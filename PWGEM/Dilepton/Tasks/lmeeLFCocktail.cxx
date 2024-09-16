@@ -18,14 +18,21 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
-#include "PWGDQ/DataModel/ReducedInfoTables.h"
+#include "PWGEM/Dilepton/DataModel/dileptonTables.h"
+#include "PWGEM/Dilepton/Utils/PairUtilities.h"
 
 using namespace o2;
 using namespace o2::framework;
 
-using McParticlesSmeared = soa::Join<aod::McParticles, aod::SmearedTracks>;
+using McParticlesSmeared = soa::Join<aod::McParticles, aod::SmearedElectrons>;
 
 struct lmeelfcocktail {
+
+  enum recLevel {
+    kGen = 0,
+    kRec,
+    kNRecLevels
+  };
 
   struct mesonInfo {
     TString name;
@@ -44,7 +51,7 @@ struct lmeelfcocktail {
   std::map<int, mesonInfo> mesons = {
     {111, {"pi0/", {22, -2}}},
     {221, {"eta/", {22, 211 * 211, -2}}},
-    {331, {"etaP/", {22, 223}}},
+    {331, {"etaP/", {22, 223, 211 * 211}}},
     {113, {"rho/", {-1}}},
     {223, {"omega/", {-1, 111}}},
     {333, {"phi/", {-1, 111, 221}}}};
@@ -60,32 +67,33 @@ struct lmeelfcocktail {
   Configurable<float> fConfigMaxPt{"cfgMaxPt", 8.0, "maximum pT"};
   Configurable<float> fConfigMinOpAng{"cfgMinOpAng", 0.050, "minimum opening angle"};
   Configurable<float> fConfigMinPtee{"cfgMinPtee", 0.0, "minimum pair pT"};
-  ConfigurableAxis fConfigMeeBins{"cfgMeeBins", {800, 0.f, 8.f}, "Mee binning"};
+  ConfigurableAxis fConfigMeeBins{"cfgMeeBins", {600, 0.f, 6.f}, "Mee binning"};
   ConfigurableAxis fConfigPteeBins{"cfgPteeBins", {400, 0.f, 10.f}, "pTee binning"};
   ConfigurableAxis fConfigPtBins{"cfgPtBins", {200, 0.f, 10.f}, "pT binning"};
-  ConfigurableAxis fConfigEtaBins{"cfgEtaBins", {200, -10.f, 10.f}, "eta binning"};
+  ConfigurableAxis fConfigEtaBins{"cfgEtaBins", {200, -5.f, 5.f}, "eta binning"};
   ConfigurableAxis fConfigPhiBins{"cfgPhiBins", {200, -TMath::Pi(), TMath::Pi()}, "phi binning"};
-  ConfigurableAxis fConfigPhiVBins{"cfgPhiVBins", {200, -TMath::Pi(), TMath::Pi()}, "phiV binning"};
-  ConfigurableAxis fConfigOpAngBins{"cfgOpAngBins", {200, -TMath::Pi(), TMath::Pi()}, "opening angle binning"};
+  ConfigurableAxis fConfigPhiVBins{"cfgPhiVBins", {200, 0, TMath::Pi()}, "phiV binning"};
+  ConfigurableAxis fConfigOpAngBins{"cfgOpAngBins", {200, 0, TMath::Pi()}, "opening angle binning"};
+  ConfigurableAxis fConfigDcaBins{"cfgDcaBins", {VARIABLE_WIDTH, 0., 0.4, 0.8, 1.2, 1.6, 2.0, 2.4, 3., 4., 5., 7., 10.}, "dca binning"};
 
   std::vector<std::shared_ptr<TH1>> histograms1D;
   std::vector<std::shared_ptr<TH2>> histograms2D;
 
-
   template <typename T, typename U>
   bool from_primary(T& p1, U& mcParticles)
   {
-    if (!p1.has_mothers()){
+    if (!p1.has_mothers()) {
       return false;
     }
     auto mother = mcParticles.iteratorAt(p1.mothersIds()[0]);
-    if (mother.has_mothers()){
+    if (mother.has_mothers()) {
       return false;
     }
     return true;
   }
 
-  bool isAcceptedSingle(ROOT::Math::PtEtaPhiMVector p1){
+  bool isAcceptedSingle(ROOT::Math::PtEtaPhiMVector p1)
+  {
     if (p1.Pt() < fConfigMinPt)
       return false;
     if (p1.Pt() > fConfigMaxPt)
@@ -95,15 +103,15 @@ struct lmeelfcocktail {
     return true;
   }
 
-
-  bool isAcceptedPair(ROOT::Math::PtEtaPhiMVector p1, ROOT::Math::PtEtaPhiMVector p2){
-    if (!isAcceptedSingle(p1)){
+  bool isAcceptedPair(ROOT::Math::PtEtaPhiMVector p1, ROOT::Math::PtEtaPhiMVector p2)
+  {
+    if (!isAcceptedSingle(p1)) {
       return false;
     }
-    if (!isAcceptedSingle(p2)){
+    if (!isAcceptedSingle(p2)) {
       return false;
     }
-    ROOT::Math::PtEtaPhiMVector p12 = p1+p2;
+    ROOT::Math::PtEtaPhiMVector p12 = p1 + p2;
     if (p12.Pt() < fConfigMinPtee)
       return false;
     if (TMath::ACos(p1.Vect().Unit().Dot(p2.Vect().Unit())) < fConfigMinOpAng)
@@ -116,7 +124,7 @@ struct lmeelfcocktail {
   {
     ROOT::Math::PtEtaPhiMVector v1(p1.ptSmeared(), p1.etaSmeared(), p1.phiSmeared(), o2::constants::physics::MassElectron);
     ROOT::Math::PtEtaPhiMVector v2(p2.ptSmeared(), p2.etaSmeared(), p2.phiSmeared(), o2::constants::physics::MassElectron);
-    return isAcceptedPair(v1,v2);
+    return isAcceptedPair(v1, v2);
   }
 
   template <typename T>
@@ -126,71 +134,92 @@ struct lmeelfcocktail {
     return isAcceptedSingle(v1);
   }
 
-
-  void addHistogram1D(TString histname, AxisSpec axis, int& i)
+  void addHistogram1D_stage(TString histname, AxisSpec axis, int& i, TString s)
   {
-    for (auto s : stage) {
+    i++;
+    TString name = s + histname;
+    histogramId[name] = i;
+    histograms1D.push_back(registry.add<TH1>(name, histname, HistType::kTH1F, {axis}, true));
+    for (auto const& [pdg, meson] : mesons) {
       i++;
-      TString name = s + histname;
+      name = s + meson.name + histname;
       histogramId[name] = i;
       histograms1D.push_back(registry.add<TH1>(name, histname, HistType::kTH1F, {axis}, true));
-      for (auto const& [pdg, meson] : mesons) {
+      for (auto const& mode : meson.decayModes) {
         i++;
-        name = s + meson.name + histname;
+        name = s + meson.name + decays[mode] + histname;
         histogramId[name] = i;
         histograms1D.push_back(registry.add<TH1>(name, histname, HistType::kTH1F, {axis}, true));
-        for (auto const& mode : meson.decayModes) {
-          i++;
-          name = s + meson.name + decays[mode] + histname;
-          histogramId[name] = i;
-          histograms1D.push_back(registry.add<TH1>(name, histname, HistType::kTH1F, {axis}, true));
-        }
       }
     }
   }
 
-  void addHistogram1D_mother(TString histname, AxisSpec axis, int& i)
+  void addHistogram1D(TString histname, AxisSpec axis, int& i)
   {
+    for (auto s : stage) {
+      addHistogram1D_stage(histname, axis, i, s);
+    }
+  }
+
+  void addHistogram1D_mother(TString histname, AxisSpec axis, int& i) // mother histograms only for gen. level, no decay channels
+  {
+    i++;
+    TString name = stage[0] + histname;
+    histogramId[name] = i;
+    histograms1D.push_back(registry.add<TH1>(name, histname, HistType::kTH1F, {axis}, true));
     for (auto const& [pdg, meson] : mesons) {
       i++;
-      TString name = stage[0] + meson.name + histname;
+      name = stage[0] + meson.name + histname;
       histogramId[name] = i;
       histograms1D.push_back(registry.add<TH1>(name, histname, HistType::kTH1F, {axis}, true));
+    }
+  }
+
+  void addHistogram2D_stage(TString histname, AxisSpec axis1, AxisSpec axis2, int& i, TString s)
+  {
+    i++;
+    TString name = s + histname;
+    histogramId[name] = i;
+    histograms2D.push_back(registry.add<TH2>(name, histname, HistType::kTH2F, {axis1, axis2}, true));
+    for (auto const& [pdg, meson] : mesons) {
+      i++;
+      name = s + meson.name + histname;
+      histogramId[name] = i;
+      histograms2D.push_back(registry.add<TH2>(name, histname, HistType::kTH2F, {axis1, axis2}, true));
+      for (auto const& mode : meson.decayModes) {
+        i++;
+        name = s + meson.name + decays[mode] + histname;
+        histogramId[name] = i;
+        histograms2D.push_back(registry.add<TH2>(name, histname, HistType::kTH2F, {axis1, axis2}, true));
+      }
     }
   }
 
   void addHistogram2D(TString histname, AxisSpec axis1, AxisSpec axis2, int& i)
   {
     for (auto s : stage) {
-      i++;
-      TString name = s + histname;
-      histogramId[name] = i;
-      histograms2D.push_back(registry.add<TH2>(name, histname, HistType::kTH2F, {axis1, axis2}, true));
-      for (auto const& [pdg, meson] : mesons) {
-        i++;
-        name = s + meson.name + histname;
-        histogramId[name] = i;
-        histograms2D.push_back(registry.add<TH2>(name, histname, HistType::kTH2F, {axis1, axis2}, true));
-        for (auto const& mode : meson.decayModes) {
-          i++;
-          name = s + meson.name + decays[mode] + histname;
-          histogramId[name] = i;
-          histograms2D.push_back(registry.add<TH2>(name, histname, HistType::kTH2F, {axis1, axis2}, true));
-        }
-      }
+      addHistogram2D_stage(histname, axis1, axis2, i, s);
     }
   }
 
-  void fillHistogram1D(TString histname, int s, int pdg, int other_daughter_pdg, float value, float weight){
-    histograms1D[histogramId[stage[s]+histname]]->Fill(value,weight);
-    histograms1D[histogramId[stage[s]+mesons[pdg].name+histname]]->Fill(value,weight);
-    histograms1D[histogramId[stage[s]+mesons[pdg].name+decays[other_daughter_pdg]+histname]]->Fill(value,weight);
+  void fillHistogram1D(TString histname, int s, int pdg, int other_daughter_pdg, float value, float weight)
+  {
+    histograms1D[histogramId[stage[s] + histname]]->Fill(value, weight);
+    histograms1D[histogramId[stage[s] + mesons[pdg].name + histname]]->Fill(value, weight);
+    histograms1D[histogramId[stage[s] + mesons[pdg].name + decays[other_daughter_pdg] + histname]]->Fill(value, weight);
   }
 
-  void fillHistogram2D(TString histname, int s, int pdg, int other_daughter_pdg, float value1, float value2, float weight){
-    histograms1D[histogramId[stage[s]+histname]]->Fill(value1, value2 ,weight);
-    histograms1D[histogramId[stage[s]+mesons[pdg].name+histname]]->Fill(value1, value2, ,weight);
-    histograms1D[histogramId[stage[s]+mesons[pdg].name+decays[other_daughter_pdg]+histname]]->Fill(value1 ,value2, weight);
+  void fillHistogram1D_mother(TString histname, int pdg, float value, float weight)
+  {
+    histograms1D[histogramId[stage[0] + histname]]->Fill(value, weight);
+    histograms1D[histogramId[stage[0] + mesons[pdg].name + histname]]->Fill(value, weight);
+  }
+
+  void fillHistogram2D(TString histname, int s, int pdg, int other_daughter_pdg, float value1, float value2, float weight)
+  {
+    histograms2D[histogramId[stage[s] + histname]]->Fill(value1, value2, weight);
+    histograms2D[histogramId[stage[s] + mesons[pdg].name + histname]]->Fill(value1, value2, weight);
+    histograms2D[histogramId[stage[s] + mesons[pdg].name + decays[other_daughter_pdg] + histname]]->Fill(value1, value2, weight);
   }
 
   void init(InitContext& context)
@@ -204,7 +233,9 @@ struct lmeelfcocktail {
     AxisSpec opAng_axis = {fConfigOpAngBins, "#it{#omega}_{ee}"};
     AxisSpec eta_axis_mother = {fConfigEtaBins, "#it{#eta}_{mother}"};
     AxisSpec pt_axis_mother = {fConfigPtBins, "#it{p}_{T,mother} (GeV/#it{c})"};
-    AxisSpec phi_axis_mother = {fConfigPhiBins, "#it{varphi}_{mother}"};
+    AxisSpec phi_axis_mother = {fConfigPhiBins, "#it{#varphi}_{mother}"};
+    AxisSpec dca_axis = {fConfigDcaBins, "DCA_{e}"};
+    AxisSpec dcaee_axis = {fConfigDcaBins, "DCA_{ee}"};
 
     if (context.mOptions.get<bool>("processPairing")) {
       registry.add<TH2>("gen/ULS", "ULS gen.", HistType::kTH2F, {mass_axis, ptee_axis}, true);
@@ -219,16 +250,20 @@ struct lmeelfcocktail {
       addHistogram1D("Pt", pt_axis, i);
       addHistogram1D("Eta", eta_axis, i);
       addHistogram1D("Phi", phi_axis, i);
-      addHistogram1D_mother("Mohter_Pt", pt_axis_mother, i);
+      addHistogram1D_mother("Mother_Pt", pt_axis_mother, i);
       addHistogram1D_mother("Mother_Eta", eta_axis_mother, i);
       addHistogram1D_mother("Mother_Phi", phi_axis_mother, i);
       addHistogram1D("PhiV", phiV_axis, i);
       addHistogram1D("OpAng", opAng_axis, i);
       addHistogram1D("Mee", mass_axis, i);
       addHistogram1D("Ptee", ptee_axis, i);
+      addHistogram1D_stage("Dca", dca_axis, i, "rec/");
+      addHistogram1D_stage("Dcaee", dcaee_axis, i, "rec/");
       i = -1;
       addHistogram2D("MeeVsPtee", mass_axis, ptee_axis, i);
-      // missing DCA
+      addHistogram2D_stage("DcaVsPt", dca_axis, pt_axis, i, "rec/");
+      addHistogram2D_stage("DcaeeVsPtee", dcaee_axis, ptee_axis, i, "rec/");
+      addHistogram2D_stage("DcaeeVsMee", dcaee_axis, mass_axis, i, "rec/");
     }
   }
 
@@ -243,83 +278,135 @@ struct lmeelfcocktail {
         LOG(error) << "Found mother particle with pdg = " << pdg << " that is not in list of mesons";
       }
       if (!particle.has_daughters()) {
-        LOG(error) << "Found meson that has no daughters";
+        LOG(error) << "Found meson with pdg = " << pdg << "that has no daughters";
       }
 
       int other_daughter_pdg = -1;
       int nEle = 0;
       int nPos = 0;
 
-      ROOT::Math::PtEtaPhiMVector pEle[2], pPos[2];
-      float wEle[2], wPos[2];
+      ROOT::Math::PtEtaPhiMVector pEleGen, pPosGen, pEleRec, pPosRec;
+      float weight(1.), effEle(1.), effPos(1.), dcaEle(0.), dcaPos(0.);
       for (const auto& daughter : particle.daughters_as<McParticlesSmeared>()) {
         int temp_pdg = daughter.pdgCode();
         if (temp_pdg == 11) {
           ROOT::Math::PtEtaPhiMVector temp_p_gen(daughter.pt(), daughter.eta(), daughter.phi(), o2::constants::physics::MassElectron);
           ROOT::Math::PtEtaPhiMVector temp_p(daughter.ptSmeared(), daughter.etaSmeared(), daughter.phiSmeared(), o2::constants::physics::MassElectron);
-          pEle[0] = temp_p_gen;
-          pEle[1] = temp_p;
-          wEle[0] = daughter.weight();
-          wEle[1] = daughter.weight()*daughter.efficiency();
+          pEleGen = temp_p_gen;
+          pEleRec = temp_p;
+          weight = daughter.weight();
+          effEle = daughter.efficiency();
+          dcaEle = daughter.dca();
           nEle++;
           continue;
         }
         if (temp_pdg == -11) {
           ROOT::Math::PtEtaPhiMVector temp_p_gen(daughter.pt(), daughter.eta(), daughter.phi(), o2::constants::physics::MassElectron);
           ROOT::Math::PtEtaPhiMVector temp_p(daughter.ptSmeared(), daughter.etaSmeared(), daughter.phiSmeared(), o2::constants::physics::MassElectron);
-          pPos[0] = temp_p_gen;
-          pPos[1] = temp_p;
-          wPos[0] = daughter.weight();
-          wPos[1] = daughter.weight()*daughter.efficiency();
+          pPosGen = temp_p_gen;
+          pPosRec = temp_p;
+          effPos = daughter.efficiency();
+          dcaPos = daughter.dca();
           nPos++;
           continue;
         }
         other_daughter_pdg = abs(other_daughter_pdg * temp_pdg);
       }
       if (!(((nEle == 1) && (nPos == 1)) || ((nEle == 2) && (nPos == 2)))) {
-        LOG(error) << "Found decay with wrong number of electrons: nElectrons = " << nEle << ", nPositrons = " << nPos;
+        LOG(error) << "Found decay with wrong number of electrons in decay of meson with pdg " << pdg << ": nElectrons = " << nEle << ", nPositrons = " << nPos;
         continue;
       }
       if ((nEle == 2) && (nPos == 2) && (other_daughter_pdg == -1)) {
         other_daughter_pdg = -2;
         // ToDO
         // LOG(warning) << "Found a decay to four electrons of meson with pdg = " << pdg <<". Not included yet";
+        continue; // should be inlcuded at some point
+      }
+      auto this_meson_decays = mesons[pdg].decayModes;
+      if (std::find(this_meson_decays.begin(), this_meson_decays.end(), other_daughter_pdg) == this_meson_decays.end()) {
+        LOG(error) << "Found decay with code = " << other_daughter_pdg << " that is not in list of decays of meson with pdg " << pdg;
         continue;
       }
-      if (decays.find(other_daughter_pdg) == decays.end()) {
-        LOG(error) << "Found decay with code = " << other_daughter_pdg << " that is not in list of decays";
-        continue;
-      }
 
-      for (int s=0; s<2;s++){
-        TString histname;
+      for (int s = 0; s < kNRecLevels; s++) { // s=0: gen, s=1: rec
 
-       /* if ((s==1) && (!isAccepted(pEle[s],pPos[s]))){
-          continue; 
-        }*/
-        // missing acceptance
-        // not OK now. need separate for Ele and Pos and only later for pair
+        ROOT::Math::PtEtaPhiMVector pEle, pPos;
+        float pairWeight(1.), weightEle(1.), weightPos(1.);
+        bool acceptedEle(true), acceptedPos(true), acceptedPair(true);
 
-        histname="Pt";
-        fillHistogram1D(histname, s, pdg, other_daughter_pdg, pEle[s].Pt(),wEle[s]);
-        fillHistogram1D(histname, s, pdg, other_daughter_pdg, pPos[s].Pt(),wPos[s]);
+        if (s == kGen) {
+          pEle = pEleGen;
+          pPos = pPosGen;
+          pairWeight = weight;
+          weightEle = weight;
+          weightPos = weight;
+          acceptedEle = true;
+          acceptedPos = true;
+          acceptedPair = true;
+        } else if (s == kRec) {
+          pEle = pEleRec;
+          pPos = pPosRec;
+          pairWeight = weight * effEle * effPos;
+          weightEle = weight * effEle;
+          weightPos = weight * effPos;
+          acceptedEle = isAcceptedSingle(pEle);
+          acceptedPos = isAcceptedSingle(pPos);
+          acceptedPair = isAcceptedPair(pEle, pPos);
+        }
 
-        histname="Eta";
-        fillHistogram1D(histname, s, pdg, other_daughter_pdg, pEle[s].Eta(),wEle[s]);
-        fillHistogram1D(histname, s, pdg, other_daughter_pdg, pPos[s].Eta(),wPos[s]);
+        // single track histograms
+        if (acceptedEle)
+          fillHistogram1D("Pt", s, pdg, other_daughter_pdg, pEle.Pt(), weightEle);
+        if (acceptedPos)
+          fillHistogram1D("Pt", s, pdg, other_daughter_pdg, pPos.Pt(), weightPos);
 
-        histname="Phi";
-        fillHistogram1D(histname, s, pdg, other_daughter_pdg, pEle[s].Phi(),wEle[s]);
-        fillHistogram1D(histname, s, pdg, other_daughter_pdg, pPos[s].Phi(),wPos[s]);
+        if (acceptedEle)
+          fillHistogram1D("Eta", s, pdg, other_daughter_pdg, pEle.Eta(), weightEle);
+        if (acceptedPos)
+          fillHistogram1D("Eta", s, pdg, other_daughter_pdg, pPos.Eta(), weightPos);
 
+        if (acceptedEle)
+          fillHistogram1D("Phi", s, pdg, other_daughter_pdg, pEle.Phi(), weightEle);
+        if (acceptedPos)
+          fillHistogram1D("Phi", s, pdg, other_daughter_pdg, pPos.Phi(), weightPos);
 
-        ROOT::Math::PtEtaPhiMVector p12=pEle[s]+pPos[s];
-        float mee = p12.M();
-        float ptee = p12.Pt();
+        if (s == kRec) { // dca only at rec. level
+          if (acceptedEle) {
+            fillHistogram1D("Dca", s, pdg, other_daughter_pdg, dcaEle, weightEle);
+            fillHistogram2D("DcaVsPt", s, pdg, other_daughter_pdg, dcaEle, pEle.Pt(), weightEle);
+          }
+          if (acceptedPos) {
+            fillHistogram1D("Dca", s, pdg, other_daughter_pdg, dcaPos, weightPos);
+            fillHistogram2D("DcaVsPt", s, pdg, other_daughter_pdg, dcaPos, pPos.Pt(), weightPos);
+          }
+        }
 
+        // mother histograms
+        if (s == kGen) { // only at gen. level
+          fillHistogram1D_mother("Mother_Pt", pdg, particle.pt(), weight);
+          fillHistogram1D_mother("Mother_Eta", pdg, particle.eta(), weight);
+          fillHistogram1D_mother("Mother_Phi", pdg, particle.phi(), weight);
+        }
 
-        histname="MeeVsPtee";
-        fillHistogram1D(histname, s, pdg, other_daughter_pdg, mee, ptee,wEle[s]*wPos[s]);
+        // pair historams
+        if (acceptedPair) {
+          ROOT::Math::PtEtaPhiMVector p12 = pEle + pPos;
+          float mee = p12.M();
+          float ptee = p12.Pt();
+          float phiV = o2::aod::pwgem::dilepton::utils::pairutil::getOpeningAngle(pPos.Px(), pPos.Py(), pPos.Pz(), pEle.Px(), pEle.Py(), pEle.Pz());
+          float opAng = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(pPos.Px(), pPos.Py(), pPos.Pz(), pEle.Px(), pEle.Py(), pEle.Pz(), 1, -1, 1);
+          float dcaee = sqrt((pow(dcaEle, 2) + pow(dcaPos, 2)) / 2);
+          fillHistogram2D("MeeVsPtee", s, pdg, other_daughter_pdg, mee, ptee, pairWeight);
+          fillHistogram1D("Mee", s, pdg, other_daughter_pdg, mee, pairWeight);
+          fillHistogram1D("Ptee", s, pdg, other_daughter_pdg, ptee, pairWeight);
+          fillHistogram1D("PhiV", s, pdg, other_daughter_pdg, phiV, pairWeight);
+          fillHistogram1D("OpAng", s, pdg, other_daughter_pdg, opAng, pairWeight);
+          if (s == kRec) { // dca only at rec. level
+            fillHistogram1D("Dcaee", s, pdg, other_daughter_pdg, dcaee, pairWeight);
+            fillHistogram2D("DcaeeVsPtee", s, pdg, other_daughter_pdg, dcaee, ptee, pairWeight);
+            fillHistogram2D("DcaeeVsMee", s, pdg, other_daughter_pdg, dcaee, mee, pairWeight);
+          }
+        }
       }
 
     } // end particle loop
@@ -340,7 +427,7 @@ struct lmeelfcocktail {
 
       // ULS spectrum
       for (auto const& [p1, p2] : combinations(o2::soa::CombinationsFullIndexPolicy(electronsGrouped, positronsGrouped))) {
-        if (!( from_primary(p1, mcParticles) && from_primary(p2, mcParticles))){
+        if (!(from_primary(p1, mcParticles) && from_primary(p2, mcParticles))) {
           continue;
         }
         ROOT::Math::PtEtaPhiMVector v1_gen(p1.pt(), p1.eta(), p1.phi(), o2::constants::physics::MassElectron);
@@ -356,7 +443,7 @@ struct lmeelfcocktail {
       }
       // LS spectra
       for (auto& [p1, p2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(electronsGrouped, electronsGrouped))) {
-        if (!( from_primary(p1, mcParticles) && from_primary(p2, mcParticles))){
+        if (!(from_primary(p1, mcParticles) && from_primary(p2, mcParticles))) {
           continue;
         }
         ROOT::Math::PtEtaPhiMVector v1_gen(p1.pt(), p1.eta(), p1.phi(), o2::constants::physics::MassElectron);
@@ -371,7 +458,7 @@ struct lmeelfcocktail {
         }
       }
       for (auto& [p1, p2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(positronsGrouped, positronsGrouped))) {
-        if (!( from_primary(p1, mcParticles) && from_primary(p2, mcParticles))){
+        if (!(from_primary(p1, mcParticles) && from_primary(p2, mcParticles))) {
           continue;
         }
         ROOT::Math::PtEtaPhiMVector v1_gen(p1.pt(), p1.eta(), p1.phi(), o2::constants::physics::MassElectron);
