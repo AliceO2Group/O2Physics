@@ -137,15 +137,15 @@ DECLARE_SOA_COLUMN(BachTOFEventTime, bachTOFEventTime, float);   //! bachelor tr
 
 // delta-times
 DECLARE_SOA_COLUMN(PosTOFDeltaTXiPi, posTOFDeltaTXiPi, float);   //! positive track TOFDeltaT from pion <- lambda <- xi expectation
-DECLARE_SOA_COLUMN(PosTOFDeltaTXiPr, posTOFDeltaTXiPr, float);   //! positive track TOFDeltaT from pion <- lambda <- xi expectation
+DECLARE_SOA_COLUMN(PosTOFDeltaTXiPr, posTOFDeltaTXiPr, float);   //! positive track TOFDeltaT from proton <- lambda <- xi expectation
 DECLARE_SOA_COLUMN(NegTOFDeltaTXiPi, negTOFDeltaTXiPi, float);   //! negative track TOFDeltaT from pion <- lambda <- xi expectation
-DECLARE_SOA_COLUMN(NegTOFDeltaTXiPr, negTOFDeltaTXiPr, float);   //! negative track TOFDeltaT from pion <- lambda <- xi expectation
+DECLARE_SOA_COLUMN(NegTOFDeltaTXiPr, negTOFDeltaTXiPr, float);   //! negative track TOFDeltaT from proton <- lambda <- xi expectation
 DECLARE_SOA_COLUMN(BachTOFDeltaTXiPi, bachTOFDeltaTXiPi, float); //! bachelor track TOFDeltaT from pion <- xi expectation
 DECLARE_SOA_COLUMN(PosTOFDeltaTOmPi, posTOFDeltaTOmPi, float);   //! positive track TOFDeltaT from pion <- lambda <- omega expectation
-DECLARE_SOA_COLUMN(PosTOFDeltaTOmPr, posTOFDeltaTOmPr, float);   //! positive track TOFDeltaT from pion <- lambda <- omega expectation
+DECLARE_SOA_COLUMN(PosTOFDeltaTOmPr, posTOFDeltaTOmPr, float);   //! positive track TOFDeltaT from proton <- lambda <- omega expectation
 DECLARE_SOA_COLUMN(NegTOFDeltaTOmPi, negTOFDeltaTOmPi, float);   //! negative track TOFDeltaT from pion <- lambda <- omega expectation
-DECLARE_SOA_COLUMN(NegTOFDeltaTOmPr, negTOFDeltaTOmPr, float);   //! negative track TOFDeltaT from pion <- lambda <- omega expectation
-DECLARE_SOA_COLUMN(BachTOFDeltaTOmPi, bachTOFDeltaTOmPi, float); //! bachelor track TOFDeltaT from pion <- omega expectation
+DECLARE_SOA_COLUMN(NegTOFDeltaTOmPr, negTOFDeltaTOmPr, float);   //! negative track TOFDeltaT from proton <- lambda <- omega expectation
+DECLARE_SOA_COLUMN(BachTOFDeltaTOmKa, bachTOFDeltaTOmKa, float); //! bachelor track TOFDeltaT from kaon <- omega expectation
 
 // n-sigmas
 DECLARE_SOA_COLUMN(TOFNSigmaXiLaPi, tofNSigmaXiLaPi, float); //! meson track NSigma from pion <- lambda <- xi expectation
@@ -170,7 +170,7 @@ DECLARE_SOA_TABLE(CascTOFPIDs, "AOD", "CASCTOFPID", // processed information for
                   cascdata::BachTOFDeltaTXiPi,
                   cascdata::PosTOFDeltaTOmPi, cascdata::PosTOFDeltaTOmPr,
                   cascdata::NegTOFDeltaTOmPi, cascdata::NegTOFDeltaTOmPr,
-                  cascdata::BachTOFDeltaTOmPi);
+                  cascdata::BachTOFDeltaTOmKa);
 DECLARE_SOA_TABLE(CascTOFNSigmas, "AOD", "CascTOFNSigmas", // Nsigmas for cascades
                   cascdata::TOFNSigmaXiLaPi, cascdata::TOFNSigmaXiLaPr, cascdata::TOFNSigmaXiPi,
                   cascdata::TOFNSigmaOmLaPi, cascdata::TOFNSigmaOmLaPr, cascdata::TOFNSigmaOmKa);

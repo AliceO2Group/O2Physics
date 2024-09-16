@@ -135,11 +135,6 @@ struct femtoUniversePairTaskTrackV0Extended {
   ConfigurableAxis ConfmTBins3D{"ConfmTBins3D", {VARIABLE_WIDTH, 1.02f, 1.14f, 1.20f, 1.26f, 1.38f, 1.56f, 1.86f, 4.50f}, "mT Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<ConfUse3D>> to true in order to use)"};
   ConfigurableAxis ConfmultBins3D{"ConfMultBins3D", {VARIABLE_WIDTH, 0.0f, 20.0f, 30.0f, 40.0f, 99999.0f}, "multiplicity Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<ConfUse3D>> to true in order to use)"};
 
-  /// MC
-
-  Configurable<float> ConfHPtMC{"ConfHPtMC", 4.0f, "higher limit for pt"};
-  Configurable<float> ConfLPtMC{"ConfLPtMC", 0.3f, "lower limit for pt"};
-
   // Efficiency
   Configurable<std::string> ConfLocalEfficiency{"ConfLocalEfficiency", "", "Local path to efficiency .root file"};
 

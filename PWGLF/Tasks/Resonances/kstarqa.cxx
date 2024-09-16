@@ -61,6 +61,8 @@ struct kstarqa {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   // Confugrable for QA histograms
+  Configurable<bool> CalcLikeSign{"CalcLikeSign", true, "Calculate Like Sign"};
+  Configurable<bool> CalcRotational{"CalcRotational", true, "Calculate Rotational"};
   Configurable<bool> QA{"QA", false, "QA"};
   Configurable<bool> QAbefore{"QAbefore", true, "QAbefore"};
   Configurable<bool> QAafter{"QAafter", true, "QAafter"};
@@ -155,9 +157,11 @@ struct kstarqa {
 
     // KStar histograms
     histos.add("h3KstarInvMassUnlikeSign", "kstar Unlike Sign", kTHnSparseF, {binsMultPlot, ptAxis, invmassAxis, thnAxisPOL}, true);
-    histos.add("h3KstarInvMasslikeSign", "kstar like Sign", kTHnSparseF, {binsMultPlot, ptAxis, invmassAxis, thnAxisPOL}, true);
-    histos.add("h3KstarInvMassRotated", "kstar rotated", kTHnSparseF, {binsMultPlot, ptAxis, invmassAxis, thnAxisPOL}, true);
     histos.add("h3KstarInvMassMixed", "kstar Mixed", kTHnSparseF, {binsMultPlot, ptAxis, invmassAxis, thnAxisPOL}, true);
+    if (CalcLikeSign)
+      histos.add("h3KstarInvMasslikeSign", "kstar like Sign", kTHnSparseF, {binsMultPlot, ptAxis, invmassAxis, thnAxisPOL}, true);
+    if (CalcRotational)
+      histos.add("h3KstarInvMassRotated", "kstar rotated", kTHnSparseF, {binsMultPlot, ptAxis, invmassAxis, thnAxisPOL}, true);
 
     // MC generated histograms
     histos.add("k892Gen", "pT distribution of True MC K(892)0", kTH1D, {ptAxis});
@@ -417,14 +421,16 @@ struct kstarqa {
               float theta2 = rn->Uniform(TMath::Pi() - TMath::Pi() / rotational_cut, TMath::Pi() + TMath::Pi() / rotational_cut);
               lv4.SetPtEtaPhiM(track1.pt(), track1.eta(), track1.phi() + theta2, massKa); // for rotated background
               lv5 = lv2 + lv4;
-              histos.fill(HIST("h3KstarInvMassRotated"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarHelicity);
+              if (CalcRotational)
+                histos.fill(HIST("h3KstarInvMassRotated"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarHelicity);
             }
           } else {
             histos.fill(HIST("h3KstarInvMassMixed"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarHelicity);
           }
         } else {
           if (!isMix) {
-            histos.fill(HIST("h3KstarInvMasslikeSign"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarHelicity);
+            if (CalcLikeSign)
+              histos.fill(HIST("h3KstarInvMasslikeSign"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarHelicity);
           }
         }
 
@@ -439,14 +445,16 @@ struct kstarqa {
               float theta2 = rn->Uniform(0, TMath::Pi());
               lv4.SetPtEtaPhiM(track1.pt(), track1.eta(), track1.phi() + theta2, massKa); // for rotated background
               lv5 = lv2 + lv4;
-              histos.fill(HIST("h3KstarInvMassRotated"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarProduction);
+              if (CalcRotational)
+                histos.fill(HIST("h3KstarInvMassRotated"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarProduction);
             }
           } else {
             histos.fill(HIST("h3KstarInvMassMixed"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarProduction);
           }
         } else {
           if (!isMix) {
-            histos.fill(HIST("h3KstarInvMasslikeSign"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarProduction);
+            if (CalcLikeSign)
+              histos.fill(HIST("h3KstarInvMasslikeSign"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarProduction);
           }
         }
       } else if (activateTHnSparseCosThStarBeam) {
@@ -460,13 +468,15 @@ struct kstarqa {
               float theta2 = rn->Uniform(0, TMath::Pi());
               lv4.SetPtEtaPhiM(track1.pt(), track1.eta(), track1.phi() + theta2, massKa); // for rotated background
               lv5 = lv2 + lv4;
-              histos.fill(HIST("h3KstarInvMassRotated"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarBeam);
+              if (CalcRotational)
+                histos.fill(HIST("h3KstarInvMassRotated"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarBeam);
             }
           } else {
             histos.fill(HIST("h3KstarInvMassMixed"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarBeam);
           }
         } else {
-          histos.fill(HIST("h3KstarInvMasslikeSign"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarBeam);
+          if (CalcLikeSign)
+            histos.fill(HIST("h3KstarInvMasslikeSign"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarBeam);
         }
       } else if (activateTHnSparseCosThStarRandom) {
         ROOT::Math::XYZVector randomVec = ROOT::Math::XYZVector(std::sin(thetaRandom) * std::cos(phiRandom), std::sin(thetaRandom) * std::sin(phiRandom), std::cos(thetaRandom));
@@ -479,14 +489,16 @@ struct kstarqa {
               float theta2 = rn->Uniform(0, TMath::Pi());
               lv4.SetPtEtaPhiM(track1.pt(), track1.eta(), track1.phi() + theta2, massKa); // for rotated background
               lv5 = lv2 + lv4;
-              histos.fill(HIST("h3KstarInvMassRotated"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarRandom);
+              if (CalcRotational)
+                histos.fill(HIST("h3KstarInvMassRotated"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarRandom);
             }
           } else {
             histos.fill(HIST("h3KstarInvMassMixed"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarRandom);
           }
         } else {
           if (!isMix) {
-            histos.fill(HIST("h3KstarInvMasslikeSign"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarRandom);
+            if (CalcLikeSign)
+              histos.fill(HIST("h3KstarInvMasslikeSign"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarRandom);
           }
         }
       }

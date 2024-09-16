@@ -112,3 +112,15 @@ o2physics_add_dpl_workflow(mftmchmatchingml
                                           O2::CCDB O2Physics::MLCore
                                           O2::ReconstructionDataFormats
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(match-mft-ft0
+                    SOURCES match-mft-ft0.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                                          O2::ReconstructionDataFormats
+                                          O2::DetectorsBase O2::DetectorsCommonDataFormats
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(zdc-task-intercalib
+                    SOURCES zdc-task-intercalib.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)

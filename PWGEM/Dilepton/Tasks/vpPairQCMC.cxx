@@ -11,7 +11,7 @@
 //
 // ========================
 //
-// This code runs loop over dalitz ee table for dalitz QC.
+// This code runs loop over ULS ee pars for virtual photon QC.
 //    Please write to: daiki.sekihata@cern.ch
 
 #include "TString.h"
@@ -119,6 +119,7 @@ struct vpPairQCMC {
     Configurable<float> cfg_max_TPCNsigmaPr{"cfg_max_TPCNsigmaPr", +0.0, "max. TPC n sigma for proton exclusion"};
     Configurable<float> cfg_min_TOFNsigmaEl{"cfg_min_TOFNsigmaEl", -0.0, "min. TOF n sigma for electron inclusion"};
     Configurable<float> cfg_max_TOFNsigmaEl{"cfg_max_TOFNsigmaEl", +0.0, "max. TOF n sigma for electron inclusion"};
+    Configurable<float> cfg_max_pin_pirejTPC{"cfg_max_pin_pirejTPC", 0.5, "max. pin for pion rejection in TPC"};
     Configurable<bool> enableTTCA{"enableTTCA", true, "Flag to enable or disable TTCA"};
 
     // CCDB configuration for PID ML
@@ -310,6 +311,7 @@ struct vpPairQCMC {
     fDielectronCut.SetTPCNsigmaKaRange(dielectroncuts.cfg_min_TPCNsigmaKa, dielectroncuts.cfg_max_TPCNsigmaKa);
     fDielectronCut.SetTPCNsigmaPrRange(dielectroncuts.cfg_min_TPCNsigmaPr, dielectroncuts.cfg_max_TPCNsigmaPr);
     fDielectronCut.SetTOFNsigmaElRange(dielectroncuts.cfg_min_TOFNsigmaEl, dielectroncuts.cfg_max_TOFNsigmaEl);
+    fDielectronCut.SetMaxPinForPionRejectionTPC(dielectroncuts.cfg_max_pin_pirejTPC);
 
     if (dielectroncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) { // please call this at the end of DefineDielectronCut
       // o2::ml::OnnxModel* eid_bdt = new o2::ml::OnnxModel();
@@ -428,7 +430,7 @@ struct vpPairQCMC {
               break;
           }
         } // end of primary/secondary selection
-      }   // end of primary selection for same mother
+      } // end of primary selection for same mother
     }
 
     // fill track info that belong to true pairs.
@@ -606,7 +608,7 @@ struct vpPairQCMC {
           }
         }
       } // end of true ULS pair loop
-    }   // end of collision loop
+    } // end of collision loop
   }
   PROCESS_SWITCH(vpPairQCMC, processGen, "run genrated info", true);
 

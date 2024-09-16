@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef PIDTOFGENERIC_H_
-#define PIDTOFGENERIC_H_
+#ifndef PWGLF_DATAMODEL_PIDTOFGENERIC_H_
+#define PWGLF_DATAMODEL_PIDTOFGENERIC_H_
 #include "CommonDataFormat/InteractionRecord.h"
 #include "Common/Core/PID/PIDTOF.h"
 
@@ -155,4 +155,4 @@ class TofPidNewCollision
 } // namespace pidtofgeneric
 } // namespace o2::aod
 
-#endif
+#endif // PWGLF_DATAMODEL_PIDTOFGENERIC_H_

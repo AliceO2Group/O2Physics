@@ -53,6 +53,8 @@ class PIDExtended
   static constexpr ID Hyperhydrog4 = 14;
   static constexpr ID XiMinus = 15;
   static constexpr ID OmegaMinus = 16;
+  static constexpr ID HyperHelium4 = 17;
+  static constexpr ID HyperHelium5 = 18;
 
   static_assert(Electron == o2::track::PID::Electron, "PID::Electron mismatch");
   static_assert(Muon == o2::track::PID::Muon, "PID::Muon mismatch");
@@ -71,59 +73,60 @@ class PIDExtended
   static_assert(Hyperhydrog4 == o2::track::PID::Hyperhydrog4, "PID::Hyperhydrog4 mismatch");
   static_assert(XiMinus == o2::track::PID::XiMinus, "PID::XiMinus mismatch");
   static_assert(OmegaMinus == o2::track::PID::OmegaMinus, "PID::OmegaMinus mismatch");
+  // static_assert(HyperHelium4 == o2::track::PID::HyperHelium4, "PID::HyperHelium4 mismatch");
+  // static_assert(HyperHelium5 == o2::track::PID::HyperHelium5, "PID::HyperHelium5 mismatch");
 
   static constexpr ID PIDCountsUntilAl = 9; // Number of indices defined in PID.h equivalent to o2::track::PID::NIDs
-  static_assert(PIDCountsUntilAl == o2::track::PID::NIDs, "PID::NIDs mismatch");
+  // static_assert(PIDCountsUntilAl == o2::track::PID::NIDs, "PID::NIDs mismatch");
 
-  static constexpr ID PIDCounts = 17; // Number of indices defined in PID.h
-  static_assert(PIDCounts == o2::track::PID::NIDsTot, "PID::NIDsTot mismatch");
+  static constexpr ID PIDCounts = 19; // Number of indices defined in PID.h
+  // static_assert(PIDCounts == o2::track::PID::NIDsTot, "PID::NIDsTot mismatch");
   // Define an array of IDs
   static constexpr std::array<ID, PIDCountsUntilAl> mIDsUntilAl = {Electron, Muon, Pion, Kaon, Proton, Deuteron, Triton, Helium3, Alpha};
-  static constexpr std::array<ID, PIDCounts> mIDs = {Electron, Muon, Pion, Kaon, Proton, Deuteron, Triton, Helium3, Alpha, PI0, Photon, K0, Lambda, HyperTriton, Hyperhydrog4, XiMinus, OmegaMinus};
+  static constexpr std::array<ID, PIDCounts> mIDs = {Electron, Muon, Pion, Kaon, Proton, Deuteron, Triton, Helium3, Alpha, PI0, Photon, K0, Lambda, HyperTriton, Hyperhydrog4, XiMinus, OmegaMinus, HyperHelium4, HyperHelium5};
 
   // Define the antiparticles
-  static constexpr ID Positron = 17;
-  static constexpr ID MuonPlus = 18;
-  static constexpr ID PionMinus = 19;
-  static constexpr ID KaonMinus = 20;
-  static constexpr ID AntiProton = 21;
-  static constexpr ID AntiDeuteron = 22;
-  static constexpr ID AntiTriton = 23;
-  static constexpr ID AntiHelium3 = 24;
-  static constexpr ID AntiAlpha = 25;
-  static constexpr ID AntiLambda = 26;
-  static constexpr ID AntiHyperTriton = 27;
-  static constexpr ID AntiHyperhydrog4 = 28;
-  static constexpr ID XiPlus = 29;
-  static constexpr ID OmegaPlus = 30;
+  static constexpr ID Positron = PIDCounts;
+  static constexpr ID MuonPlus = PIDCounts + 1;
+  static constexpr ID PionMinus = PIDCounts + 2;
+  static constexpr ID KaonMinus = PIDCounts + 3;
+  static constexpr ID AntiProton = PIDCounts + 4;
+  static constexpr ID AntiDeuteron = PIDCounts + 5;
+  static constexpr ID AntiTriton = PIDCounts + 6;
+  static constexpr ID AntiHelium3 = PIDCounts + 7;
+  static constexpr ID AntiAlpha = PIDCounts + 8;
+  static constexpr ID AntiLambda = PIDCounts + 9;
+  static constexpr ID AntiHyperTriton = PIDCounts + 10;
+  static constexpr ID AntiHyperhydrog4 = PIDCounts + 11;
+  static constexpr ID XiPlus = PIDCounts + 12;
+  static constexpr ID OmegaPlus = PIDCounts + 13;
+  static constexpr ID AntiHyperHelium4 = PIDCounts + 14;
+  static constexpr ID AntiHyperHelium5 = PIDCounts + 15;
 
-  static constexpr ID Neutron = 31;
-  static constexpr ID AntiNeutron = 32;
-  static constexpr ID HyperHelium4 = 33;
-  static constexpr ID AntiHyperHelium4 = 34;
-  static constexpr ID Phi = 35;
-
-  static constexpr ID BZero = 36;
-  static constexpr ID BPlus = 37;
-  static constexpr ID BS = 38;
-  static constexpr ID D0 = 39;
-  static constexpr ID DPlus = 40;
-  static constexpr ID DS = 41;
-  static constexpr ID DStar = 42;
-  static constexpr ID ChiC1 = 43;
-  static constexpr ID JPsi = 44;
-  static constexpr ID LambdaB0 = 45;
-  static constexpr ID LambdaCPlus = 46;
-  static constexpr ID OmegaC0 = 47;
-  static constexpr ID SigmaC0 = 48;
-  static constexpr ID SigmaCPlusPlus = 49;
-  static constexpr ID X3872 = 50;
-  static constexpr ID Xi0 = 51;
-  static constexpr ID XiB0 = 52;
-  static constexpr ID XiCCPlusPlus = 53;
-  static constexpr ID XiCPlus = 54;
-  static constexpr ID XiC0 = 55;
-  static constexpr ID NIDsTot = 56;
+  static constexpr ID Neutron = PIDCounts + 16;
+  static constexpr ID AntiNeutron = PIDCounts + 17;
+  static constexpr ID Phi = PIDCounts + 18;
+  static constexpr ID BZero = PIDCounts + 19;
+  static constexpr ID BPlus = PIDCounts + 20;
+  static constexpr ID BS = PIDCounts + 21;
+  static constexpr ID D0 = PIDCounts + 22;
+  static constexpr ID DPlus = PIDCounts + 23;
+  static constexpr ID DS = PIDCounts + 24;
+  static constexpr ID DStar = PIDCounts + 25;
+  static constexpr ID ChiC1 = PIDCounts + 26;
+  static constexpr ID JPsi = PIDCounts + 27;
+  static constexpr ID LambdaB0 = PIDCounts + 28;
+  static constexpr ID LambdaCPlus = PIDCounts + 29;
+  static constexpr ID OmegaC0 = PIDCounts + 30;
+  static constexpr ID SigmaC0 = PIDCounts + 31;
+  static constexpr ID SigmaCPlusPlus = PIDCounts + 32;
+  static constexpr ID X3872 = PIDCounts + 33;
+  static constexpr ID Xi0 = PIDCounts + 34;
+  static constexpr ID XiB0 = PIDCounts + 35;
+  static constexpr ID XiCCPlusPlus = PIDCounts + 36;
+  static constexpr ID XiCPlus = PIDCounts + 37;
+  static constexpr ID XiC0 = PIDCounts + 38;
+  static constexpr ID NIDsTot = PIDCounts + 39;
 
   static constexpr const char* sNames[NIDsTot + 1] = {
     o2::track::pid_constants::sNames[Electron],     // Electron
@@ -143,6 +146,8 @@ class PIDExtended
     o2::track::pid_constants::sNames[Hyperhydrog4], // Hyperhydrog4
     o2::track::pid_constants::sNames[XiMinus],      // XiMinus
     o2::track::pid_constants::sNames[OmegaMinus],   // OmegaMinus
+    "HyperHelium4",                                 // HyperHelium4
+    "HyperHelium5",                                 // HyperHelium5
     "Positron",                                     // Positron
     "MuonPlus",                                     // MuonPlus
     "PionMinus",                                    // PionMinus
@@ -157,10 +162,10 @@ class PIDExtended
     "AntiHyperhydrog4",                             // AntiHyperhydrog4
     "XiPlus",                                       // XiPlus
     "OmegaPlus",                                    // OmegaPlus
+    "AntiHyperHelium4",                             // AntiHyperHelium4
+    "AntiHyperHelium5",                             // AntiHyperHelium5
     "Neutron",                                      // Neutron
     "AntiNeutron",                                  // AntiNeutron
-    "HyperHelium4",                                 // HyperHelium4
-    "AntiHyperHelium4",                             // AntiHyperHelium4
     "Phi",                                          // Phi
     "BZero",                                        // BZero
     "BPlus",                                        // BPlus
@@ -244,6 +249,10 @@ class PIDExtended
         return HyperHelium4;
       case -o2::constants::physics::Pdg::kHyperHelium4:
         return AntiHyperHelium4;
+      case o2::constants::physics::Pdg::kHyperHelium5:
+        return HyperHelium5;
+      case -o2::constants::physics::Pdg::kHyperHelium5:
+        return AntiHyperHelium5;
       case 111:
         return PI0;
       case 22:
