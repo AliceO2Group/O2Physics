@@ -653,7 +653,7 @@ struct QaImpactPar {
           }
         }
       }
-      
+
       /// retrive track position at inner most update
       if (addTrackIUinfo) {
         for (const auto& trackIU : tracksIU) {
