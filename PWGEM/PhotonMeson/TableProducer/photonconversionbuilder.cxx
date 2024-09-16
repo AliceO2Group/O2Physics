@@ -40,7 +40,7 @@
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "Common/Core/TableHelper.h"
-#include "EventFiltering/Zorro.h"
+#include "Common/Core/TPCVDriftManager.h"
 
 #include "Tools/KFparticle/KFUtilities.h"
 
@@ -56,7 +56,8 @@ using namespace o2::constants::physics;
 using namespace o2::pwgem::photonmeson;
 using std::array;
 
-using MyCollisions = Join<aod::Collisions, aod::EvSels>;
+using MyCollisions = soa::Join<aod::Collisions, aod::EvSels>;
+using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerInfosTMP>;
 using MyCollisionsMC = soa::Join<MyCollisions, aod::McCollisionLabels>;
 
 using MyTracksIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCFullEl, aod::pidTPCFullPi>;
@@ -64,6 +65,7 @@ using MyTracksIUMC = soa::Join<MyTracksIU, aod::McTrackLabels>;
 
 struct PhotonConversionBuilder {
   Produces<aod::V0PhotonsKF> v0photonskf;
+  Produces<aod::V0PhotonsKFCov> v0photonskfcov;
   Produces<aod::V0Legs> v0legs;
   Produces<aod::EMEventsNgPCM> events_ngpcm;
 
@@ -74,11 +76,7 @@ struct PhotonConversionBuilder {
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
-  Configurable<bool> inherit_from_filter_dielectron_event{"inherit_from_filter_dielectron_event", false, "flag to inherit task options from filter-dielectron-event"};
-  Configurable<bool> inherit_from_emevent_dilepton{"inherit_from_emevent_dilepton", false, "flag to inherit task options from emevent-dilepton"};
   Configurable<bool> inherit_from_emevent_photon{"inherit_from_emevent_photon", false, "flag to inherit task options from emevent-photon"};
-  Configurable<bool> enable_swt{"enable_swt", false, "flag to process skimmed data (swt triggered)"};
-  Configurable<std::string> cfg_swt_names{"cfg_swt_names", "", "comma-separated software trigger names"};
 
   // Operation and minimisation criteria
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
@@ -88,6 +86,9 @@ struct PhotonConversionBuilder {
   // single track cuts
   Configurable<int> min_ncluster_tpc{"min_ncluster_tpc", 0, "min ncluster tpc"};
   Configurable<int> mincrossedrows{"mincrossedrows", 40, "min crossed rows"};
+  Configurable<bool> moveTPCTracks{"moveTPCTracks", true, "Move TPC-only tracks under the collision assumption"};
+  Configurable<bool> disableITSonlyTracks{"disableITSonlyTracks", false, "disable ITSonly tracks in V0 legs"};
+
   Configurable<float> maxchi2tpc{"maxchi2tpc", 5.0, "max chi2/NclsTPC"}; // default 4.0 + 1.0
   Configurable<float> maxchi2its{"maxchi2its", 6.0, "max chi2/NclsITS"}; // default 5.0 + 1.0
   Configurable<float> maxpt_itsonly{"maxpt_itsonly", 0.15, "max pT for ITSonly tracks at SV"};
@@ -125,7 +126,6 @@ struct PhotonConversionBuilder {
   Configurable<float> max_dcatopv_z_v0{"max_dcatopv_z_v0", +1e+10, "max. DCAz to PV for V0"};
   Configurable<bool> reject_v0_on_itsib{"reject_v0_on_itsib", true, "flag to reject v0s on ITSib"};
 
-  Zorro zorro;
   int mRunNumber;
   float d_bz;
   float maxSnp;  // max sine phi for propagation
@@ -133,6 +133,7 @@ struct PhotonConversionBuilder {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut = nullptr;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
+  o2::aod::common::TPCVDriftManager mVDriftMgr;
 
   HistogramRegistry registry{
     "registry",
@@ -178,18 +179,8 @@ struct PhotonConversionBuilder {
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
 
-    if (inherit_from_emevent_dilepton && inherit_from_filter_dielectron_event) {
-      LOGF(fatal, "Cannot enable inherit_from_emevent_dilepton and inherit_from_filter_dielectron_event at the same time. Please choose one.");
-    }
-
-    if (inherit_from_emevent_dilepton) {
-      getTaskOptionValue(initContext, "create-emevent-dilepton", "applyEveSel_at_skimming", applyEveSel_at_skimming.value, true); // for EM users.
-      getTaskOptionValue(initContext, "create-emevent-dilepton", "enable_swt", enable_swt.value, true);                           // for EM users.
-      getTaskOptionValue(initContext, "create-emevent-dilepton", "cfg_swt_names", cfg_swt_names.value, true);                     // for EM users.
-    } else if (inherit_from_filter_dielectron_event) {
-      getTaskOptionValue(initContext, "filter-dielectron-event", "applyEveSel_at_skimming", applyEveSel_at_skimming.value, true); // for EM users.
-      getTaskOptionValue(initContext, "filter-dielectron-event", "enable_swt", enable_swt.value, true);                           // for EM users.
-      getTaskOptionValue(initContext, "filter-dielectron-event", "cfg_swt_names", cfg_swt_names.value, true);                     // for EM users.
+    if (inherit_from_emevent_photon) {
+      getTaskOptionValue(initContext, "create-emevent-photon", "applyEveSel_at_skimming", applyEveSel_at_skimming.value, true);
     }
 
     if (useMatCorrType == 1) {
@@ -203,20 +194,18 @@ struct PhotonConversionBuilder {
       lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
     }
 
-    if (useMatCorrType == 1)
+    if (useMatCorrType == 1) {
       matCorr = o2::base::Propagator::MatCorrType::USEMatCorrTGeo;
-    if (useMatCorrType == 2)
+    }
+    if (useMatCorrType == 2) {
       matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+    }
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
   {
     if (mRunNumber == bc.runNumber()) {
       return;
-    }
-
-    if (enable_swt) {
-      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), cfg_swt_names.value);
     }
 
     // In case override, don't proceed, please - no CCDB access required
@@ -232,18 +221,19 @@ struct PhotonConversionBuilder {
     }
 
     auto run3grp_timestamp = bc.timestamp();
-    o2::parameters::GRPObject* grpo = 0x0;
-    o2::parameters::GRPMagField* grpmag = 0x0;
-    if (!skipGRPOquery)
+    o2::parameters::GRPObject* grpo = nullptr;
+    o2::parameters::GRPMagField* grpmag = nullptr;
+    if (!skipGRPOquery) {
       grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
-    if (grpo) {
+    }
+    if (grpo != nullptr) {
       o2::base::Propagator::initFieldFromGRP(grpo);
       // Fetch magnetic field from ccdb for current collision
       d_bz = grpo->getNominalL3Field();
       LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
     } else {
       grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
-      if (!grpmag) {
+      if (grpmag == nullptr) {
         LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
       }
       o2::base::Propagator::initFieldFromGRP(grpmag);
@@ -258,8 +248,17 @@ struct PhotonConversionBuilder {
       o2::base::Propagator::Instance()->setMatLUT(lut);
     }
     /// Set magnetic field for KF vertexing
-    float magneticField = o2::base::Propagator::Instance()->getNominalBz();
+    const float magneticField = o2::base::Propagator::Instance()->getNominalBz();
     KFParticle::SetField(magneticField);
+
+    mVDriftMgr.init(&ccdb->instance());
+  }
+
+  void updateCCDB(aod::BCsWithTimestamps::iterator const& bc)
+  {
+    auto timestamp = bc.timestamp();
+
+    mVDriftMgr.update(timestamp);
   }
 
   std::pair<int8_t, std::set<uint8_t>> its_ib_Requirement = {0, {0, 1, 2}}; // no hit on 3 ITS ib layers.
@@ -270,6 +269,10 @@ struct PhotonConversionBuilder {
       if (!track.has_mcParticle()) {
         return false;
       }
+    }
+
+    if (disableITSonlyTracks && isITSonlyTrack(track)) {
+      return false;
     }
 
     if (track.x() > maxX) {
@@ -363,25 +366,25 @@ struct PhotonConversionBuilder {
     return cospaRZ;
   }
 
-  template <typename TTrack, typename TKFParticle>
-  void fillTrackTable(TTrack const& track, TKFParticle const& kfp, float dcaXY, float dcaZ)
+  template <typename TTrack, typename TShiftedTrack, typename TKFParticle>
+  void fillTrackTable(TTrack const& track, TShiftedTrack const& shiftedtrack, TKFParticle const& kfp, float dcaXY, float dcaZ)
   {
     v0legs(track.collisionId(), track.globalIndex(), track.sign(),
            kfp.GetPx(), kfp.GetPy(), kfp.GetPz(), dcaXY, dcaZ,
-           track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(),
+           track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(), track.tpcNClsShared(),
            track.tpcChi2NCl(), track.tpcInnerParam(), track.tpcSignal(),
            track.tpcNSigmaEl(), track.tpcNSigmaPi(),
            track.itsClusterSizes(), track.itsChi2NCl(), track.detectorMap(),
-           track.x(), track.y(), track.z(), track.tgl());
+           shiftedtrack.getX(), shiftedtrack.getY(), shiftedtrack.getZ(), shiftedtrack.getTgl());
   }
 
-  template <bool isMC, class TCollisions, class TTracks, typename TV0>
+  template <bool isMC, class TBCs, class TCollisions, class TTracks, typename TV0>
   void fillV0Table(TV0 const& v0, const bool filltable)
   {
     // Get tracks
-    auto pos = v0.template posTrack_as<TTracks>();
-    auto ele = v0.template negTrack_as<TTracks>();
-    auto collision = v0.template collision_as<TCollisions>(); // collision where this v0 belongs.
+    const auto& pos = v0.template posTrack_as<TTracks>();
+    const auto& ele = v0.template negTrack_as<TTracks>();
+    const auto& collision = v0.template collision_as<TCollisions>(); // collision where this v0 belongs to.
 
     if (pos.sign() * ele.sign() > 0) { // reject same sign pair
       return;
@@ -398,6 +401,7 @@ struct PhotonConversionBuilder {
     if (isITSonlyTrack(pos) && !ele.hasITS()) {
       return;
     }
+
     if (isITSonlyTrack(ele) && !pos.hasITS()) {
       return;
     }
@@ -405,20 +409,31 @@ struct PhotonConversionBuilder {
     if (!checkV0leg<isMC>(pos) || !checkV0leg<isMC>(ele)) {
       return;
     }
+
     // LOGF(info, "v0.collisionId() = %d , v0.posTrackId() = %d , v0.negTrackId() = %d", v0.collisionId(), v0.posTrackId(), v0.negTrackId());
 
     // Calculate DCA with respect to the collision associated to the v0, not individual tracks
     gpu::gpustd::array<float, 2> dcaInfo;
 
     auto pTrack = getTrackParCov(pos);
-    pTrack.setPID(o2::track::PID::Electron);
-    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, pTrack, 2.f, matCorr, &dcaInfo);
+    if (moveTPCTracks && isTPConlyTrack(pos) && !mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, pos, pTrack)) {
+      LOGP(error, "failed correction for positive tpc track");
+      return;
+    }
+    auto pTrackC = pTrack;
+    pTrackC.setPID(o2::track::PID::Electron);
+    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, pTrackC, 2.f, matCorr, &dcaInfo);
     auto posdcaXY = dcaInfo[0];
     auto posdcaZ = dcaInfo[1];
 
     auto nTrack = getTrackParCov(ele);
-    nTrack.setPID(o2::track::PID::Electron);
-    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, nTrack, 2.f, matCorr, &dcaInfo);
+    if (moveTPCTracks && isTPConlyTrack(ele) && !mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, ele, nTrack)) {
+      LOGP(error, "failed correction for negative tpc track");
+      return;
+    }
+    auto nTrackC = nTrack;
+    nTrackC.setPID(o2::track::PID::Electron);
+    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, nTrackC, 2.f, matCorr, &dcaInfo);
     auto eledcaXY = dcaInfo[0];
     auto eledcaZ = dcaInfo[1];
 
@@ -427,17 +442,17 @@ struct PhotonConversionBuilder {
     }
 
     float xyz[3] = {0.f, 0.f, 0.f};
-    Vtx_recalculation(o2::base::Propagator::Instance(), pos, ele, xyz, matCorr);
+    Vtx_recalculationParCov(o2::base::Propagator::Instance(), pTrack, nTrack, xyz, matCorr);
     float rxy_tmp = RecoDecay::sqrtSumOfSquares(xyz[0], xyz[1]);
     if (rxy_tmp > maxX + margin_r_tpc) {
       return;
     }
-    if (rxy_tmp < abs(xyz[2]) * TMath::Tan(2 * TMath::ATan(TMath::Exp(-max_eta_v0))) - margin_z) {
+    if (rxy_tmp < fabs(xyz[2]) * std::tan(2 * std::atan(std::exp(-max_eta_v0))) - margin_z) {
       return; // RZ line cut
     }
 
-    KFPTrack kfp_track_pos = createKFPTrackFromTrack(pos);
-    KFPTrack kfp_track_ele = createKFPTrackFromTrack(ele);
+    KFPTrack kfp_track_pos = createKFPTrackFromTrackParCov(pTrack, pos.sign(), pos.tpcNClsFound(), pos.tpcChi2NCl());
+    KFPTrack kfp_track_ele = createKFPTrackFromTrackParCov(nTrack, ele.sign(), ele.tpcNClsFound(), ele.tpcChi2NCl());
     KFParticle kfp_pos(kfp_track_pos, -11);
     KFParticle kfp_ele(kfp_track_ele, 11);
     const KFParticle* GammaDaughters[2] = {&kfp_pos, &kfp_ele};
@@ -470,7 +485,7 @@ struct PhotonConversionBuilder {
     if (rxy > maxX + margin_r_tpc) {
       return;
     }
-    if (rxy < abs(gammaKF_DecayVtx.GetZ()) * TMath::Tan(2 * TMath::ATan(TMath::Exp(-max_eta_v0))) - margin_z) {
+    if (rxy < fabs(gammaKF_DecayVtx.GetZ()) * std::tan(2 * std::atan(std::exp(-max_eta_v0))) - margin_z) {
       return; // RZ line cut
     }
     if (rxy < min_v0radius) {
@@ -479,30 +494,30 @@ struct PhotonConversionBuilder {
 
     if (!filltable) {
       if (isITSTPCTrack(pos) && isITSTPCTrack(ele)) {
-        registry.fill(HIST("V0/hRxy_minX_ITSTPC_ITSTPC"), std::min(pos.x(), ele.x()), std::min(pos.x(), ele.x()) - rxy); // trackiu.x() - rxy should be positive
+        registry.fill(HIST("V0/hRxy_minX_ITSTPC_ITSTPC"), std::min(pTrack.getX(), nTrack.getX()), std::min(pTrack.getX(), nTrack.getX()) - rxy); // trackiu.x() - rxy should be positive
       } else if (isITSonlyTrack(pos) && isITSonlyTrack(ele)) {
-        registry.fill(HIST("V0/hRxy_minX_ITSonly_ITSonly"), std::min(pos.x(), ele.x()), std::min(pos.x(), ele.x()) - rxy); // trackiu.x() - rxy should be positive
+        registry.fill(HIST("V0/hRxy_minX_ITSonly_ITSonly"), std::min(pTrack.getX(), nTrack.getX()), std::min(pTrack.getX(), nTrack.getX()) - rxy); // trackiu.x() - rxy should be positive
       } else if ((isITSTPCTrack(pos) && isITSonlyTrack(ele)) || (isITSTPCTrack(ele) && isITSonlyTrack(pos))) {
-        registry.fill(HIST("V0/hRxy_minX_ITSTPC_ITSonly"), std::min(pos.x(), ele.x()), std::min(pos.x(), ele.x()) - rxy); // trackiu.x() - rxy should be positive
+        registry.fill(HIST("V0/hRxy_minX_ITSTPC_ITSonly"), std::min(pTrack.getX(), nTrack.getX()), std::min(pTrack.getX(), nTrack.getX()) - rxy); // trackiu.x() - rxy should be positive
       } else if (isITSTPCTrack(pos) && !ele.hasITS()) {
-        registry.fill(HIST("V0/hRxy_minX_ITSTPC_TPC"), std::min(pos.x(), 83.f), std::min(pos.x(), 83.f) - rxy); // trackiu.x() - rxy should be positive
+        registry.fill(HIST("V0/hRxy_minX_ITSTPC_TPC"), std::min(pTrack.getX(), 83.f), std::min(pTrack.getX(), 83.f) - rxy); // trackiu.x() - rxy should be positive
       } else if (isITSTPCTrack(ele) && !pos.hasITS()) {
-        registry.fill(HIST("V0/hRxy_minX_ITSTPC_TPC"), std::min(ele.x(), 83.f), std::min(ele.x(), 83.f) - rxy); // trackiu.x() - rxy should be positive
+        registry.fill(HIST("V0/hRxy_minX_ITSTPC_TPC"), std::min(nTrack.getX(), 83.f), std::min(nTrack.getX(), 83.f) - rxy); // trackiu.x() - rxy should be positive
       } else {
         registry.fill(HIST("V0/hRxy_minX_TPC_TPC"), std::min(83.f, 83.f), std::min(83.f, 83.f) - rxy); // trackiu.x() - rxy should be positive
       }
     }
 
     if (pos.hasITS() && ele.hasITS()) { // ITSonly-ITSonly, ITSTPC-ITSTPC, ITSTPC-ITSonly
-      if (rxy > std::min(pos.x(), ele.x()) + margin_r_its) {
+      if (rxy > std::min(pTrack.getX(), nTrack.getX()) + margin_r_its) {
         return;
       }
     } else if (!pos.hasITS() && ele.hasITS()) { // ITSTPC-TPC
-      if (rxy > std::min(83.f, ele.x()) + margin_r_itstpc_tpc) {
+      if (rxy > std::min(83.f, nTrack.getX()) + margin_r_itstpc_tpc) {
         return;
       }
     } else if (pos.hasITS() && !ele.hasITS()) { // ITSTPC-TPC
-      if (rxy > std::min(pos.x(), 83.f) + margin_r_itstpc_tpc) {
+      if (rxy > std::min(pTrack.getX(), 83.f) + margin_r_itstpc_tpc) {
         return;
       }
     } else if (!pos.hasITS() && !ele.hasITS()) { // TPC-TPC
@@ -615,7 +630,7 @@ struct PhotonConversionBuilder {
       registry.fill(HIST("V0/hPCA_CosPA"), cospa_kf, pca_kf);
       registry.fill(HIST("V0/hPCA_Rxy"), rxy, pca_kf);
       registry.fill(HIST("V0/hDCAxyz"), dca_xy_v0_to_pv, dca_z_v0_to_pv);
-      registry.fill(HIST("V0/hPCA_diffX"), pca_kf, std::min(pos.x(), ele.x()) - rxy); // trackiu.x() - rxy should be positive
+      registry.fill(HIST("V0/hPCA_diffX"), pca_kf, std::min(pTrack.getX(), nTrack.getX()) - rxy); // trackiu.x() - rxy should be positive
 
       float cospaXY_kf = cospaXY_KF(gammaKF_DecayVtx, KFPV);
       float cospaRZ_kf = cospaRZ_KF(gammaKF_DecayVtx, KFPV);
@@ -635,8 +650,9 @@ struct PhotonConversionBuilder {
       for (auto& leg : {pos, ele}) {
         registry.fill(HIST("V0Leg/hdEdx_Pin"), leg.tpcInnerParam(), leg.tpcSignal());
         registry.fill(HIST("V0Leg/hTPCNsigmaEl"), leg.tpcInnerParam(), leg.tpcNSigmaEl());
-        registry.fill(HIST("V0Leg/hXZ"), leg.z(), leg.x());
       } // end of leg loop
+      registry.fill(HIST("V0Leg/hXZ"), pTrack.getZ(), pTrack.getX());
+      registry.fill(HIST("V0Leg/hXZ"), nTrack.getZ(), nTrack.getX());
       registry.fill(HIST("V0Leg/hDCAxyz"), posdcaXY, posdcaZ);
       registry.fill(HIST("V0Leg/hDCAxyz"), eledcaXY, eledcaZ);
 
@@ -645,15 +661,17 @@ struct PhotonConversionBuilder {
       ROOT::Math::PxPyPzMVector v0_sv = vpos_sv + vele_sv;
       registry.fill(HIST("V0/hMeeSV_Rxy"), rxy, v0_sv.M());
 
-      v0photonskf(collision.globalIndex(), v0legs.lastIndex() + 1, v0legs.lastIndex() + 2,
+      v0photonskf(collision.globalIndex(), v0.globalIndex(), v0legs.lastIndex() + 1, v0legs.lastIndex() + 2,
                   gammaKF_DecayVtx.GetX(), gammaKF_DecayVtx.GetY(), gammaKF_DecayVtx.GetZ(),
                   gammaKF_PV.GetPx(), gammaKF_PV.GetPy(), gammaKF_PV.GetPz(),
                   v0_sv.M(), dca_xy_v0_to_pv, dca_z_v0_to_pv,
                   cospa_kf, pca_kf, alpha, qt, chi2kf);
 
-      fillTrackTable(pos, kfp_pos_DecayVtx, posdcaXY, posdcaZ); // positive leg first
-      fillTrackTable(ele, kfp_ele_DecayVtx, eledcaXY, eledcaZ); // negative leg second
-    }                                                           // end of fill table
+      v0photonskfcov(gammaKF_PV.GetCovariance(9), gammaKF_PV.GetCovariance(14), gammaKF_PV.GetCovariance(20), gammaKF_PV.GetCovariance(13), gammaKF_PV.GetCovariance(19), gammaKF_PV.GetCovariance(18));
+
+      fillTrackTable(pos, pTrack, kfp_pos_DecayVtx, posdcaXY, posdcaZ); // positive leg first
+      fillTrackTable(ele, nTrack, kfp_ele_DecayVtx, eledcaXY, eledcaZ); // negative leg second
+    } // end of fill table
   }
 
   Preslice<aod::V0s> perCollision = o2::aod::v0::collisionId;
@@ -663,36 +681,47 @@ struct PhotonConversionBuilder {
   std::vector<std::tuple<int64_t, int64_t, int64_t, int64_t>> stored_fullv0Ids; // (v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex())
   std::unordered_map<int64_t, int> nv0_map;                                     // map collisionId -> nv0
 
-  template <bool isMC, bool enableFilter, typename TCollisions, typename TV0s, typename TTracks, typename TBCs>
+  template <bool isMC, bool isTriggerAnalysis, bool enableFilter, typename TCollisions, typename TV0s, typename TTracks, typename TBCs>
   void build(TCollisions const& collisions, TV0s const& v0s, TTracks const&, TBCs const&)
   {
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       if constexpr (isMC) {
         if (!collision.has_mcCollision()) {
           continue;
         }
       }
 
+      if constexpr (enableFilter) {
+        if (!collision.isSelected()) {
+          continue;
+        }
+      }
+
+      if constexpr (isTriggerAnalysis) {
+        if (collision.swtaliastmp_raw() == 0) {
+          continue;
+        }
+      }
+
       nv0_map[collision.globalIndex()] = 0;
 
-      auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
+      const auto& bc = collision.template bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       registry.fill(HIST("hCollisionCounter"), 1);
 
       if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
         continue;
       }
-      if (enable_swt && !zorro.isSelected(bc.globalBC())) {
-        continue;
-      }
 
-      auto v0s_per_coll = v0s.sliceBy(perCollision, collision.globalIndex());
+      updateCCDB(bc); // delay update until is needed
+
+      const auto& v0s_per_coll = v0s.sliceBy(perCollision, collision.globalIndex());
       // LOGF(info, "n v0 = %d", v0s_per_coll.size());
-      for (auto& v0 : v0s_per_coll) {
+      for (const auto& v0 : v0s_per_coll) {
         // LOGF(info, "collision.globalIndex() = %d, v0.globalIndex() = %d, v0.posTrackId() = %d, v0.negTrackId() = %d", collision.globalIndex(), v0.globalIndex(), v0.posTrackId() , v0.negTrackId());
-        fillV0Table<isMC, TCollisions, TTracks>(v0, false);
+        fillV0Table<isMC, TBCs, TCollisions, TTracks>(v0, false);
       } // end of v0 loop
-    }   // end of collision loop
+    } // end of collision loop
 
     stored_v0Ids.reserve(pca_map.size());     // number of photon candidates per DF
     stored_fullv0Ids.reserve(pca_map.size()); // number of photon candidates per DF
@@ -765,7 +794,7 @@ struct PhotonConversionBuilder {
         // LOGF(info, "collision_tmp.globalIndex() = %d, collision_tmp.neeuls() = %d, nv0_map = %d", collision_tmp.globalIndex(), collision_tmp.neeuls(), nv0_map[collision_tmp.globalIndex()]);
       }
 
-      fillV0Table<isMC, TCollisions, TTracks>(v0, true);
+      fillV0Table<isMC, TBCs, TCollisions, TTracks>(v0, true);
     } // end of fullv0Id loop
 
     for (auto& collision : collisions) {
@@ -792,21 +821,33 @@ struct PhotonConversionBuilder {
 
   void processRec(MyCollisions const& collisions, filteredV0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const& bcs)
   {
-    build<false, false>(collisions, v0s, tracks, bcs);
+    build<false, false, false>(collisions, v0s, tracks, bcs);
   }
   PROCESS_SWITCH(PhotonConversionBuilder, processRec, "process reconstructed info for data", true);
 
+  void processRec_SWT(MyCollisionsWithSWT const& collisions, filteredV0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const& bcs)
+  {
+    build<false, true, false>(collisions, v0s, tracks, bcs);
+  }
+  PROCESS_SWITCH(PhotonConversionBuilder, processRec_SWT, "process reconstructed info for data", false);
+
   void processMC(MyCollisionsMC const& collisions, filteredV0s const& v0s, MyTracksIUMC const& tracks, aod::BCsWithTimestamps const& bcs)
   {
-    build<true, false>(collisions, v0s, tracks, bcs);
+    build<true, false, false>(collisions, v0s, tracks, bcs);
   }
   PROCESS_SWITCH(PhotonConversionBuilder, processMC, "process reconstructed info for MC", false);
 
-  void processRec_OnlyIfDielectron(soa::Join<MyCollisions, aod::EMEventsNee> const& collisions, filteredV0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const& bcs)
+  void processRec_OnlyIfDielectron(soa::Join<MyCollisions, aod::EMEvSels, aod::EMEventsNee> const& collisions, filteredV0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const& bcs)
   {
-    build<false, true>(collisions, v0s, tracks, bcs);
+    build<false, false, true>(collisions, v0s, tracks, bcs);
   }
   PROCESS_SWITCH(PhotonConversionBuilder, processRec_OnlyIfDielectron, "process reconstructed info for data", false);
+
+  void processRec_SWT_OnlyIfDielectron(soa::Join<MyCollisionsWithSWT, aod::EMEvSels, aod::EMEventsNee> const& collisions, filteredV0s const& v0s, MyTracksIU const& tracks, aod::BCsWithTimestamps const& bcs)
+  {
+    build<false, true, true>(collisions, v0s, tracks, bcs);
+  }
+  PROCESS_SWITCH(PhotonConversionBuilder, processRec_SWT_OnlyIfDielectron, "process reconstructed info for data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
