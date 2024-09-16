@@ -96,6 +96,8 @@ using MyBarrelTracksWithV0AndDalitzBits = soa::Join<aod::Tracks, aod::TracksExtr
                                                     aod::pidTPCFullKa, aod::pidTPCFullPr,
                                                     aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
                                                     aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta, aod::V0Bits, aod::DalitzBits>;
+using MyBarrelTracksForElectronMuon = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA,
+                                                aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr>;
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
 using MyEventsWithMults = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra>;
 using MyEventsWithFilter = soa::Join<aod::Collisions, aod::EvSels, aod::DQEventFilter>;
@@ -128,6 +130,7 @@ constexpr static uint32_t gkTrackFillMapWithV0Bits = gkTrackFillMap | VarManager
 constexpr static uint32_t gkTrackFillMapWithV0BitsForMaps = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackV0Bits | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackTPCPID;
 constexpr static uint32_t gkTrackFillMapWithDalitzBits = gkTrackFillMap | VarManager::ObjTypes::DalitzBits;
 constexpr static uint32_t gkTrackFillMapWithV0AndDalitzBits = gkTrackFillMap | VarManager::ObjTypes::TrackV0Bits | VarManager::ObjTypes::DalitzBits;
+constexpr static uint32_t gkTrackFillMapForElectronMuon = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackTPCPID;
 constexpr static uint32_t gkMuonFillMap = VarManager::ObjTypes::Muon;
 constexpr static uint32_t gkMuonFillMapWithCov = VarManager::ObjTypes::Muon | VarManager::ObjTypes::MuonCov;
 constexpr static uint32_t gkMuonFillMapWithCovAmbi = VarManager::ObjTypes::Muon | VarManager::ObjTypes::MuonCov | VarManager::ObjTypes::AmbiMuon;
@@ -161,9 +164,11 @@ struct TableMaker {
   Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Event selection"};
   Configurable<std::string> fConfigTrackCuts{"cfgBarrelTrackCuts", "jpsiO2MCdebugCuts2", "Comma separated list of barrel track cuts"};
   Configurable<std::string> fConfigMuonCuts{"cfgMuonCuts", "muonQualityCuts", "Comma separated list of muon cuts"};
-  Configurable<std::string> fConfigAddEventHistogram{"cfgAddEventHistogram", "", "Comma separated list of histograms"};
-  Configurable<std::string> fConfigAddTrackHistogram{"cfgAddTrackHistogram", "", "Comma separated list of histograms"};
-  Configurable<std::string> fConfigAddMuonHistogram{"cfgAddMuonHistogram", "", "Comma separated list of histograms"};
+  struct : ConfigurableGroup {
+    Configurable<std::string> fConfigAddEventHistogram{"cfgAddEventHistogram", "", "Comma separated list of histograms"};
+    Configurable<std::string> fConfigAddTrackHistogram{"cfgAddTrackHistogram", "", "Comma separated list of histograms"};
+    Configurable<std::string> fConfigAddMuonHistogram{"cfgAddMuonHistogram", "", "Comma separated list of histograms"};
+  } addHistoConfigurations;
   Configurable<float> fConfigBarrelTrackPtLow{"cfgBarrelLowPt", 1.0f, "Low pt cut for tracks in the barrel"};
   Configurable<float> fConfigBarrelTrackMaxAbsEta{"cfgBarrelMaxAbsEta", 0.9f, "Eta absolute value cut for tracks in the barrel"};
   Configurable<float> fConfigMuonPtLow{"cfgMuonLowPt", 1.0f, "Low pt cut for muons"};
@@ -615,6 +620,10 @@ struct TableMaker {
                          track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
                          track.trdSignal());
         }
+        if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackTPCPID)) {
+          trackBarrelPID(track.tpcSignal(), track.tpcNSigmaEl(), -1, track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
+                         -1, -1, -1, -1, -1, -1, -1);
+        }
       }
     } // end if constexpr (TTrackFillMap)
 
@@ -1051,6 +1060,10 @@ struct TableMaker {
                          track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
                          track.trdSignal());
         }
+        if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackTPCPID)) {
+          trackBarrelPID(track.tpcSignal(), track.tpcNSigmaEl(), -1, track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
+                         -1, -1, -1, -1, -1, -1, -1);
+        }
       }
     } // end if constexpr (TTrackFillMap)
 
@@ -1213,28 +1226,28 @@ struct TableMaker {
         }
       }
 
-      TString histEventName = fConfigAddEventHistogram.value;
+      TString histEventName = addHistoConfigurations.fConfigAddEventHistogram.value;
       if (classStr.Contains("Event")) {
         if (fConfigQA) {
           dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "event", histEventName);
         }
       }
 
-      TString histTrackName = fConfigAddTrackHistogram.value;
+      TString histTrackName = addHistoConfigurations.fConfigAddTrackHistogram.value;
       if (classStr.Contains("Track")) {
         if (fConfigQA) {
           dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "track", histTrackName);
         }
       }
 
-      TString histMuonName = fConfigAddMuonHistogram.value;
+      TString histMuonName = addHistoConfigurations.fConfigAddMuonHistogram.value;
       if (classStr.Contains("Muons")) {
         if (fConfigQA) {
           dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "track", histMuonName);
         }
       }
 
-      TString histMftName = fConfigAddMuonHistogram.value;
+      TString histMftName = addHistoConfigurations.fConfigAddMuonHistogram.value;
       if (classStr.Contains("Mft")) {
         if (fConfigDetailedQA) {
           dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "track", histMftName);
@@ -1338,6 +1351,13 @@ struct TableMaker {
     if (collision.eventFilter()) {
       fullSkimming<gkEventFillMapWithMult, gkTrackFillMapWithCov, gkMuonFillMapWithCov>(collision, bcs, tracksBarrel, tracksMuon, nullptr, nullptr);
     }
+  }
+
+  // Produce barrel + muon tables for the eletron-muon analysis, without PIDTOF----------------------------------------------------------------------
+  void processFullForElectronMuon(MyEvents::iterator const& collision, aod::BCsWithTimestamps const& bcs,
+                                  soa::Filtered<MyBarrelTracksForElectronMuon> const& tracksBarrel, soa::Filtered<MyMuons> const& tracksMuon)
+  {
+    fullSkimming<gkEventFillMap, gkTrackFillMapForElectronMuon, gkMuonFillMap>(collision, bcs, tracksBarrel, tracksMuon, nullptr, nullptr);
   }
 
   // Produce barrel only tables, with V0Bits ------------------------------------------------------------------------------------------------
@@ -1697,6 +1717,7 @@ struct TableMaker {
   PROCESS_SWITCH(TableMaker, processFullWithCent, "Build full DQ skimmed data model, w/ centrality", false);
   PROCESS_SWITCH(TableMaker, processFullWithCentAndMults, "Build full DQ skimmed data model, w/ centrality and multiplicities", false);
   PROCESS_SWITCH(TableMaker, processFullWithCovCentAndMults, "Build full DQ skimmed data model, w/ centrality, multiplicities and track covariances", false);
+  PROCESS_SWITCH(TableMaker, processFullForElectronMuon, "Build full DQ skimmed data model for electron-muon correlation analysis, w/o centrality", false);
   PROCESS_SWITCH(TableMaker, processBarrelOnlyWithV0Bits, "Build full DQ skimmed data model, w/o centrality, w/ V0Bits", false);
   PROCESS_SWITCH(TableMaker, processBarrelOnlyWithV0BitsAndMaps, "Build full DQ skimmed data model, w/o multiplicity, w/ V0Bits", false);
   PROCESS_SWITCH(TableMaker, processBarrelOnlyWithDalitzBits, "Build barrel-only DQ skimmed data model, w/o centrality, w/ DalitzBits", false);
