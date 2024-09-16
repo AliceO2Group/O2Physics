@@ -20,11 +20,6 @@ o2physics_add_dpl_workflow(lmee-lf-cocktail
                   PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                   COMPONENT_NAME Analysis)
 
-o2physics_add_executable(lmee-lf-cocktail-old
-                  SOURCES lmeeLFCocktail_old.cxx
-                  PUBLIC_LINK_LIBRARIES O2::Framework O2::SimulationDataFormat O2Physics::AnalysisCore
-                  COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(lmee-hf-cocktail
                   SOURCES lmeeHFCocktail.cxx
                   PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
