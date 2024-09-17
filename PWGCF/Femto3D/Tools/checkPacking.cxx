@@ -24,20 +24,20 @@
 using namespace o2;
 
 template <typename T>
-bool process(std::string outputName, int nevents = 100000)
+bool process(const std::string outputName, const int nevents = 100000)
 {
   class Container
   {
    public:
     Container() {}
-    void operator()(const float toPack) { mPacked = aod::singletrackselector::packInTable<T>(toPack); }
+    void operator()(const float toPack) { mPacked = aod::singletrackselector::packSymmetric<T>(toPack); }
     void test(const float toPack)
     {
-      auto bin = aod::singletrackselector::packInTable<T>(toPack);
-      LOG(info) << toPack << " goes to " << aod::singletrackselector::unPack<T>(bin) << " bin " << static_cast<int>(bin);
+      auto bin = aod::singletrackselector::packSymmetric<T>(toPack);
+      LOG(info) << toPack << " goes to " << aod::singletrackselector::unPackSymmetric<T>(bin) << " bin " << static_cast<int>(bin);
     }
     T::binned_t mPacked = 0;
-    float unpack() { return aod::singletrackselector::unPack<T>(mPacked); }
+    float unpack() { return aod::singletrackselector::unPackSymmetric<T>(mPacked); }
   } container;
 
   T::print();
@@ -51,11 +51,11 @@ bool process(std::string outputName, int nevents = 100000)
   std::vector<float> xbins;
   for (int i = 0; i <= nbins; i++) {
     const float x = min + i * T::bin_width;
-    const auto ix = aod::singletrackselector::packInTable<T>(x);
-    const float u = aod::singletrackselector::unPack<T>(ix);
+    const auto ix = aod::singletrackselector::packSymmetric<T>(x);
+    const float u = aod::singletrackselector::unPackSymmetric<T>(ix);
     LOG(info) << "Bin " << i << "/" << xbins.size() << " " << x << " => " << static_cast<int>(ix) << " " << u;
     if (i > 1) {
-      if (ix == aod::singletrackselector::packInTable<T>(xbins.back())) {
+      if (ix == aod::singletrackselector::packSymmetric<T>(xbins.back())) {
         continue;
       }
     }
@@ -65,14 +65,6 @@ bool process(std::string outputName, int nevents = 100000)
   TH1F* hgaus = new TH1F("hgaus", "", nbins, min + T::bin_width * 0.5, max + 0.5 * T::bin_width);
   hgaus->Print();
   LOG(info) << "Bin width = " << T::bin_width << " vs histo " << hgaus->GetXaxis()->GetBinWidth(1);
-  // for (int i = 1; i <= hgaus->GetNbinsX(); i++) {
-  //   // Check the packing of the bins center
-  //   const float x = hgaus->GetXaxis()->GetBinCenter(i);
-  //   const auto ix = aod::singletrackselector::packInTable<T>(x);
-  //   if (i != ix) {
-  //     LOG(info) << "Bin " << i << " " << hgaus->GetBinLowEdge(i) << " - " << hgaus->GetBinLowEdge(i + 1) << " is mapped wrongly to " << ix;
-  //   }
-  // }
   hgaus->SetLineColor(2);
   hgaus->SetLineStyle(1);
   TH1F* hgausPacked = static_cast<TH1F*>(hgaus->Clone("hgausPacked"));
@@ -87,38 +79,47 @@ bool process(std::string outputName, int nevents = 100000)
   huniformPacked->SetLineStyle(2);
 
   for (int i = 0; i < nevents; i++) {
-    float nsigma = gRandom->Gaus(0, 1);
-    hgaus->Fill(nsigma);
-    container(nsigma);
+    float randomValue = gRandom->Gaus(0, 1);
+    hgaus->Fill(randomValue);
+    container(randomValue);
     hgausPacked->Fill(container.unpack());
 
-    nsigma = gRandom->Uniform(-10, 10);
-    huniform->Fill(nsigma);
-    container(nsigma);
+    randomValue = gRandom->Uniform(-10, 10);
+    huniform->Fill(randomValue);
+    container(randomValue);
     huniformPacked->Fill(container.unpack());
   }
 
   TCanvas* can = new TCanvas("can");
   hgaus->Draw();
   hgausPacked->Draw("same");
-  outputName = "/tmp/" + outputName + ".pdf";
-  can->SaveAs("/tmp/asd.root");
-  can->SaveAs(Form("%s[", outputName.c_str()));
-  can->SaveAs(outputName.c_str());
+  TString imgoutputName = "/tmp/" + outputName + ".pdf";
+  can->SaveAs("/tmp/" + outputName + "_Gaus.root");
+  can->SaveAs(Form("%s[", imgoutputName.c_str()));
+  can->SaveAs(imgoutputName.c_str());
 
   huniform->Draw();
   huniformPacked->Draw("same");
-  can->SaveAs(outputName.c_str());
-  can->SaveAs(Form("%s]", outputName.c_str()));
+  can->SaveAs(imgoutputName.c_str());
+  can->SaveAs(Form("%s]", imgoutputName.c_str()));
   const bool gausOk = (hgaus->GetBinContent(hgaus->FindBin(0)) == hgausPacked->GetBinContent(hgausPacked->FindBin(0)));
   if (!gausOk) {
     LOG(info) << "Gaus packing/unpacking failed";
   }
+  const bool gausMeanOk = (hgaus->GetMean() == hgausPacked->GetMean());
+  if (!gausMeanOk) {
+    LOG(info) << "Gaus packing/unpacking mean failed";
+  }
+
   const bool uniformOk = (huniform->GetBinContent(huniform->FindBin(0)) == huniformPacked->GetBinContent(huniformPacked->FindBin(0)));
   if (!uniformOk) {
     LOG(info) << "Uniform packing/unpacking failed";
   }
-  return gausOk && uniformOk;
+  const bool uniformMeanOk = (huniform->GetMean() == huniformPacked->GetMean());
+  if (!uniformMeanOk) {
+    LOG(info) << "Uniform packing/unpacking mean failed";
+  }
+  return gausOk && uniformOk && gausMeanOk && uniformMeanOk;
 }
 
 int main(int /*argc*/, char* /*argv*/[])
@@ -129,6 +130,13 @@ int main(int /*argc*/, char* /*argv*/[])
     LOG(info) << "Packing and unpacking of PID signals (nsigmas) in the Femto PID response is correct.";
   } else {
     LOG(fatal) << "Packing and unpacking of PID signals (nsigmas) in the Femto PID response is incorrect.";
+  }
+
+  LOG(info) << "Checking the packing and unpacking of PID signals (dca) in the Femto DCA.";
+  if (process<o2::aod::singletrackselector::binning::dca>("Dca", 100000)) {
+    LOG(info) << "Packing and unpacking of DCA signals (dca) in the Femto is correct.";
+  } else {
+    LOG(fatal) << "Packing and unpacking of DCA signals (dca) in the Femto is incorrect.";
   }
 
 } // main
