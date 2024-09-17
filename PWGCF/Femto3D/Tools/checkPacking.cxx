@@ -24,7 +24,7 @@
 using namespace o2;
 
 template <typename T>
-bool process(const std::string outputName, const int nevents = 100000)
+bool process(const TString outputName, const int nevents = 100000)
 {
   class Container
   {
@@ -95,13 +95,13 @@ bool process(const std::string outputName, const int nevents = 100000)
   hgausPacked->Draw("same");
   TString imgoutputName = "/tmp/" + outputName + ".pdf";
   can->SaveAs("/tmp/" + outputName + "_Gaus.root");
-  can->SaveAs(Form("%s[", imgoutputName.c_str()));
-  can->SaveAs(imgoutputName.c_str());
+  can->SaveAs(Form("%s[", imgoutputName.Data()));
+  can->SaveAs(imgoutputName.Data());
 
   huniform->Draw();
   huniformPacked->Draw("same");
-  can->SaveAs(imgoutputName.c_str());
-  can->SaveAs(Form("%s]", imgoutputName.c_str()));
+  can->SaveAs(imgoutputName.Data());
+  can->SaveAs(Form("%s]", imgoutputName.Data()));
   const bool gausOk = (hgaus->GetBinContent(hgaus->FindBin(0)) == hgausPacked->GetBinContent(hgausPacked->FindBin(0)));
   if (!gausOk) {
     LOG(info) << "Gaus packing/unpacking failed";
