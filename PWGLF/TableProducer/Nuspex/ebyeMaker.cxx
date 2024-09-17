@@ -1287,7 +1287,7 @@ struct ebyeMaker {
           std::abs(candidateTrack.eta) * 10.,
           selMask,
           candidateTrack.outerPID,
-          candidateTrack.genpt,
+          candidateTrack.pdgcode > 0 ? candidateTrack.genpt : -candidateTrack.genpt,
           candidateTrack.geneta,
           candidateTrack.isreco);
       }
