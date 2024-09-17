@@ -239,7 +239,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(DcaXY_v1, dcaXY,
                            [](binning::dca_v1::binned_t dca_binned) -> float { return singletrackselector::unPack<binning::dca_v1>(dca_binned); });
 DECLARE_SOA_DYNAMIC_COLUMN(DcaZ_v1, dcaZ,
                            [](binning::dca_v1::binned_t dca_binned) -> float { return singletrackselector::unPack<binning::dca_v1>(dca_binned); });
-                           
+
 DECLARE_SOA_DYNAMIC_COLUMN(DcaXY_v2, dcaXY,
                            [](binning::dca_v2::binned_t dca_binned) -> float { return singletrackselector::unPack<binning::dca_v2>(dca_binned); });
 DECLARE_SOA_DYNAMIC_COLUMN(DcaZ_v2, dcaZ,
