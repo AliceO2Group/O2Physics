@@ -57,7 +57,7 @@ struct HfTaskDstarToD0Pi {
   ConfigurableAxis binningDecayLength{"binningDecayLength", {1000, 0.0, 0.7}, "Bins of Decay Length"};
   ConfigurableAxis binningNormDecayLength{"binningNormDecayLength", {1000, 0.0, 40.0}, "Bins of Normalised Decay Length"};
   ConfigurableAxis binningCentrality{"binningCentrality", {VARIABLE_WIDTH, 0.0, 10.0, 20.0, 30.0, 60.0, 100.0}, "centrality binning"};
-  ConfigurableAxis binningDeltaInvMass{"binningDeltaInvMass",{100,0.13,0.16}, "Bins of Delta InvMass of Dstar"};
+  ConfigurableAxis binningDeltaInvMass{"binningDeltaInvMass", {100, 0.13, 0.16}, "Bins of Delta InvMass of Dstar"};
 
   HistogramRegistry registry{
     "registry",
@@ -144,8 +144,8 @@ struct HfTaskDstarToD0Pi {
 
     // Checking PV contributors from Data as well MC rec
     // registry.add("Efficiency/hPVContributorsAllEvents", "PV Contributors; PV Contributor; entries",{HistType::kTH1I,{{100,0,300}}});
-    registry.add("Efficiency/hPVContributorsEventsWCand", "PV Contributors; PV Contributor; FT0M Centrality",{HistType::kTH2F,{{100,0,300},{axisCentrality}}}, true);
-    registry.add("Efficiency/hPVContributorsEventsWCandSignal", "PV Contributors; PV Contributor; FT0M Centrality; DeltaInvMass",{HistType::kTH3F,{{100,0,300},{axisCentrality},{axisDeltaInvMass}}}, true);
+    registry.add("Efficiency/hPVContributorsEventsWCand", "PV Contributors; PV Contributor; FT0M Centrality", {HistType::kTH2F, {{100, 0, 300}, {axisCentrality}}}, true);
+    registry.add("Efficiency/hPVContributorsEventsWCandSignal", "PV Contributors; PV Contributor; FT0M Centrality; DeltaInvMass", {HistType::kTH3F, {{100, 0, 300}, {axisCentrality}, {axisDeltaInvMass}}}, true);
   }
 
   void process(CollisionsWCent const&, CandDstarWSelFlag const&)
@@ -186,11 +186,11 @@ struct HfTaskDstarToD0Pi {
       auto collision = candDstar.collision_as<CollisionsWCent>();
       auto centrality = collision.centFT0M(); // 0-100%
 
-      registry.fill(HIST("Efficiency/hPVContributorsEventsWCand"),collision.numContrib(),centrality);
-      
+      registry.fill(HIST("Efficiency/hPVContributorsEventsWCand"), collision.numContrib(), centrality);
+
       auto signDstar = candDstar.signSoftPi();
       if (signDstar > 0) {
-        registry.fill(HIST("Efficiency/hPVContributorsEventsWCandSignal"),collision.numContrib(),centrality,(invDstar - invD0));
+        registry.fill(HIST("Efficiency/hPVContributorsEventsWCandSignal"), collision.numContrib(), centrality, (invDstar - invD0));
         registry.fill(HIST("Yield/hDeltaInvMassDstar3D"), (invDstar - invD0), candDstar.pt(), centrality);
         registry.fill(HIST("Yield/hDeltaInvMassDstar2D"), (invDstar - invD0), candDstar.pt());
         registry.fill(HIST("Yield/hInvMassD0"), invD0, candDstar.ptD0());
@@ -200,7 +200,7 @@ struct HfTaskDstarToD0Pi {
         registry.fill(HIST("QA/hPtProng0D0"), candDstar.ptProng0());
         registry.fill(HIST("QA/hPtProng1D0"), candDstar.ptProng1());
       } else if (signDstar < 0) {
-        registry.fill(HIST("Efficiency/hPVContributorsEventsWCandSignal"),collision.numContrib(),centrality,(invAntiDstar - invD0Bar));
+        registry.fill(HIST("Efficiency/hPVContributorsEventsWCandSignal"), collision.numContrib(), centrality, (invAntiDstar - invD0Bar));
         registry.fill(HIST("Yield/hDeltaInvMassDstar3D"), (invAntiDstar - invD0Bar), candDstar.pt(), centrality);
         registry.fill(HIST("Yield/hDeltaInvMassDstar2D"), (invAntiDstar - invD0Bar), candDstar.pt());
         registry.fill(HIST("Yield/hInvMassD0"), invD0Bar, candDstar.ptD0());
