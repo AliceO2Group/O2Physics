@@ -49,11 +49,13 @@ struct CreateEMEvent {
   Produces<o2::aod::EMEventsMult> event_mult;
   Produces<o2::aod::EMEventsCent> event_cent;
   Produces<o2::aod::EMEventsQvec> event_qvec;
+  Produces<o2::aod::EMEventsWeight> event_weights;
 
   enum class EMEventType : int {
     kEvent = 0,
     kEvent_Cent = 1,
     kEvent_Cent_Qvec = 2,
+    kEvent_JJ = 3,
   };
 
   // CCDB options
@@ -158,6 +160,10 @@ struct CreateEMEvent {
 
       event_mult(collision.multFT0A(), collision.multFT0C(), collision.multTPC(), collision.multNTracksPV(), collision.multNTracksPVeta1(), collision.multNTracksPVetaHalf());
 
+      if constexpr (eventype != EMEventType::kEvent_JJ) {
+        event_weights(1.f);
+      }
+
       float q2xft0m = 999.f, q2yft0m = 999.f, q2xft0a = 999.f, q2yft0a = 999.f, q2xft0c = 999.f, q2yft0c = 999.f, q2xbpos = 999.f, q2ybpos = 999.f, q2xbneg = 999.f, q2ybneg = 999.f, q2xbtot = 999.f, q2ybtot = 999.f;
       float q3xft0m = 999.f, q3yft0m = 999.f, q3xft0a = 999.f, q3yft0a = 999.f, q3xft0c = 999.f, q3yft0c = 999.f, q3xbpos = 999.f, q3ybpos = 999.f, q3xbneg = 999.f, q3ybneg = 999.f, q3xbtot = 999.f, q3ybtot = 999.f;
 
@@ -192,6 +198,24 @@ struct CreateEMEvent {
     map_ncolls_per_bc.clear();
   } // end of skimEvent
 
+  void fillEventWeights(MyCollisionsMC const& collisions, aod::McCollisions const&, MyBCs const& bcs)
+  {
+    for (auto& collision : collisions) {
+      if (!collision.has_mcCollision()) {
+        continue;
+      }
+
+      auto bc = collision.template foundBC_as<MyBCs>();
+      initCCDB(bc);
+
+      if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
+        continue;
+      }
+      auto mcCollision = collision.mcCollision();
+      event_weights(mcCollision.weight());
+    }
+  }
+
   void processEvent(MyCollisions const& collisions, MyBCs const& bcs)
   {
     skimEvent<false, EMEventType::kEvent>(collisions, bcs);
@@ -203,6 +227,13 @@ struct CreateEMEvent {
     skimEvent<true, EMEventType::kEvent>(collisions, bcs);
   }
   PROCESS_SWITCH(CreateEMEvent, processEventMC, "process event info", false);
+
+  void processEventJJMC(MyCollisionsMC const& collisions, aod::McCollisions const& mcCollisions, MyBCs const& bcs)
+  {
+    skimEvent<true, EMEventType::kEvent_JJ>(collisions, bcs);
+    fillEventWeights(collisions, mcCollisions, bcs);
+  }
+  PROCESS_SWITCH(CreateEMEvent, processEventJJMC, "process event info", false);
 
   void processEvent_Cent(MyCollisions_Cent const& collisions, MyBCs const& bcs)
   {
@@ -255,7 +286,7 @@ struct AssociatePhotonToEMEvent {
       for (int ig = 0; ig < ng; ig++) {
         eventIds(collision.globalIndex());
       } // end of photon loop
-    }   // end of collision loop
+    } // end of collision loop
   }
 
   // This struct is for both data and MC.
