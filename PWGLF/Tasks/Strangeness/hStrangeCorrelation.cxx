@@ -837,17 +837,17 @@ struct correlateStrangeness {
     }
   }
 
-  // if this process function is enabled, it will be such that only events with trigger particles within a given 
-  // trigger pt bin are taken for the entire processing. This allows for the calculation of e.g. efficiencies 
+  // if this process function is enabled, it will be such that only events with trigger particles within a given
+  // trigger pt bin are taken for the entire processing. This allows for the calculation of e.g. efficiencies
   // within an event class that has a trigger (which may differ with respect to other cases, to be checked)
 
-    // for map determining which trigger bins are present and which aren't
+  // for map determining which trigger bins are present and which aren't
   std::vector<uint32_t> triggerPresenceMap;
 
   void processSelectEventWithTrigger(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults> const& collisions,
-                            aod::TriggerTracks const& triggerTracks, TracksComplete const&, aod::BCsWithTimestamps const&)
+                                     aod::TriggerTracks const& triggerTracks, TracksComplete const&, aod::BCsWithTimestamps const&)
   {
-    //setup
+    // setup
     triggerPresenceMap.clear();
     triggerPresenceMap.resize(collisions.size(), 0);
 
@@ -868,10 +868,10 @@ struct correlateStrangeness {
       }
       for (auto const& triggerTrack : triggerTracks) {
         auto track = triggerTrack.track_as<TracksComplete>();
-        if (!isValidTrigger(track)){
+        if (!isValidTrigger(track)) {
           continue;
         }
-        auto binNumber = histos.get<TH1>(HIST("axes/hPtTriggerAxis"))->FindFixBin(track.pt())-1;
+        auto binNumber = histos.get<TH1>(HIST("axes/hPtTriggerAxis"))->FindFixBin(track.pt()) - 1;
         bitset(triggerPresenceMap[collision.globalIndex()], binNumber);
       }
     }
@@ -883,8 +883,8 @@ struct correlateStrangeness {
   {
     // ________________________________________________
     // skip if desired trigger not found
-    if ( doprocessSelectEventWithTrigger && !bitcheck(triggerPresenceMap[collision.globalIndex()], triggerBinToSelect)){ 
-      return; 
+    if (doprocessSelectEventWithTrigger && !bitcheck(triggerPresenceMap[collision.globalIndex()], triggerBinToSelect)) {
+      return;
     }
 
     // ________________________________________________
@@ -979,8 +979,8 @@ struct correlateStrangeness {
   {
     // ________________________________________________
     // skip if desired trigger not found
-    if ( doprocessSelectEventWithTrigger && !bitcheck(triggerPresenceMap[collision.globalIndex()], triggerBinToSelect)){ 
-      return; 
+    if (doprocessSelectEventWithTrigger && !bitcheck(triggerPresenceMap[collision.globalIndex()], triggerBinToSelect)) {
+      return;
     }
 
     // ________________________________________________
@@ -1077,8 +1077,8 @@ struct correlateStrangeness {
   {
     // ________________________________________________
     // skip if desired trigger not found
-    if ( doprocessSelectEventWithTrigger && !bitcheck(triggerPresenceMap[collision.globalIndex()], triggerBinToSelect)){ 
-      return; 
+    if (doprocessSelectEventWithTrigger && !bitcheck(triggerPresenceMap[collision.globalIndex()], triggerBinToSelect)) {
+      return;
     }
 
     // ________________________________________________
@@ -1135,8 +1135,8 @@ struct correlateStrangeness {
       }
       // ________________________________________________
       // skip if desired trigger not found
-      if ( doprocessSelectEventWithTrigger && (!bitcheck(triggerPresenceMap[collision1.globalIndex()], triggerBinToSelect) || !bitcheck(triggerPresenceMap[collision2.globalIndex()], triggerBinToSelect)) ){ 
-        return; 
+      if (doprocessSelectEventWithTrigger && (!bitcheck(triggerPresenceMap[collision1.globalIndex()], triggerBinToSelect) || !bitcheck(triggerPresenceMap[collision2.globalIndex()], triggerBinToSelect))) {
+        return;
       }
 
       // Perform basic event selection on both collisions
@@ -1180,8 +1180,8 @@ struct correlateStrangeness {
       }
       // ________________________________________________
       // skip if desired trigger not found
-      if ( doprocessSelectEventWithTrigger && (!bitcheck(triggerPresenceMap[collision1.globalIndex()], triggerBinToSelect) || !bitcheck(triggerPresenceMap[collision2.globalIndex()], triggerBinToSelect)) ){ 
-        return; 
+      if (doprocessSelectEventWithTrigger && (!bitcheck(triggerPresenceMap[collision1.globalIndex()], triggerBinToSelect) || !bitcheck(triggerPresenceMap[collision2.globalIndex()], triggerBinToSelect))) {
+        return;
       }
 
       // Perform basic event selection on both collisions
@@ -1220,8 +1220,8 @@ struct correlateStrangeness {
 
       // ________________________________________________
       // skip if desired trigger not found
-      if ( doprocessSelectEventWithTrigger && (!bitcheck(triggerPresenceMap[collision1.globalIndex()], triggerBinToSelect) || !bitcheck(triggerPresenceMap[collision2.globalIndex()], triggerBinToSelect)) ){ 
-        return; 
+      if (doprocessSelectEventWithTrigger && (!bitcheck(triggerPresenceMap[collision1.globalIndex()], triggerBinToSelect) || !bitcheck(triggerPresenceMap[collision2.globalIndex()], triggerBinToSelect))) {
+        return;
       }
 
       // ________________________________________________
@@ -1350,8 +1350,8 @@ struct correlateStrangeness {
 
     // ________________________________________________
     // skip if desired trigger not found
-    if ( doprocessSelectEventWithTrigger && !bitcheck(bestCollisionTriggerPresenceMap, triggerBinToSelect)){ 
-      return; 
+    if (doprocessSelectEventWithTrigger && !bitcheck(bestCollisionTriggerPresenceMap, triggerBinToSelect)) {
+      return;
     }
     if (!bestCollisionSel8)
       return;
