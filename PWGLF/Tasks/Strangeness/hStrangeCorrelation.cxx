@@ -1466,6 +1466,8 @@ struct correlateStrangeness {
     bool bestCollisionSel8 = false;
     bool bestCollisionINELgtZERO = false;
     int biggestNContribs = -1;
+    uint32_t bestCollisionTriggerPresenceMap = 0;
+
     for (auto& recCollision : recCollisions) {
       if (biggestNContribs < recCollision.numContrib()) {
         biggestNContribs = recCollision.numContrib();
@@ -1473,8 +1475,15 @@ struct correlateStrangeness {
         bestCollisionSel8 = recCollision.sel8();
         bestCollisionVtxZ = recCollision.posZ();
         bestCollisionINELgtZERO = recCollision.isInelGt0();
+        bestCollisionTriggerPresenceMap = triggerPresenceMap[recCollision.globalIndex()];
       }
     }
+    // ________________________________________________
+    // skip if desired trigger not found
+    if (doprocessSelectEventWithTrigger && !bitcheck(bestCollisionTriggerPresenceMap, triggerBinToSelect)) {
+      return;
+    }
+
     if (doGenEventSelection) {
       if (!bestCollisionSel8)
         return;
