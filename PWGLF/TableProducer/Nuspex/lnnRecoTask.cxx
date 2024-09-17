@@ -230,8 +230,8 @@ struct lnnRecoTask {
     hdEdx3HTPCMom = qaRegistry.add<TH2>("hdEdx3HTPCMom", "; #it{p}^{TPC}({}^{3}H); dE/dx", HistType::kTH2F, {TritMomAxis, dEdxAxis});
     hdEdxTot = qaRegistry.add<TH2>("hdEdxTot", ";p_{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {rigidityAxis, dEdxAxis});
     h3HMassPtTOF = qaRegistry.add<TH2>("hTrMassPtTOF", ";p_{T} (GeV/#it{c}); dE/dx", HistType::kTH2F, {MomTrAxis, MassTOFAxis});
-    h3HSignalTOF =  qaRegistry.add<TH2>("h3HSignalTOF", ";p_{T} (GeV/#it{c}); #beta (TOF)", HistType::kTH2F, {MomTrAxis, BetaAxis});
-    hdEdx3HSelTOF =  qaRegistry.add<TH2>("hdEdx3HSelTOF", ";p_{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {rigidityAxis, dEdxAxis});
+    h3HSignalTOF = qaRegistry.add<TH2>("h3HSignalTOF", ";p_{T} (GeV/#it{c}); #beta (TOF)", HistType::kTH2F, {MomTrAxis, BetaAxis});
+    hdEdx3HSelTOF = qaRegistry.add<TH2>("hdEdx3HSelTOF", ";p_{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {rigidityAxis, dEdxAxis});
     hEvents = qaRegistry.add<TH1>("hEvents", ";Events; ", HistType::kTH1D, {{2, -0.5, 1.5}});
 
     hEvents->GetXaxis()->SetBinLabel(1, "All");
@@ -357,7 +357,7 @@ struct lnnRecoTask {
       lnnCand.clusterSizeITSPi = !lnnCand.isMatter ? h3track.itsClusterSizes() : negTrack.itsClusterSizes();
       lnnCand.mom3HTPC = lnnCand.isMatter ? posRigidity : negRigidity;
       lnnCand.momPiTPC = !lnnCand.isMatter ? posRigidity : negRigidity;
-      
+
       lnnCand.flags |= lnnCand.isMatter ? static_cast<uint8_t>((posTrack.pidForTracking() & 0xF) << 4) : static_cast<uint8_t>((negTrack.pidForTracking() & 0xF) << 4);
       lnnCand.flags |= lnnCand.isMatter ? static_cast<uint8_t>(negTrack.pidForTracking() & 0xF) : static_cast<uint8_t>(posTrack.pidForTracking() & 0xF);
 
@@ -436,7 +436,7 @@ struct lnnRecoTask {
         h3HMassPtTOF->Fill(h3track.pt(), lnnCand.mass2TrTOF);
         h3HSignalTOF->Fill(h3track.pt(), beta);
         hdEdx3HSelTOF->Fill(h3track.pt(), h3track.tofSignal());
-        if (h3track.pt() >= 0.5){
+        if (h3track.pt() >= 0.5) {
           hNsigma3HTOF_pT->Fill(h3track.pt(), h3track.tofNSigmaTr());
         }
       }
