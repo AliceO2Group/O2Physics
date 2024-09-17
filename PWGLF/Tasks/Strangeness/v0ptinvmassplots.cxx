@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-/// \brief V0 task for production of invariant mass plots for Optimised Topological Cuts Analysis
+/// \brief V0 task fot Pt Analysis
 /// \author Nikolaos Karatzenis (nikolaos.karatzenis@cern.ch)
 /// \author Roman Lietava (roman.lietava@cern.ch)
 
