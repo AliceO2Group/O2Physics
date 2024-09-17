@@ -62,7 +62,7 @@ bool process(std::string outputName, int nevents = 100000)
     xbins.push_back(u);
   }
   LOG(info) << "Min = " << min << " Max = " << max;
-  TH1F* hgaus = new TH1F("hgaus", "", nbins, min+T::bin_width*0.5, max+0.5*T::bin_width);
+  TH1F* hgaus = new TH1F("hgaus", "", nbins, min + T::bin_width * 0.5, max + 0.5 * T::bin_width);
   hgaus->Print();
   LOG(info) << "Bin width = " << T::bin_width << " vs histo " << hgaus->GetXaxis()->GetBinWidth(1);
   // for (int i = 1; i <= hgaus->GetNbinsX(); i++) {
