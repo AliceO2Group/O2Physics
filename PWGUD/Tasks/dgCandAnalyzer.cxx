@@ -277,8 +277,8 @@ struct DGCandAnalyzer {
     registry.fill(HIST("FIT/FDDCAmplitude"), dgcand.totalFDDAmplitudeC(), 1.);
 
     // skip events with too few/many tracks
-    //Partition<UDTracksFull> PVContributors = aod::udtrack::isPVContributor == true;
-    //PVContributors.bindTable(dgtracks);
+    // Partition<UDTracksFull> PVContributors = aod::udtrack::isPVContributor == true;
+    // PVContributors.bindTable(dgtracks);
     if (dgcand.numContrib() != PVContributors.size()) {
       LOGF(info, "Missmatch of PVContributors %d != %d", dgcand.numContrib(), PVContributors.size());
     }
