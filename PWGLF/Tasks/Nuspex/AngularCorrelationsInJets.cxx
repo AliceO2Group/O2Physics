@@ -758,8 +758,8 @@ struct AngularCorrelationsInJets {
     return;
   }
 
-  template <typename T, typename U>
-  void fillHistogramsRun2(T const& collision, U const& allTracks)
+  template <typename U>
+  void fillHistograms(U const& tracks)
   {
     std::vector<std::pair<double, double>> fTempBufferProton;
     std::vector<std::pair<double, double>> fTempBufferAntiproton;
@@ -786,8 +786,6 @@ struct AngularCorrelationsInJets {
     std::vector<fastjet::PseudoJet> constituents;
     jets.clear();
     constituents.clear();
-
-    auto tracks = allTracks.sliceBy(perCollisionFullTracksRun2, collision.globalIndex());
 
     for (const auto& track : tracks) {
       if (!selectTrack(track))
@@ -1101,350 +1099,6 @@ struct AngularCorrelationsInJets {
     }
   }
 
-  template <typename T, typename U>
-  void fillHistogramsRun3(T const& collision, U const& allTracks)
-  {
-    std::vector<std::pair<double, double>> fTempBufferProton;
-    std::vector<std::pair<double, double>> fTempBufferAntiproton;
-    std::vector<std::pair<double, double>> fTempBufferDeuteron;
-    std::vector<std::pair<double, double>> fTempBufferAntideuteron;
-    std::vector<std::pair<double, double>> fTempBufferJet;
-    std::vector<std::pair<double, double>> fTempBufferFull;
-    fTempBufferProton.clear();
-    fTempBufferAntiproton.clear();
-    fTempBufferDeuteron.clear();
-    fTempBufferAntideuteron.clear();
-    fTempBufferJet.clear();
-    fTempBufferFull.clear();
-    std::vector<fastjet::PseudoJet> jetInput;
-    std::map<int, typename U::iterator> particles;
-    std::vector<typename U::iterator> particlesForCF;
-    jetInput.clear();
-    particles.clear();
-    int index = 0;
-    int leadingID = 0;
-    std::vector<fastjet::PseudoJet> jets;
-    std::vector<fastjet::PseudoJet> constituents;
-    jets.clear();
-    constituents.clear();
-    fastjet::PseudoJet hardestJet(0., 0., 0., 0.);
-    fastjet::PseudoJet subtractedJet(0., 0., 0., 0.);
-
-    auto tracks = allTracks.sliceBy(perCollisionFullTracksRun2, collision.globalIndex());
-
-    for (const auto& track : tracks) {
-      if (!selectTrack(track))
-        continue;
-
-      double mass;
-      if (track.hasTOF()) {
-        mass = track.mass(); // check reliability, maybe use only pion mass
-        registryQA.fill(HIST("hTOFmass"), track.pt(), track.mass());
-        registryData.fill(HIST("hTrackProtocol"), 1);
-      } else {
-        mass = 0.139; // pion mass as default, ~80% are pions
-        registryData.fill(HIST("hTrackProtocol"), 2);
-      }
-
-      if (track.pt() > fMinLeadingPt) {
-        leadingID = track.globalIndex();
-      }
-
-      if (track.tpcNClsFindable() != 0) {
-        registryQA.fill(HIST("hRatioCrossedRowsTPC"), track.pt(), track.tpcNClsCrossedRows() / track.tpcNClsFindable());
-      }
-      registryQA.fill(HIST("hPtFullEvent"), track.pt());
-      registryQA.fill(HIST("hEtaFullEvent"), track.eta());
-      registryQA.fill(HIST("hCrossedRowsTPC"), track.pt(), track.tpcNClsCrossedRows());
-      registryQA.fill(HIST("hClusterITS"), track.pt(), track.itsNCls());
-      registryQA.fill(HIST("hClusterTPC"), track.pt(), track.tpcNClsFound());
-      registryQA.fill(HIST("hChi2ITS"), track.pt(), track.itsChi2NCl());
-      registryQA.fill(HIST("hChi2TPC"), track.pt(), track.tpcChi2NCl());
-      registryQA.fill(HIST("hDCAxyFullEvent"), track.pt(), track.dcaXY());
-      registryQA.fill(HIST("hDCAzFullEvent"), track.pt(), track.dcaZ());
-      fastjet::PseudoJet inputPseudoJet(track.px(), track.py(), track.pz(), track.energy(mass));
-      inputPseudoJet.set_user_index(index);
-      particles[index] = track;
-      particlesForCF.emplace_back(track);
-      jetInput.emplace_back(inputPseudoJet);
-
-      index++;
-    } // for (const auto& track : tracks)
-
-    if (jetInput.size() < 2)
-      return;
-    registryData.fill(HIST("hEventProtocol"), 2);
-
-    // Reconstruct Jets
-    double ghost_maxrap = 1.0;
-    double ghost_area = 0.005;
-    int ghost_repeat = 1;
-    fastjet::JetDefinition jetDef(fastjet::antikt_algorithm, fJetR);
-    fastjet::JetDefinition jetDefBkg(fastjet::kt_algorithm, 0.5);
-    fastjet::AreaDefinition areaDef(fastjet::active_area, fastjet::GhostedAreaSpec(ghost_maxrap, ghost_repeat, ghost_area));
-    fastjet::AreaDefinition areaDefBkg(fastjet::active_area_explicit_ghosts, fastjet::GhostedAreaSpec(ghost_maxrap));
-    fastjet::ClusterSequenceArea clusterSeq(jetInput, jetDef, areaDef);
-    jets = sorted_by_pt(clusterSeq.inclusive_jets());
-
-    if (jets.size() == 0)
-      return;
-
-    registryData.fill(HIST("hEventProtocol"), 3);
-
-    hardestJet = jets[0];
-
-    if (hardestJet.pt() < fMinJetPt)
-      return;
-
-    registryData.fill(HIST("hEventProtocol"), 4);
-    if (hardestJet.constituents().size() < 2)
-      return;
-
-    registryData.fill(HIST("hEventProtocol"), 5);
-    registryData.fill(HIST("hNumberOfJets"), 0);
-    registryData.fill(HIST("hPtTotalJet"), hardestJet.pt());
-    registryData.fill(HIST("hJetRapidity"), hardestJet.rap());
-    registryData.fill(HIST("hNumPartInJet"), hardestJet.constituents().size());
-    registryQA.fill(HIST("hJetPtVsNumPart"), hardestJet.pt(), hardestJet.constituents().size());
-
-    for (const auto& constituent : hardestJet.constituents()) {
-      registryData.fill(HIST("hPtJetParticle"), constituent.pt());
-      if (std::isnan(constituent.phi()) || std::isnan(hardestJet.phi()))
-        continue;
-      double DeltaPhi = TVector2::Phi_0_2pi(constituent.phi() - hardestJet.phi());
-      double DeltaEta = constituent.eta() - hardestJet.eta();
-      double Delta = TMath::Sqrt(DeltaPhi * DeltaPhi + DeltaEta * DeltaEta);
-      registryData.fill(HIST("hJetConeRadius"), Delta);
-    }
-
-    fastjet::Selector selector = fastjet::SelectorAbsEtaMax(1.0) * (!fastjet::SelectorNHardest(2)); // TODO: fix subtraction
-    fastjet::JetMedianBackgroundEstimator bkgEst(selector, jetDefBkg, areaDefBkg);
-    fastjet::Subtractor subtractor(&bkgEst);
-    subtractor.set_use_rho_m(true);
-    bkgEst.set_particles(jetInput);
-
-    subtractedJet = subtractor(hardestJet);
-    if (subtractedJet.has_constituents()) {
-      for (const auto& subConstituent : subtractedJet.constituents()) {
-        registryData.fill(HIST("hPtSubtractedJet"), subConstituent.pt());
-      }
-    }
-
-    if (!hardestJet.has_constituents())
-      return;
-    constituents = hardestJet.constituents();
-
-    // QA for comparison with nuclei_in_jets
-    const auto& leadingTrack = tracks.iteratorAt(leadingID);
-    TVector3 pLeading(leadingTrack.px(), leadingTrack.py(), leadingTrack.pz());
-    TVector3 pJet(hardestJet.px(), hardestJet.py(), hardestJet.pz());
-    TVector3 UEAxis1(0.0, 0.0, 0.0);
-    TVector3 UEAxis2(0.0, 0.0, 0.0);
-    getPerpendicularAxis(pJet, UEAxis1, +1.0);
-    getPerpendicularAxis(pJet, UEAxis2, -1.0);
-
-    doCorrelations(particlesForCF, fBufferFull, fTempBufferFull, -1, pJet);
-    setTrackBuffer(fTempBufferFull, fBufferFull);
-
-    if (UEAxis1.Mag() == 0 || UEAxis2.Mag() == 0)
-      return;
-    double deltaEta = pLeading.Eta() - pJet.Eta();
-    double deltaPhi = getDeltaPhi(pLeading.Phi(), pJet.Phi());
-    registryQA.fill(HIST("hPtLeading"), leadingTrack.pt());
-    registryQA.fill(HIST("hPhiLeading"), leadingTrack.phi());
-    registryQA.fill(HIST("hEtaLeading"), leadingTrack.eta());
-    registryQA.fill(HIST("hAngleJetLeadingTrack"), (180.0 / TMath::Pi()) * pLeading.Angle(pJet));
-    if (deltaPhi != -999)
-      registryQA.fill(HIST("hDeltaEtadeltaPhiLeadingJet"), deltaEta, deltaPhi);
-
-    double NchJetPlusUE(0);
-    double NchJet(0);
-    double NchUE(0);
-    double ptJetPlusUE(0);
-    double ptJet(0);
-    double ptUE(0);
-
-    for (const auto& [index, track] : particles) {
-      TVector3 particleDir(track.px(), track.py(), track.pz());
-      double deltaEtaJet = particleDir.Eta() - pJet.Eta();
-      double deltaPhiJet = getDeltaPhi(particleDir.Phi(), pJet.Phi());
-      double deltaRJet = sqrt(deltaEtaJet * deltaEtaJet + deltaPhiJet * deltaPhiJet);
-      double deltaEtaUE1 = particleDir.Eta() - UEAxis1.Eta();
-      double deltaPhiUE1 = getDeltaPhi(particleDir.Phi(), UEAxis1.Phi());
-      double deltaRUE1 = sqrt(deltaEtaUE1 * deltaEtaUE1 + deltaPhiUE1 * deltaPhiUE1);
-      double deltaEtaUE2 = particleDir.Eta() - UEAxis2.Eta();
-      double deltaPhiUE2 = getDeltaPhi(particleDir.Phi(), UEAxis2.Phi());
-      double deltaRUE2 = sqrt(deltaEtaUE2 * deltaEtaUE2 + deltaPhiUE2 * deltaPhiUE2);
-
-      if (deltaRJet < fRmax) {
-        if (deltaPhiJet != -999)
-          registryQA.fill(HIST("hDeltaEtadeltaPhiJet"), deltaEtaJet, deltaPhiJet);
-        registryQA.fill(HIST("hRJet"), deltaRJet);
-        NchJetPlusUE++;
-        ptJetPlusUE = ptJetPlusUE + track.pt();
-      }
-      if (deltaRUE1 < fRmax) {
-        if (deltaPhiUE1 != -999)
-          registryQA.fill(HIST("hDeltaEtadeltaPhiUE"), deltaEtaUE1, deltaPhiUE1);
-        registryQA.fill(HIST("hRUE"), deltaRUE1);
-        NchUE++;
-        ptUE = ptUE + track.pt();
-      }
-      if (deltaRUE2 < fRmax) {
-        if (deltaPhiUE2 != -999)
-          registryQA.fill(HIST("hDeltaEtadeltaPhiUE"), deltaEtaUE2, deltaPhiUE2);
-        registryQA.fill(HIST("hRUE"), deltaRUE2);
-        NchUE++;
-        ptUE = ptUE + track.pt();
-      }
-    } // for (const auto& [index, track] : particles)
-
-    NchJet = NchJetPlusUE - 0.5 * NchUE;
-    ptJet = ptJetPlusUE - 0.5 * ptUE;
-    registryQA.fill(HIST("hMultiplicityJetPlusUE"), NchJetPlusUE);
-    registryQA.fill(HIST("hMultiplicityJet"), NchJet);
-    registryQA.fill(HIST("hMultiplicityUE"), 0.5 * NchUE);
-    registryQA.fill(HIST("hPtJetPlusUE"), ptJetPlusUE);
-    registryQA.fill(HIST("hPtJet"), ptJet);
-    registryQA.fill(HIST("hPtUE"), 0.5 * ptUE);
-    registryQA.fill(HIST("hDeltaJetPt"), hardestJet.pt() - ptJetPlusUE);
-
-    int nPartClusteredJet = static_cast<int>(constituents.size());
-
-    // Fill QA Histograms
-    if (ptJetPlusUE < fMinJetPt) {
-
-      registryQA.fill(HIST("hNParticlesClusteredInJet"), nPartClusteredJet);
-      double dEta = pLeading.Eta() - pJet.Eta();
-      double dPhi = getDeltaPhi(pLeading.Phi(), pJet.Phi());
-      if (dPhi != -999)
-        registryQA.fill(HIST("hDeltaEtaDeltaPhiJetAxisLeading"), dEta, dPhi);
-
-      for (const auto& track : constituents) {
-        TVector3 particleDir(track.px(), track.py(), track.pz());
-        double dEta = particleDir.Eta() - pJet.Eta();
-        double dPhi = getDeltaPhi(particleDir.Phi(), pJet.Phi());
-        registryQA.fill(HIST("hPtParticlesClusteredInJet"), track.pt());
-        if (dPhi != -999)
-          registryQA.fill(HIST("hDeltaEtaDeltaPhiJetAxis"), dEta, dPhi);
-      }
-    }
-
-    // PID
-    std::vector<typename U::iterator> jetProtons; // replace with IDs?
-    std::vector<typename U::iterator> jetAntiprotons;
-    std::vector<typename U::iterator> jetDeuterons;
-    std::vector<typename U::iterator> jetAntideuterons;
-    std::vector<typename U::iterator> jetHelium;
-    std::vector<typename U::iterator> jetAntihelium;
-    std::vector<typename U::iterator> jetAll;
-
-    for (int i = 0; i < static_cast<int>(constituents.size()); i++) {
-      registryData.fill(HIST("hTrackProtocol"), 3);
-      fastjet::PseudoJet pseudoParticle = constituents.at(i);
-      int id = pseudoParticle.user_index();
-      const auto& jetParticle = particles[id];
-      jetAll.emplace_back(jetParticle);
-
-      registryData.fill(HIST("hDCAxyFullJet"), jetParticle.pt() * jetParticle.sign(), jetParticle.dcaXY());
-      registryData.fill(HIST("hDCAzFullJet"), jetParticle.pt() * jetParticle.sign(), jetParticle.dcaZ());
-      registryData.fill(HIST("hTPCsignal"), jetParticle.pt() * jetParticle.sign(), jetParticle.tpcSignal());
-      if (jetParticle.hasTOF())
-        registryData.fill(HIST("hTOFsignal"), jetParticle.pt() * jetParticle.sign(), jetParticle.beta());
-
-      double ptDiff = pseudoParticle.pt() - jetParticle.pt();
-      registryData.fill(HIST("hPtDiff"), ptDiff);
-
-      if (jetParticle.pt() < fMinJetParticlePt)
-        continue;
-      if (isProton(jetParticle, false)) {// collect protons in jet
-        registryData.fill(HIST("hPtJetProton"), jetParticle.pt());
-        registryData.fill(HIST("hTPCnsigmaProton"), jetParticle.pt() * jetParticle.sign(), jetParticle.tpcNSigmaPr());
-        if (jetParticle.hasTOF())
-          registryData.fill(HIST("hTOFnsigmaProton"), jetParticle.pt() * jetParticle.sign(), jetParticle.tofNSigmaPr());
-        registryData.fill(HIST("hTrackProtocol"), 4); // # protons
-        if (isProton(jetParticle, true)) {
-          registryData.fill(HIST("hTrackProtocol"), 5); // # high purity protons
-          jetProtons.emplace_back(jetParticle);
-          registryData.fill(HIST("hDCAzJetProton"), jetParticle.pt(), jetParticle.dcaZ());
-        }
-      } else if (isAntiproton(jetParticle, false)) {// collect antiprotons in jet
-        registryData.fill(HIST("hPtJetAntiproton"), jetParticle.pt());
-        registryData.fill(HIST("hTPCnsigmaProton"), jetParticle.pt() * jetParticle.sign(), jetParticle.tpcNSigmaPr());
-        if (jetParticle.hasTOF())
-          registryData.fill(HIST("hTOFnsigmaProton"), jetParticle.pt() * jetParticle.sign(), jetParticle.tofNSigmaPr());
-        registryData.fill(HIST("hTrackProtocol"), 6); // # antiprotons
-        if (isAntiproton(jetParticle, true)){
-          registryData.fill(HIST("hTrackProtocol"), 7); // # high purity antiprotons
-          jetAntiprotons.emplace_back(jetParticle);
-          registryData.fill(HIST("hDCAzJetAntiproton"), jetParticle.pt(), jetParticle.dcaZ());
-        }
-      } else if (isDeuteron(jetParticle, false)) {// collect deuterons in jet
-        registryData.fill(HIST("hPtJetDeuteron"), jetParticle.pt());
-        registryData.fill(HIST("hTPCnsigmaDeuteron"), jetParticle.pt() * jetParticle.sign(), jetParticle.tpcNSigmaDe());
-        if (jetParticle.hasTOF())
-          registryData.fill(HIST("hTOFnsigmaDeuteron"), jetParticle.pt() * jetParticle.sign(), jetParticle.tofNSigmaDe());
-        registryData.fill(HIST("hTrackProtocol"), 8); // # deuterons
-        if (isDeuteron(jetParticle, true)) {
-          registryData.fill(HIST("hTrackProtocol"), 9); // # high purity deuterons
-          jetDeuterons.emplace_back(jetParticle);
-          registryData.fill(HIST("hDCAzJetDeuteron"), jetParticle.pt(), jetParticle.dcaZ());
-        }
-      } else if (isAntideuteron(jetParticle, false)) {
-        registryData.fill(HIST("hPtJetAntideuteron"), jetParticle.pt());
-        registryData.fill(HIST("hTPCnsigmaDeuteron"), jetParticle.pt() * jetParticle.sign(), jetParticle.tpcNSigmaDe());
-        if (jetParticle.hasTOF())
-          registryData.fill(HIST("hTOFnsigmaDeuteron"), jetParticle.pt() * jetParticle.sign(), jetParticle.tofNSigmaDe());
-        registryData.fill(HIST("hTrackProtocol"), 10); // # antideuterons
-        if (isAntideuteron(jetParticle, true)) {
-          registryData.fill(HIST("hTrackProtocol"), 11); // # high purity antideuterons
-          jetAntideuterons.emplace_back(jetParticle);
-          registryData.fill(HIST("hDCAzJetAntideuteron"), jetParticle.pt(), jetParticle.dcaZ());
-        }
-      } else if (isHelium(jetParticle) || isAntihelium(jetParticle)) {// collect (anti)helium in jet
-        registryData.fill(HIST("hPtJetHelium"), jetParticle.pt());
-        registryData.fill(HIST("hTPCnsigmaHelium"), jetParticle.pt() * jetParticle.sign(), jetParticle.tpcNSigmaHe());
-        if (jetParticle.hasTOF())
-          registryData.fill(HIST("hTOFnsigmaHelium"), jetParticle.pt() * jetParticle.sign(), jetParticle.tofNSigmaHe());
-        if (isHelium(jetParticle)) {
-          registryData.fill(HIST("hTrackProtocol"), 12); // # helium
-          jetDeuterons.emplace_back(jetParticle);
-          registryData.fill(HIST("hDCAzJetHelium"), jetParticle.pt(), jetParticle.dcaZ());
-        } else {
-          registryData.fill(HIST("hTrackProtocol"), 13); // # antihelium
-          jetAntideuterons.emplace_back(jetParticle);
-          registryData.fill(HIST("hDCAzJetAntihelium"), jetParticle.pt(), jetParticle.dcaZ());
-        }
-      }
-    } // for (int i=0; i<static_cast<int>(constituents.size()); i++)
-
-    if (jetAll.size() > 1) {// general correlation function
-      doCorrelations(jetAll, fBufferJet, fTempBufferJet, 0, pJet);
-      setTrackBuffer(fTempBufferJet, fBufferJet);
-    }
-
-    if ((jetProtons.size() < 2) && (jetAntiprotons.size() < 2) && (jetDeuterons.size() < 2) && (jetAntideuterons.size() < 2))
-      return;
-    registryData.fill(HIST("hEventProtocol"), 6);
-
-    if (jetProtons.size() > 1) {
-      doCorrelations(jetProtons, fBufferProton, fTempBufferProton, 1, pJet);
-      setTrackBuffer(fTempBufferProton, fBufferProton);
-    }
-    if (jetAntiprotons.size() > 1) {
-      doCorrelations(jetAntiprotons, fBufferAntiproton, fTempBufferAntiproton, 2, pJet);
-      setTrackBuffer(fTempBufferAntiproton, fBufferAntiproton);
-    }
-    if (jetDeuterons.size() > 1) {
-      doCorrelations(jetDeuterons, fBufferDeuteron, fTempBufferDeuteron, 3, pJet);
-      setTrackBuffer(fTempBufferDeuteron, fBufferDeuteron);
-    }
-    if (jetAntideuterons.size() > 1) {
-      doCorrelations(jetAntideuterons, fBufferAntideuteron, fTempBufferAntideuteron, 4, pJet);
-      setTrackBuffer(fTempBufferAntideuteron, fBufferAntideuteron);
-    }
-  }
-
   void processRun2(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                    soa::Filtered<FullTracksRun2> const& tracks,
                    BCsWithRun2Info const&)
@@ -1459,7 +1113,9 @@ struct AngularCorrelationsInJets {
         continue;
       registryData.fill(HIST("hEventProtocol"), 1);
 
-      fillHistogramsRun2(collision, tracks);
+      auto slicedTracks = tracks.sliceBy(perCollisionFullTracksRun2, collision.globalIndex());
+
+      fillHistograms(slicedTracks);
     }
   }
   PROCESS_SWITCH(AngularCorrelationsInJets, processRun2, "process Run 2 data", true);
@@ -1475,7 +1131,10 @@ struct AngularCorrelationsInJets {
       registryData.fill(HIST("hEventProtocol"), 1);
       if (TMath::Abs(collision.posZ()) > fZVtx)
         continue;
-      fillHistogramsRun3(collision, tracks);
+
+      auto slicedTracks = tracks.sliceBy(perCollisionFullTracksRun3, collision.globalIndex());
+
+      fillHistograms(slicedTracks);
     }
   }
   PROCESS_SWITCH(AngularCorrelationsInJets, processRun3, "process Run 3 data", false);
