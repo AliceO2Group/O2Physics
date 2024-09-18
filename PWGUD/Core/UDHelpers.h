@@ -218,7 +218,7 @@ T MCcompatibleBCs(F const& collision, int ndt, T const& bcs, int nMinBCs = 7)
 
   // return if collisions has no associated BC
   if (!collision.has_foundBC()) {
-    LOGF(info, "Collision %i - no BC found!", collision.globalIndex());
+    LOGF(debug, "Collision %i - no BC found!", collision.globalIndex());
     return T{{bcs.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
   }
 

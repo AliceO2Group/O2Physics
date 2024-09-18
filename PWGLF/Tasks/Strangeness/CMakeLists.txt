@@ -16,7 +16,7 @@ o2physics_add_dpl_workflow(hyperon-reco-test
 
 o2physics_add_dpl_workflow(derivedlambdakzeroanalysis
     SOURCES derivedlambdakzeroanalysis.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(lambdakzeroanalysis-mc
