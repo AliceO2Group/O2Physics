@@ -47,7 +47,7 @@ double getDeltaPhi(double phiHadron, double phiD)
 
 const int nPtBinsMassAndEfficiency = o2::analysis::hf_cuts_d0_to_pi_k::nBinsPt;
 const double efficiencyDmesonDefault[nPtBinsMassAndEfficiency] = {};
-auto vecEfficiencyDmeson = std::vector<double>{ efficiencyDmesonDefault, efficiencyDmesonDefault + nPtBinsMassAndEfficiency };
+auto vecEfficiencyDmeson = std::vector<double>{efficiencyDmesonDefault, efficiencyDmesonDefault + nPtBinsMassAndEfficiency};
 
 // histogram binning definition
 const int massAxisNBins = 200;
@@ -79,10 +79,10 @@ struct HfCorrelatorD0HadronsSelection {
 
   Produces<aod::DmesonSelection> d0Sel;
 
-  Configurable<int> selectionFlagD0{ "selectionFlagD0", 1, "Selection Flag for D0" };
-  Configurable<int> selectionFlagD0bar{ "selectionFlagD0bar", 1, "Selection Flag for D0bar" };
-  Configurable<float> yCandMax{ "yCandMax", 4.0, "max. cand. rapidity" };
-  Configurable<float> ptCandMin{ "ptCandMin", -1., "min. cand. pT" };
+  Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
+  Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
+  Configurable<float> yCandMax{"yCandMax", 4.0, "max. cand. rapidity"};
+  Configurable<float> ptCandMin{"ptCandMin", -1., "min. cand. pT"};
 
   HfHelper hfHelper;
 
@@ -162,35 +162,35 @@ struct HfCorrelatorD0Hadrons {
   Produces<aod::DHadronPair> entryD0HadronPair;
   Produces<aod::DHadronRecoInfo> entryD0HadronRecoInfo;
 
-  Configurable<int> selectionFlagD0{ "selectionFlagD0", 1, "Selection Flag for D0" };
-  Configurable<int> selectionFlagD0bar{ "selectionFlagD0bar", 1, "Selection Flag for D0bar" };
-  Configurable<float> yCandMax{ "yCandMax", 0.8, "max. cand. rapidity" };
-  Configurable<float> etaTrackMax{ "etaTrackMax", 0.8, "max. eta of tracks" };
-  Configurable<float> dcaXYTrackMax{ "dcaXYTrackMax", 1., "max. DCAxy of tracks" };
-  Configurable<float> dcaZTrackMax{ "dcaZTrackMax", 1., "max. DCAz of tracks" };
-  Configurable<float> ptCandMin{ "ptCandMin", 1., "min. cand. pT" };
-  Configurable<float> ptTrackMin{ "ptTrackMin", 0.3, "min. track pT" };
-  Configurable<float> ptTrackMax{ "ptTrackMax", 99., "max. track pT" };
-  Configurable<std::vector<double>> bins{ "ptBinsForMassAndEfficiency", std::vector<double>{ o2::analysis::hf_cuts_d0_to_pi_k::vecBinsPt }, "pT bin limits for candidate mass plots and efficiency" };
-  Configurable<std::vector<double>> efficiencyDmeson{ "efficiencyDmeson", std::vector<double>{ vecEfficiencyDmeson }, "Efficiency values for D0 meson" };
-  Configurable<int> applyEfficiency{ "efficiencyFlagD", 1, "Flag for applying D-meson efficiency weights" };
-  Configurable<float> multMin{ "multMin", 0., "minimum multiplicity accepted" };
-  Configurable<float> multMax{ "multMax", 10000., "maximum multiplicity accepted" };
-  Configurable<float> ptSoftPionMax{ "ptSoftPionMax", 3 * 800. * pow(10., -6.), "max. pT cut for soft pion identification" };
-  Configurable<bool> correlateD0WithLeadingParticle{ "correlateD0WithLeadingParticle", false, "Switch for correlation of D0 mesons with leading particle only" };
-  Configurable<bool> storeAutoCorrelationFlag{ "storeAutoCorrelationFlag", false, "Store flag that indicates if the track is paired to its D-meson mother instead of skipping it" };
-  Configurable<int> numberEventsMixed{ "numberEventsMixed", 5, "Number of events mixed in ME process" };
-  ConfigurableAxis zPoolBins{ "zPoolBins", { VARIABLE_WIDTH, -10.0f, -2.5f, 2.5f, 10.0f }, "z vertex position pools" };
-  ConfigurableAxis multPoolBins{ "multPoolBins", { VARIABLE_WIDTH, 0.0f, 2000.0f, 6000.0f, 10000.0f }, "event multiplicity pools (FT0M)" };
-  ConfigurableAxis multPoolBinsMcGen{ "multPoolBinsMcGen", { VARIABLE_WIDTH, 0.0f, 20.0f, 50.0f, 500.0f }, "Mixing bins - MC multiplicity" }; // In MCGen multiplicity is defined by counting tracks
+  Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
+  Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
+  Configurable<float> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
+  Configurable<float> etaTrackMax{"etaTrackMax", 0.8, "max. eta of tracks"};
+  Configurable<float> dcaXYTrackMax{"dcaXYTrackMax", 1., "max. DCAxy of tracks"};
+  Configurable<float> dcaZTrackMax{"dcaZTrackMax", 1., "max. DCAz of tracks"};
+  Configurable<float> ptCandMin{"ptCandMin", 1., "min. cand. pT"};
+  Configurable<float> ptTrackMin{"ptTrackMin", 0.3, "min. track pT"};
+  Configurable<float> ptTrackMax{"ptTrackMax", 99., "max. track pT"};
+  Configurable<std::vector<double>> bins{"ptBinsForMassAndEfficiency", std::vector<double>{o2::analysis::hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits for candidate mass plots and efficiency"};
+  Configurable<std::vector<double>> efficiencyDmeson{"efficiencyDmeson", std::vector<double>{vecEfficiencyDmeson}, "Efficiency values for D0 meson"};
+  Configurable<int> applyEfficiency{"efficiencyFlagD", 1, "Flag for applying D-meson efficiency weights"};
+  Configurable<float> multMin{"multMin", 0., "minimum multiplicity accepted"};
+  Configurable<float> multMax{"multMax", 10000., "maximum multiplicity accepted"};
+  Configurable<float> ptSoftPionMax{"ptSoftPionMax", 3 * 800. * pow(10., -6.), "max. pT cut for soft pion identification"};
+  Configurable<bool> correlateD0WithLeadingParticle{"correlateD0WithLeadingParticle", false, "Switch for correlation of D0 mesons with leading particle only"};
+  Configurable<bool> storeAutoCorrelationFlag{"storeAutoCorrelationFlag", false, "Store flag that indicates if the track is paired to its D-meson mother instead of skipping it"};
+  Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "Number of events mixed in ME process"};
+  ConfigurableAxis zPoolBins{"zPoolBins", {VARIABLE_WIDTH, -10.0f, -2.5f, 2.5f, 10.0f}, "z vertex position pools"};
+  ConfigurableAxis multPoolBins{"multPoolBins", {VARIABLE_WIDTH, 0.0f, 2000.0f, 6000.0f, 10000.0f}, "event multiplicity pools (FT0M)"};
+  ConfigurableAxis multPoolBinsMcGen{"multPoolBinsMcGen", {VARIABLE_WIDTH, 0.0f, 20.0f, 50.0f, 500.0f}, "Mixing bins - MC multiplicity"}; // In MCGen multiplicity is defined by counting tracks
 
   HfHelper hfHelper;
-  BinningType corrBinning{ { zPoolBins, multPoolBins }, true };
+  BinningType corrBinning{{zPoolBins, multPoolBins}, true};
 
   int leadingIndex = 0;
-  double massD0{ 0. };
-  double massPi{ 0. };
-  double massK{ 0. };
+  double massD0{0.};
+  double massPi{0.};
+  double massK{0.};
   double softPiMass = 0.14543; // pion mass + Q-value of the D*->D0pi decay
 
   Preslice<aod::HfCand2Prong> perCol = aod::hf_cand::collisionId;
@@ -207,37 +207,36 @@ struct HfCorrelatorD0Hadrons {
   HistogramRegistry registry{
     "registry",
     // NOTE: use hMassD0 for trigger normalisation (S*0.955), and hMass2DCorrelationPairs (in final task) for 2D-sideband-subtraction purposes
-    { { "hPtCand", "D0,D0bar candidates;candidate #it{p}_{T} (GeV/#it{c});entries", { HistType::kTH1F, { { ptDAxisNBins, ptDAxisMin, ptDAxisMax } } } },
-      { "hPtProng0", "D0,D0bar candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", { HistType::kTH1F, { { ptDAxisNBins, ptDAxisMin, ptDAxisMax } } } },
-      { "hPtProng1", "D0,D0bar candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", { HistType::kTH1F, { { ptDAxisNBins, ptDAxisMin, ptDAxisMax } } } },
-      { "hSelectionStatus", "D0,D0bar candidates;selection status;entries", { HistType::kTH1F, { { 4, -0.5, 3.5 } } } },
-      { "hEta", "D0,D0bar candidates;candidate #it{#eta};entries", { HistType::kTH1F, { { yAxisNBins, yAxisMin, yAxisMax } } } },
-      { "hPhi", "D0,D0bar candidates;candidate #it{#varphi};entries", { HistType::kTH1F, { { phiAxisNBins, phiAxisMin, phiAxisMax } } } },
-      { "hY", "D0,D0bar candidates;candidate #it{y};entries", { HistType::kTH1F, { { yAxisNBins, yAxisMin, yAxisMax } } } },
-      { "hMultiplicityPreSelection", "multiplicity prior to selection;multiplicity;entries", { HistType::kTH1F, { { 10000, 0., 10000. } } } },
-      { "hMultiplicity", "multiplicity;multiplicity;entries", { HistType::kTH1F, { { 10000, 0., 10000. } } } },
-      { "hPtCandRec", "D0,D0bar candidates - MC reco;candidate #it{p}_{T} (GeV/#it{c});entries", { HistType::kTH1F, { { ptDAxisNBins, ptDAxisMin, ptDAxisMax } } } },
-      { "hPtProng0Rec", "D0,D0bar candidates - MC reco;prong 0 #it{p}_{T} (GeV/#it{c});entries", { HistType::kTH1F, { { ptDAxisNBins, ptDAxisMin, ptDAxisMax } } } },
-      { "hPtProng1Rec", "D0,D0bar candidates - MC reco;prong 1 #it{p}_{T} (GeV/#it{c});entries", { HistType::kTH1F, { { ptDAxisNBins, ptDAxisMin, ptDAxisMax } } } },
-      { "hSelectionStatusRec", "D0,D0bar candidates - MC reco;selection status;entries", { HistType::kTH1F, { { 4, -0.5, 3.5 } } } },
-      { "hSignalStatusMERec", "Signal Status - MC reco ME;candidate sidnalStatus;entries", { HistType::kTH1F, { { 200, 0, 200 } } } },
-      { "hEtaRec", "D0,D0bar candidates - MC reco;candidate #it{#eta};entries", { HistType::kTH1F, { { yAxisNBins, yAxisMin, yAxisMax } } } },
-      { "hPhiRec", "D0,D0bar candidates - MC reco;candidate #it{#varphi};entries", { HistType::kTH1F, { { phiAxisNBins, phiAxisMin, phiAxisMax } } } },
-      { "hYRec", "D0,D0bar candidates - MC reco;candidate #it{y};entries", { HistType::kTH1F, { { yAxisNBins, yAxisMin, yAxisMax } } } },
-      { "hEvtCountGen", "Event counter - MC gen;;entries", { HistType::kTH1F, { { 1, -0.5, 0.5 } } } },
-      { "hPtCandGen", "D0,D0bar particles - MC gen;particle #it{p}_{T} (GeV/#it{c});entries", { HistType::kTH1F, { { ptDAxisNBins, ptDAxisMin, ptDAxisMax } } } },
-      { "hEtaGen", "D0,D0bar particles - MC gen;particle #it{#eta};entries", { HistType::kTH1F, { { yAxisNBins, yAxisMin, yAxisMax } } } },
-      { "hPhiGen", "D0,D0bar particles - MC gen;particle #it{#varphi};entries", { HistType::kTH1F, { { phiAxisNBins, phiAxisMin, phiAxisMax } } } },
-      { "hYGen", "D0,D0bar candidates - MC gen;candidate #it{y};entries", { HistType::kTH1F, { { yAxisNBins, yAxisMin, yAxisMax } } } },
-      { "hTrackCounter", "soft pion counter -  Data", { HistType::kTH1F, { { 5, 0., 5. } } } },
-      { "hTrackCounterRec", "soft pion counter - MC rec", { HistType::kTH1F, { { 5, 0., 5. } } } },
-      { "hTrackCounterGen", "soft pion counter - MC gen", { HistType::kTH1F, { { 5, 0., 5. } } } },
-      { "hMultV0M", "multiplicity;multiplicity;entries", { HistType::kTH1F, { { 10000, 0., 10000. } } } },
-      { "hZvtx", "z vertex;z vertex;entries", { HistType::kTH1F, { { 200, -20., 20. } } } },
-      { "hMultFT0M", "Multiplicity FT0M", { HistType::kTH1F, { { 10000, 0., 10000. } } } },
-      { "hD0Bin", "D0 selected in pool Bin;pool Bin;entries", { HistType::kTH1F, { { 9, 0., 9. } } } },
-      { "hTracksBin", "Tracks selected in pool Bin;pool Bin;entries", { HistType::kTH1F, { { 9, 0., 9. } } } } }
-  };
+    {{"hPtCand", "D0,D0bar candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisNBins, ptDAxisMin, ptDAxisMax}}}},
+     {"hPtProng0", "D0,D0bar candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisNBins, ptDAxisMin, ptDAxisMax}}}},
+     {"hPtProng1", "D0,D0bar candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisNBins, ptDAxisMin, ptDAxisMax}}}},
+     {"hSelectionStatus", "D0,D0bar candidates;selection status;entries", {HistType::kTH1F, {{4, -0.5, 3.5}}}},
+     {"hEta", "D0,D0bar candidates;candidate #it{#eta};entries", {HistType::kTH1F, {{yAxisNBins, yAxisMin, yAxisMax}}}},
+     {"hPhi", "D0,D0bar candidates;candidate #it{#varphi};entries", {HistType::kTH1F, {{phiAxisNBins, phiAxisMin, phiAxisMax}}}},
+     {"hY", "D0,D0bar candidates;candidate #it{y};entries", {HistType::kTH1F, {{yAxisNBins, yAxisMin, yAxisMax}}}},
+     {"hMultiplicityPreSelection", "multiplicity prior to selection;multiplicity;entries", {HistType::kTH1F, {{10000, 0., 10000.}}}},
+     {"hMultiplicity", "multiplicity;multiplicity;entries", {HistType::kTH1F, {{10000, 0., 10000.}}}},
+     {"hPtCandRec", "D0,D0bar candidates - MC reco;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisNBins, ptDAxisMin, ptDAxisMax}}}},
+     {"hPtProng0Rec", "D0,D0bar candidates - MC reco;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisNBins, ptDAxisMin, ptDAxisMax}}}},
+     {"hPtProng1Rec", "D0,D0bar candidates - MC reco;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisNBins, ptDAxisMin, ptDAxisMax}}}},
+     {"hSelectionStatusRec", "D0,D0bar candidates - MC reco;selection status;entries", {HistType::kTH1F, {{4, -0.5, 3.5}}}},
+     {"hSignalStatusMERec", "Signal Status - MC reco ME;candidate sidnalStatus;entries", {HistType::kTH1F, {{200, 0, 200}}}},
+     {"hEtaRec", "D0,D0bar candidates - MC reco;candidate #it{#eta};entries", {HistType::kTH1F, {{yAxisNBins, yAxisMin, yAxisMax}}}},
+     {"hPhiRec", "D0,D0bar candidates - MC reco;candidate #it{#varphi};entries", {HistType::kTH1F, {{phiAxisNBins, phiAxisMin, phiAxisMax}}}},
+     {"hYRec", "D0,D0bar candidates - MC reco;candidate #it{y};entries", {HistType::kTH1F, {{yAxisNBins, yAxisMin, yAxisMax}}}},
+     {"hEvtCountGen", "Event counter - MC gen;;entries", {HistType::kTH1F, {{1, -0.5, 0.5}}}},
+     {"hPtCandGen", "D0,D0bar particles - MC gen;particle #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{ptDAxisNBins, ptDAxisMin, ptDAxisMax}}}},
+     {"hEtaGen", "D0,D0bar particles - MC gen;particle #it{#eta};entries", {HistType::kTH1F, {{yAxisNBins, yAxisMin, yAxisMax}}}},
+     {"hPhiGen", "D0,D0bar particles - MC gen;particle #it{#varphi};entries", {HistType::kTH1F, {{phiAxisNBins, phiAxisMin, phiAxisMax}}}},
+     {"hYGen", "D0,D0bar candidates - MC gen;candidate #it{y};entries", {HistType::kTH1F, {{yAxisNBins, yAxisMin, yAxisMax}}}},
+     {"hTrackCounter", "soft pion counter -  Data", {HistType::kTH1F, {{5, 0., 5.}}}},
+     {"hTrackCounterRec", "soft pion counter - MC rec", {HistType::kTH1F, {{5, 0., 5.}}}},
+     {"hTrackCounterGen", "soft pion counter - MC gen", {HistType::kTH1F, {{5, 0., 5.}}}},
+     {"hMultV0M", "multiplicity;multiplicity;entries", {HistType::kTH1F, {{10000, 0., 10000.}}}},
+     {"hZvtx", "z vertex;z vertex;entries", {HistType::kTH1F, {{200, -20., 20.}}}},
+     {"hMultFT0M", "Multiplicity FT0M", {HistType::kTH1F, {{10000, 0., 10000.}}}},
+     {"hD0Bin", "D0 selected in pool Bin;pool Bin;entries", {HistType::kTH1F, {{9, 0., 9.}}}},
+     {"hTracksBin", "Tracks selected in pool Bin;pool Bin;entries", {HistType::kTH1F, {{9, 0., 9.}}}}}};
 
   void init(InitContext&)
   {
@@ -246,23 +245,23 @@ struct HfCorrelatorD0Hadrons {
     massK = MassKPlus;
 
     auto vbins = (std::vector<double>)bins;
-    registry.add("hMass", "D0,D0bar candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", { HistType::kTH2F, { { massAxisNBins, massAxisMin, massAxisMax }, { vbins, "#it{p}_{T} (GeV/#it{c})" } } });
-    registry.add("hMass1D", "D0,D0bar candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", { HistType::kTH1F, { { massAxisNBins, massAxisMin, massAxisMax } } });
-    registry.add("hMassD01D", "D0,D0bar candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", { HistType::kTH1F, { { massAxisNBins, massAxisMin, massAxisMax } } });
-    registry.add("hMassD0bar1D", "D0,D0bar candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", { HistType::kTH1F, { { massAxisNBins, massAxisMin, massAxisMax } } });
+    registry.add("hMass", "D0,D0bar candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisNBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hMass1D", "D0,D0bar candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{massAxisNBins, massAxisMin, massAxisMax}}});
+    registry.add("hMassD01D", "D0,D0bar candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{massAxisNBins, massAxisMin, massAxisMax}}});
+    registry.add("hMassD0bar1D", "D0,D0bar candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{massAxisNBins, massAxisMin, massAxisMax}}});
     // mass histogram for D0 signal candidates
-    registry.add("hMassD0RecSig", "D0 signal candidates - MC reco;inv. mass (#pi K) (GeV/#it{c}^{2});entries", { HistType::kTH2F, { { massAxisNBins, massAxisMin, massAxisMax }, { vbins, "#it{p}_{T} (GeV/#it{c})" } } });
+    registry.add("hMassD0RecSig", "D0 signal candidates - MC reco;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisNBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     // mass histogram for D0 Reflection candidates
-    registry.add("hMassD0RecRef", "D0 reflection candidates - MC reco;inv. mass (#pi K) (GeV/#it{c}^{2});entries", { HistType::kTH2F, { { massAxisNBins, massAxisMin, massAxisMax }, { vbins, "#it{p}_{T} (GeV/#it{c})" } } });
+    registry.add("hMassD0RecRef", "D0 reflection candidates - MC reco;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisNBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     // mass histogram for D0 background candidates
-    registry.add("hMassD0RecBg", "D0 background candidates - MC reco;inv. mass (#pi K) (GeV/#it{c}^{2});entries", { HistType::kTH2F, { { massAxisNBins, massAxisMin, massAxisMax }, { vbins, "#it{p}_{T} (GeV/#it{c})" } } });
+    registry.add("hMassD0RecBg", "D0 background candidates - MC reco;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisNBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     // mass histogram for D0bar signal candidates
-    registry.add("hMassD0barRecSig", "D0bar signal candidates - MC reco;inv. mass D0bar only (#pi K) (GeV/#it{c}^{2});entries", { HistType::kTH2F, { { massAxisNBins, massAxisMin, massAxisMax }, { vbins, "#it{p}_{T} (GeV/#it{c})" } } });
+    registry.add("hMassD0barRecSig", "D0bar signal candidates - MC reco;inv. mass D0bar only (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisNBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     // mass histogram for D0bar Reflection candidates
-    registry.add("hMassD0barRecRef", "D0bar reflection candidates - MC reco;inv. mass D0bar only (#pi K) (GeV/#it{c}^{2});entries", { HistType::kTH2F, { { massAxisNBins, massAxisMin, massAxisMax }, { vbins, "#it{p}_{T} (GeV/#it{c})" } } });
+    registry.add("hMassD0barRecRef", "D0bar reflection candidates - MC reco;inv. mass D0bar only (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisNBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     // mass histogram for D0bar background candidates
-    registry.add("hMassD0barRecBg", "D0bar background candidates - MC reco;inv. mass D0bar only (#pi K) (GeV/#it{c}^{2});entries", { HistType::kTH2F, { { massAxisNBins, massAxisMin, massAxisMax }, { vbins, "#it{p}_{T} (GeV/#it{c})" } } });
-    registry.add("hCountD0TriggersGen", "D0 trigger particles - MC gen;;N of trigger D0", { HistType::kTH2F, { { 1, -0.5, 0.5 }, { vbins, "#it{p}_{T} (GeV/#it{c})" } } });
+    registry.add("hMassD0barRecBg", "D0bar background candidates - MC reco;inv. mass D0bar only (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisNBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hCountD0TriggersGen", "D0 trigger particles - MC gen;;N of trigger D0", {HistType::kTH2F, {{1, -0.5, 0.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
   // Find Leading Particle
@@ -701,7 +700,7 @@ struct HfCorrelatorD0Hadrons {
           return nTracks;
         };
         using BinningTypeMcGen = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::mccollision::PosZ, decltype(getTracksSize)>;
-        BinningTypeMcGen corrBinningMcGen{ { getTracksSize }, { zPoolBins, multPoolBinsMcGen }, true };
+        BinningTypeMcGen corrBinningMcGen{{getTracksSize}, {zPoolBins, multPoolBinsMcGen}, true};
         int poolBin = corrBinningMcGen.getBin(std::make_tuple(mcCollision.posZ(), getTracksSize(mcCollision)));
         entryD0HadronPair(getDeltaPhi(particle2.phi(), particle1.phi()),
                           particle2.eta() - particle1.eta(),
@@ -728,7 +727,7 @@ struct HfCorrelatorD0Hadrons {
     }
 
     auto tracksTuple = std::make_tuple(candidates, tracks);
-    Pair<SelectedCollisions, SelectedCandidatesData, SelectedTracks, BinningType> pairData{ corrBinning, numberEventsMixed, -1, collisions, tracksTuple, &cache };
+    Pair<SelectedCollisions, SelectedCandidatesData, SelectedTracks, BinningType> pairData{corrBinning, numberEventsMixed, -1, collisions, tracksTuple, &cache};
 
     for (const auto& [c1, tracks1, c2, tracks2] : pairData) {
       // LOGF(info, "Mixed event collisions: Index = (%d, %d), tracks Size: (%d, %d), Z Vertex: (%f, %f), Pool Bin: (%d, %d)", c1.globalIndex(), c2.globalIndex(), tracks1.size(), tracks2.size(), c1.posZ(), c2.posZ(), corrBinning.getBin(std::make_tuple(c1.posZ(), c1.multFT0M())),corrBinning.getBin(std::make_tuple(c2.posZ(), c2.multFT0M()))); // For debug
@@ -790,7 +789,7 @@ struct HfCorrelatorD0Hadrons {
                               SelectedTracksMcRec const& tracks)
   {
     auto tracksTuple = std::make_tuple(candidates, tracks);
-    Pair<SelectedCollisions, SelectedCandidatesMcRec, SelectedTracksMcRec, BinningType> pairMcRec{ corrBinning, numberEventsMixed, -1, collisions, tracksTuple, &cache };
+    Pair<SelectedCollisions, SelectedCandidatesMcRec, SelectedTracksMcRec, BinningType> pairMcRec{corrBinning, numberEventsMixed, -1, collisions, tracksTuple, &cache};
     bool flagD0 = false;
     bool flagD0bar = false;
     for (const auto& [c1, tracks1, c2, tracks2] : pairMcRec) {
@@ -902,10 +901,10 @@ struct HfCorrelatorD0Hadrons {
     };
 
     using BinningTypeMcGen = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::mccollision::PosZ, decltype(getTracksSize)>;
-    BinningTypeMcGen corrBinningMcGen{ { getTracksSize }, { zPoolBins, multPoolBinsMcGen }, true };
+    BinningTypeMcGen corrBinningMcGen{{getTracksSize}, {zPoolBins, multPoolBinsMcGen}, true};
 
     auto tracksTuple = std::make_tuple(mcParticles, mcParticles);
-    Pair<SelectedCollisionsMcGen, SelectedParticlesMcGen, SelectedParticlesMcGen, BinningTypeMcGen> pairMcGen{ corrBinningMcGen, numberEventsMixed, -1, collisions, tracksTuple, &cache };
+    Pair<SelectedCollisionsMcGen, SelectedParticlesMcGen, SelectedParticlesMcGen, BinningTypeMcGen> pairMcGen{corrBinningMcGen, numberEventsMixed, -1, collisions, tracksTuple, &cache};
 
     for (const auto& [c1, tracks1, c2, tracks2] : pairMcGen) {
       for (const auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
@@ -948,6 +947,5 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<HfCorrelatorD0HadronsSelection>(cfgc),
-    adaptAnalysisTask<HfCorrelatorD0Hadrons>(cfgc)
-  };
+    adaptAnalysisTask<HfCorrelatorD0Hadrons>(cfgc)};
 }
