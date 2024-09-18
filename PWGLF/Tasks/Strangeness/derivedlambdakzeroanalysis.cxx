@@ -1310,7 +1310,7 @@ struct derivedlambdakzeroanalysis {
     // Fire up CCDB
     if ((mlConfigurations.useK0ShortScores && mlConfigurations.calculateK0ShortScores) ||
         (mlConfigurations.useLambdaScores && mlConfigurations.calculateLambdaScores) ||
-        (mlConfigurations.useAntiLambdaScores && mlConfigurations.calculateAntiLambdaScores)){
+        (mlConfigurations.useAntiLambdaScores && mlConfigurations.calculateAntiLambdaScores)) {
       initCCDB(collision);
     }
 
