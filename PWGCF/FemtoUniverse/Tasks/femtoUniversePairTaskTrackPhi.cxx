@@ -162,6 +162,8 @@ struct femtoUniversePairTaskTrackPhi {
   // Efficiency
   Configurable<std::string> ConfLocalEfficiencyProton{"ConfLocalEfficiencyProton", "", "Local path to proton efficiency th2d file"};
   Configurable<std::string> ConfLocalEfficiencyPhi{"ConfLocalEfficiencyPhi", "", "Local path to Phi efficiency th2d file"};
+  Configurable<int> ConfEffProtonTimestamp{"ConfEffProtonTimestamp", 10, "(int) Timestamp for hadron"};
+  Configurable<int> ConfEffPhiTimestamp{"ConfEffPhiTimestamp", 10, "(int) Timestamp for phi"};
 
   FemtoUniverseAngularContainer<femtoUniverseAngularContainer::EventType::same, femtoUniverseAngularContainer::Observable::kstar> sameEventAngularCont;
   FemtoUniverseAngularContainer<femtoUniverseAngularContainer::EventType::mixed, femtoUniverseAngularContainer::Observable::kstar> mixedEventAngularCont;
@@ -434,13 +436,13 @@ struct femtoUniversePairTaskTrackPhi {
     ccdb->setCreatedNotAfter(now);
 
     if (!ConfLocalEfficiencyProton.value.empty()) {
-      protoneff = ccdb->getForTimeStamp<TH2D>(ConfLocalEfficiencyProton.value.c_str(), -1);
+      protoneff = ccdb->getForTimeStamp<TH2D>(ConfLocalEfficiencyProton.value.c_str(), ConfEffProtonTimestamp);
       if (!protoneff || protoneff->IsZombie()) {
         LOGF(fatal, "Could not load efficiency protoneff histogram from %s", ConfLocalEfficiencyProton.value.c_str());
       }
     }
     if (!ConfLocalEfficiencyPhi.value.empty()) {
-      phieff = ccdb->getForTimeStamp<TH2D>(ConfLocalEfficiencyPhi.value.c_str(), -1);
+      phieff = ccdb->getForTimeStamp<TH2D>(ConfLocalEfficiencyPhi.value.c_str(), ConfEffPhiTimestamp);
       if (!phieff || phieff->IsZombie()) {
         LOGF(fatal, "Could not load efficiency phieff histogram from %s", ConfLocalEfficiencyPhi.value.c_str());
       }
