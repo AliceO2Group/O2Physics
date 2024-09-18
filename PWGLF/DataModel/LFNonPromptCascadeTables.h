@@ -28,7 +28,8 @@ DECLARE_SOA_COLUMN(MatchingChi2, matchingChi2, float);
 DECLARE_SOA_COLUMN(ITSClusSize, itsClusSize, float);
 DECLARE_SOA_COLUMN(IsGoodMatch, isGoodMatch, bool);
 DECLARE_SOA_COLUMN(IsGoodCascade, isGoodCascade, bool);
-DECLARE_SOA_COLUMN(PdgCodePrimary, pdgCodePrimary, int);
+DECLARE_SOA_COLUMN(PdgCodeMom, pdgCodeMom, int);
+DECLARE_SOA_COLUMN(PdgCodeGrandma, pdgCodeGrandma, int);
 
 DECLARE_SOA_COLUMN(PvX, pvX, float);
 DECLARE_SOA_COLUMN(PvY, pvY, float);
@@ -162,7 +163,8 @@ DECLARE_SOA_TABLE(NPCascTableMC, "AOD", "NPCASCTABLEMC",
                   NPCascadeTable::ITSClusSize,
                   NPCascadeTable::IsGoodMatch,
                   NPCascadeTable::IsGoodCascade,
-                  NPCascadeTable::PdgCodePrimary,
+                  NPCascadeTable::PdgCodeMom,
+                  NPCascadeTable::PdgCodeGrandma,
                   NPCascadeTable::PvX,
                   NPCascadeTable::PvY,
                   NPCascadeTable::PvZ,
