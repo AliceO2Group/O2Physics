@@ -883,7 +883,7 @@ struct correlateStrangeness {
   {
     // ________________________________________________
     // skip if desired trigger not found
-    if (doprocessSelectEventWithTrigger && !bitcheck(triggerPresenceMap[collision.globalIndex()], triggerBinToSelect)) {
+    if (triggerPresenceMap.size()>0 && !bitcheck(triggerPresenceMap[collision.globalIndex()], triggerBinToSelect)) {
       return;
     }
 
@@ -979,7 +979,7 @@ struct correlateStrangeness {
   {
     // ________________________________________________
     // skip if desired trigger not found
-    if (doprocessSelectEventWithTrigger && !bitcheck(triggerPresenceMap[collision.globalIndex()], triggerBinToSelect)) {
+    if (triggerPresenceMap.size()>0 && !bitcheck(triggerPresenceMap[collision.globalIndex()], triggerBinToSelect)) {
       return;
     }
 
@@ -1077,7 +1077,7 @@ struct correlateStrangeness {
   {
     // ________________________________________________
     // skip if desired trigger not found
-    if (doprocessSelectEventWithTrigger && !bitcheck(triggerPresenceMap[collision.globalIndex()], triggerBinToSelect)) {
+    if (triggerPresenceMap.size()>0 && !bitcheck(triggerPresenceMap[collision.globalIndex()], triggerBinToSelect)) {
       return;
     }
 
@@ -1135,7 +1135,7 @@ struct correlateStrangeness {
       }
       // ________________________________________________
       // skip if desired trigger not found
-      if (doprocessSelectEventWithTrigger && (!bitcheck(triggerPresenceMap[collision1.globalIndex()], triggerBinToSelect) || !bitcheck(triggerPresenceMap[collision2.globalIndex()], triggerBinToSelect))) {
+      if (triggerPresenceMap.size()>0 && (!bitcheck(triggerPresenceMap[collision1.globalIndex()], triggerBinToSelect) || !bitcheck(triggerPresenceMap[collision2.globalIndex()], triggerBinToSelect))) {
         return;
       }
 
@@ -1180,7 +1180,7 @@ struct correlateStrangeness {
       }
       // ________________________________________________
       // skip if desired trigger not found
-      if (doprocessSelectEventWithTrigger && (!bitcheck(triggerPresenceMap[collision1.globalIndex()], triggerBinToSelect) || !bitcheck(triggerPresenceMap[collision2.globalIndex()], triggerBinToSelect))) {
+      if (triggerPresenceMap.size()>0 && (!bitcheck(triggerPresenceMap[collision1.globalIndex()], triggerBinToSelect) || !bitcheck(triggerPresenceMap[collision2.globalIndex()], triggerBinToSelect))) {
         return;
       }
 
@@ -1220,7 +1220,7 @@ struct correlateStrangeness {
 
       // ________________________________________________
       // skip if desired trigger not found
-      if (doprocessSelectEventWithTrigger && (!bitcheck(triggerPresenceMap[collision1.globalIndex()], triggerBinToSelect) || !bitcheck(triggerPresenceMap[collision2.globalIndex()], triggerBinToSelect))) {
+      if (triggerPresenceMap.size()>0 && (!bitcheck(triggerPresenceMap[collision1.globalIndex()], triggerBinToSelect) || !bitcheck(triggerPresenceMap[collision2.globalIndex()], triggerBinToSelect))) {
         return;
       }
 
@@ -1350,7 +1350,7 @@ struct correlateStrangeness {
 
     // ________________________________________________
     // skip if desired trigger not found
-    if (doprocessSelectEventWithTrigger && !bitcheck(bestCollisionTriggerPresenceMap, triggerBinToSelect)) {
+    if (triggerPresenceMap.size()>0 && !bitcheck(bestCollisionTriggerPresenceMap, triggerBinToSelect)) {
       return;
     }
     if (!bestCollisionSel8)
@@ -1480,7 +1480,7 @@ struct correlateStrangeness {
     }
     // ________________________________________________
     // skip if desired trigger not found
-    if (doprocessSelectEventWithTrigger && !bitcheck(bestCollisionTriggerPresenceMap, triggerBinToSelect)) {
+    if (triggerPresenceMap.size()>0 && !bitcheck(bestCollisionTriggerPresenceMap, triggerBinToSelect)) {
       return;
     }
 
