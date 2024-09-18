@@ -398,7 +398,7 @@ struct lnnRecoTask {
       if (lnnPt < ptMin) {
         continue;
       }
-      
+
       hdEdxTot->Fill(posRigidity, posTrack.tpcSignal());
       hdEdxTot->Fill(-negRigidity, negTrack.tpcSignal());
       int chargeFactor = -1 + 2 * lnnCand.isMatter;
