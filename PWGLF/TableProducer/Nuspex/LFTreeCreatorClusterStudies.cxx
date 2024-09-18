@@ -1162,8 +1162,7 @@ struct LfTreeCreatorClusterStudies {
         -999.f,                               // TofNSigma,
         -999.f,                               // TofMass,
         -999.f,                               // cosPA,
-        -999.f                                // massMother
-      );
+        -999.f);                              // massMother
     }
   }
 
