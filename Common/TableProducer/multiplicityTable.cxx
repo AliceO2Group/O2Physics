@@ -167,7 +167,6 @@ struct MultiplicityTable {
     if (tEnabled[kMultMCExtras]) {
       if (enabledTables->get(tableNames[kMultMCExtras].c_str(), "Enable") == -1) {
         doprocessMC.value = true;
-        doprocessMC2Mults.value = true;
         LOG(info) << "Enabling MC processing due to " << tableNames[kMultMCExtras] << " table being enabled.";
       }
     }
