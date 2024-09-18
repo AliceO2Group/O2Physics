@@ -866,7 +866,11 @@ struct correlateStrangeness {
       if (!collision.isInelGt0() && selectINELgtZERO) {
         continue;
       }
-      for (auto const& triggerTrack : triggerTracks) {
+
+      // do not forget to re-group ... 
+      auto slicedTriggerTracks = triggerTracks.sliceBy(collisionSliceTracks, collision.globalIndex());
+      
+      for (auto const& triggerTrack : slicedTriggerTracks) {
         auto track = triggerTrack.track_as<TracksComplete>();
         if (!isValidTrigger(track)) {
           continue;
