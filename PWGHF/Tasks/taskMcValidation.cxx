@@ -117,7 +117,8 @@ struct HfTaskMcValidationGen {
 
   HistogramRegistry registry{
     "registry",
-    {{"hMomentumCheck", "Mom. Conservation (1 = true, 0 = false) (#it{#epsilon} = 1 MeV/#it{c}); Mom. Conservation result; entries", {HistType::kTH1F, {{2, -0.5, +1.5}}}},
+    {{"hNevGen", "Generated events counter; Gen. events; entries", {HistType::kTH1F, {{1, -0.5, +0.5}}}},
+     {"hMomentumCheck", "Mom. Conservation (1 = true, 0 = false) (#it{#epsilon} = 1 MeV/#it{c}); Mom. Conservation result; entries", {HistType::kTH1F, {{2, -0.5, +1.5}}}},
      {"hPtDiffMotherDaughterGen", "Pt Difference Mother-Daughters; #Delta#it{p}_{T}^{gen} (GeV/#it{c}); entries", {HistType::kTH1F, {axisResiduals}}},
      {"hPxDiffMotherDaughterGen", "Px Difference Mother-Daughters; #Delta#it{p}_{x}^{gen} (GeV/#it{c}); entries", {HistType::kTH1F, {axisResiduals}}},
      {"hPyDiffMotherDaughterGen", "Py Difference Mother-Daughters; #Delta#it{p}_{y}^{gen} (GeV/#it{c}); entries", {HistType::kTH1F, {axisResiduals}}},
@@ -212,6 +213,7 @@ struct HfTaskMcValidationGen {
     if (rejectionMask != 0) {
       return;
     }
+    registry.fill(HIST("hNevGen"), 1);
 
     int cPerCollision = 0;
     int cBarPerCollision = 0;
@@ -531,6 +533,7 @@ struct HfTaskMcValidationRec {
   HistogramRegistry registry{
     "registry",
     {{"histNtracks", "Number of global tracks w/o DCA requirement;#it{N}_{tracks};entries", {HistType::kTH1F, {axisMult}}},
+     {"hNevReco", "Reconstructed events counter; Reco. events; entries", {HistType::kTH1F, {{1, -0.5, +0.5}}}},
      {"histXvtxReco", "Position of reco PV in #it{X};#it{X}^{reco} (cm);entries", {HistType::kTH1F, {axisDeltaVtx}}},
      {"histYvtxReco", "Position of reco PV in #it{Y};#it{Y}^{reco} (cm);entries", {HistType::kTH1F, {axisDeltaVtx}}},
      {"histZvtxReco", "Position of reco PV in #it{Z};#it{Z}^{reco} (cm);entries", {HistType::kTH1F, {{200, -20, 20.}}}},
@@ -696,6 +699,7 @@ struct HfTaskMcValidationRec {
       return;
     }
 
+    registry.fill(HIST("hNevReco"), 1);
     registry.fill(HIST("histXvtxReco"), collision.posX());
     registry.fill(HIST("histYvtxReco"), collision.posY());
     registry.fill(HIST("histZvtxReco"), collision.posZ());
