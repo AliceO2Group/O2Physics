@@ -146,20 +146,22 @@ struct FlowGFWOmegaXi {
     // Add some output objects to the histogram registry
     registry.add("hPhi", "", {HistType::kTH1D, {cfgaxisPhi}});
     registry.add("hEta", "", {HistType::kTH1D, {cfgaxisEta}});
-    registry.add("hEtaPhi", "", {HistType::kTH2D, {cfgaxisEta, cfgaxisPhi}});
     registry.add("hVtxZ", "", {HistType::kTH1D, {cfgaxisVertex}});
     registry.add("hMult", "", {HistType::kTH1D, {{3000, 0.5, 3000.5}}});
     registry.add("hCent", "", {HistType::kTH1D, {{90, 0, 90}}});
     registry.add("hPt", "", {HistType::kTH1D, {axisPt}});
+    registry.add("hEtaPhiREF", "", {HistType::kTH2D, {cfgaxisEta, cfgaxisPhi}});
+    registry.add("hEtaPhiPOIXi", "", {HistType::kTH2D, {cfgaxisEta, cfgaxisPhi}});
+    registry.add("hEtaPhiPOIOmega", "", {HistType::kTH2D, {cfgaxisEta, cfgaxisPhi}});
     // cumulant of flow
     registry.add("c22", ";Centrality  (%) ; C_{2}{2}", {HistType::kTProfile, {axisMultiplicity}});
     registry.add("c24", ";Centrality  (%) ; C_{2}{4}", {HistType::kTProfile, {axisMultiplicity}});
     // pt-diff cumulant of flow
-    registry.add("Xic22dpt", ";pt ; C_{2}{2} ", {HistType::kTProfile2D, {axisPt, axisXiminusMass}});
-    registry.add("Omegac22dpt", ";pt ; C_{2}{2} ", {HistType::kTProfile2D, {axisPt, axisOmegaminusMass}});
+    registry.add("Xic22dpt", ";pt ; C_{2}{2} ", {HistType::kTProfile3D, {axisPt, axisXiminusMass, axisMultiplicity}});
+    registry.add("Omegac22dpt", ";pt ; C_{2}{2} ", {HistType::kTProfile3D, {axisPt, axisOmegaminusMass, axisMultiplicity}});
     // InvMass(GeV) of casc
-    registry.add("InvMassOmegaMinus", "", {HistType::kTH3D, {axisPt, axisOmegaminusMass, cfgaxisEta}});
-    registry.add("InvMassXiMinus", "", {HistType::kTH3D, {axisPt, axisXiminusMass, cfgaxisEta}});
+    registry.add("InvMassOmegaMinus", "", {HistType::kTHnSparseF, {axisPt, axisOmegaminusMass, cfgaxisEta, axisMultiplicity}});
+    registry.add("InvMassXiMinus", "", {HistType::kTHnSparseF, {axisPt, axisXiminusMass, cfgaxisEta, axisMultiplicity}});
 
     fGFW->AddRegion("full", -0.8, 0.8, 1, 1); // ("name", etamin, etamax, ptbinnum, bitmask)eta region -0.8 to 0.8
     // with (-0.5, 0.5) eta gap
@@ -211,18 +213,18 @@ struct FlowGFWOmegaXi {
   }
 
   template <char... chars>
-  void FillProfilepT(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const int& ptbin, const int& partical)
+  void FillProfilepT(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const int& ptbin, const int& partical, const float& cent)
   {
     int nMassBins = 0;
     TAxis* fMass = nullptr;
-    if (partical == 1) {
+    if (partical == 3312) {
       nMassBins = nXiMassBins;
       fMass = fXiMass;
-    } else if (partical == 2) {
+    } else if (partical == 3334) {
       nMassBins = nOmegaMassBins;
       fMass = fOmegaMass;
     } else {
-      LOGF(error, "Error, partical = 1 for Xi and 2 for Omega");
+      LOGF(error, "Error, partical = 3312 for Xi and 3334 for Omega");
       return;
     }
     for (int massbin = 1; massbin <= nMassBins; massbin++) {
@@ -233,7 +235,7 @@ struct FlowGFWOmegaXi {
         continue;
       val = fGFW->Calculate(corrconf, (ptbin - 1) + ((massbin - 1) * nPtBins), kFALSE).real() / dnx;
       if (TMath::Abs(val) < 1) {
-        registry.fill(tarName, fPtAxis->GetBinCenter(ptbin), fMass->GetBinCenter(massbin), val, dnx);
+        registry.fill(tarName, fPtAxis->GetBinCenter(ptbin), fMass->GetBinCenter(massbin), cent, val, dnx);
       }
     }
     return;
@@ -260,8 +262,8 @@ struct FlowGFWOmegaXi {
     correctionsLoaded = true;
   }
 
-  template <typename Track_weight>
-  bool setCurrentParticleWeights(float& weight_nue, float& weight_nua, Track_weight track, float vtxz)
+  template <typename TrackObject>
+  bool setCurrentParticleWeights(float& weight_nue, float& weight_nua, TrackObject track, float vtxz)
   {
     float eff = 1.;
     if (mEfficiency)
@@ -359,7 +361,7 @@ struct FlowGFWOmegaXi {
       wacc = 1 / vecwa[phibin];
       registry.fill(HIST("hPhi"), track.phi());
       registry.fill(HIST("hEta"), track.eta());
-      registry.fill(HIST("hEtaPhi"), track.eta(), track.phi());
+      registry.fill(HIST("hEtaPhiREF"), track.eta(), track.phi());
       registry.fill(HIST("hPt"), track.pt());
       int ptbin = fPtAxis->FindBin(track.pt()) - 1;
       if ((track.pt() > cfgCutPtMin) && (track.pt() < cfgCutPtMax)) {
@@ -376,13 +378,15 @@ struct FlowGFWOmegaXi {
         continue;
       }
       if (TMath::Abs(casc.yOmega()) < cfgCasc_rapidity && TMath::Abs(bachelor.tpcNSigmaKa()) < cfgNSigmaCascKaon && TMath::Abs(posdau.tpcNSigmaPr()) < cfgNSigmaCascProton && TMath::Abs(negdau.tpcNSigmaPi()) < cfgNSigmaCascPion) {
-        registry.fill(HIST("InvMassOmegaMinus"), casc.pt(), casc.mOmega(), casc.eta());
+        registry.fill(HIST("hEtaPhiPOIOmega"), casc.eta(), casc.phi());
+        registry.fill(HIST("InvMassOmegaMinus"), casc.pt(), casc.mOmega(), casc.eta(), cent);
         if ((casc.pt() < cfgCutPtPOIMax) && (casc.pt() > cfgCutPtPOIMin) && (casc.mOmega() > 1.63) && (casc.mOmega() < 1.71)) {
           fGFW->Fill(casc.eta(), fPtAxis->FindBin(casc.pt()) - 1 + ((fOmegaMass->FindBin(casc.mOmega()) - 1) * nPtBins), casc.phi(), wacc * weff, 4);
         }
       }
       if (TMath::Abs(casc.yXi()) < cfgCasc_rapidity && TMath::Abs(bachelor.tpcNSigmaKa()) < cfgNSigmaCascKaon && TMath::Abs(posdau.tpcNSigmaPr()) < cfgNSigmaCascProton && TMath::Abs(negdau.tpcNSigmaPi()) < cfgNSigmaCascPion) {
-        registry.fill(HIST("InvMassXiMinus"), casc.pt(), casc.mXi(), casc.eta());
+        registry.fill(HIST("hEtaPhiPOIXi"), casc.eta(), casc.phi());
+        registry.fill(HIST("InvMassXiMinus"), casc.pt(), casc.mXi(), casc.eta(), cent);
         if ((casc.pt() < cfgCutPtPOIMax) && (casc.pt() > cfgCutPtPOIMin) && (casc.mXi() > 1.30) && (casc.mXi() < 1.37)) {
           fGFW->Fill(casc.eta(), fPtAxis->FindBin(casc.pt()) - 1 + ((fXiMass->FindBin(casc.mXi()) - 1) * nPtBins), casc.phi(), wacc * weff, 2);
         }
@@ -391,14 +395,10 @@ struct FlowGFWOmegaXi {
     // Filling cumulant with ROOT TProfile
     FillProfile(corrconfigs.at(0), HIST("c22"), cent);
     FillProfile(corrconfigs.at(1), HIST("c24"), cent);
-    if (cent > 40)
-      return;
-    if (cent < 30)
-      return;
     for (int i = 1; i <= nPtBins; i++) // loop for all ptBins
     {
-      FillProfilepT(corrconfigs.at(2), HIST("Xic22dpt"), i, 1);
-      FillProfilepT(corrconfigs.at(3), HIST("Omegac22dpt"), i, 2);
+      FillProfilepT(corrconfigs.at(2), HIST("Xic22dpt"), i, 3312, cent);
+      FillProfilepT(corrconfigs.at(3), HIST("Omegac22dpt"), i, 3334, cent);
     }
   }
 };
