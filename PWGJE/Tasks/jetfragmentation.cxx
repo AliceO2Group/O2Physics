@@ -910,12 +910,12 @@ struct JetFragmentation {
       case 0:
         break;
       case 1:
-        w[1] = (double)isK * purity;
-        w[2] = (double)isL * purity;
-        w[3] = (double)isAL * purity;
+        w[1] = static_cast<double>(isK) * purity;
+        w[2] = static_cast<double>(isL) * purity;
+        w[3] = static_cast<double>(isAL) * purity;
         break;
       case 2:
-        w[1] = (double)isK * (2. / 3.) * purity;
+        w[1] = static_cast<double>(isK) * (2. / 3.) * purity;
         w[2] = (isK ? 2. / 3. : 0.5) * purity;
         w[3] = (isK ? 2. / 3. : 0.5) * purity;
         break;
