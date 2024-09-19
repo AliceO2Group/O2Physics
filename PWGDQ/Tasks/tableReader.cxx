@@ -1000,7 +1000,7 @@ struct AnalysisSameEventPairing {
     if (context.mOptions.get<bool>("processDummy")) {
       return;
     }
-    
+
     fCurrentRun = 0;
 
     ccdb->setURL(ccdburl.value);
