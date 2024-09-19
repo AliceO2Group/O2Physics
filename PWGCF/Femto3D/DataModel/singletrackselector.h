@@ -241,9 +241,9 @@ DECLARE_SOA_DYNAMIC_COLUMN(DcaZ_v1, dcaZ,
                            [](binning::dca_v1::binned_t dca_binned) -> float { return singletrackselector::unPack<binning::dca_v1>(dca_binned); });
 
 DECLARE_SOA_DYNAMIC_COLUMN(DcaXY_v2, dcaXY,
-                           [](binning::dca_v2::binned_t dca_binned) -> float { return singletrackselector::unPack<binning::dca_v2>(dca_binned); });
+                           [](binning::dca_v2::binned_t dca_binned) -> float { return singletrackselector::unPackSymmetric<binning::dca_v2>(dca_binned); });
 DECLARE_SOA_DYNAMIC_COLUMN(DcaZ_v2, dcaZ,
-                           [](binning::dca_v2::binned_t dca_binned) -> float { return singletrackselector::unPack<binning::dca_v2>(dca_binned); });
+                           [](binning::dca_v2::binned_t dca_binned) -> float { return singletrackselector::unPackSymmetric<binning::dca_v2>(dca_binned); });
 
 DECLARE_SOA_DYNAMIC_COLUMN(TPCChi2NCl, tpcChi2NCl,
                            [](binning::chi2::binned_t chi2_binned) -> float { return singletrackselector::unPack<binning::chi2>(chi2_binned); });
@@ -278,25 +278,25 @@ DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaHe_v0, tpcNSigmaHe,
                            [](binning::nsigma_v0::binned_t nsigma_binned) -> float { return singletrackselector::unPack<binning::nsigma_v0>(nsigma_binned); });
 
 DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigmaPi_v1, tofNSigmaPi,
-                           [](binning::nsigma_v1::binned_t nsigma_binned) -> float { return singletrackselector::unPack<binning::nsigma_v1>(nsigma_binned); });
+                           [](binning::nsigma_v1::binned_t nsigma_binned) -> float { return singletrackselector::unPackSymmetric<binning::nsigma_v1>(nsigma_binned); });
 DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaPi_v1, tpcNSigmaPi,
-                           [](binning::nsigma_v1::binned_t nsigma_binned) -> float { return singletrackselector::unPack<binning::nsigma_v1>(nsigma_binned); });
+                           [](binning::nsigma_v1::binned_t nsigma_binned) -> float { return singletrackselector::unPackSymmetric<binning::nsigma_v1>(nsigma_binned); });
 DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigmaKa_v1, tofNSigmaKa,
-                           [](binning::nsigma_v1::binned_t nsigma_binned) -> float { return singletrackselector::unPack<binning::nsigma_v1>(nsigma_binned); });
+                           [](binning::nsigma_v1::binned_t nsigma_binned) -> float { return singletrackselector::unPackSymmetric<binning::nsigma_v1>(nsigma_binned); });
 DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaKa_v1, tpcNSigmaKa,
-                           [](binning::nsigma_v1::binned_t nsigma_binned) -> float { return singletrackselector::unPack<binning::nsigma_v1>(nsigma_binned); });
+                           [](binning::nsigma_v1::binned_t nsigma_binned) -> float { return singletrackselector::unPackSymmetric<binning::nsigma_v1>(nsigma_binned); });
 DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigmaPr_v1, tofNSigmaPr,
-                           [](binning::nsigma_v1::binned_t nsigma_binned) -> float { return singletrackselector::unPack<binning::nsigma_v1>(nsigma_binned); });
+                           [](binning::nsigma_v1::binned_t nsigma_binned) -> float { return singletrackselector::unPackSymmetric<binning::nsigma_v1>(nsigma_binned); });
 DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaPr_v1, tpcNSigmaPr,
-                           [](binning::nsigma_v1::binned_t nsigma_binned) -> float { return singletrackselector::unPack<binning::nsigma_v1>(nsigma_binned); });
+                           [](binning::nsigma_v1::binned_t nsigma_binned) -> float { return singletrackselector::unPackSymmetric<binning::nsigma_v1>(nsigma_binned); });
 DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigmaDe_v1, tofNSigmaDe,
-                           [](binning::nsigma_v1::binned_t nsigma_binned) -> float { return singletrackselector::unPack<binning::nsigma_v1>(nsigma_binned); });
+                           [](binning::nsigma_v1::binned_t nsigma_binned) -> float { return singletrackselector::unPackSymmetric<binning::nsigma_v1>(nsigma_binned); });
 DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaDe_v1, tpcNSigmaDe,
-                           [](binning::nsigma_v1::binned_t nsigma_binned) -> float { return singletrackselector::unPack<binning::nsigma_v1>(nsigma_binned); });
+                           [](binning::nsigma_v1::binned_t nsigma_binned) -> float { return singletrackselector::unPackSymmetric<binning::nsigma_v1>(nsigma_binned); });
 DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigmaHe_v1, tofNSigmaHe,
-                           [](binning::nsigma_v1::binned_t nsigma_binned) -> float { return singletrackselector::unPack<binning::nsigma_v1>(nsigma_binned); });
+                           [](binning::nsigma_v1::binned_t nsigma_binned) -> float { return singletrackselector::unPackSymmetric<binning::nsigma_v1>(nsigma_binned); });
 DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaHe_v1, tpcNSigmaHe,
-                           [](binning::nsigma_v1::binned_t nsigma_binned) -> float { return singletrackselector::unPack<binning::nsigma_v1>(nsigma_binned); });
+                           [](binning::nsigma_v1::binned_t nsigma_binned) -> float { return singletrackselector::unPackSymmetric<binning::nsigma_v1>(nsigma_binned); });
 
 DECLARE_SOA_COLUMN(TPCInnerParam, tpcInnerParam, float); // Momentum at inner wall of the TPC
 DECLARE_SOA_COLUMN(TPCSignal, tpcSignal, float);         // dE/dx TPC
@@ -446,8 +446,8 @@ DECLARE_SOA_TABLE_FULL(SingleTrackSels_v2, "SelTracks", "AOD", "SINGLETRACKSEL2"
 
                        singletrackselector::ITSNClsDyn<singletrackselector::ITSclusterSizes>,
                        track::v001::ITSClsSizeInLayer<singletrackselector::ITSclusterSizes>,
-                       singletrackselector::DcaXY_v1<singletrackselector::StoredDcaXY_v1>,
-                       singletrackselector::DcaZ_v1<singletrackselector::StoredDcaZ_v1>,
+                       singletrackselector::DcaXY_v2<singletrackselector::StoredDcaXY_v2>,
+                       singletrackselector::DcaZ_v2<singletrackselector::StoredDcaZ_v2>,
                        singletrackselector::TPCChi2NCl<singletrackselector::StoredTPCChi2NCl>,
                        singletrackselector::ITSChi2NCl<singletrackselector::StoredITSChi2NCl>,
                        singletrackselector::TPCCrossedRowsOverFindableCls<singletrackselector::StoredTPCCrossedRowsOverFindableCls>,
