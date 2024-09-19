@@ -318,7 +318,7 @@ struct lmeelfcocktail {
       }
       if ((nEle == 2) && (nPos == 2) && (other_daughter_pdg == -1)) {
         other_daughter_pdg = -2;
-        weight=2*weight;
+        weight = 2 * weight;
       }
       auto this_meson_decays = mesons[pdg].decayModes;
       if (std::find(this_meson_decays.begin(), this_meson_decays.end(), other_daughter_pdg) == this_meson_decays.end()) {
