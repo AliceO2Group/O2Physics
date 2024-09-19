@@ -382,7 +382,7 @@ DECLARE_SOA_COLUMN(Chi2MassV0, chi2massv0, float); //! chi2 of proton, pion mass
 
 } // namespace kfvtx3body
 
-DECLARE_SOA_TABLE(StoredKFVtx3BodyDatas, "AOD", "KFVTX3BODYDATA", //!
+DECLARE_SOA_TABLE(KFVtx3BodyDatas, "AOD", "KFVTX3BODYDATA", //!
                                                                   // indices
                   o2::soa::Index<>, vtx3body::CollisionId, vtx3body::Track0Id, vtx3body::Track1Id, vtx3body::Track2Id, vtx3body::Decay3BodyId,
 
@@ -432,12 +432,25 @@ DECLARE_SOA_TABLE(StoredKFVtx3BodyDatas, "AOD", "KFVTX3BODYDATA", //!
                   vtx3body::Track2Eta<vtx3body::PxTrack2, vtx3body::PyTrack2, vtx3body::PzTrack2>, // deuteron eta
                   vtx3body::Track2Phi<vtx3body::PxTrack2, vtx3body::PyTrack2>);                    // deuteron phi
 
-using StoredKFVtx3BodyData = StoredKFVtx3BodyDatas::iterator;
+using KFVtx3BodyData = KFVtx3BodyDatas::iterator;
 namespace kfvtx3body
 {
-DECLARE_SOA_INDEX_COLUMN(StoredKFVtx3BodyData, storedkfvtx3BodyData); //! Index to KFVtx3BodyData entry
+DECLARE_SOA_INDEX_COLUMN(KFVtx3BodyData, kfvtx3BodyData); //! Index to KFVtx3BodyData entry
 }
 
+DECLARE_SOA_TABLE(KFDecay3BodyDataLink, "AOD", "KFDECAY3BODYLINK", //! Joinable table with Decay3bodys which links to KFVtx3BodyData which is not produced for all entries
+                  vtx3body::Vtx3BodyDataId);
+
+using KFDecay3BodysLinked = soa::Join<Decay3Bodys, KFDecay3BodyDataLink>;
+using KFDecay3BodyLinked = KFDecay3BodysLinked::iterator;
+
+DECLARE_SOA_TABLE(McKFVtx3BodyLabels, "AOD", "MCKFVTXLABEL", //! Table joinable with KFVtx3BodyData containing the MC labels
+                  mcvtx3bodylabel::McParticleId);
+using McKFVtx3BodyLabel = McKFVtx3BodyLabels::iterator;
+
+DECLARE_SOA_TABLE(McFullKFVtx3BodyLabels, "AOD", "MCFULLKFVTXLABEL", //! Table joinable with Decay3Bodys (CAUTION: NOT WITH Vtx3BodyDATA)
+                  mcfullvtx3bodylabel::McParticleId);
+using McFullKFVtx3BodyLabel = McFullKFVtx3BodyLabels::iterator;
 } // namespace o2::aod
 
 #endif // PWGLF_DATAMODEL_VTX3BODYTABLES_H_
