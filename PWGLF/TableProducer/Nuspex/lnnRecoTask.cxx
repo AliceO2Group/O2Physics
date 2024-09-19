@@ -65,13 +65,12 @@ std::shared_ptr<TH1> hCentFT0C;
 std::shared_ptr<TH1> hCentFT0M;
 std::shared_ptr<TH1> hCentFV0A;
 std::shared_ptr<TH2> hNsigma3HSel;
-std::shared_ptr<TH2> hNsigma3HTOF_pT;
+std::shared_ptr<TH2> hNsigma3HSelTOF;
 std::shared_ptr<TH2> hdEdx3HSel;
-std::shared_ptr<TH2> hdEdx3HSelTOF;
-std::shared_ptr<TH2> hdEdx3HTPCMom;
+std::shared_ptr<TH2> hdEdx3HPosTrack;
 std::shared_ptr<TH2> hdEdxTot;
 std::shared_ptr<TH2> h3HMassPtTOF;
-std::shared_ptr<TH2> h3HSignalTOF;
+std::shared_ptr<TH2> h3HSignalPtTOF;
 std::shared_ptr<TH1> hDecayChannel;
 std::shared_ptr<TH1> hIsMatterGen;
 std::shared_ptr<TH1> hIsMatterGenTwoBody;
@@ -220,18 +219,17 @@ struct lnnRecoTask {
     const AxisSpec zVtxAxis{zVtxBins, "z_{vtx} (cm)"};
     const AxisSpec centAxis{centBins, "Centrality"};
     const AxisSpec TritMomAxis{TritMomBins, "#it{p}^{TPC}({}^{3}H)"};
-    const AxisSpec MassTOFAxis{MassTOFBins, "m^2/z"};
-    const AxisSpec MomTrAxis{MomTritonBins, "#it{p_T}"};
+    const AxisSpec MassTOFAxis{MassTOFBins, "{m}^{2}/{z}^{2}"};
+    const AxisSpec MomTrAxis{MomTritonBins, "#it{p_T}^{TOF}({}^{3}H)"};
     const AxisSpec BetaAxis{BetaBins, "#beta (TOF)"};
 
-    hNsigma3HSel = qaRegistry.add<TH2>("hNsigma3HSel", "; p_{TPC}/z (GeV/#it{c}); n_{#sigma} ({}^{3}H)", HistType::kTH2F, {rigidityAxis, nSigma3HAxis});
-    hNsigma3HTOF_pT = qaRegistry.add<TH2>("hNsigma3HTOF_pT", "; Signed p_{TPC}/z (GeV/#it{c}); n#sigma_{TOF} ({}^{3}H)", HistType::kTH2F, {TritMomAxis, nSigma3HAxis});
-    hdEdx3HSel = qaRegistry.add<TH2>("hdEdx3HSel", ";p_{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {rigidityAxis, dEdxAxis});
-    hdEdx3HTPCMom = qaRegistry.add<TH2>("hdEdx3HTPCMom", "; #it{p}^{TPC}({}^{3}H); dE/dx", HistType::kTH2F, {TritMomAxis, dEdxAxis});
+    hNsigma3HSel = qaRegistry.add<TH2>("hNsigma3HSel", "; #it{p}_{TPC}/z (GeV/#it{c}); n_{#sigma} ({}^{3}H)", HistType::kTH2F, {rigidityAxis, nSigma3HAxis});
+    hNsigma3HSelTOF = qaRegistry.add<TH2>("hNsigma3HSelTOF", "; Signed p_{TOF} (GeV/#it{c}); n#sigma_{TOF} ({}^{3}H)", HistType::kTH2F, {TritMomAxis, nSigma3HAxis});
+    hdEdx3HSel = qaRegistry.add<TH2>("hdEdx3HSel", ";#it{p}_{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {rigidityAxis, dEdxAxis});
+    hdEdx3HPosTrack = qaRegistry.add<TH2>("hdEdx3HPosTrack", "; #it{p}^{TPC}({}^{3}H); dE/dx", HistType::kTH2F, {TritMomAxis, dEdxAxis});
     hdEdxTot = qaRegistry.add<TH2>("hdEdxTot", ";p_{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {rigidityAxis, dEdxAxis});
-    h3HMassPtTOF = qaRegistry.add<TH2>("hTrMassPtTOF", ";p_{T} (GeV/#it{c}); dE/dx", HistType::kTH2F, {MomTrAxis, MassTOFAxis});
-    h3HSignalTOF = qaRegistry.add<TH2>("h3HSignalTOF", ";p_{T} (GeV/#it{c}); #beta (TOF)", HistType::kTH2F, {MomTrAxis, BetaAxis});
-    hdEdx3HSelTOF = qaRegistry.add<TH2>("hdEdx3HSelTOF", ";p_{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {rigidityAxis, dEdxAxis});
+    h3HMassPtTOF = qaRegistry.add<TH2>("hTrMassPtTOF", "; #it{p}_{T}({}^{3}H) (#it{GeV}^2/#it{c}^4); m^{2}/z", HistType::kTH2F, {MomTrAxis, MassTOFAxis});
+    h3HSignalPtTOF = qaRegistry.add<TH2>("h3HSignalPtTOF", "; #it{p}_{T}({}^{3}H) (GeV/#it{c}); #beta (TOF)", HistType::kTH2F, {MomTrAxis, BetaAxis});
     hEvents = qaRegistry.add<TH1>("hEvents", ";Events; ", HistType::kTH1D, {{2, -0.5, 1.5}});
 
     hEvents->GetXaxis()->SetBinLabel(1, "All");
@@ -401,9 +399,28 @@ struct lnnRecoTask {
         continue;
       }
 
+      hdEdxTot->Fill(posRigidity, posTrack.tpcSignal());
+      hdEdxTot->Fill(-negRigidity, negTrack.tpcSignal());
+      int chargeFactor = -1 + 2 * lnnCand.isMatter;
+      hdEdx3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, h3track.tpcSignal());
+      hNsigma3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, lnnCand.nSigma3H);
+
+      if (is3H) {
+        hdEdx3HPosTrack->Fill(lnnCand.mom3HTPC, h3track.tpcSignal());
+      }
+
+      if (h3track.hasTOF()) {
+        float beta = h3track.beta();
+        lnnCand.mass2TrTOF = h3track.mass() * h3track.mass();
+        h3HMassPtTOF->Fill(h3track.pt(), lnnCand.mass2TrTOF);
+        h3HSignalPtTOF->Fill(h3track.pt(), beta);
+        if (h3track.pt() >= 0.5) {
+          hNsigma3HSelTOF->Fill(h3track.pt(), h3track.tofNSigmaTr());
+        }
+      }
+
       // Definition of lnn mass
       float mLNN_HypHI = 2.994; // value in GeV, but 2993.7 MeV/c**2
-
       float massLNNL = std::sqrt(h3lE * h3lE - lnnMom[0] * lnnMom[0] - lnnMom[1] * lnnMom[1] - lnnMom[2] * lnnMom[2]);
       bool isLNNMass = false;
       if (massLNNL > mLNN_HypHI - masswidth && massLNNL < mLNN_HypHI + masswidth) {
@@ -430,17 +447,6 @@ struct lnnRecoTask {
         lnnCand.decVtx[i] = lnnCand.decVtx[i] - primVtx[i];
       }
 
-      if (h3track.hasTOF()) {
-        float beta = h3track.beta();
-        lnnCand.mass2TrTOF = h3track.mass() * h3track.mass();
-        h3HMassPtTOF->Fill(h3track.pt(), lnnCand.mass2TrTOF);
-        h3HSignalTOF->Fill(h3track.pt(), beta);
-        hdEdx3HSelTOF->Fill(h3track.pt(), h3track.tofSignal());
-        if (h3track.pt() >= 0.5) {
-          hNsigma3HTOF_pT->Fill(h3track.pt(), h3track.tofNSigmaTr());
-        }
-      }
-
       // if survived all selections, propagate decay daughters to PV
       gpu::gpustd::array<float, 2> dcaInfo;
 
@@ -454,16 +460,6 @@ struct lnnRecoTask {
       lnnCand.isReco = true;
       lnnCand.posTrackID = posTrack.globalIndex();
       lnnCand.negTrackID = negTrack.globalIndex();
-
-      hdEdxTot->Fill(posRigidity, posTrack.tpcSignal());
-      hdEdxTot->Fill(-negRigidity, negTrack.tpcSignal());
-      int chargeFactor = -1 + 2 * lnnCand.isMatter;
-      hdEdx3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, h3track.tpcSignal());
-      hNsigma3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, lnnCand.nSigma3H);
-
-      if (is3H) {
-        hdEdx3HTPCMom->Fill(lnnCand.mom3HTPC, h3track.tpcSignal());
-      }
 
       lnnCandidates.push_back(lnnCand);
     }
