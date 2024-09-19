@@ -141,7 +141,6 @@ struct lnnRecoTask {
   Configurable<float> nClusITS{"nClusITSMin3H", 3.0, "triton NITS clusters cut"};
   Configurable<float> ptMinTOF{"ptMinTOF", 1.5, "minimum pt for TOF cut"};
   Configurable<bool> mcSignalOnly{"mcSignalOnly", true, "If true, save only signal in MC"};
-  
 
   // Define o2 fitter, 2-prong, active memory (no need to redefine per event)
   o2::vertexing::DCAFitterN<2> fitter;
@@ -400,7 +399,7 @@ struct lnnRecoTask {
       if (lnnPt < ptMin) {
         continue;
       }
-      
+
       hdEdxTot->Fill(posRigidity, posTrack.tpcSignal());
       hdEdxTot->Fill(-negRigidity, negTrack.tpcSignal());
       int chargeFactor = -1 + 2 * lnnCand.isMatter;
