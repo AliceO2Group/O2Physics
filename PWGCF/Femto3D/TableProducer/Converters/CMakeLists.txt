@@ -9,14 +9,13 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-add_subdirectory(Converters)
-
-o2physics_add_dpl_workflow(single-track-selector
-    SOURCES singleTrackSelector.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB
-    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(single-track-selector-extra
-    SOURCES singleTrackSelectorExtra.cxx
+o2physics_add_dpl_workflow(single-track-selector-converter
+    SOURCES singleTrackSelectorConverter.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(single-track-selector-converter-v1
+    SOURCES singleTrackSelectorConverterV1.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
