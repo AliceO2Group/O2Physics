@@ -48,8 +48,8 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
-using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::StoredTracksExtra_001, aod::pidTOFFullTr, aod::TOFSignal, aod::TOFEvTime, aod::pidTOFbeta, aod::pidTOFmass>;
-using TracksFullMC = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::StoredTracksExtra_001, aod::pidTOFFullTr, aod::TOFSignal, aod::TOFEvTime, aod::pidTOFbeta, aod::pidTOFmass, aod::McTrackLabels>;
+using TracksFull = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTOFFullTr, aod::pidTOFbeta, aod::pidTOFmass>;
+using TracksFullMC = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTOFFullTr, aod::pidTOFbeta, aod::pidTOFmass, aod::McTrackLabels>;
 using CollisionsFull = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As>;
 using CollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As>;
 
@@ -139,7 +139,9 @@ struct lnnRecoTask {
   Configurable<float> nSigmaCutTOF{"nSigmaCutITS", 4., "triton dEdx cut (n sigma)"};
   Configurable<float> nTPCClusMin3H{"nTPCClusMin3H", 100, "triton NTPC clusters cut"};
   Configurable<float> nClusITS{"nClusITSMin3H", 3.0, "triton NITS clusters cut"};
+  Configurable<float> ptMinTOF{"ptMinTOF", 1.5, "minimum pt for TOF cut"};
   Configurable<bool> mcSignalOnly{"mcSignalOnly", true, "If true, save only signal in MC"};
+  
 
   // Define o2 fitter, 2-prong, active memory (no need to redefine per event)
   o2::vertexing::DCAFitterN<2> fitter;
@@ -398,7 +400,7 @@ struct lnnRecoTask {
       if (lnnPt < ptMin) {
         continue;
       }
-
+      
       hdEdxTot->Fill(posRigidity, posTrack.tpcSignal());
       hdEdxTot->Fill(-negRigidity, negTrack.tpcSignal());
       int chargeFactor = -1 + 2 * lnnCand.isMatter;
@@ -414,7 +416,7 @@ struct lnnRecoTask {
         lnnCand.mass2TrTOF = h3track.mass() * h3track.mass();
         h3HMassPtTOF->Fill(h3track.pt(), lnnCand.mass2TrTOF);
         h3HSignalPtTOF->Fill(h3track.pt(), beta);
-        if (h3track.pt() >= 0.5) {
+        if (h3track.pt() >= ptMinTOF) {
           hNsigma3HSelTOF->Fill(h3track.pt(), h3track.tofNSigmaTr());
         }
       }
