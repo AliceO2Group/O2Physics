@@ -188,8 +188,12 @@ struct AnalysisEventSelection {
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
 
-  void init(o2::framework::InitContext&)
+  void init(o2::framework::InitContext& context)
   {
+    if (context.mOptions.get<bool>("processDummy")) {
+      return;
+    }
+
     fEventCut = new AnalysisCompositeCut(true);
     TString eventCutStr = fConfigEventCuts.value;
     fEventCut->AddCut(dqcuts::GetAnalysisCut(eventCutStr.Data()));
@@ -332,8 +336,12 @@ struct AnalysisTrackSelection {
 
   int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
 
-  void init(o2::framework::InitContext&)
+  void init(o2::framework::InitContext& context)
   {
+    if (context.mOptions.get<bool>("processDummy")) {
+      return;
+    }
+
     fCurrentRun = 0;
 
     TString cutNamesStr = fConfigCuts.value;
@@ -456,8 +464,12 @@ struct AnalysisMuonSelection {
   HistogramManager* fHistMan;
   std::vector<AnalysisCompositeCut> fMuonCuts;
 
-  void init(o2::framework::InitContext&)
+  void init(o2::framework::InitContext& context)
   {
+    if (context.mOptions.get<bool>("processDummy")) {
+      return;
+    }
+
     TString cutNamesStr = fConfigCuts.value;
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
@@ -550,8 +562,12 @@ struct AnalysisPrefilterSelection {
   std::map<int, bool> fPrefiltermap;
   AnalysisCompositeCut* fPairCut;
 
-  void init(o2::framework::InitContext&)
+  void init(o2::framework::InitContext& context)
   {
+    if (context.mOptions.get<bool>("processDummy")) {
+      return;
+    }
+
     fCurrentRun = 0;
 
     ccdb->setURL(ccdburl.value);
@@ -662,6 +678,10 @@ struct AnalysisEventMixing {
 
   void init(o2::framework::InitContext& context)
   {
+    if (context.mOptions.get<bool>("processDummy")) {
+      return;
+    }
+
     fCurrentRun = 0;
 
     ccdb->setURL(ccdburl.value);
@@ -977,6 +997,10 @@ struct AnalysisSameEventPairing {
 
   void init(o2::framework::InitContext& context)
   {
+    if (context.mOptions.get<bool>("processDummy")) {
+      return;
+    }
+
     fCurrentRun = 0;
 
     ccdb->setURL(ccdburl.value);
@@ -1563,8 +1587,11 @@ struct AnalysisFwdTrackPid {
 
   Configurable<float> fConfigMaxDCA{"cfgMaxDCA", 0.5f, "Manually set maximum DCA of the track"};
 
-  void init(o2::framework::InitContext&)
+  void init(o2::framework::InitContext& context)
   {
+    if (context.mOptions.get<bool>("processDummy")) {
+      return;
+    }
   }
 
   // Template function to pair mft tracks and muon tracks
@@ -1663,6 +1690,10 @@ struct AnalysisDileptonHadron {
 
   void init(o2::framework::InitContext& context)
   {
+    if (context.mOptions.get<bool>("processDummy")) {
+      return;
+    }
+
     fCurrentRun = 0;
     fValuesDilepton = new float[VarManager::kNVars];
     fValuesHadron = new float[VarManager::kNVars];
@@ -1871,6 +1902,10 @@ struct AnalysisDileptonTrackTrack {
 
   void init(o2::framework::InitContext& context)
   {
+    if (context.mOptions.get<bool>("processDummy")) {
+      return;
+    }
+
     fValuesDitrack = new float[VarManager::kNVars];
     fValuesQuadruplet = new float[VarManager::kNVars];
     VarManager::SetDefaultVarNames();
