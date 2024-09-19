@@ -164,7 +164,6 @@ struct spvector {
     // AxisSpec amplitudeZDC = {ZDCgainNbins, lbinZDCgain, hbinZDCgain, "ZDC amplitude"};
     AxisSpec channelZDCAxis = {8, 0.0, 8.0, "ZDC tower"};
     AxisSpec qxZDCAxis = {QxyNbins, lbinQxy, hbinQxy, "Qx"};
-    AxisSpec qyZDCAxis = {QxyNbins, lbinQxy, hbinQxy, "Qy"};
     AxisSpec phiAxis = {50, -6.28, 6.28, "phi"};
     AxisSpec vzAxis = {20, -10, 10, "vz"};
     AxisSpec vxAxis = {VxNbins, lbinVx, hbinVx, "vx"};
@@ -176,11 +175,10 @@ struct spvector {
     histos.add("hpQyZDCAC", "hpQyZDCAC", kTProfile, {centAxis});
     histos.add("hpQxZDCAQyZDCC", "hpQxZDCAQyZDCC", kTProfile, {centAxis});
     histos.add("hpQxZDCCQyZDCA", "hpQxZDCCQyZDCA", kTProfile, {centAxis});
-    /*histos.add("QxZDCC", "QxZDCC", kTHnSparseF, {{16,0.0,80.0}, {25,-0.05,0.0}, {25,-0.02,0.02}, {20,-10.0,10.0}, {qxZDCAxis}});
-    histos.add("QyZDCC", "QyZDCC", kTHnSparseF, {{16,0.0,80.0}, {25,-0.05,0.0}, {25,-0.02,0.02}, {20,-10.0,10.0}, {qyZDCAxis}});
-    histos.add("QxZDCA", "QxZDCA", kTHnSparseF, {{16,0.0,80.0}, {25,-0.05,0.0}, {25,-0.02,0.02}, {20,-10.0,10.0}, {qxZDCAxis}});
-    histos.add("QyZDCA", "QyZDCA", kTHnSparseF, {{16,0.0,80.0}, {25,-0.05,0.0}, {25,-0.02,0.02}, {20,-10.0,10.0}, {qxZDCAxis}});*/
-    histos.add("hsQxyZDCAC", "hsyQxyZDCAC", kTHnSparseF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {4, 0, 4}});
+    histos.add("hsQxZDCA", "hsQxZDCA", kTHnSparseF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
+    histos.add("hsQyZDCA", "hsQyZDCA", kTHnSparseF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
+    histos.add("hsQxZDCC", "hsQxZDCC", kTHnSparseF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
+    histos.add("hsQyZDCC", "hsQyZDCC", kTHnSparseF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
     /*histos.add("hpQxVZDCC", "hpQxVZDCC", kTProfile3D, {centAxis, vxAxis, vyAxis});
     histos.add("hpQyVZDCC", "hpQyVZDCC", kTProfile3D, {centAxis, vxAxis, vyAxis});
     histos.add("hpQxVZDCA", "hpQxVZDCA", kTProfile3D, {centAxis, vxAxis, vyAxis});
@@ -438,16 +436,11 @@ struct spvector {
       histos.fill(HIST("hpQyZDCAC"), centrality, (qyZDCA * qyZDCC));
       histos.fill(HIST("hpQxZDCAQyZDCC"), centrality, (qxZDCA * qyZDCC));
       histos.fill(HIST("hpQxZDCCQyZDCA"), centrality, (qxZDCC * qyZDCA));
-      /*
-      histos.fill(HIST("QxZDCC"), centrality, vx, vy, vz, qxZDCC);
-      histos.fill(HIST("QyZDCC"), centrality, vx, vy, vz, qyZDCC);
-      histos.fill(HIST("QxZDCA"), centrality, vx, vy, vz, qxZDCA);
-      histos.fill(HIST("QyZDCA"), centrality, vx, vy, vz, qyZDCA);*/
 
-      histos.fill(HIST("hsQxyZDCAC"), centrality, vx, vy, vz, 0.5, qxZDCA);
-      histos.fill(HIST("hsQxyZDCAC"), centrality, vx, vy, vz, 1.5, qyZDCA);
-      histos.fill(HIST("hsQxyZDCAC"), centrality, vx, vy, vz, 2.5, qxZDCC);
-      histos.fill(HIST("hsQxyZDCAC"), centrality, vx, vy, vz, 3.5, qyZDCC);
+      histos.fill(HIST("hsQxZDCA"), centrality, vx, vy, vz, qxZDCA);
+      histos.fill(HIST("hsQyZDCA"), centrality, vx, vy, vz, qyZDCA);
+      histos.fill(HIST("hsQxZDCC"), centrality, vx, vy, vz, qxZDCC);
+      histos.fill(HIST("hsQyZDCC"), centrality, vx, vy, vz, qyZDCC);
       /*
       histos.fill(HIST("hpQxVZDCC"), centrality, vx, vy, qxZDCC);
       histos.fill(HIST("hpQyVZDCC"), centrality, vx, vy, qyZDCC);
