@@ -46,6 +46,7 @@ struct FemtoCorrelationsMC {
   Configurable<bool> _removeSameBunchPileup{"removeSameBunchPileup", false, ""};
   Configurable<bool> _requestGoodZvtxFT0vsPV{"requestGoodZvtxFT0vsPV", false, ""};
   Configurable<bool> _requestVertexITSTPC{"requestVertexITSTPC", false, ""};
+  Configurable<int> _requestVertexTOForTRDmatched{"requestVertexTOFmatched", 0, "0 -> no selectio; 1 -> vertex is matched to TOF or TRD; 2 -> matched to both;"};
   Configurable<bool> _requestNoCollInTimeRangeStandard{"requestNoCollInTimeRangeStandard", false, ""};
   Configurable<std::pair<float, float>> _IRcut{"IRcut", std::pair<float, float>{0.f, 100.f}, "[min., max.] IR range to keep events within"};
   Configurable<std::pair<int, int>> _OccupancyCut{"OccupancyCut", std::pair<int, int>{0, 10000}, "[min., max.] occupancy range to keep events within"};
@@ -320,7 +321,7 @@ struct FemtoCorrelationsMC {
     int trackPDG, trackOrigin;
 
     for (auto track : tracks) {
-      if (abs(track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().posZ()) > _vertexZ)
+      if (std::fabs(track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().posZ()) > _vertexZ)
         continue;
       if (track.tpcFractionSharedCls() > _tpcFractionSharedCls || track.itsNCls() < _itsNCls)
         continue;
@@ -336,6 +337,8 @@ struct FemtoCorrelationsMC {
         continue;
       if (_requestVertexITSTPC && !track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().isVertexITSTPC())
         continue;
+      if (_requestVertexTOForTRDmatched > track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().isVertexTOForTRDmatched())
+        continue;
       if (_requestNoCollInTimeRangeStandard && !track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().noCollInTimeRangeStandard())
         continue;
 
@@ -348,7 +351,7 @@ struct FemtoCorrelationsMC {
         if (trackOrigin > -1 && trackOrigin < 3)
           DCA_histos_1[centBin][track.origin()]->Fill(track.pt(), track.dcaXY(), track.dcaZ());
 
-        if (abs(track.dcaXY()) > _dcaXY.value[0] + _dcaXY.value[1] * std::pow(track.pt(), _dcaXY.value[2]) || abs(track.dcaZ()) > _dcaZ.value[0] + _dcaZ.value[1] * std::pow(track.pt(), _dcaZ.value[2]))
+        if (std::fabs(track.dcaXY()) > _dcaXY.value[0] + _dcaXY.value[1] * std::pow(track.pt(), _dcaXY.value[2]) || std::fabs(track.dcaZ()) > _dcaZ.value[0] + _dcaZ.value[1] * std::pow(track.pt(), _dcaZ.value[2]))
           continue;
 
         trackPDG = abs(track.pdgCode());
@@ -369,7 +372,7 @@ struct FemtoCorrelationsMC {
         if (trackOrigin > -1 && trackOrigin < 3)
           DCA_histos_2[centBin][track.origin()]->Fill(track.pt(), track.dcaXY(), track.dcaZ());
 
-        if (abs(track.dcaXY()) > _dcaXY.value[0] + _dcaXY.value[1] * std::pow(track.pt(), _dcaXY.value[2]) || abs(track.dcaZ()) > _dcaZ.value[0] + _dcaZ.value[1] * std::pow(track.pt(), _dcaZ.value[2]))
+        if (std::fabs(track.dcaXY()) > _dcaXY.value[0] + _dcaXY.value[1] * std::pow(track.pt(), _dcaXY.value[2]) || std::fabs(track.dcaZ()) > _dcaZ.value[0] + _dcaZ.value[1] * std::pow(track.pt(), _dcaZ.value[2]))
           continue;
 
         trackPDG = abs(track.pdgCode());
@@ -395,6 +398,8 @@ struct FemtoCorrelationsMC {
       if (_requestGoodZvtxFT0vsPV && !collision.isGoodZvtxFT0vsPV())
         continue;
       if (_requestVertexITSTPC && !collision.isVertexITSTPC())
+        continue;
+      if (_requestVertexTOForTRDmatched > collision.isVertexTOForTRDmatched())
         continue;
       if (_requestNoCollInTimeRangeStandard && !collision.noCollInTimeRangeStandard())
         continue;

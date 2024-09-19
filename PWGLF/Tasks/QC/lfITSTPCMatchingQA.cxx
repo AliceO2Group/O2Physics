@@ -94,7 +94,7 @@ struct lfmatchingqa {
   float getITSClSize(T const& track)
   {
     float sum{0.f};
-    for (int iL{0}; iL < 6; ++iL) {
+    for (int iL{0}; iL < 7; ++iL) {
       sum += (track.itsClusterSizes() >> (iL * 4)) & 0xf;
     }
     return sum / track.itsNCls();

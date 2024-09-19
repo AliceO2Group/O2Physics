@@ -34,7 +34,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-template <typename JetsBase, typename JetsTag, typename JetsBasetoTagMatchingTable, typename JetsTagtoBaseMatchingTable, typename CandidatesBase, typename CandidatesTag>
+template <typename JetsBase, typename JetsTag, typename JetsBasetoTagMatchingTable, typename JetsTagtoBaseMatchingTable, typename CandidatesBase, typename CandidatesTag, typename ClustersBase>
 struct JetMatchingMc {
 
   Configurable<bool> doMatchingGeo{"doMatchingGeo", true, "Enable geometric matching"};
@@ -67,7 +67,7 @@ struct JetMatchingMc {
   void processJets(JetMcCollisions const& mcCollisions, JetCollisionsMCD const& collisions,
                    JetsBase const& jetsBase, JetsTag const& jetsTag,
                    JetTracksMCD const& tracks,
-                   JetClustersMCD const& clusters,
+                   ClustersBase const& clusters,
                    JetParticles const& particles,
                    CandidatesBase const& candidatesBase,
                    CandidatesTag const& candidatesTag)
@@ -111,44 +111,58 @@ using ChargedJetMatching = JetMatchingMc<soa::Join<aod::ChargedMCDetectorLevelJe
                                          aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets,
                                          aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets,
                                          aod::JCollisions,
-                                         aod::JMcCollisions>;
+                                         aod::JMcCollisions,
+                                         JetTracks>;
 using FullJetMatching = JetMatchingMc<soa::Join<aod::FullMCDetectorLevelJets, aod::FullMCDetectorLevelJetConstituents>,
                                       soa::Join<aod::FullMCParticleLevelJets, aod::FullMCParticleLevelJetConstituents>,
                                       aod::FullMCDetectorLevelJetsMatchedToFullMCParticleLevelJets,
                                       aod::FullMCParticleLevelJetsMatchedToFullMCDetectorLevelJets,
                                       aod::JCollisions,
-                                      aod::JMcCollisions>;
+                                      aod::JMcCollisions,
+                                      JetClustersMCD>;
 using NeutralJetMatching = JetMatchingMc<soa::Join<aod::NeutralMCDetectorLevelJets, aod::NeutralMCDetectorLevelJetConstituents>,
                                          soa::Join<aod::NeutralMCParticleLevelJets, aod::NeutralMCParticleLevelJetConstituents>,
                                          aod::NeutralMCDetectorLevelJetsMatchedToNeutralMCParticleLevelJets,
                                          aod::NeutralMCParticleLevelJetsMatchedToNeutralMCDetectorLevelJets,
                                          aod::JCollisions,
-                                         aod::JMcCollisions>;
+                                         aod::JMcCollisions,
+                                         JetClustersMCD>;
 using D0ChargedJetMatching = JetMatchingMc<soa::Join<aod::D0ChargedMCDetectorLevelJets, aod::D0ChargedMCDetectorLevelJetConstituents>,
                                            soa::Join<aod::D0ChargedMCParticleLevelJets, aod::D0ChargedMCParticleLevelJetConstituents>,
                                            aod::D0ChargedMCDetectorLevelJetsMatchedToD0ChargedMCParticleLevelJets,
                                            aod::D0ChargedMCParticleLevelJetsMatchedToD0ChargedMCDetectorLevelJets,
                                            CandidatesD0MCD,
-                                           CandidatesD0MCP>;
+                                           CandidatesD0MCP,
+                                           JetTracks>;
 using LcChargedJetMatching = JetMatchingMc<soa::Join<aod::LcChargedMCDetectorLevelJets, aod::LcChargedMCDetectorLevelJetConstituents>,
                                            soa::Join<aod::LcChargedMCParticleLevelJets, aod::LcChargedMCParticleLevelJetConstituents>,
                                            aod::LcChargedMCDetectorLevelJetsMatchedToLcChargedMCParticleLevelJets,
                                            aod::LcChargedMCParticleLevelJetsMatchedToLcChargedMCDetectorLevelJets,
                                            CandidatesLcMCD,
-                                           CandidatesLcMCP>;
+                                           CandidatesLcMCP,
+                                           JetTracks>;
 /*using BplusChargedJetMatching = JetMatchingMc<soa::Join<aod::BplusChargedMCDetectorLevelJets, aod::BplusChargedMCDetectorLevelJetConstituents>,
                                               soa::Join<aod::BplusChargedMCParticleLevelJets, aod::BplusChargedMCParticleLevelJetConstituents>,
                                               aod::BplusChargedMCDetectorLevelJetsMatchedToBplusChargedMCParticleLevelJets,
                                               aod::BplusChargedMCParticleLevelJetsMatchedToBplusChargedMCDetectorLevelJets,
                                               CandidatesBplusMCD,
-                                              CandidatesBplusMCP>;*/
+                                              CandidatesBplusMCP,
+                                              JetTracksMCD>>;*/
 using V0ChargedJetMatching = JetMatchingMc<soa::Join<aod::V0ChargedMCDetectorLevelJets, aod::V0ChargedMCDetectorLevelJetConstituents>,
                                            soa::Join<aod::V0ChargedMCParticleLevelJets, aod::V0ChargedMCParticleLevelJetConstituents>,
                                            aod::V0ChargedMCDetectorLevelJetsMatchedToV0ChargedMCParticleLevelJets,
                                            aod::V0ChargedMCParticleLevelJetsMatchedToV0ChargedMCDetectorLevelJets,
                                            CandidatesV0MCD,
-                                           CandidatesV0MCP>;
+                                           CandidatesV0MCP,
+                                           JetTracks>;
 
+using DielectronChargedJetMatching = JetMatchingMc<soa::Join<aod::DielectronChargedMCDetectorLevelJets, aod::DielectronChargedMCDetectorLevelJetConstituents>,
+                                                   soa::Join<aod::DielectronChargedMCParticleLevelJets, aod::DielectronChargedMCParticleLevelJetConstituents>,
+                                                   aod::DielectronChargedMCDetectorLevelJetsMatchedToDielectronChargedMCParticleLevelJets,
+                                                   aod::DielectronChargedMCParticleLevelJetsMatchedToDielectronChargedMCDetectorLevelJets,
+                                                   CandidatesDielectronMCD,
+                                                   CandidatesDielectronMCP,
+                                                   JetTracks>;
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   std::vector<o2::framework::DataProcessorSpec> tasks;
@@ -160,6 +174,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   tasks.emplace_back(adaptAnalysisTask<LcChargedJetMatching>(cfgc, TaskName{"jet-matching-mc-lc-ch"}));
   // tasks.emplace_back(adaptAnalysisTask<BplusChargedJetMatching>(cfgc, TaskName{"jet-matching-mc-bplus-ch"}));
   tasks.emplace_back(adaptAnalysisTask<V0ChargedJetMatching>(cfgc, TaskName{"jet-matching-mc-v0-ch"}));
+  tasks.emplace_back(adaptAnalysisTask<DielectronChargedJetMatching>(cfgc, TaskName{"jet-matching-mc-dielectron-ch"}));
 
   return WorkflowSpec{tasks};
 }

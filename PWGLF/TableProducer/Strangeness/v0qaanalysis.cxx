@@ -66,14 +66,16 @@ struct LfV0qaanalysis {
     }
     LOG(info) << "Number of process functions enabled: " << nProc;
 
-    registry.add("hNEvents", "hNEvents", {HistType::kTH1I, {{8, 0.f, 8.f}}});
+    registry.add("hNEvents", "hNEvents", {HistType::kTH1I, {{10, 0.f, 10.f}}});
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(1, "all");
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(2, "sel8");
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(3, "TVX");
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(4, "zvertex");
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(5, "TFBorder");
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(6, "ITSROFBorder");
-    registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(7, "Applied selection");
+    registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(7, "isTOFVertexMatched");
+    registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(8, "isGoodZvtxFT0vsPV");
+    registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(9, "Applied selection");
 
     registry.add("hCentFT0M", "hCentFT0M", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
     registry.add("hCentFV0A", "hCentFV0A", {HistType::kTH1F, {{1000, 0.f, 100.f}}});
@@ -137,6 +139,8 @@ struct LfV0qaanalysis {
   Configurable<bool> isTriggerTVX{"isTriggerTVX", 1, "Is Trigger TVX"};
   Configurable<bool> isNoTimeFrameBorder{"isNoTimeFrameBorder", 1, "Is No Time Frame Border"};
   Configurable<bool> isNoITSROFrameBorder{"isNoITSROFrameBorder", 1, "Is No ITS Readout Frame Border"};
+  Configurable<bool> isVertexTOFmatched{"isVertexTOFmatched", 0, "Is Vertex TOF matched"};
+  Configurable<bool> isGoodZvtxFT0vsPV{"isGoodZvtxFT0vsPV", 0, "isGoodZvtxFT0vsPV"};
 
   // V0 selection criteria
   Configurable<double> v0cospa{"v0cospa", 0.97, "V0 CosPA"};
@@ -150,6 +154,7 @@ struct LfV0qaanalysis {
   template <typename TCollision>
   bool AcceptEvent(TCollision const& collision)
   {
+    registry.fill(HIST("hNEvents"), 0.5);
     if (sel8 && !collision.sel8()) {
       return false;
     }
@@ -170,6 +175,14 @@ struct LfV0qaanalysis {
       return false;
     }
     registry.fill(HIST("hNEvents"), 5.5);
+    if (isVertexTOFmatched && !collision.selection_bit(aod::evsel::kIsVertexTOFmatched)) {
+      return false;
+    }
+    registry.fill(HIST("hNEvents"), 6.5);
+    if (isGoodZvtxFT0vsPV && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      return false;
+    }
+    registry.fill(HIST("hNEvents"), 7.5);
 
     return true;
   }
@@ -183,11 +196,10 @@ struct LfV0qaanalysis {
   {
 
     // Apply event selection
-    registry.fill(HIST("hNEvents"), 0.5);
     if (!AcceptEvent(collision)) {
       return;
     }
-    registry.fill(HIST("hNEvents"), 6.5);
+    registry.fill(HIST("hNEvents"), 8.5);
     registry.fill(HIST("hCentFT0M"), collision.centFT0M());
     registry.fill(HIST("hCentFV0A"), collision.centFV0A());
 
@@ -246,9 +258,6 @@ struct LfV0qaanalysis {
   Preslice<aod::McParticles> perMCCol = aod::mcparticle::mcCollisionId;
 
   SliceCache cache1;
-  SliceCache cache2;
-  SliceCache cache3;
-  SliceCache cache4;
 
   Service<o2::framework::O2DatabasePDG> pdgDB;
 
@@ -391,8 +400,8 @@ struct LfV0qaanalysis {
   PROCESS_SWITCH(LfV0qaanalysis, processMCReco, "Process MC Reco", false);
 
   void processMCGen(soa::Join<aod::McCollisions, aod::McCentFT0Ms>::iterator const& mcCollision,
-                    soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::PVMults>> const& collisions,
-                    aod::McParticles const& mcParticles)
+                    aod::McParticles const& mcParticles,
+                    soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::PVMults>> const& collisions)
   {
     //====================================
     //===== Event Loss Denominator =======
@@ -406,11 +415,9 @@ struct LfV0qaanalysis {
     registry.fill(HIST("hNEventsMCGen"), 1.5);
     registry.fill(HIST("hCentFT0M_GenColl_MC"), mcCollision.centFT0M());
 
-    const auto particlesInMCCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache3);
-
     bool isINELgt0true = false;
 
-    if (pwglf::isINELgtNmc(particlesInMCCollision, 0, pdgDB)) {
+    if (pwglf::isINELgtNmc(mcParticles, 0, pdgDB)) {
       isINELgt0true = true;
       registry.fill(HIST("hNEventsMCGen"), 2.5);
       registry.fill(HIST("hCentFT0M_GenColl_MC_INELgt0"), mcCollision.centFT0M());
@@ -420,7 +427,7 @@ struct LfV0qaanalysis {
     //===== Signal Loss Denominator =======
     //=====================================
 
-    for (auto& mcParticle : particlesInMCCollision) {
+    for (auto& mcParticle : mcParticles) {
 
       if (!mcParticle.isPhysicalPrimary()) {
         continue;
@@ -457,12 +464,11 @@ struct LfV0qaanalysis {
       //====== Event Split Numerator ========
       //=====================================
 
-      registry.fill(HIST("hNEvents"), 0.5);
       registry.fill(HIST("hNEventsMCReco"), 0.5);
       if (!AcceptEvent(collision)) {
         continue;
       }
-      registry.fill(HIST("hNEvents"), 6.5);
+      registry.fill(HIST("hNEvents"), 8.5);
       registry.fill(HIST("hNEventsMCReco"), 1.5);
       registry.fill(HIST("hCentFT0M_RecoColl_MC"), mcCollision.centFT0M());
 
@@ -479,7 +485,7 @@ struct LfV0qaanalysis {
       //======== Sgn Split Numerator ========
       //=====================================
 
-      for (auto& mcParticle : particlesInMCCollision) {
+      for (auto& mcParticle : mcParticles) {
 
         if (!mcParticle.isPhysicalPrimary()) {
           continue;
@@ -531,9 +537,7 @@ struct LfV0qaanalysis {
     //===== Signal Loss Numerator =========
     //=====================================
 
-    const auto particlesInMCRecoCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache4);
-
-    for (auto& mcParticle : particlesInMCRecoCollision) {
+    for (auto& mcParticle : mcParticles) {
 
       if (!mcParticle.isPhysicalPrimary()) {
         continue;

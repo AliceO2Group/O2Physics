@@ -217,7 +217,11 @@ struct DGCandAnalyzer {
     }
   }
 
-  void processReco(UDCollisionFull const& dgcand, UDTracksFull const& dgtracks)
+  // PV contributors
+  Filter PVContributorFilter = aod::udtrack::isPVContributor == true;
+  using PVTracks = soa::Filtered<UDTracksFull>;
+
+  void processReco(UDCollisionFull const& dgcand, UDTracksFull const& dgtracks, PVTracks const& PVContributors)
   {
     // count collisions
     registry.fill(HIST("stat/candCaseAll"), 0., 1.);
@@ -273,8 +277,8 @@ struct DGCandAnalyzer {
     registry.fill(HIST("FIT/FDDCAmplitude"), dgcand.totalFDDAmplitudeC(), 1.);
 
     // skip events with too few/many tracks
-    Partition<UDTracksFull> PVContributors = aod::udtrack::isPVContributor == true;
-    PVContributors.bindTable(dgtracks);
+    // Partition<UDTracksFull> PVContributors = aod::udtrack::isPVContributor == true;
+    // PVContributors.bindTable(dgtracks);
     if (dgcand.numContrib() != PVContributors.size()) {
       LOGF(info, "Missmatch of PVContributors %d != %d", dgcand.numContrib(), PVContributors.size());
     }

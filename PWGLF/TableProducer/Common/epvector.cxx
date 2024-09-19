@@ -108,6 +108,8 @@ struct epvector {
 
   void init(o2::framework::InitContext&)
   {
+    std::vector<double> occupancyBinning = {0.0, 500.0, 1000.0, 1500.0, 2000.0, 3000.0, 4000.0, 5000.0, 50000.0};
+
     const AxisSpec centAxis{configAxisCentrality, "V0M (%)"};
     // AxisSpec centAxis = {8, 0, 80, "V0M (%)"};
     AxisSpec multiplicity = {5000, -500, 500, "TPC Multiplicity"};
@@ -117,9 +119,12 @@ struct epvector {
     AxisSpec qyFT0Axis = {80000, -10000.0, 10000.0, "Qy"};
     AxisSpec phiAxis = {500, -6.28, 6.28, "phi"};
     AxisSpec vzAxis = {400, -20, 20, "vz"};
-    AxisSpec resAxis = {400, -2, 2, "vz"};
+    AxisSpec resAxis = {200, -2, 2, "Resv2"};
+    AxisSpec resAxisSP = {800, -80, 80, "ResSP"};
+    AxisSpec qAxis = {100, 0, 10, "Q axis"};
     AxisSpec shiftAxis = {10, 0, 10, "shift"};
     AxisSpec basisAxis = {2, 0, 2, "basis"};
+    AxisSpec occupancyAxis = {occupancyBinning, "occupancy"};
 
     histos.add("hCentrality", "hCentrality", kTH1F, {{8, 0, 80.0}});
     histos.add("Vz", "Vz", kTH1F, {{400, -20.0, 20.0}});
@@ -139,9 +144,26 @@ struct epvector {
     histos.add("QxTPCR", "QxTPCR", kTH2F, {centAxis, multiplicity});
     histos.add("QyTPCR", "QyTPCR", kTH2F, {centAxis, multiplicity});
     histos.add("PsiTPCR", "PsiTPCR", kTH2F, {centAxis, phiAxis});
-    histos.add("ResFT0CTPC", "ResFT0CTPC", kTH2F, {centAxis, resAxis});
-    histos.add("ResFT0CFT0A", "ResFT0CFT0A", kTH2F, {centAxis, resAxis});
-    histos.add("ResFT0ATPC", "ResFT0ATPC", kTH2F, {centAxis, resAxis});
+
+    histos.add("ResFT0CFT0A", "ResFT0CFT0A", kTH3F, {centAxis, resAxis, occupancyAxis});
+    histos.add("ResFT0CTPC", "ResFT0CTPC", kTH3F, {centAxis, resAxis, occupancyAxis});
+    histos.add("ResFT0ATPC", "ResFT0ATPC", kTH3F, {centAxis, resAxis, occupancyAxis});
+    histos.add("ResFT0CTPCL", "ResFT0CTPCL", kTH3F, {centAxis, resAxis, occupancyAxis});
+    histos.add("ResFT0CTPCR", "ResFT0CTPCR", kTH3F, {centAxis, resAxis, occupancyAxis});
+    histos.add("ResTPCRTPCL", "ResTPCRTPCL", kTH3F, {centAxis, resAxis, occupancyAxis});
+
+    histos.add("ResFT0CFT0ASP", "ResFT0CFT0ASP", kTH3F, {centAxis, resAxisSP, occupancyAxis});
+    histos.add("ResFT0CTPCSP", "ResFT0CTPCSP", kTH3F, {centAxis, resAxisSP, occupancyAxis});
+    histos.add("ResFT0ATPCSP", "ResFT0ATPCSP", kTH3F, {centAxis, resAxisSP, occupancyAxis});
+    histos.add("ResFT0CTPCLSP", "ResFT0CTPCLSP", kTH3F, {centAxis, resAxisSP, occupancyAxis});
+    histos.add("ResFT0CTPCRSP", "ResFT0CTPCRSP", kTH3F, {centAxis, resAxisSP, occupancyAxis});
+    histos.add("ResTPCRTPCLSP", "ResTPCRTPCLSP", kTH3F, {centAxis, resAxisSP, occupancyAxis});
+
+    histos.add("QFT0C", "QFT0C", kTH3F, {centAxis, qAxis, occupancyAxis});
+    histos.add("QFT0A", "QFT0A", kTH3F, {centAxis, qAxis, occupancyAxis});
+    histos.add("QTPCL", "QTPCL", kTH3F, {centAxis, qAxis, occupancyAxis});
+    histos.add("QTPCR", "QTPCR", kTH3F, {centAxis, qAxis, occupancyAxis});
+    histos.add("QTPC", "QTPC", kTH3F, {centAxis, qAxis, occupancyAxis});
 
     histos.add("ShiftFT0C", "ShiftFT0C", kTProfile3D, {centAxis, basisAxis, shiftAxis});
 
@@ -266,7 +288,7 @@ struct epvector {
       if (useGainCallib && (currentRunNumber != lastRunNumber)) {
         gainprofile = ccdb->getForTimeStamp<TProfile>(ConfGainPath.value, bc.timestamp());
       }
-
+      int occupancy = coll.trackOccupancyInTimeRange();
       histos.fill(HIST("hCentrality"), centrality);
       histos.fill(HIST("Vz"), vz);
 
@@ -302,7 +324,7 @@ struct epvector {
       }
 
       for (auto& trk : tracks) {
-        if (!selectionTrack(trk) || abs(trk.eta()) > 0.8 || trk.pt() > cfgCutPTMax || abs(trk.eta()) < cfgMinEta) {
+        if (!selectionTrack(trk) || TMath::Abs(trk.eta()) > 0.8 || trk.pt() > cfgCutPTMax || TMath::Abs(trk.eta()) < cfgMinEta) {
           continue;
         }
         qxTPC = qxTPC + trk.pt() * TMath::Cos(2.0 * trk.phi());
@@ -365,9 +387,31 @@ struct epvector {
       histos.fill(HIST("QyTPCR"), centrality, qyTPCR);
       histos.fill(HIST("PsiTPCR"), centrality, psiTPCR);
 
-      histos.fill(HIST("ResFT0CTPC"), centrality, TMath::Cos(2.0 * (psiFT0C - psiTPC)));
-      histos.fill(HIST("ResFT0CFT0A"), centrality, TMath::Cos(2.0 * (psiFT0C - psiFT0A)));
-      histos.fill(HIST("ResFT0ATPC"), centrality, TMath::Cos(2.0 * (psiTPC - psiFT0A)));
+      histos.fill(HIST("ResFT0CFT0A"), centrality, TMath::Cos(2.0 * (psiFT0C - psiFT0A)), occupancy);
+      histos.fill(HIST("ResFT0CTPC"), centrality, TMath::Cos(2.0 * (psiFT0C - psiTPC)), occupancy);
+      histos.fill(HIST("ResFT0ATPC"), centrality, TMath::Cos(2.0 * (psiFT0A - psiTPC)), occupancy);
+      histos.fill(HIST("ResFT0CTPCL"), centrality, TMath::Cos(2.0 * (psiFT0C - psiTPCL)), occupancy);
+      histos.fill(HIST("ResFT0CTPCR"), centrality, TMath::Cos(2.0 * (psiFT0C - psiTPCR)), occupancy);
+      histos.fill(HIST("ResTPCRTPCL"), centrality, TMath::Cos(2.0 * (psiTPCR - psiTPCL)), occupancy);
+
+      double qFT0Cmag = TMath::Sqrt(qxFT0C * qxFT0C + qyFT0C * qyFT0C);
+      double qFT0Amag = TMath::Sqrt(qxFT0A * qxFT0A + qyFT0A * qyFT0A);
+      double qTPCmag = TMath::Sqrt(qxTPC * qxTPC + qyTPC * qyTPC);
+      double qTPCLmag = TMath::Sqrt(qxTPCL * qxTPCL + qyTPCL * qyTPCL);
+      double qTPCRmag = TMath::Sqrt(qxTPCR * qxTPCR + qyTPCR * qyTPCR);
+
+      histos.fill(HIST("QTPC"), centrality, qTPCmag, occupancy);
+      histos.fill(HIST("QTPCL"), centrality, qTPCLmag, occupancy);
+      histos.fill(HIST("QTPCR"), centrality, qTPCRmag, occupancy);
+      histos.fill(HIST("QFT0C"), centrality, qFT0Cmag, occupancy);
+      histos.fill(HIST("QFT0A"), centrality, qFT0Amag, occupancy);
+
+      histos.fill(HIST("ResFT0CFT0ASP"), centrality, qFT0Cmag * qFT0Amag * TMath::Cos(2.0 * (psiFT0C - psiFT0A)), occupancy);
+      histos.fill(HIST("ResFT0CTPCSP"), centrality, qFT0Cmag * qTPCmag * TMath::Cos(2.0 * (psiFT0C - psiTPC)), occupancy);
+      histos.fill(HIST("ResFT0ATPCSP"), centrality, qFT0Amag * qTPCmag * TMath::Cos(2.0 * (psiFT0A - psiTPC)), occupancy);
+      histos.fill(HIST("ResFT0CTPCLSP"), centrality, qFT0Cmag * qTPCLmag * TMath::Cos(2.0 * (psiFT0C - psiTPCL)), occupancy);
+      histos.fill(HIST("ResFT0CTPCRSP"), centrality, qFT0Cmag * qTPCRmag * TMath::Cos(2.0 * (psiFT0C - psiTPCR)), occupancy);
+      histos.fill(HIST("ResTPCRTPCLSP"), centrality, qTPCRmag * qTPCLmag * TMath::Cos(2.0 * (psiTPCR - psiTPCL)), occupancy);
 
       for (int ishift = 1; ishift <= 10; ishift++) {
         histos.fill(HIST("ShiftFT0C"), centrality, 0.5, ishift - 0.5, TMath::Sin(ishift * 2.0 * psiFT0C));

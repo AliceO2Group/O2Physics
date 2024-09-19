@@ -69,7 +69,7 @@ struct v2ellip {
   // Confugrable for QA histograms
   Configurable<bool> onlyTOF{"onlyTOF", false, "only TOF tracks"};
   Configurable<bool> onlyTOFHIT{"onlyTOFHIT", false, "accept only TOF hit tracks at high pt"};
-  Configurable<bool> onlyTPC{"onlyTPC", true, "only TPC tracks"};
+  bool onlyTPC = true;
 
   // Configurables for track selections
   Configurable<float> cfgCutPT{"cfgCutPT", 0.2f, "PT cut on daughter track"};
@@ -91,7 +91,6 @@ struct v2ellip {
   Configurable<bool> timFrameEvsel{"timFrameEvsel", false, "TPC Time frame boundary cut"};
   Configurable<bool> TVXEvsel{"TVXEvsel", false, "Triggger selection"};
   Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
-  Configurable<bool> MID{"MID", false, "Misidentification of tracks"};
 
   // Configurable for histograms
   Configurable<int> nBins{"nBins", 100, "N bins in all histos"};
@@ -101,8 +100,9 @@ struct v2ellip {
   {
     // Axes
     AxisSpec vertexZAxis = {nBins, -15., 15., "vrtx_{Z} [cm] for plots"};
-    AxisSpec axisv2ref = {5, 0, 5, "v2_{ref}"};
+    AxisSpec axisv2ref = {10, 0, 10, "v2_{ref}"};
     AxisSpec axisv2diff = {14, 0, 14, "v2_{def}"};
+    AxisSpec axisphi = {700, 0, 7, "#phi"};
 
     // Histograms
     // Event selection
@@ -111,9 +111,24 @@ struct v2ellip {
 
     // v2 tprofiles for reference and differential flow
     histos.add("profv2ref", "profv2ref", kTProfile, {axisv2ref});
-    histos.add("profv2diff_pr", "profv2diff_pr", kTProfile, {axisv2diff});
-    histos.add("profv2diff_pi", "profv2diff_pi", kTProfile, {axisv2diff});
-    histos.add("profv2diff_k", "profv2diff_k", kTProfile, {axisv2diff});
+    histos.add("profv2diff_pr_10_20", "profv2diff_pr_10_20", kTProfile, {axisv2diff});
+    histos.add("profv2diff_pi_10_20", "profv2diff_pi_10_20", kTProfile, {axisv2diff});
+    histos.add("profv2diff_k_10_20", "profv2diff_k_10_20", kTProfile, {axisv2diff});
+
+    histos.add("profv2diff_pr_20_30", "profv2diff_pr_20_30", kTProfile, {axisv2diff});
+    histos.add("profv2diff_pi_20_30", "profv2diff_pi_20_30", kTProfile, {axisv2diff});
+    histos.add("profv2diff_k_20_30", "profv2diff_k_20_30", kTProfile, {axisv2diff});
+
+    histos.add("profv2diff_pr_30_40", "profv2diff_pr_30_40", kTProfile, {axisv2diff});
+    histos.add("profv2diff_pi_30_40", "profv2diff_pi_30_40", kTProfile, {axisv2diff});
+    histos.add("profv2diff_k_30_40", "profv2diff_k_30_40", kTProfile, {axisv2diff});
+
+    histos.add("profv2diff_pr_40_50", "profv2diff_pr_40_50", kTProfile, {axisv2diff});
+    histos.add("profv2diff_pi_40_50", "profv2diff_pi_40_50", kTProfile, {axisv2diff});
+    histos.add("profv2diff_k_40_50", "profv2diff_k_40_50", kTProfile, {axisv2diff});
+
+    // histogram for phi distribution
+    histos.add("hphi", "hphi", kTH1F, {axisphi});
   }
 
   template <typename T>
@@ -129,6 +144,10 @@ struct v2ellip {
   template <typename T>
   bool selectionPID(const T& candidate, int PID)
   {
+    if (candidate.pt() > 0.4) {
+      onlyTPC = false;
+    }
+
     if (PID == 0) {
       if (onlyTOF) {
         if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPi()) < nsigmaCutTOFPi) {
@@ -199,86 +218,6 @@ struct v2ellip {
           return true;
         }
         if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaPr()) < nsigmaCutTPCPr) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  template <typename T>
-  bool MIDselectionPID(const T& candidate, int PID)
-  {
-    if (PID == 0) {
-      if (onlyTOF) {
-        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPi()) < 3.0) {
-          return true;
-        }
-      } else if (onlyTOFHIT) {
-        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPi()) < 3.0) {
-          return true;
-        }
-        if (!candidate.hasTOF() &&
-            std::abs(candidate.tpcNSigmaPi()) < 3.0) {
-          return true;
-        }
-      } else if (onlyTPC) {
-        if (std::abs(candidate.tpcNSigmaPi()) < 3.0) {
-          return true;
-        }
-      } else {
-        if (candidate.hasTOF() && (candidate.tofNSigmaPi() * candidate.tofNSigmaPi() + candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi()) < (3.0 * 3.0)) {
-          return true;
-        }
-        if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < 3.0) {
-          return true;
-        }
-      }
-    } else if (PID == 1) {
-      if (onlyTOF) {
-        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaKa()) < 3.0) {
-          return true;
-        }
-      } else if (onlyTOFHIT) {
-        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaKa()) < 3.0) {
-          return true;
-        }
-        if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < 3.0) {
-          return true;
-        }
-      } else if (onlyTPC) {
-        if (std::abs(candidate.tpcNSigmaKa()) < 3.0) {
-          return true;
-        }
-      } else {
-        if (candidate.hasTOF() && (candidate.tofNSigmaKa() * candidate.tofNSigmaKa() + candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()) < (3.0 * 3.0)) {
-          return true;
-        }
-        if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < 3.0) {
-          return true;
-        }
-      }
-    } else if (PID == 2) {
-      if (onlyTOF) {
-        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPr()) < 3.0) {
-          return true;
-        }
-      } else if (onlyTOFHIT) {
-        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPr()) < 3.0) {
-          return true;
-        }
-        if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaPr()) < 3.0) {
-          return true;
-        }
-      } else if (onlyTPC) {
-        if (std::abs(candidate.tpcNSigmaPr()) < 3.0) {
-          return true;
-        }
-      } else {
-        if (candidate.hasTOF() && (candidate.tofNSigmaPr() * candidate.tofNSigmaPr() + candidate.tpcNSigmaPr() * candidate.tpcNSigmaPr()) < (3.0 * 3.0)) {
-          return true;
-        }
-        if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaPr()) < 3.0) {
           return true;
         }
       }
@@ -367,113 +306,189 @@ struct v2ellip {
     auto atrack = Atracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto btrack = Btracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
+    for (auto track : tracks) {
+      if (!selectionTrack(track)) {
+        continue;
+      }
+      if (selectionPID(track, 0) || selectionPID(track, 1) || selectionPID(track, 2)) { // If track pion, kaon or proton
+        histos.fill(HIST("hphi"), track.phi());
+      } else {
+        continue;
+      }
+    } // end of track loop
+
     for (auto track1 : atrack) {
       if (!selectionTrack(track1)) {
         continue;
-      }
-
-      if (!selectionPID(track1, 0) && !selectionPID(track1, 1) && !selectionPID(track1, 2)) {
-        continue;
-      } // If track not pion, kaon and proton then discard the track
-
-      if (MID) {
-        if (MIDselectionPID(track1, 0)) {
-          continue;
-        } // misidentified as pion
-        if (MIDselectionPID(track1, 2)) {
-          continue;
-        } // misidentified as proton
       }
 
       sum_sinA += TMath::Sin(2.0 * track1.phi()); // sum of sin components of Q vector
       sum_cosA += TMath::Cos(2.0 * track1.phi()); // sum of cos components of Q vector
       multA++;                                    // charged particle multiplicity
 
-      // pt loop for component sums of p vector, POI multiplicities pt wise
-      for (auto pt = 0; pt < 14; pt++) {
-        sum_sindsA[pt] += TMath::Sin(2 * track1.phi());
-        sum_cosdsA[pt] += TMath::Cos(2 * track1.phi());
+      if (selectionPID(track1, 0) || selectionPID(track1, 1) || selectionPID(track1, 2)) { // If track  pion, kaon or proton
+        // pt loop for component sums of p vector, POI multiplicities pt wise
+        for (auto pt = 0; pt < 14; pt++) {
+          sum_sindsA[pt] += TMath::Sin(2 * track1.phi());
+          sum_cosdsA[pt] += TMath::Cos(2 * track1.phi());
 
-        if (track1.pt() > ptbins[pt] && track1.pt() <= ptbins[pt + 1] && selectionPID(track1, 2)) {
-          pn_sumsinA_pr[pt] += TMath::Sin(2 * track1.phi());
-          pn_sumcosA_pr[pt] += TMath::Cos(2 * track1.phi());
-          mpA_pr[pt]++;
-        } else if (track1.pt() > ptbins[pt] && track1.pt() <= ptbins[pt + 1] && selectionPID(track1, 0)) {
-          pn_sumsinA_pi[pt] += TMath::Sin(2 * track1.phi());
-          pn_sumcosA_pi[pt] += TMath::Cos(2 * track1.phi());
-          mpA_pi[pt]++;
-        } else if (track1.pt() > ptbins[pt] && track1.pt() <= ptbins[pt + 1] && selectionPID(track1, 1)) {
-          pn_sumsinA_k[pt] += TMath::Sin(2 * track1.phi());
-          pn_sumcosA_k[pt] += TMath::Cos(2 * track1.phi());
-          mpA_k[pt]++;
-        } else {
-          continue;
-        }
-      } // end of pt loop
-    }   // track loop ends
+          if (track1.pt() > ptbins[pt] && track1.pt() <= ptbins[pt + 1] && selectionPID(track1, 0)) { // for pion
+            pn_sumsinA_pi[pt] += TMath::Sin(2 * track1.phi());
+            pn_sumcosA_pi[pt] += TMath::Cos(2 * track1.phi());
+            mpA_pi[pt]++;
+          } else if (track1.pt() > ptbins[pt] && track1.pt() <= ptbins[pt + 1] && selectionPID(track1, 1)) { // for kaon
+            pn_sumsinA_k[pt] += TMath::Sin(2 * track1.phi());
+            pn_sumcosA_k[pt] += TMath::Cos(2 * track1.phi());
+            mpA_k[pt]++;
+          } else if (track1.pt() > ptbins[pt] && track1.pt() <= ptbins[pt + 1] && selectionPID(track1, 2)) { // for proton
+            pn_sumsinA_pr[pt] += TMath::Sin(2 * track1.phi());
+            pn_sumcosA_pr[pt] += TMath::Cos(2 * track1.phi());
+            mpA_pr[pt]++;
+          } else {
+            continue;
+          }
+        } // end of pt loop
+      } else {
+        continue;
+      }
+    } // track loop ends
 
     for (auto track2 : btrack) {
       if (!selectionTrack(track2)) {
         continue;
       }
 
-      if (!selectionPID(track2, 0) && !selectionPID(track2, 1) && !selectionPID(track2, 2)) {
-        continue;
-      } // If track not pion, kaon and proton then discard the track
-
-      if (MID) {
-        if (MIDselectionPID(track2, 1)) {
-          continue;
-        } // misidentified as kaon
-      }
-
       sum_sinB += TMath::Sin(2.0 * track2.phi()); // sum of sin components of Q vector
       sum_cosB += TMath::Cos(2.0 * track2.phi()); // sum of cos components of Q vector
       multB++;                                    // charged particle multiplicity
 
-      // pt loop for component sums of p vector, POI multiplicities pt wise
-      for (auto pt = 0; pt < 14; pt++) {
-        sum_sindsB[pt] += TMath::Sin(2 * track2.phi());
-        sum_cosdsB[pt] += TMath::Cos(2 * track2.phi());
+      if (selectionPID(track2, 0) || selectionPID(track2, 1) || selectionPID(track2, 2)) { // If track  pion, kaon or proton
+        // pt loop for component sums of p vector, POI multiplicities pt wise
+        for (auto pt = 0; pt < 14; pt++) {
+          sum_sindsB[pt] += TMath::Sin(2 * track2.phi());
+          sum_cosdsB[pt] += TMath::Cos(2 * track2.phi());
 
-        if (track2.pt() > ptbins[pt] && track2.pt() <= ptbins[pt + 1] && selectionPID(track2, 2)) {
-          pn_sumsinB_pr[pt] += TMath::Sin(2 * track2.phi());
-          pn_sumcosB_pr[pt] += TMath::Cos(2 * track2.phi());
-          mpB_pr[pt]++;
-        } else if (track2.pt() > ptbins[pt] && track2.pt() <= ptbins[pt + 1] && selectionPID(track2, 0)) {
-          pn_sumsinB_pi[pt] += TMath::Sin(2 * track2.phi());
-          pn_sumcosB_pi[pt] += TMath::Cos(2 * track2.phi());
-          mpB_pi[pt]++;
-        } else if (track2.pt() > ptbins[pt] && track2.pt() <= ptbins[pt + 1] && selectionPID(track2, 1)) {
-          pn_sumsinB_k[pt] += TMath::Sin(2 * track2.phi());
-          pn_sumcosB_k[pt] += TMath::Cos(2 * track2.phi());
-          mpB_k[pt]++;
-        } else {
-          continue;
-        }
-      } // end of pt loop
-
+          if (track2.pt() > ptbins[pt] && track2.pt() <= ptbins[pt + 1] && selectionPID(track2, 0)) { // for pion
+            pn_sumsinB_pi[pt] += TMath::Sin(2 * track2.phi());
+            pn_sumcosB_pi[pt] += TMath::Cos(2 * track2.phi());
+            mpB_pi[pt]++;
+          } else if (track2.pt() > ptbins[pt] && track2.pt() <= ptbins[pt + 1] && selectionPID(track2, 1)) { // for kaon
+            pn_sumsinB_k[pt] += TMath::Sin(2 * track2.phi());
+            pn_sumcosB_k[pt] += TMath::Cos(2 * track2.phi());
+            mpB_k[pt]++;
+          } else if (track2.pt() > ptbins[pt] && track2.pt() <= ptbins[pt + 1] && selectionPID(track2, 2)) { // for proton
+            pn_sumsinB_pr[pt] += TMath::Sin(2 * track2.phi());
+            pn_sumcosB_pr[pt] += TMath::Cos(2 * track2.phi());
+            mpB_pr[pt]++;
+          } else {
+            continue;
+          }
+        } // end of pt loop
+      } else {
+        continue;
+      }
     } // track loop ends
 
-    // std::cout<<"MultA:  "<<multA<<"   MultB:  "<<multB<<std::endl;
+    if (10.0 < multiplicity && multiplicity <= 20.0) {
+      // reference flow
+      if ((multA * multB) != 0) {
+        histos.fill(HIST("profv2ref"), 1, ((sum_cosA * sum_cosB + sum_sinA * sum_sinB) / (multA * multB)), multA * multB);
+      }
 
-    // reference flow
-    if ((multA * multB) != 0) {
-      histos.fill(HIST("profv2ref"), 1, ((sum_cosA * sum_cosB + sum_sinA * sum_sinB) / (multA * multB)), multA * multB);
-    }
+      // pt wise differential flow
+      for (auto pt = 0; pt < 14; pt++) {
+        if ((mpA_pr[pt] * multB) != 0) {
+          histos.fill(HIST("profv2diff_pr_10_20"), pt + 1, ((pn_sumcosA_pr[pt] * sum_cosB + pn_sumsinA_pr[pt] * sum_sinB) / (mpA_pr[pt] * multB)), mpA_pr[pt] * multB);
+        } // for proton
+        if ((mpA_pi[pt] * multB) != 0) {
+          histos.fill(HIST("profv2diff_pi_10_20"), pt + 1, ((pn_sumcosA_pi[pt] * sum_cosB + pn_sumsinA_pi[pt] * sum_sinB) / (mpA_pi[pt] * multB)), mpA_pi[pt] * multB);
+        } // for pion
+        if ((mpA_k[pt] * multB) != 0) {
+          histos.fill(HIST("profv2diff_k_10_20"), pt + 1, ((pn_sumcosA_k[pt] * sum_cosB + pn_sumsinA_k[pt] * sum_sinB) / (mpA_k[pt] * multB)), mpA_k[pt] * multB);
+        } // for kaon
+      }
+    } // 10 to 20 percent centrality
 
-    // pt wise differential flow
-    for (auto pt = 0; pt < 14; pt++) {
-      if ((mpA_pr[pt] * multB) != 0) {
-        histos.fill(HIST("profv2diff_pr"), pt + 1, ((pn_sumcosA_pr[pt] * sum_cosB + pn_sumsinA_pr[pt] * sum_sinB) / (mpA_pr[pt] * multB)), mpA_pr[pt] * multB);
-      } // for proton
-      if ((mpA_pi[pt] * multB) != 0) {
-        histos.fill(HIST("profv2diff_pi"), pt + 1, ((pn_sumcosA_pi[pt] * sum_cosB + pn_sumsinA_pi[pt] * sum_sinB) / (mpA_pi[pt] * multB)), mpA_pi[pt] * multB);
-      } // for pion
-      if ((mpA_k[pt] * multB) != 0) {
-        histos.fill(HIST("profv2diff_k"), pt + 1, ((pn_sumcosA_k[pt] * sum_cosB + pn_sumsinA_k[pt] * sum_sinB) / (mpA_k[pt] * multB)), mpA_k[pt] * multB);
-      } // for kaon
-    }
+    if (20.0 < multiplicity && multiplicity <= 30.0) {
+      // reference flow
+      if ((multA * multB) != 0) {
+        histos.fill(HIST("profv2ref"), 2, ((sum_cosA * sum_cosB + sum_sinA * sum_sinB) / (multA * multB)), multA * multB);
+      }
+
+      // pt wise differential flow
+      for (auto pt = 0; pt < 14; pt++) {
+        if ((mpA_pr[pt] * multB) != 0) {
+          histos.fill(HIST("profv2diff_pr_20_30"), pt + 1, ((pn_sumcosA_pr[pt] * sum_cosB + pn_sumsinA_pr[pt] * sum_sinB) / (mpA_pr[pt] * multB)), mpA_pr[pt] * multB);
+        } // for proton
+        if ((mpA_pi[pt] * multB) != 0) {
+          histos.fill(HIST("profv2diff_pi_20_30"), pt + 1, ((pn_sumcosA_pi[pt] * sum_cosB + pn_sumsinA_pi[pt] * sum_sinB) / (mpA_pi[pt] * multB)), mpA_pi[pt] * multB);
+        } // for pion
+        if ((mpA_k[pt] * multB) != 0) {
+          histos.fill(HIST("profv2diff_k_20_30"), pt + 1, ((pn_sumcosA_k[pt] * sum_cosB + pn_sumsinA_k[pt] * sum_sinB) / (mpA_k[pt] * multB)), mpA_k[pt] * multB);
+        } // for kaon
+      }
+    } // 20 to 30 percent centrality
+
+    if (30.0 < multiplicity && multiplicity <= 40.0) {
+      // reference flow
+      if ((multA * multB) != 0) {
+        histos.fill(HIST("profv2ref"), 3, ((sum_cosA * sum_cosB + sum_sinA * sum_sinB) / (multA * multB)), multA * multB);
+      }
+
+      // pt wise differential flow
+      for (auto pt = 0; pt < 14; pt++) {
+        if ((mpA_pr[pt] * multB) != 0) {
+          histos.fill(HIST("profv2diff_pr_30_40"), pt + 1, ((pn_sumcosA_pr[pt] * sum_cosB + pn_sumsinA_pr[pt] * sum_sinB) / (mpA_pr[pt] * multB)), mpA_pr[pt] * multB);
+        } // for proton
+        if ((mpA_pi[pt] * multB) != 0) {
+          histos.fill(HIST("profv2diff_pi_30_40"), pt + 1, ((pn_sumcosA_pi[pt] * sum_cosB + pn_sumsinA_pi[pt] * sum_sinB) / (mpA_pi[pt] * multB)), mpA_pi[pt] * multB);
+        } // for pion
+        if ((mpA_k[pt] * multB) != 0) {
+          histos.fill(HIST("profv2diff_k_30_40"), pt + 1, ((pn_sumcosA_k[pt] * sum_cosB + pn_sumsinA_k[pt] * sum_sinB) / (mpA_k[pt] * multB)), mpA_k[pt] * multB);
+        } // for kaon
+      }
+    } // 30 to 40 percent centrality
+
+    if (40.0 < multiplicity && multiplicity <= 50.0) {
+      // reference flow
+      if ((multA * multB) != 0) {
+        histos.fill(HIST("profv2ref"), 4, ((sum_cosA * sum_cosB + sum_sinA * sum_sinB) / (multA * multB)), multA * multB);
+      }
+
+      // pt wise differential flow
+      for (auto pt = 0; pt < 14; pt++) {
+        if ((mpA_pr[pt] * multB) != 0) {
+          histos.fill(HIST("profv2diff_pr_40_50"), pt + 1, ((pn_sumcosA_pr[pt] * sum_cosB + pn_sumsinA_pr[pt] * sum_sinB) / (mpA_pr[pt] * multB)), mpA_pr[pt] * multB);
+        } // for proton
+        if ((mpA_pi[pt] * multB) != 0) {
+          histos.fill(HIST("profv2diff_pi_40_50"), pt + 1, ((pn_sumcosA_pi[pt] * sum_cosB + pn_sumsinA_pi[pt] * sum_sinB) / (mpA_pi[pt] * multB)), mpA_pi[pt] * multB);
+        } // for pion
+        if ((mpA_k[pt] * multB) != 0) {
+          histos.fill(HIST("profv2diff_k_40_50"), pt + 1, ((pn_sumcosA_k[pt] * sum_cosB + pn_sumsinA_k[pt] * sum_sinB) / (mpA_k[pt] * multB)), mpA_k[pt] * multB);
+        } // for kaon
+      }
+    } // 40 to 50 percent centrality
+
+    if (50.0 < multiplicity && multiplicity <= 60.0) {
+      // reference flow
+      if ((multA * multB) != 0) {
+        histos.fill(HIST("profv2ref"), 5, ((sum_cosA * sum_cosB + sum_sinA * sum_sinB) / (multA * multB)), multA * multB);
+      }
+    } // 50 to 60 percent centrality
+
+    if (60.0 < multiplicity && multiplicity <= 70.0) {
+      // reference flow
+      if ((multA * multB) != 0) {
+        histos.fill(HIST("profv2ref"), 6, ((sum_cosA * sum_cosB + sum_sinA * sum_sinB) / (multA * multB)), multA * multB);
+      }
+    } // 60 to 70 percent centrality
+
+    if (70.0 < multiplicity && multiplicity <= 80.0) {
+      // reference flow
+      if ((multA * multB) != 0) {
+        histos.fill(HIST("profv2ref"), 7, ((sum_cosA * sum_cosB + sum_sinA * sum_sinB) / (multA * multB)), multA * multB);
+      }
+    } // 70 to 80 percent centrality
 
   } // end of process
 

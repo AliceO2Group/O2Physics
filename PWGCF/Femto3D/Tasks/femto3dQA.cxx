@@ -43,6 +43,7 @@ struct QAHistograms {
   Configurable<bool> _removeSameBunchPileup{"removeSameBunchPileup", false, ""};
   Configurable<bool> _requestGoodZvtxFT0vsPV{"requestGoodZvtxFT0vsPV", false, ""};
   Configurable<bool> _requestVertexITSTPC{"requestVertexITSTPC", false, ""};
+  Configurable<int> _requestVertexTOForTRDmatched{"requestVertexTOFmatched", 0, "0 -> no selectio; 1 -> vertex is matched to TOF or TRD; 2 -> matched to both;"};
   Configurable<bool> _requestNoCollInTimeRangeStandard{"requestNoCollInTimeRangeStandard", false, ""};
   Configurable<std::pair<float, float>> _IRcut{"IRcut", std::pair<float, float>{0.f, 100.f}, "[min., max.] IR range to keep events within"};
   Configurable<std::pair<int, int>> _OccupancyCut{"OccupancyCut", std::pair<int, int>{0, 10000}, "[min., max.] occupancy range to keep events within"};
@@ -155,6 +156,8 @@ struct QAHistograms {
         continue;
       if (_requestVertexITSTPC && !collision.isVertexITSTPC())
         continue;
+      if (_requestVertexTOForTRDmatched > collision.isVertexTOForTRDmatched())
+        continue;
       if (_requestNoCollInTimeRangeStandard && !collision.noCollInTimeRangeStandard())
         continue;
       if (collision.multPerc() < _centCut.value.first || collision.multPerc() >= _centCut.value.second)
@@ -178,10 +181,12 @@ struct QAHistograms {
         continue;
       if (_requestVertexITSTPC && !track.template singleCollSel_as<ColsType>().isVertexITSTPC())
         continue;
+      if (_requestVertexTOForTRDmatched > track.template singleCollSel_as<ColsType>().isVertexTOForTRDmatched())
+        continue;
       if (_requestNoCollInTimeRangeStandard && !track.template singleCollSel_as<ColsType>().noCollInTimeRangeStandard())
         continue;
 
-      if (abs(track.template singleCollSel_as<ColsType>().posZ()) > _vertexZ)
+      if (std::fabs(track.template singleCollSel_as<ColsType>().posZ()) > _vertexZ)
         continue;
       if (track.template singleCollSel_as<ColsType>().multPerc() < _centCut.value.first || track.template singleCollSel_as<ColsType>().multPerc() >= _centCut.value.second)
         continue;
@@ -191,7 +196,7 @@ struct QAHistograms {
         continue;
       if ((track.tpcFractionSharedCls()) > _tpcFractionSharedCls || (track.itsNCls()) < _itsNCls)
         continue;
-      if (abs(track.dcaXY()) > _dcaXY.value[0] + _dcaXY.value[1] * std::pow(track.pt(), _dcaXY.value[2]) || abs(track.dcaZ()) > _dcaZ.value[0] + _dcaZ.value[1] * std::pow(track.pt(), _dcaZ.value[2]))
+      if (std::fabs(track.dcaXY()) > _dcaXY.value[0] + _dcaXY.value[1] * std::pow(track.pt(), _dcaXY.value[2]) || std::fabs(track.dcaZ()) > _dcaZ.value[0] + _dcaZ.value[1] * std::pow(track.pt(), _dcaZ.value[2]))
         continue;
 
       if constexpr (FillExtra) {

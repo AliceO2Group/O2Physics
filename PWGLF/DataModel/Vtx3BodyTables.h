@@ -43,6 +43,9 @@ DECLARE_SOA_COLUMN(Z, z, float);               //! decay position Z
 
 // Saved from finding: DCAs
 DECLARE_SOA_COLUMN(DCAVtxDaughters, dcaVtxdaughters, float); //! DCA among daughters
+DECLARE_SOA_COLUMN(DCAXYTrack0ToPV, dcaXYtrack0topv, float); //! DCAXY of prong0 to PV
+DECLARE_SOA_COLUMN(DCAXYTrack1ToPV, dcaXYtrack1topv, float); //! DCAXY of prong1 to PV
+DECLARE_SOA_COLUMN(DCAXYTrack2ToPV, dcaXYtrack2topv, float); //! DCAXY of prong2 to PV
 DECLARE_SOA_COLUMN(DCATrack0ToPV, dcatrack0topv, float);     //! DCA of prong0 to PV
 DECLARE_SOA_COLUMN(DCATrack1ToPV, dcatrack1topv, float);     //! DCA of prong1 to PV
 DECLARE_SOA_COLUMN(DCATrack2ToPV, dcatrack2topv, float);     //! DCA of prong2 to PV
@@ -132,6 +135,7 @@ DECLARE_SOA_TABLE_FULL(StoredVtx3BodyDatas, "Vtx3BodyDatas", "AOD", "Vtx3BodyDAT
                        vtx3body::PxTrack1, vtx3body::PyTrack1, vtx3body::PzTrack1,
                        vtx3body::PxTrack2, vtx3body::PyTrack2, vtx3body::PzTrack2,
                        vtx3body::DCAVtxDaughters,
+                       vtx3body::DCAXYTrack0ToPV, vtx3body::DCAXYTrack1ToPV, vtx3body::DCAXYTrack2ToPV,
                        vtx3body::DCATrack0ToPV, vtx3body::DCATrack1ToPV, vtx3body::DCATrack2ToPV,
                        vtx3body::TOFNSigmaBachDe,
 
@@ -246,15 +250,19 @@ DECLARE_SOA_COLUMN(TPCNSigmaPion, tpcNSigmaPion, float);         //! nsigma of T
 DECLARE_SOA_COLUMN(TPCNSigmaBachelor, tpcNSigmaBachelor, float); //! nsigma of TPC PID of the bachelor daughter
 DECLARE_SOA_COLUMN(TOFNSigmaBachelor, tofNSigmaBachelor, float); //! nsigma of TOF PID of the bachelor daughter
 // DCA to PV
-DECLARE_SOA_COLUMN(DCAProtonToPV, dcaProtontoPV, float);     //! DCA of the proton daughter to pv
-DECLARE_SOA_COLUMN(DCAPionToPV, dcaPiontoPV, float);         //! DCA of the pion daughter to pv
-DECLARE_SOA_COLUMN(DCABachelorToPV, dcaBachelortoPV, float); //! DCA of the bachelor daughter to pv
+DECLARE_SOA_COLUMN(DCAXYProtonToPV, dcaxyProtontoPV, float);     //! DCAXY of the proton daughter to pv
+DECLARE_SOA_COLUMN(DCAXYPionToPV, dcaxyPiontoPV, float);         //! DCAXY of the pion daughter to pv
+DECLARE_SOA_COLUMN(DCAXYBachelorToPV, dcaxyBachelortoPV, float); //! DCAXY of the bachelor daughter to pv
+DECLARE_SOA_COLUMN(DCAProtonToPV, dcaProtontoPV, float);         //! DCA of the proton daughter to pv
+DECLARE_SOA_COLUMN(DCAPionToPV, dcaPiontoPV, float);             //! DCA of the pion daughter to pv
+DECLARE_SOA_COLUMN(DCABachelorToPV, dcaBachelortoPV, float);     //! DCA of the bachelor daughter to pv
 // for MC
 DECLARE_SOA_COLUMN(GenP, genP, float);                                    // P of the hypertriton
 DECLARE_SOA_COLUMN(GenPt, genPt, float);                                  // pT of the hypertriton
 DECLARE_SOA_COLUMN(GenCt, genCt, float);                                  // ct of the hypertriton
 DECLARE_SOA_COLUMN(GenPhi, genPhi, float);                                // Phi of the hypertriton
 DECLARE_SOA_COLUMN(GenEta, genEta, float);                                // Eta of the hypertriton
+DECLARE_SOA_COLUMN(GenRapidity, genRapidity, float);                      // Rapidity of the hypertriton
 DECLARE_SOA_COLUMN(IsReco, isReco, bool);                                 // bool: true for reco
 DECLARE_SOA_COLUMN(IsSignal, isSignal, bool);                             // bool: true for signal
 DECLARE_SOA_COLUMN(PdgCode, pdgCode, int);                                // pdgCode of the mcparticle, -1 for fake pair
@@ -284,6 +292,7 @@ DECLARE_SOA_TABLE(Hyp3BodyCands, "AOD", "HYP3BODYCANDS",
                   hyp3body::ITSNclusSizeProton, hyp3body::ITSNclusSizePion, hyp3body::ITSNclusSizeBachelor,
                   hyp3body::TPCNSigmaProton, hyp3body::TPCNSigmaPion, hyp3body::TPCNSigmaBachelor,
                   hyp3body::TOFNSigmaBachelor,
+                  hyp3body::DCAXYProtonToPV, hyp3body::DCAXYPionToPV, hyp3body::DCAXYBachelorToPV,
                   hyp3body::DCAProtonToPV, hyp3body::DCAPionToPV, hyp3body::DCABachelorToPV);
 
 // output table for MC
@@ -309,6 +318,7 @@ DECLARE_SOA_TABLE(MCHyp3BodyCands, "AOD", "MCHYP3BODYCANDS",
                   hyp3body::ITSNclusSizeProton, hyp3body::ITSNclusSizePion, hyp3body::ITSNclusSizeBachelor,
                   hyp3body::TPCNSigmaProton, hyp3body::TPCNSigmaPion, hyp3body::TPCNSigmaBachelor,
                   hyp3body::TOFNSigmaBachelor,
+                  hyp3body::DCAXYProtonToPV, hyp3body::DCAXYPionToPV, hyp3body::DCAXYBachelorToPV,
                   hyp3body::DCAProtonToPV, hyp3body::DCAPionToPV, hyp3body::DCABachelorToPV,
                   // MC information
                   hyp3body::GenP,
@@ -316,6 +326,7 @@ DECLARE_SOA_TABLE(MCHyp3BodyCands, "AOD", "MCHYP3BODYCANDS",
                   hyp3body::GenCt,
                   hyp3body::GenPhi,
                   hyp3body::GenEta,
+                  hyp3body::GenRapidity,
                   hyp3body::IsSignal,
                   hyp3body::IsReco,
                   hyp3body::PdgCode,
@@ -440,7 +451,6 @@ using McKFVtx3BodyLabel = McKFVtx3BodyLabels::iterator;
 DECLARE_SOA_TABLE(McFullKFVtx3BodyLabels, "AOD", "MCFULLKFVTXLABEL", //! Table joinable with Decay3Bodys (CAUTION: NOT WITH Vtx3BodyDATA)
                   mcfullvtx3bodylabel::McParticleId);
 using McFullKFVtx3BodyLabel = McFullKFVtx3BodyLabels::iterator;
-
 } // namespace o2::aod
 
 #endif // PWGLF_DATAMODEL_VTX3BODYTABLES_H_

@@ -20,7 +20,7 @@
 #include <algorithm>
 
 //_______________________________________________________________________
-namespace o2::aod::pwgem::dilepton::mcutil
+namespace o2::aod::pwgem::dilepton::utils::mcutil
 {
 enum class EM_HFeeType : int {
   kUndef = -1,
@@ -31,6 +31,160 @@ enum class EM_HFeeType : int {
   kBCe_Be_DiffB = 4, // LS
 };
 
+//_______________________________________________________________________
+template <typename TMCParticle1, typename TMCParticle2>
+int FindCommonMotherFrom2ProngsWithoutPDG(TMCParticle1 const& p1, TMCParticle2 const& p2)
+{
+  if (p1.globalIndex() == p2.globalIndex())
+    return -1; // mc particle p1 and p2 is identical. reject.
+
+  if (!p1.has_mothers())
+    return -1;
+  if (!p2.has_mothers())
+    return -1;
+
+  // LOGF(info,"original motherid1 = %d , motherid2 = %d", p1.mothersIds()[0], p2.mothersIds()[0]);
+
+  int motherid1 = p1.mothersIds()[0];
+  int motherid2 = p2.mothersIds()[0];
+
+  // LOGF(info,"motherid1 = %d , motherid2 = %d", motherid1, motherid2);
+
+  if (motherid1 != motherid2)
+    return -1;
+  return motherid1;
+}
+//_______________________________________________________________________
+template <typename TMCParticle1, typename TMCParticle2, typename TMCParticle3>
+int FindCommonMotherFrom3ProngsWithoutPDG(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticle3 const& p3)
+{
+  if (p1.globalIndex() == p2.globalIndex())
+    return -1; // mc particle p1 and p2 are identical. reject.
+  if (p2.globalIndex() == p3.globalIndex())
+    return -1; // mc particle p2 and p3 are identical. reject.
+  if (p3.globalIndex() == p1.globalIndex())
+    return -1; // mc particle p3 and p1 are identical. reject.
+
+  if (!p1.has_mothers())
+    return -1;
+  if (!p2.has_mothers())
+    return -1;
+  if (!p3.has_mothers())
+    return -1;
+
+  // LOGF(info,"original motherid1 = %d , motherid2 = %d", p1.mothersIds()[0], p2.mothersIds()[0]);
+
+  int motherid1 = p1.mothersIds()[0];
+  int motherid2 = p2.mothersIds()[0];
+  int motherid3 = p3.mothersIds()[0];
+
+  // LOGF(info,"motherid1 = %d , motherid2 = %d", motherid1, motherid2);
+
+  if (motherid1 != motherid2)
+    return -1;
+  if (motherid2 != motherid3)
+    return -1;
+  if (motherid3 != motherid1)
+    return -1;
+  return motherid1;
+}
+//_______________________________________________________________________
+template <typename TMCParticle1, typename TMCParticle2, typename TMCParticles>
+int FindCommonMotherFrom2Prongs(TMCParticle1 const& p1, TMCParticle2 const& p2, const int expected_pdg1, const int expected_pdg2, const int expected_mother_pdg, TMCParticles const& mcparticles)
+{
+  if (p1.globalIndex() == p2.globalIndex())
+    return -1; // mc particle p1 and p2 is identical. reject.
+
+  if (p1.pdgCode() != expected_pdg1)
+    return -1;
+  if (p2.pdgCode() != expected_pdg2)
+    return -1;
+
+  if (!p1.has_mothers())
+    return -1;
+  if (!p2.has_mothers())
+    return -1;
+
+  // LOGF(info,"original motherid1 = %d , motherid2 = %d", p1.mothersIds()[0], p2.mothersIds()[0]);
+
+  int motherid1 = p1.mothersIds()[0];
+  auto mother1 = mcparticles.iteratorAt(motherid1);
+  int mother1_pdg = mother1.pdgCode();
+
+  int motherid2 = p2.mothersIds()[0];
+  auto mother2 = mcparticles.iteratorAt(motherid2);
+  int mother2_pdg = mother2.pdgCode();
+
+  // LOGF(info,"motherid1 = %d , motherid2 = %d", motherid1, motherid2);
+
+  if (motherid1 != motherid2)
+    return -1;
+  if (mother1_pdg != mother2_pdg)
+    return -1;
+  if (mother1_pdg != expected_mother_pdg)
+    return -1;
+  return motherid1;
+}
+//_______________________________________________________________________
+template <typename TMCParticle1, typename TMCParticle2, typename TMCParticle3, typename TMCParticles>
+int FindCommonMotherFrom3Prongs(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticle3 const& p3, const int expected_pdg1, const int expected_pdg2, const int expected_pdg3, const int expected_mother_pdg, TMCParticles const& mcparticles)
+{
+  if (p1.globalIndex() == p2.globalIndex())
+    return -1; // mc particle p1 and p2 are identical. reject.
+  if (p2.globalIndex() == p3.globalIndex())
+    return -1; // mc particle p2 and p3 are identical. reject.
+  if (p3.globalIndex() == p1.globalIndex())
+    return -1; // mc particle p3 and p1 are identical. reject.
+
+  if (p1.pdgCode() != expected_pdg1)
+    return -1;
+  if (p2.pdgCode() != expected_pdg2)
+    return -1;
+  if (p3.pdgCode() != expected_pdg3)
+    return -1;
+
+  if (!p1.has_mothers())
+    return -1;
+  if (!p2.has_mothers())
+    return -1;
+  if (!p3.has_mothers())
+    return -1;
+
+  // LOGF(info,"original motherid1 = %d , motherid2 = %d", p1.mothersIds()[0], p2.mothersIds()[0]);
+
+  int motherid1 = p1.mothersIds()[0];
+  auto mother1 = mcparticles.iteratorAt(motherid1);
+  int mother1_pdg = mother1.pdgCode();
+
+  int motherid2 = p2.mothersIds()[0];
+  auto mother2 = mcparticles.iteratorAt(motherid2);
+  int mother2_pdg = mother2.pdgCode();
+
+  int motherid3 = p3.mothersIds()[0];
+  auto mother3 = mcparticles.iteratorAt(motherid3);
+  int mother3_pdg = mother3.pdgCode();
+
+  // LOGF(info,"motherid1 = %d , motherid2 = %d", motherid1, motherid2);
+
+  if (motherid1 != motherid2)
+    return -1;
+  if (motherid2 != motherid3)
+    return -1;
+  if (motherid3 != motherid1)
+    return -1;
+
+  if (mother1_pdg != mother2_pdg)
+    return -1;
+  if (mother2_pdg != mother3_pdg)
+    return -1;
+  if (mother3_pdg != mother1_pdg)
+    return -1;
+
+  if (mother1_pdg != expected_mother_pdg)
+    return -1;
+  return motherid1;
+}
+//_______________________________________________________________________
 template <typename TMCParticle, typename TMCParticles>
 int IsFromBeauty(TMCParticle const& p, TMCParticles const& mcparticles)
 {
@@ -39,6 +193,11 @@ int IsFromBeauty(TMCParticle const& p, TMCParticles const& mcparticles)
   }
 
   int motherid = p.mothersIds()[0]; // first mother index
+  auto mp_tmp = mcparticles.iteratorAt(motherid);
+  if (abs(mp_tmp.pdgCode()) < 1e+9 && (std::to_string(abs(mp_tmp.pdgCode()))[std::to_string(abs(mp_tmp.pdgCode())).length() - 2] == '5' && std::to_string(abs(mp_tmp.pdgCode()))[std::to_string(abs(mp_tmp.pdgCode())).length() - 3] == '5') && abs(mp_tmp.pdgCode()) % 2 == 1) {
+    return -999; // reject bottomonia
+  }
+
   while (motherid > -1) {
     if (motherid < mcparticles.size()) { // protect against bad mother indices. why is this needed?
       auto mp = mcparticles.iteratorAt(motherid);
@@ -66,6 +225,10 @@ int IsFromCharm(TMCParticle const& p, TMCParticles const& mcparticles)
   }
 
   int motherid = p.mothersIds()[0]; // first mother index
+  auto mp_tmp = mcparticles.iteratorAt(motherid);
+  if (abs(mp_tmp.pdgCode()) < 1e+9 && (std::to_string(abs(mp_tmp.pdgCode()))[std::to_string(abs(mp_tmp.pdgCode())).length() - 2] == '4' && std::to_string(abs(mp_tmp.pdgCode()))[std::to_string(abs(mp_tmp.pdgCode())).length() - 3] == '4') && abs(mp_tmp.pdgCode()) % 2 == 1) {
+    return -999; // reject bottomonia
+  }
   while (motherid > -1) {
     if (motherid < mcparticles.size()) { // protect against bad mother indices. why is this needed?
       auto mp = mcparticles.iteratorAt(motherid);
@@ -136,13 +299,24 @@ int IsHF(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcp
     }
   }
 
-  bool is_direct_from_b1 = abs(mothers_pdg1[0]) < 1e+9 && (std::to_string(mothers_pdg1[0])[std::to_string(mothers_pdg1[0]).length() - 3] == '5' || std::to_string(mothers_pdg1[0])[std::to_string(mothers_pdg1[0]).length() - 4] == '5');
-  bool is_direct_from_b2 = abs(mothers_pdg2[0]) < 1e+9 && (std::to_string(mothers_pdg2[0])[std::to_string(mothers_pdg2[0]).length() - 3] == '5' || std::to_string(mothers_pdg2[0])[std::to_string(mothers_pdg2[0]).length() - 4] == '5');
-  bool is_prompt_c1 = abs(mothers_pdg1[0]) < 1e+9 && (std::to_string(mothers_pdg1[0])[std::to_string(mothers_pdg1[0]).length() - 3] == '4' || std::to_string(mothers_pdg1[0])[std::to_string(mothers_pdg1[0]).length() - 4] == '4') && IsFromBeauty(p1, mcparticles) < 0;
-  bool is_prompt_c2 = abs(mothers_pdg2[0]) < 1e+9 && (std::to_string(mothers_pdg2[0])[std::to_string(mothers_pdg2[0]).length() - 3] == '4' || std::to_string(mothers_pdg2[0])[std::to_string(mothers_pdg2[0]).length() - 4] == '4') && IsFromBeauty(p2, mcparticles) < 0;
-  bool is_c_from_b1 = abs(mothers_pdg1[0]) < 1e+9 && (std::to_string(mothers_pdg1[0])[std::to_string(mothers_pdg1[0]).length() - 3] == '4' || std::to_string(mothers_pdg1[0])[std::to_string(mothers_pdg1[0]).length() - 4] == '4') && IsFromBeauty(p1, mcparticles) > 0;
-  bool is_c_from_b2 = abs(mothers_pdg2[0]) < 1e+9 && (std::to_string(mothers_pdg2[0])[std::to_string(mothers_pdg2[0]).length() - 3] == '4' || std::to_string(mothers_pdg2[0])[std::to_string(mothers_pdg2[0]).length() - 4] == '4') && IsFromBeauty(p2, mcparticles) > 0;
+  bool is_direct_from_b1 = IsFromBeauty(p1, mcparticles) > 0 && IsFromCharm(p1, mcparticles) < 0;
+  bool is_direct_from_b2 = IsFromBeauty(p2, mcparticles) > 0 && IsFromCharm(p2, mcparticles) < 0;
+  bool is_prompt_c1 = IsFromBeauty(p1, mcparticles) < 0 && IsFromCharm(p1, mcparticles) > 0;
+  bool is_prompt_c2 = IsFromBeauty(p2, mcparticles) < 0 && IsFromCharm(p2, mcparticles) > 0;
+  bool is_c_from_b1 = IsFromBeauty(p1, mcparticles) > 0 && IsFromCharm(p1, mcparticles) > 0;
+  bool is_c_from_b2 = IsFromBeauty(p2, mcparticles) > 0 && IsFromCharm(p2, mcparticles) > 0;
 
+  if (is_direct_from_b1 && is_direct_from_b2 && p1.pdgCode() * p2.pdgCode() < 0) {
+    mothers_id1.clear();
+    mothers_pdg1.clear();
+    mothers_id2.clear();
+    mothers_pdg2.clear();
+    mothers_id1.shrink_to_fit();
+    mothers_pdg1.shrink_to_fit();
+    mothers_id2.shrink_to_fit();
+    mothers_pdg2.shrink_to_fit();
+    return static_cast<int>(EM_HFeeType::kBe_Be); // bb->ee, decay type = 2
+  }
   if (is_prompt_c1 && is_prompt_c2 && p1.pdgCode() * p2.pdgCode() < 0) {
     mothers_id1.clear();
     mothers_pdg1.clear();
@@ -153,17 +327,8 @@ int IsHF(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcp
     mothers_id2.shrink_to_fit();
     mothers_pdg2.shrink_to_fit();
     return static_cast<int>(EM_HFeeType::kCe_Ce); // cc->ee, decay type = 0
-  } else if (is_direct_from_b1 && is_direct_from_b2 && p1.pdgCode() * p2.pdgCode() < 0) {
-    mothers_id1.clear();
-    mothers_pdg1.clear();
-    mothers_id2.clear();
-    mothers_pdg2.clear();
-    mothers_id1.shrink_to_fit();
-    mothers_pdg1.shrink_to_fit();
-    mothers_id2.shrink_to_fit();
-    mothers_pdg2.shrink_to_fit();
-    return static_cast<int>(EM_HFeeType::kBe_Be); // bb->ee, decay type = 2
-  } else if (is_c_from_b1 && is_c_from_b2 && p1.pdgCode() * p2.pdgCode() < 0) {
+  }
+  if (is_c_from_b1 && is_c_from_b2 && p1.pdgCode() * p2.pdgCode() < 0) {
     mothers_id1.clear();
     mothers_pdg1.clear();
     mothers_id2.clear();
@@ -173,7 +338,8 @@ int IsHF(TMCParticle1 const& p1, TMCParticle2 const& p2, TMCParticles const& mcp
     mothers_id2.shrink_to_fit();
     mothers_pdg2.shrink_to_fit();
     return static_cast<int>(EM_HFeeType::kBCe_BCe); // b->c->e and b->c->e, decay type = 1
-  } else if ((is_direct_from_b1 && is_c_from_b2) || (is_direct_from_b2 && is_c_from_b1)) {
+  }
+  if ((is_direct_from_b1 && is_c_from_b2) || (is_direct_from_b2 && is_c_from_b1)) {
     if (p1.pdgCode() * p2.pdgCode() < 0) { // ULS
       for (auto& mid1 : mothers_id1) {
         for (auto& mid2 : mothers_id2) {
@@ -374,5 +540,5 @@ bool isBeautyBaryon(T const& track)
 }
 //_______________________________________________________________________
 //_______________________________________________________________________
-} // namespace o2::aod::pwgem::dilepton::mcutil
+} // namespace o2::aod::pwgem::dilepton::utils::mcutil
 #endif // PWGEM_DILEPTON_UTILS_MCUTILITIES_H_

@@ -165,6 +165,9 @@ struct v0selector {
       registry.add("hMassGamma", "hMassGamma", HistType::kTH2F, {{900, 0.0f, 90.0f}, {100, 0.0f, 0.1f}});
       registry.add("hGammaRxy", "hGammaRxy", HistType::kTH2F, {{1800, -90.0f, 90.0f}, {1800, -90.0f, 90.0f}});
       registry.add("hMassK0S", "hMassK0S", HistType::kTH2F, {{900, 0.0f, 90.0f}, {100, 0.45, 0.55}});
+      registry.add("hMassK0SPt", "hMassK0SPt", HistType::kTH2F, {{200, 0.0f, 20.0f}, {100, 0.45, 0.55}});
+      registry.add("hMassK0SEta", "hMassK0SEta", HistType::kTH2F, {{20, -1, 1}, {100, 0.45, 0.55}});
+      registry.add("hMassK0SPhi", "hMassK0SPhi", HistType::kTH2F, {{63, 0, 6.3}, {100, 0.45, 0.55}});
       registry.add("hMassLambda", "hMassLambda", HistType::kTH2F, {{900, 0.0f, 90.0f}, {100, 1.05, 1.15f}});
       registry.add("hMassAntiLambda", "hAntiMassLambda", HistType::kTH2F, {{900, 0.0f, 90.0f}, {100, 1.05, 1.15f}});
       registry.add("hV0Pt", "pT", HistType::kTH1F, {{100, 0.0f, 10}});
@@ -308,6 +311,9 @@ struct v0selector {
       } else if (v0id == kK0S) { // K0S-> pi pi
         if (fillhisto) {
           registry.fill(HIST("hMassK0S"), V0radius, mK0S);
+          registry.fill(HIST("hMassK0SPt"), V0.pt(), mK0S);
+          registry.fill(HIST("hMassK0SEta"), V0.eta(), mK0S);
+          registry.fill(HIST("hMassK0SPhi"), V0.phi(), mK0S);
         }
         if ((0.48 < mK0S && mK0S < 0.51) && TMath::Abs(V0.posTrack_as<FullTracksExt>().tpcNSigmaPi()) < 5 && TMath::Abs(V0.negTrack_as<FullTracksExt>().tpcNSigmaPi()) < 5) {
           pidmap[V0.posTrackId()] |= (uint8_t(1) << kK0S);

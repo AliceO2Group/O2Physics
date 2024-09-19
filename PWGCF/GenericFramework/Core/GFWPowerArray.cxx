@@ -52,7 +52,7 @@ void GFWPowerArray::RecursiveFunction(HarSet& masterVector, HarSet hars, int off
 {
   HarSet compVec = AddConstant(hars, offset);
   FlushVectorToMaster(masterVector, compVec, MaxPower);
-  for (int i = 0; i < hars.size(); i++)
+  for (size_t i = 0; i < hars.size(); i++)
     RecursiveFunction(masterVector, TrimVec(hars, i), offset + hars.at(i), MaxPower);
   ;
 };

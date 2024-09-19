@@ -27,6 +27,7 @@
 #include "Common/Core/trackUtilities.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/Vtx3BodyTables.h"
+#include "PWGLF/DataModel/pidTOFGeneric.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
@@ -58,9 +59,10 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
+using ColwithEvTimes = o2::soa::Join<aod::Collisions, aod::EvSels, aod::EvTimeTOFFT0>;
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels>;
-using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU>;
-using FullTracksExtPIDIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullPi, aod::pidTPCFullDe>;
+using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::EvTimeTOFFT0ForTrack>;
+using FullTracksExtPIDIU = soa::Join<FullTracksExtIU, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullPi, aod::pidTPCFullDe>;
 using MCLabeledTracksIU = soa::Join<FullTracksExtIU, aod::McTrackLabels>;
 
 struct decay3bodyBuilder {
@@ -156,12 +158,12 @@ struct decay3bodyBuilder {
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   // CCDB TOF PID paras
+  Configurable<int64_t> timestamp{"ccdb-timestamp", -1, "timestamp of the object"};
   Configurable<std::string> paramFileName{"paramFileName", "", "Path to the parametrization object. If empty the parametrization is not taken from file"};
   Configurable<std::string> parametrizationPath{"parametrizationPath", "TOF/Calib/Params", "Path of the TOF parametrization on the CCDB or in the file, if the paramFileName is not empty"};
   Configurable<std::string> passName{"passName", "", "Name of the pass inside of the CCDB parameter collection. If empty, the automatically deceted from metadata (to be implemented!!!)"};
   Configurable<std::string> timeShiftCCDBPath{"timeShiftCCDBPath", "", "Path of the TOF time shift vs eta. If empty none is taken"};
   Configurable<bool> loadResponseFromCCDB{"loadResponseFromCCDB", false, "Flag to load the response from the CCDB"};
-  Configurable<bool> enableTimeDependentResponse{"enableTimeDependentResponse", false, "Flag to use the collision timestamp to fetch the PID Response"};
   Configurable<bool> fatalOnPassNotAvailable{"fatalOnPassNotAvailable", true, "Flag to throw a fatal if the pass is not available in the retrieved CCDB object"};
   // for KFParticle reconstruction
   struct : ConfigurableGroup {
@@ -208,6 +210,7 @@ struct decay3bodyBuilder {
   float maxStep; // max step size (cm) for propagation
   o2::base::MatLayerCylSet* lut = nullptr;
   o2::vertexing::DCAFitterN<3> fitter3body;
+  o2::aod::pidtofgeneric::TofPidNewCollision<ColwithEvTimes::iterator, FullTracksExtIU::iterator> bachelorTOFPID;
   o2::pid::tof::TOFResoParamsV2 mRespParamsV2;
 
   void init(InitContext&)
@@ -334,7 +337,8 @@ struct decay3bodyBuilder {
     }
 
     // Initial TOF PID Paras, copied from PIDTOF.h
-    ccdb->setTimestamp(bc.timestamp());
+    timestamp.value = bc.timestamp();
+    ccdb->setTimestamp(timestamp.value);
     // Not later than now objects
     ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
     // TODO: implement the automatic pass name detection from metadata
@@ -365,8 +369,8 @@ struct decay3bodyBuilder {
         mRespParamsV2.loadParamFromFile(fname.data(), parametrizationPath.value);
       }
     } else if (loadResponseFromCCDB) { // Loading it from CCDB
-      LOG(info) << "Loading exp. sigma parametrization from CCDB, using path: " << parametrizationPath.value << " for timestamp " << bc.timestamp();
-      o2::tof::ParameterCollection* paramCollection = ccdb->getForTimeStamp<o2::tof::ParameterCollection>(parametrizationPath.value, bc.timestamp());
+      LOG(info) << "Loading exp. sigma parametrization from CCDB, using path: " << parametrizationPath.value << " for timestamp " << timestamp.value;
+      o2::tof::ParameterCollection* paramCollection = ccdb->getForTimeStamp<o2::tof::ParameterCollection>(parametrizationPath.value, timestamp.value);
       paramCollection->print();
       if (!paramCollection->retrieveParameters(mRespParamsV2, passName.value)) { // Attempt at loading the parameters with the pass defined
         if (fatalOnPassNotAvailable) {
@@ -385,10 +389,12 @@ struct decay3bodyBuilder {
         mRespParamsV2.setTimeShiftParameters(timeShiftCCDBPath.value, "gmean_Pos", true);
         mRespParamsV2.setTimeShiftParameters(timeShiftCCDBPath.value, "gmean_Neg", false);
       } else {
-        mRespParamsV2.setTimeShiftParameters(ccdb->getForTimeStamp<TGraph>(Form("%s/pos", timeShiftCCDBPath.value.c_str()), bc.timestamp()), true);
-        mRespParamsV2.setTimeShiftParameters(ccdb->getForTimeStamp<TGraph>(Form("%s/neg", timeShiftCCDBPath.value.c_str()), bc.timestamp()), false);
+        mRespParamsV2.setTimeShiftParameters(ccdb->getForTimeStamp<TGraph>(Form("%s/pos", timeShiftCCDBPath.value.c_str()), timestamp.value), true);
+        mRespParamsV2.setTimeShiftParameters(ccdb->getForTimeStamp<TGraph>(Form("%s/neg", timeShiftCCDBPath.value.c_str()), timestamp.value), false);
       }
     }
+
+    bachelorTOFPID.SetParams(mRespParamsV2);
   }
 
   //------------------------------------------------------------------
@@ -424,7 +430,8 @@ struct decay3bodyBuilder {
 
   //------------------------------------------------------------------
   // 3body candidate builder
-  template <class TTrackClass, typename TCollisionTable, typename TTrackTable>
+  template <class TCollisionClass, class TTrackClass, typename TCollisionTable, typename TTrackTable>
+  // void buildVtx3BodyDataTable(TCollisionTable const& /*allcollisions*/, TCollisionTable::iterator const& collision, TTrackTable const& /*tracks*/, aod::Decay3Bodys const& decay3bodys, int bachelorcharge = 1)
   void buildVtx3BodyDataTable(TCollisionTable const& collision, TTrackTable const& /*tracks*/, aod::Decay3Bodys const& decay3bodys, int bachelorcharge = 1)
   {
 
@@ -447,14 +454,17 @@ struct decay3bodyBuilder {
       auto Track0Par = getTrackPar(t0);
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, Track0Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
       auto Track0dcaXY = dcaInfo[0];
+      auto Track0dca = std::sqrt(Track0dcaXY * Track0dcaXY + dcaInfo[1] * dcaInfo[1]);
 
       auto Track1Par = getTrackPar(t1);
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, Track1Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
       auto Track1dcaXY = dcaInfo[0];
+      auto Track1dca = std::sqrt(Track1dcaXY * Track1dcaXY + dcaInfo[1] * dcaInfo[1]);
 
       auto Track2Par = getTrackPar(t2);
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, Track2Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
       auto Track2dcaXY = dcaInfo[0];
+      auto Track2dca = std::sqrt(Track2dcaXY * Track2dcaXY + dcaInfo[1] * dcaInfo[1]);
 
       auto Track0 = getTrackParCov(t0);
       auto Track1 = getTrackParCov(t1);
@@ -496,17 +506,10 @@ struct decay3bodyBuilder {
 
       // Recalculate the TOF PID
       double tofNsigmaDe = -999;
-      static constexpr float kCSPEED = TMath::C() * 1.0e2f * 1.0e-12f; // c in cm/ps
 
-      if (t2.hasTOF()) {
-        double bachExpTime = t2.length() * sqrt((o2::constants::physics::MassDeuteron * o2::constants::physics::MassDeuteron) + (t2.tofExpMom() * t2.tofExpMom())) / (kCSPEED * t2.tofExpMom()); // L*E/(p*c) = L/v
-        double tofsignal = t2.trackTime() * 1000 + bachExpTime;
-        // double bachtime = t2.trackTime() * 1000 + bachExpTime - collision.collisionTime(); // in ps
-
-        double expSigma = GetExpectedSigma(mRespParamsV2, t2, tofsignal, collision.collisionTimeRes(), o2::constants::physics::MassDeuteron);
-        double corrTofMom = t2.tofExpMom() / (1.f + t2.sign() * mRespParamsV2.getShift(t2.eta()));
-        double corrSignal = t2.length() * sqrt((o2::constants::physics::MassDeuteron * o2::constants::physics::MassDeuteron) + (corrTofMom * corrTofMom)) / (kCSPEED * corrTofMom) + mRespParamsV2.getTimeShift(t2.eta(), t2.sign());
-        tofNsigmaDe = (tofsignal - collision.collisionTime() - corrSignal) / expSigma;
+      if (t2.has_collision() && t2.hasTOF()) {
+        auto originalcol = t2.template collision_as<TCollisionClass>();
+        tofNsigmaDe = bachelorTOFPID.GetTOFNSigma(o2::track::PID::Deuteron, t2, originalcol, collision);
       }
 
       registry.fill(HIST("hBachelorTOFNSigmaDe"), t2.sign() * t2.p(), tofNsigmaDe);
@@ -517,7 +520,374 @@ struct decay3bodyBuilder {
         p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], p2[0], p2[1], p2[2],
         fitter3body.getChi2AtPCACandidate(),
         Track0dcaXY, Track1dcaXY, Track2dcaXY,
+        Track0dca, Track1dca, Track2dca,
         tofNsigmaDe);
+    }
+  }
+
+  //------------------------------------------------------------------
+  // 3body candidate builder with KFParticle
+  template <class TTrackTo, typename TCollision>
+  void buildVtx3BodyDataTableKFParticle(TCollision const& collision, aod::Decay3Bodys const& decay3bodys, int bachelorcharge)
+  {
+    LOG(debug) << "buildVtx3BodyDataTableKFParticle called.";
+    for (auto& vtx3body : decay3bodys) {
+      LOG(debug) << "Entered decay3bodys loop.";
+
+      registry.fill(HIST("hVtx3BodyCounterKFParticle"), kKfVtxAll);
+
+      auto trackPos = vtx3body.template track0_as<TTrackTo>();
+      auto trackNeg = vtx3body.template track1_as<TTrackTo>();
+      auto trackBach = vtx3body.template track2_as<TTrackTo>();
+      auto trackParCovPos = getTrackParCov(trackPos);
+      auto trackParCovNeg = getTrackParCov(trackNeg);
+      auto trackParCovBach = getTrackParCov(trackBach);
+      LOG(debug) << "Got all daughter tracks.";
+
+      KFPVertex kfpVertex = createKFPVertexFromCollision(collision);
+      KFParticle kfpv(kfpVertex);
+      LOG(debug) << "Created KF PV.";
+
+      bool isMatter = trackBach.sign() > 0 ? true : false;
+
+      // ---------- fill trackQA and vertexQA histograms
+      if (kfparticleConfigurations.doTrackQA) {
+        registry.fill(HIST("QA/Tracks/hTrackPosTPCNcls"), trackPos.tpcNClsFound());
+        registry.fill(HIST("QA/Tracks/hTrackNegTPCNcls"), trackNeg.tpcNClsFound());
+        registry.fill(HIST("QA/Tracks/hTrackBachTPCNcls"), trackBach.tpcNClsFound());
+        registry.fill(HIST("QA/Tracks/hTrackPosHasTPC"), trackPos.hasTPC());
+        registry.fill(HIST("QA/Tracks/hTrackNegHasTPC"), trackNeg.hasTPC());
+        registry.fill(HIST("QA/Tracks/hTrackBachHasTPC"), trackBach.hasTPC());
+        if (isMatter) {
+          registry.fill(HIST("QA/Tracks/hTrackProtonTPCPID"), trackPos.sign() * trackPos.tpcInnerParam(), trackPos.tpcNSigmaPr());
+          registry.fill(HIST("QA/Tracks/hTrackPionTPCPID"), trackNeg.sign() * trackNeg.tpcInnerParam(), trackNeg.tpcNSigmaPi());
+          registry.fill(HIST("QA/Tracks/hTrackProtonPt"), trackPos.pt());
+          registry.fill(HIST("QA/Tracks/hTrackPionPt"), trackNeg.pt());
+        } else {
+          registry.fill(HIST("QA/Tracks/hTrackProtonTPCPID"), trackNeg.sign() * trackNeg.tpcInnerParam(), trackNeg.tpcNSigmaPr());
+          registry.fill(HIST("QA/Tracks/hTrackPionTPCPID"), trackPos.sign() * trackPos.tpcInnerParam(), trackPos.tpcNSigmaPi());
+          registry.fill(HIST("QA/Tracks/hTrackProtonPt"), trackNeg.pt());
+          registry.fill(HIST("QA/Tracks/hTrackPionPt"), trackPos.pt());
+        }
+        registry.fill(HIST("QA/Tracks/hTrackBachTPCPID"), trackBach.sign() * trackBach.tpcInnerParam(), trackBach.tpcNSigmaDe());
+        registry.fill(HIST("QA/Tracks/hTrackBachPt"), trackBach.pt());
+      }
+
+      if (kfparticleConfigurations.doVertexQA) {
+        registry.fill(HIST("QA/Event/hVtxXKF"), kfpv.GetX());
+        registry.fill(HIST("QA/Event/hVtxYKF"), kfpv.GetY());
+        registry.fill(HIST("QA/Event/hVtxZKF"), kfpv.GetZ());
+        registry.fill(HIST("QA/Event/hVtxCovXXKF"), kfpv.GetCovariance(0));
+        registry.fill(HIST("QA/Event/hVtxCovYYKF"), kfpv.GetCovariance(2));
+        registry.fill(HIST("QA/Event/hVtxCovZZKF"), kfpv.GetCovariance(5));
+        registry.fill(HIST("QA/Event/hVtxCovXYKF"), kfpv.GetCovariance(1));
+        registry.fill(HIST("QA/Event/hVtxCovXZKF"), kfpv.GetCovariance(3));
+        registry.fill(HIST("QA/Event/hVtxCovYZKF"), kfpv.GetCovariance(4));
+        registry.fill(HIST("QA/Event/hVtxX"), collision.posX());
+        registry.fill(HIST("QA/Event/hVtxY"), collision.posY());
+        registry.fill(HIST("QA/Event/hVtxZ"), collision.posZ());
+        registry.fill(HIST("QA/Event/hVtxCovXX"), collision.covXX());
+        registry.fill(HIST("QA/Event/hVtxCovYY"), collision.covYY());
+        registry.fill(HIST("QA/Event/hVtxCovZZ"), collision.covZZ());
+        registry.fill(HIST("QA/Event/hVtxCovXY"), collision.covXY());
+        registry.fill(HIST("QA/Event/hVtxCovXZ"), collision.covXZ());
+        registry.fill(HIST("QA/Event/hVtxCovYZ"), collision.covYZ());
+      }
+
+      // -------- STEP 1: track selection --------
+      // collision ID --> not correct? tracks can have different collisions, but belong to one 3prong vertex!
+      // if (trackPos.collisionId() != trackNeg.collisionId() || trackPos.collisionId() != trackBach.collisionId() || trackNeg.collisionId() != trackBach.collisionId()) {
+      //   continue;
+      // }
+      registry.fill(HIST("hVtx3BodyCounterKFParticle"), kKfVtxCollIds);
+      // track IDs --> already checked in SVertexer!
+
+      // track signs (pos, neg, bach) --> sanity check, should already be in SVertexer
+      if (trackPos.sign() != +1 || trackNeg.sign() != -1) {
+        continue;
+      }
+      registry.fill(HIST("hVtx3BodyCounterKFParticle"), kKfVtxCharge);
+
+      // track eta
+      if (trackPos.eta() > kfparticleConfigurations.maxEta || trackNeg.eta() > kfparticleConfigurations.maxEta || trackBach.eta() > kfparticleConfigurations.maxEta) {
+        continue;
+      }
+      registry.fill(HIST("hVtx3BodyCounterKFParticle"), kKfVtxEta);
+
+      // TPC PID
+      if (isMatter && !selectTPCPID(trackPos, trackNeg, trackBach)) { // hypertriton (proton, pi-, deuteron)
+        continue;
+      } else if (!isMatter && !selectTPCPID(trackNeg, trackPos, trackBach)) { // anti-hypertriton (anti-proton, pi+, deuteron)
+        continue;
+      }
+      registry.fill(HIST("hVtx3BodyCounterKFParticle"), kKfVtxTPCPID);
+
+      // number of TPC clusters
+      if (trackBach.tpcNClsFound() <= kfparticleConfigurations.mintpcNClsTrack) {
+        continue;
+      }
+      if (isMatter && (trackNeg.tpcNClsFound() <= kfparticleConfigurations.mintpcNClsPion || trackPos.tpcNClsFound() <= kfparticleConfigurations.mintpcNClsTrack)) {
+        continue;
+      } else if (!isMatter && (trackPos.tpcNClsFound() <= kfparticleConfigurations.mintpcNClsPion || trackNeg.tpcNClsFound() <= kfparticleConfigurations.mintpcNClsTrack)) {
+        continue;
+      }
+      registry.fill(HIST("hVtx3BodyCounterKFParticle"), kKfVtxTPCNcls);
+
+      // number of TPC crossed rows
+      if (trackBach.tpcNClsCrossedRows() <= kfparticleConfigurations.mintpcCrossedRows) {
+        continue;
+      }
+      if (isMatter && (trackNeg.tpcNClsCrossedRows() <= kfparticleConfigurations.mintpcCrossedRowsPion || trackPos.tpcNClsCrossedRows() <= kfparticleConfigurations.mintpcCrossedRows)) {
+        continue;
+      } else if (!isMatter && (trackPos.tpcNClsCrossedRows() <= kfparticleConfigurations.mintpcCrossedRowsPion || trackNeg.tpcNClsCrossedRows() <= kfparticleConfigurations.mintpcCrossedRows)) {
+        continue;
+      }
+      registry.fill(HIST("hVtx3BodyCounterKFParticle"), kKfVtxTPCRows);
+      LOG(debug) << "Basic track selections done.";
+
+      // track DCAxy and DCAz to PV associated with decay3body
+      o2::dataformats::VertexBase mPV;
+      o2::dataformats::DCA mDcaInfoCovPos;
+      o2::dataformats::DCA mDcaInfoCovNeg;
+      o2::dataformats::DCA mDcaInfoCovBach;
+      auto trackParCovPVPos = trackParCovPos;
+      auto trackParCovPVNeg = trackParCovNeg;
+      auto trackParCovPVBach = trackParCovBach;
+      mPV.setPos({collision.posX(), collision.posY(), collision.posZ()});
+      mPV.setCov(collision.covXX(), collision.covXX(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
+      o2::base::Propagator::Instance()->propagateToDCABxByBz(mPV, trackParCovPVPos, 2.f, matCorr, &mDcaInfoCovPos);
+      o2::base::Propagator::Instance()->propagateToDCABxByBz(mPV, trackParCovPVNeg, 2.f, matCorr, &mDcaInfoCovNeg);
+      o2::base::Propagator::Instance()->propagateToDCABxByBz(mPV, trackParCovPVBach, 2.f, matCorr, &mDcaInfoCovBach);
+      auto TrackPosDcaXY = mDcaInfoCovPos.getY();
+      auto TrackNegDcaXY = mDcaInfoCovNeg.getY();
+      auto TrackBachDcaXY = mDcaInfoCovBach.getY();
+      if (isMatter && (fabs(TrackNegDcaXY) <= kfparticleConfigurations.mindcaXYPionPV || fabs(TrackPosDcaXY) <= kfparticleConfigurations.mindcaXYProtonPV)) {
+        continue;
+      } else if (!isMatter && (fabs(TrackPosDcaXY) <= kfparticleConfigurations.mindcaXYPionPV || fabs(TrackNegDcaXY) <= kfparticleConfigurations.mindcaXYProtonPV)) {
+        continue;
+      }
+      registry.fill(HIST("hVtx3BodyCounterKFParticle"), kKfVtxDCAxyPV);
+      if (isMatter && (fabs(mDcaInfoCovNeg.getZ()) <= kfparticleConfigurations.mindcaZPionPV || fabs(mDcaInfoCovPos.getZ()) <= kfparticleConfigurations.mindcaZProtonPV)) {
+        continue;
+      } else if (!isMatter && (fabs(mDcaInfoCovPos.getZ()) <= kfparticleConfigurations.mindcaZPionPV || fabs(mDcaInfoCovNeg.getZ()) <= kfparticleConfigurations.mindcaZProtonPV)) {
+        continue;
+      }
+      registry.fill(HIST("hVtx3BodyCounterKFParticle"), kKfVtxDCAzPV);
+
+      // pT selection
+      if (trackBach.pt() <= kfparticleConfigurations.minDeuteronPt) {
+        continue;
+      }
+      if (isMatter && (trackNeg.pt() > kfparticleConfigurations.maxPionPt || trackPos.pt() <= kfparticleConfigurations.minProtonPt)) {
+        continue;
+      } else if (!isMatter && (trackPos.pt() > kfparticleConfigurations.maxPionPt || trackNeg.pt() <= kfparticleConfigurations.minProtonPt)) {
+        continue;
+      }
+      registry.fill(HIST("hVtx3BodyCounterKFParticle"), kKfVtxTrackPt);
+
+      // -------- STEP 2: fit vertex with proton and pion --------
+      // Fit vertex with DCA fitter to find minimization point --> uses material corrections implicitly
+      if (kfparticleConfigurations.kfDoDCAFitterPreMinimum) {
+        try {
+          fitter3body.process(trackParCovPos, trackParCovNeg, trackParCovBach);
+        } catch (std::runtime_error& e) {
+          LOG(error) << "Exception caught in DCA fitter process call: Not able to fit decay3body vertex!";
+          continue;
+        }
+        // re-acquire tracks at vertex position from DCA fitter
+        trackParCovPos = fitter3body.getTrack(0);
+        trackParCovNeg = fitter3body.getTrack(1);
+        trackParCovBach = fitter3body.getTrack(2);
+
+        LOG(debug) << "Minimum found with DCA fitter for decay3body.";
+      }
+
+      // create KFParticle objects from tracks
+      KFParticle kfpProton, kfpPion;
+      if (isMatter) {
+        kfpProton = createKFParticleFromTrackParCov(trackParCovPos, trackPos.sign(), constants::physics::MassProton);
+        kfpPion = createKFParticleFromTrackParCov(trackParCovNeg, trackNeg.sign(), constants::physics::MassPionCharged);
+      } else if (!isMatter) {
+        kfpProton = createKFParticleFromTrackParCov(trackParCovNeg, trackNeg.sign(), constants::physics::MassProton);
+        kfpPion = createKFParticleFromTrackParCov(trackParCovPos, trackPos.sign(), constants::physics::MassPionCharged);
+      }
+      LOG(debug) << "KFParticle objects created from daughter tracks.";
+
+      // Construct V0
+      KFParticle KFV0;
+      int nDaughters = 2;
+      const KFParticle* Daughters[2] = {&kfpProton, &kfpPion};
+      KFV0.SetConstructMethod(2);
+      try {
+        KFV0.Construct(Daughters, nDaughters);
+      } catch (std::runtime_error& e) {
+        LOG(debug) << "Failed to create V0 vertex from daughter tracks." << e.what();
+        continue;
+      }
+      KFV0.TransportToDecayVertex();
+      LOG(debug) << "V0 constructed.";
+
+      // check V0 mass and set mass constraint
+      float massV0, sigmaMassV0;
+      KFV0.GetMass(massV0, sigmaMassV0);
+      if (abs(massV0 - constants::physics::MassLambda) <= kfparticleConfigurations.lambdaMassWindow) {
+        continue;
+      }
+      KFParticle KFV0Mass = KFV0;
+      KFV0Mass.SetNonlinearMassConstraint(o2::constants::physics::MassLambda);
+      float chi2massV0 = KFV0Mass.GetChi2() / KFV0Mass.GetNDF();
+      LOG(debug) << "V0 mass constraint applied.";
+      registry.fill(HIST("hVtx3BodyCounterKFParticle"), kKfVtxNoV0);
+
+      // -------- STEP 3: fit vertex with V0 and deuteron --------
+      // Create KFParticle object from deuteron track
+      KFParticle kfpDeuteron;
+      kfpDeuteron = createKFParticleFromTrackParCov(trackParCovBach, trackBach.sign() * bachelorcharge, constants::physics::MassDeuteron);
+      LOG(debug) << "KFParticle created from deuteron track.";
+      // Add deuteron to V0 vertex
+      KFParticle KFHt;
+      KFHt = KFV0;
+      KFHt.SetConstructMethod(2);
+      try {
+        KFHt.AddDaughter(kfpDeuteron);
+      } catch (std::runtime_error& e) {
+        LOG(debug) << "Failed to create Hyper triton from V0 and deuteron." << e.what();
+        continue;
+      }
+      registry.fill(HIST("hVtx3BodyCounterKFParticle"), kKfVtxhasSV);
+      LOG(debug) << "Hypertriton vertex constructed.";
+
+      // -------- STEP 4: selections after geometrical vertex fit --------
+      // Get updated daughter tracks
+      kfpProton.SetProductionVertex(KFHt);
+      kfpPion.SetProductionVertex(KFHt);
+      kfpDeuteron.SetProductionVertex(KFHt);
+      LOG(debug) << "Topo constraint applied to daughters.";
+      // daughter DCAs
+      if ((kfpProton.GetDistanceFromParticle(kfpPion) >= kfparticleConfigurations.maxDcaProPi) || (kfpProton.GetDistanceFromParticle(kfpDeuteron) >= kfparticleConfigurations.maxDcaProDeu) || (kfpPion.GetDistanceFromParticle(kfpDeuteron) >= kfparticleConfigurations.maxDcaPiDe)) {
+        continue;
+      }
+      float DCAvtxDaughters3D = kfpProton.GetDistanceFromParticle(kfpPion) + kfpProton.GetDistanceFromParticle(kfpDeuteron) + kfpPion.GetDistanceFromParticle(kfpDeuteron);
+      registry.fill(HIST("hVtx3BodyCounterKFParticle"), kKfVtxDcaDau);
+      LOG(debug) << "DCA selection after vertex fit applied.";
+
+      // daughter DCAs to vertex
+      if (kfpProton.GetDistanceFromVertexXY(KFHt) >= kfparticleConfigurations.maxDcaXYSVDau || kfpPion.GetDistanceFromVertexXY(KFHt) >= kfparticleConfigurations.maxDcaXYSVPion || kfpDeuteron.GetDistanceFromVertexXY(KFHt) >= kfparticleConfigurations.maxDcaXYSVDau) {
+        continue;
+      }
+      registry.fill(HIST("hVtx3BodyCounterKFParticle"), kKfVtxDcaDauVtx);
+      LOG(debug) << "DCA to vertex selection after vertex fit applied.";
+
+      // -------- STEP 5: candidate selection after geometrical vertex fit --------
+      // Pt selection
+      if (KFHt.GetPt() <= kfparticleConfigurations.minPtHt || KFHt.GetPt() >= kfparticleConfigurations.maxPtHt) {
+        continue;
+      }
+      registry.fill(HIST("hVtx3BodyCounterKFParticle"), kKfVtxPt);
+
+      // Mass window
+      float massHt, sigmaMassHt;
+      KFHt.GetMass(massHt, sigmaMassHt);
+      if (massHt <= kfparticleConfigurations.minMassHt || massHt >= kfparticleConfigurations.maxMassHt) {
+        continue;
+      }
+      registry.fill(HIST("hVtx3BodyCounterKFParticle"), kKfVtxMass);
+
+      // cos(PA) to PV
+      if (abs(cpaFromKF(KFHt, kfpv)) <= kfparticleConfigurations.minCosPA) {
+        continue;
+      }
+      registry.fill(HIST("hVtx3BodyCounterKFParticle"), kKfVtxCosPA);
+
+      // cos(PA) xy to PV
+      if (abs(cpaXYFromKF(KFHt, kfpv)) <= kfparticleConfigurations.minCosPAxy) {
+        continue;
+      }
+      registry.fill(HIST("hVtx3BodyCounterKFParticle"), kKfVtxCosPAXY);
+
+      // chi2 geometrical
+      float chi2geoNDF = KFHt.GetChi2() / KFHt.GetNDF();
+      if (chi2geoNDF >= kfparticleConfigurations.maxChi2geo) {
+        continue;
+      }
+      registry.fill(HIST("hVtx3BodyCounterKFParticle"), kKfVtxChi2geo);
+      LOG(debug) << "Basic selections after vertex fit done.";
+
+      // -------- STEP 6: topological constraint --------
+      /// Set vertex constraint and topological selection
+      KFParticle KFHtPV = KFHt;
+      KFHtPV.SetProductionVertex(kfpv);
+      KFHtPV.TransportToDecayVertex();
+      float chi2topoNDF = KFHtPV.GetChi2() / KFHtPV.GetNDF();
+      if (kfparticleConfigurations.applyTopoSels && chi2topoNDF >= kfparticleConfigurations.maxChi2topo) {
+        continue;
+      }
+      registry.fill(HIST("hVtx3BodyCounterKFParticle"), kKfVtxChi2topo);
+      LOG(debug) << "Topological constraint applied.";
+
+      //------------------------------------------------------------------
+      // Recalculate the bachelor TOF PID
+      double tofNsigmaDe = -999;
+      static constexpr float kCSPEED = TMath::C() * 1.0e2f * 1.0e-12f; // c in cm/ps
+      if (trackBach.hasTOF()) {
+        double bachExpTime = trackBach.length() * sqrt((o2::constants::physics::MassDeuteron * o2::constants::physics::MassDeuteron) + (trackBach.tofExpMom() * trackBach.tofExpMom())) / (kCSPEED * trackBach.tofExpMom()); // L*E/(p*c) = L/v
+        double tofsignal = trackBach.trackTime() * 1000 + bachExpTime;
+        // double bachtime = trackBach.trackTime() * 1000 + bachExpTime - collision.collisionTime(); // in ps
+
+        double expSigma = GetExpectedSigma(mRespParamsV2, trackBach, tofsignal, collision.collisionTimeRes(), o2::constants::physics::MassDeuteron);
+        double corrTofMom = trackBach.tofExpMom() / (1.f + trackBach.sign() * mRespParamsV2.getShift(trackBach.eta()));
+        double corrSignal = trackBach.length() * sqrt((o2::constants::physics::MassDeuteron * o2::constants::physics::MassDeuteron) + (corrTofMom * corrTofMom)) / (kCSPEED * corrTofMom) + mRespParamsV2.getTimeShift(trackBach.eta(), trackBach.sign());
+        tofNsigmaDe = (tofsignal - collision.collisionTime() - corrSignal) / expSigma;
+      }
+      registry.fill(HIST("hBachelorTOFNSigmaDe"), trackBach.sign() * trackBach.p(), tofNsigmaDe);
+      LOG(debug) << "Bachelor TOF info calculated.";
+
+      //------------------------------------------------------------------
+      // table filling
+      kfvtx3bodydata(
+        collision.globalIndex(), trackPos.globalIndex(), trackNeg.globalIndex(), trackBach.globalIndex(), vtx3body.globalIndex(),
+        // hypertriton
+        massHt,
+        KFHt.GetX(), KFHt.GetY(), KFHt.GetZ(),
+        KFHt.GetPx(), KFHt.GetPy(), KFHt.GetPz(), KFHt.GetPt(),
+        KFHt.GetQ(),
+        KFHt.GetDistanceFromVertex(kfpv), KFHt.GetDistanceFromVertexXY(kfpv),
+        cpaFromKF(KFHt, kfpv), // before topo constraint
+        cpaXYFromKF(KFHt, kfpv),
+        cpaFromKF(KFHtPV, kfpv), // after topo constraint
+        cpaXYFromKF(KFHtPV, kfpv),
+        KFHtPV.GetDecayLength(), KFHtPV.GetDecayLengthXY(),   // decay length defined after topological constraint
+        KFHtPV.GetDecayLength() / KFHtPV.GetErrDecayLength(), // ldl
+        chi2geoNDF, chi2topoNDF,
+        // V0
+        massV0, chi2massV0,
+        // daughter momenta
+        kfpProton.GetPx(), kfpProton.GetPy(), kfpProton.GetPz(),
+        kfpPion.GetPx(), kfpPion.GetPy(), kfpPion.GetPz(),
+        kfpDeuteron.GetPx(), kfpDeuteron.GetPy(), kfpDeuteron.GetPz(),
+        // daughter DCAs KF
+        kfpProton.GetDistanceFromVertex(kfpv),
+        kfpPion.GetDistanceFromVertex(kfpv),
+        kfpDeuteron.GetDistanceFromVertex(kfpv),
+        kfpProton.GetDistanceFromVertexXY(kfpv),
+        kfpPion.GetDistanceFromVertexXY(kfpv),
+        kfpDeuteron.GetDistanceFromVertexXY(kfpv),
+        kfpProton.GetDistanceFromVertexXY(KFHt),
+        kfpPion.GetDistanceFromVertexXY(KFHt),
+        kfpDeuteron.GetDistanceFromVertexXY(KFHt),
+        kfpProton.GetDistanceFromParticle(kfpPion),
+        kfpProton.GetDistanceFromParticle(kfpDeuteron),
+        kfpPion.GetDistanceFromParticle(kfpDeuteron),
+        DCAvtxDaughters3D,
+        // daughter DCAs to PV propagated with material
+        TrackPosDcaXY, TrackNegDcaXY, TrackBachDcaXY,
+        // daughter signs
+        trackPos.sign(),
+        trackNeg.sign(),
+        trackBach.sign(),
+        // bachelor TOF PID
+        tofNsigmaDe);
+      LOG(debug) << "Table filled.";
     }
   }
 
@@ -890,6 +1260,8 @@ struct decay3bodyBuilder {
   //------------------------------------------------------------------
   void processRun3(aod::Collision const& collision, FullTracksExtIU const& tracksIU, aod::Decay3Bodys const& decay3bodys, aod::BCsWithTimestamps const&)
   {
+    // for (const auto& collision : collisions) {
+    LOG(debug) << "Start of processRun3withKFParticle.";
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
     registry.fill(HIST("hEventCounter"), 0.5);

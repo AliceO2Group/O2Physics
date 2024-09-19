@@ -19,6 +19,7 @@
 #include "Framework/runDataProcessing.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGHF/DataModel/DerivedTables.h"
+#include "PWGDQ/DataModel/ReducedInfoTables.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -47,6 +48,9 @@ struct JetDerivedDataProducerDummyTask {
   Produces<aod::Hf3PMcs> lcMcsTable;
   Produces<aod::Hf3PMcCollBases> lcMcCollisionsTable;
   Produces<aod::Hf3PPBases> lcParticlesTable;
+
+  Produces<aod::ReducedEvents> dielectronCollisionsTable;
+  Produces<aod::Dielectrons> dielectronTable;
 
   void init(InitContext const&)
   {
