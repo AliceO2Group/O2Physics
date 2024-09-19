@@ -318,9 +318,7 @@ struct lmeelfcocktail {
       }
       if ((nEle == 2) && (nPos == 2) && (other_daughter_pdg == -1)) {
         other_daughter_pdg = -2;
-        // ToDO
-        // LOG(warning) << "Found a decay to four electrons of meson with pdg = " << pdg <<". Not included yet";
-        continue; // should be inlcuded at some point
+        weight=2*weight;
       }
       auto this_meson_decays = mesons[pdg].decayModes;
       if (std::find(this_meson_decays.begin(), this_meson_decays.end(), other_daughter_pdg) == this_meson_decays.end()) {
