@@ -36,10 +36,10 @@ using namespace o2::framework::expressions;
 
 struct HfTaskElectronWeakBoson {
 
-  using SelectedClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
+  using SelectedClusters = o2::aod::EMCALClusters;
 
   // PbPb
-  using TrackEle = o2::soa::Filtered<o2::soa::Join<o2::aod::Tracks, o2::aod::FullTracks, o2::aod::TracksExtra_001, o2::aod::TracksDCA, o2::aod::TrackSelection, o2::aod::pidTPCFullEl>>;
+  using TrackEle = o2::soa::Join<o2::aod::Tracks, o2::aod::FullTracks, o2::aod::TracksExtra_001, o2::aod::TracksDCA, o2::aod::TrackSelection, o2::aod::pidTPCFullEl>;
 
   // pp
   // using TrackEle = o2::soa::Filtered<o2::soa::Join<o2::aod::Tracks, o2::aod::FullTracks, o2::aod::TracksDCA, o2::aod::TrackSelection, o2::aod::pidTPCEl, o2::aod::pidTOFEl>>;
@@ -52,38 +52,38 @@ struct HfTaskElectronWeakBoson {
 
   Configurable<float> vtxZ{"vtxZ", 10.f, ""};
 
-  Configurable<float> etalow_cut{"etalow_cut", -0.6f, "eta lower cut"};
-  Configurable<float> etaup_cut{"etaup_cut", 0.6f, "eta upper cut"};
-  Configurable<float> dcaxy_cut{"dcaxy_cut", 2.0f, "dca xy cut"};
-  Configurable<float> itschi2_cut{"itschi2_cut", 15.0f, "its chi2 cut"};
-  Configurable<float> mimpT_cut{"mimpT_cut", 3.0f, "minimum pT cut"};
-  Configurable<float> tpcchi2_cut{"tpcchi2_cut", 4.0f, "tpc chi2 cut"};
-  Configurable<float> itsNcl_cut{"itsNcl_cut", 2.0f, "its # of cluster cut"};
-  Configurable<float> tpcNcl_cut{"tpcNcl_cut", 100.0f, "tpc # if cluster cut"};
-  Configurable<float> tpcNclCr_cut{"tpcNclCr_cut", 100.0f, "tpc # of crossedRows cut"};
-  Configurable<float> tpcNsiglow_cut{"tpcNsiglow_cut", -1.0, "tpc Nsig lower cut"};
-  Configurable<float> tpcNsigup_cut{"tpcNsigup_cut", 3.0, "tpc Nsig upper cut"};
+  Configurable<float> etalowCut{"etalowCut", -0.6f, "eta lower cut"};
+  Configurable<float> etaupCut{"etaupCut", 0.6f, "eta upper cut"};
+  Configurable<float> dcaxyCut{"dcaxyCut", 2.0f, "dca xy cut"};
+  Configurable<float> itschi2Cut{"itschi2Cut", 15.0f, "its chi2 cut"};
+  Configurable<float> mimpTCut{"mimpTCut", 3.0f, "minimum pT cut"};
+  Configurable<float> tpcchi2Cut{"tpcchi2Cut", 4.0f, "tpc chi2 cut"};
+  Configurable<float> itsNclCut{"itsNclCut", 2.0f, "its # of cluster cut"};
+  Configurable<float> tpcNclCut{"tpcNclCut", 100.0f, "tpc # if cluster cut"};
+  Configurable<float> tpcNclCrCut{"tpcNclCrCut", 100.0f, "tpc # of crossedRows cut"};
+  Configurable<float> tpcNsiglowCut{"tpcNsiglowCut", -1.0, "tpc Nsig lower cut"};
+  Configurable<float> tpcNsigupCut{"tpcNsigupCut", 3.0, "tpc Nsig upper cut"};
 
-  Configurable<float> emcacc_phimin{"emcacc_phimin", 1.39, "Maximum M20"};
-  Configurable<float> emcacc_phimax{"emcacc_phimax", 3.36, "Maximum M20"};
-  Configurable<int> mClusterDefinition{"mClusterDefinition", 10, "cluster definition to be selected, e.g. 10=kV3Default"};
+  Configurable<float> emcaccPhimin{"emcaccPhimin", 1.39, "Maximum M20"};
+  Configurable<float> emcaccPhimax{"emcaccPhimax", 3.36, "Maximum M20"};
+  Configurable<int> ClusterDefinition{"ClusterDefinition", 10, "cluster definition to be selected, e.g. 10=kV3Default"};
   Configurable<float> minTime{"minTime", -25., "Minimum cluster time"};
   Configurable<float> maxTime{"maxTime", +20., "Maximum cluster time"};
   Configurable<float> minM02{"minM02", 0.1, "Minimum M02"};
   Configurable<float> maxM02{"maxM02", 0.9, "Maximum M02"};
   Configurable<float> minM20{"minM20", 0.1, "Minimum M20"};
   Configurable<float> maxM20{"maxM20", 0.6, "Maximum M20"};
-  Configurable<float> MatchR_cut{"MatchR_cut", 0.1, "cluster - track matching cut"};
+  Configurable<float> MatchRCut{"MatchRCut", 0.1, "cluster - track matching cut"};
 
   // Filter
   Filter eventFilter = (o2::aod::evsel::sel8 == true);
   Filter posZFilter = (nabs(o2::aod::collision::posZ) < vtxZ);
 
-  Filter etafilter = (aod::track::eta < etaup_cut) && (aod::track::eta > etalow_cut);
-  Filter dcaxyfilter = (nabs(aod::track::dcaXY) < dcaxy_cut);
+  Filter etafilter = (aod::track::eta < etaupCut) && (aod::track::eta > etalowCut);
+  Filter dcaxyfilter = (nabs(aod::track::dcaXY) < dcaxyCut);
   Filter filter_globalTr = requireGlobalTrackInFilter();
 
-  Filter clusterDefinitionSelection = (o2::aod::emcalcluster::definition == mClusterDefinition) && (o2::aod::emcalcluster::time >= minTime) && (o2::aod::emcalcluster::time <= maxTime) && (o2::aod::emcalcluster::m02 > minM02) && (o2::aod::emcalcluster::m02 < maxM02);
+  Filter clusterDefinitionSelection = (o2::aod::emcalcluster::definition == ClusterDefinition) && (o2::aod::emcalcluster::time >= minTime) && (o2::aod::emcalcluster::time <= maxTime) && (o2::aod::emcalcluster::m02 > minM02) && (o2::aod::emcalcluster::m02 < maxM02);
 
   // Data Handling Objects
   Preslice<o2::aod::EMCALClusterCells> perCluster = o2::aod::emcalclustercell::emcalclusterId;
@@ -116,11 +116,11 @@ struct HfTaskElectronWeakBoson {
     // create registrygrams
     registry.add("hZvtx", "Z vertex", kTH1F, {axisZvtx});
     registry.add("hEventCounter", "hEventCounter", kTH1F, {axisCounter});
-    registry.add("hITS_Chi2", "ITS #chi^{2}", kTH1F, {axisChi2});
-    registry.add("hTPC_Chi2", "TPC #chi^{2}", kTH1F, {axisChi2});
-    registry.add("hTPC_NCls", "TPC NCls", kTH1F, {axisCluster});
-    registry.add("hITS_NCls", "ITS NCls", kTH1F, {axisITSNCls});
-    registry.add("hTPC_NClsCrossedRows", "TPC NClsCrossedRows", kTH1F, {axisCluster});
+    registry.add("hITSchi2", "ITS #chi^{2}", kTH1F, {axisChi2});
+    registry.add("hTPCchi2", "TPC #chi^{2}", kTH1F, {axisChi2});
+    registry.add("hTPCnCls", "TPC NCls", kTH1F, {axisCluster});
+    registry.add("hITSnCls", "ITS NCls", kTH1F, {axisITSNCls});
+    registry.add("hTPCnClsCrossedRows", "TPC NClsCrossedRows", kTH1F, {axisCluster});
     registry.add("hEta", "track eta", kTH1F, {axisEta});
     registry.add("hPt", "track pt", kTH1F, {axisPt});
     registry.add("hTPCNsigma", "TPC electron Nsigma", kTH2F, {{axisPt}, {axisNsigma}});
@@ -138,49 +138,48 @@ struct HfTaskElectronWeakBoson {
 
   // void process(soa::Filtered<aod::Collisions>::iterator const& collision, SelectedClusters const& clusters, TrackEle const& tracks, o2::aod::EMCALMatchedTracks const& matchedtracks)
   void process(soa::Filtered<aod::Collisions>::iterator const& collision, SelectedClusters const& emcClusters, TrackEle const& tracks, o2::aod::EMCALMatchedTracks const& matchedtracks)
+  // void process(soa::Filtered<aod::Collisions>::iterator const& collision, TrackEle const& tracks, o2::aod::EMCALMatchedTracks const& matchedtracks)
   {
     registry.fill(HIST("hEventCounter"), 0.5);
 
     // LOGF(info, "Collision index : %d", collision.index());
     // LOGF(info, "Number of tracks: %d", tracks.size());
     // LOGF(info, "Number of clusters: %d", clusters.size());
-    // LOGF(info, "Number of clusters: %d", emcClusters.size());
 
     registry.fill(HIST("hZvtx"), collision.posZ());
 
     for (const auto& track : tracks) {
 
       registry.fill(HIST("hEta"), track.eta());
-      registry.fill(HIST("hITS_Chi2"), track.itsChi2NCl());
-      registry.fill(HIST("hTPC_Chi2"), track.tpcChi2NCl());
-      registry.fill(HIST("hTPC_NCls"), track.tpcNClsFound());
-      registry.fill(HIST("hITS_NCls"), track.itsNCls());
-      registry.fill(HIST("hTPC_NClsCrossedRows"), track.tpcNClsCrossedRows());
+      registry.fill(HIST("hITSchi2"), track.itsChi2NCl());
+      registry.fill(HIST("hTPCchi2"), track.tpcChi2NCl());
+      registry.fill(HIST("hTPCnCls"), track.tpcNClsFound());
+      registry.fill(HIST("hITSnCls"), track.itsNCls());
+      registry.fill(HIST("hTPCnClsCrossedRows"), track.tpcNClsCrossedRows());
 
-      if (std::abs(track.eta()) > etaup_cut)
+      if (std::abs(track.eta()) > etaupCut)
         continue;
-      if (track.tpcNClsCrossedRows() < tpcNclCr_cut)
+      if (track.tpcNClsCrossedRows() < tpcNclCrCut)
         continue;
-      if (std::abs(track.dcaXY()) > dcaxy_cut)
+      if (std::abs(track.dcaXY()) > dcaxyCut)
         continue;
-      if (track.itsChi2NCl() > itschi2_cut)
+      if (track.itsChi2NCl() > itschi2Cut)
         continue;
-      if (track.tpcChi2NCl() > tpcchi2_cut)
+      if (track.tpcChi2NCl() > tpcchi2Cut)
         continue;
-      if (track.tpcNClsFound() < tpcNcl_cut)
+      if (track.tpcNClsFound() < tpcNclCut)
         continue;
-      if (track.itsNCls() < itsNcl_cut)
+      if (track.itsNCls() < itsNclCut)
         continue;
-      if (track.pt() < mimpT_cut)
+      if (track.pt() < mimpTCut)
         continue;
       registry.fill(HIST("hPt"), track.pt());
       registry.fill(HIST("hTPCNsigma"), track.p(), track.tpcNSigmaEl());
 
       // track - match
 
-      if (!emcClusters.size())
-        continue;
-      if (track.phi() < emcacc_phimin || track.phi() > emcacc_phimax)
+      //  continue;
+      if (track.phi() < emcaccPhimin || track.phi() > emcaccPhimax)
         continue;
       auto tracksofcluster = matchedtracks.sliceBy(perClusterMatchedTracks, track.globalIndex());
 
@@ -229,7 +228,7 @@ struct HfTaskElectronWeakBoson {
             registry.fill(HIST("hEMCtime"), emc_time);
             registry.fill(HIST("hEnergy"), emc_energy);
 
-            if (R < MatchR_cut)
+            if (R < MatchRCut)
               continue;
 
             double eop = emc_energy / match.track_as<TrackEle>().p();
@@ -237,7 +236,7 @@ struct HfTaskElectronWeakBoson {
             registry.fill(HIST("hEopNsigTPC"), match.track_as<TrackEle>().tpcNSigmaEl(), eop);
             registry.fill(HIST("hM02"), match.track_as<TrackEle>().tpcNSigmaEl(), emc_m02);
             registry.fill(HIST("hM20"), match.track_as<TrackEle>().tpcNSigmaEl(), emc_m20);
-            if (match.track_as<TrackEle>().tpcNSigmaEl() > tpcNsiglow_cut && match.track_as<TrackEle>().tpcNSigmaEl() < tpcNsigup_cut) {
+            if (match.track_as<TrackEle>().tpcNSigmaEl() > tpcNsiglowCut && match.track_as<TrackEle>().tpcNSigmaEl() < tpcNsigupCut) {
               registry.fill(HIST("hEop"), match.track_as<TrackEle>().pt(), eop);
             }
           }
@@ -246,7 +245,7 @@ struct HfTaskElectronWeakBoson {
         }
       }
 
-      if (Rmim < MatchR_cut) {
+      if (Rmim < MatchRCut) {
         // LOG(info) << "R mim = " << Rmim;
         registry.fill(HIST("hTrMatch_mim"), dPhi_mim, dEta_mim);
       }
