@@ -113,6 +113,7 @@ struct Lithium4Candidate {
   float nSigmaPr = -10.f;
   float chi2TPCHe3 = -10.f;
   float chi2TPCPr = -10.f;
+
   float massTOFHe3 = -10;
   float massTOFPr = -10;
 
@@ -121,6 +122,7 @@ struct Lithium4Candidate {
 
   uint32_t itsClSizeHe3 = 0u;
   uint32_t itsClSizePr = 0u;
+
   uint8_t sharedClustersHe3 = 0u;
   uint8_t sharedClustersPr = 0u;
 
@@ -265,6 +267,7 @@ struct lithium4analysis {
       m_zorro.initCCDB(m_ccdb.service, bc.runNumber(), bc.timestamp(), "fHe");
       m_zorro.populateHistRegistry(m_qaRegistry, bc.runNumber());
     }
+
     m_runNumber = bc.runNumber();
   }
 
@@ -638,6 +641,7 @@ struct lithium4analysis {
     pairTracksEventMixing();
 
     for (auto& trackPair : m_trackPairs) {
+
       auto heTrack = tracks.rawIteratorAt(trackPair.tr0Idx);
       auto prTrack = tracks.rawIteratorAt(trackPair.tr1Idx);
 
