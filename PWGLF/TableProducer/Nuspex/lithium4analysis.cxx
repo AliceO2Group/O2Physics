@@ -221,6 +221,7 @@ struct lithium4analysis {
       {"hProtonPt", "Pt distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{200, -3.0f, 3.0f}}}},
       {"h2dEdxHe3candidates", "dEdx distribution; Signed #it{p} (GeV/#it{c}); dE/dx (a.u.)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {100, 0.0f, 2000.0f}}}},
       {"h2NsigmaHe3TPC", "NsigmaHe3 TPC distribution; Signed #it{p}/#it{z} (GeV/#it{c}); n#sigma_{TPC}({}^{3}He)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
+      {"h2NsigmaProtonTPC_preselection", "NsigmaProton TPC distribution (before PID selections); Signed #it{p}/#it{z} (GeV/#it{c}); n#sigma_{TPC}(p)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
       {"h2NsigmaProtonTPC", "NsigmaProton TPC distribution; Signed #it{p}/#it{z} (GeV/#it{c}); n#sigma_{TPC}(p)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
       {"h2NsigmaProtonTOF", "NsigmaProton TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(p)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
     },
@@ -288,6 +289,7 @@ struct lithium4analysis {
   template <typename T>
   bool selectionPIDProton(const T& candidate)
   {
+    m_qaRegistry.fill(HIST("h2NsigmaProtonTPC_preselection"), candidate.tpcInnerParam(), candidate.tpcNSigmaPr());
     if (candidate.hasTOF()) {
       if (std::abs(candidate.tofNSigmaPr()) < setting_nsigmaCutTOF && std::abs(candidate.tpcNSigmaPr()) < setting_nsigmaCutTPC) {
         m_qaRegistry.fill(HIST("h2NsigmaProtonTPC"), candidate.tpcInnerParam(), candidate.tpcNSigmaPr());
@@ -331,6 +333,9 @@ struct lithium4analysis {
   bool fillCandidateInfo(const T& trackHe3, const T& trackPr, Lithium4Candidate& li4cand, bool mix)
   {
     li4cand.momHe3 = std::array{trackHe3.px(), trackHe3.py(), trackHe3.pz()};
+    for (int i = 0; i < 3; i++) {
+      li4cand.momHe3[i] = li4cand.momHe3[i] * 2;
+    }
     li4cand.momPr = std::array{trackPr.px(), trackPr.py(), trackPr.pz()};
     float invMass = RecoDecay::m(array{li4cand.momHe3, li4cand.momPr}, std::array{o2::constants::physics::MassHelium3, o2::constants::physics::MassProton});
 
