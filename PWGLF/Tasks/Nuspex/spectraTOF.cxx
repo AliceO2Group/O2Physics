@@ -1,4 +1,5 @@
-// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// Copyright 2019-[9/5 3:09 PM] Likmeta, Iris
+//e2020 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -57,7 +58,7 @@ public:
     enum OriginType { None = 0,
                       Prompt,
                       NonPrompt };
-    
+
     template <typename T>
     static int getCharmHadronOrigin(const T& particlesMC,
                                     const typename T::iterator& particle,
@@ -1644,7 +1645,7 @@ struct tofSpectra {
     if (std::abs(mcParticle.y()) > trkselOptions.cfgCutY) {
       return;
     }
-      
+
     histos.fill(HIST(hdcaxytot[i]), track.pt(), track.dcaXY());
     histos.fill(HIST(hdcaztot[i]), track.pt(), track.dcaZ());
 
@@ -1674,7 +1675,7 @@ struct tofSpectra {
         // DCAxy for all non primaries
         histos.fill(HIST(hdcaxyprm2[i]), track.pt(), track.dcaXY());
         histos.fill(HIST(hdcazprm2[i]), track.pt(), track.dcaZ());
-      
+
         //bool IsD0Mother{false};
         bool IsCharmMother{false};
         bool IsBeautyMother{false};
@@ -1710,7 +1711,7 @@ struct tofSpectra {
             histos.fill(HIST(hdcazprm[i]), track.pt(), track.dcaZ());
           }
 
-        
+
 
         if (enableDcaGoodEvents.value && collision.has_mcCollision()) {
           histos.fill(HIST(hdcaxyprmgoodevs[i]), track.pt(), track.dcaXY());
