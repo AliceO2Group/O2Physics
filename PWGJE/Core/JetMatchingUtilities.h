@@ -470,7 +470,7 @@ float getPtSum(T const& tracksBase, U const& clustersBase, V const& tracksTag, O
 template <typename T, typename U>
 auto getConstituents(T const& jet, U const& /*constituents*/)
 {
-  if constexpr (jetfindingutilities::isEMCALTable<U>()) {
+  if constexpr (jetfindingutilities::isEMCALClusterTable<U>()) {
     return jet.template clusters_as<U>();
   } else {
     return jet.template tracks_as<U>();
@@ -492,8 +492,8 @@ void MatchPt(T const& jetsBasePerCollision, U const& jetsTagPerCollision, std::v
       auto jetTagTracks = getConstituents(jetTag, tracksTag);
       auto jetTagClusters = getConstituents(jetTag, clustersTag);
 
-      ptSumBase = getPtSum < jetfindingutilities::isEMCALTable<M>() || jetfindingutilities::isEMCALTable<O>(), jetsBaseIsMc, jetsTagIsMc > (jetBaseTracks, jetBaseClusters, jetTagTracks, jetTagClusters);
-      ptSumTag = getPtSum < jetfindingutilities::isEMCALTable<M>() || jetfindingutilities::isEMCALTable<O>(), jetsTagIsMc, jetsBaseIsMc > (jetTagTracks, jetTagClusters, jetBaseTracks, jetBaseClusters);
+      ptSumBase = getPtSum < jetfindingutilities::isEMCALClusterTable<M>() || jetfindingutilities::isEMCALClusterTable<O>(), jetsBaseIsMc, jetsTagIsMc > (jetBaseTracks, jetBaseClusters, jetTagTracks, jetTagClusters);
+      ptSumTag = getPtSum < jetfindingutilities::isEMCALClusterTable<M>() || jetfindingutilities::isEMCALClusterTable<O>(), jetsTagIsMc, jetsBaseIsMc > (jetTagTracks, jetTagClusters, jetBaseTracks, jetBaseClusters);
       if (ptSumBase > jetBase.pt() * minPtFraction) {
         baseToTagMatchingPt[jetBase.globalIndex()].push_back(jetTag.globalIndex());
       }

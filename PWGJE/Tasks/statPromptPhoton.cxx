@@ -139,6 +139,7 @@ struct statPromptPhoton {
   /////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////
   template <typename Tracks, typename Trigger>
+
   double GetPtHadSum(const Tracks& tracks, const Trigger& trigger, double MinR, double MaxR, bool IsStern, bool IsParticle, bool DodR)
   {
     double eta_trigger, phi_trigger;
@@ -157,19 +158,19 @@ struct statPromptPhoton {
       double pt_track = track.pt();
 
       if (!IsParticle) {
-	if constexpr (requires { track.trackId(); }) {
-	  auto originaltrack = track.template track_as<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>>();
-	  if (!trackSelection(originaltrack)) {
-	    continue;	    
-	  } //reject track
-	}  else if constexpr (requires { track.sign(); }) { //checking for JTrack
-	  //done checking for JTrack, now default to normal tracks
-	  if (!trackSelection(track)) {
-	    continue;
-	  } //reject track
-	}// done checking for JTrack 
+        if constexpr (requires { track.trackId(); }) {
+          auto originaltrack = track.template track_as<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>>();
+          if (!trackSelection(originaltrack)) {
+            continue;
+          } // reject track
+        } else if constexpr (requires { track.sign(); }) { // checking for JTrack
+          // done checking for JTrack, now default to normal tracks
+          if (!trackSelection(track)) {
+            continue;
+          } // reject track
+        } // done checking for JTrack
       } else {
-	if constexpr (requires { track.isPhysicalPrimary(); }) {
+        if constexpr (requires { track.isPhysicalPrimary(); }) {
           if (track.pt() < 0.15) {
             continue;
           }
@@ -347,7 +348,7 @@ struct statPromptPhoton {
       bool sterntrigger = false;
       double sternPt = 0.0;
       if (!trackSelection(track)) {
-	continue;
+        continue;
       }
       if (track.pt() > cfgMinTrig && track.pt() < cfgMaxTrig) {
         if (fabs(track.eta()) <= cfgtrkMaxEta) {
@@ -394,6 +395,7 @@ struct statPromptPhoton {
       if (!recocoll.sel8())
         return;
       if (fabs(recocoll.posZ()) > cfgVtxCut)
+
         return;
       histos.fill(HIST("GEN_nEvents"), 1.5);
       if (!recocoll.alias_bit(kTVXinEMC))
@@ -550,41 +552,35 @@ struct statPromptPhoton {
       double sternPt = 0.0;
       auto ogtrack = track.track_as<TrackCandidates>();
       if (!trackSelection(ogtrack)) {
-	continue;
+        continue;
       }
-      if(track.pt() > cfgMinTrig && track.pt() < cfgMaxTrig) {
-	if(fabs(track.eta()) <= cfgtrkMaxEta) {	    
-	  sterntrigger=true;
-	  sternPt=track.pt();
-	}
+      if (track.pt() > cfgMinTrig && track.pt() < cfgMaxTrig) {
+        if (fabs(track.eta()) <= cfgtrkMaxEta) {
+          sterntrigger = true;
+          sternPt = track.pt();
+        }
       }
 
-      if(sterntrigger) {
-	bool doStern = true;
-	double sterncount = 1.0;
-	while(doStern) {
-	   double pthadsum = GetPtHadSum(tracks, track, cfgMinR, cfgMaxR, true, false, true);
-	   histos.fill(HIST("REC_Trigger_V_PtHadSum_Stern"), sterncount, pthadsum, 2.0/sternPt);
-	  if(sterncount<sternPt) {
-	    sterncount++;
-	  } else {
-	    doStern=false;
-	  }
-	}// While sternin'
-      }// stern trigger loop      
-    }// track loop
-    
-     
+      if (sterntrigger) {
+        bool doStern = true;
+        double sterncount = 1.0;
+        while (doStern) {
+          double pthadsum = GetPtHadSum(tracks, track, cfgMinR, cfgMaxR, true, false, true);
+          histos.fill(HIST("REC_Trigger_V_PtHadSum_Stern"), sterncount, pthadsum, 2.0 / sternPt);
+          if (sterncount < sternPt) {
+            sterncount++;
+          } else {
+            doStern = false;
+          }
+        } // While sternin'
+      } // stern trigger loop
+    } // track loop
+
     histos.fill(HIST("REC_nEvents"), 1.5);
-    if(clustertrigger)
-      histos.fill(HIST("REC_nEvents"), 2.5);
 
-    
-  }// end of process
+  } // end of process
 
   PROCESS_SWITCH(statPromptPhoton, processMCRec_JE, "processJE  MC data", false);
-
-
 
 }; // end of main struct
 

@@ -66,7 +66,7 @@ constexpr bool isEMCALCluster()
  * returns true if the table is an EMCAL table
  */
 template <typename T>
-constexpr bool isEMCALTable()
+constexpr bool isEMCALClusterTable()
 {
   return isEMCALCluster<typename T::iterator>() || isEMCALCluster<typename T::filtered_iterator>();
 }

@@ -270,11 +270,11 @@ struct lambdakzerofinder {
     int collisionIndex = -1;
     //   float getDCAtoPV(float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ){
     for (auto const& collision : collisions) {
-      float thisDCA = TMath::Abs(getDCAtoPV(vtx[0], vtx[1], vtx[2], pvec0[0] + pvec1[0], pvec0[1] + pvec1[1], pvec0[2] + pvec1[2], collision.posX(), collision.posY(), collision.posY()));
+      float thisDCA = TMath::Abs(getDCAtoPV(vtx[0], vtx[1], vtx[2], pvec0[0] + pvec1[0], pvec0[1] + pvec1[1], pvec0[2] + pvec1[2], collision.posX(), collision.posY(), collision.posZ()));
       if (thisDCA < smallestDCA) {
         collisionIndex = collision.globalIndex();
         smallestDCA = thisDCA;
-        cosPA = RecoDecay::cpa(std::array{collision.posX(), collision.posY(), collision.posY()}, array{vtx[0], vtx[1], vtx[2]}, array{pvec0[0] + pvec1[0], pvec0[1] + pvec1[1], pvec0[2] + pvec1[2]});
+        cosPA = RecoDecay::cpa(std::array{collision.posX(), collision.posY(), collision.posZ()}, array{vtx[0], vtx[1], vtx[2]}, array{pvec0[0] + pvec1[0], pvec0[1] + pvec1[1], pvec0[2] + pvec1[2]});
       }
     }
     if (smallestDCA > maxV0DCAtoPV)
