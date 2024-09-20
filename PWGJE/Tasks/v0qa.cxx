@@ -116,6 +116,15 @@ struct V0QA {
       registry.add("JetPtEtaAntiLambdaPt", "Jet Pt, Eta, AntiLambda Pt", HistType::kTH3D, {axisJetPt, axisEta, axisV0Pt});
       registry.add("InvMassJetAntiLambdaTrue", "Invariant mass of AntiLambda in jets", HistType::kTH3D, {axisJetPt, axisV0Pt, axisAntiLambdaM});
     }
+    if (doprocessMcDMatchedJets) {
+      registry.add("hMatchedJetEvents", "Matched Jet Events", {HistType::kTH1D, {{2, 0.0f, 2.0f}}});
+      registry.add("JetsPtEtaK0SPt", "Matched Jet Pt, Eta, K0S Pt", HistType::kTHnSparseD, {axisJetPt, axisJetPt, axisEta, axisV0Pt});
+      registry.add("InvMassJetsK0STrue", "Invariant mass of K0S in matched jets", HistType::kTHnSparseD, {axisJetPt, axisJetPt, axisV0Pt, axisK0SM});
+      registry.add("JetsPtEtaLambdaPt", "Matched Jet Pt, Eta, Lambda Pt", HistType::kTHnSparseD, {axisJetPt, axisJetPt, axisEta, axisV0Pt});
+      registry.add("InvMassJetsLambdaTrue", "Invariant mass of Lambda in matched jets", HistType::kTHnSparseD, {axisJetPt, axisJetPt, axisV0Pt, axisLambdaM});
+      registry.add("JetsPtEtaAntiLambdaPt", "Matched Jet Pt, Eta, AntiLambda Pt", HistType::kTHnSparseD, {axisJetPt, axisJetPt, axisEta, axisV0Pt});
+      registry.add("InvMassJetsAntiLambdaTrue", "Invariant mass of AntiLambda in matched jets", HistType::kTHnSparseD, {axisJetPt, axisJetPt, axisV0Pt, axisAntiLambdaM});
+    }
     if (doprocessMcPJets) {
       registry.add("hMcJetEvents", "MC Jet Events", {HistType::kTH1D, {{2, 0.0f, 2.0f}}});
       registry.add("GeneratedJetK0S", "Generated Jet K0S", HistType::kTH3D, {axisJetPt, axisEta, axisV0Pt});
@@ -134,6 +143,14 @@ struct V0QA {
       return false;
     }
     return true;
+  }
+  template <typename T, typename U, typename V>
+  bool V0sAreMatched(T const& v0, U const& particle, V const& /*tracks*/)
+  {
+    auto negId = v0.template negTrack_as<V>().mcParticleId();
+    auto posId = v0.template posTrack_as<V>().mcParticleId();
+    auto daughters = particle.daughtersIds();
+    return ((negId == daughters[0] && posId == daughters[1]) || (posId == daughters[0] && negId == daughters[1]));
   }
 
   void processDummy(CandidatesV0MCD const&) {}
@@ -327,6 +344,84 @@ struct V0QA {
     }
   }
   PROCESS_SWITCH(V0QA, processMcDJets, "Reconstructed true V0s in jets", false);
+
+  void processMcDMatchedJets(soa::Filtered<JetCollisionsMCD>::iterator const& jcoll, JetMcCollisions const&, MatchedMCDV0JetsWithConstituents const& mcdjets, MatchedMCPV0JetsWithConstituents const& mcpjets, soa::Join<CandidatesV0MCD, aod::McV0Labels> const&, CandidatesV0MCP const&, JetTracksMCD const& jTracks, aod::McParticles const&)
+  {
+    registry.fill(HIST("hMatchedJetEvents"), 0.5);
+    if (!isCollisionReconstructed(jcoll, eventSelection)) {
+      return;
+    }
+    registry.fill(HIST("hMatchedJetEvents"), 1.5);
+    double weight = jcoll.mcCollision().weight();
+
+    for (const auto& mcdjet : mcdjets) {
+      // if (!jetfindingutilities::isInEtaAcceptance(mcdjet, -99., -99., v0EtaMin, v0EtaMax))
+      for (const auto& mcpjet : mcdjet.template matchedJetGeo_as<MatchedMCPV0JetsWithConstituents>()) {
+        for (const auto& v0 : mcdjet.template candidates_as<soa::Join<CandidatesV0MCD, aod::McV0Labels>>()) {
+          if (!v0.has_mcParticle())
+            continue;
+          if (v0.v0cosPA() < v0cospaMin)
+            continue;
+          if (v0.v0radius() < v0radiusMin)
+            continue;
+          if (v0.dcaV0daughters() > dcav0dauMax)
+            continue;
+
+          for (const auto& pv0 : mcpjet.template candidates_as<CandidatesV0MCP>()) {
+            if (!V0sAreMatched(v0, pv0, jTracks))
+              continue;
+            int pdg = pv0.pdgCode();
+
+            // K0S
+            if (TMath::Abs(pdg) == 310) {
+              if (TMath::Abs(v0.dcapostopv()) < dcapiMin)
+                continue;
+              if (TMath::Abs(v0.dcanegtopv()) < dcapiMin)
+                continue;
+              if (TMath::Abs(v0.yK0Short()) > yK0SMax)
+                continue;
+              float ctauK0S = v0.distovertotmom(jcoll.posX(), jcoll.posY(), jcoll.posZ()) * o2::constants::physics::MassK0Short;
+              if (ctauK0S > lifetimeK0SMax)
+                continue;
+
+              registry.fill(HIST("JetsPtEtaK0SPt"), mcpjet.pt(), mcdjet.pt(), mcdjet.eta(), v0.pt(), weight);
+              registry.fill(HIST("InvMassJetsK0STrue"), mcpjet.pt(), mcdjet.pt(), v0.pt(), v0.mK0Short(), weight);
+            }
+            // Lambda
+            if (pdg == 3122) {
+              if (TMath::Abs(v0.dcapostopv()) < dcaprMin)
+                continue;
+              if (TMath::Abs(v0.dcanegtopv()) < dcapiMin)
+                continue;
+              if (TMath::Abs(v0.yLambda()) > yLambdaMax)
+                continue;
+              float ctauLambda = v0.distovertotmom(jcoll.posX(), jcoll.posY(), jcoll.posZ()) * o2::constants::physics::MassLambda0;
+              if (ctauLambda > lifetimeLambdaMax)
+                continue;
+
+              registry.fill(HIST("JetsPtEtaLambdaPt"), mcpjet.pt(), mcdjet.pt(), mcdjet.eta(), v0.pt(), weight);
+              registry.fill(HIST("InvMassJetsLambdaTrue"), mcpjet.pt(), mcdjet.pt(), v0.pt(), v0.mLambda(), weight);
+            }
+            if (pdg == -3122) {
+              if (TMath::Abs(v0.dcapostopv()) < dcapiMin)
+                continue;
+              if (TMath::Abs(v0.dcanegtopv()) < dcaprMin)
+                continue;
+              if (TMath::Abs(v0.yLambda()) > yLambdaMax)
+                continue;
+              float ctauAntiLambda = v0.distovertotmom(jcoll.posX(), jcoll.posY(), jcoll.posZ()) * o2::constants::physics::MassLambda0Bar;
+              if (ctauAntiLambda > lifetimeLambdaMax)
+                continue;
+
+              registry.fill(HIST("JetsPtEtaAntiLambdaPt"), mcpjet.pt(), mcdjet.pt(), mcdjet.eta(), v0.pt(), weight);
+              registry.fill(HIST("InvMassJetsAntiLambdaTrue"), mcpjet.pt(), mcdjet.pt(), v0.pt(), v0.mAntiLambda(), weight);
+            }
+          }
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(V0QA, processMcDMatchedJets, "Reconstructed true V0s in jets", false);
 
   void processMcPJets(JetMcCollision const& mccoll, soa::SmallGroups<JetCollisionsMCD> const& collisions, MCPV0JetsWithConstituents const& jets, CandidatesV0MCP const&)
   {
