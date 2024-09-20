@@ -88,12 +88,24 @@ static constexpr std::string_view hdcaxy[NpCharge] = {"dcaxy/pos/el", "dcaxy/pos
                                                       "dcaxy/neg/el", "dcaxy/neg/mu", "dcaxy/neg/pi",
                                                       "dcaxy/neg/ka", "dcaxy/neg/pr", "dcaxy/neg/de",
                                                       "dcaxy/neg/tr", "dcaxy/neg/he", "dcaxy/neg/al"};
+static constexpr std::string_view hdcaxytot[NpCharge] = {"dcaxytot/pos/el", "dcaxytot/pos/mu", "dcaxytot/pos/pi",
+                                                      "dcaxytot/pos/ka", "dcaxytot/pos/pr", "dcaxytot/pos/de",
+                                                      "dcaxytot/pos/tr", "dcaxytot/pos/he", "dcaxytot/pos/al",
+                                                      "dcaxytot/neg/el", "dcaxytot/neg/mu", "dcaxytot/neg/pi",
+                                                      "dcaxytot/neg/ka", "dcaxytot/neg/pr", "dcaxytot/neg/de",
+                                                      "dcaxytot/neg/tr", "dcaxytot/neg/he", "dcaxytot/neg/al"};
 static constexpr std::string_view hdcaz[NpCharge] = {"dcaz/pos/el", "dcaz/pos/mu", "dcaz/pos/pi",
                                                      "dcaz/pos/ka", "dcaz/pos/pr", "dcaz/pos/de",
                                                      "dcaz/pos/tr", "dcaz/pos/he", "dcaz/pos/al",
                                                      "dcaz/neg/el", "dcaz/neg/mu", "dcaz/neg/pi",
                                                      "dcaz/neg/ka", "dcaz/neg/pr", "dcaz/neg/de",
                                                      "dcaz/neg/tr", "dcaz/neg/he", "dcaz/neg/al"};
+static constexpr std::string_view hdcaztot[NpCharge] = {"dcaztot/pos/el", "dcaztot/pos/mu", "dcaztot/pos/pi",
+                                                      "dcaztot/pos/ka", "dcaztot/pos/pr", "dcaztot/pos/de",
+                                                      "dcaztot/pos/tr", "dcaztot/pos/he", "dcaztot/pos/al",
+                                                      "dcaztot/neg/el", "dcaztot/neg/mu", "dcaztot/neg/pi",
+                                                      "dcaztot/neg/ka", "dcaztot/neg/pr", "dcaztot/neg/de",
+                                                      "dcaztot/neg/tr", "dcaztot/neg/he", "dcaztot/neg/al"};
 static constexpr std::string_view hdcaxyphi[NpCharge] = {"dcaxyphi/pos/el", "dcaxyphi/pos/mu", "dcaxyphi/pos/pi",
                                                          "dcaxyphi/pos/ka", "dcaxyphi/pos/pr", "dcaxyphi/pos/de",
                                                          "dcaxyphi/pos/tr", "dcaxyphi/pos/he", "dcaxyphi/pos/al",
@@ -223,6 +235,18 @@ static constexpr std::string_view hdcaxyprm[NpCharge] = {"dcaxyprm/pos/el", "dca
                                                          "dcaxyprm/neg/el", "dcaxyprm/neg/mu", "dcaxyprm/neg/pi",
                                                          "dcaxyprm/neg/ka", "dcaxyprm/neg/pr", "dcaxyprm/neg/de",
                                                          "dcaxyprm/neg/tr", "dcaxyprm/neg/he", "dcaxyprm/neg/al"};
+static constexpr std::string_view hdcaxyprm2[NpCharge] = {"dcaxyprm2/pos/el", "dcaxyprm2/pos/mu", "dcaxyprm2/pos/pi",
+                                                         "dcaxyprm2/pos/ka", "dcaxyprm2/pos/pr", "dcaxyprm2/pos/de",
+                                                         "dcaxyprm2/pos/tr", "dcaxyprm2/pos/he", "dcaxyprm2/pos/al",
+                                                         "dcaxyprm2/neg/el", "dcaxyprm2/neg/mu", "dcaxyprm2/neg/pi",
+                                                         "dcaxyprm2/neg/ka", "dcaxyprm2/neg/pr", "dcaxyprm2/neg/de",
+                                                         "dcaxyprm2/neg/tr", "dcaxyprm2/neg/he", "dcaxyprm2/neg/al"};
+static constexpr std::string_view hdcaxyD0[NpCharge] = {"dcaxyD0/pos/el", "dcaxyD0/pos/mu", "dcaxyD0/pos/pi",
+                                                         "dcaxyD0/pos/ka", "dcaxyD0/pos/pr", "dcaxyD0/pos/de",
+                                                         "dcaxyD0/pos/tr", "dcaxyD0/pos/he", "dcaxyD0/pos/al",
+                                                         "dcaxyD0/neg/el", "dcaxyD0/neg/mu", "dcaxyD0/neg/pi",
+                                                         "dcaxyD0/neg/ka", "dcaxyD0/neg/pr", "dcaxyD0/neg/de",
+                                                         "dcaxyD0/neg/tr", "dcaxyD0/neg/he", "dcaxyD0/neg/al"};
 static constexpr std::string_view hdcaxyprmgoodevs[NpCharge] = {"dcaxyprmgoodevs/pos/el", "dcaxyprmgoodevs/pos/mu", "dcaxyprmgoodevs/pos/pi",
                                                                 "dcaxyprmgoodevs/pos/ka", "dcaxyprmgoodevs/pos/pr", "dcaxyprmgoodevs/pos/de",
                                                                 "dcaxyprmgoodevs/pos/tr", "dcaxyprmgoodevs/pos/he", "dcaxyprmgoodevs/pos/al",
@@ -235,6 +259,18 @@ static constexpr std::string_view hdcazprm[NpCharge] = {"dcazprm/pos/el", "dcazp
                                                         "dcazprm/neg/el", "dcazprm/neg/mu", "dcazprm/neg/pi",
                                                         "dcazprm/neg/ka", "dcazprm/neg/pr", "dcazprm/neg/de",
                                                         "dcazprm/neg/tr", "dcazprm/neg/he", "dcazprm/neg/al"};
+static constexpr std::string_view hdcazprm2[NpCharge] = {"dcazprm2/pos/el", "dcazprm2/pos/mu", "dcazprm2/pos/pi",
+                                                        "dcazprm2/pos/ka", "dcazprm2/pos/pr", "dcazprm2/pos/de",
+                                                        "dcazprm2/pos/tr", "dcazprm2/pos/he", "dcazprm2/pos/al",
+                                                        "dcazprm2/neg/el", "dcazprm2/neg/mu", "dcazprm2/neg/pi",
+                                                        "dcazprm2/neg/ka", "dcazprm2/neg/pr", "dcazprm2/neg/de",
+                                                        "dcazprm2/neg/tr", "dcazprm2/neg/he", "dcazprm2/neg/al"};                    
+static constexpr std::string_view hdcazD0[NpCharge] = {"dcazD0/pos/el", "dcazD0/pos/mu", "dcazD0/pos/pi",
+                                                         "dcazD0/pos/ka", "dcazD0/pos/pr", "dcazD0/pos/de",
+                                                         "dcazD0/pos/tr", "dcazD0/pos/he", "dcazD0/pos/al",
+                                                         "dcazD0/neg/el", "dcazD0/neg/mu", "dcazD0/neg/pi",
+                                                         "dcazD0/neg/ka", "dcazD0/neg/pr", "dcazD0/neg/de",
+                                                         "dcazD0/neg/tr", "dcazD0/neg/he", "dcazD0/neg/al"};      
 static constexpr std::string_view hdcazprmgoodevs[NpCharge] = {"dcazprmgoodevs/pos/el", "dcazprmgoodevs/pos/mu", "dcazprmgoodevs/pos/pi",
                                                                "dcazprmgoodevs/pos/ka", "dcazprmgoodevs/pos/pr", "dcazprmgoodevs/pos/de",
                                                                "dcazprmgoodevs/pos/tr", "dcazprmgoodevs/pos/he", "dcazprmgoodevs/pos/al",
@@ -247,18 +283,42 @@ static constexpr std::string_view hdcaxystr[NpCharge] = {"dcaxystr/pos/el", "dca
                                                          "dcaxystr/neg/el", "dcaxystr/neg/mu", "dcaxystr/neg/pi",
                                                          "dcaxystr/neg/ka", "dcaxystr/neg/pr", "dcaxystr/neg/de",
                                                          "dcaxystr/neg/tr", "dcaxystr/neg/he", "dcaxystr/neg/al"};
-static constexpr std::string_view hdcazstr[NpCharge] = {"dcazstr/pos/el", "dcazstr/pos/mu", "dcazstr/pos/pi",
-                                                        "dcazstr/pos/ka", "dcazstr/pos/pr", "dcazstr/pos/de",
-                                                        "dcazstr/pos/tr", "dcazstr/pos/he", "dcazstr/pos/al",
-                                                        "dcazstr/neg/el", "dcazstr/neg/mu", "dcazstr/neg/pi",
-                                                        "dcazstr/neg/ka", "dcazstr/neg/pr", "dcazstr/neg/de",
-                                                        "dcazstr/neg/tr", "dcazstr/neg/he", "dcazstr/neg/al"};
+static constexpr std::string_view hdcaxycharm[NpCharge] = {"dcaxycharm/pos/el", "dcaxycharm/pos/mu", "dcaxycharm/pos/pi",
+                                                         "dcaxycharm/pos/ka", "dcaxycharm/pos/pr", "dcaxycharm/pos/de",
+                                                         "dcaxycharm/pos/tr", "dcaxycharm/pos/he", "dcaxycharm/pos/al",
+                                                         "dcaxycharm/neg/el", "dcaxycharm/neg/mu", "dcaxycharm/neg/pi",
+                                                         "dcaxycharm/neg/ka", "dcaxycharm/neg/pr", "dcaxycharm/neg/de",
+                                                         "dcaxycharm/neg/tr", "dcaxycharm/neg/he", "dcaxycharm/neg/al"};
+static constexpr std::string_view hdcaxybeauty[NpCharge] = {"dcaxybeauty/pos/el", "dcaxybeauty/pos/mu", "dcaxybeauty/pos/pi",
+                                                         "dcaxybeauty/pos/ka", "dcaxybeauty/pos/pr", "dcaxybeauty/pos/de",
+                                                         "dcaxybeauty/pos/tr", "dcaxybeauty/pos/he", "dcaxybeauty/pos/al",
+                                                         "dcaxybeauty/neg/el", "dcaxybeauty/neg/mu", "dcaxybeauty/neg/pi",
+                                                         "dcaxybeauty/neg/ka", "dcaxybeauty/neg/pr", "dcaxybeauty/neg/de",
+                                                         "dcaxybeauty/neg/tr", "dcaxybeauty/neg/he", "dcaxybeauty/neg/al"};
 static constexpr std::string_view hdcaxymat[NpCharge] = {"dcaxymat/pos/el", "dcaxymat/pos/mu", "dcaxymat/pos/pi",
                                                          "dcaxymat/pos/ka", "dcaxymat/pos/pr", "dcaxymat/pos/de",
                                                          "dcaxymat/pos/tr", "dcaxymat/pos/he", "dcaxymat/pos/al",
                                                          "dcaxymat/neg/el", "dcaxymat/neg/mu", "dcaxymat/neg/pi",
                                                          "dcaxymat/neg/ka", "dcaxymat/neg/pr", "dcaxymat/neg/de",
                                                          "dcaxymat/neg/tr", "dcaxymat/neg/he", "dcaxymat/neg/al"};
+static constexpr std::string_view hdcazstr[NpCharge] = {"dcazstr/pos/el", "dcazstr/pos/mu", "dcazstr/pos/pi",
+                                                        "dcazstr/pos/ka", "dcazstr/pos/pr", "dcazstr/pos/de",
+                                                        "dcazstr/pos/tr", "dcazstr/pos/he", "dcazstr/pos/al",
+                                                        "dcazstr/neg/el", "dcazstr/neg/mu", "dcazstr/neg/pi",
+                                                        "dcazstr/neg/ka", "dcazstr/neg/pr", "dcazstr/neg/de",
+                                                        "dcazstr/neg/tr", "dcazstr/neg/he", "dcazstr/neg/al"};
+static constexpr std::string_view hdcazcharm[NpCharge] = {"dcazcharm/pos/el", "dcazcharm/pos/mu", "dcazcharm/pos/pi",
+                                                         "dcazcharm/pos/ka", "dcazcharm/pos/pr", "dcazcharm/pos/de",
+                                                         "dcazcharm/pos/tr", "dcazcharm/pos/he", "dcazcharm/pos/al",
+                                                         "dcazcharm/neg/el", "dcazcharm/neg/mu", "dcazcharm/neg/pi",
+                                                         "dcazcharm/neg/ka", "dcazcharm/neg/pr", "dcazcharm/neg/de",
+                                                         "dcazcharm/neg/tr", "dcazcharm/neg/he", "dcazcharm/neg/al"};
+static constexpr std::string_view hdcazbeauty[NpCharge] = {"dcazbeauty/pos/el", "dcazbeauty/pos/mu", "dcazbeauty/pos/pi",
+                                                         "dcazbeauty/pos/ka", "dcazbeauty/pos/pr", "dcazbeauty/pos/de",
+                                                         "dcazbeauty/pos/tr", "dcazbeauty/pos/he", "dcazbeauty/pos/al",
+                                                         "dcazbeauty/neg/el", "dcazbeauty/neg/mu", "dcazbeauty/neg/pi",
+                                                         "dcazbeauty/neg/ka", "dcazbeauty/neg/pr", "dcazbeauty/neg/de",
+                                                         "dcazbeauty/neg/tr", "dcazbeauty/neg/he", "dcazbeauty/neg/al"};  
 static constexpr std::string_view hdcazmat[NpCharge] = {"dcazmat/pos/el", "dcazmat/pos/mu", "dcazmat/pos/pi",
                                                         "dcazmat/pos/ka", "dcazmat/pos/pr", "dcazmat/pos/de",
                                                         "dcazmat/pos/tr", "dcazmat/pos/he", "dcazmat/pos/al",
