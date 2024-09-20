@@ -45,7 +45,9 @@ struct NPCascCandidate {
   float itsClusSize;
   bool isGoodMatch;
   bool isGoodCascade;
-  int pdgCodePrimary;
+  int pdgCodeMom;
+  bool isFromBeauty;
+  bool isFromCharm;
   float pvX;
   float pvY;
   float pvZ;
@@ -563,15 +565,25 @@ struct NonPromptCascadeTask {
 
       bool isGoodMatch = ((motherParticleID == ITStrack.mcParticleId())) ? true : false;
 
-      int pdgCodePrimary = 0;
+      int pdgCodeMom = 0;
+      bool fromBeauty = false, fromCharm = false;
       if (isGoodCascade && isGoodMatch) {
         if (track.mcParticle().has_mothers()) {
-          const auto primary = track.mcParticle().mothers_as<aod::McParticles>()[0];
-          pdgCodePrimary = primary.pdgCode();
+          auto mom = track.mcParticle().mothers_as<aod::McParticles>()[0];
+          pdgCodeMom = mom.pdgCode();
+          fromBeauty = std::abs(pdgCodeMom) / 5000 == 1 || std::abs(pdgCodeMom) / 500 == 1 || std::abs(pdgCodeMom) == 5;
+          fromCharm = std::abs(pdgCodeMom) / 4000 == 1 || std::abs(pdgCodeMom) / 400 == 1 || std::abs(pdgCodeMom) == 4;
+          while (mom.has_mothers()) {
+            const auto grandma = mom.mothers_as<aod::McParticles>()[0];
+            int pdgCodeGrandma = std::abs(grandma.pdgCode());
+            fromBeauty = fromBeauty || (pdgCodeGrandma / 5000 == 1 || pdgCodeGrandma / 500 == 1 || pdgCodeGrandma == 5);
+            fromCharm = fromCharm || (pdgCodeGrandma / 4000 == 1 || pdgCodeGrandma / 400 == 1 || pdgCodeGrandma == 4);
+            mom = grandma;
+          }
         }
       }
 
-      candidates.emplace_back(NPCascCandidate{track.globalIndex(), ITStrack.globalIndex(), trackedCascade.collisionId(), trackedCascade.matchingChi2(), trackedCascade.itsClsSize(), isGoodMatch, isGoodCascade, pdgCodePrimary,
+      candidates.emplace_back(NPCascCandidate{track.globalIndex(), ITStrack.globalIndex(), trackedCascade.collisionId(), trackedCascade.matchingChi2(), trackedCascade.itsClsSize(), isGoodMatch, isGoodCascade, pdgCodeMom, fromBeauty, fromCharm,
                                               primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
                                               track.pt(), track.eta(), track.phi(),
                                               protonTrack.pt(), protonTrack.eta(), pionTrack.pt(), pionTrack.eta(), bachelor.pt(), bachelor.eta(),
@@ -600,7 +612,7 @@ struct NonPromptCascadeTask {
       auto mcCollision = particle.mcCollision_as<aod::McCollisions>();
       auto label = collisions.iteratorAt(c.collisionID);
 
-      NPCTableMC(c.matchingChi2, c.itsClusSize, c.isGoodMatch, c.isGoodCascade, c.pdgCodePrimary,
+      NPCTableMC(c.matchingChi2, c.itsClusSize, c.isGoodMatch, c.isGoodCascade, c.pdgCodeMom, c.isFromBeauty, c.isFromCharm,
                  c.pvX, c.pvY, c.pvZ,
                  c.cascPt, c.cascEta, c.cascPhi,
                  c.protonPt, c.protonEta, c.pionPt, c.pionEta, c.bachPt, c.bachEta,
@@ -808,7 +820,7 @@ struct NonPromptCascadeTask {
       daughtersDCA dDCA;
       fillDauDCA(trackedCascade, bachelor, protonTrack, pionTrack, primaryVertex, isOmega, dDCA);
 
-      candidates.emplace_back(NPCascCandidate{track.globalIndex(), ITStrack.globalIndex(), trackedCascade.collisionId(), trackedCascade.matchingChi2(), trackedCascade.itsClsSize(), 0, 0, -1,
+      candidates.emplace_back(NPCascCandidate{track.globalIndex(), ITStrack.globalIndex(), trackedCascade.collisionId(), trackedCascade.matchingChi2(), trackedCascade.itsClsSize(), 0, 0, 0, 0, 0,
                                               primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
                                               track.pt(), track.eta(), track.phi(),
                                               protonTrack.pt(), protonTrack.eta(), pionTrack.pt(), pionTrack.eta(), bachelor.pt(), bachelor.eta(),

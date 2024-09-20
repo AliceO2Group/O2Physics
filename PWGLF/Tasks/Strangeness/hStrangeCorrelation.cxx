@@ -73,6 +73,8 @@ struct correlateStrangeness {
   Configurable<bool> doLambdaPrimary{"doLambdaPrimary", false, "do primary selection for lambda"};
   Configurable<bool> doAutocorrelationRejection{"doAutocorrelationRejection", true, "reject pairs where trigger Id is the same as daughter particle Id"};
 
+  Configurable<int> triggerBinToSelect{"triggerBinToSelect", 0, "trigger bin to select on if processSelectEventWithTrigger enabled"};
+
   // Axes - configurable for smaller sizes
   ConfigurableAxis axisMult{"axisMult", {VARIABLE_WIDTH, 0.0f, 0.01f, 1.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 70.0f, 100.0f}, "Mixing bins - multiplicity"};
   ConfigurableAxis axisVtxZ{"axisVtxZ", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
@@ -835,10 +837,60 @@ struct correlateStrangeness {
     }
   }
 
+  // if this process function is enabled, it will be such that only events with trigger particles within a given
+  // trigger pt bin are taken for the entire processing. This allows for the calculation of e.g. efficiencies
+  // within an event class that has a trigger (which may differ with respect to other cases, to be checked)
+
+  // for map determining which trigger bins are present and which aren't
+  std::vector<uint32_t> triggerPresenceMap;
+
+  void processSelectEventWithTrigger(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults> const& collisions,
+                                     aod::TriggerTracks const& triggerTracks, TracksComplete const&, aod::BCsWithTimestamps const&)
+  {
+    // setup
+    triggerPresenceMap.clear();
+    triggerPresenceMap.resize(collisions.size(), 0);
+
+    for (auto const& collision : collisions) {
+      // ________________________________________________
+      // Perform basic event selection
+      if (!collision.sel8()) {
+        continue;
+      }
+      if (TMath::Abs(collision.posZ()) > zVertexCut) {
+        continue;
+      }
+      if (collision.centFT0M() > axisRanges[5][1] || collision.centFT0M() < axisRanges[5][0]) {
+        continue;
+      }
+      if (!collision.isInelGt0() && selectINELgtZERO) {
+        continue;
+      }
+
+      // do not forget to re-group ...
+      auto slicedTriggerTracks = triggerTracks.sliceBy(collisionSliceTracks, collision.globalIndex());
+
+      for (auto const& triggerTrack : slicedTriggerTracks) {
+        auto track = triggerTrack.track_as<TracksComplete>();
+        if (!isValidTrigger(track)) {
+          continue;
+        }
+        auto binNumber = histos.get<TH1>(HIST("axes/hPtTriggerAxis"))->FindFixBin(track.pt()) - 1;
+        bitset(triggerPresenceMap[collision.globalIndex()], binNumber);
+      }
+    }
+  }
+
   void processSameEventHV0s(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>::iterator const& collision,
                             aod::AssocV0s const& associatedV0s, aod::TriggerTracks const& triggerTracks,
                             V0DatasWithoutTrackX const&, aod::V0sLinked const&, TracksComplete const&, aod::BCsWithTimestamps const&)
   {
+    // ________________________________________________
+    // skip if desired trigger not found
+    if (triggerPresenceMap.size() > 0 && !bitcheck(triggerPresenceMap[collision.globalIndex()], triggerBinToSelect)) {
+      return;
+    }
+
     // ________________________________________________
     // Perform basic event selection
     if (!collision.sel8()) {
@@ -929,6 +981,12 @@ struct correlateStrangeness {
                                  aod::AssocV0s const&, aod::AssocCascades const& associatedCascades, aod::TriggerTracks const& triggerTracks,
                                  V0DatasWithoutTrackX const&, aod::V0sLinked const&, aod::CascDatas const&, TracksComplete const&, aod::BCsWithTimestamps const&)
   {
+    // ________________________________________________
+    // skip if desired trigger not found
+    if (triggerPresenceMap.size() > 0 && !bitcheck(triggerPresenceMap[collision.globalIndex()], triggerBinToSelect)) {
+      return;
+    }
+
     // ________________________________________________
     // Perform basic event selection
     if (!collision.sel8()) {
@@ -1022,6 +1080,12 @@ struct correlateStrangeness {
                               TracksComplete const&, aod::BCsWithTimestamps const&)
   {
     // ________________________________________________
+    // skip if desired trigger not found
+    if (triggerPresenceMap.size() > 0 && !bitcheck(triggerPresenceMap[collision.globalIndex()], triggerBinToSelect)) {
+      return;
+    }
+
+    // ________________________________________________
     // Perform basic event selection
     if (!collision.sel8()) {
       return;
@@ -1073,6 +1137,12 @@ struct correlateStrangeness {
         auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
         initEfficiencyFromCCDB(bc);
       }
+      // ________________________________________________
+      // skip if desired trigger not found
+      if (triggerPresenceMap.size() > 0 && (!bitcheck(triggerPresenceMap[collision1.globalIndex()], triggerBinToSelect) || !bitcheck(triggerPresenceMap[collision2.globalIndex()], triggerBinToSelect))) {
+        return;
+      }
+
       // Perform basic event selection on both collisions
       if (!collision1.sel8() || !collision2.sel8())
         continue;
@@ -1112,6 +1182,12 @@ struct correlateStrangeness {
         auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
         initEfficiencyFromCCDB(bc);
       }
+      // ________________________________________________
+      // skip if desired trigger not found
+      if (triggerPresenceMap.size() > 0 && (!bitcheck(triggerPresenceMap[collision1.globalIndex()], triggerBinToSelect) || !bitcheck(triggerPresenceMap[collision2.globalIndex()], triggerBinToSelect))) {
+        return;
+      }
+
       // Perform basic event selection on both collisions
       if (!collision1.sel8() || !collision2.sel8())
         continue;
@@ -1145,6 +1221,13 @@ struct correlateStrangeness {
                                TracksComplete const&)
   {
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, mixingParameter, -1, collisions, collisions)) {
+
+      // ________________________________________________
+      // skip if desired trigger not found
+      if (triggerPresenceMap.size() > 0 && (!bitcheck(triggerPresenceMap[collision1.globalIndex()], triggerBinToSelect) || !bitcheck(triggerPresenceMap[collision2.globalIndex()], triggerBinToSelect))) {
+        return;
+      }
+
       // ________________________________________________
       // Perform basic event selection on both collisions
       if (!collision1.sel8() || !collision2.sel8())
@@ -1227,6 +1310,8 @@ struct correlateStrangeness {
     float bestCollisionVtxZ = 0.0f;
     bool bestCollisionSel8 = false;
     bool bestCollisionINELgtZERO = false;
+    uint32_t bestCollisionTriggerPresenceMap = 0;
+
     for (auto& collision : collisions) {
       if (biggestNContribs < collision.numContrib()) {
         biggestNContribs = collision.numContrib();
@@ -1234,6 +1319,7 @@ struct correlateStrangeness {
         bestCollisionSel8 = collision.sel8();
         bestCollisionVtxZ = collision.posZ();
         bestCollisionINELgtZERO = collision.isInelGt0();
+        bestCollisionTriggerPresenceMap = triggerPresenceMap[collision.globalIndex()];
       }
     }
 
@@ -1265,6 +1351,12 @@ struct correlateStrangeness {
     // do selections on best collision
     // WARNING: if 2 PV case large, this will not necessarily be fine!
     //          caution advised!
+
+    // ________________________________________________
+    // skip if desired trigger not found
+    if (triggerPresenceMap.size() > 0 && !bitcheck(bestCollisionTriggerPresenceMap, triggerBinToSelect)) {
+      return;
+    }
     if (!bestCollisionSel8)
       return;
     if (std::abs(bestCollisionVtxZ) > 10.0f)
@@ -1378,6 +1470,8 @@ struct correlateStrangeness {
     bool bestCollisionSel8 = false;
     bool bestCollisionINELgtZERO = false;
     int biggestNContribs = -1;
+    uint32_t bestCollisionTriggerPresenceMap = 0;
+
     for (auto& recCollision : recCollisions) {
       if (biggestNContribs < recCollision.numContrib()) {
         biggestNContribs = recCollision.numContrib();
@@ -1385,8 +1479,15 @@ struct correlateStrangeness {
         bestCollisionSel8 = recCollision.sel8();
         bestCollisionVtxZ = recCollision.posZ();
         bestCollisionINELgtZERO = recCollision.isInelGt0();
+        bestCollisionTriggerPresenceMap = triggerPresenceMap[recCollision.globalIndex()];
       }
     }
+    // ________________________________________________
+    // skip if desired trigger not found
+    if (triggerPresenceMap.size() > 0 && !bitcheck(bestCollisionTriggerPresenceMap, triggerBinToSelect)) {
+      return;
+    }
+
     if (doGenEventSelection) {
       if (!bestCollisionSel8)
         return;
@@ -1498,21 +1599,24 @@ struct correlateStrangeness {
             Double_t getaassoc = assocParticle.eta();
             Double_t gphiassoc = assocParticle.phi();
             Double_t ptassoc = assocParticle.pt();
+            Double_t deltaphi = ComputeDeltaPhi(gphitrigger, gphiassoc);
+            Double_t deltaeta = getatrigger - getaassoc;
 
             // skip if basic ranges not met
-            if (gphiassoc < axisRanges[0][0] || gphiassoc > axisRanges[0][1])
+            if (deltaphi < axisRanges[0][0] || deltaphi > axisRanges[0][1])
               continue;
-            if (getaassoc < axisRanges[1][0] || getaassoc > axisRanges[1][1])
+            if (deltaeta < axisRanges[1][0] || deltaeta > axisRanges[1][1])
               continue;
             if (ptassoc < axisRanges[2][0] || ptassoc > axisRanges[2][1])
               continue;
-            histos.fill(HIST("ClosureTest/sameEvent/") + HIST(particlenames[index]), ComputeDeltaPhi(gphitrigger, gphiassoc), getatrigger - getaassoc, ptassoc, pttrigger, bestCollisionVtxZ, bestCollisionFT0Mpercentile);
+            histos.fill(HIST("ClosureTest/sameEvent/") + HIST(particlenames[index]), ComputeDeltaPhi(gphitrigger, gphiassoc), deltaeta, ptassoc, pttrigger, bestCollisionVtxZ, bestCollisionFT0Mpercentile);
           }
         }
       });
     }
   }
 
+  PROCESS_SWITCH(correlateStrangeness, processSelectEventWithTrigger, "Select events with trigger only", false);
   PROCESS_SWITCH(correlateStrangeness, processSameEventHV0s, "Process same events, h-V0s", true);
   PROCESS_SWITCH(correlateStrangeness, processSameEventHCascades, "Process same events, h-Cascades", true);
   PROCESS_SWITCH(correlateStrangeness, processSameEventHPions, "Process same events, h-Pion", true);

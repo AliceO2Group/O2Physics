@@ -65,12 +65,16 @@ struct QaImpactPar {
   ConfigurableAxis binningPhi{"binningPhi", {24, 0.f, TMath::TwoPi()}, "Phi binning"};
   ConfigurableAxis binningPDG{"binningPDG", {5, -1.5f, 3.5f}, "PDG species binning (-1: not matched, 0: unknown, 1: pi, 2: K, 3: p)"};
   ConfigurableAxis binningCharge{"binningCharge", {2, -2.f, 2.f}, "charge binning (-1: negative; +1: positive)"};
+  ConfigurableAxis binningIuPosX{"binningIuPosX", {100, -10.f, 10.f}, "Track IU x position"};
+  ConfigurableAxis binningIuPosY{"binningIuPosY", {100, -10.f, 10.f}, "Track IU y position"};
+  ConfigurableAxis binningIuPosZ{"binningIuPosZ", {100, -10.f, 10.f}, "Track IU z position"};
   ConfigurableAxis binsNumPvContrib{"binsNumPvContrib", {200, 0, 200}, "Number of original PV contributors"};
   Configurable<bool> keepOnlyPhysPrimary{"keepOnlyPhysPrimary", false, "Consider only phys. primary particles (MC)"};
   Configurable<bool> keepOnlyPvContrib{"keepOnlyPvContrib", false, "Consider only PV contributor tracks"};
   // Configurable<int> numberContributorsMin{"numberContributorsMin", 0, "Minimum number of contributors for the primary vertex"};
   Configurable<bool> useTriggerkINT7{"useTriggerkINT7", false, "Use kINT7 trigger"};
   Configurable<bool> usesel8{"usesel8", true, "Use or not the sel8() (T0A & T0C) event selection"};
+  Configurable<bool> addTrackIUinfo{"addTrackIUinfo", false, "Add track parameters at inner most update"};
   Configurable<int> trackSelection{"trackSelection", 1, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
   Configurable<float> zVtxMax{"zVtxMax", 10.f, "Maximum value for |z_vtx|"};
   // Configurable<int> keepOnlyGlobalTracks{"keepOnlyGlobalTracks", 1, "Keep only global tracks or not"};
@@ -154,11 +158,12 @@ struct QaImpactPar {
   void processData(o2::soa::Filtered<collisionRecoTable>::iterator& collision,
                    const trackTable& tracksUnfiltered,
                    const o2::soa::Filtered<trackFullTable>& tracks,
+                   const o2::aod::TracksIU& tracksIU,
                    o2::aod::BCsWithTimestamps const&)
   {
     /// here call the template processReco function
     auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
-    processReco<false>(collision, tracksUnfiltered, tracks, 0, bc);
+    processReco<false>(collision, tracksUnfiltered, tracks, tracksIU, 0, bc);
   }
   PROCESS_SWITCH(QaImpactPar, processData, "process data", true);
 
@@ -168,13 +173,14 @@ struct QaImpactPar {
   void processMC(o2::soa::Filtered<collisionMCRecoTable>::iterator& collision,
                  trackTable const& tracksUnfiltered,
                  o2::soa::Filtered<trackMCFullTable> const& tracks,
+                 const o2::aod::TracksIU& tracksIU,
                  const o2::aod::McParticles& mcParticles,
                  const o2::aod::McCollisions&,
                  o2::aod::BCsWithTimestamps const&)
   {
     /// here call the template processReco function
     auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
-    processReco<true>(collision, tracksUnfiltered, tracks, mcParticles, bc);
+    processReco<true>(collision, tracksUnfiltered, tracks, tracksIU, mcParticles, bc);
   }
   PROCESS_SWITCH(QaImpactPar, processMC, "process MC", false);
 
@@ -256,6 +262,9 @@ struct QaImpactPar {
     const AxisSpec trackPtAxis{binningPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec trackEtaAxis{binningEta, "#it{#eta}"};
     const AxisSpec trackPhiAxis{binningPhi, "#varphi"};
+    const AxisSpec trackIUposXaxis{binningIuPosX, "x"};
+    const AxisSpec trackIUposYaxis{binningIuPosY, "x"};
+    const AxisSpec trackIUposZaxis{binningIuPosZ, "x"};
     const AxisSpec trackImpParRPhiAxis{binningImpPar, "#it{d}_{r#it{#varphi}} (#mum)"};
     const AxisSpec trackImpParZAxis{binningImpPar, "#it{d}_{z} (#mum)"};
     const AxisSpec trackImpParRPhiPullsAxis{binningPulls, "#it{d}_{r#it{#varphi}} / #sigma(#it{d}_{r#it{#varphi}})"};
@@ -281,6 +290,10 @@ struct QaImpactPar {
     histograms.get<TH1>(HIST("Reco/refitRun3"))->GetXaxis()->SetBinLabel(5, "hasTPC && hasITS");
     histograms.add("Reco/h4ImpPar", "", kTHnSparseD, {trackPtAxis, trackImpParRPhiAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
     histograms.add("Reco/h4ImpParZ", "", kTHnSparseD, {trackPtAxis, trackImpParZAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
+    if (addTrackIUinfo) {
+      histograms.add("Reco/h4ImpParIU", "", kTHnSparseD, {trackPtAxis, trackImpParRPhiAxis, trackIUposXaxis, trackIUposYaxis, trackIUposZaxis});
+      histograms.add("Reco/h4ImpParZIU", "", kTHnSparseD, {trackPtAxis, trackImpParZAxis, trackIUposXaxis, trackIUposYaxis, trackIUposZaxis});
+    }
     // if(fEnablePulls && !doPVrefit) {
     //   LOGF(fatal, ">>> dca errors not stored after track propagation at the moment. Use fEnablePulls only if doPVrefit!");
     // }
@@ -320,7 +333,7 @@ struct QaImpactPar {
   /// core template process function
   template <bool IS_MC, typename C, typename T, typename T_MC>
   void processReco(const C& collision, const trackTable& unfilteredTracks, const T& tracks,
-                   const T_MC& /*mcParticles*/,
+                   const o2::aod::TracksIU& tracksIU, const T_MC& /*mcParticles*/,
                    o2::aod::BCsWithTimestamps::iterator const& bc)
   {
     constexpr float toMicrometers = 10000.f; // Conversion from [cm] to [mum]
@@ -451,6 +464,9 @@ struct QaImpactPar {
     float tofNSigmaPion = -999.f;
     float tofNSigmaKaon = -999.f;
     float tofNSigmaProton = -999.f;
+    float trackIuPosX = -999.f;
+    float trackIuPosY = -999.f;
+    float trackIuPosZ = -999.f;
     int ntr = tracks.size();
     int cnt = 0;
     for (const auto& track : tracks) {
@@ -638,9 +654,24 @@ struct QaImpactPar {
         }
       }
 
+      /// retrive track position at inner most update
+      if (addTrackIUinfo) {
+        for (const auto& trackIU : tracksIU) {
+          if (trackIU.globalIndex() == track.globalIndex()) {
+            trackIuPosX = trackIU.x();
+            trackIuPosY = trackIU.y();
+            trackIuPosZ = trackIU.z();
+          }
+        }
+      }
+
       /// all tracks
       histograms.fill(HIST("Reco/h4ImpPar"), pt, impParRPhi, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
       histograms.fill(HIST("Reco/h4ImpParZ"), pt, impParZ, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
+      if (addTrackIUinfo) {
+        histograms.fill(HIST("Reco/h4ImpParIU"), pt, impParRPhi, trackIuPosX, trackIuPosY, trackIuPosZ);
+        histograms.fill(HIST("Reco/h4ImpParZIU"), pt, impParZ, trackIuPosX, trackIuPosY, trackIuPosZ);
+      }
       if (fEnablePulls) {
         histograms.fill(HIST("Reco/h4ImpParPulls"), pt, impParRPhi / impParRPhiSigma, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
         histograms.fill(HIST("Reco/h4ImpParZPulls"), pt, impParZ / impParZSigma, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());

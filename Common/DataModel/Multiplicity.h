@@ -115,7 +115,8 @@ DECLARE_SOA_TABLE(MultsExtra, "AOD", "MULTEXTRA", //!
                   mult::MultNTracksHasITS, mult::MultNTracksHasTPC, mult::MultNTracksHasTOF, mult::MultNTracksHasTRD,
                   mult::MultNTracksITSOnly, mult::MultNTracksTPCOnly, mult::MultNTracksITSTPC,
                   mult::MultAllTracksTPCOnly, mult::MultAllTracksITSTPC,
-                  evsel::NumTracksInTimeRange);
+                  evsel::NumTracksInTimeRange,
+                  collision::Flags);
 
 DECLARE_SOA_TABLE(MultNeighs, "AOD", "MULTNEIGH", //!
                   mult::TimeToPrePrevious, mult::TimeToPrevious,
@@ -151,7 +152,7 @@ namespace mult
 DECLARE_SOA_INDEX_COLUMN(MultMCExtra, multMCExtra);
 }
 
-DECLARE_SOA_TABLE(MC2Mults, "AOD", "MC2MULTS", //! Relate BC -> mult
+DECLARE_SOA_TABLE(Mult2MCExtras, "AOD", "Mult2MCEXTRA", //! Relate reco mult entry to MC extras entry
                   o2::soa::Index<>, mult::MultMCExtraId);
 
 namespace multZeq
@@ -221,7 +222,8 @@ DECLARE_SOA_TABLE(MultBCs, "AOD", "MULTBC", //!
                   multBC::MultBCT0triggerBits,
                   multBC::MultBCFDDtriggerBits,
                   multBC::MultBCTriggerMask,
-                  multBC::MultBCColliding);
+                  multBC::MultBCColliding,
+                  bc::Flags);
 using MultBC = MultBCs::iterator;
 
 // crosslinks

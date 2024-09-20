@@ -159,12 +159,15 @@ struct TaskPolarisationCharmHadrons {
   struct : ConfigurableGroup {
     Configurable<bool> applyLcBkgVeto{"applyLcBkgVeto", false, "Flag to enable the veto on D+ and Ds+ background for Lc->pKpi analysis"};
     /// background from D+->K-pi+pi+
+    Configurable<bool> enableLcBkgVetoDplusKPiPi{"enableLcBkgVetoDplusKPiPi", false, "Flag to enable the veto on D+->K-pi+pi+ for Lc->pKpi analysis"};
     Configurable<float> massDplusKPiPiMinVeto{"massDplusKPiPiMinVeto", 1.85, "Min. value for D+->K-pi+pi+ veto"};
     Configurable<float> massDplusKPiPiMaxVeto{"massDplusKPiPiMaxVeto", 1.90, "Max. value for D+->K-pi+pi+ veto"};
     /// background from D+->K+K-pi+
+    Configurable<bool> enableLcBkgVetoDplusKKPi{"enableLcBkgVetoDplusKKPi", false, "Flag to enable the veto on D+->K+K-pi+ for Lc->pKpi analysis"};
     Configurable<float> massDplusKKPiMinVeto{"massDplusKKPiMinVeto", 1.85, "Min. value for D+->K+K-pi+ veto"}; // one can use also massDplusKPiPiMinVeto, but this allows more flexibility in analysis
     Configurable<float> massDplusKKPiMaxVeto{"massDplusKKPiMaxVeto", 1.90, "Max. value for D+->K+K-pi+ veto"}; // one can use also massDplusKPiPiMaxVeto, but this allows more flexibility in analysis
     /// background from Ds+->K+K-pi+
+    Configurable<bool> enableLcBkgVetoDsKKPi{"enableLcBkgVetoDsKKPi", false, "Flag to enable the veto on Ds+->K+K-pi+ for Lc->pKpi analysis"};
     Configurable<float> massDsKKPiMinVeto{"massDsKKPiMinVeto", 1.94, "Min. value for Ds+->K+K-pi+ veto"};
     Configurable<float> massDsKKPiMaxVeto{"massDsKKPiMaxVeto", 2.00, "Max. value for Ds+->K+K-pi+ veto"};
   } lcBkgVeto;
@@ -1135,11 +1138,11 @@ struct TaskPolarisationCharmHadrons {
         }
 
         /// put veto on D+, Ds+ inv. masses, to reduce the background
-        if (lcBkgVeto.applyLcBkgVeto && ((lcBkgVeto.massDplusKPiPiMinVeto < invMassPiKPi && invMassPiKPi < lcBkgVeto.massDplusKPiPiMaxVeto) /*bkg. from D+ -> K+pi-pi-*/ ||
-                                         (lcBkgVeto.massDplusKKPiMinVeto < invMassKKPi && invMassKKPi < lcBkgVeto.massDplusKKPiMaxVeto) /*bkg. from D+ -> K+K-pi+ (1st mass hypothesis)*/ ||
-                                         (lcBkgVeto.massDplusKKPiMinVeto < invMassPiKK && invMassPiKK < lcBkgVeto.massDplusKKPiMaxVeto) /*bkg. from D+ -> K+K-pi+ (2nd mass hypothesis)*/ ||
-                                         (lcBkgVeto.massDsKKPiMinVeto < invMassKKPi && invMassKKPi < lcBkgVeto.massDsKKPiMaxVeto) /*bkg. from Ds+ -> K+K-pi+ (1st mass hypothesis)*/ ||
-                                         (lcBkgVeto.massDsKKPiMinVeto < invMassPiKK && invMassPiKK < lcBkgVeto.massDsKKPiMaxVeto)) /*bkg. from Ds+ -> K+K-pi+ (2nd mass hypothesis)*/) {
+        if (lcBkgVeto.applyLcBkgVeto && ((lcBkgVeto.enableLcBkgVetoDplusKPiPi && lcBkgVeto.massDplusKPiPiMinVeto < invMassPiKPi && invMassPiKPi < lcBkgVeto.massDplusKPiPiMaxVeto) /*bkg. from D+ -> K+pi-pi-*/ ||
+                                         (lcBkgVeto.enableLcBkgVetoDplusKKPi && lcBkgVeto.massDplusKKPiMinVeto < invMassKKPi && invMassKKPi < lcBkgVeto.massDplusKKPiMaxVeto) /*bkg. from D+ -> K+K-pi+ (1st mass hypothesis)*/ ||
+                                         (lcBkgVeto.enableLcBkgVetoDplusKKPi && lcBkgVeto.massDplusKKPiMinVeto < invMassPiKK && invMassPiKK < lcBkgVeto.massDplusKKPiMaxVeto) /*bkg. from D+ -> K+K-pi+ (2nd mass hypothesis)*/ ||
+                                         (lcBkgVeto.enableLcBkgVetoDsKKPi && lcBkgVeto.massDsKKPiMinVeto < invMassKKPi && invMassKKPi < lcBkgVeto.massDsKKPiMaxVeto) /*bkg. from Ds+ -> K+K-pi+ (1st mass hypothesis)*/ ||
+                                         (lcBkgVeto.enableLcBkgVetoDsKKPi && lcBkgVeto.massDsKKPiMinVeto < invMassPiKK && invMassPiKK < lcBkgVeto.massDsKKPiMaxVeto)) /*bkg. from Ds+ -> K+K-pi+ (2nd mass hypothesis)*/) {
           /// this candidate has D+ and/or Ds+ in the veto range, let's reject it
           continue;
         }
@@ -1379,7 +1382,7 @@ struct TaskPolarisationCharmHadrons {
                        isRealPKPi, isRealLcPKPi, isReflected,
                        charge);
         } // end studyLcPKPiBkgMc
-      }   // end table for Lc->pKpi background studies
+      } // end table for Lc->pKpi background studies
 
     } /// end loop over mass hypotheses
 
