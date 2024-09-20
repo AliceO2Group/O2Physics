@@ -186,8 +186,8 @@ struct statPromptPhoton {
           int pdg = std::abs(track.pdgCode());
           if (pdg != 211 && pdg != 321 && pdg != 2212) {
             continue;
-	  }
-	}
+          }
+        }
       }
       if (IsStern || IsParticle) {
         if constexpr (requires { trigger.globalIndex(); }) {
@@ -290,16 +290,16 @@ struct statPromptPhoton {
       return;
     if (!collision.sel8())
       return;
-    
+
     histos.fill(HIST("REC_nEvents"), 1.5);
-    
+
     if (!collision.alias_bit(kTVXinEMC))
       return;
 
     histos.fill(HIST("REC_nEvents"), 2.5);
 
     // now we do clusters
-    
+
     for (auto& mccluster : mcclusters) {
       histos.fill(HIST("REC_All_Energy"), mccluster.energy());
       bool photontrigger = false;
@@ -399,7 +399,7 @@ struct statPromptPhoton {
         return;
       histos.fill(HIST("GEN_nEvents"), 1.5);
       if (!recocoll.alias_bit(kTVXinEMC))
-	return;
+        return;
       histos.fill(HIST("GEN_nEvents"), 2.5);
     }
 
@@ -486,9 +486,10 @@ struct statPromptPhoton {
   using jselectedCollisions = soa::Join<aod::JCollisions, aod::EvSels>;
   using jfilteredCollisions = soa::Filtered<jselectedCollisions>;
   using jfilteredMCClusters = soa::Filtered<jMCClusters>;
-  
-  int nEventsRecMC_JE   = 0;
-  void processMCRec_JE(jfilteredCollisions::iterator const& collision, jfilteredMCClusters const& mcclusters, jTrackCandidates const& tracks, aod::JMcParticles const&, TrackCandidates const&, aod::JTracks const&){
+
+  int nEventsRecMC_JE = 0;
+  void processMCRec_JE(jfilteredCollisions::iterator const& collision, jfilteredMCClusters const& mcclusters, jTrackCandidates const& tracks, aod::JMcParticles const&, TrackCandidates const&, aod::JTracks const&)
+  {
 
     nEventsRecMC_JE++;
     if ((nEventsRecMC_JE + 1) % 10000 == 0) {
@@ -505,7 +506,7 @@ struct statPromptPhoton {
     bool clustertrigger = false;
     // now we do clusters
     for (auto& mccluster : mcclusters) {
-      clustertrigger=true;
+      clustertrigger = true;
       histos.fill(HIST("REC_All_Energy"), mccluster.energy());
       bool photontrigger = false;
       double photonPt = 0.0;
@@ -514,40 +515,39 @@ struct statPromptPhoton {
       auto tracksofcluster = mccluster.matchedTracks_as<aod::JTracks>();
       // first, we do the data-level analysis
       if (tracksofcluster.size() < 1) {
-	if (mccluster.energy() > cfgMinTrig && mccluster.energy() < cfgMaxTrig) {
-	  if (fabs(mccluster.eta()) <= cfgtrkMaxEta) {
-	    photontrigger = true;
-	    photonPt = mccluster.energy();
-	  }
-	}
+        if (mccluster.energy() > cfgMinTrig && mccluster.energy() < cfgMaxTrig) {
+          if (fabs(mccluster.eta()) <= cfgtrkMaxEta) {
+            photontrigger = true;
+            photonPt = mccluster.energy();
+          }
+        }
       }
-      if(photontrigger) {
-	double pthadsum = GetPtHadSum(tracks, mccluster, cfgMinR, cfgMaxR, false, false, true);
-	histos.fill(HIST("REC_Trigger_V_PtHadSum_Photon"), photonPt, pthadsum);
-	histos.fill(HIST("REC_PtHadSum_Photon"), pthadsum);
-	histos.fill(HIST("REC_Trigger_Energy"), mccluster.energy());
+      if (photontrigger) {
+        double pthadsum = GetPtHadSum(tracks, mccluster, cfgMinR, cfgMaxR, false, false, true);
+        histos.fill(HIST("REC_Trigger_V_PtHadSum_Photon"), photonPt, pthadsum);
+        histos.fill(HIST("REC_PtHadSum_Photon"), pthadsum);
+        histos.fill(HIST("REC_Trigger_Energy"), mccluster.energy());
 
-	//now we check the realness of our prompt photons
-	auto ClusterParticles = mccluster.mcParticle_as<aod::JMcParticles>();
-	for (auto& clusterparticle : ClusterParticles) {
-	  if (clusterparticle.pdgCode() == 22) {
-	    histos.fill(HIST("REC_True_Trigger_Energy"), clusterparticle.e());
-	    if(std::abs(clusterparticle.getGenStatusCode()) > 19 && std::abs(clusterparticle.getGenStatusCode())<70) {
-	      histos.fill(HIST("REC_True_Prompt_Trigger_Energy"), clusterparticle.e());
-	       TLorentzVector lRealPhoton;
-	       lRealPhoton.SetPxPyPzE(clusterparticle.px(), clusterparticle.py(), clusterparticle.pz(), clusterparticle.e());
-	       double truepthadsum = GetPtHadSum(tracks, lRealPhoton, cfgMinR, cfgMaxR, false, false, false);
-	       truephotonPt = clusterparticle.e();
-	       histos.fill(HIST("REC_TrueTrigger_V_PtHadSum_Photon"), truephotonPt, truepthadsum);
-	    }
-	  } //photon check
-	}// photon trigger loop
-      }// clusterparticle loop      
-    }// cluster loop
+        // now we check the realness of our prompt photons
+        auto ClusterParticles = mccluster.mcParticle_as<aod::JMcParticles>();
+        for (auto& clusterparticle : ClusterParticles) {
+          if (clusterparticle.pdgCode() == 22) {
+            histos.fill(HIST("REC_True_Trigger_Energy"), clusterparticle.e());
+            if (std::abs(clusterparticle.getGenStatusCode()) > 19 && std::abs(clusterparticle.getGenStatusCode()) < 70) {
+              histos.fill(HIST("REC_True_Prompt_Trigger_Energy"), clusterparticle.e());
+              TLorentzVector lRealPhoton;
+              lRealPhoton.SetPxPyPzE(clusterparticle.px(), clusterparticle.py(), clusterparticle.pz(), clusterparticle.e());
+              double truepthadsum = GetPtHadSum(tracks, lRealPhoton, cfgMinR, cfgMaxR, false, false, false);
+              truephotonPt = clusterparticle.e();
+              histos.fill(HIST("REC_TrueTrigger_V_PtHadSum_Photon"), truephotonPt, truepthadsum);
+            }
+          } // photon check
+        } // photon trigger loop
+      } // clusterparticle loop
+    } // cluster loop
 
-
-    //clusters done, now we do the sternheimer tracks    
-    for ( auto& track : tracks) {
+    // clusters done, now we do the sternheimer tracks
+    for (auto& track : tracks) {
       bool sterntrigger = false;
       double sternPt = 0.0;
       auto ogtrack = track.track_as<TrackCandidates>();
