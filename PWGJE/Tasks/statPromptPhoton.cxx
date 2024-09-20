@@ -90,6 +90,7 @@ struct statPromptPhoton {
     histos.add("REC_PtHadSum_Photon", "REC_PtHadSum_Photon", kTH1F, {pthadAxis});
 
     histos.add("REC_Trigger_Energy", "REC_Trigger_Energy", kTH1F, {{82, -1.0, 40.0}});
+    histos.add("REC_All_Energy", "REC_All_Energy", kTH1F, {{82, -1.0, 40.0}});
     histos.add("REC_True_Trigger_Energy", "REC_True_Trigger_Energy", kTH1F, {{82, -1.0, 40.0}});
     histos.add("REC_True_Prompt_Trigger_Energy", "REC_True_Prompt_Trigger_Energy", kTH1F, {{82, -1.0, 40.0}});
 
@@ -99,8 +100,9 @@ struct statPromptPhoton {
     histos.add("REC_dR_Photon", "REC_dR_Photon", kTH1F, {{628, 0.0, 2 * TMath::Pi()}});
     histos.add("REC_dR_Stern", "REC_dR_Stern", kTH1F, {{628, 0.0, 2 * TMath::Pi()}});
 
-    histos.add("GEN_True_Photon_Energy", "GEN_True_Photon_Energy", kTH1F, {{82, -1.0, 40.0}});
-    histos.add("GEN_True_Prompt_Photon_Energy", "GEN_True_Prompt_Photon_Energy", kTH1F, {{82, -1.0, 40.0}});
+    histos.add("GEN_nEvents", "GEN_nEvents", kTH1F, {{4, 0.0, 4.0}});
+    histos.add("GEN_True_Photon_Energy", "GEN_True_Photon_Energy", kTH1F, {{8200, -1.0, 40.0}});
+    histos.add("GEN_True_Prompt_Photon_Energy", "GEN_True_Prompt_Photon_Energy", kTH1F, {{8200, -1.0, 40.0}});
     histos.add("GEN_Trigger_V_PtHadSum_Stern", "GEN_Trigger_V_PtHadSum_Stern", kTH2F, {{100, 0, 100}, pthadAxis});
     histos.add("GEN_Trigger_V_PtHadSum_Photon", "GEN_Trigger_V_PtHadSum_Photon", kTH2F, {{100, 0, 100}, pthadAxis});
     histos.add("GEN_TrueTrigger_V_PtHadSum_Photon", "GEN_Trigger_V_PtHadSum_Photon", kTH2F, {{100, 0, 100}, pthadAxis});
@@ -128,6 +130,7 @@ struct statPromptPhoton {
   using filteredMCCollisions = soa::Filtered<selectedMCCollisions>;
 
   Preslice<o2::aod::EMCALMatchedTracks> perClusterMatchedTracks = o2::aod::emcalclustercell::emcalclusterId;
+
   // Helper functions
   /////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////
@@ -286,9 +289,18 @@ struct statPromptPhoton {
       return;
     if (!collision.sel8())
       return;
+    
+    histos.fill(HIST("REC_nEvents"), 1.5);
+    
+    if (!collision.alias_bit(kTVXinEMC))
+      return;
+
+    histos.fill(HIST("REC_nEvents"), 2.5);
 
     // now we do clusters
+    
     for (auto& mccluster : mcclusters) {
+      histos.fill(HIST("REC_All_Energy"), mccluster.energy());
       bool photontrigger = false;
       double photonPt = 0.0;
       double truephotonPt = 0.0;
@@ -359,7 +371,6 @@ struct statPromptPhoton {
       } // stern trigger loop
     } // track loop
 
-    histos.fill(HIST("REC_nEvents"), 1.5);
   } // end of process
 
   PROCESS_SWITCH(statPromptPhoton, processMCRec, "process MC data", true);
@@ -367,12 +378,13 @@ struct statPromptPhoton {
   /////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////
 
-  void processMCGen(filteredMCCollisions::iterator const& collision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, filteredCollisions>> const& recocolls, aod::McParticles const& mcParticles)
+  void processMCGen(filteredMCCollisions::iterator const& collision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, filteredCollisions>> const& recocolls, aod::McParticles const& mcParticles, filteredMCClusters const& mcclusters)
   {
     nEventsGenMC++;
     if ((nEventsGenMC + 1) % 10000 == 0) {
       std::cout << "Processed Gen MC Events: " << nEventsGenMC << std::endl;
     }
+    histos.fill(HIST("GEN_nEvents"), 0.5);
     if (fabs(collision.posZ()) > cfgVtxCut)
       return;
 
@@ -382,8 +394,11 @@ struct statPromptPhoton {
       if (!recocoll.sel8())
         return;
       if (fabs(recocoll.posZ()) > cfgVtxCut)
-
         return;
+      histos.fill(HIST("GEN_nEvents"), 1.5);
+      if (!recocoll.alias_bit(kTVXinEMC))
+	return;
+      histos.fill(HIST("GEN_nEvents"), 2.5);
     }
 
     for (auto& mcPhoton : mcParticles) {
@@ -465,14 +480,14 @@ struct statPromptPhoton {
   Filter clusterDefinitionSelection_JE = (o2::aod::jcluster::definition == cfgClusterDefinition) && (o2::aod::jcluster::time >= cfgMinTime) && (o2::aod::jcluster::time <= cfgMaxTime) && (o2::aod::jcluster::energy > cfgMinClusterEnergy) && (o2::aod::jcluster::nCells >= cfgMinNCells) && (o2::aod::jcluster::nlm <= cfgMaxNLM) && (o2::aod::jcluster::isExotic == cfgExoticContribution);
 
   using jTrackCandidates = soa::Join<aod::JTracks, aod::JTrackPIs, aod::McTrackLabels>;
-  using jMCClusters = o2::soa::Join<o2::aod::JMcClusterLbs, o2::aod::JClusters>;
+  using jMCClusters = o2::soa::Join<o2::aod::JMcClusterLbs, o2::aod::JClusters, o2::aod::JClusterTracks>;
   using jselectedCollisions = soa::Join<aod::JCollisions, aod::EvSels>;
   using jfilteredCollisions = soa::Filtered<jselectedCollisions>;
   using jfilteredMCClusters = soa::Filtered<jMCClusters>;
-
+  
   int nEventsRecMC_JE   = 0;
+  void processMCRec_JE(jfilteredCollisions::iterator const& collision, jfilteredMCClusters const& mcclusters, jTrackCandidates const& tracks, aod::JMcParticles const&, TrackCandidates const&, aod::JTracks const&){
 
-  void processMCRec_JE(jfilteredCollisions::iterator const& collision, jfilteredMCClusters const& mcclusters, aod::JMcParticles const&, o2::aod::EMCALClusterCells const& /*emccluscells*/, o2::aod::EMCALMatchedTracks const& matchedtracks, jTrackCandidates const& tracks, TrackCandidates const&){
     nEventsRecMC_JE++;
     if ((nEventsRecMC_JE + 1) % 10000 == 0) {
       std::cout << "Processed JE Rec MC Events: " << nEventsRecMC_JE << std::endl;
@@ -485,13 +500,16 @@ struct statPromptPhoton {
     if (!collision.sel8())
       return;
 
+    bool clustertrigger = false;
     // now we do clusters
     for (auto& mccluster : mcclusters) {
+      clustertrigger=true;
+      histos.fill(HIST("REC_All_Energy"), mccluster.energy());
       bool photontrigger = false;
       double photonPt = 0.0;
       double truephotonPt = 0.0;
-      auto tracksofcluster = matchedtracks.sliceBy(perClusterMatchedTracks, mccluster.globalIndex());
-
+      //      auto tracksofcluster = mccluster.matchedTracks();
+      auto tracksofcluster = mccluster.matchedTracks_as<aod::JTracks>();
       // first, we do the data-level analysis
       if (tracksofcluster.size() < 1) {
 	if (mccluster.energy() > cfgMinTrig && mccluster.energy() < cfgMaxTrig) {
@@ -558,6 +576,9 @@ struct statPromptPhoton {
     
      
     histos.fill(HIST("REC_nEvents"), 1.5);
+    if(clustertrigger)
+      histos.fill(HIST("REC_nEvents"), 2.5);
+
     
   }// end of process
 
