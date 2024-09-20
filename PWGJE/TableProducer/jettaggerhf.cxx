@@ -67,7 +67,7 @@ struct JetTaggerHFTask {
   Configurable<std::vector<float>> paramsResoFuncLfJetMC{"paramsResoFuncLfJetMC", std::vector<float>{1539435.343, -0.061, 0.896, 13.272, 1.034, 5.884, 0.004, 7.843, 0.090}, "parameters of gaus(0)+expo(3)+expo(5)+expo(7)))"};
   Configurable<float> minSignImpXYSig{"minsIPs", -40.0, "minimum of signed impact parameter significance"};
   Configurable<float> tagPointForIP{"tagPointForIP", 2.5, "tagging working point for IP"};
-  Configurable<int> minIPCount{"minSipCount", 2, "Select at least N signed impact parameter significance in jets"}; // default 2
+  Configurable<int> minIPCount{"minIPCount", 2, "Select at least N signed impact parameter significance in jets"}; // default 2
   // configuration about SV method
   Configurable<bool> doSV{"doSV", false, "fill table for secondary vertex algorithm"};
   Configurable<bool> useXYZForTagging{"useXYZForTagging", false, "Enable tagging decision using full XYZ DCA for secondary vertex algorithm"};
