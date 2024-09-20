@@ -46,87 +46,87 @@ using namespace o2::framework::expressions;
 
 class RecoDecay
 {
-public:
-    /// Default constructor
-    RecoDecay() = default;
+ public:
+  /// Default constructor
+  RecoDecay() = default;
 
-    /// Default destructor
-    ~RecoDecay() = default;
+  /// Default destructor
+  ~RecoDecay() = default;
 
-    // mapping of charm-hadron origin type
-    enum OriginType { None = 0,
-                      Prompt,
-                      NonPrompt };
+  // mapping of charm-hadron origin type
+  enum OriginType { None = 0,
+                    Prompt,
+                    NonPrompt };
 
-    template <typename T>
-    static int getCharmHadronOrigin(const T& particlesMC,
-                                    const typename T::iterator& particle,
-                                    const bool searchUpToQuark = false)
-    {
-      int stage = 0; // mother tree level (just for debugging)
+  template <typename T>
+  static int getCharmHadronOrigin(const T& particlesMC,
+                                  const typename T::iterator& particle,
+                                  const bool searchUpToQuark = false)
+  {
+    int stage = 0; // mother tree level (just for debugging)
 
-      // vector of vectors with mother indices; each line corresponds to a "stage"
-      std::vector<std::vector<int64_t>> arrayIds{};
-      std::vector<int64_t> initVec{particle.globalIndex()};
-      arrayIds.push_back(initVec); // the first vector contains the index of the original particle
-      auto PDGParticle = std::abs(particle.pdgCode());
-      bool couldBePrompt = false;
-      if (PDGParticle / 100 == 4 || PDGParticle / 1000 == 4) {
-        couldBePrompt = true;
-      }
-      while (arrayIds[-stage].size() > 0) {
-        // vector of mother indices for the current stage
-        std::vector<int64_t> arrayIdsStage{};
-        for (auto& iPart : arrayIds[-stage]) { // check all the particles that were the mothers at the previous stage
-          auto particleMother = particlesMC.rawIteratorAt(iPart - particlesMC.offset());
-          if (particleMother.has_mothers()) {
-            for (auto iMother = particleMother.mothersIds().front(); iMother <= particleMother.mothersIds().back(); ++iMother) { // loop over the mother particles of the analysed particle
-              if (std::find(arrayIdsStage.begin(), arrayIdsStage.end(), iMother) != arrayIdsStage.end()) {                       // if a mother is still present in the vector, do not check it again
-                continue;
-              }
-              auto mother = particlesMC.rawIteratorAt(iMother - particlesMC.offset());
-              // Check mother's PDG code.
-              auto PDGParticleIMother = std::abs(mother.pdgCode()); // PDG code of the mother
-              // printf("getMother: ");
-              // for (int i = stage; i < 0; i++) // Indent to make the tree look nice.
-              //   printf(" ");
-              // printf("Stage %d: Mother PDG: %d, Index: %d\n", stage, PDGParticleIMother, iMother);
-
-              if (searchUpToQuark) {
-                if (PDGParticleIMother == 5) { // b quark
-                  return OriginType::NonPrompt;
-                }
-                if (PDGParticleIMother == 4) { // c quark
-                  return OriginType::Prompt;
-                }
-              } else {
-                if (
-                  (PDGParticleIMother / 100 == 5 || // b mesons
-                   PDGParticleIMother / 1000 == 5)  // b baryons
-                ) {
-                  return OriginType::NonPrompt;
-                }
-                if (
-                  (PDGParticleIMother / 100 == 4 || // c mesons
-                   PDGParticleIMother / 1000 == 4)  // c baryons
-                ) {
-                  couldBePrompt = true;
-                }
-              }
-              // add mother index in the vector for the current stage
-              arrayIdsStage.push_back(iMother);
+    // vector of vectors with mother indices; each line corresponds to a "stage"
+    std::vector<std::vector<int64_t>> arrayIds{};
+    std::vector<int64_t> initVec{particle.globalIndex()};
+    arrayIds.push_back(initVec); // the first vector contains the index of the original particle
+    auto PDGParticle = std::abs(particle.pdgCode());
+    bool couldBePrompt = false;
+    if (PDGParticle / 100 == 4 || PDGParticle / 1000 == 4) {
+      couldBePrompt = true;
+    }
+    while (arrayIds[-stage].size() > 0) {
+      // vector of mother indices for the current stage
+      std::vector<int64_t> arrayIdsStage{};
+      for (auto& iPart : arrayIds[-stage]) { // check all the particles that were the mothers at the previous stage
+        auto particleMother = particlesMC.rawIteratorAt(iPart - particlesMC.offset());
+        if (particleMother.has_mothers()) {
+          for (auto iMother = particleMother.mothersIds().front(); iMother <= particleMother.mothersIds().back(); ++iMother) { // loop over the mother particles of the analysed particle
+            if (std::find(arrayIdsStage.begin(), arrayIdsStage.end(), iMother) != arrayIdsStage.end()) {                       // if a mother is still present in the vector, do not check it again
+              continue;
             }
+            auto mother = particlesMC.rawIteratorAt(iMother - particlesMC.offset());
+            // Check mother's PDG code.
+            auto PDGParticleIMother = std::abs(mother.pdgCode()); // PDG code of the mother
+            // printf("getMother: ");
+            // for (int i = stage; i < 0; i++) // Indent to make the tree look nice.
+            //   printf(" ");
+            // printf("Stage %d: Mother PDG: %d, Index: %d\n", stage, PDGParticleIMother, iMother);
+
+            if (searchUpToQuark) {
+              if (PDGParticleIMother == 5) { // b quark
+                return OriginType::NonPrompt;
+              }
+              if (PDGParticleIMother == 4) { // c quark
+                return OriginType::Prompt;
+              }
+            } else {
+              if (
+                (PDGParticleIMother / 100 == 5 || // b mesons
+                 PDGParticleIMother / 1000 == 5)  // b baryons
+              ) {
+                return OriginType::NonPrompt;
+              }
+              if (
+                (PDGParticleIMother / 100 == 4 || // c mesons
+                 PDGParticleIMother / 1000 == 4)  // c baryons
+              ) {
+                couldBePrompt = true;
+              }
+            }
+            // add mother index in the vector for the current stage
+            arrayIdsStage.push_back(iMother);
           }
         }
-        // add vector of mother indices for the current stage
-        arrayIds.push_back(arrayIdsStage);
-        stage--;
       }
-      if (!searchUpToQuark && couldBePrompt) { // Returns prompt if it's a charm hadron or a charm-hadron daughter. Note: 1) LF decay particles from cases like -> Lc -> p K0S, K0S -> pi pi are marked as prompt. 2) if particles from HF parton showers have to be searched, switch to option "search up to quark"
-        return OriginType::Prompt;
-      }
-      return OriginType::None;
+      // add vector of mother indices for the current stage
+      arrayIds.push_back(arrayIdsStage);
+      stage--;
     }
+    if (!searchUpToQuark && couldBePrompt) { // Returns prompt if it's a charm hadron or a charm-hadron daughter. Note: 1) LF decay particles from cases like -> Lc -> p K0S, K0S -> pi pi are marked as prompt. 2) if particles from HF parton showers have to be searched, switch to option "search up to quark"
+      return OriginType::Prompt;
+    }
+    return OriginType::None;
+  }
 };
 
 // Histograms
@@ -1409,7 +1409,7 @@ struct tofSpectra {
       histos.fill(HIST("nsigmatof/test_occupancy/neg/pr"), track.pt(), nsigmaTOFPr, multiplicity, occupancy);
 
     } // track
-  }   // process function
+  } // process function
   PROCESS_SWITCH(tofSpectra, processOccupancy, "check for occupancy plots", false);
 
   void processStandard(CollisionCandidates::iterator const& collision,
@@ -1675,42 +1675,40 @@ struct tofSpectra {
         histos.fill(HIST(hdcaxyprm2[i]), track.pt(), track.dcaXY());
         histos.fill(HIST(hdcazprm2[i]), track.pt(), track.dcaZ());
 
-        //bool IsD0Mother{false};
+        // bool IsD0Mother{false};
         bool IsCharmMother{false};
         bool IsBeautyMother{false};
         if (mcParticle.has_mothers()) {
-            for (const auto& mother : mcParticle.template mothers_as<aod::McParticles>()) {
-                int motherPdgCode = mother.pdgCode();
-                if (motherPdgCode == 421) {
-                    std::cout << "Mother PDG Code: " << motherPdgCode << std::endl;
-                    histos.fill(HIST(hdcaxyD0[i]), track.pt(), track.dcaXY());
-                    histos.fill(HIST(hdcazD0[i]), track.pt(), track.dcaZ());
-                    //IsD0Mother = true;
-                }
-                if (RecoDecay::OriginType::NonPrompt) {
-                  if ((motherPdgCode) / 1000 == 5 || (motherPdgCode) / 100 == 5) {
-                    std::cout << "Mother PDG Code starts with 5: " << motherPdgCode << std::endl;
-                    histos.fill(HIST(hdcaxybeauty[i]), track.pt(), track.dcaXY());
-                    histos.fill(HIST(hdcazbeauty[i]), track.pt(), track.dcaZ());
-                    IsBeautyMother = true;
-                  }
-                }
-                if (RecoDecay::OriginType::Prompt) {
-                  if ((motherPdgCode) / 1000 == 4 || (motherPdgCode) / 100 == 4) {
-                     std::cout << "Mother PDG Code starts with 4: " << motherPdgCode << std::endl;
-                     histos.fill(HIST(hdcaxycharm[i]), track.pt(), track.dcaXY());
-                     histos.fill(HIST(hdcazcharm[i]), track.pt(), track.dcaZ());
-                     IsCharmMother = true;
-                  }
-                }
+          for (const auto& mother : mcParticle.template mothers_as<aod::McParticles>()) {
+            int motherPdgCode = mother.pdgCode();
+            if (motherPdgCode == 421) {
+              std::cout << "Mother PDG Code: " << motherPdgCode << std::endl;
+              histos.fill(HIST(hdcaxyD0[i]), track.pt(), track.dcaXY());
+              histos.fill(HIST(hdcazD0[i]), track.pt(), track.dcaZ());
+              // IsD0Mother = true;
+            }
+            if (RecoDecay::OriginType::NonPrompt) {
+              if ((motherPdgCode) / 1000 == 5 || (motherPdgCode) / 100 == 5) {
+                std::cout << "Mother PDG Code starts with 5: " << motherPdgCode << std::endl;
+                histos.fill(HIST(hdcaxybeauty[i]), track.pt(), track.dcaXY());
+                histos.fill(HIST(hdcazbeauty[i]), track.pt(), track.dcaZ());
+                IsBeautyMother = true;
               }
+            }
+            if (RecoDecay::OriginType::Prompt) {
+              if ((motherPdgCode) / 1000 == 4 || (motherPdgCode) / 100 == 4) {
+                std::cout << "Mother PDG Code starts with 4: " << motherPdgCode << std::endl;
+                histos.fill(HIST(hdcaxycharm[i]), track.pt(), track.dcaXY());
+                histos.fill(HIST(hdcazcharm[i]), track.pt(), track.dcaZ());
+                IsCharmMother = true;
+              }
+            }
           }
-          if (!IsCharmMother && !IsBeautyMother) {
-            histos.fill(HIST(hdcaxyprm[i]), track.pt(), track.dcaXY());
-            histos.fill(HIST(hdcazprm[i]), track.pt(), track.dcaZ());
-          }
-
-
+        }
+        if (!IsCharmMother && !IsBeautyMother) {
+          histos.fill(HIST(hdcaxyprm[i]), track.pt(), track.dcaXY());
+          histos.fill(HIST(hdcazprm[i]), track.pt(), track.dcaZ());
+        }
 
         if (enableDcaGoodEvents.value && collision.has_mcCollision()) {
           histos.fill(HIST(hdcaxyprmgoodevs[i]), track.pt(), track.dcaXY());
