@@ -98,7 +98,7 @@ struct lmeelfcocktail {
       return false;
     if (p1.Pt() > fConfigMaxPt)
       return false;
-    if (abs(p1.Eta()) > fConfigMaxEta)
+    if (fabs(p1.Eta()) > fConfigMaxEta)
       return false;
     return true;
   }
