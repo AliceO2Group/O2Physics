@@ -72,6 +72,17 @@ struct tofPidFull {
                                                  {defaultParameters[0], nSpecies, nParameters, particleNames, parameterNames},
                                                  "Produce PID information for the various mass hypotheses. Values different than -1 override the automatic setup: the corresponding table can be set off (0) or on (1)"};
 
+  // postcalibrations to overcome MC FT0 timing issue
+  std::map<int, TGraph*> gMcPostCalibMean{};
+  std::map<int, TGraph*> gMcPostCalibSigma{};
+  int currentRun{0};
+  struct : ConfigurableGroup {
+    std::string prefix = "mcRecalib";
+    Configurable<bool> enable{"enable", false, "enable MC recalibration for Pi/Ka/Pr"};
+    Configurable<std::string> ccdbPath{"ccdbPath", "Users/f/fgrosa/RecalibMcPidTOF/", "path for MC recalibration objects in CCDB"};
+    Configurable<std::string> passName{"passName", "apass6", "reco pass of MC anchoring"};
+  } mcRecalib;
+
   // Running variables
   std::vector<int> mEnabledParticles; // Vector of enabled PID hypotheses to loop on when making tables
   int mLastCollisionId = -1;          // Last collision ID analysed
@@ -264,6 +275,46 @@ struct tofPidFull {
     }
   }
 
+  /// Retrieve MC postcalibration objects from CCDB
+  /// \param timestamp timestamp
+  void retrieveMcPostCalibFromCcdb(int timestamp)
+  {
+    std::map<std::string, std::string> metadata;
+    metadata["RecoPassName"] = mcRecalib.passName;
+    auto calibList = ccdb->getSpecific<TList>(mcRecalib.ccdbPath, timestamp, metadata);
+    gMcPostCalibMean[2] = reinterpret_cast<TGraph*>(calibList->FindObject("MeanPi"));
+    gMcPostCalibMean[3] = reinterpret_cast<TGraph*>(calibList->FindObject("MeanKa"));
+    gMcPostCalibMean[4] = reinterpret_cast<TGraph*>(calibList->FindObject("MeanPr"));
+    gMcPostCalibSigma[2] = reinterpret_cast<TGraph*>(calibList->FindObject("SigmaPi"));
+    gMcPostCalibSigma[3] = reinterpret_cast<TGraph*>(calibList->FindObject("SigmaKa"));
+    gMcPostCalibSigma[4] = reinterpret_cast<TGraph*>(calibList->FindObject("SigmaPr"));
+  }
+
+  /// Apply MC postcalibrations
+  /// \param partId particle id
+  /// \param pt track pT
+  template<typename T>
+  T applyMcRecalib(int partId, T trackPt, T nSigma)
+  {
+    float shift{0.f}, scaleWidth{0.f};
+    int nPoints = gMcPostCalibMean[partId]->GetN();
+    double ptMin = gMcPostCalibMean[partId]->GetX()[0];
+    double ptMax = gMcPostCalibMean[partId]->GetX()[nPoints - 1];
+    if (trackPt < ptMin) {
+      shift = gMcPostCalibMean[partId]->Eval(ptMin);
+      scaleWidth = gMcPostCalibSigma[partId]->Eval(ptMin);
+    } else if (trackPt > ptMax) {
+      shift = gMcPostCalibMean[partId]->Eval(ptMax);
+      scaleWidth = gMcPostCalibSigma[partId]->Eval(ptMax);
+    } else {
+      shift = gMcPostCalibMean[partId]->Eval(trackPt);
+      scaleWidth = gMcPostCalibSigma[partId]->Eval(trackPt);
+    }
+
+    T nSigmaCorr = (nSigma - shift) / scaleWidth;
+    return nSigmaCorr; 
+  }
+
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::pidEvTimeFlags>;
   // Define slice per collision
   Preslice<Trks> perCollision = aod::track::collisionId;
@@ -313,9 +364,20 @@ struct tofPidFull {
         }
       }
 
+      // in case of MC recalibrations, check if the objects from CCDB has to be updated
+      if (mcRecalib.enable) {
+        int runNumber = track.collision().bc_as<aod::BCsWithTimestamps>().runNumber();
+        if (runNumber != currentRun) {
+          // update postcalibration files
+          retrieveMcPostCalibFromCcdb(timestamp);
+        }
+        currentRun = runNumber;
+      }
+
       const auto& tracksInCollision = tracks.sliceBy(perCollision, lastCollisionId);
       for (auto const& trkInColl : tracksInCollision) { // Loop on tracks
         for (auto const& pidId : mEnabledParticles) {   // Loop on enabled particle hypotheses
+          float nSigma{-999.f};
           switch (pidId) {
             case 0:
               resolution = responseEl.GetExpectedSigma(mRespParamsV2, trkInColl);
@@ -329,18 +391,27 @@ struct tofPidFull {
               break;
             case 2:
               resolution = responsePi.GetExpectedSigma(mRespParamsV2, trkInColl);
-              tablePIDPi(resolution,
-                         responsePi.GetSeparation(mRespParamsV2, trkInColl, resolution));
+              nSigma = responsePi.GetSeparation(mRespParamsV2, trkInColl, resolution);
+              if (mcRecalib.enable) {
+                nSigma = applyMcRecalib(pidId, trkInColl.pt(), nSigma);
+              }
+              tablePIDPi(resolution, nSigma);
               break;
             case 3:
               resolution = responseKa.GetExpectedSigma(mRespParamsV2, trkInColl);
-              tablePIDKa(resolution,
-                         responseKa.GetSeparation(mRespParamsV2, trkInColl, resolution));
+              nSigma = responseKa.GetSeparation(mRespParamsV2, trkInColl, resolution);
+              if (mcRecalib.enable) {
+                nSigma = applyMcRecalib(pidId, trkInColl.pt(), nSigma);
+              }
+              tablePIDKa(resolution, nSigma);
               break;
             case 4:
               resolution = responsePr.GetExpectedSigma(mRespParamsV2, trkInColl);
-              tablePIDPr(resolution,
-                         responsePr.GetSeparation(mRespParamsV2, trkInColl, resolution));
+              nSigma = responsePr.GetSeparation(mRespParamsV2, trkInColl, resolution);
+              if (mcRecalib.enable) {
+                nSigma = applyMcRecalib(pidId, trkInColl.pt(), nSigma);
+              }
+              tablePIDPr(resolution, nSigma);
               break;
             case 5:
               resolution = responseDe.GetExpectedSigma(mRespParamsV2, trkInColl);
@@ -412,6 +483,17 @@ struct tofPidFull {
         }
       }
 
+      // in case of MC recalibrations, check if the objects from CCDB has to be updated
+      if (mcRecalib.enable) {
+        int runNumber = track.collision().bc_as<aod::BCsWithTimestamps>().runNumber();
+        if (runNumber != currentRun) {
+          // update postcalibration files
+          retrieveMcPostCalibFromCcdb(timestamp);
+        }
+        currentRun = runNumber;
+      }
+
+      float nSigma{-999.f};
       for (auto const& pidId : mEnabledParticles) { // Loop on enabled particle hypotheses
         switch (pidId) {
           case 0:
@@ -425,20 +507,29 @@ struct tofPidFull {
                        responseMu.GetSeparation(mRespParamsV2, track, resolution));
             break;
           case 2:
-            resolution = responsePi.GetExpectedSigma(mRespParamsV2, track);
-            tablePIDPi(resolution,
-                       responsePi.GetSeparation(mRespParamsV2, track));
-            break;
-          case 3:
-            resolution = responseKa.GetExpectedSigma(mRespParamsV2, track);
-            tablePIDKa(resolution,
-                       responseKa.GetSeparation(mRespParamsV2, track, resolution));
-            break;
-          case 4:
-            resolution = responsePr.GetExpectedSigma(mRespParamsV2, track);
-            tablePIDPr(resolution,
-                       responsePr.GetSeparation(mRespParamsV2, track, resolution));
-            break;
+              resolution = responsePi.GetExpectedSigma(mRespParamsV2, track);
+              nSigma = responsePi.GetSeparation(mRespParamsV2, track, resolution);
+              if (mcRecalib.enable) {
+                nSigma = applyMcRecalib(pidId, track.pt(), nSigma);
+              }
+              tablePIDPi(resolution, nSigma);
+              break;
+            case 3:
+              resolution = responseKa.GetExpectedSigma(mRespParamsV2, track);
+              nSigma = responseKa.GetSeparation(mRespParamsV2, track, resolution);
+              if (mcRecalib.enable) {
+                nSigma = applyMcRecalib(pidId, track.pt(), nSigma);
+              }
+              tablePIDKa(resolution, nSigma);
+              break;
+            case 4:
+              resolution = responsePr.GetExpectedSigma(mRespParamsV2, track);
+              nSigma = responsePr.GetSeparation(mRespParamsV2, track, resolution);
+              if (mcRecalib.enable) {
+                nSigma = applyMcRecalib(pidId, track.pt(), nSigma);
+              }
+              tablePIDPr(resolution, nSigma);
+              break;
           case 5:
             resolution = responseDe.GetExpectedSigma(mRespParamsV2, track);
             tablePIDDe(resolution,
