@@ -114,7 +114,7 @@ struct lmeelfcocktail {
     ROOT::Math::PtEtaPhiMVector p12 = p1 + p2;
     if (p12.Pt() < fConfigMinPtee)
       return false;
-    if (TMath::ACos(p1.Vect().Unit().Dot(p2.Vect().Unit())) < fConfigMinOpAng)
+    if (o2::aod::pwgem::dilepton::utils::pairutil::getOpeningAngle(p1.Px(), p1.Py(), p1.Pz(), p2.Px(), p2.Py(), p2.Pz()) < fConfigMinOpAng)
       return false;
     return true;
   }
@@ -391,8 +391,8 @@ struct lmeelfcocktail {
           ROOT::Math::PtEtaPhiMVector p12 = pEle + pPos;
           float mee = p12.M();
           float ptee = p12.Pt();
-          float phiV = o2::aod::pwgem::dilepton::utils::pairutil::getOpeningAngle(pPos.Px(), pPos.Py(), pPos.Pz(), pEle.Px(), pEle.Py(), pEle.Pz());
-          float opAng = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(pPos.Px(), pPos.Py(), pPos.Pz(), pEle.Px(), pEle.Py(), pEle.Pz(), 1, -1, 1);
+          float opAng = o2::aod::pwgem::dilepton::utils::pairutil::getOpeningAngle(pPos.Px(), pPos.Py(), pPos.Pz(), pEle.Px(), pEle.Py(), pEle.Pz());
+          float phiV = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(pPos.Px(), pPos.Py(), pPos.Pz(), pEle.Px(), pEle.Py(), pEle.Pz(), 1, -1, 1);
           float dcaee = sqrt((pow(dcaEle, 2) + pow(dcaPos, 2)) / 2);
           fillHistogram2D("MeeVsPtee", s, pdg, other_daughter_pdg, mee, ptee, pairWeight);
           fillHistogram1D("Mee", s, pdg, other_daughter_pdg, mee, pairWeight);
