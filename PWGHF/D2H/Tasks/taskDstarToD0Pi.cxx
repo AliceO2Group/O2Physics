@@ -162,7 +162,7 @@ struct HfTaskDstarToD0Pi {
       auto nCandsCurrentCol = selectedCandsCurrentCol.size();
 
       if (nCandsCurrentCol > 0) {
-        LOGF(info, "size of selectedCandsCurrentCol: %d", nCandsCurrentCol);
+        LOGF(debug, "size of selectedCandsCurrentCol: %d", nCandsCurrentCol);
         registry.fill(HIST("Efficiency/hNumPvContributorsCand"), nPVContributors, centrality);
       }
 
