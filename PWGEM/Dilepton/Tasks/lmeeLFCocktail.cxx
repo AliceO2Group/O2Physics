@@ -65,8 +65,9 @@ struct lmeelfcocktail {
   Configurable<float> fConfigMaxEta{"cfgMaxEta", 0.8, "maxium |eta|"};
   Configurable<float> fConfigMinPt{"cfgMinPt", 0.2, "minium pT"};
   Configurable<float> fConfigMaxPt{"cfgMaxPt", 8.0, "maximum pT"};
-  Configurable<float> fConfigMinOpAng{"cfgMinOpAng", 0.050, "minimum opening angle"};
-  Configurable<float> fConfigMinPtee{"cfgMinPtee", 0.0, "minimum pair pT"};
+  Configurable<float> fConfigMinOpAng{"cfgMinOpAng", 0, "minimum opening angle"};
+  Configurable<float> fConfigMinPtee{"cfgMinPtee", 0, "minimum pair pT"};
+  Configurable<float> fConfigMaxRapee{"cfgMaxRapee", 999., "maximum pair rapidity"};
   ConfigurableAxis fConfigMeeBins{"cfgMeeBins", {600, 0.f, 6.f}, "Mee binning"};
   ConfigurableAxis fConfigPteeBins{"cfgPteeBins", {400, 0.f, 10.f}, "pTee binning"};
   ConfigurableAxis fConfigPtBins{"cfgPtBins", {200, 0.f, 10.f}, "pT binning"};
@@ -115,6 +116,8 @@ struct lmeelfcocktail {
     if (p12.Pt() < fConfigMinPtee)
       return false;
     if (o2::aod::pwgem::dilepton::utils::pairutil::getOpeningAngle(p1.Px(), p1.Py(), p1.Pz(), p2.Px(), p2.Py(), p2.Pz()) < fConfigMinOpAng)
+      return false;
+    if (fabs(p12.Rapidity()) > fConfigMaxRapee)
       return false;
     return true;
   }
