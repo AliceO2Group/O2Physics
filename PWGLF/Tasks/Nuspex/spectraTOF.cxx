@@ -54,7 +54,6 @@ std::array<std::shared_ptr<TH2>, NpCharge> hDcaXYWrongCollisionStr;
 std::array<std::shared_ptr<TH2>, NpCharge> hDcaXYWrongCollisionMat;
 std::array<std::shared_ptr<TH2>, NpCharge> hDcaXYMC;       // DCA xy in the MC
 std::array<std::shared_ptr<TH2>, NpCharge> hDcaZMC;        // DCA z in the MC
-std::array<std::shared_ptr<TH2>, NpCharge> hDcaXYMCPrm;    // DCA xy in the MC
 std::array<std::shared_ptr<TH2>, NpCharge> hDcaXYMCD0;     // DCA xy in the MC for particles from D0
 std::array<std::shared_ptr<TH2>, NpCharge> hDcaZMCD0;      // DCA z in the MC for particles from D0
 std::array<std::shared_ptr<TH2>, NpCharge> hDcaXYMCCharm;  // DCA xy in the MC for particles from charm
@@ -1644,12 +1643,12 @@ struct tofSpectra {
           hDcaZMCD0[i]->Fill(track.pt(), track.dcaZ());
         }
         if (IsCharmMother) {
-          hDcaXYMCBeauty[i]->Fill(track.pt(), track.dcaXY());
-          hDcaZMCBeauty[i]->Fill(track.pt(), track.dcaZ());
-        }
-        if (IsBeautyMother) {
           hDcaXYMCCharm[i]->Fill(track.pt(), track.dcaXY());
           hdcaZMCCharm[i]->Fill(track.pt(), track.dcaZ());
+        }
+        if (IsBeautyMother) {
+          hDcaXYMCBeauty[i]->Fill(track.pt(), track.dcaXY());
+          hDcaZMCBeauty[i]->Fill(track.pt(), track.dcaZ());
         }
         if (!IsCharmMother && !IsBeautyMother) {
           hDcaXYMCNotHF[i]->Fill(track.pt(), track.dcaXY());
