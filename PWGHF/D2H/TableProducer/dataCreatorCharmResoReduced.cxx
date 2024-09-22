@@ -76,7 +76,7 @@ enum DType : uint8_t {
 /// Creation of D-V0 pairs
 struct HfDataCreatorCharmResoReduced {
 
-  // Produces AOD tables to store track information
+  // Produces AOD tables to store collision information
   Produces<aod::HfRedCollisions> hfReducedCollision; // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
   Produces<aod::HfOrigColCounts> hfCollisionCounter; // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
   // tracks, V0 and D candidates reduced tables
@@ -85,6 +85,9 @@ struct HfDataCreatorCharmResoReduced {
   Produces<aod::HfRed3PrNoTrks> hfCandD; // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
   // ML optional Tables
   Produces<aod::HfRed3ProngsMl> hfCandDMl; // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
+  // MC Tables
+  Produces<aod::HfMcRecRedDV0s> rowHfDV0McRecReduced;
+
 
   // CCDB configuration
   o2::ccdb::CcdbApi ccdbApi;
@@ -460,6 +463,64 @@ struct HfDataCreatorCharmResoReduced {
     return true;
   }
 
+  /// Function for filling MC reco information in the tables
+  /// \param particlesMc is the table with MC particles
+  /// \param vecDaughtersReso is the vector with all daughter tracks (bachelor pion in last position)
+  /// \param indexHfCandCharm is the index of the charm-hadron bachelor
+  /// \param indexCandV0 is the index of the v0 bachelor
+  template <uint8_t decChannel, typename PParticles, typename TTrack>
+  void fillMcRecoInfo(const PParticles& particlesMc,
+                      const std::vector<TTrack>& vecDaughtersReso,
+                      int& indexHfCandCharm,
+                      int& indexCandV0)
+  {
+
+    // we check the MC matching to be stored
+    int8_t sign{0};
+    int8_t flag{0};
+    int8_t debug{0};
+    int pdgCodeResoMother{-1};
+    int pdgCodeCharmMother{-1};
+    int pdgCodev0Mother{-1};
+    int pdgCodeProng0{0};
+    int pdgCodeProng1{0};
+    int pdgCodeProng2{0};
+    int pdgCodeProng3{0};
+    int pdgCodeProng4{0};
+    float motherPt{-1.f};
+
+    if constexpr (decChannel == DecayChannel::DstarV0) {
+      // Ds1 → D* K0 → (D0 π+) K0s → ((K-π+) π+)(π+π-)
+      auto indexRec = RecoDecay::getMatchedMCRec<true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2], vecDaughtersReso[3], vecDaughtersReso[4]}, Pdg::kDS1, std::array{+kPiPlus, -kKPlus, +kPiPlus,  +kPiPlus, -kPiPlus}, true, &sign, 4);
+      if (indexRec > -1) {
+        // D- → π- K+ π-
+        // Printf("Checking D- → π- K+ π-");
+        indexRec = RecoDecay::getMatchedMCRec(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2]}, Pdg::kDStar, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 3);
+        auto indexRecD0 = RecoDecay::getMatchedMCRec(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1]}, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign, 2);
+        auto indexRecK0 = RecoDecay::getMatchedMCRec(particlesMc, std::array{vecDaughtersReso[3], vecDaughtersReso[4]}, kK0 , std::array{+kPiPlus, -kPiPlus}, true, &sign, 3);
+        if (indexRec > -1 && indexRecD0 > -1 && indexRecK0 > -1) {
+          flag = sign * BIT(hf_cand_b0::DecayTypeMc::B0ToDplusPiToPiKPiPi);
+        } else {
+          if (indexRec <= -1)
+            debug = 1;
+            LOGF(debug, "DS1 decays in the expected final state but Dstar does not!");
+          if (indexRec > -1 && indexRecD0 <= -1)
+            debug = 2;
+            LOGF(debug, "DS1 and Dstar decays in the expected final state but D0 does not!");
+          if (indexRec > -1 && indexRecK0 <= -1)
+            debug = 3;
+            LOGF(debug, "DS1 and Dstar decays in the expected final state but K0 does not!");
+        }
+        auto indexMother = RecoDecay::getMother(particlesMc, vecDaughtersReso.back().template mcParticle_as<PParticles>(), Pdg::kDS1, true);
+        if (indexMother >= 0) {
+          auto particleMother = particlesMc.rawIteratorAt(indexMother);
+          motherPt = particleMother.pt();
+        }
+      }
+      rowHfDV0McRecReduced(indexHfCandCharm, indexCandV0, flag, debug, motherPt);
+    }
+  }
+
   template <bool withMl, uint8_t DecayChannel, typename Coll, typename CCands, typename Tr, typename BBach>
   void runDataCreation(Coll const& collision,
                        CCands const& candsD,
@@ -493,6 +554,7 @@ struct HfDataCreatorCharmResoReduced {
       std::array<int, 3> prongIdsD;
       int8_t dtype;
       std::array<float, 3> bdtScores;
+      std::vector<typename Tr::iterator> charmHadDauTracks{};
       if constexpr (DecayChannel == DecayChannel::DstarV0 || DecayChannel == DecayChannel::DstarTrack) {
         if (candD.signSoftPi() > 0) {
           invMassD = candD.invMassDstar();
@@ -509,7 +571,9 @@ struct HfDataCreatorCharmResoReduced {
         prongIdsD[1] = candD.prong1Id();
         prongIdsD[2] = candD.prongPiId();
         pVecProng2 = candD.pVecSoftPi();
-
+        charmResoDauTracks.push_back(candD.template prong0_as<Tr>());
+        charmResoDauTracks.push_back(candD.template prong1_as<Tr>());
+        charmResoDauTracks.push_back(candD.template prongPi_as<Tr>());
         dtype = candD.signSoftPi() * DType::Dstar;
         if constexpr (withMl) {
           std::copy(candD.mlProbDstarToD0Pi().begin(), candD.mlProbDstarToD0Pi().end(), bdtScores.begin());
@@ -527,6 +591,9 @@ struct HfDataCreatorCharmResoReduced {
         prongIdsD[2] = candD.prong2Id();
         pVecProng2 = candD.pVectorProng2();
         dtype = static_cast<int8_t>(prong0.sign() * DType::Dplus);
+        charmResoDauTracks.push_back(candD.template prong0_as<Tr>());
+        charmResoDauTracks.push_back(candD.template prong1_as<Tr>());
+        charmResoDauTracks.push_back(candD.template prong2_as<Tr>());
         if constexpr (withMl) {
           std::copy(candD.mlProbDplusToPiKPi().begin(), candD.mlProbDplusToPiKPi().end(), bdtScores.begin());
         }
@@ -604,6 +671,16 @@ struct HfDataCreatorCharmResoReduced {
             selectedV0s[v0.globalIndex()] = hfCandV0.lastIndex();
           }
           fillHfCandD = true;
+          // Optional filling of MC Rec table 
+          if constexpr (doMc) {
+            std::vector<typename Tr::iterator> charmResoDauTracks{};
+            for (const auto& track : charmHadDauTracks) {
+              charmResoDauTracks.push_back(track);
+            }
+            charmResoDauTracks.push_back(trackPos);
+            charmResoDauTracks.push_back(trackNeg);
+            fillMcRecoInfo<decChannel>(particlesMc, beautyHadDauTracks, indexHfCandCharm, selectedTracksPion);
+          }
         } // V0 loop
       } else if constexpr (DecayChannel == DecayChannel::DstarTrack) {
         for (const auto& trackIndex : bachelors) {
