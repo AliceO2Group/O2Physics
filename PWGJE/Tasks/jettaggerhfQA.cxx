@@ -68,6 +68,7 @@ struct JetTaggerHFQA {
   Configurable<float> pTHatExponent{"pTHatExponent", 6.0, "exponent of the event weight for the calculation of pTHat"};
   Configurable<float> jetAreaFractionMin{"jetAreaFractionMin", -99.0, "used to make a cut on the jet areas"};
   Configurable<float> leadingConstituentPtMin{"leadingConstituentPtMin", -99.0, "minimum pT selection on jet constituent"};
+  Configurable<float> leadingConstituentPtMax{"leadingConstituentPtMax", 9999.0, "maximum pT selection on jet constituent"};
   Configurable<bool> checkMcCollisionIsMatched{"checkMcCollisionIsMatched", false, "0: count whole MCcollisions, 1: select MCcollisions which only have their correspond collisions"};
   Configurable<int> trackOccupancyInTimeRangeMax{"trackOccupancyInTimeRangeMax", 999999, "maximum occupancy of tracks in neighbouring collisions in a given time range; only applied to reconstructed collisions (data and mcd jets), not mc collisions (mcp jets)"};
   Configurable<int> trackOccupancyInTimeRangeMin{"trackOccupancyInTimeRangeMin", -999999, "minimum occupancy of tracks in neighbouring collisions in a given time range; only applied to reconstructed collisions (data and mcd jets), not mc collisions (mcp jets)"};
@@ -383,18 +384,30 @@ struct JetTaggerHFQA {
         return false;
       }
     }
-    if (leadingConstituentPtMin > -98.0) {
-      bool isMinleadingConstituent = false;
-      for (auto& constituent : jet.template tracks_as<T>()) {
-        if (constituent.pt() >= leadingConstituentPtMin) {
-          isMinleadingConstituent = true;
-          break;
+    bool checkConstituentPt = true;
+    bool checkConstituentMinPt = (leadingConstituentPtMin > -98.0);
+    bool checkConstituentMaxPt = (leadingConstituentPtMax < 9998.0);
+    if (!checkConstituentMinPt && !checkConstituentMaxPt) {
+      checkConstituentPt = false;
+    }
+
+    if (checkConstituentPt) {
+      bool isMinLeadingConstituent = !checkConstituentMinPt;
+      bool isMaxLeadingConstituent = true;
+
+      for (const auto& constituent : jet.template tracks_as<T>()) {
+        double pt = constituent.pt();
+
+        if (checkConstituentMinPt && pt >= leadingConstituentPtMin) {
+          isMinLeadingConstituent = true;
+        }
+        if (checkConstituentMaxPt && pt > leadingConstituentPtMax) {
+          isMaxLeadingConstituent = false;
         }
       }
-      if (!isMinleadingConstituent) {
-        return false;
-      }
+      return isMinLeadingConstituent && isMaxLeadingConstituent;
     }
+
     return true;
   }
 
@@ -926,6 +939,7 @@ struct JetTaggerHFQA {
   template <typename T, typename U>
   void fillHistogramSV3ProngMCD(T const& mcdjet, U const& /*prongs*/, float eventWeight = 1.0)
   {
+    //std::cout << "weight: " << eventWeight << std::endl;
     float pTHat = 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
     if (mcdjet.pt() > pTHatMaxMCD * pTHat) {
       return;
