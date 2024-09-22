@@ -580,11 +580,11 @@ struct JetTaggerHFQA {
       if (fillIPxyz) {
         float varImpXYZ, varSignImpXYZ, varImpXYZSig, varSignImpXYZSig;
         float dcaXYZ = track.dcaXYZ();
-        float sigmadcaXYZ2 = track.sigmadcaXYZ();
+        float sigmadcaXYZ = track.sigmadcaXYZ();
         varImpXYZ = dcaXYZ * jettaggingutilities::cmTomum;
         varSignImpXYZ = geoSign * std::abs(dcaXYZ) * jettaggingutilities::cmTomum;
-        varImpXYZSig = dcaXYZ / std::sqrt(sigmadcaXYZ2);
-        varSignImpXYZSig = geoSign * std::abs(dcaXYZ) / std::sqrt(sigmadcaXYZ2);
+        varImpXYZSig = dcaXYZ / sigmadcaXYZ;
+        varSignImpXYZSig = geoSign * std::abs(dcaXYZ) / sigmadcaXYZ;
         registry.fill(HIST("h3_jet_pt_impact_parameter_xyz_flavour"), mcdjet.pt(), varImpXYZ, jetflavour, eventWeight);
         registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xyz_flavour"), mcdjet.pt(), varSignImpXYZ, jetflavour, eventWeight);
         registry.fill(HIST("h3_jet_pt_impact_parameter_xyz_significance_flavour"), mcdjet.pt(), varImpXYZSig, jetflavour, eventWeight);
@@ -1042,9 +1042,9 @@ struct JetTaggerHFQA {
       varImpZ = jtrack.dcaZ() * jettaggingutilities::cmTomum;
       varImpZSig = jtrack.dcaZ() / jtrack.sigmadcaZ();
       float dcaXYZ = jtrack.dcaXYZ();
-      float sigmadcaXYZ2 = jtrack.sigmadcaXYZ();
+      float sigmadcaXYZ = jtrack.sigmadcaXYZ();
       varImpXYZ = dcaXYZ * jettaggingutilities::cmTomum;
-      varImpXYZSig = dcaXYZ / std::sqrt(sigmadcaXYZ2);
+      varImpXYZSig = dcaXYZ / sigmadcaXYZ;
 
       registry.fill(HIST("h_impact_parameter_xy"), varImpXY);
       registry.fill(HIST("h_impact_parameter_xy_significance"), varImpXYSig);

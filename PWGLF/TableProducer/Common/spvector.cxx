@@ -108,6 +108,7 @@ struct spvector {
   Configurable<float> lbinCent{"lbinCent", 0.0, "lower bin value in cent histograms"};
   Configurable<float> hbinCent{"hbinCent", 80.0, "higher bin value in cent histograms"};
   Configurable<bool> QA{"QA", false, "QA histograms"};
+  Configurable<bool> usesparse{"usesparse", false, "flag to use sparse histogram"};
   Configurable<bool> tablewrite{"tablewrite", false, "Boolean for writing table"};
   Configurable<bool> useGainCallib{"useGainCallib", false, "use gain calibration"};
   // Configurable<bool> useRecentere{"useRecentere", false, "use Recentering"};
@@ -175,10 +176,18 @@ struct spvector {
     histos.add("hpQyZDCAC", "hpQyZDCAC", kTProfile, {centAxis});
     histos.add("hpQxZDCAQyZDCC", "hpQxZDCAQyZDCC", kTProfile, {centAxis});
     histos.add("hpQxZDCCQyZDCA", "hpQxZDCCQyZDCA", kTProfile, {centAxis});
-    histos.add("hsQxZDCA", "hsQxZDCA", kTHnSparseF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
-    histos.add("hsQyZDCA", "hsQyZDCA", kTHnSparseF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
-    histos.add("hsQxZDCC", "hsQxZDCC", kTHnSparseF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
-    histos.add("hsQyZDCC", "hsQyZDCC", kTHnSparseF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
+    if (usesparse == 1) {
+      histos.add("hsQxZDCA", "hsQxZDCA", kTHnSparseF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
+      histos.add("hsQyZDCA", "hsQyZDCA", kTHnSparseF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
+      histos.add("hsQxZDCC", "hsQxZDCC", kTHnSparseF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
+      histos.add("hsQyZDCC", "hsQyZDCC", kTHnSparseF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
+    } else {
+      histos.add("hnQxZDCA", "hnQxZDCA", kTHnF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
+      histos.add("hnQyZDCA", "hnQyZDCA", kTHnF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
+      histos.add("hnQxZDCC", "hnQxZDCC", kTHnF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
+      histos.add("hnQyZDCC", "hnQyZDCC", kTHnF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
+    }
+
     /*histos.add("hpQxVZDCC", "hpQxVZDCC", kTProfile3D, {centAxis, vxAxis, vyAxis});
     histos.add("hpQyVZDCC", "hpQyVZDCC", kTProfile3D, {centAxis, vxAxis, vyAxis});
     histos.add("hpQxVZDCA", "hpQxVZDCA", kTProfile3D, {centAxis, vxAxis, vyAxis});
@@ -217,7 +226,9 @@ struct spvector {
   int lastRunNumber = -999;
   TH2D* gainprofile;
   // TH3D* hrecentere;
-  THnSparseF* hrecentereSp;
+  // THnSparseF* hrecentereSp;
+  THnF* hrecentereSp;
+
   /*
   TH3D* hrecentereVxyQxA;
   TH3D* hrecentereVxyQyA;
@@ -340,7 +351,7 @@ struct spvector {
       }
 
       if (useRecentereSp && (currentRunNumber != lastRunNumber)) {
-        hrecentereSp = ccdb->getForTimeStamp<THnSparseT<TArrayF>>(ConfRecentereSp.value, bc.timestamp());
+        hrecentereSp = ccdb->getForTimeStamp<THnF>(ConfRecentereSp.value, bc.timestamp());
       }
 
       if (useRecentereSp && hrecentereSp) {
@@ -377,6 +388,8 @@ struct spvector {
         binCoords[4] = channelAxis->FindBin(3.5); // Channel for meanyC
         int globalBinMeanyC = hrecentereSp->GetBin(binCoords);
         float meanyC = hrecentereSp->GetBinContent(globalBinMeanyC);
+
+        // LOG(info) << "*******value is**********" <<binCoords[0]<<" "<<binCoords[1]<<" "<<binCoords[2]<<" "<<binCoords[3]<<" "<<meanxA<<" "<<meanyA<<" "<<meanxC<<" "<<meanyC;
 
         qxZDCA = qxZDCA - meanxA;
         qyZDCA = qyZDCA - meanyA;
@@ -437,10 +450,17 @@ struct spvector {
       histos.fill(HIST("hpQxZDCAQyZDCC"), centrality, (qxZDCA * qyZDCC));
       histos.fill(HIST("hpQxZDCCQyZDCA"), centrality, (qxZDCC * qyZDCA));
 
-      histos.fill(HIST("hsQxZDCA"), centrality, vx, vy, vz, qxZDCA);
-      histos.fill(HIST("hsQyZDCA"), centrality, vx, vy, vz, qyZDCA);
-      histos.fill(HIST("hsQxZDCC"), centrality, vx, vy, vz, qxZDCC);
-      histos.fill(HIST("hsQyZDCC"), centrality, vx, vy, vz, qyZDCC);
+      if (usesparse) {
+        histos.fill(HIST("hsQxZDCA"), centrality, vx, vy, vz, qxZDCA);
+        histos.fill(HIST("hsQyZDCA"), centrality, vx, vy, vz, qyZDCA);
+        histos.fill(HIST("hsQxZDCC"), centrality, vx, vy, vz, qxZDCC);
+        histos.fill(HIST("hsQyZDCC"), centrality, vx, vy, vz, qyZDCC);
+      } else {
+        histos.fill(HIST("hnQxZDCA"), centrality, vx, vy, vz, qxZDCA);
+        histos.fill(HIST("hnQyZDCA"), centrality, vx, vy, vz, qyZDCA);
+        histos.fill(HIST("hnQxZDCC"), centrality, vx, vy, vz, qxZDCC);
+        histos.fill(HIST("hnQyZDCC"), centrality, vx, vy, vz, qyZDCC);
+      }
       /*
       histos.fill(HIST("hpQxVZDCC"), centrality, vx, vy, qxZDCC);
       histos.fill(HIST("hpQyVZDCC"), centrality, vx, vy, qyZDCC);
