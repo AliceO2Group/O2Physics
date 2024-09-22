@@ -109,16 +109,19 @@ struct spvector {
   Configurable<float> hbinCent{"hbinCent", 80.0, "higher bin value in cent histograms"};
   Configurable<bool> QA{"QA", false, "QA histograms"};
   Configurable<bool> usesparse{"usesparse", false, "flag to use sparse histogram"};
+  Configurable<bool> usenormqn{"usenormqn", true, "flag to use normalized qs"};
   Configurable<bool> tablewrite{"tablewrite", false, "Boolean for writing table"};
   Configurable<bool> useGainCallib{"useGainCallib", false, "use gain calibration"};
   // Configurable<bool> useRecentere{"useRecentere", false, "use Recentering"};
-  Configurable<bool> useRecentereSp{"useRecentereSp", false, "use Recentering with Sparse"};
+  Configurable<bool> useRecentereSp{"useRecentereSp", false, "use Recentering with Sparse or THn"};
+  Configurable<bool> useRecenteresqSp{"useRecenteresqSp", false, "use Recenteringsq with Sparse or THn"};
   // Configurable<bool> useRecentereVxy{"useRecentereVxy", false, "use Recentering for Vxy"};
   Configurable<bool> recwitherror{"recwitherror", false, "use Recentering with error"};
   // Configurable<bool> useShift{"useShift", false, "use Shift"};
   Configurable<std::string> ConfGainPath{"ConfGainPath", "Users/p/prottay/My/Object/NewPbPbpass4_10092024/gaincallib", "Path to gain calibration"};
   // Configurable<std::string> ConfRecentere{"ConfRecentere", "Users/p/prottay/My/Object/NewPbPbpass4_23082024/recenter", "Path for recentere"};
-  Configurable<std::string> ConfRecentereSp{"ConfRecentereSp", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse Path for recentere"};
+  Configurable<std::string> ConfRecentereSp{"ConfRecentereSp", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for recentere"};
+  Configurable<std::string> ConfRecenteresqSp{"ConfRecenteresqSp", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for recenteresq"};
   /*
   Configurable<std::string> ConfRecentereVxyQxA{"ConfRecentereVxyQxA", "Users/p/prottay/My/Object/NewPbPbpass4_23082024/recenter", "Path for recentereVxyQxA"};
   Configurable<std::string> ConfRecentereVxyQyA{"ConfRecentereVxyQyA", "Users/p/prottay/My/Object/NewPbPbpass4_23082024/recenter", "Path for recentereVxyQyA"};
@@ -228,6 +231,7 @@ struct spvector {
   // TH3D* hrecentere;
   // THnSparseF* hrecentereSp;
   THnF* hrecentereSp;
+  THnF* hrecenteresqSp;
 
   /*
   TH3D* hrecentereVxyQxA;
@@ -333,15 +337,21 @@ struct spvector {
         }
       }
 
-      if (sumA > 0) {
-        qxZDCA = qxZDCA / sumA;
-        qyZDCA = qyZDCA / sumA;
+      if (usenormqn) {
+        if (sumA > 0) {
+          qxZDCA = qxZDCA / sumA;
+          qyZDCA = qyZDCA / sumA;
+        }
+        if (sumC > 0) {
+          qxZDCC = qxZDCC / sumC;
+          qyZDCC = qyZDCC / sumC;
+        }
+      } else {
+        qxZDCA = qxZDCA;
+        qxZDCC = qxZDCC;
+        qyZDCA = qyZDCA;
+        qyZDCC = qyZDCC;
       }
-      if (sumC > 0) {
-        qxZDCC = qxZDCC / sumC;
-        qyZDCC = qyZDCC / sumC;
-      }
-
       if (sumA <= 1e-4 || sumC <= 1e-4) {
         qxZDCA = 0.0;
         qxZDCC = 0.0;
@@ -352,6 +362,10 @@ struct spvector {
 
       if (useRecentereSp && (currentRunNumber != lastRunNumber)) {
         hrecentereSp = ccdb->getForTimeStamp<THnF>(ConfRecentereSp.value, bc.timestamp());
+      }
+
+      if (useRecenteresqSp && (currentRunNumber != lastRunNumber)) {
+        hrecenteresqSp = ccdb->getForTimeStamp<THnF>(ConfRecenteresqSp.value, bc.timestamp());
       }
 
       if (useRecentereSp && hrecentereSp) {
@@ -389,12 +403,41 @@ struct spvector {
         int globalBinMeanyC = hrecentereSp->GetBin(binCoords);
         float meanyC = hrecentereSp->GetBinContent(globalBinMeanyC);
 
-        // LOG(info) << "*******value is**********" <<binCoords[0]<<" "<<binCoords[1]<<" "<<binCoords[2]<<" "<<binCoords[3]<<" "<<meanxA<<" "<<meanyA<<" "<<meanxC<<" "<<meanyC;
-
         qxZDCA = qxZDCA - meanxA;
         qyZDCA = qyZDCA - meanyA;
         qxZDCC = qxZDCC - meanxC;
         qyZDCC = qyZDCC - meanyC;
+
+        if (useRecenteresqSp && hrecenteresqSp) {
+
+          binCoords[4] = channelAxis->FindBin(0.5); // Channel for meanyA
+          int globalBinMeansqxA = hrecenteresqSp->GetBin(binCoords);
+          float meansqxA = hrecenteresqSp->GetBinContent(globalBinMeansqxA);
+
+          // Repeat for other channels (meanyA, meanxC, meanyC)
+          binCoords[4] = channelAxis->FindBin(1.5); // Channel for meanyA
+          int globalBinMeansqyA = hrecenteresqSp->GetBin(binCoords);
+          float meansqyA = hrecenteresqSp->GetBinContent(globalBinMeansqyA);
+
+          binCoords[4] = channelAxis->FindBin(2.5); // Channel for meanxC
+          int globalBinMeansqxC = hrecenteresqSp->GetBin(binCoords);
+          float meansqxC = hrecenteresqSp->GetBinContent(globalBinMeansqxC);
+
+          binCoords[4] = channelAxis->FindBin(3.5); // Channel for meanyC
+          int globalBinMeansqyC = hrecenteresqSp->GetBin(binCoords);
+          float meansqyC = hrecenteresqSp->GetBinContent(globalBinMeansqyC);
+
+          qxZDCA = qxZDCA / meansqxA;
+          qyZDCA = qyZDCA / meansqyA;
+          qxZDCC = qxZDCC / meansqxC;
+          qyZDCC = qyZDCC / meansqyC;
+
+        } else {
+          qxZDCA = qxZDCA;
+          qyZDCA = qyZDCA;
+          qxZDCC = qxZDCC;
+          qyZDCC = qyZDCC;
+        }
       }
 
       /*
