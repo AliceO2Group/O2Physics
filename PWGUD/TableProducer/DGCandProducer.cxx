@@ -136,7 +136,7 @@ struct DGCandProducer {
   template <typename TBC>
   void fillFIThistograms(TBC const& bc)
   {
-    LOGF(debug,"");
+    LOGF(debug, "");
     std::array<bool, 5> triggers{{true, !udhelpers::cleanFIT(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits()),
                                   udhelpers::TVX(bc), udhelpers::TSC(bc), udhelpers::TCE(bc)}};
     LOGF(debug, "triggers %d %d %d %d %d", triggers[0], triggers[1], triggers[2], triggers[3], triggers[4]);
@@ -215,11 +215,11 @@ struct DGCandProducer {
     //   9: IsBBXXX         10: !IsBBXXX
     //  11: kNoBGXXX        12: !kNoBGXXX
     const int nXbinsFITH = 201;
-    registry.add("reco/fv0",  "FV0 amplitudes",  {HistType::kTH2F, {{nXbinsFITH, -0.5, nXbinsFITH-0.5}, {13, -0.5, 12.5}}});
-    registry.add("reco/ft0A", "FT0A amplitudes", {HistType::kTH2F, {{nXbinsFITH, -0.5, nXbinsFITH-0.5}, {13, -0.5, 12.5}}});
-    registry.add("reco/ft0C", "FT0C amplitudes", {HistType::kTH2F, {{nXbinsFITH, -0.5, nXbinsFITH-0.5}, {13, -0.5, 12.5}}});
-    registry.add("reco/fddA", "FDDA amplitudes", {HistType::kTH2F, {{nXbinsFITH, -0.5, nXbinsFITH-0.5}, {13, -0.5, 12.5}}});
-    registry.add("reco/fddC", "FDDC amplitudes", {HistType::kTH2F, {{nXbinsFITH, -0.5, nXbinsFITH-0.5}, {13, -0.5, 12.5}}});
+    registry.add("reco/fv0", "FV0 amplitudes", {HistType::kTH2F, {{nXbinsFITH, -0.5, nXbinsFITH - 0.5}, {13, -0.5, 12.5}}});
+    registry.add("reco/ft0A", "FT0A amplitudes", {HistType::kTH2F, {{nXbinsFITH, -0.5, nXbinsFITH - 0.5}, {13, -0.5, 12.5}}});
+    registry.add("reco/ft0C", "FT0C amplitudes", {HistType::kTH2F, {{nXbinsFITH, -0.5, nXbinsFITH - 0.5}, {13, -0.5, 12.5}}});
+    registry.add("reco/fddA", "FDDA amplitudes", {HistType::kTH2F, {{nXbinsFITH, -0.5, nXbinsFITH - 0.5}, {13, -0.5, 12.5}}});
+    registry.add("reco/fddC", "FDDC amplitudes", {HistType::kTH2F, {{nXbinsFITH, -0.5, nXbinsFITH - 0.5}, {13, -0.5, 12.5}}});
 
     std::string labels[nXbinsInStatH] = {"all", "hasBC", "accepted", "FITveto", "MID trk", "global not PV trk", "not global PV trk",
                                          "ITS-only PV trk", "TOF PV trk fraction", "n PV trks", "PID", "pt", "eta", "net charge",
@@ -681,7 +681,7 @@ struct McDGCandProducer {
           mccolAtEnd = true;
         }
       }
-      LOGF(debug, "  UDMcCollsLabels %d (of %d) UDMcCollisions %d", outputMcCollsLabels.lastIndex(), dgcands.size()-1, outputMcCollisions.lastIndex());
+      LOGF(debug, "  UDMcCollsLabels %d (of %d) UDMcCollisions %d", outputMcCollsLabels.lastIndex(), dgcands.size() - 1, outputMcCollisions.lastIndex());
       goon = !dgcandAtEnd || !mccolAtEnd;
     }
   }
