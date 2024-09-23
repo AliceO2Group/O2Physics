@@ -558,7 +558,7 @@ struct DetectorOccupancyQaTask {
       bool sel = col.selection_bit(kIsTriggerTVX);
 
       // loop over nearby collisions
-      for (unsigned long iCol = 0; iCol < vCollsAssocToGivenColl.size(); iCol++) {
+      for (unsigned int iCol = 0; iCol < vCollsAssocToGivenColl.size(); iCol++) {
         int thisColIndex = vCollsAssocToGivenColl[iCol];
         int64_t thisGlobBC = vFoundGlobalBC[thisColIndex];
         float thisColTimeDiff = vCollsTimeDeltaWrtGivenColl[iCol] / 1e3; // ns -> us
