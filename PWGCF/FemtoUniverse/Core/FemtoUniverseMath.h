@@ -201,14 +201,13 @@ class FemtoUniverseMath
     const double betaOut = tPt / tMt;
     const double gammaOut = tMt / tM;
 
-    const double fDKOutPRF = gammaOut * (fDKOutLCMS - betaOut * (pE1LCMS - pE2LCMS));   
+    const double fDKOutPRF = gammaOut * (fDKOutLCMS - betaOut * (pE1LCMS - pE2LCMS));
     const double fDKSidePRF = fDKSideLCMS;
-    const double fDKLongPRF = fDKLongLCMS;   
-    
+    const double fDKLongPRF = fDKLongLCMS;
     const double fKOut = gammaOut * (fDKOut - betaOut * fDE);
 
     const double qlcms = sqrt(fDKOutLCMS * fDKOutLCMS + fDKSideLCMS * fDKSideLCMS + fDKLongLCMS * fDKLongLCMS);
-    const double qinv = sqrt(fDKOutPRF * fDKOutPRF + fDKSidePRF * fDKSidePRF + fDKLongPRF * fDKLongPRF);    
+    const double qinv = sqrt(fDKOutPRF * fDKOutPRF + fDKSidePRF * fDKSidePRF + fDKLongPRF * fDKLongPRF);
     const double kstar = sqrt(fKOut * fKOut + fDKSide * fDKSide + fDKLong * fDKLong);
 
     if (isiden) {
@@ -216,7 +215,7 @@ class FemtoUniverseMath
       vect.push_back(fDKOutLCMS);
       vect.push_back(fDKSideLCMS);
       vect.push_back(fDKLongLCMS);
-      vect.push_back(qlcms);     
+      vect.push_back(qlcms);
     } else {
       vect.push_back(kstar);
       vect.push_back(fDKOut);
