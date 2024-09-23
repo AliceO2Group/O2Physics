@@ -32,6 +32,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 using MyMCCollisions = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::EMCALMatchedCollisions>;
+using bcEvSels = o2::soa::Join<o2::aod::BCs, o2::aod::BcSels>;
 
 struct MCGeneratorStudies {
   HistogramRegistry mHistManager{"MCGeneratorStudyHistograms"};
@@ -45,6 +46,7 @@ struct MCGeneratorStudies {
   void init(InitContext const&)
   {
     AxisSpec pTAxis{250, 0., 25., "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec bcAxis{4000, 0., 4000., "BC id"};
 
     auto hCollisionCounter = mHistManager.add<TH1>("hCollisionCounter", "Number of collisions after event cuts", HistType::kTH1F, {{7, 0.5, 7.5}});
     hCollisionCounter->GetXaxis()->SetBinLabel(1, "all");
@@ -54,6 +56,11 @@ struct MCGeneratorStudies {
     hCollisionCounter->GetXaxis()->SetBinLabel(5, "Tzz EMCal");
     hCollisionCounter->GetXaxis()->SetBinLabel(6, "TzzE Sel8");
     hCollisionCounter->GetXaxis()->SetBinLabel(7, "TzzES Unique");
+    auto hAllCollisionCounter = mHistManager.add<TH1>("hAllCollisionCounter", "Number of all collisions for different BC ids", HistType::kTH1F, {bcAxis});
+    auto hTVXCollisionCounter = mHistManager.add<TH1>("hTVXCollisionCounter", "Number of TVX collisions for different BC ids", HistType::kTH1F, {bcAxis});
+    auto hgoodsmallTVXCollisionCounter = mHistManager.add<TH1>("hgoodsmallTVXCollisionCounter", "Number of good small TVX collisions for different BC ids", HistType::kTH1F, {bcAxis});
+    auto hkTVXinEMCCollisionCounter = mHistManager.add<TH1>("hkTVXinEMCCollisionCounter", "Number of kTVXinEMC collisions for different BC ids", HistType::kTH1F, {bcAxis});
+
     TString mesonLatexString = (TString)mSelectedParticleCode;
     switch (mSelectedParticleCode) {
       case 111:
@@ -72,6 +79,16 @@ struct MCGeneratorStudies {
     mHistManager.add("hpT_T_z_z_E_Sel8", Form("Generated %s in TVXinEMC collisions with good z < 10cm and Sel8", mesonLatexString.Data()), HistType::kTH1F, {pTAxis});
     mHistManager.add("hpT_T_z_z_E_S_Unique", Form("Generated %s in unique TVXinEMC collisions with good z < 10cm and Sel8", mesonLatexString.Data()), HistType::kTH1F, {pTAxis});
     mHistManager.add("hpTAccepted_T_z_z_E_S_U", Form("Accepted %s in unique TVXinEMC collisions with good z < 10cm and Sel8", mesonLatexString.Data()), HistType::kTH1F, {pTAxis});
+
+    mHistManager.add("hbc_all", Form("Generated %s in all collisions", mesonLatexString.Data()), HistType::kTH1F, {bcAxis});
+    mHistManager.add("hbc_TVX", Form("Generated %s in TVX triggered collisions", mesonLatexString.Data()), HistType::kTH1F, {bcAxis});
+    mHistManager.add("hbc_T_zsmall", Form("Generated %s in TVX collisions with z < 10cm", mesonLatexString.Data()), HistType::kTH1F, {bcAxis});
+    mHistManager.add("hbc_T_z_zGood", Form("Generated %s in TVX collisions with good z < 10cm", mesonLatexString.Data()), HistType::kTH1F, {bcAxis});
+    mHistManager.add("hbcAccepted_T_z_z", Form("Accepted (EMCal) %s in TVX collisions with good z < 10cm", mesonLatexString.Data()), HistType::kTH1F, {bcAxis});
+    mHistManager.add("hbc_T_z_z_EMCal", Form("Generated %s in TVXinEMC collisions with good z < 10cm", mesonLatexString.Data()), HistType::kTH1F, {bcAxis});
+    mHistManager.add("hbc_T_z_z_E_Sel8", Form("Generated %s in TVXinEMC collisions with good z < 10cm and Sel8", mesonLatexString.Data()), HistType::kTH1F, {bcAxis});
+    mHistManager.add("hbc_T_z_z_E_S_Unique", Form("Generated %s in unique TVXinEMC collisions with good z < 10cm and Sel8", mesonLatexString.Data()), HistType::kTH1F, {bcAxis});
+    mHistManager.add("hbcAccepted_T_z_z_E_S_U", Form("Accepted %s in unique TVXinEMC collisions with good z < 10cm and Sel8", mesonLatexString.Data()), HistType::kTH1F, {bcAxis});
 
     auto hEMCollisionCounter = mHistManager.add<TH1>("hEMCollisionCounter", "collision counter;;Number of events", kTH1F, {{13, 0.5, 13.5}}, false);
     hEMCollisionCounter->GetXaxis()->SetBinLabel(1, "all");
@@ -93,9 +110,11 @@ struct MCGeneratorStudies {
 
   PresliceUnsorted<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
 
-  void process(MyMCCollisions::iterator const& collision, aod::McCollisions const&, aod::McParticles const& mcParticles)
+  void process(MyMCCollisions::iterator const& collision, aod::McCollisions const&, aod::McParticles const& mcParticles, bcEvSels const& bcs)
   {
-    fillEventHistogram(&mHistManager, collision);
+    auto globalbcid = collision.foundBC_as<bcEvSels>().globalBC();
+    auto bcID = globalbcid % 3564;
+    fillEventHistogram(&mHistManager, collision, bcID);
 
     auto mcCollision = collision.mcCollision();
     auto mcParticles_inColl = mcParticles.sliceBy(perMcCollision, mcCollision.globalIndex());
@@ -108,23 +127,33 @@ struct MCGeneratorStudies {
       if (mRequireGammaGammaDecay && !isGammaGammaDecay(mcParticle, mcParticles))
         continue;
 
+      mHistManager.fill(HIST("hbc_all"), bcID);
       mHistManager.fill(HIST("hpT_all"), mcParticle.pt());
       if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+        mHistManager.fill(HIST("hbc_TVX"), bcID);
         mHistManager.fill(HIST("hpT_TVX"), mcParticle.pt());
         if (abs(collision.posZ()) < mVertexCut) {
+          mHistManager.fill(HIST("hbc_T_zsmall"), bcID);
           mHistManager.fill(HIST("hpT_T_zsmall"), mcParticle.pt());
           if (collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+            mHistManager.fill(HIST("hbc_T_z_zGood"), bcID);
             mHistManager.fill(HIST("hpT_T_z_zGood"), mcParticle.pt());
             if (isAccepted(mcParticle, mcParticles))
-              mHistManager.fill(HIST("hpTAccepted_T_z_z"), mcParticle.pt());
+              mHistManager.fill(HIST("hbcAccepted_T_z_z"), bcID);
+            mHistManager.fill(HIST("hpTAccepted_T_z_z"), mcParticle.pt());
             if (mRequireEMCCellContent ? collision.isemcreadout() : collision.alias_bit(kTVXinEMC)) {
+              mHistManager.fill(HIST("hbc_T_z_z_EMCal"), bcID);
               mHistManager.fill(HIST("hpT_T_z_z_EMCal"), mcParticle.pt());
               if (collision.sel8()) {
+                mHistManager.fill(HIST("hbc_T_z_z_E_Sel8"), bcID);
                 mHistManager.fill(HIST("hpT_T_z_z_E_Sel8"), mcParticle.pt());
                 if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+                  mHistManager.fill(HIST("hbc_T_z_z_E_S_Unique"), bcID);
                   mHistManager.fill(HIST("hpT_T_z_z_E_S_Unique"), mcParticle.pt());
-                  if (isAccepted(mcParticle, mcParticles))
+                  if (isAccepted(mcParticle, mcParticles)) {
+                    mHistManager.fill(HIST("hbcAccepted_T_z_z_E_S_U"), bcID);
                     mHistManager.fill(HIST("hpTAccepted_T_z_z_E_S_U"), mcParticle.pt());
+                  }
                 }
               }
             }
@@ -168,7 +197,7 @@ struct MCGeneratorStudies {
     return true;
   }
 
-  void fillEventHistogram(HistogramRegistry* fRegistry, MyMCCollisions::iterator const& collision)
+  void fillEventHistogram(HistogramRegistry* fRegistry, MyMCCollisions::iterator const& collision, int bcID)
   {
     fRegistry->fill(HIST("hEMCollisionCounter"), 1.0);
     if (collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder))
@@ -195,19 +224,24 @@ struct MCGeneratorStudies {
       fRegistry->fill(HIST("hEMCollisionCounter"), 12.0);
     fRegistry->fill(HIST("hEMCollisionCounter"), 13.0);
 
+    fRegistry->fill(HIST("hAllCollisionCounter"), bcID);
     fRegistry->fill(HIST("hCollisionCounter"), 1);
     if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+      fRegistry->fill(HIST("hTVXCollisionCounter"), bcID);
       fRegistry->fill(HIST("hCollisionCounter"), 2);
       if (abs(collision.posZ()) < mVertexCut) {
         fRegistry->fill(HIST("hCollisionCounter"), 3);
-        if (collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
+        if (collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+          fRegistry->fill(HIST("hgoodsmallTVXCollisionCounter"), bcID);
           fRegistry->fill(HIST("hCollisionCounter"), 4);
-        if (mRequireEMCCellContent ? collision.isemcreadout() : collision.alias_bit(kTVXinEMC)) {
-          fRegistry->fill(HIST("hCollisionCounter"), 5);
-          if (collision.sel8()) {
-            fRegistry->fill(HIST("hCollisionCounter"), 6);
-            if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
-              fRegistry->fill(HIST("hCollisionCounter"), 7);
+          if (mRequireEMCCellContent ? collision.isemcreadout() : collision.alias_bit(kTVXinEMC)) {
+            fRegistry->fill(HIST("hkTVXinEMCCollisionCounter"), bcID);
+            fRegistry->fill(HIST("hCollisionCounter"), 5);
+            if (collision.sel8()) {
+              fRegistry->fill(HIST("hCollisionCounter"), 6);
+              if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+                fRegistry->fill(HIST("hCollisionCounter"), 7);
+              }
             }
           }
         }
