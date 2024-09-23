@@ -408,9 +408,9 @@ DECLARE_SOA_TABLE(KFVtx3BodyDatas, "AOD", "KFVTX3BODYDATA", //!
                   kfvtx3body::DCAxyTrack0ToSVKF, kfvtx3body::DCAxyTrack1ToSVKF, kfvtx3body::DCAxyTrack2ToSVKF,
                   kfvtx3body::DCAxyTrack0ToTrack1, kfvtx3body::DCAxyTrack0ToTrack2, kfvtx3body::DCAxyTrack1ToTrack2,
                   kfvtx3body::DCAVtxDaughtersKF,
+                  vtx3body::DCAXYTrack0ToPV, vtx3body::DCAXYTrack1ToPV, vtx3body::DCAXYTrack2ToPV,
                   vtx3body::DCATrack0ToPV, vtx3body::DCATrack1ToPV, vtx3body::DCATrack2ToPV,
                   kfvtx3body::Track0Sign, kfvtx3body::Track1Sign, kfvtx3body::Track2Sign, // track sing: proton, pion, deuteron
-                  vtx3body::TOFNSigmaBachDe,
 
                   // dynamic columns
                   vtx3body::VtxRadius<vtx3body::X, vtx3body::Y>,
@@ -438,18 +438,30 @@ namespace kfvtx3body
 DECLARE_SOA_INDEX_COLUMN(KFVtx3BodyData, kfvtx3BodyData); //! Index to KFVtx3BodyData entry
 }
 
-DECLARE_SOA_TABLE(KFDecay3BodyDataLink, "AOD", "KFDECAY3BODYLINK", //! Joinable table with Decay3bodys which links to KFVtx3BodyData which is not produced for all entries
-                  vtx3body::Vtx3BodyDataId);
+DECLARE_SOA_TABLE(KFDecay3BodyDataLink, "AOD", "KF3BODYLINK", //! Joinable table with Decay3bodys which links to KFVtx3BodyData which is not produced for all entries
+                  kfvtx3body::KFVtx3BodyDataId);
 
 using KFDecay3BodysLinked = soa::Join<Decay3Bodys, KFDecay3BodyDataLink>;
 using KFDecay3BodyLinked = KFDecay3BodysLinked::iterator;
 
+// Definition of labels for KFVtx3BodyDatas
+namespace mckfvtx3bodylabel
+{
+DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle); //! MC particle for KF Vtx3BodyDatas
+} // namespace mckfvtx3bodylabel
+
 DECLARE_SOA_TABLE(McKFVtx3BodyLabels, "AOD", "MCKFVTXLABEL", //! Table joinable with KFVtx3BodyData containing the MC labels
-                  mcvtx3bodylabel::McParticleId);
+                  mckfvtx3bodylabel::McParticleId);
 using McKFVtx3BodyLabel = McKFVtx3BodyLabels::iterator;
 
-DECLARE_SOA_TABLE(McFullKFVtx3BodyLabels, "AOD", "MCFULLKFVTXLABEL", //! Table joinable with Decay3Bodys (CAUTION: NOT WITH Vtx3BodyDATA)
-                  mcfullvtx3bodylabel::McParticleId);
+// Definition of labels for KFDecay3Bodys // Full table, joinable with KFDecay3Bodys (CAUTION: NOT WITH Vtx3BodyDATA)
+namespace mcfullkfvtx3bodylabel
+{
+DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle); //! MC particle for Decay3Bodys
+} // namespace mcfullkfvtx3bodylabel
+
+DECLARE_SOA_TABLE(McFullKFVtx3BodyLabels, "AOD", "MCFULLKFLABEL", //! Table joinable with Decay3Bodys (CAUTION: NOT WITH Vtx3BodyDATA)
+                  mcfullkfvtx3bodylabel::McParticleId);
 using McFullKFVtx3BodyLabel = McFullKFVtx3BodyLabels::iterator;
 } // namespace o2::aod
 
