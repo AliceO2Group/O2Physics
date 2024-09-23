@@ -110,6 +110,7 @@ struct spvector {
   Configurable<bool> QA{"QA", false, "QA histograms"};
   Configurable<bool> usesparse{"usesparse", false, "flag to use sparse histogram"};
   Configurable<bool> usenormqn{"usenormqn", true, "flag to use normalized qs"};
+  Configurable<bool> refsys{"refsys", true, "flag to use own reference system"};
   Configurable<bool> tablewrite{"tablewrite", false, "Boolean for writing table"};
   Configurable<bool> useGainCallib{"useGainCallib", false, "use gain calibration"};
   // Configurable<bool> useRecentere{"useRecentere", false, "use Recentering"};
@@ -328,7 +329,11 @@ struct spvector {
             return;
           } else {
             float ampl = gainequal * zncEnergy[iChA - 4];
-            qxZDCC = qxZDCC + ampl * x[iChA - 4];
+            if (refsys) {
+              qxZDCC = qxZDCC - ampl * x[iChA - 4];
+            } else {
+              qxZDCC = qxZDCC + ampl * x[iChA - 4];
+            }
             qyZDCC = qyZDCC + ampl * y[iChA - 4];
             sumC = sumC + ampl;
             histos.fill(HIST("ZDCAmp"), chanelid + 0.5, vz, ampl);
@@ -389,24 +394,43 @@ struct spvector {
         // Get the global bin for meanxA
         int globalBinMeanxA = hrecentereSp->GetBin(binCoords);
         float meanxA = hrecentereSp->GetBinContent(globalBinMeanxA);
+        float meanxAerror = hrecentereSp->GetBinError(globalBinMeanxA);
 
         // Repeat for other channels (meanyA, meanxC, meanyC)
         binCoords[4] = channelAxis->FindBin(1.5); // Channel for meanyA
         int globalBinMeanyA = hrecentereSp->GetBin(binCoords);
         float meanyA = hrecentereSp->GetBinContent(globalBinMeanyA);
+        float meanyAerror = hrecentereSp->GetBinError(globalBinMeanyA);
 
         binCoords[4] = channelAxis->FindBin(2.5); // Channel for meanxC
         int globalBinMeanxC = hrecentereSp->GetBin(binCoords);
         float meanxC = hrecentereSp->GetBinContent(globalBinMeanxC);
+        float meanxCerror = hrecentereSp->GetBinError(globalBinMeanxC);
 
         binCoords[4] = channelAxis->FindBin(3.5); // Channel for meanyC
         int globalBinMeanyC = hrecentereSp->GetBin(binCoords);
         float meanyC = hrecentereSp->GetBinContent(globalBinMeanyC);
+        float meanyCerror = hrecentereSp->GetBinError(globalBinMeanyC);
 
         qxZDCA = qxZDCA - meanxA;
         qyZDCA = qyZDCA - meanyA;
         qxZDCC = qxZDCC - meanxC;
         qyZDCC = qyZDCC - meanyC;
+
+        if (recwitherror) {
+          if (meanxAerror != 0.0) {
+            qxZDCA = qxZDCA / meanxAerror;
+          }
+          if (meanyAerror != 0.0) {
+            qyZDCA = qyZDCA / meanyAerror;
+          }
+          if (meanxCerror != 0.0) {
+            qxZDCC = qxZDCC / meanxCerror;
+          }
+          if (meanyCerror != 0.0) {
+            qyZDCC = qyZDCC / meanyCerror;
+          }
+        }
 
         if (useRecenteresqSp && hrecenteresqSp) {
 
@@ -427,11 +451,18 @@ struct spvector {
           int globalBinMeansqyC = hrecenteresqSp->GetBin(binCoords);
           float meansqyC = hrecenteresqSp->GetBinContent(globalBinMeansqyC);
 
-          qxZDCA = qxZDCA / meansqxA;
-          qyZDCA = qyZDCA / meansqyA;
-          qxZDCC = qxZDCC / meansqxC;
-          qyZDCC = qyZDCC / meansqyC;
-
+          if (meansqxA != 0.0) {
+            qxZDCA = qxZDCA / meansqxA;
+          }
+          if (meansqyA != 0.0) {
+            qyZDCA = qyZDCA / meansqyA;
+          }
+          if (meansqxC != 0.0) {
+            qxZDCC = qxZDCC / meansqxC;
+          }
+          if (meansqyC != 0.0) {
+            qyZDCC = qyZDCC / meansqyC;
+          }
         } else {
           qxZDCA = qxZDCA;
           qyZDCA = qyZDCA;
