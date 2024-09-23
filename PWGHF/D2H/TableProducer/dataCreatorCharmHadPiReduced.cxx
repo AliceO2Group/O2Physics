@@ -353,6 +353,17 @@ struct HfDataCreatorCharmHadPiReduced {
             }
           }
         }
+        // Bs → Ds- π+ → (K- K+ π-) π+
+        if (!flag) {
+          indexRec = RecoDecay::getMatchedMCRec<true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2], vecDaughtersB[3]}, Pdg::kBS, std::array{-kKPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 3);
+          if (indexRec > -1) {
+            // Ds- → K- K+ π-
+            indexRec = RecoDecay::getMatchedMCRec(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2]}, -Pdg::kDS, std::array{-kKPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
+            if (indexRec > -1) {
+              flag = sign * BIT(hf_cand_b0::DecayTypeMc::BsToDsPiToKKPiPi);
+            }
+          }
+        }
         // Partly reconstructed decays, i.e. the 4 prongs have a common b-hadron ancestor
         // convention: final state particles are prong0,1,2,3
         if (!flag) {

@@ -1670,6 +1670,7 @@ enum DecayType { B0ToDPi };
 
 enum DecayTypeMc : uint8_t { B0ToDplusPiToPiKPiPi = 0,
                              B0ToDsPiToKKPiPi,
+                             BsToDsPiToKKPiPi,
                              PartlyRecoDecay,
                              OtherDecay,
                              NDecayTypeMc };

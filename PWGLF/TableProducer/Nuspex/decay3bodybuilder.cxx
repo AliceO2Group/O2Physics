@@ -75,8 +75,15 @@ struct decay3bodyBuilder {
   // Configurables
   Configurable<bool> d_UseAbsDCA{"d_UseAbsDCA", true, "Use Abs DCAs"};
 
+  enum hyp3body { kH3L = 0,
+                  kH4L,
+                  kHe4L,
+                  kHe5L,
+                  kNHyp3body };
+
   enum vtxstep { kVtxAll = 0,
                  kVtxTPCNcls,
+                 kVtxPIDCut,
                  kVtxhasSV,
                  kVtxDcaDau,
                  kVtxCosPA,
@@ -142,12 +149,20 @@ struct decay3bodyBuilder {
   };
 
   // hypothesis
-  Configurable<int> bachelorcharge{"bachelorcharge", 1, "charge of the bachelor track"};
+  Configurable<int> motherhyp{"motherhyp", 0, "hypothesis of the 3body decayed particle"};                           // corresponds to hyp3body
+  int bachelorcharge = 1;                                                                                            // to be updated in Init base on the hypothesis
+  o2::aod::pidtofgeneric::TofPidNewCollision<ColwithEvTimes::iterator, FullTracksExtPIDIU::iterator> bachelorTOFPID; // to be updated in Init base on the hypothesis
+
   // Selection criteria
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
   Configurable<int> mintpcNCls{"mintpcNCls", 70, "min tpc Nclusters"};
   Configurable<float> minCosPA3body{"minCosPA3body", 0.9, "minCosPA3body"};
   Configurable<float> dcavtxdau{"dcavtxdau", 1.0, "DCA Vtx Daughters"};
+  Configurable<bool> enablePidCut{"enablePidCut", 0, "enable function checkPIDH3L"};
+  Configurable<float> TofPidNsigmaMin{"TofPidNsigmaMin", -5, "TofPidNsigmaMin"};
+  Configurable<float> TofPidNsigmaMax{"TofPidNsigmaMax", 5, "TofPidNsigmaMax"};
+  Configurable<float> TpcPidNsigmaCut{"TpcPidNsigmaCut", 5, "TpcPidNsigmaCut"};
+  Configurable<float> minBachPUseTOF{"minBachPUseTOF", 1, "minBachP Enable TOF PID"};
 
   Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
   // CCDB options
@@ -206,7 +221,6 @@ struct decay3bodyBuilder {
   float maxStep; // max step size (cm) for propagation
   o2::base::MatLayerCylSet* lut = nullptr;
   o2::vertexing::DCAFitterN<3> fitter3body;
-  o2::aod::pidtofgeneric::TofPidNewCollision<ColwithEvTimes::iterator, FullTracksExtIU::iterator> bachelorTOFPID;
   o2::pid::tof::TOFResoParamsV2 mRespParamsV2;
 
   void init(InitContext&)
@@ -215,6 +229,30 @@ struct decay3bodyBuilder {
     d_bz = 0;
     maxSnp = 0.85f;  // could be changed later
     maxStep = 2.00f; // could be changed later
+
+    // set hypothesis corresponds to hyp3body, tpcpid to be implemented
+    switch (motherhyp) {
+      case hyp3body::kH3L:
+        bachelorcharge = 1;
+        bachelorTOFPID.SetPidType(o2::track::PID::Deuteron);
+        break;
+      case hyp3body::kH4L:
+        bachelorcharge = 1;
+        bachelorTOFPID.SetPidType(o2::track::PID::Triton);
+        break;
+      case hyp3body::kHe4L:
+        bachelorcharge = 2;
+        bachelorTOFPID.SetPidType(o2::track::PID::Helium3);
+        break;
+      case hyp3body::kHe5L:
+        bachelorcharge = 2;
+        bachelorTOFPID.SetPidType(o2::track::PID::Alpha);
+        break;
+      default:
+        LOG(fatal) << "Wrong hypothesis for decay3body";
+        return;
+    }
+
     fitter3body.setPropagateToPCA(true);
     fitter3body.setMaxR(200.); //->maxRIni3body
     fitter3body.setMinParamChange(1e-3);
@@ -394,6 +432,32 @@ struct decay3bodyBuilder {
   }
 
   //------------------------------------------------------------------
+  // Select decay3body candidate based on daughter track PID
+  template <typename TTrack>
+  bool checkPID(TTrack const& trackProton, TTrack const& trackPion, TTrack const& trackBachelor, const double& tofNSigmaBach)
+  {
+    if ((tofNSigmaBach < TofPidNsigmaMin || tofNSigmaBach > TofPidNsigmaMax) && trackBachelor.p() > minBachPUseTOF) {
+      return false;
+    }
+    if (std::abs(trackProton.tpcNSigmaPr()) > TpcPidNsigmaCut) {
+      return false;
+    }
+    if (std::abs(trackPion.tpcNSigmaPi()) > TpcPidNsigmaCut) {
+      return false;
+    }
+    return true;
+  }
+  // PID check for H3L
+  template <typename TTrack>
+  bool checkPIDH3L(TTrack const& trackProton, TTrack const& trackPion, TTrack const& trackBachelor, const double& tofNSigmaBach)
+  {
+    if ((std::abs(trackBachelor.tpcNSigmaDe()) > TpcPidNsigmaCut) || !checkPID(trackProton, trackPion, trackBachelor, tofNSigmaBach)) {
+      return false;
+    }
+    return true;
+  }
+
+  //------------------------------------------------------------------
   // Recalculate TOF PID for bachelors (deuteron), copied from PIDTOF.h
   template <typename TrackType>
   static float GetExpectedSigma(const o2::pid::tof::TOFResoParamsV2& parameters, const TrackType& track, const float tofSignal, const float collisionTimeRes, double mMassZ)
@@ -443,6 +507,25 @@ struct decay3bodyBuilder {
         continue;
       }
       registry.fill(HIST("hVtx3BodyCounter"), kVtxTPCNcls);
+
+      // Recalculate the TOF PID
+      double tofNSigmaBach = -999;
+      if (t2.has_collision() && t2.hasTOF()) {
+        auto originalcol = t2.template collision_as<TCollisionClass>();
+        tofNSigmaBach = bachelorTOFPID.GetTOFNSigma(t2, originalcol, collision);
+      }
+
+      if (enablePidCut) {
+        if (t2.sign() > 0) {
+          if (!checkPIDH3L(t0, t1, t2, tofNSigmaBach))
+            continue;
+        } else {
+          if (!checkPIDH3L(t1, t0, t2, tofNSigmaBach))
+            continue;
+        }
+      }
+
+      registry.fill(HIST("hVtx3BodyCounter"), kVtxPIDCut);
 
       // Calculate DCA with respect to the collision associated to the V0, not individual tracks
       gpu::gpustd::array<float, 2> dcaInfo;
@@ -500,15 +583,7 @@ struct decay3bodyBuilder {
       }
       registry.fill(HIST("hVtx3BodyCounter"), kVtxCosPA);
 
-      // Recalculate the TOF PID
-      double tofNsigmaDe = -999;
-
-      if (t2.has_collision() && t2.hasTOF()) {
-        auto originalcol = t2.template collision_as<TCollisionClass>();
-        tofNsigmaDe = bachelorTOFPID.GetTOFNSigma(o2::track::PID::Deuteron, t2, originalcol, collision);
-      }
-
-      registry.fill(HIST("hBachelorTOFNSigmaDe"), t2.sign() * t2.p(), tofNsigmaDe);
+      registry.fill(HIST("hBachelorTOFNSigmaDe"), t2.sign() * t2.p(), tofNSigmaBach);
 
       vtx3bodydata(
         t0.globalIndex(), t1.globalIndex(), t2.globalIndex(), collision.globalIndex(), vtx3body.globalIndex(),
@@ -517,7 +592,7 @@ struct decay3bodyBuilder {
         fitter3body.getChi2AtPCACandidate(),
         Track0dcaXY, Track1dcaXY, Track2dcaXY,
         Track0dca, Track1dca, Track2dca,
-        tofNsigmaDe);
+        tofNSigmaBach);
     }
   }
 

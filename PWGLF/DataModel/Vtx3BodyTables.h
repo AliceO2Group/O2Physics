@@ -209,31 +209,22 @@ namespace hyp3body
 {
 // collision
 DECLARE_SOA_COLUMN(Centrality, centrality, float); //! centrality
-DECLARE_SOA_COLUMN(XPV, xpv, float);               //! primary vertex X
-DECLARE_SOA_COLUMN(YPV, ypv, float);               //! primary vertex Y
-DECLARE_SOA_COLUMN(ZPV, zpv, float);               //! primary vertex Z
 // reconstruced candidate
 DECLARE_SOA_COLUMN(IsMatter, isMatter, bool); //! bool: true for matter
 DECLARE_SOA_COLUMN(M, m, float);              //! invariant mass
 DECLARE_SOA_COLUMN(P, p, float);              //! p
 DECLARE_SOA_COLUMN(Pt, pt, float);            //! pT
 DECLARE_SOA_COLUMN(Ct, ct, float);            //! ct
-DECLARE_SOA_COLUMN(X, x, float);              //! decay position X
-DECLARE_SOA_COLUMN(Y, y, float);              //! decay position Y
-DECLARE_SOA_COLUMN(Z, z, float);              //! decay position Z
 DECLARE_SOA_COLUMN(CosPA, cospa, float);
 DECLARE_SOA_COLUMN(DCADaughters, dcaDaughters, float); //! DCA among daughters
 DECLARE_SOA_COLUMN(DCACandToPV, dcaCandtopv, float);   //! DCA of the reconstructed track to pv
 // kinematic infomation of daughter tracks
-DECLARE_SOA_COLUMN(PProton, pProton, float);         //! p of the proton daughter
 DECLARE_SOA_COLUMN(PtProton, ptProton, float);       //! pT of the proton daughter
 DECLARE_SOA_COLUMN(EtaProton, etaProton, float);     //! eta of the proton daughter
 DECLARE_SOA_COLUMN(PhiProton, phiProton, float);     //! phi of the proton daughter
-DECLARE_SOA_COLUMN(PPion, pPion, float);             //! p of the pion daughter
 DECLARE_SOA_COLUMN(PtPion, ptPion, float);           //! pT of the pion daughter
 DECLARE_SOA_COLUMN(EtaPion, etaPion, float);         //! eta of the pion daughter
 DECLARE_SOA_COLUMN(PhiPion, phiPion, float);         //! phi of the pion daughter
-DECLARE_SOA_COLUMN(PBachelor, pBachelor, float);     //! p of the bachelor daughter
 DECLARE_SOA_COLUMN(PtBachelor, ptBachelor, float);   //! pT of the bachelor daughter
 DECLARE_SOA_COLUMN(EtaBachelor, etaBachelor, float); //! eta of the bachelor daughter
 DECLARE_SOA_COLUMN(PhiBachelor, phiBachelor, float); //! phi of the bachelor daughter
@@ -273,21 +264,19 @@ DECLARE_SOA_COLUMN(SurvivedEventSelection, survivedEventSelection, bool); // boo
 DECLARE_SOA_TABLE(Hyp3BodyCands, "AOD", "HYP3BODYCANDS",
                   o2::soa::Index<>,
                   hyp3body::Centrality,
-                  hyp3body::XPV, hyp3body::YPV, hyp3body::ZPV,
                   // secondary vertex and reconstruced candidate
                   hyp3body::IsMatter,
                   hyp3body::M,
                   hyp3body::P,
                   hyp3body::Pt,
                   hyp3body::Ct,
-                  hyp3body::X, hyp3body::Y, hyp3body::Z,
                   hyp3body::CosPA,
                   hyp3body::DCADaughters,
                   hyp3body::DCACandToPV,
                   // daughter tracks
-                  hyp3body::PProton, hyp3body::PtProton, hyp3body::EtaProton, hyp3body::PhiProton,
-                  hyp3body::PPion, hyp3body::PtPion, hyp3body::EtaPion, hyp3body::PhiPion,
-                  hyp3body::PBachelor, hyp3body::PtBachelor, hyp3body::EtaBachelor, hyp3body::PhiBachelor,
+                  hyp3body::PtProton, hyp3body::EtaProton, hyp3body::PhiProton,
+                  hyp3body::PtPion, hyp3body::EtaPion, hyp3body::PhiPion,
+                  hyp3body::PtBachelor, hyp3body::EtaBachelor, hyp3body::PhiBachelor,
                   hyp3body::TPCNclusProton, hyp3body::TPCNclusPion, hyp3body::TPCNclusBachelor,
                   hyp3body::ITSNclusSizeProton, hyp3body::ITSNclusSizePion, hyp3body::ITSNclusSizeBachelor,
                   hyp3body::TPCNSigmaProton, hyp3body::TPCNSigmaPion, hyp3body::TPCNSigmaBachelor,
@@ -299,21 +288,19 @@ DECLARE_SOA_TABLE(Hyp3BodyCands, "AOD", "HYP3BODYCANDS",
 DECLARE_SOA_TABLE(MCHyp3BodyCands, "AOD", "MCHYP3BODYCANDS",
                   o2::soa::Index<>,
                   hyp3body::Centrality,
-                  hyp3body::XPV, hyp3body::YPV, hyp3body::ZPV,
                   // secondary vertex and reconstruced candidate
                   hyp3body::IsMatter,
                   hyp3body::M,
                   hyp3body::P,
                   hyp3body::Pt,
                   hyp3body::Ct,
-                  hyp3body::X, hyp3body::Y, hyp3body::Z,
                   hyp3body::CosPA,
                   hyp3body::DCADaughters,
                   hyp3body::DCACandToPV,
                   // daughter tracks
-                  hyp3body::PProton, hyp3body::PtProton, hyp3body::EtaProton, hyp3body::PhiProton,
-                  hyp3body::PPion, hyp3body::PtPion, hyp3body::EtaPion, hyp3body::PhiPion,
-                  hyp3body::PBachelor, hyp3body::PtBachelor, hyp3body::EtaBachelor, hyp3body::PhiBachelor,
+                  hyp3body::PtProton, hyp3body::EtaProton, hyp3body::PhiProton,
+                  hyp3body::PtPion, hyp3body::EtaPion, hyp3body::PhiPion,
+                  hyp3body::PtBachelor, hyp3body::EtaBachelor, hyp3body::PhiBachelor,
                   hyp3body::TPCNclusProton, hyp3body::TPCNclusPion, hyp3body::TPCNclusBachelor,
                   hyp3body::ITSNclusSizeProton, hyp3body::ITSNclusSizePion, hyp3body::ITSNclusSizeBachelor,
                   hyp3body::TPCNSigmaProton, hyp3body::TPCNSigmaPion, hyp3body::TPCNSigmaBachelor,

@@ -210,9 +210,9 @@ struct TOFCalibConfig {
     mTimestamp = bc.timestamp();
 
     // Check the beam type
-    o2::parameters::GRPLHCIFData* grpo = ccdb->template getForTimeStamp<o2::parameters::GRPLHCIFData>(mPathGrpLhcIf,
-                                                                                                      mTimestamp);
     if (mCollisionSystem == -1) {
+      o2::parameters::GRPLHCIFData* grpo = ccdb->template getForTimeStamp<o2::parameters::GRPLHCIFData>(mPathGrpLhcIf,
+                                                                                                        mTimestamp);
       mCollisionSystem = CollisionSystemType::getCollisionTypeFromGrp(grpo);
     } else {
       LOG(debug) << "Not setting collisions system as already set to " << mCollisionSystem << " " << CollisionSystemType::getCollisionSystemName(mCollisionSystem);
