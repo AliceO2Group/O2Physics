@@ -43,7 +43,8 @@ using namespace o2::aod::evsel;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
-struct FlowGFWPbPb {
+struct FlowGFWPbPb
+{
 
   O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 10.0f, "Accepted z-vertex range")
   O2_DEFINE_CONFIGURABLE(cfgCutPtMin, float, 0.2f, "Minimal pT for ref tracks")
@@ -53,7 +54,7 @@ struct FlowGFWPbPb {
   O2_DEFINE_CONFIGURABLE(cfgCutTPCclu, float, 70.0f, "minimum TPC clusters")
   O2_DEFINE_CONFIGURABLE(cfgUseAdditionalEventCut, bool, false, "Use additional event cut on mult correlations")
   O2_DEFINE_CONFIGURABLE(cfgUseAdditionalTrackCut, bool, false, "Use additional track cut on phi")
-  O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, true, "Use Nch for flow observables")
+  O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, false, "Use Nch for flow observables")
   O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 10, "Number of subsamples")
   O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeights, bool, false, "Fill and output NUA weights")
   O2_DEFINE_CONFIGURABLE(cfgEfficiency, std::string, "", "CCDB path to efficiency object")
@@ -62,7 +63,8 @@ struct FlowGFWPbPb {
   O2_DEFINE_CONFIGURABLE(dcaZ, float, 0.2f, "Custom DCA Z cut (ignored if negative)")
   O2_DEFINE_CONFIGURABLE(GlobalplusITS, bool, false, "Global and ITS tracks")
   O2_DEFINE_CONFIGURABLE(Globalonly, bool, false, "Global only tracks")
-  O2_DEFINE_CONFIGURABLE(ITSonly, bool, true, "ITS only tracks")
+  O2_DEFINE_CONFIGURABLE(ITSonly, bool, false, "ITS only tracks")
+
 
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis axisPhi{"axisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
@@ -77,22 +79,18 @@ struct FlowGFWPbPb {
   ConfigurableAxis axisT0A{"axisT0A", {200, 0, 200000}, "N_{ch} (T0A)"};
   ConfigurableAxis axisNchPV{"axisNchPV", {4000, 0, 4000}, "N_{ch} (PV)"};
 
-  using Colls = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::CentFT0Cs>>; // collisions filter
-  using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksDCA, aod::TracksExtra>>;    // tracks filter
-  Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
 
   static constexpr TrackSelectionFlags::flagtype trackSelectionITS =
-    TrackSelectionFlags::kITSNCls | TrackSelectionFlags::kITSChi2NDF |
-    TrackSelectionFlags::kITSHits;
+   TrackSelectionFlags::kITSNCls | TrackSelectionFlags::kITSChi2NDF |
+   TrackSelectionFlags::kITSHits;
   static constexpr TrackSelectionFlags::flagtype trackSelectionTPC =
-    TrackSelectionFlags::kTPCNCls |
-    TrackSelectionFlags::kTPCCrossedRowsOverNCls |
-    TrackSelectionFlags::kTPCChi2NDF;
+   TrackSelectionFlags::kTPCNCls |
+   TrackSelectionFlags::kTPCCrossedRowsOverNCls |
+   TrackSelectionFlags::kTPCChi2NDF;
   static constexpr TrackSelectionFlags::flagtype trackSelectionDCA =
-    TrackSelectionFlags::kDCAz | TrackSelectionFlags::kDCAxy;
+   TrackSelectionFlags::kDCAz | TrackSelectionFlags::kDCAxy;
   static constexpr TrackSelectionFlags::flagtype trackSelectionDCAXYonly =
-    TrackSelectionFlags::kDCAxy;
+   TrackSelectionFlags::kDCAxy;
 
   // Corrections
   TH1D* mEfficiency = nullptr;
@@ -110,24 +108,22 @@ struct FlowGFWPbPb {
   HistogramRegistry registry{"registry"};
 
   // define global variables
-  GFW* fGFW = new GFW(); // GFW class used from main src
+  GFW* fGFW = new GFW();  // GFW class used from main src
   std::vector<GFW::CorrConfig> corrconfigs;
   TRandom3* fRndm = new TRandom3(0);
   TAxis* fPtAxis;
-  std::vector<std::vector<std::shared_ptr<TProfile>>> BootstrapArray; // TProfile is a shared pointer
+  std::vector<std::vector<std::shared_ptr<TProfile>>> BootstrapArray; //TProfile is a shared pointer
 
-  enum ExtraProfile {
+  enum ExtraProfile
+  {
 
-    // here are TProfiles for vn-pt correlations that are not implemented in GFW
-    kc22,
-    kc24,
-    kc26,
-    kc28,
-    kc22etagap,
+  // here are TProfiles for vn-pt correlations that are not implemented in GFW
+  kc22, kc24, kc26, kc28, kc22etagap,
 
-    // Count the total number of enum
-    kCount_ExtraProfile
+  // Count the total number of enum
+  kCount_ExtraProfile
   };
+
 
   // Additional Event selection cuts - Copy from flowGenericFramework.cxx
   TF1* fPhiCutLow = nullptr;
@@ -140,18 +136,18 @@ struct FlowGFWPbPb {
   TF1* fT0AV0AMean = nullptr;
   TF1* fT0AV0ASigma = nullptr;
 
-  void init(InitContext const&) // Initialization
+  void init(InitContext const&)  // Initialization
   {
     ccdb->setURL(url.value);
     ccdb->setCaching(true);
     ccdb->setCreatedNotAfter(nolaterthan.value);
 
     // Add some output objects to the histogram registry
-    registry.add("hEventCount", "Number of Events;; Count", {HistType::kTH1D, {{4, 0, 4}}});
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(1, "Filtered event");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(2, "after sel8");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(3, "after additional event cut");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(4, "after correction loads");
+    registry.add("hEventCount", "Number of Events;; No. of Events", {HistType::kTH1D, {{4, 0, 4}}});
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(1, "Filtered Events");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(2, "After sel8");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(3, "After additional event cut");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(4, "After correction loads");
     registry.add("hPhi", "", {HistType::kTH1D, {axisPhi}});
     registry.add("hEta", "", {HistType::kTH1D, {axisEta}});
     registry.add("hVtxZ", "Vexter Z distribution", {HistType::kTH1D, {axisVertex}});
@@ -159,7 +155,7 @@ struct FlowGFWPbPb {
     registry.add("hCent", "Centrality distribution", {HistType::kTH1D, {{90, 0, 90}}});
     registry.add("cent_vs_Nch", ";Centrality (%); M (|#eta| < 0.8);", {HistType::kTH2D, {axisCentrality, axisNch}});
 
-    // Before cuts
+    //Before cuts
     registry.add("BeforeCut_globalTracks_centT0C", "before cut;Centrality T0C;mulplicity global tracks", {HistType::kTH2D, {axisCentForQA, axisNch}});
     registry.add("BeforeCut_PVTracks_centT0C", "before cut;Centrality T0C;mulplicity PV tracks", {HistType::kTH2D, {axisCentForQA, axisNchPV}});
     registry.add("BeforeCut_globalTracks_PVTracks", "before cut;mulplicity PV tracks;mulplicity global tracks", {HistType::kTH2D, {axisNchPV, axisNch}});
@@ -168,7 +164,7 @@ struct FlowGFWPbPb {
     registry.add("BeforeCut_multV0A_multT0A", "before cut;mulplicity T0A;mulplicity V0A", {HistType::kTH2D, {axisT0A, axisT0A}});
     registry.add("BeforeCut_multT0C_centT0C", "before cut;Centrality T0C;mulplicity T0C", {HistType::kTH2D, {axisCentForQA, axisT0C}});
 
-    // After cuts
+    //After cuts
     registry.add("globalTracks_centT0C_Aft", "after cut;Centrality T0C;mulplicity global tracks", {HistType::kTH2D, {axisCentForQA, axisNch}});
     registry.add("PVTracks_centT0C_Aft", "after cut;Centrality T0C;mulplicity PV tracks", {HistType::kTH2D, {axisCentForQA, axisNchPV}});
     registry.add("globalTracks_PVTracks_Aft", "after cut;mulplicity PV tracks;mulplicity global tracks", {HistType::kTH2D, {axisNchPV, axisNch}});
@@ -177,12 +173,15 @@ struct FlowGFWPbPb {
     registry.add("multV0A_multT0A_Aft", "after cut;mulplicity T0A;mulplicity V0A", {HistType::kTH2D, {axisT0A, axisT0A}});
     registry.add("multT0C_centT0C_Aft", "after cut;Centrality T0C;mulplicity T0C", {HistType::kTH2D, {axisCentForQA, axisT0C}});
 
-    // Track types
+    //Track types
     registry.add("GlobalplusITS", "Global plus ITS;Centrality FT0C;Nch", kTH1F, {axisCentrality});
     registry.add("Globalonly", "Global only;Centrality FT0C;Nch", kTH1F, {axisCentrality});
     registry.add("ITSonly", "ITS only;Centrality FT0C;Nch", kTH1F, {axisCentrality});
+    registry.add("GlobalplusITS_Nch_vs_Cent", "Global plus ITS;Centrality (%); M (|#eta| < 0.8);", {HistType::kTH2D, {axisCentrality, axisNch}});
+    registry.add("Globalonly_Nch_vs_Cent", "Global only;Centrality (%); M (|#eta| < 0.8);", {HistType::kTH2D, {axisCentrality, axisNch}});
+    registry.add("ITSonly_Nch_vs_Cent", "ITS only;Centrality (%); M (|#eta| < 0.8);", {HistType::kTH2D, {axisCentrality, axisNch}});
 
-    // Track QA
+    //Track QA
     registry.add("hPt", "p_{T} distribution before cut", {HistType::kTH1D, {axisPtHist}});
     registry.add("hPtRef", "p_{T} distribution after cut", {HistType::kTH1D, {axisPtHist}});
     registry.add("pt_phi_bef", "before cut;p_{T};#phi_{modn}", {HistType::kTH2D, {axisPt, axisPhiMod}});
@@ -201,10 +200,11 @@ struct FlowGFWPbPb {
     // initial array
     BootstrapArray.resize(cfgNbootstrap);
     for (int i = 0; i < cfgNbootstrap; i++) {
-      BootstrapArray[i].resize(kCount_ExtraProfile);
+    BootstrapArray[i].resize(kCount_ExtraProfile);
     }
 
-    for (int i = 0; i < cfgNbootstrap; i++) {
+    for (int i = 0; i < cfgNbootstrap; i++)
+    {
       BootstrapArray[i][kc22] = registry.add<TProfile>(Form("BootstrapContainer_%d/c22", i), ";Centrality  (%) ; C_{2}{2}", {HistType::kTProfile, {axisCentrality}});
       BootstrapArray[i][kc24] = registry.add<TProfile>(Form("BootstrapContainer_%d/c24", i), ";Centrality  (%) ; C_{2}{4}", {HistType::kTProfile, {axisCentrality}});
       BootstrapArray[i][kc26] = registry.add<TProfile>(Form("BootstrapContainer_%d/c26", i), ";Centrality  (%) ; C_{2}{6}", {HistType::kTProfile, {axisCentrality}});
@@ -217,7 +217,8 @@ struct FlowGFWPbPb {
     double* PtBins = &(axis.binEdges)[0];
     fPtAxis = new TAxis(nPtBins, PtBins);
 
-    if (cfgOutputNUAWeights) {
+    if (cfgOutputNUAWeights)
+    {
       fWeights->SetPtBins(nPtBins, PtBins);
       fWeights->Init(true, false);
     }
@@ -229,7 +230,7 @@ struct FlowGFWPbPb {
     fFC->Initialize(oba, axisCentrality, cfgNbootstrap);
     delete oba;
 
-    fGFW->AddRegion("full", -0.8, 0.8, 1, 1); // eta region -0.8 to 0.8
+    fGFW->AddRegion("full", -0.8, 0.8, 1, 1);  // eta region -0.8 to 0.8
     fGFW->AddRegion("refN10", -0.8, -0.5, 1, 1);
     fGFW->AddRegion("refP10", 0.5, 0.8, 1, 1);
 
@@ -238,9 +239,10 @@ struct FlowGFWPbPb {
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 2 2 -2 -2 -2}", "ChFull26", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 2 2 2  -2 -2 -2 -2}", "ChFull28", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN10 {2} refP10 {-2}", "Ch10Gap22", kFALSE));
-    fGFW->CreateRegions(); // finalize the initialization
+    fGFW->CreateRegions();  // finalize the initialization
 
-    if (cfgUseAdditionalEventCut) {
+    if (cfgUseAdditionalEventCut)
+    {
       fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x - 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
       fMultPVCutLow->SetParameters(3257.29, -121.848, 1.98492, -0.0172128, 6.47528e-05, 154.756, -1.86072, -0.0274713, 0.000633499, -3.37757e-06);
       fMultPVCutHigh = new TF1("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x + 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
@@ -257,7 +259,8 @@ struct FlowGFWPbPb {
       fT0AV0ASigma->SetParameters(463.4144, 6.796509e-02, -9.097136e-07, 7.971088e-12, -2.600581e-17);
     }
 
-    if (cfgUseAdditionalTrackCut) {
+    if (cfgUseAdditionalTrackCut)
+    {
       fPhiCutLow = new TF1("fPhiCutLow", "0.06/x+pi/18.0-0.06", 0, 100);
       fPhiCutHigh = new TF1("fPhiCutHigh", "0.1/x+pi/18.0+0.06", 0, 100);
     }
@@ -289,7 +292,7 @@ struct FlowGFWPbPb {
     if (!corrconf.pTDif) {
       val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
       if (TMath::Abs(val) < 1) {
-        tarName->Fill(cent, val, dnx);
+          tarName->Fill(cent, val, dnx);
       }
       return;
     }
@@ -304,17 +307,17 @@ struct FlowGFWPbPb {
       return;
     if (!corrconf.pTDif) {
       val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
-      if (TMath::Abs(val) < 1)
-        fFC->FillProfile(corrconf.Head.c_str(), cent, val, dnx, rndm);
+    if (TMath::Abs(val) < 1)
+      fFC->FillProfile(corrconf.Head.c_str(), cent, val, dnx, rndm);
       return;
     }
     for (Int_t i = 1; i <= fPtAxis->GetNbins(); i++) {
       dnx = fGFW->Calculate(corrconf, i - 1, kTRUE).real();
       if (dnx == 0)
-        continue;
+      continue;
       val = fGFW->Calculate(corrconf, i - 1, kFALSE).real() / dnx;
       if (TMath::Abs(val) < 1)
-        fFC->FillProfile(Form("%s_pt_%i", corrconf.Head.c_str(), i), cent, val, dnx, rndm);
+       fFC->FillProfile(Form("%s_pt_%i", corrconf.Head.c_str(), i), cent, val, dnx, rndm);
     }
     return;
   }
@@ -332,19 +335,19 @@ struct FlowGFWPbPb {
     }
     if (cfgEfficiency.value.empty() == false) {
       mEfficiency = ccdb->getForTimeStamp<TH1D>(cfgEfficiency, timestamp);
-      if (mEfficiency == nullptr) {
-        LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgEfficiency.value.c_str());
-      }
-      LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgEfficiency.value.c_str(), (void*)mEfficiency);
+    if (mEfficiency == nullptr) {
+      LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", cfgEfficiency.value.c_str());
     }
-    correctionsLoaded = true;
+    LOGF(info, "Loaded efficiency histogram from %s (%p)", cfgEfficiency.value.c_str(), (void*)mEfficiency);
+    }
+   correctionsLoaded = true;
   }
 
   bool setCurrentParticleWeights(float& weight_nue, float& weight_nua, float phi, float eta, float pt, float vtxz)
   {
     float eff = 1.;
     if (mEfficiency)
-      eff = mEfficiency->GetBinContent(mEfficiency->FindBin(pt));
+       eff = mEfficiency->GetBinContent(mEfficiency->FindBin(pt));
     else
       eff = 1.0;
     if (eff == 0)
@@ -389,7 +392,7 @@ struct FlowGFWPbPb {
       vtxz = collision.posZ();
       float zRes = TMath::Sqrt(collision.covZZ());
       if (zRes > 0.25 && collision.numContrib() < 20)
-        vtxz = -999;
+      vtxz = -999;
     }
 
     auto multNTracksPV = collision.multNTracksPV();
@@ -409,10 +412,11 @@ struct FlowGFWPbPb {
 
     // V0A T0A 5 sigma cut
     if (abs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > 5 * fT0AV0ASigma->Eval(collision.multFT0A()))
-      return false;
+    return false;
 
     return true;
   }
+
 
   int getMagneticField(uint64_t timestamp)
   {
@@ -423,7 +427,7 @@ struct FlowGFWPbPb {
         LOGF(fatal, "GRP object not found in %s for timestamp %llu", cfgMagnetField.value.c_str(), timestamp);
         return 0;
       }
-      LOGF(info, "Retrieved GRP from %s for timestamp %llu with magnetic field of %d kG", cfgMagnetField.value.c_str(), timestamp, grpo->getNominalL3Field());
+       LOGF(info, "Retrieved GRP from %s for timestamp %llu with magnetic field of %d kG", cfgMagnetField.value.c_str(), timestamp, grpo->getNominalL3Field());
     }
     return grpo->getNominalL3Field();
   }
@@ -435,7 +439,7 @@ struct FlowGFWPbPb {
     if (field < 0) // for negative polarity field
       phimodn = TMath::TwoPi() - phimodn;
     if (track.sign() < 0) // for negative charge
-      phimodn = TMath::TwoPi() - phimodn;
+       phimodn = TMath::TwoPi() - phimodn;
     if (phimodn < 0)
       LOGF(warning, "phi < 0: %g", phimodn);
 
@@ -448,22 +452,29 @@ struct FlowGFWPbPb {
     return true;
   }
 
-  Filter trackSelectionProperMixed = ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) &&
-                                     ncheckbit(aod::track::trackCutFlag, trackSelectionITS) &&
-                                     ifnode(ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC),
-                                            ncheckbit(aod::track::trackCutFlag, trackSelectionTPC), true) &&
-                                     ifnode(dcaZ.node() > 0.f, nabs(aod::track::dcaZ) <= dcaZ && ncheckbit(aod::track::trackCutFlag, trackSelectionDCAXYonly),
-                                            ncheckbit(aod::track::trackCutFlag, trackSelectionDCA));
+    //Apply process filters
+    Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
+    Filter trackSelectionProperMixed = ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) &&
+                                                        ncheckbit(aod::track::trackCutFlag, trackSelectionITS) &&
+                                                        ifnode(ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC),
+                                                               ncheckbit(aod::track::trackCutFlag, trackSelectionTPC), true) &&
+                                                        ifnode(dcaZ.node() > 0.f, nabs(aod::track::dcaZ) <= dcaZ && ncheckbit(aod::track::trackCutFlag, trackSelectionDCAXYonly),
+                                                               ncheckbit(aod::track::trackCutFlag, trackSelectionDCA)) &&
+                                                        (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) &&
+                                                        (aod::track::pt < cfgCutPtMax) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) ;
+
+    using Colls = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::CentFT0Cs>>; // collisions filter
+    using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksDCA, aod::TracksExtra>>; // tracks filter
 
   void process(Colls::iterator const& collision, aod::BCsWithTimestamps const&, aodTracks const& tracks)
   {
     registry.fill(HIST("hEventCount"), 0.5);
     if (!collision.sel8())
-      return;
+        return;
 
     int Ntot = tracks.size();
     if (Ntot < 1)
-      return;
+        return;
 
     // fill event QA before cuts
     registry.fill(HIST("BeforeCut_globalTracks_centT0C"), collision.centFT0C(), tracks.size());
@@ -477,8 +488,7 @@ struct FlowGFWPbPb {
 
     const auto cent = collision.centFT0C();
 
-    if (cfgUseAdditionalEventCut && !eventSelected(o2::aod::mult::MultNTracksPV(), collision, tracks.size(), cent))
-      return;
+    if (cfgUseAdditionalEventCut && !eventSelected(o2::aod::mult::MultNTracksPV(), collision, tracks.size(), cent)) {return;}
 
     registry.fill(HIST("hEventCount"), 2.5);
 
@@ -513,18 +523,23 @@ struct FlowGFWPbPb {
     }
 
     // track loop
+      int globalplusits_nch{0};
+      int gloabalonly_nch{0};
+      int itsonly_nch{0};
+
     for (auto& track : tracks) {
 
       if (track.tpcNClsFound() < cfgCutTPCclu)
-        continue;
+         continue;
       if (cfgUseAdditionalTrackCut && !trackSelected(track, Magnetfield))
         continue;
       if (cfgOutputNUAWeights)
         fWeights->Fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
       if (!setCurrentParticleWeights(weff, wacc, track.phi(), track.eta(), track.pt(), vtxz))
-        continue;
+       continue;
 
-      bool WithinPtRef = (cfgCutPtMin < track.pt()) && (track.pt() < cfgCutPtMax); // within RF pT range
+
+      bool WithinPtRef = (cfgCutPtMin < track.pt()) && (track.pt() < cfgCutPtMax);  // within RF pT range
       registry.fill(HIST("hPt"), track.pt());
 
       if (WithinPtRef) {
@@ -536,25 +551,45 @@ struct FlowGFWPbPb {
         registry.fill(HIST("hnTPCCrossedRow"), track.tpcNClsCrossedRows());
       }
 
-      if (GlobalplusITS == true) {
-        registry.fill(HIST("GlobalplusITS"), collision.centFT0C());
-        if (WithinPtRef)
-          fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
-      }
 
-      if (track.hasTPC() && Globalonly == true) {
-        registry.fill(HIST("Globalonly"), collision.centFT0C());
-        if (WithinPtRef)
-          fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
-      }
+            globalplusits_nch++;
+            registry.fill(HIST("GlobalplusITS"), collision.centFT0C());
+        if (GlobalplusITS)
+        {
+            if (WithinPtRef)
+                fGFW->Fill(track.eta(),fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
+       }
 
-      if (track.hasITS() && ITSonly == true) {
-        registry.fill(HIST("ITSonly"), collision.centFT0C());
-        if (WithinPtRef)
-          fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
-      }
+        if (track.hasTPC())
+        {
+            gloabalonly_nch++;
+            registry.fill(HIST("Globalonly"), collision.centFT0C());
+            if (Globalonly)
+            {
+                if (WithinPtRef)
+                    fGFW->Fill(track.eta(),fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
+            }
+        }
+        else
+        {
+            itsonly_nch++;
+            registry.fill(HIST("ITSonly"), collision.centFT0C());
+            if (ITSonly)
+            {
+                if (WithinPtRef)
+                    fGFW->Fill(track.eta(),fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
+            }
+        }
 
     } // End of track loop
+
+      registry.fill(HIST("GlobalplusITS_Nch_vs_Cent"), cent, globalplusits_nch);
+      registry.fill(HIST("Globalonly_Nch_vs_Cent"), cent, gloabalonly_nch);
+      registry.fill(HIST("ITSonly_Nch_vs_Cent"), cent, itsonly_nch);
+
+
+
+
 
     // Filling c22 with ROOT TProfile
     FillProfile(corrconfigs.at(0), HIST("c22"), cent);
@@ -563,7 +598,7 @@ struct FlowGFWPbPb {
     FillProfile(corrconfigs.at(3), HIST("c28"), cent);
     FillProfile(corrconfigs.at(4), HIST("c22etagap"), cent);
 
-    // Filling Bootstrap Samples
+    //Filling Bootstrap Samples
     int SampleIndex = static_cast<int>(cfgNbootstrap * l_Random);
     FillProfile(corrconfigs.at(0), BootstrapArray[SampleIndex][kc22], cent);
     FillProfile(corrconfigs.at(1), BootstrapArray[SampleIndex][kc24], cent);
@@ -571,10 +606,14 @@ struct FlowGFWPbPb {
     FillProfile(corrconfigs.at(3), BootstrapArray[SampleIndex][kc28], cent);
     FillProfile(corrconfigs.at(4), BootstrapArray[SampleIndex][kc22etagap], cent);
 
+
+
     // Filling Flow Container
     for (uint l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
-      FillFC(corrconfigs.at(l_ind), cent, l_Random);
+    FillFC(corrconfigs.at(l_ind), cent, l_Random);
     }
+
+
 
   } // End of process
 }; // End of struct
