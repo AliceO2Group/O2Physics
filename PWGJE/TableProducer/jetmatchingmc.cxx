@@ -112,7 +112,7 @@ using ChargedJetMatching = JetMatchingMc<soa::Join<aod::ChargedMCDetectorLevelJe
                                          aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets,
                                          aod::JCollisions,
                                          aod::JMcCollisions,
-                                         JetTracks>;
+                                         aod::JDummys>;
 using FullJetMatching = JetMatchingMc<soa::Join<aod::FullMCDetectorLevelJets, aod::FullMCDetectorLevelJetConstituents>,
                                       soa::Join<aod::FullMCParticleLevelJets, aod::FullMCParticleLevelJetConstituents>,
                                       aod::FullMCDetectorLevelJetsMatchedToFullMCParticleLevelJets,
@@ -133,28 +133,28 @@ using D0ChargedJetMatching = JetMatchingMc<soa::Join<aod::D0ChargedMCDetectorLev
                                            aod::D0ChargedMCParticleLevelJetsMatchedToD0ChargedMCDetectorLevelJets,
                                            CandidatesD0MCD,
                                            CandidatesD0MCP,
-                                           JetTracks>;
+                                           aod::JDummys>;
 using LcChargedJetMatching = JetMatchingMc<soa::Join<aod::LcChargedMCDetectorLevelJets, aod::LcChargedMCDetectorLevelJetConstituents>,
                                            soa::Join<aod::LcChargedMCParticleLevelJets, aod::LcChargedMCParticleLevelJetConstituents>,
                                            aod::LcChargedMCDetectorLevelJetsMatchedToLcChargedMCParticleLevelJets,
                                            aod::LcChargedMCParticleLevelJetsMatchedToLcChargedMCDetectorLevelJets,
                                            CandidatesLcMCD,
                                            CandidatesLcMCP,
-                                           JetTracks>;
+                                           aod::JDummys>;
 /*using BplusChargedJetMatching = JetMatchingMc<soa::Join<aod::BplusChargedMCDetectorLevelJets, aod::BplusChargedMCDetectorLevelJetConstituents>,
                                               soa::Join<aod::BplusChargedMCParticleLevelJets, aod::BplusChargedMCParticleLevelJetConstituents>,
                                               aod::BplusChargedMCDetectorLevelJetsMatchedToBplusChargedMCParticleLevelJets,
                                               aod::BplusChargedMCParticleLevelJetsMatchedToBplusChargedMCDetectorLevelJets,
                                               CandidatesBplusMCD,
                                               CandidatesBplusMCP,
-                                              JetTracksMCD>>;*/
+                                              aod::JDummys>>;*/
 using V0ChargedJetMatching = JetMatchingMc<soa::Join<aod::V0ChargedMCDetectorLevelJets, aod::V0ChargedMCDetectorLevelJetConstituents>,
                                            soa::Join<aod::V0ChargedMCParticleLevelJets, aod::V0ChargedMCParticleLevelJetConstituents>,
                                            aod::V0ChargedMCDetectorLevelJetsMatchedToV0ChargedMCParticleLevelJets,
                                            aod::V0ChargedMCParticleLevelJetsMatchedToV0ChargedMCDetectorLevelJets,
                                            CandidatesV0MCD,
                                            CandidatesV0MCP,
-                                           JetTracks>;
+                                           aod::JDummys>;
 
 using DielectronChargedJetMatching = JetMatchingMc<soa::Join<aod::DielectronChargedMCDetectorLevelJets, aod::DielectronChargedMCDetectorLevelJetConstituents>,
                                                    soa::Join<aod::DielectronChargedMCParticleLevelJets, aod::DielectronChargedMCParticleLevelJetConstituents>,
@@ -162,7 +162,7 @@ using DielectronChargedJetMatching = JetMatchingMc<soa::Join<aod::DielectronChar
                                                    aod::DielectronChargedMCParticleLevelJetsMatchedToDielectronChargedMCDetectorLevelJets,
                                                    CandidatesDielectronMCD,
                                                    CandidatesDielectronMCP,
-                                                   JetTracks>;
+                                                   aod::JDummys>;
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   std::vector<o2::framework::DataProcessorSpec> tasks;

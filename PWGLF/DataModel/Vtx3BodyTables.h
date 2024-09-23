@@ -209,31 +209,22 @@ namespace hyp3body
 {
 // collision
 DECLARE_SOA_COLUMN(Centrality, centrality, float); //! centrality
-DECLARE_SOA_COLUMN(XPV, xpv, float);               //! primary vertex X
-DECLARE_SOA_COLUMN(YPV, ypv, float);               //! primary vertex Y
-DECLARE_SOA_COLUMN(ZPV, zpv, float);               //! primary vertex Z
 // reconstruced candidate
 DECLARE_SOA_COLUMN(IsMatter, isMatter, bool); //! bool: true for matter
 DECLARE_SOA_COLUMN(M, m, float);              //! invariant mass
 DECLARE_SOA_COLUMN(P, p, float);              //! p
 DECLARE_SOA_COLUMN(Pt, pt, float);            //! pT
 DECLARE_SOA_COLUMN(Ct, ct, float);            //! ct
-DECLARE_SOA_COLUMN(X, x, float);              //! decay position X
-DECLARE_SOA_COLUMN(Y, y, float);              //! decay position Y
-DECLARE_SOA_COLUMN(Z, z, float);              //! decay position Z
 DECLARE_SOA_COLUMN(CosPA, cospa, float);
 DECLARE_SOA_COLUMN(DCADaughters, dcaDaughters, float); //! DCA among daughters
 DECLARE_SOA_COLUMN(DCACandToPV, dcaCandtopv, float);   //! DCA of the reconstructed track to pv
 // kinematic infomation of daughter tracks
-DECLARE_SOA_COLUMN(PProton, pProton, float);         //! p of the proton daughter
 DECLARE_SOA_COLUMN(PtProton, ptProton, float);       //! pT of the proton daughter
 DECLARE_SOA_COLUMN(EtaProton, etaProton, float);     //! eta of the proton daughter
 DECLARE_SOA_COLUMN(PhiProton, phiProton, float);     //! phi of the proton daughter
-DECLARE_SOA_COLUMN(PPion, pPion, float);             //! p of the pion daughter
 DECLARE_SOA_COLUMN(PtPion, ptPion, float);           //! pT of the pion daughter
 DECLARE_SOA_COLUMN(EtaPion, etaPion, float);         //! eta of the pion daughter
 DECLARE_SOA_COLUMN(PhiPion, phiPion, float);         //! phi of the pion daughter
-DECLARE_SOA_COLUMN(PBachelor, pBachelor, float);     //! p of the bachelor daughter
 DECLARE_SOA_COLUMN(PtBachelor, ptBachelor, float);   //! pT of the bachelor daughter
 DECLARE_SOA_COLUMN(EtaBachelor, etaBachelor, float); //! eta of the bachelor daughter
 DECLARE_SOA_COLUMN(PhiBachelor, phiBachelor, float); //! phi of the bachelor daughter
@@ -273,21 +264,19 @@ DECLARE_SOA_COLUMN(SurvivedEventSelection, survivedEventSelection, bool); // boo
 DECLARE_SOA_TABLE(Hyp3BodyCands, "AOD", "HYP3BODYCANDS",
                   o2::soa::Index<>,
                   hyp3body::Centrality,
-                  hyp3body::XPV, hyp3body::YPV, hyp3body::ZPV,
                   // secondary vertex and reconstruced candidate
                   hyp3body::IsMatter,
                   hyp3body::M,
                   hyp3body::P,
                   hyp3body::Pt,
                   hyp3body::Ct,
-                  hyp3body::X, hyp3body::Y, hyp3body::Z,
                   hyp3body::CosPA,
                   hyp3body::DCADaughters,
                   hyp3body::DCACandToPV,
                   // daughter tracks
-                  hyp3body::PProton, hyp3body::PtProton, hyp3body::EtaProton, hyp3body::PhiProton,
-                  hyp3body::PPion, hyp3body::PtPion, hyp3body::EtaPion, hyp3body::PhiPion,
-                  hyp3body::PBachelor, hyp3body::PtBachelor, hyp3body::EtaBachelor, hyp3body::PhiBachelor,
+                  hyp3body::PtProton, hyp3body::EtaProton, hyp3body::PhiProton,
+                  hyp3body::PtPion, hyp3body::EtaPion, hyp3body::PhiPion,
+                  hyp3body::PtBachelor, hyp3body::EtaBachelor, hyp3body::PhiBachelor,
                   hyp3body::TPCNclusProton, hyp3body::TPCNclusPion, hyp3body::TPCNclusBachelor,
                   hyp3body::ITSNclusSizeProton, hyp3body::ITSNclusSizePion, hyp3body::ITSNclusSizeBachelor,
                   hyp3body::TPCNSigmaProton, hyp3body::TPCNSigmaPion, hyp3body::TPCNSigmaBachelor,
@@ -299,21 +288,19 @@ DECLARE_SOA_TABLE(Hyp3BodyCands, "AOD", "HYP3BODYCANDS",
 DECLARE_SOA_TABLE(MCHyp3BodyCands, "AOD", "MCHYP3BODYCANDS",
                   o2::soa::Index<>,
                   hyp3body::Centrality,
-                  hyp3body::XPV, hyp3body::YPV, hyp3body::ZPV,
                   // secondary vertex and reconstruced candidate
                   hyp3body::IsMatter,
                   hyp3body::M,
                   hyp3body::P,
                   hyp3body::Pt,
                   hyp3body::Ct,
-                  hyp3body::X, hyp3body::Y, hyp3body::Z,
                   hyp3body::CosPA,
                   hyp3body::DCADaughters,
                   hyp3body::DCACandToPV,
                   // daughter tracks
-                  hyp3body::PProton, hyp3body::PtProton, hyp3body::EtaProton, hyp3body::PhiProton,
-                  hyp3body::PPion, hyp3body::PtPion, hyp3body::EtaPion, hyp3body::PhiPion,
-                  hyp3body::PBachelor, hyp3body::PtBachelor, hyp3body::EtaBachelor, hyp3body::PhiBachelor,
+                  hyp3body::PtProton, hyp3body::EtaProton, hyp3body::PhiProton,
+                  hyp3body::PtPion, hyp3body::EtaPion, hyp3body::PhiPion,
+                  hyp3body::PtBachelor, hyp3body::EtaBachelor, hyp3body::PhiBachelor,
                   hyp3body::TPCNclusProton, hyp3body::TPCNclusPion, hyp3body::TPCNclusBachelor,
                   hyp3body::ITSNclusSizeProton, hyp3body::ITSNclusSizePion, hyp3body::ITSNclusSizeBachelor,
                   hyp3body::TPCNSigmaProton, hyp3body::TPCNSigmaPion, hyp3body::TPCNSigmaBachelor,
@@ -408,9 +395,9 @@ DECLARE_SOA_TABLE(KFVtx3BodyDatas, "AOD", "KFVTX3BODYDATA", //!
                   kfvtx3body::DCAxyTrack0ToSVKF, kfvtx3body::DCAxyTrack1ToSVKF, kfvtx3body::DCAxyTrack2ToSVKF,
                   kfvtx3body::DCAxyTrack0ToTrack1, kfvtx3body::DCAxyTrack0ToTrack2, kfvtx3body::DCAxyTrack1ToTrack2,
                   kfvtx3body::DCAVtxDaughtersKF,
+                  vtx3body::DCAXYTrack0ToPV, vtx3body::DCAXYTrack1ToPV, vtx3body::DCAXYTrack2ToPV,
                   vtx3body::DCATrack0ToPV, vtx3body::DCATrack1ToPV, vtx3body::DCATrack2ToPV,
                   kfvtx3body::Track0Sign, kfvtx3body::Track1Sign, kfvtx3body::Track2Sign, // track sing: proton, pion, deuteron
-                  vtx3body::TOFNSigmaBachDe,
 
                   // dynamic columns
                   vtx3body::VtxRadius<vtx3body::X, vtx3body::Y>,
@@ -438,18 +425,30 @@ namespace kfvtx3body
 DECLARE_SOA_INDEX_COLUMN(KFVtx3BodyData, kfvtx3BodyData); //! Index to KFVtx3BodyData entry
 }
 
-DECLARE_SOA_TABLE(KFDecay3BodyDataLink, "AOD", "KFDECAY3BODYLINK", //! Joinable table with Decay3bodys which links to KFVtx3BodyData which is not produced for all entries
-                  vtx3body::Vtx3BodyDataId);
+DECLARE_SOA_TABLE(KFDecay3BodyDataLink, "AOD", "KF3BODYLINK", //! Joinable table with Decay3bodys which links to KFVtx3BodyData which is not produced for all entries
+                  kfvtx3body::KFVtx3BodyDataId);
 
 using KFDecay3BodysLinked = soa::Join<Decay3Bodys, KFDecay3BodyDataLink>;
 using KFDecay3BodyLinked = KFDecay3BodysLinked::iterator;
 
+// Definition of labels for KFVtx3BodyDatas
+namespace mckfvtx3bodylabel
+{
+DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle); //! MC particle for KF Vtx3BodyDatas
+} // namespace mckfvtx3bodylabel
+
 DECLARE_SOA_TABLE(McKFVtx3BodyLabels, "AOD", "MCKFVTXLABEL", //! Table joinable with KFVtx3BodyData containing the MC labels
-                  mcvtx3bodylabel::McParticleId);
+                  mckfvtx3bodylabel::McParticleId);
 using McKFVtx3BodyLabel = McKFVtx3BodyLabels::iterator;
 
-DECLARE_SOA_TABLE(McFullKFVtx3BodyLabels, "AOD", "MCFULLKFVTXLABEL", //! Table joinable with Decay3Bodys (CAUTION: NOT WITH Vtx3BodyDATA)
-                  mcfullvtx3bodylabel::McParticleId);
+// Definition of labels for KFDecay3Bodys // Full table, joinable with KFDecay3Bodys (CAUTION: NOT WITH Vtx3BodyDATA)
+namespace mcfullkfvtx3bodylabel
+{
+DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle); //! MC particle for Decay3Bodys
+} // namespace mcfullkfvtx3bodylabel
+
+DECLARE_SOA_TABLE(McFullKFVtx3BodyLabels, "AOD", "MCFULLKFLABEL", //! Table joinable with Decay3Bodys (CAUTION: NOT WITH Vtx3BodyDATA)
+                  mcfullkfvtx3bodylabel::McParticleId);
 using McFullKFVtx3BodyLabel = McFullKFVtx3BodyLabels::iterator;
 } // namespace o2::aod
 
