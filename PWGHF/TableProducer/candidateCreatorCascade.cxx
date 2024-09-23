@@ -173,22 +173,14 @@ struct HfCandidateCreatorCascade {
       float v0x, v0y, v0z, v0px, v0py, v0pz;
       float v0PosPx, v0PosPy, v0PosPz, v0NegPx, v0NegPy, v0NegPz;
       float dcaV0dau, dcaPosToPV, dcaNegToPV, v0cosPA;
-      // float posTrackX, negTrackX;
-      // o2::track::TrackParCov trackParCovV0DaughPos;
-      // o2::track::TrackParCov trackParCovV0DaughNeg;
       std::array<float, 21> covV = {0.};
 
-      // auto v0index = casc.v0_as<o2::aod::V0sLinked>();
       auto v0index = casc.template v0_as<o2::aod::V0sLinked>();
-      // auto v0index = casc.template findableV0_as<aod::FindableV0sLinked>();
       if (v0index.has_v0Data()) {
         // this V0 passed both standard V0 and cascade V0 selections
-        // auto v0row = v0index.v0Data();
         auto v0row = v0index.template v0Data_as<V0full>();
         const auto& trackV0DaughPos = v0row.posTrack_as<aod::TracksWCov>();
         const auto& trackV0DaughNeg = v0row.negTrack_as<aod::TracksWCov>();
-        // trackParCovV0DaughPos = getTrackParCov(trackV0DaughPos); // check that aod::TracksWCov does not need TracksDCA!
-        // trackParCovV0DaughNeg = getTrackParCov(trackV0DaughNeg); // check that aod::TracksWCov does not need TracksDCA!
         posGlobalIndex = trackV0DaughPos.globalIndex();
         negGlobalIndex = trackV0DaughNeg.globalIndex();
         v0x = v0row.x();
@@ -207,8 +199,6 @@ struct HfCandidateCreatorCascade {
         dcaPosToPV = v0row.dcapostopv();
         dcaNegToPV = v0row.dcanegtopv();
         v0cosPA = v0row.v0cosPA();
-        // posTrackX = v0row.posX();
-        // negTrackX = v0row.negX();
 
         constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
         for (int i = 0; i < 6; i++) {
@@ -217,12 +207,9 @@ struct HfCandidateCreatorCascade {
         }
       } else if (v0index.has_v0fCData()) {
         // this V0 passes only V0-for-cascade selections, use that instead
-        // auto v0row = v0index.v0fCData();
         auto v0row = v0index.template v0fCData_as<V0fCfull>();
         const auto& trackV0DaughPos = v0row.posTrack_as<aod::TracksWCov>();
         const auto& trackV0DaughNeg = v0row.negTrack_as<aod::TracksWCov>();
-        // trackParCovV0DaughPos = getTrackParCov(trackV0DaughPos); // check that aod::TracksWCov does not need TracksDCA!
-        // trackParCovV0DaughNeg = getTrackParCov(trackV0DaughNeg); // check that aod::TracksWCov does not need TracksDCA!
         posGlobalIndex = trackV0DaughPos.globalIndex();
         negGlobalIndex = trackV0DaughNeg.globalIndex();
         v0x = v0row.x();
@@ -241,8 +228,6 @@ struct HfCandidateCreatorCascade {
         dcaPosToPV = v0row.dcapostopv();
         dcaNegToPV = v0row.dcanegtopv();
         v0cosPA = v0row.v0cosPA();
-        // posTrackX = v0row.posX();
-        // negTrackX = v0row.negX();
 
         constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
         for (int i = 0; i < 6; i++) {
@@ -264,16 +249,6 @@ struct HfCandidateCreatorCascade {
         // df.setBz(bz); /// put it outside the 'if'! Otherwise we have a difference wrt bz Configurable (< 1 permille) in Run2 conv. data
       }
       df.setBz(bz);
-
-      /*
-      auto trackParCovBach = getTrackParCov(bach);
-      trackParCovV0DaughPos.propagateTo(posTrackX, bz); // propagate the track to the X closest to the V0 vertex
-      trackParCovV0DaughNeg.propagateTo(negTrackX, bz); // propagate the track to the X closest to the V0 vertex
-      const std::array<float, 3> vertexV0 = {v0x, v0y, v0z};
-      const std::array<float, 3> momentumV0 = {v0px, v0py, v0pz};
-      // we build the neutral track to then build the cascade
-      auto trackV0 = o2::dataformats::V0(vertexV0, momentumV0, {0, 0, 0, 0, 0, 0}, trackParCovV0DaughPos, trackParCovV0DaughNeg); // build the V0 track (indices for v0 daughters set to 0 for now)
-      */
 
       auto trackBach = getTrackParCov(bach);
       const std::array<float, 3> vertexV0 = {v0x, v0y, v0z};
@@ -340,7 +315,6 @@ struct HfCandidateCreatorCascade {
                        std::sqrt(impactParameterBach.getSigmaY2()), std::sqrt(impactParameterV0.getSigmaY2()),
                        casc.prong0Id(), casc.v0Id(),
                        v0x, v0y, v0z,
-                       // v0.posTrack(), v0.negTrack(), // why this was not fine?
                        posGlobalIndex, negGlobalIndex,
                        v0PosPx, v0PosPy, v0PosPz,
                        v0NegPx, v0NegPy, v0NegPz,
