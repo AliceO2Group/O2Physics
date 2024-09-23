@@ -86,7 +86,7 @@ struct PhotonIsolationQA {
   using selectedCollisions = soa::Filtered<collisionEvSelIt>;
   using selectedClusters = soa::Filtered<aod::EMCALClusters>;
   using selectedMCClusters = soa::Filtered<MCClusters>;
-  
+
   // Preslices
   Preslice<aod::Collisions> collisionsPerBC = aod::collision::bcId;
   Preslice<o2::aod::EMCALMatchedTracks> perClusterMatchedTracks = o2::aod::emcalclustercell::emcalclusterId;
@@ -132,12 +132,12 @@ struct PhotonIsolationQA {
     Data_Info.add("hEvsNumTracks", "Energy of cluster vs matched tracks", o2HistType::kTH2F, {{Energy_Axis}, {Num_Track_Axis}});
 
     Data_Info.add("hEvsPtIso", "Pt_Iso", o2HistType::kTH2F, {{Energy_Axis}, {PtIso_Axis}});
-    Data_Info.add("hRho_Perpen_Cone", "Energy vs Density of perpendicular cone", o2HistType::kTH2F, {{Energy_Axis},{Rho_Axis}});
+    Data_Info.add("hRho_Perpen_Cone", "Energy vs Density of perpendicular cone", o2HistType::kTH2F, {{Energy_Axis}, {Rho_Axis}});
     Data_Info.add("hShowerShape", "Shower shape", o2HistType::kTH2F, {{Shower_Shape_Long_Axis}, {Shower_Shape_Short_Axis}});
     Data_Info.add("hSigmaLongvsPtIso", "Long shower shape vs Pt_Iso", o2HistType::kTH2F, {{Shower_Shape_Long_Axis}, {PtIso_Axis}});
     Data_Info.add("hABCDControlRegion", "Yield Control Regions", o2HistType::kTH2F, {{ABCD_Axis}, {Energy_Axis}});
     Data_Info.add("hCollperBC", "collisions per BC", o2HistType::kTH1F, {BC_Axis});
-    Data_Info.add("hEnergy_NLM_Flag", "Energy vs NLM", o2HistType::kTH3F, {{Energy_Axis},{NLM_Axis},{SM_Flag_Axis}});
+    Data_Info.add("hEnergy_NLM_Flag", "Energy vs NLM", o2HistType::kTH3F, {{Energy_Axis}, {NLM_Axis}, {SM_Flag_Axis}});
 
     MC_Info.add("hPosZ", "Z Position of collision", o2HistType::kTH1F, {PosZ_Axis});
     MC_Info.add("hNumClusters", "Number of cluster per collision", o2HistType::kTH1F, {Num_Cluster_Axis});
@@ -149,16 +149,16 @@ struct PhotonIsolationQA {
 
     MC_Info.add("hEvsNumTracks", "Energy of cluster vs matched tracks", o2HistType::kTH2F, {{Energy_Axis}, {Num_Track_Axis}});
     MC_Info.add("hEvsPtIso", "Pt_Iso", o2HistType::kTH2F, {{Energy_Axis}, {PtIso_Axis}});
-    MC_Info.add("hRho_Perpen_Cone", "Energy vs Density of perpendicular cone", o2HistType::kTH2F, {{Energy_Axis},{Rho_Axis}});
+    MC_Info.add("hRho_Perpen_Cone", "Energy vs Density of perpendicular cone", o2HistType::kTH2F, {{Energy_Axis}, {Rho_Axis}});
     MC_Info.add("hShowerShape", "Shower shape", o2HistType::kTH2F, {{Shower_Shape_Long_Axis}, {Shower_Shape_Short_Axis}});
     MC_Info.add("hSigmaLongvsPtIso", "Long shower shape vs Pt_Iso", o2HistType::kTH2F, {{Shower_Shape_Long_Axis}, {PtIso_Axis}});
     MC_Info.add("hABCDControlRegion", "Yield Control Regions", o2HistType::kTH2F, {{ABCD_Axis}, {Energy_Axis}});
-    MC_Info.add("hClusterEnergy_MCParticleEnergy", "Energy cluster vs energy particle of cluster", o2HistType::kTH2F, {{Energy_Axis},{Energy_Axis}});
+    MC_Info.add("hClusterEnergy_MCParticleEnergy", "Energy cluster vs energy particle of cluster", o2HistType::kTH2F, {{Energy_Axis}, {Energy_Axis}});
     MC_Info.add("hMotherPDG", "PDG code of candidate photons mother", o2HistType::kTH1F, {{2000, -1000.5, 999.5}});
     MC_Info.add("hMotherStatusCode", "Statuscode of candidate photons mother", o2HistType::kTH1F, {{400, -200.5, 199.5}});
-    MC_Info.add("hMotherStatusCodeVsPDG", "Statuscode of candidate photons mother", o2HistType::kTH2F, {{Status_Code_Axis},{PDG_Axis}});
+    MC_Info.add("hMotherStatusCodeVsPDG", "Statuscode of candidate photons mother", o2HistType::kTH2F, {{Status_Code_Axis}, {PDG_Axis}});
     MC_Info.add("hCollperBC", "collisions per BC", o2HistType::kTH1F, {BC_Axis});
-    MC_Info.add("hEnergy_NLM_Flag", "Energy vs NLM", o2HistType::kTH3F, {{Energy_Axis},{NLM_Axis},{SM_Flag_Axis}});
+    MC_Info.add("hEnergy_NLM_Flag", "Energy vs NLM", o2HistType::kTH3F, {{Energy_Axis}, {NLM_Axis}, {SM_Flag_Axis}});
 
     std::vector<std::string> bin_names = {"A", "B", "C", "D", "True Bckgr A"};
     for (size_t i = 0; i < bin_names.size(); i++) {
@@ -176,7 +176,7 @@ struct PhotonIsolationQA {
         dphi = 2. * M_PI - abs(dphi);
       }
       double distance = sqrt(pow((cluster.eta() - match.track_as<myGlobTracks>().eta()), 2) + pow(dphi, 2));
-      if (distance < Track_matching_Radius){
+      if (distance < Track_matching_Radius) {
         double abs_pt = abs(match.track_as<myGlobTracks>().pt());
         if ((cluster.energy() / abs_pt) < 1.75) {
           return true;
@@ -270,7 +270,7 @@ struct PhotonIsolationQA {
     }
   }
 
-  //iterates over all mothers to check if photon originated from hard scattering (statuscode = abs(23))
+  // iterates over all mothers to check if photon originated from hard scattering (statuscode = abs(23))
   template <typename T>
   int getOriginalMotherIndex(const typename T::iterator& particle)
   {
@@ -296,7 +296,7 @@ struct PhotonIsolationQA {
     return -1.0;
   }
 
-  //Calculates the number of local maxima within a cluster
+  // Calculates the number of local maxima within a cluster
   std::pair<int, int> CalculateNLM(const auto& ClusterCells)
   {
     std::vector<std::vector<float>> Cell_Info(ClusterCells.size(), std::vector<float>(3));
@@ -341,13 +341,13 @@ struct PhotonIsolationQA {
 
     int NLM = uniqueRows.size();
 
-    //flag = 0 if cluster falls in 1 supermodule. flag = 1 if cluster falls in multiple supermodules and will have automatically more local maxima
+    // flag = 0 if cluster falls in 1 supermodule. flag = 1 if cluster falls in multiple supermodules and will have automatically more local maxima
     int flag = (std::unordered_set<int>(supermodules.begin(), supermodules.end()).size() > 1) ? 1 : 0;
     return std::make_pair(NLM, flag);
   }
 
   // process monte carlo data
-  void processMC(aod::BCs const& bcs, selectedCollisions const& Collisions, selectedMCClusters const& mcclusters,aod::McParticles const&, myGlobTracks const& tracks, o2::aod::EMCALMatchedTracks const& matchedtracks, aod::Calos const&, aod::EMCALClusterCells const& ClusterCells)
+  void processMC(aod::BCs const& bcs, selectedCollisions const& Collisions, selectedMCClusters const& mcclusters, aod::McParticles const&, myGlobTracks const& tracks, o2::aod::EMCALMatchedTracks const& matchedtracks, aod::Calos const&, aod::EMCALClusterCells const& ClusterCells)
   {
     for (auto bc : bcs) {
       auto collisionsInBC = Collisions.sliceBy(collisionsPerBC, bc.globalIndex());
