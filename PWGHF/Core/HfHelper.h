@@ -358,6 +358,42 @@ class HfHelper
     return candidate.m(std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus, o2::constants::physics::MassProton});
   }
 
+  template <typename T>
+  auto invMassKPiPairLcToPKPi(const T& candidate)
+  {
+    return RecoDecay::m(std::array{candidate.pVectorProng1(), candidate.pVectorProng2()}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
+  }
+
+  template <typename T>
+  auto invMassKPiPairLcToPiKP(const T& candidate)
+  {
+    return RecoDecay::m(std::array{candidate.pVectorProng1(), candidate.pVectorProng0()}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
+  }
+
+  template <typename T>
+  auto invMassPKPairLcToPKPi(const T& candidate)
+  {
+    return RecoDecay::m(std::array{candidate.pVectorProng0(), candidate.pVectorProng1()}, std::array{o2::constants::physics::MassProton, o2::constants::physics::MassKPlus});
+  }
+
+  template <typename T>
+  auto invMassPKPairLcToPiKP(const T& candidate)
+  {
+    return RecoDecay::m(std::array{candidate.pVectorProng2(), candidate.pVectorProng1()}, std::array{o2::constants::physics::MassProton, o2::constants::physics::MassKPlus});
+  }
+
+  template <typename T>
+  auto invMassPPiPairLcToPKPi(const T& candidate)
+  {
+    return RecoDecay::m(std::array{candidate.pVectorProng0(), candidate.pVectorProng2()}, std::array{o2::constants::physics::MassProton, o2::constants::physics::MassPiPlus});
+  }
+
+  template <typename T>
+  auto invMassPPiPairLcToPiKP(const T& candidate)
+  {
+    return RecoDecay::m(std::array{candidate.pVectorProng2(), candidate.pVectorProng0()}, std::array{o2::constants::physics::MassProton, o2::constants::physics::MassPiPlus});
+  }
+
   // Ξc± → p± K∓ π±
 
   template <typename T>
@@ -651,6 +687,14 @@ class HfHelper
   auto yScPlusPlus(const T& candidate)
   {
     return candidate.y(o2::constants::physics::MassSigmaCPlusPlus);
+  }
+
+  /// Σc0,++ → Λc+(→K0sP) π-,+
+  /// @brief Sc inv. mass using reco mass for Lc in K0sP and PDG mass for pion
+  template <typename T, typename U>
+  auto invMassScRecoLcToK0sP(const T& candidateSc, const U& candidateLc)
+  {
+    return candidateSc.m(std::array{static_cast<double>(invMassLcToK0sP(candidateLc)), o2::constants::physics::MassPiMinus});
   }
 
   /// Apply topological cuts as defined in SelectorCuts.h

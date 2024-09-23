@@ -583,7 +583,8 @@ struct DptDptFilterTracks {
     fPDG = TDatabasePDG::Instance();
 
     /* required ambiguous tracks checks? */
-    if (dofilterDetectorLevelWithoutPIDAmbiguous || dofilterDetectorLevelWithPIDAmbiguous || dofilterRecoWithoutPIDAmbiguous || dofilterRecoWithPIDAmbiguous) {
+    if (dofilterDetectorLevelWithoutPIDAmbiguous || dofilterDetectorLevelWithPIDAmbiguous || dofilterDetectorLevelWithFullPIDAmbiguous ||
+        dofilterRecoWithoutPIDAmbiguous || dofilterRecoWithPIDAmbiguous || dofilterRecoWithFullPIDAmbiguous) {
       checkAmbiguousTracks = true;
     }
 

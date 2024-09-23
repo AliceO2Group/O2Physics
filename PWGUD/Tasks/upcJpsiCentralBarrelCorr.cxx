@@ -60,15 +60,20 @@ struct UpcJpsiCentralBarrel {
   Configurable<bool> TOFOneProton{"TOFOneProton", false, "one candidate proton has TOF hits"};
   Configurable<bool> TPCNsigmaCut{"TPCNsigmaCut", false, "cut on nSigma"};
   Configurable<bool> TPCPIDOnly{"TPCPIDOnly", false, "Only TPC PID"};
+  Configurable<bool> smallestPID{"smallestPID", false, "Use smallest PID hypo."};
+  Configurable<bool> DCAcut{"DCAcut", false, "DCA cut from run2."};
+  Configurable<bool> newCutTPC{"newCutTPC", false, "New cuts for TPC tracks."};
   Configurable<float> TPCNSigmaMu{"TPCNSigmaMu", 3, "PID for TPC Mu track"};
   Configurable<float> EtaCut{"EtaCut", 0.9f, "acceptance cut per track"};
   Configurable<float> RapCut{"RapCut", 0.8f, "choose event in midrapidity"};
   Configurable<float> dcaZCut{"dcaZCut", 2, "cut on the impact parameter in z of the track to the PV"};
   Configurable<float> dcaXYCut{"dcaXYCut", 1e10, "cut on the impact parameter in xy of the track to the PV"};
-  Configurable<int> ITSNClsCut{"ITSNClsCut", 1, "minimal number of ITS clusters"};
+  Configurable<int> ITSNClsCut{"ITSNClsCut", 4, "minimal number of ITS clusters"};
   Configurable<int> ITSChi2NClsCut{"ITSChi2NClsCut", 36, "minimal Chi2/cluster for the ITS track"};
   Configurable<int> TPCNClsCrossedRowsCut{"TPCNClsCrossedRowsCut", 70, "minimal number of crossed TPC rows"};
   Configurable<int> TPCChi2NCls{"TPCChi2NCls", 4, "minimal Chi2/cluster for the TPC track"};
+  Configurable<float> TPCMinNCls{"TPCMinNCls", 3, "minimum number of TPC clusters"};
+  Configurable<float> TPCCrossedOverFindable{"TPCCrossedOverFindable", 3, "number of TPC crosseed rows over findable clusters"};
   Configurable<float> maxJpsiMass{"maxJpsiMass", 3.18, "Maximum of the jpsi peak for peak cut"};
   Configurable<float> minJpsiMass{"minJpsiMass", 3.0, "Minimum of the jpsi peak for peak cut"};
 
@@ -186,6 +191,8 @@ struct UpcJpsiCentralBarrel {
     PVContributors.add("PVContributors/hTrackPt", "hTrackPt", {HistType::kTH1F, {axispt}});
     PVContributors.add("PVContributors/hTrackEta", "hTrackEta", {HistType::kTH1F, {axiseta}});
     PVContributors.add("PVContributors/hTrackPhi", "hTrackPhi", {HistType::kTH1F, {axisPhi}});
+    PVContributors.add("PVContributors/hTPCNClsFindable", "hTPCNClsFindable", {HistType::kTH1F, {axisTPC}});
+    PVContributors.add("PVContributors/hTPCNClsFindableMinusFound", "hTPCNClsFindableMinusFound", {HistType::kTH1F, {axisTPC}});
     PVContributors.add("PVContributors/PID/hTPCVsP", "hTPCVsP", {HistType::kTH2F, {axisp, axisTPC}});
     PVContributors.add("PVContributors/PID/hTPCVsPt", "hTPCVsPt", {HistType::kTH2F, {axispt, axisTPC}});
     PVContributors.add("PVContributors/PID/hTPCVsPhi", "hTPCVsPhi", {HistType::kTH2F, {axisPhi, axisTPC}});
@@ -203,6 +210,8 @@ struct UpcJpsiCentralBarrel {
     TG.add("TG/hTrackPt2", "hTrackPt2", {HistType::kTH1F, {axispt}});
     TG.add("TG/hTrackEta2", "hTrackEta2", {HistType::kTH1F, {axiseta}});
     TG.add("TG/hTrackPhi2", "hTrackPhi2", {HistType::kTH1F, {axisPhi}});
+    TG.add("TG/hTPCNClsFindable", "hTPCNClsFindable", {HistType::kTH1F, {axisTPC}});
+    TG.add("TG/hTPCNClsFindableMinusFound", "hTPCNClsFindableMinusFound", {HistType::kTH1F, {axisTPC}});
     TG.add("TG/PID/hTPCVsP", "hTPCVsP", {HistType::kTH2F, {axisp, axisTPC}});
     TG.add("TG/PID/hTPCVsPt", "hTPCVsPt", {HistType::kTH2F, {axispt, axisTPC}});
     TG.add("TG/PID/hTPCVsPhi", "hTPCVsPhi", {HistType::kTH2F, {axisPhi, axisTPC}});
@@ -215,6 +224,8 @@ struct UpcJpsiCentralBarrel {
     TG.add("TG/TPC/hNsigmaMu", "hNsigmaMu", HistType::kTH1F, {axisSigma});
     TG.add("TG/TPC/hNsigmaEl", "hNsigmaEl", HistType::kTH1F, {axisSigma});
     TG.add("TG/TPC/hNsigmaPr", "hNsigmaPr", HistType::kTH1F, {axisSigma});
+    TG.add("TG/TPC/TPCPosSignal", "TPCPosSignal", HistType::kTH1F, {axisTPC});
+    TG.add("TG/TPC/TPCNegSignal", "TPCNegSignal", HistType::kTH1F, {axisTPC});
     TG.add("TG/TOF/hNsigmaMu", "hNsigmaMu", HistType::kTH1F, {axisSigma});
     TG.add("TG/TOF/hNsigmaEl", "hNsigmaEl", HistType::kTH1F, {axisSigma});
     TG.add("TG/TOF/hNsigmaPr", "hNsigmaPr", HistType::kTH1F, {axisSigma});
@@ -228,6 +239,8 @@ struct UpcJpsiCentralBarrel {
     TGmu.add("TGmu/hTrackPhi2", "hTrackPhi2", {HistType::kTH1F, {axisPhi}});
     TGmu.add("TGmu/hNsigmaMu", "hNsigmaMu", HistType::kTH1F, {axisSigma});
     TGmu.add("TGmu/hNsigmaMuTOF", "hNsigmaMuTOF", HistType::kTH1F, {axisSigma});
+    TGmu.add("TGmu/TPCPosSignal", "TPCPosSignal", HistType::kTH1F, {axisTPC});
+    TGmu.add("TGmu/TPCNegSignal", "TPCNegSignal", HistType::kTH1F, {axisTPC});
     TGmu.add("TGmu/PID/hTPCVsP", "hTPCVsP", {HistType::kTH2F, {axisp, axisTPC}});
     TGmu.add("TGmu/PID/hTPCVsPt", "hTPCVsPt", {HistType::kTH2F, {axispt, axisTPC}});
     TGmu.add("TGmu/PID/hTPCVsPhi", "hTPCVsPhi", {HistType::kTH2F, {axisPhi, axisTPC}});
@@ -251,6 +264,8 @@ struct UpcJpsiCentralBarrel {
     TGmuCand.add("TGmuCand/hPairIVM", "hPairIVM", {HistType::kTH1F, {axisIVMWide}});
     TGmuCand.add("TGmuCand/hJpsiPt", "hJpsiPt", {HistType::kTH1F, {axispt}});
     TGmuCand.add("TGmuCand/hJpsiRap", "hJpsiRap", {HistType::kTH1F, {axiseta}});
+    TGmuCand.add("TGmuCand/TPCPosSignal", "TPCPosSignal", HistType::kTH1F, {axisTPC});
+    TGmuCand.add("TGmuCand/TPCNegSignal", "TPCNegSignal", HistType::kTH1F, {axisTPC});
     TGmuCand.add("TGmuCand/PID/hTPCVsP", "hTPCVsP", {HistType::kTH2F, {axisp, axisTPC}});
     TGmuCand.add("TGmuCand/PID/hTPCVsPt", "hTPCVsPt", {HistType::kTH2F, {axispt, axisTPC}});
     TGmuCand.add("TGmuCand/PID/hTPCVsPhi", "hTPCVsPhi", {HistType::kTH2F, {axisPhi, axisTPC}});
@@ -270,6 +285,8 @@ struct UpcJpsiCentralBarrel {
     TGel.add("TGel/hTrackPhi2", "hTrackPhi2", {HistType::kTH1F, {axisPhi}});
     TGel.add("TGel/hNsigmaEl", "hNsigmaEl", HistType::kTH1F, {axisSigma});
     TGel.add("TGel/hNsigmaElTOF", "hNsigmaElTOF", HistType::kTH1F, {axisSigma});
+    TGel.add("TGel/TPCPosSignal", "TPCPosSignal", HistType::kTH1F, {axisTPC});
+    TGel.add("TGel/TPCNegSignal", "TPCNegSignal", HistType::kTH1F, {axisTPC});
     TGel.add("TGel/PID/hTPCVsP", "hTPCVsP", {HistType::kTH2F, {axisp, axisTPC}});
     TGel.add("TGel/PID/hTPCVsPt", "hTPCVsPt", {HistType::kTH2F, {axispt, axisTPC}});
     TGel.add("TGel/PID/hTPCVsPhi", "hTPCVsPhi", {HistType::kTH2F, {axisPhi, axisTPC}});
@@ -287,6 +304,8 @@ struct UpcJpsiCentralBarrel {
     TGelCand.add("TGelCand/hTrackPt2", "hTrackPt2", {HistType::kTH1F, {axispt}});
     TGelCand.add("TGelCand/hTrackEta2", "hTrackEta2", {HistType::kTH1F, {axiseta}});
     TGelCand.add("TGelCand/hTrackPhi2", "hTrackPhi2", {HistType::kTH1F, {axisPhi}});
+    TGelCand.add("TGelCand/TPCPosSignal", "TPCPosSignal", HistType::kTH1F, {axisTPC});
+    TGelCand.add("TGelCand/TPCNegSignal", "TPCNegSignal", HistType::kTH1F, {axisTPC});
     TGelCand.add("TGelCand/hTrackITSNcls1", "hTrackITSNcls1", {HistType::kTH1F, {axisCounter}});
     TGelCand.add("TGelCand/hTrackITSNcls2", "hTrackITSNcls2", {HistType::kTH1F, {axisCounter}});
     TGelCand.add("TGelCand/hPairPt", "hPairPt", {HistType::kTH1F, {axispt}});
@@ -521,8 +540,15 @@ struct UpcJpsiCentralBarrel {
     if (track.dcaZ() > dcaZCut) {
       return false;
     }
-    if (track.dcaXY() > dcaXYCut) {
-      return false;
+    if (DCAcut) {
+      float dcaXYCut = 0.0105f + 0.0350f / pow(track.pt(), 1.1f);
+      if (abs(track.dcaXY()) > dcaXYCut) {
+        return false;
+      }
+    } else {
+      if (track.dcaXY() > dcaXYCut) {
+        return false;
+      }
     }
     // ITS
     if (!track.hasITS()) {
@@ -543,6 +569,14 @@ struct UpcJpsiCentralBarrel {
     }
     if (track.tpcChi2NCl() > TPCChi2NCls) {
       return false; // TPC chi2
+    }
+    if (newCutTPC) {
+      if ((track.tpcNClsFindable() - track.tpcNClsFindableMinusFound()) < TPCMinNCls) {
+        return false;
+      }
+      if ((static_cast<float>(track.tpcNClsCrossedRows()) / static_cast<float>(track.tpcNClsFindable())) < TPCCrossedOverFindable) {
+        return false;
+      }
     }
 
     return true;
@@ -584,6 +618,8 @@ struct UpcJpsiCentralBarrel {
           PVContributors.get<TH2>(HIST("PVContributors/PID/hTPCVsPt"))->Fill(track.pt(), track.tpcSignal());
           PVContributors.get<TH2>(HIST("PVContributors/PID/hTPCVsEta"))->Fill(RecoDecay::eta(std::array{trkPx, trkPy, trkPz}), track.tpcSignal());
           PVContributors.get<TH2>(HIST("PVContributors/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(trkPx, trkPy), track.tpcSignal());
+          PVContributors.get<TH1>(HIST("PVContributors/hTPCNClsFindable"))->Fill(track.tpcNClsFindable());
+          PVContributors.get<TH1>(HIST("PVContributors/hTPCNClsFindableMinusFound"))->Fill(track.tpcNClsFindableMinusFound());
         }
 
         if (track.hasTOF()) {
@@ -636,24 +672,36 @@ struct UpcJpsiCentralBarrel {
         continue;
       }
       countGT++;
-      int hypoID;
-      if (TPCPIDOnly) {
-        hypoID = testPIDhypoTPC(track);
-      } else {
-        hypoID = testPIDhypo(track);
-      }
-      if (hypoID == P_ELECTRON || hypoID == P_MUON || hypoID == P_PROTON) {
-        countGTselected++;
-        trkIdx.push_back(track.index());
-        if (hypoID == P_ELECTRON) {
-          countGTel++;
+      trkIdx.push_back(track.index());
+      if (smallestPID) {
+        int hypoID;
+        if (TPCPIDOnly) {
+          hypoID = testPIDhypoTPC(track);
+        } else {
+          hypoID = testPIDhypo(track);
         }
-        if (hypoID == P_MUON) {
-          countGTmu++;
+        if (hypoID == P_ELECTRON || hypoID == P_MUON || hypoID == P_PROTON) {
+          countGTselected++;
+          trkIdx.push_back(track.index());
+          if (hypoID == P_ELECTRON) {
+            countGTel++;
+          }
+          if (hypoID == P_MUON) {
+            countGTmu++;
+          }
+          if (hypoID == P_PROTON) {
+            countGTp++;
+          }
         }
-        if (hypoID == P_PROTON) {
-          countGTp++;
-        }
+
+        Statistics.get<TH1>(HIST("Statistics/hNumberOfTracks"))->Fill(3., countGTselected);
+        Statistics.get<TH1>(HIST("Statistics/hNumberOfTracks"))->Fill(4., countGTel);
+        Statistics.get<TH1>(HIST("Statistics/hNumberOfTracks"))->Fill(5., countGTmu);
+
+        Statistics.get<TH1>(HIST("Statistics/hNumberGTselected"))->Fill(countGTselected);
+        Statistics.get<TH1>(HIST("Statistics/hNumberGTel"))->Fill(countGTel);
+        Statistics.get<TH1>(HIST("Statistics/hNumberGTmu"))->Fill(countGTmu);
+        Statistics.get<TH1>(HIST("Statistics/hNumberGTp"))->Fill(countGTp);
       }
       if (std::abs(track.tpcNSigmaMu()) < 3) {
         countGTMuSigma++;
@@ -670,14 +718,7 @@ struct UpcJpsiCentralBarrel {
     }
 
     Statistics.get<TH1>(HIST("Statistics/hNumberOfTracks"))->Fill(2., countGT);
-    Statistics.get<TH1>(HIST("Statistics/hNumberOfTracks"))->Fill(3., countGTselected);
-    Statistics.get<TH1>(HIST("Statistics/hNumberOfTracks"))->Fill(4., countGTel);
-    Statistics.get<TH1>(HIST("Statistics/hNumberOfTracks"))->Fill(5., countGTmu);
     Statistics.get<TH1>(HIST("Statistics/hNumberGT"))->Fill(countGT);
-    Statistics.get<TH1>(HIST("Statistics/hNumberGTselected"))->Fill(countGTselected);
-    Statistics.get<TH1>(HIST("Statistics/hNumberGTel"))->Fill(countGTel);
-    Statistics.get<TH1>(HIST("Statistics/hNumberGTmu"))->Fill(countGTmu);
-    Statistics.get<TH1>(HIST("Statistics/hNumberGTp"))->Fill(countGTp);
     Statistics.get<TH1>(HIST("Statistics/hNumberGTelSigma"))->Fill(countGTElSigma);
     Statistics.get<TH1>(HIST("Statistics/hNumberGTmuSigma"))->Fill(countGTMuSigma);
     Statistics.get<TH1>(HIST("Statistics/hNumberGTpSigma"))->Fill(countGTPSigma);
@@ -689,22 +730,24 @@ struct UpcJpsiCentralBarrel {
 
     if (countGT == 2) {
       TLorentzVector mom, daughter[2];
+
       auto trkDaughter1 = tracks.iteratorAt(trkIdx[0]);
       auto trkDaughter2 = tracks.iteratorAt(trkIdx[1]);
+
       if ((trkDaughter1.sign() * trkDaughter2.sign()) > 0) {
         return;
       }
 
-      auto ene1 = RecoDecay::e(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz(), massEl);
+      /*auto ene1 = RecoDecay::e(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz(), massEl);
       auto ene2 = RecoDecay::e(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz(), massEl);
       daughter[0].SetPxPyPzE(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz(), ene1);
       daughter[1].SetPxPyPzE(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz(), ene2);
-      mom = daughter[0] + daughter[1];
+      mom = daughter[0] + daughter[1];*/
 
       std::array<double, 3> daughter1 = {trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz()};
       std::array<double, 3> daughter2 = {trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()};
 
-      std::array<double, 3> mother = {trkDaughter1.px() + trkDaughter2.px(), trkDaughter1.py() + trkDaughter2.py(), trkDaughter1.pz() + trkDaughter2.pz()};
+      // std::array<double, 3> mother = {trkDaughter1.px() + trkDaughter2.px(), trkDaughter1.py() + trkDaughter2.py(), trkDaughter1.pz() + trkDaughter2.pz()};
 
       TG.get<TH1>(HIST("TG/hTrackPt1"))->Fill(trkDaughter1.pt());
       TG.get<TH1>(HIST("TG/hTrackPt2"))->Fill(trkDaughter2.pt());
@@ -721,6 +764,13 @@ struct UpcJpsiCentralBarrel {
         TG.get<TH1>(HIST("TG/TPC/hNsigmaMu"))->Fill(trkDaughter1.tpcNSigmaMu());
         TG.get<TH1>(HIST("TG/TPC/hNsigmaEl"))->Fill(trkDaughter1.tpcNSigmaEl());
         TG.get<TH1>(HIST("TG/TPC/hNsigmaPr"))->Fill(trkDaughter1.tpcNSigmaPr());
+        TG.get<TH1>(HIST("TG/hTPCNClsFindable"))->Fill(trkDaughter1.tpcNClsFindable());
+        TG.get<TH1>(HIST("TG/hTPCNClsFindableMinusFound"))->Fill(trkDaughter1.tpcNClsFindableMinusFound());
+        if (trkDaughter1.sign() > 0) {
+          TG.get<TH1>(HIST("TG/TPC/TPCPosSignal"))->Fill(trkDaughter1.tpcSignal());
+        } else {
+          TG.get<TH1>(HIST("TG/TPC/TPCNegSignal"))->Fill(trkDaughter1.tpcSignal());
+        }
       }
       if (trkDaughter2.hasTPC()) {
         TG.get<TH2>(HIST("TG/PID/hTPCVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.tpcSignal());
@@ -730,6 +780,13 @@ struct UpcJpsiCentralBarrel {
         TG.get<TH1>(HIST("TG/TPC/hNsigmaMu"))->Fill(trkDaughter2.tpcNSigmaMu());
         TG.get<TH1>(HIST("TG/TPC/hNsigmaEl"))->Fill(trkDaughter2.tpcNSigmaEl());
         TG.get<TH1>(HIST("TG/TPC/hNsigmaPr"))->Fill(trkDaughter2.tpcNSigmaPr());
+        TG.get<TH1>(HIST("TG/hTPCNClsFindable"))->Fill(trkDaughter2.tpcNClsFindable());
+        TG.get<TH1>(HIST("TG/hTPCNClsFindableMinusFound"))->Fill(trkDaughter2.tpcNClsFindableMinusFound());
+        if (trkDaughter2.sign() > 0) {
+          TG.get<TH1>(HIST("TG/TPC/TPCPosSignal"))->Fill(trkDaughter2.tpcSignal());
+        } else {
+          TG.get<TH1>(HIST("TG/TPC/TPCNegSignal"))->Fill(trkDaughter2.tpcSignal());
+        }
       }
       if (trkDaughter1.hasTOF()) {
         TG.get<TH2>(HIST("TG/PID/hTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz()), trkDaughter1.tofSignal());
@@ -751,10 +808,16 @@ struct UpcJpsiCentralBarrel {
         TG.get<TH1>(HIST("TG/TOF/hNsigmaPr"))->Fill(trkDaughter2.tofNSigmaPr());
       }
 
-      if (countGTel == 2) {
-        if (!(RecoDecay::sumOfSquares(trkDaughter1.tpcNSigmaMu(), trkDaughter2.tpcNSigmaMu()) > RecoDecay::sumOfSquares(trkDaughter1.tpcNSigmaEl(), trkDaughter2.tpcNSigmaEl()))) {
-          return;
-        }
+      if (RecoDecay::sumOfSquares(trkDaughter1.tpcNSigmaMu(), trkDaughter2.tpcNSigmaMu()) > RecoDecay::sumOfSquares(trkDaughter1.tpcNSigmaEl(), trkDaughter2.tpcNSigmaEl())) {
+
+        auto ene1 = RecoDecay::e(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz(), massEl);
+        auto ene2 = RecoDecay::e(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz(), massEl);
+        daughter[0].SetPxPyPzE(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz(), ene1);
+        daughter[1].SetPxPyPzE(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz(), ene2);
+        mom = daughter[0] + daughter[1];
+
+        std::array<double, 3> mother = {trkDaughter1.px() + trkDaughter2.px(), trkDaughter1.py() + trkDaughter2.py(), trkDaughter1.pz() + trkDaughter2.pz()};
+
         if (TOFBothTracks) {
           if (!trkDaughter1.hasTOF() || !trkDaughter2.hasTOF())
             return;
@@ -785,6 +848,11 @@ struct UpcJpsiCentralBarrel {
           TGel.get<TH2>(HIST("TGel/PID/hTPCVsEta"))->Fill(RecoDecay::eta(daughter1), trkDaughter1.tpcSignal());
           TGel.get<TH2>(HIST("TGel/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter1), trkDaughter1.tpcSignal());
           TGel.get<TH1>(HIST("TGel/hNsigmaEl"))->Fill(trkDaughter1.tpcNSigmaEl());
+          if (trkDaughter1.sign() > 0) {
+            TGel.get<TH1>(HIST("TGel/TPCPosSignal"))->Fill(trkDaughter1.tpcSignal());
+          } else {
+            TGel.get<TH1>(HIST("TGel/TPCNegSignal"))->Fill(trkDaughter1.tpcSignal());
+          }
         }
         if (trkDaughter2.hasTPC()) {
           TGel.get<TH2>(HIST("TGel/PID/hTPCVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.tpcSignal());
@@ -792,6 +860,11 @@ struct UpcJpsiCentralBarrel {
           TGel.get<TH2>(HIST("TGel/PID/hTPCVsEta"))->Fill(RecoDecay::eta(daughter2), trkDaughter2.tpcSignal());
           TGel.get<TH2>(HIST("TGel/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tpcSignal());
           TGel.get<TH1>(HIST("TGel/hNsigmaEl"))->Fill(trkDaughter2.tpcNSigmaEl());
+          if (trkDaughter2.sign() > 0) {
+            TGel.get<TH1>(HIST("TGel/TPCPosSignal"))->Fill(trkDaughter2.tpcSignal());
+          } else {
+            TGel.get<TH1>(HIST("TGel/TPCNegSignal"))->Fill(trkDaughter2.tpcSignal());
+          }
         }
         if (trkDaughter1.hasTOF()) {
           TGel.get<TH2>(HIST("TGel/PID/hTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz()), trkDaughter1.tofSignal());
@@ -829,6 +902,11 @@ struct UpcJpsiCentralBarrel {
           TGelCand.get<TH2>(HIST("TGelCand/PID/hTPCVsPt"))->Fill(trkDaughter1.pt(), trkDaughter1.tpcSignal());
           TGelCand.get<TH2>(HIST("TGelCand/PID/hTPCVsEta"))->Fill(RecoDecay::eta(daughter1), trkDaughter1.tpcSignal());
           TGelCand.get<TH2>(HIST("TGelCand/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter1), trkDaughter1.tpcSignal());
+          if (trkDaughter1.sign() > 0) {
+            TGelCand.get<TH1>(HIST("TGelCand/TPCPosSignal"))->Fill(trkDaughter1.tpcSignal());
+          } else {
+            TGelCand.get<TH1>(HIST("TGelCand/TPCNegSignal"))->Fill(trkDaughter1.tpcSignal());
+          }
         }
         if (trkDaughter2.hasTPC()) {
           TGelCand.get<TH2>(HIST("TGelCand/PID/hTPCVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.tpcSignal());
@@ -912,7 +990,7 @@ struct UpcJpsiCentralBarrel {
             Asymmetry.get<TH1>(HIST("Asymmetry/Electron/Coherent/DeltaPhi"))->Fill(dp);
 
             delete[] q;
-          }
+          } // end coherent electrons
           if (RecoDecay::pt(mother) > 0.2f) {
             // fill track histos
             JPsiToEl.get<TH1>(HIST("JPsiToEl/Incoherent/hPt1"))->Fill(trkDaughter1.pt());
@@ -966,15 +1044,18 @@ struct UpcJpsiCentralBarrel {
             Asymmetry.get<TH1>(HIST("Asymmetry/Electron/Incoherent/DeltaPhi"))->Fill(dp);
 
             delete[] q;
-          }
-        }
-      } // end electrons
-      if (countGTmu == 2) {
+          } // end incoherent electrons
+        }   // end mass cut
+      }     // end electrons
+      if (RecoDecay::sumOfSquares(trkDaughter1.tpcNSigmaEl(), trkDaughter2.tpcNSigmaEl()) > RecoDecay::sumOfSquares(trkDaughter1.tpcNSigmaMu(), trkDaughter2.tpcNSigmaMu())) {
 
-        if (!(RecoDecay::sumOfSquares(trkDaughter1.tpcNSigmaEl(), trkDaughter2.tpcNSigmaEl()) > RecoDecay::sumOfSquares(trkDaughter1.tpcNSigmaMu(), trkDaughter2.tpcNSigmaMu()))) {
-          return;
-        }
+        auto ene1 = RecoDecay::e(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz(), massMu);
+        auto ene2 = RecoDecay::e(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz(), massMu);
+        daughter[0].SetPxPyPzE(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz(), ene1);
+        daughter[1].SetPxPyPzE(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz(), ene2);
+        mom = daughter[0] + daughter[1];
 
+        std::array<double, 3> mother = {trkDaughter1.px() + trkDaughter2.px(), trkDaughter1.py() + trkDaughter2.py(), trkDaughter1.pz() + trkDaughter2.pz()};
         if (TOFBothTracks) {
           if (!trkDaughter1.hasTOF() || !trkDaughter2.hasTOF())
             return;
@@ -1005,6 +1086,11 @@ struct UpcJpsiCentralBarrel {
           TGmu.get<TH2>(HIST("TGmu/PID/hTPCVsEta"))->Fill(RecoDecay::eta(daughter1), trkDaughter1.tpcSignal());
           TGmu.get<TH2>(HIST("TGmu/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter1), trkDaughter1.tpcSignal());
           TGmu.get<TH1>(HIST("TGmu/hNsigmaMu"))->Fill(trkDaughter1.tpcNSigmaMu());
+          if (trkDaughter1.sign() > 0) {
+            TGmu.get<TH1>(HIST("TGmu/TPCPosSignal"))->Fill(trkDaughter1.tpcSignal());
+          } else {
+            TGmu.get<TH1>(HIST("TGmu/TPCNegSignal"))->Fill(trkDaughter1.tpcSignal());
+          }
         }
         if (trkDaughter2.hasTPC()) {
           TGmu.get<TH2>(HIST("TGmu/PID/hTPCVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.tpcSignal());
@@ -1012,6 +1098,11 @@ struct UpcJpsiCentralBarrel {
           TGmu.get<TH2>(HIST("TGmu/PID/hTPCVsEta"))->Fill(RecoDecay::eta(daughter2), trkDaughter2.tpcSignal());
           TGmu.get<TH2>(HIST("TGmu/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tpcSignal());
           TGmu.get<TH1>(HIST("TGmu/hNsigmaMu"))->Fill(trkDaughter2.tpcNSigmaMu());
+          if (trkDaughter2.sign() > 0) {
+            TGmu.get<TH1>(HIST("TGmu/TPCPosSignal"))->Fill(trkDaughter2.tpcSignal());
+          } else {
+            TGmu.get<TH1>(HIST("TGmu/TPCNegSignal"))->Fill(trkDaughter2.tpcSignal());
+          }
         }
         if (trkDaughter1.hasTOF()) {
           TGmu.get<TH2>(HIST("TGmu/PID/hTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz()), trkDaughter1.tofSignal());
@@ -1049,12 +1140,22 @@ struct UpcJpsiCentralBarrel {
           TGmuCand.get<TH2>(HIST("TGmuCand/PID/hTPCVsPt"))->Fill(trkDaughter1.pt(), trkDaughter1.tpcSignal());
           TGmuCand.get<TH2>(HIST("TGmuCand/PID/hTPCVsEta"))->Fill(RecoDecay::eta(daughter1), trkDaughter1.tpcSignal());
           TGmuCand.get<TH2>(HIST("TGmuCand/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter1), trkDaughter1.tpcSignal());
+          if (trkDaughter1.sign() > 0) {
+            TGmuCand.get<TH1>(HIST("TGmuCand/TPCPosSignal"))->Fill(trkDaughter1.tpcSignal());
+          } else {
+            TGmuCand.get<TH1>(HIST("TGmuCand/TPCNegSignal"))->Fill(trkDaughter1.tpcSignal());
+          }
         }
         if (trkDaughter2.hasTPC()) {
           TGmuCand.get<TH2>(HIST("TGmuCand/PID/hTPCVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.tpcSignal());
           TGmuCand.get<TH2>(HIST("TGmuCand/PID/hTPCVsPt"))->Fill(trkDaughter2.pt(), trkDaughter2.tpcSignal());
           TGmuCand.get<TH2>(HIST("TGmuCand/PID/hTPCVsEta"))->Fill(RecoDecay::eta(daughter2), trkDaughter2.tpcSignal());
           TGmuCand.get<TH2>(HIST("TGmuCand/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tpcSignal());
+          if (trkDaughter2.sign() > 0) {
+            TGmuCand.get<TH1>(HIST("TGmuCand/TPCPosSignal"))->Fill(trkDaughter2.tpcSignal());
+          } else {
+            TGmuCand.get<TH1>(HIST("TGmuCand/TPCNegSignal"))->Fill(trkDaughter2.tpcSignal());
+          }
         }
         if (trkDaughter1.hasTOF()) {
           TGmuCand.get<TH2>(HIST("TGmuCand/PID/hTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz()), trkDaughter1.tofSignal());
@@ -1189,7 +1290,15 @@ struct UpcJpsiCentralBarrel {
           }
         }
       } // end muons
-      if (countGTp == 2) {
+      if (RecoDecay::sumOfSquares((trkDaughter1.hasTOF() ? trkDaughter1.tofNSigmaPr() : trkDaughter1.tpcNSigmaPr()), (trkDaughter2.hasTOF() ? trkDaughter2.tofNSigmaPr() : trkDaughter2.tpcNSigmaPr()) < 4)) {
+
+        auto ene1 = RecoDecay::e(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz(), massPr);
+        auto ene2 = RecoDecay::e(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz(), massPr);
+        daughter[0].SetPxPyPzE(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz(), ene1);
+        daughter[1].SetPxPyPzE(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz(), ene2);
+        mom = daughter[0] + daughter[1];
+
+        std::array<double, 3> mother = {trkDaughter1.px() + trkDaughter2.px(), trkDaughter1.py() + trkDaughter2.py(), trkDaughter1.pz() + trkDaughter2.pz()};
 
         if (TOFBothProtons) {
           if (!trkDaughter1.hasTOF() || !trkDaughter2.hasTOF())
@@ -1334,7 +1443,7 @@ struct UpcJpsiCentralBarrel {
             JPsiToP.get<TH1>(HIST("JPsiToP/Coherent/hEta"))->Fill(RecoDecay::eta(mother));
             JPsiToP.get<TH1>(HIST("JPsiToP/Coherent/hPhi"))->Fill(RecoDecay::phi(mother));
             JPsiToP.get<TH1>(HIST("JPsiToP/Coherent/hRap"))->Fill(rapJpsi);
-          }
+          } // end coherent
           if (RecoDecay::pt(mother) > 0.2f) {
             // fill track histos
             JPsiToP.get<TH1>(HIST("JPsiToP/Incoherent/hPt1"))->Fill(trkDaughter1.pt());
@@ -1374,12 +1483,12 @@ struct UpcJpsiCentralBarrel {
             JPsiToP.get<TH1>(HIST("JPsiToP/Incoherent/hEta"))->Fill(RecoDecay::eta(mother));
             JPsiToP.get<TH1>(HIST("JPsiToP/Incoherent/hPhi"))->Fill(RecoDecay::phi(mother));
             JPsiToP.get<TH1>(HIST("JPsiToP/Incoherent/hRap"))->Fill(rapJpsi);
-          }
-        }
-      } // end protons
-    }   // end two tracks
-  }     // end process
-};      // end struct
+          } // end incoherent
+        }   // end mass cut
+      }     // end protons
+    }       // end two tracks
+  }         // end process
+};          // end struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

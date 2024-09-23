@@ -218,7 +218,7 @@ T MCcompatibleBCs(F const& collision, int ndt, T const& bcs, int nMinBCs = 7)
 
   // return if collisions has no associated BC
   if (!collision.has_foundBC()) {
-    LOGF(info, "Collision %i - no BC found!", collision.globalIndex());
+    LOGF(debug, "Collision %i - no BC found!", collision.globalIndex());
     return T{{bcs.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
   }
 
@@ -743,7 +743,7 @@ bool cleanCalo(T const& bc, aod::Calos& calos, std::vector<float>& /*lims*/, Sli
 // -----------------------------------------------------------------------------
 // check if all tracks come from same MCCollision
 template <typename T>
-int64_t sameMCCollision(T tracks, aod::McCollisions mccols, aod::McParticles mcparts)
+int64_t sameMCCollision(T tracks, aod::McCollisions, aod::McParticles)
 {
   int64_t colID = -1;
   for (auto const& track : tracks) {

@@ -42,6 +42,7 @@ struct JetMatchingQA {
 
       {"h_jet_match_geo_pt_zoom", "geo-matched jets", {HistType::kTH2F, {{1000, 0.0f, 10.0f, "#it{p}_{T} (particle level, GeV/#it{c})"}, {1000, 0.0f, 10.0f, "#it{p}_{T} (detector level, GeV/#it{c})"}}}},
       {"h_jet_match_geo_dpt", "geo-matched jets", {HistType::kTH1F, {{100, -10.0f, 10.0f, "#Delta#it{p}_{T} (particle level vs detector level, GeV/#it{c})"}}}},
+      {"h2_jet_pt_jet_match_geo_dptoverpt", "geo-matched jets", {HistType::kTH2F, {{2000, 0.0f, 200.0f, "#it{p}_{T} (detector level, GeV/#it{c})"}, {700, -5.0f, 2.0f, "(#it{p}_{T, part}-#it{p}_{T, det})/#it{p}_{T,part} (particle level vs detector level, GeV/#it{c})"}}}},
       {"h_jet_match_geo_PtLeadingPart", "geo-matched jets", {HistType::kTH2F, {{1000, 0.0f, 10.0f, "#it{p}_{T}^{leading} (particle level, GeV/#it{c})"}, {1000, 0.0f, 10.0f, "#it{p}_{T}^{leading} (detector level, GeV/#it{c})"}}}},
       {"h_jet_match_geo_phi", "geo-matched jets", {HistType::kTH2F, {{80, -1.0f, 7.0f, "#phi_{jet} (particle level, rad)"}, {80, -1.0f, 7.0f, "#phi_{jet} (detector level, rad)"}}}},
       {"h_jet_match_geo_eta", "geo-matched jets", {HistType::kTH2F, {{70, -0.7f, 0.7f, "#it{p}_{T}^{particle level} (GeV/#it{c})"}, {70, -0.7f, 0.7f, "#it{p}_{T} (detector level, GeV/#it{c})"}}}},
@@ -127,6 +128,7 @@ struct JetMatchingQA {
 
         registry.fill(HIST("h_jet_match_geo_pt_zoom"), pjet.pt(), djet.pt());
         registry.fill(HIST("h_jet_match_geo_dpt"), pjet.pt() - djet.pt());
+        registry.fill(HIST("h2_jet_pt_jet_match_geo_dptoverpt"), pjet.pt(), (pjet.pt() - djet.pt()) * 1. / pjet.pt());
         registry.fill(HIST("h_jet_match_geo_phi"), pjet.phi(), djet.phi());
         registry.fill(HIST("h_jet_match_geo_eta"), pjet.eta(), djet.eta());
         registry.fill(HIST("h_jet_match_geo_Nconst"), pjet.tracksIds().size(), djet.tracksIds().size());
@@ -174,7 +176,7 @@ struct JetMatchingQA {
       }
     }
   }
-  PROCESS_SWITCH(JetMatchingQA, processMCD, "QA on detector-level jets", true);
+  PROCESS_SWITCH(JetMatchingQA, processMCD, "QA on detector-level jets", false);
 
   void processMCP(JetMcCollision const&,
                   TagJetCollection const& pjets, BaseJetCollection const&)
@@ -188,7 +190,7 @@ struct JetMatchingQA {
       }
     }
   }
-  PROCESS_SWITCH(JetMatchingQA, processMCP, "QA on generator-level jets", true);
+  PROCESS_SWITCH(JetMatchingQA, processMCP, "QA on generator-level jets", false);
 };
 
 using ChargedDetectorLevelJets = soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>;
@@ -207,6 +209,10 @@ using BplusChargedDetectorLevelJets = soa::Join<aod::BplusChargedMCDetectorLevel
 using BplusChargedParticleLevelJets = soa::Join<aod::BplusChargedMCParticleLevelJets, aod::BplusChargedMCParticleLevelJetConstituents, aod::BplusChargedMCParticleLevelJetsMatchedToBplusChargedMCDetectorLevelJets>;
 using BplusChargedJetMatchingQA = JetMatchingQA<BplusChargedDetectorLevelJets, BplusChargedParticleLevelJets>;
 
+using DielectronChargedDetectorLevelJets = soa::Join<aod::DielectronChargedMCDetectorLevelJets, aod::DielectronChargedMCDetectorLevelJetConstituents, aod::DielectronChargedMCDetectorLevelJetsMatchedToDielectronChargedMCParticleLevelJets>;
+using DielectronChargedParticleLevelJets = soa::Join<aod::DielectronChargedMCParticleLevelJets, aod::DielectronChargedMCParticleLevelJetConstituents, aod::DielectronChargedMCParticleLevelJetsMatchedToDielectronChargedMCDetectorLevelJets>;
+using DielectronChargedJetMatchingQA = JetMatchingQA<DielectronChargedDetectorLevelJets, DielectronChargedParticleLevelJets>;
+
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   std::vector<o2::framework::DataProcessorSpec> tasks;
@@ -214,7 +220,8 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   tasks.emplace_back(adaptAnalysisTask<ChargedJetMatchingQA>(cfgc, SetDefaultProcesses{}, TaskName{"jet-matching-qa-ch"}));
   tasks.emplace_back(adaptAnalysisTask<D0ChargedJetMatchingQA>(cfgc, TaskName{"jet-matching-qa-d0-ch"}));
   tasks.emplace_back(adaptAnalysisTask<LcChargedJetMatchingQA>(cfgc, TaskName{"jet-matching-qa-lc-ch"}));
-  tasks.emplace_back(adaptAnalysisTask<BplusChargedJetMatchingQA>(cfgc, TaskName{"jet-matching-qa-bplus-ch"}));
+  // tasks.emplace_back(adaptAnalysisTask<BplusChargedJetMatchingQA>(cfgc, TaskName{"jet-matching-qa-bplus-ch"}));
+  tasks.emplace_back(adaptAnalysisTask<DielectronChargedJetMatchingQA>(cfgc, TaskName{"jet-matching-qa-dielectron-ch"}));
 
   return WorkflowSpec{tasks};
 }
