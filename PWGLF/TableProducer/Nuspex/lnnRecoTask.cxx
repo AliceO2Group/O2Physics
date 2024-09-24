@@ -143,7 +143,6 @@ struct lnnRecoTask {
   Configurable<float> nClusITS{"nClusITSMin3H", 3.0, "triton NITS clusters cut"};
   Configurable<float> ptMinTOF{"ptMinTOF", 1.5, "minimum pt for TOF cut"};
   Configurable<bool> mcSignalOnly{"mcSignalOnly", true, "If true, save only signal in MC"};
-  
 
   // Define o2 fitter, 2-prong, active memory (no need to redefine per event)
   o2::vertexing::DCAFitterN<2> fitter;
@@ -375,7 +374,7 @@ struct lnnRecoTask {
       if (is3H) {
         hdEdx3HPosTrack->Fill(lnnCand.mom3HTPC, h3track.tpcSignal());
       }
-      
+
       if (h3track.hasTOF()) {
         float beta = h3track.beta();
         lnnCand.mass2TrTOF = h3track.mass() * h3track.mass();
@@ -548,7 +547,7 @@ struct lnnRecoTask {
                         lnnCand.dcaV0dau, lnnCand.h3DCAXY, lnnCand.piDCAXY,
                         lnnCand.nSigma3H, lnnCand.nTPCClusters3H, lnnCand.nTPCClustersPi,
                         lnnCand.mom3HTPC, lnnCand.momPiTPC, lnnCand.tpcSignal3H, lnnCand.tpcSignalPi,
-                        lnnCand.mass2TrTOF, 
+                        lnnCand.mass2TrTOF,
                         lnnCand.clusterSizeITS3H, lnnCand.clusterSizeITSPi, lnnCand.flags);
       }
     }
@@ -605,7 +604,7 @@ struct lnnRecoTask {
                       lnnCand.dcaV0dau, lnnCand.h3DCAXY, lnnCand.piDCAXY,
                       lnnCand.nSigma3H, lnnCand.nTPCClusters3H, lnnCand.nTPCClustersPi,
                       lnnCand.mom3HTPC, lnnCand.momPiTPC, lnnCand.tpcSignal3H, lnnCand.tpcSignalPi,
-                      lnnCand.mass2TrTOF, 
+                      lnnCand.mass2TrTOF,
                       lnnCand.clusterSizeITS3H, lnnCand.clusterSizeITSPi, lnnCand.flags,
                       chargeFactor * lnnCand.genPt(), lnnCand.genPhi(), lnnCand.genEta(), lnnCand.genPt3H(),
                       lnnCand.gDecVtx[0], lnnCand.gDecVtx[1], lnnCand.gDecVtx[2], lnnCand.isReco, lnnCand.isSignal, lnnCand.survEvSelection);
@@ -675,7 +674,7 @@ struct lnnRecoTask {
                     -1, -1, -1,
                     -1, -1, -1,
                     -1, -1, -1, -1,
-                    -1, 
+                    -1,
                     -1, -1, -1,
                     chargeFactor * lnnCand.genPt(), lnnCand.genPhi(), lnnCand.genEta(), lnnCand.genPt3H(),
                     lnnCand.gDecVtx[0], lnnCand.gDecVtx[1], lnnCand.gDecVtx[2], lnnCand.isReco, lnnCand.isSignal, lnnCand.survEvSelection);
