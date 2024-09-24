@@ -155,10 +155,11 @@ struct QaImpactPar {
   using trackFullTable = o2::soa::Join<o2::aod::Tracks, o2::aod::TrackSelection, o2::aod::TracksCov, o2::aod::TracksExtra, o2::aod::TracksDCA, o2::aod::TracksDCACov,
                                        o2::aod::pidTPCFullPi, o2::aod::pidTPCFullKa, o2::aod::pidTPCFullPr,
                                        o2::aod::pidTOFFullPi, o2::aod::pidTOFFullKa, o2::aod::pidTOFFullPr>;
+  using trackTableIU = o2::soa::Join<o2::aod::TracksIU, o2::aod::TracksCovIU>;
   void processData(o2::soa::Filtered<collisionRecoTable>::iterator& collision,
                    const trackTable& tracksUnfiltered,
                    const o2::soa::Filtered<trackFullTable>& tracks,
-                   const o2::aod::TracksIU& tracksIU,
+                   const trackTableIU& tracksIU,
                    o2::aod::BCsWithTimestamps const&)
   {
     /// here call the template processReco function
@@ -173,7 +174,7 @@ struct QaImpactPar {
   void processMC(o2::soa::Filtered<collisionMCRecoTable>::iterator& collision,
                  trackTable const& tracksUnfiltered,
                  o2::soa::Filtered<trackMCFullTable> const& tracks,
-                 const o2::aod::TracksIU& tracksIU,
+                 const trackTableIU& tracksIU,
                  const o2::aod::McParticles& mcParticles,
                  const o2::aod::McCollisions&,
                  o2::aod::BCsWithTimestamps const&)
@@ -260,11 +261,12 @@ struct QaImpactPar {
 
     // tracks
     const AxisSpec trackPtAxis{binningPt, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec trackPaxis{binningPt, "#it{p} (GeV/#it{c})"};
     const AxisSpec trackEtaAxis{binningEta, "#it{#eta}"};
     const AxisSpec trackPhiAxis{binningPhi, "#varphi"};
-    const AxisSpec trackIUposXaxis{binningIuPosX, "x"};
-    const AxisSpec trackIUposYaxis{binningIuPosY, "x"};
-    const AxisSpec trackIUposZaxis{binningIuPosZ, "x"};
+    const AxisSpec trackIUposXaxis{binningIuPosX, "x (cm)"};
+    const AxisSpec trackIUposYaxis{binningIuPosY, "y (cm)"};
+    const AxisSpec trackIUposZaxis{binningIuPosZ, "z (cm)"};
     const AxisSpec trackImpParRPhiAxis{binningImpPar, "#it{d}_{r#it{#varphi}} (#mum)"};
     const AxisSpec trackImpParZAxis{binningImpPar, "#it{d}_{z} (#mum)"};
     const AxisSpec trackImpParRPhiPullsAxis{binningPulls, "#it{d}_{r#it{#varphi}} / #sigma(#it{d}_{r#it{#varphi}})"};
@@ -291,8 +293,8 @@ struct QaImpactPar {
     histograms.add("Reco/h4ImpPar", "", kTHnSparseD, {trackPtAxis, trackImpParRPhiAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
     histograms.add("Reco/h4ImpParZ", "", kTHnSparseD, {trackPtAxis, trackImpParZAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
     if (addTrackIUinfo) {
-      histograms.add("Reco/h4ImpParIU", "", kTHnSparseD, {trackPtAxis, trackImpParRPhiAxis, trackIUposXaxis, trackIUposYaxis, trackIUposZaxis});
-      histograms.add("Reco/h4ImpParZIU", "", kTHnSparseD, {trackPtAxis, trackImpParZAxis, trackIUposXaxis, trackIUposYaxis, trackIUposZaxis});
+      histograms.add("Reco/h4ImpParIU", "", kTHnSparseD, {trackPaxis, trackImpParRPhiAxis, trackIUposXaxis, trackIUposYaxis, trackIUposZaxis});
+      histograms.add("Reco/h4ImpParZIU", "", kTHnSparseD, {trackPaxis, trackImpParZAxis, trackIUposXaxis, trackIUposYaxis, trackIUposZaxis});
     }
     // if(fEnablePulls && !doPVrefit) {
     //   LOGF(fatal, ">>> dca errors not stored after track propagation at the moment. Use fEnablePulls only if doPVrefit!");
@@ -333,7 +335,7 @@ struct QaImpactPar {
   /// core template process function
   template <bool IS_MC, typename C, typename T, typename T_MC>
   void processReco(const C& collision, const trackTable& unfilteredTracks, const T& tracks,
-                   const o2::aod::TracksIU& tracksIU, const T_MC& /*mcParticles*/,
+                   const trackTableIU& tracksIU, const T_MC& /*mcParticles*/,
                    o2::aod::BCsWithTimestamps::iterator const& bc)
   {
     constexpr float toMicrometers = 10000.f; // Conversion from [cm] to [mum]
@@ -454,6 +456,7 @@ struct QaImpactPar {
 
     /// loop over tracks
     float pt = -999.f;
+    float p = -999.f;
     float impParRPhi = -999.f;
     float impParZ = -999.f;
     float impParRPhiSigma = 999.f;
@@ -467,6 +470,7 @@ struct QaImpactPar {
     float trackIuPosX = -999.f;
     float trackIuPosY = -999.f;
     float trackIuPosZ = -999.f;
+    std::array<float, 3> posXYZ = {-999.f, -999.f, -999.f};
     int ntr = tracks.size();
     int cnt = 0;
     for (const auto& track : tracks) {
@@ -550,6 +554,7 @@ struct QaImpactPar {
       }
 
       pt = track.pt();
+      p = track.p();
       tpcNSigmaPion = track.tpcNSigmaPi();
       tpcNSigmaKaon = track.tpcNSigmaKa();
       tpcNSigmaProton = track.tpcNSigmaPr();
@@ -658,9 +663,11 @@ struct QaImpactPar {
       if (addTrackIUinfo) {
         for (const auto& trackIU : tracksIU) {
           if (trackIU.globalIndex() == track.globalIndex()) {
-            trackIuPosX = trackIU.x();
-            trackIuPosY = trackIU.y();
-            trackIuPosZ = trackIU.z();
+            o2::track::TrackParCov trackIuParCov = getTrackParCov(trackIU);
+            trackIuParCov.getXYZGlo(posXYZ);
+            trackIuPosX = posXYZ[0];
+            trackIuPosY = posXYZ[1];
+            trackIuPosZ = posXYZ[2];
           }
         }
       }
@@ -669,8 +676,8 @@ struct QaImpactPar {
       histograms.fill(HIST("Reco/h4ImpPar"), pt, impParRPhi, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
       histograms.fill(HIST("Reco/h4ImpParZ"), pt, impParZ, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
       if (addTrackIUinfo) {
-        histograms.fill(HIST("Reco/h4ImpParIU"), pt, impParRPhi, trackIuPosX, trackIuPosY, trackIuPosZ);
-        histograms.fill(HIST("Reco/h4ImpParZIU"), pt, impParZ, trackIuPosX, trackIuPosY, trackIuPosZ);
+        histograms.fill(HIST("Reco/h4ImpParIU"), p, impParRPhi, trackIuPosX, trackIuPosY, trackIuPosZ);
+        histograms.fill(HIST("Reco/h4ImpParZIU"), p, impParZ, trackIuPosX, trackIuPosY, trackIuPosZ);
       }
       if (fEnablePulls) {
         histograms.fill(HIST("Reco/h4ImpParPulls"), pt, impParRPhi / impParRPhiSigma, track.eta(), track.phi(), pdgIndex, track.sign(), collision.numContrib(), track.isPVContributor());
