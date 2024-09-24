@@ -443,7 +443,6 @@ struct BcSelectionTask {
 struct EventSelectionTask {
   SliceCache cache;
   Produces<aod::EvSels> evsel;
-  Configurable<std::string> syst{"syst", "PbPb", "pp, pPb, Pbp, PbPb, XeXe"}; // TODO determine from AOD metadata or from CCDB
   Configurable<int> muonSelection{"muonSelection", 0, "0 - barrel, 1 - muon selection with pileup cuts, 2 - muon selection without pileup cuts"};
   Configurable<float> maxDiffZvtxFT0vsPV{"maxDiffZvtxFT0vsPV", 1., "maximum difference (in cm) between z-vertex from FT0 and PV"};
   Configurable<int> isMC{"isMC", 0, "-1 - autoset, 0 - data, 1 - MC"};
