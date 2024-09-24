@@ -82,7 +82,7 @@ struct MatchingQaTask {
     const AxisSpec axisColTimeRes{1500, 0., 1500., "collision time resolution (ns)"};
     const AxisSpec axisFraction{1000, 0., 1., ""};
     const AxisSpec axisBcDiff{800, -400., 400., "bc diff"};
-    const AxisSpec axisBcs{nBCsPerOrbit, 0., float(nBCsPerOrbit), "bc"};
+    const AxisSpec axisBcs{nBCsPerOrbit, 0., static_cast<float>(nBCsPerOrbit), "bc"};
     const AxisSpec axisMultT0C{200, 0., isLowFlux ? 6000. : 60000., "Rec. mult. T0C"};
     const AxisSpec axisZvtxDiff{200, -20., 20., "Zvtx difference, cm"};
 
@@ -163,8 +163,8 @@ struct MatchingQaTask {
       bcSOR = orbitSOR * nBCsPerOrbit;
       nBCsPerTF = nOrbitsPerTF * nBCsPerOrbit;
       nBCsPerITSROF = (run >= 543437 && run <= 545367) ? 594 : 198;
-      const AxisSpec axisBcsInTF{nBCsPerTF, 0., float(nBCsPerTF), "bc"};
-      const AxisSpec axisBcsInITSROF{nBCsPerITSROF, 0., float(nBCsPerITSROF), "bc"};
+      const AxisSpec axisBcsInTF{nBCsPerTF, 0., static_cast<float>(nBCsPerTF), "bc"};
+      const AxisSpec axisBcsInITSROF{nBCsPerITSROF, 0., static_cast<float>(nBCsPerITSROF), "bc"};
       histos.add("hBcInTFall", "", kTH1F, {axisBcsInTF});
       histos.add("hBcInTFcut", "", kTH1F, {axisBcsInTF});
       histos.add("hBcInITSROFall", "", kTH1F, {axisBcsInITSROF});
@@ -472,9 +472,9 @@ struct MatchingQaTask {
 
       histos.fill(HIST("hNcontribAllContribAll"), nContrib, nContrib);
       histos.fill(HIST("hNcontribAllContribWrong"), nContrib, vNumWrongContributors[colId]);
-      histos.fill(HIST("hNcontribAllFractionWrong"), nContrib, float(vNumWrongContributors[colId]) / nContrib);
+      histos.fill(HIST("hNcontribAllFractionWrong"), nContrib, static_cast<float>(vNumWrongContributors[colId]) / nContrib);
 
-      if (float(vNumWrongContributors[colId]) / nContrib > 0.1)
+      if (static_cast<float>(vNumWrongContributors[colId]) / nContrib > 0.1)
         continue;
 
       histos.fill(HIST("hNcontribColMostlyOk"), nContrib);
