@@ -303,8 +303,7 @@ struct HfDataCreatorCharmHadPiReduced {
     return true;
   }
 
-
-  ///Calculates the index of the collision with the maximum number of contributions.
+  /// Calculates the index of the collision with the maximum number of contributions.
   ///\param collisions are the collisions to search through.
   ///\return The index of the collision with the maximum number of contributions.
   template <typename CColl>
@@ -323,18 +322,19 @@ struct HfDataCreatorCharmHadPiReduced {
 
   /// Checks if the B meson is associated with a different collision than the one it was generated in
   /// \param particleMother is the mother particle
-  /// \param collision is the reconstructed collision 
+  /// \param collision is the reconstructed collision
   /// \param indexCollisionMaxNumContrib is the index of the collision associated with a given MC collision with the largest number of contributors.
   /// \param flagWrongCollision is the flag indicating if whether the associated collision is incorrect.
   template <typename PParticle, typename CColl>
   void checkWrongCollision(const PParticle& particleMother,
                            const CColl& collision,
                            const int64_t& indexCollisionMaxNumContrib,
-                           int8_t& flagWrongCollision) {
+                           int8_t& flagWrongCollision)
+  {
 
     if (particleMother.mcCollision().globalIndex() != collision.mcCollisionId()) {
       flagWrongCollision = BIT(WrongCollisionType::WrongAssociation);
-    } else { 
+    } else {
       if (collision.globalIndex() != indexCollisionMaxNumContrib) {
         flagWrongCollision = BIT(WrongCollisionType::SplitCollision);
       }
