@@ -98,7 +98,9 @@ struct lnnCandidate {
   float piDCAXY = -10;
   float mom3HTPC = -10.f;
   float momPiTPC = -10.f;
-  float mass2TrTOF = 10.f;
+  float mass2TrTOF = -10.f;
+  float DCAPvto3H = -10.f;
+  float DCAPvtoPi = -10.f;
   float beta = 10.f;
   std::array<float, 3> mom3H;
   std::array<float, 3> momPi;
@@ -128,7 +130,7 @@ struct lnnRecoTask {
 
   // Selection criteria
   Configurable<double> v0cospa{"lnncospa", 0.95, "V0 CosPA"};
-  Configurable<float> masswidth{"lnnmasswidth", 0.006, "Mass width (GeV/c^2)"};
+  Configurable<float> masswidth{"lnnmasswidth", 0.06, "Mass width (GeV/c^2)"};
   Configurable<float> dcav0dau{"lnndcaDau", 0.5, "DCA V0 Daughters"};
   Configurable<float> Chi2nClusTPC{"Chi2NClusTPC", 4., "Chi2 / nClusTPC for triton track"};
   Configurable<float> Chi2nClusITS{"Chi2NClusITS", 36., "Chi2 / nClusITS for triton track"};
@@ -137,7 +139,7 @@ struct lnnRecoTask {
   Configurable<float> TPCRigidityMin3H{"TPCRigidityMin3H", 0.5, "Minimum rigidity of the triton candidate"};
   Configurable<float> nSigmaCutTPC{"nSigmaCutTPC", 2.5, "triton dEdx cut (n sigma)"};
   Configurable<float> nSigmaCutTOF{"nSigmaCutITS", 4., "triton dEdx cut (n sigma)"};
-  Configurable<float> nTPCClusMin3H{"nTPCClusMin3H", 100, "triton NTPC clusters cut"};
+  Configurable<float> nTPCClusMin3H{"nTPCClusMin3H", 80, "triton NTPC clusters cut"};
   Configurable<float> nClusITS{"nClusITSMin3H", 3.0, "triton NITS clusters cut"};
   Configurable<float> ptMinTOF{"ptMinTOF", 1.5, "minimum pt for TOF cut"};
   Configurable<bool> mcSignalOnly{"mcSignalOnly", true, "If true, save only signal in MC"};
@@ -172,7 +174,7 @@ struct lnnRecoTask {
   ConfigurableAxis nSigmaBins{"nSigmaBins", {200, -5.f, 5.f}, "Binning for n sigma"};
   ConfigurableAxis zVtxBins{"zVtxBins", {100, -20.f, 20.f}, "Binning for n sigma"};
   ConfigurableAxis centBins{"centBins", {100, 0.f, 100.f}, "Binning for centrality"};
-  ConfigurableAxis TritMomBins{"TritMom", {100, 0.f, 10.f}, "Binning for Triton TPC momentum"};
+  ConfigurableAxis TritMomBins{"TritMom", {100, -10.f, 10.f}, "Binning for Triton TPC momentum"};
   ConfigurableAxis MassTOFBins{"MassTOFTr", {400, 0.f, 10.f}, "Binning for Triton Mass TOF"};
   ConfigurableAxis MomTritonBins{"MomTritonBins", {200, -6.f, 6.f}, "Binning for Triton Mom positive values"};
   ConfigurableAxis BetaBins{"BetaBins", {550, 0.f, 1.1f}, "BInning for Beta"};
@@ -360,12 +362,32 @@ struct lnnRecoTask {
       lnnCand.flags |= lnnCand.isMatter ? static_cast<uint8_t>((posTrack.pidForTracking() & 0xF) << 4) : static_cast<uint8_t>((negTrack.pidForTracking() & 0xF) << 4);
       lnnCand.flags |= lnnCand.isMatter ? static_cast<uint8_t>(negTrack.pidForTracking() & 0xF) : static_cast<uint8_t>(posTrack.pidForTracking() & 0xF);
 
-      auto posTrackCov = getTrackParCov(posTrack);
+      auto h3TrackCov = getTrackParCov(h3track);
       auto negTrackCov = getTrackParCov(negTrack);
+
+      hdEdxTot->Fill(posRigidity, h3track.tpcSignal());
+      hdEdxTot->Fill(-negRigidity, negTrack.tpcSignal());
+
+      int chargeFactor = -1 + 2 * lnnCand.isMatter;
+      hdEdx3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, h3track.tpcSignal());
+      hNsigma3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, lnnCand.nSigma3H);
+      if (is3H) {
+        hdEdx3HPosTrack->Fill(lnnCand.mom3HTPC, h3track.tpcSignal());
+      }
+
+      if (h3track.hasTOF()) {
+        float beta = h3track.beta();
+        lnnCand.mass2TrTOF = h3track.mass() * h3track.mass();
+        h3HMassPtTOF->Fill(chargeFactor * h3track.pt(), lnnCand.mass2TrTOF);
+        h3HSignalPtTOF->Fill(chargeFactor * h3track.pt(), beta);
+        if (h3track.pt() >= ptMinTOF) {
+          hNsigma3HSelTOF->Fill(chargeFactor * h3track.pt(), h3track.tofNSigmaTr());
+        }
+      }
 
       int nCand = 0;
       try {
-        nCand = fitter.process(posTrackCov, negTrackCov);
+        nCand = fitter.process(h3TrackCov, negTrackCov);
       } catch (...) {
         LOG(error) << "Exception caught in DCA fitter process call!";
         continue;
@@ -400,28 +422,8 @@ struct lnnRecoTask {
         continue;
       }
 
-      hdEdxTot->Fill(posRigidity, posTrack.tpcSignal());
-      hdEdxTot->Fill(-negRigidity, negTrack.tpcSignal());
-      int chargeFactor = -1 + 2 * lnnCand.isMatter;
-      hdEdx3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, h3track.tpcSignal());
-      hNsigma3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, lnnCand.nSigma3H);
-
-      if (is3H) {
-        hdEdx3HPosTrack->Fill(lnnCand.mom3HTPC, h3track.tpcSignal());
-      }
-
-      if (h3track.hasTOF()) {
-        float beta = h3track.beta();
-        lnnCand.mass2TrTOF = h3track.mass() * h3track.mass();
-        h3HMassPtTOF->Fill(h3track.pt(), lnnCand.mass2TrTOF);
-        h3HSignalPtTOF->Fill(h3track.pt(), beta);
-        if (h3track.pt() >= ptMinTOF) {
-          hNsigma3HSelTOF->Fill(h3track.pt(), h3track.tofNSigmaTr());
-        }
-      }
-
       // Definition of lnn mass
-      float mLNN_HypHI = 2.994; // value in GeV, but 2993.7 MeV/c**2
+      float mLNN_HypHI = 2993.7; // value in GeV, but 2993.7 MeV/c**2
       float massLNNL = std::sqrt(h3lE * h3lE - lnnMom[0] * lnnMom[0] - lnnMom[1] * lnnMom[1] - lnnMom[2] * lnnMom[2]);
       bool isLNNMass = false;
       if (massLNNL > mLNN_HypHI - masswidth && massLNNL < mLNN_HypHI + masswidth) {
@@ -451,7 +453,7 @@ struct lnnRecoTask {
       // if survived all selections, propagate decay daughters to PV
       gpu::gpustd::array<float, 2> dcaInfo;
 
-      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, posTrackCov, 2.f, fitter.getMatCorrType(), &dcaInfo);
+      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, h3TrackCov, 2.f, fitter.getMatCorrType(), &dcaInfo);
       lnnCand.isMatter ? lnnCand.h3DCAXY = dcaInfo[0] : lnnCand.piDCAXY = dcaInfo[0];
 
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, negTrackCov, 2.f, fitter.getMatCorrType(), &dcaInfo);
