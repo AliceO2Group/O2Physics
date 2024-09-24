@@ -130,7 +130,7 @@ struct lnnRecoTask {
 
   // Selection criteria
   Configurable<double> v0cospa{"lnncospa", 0.95, "V0 CosPA"};
-  Configurable<float> masswidth{"lnnmasswidth", 0.006, "Mass width (GeV/c^2)"};
+  Configurable<float> masswidth{"lnnmasswidth", 0.06, "Mass width (GeV/c^2)"};
   Configurable<float> dcav0dau{"lnndcaDau", 0.5, "DCA V0 Daughters"};
   Configurable<float> Chi2nClusTPC{"Chi2NClusTPC", 4., "Chi2 / nClusTPC for triton track"};
   Configurable<float> Chi2nClusITS{"Chi2NClusITS", 36., "Chi2 / nClusITS for triton track"};
@@ -424,7 +424,7 @@ struct lnnRecoTask {
       }
 
       // Definition of lnn mass
-      float mLNN_HypHI = 2.994; // value in GeV, but 2993.7 MeV/c**2
+      float mLNN_HypHI = 2993.7; // value in GeV, but 2993.7 MeV/c**2
       float massLNNL = std::sqrt(h3lE * h3lE - lnnMom[0] * lnnMom[0] - lnnMom[1] * lnnMom[1] - lnnMom[2] * lnnMom[2]);
       bool isLNNMass = false;
       if (massLNNL > mLNN_HypHI - masswidth && massLNNL < mLNN_HypHI + masswidth) {
