@@ -53,7 +53,7 @@ struct FlowGFWPbPb {
   O2_DEFINE_CONFIGURABLE(cfgCutTPCclu, float, 70.0f, "minimum TPC clusters")
   O2_DEFINE_CONFIGURABLE(cfgUseAdditionalEventCut, bool, false, "Use additional event cut on mult correlations")
   O2_DEFINE_CONFIGURABLE(cfgUseAdditionalTrackCut, bool, false, "Use additional track cut on phi")
-  O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, true, "Use Nch for flow observables")
+  O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, false, "Use Nch for flow observables")
   O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 10, "Number of subsamples")
   O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeights, bool, false, "Fill and output NUA weights")
   O2_DEFINE_CONFIGURABLE(cfgEfficiency, std::string, "", "CCDB path to efficiency object")
@@ -62,7 +62,7 @@ struct FlowGFWPbPb {
   O2_DEFINE_CONFIGURABLE(dcaZ, float, 0.2f, "Custom DCA Z cut (ignored if negative)")
   O2_DEFINE_CONFIGURABLE(GlobalplusITS, bool, false, "Global and ITS tracks")
   O2_DEFINE_CONFIGURABLE(Globalonly, bool, false, "Global only tracks")
-  O2_DEFINE_CONFIGURABLE(ITSonly, bool, true, "ITS only tracks")
+  O2_DEFINE_CONFIGURABLE(ITSonly, bool, false, "ITS only tracks")
 
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis axisPhi{"axisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
@@ -76,11 +76,6 @@ struct FlowGFWPbPb {
   ConfigurableAxis axisT0C{"axisT0C", {70, 0, 70000}, "N_{ch} (T0C)"};
   ConfigurableAxis axisT0A{"axisT0A", {200, 0, 200000}, "N_{ch} (T0A)"};
   ConfigurableAxis axisNchPV{"axisNchPV", {4000, 0, 4000}, "N_{ch} (PV)"};
-
-  using Colls = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::CentFT0Cs>>; // collisions filter
-  using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksDCA, aod::TracksExtra>>;    // tracks filter
-  Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
 
   static constexpr TrackSelectionFlags::flagtype trackSelectionITS =
     TrackSelectionFlags::kITSNCls | TrackSelectionFlags::kITSChi2NDF |
@@ -147,11 +142,11 @@ struct FlowGFWPbPb {
     ccdb->setCreatedNotAfter(nolaterthan.value);
 
     // Add some output objects to the histogram registry
-    registry.add("hEventCount", "Number of Events;; Count", {HistType::kTH1D, {{4, 0, 4}}});
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(1, "Filtered event");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(2, "after sel8");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(3, "after additional event cut");
-    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(4, "after correction loads");
+    registry.add("hEventCount", "Number of Events;; No. of Events", {HistType::kTH1D, {{4, 0, 4}}});
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(1, "Filtered Events");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(2, "After sel8");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(3, "After additional event cut");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(4, "After correction loads");
     registry.add("hPhi", "", {HistType::kTH1D, {axisPhi}});
     registry.add("hEta", "", {HistType::kTH1D, {axisEta}});
     registry.add("hVtxZ", "Vexter Z distribution", {HistType::kTH1D, {axisVertex}});
@@ -181,6 +176,9 @@ struct FlowGFWPbPb {
     registry.add("GlobalplusITS", "Global plus ITS;Centrality FT0C;Nch", kTH1F, {axisCentrality});
     registry.add("Globalonly", "Global only;Centrality FT0C;Nch", kTH1F, {axisCentrality});
     registry.add("ITSonly", "ITS only;Centrality FT0C;Nch", kTH1F, {axisCentrality});
+    registry.add("GlobalplusITS_Nch_vs_Cent", "Global plus ITS;Centrality (%); M (|#eta| < 0.8);", {HistType::kTH2D, {axisCentrality, axisNch}});
+    registry.add("Globalonly_Nch_vs_Cent", "Global only;Centrality (%); M (|#eta| < 0.8);", {HistType::kTH2D, {axisCentrality, axisNch}});
+    registry.add("ITSonly_Nch_vs_Cent", "ITS only;Centrality (%); M (|#eta| < 0.8);", {HistType::kTH2D, {axisCentrality, axisNch}});
 
     // Track QA
     registry.add("hPt", "p_{T} distribution before cut", {HistType::kTH1D, {axisPtHist}});
@@ -448,12 +446,19 @@ struct FlowGFWPbPb {
     return true;
   }
 
+  // Apply process filters
+  Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackSelectionProperMixed = ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) &&
                                      ncheckbit(aod::track::trackCutFlag, trackSelectionITS) &&
                                      ifnode(ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC),
                                             ncheckbit(aod::track::trackCutFlag, trackSelectionTPC), true) &&
                                      ifnode(dcaZ.node() > 0.f, nabs(aod::track::dcaZ) <= dcaZ && ncheckbit(aod::track::trackCutFlag, trackSelectionDCAXYonly),
-                                            ncheckbit(aod::track::trackCutFlag, trackSelectionDCA));
+                                            ncheckbit(aod::track::trackCutFlag, trackSelectionDCA)) &&
+                                     (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) &&
+                                     (aod::track::pt < cfgCutPtMax) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
+
+  using Colls = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::CentFT0Cs>>; // collisions filter
+  using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksDCA, aod::TracksExtra>>;    // tracks filter
 
   void process(Colls::iterator const& collision, aod::BCsWithTimestamps const&, aodTracks const& tracks)
   {
@@ -477,8 +482,9 @@ struct FlowGFWPbPb {
 
     const auto cent = collision.centFT0C();
 
-    if (cfgUseAdditionalEventCut && !eventSelected(o2::aod::mult::MultNTracksPV(), collision, tracks.size(), cent))
+    if (cfgUseAdditionalEventCut && !eventSelected(o2::aod::mult::MultNTracksPV(), collision, tracks.size(), cent)) {
       return;
+    }
 
     registry.fill(HIST("hEventCount"), 2.5);
 
@@ -513,6 +519,10 @@ struct FlowGFWPbPb {
     }
 
     // track loop
+    int globalplusits_nch{0};
+    int gloabalonly_nch{0};
+    int itsonly_nch{0};
+
     for (auto& track : tracks) {
 
       if (track.tpcNClsFound() < cfgCutTPCclu)
@@ -536,25 +546,34 @@ struct FlowGFWPbPb {
         registry.fill(HIST("hnTPCCrossedRow"), track.tpcNClsCrossedRows());
       }
 
-      if (GlobalplusITS == true) {
-        registry.fill(HIST("GlobalplusITS"), collision.centFT0C());
+      globalplusits_nch++;
+      registry.fill(HIST("GlobalplusITS"), collision.centFT0C());
+      if (GlobalplusITS) {
         if (WithinPtRef)
           fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
       }
 
-      if (track.hasTPC() && Globalonly == true) {
+      if (track.hasTPC()) {
+        gloabalonly_nch++;
         registry.fill(HIST("Globalonly"), collision.centFT0C());
-        if (WithinPtRef)
-          fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
-      }
-
-      if (track.hasITS() && ITSonly == true) {
+        if (Globalonly) {
+          if (WithinPtRef)
+            fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
+        }
+      } else {
+        itsonly_nch++;
         registry.fill(HIST("ITSonly"), collision.centFT0C());
-        if (WithinPtRef)
-          fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
+        if (ITSonly) {
+          if (WithinPtRef)
+            fGFW->Fill(track.eta(), fPtAxis->FindBin(track.pt()) - 1, track.phi(), wacc * weff, 1);
+        }
       }
 
     } // End of track loop
+
+    registry.fill(HIST("GlobalplusITS_Nch_vs_Cent"), cent, globalplusits_nch);
+    registry.fill(HIST("Globalonly_Nch_vs_Cent"), cent, gloabalonly_nch);
+    registry.fill(HIST("ITSonly_Nch_vs_Cent"), cent, itsonly_nch);
 
     // Filling c22 with ROOT TProfile
     FillProfile(corrconfigs.at(0), HIST("c22"), cent);
