@@ -59,10 +59,14 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
-using ColwithEvTimes = o2::soa::Join<aod::Collisions, aod::EvSels, aod::EvTimeTOFFT0>;
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels>;
-using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::EvTimeTOFFT0ForTrack>;
+using FullTracksExtIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU>;
 using FullTracksExtPIDIU = soa::Join<FullTracksExtIU, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullPi, aod::pidTPCFullDe>;
+
+using ColwithEvTimes = o2::soa::Join<aod::Collisions, aod::EvSels, aod::EvTimeTOFFT0>;
+using TrackExtIUwithEvTimes = soa::Join<FullTracksExtIU, aod::EvTimeTOFFT0ForTrack>;
+using TrackExtPIDIUwithEvTimes = soa::Join<FullTracksExtPIDIU, aod::EvTimeTOFFT0ForTrack>;
+
 using MCLabeledTracksIU = soa::Join<FullTracksExtIU, aod::McTrackLabels>;
 
 struct decay3bodyBuilder {
@@ -152,7 +156,7 @@ struct decay3bodyBuilder {
   // hypothesis
   Configurable<int> motherhyp{"motherhyp", 0, "hypothesis of the 3body decayed particle"};                           // corresponds to hyp3body
   int bachelorcharge = 1;                                                                                            // to be updated in Init base on the hypothesis
-  o2::aod::pidtofgeneric::TofPidNewCollision<ColwithEvTimes::iterator, FullTracksExtPIDIU::iterator> bachelorTOFPID; // to be updated in Init base on the hypothesis
+  o2::aod::pidtofgeneric::TofPidNewCollision<ColwithEvTimes::iterator, TrackExtPIDIUwithEvTimes::iterator> bachelorTOFPID; // to be updated in Init base on the hypothesis
 
   // Selection criteria
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
@@ -967,7 +971,7 @@ struct decay3bodyBuilder {
   }
 
   //------------------------------------------------------------------
-  void processRun3(ColwithEvTimes const& collisions, FullTracksExtPIDIU const& tracksIU, aod::Decay3Bodys const& decay3bodys, aod::BCsWithTimestamps const&)
+  void processRun3(ColwithEvTimes const& collisions, TrackExtPIDIUwithEvTimes const& tracksIU, aod::Decay3Bodys const& decay3bodys, aod::BCsWithTimestamps const&)
   {
     for (const auto& collision : collisions) {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -975,8 +979,8 @@ struct decay3bodyBuilder {
       registry.fill(HIST("hEventCounter"), 0.5);
 
       const auto& d3bodysInCollision = decay3bodys.sliceBy(perCollision, collision.globalIndex());
-      // buildVtx3BodyDataTable<ColwithEvTimes, FullTracksExtPIDIU>(collisions, collision, tracksIU, d3bodysInCollision, bachelorcharge);
-      buildVtx3BodyDataTable<ColwithEvTimes, FullTracksExtPIDIU>(collision, tracksIU, d3bodysInCollision, bachelorcharge);
+      // buildVtx3BodyDataTable<ColwithEvTimes, TrackExtPIDIUwithEvTimes>(collisions, collision, tracksIU, d3bodysInCollision, bachelorcharge);
+      buildVtx3BodyDataTable<ColwithEvTimes, TrackExtPIDIUwithEvTimes>(collision, tracksIU, d3bodysInCollision, bachelorcharge);
     }
   }
   PROCESS_SWITCH(decay3bodyBuilder, processRun3, "Produce DCA fitter decay3body tables", true);
