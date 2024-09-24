@@ -132,6 +132,9 @@ struct femtoUniverseProducerTask {
   Configurable<bool> ConfEvIsGoodZvtxFT0vsPV{"ConfEvIsGoodZvtxFT0vsPV", true, "Require kIsGoodZvtxFT0vsPV selection on Events."};
   Configurable<bool> ConfEvNoSameBunchPileup{"ConfEvNoSameBunchPileup", true, "Require kNoSameBunchPileup selection on Events."};
   Configurable<bool> ConfEvIsVertexITSTPC{"ConfEvIsVertexITSTPC", true, "Require kIsVertexITSTPC selection on Events"};
+  Configurable<int> ConfTPCOccupancyMin{"ConfTPCOccupancyMin", 0, "Minimum value for TPC Occupancy selection"};
+  Configurable<int> ConfTPCOccupancyMax{"ConfTPCOccupancyMax", 500, "Maximum value for TPC Occupancy selection"};
+
   Filter CustomCollCentFilter = (aod::cent::centFT0C > ConfCentFT0Min) &&
                                 (aod::cent::centFT0C < ConfCentFT0Max);
 
@@ -850,6 +853,7 @@ struct femtoUniverseProducerTask {
       cent = col.centFT0C();
     }
 
+    int occupancy = col.trackOccupancyInTimeRange();
     // check whether the basic event selection criteria are fulfilled
     // if the basic selection is NOT fulfilled:
     // in case of skimming run - don't store such collisions
@@ -857,10 +861,12 @@ struct femtoUniverseProducerTask {
     // particle candidates for such collisions
     if (!colCuts.isSelectedRun3(col)) {
       if (ConfIsTrigger) {
-        if (ConfDoSpher) {
-          outputCollision(vtxZ, cent, multNtr, colCuts.computeSphericity(col, tracks), mMagField);
-        } else {
-          outputCollision(vtxZ, cent, multNtr, 2, mMagField);
+        if (occupancy > ConfTPCOccupancyMin && occupancy <= ConfTPCOccupancyMax) {
+          if (ConfDoSpher) {
+            outputCollision(vtxZ, cent, multNtr, colCuts.computeSphericity(col, tracks), mMagField);
+          } else {
+            outputCollision(vtxZ, cent, multNtr, 2, mMagField);
+          }
         }
       } //////
 

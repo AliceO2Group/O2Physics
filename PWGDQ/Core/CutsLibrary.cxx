@@ -889,7 +889,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
-  for (int iCut = 0; iCut < 7; iCut++) {
+  for (int iCut = 0; iCut < 10; iCut++) {
     if (!nameStr.compare(Form("jpsiEleSel%d_ionut", iCut))) {
       cut->AddCut(GetAnalysisCut("kineJpsiEle_ionut"));
       cut->AddCut(GetAnalysisCut("dcaCut1_ionut"));
@@ -4090,6 +4090,24 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kTPCnSigmaEl, -1.0, 4.0);
     cut->AddCut(VarManager::kTOFnSigmaEl, -1.0, 4.0);
     cut->AddCut(VarManager::kTPCnSigmaPr, -4.0, 4.0, true);
+    return cut;
+  }
+
+  if (!nameStr.compare("pidJpsiEle7_ionut")) {
+    cut->AddCut(VarManager::kTOFnSigmaEl, -3.0, 4.0);
+    cut->AddCut(VarManager::kTPCnSigmaEl, -1.0, 4.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("pidJpsiEle8_ionut")) {
+    cut->AddCut(VarManager::kTOFnSigmaEl, -3.0, 4.0);
+    cut->AddCut(VarManager::kTPCnSigmaEl, -1.5, 4.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("pidJpsiEle9_ionut")) {
+    cut->AddCut(VarManager::kTOFnSigmaEl, -3.0, 4.0);
+    cut->AddCut(VarManager::kTPCnSigmaEl, -2.0, 4.0);
     return cut;
   }
 

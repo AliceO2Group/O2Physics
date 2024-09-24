@@ -1628,6 +1628,14 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kPsi2ANEG] = Psi2ANEG;
     values[kPsi2B] = Psi2B;
     values[kPsi2C] = Psi2C;
+
+    values[kR2SP_AB] = (values[kQ2X0A] * values[kQ2X0B] + values[kQ2Y0A] * values[kQ2Y0B]);
+    values[kR2SP_AC] = (values[kQ2X0A] * values[kQ2X0C] + values[kQ2Y0A] * values[kQ2Y0C]);
+    values[kR2SP_BC] = (values[kQ2X0B] * values[kQ2X0C] + values[kQ2Y0B] * values[kQ2Y0C]);
+
+    values[kR2EP_AB] = TMath::Cos(2 * (Psi2A - Psi2B));
+    values[kR2EP_AC] = TMath::Cos(2 * (Psi2A - Psi2C));
+    values[kR2EP_BC] = TMath::Cos(2 * (Psi2B - Psi2C));
   }
 
   if constexpr ((fillMap & CollisionMC) > 0) {

@@ -35,9 +35,12 @@ struct TimestampTask {
   Produces<aod::Timestamps> timestampTable;  /// Table with SOR timestamps produced by the task
   Service<o2::ccdb::BasicCCDBManager> ccdb;  /// CCDB manager to access orbit-reset timestamp
   o2::ccdb::CcdbApi ccdb_api;                /// API to access CCDB headers
+  Configurable<bool> fatalOnInvalidTimestamp{"fatalOnInvalidTimestamp", false, "Generate fatal error for invalid timestamps"};
   std::map<int, int64_t> mapRunToOrbitReset; /// Cache of orbit reset timestamps
+  std::map<int, std::pair<int64_t, int64_t>> mapRunToRunDuration; /// Cache of run duration timestamps
   int lastRunNumber = 0;                     /// Last run number processed
   int64_t orbitResetTimestamp = 0;           /// Orbit-reset timestamp in us
+  std::pair<int64_t, int64_t> runDuration;   /// Pair of SOR and EOR timestamps
 
   // Configurables
   Configurable<bool> verbose{"verbose", false, "verbose mode"};
@@ -75,11 +78,12 @@ struct TimestampTask {
     } else if (mapRunToOrbitReset.count(runNumber)) { // The run number was already requested before: getting it from cache!
       LOGF(debug, "Getting orbit-reset timestamp from cache");
       orbitResetTimestamp = mapRunToOrbitReset[runNumber];
+      runDuration = mapRunToRunDuration[runNumber];
     } else { // The run was not requested before: need to acccess CCDB!
       LOGF(debug, "Getting start-of-run and end-of-run timestamps from CCDB");
-      auto timestamps = ccdb->getRunDuration(runNumber, true); /// fatalise if timestamps are not found
-      int64_t sorTimestamp = timestamps.first;                 // timestamp of the SOR in ms
-      int64_t eorTimestamp = timestamps.second;                // timestamp of the EOR in ms
+      runDuration = ccdb->getRunDuration(runNumber, true); /// fatalise if timestamps are not found
+      int64_t sorTimestamp = runDuration.first;            // timestamp of the SOR/SOX/STF in ms
+      int64_t eorTimestamp = runDuration.second;           // timestamp of the EOR/EOX/ETF in ms
 
       const bool isUnanchoredRun3MC = runNumber >= 300000 && runNumber < 500000;
       if (isRun2MC.value == 1 || isUnanchoredRun3MC) {
@@ -94,7 +98,7 @@ struct TimestampTask {
       } else {
         // sometimes orbit is reset after SOR. Using EOR timestamps for orbitReset query is more reliable
         LOGF(debug, "Getting orbit-reset timestamp using end-of-run timestamp from CCDB");
-        auto ctp = ccdb->getForTimeStamp<std::vector<Long64_t>>(orbit_reset_path.value.data(), eorTimestamp);
+        auto ctp = ccdb->getForTimeStamp<std::vector<Long64_t>>(orbit_reset_path.value.data(), eorTimestamp / 2 + sorTimestamp / 2);
         orbitResetTimestamp = (*ctp)[0];
       }
 
@@ -104,14 +108,22 @@ struct TimestampTask {
       if (!check.second) {
         LOGF(fatal, "Run number %i already existed with a orbit-reset timestamp of %llu", runNumber, check.first->second);
       }
-      LOGF(info, "Add new run number %i with orbit-reset timestamp %llu to cache", runNumber, orbitResetTimestamp);
+      mapRunToRunDuration[runNumber] = runDuration;
+      LOGF(info, "Add new run number %i with orbit-reset timestamp %llu, SOR: %llu, EOR: %llu to cache", runNumber, orbitResetTimestamp, runDuration.first, runDuration.second);
     }
 
     if (verbose.value) {
       LOGF(info, "Orbit-reset timestamp for run number %i found: %llu us", runNumber, orbitResetTimestamp);
     }
-
-    timestampTable((orbitResetTimestamp + int64_t(bc.globalBC() * o2::constants::lhc::LHCBunchSpacingNS * 1e-3)) / 1000); // us -> ms
+    int64_t timestamp{(orbitResetTimestamp + int64_t(bc.globalBC() * o2::constants::lhc::LHCBunchSpacingNS * 1e-3)) / 1000}; // us -> ms
+    if (timestamp < runDuration.first || timestamp > runDuration.second) {
+      if (fatalOnInvalidTimestamp.value) {
+        LOGF(fatal, "Timestamp %llu us is out of run duration [%llu, %llu] ms", timestamp, runDuration.first, runDuration.second);
+      } else {
+        LOGF(debug, "Timestamp %llu us is out of run duration [%llu, %llu] ms", timestamp, runDuration.first, runDuration.second);
+      }
+    }
+    timestampTable(timestamp);
   }
 };
 

@@ -49,6 +49,7 @@ class DimuonCut : public TNamed
     kTrackType,
     kTrackPtRange,
     kTrackEtaRange,
+    kTrackPhiRange,
     kDCAxy,
     kMFTNCls,
     kMCHMIDNCls,
@@ -118,6 +119,9 @@ class DimuonCut : public TNamed
     if (!IsSelectedTrack(track, DimuonCuts::kTrackEtaRange)) {
       return false;
     }
+    if (!IsSelectedTrack(track, DimuonCuts::kTrackPhiRange)) {
+      return false;
+    }
     if (!IsSelectedTrack(track, DimuonCuts::kDCAxy)) {
       return false;
     }
@@ -159,6 +163,9 @@ class DimuonCut : public TNamed
       case DimuonCuts::kTrackEtaRange:
         return track.eta() > mMinTrackEta && track.eta() < mMaxTrackEta;
 
+      case DimuonCuts::kTrackPhiRange:
+        return track.phi() > mMinTrackPhi && track.phi() < mMaxTrackPhi;
+
       case DimuonCuts::kDCAxy:
         return mMinDcaXY < std::sqrt(std::pow(track.fwdDcaX(), 2) + std::pow(track.fwdDcaY(), 2)) && std::sqrt(std::pow(track.fwdDcaX(), 2) + std::pow(track.fwdDcaY(), 2)) < mMaxDcaXY;
 
@@ -197,6 +204,7 @@ class DimuonCut : public TNamed
   void SetTrackType(int track_type); // 0: MFT-MCH-MID (global muon), 3: MCH-MID (standalone muon)
   void SetTrackPtRange(float minPt = 0.f, float maxPt = 1e10f);
   void SetTrackEtaRange(float minEta = -1e10f, float maxEta = 1e10f);
+  void SetTrackPhiRange(float minPhi = 0.f, float maxPhi = 2.f * M_PI);
   void SetNClustersMFT(int min, int max);
   void SetNClustersMCHMID(int min, int max);
   void SetChi2(float min, float max);
@@ -214,8 +222,9 @@ class DimuonCut : public TNamed
   float mMinPairDCAxy{0.f}, mMaxPairDCAxy{1e10f}; // range in 3D DCA in sigma
 
   // kinematic cuts
-  float mMinTrackPt{0.f}, mMaxTrackPt{1e10f};      // range in pT
-  float mMinTrackEta{-1e10f}, mMaxTrackEta{1e10f}; // range in eta
+  float mMinTrackPt{0.f}, mMaxTrackPt{1e10f};        // range in pT
+  float mMinTrackEta{-1e10f}, mMaxTrackEta{1e10f};   // range in eta
+  float mMinTrackPhi{0.f}, mMaxTrackPhi{2.f * M_PI}; // range in phi
 
   // track quality cuts
   int mTrackType{3};

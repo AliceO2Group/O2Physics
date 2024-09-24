@@ -184,7 +184,7 @@ class PairSHCentMultKt
   /// \param ktval kT value
   template <typename T>
   void fill_mult_NumDen(T const& part1, T const& part2, uint8_t ChosenEventType,
-                        int maxl, int multval, float ktval)
+                        int maxl, int multval, float ktval, bool isiden)
   {
     int multbinval;
     int absmultval = multval;
@@ -201,7 +201,7 @@ class PairSHCentMultKt
       return;
     }
     // std::cout<<"multbinval "<<multbinval<<std::endl;
-    fill_kT_NumDen(part1, part2, ChosenEventType, maxl, multbinval, ktval);
+    fill_kT_NumDen(part1, part2, ChosenEventType, maxl, multbinval, ktval, isiden);
   }
 
   /// Templated function to access different kT directory and call AddEventPair
@@ -213,7 +213,7 @@ class PairSHCentMultKt
   /// \param ktval kT value
   template <typename T>
   void fill_kT_NumDen(T const& part1, T const& part2, uint8_t ChosenEventType,
-                      int maxl, int multval, float ktval)
+                      int maxl, int multval, float ktval, bool isiden)
   {
     int ktbinval = -1;
     if ((ktval >= KtBins[0]) && (ktval < KtBins[1])) {
@@ -227,7 +227,7 @@ class PairSHCentMultKt
     } else {
       return;
     }
-    AddEventPair(part1, part2, ChosenEventType, maxl, multval, ktbinval);
+    AddEventPair(part1, part2, ChosenEventType, maxl, multval, ktbinval, isiden);
   }
 
   /// Set the PDG codes of the two particles involved
@@ -262,14 +262,14 @@ class PairSHCentMultKt
   /// \param ktval kT value
   template <typename T>
   void AddEventPair(T const& part1, T const& part2, uint8_t ChosenEventType,
-                    int /*maxl*/, int multval, int ktval)
+                    int /*maxl*/, int multval, int ktval, bool isiden)
   {
     int fMultBin = multval;
     int fKtBin = ktval;
     std::vector<std::complex<double>> fYlmBuffer(fMaxJM);
     std::vector<double> f3d;
-    f3d = FemtoUniverseMath::getpairmom3d(part1, mMassOne, part2, mMassTwo,
-                                          true, true);
+    f3d = FemtoUniverseMath::newpairfunc(part1, mMassOne, part2, mMassTwo,
+                                         isiden);
 
     const float qout = f3d[1];
     const float qside = f3d[2];

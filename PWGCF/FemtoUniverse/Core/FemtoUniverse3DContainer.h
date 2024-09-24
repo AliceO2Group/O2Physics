@@ -74,7 +74,6 @@ class FemtoUniverse3DContainer
   /// \param mTAxis axis object for the mT axis
   /// \param use3dplots Flag to fill 3D plots
   /// \param isiden Identical or non-identical particle pair
-  /// \param islcms LCMS or PRF
   template <typename T>
   void init_base(std::string folderName, std::string femtoObs1D, std::string femtoObsKout, std::string femtoObsKside, std::string femtoObsKlong, T femtoObsAxis1D, T femtoObsAxisOut, T femtoObsAxisSide, T femtoObsAxisLong, T multAxis, T kTAxis, T mTAxis, T multAxis3D, T mTAxis3D, bool use3dplots, bool isiden)
   {
@@ -214,13 +213,13 @@ class FemtoUniverse3DContainer
   /// \param isiden Choosing identical or non-identical pairs
   /// \param islcm Choosing LCMS or PRF
   template <bool isMC, typename T>
-  void setPair(T const& part1, T const& part2, const int mult, bool use3dplots, bool isiden, bool islcms)
+  void setPair(T const& part1, T const& part2, const int mult, bool use3dplots, bool isiden)
   {
     std::vector<double> f3d;
     const float kT = FemtoUniverseMath::getkT(part1, mMassOne, part2, mMassTwo);
     const float mT = FemtoUniverseMath::getmT(part1, mMassOne, part2, mMassTwo);
 
-    f3d = FemtoUniverseMath::getpairmom3d(part1, mMassOne, part2, mMassTwo, isiden, islcms);
+    f3d = FemtoUniverseMath::newpairfunc(part1, mMassOne, part2, mMassTwo, isiden);
 
     const float femtoObs1D = f3d[0];
     const float femtoObsKout = f3d[1];

@@ -209,7 +209,10 @@ struct JetFinderQATask {
 
     if (doprocessRandomConeData || doprocessRandomConeMCD) {
       registry.add("h2_centrality_rhorandomcone", "; centrality; #it{p}_{T,random cone} - #it{area, random cone} * #it{rho} (GeV/c);", {HistType::kTH2F, {{1100, 0., 110.}, {800, -400.0, 400.0}}});
+      registry.add("h2_centrality_rhorandomconerandomtrackdirection", "; centrality; #it{p}_{T,random cone} - #it{area, random cone} * #it{rho} (GeV/c);", {HistType::kTH2F, {{1100, 0., 110.}, {800, -400.0, 400.0}}});
       registry.add("h2_centrality_rhorandomconewithoutleadingjet", "; centrality; #it{p}_{T,random cone} - #it{area, random cone} * #it{rho} (GeV/c);", {HistType::kTH2F, {{1100, 0., 110.}, {800, -400.0, 400.0}}});
+      registry.add("h2_centrality_rhorandomconerandomtrackdirectionwithoutoneleadingjets", "; centrality; #it{p}_{T,random cone} - #it{area, random cone} * #it{rho} (GeV/c);", {HistType::kTH2F, {{1100, 0., 110.}, {800, -400.0, 400.0}}});
+      registry.add("h2_centrality_rhorandomconerandomtrackdirectionwithouttwoleadingjets", "; centrality; #it{p}_{T,random cone} - #it{area, random cone} * #it{rho} (GeV/c);", {HistType::kTH2F, {{1100, 0., 110.}, {800, -400.0, 400.0}}});
     }
 
     if (doprocessJetsMCP || doprocessJetsMCPWeighted) {
@@ -360,6 +363,17 @@ struct JetFinderQATask {
     }
 
     return true;
+  }
+
+  template <typename T, typename U>
+  bool trackIsInJet(T const& track, U const& jet)
+  {
+    for (auto const& constituentId : jet.tracksIds()) {
+      if (constituentId == track.globalIndex()) {
+        return true;
+      }
+    }
+    return false;
   }
 
   template <typename T>
@@ -606,6 +620,19 @@ struct JetFinderQATask {
     }
     registry.fill(HIST("h2_centrality_rhorandomcone"), collision.centrality(), randomConePt - M_PI * randomConeR * randomConeR * collision.rho());
 
+    // randomised eta,phi for tracks, to assess part of fluctuations coming from statistically independently emitted particles
+    randomConePt = 0;
+    for (auto const& track : tracks) {
+      if (jetderiveddatautilities::selectTrack(track, trackSelection)) {
+        float dPhi = RecoDecay::constrainAngle(randomNumber.Uniform(0.0, 2 * M_PI) - randomConePhi, static_cast<float>(-M_PI)); // ignores actual phi of track
+        float dEta = randomNumber.Uniform(trackEtaMin, trackEtaMax) - randomConeEta;                                            // ignores actual eta of track
+        if (TMath::Sqrt(dEta * dEta + dPhi * dPhi) < randomConeR) {
+          randomConePt += track.pt();
+        }
+      }
+    }
+    registry.fill(HIST("h2_centrality_rhorandomconerandomtrackdirection"), collision.centrality(), randomConePt - M_PI * randomConeR * randomConeR * collision.rho());
+
     // removing the leading jet from the random cone
     if (jets.size() > 0) { // if there are no jets in the acceptance (from the jetfinder cuts) then there can be no leading jet
       float dPhiLeadingJet = RecoDecay::constrainAngle(jets.iteratorAt(0).phi() - randomConePhi, static_cast<float>(-M_PI));
@@ -634,6 +661,26 @@ struct JetFinderQATask {
     }
 
     registry.fill(HIST("h2_centrality_rhorandomconewithoutleadingjet"), collision.centrality(), randomConePt - M_PI * randomConeR * randomConeR * collision.rho());
+
+    // randomised eta,phi for tracks, to assess part of fluctuations coming from statistically independently emitted particles, removing tracks from 2 leading jets
+    double randomConePtWithoutOneLeadJet = 0;
+    double randomConePtWithoutTwoLeadJet = 0;
+    for (auto const& track : tracks) {
+      if (jetderiveddatautilities::selectTrack(track, trackSelection)) {
+        float dPhi = RecoDecay::constrainAngle(randomNumber.Uniform(0.0, 2 * M_PI) - randomConePhi, static_cast<float>(-M_PI)); // ignores actual phi of track
+        float dEta = randomNumber.Uniform(trackEtaMin, trackEtaMax) - randomConeEta;                                            // ignores actual eta of track
+        if (TMath::Sqrt(dEta * dEta + dPhi * dPhi) < randomConeR) {
+          if (!trackIsInJet(track, jets.iteratorAt(0))) {
+            randomConePtWithoutOneLeadJet += track.pt();
+            if (!trackIsInJet(track, jets.iteratorAt(1))) {
+              randomConePtWithoutTwoLeadJet += track.pt();
+            }
+          }
+        }
+      }
+    }
+    registry.fill(HIST("h2_centrality_rhorandomconerandomtrackdirectionwithoutoneleadingjets"), collision.centrality(), randomConePtWithoutOneLeadJet - M_PI * randomConeR * randomConeR * collision.rho());
+    registry.fill(HIST("h2_centrality_rhorandomconerandomtrackdirectionwithouttwoleadingjets"), collision.centrality(), randomConePtWithoutTwoLeadJet - M_PI * randomConeR * randomConeR * collision.rho());
   }
 
   void processJetsData(soa::Filtered<JetCollisions>::iterator const& collision, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets, JetTracks const&)

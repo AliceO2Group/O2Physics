@@ -39,6 +39,7 @@ struct MultiplicityExtraTable {
   // Allow for downscaling of BC table for less space use in derived data
   Configurable<float> bcDownscaleFactor{"bcDownscaleFactor", 2, "Downscale factor for BC table (0: save nothing, 1: save all)"};
   Configurable<float> minFT0CforBCTable{"minFT0CforBCTable", 25.0f, "Minimum FT0C amplitude to fill BC table to reduce data"};
+  Configurable<bool> saveOnlyBCsWithCollisions{"saveOnlyBCsWithCollisions", true, "save only BCs with collisions in them"};
 
   // needed for downscale
   unsigned int randomSeed = 0;
@@ -62,17 +63,28 @@ struct MultiplicityExtraTable {
 
   using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
 
-  void processBCs(BCsWithRun3Matchings const& bcs, aod::FV0As const&, aod::FT0s const&, aod::FDDs const&, aod::Zdcs const&, aod::Collisions const& collisions)
+  void processBCs(soa::Join<BCsWithRun3Matchings, aod::BCFlags> const& bcs, aod::FV0As const&, aod::FT0s const&, aod::FDDs const&, aod::Zdcs const&, soa::Join<aod::Collisions, aod::EvSels> const& collisions)
   {
     //+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+
     // determine saved BCs and corresponding new BC table index
+    std::vector<int> bcHasCollision(bcs.size());
     std::vector<int> newBCindex(bcs.size());
     std::vector<int> bc2multArray(bcs.size());
     int atIndex = 0;
     for (const auto& bc : bcs) {
+      bcHasCollision[bc.globalIndex()] = false;
       newBCindex[bc.globalIndex()] = -1;
       bc2multArray[bc.globalIndex()] = -1;
+    }
 
+    //+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+
+    // tag BCs that have a collision (from evsel foundBC)
+    for (const auto& collision : collisions) {
+      bcHasCollision[collision.foundBCId()] = true;
+    }
+    //+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+
+
+    for (const auto& bc : bcs) {
       // downscale if requested to do so
       if (bcDownscaleFactor < 1.f && (static_cast<float>(rand_r(&randomSeed)) / static_cast<float>(RAND_MAX)) > bcDownscaleFactor) {
         continue;
@@ -91,6 +103,11 @@ struct MultiplicityExtraTable {
       if (multFT0C < minFT0CforBCTable) {
         continue; // skip this event
       }
+
+      if (saveOnlyBCsWithCollisions && !bcHasCollision[bc.globalIndex()]) {
+        continue; // skip if no collision is assigned to this BC (from evSel assignment)
+      }
+
       newBCindex[bc.globalIndex()] = atIndex++;
     }
     //+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+
@@ -98,8 +115,8 @@ struct MultiplicityExtraTable {
     //+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+
     // interlink: collision -> valid BC, BC -> collision
     for (const auto& collision : collisions) {
-      mult2bc(newBCindex[collision.bcId()]);
-      bc2multArray[collision.bcId()] = collision.globalIndex();
+      mult2bc(newBCindex[collision.foundBCId()]);
+      bc2multArray[collision.foundBCId()] = collision.globalIndex();
     }
     //+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+
 
@@ -213,7 +230,12 @@ struct MultiplicityExtraTable {
       }
 
       bc2mult(bc2multArray[bc.globalIndex()]);
-      multBC(multFT0A, multFT0C, posZFT0, posZFT0valid, multFV0A, multFDDA, multFDDC, multZNA, multZNC, multZEM1, multZEM2, multZPA, multZPC, Tvx, isFV0OrA, multFV0TriggerBits, multFT0TriggerBits, multFDDTriggerBits, multBCTriggerMask, collidingBC);
+      multBC(
+        multFT0A, multFT0C, posZFT0, posZFT0valid, multFV0A,
+        multFDDA, multFDDC, multZNA, multZNC, multZEM1,
+        multZEM2, multZPA, multZPC, Tvx, isFV0OrA,
+        multFV0TriggerBits, multFT0TriggerBits, multFDDTriggerBits, multBCTriggerMask, collidingBC,
+        bc.flags());
     }
   }
 

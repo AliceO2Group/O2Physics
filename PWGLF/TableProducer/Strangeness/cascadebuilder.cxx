@@ -53,6 +53,7 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/LFStrangenessMLTables.h"
 #include "PWGLF/DataModel/LFParticleIdentification.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -124,6 +125,10 @@ struct cascadeBuilder {
   Produces<aod::CascBBs> cascbb;          // if enabled
   Produces<aod::CascCovs> casccovs;       // if requested by someone
   Produces<aod::KFCascCovs> kfcasccovs;   // if requested by someone
+
+  // produces calls for machine-learning selections
+  Produces<aod::CascXiMLScores> xiMLSelections;    // Xi scores
+  Produces<aod::CascOmMLScores> omegaMLSelections; // Omega scores
 
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -1573,6 +1578,13 @@ struct cascadeBuilder {
       cascTrackXs(cascadecandidate.positiveX, cascadecandidate.negativeX, cascadecandidate.bachelorX);
     }
     cascbb(cascadecandidate.bachBaryonCosPA, cascadecandidate.bachBaryonDCAxyToPV);
+    if (cascadecandidate.charge < 0) {
+      xiMLSelections(cascadecandidate.mlXiMinusScore);
+      omegaMLSelections(cascadecandidate.mlOmegaMinusScore);
+    } else {
+      xiMLSelections(cascadecandidate.mlXiPlusScore);
+      omegaMLSelections(cascadecandidate.mlOmegaPlusScore);
+    }
 
     // populate cascade covariance matrices if required by any other task
     if (createCascCovMats) {
@@ -1743,6 +1755,13 @@ struct cascadeBuilder {
         cascTrackXs(cascadecandidate.positiveX, cascadecandidate.negativeX, cascadecandidate.bachelorX);
       }
       cascbb(cascadecandidate.bachBaryonCosPA, cascadecandidate.bachBaryonDCAxyToPV);
+      if (cascadecandidate.charge < 0) {
+        xiMLSelections(cascadecandidate.mlXiMinusScore);
+        omegaMLSelections(cascadecandidate.mlOmegaMinusScore);
+      } else {
+        xiMLSelections(cascadecandidate.mlXiPlusScore);
+        omegaMLSelections(cascadecandidate.mlOmegaPlusScore);
+      }
 
       // populate cascade covariance matrices if required by any other task
       if (createCascCovMats) {
