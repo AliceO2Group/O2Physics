@@ -297,7 +297,8 @@ struct MatchingQaTask {
 
       int32_t nContrib = col.numContrib();
       float zVtxCol = col.posZ();
-      float zVtxSigma = 0.56 - 0.002 * nContrib;
+      float zVtxSigma = 2.7 * pow(nContrib, -0.466) + 0.024;
+      zVtxSigma += 1.0; // additional uncertainty due to imperfectections of FT0 time calibration
 
       // QA
       vWeightedSigma[colId] = weightedSigma;
@@ -315,10 +316,8 @@ struct MatchingQaTask {
         float zVtxDiff = zVtxFT0 - zVtxCol;
         float timeDiff = bcNS * (tpcGlobalBC - globalBC);
         float chi2 = 0;
-        if (useVtxDiff)
-          chi2 += pow(zVtxDiff / zVtxSigma, 2);
-        if (useTimeDiff)
-          chi2 += pow(timeDiff / weightedSigma, 2);
+        chi2 += useVtxDiff ? pow(zVtxDiff / zVtxSigma, 2) : 0.;
+        chi2 += useTimeDiff ? pow(timeDiff / weightedSigma, 2) : 0.;
 
         if (chi2 < bestChi2) {
           bestChi2 = chi2;
