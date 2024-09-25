@@ -1833,7 +1833,7 @@ struct AnalysisDileptonTrack {
     if (context.mOptions.get<bool>("processDummy")) {
       return;
     }
-    
+
     bool isBarrel = context.mOptions.get<bool>("processBarrelSkimmed");
     bool isMuon = context.mOptions.get<bool>("processMuonSkimmed");
     bool isAnyProcessEnabled = isBarrel || isMuon;

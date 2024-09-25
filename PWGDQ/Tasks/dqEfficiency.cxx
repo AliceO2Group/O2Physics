@@ -176,7 +176,7 @@ struct AnalysisTrackSelection {
     if (context.mOptions.get<bool>("processDummy")) {
       return;
     }
-    
+
     // Setting the cut names
     TString cutNamesStr = fConfigCuts.value;
     if (!cutNamesStr.IsNull()) {
@@ -340,7 +340,7 @@ struct AnalysisMuonSelection {
     if (context.mOptions.get<bool>("processDummy")) {
       return;
     }
-    
+
     // Setting the cut names
     TString cutNamesStr = fConfigCuts.value;
     if (!cutNamesStr.IsNull()) {
