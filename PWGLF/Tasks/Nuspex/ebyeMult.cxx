@@ -19,7 +19,7 @@
 #include "ReconstructionDataFormats/Track.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Centrality.h"
-//#include "Common/DataModel/Multiplicity.h"
+// #include "Common/DataModel/Multiplicity.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
 #include "DetectorsBase/Propagator.h"
@@ -43,7 +43,7 @@ namespace
 constexpr float dcaSels[3]{10., 10., 10.};
 static const std::vector<std::string> dcaSelsNames{"dcaxy", "dcaz", "dca"};
 static const std::vector<std::string> particleName{"tracks"};
-}
+} // namespace
 
 struct CandidateTrack {
   float pt = -999.f;
@@ -210,7 +210,6 @@ struct ebyeMult {
     d_bz = o2::base::Propagator::Instance()->getNominalBz();
     LOG(info) << "Retrieved GRP for timestamp " << timestamp << " with magnetic field of " << d_bz << " kG";
     mRunNumber = bc.runNumber();
-
   }
 
   // float getV0M(int64_t const id, float const zvtx, aod::FV0As const& fv0as, aod::FV0Cs const& fv0cs)
@@ -275,7 +274,7 @@ struct ebyeMult {
   }
 
   template <class C, class T>
-  void fillRecoEvent(C const& collision, T const& tracksAll/* , float const& centrality */)
+  void fillRecoEvent(C const& collision, T const& tracksAll /* , float const& centrality */)
   {
     auto tracks = tracksAll.sliceBy(perCollisionTracksFull, collision.globalIndex());
     candidateTracks.clear();
@@ -322,9 +321,9 @@ struct ebyeMult {
   }
 
   template <class C, class T>
-  void fillMcEvent(C const& collision, T const& tracks/* , float const& centrality */, aod::McParticles const&, aod::McTrackLabels const& mcLabels)
+  void fillMcEvent(C const& collision, T const& tracks /* , float const& centrality */, aod::McParticles const&, aod::McTrackLabels const& mcLabels)
   {
-    fillRecoEvent<C, T>(collision, tracks/* , centrality */);
+    fillRecoEvent<C, T>(collision, tracks /* , centrality */);
 
     for (auto& candidateTrack : candidateTracks) {
       candidateTrack.isreco = true;
@@ -336,11 +335,9 @@ struct ebyeMult {
           continue;
         if (mcTrack.isPhysicalPrimary()) { // primary
           histos.fill(HIST("PrimTracks"), nTrackletsColl, std::abs(candidateTrack.pt), candidateTrack.dcaxypv);
-        }
-        else if (mcTrack.has_mothers()) { // sec WD
+        } else if (mcTrack.has_mothers()) { // sec WD
           histos.fill(HIST("SecWDTracks"), nTrackletsColl, std::abs(candidateTrack.pt), candidateTrack.dcaxypv);
-        }
-        else { // from material
+        } else { // from material
           histos.fill(HIST("SecTracks"), nTrackletsColl, std::abs(candidateTrack.pt), candidateTrack.dcaxypv);
         }
 
@@ -387,7 +384,7 @@ struct ebyeMult {
     }
   }
 
-  void processRun2(soa::Join<aod::Collisions, aod::EvSels> const& collisions, TracksFull const& tracks/* , aod::FV0As const& fv0as, aod::FV0Cs const& fv0cs */, BCsWithRun2Info const&)
+  void processRun2(soa::Join<aod::Collisions, aod::EvSels> const& collisions, TracksFull const& tracks /* , aod::FV0As const& fv0as, aod::FV0Cs const& fv0cs */, BCsWithRun2Info const&)
   {
 
     for (const auto& collision : collisions) {
@@ -408,7 +405,7 @@ struct ebyeMult {
 
       histos.fill(HIST("QA/zVtx"), collision.posZ());
 
-      fillRecoEvent(collision, tracks/* , cV0M */);
+      fillRecoEvent(collision, tracks /* , cV0M */);
 
       for (auto t : candidateTracks) {
         histos.fill(HIST("RecTracks"), nTrackletsColl, std::abs(t.pt), t.dcaxypv);
@@ -417,7 +414,7 @@ struct ebyeMult {
   }
   PROCESS_SWITCH(ebyeMult, processRun2, "process (Run 2)", false);
 
-  void processMcRun2(soa::Join<aod::Collisions, aod::McCollisionLabels> const& collisions, aod::McCollisions const& /*mcCollisions*/, TracksFull const& tracks/* , aod::FV0As const& fv0as, aod::FV0Cs const& fv0cs */, aod::McParticles const& mcParticles, aod::McTrackLabels const& mcLab, BCsWithRun2Info const&)
+  void processMcRun2(soa::Join<aod::Collisions, aod::McCollisionLabels> const& collisions, aod::McCollisions const& /*mcCollisions*/, TracksFull const& tracks /* , aod::FV0As const& fv0as, aod::FV0Cs const& fv0cs */, aod::McParticles const& mcParticles, aod::McTrackLabels const& mcLab, BCsWithRun2Info const&)
   {
 
     for (const auto& collision : collisions) {
@@ -435,7 +432,7 @@ struct ebyeMult {
 
       histos.fill(HIST("QA/zVtx"), collision.posZ());
 
-      fillMcEvent(collision, tracks/* , cV0M */, mcParticles, mcLab);
+      fillMcEvent(collision, tracks /* , cV0M */, mcParticles, mcLab);
       fillMcGen(mcParticles, mcLab, collision.mcCollisionId());
     }
   }
