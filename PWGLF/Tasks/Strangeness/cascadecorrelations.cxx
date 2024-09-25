@@ -281,6 +281,7 @@ struct cascadeCorrelations {
   AxisSpec selectionFlagAxis = {4, -0.5f, 3.5f, "Selection flag of casc candidate"};
   AxisSpec vertexAxis = {200, -10.0f, 10.0f, "cm"};
   AxisSpec multiplicityAxis{100, 0, 100, "Multiplicity (MultFT0M?)"};
+  AxisSpec rapidityAxis{100, -2, 2, "y"};
 
   // initialize efficiency maps
   TH1D* hEffXiMin;
@@ -318,6 +319,9 @@ struct cascadeCorrelations {
       {"hMassXiPlus", "hMassXiPlus", {HistType::kTH2F, {invMassAxis, ptAxis}}},
       {"hMassOmegaMinus", "hMassOmegaMinus", {HistType::kTH2F, {invMassAxis, ptAxis}}},
       {"hMassOmegaPlus", "hMassOmegaPlus", {HistType::kTH2F, {invMassAxis, ptAxis}}},
+      // efficiency corrected inv mass
+      {"hMassXiEffCorrected", "hMassXiEffCorrected", {HistType::kTHnSparseF, {invMassAxis, ptAxis, rapidityAxis, vertexAxis, multiplicityAxis}}, true},
+      {"hMassOmegaEffCorrected", "hMassOmegaEffCorrected", {HistType::kTHnSparseF, {invMassAxis, ptAxis, rapidityAxis, vertexAxis, multiplicityAxis}}, true},
 
       // basic selection variables
       {"hV0Radius", "hV0Radius", {HistType::kTH1F, {{1000, 0.0f, 100.0f, "cm"}}}},
@@ -337,8 +341,8 @@ struct cascadeCorrelations {
       {"hAutoCorrelationOS", "hAutoCorrelationOS", {HistType::kTH1I, {{2, -1.f, 1.f, "Charge of OS autocorrelated track"}}}},
       {"hPhi", "hPhi", {HistType::kTH1F, {{100, 0, 2 * PI, "#varphi"}}}},
       {"hEta", "hEta", {HistType::kTH1F, {{100, -2, 2, "#eta"}}}},
-      {"hRapidityXi", "hRapidityXi", {HistType::kTH1F, {{100, -2, 2, "y"}}}},
-      {"hRapidityOmega", "hRapidityOmega", {HistType::kTH1F, {{100, -2, 2, "y"}}}},
+      {"hRapidityXi", "hRapidityXi", {HistType::kTH1F, {rapidityAxis}}},
+      {"hRapidityOmega", "hRapidityOmega", {HistType::kTH1F, {rapidityAxis}}},
 
       // correlation histos
       {"hDeltaPhiSS", "hDeltaPhiSS", {HistType::kTH1F, {deltaPhiAxis}}},
@@ -392,22 +396,29 @@ struct cascadeCorrelations {
       return;
     }
 
+    double weight;
     // Some QA on the cascades
     for (auto& casc : Cascades) {
       if (casc.isSelected() <= 2) { // not exclusively an Omega --> consistent with Xi or both
         if (casc.sign() < 0) {
           registry.fill(HIST("hMassXiMinus"), casc.mXi(), casc.pt());
+          weight = 1. / getEfficiency(hEffXiMin, casc.pt());
         } else {
           registry.fill(HIST("hMassXiPlus"), casc.mXi(), casc.pt());
+          weight = 1. / getEfficiency(hEffXiPlus, casc.pt());
         }
+        registry.fill(HIST("hMassXiEffCorrected"), casc.mXi(), casc.pt(), casc.yXi(), collision.posZ(), collision.multFT0M(), weight);
         registry.fill(HIST("hRapidityXi"), casc.yXi());
       }
       if (casc.isSelected() >= 2) { // consistent with Omega or both
         if (casc.sign() < 0) {
           registry.fill(HIST("hMassOmegaMinus"), casc.mOmega(), casc.pt());
+          weight = 1. / getEfficiency(hEffOmegaMin, casc.pt());
         } else {
           registry.fill(HIST("hMassOmegaPlus"), casc.mOmega(), casc.pt());
+          weight = 1. / getEfficiency(hEffOmegaPlus, casc.pt());
         }
+        registry.fill(HIST("hMassOmegaEffCorrected"), casc.mOmega(), casc.pt(), casc.yOmega(), collision.posZ(), collision.multFT0M(), weight);
         registry.fill(HIST("hRapidityOmega"), casc.yOmega());
       }
       registry.fill(HIST("hV0Radius"), casc.v0radius());
