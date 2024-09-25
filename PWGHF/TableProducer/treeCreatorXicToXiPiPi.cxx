@@ -25,6 +25,7 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::constants::physics;
 
 namespace o2::aod
 {
@@ -363,6 +364,7 @@ struct HfTreeCreatorXicToXiPiPi {
 
   Configurable<int> selectionFlagXic{"selectionXic", 1, "Selection Flag for Xic"};
   Configurable<bool> fillCandidateLiteTable{"fillCandidateLiteTable", false, "Switch to fill lite table with candidate properties"};
+  Configurable<bool> fillGenParticleTable{"fillGenParticleTable", false, "Switch to fill table with MC truth for generated particles"};
   Configurable<bool> fillResidualTable{"fillResidualTable", false, "Switch to fill table with residuals for MC candidates"};
   // parameters for production of training samples
   Configurable<bool> fillOnlySignal{"fillOnlySignal", false, "Flag to fill derived tables with signal for ML trainings"};
@@ -377,8 +379,6 @@ struct HfTreeCreatorXicToXiPiPi {
   using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi>;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_xic::isSelXicToXiPiPi >= selectionFlagXic;
-
-  Preslice<aod::McParticles> genParticlesPerCollision = aod::mcparticle::mcCollisionId;
 
   Partition<SelectedCandidatesMc> recSig = nabs(aod::hf_cand_xic_to_xi_pi_pi::flagMcMatchRec) != int8_t(0);
   Partition<SelectedCandidatesMc> recBg = nabs(aod::hf_cand_xic_to_xi_pi_pi::flagMcMatchRec) == int8_t(0);
@@ -648,6 +648,8 @@ struct HfTreeCreatorXicToXiPiPi {
   PROCESS_SWITCH(HfTreeCreatorXicToXiPiPi, processDataKf, "Process data with KF Particle reconstruction", false);
 
   void processMc(SelectedCandidatesMc const& candidates,
+                 aod::TracksWMc const& tracks,
+                 aod::McParticles const& mcParticles,
                  soa::Join<aod::McParticles, aod::HfCandXicMcGen> const& particles)
   {
     std::vector<int> arrDaughIndex;
@@ -686,92 +688,105 @@ struct HfTreeCreatorXicToXiPiPi {
       }
     }
 
-    // Filling particle properties
-    rowCandidateFullParticles.reserve(particles.size());
-    for (const auto& particle : particles) {
-      if (TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi) || TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiResPiToXiPiPi)) {
-        arrDaughIndex.clear();
-        RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{+kXiMinus, +kPiPlus, +kPiPlus}, 2);
-        auto xicDaugh0 = particles.rawIteratorAt(arrDaughIndex[0]);
+    if (fillGenParticleTable) {
+      rowCandidateFullParticles.reserve(particles.size());
 
-        rowCandidateFullParticles(
-          particle.pt(),
-          particle.eta(),
-          particle.phi(),
-          RecoDecay::y(particle.pVector(), o2::constants::physics::MassXiCPlus),
-          particle.vx(),
-          particle.vy(),
-          particle.vz(),
-          xicDaugh0.vx(),
-          xicDaugh0.vx(),
-          xicDaugh0.vz(),
-          particle.flagMcMatchGen());
-      }
+      for (const auto& particle : particles) {
+        if (TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi) || TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiResPiToXiPiPi)) {
+          arrDaughIndex.clear();
+          RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{+kXiMinus, +kPiPlus, +kPiPlus}, 2);
+          auto XicDaugh0 = particles.rawIteratorAt(arrDaughIndex[0]);
+
+          rowCandidateFullParticles(
+            particle.pt(),
+            particle.eta(),
+            particle.phi(),
+            RecoDecay::y(particle.pVector(), o2::constants::physics::MassXiCPlus),
+            particle.vx(),
+            particle.vy(),
+            particle.vz(),
+            XicDaugh0.vx(),
+            XicDaugh0.vx(),
+            XicDaugh0.vz(),
+            particle.flagMcMatchGen());
+        }
+      } // loop over generated particles
     }
 
     if (fillResidualTable) {
       rowCandidateResiduals.reserve(recSig.size());
+
+      recSig->bindExternalIndices(&tracks);
+      int indexRecXic = -1;
+      int8_t sign = 0;
+
       for (const auto& candidate : recSig) {
-        auto thisCollId = candidate.collisionId();
-        auto groupedParticles = particles.sliceBy(genParticlesPerCollision, thisCollId);
+        arrDaughIndex.clear();
+        sign = 0;
+        std::array<float, 3> pvResiduals;
+        std::array<float, 3> svResiduals;
+        std::array<float, 3> pvPulls = {-999.9};
+        std::array<float, 3> svPulls = {-999.9};
+        
+        auto arrayDaughters = std::array{candidate.pi0_as<aod::TracksWMc>(),       // pi <- Xic
+                                         candidate.pi1_as<aod::TracksWMc>(),       // pi <- Xic
+                                         candidate.bachelor_as<aod::TracksWMc>(),  // pi <- cascade
+                                         candidate.posTrack_as<aod::TracksWMc>(),  // p <- lambda
+                                         candidate.negTrack_as<aod::TracksWMc>()}; // pi <- lambda
 
-        for (const auto& particle : groupedParticles) {
-          std::array<float, 3> pvResiduals;
-          std::array<float, 3> svResiduals;
-          std::array<float, 3> pvPulls = {-999.9};
-          std::array<float, 3> svPulls = {-999.9};
+        // get Xic and daughters as MC particle
+        indexRecXic = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kXiCPlus, std::array{+kPiPlus, +kPiPlus, +kPiMinus, +kProton, +kPiMinus}, true, &sign, 4);
+        if (indexRecXic == -1) {
+          continue;
+        }
+        auto XicGen = particles.rawIteratorAt(indexRecXic);
+        RecoDecay::getDaughters(XicGen, &arrDaughIndex, std::array{+kXiMinus, +kPiPlus, +kPiPlus}, 2);
+        auto XicDaugh0 = particles.rawIteratorAt(arrDaughIndex[0]);
 
-          arrDaughIndex.clear();
-          RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{+kXiMinus, +kPiPlus, +kPiPlus}, 2);
+        // calculate residuals and pulls
+        float pResidual = candidate.p() - XicGen.p();
+        float ptResidual = candidate.pt() - XicGen.pt();
+        pvResiduals[0] = candidate.posX() - XicGen.vx();
+        pvResiduals[1] = candidate.posY() - XicGen.vy();
+        pvResiduals[2] = candidate.posZ() - XicGen.vz();
+        svResiduals[0] = candidate.xSecondaryVertex() - XicDaugh0.vx();
+        svResiduals[1] = candidate.ySecondaryVertex() - XicDaugh0.vy();
+        svResiduals[2] = candidate.zSecondaryVertex() - XicDaugh0.vz();
+        try {
+          pvPulls[0] = pvResiduals[0] / candidate.xPvErr();
+          pvPulls[1] = pvResiduals[1] / candidate.yPvErr();
+          pvPulls[2] = pvResiduals[2] / candidate.zPvErr();
+          svPulls[0] = svResiduals[0] / candidate.xSvErr();
+          svPulls[1] = svResiduals[1] / candidate.ySvErr();
+          svPulls[2] = svResiduals[2] / candidate.zSvErr();
+        } catch (const std::runtime_error& error) {
+          LOG(info) << "Run time error found: " << error.what() << ". Set values of vertex pulls to -999.9.";
+        }
 
-          if ((candidate.cascadeId() == arrDaughIndex[0] || candidate.cascadeId() == arrDaughIndex[1] || candidate.cascadeId() == arrDaughIndex[2]) && (candidate.pi0Id() == arrDaughIndex[0] || candidate.pi0Id() == arrDaughIndex[1] || candidate.pi0Id() == arrDaughIndex[2]) && (candidate.pi1Id() == arrDaughIndex[0] || candidate.pi1Id() == arrDaughIndex[1] || candidate.pi1Id() == arrDaughIndex[2])) {
-            auto xicDaugh0 = particles.rawIteratorAt(arrDaughIndex[0]);
-
-            // residuals
-            float pResidual = candidate.p() - particle.p();
-            float ptResidual = candidate.pt() - particle.pt();
-            pvResiduals[0] = candidate.posX() - particle.vx();
-            pvResiduals[1] = candidate.posY() - particle.vy();
-            pvResiduals[2] = candidate.posZ() - particle.vz();
-            svResiduals[0] = candidate.xSecondaryVertex() - xicDaugh0.vx();
-            svResiduals[1] = candidate.ySecondaryVertex() - xicDaugh0.vy();
-            svResiduals[2] = candidate.zSecondaryVertex() - xicDaugh0.vz();
-            // pulls
-            try {
-              pvPulls[0] = pvResiduals[0] / candidate.xPvErr();
-              pvPulls[1] = pvResiduals[1] / candidate.yPvErr();
-              pvPulls[2] = pvResiduals[2] / candidate.zPvErr();
-              svPulls[0] = svResiduals[0] / candidate.xSvErr();
-              svPulls[1] = svResiduals[1] / candidate.ySvErr();
-              svPulls[2] = svResiduals[2] / candidate.zSvErr();
-            } catch (const std::runtime_error& error) {
-              LOG(info) << "Run time error found: " << error.what() << ". Set values of vertex pulls to -999.9.";
-            }
-
-            // fill table
-            rowCandidateResiduals(
-              pResidual,
-              ptResidual,
-              pvResiduals[0],
-              pvResiduals[1],
-              pvResiduals[2],
-              pvPulls[0],
-              pvPulls[1],
-              pvPulls[2],
-              svResiduals[0],
-              svResiduals[1],
-              svResiduals[2],
-              svPulls[0],
-              svPulls[1],
-              svPulls[2]);
-          }
-        } // loop over generated particles
-      } // loop over reconstructed candidates
+        // fill table
+        rowCandidateResiduals(
+          pResidual,
+          ptResidual,
+          pvResiduals[0],
+          pvResiduals[1],
+          pvResiduals[2],
+          pvPulls[0],
+          pvPulls[1],
+          pvPulls[2],
+          svResiduals[0],
+          svResiduals[1],
+          svResiduals[2],
+          svPulls[0],
+          svPulls[1],
+          svPulls[2]);
+      } // loop over reconstructed signal
     }
   }
   PROCESS_SWITCH(HfTreeCreatorXicToXiPiPi, processMc, "Process MC", false);
 
   void processMcKf(SelectedCandidatesKfMc const& candidates,
+                   aod::TracksWMc const& tracks,
+                   aod::McParticles const& mcParticles,
                    soa::Join<aod::McParticles, aod::HfCandXicMcGen> const& particles)
   {
     std::vector<int> arrDaughIndex;
@@ -810,87 +825,97 @@ struct HfTreeCreatorXicToXiPiPi {
       }
     }
 
-    // Filling particle properties
-    rowCandidateFullParticles.reserve(particles.size());
-    for (const auto& particle : particles) {
-      if (TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi) || TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiResPiToXiPiPi)) {
-        arrDaughIndex.clear();
-        RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{+kXiMinus, +kPiPlus, +kPiPlus}, 2);
-        auto xicDaugh0 = particles.rawIteratorAt(arrDaughIndex[0]);
+    if (fillGenParticleTable) {
+      rowCandidateFullParticles.reserve(particles.size());
+      for (const auto& particle : particles) {
+        if (TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi) || TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiResPiToXiPiPi)) {
+          arrDaughIndex.clear();
+          RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{+kXiMinus, +kPiPlus, +kPiPlus}, 2);
+          auto XicDaugh0 = particles.rawIteratorAt(arrDaughIndex[0]);
 
-        rowCandidateFullParticles(
-          particle.pt(),
-          particle.eta(),
-          particle.phi(),
-          RecoDecay::y(particle.pVector(), o2::constants::physics::MassXiCPlus),
-          particle.vx(),
-          particle.vy(),
-          particle.vz(),
-          xicDaugh0.vx(),
-          xicDaugh0.vx(),
-          xicDaugh0.vz(),
-          particle.flagMcMatchGen());
-      }
+          rowCandidateFullParticles(
+            particle.pt(),
+            particle.eta(),
+            particle.phi(),
+            RecoDecay::y(particle.pVector(), o2::constants::physics::MassXiCPlus),
+            particle.vx(),
+            particle.vy(),
+            particle.vz(),
+            XicDaugh0.vx(),
+            XicDaugh0.vx(),
+            XicDaugh0.vz(),
+            particle.flagMcMatchGen());
+        }
+      } // loop over generated particles
     }
 
     if (fillResidualTable) {
       rowCandidateResiduals.reserve(recSigKf.size());
+
+      recSigKf->bindExternalIndices(&tracks);
+      int indexRecXic = -1;
+      int8_t sign = 0;
+
       for (const auto& candidate : recSigKf) {
-        auto thisCollId = candidate.collisionId();
-        auto groupedParticles = particles.sliceBy(genParticlesPerCollision, thisCollId);
+        arrDaughIndex.clear();
+        sign = 0;
+        std::array<float, 3> pvResiduals;
+        std::array<float, 3> svResiduals;
+        std::array<float, 3> pvPulls = {-999.9};
+        std::array<float, 3> svPulls = {-999.9};
 
-        for (const auto& particle : groupedParticles) {
-          std::array<float, 3> pvResiduals;
-          std::array<float, 3> svResiduals;
-          std::array<float, 3> pvPulls = {-999.9};
-          std::array<float, 3> svPulls = {-999.9};
+        auto arrayDaughters = std::array{candidate.pi0_as<aod::TracksWMc>(),       // pi <- Xic
+                                         candidate.pi1_as<aod::TracksWMc>(),       // pi <- Xic
+                                         candidate.bachelor_as<aod::TracksWMc>(),  // pi <- cascade
+                                         candidate.posTrack_as<aod::TracksWMc>(),  // p <- lambda
+                                         candidate.negTrack_as<aod::TracksWMc>()}; // pi <- lambda
 
-          arrDaughIndex.clear();
-          RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{+kXiMinus, +kPiPlus, +kPiPlus}, 2);
+        // get Xic and daughters as MC particle
+        indexRecXic = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kXiCPlus, std::array{+kPiPlus, +kPiPlus, +kPiMinus, +kProton, +kPiMinus}, true, &sign, 4);
+        if (indexRecXic == -1) {
+          continue;
+        }
+        auto XicGen = particles.rawIteratorAt(indexRecXic);
+        RecoDecay::getDaughters(XicGen, &arrDaughIndex, std::array{+kXiMinus, +kPiPlus, +kPiPlus}, 2);
+        auto XicDaugh0 = particles.rawIteratorAt(arrDaughIndex[0]);
 
-          if ((candidate.cascadeId() == arrDaughIndex[0] || candidate.cascadeId() == arrDaughIndex[1] || candidate.cascadeId() == arrDaughIndex[2]) && (candidate.pi0Id() == arrDaughIndex[0] || candidate.pi0Id() == arrDaughIndex[1] || candidate.pi0Id() == arrDaughIndex[2]) && (candidate.pi1Id() == arrDaughIndex[0] || candidate.pi1Id() == arrDaughIndex[1] || candidate.pi1Id() == arrDaughIndex[2])) {
-            auto xicDaugh0 = particles.rawIteratorAt(arrDaughIndex[0]);
+        // calculate residuals and pulls
+        float pResidual = candidate.p() - XicGen.p();
+        float ptResidual = candidate.pt() - XicGen.pt();
+        pvResiduals[0] = candidate.posX() - XicGen.vx();
+        pvResiduals[1] = candidate.posY() - XicGen.vy();
+        pvResiduals[2] = candidate.posZ() - XicGen.vz();
+        svResiduals[0] = candidate.xSecondaryVertex() - XicDaugh0.vx();
+        svResiduals[1] = candidate.ySecondaryVertex() - XicDaugh0.vy();
+        svResiduals[2] = candidate.zSecondaryVertex() - XicDaugh0.vz();
+        try {
+          pvPulls[0] = pvResiduals[0] / candidate.xPvErr();
+          pvPulls[1] = pvResiduals[1] / candidate.yPvErr();
+          pvPulls[2] = pvResiduals[2] / candidate.zPvErr();
+          svPulls[0] = svResiduals[0] / candidate.xSvErr();
+          svPulls[1] = svResiduals[1] / candidate.ySvErr();
+          svPulls[2] = svResiduals[2] / candidate.zSvErr();
+        } catch (const std::runtime_error& error) {
+          LOG(info) << "Run time error found: " << error.what() << ". Set values of vertex pulls to -999.9.";
+        }
 
-            // residuals
-            float pResidual = candidate.p() - particle.p();
-            float ptResidual = candidate.pt() - particle.pt();
-            pvResiduals[0] = candidate.posX() - particle.vx();
-            pvResiduals[1] = candidate.posY() - particle.vy();
-            pvResiduals[2] = candidate.posZ() - particle.vz();
-            svResiduals[0] = candidate.xSecondaryVertex() - xicDaugh0.vx();
-            svResiduals[1] = candidate.ySecondaryVertex() - xicDaugh0.vy();
-            svResiduals[2] = candidate.zSecondaryVertex() - xicDaugh0.vz();
-            // pulls
-            try {
-              pvPulls[0] = pvResiduals[0] / candidate.xPvErr();
-              pvPulls[1] = pvResiduals[1] / candidate.yPvErr();
-              pvPulls[2] = pvResiduals[2] / candidate.zPvErr();
-              svPulls[0] = svResiduals[0] / candidate.xSvErr();
-              svPulls[1] = svResiduals[1] / candidate.ySvErr();
-              svPulls[2] = svResiduals[2] / candidate.zSvErr();
-            } catch (const std::runtime_error& error) {
-              LOG(info) << "Run time error found: " << error.what() << ". Set values of vertex pulls to -999.9.";
-            }
-
-            // fill table
-            rowCandidateResiduals(
-              pResidual,
-              ptResidual,
-              pvResiduals[0],
-              pvResiduals[1],
-              pvResiduals[2],
-              pvPulls[0],
-              pvPulls[1],
-              pvPulls[2],
-              svResiduals[0],
-              svResiduals[1],
-              svResiduals[2],
-              svPulls[0],
-              svPulls[1],
-              svPulls[2]);
-          }
-        } // loop over generated particles
-      } // loop over reconstructed candidates
+        // fill table
+        rowCandidateResiduals(
+          pResidual,
+          ptResidual,
+          pvResiduals[0],
+          pvResiduals[1],
+          pvResiduals[2],
+          pvPulls[0],
+          pvPulls[1],
+          pvPulls[2],
+          svResiduals[0],
+          svResiduals[1],
+          svResiduals[2],
+          svPulls[0],
+          svPulls[1],
+          svPulls[2]);
+      } // loop over reconstructed signal
     }
   }
   PROCESS_SWITCH(HfTreeCreatorXicToXiPiPi, processMcKf, "Process MC with KF Particle reconstruction", false);
