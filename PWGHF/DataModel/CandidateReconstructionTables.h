@@ -483,6 +483,24 @@ DECLARE_SOA_COLUMN(ErrorImpactParameterZ2, errorImpactParameterZ2, float);      
 DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterZNormalised2, impactParameterZNormalised2, //!
                            [](float dca, float err) -> float { return dca / err; });
 DECLARE_SOA_COLUMN(NProngsContributorsPV, nProngsContributorsPV, uint8_t); //! number of prongs contributing to the primary-vertex reconstruction
+DECLARE_SOA_COLUMN(NSigTpcPi0, nSigTpcPi0, float); //! TPC nSigma for pion hypothesis - prong 0
+DECLARE_SOA_COLUMN(NSigTpcPi1, nSigTpcPi1, float); //! TPC nSigma for pion hypothesis - prong 1
+DECLARE_SOA_COLUMN(NSigTpcPi2, nSigTpcPi2, float); //! TPC nSigma for pion hypothesis - prong 2
+DECLARE_SOA_COLUMN(NSigTpcKa0, nSigTpcKa0, float); //! TPC nSigma for kaon hypothesis - prong 0
+DECLARE_SOA_COLUMN(NSigTpcKa1, nSigTpcKa1, float); //! TPC nSigma for kaon hypothesis - prong 1
+DECLARE_SOA_COLUMN(NSigTpcKa2, nSigTpcKa2, float); //! TPC nSigma for kaon hypothesis - prong 2
+DECLARE_SOA_COLUMN(NSigTpcPr0, nSigTpcPr0, float); //! TPC nSigma for proton hypothesis - prong 0
+DECLARE_SOA_COLUMN(NSigTpcPr1, nSigTpcPr1, float); //! TPC nSigma for proton hypothesis - prong 1
+DECLARE_SOA_COLUMN(NSigTpcPr2, nSigTpcPr2, float); //! TPC nSigma for proton hypothesis - prong 2
+DECLARE_SOA_COLUMN(NSigTofPi0, nSigTofPi0, float); //! TOF nSigma for pion hypothesis - prong 0
+DECLARE_SOA_COLUMN(NSigTofPi1, nSigTofPi1, float); //! TOF nSigma for pion hypothesis - prong 1
+DECLARE_SOA_COLUMN(NSigTofPi2, nSigTofPi2, float); //! TOF nSigma for pion hypothesis - prong 2
+DECLARE_SOA_COLUMN(NSigTofKa0, nSigTofKa0, float); //! TOF nSigma for kaon hypothesis - prong 0
+DECLARE_SOA_COLUMN(NSigTofKa1, nSigTofKa1, float); //! TOF nSigma for kaon hypothesis - prong 1
+DECLARE_SOA_COLUMN(NSigTofKa2, nSigTofKa2, float); //! TOF nSigma for kaon hypothesis - prong 2
+DECLARE_SOA_COLUMN(NSigTofPr0, nSigTofPr0, float); //! TOF nSigma for proton hypothesis - prong 0
+DECLARE_SOA_COLUMN(NSigTofPr1, nSigTofPr1, float); //! TOF nSigma for proton hypothesis - prong 1
+DECLARE_SOA_COLUMN(NSigTofPr2, nSigTofPr2, float); //! TOF nSigma for proton hypothesis - prong 2
 // candidate properties
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //!
                            [](float px, float py) -> float { return RecoDecay::pt(px, py); });
@@ -606,6 +624,10 @@ DECLARE_SOA_TABLE(HfCand2ProngBase, "AOD", "HFCAND2PBASE", //!
                   hf_cand::ErrorImpactParameterZ0, hf_cand::ErrorImpactParameterZ1,
                   hf_track_index::Prong0Id, hf_track_index::Prong1Id, hf_cand::NProngsContributorsPV,
                   hf_track_index::HFflag,
+                  hf_cand::NSigTpcPi0, hf_cand::NSigTpcKa0,
+                  hf_cand::NSigTpcPi1, hf_cand::NSigTpcKa1,
+                  hf_cand::NSigTofPi0, hf_cand::NSigTofKa0,
+                  hf_cand::NSigTofPi1, hf_cand::NSigTofKa1,
                   /* dynamic columns */
                   hf_cand_2prong::M<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
                   hf_cand_2prong::M2<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
