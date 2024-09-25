@@ -1319,7 +1319,8 @@ struct correlateStrangeness {
         bestCollisionSel8 = collision.sel8();
         bestCollisionVtxZ = collision.posZ();
         bestCollisionINELgtZERO = collision.isInelGt0();
-        bestCollisionTriggerPresenceMap = triggerPresenceMap[collision.globalIndex()];
+        if (triggerPresenceMap.size() > 0)
+          bestCollisionTriggerPresenceMap = triggerPresenceMap[collision.globalIndex()];
       }
     }
 
@@ -1479,7 +1480,8 @@ struct correlateStrangeness {
         bestCollisionSel8 = recCollision.sel8();
         bestCollisionVtxZ = recCollision.posZ();
         bestCollisionINELgtZERO = recCollision.isInelGt0();
-        bestCollisionTriggerPresenceMap = triggerPresenceMap[recCollision.globalIndex()];
+        if (triggerPresenceMap.size() > 0)
+          bestCollisionTriggerPresenceMap = triggerPresenceMap[recCollision.globalIndex()];
       }
     }
     // ________________________________________________
