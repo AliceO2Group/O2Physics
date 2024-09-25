@@ -97,8 +97,12 @@ struct AnalysisEventSelection {
   HistogramManager* fHistMan;
   AnalysisCompositeCut* fEventCut;
 
-  void init(o2::framework::InitContext&)
+  void init(o2::framework::InitContext& context)
   {
+    if (context.mOptions.get<bool>("processDummy")) {
+      return;
+    }
+
     fEventCut = new AnalysisCompositeCut(true);
     TString eventCutStr = fConfigEventCuts.value;
     fEventCut->AddCut(dqcuts::GetAnalysisCut(eventCutStr.Data()));
@@ -167,8 +171,12 @@ struct AnalysisTrackSelection {
   std::vector<TString> fHistNamesReco;
   std::vector<std::vector<TString>> fHistNamesMCMatched;
 
-  void init(o2::framework::InitContext&)
+  void init(o2::framework::InitContext& context)
   {
+    if (context.mOptions.get<bool>("processDummy")) {
+      return;
+    }
+
     // Setting the cut names
     TString cutNamesStr = fConfigCuts.value;
     if (!cutNamesStr.IsNull()) {
@@ -327,8 +335,12 @@ struct AnalysisMuonSelection {
   std::vector<TString> fHistNamesReco;
   std::vector<std::vector<TString>> fHistNamesMCMatched;
 
-  void init(o2::framework::InitContext&)
+  void init(o2::framework::InitContext& context)
   {
+    if (context.mOptions.get<bool>("processDummy")) {
+      return;
+    }
+
     // Setting the cut names
     TString cutNamesStr = fConfigCuts.value;
     if (!cutNamesStr.IsNull()) {
@@ -532,6 +544,10 @@ struct AnalysisSameEventPairing {
 
   void init(o2::framework::InitContext& context)
   {
+    if (context.mOptions.get<bool>("processDummy")) {
+      return;
+    }
+
     fCurrentRun = 0;
 
     ccdb->setURL(ccdburl.value);
@@ -1046,6 +1062,10 @@ struct AnalysisDileptonTrack {
 
   void init(o2::framework::InitContext& context)
   {
+    if (context.mOptions.get<bool>("processDummy")) {
+      return;
+    }
+
     TString sigNamesStr = fConfigMCRecSignals.value;
     std::unique_ptr<TObjArray> objRecSigArray(sigNamesStr.Tokenize(","));
     TString histNames;

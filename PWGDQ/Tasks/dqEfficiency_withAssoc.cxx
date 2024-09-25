@@ -152,8 +152,12 @@ struct AnalysisEventSelection {
   std::map<string, string> fMetadataRCT, fHeader;
   int fCurrentRun;
 
-  void init(o2::framework::InitContext&)
+  void init(o2::framework::InitContext& context)
   {
+    if (context.mOptions.get<bool>("processDummy")) {
+      return;
+    }
+
     fEventCut = new AnalysisCompositeCut(true);
     TString eventCutStr = fConfigEventCuts.value;
     fEventCut->AddCut(dqcuts::GetAnalysisCut(eventCutStr.Data()));
@@ -361,8 +365,12 @@ struct AnalysisTrackSelection {
   std::map<int64_t, std::vector<int64_t>> fNAssocsInBunch;    // key: track global index, value: vector of global index for events associated in-bunch (events that have in-bunch pileup or splitting)
   std::map<int64_t, std::vector<int64_t>> fNAssocsOutOfBunch; // key: track global index, value: vector of global index for events associated out-of-bunch (events that have no in-bunch pileup)
 
-  void init(o2::framework::InitContext&)
+  void init(o2::framework::InitContext& context)
   {
+    if (context.mOptions.get<bool>("processDummy")) {
+      return;
+    }
+
     fCurrentRun = 0;
     TString cutNamesStr = fConfigCuts.value;
     if (!cutNamesStr.IsNull()) {
@@ -637,8 +645,12 @@ struct AnalysisMuonSelection {
   std::map<int64_t, std::vector<int64_t>> fNAssocsInBunch;    // key: track global index, value: vector of global index for events associated in-bunch (events that have in-bunch pileup or splitting)
   std::map<int64_t, std::vector<int64_t>> fNAssocsOutOfBunch; // key: track global index, value: vector of global index for events associated out-of-bunch (events that have no in-bunch pileup)
 
-  void init(o2::framework::InitContext&)
+  void init(o2::framework::InitContext& context)
   {
+    if (context.mOptions.get<bool>("processDummy")) {
+      return;
+    }
+
     fCurrentRun = 0;
     TString cutNamesStr = fConfigCuts.value;
     if (!cutNamesStr.IsNull()) {
@@ -884,8 +896,12 @@ struct AnalysisPrefilterSelection {
 
   Preslice<aod::ReducedTracksAssoc> trackAssocsPerCollision = aod::reducedtrack_association::reducedeventId;
 
-  void init(o2::framework::InitContext& initContext)
+  void init(o2::framework::InitContext& context)
   {
+    if (context.mOptions.get<bool>("processDummy")) {
+      return;
+    }
+
     // get the list of track cuts to be prefiltered
     TString trackCutsStr = fConfigTrackCuts.value;
     TObjArray* objArrayTrackCuts = nullptr;
@@ -901,7 +917,7 @@ struct AnalysisPrefilterSelection {
     fPrefilterMask = 0;
     fPrefilterCutBit = -1;
     string trackCuts;
-    getTaskOptionValue<string>(initContext, "analysis-track-selection", "cfgTrackCuts", trackCuts, false);
+    getTaskOptionValue<string>(context, "analysis-track-selection", "cfgTrackCuts", trackCuts, false);
     TString allTrackCutsStr = trackCuts;
     TString prefilterTrackCutStr = fConfigPrefilterTrackCut.value;
     if (!trackCutsStr.IsNull()) {
@@ -1097,6 +1113,10 @@ struct AnalysisSameEventPairing {
 
   void init(o2::framework::InitContext& context)
   {
+    if (context.mOptions.get<bool>("processDummy")) {
+      return;
+    }
+
     fEnableBarrelHistos = context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmed") || context.mOptions.get<bool>("processBarrelOnlyWithCollSkimmed");
     fEnableMuonHistos = context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processMuonOnlySkimmed");
     bool isDummy = context.mOptions.get<bool>("processDummy");
@@ -1810,6 +1830,10 @@ struct AnalysisDileptonTrack {
 
   void init(o2::framework::InitContext& context)
   {
+    if (context.mOptions.get<bool>("processDummy")) {
+      return;
+    }
+
     bool isBarrel = context.mOptions.get<bool>("processBarrelSkimmed");
     bool isMuon = context.mOptions.get<bool>("processMuonSkimmed");
     bool isAnyProcessEnabled = isBarrel || isMuon;
