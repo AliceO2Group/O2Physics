@@ -60,6 +60,17 @@ struct FlowGFWOmegaXi {
   O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 10, "Number of subsamples")
   O2_DEFINE_CONFIGURABLE(cfgEfficiency, std::string, "", "CCDB path to efficiency object")
   O2_DEFINE_CONFIGURABLE(cfgAcceptance, std::string, "", "CCDB path to acceptance object")
+  // topological cut for cascade
+  O2_DEFINE_CONFIGURABLE(cfgcasc_radius, float, 0.5f, "minimum decay radius")
+  O2_DEFINE_CONFIGURABLE(cfgcasc_cospa, float, 0.998f, "minimum cosine of pointing angle")
+  O2_DEFINE_CONFIGURABLE(cfgcasc_dcav0topv, float, 0.01f, "minimum daughter DCA to PV")
+  O2_DEFINE_CONFIGURABLE(cfgcasc_dcabachtopv, float, 0.01f, "minimum bachelor DCA to PV")
+  O2_DEFINE_CONFIGURABLE(cfgcasc_dcacascdau, float, 0.3f, "maximum DCA among cascade daughters")
+  O2_DEFINE_CONFIGURABLE(cfgcasc_dcav0dau, float, 1.0f, "maximum DCA among V0 daughters")
+  O2_DEFINE_CONFIGURABLE(cfgcasc_mlamdawindow, float, 0.04f, "Invariant mass window of lamda")
+  // track quality and type selections
+  O2_DEFINE_CONFIGURABLE(cfgtpcclusters, int, 70, "minimum number of TPC clusters requirement")
+  O2_DEFINE_CONFIGURABLE(cfgitsclusters, int, 1, "minimum number of ITS clusters requirement")
 
   ConfigurableAxis cfgaxisVertex{"axisVertex", {20, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis cfgaxisPhi{"axisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
@@ -68,14 +79,14 @@ struct FlowGFWOmegaXi {
   Configurable<std::vector<float>> cfgvecwacc{"vecwacc", std::vector<float>{0.879543, 0.893808, 0.993375, 1.09663, 0.983883, 0.984094, 1.11362, 0.963896, 0.911212, 1.02934, 1.00295, 0.950711, 0.996856, 1.11934, 0.993665, 0.99087, 1.11915, 1.0198, 0.966849, 1.03237, 0.989367, 0.948312, 0.970883, 0.984305, 0.920335, 0.929722, 1.07467, 1.00862, 0.977185, 0.870868, 1.06552, 0.962393, 1.01025, 1.09959, 0.984226, 0.986361, 1.0931, 0.994377, 0.976051, 1.05249, 0.995538, 0.886452, 0.936763, 0.993613, 0.94491, 0.966559, 1.10829, 1.01998, 0.991503, 1.07918, 1.05655, 0.973784, 1.00914, 1.11678, 1.00092, 0.95232, 1.09814, 1.02322, 0.958543, 0.947231}, "wacc in phi bins"};
   AxisSpec axisPt{{0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.20, 2.40, 2.60, 2.80, 3.00, 3.50, 4.00, 4.50, 5.00, 5.50, 6.00, 7.00, 8.00, 9.00, 10.0}, "pt(GeV)"};
   AxisSpec axisMultiplicity{{0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}, "Centrality (%)"};
-  AxisSpec axisOmegaminusMass{{1.63, 1.635, 1.64, 1.645, 1.65, 1.655, 1.66, 1.665, 1.67, 1.675, 1.68, 1.685, 1.69, 1.695, 1.7, 1.705, 1.71}, "Mass(GeV)"};
-  AxisSpec axisXiminusMass{{1.3, 1.305, 1.31, 1.315, 1.32, 1.325, 1.33, 1.335, 1.34, 1.345, 1.35, 1.355, 1.36, 1.365, 1.37}, "Mass(GeV)"};
+  AxisSpec axisOmegaminusMass = {80, 1.63f, 1.71f, "Inv. Mass (GeV)"};
+  AxisSpec axisXiminusMass = {70, 1.3f, 1.37f, "Inv. Mass (GeV)"};
 
   Configurable<bool> cfgcheckDauTPC{"checkDauTPC", false, "check if daughter tracks have TPC match"};
   Configurable<float> cfgCasc_rapidity{"Casc_rapidity", 0.5, "rapidity"};
-  Configurable<float> cfgNSigmaCascPion{"NSigmaCascPion", 6, "NSigmaCascPion"};
-  Configurable<float> cfgNSigmaCascProton{"NSigmaCascProton", 6, "NSigmaCascProton"};
-  Configurable<float> cfgNSigmaCascKaon{"NSigmaCascKaon", 6, "NSigmaCascKaon"};
+  Configurable<float> cfgNSigmaCascPion{"NSigmaCascPion", 3, "NSigmaCascPion"};
+  Configurable<float> cfgNSigmaCascProton{"NSigmaCascProton", 3, "NSigmaCascProton"};
+  Configurable<float> cfgNSigmaCascKaon{"NSigmaCascKaon", 3, "NSigmaCascKaon"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtPOIMin) && (aod::track::pt < cfgCutPtPOIMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
@@ -160,6 +171,8 @@ struct FlowGFWOmegaXi {
     registry.add("Xic22dpt", ";pt ; C_{2}{2} ", {HistType::kTProfile3D, {axisPt, axisXiminusMass, axisMultiplicity}});
     registry.add("Omegac22dpt", ";pt ; C_{2}{2} ", {HistType::kTProfile3D, {axisPt, axisOmegaminusMass, axisMultiplicity}});
     // InvMass(GeV) of casc
+    registry.add("InvMassXiMinus_all", "", {HistType::kTHnSparseF, {axisPt, axisXiminusMass, cfgaxisEta, axisMultiplicity}});
+    registry.add("InvMassOmegaMinus_all", "", {HistType::kTHnSparseF, {axisPt, axisOmegaminusMass, cfgaxisEta, axisMultiplicity}});
     registry.add("InvMassOmegaMinus", "", {HistType::kTHnSparseF, {axisPt, axisOmegaminusMass, cfgaxisEta, axisMultiplicity}});
     registry.add("InvMassXiMinus", "", {HistType::kTHnSparseF, {axisPt, axisXiminusMass, cfgaxisEta, axisMultiplicity}});
 
@@ -377,14 +390,52 @@ struct FlowGFWOmegaXi {
       if (cfgcheckDauTPC && (!posdau.hasTPC() || !negdau.hasTPC() || !bachelor.hasTPC())) {
         continue;
       }
-      if (TMath::Abs(casc.yOmega()) < cfgCasc_rapidity && TMath::Abs(bachelor.tpcNSigmaKa()) < cfgNSigmaCascKaon && TMath::Abs(posdau.tpcNSigmaPr()) < cfgNSigmaCascProton && TMath::Abs(negdau.tpcNSigmaPi()) < cfgNSigmaCascPion) {
+      int partical = 0;
+      if (casc.sign() < 0 && TMath::Abs(casc.yOmega()) < cfgCasc_rapidity && TMath::Abs(bachelor.tpcNSigmaKa()) < cfgNSigmaCascKaon && TMath::Abs(posdau.tpcNSigmaPr()) < cfgNSigmaCascProton && TMath::Abs(negdau.tpcNSigmaPi()) < cfgNSigmaCascPion) {
+        registry.fill(HIST("InvMassOmegaMinus_all"), casc.pt(), casc.mOmega(), casc.eta(), cent);
+        partical = 3334;
+      } else if (casc.sign() < 0 && TMath::Abs(casc.yXi()) < cfgCasc_rapidity && TMath::Abs(bachelor.tpcNSigmaPi()) < cfgNSigmaCascPion && TMath::Abs(posdau.tpcNSigmaPr()) < cfgNSigmaCascProton && TMath::Abs(negdau.tpcNSigmaPi()) < cfgNSigmaCascPion) {
+        registry.fill(HIST("InvMassXiMinus_all"), casc.pt(), casc.mXi(), casc.eta(), cent);
+        partical = 3312;
+      } else {
+        continue;
+      }
+      // topological cut
+      if (casc.cascradius() < cfgcasc_radius)
+        continue;
+      if (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) < cfgcasc_cospa)
+        continue;
+      if (casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) < cfgcasc_dcav0topv)
+        continue;
+      if (casc.dcabachtopv() < cfgcasc_dcabachtopv)
+        continue;
+      if (casc.dcacascdaughters() > cfgcasc_dcacascdau)
+        continue;
+      if (casc.dcaV0daughters() > cfgcasc_dcav0dau)
+        continue;
+      if (TMath::Abs(casc.mLambda() - 1.115683) > cfgcasc_mlamdawindow)
+        continue;
+      // track quality check
+      if (bachelor.tpcNClsFound() < cfgtpcclusters)
+        continue;
+      if (posdau.tpcNClsFound() < cfgtpcclusters)
+        continue;
+      if (negdau.tpcNClsFound() < cfgtpcclusters)
+        continue;
+      if (bachelor.itsNCls() < cfgitsclusters)
+        continue;
+      if (posdau.itsNCls() < cfgitsclusters)
+        continue;
+      if (negdau.itsNCls() < cfgitsclusters)
+        continue;
+      if (partical == 3334) {
         registry.fill(HIST("hEtaPhiPOIOmega"), casc.eta(), casc.phi());
         registry.fill(HIST("InvMassOmegaMinus"), casc.pt(), casc.mOmega(), casc.eta(), cent);
         if ((casc.pt() < cfgCutPtPOIMax) && (casc.pt() > cfgCutPtPOIMin) && (casc.mOmega() > 1.63) && (casc.mOmega() < 1.71)) {
           fGFW->Fill(casc.eta(), fPtAxis->FindBin(casc.pt()) - 1 + ((fOmegaMass->FindBin(casc.mOmega()) - 1) * nPtBins), casc.phi(), wacc * weff, 4);
         }
       }
-      if (TMath::Abs(casc.yXi()) < cfgCasc_rapidity && TMath::Abs(bachelor.tpcNSigmaPi()) < cfgNSigmaCascPion && TMath::Abs(posdau.tpcNSigmaPr()) < cfgNSigmaCascProton && TMath::Abs(negdau.tpcNSigmaPi()) < cfgNSigmaCascPion) {
+      if (partical == 3312) {
         registry.fill(HIST("hEtaPhiPOIXi"), casc.eta(), casc.phi());
         registry.fill(HIST("InvMassXiMinus"), casc.pt(), casc.mXi(), casc.eta(), cent);
         if ((casc.pt() < cfgCutPtPOIMax) && (casc.pt() > cfgCutPtPOIMin) && (casc.mXi() > 1.30) && (casc.mXi() < 1.37)) {
