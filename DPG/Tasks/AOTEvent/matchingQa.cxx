@@ -32,6 +32,7 @@ struct MatchingQaTask {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   Preslice<FullTracksIU> perCollision = aod::track::collisionId;
+  Configurable<int> customOrbitOffset{"customOrbitOffset", 0, "customOrbitOffset for MC"};
   Configurable<bool> isLowFlux{"isLowFlux", 0, "1 - low flux (pp, pPb), 0 - high flux (PbPb)"};
   Configurable<bool> useTimeDiff{"useTimeDiff", 1, "use time difference for selection"};
   Configurable<bool> useVtxDiff{"useVtxDiff", 1, "use vertex difference for selection"};
@@ -77,13 +78,12 @@ struct MatchingQaTask {
       }
     }
 
-    const AxisSpec axisNcontrib{isLowFlux ? 100 : 8000, 0., isLowFlux ? 100. : 8000., "n contributors"};
-    const AxisSpec axisNcontribSparse{isLowFlux ? 100 : 8000, 0., isLowFlux ? 100. : 8000., "n contributors"};
+    const AxisSpec axisNcontrib{isLowFlux ? 150 : 8000, 0., isLowFlux ? 150. : 8000., "n contributors"};
     const AxisSpec axisColTimeRes{1500, 0., 1500., "collision time resolution (ns)"};
     const AxisSpec axisFraction{1000, 0., 1., ""};
     const AxisSpec axisBcDiff{800, -400., 400., "bc diff"};
     const AxisSpec axisBcs{nBCsPerOrbit, 0., static_cast<float>(nBCsPerOrbit), "bc"};
-    const AxisSpec axisMultT0C{200, 0., isLowFlux ? 6000. : 60000., "Rec. mult. T0C"};
+    const AxisSpec axisMultT0C{200, 0., isLowFlux ? 1600. : 60000., "Rec. mult. T0C"};
     const AxisSpec axisZvtxDiff{200, -20., 20., "Zvtx difference, cm"};
 
     histos.add("hRecMultT0C", "", kTH1D, {axisMultT0C});
@@ -111,12 +111,6 @@ struct MatchingQaTask {
     histos.add("hNcontribAccTPC", "", kTH1F, {axisNcontrib});
     histos.add("hNcontribAccITS", "", kTH1F, {axisNcontrib});
 
-    histos.add("hNcontribMis", "", kTH1F, {axisNcontrib});
-    histos.add("hNcontribMisTOF", "", kTH1F, {axisNcontrib});
-    histos.add("hNcontribMisTRD", "", kTH1F, {axisNcontrib});
-    histos.add("hNcontribMisTPC", "", kTH1F, {axisNcontrib});
-    histos.add("hNcontribMisITS", "", kTH1F, {axisNcontrib});
-
     histos.add("hColBcDiffVsNcontrib", "", kTH2F, {axisNcontrib, axisBcDiff});
     histos.add("hColBcDiffVsNcontribTOF", "", kTH2F, {axisNcontrib, axisBcDiff});
     histos.add("hColBcDiffVsNcontribTRD", "", kTH2F, {axisNcontrib, axisBcDiff});
@@ -127,7 +121,30 @@ struct MatchingQaTask {
     histos.add("hZvtxDiffVsNcontribTPC", "", kTH2F, {axisNcontrib, axisZvtxDiff});
     histos.add("hZvtxDiffVsNcontribTRD", "", kTH2F, {axisNcontrib, axisZvtxDiff});
 
+    histos.add("hNcontribUnambiguous", "", kTH1F, {axisNcontrib});
+    histos.add("hNcontribUnambiguousTOF", "", kTH1F, {axisNcontrib});
+    histos.add("hNcontribUnambiguousTRD", "", kTH1F, {axisNcontrib});
+    histos.add("hNcontribUnambiguousTPC", "", kTH1F, {axisNcontrib});
+    histos.add("hNcontribUnambiguousITS", "", kTH1F, {axisNcontrib});
+
+    histos.add("hNcontribMis", "", kTH1F, {axisNcontrib});
+    histos.add("hNcontribMisTOF", "", kTH1F, {axisNcontrib});
+    histos.add("hNcontribMisTRD", "", kTH1F, {axisNcontrib});
+    histos.add("hNcontribMisTPC", "", kTH1F, {axisNcontrib});
+    histos.add("hNcontribMisITS", "", kTH1F, {axisNcontrib});
+
     histos.add("hNcontribColMostlyOk", "", kTH1F, {axisNcontrib});
+    histos.add("hNcontribColMostlyOkTOF", "", kTH1F, {axisNcontrib});
+    histos.add("hNcontribColMostlyOkTPC", "", kTH1F, {axisNcontrib});
+    histos.add("hNcontribColMostlyOkTRD", "", kTH1F, {axisNcontrib});
+    histos.add("hNcontribColMostlyOkITS", "", kTH1F, {axisNcontrib});
+
+    histos.add("hNcontribColMostlyOkMis", "", kTH1F, {axisNcontrib});
+    histos.add("hNcontribColMostlyOkMisTOF", "", kTH1F, {axisNcontrib});
+    histos.add("hNcontribColMostlyOkMisTPC", "", kTH1F, {axisNcontrib});
+    histos.add("hNcontribColMostlyOkMisTRD", "", kTH1F, {axisNcontrib});
+    histos.add("hNcontribColMostlyOkMisITS", "", kTH1F, {axisNcontrib});
+
     histos.add("hNcontribAllContribAll", "", kTH1F, {axisNcontrib});
     histos.add("hNcontribAllContribWrong", "", kTH1F, {axisNcontrib});
     histos.add("hNcontribAllFractionWrong", "", kTH2F, {axisNcontrib, axisFraction});
@@ -160,7 +177,7 @@ struct MatchingQaTask {
       uint32_t nOrbitsPerTF = run < 534133 ? 128 : 32;
       int64_t orbitSOR = (tsSOR * 1000 - tsOrbitReset) / o2::constants::lhc::LHCOrbitMUS;
       orbitSOR = orbitSOR / nOrbitsPerTF * nOrbitsPerTF;
-      bcSOR = orbitSOR * nBCsPerOrbit;
+      bcSOR = orbitSOR * nBCsPerOrbit + customOrbitOffset * nBCsPerOrbit;
       nBCsPerTF = nOrbitsPerTF * nBCsPerOrbit;
       nBCsPerITSROF = (run >= 543437 && run <= 545367) ? 594 : 198;
       const AxisSpec axisBcsInTF{nBCsPerTF, 0., static_cast<float>(nBCsPerTF), "bc"};
@@ -170,12 +187,18 @@ struct MatchingQaTask {
       histos.add("hBcInITSROFall", "", kTH1F, {axisBcsInITSROF});
       histos.add("hBcInITSROFcut", "", kTH1F, {axisBcsInITSROF});
     }
+
     int nCols = cols.size();
-    vFoundBCindex.resize(nCols, -1);
-    vNumITStracks.resize(nCols, 0);
-    vNumTOFtracks.resize(nCols, 0);
-    vNumTRDtracks.resize(nCols, 0);
-    vNumTPCtracks.resize(nCols, 0);
+    vFoundBCindex.resize(nCols);
+    vNumITStracks.resize(nCols);
+    vNumTOFtracks.resize(nCols);
+    vNumTRDtracks.resize(nCols);
+    vNumTPCtracks.resize(nCols);
+    std::fill(vFoundBCindex.begin(), vFoundBCindex.end(), -1);
+    std::fill(vNumITStracks.begin(), vNumITStracks.end(), 0);
+    std::fill(vNumTOFtracks.begin(), vNumTOFtracks.end(), 0);
+    std::fill(vNumTRDtracks.begin(), vNumTRDtracks.end(), 0);
+    std::fill(vNumTPCtracks.begin(), vNumTPCtracks.end(), 0);
 
     std::vector<float> vTOFtracksSumWeightedTimes(cols.size(), 0);
     std::vector<float> vTRDtracksSumWeightedTimes(cols.size(), 0);
@@ -297,10 +320,8 @@ struct MatchingQaTask {
         int64_t minROF = (itsGlobalBC - offsetITSROF) / nBCsPerITSROF * nBCsPerITSROF + offsetITSROF;
         int64_t maxROF = minROF + nBCsPerITSROF;
         histos.fill(HIST("hBCsITS"), minROF % 3564);
-        if (minBC < minROF)
-          minBC = minROF;
-        if (maxBC > maxROF)
-          maxBC = maxROF;
+        minBC = minBC < minROF ? minROF : minBC;
+        maxBC = maxBC > maxROF ? maxROF : maxBC;
         // LOGP(info,"{} {} {} {}",minBC, maxBC, minROF, maxROF);
       }
       if (minBC > maxBC)
@@ -478,6 +499,15 @@ struct MatchingQaTask {
         continue;
 
       histos.fill(HIST("hNcontribColMostlyOk"), nContrib);
+      if (vNumTOFtracks[colId] > 0) {
+        histos.fill(HIST("hNcontribColMostlyOkTOF"), nContrib);
+      } else if (vNumTPCtracks[colId] > 0) {
+        histos.fill(HIST("hNcontribColMostlyOkTPC"), nContrib);
+      } else if (vNumTRDtracks[colId] > 0) {
+        histos.fill(HIST("hNcontribColMostlyOkTRD"), nContrib);
+      } else if (vNumITStracks[colId] > 0) {
+        histos.fill(HIST("hNcontribColMostlyOkITS"), nContrib);
+      }
 
       int32_t foundBC = vFoundBCindex[colId];
       int32_t mcColId = vLabel[colId];
@@ -488,24 +518,46 @@ struct MatchingQaTask {
       if (isMcTVX)
         histos.fill(HIST("hNcontribTvxMostlyOk"), nContrib);
 
+      if (foundBC >= 0 && foundBC != mcBC.globalIndex()) {
+        // Analyse mismatches
+        histos.fill(HIST("hNcontribColMostlyOkMis"), nContrib);
+        if (vNumTOFtracks[colId] > 0) {
+          histos.fill(HIST("hNcontribColMostlyOkMisTOF"), nContrib);
+        } else if (vNumTPCtracks[colId] > 0) {
+          histos.fill(HIST("hNcontribColMostlyOkMisTPC"), nContrib);
+        } else if (vNumTRDtracks[colId] > 0) {
+          histos.fill(HIST("hNcontribColMostlyOkMisTRD"), nContrib);
+        } else if (vNumITStracks[colId] > 0) {
+          histos.fill(HIST("hNcontribColMostlyOkMisITS"), nContrib);
+        }
+      }
+
       if (vIsAmbiguousLabel[colId])
         continue;
-      if (foundBC < 0)
-        continue;
 
-      if (foundBC == mcBC.globalIndex())
-        continue;
-
-      // Analyse mismatches
-      histos.fill(HIST("hNcontribMis"), nContrib);
+      histos.fill(HIST("hNcontribUnambiguous"), nContrib);
       if (vNumTOFtracks[colId] > 0) {
-        histos.fill(HIST("hNcontribMisTOF"), nContrib);
-      } else if (vNumTRDtracks[colId] > 0) {
-        histos.fill(HIST("hNcontribMisTRD"), nContrib);
+        histos.fill(HIST("hNcontribUnambiguousTOF"), nContrib);
       } else if (vNumTPCtracks[colId] > 0) {
-        histos.fill(HIST("hNcontribMisTPC"), nContrib);
+        histos.fill(HIST("hNcontribUnambiguousTPC"), nContrib);
+      } else if (vNumTRDtracks[colId] > 0) {
+        histos.fill(HIST("hNcontribUnambiguousTRD"), nContrib);
       } else if (vNumITStracks[colId] > 0) {
-        histos.fill(HIST("hNcontribMisITS"), nContrib);
+        histos.fill(HIST("hNcontribUnambiguousITS"), nContrib);
+      }
+
+      if (foundBC >= 0 && foundBC != mcBC.globalIndex()) {
+        // Analyse mismatches
+        histos.fill(HIST("hNcontribMis"), nContrib);
+        if (vNumTOFtracks[colId] > 0) {
+          histos.fill(HIST("hNcontribMisTOF"), nContrib);
+        } else if (vNumTPCtracks[colId] > 0) {
+          histos.fill(HIST("hNcontribMisTPC"), nContrib);
+        } else if (vNumTRDtracks[colId] > 0) {
+          histos.fill(HIST("hNcontribMisTRD"), nContrib);
+        } else if (vNumITStracks[colId] > 0) {
+          histos.fill(HIST("hNcontribMisITS"), nContrib);
+        }
       }
     }
   }
