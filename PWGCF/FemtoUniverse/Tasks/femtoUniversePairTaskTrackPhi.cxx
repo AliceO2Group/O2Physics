@@ -68,6 +68,13 @@ struct femtoUniversePairTaskTrackPhi {
   using FemtoRecoParticles = soa::Join<aod::FDParticles, aod::FDExtParticles, aod::FDMCLabels>;
   Preslice<FemtoRecoParticles> perColMC = aod::femtouniverseparticle::fdCollisionId;
 
+  // Efficiency
+  Configurable<std::string> ConfLocalEfficiencyProton{"ConfLocalEfficiencyProton", "", "Local path to proton efficiency th2d file"};
+  Configurable<std::string> ConfLocalEfficiencyPhi{"ConfLocalEfficiencyPhi", "", "Local path to Phi efficiency th2d file"};
+  Configurable<long> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  Configurable<long> ConfEffProtonTimestamp{"ConfEffProtonTimestamp", 0, "(long int) Timestamp for hadron"};
+  Configurable<long> ConfEffPhiTimestamp{"ConfEffPhiTimestamp", 0, "(long int) Timestamp for phi"};
+
   Configurable<bool> ConfIsCPR{"ConfIsCPR", true, "Close Pair Rejection"};
   Configurable<bool> ConfCPRPlotPerRadii{"ConfCPRPlotPerRadii", false, "Plot CPR per radii"};
   Configurable<float> ConfCPRdeltaPhiCutMax{"ConfCPRdeltaPhiCutMax", 0.0, "Delta Phi max cut for Close Pair Rejection"};
@@ -158,12 +165,6 @@ struct femtoUniversePairTaskTrackPhi {
   ConfigurableAxis ConfkstarBins{"ConfkstarBins", {1500, 0., 6.}, "binning kstar"};
   ConfigurableAxis ConfkTBins{"ConfkTBins", {150, 0., 9.}, "binning kT"};
   ConfigurableAxis ConfmTBins{"ConfmTBins", {225, 0., 7.5}, "binning mT"};
-
-  // Efficiency
-  Configurable<std::string> ConfLocalEfficiencyProton{"ConfLocalEfficiencyProton", "", "Local path to proton efficiency th2d file"};
-  Configurable<std::string> ConfLocalEfficiencyPhi{"ConfLocalEfficiencyPhi", "", "Local path to Phi efficiency th2d file"};
-  Configurable<int> ConfEffProtonTimestamp{"ConfEffProtonTimestamp", 10, "(int) Timestamp for hadron"};
-  Configurable<int> ConfEffPhiTimestamp{"ConfEffPhiTimestamp", 10, "(int) Timestamp for phi"};
 
   FemtoUniverseAngularContainer<femtoUniverseAngularContainer::EventType::same, femtoUniverseAngularContainer::Observable::kstar> sameEventAngularCont;
   FemtoUniverseAngularContainer<femtoUniverseAngularContainer::EventType::mixed, femtoUniverseAngularContainer::Observable::kstar> mixedEventAngularCont;
@@ -436,13 +437,13 @@ struct femtoUniversePairTaskTrackPhi {
     ccdb->setCreatedNotAfter(now);
 
     if (!ConfLocalEfficiencyProton.value.empty()) {
-      protoneff = ccdb->getForTimeStamp<TH2D>(ConfLocalEfficiencyProton.value.c_str(), ConfEffProtonTimestamp);
+      protoneff = ccdb->getForTimeStamp<TH2D>(ConfLocalEfficiencyProton.value.c_str(), ConfEffProtonTimestamp.value);
       if (!protoneff || protoneff->IsZombie()) {
         LOGF(fatal, "Could not load efficiency protoneff histogram from %s", ConfLocalEfficiencyProton.value.c_str());
       }
     }
     if (!ConfLocalEfficiencyPhi.value.empty()) {
-      phieff = ccdb->getForTimeStamp<TH2D>(ConfLocalEfficiencyPhi.value.c_str(), ConfEffPhiTimestamp);
+      phieff = ccdb->getForTimeStamp<TH2D>(ConfLocalEfficiencyPhi.value.c_str(), ConfEffPhiTimestamp.value);
       if (!phieff || phieff->IsZombie()) {
         LOGF(fatal, "Could not load efficiency phieff histogram from %s", ConfLocalEfficiencyPhi.value.c_str());
       }
