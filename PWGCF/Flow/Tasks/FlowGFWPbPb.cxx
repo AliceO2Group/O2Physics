@@ -18,6 +18,7 @@
 #include "Framework/ASoAHelpers.h"
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/AnalysisDataModel.h"
 
 #include "Common/DataModel/EventSelection.h"
 #include "Common/Core/TrackSelection.h"
@@ -525,8 +526,8 @@ struct FlowGFWPbPb {
 
     for (auto& track : tracks) {
 
-      if (track.tpcNClsFound() < cfgCutTPCclu)
-        continue;
+      //      if (track.tpcNClsFound() < cfgCutTPCclu)
+      //         continue;
       if (cfgUseAdditionalTrackCut && !trackSelected(track, Magnetfield))
         continue;
       if (cfgOutputNUAWeights)
