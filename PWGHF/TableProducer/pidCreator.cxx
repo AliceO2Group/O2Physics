@@ -38,11 +38,8 @@ struct HfPidCreator {
   Produces<aod::PidTpcTofFullPr> trackPidFullPr;
   Produces<aod::PidTpcTofTinyPr> trackPidTinyPr;
   /// 2-prong candidate tables
-  Produces<aod::PidTpcTofCand2ProngFullEl> cand2ProngPidFullEl;
-  Produces<aod::PidTpcTofCand2ProngFullMu> cand2ProngPidFullMu;
   Produces<aod::PidTpcTofCand2ProngFullPi> cand2ProngPidFullPi;
   Produces<aod::PidTpcTofCand2ProngFullKa> cand2ProngPidFullKa;
-  Produces<aod::PidTpcTofCand2ProngFullPr> cand2ProngPidFullPr;
 
   static constexpr float defaultNSigmaTolerance = .1f;
   static constexpr float defaultNSigma = -999.f + defaultNSigmaTolerance; // -999.f is the default value set in TPCPIDResponse.h and PIDTOF.h
@@ -68,6 +65,7 @@ struct HfPidCreator {
   void init(InitContext& initContext)
   {
     // Check whether the right process functions are enabled.
+    // tracks
     checkTableSwitch(initContext, "PidTpcTofFullEl", doprocessFullEl);
     checkTableSwitch(initContext, "PidTpcTofTinyEl", doprocessTinyEl);
     checkTableSwitch(initContext, "PidTpcTofFullMu", doprocessFullMu);
@@ -78,6 +76,9 @@ struct HfPidCreator {
     checkTableSwitch(initContext, "PidTpcTofTinyKa", doprocessTinyKa);
     checkTableSwitch(initContext, "PidTpcTofFullPr", doprocessFullPr);
     checkTableSwitch(initContext, "PidTpcTofTinyPr", doprocessTinyPr);
+    // 2-prong candidates
+    checkTableSwitch(initContext, "PidTpcTofCand2ProngFullPi", doprocessPIDCand2ProngFullPi);
+    checkTableSwitch(initContext, "PidTpcTofCand2ProngFullKa", doprocessPIDCand2ProngFullKa);
   }
 
   /// Function to combine TPC and TOF NSigma
