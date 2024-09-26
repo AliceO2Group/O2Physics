@@ -224,6 +224,9 @@ struct HfCandidateCreatorXic0Omegac0 {
     registry.add("hKFParticleV0TopoChi2", "hKFParticleV0TopoChi2", kTH1F, {{1000, -0.10f, 100.0f}});
     registry.add("hKFParticleCascTopoChi2", "hKFParticleCascTopoChi2", kTH1F, {{1000, -0.1f, 100.0f}});
     registry.add("hKFParticleCascBachTopoChi2", "hKFParticleCascBachTopoChi2", kTH1F, {{1000, -0.1f, 100.0f}});
+	registry.add("hKFParticleDcaCharmBaryonDau", "hKFParticleDcaCharmBaryonDau", kTH1F, {{1000, -0.1f, 100.0f}});
+	registry.add("hKFParticleDcaXYV0DauToPv", "hKFParticleDcaXYV0DauToPv", kTH1F, {{1000, -0.1f, 100.0f}});
+	registry.add("hKFParticleDcaXYCascBachToPv", "hKFParticleDcaXYCascBachToPv", kTH1F, {{1000, -0.1f, 100.0f}});
     registry.add("hKfLambda_ldl", "hKfLambda_ldl", kTH1F, {{1000, 0.0f, 1000.0f}});
     registry.add("hKfOmega_ldl", "hKfOmega_ldl", kTH1F, {{1000, 0.0f, 1000.0f}});
     registry.add("hKfOmegaC0_ldl", "hKfOmegaC0_ldl", kTH1F, {{1000, 0.0f, 1000.0f}});
@@ -771,17 +774,17 @@ struct HfCandidateCreatorXic0Omegac0 {
       KFOmegac0ToPv.SetProductionVertex(KFPV);
       kfpPiFromOmegacToPv.SetProductionVertex(KFPV);
       //------------get updated daughter tracks after vertex fit  ---------------
-	  o2::track::TrackParCov trackParVarCharmBachelor = getTrackParCovFromKFP(kfpBachPionToOmegaC, o2::track::PID::Pion, kfpBachPionToOmegaC.GetQ()); //chrambaryon bach pion
+	  auto trackParVarCharmBachelor = getTrackParCovFromKFP(kfpBachPionToOmegaC, o2::track::PID::Pion, kfpBachPionToOmegaC.GetQ()); //chrambaryon bach pion
       trackParVarCharmBachelor.setAbsCharge(1);
 	  
-	  o2::track::TrackParCov omegaDauChargedTrackParCov = getTrackParCovFromKFP(kfpBachKaonToOmega, o2::track::PID::Kaon, kfpBachKaonToOmega.GetQ()); //Cascade bach kaon
+	  omegaDauChargedTrackParCov = getTrackParCovFromKFP(kfpBachKaonToOmega, o2::track::PID::Kaon, kfpBachKaonToOmega.GetQ()); //Cascade bach kaon
       omegaDauChargedTrackParCov.setAbsCharge(1);
       o2::track::TrackParCov trackCasc = getTrackParCovFromKFP(KFOmegaToOmegaC, KFOmegaToOmegaC.GetPDG(), 0);
       trackCasc.setAbsCharge(0);
 	  
-	  o2::track::TrackParCov trackParCovV0Dau0 = getTrackParCovFromKFP(kfpPos, kfpPos.GetPDG(), kfpPos.GetQ()); //V0 postive daughter
+	  trackParCovV0Dau0 = getTrackParCovFromKFP(kfpPos, kfpPos.GetPDG(), kfpPos.GetQ()); //V0 postive daughter
       trackParCovV0Dau0.setAbsCharge(1);
-	  o2::track::TrackParCov trackParCovV0Dau1 = getTrackParCovFromKFP(kfpNeg, kfpNeg.GetPDG(), kfpNeg.GetQ()); //V0 negtive daughter
+	  trackParCovV0Dau1 = getTrackParCovFromKFP(kfpNeg, kfpNeg.GetPDG(), kfpNeg.GetQ()); //V0 negtive daughter
       trackParCovV0Dau1.setAbsCharge(1);
 
       //-------------------------- V0 info---------------------------
@@ -950,7 +953,9 @@ struct HfCandidateCreatorXic0Omegac0 {
       registry.fill(HIST("hKFParticleCascBachTopoChi2"), cascBachTopoChi2);
       registry.fill(HIST("hKFParticleV0TopoChi2"), kfOmegac0Candidate.chi2TopoV0ToCasc);
       registry.fill(HIST("hKFParticleCascTopoChi2"), kfOmegac0Candidate.chi2TopoCascToOmegac);
-
+      registry.fill(HIST("hKFParticleDcaCharmBaryonDau"), kfOmegac0Candidate.kfDcaOmegacDau);
+	  registry.fill(HIST("hKFParticleDcaXYCascBachToPv"), dcaxyCascBachelor);
+	  registry.fill(HIST("hKFParticleDcaXYV0DauToPv"), dcaxyV0Dau0);
       registry.fill(HIST("hKfLambda_ldl"), kfOmegac0Candidate.ldlV0);
       registry.fill(HIST("hKfOmega_ldl"), kfOmegac0Candidate.ldlCasc);
       registry.fill(HIST("hKfOmegaC0_ldl"), kfOmegac0Candidate.ldlOmegac);
@@ -965,7 +970,7 @@ struct HfCandidateCreatorXic0Omegac0 {
                        trackCascDauCharged.sign(),
                        covVtxCharmBaryon[0], covVtxCharmBaryon[1], covVtxCharmBaryon[2], covVtxCharmBaryon[3], covVtxCharmBaryon[4], covVtxCharmBaryon[5],
                        pVecCharmBaryon[0], pVecCharmBaryon[1], pVecCharmBaryon[2],
-                       pVecCasc[0], pVecCasc[1], pVecCasc[2],
+                       KFOmegaToOmegaC.GetPx(), KFOmegaToOmegaC.GetPy(), KFOmegaToOmegaC.GetPz(),
                        pVecCharmBachelorAsD[0], pVecCharmBachelorAsD[1], pVecCharmBachelorAsD[2],
                        pVecV0[0], pVecV0[1], pVecV0[2],
                        pVecCascBachelor[0], pVecCascBachelor[1], pVecCascBachelor[2],
