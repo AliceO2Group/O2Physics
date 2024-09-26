@@ -241,12 +241,12 @@ struct SGCandProducer {
         }
       }
       // update SGFwdTracks tables
-      /* if (sameCuts.withFwdTracks()) {
+       if (sameCuts.withFwdTracks()) {
          for (auto& fwdtrack : fwdtracks) {
            if (!sgSelector.FwdTrkSelector(fwdtrack))
              updateUDFwdTrackTables(fwdtrack, bc.globalBC());
          }
-       }*/
+       }
     }
   }
 };
