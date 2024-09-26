@@ -84,31 +84,35 @@ class TrackSelectorPidBase
   }
 
   /// Set the custom value of TPC nσ vs. pion hypothesis to be used for selections
-  void setCustomNSigmaTpcPi(float nSigma) {
+  void setCustomNSigmaTpcPi(float nSigma)
+  {
     mUseCustomNSigmaTpcPi = true;
     mCustomNSigmaTpcPi = nSigma;
   }
   /// Set the custom value of TPC nσ vs. kaon hypothesis to be used for selections
-  void setCustomNSigmaTpcKa(float nSigma) {
+  void setCustomNSigmaTpcKa(float nSigma)
+  {
     mUseCustomNSigmaTpcKa = true;
     mCustomNSigmaTpcKa = nSigma;
   }
   /// Set the custom value of TPC nσ vs. proton hypothesis to be used for selections
-  void setCustomNSigmaTpcPr(float nSigma) {
+  void setCustomNSigmaTpcPr(float nSigma)
+  {
     mUseCustomNSigmaTpcPr = true;
     mCustomNSigmaTpcPr = nSigma;
   }
   /// Set the custom value of TPC nσ vs. muon hypothesis to be used for selections
-  void setCustomNSigmaTpcMu(float nSigma) {
+  void setCustomNSigmaTpcMu(float nSigma)
+  {
     mUseCustomNSigmaTpcMu = true;
     mCustomNSigmaTpcMu = nSigma;
   }
   /// Set the custom value of TPC nσ vs. electron hypothesis to be used for selections
-  void setCustomNSigmaTpcEl(float nSigma) {
+  void setCustomNSigmaTpcEl(float nSigma)
+  {
     mUseCustomNSigmaTpcEl = true;
     mCustomNSigmaTpcEl = nSigma;
   }
-  
 
   /// Set TPC nσ range in which a track should be conditionally accepted if combined with TOF. Set to 0 to disable.
   void setRangeNSigmaTpcCondTof(float nsMin, float nsMax)
@@ -199,27 +203,32 @@ class TrackSelectorPidBase
   }
 
   /// Set the custom value of TOF nσ vs. pion hypothesis to be used for selections
-  void setCustomNSigmaTofPi(float nSigma) {
+  void setCustomNSigmaTofPi(float nSigma)
+  {
     mUseCustomNSigmaTofPi = true;
     mCustomNSigmaTofPi = nSigma;
   }
   /// Set the custom value of TOF nσ vs. kaon hypothesis to be used for selections
-  void setCustomNSigmaTofKa(float nSigma) {
+  void setCustomNSigmaTofKa(float nSigma)
+  {
     mUseCustomNSigmaTofKa = true;
     mCustomNSigmaTofKa = nSigma;
   }
   /// Set the custom value of TOF nσ vs. proton hypothesis to be used for selections
-  void setCustomNSigmaTofPr(float nSigma) {
+  void setCustomNSigmaTofPr(float nSigma)
+  {
     mUseCustomNSigmaTofPr = true;
     mCustomNSigmaTofPr = nSigma;
   }
   /// Set the custom value of TOF nσ vs. muon hypothesis to be used for selections
-  void setCustomNSigmaTofMu(float nSigma) {
+  void setCustomNSigmaTofMu(float nSigma)
+  {
     mUseCustomNSigmaTofMu = true;
     mCustomNSigmaTofMu = nSigma;
   }
   /// Set the custom value of TOF nσ vs. electron hypothesis to be used for selections
-  void setCustomNSigmaTofEl(float nSigma) {
+  void setCustomNSigmaTofEl(float nSigma)
+  {
     mUseCustomNSigmaTofEl = true;
     mCustomNSigmaTofEl = nSigma;
   }
@@ -659,17 +668,17 @@ class TrackSelectorPidBase
 
  private:
   // TPC
-  float mPtTpcMin = 0.;            ///< minimum pT for TPC PID [GeV/c]
-  float mPtTpcMax = 100.;          ///< maximum pT for TPC PID [GeV/c]
-  float mNSigmaTpcMin = -3.;       ///< minimum number of TPC σ
-  float mNSigmaTpcMax = 3.;        ///< maximum number of TPC σ
-  float mNSigmaTpcMinCondTof = 0.; ///< minimum number of TPC σ if combined with TOF
-  float mNSigmaTpcMaxCondTof = 0.; ///< maximum number of TPC σ if combined with TOF
-  bool mUseCustomNSigmaTpcPi = false; ///< enable the usage of a custom value of TPC nσ vs. pion hypothesis
-  bool mUseCustomNSigmaTpcKa = false; ///< enable the usage of a custom value of TPC nσ vs. kaon hypothesis
-  bool mUseCustomNSigmaTpcPr = false; ///< enable the usage of a custom value of TPC nσ vs. proton hypothesis
-  bool mUseCustomNSigmaTpcMu = false; ///< enable the usage of a custom value of TPC nσ vs. muon hypothesis
-  bool mUseCustomNSigmaTpcEl = false; ///< enable the usage of a custom value of TPC nσ vs. electron hypothesis
+  float mPtTpcMin = 0.;                ///< minimum pT for TPC PID [GeV/c]
+  float mPtTpcMax = 100.;              ///< maximum pT for TPC PID [GeV/c]
+  float mNSigmaTpcMin = -3.;           ///< minimum number of TPC σ
+  float mNSigmaTpcMax = 3.;            ///< maximum number of TPC σ
+  float mNSigmaTpcMinCondTof = 0.;     ///< minimum number of TPC σ if combined with TOF
+  float mNSigmaTpcMaxCondTof = 0.;     ///< maximum number of TPC σ if combined with TOF
+  bool mUseCustomNSigmaTpcPi = false;  ///< enable the usage of a custom value of TPC nσ vs. pion hypothesis
+  bool mUseCustomNSigmaTpcKa = false;  ///< enable the usage of a custom value of TPC nσ vs. kaon hypothesis
+  bool mUseCustomNSigmaTpcPr = false;  ///< enable the usage of a custom value of TPC nσ vs. proton hypothesis
+  bool mUseCustomNSigmaTpcMu = false;  ///< enable the usage of a custom value of TPC nσ vs. muon hypothesis
+  bool mUseCustomNSigmaTpcEl = false;  ///< enable the usage of a custom value of TPC nσ vs. electron hypothesis
   float mCustomNSigmaTpcPi = -99999.f; ///< custom value of TPC nσ vs. pion hypothesis to be used for selections
   float mCustomNSigmaTpcKa = -99999.f; ///< custom value of TPC nσ vs. kaon hypothesis to be used for selections
   float mCustomNSigmaTpcPr = -99999.f; ///< custom value of TPC nσ vs. proton hypothesis to be used for selections
@@ -677,17 +686,17 @@ class TrackSelectorPidBase
   float mCustomNSigmaTpcEl = -99999.f; ///< custom value of TPC nσ vs. electron hypothesis to be used for selections
 
   // TOF
-  float mPtTofMin = 0.;            ///< minimum pT for TOF PID [GeV/c]
-  float mPtTofMax = 100.;          ///< maximum pT for TOF PID [GeV/c]
-  float mNSigmaTofMin = -3.;       ///< minimum number of TOF σ
-  float mNSigmaTofMax = 3.;        ///< maximum number of TOF σ
-  float mNSigmaTofMinCondTpc = 0.; ///< minimum number of TOF σ if combined with TPC
-  float mNSigmaTofMaxCondTpc = 0.; ///< maximum number of TOF σ if combined with TPC
-  bool mUseCustomNSigmaTofPi = false; ///< enable the usage of a custom value of TOF nσ vs. pion hypothesis
-  bool mUseCustomNSigmaTofKa = false; ///< enable the usage of a custom value of TOF nσ vs. kaon hypothesis
-  bool mUseCustomNSigmaTofPr = false; ///< enable the usage of a custom value of TOF nσ vs. proton hypothesis
-  bool mUseCustomNSigmaTofMu = false; ///< enable the usage of a custom value of TOF nσ vs. muon hypothesis
-  bool mUseCustomNSigmaTofEl = false; ///< enable the usage of a custom value of TOF nσ vs. electron hypothesis
+  float mPtTofMin = 0.;                ///< minimum pT for TOF PID [GeV/c]
+  float mPtTofMax = 100.;              ///< maximum pT for TOF PID [GeV/c]
+  float mNSigmaTofMin = -3.;           ///< minimum number of TOF σ
+  float mNSigmaTofMax = 3.;            ///< maximum number of TOF σ
+  float mNSigmaTofMinCondTpc = 0.;     ///< minimum number of TOF σ if combined with TPC
+  float mNSigmaTofMaxCondTpc = 0.;     ///< maximum number of TOF σ if combined with TPC
+  bool mUseCustomNSigmaTofPi = false;  ///< enable the usage of a custom value of TOF nσ vs. pion hypothesis
+  bool mUseCustomNSigmaTofKa = false;  ///< enable the usage of a custom value of TOF nσ vs. kaon hypothesis
+  bool mUseCustomNSigmaTofPr = false;  ///< enable the usage of a custom value of TOF nσ vs. proton hypothesis
+  bool mUseCustomNSigmaTofMu = false;  ///< enable the usage of a custom value of TOF nσ vs. muon hypothesis
+  bool mUseCustomNSigmaTofEl = false;  ///< enable the usage of a custom value of TOF nσ vs. electron hypothesis
   float mCustomNSigmaTofPi = -99999.f; ///< custom value of TOF nσ vs. pion hypothesis to be used for selections
   float mCustomNSigmaTofKa = -99999.f; ///< custom value of TOF nσ vs. kaon hypothesis to be used for selections
   float mCustomNSigmaTofPr = -99999.f; ///< custom value of TOF nσ vs. proton hypothesis to be used for selections

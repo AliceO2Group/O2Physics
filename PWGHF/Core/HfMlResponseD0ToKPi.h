@@ -29,10 +29,9 @@
 // Fill the map of available input features
 // the key is the feature's name (std::string)
 // the value is the corresponding value in EnumInputFeatures
-#define FILL_MAP_D0(FEATURE)                                        \
-  {                                                                 \
-#FEATURE, static_cast < uint8_t>(InputFeaturesD0ToKPi::FEATURE) \
-  }
+#define FILL_MAP_D0(FEATURE) \
+  {                          \
+    #FEATURE, static_cast<uint8_t>(InputFeaturesD0ToKPi::FEATURE)}
 
 // Check if the index of mCachedIndices (index associated to a FEATURE)
 // matches the entry in EnumInputFeatures associated to this FEATURE
@@ -90,13 +89,13 @@
 // where GETTER1 and GETTER2 are methods of the OBJECT, and the variable
 // is filled depending on whether it is a D0 or a D0bar
 #define CHECK_AND_FILL_VEC_D0_SIGNED(OBJECT, FEATURE, GETTER1, GETTER2) \
-  case static_cast<uint8_t>(InputFeaturesD0ToKPi::FEATURE): {                    \
-    if (pdgCode == o2::constants::physics::kD0) {                                \
-      inputFeatures.emplace_back(OBJECT.GETTER1());                      \
-    } else {                                                                     \
-      inputFeatures.emplace_back(OBJECT.GETTER2());                      \
-    }                                                                            \
-    break;                                                                       \
+  case static_cast<uint8_t>(InputFeaturesD0ToKPi::FEATURE): {           \
+    if (pdgCode == o2::constants::physics::kD0) {                       \
+      inputFeatures.emplace_back(OBJECT.GETTER1());                     \
+    } else {                                                            \
+      inputFeatures.emplace_back(OBJECT.GETTER2());                     \
+    }                                                                   \
+    break;                                                              \
   }
 
 namespace o2::analysis
@@ -186,10 +185,10 @@ class HfMlResponseD0ToKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_D0_FULL(candidate, nSigTpcKa0, /*getter*/ nSigTpcKa0);
         CHECK_AND_FILL_VEC_D0_FULL(candidate, nSigTpcPi1, /*getter*/ nSigTpcPi1);
         CHECK_AND_FILL_VEC_D0_FULL(candidate, nSigTpcKa1, /*getter*/ nSigTpcKa1);
-        //CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong0, prong1, nSigTpcPiExpPi, tpcNSigmaPi);
-        //CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong0, prong1, nSigTpcKaExpPi, tpcNSigmaKa);
-        //CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong1, prong0, nSigTpcPiExpKa, tpcNSigmaPi);
-        //CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong1, prong0, nSigTpcKaExpKa, tpcNSigmaKa);
+        // CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong0, prong1, nSigTpcPiExpPi, tpcNSigmaPi);
+        // CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong0, prong1, nSigTpcKaExpPi, tpcNSigmaKa);
+        // CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong1, prong0, nSigTpcPiExpKa, tpcNSigmaPi);
+        // CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong1, prong0, nSigTpcKaExpKa, tpcNSigmaKa);
         CHECK_AND_FILL_VEC_D0_SIGNED(candidate, nSigTpcPiExpPi, nSigTpcPi0, nSigTpcPi1);
         CHECK_AND_FILL_VEC_D0_SIGNED(candidate, nSigTpcKaExpPi, nSigTpcKa0, nSigTpcKa1);
         CHECK_AND_FILL_VEC_D0_SIGNED(candidate, nSigTpcPiExpKa, nSigTpcPi1, nSigTpcPi0);
@@ -199,10 +198,10 @@ class HfMlResponseD0ToKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_D0_FULL(candidate, nSigTofKa0, /*getter*/ nSigTofKa0);
         CHECK_AND_FILL_VEC_D0_FULL(candidate, nSigTofPi1, /*getter*/ nSigTofPi1);
         CHECK_AND_FILL_VEC_D0_FULL(candidate, nSigTofKa1, /*getter*/ nSigTofKa1);
-        //CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong0, prong1, nSigTofPiExpPi, tofNSigmaPi);
-        //CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong0, prong1, nSigTofKaExpPi, tofNSigmaKa);
-        //CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong1, prong0, nSigTofPiExpKa, tofNSigmaPi);
-        //CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong1, prong0, nSigTofKaExpKa, tofNSigmaKa);
+        // CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong0, prong1, nSigTofPiExpPi, tofNSigmaPi);
+        // CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong0, prong1, nSigTofKaExpPi, tofNSigmaKa);
+        // CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong1, prong0, nSigTofPiExpKa, tofNSigmaPi);
+        // CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong1, prong0, nSigTofKaExpKa, tofNSigmaKa);
         CHECK_AND_FILL_VEC_D0_SIGNED(candidate, nSigTofPiExpPi, nSigTofPi0, nSigTofPi1);
         CHECK_AND_FILL_VEC_D0_SIGNED(candidate, nSigTofKaExpPi, nSigTofKa0, nSigTofKa1);
         CHECK_AND_FILL_VEC_D0_SIGNED(candidate, nSigTofPiExpKa, nSigTofPi1, nSigTofPi0);
@@ -212,10 +211,10 @@ class HfMlResponseD0ToKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_D0_FULL(candidate, nSigTpcTofKa0, tpcTofNSigmaKa0);
         CHECK_AND_FILL_VEC_D0_FULL(candidate, nSigTpcTofPi1, tpcTofNSigmaPi1);
         CHECK_AND_FILL_VEC_D0_FULL(candidate, nSigTpcTofKa1, tpcTofNSigmaKa1);
-        //CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong0, prong1, nSigTpcTofPiExpPi, tpcTofNSigmaPi);
-        //CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong0, prong1, nSigTpcTofKaExpPi, tpcTofNSigmaKa);
-        //CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong1, prong0, nSigTpcTofPiExpKa, tpcTofNSigmaPi);
-        //CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong1, prong0, nSigTpcTofKaExpKa, tpcTofNSigmaKa);
+        // CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong0, prong1, nSigTpcTofPiExpPi, tpcTofNSigmaPi);
+        // CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong0, prong1, nSigTpcTofKaExpPi, tpcTofNSigmaKa);
+        // CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong1, prong0, nSigTpcTofPiExpKa, tpcTofNSigmaPi);
+        // CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong1, prong0, nSigTpcTofKaExpKa, tpcTofNSigmaKa);
         CHECK_AND_FILL_VEC_D0_SIGNED(candidate, nSigTpcTofPiExpPi, tpcTofNSigmaPi0, tpcTofNSigmaPi1);
         CHECK_AND_FILL_VEC_D0_SIGNED(candidate, nSigTpcTofKaExpPi, tpcTofNSigmaKa0, tpcTofNSigmaKa1);
         CHECK_AND_FILL_VEC_D0_SIGNED(candidate, nSigTpcTofPiExpKa, tpcTofNSigmaPi1, tpcTofNSigmaPi0);
