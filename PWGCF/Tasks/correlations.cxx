@@ -149,6 +149,7 @@ struct CorrelationTask {
       registry.add("etaphiTrigger", "multiplicity/centrality vs eta vs phi (triggers)", {HistType::kTH3F, {{100, 0, 100, "multiplicity/centrality"}, {100, -2, 2, "#eta"}, {200, 0, 2 * M_PI, "#varphi"}}});
       registry.add("invMass", "2-prong invariant mass (GeV/c^2)", {HistType::kTH3F, {axisInvMassHistogram, axisPtTrigger, axisMultiplicity}});
     }
+    registry.add("multiplicity", "multiplicity vs track count", {HistType::kTH1F, {{1000, 0, 100, "/multiplicity/centrality"}}});
 
     const int maxMixBin = AxisSpec(axisMultiplicity).getNbins() * AxisSpec(axisVertex).getNbins();
     registry.add("eventcount_same", "bin", {HistType::kTH1F, {{maxMixBin + 2, -2.5, -0.5 + maxMixBin, "bin"}}});
@@ -221,6 +222,7 @@ struct CorrelationTask {
   template <typename TCollision, typename TTracks>
   void fillQA(const TCollision& /*collision*/, float multiplicity, const TTracks& tracks)
   {
+    registry.fill(HIST("multiplicity"), multiplicity);
     for (auto& track1 : tracks) {
       registry.fill(HIST("yields"), multiplicity, track1.pt(), track1.eta());
       registry.fill(HIST("etaphi"), multiplicity, track1.eta(), track1.phi());
@@ -793,6 +795,8 @@ struct CorrelationTask {
         LOGF(info, "  Data multiplicity: %f", multiplicity);
       }
     }
+
+    fillQA(mcCollision, multiplicity, mcParticles);
 
     same->fillEvent(multiplicity, CorrelationContainer::kCFStepAll);
     fillCorrelations<CorrelationContainer::kCFStepAll>(same, mcParticles, mcParticles, multiplicity, mcCollision.posZ(), 0, 1.0f);

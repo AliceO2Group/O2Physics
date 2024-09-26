@@ -153,7 +153,7 @@ class FemtoUniverseAngularContainer
   /// \param part2 Particle two
   /// \param mult Multiplicity of the event
   template <o2::aod::femtouniverseMCparticle::MCType mc, typename T>
-  void setPair_base(const float /*femtoObs*/, const float /*mT*/, T const& part1, T const& part2, const int /*mult*/, bool use3dplots)
+  void setPair_base(const float /*femtoObs*/, const float /*mT*/, T const& part1, T const& part2, const int /*mult*/, bool use3dplots, float weight = 1.0f)
   {
     delta_eta = part1.eta() - part2.eta();
     delta_phi = part1.phi() - part2.phi();
@@ -165,7 +165,7 @@ class FemtoUniverseAngularContainer
       delta_phi -= o2::constants::math::TwoPI;
     }
 
-    mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[mc]) + HIST("/DeltaEtaDeltaPhi"), delta_phi, delta_eta);
+    mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[mc]) + HIST("/DeltaEtaDeltaPhi"), delta_phi, delta_eta, weight);
     if (use3dplots) {
       // use 3d plots
     }
@@ -194,7 +194,7 @@ class FemtoUniverseAngularContainer
   /// \param part2 Particle two
   /// \param mult Multiplicity of the event
   template <bool isMC, typename T>
-  void setPair(T const& part1, T const& part2, const int mult, bool use3dplots)
+  void setPair(T const& part1, T const& part2, const int mult, bool use3dplots, float weight = 1.0f)
   {
     float femtoObs, femtoObsMC;
     // Calculate femto observable and the mT with reconstructed information
@@ -215,7 +215,7 @@ class FemtoUniverseAngularContainer
           const float mTMC = FemtoUniverseMath::getmT(part1.fdMCParticle(), mMassOne, part2.fdMCParticle(), mMassTwo);
 
           if (abs(part1.fdMCParticle().pdgMCTruth()) == abs(mPDGOne) && abs(part2.fdMCParticle().pdgMCTruth()) == abs(mPDGTwo)) { // Note: all pair-histogramms are filled with MC truth information ONLY in case of non-fake candidates
-            setPair_base<o2::aod::femtouniverseMCparticle::MCType::kTruth>(femtoObsMC, mTMC, part1.fdMCParticle(), part2.fdMCParticle(), mult, use3dplots);
+            setPair_base<o2::aod::femtouniverseMCparticle::MCType::kTruth>(femtoObsMC, mTMC, part1.fdMCParticle(), part2.fdMCParticle(), mult, use3dplots, weight);
             setPair_MC(femtoObsMC, femtoObs, mT, mult);
           } else {
           }

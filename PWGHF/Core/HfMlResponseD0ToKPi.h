@@ -73,6 +73,19 @@
     break;                                                                       \
   }
 
+// Variation of CHECK_AND_FILL_VEC_D0_HFHELPER(OBJECT, FEATURE, GETTER)
+// where GETTER1 and GETTER2 are methods of hfHelper, and the variable
+// is filled depending on whether it is a D0 or a D0bar
+#define CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(OBJECT1, OBJECT2, FEATURE, GETTER) \
+  case static_cast<uint8_t>(InputFeaturesD0ToKPi::FEATURE): {                           \
+    if (pdgCode == o2::constants::physics::kD0) {                                       \
+      inputFeatures.emplace_back(OBJECT1.GETTER());                                     \
+    } else {                                                                            \
+      inputFeatures.emplace_back(OBJECT2.GETTER());                                     \
+    }                                                                                   \
+    break;                                                                              \
+  }
+
 namespace o2::analysis
 {
 enum class InputFeaturesD0ToKPi : uint8_t {
@@ -100,6 +113,18 @@ enum class InputFeaturesD0ToKPi : uint8_t {
   nSigTofKa1,
   nSigTpcTofPi1,
   nSigTpcTofKa1,
+  nSigTpcPiExpPi,
+  nSigTpcKaExpPi,
+  nSigTpcPiExpKa,
+  nSigTpcKaExpKa,
+  nSigTofPiExpPi,
+  nSigTofKaExpPi,
+  nSigTofPiExpKa,
+  nSigTofKaExpKa,
+  nSigTpcTofPiExpPi,
+  nSigTpcTofKaExpPi,
+  nSigTpcTofPiExpKa,
+  nSigTpcTofKaExpKa,
   maxNormalisedDeltaIP,
   impactParameterProduct,
   cosThetaStar,
@@ -148,16 +173,28 @@ class HfMlResponseD0ToKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_D0_FULL(prong0, nSigTpcKa0, tpcNSigmaKa);
         CHECK_AND_FILL_VEC_D0_FULL(prong1, nSigTpcPi1, tpcNSigmaPi);
         CHECK_AND_FILL_VEC_D0_FULL(prong1, nSigTpcKa1, tpcNSigmaKa);
+        CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong0, prong1, nSigTpcPiExpPi, tpcNSigmaPi);
+        CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong0, prong1, nSigTpcKaExpPi, tpcNSigmaKa);
+        CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong1, prong0, nSigTpcPiExpKa, tpcNSigmaPi);
+        CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong1, prong0, nSigTpcKaExpKa, tpcNSigmaKa);
         // TOF PID variables
         CHECK_AND_FILL_VEC_D0_FULL(prong0, nSigTofPi0, tofNSigmaPi);
         CHECK_AND_FILL_VEC_D0_FULL(prong0, nSigTofKa0, tofNSigmaKa);
         CHECK_AND_FILL_VEC_D0_FULL(prong1, nSigTofPi1, tofNSigmaPi);
         CHECK_AND_FILL_VEC_D0_FULL(prong1, nSigTofKa1, tofNSigmaKa);
+        CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong0, prong1, nSigTofPiExpPi, tofNSigmaPi);
+        CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong0, prong1, nSigTofKaExpPi, tofNSigmaKa);
+        CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong1, prong0, nSigTofPiExpKa, tofNSigmaPi);
+        CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong1, prong0, nSigTofKaExpKa, tofNSigmaKa);
         // Combined PID variables
         CHECK_AND_FILL_VEC_D0_FULL(prong0, nSigTpcTofPi0, tpcTofNSigmaPi);
         CHECK_AND_FILL_VEC_D0_FULL(prong0, nSigTpcTofKa0, tpcTofNSigmaKa);
         CHECK_AND_FILL_VEC_D0_FULL(prong1, nSigTpcTofPi1, tpcTofNSigmaPi);
         CHECK_AND_FILL_VEC_D0_FULL(prong1, nSigTpcTofKa1, tpcTofNSigmaKa);
+        CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong0, prong1, nSigTpcTofPiExpPi, tpcTofNSigmaPi);
+        CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong0, prong1, nSigTpcTofKaExpPi, tpcTofNSigmaKa);
+        CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong1, prong0, nSigTpcTofPiExpKa, tpcTofNSigmaPi);
+        CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED(prong1, prong0, nSigTpcTofKaExpKa, tpcTofNSigmaKa);
 
         CHECK_AND_FILL_VEC_D0(maxNormalisedDeltaIP);
         CHECK_AND_FILL_VEC_D0_FULL(candidate, impactParameterProduct, impactParameterProduct);
@@ -192,16 +229,28 @@ class HfMlResponseD0ToKPi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_D0(nSigTpcKa0),
       FILL_MAP_D0(nSigTpcPi1),
       FILL_MAP_D0(nSigTpcKa1),
+      FILL_MAP_D0(nSigTpcPiExpPi),
+      FILL_MAP_D0(nSigTpcKaExpPi),
+      FILL_MAP_D0(nSigTpcPiExpKa),
+      FILL_MAP_D0(nSigTpcKaExpKa),
       // TOF PID variables
       FILL_MAP_D0(nSigTofPi0),
       FILL_MAP_D0(nSigTofKa0),
       FILL_MAP_D0(nSigTofPi1),
       FILL_MAP_D0(nSigTofKa1),
+      FILL_MAP_D0(nSigTofPiExpPi),
+      FILL_MAP_D0(nSigTofKaExpPi),
+      FILL_MAP_D0(nSigTofPiExpKa),
+      FILL_MAP_D0(nSigTofKaExpKa),
       // Combined PID variables
       FILL_MAP_D0(nSigTpcTofPi0),
       FILL_MAP_D0(nSigTpcTofKa0),
       FILL_MAP_D0(nSigTpcTofPi1),
       FILL_MAP_D0(nSigTpcTofKa1),
+      FILL_MAP_D0(nSigTpcTofPiExpPi),
+      FILL_MAP_D0(nSigTpcTofKaExpPi),
+      FILL_MAP_D0(nSigTpcTofPiExpKa),
+      FILL_MAP_D0(nSigTpcTofKaExpKa),
 
       FILL_MAP_D0(maxNormalisedDeltaIP),
       FILL_MAP_D0(impactParameterProduct),
@@ -219,5 +268,6 @@ class HfMlResponseD0ToKPi : public HfMlResponse<TypeOutputScore>
 #undef CHECK_AND_FILL_VEC_D0
 #undef CHECK_AND_FILL_VEC_D0_HFHELPER
 #undef CHECK_AND_FILL_VEC_D0_HFHELPER_SIGNED
+#undef CHECK_AND_FILL_VEC_D0_OBJECT_HFHELPER_SIGNED
 
 #endif // PWGHF_CORE_HFMLRESPONSED0TOKPI_H_

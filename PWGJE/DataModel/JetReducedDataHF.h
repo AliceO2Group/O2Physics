@@ -35,13 +35,6 @@ DECLARE_SOA_INDEX_COLUMN(JMcCollision, mcCollision);
 DECLARE_SOA_INDEX_COLUMN(JMcParticle, mcParticle);
 } // namespace jd0indices
 
-namespace d0collisioncounter
-{
-DECLARE_SOA_COLUMN(ReadCounts, readCounts, std::vector<int>);
-DECLARE_SOA_COLUMN(ReadSelectedCounts, readSelectedCounts, std::vector<int>);
-DECLARE_SOA_COLUMN(WrittenCounts, writtenCounts, std::vector<int>);
-} // namespace d0collisioncounter
-
 DECLARE_SOA_TABLE(JD0CollisionIds, "AOD", "JD0COLLID",
                   jd0indices::JCollisionId);
 
@@ -76,11 +69,6 @@ DECLARE_SOA_TABLE(StoredJD0PIds, "AOD1", "JD0PID",
                   jd0indices::JMcParticleId,
                   o2::soa::Marker<1>);
 
-DECLARE_SOA_TABLE(D0CollisionCounts, "AOD", "D0COLLCOUNT",
-                  d0collisioncounter::ReadCounts,
-                  d0collisioncounter::ReadSelectedCounts,
-                  d0collisioncounter::WrittenCounts);
-
 namespace jlcindices
 {
 DECLARE_SOA_INDEX_COLUMN(JCollision, collision);
@@ -90,13 +78,6 @@ DECLARE_SOA_INDEX_COLUMN_FULL(Prong2, prong2, int, JTracks, "_2");
 DECLARE_SOA_INDEX_COLUMN(JMcCollision, mcCollision);
 DECLARE_SOA_INDEX_COLUMN(JMcParticle, mcParticle);
 } // namespace jlcindices
-
-namespace lccollisioncounter
-{
-DECLARE_SOA_COLUMN(ReadCounts, readCounts, std::vector<int>);
-DECLARE_SOA_COLUMN(ReadSelectedCounts, readSelectedCounts, std::vector<int>);
-DECLARE_SOA_COLUMN(WrittenCounts, writtenCounts, std::vector<int>);
-} // namespace lccollisioncounter
 
 DECLARE_SOA_TABLE(JLcCollisionIds, "AOD", "JLCCOLLID",
                   jlcindices::JCollisionId);
@@ -133,11 +114,6 @@ DECLARE_SOA_TABLE(StoredJLcPIds, "AOD1", "JLCPID",
                   jlcindices::JMcCollisionId,
                   jlcindices::JMcParticleId,
                   o2::soa::Marker<1>);
-
-DECLARE_SOA_TABLE(LcCollisionCounts, "AOD", "LcCOLLCOUNT",
-                  lccollisioncounter::ReadCounts,
-                  lccollisioncounter::ReadSelectedCounts,
-                  lccollisioncounter::WrittenCounts);
 
 } // namespace o2::aod
 

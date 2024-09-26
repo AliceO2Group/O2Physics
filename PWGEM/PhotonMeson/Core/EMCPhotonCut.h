@@ -49,33 +49,30 @@ class EMCPhotonCut : public TNamed
   template <typename T, typename Cluster>
   bool IsSelected(Cluster const& cluster) const
   {
-    // auto track = cluster.template MatchedTrack_as<T>();
-    auto track = nullptr;
-    if (!IsSelectedEMCal(EMCPhotonCuts::kEnergy, cluster, track)) {
+    if (!IsSelectedEMCal(EMCPhotonCuts::kEnergy, cluster)) {
       return false;
     }
-    if (!IsSelectedEMCal(EMCPhotonCuts::kNCell, cluster, track)) {
+    if (!IsSelectedEMCal(EMCPhotonCuts::kNCell, cluster)) {
       return false;
     }
-    if (!IsSelectedEMCal(EMCPhotonCuts::kM02, cluster, track)) {
+    if (!IsSelectedEMCal(EMCPhotonCuts::kM02, cluster)) {
       return false;
     }
-    if (!IsSelectedEMCal(EMCPhotonCuts::kTiming, cluster, track)) {
+    if (!IsSelectedEMCal(EMCPhotonCuts::kTiming, cluster)) {
       return false;
     }
-    if (!IsSelectedEMCal(EMCPhotonCuts::kTM, cluster, track)) {
+    if (!IsSelectedEMCal(EMCPhotonCuts::kTM, cluster)) {
       return false;
     }
-    if (!IsSelectedEMCal(EMCPhotonCuts::kExotic, cluster, track)) {
+    if (!IsSelectedEMCal(EMCPhotonCuts::kExotic, cluster)) {
       return false;
     }
     return true;
   }
 
-  // Temporary function to check if cluster passes a given selection criteria. To be replaced by framework filters.
   // Returns true if a cluster survives the cuts!
-  template <typename Cluster, typename Track>
-  bool IsSelectedEMCal(const EMCPhotonCuts& cut, Cluster const& cluster, Track const& /*track*/) const
+  template <typename Cluster>
+  bool IsSelectedEMCal(const EMCPhotonCuts& cut, Cluster const& cluster) const
   {
     switch (cut) {
       case EMCPhotonCuts::kEnergy:

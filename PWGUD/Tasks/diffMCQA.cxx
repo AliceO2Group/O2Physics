@@ -239,12 +239,26 @@ struct DiffMCQA {
   PROCESS_SWITCH(DiffMCQA, processMCTruth, "Process MC truth", true);
 
   // ...............................................................................................................
-  void processMain(CC const& collision, BCs const& bct0s,
-                   TCs const& tracks, FWs const& fwdtracks, ATs const& /*ambtracks*/, AFTs const& /*ambfwdtracks*/,
-                   aod::FT0s const& /*ft0s*/, aod::FV0As const& /*fv0as*/, aod::FDDs const& /*fdds*/,
-                   aod::Zdcs& zdcs, aod::Calos& calos,
-                   aod::V0s const& v0s, aod::Cascades const& cascades,
-                   aod::McCollisions const& /*McCols*/, aod::McParticles const& McParts)
+  // filter for global tracks
+  Filter globalTrackFilter = requireGlobalTrackInFilter();
+  using globalTracks = soa::Filtered<TCs>;
+
+  void processMain(CC const& collision,
+                   BCs const& bct0s,
+                   TCs const& tracks,
+                   FWs const& fwdtracks,
+                   globalTracks const& goodTracks,
+                   ATs const& /*ambtracks*/,
+                   AFTs const& /*ambfwdtracks*/,
+                   aod::FT0s const& /*ft0s*/,
+                   aod::FV0As const& /*fv0as*/,
+                   aod::FDDs const& /*fdds*/,
+                   aod::Zdcs& zdcs,
+                   aod::Calos& calos,
+                   aod::V0s const& v0s,
+                   aod::Cascades const& cascades,
+                   aod::McCollisions const& /*McCols*/,
+                   aod::McParticles const& McParts)
   {
     bool isDGcandidate = true;
 
@@ -262,10 +276,6 @@ struct DiffMCQA {
     } else {
       registry.get<TH1>(HIST("all/mcCols"))->Fill(0., 1.);
     }
-
-    // global tracks
-    Partition<TCs> goodTracks = requireGlobalTrackInFilter();
-    goodTracks.bindTable(tracks);
 
     // update collision histograms
     if (isPythiaDiff) {

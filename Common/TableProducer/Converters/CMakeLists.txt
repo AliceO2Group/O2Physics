@@ -39,8 +39,18 @@ o2physics_add_dpl_workflow(collision-converter
                     PUBLIC_LINK_LIBRARIES
                 COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(mccollision-converter
+                SOURCES mcCollisionConverter.cxx
+                PUBLIC_LINK_LIBRARIES
+            COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(bc-converter
                     SOURCES bcConverter.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework
+                COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(bc-flags-creator
+                    SOURCES bcFlagsCreator.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework
                 COMPONENT_NAME Analysis)
 

@@ -32,6 +32,6 @@ using MyEMCCluster = MyEMCClusters::iterator;
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<Pi0EtaToGammaGammaMC<PairType::kEMCEMC, MyEMCClusters, aod::SkimEMCMTs>>(cfgc, TaskName{"pi0eta-to-gammagamma-mc-emcemc"}),
+    adaptAnalysisTask<Pi0EtaToGammaGammaMC<PairType::kEMCEMC, MyEMCClusters>>(cfgc, TaskName{"pi0eta-to-gammagamma-mc-emcemc"}),
   };
 }

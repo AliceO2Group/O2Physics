@@ -22,7 +22,6 @@
 
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
@@ -41,9 +40,9 @@ using namespace o2::framework::expressions;
 // NB: runDataProcessing.h must be included after customize!
 #include "Framework/runDataProcessing.h"
 
-template <typename CandidateCollisionTable, typename CandidateMcCollisionTable, typename CandidateTable, typename CandidateTableMCD, typename CandidateTableMCP, typename TracksSub, typename JetTableData, typename JetMatchedTableData, typename OutputCollisionTableData, typename OutputTableData, typename SubstructureOutputTableData, typename MatchingOutputTableData, typename JetTableMCD, typename OutputCollisionTableMCD, typename OutputTableMCD, typename SubstructureOutputTableMCD, typename MatchingOutputTableMCD, typename JetTableMCP, typename OutputCollisionTableMCP, typename OutputTableMCP, typename SubstructureOutputTableMCP, typename MatchingOutputTableMCP, typename JetTableDataSub, typename OutputCollisionTableDataSub, typename OutputTableDataSub, typename SubstructureOutputTableDataSub, typename MatchingOutputTableDataSub, typename CandidateCollisionOutputTable, typename CandidateOutputTable, typename CandidateParOutputTable, typename CandidateParExtraOutputTable, typename CandidateSelOutputTable, typename CandidateMlOutputTable, typename CandidateMCDOutputTable, typename CandidateMcCollisionOutputTable, typename CandidateMcCollisionMatchingOutputTable, typename CandidateMCPOutputTable, typename CollisionCounterTable>
+template <typename CandidateCollisionTable, typename CandidateMcCollisionTable, typename CandidateTable, typename CandidateTableMCD, typename CandidateTableMCP, typename TracksSub, typename JetTableData, typename JetMatchedTableData, typename OutputCollisionTableData, typename OutputTableData, typename SubstructureOutputTableData, typename MatchingOutputTableData, typename JetTableMCD, typename OutputCollisionTableMCD, typename OutputTableMCD, typename SubstructureOutputTableMCD, typename MatchingOutputTableMCD, typename JetTableMCP, typename OutputCollisionTableMCP, typename OutputTableMCP, typename SubstructureOutputTableMCP, typename MatchingOutputTableMCP, typename JetTableDataSub, typename OutputCollisionTableDataSub, typename OutputTableDataSub, typename SubstructureOutputTableDataSub, typename MatchingOutputTableDataSub, typename CandidateCollisionOutputTable, typename CandidateOutputTable, typename CandidateParOutputTable, typename CandidateParExtraOutputTable, typename CandidateSelOutputTable, typename CandidateMlOutputTable, typename CandidateMCDOutputTable, typename CandidateMcCollisionOutputTable, typename CandidateMcCollisionMatchingOutputTable, typename CandidateMCPOutputTable>
 struct JetSubstructureHFOutputTask {
-  Produces<CollisionCounterTable> storedCollisionCountsTable;
+
   Produces<OutputCollisionTableData> collisionOutputTableData;
   Produces<OutputTableData> jetOutputTableData;
   Produces<SubstructureOutputTableData> jetSubstructureOutputTableData;
@@ -82,19 +81,14 @@ struct JetSubstructureHFOutputTask {
   Configurable<float> trackEtaMin{"trackEtaMin", -0.9, "minimum track pseudorapidity"};
   Configurable<float> trackEtaMax{"trackEtaMax", 0.9, "maximum track pseudorapidity"};
 
-  Configurable<std::string> eventSelectionForCounting{"eventSelectionForCounting", "sel8", "choose event selection for collision counter"};
-
-  std::map<int32_t, int32_t> candidateMapping;
-  std::map<int32_t, int32_t> candidateCollisionMapping;
-
-  std::map<int32_t, int32_t> candidateMappingMCP;
-
   std::map<int32_t, int32_t> jetMappingData;
   std::map<int32_t, int32_t> jetMappingDataSub;
   std::map<int32_t, int32_t> jetMappingMCD;
   std::map<int32_t, int32_t> jetMappingMCP;
-  std::map<int32_t, int32_t> hfCollisionMapping;
-  std::map<int32_t, int32_t> hfMcCollisionMapping;
+  std::map<int32_t, int32_t> candidateMapping;
+  std::map<int32_t, int32_t> candidateMappingMCP;
+  std::map<int32_t, int32_t> candidateCollisionMapping;
+  std::map<int32_t, int32_t> candidateMcCollisionMapping;
 
   std::vector<double> jetRadiiValues;
 
@@ -104,33 +98,42 @@ struct JetSubstructureHFOutputTask {
   PresliceUnsorted<soa::Join<JetCollisions, aod::JMcCollisionLbs>> CollisionsPerMcCollision = aod::jmccollisionlb::mcCollisionId;
   PresliceOptional<CollisionsD0> D0CollisionsPerCollision = aod::jd0indices::collisionId;
   PresliceOptional<CollisionsLc> LcCollisionsPerCollision = aod::jlcindices::collisionId;
+  PresliceOptional<CollisionsDielectron> DielectronCollisionsPerCollision = aod::jdielectronindices::collisionId;
   PresliceOptional<soa::Join<McCollisionsD0, aod::HfD0McRCollIds>> D0McCollisionsPerMcCollision = aod::jd0indices::mcCollisionId;
   PresliceOptional<soa::Join<McCollisionsLc, aod::Hf3PMcRCollIds>> LcMcCollisionsPerMcCollision = aod::jlcindices::mcCollisionId;
+  PresliceOptional<McCollisionsDielectron> DielectronMcCollisionsPerMcCollision = aod::jdielectronindices::mcCollisionId;
 
-  int eventSelection = -1;
   void init(InitContext const&)
   {
     jetRadiiValues = (std::vector<double>)jetRadii;
-    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(eventSelectionForCounting));
   }
 
   template <typename T, typename U, typename V, typename M>
-  void fillTables(T const& jet, U const& /*cand*/, int32_t collisionIndex, int32_t candidateIndex, V& jetOutputTable, M& jetSubstructureOutputTable, std::map<int32_t, int32_t>& jetMap)
+  void fillJetTables(T const& jet, U const& /*cand*/, int32_t collisionIndex, int32_t candidateIndex, V& jetOutputTable, M& jetSubstructureOutputTable, std::map<int32_t, int32_t>& jetMap)
   {
     std::vector<float> energyMotherVec;
     std::vector<float> ptLeadingVec;
     std::vector<float> ptSubLeadingVec;
     std::vector<float> thetaVec;
+    std::vector<float> pairPtVec;
+    std::vector<float> pairEnergyVec;
+    std::vector<float> pairThetaVec;
     auto energyMotherSpan = jet.energyMother();
     auto ptLeadingSpan = jet.ptLeading();
     auto ptSubLeadingSpan = jet.ptSubLeading();
     auto thetaSpan = jet.theta();
+    auto pairPtSpan = jet.pairPt();
+    auto pairEnergySpan = jet.pairEnergy();
+    auto pairThetaSpan = jet.pairTheta();
     std::copy(energyMotherSpan.begin(), energyMotherSpan.end(), std::back_inserter(energyMotherVec));
     std::copy(ptLeadingSpan.begin(), ptLeadingSpan.end(), std::back_inserter(ptLeadingVec));
     std::copy(ptSubLeadingSpan.begin(), ptSubLeadingSpan.end(), std::back_inserter(ptSubLeadingVec));
     std::copy(thetaSpan.begin(), thetaSpan.end(), std::back_inserter(thetaVec));
-    jetOutputTable(collisionIndex, candidateIndex, jet.pt(), jet.phi(), jet.eta(), jet.y(), jet.r(), jet.tracksIds().size() + jet.hfcandidatesIds().size()); // here we take the decision to keep the collision index consistent with the JE framework in case it is later needed to join to other tables. The candidate Index however can be linked to the HF tables
-    jetSubstructureOutputTable(jetOutputTable.lastIndex(), energyMotherVec, ptLeadingVec, ptSubLeadingVec, thetaVec, jet.nSub2DR(), jet.nSub1(), jet.nSub2());
+    std::copy(pairPtSpan.begin(), pairPtSpan.end(), std::back_inserter(pairPtVec));
+    std::copy(pairEnergySpan.begin(), pairEnergySpan.end(), std::back_inserter(pairEnergyVec));
+    std::copy(pairThetaSpan.begin(), pairThetaSpan.end(), std::back_inserter(pairThetaVec));
+    jetOutputTable(collisionIndex, candidateIndex, jet.pt(), jet.phi(), jet.eta(), jet.y(), jet.r(), jet.tracksIds().size() + jet.candidatesIds().size()); // here we take the decision to keep the collision index consistent with the JE framework in case it is later needed to join to other tables. The candidate Index however can be linked to the HF tables
+    jetSubstructureOutputTable(jetOutputTable.lastIndex(), energyMotherVec, ptLeadingVec, ptSubLeadingVec, thetaVec, jet.nSub2DR(), jet.nSub1(), jet.nSub2(), pairPtVec, pairEnergyVec, pairThetaVec, jet.angularity());
     jetMap.insert(std::make_pair(jet.globalIndex(), jetOutputTable.lastIndex()));
   }
 
@@ -149,7 +152,7 @@ struct JetSubstructureHFOutputTask {
       }
       for (const auto& jetRadiiValue : jetRadiiValues) {
         if (jet.r() == round(jetRadiiValue * 100.0f)) {
-          auto candidate = jet.template hfcandidates_first_as<V>();
+          auto candidate = jet.template candidates_first_as<V>();
           int32_t candidateIndex = -1;
           auto candidateTableIndex = candidateMap.find(candidate.globalIndex());
           if (candidateTableIndex != candidateMap.end()) {
@@ -162,7 +165,7 @@ struct JetSubstructureHFOutputTask {
             }
             nJetInCollision++;
           }
-          fillTables(jet, candidate, collisionIndex, candidateIndex, jetOutputTable, jetSubstructureOutputTable, jetMap);
+          fillJetTables(jet, candidate, collisionIndex, candidateIndex, jetOutputTable, jetSubstructureOutputTable, jetMap);
         }
       }
     }
@@ -181,7 +184,7 @@ struct JetSubstructureHFOutputTask {
       for (const auto& jetRadiiValue : jetRadiiValues) {
         if (jet.r() == round(jetRadiiValue * 100.0f)) {
 
-          auto candidate = jet.template hfcandidates_first_as<U>();
+          auto candidate = jet.template candidates_first_as<U>();
 
           auto candidateTableIndex = candidateMap.find(candidate.globalIndex());
           if (candidateTableIndex != candidateMap.end()) {
@@ -190,17 +193,17 @@ struct JetSubstructureHFOutputTask {
           int32_t candidateCollisionIndex = -1;
           int32_t candidateIndex = -1;
           if constexpr (isMCP) {
-            auto hfMcCollisionIndex = hfMcCollisionMapping.find(candidate.hfMcCollBaseId());
-            if (hfMcCollisionIndex != hfMcCollisionMapping.end()) {
+            auto hfMcCollisionIndex = candidateMcCollisionMapping.find(jetcandidateutilities::getMcCandidateCollisionId(candidate));
+            if (hfMcCollisionIndex != candidateMcCollisionMapping.end()) {
               candidateCollisionIndex = hfMcCollisionIndex->second;
             }
-            jethfutilities::fillCandidateMcTable(candidate, candidateCollisionIndex, hfParticlesTable, candidateIndex);
+            jetcandidateutilities::fillCandidateMcTable(candidate, candidateCollisionIndex, hfParticlesTable, candidateIndex);
           } else {
-            auto hfCollisionIndex = hfCollisionMapping.find(candidate.hfCollBaseId());
-            if (hfCollisionIndex != hfCollisionMapping.end()) {
+            auto hfCollisionIndex = candidateCollisionMapping.find(jetcandidateutilities::getCandidateCollisionId(candidate));
+            if (hfCollisionIndex != candidateCollisionMapping.end()) {
               candidateCollisionIndex = hfCollisionIndex->second;
             }
-            jethfutilities::fillCandidateTable<isMCD>(candidate, candidateCollisionIndex, candidateTable, candidateParsTable, candidateParExtrasTable, candidateSelsTable, candidateMlsTable, candidateMcsTable, candidateIndex);
+            jetcandidateutilities::fillCandidateTable<isMCD>(candidate, candidateCollisionIndex, candidateTable, candidateParsTable, candidateParExtrasTable, candidateSelsTable, candidateMlsTable, candidateMcsTable, candidateIndex);
           }
           candidateMap.insert(std::make_pair(candidate.globalIndex(), candidateIndex));
         }
@@ -315,15 +318,15 @@ struct JetSubstructureHFOutputTask {
     if constexpr (!isMCPOnly) {
       for (const auto& collision : collisions) {
         if (collisionFlag[collision.globalIndex()]) {
-          const auto hfCollisionsPerCollision = jethfutilities::slicedPerCollision(hfCollisions, candidates, collision, D0CollisionsPerCollision, LcCollisionsPerCollision, D0CollisionsPerCollision); // add Bplus later
+          const auto hfCollisionsPerCollision = jetcandidateutilities::slicedPerCandidateCollision(hfCollisions, candidates, collision, D0CollisionsPerCollision, LcCollisionsPerCollision, D0CollisionsPerCollision, DielectronCollisionsPerCollision); // add Bplus later
           int32_t candidateCollisionIndex = -1;
           for (const auto& hfCollisionPerCollision : hfCollisionsPerCollision) { // should only ever be one
-            auto hfCollisionTableIndex = hfCollisionMapping.find(hfCollisionPerCollision.globalIndex());
-            if (hfCollisionTableIndex != hfCollisionMapping.end()) {
+            auto hfCollisionTableIndex = candidateCollisionMapping.find(hfCollisionPerCollision.globalIndex());
+            if (hfCollisionTableIndex != candidateCollisionMapping.end()) {
               continue;
             }
-            jethfutilities::fillHFCollisionTable(hfCollisionPerCollision, candidates, hfCollisionsTable, candidateCollisionIndex);
-            hfCollisionMapping.insert(std::make_pair(hfCollisionPerCollision.globalIndex(), hfCollisionsTable.lastIndex()));
+            jetcandidateutilities::fillCandidateCollisionTable(hfCollisionPerCollision, candidates, hfCollisionsTable, candidateCollisionIndex);
+            candidateCollisionMapping.insert(std::make_pair(hfCollisionPerCollision.globalIndex(), hfCollisionsTable.lastIndex()));
           }
         }
       }
@@ -331,24 +334,24 @@ struct JetSubstructureHFOutputTask {
     if constexpr (isMC) {
       for (const auto& mcCollision : mcCollisions) {
         if (mcCollisionFlag[mcCollision.globalIndex()]) {
-          const auto hfMcCollisionsPerMcCollision = jethfutilities::slicedPerCollision(hfMcCollisions, candidatesMCP, mcCollision, D0McCollisionsPerMcCollision, LcMcCollisionsPerMcCollision, D0McCollisionsPerMcCollision); // add Bplus later
+          const auto hfMcCollisionsPerMcCollision = jetcandidateutilities::slicedPerCandidateCollision(hfMcCollisions, candidatesMCP, mcCollision, D0McCollisionsPerMcCollision, LcMcCollisionsPerMcCollision, D0McCollisionsPerMcCollision, DielectronMcCollisionsPerMcCollision); // add Bplus later
           int32_t candidateMcCollisionIndex = -1;
           for (const auto& hfMcCollisionPerMcCollision : hfMcCollisionsPerMcCollision) { // should only ever be one
-            auto hfMcCollisionTableIndex = hfMcCollisionMapping.find(hfMcCollisionPerMcCollision.globalIndex());
-            if (hfMcCollisionTableIndex != hfMcCollisionMapping.end()) {
+            auto hfMcCollisionTableIndex = candidateMcCollisionMapping.find(hfMcCollisionPerMcCollision.globalIndex());
+            if (hfMcCollisionTableIndex != candidateMcCollisionMapping.end()) {
               continue;
             }
-            jethfutilities::fillHFMcCollisionTable(hfMcCollisionPerMcCollision, candidatesMCP, hfMcCollisionsTable, candidateMcCollisionIndex);
-            hfMcCollisionMapping.insert(std::make_pair(hfMcCollisionPerMcCollision.globalIndex(), hfMcCollisionsTable.lastIndex()));
-            if constexpr (!isMCPOnly) {
+            jetcandidateutilities::fillCandidateMcCollisionTable(hfMcCollisionPerMcCollision, candidatesMCP, hfMcCollisionsTable, candidateMcCollisionIndex);
+            candidateMcCollisionMapping.insert(std::make_pair(hfMcCollisionPerMcCollision.globalIndex(), hfMcCollisionsTable.lastIndex()));
+            if constexpr (!isMCPOnly && (jethfutilities::isHFTable<P>() || jethfutilities::isHFMcTable<S>())) { // the matching of mcCollision to Collision is only done for HF tables
               std::vector<int32_t> hfCollisionIDs;
-              for (auto const& hfCollisionPerMcCollision : hfMcCollisionPerMcCollision.template hfCollBases_as<V>()) {
-                auto hfCollisionIndex = hfCollisionMapping.find(hfCollisionPerMcCollision.globalIndex());
-                if (hfCollisionIndex != hfCollisionMapping.end()) {
+              for (auto const& hfCollisionPerMcCollision : hfMcCollisionPerMcCollision.template hfCollBases_as<V>()) { // if added for others this line needs to be templated per type
+                auto hfCollisionIndex = candidateCollisionMapping.find(hfCollisionPerMcCollision.globalIndex());
+                if (hfCollisionIndex != candidateCollisionMapping.end()) {
                   hfCollisionIDs.push_back(hfCollisionIndex->second);
                 }
               }
-              hfMcCollisionsMatchingTable(hfCollisionIDs); // make matching table a template
+              hfMcCollisionsMatchingTable(hfCollisionIDs);
             }
           }
         }
@@ -365,49 +368,10 @@ struct JetSubstructureHFOutputTask {
     jetMappingDataSub.clear();
     jetMappingMCD.clear();
     jetMappingMCP.clear();
-    hfCollisionMapping.clear();
-    hfMcCollisionMapping.clear();
+    candidateCollisionMapping.clear();
+    candidateMcCollisionMapping.clear();
   }
   PROCESS_SWITCH(JetSubstructureHFOutputTask, processClearMaps, "process function that clears all the maps in each dataframe", true);
-
-  void processCountCollisions(JetCollisions const& collisions, aod::CollisionCounts const& collisionCounts)
-  {
-    int readCollisionCounter = 0;
-    int readSelectedCollisionCounter = 0;
-    int writtenCollisionCounter = -1;
-    for (auto const& collision : collisions) {
-      readCollisionCounter++;
-      if (jetderiveddatautilities::selectCollision(collision, eventSelection)) {
-        readSelectedCollisionCounter++;
-      }
-    }
-    std::vector<int> previousReadCounts;
-    std::vector<int> previousReadSelectedCounts;
-    std::vector<int> previousWrittenCounts;
-    int iPreviousDataFrame = 0;
-    for (const auto& collisionCount : collisionCounts) {
-      auto readCollisionCounterSpan = collisionCount.readCounts();
-      auto readSelectedCollisionCounterSpan = collisionCount.readSelectedCounts();
-      auto writtenCollisionCounterSpan = collisionCount.writtenCounts();
-      if (iPreviousDataFrame == 0) {
-        std::copy(readCollisionCounterSpan.begin(), readCollisionCounterSpan.end(), std::back_inserter(previousReadCounts));
-        std::copy(readSelectedCollisionCounterSpan.begin(), readSelectedCollisionCounterSpan.end(), std::back_inserter(previousReadSelectedCounts));
-        std::copy(writtenCollisionCounterSpan.begin(), writtenCollisionCounterSpan.end(), std::back_inserter(previousWrittenCounts));
-      } else {
-        for (unsigned int i = 0; i < previousReadCounts.size(); i++) {
-          previousReadCounts[i] += readCollisionCounterSpan[i];
-          previousReadSelectedCounts[i] += readSelectedCollisionCounterSpan[i];
-          previousWrittenCounts[i] += writtenCollisionCounterSpan[i];
-        }
-      }
-      iPreviousDataFrame++;
-    }
-    previousReadCounts.push_back(readCollisionCounter);
-    previousReadSelectedCounts.push_back(readSelectedCollisionCounter);
-    previousWrittenCounts.push_back(writtenCollisionCounter);
-    storedCollisionCountsTable(previousReadCounts, previousReadSelectedCounts, previousWrittenCounts);
-  }
-  PROCESS_SWITCH(JetSubstructureHFOutputTask, processCountCollisions, "process function that counts read in collisions", false);
 
   void processOutputCollisionsData(JetCollisions const& collisions,
                                    JetTableData const& jets,
@@ -530,9 +494,10 @@ struct JetSubstructureHFOutputTask {
   }
   PROCESS_SWITCH(JetSubstructureHFOutputTask, processOutputMatchingMC, "jet matching output MC", false);
 };
-using JetSubstructureOutputD0 = JetSubstructureHFOutputTask<CollisionsD0, soa::Join<McCollisionsD0, aod::HfD0McRCollIds>, CandidatesD0Data, CandidatesD0MCD, CandidatesD0MCP, aod::JTrackD0Subs, soa::Join<aod::D0ChargedJets, aod::D0ChargedJetConstituents, aod::D0CJetSSs>, soa::Join<aod::D0ChargedJets, aod::D0ChargedJetConstituents, aod::D0CJetSSs, aod::D0ChargedJetsMatchedToD0ChargedEventWiseSubtractedJets>, aod::D0CJetCOs, aod::D0CJetOs, aod::D0CJetSSOs, aod::D0CJetMOs, soa::Join<aod::D0ChargedMCDetectorLevelJets, aod::D0ChargedMCDetectorLevelJetConstituents, aod::D0CMCDJetSSs, aod::D0ChargedMCDetectorLevelJetsMatchedToD0ChargedMCParticleLevelJets>, aod::D0CMCDJetCOs, aod::D0CMCDJetOs, aod::D0CMCDJetSSOs, aod::D0CMCDJetMOs, soa::Join<aod::D0ChargedMCParticleLevelJets, aod::D0ChargedMCParticleLevelJetConstituents, aod::D0CMCPJetSSs, aod::D0ChargedMCParticleLevelJetsMatchedToD0ChargedMCDetectorLevelJets>, aod::D0CMCPJetCOs, aod::D0CMCPJetOs, aod::D0CMCPJetSSOs, aod::D0CMCPJetMOs, soa::Join<aod::D0ChargedEventWiseSubtractedJets, aod::D0ChargedEventWiseSubtractedJetConstituents, aod::D0CEWSJetSSs, aod::D0ChargedEventWiseSubtractedJetsMatchedToD0ChargedJets>, aod::D0CEWSJetCOs, aod::D0CEWSJetOs, aod::D0CEWSJetSSOs, aod::D0CEWSJetMOs, aod::StoredHfD0CollBase, aod::StoredHfD0Bases, aod::StoredHfD0Pars, aod::StoredHfD0ParEs, aod::StoredHfD0Sels, aod::StoredHfD0Mls, aod::StoredHfD0Mcs, aod::StoredHfD0McCollBases, aod::StoredHfD0McRCollIds, aod::StoredHfD0PBases, aod::D0CollisionCounts>;
-using JetSubstructureOutputLc = JetSubstructureHFOutputTask<CollisionsLc, soa::Join<McCollisionsLc, aod::Hf3PMcRCollIds>, CandidatesLcData, CandidatesLcMCD, CandidatesLcMCP, aod::JTrackLcSubs, soa::Join<aod::LcChargedJets, aod::LcChargedJetConstituents, aod::LcCJetSSs>, soa::Join<aod::LcChargedJets, aod::LcChargedJetConstituents, aod::LcCJetSSs, aod::LcChargedJetsMatchedToLcChargedEventWiseSubtractedJets>, aod::LcCJetCOs, aod::LcCJetOs, aod::LcCJetSSOs, aod::LcCJetMOs, soa::Join<aod::LcChargedMCDetectorLevelJets, aod::LcChargedMCDetectorLevelJetConstituents, aod::LcCMCDJetSSs, aod::LcChargedMCDetectorLevelJetsMatchedToLcChargedMCParticleLevelJets>, aod::LcCMCDJetCOs, aod::LcCMCDJetOs, aod::LcCMCDJetSSOs, aod::LcCMCDJetMOs, soa::Join<aod::LcChargedMCParticleLevelJets, aod::LcChargedMCParticleLevelJetConstituents, aod::LcCMCPJetSSs, aod::LcChargedMCParticleLevelJetsMatchedToLcChargedMCDetectorLevelJets>, aod::LcCMCPJetCOs, aod::LcCMCPJetOs, aod::LcCMCPJetSSOs, aod::LcCMCPJetMOs, soa::Join<aod::LcChargedEventWiseSubtractedJets, aod::LcChargedEventWiseSubtractedJetConstituents, aod::LcCEWSJetSSs, aod::LcChargedEventWiseSubtractedJetsMatchedToLcChargedJets>, aod::LcCEWSJetCOs, aod::LcCEWSJetOs, aod::LcCEWSJetSSOs, aod::LcCEWSJetMOs, aod::StoredHf3PCollBase, aod::StoredHf3PBases, aod::StoredHf3PPars, aod::StoredHf3PParEs, aod::StoredHf3PSels, aod::StoredHf3PMls, aod::StoredHf3PMcs, aod::StoredHf3PMcCollBases, aod::StoredHf3PMcRCollIds, aod::StoredHf3PPBases, aod::LcCollisionCounts>;
-// using JetSubstructureOutputBplus = JetSubstructureHFOutputTask<aod::HfBplusCollBases, soa::Join<aod::StoredHfBplusMcCollBases, aod::JBplusMcCollisionIds, aod::HfBplusMcRCollIds>, CandidatesBplusData, CandidatesBplusMCD, CandidatesBplusMCP, aod::JTrackBplusSubs, soa::Join<aod::BplusChargedJets, aod::BplusChargedJetConstituents, aod::BplusCJetSSs>, soa::Join<aod::BplusChargedJets, aod::BplusChargedJetConstituents, aod::BplusCJetSSs, aod::BplusChargedJetsMatchedToBplusChargedEventWiseSubtractedJets>, aod::BplusCJetCOs, aod::BplusCJetOs, aod::BplusCJetSSOs, aod::BplusCJetMOs, soa::Join<aod::BplusChargedMCDetectorLevelJets, aod::BplusChargedMCDetectorLevelJetConstituents, aod::BplusCMCDJetSSs, aod::BplusChargedMCDetectorLevelJetsMatchedToBplusChargedMCParticleLevelJets>, aod::BplusCMCDJetCOs, aod::BplusCMCDJetOs, aod::BplusCMCDJetSSOs,  aod::BplusCMCDJetMOs, soa::Join<aod::BplusChargedMCParticleLevelJets, aod::BplusChargedMCParticleLevelJetConstituents, aod::BplusCMCPJetSSs, aod::BplusChargedMCParticleLevelJetsMatchedToBplusChargedMCDetectorLevelJets>, aod::BplusCMCPJetCOs, aod::BplusCMCPJetOs, aod::BplusCMCPJetSSOs, aod::BplusCMCPJetMOs, soa::Join<aod::BplusChargedEventWiseSubtractedJets, aod::BplusChargedEventWiseSubtractedJetConstituents, aod::BplusCEWSJetSSs, aod::BplusChargedEventWiseSubtractedJetsMatchedToBplusChargedJets>, aod::BplusCEWSJetCOs, aod::BplusCEWSJetOs, aod::BplusCEWSJetSSOs, aod::BplusCEWSJetMOs, aod::StoredHfBplusCollBase, aod::StoredHfBplusBases, aod::StoredHfBplusPars, aod::StoredHfBplusParEs, aod::StoredHfBplusSels, aod::StoredHfBplusMls, aod::StoredHfBplusMcs, aod::StoredHfBplusPBases, aod::BplusCollisionCounts>;
+using JetSubstructureOutputD0 = JetSubstructureHFOutputTask<CollisionsD0, soa::Join<McCollisionsD0, aod::HfD0McRCollIds>, CandidatesD0Data, CandidatesD0MCD, CandidatesD0MCP, aod::JTrackD0Subs, soa::Join<aod::D0ChargedJets, aod::D0ChargedJetConstituents, aod::D0CJetSSs>, soa::Join<aod::D0ChargedJets, aod::D0ChargedJetConstituents, aod::D0CJetSSs, aod::D0ChargedJetsMatchedToD0ChargedEventWiseSubtractedJets>, aod::D0CJetCOs, aod::D0CJetOs, aod::D0CJetSSOs, aod::D0CJetMOs, soa::Join<aod::D0ChargedMCDetectorLevelJets, aod::D0ChargedMCDetectorLevelJetConstituents, aod::D0CMCDJetSSs, aod::D0ChargedMCDetectorLevelJetsMatchedToD0ChargedMCParticleLevelJets>, aod::D0CMCDJetCOs, aod::D0CMCDJetOs, aod::D0CMCDJetSSOs, aod::D0CMCDJetMOs, soa::Join<aod::D0ChargedMCParticleLevelJets, aod::D0ChargedMCParticleLevelJetConstituents, aod::D0CMCPJetSSs, aod::D0ChargedMCParticleLevelJetsMatchedToD0ChargedMCDetectorLevelJets>, aod::D0CMCPJetCOs, aod::D0CMCPJetOs, aod::D0CMCPJetSSOs, aod::D0CMCPJetMOs, soa::Join<aod::D0ChargedEventWiseSubtractedJets, aod::D0ChargedEventWiseSubtractedJetConstituents, aod::D0CEWSJetSSs, aod::D0ChargedEventWiseSubtractedJetsMatchedToD0ChargedJets>, aod::D0CEWSJetCOs, aod::D0CEWSJetOs, aod::D0CEWSJetSSOs, aod::D0CEWSJetMOs, aod::StoredHfD0CollBase, aod::StoredHfD0Bases, aod::StoredHfD0Pars, aod::StoredHfD0ParEs, aod::StoredHfD0Sels, aod::StoredHfD0Mls, aod::StoredHfD0Mcs, aod::StoredHfD0McCollBases, aod::StoredHfD0McRCollIds, aod::StoredHfD0PBases>;
+using JetSubstructureOutputLc = JetSubstructureHFOutputTask<CollisionsLc, soa::Join<McCollisionsLc, aod::Hf3PMcRCollIds>, CandidatesLcData, CandidatesLcMCD, CandidatesLcMCP, aod::JTrackLcSubs, soa::Join<aod::LcChargedJets, aod::LcChargedJetConstituents, aod::LcCJetSSs>, soa::Join<aod::LcChargedJets, aod::LcChargedJetConstituents, aod::LcCJetSSs, aod::LcChargedJetsMatchedToLcChargedEventWiseSubtractedJets>, aod::LcCJetCOs, aod::LcCJetOs, aod::LcCJetSSOs, aod::LcCJetMOs, soa::Join<aod::LcChargedMCDetectorLevelJets, aod::LcChargedMCDetectorLevelJetConstituents, aod::LcCMCDJetSSs, aod::LcChargedMCDetectorLevelJetsMatchedToLcChargedMCParticleLevelJets>, aod::LcCMCDJetCOs, aod::LcCMCDJetOs, aod::LcCMCDJetSSOs, aod::LcCMCDJetMOs, soa::Join<aod::LcChargedMCParticleLevelJets, aod::LcChargedMCParticleLevelJetConstituents, aod::LcCMCPJetSSs, aod::LcChargedMCParticleLevelJetsMatchedToLcChargedMCDetectorLevelJets>, aod::LcCMCPJetCOs, aod::LcCMCPJetOs, aod::LcCMCPJetSSOs, aod::LcCMCPJetMOs, soa::Join<aod::LcChargedEventWiseSubtractedJets, aod::LcChargedEventWiseSubtractedJetConstituents, aod::LcCEWSJetSSs, aod::LcChargedEventWiseSubtractedJetsMatchedToLcChargedJets>, aod::LcCEWSJetCOs, aod::LcCEWSJetOs, aod::LcCEWSJetSSOs, aod::LcCEWSJetMOs, aod::StoredHf3PCollBase, aod::StoredHf3PBases, aod::StoredHf3PPars, aod::StoredHf3PParEs, aod::StoredHf3PSels, aod::StoredHf3PMls, aod::StoredHf3PMcs, aod::StoredHf3PMcCollBases, aod::StoredHf3PMcRCollIds, aod::StoredHf3PPBases>;
+// using JetSubstructureOutputBplus = JetSubstructureHFOutputTask<aod::HfBplusCollBases, soa::Join<aod::StoredHfBplusMcCollBases, aod::JBplusMcCollisionIds, aod::HfBplusMcRCollIds>, CandidatesBplusData, CandidatesBplusMCD, CandidatesBplusMCP, aod::JTrackBplusSubs, soa::Join<aod::BplusChargedJets, aod::BplusChargedJetConstituents, aod::BplusCJetSSs>, soa::Join<aod::BplusChargedJets, aod::BplusChargedJetConstituents, aod::BplusCJetSSs, aod::BplusChargedJetsMatchedToBplusChargedEventWiseSubtractedJets>, aod::BplusCJetCOs, aod::BplusCJetOs, aod::BplusCJetSSOs, aod::BplusCJetMOs, soa::Join<aod::BplusChargedMCDetectorLevelJets, aod::BplusChargedMCDetectorLevelJetConstituents, aod::BplusCMCDJetSSs, aod::BplusChargedMCDetectorLevelJetsMatchedToBplusChargedMCParticleLevelJets>, aod::BplusCMCDJetCOs, aod::BplusCMCDJetOs, aod::BplusCMCDJetSSOs,  aod::BplusCMCDJetMOs, soa::Join<aod::BplusChargedMCParticleLevelJets, aod::BplusChargedMCParticleLevelJetConstituents, aod::BplusCMCPJetSSs, aod::BplusChargedMCParticleLevelJetsMatchedToBplusChargedMCDetectorLevelJets>, aod::BplusCMCPJetCOs, aod::BplusCMCPJetOs, aod::BplusCMCPJetSSOs, aod::BplusCMCPJetMOs, soa::Join<aod::BplusChargedEventWiseSubtractedJets, aod::BplusChargedEventWiseSubtractedJetConstituents, aod::BplusCEWSJetSSs, aod::BplusChargedEventWiseSubtractedJetsMatchedToBplusChargedJets>, aod::BplusCEWSJetCOs, aod::BplusCEWSJetOs, aod::BplusCEWSJetSSOs, aod::BplusCEWSJetMOs, aod::StoredHfBplusCollBase, aod::StoredHfBplusBases, aod::StoredHfBplusPars, aod::StoredHfBplusParEs, aod::StoredHfBplusSels, aod::StoredHfBplusMls, aod::StoredHfBplusMcs, aod::StoredHfBplusPBases>;
+using JetSubstructureOutputDielectron = JetSubstructureHFOutputTask<CollisionsDielectron, McCollisionsDielectron, CandidatesDielectronData, CandidatesDielectronMCD, CandidatesDielectronMCP, aod::JTrackDielectronSubs, soa::Join<aod::DielectronChargedJets, aod::DielectronChargedJetConstituents, aod::DielectronCJetSSs>, soa::Join<aod::DielectronChargedJets, aod::DielectronChargedJetConstituents, aod::DielectronCJetSSs, aod::DielectronChargedJetsMatchedToDielectronChargedEventWiseSubtractedJets>, aod::DielectronCJetCOs, aod::DielectronCJetOs, aod::DielectronCJetSSOs, aod::DielectronCJetMOs, soa::Join<aod::DielectronChargedMCDetectorLevelJets, aod::DielectronChargedMCDetectorLevelJetConstituents, aod::DielectronCMCDJetSSs, aod::DielectronChargedMCDetectorLevelJetsMatchedToDielectronChargedMCParticleLevelJets>, aod::DielectronCMCDJetCOs, aod::DielectronCMCDJetOs, aod::DielectronCMCDJetSSOs, aod::DielectronCMCDJetMOs, soa::Join<aod::DielectronChargedMCParticleLevelJets, aod::DielectronChargedMCParticleLevelJetConstituents, aod::DielectronCMCPJetSSs, aod::DielectronChargedMCParticleLevelJetsMatchedToDielectronChargedMCDetectorLevelJets>, aod::DielectronCMCPJetCOs, aod::DielectronCMCPJetOs, aod::DielectronCMCPJetSSOs, aod::DielectronCMCPJetMOs, soa::Join<aod::DielectronChargedEventWiseSubtractedJets, aod::DielectronChargedEventWiseSubtractedJetConstituents, aod::DielectronCEWSJetSSs, aod::DielectronChargedEventWiseSubtractedJetsMatchedToDielectronChargedJets>, aod::DielectronCEWSJetCOs, aod::DielectronCEWSJetOs, aod::DielectronCEWSJetSSOs, aod::DielectronCEWSJetMOs, aod::StoredReducedEvents, aod::StoredDielectrons, aod::JDielectron1Dummys, aod::JDielectron2Dummys, aod::JDielectron3Dummys, aod::JDielectron4Dummys, aod::JDielectron5Dummys, aod::StoredJDielectronMcCollisions, aod::JDielectron6Dummys, aod::StoredJDielectronMcs>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
@@ -541,5 +506,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   tasks.emplace_back(adaptAnalysisTask<JetSubstructureOutputD0>(cfgc, SetDefaultProcesses{}, TaskName{"jet-substructure-d0-output"}));
   tasks.emplace_back(adaptAnalysisTask<JetSubstructureOutputLc>(cfgc, SetDefaultProcesses{}, TaskName{"jet-substructure-lc-output"}));
   // tasks.emplace_back(adaptAnalysisTask<JetSubstructureOutputBplus>(cfgc, SetDefaultProcesses{}, TaskName{"jet-substructure-bplus-output"}));
+  tasks.emplace_back(adaptAnalysisTask<JetSubstructureOutputDielectron>(cfgc, SetDefaultProcesses{}, TaskName{"jet-substructure-dielectron-output"}));
+
   return WorkflowSpec{tasks};
 }
