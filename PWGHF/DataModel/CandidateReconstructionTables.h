@@ -551,6 +551,43 @@ enum VertexerType { DCAFitter = 0,
                     KfParticle };
 } // namespace hf_cand
 
+namespace pid_tpc_tof_static_full_cand
+{
+// Combined TPC and TOF NSigma
+DECLARE_SOA_COLUMN(TpcTofNSigmaEl0, tpcTofNSigmaEl0, float); //! Combined NSigma separation with the TPC & TOF detectors for electron - prong 0
+DECLARE_SOA_COLUMN(TpcTofNSigmaEl1, tpcTofNSigmaEl1, float); //! Combined NSigma separation with the TPC & TOF detectors for electron - prong 1
+DECLARE_SOA_COLUMN(TpcTofNSigmaEl2, tpcTofNSigmaEl2, float); //! Combined NSigma separation with the TPC & TOF detectors for electron - prong 2
+DECLARE_SOA_COLUMN(TpcTofNSigmaMu0, tpcTofNSigmaMu0, float); //! Combined NSigma separation with the TPC & TOF detectors for muon - prong 0
+DECLARE_SOA_COLUMN(TpcTofNSigmaMu1, tpcTofNSigmaMu1, float); //! Combined NSigma separation with the TPC & TOF detectors for muon - prong 1
+DECLARE_SOA_COLUMN(TpcTofNSigmaMu2, tpcTofNSigmaMu2, float); //! Combined NSigma separation with the TPC & TOF detectors for muon - prong 2
+DECLARE_SOA_COLUMN(TpcTofNSigmaPi0, tpcTofNSigmaPi0, float); //! Combined NSigma separation with the TPC & TOF detectors for pion - prong 0
+DECLARE_SOA_COLUMN(TpcTofNSigmaPi1, tpcTofNSigmaPi1, float); //! Combined NSigma separation with the TPC & TOF detectors for pion - prong 1
+DECLARE_SOA_COLUMN(TpcTofNSigmaPi2, tpcTofNSigmaPi2, float); //! Combined NSigma separation with the TPC & TOF detectors for pion - prong 2
+DECLARE_SOA_COLUMN(TpcTofNSigmaKa0, tpcTofNSigmaKa0, float); //! Combined NSigma separation with the TPC & TOF detectors for kaon - prong 0
+DECLARE_SOA_COLUMN(TpcTofNSigmaKa1, tpcTofNSigmaKa1, float); //! Combined NSigma separation with the TPC & TOF detectors for kaon - prong 1
+DECLARE_SOA_COLUMN(TpcTofNSigmaKa2, tpcTofNSigmaKa2, float); //! Combined NSigma separation with the TPC & TOF detectors for kaon - prong 2
+DECLARE_SOA_COLUMN(TpcTofNSigmaPr0, tpcTofNSigmaPr0, float); //! Combined NSigma separation with the TPC & TOF detectors for proton - prong 0
+DECLARE_SOA_COLUMN(TpcTofNSigmaPr1, tpcTofNSigmaPr1, float); //! Combined NSigma separation with the TPC & TOF detectors for proton - prong 1
+DECLARE_SOA_COLUMN(TpcTofNSigmaPr2, tpcTofNSigmaPr2, float); //! Combined NSigma separation with the TPC & TOF detectors for proton - prong 2
+} // namespace pid_tpc_tof_static_full_cand
+
+// Extension of 2-prong candidate table
+DECLARE_SOA_TABLE(PidTpcTofCand2ProngFullEl, "AOD", "PIDTPCTOF2PEL", //! Table of the TPC & TOF Combined NSigma for electron
+                  pid_tpc_tof_static_full_cand::TpcTofNSigmaEl0,
+                  pid_tpc_tof_static_full_cand::TpcTofNSigmaEl1);
+DECLARE_SOA_TABLE(PidTpcTofCand2ProngFullMu, "AOD", "PIDTPCTOF2PMU", //! Table of the TPC & TOF Combined NSigma for muon
+                  pid_tpc_tof_static_full_cand::TpcTofNSigmaMu0,
+                  pid_tpc_tof_static_full_cand::TpcTofNSigmaMu1);
+DECLARE_SOA_TABLE(PidTpcTofCand2ProngFullPi, "AOD", "PIDTPCTOF2PPI", //! Table of the TPC & TOF Combined NSigma for pion
+                  pid_tpc_tof_static_full_cand::TpcTofNSigmaPi0,
+                  pid_tpc_tof_static_full_cand::TpcTofNSigmaPi1);
+DECLARE_SOA_TABLE(PidTpcTofCand2ProngFullKa, "AOD", "PIDTPCTOF2PKA", //! Table of the TPC & TOF Combined NSigma for kaon
+                  pid_tpc_tof_static_full_cand::TpcTofNSigmaKa0,
+                  pid_tpc_tof_static_full_cand::TpcTofNSigmaKa1);
+DECLARE_SOA_TABLE(PidTpcTofCand2ProngFullPr, "AOD", "PIDTPCTOF2PPR", //! Table of the TPC & TOF Combined NSigma for proton
+                  pid_tpc_tof_static_full_cand::TpcTofNSigmaPr0,
+                  pid_tpc_tof_static_full_cand::TpcTofNSigmaPr1);
+
 // specific 2-prong decay properties
 namespace hf_cand_2prong
 {
@@ -656,6 +693,7 @@ DECLARE_SOA_EXTENDED_TABLE_USER(HfCand2ProngExt, HfCand2ProngBase, "HFCAND2PEXT"
                                 hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz);
 
 using HfCand2Prong = HfCand2ProngExt;
+using HfCand2ProngPidPiKa = soa::Join<HfCand2Prong, PidTpcTofCand2ProngFullPi, PidTpcTofCand2ProngFullKa>;
 
 DECLARE_SOA_TABLE(HfCand2ProngKF, "AOD", "HFCAND2PKF",
                   hf_cand::KfTopolChi2OverNdf,
