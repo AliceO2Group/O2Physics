@@ -49,7 +49,8 @@ using filteredJTracks = soa::Filtered<soa::Join<aod::JTracks, aod::JTrackPIs, ao
 using filteredJets = soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>>;
 using joinedTracks = soa::Join<aod::Tracks, aod::TracksExtra>;
 
-float DcaXYPtCut(float tracPt){
+float DcaXYPtCut(float tracPt)
+{
   return 0.0105f + 0.0350f / pow(tracPt, 1.1f);
 }
 
@@ -201,7 +202,7 @@ struct ChJetTriggerQATask {
           continue;
         }
 
-        bool bDcaCondition = (nabs(track.dcaZ()) < dcaZ_cut) && (nabs(track.dcaXY()) < dcaXY_multFact*DcaXYPtCut(track.pt()));
+        bool bDcaCondition = (nabs(track.dcaZ()) < dcaZ_cut) && (nabs(track.dcaXY()) < dcaXY_multFact * DcaXYPtCut(track.pt()));
         if (originalTrack.itsNCls() >= 4 && bDcaCondition) { // correspond to number of track hits in ITS layers
           spectra.fill(HIST("DCAxy_track_Phi_pT"), track.dcaXY(), track.phi(), track.pt());
           spectra.fill(HIST("DCAz_track_Phi_pT"), track.dcaZ(), track.phi(), track.pt());
