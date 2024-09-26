@@ -240,12 +240,12 @@ struct SGCandProducer {
         }
       }
       // update SGFwdTracks tables
-     /* if (sameCuts.withFwdTracks()) {
-        for (auto& fwdtrack : fwdtracks) {
-          if (!sgSelector.FwdTrkSelector(fwdtrack))
-            updateUDFwdTrackTables(fwdtrack, bc.globalBC());
-        }
-      }*/
+      /* if (sameCuts.withFwdTracks()) {
+         for (auto& fwdtrack : fwdtracks) {
+           if (!sgSelector.FwdTrkSelector(fwdtrack))
+             updateUDFwdTrackTables(fwdtrack, bc.globalBC());
+         }
+       }*/
     }
   }
 };
@@ -340,20 +340,20 @@ struct McSGCandProducer {
     // all particles of the McCollision are saved
     for (auto mcpart : McParts) {
       if (mcPartIsSaved.find(mcpart.globalIndex()) == mcPartIsSaved.end()) {
-        //mothers
+        // mothers
         newmids.clear();
         auto oldmids = mcpart.mothersIds();
-          for (auto oldmid : oldmids) {
+        for (auto oldmid : oldmids) {
           auto m = McParts.rawIteratorAt(oldmid);
           LOGF(debug, "    m %d", m.globalIndex());
           if (mcPartIsSaved.find(oldmid) != mcPartIsSaved.end()) {
             newval = mcPartIsSaved[oldmid];
-	  } else {
+          } else {
             newval = -1;
           }
           newmids.push_back(newval);
         }
-	  //daughters
+        // daughters
         auto olddids = mcpart.daughtersIds();
         for (uint ii = 0; ii < olddids.size(); ii++) {
           if (oldnew.find(olddids[ii]) != oldnew.end()) {
@@ -429,7 +429,6 @@ struct McSGCandProducer {
     }
   }
 
-
   void init(InitContext& context)
   {
     // add histograms for the different process functions
@@ -440,7 +439,7 @@ struct McSGCandProducer {
     }
   }
 
-   // process function for MC data
+  // process function for MC data
   // save the MC truth of all events of interest and of the DG events
   void processMC(aod::McCollisions const& mccols, aod::McParticles const& mcparts,
                  UDCCs const& sgcands, UDTCs const& udtracks,
@@ -470,7 +469,7 @@ struct McSGCandProducer {
     // advance dgcand and mccol until both are AtEnd
     int64_t mccolId = mccol.globalIndex();
     int64_t mcsgId = -1;
-    //int64_t colId = -1;
+    // int64_t colId = -1;
     auto sgcandAtEnd = sgcand == lastsgcand;
     auto mccolAtEnd = mccol == lastmccol;
     bool goon = !sgcandAtEnd || !mccolAtEnd;
@@ -479,14 +478,14 @@ struct McSGCandProducer {
       // check if dgcand has an associated McCollision
       if (sgcand.has_collision()) {
         auto sgcandCol = sgcand.collision_as<CCs>();
-          //colId = sgcandCol.globalIndex();
-	  if (sgcandCol.has_mcCollision()) {
-             mcsgId = sgcandCol.mcCollision().globalIndex();
-          } else {
-             mcsgId = -1;
-          }
+        // colId = sgcandCol.globalIndex();
+        if (sgcandCol.has_mcCollision()) {
+          mcsgId = sgcandCol.mcCollision().globalIndex();
+        } else {
+          mcsgId = -1;
+        }
       } else {
-      //  colId = -1;
+        //  colId = -1;
         mcsgId = -1;
       }
       LOGF(info, "\nStart of loop mcsgId %d mccolId %d", mcsgId, mccolId);
@@ -496,7 +495,7 @@ struct McSGCandProducer {
       // 2. mccolId < mcdgId: the event to process is an MC event of interest without reconstructed dgcand. In this case only the Mc tables are updated
       if ((!sgcandAtEnd && !mccolAtEnd && (mcsgId <= mccolId)) || mccolAtEnd) {
         // this is case 1.
-      //  LOGF(info, "Doing case 1 with mcsgId %d", mcsgId);
+        //  LOGF(info, "Doing case 1 with mcsgId %d", mcsgId);
 
         // update UDMcCollisions and UDMcColsLabels (for each UDCollision -> UDMcCollisions)
         // update UDMcParticles and UDMcTrackLabels (for each UDTrack -> UDMcParticles)
@@ -528,7 +527,7 @@ struct McSGCandProducer {
         } else {
           // If the sgcand has no associated McCollision then only the McParticles which are associated
           // with the tracks of the sgcand are saved
-          //LOGF(info, "  Saving McCollision %d", -1);
+          // LOGF(info, "  Saving McCollision %d", -1);
 
           // update UDMcColsLabels (for each UDCollision -> UDMcCollisions)
           outputMcCollsLabels(-1);
@@ -583,7 +582,7 @@ struct McSGCandProducer {
       }
 
       goon = !sgcandAtEnd || !mccolAtEnd;
-      //LOGF(info, "End of loop mcsgId %d mccolId %d", mcsgId, mccolId);
+      // LOGF(info, "End of loop mcsgId %d mccolId %d", mcsgId, mccolId);
     }
   }
   PROCESS_SWITCH(McSGCandProducer, processMC, "Produce MC tables", false);
