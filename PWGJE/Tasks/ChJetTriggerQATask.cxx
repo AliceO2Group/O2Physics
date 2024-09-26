@@ -202,7 +202,7 @@ struct ChJetTriggerQATask {
           continue;
         }
 
-        bool bDcaCondition = (nabs(track.dcaZ()) < dcaZ_cut) && (nabs(track.dcaXY()) < dcaXY_multFact * DcaXYPtCut(track.pt()));
+        bool bDcaCondition = (abs(track.dcaZ()) < dcaZ_cut) && (abs(track.dcaXY()) < dcaXY_multFact * DcaXYPtCut(track.pt()));
         if (originalTrack.itsNCls() >= 4 && bDcaCondition) { // correspond to number of track hits in ITS layers
           spectra.fill(HIST("DCAxy_track_Phi_pT"), track.dcaXY(), track.phi(), track.pt());
           spectra.fill(HIST("DCAz_track_Phi_pT"), track.dcaZ(), track.phi(), track.pt());
