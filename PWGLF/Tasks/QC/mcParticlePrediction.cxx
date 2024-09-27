@@ -43,21 +43,24 @@ bool enabledParticlesArray[PIDExtended::NIDsTot];
 
 // Estimators
 struct Estimators {
-  static const int FT0A = 0;
-  static const int FT0C = 1;
-  static const int FT0AC = 2;
-  static const int FV0A = 3;
-  static const int FDDA = 4;
-  static const int FDDC = 5;
-  static const int FDDAC = 6;
-  static const int ZNA = 7;
-  static const int ZNC = 8;
-  static const int ZEM1 = 9;
-  static const int ZEM2 = 10;
-  static const int ZPA = 11;
-  static const int ZPC = 12;
-  static const int ITS = 13;
-  static const int nEstimators = 14;
+  static constexpr int FT0A = 0;
+  static constexpr int FT0C = 1;
+  static constexpr int FT0AC = 2;
+  static constexpr int FV0A = 3;
+  static constexpr int FDDA = 4;
+  static constexpr int FDDC = 5;
+  static constexpr int FDDAC = 6;
+  static constexpr int ZNA = 7;
+  static constexpr int ZNC = 8;
+  static constexpr int ZEM1 = 9;
+  static constexpr int ZEM2 = 10;
+  static constexpr int ZPA = 11;
+  static constexpr int ZPC = 12;
+  static constexpr int ITS = 13;
+  static constexpr int V0A = 14;  // (Run2)
+  static constexpr int V0C = 15;  // (Run2)
+  static constexpr int V0AC = 16; // (Run2)
+  static constexpr int nEstimators = 17;
 
   static constexpr const char* estimatorNames[nEstimators] = {"FT0A",
                                                               "FT0C",
@@ -72,7 +75,10 @@ struct Estimators {
                                                               "ZEM2",
                                                               "ZPA",
                                                               "ZPC",
-                                                              "ITS"};
+                                                              "ITS",
+                                                              "V0A",
+                                                              "V0C",
+                                                              "V0AC"};
   static std::vector<std::string> arrayNames()
   {
     std::vector<std::string> names;
@@ -96,7 +102,10 @@ static const int defaultEstimators[Estimators::nEstimators][nParameters]{{0},  /
                                                                          {0},  // ZEM2
                                                                          {0},  // ZPA
                                                                          {0},  // ZPC
-                                                                         {0}}; // ITS
+                                                                         {0},  // ITS
+                                                                         {0},  // V0A (Run2)
+                                                                         {0},  // V0C (Run2)
+                                                                         {0}}; // V0AC (Run2)
 
 // Histograms
 std::array<std::shared_ptr<TH1>, Estimators::nEstimators> hestimators;
@@ -318,16 +327,45 @@ struct mcParticlePrediction {
     }
     histos.fill(HIST("collisions/generated"), 2);
     float nMult[Estimators::nEstimators];
-    nMult[Estimators::FT0A] = mCounter.countFT0A(mcParticles);
-    nMult[Estimators::FT0C] = mCounter.countFT0C(mcParticles);
-    nMult[Estimators::FT0AC] = nMult[Estimators::FT0A] + nMult[Estimators::FT0C];
-    nMult[Estimators::FV0A] = mCounter.countFV0A(mcParticles);
-    nMult[Estimators::FDDA] = mCounter.countFDDA(mcParticles);
-    nMult[Estimators::FDDC] = mCounter.countFDDC(mcParticles);
-    nMult[Estimators::FDDAC] = nMult[Estimators::FDDA] + nMult[Estimators::FDDC];
-    nMult[Estimators::ZNA] = mCounter.countZNA(mcParticles);
-    nMult[Estimators::ZNC] = mCounter.countZNC(mcParticles);
-    nMult[Estimators::ITS] = mCounter.countITSIB(mcParticles);
+    if (enabledEstimatorsArray[Estimators::FT0A] || enabledEstimatorsArray[Estimators::FT0AC]) {
+      nMult[Estimators::FT0A] = mCounter.countFT0A(mcParticles);
+    }
+    if (enabledEstimatorsArray[Estimators::FT0C] || enabledEstimatorsArray[Estimators::FT0AC]) {
+      nMult[Estimators::FT0C] = mCounter.countFT0C(mcParticles);
+    }
+    if (enabledEstimatorsArray[Estimators::FT0AC]) {
+      nMult[Estimators::FT0AC] = nMult[Estimators::FT0A] + nMult[Estimators::FT0C];
+    }
+    if (enabledEstimatorsArray[Estimators::FV0A]) {
+      nMult[Estimators::FV0A] = mCounter.countFV0A(mcParticles);
+    }
+    if (enabledEstimatorsArray[Estimators::FDDA]) {
+      nMult[Estimators::FDDA] = mCounter.countFDDA(mcParticles);
+    }
+    if (enabledEstimatorsArray[Estimators::FDDC]) {
+      nMult[Estimators::FDDC] = mCounter.countFDDC(mcParticles);
+    }
+    if (enabledEstimatorsArray[Estimators::FDDAC]) {
+      nMult[Estimators::FDDAC] = nMult[Estimators::FDDA] + nMult[Estimators::FDDC];
+    }
+    if (enabledEstimatorsArray[Estimators::ZNA]) {
+      nMult[Estimators::ZNA] = mCounter.countZNA(mcParticles);
+    }
+    if (enabledEstimatorsArray[Estimators::ZNC]) {
+      nMult[Estimators::ZNC] = mCounter.countZNC(mcParticles);
+    }
+    if (enabledEstimatorsArray[Estimators::ITS]) {
+      nMult[Estimators::ITS] = mCounter.countITSIB(mcParticles);
+    }
+    if (enabledEstimatorsArray[Estimators::V0A] || enabledEstimatorsArray[Estimators::V0AC]) {
+      nMult[Estimators::V0A] = mCounter.countV0A(mcParticles);
+    }
+    if (enabledEstimatorsArray[Estimators::V0C] || enabledEstimatorsArray[Estimators::V0AC]) {
+      nMult[Estimators::V0C] = mCounter.countV0C(mcParticles);
+    }
+    if (enabledEstimatorsArray[Estimators::V0AC]) {
+      nMult[Estimators::V0AC] = nMult[Estimators::V0A] + nMult[Estimators::V0C];
+    }
 
     for (int i = 0; i < Estimators::nEstimators; i++) {
       if (!enabledEstimatorsArray[i]) {
@@ -512,16 +550,45 @@ struct mcParticlePrediction {
     histos.fill(HIST("particles/FromCollBadOverFromCollVsVsFromMCColl"), 1.f * particlesFromCollWrongBC / particlesFromColl, particlesInCollision.size());
 
     float nMult[Estimators::nEstimators];
-    nMult[Estimators::FT0A] = mCounter.countFT0A(particlesInCollision);
-    nMult[Estimators::FT0C] = mCounter.countFT0C(particlesInCollision);
-    nMult[Estimators::FT0AC] = nMult[Estimators::FT0A] + nMult[Estimators::FT0C];
-    nMult[Estimators::FV0A] = mCounter.countFV0A(particlesInCollision);
-    nMult[Estimators::FDDA] = mCounter.countFDDA(particlesInCollision);
-    nMult[Estimators::FDDC] = mCounter.countFDDC(particlesInCollision);
-    nMult[Estimators::FDDAC] = nMult[Estimators::FDDA] + nMult[Estimators::FDDC];
-    nMult[Estimators::ZNA] = mCounter.countZNA(particlesInCollision);
-    nMult[Estimators::ZNC] = mCounter.countZNC(particlesInCollision);
-    nMult[Estimators::ITS] = mCounter.countITSIB(particlesInCollision);
+    if (enabledEstimatorsArray[Estimators::FT0A] || enabledEstimatorsArray[Estimators::FT0AC]) {
+      nMult[Estimators::FT0A] = mCounter.countFT0A(mcParticles);
+    }
+    if (enabledEstimatorsArray[Estimators::FT0C] || enabledEstimatorsArray[Estimators::FT0AC]) {
+      nMult[Estimators::FT0C] = mCounter.countFT0C(mcParticles);
+    }
+    if (enabledEstimatorsArray[Estimators::FT0AC]) {
+      nMult[Estimators::FT0AC] = nMult[Estimators::FT0A] + nMult[Estimators::FT0C];
+    }
+    if (enabledEstimatorsArray[Estimators::FV0A]) {
+      nMult[Estimators::FV0A] = mCounter.countFV0A(mcParticles);
+    }
+    if (enabledEstimatorsArray[Estimators::FDDA]) {
+      nMult[Estimators::FDDA] = mCounter.countFDDA(mcParticles);
+    }
+    if (enabledEstimatorsArray[Estimators::FDDC]) {
+      nMult[Estimators::FDDC] = mCounter.countFDDC(mcParticles);
+    }
+    if (enabledEstimatorsArray[Estimators::FDDAC]) {
+      nMult[Estimators::FDDAC] = nMult[Estimators::FDDA] + nMult[Estimators::FDDC];
+    }
+    if (enabledEstimatorsArray[Estimators::ZNA]) {
+      nMult[Estimators::ZNA] = mCounter.countZNA(mcParticles);
+    }
+    if (enabledEstimatorsArray[Estimators::ZNC]) {
+      nMult[Estimators::ZNC] = mCounter.countZNC(mcParticles);
+    }
+    if (enabledEstimatorsArray[Estimators::ITS]) {
+      nMult[Estimators::ITS] = mCounter.countITSIB(mcParticles);
+    }
+    if (enabledEstimatorsArray[Estimators::V0A] || enabledEstimatorsArray[Estimators::V0AC]) {
+      nMult[Estimators::V0A] = mCounter.countV0A(mcParticles);
+    }
+    if (enabledEstimatorsArray[Estimators::V0C] || enabledEstimatorsArray[Estimators::V0AC]) {
+      nMult[Estimators::V0C] = mCounter.countV0C(mcParticles);
+    }
+    if (enabledEstimatorsArray[Estimators::V0AC]) {
+      nMult[Estimators::V0AC] = nMult[Estimators::V0A] + nMult[Estimators::V0C];
+    }
 
     float nMultReco[Estimators::nEstimators];
     nMultReco[Estimators::FT0A] = collision.multFT0A();

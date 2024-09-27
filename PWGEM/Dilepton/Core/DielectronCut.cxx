@@ -50,6 +50,12 @@ void DielectronCut::SetMaxPhivPairMeeDep(std::function<float(float)> meeDepCut)
   mMaxPhivPairMeeDep = meeDepCut;
   LOG(info) << "Dielectron Cut, set max phiv pair mee dep: " << mMaxPhivPairMeeDep(0.02);
 }
+void DielectronCut::SetPhivPairRange(float min, float max)
+{
+  mMinPhivPair = min;
+  mMaxPhivPair = max;
+  LOG(info) << "Dielectron Cut, set phiv range: " << mMinPhivPair << " - " << mMaxPhivPair;
+}
 void DielectronCut::SelectPhotonConversion(bool flag)
 {
   mSelectPC = flag;
@@ -114,24 +120,24 @@ void DielectronCut::SetMeanClusterSizeITS(float min, float max, float maxP)
   mMaxP_ITSClusterSize = maxP;
   LOG(info) << "Dielectron Cut, set mean cluster size ITS range: " << mMinMeanClusterSizeITS << " - " << mMaxMeanClusterSizeITS;
 }
-void DielectronCut::SetDca3DRange(float min, float max)
+void DielectronCut::SetTrackDca3DRange(float min, float max)
 {
   mMinDca3D = min;
   mMaxDca3D = max;
   LOG(info) << "Dielectron Cut, set DCA 3D range in sigma: " << mMinDca3D << " - " << mMaxDca3D;
 }
-void DielectronCut::SetMaxDcaXY(float maxDcaXY)
+void DielectronCut::SetTrackMaxDcaXY(float maxDcaXY)
 {
   mMaxDcaXY = maxDcaXY;
   LOG(info) << "Dielectron Cut, set max DCA xy: " << mMaxDcaXY;
 }
-void DielectronCut::SetMaxDcaZ(float maxDcaZ)
+void DielectronCut::SetTrackMaxDcaZ(float maxDcaZ)
 {
   mMaxDcaZ = maxDcaZ;
   LOG(info) << "Dielectron Cut, set max DCA z: " << mMaxDcaZ;
 }
 
-void DielectronCut::SetMaxDcaXYPtDep(std::function<float(float)> ptDepCut)
+void DielectronCut::SetTrackMaxDcaXYPtDep(std::function<float(float)> ptDepCut)
 {
   mMaxDcaXYPtDep = ptDepCut;
   LOG(info) << "Dielectron Cut, set max DCA xy pt dep: " << mMaxDcaXYPtDep(1.0);

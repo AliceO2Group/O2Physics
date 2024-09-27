@@ -137,6 +137,7 @@ struct hyperRecoTask {
   Configurable<double> v0cospacut{"hypcospa", 0.95, "V0 CosPA"};
   Configurable<float> masswidth{"hypmasswidth", 0.06, "Mass width (GeV/c^2)"};
   Configurable<float> dcaToPvPion{"dcapvPi", 0., "DCA to PV pion"};
+  Configurable<float> dcaToPvHe{"dcapvHe", 0., "DCA to PV helium"};
   Configurable<float> dcav0dau{"hypdcaDau", 1.0, "DCA V0 Daughters"};
   Configurable<float> ptMin{"ptMin", 0.5, "Minimum pT of the hypercandidate"};
   Configurable<float> TPCRigidityMinHe{"TPCRigidityMinHe", 0.2, "Minimum rigidity of the helium candidate"};
@@ -489,7 +490,7 @@ struct hyperRecoTask {
     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, piTrackCov, 2.f, fitter.getMatCorrType(), &dcaInfo);
     hypCand.piDCAXY = dcaInfo[0];
 
-    if (abs(hypCand.piDCAXY) < dcaToPvPion) {
+    if (abs(hypCand.piDCAXY) < dcaToPvPion || abs(hypCand.he3DCAXY) < dcaToPvHe) {
       return;
     }
 

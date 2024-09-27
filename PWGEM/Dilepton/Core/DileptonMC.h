@@ -501,8 +501,8 @@ struct DileptonMC {
     fDielectronCut.SetChi2PerClusterITS(0.0, dielectroncuts.cfg_max_chi2its);
     fDielectronCut.SetNClustersITS(dielectroncuts.cfg_min_ncluster_its, 7);
     fDielectronCut.SetMeanClusterSizeITS(0, 16);
-    fDielectronCut.SetMaxDcaXY(dielectroncuts.cfg_max_dcaxy);
-    fDielectronCut.SetMaxDcaZ(dielectroncuts.cfg_max_dcaz);
+    fDielectronCut.SetTrackMaxDcaXY(dielectroncuts.cfg_max_dcaxy);
+    fDielectronCut.SetTrackMaxDcaZ(dielectroncuts.cfg_max_dcaz);
 
     // for eID
     fDielectronCut.SetPIDScheme(dielectroncuts.cfg_pid_scheme);

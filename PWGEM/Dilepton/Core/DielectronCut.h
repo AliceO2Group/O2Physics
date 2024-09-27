@@ -364,6 +364,7 @@ class DielectronCut : public TNamed
   void SetPairDCARange(float min = 0.f, float max = 1e10f); // 3D DCA in sigma
   void SetMeeRange(float min = 0.f, float max = 0.5);
   void SetMaxPhivPairMeeDep(std::function<float(float)> meeDepCut);
+  void SetPhivPairRange(float min, float max);
   void SelectPhotonConversion(bool flag);
 
   void SetTrackPtRange(float minPt = 0.f, float maxPt = 1e10f);
@@ -396,10 +397,10 @@ class DielectronCut : public TNamed
   void RequireITSibAny(bool flag);
   void RequireITSib1st(bool flag);
 
-  void SetDca3DRange(float min, float max); // in sigma
-  void SetMaxDcaXY(float maxDcaXY);         // in cm
-  void SetMaxDcaZ(float maxDcaZ);           // in cm
-  void SetMaxDcaXYPtDep(std::function<float(float)> ptDepCut);
+  void SetTrackDca3DRange(float min, float max); // in sigma
+  void SetTrackMaxDcaXY(float maxDcaXY);         // in cm
+  void SetTrackMaxDcaZ(float maxDcaZ);           // in cm
+  void SetTrackMaxDcaXYPtDep(std::function<float(float)> ptDepCut);
   void ApplyPrefilter(bool flag);
   void ApplyPhiV(bool flag);
 
