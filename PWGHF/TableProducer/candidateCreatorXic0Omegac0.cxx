@@ -134,14 +134,14 @@ struct HfCandidateCreatorXic0Omegac0 {
     float chi2TopoCascToPv;
     float decayLenXYLambda;
     float decayLenXYCasc;
-    float cosPaV0ToCasc; 
+    float cosPaV0ToCasc;
     float cosPaXYV0ToCasc;
-    float cosPaV0ToPv; 
+    float cosPaV0ToPv;
     float cosPaXYV0ToPv;
-    float cosPaCascToOmegac; 
+    float cosPaCascToOmegac;
     float cosPaXYCascToOmegac;
-    float cosPaCascToPv;   
-    float cosPaXYCascToPv; 
+    float cosPaCascToPv;  
+    float cosPaXYCascToPv;
     float massV0;
     float massCasc;
     float ptPiFromOmegac;
@@ -160,7 +160,7 @@ struct HfCandidateCreatorXic0Omegac0 {
     float kfDcaOmegacDau;
     float kfDcaXYCascToPv;
     float chi2TopoOmegacToPv;
-    float cosPaOmegacToPv; 
+    float cosPaOmegacToPv;
     float cosPaXYOmegacToPv;
     float ldlOmegac;
     float ctV0;
