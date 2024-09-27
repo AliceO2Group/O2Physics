@@ -2709,8 +2709,7 @@ struct JetFragmentation {
           break; // Make sure we only do this once
         }
       }
-    }
-    else {
+    } else {
       for (const auto& mcdjet : chjets) {
         if (!jetfindingutilities::isInEtaAcceptance(mcdjet, -99., -99., v0EtaMin, v0EtaMax)) {
           continue;
