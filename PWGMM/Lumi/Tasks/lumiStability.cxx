@@ -39,6 +39,7 @@ using namespace o2;
 using namespace o2::framework;
 
 using BCsWithTimestamps = soa::Join<aod::BCs, aod::Timestamps>;
+//using CollisionWithFDD = soa::Join<aod::FDDs, aod::Collision>;
 
 struct LumiStabilityTask {
   // Histogram registry: an object to hold your histograms
