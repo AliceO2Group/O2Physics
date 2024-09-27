@@ -222,6 +222,7 @@ struct ebyeMaker {
   Configurable<float> zVtxMax{"zVtxMax", 10.0f, "maximum z position of the primary vertex"};
   Configurable<float> etaMax{"etaMax", 0.8f, "maximum eta"};
   Configurable<float> etaMaxV0dau{"etaMaxV0dau", 0.8f, "maximum eta V0 daughters"};
+  Configurable<float> outerPIDMin{"outerPIDMin", -4.f, "minimum outer PID"};
 
   Configurable<bool> fillOnlySignal{"fillOnlySignal", false, "fill histograms only for true signal candidates (MC)"};
   Configurable<std::string> genName{"genname", "", "Genearator name: HIJING, PYTHIA8, ... Default: \"\""};
@@ -525,7 +526,7 @@ struct ebyeMaker {
     } else if (doprocessRun2 || doprocessMiniRun2 || doprocessMcRun2 || doprocessMiniMcRun2) {
       histos.add<TH2>("QA/V0MvsCL0", ";Centrality CL0 (%);Centrality V0M (%)", HistType::kTH2F, {centAxis, centAxis});
       histos.add<TH2>("QA/trackletsVsV0M", ";Centrality CL0 (%);Centrality V0M (%)", HistType::kTH2F, {centAxis, multAxis});
-      histos.add<TH2>("QA/nTrklCorrelation", ";Tracklets |#eta| > 0.6; Tracklets |#eta| < 0.6", HistType::kTH2D, {{201, -0.5, 200.5}, {201, -0.5, 200.5}});
+      histos.add<TH2>("QA/nTrklCorrelation", ";Tracklets |#eta| > 0.7; Tracklets |#eta| < 0.6", HistType::kTH2D, {{201, -0.5, 200.5}, {201, -0.5, 200.5}});
       histos.add<TH1>("QA/TrklEta", ";Tracklets #eta; Entries", HistType::kTH1D, {{100, -3., 3.}});
     }
 
@@ -568,11 +569,14 @@ struct ebyeMaker {
     candidateV0s.clear();
 
     gpu::gpustd::array<float, 2> dcaInfo;
-    int nTracklets[2]{0, 0};
+    uint8_t nTracklets[2]{0, 0};
     for (const auto& track : tracks) {
 
       if (track.trackType() == 255 && std::abs(track.eta()) < 1.2) { // tracklet
-        nTracklets[std::abs(track.eta()) < 0.6]++;
+        if (std::abs(track.eta()) < 0.6)
+          nTracklets[0]++;
+        else if (std::abs(track.eta()) > 0.7)
+          nTracklets[1]++;
       }
 
       if (!selectTrack(track)) {
@@ -1097,7 +1101,7 @@ struct ebyeMaker {
         float outerPID = getOuterPID(tk);
         candidateTrack.outerPID = tk.pt() < antipPtTof ? candidateTrack.outerPID : outerPID;
         int selMask = getTrackSelMask(candidateTrack);
-        if (candidateTrack.outerPID < -4)
+        if (candidateTrack.outerPID < outerPIDMin)
           continue;
         miniTrkTable(
           miniCollTable.lastIndex(),

@@ -127,6 +127,7 @@ struct k892analysis {
   Configurable<int> cetaphiBins{"cetaphiBins", 400, "number of eta and phi bins"};
   Configurable<double> cMaxDeltaEtaCut{"cMaxDeltaEtaCut", 0.7, "Maximum deltaEta between daughters"};
   Configurable<double> cMaxDeltaPhiCut{"cMaxDeltaPhiCut", 1.5, "Maximum deltaPhi between daughters"};
+  TRandom* rn = new TRandom();
 
   void init(o2::framework::InitContext&)
   {
@@ -588,7 +589,6 @@ struct k892analysis {
       lDecayDaughter1.SetPtEtaPhiM(trk1.pt(), trk1.eta(), trk1.phi(), massPi);
       lDecayDaughter2.SetPtEtaPhiM(trk2.pt(), trk2.eta(), trk2.phi(), massKa);
       lResonance = lDecayDaughter1 + lDecayDaughter2;
-      TRandom* rn = new TRandom();
       // Rapidity cut
       if (abs(lResonance.Rapidity()) >= 0.5)
         continue;

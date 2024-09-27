@@ -148,6 +148,7 @@ struct strangeness_tutorial {
   TF1* fMultCutHigh = nullptr;
   TF1* fMultMultPVCut = nullptr;
   Service<o2::framework::O2DatabasePDG> PDGdatabase;
+  TRandom* rn = new TRandom();
 
   void init(InitContext const&)
   {
@@ -627,16 +628,12 @@ struct strangeness_tutorial {
 
       // polarization calculations
 
-      auto phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
-      auto thetaRandom = gRandom->Uniform(0.f, constants::math::PI);
       ROOT::Math::PxPyPzMVector fourVecDau = ROOT::Math::PxPyPzMVector(daughter1.Px(), daughter1.Py(), daughter1.Pz(), massK0s); // Kshort
 
       ROOT::Math::PxPyPzMVector fourVecMother = ROOT::Math::PxPyPzMVector(lv3.Px(), lv3.Py(), lv3.Pz(), lv3.M()); // mass of KshortKshort pair
       ROOT::Math::Boost boost{fourVecMother.BoostToCM()};                                                         // boost mother to center of mass frame
       ROOT::Math::PxPyPzMVector fourVecDauCM = boost(fourVecDau);                                                 // boost the frame of daughter same as mother
       ROOT::Math::XYZVector threeVecDauCM = fourVecDauCM.Vect();                                                  // get the 3 vector of daughter in the frame of mother
-
-      TRandom* rn = new TRandom();
 
       if (TMath::Abs(lv3.Rapidity() < 0.5)) {
 
@@ -676,6 +673,8 @@ struct strangeness_tutorial {
             hglue.fill(HIST("h3glueInvMassRot"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarBeam);
           }
         } else if (activateTHnSparseCosThStarRandom) {
+          auto phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
+          auto thetaRandom = gRandom->Uniform(0.f, constants::math::PI);
           ROOT::Math::XYZVector randomVec = ROOT::Math::XYZVector(std::sin(thetaRandom) * std::cos(phiRandom), std::sin(thetaRandom) * std::sin(phiRandom), std::cos(thetaRandom));
           auto cosThetaStarRandom = randomVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
           hglue.fill(HIST("h3glueInvMassDS"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarRandom);
@@ -771,8 +770,6 @@ struct strangeness_tutorial {
           lv2.SetPtEtaPhiM(t2.pt(), t2.eta(), t2.phi(), massK0s);
           lv3 = lv1 + lv2;
 
-          auto phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
-          auto thetaRandom = gRandom->Uniform(0.f, constants::math::PI);
           ROOT::Math::PxPyPzMVector fourVecDau = ROOT::Math::PxPyPzMVector(daughter1.Px(), daughter1.Py(), daughter1.Pz(), massK0s); // Kshort
 
           ROOT::Math::PxPyPzMVector fourVecMother = ROOT::Math::PxPyPzMVector(lv3.Px(), lv3.Py(), lv3.Pz(), lv3.M()); // mass of KshortKshort pair
@@ -795,6 +792,8 @@ struct strangeness_tutorial {
               auto cosThetaStarBeam = beamVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
               hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarBeam);
             } else if (activateTHnSparseCosThStarRandom) {
+              auto phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
+              auto thetaRandom = gRandom->Uniform(0.f, constants::math::PI);
               ROOT::Math::XYZVector randomVec = ROOT::Math::XYZVector(std::sin(thetaRandom) * std::cos(phiRandom), std::sin(thetaRandom) * std::sin(phiRandom), std::cos(thetaRandom));
               auto cosThetaStarRandom = randomVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
               hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarRandom);
@@ -862,8 +861,6 @@ struct strangeness_tutorial {
           lv2.SetPtEtaPhiM(t2.pt(), t2.eta(), t2.phi(), massK0s);
           lv3 = lv1 + lv2;
 
-          auto phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
-          auto thetaRandom = gRandom->Uniform(0.f, constants::math::PI);
           ROOT::Math::PxPyPzMVector fourVecDau = ROOT::Math::PxPyPzMVector(daughter1.Px(), daughter1.Py(), daughter1.Pz(), massK0s); // Kshort
 
           ROOT::Math::PxPyPzMVector fourVecMother = ROOT::Math::PxPyPzMVector(lv3.Px(), lv3.Py(), lv3.Pz(), lv3.M()); // mass of KshortKshort pair
@@ -886,6 +883,8 @@ struct strangeness_tutorial {
               auto cosThetaStarBeam = beamVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
               hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarBeam);
             } else if (activateTHnSparseCosThStarRandom) {
+              auto phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
+              auto thetaRandom = gRandom->Uniform(0.f, constants::math::PI);
               ROOT::Math::XYZVector randomVec = ROOT::Math::XYZVector(std::sin(thetaRandom) * std::cos(phiRandom), std::sin(thetaRandom) * std::sin(phiRandom), std::cos(thetaRandom));
               auto cosThetaStarRandom = randomVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
               hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarRandom);

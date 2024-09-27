@@ -358,7 +358,6 @@ struct HfTreeCreatorLcToK0sP {
 
   void processMc(aod::Collisions const& collisions,
                  aod::McCollisions const&,
-                 // soa::Join<aod::HfCandCascade, aod::HfCandCascadeMcRec, aod::HfSelLcToK0sP> const& candidates,
                  SelectedCandidatesMc const& candidates,
                  soa::Join<aod::McParticles, aod::HfCandCascadeMcGen> const& particles,
                  TracksWPid const&)
@@ -405,15 +404,7 @@ struct HfTreeCreatorLcToK0sP {
       }
       for (const auto& candidate : candidates) {
         auto bach = candidate.prong0_as<TracksWPid>(); // bachelor
-                                                       /*if (downSampleBkgFactor < 1.) {
-                                                         double pseudoRndm = bach.pt() * 1000. - (int16_t)(bach.pt() * 1000);
-                                                         if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
-                                                           continue;
-                                                         }
-                                                   }*/
-                                                       // if (candidate.isSelLcToK0sP() >= 1) {
         fillCandidate(candidate, bach, candidate.flagMcMatchRec(), candidate.originMcRec());
-        //}
       }
     }
 

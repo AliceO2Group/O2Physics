@@ -37,6 +37,15 @@ using FullTracksIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA>;
 struct EmcVertexSelectionQA {
   o2::framework::HistogramRegistry mHistManager{"EMCALVertexSelectionQAHistograms"};
 
+  Configurable<float> cfgZvtxMax{"cfgZvtxMax", 20.f, "max. Zvtx"};
+  Configurable<bool> cfgRequireSel8{"cfgRequireSel8", false, "require sel8 in event cut"};
+  Configurable<bool> cfgRequireFT0AND{"cfgRequireFT0AND", false, "require FT0AND in event cut"};
+  Configurable<bool> cfgRequireNoTFB{"cfgRequireNoTFB", false, "require No time frame border in event cut"};
+  Configurable<bool> cfgRequireNoITSROFB{"cfgRequireNoITSROFB", false, "require no ITS readout frame border in event cut"};
+  Configurable<bool> cfgRequireNoSameBunchPileup{"cfgRequireNoSameBunchPileup", false, "require no same bunch pileup in event cut"};
+  Configurable<bool> cfgRequireVertexITSTPC{"cfgRequireVertexITSTPC", false, "require Vertex ITSTPC in event cut"}; // ITS-TPC matched track contributes PV.
+  Configurable<bool> cfgRequireGoodZvtxFT0vsPV{"cfgRequireGoodZvtxFT0vsPV", false, "require good Zvtx between FT0 vs. PV in event cut"};
+
   void init(o2::framework::InitContext const&)
   {
     using o2HistType = o2::framework::HistType;
@@ -100,6 +109,29 @@ struct EmcVertexSelectionQA {
       bool isEMCALreadout = (bc.alias_bit(kTVXinEMC) || bc.alias_bit(kEMC7) || bc.alias_bit(kEG1) || bc.alias_bit(kEG2) || bc.alias_bit(kDG1) || bc.alias_bit(kDG2) || bc.alias_bit(kEJ1) || bc.alias_bit(kEJ2) || bc.alias_bit(kDJ1) || bc.alias_bit(kDJ2));
 
       auto colsinbc = collisions.sliceBy(perFoundBC, bc.globalIndex());
+
+      bool isBCAccepted = true;
+      for (auto& col : colsinbc) {
+        if (cfgRequireSel8 && !col.sel8())
+          isBCAccepted = false;
+        if (cfgRequireFT0AND && !col.selection_bit(o2::aod::evsel::kIsTriggerTVX))
+          isBCAccepted = false;
+        if (col.posZ() < -cfgZvtxMax || col.posZ() > cfgZvtxMax)
+          isBCAccepted = false;
+        if (cfgRequireNoTFB && !col.selection_bit(o2::aod::evsel::kNoTimeFrameBorder))
+          isBCAccepted = false;
+        if (cfgRequireNoITSROFB && !col.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))
+          isBCAccepted = false;
+        if (cfgRequireNoSameBunchPileup && !col.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
+          isBCAccepted = false;
+        if (cfgRequireVertexITSTPC && !col.selection_bit(o2::aod::evsel::kIsVertexITSTPC))
+          isBCAccepted = false;
+        if (cfgRequireGoodZvtxFT0vsPV && !col.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
+          isBCAccepted = false;
+      }
+      if (!isBCAccepted)
+        continue;
+
       int collisionStatus = -1;
       if (!colsinbc.size()) {
         collisionStatus = 0;

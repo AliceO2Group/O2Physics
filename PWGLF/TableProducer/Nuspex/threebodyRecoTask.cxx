@@ -450,43 +450,44 @@ struct threebodyRecoTask {
 
   //------------------------------------------------------------------
   // process real data analysis
-  void processData(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>::iterator const& collision, aod::Vtx3BodyDatas const& vtx3bodydatas, FullTracksExtIU const& /*tracks*/)
+  void processData(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions, aod::Vtx3BodyDatas const& vtx3bodydatas, FullTracksExtIU const& /*tracks*/)
   {
-    Candidates3body.clear();
-    registry.fill(HIST("hEventCounter"), 0.5);
-    if (event_sel8_selection && !collision.sel8()) {
-      return;
-    }
-    registry.fill(HIST("hEventCounter"), 1.5);
-    if (event_posZ_selection && abs(collision.posZ()) > 10.f) { // 10cm
-      return;
-    }
-    registry.fill(HIST("hEventCounter"), 2.5);
-    registry.fill(HIST("hCentFT0C"), collision.centFT0C());
+    for (auto collision : collisions) {
+      Candidates3body.clear();
+      registry.fill(HIST("hEventCounter"), 0.5);
+      if (event_sel8_selection && !collision.sel8()) {
+        continue;
+      }
+      registry.fill(HIST("hEventCounter"), 1.5);
+      if (event_posZ_selection && abs(collision.posZ()) > 10.f) { // 10cm
+        continue;
+      }
+      registry.fill(HIST("hEventCounter"), 2.5);
+      registry.fill(HIST("hCentFT0C"), collision.centFT0C());
 
-    bool if_hasvtx = false;
+      bool if_hasvtx = false;
+      auto d3bodyCands = vtx3bodydatas.sliceBy(perCollisionVtx3BodyDatas, collision.globalIndex());
+      for (auto vtx : d3bodyCands) {
+        CandidateAnalysis<FullTracksExtIU>(collision, vtx, if_hasvtx);
+      }
+      if (if_hasvtx)
+        registry.fill(HIST("hEventCounter"), 3.5);
+      fillHistos();
+      resetHistos();
 
-    for (auto& vtx : vtx3bodydatas) {
-      CandidateAnalysis<FullTracksExtIU>(collision, vtx, if_hasvtx);
-    }
-
-    if (if_hasvtx)
-      registry.fill(HIST("hEventCounter"), 3.5);
-    fillHistos();
-    resetHistos();
-
-    for (auto& cand3body : Candidates3body) {
-      outputDataTable(collision.centFT0C(),
-                      cand3body.isMatter, cand3body.invmass, cand3body.lcand.P(), cand3body.lcand.Pt(), cand3body.ct,
-                      cand3body.cosPA, cand3body.dcadaughters, cand3body.dcacandtopv,
-                      cand3body.lproton.Pt(), cand3body.lproton.Eta(), cand3body.lproton.Phi(),
-                      cand3body.lpion.Pt(), cand3body.lpion.Eta(), cand3body.lpion.Phi(),
-                      cand3body.lbachelor.Pt(), cand3body.lbachelor.Eta(), cand3body.lbachelor.Phi(),
-                      cand3body.dautpcNclusters[0], cand3body.dautpcNclusters[1], cand3body.dautpcNclusters[2],
-                      cand3body.dauitsclussize[0], cand3body.dauitsclussize[1], cand3body.dauitsclussize[2],
-                      cand3body.dautpcNsigma[0], cand3body.dautpcNsigma[1], cand3body.dautpcNsigma[2], cand3body.bachelortofNsigma,
-                      cand3body.daudcaxytopv[0], cand3body.daudcaxytopv[1], cand3body.daudcaxytopv[2],
-                      cand3body.daudcatopv[0], cand3body.daudcatopv[1], cand3body.daudcatopv[2]);
+      for (auto& cand3body : Candidates3body) {
+        outputDataTable(collision.centFT0C(),
+                        cand3body.isMatter, cand3body.invmass, cand3body.lcand.P(), cand3body.lcand.Pt(), cand3body.ct,
+                        cand3body.cosPA, cand3body.dcadaughters, cand3body.dcacandtopv,
+                        cand3body.lproton.Pt(), cand3body.lproton.Eta(), cand3body.lproton.Phi(),
+                        cand3body.lpion.Pt(), cand3body.lpion.Eta(), cand3body.lpion.Phi(),
+                        cand3body.lbachelor.Pt(), cand3body.lbachelor.Eta(), cand3body.lbachelor.Phi(),
+                        cand3body.dautpcNclusters[0], cand3body.dautpcNclusters[1], cand3body.dautpcNclusters[2],
+                        cand3body.dauitsclussize[0], cand3body.dauitsclussize[1], cand3body.dauitsclussize[2],
+                        cand3body.dautpcNsigma[0], cand3body.dautpcNsigma[1], cand3body.dautpcNsigma[2], cand3body.bachelortofNsigma,
+                        cand3body.daudcaxytopv[0], cand3body.daudcaxytopv[1], cand3body.daudcaxytopv[2],
+                        cand3body.daudcatopv[0], cand3body.daudcatopv[1], cand3body.daudcatopv[2]);
+      }
     }
   }
   PROCESS_SWITCH(threebodyRecoTask, processData, "Real data reconstruction", true);
