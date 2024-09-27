@@ -31,15 +31,6 @@ namespace spcalibrationtable
 DECLARE_SOA_COLUMN(TriggerEvent, triggerevent, bool);
 DECLARE_SOA_COLUMN(TriggerEventRunNo, triggereventrunno, int);
 DECLARE_SOA_COLUMN(Cent, cent, float);
-DECLARE_SOA_COLUMN(Vz, vz, float);
-DECLARE_SOA_COLUMN(ZNAEN1, znaen1, float);
-DECLARE_SOA_COLUMN(ZNAEN2, znaen2, float);
-DECLARE_SOA_COLUMN(ZNAEN3, znaen3, float);
-DECLARE_SOA_COLUMN(ZNAEN4, znaen4, float);
-DECLARE_SOA_COLUMN(ZNCEN1, zncen1, float);
-DECLARE_SOA_COLUMN(ZNCEN2, zncen2, float);
-DECLARE_SOA_COLUMN(ZNCEN3, zncen3, float);
-DECLARE_SOA_COLUMN(ZNCEN4, zncen4, float);
 DECLARE_SOA_COLUMN(QXZDCA, qxZDCA, float);
 DECLARE_SOA_COLUMN(QXZDCC, qxZDCC, float);
 DECLARE_SOA_COLUMN(QYZDCA, qyZDCA, float);
@@ -51,15 +42,6 @@ DECLARE_SOA_TABLE(SPCalibrationTables, "AOD", "SPCALCOLS",
                   spcalibrationtable::TriggerEvent,
                   spcalibrationtable::TriggerEventRunNo,
                   spcalibrationtable::Cent,
-                  spcalibrationtable::Vz,
-                  spcalibrationtable::ZNAEN1,
-                  spcalibrationtable::ZNAEN2,
-                  spcalibrationtable::ZNAEN3,
-                  spcalibrationtable::ZNAEN4,
-                  spcalibrationtable::ZNCEN1,
-                  spcalibrationtable::ZNCEN2,
-                  spcalibrationtable::ZNCEN3,
-                  spcalibrationtable::ZNCEN4,
                   spcalibrationtable::QXZDCA,
                   spcalibrationtable::QXZDCC,
                   spcalibrationtable::QYZDCA,
