@@ -12,10 +12,10 @@
 #ifndef PWGCF_TWOPARTICLECORRELATIONS_TABLEPRODUCER_IDENTIFIEDBFFILTER_H_
 #define PWGCF_TWOPARTICLECORRELATIONS_TABLEPRODUCER_IDENTIFIEDBFFILTER_H_
 
+#include <CCDB/BasicCCDBManager.h>
+
 #include <vector>
 #include <string>
-
-#include <CCDB/BasicCCDBManager.h>
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
