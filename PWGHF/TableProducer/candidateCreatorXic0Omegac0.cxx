@@ -664,12 +664,12 @@ struct HfCandidateCreatorXic0Omegac0 {
 
       //__________________________________________
       //*>~<* step 1 : construct V0 with KF
-      const KFParticle* V0Daughters[2] = {&kfpPos, &kfpNeg};
+      const KFParticle* v0Daughters[2] = {&kfpPos, &kfpNeg};
       // construct V0
       KFParticle kfV0;
       kfV0.SetConstructMethod(kfConstructMethod);
       try {
-        kfV0.Construct(V0Daughters, 2);
+        kfV0.Construct(v0Daughters, 2);
       } catch (std::runtime_error& e) {
         LOG(debug) << "Failed to construct cascade V0 from daughter tracks: " << e.what();
         continue;
@@ -695,12 +695,12 @@ struct HfCandidateCreatorXic0Omegac0 {
 
       //__________________________________________
       //*>~<* step 2 : reconstruct cascade(Omega) with KF
-      const KFParticle* OmegaDaugthers[2] = {&kfpBachKaon, &kfV0};
+      const KFParticle* omegaDaugthers[2] = {&kfpBachKaon, &kfV0};
       // construct cascade
       KFParticle kfOmega;
       kfOmega.SetConstructMethod(kfConstructMethod);
       try {
-        kfOmega.Construct(OmegaDaugthers, 2);
+        kfOmega.Construct(omegaDaugthers, 2);
       } catch (std::runtime_error& e) {
         LOG(debug) << "Failed to construct Omega from V0 and bachelor track: " << e.what();
         continue;
@@ -729,13 +729,13 @@ struct HfCandidateCreatorXic0Omegac0 {
       // Create KF charm bach Pion from track
       KFPTrack kfpTrackBachPion = createKFPTrackFromTrack(trackCharmBachelor);
       KFParticle kfpBachPion(kfpTrackBachPion, kPiPlus);
-      const KFParticle* OmegaC0Daugthers[2] = {&kfpBachPion, &kfOmega};
+      const KFParticle* omegaC0Daugthers[2] = {&kfpBachPion, &kfOmega};
 
       // construct OmegaC0
       KFParticle kfOmegaC0;
       kfOmegaC0.SetConstructMethod(kfConstructMethod);
       try {
-        kfOmegaC0.Construct(OmegaC0Daugthers, 2);
+        kfOmegaC0.Construct(omegaC0Daugthers, 2);
       } catch (std::runtime_error& e) {
         LOG(debug) << "Failed to construct OmegaC0 from Cascade and bachelor pion track: " << e.what();
         continue;
