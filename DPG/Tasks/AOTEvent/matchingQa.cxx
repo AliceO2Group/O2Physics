@@ -78,12 +78,12 @@ struct MatchingQaTask {
       }
     }
 
-    const AxisSpec axisNcontrib{isLowFlux ? 150 : 8000, 0., isLowFlux ? 150. : 8000., "n contributors"};
+    const AxisSpec axisNcontrib{isLowFlux ? 200 : 8000, 0., isLowFlux ? 200. : 8000., "n contributors"};
     const AxisSpec axisColTimeRes{1500, 0., 1500., "collision time resolution (ns)"};
     const AxisSpec axisFraction{1000, 0., 1., ""};
     const AxisSpec axisBcDiff{800, -400., 400., "bc diff"};
     const AxisSpec axisBcs{nBCsPerOrbit, 0., static_cast<float>(nBCsPerOrbit), "bc"};
-    const AxisSpec axisMultT0C{200, 0., isLowFlux ? 1600. : 60000., "Rec. mult. T0C"};
+    const AxisSpec axisMultT0C{200, 0., isLowFlux ? 2000. : 60000., "Rec. mult. T0C"};
     const AxisSpec axisZvtxDiff{200, -20., 20., "Zvtx difference, cm"};
 
     histos.add("hRecMultT0C", "", kTH1D, {axisMultT0C});
@@ -200,6 +200,8 @@ struct MatchingQaTask {
     std::fill(vNumTRDtracks.begin(), vNumTRDtracks.end(), 0);
     std::fill(vNumTPCtracks.begin(), vNumTPCtracks.end(), 0);
 
+    std::vector<std::vector<float>> vTOFtracksTimes(cols.size());
+
     std::vector<float> vTOFtracksSumWeightedTimes(cols.size(), 0);
     std::vector<float> vTRDtracksSumWeightedTimes(cols.size(), 0);
     std::vector<float> vTPCtracksSumWeightedTimes(cols.size(), 0);
@@ -251,6 +253,8 @@ struct MatchingQaTask {
       float trackTimeRes = track.trackTimeRes();
       float w = 1. / (trackTimeRes * trackTimeRes);
       if (track.hasTOF()) {
+        vTOFtracksTimes[colId].push_back(trackTime);
+
         vNumTOFtracks[colId]++;
         vTOFtracksSumWeightedTimes[colId] += trackTime * w;
         vTOFtracksSumWeights[colId] += w;
@@ -280,9 +284,19 @@ struct MatchingQaTask {
         continue;
       auto bc = col.bc_as<BCsRun3>();
       int64_t globalBC = bc.globalBC();
+
       // todo: bypass ambiguous collisions with TOF tracks pointing to different bcs
-      float weightedTime = vTOFtracksSumWeightedTimes[colId] / vTOFtracksSumWeights[colId];
-      int64_t tofGlobalBC = globalBC + TMath::Nint(weightedTime / bcNS);
+      // float weightedTime = vTOFtracksSumWeightedTimes[colId] / vTOFtracksSumWeights[colId];
+
+      // TOF track time median calculation using std::nth_element
+      auto& vTOFtracks = vTOFtracksTimes[colId];
+      int median = vTOFtracks.size() / 2;
+      std::nth_element(vTOFtracks.begin(), vTOFtracks.begin() + median, vTOFtracks.end());
+      float medianTime = vTOFtracks[median];
+
+      //      int64_t tofGlobalBC = globalBC + TMath::Nint(weightedTime / bcNS);
+      int64_t tofGlobalBC = globalBC + TMath::Nint(medianTime / bcNS);
+
       int32_t foundBC = findClosest(tofGlobalBC, mapGlobalBcWithTVX);
       // todo: check what to do if foundBC is too far from tofGlobalBC
       if (fabs(bcs.iteratorAt(foundBC).globalBC() - tofGlobalBC) > 0) {
