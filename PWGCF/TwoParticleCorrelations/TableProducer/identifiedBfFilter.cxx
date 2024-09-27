@@ -660,7 +660,7 @@ struct IdentifiedBfFilterTracks {
 
         ccdblst = getCCDBInput(cfgcentersinputfile.cfgCCDBPathName->c_str(), cfgcentersinputfile.cfgCCDBDate->c_str());
         for (int i = 0; i < kIdBfNoOfSpecies; i++) {
-          fhNSigmaCorrection[i] = reinterpret_cast<TH1F*>ccdblst->FindObject(Form("centerBin_%s", speciesName[i]));
+          fhNSigmaCorrection[i] = reinterpret_cast<TH1F*>(ccdblst->FindObject(Form("centerBin_%s", speciesName[i])));
         }
       }
     }
