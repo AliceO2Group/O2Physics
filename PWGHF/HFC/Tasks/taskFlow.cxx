@@ -539,7 +539,7 @@ struct HfTaskFlow {
       registry.fill(HIST("MC/Gen/TpcTpc/HadronHadron/MixedEvent/hVtxZMixing"), vz);
     }
 
-    int Ntracks = 0;
+    int nTracks = 0;
     for (const auto& track1 : tracks) {
       Ntracks++;
       if constexpr (std::is_same_v<TracksWDcaSelMC, TTracks>) { // if MC Rec
