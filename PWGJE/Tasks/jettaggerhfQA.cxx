@@ -700,8 +700,7 @@ struct JetTaggerHFQA {
     int jetflavourRun2Def = -1;
     // if (!mcdjet.has_matchedJetGeo()) continue;
     for (auto& mcpjet : mcdjet.template matchedJetGeo_as<U>()) {
-      //jetflavourRun2Def = jettaggingutilities::getJetFlavor(mcpjet, particlesPerColl);
-      jetflavourRun2Def = jettaggingutilities::getJetFlavorHadron(mcpjet, particlesPerColl);
+      jetflavourRun2Def = jettaggingutilities::getJetFlavor(mcpjet, particlesPerColl);
       registry.fill(HIST("h3_jet_pt_jet_pt_part_matchedgeo_flavour"), mcpjet.pt(), mcdjet.pt(), jetflavour, eventWeight);
       registry.fill(HIST("h3_jet_pt_jet_pt_part_matchedgeo_flavour_run2"), mcpjet.pt(), mcdjet.pt(), jetflavourRun2Def, eventWeight);
     }
@@ -907,8 +906,7 @@ struct JetTaggerHFQA {
     }
     int jetflavourRun2Def = -1;
     for (auto& mcpjet : mcdjet.template matchedJetGeo_as<U>()) {
-      //jetflavourRun2Def = jettaggingutilities::getJetFlavor(mcpjet, particlesPerColl);
-      jetflavourRun2Def = jettaggingutilities::getJetFlavorHadron(mcpjet, particlesPerColl);
+      jetflavourRun2Def = jettaggingutilities::getJetFlavor(mcpjet, particlesPerColl);
     }
     if (jetflavourRun2Def < 0)
       return;
@@ -942,7 +940,7 @@ struct JetTaggerHFQA {
   template <typename T, typename U>
   void fillHistogramSV3ProngMCD(T const& mcdjet, U const& /*prongs*/, float eventWeight = 1.0)
   {
-    //std::cout << "weight: " << eventWeight << std::endl;
+    // std::cout << "weight: " << eventWeight << std::endl;
     float pTHat = 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
     if (mcdjet.pt() > pTHatMaxMCD * pTHat) {
       return;
@@ -990,8 +988,7 @@ struct JetTaggerHFQA {
     }
     int jetflavourRun2Def = -1;
     for (auto& mcpjet : mcdjet.template matchedJetGeo_as<U>()) {
-      //jetflavourRun2Def = jettaggingutilities::getJetFlavor(mcpjet, particlesPerColl);
-      jetflavourRun2Def = jettaggingutilities::getJetFlavorHadron(mcpjet, particlesPerColl);
+      jetflavourRun2Def = jettaggingutilities::getJetFlavor(mcpjet, particlesPerColl);
     }
     if (jetflavourRun2Def < 0)
       return;
