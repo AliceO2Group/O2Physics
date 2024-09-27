@@ -140,7 +140,7 @@ struct HfCandidateCreatorXic0Omegac0 {
     float cosPaXYV0ToPv;
     float cosPaCascToOmegac;
     float cosPaXYCascToOmegac;
-    float cosPaCascToPv;  
+    float cosPaCascToPv;
     float cosPaXYCascToPv;
     float massV0;
     float massCasc;
