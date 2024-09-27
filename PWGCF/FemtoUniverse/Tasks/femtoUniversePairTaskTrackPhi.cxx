@@ -69,21 +69,24 @@ struct femtoUniversePairTaskTrackPhi {
   Preslice<FemtoRecoParticles> perColMC = aod::femtouniverseparticle::fdCollisionId;
 
   // Efficiency
-  Configurable<std::string> ConfLocalEfficiencyProton{"ConfLocalEfficiencyProton", "", "Local path to proton efficiency th2d file"};
-  Configurable<std::string> ConfLocalEfficiencyPhi{"ConfLocalEfficiencyPhi", "", "Local path to Phi efficiency th2d file"};
-  Configurable<long> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
-  Configurable<long> ConfEffProtonTimestamp{"ConfEffProtonTimestamp", 0, "(long int) Timestamp for hadron"};
-  Configurable<long> ConfEffPhiTimestamp{"ConfEffPhiTimestamp", 0, "(long int) Timestamp for phi"};
+  struct : o2::framework::ConfigurableGroup {
+    Configurable<std::string> ConfLocalEfficiencyProton{"ConfLocalEfficiencyProton", "", "Local path to proton efficiency th2d file"};
+    Configurable<std::string> ConfLocalEfficiencyPhi{"ConfLocalEfficiencyPhi", "", "Local path to Phi efficiency th2d file"};
+    Configurable<long> ConfEffProtonTimestamp{"ConfEffProtonTimestamp", 0, "(long int) Timestamp for hadron"};
+    Configurable<long> ConfEffPhiTimestamp{"ConfEffPhiTimestamp", 0, "(long int) Timestamp for phi"};
+  } ConfEff;
 
-  Configurable<bool> ConfIsCPR{"ConfIsCPR", true, "Close Pair Rejection"};
-  Configurable<bool> ConfCPRPlotPerRadii{"ConfCPRPlotPerRadii", false, "Plot CPR per radii"};
-  Configurable<float> ConfCPRdeltaPhiCutMax{"ConfCPRdeltaPhiCutMax", 0.0, "Delta Phi max cut for Close Pair Rejection"};
-  Configurable<float> ConfCPRdeltaPhiCutMin{"ConfCPRdeltaPhiCutMin", 0.0, "Delta Phi min cut for Close Pair Rejection"};
-  Configurable<float> ConfCPRdeltaEtaCutMax{"ConfCPRdeltaEtaCutMax", 0.0, "Delta Eta max cut for Close Pair Rejection"};
-  Configurable<float> ConfCPRdeltaEtaCutMin{"ConfCPRdeltaEtaCutMin", 0.0, "Delta Eta min cut for Close Pair Rejection"};
-  Configurable<float> ConfCPRInvMassCutMin{"ConfCPRInvMassCutMin", 1.014, "Invariant mass (low) cut for Close Pair Rejection"};
-  Configurable<float> ConfCPRInvMassCutMax{"ConfCPRInvMassCutMax", 1.026, "Invariant mass (high) cut for Close Pair Rejection"};
-  Configurable<float> ConfCPRChosenRadii{"ConfCPRChosenRadii", 0.80, "Delta Eta cut for Close Pair Rejection"};
+  struct : o2::framework::ConfigurableGroup {
+    Configurable<bool> ConfIsCPR{"ConfIsCPR", true, "Close Pair Rejection"};
+    Configurable<bool> ConfCPRPlotPerRadii{"ConfCPRPlotPerRadii", false, "Plot CPR per radii"};
+    Configurable<float> ConfCPRdeltaPhiCutMax{"ConfCPRdeltaPhiCutMax", 0.0, "Delta Phi max cut for Close Pair Rejection"};
+    Configurable<float> ConfCPRdeltaPhiCutMin{"ConfCPRdeltaPhiCutMin", 0.0, "Delta Phi min cut for Close Pair Rejection"};
+    Configurable<float> ConfCPRdeltaEtaCutMax{"ConfCPRdeltaEtaCutMax", 0.0, "Delta Eta max cut for Close Pair Rejection"};
+    Configurable<float> ConfCPRdeltaEtaCutMin{"ConfCPRdeltaEtaCutMin", 0.0, "Delta Eta min cut for Close Pair Rejection"};
+    Configurable<float> ConfCPRInvMassCutMin{"ConfCPRInvMassCutMin", 1.014, "Invariant mass (low) cut for Close Pair Rejection"};
+    Configurable<float> ConfCPRInvMassCutMax{"ConfCPRInvMassCutMax", 1.026, "Invariant mass (high) cut for Close Pair Rejection"};
+    Configurable<float> ConfCPRChosenRadii{"ConfCPRChosenRadii", 0.80, "Delta Eta cut for Close Pair Rejection"};
+  } ConfCPR;
 
   /// Table for both particles
   struct : o2::framework::ConfigurableGroup {
@@ -424,8 +427,8 @@ struct femtoUniversePairTaskTrackPhi {
     mixedEventAngularCont.setPDGCodes(ConfPhi.ConfPDGCodePhi, ConfTrack.ConfPDGCodeTrack);
 
     pairCleaner.init(&qaRegistry);
-    if (ConfIsCPR.value) {
-      pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiCutMin.value, ConfCPRdeltaPhiCutMax.value, ConfCPRdeltaEtaCutMin.value, ConfCPRdeltaEtaCutMax.value, ConfCPRChosenRadii.value, ConfCPRPlotPerRadii.value, ConfCPRInvMassCutMin.value, ConfCPRInvMassCutMax.value);
+    if (ConfCPR.ConfIsCPR.value) {
+      pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPR.ConfCPRdeltaPhiCutMin.value, ConfCPR.ConfCPRdeltaPhiCutMax.value, ConfCPR.ConfCPRdeltaEtaCutMin.value, ConfCPR.ConfCPRdeltaEtaCutMax.value, ConfCPR.ConfCPRChosenRadii.value, ConfCPR.ConfCPRPlotPerRadii.value, ConfCPR.ConfCPRInvMassCutMin.value, ConfCPR.ConfCPRInvMassCutMax.value);
     }
 
     /// Initializing CCDB
@@ -436,16 +439,16 @@ struct femtoUniversePairTaskTrackPhi {
     long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now);
 
-    if (!ConfLocalEfficiencyProton.value.empty()) {
-      protoneff = ccdb->getForTimeStamp<TH2D>(ConfLocalEfficiencyProton.value.c_str(), ConfEffProtonTimestamp.value);
+    if (!ConfEff.ConfLocalEfficiencyProton.value.empty()) {
+      protoneff = ccdb->getForTimeStamp<TH2D>(ConfEff.ConfLocalEfficiencyProton.value.c_str(), ConfEff.ConfEffProtonTimestamp.value);
       if (!protoneff || protoneff->IsZombie()) {
-        LOGF(fatal, "Could not load efficiency protoneff histogram from %s", ConfLocalEfficiencyProton.value.c_str());
+        LOGF(fatal, "Could not load efficiency protoneff histogram from %s", ConfEff.ConfLocalEfficiencyProton.value.c_str());
       }
     }
-    if (!ConfLocalEfficiencyPhi.value.empty()) {
-      phieff = ccdb->getForTimeStamp<TH2D>(ConfLocalEfficiencyPhi.value.c_str(), ConfEffPhiTimestamp.value);
+    if (!ConfEff.ConfLocalEfficiencyPhi.value.empty()) {
+      phieff = ccdb->getForTimeStamp<TH2D>(ConfEff.ConfLocalEfficiencyPhi.value.c_str(), ConfEff.ConfEffPhiTimestamp.value);
       if (!phieff || phieff->IsZombie()) {
-        LOGF(fatal, "Could not load efficiency phieff histogram from %s", ConfLocalEfficiencyPhi.value.c_str());
+        LOGF(fatal, "Could not load efficiency phieff histogram from %s", ConfEff.ConfLocalEfficiencyPhi.value.c_str());
       }
     }
 
@@ -552,7 +555,7 @@ struct femtoUniversePairTaskTrackPhi {
       }
 
       // // Close Pair Rejection
-      if (ConfIsCPR.value) {
+      if (ConfCPR.ConfIsCPR.value) {
         if (pairCloseRejection.isClosePair(track, phicandidate, parts, magFieldTesla, femtoUniverseContainer::EventType::same)) {
           continue;
         }
@@ -664,7 +667,7 @@ struct femtoUniversePairTaskTrackPhi {
         }
       }
 
-      if (ConfIsCPR.value) {
+      if (ConfCPR.ConfIsCPR.value) {
         if (pairCloseRejection.isClosePair(track, phicandidate, parts, magFieldTesla, femtoUniverseContainer::EventType::mixed)) {
           continue;
         }
