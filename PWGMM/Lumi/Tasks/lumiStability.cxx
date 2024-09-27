@@ -33,6 +33,7 @@ using namespace o2;
 using namespace o2::framework;
 
 using BCsWithTimestamps = soa::Join<aod::BCs, aod::Timestamps>;
+//using CollisionWithFDD = soa::Join<aod::FDDs, aod::Collision>;
 
 struct lumiStabilityTask {
   // Histogram registry: an object to hold your histograms
@@ -68,11 +69,21 @@ struct lumiStabilityTask {
     const AxisSpec axisCounts{6, -0.5, 5.5};
     const AxisSpec axisV0Counts{5, -0.5, 4.5};
     const AxisSpec axisTriggger{nBCsPerOrbit, -0.5f, nBCsPerOrbit - 0.5f};
+    const AxisSpec axisPos{1000, -1, 1};
+    const AxisSpec axisPosZ{1000, -25, 25};
+    const AxisSpec axisNumContrib{1001, -0.5, 1000};
+    const AxisSpec axisColisionTime{202, -100, 100};
 
     histos.add("hBcA", "BC pattern A; BC ; It is present", kTH1F, {axisTriggger});
     histos.add("hBcC", "BC pattern C; BC ; It is present", kTH1F, {axisTriggger});
     histos.add("hBcB", "BC pattern B; BC ; It is present", kTH1F, {axisTriggger});
     histos.add("hBcE", "BC pattern Empty; BC ; It is present", kTH1F, {axisTriggger});
+    histos.add("hvertexX", "Pos X vertex trigger; Pos x; Count ", kTH1F, {axisPos});
+    histos.add("hvertexXvsTime", "Pos X vertex vs Collision Time; ns; vertex X (cm)", {HistType::kTH2F, {{axisPos}, {axisColisionTime}}});
+    histos.add("hvertexY", "Pos Y vertex trigger; Pos y; Count ", kTH1F, {axisPos});
+    histos.add("hvertexZ", "Pos Z vertex trigger; Pos z; Count ", kTH1F, {axisPosZ});
+    histos.add("hnumContrib", "Num of contributors; Num of contributors; Count ", kTH1I, {axisNumContrib});
+    histos.add("hcollisinTime", "Collision Time; ns; Count ", kTH1F, {axisColisionTime});
 
     // histo about triggers
     histos.add("FDD/hCounts", "0 FDDCount - 1 FDDVertexCount - 2 FDDPPVertexCount - 3 FDDCoincidencesVertexCount - 4 FDDPPCoincidencesVertexCount - 5 FDDPPBotSidesCount; Number; counts", kTH1F, {axisCounts});
@@ -163,7 +174,7 @@ struct lumiStabilityTask {
   {
     uint32_t nOrbitsPerTF = 128; // 128 in 2022, 32 in 2023
     int runNumber = bcs.iteratorAt(0).runNumber();
-    std::cout << ">>>>>>>>>>>>>>>>> Run Number: " << runNumber << std::endl;
+    //std::cout << ">>>>>>>>>>>>>>>>> Run Number: " << runNumber << std::endl;
     if (runNumber != lastRunNumber) {
       lastRunNumber = runNumber; // do it only once
       int64_t tsSOR = 0;
@@ -636,6 +647,18 @@ struct lumiStabilityTask {
   }   // end processMain
 
   PROCESS_SWITCH(lumiStabilityTask, processMain, "Process FDD and FT0 to lumi stability analysis", true);
+
+  void processCollisions(aod::Collision const& collision)
+  {
+    histos.fill(HIST("hvertexX"), collision.posX());
+    histos.fill(HIST("hvertexY"), collision.posY());
+    histos.fill(HIST("hvertexZ"), collision.posZ());
+    histos.fill(HIST("hnumContrib"), collision.numContrib());
+    histos.fill(HIST("hcollisinTime"), collision.collisionTime());
+    histos.fill(HIST("hvertexXvsTime"), collision.posX(), collision.collisionTime());
+  }
+
+  PROCESS_SWITCH(lumiStabilityTask, processCollisions, "Process collision to get vertex position", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
