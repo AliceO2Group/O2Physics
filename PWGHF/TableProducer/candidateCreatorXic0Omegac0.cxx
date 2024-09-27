@@ -638,33 +638,33 @@ struct HfCandidateCreatorXic0Omegac0 {
       // kaon <- casc TrackParCov
       auto omegaDauChargedTrackParCov = getTrackParCov(trackCascDauCharged);
       // convert tracks into KFParticle object
-      KFPTrack kfpTrack0 = createKFPTrackFromTrack(trackV0Dau0);
-      KFPTrack kfpTrack1 = createKFPTrackFromTrack(trackV0Dau1);
-      KFPTrack kfpTrackBach = createKFPTrackFromTrack(trackCascDauCharged);
+      KFPTrack kfTrack0 = createKFPTrackFromTrack(trackV0Dau0);
+      KFPTrack kfTrack1 = createKFPTrackFromTrack(trackV0Dau1);
+      KFPTrack kfTrackBach = createKFPTrackFromTrack(trackCascDauCharged);
 
-      KFParticle kfpPosPr(kfpTrack0, kProton);
-      KFParticle kfpNegPi(kfpTrack1, kPiMinus);
-      KFParticle kfpNegKa(kfpTrackBach, kKMinus);
-      KFParticle kfpPosPi(kfpTrack0, kPiPlus);
-      KFParticle kfpNegPr(kfpTrack1, kProton);
-      KFParticle kfpPosKa(kfpTrackBach, kKPlus);
+      KFParticle kfPosPr(kfTrack0, kProton);
+      KFParticle kfNegPi(kfTrack1, kPiMinus);
+      KFParticle kfNegKa(kfTrackBach, kKMinus);
+      KFParticle kfPosPi(kfTrack0, kPiPlus);
+      KFParticle kfNegPr(kfTrack1, kProton);
+      KFParticle kfPosKa(kfTrackBach, kKPlus);
 
-      KFParticle kfpBachKaon;
-      KFParticle kfpPos;
-      KFParticle kfpNeg;
+      KFParticle kfBachKaon;
+      KFParticle kfPos;
+      KFParticle kfNeg;
       if (bachCharge < 0) {
-        kfpPos = kfpPosPr;
-        kfpNeg = kfpNegPi;
-        kfpBachKaon = kfpNegKa;
+        kfPos = kfPosPr;
+        kfNeg = kfNegPi;
+        kfBachKaon = kfNegKa;
       } else {
-        kfpPos = kfpPosPi;
-        kfpNeg = kfpNegPr;
-        kfpBachKaon = kfpPosKa;
+        kfPos = kfPosPi;
+        kfNeg = kfNegPr;
+        kfBachKaon = kfPosKa;
       }
 
       //__________________________________________
       //*>~<* step 1 : construct V0 with KF
-      const KFParticle* v0Daughters[2] = {&kfpPos, &kfpNeg};
+      const KFParticle* v0Daughters[2] = {&kfPos, &kfNeg};
       // construct V0
       KFParticle kfV0;
       kfV0.SetConstructMethod(kfConstructMethod);
@@ -695,7 +695,7 @@ struct HfCandidateCreatorXic0Omegac0 {
 
       //__________________________________________
       //*>~<* step 2 : reconstruct cascade(Omega) with KF
-      const KFParticle* omegaDaugthers[2] = {&kfpBachKaon, &kfV0};
+      const KFParticle* omegaDaugthers[2] = {&kfBachKaon, &kfV0};
       // construct cascade
       KFParticle kfOmega;
       kfOmega.SetConstructMethod(kfConstructMethod);
@@ -727,9 +727,9 @@ struct HfCandidateCreatorXic0Omegac0 {
       //__________________________________________
       //*>~<* step 3 : reconstruc Omegac0 with KF
       // Create KF charm bach Pion from track
-      KFPTrack kfpTrackBachPion = createKFPTrackFromTrack(trackCharmBachelor);
-      KFParticle kfpBachPion(kfpTrackBachPion, kPiPlus);
-      const KFParticle* omegaC0Daugthers[2] = {&kfpBachPion, &kfOmega};
+      KFPTrack kfTrackBachPion = createKFPTrackFromTrack(trackCharmBachelor);
+      KFParticle kfBachPion(kfTrackBachPion, kPiPlus);
+      const KFParticle* omegaC0Daugthers[2] = {&kfBachPion, &kfOmega};
 
       // construct OmegaC0
       KFParticle kfOmegaC0;
@@ -751,79 +751,79 @@ struct HfCandidateCreatorXic0Omegac0 {
       hCandidateCounter->Fill(2);
 
       // PV
-      KFPVertex kfpVertex = createKFPVertexFromCollision(collision);
-      KFParticle kfPV(kfpVertex);
+      KFPVertex kfVertex = createKFPVertexFromCollision(collision);
+      KFParticle kfPV(kfVertex);
 
       // set production vertex;
-      kfpNeg.SetProductionVertex(kfV0);
-      kfpPos.SetProductionVertex(kfV0);
+      kfNeg.SetProductionVertex(kfV0);
+      kfPos.SetProductionVertex(kfV0);
 
-      KFParticle kfpBachKaonToOmega = kfpBachKaon;
+      KFParticle kfBachKaonToOmega = kfBachKaon;
       KFParticle kfV0ToCasc = kfV0;
-      kfpBachKaonToOmega.SetProductionVertex(kfOmega);
+      kfBachKaonToOmega.SetProductionVertex(kfOmega);
       kfV0ToCasc.SetProductionVertex(kfOmega);
 
       KFParticle kfOmegaToOmegaC = kfOmega;
-      KFParticle kfpBachPionToOmegaC = kfpBachPion;
-      kfpBachPionToOmegaC.SetProductionVertex(kfOmegaC0);
+      KFParticle kfBachPionToOmegaC = kfBachPion;
+      kfBachPionToOmegaC.SetProductionVertex(kfOmegaC0);
       kfOmegaToOmegaC.SetProductionVertex(kfOmegaC0);
 
       // KFParticle to PV
       KFParticle kfV0ToPv = kfV0;
       KFParticle kfOmegaToPv = kfOmega;
       KFParticle kfOmegac0ToPv = kfOmegaC0;
-      KFParticle kfpPiFromOmegacToPv = kfpBachPion;
+      KFParticle kfPiFromOmegacToPv = kfBachPion;
 
       kfV0ToPv.SetProductionVertex(kfPV);
       kfOmegaToPv.SetProductionVertex(kfPV);
       kfOmegac0ToPv.SetProductionVertex(kfPV);
-      kfpPiFromOmegacToPv.SetProductionVertex(kfPV);
+      kfPiFromOmegacToPv.SetProductionVertex(kfPV);
       //------------get updated daughter tracks after vertex fit  ---------------
-      auto trackParVarCharmBachelor = getTrackParCovFromKFP(kfpBachPionToOmegaC, o2::track::PID::Pion, kfpBachPionToOmegaC.GetQ()); // chrambaryon bach pion
+      auto trackParVarCharmBachelor = getTrackParCovFromKFP(kfBachPionToOmegaC, o2::track::PID::Pion, kfBachPionToOmegaC.GetQ()); // chrambaryon bach pion
       trackParVarCharmBachelor.setAbsCharge(1);
 
-      omegaDauChargedTrackParCov = getTrackParCovFromKFP(kfpBachKaonToOmega, o2::track::PID::Kaon, kfpBachKaonToOmega.GetQ()); // Cascade bach kaon
+      omegaDauChargedTrackParCov = getTrackParCovFromKFP(kfBachKaonToOmega, o2::track::PID::Kaon, kfBachKaonToOmega.GetQ()); // Cascade bach kaon
       omegaDauChargedTrackParCov.setAbsCharge(1);
       o2::track::TrackParCov trackCasc = getTrackParCovFromKFP(kfOmegaToOmegaC, kfOmegaToOmegaC.GetPDG(), 0);
       trackCasc.setAbsCharge(0);
 
-      trackParCovV0Dau0 = getTrackParCovFromKFP(kfpPos, kfpPos.GetPDG(), kfpPos.GetQ()); // V0 postive daughter
+      trackParCovV0Dau0 = getTrackParCovFromKFP(kfPos, kfPos.GetPDG(), kfPos.GetQ()); // V0 postive daughter
       trackParCovV0Dau0.setAbsCharge(1);
-      trackParCovV0Dau1 = getTrackParCovFromKFP(kfpNeg, kfpNeg.GetPDG(), kfpNeg.GetQ()); // V0 negtive daughter
+      trackParCovV0Dau1 = getTrackParCovFromKFP(kfNeg, kfNeg.GetPDG(), kfNeg.GetQ()); // V0 negtive daughter
       trackParCovV0Dau1.setAbsCharge(1);
 
       //-------------------------- V0 info---------------------------
       // pseudorapidity
-      float pseudorapV0Dau0 = kfpPos.GetEta();
-      float pseudorapV0Dau1 = kfpNeg.GetEta();
+      float pseudorapV0Dau0 = kfPos.GetEta();
+      float pseudorapV0Dau1 = kfNeg.GetEta();
 
       // info from from KFParticle
       std::array<float, 3> pVecV0 = {kfV0ToCasc.GetPx(), kfV0ToCasc.GetPy(), kfV0ToCasc.GetPz()}; // pVec stands for vector containing the 3-momentum components
       std::array<float, 3> vertexV0 = {kfV0ToCasc.GetX(), kfV0ToCasc.GetY(), kfV0ToCasc.GetZ()};
-      std::array<float, 3> pVecV0Dau0 = {kfpPos.GetPx(), kfpPos.GetPy(), kfpPos.GetPz()};
-      std::array<float, 3> pVecV0Dau1 = {kfpNeg.GetPx(), kfpNeg.GetPy(), kfpNeg.GetPz()};
+      std::array<float, 3> pVecV0Dau0 = {kfPos.GetPx(), kfPos.GetPy(), kfPos.GetPz()};
+      std::array<float, 3> pVecV0Dau1 = {kfNeg.GetPx(), kfNeg.GetPy(), kfNeg.GetPz()};
 
       //-------------------reconstruct cascade track------------------
       // pseudorapidity
-      float pseudorapCascBachelor = kfpBachKaonToOmega.GetEta();
+      float pseudorapCascBachelor = kfBachKaonToOmega.GetEta();
 
       // info from KFParticle
       std::array<float, 3> vertexCasc = {kfOmegaToOmegaC.GetX(), kfOmegaToOmegaC.GetY(), kfOmegaToOmegaC.GetZ()};
-      std::array<float, 3> pVecCascBachelor = {kfpBachKaonToOmega.GetPx(), kfpBachKaonToOmega.GetPy(), kfpBachKaonToOmega.GetPz()};
+      std::array<float, 3> pVecCascBachelor = {kfBachKaonToOmega.GetPx(), kfBachKaonToOmega.GetPy(), kfBachKaonToOmega.GetPz()};
 
       auto primaryVertex = getPrimaryVertex(collision);
       std::array<float, 3> pvCoord = {collision.posX(), collision.posY(), collision.posZ()};
       std::array<float, 3> vertexCharmBaryonFromFitter = {0.0, 0.0, 0.0}; // This variable get from DCAfitter in default process, in KF process it is set as 0.
       std::array<float, 3> pVecCharmBachelorAsD;
-      pVecCharmBachelorAsD[0] = kfpBachPionToOmegaC.GetPx();
-      pVecCharmBachelorAsD[1] = kfpBachPionToOmegaC.GetPy();
-      pVecCharmBachelorAsD[2] = kfpBachPionToOmegaC.GetPz();
+      pVecCharmBachelorAsD[0] = kfBachPionToOmegaC.GetPx();
+      pVecCharmBachelorAsD[1] = kfBachPionToOmegaC.GetPy();
+      pVecCharmBachelorAsD[2] = kfBachPionToOmegaC.GetPz();
 
       std::array<float, 3> pVecCharmBaryon = {kfOmegaC0.GetPx(), kfOmegaC0.GetPy(), kfOmegaC0.GetPz()};
       std::array<float, 3> coordVtxCharmBaryon = {kfOmegaC0.GetX(), kfOmegaC0.GetY(), kfOmegaC0.GetZ()};
       auto covVtxCharmBaryon = kfOmegaC0.CovarianceMatrix();
       float covMatrixPV[6];
-      kfpVertex.GetCovarianceMatrix(covMatrixPV);
+      kfVertex.GetCovarianceMatrix(covMatrixPV);
 
       // impact parameters
       o2::dataformats::DCA impactParameterV0Dau0;
@@ -840,7 +840,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       float dcazCascBachelor = impactParameterKaFromCasc.getZ();
 
       // pseudorapidity
-      float pseudorapCharmBachelor = kfpBachPionToOmegaC.GetEta();
+      float pseudorapCharmBachelor = kfBachPionToOmegaC.GetEta();
 
       // impact parameters
       o2::dataformats::DCA impactParameterCasc;
@@ -887,10 +887,10 @@ struct HfCandidateCreatorXic0Omegac0 {
       // KF topo Chi2
       kfOmegac0Candidate.chi2TopoV0ToPv = kfV0ToPv.GetChi2();
       kfOmegac0Candidate.chi2TopoCascToPv = kfOmegaToPv.GetChi2();
-      kfOmegac0Candidate.chi2TopoPiFromOmegacToPv = kfpPiFromOmegacToPv.GetChi2();
+      kfOmegac0Candidate.chi2TopoPiFromOmegacToPv = kfPiFromOmegacToPv.GetChi2();
       kfOmegac0Candidate.chi2TopoOmegacToPv = kfOmegac0ToPv.GetChi2();
 
-      auto cascBachTopoChi2 = kfpBachKaonToOmega.GetChi2();
+      auto cascBachTopoChi2 = kfBachKaonToOmega.GetChi2();
       kfOmegac0Candidate.chi2TopoV0ToCasc = kfV0ToCasc.GetChi2();
       kfOmegac0Candidate.chi2TopoCascToOmegac = kfOmegaToOmegaC.GetChi2();
 
@@ -900,11 +900,11 @@ struct HfCandidateCreatorXic0Omegac0 {
       kfOmegac0Candidate.ldlOmegac = ldlFromKF(kfOmegaC0, kfPV);
 
       // KF dca
-      kfOmegac0Candidate.kfDcaXYPiFromOmegac = kfpBachPionToOmegaC.GetDistanceFromVertexXY(kfPV);
-      kfOmegac0Candidate.kfDcaV0Dau = kfpNeg.GetDistanceFromParticle(kfpPos);
-      kfOmegac0Candidate.kfDcaCascDau = kfpBachKaonToOmega.GetDistanceFromParticle(kfV0ToCasc);
+      kfOmegac0Candidate.kfDcaXYPiFromOmegac = kfBachPionToOmegaC.GetDistanceFromVertexXY(kfPV);
+      kfOmegac0Candidate.kfDcaV0Dau = kfNeg.GetDistanceFromParticle(kfPos);
+      kfOmegac0Candidate.kfDcaCascDau = kfBachKaonToOmega.GetDistanceFromParticle(kfV0ToCasc);
       kfOmegac0Candidate.kfDcaXYCascToPv = kfOmegaToOmegaC.GetDistanceFromVertexXY(kfPV);
-      kfOmegac0Candidate.kfDcaOmegacDau = kfpBachPionToOmegaC.GetDistanceFromParticle(kfOmegaToOmegaC);
+      kfOmegac0Candidate.kfDcaOmegacDau = kfBachPionToOmegaC.GetDistanceFromParticle(kfOmegaToOmegaC);
 
       // KF decay length
       float DecayLxy_Lam, err_DecayLxy_Lam;
@@ -937,14 +937,14 @@ struct HfCandidateCreatorXic0Omegac0 {
       kfOmegac0Candidate.massOmegac = massOmegaC0;
 
       // KF pT
-      kfOmegac0Candidate.ptPiFromOmegac = kfpBachPionToOmegaC.GetPt();
+      kfOmegac0Candidate.ptPiFromOmegac = kfBachPionToOmegaC.GetPt();
       kfOmegac0Candidate.ptOmegac = kfOmegac0ToPv.GetPt();
 
       // KF rapidity
       kfOmegac0Candidate.rapOmegac = kfOmegac0ToPv.GetRapidity();
 
       // KF cosThetaStar
-      kfOmegac0Candidate.cosThetaStarPiFromOmegac = cosThetaStarFromKF(0, 4332, 211, 3312, kfpBachPionToOmegaC, kfOmegaToOmegaC);
+      kfOmegac0Candidate.cosThetaStarPiFromOmegac = cosThetaStarFromKF(0, 4332, 211, 3312, kfBachPionToOmegaC, kfOmegaToOmegaC);
 
       // KF ct
       kfOmegac0Candidate.ctV0 = kfV0ToCasc.GetLifeTime();
