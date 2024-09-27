@@ -1694,8 +1694,8 @@ struct JetFragmentation {
     auto posTrack = v0.template posTrack_as<V0DaughterType>();
     auto negPart = negTrack.template mcParticle_as<ParticleDaughterType>();
     auto posPart = posTrack.template mcParticle_as<ParticleDaughterType>();
-    registry.fill(HIST("matching/jets/V0/partJetPtDetJetPtPartV0PtPosPtRatioPtRelDiffPt"), partJet.pt(), detJet.pt(), particle.pt(), posTrack.pt(), posTrack.pt() / posPart.pt(), (posTrack.pt() - posPart.pt()) / posPart.pt(), weight);
-    registry.fill(HIST("matching/jets/V0/partJetPtDetJetPtPartV0PtNegPtRatioPtRelDiffPt"), partJet.pt(), detJet.pt(), particle.pt(), negTrack.pt(), negTrack.pt() / negPart.pt(), (negTrack.pt() - negPart.pt()) / negPart.pt(), weight);
+    registry.fill(HIST("matching/jets/V0/partJetPtDetJetPtPartV0PtPosPtRatioPtRelDiffPt"), partJet.pt(), detJet.pt(), particle.pt(), posPart.pt(), posTrack.pt() / posPart.pt(), (posTrack.pt() - posPart.pt()) / posPart.pt(), weight);
+    registry.fill(HIST("matching/jets/V0/partJetPtDetJetPtPartV0PtNegPtRatioPtRelDiffPt"), partJet.pt(), detJet.pt(), particle.pt(), negPart.pt(), negTrack.pt() / negPart.pt(), (negTrack.pt() - negPart.pt()) / negPart.pt(), weight);
   }
   // Reconstructed signal for in-jet V0s
   template <typename CollisionType, typename DetJetType, typename PartJetType, typename V0Type, typename ParticleType>
@@ -2715,7 +2715,7 @@ struct JetFragmentation {
           continue;
         }
         for (const auto& mcpjet : mcdjet.template matchedJetGeo_as<MatchedMCPJets>()) {
-          fillMcPerpConeHists(jcoll, mcdjet, v0s, particles, weight);
+          fillMcPerpConeHists(jcoll, mcdjet, mcpjet, v0s, particles, weight);
         }
       }
     }
