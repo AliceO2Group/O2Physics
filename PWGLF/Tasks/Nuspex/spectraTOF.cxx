@@ -1893,7 +1893,7 @@ struct tofSpectra {
       const auto& mcParticle = track.mcParticle();
 
       static_for<0, 17>([&](auto i) {
-        fillTrackHistograms_MC<i>(track, mcParticle, track.collision_as<RecoMCCollisions>());
+        fillTrackHistograms_MC<i>(track, mcParticle, track.collision_as<RecoMCCollisions>(), mcParticles);
       });
     }
     if (includeCentralityMC) {
