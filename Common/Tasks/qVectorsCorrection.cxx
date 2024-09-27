@@ -75,6 +75,7 @@ struct qVectorsCorrection {
   Configurable<bool> cfgQAFinal{"cfgQAFinal", false, "draw final q-vector steps"};
   Configurable<bool> cfgQAFlowStudy{"cfgQAFlowStudy", false, "configurable for flow study"};
   Configurable<bool> cfgQAOccupancyStudy{"cfgQAOccupancyStudy", false, "configurable for occupancy study"};
+  Configurable<bool> cfgAddEvtSelPileup{"cfgAddEvtSelPileup", false, "configurable for pileup selection"};
 
   Configurable<float> cfgMinPt{"cfgMinPt", 0.15, "Minimum transverse momentum for charged track"};
   Configurable<float> cfgMaxEta{"cfgMaxEta", 0.8, "Maximum pseudorapidiy for charged track"};
@@ -546,6 +547,9 @@ struct qVectorsCorrection {
       return;
     }
     if (cfgAddEvtSel && (qVec.trackOccupancyInTimeRange() > cfgMaxOccupancy || qVec.trackOccupancyInTimeRange() < cfgMinOccupancy)) {
+      return;
+    }
+    if (cfgAddEvtSelPileup && !qVec.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       return;
     }
 
