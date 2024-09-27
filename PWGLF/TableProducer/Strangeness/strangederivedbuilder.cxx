@@ -312,8 +312,8 @@ struct strangederivedbuilder {
 
       // +-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+-<*>-+
       // set UD information in case present at this stage
-      auto udCollIterator = udCollisions.begin(); 
-      if constexpr ( requires {udCollIterator.gapSide(); }) { // check if this table is the expected one
+      auto udCollIterator = udCollisions.begin();
+      if constexpr (requires { udCollIterator.gapSide(); }) { // check if this table is the expected one
         auto udCollision = udCollisions.sliceBy(udCollisionsPerCollision, collIdx);
         if (udCollision.size() == 1) { // check that the slicing provide a unique UD collision
           for (auto& udColl : udCollision) {
@@ -341,7 +341,7 @@ struct strangederivedbuilder {
       // fill collision tables
       if (strange || fillEmptyCollisions) {
         strangeColl(collision.posX(), collision.posY(), collision.posZ());
-        if constexpr ( requires {collision.mcCollisionId(); }) { // check if MC information is available and if so fill labels
+        if constexpr (requires { collision.mcCollisionId(); }) { // check if MC information is available and if so fill labels
           strangeCollLabels(collision.mcCollisionId());
         }
         strangeCents(collision.centFT0M(), collision.centFT0A(),
@@ -390,10 +390,10 @@ struct strangederivedbuilder {
     for (const auto& casc : Cascades) {
       casccollref(CascadeCollIndices[casc.globalIndex()]);
     }
-    for (const auto& casc : KFCascades){
+    for (const auto& casc : KFCascades) {
       kfcasccollref(KFCascadeCollIndices[casc.globalIndex()]);
     }
-    for (const auto& casc : KFCascades){
+    for (const auto& casc : KFCascades) {
       tracasccollref(TraCascadeCollIndices[casc.globalIndex()]);
     }
   }
@@ -412,7 +412,6 @@ struct strangederivedbuilder {
                      mccollision.multMCNParticlesEta10());
     }
   }
-
 
   void processCollisions(soa::Join<aod::Collisions, aod::FT0Mults, aod::FV0Mults, aod::FDDMults, aod::PVMults, aod::ZDCMults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::EvSels, aod::MultsExtra, aod::MultsGlobal> const& collisions, aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, aod::BCsWithTimestamps const& /*bcs*/)
   {
