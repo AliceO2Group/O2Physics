@@ -112,6 +112,7 @@ struct HeavyIonMultiplicity {
   ConfigurableAxis FT0CmultHistBin{"FT0CMultDistBinning", {501, -0.5, 500.5}, ""};
   ConfigurableAxis pTHistBin{"pTHistBin", {200, 0., 20.}, ""};
   ConfigurableAxis CentralityBinning{"CentralityBinning", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, ""};
+  ConfigurableAxis OccupancyBin{"OccupancyBin", {3000., 0., 15000.}, ""};
 
   Configurable<bool> IsApplySameBunchPileup{"IsApplySameBunchPileup", true, "Enable SameBunchPileup cut"};
   Configurable<bool> IsApplyGoodZvtxFT0vsPV{"IsApplyGoodZvtxFT0vsPV", true, "Enable GoodZvtxFT0vsPV cut"};
@@ -132,6 +133,7 @@ struct HeavyIonMultiplicity {
     AxisSpec axisFT0CMult = {FT0CmultHistBin};
     AxisSpec CentAxis = {CentralityBinning, "Centrality", "CentralityAxis"};
     AxisSpec axisPT = {pTHistBin};
+    AxisSpec axisOccupancy = {OccupancyBin};
 
     histos.add("EventHist", "EventHist", kTH1D, {axisEvent}, false);
     histos.add("VtxZHist", "VtxZHist", kTH1D, {axisVtxZ}, false);
@@ -153,6 +155,7 @@ struct HeavyIonMultiplicity {
       histos.add("CentHistInsideTrackloop", "CentHistInsideTrackloop", kTH1D, {axisCent}, false);
       histos.add("hdatamult", "hdatamult", kTHnSparseD, {axisVtxZ, axisMult, CentAxis}, false);
       histos.add("hdatadndeta", "hdatadndeta", kTHnSparseD, {axisVtxZ, CentAxis, axisEta, axisPhi, axisPT, AxisTrackType}, false);
+      histos.add("hdatadndetaOccupancy", "hdatadndetaOccupancy", kTHnSparseD, {axisVtxZ, CentAxis, axisEta, axisPhi, axisOccupancy}, false);
       histos.add("hdatazvtxcent", "hdatazvtxcent", kTH2D, {axisVtxZ, CentAxis}, false);
       histos.add("PhiVsEtaHistBeforePhiCut", "PhiVsEtaHistBeforePhiCut", kTH2D, {axisPhi2, axisEta}, false);
       histos.add("PhiVsEtaHistAfterPhiCut", "PhiVsEtaHistAfterPhiCut", kTH2D, {axisPhi2, axisEta}, false);
@@ -277,6 +280,7 @@ struct HeavyIonMultiplicity {
       histos.fill(HIST("PhiVsEtaHistAfterPhiCut"), track.phi(), track.eta());
       NchTracks++;
       histos.fill(HIST("CentHistInsideTrackloop"), collision.centFT0C());
+      histos.fill(HIST("hdatadndetaOccupancy"), collision.posZ(), collision.centFT0C(), track.eta(), track.phi(), collision.trackOccupancyInTimeRange());
       histos.fill(HIST("hdatadndeta"), collision.posZ(), collision.centFT0C(), track.eta(), track.phi(), track.pt(), kGlobalplusITS);
 
       if (track.hasTPC()) {
