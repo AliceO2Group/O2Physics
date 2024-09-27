@@ -125,6 +125,8 @@ struct spvector {
   Configurable<float> lfinebinCent{"lfinebinCent", 0.0, "lower bin value in cent fine histograms"};
   Configurable<float> hfinebinCent{"hfinebinCent", 80.0, "higher bin value in cent fine histograms"};
   Configurable<bool> QA{"QA", false, "QA histograms"};
+  Configurable<bool> ispolarization{"ispolarization", false, "Flag to check polarization"};
+  Configurable<bool> finecorrection{"finecorrection", false, "Flag to check fine correction"};
   Configurable<bool> usesparse{"usesparse", false, "flag to use sparse histogram"};
   Configurable<bool> usenormqn{"usenormqn", true, "flag to use normalized qs"};
   Configurable<bool> refsys{"refsys", true, "flag to use own reference system"};
@@ -193,36 +195,41 @@ struct spvector {
     histos.add("hpQyZDCAC", "hpQyZDCAC", kTProfile, {centfineAxis});
     histos.add("hpQxZDCAQyZDCC", "hpQxZDCAQyZDCC", kTProfile, {centfineAxis});
     histos.add("hpQxZDCCQyZDCA", "hpQxZDCCQyZDCA", kTProfile, {centfineAxis});
-    if (usesparse == 1) {
-      histos.add("hsQxZDCA", "hsQxZDCA", kTHnSparseF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
-      histos.add("hsQyZDCA", "hsQyZDCA", kTHnSparseF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
-      histos.add("hsQxZDCC", "hsQxZDCC", kTHnSparseF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
-      histos.add("hsQyZDCC", "hsQyZDCC", kTHnSparseF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
-    } else {
-      histos.add("hnQxZDCA", "hnQxZDCA", kTHnF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
-      histos.add("hnQyZDCA", "hnQyZDCA", kTHnF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
-      histos.add("hnQxZDCC", "hnQxZDCC", kTHnF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
-      histos.add("hnQyZDCC", "hnQyZDCC", kTHnF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
 
-      histos.add("hcentQxZDCA", "hcentQxZDCA", kTH2F, {{centfineAxis}, {qxZDCAxis}});
-      histos.add("hcentQyZDCA", "hcentQyZDCA", kTH2F, {{centfineAxis}, {qxZDCAxis}});
-      histos.add("hcentQxZDCC", "hcentQxZDCC", kTH2F, {{centfineAxis}, {qxZDCAxis}});
-      histos.add("hcentQyZDCC", "hcentQyZDCC", kTH2F, {{centfineAxis}, {qxZDCAxis}});
+    if (!ispolarization) {
+      if (usesparse == 1) {
+        histos.add("hsQxZDCA", "hsQxZDCA", kTHnSparseF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
+        histos.add("hsQyZDCA", "hsQyZDCA", kTHnSparseF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
+        histos.add("hsQxZDCC", "hsQxZDCC", kTHnSparseF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
+        histos.add("hsQyZDCC", "hsQyZDCC", kTHnSparseF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
+      } else {
+        histos.add("hnQxZDCA", "hnQxZDCA", kTHnF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
+        histos.add("hnQyZDCA", "hnQyZDCA", kTHnF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
+        histos.add("hnQxZDCC", "hnQxZDCC", kTHnF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
+        histos.add("hnQyZDCC", "hnQyZDCC", kTHnF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
 
-      histos.add("hvxQxZDCA", "hvxQxZDCA", kTH2F, {{vxfineAxis}, {qxZDCAxis}});
-      histos.add("hvxQyZDCA", "hvxQyZDCA", kTH2F, {{vxfineAxis}, {qxZDCAxis}});
-      histos.add("hvxQxZDCC", "hvxQxZDCC", kTH2F, {{vxfineAxis}, {qxZDCAxis}});
-      histos.add("hvxQyZDCC", "hvxQyZDCC", kTH2F, {{vxfineAxis}, {qxZDCAxis}});
+        if (finecorrection) {
+          histos.add("hcentQxZDCA", "hcentQxZDCA", kTH2F, {{centfineAxis}, {qxZDCAxis}});
+          histos.add("hcentQyZDCA", "hcentQyZDCA", kTH2F, {{centfineAxis}, {qxZDCAxis}});
+          histos.add("hcentQxZDCC", "hcentQxZDCC", kTH2F, {{centfineAxis}, {qxZDCAxis}});
+          histos.add("hcentQyZDCC", "hcentQyZDCC", kTH2F, {{centfineAxis}, {qxZDCAxis}});
 
-      histos.add("hvyQxZDCA", "hvyQxZDCA", kTH2F, {{vyfineAxis}, {qxZDCAxis}});
-      histos.add("hvyQyZDCA", "hvyQyZDCA", kTH2F, {{vyfineAxis}, {qxZDCAxis}});
-      histos.add("hvyQxZDCC", "hvyQxZDCC", kTH2F, {{vyfineAxis}, {qxZDCAxis}});
-      histos.add("hvyQyZDCC", "hvyQyZDCC", kTH2F, {{vyfineAxis}, {qxZDCAxis}});
+          histos.add("hvxQxZDCA", "hvxQxZDCA", kTH2F, {{vxfineAxis}, {qxZDCAxis}});
+          histos.add("hvxQyZDCA", "hvxQyZDCA", kTH2F, {{vxfineAxis}, {qxZDCAxis}});
+          histos.add("hvxQxZDCC", "hvxQxZDCC", kTH2F, {{vxfineAxis}, {qxZDCAxis}});
+          histos.add("hvxQyZDCC", "hvxQyZDCC", kTH2F, {{vxfineAxis}, {qxZDCAxis}});
 
-      histos.add("hvzQxZDCA", "hvzQxZDCA", kTH2F, {{vzfineAxis}, {qxZDCAxis}});
-      histos.add("hvzQyZDCA", "hvzQyZDCA", kTH2F, {{vzfineAxis}, {qxZDCAxis}});
-      histos.add("hvzQxZDCC", "hvzQxZDCC", kTH2F, {{vzfineAxis}, {qxZDCAxis}});
-      histos.add("hvzQyZDCC", "hvzQyZDCC", kTH2F, {{vzfineAxis}, {qxZDCAxis}});
+          histos.add("hvyQxZDCA", "hvyQxZDCA", kTH2F, {{vyfineAxis}, {qxZDCAxis}});
+          histos.add("hvyQyZDCA", "hvyQyZDCA", kTH2F, {{vyfineAxis}, {qxZDCAxis}});
+          histos.add("hvyQxZDCC", "hvyQxZDCC", kTH2F, {{vyfineAxis}, {qxZDCAxis}});
+          histos.add("hvyQyZDCC", "hvyQyZDCC", kTH2F, {{vyfineAxis}, {qxZDCAxis}});
+
+          histos.add("hvzQxZDCA", "hvzQxZDCA", kTH2F, {{vzfineAxis}, {qxZDCAxis}});
+          histos.add("hvzQyZDCA", "hvzQyZDCA", kTH2F, {{vzfineAxis}, {qxZDCAxis}});
+          histos.add("hvzQxZDCC", "hvzQxZDCC", kTH2F, {{vzfineAxis}, {qxZDCAxis}});
+          histos.add("hvzQyZDCC", "hvzQyZDCC", kTH2F, {{vzfineAxis}, {qxZDCAxis}});
+        }
+      }
     }
 
     histos.add("PsiZDCC", "PsiZDCC", kTH2F, {centfineAxis, phiAxis});
@@ -548,36 +555,40 @@ struct spvector {
       histos.fill(HIST("hpQxZDCAQyZDCC"), centrality, (qxZDCA * qyZDCC));
       histos.fill(HIST("hpQxZDCCQyZDCA"), centrality, (qxZDCC * qyZDCA));
 
-      if (usesparse) {
-        histos.fill(HIST("hsQxZDCA"), centrality, vx, vy, vz, qxZDCA);
-        histos.fill(HIST("hsQyZDCA"), centrality, vx, vy, vz, qyZDCA);
-        histos.fill(HIST("hsQxZDCC"), centrality, vx, vy, vz, qxZDCC);
-        histos.fill(HIST("hsQyZDCC"), centrality, vx, vy, vz, qyZDCC);
-      } else {
-        histos.fill(HIST("hnQxZDCA"), centrality, vx, vy, vz, qxZDCA);
-        histos.fill(HIST("hnQyZDCA"), centrality, vx, vy, vz, qyZDCA);
-        histos.fill(HIST("hnQxZDCC"), centrality, vx, vy, vz, qxZDCC);
-        histos.fill(HIST("hnQyZDCC"), centrality, vx, vy, vz, qyZDCC);
+      if (!ispolarization) {
+        if (usesparse) {
+          histos.fill(HIST("hsQxZDCA"), centrality, vx, vy, vz, qxZDCA);
+          histos.fill(HIST("hsQyZDCA"), centrality, vx, vy, vz, qyZDCA);
+          histos.fill(HIST("hsQxZDCC"), centrality, vx, vy, vz, qxZDCC);
+          histos.fill(HIST("hsQyZDCC"), centrality, vx, vy, vz, qyZDCC);
+        } else {
+          histos.fill(HIST("hnQxZDCA"), centrality, vx, vy, vz, qxZDCA);
+          histos.fill(HIST("hnQyZDCA"), centrality, vx, vy, vz, qyZDCA);
+          histos.fill(HIST("hnQxZDCC"), centrality, vx, vy, vz, qxZDCC);
+          histos.fill(HIST("hnQyZDCC"), centrality, vx, vy, vz, qyZDCC);
 
-        histos.fill(HIST("hcentQxZDCA"), centrality, qxZDCA);
-        histos.fill(HIST("hcentQyZDCA"), centrality, qyZDCA);
-        histos.fill(HIST("hcentQxZDCC"), centrality, qxZDCC);
-        histos.fill(HIST("hcentQyZDCC"), centrality, qyZDCC);
+          if (finecorrection) {
+            histos.fill(HIST("hcentQxZDCA"), centrality, qxZDCA);
+            histos.fill(HIST("hcentQyZDCA"), centrality, qyZDCA);
+            histos.fill(HIST("hcentQxZDCC"), centrality, qxZDCC);
+            histos.fill(HIST("hcentQyZDCC"), centrality, qyZDCC);
 
-        histos.fill(HIST("hvxQxZDCA"), vx, qxZDCA);
-        histos.fill(HIST("hvxQyZDCA"), vx, qyZDCA);
-        histos.fill(HIST("hvxQxZDCC"), vx, qxZDCC);
-        histos.fill(HIST("hvxQyZDCC"), vx, qyZDCC);
+            histos.fill(HIST("hvxQxZDCA"), vx, qxZDCA);
+            histos.fill(HIST("hvxQyZDCA"), vx, qyZDCA);
+            histos.fill(HIST("hvxQxZDCC"), vx, qxZDCC);
+            histos.fill(HIST("hvxQyZDCC"), vx, qyZDCC);
 
-        histos.fill(HIST("hvyQxZDCA"), vy, qxZDCA);
-        histos.fill(HIST("hvyQyZDCA"), vy, qyZDCA);
-        histos.fill(HIST("hvyQxZDCC"), vy, qxZDCC);
-        histos.fill(HIST("hvyQyZDCC"), vy, qyZDCC);
+            histos.fill(HIST("hvyQxZDCA"), vy, qxZDCA);
+            histos.fill(HIST("hvyQyZDCA"), vy, qyZDCA);
+            histos.fill(HIST("hvyQxZDCC"), vy, qxZDCC);
+            histos.fill(HIST("hvyQyZDCC"), vy, qyZDCC);
 
-        histos.fill(HIST("hvzQxZDCA"), vz, qxZDCA);
-        histos.fill(HIST("hvzQyZDCA"), vz, qyZDCA);
-        histos.fill(HIST("hvzQxZDCC"), vz, qxZDCC);
-        histos.fill(HIST("hvzQyZDCC"), vz, qyZDCC);
+            histos.fill(HIST("hvzQxZDCA"), vz, qxZDCA);
+            histos.fill(HIST("hvzQyZDCA"), vz, qyZDCA);
+            histos.fill(HIST("hvzQxZDCC"), vz, qxZDCC);
+            histos.fill(HIST("hvzQyZDCC"), vz, qyZDCC);
+          }
+        }
       }
 
       if (QA) {
