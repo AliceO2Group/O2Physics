@@ -46,8 +46,6 @@ using namespace o2::analysis;
 #define IDENTIFIEDBFFILTERLOGCOLLISIONS debug
 #define IDENTIFIEDBFFILTERLOGTRACKS debug
 
-
-
 namespace o2::analysis::identifiedbffilter
 {
 using IdBfFullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA>;
@@ -67,10 +65,8 @@ using IdBfFullTracksFullPIDDetLevelAmbiguous = soa::Join<IdBfFullTracksDetLevelA
 
 bool fullDerivedData = false; /* produce full derived data for its external storage */
 
-
 TList* ccdblst = nullptr;
 bool loadfromccdb = false;
-
 
 //============================================================================================
 // The IdentifiedBfFilter histogram objects
@@ -586,8 +582,6 @@ T computeRMS(std::vector<T>& vec)
   return stdev;
 }
 
-
-
 struct IdentifiedBfFilterTracks {
 
   struct : ConfigurableGroup {
@@ -652,24 +646,22 @@ struct IdentifiedBfFilterTracks {
   {
     LOGF(info, "IdentifiedBfFilterTracks::init()");
 
-
-    //ccdb info
+    // ccdb info
     ccdb->setURL(cfgcentersinputfile.cfgCCDBUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
-    LOGF(info,"Initizalized CCDB");
+    LOGF(info, "Initizalized CCDB");
 
     loadfromccdb = cfgcentersinputfile.cfgCCDBPathName->length() > 0;
 
     if (ccdblst == nullptr) {
       if (loadfromccdb) {
-        LOGF(info,"Loading CCDB Objects");
+        LOGF(info, "Loading CCDB Objects");
 
         ccdblst = getCCDBInput(cfgcentersinputfile.cfgCCDBPathName->c_str(), cfgcentersinputfile.cfgCCDBDate->c_str());
-        for(int i = 0; i < kIdBfNoOfSpecies; i++){
-          fhNSigmaCorrection[i] = (TH1F*)ccdblst->FindObject(Form("centerBin_%s",speciesName[i]));
+        for (int i = 0; i < kIdBfNoOfSpecies; i++) {
+          fhNSigmaCorrection[i] = (TH1F*)ccdblst->FindObject(Form("centerBin_%s", speciesName[i]));
         }
-
       }
     }
     LOGF(info, "Loaded CCDB Objects");
@@ -933,9 +925,7 @@ struct IdentifiedBfFilterTracks {
       }
     }
     /* initialize access to the CCDB */
-
   }
-  
 
   template <typename TrackObject>
   inline MatchRecoGenSpecies IdentifyTrack(TrackObject const& track);
@@ -1181,7 +1171,6 @@ struct IdentifiedBfFilterTracks {
     filterParticles(gencollisions, particles);
   }
   PROCESS_SWITCH(IdentifiedBfFilterTracks, filterGenerated, "Generated particles filering", true)
-
 };
 
 template <typename ParticleObject>
@@ -1228,9 +1217,9 @@ void fillNSigmaHistos(TrackObject const& track)
   float actualTPCNSigmaPi = track.tpcNSigmaPi();
   float actualTPCNSigmaKa = track.tpcNSigmaKa();
   float actualTPCNSigmaPr = track.tpcNSigmaPr();
-  
-  if(track.tpcInnerParam()>0.3){
-    if (loadfromccdb){
+
+  if (track.tpcInnerParam() > 0.3) {
+    if (loadfromccdb) {
       actualTPCNSigmaEl = actualTPCNSigmaEl - fhNSigmaCorrection[kIdBfElectron]->GetBinContent(fhNSigmaCorrection[kIdBfElectron]->FindBin(track.tpcInnerParam()));
       actualTPCNSigmaPi = actualTPCNSigmaPi - fhNSigmaCorrection[kIdBfPion]->GetBinContent(fhNSigmaCorrection[kIdBfPion]->FindBin(track.tpcInnerParam()));
       actualTPCNSigmaKa = actualTPCNSigmaKa - fhNSigmaCorrection[kIdBfKaon]->GetBinContent(fhNSigmaCorrection[kIdBfKaon]->FindBin(track.tpcInnerParam()));
@@ -1268,8 +1257,8 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::IdentifyTrack(TrackObject c
 
   float nsigmas[kIdBfNoOfSpecies];
 
-  if(track.tpcInnerParam()>0.3){
-    if (loadfromccdb){
+  if (track.tpcInnerParam() > 0.3) {
+    if (loadfromccdb) {
       actualTPCNSigmaEl = actualTPCNSigmaEl - fhNSigmaCorrection[kIdBfElectron]->GetBinContent(fhNSigmaCorrection[kIdBfElectron]->FindBin(track.tpcInnerParam()));
       actualTPCNSigmaPi = actualTPCNSigmaPi - fhNSigmaCorrection[kIdBfPion]->GetBinContent(fhNSigmaCorrection[kIdBfPion]->FindBin(track.tpcInnerParam()));
       actualTPCNSigmaKa = actualTPCNSigmaKa - fhNSigmaCorrection[kIdBfKaon]->GetBinContent(fhNSigmaCorrection[kIdBfKaon]->FindBin(track.tpcInnerParam()));
@@ -1277,16 +1266,12 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::IdentifyTrack(TrackObject c
     }
   }
 
-
-
-
   if (track.tpcInnerParam() < 0.8 && !reqTOF && !onlyTOF) {
 
     nsigmas[kIdBfElectron] = actualTPCNSigmaEl;
     nsigmas[kIdBfPion] = actualTPCNSigmaPi;
     nsigmas[kIdBfKaon] = actualTPCNSigmaKa;
     nsigmas[kIdBfProton] = actualTPCNSigmaPr;
-  
 
   } else {
     /* introduce require TOF flag */
@@ -1295,8 +1280,6 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::IdentifyTrack(TrackObject c
       nsigmas[kIdBfPion] = sqrtf(actualTPCNSigmaPi * actualTPCNSigmaPi + track.tofNSigmaPi() * track.tofNSigmaPi());
       nsigmas[kIdBfKaon] = sqrtf(actualTPCNSigmaKa * actualTPCNSigmaKa + track.tofNSigmaKa() * track.tofNSigmaKa());
       nsigmas[kIdBfProton] = sqrtf(actualTPCNSigmaPr * actualTPCNSigmaPr + track.tofNSigmaPr() * track.tofNSigmaPr());
-    
-
 
     } else if (!reqTOF || !onlyTOF) {
       nsigmas[kIdBfElectron] = actualTPCNSigmaEl;
@@ -1313,7 +1296,6 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::IdentifyTrack(TrackObject c
       return kWrongSpecies;
     }
   }
-
 
   if (!pidEl) {
     nsigmas[kIdBfElectron] = 999.0f;
@@ -1344,7 +1326,6 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::IdentifyTrack(TrackObject c
         if (nsigmas[sp] < maxRejectSigma && nsigmas[sp] > minRejectSigma) { // If secondary species is in rejection range
           doublematch = true;                                         // Set double match true
           spDouble = MatchRecoGenSpecies(sp);
-
         }
       }
     }
@@ -1367,7 +1348,7 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::IdentifyTrack(TrackObject c
       if (sp_min_nsigma == 3) {
         fhNSigmaTPC_IdTrks[sp_min_nsigma]->Fill(actualTPCNSigmaPr, track.tpcInnerParam());
       }
-      
+
       return sp_min_nsigma;
     }
   } else {

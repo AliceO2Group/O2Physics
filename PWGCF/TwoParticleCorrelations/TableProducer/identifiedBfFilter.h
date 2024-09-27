@@ -45,7 +45,6 @@ namespace analysis
 namespace identifiedbffilter
 {
 
-
 /// \enum MatchRecoGenSpecies
 /// \brief The species considered by the matching test
 enum MatchRecoGenSpecies {
@@ -216,9 +215,6 @@ SystemType fSystem = kNoSystem;
 DataType fDataType = kData;
 CentMultEstimatorType fCentMultEstimator = kV0M;
 TriggerSelectionType fTriggerSelection = kMB;
-
-
-
 
 /* adaptations for the pp nightly checks */
 analysis::CheckRangeCfg traceDCAOutliers;
