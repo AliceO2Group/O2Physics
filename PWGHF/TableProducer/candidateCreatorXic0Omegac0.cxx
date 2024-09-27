@@ -710,7 +710,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       // err_massOmega > 0
       if (sigCasc <= 0)
         continue;
-      if (TMath::Abs(massCasc - MassOmegaMinus) > massToleranceCascade)
+      if (std::abs(massCasc - MassOmegaMinus) > massToleranceCascade)
         continue;
       // chi2>0 && NDF>0
       if (KFOmega.GetNDF() <= 0 || KFOmega.GetChi2() <= 0)
