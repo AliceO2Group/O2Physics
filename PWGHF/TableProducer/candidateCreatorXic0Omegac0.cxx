@@ -717,7 +717,7 @@ struct HfCandidateCreatorXic0Omegac0 {
         continue;
       kfOmegac0Candidate.chi2GeoCasc = kfOmega.GetChi2();
       KFParticle kfOmegaMassConstrained = kfOmega;
-      kfOmegaMassConstrained.SetNonlinearMassConstraint(o2::constants::physics::MassOmegaMinus);// set mass constrain to OmegaMinus
+      kfOmegaMassConstrained.SetNonlinearMassConstraint(o2::constants::physics::MassOmegaMinus); // set mass constrain to OmegaMinus
       if (kfUseCascadeMassConstraint) {
         // set mass constraint if requested
         KFParticle kfOmega = kfOmegaMassConstrained;
