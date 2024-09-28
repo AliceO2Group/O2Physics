@@ -265,7 +265,7 @@ struct DGCandProducer {
 
       // fill FITInfo
       upchelpers::FITInfo fitInfo{};
-      udhelpers::getFITinfo(fitInfo, bc.globalBC(), bcs, ft0s, fv0as, fdds);
+      udhelpers::getFITinfo(fitInfo, bc, bcs, ft0s, fv0as, fdds);
 
       // update DG candidates tables
       auto rtrwTOF = udhelpers::rPVtrwTOF<true>(tracks, collision.numContrib());
