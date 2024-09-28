@@ -38,6 +38,9 @@ struct MatchingQaTask {
   Configurable<bool> useVtxDiff{"useVtxDiff", 1, "use vertex difference for selection"};
   Configurable<bool> removeTOFmatches{"removeTOFmatches", 1, "remove TVX bcs matched to collisions with TOF tracks"};
   Configurable<bool> removeColsWithAmbiguousTOF{"removeColsWithAmbiguousTOF", 0, "remove collisions with ambiguous TOF signals"};
+  Configurable<bool> useITSROFconstraint{"useITSROFconstraint", 0, "use ITS ROF constraints for ITS-TPC vertices"};
+  Configurable<int> additionalDeltaBC{"additionalDeltaBC", 0, "Additional BC margin added to deltaBC for ITS-TPC vertices"};
+
   int lastRun = -1;
   int64_t bcSOR = -1;     // global bc of the start of the first orbit
   int32_t nBCsPerTF = -1; // duration of TF in bcs, should be 128*3564 or 32*3564
@@ -186,6 +189,12 @@ struct MatchingQaTask {
       histos.add("hBcInTFcut", "", kTH1F, {axisBcsInTF});
       histos.add("hBcInITSROFall", "", kTH1F, {axisBcsInITSROF});
       histos.add("hBcInITSROFcut", "", kTH1F, {axisBcsInITSROF});
+
+      histos.add("hBcInTFITS", "", kTH1F, {axisBcsInTF});
+      histos.add("hBcInTFTPC", "", kTH1F, {axisBcsInTF});
+
+      histos.add("hBcInITSROFITS", "", kTH1F, {axisBcsInITSROF});
+      histos.add("hBcInITSROFTPC", "", kTH1F, {axisBcsInITSROF});
     }
 
     int nCols = cols.size();
@@ -323,12 +332,12 @@ struct MatchingQaTask {
       int64_t deltaBC = std::ceil(weightedSigma / bcNS * 3);
       int64_t tpcGlobalBC = globalBC + TMath::Nint(weightedTime / bcNS);
 
-      // if (deltaBC>20) deltaBC = 20;
+      deltaBC += additionalDeltaBC;
 
       int64_t minBC = tpcGlobalBC - deltaBC;
       int64_t maxBC = tpcGlobalBC + deltaBC;
 
-      if (vNumITStracks[colId] > 0) {
+      if (useITSROFconstraint && vNumITStracks[colId] > 0) {
         float weightedTimeITS = vITStracksSumWeightedTimes[colId] / vITStracksSumWeights[colId];
         int64_t itsGlobalBC = globalBC + TMath::Nint(weightedTimeITS / bcNS);
         int64_t minROF = (itsGlobalBC - offsetITSROF) / nBCsPerITSROF * nBCsPerITSROF + offsetITSROF;
@@ -337,9 +346,9 @@ struct MatchingQaTask {
         minBC = minBC < minROF ? minROF : minBC;
         maxBC = maxBC > maxROF ? maxROF : maxBC;
         // LOGP(info,"{} {} {} {}",minBC, maxBC, minROF, maxROF);
+        if (minBC > maxBC)
+          continue;
       }
-      if (minBC > maxBC)
-        continue;
 
       int32_t nContrib = col.numContrib();
       float zVtxCol = col.posZ();
@@ -447,6 +456,11 @@ struct MatchingQaTask {
         histos.fill(HIST("hNcontribSigma"), nContrib, vWeightedSigma[colId]);
         histos.fill(HIST("hNcontribColTPC"), nContrib);
         histos.fill(HIST("hColBcDiffVsNcontribTPC"), nContrib, bcDiff);
+        if (nContrib > 180) {
+          histos.fill(HIST("hBcInTFTPC"), (globalBC - bcSOR) % nBCsPerTF);
+          histos.fill(HIST("hBcInITSROFTPC"), (globalBC + nBCsPerOrbit - offsetITSROF) % nBCsPerITSROF);
+        }
+
         if (isFoundTVX) {
           histos.fill(HIST("hNcontribAccTPC"), nContrib);
           histos.fill(HIST("hRecMultT0CvsNcontribTPC"), multT0C, nContrib);
@@ -454,6 +468,11 @@ struct MatchingQaTask {
         }
       } else if (vNumITStracks[colId] > 0) {
         histos.fill(HIST("hNcontribColITS"), nContrib);
+        if (nContrib > 180) {
+          histos.fill(HIST("hBcInTFITS"), (globalBC - bcSOR) % nBCsPerTF);
+          histos.fill(HIST("hBcInITSROFITS"), (globalBC + nBCsPerOrbit - offsetITSROF) % nBCsPerITSROF);
+        }
+
         if (isFoundTVX)
           histos.fill(HIST("hNcontribAccITS"), nContrib);
       }
