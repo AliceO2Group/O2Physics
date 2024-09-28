@@ -13,6 +13,7 @@
 /// \file   mcParticlePrediction.cxx
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
 /// \author Francesca Ercolessi francesca.ercolessi@cern.ch
+/// \author Navneet Kumar navneet.kumar@cern.ch
 /// \brief Task to build the predictions from the models based on the generated particles
 ///
 
@@ -60,7 +61,8 @@ struct Estimators {
   static constexpr int V0A = 14;  // (Run2)
   static constexpr int V0C = 15;  // (Run2)
   static constexpr int V0AC = 16; // (Run2)
-  static constexpr int nEstimators = 17;
+  static constexpr int V0M = 17;  // (Run2)
+  static constexpr int nEstimators = 18;
 
   static constexpr const char* estimatorNames[nEstimators] = {"FT0A",
                                                               "FT0C",
@@ -78,7 +80,8 @@ struct Estimators {
                                                               "ITS",
                                                               "V0A",
                                                               "V0C",
-                                                              "V0AC"};
+                                                              "V0AC",
+                                                              "V0M"};
   static std::vector<std::string> arrayNames()
   {
     std::vector<std::string> names;
@@ -105,10 +108,12 @@ static const int defaultEstimators[Estimators::nEstimators][nParameters]{{0},  /
                                                                          {0},  // ITS
                                                                          {0},  // V0A (Run2)
                                                                          {0},  // V0C (Run2)
-                                                                         {0}}; // V0AC (Run2)
+                                                                         {0},  // V0AC (Run2)
+                                                                         {0}}; // V0M (Run2)
 
 // Histograms
 std::array<std::shared_ptr<TH1>, Estimators::nEstimators> hestimators;
+std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsVsdNChdeta;
 std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsVsITS;
 std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvGenVsReco;
 std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvGenVsReco_BCMC;
@@ -133,8 +138,10 @@ struct mcParticlePrediction {
   ConfigurableAxis binsEta{"binsEta", {100, -20, 20}, "Binning of the Eta axis"};
   ConfigurableAxis binsVxy{"binsVxy", {100, -10, 10}, "Binning of the production vertex (x and y) axis"};
   ConfigurableAxis binsVz{"binsVz", {100, -10, 10}, "Binning of the production vertex (z) axis"};
-  ConfigurableAxis binsPt{"binsPt", {100, 0, 10}, "Binning of the Pt axis"};
-  ConfigurableAxis binsMultiplicity{"binsMultiplicity", {300, -0.5, 299.5}, "Binning of the Multiplicity axis"};
+  ConfigurableAxis binsPt{"binsPt", {300, 0, 30}, "Binning of the Pt axis"};
+  ConfigurableAxis binsMultiplicity{"binsMultiplicity", {800, -0.5, 799.5}, "Binning of the Multiplicity axis"};
+  ConfigurableAxis binsMultiplicitydNChdeta{"binsMultiplicitydNChdeta", {400, -0.5, 399.5}, "Binning of the Multiplicity axis"};
+
   ConfigurableAxis binsMultiplicityReco{"binsMultiplicityReco", {1000, -0.5, -0.5 + 10000}, "Binning of the Multiplicity axis"};
   Configurable<LabeledArray<int>> enabledSpecies{"enabledSpecies",
                                                  {defaultParticles[0], PIDExtended::NIDsTot, nParameters, PIDExtended::arrayNames(), parameterNames},
@@ -168,6 +175,8 @@ struct mcParticlePrediction {
     const AxisSpec axisVz{binsVz, "Vz"};
     const AxisSpec axisPt{binsPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec axisMultiplicity{binsMultiplicity, "Multiplicity (undefined)"};
+    const AxisSpec axisdNChdeta{binsMultiplicitydNChdeta, "#frac{dN_{ch}}{#eta}"};
+
     const AxisSpec axisMultiplicityReco{binsMultiplicityReco, "Multiplicity Reco. (undefined)"};
     const AxisSpec axisMultiplicityRecoITS{100, 0, 100, "Multiplicity Reco. ITS"};
     const AxisSpec axisMultiplicityGenV0s{100, 0, 100, "K0s gen"};
@@ -251,6 +260,11 @@ struct mcParticlePrediction {
       hestimatorsVsITS[i]->GetXaxis()->SetTitle(Form("Multiplicity %s", name));
       hestimatorsVsITS[i]->GetYaxis()->SetTitle(Form("Multiplicity %s", Estimators::estimatorNames[Estimators::ITS]));
 
+      // Adding the dNChdetavsV0M histogram
+      hestimatorsVsdNChdeta[i] = histos.add<TH2>(Form("multiplicity/vsdNChdeta%s", name), name, kTH2D, {axisMultiplicity, axisdNChdeta});
+      hestimatorsVsdNChdeta[i]->GetYaxis()->SetTitle("#frac{dn_{ch}}{eta}");
+      hestimatorsVsdNChdeta[i]->GetXaxis()->SetTitle(Form("%s Multiplicity", name));
+
       hvertexPosZ[i] = histos.add<TH2>(Form("multiplicity/posZ/%s", name), name, kTH2D, {{200, -20, 20, "pos Z"}, axisMultiplicity});
       hvertexPosZ[i]->GetYaxis()->SetTitle(Form("Multiplicity %s", name));
 
@@ -300,8 +314,9 @@ struct mcParticlePrediction {
           continue;
         }
         const char* name = Estimators::estimatorNames[j];
-        hpt[j][i] = histosPt.add<TH2>(Form("prediction/pt/%s/%s", name, PIDExtended::getName(i)), PIDExtended::getName(i), kTH2D, {axisPt, axisMultiplicity});
-        hpt[j][i]->GetYaxis()->SetTitle(Form("Multiplicity %s", name));
+        hpt[j][i] = histosPt.add<TH2>(Form("prediction/pt/%s/%s", name, PIDExtended::getName(i)), PIDExtended::getName(i), kTH2D, {axisMultiplicity, axisPt});
+        hpt[j][i]->GetXaxis()->SetTitle(Form("%s Multiplicity", name));
+        hpt[j][i]->GetYaxis()->SetTitle("p_{T}");
 
         hyield[j][i] = histosYield.add<TH1>(Form("prediction/yield/%s/%s", name, PIDExtended::getName(i)), PIDExtended::getName(i), kTH1D, {axisMultiplicity});
         hyield[j][i]->GetYaxis()->SetTitle(Form("Multiplicity %s", name));
@@ -366,7 +381,11 @@ struct mcParticlePrediction {
     if (enabledEstimatorsArray[Estimators::V0AC]) {
       nMult[Estimators::V0AC] = nMult[Estimators::V0A] + nMult[Estimators::V0C];
     }
-
+    if (enabledEstimatorsArray[Estimators::V0M]) {
+      if (nMult[Estimators::V0A] > 0 && nMult[Estimators::V0C] > 0) {
+        nMult[Estimators::V0M] = nMult[Estimators::V0A] + nMult[Estimators::V0C];
+      }
+    }
     for (int i = 0; i < Estimators::nEstimators; i++) {
       if (!enabledEstimatorsArray[i]) {
         continue;
@@ -377,6 +396,7 @@ struct mcParticlePrediction {
       hvertexPosZ[i]->Fill(mcCollision.posZ(), nMult[i]);
     }
 
+    Int_t dnChdeta = 0; // To account for the dNChdeta
     for (const auto& particle : mcParticles) {
       particle.pdgCode();
       const auto id = PIDExtended::pdgToId(particle);
@@ -403,6 +423,7 @@ struct mcParticlePrediction {
       if (abs(particle.y()) > 0.5) {
         continue;
       }
+      dnChdeta++;
 
       histos.fill(HIST("particles/vtx/x"), particle.vx());
       histos.fill(HIST("particles/vtx/y"), particle.vy());
@@ -413,9 +434,15 @@ struct mcParticlePrediction {
         if (!enabledEstimatorsArray[i]) {
           continue;
         }
-        hpt[i][id]->Fill(particle.pt(), nMult[i]);
+        hpt[i][id]->Fill(nMult[i], particle.pt());
         hyield[i][id]->Fill(nMult[i]);
       }
+    }
+    for (int i = 0; i < Estimators::nEstimators; i++) {
+      if (!enabledEstimatorsArray[i]) {
+        continue;
+      }
+      hestimatorsVsdNChdeta[i]->Fill(nMult[i], dnChdeta);
     }
   }
 
