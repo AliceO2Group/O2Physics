@@ -629,6 +629,19 @@ DECLARE_SOA_TABLE(HfMcRecRedDV0s, "AOD", "HFMCRECREDDV0", //! Table with reconst
                   hf_reso_cand_reduced::DebugMcRec,
                   hf_b0_mc::PtMother,
                   o2::soa::Marker<1>);
+
+DECLARE_SOA_TABLE(HfMcGenRedResos, "AOD", "HFMCGENREDRESO", //! Generation-level MC information on B0 candidates for reduced workflow
+                  hf_cand_b0::FlagMcMatchGen,
+                  hf_b0_mc::PtTrack,
+                  hf_b0_mc::YTrack,
+                  hf_b0_mc::EtaTrack,
+                  hf_b0_mc::PtProng0,
+                  hf_b0_mc::YProng0,
+                  hf_b0_mc::EtaProng0,
+                  hf_b0_mc::PtProng1,
+                  hf_b0_mc::YProng1,
+                  hf_b0_mc::EtaProng1,
+                  o2::soa::Marker<1>);
 } // namespace aod
 
 namespace soa
