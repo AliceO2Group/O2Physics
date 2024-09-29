@@ -19,7 +19,7 @@
 #include "ReconstructionDataFormats/Track.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Centrality.h"
-//#include "Common/DataModel/Multiplicity.h"
+// #include "Common/DataModel/Multiplicity.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
 #include "DetectorsBase/Propagator.h"
@@ -43,7 +43,7 @@ namespace
 constexpr float dcaSels[3]{10., 10., 10.};
 static const std::vector<std::string> dcaSelsNames{"dcaxy", "dcaz", "dca"};
 static const std::vector<std::string> particleName{"tracks"};
-}
+} // namespace
 
 struct CandidateTrack {
   float pt = -999.f;
@@ -221,7 +221,6 @@ struct ebyeMult {
     d_bz = o2::base::Propagator::Instance()->getNominalBz();
     LOG(info) << "Retrieved GRP for timestamp " << timestamp << " with magnetic field of " << d_bz << " kG";
     mRunNumber = bc.runNumber();
-
   }
 
   // float getV0M(int64_t const id, float const zvtx, aod::FV0As const& fv0as, aod::FV0Cs const& fv0cs)
@@ -353,7 +352,7 @@ struct ebyeMult {
           }
         }
         if ((mcTrack.flags() & 0x1))
-        continue;
+          continue;
         if (mcTrack.isPhysicalPrimary()) { // primary
           histos.fill(HIST("PrimTracks"), nTrackletsColl, candidateTrack.pt, candidateTrack.dcaxypv);
         }
