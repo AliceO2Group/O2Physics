@@ -270,7 +270,7 @@ struct spvector {
   TH2F* hrecenterevxSp;
   TH2F* hrecenterevySp;
   TH2F* hrecenterevzSp;
-  TH2F* hrecenteresqSp;
+  THnF* hrecenteresqSp;
 
   // Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   // Filter centralityFilter = (nabs(aod::cent::centFT0C) < cfgCutCentralityMax && nabs(aod::cent::centFT0C) > cfgCutCentralityMin);
