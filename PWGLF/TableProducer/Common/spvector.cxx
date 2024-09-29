@@ -266,11 +266,11 @@ struct spvector {
   int lastRunNumber = -999;
   TH2D* gainprofile;
   THnF* hrecentereSp;
-  TH1F* hrecenterecentSp;
-  TH1F* hrecenterevxSp;
-  TH1F* hrecenterevySp;
-  TH1F* hrecenterevzSp;
-  THnF* hrecenteresqSp;
+  TH2F* hrecenterecentSp;
+  TH2F* hrecenterevxSp;
+  TH2F* hrecenterevySp;
+  TH2F* hrecenterevzSp;
+  TH2F* hrecenteresqSp;
 
   // Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   // Filter centralityFilter = (nabs(aod::cent::centFT0C) < cfgCutCentralityMax && nabs(aod::cent::centFT0C) > cfgCutCentralityMin);
@@ -414,10 +414,10 @@ struct spvector {
         hrecentereSp = ccdb->getForTimeStamp<THnF>(ConfRecentereSp.value, bc.timestamp());
       }
       if (useRecenterefineSp && (currentRunNumber != lastRunNumber)) {
-        hrecenterecentSp = ccdb->getForTimeStamp<TH1F>(ConfRecenterecentSp.value, bc.timestamp());
-        hrecenterevxSp = ccdb->getForTimeStamp<TH1F>(ConfRecenterevxSp.value, bc.timestamp());
-        hrecenterevySp = ccdb->getForTimeStamp<TH1F>(ConfRecenterevySp.value, bc.timestamp());
-        hrecenterevzSp = ccdb->getForTimeStamp<TH1F>(ConfRecenterevzSp.value, bc.timestamp());
+        hrecenterecentSp = ccdb->getForTimeStamp<TH2F>(ConfRecenterecentSp.value, bc.timestamp());
+        hrecenterevxSp = ccdb->getForTimeStamp<TH2F>(ConfRecenterevxSp.value, bc.timestamp());
+        hrecenterevySp = ccdb->getForTimeStamp<TH2F>(ConfRecenterevySp.value, bc.timestamp());
+        hrecenterevzSp = ccdb->getForTimeStamp<TH2F>(ConfRecenterevzSp.value, bc.timestamp());
       }
       if (useRecenteresqSp && (currentRunNumber != lastRunNumber)) {
         hrecenteresqSp = ccdb->getForTimeStamp<THnF>(ConfRecenteresqSp.value, bc.timestamp());
