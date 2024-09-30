@@ -127,6 +127,8 @@ DECLARE_SOA_COLUMN(Chi2TopologicalCharmedBaryon, chi2TopologicalCharmedBaryon, f
 DECLARE_SOA_COLUMN(Chi2TopologicalCasc, chi2TopologicalCasc, float);
 DECLARE_SOA_COLUMN(DecayLengthCharmedBaryon, decayLengthCharmedBaryon, float);
 DECLARE_SOA_COLUMN(DecayLengthXYCharmedBaryon, decayLengthXYCharmedBaryon, float);
+DECLARE_SOA_COLUMN(DecayLengthCharmedBaryonUntracked, decayLengthCharmedBaryonUntracked, float);
+DECLARE_SOA_COLUMN(DecayLengthXYCharmedBaryonUntracked, decayLengthXYCharmedBaryonUntracked, float);
 DECLARE_SOA_COLUMN(DecayLengthCasc, decayLengthCasc, float);
 DECLARE_SOA_COLUMN(DecayLengthXYCasc, decayLengthXYCasc, float);
 DECLARE_SOA_INDEX_COLUMN_FULL(MotherCasc, motherCasc, int, HfStChBarGens, "_Casc");
@@ -178,6 +180,8 @@ DECLARE_SOA_TABLE(HfStChBars, "AOD", "HFSTCHBAR",
                   hf_st_charmed_baryon::Chi2TopologicalCasc,
                   hf_st_charmed_baryon::DecayLengthCharmedBaryon,
                   hf_st_charmed_baryon::DecayLengthXYCharmedBaryon,
+                  hf_st_charmed_baryon::DecayLengthCharmedBaryonUntracked,
+                  hf_st_charmed_baryon::DecayLengthXYCharmedBaryonUntracked,
                   hf_st_charmed_baryon::DecayLengthCasc,
                   hf_st_charmed_baryon::DecayLengthXYCasc,
                   hf_st_charmed_baryon::MotherCascId,
@@ -460,8 +464,9 @@ struct HfTreeCreatorOmegacSt {
         std::array<std::array<float, 3>, 2> momentaCascDaughters;
         trackParV0.getPxPyPzGlo(momentaCascDaughters[0]);
         trackParBachelor.getPxPyPzGlo(momentaCascDaughters[1]);
+        o2::track::TrackParCov trackParCovCascUntracked = df2.createParentTrackParCov(0);
         std::array<float, 3> pCasc;
-        df2.createParentTrackParCov().getPxPyPzGlo(pCasc);
+        trackParCovCascUntracked.getPxPyPzGlo(pCasc);
         const auto cpaCasc = RecoDecay::cpa(primaryVertexPos, df2.getPCACandidate(), pCasc);
         const auto cpaXYCasc = RecoDecay::cpaXY(primaryVertexPos, df2.getPCACandidate(), pCasc);
 
@@ -538,6 +543,13 @@ struct HfTreeCreatorOmegacSt {
 
                 hCandidatesCascPi->Fill(SVFitting::BeforeFit);
                 try {
+                  auto decayLengthUntracked = -1.;
+                  auto decayLengthXYUntracked = -1.;
+                  if (df2.process(trackParCovCascUntracked, trackParCovPion)) {
+                    const auto& secondaryVertexUntracked = df2.getPCACandidate();
+                    decayLengthUntracked = RecoDecay::distance(secondaryVertexUntracked, primaryVertexPos);
+                    decayLengthXYUntracked = RecoDecay::distanceXY(secondaryVertexUntracked, primaryVertexPos);
+                  }
                   if (df2.process(trackParCovCasc, trackParCovPion)) {
                     const auto& secondaryVertex = df2.getPCACandidate();
                     const auto decayLength = RecoDecay::distance(secondaryVertex, primaryVertexPos);
@@ -603,6 +615,8 @@ struct HfTreeCreatorOmegacSt {
                                   trackedCascade.topologyChi2(),
                                   decayLength,
                                   decayLengthXY,
+                                  decayLengthUntracked,
+                                  decayLengthXYUntracked,
                                   decayLengthCasc,
                                   decayLengthCascXY,
                                   trackCascMotherId,
