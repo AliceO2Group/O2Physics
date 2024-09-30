@@ -220,11 +220,11 @@ struct derivedlambdakzeroanalysis {
   // UPC selections
   SGSelector sgSelector;
   struct : ConfigurableGroup {
-    Configurable<float> FV0cut{"FV0cut", 100., "FV0A threshold"};
-    Configurable<float> FT0Acut{"FT0Acut", 200., "FT0A threshold"};
-    Configurable<float> FT0Ccut{"FT0Ccut", 100., "FT0C threshold"};
-    Configurable<float> ZDCcut{"ZDCcut", 10., "ZDC threshold"};
-    // Configurable<float> gapSel{"gapSel", 2, "Gap selection"};
+    Configurable<float> FV0cut{"upcCuts.FV0cut", 100., "FV0A threshold"};
+    Configurable<float> FT0Acut{"upcCuts.FT0Acut", 200., "FT0A threshold"};
+    Configurable<float> FT0Ccut{"upcCuts.FT0Ccut", 100., "FT0C threshold"};
+    Configurable<float> ZDCcut{"upcCuts.ZDCcut", 10., "ZDC threshold"};
+    // Configurable<float> gapSel{"upcCuts.gapSel", 2, "Gap selection"};
   } upcCuts;
 
   // AP plot axes
