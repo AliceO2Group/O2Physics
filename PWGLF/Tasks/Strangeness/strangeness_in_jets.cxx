@@ -104,7 +104,7 @@ struct strangeness_in_jets {
   Configurable<float> dcaCascDaughtersMax{"dcaCascDaughtersMax", 0.5f, "Maximum DCA Daughters"};
 
   // List of Particles
-  enum option { vzeros, 
+  enum option { vzeros,
                 cascades,
                 pions };
 
