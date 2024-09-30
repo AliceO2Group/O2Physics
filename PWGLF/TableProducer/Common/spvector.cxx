@@ -266,23 +266,23 @@ struct spvector {
   int lastRunNumber = -999;
   TH2D* gainprofile;
   THnF* hrecentereSp;
-  TH1F* hrecenterecentSp;
-  TH1F* hrecenterevxSp;
-  TH1F* hrecenterevySp;
-  TH1F* hrecenterevzSp;
+  TH2F* hrecenterecentSp;
+  TH2F* hrecenterevxSp;
+  TH2F* hrecenterevySp;
+  TH2F* hrecenterevzSp;
   THnF* hrecenteresqSp;
 
   // Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   // Filter centralityFilter = (nabs(aod::cent::centFT0C) < cfgCutCentralityMax && nabs(aod::cent::centFT0C) > cfgCutCentralityMin);
-  //  Filter acceptanceFilter = (nabs(aod::track::eta) < cfgCutEta && nabs(aod::track::pt) > cfgCutPT);
-  //  Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
+  // Filter acceptanceFilter = (nabs(aod::track::eta) < cfgCutEta && nabs(aod::track::pt) > cfgCutPT);
+  // Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
 
   using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::FT0sCorrected, aod::CentFT0Cs>;
   // using MyTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension>>;
 
   Preslice<aod::Zdcs> zdcPerCollision = aod::collision::bcId;
 
-  void process(MyCollisions::iterator const& collision, aod::FT0s const& /*ft0s*/, BCsRun3 const& bcs, aod::Zdcs const&)
+  void process(MyCollisions::iterator const& collision, aod::FT0s const& /*ft0s*/, aod::FV0As const& /*fv0s*/, BCsRun3 const& bcs, aod::Zdcs const&)
   {
 
     auto centrality = collision.centFT0C();
@@ -334,7 +334,7 @@ struct spvector {
         gainprofile = ccdb->getForTimeStamp<TH2D>(ConfGainPath.value, bc.timestamp());
       }
 
-      initCCDB(bc);
+      // initCCDB(bc);
 
       auto gainequal = 1.0;
       constexpr float x[4] = {-1.75, 1.75, -1.75, 1.75};
@@ -350,6 +350,7 @@ struct spvector {
 
           if (znaEnergy[iChA] <= 0.0) {
             triggerevent = false;
+            spcalibrationtable(triggerevent, currentRunNumber, centrality, qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
             return;
           } else {
             float ampl = gainequal * znaEnergy[iChA];
@@ -362,6 +363,7 @@ struct spvector {
         } else {
           if (zncEnergy[iChA - 4] <= 0.0) {
             triggerevent = false;
+            spcalibrationtable(triggerevent, currentRunNumber, centrality, qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
             return;
           } else {
             float ampl = gainequal * zncEnergy[iChA - 4];
@@ -412,10 +414,10 @@ struct spvector {
         hrecentereSp = ccdb->getForTimeStamp<THnF>(ConfRecentereSp.value, bc.timestamp());
       }
       if (useRecenterefineSp && (currentRunNumber != lastRunNumber)) {
-        hrecenterecentSp = ccdb->getForTimeStamp<TH1F>(ConfRecenterecentSp.value, bc.timestamp());
-        hrecenterevxSp = ccdb->getForTimeStamp<TH1F>(ConfRecenterevxSp.value, bc.timestamp());
-        hrecenterevySp = ccdb->getForTimeStamp<TH1F>(ConfRecenterevySp.value, bc.timestamp());
-        hrecenterevzSp = ccdb->getForTimeStamp<TH1F>(ConfRecenterevzSp.value, bc.timestamp());
+        hrecenterecentSp = ccdb->getForTimeStamp<TH2F>(ConfRecenterecentSp.value, bc.timestamp());
+        hrecenterevxSp = ccdb->getForTimeStamp<TH2F>(ConfRecenterevxSp.value, bc.timestamp());
+        hrecenterevySp = ccdb->getForTimeStamp<TH2F>(ConfRecenterevySp.value, bc.timestamp());
+        hrecenterevzSp = ccdb->getForTimeStamp<TH2F>(ConfRecenterevzSp.value, bc.timestamp());
       }
       if (useRecenteresqSp && (currentRunNumber != lastRunNumber)) {
         hrecenteresqSp = ccdb->getForTimeStamp<THnF>(ConfRecenteresqSp.value, bc.timestamp());
