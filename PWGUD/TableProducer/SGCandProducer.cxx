@@ -206,7 +206,7 @@ struct SGCandProducer {
           return;
       }
       upchelpers::FITInfo fitInfo{};
-      udhelpers::getFITinfo(fitInfo, newbc.globalBC(), bcs, ft0s, fv0as, fdds);
+      udhelpers::getFITinfo(fitInfo, newbc, bcs, ft0s, fv0as, fdds);
       // update SG candidates tables
       outputCollisions(bc.globalBC(), bc.runNumber(),
                        collision.posX(), collision.posY(), collision.posZ(),
