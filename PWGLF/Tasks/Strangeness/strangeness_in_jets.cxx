@@ -1078,6 +1078,7 @@ struct strangeness_in_jets {
   PROCESS_SWITCH(strangeness_in_jets, processData, "Process data", true);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) {
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
   return WorkflowSpec{adaptAnalysisTask<strangeness_in_jets>(cfgc)};
 }
