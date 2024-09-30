@@ -1183,7 +1183,7 @@ struct JetTaggerHFQA {
   }
   PROCESS_SWITCH(JetTaggerHFQA, processIPsMCPMCDMatchedWeighted, "Fill impact parameter imformation for mcp mcd matched jets", false);
 
-  void processJPData(soa::Filtered<JetCollisions>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD> const& jets, JetTagTracksData const&)
+  void processJPData(soa::Filtered<JetCollisions>::iterator const& collision, soa::Join<JetTableData, TagTableData> const& jets, JetTagTracksData const&)
   {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
