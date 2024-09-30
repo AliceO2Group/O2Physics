@@ -145,7 +145,6 @@ struct lnnRecoTask {
   Configurable<float> ptMaxTOF{"ptMinTOF", 3.5, "minimum pt for TOF cut"};
   Configurable<float> TrTOFMass2Cut{"TrTOFMass2Cut", 5.5, "minimum Triton mass square to TOF"};
   Configurable<bool> mcSignalOnly{"mcSignalOnly", true, "If true, save only signal in MC"};
-  
 
   // Define o2 fitter, 2-prong, active memory (no need to redefine per event)
   o2::vertexing::DCAFitterN<2> fitter;
@@ -340,8 +339,8 @@ struct lnnRecoTask {
       hdEdxTot->Fill(-negRigidity, negTrack.tpcSignal());
 
       // ITS only tracks do not have TPC information. TPCnSigma: only lower cut to allow for triton reconstruction
-      
-      bool is3H = posTrack.hasTPC() && nSigmaTPCpos > nSigmaCutMinTPC &&  nSigmaTPCpos < nSigmaCutMaxTPC;
+
+      bool is3H = posTrack.hasTPC() && nSigmaTPCpos > nSigmaCutMinTPC && nSigmaTPCpos < nSigmaCutMaxTPC;
       bool isAnti3H = negTrack.hasTPC() && nSigmaTPCneg > nSigmaCutMinTPC && nSigmaTPCneg < nSigmaCutMaxTPC;
 
       if (!is3H && !isAnti3H)
@@ -380,13 +379,13 @@ struct lnnRecoTask {
       hdEdx3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, h3track.tpcSignal());
       hNsigma3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, lnnCand.nSigma3H);
       hDCAxy3H->Fill(h3track.pt(), h3track.dcaXY());
-      if (is3H){
+      if (is3H) {
         hdEdx3HPosTrack->Fill(lnnCand.mom3HTPC, h3track.tpcSignal());
       }
       if (h3track.hasTOF()) {
         float beta = h3track.beta();
         lnnCand.mass2TrTOF = h3track.mass() * h3track.mass();
-        if (h3track.pt() >=  ptMinTOF && h3track.pt() <= ptMaxTOF && lnnCand.mass2TrTOF >= TrTOFMass2Cut) {
+        if (h3track.pt() >= ptMinTOF && h3track.pt() <= ptMaxTOF && lnnCand.mass2TrTOF >= TrTOFMass2Cut) {
           h3HSignalPtTOF->Fill(chargeFactor * h3track.pt(), beta);
           hNsigma3HSelTOF->Fill(chargeFactor * h3track.pt(), h3track.tofNSigmaTr());
           h3HMassPtTOF->Fill(chargeFactor * h3track.pt(), lnnCand.mass2TrTOF);
@@ -555,7 +554,7 @@ struct lnnRecoTask {
                         lnnCand.dcaV0dau, lnnCand.h3DCAXY, lnnCand.piDCAXY,
                         lnnCand.nSigma3H, lnnCand.nTPCClusters3H, lnnCand.nTPCClustersPi,
                         lnnCand.mom3HTPC, lnnCand.momPiTPC, lnnCand.tpcSignal3H, lnnCand.tpcSignalPi,
-                        lnnCand.mass2TrTOF, 
+                        lnnCand.mass2TrTOF,
                         lnnCand.clusterSizeITS3H, lnnCand.clusterSizeITSPi, lnnCand.flags);
       }
     }
@@ -612,7 +611,7 @@ struct lnnRecoTask {
                       lnnCand.dcaV0dau, lnnCand.h3DCAXY, lnnCand.piDCAXY,
                       lnnCand.nSigma3H, lnnCand.nTPCClusters3H, lnnCand.nTPCClustersPi,
                       lnnCand.mom3HTPC, lnnCand.momPiTPC, lnnCand.tpcSignal3H, lnnCand.tpcSignalPi,
-                      lnnCand.mass2TrTOF, 
+                      lnnCand.mass2TrTOF,
                       lnnCand.clusterSizeITS3H, lnnCand.clusterSizeITSPi, lnnCand.flags,
                       chargeFactor * lnnCand.genPt(), lnnCand.genPhi(), lnnCand.genEta(), lnnCand.genPt3H(),
                       lnnCand.gDecVtx[0], lnnCand.gDecVtx[1], lnnCand.gDecVtx[2], lnnCand.isReco, lnnCand.isSignal, lnnCand.survEvSelection);
@@ -682,7 +681,7 @@ struct lnnRecoTask {
                     -1, -1, -1,
                     -1, -1, -1,
                     -1, -1, -1, -1,
-                    -1, 
+                    -1,
                     -1, -1, -1,
                     chargeFactor * lnnCand.genPt(), lnnCand.genPhi(), lnnCand.genEta(), lnnCand.genPt3H(),
                     lnnCand.gDecVtx[0], lnnCand.gDecVtx[1], lnnCand.gDecVtx[2], lnnCand.isReco, lnnCand.isSignal, lnnCand.survEvSelection);
