@@ -39,7 +39,7 @@ using namespace o2;
 using namespace o2::framework;
 
 using BCsWithTimestamps = soa::Join<aod::BCs, aod::Timestamps>;
-//using CollisionWithFDD = soa::Join<aod::FDDs, aod::Collision>;
+// using CollisionWithFDD = soa::Join<aod::FDDs, aod::Collision>;
 
 struct LumiStabilityTask {
   // Histogram registry: an object to hold your histograms
@@ -107,6 +107,7 @@ struct LumiStabilityTask {
     histos.add("hOrbitFV0Central", "", kTH1F, {axisOrbits});
     histos.add("tsValues", "", kTH1D, {{2, -0.5, 1.5}});
     // time 32.766 is dummy time
+
     // histo about triggers
     histos.add("FDD/hCounts", "0 FDDCount - 1 FDDVertexCount - 2 FDDPPVertexCount - 3 FDDCoincidencesVertexCount - 4 FDDPPCoincidencesVertexCount - 5 FDDPPBotSidesCount; Number; counts", kTH1F, {axisCounts});
     histos.add("FDD/bcVertexTrigger", "vertex trigger per BC (FDD);BC in FDD; counts", kTH1F, {axisTrigger});
