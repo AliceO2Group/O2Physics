@@ -140,13 +140,10 @@ struct lnnRecoTask {
   Configurable<float> TPCRigidityMin3H{"TPCRigidityMin3H", 0.2, "Minimum rigidity of the triton candidate"};
   Configurable<float> nSigmaCutMinTPC{"nSigmaCutMinTPC", -5, "triton dEdx cut (n sigma)"};
   Configurable<float> nSigmaCutMaxTPC{"nSigmaCutMaxTPC", 5, "triton dEdx cut (n sigma)"};
-  Configurable<float> nSigmaCutTOF{"nSigmaCutITS", 4., "triton dEdx cut (n sigma)"};
   Configurable<float> nTPCClusMin3H{"nTPCClusMin3H", 80, "triton NTPC clusters cut"};
-  Configurable<float> nClusITS{"nClusITSMin3H", 3.0, "triton NITS clusters cut"};
-  Configurable<float> ptMinTOF{"ptMinTOF", 1.5, "minimum pt for TOF cut"};
+  Configurable<float> ptMinTOF{"ptMinTOF", 0.8, "minimum pt for TOF cut"};
+  Configurable<float> ptMaxTOF{"ptMinTOF", 3.5, "minimum pt for TOF cut"};
   Configurable<float> TrTOFMass2Cut{"TrTOFMass2Cut", 5.5, "minimum Triton mass square to TOF"};
-  Configurable<float> DCAmin{"DCAmin", -2., "DCAxy min"};
-  Configurable<float> DCAmax{"DCAmax", -2., "DCAxy max"};
   Configurable<bool> mcSignalOnly{"mcSignalOnly", true, "If true, save only signal in MC"};
   
 
@@ -389,10 +386,9 @@ struct lnnRecoTask {
       if (h3track.hasTOF()) {
         float beta = h3track.beta();
         lnnCand.mass2TrTOF = h3track.mass() * h3track.mass();
-        //if (h3track.pt() <=  ptMinTOF) {
-        h3HSignalPtTOF->Fill(chargeFactor * h3track.pt(), beta);
-        hNsigma3HSelTOF->Fill(chargeFactor * h3track.pt(), h3track.tofNSigmaTr());
-        if (lnnCand.mass2TrTOF >= TrTOFMass2Cut) {
+        if (h3track.pt() >=  ptMinTOF && h3track.pt() <= ptMaxTOF && lnnCand.mass2TrTOF >= TrTOFMass2Cut) {
+          h3HSignalPtTOF->Fill(chargeFactor * h3track.pt(), beta);
+          hNsigma3HSelTOF->Fill(chargeFactor * h3track.pt(), h3track.tofNSigmaTr());
           h3HMassPtTOF->Fill(chargeFactor * h3track.pt(), lnnCand.mass2TrTOF);
         }
       }
