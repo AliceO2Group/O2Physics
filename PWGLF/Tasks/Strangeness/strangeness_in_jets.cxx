@@ -104,10 +104,12 @@ struct strangeness_in_jets {
   Configurable<float> dcaCascDaughtersMax{"dcaCascDaughtersMax", 0.5f, "Maximum DCA Daughters"};
 
   // List of Particles
-  enum option { vzeros, cascades, pions };
+  enum option { vzeros, 
+                cascades,
+                pions };
 
-  void init(InitContext const &) {
-
+  void init(InitContext const&)
+  {
     // Event Counters
     registryData.add("number_of_events_data", "number of events in data", HistType::kTH1F, {{10, 0, 10, "Event Cuts"}});
     registryMC.add("number_of_events_mc", "number of events in mc", HistType::kTH1F, {{10, 0, 10, "Event Cuts"}});
@@ -169,7 +171,7 @@ struct strangeness_in_jets {
   }
 
   template <typename chargedTrack>
-  bool passedTrackSelectionForJetReconstruction(const chargedTrack &track)
+  bool passedTrackSelectionForJetReconstruction(const chargedTrack& track)
   {
     if (!track.hasITS())
       return false;
@@ -195,7 +197,7 @@ struct strangeness_in_jets {
   }
 
   template <typename pionTrack>
-  bool passedTrackSelectionForPions(const pionTrack &track)
+  bool passedTrackSelectionForPions(const pionTrack& track)
   {
     if (!track.hasITS())
       return false;
@@ -220,7 +222,7 @@ struct strangeness_in_jets {
 
   // Lambda Selections
   template <typename Lambda, typename TrackPos, typename TrackNeg>
-  bool passedLambdaSelection(const Lambda &v0, const TrackPos &ptrack, const TrackNeg &ntrack)
+  bool passedLambdaSelection(const Lambda& v0, const TrackPos& ptrack, const TrackNeg& ntrack)
   {
     // Single-Track Selections
     if (!passedSingleTrackSelection(ptrack))
@@ -271,7 +273,7 @@ struct strangeness_in_jets {
 
   // AntiLambda Selections
   template <typename AntiLambda, typename TrackPos, typename TrackNeg>
-  bool passedAntiLambdaSelection(const AntiLambda &v0, const TrackPos &ptrack, const TrackNeg &ntrack)
+  bool passedAntiLambdaSelection(const AntiLambda& v0, const TrackPos& ptrack, const TrackNeg& ntrack)
   {
     // Single-Track Selections
     if (!passedSingleTrackSelection(ptrack))
@@ -322,7 +324,7 @@ struct strangeness_in_jets {
 
   // K0s Selections
   template <typename K0short, typename TrackPos, typename TrackNeg>
-  bool passedK0ShortSelection(const K0short &v0, const TrackPos &ptrack, const TrackNeg &ntrack)
+  bool passedK0ShortSelection(const K0short& v0, const TrackPos& ptrack, const TrackNeg& ntrack)
   {
     // Single-Track Selections
     if (!passedSingleTrackSelection(ptrack))
@@ -373,7 +375,7 @@ struct strangeness_in_jets {
 
   // Xi Selections
   template <typename Xi, typename TrackPos, typename TrackNeg, typename TrackBac, typename Coll>
-  bool passedXiSelection(const Xi &casc, const TrackPos &ptrack, const TrackNeg &ntrack, const TrackBac &btrack, const Coll &coll)
+  bool passedXiSelection(const Xi& casc, const TrackPos& ptrack, const TrackNeg& ntrack, const TrackBac& btrack, const Coll& coll)
   {
     if (!passedSingleTrackSelection(ptrack))
       return false;
@@ -472,7 +474,7 @@ struct strangeness_in_jets {
 
   // Omega Selections
   template <typename Omega, typename TrackPos, typename TrackNeg, typename TrackBac, typename Coll>
-  bool passedOmegaSelection(const Omega &casc, const TrackPos &ptrack, const TrackNeg &ntrack, const TrackBac &btrack, const Coll &coll)
+  bool passedOmegaSelection(const Omega& casc, const TrackPos& ptrack, const TrackNeg& ntrack, const TrackBac& btrack, const Coll& coll)
   {
     if (!passedSingleTrackSelection(ptrack))
       return false;
@@ -571,7 +573,7 @@ struct strangeness_in_jets {
 
   // Single-Track Selection
   template <typename Track>
-  bool passedSingleTrackSelection(const Track &track)
+  bool passedSingleTrackSelection(const Track& track)
   {
     if (requireITS && (!track.hasITS()))
       return false;
@@ -594,7 +596,7 @@ struct strangeness_in_jets {
 
   // Pion Selection
   template <typename pionTrack>
-  bool isHighPurityPion(const pionTrack &track)
+  bool isHighPurityPion(const pionTrack& track)
   {
     if (track.p() < 0.6 && abs(track.tpcNSigmaPi()) < 3.0)
       return true;
@@ -629,7 +631,7 @@ struct strangeness_in_jets {
     return delta_phi;
   }
 
-  void get_perpendicular_axis(TVector3 p, TVector3 &u, double sign)
+  void get_perpendicular_axis(TVector3 p, TVector3& u, double sign)
   {
     // Initialization
     double ux(0), uy(0), uz(0);
@@ -701,7 +703,7 @@ struct strangeness_in_jets {
     return false;
   }
 
-  void processData(SelCollisions::iterator const &collision, aod::V0Datas const &fullV0s, aod::CascDataExt const &Cascades, FullTracks const &tracks)
+  void processData(SelCollisions::iterator const& collision, aod::V0Datas const& fullV0s, aod::CascDataExt const& Cascades, FullTracks const& tracks)
   {
 
     // Event Counter: before event selection
@@ -888,10 +890,10 @@ struct strangeness_in_jets {
 
       // Vzeros
       if (particle_of_interest == option::vzeros) {
-        for (auto &v0 : fullV0s) {
+        for (auto& v0 : fullV0s) {
 
-          const auto &pos = v0.posTrack_as<FullTracks>();
-          const auto &neg = v0.negTrack_as<FullTracks>();
+          const auto& pos = v0.posTrack_as<FullTracks>();
+          const auto& neg = v0.negTrack_as<FullTracks>();
           TVector3 v0dir(v0.px(), v0.py(), v0.pz());
 
           float deltaEta_jet = v0dir.Eta() - jet[i].Eta();
@@ -936,7 +938,7 @@ struct strangeness_in_jets {
 
       // Cascades
       if (particle_of_interest == option::cascades) {
-        for (auto &casc : Cascades) {
+        for (auto& casc : Cascades) {
 
           auto bach = casc.bachelor_as<FullTracks>();
           auto pos = casc.posTrack_as<FullTracks>();
