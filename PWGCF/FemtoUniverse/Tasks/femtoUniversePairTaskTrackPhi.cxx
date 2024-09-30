@@ -70,8 +70,8 @@ struct femtoUniversePairTaskTrackPhi {
 
   // Efficiency
   struct : o2::framework::ConfigurableGroup {
-    Configurable<std::string> ConfLocalEfficiencyProton{"ConfLocalEfficiencyProton", "", "Local path to proton efficiency th2d file"};
-    Configurable<std::string> ConfLocalEfficiencyPhi{"ConfLocalEfficiencyPhi", "", "Local path to Phi efficiency th2d file"};
+    Configurable<std::string> ConfLocalEfficiencyProton{"ConfLocalEfficiencyProton", "", "Local path to proton efficiency TH2F file"};
+    Configurable<std::string> ConfLocalEfficiencyPhi{"ConfLocalEfficiencyPhi", "", "Local path to Phi efficiency TH2F file"};
     Configurable<long> ConfEffProtonTimestamp{"ConfEffProtonTimestamp", 0, "(long int) Timestamp for hadron"};
     Configurable<long> ConfEffPhiTimestamp{"ConfEffPhiTimestamp", 0, "(long int) Timestamp for phi"};
   } ConfEff;
@@ -184,8 +184,8 @@ struct femtoUniversePairTaskTrackPhi {
   HistogramRegistry registryPhiMinvBackground{"registryPhiMinvBackground", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
 
   Service<ccdb::BasicCCDBManager> ccdb;
-  TH2D* protoneff;
-  TH2D* phieff;
+  TH2F* protoneff;
+  TH2F* phieff;
 
   // PID for protons
   bool IsProtonNSigma(float mom, float nsigmaTPCPr, float nsigmaTOFPr) // previous version from: https://github.com/alisw/AliPhysics/blob/master/PWGCF/FEMTOSCOPY/AliFemtoUser/AliFemtoMJTrackCut.cxx
@@ -440,13 +440,13 @@ struct femtoUniversePairTaskTrackPhi {
     ccdb->setCreatedNotAfter(now);
 
     if (!ConfEff.ConfLocalEfficiencyProton.value.empty()) {
-      protoneff = ccdb->getForTimeStamp<TH2D>(ConfEff.ConfLocalEfficiencyProton.value.c_str(), ConfEff.ConfEffProtonTimestamp.value);
+      protoneff = ccdb->getForTimeStamp<TH2F>(ConfEff.ConfLocalEfficiencyProton.value.c_str(), ConfEff.ConfEffProtonTimestamp.value);
       if (!protoneff || protoneff->IsZombie()) {
         LOGF(fatal, "Could not load efficiency protoneff histogram from %s", ConfEff.ConfLocalEfficiencyProton.value.c_str());
       }
     }
     if (!ConfEff.ConfLocalEfficiencyPhi.value.empty()) {
-      phieff = ccdb->getForTimeStamp<TH2D>(ConfEff.ConfLocalEfficiencyPhi.value.c_str(), ConfEff.ConfEffPhiTimestamp.value);
+      phieff = ccdb->getForTimeStamp<TH2F>(ConfEff.ConfLocalEfficiencyPhi.value.c_str(), ConfEff.ConfEffPhiTimestamp.value);
       if (!phieff || phieff->IsZombie()) {
         LOGF(fatal, "Could not load efficiency phieff histogram from %s", ConfEff.ConfLocalEfficiencyPhi.value.c_str());
       }
