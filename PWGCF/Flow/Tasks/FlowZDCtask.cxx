@@ -9,7 +9,6 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include <CCDB/BasicCCDBManager.h>
 #include <cmath>
 #include <vector>
 #include "Framework/runDataProcessing.h"
@@ -103,6 +102,15 @@ struct FlowZDCtask {
   OutputObj<TProfile> pCosPsiDifferences{TProfile("pCosPsiDifferences", "Differences in cos(psi) vs Centrality;Centrality;Mean cos(psi) Difference", 200, 0, 100, -1, 1)};
   OutputObj<TProfile> pSinPsiDifferences{TProfile("pSinPsiDifferences", "Differences in sin(psi) vs Centrality;Centrality;Mean sin(psi) Difference", 200, 0, 100, -1, 1)};
 
+  OutputObj<TProfile> pZNvsFT0MAmp{TProfile("pZNvsFT0MAmp", "ZN Energy vs FT0M Amplitude", 100, 0, 300, 0, 50000)};
+  OutputObj<TProfile> pZPvsFT0MAmp{TProfile("pZPvsFT0MAmp", "ZP Energy vs FT0M Amplitude", 100, 0, 300, 0, 50000)};
+
+  OutputObj<TProfile> pZNvsFT0Ccent{TProfile("pZNvsFT0Ccent", "ZN Energy vs FT0C Centrality", 10, 0, 100, 0, 50000)};
+  OutputObj<TProfile> pZPvsFT0Ccent{TProfile("pZPvsFT0Ccent", "ZP Energy vs FT0C Centrality", 10, 0, 100, 0, 50000)};
+  OutputObj<TProfile> pZNratiovscent{TProfile("pZNratiovscent", "Ratio ZNC/ZNA vs FT0C Centrality", 100, 0, 100, 0, 5)};
+  OutputObj<TProfile> pZPratiovscent{TProfile("pZPratiovscent", "Ratio ZPC/ZPA vs FT0C Centrality", 100, 0, 100, 0, 5)};
+ 
+
   double sumCosPsiDiff = 0.0; // Sum of cos(psiZNC) - cos(psiZNA)
   int countEvents = 0;        // Count of processed events
 
@@ -120,7 +128,7 @@ struct FlowZDCtask {
     const AxisSpec axisQZNA{100, -1, 1, "Q"};
     const AxisSpec axisREQ{100, -1, 1, "real Q"};
     const AxisSpec axisIMQ{100, -1, 1, "imag Q"};
-    const AxisSpec axisEnergy{100, 0, 50, "energy"};
+    const AxisSpec axisEnergy{100, 0, 50000., "energy"};
 
     AxisSpec axisVtxcounts{2, -0.5f, 1.5f, "Vtx info (0=no, 1=yes)"};
     AxisSpec axisZvert{120, -30.f, 30.f, "Vtx z (cm)"};
@@ -152,6 +160,15 @@ struct FlowZDCtask {
 
     histos.add("EnergyZNA", "ZNA Sector Energy", kTH1F, {axisEnergy});
     histos.add("EnergyZNC", "ZNC Sector Energy", kTH1F, {axisEnergy});
+
+    histos.add("ZNenergy", "zn energy", kTH1F, {axisEnergy});
+    histos.add("ZPenergy", "zp energy", kTH1F, {axisEnergy});
+
+    histos.add("hCentFT0C", "FT0C Centrality Distribution", kTH1F, {{100, 0, 105}});
+    histos.add("hFT0MAmp", "hFT0MAmp", kTH1F, {{nBinsAmp, 0, 40000}} );
+       
+
+
     // for q vector recentering
     histos.add("revsimag", "revsimag", kTH2F, {axisREQ, axisIMQ});
 
@@ -313,8 +330,44 @@ struct FlowZDCtask {
       }
     }
   }
+void processNeutronSkin(aodCollisions::iterator const& collision, aod::Zdcs const& zdcs, aod::FT0s const& ft0)
+{
+        float cent = collision.centFT0C();
+        auto ft0Entry = ft0.iteratorAt(collision.globalIndex()) ;
+        float sumA = ft0Entry.sumAmpA();
+        float sumC = ft0Entry.sumAmpC();
+        float FT0MAmp = sumA + sumC; 
+        histos.fill(HIST("hFT0MAmp"), FT0MAmp);
+
+        // Access ZDC data
+        auto zdcEntry = zdcs.iteratorAt(collision.globalIndex());
+        float sumZNC = zdcEntry.energyCommonZNC();
+        float sumZNA = zdcEntry.energyCommonZNA();
+        float sumZPC = zdcEntry.energyCommonZPC();
+        float sumZPA = zdcEntry.energyCommonZPA();
+        float sumZN = sumZNC + sumZNA;
+        float sumZP = sumZPC + sumZPA;
+
+        float ratioZN = sumZNC / sumZNA ; 
+        float ratioZP = sumZPC / sumZPA; 
+        pZNratiovscent->Fill(cent, ratioZN);
+        pZPratiovscent->Fill(cent, ratioZP);        
+        histos.fill(HIST("ZNenergy"), sumZN); 
+        histos.fill(HIST("ZPenergy"), sumZP); 
+        pZNvsFT0Ccent->Fill(cent, sumZN);
+        pZPvsFT0Ccent->Fill(cent, sumZP);
+        pZNvsFT0MAmp->Fill(FT0MAmp, sumZN);
+        pZPvsFT0MAmp->Fill(FT0MAmp, sumZP);
+
+
+
+   
+}
+
+
   PROCESS_SWITCH(FlowZDCtask, processZdcCollAssoc, "Processing ZDC w. collision association", true);
   PROCESS_SWITCH(FlowZDCtask, processQVector, "Process before recentering", true);
+  PROCESS_SWITCH(FlowZDCtask, processNeutronSkin, "Process for analysis of neutron skin", true);
 
 }; // end of struct function
 
