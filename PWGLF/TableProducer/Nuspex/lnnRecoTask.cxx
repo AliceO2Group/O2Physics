@@ -142,7 +142,7 @@ struct lnnRecoTask {
   Configurable<float> nSigmaCutMaxTPC{"nSigmaCutMaxTPC", 5, "triton dEdx cut (n sigma)"};
   Configurable<float> nTPCClusMin3H{"nTPCClusMin3H", 80, "triton NTPC clusters cut"};
   Configurable<float> ptMinTOF{"ptMinTOF", 0.8, "minimum pt for TOF cut"};
-  Configurable<float> ptMaxTOF{"ptMinTOF", 3.5, "minimum pt for TOF cut"};
+  Configurable<float> ptMaxTOF{"ptMaxTOF", 3.5, "minimum pt for TOF cut"};
   Configurable<float> TrTOFMass2Cut{"TrTOFMass2Cut", 5.5, "minimum Triton mass square to TOF"};
   Configurable<bool> mcSignalOnly{"mcSignalOnly", true, "If true, save only signal in MC"};
   
