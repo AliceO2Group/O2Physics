@@ -841,7 +841,7 @@ struct HfDataCreatorCharmHadPiReduced {
                             ptProngs[1], yProngs[1], etaProngs[1]);
       } else if constexpr (decayChannel == DecayChannel::BplusToD0barPi) {
         // B+ → D0bar π+
-        if (RecoDecay::isMatchedMCGen(particlesMc, particle, Pdg::kBPlus, std::array{static_cast<int>(Pdg::kD0), +kPiPlus}, true)) {
+        if (RecoDecay::isMatchedMCGen(particlesMc, particle, Pdg::kBPlus, std::array{-static_cast<int>(Pdg::kD0), +kPiPlus}, true)) {
           // Match D0bar -> π- K+
           auto candD0MC = particlesMc.rawIteratorAt(particle.daughtersIds().front());
           // Printf("Checking D0bar -> π- K+");
