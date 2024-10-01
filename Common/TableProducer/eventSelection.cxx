@@ -33,12 +33,6 @@ using namespace o2::aod::evsel;
 
 MetadataHelper metadataInfo; // Metadata helper
 
-using BCsWithRun2InfosTimestampsAndMatches = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps, aod::Run2MatchedToBCSparse>;
-using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
-using BCsWithBcSelsRun2 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run2BCInfos, aod::Run2MatchedToBCSparse>;
-using BCsWithBcSelsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
-using FullTracksIU = soa::Join<aod::TracksIU, aod::TracksExtra>;
-
 struct BcSelectionTask {
   Produces<aod::BcSels> bcsel;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -60,15 +54,6 @@ struct BcSelectionTask {
 
   void init(InitContext&)
   {
-    if (metadataInfo.isFullyDefined() && !doprocessRun2 && !doprocessRun3) { // Check if the metadata is initialized (only if not forced from the workflow configuration)
-      LOG(info) << "Autosetting the processing mode (Run2 or Run3) based on metadata";
-      if (metadataInfo.isRun3()) {
-        doprocessRun3.value = true;
-      } else {
-        doprocessRun2.value = false;
-      }
-    }
-
     // ccdb->setURL("http://ccdb-test.cern.ch:8080");
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
@@ -93,137 +78,11 @@ struct BcSelectionTask {
     histos.add("hLumiZNCafterBCcuts", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
   }
 
-  void processRun2(
-    BCsWithRun2InfosTimestampsAndMatches const& bcs,
-    aod::Zdcs const&,
-    aod::FV0As const&,
-    aod::FV0Cs const&,
-    aod::FT0s const&,
-    aod::FDDs const&)
-  {
-    bcsel.reserve(bcs.size());
-
-    for (auto& bc : bcs) {
-      EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", bc.timestamp());
-      TriggerAliases* aliases = ccdb->getForTimeStamp<TriggerAliases>("EventSelection/TriggerAliases", bc.timestamp());
-      // fill fired aliases
-      uint32_t alias{0};
-      uint64_t triggerMask = bc.triggerMask();
-      for (auto& al : aliases->GetAliasToTriggerMaskMap()) {
-        if (triggerMask & al.second) {
-          alias |= BIT(al.first);
-        }
-      }
-      uint64_t triggerMaskNext50 = bc.triggerMaskNext50();
-      for (auto& al : aliases->GetAliasToTriggerMaskNext50Map()) {
-        if (triggerMaskNext50 & al.second) {
-          alias |= BIT(al.first);
-        }
-      }
-      alias |= BIT(kALL);
-
-      // get timing info from ZDC, FV0, FT0 and FDD
-      float timeZNA = bc.has_zdc() ? bc.zdc().timeZNA() : -999.f;
-      float timeZNC = bc.has_zdc() ? bc.zdc().timeZNC() : -999.f;
-      float timeV0A = bc.has_fv0a() ? bc.fv0a().time() : -999.f;
-      float timeV0C = bc.has_fv0c() ? bc.fv0c().time() : -999.f;
-      float timeT0A = bc.has_ft0() ? bc.ft0().timeA() : -999.f;
-      float timeT0C = bc.has_ft0() ? bc.ft0().timeC() : -999.f;
-      float timeFDA = bc.has_fdd() ? bc.fdd().timeA() : -999.f;
-      float timeFDC = bc.has_fdd() ? bc.fdd().timeC() : -999.f;
-
-      LOGF(debug, "timeZNA=%f timeZNC=%f", timeZNA, timeZNC);
-      LOGF(debug, "timeV0A=%f timeV0C=%f", timeV0A, timeV0C);
-      LOGF(debug, "timeFDA=%f timeFDC=%f", timeFDA, timeFDC);
-      LOGF(debug, "timeT0A=%f timeT0C=%f", timeT0A, timeT0C);
-
-      // fill time-based selection criteria
-      uint64_t selection{0};
-      selection |= timeV0A > par->fV0ABBlower && timeV0A < par->fV0ABBupper ? BIT(kIsBBV0A) : 0;
-      selection |= timeV0C > par->fV0CBBlower && timeV0C < par->fV0CBBupper ? BIT(kIsBBV0C) : 0;
-      selection |= timeFDA > par->fFDABBlower && timeFDA < par->fFDABBupper ? BIT(kIsBBFDA) : 0;
-      selection |= timeFDC > par->fFDCBBlower && timeFDC < par->fFDCBBupper ? BIT(kIsBBFDC) : 0;
-      selection |= !(timeV0A > par->fV0ABGlower && timeV0A < par->fV0ABGupper) ? BIT(kNoBGV0A) : 0;
-      selection |= !(timeV0C > par->fV0CBGlower && timeV0C < par->fV0CBGupper) ? BIT(kNoBGV0C) : 0;
-      selection |= !(timeFDA > par->fFDABGlower && timeFDA < par->fFDABGupper) ? BIT(kNoBGFDA) : 0;
-      selection |= !(timeFDC > par->fFDCBGlower && timeFDC < par->fFDCBGupper) ? BIT(kNoBGFDC) : 0;
-      selection |= (timeT0A > par->fT0ABBlower && timeT0A < par->fT0ABBupper) ? BIT(kIsBBT0A) : 0;
-      selection |= (timeT0C > par->fT0CBBlower && timeT0C < par->fT0CBBupper) ? BIT(kIsBBT0C) : 0;
-      selection |= (timeZNA > par->fZNABBlower && timeZNA < par->fZNABBupper) ? BIT(kIsBBZNA) : 0;
-      selection |= (timeZNC > par->fZNCBBlower && timeZNC < par->fZNCBBupper) ? BIT(kIsBBZNC) : 0;
-      selection |= !(fabs(timeZNA) > par->fZNABGlower && fabs(timeZNA) < par->fZNABGupper) ? BIT(kNoBGZNA) : 0;
-      selection |= !(fabs(timeZNC) > par->fZNCBGlower && fabs(timeZNC) < par->fZNCBGupper) ? BIT(kNoBGZNC) : 0;
-      selection |= (pow((timeZNA + timeZNC - par->fZNSumMean) / par->fZNSumSigma, 2) + pow((timeZNA - timeZNC - par->fZNDifMean) / par->fZNDifSigma, 2) < 1) ? BIT(kIsBBZAC) : 0;
-
-      // Calculate V0 multiplicity per ring
-      float multRingV0A[5] = {0.};
-      float multRingV0C[4] = {0.};
-      float multFV0A = 0;
-      float multFV0C = 0;
-      if (bc.has_fv0a()) {
-        for (unsigned int i = 0; i < bc.fv0a().amplitude().size(); ++i) {
-          int ring = bc.fv0a().channel()[i] / 8;
-          multRingV0A[ring] += bc.fv0a().amplitude()[i];
-          multFV0A += bc.fv0a().amplitude()[i];
-        }
-      }
-
-      if (bc.has_fv0c()) {
-        for (unsigned int i = 0; i < bc.fv0c().amplitude().size(); ++i) {
-          int ring = bc.fv0c().channel()[i] / 8;
-          multRingV0C[ring] += bc.fv0c().amplitude()[i];
-          multFV0C += bc.fv0c().amplitude()[i];
-        }
-      }
-
-      // Calculate pileup and background related selection flags
-      // V0A0 excluded from online V0A charge sum => excluding also from offline sum for consistency
-      float ofV0M = multFV0A + multFV0C - multRingV0A[0];
-      float onV0M = bc.v0TriggerChargeA() + bc.v0TriggerChargeC();
-      float ofSPD = bc.spdFiredChipsL0() + bc.spdFiredChipsL1();
-      float onSPD = bc.spdFiredFastOrL0() + bc.spdFiredFastOrL1();
-      float multV0C012 = multRingV0C[0] + multRingV0C[1] + multRingV0C[2];
-
-      selection |= (onV0M > par->fV0MOnVsOfA + par->fV0MOnVsOfB * ofV0M) ? BIT(kNoV0MOnVsOfPileup) : 0;
-      selection |= (onSPD > par->fSPDOnVsOfA + par->fSPDOnVsOfB * ofSPD) ? BIT(kNoSPDOnVsOfPileup) : 0;
-      selection |= (multRingV0C[3] > par->fV0CasymA + par->fV0CasymB * multV0C012) ? BIT(kNoV0Casymmetry) : 0;
-      selection |= (TESTBIT(selection, kIsBBV0A) || TESTBIT(selection, kIsBBV0C) || ofSPD) ? BIT(kIsINT1) : 0;
-      selection |= (bc.has_ft0() ? TESTBIT(bc.ft0().triggerMask(), o2::ft0::Triggers::bitVertex) : 0) ? BIT(kIsTriggerTVX) : 0;
-
-      // copy remaining selection decisions from eventCuts
-      uint32_t eventCuts = bc.eventCuts();
-      selection |= (eventCuts & 1 << aod::kTimeRangeCut) ? BIT(kIsGoodTimeRange) : 0;
-      selection |= (eventCuts & 1 << aod::kIncompleteDAQ) ? BIT(kNoIncompleteDAQ) : 0;
-      selection |= !(eventCuts & 1 << aod::kIsTPCLaserWarmUp) ? BIT(kNoTPCLaserWarmUp) : 0;
-      selection |= !(eventCuts & 1 << aod::kIsTPCHVdip) ? BIT(kNoTPCHVdip) : 0;
-      selection |= !(eventCuts & 1 << aod::kIsPileupFromSPD) ? BIT(kNoPileupFromSPD) : 0;
-      selection |= !(eventCuts & 1 << aod::kIsV0PFPileup) ? BIT(kNoV0PFPileup) : 0;
-      selection |= (eventCuts & 1 << aod::kConsistencySPDandTrackVertices) ? BIT(kNoInconsistentVtx) : 0;
-      selection |= (eventCuts & 1 << aod::kPileupInMultBins) ? BIT(kNoPileupInMultBins) : 0;
-      selection |= (eventCuts & 1 << aod::kPileUpMV) ? BIT(kNoPileupMV) : 0;
-      selection |= (eventCuts & 1 << aod::kTPCPileUp) ? BIT(kNoPileupTPC) : 0;
-
-      int32_t foundFT0 = bc.has_ft0() ? bc.ft0().globalIndex() : -1;
-      int32_t foundFV0 = bc.has_fv0a() ? bc.fv0a().globalIndex() : -1;
-      int32_t foundFDD = bc.has_fdd() ? bc.fdd().globalIndex() : -1;
-      int32_t foundZDC = bc.has_zdc() ? bc.zdc().globalIndex() : -1;
-
-      // Fill TVX (T0 vertex) counters
-      if (TESTBIT(selection, kIsTriggerTVX)) {
-        histos.get<TH1>(HIST("hCounterTVX"))->Fill(Form("%d", bc.runNumber()), 1);
-      }
-
-      // Fill bc selection columns
-      bcsel(alias, selection, foundFT0, foundFV0, foundFDD, foundZDC);
-    }
-  }
-  PROCESS_SWITCH(BcSelectionTask, processRun2, "Process Run2 event selection", true);
-
-  void processRun3(BCsWithRun3Matchings const& bcs,
-                   aod::Zdcs const&,
-                   aod::FV0As const&,
-                   aod::FT0s const&,
-                   aod::FDDs const&)
+  void process(soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse> const& bcs,
+               aod::Zdcs const&,
+               aod::FV0As const&,
+               aod::FT0s const&,
+               aod::FDDs const&)
   {
     if (bcs.size() == 0)
       return;
@@ -437,7 +296,176 @@ struct BcSelectionTask {
       bcsel(alias, selection, foundFT0, foundFV0, foundFDD, foundZDC);
     }
   }
-  PROCESS_SWITCH(BcSelectionTask, processRun3, "Process Run3 event selection", false);
+};
+
+struct BcSelectionTaskRun2 {
+  Produces<aod::BcSels> bcsel;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  Configurable<int> confTriggerBcShift{"triggerBcShift", 999, "set to 294 for apass2/apass3 in LHC22o-t"};
+  Configurable<int> confITSROFrameStartBorderMargin{"ITSROFrameStartBorderMargin", -1, "Number of bcs at the start of ITS RO Frame border. Take from CCDB if -1"};
+  Configurable<int> confITSROFrameEndBorderMargin{"ITSROFrameEndBorderMargin", -1, "Number of bcs at the end of ITS RO Frame border. Take from CCDB if -1"};
+  Configurable<int> confTimeFrameStartBorderMargin{"TimeFrameStartBorderMargin", -1, "Number of bcs to cut at the start of the Time Frame. Take from CCDB if -1"};
+  Configurable<int> confTimeFrameEndBorderMargin{"TimeFrameEndBorderMargin", -1, "Number of bcs to cut at the end of the Time Frame. Take from CCDB if -1"};
+  Configurable<bool> confCheckRunDurationLimits{"checkRunDurationLimits", false, "Check if the BCs are within the run duration limits"};
+
+  int lastRunNumber = -1;
+  int64_t bcSOR = -1;                    // global bc of the start of the first orbit
+  int64_t nBCsPerTF = -1;                // duration of TF in bcs, should be 128*3564 or 32*3564
+  int mITSROFrameStartBorderMargin = 10; // default value
+  int mITSROFrameEndBorderMargin = 20;   // default value
+  int mTimeFrameStartBorderMargin = 300; // default value
+  int mTimeFrameEndBorderMargin = 4000;  // default value
+
+  void init(InitContext&)
+  {
+    // ccdb->setURL("http://ccdb-test.cern.ch:8080");
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+
+    histos.add("hCounterTVX", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hCounterTCE", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hCounterZEM", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hCounterZNC", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hCounterTVXafterBCcuts", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hCounterTCEafterBCcuts", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hCounterZEMafterBCcuts", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hCounterZNCafterBCcuts", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hCounterInvalidBCTimestamp", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hLumiTVX", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
+    histos.add("hLumiTCE", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
+    histos.add("hLumiZEM", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
+    histos.add("hLumiZNC", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
+    histos.add("hLumiTVXafterBCcuts", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
+    histos.add("hLumiTCEafterBCcuts", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
+    histos.add("hLumiZEMafterBCcuts", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
+    histos.add("hLumiZNCafterBCcuts", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
+  }
+
+  void process(soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps, aod::Run2MatchedToBCSparse> const& bcs,
+               aod::Zdcs const&,
+               aod::FV0As const&,
+               aod::FV0Cs const&,
+               aod::FT0s const&,
+               aod::FDDs const&)
+  {
+    bcsel.reserve(bcs.size());
+
+    for (auto& bc : bcs) {
+      EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", bc.timestamp());
+      TriggerAliases* aliases = ccdb->getForTimeStamp<TriggerAliases>("EventSelection/TriggerAliases", bc.timestamp());
+      // fill fired aliases
+      uint32_t alias{0};
+      uint64_t triggerMask = bc.triggerMask();
+      for (auto& al : aliases->GetAliasToTriggerMaskMap()) {
+        if (triggerMask & al.second) {
+          alias |= BIT(al.first);
+        }
+      }
+      uint64_t triggerMaskNext50 = bc.triggerMaskNext50();
+      for (auto& al : aliases->GetAliasToTriggerMaskNext50Map()) {
+        if (triggerMaskNext50 & al.second) {
+          alias |= BIT(al.first);
+        }
+      }
+      alias |= BIT(kALL);
+
+      // get timing info from ZDC, FV0, FT0 and FDD
+      float timeZNA = bc.has_zdc() ? bc.zdc().timeZNA() : -999.f;
+      float timeZNC = bc.has_zdc() ? bc.zdc().timeZNC() : -999.f;
+      float timeV0A = bc.has_fv0a() ? bc.fv0a().time() : -999.f;
+      float timeV0C = bc.has_fv0c() ? bc.fv0c().time() : -999.f;
+      float timeT0A = bc.has_ft0() ? bc.ft0().timeA() : -999.f;
+      float timeT0C = bc.has_ft0() ? bc.ft0().timeC() : -999.f;
+      float timeFDA = bc.has_fdd() ? bc.fdd().timeA() : -999.f;
+      float timeFDC = bc.has_fdd() ? bc.fdd().timeC() : -999.f;
+
+      LOGF(debug, "timeZNA=%f timeZNC=%f", timeZNA, timeZNC);
+      LOGF(debug, "timeV0A=%f timeV0C=%f", timeV0A, timeV0C);
+      LOGF(debug, "timeFDA=%f timeFDC=%f", timeFDA, timeFDC);
+      LOGF(debug, "timeT0A=%f timeT0C=%f", timeT0A, timeT0C);
+
+      // fill time-based selection criteria
+      uint64_t selection{0};
+      selection |= timeV0A > par->fV0ABBlower && timeV0A < par->fV0ABBupper ? BIT(kIsBBV0A) : 0;
+      selection |= timeV0C > par->fV0CBBlower && timeV0C < par->fV0CBBupper ? BIT(kIsBBV0C) : 0;
+      selection |= timeFDA > par->fFDABBlower && timeFDA < par->fFDABBupper ? BIT(kIsBBFDA) : 0;
+      selection |= timeFDC > par->fFDCBBlower && timeFDC < par->fFDCBBupper ? BIT(kIsBBFDC) : 0;
+      selection |= !(timeV0A > par->fV0ABGlower && timeV0A < par->fV0ABGupper) ? BIT(kNoBGV0A) : 0;
+      selection |= !(timeV0C > par->fV0CBGlower && timeV0C < par->fV0CBGupper) ? BIT(kNoBGV0C) : 0;
+      selection |= !(timeFDA > par->fFDABGlower && timeFDA < par->fFDABGupper) ? BIT(kNoBGFDA) : 0;
+      selection |= !(timeFDC > par->fFDCBGlower && timeFDC < par->fFDCBGupper) ? BIT(kNoBGFDC) : 0;
+      selection |= (timeT0A > par->fT0ABBlower && timeT0A < par->fT0ABBupper) ? BIT(kIsBBT0A) : 0;
+      selection |= (timeT0C > par->fT0CBBlower && timeT0C < par->fT0CBBupper) ? BIT(kIsBBT0C) : 0;
+      selection |= (timeZNA > par->fZNABBlower && timeZNA < par->fZNABBupper) ? BIT(kIsBBZNA) : 0;
+      selection |= (timeZNC > par->fZNCBBlower && timeZNC < par->fZNCBBupper) ? BIT(kIsBBZNC) : 0;
+      selection |= !(fabs(timeZNA) > par->fZNABGlower && fabs(timeZNA) < par->fZNABGupper) ? BIT(kNoBGZNA) : 0;
+      selection |= !(fabs(timeZNC) > par->fZNCBGlower && fabs(timeZNC) < par->fZNCBGupper) ? BIT(kNoBGZNC) : 0;
+      selection |= (pow((timeZNA + timeZNC - par->fZNSumMean) / par->fZNSumSigma, 2) + pow((timeZNA - timeZNC - par->fZNDifMean) / par->fZNDifSigma, 2) < 1) ? BIT(kIsBBZAC) : 0;
+
+      // Calculate V0 multiplicity per ring
+      float multRingV0A[5] = {0.};
+      float multRingV0C[4] = {0.};
+      float multFV0A = 0;
+      float multFV0C = 0;
+      if (bc.has_fv0a()) {
+        for (unsigned int i = 0; i < bc.fv0a().amplitude().size(); ++i) {
+          int ring = bc.fv0a().channel()[i] / 8;
+          multRingV0A[ring] += bc.fv0a().amplitude()[i];
+          multFV0A += bc.fv0a().amplitude()[i];
+        }
+      }
+
+      if (bc.has_fv0c()) {
+        for (unsigned int i = 0; i < bc.fv0c().amplitude().size(); ++i) {
+          int ring = bc.fv0c().channel()[i] / 8;
+          multRingV0C[ring] += bc.fv0c().amplitude()[i];
+          multFV0C += bc.fv0c().amplitude()[i];
+        }
+      }
+
+      // Calculate pileup and background related selection flags
+      // V0A0 excluded from online V0A charge sum => excluding also from offline sum for consistency
+      float ofV0M = multFV0A + multFV0C - multRingV0A[0];
+      float onV0M = bc.v0TriggerChargeA() + bc.v0TriggerChargeC();
+      float ofSPD = bc.spdFiredChipsL0() + bc.spdFiredChipsL1();
+      float onSPD = bc.spdFiredFastOrL0() + bc.spdFiredFastOrL1();
+      float multV0C012 = multRingV0C[0] + multRingV0C[1] + multRingV0C[2];
+
+      selection |= (onV0M > par->fV0MOnVsOfA + par->fV0MOnVsOfB * ofV0M) ? BIT(kNoV0MOnVsOfPileup) : 0;
+      selection |= (onSPD > par->fSPDOnVsOfA + par->fSPDOnVsOfB * ofSPD) ? BIT(kNoSPDOnVsOfPileup) : 0;
+      selection |= (multRingV0C[3] > par->fV0CasymA + par->fV0CasymB * multV0C012) ? BIT(kNoV0Casymmetry) : 0;
+      selection |= (TESTBIT(selection, kIsBBV0A) || TESTBIT(selection, kIsBBV0C) || ofSPD) ? BIT(kIsINT1) : 0;
+      selection |= (bc.has_ft0() ? TESTBIT(bc.ft0().triggerMask(), o2::ft0::Triggers::bitVertex) : 0) ? BIT(kIsTriggerTVX) : 0;
+
+      // copy remaining selection decisions from eventCuts
+      uint32_t eventCuts = bc.eventCuts();
+      selection |= (eventCuts & 1 << aod::kTimeRangeCut) ? BIT(kIsGoodTimeRange) : 0;
+      selection |= (eventCuts & 1 << aod::kIncompleteDAQ) ? BIT(kNoIncompleteDAQ) : 0;
+      selection |= !(eventCuts & 1 << aod::kIsTPCLaserWarmUp) ? BIT(kNoTPCLaserWarmUp) : 0;
+      selection |= !(eventCuts & 1 << aod::kIsTPCHVdip) ? BIT(kNoTPCHVdip) : 0;
+      selection |= !(eventCuts & 1 << aod::kIsPileupFromSPD) ? BIT(kNoPileupFromSPD) : 0;
+      selection |= !(eventCuts & 1 << aod::kIsV0PFPileup) ? BIT(kNoV0PFPileup) : 0;
+      selection |= (eventCuts & 1 << aod::kConsistencySPDandTrackVertices) ? BIT(kNoInconsistentVtx) : 0;
+      selection |= (eventCuts & 1 << aod::kPileupInMultBins) ? BIT(kNoPileupInMultBins) : 0;
+      selection |= (eventCuts & 1 << aod::kPileUpMV) ? BIT(kNoPileupMV) : 0;
+      selection |= (eventCuts & 1 << aod::kTPCPileUp) ? BIT(kNoPileupTPC) : 0;
+
+      int32_t foundFT0 = bc.has_ft0() ? bc.ft0().globalIndex() : -1;
+      int32_t foundFV0 = bc.has_fv0a() ? bc.fv0a().globalIndex() : -1;
+      int32_t foundFDD = bc.has_fdd() ? bc.fdd().globalIndex() : -1;
+      int32_t foundZDC = bc.has_zdc() ? bc.zdc().globalIndex() : -1;
+
+      // Fill TVX (T0 vertex) counters
+      if (TESTBIT(selection, kIsTriggerTVX)) {
+        histos.get<TH1>(HIST("hCounterTVX"))->Fill(Form("%d", bc.runNumber()), 1);
+      }
+
+      // Fill bc selection columns
+      bcsel(alias, selection, foundFT0, foundFV0, foundFDD, foundZDC);
+    }
+  }
 };
 
 struct EventSelectionTask {
@@ -483,14 +511,6 @@ struct EventSelectionTask {
   void init(InitContext&)
   {
     if (metadataInfo.isFullyDefined()) { // Check if the metadata is initialized (only if not forced from the workflow configuration)
-      if (!doprocessRun2 && !doprocessRun3) {
-        LOG(info) << "Autosetting the processing mode (Run2 or Run3) based on metadata";
-        if (metadataInfo.isRun3()) {
-          doprocessRun3.value = true;
-        } else {
-          doprocessRun2.value = false;
-        }
-      }
       if (isMC == -1) {
         LOG(info) << "Autosetting the MC mode based on metadata";
         if (metadataInfo.isMC()) {
@@ -512,86 +532,15 @@ struct EventSelectionTask {
     // histos.add("hOccupancy", "", kTH1D, {{200, 0., 10000}});
   }
 
-  void process(aod::Collisions const& collisions)
+  using BCsWithBcSelsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
+  using FullTracksIU = soa::Join<aod::TracksIU, aod::TracksExtra>;
+  Preslice<FullTracksIU> perCollision = aod::track::collisionId;
+  void process(aod::Collisions const& cols,
+               FullTracksIU const& tracks,
+               BCsWithBcSelsRun3 const& bcs,
+               aod::FT0s const&)
   {
     evsel.reserve(collisions.size());
-  }
-
-  void processRun2(aod::Collision const& col, BCsWithBcSelsRun2 const&, aod::Tracks const&, aod::FV0Cs const&)
-  {
-    auto bc = col.bc_as<BCsWithBcSelsRun2>();
-    EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", bc.timestamp());
-    bool* applySelection = par->GetSelection(muonSelection);
-    if (isMC == 1) {
-      applySelection[kIsBBZAC] = 0;
-      applySelection[kNoV0MOnVsOfPileup] = 0;
-      applySelection[kNoSPDOnVsOfPileup] = 0;
-      applySelection[kNoV0Casymmetry] = 0;
-      applySelection[kNoV0PFPileup] = 0;
-    }
-
-    int32_t foundBC = bc.globalIndex();
-    int32_t foundFT0 = bc.foundFT0Id();
-    int32_t foundFV0 = bc.foundFV0Id();
-    int32_t foundFDD = bc.foundFDDId();
-    int32_t foundZDC = bc.foundZDCId();
-
-    // copy alias decisions from bcsel table
-    uint32_t alias = bc.alias_raw();
-
-    // copy selection decisions from bcsel table
-    uint64_t selection = bc.selection_raw();
-
-    // calculate V0C012 multiplicity
-    float multRingV0C[4] = {0.};
-    if (bc.has_fv0c()) {
-      for (unsigned int i = 0; i < bc.fv0c().amplitude().size(); ++i) {
-        int ring = bc.fv0c().channel()[i] / 8;
-        multRingV0C[ring] += bc.fv0c().amplitude()[i];
-      }
-    }
-    float multV0C012 = multRingV0C[0] + multRingV0C[1] + multRingV0C[2];
-
-    // applying selections depending on the number of tracklets
-    auto trackletsGrouped = tracklets->sliceByCached(aod::track::collisionId, col.globalIndex(), cache);
-    int nTkl = trackletsGrouped.size();
-    int spdClusters = bc.spdClustersL0() + bc.spdClustersL1();
-
-    selection |= (spdClusters < par->fSPDClsVsTklA + nTkl * par->fSPDClsVsTklB) ? BIT(kNoSPDClsVsTklBG) : 0;
-    selection |= !(nTkl < 6 && multV0C012 > par->fV0C012vsTklA + nTkl * par->fV0C012vsTklB) ? BIT(kNoV0C012vsTklBG) : 0;
-
-    // apply int7-like selections
-    bool sel7 = 1;
-    for (int i = 0; i < kNsel; i++) {
-      sel7 = sel7 && (applySelection[i] ? TESTBIT(selection, i) : 1);
-    }
-
-    // TODO introduce array of sel[0]... sel[8] or similar?
-    bool sel8 = bc.selection_bit(kIsBBT0A) && bc.selection_bit(kIsBBT0C); // TODO apply other cuts for sel8
-    bool sel1 = bc.selection_bit(kIsINT1);
-    sel1 = sel1 && bc.selection_bit(kNoBGV0A);
-    sel1 = sel1 && bc.selection_bit(kNoBGV0C);
-    sel1 = sel1 && bc.selection_bit(kNoTPCLaserWarmUp);
-    sel1 = sel1 && bc.selection_bit(kNoTPCHVdip);
-
-    // INT1 (SPDFO>0 | V0A | V0C) minimum bias trigger logic used in pp2010 and pp2011
-    bool isINT1period = bc.runNumber() <= 136377 || (bc.runNumber() >= 144871 && bc.runNumber() <= 159582);
-
-    // fill counters
-    if (isMC == 1 || (!isINT1period && bc.alias_bit(kINT7)) || (isINT1period && bc.alias_bit(kINT1))) {
-      histos.get<TH1>(HIST("hColCounterAll"))->Fill(Form("%d", bc.runNumber()), 1);
-      if ((!isINT1period && sel7) || (isINT1period && sel1)) {
-        histos.get<TH1>(HIST("hColCounterAcc"))->Fill(Form("%d", bc.runNumber()), 1);
-      }
-    }
-
-    evsel(alias, selection, sel7, sel8, foundBC, foundFT0, foundFV0, foundFDD, foundZDC, 0);
-  }
-  PROCESS_SWITCH(EventSelectionTask, processRun2, "Process Run2 event selection", true);
-
-  Preslice<FullTracksIU> perCollision = aod::track::collisionId;
-  void processRun3(aod::Collisions const& cols, FullTracksIU const& tracks, BCsWithBcSelsRun3 const& bcs, aod::FT0s const&)
-  {
     int run = bcs.iteratorAt(0).runNumber();
     // extract bc pattern from CCDB for data or anchored MC only
     if (run != lastRun && run >= 500000) {
@@ -924,16 +873,157 @@ struct EventSelectionTask {
       evsel(alias, selection, sel7, sel8, foundBC, foundFT0, foundFV0, foundFDD, foundZDC, nTracksITS567inFullTimeWin);
     }
   }
+};
 
-  PROCESS_SWITCH(EventSelectionTask, processRun3, "Process Run3 event selection", false);
+struct EventSelectionTaskRun2 {
+  SliceCache cache;
+  Produces<aod::EvSels> evsel;
+  Configurable<int> muonSelection{"muonSelection", 0, "0 - barrel, 1 - muon selection with pileup cuts, 2 - muon selection without pileup cuts"};
+  Configurable<float> maxDiffZvtxFT0vsPV{"maxDiffZvtxFT0vsPV", 1., "maximum difference (in cm) between z-vertex from FT0 and PV"};
+  Configurable<int> isMC{"isMC", 0, "-1 - autoset, 0 - data, 1 - MC"};
+  // configurables for occupancy-based event selection
+  Configurable<float> confTimeIntervalForOccupancyCalculationMin{"TimeIntervalForOccupancyCalculationMin", -40, "Min time diff window for TPC occupancy calculation, us"};
+  Configurable<float> confTimeIntervalForOccupancyCalculationMax{"TimeIntervalForOccupancyCalculationMax", 100, "Max time diff window for TPC occupancy calculation, us"};
+  Configurable<std::vector<float>> confTimeBinsForOccupancyCalculation{"TimeBinsForOccupancyCalculation", {-40, -20, 0, 25, 50, 75, 100}, "Time bins for occupancy calculation and corresponding cuts (us)"};
+  Configurable<std::vector<float>> confReferenceOccupanciesInTimeBins{"ReferenceOccupanciesInTimeBins", {3000, 1400, 750, 1000, 1750, 4000}, "Occupancy cuts in time bins (n tracks)"};
+  Configurable<float> confTimeRangeVetoOnCollStandard{"TimeRangeVetoOnCollStandard", 10, "Exclusion of a collision if there are other collisions nearby, +/- us"};
+  Configurable<float> confTimeRangeVetoOnCollNarrow{"TimeRangeVetoOnCollNarrow", 4, "Exclusion of a collision if there are other collisions nearby, +/- us"};
+  Configurable<bool> confUseWeightsForOccupancyVariable{"UseWeightsForOccupancyEstimator", 1, "Use or not the delta-time weights for the occupancy estimator"};
+
+  Partition<aod::Tracks> tracklets = (aod::track::trackType == static_cast<uint8_t>(o2::aod::track::TrackTypeEnum::Run2Tracklet));
+
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  int lastRun = -1;                                          // last run number (needed to access ccdb only if run!=lastRun)
+  std::bitset<o2::constants::lhc::LHCMaxBunches> bcPatternB; // bc pattern of colliding bunches
+
+  int64_t bcSOR = -1;     // global bc of the start of the first orbit
+  int64_t nBCsPerTF = -1; // duration of TF in bcs, should be 128*3564 or 32*3564
+
+  int32_t findClosest(int64_t globalBC, std::map<int64_t, int32_t>& bcs)
+  {
+    auto it = bcs.lower_bound(globalBC);
+    int64_t bc1 = it->first;
+    int32_t index1 = it->second;
+    if (it != bcs.begin())
+      --it;
+    int64_t bc2 = it->first;
+    int32_t index2 = it->second;
+    int64_t dbc1 = std::abs(bc1 - globalBC);
+    int64_t dbc2 = std::abs(bc2 - globalBC);
+    return (dbc1 <= dbc2) ? index1 : index2;
+  }
+
+  void init(InitContext&)
+  {
+    if (metadataInfo.isFullyDefined()) { // Check if the metadata is initialized (only if not forced from the workflow configuration)
+      if (isMC == -1) {
+        LOG(info) << "Autosetting the MC mode based on metadata";
+        if (metadataInfo.isMC()) {
+          isMC.value = 1;
+        } else {
+          isMC.value = 0;
+        }
+      }
+    }
+
+    // ccdb->setURL("http://ccdb-test.cern.ch:8080");
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+
+    histos.add("hColCounterAll", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hColCounterTVX", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hColCounterAcc", "", kTH1D, {{1, 0., 1.}});
+    // histos.add("hOccupancy", "", kTH1D, {{200, 0., 10000}});
+  }
+
+  using BCsWithBcSelsRun2 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run2BCInfos, aod::Run2MatchedToBCSparse>;
+  void process(aod::Collision const& col,
+               BCsWithBcSelsRun2 const&,
+               aod::Tracks const&,
+               aod::FV0Cs const&)
+  {
+    evsel.reserve(collisions.size());
+    auto bc = col.bc_as<BCsWithBcSelsRun2>();
+    EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", bc.timestamp());
+    bool* applySelection = par->GetSelection(muonSelection);
+    if (isMC == 1) {
+      applySelection[kIsBBZAC] = 0;
+      applySelection[kNoV0MOnVsOfPileup] = 0;
+      applySelection[kNoSPDOnVsOfPileup] = 0;
+      applySelection[kNoV0Casymmetry] = 0;
+      applySelection[kNoV0PFPileup] = 0;
+    }
+
+    int32_t foundBC = bc.globalIndex();
+    int32_t foundFT0 = bc.foundFT0Id();
+    int32_t foundFV0 = bc.foundFV0Id();
+    int32_t foundFDD = bc.foundFDDId();
+    int32_t foundZDC = bc.foundZDCId();
+
+    // copy alias decisions from bcsel table
+    uint32_t alias = bc.alias_raw();
+
+    // copy selection decisions from bcsel table
+    uint64_t selection = bc.selection_raw();
+
+    // calculate V0C012 multiplicity
+    float multRingV0C[4] = {0.};
+    if (bc.has_fv0c()) {
+      for (unsigned int i = 0; i < bc.fv0c().amplitude().size(); ++i) {
+        int ring = bc.fv0c().channel()[i] / 8;
+        multRingV0C[ring] += bc.fv0c().amplitude()[i];
+      }
+    }
+    float multV0C012 = multRingV0C[0] + multRingV0C[1] + multRingV0C[2];
+
+    // applying selections depending on the number of tracklets
+    auto trackletsGrouped = tracklets->sliceByCached(aod::track::collisionId, col.globalIndex(), cache);
+    int nTkl = trackletsGrouped.size();
+    int spdClusters = bc.spdClustersL0() + bc.spdClustersL1();
+
+    selection |= (spdClusters < par->fSPDClsVsTklA + nTkl * par->fSPDClsVsTklB) ? BIT(kNoSPDClsVsTklBG) : 0;
+    selection |= !(nTkl < 6 && multV0C012 > par->fV0C012vsTklA + nTkl * par->fV0C012vsTklB) ? BIT(kNoV0C012vsTklBG) : 0;
+
+    // apply int7-like selections
+    bool sel7 = 1;
+    for (int i = 0; i < kNsel; i++) {
+      sel7 = sel7 && (applySelection[i] ? TESTBIT(selection, i) : 1);
+    }
+
+    // TODO introduce array of sel[0]... sel[8] or similar?
+    bool sel8 = bc.selection_bit(kIsBBT0A) && bc.selection_bit(kIsBBT0C); // TODO apply other cuts for sel8
+    bool sel1 = bc.selection_bit(kIsINT1);
+    sel1 = sel1 && bc.selection_bit(kNoBGV0A);
+    sel1 = sel1 && bc.selection_bit(kNoBGV0C);
+    sel1 = sel1 && bc.selection_bit(kNoTPCLaserWarmUp);
+    sel1 = sel1 && bc.selection_bit(kNoTPCHVdip);
+
+    // INT1 (SPDFO>0 | V0A | V0C) minimum bias trigger logic used in pp2010 and pp2011
+    bool isINT1period = bc.runNumber() <= 136377 || (bc.runNumber() >= 144871 && bc.runNumber() <= 159582);
+
+    // fill counters
+    if (isMC == 1 || (!isINT1period && bc.alias_bit(kINT7)) || (isINT1period && bc.alias_bit(kINT1))) {
+      histos.get<TH1>(HIST("hColCounterAll"))->Fill(Form("%d", bc.runNumber()), 1);
+      if ((!isINT1period && sel7) || (isINT1period && sel1)) {
+        histos.get<TH1>(HIST("hColCounterAcc"))->Fill(Form("%d", bc.runNumber()), 1);
+      }
+    }
+
+    evsel(alias, selection, sel7, sel8, foundBC, foundFT0, foundFV0, foundFDD, foundZDC, 0);
+  }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   // Parse the metadata
   metadataInfo.initMetadata(cfgc);
-
-  return WorkflowSpec{
-    adaptAnalysisTask<BcSelectionTask>(cfgc),
-    adaptAnalysisTask<EventSelectionTask>(cfgc)};
+  if (metadataInfo.isRun3()) {
+    return WorkflowSpec{adaptAnalysisTask<BcSelectionTask>(cfgc),
+                        adaptAnalysisTask<EventSelectionTask>(cfgc)};
+  }
+  return WorkflowSpec{adaptAnalysisTask<BcSelectionTaskRun2>(cfgc),
+                      adaptAnalysisTask<EventSelectionTaskRun2>(cfgc)};
 }
