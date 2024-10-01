@@ -189,44 +189,45 @@ struct decay3bodyBuilder {
   Configurable<bool> fatalOnPassNotAvailable{"fatalOnPassNotAvailable", true, "Flag to throw a fatal if the pass is not available in the retrieved CCDB object"};
   // for KFParticle reconstruction
   struct : ConfigurableGroup {
-    Configurable<bool> doSel8selection{"doSel8selection", true, "flag for sel8 event selection"};
-    Configurable<bool> doPosZselection{"doPosZselection", true, "flag for posZ event selection"};
-    Configurable<bool> doDCAFitterPreMinimum{"doDCAFitterPreMinimum", false, "do DCAFitter pre-optimization before KF fit to include material corrections for decay3body vertex"};
-    Configurable<bool> doTrackQA{"doTrackQA", false, "Flag to fill QA histograms for daughter tracks."};
-    Configurable<bool> doVertexQA{"doVertexQA", false, "Flag to fill QA histograms for KFParticle PV."};
-    Configurable<bool> useLambdaMassConstraint{"useLambdaMassConstraint", false, "Apply Lambda mass constraint on proton-pion vertex"};
-    Configurable<float> maxEta{"maxEta", 0.9, "Maximum eta for daughter tracks"};
-    Configurable<float> mintpcNClsProton{"mintpcNClsProton", 70, "Minimum number of TPC clusters for proton track"};
-    Configurable<float> mintpcNClsPion{"mintpcNClsPion", 70, "Minimum number of TPC clusters for pion track"};
-    Configurable<float> mintpcNClsBach{"mintpcNClsBach", 70, "Minimum number of TPC clusters for bachelor track"};
-    Configurable<float> mintpcCrossedRows{"mintpcCrossedRows", 70, "Minimum number of TPC crossed rows for proton and deuteron track"};
-    Configurable<float> mintpcCrossedRowsPion{"mintpcCrossedRowsPion", 70, "Minimum number of TPC crossed rows for pion track"};
-    Configurable<float> minPtProton{"minPtProton", 0.1, "Minimum pT of proton track"};
-    Configurable<float> maxPtProton{"maxPtProton", 10, "Maximum pT of proton track"};
-    Configurable<float> minPtPion{"minPtPion", 0.1, "Minimum pT of pion track"};
-    Configurable<float> maxPtPion{"maxPtPion", 10, "Maximum pT of pion track"};
-    Configurable<float> minPtDeuteron{"minPtDeuteron", 0.1, "Minimum pT of deuteron track"};
-    Configurable<float> maxPtDeuteron{"maxPtDeuteron", 10, "Maximum pT of deuteron track"};
-    Configurable<float> mindcaXYPionPV{"mindcaXYPionPV", 0.1, "Minimum DCA XY of the pion daughter track to the PV"};
-    Configurable<float> mindcaXYProtonPV{"mindcaXYProtonPV", 0.1, "Minimum DCA XY of the proton daughter track to the PV"};
-    Configurable<float> mindcaZPionPV{"mindcaZPionPV", 0.1, "Minimum DCA Z of the pion daughter track to the PV"};
-    Configurable<float> mindcaZProtonPV{"mindcaZProtonPV", 0.1, "Minimum DCA Z of the proton daughter track to the PV"};
-    Configurable<float> maxtpcnSigma{"maxtpcnSigma", 5., "Maximum nSigma TPC for daughter tracks"};
-    Configurable<float> maxDcaProDeu{"maxDcaProDeu", 1000., "Maximum geometrical distance between proton and deuteron at the SV in 3D with KFParticle"};
-    Configurable<float> maxDcaProPi{"maxDcaProPi", 1000., "Maximum geometrical distance between proton and pion at the SV in 3D with KFParticle"};
-    Configurable<float> maxDcaPiDe{"maxDcaPiDe", 1000., "Maximum geometrical distance between pion and deuteron at the SV in 3D with KFParticle"};
-    Configurable<float> maxDcaXYSVDau{"maxDcaXYSVDau", 1.0, "Maximum geometrical distance of daughter tracks from the SV in XY with KFParticle"};
-    Configurable<float> maxRapidityHt{"maxRapidityHt", 1., "Maximum rapidity for Hypertriton candidates with KFParticle"};
-    Configurable<float> minPtHt{"minPtHt", 0., "Minimum momentum for Hypertriton candidates with KFParticle"};
-    Configurable<float> maxPtHt{"maxPtHt", 36., "Maximum momentum for Hypertriton candidates with KFParticle"};
-    Configurable<float> minMassHt{"minMassHt", 2.96, "Minimum candidate mass with KFParticle"};
-    Configurable<float> maxMassHt{"maxMassHt", 3.05, "Maximum candidate mass with KFParticle"};
-    Configurable<float> maxctauHt{"maxctauHt", 40., "Maximum candidate ctau with KFParticle before topological constraint"};
-    Configurable<float> maxChi2geo{"maxChi2geo", 1000., "Maximum chi2 geometrical with KFParticle"};
-    Configurable<float> minCosPA{"minCosPA", 0.5, "Minimum cosine pointing angle with KFParticle"};
-    Configurable<float> minCosPAxy{"minCosPAxy", 0.5, "Minimum cosine pointing angle in xy with KFParticle"};
-    Configurable<bool> applyTopoSel{"applyTopoSel", false, "Apply selection constraining the mother to the PV with KFParticle"};
-    Configurable<float> maxChi2topo{"maxChi2topo", 1000., "Maximum chi2 topological with KFParticle"};
+    Configurable<bool> fillCandidateLiteTable{"kfparticleConfigurations.fillCandidateLiteTable", false, "Switch to fill lite table with candidate properties"};
+    Configurable<bool> doSel8selection{"kfparticleConfigurations.doSel8selection", true, "flag for sel8 event selection"};
+    Configurable<bool> doPosZselection{"kfparticleConfigurations.doPosZselection", true, "flag for posZ event selection"};
+    Configurable<bool> doDCAFitterPreMinimum{"kfparticleConfigurations.doDCAFitterPreMinimum", false, "do DCAFitter pre-optimization before KF fit to include material corrections for decay3body vertex"};
+    Configurable<bool> doTrackQA{"kfparticleConfigurations.doTrackQA", false, "Flag to fill QA histograms for daughter tracks."};
+    Configurable<bool> doVertexQA{"kfparticleConfigurations.doVertexQA", false, "Flag to fill QA histograms for KFParticle PV."};
+    Configurable<bool> useLambdaMassConstraint{"kfparticleConfigurations.useLambdaMassConstraint", false, "Apply Lambda mass constraint on proton-pion vertex"};
+    Configurable<float> maxEta{"kfparticleConfigurations.maxEta", 0.9, "Maximum eta for daughter tracks"};
+    Configurable<float> mintpcNClsProton{"kfparticleConfigurations.mintpcNClsProton", 70, "Minimum number of TPC clusters for proton track"};
+    Configurable<float> mintpcNClsPion{"kfparticleConfigurations.mintpcNClsPion", 70, "Minimum number of TPC clusters for pion track"};
+    Configurable<float> mintpcNClsBach{"kfparticleConfigurations.mintpcNClsBach", 70, "Minimum number of TPC clusters for bachelor track"};
+    Configurable<float> mintpcCrossedRows{"kfparticleConfigurations.mintpcCrossedRows", 70, "Minimum number of TPC crossed rows for proton and deuteron track"};
+    Configurable<float> mintpcCrossedRowsPion{"kfparticleConfigurations.mintpcCrossedRowsPion", 70, "Minimum number of TPC crossed rows for pion track"};
+    Configurable<float> minPtProton{"kfparticleConfigurations.minPtProton", 0.1, "Minimum pT of proton track"};
+    Configurable<float> maxPtProton{"kfparticleConfigurations.maxPtProton", 10, "Maximum pT of proton track"};
+    Configurable<float> minPtPion{"kfparticleConfigurations.minPtPion", 0.1, "Minimum pT of pion track"};
+    Configurable<float> maxPtPion{"kfparticleConfigurations.maxPtPion", 10, "Maximum pT of pion track"};
+    Configurable<float> minPtDeuteron{"kfparticleConfigurations.minPtDeuteron", 0.1, "Minimum pT of deuteron track"};
+    Configurable<float> maxPtDeuteron{"kfparticleConfigurations.maxPtDeuteron", 10, "Maximum pT of deuteron track"};
+    Configurable<float> mindcaXYPionPV{"kfparticleConfigurations.mindcaXYPionPV", 0.1, "Minimum DCA XY of the pion daughter track to the PV"};
+    Configurable<float> mindcaXYProtonPV{"kfparticleConfigurations.mindcaXYProtonPV", 0.1, "Minimum DCA XY of the proton daughter track to the PV"};
+    Configurable<float> mindcaZPionPV{"kfparticleConfigurations.mindcaZPionPV", 0.1, "Minimum DCA Z of the pion daughter track to the PV"};
+    Configurable<float> mindcaZProtonPV{"kfparticleConfigurations.mindcaZProtonPV", 0.1, "Minimum DCA Z of the proton daughter track to the PV"};
+    Configurable<float> maxtpcnSigma{"kfparticleConfigurations.maxtpcnSigma", 5., "Maximum nSigma TPC for daughter tracks"};
+    Configurable<float> maxDcaProDeu{"kfparticleConfigurations.maxDcaProDeu", 1000., "Maximum geometrical distance between proton and deuteron at the SV in 3D with KFParticle"};
+    Configurable<float> maxDcaProPi{"kfparticleConfigurations.maxDcaProPi", 1000., "Maximum geometrical distance between proton and pion at the SV in 3D with KFParticle"};
+    Configurable<float> maxDcaPiDe{"kfparticleConfigurations.maxDcaPiDe", 1000., "Maximum geometrical distance between pion and deuteron at the SV in 3D with KFParticle"};
+    Configurable<float> maxDcaXYSVDau{"kfparticleConfigurations.maxDcaXYSVDau", 1.0, "Maximum geometrical distance of daughter tracks from the SV in XY with KFParticle"};
+    Configurable<float> maxRapidityHt{"kfparticleConfigurations.maxRapidityHt", 1., "Maximum rapidity for Hypertriton candidates with KFParticle"};
+    Configurable<float> minPtHt{"kfparticleConfigurations.minPtHt", 0., "Minimum momentum for Hypertriton candidates with KFParticle"};
+    Configurable<float> maxPtHt{"kfparticleConfigurations.maxPtHt", 36., "Maximum momentum for Hypertriton candidates with KFParticle"};
+    Configurable<float> minMassHt{"kfparticleConfigurations.minMassHt", 2.96, "Minimum candidate mass with KFParticle"};
+    Configurable<float> maxMassHt{"kfparticleConfigurations.maxMassHt", 3.05, "Maximum candidate mass with KFParticle"};
+    Configurable<float> maxctauHt{"kfparticleConfigurations.maxctauHt", 40., "Maximum candidate ctau with KFParticle before topological constraint"};
+    Configurable<float> maxChi2geo{"kfparticleConfigurations.maxChi2geo", 1000., "Maximum chi2 geometrical with KFParticle"};
+    Configurable<float> minCosPA{"kfparticleConfigurations.minCosPA", 0.5, "Minimum cosine pointing angle with KFParticle"};
+    Configurable<float> minCosPAxy{"kfparticleConfigurations.minCosPAxy", 0.5, "Minimum cosine pointing angle in xy with KFParticle"};
+    Configurable<bool> applyTopoSel{"kfparticleConfigurations.applyTopoSel", false, "Apply selection constraining the mother to the PV with KFParticle"};
+    Configurable<float> maxChi2topo{"kfparticleConfigurations.maxChi2topo", 1000., "Maximum chi2 topological with KFParticle"};
   } kfparticleConfigurations;
 
   // Filters and slices
@@ -948,7 +949,9 @@ struct decay3bodyBuilder {
         // hypertriton
         massHt,
         KFHt.GetX(), KFHt.GetY(), KFHt.GetZ(),
+        KFHt.GetErrX(), KFHt.GetErrY(), KFHt.GetErrZ(),
         KFHt.GetPx(), KFHt.GetPy(), KFHt.GetPz(), KFHt.GetPt(),
+        KFHt.GetErrPx(), KFHt.GetErrPy(), KFHt.GetErrPz(), KFHt.GetErrPt(),
         KFHt.GetQ(),
         KFHt.GetDistanceFromVertex(kfpv), KFHt.GetDistanceFromVertexXY(kfpv),
         cpaFromKF(KFHt, kfpv), // before topo constraint
@@ -987,6 +990,54 @@ struct decay3bodyBuilder {
         signProton,
         signPion,
         trackBach.sign());
+
+      if (fillCandidateLiteTable) {
+        kfvtx3bodydata(
+          // hypertriton
+          massHt,
+          KFHt.GetX(), KFHt.GetY(), KFHt.GetZ(),
+          KFHt.GetErrX(), KFHt.GetErrY(), KFHt.GetErrZ(),
+          KFHt.GetPx(), KFHt.GetPy(), KFHt.GetPz(), KFHt.GetPt(),
+          KFHt.GetErrPx(), KFHt.GetErrPy(), KFHt.GetErrPz(), KFHt.GetErrPt(),
+          KFHt.GetQ(),
+          KFHt.GetDistanceFromVertex(kfpv), KFHt.GetDistanceFromVertexXY(kfpv),
+          cpaFromKF(KFHt, kfpv), // before topo constraint
+          cpaXYFromKF(KFHt, kfpv),
+          cpaFromKF(KFHtPV, kfpv), // after topo constraint
+          cpaXYFromKF(KFHtPV, kfpv),
+          KFHtPV.GetDecayLength(), KFHtPV.GetDecayLengthXY(),   // decay length defined after topological constraint
+          KFHtPV.GetDecayLength() / KFHtPV.GetErrDecayLength(), // ldl
+          chi2geoNDF, chi2topoNDF,
+          KFHt.GetLifetime(), KFHtPV.GetLifetime(),
+          // V0
+          massV0, chi2massV0,
+          // daughter momenta
+          kfpProton.GetPx(), kfpProton.GetPy(), kfpProton.GetPz(),
+          kfpPion.GetPx(), kfpPion.GetPy(), kfpPion.GetPz(),
+          kfpDeuteron.GetPx(), kfpDeuteron.GetPy(), kfpDeuteron.GetPz(),
+          // daughter DCAs KF
+          kfpProton.GetDistanceFromVertex(kfpv),
+          kfpPion.GetDistanceFromVertex(kfpv),
+          kfpDeuteron.GetDistanceFromVertex(kfpv),
+          kfpProton.GetDistanceFromVertexXY(kfpv),
+          kfpPion.GetDistanceFromVertexXY(kfpv),
+          kfpDeuteron.GetDistanceFromVertexXY(kfpv),
+          kfpProton.GetDistanceFromVertexXY(KFHt),
+          kfpPion.GetDistanceFromVertexXY(KFHt),
+          kfpDeuteron.GetDistanceFromVertexXY(KFHt),
+          kfpProton.GetDistanceFromParticle(kfpPion),
+          kfpProton.GetDistanceFromParticle(kfpDeuteron),
+          kfpPion.GetDistanceFromParticle(kfpDeuteron),
+          DCAvtxDaughters3D,
+          // daughter DCAs to PV in XY propagated with material
+          TrackPosDcaXY, TrackNegDcaXY, TrackBachDcaXY,
+          // daughter DCAs to PV in 3D propagated with material
+          TrackPosDca, TrackNegDca, TrackBachDca,
+          // daughter signs
+          signProton,
+          signPion,
+          trackBach.sign());
+      }
       LOG(debug) << "Table filled.";
     }
 

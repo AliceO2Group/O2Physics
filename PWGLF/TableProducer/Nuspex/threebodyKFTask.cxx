@@ -75,8 +75,7 @@ struct Candidate3body {
 
 struct threebodyKFTask {
 
-  Produces<aod::Hyp3BodyCands> outputDataTable;
-  Produces<aod::MCHyp3BodyCands> outputMCTable;
+  Produces<aod::McKFVtx3BodyDatas> outputMCTable;
   std::vector<Candidate3body> Candidates3body;
   std::vector<unsigned int> filledMothers;
   std::vector<bool> isGoodCollision;
@@ -177,8 +176,8 @@ struct threebodyKFTask {
   //------------------------------------------------------------------
   Preslice<aod::Vtx3BodyDatas> perCollisionVtx3BodyDatas = o2::aod::vtx3body::collisionId;
   //------------------------------------------------------------------
-  template <class TMCTrackTo, typename TMCParticle>
-  bool is3bodyDecayed(TMCParticle const& particle)
+  template <class TMCTrackTo, typename TMCParticle, bool getGenInfo>
+  bool isH3L3body(TMCParticle const& particle)
   {
     if (std::abs(particle.pdgCode()) != motherPdgCode) {
       return false;
@@ -378,25 +377,35 @@ struct threebodyKFTask {
 
   //------------------------------------------------------------------
   // process mc analysis
-  void processMC(soa::Filtered<soa::Join<aod::Collisions, o2::aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs>>::iterator const& collision, 
-                 soa::Join<aod::KFVtx3BodyDatas, aod::McKFVtx3BodyLabels> const& vtx3bodydatas, 
-                 aod::McParticles const& particlesMC, 
-                 MCLabeledTracksIU const&, 
+  void processMC(soa::Filtered<soa::Join<aod::Collisions, o2::aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs>>::iterator const& collision,
+                 soa::Join<aod::KFVtx3BodyDatas, aod::McKFVtx3BodyLabels> const& vtx3bodydatas,
+                 aod::McParticles const& particlesMC,
+                 MCLabeledTracksIU const&,
                  aod::McCollisions const& mcCollisions)
   {
     // Candidates3body.clear();
-    // filledMothers.clear();
+    filledMothers.clear();
     // GetGeneratedH3LInfo(particlesMC);
-    // isGoodCollision.resize(mcCollisions.size(), false);
+    isGoodCollision.resize(mcCollisions.size(), false);
+    // collision survived event selection filter --> fill value for MC collision
+    if (collision.mcCollisionId() >= 0) {
+      isGoodCollision[collision.mcCollisionId()] = true;
+    }
 
     for (auto& vtx3bodydata : vtx3bodydatas) {
       registry.fill(HIST("hLabelCounter"), 0.5);
 
-      int motherLabel = -1;
       double MClifetime = -1;
       TLorentzVector lmother;
       bool isTrueH3L = false;
       bool isTrueAntiH3L = false;
+      float genPhi = -1;
+      float genEta = -1;
+      float genRap = -1;
+      float genP = -1;
+      float genPt = -1;
+      std::array<double, 3> genDecVtx = -1;
+      int vtx3bodyPDGcode = -1;
 
       auto track0 = vtx3bodydata.track0_as<MCLabeledTracksIU>();
       auto track1 = vtx3bodydata.track1_as<MCLabeledTracksIU>();
@@ -410,76 +419,110 @@ struct threebodyKFTask {
           auto lMCTrack1 = track1.mcParticle_as<aod::McParticles>();
           auto lMCTrack2 = track2.mcParticle_as<aod::McParticles>();
           // check PDG codes
+          if ((MCvtx3body.pdgCode() == motherPdgCode && lMCTrack0.pdgCode() == 2212 && lMCTrack1.pdgCode() == -211 && lMCTrack2.pdgCode() == bachelorPdgCode) ||
+              (MCvtx3body.pdgCode() == -motherPdgCode && lMCTrack0.pdgCode() == 211 && lMCTrack1.pdgCode() == -2212 && lMCTrack2.pdgCode() == -bachelorPdgCode)) {
+            vtx3bodyPDGcode = MCvtx3body.pdgCode();
+            genDecVtx[0] = lMCTrack0.vx();
+            genDecVtx[0] = lMCTrack0.vy();
+            genDecVtx[0] = lMCTrack0.vz();
+            MClifetime = RecoDecay::sqrtSumOfSquares(lMCTrack2.vx() - MCvtx3body.vx(), lMCTrack2.vy() - MCvtx3body.vy(), lMCTrack2.vz() - MCvtx3body.vz()) * o2::constants::physics::MassHyperTriton / MCvtx3body.p();
+            filledMothers.push_back(MCvtx3body.glocalIndex());
+          } // end is H3L or Anti-H3L
           if (MCvtx3body.pdgCode() == motherPdgCode && lMCTrack0.pdgCode() == 2212 && lMCTrack1.pdgCode() == -211 && lMCTrack2.pdgCode() == bachelorPdgCode) {
             isTrueH3L = true;
-            motherLabel = MCvtx3body.mcParticleId();
             double hypertritonMCMass = RecoDecay::m(array{array{lMCTrack0.px(), lMCTrack0.py(), lMCTrack0.pz()}, array{lMCTrack1.px(), lMCTrack1.py(), lMCTrack1.pz()}, array{lMCTrack2.px(), lMCTrack2.py(), lMCTrack2.pz()}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged, o2::constants::physics::MassDeuteron});
-            MClifetime = RecoDecay::sqrtSumOfSquares(lMCTrack2.vx() - lMother2.vx(), lMCTrack2.vy() - lMother2.vy(), lMCTrack2.vz() - lMother2.vz()) * o2::constants::physics::MassHyperTriton / lMother2.p();
             registry.fill(HIST("hLabelCounter"), 2.5);
             registry.fill(HIST("hTrueHypertritonMCPt"), MCvtx3body.pt());
             registry.fill(HIST("hTrueHypertritonMCLifetime"), MClifetime);
             registry.fill(HIST("hTrueHypertritonMCMass"), hypertritonMCMass);
-            lmother.SetXYZM(lMother0.px(), lMother0.py(), lMother0.pz(), o2::constants::physics::MassHyperTriton);
           } // end is H3L
           if (MCvtx3body.pdgCode() == -motherPdgCode && lMCTrack0.pdgCode() == 211 && lMCTrack1.pdgCode() == -2212 && lMCTrack2.pdgCode() == -bachelorPdgCode) {
             isTrueAntiH3L = true;
-            motherLabel = MCvtx3body.mcParticleId();
             double antiHypertritonMCMass = RecoDecay::m(array{array{lMCTrack0.px(), lMCTrack0.py(), lMCTrack0.pz()}, array{lMCTrack1.px(), lMCTrack1.py(), lMCTrack1.pz()}, array{lMCTrack2.px(), lMCTrack2.py(), lMCTrack2.pz()}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassProton, o2::constants::physics::MassDeuteron});
-            MClifetime = RecoDecay::sqrtSumOfSquares(lMCTrack2.vx() - lMother2.vx(), lMCTrack2.vy() - lMother2.vy(), lMCTrack2.vz() - lMother2.vz()) * o2::constants::physics::MassHyperTriton / lMother2.p();
             registry.fill(HIST("hLabelCounter"), 2.5);
             registry.fill(HIST("hTrueAntiHypertritonMCPt"), MCvtx3body.pt());
             registry.fill(HIST("hTrueAntiHypertritonMCLifetime"), MClifetime);
             registry.fill(HIST("hTrueAntiHypertritonMCMass"), antiHypertritonMCMass);
-            lmother.SetXYZM(lMother0.px(), lMother0.py(), lMother0.pz(), o2::constants::physics::MassHyperTriton);
           } // end is Anti-H3L
         } // end has daughters
       } // end has matched MC particle
 
-      
-
-      /// TODO: CONTINUE HERE!! 
-      /// BRIEF: fill MC table and move rest of CandidateAnalysis here
-      /// BRIEF: find out for what GetGeneratedH3LInfois needed
-      /// BRIEF: make function to creat mass and Dalitz histograms to also include it here in processMC
-      /// BRIEF: understand and potentially add las part about signal candidates that were not reconstructed here
-
-
-
-
-
-      CandidateAnalysis<MCLabeledTracksIU>(collision, vtx, if_hasvtx, isTrueCand, lLabel, lmother, MClifetime);
+      outputMCTable( // filled for each reconstructed candidate (in KFVtx3BodyDatas)
+        vtx3bodydata.mass(),
+        vtx3bodydata.x(), vtx3bodydata.y(), vtx3bodydata.z(),
+        vtx3bodydata.px(), vtx3bodydata.py(), vtx3bodydata.pz(), vtx3bodydata.pt(),
+        vtx3bodydata.sign(),
+        vtx3bodydata.dcavtxtopvkf(), vtx3bodydata.dcaxyvtxtopvkf(),
+        vtx3bodydata.vtxcospakf(), vtx3bodydata.vtxcosxypakf(),
+        vtx3bodydata.vtxcospakftopo(), vtx3bodydata.vtxcosxypakftopo(),
+        vtx3bodydata.decaylkf(), vtx3bodydata.decaylxykf(), vtx3bodydata.decayldeltal(),
+        vtx3bodydata.chi2geondf(), vtx3bodydata.chi2topondf(),
+        vtx3bodydata.ctaukf(), vtx3bodydata.ctaukftopo(),
+        vtx3bodydata.massv0(), vtx3bodydata.chi2massv0(),
+        vtx3bodydata.pxtrack0(), vtx3bodydata.pytrack0(), vtx3bodydata.pztrack0(),                            // proton
+        vtx3bodydata.pxtrack1(), vtx3bodydata.pytrack1(), vtx3bodydata.pztrack1(),                            // pion
+        vtx3bodydata.pxtrack2(), vtx3bodydata.pytrack2(), vtx3bodydata.pztrack2(),                            // deuteron
+        vtx3bodydata.dcatrack0topvkf(), vtx3bodydata.dcatrack1topvkf(), vtx3bodydata.dcatrack2topvkf(),       // proton, pion, deuteron
+        vtx3bodydata.dcaxytrack0topvkf(), vtx3bodydata.dcaxytrack1topvkf(), vtx3bodydata.dcaxytrack2topvkf(), // proton, pion, deuteron
+        vtx3bodydata.dcaxytrack0tosvkf(), vtx3bodydata.dcaxytrack1tosvkf(), vtx3bodydata.dcaxytrack2tosvkf(), // proton, pion, deuteron
+        vtx3bodydata.dcaxytrack0totrack1(), vtx3bodydata.dcaxytrack0totrack2(), vtx3bodydata.dcaxytrack1totrack2(),
+        vtx3bodydata.dcavtxdaughterskf(),
+        vtx3bodydata.dcaxytrackpostopv(), vtx3bodydata.dcaxytracknegtopv(), vtx3bodydata.dcaxytrackbachtopv(),
+        vtx3bodydata.dcatrackpostopv(), vtx3bodydata.dcatracknegtopv(), vtx3bodydata.dcatrackbachtopv(),
+        vtx3bodydata.track0sign(), vtx3bodydata.track1sign(), vtx3bodydata.track2sign(), // proton, pion, deuteron
+        // MC info (-1 if not matched to MC particle)
+        MCvtx3body.p(),
+        MCvtx3body.pt(),
+        genDecVtx[0], genDecVtx[1], genDecVtx[2],
+        MClifetime,
+        MCvtx3body.phi(),
+        MCvtx3body.eta(),
+        MCvtx3body.y(),
+        isTrueH3L, isTrueAntiH3L,
+        MCvtx3body.pdgCode());
     }
 
-    if (if_hasvtx)
-      registry.fill(HIST("hEventCounter"), 3.5);
-    fillHistos();
-    resetHistos();
-
-    for (auto& cand3body : Candidates3body) {
-      outputMCTable(collision.centFT0C(),
-                    cand3body.isMatter, cand3body.invmass, cand3body.lcand.P(), cand3body.lcand.Pt(), cand3body.ct,
-                    cand3body.cosPA, cand3body.dcadaughters, cand3body.dcacandtopv,
-                    cand3body.lproton.Pt(), cand3body.lproton.Eta(), cand3body.lproton.Phi(),
-                    cand3body.lpion.Pt(), cand3body.lpion.Eta(), cand3body.lpion.Phi(),
-                    cand3body.lbachelor.Pt(), cand3body.lbachelor.Eta(), cand3body.lbachelor.Phi(),
-                    cand3body.dautpcNclusters[0], cand3body.dautpcNclusters[1], cand3body.dautpcNclusters[2],
-                    cand3body.dauitsclussize[0], cand3body.dauitsclussize[1], cand3body.dauitsclussize[2],
-                    cand3body.dautpcNsigma[0], cand3body.dautpcNsigma[1], cand3body.dautpcNsigma[2], cand3body.bachelortofNsigma,
-                    cand3body.daudcaxytopv[0], cand3body.daudcaxytopv[1], cand3body.daudcaxytopv[2],
-                    cand3body.daudcatopv[0], cand3body.daudcatopv[1], cand3body.daudcatopv[2],
-                    cand3body.lgencand.P(), cand3body.lgencand.Pt(), cand3body.genct, cand3body.lgencand.Phi(), cand3body.lgencand.Eta(), cand3body.lgencand.Rapidity(),
-                    cand3body.isSignal, cand3body.isReco, cand3body.pdgCode, cand3body.SurvivedEventSelection);
-    }
-
-    // now we fill only the signal candidates that were not reconstructed
+    // generated MC particle analysis
+    // fill MC table for all generated but not reconstructed particles
     for (auto& mcparticle : particlesMC) {
-      if (!is3bodyDecayed<aod::McParticles>(mcparticle)) {
+      // check if MC particle is hypertriton with 3-body decay
+      if (std::abs(mcparticle.pdgCode()) != motherPdgCode) {
         continue;
       }
+      bool haveProton = false, havePion = false, haveBachelor = false;
+      bool haveAntiProton = false, haveAntiPion = false, haveAntiBachelor = false;
+      for (auto& mcparticleDaughter : mcparticle.template daughters_as<aod::McParticles>()) {
+        if (mcparticleDaughter.pdgCode() == 2212)
+          haveProton = true;
+        if (mcparticleDaughter.pdgCode() == -2212)
+          haveAntiProton = true;
+        if (mcparticleDaughter.pdgCode() == 211)
+          havePion = true;
+        if (mcparticleDaughter.pdgCode() == -211)
+          haveAntiPion = true;
+        if (mcparticleDaughter.pdgCode() == bachelorPdgCode)
+          haveBachelor = true;
+        if (mcparticleDaughter.pdgCode() == -bachelorPdgCode)
+          haveAntiBachelor = true;
+      }
+      if (!(haveProton && haveAntiPion && haveBachelor && particle.pdgCode() > 0) && !(haveAntiProton && havePion && haveAntiBachelor && particle.pdgCode() < 0)) {
+        continue;
+      }
+
+      // check if mcparticle was reconstructed and already filled in the table
       if (std::find(filledMothers.begin(), filledMothers.end(), mcparticle.globalIndex()) != std::end(filledMothers)) {
         continue;
       }
+
+       /// TODO: CONTINUE HERE!!
+      /// BRIEF: make function to creat mass and Dalitz histograms to also include it here in processMC
+      /// BRIEF: finish last part about signal candidates that were not reconstructed here --> MC tabled needs to be filled for all gen particles (not only the ones which were also recosntructed)
+    
+
+      // set flag if reco collision survived event selection --> isn't hits per se excluding all MC collisions which were not reconstructed?
+      // since we only fill true if the reconstructed collision has passed the event selection ???
       bool isSurEvSelection = isGoodCollision[mcparticle.mcCollisionId()];
+      
       std::array<float, 3> posSV{0.f};
       for (auto& mcDaughter : mcparticle.daughters_as<aod::McParticles>()) {
         if (std::abs(mcDaughter.pdgCode()) == bachelorPdgCode) {
