@@ -1397,7 +1397,7 @@ struct derivedlambdakzeroanalysis {
     selGapSide = sgSelector.trueGap(collision, upcCuts.FV0cut, upcCuts.FT0Acut, upcCuts.FT0Ccut, upcCuts.ZDCcut);
     histos.fill(HIST("hGapSide"), gapSide);
     histos.fill(HIST("hSelGapSide"), selGapSide);
-    histos.fill(HIST("hEventCentralityVsSelGapSide"), centrality, selGapSide <= 2 ? selGapSide : -1 );
+    histos.fill(HIST("hEventCentralityVsSelGapSide"), centrality, selGapSide <= 2 ? selGapSide : -1);
 
     histos.fill(HIST("hEventCentrality"), centrality);
 
@@ -1513,7 +1513,7 @@ struct derivedlambdakzeroanalysis {
     selGapSide = sgSelector.trueGap(collision, upcCuts.FV0cut, upcCuts.FT0Acut, upcCuts.FT0Ccut, upcCuts.ZDCcut);
     histos.fill(HIST("hGapSide"), gapSide);
     histos.fill(HIST("hSelGapSide"), selGapSide);
-    histos.fill(HIST("hEventCentralityVsSelGapSide"), centrality, selGapSide <= 2 ? selGapSide : -1 );
+    histos.fill(HIST("hEventCentralityVsSelGapSide"), centrality, selGapSide <= 2 ? selGapSide : -1);
 
     histos.fill(HIST("hEventCentrality"), centrality);
 
