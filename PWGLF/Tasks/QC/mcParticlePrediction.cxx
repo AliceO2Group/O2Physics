@@ -106,8 +106,7 @@ static const int defaultEstimators[Estimators::nEstimators][nParameters]{{0},  /
                                                                          {0},  // ITS
                                                                          {0},  // V0A (Run2)
                                                                          {0},  // V0C (Run2)
-                                                                         {0},  // V0AC (Run2)
-                                                                         {0}}; // V0M (Run2)
+                                                                         {0}}; // V0AC (Run2 V0M)
 
 // Histograms
 std::array<std::shared_ptr<TH1>, Estimators::nEstimators> hestimators;
