@@ -146,7 +146,6 @@ struct mcParticlePrediction {
                                                     "Estimators enabled"};
   Configurable<bool> selectInelGt0{"selectInelGt0", true, "Select only inelastic events"};
   Configurable<bool> selectPrimaries{"selectPrimaries", true, "Select only primary particles"};
-
   Configurable<bool> requireCoincidenceEstimators{"requireCoincidenceEstimators", false, "Asks for a coincidence when two estimators are used"};
   Configurable<bool> discardkIsGoodZvtxFT0vsPV{"discardkIsGoodZvtxFT0vsPV", false, "Select only collisions with matching BC and MC BC"};
   Configurable<bool> discardMismatchedBCs{"discardMismatchedBCs", false, "Select only collisions with matching BC and MC BC"};
@@ -394,7 +393,6 @@ struct mcParticlePrediction {
       hvertexPosZ[i]->Fill(mcCollision.posZ(), nMult[i]);
     }
 
-    Int_t dnChdeta = 0; // To account for the dNChdeta
     for (const auto& particle : mcParticles) {
       particle.pdgCode();
       const auto id = PIDExtended::pdgToId(particle);
@@ -421,7 +419,6 @@ struct mcParticlePrediction {
       if (abs(particle.y()) > 0.5) {
         continue;
       }
-      dnChdeta++;
 
       histos.fill(HIST("particles/vtx/x"), particle.vx());
       histos.fill(HIST("particles/vtx/y"), particle.vy());
@@ -435,12 +432,6 @@ struct mcParticlePrediction {
         hpt[i][id]->Fill(particle.pt(), nMult[i]);
         hyield[i][id]->Fill(nMult[i]);
       }
-    }
-    for (int i = 0; i < Estimators::nEstimators; i++) {
-      if (!enabledEstimatorsArray[i]) {
-        continue;
-      }
-      hestimatorsVsdNChdeta[i]->Fill(nMult[i], dnChdeta);
     }
   }
 
