@@ -252,11 +252,6 @@ struct mcParticlePrediction {
       hestimatorsVsITS[i]->GetXaxis()->SetTitle(Form("Multiplicity %s", name));
       hestimatorsVsITS[i]->GetYaxis()->SetTitle(Form("Multiplicity %s", Estimators::estimatorNames[Estimators::ITS]));
 
-      // Adding the dNChdetavsV0M histogram
-      hestimatorsVsdNChdeta[i] = histos.add<TH2>(Form("multiplicity/vsdNChdeta%s", name), name, kTH2D, {axisMultiplicity, axisdNChdeta});
-      hestimatorsVsdNChdeta[i]->GetYaxis()->SetTitle("#frac{dn_{ch}}{eta}");
-      hestimatorsVsdNChdeta[i]->GetXaxis()->SetTitle(Form("%s Multiplicity", name));
-
       hvertexPosZ[i] = histos.add<TH2>(Form("multiplicity/posZ/%s", name), name, kTH2D, {{200, -20, 20, "pos Z"}, axisMultiplicity});
       hvertexPosZ[i]->GetYaxis()->SetTitle(Form("Multiplicity %s", name));
 
