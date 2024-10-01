@@ -785,7 +785,7 @@ struct strangeness_in_jets {
     int n_jets_selected(0);
     for (int i = 0; i < static_cast<int>(jet.size()); i++) {
 
-      if ((abs(jet[i].Eta()) + Rjet) > max_eta)
+      if ((abs(jet[i].Eta()) + Rjet) > etaMax)
         continue;
 
       // Perpendicular cones
