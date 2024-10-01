@@ -311,9 +311,8 @@ struct mcParticlePrediction {
           continue;
         }
         const char* name = Estimators::estimatorNames[j];
-        hpt[j][i] = histosPt.add<TH2>(Form("prediction/pt/%s/%s", name, PIDExtended::getName(i)), PIDExtended::getName(i), kTH2D, {axisMultiplicity, axisPt});
-        hpt[j][i]->GetXaxis()->SetTitle(Form("%s Multiplicity", name));
-        hpt[j][i]->GetYaxis()->SetTitle("p_{T}");
+        hpt[j][i] = histosPt.add<TH2>(Form("prediction/pt/%s/%s", name, PIDExtended::getName(i)), PIDExtended::getName(i), kTH2D, {axisPt, axisMultiplicity});
+        hpt[j][i]->GetYaxis()->SetTitle(Form("Multiplicity %s", name));
 
         hyield[j][i] = histosYield.add<TH1>(Form("prediction/yield/%s/%s", name, PIDExtended::getName(i)), PIDExtended::getName(i), kTH1D, {axisMultiplicity});
         hyield[j][i]->GetYaxis()->SetTitle(Form("Multiplicity %s", name));
