@@ -13,6 +13,7 @@
 /// \file   mcParticlePrediction.cxx
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
 /// \author Francesca Ercolessi francesca.ercolessi@cern.ch
+/// \author Navneet Kumar navneet.kumar@cern.ch
 /// \brief Task to build the predictions from the models based on the generated particles
 ///
 
@@ -59,7 +60,7 @@ struct Estimators {
   static constexpr int ITS = 13;
   static constexpr int V0A = 14;  // (Run2)
   static constexpr int V0C = 15;  // (Run2)
-  static constexpr int V0AC = 16; // (Run2)
+  static constexpr int V0AC = 16; // (Run2 V0M)
   static constexpr int nEstimators = 17;
 
   static constexpr const char* estimatorNames[nEstimators] = {"FT0A",
@@ -105,7 +106,7 @@ static const int defaultEstimators[Estimators::nEstimators][nParameters]{{0},  /
                                                                          {0},  // ITS
                                                                          {0},  // V0A (Run2)
                                                                          {0},  // V0C (Run2)
-                                                                         {0}}; // V0AC (Run2)
+                                                                         {0}}; // V0AC (Run2 V0M)
 
 // Histograms
 std::array<std::shared_ptr<TH1>, Estimators::nEstimators> hestimators;
@@ -144,7 +145,7 @@ struct mcParticlePrediction {
                                                     "Estimators enabled"};
   Configurable<bool> selectInelGt0{"selectInelGt0", true, "Select only inelastic events"};
   Configurable<bool> selectPrimaries{"selectPrimaries", true, "Select only primary particles"};
-
+  Configurable<bool> requireCoincidenceEstimators{"requireCoincidenceEstimators", false, "Asks for a coincidence when two estimators are used"};
   Configurable<bool> discardkIsGoodZvtxFT0vsPV{"discardkIsGoodZvtxFT0vsPV", false, "Select only collisions with matching BC and MC BC"};
   Configurable<bool> discardMismatchedBCs{"discardMismatchedBCs", false, "Select only collisions with matching BC and MC BC"};
   Configurable<bool> discardMismatchedFoundBCs{"discardMismatchedFoundBCs", false, "Select only collisions with matching found BC and MC BC"};
@@ -335,6 +336,9 @@ struct mcParticlePrediction {
     }
     if (enabledEstimatorsArray[Estimators::FT0AC]) {
       nMult[Estimators::FT0AC] = nMult[Estimators::FT0A] + nMult[Estimators::FT0C];
+      if (requireCoincidenceEstimators && (nMult[Estimators::FT0A] <= 0 || nMult[Estimators::FT0C] <= 0)) {
+        nMult[Estimators::FT0AC] = 0;
+      }
     }
     if (enabledEstimatorsArray[Estimators::FV0A]) {
       nMult[Estimators::FV0A] = mCounter.countFV0A(mcParticles);
@@ -347,6 +351,9 @@ struct mcParticlePrediction {
     }
     if (enabledEstimatorsArray[Estimators::FDDAC]) {
       nMult[Estimators::FDDAC] = nMult[Estimators::FDDA] + nMult[Estimators::FDDC];
+      if (requireCoincidenceEstimators && (nMult[Estimators::FDDA] <= 0 || nMult[Estimators::FDDC] <= 0)) {
+        nMult[Estimators::FDDAC] = 0;
+      }
     }
     if (enabledEstimatorsArray[Estimators::ZNA]) {
       nMult[Estimators::ZNA] = mCounter.countZNA(mcParticles);
@@ -365,6 +372,9 @@ struct mcParticlePrediction {
     }
     if (enabledEstimatorsArray[Estimators::V0AC]) {
       nMult[Estimators::V0AC] = nMult[Estimators::V0A] + nMult[Estimators::V0C];
+      if (requireCoincidenceEstimators && (nMult[Estimators::V0A] <= 0 || nMult[Estimators::V0C] <= 0)) {
+        nMult[Estimators::V0AC] = 0;
+      }
     }
 
     for (int i = 0; i < Estimators::nEstimators; i++) {
