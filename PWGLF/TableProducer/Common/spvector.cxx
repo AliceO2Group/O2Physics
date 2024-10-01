@@ -309,7 +309,7 @@ struct spvector {
     auto bc = collision.foundBC_as<BCsRun3>();
     if (!bc.has_zdc()) {
       triggerevent = false;
-      spcalibrationtable(triggerevent, currentRunNumber, centrality, qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
+      spcalibrationtable(triggerevent, currentRunNumber, centrality, vx, vy, vz, qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
       return;
     }
 
@@ -319,12 +319,12 @@ struct spvector {
 
     if (znaEnergy[0] < 0.0 || znaEnergy[1] < 0.0 || znaEnergy[2] < 0.0 || znaEnergy[3] < 0.0) {
       triggerevent = false;
-      spcalibrationtable(triggerevent, currentRunNumber, centrality, qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
+      spcalibrationtable(triggerevent, currentRunNumber, centrality, vx, vy, vz, qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
       return;
     }
     if (zncEnergy[0] < 0.0 || zncEnergy[1] < 0.0 || zncEnergy[2] < 0.0 || zncEnergy[3] < 0.0) {
       triggerevent = false;
-      spcalibrationtable(triggerevent, currentRunNumber, centrality, qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
+      spcalibrationtable(triggerevent, currentRunNumber, centrality, vx, vy, vz, qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
       return;
     }
 
@@ -350,7 +350,7 @@ struct spvector {
 
           if (znaEnergy[iChA] <= 0.0) {
             triggerevent = false;
-            spcalibrationtable(triggerevent, currentRunNumber, centrality, qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
+            spcalibrationtable(triggerevent, currentRunNumber, centrality, vx, vy, vz, qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
             return;
           } else {
             float ampl = gainequal * znaEnergy[iChA];
@@ -363,7 +363,7 @@ struct spvector {
         } else {
           if (zncEnergy[iChA - 4] <= 0.0) {
             triggerevent = false;
-            spcalibrationtable(triggerevent, currentRunNumber, centrality, qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
+            spcalibrationtable(triggerevent, currentRunNumber, centrality, vx, vy, vz, qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
             return;
           } else {
             float ampl = gainequal * zncEnergy[iChA - 4];
@@ -401,7 +401,7 @@ struct spvector {
         qyZDCA = 0.0;
         qyZDCC = 0.0;
         triggerevent = false;
-        spcalibrationtable(triggerevent, currentRunNumber, centrality, qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
+        spcalibrationtable(triggerevent, currentRunNumber, centrality, vx, vy, vz, qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
         return;
       }
 
@@ -603,7 +603,7 @@ struct spvector {
       lastRunNumber = currentRunNumber;
     }
 
-    spcalibrationtable(triggerevent, lastRunNumber, centrality, qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
+    spcalibrationtable(triggerevent, lastRunNumber, centrality, vx, vy, vz, qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
   }
 };
 
