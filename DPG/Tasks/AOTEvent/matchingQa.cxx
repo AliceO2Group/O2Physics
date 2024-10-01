@@ -43,6 +43,7 @@ struct MatchingQaTask {
   Configurable<bool> useITSROFconstraint{"useITSROFconstraint", 1, "use ITS ROF constraints for ITS-TPC vertices"};
   Configurable<int> additionalDeltaBC{"additionalDeltaBC", 0, "Additional BC margin added to deltaBC for ITS-TPC vertices"};
   Configurable<int> deltaBCforTOFcollisions{"deltaBCforTOFcollisions", 1, "bc margin for TOF-matched collisions"};
+  Configurable<int> minimumDeltaBC{"minimumDeltaBC", -1, "minimum delta BC for ITS-TPC vertices"};
 
   std::bitset<o2::constants::lhc::LHCMaxBunches> bcPatternB; // bc pattern of colliding bunches
   int lastRun = -1;
@@ -102,6 +103,7 @@ struct MatchingQaTask {
 
     histos.add("hBCsITS", "", kTH1F, {axisBcs});
     histos.add("hNcontribCandidates", "", kTH1F, {axisNcontrib});
+    histos.add("hNcontribCounts", "", kTH1F, {axisNcontrib});
     histos.add("hNcontribSigma", "", kTH2F, {axisNcontrib, axisColTimeRes});
 
     histos.add("hNcontribAll", "", kTH1F, {axisNcontrib});
@@ -407,6 +409,10 @@ struct MatchingQaTask {
 
       deltaBC += additionalDeltaBC;
 
+      if (minimumDeltaBC >= 0) {
+        deltaBC = deltaBC < minimumDeltaBC ? minimumDeltaBC : deltaBC;
+      }
+
       int64_t minBC = tpcGlobalBC - deltaBC;
       int64_t maxBC = tpcGlobalBC + deltaBC;
 
@@ -453,6 +459,7 @@ struct MatchingQaTask {
         LOGP(info, "{} {}", minBC, maxBC);
 
       histos.fill(HIST("hNcontribCandidates"), nContrib, nCandidates);
+      histos.fill(HIST("hNcontribCounts"), nContrib);
 
       if (globalBcBest != 0)
         vFoundBCindex[colId] = mapGlobalBcWithTVX[globalBcBest];
