@@ -35,6 +35,7 @@ using FullUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksD
 
 struct upcRhoAnalysis {
   double PcEtaCut = 0.9; // physics coordination recommendation
+
   Configurable<bool> specifyGapSide{"specifyGapSide", true, "specify gap side for SG/DG produced data"};
   Configurable<bool> requireTof{"requireTof", false, "require TOF signal"};
 
@@ -294,8 +295,8 @@ struct upcRhoAnalysis {
     registry.add("reco/system/6pi/hY", ";y;counts", kTH1D, {yAxis});
   }
 
-  template <typename T>
-  bool collisionPassesCuts(T const& collision) // collision cuts
+  template <typename C>
+  bool collisionPassesCuts(const C& collision) // collision cuts
   {
     if (std::abs(collision.posZ()) > collisionsPosZMaxCut)
       return false;
@@ -309,11 +310,11 @@ struct upcRhoAnalysis {
   {
     if (requireTof && !track.hasTOF())
       return false;
-    if (!track.isPVContributor()) // does this do anything?
+    if (!track.isPVContributor()) // does this actually do anything?
       return false;
     if (!track.hasITS() || !track.hasTPC())
       return false;
-    if (std::abs(track.dcaZ()) > tracksDcaMaxCut || std::abs(track.dcaXY()) > tracksDcaMaxCut)
+    if (std::abs(track.dcaZ()) > tracksDcaMaxCut || std::abs(track.dcaXY()) > (0.0182 + 0.0350 / std::pow(track.pt(), 1.01))) // Run 2 dynamic DCA cut
       return false;
     if (std::abs(eta(track.px(), track.py(), track.pz())) > PcEtaCut)
       return false;
@@ -363,9 +364,8 @@ struct upcRhoAnalysis {
     return (dPhi < 0) ? (dPhi + o2::constants::math::TwoPI) : dPhi;
   }
 
-  template <typename V>
-  double getPhiRandom(const V& cutTracks4Vecs) // decay phi anisotropy
-  {                                       // two possible definitions of phi: randomize the tracks
+  double getPhiRandom(const std::vector<ROOT::Math::PxPyPzMVector>& cutTracks4Vecs) // decay phi anisotropy
+  {                                                                                 // two possible definitions of phi: randomize the tracks
     std::vector<int> indices = {0, 1};
     unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();    // get time-based seed
     std::shuffle(indices.begin(), indices.end(), std::default_random_engine(seed)); // shuffle indices
@@ -447,7 +447,7 @@ struct upcRhoAnalysis {
     if (!tracksPassPiPID(cutTracks))
       return;
     // reonstruct system and calculate total charge
-    auto system = reconstructSystem(cutTracks4Vecs);
+    ROOT::Math::PxPyPzMVector system = reconstructSystem(cutTracks4Vecs);
     int totalCharge = tracksTotalCharge(cutTracks);
     int nTracks = cutTracks.size();
 
