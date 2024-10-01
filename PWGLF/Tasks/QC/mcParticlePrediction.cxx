@@ -296,7 +296,7 @@ struct mcParticlePrediction {
       hestimatorsRecoEvRecoVsRecoITS[i]->GetXaxis()->SetTitle("Multiplicity Reco. " + estName);
 
       hestimatorsRecoEvRecoVsRecoITS_BCMC[i] = histosRecoEvs.add<TH2>("multiplicity/Reco/RecoVsRecoITS_BCMC/" + estName, estName, kTH2D, {axisMultiplicityReco, axisMultiplicityRecoITS});
-      hestimatorsRecoEvRecoVsRecoITS_BCMC[i]->GetXaxis()->SetTitle(Form("Multiplicity Reco. %s (BCMC)", estName));
+      hestimatorsRecoEvRecoVsRecoITS_BCMC[i]->GetXaxis()->SetTitle("Multiplicity Reco. " + estName + " (BCMC)");
 
       hestimatorsRecoEvRecoVsFT0A[i] = histosRecoEvs.add<TH2>("multiplicity/Reco/RecovsFT0A/" + estName, estName, kTH2D, {axisMultiplicityReco, axisMultiplicity});
       hestimatorsRecoEvRecoVsFT0A[i]->GetXaxis()->SetTitle("Multiplicity Reco. " + estName);
