@@ -43,27 +43,27 @@ bool enabledParticlesArray[PIDExtended::NIDsTot];
 
 // Estimators
 struct Estimators {
-  typename int id;
-  static constexpr id FT0A = 0;
-  static constexpr id FT0C = 1;
-  static constexpr id FT0AC = 2;
-  static constexpr id FV0A = 3;
-  static constexpr id FDDA = 4;
-  static constexpr id FDDC = 5;
-  static constexpr id FDDAC = 6;
-  static constexpr id ZNA = 7;
-  static constexpr id ZNC = 8;
-  static constexpr id ZEM1 = 9;
-  static constexpr id ZEM2 = 10;
-  static constexpr id ZPA = 11;
-  static constexpr id ZPC = 12;
-  static constexpr id ITSIB = 13;
-  static constexpr id ETA05 = 14;
-  static constexpr id ETA08 = 15;
-  static constexpr id V0A = 16;  // (Run2)
-  static constexpr id V0C = 17;  // (Run2)
-  static constexpr id V0AC = 18; // (Run2 V0M)
-  static constexpr id nEstimators = 19;
+  typedef int estID;
+  static constexpr estID FT0A = 0;
+  static constexpr estID FT0C = 1;
+  static constexpr estID FT0AC = 2;
+  static constexpr estID FV0A = 3;
+  static constexpr estID FDDA = 4;
+  static constexpr estID FDDC = 5;
+  static constexpr estID FDDAC = 6;
+  static constexpr estID ZNA = 7;
+  static constexpr estID ZNC = 8;
+  static constexpr estID ZEM1 = 9;
+  static constexpr estID ZEM2 = 10;
+  static constexpr estID ZPA = 11;
+  static constexpr estID ZPC = 12;
+  static constexpr estID ITSIB = 13;
+  static constexpr estID ETA05 = 14;
+  static constexpr estID ETA08 = 15;
+  static constexpr estID V0A = 16;  // (Run2)
+  static constexpr estID V0C = 17;  // (Run2)
+  static constexpr estID V0AC = 18; // (Run2 V0M)
+  static constexpr estID nEstimators = 19;
 
   static constexpr const char* estimatorNames[nEstimators] = {"FT0A",
                                                               "FT0C",
@@ -163,9 +163,12 @@ struct mcParticlePrediction {
   Configurable<float> posZCut{"posZCut", 10.f, "Cut in the Z position of the primary vertex"};
   Configurable<float> collisionTimeResCut{"collisionTimeResCut", -40.f, "Cut in the collisionTimeRes"};
   Configurable<bool> requirekIsGoodZvtxFT0vsPV{"requirekIsGoodZvtxFT0vsPV", false, "Require kIsGoodZvtxFT0vsPV: small difference between z-vertex from PV and from FT0"};
-  Configurable<bool> requirekIsVertexITSTPC{"requirekIsVertexITSTPC", false, "Require kIsVertexITSTPC: at least one ITSIB-TPC track (reject vertices built from ITSIB-only tracks)"};
+  Configurable<bool> requirekIsVertexITSTPC{"requirekIsVertexITSTPC", false, "Require kIsVertexITSTPC: at least one ITS-TPC track (reject vertices built from ITS-only tracks)"};
   Configurable<bool> requirekIsVertexTOFmatched{"requirekIsVertexTOFmatched", false, "Require kIsVertexTOFmatched: at least one of vertex contributors is matched to TOF"};
   Configurable<bool> requirekIsVertexTRDmatched{"requirekIsVertexTRDmatched", false, "Require kIsVertexTRDmatched: at least one of vertex contributors is matched to TRD"};
+  Configurable<bool> enableVsITSHistograms{"enableVsITSHistograms", true, "Enables the correlation between ITS and other estimators"};
+  Configurable<bool> enableVsEta05Histograms{"enableVsEta05Histograms", true, "Enables the correlation between ETA05 and other estimators"};
+  Configurable<bool> enableVsEta08Histograms{"enableVsEta08Histograms", true, "Enables the correlation between ETA08 and other estimators"};
 
   Service<o2::framework::O2DatabasePDG> pdgDB;
   o2::pwglf::ParticleCounter<o2::framework::O2DatabasePDG> mCounter;
@@ -255,59 +258,66 @@ struct mcParticlePrediction {
       if (!enabledEstimatorsArray[i]) {
         continue;
       }
-      const std::string estName = Estimators::estimatorNames[i];
-      hestimators[i] = histos.add<TH1>("multiplicity/" + estName, estName, kTH1D, {axisMultiplicity});
-      hestimators[i]->GetXaxis()->SetTitle("Multiplicity " + estName);
+      const char* name = Estimators::estimatorNames[i];
+      hestimators[i] = histos.add<TH1>(Form("multiplicity/%s", name), name, kTH1D, {axisMultiplicity});
+      hestimators[i]->GetXaxis()->SetTitle(Form("Multiplicity %s", name));
 
-      hestimatorsVsITS[i] = histos.add<TH2>("multiplicity/vsITS/" + estName, estName, kTH2D, {axisMultiplicity, axisMultiplicity});
-      hestimatorsVsITS[i]->GetXaxis()->SetTitle("Multiplicity " + estName);
-      hestimatorsVsITS[i]->GetYaxis()->SetTitle(Form("Multiplicity %s", Estimators::estimatorNames[Estimators::ITSIB]));
+      auto make2DH = [&](const std::string& h, const char* ytitle) {
+        auto hist = histos.add<TH2>(Form("%s/%s", h.c_str(), name),
+                                    name,
+                                    kTH2D,
+                                    {axisMultiplicity, axisMultiplicity});
+        hist->GetXaxis()->SetTitle(Form("Multiplicity %s", name));
+        hist->GetXaxis()->SetTitle(Form("Multiplicity %s", ytitle));
+        return hist;
+      };
+      if (enableVsITSHistograms) {
+        hestimatorsVsITS[i] = make2DH("multiplicity/vsITS/", Estimators::estimatorNames[Estimators::ITSIB]);
+      }
+      if (enableVsEta05Histograms) {
+        hestimatorsVsETA05[i] = make2DH("multiplicity/vsETA05/", Estimators::estimatorNames[Estimators::ETA05]);
+      }
+      if (enableVsEta08Histograms) {
+        hestimatorsVsETA08[i] = make2DH("multiplicity/vsETA08/", Estimators::estimatorNames[Estimators::ETA08]);
+      }
 
-      hestimatorsVsETA05[i] = histos.add<TH2>("multiplicity/vsETA05/" + estName, estName, kTH2D, {axisMultiplicity, axisMultiplicity});
-      hestimatorsVsETA05[i]->GetXaxis()->SetTitle("Multiplicity " + estName);
-      hestimatorsVsETA05[i]->GetYaxis()->SetTitle(Form("Multiplicity %s", Estimators::estimatorNames[Estimators::ETA05]));
+      hvertexPosZ[i] = histos.add<TH2>(Form("multiplicity/posZ/%s", name), name, kTH2D, {{200, -20, 20, "pos Z"}, axisMultiplicity});
+      hvertexPosZ[i]->GetYaxis()->SetTitle(Form("Multiplicity %s", name));
 
-      hestimatorsVsETA08[i] = histos.add<TH2>("multiplicity/vsETA08/" + estName, estName, kTH2D, {axisMultiplicity, axisMultiplicity});
-      hestimatorsVsETA08[i]->GetXaxis()->SetTitle("Multiplicity " + estName);
-      hestimatorsVsETA08[i]->GetYaxis()->SetTitle(Form("Multiplicity %s", Estimators::estimatorNames[Estimators::ETA08]));
-
-      hvertexPosZ[i] = histos.add<TH2>("multiplicity/posZ/" + estName, estName, kTH2D, {{200, -20, 20, "pos Z"}, axisMultiplicity});
-      hvertexPosZ[i]->GetYaxis()->SetTitle("Multiplicity " + estName);
-
-      if (!doprocessReco) {
+      if (!doprocessReco) { // Reco events
         continue;
       }
-      // Reco events
-      hestimatorsRecoEvGenVsReco[i] = histosRecoEvs.add<TH2>("multiplicity/Reco/GenVsReco/" + estName, estName, kTH2D, {axisMultiplicity, axisMultiplicityReco});
-      hestimatorsRecoEvGenVsReco[i]->GetXaxis()->SetTitle("Multiplicity " + estName);
-      hestimatorsRecoEvGenVsReco[i]->GetYaxis()->SetTitle("Multiplicity Reco. " + estName);
 
-      hestimatorsRecoEvGenVsReco_BCMC[i] = histosRecoEvs.add<TH2>("multiplicity/Reco/GenVsReco_BCMC/" + estName, estName, kTH2D, {axisMultiplicity, axisMultiplicityReco});
-      hestimatorsRecoEvGenVsReco_BCMC[i]->GetXaxis()->SetTitle("Multiplicity " + estName);
-      hestimatorsRecoEvGenVsReco_BCMC[i]->GetYaxis()->SetTitle(Form("Multiplicity Reco. %s (BCMC)", estName));
+      hestimatorsRecoEvGenVsReco[i] = histosRecoEvs.add<TH2>(Form("multiplicity/Reco/GenVsReco/%s", name), name, kTH2D, {axisMultiplicity, axisMultiplicityReco});
+      hestimatorsRecoEvGenVsReco[i]->GetXaxis()->SetTitle(Form("Multiplicity %s", name));
+      hestimatorsRecoEvGenVsReco[i]->GetYaxis()->SetTitle(Form("Multiplicity Reco. %s", name));
 
-      hestimatorsRecoEvGenVsRecoITS[i] = histosRecoEvs.add<TH2>("multiplicity/Reco/GenVsRecoITS/" + estName, estName, kTH2D, {axisMultiplicity, axisMultiplicityRecoITS});
-      hestimatorsRecoEvGenVsRecoITS[i]->GetXaxis()->SetTitle("Multiplicity " + estName);
+      hestimatorsRecoEvGenVsReco_BCMC[i] = histosRecoEvs.add<TH2>(Form("multiplicity/Reco/GenVsReco_BCMC/%s", name), name, kTH2D, {axisMultiplicity, axisMultiplicityReco});
+      hestimatorsRecoEvGenVsReco_BCMC[i]->GetXaxis()->SetTitle(Form("Multiplicity %s", name));
+      hestimatorsRecoEvGenVsReco_BCMC[i]->GetYaxis()->SetTitle(Form("Multiplicity Reco. %s (BCMC)", name));
 
-      hestimatorsRecoEvRecoVsITS[i] = histosRecoEvs.add<TH2>("multiplicity/Reco/RecoVsITS/" + estName, estName, kTH2D, {axisMultiplicityReco, axisMultiplicity});
-      hestimatorsRecoEvRecoVsITS[i]->GetXaxis()->SetTitle("Multiplicity Reco. " + estName);
+      hestimatorsRecoEvGenVsRecoITS[i] = histosRecoEvs.add<TH2>(Form("multiplicity/Reco/GenVsRecoITS/%s", name), name, kTH2D, {axisMultiplicity, axisMultiplicityRecoITS});
+      hestimatorsRecoEvGenVsRecoITS[i]->GetXaxis()->SetTitle(Form("Multiplicity %s", name));
+
+      hestimatorsRecoEvRecoVsITS[i] = histosRecoEvs.add<TH2>(Form("multiplicity/Reco/RecoVsITS/%s", name), name, kTH2D, {axisMultiplicityReco, axisMultiplicity});
+      hestimatorsRecoEvRecoVsITS[i]->GetXaxis()->SetTitle(Form("Multiplicity Reco. %s", name));
       hestimatorsRecoEvRecoVsITS[i]->GetYaxis()->SetTitle(Form("Multiplicity %s", Estimators::estimatorNames[Estimators::ITSIB]));
 
-      hestimatorsRecoEvRecoVsRecoITS[i] = histosRecoEvs.add<TH2>("multiplicity/Reco/RecoVsRecoITS/" + estName, estName, kTH2D, {axisMultiplicityReco, axisMultiplicityRecoITS});
-      hestimatorsRecoEvRecoVsRecoITS[i]->GetXaxis()->SetTitle("Multiplicity Reco. " + estName);
+      hestimatorsRecoEvRecoVsRecoITS[i] = histosRecoEvs.add<TH2>(Form("multiplicity/Reco/RecoVsRecoITS/%s", name), name, kTH2D, {axisMultiplicityReco, axisMultiplicityRecoITS});
+      hestimatorsRecoEvRecoVsRecoITS[i]->GetXaxis()->SetTitle(Form("Multiplicity Reco. %s", name));
 
-      hestimatorsRecoEvRecoVsRecoITS_BCMC[i] = histosRecoEvs.add<TH2>("multiplicity/Reco/RecoVsRecoITS_BCMC/" + estName, estName, kTH2D, {axisMultiplicityReco, axisMultiplicityRecoITS});
-      hestimatorsRecoEvRecoVsRecoITS_BCMC[i]->GetXaxis()->SetTitle("Multiplicity Reco. " + estName + " (BCMC)");
+      hestimatorsRecoEvRecoVsRecoITS_BCMC[i] = histosRecoEvs.add<TH2>(Form("multiplicity/Reco/RecoVsRecoITS_BCMC/%s", name), name, kTH2D, {axisMultiplicityReco, axisMultiplicityRecoITS});
+      hestimatorsRecoEvRecoVsRecoITS_BCMC[i]->GetXaxis()->SetTitle(Form("Multiplicity Reco. %s (BCMC)", name));
 
-      hestimatorsRecoEvRecoVsFT0A[i] = histosRecoEvs.add<TH2>("multiplicity/Reco/RecovsFT0A/" + estName, estName, kTH2D, {axisMultiplicityReco, axisMultiplicity});
-      hestimatorsRecoEvRecoVsFT0A[i]->GetXaxis()->SetTitle("Multiplicity Reco. " + estName);
+      hestimatorsRecoEvRecoVsFT0A[i] = histosRecoEvs.add<TH2>(Form("multiplicity/Reco/RecovsFT0A/%s", name), name, kTH2D, {axisMultiplicityReco, axisMultiplicity});
+      hestimatorsRecoEvRecoVsFT0A[i]->GetXaxis()->SetTitle(Form("Multiplicity Reco. %s", name));
       hestimatorsRecoEvRecoVsFT0A[i]->GetYaxis()->SetTitle(Form("Multiplicity %s", Estimators::estimatorNames[Estimators::FT0A]));
 
-      hestimatorsRecoEvRecoVsBCId[i] = histosRecoEvs.add<TH2>("multiplicity/Reco/RecoVsBCId/" + estName, estName, kTH2D, {axisBCID, axisMultiplicityReco});
-      hestimatorsRecoEvRecoVsBCId[i]->GetYaxis()->SetTitle("Multiplicity Reco. " + estName);
+      hestimatorsRecoEvRecoVsBCId[i] = histosRecoEvs.add<TH2>(Form("multiplicity/Reco/RecoVsBCId/%s", name), name, kTH2D, {axisBCID, axisMultiplicityReco});
+      hestimatorsRecoEvRecoVsBCId[i]->GetYaxis()->SetTitle(Form("Multiplicity Reco. %s", name));
 
-      hestimatorsRecoEvVsBCId[i] = histosRecoEvs.add<TH2>("multiplicity/Reco/VsBCId/" + estName, estName, kTH2D, {axisBCID, axisMultiplicity});
-      hestimatorsRecoEvVsBCId[i]->GetYaxis()->SetTitle("Multiplicity " + estName);
+      hestimatorsRecoEvVsBCId[i] = histosRecoEvs.add<TH2>(Form("multiplicity/Reco/VsBCId/%s", name), name, kTH2D, {axisBCID, axisMultiplicity});
+      hestimatorsRecoEvVsBCId[i]->GetYaxis()->SetTitle(Form("Multiplicity %s", name));
     }
 
     for (int i = 0; i < PIDExtended::NIDsTot; i++) {
@@ -346,7 +356,7 @@ struct mcParticlePrediction {
     }
     if (enabledEstimatorsArray[Estimators::FT0AC]) {
       nMult[Estimators::FT0AC] = nMult[Estimators::FT0A] + nMult[Estimators::FT0C];
-      if (requireCoincidenceEstimators && (nMult[Estimators::FT0A] <= 0 || nMult[Estimators::FT0C] <= 0)) {
+      if (requireCoincidenceEstimators && (nMult[Estimators::FT0A] <= 0.f || nMult[Estimators::FT0C] <= 0.f)) {
         nMult[Estimators::FT0AC] = 0;
       }
     }
@@ -361,7 +371,7 @@ struct mcParticlePrediction {
     }
     if (enabledEstimatorsArray[Estimators::FDDAC]) {
       nMult[Estimators::FDDAC] = nMult[Estimators::FDDA] + nMult[Estimators::FDDC];
-      if (requireCoincidenceEstimators && (nMult[Estimators::FDDA] <= 0 || nMult[Estimators::FDDC] <= 0)) {
+      if (requireCoincidenceEstimators && (nMult[Estimators::FDDA] <= 0.f || nMult[Estimators::FDDC] <= 0.f)) {
         nMult[Estimators::FDDAC] = 0;
       }
     }
@@ -371,13 +381,13 @@ struct mcParticlePrediction {
     if (enabledEstimatorsArray[Estimators::ZNC]) {
       nMult[Estimators::ZNC] = mCounter.countZNC(mcParticles);
     }
-    if (enabledEstimatorsArray[Estimators::ITSIB]) {
+    if (enabledEstimatorsArray[Estimators::ITSIB] || enableVsITSHistograms) {
       nMult[Estimators::ITSIB] = mCounter.countITSIB(mcParticles);
     }
-    if (enabledEstimatorsArray[Estimators::ETA05]) {
+    if (enabledEstimatorsArray[Estimators::ETA05] || enableVsEta05Histograms) {
       nMult[Estimators::ETA05] = mCounter.countEta05(mcParticles);
     }
-    if (enabledEstimatorsArray[Estimators::ETA08]) {
+    if (enabledEstimatorsArray[Estimators::ETA08] || enableVsEta08Histograms) {
       nMult[Estimators::ETA08] = mCounter.countEta08(mcParticles);
     }
     if (enabledEstimatorsArray[Estimators::V0A] || enabledEstimatorsArray[Estimators::V0AC]) {
@@ -409,7 +419,7 @@ struct mcParticlePrediction {
     }
     histos.fill(HIST("collisions/generated"), 2);
 
-    const std::array<float, Estimators::nEstimators> nMult = genMult(mcParticles, nMult);
+    const std::array<float, Estimators::nEstimators>& nMult = genMult(mcParticles);
 
     for (int i = 0; i < Estimators::nEstimators; i++) {
       if (!enabledEstimatorsArray[i]) {
@@ -417,7 +427,15 @@ struct mcParticlePrediction {
       }
 
       hestimators[i]->Fill(nMult[i]);
-      hestimatorsVsITS[i]->Fill(nMult[i], nMult[Estimators::ITSIB]);
+      if (enableVsITSHistograms) {
+        hestimatorsVsITS[i]->Fill(nMult[i], nMult[Estimators::ITSIB]);
+      }
+      if (enableVsEta05Histograms) {
+        hestimatorsVsETA05[i]->Fill(nMult[i], nMult[Estimators::ETA05]);
+      }
+      if (enableVsEta08Histograms) {
+        hestimatorsVsETA08[i]->Fill(nMult[i], nMult[Estimators::ETA08]);
+      }
       hvertexPosZ[i]->Fill(mcCollision.posZ(), nMult[i]);
     }
 
@@ -593,7 +611,7 @@ struct mcParticlePrediction {
     histos.fill(HIST("particles/FromCollVsFromCollBad"), particlesFromColl, particlesFromCollWrongBC);
     histos.fill(HIST("particles/FromCollBadOverFromCollVsVsFromMCColl"), 1.f * particlesFromCollWrongBC / particlesFromColl, particlesInCollision.size());
 
-    const std::array<float, Estimators::nEstimators> nMult = genMult(mcParticles, nMult);
+    const std::array<float, Estimators::nEstimators>& nMult = genMult(mcParticles);
 
     float nMultReco[Estimators::nEstimators];
     nMultReco[Estimators::FT0A] = collision.multFT0A();
