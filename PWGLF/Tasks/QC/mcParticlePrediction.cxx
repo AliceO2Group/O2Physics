@@ -135,9 +135,8 @@ struct mcParticlePrediction {
   ConfigurableAxis binsEta{"binsEta", {100, -20, 20}, "Binning of the Eta axis"};
   ConfigurableAxis binsVxy{"binsVxy", {100, -10, 10}, "Binning of the production vertex (x and y) axis"};
   ConfigurableAxis binsVz{"binsVz", {100, -10, 10}, "Binning of the production vertex (z) axis"};
-  ConfigurableAxis binsPt{"binsPt", {300, 0, 30}, "Binning of the Pt axis"};
-  ConfigurableAxis binsMultiplicity{"binsMultiplicity", {800, -0.5, 799.5}, "Binning of the Multiplicity axis"};
-  ConfigurableAxis binsMultiplicitydNChdeta{"binsMultiplicitydNChdeta", {400, -0.5, 399.5}, "Binning of the Multiplicity axis"};
+  ConfigurableAxis binsPt{"binsPt", {100, 0, 10}, "Binning of the Pt axis"};
+  ConfigurableAxis binsMultiplicity{"binsMultiplicity", {300, -0.5, 299.5}, "Binning of the Multiplicity axis"};
 
   ConfigurableAxis binsMultiplicityReco{"binsMultiplicityReco", {1000, -0.5, -0.5 + 10000}, "Binning of the Multiplicity axis"};
   Configurable<LabeledArray<int>> enabledSpecies{"enabledSpecies",
