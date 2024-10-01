@@ -43,26 +43,27 @@ bool enabledParticlesArray[PIDExtended::NIDsTot];
 
 // Estimators
 struct Estimators {
-  static constexpr int FT0A = 0;
-  static constexpr int FT0C = 1;
-  static constexpr int FT0AC = 2;
-  static constexpr int FV0A = 3;
-  static constexpr int FDDA = 4;
-  static constexpr int FDDC = 5;
-  static constexpr int FDDAC = 6;
-  static constexpr int ZNA = 7;
-  static constexpr int ZNC = 8;
-  static constexpr int ZEM1 = 9;
-  static constexpr int ZEM2 = 10;
-  static constexpr int ZPA = 11;
-  static constexpr int ZPC = 12;
-  static constexpr int ITSIB = 13;
-  static constexpr int ETA05 = 14;
-  static constexpr int ETA08 = 15;
-  static constexpr int V0A = 16;  // (Run2)
-  static constexpr int V0C = 17;  // (Run2)
-  static constexpr int V0AC = 18; // (Run2 V0M)
-  static constexpr int nEstimators = 19;
+  typename int id;
+  static constexpr id FT0A = 0;
+  static constexpr id FT0C = 1;
+  static constexpr id FT0AC = 2;
+  static constexpr id FV0A = 3;
+  static constexpr id FDDA = 4;
+  static constexpr id FDDC = 5;
+  static constexpr id FDDAC = 6;
+  static constexpr id ZNA = 7;
+  static constexpr id ZNC = 8;
+  static constexpr id ZEM1 = 9;
+  static constexpr id ZEM2 = 10;
+  static constexpr id ZPA = 11;
+  static constexpr id ZPC = 12;
+  static constexpr id ITSIB = 13;
+  static constexpr id ETA05 = 14;
+  static constexpr id ETA08 = 15;
+  static constexpr id V0A = 16;  // (Run2)
+  static constexpr id V0C = 17;  // (Run2)
+  static constexpr id V0AC = 18; // (Run2 V0M)
+  static constexpr id nEstimators = 19;
 
   static constexpr const char* estimatorNames[nEstimators] = {"FT0A",
                                                               "FT0C",
@@ -334,20 +335,9 @@ struct mcParticlePrediction {
     histosYield.print();
   }
 
-  void process(aod::McCollision const& mcCollision,
-               aod::McParticles const& mcParticles)
+  std::array<float, Estimators::nEstimators> generatedMultiplicity(const auto& mcParticles, auto& nMult)
   {
-    histos.fill(HIST("collisions/generated"), 0);
-    if (selectInelGt0.value && !o2::pwglf::isINELgt0mc(mcParticles, pdgDB)) {
-      return;
-    }
-
-    histos.fill(HIST("collisions/generated"), 1);
-    if (abs(mcCollision.posZ()) > 10.f) {
-      return;
-    }
-    histos.fill(HIST("collisions/generated"), 2);
-    float nMult[Estimators::nEstimators];
+    std::array<float, Estimators::nEstimators> nMult;
     if (enabledEstimatorsArray[Estimators::FT0A] || enabledEstimatorsArray[Estimators::FT0AC]) {
       nMult[Estimators::FT0A] = mCounter.countFT0A(mcParticles);
     }
@@ -384,6 +374,12 @@ struct mcParticlePrediction {
     if (enabledEstimatorsArray[Estimators::ITSIB]) {
       nMult[Estimators::ITSIB] = mCounter.countITSIB(mcParticles);
     }
+    if (enabledEstimatorsArray[Estimators::ETA05]) {
+      nMult[Estimators::ETA05] = mCounter.countEta05(mcParticles);
+    }
+    if (enabledEstimatorsArray[Estimators::ETA08]) {
+      nMult[Estimators::ETA08] = mCounter.countEta08(mcParticles);
+    }
     if (enabledEstimatorsArray[Estimators::V0A] || enabledEstimatorsArray[Estimators::V0AC]) {
       nMult[Estimators::V0A] = mCounter.countV0A(mcParticles);
     }
@@ -396,6 +392,24 @@ struct mcParticlePrediction {
         nMult[Estimators::V0AC] = 0;
       }
     }
+    return nMult;
+  }
+
+  void process(aod::McCollision const& mcCollision,
+               aod::McParticles const& mcParticles)
+  {
+    histos.fill(HIST("collisions/generated"), 0);
+    if (selectInelGt0.value && !o2::pwglf::isINELgt0mc(mcParticles, pdgDB)) {
+      return;
+    }
+
+    histos.fill(HIST("collisions/generated"), 1);
+    if (abs(mcCollision.posZ()) > 10.f) {
+      return;
+    }
+    histos.fill(HIST("collisions/generated"), 2);
+
+    const std::array<float, Estimators::nEstimators> nMult = generatedMultiplicity(mcParticles, nMult);
 
     for (int i = 0; i < Estimators::nEstimators; i++) {
       if (!enabledEstimatorsArray[i]) {
@@ -579,46 +593,7 @@ struct mcParticlePrediction {
     histos.fill(HIST("particles/FromCollVsFromCollBad"), particlesFromColl, particlesFromCollWrongBC);
     histos.fill(HIST("particles/FromCollBadOverFromCollVsVsFromMCColl"), 1.f * particlesFromCollWrongBC / particlesFromColl, particlesInCollision.size());
 
-    float nMult[Estimators::nEstimators];
-    if (enabledEstimatorsArray[Estimators::FT0A] || enabledEstimatorsArray[Estimators::FT0AC]) {
-      nMult[Estimators::FT0A] = mCounter.countFT0A(mcParticles);
-    }
-    if (enabledEstimatorsArray[Estimators::FT0C] || enabledEstimatorsArray[Estimators::FT0AC]) {
-      nMult[Estimators::FT0C] = mCounter.countFT0C(mcParticles);
-    }
-    if (enabledEstimatorsArray[Estimators::FT0AC]) {
-      nMult[Estimators::FT0AC] = nMult[Estimators::FT0A] + nMult[Estimators::FT0C];
-    }
-    if (enabledEstimatorsArray[Estimators::FV0A]) {
-      nMult[Estimators::FV0A] = mCounter.countFV0A(mcParticles);
-    }
-    if (enabledEstimatorsArray[Estimators::FDDA]) {
-      nMult[Estimators::FDDA] = mCounter.countFDDA(mcParticles);
-    }
-    if (enabledEstimatorsArray[Estimators::FDDC]) {
-      nMult[Estimators::FDDC] = mCounter.countFDDC(mcParticles);
-    }
-    if (enabledEstimatorsArray[Estimators::FDDAC]) {
-      nMult[Estimators::FDDAC] = nMult[Estimators::FDDA] + nMult[Estimators::FDDC];
-    }
-    if (enabledEstimatorsArray[Estimators::ZNA]) {
-      nMult[Estimators::ZNA] = mCounter.countZNA(mcParticles);
-    }
-    if (enabledEstimatorsArray[Estimators::ZNC]) {
-      nMult[Estimators::ZNC] = mCounter.countZNC(mcParticles);
-    }
-    if (enabledEstimatorsArray[Estimators::ITSIB]) {
-      nMult[Estimators::ITSIB] = mCounter.countITSIB(mcParticles);
-    }
-    if (enabledEstimatorsArray[Estimators::V0A] || enabledEstimatorsArray[Estimators::V0AC]) {
-      nMult[Estimators::V0A] = mCounter.countV0A(mcParticles);
-    }
-    if (enabledEstimatorsArray[Estimators::V0C] || enabledEstimatorsArray[Estimators::V0AC]) {
-      nMult[Estimators::V0C] = mCounter.countV0C(mcParticles);
-    }
-    if (enabledEstimatorsArray[Estimators::V0AC]) {
-      nMult[Estimators::V0AC] = nMult[Estimators::V0A] + nMult[Estimators::V0C];
-    }
+    const std::array<float, Estimators::nEstimators> nMult = generatedMultiplicity(mcParticles, nMult);
 
     float nMultReco[Estimators::nEstimators];
     nMultReco[Estimators::FT0A] = collision.multFT0A();
