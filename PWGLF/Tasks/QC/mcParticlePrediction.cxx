@@ -172,8 +172,6 @@ struct mcParticlePrediction {
     const AxisSpec axisVz{binsVz, "Vz"};
     const AxisSpec axisPt{binsPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec axisMultiplicity{binsMultiplicity, "Multiplicity (undefined)"};
-    const AxisSpec axisdNChdeta{binsMultiplicitydNChdeta, "#frac{dN_{ch}}{#eta}"};
-
     const AxisSpec axisMultiplicityReco{binsMultiplicityReco, "Multiplicity Reco. (undefined)"};
     const AxisSpec axisMultiplicityRecoITS{100, 0, 100, "Multiplicity Reco. ITS"};
     const AxisSpec axisMultiplicityGenV0s{100, 0, 100, "K0s gen"};
