@@ -335,7 +335,7 @@ struct mcParticlePrediction {
     histosYield.print();
   }
 
-  std::array<float, Estimators::nEstimators> generatedMultiplicity(const auto& mcParticles, auto& nMult)
+  std::array<float, Estimators::nEstimators> genMult(const auto& mcParticles)
   {
     std::array<float, Estimators::nEstimators> nMult;
     if (enabledEstimatorsArray[Estimators::FT0A] || enabledEstimatorsArray[Estimators::FT0AC]) {
@@ -409,7 +409,7 @@ struct mcParticlePrediction {
     }
     histos.fill(HIST("collisions/generated"), 2);
 
-    const std::array<float, Estimators::nEstimators> nMult = generatedMultiplicity(mcParticles, nMult);
+    const std::array<float, Estimators::nEstimators> nMult = genMult(mcParticles, nMult);
 
     for (int i = 0; i < Estimators::nEstimators; i++) {
       if (!enabledEstimatorsArray[i]) {
@@ -593,7 +593,7 @@ struct mcParticlePrediction {
     histos.fill(HIST("particles/FromCollVsFromCollBad"), particlesFromColl, particlesFromCollWrongBC);
     histos.fill(HIST("particles/FromCollBadOverFromCollVsVsFromMCColl"), 1.f * particlesFromCollWrongBC / particlesFromColl, particlesInCollision.size());
 
-    const std::array<float, Estimators::nEstimators> nMult = generatedMultiplicity(mcParticles, nMult);
+    const std::array<float, Estimators::nEstimators> nMult = genMult(mcParticles, nMult);
 
     float nMultReco[Estimators::nEstimators];
     nMultReco[Estimators::FT0A] = collision.multFT0A();
