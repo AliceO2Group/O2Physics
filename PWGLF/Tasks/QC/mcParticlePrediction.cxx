@@ -149,6 +149,7 @@ struct mcParticlePrediction {
   Configurable<bool> selectInelGt0{"selectInelGt0", true, "Select only inelastic events"};
   Configurable<bool> selectPrimaries{"selectPrimaries", true, "Select only primary particles"};
 
+  Configurable<bool> requireCoincidenceEstimators{"requireCoincidenceEstimators", false, "Asks for a coincidence when two estimators are used"};
   Configurable<bool> discardkIsGoodZvtxFT0vsPV{"discardkIsGoodZvtxFT0vsPV", false, "Select only collisions with matching BC and MC BC"};
   Configurable<bool> discardMismatchedBCs{"discardMismatchedBCs", false, "Select only collisions with matching BC and MC BC"};
   Configurable<bool> discardMismatchedFoundBCs{"discardMismatchedFoundBCs", false, "Select only collisions with matching found BC and MC BC"};
@@ -346,6 +347,9 @@ struct mcParticlePrediction {
     }
     if (enabledEstimatorsArray[Estimators::FT0AC]) {
       nMult[Estimators::FT0AC] = nMult[Estimators::FT0A] + nMult[Estimators::FT0C];
+      if (requireCoincidenceEstimators && (nMult[Estimators::FT0A] <= 0 || nMult[Estimators::FT0C] <= 0)) {
+        nMult[Estimators::FT0AC] = 0;
+      }
     }
     if (enabledEstimatorsArray[Estimators::FV0A]) {
       nMult[Estimators::FV0A] = mCounter.countFV0A(mcParticles);
@@ -358,6 +362,9 @@ struct mcParticlePrediction {
     }
     if (enabledEstimatorsArray[Estimators::FDDAC]) {
       nMult[Estimators::FDDAC] = nMult[Estimators::FDDA] + nMult[Estimators::FDDC];
+      if (requireCoincidenceEstimators && (nMult[Estimators::FDDA] <= 0 || nMult[Estimators::FDDC] <= 0)) {
+        nMult[Estimators::FDDAC] = 0;
+      }
     }
     if (enabledEstimatorsArray[Estimators::ZNA]) {
       nMult[Estimators::ZNA] = mCounter.countZNA(mcParticles);
@@ -376,10 +383,8 @@ struct mcParticlePrediction {
     }
     if (enabledEstimatorsArray[Estimators::V0AC]) {
       nMult[Estimators::V0AC] = nMult[Estimators::V0A] + nMult[Estimators::V0C];
-    }
-    if (enabledEstimatorsArray[Estimators::V0M]) {
-      if (nMult[Estimators::V0A] > 0 && nMult[Estimators::V0C] > 0) {
-        nMult[Estimators::V0M] = nMult[Estimators::V0A] + nMult[Estimators::V0C];
+      if (requireCoincidenceEstimators && (nMult[Estimators::V0A] <= 0 || nMult[Estimators::V0C] <= 0)) {
+        nMult[Estimators::V0AC] = 0;
       }
     }
     for (int i = 0; i < Estimators::nEstimators; i++) {
