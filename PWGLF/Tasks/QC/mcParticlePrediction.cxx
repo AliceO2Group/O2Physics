@@ -110,7 +110,6 @@ static const int defaultEstimators[Estimators::nEstimators][nParameters]{{0},  /
 
 // Histograms
 std::array<std::shared_ptr<TH1>, Estimators::nEstimators> hestimators;
-std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsVsdNChdeta;
 std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsVsITS;
 std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvGenVsReco;
 std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvGenVsReco_BCMC;
