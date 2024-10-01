@@ -13,7 +13,6 @@
 /// \file   mcParticlePrediction.cxx
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
 /// \author Francesca Ercolessi francesca.ercolessi@cern.ch
-/// \author Navneet Kumar navneet.kumar@cern.ch
 /// \brief Task to build the predictions from the models based on the generated particles
 ///
 
@@ -57,11 +56,13 @@ struct Estimators {
   static constexpr int ZEM2 = 10;
   static constexpr int ZPA = 11;
   static constexpr int ZPC = 12;
-  static constexpr int ITS = 13;
-  static constexpr int V0A = 14;  // (Run2)
-  static constexpr int V0C = 15;  // (Run2)
-  static constexpr int V0AC = 16; // (Run2 V0M)
-  static constexpr int nEstimators = 17;
+  static constexpr int ITSIB = 13;
+  static constexpr int ETA05 = 14;
+  static constexpr int ETA08 = 15;
+  static constexpr int V0A = 16;  // (Run2)
+  static constexpr int V0C = 17;  // (Run2)
+  static constexpr int V0AC = 18; // (Run2 V0M)
+  static constexpr int nEstimators = 19;
 
   static constexpr const char* estimatorNames[nEstimators] = {"FT0A",
                                                               "FT0C",
@@ -76,13 +77,18 @@ struct Estimators {
                                                               "ZEM2",
                                                               "ZPA",
                                                               "ZPC",
-                                                              "ITS",
+                                                              "ITSIB",
+                                                              "ETA05",
+                                                              "ETA08",
                                                               "V0A",
                                                               "V0C",
                                                               "V0AC"};
   static std::vector<std::string> arrayNames()
   {
-    std::vector<std::string> names;
+    static std::vector<std::string> names;
+    if (!names.empty()) {
+      return names;
+    }
     for (int i = 0; i < nEstimators; i++) {
       names.push_back(estimatorNames[i]);
     }
@@ -103,7 +109,9 @@ static const int defaultEstimators[Estimators::nEstimators][nParameters]{{0},  /
                                                                          {0},  // ZEM2
                                                                          {0},  // ZPA
                                                                          {0},  // ZPC
-                                                                         {0},  // ITS
+                                                                         {0},  // ITSIB
+                                                                         {0},  // ETA05
+                                                                         {0},  // ETA08
                                                                          {0},  // V0A (Run2)
                                                                          {0},  // V0C (Run2)
                                                                          {0}}; // V0AC (Run2 V0M)
@@ -111,6 +119,8 @@ static const int defaultEstimators[Estimators::nEstimators][nParameters]{{0},  /
 // Histograms
 std::array<std::shared_ptr<TH1>, Estimators::nEstimators> hestimators;
 std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsVsITS;
+std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsVsETA05;
+std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsVsETA08;
 std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvGenVsReco;
 std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvGenVsReco_BCMC;
 std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvGenVsRecoITS;
@@ -152,7 +162,7 @@ struct mcParticlePrediction {
   Configurable<float> posZCut{"posZCut", 10.f, "Cut in the Z position of the primary vertex"};
   Configurable<float> collisionTimeResCut{"collisionTimeResCut", -40.f, "Cut in the collisionTimeRes"};
   Configurable<bool> requirekIsGoodZvtxFT0vsPV{"requirekIsGoodZvtxFT0vsPV", false, "Require kIsGoodZvtxFT0vsPV: small difference between z-vertex from PV and from FT0"};
-  Configurable<bool> requirekIsVertexITSTPC{"requirekIsVertexITSTPC", false, "Require kIsVertexITSTPC: at least one ITS-TPC track (reject vertices built from ITS-only tracks)"};
+  Configurable<bool> requirekIsVertexITSTPC{"requirekIsVertexITSTPC", false, "Require kIsVertexITSTPC: at least one ITSIB-TPC track (reject vertices built from ITSIB-only tracks)"};
   Configurable<bool> requirekIsVertexTOFmatched{"requirekIsVertexTOFmatched", false, "Require kIsVertexTOFmatched: at least one of vertex contributors is matched to TOF"};
   Configurable<bool> requirekIsVertexTRDmatched{"requirekIsVertexTRDmatched", false, "Require kIsVertexTRDmatched: at least one of vertex contributors is matched to TRD"};
 
@@ -170,7 +180,7 @@ struct mcParticlePrediction {
     const AxisSpec axisPt{binsPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec axisMultiplicity{binsMultiplicity, "Multiplicity (undefined)"};
     const AxisSpec axisMultiplicityReco{binsMultiplicityReco, "Multiplicity Reco. (undefined)"};
-    const AxisSpec axisMultiplicityRecoITS{100, 0, 100, "Multiplicity Reco. ITS"};
+    const AxisSpec axisMultiplicityRecoITS{100, 0, 100, "Multiplicity Reco. ITSIB"};
     const AxisSpec axisMultiplicityGenV0s{100, 0, 100, "K0s gen"};
     const AxisSpec axisMultiplicityRecoV0s{20, 0, 20, "K0s reco"};
     const AxisSpec axisBCID{o2::constants::lhc::LHCMaxBunches, -0.5, -0.5 + o2::constants::lhc::LHCMaxBunches, "BC ID in orbit"};
@@ -244,49 +254,59 @@ struct mcParticlePrediction {
       if (!enabledEstimatorsArray[i]) {
         continue;
       }
-      const char* name = Estimators::estimatorNames[i];
-      hestimators[i] = histos.add<TH1>(Form("multiplicity/%s", name), name, kTH1D, {axisMultiplicity});
-      hestimators[i]->GetXaxis()->SetTitle(Form("Multiplicity %s", name));
+      const std::string estName = Estimators::estimatorNames[i];
+      hestimators[i] = histos.add<TH1>("multiplicity/" + estName, estName, kTH1D, {axisMultiplicity});
+      hestimators[i]->GetXaxis()->SetTitle("Multiplicity " + estName);
 
-      hestimatorsVsITS[i] = histos.add<TH2>(Form("multiplicity/vsITS/%s", name), name, kTH2D, {axisMultiplicity, axisMultiplicity});
-      hestimatorsVsITS[i]->GetXaxis()->SetTitle(Form("Multiplicity %s", name));
-      hestimatorsVsITS[i]->GetYaxis()->SetTitle(Form("Multiplicity %s", Estimators::estimatorNames[Estimators::ITS]));
+      hestimatorsVsITS[i] = histos.add<TH2>("multiplicity/vsITS/" + estName, estName, kTH2D, {axisMultiplicity, axisMultiplicity});
+      hestimatorsVsITS[i]->GetXaxis()->SetTitle("Multiplicity " + estName);
+      hestimatorsVsITS[i]->GetYaxis()->SetTitle(Form("Multiplicity %s", Estimators::estimatorNames[Estimators::ITSIB]));
 
-      hvertexPosZ[i] = histos.add<TH2>(Form("multiplicity/posZ/%s", name), name, kTH2D, {{200, -20, 20, "pos Z"}, axisMultiplicity});
-      hvertexPosZ[i]->GetYaxis()->SetTitle(Form("Multiplicity %s", name));
+      hestimatorsVsETA05[i] = histos.add<TH2>("multiplicity/vsETA05/" + estName, estName, kTH2D, {axisMultiplicity, axisMultiplicity});
+      hestimatorsVsETA05[i]->GetXaxis()->SetTitle("Multiplicity " + estName);
+      hestimatorsVsETA05[i]->GetYaxis()->SetTitle(Form("Multiplicity %s", Estimators::estimatorNames[Estimators::ETA05]));
 
+      hestimatorsVsETA08[i] = histos.add<TH2>("multiplicity/vsETA08/" + estName, estName, kTH2D, {axisMultiplicity, axisMultiplicity});
+      hestimatorsVsETA08[i]->GetXaxis()->SetTitle("Multiplicity " + estName);
+      hestimatorsVsETA08[i]->GetYaxis()->SetTitle(Form("Multiplicity %s", Estimators::estimatorNames[Estimators::ETA08]));
+
+      hvertexPosZ[i] = histos.add<TH2>("multiplicity/posZ/" + estName, estName, kTH2D, {{200, -20, 20, "pos Z"}, axisMultiplicity});
+      hvertexPosZ[i]->GetYaxis()->SetTitle("Multiplicity " + estName);
+
+      if (!doprocessReco) {
+        continue;
+      }
       // Reco events
-      hestimatorsRecoEvGenVsReco[i] = histosRecoEvs.add<TH2>(Form("multiplicity/Reco/GenVsReco/%s", name), name, kTH2D, {axisMultiplicity, axisMultiplicityReco});
-      hestimatorsRecoEvGenVsReco[i]->GetXaxis()->SetTitle(Form("Multiplicity %s", name));
-      hestimatorsRecoEvGenVsReco[i]->GetYaxis()->SetTitle(Form("Multiplicity Reco. %s", name));
+      hestimatorsRecoEvGenVsReco[i] = histosRecoEvs.add<TH2>("multiplicity/Reco/GenVsReco/" + estName, estName, kTH2D, {axisMultiplicity, axisMultiplicityReco});
+      hestimatorsRecoEvGenVsReco[i]->GetXaxis()->SetTitle("Multiplicity " + estName);
+      hestimatorsRecoEvGenVsReco[i]->GetYaxis()->SetTitle("Multiplicity Reco. " + estName);
 
-      hestimatorsRecoEvGenVsReco_BCMC[i] = histosRecoEvs.add<TH2>(Form("multiplicity/Reco/GenVsReco_BCMC/%s", name), name, kTH2D, {axisMultiplicity, axisMultiplicityReco});
-      hestimatorsRecoEvGenVsReco_BCMC[i]->GetXaxis()->SetTitle(Form("Multiplicity %s", name));
-      hestimatorsRecoEvGenVsReco_BCMC[i]->GetYaxis()->SetTitle(Form("Multiplicity Reco. %s (BCMC)", name));
+      hestimatorsRecoEvGenVsReco_BCMC[i] = histosRecoEvs.add<TH2>("multiplicity/Reco/GenVsReco_BCMC/" + estName, estName, kTH2D, {axisMultiplicity, axisMultiplicityReco});
+      hestimatorsRecoEvGenVsReco_BCMC[i]->GetXaxis()->SetTitle("Multiplicity " + estName);
+      hestimatorsRecoEvGenVsReco_BCMC[i]->GetYaxis()->SetTitle(Form("Multiplicity Reco. %s (BCMC)", estName));
 
-      hestimatorsRecoEvGenVsRecoITS[i] = histosRecoEvs.add<TH2>(Form("multiplicity/Reco/GenVsRecoITS/%s", name), name, kTH2D, {axisMultiplicity, axisMultiplicityRecoITS});
-      hestimatorsRecoEvGenVsRecoITS[i]->GetXaxis()->SetTitle(Form("Multiplicity %s", name));
+      hestimatorsRecoEvGenVsRecoITS[i] = histosRecoEvs.add<TH2>("multiplicity/Reco/GenVsRecoITS/" + estName, estName, kTH2D, {axisMultiplicity, axisMultiplicityRecoITS});
+      hestimatorsRecoEvGenVsRecoITS[i]->GetXaxis()->SetTitle("Multiplicity " + estName);
 
-      hestimatorsRecoEvRecoVsITS[i] = histosRecoEvs.add<TH2>(Form("multiplicity/Reco/RecoVsITS/%s", name), name, kTH2D, {axisMultiplicityReco, axisMultiplicity});
-      hestimatorsRecoEvRecoVsITS[i]->GetXaxis()->SetTitle(Form("Multiplicity Reco. %s", name));
-      hestimatorsRecoEvRecoVsITS[i]->GetYaxis()->SetTitle(Form("Multiplicity %s", Estimators::estimatorNames[Estimators::ITS]));
+      hestimatorsRecoEvRecoVsITS[i] = histosRecoEvs.add<TH2>("multiplicity/Reco/RecoVsITS/" + estName, estName, kTH2D, {axisMultiplicityReco, axisMultiplicity});
+      hestimatorsRecoEvRecoVsITS[i]->GetXaxis()->SetTitle("Multiplicity Reco. " + estName);
+      hestimatorsRecoEvRecoVsITS[i]->GetYaxis()->SetTitle(Form("Multiplicity %s", Estimators::estimatorNames[Estimators::ITSIB]));
 
-      hestimatorsRecoEvRecoVsRecoITS[i] = histosRecoEvs.add<TH2>(Form("multiplicity/Reco/RecoVsRecoITS/%s", name), name, kTH2D, {axisMultiplicityReco, axisMultiplicityRecoITS});
-      hestimatorsRecoEvRecoVsRecoITS[i]->GetXaxis()->SetTitle(Form("Multiplicity Reco. %s", name));
+      hestimatorsRecoEvRecoVsRecoITS[i] = histosRecoEvs.add<TH2>("multiplicity/Reco/RecoVsRecoITS/" + estName, estName, kTH2D, {axisMultiplicityReco, axisMultiplicityRecoITS});
+      hestimatorsRecoEvRecoVsRecoITS[i]->GetXaxis()->SetTitle("Multiplicity Reco. " + estName);
 
-      hestimatorsRecoEvRecoVsRecoITS_BCMC[i] = histosRecoEvs.add<TH2>(Form("multiplicity/Reco/RecoVsRecoITS_BCMC/%s", name), name, kTH2D, {axisMultiplicityReco, axisMultiplicityRecoITS});
-      hestimatorsRecoEvRecoVsRecoITS_BCMC[i]->GetXaxis()->SetTitle(Form("Multiplicity Reco. %s (BCMC)", name));
+      hestimatorsRecoEvRecoVsRecoITS_BCMC[i] = histosRecoEvs.add<TH2>("multiplicity/Reco/RecoVsRecoITS_BCMC/" + estName, estName, kTH2D, {axisMultiplicityReco, axisMultiplicityRecoITS});
+      hestimatorsRecoEvRecoVsRecoITS_BCMC[i]->GetXaxis()->SetTitle(Form("Multiplicity Reco. %s (BCMC)", estName));
 
-      hestimatorsRecoEvRecoVsFT0A[i] = histosRecoEvs.add<TH2>(Form("multiplicity/Reco/RecovsFT0A/%s", name), name, kTH2D, {axisMultiplicityReco, axisMultiplicity});
-      hestimatorsRecoEvRecoVsFT0A[i]->GetXaxis()->SetTitle(Form("Multiplicity Reco. %s", name));
+      hestimatorsRecoEvRecoVsFT0A[i] = histosRecoEvs.add<TH2>("multiplicity/Reco/RecovsFT0A/" + estName, estName, kTH2D, {axisMultiplicityReco, axisMultiplicity});
+      hestimatorsRecoEvRecoVsFT0A[i]->GetXaxis()->SetTitle("Multiplicity Reco. " + estName);
       hestimatorsRecoEvRecoVsFT0A[i]->GetYaxis()->SetTitle(Form("Multiplicity %s", Estimators::estimatorNames[Estimators::FT0A]));
 
-      hestimatorsRecoEvRecoVsBCId[i] = histosRecoEvs.add<TH2>(Form("multiplicity/Reco/RecoVsBCId/%s", name), name, kTH2D, {axisBCID, axisMultiplicityReco});
-      hestimatorsRecoEvRecoVsBCId[i]->GetYaxis()->SetTitle(Form("Multiplicity Reco. %s", name));
+      hestimatorsRecoEvRecoVsBCId[i] = histosRecoEvs.add<TH2>("multiplicity/Reco/RecoVsBCId/" + estName, estName, kTH2D, {axisBCID, axisMultiplicityReco});
+      hestimatorsRecoEvRecoVsBCId[i]->GetYaxis()->SetTitle("Multiplicity Reco. " + estName);
 
-      hestimatorsRecoEvVsBCId[i] = histosRecoEvs.add<TH2>(Form("multiplicity/Reco/VsBCId/%s", name), name, kTH2D,
-                                                          {axisBCID, axisMultiplicity});
-      hestimatorsRecoEvVsBCId[i]->GetYaxis()->SetTitle(Form("Multiplicity %s", name));
+      hestimatorsRecoEvVsBCId[i] = histosRecoEvs.add<TH2>("multiplicity/Reco/VsBCId/" + estName, estName, kTH2D, {axisBCID, axisMultiplicity});
+      hestimatorsRecoEvVsBCId[i]->GetYaxis()->SetTitle("Multiplicity " + estName);
     }
 
     for (int i = 0; i < PIDExtended::NIDsTot; i++) {
@@ -361,8 +381,8 @@ struct mcParticlePrediction {
     if (enabledEstimatorsArray[Estimators::ZNC]) {
       nMult[Estimators::ZNC] = mCounter.countZNC(mcParticles);
     }
-    if (enabledEstimatorsArray[Estimators::ITS]) {
-      nMult[Estimators::ITS] = mCounter.countITSIB(mcParticles);
+    if (enabledEstimatorsArray[Estimators::ITSIB]) {
+      nMult[Estimators::ITSIB] = mCounter.countITSIB(mcParticles);
     }
     if (enabledEstimatorsArray[Estimators::V0A] || enabledEstimatorsArray[Estimators::V0AC]) {
       nMult[Estimators::V0A] = mCounter.countV0A(mcParticles);
@@ -383,7 +403,7 @@ struct mcParticlePrediction {
       }
 
       hestimators[i]->Fill(nMult[i]);
-      hestimatorsVsITS[i]->Fill(nMult[i], nMult[Estimators::ITS]);
+      hestimatorsVsITS[i]->Fill(nMult[i], nMult[Estimators::ITSIB]);
       hvertexPosZ[i]->Fill(mcCollision.posZ(), nMult[i]);
     }
 
@@ -587,8 +607,8 @@ struct mcParticlePrediction {
     if (enabledEstimatorsArray[Estimators::ZNC]) {
       nMult[Estimators::ZNC] = mCounter.countZNC(mcParticles);
     }
-    if (enabledEstimatorsArray[Estimators::ITS]) {
-      nMult[Estimators::ITS] = mCounter.countITSIB(mcParticles);
+    if (enabledEstimatorsArray[Estimators::ITSIB]) {
+      nMult[Estimators::ITSIB] = mCounter.countITSIB(mcParticles);
     }
     if (enabledEstimatorsArray[Estimators::V0A] || enabledEstimatorsArray[Estimators::V0AC]) {
       nMult[Estimators::V0A] = mCounter.countV0A(mcParticles);
@@ -610,7 +630,7 @@ struct mcParticlePrediction {
     nMultReco[Estimators::FDDAC] = collision.multFDDM();
     nMultReco[Estimators::ZNA] = collision.multZNA();
     nMultReco[Estimators::ZNC] = collision.multZNC();
-    nMultReco[Estimators::ITS] = collision.multNTracksPV();
+    nMultReco[Estimators::ITSIB] = collision.multNTracksPV();
 
     float nMultRecoMCBC[Estimators::nEstimators] = {0};
     if (mcBC.has_ft0()) {
@@ -633,10 +653,10 @@ struct mcParticlePrediction {
       }
       hestimatorsRecoEvGenVsReco[i]->Fill(nMult[i], nMultReco[i]);
       hestimatorsRecoEvGenVsReco_BCMC[i]->Fill(nMult[i], nMultRecoMCBC[i]);
-      hestimatorsRecoEvGenVsRecoITS[i]->Fill(nMult[i], nMultReco[Estimators::ITS]);
-      hestimatorsRecoEvRecoVsITS[i]->Fill(nMultReco[i], nMult[Estimators::ITS]);
-      hestimatorsRecoEvRecoVsRecoITS[i]->Fill(nMultReco[i], nMultReco[Estimators::ITS]);
-      hestimatorsRecoEvRecoVsRecoITS_BCMC[i]->Fill(nMultRecoMCBC[i], nMultReco[Estimators::ITS]);
+      hestimatorsRecoEvGenVsRecoITS[i]->Fill(nMult[i], nMultReco[Estimators::ITSIB]);
+      hestimatorsRecoEvRecoVsITS[i]->Fill(nMultReco[i], nMult[Estimators::ITSIB]);
+      hestimatorsRecoEvRecoVsRecoITS[i]->Fill(nMultReco[i], nMultReco[Estimators::ITSIB]);
+      hestimatorsRecoEvRecoVsRecoITS_BCMC[i]->Fill(nMultRecoMCBC[i], nMultReco[Estimators::ITSIB]);
       hestimatorsRecoEvRecoVsFT0A[i]->Fill(nMultReco[i], nMult[Estimators::FT0A]);
       hestimatorsRecoEvRecoVsBCId[i]->Fill(foundBCid, nMult[i]);
       hestimatorsRecoEvVsBCId[i]->Fill(foundBCid, nMultReco[i]);
