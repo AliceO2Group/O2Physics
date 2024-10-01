@@ -60,9 +60,8 @@ struct Estimators {
   static constexpr int ITS = 13;
   static constexpr int V0A = 14;  // (Run2)
   static constexpr int V0C = 15;  // (Run2)
-  static constexpr int V0AC = 16; // (Run2)
-  static constexpr int V0M = 17;  // (Run2)
-  static constexpr int nEstimators = 18;
+  static constexpr int V0AC = 16; // (Run2 V0M)
+  static constexpr int nEstimators = 17;
 
   static constexpr const char* estimatorNames[nEstimators] = {"FT0A",
                                                               "FT0C",
@@ -80,8 +79,7 @@ struct Estimators {
                                                               "ITS",
                                                               "V0A",
                                                               "V0C",
-                                                              "V0AC",
-                                                              "V0M"};
+                                                              "V0AC"};
   static std::vector<std::string> arrayNames()
   {
     std::vector<std::string> names;
