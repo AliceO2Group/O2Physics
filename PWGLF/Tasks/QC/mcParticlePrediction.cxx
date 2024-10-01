@@ -436,7 +436,7 @@ struct mcParticlePrediction {
         if (!enabledEstimatorsArray[i]) {
           continue;
         }
-        hpt[i][id]->Fill(nMult[i], particle.pt());
+        hpt[i][id]->Fill(particle.pt(), nMult[i]);
         hyield[i][id]->Fill(nMult[i]);
       }
     }
