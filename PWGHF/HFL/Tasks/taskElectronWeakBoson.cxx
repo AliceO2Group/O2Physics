@@ -24,6 +24,7 @@
 #include "DataFormatsEMCAL/Constants.h"
 #include "DataFormatsEMCAL/AnalysisCluster.h"
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/PIDResponse.h"
@@ -183,12 +184,12 @@ struct HfTaskElectronWeakBoson {
 
       // LOGF(info, "Number of matched track: %d", tracksofcluster.size());
 
-      double Rmim = 999.9;
-      double dPhi_mim = 999.9;
-      double dEta_mim = 999.9;
+      double rMin = 999.9;
+      double dPhiMin = 999.9;
+      double dEtaMin = 999.9;
 
       if (tracksofcluster.size()) {
-        int nmatch = 0;
+        int nMatch = 0;
         for (const auto& match : tracksofcluster) {
           if (match.emcalcluster_as<SelectedClusters>().time() < timeEmcMin || match.emcalcluster_as<SelectedClusters>().time() > timeEmcMax)
             continue;
@@ -204,29 +205,25 @@ struct HfTaskElectronWeakBoson {
           // LOG(info) << "tr phi0 = " << match.track_as<TrackEle>().phi();
           // LOG(info) << "tr phi1 = " << track.phi();
           // LOG(info) << "emc phi = " << phiEmc;
-          if (nmatch == 0) {
+          if (nMatch == 0) {
             double dEta = match.track_as<TrackEle>().eta() - etaEmc;
             double dPhi = match.track_as<TrackEle>().phi() - phiEmc;
-            if (dPhi > o2::constants::math::PI) {
-              dPhi -= 2 * o2::constants::math::PI;
-            } else if (dPhi < -o2::constants::math::PI) {
-              dPhi += 2 * o2::constants::math::PI;
-            }
+            dPhi = RecoDecay::constrainAngle(dPhi, -o2::constants::math::PI);
 
             registry.fill(HIST("hMatchPhi"), phiEmc, match.track_as<TrackEle>().phi());
             registry.fill(HIST("hMatchEta"), etaEmc, match.track_as<TrackEle>().eta());
 
-            double R = std::sqrt(std::pow(dPhi, 2) + std::pow(dEta, 2));
-            if (R < Rmim) {
-              Rmim = R;
-              dPhi_mim = dPhi;
-              dEta_mim = dEta;
+            double r = RecoDecay::sqrtSumOfSquares(dPhi, dEta);
+            if (r < rMin) {
+              rMin = r;
+              dPhiMin = dPhi;
+              dEtaMin = dEta;
             }
             registry.fill(HIST("hTrMatch"), dPhi, dEta);
             registry.fill(HIST("hEMCtime"), timeEmc);
             registry.fill(HIST("hEnergy"), energyEmc);
 
-            if (R < rMatchMax)
+            if (r < rMatchMax)
               continue;
 
             double eop = energyEmc / match.track_as<TrackEle>().p();
@@ -239,13 +236,13 @@ struct HfTaskElectronWeakBoson {
             }
           }
 
-          nmatch++;
+          nMatch++;
         }
       }
 
-      if (Rmim < rMatchMax) {
-        // LOG(info) << "R mim = " << Rmim;
-        registry.fill(HIST("hTrMatch_mim"), dPhi_mim, dEta_mim);
+      if (rMin < rMatchMax) {
+        // LOG(info) << "R mim = " << rMin;
+        registry.fill(HIST("hTrMatch_mim"), dPhiMin, dEtaMin);
       }
 
     } // end of track loop
@@ -254,6 +251,5 @@ struct HfTaskElectronWeakBoson {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<HfTaskElectronWeakBoson>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfTaskElectronWeakBoson>(cfgc)};
 }
