@@ -54,13 +54,14 @@ struct upcRhoAnalysis {
   ConfigurableAxis mAxis{"mAxis", {1000, 0.0, 10.0}, "m (GeV/#it{c}^{2})"};
   ConfigurableAxis mCutAxis{"mCutAxis", {70, 0.5, 1.2}, "m (GeV/#it{c}^{2})"};
   ConfigurableAxis ptAxis{"ptAxis", {1000, 0.0, 10.0}, "p_{T} (GeV/#it{c})"};
-  ConfigurableAxis ptCutAxis{"ptCutAxis", {30, 0.0, 0.3}, "p_{T} (GeV/#it{c})"};
-  ConfigurableAxis pt2Axis{"pt2Axis", {90, 0.0, 0.09}, "p_{T}^{2} (GeV^{2}/#it{c}^{2})"};
+  ConfigurableAxis ptCutAxis{"ptCutAxis", {300, 0.0, 0.3}, "p_{T} (GeV/#it{c})"};
+  ConfigurableAxis pt2Axis{"pt2Axis", {900, 0.0, 0.09}, "p_{T}^{2} (GeV^{2}/#it{c}^{2})"};
   ConfigurableAxis etaAxis{"etaAxis", {180, -0.9, 0.9}, "#eta"};
   ConfigurableAxis yAxis{"yAxis", {180, -0.9, 0.9}, "y"};
   ConfigurableAxis phiAxis{"phiAxis", {180, 0.0, o2::constants::math::TwoPI}, "#phi"};
-  ConfigurableAxis phiAsymmAxis{"phiAsymmAxis", {364, 0, o2::constants::math::TwoPI}, "#phi"};
+  ConfigurableAxis phiAsymmAxis{"phiAsymmAxis", {182, -1.0 * o2::constants::math::PI, o2::constants::math::PI}, "#phi"};
   ConfigurableAxis cosTwoPhiAxis{"cosTwoPhiAxis", {100, -1.0, 1.0}, "cos(2#phi)"};
+  ConfigurableAxis momentumFromPhiAxis{"momentumFromPhiAxis", {600, -0.3, 0.3}, "p (GeV/#it{c})"};
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -125,6 +126,8 @@ struct upcRhoAnalysis {
     registry.add("reco/system/2pi/cut/no-selection/unlike-sign/hCosTwoPhiCharge", ";cos(2#phi);counts", kTH1D, {cosTwoPhiAxis});
     registry.add("reco/system/2pi/cut/no-selection/unlike-sign/hPhiRandomVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
     registry.add("reco/system/2pi/cut/no-selection/unlike-sign/hPhiChargeVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
+    registry.add("reco/system/2pi/cut/no-selection/unlike-sign/hPyVsPxRandom", ";p_{x} (GeV/#it{c});p_{y} (GeV/#it{c});counts", kTH2D, {momentumFromPhiAxis, momentumFromPhiAxis});
+    registry.add("reco/system/2pi/cut/no-selection/unlike-sign/hPyVsPxCharge", ";p_{x} (GeV/#it{c});p_{y} (GeV/#it{c});counts", kTH2D, {momentumFromPhiAxis, momentumFromPhiAxis});
     registry.add("reco/system/2pi/cut/no-selection/like-sign/positive/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mCutAxis});
     registry.add("reco/system/2pi/cut/no-selection/like-sign/positive/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptCutAxis});
     registry.add("reco/system/2pi/cut/no-selection/like-sign/positive/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
@@ -358,10 +361,11 @@ struct upcRhoAnalysis {
     return system;
   }
 
-  double deltaPhi(const ROOT::Math::PxPyPzMVector& p1, const ROOT::Math::PxPyPzMVector& p2) // calculate delta phi in (0, 2pi)
+  double deltaPhi(const ROOT::Math::PxPyPzMVector& p1, const ROOT::Math::PxPyPzMVector& p2)
   {
     double dPhi = p1.Phi() - p2.Phi();
-    return (dPhi < 0) ? (dPhi + o2::constants::math::TwoPI) : dPhi;
+    // return (dPhi < 0) ? (dPhi + o2::constants::math::TwoPI) : dPhi; // calculate delta phi in (0, 2pi)
+    return dPhi; // calculate delta phi in (-pi, pi)
   }
 
   double getPhiRandom(const std::vector<ROOT::Math::PxPyPzMVector>& cutTracks4Vecs) // decay phi anisotropy
@@ -494,6 +498,8 @@ struct upcRhoAnalysis {
           registry.fill(HIST("reco/system/2pi/cut/no-selection/unlike-sign/hCosTwoPhiCharge"), std::cos(2. * getPhiCharge(cutTracks, cutTracks4Vecs)));
           registry.fill(HIST("reco/system/2pi/cut/no-selection/unlike-sign/hPhiRandomVsM"), system.M(), getPhiRandom(cutTracks4Vecs));
           registry.fill(HIST("reco/system/2pi/cut/no-selection/unlike-sign/hPhiChargeVsM"), system.M(), getPhiCharge(cutTracks, cutTracks4Vecs));
+          registry.fill(HIST("reco/system/2pi/cut/no-selection/unlike-sign/hPyVsPxRandom"), system.Pt() * std::cos(getPhiRandom(cutTracks4Vecs)), system.Pt() * std::sin(getPhiRandom(cutTracks4Vecs)));
+          registry.fill(HIST("reco/system/2pi/cut/no-selection/unlike-sign/hPyVsPxCharge"), system.Pt() * std::cos(getPhiCharge(cutTracks, cutTracks4Vecs)), system.Pt() * std::sin(getPhiCharge(cutTracks, cutTracks4Vecs)));
           if (OnOn) {
             registry.fill(HIST("reco/system/2pi/cut/0n0n/unlike-sign/hM"), system.M());
             registry.fill(HIST("reco/system/2pi/cut/0n0n/unlike-sign/hPt"), system.Pt());
@@ -686,7 +692,18 @@ struct upcRhoAnalysis {
       registry.fill(HIST("reco/system/6pi/hY"), system.Rapidity());
     }
   }
-  PROCESS_SWITCH(upcRhoAnalysis, processReco, "analyse reco tracks", true);
+  PROCESS_SWITCH(upcRhoAnalysis, processReco, "analyse reco tracks", false);
+
+  void processMC(aod::UDMcCollisions::iterator const&, aod::UDMcParticles const& mcparticles)
+  {
+    // loop over all particles in the event
+    for (auto const& mcparticle : mcparticles) {
+      // only consider charged pions
+      if (std::abs(mcparticle.pdgCode()) != 211)
+        continue;
+    }
+  }
+  PROCESS_SWITCH(upcRhoAnalysis, processMC, "analyse MC tracks", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
