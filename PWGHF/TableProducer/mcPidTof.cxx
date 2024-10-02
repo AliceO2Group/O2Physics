@@ -242,7 +242,7 @@ struct mcPidTof {
   /// Apply MC postcalibrations
   /// \param pidId particle id
   /// \param pt track pT
-  template<typename T>
+  template <typename T>
   T applyMcRecalib(int pidId, T trackPt, T nSigma)
   {
     float shift{0.f}, scaleWidth{0.f};
@@ -261,7 +261,7 @@ struct mcPidTof {
     }
 
     T nSigmaCorr = (nSigma - shift) / scaleWidth;
-    return nSigmaCorr; 
+    return nSigmaCorr;
   }
 
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::pidEvTimeFlags>;
