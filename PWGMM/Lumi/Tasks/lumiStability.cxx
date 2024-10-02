@@ -561,14 +561,21 @@ struct LumiStabilityTask {
           }
         }
 
-        if (isCoinA && isCoinC) {
-          histos.fill(HIST("FDD/bcVertexTriggerCoincidence"), localBC);
-          histos.fill(HIST("FDD/hCounts"), 3);
-          histos.fill(HIST("hOrbitFDDVertexCoinc"), orbit - minOrbit);
+          if (deltaBC < myMaxDeltaBCFDD) {
+            std::bitset<8> fddTriggersPast = fdd_past.triggerMask();
+            bool vertexPast = fddTriggersPast[o2::fdd::Triggers::bitVertex];
+            pastActivityFDDVertex |= (vertexPast);
+          }
+        }
+        deltaIndex = 0;
+        deltaBC = 0;
 
+        if (pastActivityFDDVertex == false) {
+          histos.fill(HIST("FDD/hCounts"), 2);
+          histos.fill(HIST("FDD/bcVertexTriggerPP"), localBC);
           if (bcPatternA[localBC]) {
-            histos.fill(HIST("FDD/timeACbcA"), fdd.timeA(), fdd.timeC());
-            histos.fill(HIST("FDD/hBcA"), localBC);
+            histos.fill(HIST("FDD/timeACbcAVertex"), fdd.timeA(), fdd.timeC());
+            histos.fill(HIST("FDD/hBcAVertex"), localBC);
           }
           if (bcPatternC[localBC]) {
             histos.fill(HIST("FDD/timeACbcC"), fdd.timeA(), fdd.timeC());
@@ -617,6 +624,37 @@ struct LumiStabilityTask {
                 histos.fill(HIST("FDD/hValidTimevsBC"), localBC);
               }
             }
+          }
+          if (bcPatternB[localBC]) {
+            histos.fill(HIST("FDD/timeACbcBVertex"), fdd.timeA(), fdd.timeC());
+            histos.fill(HIST("FDD/hBcBVertex"), localBC);
+          }
+          if (bcPatternE[localBC]) {
+            histos.fill(HIST("FDD/timeACbcEVertex"), fdd.timeA(), fdd.timeC());
+            histos.fill(HIST("FDD/hBcEVertex"), localBC);
+          }
+        }
+
+
+        if (isCoinA && isCoinC) {
+          histos.fill(HIST("FDD/bcVertexTriggerCoincidence"), localBC);
+          histos.fill(HIST("FDD/hCounts"), 3);
+          histos.fill(HIST("hOrbitFDDVertexCoinc"), orbit - minOrbit);
+
+          if (bcPatternA[localBC]) {
+            histos.fill(HIST("FDD/timeACbcA"), fdd.timeA(), fdd.timeC());
+            histos.fill(HIST("FDD/hBcA"), localBC);
+          }
+          if (bcPatternC[localBC]) {
+            histos.fill(HIST("FDD/timeACbcC"), fdd.timeA(), fdd.timeC());
+            histos.fill(HIST("FDD/hBcC"), localBC);
+          }
+          if (bcPatternB[localBC]) {
+            histos.fill(HIST("FDD/timeACbcB"), fdd.timeA(), fdd.timeC());
+            histos.fill(HIST("FDD/hBcB"), localBC);
+            histos.fill(HIST("FDD/hTimeA"), fdd.timeA());
+            histos.fill(HIST("FDD/hTimeC"), fdd.timeC());
+
           }
           if (bcPatternE[localBC]) {
             histos.fill(HIST("FDD/timeACbcE"), fdd.timeA(), fdd.timeC());
