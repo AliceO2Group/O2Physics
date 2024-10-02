@@ -10,10 +10,10 @@
 // or submit itself to any jurisdiction.
 
 ///
-/// \file   pidTOFFull.cxx
-/// \author Nicolò Jacazio nicolo.jacazio@cern.ch
-/// \brief  Task to produce PID tables for TOF split for each particle.
-///         Only the tables for the mass hypotheses requested are filled, the others are sent empty.
+/// \file   mcPidTof.cxx
+/// \author Fabrizio Grosa fabrizio.grosa@cern.ch
+/// \brief  Task to produce PID tables for TOF split for pi, K, p, copied from https://github.com/AliceO2Group/O2Physics/blob/master/Common/TableProducer/PID/pidTOFFull.cxx
+///         In addition, it applies postcalibrations for MC.
 ///
 
 // O2 includes
@@ -24,7 +24,7 @@
 
 // O2Physics includes
 #include "TableHelper.h"
-#include "pidTOFBase.h"
+#include "Common/TableProducer/PID/pidTOFBase.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -41,17 +41,11 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 #include "Framework/runDataProcessing.h"
 
 /// Task to produce the response table
-struct tofPidFull {
+struct mcPidTof {
   // Tables to produce
-  Produces<o2::aod::pidTOFFullEl> tablePIDEl;
-  Produces<o2::aod::pidTOFFullMu> tablePIDMu;
   Produces<o2::aod::pidTOFFullPi> tablePIDPi;
   Produces<o2::aod::pidTOFFullKa> tablePIDKa;
   Produces<o2::aod::pidTOFFullPr> tablePIDPr;
-  Produces<o2::aod::pidTOFFullDe> tablePIDDe;
-  Produces<o2::aod::pidTOFFullTr> tablePIDTr;
-  Produces<o2::aod::pidTOFFullHe> tablePIDHe;
-  Produces<o2::aod::pidTOFFullAl> tablePIDAl;
   // Detector response parameters
   o2::pid::tof::TOFResoParamsV2 mRespParamsV2;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -67,10 +61,16 @@ struct tofPidFull {
   Configurable<bool> loadResponseFromCCDB{"loadResponseFromCCDB", false, "Flag to load the response from the CCDB"};
   Configurable<bool> enableTimeDependentResponse{"enableTimeDependentResponse", false, "Flag to use the collision timestamp to fetch the PID Response"};
   Configurable<bool> fatalOnPassNotAvailable{"fatalOnPassNotAvailable", true, "Flag to throw a fatal if the pass is not available in the retrieved CCDB object"};
-  // Configuration flags to include and exclude particle hypotheses
-  Configurable<LabeledArray<int>> enableParticle{"enableParticle",
-                                                 {defaultParameters[0], nSpecies, nParameters, particleNames, parameterNames},
-                                                 "Produce PID information for the various mass hypotheses. Values different than -1 override the automatic setup: the corresponding table can be set off (0) or on (1)"};
+  // postcalibrations to overcome MC FT0 timing issue
+  std::map<int, TGraph*> gMcPostCalibMean{};
+  std::map<int, TGraph*> gMcPostCalibSigma{};
+  int currentRun{0};
+  struct : ConfigurableGroup {
+    std::string prefix = "mcRecalib";
+    Configurable<bool> enable{"enable", false, "enable MC recalibration for Pi/Ka/Pr"};
+    Configurable<std::string> ccdbPath{"ccdbPath", "Users/f/fgrosa/RecalibMcPidTOF/", "path for MC recalibration objects in CCDB"};
+    Configurable<std::string> passName{"passName", "apass6", "reco pass of MC anchoring"};
+  } mcRecalib;
 
   // Running variables
   std::vector<int> mEnabledParticles; // Vector of enabled PID hypotheses to loop on when making tables
@@ -113,18 +113,16 @@ struct tofPidFull {
       LOGF(fatal, "Cannot run without any of processWoSlice and processWSlice enabled. Please choose one.");
     }
 
-    // Checking the tables are requested in the workflow and enabling them
-    for (int i = 0; i < nSpecies; i++) {
-      int f = enableParticle->get(particleNames[i].c_str(), "Enable");
-      enableFlagIfTableRequired(initContext, "pidTOFFull" + particleNames[i], f);
-      if (f == 1) {
-        mEnabledParticles.push_back(i);
-      }
+    // Checking the tables are requested in the workflow and enabling them (only pi, K, p)
+    std::array<int, 3> supportedSpecies = {2, 3, 4};
+    for (auto iSpecie{0u}; iSpecie < supportedSpecies.size(); ++iSpecie) {
+      int flag = -1;
+      enableFlagIfTableRequired(initContext, "mcPidTof" + particleNames[supportedSpecies[iSpecie]], flag);
     }
     // Printing enabled tables
     LOG(info) << "++ Enabled tables:";
-    for (const int& i : mEnabledParticles) {
-      LOG(info) << "++  pidTOFFull" << particleNames[i] << " is enabled";
+    for (const int& pidId : mEnabledParticles) {
+      LOG(info) << "++  mcPidTof" << particleNames[pidId] << " is enabled";
     }
 
     // Getting the parametrization parameters
@@ -194,12 +192,6 @@ struct tofPidFull {
   void reserveTable(const int id, const int64_t& size)
   {
     switch (id) {
-      case 0:
-        tablePIDEl.reserve(size);
-        break;
-      case 1:
-        tablePIDMu.reserve(size);
-        break;
       case 2:
         tablePIDPi.reserve(size);
         break;
@@ -208,18 +200,6 @@ struct tofPidFull {
         break;
       case 4:
         tablePIDPr.reserve(size);
-        break;
-      case 5:
-        tablePIDDe.reserve(size);
-        break;
-      case 6:
-        tablePIDTr.reserve(size);
-        break;
-      case 7:
-        tablePIDHe.reserve(size);
-        break;
-      case 8:
-        tablePIDAl.reserve(size);
         break;
       default:
         LOG(fatal) << "Wrong particle ID in reserveTable()";
@@ -231,12 +211,6 @@ struct tofPidFull {
   void makeTableEmpty(const int id)
   {
     switch (id) {
-      case 0:
-        tablePIDEl(-999.f, -999.f);
-        break;
-      case 1:
-        tablePIDMu(-999.f, -999.f);
-        break;
       case 2:
         tablePIDPi(-999.f, -999.f);
         break;
@@ -246,22 +220,48 @@ struct tofPidFull {
       case 4:
         tablePIDPr(-999.f, -999.f);
         break;
-      case 5:
-        tablePIDDe(-999.f, -999.f);
-        break;
-      case 6:
-        tablePIDTr(-999.f, -999.f);
-        break;
-      case 7:
-        tablePIDHe(-999.f, -999.f);
-        break;
-      case 8:
-        tablePIDAl(-999.f, -999.f);
-        break;
       default:
         LOG(fatal) << "Wrong particle ID in makeTableEmpty()";
         break;
     }
+  }
+
+  /// Retrieve MC postcalibration objects from CCDB
+  /// \param timestamp timestamp
+  void retrieveMcPostCalibFromCcdb(int timestamp)
+  {
+    std::map<std::string, std::string> metadata;
+    metadata["RecoPassName"] = mcRecalib.passName;
+    auto calibList = ccdb->getSpecific<TList>(mcRecalib.ccdbPath, timestamp, metadata);
+    for (auto const& pidId : mEnabledParticles) { // Loop on enabled particle hypotheses
+      gMcPostCalibMean[pidId] = reinterpret_cast<TGraph*>(calibList->FindObject(Form("Mean%s", particleNames[pidId].data())));
+      gMcPostCalibSigma[pidId] = reinterpret_cast<TGraph*>(calibList->FindObject(Form("Sigma%s", particleNames[pidId].data())));
+    }
+  }
+
+  /// Apply MC postcalibrations
+  /// \param pidId particle id
+  /// \param pt track pT
+  template<typename T>
+  T applyMcRecalib(int pidId, T trackPt, T nSigma)
+  {
+    float shift{0.f}, scaleWidth{0.f};
+    int nPoints = gMcPostCalibMean[pidId]->GetN();
+    double ptMin = gMcPostCalibMean[pidId]->GetX()[0];
+    double ptMax = gMcPostCalibMean[pidId]->GetX()[nPoints - 1];
+    if (trackPt < ptMin) {
+      shift = gMcPostCalibMean[pidId]->Eval(ptMin);
+      scaleWidth = gMcPostCalibSigma[pidId]->Eval(ptMin);
+    } else if (trackPt > ptMax) {
+      shift = gMcPostCalibMean[pidId]->Eval(ptMax);
+      scaleWidth = gMcPostCalibSigma[pidId]->Eval(ptMax);
+    } else {
+      shift = gMcPostCalibMean[pidId]->Eval(trackPt);
+      scaleWidth = gMcPostCalibSigma[pidId]->Eval(trackPt);
+    }
+
+    T nSigmaCorr = (nSigma - shift) / scaleWidth;
+    return nSigmaCorr; 
   }
 
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::pidEvTimeFlags>;
@@ -271,15 +271,9 @@ struct tofPidFull {
   using ResponseImplementation = o2::pid::tof::ExpTimes<Trks::iterator, pid>;
   void processWSlice(Trks const& tracks, aod::Collisions const&, aod::BCsWithTimestamps const&)
   {
-    constexpr auto responseEl = ResponseImplementation<PID::Electron>();
-    constexpr auto responseMu = ResponseImplementation<PID::Muon>();
     constexpr auto responsePi = ResponseImplementation<PID::Pion>();
     constexpr auto responseKa = ResponseImplementation<PID::Kaon>();
     constexpr auto responsePr = ResponseImplementation<PID::Proton>();
-    constexpr auto responseDe = ResponseImplementation<PID::Deuteron>();
-    constexpr auto responseTr = ResponseImplementation<PID::Triton>();
-    constexpr auto responseHe = ResponseImplementation<PID::Helium3>();
-    constexpr auto responseAl = ResponseImplementation<PID::Alpha>();
 
     for (auto const& pidId : mEnabledParticles) {
       reserveTable(pidId, tracks.size());
@@ -313,54 +307,44 @@ struct tofPidFull {
         }
       }
 
+      // in case of MC recalibrations, check if the objects from CCDB has to be updated
+      if (mcRecalib.enable) {
+        int runNumber = track.collision().bc_as<aod::BCsWithTimestamps>().runNumber();
+        if (runNumber != currentRun) {
+          // update postcalibration files
+          retrieveMcPostCalibFromCcdb(timestamp);
+        }
+        currentRun = runNumber;
+      }
+
       const auto& tracksInCollision = tracks.sliceBy(perCollision, lastCollisionId);
       for (auto const& trkInColl : tracksInCollision) { // Loop on tracks
         for (auto const& pidId : mEnabledParticles) {   // Loop on enabled particle hypotheses
+          float nSigma{-999.f};
           switch (pidId) {
-            case 0:
-              resolution = responseEl.GetExpectedSigma(mRespParamsV2, trkInColl);
-              tablePIDEl(resolution,
-                         responseEl.GetSeparation(mRespParamsV2, trkInColl, resolution));
-              break;
-            case 1:
-              resolution = responseMu.GetExpectedSigma(mRespParamsV2, trkInColl);
-              tablePIDMu(resolution,
-                         responseMu.GetSeparation(mRespParamsV2, trkInColl, resolution));
-              break;
             case 2:
               resolution = responsePi.GetExpectedSigma(mRespParamsV2, trkInColl);
-              tablePIDPi(resolution,
-                         responsePi.GetSeparation(mRespParamsV2, trkInColl, resolution));
+              nSigma = responsePi.GetSeparation(mRespParamsV2, trkInColl, resolution);
+              if (mcRecalib.enable) {
+                nSigma = applyMcRecalib(pidId, trkInColl.pt(), nSigma);
+              }
+              tablePIDPi(resolution, nSigma);
               break;
             case 3:
               resolution = responseKa.GetExpectedSigma(mRespParamsV2, trkInColl);
-              tablePIDKa(resolution,
-                         responseKa.GetSeparation(mRespParamsV2, trkInColl, resolution));
+              nSigma = responseKa.GetSeparation(mRespParamsV2, trkInColl, resolution);
+              if (mcRecalib.enable) {
+                nSigma = applyMcRecalib(pidId, trkInColl.pt(), nSigma);
+              }
+              tablePIDKa(resolution, nSigma);
               break;
             case 4:
               resolution = responsePr.GetExpectedSigma(mRespParamsV2, trkInColl);
-              tablePIDPr(resolution,
-                         responsePr.GetSeparation(mRespParamsV2, trkInColl, resolution));
-              break;
-            case 5:
-              resolution = responseDe.GetExpectedSigma(mRespParamsV2, trkInColl);
-              tablePIDDe(resolution,
-                         responseDe.GetSeparation(mRespParamsV2, trkInColl, resolution));
-              break;
-            case 6:
-              resolution = responseTr.GetExpectedSigma(mRespParamsV2, trkInColl);
-              tablePIDTr(resolution,
-                         responseTr.GetSeparation(mRespParamsV2, trkInColl, resolution));
-              break;
-            case 7:
-              resolution = responseHe.GetExpectedSigma(mRespParamsV2, trkInColl);
-              tablePIDHe(resolution,
-                         responseHe.GetSeparation(mRespParamsV2, trkInColl, resolution));
-              break;
-            case 8:
-              resolution = responseAl.GetExpectedSigma(mRespParamsV2, trkInColl);
-              tablePIDAl(resolution,
-                         responseAl.GetSeparation(mRespParamsV2, trkInColl, resolution));
+              nSigma = responsePr.GetSeparation(mRespParamsV2, trkInColl, resolution);
+              if (mcRecalib.enable) {
+                nSigma = applyMcRecalib(pidId, trkInColl.pt(), nSigma);
+              }
+              tablePIDPr(resolution, nSigma);
               break;
             default:
               LOG(fatal) << "Wrong particle ID in processWSlice()";
@@ -370,22 +354,16 @@ struct tofPidFull {
       }
     }
   }
-  PROCESS_SWITCH(tofPidFull, processWSlice, "Process with track slices", true);
+  PROCESS_SWITCH(mcPidTof, processWSlice, "Process with track slices", true);
 
   using TrksIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::pidEvTimeFlags>;
   template <o2::track::PID::ID pid>
   using ResponseImplementationIU = o2::pid::tof::ExpTimes<TrksIU::iterator, pid>;
   void processWoSlice(TrksIU const& tracks, aod::Collisions const&, aod::BCsWithTimestamps const&)
   {
-    constexpr auto responseEl = ResponseImplementationIU<PID::Electron>();
-    constexpr auto responseMu = ResponseImplementationIU<PID::Muon>();
     constexpr auto responsePi = ResponseImplementationIU<PID::Pion>();
     constexpr auto responseKa = ResponseImplementationIU<PID::Kaon>();
     constexpr auto responsePr = ResponseImplementationIU<PID::Proton>();
-    constexpr auto responseDe = ResponseImplementationIU<PID::Deuteron>();
-    constexpr auto responseTr = ResponseImplementationIU<PID::Triton>();
-    constexpr auto responseHe = ResponseImplementationIU<PID::Helium3>();
-    constexpr auto responseAl = ResponseImplementationIU<PID::Alpha>();
 
     for (auto const& pidId : mEnabledParticles) {
       reserveTable(pidId, tracks.size());
@@ -412,52 +390,42 @@ struct tofPidFull {
         }
       }
 
+      // in case of MC recalibrations, check if the objects from CCDB has to be updated
+      if (mcRecalib.enable) {
+        int runNumber = track.collision().bc_as<aod::BCsWithTimestamps>().runNumber();
+        if (runNumber != currentRun) {
+          // update postcalibration files
+          retrieveMcPostCalibFromCcdb(timestamp);
+        }
+        currentRun = runNumber;
+      }
+
+      float nSigma{-999.f};
       for (auto const& pidId : mEnabledParticles) { // Loop on enabled particle hypotheses
         switch (pidId) {
-          case 0:
-            resolution = responseEl.GetExpectedSigma(mRespParamsV2, track);
-            tablePIDEl(resolution,
-                       responseEl.GetSeparation(mRespParamsV2, track, resolution));
-            break;
-          case 1:
-            resolution = responseMu.GetExpectedSigma(mRespParamsV2, track);
-            tablePIDMu(resolution,
-                       responseMu.GetSeparation(mRespParamsV2, track, resolution));
-            break;
           case 2:
             resolution = responsePi.GetExpectedSigma(mRespParamsV2, track);
-            tablePIDPi(resolution,
-                       responsePi.GetSeparation(mRespParamsV2, track));
+            nSigma = responsePi.GetSeparation(mRespParamsV2, track, resolution);
+            if (mcRecalib.enable) {
+              nSigma = applyMcRecalib(pidId, track.pt(), nSigma);
+            }
+            tablePIDPi(resolution, nSigma);
             break;
           case 3:
             resolution = responseKa.GetExpectedSigma(mRespParamsV2, track);
-            tablePIDKa(resolution,
-                       responseKa.GetSeparation(mRespParamsV2, track, resolution));
+            nSigma = responseKa.GetSeparation(mRespParamsV2, track, resolution);
+            if (mcRecalib.enable) {
+              nSigma = applyMcRecalib(pidId, track.pt(), nSigma);
+            }
+            tablePIDKa(resolution, nSigma);
             break;
           case 4:
             resolution = responsePr.GetExpectedSigma(mRespParamsV2, track);
-            tablePIDPr(resolution,
-                       responsePr.GetSeparation(mRespParamsV2, track, resolution));
-            break;
-          case 5:
-            resolution = responseDe.GetExpectedSigma(mRespParamsV2, track);
-            tablePIDDe(resolution,
-                       responseDe.GetSeparation(mRespParamsV2, track, resolution));
-            break;
-          case 6:
-            resolution = responseTr.GetExpectedSigma(mRespParamsV2, track);
-            tablePIDTr(resolution,
-                       responseTr.GetSeparation(mRespParamsV2, track, resolution));
-            break;
-          case 7:
-            resolution = responseHe.GetExpectedSigma(mRespParamsV2, track);
-            tablePIDHe(resolution,
-                       responseHe.GetSeparation(mRespParamsV2, track, resolution));
-            break;
-          case 8:
-            resolution = responseAl.GetExpectedSigma(mRespParamsV2, track);
-            tablePIDAl(resolution,
-                       responseAl.GetSeparation(mRespParamsV2, track, resolution));
+            nSigma = responsePr.GetSeparation(mRespParamsV2, track, resolution);
+            if (mcRecalib.enable) {
+              nSigma = applyMcRecalib(pidId, track.pt(), nSigma);
+            }
+            tablePIDPr(resolution, nSigma);
             break;
           default:
             LOG(fatal) << "Wrong particle ID in processWoSlice()";
@@ -466,7 +434,7 @@ struct tofPidFull {
       }
     }
   }
-  PROCESS_SWITCH(tofPidFull, processWoSlice, "Process without track slices and on TrackIU (faster but only Run3)", false);
+  PROCESS_SWITCH(mcPidTof, processWoSlice, "Process without track slices and on TrackIU (faster but only Run3)", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<tofPidFull>(cfgc)}; }
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<mcPidTof>(cfgc)}; }
