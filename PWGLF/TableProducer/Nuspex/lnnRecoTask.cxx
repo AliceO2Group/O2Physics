@@ -340,8 +340,8 @@ struct lnnRecoTask {
       hdEdxTot->Fill(-negRigidity, negTrack.tpcSignal());
 
       // ITS only tracks do not have TPC information. TPCnSigma: only lower cut to allow for triton reconstruction
-      
-      bool is3H = posTrack.hasTPC() && nSigmaTPCpos > nSigmaCutMinTPC &&  nSigmaTPCpos < nSigmaCutMaxTPC;
+
+      bool is3H = posTrack.hasTPC() && nSigmaTPCpos > nSigmaCutMinTPC && nSigmaTPCpos < nSigmaCutMaxTPC;
       bool isAnti3H = negTrack.hasTPC() && nSigmaTPCneg > nSigmaCutMinTPC && nSigmaTPCneg < nSigmaCutMaxTPC;
 
       if (!is3H && !isAnti3H)
@@ -380,13 +380,13 @@ struct lnnRecoTask {
       hdEdx3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, h3track.tpcSignal());
       hNsigma3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, lnnCand.nSigma3H);
       hDCAxy3H->Fill(h3track.pt(), h3track.dcaXY());
-      if (is3H){
+      if (is3H) {
         hdEdx3HPosTrack->Fill(lnnCand.mom3HTPC, h3track.tpcSignal());
       }
       if (h3track.hasTOF()) {
         float beta = h3track.beta();
         lnnCand.mass2TrTOF = h3track.mass() * h3track.mass();
-        if (h3track.pt() >=  ptMinTOF && h3track.pt() <= ptMaxTOF && lnnCand.mass2TrTOF >= TrTOFMass2Cut) {
+        if (h3track.pt() >= ptMinTOF && h3track.pt() <= ptMaxTOF && lnnCand.mass2TrTOF >= TrTOFMass2Cut) {
           h3HSignalPtTOF->Fill(chargeFactor * h3track.pt(), beta);
           hNsigma3HSelTOF->Fill(chargeFactor * h3track.pt(), h3track.tofNSigmaTr());
           h3HMassPtTOF->Fill(chargeFactor * h3track.pt(), lnnCand.mass2TrTOF);
