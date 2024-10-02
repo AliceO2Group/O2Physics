@@ -29,6 +29,7 @@
 #include <iostream>
 #include <utility>
 #include <complex>
+#include <algorithm>
 
 #include <TObject.h>
 #include <TString.h>
