@@ -165,7 +165,7 @@ struct FlowZDCtask {
     histos.add("ZPenergy", "zp energy", kTH1F, {axisEnergy});
 
     histos.add("hCentFT0C", "FT0C Centrality Distribution", kTH1F, {{100, 0, 105}});
-    histos.add("hFT0MAmp", "hFT0MAmp", kTH1F, {{nBinsAmp, 0, 40000}} );
+    histos.add("hFT0MAmp", "hFT0MAmp", kTH1F, {{nBinsAmp, 0, 40000}});
     // for q vector recentering
     histos.add("revsimag", "revsimag", kTH2F, {axisREQ, axisIMQ});
 
@@ -327,35 +327,34 @@ struct FlowZDCtask {
       }
     }
   }
-void processNeutronSkin(aodCollisions::iterator const& collision, aod::Zdcs const& zdcs, aod::FT0s const& ft0)
-{
-        float cent = collision.centFT0C();
-        auto ft0Entry = ft0.iteratorAt(collision.globalIndex()) ;
-        float sumA = ft0Entry.sumAmpA();
-        float sumC = ft0Entry.sumAmpC();
-        float FT0MAmp = sumA + sumC;
-        histos.fill(HIST("hFT0MAmp"), FT0MAmp);
+  void processNeutronSkin(aodCollisions::iterator const& collision, aod::Zdcs const& zdcs, aod::FT0s const& ft0)
+  {
+    float cent = collision.centFT0C();
+    auto ft0Entry = ft0.iteratorAt(collision.globalIndex());
+    float sumA = ft0Entry.sumAmpA();
+    float sumC = ft0Entry.sumAmpC();
+    float FT0MAmp = sumA + sumC;
+    histos.fill(HIST("hFT0MAmp"), FT0MAmp);
 
-        // Access ZDC data
-        auto zdcEntry = zdcs.iteratorAt(collision.globalIndex());
-        float sumZNC = zdcEntry.energyCommonZNC();
-        float sumZNA = zdcEntry.energyCommonZNA();
-        float sumZPC = zdcEntry.energyCommonZPC();
-        float sumZPA = zdcEntry.energyCommonZPA();
-        float sumZN = sumZNC + sumZNA;
-        float sumZP = sumZPC + sumZPA;
-        float ratioZN = sumZNC / sumZNA;
-        float ratioZP = sumZPC / sumZPA;
-        pZNratiovscent->Fill(cent, ratioZN);
-        pZPratiovscent->Fill(cent, ratioZP);
-        histos.fill(HIST("ZNenergy"), sumZN);
-        histos.fill(HIST("ZPenergy"), sumZP);
-        pZNvsFT0Ccent->Fill(cent, sumZN);
-        pZPvsFT0Ccent->Fill(cent, sumZP);
-        pZNvsFT0MAmp->Fill(FT0MAmp, sumZN);
-        pZPvsFT0MAmp->Fill(FT0MAmp, sumZP);
-}
-
+    // Access ZDC data
+    auto zdcEntry = zdcs.iteratorAt(collision.globalIndex());
+    float sumZNC = zdcEntry.energyCommonZNC();
+    float sumZNA = zdcEntry.energyCommonZNA();
+    float sumZPC = zdcEntry.energyCommonZPC();
+    float sumZPA = zdcEntry.energyCommonZPA();
+    float sumZN = sumZNC + sumZNA;
+    float sumZP = sumZPC + sumZPA;
+    float ratioZN = sumZNC / sumZNA;
+    float ratioZP = sumZPC / sumZPA;
+    pZNratiovscent->Fill(cent, ratioZN);
+    pZPratiovscent->Fill(cent, ratioZP);
+    histos.fill(HIST("ZNenergy"), sumZN);
+    histos.fill(HIST("ZPenergy"), sumZP);
+    pZNvsFT0Ccent->Fill(cent, sumZN);
+    pZPvsFT0Ccent->Fill(cent, sumZP);
+    pZNvsFT0MAmp->Fill(FT0MAmp, sumZN);
+    pZPvsFT0MAmp->Fill(FT0MAmp, sumZP);
+  }
 
   PROCESS_SWITCH(FlowZDCtask, processZdcCollAssoc, "Processing ZDC w. collision association", true);
   PROCESS_SWITCH(FlowZDCtask, processQVector, "Process before recentering", true);
