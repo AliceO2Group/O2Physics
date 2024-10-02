@@ -347,8 +347,8 @@ void processNeutronSkin(aodCollisions::iterator const& collision, aod::Zdcs cons
         float ratioZN = sumZNC / sumZNA;
         float ratioZP = sumZPC / sumZPA;
         pZNratiovscent->Fill(cent, ratioZN);
-        pZPratiovscent->Fill(cent, ratioZP);      
-        histos.fill(HIST("ZNenergy"), sumZN); 
+        pZPratiovscent->Fill(cent, ratioZP);   
+        histos.fill(HIST("ZNenergy"), sumZN);
         histos.fill(HIST("ZPenergy"), sumZP);
         pZNvsFT0Ccent->Fill(cent, sumZN);
         pZPvsFT0Ccent->Fill(cent, sumZP);
