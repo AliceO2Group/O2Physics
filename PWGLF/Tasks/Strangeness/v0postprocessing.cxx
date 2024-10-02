@@ -90,34 +90,34 @@ struct v0postprocessing {
     registry.add("hK0sTPCNSigmaPosPi", "hK0sTPCNSigmaPosPi", {HistType::kTH1F, {{100, -10.0f, 10.0f}}});
     registry.add("hK0sTPCNSigmaNegPi", "hK0sTPCNSigmaNegPi", {HistType::kTH1F, {{100, -10.0f, 10.0f}}});
 
-     registry.add("hLambdaV0Radius", "hLambdaV0Radius", {HistType::kTH1D, {{200, 0.0f, 40.0f}}});
-     registry.add("hLambdaCosPA", "hLambdaCosPA", {HistType::kTH1F, {{100, 0.9f, 1.0f}}});
-     registry.add("hLambdaV0DCANegToPV", "hLambdaV0DCANegToPV", {HistType::kTH1F, {{200, -1.0f, 1.0f}}});
-     registry.add("hLambdaV0DCAPosToPV", "hLambdaV0DCAPosToPV", {HistType::kTH1F, {{200, -1.0f, 1.0f}}});
-     registry.add("hLambdaV0DCAV0Daughters", "hLambdaV0DCAV0Daughters", {HistType::kTH1F, {{55, 0.0f, 2.20f}}});
-     registry.add("hLambdaCtau", "hLambdaCtau", {HistType::kTH1F, {{100, 0.0f, 50.0f}}});
-     registry.add("hLambdaEtaDau", "hLambdaEtaDau", {HistType::kTH1F, {{100, -1.0f, 1.0f}}});
-     registry.add("hLambdaRap", "hLambdaRap", {HistType::kTH1F, {{100, -1.0f, 1.0f}}});
-     registry.add("hLambdaTPCNSigmaNegPi", "hLambdaTPCNSigmaNegPi", {HistType::kTH1F, {{100, -10.0f, 10.0f}}});
-     registry.add("hLambdaTPCNSigmaPosPr", "hLambdaTPCNSigmaPosPr", {HistType::kTH1F, {{100, -10.0f, 10.0f}}});
+    registry.add("hLambdaV0Radius", "hLambdaV0Radius", {HistType::kTH1D, {{200, 0.0f, 40.0f}}});
+    registry.add("hLambdaCosPA", "hLambdaCosPA", {HistType::kTH1F, {{100, 0.9f, 1.0f}}});
+    registry.add("hLambdaV0DCANegToPV", "hLambdaV0DCANegToPV", {HistType::kTH1F, {{200, -1.0f, 1.0f}}});
+    registry.add("hLambdaV0DCAPosToPV", "hLambdaV0DCAPosToPV", {HistType::kTH1F, {{200, -1.0f, 1.0f}}});
+    registry.add("hLambdaV0DCAV0Daughters", "hLambdaV0DCAV0Daughters", {HistType::kTH1F, {{55, 0.0f, 2.20f}}});
+    registry.add("hLambdaCtau", "hLambdaCtau", {HistType::kTH1F, {{100, 0.0f, 50.0f}}});
+    registry.add("hLambdaEtaDau", "hLambdaEtaDau", {HistType::kTH1F, {{100, -1.0f, 1.0f}}});
+    registry.add("hLambdaRap", "hLambdaRap", {HistType::kTH1F, {{100, -1.0f, 1.0f}}});
+    registry.add("hLambdaTPCNSigmaNegPi", "hLambdaTPCNSigmaNegPi", {HistType::kTH1F, {{100, -10.0f, 10.0f}}});
+    registry.add("hLambdaTPCNSigmaPosPr", "hLambdaTPCNSigmaPosPr", {HistType::kTH1F, {{100, -10.0f, 10.0f}}});
 
-     registry.add("hAntiLambdaV0Radius", "hAntiLambdaV0Radius", {HistType::kTH1D, {{200, 0.0f, 40.0f}}});
-     registry.add("hAntiLambdaCosPA", "hAntiLambdaCosPA", {HistType::kTH1F, {{100, 0.9f, 1.0f}}});
-     registry.add("hAntiLambdaV0DCANegToPV", "hAntiLambdaV0DCANegToPV", {HistType::kTH1F, {{200, -1.0f, 1.0f}}});
-     registry.add("hAntiLambdaV0DCAPosToPV", "hAntiLambdaV0DCAPosToPV", {HistType::kTH1F, {{200, -1.0f, 1.0f}}});
-     registry.add("hAntiLambdaV0DCAV0Daughters", "hAntiLambdaV0DCAV0Daughters", {HistType::kTH1F, {{55, 0.0f, 2.20f}}});
-     registry.add("hAntiLambdaCtau", "hAntiLambdaCtau", {HistType::kTH1F, {{100, 0.0f, 50.0f}}});
-     registry.add("hAntiLambdaEtaDau", "hAntiLambdaEtaDau", {HistType::kTH1F, {{100, -1.0f, 1.0f}}});
-     registry.add("hAntiLambdaRap", "hAntiLambdaRap", {HistType::kTH1F, {{100, -1.0f, 1.0f}}});
-     registry.add("hAntiLambdaTPCNSigmaPosPi", "hAntiLambdaTPCNSigmaPosPi", {HistType::kTH1F, {{100, -10.0f, 10.0f}}});
-     registry.add("hAntiLambdaTPCNSigmaNegPr", "hAntiLambdaTPCNSigmaNegPr", {HistType::kTH1F, {{100, -10.0f, 10.0f}}});
+    registry.add("hAntiLambdaV0Radius", "hAntiLambdaV0Radius", {HistType::kTH1D, {{200, 0.0f, 40.0f}}});
+    registry.add("hAntiLambdaCosPA", "hAntiLambdaCosPA", {HistType::kTH1F, {{100, 0.9f, 1.0f}}});
+    registry.add("hAntiLambdaV0DCANegToPV", "hAntiLambdaV0DCANegToPV", {HistType::kTH1F, {{200, -1.0f, 1.0f}}});
+    registry.add("hAntiLambdaV0DCAPosToPV", "hAntiLambdaV0DCAPosToPV", {HistType::kTH1F, {{200, -1.0f, 1.0f}}});
+    registry.add("hAntiLambdaV0DCAV0Daughters", "hAntiLambdaV0DCAV0Daughters", {HistType::kTH1F, {{55, 0.0f, 2.20f}}});
+    registry.add("hAntiLambdaCtau", "hAntiLambdaCtau", {HistType::kTH1F, {{100, 0.0f, 50.0f}}});
+    registry.add("hAntiLambdaEtaDau", "hAntiLambdaEtaDau", {HistType::kTH1F, {{100, -1.0f, 1.0f}}});
+    registry.add("hAntiLambdaRap", "hAntiLambdaRap", {HistType::kTH1F, {{100, -1.0f, 1.0f}}});
+    registry.add("hAntiLambdaTPCNSigmaPosPi", "hAntiLambdaTPCNSigmaPosPi", {HistType::kTH1F, {{100, -10.0f, 10.0f}}});
+    registry.add("hAntiLambdaTPCNSigmaNegPr", "hAntiLambdaTPCNSigmaNegPr", {HistType::kTH1F, {{100, -10.0f, 10.0f}}});
 
-       /*registry.add("TPCNSigmaPosPr", "TPCNSigmaPosPr", {HistType::kTH1F, {{100, -10.0f, 10.0f}}});
-       registry.add("TPCNSigmaNegPr", "TPCNSigmaNegPr", {HistType::kTH1F, {{100, -10.0f, 10.0f}}});
-       registry.add("TOFNSigmaPosPi", "TOFNSigmaPosPi", {HistType::kTH1F, {{100, -10.0f, 10.0f}}});
-       registry.add("TOFNSigmaNegPi", "TOFNSigmaNegPi", {HistType::kTH1F, {{100, -10.0f, 10.0f}}});
-       registry.add("TOFNSigmaPosPr", "TOFNSigmaPosPr", {HistType::kTH1F, {{100, -10.0f, 10.0f}}});
-       registry.add("TOFNSigmaNegPr", "TOFNSigmaNegPr", {HistType::kTH1F, {{100, -10.0f, 10.0f}}}); */
+    /*registry.add("TPCNSigmaPosPr", "TPCNSigmaPosPr", {HistType::kTH1F, {{100, -10.0f, 10.0f}}});
+    registry.add("TPCNSigmaNegPr", "TPCNSigmaNegPr", {HistType::kTH1F, {{100, -10.0f, 10.0f}}});
+    registry.add("TOFNSigmaPosPi", "TOFNSigmaPosPi", {HistType::kTH1F, {{100, -10.0f, 10.0f}}});
+    registry.add("TOFNSigmaNegPi", "TOFNSigmaNegPi", {HistType::kTH1F, {{100, -10.0f, 10.0f}}});
+    registry.add("TOFNSigmaPosPr", "TOFNSigmaPosPr", {HistType::kTH1F, {{100, -10.0f, 10.0f}}});
+    registry.add("TOFNSigmaNegPr", "TOFNSigmaNegPr", {HistType::kTH1F, {{100, -10.0f, 10.0f}}}); */
   }
 
   void process(aod::MyV0Candidates const& myv0s)
@@ -179,59 +179,57 @@ struct v0postprocessing {
       }
 
       // Lambda analysis
-        if (candidate.v0cospa() > cospaLambda &&
-            TMath::Abs(candidate.raplambda()) < rap &&
-            TMath::Abs(candidate.massk0short() - o2::constants::physics::MassK0Short) > v0rejLambda) {
+      if (candidate.v0cospa() > cospaLambda &&
+          TMath::Abs(candidate.raplambda()) < rap &&
+          TMath::Abs(candidate.massk0short() - o2::constants::physics::MassK0Short) > v0rejLambda) {
 
-           //Lambda
-           if (TMath::Abs(candidate.ntpcsigmanegpi()) <= ntpcsigma && TMath::Abs(candidate.ntpcsigmapospr()) <= ntpcsigma &&
-              candidate.ctaulambda() < ctauLambda &&
-              TMath::Abs(candidate.masslambda() - o2::constants::physics::MassLambda0) < 0.075){
+        // Lambda
+        if (TMath::Abs(candidate.ntpcsigmanegpi()) <= ntpcsigma && TMath::Abs(candidate.ntpcsigmapospr()) <= ntpcsigma &&
+            candidate.ctaulambda() < ctauLambda &&
+            TMath::Abs(candidate.masslambda() - o2::constants::physics::MassLambda0) < 0.075) {
 
-            registry.fill(HIST("hMassLambda"), candidate.masslambda());
-            registry.fill(HIST("hMassVsPtLambda"), candidate.v0pt(), candidate.masslambda());
-            registry.fill(HIST("hMassVsPtLambdaVsCentFT0M"), candidate.v0pt(), candidate.multft0m(), candidate.masslambda());
-            registry.fill(HIST("hMassVsPtLambdaVsCentFV0A"), candidate.v0pt(), candidate.multfv0a(), candidate.masslambda());
+          registry.fill(HIST("hMassLambda"), candidate.masslambda());
+          registry.fill(HIST("hMassVsPtLambda"), candidate.v0pt(), candidate.masslambda());
+          registry.fill(HIST("hMassVsPtLambdaVsCentFT0M"), candidate.v0pt(), candidate.multft0m(), candidate.masslambda());
 
-            // QA
-            if (!isMC) {
-              registry.fill(HIST("hLambdaV0Radius"), candidate.v0radius());
-              registry.fill(HIST("hLambdaCosPA"), candidate.v0cospa());
-              registry.fill(HIST("hLambdaV0DCANegToPV"), candidate.v0dcanegtopv());
-              registry.fill(HIST("hLambdaV0DCAPosToPV"), candidate.v0dcapostopv());
-              registry.fill(HIST("hLambdaV0DCAV0Daughters"), candidate.v0dcav0daughters());
-              registry.fill(HIST("hLambdaCtau"), candidate.ctaulambda());
-              registry.fill(HIST("hLambdaEtaDau"), candidate.v0poseta());
-              registry.fill(HIST("hLambdaRap"), candidate.raplambda());
-              registry.fill(HIST("hLambdaTPCNSigmaPosPr"), candidate.ntpcsigmapospr());
-              registry.fill(HIST("hLambdaTPCNSigmaNegPi"), candidate.ntpcsigmanegpi());
-            }
+          // QA
+          if (!isMC) {
+            registry.fill(HIST("hLambdaV0Radius"), candidate.v0radius());
+            registry.fill(HIST("hLambdaCosPA"), candidate.v0cospa());
+            registry.fill(HIST("hLambdaV0DCANegToPV"), candidate.v0dcanegtopv());
+            registry.fill(HIST("hLambdaV0DCAPosToPV"), candidate.v0dcapostopv());
+            registry.fill(HIST("hLambdaV0DCAV0Daughters"), candidate.v0dcav0daughters());
+            registry.fill(HIST("hLambdaCtau"), candidate.ctaulambda());
+            registry.fill(HIST("hLambdaEtaDau"), candidate.v0poseta());
+            registry.fill(HIST("hLambdaRap"), candidate.raplambda());
+            registry.fill(HIST("hLambdaTPCNSigmaPosPr"), candidate.ntpcsigmapospr());
+            registry.fill(HIST("hLambdaTPCNSigmaNegPi"), candidate.ntpcsigmanegpi());
           }
-          //AntiLambda
-           if (TMath::Abs(candidate.ntpcsigmanegpr()) <= ntpcsigma && TMath::Abs(candidate.ntpcsigmapospi()) <= ntpcsigma &&
-              candidate.ctauantilambda() < ctauLambda &&
-              TMath::Abs(candidate.massantilambda() - o2::constants::physics::MassLambda0) < 0.075){
+        }
+        // AntiLambda
+        if (TMath::Abs(candidate.ntpcsigmanegpr()) <= ntpcsigma && TMath::Abs(candidate.ntpcsigmapospi()) <= ntpcsigma &&
+            candidate.ctauantilambda() < ctauLambda &&
+            TMath::Abs(candidate.massantilambda() - o2::constants::physics::MassLambda0) < 0.075) {
 
-            registry.fill(HIST("hMassAntiLambda"), candidate.massantilambda());
-            registry.fill(HIST("hMassVsPtAntiLambda"), candidate.v0pt(), candidate.massantilambda());
-            registry.fill(HIST("hMassVsPtAntiLambdaVsCentFT0M"), candidate.v0pt(), candidate.multft0m(), candidate.massantilambda());
-            registry.fill(HIST("hMassVsPtAntiLambdaVsCentFV0A"), candidate.v0pt(), candidate.multfv0a(), candidate.massantilambda());
+          registry.fill(HIST("hMassAntiLambda"), candidate.massantilambda());
+          registry.fill(HIST("hMassVsPtAntiLambda"), candidate.v0pt(), candidate.massantilambda());
+          registry.fill(HIST("hMassVsPtAntiLambdaVsCentFT0M"), candidate.v0pt(), candidate.multft0m(), candidate.massantilambda());
 
-            // QA
-            if (!isMC) {
-              registry.fill(HIST("hAntiLambdaV0Radius"), candidate.v0radius());
-              registry.fill(HIST("hAntiLambdaCosPA"), candidate.v0cospa());
-              registry.fill(HIST("hAntiLambdaV0DCANegToPV"), candidate.v0dcanegtopv());
-              registry.fill(HIST("hAntiLambdaV0DCAPosToPV"), candidate.v0dcapostopv());
-              registry.fill(HIST("hAntiLambdaV0DCAV0Daughters"), candidate.v0dcav0daughters());
-              registry.fill(HIST("hAntiLambdaCtau"), candidate.ctauantilambda());
-              registry.fill(HIST("hAntiLambdaEtaDau"), candidate.v0poseta());
-              registry.fill(HIST("hAntiLambdaRap"), candidate.raplambda());
-              registry.fill(HIST("hAntiLambdaTPCNSigmaNegPr"), candidate.ntpcsigmanegpr());
-              registry.fill(HIST("hAntiLambdaTPCNSigmaPosPi"), candidate.ntpcsigmapospi());
-            }
+          // QA
+          if (!isMC) {
+            registry.fill(HIST("hAntiLambdaV0Radius"), candidate.v0radius());
+            registry.fill(HIST("hAntiLambdaCosPA"), candidate.v0cospa());
+            registry.fill(HIST("hAntiLambdaV0DCANegToPV"), candidate.v0dcanegtopv());
+            registry.fill(HIST("hAntiLambdaV0DCAPosToPV"), candidate.v0dcapostopv());
+            registry.fill(HIST("hAntiLambdaV0DCAV0Daughters"), candidate.v0dcav0daughters());
+            registry.fill(HIST("hAntiLambdaCtau"), candidate.ctauantilambda());
+            registry.fill(HIST("hAntiLambdaEtaDau"), candidate.v0poseta());
+            registry.fill(HIST("hAntiLambdaRap"), candidate.raplambda());
+            registry.fill(HIST("hAntiLambdaTPCNSigmaNegPr"), candidate.ntpcsigmanegpr());
+            registry.fill(HIST("hAntiLambdaTPCNSigmaPosPi"), candidate.ntpcsigmapospi());
           }
-       }
+        }
+      }
 
       if (isMC) {
 
@@ -273,46 +271,46 @@ struct v0postprocessing {
             TMath::Abs(candidate.raplambda()) < rap &&
             TMath::Abs(candidate.massk0short() - o2::constants::physics::MassK0Short) > v0rejLambda) {
 
-            //Lambda
-            if (TMath::Abs(candidate.ntpcsigmanegpi()) <= ntpcsigmaMC && TMath::Abs(candidate.ntpcsigmapospr()) <= ntpcsigmaMC &&
-                candidate.ctaulambda() < ctauLambda &&
-                TMath::Abs(candidate.masslambda() - o2::constants::physics::MassLambda0) < 0.075 &&
-                candidate.pdgcode() == 3122){
+          // Lambda
+          if (TMath::Abs(candidate.ntpcsigmanegpi()) <= ntpcsigmaMC && TMath::Abs(candidate.ntpcsigmapospr()) <= ntpcsigmaMC &&
+              candidate.ctaulambda() < ctauLambda &&
+              TMath::Abs(candidate.masslambda() - o2::constants::physics::MassLambda0) < 0.075 &&
+              candidate.pdgcode() == 3122) {
 
-              registry.fill(HIST("hMassLambda_MC"), candidate.masslambda());
-              registry.fill(HIST("hMassVsPtLambda_MC"), candidate.v0pt(), candidate.multft0m(), candidate.masslambda());
+            registry.fill(HIST("hMassLambda_MC"), candidate.masslambda());
+            registry.fill(HIST("hMassVsPtLambda_MC"), candidate.v0pt(), candidate.multft0m(), candidate.masslambda());
 
-              registry.fill(HIST("hLambdaV0Radius"), candidate.v0radius());
-              registry.fill(HIST("hLambdaCosPA"), candidate.v0cospa());
-              registry.fill(HIST("hLambdaV0DCANegToPV"), candidate.v0dcanegtopv());
-              registry.fill(HIST("hLambdaV0DCAPosToPV"), candidate.v0dcapostopv());
-              registry.fill(HIST("hLambdaV0DCAV0Daughters"), candidate.v0dcav0daughters());
-              registry.fill(HIST("hLambdaCtau"), candidate.ctaulambda());
-              registry.fill(HIST("hLambdaEtaDau"), candidate.v0poseta());
-              registry.fill(HIST("hLambdaRap"), candidate.raplambda());
-              registry.fill(HIST("hLambdaTPCNSigmaPosPr"), candidate.ntpcsigmapospr());
-              registry.fill(HIST("hLambdaTPCNSigmaNegPi"), candidate.ntpcsigmanegpi());
-            }
-            //AntiLambda
-            if (TMath::Abs(candidate.ntpcsigmanegpr()) <= ntpcsigmaMC && TMath::Abs(candidate.ntpcsigmapospi()) <= ntpcsigmaMC &&
-                candidate.ctauantilambda() < ctauLambda &&
-                TMath::Abs(candidate.massantilambda() - o2::constants::physics::MassLambda0) < 0.075 &&
-                candidate.pdgcode() == -3122){
+            registry.fill(HIST("hLambdaV0Radius"), candidate.v0radius());
+            registry.fill(HIST("hLambdaCosPA"), candidate.v0cospa());
+            registry.fill(HIST("hLambdaV0DCANegToPV"), candidate.v0dcanegtopv());
+            registry.fill(HIST("hLambdaV0DCAPosToPV"), candidate.v0dcapostopv());
+            registry.fill(HIST("hLambdaV0DCAV0Daughters"), candidate.v0dcav0daughters());
+            registry.fill(HIST("hLambdaCtau"), candidate.ctaulambda());
+            registry.fill(HIST("hLambdaEtaDau"), candidate.v0poseta());
+            registry.fill(HIST("hLambdaRap"), candidate.raplambda());
+            registry.fill(HIST("hLambdaTPCNSigmaPosPr"), candidate.ntpcsigmapospr());
+            registry.fill(HIST("hLambdaTPCNSigmaNegPi"), candidate.ntpcsigmanegpi());
+          }
+          // AntiLambda
+          if (TMath::Abs(candidate.ntpcsigmanegpr()) <= ntpcsigmaMC && TMath::Abs(candidate.ntpcsigmapospi()) <= ntpcsigmaMC &&
+              candidate.ctauantilambda() < ctauLambda &&
+              TMath::Abs(candidate.massantilambda() - o2::constants::physics::MassLambda0) < 0.075 &&
+              candidate.pdgcode() == -3122) {
 
-              registry.fill(HIST("hMassAntiLambda_MC"), candidate.massantilambda());
-              registry.fill(HIST("hMassVsPtAntiLambda_MC"), candidate.v0pt(), candidate.multft0m(), candidate.massantilambda());
+            registry.fill(HIST("hMassAntiLambda_MC"), candidate.massantilambda());
+            registry.fill(HIST("hMassVsPtAntiLambda_MC"), candidate.v0pt(), candidate.multft0m(), candidate.massantilambda());
 
-              registry.fill(HIST("hAntiLambdaV0Radius"), candidate.v0radius());
-              registry.fill(HIST("hAntiLambdaCosPA"), candidate.v0cospa());
-              registry.fill(HIST("hAntiLambdaV0DCANegToPV"), candidate.v0dcanegtopv());
-              registry.fill(HIST("hAntiLambdaV0DCAPosToPV"), candidate.v0dcapostopv());
-              registry.fill(HIST("hAntiLambdaV0DCAV0Daughters"), candidate.v0dcav0daughters());
-              registry.fill(HIST("hAntiLambdaCtau"), candidate.ctauantilambda());
-              registry.fill(HIST("hAntiLambdaEtaDau"), candidate.v0poseta());
-              registry.fill(HIST("hAntiLambdaRap"), candidate.raplambda());
-              registry.fill(HIST("hAntiLambdaTPCNSigmaPosPi"), candidate.ntpcsigmapospi());
-              registry.fill(HIST("hAntiLambdaTPCNSigmaNegPr"), candidate.ntpcsigmanegpr());
-            }
+            registry.fill(HIST("hAntiLambdaV0Radius"), candidate.v0radius());
+            registry.fill(HIST("hAntiLambdaCosPA"), candidate.v0cospa());
+            registry.fill(HIST("hAntiLambdaV0DCANegToPV"), candidate.v0dcanegtopv());
+            registry.fill(HIST("hAntiLambdaV0DCAPosToPV"), candidate.v0dcapostopv());
+            registry.fill(HIST("hAntiLambdaV0DCAV0Daughters"), candidate.v0dcav0daughters());
+            registry.fill(HIST("hAntiLambdaCtau"), candidate.ctauantilambda());
+            registry.fill(HIST("hAntiLambdaEtaDau"), candidate.v0poseta());
+            registry.fill(HIST("hAntiLambdaRap"), candidate.raplambda());
+            registry.fill(HIST("hAntiLambdaTPCNSigmaPosPi"), candidate.ntpcsigmapospi());
+            registry.fill(HIST("hAntiLambdaTPCNSigmaNegPr"), candidate.ntpcsigmanegpr());
+          }
         } // lambda
       } // is MC
     }
