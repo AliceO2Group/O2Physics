@@ -419,6 +419,7 @@ struct nucleiSpectra {
     spectra.add("hTpcSignalData", "Specific energy loss", HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E} / d#it{X} (a. u.)"}});
     spectra.add("hTpcSignalDataSelected", "Specific energy loss for selected particles", HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E} / d#it{X} (a. u.)"}});
     spectra.add("hTofSignalData", "TOF beta", HistType::kTH2F, {{500, 0., 5., "#it{p} (GeV/#it{c})"}, {750, 0, 1.5, "TOF #beta"}});
+    spectra.add("hPDGcodeProcessMC", "PDG code of the particles", HistType::kTH1F, {{10, 0,10, "PDG code"}});
     for (int iC{0}; iC < 2; ++iC) {
       nuclei::hGloTOFtracks[iC] = spectra.add<TH2>(fmt::format("hTPCTOFtracks{}", nuclei::matter[iC]).data(), fmt::format("Global vs TOF matched {} tracks in a collision", nuclei::chargeLabelNames[iC]).data(), HistType::kTH2D, {{300, -0.5, 300.5, "Number of global tracks"}, {300, -0.5, 300.5, "Number of TOF matched tracks"}});
 
@@ -500,7 +501,7 @@ struct nucleiSpectra {
     const o2::math_utils::Point3D<float> collVtx{collision.posX(), collision.posY(), collision.posZ()};
 
     float centrality = getCentrality(collision);
-
+    int filled=0;
     const double bgScalings[5][2]{
       {nuclei::charges[0] * cfgMomentumScalingBetheBloch->get(0u, 0u) / nuclei::masses[0], nuclei::charges[0] * cfgMomentumScalingBetheBloch->get(0u, 1u) / nuclei::masses[0]},
       {nuclei::charges[1] * cfgMomentumScalingBetheBloch->get(1u, 0u) / nuclei::masses[1], nuclei::charges[1] * cfgMomentumScalingBetheBloch->get(1u, 1u) / nuclei::masses[1]},
@@ -645,7 +646,7 @@ struct nucleiSpectra {
           if (cfgTreeConfig->get(iS, 1u) && !selectedTOF) {
             continue;
           }
-          !fillTree && cfgTreeConfig->get(iS, 0u) ? fillTree = true : fillTree;
+          !fillTree && cfgTreeConfig->get(iS, 0u) ? fillTree = true : fillTree; // AAAA se lo metti false invece che :fillTree filla molto meno
           !fillDCAHist && cfgDCAHists->get(iS, iC) ? fillDCAHist = true : fillDCAHist;
           bool setPartFlag = cfgTreeConfig->get(iS, 0u) || cfgDCAHists->get(iS, iC);
           if (setPartFlag) {
@@ -654,9 +655,13 @@ struct nucleiSpectra {
             }
             flag |= BIT(iS);
           }
+
         }
       }
-      if (flag & (kProton | kDeuteron | kTriton | kHe3 | kHe4) || doprocessMC) { /// ignore PID pre-selections for the MC
+      if(fillTree){
+        filled++;
+      }
+      if (flag & (kProton | kDeuteron | kTriton | kHe3 | kHe4)){ //|| doprocessMC) { /// ignore PID pre-selections for the MC
         if constexpr (std::is_same<Tcoll, CollWithEP>::value) {
           nuclei::candidates_flow.emplace_back(NucleusCandidateFlow{
             collision.centFV0A(),
@@ -693,22 +698,35 @@ struct nucleiSpectra {
           static_cast<uint8_t>(track.tpcNClsFound()), static_cast<uint8_t>(track.tpcNClsShared()), static_cast<uint8_t>(track.itsNCls()), static_cast<uint32_t>(track.itsClusterSizes())});
       }
     } // end loop over tracks
-
+    //LOGP(info,"Filled tracks={}",filled);
     nuclei::hGloTOFtracks[0]->Fill(nGloTracks[0], nTOFTracks[0]);
     nuclei::hGloTOFtracks[1]->Fill(nGloTracks[1], nTOFTracks[1]);
   }
 
-  void processData(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, TrackCandidates const& tracks, aod::BCsWithTimestamps const&)
+  Preslice<TrackCandidates> tracksPerCollisionsData = aod::track::collisionId;
+  void processData(soa::Join<aod::Collisions, aod::EvSels> const& collisions, TrackCandidates const& tracks, aod::BCsWithTimestamps const&)
   {
+    //LOGP(info,"PorcessData start");
     nuclei::candidates.clear();
-    if (!eventSelection(collision)) {
-      return;
-    }
-    if (cfgSkimmedProcessing) {
-      zorro.isSelected(collision.bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
+    //if (cfgSkimmedProcessing) {
+      //zorro.isSelected(collision.bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
+    //}
+
+    for (auto& collision : collisions) {
+      if (!eventSelection(collision)) {
+        LOGP(info," Data collIndexBB={} evesel failed",collision.globalIndex());
+        continue;
+      }
+      const auto& slicedTracks = tracks.sliceBy(tracksPerCollisionsData, collision.globalIndex());
+      int nTrackstemp=0;
+      nTrackstemp=nuclei::candidates.size();
+      fillDataInfo(collision, slicedTracks);
+      int nTracks=nuclei::candidates.size()-nTrackstemp;
+      LOGP(info," Data collIndexAAA={}, len nucleicand={}",collision.globalIndex(),nTracks);
     }
 
-    fillDataInfo(collision, tracks);
+    //fillDataInfo(collision, tracks);
+    //LOGP(info," Data collIndex={}, len nucleicand={}",collision.globalIndex(),nuclei::candidates.size());
     for (auto& c : nuclei::candidates) {
       if (c.fillTree) {
         nucleiTable(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.TPCnClsShared, c.clusterSizesITS);
@@ -785,6 +803,7 @@ struct nucleiSpectra {
   Preslice<TrackCandidates> tracksPerCollisions = aod::track::collisionId;
   void processMC(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions, aod::McCollisions const& mcCollisions, soa::Join<TrackCandidates, aod::McTrackLabels> const& tracks, aod::McParticles const& particlesMC, aod::BCsWithTimestamps const&)
   {
+    //LOGP(info,"PorcessMC start");
     nuclei::candidates.clear();
     for (auto& c : mcCollisions) {
       spectra.fill(HIST("hGenVtxZ"), c.posZ());
@@ -792,22 +811,30 @@ struct nucleiSpectra {
     std::vector<bool> goodCollisions(mcCollisions.size(), false);
     for (auto& collision : collisions) {
       if (!eventSelection(collision)) {
+        LOGP(info," MC collIndexBB={} evesel failed",collision.globalIndex());
         continue;
       }
       goodCollisions[collision.mcCollisionId()] = true;
       const auto& slicedTracks = tracks.sliceBy(tracksPerCollisions, collision.globalIndex());
+      int nTrackstemp=0;
+      nTrackstemp=nuclei::candidates.size();
       fillDataInfo(collision, slicedTracks);
+      int nTracks=nuclei::candidates.size()-nTrackstemp;
+      LOGP(info," MC collIndex={}, len nucleicand={}",collision.globalIndex(),nTracks);
     }
     std::vector<bool> isReconstructed(particlesMC.size(), false);
+    int ValidTTracks=0;
+    int StartNumber=nuclei::candidates.size();
     for (auto& c : nuclei::candidates) {
       auto label = tracks.iteratorAt(c.globalIndex);
       if (label.mcParticleId() < -1 || label.mcParticleId() >= particlesMC.size()) {
         continue;
       }
+      ValidTTracks++;
       auto particle = particlesMC.iteratorAt(label.mcParticleId());
       bool storeIt{false};
       for (int iS{0}; iS < nuclei::species; ++iS) {
-        if (std::abs(particle.pdgCode()) == nuclei::codes[iS]) {
+        if (std::abs(particle.pdgCode()) ==  nuclei::codes[iS]) { //AAAAA
           if (c.fillTree && !storeIt) {
             nuclei::hMomRes[iS][particle.pdgCode() < 0]->Fill(1., std::abs(c.pt * nuclei::charges[iS]), 1. - std::abs(c.pt * nuclei::charges[iS]) / particle.pt());
             storeIt = cfgTreeConfig->get(iS, 0u) || cfgTreeConfig->get(iS, 1u); /// store only the particles of interest
@@ -840,9 +867,10 @@ struct nucleiSpectra {
         c.flags |= kIsSecondaryFromMaterial;
       }
       float absoDecL = computeAbsoDecL(particle);
+      //LOGP(info,"BBBBBBB pdg={},a={}",particle.pdgCode(),a);
       nucleiTableMC(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.TPCnClsShared, c.clusterSizesITS, particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), goodCollisions[particle.mcCollisionId()], absoDecL);
     }
-
+    LOGP(info,"ValidTTracks={},StartNumber={}",ValidTTracks,StartNumber);
     int index{0};
     for (auto& particle : particlesMC) {
       int pdg{std::abs(particle.pdgCode())};
