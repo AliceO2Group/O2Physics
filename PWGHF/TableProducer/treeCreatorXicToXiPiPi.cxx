@@ -727,7 +727,7 @@ struct HfTreeCreatorXicToXiPiPi {
         std::array<float, 3> svResiduals;
         std::array<float, 3> pvPulls = {-999.9};
         std::array<float, 3> svPulls = {-999.9};
-        
+
         auto arrayDaughters = std::array{candidate.pi0_as<aod::TracksWMc>(),       // pi <- Xic
                                          candidate.pi1_as<aod::TracksWMc>(),       // pi <- Xic
                                          candidate.bachelor_as<aod::TracksWMc>(),  // pi <- cascade
