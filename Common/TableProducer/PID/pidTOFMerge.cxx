@@ -31,6 +31,7 @@
 // O2Physics includes
 #include "TableHelper.h"
 #include "MetadataHelper.h"
+#include "CollisionTypeHelper.h"
 #include "pidTOFBase.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
@@ -45,133 +46,224 @@ using namespace o2::track;
 
 MetadataHelper metadataInfo;
 
-// Configuration common to all tasks
-struct TOFCalibConfig : ConfigurableGroup {
-  Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<int64_t> timestamp{"ccdb-timestamp", -1, "timestamp of the object"};
-  Configurable<std::string> timeShiftCCDBPath{"timeShiftCCDBPath", "", "Path of the TOF time shift vs eta. If empty none is taken"};
-  Configurable<std::string> paramFileName{"paramFileName", "", "Path to the parametrization object. If empty the parametrization is not taken from file"};
-  Configurable<std::string> parametrizationPath{"parametrizationPath", "TOF/Calib/Params", "Path of the TOF parametrization on the CCDB or in the file, if the paramFileName is not empty"};
-  Configurable<std::string> passName{"passName", "", "Name of the pass inside of the CCDB parameter collection. If empty, the automatically deceted from metadata (to be implemented!!!)"};
-  Configurable<bool> loadResponseFromCCDB{"loadResponseFromCCDB", false, "Flag to load the response from the CCDB"};
-  Configurable<bool> fatalOnPassNotAvailable{"fatalOnPassNotAvailable", true, "Flag to throw a fatal if the pass is not available in the retrieved CCDB object"};
+// Input data types
+using Run3Trks = o2::soa::Join<aod::TracksIU, aod::TracksExtra>;
+using Run3Cols = aod::Collisions;
+using Run3TrksWtof = soa::Join<Run3Trks, aod::TOFSignal>;
+using Run3TrksWtofWevTime = soa::Join<Run3TrksWtof, aod::TOFEvTime, aod::pidEvTimeFlags>;
 
-  void inheritFromBaseTask(o2::framework::InitContext& initContext)
+using EvTimeCollisions = soa::Join<Run3Cols, aod::EvSels>;
+using EvTimeCollisionsFT0 = soa::Join<EvTimeCollisions, aod::FT0sCorrected>;
+
+using Run2Trks = o2::soa::Join<aod::Tracks, aod::TracksExtra>;
+using Run2TrksWtofWevTime = soa::Join<Run2Trks, aod::TOFSignal, aod::TOFEvTime, aod::pidEvTimeFlags>;
+
+// Configuration common to all tasks
+struct TOFCalibConfig {
+  template <typename CfgType>
+  void init(const CfgType& opt)
   {
-    if (!getTaskOptionValue(initContext, "tof-signal", "ccdb-url", url.value, true)) {
-      LOG(fatal) << "Could not get ccdb-url from tof-signal task";
-    }
-    if (!getTaskOptionValue(initContext, "tof-signal", "ccdb-timestamp", timestamp.value, true)) {
-      LOG(fatal) << "Could not get ccdb-timestamp from tof-signal task";
-    }
-    if (!getTaskOptionValue(initContext, "tof-signal", "paramFileName", paramFileName.value, true)) {
-      LOG(fatal) << "Could not get paramFileName from tof-signal task";
-    }
-    if (!getTaskOptionValue(initContext, "tof-signal", "parametrizationPath", parametrizationPath.value, true)) {
-      LOG(fatal) << "Could not get parametrizationPath from tof-signal task";
-    }
-    if (!getTaskOptionValue(initContext, "tof-signal", "passName", passName.value, true)) {
-      LOG(fatal) << "Could not get passName from tof-signal task";
-    }
-    if (!getTaskOptionValue(initContext, "tof-signal", "timeShiftCCDBPath", timeShiftCCDBPath.value, true)) {
-      LOG(fatal) << "Could not get timeShiftCCDBPath from tof-signal task";
-    }
-    if (!getTaskOptionValue(initContext, "tof-signal", "loadResponseFromCCDB", loadResponseFromCCDB.value, true)) {
-      LOG(fatal) << "Could not get loadResponseFromCCDB from tof-signal task";
-    }
-    if (!getTaskOptionValue(initContext, "tof-signal", "fatalOnPassNotAvailable", fatalOnPassNotAvailable.value, true)) {
-      LOG(fatal) << "Could not get fatalOnPassNotAvailable from tof-signal task";
+    mUrl = opt.cfgUrl.value;
+    mPathGrpLhcIf = opt.cfgPathGrpLhcIf.value;
+    mTimestamp = opt.cfgTimestamp.value;
+    mTimeShiftCCDBPathPos = opt.cfgTimeShiftCCDBPathPos.value;
+    mTimeShiftCCDBPathNeg = opt.cfgTimeShiftCCDBPathNeg.value;
+    mParamFileName = opt.cfgParamFileName.value;
+    mParametrizationPath = opt.cfgParametrizationPath.value;
+    mReconstructionPass = opt.cfgReconstructionPass.value;
+    mLoadResponseFromCCDB = opt.cfgLoadResponseFromCCDB.value;
+    mFatalOnPassNotAvailable = opt.cfgFatalOnPassNotAvailable.value;
+    mEnableTimeDependentResponse = opt.cfgEnableTimeDependentResponse.value;
+    mCollisionSystem = opt.cfgCollisionSystem.value;
+    mAutoSetProcessFunctions = opt.cfgAutoSetProcessFunctions.value;
+  }
+
+  template <typename VType>
+  void getCfg(o2::framework::InitContext& initContext, const std::string name, VType& v, const std::string task)
+  {
+    if (!getTaskOptionValue(initContext, task, name, v, true)) {
+      LOG(fatal) << "Could not get " << name << " from " << task << " task";
     }
   }
 
-  template <typename CCDBObject>
-  void setUp(o2::pid::tof::TOFResoParamsV3& mRespParamsV3, CCDBObject ccdb)
+  void inheritFromBaseTask(o2::framework::InitContext& initContext, const std::string task = "tof-signal")
   {
+    mInitMode = 2;
+    getCfg(initContext, "ccdb-url", mUrl, task);
+    getCfg(initContext, "ccdb-path-grplhcif", mPathGrpLhcIf, task);
+    getCfg(initContext, "ccdb-timestamp", mTimestamp, task);
+    getCfg(initContext, "timeShiftCCDBPathPos", mTimeShiftCCDBPathPos, task);
+    getCfg(initContext, "timeShiftCCDBPathNeg", mTimeShiftCCDBPathPos, task);
+    getCfg(initContext, "paramFileName", mParamFileName, task);
+    getCfg(initContext, "parametrizationPath", mParametrizationPath, task);
+    getCfg(initContext, "reconstructionPass", mReconstructionPass, task);
+    getCfg(initContext, "loadResponseFromCCDB", mLoadResponseFromCCDB, task);
+    getCfg(initContext, "fatalOnPassNotAvailable", mFatalOnPassNotAvailable, task);
+    getCfg(initContext, "enableTimeDependentResponse", mEnableTimeDependentResponse, task);
+    getCfg(initContext, "collisionSystem", mCollisionSystem, task);
+    getCfg(initContext, "autoSetProcessFunctions", mAutoSetProcessFunctions, task);
+  }
+  // @brief Set up the configuration from the calibration object from the init function of the task
+  template <typename CCDBObject>
+  void initSetup(o2::pid::tof::TOFResoParamsV3& mRespParamsV3,
+                 CCDBObject ccdb)
+  {
+    mInitMode = 1;
     // First we set the CCDB manager
-    ccdb->setURL(url.value);
-    ccdb->setTimestamp(timestamp.value);
+    ccdb->setURL(mUrl);
+    ccdb->setTimestamp(mTimestamp);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     // Not later than now objects
     ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
 
     // Then the information about the metadata
-    if (passName.value == "metadata") {
+    if (mReconstructionPass == "metadata") {
       LOG(info) << "Getting pass from metadata";
       if (metadataInfo.isMC()) {
-        passName.value = metadataInfo.get("AnchorPassName");
+        mReconstructionPass = metadataInfo.get("AnchorPassName");
       } else {
-        passName.value = metadataInfo.get("RecoPassName");
+        mReconstructionPass = metadataInfo.get("RecoPassName");
       }
-      LOG(info) << "Passed autodetect mode for pass. Taking '" << passName.value << "'";
+      LOG(info) << "Passed autodetect mode for pass. Taking '" << mReconstructionPass << "'";
     }
-    LOG(info) << "Using parameter collection, starting from pass '" << passName.value << "'";
+    LOG(info) << "Using parameter collection, starting from pass '" << mReconstructionPass << "'";
 
-    const std::string fname = paramFileName.value;
+    const std::string fname = mParamFileName;
     if (!fname.empty()) { // Loading the parametrization from file
-      LOG(info) << "Loading exp. sigma parametrization from file " << fname << ", using param: " << parametrizationPath.value;
+      LOG(info) << "Loading exp. sigma parametrization from file " << fname << ", using param: " << mParametrizationPath;
       if (1) {
         o2::tof::ParameterCollection paramCollection;
-        paramCollection.loadParamFromFile(fname, parametrizationPath.value);
+        paramCollection.loadParamFromFile(fname, mParametrizationPath);
         LOG(info) << "+++ Loaded parameter collection from file +++";
-        if (!paramCollection.retrieveParameters(mRespParamsV3, passName.value)) {
-          if (fatalOnPassNotAvailable) {
-            LOGF(fatal, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
+        if (!paramCollection.retrieveParameters(mRespParamsV3, mReconstructionPass)) {
+          if (mFatalOnPassNotAvailable) {
+            LOGF(fatal, "Pass '%s' not available in the retrieved CCDB object", mReconstructionPass.data());
           } else {
-            LOGF(warning, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
+            LOGF(warning, "Pass '%s' not available in the retrieved CCDB object", mReconstructionPass.data());
           }
         } else {
-          mRespParamsV3.setMomentumChargeShiftParameters(paramCollection.getPars(passName.value));
+          mRespParamsV3.setMomentumChargeShiftParameters(paramCollection.getPars(mReconstructionPass));
           mRespParamsV3.printMomentumChargeShiftParameters();
         }
       } else {
-        mRespParamsV3.loadParamFromFile(fname.data(), parametrizationPath.value);
+        mRespParamsV3.loadParamFromFile(fname.data(), mParametrizationPath);
       }
-    } else if (loadResponseFromCCDB) { // Loading it from CCDB
-      LOG(info) << "Loading exp. sigma parametrization from CCDB, using path: " << parametrizationPath.value << " for timestamp " << timestamp.value;
-      o2::tof::ParameterCollection* paramCollection = ccdb->template getForTimeStamp<o2::tof::ParameterCollection>(parametrizationPath.value, timestamp.value);
+    } else if (mLoadResponseFromCCDB) { // Loading it from CCDB
+      LOG(info) << "Loading exp. sigma parametrization from CCDB, using path: " << mParametrizationPath << " for timestamp " << mTimestamp;
+      o2::tof::ParameterCollection* paramCollection = ccdb->template getForTimeStamp<o2::tof::ParameterCollection>(mParametrizationPath, mTimestamp);
       paramCollection->print();
-      if (!paramCollection->retrieveParameters(mRespParamsV3, passName.value)) { // Attempt at loading the parameters with the pass defined
-        if (fatalOnPassNotAvailable) {
-          LOGF(fatal, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
+      if (!paramCollection->retrieveParameters(mRespParamsV3, mReconstructionPass)) { // Attempt at loading the parameters with the pass defined
+        if (mFatalOnPassNotAvailable) {
+          LOGF(fatal, "Pass '%s' not available in the retrieved CCDB object", mReconstructionPass.data());
         } else {
-          LOGF(warning, "Pass '%s' not available in the retrieved CCDB object", passName.value.data());
+          LOGF(warning, "Pass '%s' not available in the retrieved CCDB object", mReconstructionPass.data());
         }
       } else { // Pass is available, load non standard parameters
-        mRespParamsV3.setMomentumChargeShiftParameters(paramCollection->getPars(passName.value));
+        mRespParamsV3.setMomentumChargeShiftParameters(paramCollection->getPars(mReconstructionPass));
         mRespParamsV3.printMomentumChargeShiftParameters();
       }
     }
+    // Calibration object is defined
     mRespParamsV3.print();
-    if (timeShiftCCDBPath.value != "") {
-      if (timeShiftCCDBPath.value.find(".root") != std::string::npos) {
-        mRespParamsV3.setTimeShiftParameters(timeShiftCCDBPath.value, "gmean_Pos", true);
-        mRespParamsV3.setTimeShiftParameters(timeShiftCCDBPath.value, "gmean_Neg", false);
+
+    // Loading additional calibration objects
+    if (mTimeShiftCCDBPathPos != "") {
+      if (mTimeShiftCCDBPathPos.find(".root") != std::string::npos) {
+        mRespParamsV3.setTimeShiftParameters(mTimeShiftCCDBPathPos, "ccdb_object", true);
       } else {
-        mRespParamsV3.setTimeShiftParameters(ccdb->template getForTimeStamp<TGraph>(Form("%s/pos", timeShiftCCDBPath.value.c_str()), timestamp.value), true);
-        mRespParamsV3.setTimeShiftParameters(ccdb->template getForTimeStamp<TGraph>(Form("%s/neg", timeShiftCCDBPath.value.c_str()), timestamp.value), false);
+        if (mReconstructionPass == "") {
+          mRespParamsV3.setTimeShiftParameters(ccdb->template getForTimeStamp<TGraph>(mTimeShiftCCDBPathPos, mTimestamp), true);
+        } else {
+          std::map<std::string, std::string> metadata;
+          metadata["RecoPassName"] = mReconstructionPass;
+          mRespParamsV3.setTimeShiftParameters(ccdb->template getSpecific<TGraph>(mTimeShiftCCDBPathPos, mTimestamp, metadata), true);
+        }
+      }
+    }
+    if (mTimeShiftCCDBPathNeg != "") {
+      if (mTimeShiftCCDBPathNeg.find(".root") != std::string::npos) {
+        mRespParamsV3.setTimeShiftParameters(mTimeShiftCCDBPathNeg, "ccdb_object", false);
+      } else {
+        if (mReconstructionPass == "") {
+          mRespParamsV3.setTimeShiftParameters(ccdb->template getForTimeStamp<TGraph>(mTimeShiftCCDBPathNeg, mTimestamp), false);
+        } else {
+          std::map<std::string, std::string> metadata;
+          metadata["RecoPassName"] = mReconstructionPass;
+          mRespParamsV3.setTimeShiftParameters(ccdb->template getSpecific<TGraph>(mTimeShiftCCDBPathNeg, mTimestamp, metadata), false);
+        }
       }
     }
   }
+
+  template <typename CCDBObject, typename BcType>
+  void processSetup(o2::pid::tof::TOFResoParamsV3& mRespParamsV3,
+                    CCDBObject ccdb,
+                    const BcType& bc)
+  {
+    LOG(debug) << "Processing setup for run number " << bc.runNumber() << " from run " << mLastRunNumber;
+    // First we check if this run number was already processed
+    if (mLastRunNumber == bc.runNumber()) {
+      return;
+    }
+    mLastRunNumber = bc.runNumber();
+    mTimestamp = bc.timestamp();
+
+    // Check the beam type
+    if (mCollisionSystem == -1) {
+      o2::parameters::GRPLHCIFData* grpo = ccdb->template getForTimeStamp<o2::parameters::GRPLHCIFData>(mPathGrpLhcIf,
+                                                                                                        mTimestamp);
+      mCollisionSystem = CollisionSystemType::getCollisionTypeFromGrp(grpo);
+    } else {
+      LOG(debug) << "Not setting collisions system as already set to " << mCollisionSystem << " " << CollisionSystemType::getCollisionSystemName(mCollisionSystem);
+    }
+
+    if (!mEnableTimeDependentResponse) {
+      return;
+    }
+    LOG(debug) << "Updating parametrization from path '" << mParametrizationPath << "' and timestamp " << mTimestamp;
+    if (!ccdb->template getForTimeStamp<o2::tof::ParameterCollection>(mParametrizationPath, mTimestamp)->retrieveParameters(mRespParamsV3, mReconstructionPass)) {
+      if (mFatalOnPassNotAvailable) {
+        LOGF(fatal, "Pass '%s' not available in the retrieved CCDB object", mReconstructionPass.data());
+      } else {
+        LOGF(warning, "Pass '%s' not available in the retrieved CCDB object", mReconstructionPass.data());
+      }
+    }
+    return;
+  }
+
+  bool autoSetProcessFunctions() const { return mAutoSetProcessFunctions; }
+  int collisionSystem() const { return mCollisionSystem; }
+
+ private:
+  int mLastRunNumber = -1; // Last run number for which the calibration was loaded
+  int mInitMode = 0;       // 0: no init, 1: init, 2: inherit
+
+  // Configurable options
+  std::string mUrl;
+  std::string mPathGrpLhcIf;
+  int64_t mTimestamp;
+  std::string mTimeShiftCCDBPathPos;
+  std::string mTimeShiftCCDBPathNeg;
+  std::string mParamFileName;
+  std::string mParametrizationPath;
+  std::string mReconstructionPass;
+  bool mLoadResponseFromCCDB;
+  bool mFatalOnPassNotAvailable;
+  bool mEnableTimeDependentResponse;
+  int mCollisionSystem;
+  bool mAutoSetProcessFunctions;
 };
 
 // Part 1 TOF signal definition
 
 /// Selection criteria for tracks used for TOF event time
-float trackDistanceForGoodMatch = 999.f;
-float trackDistanceForGoodMatchLowMult = 999.f;
-int multiplicityThreshold = 0;
-using Run3Trks = o2::soa::Join<aod::TracksIU, aod::TracksExtra>;
-using Run3Cols = o2::soa::Join<aod::Collisions, aod::PVMults>;
-bool isTrackGoodMatchForTOFPID(const Run3Trks::iterator& tr, const Run3Cols& /*ev*/)
+bool isTrackGoodMatchForTOFPID(const Run3Trks::iterator& tr)
 {
   if (!tr.hasTOF()) {
     return false;
   }
-  if (tr.has_collision() && tr.collision_as<Run3Cols>().multNTracksPVeta1() < multiplicityThreshold) {
-    return tr.tofChi2() < trackDistanceForGoodMatchLowMult;
-  }
-  return tr.tofChi2() < trackDistanceForGoodMatch;
+  return true;
 }
 
 /// Task to produce the TOF signal from the trackTime information
@@ -182,16 +274,33 @@ struct tofSignal {
   // Running flags
   bool enableTableTOFSignal = false;   // Flag to check if the TOF signal table is requested or not
   bool enableTablepidTOFFlags = false; // Flag to check if the TOF signal flags table is requested or not
-  TOFCalibConfig mTOFCalibConfig;      // TOF Calib configuration
-  Configurable<float> distanceForGoodMatch{"distanceForGoodMatch", 999.f, "Maximum distance to consider a good match"};
-  Configurable<float> distanceForGoodMatchLowMult{"distanceForGoodMatchLowMult", 999.f, "Maximum distance to consider a good match for low multiplicity events"};
-  Configurable<int> multThreshold{"multThreshold", 0, "Multiplicity threshold to consider a low multiplicity event"};
   // Output histograms
   Configurable<bool> enableQaHistograms{"enableQaHistograms", false, "Flag to enable the QA histograms"};
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  // Detector response and input parameters
+  o2::pid::tof::TOFResoParamsV3 mRespParamsV3;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  struct : ConfigurableGroup {
+    Configurable<std::string> cfgUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+    Configurable<std::string> cfgPathGrpLhcIf{"ccdb-path-grplhcif", "GLO/Config/GRPLHCIF", "Path on the CCDB for the GRPLHCIF object"};
+    Configurable<int64_t> cfgTimestamp{"ccdb-timestamp", -1, "timestamp of the object"};
+    Configurable<std::string> cfgTimeShiftCCDBPathPos{"timeShiftCCDBPathPos", "", "Path of the TOF time shift vs eta for pos. tracks. If empty none is taken"};
+    Configurable<std::string> cfgTimeShiftCCDBPathNeg{"timeShiftCCDBPathNeg", "", "Path of the TOF time shift vs eta for neg. tracks. If empty none is taken"};
+    Configurable<std::string> cfgParamFileName{"paramFileName", "", "Path to the parametrization object. If empty the parametrization is not taken from file"};
+    Configurable<std::string> cfgParametrizationPath{"parametrizationPath", "TOF/Calib/Params", "Path of the TOF parametrization on the CCDB or in the file, if the paramFileName is not empty"};
+    Configurable<std::string> cfgReconstructionPass{"reconstructionPass", "", {"Apass to use when fetching the calibration tables. Empty (default) does not check for any pass. Use `metadata` to fetch it from the AO2D metadata. Otherwise it will override the metadata."}};
+    Configurable<bool> cfgLoadResponseFromCCDB{"loadResponseFromCCDB", false, "Flag to load the response from the CCDB"};
+    Configurable<bool> cfgFatalOnPassNotAvailable{"fatalOnPassNotAvailable", true, "Flag to throw a fatal if the pass is not available in the retrieved CCDB object"};
+    Configurable<bool> cfgEnableTimeDependentResponse{"enableTimeDependentResponse", false, "Flag to use the collision timestamp to fetch the PID Response"};
+    Configurable<int> cfgCollisionSystem{"collisionSystem", -1, "Collision system: -1 (autoset), 0 (pp), 1 (PbPb), 2 (XeXe), 3 (pPb)"};
+    Configurable<bool> cfgAutoSetProcessFunctions{"autoSetProcessFunctions", true, "Flag to autodetect the process functions to use"};
+  } cfg; // Configurables (only defined here and inherited from other tasks)
+
+  TOFCalibConfig mTOFCalibConfig; // TOF Calib configuration
 
   void init(o2::framework::InitContext& initContext)
   {
+    mTOFCalibConfig.init(cfg);
     // Checking that the table is requested in the workflow and enabling it
     enableTableTOFSignal = isTableRequiredInWorkflow(initContext, "TOFSignal");
     if (enableTableTOFSignal) {
@@ -207,11 +316,14 @@ struct tofSignal {
       LOG(info) << "No table or process is enabled. Disabling task";
       return;
     }
-    if (metadataInfo.isFullyDefined() && !doprocessRun2 && !doprocessRun3) { // Check if the metadata is initialized (only if not forced from the workflow configuration)
-      if (metadataInfo.isRun3()) {
-        doprocessRun3.value = true;
-      } else {
-        doprocessRun2.value = false;
+    if (mTOFCalibConfig.autoSetProcessFunctions()) {
+      LOG(info) << "Autodetecting process functions";
+      if (metadataInfo.isFullyDefined() && !doprocessRun2 && !doprocessRun3) { // Check if the metadata is initialized (only if not forced from the workflow configuration)
+        if (metadataInfo.isRun3()) {
+          doprocessRun3.value = true;
+        } else {
+          doprocessRun2.value = false;
+        }
       }
     }
 
@@ -222,11 +334,7 @@ struct tofSignal {
     if (!doprocessRun2 && !doprocessRun3) {
       LOG(fatal) << "Neither processRun2 nor processRun3 are enabled. Pick one of the two";
     }
-
-    trackDistanceForGoodMatch = distanceForGoodMatch;
-    trackDistanceForGoodMatchLowMult = distanceForGoodMatchLowMult;
-    multiplicityThreshold = multThreshold;
-    LOG(info) << "Configuring selections for good match: " << trackDistanceForGoodMatch << " low mult " << trackDistanceForGoodMatchLowMult << " mult. threshold " << multiplicityThreshold;
+    mTOFCalibConfig.initSetup(mRespParamsV3, ccdb); // Getting the parametrization parameters
     if (!enableQaHistograms) {
       return;
     }
@@ -239,7 +347,7 @@ struct tofSignal {
   /// Dummy process function for BCs, needed in case both Run2 and Run3 process functions are disabled
   void process(aod::BCs const&) {}
 
-  void processRun3(Run3Trks const& tracks, Run3Cols const& collisions)
+  void processRun3(Run3Trks const& tracks)
   {
     if (!enableTableTOFSignal) {
       return;
@@ -248,26 +356,25 @@ struct tofSignal {
     if (enableTablepidTOFFlags) {
       tableFlags.reserve(tracks.size());
     }
-    for (auto& t : tracks) {
-      const auto s = o2::pid::tof::TOFSignal<Run3Trks::iterator>::GetTOFSignal(t);
+    for (auto& trk : tracks) {
+      const float& sig = o2::pid::tof::TOFSignal<Run3Trks::iterator>::GetTOFSignal(trk);
       if (enableQaHistograms) {
-        histos.fill(HIST("tofSignal"), s);
+        histos.fill(HIST("tofSignal"), sig);
       }
-      table(s);
+      table(sig);
       if (!enableTablepidTOFFlags) {
         continue;
       }
-      const auto b = isTrackGoodMatchForTOFPID(t, collisions);
+      const auto& b = isTrackGoodMatchForTOFPID(trk);
       if (enableQaHistograms) {
-        histos.fill(HIST("goodForPIDFlags"), s);
+        histos.fill(HIST("goodForPIDFlags"), sig);
       }
       tableFlags(b);
     }
   }
   PROCESS_SWITCH(tofSignal, processRun3, "Process Run3 data i.e. input is TrackIU. Set to false to autodetect from metadata.", false);
 
-  using TrksRun2 = o2::soa::Join<aod::Tracks, aod::TracksExtra>;
-  void processRun2(TrksRun2 const& tracks)
+  void processRun2(Run2Trks const& tracks)
   {
     if (!enableTableTOFSignal) {
       return;
@@ -276,8 +383,8 @@ struct tofSignal {
     if (enableTablepidTOFFlags) {
       tableFlags.reserve(tracks.size());
     }
-    for (auto& t : tracks) {
-      table(o2::pid::tof::TOFSignal<TrksRun2::iterator>::GetTOFSignal(t));
+    for (auto& trk : tracks) {
+      table(o2::pid::tof::TOFSignal<Run2Trks::iterator>::GetTOFSignal(trk));
       if (!enableTablepidTOFFlags) {
         continue;
       }
@@ -293,7 +400,11 @@ float trackSampleMaxMomentum = 2.f;
 template <typename trackType>
 bool filterForTOFEventTime(const trackType& tr)
 {
-  return (tr.hasTOF() && tr.p() > trackSampleMinMomentum && tr.p() < trackSampleMaxMomentum && (tr.trackType() == o2::aod::track::TrackTypeEnum::Track || tr.trackType() == o2::aod::track::TrackTypeEnum::TrackIU));
+  return (tr.hasTOF() &&
+          tr.p() > trackSampleMinMomentum && tr.p() < trackSampleMaxMomentum &&
+          tr.hasITS() &&
+          tr.hasTPC() &&
+          (tr.trackType() == o2::aod::track::TrackTypeEnum::Track || tr.trackType() == o2::aod::track::TrackTypeEnum::TrackIU));
 } // accept all
 
 /// Specialization of TOF event time maker
@@ -334,10 +445,13 @@ struct tofEventTime {
   Configurable<float> maxMomentum{"maxMomentum", 2.0f, "Maximum momentum to select track sample for TOF event time"};
   Configurable<float> maxEvTimeTOF{"maxEvTimeTOF", 100000.0f, "Maximum value of the TOF event time"};
   Configurable<bool> sel8TOFEvTime{"sel8TOFEvTime", false, "Flag to compute the ev. time only for events that pass the sel8 ev. selection"};
+  Configurable<int> mComputeEvTimeWithTOF{"computeEvTimeWithTOF", -1, "Compute ev. time with TOF. -1 (autoset), 0 no, 1 yes"};
+  Configurable<int> mComputeEvTimeWithFT0{"computeEvTimeWithFT0", -1, "Compute ev. time with FT0. -1 (autoset), 0 no, 1 yes"};
   Configurable<int> maxNtracksInSet{"maxNtracksInSet", 10, "Size of the set to consider for the TOF ev. time computation"};
 
   void init(o2::framework::InitContext& initContext)
   {
+    mTOFCalibConfig.inheritFromBaseTask(initContext);
     // Checking that the table is requested in the workflow and enabling it
     enableTableTOFEvTime = isTableRequiredInWorkflow(initContext, "TOFEvTime");
 
@@ -356,8 +470,24 @@ struct tofEventTime {
       return;
     }
 
-    if (metadataInfo.isFullyDefined() && metadataInfo.isRun3() && doprocessRun2) {
-      LOG(fatal) << "Run2 process function is enabled but the metadata says it is Run3";
+    if (mTOFCalibConfig.autoSetProcessFunctions()) {
+      LOG(info) << "Autodetecting process functions";
+      if (metadataInfo.isFullyDefined()) {
+        if (metadataInfo.isRun3()) {
+          doprocessRun3.value = true;
+        } else {
+          doprocessRun2.value = true;
+        }
+      }
+    }
+
+    if (metadataInfo.isFullyDefined()) {
+      if (metadataInfo.isRun3() && doprocessRun2) {
+        LOG(fatal) << "Run2 process function is enabled but the metadata says it is Run3";
+      }
+      if (!metadataInfo.isRun3() && doprocessRun3) {
+        LOG(fatal) << "Run3 process function is enabled but the metadata says it is Run2";
+      }
     }
 
     trackSampleMinMomentum = minMomentum;
@@ -369,16 +499,8 @@ struct tofEventTime {
       LOGF(info, "Enabling process function: processRun2");
       nEnabled++;
     }
-    if (doprocessNoFT0 == true) {
-      LOGF(info, "Enabling process function: processNoFT0");
-      nEnabled++;
-    }
-    if (doprocessFT0 == true) {
-      LOGF(info, "Enabling process function: processFT0");
-      nEnabled++;
-    }
-    if (doprocessOnlyFT0 == true) {
-      LOGF(info, "Enabling process function: processOnlyFT0");
+    if (doprocessRun3 == true) {
+      LOGF(info, "Enabling process function: processRun3");
       nEnabled++;
     }
     if (nEnabled > 1) {
@@ -388,7 +510,7 @@ struct tofEventTime {
     if (sel8TOFEvTime.value == true) {
       LOG(info) << "TOF event time will be computed for collisions that pass the event selection only!";
     }
-    mTOFCalibConfig.setUp(mRespParamsV3, ccdb); // Getting the parametrization parameters
+    mTOFCalibConfig.initSetup(mRespParamsV3, ccdb); // Getting the parametrization parameters
 
     o2::tof::eventTimeContainer::setMaxNtracksInSet(maxNtracksInSet.value);
     o2::tof::eventTimeContainer::printConfig();
@@ -418,210 +540,213 @@ struct tofEventTime {
       tableEvTime(t.collision().collisionTime() * 1000.f, t.collision().collisionTimeRes() * 1000.f);
     }
   }
-  PROCESS_SWITCH(tofEventTime, processRun2, "Process with Run2 data", false);
+  PROCESS_SWITCH(tofEventTime, processRun2, "Process with Run2 data", true);
 
   ///
   /// Process function to prepare the event for each track on Run 3 data without the FT0
-  using TrksEvTime = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TOFSignal>;
   // Define slice per collision
-  Preslice<TrksEvTime> perCollision = aod::track::collisionId;
+  Preslice<Run3TrksWtof> perCollision = aod::track::collisionId;
   template <o2::track::PID::ID pid>
-  using ResponseImplementationEvTime = o2::pid::tof::ExpTimes<TrksEvTime::iterator, pid>;
-  using EvTimeCollisions = soa::Join<aod::Collisions, aod::EvSels>;
-  void processNoFT0(TrksEvTime const& tracks,
-                    EvTimeCollisions const&)
+  using ResponseImplementationEvTime = o2::pid::tof::ExpTimes<Run3TrksWtof::iterator, pid>;
+  void processRun3(Run3TrksWtof& tracks,
+                   aod::FT0s const&,
+                   EvTimeCollisionsFT0 const&,
+                   aod::BCsWithTimestamps const&)
   {
     if (!enableTableTOFEvTime) {
       return;
     }
+    LOG(debug) << "Processing Run3 data for TOF event time";
 
     tableEvTime.reserve(tracks.size());
     tableFlags.reserve(tracks.size());
     if (enableTableEvTimeTOFOnly) {
       tableEvTimeTOFOnly.reserve(tracks.size());
     }
-
-    int lastCollisionId = -1;                                                                                    // Last collision ID analysed
-    for (auto const& t : tracks) {                                                                               // Loop on collisions
-      if (!t.has_collision() || ((sel8TOFEvTime.value == true) && !t.collision_as<EvTimeCollisions>().sel8())) { // Track was not assigned, cannot compute event time or event did not pass the event selection
-        tableFlags(0);
-        tableEvTime(0.f, 999.f);
-        if (enableTableEvTimeTOFOnly) {
-          tableEvTimeTOFOnly((uint8_t)0, 0.f, 0.f, -1);
-        }
+    bool calibUpdated = false;
+    for (auto const& track : tracks) { // Loop on all tracks
+      if (!track.has_collision()) {    // Skipping tracks without collisions
         continue;
       }
-      if (t.collisionId() == lastCollisionId) { // Event time from this collision is already in the table
+      const auto& coll = track.collision_as<EvTimeCollisionsFT0>();
+      if (!coll.has_bc()) {
         continue;
       }
-      /// Create new table for the tracks in a collision
-      lastCollisionId = t.collisionId(); /// Cache last collision ID
+      mTOFCalibConfig.processSetup(mRespParamsV3, ccdb, coll.bc_as<aod::BCsWithTimestamps>()); // Update the calibration parameters
+      calibUpdated = true;
+      break;
+    }
 
-      const auto& tracksInCollision = tracks.sliceBy(perCollision, lastCollisionId);
-
-      // First make table for event time
-      const auto evTimeTOF = evTimeMakerForTracks<TrksEvTime::iterator, filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, mRespParamsV3, diamond);
-      int nGoodTracksForTOF = 0;
-      float et = evTimeTOF.mEventTime;
-      float erret = evTimeTOF.mEventTimeError;
-
-      for (auto const& trk : tracksInCollision) { // Loop on Tracks
-        if constexpr (removeTOFEvTimeBias) {
-          evTimeTOF.removeBias<TrksEvTime::iterator, filterForTOFEventTime>(trk, nGoodTracksForTOF, et, erret, 2);
+    // Autoset the processing mode for the event time computation
+    if (calibUpdated) {
+      if (mComputeEvTimeWithTOF == -1 || mComputeEvTimeWithFT0 == -1) {
+        switch (mTOFCalibConfig.collisionSystem()) {
+          case CollisionSystemType::kCollSyspp: // pp
+            mComputeEvTimeWithTOF.value = ((mComputeEvTimeWithTOF == -1) ? 0 : mComputeEvTimeWithTOF.value);
+            mComputeEvTimeWithFT0.value = ((mComputeEvTimeWithFT0 == -1) ? 1 : mComputeEvTimeWithFT0.value);
+            break;
+          case CollisionSystemType::kCollSysPbPb: // PbPb
+            mComputeEvTimeWithTOF.value = ((mComputeEvTimeWithTOF == -1) ? 1 : mComputeEvTimeWithTOF.value);
+            mComputeEvTimeWithFT0.value = ((mComputeEvTimeWithFT0 == -1) ? 0 : mComputeEvTimeWithFT0.value);
+            break;
+          default:
+            LOG(fatal) << "Collision system " << mTOFCalibConfig.collisionSystem() << " " << CollisionSystemType::getCollisionSystemName(mTOFCalibConfig.collisionSystem()) << " not supported for TOF event time computation";
+            break;
         }
+      }
+    } else {
+      LOG(warning) << "Calibration not updated on " << tracks.size() << " tracks !!";
+    }
+    LOG(debug) << "Running on " << CollisionSystemType::getCollisionSystemName(mTOFCalibConfig.collisionSystem()) << " mComputeEvTimeWithTOF " << mComputeEvTimeWithTOF.value << " mComputeEvTimeWithFT0 " << mComputeEvTimeWithFT0.value;
+
+    if (mComputeEvTimeWithTOF == 1 && mComputeEvTimeWithFT0 == 1) {
+      int lastCollisionId = -1;                                                                                       // Last collision ID analysed
+      for (auto const& t : tracks) {                                                                                  // Loop on collisions
+        if (!t.has_collision() || ((sel8TOFEvTime.value == true) && !t.collision_as<EvTimeCollisionsFT0>().sel8())) { // Track was not assigned, cannot compute event time or event did not pass the event selection
+          tableFlags(0);
+          tableEvTime(0.f, 999.f);
+          if (enableTableEvTimeTOFOnly) {
+            tableEvTimeTOFOnly((uint8_t)0, 0.f, 0.f, -1);
+          }
+          continue;
+        }
+        if (t.collisionId() == lastCollisionId) { // Event time from this collision is already in the table
+          continue;
+        }
+        /// Create new table for the tracks in a collision
+        lastCollisionId = t.collisionId(); /// Cache last collision ID
+
+        const auto& tracksInCollision = tracks.sliceBy(perCollision, lastCollisionId);
+        const auto& collision = t.collision_as<EvTimeCollisionsFT0>();
+
+        // Compute the TOF event time
+        const auto evTimeMakerTOF = evTimeMakerForTracks<Run3TrksWtof::iterator, filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, mRespParamsV3, diamond);
+
+        float t0AC[2] = {.0f, 999.f};                                                                                             // Value and error of T0A or T0C or T0AC
+        float t0TOF[2] = {static_cast<float_t>(evTimeMakerTOF.mEventTime), static_cast<float_t>(evTimeMakerTOF.mEventTimeError)}; // Value and error of TOF
+
         uint8_t flags = 0;
-        if (erret < errDiamond && (maxEvTimeTOF <= 0.f || abs(et) < maxEvTimeTOF)) {
-          flags |= o2::aod::pidflags::enums::PIDFlags::EvTimeTOF;
-        } else {
-          et = 0.f;
-          erret = errDiamond;
-        }
-        tableFlags(flags);
-        tableEvTime(et, erret);
-        if (enableTableEvTimeTOFOnly) {
-          tableEvTimeTOFOnly((uint8_t)filterForTOFEventTime(trk), et, erret, evTimeTOF.mEventTimeMultiplicity);
+        int nGoodTracksForTOF = 0;
+        float eventTime = 0.f;
+        float sumOfWeights = 0.f;
+        float weight = 0.f;
+
+        for (auto const& trk : tracksInCollision) { // Loop on Tracks
+          // Reset the flag
+          flags = 0;
+          // Reset the event time
+          eventTime = 0.f;
+          sumOfWeights = 0.f;
+          weight = 0.f;
+          // Remove the bias on TOF ev. time
+          if constexpr (removeTOFEvTimeBias) {
+            evTimeMakerTOF.removeBias<Run3TrksWtof::iterator, filterForTOFEventTime>(trk, nGoodTracksForTOF, t0TOF[0], t0TOF[1], 2);
+          }
+          if (t0TOF[1] < errDiamond && (maxEvTimeTOF <= 0 || abs(t0TOF[0]) < maxEvTimeTOF)) {
+            flags |= o2::aod::pidflags::enums::PIDFlags::EvTimeTOF;
+
+            weight = 1.f / (t0TOF[1] * t0TOF[1]);
+            eventTime += t0TOF[0] * weight;
+            sumOfWeights += weight;
+          }
+
+          if (collision.has_foundFT0()) { // T0 measurement is available
+            // const auto& ft0 = collision.foundFT0();
+            if (collision.t0ACValid()) {
+              t0AC[0] = collision.t0AC() * 1000.f;
+              t0AC[1] = collision.t0resolution() * 1000.f;
+              flags |= o2::aod::pidflags::enums::PIDFlags::EvTimeT0AC;
+            }
+
+            weight = 1.f / (t0AC[1] * t0AC[1]);
+            eventTime += t0AC[0] * weight;
+            sumOfWeights += weight;
+          }
+
+          if (sumOfWeights < weightDiamond) { // avoiding sumOfWeights = 0 or worse that diamond
+            eventTime = 0;
+            sumOfWeights = weightDiamond;
+            tableFlags(0);
+          } else {
+            tableFlags(flags);
+          }
+          tableEvTime(eventTime / sumOfWeights, sqrt(1. / sumOfWeights));
+          if (enableTableEvTimeTOFOnly) {
+            tableEvTimeTOFOnly((uint8_t)filterForTOFEventTime(trk), t0TOF[0], t0TOF[1], evTimeMakerTOF.mEventTimeMultiplicity);
+          }
         }
       }
-    }
-  }
-  PROCESS_SWITCH(tofEventTime, processNoFT0, "Process without FT0", false);
+    } else if (mComputeEvTimeWithTOF == 1 && mComputeEvTimeWithFT0 == 0) {
+      int lastCollisionId = -1;                                                                                    // Last collision ID analysed
+      for (auto const& t : tracks) {                                                                               // Loop on collisions
+        if (!t.has_collision() || ((sel8TOFEvTime.value == true) && !t.collision_as<EvTimeCollisions>().sel8())) { // Track was not assigned, cannot compute event time or event did not pass the event selection
+          tableFlags(0);
+          tableEvTime(0.f, 999.f);
+          if (enableTableEvTimeTOFOnly) {
+            tableEvTimeTOFOnly((uint8_t)0, 0.f, 0.f, -1);
+          }
+          continue;
+        }
+        if (t.collisionId() == lastCollisionId) { // Event time from this collision is already in the table
+          continue;
+        }
+        /// Create new table for the tracks in a collision
+        lastCollisionId = t.collisionId(); /// Cache last collision ID
 
-  ///
-  /// Process function to prepare the event for each track on Run 3 data with the FT0
-  using EvTimeCollisionsFT0 = soa::Join<EvTimeCollisions, aod::FT0sCorrected>;
-  void processFT0(TrksEvTime& tracks,
-                  aod::FT0s const&,
-                  EvTimeCollisionsFT0 const&)
-  {
-    if (!enableTableTOFEvTime) {
-      return;
-    }
+        const auto& tracksInCollision = tracks.sliceBy(perCollision, lastCollisionId);
 
-    tableEvTime.reserve(tracks.size());
-    tableFlags.reserve(tracks.size());
-    if (enableTableEvTimeTOFOnly) {
-      tableEvTimeTOFOnly.reserve(tracks.size());
-    }
+        // First make table for event time
+        const auto evTimeMakerTOF = evTimeMakerForTracks<Run3TrksWtof::iterator, filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, mRespParamsV3, diamond);
+        int nGoodTracksForTOF = 0;
+        float et = evTimeMakerTOF.mEventTime;
+        float erret = evTimeMakerTOF.mEventTimeError;
 
-    int lastCollisionId = -1;                                                                                       // Last collision ID analysed
-    for (auto const& t : tracks) {                                                                                  // Loop on collisions
-      if (!t.has_collision() || ((sel8TOFEvTime.value == true) && !t.collision_as<EvTimeCollisionsFT0>().sel8())) { // Track was not assigned, cannot compute event time or event did not pass the event selection
-        tableFlags(0);
-        tableEvTime(0.f, 999.f);
+        for (auto const& trk : tracksInCollision) { // Loop on Tracks
+          if constexpr (removeTOFEvTimeBias) {
+            evTimeMakerTOF.removeBias<Run3TrksWtof::iterator, filterForTOFEventTime>(trk, nGoodTracksForTOF, et, erret, 2);
+          }
+          uint8_t flags = 0;
+          if (erret < errDiamond && (maxEvTimeTOF <= 0.f || abs(et) < maxEvTimeTOF)) {
+            flags |= o2::aod::pidflags::enums::PIDFlags::EvTimeTOF;
+          } else {
+            et = 0.f;
+            erret = errDiamond;
+          }
+          tableFlags(flags);
+          tableEvTime(et, erret);
+          if (enableTableEvTimeTOFOnly) {
+            tableEvTimeTOFOnly((uint8_t)filterForTOFEventTime(trk), et, erret, evTimeMakerTOF.mEventTimeMultiplicity);
+          }
+        }
+      }
+    } else if (mComputeEvTimeWithTOF == 0 && mComputeEvTimeWithFT0 == 1) {
+      for (auto const& t : tracks) { // Loop on collisions
         if (enableTableEvTimeTOFOnly) {
           tableEvTimeTOFOnly((uint8_t)0, 0.f, 0.f, -1);
         }
-        continue;
-      }
-      if (t.collisionId() == lastCollisionId) { // Event time from this collision is already in the table
-        continue;
-      }
-      /// Create new table for the tracks in a collision
-      lastCollisionId = t.collisionId(); /// Cache last collision ID
-
-      const auto& tracksInCollision = tracks.sliceBy(perCollision, lastCollisionId);
-      const auto& collision = t.collision_as<EvTimeCollisionsFT0>();
-
-      // Compute the TOF event time
-      const auto evTimeTOF = evTimeMakerForTracks<TrksEvTime::iterator, filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, mRespParamsV3, diamond);
-
-      float t0AC[2] = {.0f, 999.f};                                                                                   // Value and error of T0A or T0C or T0AC
-      float t0TOF[2] = {static_cast<float_t>(evTimeTOF.mEventTime), static_cast<float_t>(evTimeTOF.mEventTimeError)}; // Value and error of TOF
-
-      uint8_t flags = 0;
-      int nGoodTracksForTOF = 0;
-      float eventTime = 0.f;
-      float sumOfWeights = 0.f;
-      float weight = 0.f;
-
-      for (auto const& trk : tracksInCollision) { // Loop on Tracks
-        // Reset the flag
-        flags = 0;
-        // Reset the event time
-        eventTime = 0.f;
-        sumOfWeights = 0.f;
-        weight = 0.f;
-        // Remove the bias on TOF ev. time
-        if constexpr (removeTOFEvTimeBias) {
-          evTimeTOF.removeBias<TrksEvTime::iterator, filterForTOFEventTime>(trk, nGoodTracksForTOF, t0TOF[0], t0TOF[1], 2);
+        if (!t.has_collision()) { // Track was not assigned, cannot compute event time
+          tableFlags(0);
+          tableEvTime(0.f, 999.f);
+          continue;
         }
-        if (t0TOF[1] < errDiamond && (maxEvTimeTOF <= 0 || abs(t0TOF[0]) < maxEvTimeTOF)) {
-          flags |= o2::aod::pidflags::enums::PIDFlags::EvTimeTOF;
-
-          weight = 1.f / (t0TOF[1] * t0TOF[1]);
-          eventTime += t0TOF[0] * weight;
-          sumOfWeights += weight;
-        }
+        const auto& collision = t.collision_as<EvTimeCollisionsFT0>();
 
         if (collision.has_foundFT0()) { // T0 measurement is available
           // const auto& ft0 = collision.foundFT0();
           if (collision.t0ACValid()) {
-            t0AC[0] = collision.t0AC() * 1000.f;
-            t0AC[1] = collision.t0resolution() * 1000.f;
-            flags |= o2::aod::pidflags::enums::PIDFlags::EvTimeT0AC;
+            tableFlags(o2::aod::pidflags::enums::PIDFlags::EvTimeT0AC);
+            tableEvTime(collision.t0AC() * 1000.f, collision.t0resolution() * 1000.f);
+            continue;
           }
-
-          weight = 1.f / (t0AC[1] * t0AC[1]);
-          eventTime += t0AC[0] * weight;
-          sumOfWeights += weight;
         }
-
-        if (sumOfWeights < weightDiamond) { // avoiding sumOfWeights = 0 or worse that diamond
-          eventTime = 0;
-          sumOfWeights = weightDiamond;
-          tableFlags(0);
-        } else {
-          tableFlags(flags);
-        }
-        tableEvTime(eventTime / sumOfWeights, sqrt(1. / sumOfWeights));
-        if (enableTableEvTimeTOFOnly) {
-          tableEvTimeTOFOnly((uint8_t)filterForTOFEventTime(trk), t0TOF[0], t0TOF[1], evTimeTOF.mEventTimeMultiplicity);
-        }
-      }
-    }
-  }
-  PROCESS_SWITCH(tofEventTime, processFT0, "Process with FT0", false);
-
-  ///
-  /// Process function to prepare the event for each track on Run 3 data with only the FT0
-  void processOnlyFT0(TrksEvTime& tracks,
-                      aod::FT0s const&,
-                      EvTimeCollisionsFT0 const&)
-  {
-    if (!enableTableTOFEvTime) {
-      return;
-    }
-
-    tableEvTime.reserve(tracks.size());
-    tableFlags.reserve(tracks.size());
-    if (!enableTableEvTimeTOFOnly) {
-      tableEvTimeTOFOnly.reserve(tracks.size());
-    }
-
-    for (auto const& t : tracks) { // Loop on collisions
-      if (enableTableEvTimeTOFOnly) {
-        tableEvTimeTOFOnly((uint8_t)0, 0.f, 0.f, -1);
-      }
-      if (!t.has_collision()) { // Track was not assigned, cannot compute event time
         tableFlags(0);
         tableEvTime(0.f, 999.f);
-        continue;
       }
-      const auto& collision = t.collision_as<EvTimeCollisionsFT0>();
-
-      if (collision.has_foundFT0()) { // T0 measurement is available
-        // const auto& ft0 = collision.foundFT0();
-        if (collision.t0ACValid()) {
-          tableFlags(o2::aod::pidflags::enums::PIDFlags::EvTimeT0AC);
-          tableEvTime(collision.t0AC() * 1000.f, collision.t0resolution() * 1000.f);
-          continue;
-        }
-      }
-      tableFlags(0);
-      tableEvTime(0.f, 999.f);
+    } else {
+      LOG(fatal) << "Invalid configuration for TOF event time computation";
     }
   }
-  PROCESS_SWITCH(tofEventTime, processOnlyFT0, "Process only with FT0", false);
+  PROCESS_SWITCH(tofEventTime, processRun3, "Process the Run3 data", true);
 };
 
 // Part 3 Nsigma computation
@@ -676,9 +801,7 @@ struct tofPidMerge {
   o2::pid::tof::TOFResoParamsV3 mRespParamsV3;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   TOFCalibConfig mTOFCalibConfig; // TOF Calib configuration
-  // Configurable<bool> inheritFromBaseTask{"inheritFromBaseTask", true, "Flag to iherit all common configurables from the TOF base task"};
   Configurable<bool> enableQaHistograms{"enableQaHistograms", false, "Flag to enable the QA histograms"};
-  Configurable<bool> enableTimeDependentResponse{"enableTimeDependentResponse", false, "Flag to use the collision timestamp to fetch the PID Response"};
 
   // Configuration flags to include and exclude particle hypotheses
   Configurable<LabeledArray<int>> enableParticle{"enableParticle",
@@ -696,6 +819,7 @@ struct tofPidMerge {
   std::vector<int> mEnabledParticlesFull; // Vector of enabled PID hypotheses to loop on when making full tables
   void init(o2::framework::InitContext& initContext)
   {
+    mTOFCalibConfig.inheritFromBaseTask(initContext);
     // Checking the tables are requested in the workflow and enabling them
     for (int i = 0; i < nSpecies; i++) {
       // First checking tiny
@@ -714,12 +838,24 @@ struct tofPidMerge {
     }
     if (mEnabledParticlesFull.size() == 0 && mEnabledParticles.size() == 0) {
       LOG(info) << "No PID tables are required, disabling the task";
-      doprocessData.value = false;
+      doprocessRun3.value = false;
+      doprocessRun2.value = false;
       return;
-    } else if (doprocessData.value == false) {
+    } else if (doprocessRun3.value == false && doprocessRun2.value == false) {
       LOG(fatal) << "PID tables are required but process data is disabled. Please enable it";
     }
-    mTOFCalibConfig.setUp(mRespParamsV3, ccdb); // Getting the parametrization parameters
+    if (doprocessRun3.value == true && doprocessRun2.value == true) {
+      LOG(fatal) << "Both processRun2 and processRun3 are enabled. Pick one of the two";
+    }
+    if (metadataInfo.isFullyDefined()) {
+      if (metadataInfo.isRun3() && doprocessRun2) {
+        LOG(fatal) << "Run2 process function is enabled but the metadata says it is Run3";
+      }
+      if (!metadataInfo.isRun3() && doprocessRun3) {
+        LOG(fatal) << "Run3 process function is enabled but the metadata says it is Run2";
+      }
+    }
+    mTOFCalibConfig.initSetup(mRespParamsV3, ccdb); // Getting the parametrization parameters
 
     // Printing enabled tables and enabling QA histograms if needed
     LOG(info) << "++ Enabled tables:";
@@ -907,10 +1043,11 @@ struct tofPidMerge {
 
   void process(aod::BCs const&) {}
 
-  using Trks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::pidEvTimeFlags>;
   template <o2::track::PID::ID pid>
-  using ResponseImplementation = o2::pid::tof::ExpTimes<Trks::iterator, pid>;
-  void processData(Trks const& tracks, aod::Collisions const&, aod::BCsWithTimestamps const&)
+  using ResponseImplementation = o2::pid::tof::ExpTimes<Run3TrksWtofWevTime::iterator, pid>;
+  void processRun3(Run3TrksWtofWevTime const& tracks,
+                   Run3Cols const&,
+                   aod::BCsWithTimestamps const&)
   {
     constexpr auto responseEl = ResponseImplementation<PID::Electron>();
     constexpr auto responseMu = ResponseImplementation<PID::Muon>();
@@ -926,17 +1063,11 @@ struct tofPidMerge {
       if (!track.has_collision()) {    // Skipping tracks without collisions
         continue;
       }
-      mTOFCalibConfig.timestamp.value = track.collision().bc_as<aod::BCsWithTimestamps>().timestamp();
-      if (enableTimeDependentResponse) {
-        LOG(debug) << "Updating parametrization from path '" << mTOFCalibConfig.parametrizationPath.value << "' and timestamp " << mTOFCalibConfig.timestamp.value;
-        if (!ccdb->getForTimeStamp<o2::tof::ParameterCollection>(mTOFCalibConfig.parametrizationPath.value, mTOFCalibConfig.timestamp.value)->retrieveParameters(mRespParamsV3, mTOFCalibConfig.passName.value)) {
-          if (mTOFCalibConfig.fatalOnPassNotAvailable) {
-            LOGF(fatal, "Pass '%s' not available in the retrieved CCDB object", mTOFCalibConfig.passName.value.data());
-          } else {
-            LOGF(warning, "Pass '%s' not available in the retrieved CCDB object", mTOFCalibConfig.passName.value.data());
-          }
-        }
+      const auto& coll = track.collision();
+      if (!coll.has_bc()) {
+        continue;
       }
+      mTOFCalibConfig.processSetup(mRespParamsV3, ccdb, coll.bc_as<aod::BCsWithTimestamps>()); // Update the calibration parameters
       break;
     }
 
@@ -1082,7 +1213,179 @@ struct tofPidMerge {
       }
     }
   }
-  PROCESS_SWITCH(tofPidMerge, processData, "Produce tables. Set to off if the tables are not required", true);
+  PROCESS_SWITCH(tofPidMerge, processRun3, "Produce tables. Set to off if the tables are not required", true);
+
+  template <o2::track::PID::ID pid>
+  using ResponseImplementationRun2 = o2::pid::tof::ExpTimes<Run2TrksWtofWevTime::iterator, pid>;
+  void processRun2(Run2TrksWtofWevTime const& tracks,
+                   Run3Cols const&,
+                   aod::BCsWithTimestamps const&)
+  {
+    constexpr auto responseEl = ResponseImplementationRun2<PID::Electron>();
+    constexpr auto responseMu = ResponseImplementationRun2<PID::Muon>();
+    constexpr auto responsePi = ResponseImplementationRun2<PID::Pion>();
+    constexpr auto responseKa = ResponseImplementationRun2<PID::Kaon>();
+    constexpr auto responsePr = ResponseImplementationRun2<PID::Proton>();
+    constexpr auto responseDe = ResponseImplementationRun2<PID::Deuteron>();
+    constexpr auto responseTr = ResponseImplementationRun2<PID::Triton>();
+    constexpr auto responseHe = ResponseImplementationRun2<PID::Helium3>();
+    constexpr auto responseAl = ResponseImplementationRun2<PID::Alpha>();
+
+    for (auto const& track : tracks) { // Loop on all tracks
+      if (!track.has_collision()) {    // Skipping tracks without collisions
+        continue;
+      }
+      const auto& coll = track.collision();
+      if (!coll.has_bc()) {
+        continue;
+      }
+      mTOFCalibConfig.processSetup(mRespParamsV3, ccdb, coll.bc_as<aod::BCsWithTimestamps>()); // Update the calibration parameters
+      break;
+    }
+
+    for (auto const& pidId : mEnabledParticles) {
+      reserveTable(pidId, tracks.size(), false);
+    }
+
+    for (auto const& pidId : mEnabledParticlesFull) {
+      reserveTable(pidId, tracks.size(), true);
+    }
+
+    float resolution = 1.f; // Last resolution assigned
+    float nsigma = 0;
+    for (auto const& trk : tracks) { // Loop on all tracks
+      if (!trk.has_collision()) {    // Track was not assigned, cannot compute NSigma (no event time) -> filling with empty table
+        for (auto const& pidId : mEnabledParticles) {
+          makeTableEmpty(pidId, false);
+        }
+        for (auto const& pidId : mEnabledParticlesFull) {
+          makeTableEmpty(pidId, true);
+        }
+        continue;
+      }
+
+      for (auto const& pidId : mEnabledParticles) { // Loop on enabled particle hypotheses
+        switch (pidId) {
+          case idxEl: {
+            nsigma = responseEl.GetSeparation(mRespParamsV3, trk);
+            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDEl);
+            break;
+          }
+          case idxMu: {
+            nsigma = responseMu.GetSeparation(mRespParamsV3, trk);
+            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDMu);
+            break;
+          }
+          case idxPi: {
+            nsigma = responsePi.GetSeparation(mRespParamsV3, trk);
+            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDPi);
+            break;
+          }
+          case idxKa: {
+            nsigma = responseKa.GetSeparation(mRespParamsV3, trk);
+            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDKa);
+            break;
+          }
+          case idxPr: {
+            nsigma = responsePr.GetSeparation(mRespParamsV3, trk);
+            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDPr);
+            break;
+          }
+          case idxDe: {
+            nsigma = responseDe.GetSeparation(mRespParamsV3, trk);
+            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDDe);
+            break;
+          }
+          case idxTr: {
+            nsigma = responseTr.GetSeparation(mRespParamsV3, trk);
+            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDTr);
+            break;
+          }
+          case idxHe: {
+            nsigma = responseHe.GetSeparation(mRespParamsV3, trk);
+            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDHe);
+            break;
+          }
+          case idxAl: {
+            nsigma = responseAl.GetSeparation(mRespParamsV3, trk);
+            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDAl);
+            break;
+          }
+          default:
+            LOG(fatal) << "Wrong particle ID for standard tables";
+            break;
+        }
+        if (enableQaHistograms) {
+          hnsigma[pidId]->Fill(trk.p(), nsigma);
+        }
+      }
+      for (auto const& pidId : mEnabledParticlesFull) { // Loop on enabled particle hypotheses with full tables
+        switch (pidId) {
+          case idxEl: {
+            resolution = responseEl.GetExpectedSigma(mRespParamsV3, trk);
+            nsigma = responseEl.GetSeparation(mRespParamsV3, trk, resolution);
+            tablePIDFullEl(resolution, nsigma);
+            break;
+          }
+          case idxMu: {
+            resolution = responseMu.GetExpectedSigma(mRespParamsV3, trk);
+            nsigma = responseMu.GetSeparation(mRespParamsV3, trk, resolution);
+            tablePIDFullMu(resolution, nsigma);
+            break;
+          }
+          case idxPi: {
+            resolution = responsePi.GetExpectedSigma(mRespParamsV3, trk);
+            nsigma = responsePi.GetSeparation(mRespParamsV3, trk);
+            tablePIDFullPi(resolution, nsigma);
+            break;
+          }
+          case idxKa: {
+            resolution = responseKa.GetExpectedSigma(mRespParamsV3, trk);
+            nsigma = responseKa.GetSeparation(mRespParamsV3, trk, resolution);
+            tablePIDFullKa(resolution, nsigma);
+            break;
+          }
+          case idxPr: {
+            resolution = responsePr.GetExpectedSigma(mRespParamsV3, trk);
+            nsigma = responsePr.GetSeparation(mRespParamsV3, trk, resolution);
+            tablePIDFullPr(resolution, nsigma);
+            break;
+          }
+          case idxDe: {
+            resolution = responseDe.GetExpectedSigma(mRespParamsV3, trk);
+            nsigma = responseDe.GetSeparation(mRespParamsV3, trk, resolution);
+            tablePIDFullDe(resolution, nsigma);
+            break;
+          }
+          case idxTr: {
+            resolution = responseTr.GetExpectedSigma(mRespParamsV3, trk);
+            nsigma = responseTr.GetSeparation(mRespParamsV3, trk, resolution);
+            tablePIDFullTr(resolution, nsigma);
+            break;
+          }
+          case idxHe: {
+            resolution = responseHe.GetExpectedSigma(mRespParamsV3, trk);
+            nsigma = responseHe.GetSeparation(mRespParamsV3, trk, resolution);
+            tablePIDFullHe(resolution, nsigma);
+            break;
+          }
+          case idxAl: {
+            resolution = responseAl.GetExpectedSigma(mRespParamsV3, trk);
+            nsigma = responseAl.GetSeparation(mRespParamsV3, trk, resolution);
+            tablePIDFullAl(resolution, nsigma);
+            break;
+          }
+          default:
+            LOG(fatal) << "Wrong particle ID for full tables";
+            break;
+        }
+        if (enableQaHistograms) {
+          hnsigmaFull[pidId]->Fill(trk.p(), nsigma);
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(tofPidMerge, processRun2, "Produce tables. Set to off if the tables are not required", false);
 };
 
 // Part 4 Beta and TOF mass computation
@@ -1101,17 +1404,22 @@ struct tofPidBeta {
   bool enableTableMass = false;
   void init(o2::framework::InitContext& initContext)
   {
+    mTOFCalibConfig.inheritFromBaseTask(initContext);
     enableTableBeta = isTableRequiredInWorkflow(initContext, "pidTOFbeta");
     enableTableMass = isTableRequiredInWorkflow(initContext, "pidTOFmass");
     if (!enableTableBeta && !enableTableMass && !doprocessRun2 && !doprocessRun3) {
       LOG(info) << "No table or process is enabled. Disabling task";
       return;
     }
-    if (metadataInfo.isFullyDefined()) {
-      if (metadataInfo.isRun3()) {
-        doprocessRun3.value = true;
-      } else {
-        doprocessRun2.value = true;
+
+    if (mTOFCalibConfig.autoSetProcessFunctions()) {
+      LOG(info) << "Autodetecting process functions";
+      if (metadataInfo.isFullyDefined()) {
+        if (metadataInfo.isRun3()) {
+          doprocessRun3.value = true;
+        } else {
+          doprocessRun2.value = true;
+        }
       }
     }
 
@@ -1119,14 +1427,13 @@ struct tofPidBeta {
     if (!enableTOFParams) {
       return;
     }
-    mTOFCalibConfig.setUp(mRespParamsV3, ccdb); // Getting the parametrization parameters
+    mTOFCalibConfig.initSetup(mRespParamsV3, ccdb); // Getting the parametrization parameters
   }
 
   void process(aod::BCs const&) {}
 
-  using TrksRun2 = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::pidEvTimeFlags>;
-  o2::pid::tof::Beta<TrksRun2::iterator> responseBetaRun2;
-  void processRun2(TrksRun2 const& tracks)
+  o2::pid::tof::Beta<Run2TrksWtofWevTime::iterator> responseBetaRun2;
+  void processRun2(Run2TrksWtofWevTime const& tracks)
   {
     if (!enableTableBeta && !enableTableMass) {
       return;
@@ -1140,18 +1447,17 @@ struct tofPidBeta {
       }
       if (enableTableMass) {
         if (enableTOFParams) {
-          tablePIDTOFMass(o2::pid::tof::TOFMass<TrksRun2::iterator>::GetTOFMass(trk.tofExpMom() / (1.f + trk.sign() * mRespParamsV3.getMomentumChargeShift(trk.eta())), beta));
+          tablePIDTOFMass(o2::pid::tof::TOFMass<Run2TrksWtofWevTime::iterator>::GetTOFMass(trk.tofExpMom() / (1.f + trk.sign() * mRespParamsV3.getMomentumChargeShift(trk.eta())), beta));
         } else {
-          tablePIDTOFMass(o2::pid::tof::TOFMass<TrksRun2::iterator>::GetTOFMass(trk, beta));
+          tablePIDTOFMass(o2::pid::tof::TOFMass<Run2TrksWtofWevTime::iterator>::GetTOFMass(trk, beta));
         }
       }
     }
   }
-  PROCESS_SWITCH(tofPidBeta, processRun2, "Process Run3 data i.e. input is TrackIU. If false, taken from metadata automatically", false);
+  PROCESS_SWITCH(tofPidBeta, processRun2, "Process Run3 data i.e. input is TrackIU. If false, taken from metadata automatically", true);
 
-  using Trks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::pidEvTimeFlags>;
-  o2::pid::tof::Beta<Trks::iterator> responseBeta;
-  void processRun3(Trks const& tracks)
+  o2::pid::tof::Beta<Run3TrksWtofWevTime::iterator> responseBeta;
+  void processRun3(Run3TrksWtofWevTime const& tracks)
   {
     if (!enableTableBeta && !enableTableMass) {
       return;
@@ -1166,14 +1472,14 @@ struct tofPidBeta {
       }
       if (enableTableMass) {
         if (enableTOFParams) {
-          tablePIDTOFMass(o2::pid::tof::TOFMass<Trks::iterator>::GetTOFMass(trk.tofExpMom() / (1.f + trk.sign() * mRespParamsV3.getMomentumChargeShift(trk.eta())), beta));
+          tablePIDTOFMass(o2::pid::tof::TOFMass<Run3TrksWtofWevTime::iterator>::GetTOFMass(trk.tofExpMom() / (1.f + trk.sign() * mRespParamsV3.getMomentumChargeShift(trk.eta())), beta));
         } else {
-          tablePIDTOFMass(o2::pid::tof::TOFMass<Trks::iterator>::GetTOFMass(trk, beta));
+          tablePIDTOFMass(o2::pid::tof::TOFMass<Run3TrksWtofWevTime::iterator>::GetTOFMass(trk, beta));
         }
       }
     }
   }
-  PROCESS_SWITCH(tofPidBeta, processRun3, "Process Run3 data i.e. input is TrackIU. If false, taken from metadata automatically", false);
+  PROCESS_SWITCH(tofPidBeta, processRun3, "Process Run3 data i.e. input is TrackIU. If false, taken from metadata automatically", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

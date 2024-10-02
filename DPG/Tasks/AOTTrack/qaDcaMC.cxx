@@ -110,7 +110,8 @@ struct QaDcaMc {
   ConfigurableAxis etaBins{"etaBins", {200, -3.f, 3.f}, "Eta binning"};
   ConfigurableAxis phiBins{"phiBins", {200, 0.f, 6.284f}, "Phi binning"};
   ConfigurableAxis yBins{"yBins", {200, -0.5f, 0.5f}, "Y binning"};
-  ConfigurableAxis dcaBins{"dcaBins", {2000, -1.f, 1.f}, "DCA binning"};
+  ConfigurableAxis dcaBinsxy{"dcaBinsxy", {500, -1.f, 1.f}, "DCAxy binning"};
+  ConfigurableAxis dcaBinsz{"dcaBinsz", {100, -0.1f, 0.1f}, "DCAz binning"};
   Configurable<bool> doPVContributorCut{"doPVContributorCut", false, "Select tracks used for primary vertex recostruction (isPVContributor)"};
 
   // Histograms
@@ -149,8 +150,8 @@ struct QaDcaMc {
     const AxisSpec axisEta{etaBins, "#it{#eta}"};
     const AxisSpec axisY{yBins, "#it{y}"};
     const AxisSpec axisPhi{phiBins, "#it{#varphi} (rad)"};
-    const AxisSpec axisDCAxy{dcaBins, "DCA_{xy} (cm)"};
-    const AxisSpec axisDCAz{dcaBins, "DCA_{z} (cm)"};
+    const AxisSpec axisDCAxy{dcaBinsxy, "DCA_{xy} (cm)"};
+    const AxisSpec axisDCAz{dcaBinsz, "DCA_{z} (cm)"};
 
     const char* partName = particleName(pdgSign, id);
     LOG(info) << "Preparing histograms for particle: " << partName << " pdgSign " << pdgSign;

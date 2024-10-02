@@ -149,9 +149,8 @@ class FemtoUniverseMath
   /// \param part2 Particle 2
   /// \param mass2 Mass of particle 2
   /// \param isiden Identical or non-identical particle pair
-  /// \param islcms LCMS or PRF
   template <typename T>
-  static std::vector<double> getpairmom3d(const T& part1, const float mass1, const T& part2, const float mass2, bool isiden, bool islcms)
+  static std::vector<double> newpairfunc(const T& part1, const float mass1, const T& part2, const float mass2, bool isiden)
   {
     const double E1 = sqrt(pow(part1.px(), 2) + pow(part1.py(), 2) + pow(part1.pz(), 2) + pow(mass1, 2));
     const double E2 = sqrt(pow(part2.px(), 2) + pow(part2.py(), 2) + pow(part2.pz(), 2) + pow(mass2, 2));
@@ -165,80 +164,63 @@ class FemtoUniverseMath
     const double tPx = trackSum.px();
     const double tPy = trackSum.py();
     const double tPz = trackSum.pz();
-    const double tPE = trackSum.E();
+    const double tE = trackSum.E();
 
-    const double tPt = trackSum.pt();
-    const double tMt = trackSum.mt();
-    const double tPinv = std::sqrt((tMt * tMt) - (tPt * tPt));
-
-    float nullmass = 0.0;
-    const double m1 = std::max(nullmass, mass1);
-    const double m2 = std::max(nullmass, mass2);
-
-    const double tQinvL = std::pow((E1 - E2), 2) - std::pow((part1.px() - part2.px()), 2) -
-                          std::pow((part1.py() - part2.py()), 2) - std::pow((part1.pz() - part2.pz()), 2);
-
-    double tQ = (m1 - m2) / tPinv;
-    tQ = ::sqrt(tQ * tQ - tQinvL);
-
-    const double fKStarCalc = tQ / 2.0;
-    vect.push_back(fKStarCalc);
+    const double tPtSq = (tPx * tPx + tPy * tPy);
+    const double tMtSq = (tE * tE - tPz * tPz);
+    const double tM = sqrt(tMtSq - tPtSq);
+    const double tMt = sqrt(tMtSq);
+    const double tPt = sqrt(tPtSq);
 
     // Boost to LCMS
 
-    const double beta = tPz / tPE;
-    const double gamma = tPE / tMt;
+    const double beta = tPz / tE;
+    const double gamma = tE / tMt;
 
-    const double px1L = (part1.px() * tPx + part1.py() * tPy) / tPt;
-    const double py1L = (-part1.px() * tPy + part1.py() * tPx) / tPt;
-    const double pz1L = gamma * (part1.pz() - beta * E1);
-    const double pE1L = gamma * (E1 - beta * part1.pz());
+    const double fDKOut = (part1.px() * tPx + part1.py() * tPy) / tPt;
+    const double fDKSide = (-part1.px() * tPy + part1.py() * tPx) / tPt;
+    const double fDKLong = gamma * (part1.pz() - beta * E1);
+    const double fDE = gamma * (E1 - beta * part1.pz());
 
-    const double px2L = (part2.px() * tPx + part2.py() * tPy) / tPt;
-    const double py2L = (-part2.px() * tPy + part2.py() * tPx) / tPt;
-    const double pz2L = gamma * (part2.pz() - beta * E2);
-    const double pE2L = gamma * (E2 - beta * part2.pz());
+    const double px1LCMS = fDKOut;
+    const double py1LCMS = fDKSide;
+    const double pz1LCMS = fDKLong;
+    const double pE1LCMS = fDE;
 
-    double fDKOutLCMS;
-    double fDKSideLCMS;
-    double fDKLongLCMS;
+    const double px2LCMS = (part2.px() * tPx + part2.py() * tPy) / tPt;
+    const double py2LCMS = (part2.py() * tPx - part2.px() * tPy) / tPt;
+    const double pz2LCMS = gamma * (part2.pz() - beta * E2);
+    const double pE2LCMS = gamma * (E2 - beta * part2.pz());
 
-    double fDKOutPRF;
-    double fDKSidePRF;
-    double fDKLongPRF;
-
-    if (!isiden) {
-      fDKOutLCMS = px1L;
-      fDKSideLCMS = py1L;
-      fDKLongLCMS = pz1L;
-    } else {
-      fDKOutLCMS = px1L - px2L;
-      fDKSideLCMS = py1L - py2L;
-      fDKLongLCMS = pz1L - pz2L;
-    }
+    const double fDKOutLCMS = px1LCMS - px2LCMS;
+    const double fDKSideLCMS = py1LCMS - py2LCMS;
+    const double fDKLongLCMS = pz1LCMS - pz2LCMS;
 
     // Boost to PRF
+
     const double betaOut = tPt / tMt;
-    const double gammaOut = tMt / tPinv;
+    const double gammaOut = tMt / tM;
 
-    if (!isiden) {
-      fDKOutPRF = gammaOut * (fDKOutLCMS - betaOut * pE1L);
-      fDKSidePRF = fDKSideLCMS;
-      fDKLongPRF = fDKLongLCMS;
-    } else {
-      fDKOutPRF = gammaOut * (fDKOutLCMS - betaOut * (pE1L - pE2L));
-      fDKSidePRF = fDKSideLCMS;
-      fDKLongPRF = fDKLongLCMS;
-    }
+    const double fDKOutPRF = gammaOut * (fDKOutLCMS - betaOut * (pE1LCMS - pE2LCMS));
+    const double fDKSidePRF = fDKSideLCMS;
+    const double fDKLongPRF = fDKLongLCMS;
+    const double fKOut = gammaOut * (fDKOut - betaOut * fDE);
 
-    if (islcms) {
+    const double qlcms = sqrt(fDKOutLCMS * fDKOutLCMS + fDKSideLCMS * fDKSideLCMS + fDKLongLCMS * fDKLongLCMS);
+    const double qinv = sqrt(fDKOutPRF * fDKOutPRF + fDKSidePRF * fDKSidePRF + fDKLongPRF * fDKLongPRF);
+    const double kstar = sqrt(fKOut * fKOut + fDKSide * fDKSide + fDKLong * fDKLong);
+
+    if (isiden) {
+      vect.push_back(qinv);
       vect.push_back(fDKOutLCMS);
       vect.push_back(fDKSideLCMS);
       vect.push_back(fDKLongLCMS);
+      vect.push_back(qlcms);
     } else {
-      vect.push_back(fDKOutPRF);
-      vect.push_back(fDKSidePRF);
-      vect.push_back(fDKLongPRF);
+      vect.push_back(kstar);
+      vect.push_back(fDKOut);
+      vect.push_back(fDKSide);
+      vect.push_back(fDKLong);
     }
     return vect;
   }

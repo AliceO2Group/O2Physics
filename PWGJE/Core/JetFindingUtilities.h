@@ -54,6 +54,24 @@ namespace jetfindingutilities
 {
 
 /**
+ * returns true if the object is from the JDummys table
+ */
+template <typename T>
+constexpr bool isDummy()
+{
+  return std::is_same_v<std::decay_t<T>, o2::aod::JDummys::iterator> || std::is_same_v<std::decay_t<T>, o2::aod::JDummys::filtered_iterator>;
+}
+
+/**
+ * returns true if the table is a JDummys table
+ */
+template <typename T>
+constexpr bool isDummyTable()
+{
+  return isDummy<typename T::iterator>() || isDummy<typename T::filtered_iterator>();
+}
+
+/**
  * returns true if the cluster is from an EMCAL table
  */
 template <typename T>
@@ -66,7 +84,7 @@ constexpr bool isEMCALCluster()
  * returns true if the table is an EMCAL table
  */
 template <typename T>
-constexpr bool isEMCALTable()
+constexpr bool isEMCALClusterTable()
 {
   return isEMCALCluster<typename T::iterator>() || isEMCALCluster<typename T::filtered_iterator>();
 }

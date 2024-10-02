@@ -223,7 +223,7 @@ struct HfTaskCharmHadronsFemtoDream {
     for (auto const& [p1, p2] : combinations(CombinationsFullIndexPolicy(sliceTrk1, sliceCharmHad))) {
       // proton track charge
       float chargeTrack = 0.;
-      if ((p1.cut() & 1) == 1) {
+      if ((p1.cut() & 2) == 2) {
         chargeTrack = PositiveCharge;
       } else {
         chargeTrack = NegativeCharge;
@@ -312,7 +312,7 @@ struct HfTaskCharmHadronsFemtoDream {
       for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(sliceTrk1, sliceCharmHad))) {
 
         float chargeTrack = 0.;
-        if ((p1.cut() & 1) == 1) {
+        if ((p1.cut() & 2) == 2) {
           chargeTrack = PositiveCharge;
         } else {
           chargeTrack = NegativeCharge;

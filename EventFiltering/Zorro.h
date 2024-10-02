@@ -23,6 +23,7 @@
 #include "CommonDataFormat/IRFrame.h"
 #include "Framework/HistogramRegistry.h"
 #include "ZorroHelper.h"
+#include "ZorroSummary.h"
 
 namespace o2
 {
@@ -39,6 +40,7 @@ class Zorro
   std::vector<int> initCCDB(o2::ccdb::BasicCCDBManager* ccdb, int runNumber, uint64_t timestamp, std::string tois, int bcTolerance = 500);
   std::bitset<128> fetch(uint64_t bcGlobalId, uint64_t tolerance = 100);
   bool isSelected(uint64_t bcGlobalId, uint64_t tolerance = 100);
+  bool isNotSelectedByAny(uint64_t bcGlobalId, uint64_t tolerance = 100);
 
   void populateHistRegistry(o2::framework::HistogramRegistry& histRegistry, int runNumber, std::string folderName = "Zorro");
 
@@ -47,13 +49,18 @@ class Zorro
   TH1D* getInspectedTVX() const { return mInspectedTVX; }
   std::bitset<128> getLastResult() const { return mLastResult; }
   std::vector<int> getTOIcounters() const { return mTOIcounts; }
+  std::vector<bool> getTriggerOfInterestResults(uint64_t bcGlobalId, uint64_t tolerance = 100);
   std::vector<bool> getTriggerOfInterestResults() const;
 
   void setCCDBpath(std::string path) { mBaseCCDBPath = path; }
   void setBaseCCDBPath(std::string path) { mBaseCCDBPath = path; }
   void setBCtolerance(int tolerance) { mBCtolerance = tolerance; }
 
+  ZorroSummary* getZorroSummary() { return &mZorroSummary; }
+
  private:
+  ZorroSummary mZorroSummary{"ZorroSummary", "ZorroSummary"};
+
   std::string mBaseCCDBPath = "Users/m/mpuccio/EventFiltering/OTS/";
   int mRunNumber = 0;
   TH1* mAnalysedTriggers;           /// Accounting for all triggers in the current run

@@ -46,7 +46,7 @@ o2physics_add_dpl_workflow(nucleustreecreator
 
 o2physics_add_dpl_workflow(lithium4analysis
     SOURCES lithium4analysis.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(nuclei-spectra
@@ -77,4 +77,9 @@ o2physics_add_dpl_workflow(ebye-maker
 o2physics_add_dpl_workflow(cluster-studies-tree-creator
     SOURCES LFTreeCreatorClusterStudies.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(pidtof-generic
+    SOURCES pidTOFGeneric.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::TOFBase
     COMPONENT_NAME Analysis)

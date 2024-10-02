@@ -94,12 +94,16 @@ enum CentMultEstimatorType {
 /// \enum TriggerSelectionType
 /// \brief The type of trigger to apply for event selection
 enum TriggerSelectionType {
-  kNONE = 0,         ///< do not use trigger selection
-  kMB,               ///< Minimum bias trigger
-  kVTXTOFMATCHED,    ///< at least one vertex contributor is matched to TOF
-  kVTXTRDMATCHED,    ///< at least one vertex contributor is matched to TRD
-  kVTXTRDTOFMATCHED, ///< at least one vertex contributor is matched to TRD and TOF
-  knEventSelection   ///< number of triggers for event selection
+  kNONE = 0,              ///< do not use trigger selection
+  kMB,                    ///< Minimum bias trigger
+  kMBEXTRA,               ///< Additional Run3 event quality
+  kVTXTOFMATCHED,         ///< at least one vertex contributor is matched to TOF
+  kVTXTRDMATCHED,         ///< at least one vertex contributor is matched to TRD
+  kVTXTRDTOFMATCHED,      ///< at least one vertex contributor is matched to TRD and TOF
+  kEXTRAVTXTOFMATCHED,    ///< Additional Run3 event quality and at least one vertex contributor is matched to TOF
+  kEXTRAVTXTRDMATCHED,    ///< Additional Run3 event quality and at least one vertex contributor is matched to TRD
+  kEXTRAVTXTRDTOFMATCHED, ///< Additional Run3 event quality and at least one vertex contributor is matched to TRD and TOF
+  knEventSelection        ///< number of triggers for event selection
 };
 
 /// \enum StrongDebugging
@@ -312,12 +316,20 @@ inline TriggerSelectionType getTriggerSelection(std::string const& triggstr)
 {
   if (triggstr.empty() || triggstr == "MB") {
     return kMB;
+  } else if (triggstr == "MBEXTRA") {
+    return kMBEXTRA;
   } else if (triggstr == "VTXTOFMATCHED") {
     return kVTXTOFMATCHED;
   } else if (triggstr == "VTXTRDMATCHED") {
     return kVTXTRDMATCHED;
   } else if (triggstr == "VTXTRDTOFMATCHED") {
     return kVTXTRDTOFMATCHED;
+  } else if (triggstr == "EXTRAVTXTOFMATCHED") {
+    return kEXTRAVTXTOFMATCHED;
+  } else if (triggstr == "EXTRAVTXTRDMATCHED") {
+    return kEXTRAVTXTRDMATCHED;
+  } else if (triggstr == "EXTRAVTXTRDTOFMATCHED") {
+    return kEXTRAVTXTRDTOFMATCHED;
   } else if (triggstr == "None") {
     return kNONE;
   } else {
@@ -481,9 +493,10 @@ inline bool triggerSelectionReco(CollisionObject const& collision)
     case kppRun3:
     case kPbPbRun3: {
       auto run3Accepted = [](auto const& coll) {
+        return coll.sel8();
+      };
+      auto run3ExtraAccepted = [](auto const& coll) {
         return coll.sel8() &&
-               coll.selection_bit(aod::evsel::kNoITSROFrameBorder) &&
-               coll.selection_bit(aod::evsel::kNoTimeFrameBorder) &&
                coll.selection_bit(aod::evsel::kNoSameBunchPileup) &&
                coll.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) &&
                coll.selection_bit(aod::evsel::kIsVertexITSTPC);
@@ -491,6 +504,11 @@ inline bool triggerSelectionReco(CollisionObject const& collision)
       switch (fTriggerSelection) {
         case kMB:
           if (run3Accepted(collision)) {
+            trigsel = true;
+          }
+          break;
+        case kMBEXTRA:
+          if (run3ExtraAccepted(collision)) {
             trigsel = true;
           }
           break;
@@ -506,6 +524,21 @@ inline bool triggerSelectionReco(CollisionObject const& collision)
           break;
         case kVTXTRDTOFMATCHED:
           if (run3Accepted(collision) && collision.selection_bit(aod::evsel::kIsVertexTRDmatched) && collision.selection_bit(aod::evsel::kIsVertexTOFmatched)) {
+            trigsel = true;
+          }
+          break;
+        case kEXTRAVTXTOFMATCHED:
+          if (run3ExtraAccepted(collision) && collision.selection_bit(aod::evsel::kIsVertexTOFmatched)) {
+            trigsel = true;
+          }
+          break;
+        case kEXTRAVTXTRDMATCHED:
+          if (run3ExtraAccepted(collision) && collision.selection_bit(aod::evsel::kIsVertexTRDmatched)) {
+            trigsel = true;
+          }
+          break;
+        case kEXTRAVTXTRDTOFMATCHED:
+          if (run3ExtraAccepted(collision) && collision.selection_bit(aod::evsel::kIsVertexTRDmatched) && collision.selection_bit(aod::evsel::kIsVertexTOFmatched)) {
             trigsel = true;
           }
           break;
@@ -628,51 +661,38 @@ inline float extractMultiplicity(CollisionObject const& collision, CentMultEstim
 
 /// \brief Centrality/multiplicity percentile
 template <typename CollisionObject>
+  requires(o2::aod::HasRun2Centrality<CollisionObject>)
 float getCentMultPercentile(CollisionObject collision)
 {
-  if constexpr (framework::has_type_v<aod::cent::CentRun2V0M, typename CollisionObject::all_columns> ||
-                framework::has_type_v<aod::cent::CentRun2CL0, typename CollisionObject::all_columns> ||
-                framework::has_type_v<aod::cent::CentRun2CL1, typename CollisionObject::all_columns>) {
-    switch (fCentMultEstimator) {
-      case kV0M:
-        return collision.centRun2V0M();
-        break;
-      case kCL0:
-        return collision.centRun2CL0();
-        break;
-      case kCL1:
-        return collision.centRun2CL1();
-        break;
-      default:
-        return 105.0;
-        break;
-    }
+  switch (fCentMultEstimator) {
+    case kV0M:
+      return collision.centRun2V0M();
+    case kCL0:
+      return collision.centRun2CL0();
+    case kCL1:
+      return collision.centRun2CL1();
+    default:
+      return 105.0;
   }
-  if constexpr (framework::has_type_v<aod::cent::CentFV0A, typename CollisionObject::all_columns> ||
-                framework::has_type_v<aod::cent::CentFT0M, typename CollisionObject::all_columns> ||
-                framework::has_type_v<aod::cent::CentFT0A, typename CollisionObject::all_columns> ||
-                framework::has_type_v<aod::cent::CentFT0C, typename CollisionObject::all_columns> ||
-                framework::has_type_v<aod::cent::CentNTPV, typename CollisionObject::all_columns>) {
-    switch (fCentMultEstimator) {
-      case kFV0A:
-        return collision.centFV0A();
-        break;
-      case kFT0M:
-        return collision.centFT0M();
-        break;
-      case kFT0A:
-        return collision.centFT0A();
-        break;
-      case kFT0C:
-        return collision.centFT0C();
-        break;
-      case kNTPV:
-        return collision.centNTPV();
-        break;
-      default:
-        return 105.0;
-        break;
-    }
+}
+
+template <typename CollisionObject>
+  requires(o2::aod::HasCentrality<CollisionObject>)
+float getCentMultPercentile(CollisionObject collision)
+{
+  switch (fCentMultEstimator) {
+    case kFV0A:
+      return collision.centFV0A();
+    case kFT0M:
+      return collision.centFT0M();
+    case kFT0A:
+      return collision.centFT0A();
+    case kFT0C:
+      return collision.centFT0C();
+    case kNTPV:
+      return collision.centNTPV();
+    default:
+      return 105.0;
   }
 }
 
@@ -820,7 +840,7 @@ inline bool matchTrackType(TrackObject const& track)
           }
         };
         auto checkDcaZcut = [&](auto const& track) {
-          return ((maxDcaZPtDep) ? abs(track.dcaZ()) <= maxDcaZPtDep(track.pt()) : true);
+          return ((maxDcaZPtDep) ? std::fabs(track.dcaZ()) <= maxDcaZPtDep(track.pt()) : true);
         };
 
         /* tight pT dependent DCAz cut */

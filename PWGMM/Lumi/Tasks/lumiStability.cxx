@@ -33,7 +33,6 @@ using namespace o2;
 using namespace o2::framework;
 
 using BCsWithTimestamps = soa::Join<aod::BCs, aod::Timestamps>;
-// using CollisionWithFDD = soa::Join<aod::FDDs, aod::Collision>;
 
 struct lumiStabilityTask {
   // Histogram registry: an object to hold your histograms
@@ -89,6 +88,11 @@ struct lumiStabilityTask {
     histos.add("hcollisinTime", "Collision Time; ns; Count ", kTH1F, {axisColisionTime});
 
     // time 32.766 is dummy time
+
+    histos.add("hBcA", "BC pattern A; BC ; It is present", kTH1F, {axisTriggger});
+    histos.add("hBcC", "BC pattern C; BC ; It is present", kTH1F, {axisTriggger});
+    histos.add("hBcB", "BC pattern B; BC ; It is present", kTH1F, {axisTriggger});
+    histos.add("hBcE", "BC pattern Empty; BC ; It is present", kTH1F, {axisTriggger});
 
     // histo about triggers
     histos.add("FDD/hCounts", "0 FDDCount - 1 FDDVertexCount - 2 FDDPPVertexCount - 3 FDDCoincidencesVertexCount - 4 FDDPPCoincidencesVertexCount - 5 FDDPPBotSidesCount; Number; counts", kTH1F, {axisCounts});
@@ -201,7 +205,6 @@ struct lumiStabilityTask {
   {
     uint32_t nOrbitsPerTF = 128; // 128 in 2022, 32 in 2023
     int runNumber = bcs.iteratorAt(0).runNumber();
-    // std::cout << ">>>>>>>>>>>>>>>>> Run Number: " << runNumber << std::endl;
     if (runNumber != lastRunNumber) {
       lastRunNumber = runNumber; // do it only once
       int64_t tsSOR = 0;

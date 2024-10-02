@@ -135,6 +135,13 @@ std::vector<int> Zorro::initCCDB(o2::ccdb::BasicCCDBManager* ccdb, int runNumber
   for (size_t i{0}; i < mTOIs.size(); ++i) {
     LOGF(info, ">>> %s : %i", mTOIs[i].data(), mTOIidx[i]);
   }
+  mZorroSummary.setupTOIs(mTOIs.size(), tois);
+  std::vector<double> toiCounters(mTOIs.size(), 0.);
+  for (size_t i{0}; i < mTOIs.size(); ++i) {
+    toiCounters[i] = mSelections->GetBinContent(mTOIidx[i] + 2);
+  }
+  mZorroSummary.setupRun(runNumber, mInspectedTVX->GetBinContent(1), toiCounters);
+
   return mTOIidx;
 }
 
@@ -174,6 +181,7 @@ bool Zorro::isSelected(uint64_t bcGlobalId, uint64_t tolerance)
 {
   uint64_t lastSelectedIdx = mLastSelectedIdx;
   fetch(bcGlobalId, tolerance);
+  bool retVal{false};
   for (size_t i{0}; i < mTOIidx.size(); ++i) {
     if (mTOIidx[i] < 0) {
       continue;
@@ -181,11 +189,18 @@ bool Zorro::isSelected(uint64_t bcGlobalId, uint64_t tolerance)
       mTOIcounts[i] += (lastSelectedIdx != mLastSelectedIdx); /// Avoid double counting
       if (mAnalysedTriggersOfInterest && lastSelectedIdx != mLastSelectedIdx) {
         mAnalysedTriggersOfInterest->Fill(i);
+        mZorroSummary.increaseTOIcounter(mRunNumber, i);
       }
-      return true;
+      retVal = true;
     }
   }
-  return false;
+  return retVal;
+}
+
+std::vector<bool> Zorro::getTriggerOfInterestResults(uint64_t bcGlobalId, uint64_t tolerance)
+{
+  fetch(bcGlobalId, tolerance);
+  return getTriggerOfInterestResults();
 }
 
 std::vector<bool> Zorro::getTriggerOfInterestResults() const
@@ -199,4 +214,10 @@ std::vector<bool> Zorro::getTriggerOfInterestResults() const
     }
   }
   return results;
+}
+
+bool Zorro::isNotSelectedByAny(uint64_t bcGlobalId, uint64_t tolerance)
+{
+  fetch(bcGlobalId, tolerance);
+  return mLastResult.none();
 }

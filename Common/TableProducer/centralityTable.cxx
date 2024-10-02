@@ -23,12 +23,14 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-
+#include "MetadataHelper.h"
 #include "TableHelper.h"
 #include "TList.h"
 
 using namespace o2;
 using namespace o2::framework;
+
+MetadataHelper metadataInfo; // Metadata helper
 
 static constexpr int kCentRun2V0Ms = 0;
 static constexpr int kCentRun2V0As = 1;
@@ -76,12 +78,15 @@ struct CentralityTable {
   Configurable<LabeledArray<int>> enabledTables{"enabledTables",
                                                 {defaultParameters[0], nTables, nParameters, tableNames, parameterNames},
                                                 "Produce tables depending on needs. Values different than -1 override the automatic setup: the corresponding table can be set off (0) or on (1)"};
-  Configurable<std::string> ccdbUrl{"ccdburl", "http://alice-ccdb.cern.ch", "The CCDB endpoint url address"};
-  Configurable<std::string> ccdbPath{"ccdbpath", "Centrality/Estimators", "The CCDB path for centrality/multiplicity information"};
-  Configurable<std::string> genName{"genname", "", "Genearator name: HIJING, PYTHIA8, ... Default: \"\""};
-  Configurable<bool> doNotCrashOnNull{"doNotCrashOnNull", false, {"Option to not crash on null and instead fill required tables with dummy info"}};
+  struct : ConfigurableGroup {
+    Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "The CCDB endpoint url address"};
+    Configurable<std::string> ccdbPath{"ccdbpath", "Centrality/Estimators", "The CCDB path for centrality/multiplicity information"};
+    Configurable<std::string> genName{"genname", "", "Genearator name: HIJING, PYTHIA8, ... Default: \"\""};
+    Configurable<bool> doNotCrashOnNull{"doNotCrashOnNull", false, {"Option to not crash on null and instead fill required tables with dummy info"}};
+    Configurable<std::string> reconstructionPass{"reconstructionPass", "", {"Apass to use when fetching the calibration tables. Empty (default) does not check for any pass. Use `metadata` to fetch it from the AO2D metadata. Otherwise it will override the metadata."}};
+  } ccdbConfig;
+
   Configurable<bool> embedINELgtZEROselection{"embedINELgtZEROselection", false, {"Option to do percentile 100.5 if not INELgtZERO"}};
-  Configurable<bool> fatalizeMultCalibSanity{"fatalizeMultCalibSanity", false, {"Option to do fatalize the sanity check on the multiplicity calibration"}};
   Configurable<bool> produceHistograms{"produceHistograms", false, {"Option to produce debug histograms"}};
   ConfigurableAxis binsPercentile{"binsPercentile", {VARIABLE_WIDTH, 0, 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.011, 0.012, 0.013, 0.014, 0.015, 0.016, 0.017, 0.018, 0.019, 0.02, 0.021, 0.022, 0.023, 0.024, 0.025, 0.026, 0.027, 0.028, 0.029, 0.03, 0.031, 0.032, 0.033, 0.034, 0.035, 0.036, 0.037, 0.038, 0.039, 0.04, 0.041, 0.042, 0.043, 0.044, 0.045, 0.046, 0.047, 0.048, 0.049, 0.05, 0.051, 0.052, 0.053, 0.054, 0.055, 0.056, 0.057, 0.058, 0.059, 0.06, 0.061, 0.062, 0.063, 0.064, 0.065, 0.066, 0.067, 0.068, 0.069, 0.07, 0.071, 0.072, 0.073, 0.074, 0.075, 0.076, 0.077, 0.078, 0.079, 0.08, 0.081, 0.082, 0.083, 0.084, 0.085, 0.086, 0.087, 0.088, 0.089, 0.09, 0.091, 0.092, 0.093, 0.094, 0.095, 0.096, 0.097, 0.098, 0.099, 0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.2, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.3, 0.31, 0.32, 0.33, 0.34, 0.35, 0.36, 0.37, 0.38, 0.39, 0.4, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49, 0.5, 0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.6, 0.61, 0.62, 0.63, 0.64, 0.65, 0.66, 0.67, 0.68, 0.69, 0.7, 0.71, 0.72, 0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 0.8, 0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.9, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4.0, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 5.0, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 5.9, 6.0, 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8, 6.9, 7.0, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9, 8.0, 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 8.7, 8.8, 8.9, 9.0, 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7, 9.8, 9.9, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 21.0, 22.0, 23.0, 24.0, 25.0, 26.0, 27.0, 28.0, 29.0, 30.0, 31.0, 32.0, 33.0, 34.0, 35.0, 36.0, 37.0, 38.0, 39.0, 40.0, 41.0, 42.0, 43.0, 44.0, 45.0, 46.0, 47.0, 48.0, 49.0, 50.0, 51.0, 52.0, 53.0, 54.0, 55.0, 56.0, 57.0, 58.0, 59.0, 60.0, 61.0, 62.0, 63.0, 64.0, 65.0, 66.0, 67.0, 68.0, 69.0, 70.0, 71.0, 72.0, 73.0, 74.0, 75.0, 76.0, 77.0, 78.0, 79.0, 80.0, 81.0, 82.0, 83.0, 84.0, 85.0, 86.0, 87.0, 88.0, 89.0, 90.0, 91.0, 92.0, 93.0, 94.0, 95.0, 96.0, 97.0, 98.0, 99.0, 100.0}, "Binning of the percentile axis"};
 
@@ -208,7 +213,7 @@ struct CentralityTable {
       doprocessRun3.value = false;
     }
 
-    ccdb->setURL(ccdbUrl);
+    ccdb->setURL(ccdbConfig.ccdburl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
@@ -233,6 +238,7 @@ struct CentralityTable {
     histos.addClone("FT0C/", "sel8FT0C/");
     histos.addClone("FT0A/", "sel8FT0A/");
 
+    histos.print();
     listCalib.setObject(new TList);
   }
 
@@ -244,7 +250,18 @@ struct CentralityTable {
     auto bc = collision.bc_as<BCsWithTimestampsAndRun2Infos>();
     if (bc.runNumber() != mRunNumber) {
       LOGF(debug, "timestamp=%llu", bc.timestamp());
-      TList* callst = ccdb->getForTimeStamp<TList>(ccdbPath, bc.timestamp());
+      TList* callst = nullptr;
+      if (ccdbConfig.reconstructionPass.value == "") {
+        callst = ccdb->getForTimeStamp<TList>(ccdbConfig.ccdbPath, bc.timestamp());
+      } else if (ccdbConfig.reconstructionPass.value == "metadata") {
+        std::map<std::string, std::string> metadata;
+        metadata["RecoPassName"] = metadataInfo.get("RecoPassName");
+        callst = ccdb->getSpecific<TList>(ccdbConfig.ccdbPath, bc.timestamp(), metadata);
+      } else {
+        std::map<std::string, std::string> metadata;
+        metadata["RecoPassName"] = ccdbConfig.reconstructionPass.value;
+        callst = ccdb->getSpecific<TList>(ccdbConfig.ccdbPath, bc.timestamp(), metadata);
+      }
 
       Run2V0MInfo.mCalibrationStored = false;
       Run2V0AInfo.mCalibrationStored = false;
@@ -266,9 +283,9 @@ struct CentralityTable {
           Run2V0MInfo.mhVtxAmpCorrV0A = getccdb("hVtx_fAmplitude_V0A_Normalized");
           Run2V0MInfo.mhVtxAmpCorrV0C = getccdb("hVtx_fAmplitude_V0C_Normalized");
           Run2V0MInfo.mhMultSelCalib = getccdb("hMultSelCalib_V0M");
-          Run2V0MInfo.mMCScale = getformulaccdb(TString::Format("%s-V0M", genName->c_str()).Data());
+          Run2V0MInfo.mMCScale = getformulaccdb(TString::Format("%s-V0M", ccdbConfig.genName->c_str()).Data());
           if ((Run2V0MInfo.mhVtxAmpCorrV0A != nullptr) && (Run2V0MInfo.mhVtxAmpCorrV0C != nullptr) && (Run2V0MInfo.mhMultSelCalib != nullptr)) {
-            if (genName->length() != 0) {
+            if (ccdbConfig.genName->length() != 0) {
               if (Run2V0MInfo.mMCScale != nullptr) {
                 for (int ixpar = 0; ixpar < 6; ++ixpar) {
                   Run2V0MInfo.mMCScalePars[ixpar] = Run2V0MInfo.mMCScale->GetParameter(ixpar);
@@ -337,7 +354,7 @@ struct CentralityTable {
           mRunNumber = bc.runNumber();
         }
       } else {
-        if (!doNotCrashOnNull) { // default behaviour: crash
+        if (!ccdbConfig.doNotCrashOnNull) { // default behaviour: crash
           LOGF(fatal, "Centrality calibration is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
         } else { // only if asked: continue filling with non-valid values (105)
           LOGF(info, "Centrality calibration is not available in CCDB for run=%d at timestamp=%llu, will fill tables with dummy values", bc.runNumber(), bc.timestamp());
@@ -457,7 +474,29 @@ struct CentralityTable {
       auto bc = collision.template bc_as<BCsWithTimestamps>();
       if (bc.runNumber() != mRunNumber) {
         LOGF(info, "timestamp=%llu, run number=%d", bc.timestamp(), bc.runNumber());
-        TList* callst = ccdb->getForTimeStamp<TList>(ccdbPath, bc.timestamp());
+        TList* callst = nullptr;
+        // Check if the ccdb path is a root file
+        if (ccdbConfig.ccdbPath.value.find(".root") != std::string::npos) {
+          TFile f(ccdbConfig.ccdbPath.value.c_str(), "READ");
+          f.GetObject(ccdbConfig.reconstructionPass.value.c_str(), callst);
+          if (!callst) {
+            f.ls();
+            LOG(fatal) << "No calibration list " << ccdbConfig.reconstructionPass.value << " found in the file " << ccdbConfig.ccdbPath.value;
+          }
+        } else {
+          if (ccdbConfig.reconstructionPass.value == "") {
+            callst = ccdb->getForTimeStamp<TList>(ccdbConfig.ccdbPath, bc.timestamp());
+          } else if (ccdbConfig.reconstructionPass.value == "metadata") {
+            std::map<std::string, std::string> metadata;
+            metadata["RecoPassName"] = metadataInfo.get("RecoPassName");
+            callst = ccdb->getSpecific<TList>(ccdbConfig.ccdbPath, bc.timestamp(), metadata);
+          } else {
+            std::map<std::string, std::string> metadata;
+            metadata["RecoPassName"] = ccdbConfig.reconstructionPass.value;
+            callst = ccdb->getSpecific<TList>(ccdbConfig.ccdbPath, bc.timestamp(), metadata);
+          }
+        }
+
         FV0AInfo.mCalibrationStored = false;
         FT0MInfo.mCalibrationStored = false;
         FT0AInfo.mCalibrationStored = false;
@@ -494,22 +533,22 @@ struct CentralityTable {
           for (auto const& table : mEnabledTables) {
             switch (table) {
               case kCentFV0As:
-                getccdb(FV0AInfo, genName);
+                getccdb(FV0AInfo, ccdbConfig.genName);
                 break;
               case kCentFT0Ms:
-                getccdb(FT0MInfo, genName);
+                getccdb(FT0MInfo, ccdbConfig.genName);
                 break;
               case kCentFT0As:
-                getccdb(FT0AInfo, genName);
+                getccdb(FT0AInfo, ccdbConfig.genName);
                 break;
               case kCentFT0Cs:
-                getccdb(FT0CInfo, genName);
+                getccdb(FT0CInfo, ccdbConfig.genName);
                 break;
               case kCentFDDMs:
-                getccdb(FDDMInfo, genName);
+                getccdb(FDDMInfo, ccdbConfig.genName);
                 break;
               case kCentNTPVs:
-                getccdb(NTPVInfo, genName);
+                getccdb(NTPVInfo, ccdbConfig.genName);
                 break;
               default:
                 LOGF(fatal, "Table %d not supported in Run3", table);
@@ -518,7 +557,7 @@ struct CentralityTable {
           }
           mRunNumber = bc.runNumber();
         } else {
-          if (!doNotCrashOnNull) { // default behaviour: crash
+          if (!ccdbConfig.doNotCrashOnNull) { // default behaviour: crash
             LOGF(fatal, "Centrality calibration is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
           } else { // only if asked: continue filling with non-valid values (105)
             LOGF(info, "Centrality calibration is not available in CCDB for run=%d at timestamp=%llu, will fill tables with dummy values", bc.runNumber(), bc.timestamp());
@@ -585,11 +624,11 @@ struct CentralityTable {
               if (produceHistograms.value) {
                 histos.fill(HIST("FT0A/percentile"), perC);
                 histos.fill(HIST("FT0A/percentilevsPV"), perC, collision.multNTracksPV());
-                histos.fill(HIST("FT0A/MultvsPV"), collision.multZeqFT0A(), collision.multNTracksPV());
+                histos.fill(HIST("FT0A/MultvsPV"), collision.multZeqFT0A() + collision.multZeqFT0C(), collision.multNTracksPV());
                 if (collision.sel8()) {
                   histos.fill(HIST("sel8FT0A/percentile"), perC);
                   histos.fill(HIST("sel8FT0A/percentilevsPV"), perC, collision.multNTracksPV());
-                  histos.fill(HIST("sel8FT0A/MultvsPV"), collision.multZeqFT0A(), collision.multNTracksPV());
+                  histos.fill(HIST("sel8FT0A/MultvsPV"), collision.multZeqFT0A() + collision.multZeqFT0C(), collision.multNTracksPV());
                 }
               }
             }
@@ -600,11 +639,11 @@ struct CentralityTable {
               if (produceHistograms.value) {
                 histos.fill(HIST("FT0C/percentile"), perC);
                 histos.fill(HIST("FT0C/percentilevsPV"), perC, collision.multNTracksPV());
-                histos.fill(HIST("FT0C/MultvsPV"), collision.multZeqFT0C(), collision.multNTracksPV());
+                histos.fill(HIST("FT0C/MultvsPV"), collision.multZeqFT0A() + collision.multZeqFT0C(), collision.multNTracksPV());
                 if (collision.sel8()) {
                   histos.fill(HIST("sel8FT0C/percentile"), perC);
                   histos.fill(HIST("sel8FT0C/percentilevsPV"), perC, collision.multNTracksPV());
-                  histos.fill(HIST("sel8FT0C/MultvsPV"), collision.multZeqFT0C(), collision.multNTracksPV());
+                  histos.fill(HIST("sel8FT0C/MultvsPV"), collision.multZeqFT0A() + collision.multZeqFT0C(), collision.multNTracksPV());
                 }
               }
             }
@@ -646,4 +685,8 @@ struct CentralityTable {
   PROCESS_SWITCH(CentralityTable, processRun3FT0, "Provide Run3 calibrated centrality/multiplicity percentiles tables for FT0 only", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<CentralityTable>(cfgc)}; }
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
+  metadataInfo.initMetadata(cfgc);
+  return WorkflowSpec{adaptAnalysisTask<CentralityTable>(cfgc)};
+}
