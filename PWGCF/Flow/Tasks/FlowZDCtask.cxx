@@ -110,7 +110,6 @@ struct FlowZDCtask {
   OutputObj<TProfile> pZPvsFT0Ccent{TProfile("pZPvsFT0Ccent", "ZP Energy vs FT0C Centrality", 10, 0, 100, 0, 50000)};
   OutputObj<TProfile> pZNratiovscent{TProfile("pZNratiovscent", "Ratio ZNC/ZNA vs FT0C Centrality", 100, 0, 100, 0, 5)};
   OutputObj<TProfile> pZPratiovscent{TProfile("pZPratiovscent", "Ratio ZPC/ZPA vs FT0C Centrality", 100, 0, 100, 0, 5)};
- 
 
   double sumCosPsiDiff = 0.0; // Sum of cos(psiZNC) - cos(psiZNA)
   int countEvents = 0;        // Count of processed events
@@ -167,9 +166,6 @@ struct FlowZDCtask {
 
     histos.add("hCentFT0C", "FT0C Centrality Distribution", kTH1F, {{100, 0, 105}});
     histos.add("hFT0MAmp", "hFT0MAmp", kTH1F, {{nBinsAmp, 0, 40000}} );
-       
-
-
     // for q vector recentering
     histos.add("revsimag", "revsimag", kTH2F, {axisREQ, axisIMQ});
 
@@ -337,7 +333,7 @@ void processNeutronSkin(aodCollisions::iterator const& collision, aod::Zdcs cons
         auto ft0Entry = ft0.iteratorAt(collision.globalIndex()) ;
         float sumA = ft0Entry.sumAmpA();
         float sumC = ft0Entry.sumAmpC();
-        float FT0MAmp = sumA + sumC; 
+        float FT0MAmp = sumA + sumC;
         histos.fill(HIST("hFT0MAmp"), FT0MAmp);
 
         // Access ZDC data
@@ -349,20 +345,16 @@ void processNeutronSkin(aodCollisions::iterator const& collision, aod::Zdcs cons
         float sumZN = sumZNC + sumZNA;
         float sumZP = sumZPC + sumZPA;
 
-        float ratioZN = sumZNC / sumZNA ; 
-        float ratioZP = sumZPC / sumZPA; 
+        float ratioZN = sumZNC / sumZNA; 
+        float ratioZP = sumZPC / sumZPA;
         pZNratiovscent->Fill(cent, ratioZN);
-        pZPratiovscent->Fill(cent, ratioZP);        
+        pZPratiovscent->Fill(cent, ratioZP);       
         histos.fill(HIST("ZNenergy"), sumZN); 
-        histos.fill(HIST("ZPenergy"), sumZP); 
+        histos.fill(HIST("ZPenergy"), sumZP);
         pZNvsFT0Ccent->Fill(cent, sumZN);
         pZPvsFT0Ccent->Fill(cent, sumZP);
         pZNvsFT0MAmp->Fill(FT0MAmp, sumZN);
         pZPvsFT0MAmp->Fill(FT0MAmp, sumZP);
-
-
-
-   
 }
 
 
