@@ -120,7 +120,7 @@ struct ParticleCounter {
     return counter;
   }
 
-  float countEnergyInAcceptance(const aod::McParticles& mcParticles, , const float etamin, const float etamax, const bool requireNeutral = false)
+  float countEnergyInAcceptance(const aod::McParticles& mcParticles, const float etamin, const float etamax, const bool requireNeutral = false)
   {
     // static_assert(etamin < etamax, "etamin must be smaller than etamax");
     float counter = 0.f;
