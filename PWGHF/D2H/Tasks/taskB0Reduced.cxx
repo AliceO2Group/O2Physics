@@ -145,11 +145,6 @@ struct HfTaskB0Reduced {
       LOGP(fatal, "Only one process function for MC can be enabled at a time.");
     }
 
-    if (((doprocessData || doprocessDataWithDmesMl) && fillTree && downSampleBkgFactor >= 1.) ||
-        ((doprocessMc || doprocessMcWithDmesMl) && fillTree && fillBackground && downSampleBkgFactor >= 1.)) {
-      LOGP(fatal, "Set downSampleBkgFactor below unity when filling tree with background.");
-    }
-
     const AxisSpec axisMlScore{100, 0.f, 1.f};
     const AxisSpec axisMassB0{300, 4.5f, 6.0f};
     const AxisSpec axisMassDminus{300, 1.75f, 2.05f};
@@ -531,26 +526,27 @@ struct HfTaskB0Reduced {
           isSignal,
           flagWrongCollision,
           ptMother);
-      }
-      if constexpr (withDecayTypeCheck) {
-        float candidateMlScoreSig = -1;
-        if constexpr (withB0Ml) {
-          candidateMlScoreSig = candidate.mlProbB0ToDPi();
+
+        if constexpr (withDecayTypeCheck) {
+          float candidateMlScoreSig = -1;
+          if constexpr (withB0Ml) {
+            candidateMlScoreSig = candidate.mlProbB0ToDPi();
+          }
+          hfRedB0McCheck(
+            flagMcMatchRec,
+            flagWrongCollision,
+            invMassD,
+            ptD,
+            invMassB0,
+            ptCandB0,
+            candidateMlScoreSig,
+            candidate.pdgCodeBeautyMother(),
+            candidate.pdgCodeCharmMother(),
+            candidate.pdgCodeProng0(),
+            candidate.pdgCodeProng1(),
+            candidate.pdgCodeProng2(),
+            candidate.pdgCodeProng3());
         }
-        hfRedB0McCheck(
-          flagMcMatchRec,
-          flagWrongCollision,
-          invMassD,
-          ptD,
-          invMassB0,
-          ptCandB0,
-          candidateMlScoreSig,
-          candidate.pdgCodeBeautyMother(),
-          candidate.pdgCodeCharmMother(),
-          candidate.pdgCodeProng0(),
-          candidate.pdgCodeProng1(),
-          candidate.pdgCodeProng2(),
-          candidate.pdgCodeProng3());
       }
     }
   }
