@@ -55,7 +55,7 @@ struct resonances_tutorial {
 
   // Fill histograms (main function)
   template <bool IsMC, bool IsMix, typename CollisionType, typename TracksType>
-  void fillHistograms(const CollisionType& collision, const TracksType& dTracks1, const TracksType& dTracks2)
+  void fillHistograms(const CollisionType& /*collision*/, const TracksType& dTracks1, const TracksType& /*dTracks2*/)
   {
     for (auto track1 : dTracks1) { // loop over all dTracks1
       if (!trackCut(track1))

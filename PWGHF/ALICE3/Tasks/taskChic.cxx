@@ -155,7 +155,7 @@ struct HfTaskChicMc {
 
   void process(soa::Filtered<soa::Join<aod::HfCandChic, aod::HfSelChicToJpsiGamma, aod::HfCandChicMcRec>> const& candidates,
                soa::Join<aod::McParticles, aod::HfCandChicMcGen> const& mcParticles,
-               aod::TracksWMc const& tracks)
+               aod::TracksWMc const&)
   {
     // MC rec.
     int decayMode = modeChicToJpsiToMuMuGamma ? hf_cand_chic::DecayType::ChicToJpsiToMuMuGamma : hf_cand_chic::DecayType::ChicToJpsiToEEGamma;
@@ -204,7 +204,7 @@ struct HfTaskChicMc {
     for (const auto& particle : mcParticles) {
       if (particle.flagMcMatchGen() == 1 << decayMode) {
         auto mchic = o2::constants::physics::MassChiC1; // chi_c1(1p)
-        if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, mchic)) > yCandMax) {
+        if (yCandMax >= 0. && std::abs(RecoDecay::y(particle.pVector(), mchic)) > yCandMax) {
           continue;
         }
 

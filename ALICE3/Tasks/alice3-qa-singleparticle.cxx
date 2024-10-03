@@ -134,6 +134,8 @@ struct Alice3SingleParticle {
     histos.add("particle/primariesEta", "Particle Eta (primary) " + tit, kTH1D, {axisEta});
     histos.add("particle/secondariesEta", "Particle Eta (secondary) " + tit, kTH1D, {axisEta});
     histos.add("particle/Y", "Particle Y " + tit, kTH1D, {axisY});
+    histos.add("particle/primariesY", "Particle Y (primary)" + tit, kTH1D, {axisY});
+    histos.add("particle/secondariesY", "Particle Y (secondary)" + tit, kTH1D, {axisY});
     histos.add("particle/EvsPz", "Particle E vs Pz " + tit, kTH2D, {axisE, axisPz});
     histos.add("particle/YvzPz", "Particle Y vs Pz " + tit, kTH2D, {axisY, axisPz});
     histos.add("particle/EtavzPz", "Particle Eta vs Pz " + tit, kTH2D, {axisEta, axisPz});
@@ -149,6 +151,10 @@ struct Alice3SingleParticle {
     histos.add("particle/daughters/prodVx", "Daughters Prod. Vertex X " + tit, kTH1D, {axisProdx});
     histos.add("particle/daughters/prodVy", "Daughters Prod. Vertex Y " + tit, kTH1D, {axisPrody});
     histos.add("particle/daughters/prodVz", "Daughters Prod. Vertex Z " + tit, kTH1D, {axisProdz});
+    histos.add("particle/daughters/prodDistanceX", "Daughters Prod. distance " + tit, kTH1D, {axisProdx});
+    histos.add("particle/daughters/prodDistanceY", "Daughters Prod. distance " + tit, kTH1D, {axisPrody});
+    histos.add("particle/daughters/prodDistanceZ", "Daughters Prod. distance " + tit, kTH1D, {axisProdz});
+    histos.add("particle/daughters/prodDistanceVsPt", "Daughters Prod. distance " + tit, kTH2D, {axisPt, axisProdRadius});
     histos.add("particle/daughters/prodRadiusVsPt", "Daughters Prod. Vertex Radius " + tit, kTH2D, {axisPt, axisProdRadius});
     histos.add("particle/daughters/prodRadius3DVsPt", "Daughters Prod. Vertex Radius XYZ " + tit, kTH2D, {axisPt, axisProdRadius});
 
@@ -160,6 +166,16 @@ struct Alice3SingleParticle {
     histos.add("particle/mothers/prodVz", "Mothers Prod. Vertex Z " + tit, kTH1D, {axisProdz});
     histos.add("particle/mothers/prodRadiusVsPt", "Mothers Prod. Vertex Radius " + tit, kTH2D, {axisPt, axisProdRadius});
     histos.add("particle/mothers/prodRadius3DVsPt", "Mothers Prod. Vertex Radius XYZ " + tit, kTH2D, {axisPt, axisProdRadius});
+
+    histos.add("particle/mothers/mothers/PDGs", "Mothers mothers PDGs " + tit, kTH2D, {axisPDGs, axisCharge});
+    histos.add("particle/mothers/mothers/PDGsPrimaries", "Mothers mothers PDGs Primaries of " + tit, kTH2D, {axisPDGs, axisCharge});
+    histos.add("particle/mothers/mothers/PDGsSecondaries", "Mothers mothers PDGs Secondaries of " + tit, kTH2D, {axisPDGs, axisCharge});
+    histos.add("particle/mothers/mothers/prodVx", "Mothers mothers Prod. Vertex X " + tit, kTH1D, {axisProdx});
+    histos.add("particle/mothers/mothers/prodVy", "Mothers mothers Prod. Vertex Y " + tit, kTH1D, {axisPrody});
+    histos.add("particle/mothers/mothers/prodVz", "Mothers mothers Prod. Vertex Z " + tit, kTH1D, {axisProdz});
+    histos.add("particle/mothers/mothers/prodRadiusVsPt", "Mothers mothers Prod. Vertex Radius " + tit, kTH2D, {axisPt, axisProdRadius});
+    histos.add("particle/mothers/mothers/prodRadius3DVsPt", "Mothers mothers Prod. Vertex Radius XYZ " + tit, kTH2D, {axisPt, axisProdRadius});
+
     if (doprocessParticleOnly) {
       return;
     }
@@ -235,10 +251,12 @@ struct Alice3SingleParticle {
         histos.fill(HIST("particle/primariesPt"), mcParticle.pt());
         histos.fill(HIST("particle/primariesP"), mcParticle.p());
         histos.fill(HIST("particle/primariesEta"), mcParticle.eta());
+        histos.fill(HIST("particle/primariesY"), mcParticle.y());
       } else {
         histos.fill(HIST("particle/secondariesPt"), mcParticle.pt());
         histos.fill(HIST("particle/secondariesP"), mcParticle.p());
         histos.fill(HIST("particle/secondariesEta"), mcParticle.eta());
+        histos.fill(HIST("particle/secondariesY"), mcParticle.y());
       }
       histos.fill(HIST("particle/EvsPz"), mcParticle.e(), mcParticle.pz());
       histos.fill(HIST("particle/Y"), mcParticle.y());
@@ -268,12 +286,16 @@ struct Alice3SingleParticle {
           histos.fill(HIST("particle/daughters/prodVx"), daughter.vx());
           histos.fill(HIST("particle/daughters/prodVy"), daughter.vy());
           histos.fill(HIST("particle/daughters/prodVz"), daughter.vz());
-          histos.fill(HIST("particle/daughters/prodRadiusVsPt"), mcParticle.pt(), std::sqrt(mcParticle.vx() * mcParticle.vx() + mcParticle.vy() * mcParticle.vy()));
-          histos.fill(HIST("particle/daughters/prodRadius3DVsPt"), mcParticle.pt(), std::sqrt(mcParticle.vx() * mcParticle.vx() + mcParticle.vy() * mcParticle.vy() + mcParticle.vz() * mcParticle.vz()));
+          histos.fill(HIST("particle/daughters/prodDistanceX"), daughter.vx() - mcParticle.vx());
+          histos.fill(HIST("particle/daughters/prodDistanceY"), daughter.vy() - mcParticle.vy());
+          histos.fill(HIST("particle/daughters/prodDistanceZ"), daughter.vz() - mcParticle.vz());
+          histos.fill(HIST("particle/daughters/prodDistanceVsPt"), mcParticle.pt(), std::sqrt((daughter.vx() - mcParticle.vx()) * (daughter.vx() - mcParticle.vx()) + (daughter.vy() - mcParticle.vy()) * (daughter.vy() - mcParticle.vy()) + (daughter.vz() - mcParticle.vz()) * (daughter.vz() - mcParticle.vz())));
+          histos.fill(HIST("particle/daughters/prodRadiusVsPt"), mcParticle.pt(), std::sqrt(daughter.vx() * daughter.vx() + daughter.vy() * daughter.vy()));
+          histos.fill(HIST("particle/daughters/prodRadius3DVsPt"), mcParticle.pt(), std::sqrt(daughter.vx() * daughter.vx() + daughter.vy() * daughter.vy() + daughter.vz() * daughter.vz()));
         }
       }
       if (mcParticle.has_mothers()) {
-        auto mothers = mcParticle.mothers_as<aod::McParticles>();
+        const auto& mothers = mcParticle.mothers_as<aod::McParticles>();
         for (const auto& mother : mothers) {
           const auto& pdgStringMot = getPdgCodeString(mother);
           const auto& pdgChargeMot = getCharge(mother);
@@ -290,6 +312,26 @@ struct Alice3SingleParticle {
           histos.fill(HIST("particle/mothers/prodVz"), mother.vz());
           histos.fill(HIST("particle/mothers/prodRadiusVsPt"), mother.pt(), std::sqrt(mother.vx() * mother.vx() + mother.vy() * mother.vy()));
           histos.fill(HIST("particle/mothers/prodRadius3DVsPt"), mother.pt(), std::sqrt(mother.vx() * mother.vx() + mother.vy() * mother.vy() + mother.vz() * mother.vz()));
+          if (mother.has_mothers()) {
+            const auto& mothers2 = mother.mothers_as<aod::McParticles>();
+            for (const auto& mother2 : mothers2) {
+              const auto& pdgStringMot2 = getPdgCodeString(mother2);
+              const auto& pdgChargeMot2 = getCharge(mother2);
+
+              histos.get<TH2>(HIST("particle/mothers/mothers/PDGs"))->Fill(pdgStringMot2, pdgChargeMot2, 1.f);
+              if (mcParticle.isPhysicalPrimary()) {
+                histos.get<TH2>(HIST("particle/mothers/mothers/PDGsPrimaries"))->Fill(pdgStringMot2, pdgChargeMot2, 1.f);
+              } else {
+                histos.get<TH2>(HIST("particle/mothers/mothers/PDGsSecondaries"))->Fill(pdgStringMot2, pdgChargeMot2, 1.f);
+              }
+
+              histos.fill(HIST("particle/mothers/mothers/prodVx"), mother2.vx());
+              histos.fill(HIST("particle/mothers/mothers/prodVy"), mother2.vy());
+              histos.fill(HIST("particle/mothers/mothers/prodVz"), mother2.vz());
+              histos.fill(HIST("particle/mothers/mothers/prodRadiusVsPt"), mother2.pt(), std::sqrt(mother2.vx() * mother2.vx() + mother2.vy() * mother2.vy()));
+              histos.fill(HIST("particle/mothers/mothers/prodRadius3DVsPt"), mother2.pt(), std::sqrt(mother2.vx() * mother2.vx() + mother2.vy() * mother2.vy() + mother2.vz() * mother2.vz()));
+            }
+          }
         }
       }
 
@@ -323,7 +365,8 @@ struct Alice3SingleParticle {
       if (track.hasTOF()) {
         histos.get<TH2>(HIST("track/tofPDGs"))->Fill(getPdgCodeString(mcParticle), getCharge(mcParticle), 1.f);
       }
-      if (!IsStable) {
+      if (IsStable.value == 0) {
+        LOG(info) << mcParticle.pdgCode() << " asked for " << PDG.value;
         if (!mcParticle.has_mothers()) {
           continue;
         }
@@ -403,10 +446,12 @@ struct Alice3SingleParticle {
         histos.fill(HIST("particle/primariesPt"), mcParticle.pt());
         histos.fill(HIST("particle/primariesP"), mcParticle.p());
         histos.fill(HIST("particle/primariesEta"), mcParticle.eta());
+        histos.fill(HIST("particle/primariesY"), mcParticle.y());
       } else {
         histos.fill(HIST("particle/secondariesPt"), mcParticle.pt());
         histos.fill(HIST("particle/secondariesP"), mcParticle.p());
         histos.fill(HIST("particle/secondariesEta"), mcParticle.eta());
+        histos.fill(HIST("particle/secondariesY"), mcParticle.y());
       }
       histos.fill(HIST("particle/EvsPz"), mcParticle.e(), mcParticle.pz());
       histos.fill(HIST("particle/Y"), mcParticle.y());
@@ -520,10 +565,12 @@ struct Alice3SingleParticle {
         histos.fill(HIST("particle/primariesPt"), mcParticle.pt());
         histos.fill(HIST("particle/primariesP"), mcParticle.p());
         histos.fill(HIST("particle/primariesEta"), mcParticle.eta());
+        histos.fill(HIST("particle/primariesY"), mcParticle.y());
       } else {
         histos.fill(HIST("particle/secondariesPt"), mcParticle.pt());
         histos.fill(HIST("particle/secondariesP"), mcParticle.p());
         histos.fill(HIST("particle/secondariesEta"), mcParticle.eta());
+        histos.fill(HIST("particle/secondariesY"), mcParticle.y());
       }
       histos.fill(HIST("particle/EvsPz"), mcParticle.e(), mcParticle.pz());
       histos.fill(HIST("particle/Y"), mcParticle.y());
@@ -608,13 +655,12 @@ struct Alice3SingleParticle {
       if (track.hasTOF()) {
         histos.get<TH2>(HIST("track/tofPDGs"))->Fill(getPdgCodeString(mcParticle), getCharge(mcParticle), 1.f);
       }
-      if (!IsStable) {
+      if (IsStable.value == 0) {
         if (!mcParticle.has_mothers()) {
           continue;
         }
-        // auto mothers = mcParticle.mothers();
-        auto mothers = mcParticle.mothers_as<aod::McParticles>();
-        const auto ParticleIsInteresting = std::find(ParticlesOfInterest.begin(), ParticlesOfInterest.end(), mothers[0].globalIndex()) != ParticlesOfInterest.end();
+        const auto& mothers = mcParticle.mothers_as<aod::McParticles>();
+        const auto& ParticleIsInteresting = std::find(ParticlesOfInterest.begin(), ParticlesOfInterest.end(), mothers[0].globalIndex()) != ParticlesOfInterest.end();
         if (!ParticleIsInteresting) {
           continue;
         }

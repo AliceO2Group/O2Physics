@@ -74,6 +74,8 @@ static const std::vector<std::string> labelsPtTrack{
 
 struct taskMuonMchTrkEfficiency {
 
+  Configurable<int> muonSelType{"muonSelType", 4, "Selected muon track type"}; /// Muon track type to be selected if value >=0 (no selection by default)
+
   Configurable<double> ptMuonMin{"ptMin", 0., "Lower bound of pT"};       /// Muon minimum pt to be studied
   Configurable<double> etaMuonMin{"etaMin", 2.5, "Lower bound of |eta|"}; /// Muon minimum |eta| to be studied
   Configurable<double> etaMuonMax{"etaMax", 4.0, "Upper bound of |eta|"}; /// Muon maximum |eta| to be studied
@@ -153,7 +155,7 @@ struct taskMuonMchTrkEfficiency {
 
   /// Method to define and apply the weight required to optimise the generated distributions
   ///  TO BE UPDATED with realistic distributions and probably using input TF1 as weights
-  void FillHistosWeight(double eta, double pt, double phi, uint16_t map, double etaGen, double ptGen, double phiGen)
+  void FillHistosWeight(double eta, double pt, double phi, uint16_t map, double /*etaGen*/, double /*ptGen*/, double /*phiGen*/)
   {
     double weighteta = 1, weightpt = 1, weightphi = 1; // default weight set to unity for now: no effect
     double etaw = eta * weighteta;
@@ -219,7 +221,14 @@ struct taskMuonMchTrkEfficiency {
   void processReco(aod::MchTrkEffBase const& mchtrkeffbases)
   {
     for (auto& mchtrkeffbase : mchtrkeffbases) {
-      if (IsInKinematics(mchtrkeffbase.eta(), mchtrkeffbase.pt()))
+      bool isSel = true;
+      if (!IsInKinematics(mchtrkeffbase.eta(), mchtrkeffbase.pt()))
+        isSel = false;
+      if (muonSelType >= 0) {
+        if (mchtrkeffbase.trackType() != muonSelType)
+          isSel = false;
+      }
+      if (isSel)
         FillHistos(mchtrkeffbase.eta(), mchtrkeffbase.pt(), mchtrkeffbase.phi(), mchtrkeffbase.mchBitMap());
     }
   }
@@ -233,7 +242,7 @@ struct taskMuonMchTrkEfficiency {
         FillHistosMC(mchtrkeffbase.eta(), mchtrkeffbase.pt(), mchtrkeffbase.phi(), mchtrkeffbase.mchBitMap(), mchtrkeffbase.etaGen(), mchtrkeffbase.ptGen(), mchtrkeffbase.phiGen());
     }
   }
-  PROCESS_SWITCH(taskMuonMchTrkEfficiency, processSim, "process reconstructed information", false);
+  PROCESS_SWITCH(taskMuonMchTrkEfficiency, processSim, "process simulated information", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

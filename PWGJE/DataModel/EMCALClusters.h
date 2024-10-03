@@ -17,6 +17,7 @@
 #define PWGJE_DATAMODEL_EMCALCLUSTERS_H_
 
 #include <string>
+#include <vector>
 #include "Framework/AnalysisDataModel.h"
 #include "EMCALClusterDefinition.h"
 
@@ -34,6 +35,7 @@ const EMCALClusterDefinition kV1Variation2(ClusterAlgorithm_t::kV3, 2, 1, "kV1Va
 const EMCALClusterDefinition kV3Default(ClusterAlgorithm_t::kV3, 10, 1, "kV3Default", 0.5, 0.1, -10000, 10000, true, 0.03);
 const EMCALClusterDefinition kV3Variation1(ClusterAlgorithm_t::kV3, 11, 1, "kV3Variation1", 0.5, 0.1, -10000, 10000, true, 0.);
 const EMCALClusterDefinition kV3Variation2(ClusterAlgorithm_t::kV3, 12, 1, "kV3Variation2", 0.5, 0.1, -10000, 10000, false, 0.);
+const EMCALClusterDefinition kV3Variation3(ClusterAlgorithm_t::kV3, 13, 1, "kV3Variation3", 0.5, 0.1, -10000, 10000, true, 20.);
 
 /// \brief function returns EMCALClusterDefinition for the given name
 /// \param name name of the cluster definition
@@ -52,6 +54,8 @@ const EMCALClusterDefinition getClusterDefinitionFromString(const std::string& c
     return kV3Variation1;
   } else if (clusterDefinitionName == "kV3Variation2") {
     return kV3Variation2;
+  } else if (clusterDefinitionName == "kV3Variation3") {
+    return kV3Variation3;
   } else {
     throw std::invalid_argument("Cluster definition name not recognized");
   }
@@ -90,6 +94,17 @@ DECLARE_SOA_TABLE(EMCALAmbiguousClusters, "AOD", "EMCALAMBCLUS", //!
 
 using EMCALCluster = EMCALClusters::iterator;
 using EMCALAmbiguousCluster = EMCALAmbiguousClusters::iterator;
+
+namespace emcalclustermc
+{
+DECLARE_SOA_ARRAY_INDEX_COLUMN(McParticle, mcParticle);         //! Array of MC particles that deposited energy in this calo cell
+DECLARE_SOA_COLUMN(AmplitudeA, amplitudeA, std::vector<float>); //! Energy fraction deposited by a particle inside this calo cell.
+} // namespace emcalclustermc
+// table of cluster MC info that could be matched to a collision
+DECLARE_SOA_TABLE(EMCALMCClusters, "AOD", "EMCALMCCLUSTERS", //!
+                  emcalclustermc::McParticleIds, emcalclustermc::AmplitudeA);
+
+using EMCALMCCluster = EMCALMCClusters::iterator;
 
 namespace emcalclustercell
 {

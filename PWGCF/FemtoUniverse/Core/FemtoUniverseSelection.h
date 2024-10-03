@@ -12,7 +12,7 @@
 /// \file FemtoUniverseSelection.h
 /// \brief FemtoUniverseSelection - small generic class to do selections
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
-/// \author Zuzanna Chochulska, WUT Warsaw, zuzanna.chochulska.stud@pw.edu.pl
+/// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSESELECTION_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSESELECTION_H_

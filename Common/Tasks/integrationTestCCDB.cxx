@@ -94,7 +94,7 @@ struct integrationTestCCDB {
     LOG(info) << "Finished MagField init! Magnetic field set in Propagator Instance for inspection: " << magneticField;
   }
 
-  void init(InitContext& context)
+  void init(InitContext&)
   {
     lut = 0x0;
     const AxisSpec axis{1, 0.0f, 1.0f, ""};

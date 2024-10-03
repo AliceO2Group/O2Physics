@@ -218,11 +218,24 @@ struct DiffQA {
   }
 
   // ...............................................................................................................
-  void processMain(CC const& collision, BCs const& bct0s,
-                   TCs const& tracks, FWs const& fwdtracks, ATs const& ambtracks, AFTs const& ambfwdtracks,
-                   aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds,
-                   aod::Zdcs& zdcs, aod::Calos& calos,
-                   aod::V0s const& v0s, aod::Cascades const& cascades)
+  // filter for global tracks
+  Filter globalTrackFilter = requireGlobalTrackInFilter();
+  using globalTracks = soa::Filtered<TCs>;
+
+  void processMain(CC const& collision,
+                   BCs const& bct0s,
+                   TCs const& tracks,
+                   FWs const& fwdtracks,
+                   globalTracks const& goodTracks,
+                   ATs const& /*ambtracks*/,
+                   AFTs const& /*ambfwdtracks*/,
+                   aod::FT0s const& /*ft0s*/,
+                   aod::FV0As const& /*fv0as*/,
+                   aod::FDDs const& /*fdds*/,
+                   aod::Zdcs& zdcs,
+                   aod::Calos& calos,
+                   aod::V0s const& v0s,
+                   aod::Cascades const& cascades)
   {
     LOGF(debug, "<DiffQA> Collision %d", collision.globalIndex());
     LOGF(debug, "<DiffQA> Start %i", abcrs.size());
@@ -239,8 +252,6 @@ struct DiffQA {
     // vertex tracks
     registry.get<TH1>(HIST("collisions/PVTracks"))->Fill(collision.numContrib());
     // global tracks
-    Partition<TCs> goodTracks = requireGlobalTrackInFilter();
-    goodTracks.bindTable(tracks);
     registry.get<TH1>(HIST("collisions/globalTracks"))->Fill(goodTracks.size());
 
     // loop over all tracks
@@ -513,7 +524,7 @@ struct DiffQA {
   // ...............................................................................................................
   // Fraction of collisions with empty FIT as function of NDtcoll
   void processCleanFIT1(CC const& collision, BCs const& bct0s,
-                        aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
+                        aod::FT0s const& /*ft0s*/, aod::FV0As const& /*fv0as*/, aod::FDDs const& /*fdds*/)
   {
     LOGF(debug, "<CleanFit1. Collision %d", collision.globalIndex());
 
@@ -553,7 +564,7 @@ struct DiffQA {
 
   // ...............................................................................................................
   void processCleanFIT2(CC const& collision, BCs const& bct0s,
-                        aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
+                        aod::FT0s const& /*ft0s*/, aod::FV0As const& /*fv0as*/, aod::FDDs const& /*fdds*/)
   {
     LOGF(debug, "<CleanFit2. Collision %d", collision.globalIndex());
 
@@ -593,8 +604,8 @@ struct DiffQA {
 
   // ...............................................................................................................
   // Distribution of number of PV contributors for all collisions and those with empty FT0
-  void processCleanFT0(CC const& collision, BCs const& bct0s,
-                       aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
+  void processCleanFT0(CC const& collision, BCs const& /*bct0s*/,
+                       aod::FT0s const& /*ft0s*/, aod::FV0As const& /*fv0as*/, aod::FDDs const& /*fdds*/)
   {
     // count collisions
     registry.get<TH1>(HIST("cleanFT0/Stat"))->Fill(1., 1.);

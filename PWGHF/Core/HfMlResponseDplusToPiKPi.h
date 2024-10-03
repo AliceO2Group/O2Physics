@@ -58,11 +58,17 @@ enum class InputFeaturesDplusToPiKPi : uint8_t {
   impactParameterXY0,
   impactParameterXY1,
   impactParameterXY2,
+  impactParameterZ0,
+  impactParameterZ1,
+  impactParameterZ2,
   decayLength,
+  decayLengthXY,
+  decayLengthNormalised,
   decayLengthXYNormalised,
   cpa,
   cpaXY,
   maxNormalisedDeltaIP,
+  chi2PCA,
   tpcNSigmaPi0,
   tpcNSigmaKa0,
   tpcNSigmaPi1,
@@ -112,11 +118,17 @@ class HfMlResponseDplusToPiKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_DPLUS_FULL(candidate, impactParameterXY0, impactParameter0);
         CHECK_AND_FILL_VEC_DPLUS_FULL(candidate, impactParameterXY1, impactParameter1);
         CHECK_AND_FILL_VEC_DPLUS_FULL(candidate, impactParameterXY2, impactParameter2);
+        CHECK_AND_FILL_VEC_DPLUS(impactParameterZ0);
+        CHECK_AND_FILL_VEC_DPLUS(impactParameterZ1);
+        CHECK_AND_FILL_VEC_DPLUS(impactParameterZ2);
         CHECK_AND_FILL_VEC_DPLUS(decayLength);
+        CHECK_AND_FILL_VEC_DPLUS(decayLengthXY);
+        CHECK_AND_FILL_VEC_DPLUS(decayLengthNormalised);
         CHECK_AND_FILL_VEC_DPLUS(decayLengthXYNormalised);
         CHECK_AND_FILL_VEC_DPLUS(cpa);
         CHECK_AND_FILL_VEC_DPLUS(cpaXY);
         CHECK_AND_FILL_VEC_DPLUS(maxNormalisedDeltaIP);
+        CHECK_AND_FILL_VEC_DPLUS(chi2PCA);
         // TPC PID variables
         CHECK_AND_FILL_VEC_DPLUS_FULL(prong0, tpcNSigmaPi0, tpcNSigmaPi);
         CHECK_AND_FILL_VEC_DPLUS_FULL(prong0, tpcNSigmaKa0, tpcNSigmaKa);
@@ -155,11 +167,17 @@ class HfMlResponseDplusToPiKPi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_DPLUS(impactParameterXY0),
       FILL_MAP_DPLUS(impactParameterXY1),
       FILL_MAP_DPLUS(impactParameterXY2),
+      FILL_MAP_DPLUS(impactParameterZ0),
+      FILL_MAP_DPLUS(impactParameterZ1),
+      FILL_MAP_DPLUS(impactParameterZ2),
       FILL_MAP_DPLUS(decayLength),
+      FILL_MAP_DPLUS(decayLengthXY),
+      FILL_MAP_DPLUS(decayLengthNormalised),
       FILL_MAP_DPLUS(decayLengthXYNormalised),
       FILL_MAP_DPLUS(cpa),
       FILL_MAP_DPLUS(cpaXY),
       FILL_MAP_DPLUS(maxNormalisedDeltaIP),
+      FILL_MAP_DPLUS(chi2PCA),
       // TPC PID variables
       FILL_MAP_DPLUS(tpcNSigmaPi0),
       FILL_MAP_DPLUS(tpcNSigmaKa0),

@@ -330,7 +330,7 @@ struct resonanceqa {
     }
   }
   PROCESS_SWITCH(resonanceqa, processSameEvent, "Process Same event", false);
-  void processMixedEvent(EventCandidates const& collisions, TrackCandidates const& tracks)
+  void processMixedEvent(EventCandidates const&, TrackCandidates const&)
   {
     for (auto& [c1, tracks1, c2, tracks2] : pair) {
       if (!c1.sel8()) {
@@ -427,7 +427,7 @@ struct resonanceqa {
     }
   }
   PROCESS_SWITCH(resonanceqa, processGen, "Process Generated", false);
-  void processRec(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const& tracks, aod::McParticles const& mcParticles, aod::McCollisions const& mcCollisions)
+  void processRec(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const& tracks, aod::McParticles const&, aod::McCollisions const&)
   {
     if (std::abs(collision.mcCollision().posZ()) > cfgCutVertex) {
       return;

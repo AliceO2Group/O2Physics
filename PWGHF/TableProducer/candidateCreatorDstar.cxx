@@ -24,13 +24,20 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
+#include "Framework/RunningWorkflowInfo.h"
 // O2Physics
 #include "Common/Core/trackUtilities.h"
 // PWGHF
+#include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
+#include "PWGHF/Utils/utilsEvSelHf.h"
+#include "PWGHF/Utils/utilsTrkCandHf.h"
 
 using namespace o2;
+using namespace o2::hf_evsel;
+using namespace o2::hf_trkcandsel;
+using namespace o2::hf_centrality;
 using namespace o2::constants::physics;
 using namespace o2::framework;
 
@@ -62,9 +69,9 @@ struct HfCandidateCreatorDstar {
   Configurable<bool> useAbsDCA{"useAbsDCA", false, "Minimise abs. distance rather than chi2"};
   Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
 
+  HfEventSelection hfEvSel;                 // event selection and monitoring
   Service<o2::ccdb::BasicCCDBManager> ccdb; // From utilsBfieldCCDB.h
-  o2::base::MatLayerCylSet* lut;            // From MatLayercylSet.h
-  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+  o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   // D0-prong vertex fitter
   o2::vertexing::DCAFitterN<2> df;
   int runNumber;
@@ -75,6 +82,7 @@ struct HfCandidateCreatorDstar {
   AxisSpec ptAxis = {100, 0., 2.0, "#it{p}_{T} (GeV/#it{c}"};
   AxisSpec dcaAxis = {200, -500., 500., "#it{d}_{xy,z} (#mum)"};
 
+  std::shared_ptr<TH1> hCandidates;
   HistogramRegistry registry{
     "registry",
     {{"Refit/hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 1.e-4}}}},
@@ -100,19 +108,37 @@ struct HfCandidateCreatorDstar {
   /// @brief This function initializes the ccdb setting, vertex fitter and runs function MatLayerCylSet::rectifyPtrFromFile(..args..)
   void init(InitContext const&)
   {
-    if (doprocessPvRefit && doprocessNoPvRefit) { //............Warning! remove this if any of this function is removed
-      LOGP(fatal, "Only one process function between processPvRefit and processNoPvRefit can be enabled at a time.");
+    std::array<bool, 6> processes = {doprocessPvRefit, doprocessNoPvRefit,
+                                     doprocessPvRefitCentFT0C, doprocessNoPvRefitCentFT0C,
+                                     doprocessPvRefitCentFT0M, doprocessNoPvRefitCentFT0M};
+    if (std::accumulate(processes.begin(), processes.end(), 0) != 1) {
+      LOGP(fatal, "One and only one process function must be enabled at a time.");
     }
+
+    std::array<bool, 3> processesCollisions = {doprocessCollisions, doprocessCollisionsCentFT0C, doprocessCollisionsCentFT0M};
+    const int nProcessesCollisions = std::accumulate(processesCollisions.begin(), processesCollisions.end(), 0);
+    if (nProcessesCollisions > 1) {
+      LOGP(fatal, "At most one process function for collision monitoring can be enabled at a time.");
+    }
+    if (nProcessesCollisions == 1) {
+      if ((doprocessPvRefit || doprocessNoPvRefit) && !doprocessCollisions) {
+        LOGP(fatal, "Process function for collision monitoring not correctly enabled. Did you enable \"processCollisions\"?");
+      }
+      if ((doprocessPvRefitCentFT0C || doprocessNoPvRefitCentFT0C) && !doprocessCollisionsCentFT0C) {
+        LOGP(fatal, "Process function for collision monitoring not correctly enabled. Did you enable \"processCollisionsCentFT0C\"?");
+      }
+      if ((doprocessPvRefitCentFT0M || doprocessNoPvRefitCentFT0M) && !doprocessCollisionsCentFT0M) {
+        LOGP(fatal, "Process function for collision monitoring not correctly enabled. Did you enable \"processCollisionsCentFT0M\"?");
+      }
+    }
+
+    hCandidates = registry.add<TH1>("hCandidates", "candidates counter", {HistType::kTH1D, {axisCands}});
+    hfEvSel.addHistograms(registry); // collision monitoring
+
     // LOG(info) << "Init Function Invoked";
-    ccdb->setURL(ccdbUrl);
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking(); // set the flag to check object validity before CCDB query
-    // LOG(info) << "Retriving ccdb object";
-    auto rectification = ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut); // retrieve an object of type T from CCDB as stored under path; will use the timestamp member
-    lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(rectification);
-    // LOG(info) << "Successfully Retrived";
-    runNumber = 0;
-    bz = 0;
+    massPi = MassPiPlus;
+    massK = MassKPlus;
+    massD0 = MassD0;
 
     df.setPropagateToPCA(propagateToPCA);
     df.setMaxR(maxR);
@@ -121,10 +147,16 @@ struct HfCandidateCreatorDstar {
     df.setMinRelChi2Change(minRelChi2Change);
     df.setUseAbsDCA(useAbsDCA);
     df.setWeightedFinalPCA(useWeightedFinalPCA);
+    df.setMatCorrType(noMatCorr);
 
-    massPi = MassPiPlus;
-    massK = MassKPlus;
-    massD0 = MassD0;
+    ccdb->setURL(ccdbUrl);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking(); // set the flag to check object validity before CCDB query
+    runNumber = 0;
+    bz = 0;
+
+    /// candidate monitoring
+    setLabelHistoCands(hCandidates);
   }
 
   /// @brief function for secondary vertex reconstruction and candidate creator
@@ -135,24 +167,31 @@ struct HfCandidateCreatorDstar {
   /// @param rowsTrackIndexD0 D0 table object from trackIndexSkimCreator.cxx
   /// @param tracks track table with Cov object
   /// @param bcWithTimeStamps Bunch Crossing with timestamps
-  template <bool doPvRefit, typename CandsDstar>
-  void runCreatorDstar(aod::Collisions const& collisions,
+  template <bool doPvRefit, o2::hf_centrality::CentralityEstimator centEstimator, typename Coll, typename CandsDstar>
+  void runCreatorDstar(Coll const&,
                        CandsDstar const& rowsTrackIndexDstar,
-                       aod::Hf2Prongs const& rowsTrackIndexD0,
-                       aod::TracksWCov const& tracks,
-                       aod::BCsWithTimestamps const& bcWithTimeStamps)
+                       aod::Hf2Prongs const&,
+                       aod::TracksWCov const&,
+                       aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
   {
     // LOG(info) << "runCreatorDstar function called";
     // LOG(info) << "candidate loop starts";
     // loop over suspected Dstar Candidate
     for (const auto& rowTrackIndexDstar : rowsTrackIndexDstar) {
 
+      /// reject candidates in collisions not satisfying the event selections
+      auto collision = rowTrackIndexDstar.template collision_as<Coll>();
+      float centrality{-1.f};
+      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, centEstimator, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
+      if (rejectionMask != 0) {
+        /// at least one event selection not satisfied --> reject the candidate
+        continue;
+      }
+
       auto trackPi = rowTrackIndexDstar.template prong0_as<aod::TracksWCov>();
       auto prongD0 = rowTrackIndexDstar.template prongD0_as<aod::Hf2Prongs>();
       auto trackD0Prong0 = prongD0.template prong0_as<aod::TracksWCov>();
       auto trackD0Prong1 = prongD0.template prong1_as<aod::TracksWCov>();
-
-      auto collision = rowTrackIndexDstar.collision();
 
       // Extracts primary vertex position and covariance matrix from a collision
       auto primaryVertex = getPrimaryVertex(collision);
@@ -173,16 +212,30 @@ struct HfCandidateCreatorDstar {
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       if (runNumber != bc.runNumber()) {
         // LOG(info) << ">>>>>>>>>>>> Current run number: " << runNumber;
-        initCCDB(bc, runNumber, ccdb, isRun2 ? ccdbPathGrp : ccdbPathGrpMag, lut, isRun2); // Sets up the grp object for magnetic field (w/o matCorr for propagation)
+        o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbPathGrpMag, bc.timestamp());
+        if (grpo == nullptr) {
+          LOGF(fatal, "Run 3 GRP object (type o2::parameters::GRPMagField) is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
+        }
+        o2::base::Propagator::initFieldFromGRP(grpo);
         bz = o2::base::Propagator::Instance()->getNominalBz();
         // LOG(info) << ">>>>>>>>>>>> Magnetic field: " << bz;
+        runNumber = bc.runNumber();
       }
       df.setBz(bz);
 
       // reconstruct the 2-prong secondary vertex
-      if (df.process(trackD0Prong0ParVarPos1, trackD0Prong1ParVarNeg1) == 0) {
+      hCandidates->Fill(SVFitting::BeforeFit);
+      try {
+        if (df.process(trackD0Prong0ParVarPos1, trackD0Prong1ParVarNeg1) == 0) {
+          continue;
+        }
+      } catch (const std::runtime_error& error) {
+        LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN cannot work, skipping the candidate.";
+        hCandidates->Fill(SVFitting::Fail);
         continue;
       }
+      hCandidates->Fill(SVFitting::FitOk);
+
       const auto& secondaryVertex = df.getPCACandidate();
       auto chi2PCA = df.getChi2AtPCACandidate();
       auto covMatrixPCA = df.calcPCACovMatrixFlat();
@@ -255,9 +308,10 @@ struct HfCandidateCreatorDstar {
       // D0 pt magnitude
       auto ptD0 = RecoDecay::pt(pVecD0);
 
-      // Soft pi momentum vector
+      // Soft pi momentum vector and sign
       std::array<float, 3> pVecSoftPi;
       trackPiParVar.getPxPyPzGlo(pVecSoftPi);
+      int8_t signSoftPi = static_cast<int8_t>(trackPi.sign());
 
       // D* pt magnitude
       auto ptDstar = RecoDecay::pt(pVecD0, pVecSoftPi);
@@ -267,9 +321,12 @@ struct HfCandidateCreatorDstar {
                        primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
                        rowTrackIndexDstar.prong0Id(), rowTrackIndexDstar.prongD0Id(),
                        pVecSoftPi[0], pVecSoftPi[1], pVecSoftPi[2],
-                       impactParameterPi.getY(), std::sqrt(impactParameterPi.getSigmaY2()),
+                       signSoftPi,
+                       impactParameterPi.getY(), impactParameterPi.getZ(),
+                       std::sqrt(impactParameterPi.getSigmaY2()), std::sqrt(impactParameterPi.getSigmaZ2()),
                        pVecD0Prong0[0], pVecD0Prong0[1], pVecD0Prong0[2],
-                       pVecD0Prong1[0], pVecD0Prong1[1], pVecD0Prong1[2]);
+                       pVecD0Prong1[0], pVecD0Prong1[1], pVecD0Prong1[2],
+                       prongD0.prong0Id(), prongD0.prong1Id());
       // Fill candidate Table for D0
       rowCandD0Base(collision.globalIndex(),
                     primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
@@ -279,7 +336,9 @@ struct HfCandidateCreatorDstar {
                     pVecD0Prong0[0], pVecD0Prong0[1], pVecD0Prong0[2],
                     pVecD0Prong1[0], pVecD0Prong1[1], pVecD0Prong1[2],
                     impactParameter0.getY(), impactParameter1.getY(),
+                    impactParameter0.getZ(), impactParameter1.getZ(),
                     std::sqrt(impactParameter0.getSigmaY2()), std::sqrt(impactParameter1.getSigmaY2()),
+                    std::sqrt(impactParameter0.getSigmaZ2()), std::sqrt(impactParameter1.getSigmaZ2()),
                     prongD0.prong0Id(), prongD0.prong1Id(),
                     prongD0.hfflag());
 
@@ -294,25 +353,146 @@ struct HfCandidateCreatorDstar {
     // LOG(info) << "Candidate for loop ends";
   }
 
-  void processPvRefit(aod::Collisions const& collisions,
+  ///////////////////////////////////
+  ///                             ///
+  ///   No centrality selection   ///
+  ///                             ///
+  ///////////////////////////////////
+
+  /// @brief process function w/ PV refit and w/o centrality selections
+  void processPvRefit(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                       aod::Hf2Prongs const& rowsTrackIndexD0,
                       aod::HfDstarsWithPvRefitInfo const& rowsTrackIndexDstar,
                       aod::TracksWCov const& tracks,
                       aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
-    runCreatorDstar<true>(collisions, rowsTrackIndexDstar, rowsTrackIndexD0, tracks, bcWithTimeStamps);
+    runCreatorDstar</*doPvRefit*/ true, CentralityEstimator::None>(collisions, rowsTrackIndexDstar, rowsTrackIndexD0, tracks, bcWithTimeStamps);
   }
-  PROCESS_SWITCH(HfCandidateCreatorDstar, processPvRefit, " Run candidate creator with PV refit", false);
+  PROCESS_SWITCH(HfCandidateCreatorDstar, processPvRefit, " Run candidate creator with PV refit and w/o centrality selections", false);
 
-  void processNoPvRefit(aod::Collisions const& collisions,
+  /// @brief process function w/o PV refit and w/o centrality selections
+  void processNoPvRefit(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                         aod::Hf2Prongs const& rowsTrackIndexD0,
                         aod::HfDstars const& rowsTrackIndexDstar,
                         aod::TracksWCov const& tracks,
                         aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
-    runCreatorDstar<false>(collisions, rowsTrackIndexDstar, rowsTrackIndexD0, tracks, bcWithTimeStamps);
+    runCreatorDstar</*doPvRefit*/ false, CentralityEstimator::None>(collisions, rowsTrackIndexDstar, rowsTrackIndexD0, tracks, bcWithTimeStamps);
   }
-  PROCESS_SWITCH(HfCandidateCreatorDstar, processNoPvRefit, " Run candidate creator without PV refit", true);
+  PROCESS_SWITCH(HfCandidateCreatorDstar, processNoPvRefit, " Run candidate creator without PV refit and w/o centrality selections", true);
+
+  /////////////////////////////////////////////
+  ///                                       ///
+  ///   with centrality selection on FT0C   ///
+  ///                                       ///
+  /////////////////////////////////////////////
+
+  /// @brief process function w/ PV refit and w/ centrality selection on FT0C
+  void processPvRefitCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
+                              aod::Hf2Prongs const& rowsTrackIndexD0,
+                              aod::HfDstarsWithPvRefitInfo const& rowsTrackIndexDstar,
+                              aod::TracksWCov const& tracks,
+                              aod::BCsWithTimestamps const& bcWithTimeStamps)
+  {
+    runCreatorDstar</*doPvRefit*/ true, CentralityEstimator::FT0C>(collisions, rowsTrackIndexDstar, rowsTrackIndexD0, tracks, bcWithTimeStamps);
+  }
+  PROCESS_SWITCH(HfCandidateCreatorDstar, processPvRefitCentFT0C, " Run candidate creator with PV refit nad w/ centrality selection on FT0C", false);
+
+  /// @brief process function w/o PV refit and w/ centrality selection on FT0C
+  void processNoPvRefitCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
+                                aod::Hf2Prongs const& rowsTrackIndexD0,
+                                aod::HfDstars const& rowsTrackIndexDstar,
+                                aod::TracksWCov const& tracks,
+                                aod::BCsWithTimestamps const& bcWithTimeStamps)
+  {
+    runCreatorDstar</*doPvRefit*/ false, CentralityEstimator::FT0C>(collisions, rowsTrackIndexDstar, rowsTrackIndexD0, tracks, bcWithTimeStamps);
+  }
+  PROCESS_SWITCH(HfCandidateCreatorDstar, processNoPvRefitCentFT0C, " Run candidate creator without PV refit and w centrality selection on FT0C", false);
+
+  /////////////////////////////////////////////
+  ///                                       ///
+  ///   with centrality selection on FT0M   ///
+  ///                                       ///
+  /////////////////////////////////////////////
+
+  /// @brief process function w/ PV refit and w/ centrality selection on FT0M
+  void processPvRefitCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
+                              aod::Hf2Prongs const& rowsTrackIndexD0,
+                              aod::HfDstarsWithPvRefitInfo const& rowsTrackIndexDstar,
+                              aod::TracksWCov const& tracks,
+                              aod::BCsWithTimestamps const& bcWithTimeStamps)
+  {
+    runCreatorDstar</*doPvRefit*/ true, CentralityEstimator::FT0M>(collisions, rowsTrackIndexDstar, rowsTrackIndexD0, tracks, bcWithTimeStamps);
+  }
+  PROCESS_SWITCH(HfCandidateCreatorDstar, processPvRefitCentFT0M, " Run candidate creator with PV refit nad w/ centrality selection on FT0M", false);
+
+  /// @brief process function w/o PV refit and w/ centrality selection on FT0M
+  void processNoPvRefitCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
+                                aod::Hf2Prongs const& rowsTrackIndexD0,
+                                aod::HfDstars const& rowsTrackIndexDstar,
+                                aod::TracksWCov const& tracks,
+                                aod::BCsWithTimestamps const& bcWithTimeStamps)
+  {
+    runCreatorDstar</*doPvRefit*/ false, CentralityEstimator::FT0M>(collisions, rowsTrackIndexDstar, rowsTrackIndexD0, tracks, bcWithTimeStamps);
+  }
+  PROCESS_SWITCH(HfCandidateCreatorDstar, processNoPvRefitCentFT0M, " Run candidate creator without PV refit and w/ centrality selection on FT0M", false);
+
+  ///////////////////////////////////////////////////////////
+  ///                                                     ///
+  ///   Process functions only for collision monitoring   ///
+  ///                                                     ///
+  ///////////////////////////////////////////////////////////
+
+  /// @brief process function to monitor collisions - no centrality
+  void processCollisions(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
+  {
+    /// loop over collisions
+    for (const auto& collision : collisions) {
+
+      /// bitmask with event. selection info
+      float centrality{-1.f};
+      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
+
+      /// monitor the satisfied event selections
+      hfEvSel.fillHistograms(collision, rejectionMask, centrality);
+
+    } /// end loop over collisions
+  }
+  PROCESS_SWITCH(HfCandidateCreatorDstar, processCollisions, "Collision monitoring - no centrality", true);
+
+  /// @brief process function to monitor collisions - FT0C centrality
+  void processCollisionsCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions, aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
+  {
+    /// loop over collisions
+    for (const auto& collision : collisions) {
+
+      /// bitmask with event. selection info
+      float centrality{-1.f};
+      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0C, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
+
+      /// monitor the satisfied event selections
+      hfEvSel.fillHistograms(collision, rejectionMask, centrality);
+
+    } /// end loop over collisions
+  }
+  PROCESS_SWITCH(HfCandidateCreatorDstar, processCollisionsCentFT0C, "Collision monitoring - FT0C centrality", false);
+
+  /// @brief process function to monitor collisions - FT0M centrality
+  void processCollisionsCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions, aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
+  {
+    /// loop over collisions
+    for (const auto& collision : collisions) {
+
+      /// bitmask with event. selection info
+      float centrality{-1.f};
+      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0M, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
+
+      /// monitor the satisfied event selections
+      hfEvSel.fillHistograms(collision, rejectionMask, centrality);
+
+    } /// end loop over collisions
+  }
+  PROCESS_SWITCH(HfCandidateCreatorDstar, processCollisionsCentFT0M, "Collision monitoring - FT0M centrality", false);
 };
 
 struct HfCandidateCreatorDstarExpressions {
@@ -324,11 +504,46 @@ struct HfCandidateCreatorDstarExpressions {
   Produces<aod::HfCandDstarMcRec> rowsMcMatchRecDstar;
   Produces<aod::HfCandDstarMcGen> rowsMcMatchGenDstar;
 
-  void init(InitContext const&) {}
+  // Configuration
+  o2::framework::Configurable<bool> rejectBackground{"rejectBackground", true, "Reject particles from background events"};
+
+  using McCollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
+  using McCollisionsFT0Cs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs>;
+  using McCollisionsFT0Ms = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Ms>;
+  PresliceUnsorted<McCollisionsNoCents> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
+  PresliceUnsorted<McCollisionsFT0Cs> colPerMcCollisionFT0C = aod::mccollisionlabel::mcCollisionId;
+  PresliceUnsorted<McCollisionsFT0Ms> colPerMcCollisionFT0M = aod::mccollisionlabel::mcCollisionId;
+  Preslice<aod::McParticles> mcParticlesPerMcCollision = aod::mcparticle::mcCollisionId;
+
+  HfEventSelectionMc hfEvSelMc; // mc event selection and monitoring
+  using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
+  HistogramRegistry registry{"registry"};
+
+  // inspect for which zPvPosMax cut was set for reconstructed
+  void init(InitContext& initContext)
+  {
+    std::array<bool, 3> procCollisions = {doprocessMc, doprocessMcCentFT0C, doprocessMcCentFT0M};
+    if (std::accumulate(procCollisions.begin(), procCollisions.end(), 0) > 1) {
+      LOGP(fatal, "At most one process function for collision study can be enabled at a time.");
+    }
+
+    const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
+    for (const DeviceSpec& device : workflows.devices) {
+      if (device.name.compare("hf-candidate-creator-dstar") == 0) {
+        hfEvSelMc.configureFromDevice(device);
+        break;
+      }
+    }
+    hfEvSelMc.addHistograms(registry); // particles monitoring
+  }
 
   /// Perform MC Matching.
-  void processMc(aod::TracksWMc const& tracks,
-                 aod::McParticles const& mcParticles)
+  template <o2::hf_centrality::CentralityEstimator centEstimator, typename CCs>
+  void runCreatorDstarMc(aod::TracksWMc const& tracks,
+                         aod::McParticles const& mcParticles,
+                         CCs const& collInfos,
+                         aod::McCollisions const& mcCollisions,
+                         BCsInfo const&)
   {
     rowsCandidateD0->bindExternalIndices(&tracks);
     rowsCandidateDstar->bindExternalIndices(&tracks);
@@ -344,6 +559,7 @@ struct HfCandidateCreatorDstarExpressions {
       flagD0 = 0;
       originDstar = 0;
       originD0 = 0;
+      std::vector<int> idxBhadMothers{};
 
       auto indexDstar = rowCandidateDstar.globalIndex();
       auto candD0 = rowsCandidateD0->iteratorAt(indexDstar);
@@ -351,6 +567,24 @@ struct HfCandidateCreatorDstarExpressions {
 
       auto arrayDaughtersDstar = std::array{candSoftPi, candD0.prong0_as<aod::TracksWMc>(), candD0.prong1_as<aod::TracksWMc>()};
       auto arrayDaughtersofD0 = std::array{candD0.prong0_as<aod::TracksWMc>(), candD0.prong1_as<aod::TracksWMc>()};
+
+      // Check whether the particle is from background events. If so, reject it.
+      if (rejectBackground) {
+        bool fromBkg{false};
+        for (const auto& daughter : arrayDaughtersDstar) {
+          if (daughter.has_mcParticle()) {
+            auto mcParticle = daughter.mcParticle();
+            if (mcParticle.fromBackgroundEvent()) {
+              fromBkg = true;
+              break;
+            }
+          }
+        }
+        if (fromBkg) {
+          rowsMcMatchRecDstar(flagDstar, originDstar, -1.f, 0);
+          continue;
+        }
+      }
 
       // D*± → D0(bar) π±
       indexRecDstar = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersDstar, Pdg::kDStar, std::array{+kPiPlus, +kPiPlus, -kKPlus}, true, &signDstar, 2);
@@ -367,44 +601,117 @@ struct HfCandidateCreatorDstarExpressions {
       // check wether the particle is non-promt (from a B0 hadron)
       if (flagDstar != 0) {
         auto particleDstar = mcParticles.iteratorAt(indexRecDstar);
-        originDstar = RecoDecay::getCharmHadronOrigin(mcParticles, particleDstar);
+        originDstar = RecoDecay::getCharmHadronOrigin(mcParticles, particleDstar, false, &idxBhadMothers);
       }
       if (flagD0 != 0) {
         auto particleD0 = mcParticles.iteratorAt(indexRecD0);
         originD0 = RecoDecay::getCharmHadronOrigin(mcParticles, particleD0);
       }
-      rowsMcMatchRecDstar(flagDstar, originDstar);
-      rowsMcMatchRecD0(flagD0, originD0);
+      if (originDstar == RecoDecay::OriginType::NonPrompt) {
+        auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
+        rowsMcMatchRecDstar(flagDstar, originDstar, bHadMother.pt(), bHadMother.pdgCode());
+      } else {
+        rowsMcMatchRecDstar(flagDstar, originDstar, -1.f, 0);
+      }
+      rowsMcMatchRecD0(flagD0, originD0, -1.f, 0);
     }
 
-    // Match generated particles.
-    for (const auto& particle : mcParticles) {
-      flagDstar = 0;
-      flagD0 = 0;
-      originDstar = 0;
-      originD0 = 0;
+    for (const auto& mcCollision : mcCollisions) {
+      // Slice the MC particles table to get the particles for the current MC collision
+      const auto mcParticlesPerMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, mcCollision.globalIndex());
+      // Slice the collisions table to get the collision info for the current MC collision
+      float centrality{-1.f};
+      uint16_t rejectionMask{0};
+      if constexpr (centEstimator == CentralityEstimator::FT0C) {
+        const auto collSlice = collInfos.sliceBy(colPerMcCollisionFT0C, mcCollision.globalIndex());
+        rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
+      } else if constexpr (centEstimator == CentralityEstimator::FT0M) {
+        const auto collSlice = collInfos.sliceBy(colPerMcCollisionFT0M, mcCollision.globalIndex());
+        rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
+      } else if constexpr (centEstimator == CentralityEstimator::None) {
+        const auto collSlice = collInfos.sliceBy(colPerMcCollision, mcCollision.globalIndex());
+        rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
+      }
+      hfEvSelMc.fillHistograms(rejectionMask);
+      if (rejectionMask != 0) {
+        // at least one event selection not satisfied --> reject all particles from this collision
+        for (unsigned int i = 0; i < mcParticlesPerMcColl.size(); ++i) {
+          rowsMcMatchGenDstar(0, 0, -1);
+          rowsMcMatchGenD0(0, 0, -1);
+        }
+        continue;
+      }
 
-      // D*± → D0(bar) π±
-      if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDStar, std::array{+kPiPlus, +kPiPlus, -kKPlus}, true, &signDstar, 2)) {
-        flagDstar = signDstar * (BIT(aod::hf_cand_dstar::DecayType::DstarToD0Pi));
-      }
-      // D0(bar) → π± K∓
-      if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &signD0)) {
-        flagD0 = signD0 * (BIT(aod::hf_cand_dstar::DecayType::D0ToPiK));
-      }
+      // Match generated particles.
+      for (const auto& particle : mcParticlesPerMcColl) {
+        flagDstar = 0;
+        flagD0 = 0;
+        originDstar = 0;
+        originD0 = 0;
+        std::vector<int> idxBhadMothers{};
+        // Reject particles from background events
+        if (particle.fromBackgroundEvent() && rejectBackground) {
+          rowsMcMatchGenDstar(flagDstar, originDstar, -1);
+          rowsMcMatchGenD0(flagD0, originD0, -1);
+          continue;
+        }
 
-      // check wether the particle is non-promt (from a B0 hadron)
-      if (flagDstar != 0) {
-        originDstar = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
+        // D*± → D0(bar) π±
+        if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDStar, std::array{+kPiPlus, +kPiPlus, -kKPlus}, true, &signDstar, 2)) {
+          flagDstar = signDstar * (BIT(aod::hf_cand_dstar::DecayType::DstarToD0Pi));
+        }
+        // D0(bar) → π± K∓
+        if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &signD0)) {
+          flagD0 = signD0 * (BIT(aod::hf_cand_dstar::DecayType::D0ToPiK));
+        }
+
+        // check wether the particle is non-promt (from a B0 hadron)
+        if (flagDstar != 0) {
+          originDstar = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
+        }
+        if (flagD0 != 0) {
+          originD0 = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
+        }
+
+        if (originDstar == RecoDecay::OriginType::NonPrompt) {
+          rowsMcMatchGenDstar(flagDstar, originDstar, idxBhadMothers[0]);
+        } else {
+          rowsMcMatchGenDstar(flagDstar, originDstar, -1);
+        }
+        rowsMcMatchGenD0(flagD0, originD0, -1.);
       }
-      if (flagD0 != 0) {
-        originD0 = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
-      }
-      rowsMcMatchGenDstar(flagDstar, originDstar);
-      rowsMcMatchGenD0(flagD0, originD0);
     }
   }
-  PROCESS_SWITCH(HfCandidateCreatorDstarExpressions, processMc, "Process MC", false);
+
+  void processMc(aod::TracksWMc const& tracks,
+                 aod::McParticles const& mcParticles,
+                 McCollisionsNoCents const& collInfos,
+                 aod::McCollisions const& mcCollisions,
+                 BCsInfo const& BCsInfo)
+  {
+    runCreatorDstarMc<CentralityEstimator::None>(tracks, mcParticles, collInfos, mcCollisions, BCsInfo);
+  }
+  PROCESS_SWITCH(HfCandidateCreatorDstarExpressions, processMc, "Process MC - no centrality", false);
+
+  void processMcCentFT0C(aod::TracksWMc const& tracks,
+                         aod::McParticles const& mcParticles,
+                         McCollisionsFT0Cs const& collInfos,
+                         aod::McCollisions const& mcCollisions,
+                         BCsInfo const& BCsInfo)
+  {
+    runCreatorDstarMc<CentralityEstimator::FT0C>(tracks, mcParticles, collInfos, mcCollisions, BCsInfo);
+  }
+  PROCESS_SWITCH(HfCandidateCreatorDstarExpressions, processMcCentFT0C, "Process MC - FT0c centrality", false);
+
+  void processMcCentFT0M(aod::TracksWMc const& tracks,
+                         aod::McParticles const& mcParticles,
+                         McCollisionsFT0Ms const& collInfos,
+                         aod::McCollisions const& mcCollisions,
+                         BCsInfo const& BCsInfo)
+  {
+    runCreatorDstarMc<CentralityEstimator::FT0M>(tracks, mcParticles, collInfos, mcCollisions, BCsInfo);
+  }
+  PROCESS_SWITCH(HfCandidateCreatorDstarExpressions, processMcCentFT0M, "Process MC - FT0m centrality", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

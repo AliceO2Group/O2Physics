@@ -29,6 +29,7 @@
 
 #include "EMCALBase/Geometry.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
+#include "PWGJE/DataModel/EMCALMatchedCollisions.h"
 #include "DataFormatsEMCAL/Cell.h"
 #include "DataFormatsEMCAL/Constants.h"
 #include "DataFormatsEMCAL/AnalysisCluster.h"
@@ -53,6 +54,8 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using collisionEvSelIt = o2::aod::Collision;
 using selectedClusters = o2::soa::Filtered<o2::aod::EMCALClusters>;
+using MyCollisions = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, o2::aod::EMCALMatchedCollisions>;
+using MyBCs = o2::soa::Join<o2::aod::BCs, o2::aod::BcSels>;
 using selectedCluster = o2::soa::Filtered<o2::aod::EMCALCluster>;
 using selectedAmbiguousClusters = o2::soa::Filtered<o2::aod::EMCALAmbiguousClusters>;
 using selectedAmbiguousCluster = o2::soa::Filtered<o2::aod::EMCALAmbiguousCluster>;
@@ -129,9 +132,13 @@ struct Pi0QCTask {
   HistogramRegistry mHistManager{"NeutralMesonHistograms"};
   o2::emcal::Geometry* mGeometry = nullptr;
 
+  Filter emccellfilter = o2::aod::calo::caloType == 1;
+
   // configurable parameters
   // TODO adapt mDoEventSel switch to also allow selection of other triggers (e.g. EMC7)
   Configurable<bool> mDoEventSel{"doEventSel", 0, "demand kINT7"};
+  Configurable<bool> mRequireCaloReadout{"RequireCaloReadout", 0, "require kTVXinEMC"};
+  Configurable<bool> mRequireEMCalCells{"RequireEMCalCells", 0, "require at least one EMC cell in each collision"};
   Configurable<std::string> mVetoBCID{"vetoBCID", "", "BC ID(s) to be excluded, this should be used as an alternative to the event selection"};
   Configurable<std::string> mSelectBCID{"selectBCID", "all", "BC ID(s) to be included, this should be used as an alternative to the event selection"};
   Configurable<double> mVertexCut{"vertexCut", -1, "apply z-vertex cut with value in cm"};
@@ -158,8 +165,6 @@ struct Pi0QCTask {
 
   // define container for photons
   std::vector<Photon> mPhotons;
-  // define container for photons for each collision
-  std::map<int, std::vector<Photon>> mapPhotons;
 
   // event mixing class
   EventMixVec evtMix;
@@ -179,10 +184,14 @@ struct Pi0QCTask {
     const o2Axis bcAxis{3501, -0.5, 3500.5};
     const o2Axis energyAxis{makeClusterBinning(), "#it{E} (GeV)"};
 
-    // event properties
-    mHistManager.add("eventsAll", "Number of events", o2HistType::kTH1F, {{1, 0.5, 1.5}});
-    mHistManager.add("eventsEMCTrigg", "Number of EMC triggered events", o2HistType::kTH1F, {{1, 0.5, 1.5}});
-    mHistManager.add("eventsSelected", "Number of events", o2HistType::kTH1F, {{1, 0.5, 1.5}});
+    mHistManager.add("events", "events;;#it{count}", o2HistType::kTH1F, {{6, 0.5, 6.5}});
+    auto heventType = mHistManager.get<TH1>(HIST("events"));
+    heventType->GetXaxis()->SetBinLabel(1, "All events");
+    heventType->GetXaxis()->SetBinLabel(2, "sel8 + readout");
+    heventType->GetXaxis()->SetBinLabel(3, "1+ Contributor");
+    heventType->GetXaxis()->SetBinLabel(4, "z<10cm");
+    heventType->GetXaxis()->SetBinLabel(5, "unique col");
+    heventType->GetXaxis()->SetBinLabel(6, "EMCAL cell>0");
     mHistManager.add("eventBCAll", "Bunch crossing ID of event (all events)", o2HistType::kTH1F, {bcAxis});
     mHistManager.add("eventBCSelected", "Bunch crossing ID of event (selected events)", o2HistType::kTH1F, {bcAxis});
     mHistManager.add("eventVertexZAll", "z-vertex of event (all events)", o2HistType::kTH1F, {{200, -20, 20}});
@@ -238,31 +247,63 @@ struct Pi0QCTask {
     }
   }
 
-  /// \brief Process EMCAL clusters that are matched to a collisions
-  void processCollisions(o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>::iterator const& collision, selectedClusters const& clusters)
-  {
-    // for(const auto & collision : theCollisions){
-    mHistManager.fill(HIST("eventsAll"), 1);
-    LOG(debug) << "processCollisions";
-    // do event selection if mDoEventSel is specified
-    // currently the event selection is hard coded to kTVXinEMC
-    // but other selections are possible that are defined in TriggerAliases.h
-    if (mDoEventSel && (!collision.alias_bit(kTVXinEMC))) {
-      LOG(debug) << "Event not selected becaus it is not kTVXinEMC, skipping";
-      return;
-    }
-    mHistManager.fill(HIST("eventVertexZAll"), collision.posZ());
-    if (mVertexCut > 0 && std::abs(collision.posZ()) > mVertexCut) {
-      LOG(debug) << "Event not selected because of z-vertex cut z= " << collision.posZ() << " > " << mVertexCut << " cm, skipping";
-      return;
-    }
-    mHistManager.fill(HIST("eventsSelected"), 1);
-    mHistManager.fill(HIST("eventVertexZSelected"), collision.posZ());
+  PresliceUnsorted<selectedClusters> perCollision = o2::aod::emcalcluster::collisionId;
 
-    ProcessClusters(clusters);
-    ProcessMesons();
+  /// \brief Process EMCAL clusters that are matched to a collisions
+  void processCollision(MyBCs const&, MyCollisions const& collisions, selectedClusters const& clusters, o2::soa::Filtered<o2::aod::Calos> const& cells)
+  {
+    std::unordered_map<uint64_t, int> cellGlobalBCs;
+    // Build map of number of cells for corrected BCs using global BCs
+    // used later in the determination whether a BC has EMC cell content (for speed reason)
+    for (const auto& cell : cells) {
+      auto globalbcid = cell.bc_as<MyBCs>().globalBC();
+      auto found = cellGlobalBCs.find(globalbcid);
+      if (found != cellGlobalBCs.end()) {
+        found->second++;
+      } else {
+        cellGlobalBCs.insert(std::pair<uint64_t, int>(globalbcid, 1));
+      }
+    }
+
+    for (auto& collision : collisions) {
+      mHistManager.fill(HIST("events"), 1); // Fill "All events" bin of event histogram
+
+      if (mDoEventSel && (!collision.sel8() || (mRequireCaloReadout && !collision.alias_bit(kTVXinEMC)))) { // Check sel8 and whether EMC was read out
+        continue;
+      }
+      mHistManager.fill(HIST("events"), 2); // Fill sel8 + readout
+
+      if (mDoEventSel && collision.numContrib() < 0.5) { // Skip collisions without contributors
+        continue;
+      }
+      mHistManager.fill(HIST("events"), 3); // Fill >1 vtx contr. bin of event histogram
+
+      mHistManager.fill(HIST("eventVertexZAll"), collision.posZ());
+      if (mVertexCut > 0 && std::abs(collision.posZ()) > mVertexCut) {
+        continue;
+      }
+      mHistManager.fill(HIST("events"), 4); // Fill z-Vertex selected bin of event histogram
+      mHistManager.fill(HIST("eventVertexZSelected"), collision.posZ());
+
+      if (mDoEventSel && collision.ambiguous()) { // Skip ambiguous collisions (those that are in BCs including multiple collisions)
+        continue;
+      }
+      mHistManager.fill(HIST("events"), 5); // Fill "One collision in BC" bin of event histogram
+
+      if (mDoEventSel) {
+        auto found = cellGlobalBCs.find(collision.foundBC_as<MyBCs>().globalBC());
+        if (mRequireEMCalCells && (found == cellGlobalBCs.end() || found->second == 0)) { // Skip collisions without any readout EMCal cells
+          continue;
+        }
+      }
+      mHistManager.fill(HIST("events"), 6); // Fill at least one non0 cell in EMCal of event histogram (Selected)
+
+      auto clusters_per_coll = clusters.sliceBy(perCollision, collision.collisionId());
+      ProcessClusters(clusters_per_coll);
+      ProcessMesons();
+    }
   }
-  PROCESS_SWITCH(Pi0QCTask, processCollisions, "Process clusters from collision", false);
+  PROCESS_SWITCH(Pi0QCTask, processCollision, "Process clusters from collision", false);
 
   /// \brief Process EMCAL clusters that are not matched to a collision
   /// This is not needed for most users
@@ -294,7 +335,6 @@ struct Pi0QCTask {
     LOG(debug) << "ProcessClusters";
     // clear photon vector
     mPhotons.clear();
-    mapPhotons.clear();
 
     int globalCollID = -1000;
 
@@ -381,13 +421,16 @@ struct Pi0QCTask {
       LOG(debug) << "Cluster rejected because of energy cut";
       return true;
     }
-    if (cluster.nCells() <= mMinNCellsCut) {
+    if (cluster.nCells() < mMinNCellsCut) {
       LOG(debug) << "Cluster rejected because of nCells cut";
       return true;
     }
-    if (cluster.m02() < mClusterMinM02Cut || cluster.m02() > mClusterMaxM02Cut) {
-      LOG(debug) << "Cluster rejected because of m02 cut";
-      return true;
+    // Only apply M02 cut when cluster contains more than one cell
+    if (cluster.nCells() > 1) {
+      if (cluster.m02() < mClusterMinM02Cut || cluster.m02() > mClusterMaxM02Cut) {
+        LOG(debug) << "Cluster rejected because of m02 cut";
+        return true;
+      }
     }
     if (cluster.time() < mTimeMin || cluster.time() > mTimeMax) {
       LOG(debug) << "Cluster rejected because of time cut";
@@ -400,8 +443,6 @@ struct Pi0QCTask {
   void ProcessMesons()
   {
     LOG(debug) << "ProcessMesons " << mPhotons.size();
-
-    mHistManager.fill(HIST("eventsEMCTrigg"), 1);
 
     // if less then 2 clusters are found, skip event
     if (mPhotons.size() < 2)
@@ -539,7 +580,7 @@ struct Pi0QCTask {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<Pi0QCTask>(cfgc, TaskName{"EMCPi0QCTask"}, SetDefaultProcesses{{{"processCollisions", true}, {"processAmbiguous", false}}}),
-    adaptAnalysisTask<Pi0QCTask>(cfgc, TaskName{"EMCPi0QCTaskAmbiguous"}, SetDefaultProcesses{{{"processCollisions", false}, {"processAmbiguous", true}}})};
+    adaptAnalysisTask<Pi0QCTask>(cfgc, TaskName{"EMCPi0QCTask"}, SetDefaultProcesses{{{"processCollision", true}, {"processAmbiguous", false}}}),
+    adaptAnalysisTask<Pi0QCTask>(cfgc, TaskName{"EMCPi0QCTaskAmbiguous"}, SetDefaultProcesses{{{"processCollision", false}, {"processAmbiguous", true}}})};
   return workflow;
 }

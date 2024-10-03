@@ -139,7 +139,7 @@ struct TrackChecks {
   void processMC(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const& col,
                  soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA,
                                          aod::TrackSelection, aod::McTrackLabels>>& tracks,
-                 aod::McParticles& mcParticles)
+                 aod::McParticles&)
   {
 
     // event selection

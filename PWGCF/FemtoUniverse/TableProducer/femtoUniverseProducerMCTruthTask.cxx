@@ -12,7 +12,7 @@
 /// \file femtoUniverseProducerMCTruthTask.cxx
 /// \brief Tasks that produces the track tables used for the pairing
 /// \author Malgorzata Janik, WUT Warsaw, majanik@cern.ch
-/// \author Zuzanna Chochulska, WUT Warsaw, zuzanna.chochulska.stud@pw.edu.pl
+/// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 
 #include <CCDB/BasicCCDBManager.h>
 #include "Common/Core/trackUtilities.h"
@@ -98,6 +98,8 @@ struct femtoUniverseProducerMCTruthTask {
   Configurable<bool> ConfEvtTriggerCheck{"ConfEvtTriggerCheck", true, "Evt sel: check for trigger"};
   Configurable<int> ConfEvtTriggerSel{"ConfEvtTriggerSel", kINT7, "Evt sel: trigger"};
   Configurable<bool> ConfEvtOfflineCheck{"ConfEvtOfflineCheck", false, "Evt sel: check for offline selection"};
+  Configurable<float> ConfCentFT0Min{"ConfCentFT0Min", 0.f, "Min CentFT0 value for centrality selection"};
+  Configurable<float> ConfCentFT0Max{"ConfCentFT0Max", 200.f, "Max CentFT0 value for centrality selection"};
 
   // Track cuts
   struct : o2::framework::ConfigurableGroup {
@@ -116,7 +118,7 @@ struct femtoUniverseProducerMCTruthTask {
       LOGF(fatal, "Neither processFullData nor processFullMC enabled. Please choose one.");
     }
 
-    colCuts.setCuts(ConfEvtZvtx, ConfEvtTriggerCheck, ConfEvtTriggerSel, ConfEvtOfflineCheck, ConfIsRun3);
+    colCuts.setCuts(ConfEvtZvtx, ConfEvtTriggerCheck, ConfEvtTriggerSel, ConfEvtOfflineCheck, ConfIsRun3, ConfCentFT0Min, ConfCentFT0Max);
 
     colCuts.init(&qaRegistry);
     trackCuts.init<aod::femtouniverseparticle::ParticleType::kTrack, aod::femtouniverseparticle::TrackType::kNoChild, aod::femtouniverseparticle::cutContainerType>(&qaRegistry);
@@ -133,7 +135,7 @@ struct femtoUniverseProducerMCTruthTask {
   }
 
   template <typename CollisionType, typename TrackType>
-  void fillCollisions(CollisionType const& col, TrackType const& tracks)
+  void fillCollisions(CollisionType const& col, TrackType const& /*tracks*/)
   {
     for (auto& c : col) {
       const auto vtxZ = c.posZ();
@@ -166,13 +168,11 @@ struct femtoUniverseProducerMCTruthTask {
         bool pass = false;
         std::vector<int> tmpPDGCodes = ConfPDGCodes; // necessary due to some features of the Configurable
         for (uint32_t pdg : tmpPDGCodes) {
-          if (static_cast<int>(pdg) == static_cast<int>(pdgCode)) {
-            if (pdgCode == 333) { // ATTENTION: workaround for now, because all Phi mesons are NOT primary particles for now.
+          if (pdgCode == 333) {
+            pass = true;
+          } else if (static_cast<int>(pdg) == static_cast<int>(pdgCode)) {
+            if (particle.isPhysicalPrimary())
               pass = true;
-            } else {
-              if (particle.isPhysicalPrimary())
-                pass = true;
-            }
           }
         }
         if (!pass)
@@ -206,7 +206,7 @@ struct femtoUniverseProducerMCTruthTask {
   }
 
   void
-    processTrackMC(aod::McCollision const& mcCol,
+    processTrackMC(aod::McCollision const&,
                    soa::SmallGroups<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>> const& collisions,
                    aod::McParticles const& mcParticles,
                    aod::BCsWithTimestamps const&)

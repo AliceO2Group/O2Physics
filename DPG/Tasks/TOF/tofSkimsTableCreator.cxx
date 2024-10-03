@@ -48,7 +48,7 @@ struct tofSkimsTableCreator {
   Configurable<float> fractionOfEvents{"fractionOfEvents", 0.1, "Fractions of events to keep"};
 
   unsigned int randomSeed = 0;
-  void init(o2::framework::InitContext& initContext)
+  void init(o2::framework::InitContext&)
   {
     randomSeed = static_cast<unsigned int>(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
     switch (applyEvSel.value) {

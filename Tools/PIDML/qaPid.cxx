@@ -323,7 +323,7 @@ struct EvaluatePid {
      {"TOFPidFalse/011", "PID false e^{+};p (GeV/c); TOF #beta", {HistType::kTH2F, {{binsNb2D, 0.2, 10}, {110, 0, 1.1}}}}}};
 
   template <std::size_t i, typename T>
-  void pidSimple(const T& track, const int pdgCode, const float tpcNSigmas[], const float tofNSigmas[], int arrLen)
+  void pidSimple(const T& track, const int pdgCode, const float tpcNSigmas[], const float tofNSigmas[], int /*arrLen*/)
   {
     /*
     Simplest possible PID, accept particle when:
@@ -505,7 +505,7 @@ struct EvaluatePid {
   Filter trackFilter = requireGlobalTrackInFilter();
   using pidTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels, aod::TracksDCA, aod::TrackSelection, aod::pidTOFbeta, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCKa, aod::pidTPCEl, aod::pidTPCMu, aod::pidTOFPi, aod::pidTOFPr, aod::pidTOFKa, aod::pidTOFEl, aod::pidTOFMu, aod::pidBayes>>;
 
-  void process(pidTracks const& tracks, aod::McParticles const& mcParticles)
+  void process(pidTracks const& tracks, aod::McParticles const& /*mcParticles*/)
   {
     for (auto& track : tracks) {
       auto particle = track.mcParticle_as<aod::McParticles_000>();

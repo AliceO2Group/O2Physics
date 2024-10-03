@@ -65,7 +65,7 @@ class GFWWeights : public TNamed
   int fNbinsPt;    //! do not store
   double* fbinsPt; //! do not store
   void AddArray(TObjArray* targ, TObjArray* sour);
-  const char* GetBinName(double ptv, double v0mv, const char* pf = "")
+  const char* GetBinName(double /*ptv*/, double /*v0mv*/, const char* pf = "")
   {
     int ptind = 0;  // GetPtBin(ptv);
     int v0mind = 0; // GetV0MBin(v0mv);

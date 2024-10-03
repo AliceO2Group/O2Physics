@@ -15,7 +15,7 @@
 ///
 /// \author Mattia Faggin <mfaggin@cern.ch>, University and INFN PADOVA
 
-#include "CCDB/BasicCCDBManager.h"             // for dca recalculation
+#include "CCDB/BasicCCDBManager.h" // for dca recalculation
 #include "CommonConstants/PhysicsConstants.h"
 #include "DataFormatsParameters/GRPMagField.h" // for dca recalculation
 #include "DataFormatsParameters/GRPObject.h"   // for dca recalculation
@@ -24,10 +24,12 @@
 #include "DetectorsVertexing/PVertexer.h"      // for dca recalculation
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
+#include "Framework/RunningWorkflowInfo.h"
 
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/Core/TrackSelectionDefaults.h"
 
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
@@ -52,6 +54,7 @@ struct HfCandidateCreatorSigmac0plusplus {
   Configurable<LabeledArray<double>> cutsMassLcMax{"cutsMassLcMax", {hf_cuts_sigmac_to_p_k_pi::cuts[0], hf_cuts_sigmac_to_p_k_pi::nBinsPt, hf_cuts_sigmac_to_p_k_pi::nCutVars, hf_cuts_sigmac_to_p_k_pi::labelsPt, hf_cuts_sigmac_to_p_k_pi::labelsCutVar}, "Lc candidate selection per pT bin"};
 
   /// Selections on candidate soft π-,+
+  Configurable<bool> applyGlobalTrkWoDcaCutsSoftPi{"applyGlobalTrkWoDcaCutsSoftPi", false, "Switch on the application of the global-track w/o dca cuts for soft pion BEFORE ALL OTHER CUSTOM CUTS"};
   Configurable<float> softPiEtaMax{"softPiEtaMax", 0.9f, "Soft pion max value for pseudorapidity (abs vale)"};
   Configurable<float> softPiChi2Max{"softPiChi2Max", 36.f, "Soft pion max value for chi2 ITS"};
   Configurable<int> softPiItsHitMap{"softPiItsHitMap", 127, "Soft pion ITS hitmap"};
@@ -111,6 +114,19 @@ struct HfCandidateCreatorSigmac0plusplus {
     ////////////////////////////////////////
     /// set the selections for soft pion ///
     ////////////////////////////////////////
+
+    /// apply the global-track w/o dca cuts for soft pion BEFORE ALL OTHER CUSTOM CUTS
+    if (applyGlobalTrkWoDcaCutsSoftPi) {
+
+      LOG(info) << ">>> applyGlobalTrkWoDcaCutsSoftPi==true  ==>  global-track w/o dca cuts for soft pionapplied BEFORE ALL OTHER CUSTOM CUTS <<<";
+
+      /// same configuration as in track selection (itsMatching==1)
+      softPiCuts = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny, 0);
+
+      /// remove dca cuts (applied manually after the possible track-to-collision reassociation)
+      softPiCuts.SetMaxDcaXY(99999);
+      softPiCuts.SetMaxDcaZ(99999);
+    }
 
     // kinematics
     // softPiCuts.SetPtRange(0.001, 1000.); // pt
@@ -201,9 +217,9 @@ struct HfCandidateCreatorSigmac0plusplus {
       //////////////////////////////////////////////////////////////////////////////////////
 
       /// Exclude the current candidate soft pion if it corresponds already to a candidate Lc prong
-      int indexProng0 = candLc.template prong0_as<aod::Tracks>().globalIndex();
-      int indexProng1 = candLc.template prong1_as<aod::Tracks>().globalIndex();
-      int indexProng2 = candLc.template prong2_as<aod::Tracks>().globalIndex();
+      int indexProng0 = candLc.template prong0_as<aod::TracksWDcaExtra>().globalIndex();
+      int indexProng1 = candLc.template prong1_as<aod::TracksWDcaExtra>().globalIndex();
+      int indexProng2 = candLc.template prong2_as<aod::TracksWDcaExtra>().globalIndex();
       int indexSoftPi = trackSoftPi.globalIndex();
       if (indexSoftPi == indexProng0 || indexSoftPi == indexProng1 || indexSoftPi == indexProng2) {
         continue;
@@ -244,7 +260,7 @@ struct HfCandidateCreatorSigmac0plusplus {
                     TRK const& trackSoftPi,
                     aod::TracksWDcaExtra const& tracks,
                     CandidatesLc const& candidates,
-                    aod::BCsWithTimestamps const& bcWithTimeStamps)
+                    aod::BCsWithTimestamps const&)
   {
 
     auto thisCollId = collision.globalIndex();
@@ -314,11 +330,10 @@ struct HfCandidateCreatorSigmac0plusplus {
 
       histos.fill(HIST("hCounter"), 1);
       // LOG(info) << "[processDataTrackToCollAssoc] Collision with globalIndex " << collision.globalIndex();
-      // LOG(info) << "[processDataTrackToCollAssoc]     - number of tracks: " << tracks.size();
-      // LOG(info) << "[processDataTrackToCollAssoc]     - number of Lc candidates: " << candidates.size();
 
       // slice by hand the assoc. track with time per collision
       auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, collision.globalIndex());
+      // LOG(info) << "[processDataTrackToCollAssoc]     - number of tracks: " << trackIdsThisCollision.size();
 
       /// loop over tracks for soft pion
       for (const auto& trackId : trackIdsThisCollision) {
@@ -371,8 +386,24 @@ struct HfCandidateSigmac0plusplusMc {
   using LambdacMc = soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>;
   // using LambdacMcGen = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
 
+  float zPvPosMax{1000.f};
+
   /// @brief init function
-  void init(InitContext const&) {}
+  void init(InitContext& initContext)
+  {
+    const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
+    for (const DeviceSpec& device : workflows.devices) {
+      if (device.name.compare("hf-candidate-creator-3prong") == 0) { // here we assume that the hf-candidate-creator-3prong is in the workflow
+        for (const auto& option : device.options) {
+          if (option.name.compare("hfEvSel.zPvPosMax") == 0) {
+            zPvPosMax = option.defaultValue.get<float>();
+            break;
+          }
+        }
+        break;
+      }
+    }
+  }
 
   /// @brief dummy process function, to be run on data
   /// @param
@@ -383,7 +414,8 @@ struct HfCandidateSigmac0plusplusMc {
   /// @param mcParticles table of generated particles
   void processMc(aod::McParticles const& mcParticles,
                  aod::TracksWMc const& tracks,
-                 LambdacMc const& candsLc /*, const LambdacMcGen&*/)
+                 LambdacMc const& candsLc /*, const LambdacMcGen&*/,
+                 aod::McCollisions const&)
   {
 
     // Match reconstructed candidates.
@@ -395,7 +427,6 @@ struct HfCandidateSigmac0plusplusMc {
     int8_t flag = 0;
     int8_t origin = 0;
     int8_t chargeSigmac = 10;
-    // std::vector<int> arrDaughIndex; /// index of daughters of MC particle
 
     /// Match reconstructed Σc0,++ candidates
     for (const auto& candSigmac : *candidatesSigmac) {
@@ -403,12 +434,12 @@ struct HfCandidateSigmac0plusplusMc {
       sign = 0;
       flag = 0;
       origin = 0;
-      // arrDaughIndex.clear();
+      std::vector<int> idxBhadMothers{};
 
       /// skip immediately the candidate Σc0,++ w/o a Λc+ matched to MC
       auto candLc = candSigmac.prongLc_as<LambdacMc>();
       if (!(std::abs(candLc.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) { /// (*)
-        rowMCMatchScRec(flag, origin);
+        rowMCMatchScRec(flag, origin, -1.f, 0);
         continue;
       }
 
@@ -443,17 +474,29 @@ struct HfCandidateSigmac0plusplusMc {
       /// check the origin (prompt vs. non-prompt)
       if (flag != 0) {
         auto particle = mcParticles.rawIteratorAt(indexRec);
-        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
+        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
       }
-
       /// fill the table with results of reconstruction level MC matching
-      rowMCMatchScRec(flag, origin);
+      if (origin == RecoDecay::OriginType::NonPrompt) {
+        auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
+        rowMCMatchScRec(flag, origin, bHadMother.pt(), bHadMother.pdgCode());
+      } else {
+        rowMCMatchScRec(flag, origin, -1.f, 0);
+      }
     } /// end loop over reconstructed Σc0,++ candidates
 
     /// Match generated Σc0,++ candidates
     for (const auto& particle : mcParticles) {
       flag = 0;
       origin = 0;
+      std::vector<int> idxBhadMothers{};
+
+      auto mcCollision = particle.mcCollision();
+      float zPv = mcCollision.posZ();
+      if (zPv < -zPvPosMax || zPv > zPvPosMax) { // to avoid counting particles in collisions with Zvtx larger than the maximum, we do not match them
+        rowMCMatchScGen(flag, origin, -1);
+        continue;
+      }
 
       /// 3 levels:
       ///   1. Σc0 → Λc+ π-,+
@@ -493,12 +536,14 @@ struct HfCandidateSigmac0plusplusMc {
       /// check the origin (prompt vs. non-prompt)
       if (flag != 0) {
         auto particle = mcParticles.rawIteratorAt(indexRec);
-        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
+        origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
       }
-
       /// fill the table with results of generation level MC matching
-      rowMCMatchScGen(flag, origin);
-
+      if (origin == RecoDecay::OriginType::NonPrompt) {
+        rowMCMatchScGen(flag, origin, idxBhadMothers[0]);
+      } else {
+        rowMCMatchScGen(flag, origin, -1);
+      }
     } /// end loop over mcParticles
   }   /// end processMc
   PROCESS_SWITCH(HfCandidateSigmac0plusplusMc, processMc, "Process MC", false);

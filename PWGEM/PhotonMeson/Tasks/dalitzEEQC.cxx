@@ -14,317 +14,361 @@
 // This code runs loop over dalitz ee table for dalitz QC.
 //    Please write to: daiki.sekihata@cern.ch
 
-#include <array>
 #include "TString.h"
-#include "THashList.h"
-#include "TDirectory.h"
 #include "Math/Vector4D.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
-
 #include "Common/Core/RecoDecay.h"
+
+#include "DetectorsBase/GeometryManager.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "CCDB/BasicCCDBManager.h"
+
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Core/DalitzEECut.h"
-#include "PWGEM/PhotonMeson/Core/CutsLibrary.h"
-#include "PWGEM/PhotonMeson/Core/HistogramsLibrary.h"
-#include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
+#include "PWGEM/PhotonMeson/Core/EMPhotonEventCut.h"
+#include "PWGEM/Dilepton/Utils/PairUtilities.h"
+#include "PWGEM/PhotonMeson/Utils/EventHistograms.h"
 
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
-using std::array;
+using namespace o2::aod::pwgem::dilepton::utils::emtrackutil;
 
-using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent, aod::EMReducedEventsBz, aod::EMReducedEventsNee>;
+using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec>;
 using MyCollision = MyCollisions::iterator;
 
-using MyDalitzEEs = soa::Join<aod::DalitzEEs, aod::DalitzEEEMReducedEventIds>;
-using MyDalitzEE = MyDalitzEEs::iterator;
-
-using MyTracks = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronEMReducedEventIds, aod::EMPrimaryElectronsPrefilterBit>;
+using MyTracks = soa::Join<aod::EMPrimaryElectronsFromDalitz, aod::EMPrimaryElectronEMEventIds>;
 using MyTrack = MyTracks::iterator;
 
 struct DalitzEEQC {
-  Configurable<std::string> fConfigDalitzEECuts{"cfgDalitzEECuts", "mee_all_tpchadrejortofreq_lowB,nocut", "Comma separated list of dalitz ee cuts"};
-  std::vector<DalitzEECut> fDalitzEECuts;
+  // Configurables
+  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
+  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
+  Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
 
-  OutputObj<THashList> fOutputEvent{"Event"};
-  OutputObj<THashList> fOutputTrack{"Track"};
-  OutputObj<THashList> fOutputDalitzEE{"DalitzEE"};
-  THashList* fMainList = new THashList();
-  bool doMix = false;
+  Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
+  Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
+  Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
+  Configurable<float> maxY{"maxY", 0.9, "maximum rapidity for reconstructed particles"};
+
+  EMPhotonEventCut fEMEventCut;
+  struct : ConfigurableGroup {
+    std::string prefix = "eventcut_group";
+    Configurable<float> cfgZvtxMax{"cfgZvtxMax", 10.f, "max. Zvtx"};
+    Configurable<bool> cfgRequireSel8{"cfgRequireSel8", true, "require sel8 in event cut"};
+    Configurable<bool> cfgRequireFT0AND{"cfgRequireFT0AND", true, "require FT0AND in event cut"};
+    Configurable<bool> cfgRequireNoTFB{"cfgRequireNoTFB", false, "require No time frame border in event cut"};
+    Configurable<bool> cfgRequireNoITSROFB{"cfgRequireNoITSROFB", false, "require no ITS readout frame border in event cut"};
+    Configurable<bool> cfgRequireNoSameBunchPileup{"cfgRequireNoSameBunchPileup", false, "require no same bunch pileup in event cut"};
+    Configurable<bool> cfgRequireVertexITSTPC{"cfgRequireVertexITSTPC", false, "require Vertex ITSTPC in event cut"}; // ITS-TPC matched track contributes PV.
+    Configurable<bool> cfgRequireGoodZvtxFT0vsPV{"cfgRequireGoodZvtxFT0vsPV", false, "require good Zvtx between FT0 vs. PV in event cut"};
+    Configurable<int> cfgOccupancyMin{"cfgOccupancyMin", -1, "min. occupancy"};
+    Configurable<int> cfgOccupancyMax{"cfgOccupancyMax", 1000000000, "max. occupancy"};
+  } eventcuts;
+
+  DalitzEECut fDileptonCut;
+  struct : ConfigurableGroup {
+    std::string prefix = "dileptoncut_group";
+    Configurable<float> cfg_min_mass{"cfg_min_mass", 0.0, "min mass"};
+    Configurable<float> cfg_max_mass{"cfg_max_mass", 0.5, "max mass"};
+    Configurable<bool> cfg_apply_phiv{"cfg_apply_phiv", true, "flag to apply phiv cut"};
+    Configurable<bool> cfg_apply_pf{"cfg_apply_pf", false, "flag to apply phiv prefilter"};
+    Configurable<bool> cfg_require_itsib_any{"cfg_require_itsib_any", true, "flag to require ITS ib any hits"};
+    Configurable<bool> cfg_require_itsib_1st{"cfg_require_itsib_1st", false, "flag to require ITS ib 1st hit"};
+    Configurable<float> cfg_phiv_slope{"cfg_phiv_slope", 0.0185, "slope for m vs. phiv"};
+    Configurable<float> cfg_phiv_intercept{"cfg_phiv_intercept", -0.0280, "intercept for m vs. phiv"};
+
+    Configurable<float> cfg_min_pt_track{"cfg_min_pt_track", 0.1, "min pT for single track"};
+    Configurable<float> cfg_max_eta_track{"cfg_max_eta_track", 0.9, "max eta for single track"};
+    Configurable<int> cfg_min_ncluster_tpc{"cfg_min_ncluster_tpc", 0, "min ncluster tpc"};
+    Configurable<int> cfg_min_ncluster_its{"cfg_min_ncluster_its", 5, "min ncluster its"};
+    Configurable<int> cfg_min_ncrossedrows{"cfg_min_ncrossedrows", 70, "min ncrossed rows"};
+    Configurable<float> cfg_max_chi2tpc{"cfg_max_chi2tpc", 4.0, "max chi2/NclsTPC"};
+    Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 5.0, "max chi2/NclsITS"};
+    Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 1.0, "max dca XY for single track in cm"};
+    Configurable<float> cfg_max_dcaz{"cfg_max_dcaz", 1.0, "max dca Z for single track in cm"};
+
+    Configurable<int> cfg_pid_scheme{"cfg_pid_scheme", static_cast<int>(DalitzEECut::PIDSchemes::kTPConly), "pid scheme [kTPConly : 0]"};
+    Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -2.0, "min. TPC n sigma for electron inclusion"};
+    Configurable<float> cfg_max_TPCNsigmaEl{"cfg_max_TPCNsigmaEl", +3.0, "max. TPC n sigma for electron inclusion"};
+    Configurable<float> cfg_min_TPCNsigmaPi{"cfg_min_TPCNsigmaPi", -1e+10, "min. TPC n sigma for pion exclusion"};
+    Configurable<float> cfg_max_TPCNsigmaPi{"cfg_max_TPCNsigmaPi", +3.0, "max. TPC n sigma for pion exclusion"};
+  } dileptoncuts;
+
+  o2::ccdb::CcdbApi ccdbApi;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  int mRunNumber;
+  float d_bz;
+
+  HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
+  static constexpr std::string_view event_cut_types[2] = {"before/", "after/"};
+
+  void init(InitContext& /*context*/)
+  {
+    DefineEMEventCut();
+    DefineDileptonCut();
+    addhistograms();
+
+    mRunNumber = 0;
+    d_bz = 0;
+
+    ccdb->setURL(ccdburl);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setFatalWhenNull(false);
+  }
+
+  template <typename TCollision>
+  void initCCDB(TCollision const& collision)
+  {
+    if (mRunNumber == collision.runNumber()) {
+      return;
+    }
+
+    // In case override, don't proceed, please - no CCDB access required
+    if (d_bz_input > -990) {
+      d_bz = d_bz_input;
+      o2::parameters::GRPMagField grpmag;
+      if (fabs(d_bz) > 1e-5) {
+        grpmag.setL3Current(30000.f / (d_bz / 5.0f));
+      }
+      mRunNumber = collision.runNumber();
+      return;
+    }
+
+    auto run3grp_timestamp = collision.timestamp();
+    o2::parameters::GRPObject* grpo = 0x0;
+    o2::parameters::GRPMagField* grpmag = 0x0;
+    if (!skipGRPOquery)
+      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
+    if (grpo) {
+      // Fetch magnetic field from ccdb for current collision
+      d_bz = grpo->getNominalL3Field();
+      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
+    } else {
+      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
+      if (!grpmag) {
+        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
+      }
+      // Fetch magnetic field from ccdb for current collision
+      d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
+      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
+    }
+    mRunNumber = collision.runNumber();
+  }
+
+  ~DalitzEEQC() {}
 
   void addhistograms()
   {
-    fMainList->SetOwner(true);
-    fMainList->SetName("fMainList");
+    // event info
+    o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&fRegistry);
 
-    // create sub lists first.
-    o2::aod::emphotonhistograms::AddHistClass(fMainList, "Event");
-    THashList* list_ev = reinterpret_cast<THashList*>(fMainList->FindObject("Event"));
-    o2::aod::emphotonhistograms::DefineHistograms(list_ev, "Event");
+    // pair info
+    std::vector<double> ptbins;
+    std::vector<double> massbins;
 
-    o2::aod::emphotonhistograms::AddHistClass(fMainList, "Track");
-    THashList* list_track = reinterpret_cast<THashList*>(fMainList->FindObject("Track"));
+    for (int i = 0; i < 51; i++) {
+      massbins.emplace_back(0.01 * (i - 0) + 0.0); // every 0.01 GeV/c2 from 0.0 to 0.5 GeV/c2
+    }
+    const AxisSpec axis_mass{massbins, "m_{ee} (GeV/c^{2})"};
 
-    o2::aod::emphotonhistograms::AddHistClass(fMainList, "DalitzEE");
-    THashList* list_dalitzee = reinterpret_cast<THashList*>(fMainList->FindObject("DalitzEE"));
+    for (int i = 0; i < 50; i++) {
+      ptbins.emplace_back(0.1 * (i - 0) + 0.0); // every 0.1 GeV/c from 0.0 to 5.0 GeV/c
+    }
+    for (int i = 50; i < 61; i++) {
+      ptbins.emplace_back(0.5 * (i - 50) + 5.0); // every 0.5 GeV/c from 5.0 to 10 GeV/c
+    }
+    const AxisSpec axis_pt{ptbins, "p_{T,ee} (GeV/c)"};
 
-    for (const auto& cut : fDalitzEECuts) {
-      const char* cutname = cut.GetName();
-      o2::aod::emphotonhistograms::AddHistClass(list_track, cutname);
-      o2::aod::emphotonhistograms::AddHistClass(list_dalitzee, cutname);
+    fRegistry.add("Pair/same/hMvsPt", "m_{ee} vs. p_{T,ee};m_{ee} (GeV/c^{2});p_{T,ee} (GeV/c)", kTH2F, {axis_mass, axis_pt}, true);
+    fRegistry.add("Pair/same/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{90, 0, M_PI}, {100, 0.0f, 0.1f}}, true);
+
+    fRegistry.add("Track/hPt", "pT;p_{T} (GeV/c)", kTH1F, {{1000, 0.0f, 10}}, false);
+    fRegistry.add("Track/hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", kTH1F, {{400, -20, 20}}, false);
+    fRegistry.add("Track/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{180, 0, 2 * M_PI}, {40, -2.0f, 2.0f}}, false);
+    fRegistry.add("Track/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", kTH2F, {{200, -1.0f, 1.0f}, {200, -1.0f, 1.0f}}, false);
+    fRegistry.add("Track/hNclsTPC", "number of TPC clusters", kTH1F, {{161, -0.5, 160.5}}, false);
+    fRegistry.add("Track/hNcrTPC", "number of TPC crossed rows", kTH1F, {{161, -0.5, 160.5}}, false);
+    fRegistry.add("Track/hChi2TPC", "chi2/number of TPC clusters", kTH1F, {{100, 0, 10}}, false);
+    fRegistry.add("Track/hTPCdEdx", "TPC dE/dx;p_{in} (GeV/c);TPC dE/dx (a.u.)", kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
+    fRegistry.add("Track/hTPCNsigmaEl", "TPC n sigma el;p_{in} (GeV/c);n #sigma_{e}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+    fRegistry.add("Track/hTPCNsigmaPi", "TPC n sigma pi;p_{in} (GeV/c);n #sigma_{#pi}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+    fRegistry.add("Track/hTPCNcr2Nf", "TPC Ncr/Nfindable", kTH1F, {{200, 0, 2}}, false);
+    fRegistry.add("Track/hTPCNcls2Nf", "TPC Ncls/Nfindable", kTH1F, {{200, 0, 2}}, false);
+    fRegistry.add("Track/hNclsITS", "number of ITS clusters", kTH1F, {{8, -0.5, 7.5}}, false);
+    fRegistry.add("Track/hChi2ITS", "chi2/number of ITS clusters", kTH1F, {{100, 0, 10}}, false);
+    fRegistry.add("Track/hITSClusterMap", "ITS cluster map", kTH1F, {{128, -0.5, 127.5}}, false);
+  }
+
+  void DefineEMEventCut()
+  {
+    fEMEventCut = EMPhotonEventCut("fEMEventCut", "fEMEventCut");
+    fEMEventCut.SetRequireSel8(eventcuts.cfgRequireSel8);
+    fEMEventCut.SetRequireFT0AND(eventcuts.cfgRequireFT0AND);
+    fEMEventCut.SetZvtxRange(-eventcuts.cfgZvtxMax, +eventcuts.cfgZvtxMax);
+    fEMEventCut.SetRequireNoTFB(eventcuts.cfgRequireNoTFB);
+    fEMEventCut.SetRequireNoITSROFB(eventcuts.cfgRequireNoITSROFB);
+    fEMEventCut.SetRequireNoSameBunchPileup(eventcuts.cfgRequireNoSameBunchPileup);
+    fEMEventCut.SetRequireVertexITSTPC(eventcuts.cfgRequireVertexITSTPC);
+    fEMEventCut.SetRequireGoodZvtxFT0vsPV(eventcuts.cfgRequireGoodZvtxFT0vsPV);
+    fEMEventCut.SetOccupancyRange(eventcuts.cfgOccupancyMin, eventcuts.cfgOccupancyMax);
+  }
+
+  void DefineDileptonCut()
+  {
+    fDileptonCut = DalitzEECut("fDileptonCut", "fDileptonCut");
+
+    // for pair
+    fDileptonCut.SetMeeRange(dileptoncuts.cfg_min_mass, dileptoncuts.cfg_max_mass);
+    fDileptonCut.SetMaxPhivPairMeeDep([&](float mll) { return (mll - dileptoncuts.cfg_phiv_intercept) / dileptoncuts.cfg_phiv_slope; });
+    fDileptonCut.ApplyPhiV(dileptoncuts.cfg_apply_phiv);
+    fDileptonCut.RequireITSibAny(dileptoncuts.cfg_require_itsib_any);
+    fDileptonCut.RequireITSib1st(dileptoncuts.cfg_require_itsib_1st);
+
+    // for track
+    fDileptonCut.SetTrackPtRange(dileptoncuts.cfg_min_pt_track, 1e+10f);
+    fDileptonCut.SetTrackEtaRange(-dileptoncuts.cfg_max_eta_track, +dileptoncuts.cfg_max_eta_track);
+    fDileptonCut.SetMinNClustersTPC(dileptoncuts.cfg_min_ncluster_tpc);
+    fDileptonCut.SetMinNCrossedRowsTPC(dileptoncuts.cfg_min_ncrossedrows);
+    fDileptonCut.SetMinNCrossedRowsOverFindableClustersTPC(0.8);
+    fDileptonCut.SetChi2PerClusterTPC(0.0, dileptoncuts.cfg_max_chi2tpc);
+    fDileptonCut.SetChi2PerClusterITS(0.0, dileptoncuts.cfg_max_chi2its);
+    fDileptonCut.SetNClustersITS(dileptoncuts.cfg_min_ncluster_its, 7);
+    fDileptonCut.SetMaxDcaXY(dileptoncuts.cfg_max_dcaxy);
+    fDileptonCut.SetMaxDcaZ(dileptoncuts.cfg_max_dcaz);
+
+    // for eID
+    fDileptonCut.SetPIDScheme(dileptoncuts.cfg_pid_scheme);
+    fDileptonCut.SetTPCNsigmaElRange(dileptoncuts.cfg_min_TPCNsigmaEl, dileptoncuts.cfg_max_TPCNsigmaEl);
+    fDileptonCut.SetTPCNsigmaPiRange(dileptoncuts.cfg_min_TPCNsigmaPi, dileptoncuts.cfg_max_TPCNsigmaPi);
+  }
+
+  template <typename TCollision, typename TTrack1, typename TTrack2>
+  bool fillPairInfo(TCollision const&, TTrack1 const& t1, TTrack2 const& t2)
+  {
+    if (t1.trackId() == t2.trackId()) { // this is protection against pairing identical 2 tracks. This happens, when TTCA is used. TTCA can assign a track to several possible collisions.
+      return false;
     }
 
-    // for single tracks
-    for (auto& cut : fDalitzEECuts) {
-      std::string_view cutname = cut.GetName();
-      THashList* list = reinterpret_cast<THashList*>(fMainList->FindObject("Track")->FindObject(cutname.data()));
-      o2::aod::emphotonhistograms::DefineHistograms(list, "Track");
+    if (!fDileptonCut.IsSelectedTrack(t1) || !fDileptonCut.IsSelectedTrack(t2)) {
+      return false;
     }
 
-    // for DalitzEEs
-    for (auto& cut : fDalitzEECuts) {
-      std::string_view cutname = cut.GetName();
-      THashList* list = reinterpret_cast<THashList*>(fMainList->FindObject("DalitzEE")->FindObject(cutname.data()));
-      if (doMix) {
-        o2::aod::emphotonhistograms::DefineHistograms(list, "DalitzEE", "mix");
-      } else {
-        o2::aod::emphotonhistograms::DefineHistograms(list, "DalitzEE", "");
+    if (!fDileptonCut.IsSelectedPair(t1, t2, d_bz)) {
+      return false;
+    }
+
+    ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron);
+    ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
+    ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+    if (abs(v12.Rapidity()) > maxY) {
+      return false;
+    }
+    float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), d_bz);
+
+    if (t1.sign() * t2.sign() < 0) { // ULS
+      fRegistry.fill(HIST("Pair/same/hMvsPt"), v12.M(), v12.Pt());
+      fRegistry.fill(HIST("Pair/same/hMvsPhiV"), phiv, v12.M());
+    }
+
+    if (t1.sign() > 0) {
+      if (std::find(used_trackIds.begin(), used_trackIds.end(), t1.globalIndex()) == used_trackIds.end()) {
+        used_trackIds.emplace_back(t1.globalIndex());
+        fillTrackInfo(t1);
+      }
+    } else {
+      if (std::find(used_trackIds.begin(), used_trackIds.end(), t1.globalIndex()) == used_trackIds.end()) {
+        used_trackIds.emplace_back(t1.globalIndex());
+        fillTrackInfo(t1);
       }
     }
-  }
-
-  void DefineCuts()
-  {
-    TString cutNamesStr = fConfigDalitzEECuts.value;
-    if (!cutNamesStr.IsNull()) {
-      std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
-      for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        const char* cutname = objArray->At(icut)->GetName();
-        LOGF(info, "add cut : %s", cutname);
-        fDalitzEECuts.push_back(*dalitzeecuts::GetCut(cutname));
+    if (t2.sign() > 0) {
+      if (std::find(used_trackIds.begin(), used_trackIds.end(), t2.globalIndex()) == used_trackIds.end()) {
+        used_trackIds.emplace_back(t2.globalIndex());
+        fillTrackInfo(t2);
+      }
+    } else {
+      if (std::find(used_trackIds.begin(), used_trackIds.end(), t2.globalIndex()) == used_trackIds.end()) {
+        used_trackIds.emplace_back(t2.globalIndex());
+        fillTrackInfo(t2);
       }
     }
-    LOGF(info, "Number of Dalitz cuts = %d", fDalitzEECuts.size());
+    return true;
   }
 
-  void init(InitContext& context)
+  template <typename TTrack>
+  void fillTrackInfo(TTrack const& track)
   {
-    if (context.mOptions.get<bool>("processEventMixing")) {
-      doMix = true;
-    }
-
-    DefineCuts();
-    addhistograms(); // please call this after DefinCuts();
-
-    fOutputEvent.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("Event")));
-    fOutputTrack.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("Track")));
-    fOutputDalitzEE.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("DalitzEE")));
+    fRegistry.fill(HIST("Track/hPt"), track.pt());
+    fRegistry.fill(HIST("Track/hQoverPt"), track.sign() / track.pt());
+    fRegistry.fill(HIST("Track/hEtaPhi"), track.phi(), track.eta());
+    fRegistry.fill(HIST("Track/hDCAxyz"), track.dcaXY(), track.dcaZ());
+    fRegistry.fill(HIST("Track/hNclsITS"), track.itsNCls());
+    fRegistry.fill(HIST("Track/hNclsTPC"), track.tpcNClsFound());
+    fRegistry.fill(HIST("Track/hNcrTPC"), track.tpcNClsCrossedRows());
+    fRegistry.fill(HIST("Track/hTPCNcr2Nf"), track.tpcCrossedRowsOverFindableCls());
+    fRegistry.fill(HIST("Track/hTPCNcls2Nf"), track.tpcFoundOverFindableCls());
+    fRegistry.fill(HIST("Track/hChi2TPC"), track.tpcChi2NCl());
+    fRegistry.fill(HIST("Track/hChi2ITS"), track.itsChi2NCl());
+    fRegistry.fill(HIST("Track/hITSClusterMap"), track.itsClusterMap());
+    fRegistry.fill(HIST("Track/hTPCdEdx"), track.tpcInnerParam(), track.tpcSignal());
+    fRegistry.fill(HIST("Track/hTPCNsigmaEl"), track.tpcInnerParam(), track.tpcNSigmaEl());
+    fRegistry.fill(HIST("Track/hTPCNsigmaPi"), track.tpcInnerParam(), track.tpcNSigmaPi());
   }
 
-  Partition<MyDalitzEEs> uls_pairs = o2::aod::dalitzee::sign == 0;
-  Partition<MyDalitzEEs> lspp_pairs = o2::aod::dalitzee::sign == +1;
-  Partition<MyDalitzEEs> lsmm_pairs = o2::aod::dalitzee::sign == -1;
+  Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
+  using FilteredMyCollisions = soa::Filtered<MyCollisions>;
 
   SliceCache cache;
-  Preslice<MyDalitzEEs> perCollision = aod::dalitzee::emreducedeventId;
+  Preslice<MyTracks> perCollision_track = aod::emprimaryelectron::emeventId;
+  Filter trackFilter = static_cast<float>(dileptoncuts.cfg_min_pt_track) < o2::aod::track::pt && nabs(o2::aod::track::eta) < static_cast<float>(dileptoncuts.cfg_max_eta_track) && o2::aod::track::tpcChi2NCl < static_cast<float>(dileptoncuts.cfg_max_chi2tpc) && o2::aod::track::itsChi2NCl < static_cast<float>(dileptoncuts.cfg_max_chi2its) && nabs(o2::aod::track::dcaXY) < static_cast<float>(dileptoncuts.cfg_max_dcaxy) && nabs(o2::aod::track::dcaZ) < static_cast<float>(dileptoncuts.cfg_max_dcaz);
+  Filter pidFilter = (static_cast<float>(dileptoncuts.cfg_min_TPCNsigmaEl) < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < static_cast<float>(dileptoncuts.cfg_max_TPCNsigmaEl)) && (o2::aod::pidtpc::tpcNSigmaPi < static_cast<float>(dileptoncuts.cfg_min_TPCNsigmaPi) || static_cast<float>(dileptoncuts.cfg_max_TPCNsigmaPi) < o2::aod::pidtpc::tpcNSigmaPi);
+  using FilteredMyTracks = soa::Filtered<MyTracks>;
+  Partition<FilteredMyTracks> posTracks = o2::aod::emprimaryelectron::sign > int8_t(0);
+  Partition<FilteredMyTracks> negTracks = o2::aod::emprimaryelectron::sign < int8_t(0);
 
-  std::vector<uint64_t> used_trackIds;
-
-  void processQC(MyCollisions const& collisions, MyDalitzEEs const& dileptons, MyTracks const& tracks)
+  std::vector<int> used_trackIds;
+  void processQC(FilteredMyCollisions const& collisions, FilteredMyTracks const& /*tracks*/)
   {
-    THashList* list_ev = static_cast<THashList*>(fMainList->FindObject("Event"));
-    THashList* list_dalitzee = static_cast<THashList*>(fMainList->FindObject("DalitzEE"));
-    THashList* list_track = static_cast<THashList*>(fMainList->FindObject("Track"));
-    double values[4] = {0, 0, 0, 0};
-
     for (auto& collision : collisions) {
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hZvtx_before"))->Fill(collision.posZ());
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->Fill(1.0);
-      if (!collision.sel8()) {
+      initCCDB(collision);
+      const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->Fill(2.0);
 
-      if (collision.numContrib() < 0.5) {
+      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<0>(&fRegistry, collision);
+      if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->Fill(3.0);
+      o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<1>(&fRegistry, collision);
+      fRegistry.fill(HIST("Event/before/hCollisionCounter"), 12.0); // accepted
+      fRegistry.fill(HIST("Event/after/hCollisionCounter"), 12.0);  // accepted
 
-      if (abs(collision.posZ()) > 10.0) {
-        continue;
+      auto posTracks_per_coll = posTracks->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);
+      auto negTracks_per_coll = negTracks->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);
+      // LOGF(info, "centrality = %f , posTracks_per_coll.size() = %d, negTracks_per_coll.size() = %d", centralities[cfgCentEstimator], posTracks_per_coll.size(), negTracks_per_coll.size());
+
+      for (auto& [pos, ele] : combinations(CombinationsFullIndexPolicy(posTracks_per_coll, negTracks_per_coll))) { // ULS
+        fillPairInfo(collision, pos, ele);
       }
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->Fill(4.0);
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hZvtx_after"))->Fill(collision.posZ());
-      o2::aod::emphotonhistograms::FillHistClass<EMHistType::kEvent>(list_ev, "", collision);
+    } // end of collision loop
 
-      auto uls_pairs_per_coll = uls_pairs->sliceByCached(o2::aod::dalitzee::emreducedeventId, collision.globalIndex(), cache);
-      auto lspp_pairs_per_coll = lspp_pairs->sliceByCached(o2::aod::dalitzee::emreducedeventId, collision.globalIndex(), cache);
-      auto lsmm_pairs_per_coll = lsmm_pairs->sliceByCached(o2::aod::dalitzee::emreducedeventId, collision.globalIndex(), cache);
+    used_trackIds.clear();
+    used_trackIds.shrink_to_fit();
 
-      for (const auto& cut : fDalitzEECuts) {
-        THashList* list_dalitzee_cut = static_cast<THashList*>(list_dalitzee->FindObject(cut.GetName()));
-        THashList* list_track_cut = static_cast<THashList*>(list_track->FindObject(cut.GetName()));
-        used_trackIds.reserve(uls_pairs_per_coll.size() * 2);
-
-        int nuls = 0, nlspp = 0, nlsmm = 0;
-        for (auto& uls_pair : uls_pairs_per_coll) {
-          auto pos = uls_pair.template posTrack_as<MyTracks>();
-          auto ele = uls_pair.template negTrack_as<MyTracks>();
-          if (cut.IsSelected<MyTracks>(uls_pair)) {
-            values[0] = uls_pair.mass();
-            values[1] = uls_pair.pt();
-            values[2] = uls_pair.dcaXY();
-            values[3] = uls_pair.phiv();
-            reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_uls_same"))->Fill(values);
-            nuls++;
-            for (auto& track : {pos, ele}) {
-              if (std::find(used_trackIds.begin(), used_trackIds.end(), track.globalIndex()) == used_trackIds.end()) {
-                o2::aod::emphotonhistograms::FillHistClass<EMHistType::kTrack>(list_track_cut, "", track);
-                used_trackIds.emplace_back(track.globalIndex());
-              }
-            }
-          }
-        } // end of uls pair loop
-        reinterpret_cast<TH1F*>(list_dalitzee_cut->FindObject("hNpair_uls"))->Fill(nuls);
-
-        for (auto& lspp_pair : lspp_pairs_per_coll) {
-          if (cut.IsSelected<MyTracks>(lspp_pair)) {
-            values[0] = lspp_pair.mass();
-            values[1] = lspp_pair.pt();
-            values[2] = lspp_pair.dcaXY();
-            values[3] = lspp_pair.phiv();
-            reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_lspp_same"))->Fill(values);
-            nlspp++;
-          }
-        } // end of lspp pair loop
-        reinterpret_cast<TH1F*>(list_dalitzee_cut->FindObject("hNpair_lspp"))->Fill(nlspp);
-
-        for (auto& lsmm_pair : lsmm_pairs_per_coll) {
-          if (cut.IsSelected<MyTracks>(lsmm_pair)) {
-            values[0] = lsmm_pair.mass();
-            values[1] = lsmm_pair.pt();
-            values[2] = lsmm_pair.dcaXY();
-            values[3] = lsmm_pair.phiv();
-            reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_lsmm_same"))->Fill(values);
-            nlsmm++;
-          }
-        } // end of lsmm pair loop
-        reinterpret_cast<TH1F*>(list_dalitzee_cut->FindObject("hNpair_lsmm"))->Fill(nlsmm);
-
-        used_trackIds.clear();
-        used_trackIds.shrink_to_fit();
-      } // end of cut loop
-    }   // end of collision loop
-  }     // end of process
+  } // end of process
   PROCESS_SWITCH(DalitzEEQC, processQC, "run Dalitz QC", true);
 
-  Configurable<int> ndepth{"ndepth", 10, "depth for event mixing"};
-  ConfigurableAxis ConfVtxBins{"ConfVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
-  ConfigurableAxis ConfCentBins{"ConfCentBins", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 999.f}, "Mixing bins - centrality"};
-  using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
-  BinningType colBinning{{ConfVtxBins, ConfCentBins}, true};
-  Filter collisionFilter_common = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::collision::numContrib > (uint16_t)0 && o2::aod::evsel::sel8 == true;
-  Filter collisionFilter_subsys = (o2::aod::emreducedevent::neeuls >= 1) || (o2::aod::emreducedevent::neelspp >= 1) || (o2::aod::emreducedevent::neelsmm >= 1);
-  using MyFilteredCollisions = soa::Filtered<MyCollisions>; // this goes to mixed event.
-
-  // e+, e- enter to event mixing, only if any pair exists. If you want to do mixed event, please store LS for ee
-  void processEventMixing(MyFilteredCollisions const& collisions, MyDalitzEEs const& dileptons, MyTracks const& tracks)
-  {
-    THashList* list_dalitzee = static_cast<THashList*>(fMainList->FindObject("DalitzEE"));
-    double values[4] = {0, 0, 0, 0};
-    ROOT::Math::PtEtaPhiMVector v1, v2, v12;
-    float phiv = 0;
-
-    for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, ndepth, -1, collisions, collisions)) { // internally, CombinationsStrictlyUpperIndexPolicy(collisions, collisions) is called.
-      auto dileptons_coll1 = dileptons.sliceBy(perCollision, collision1.globalIndex());
-      auto dileptons_coll2 = dileptons.sliceBy(perCollision, collision2.globalIndex());
-      // LOGF(info, "collision1.globalIndex() = %d, collision1: posZ = %f, sel8 = %d | collision2.globalIndex() = %d, collision2: posZ = %f, sel8 = %d",collision1.globalIndex(), collision1.posZ(), collision1.sel8(), collision2.globalIndex(), collision2.posZ(), collision2.sel8());
-
-      for (auto& cut : fDalitzEECuts) {
-        THashList* list_dalitzee_cut = static_cast<THashList*>(list_dalitzee->FindObject(cut.GetName()));
-        for (auto& [dl1, dl2] : combinations(soa::CombinationsFullIndexPolicy(dileptons_coll1, dileptons_coll2))) {
-          if (!cut.IsSelected<MyTracks>(dl1) || !cut.IsSelected<MyTracks>(dl2)) {
-            continue;
-          }
-
-          auto pos1 = dl1.template posTrack_as<MyTracks>();
-          auto ele1 = dl1.template negTrack_as<MyTracks>();
-          auto pos2 = dl2.template posTrack_as<MyTracks>();
-          auto ele2 = dl2.template negTrack_as<MyTracks>();
-
-          // float dcaxy1 = t1.dcaXY() / sqrt(t1.cYY());
-          // float dcaxy2 = t2.dcaXY() / sqrt(t2.cYY());
-          // float dcamumuxy = sqrt((pow(dcaxy1, 2) + pow(dcaxy2, 2)) / 2.);
-          // float dcaz1 = t1.dcaZ() / sqrt(t1.cZZ());
-          // float dcaz2 = t2.dcaZ() / sqrt(t2.cZZ());
-          // float dcamumuz = sqrt((pow(dcaz1, 2) + pow(dcaz2, 2)) / 2.);
-
-          // mix uls1
-          // ROOT::Math::PtEtaPhiMVector v1(pos1.pt(), pos1.eta(), pos1.phi(), o2::constants::physics::MassElectron);
-          // ROOT::Math::PtEtaPhiMVector v2(ele2.pt(), ele2.eta(), ele2.phi(), o2::constants::physics::MassElectron);
-          // ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-          v1 = ROOT::Math::PtEtaPhiMVector(pos1.pt(), pos1.eta(), pos1.phi(), o2::constants::physics::MassElectron);
-          v2 = ROOT::Math::PtEtaPhiMVector(ele2.pt(), ele2.eta(), ele2.phi(), o2::constants::physics::MassElectron);
-          v12 = v1 + v2;
-          phiv = getPhivPair(pos1.px(), pos1.py(), pos1.pz(), ele2.px(), ele2.py(), ele2.pz(), pos1.sign(), ele2.sign(), collision1.bz());
-          values[0] = v12.M();
-          values[1] = v12.Pt();
-          values[2] = sqrt((pow(pos1.dcaXY() / sqrt(pos1.cYY()), 2) + pow(ele2.dcaXY() / sqrt(ele2.cYY()), 2)) / 2.); // pair DCAxy
-          values[3] = phiv;
-          if (cut.IsSelectedTrack(pos1) && cut.IsSelectedTrack(ele2) && cut.IsSelectedPair(v12.M(), phiv)) {
-            reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_uls_mix"))->Fill(values);
-          }
-
-          // mix uls2
-          v1 = ROOT::Math::PtEtaPhiMVector(pos2.pt(), pos2.eta(), pos2.phi(), o2::constants::physics::MassElectron);
-          v2 = ROOT::Math::PtEtaPhiMVector(ele1.pt(), ele1.eta(), ele1.phi(), o2::constants::physics::MassElectron);
-          v12 = v1 + v2;
-          phiv = getPhivPair(pos2.px(), pos2.py(), pos2.pz(), ele1.px(), ele1.py(), ele1.pz(), pos2.sign(), ele1.sign(), collision1.bz());
-          values[0] = v12.M();
-          values[1] = v12.Pt();
-          values[2] = sqrt((pow(pos2.dcaXY() / sqrt(pos2.cYY()), 2) + pow(ele1.dcaXY() / sqrt(ele1.cYY()), 2)) / 2.); // pair DCAxy
-          values[3] = phiv;
-          if (cut.IsSelectedTrack(pos2) && cut.IsSelectedTrack(ele1) && cut.IsSelectedPair(v12.M(), phiv)) {
-            reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_uls_mix"))->Fill(values);
-          }
-
-          // mix lspp
-          v1 = ROOT::Math::PtEtaPhiMVector(pos1.pt(), pos1.eta(), pos1.phi(), o2::constants::physics::MassElectron);
-          v2 = ROOT::Math::PtEtaPhiMVector(pos2.pt(), pos2.eta(), pos2.phi(), o2::constants::physics::MassElectron);
-          v12 = v1 + v2;
-          phiv = getPhivPair(pos1.px(), pos1.py(), pos1.pz(), pos2.px(), pos2.py(), pos2.pz(), pos1.sign(), pos2.sign(), collision1.bz());
-          values[0] = v12.M();
-          values[1] = v12.Pt();
-          values[2] = sqrt((pow(pos1.dcaXY() / sqrt(pos1.cYY()), 2) + pow(pos2.dcaXY() / sqrt(pos2.cYY()), 2)) / 2.); // pair DCAxy
-          values[3] = phiv;
-          if (cut.IsSelectedTrack(pos1) && cut.IsSelectedTrack(pos2) && cut.IsSelectedPair(v12.M(), phiv)) {
-            reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_lspp_mix"))->Fill(values);
-          }
-
-          // mix lsmm
-          v1 = ROOT::Math::PtEtaPhiMVector(ele1.pt(), ele1.eta(), ele1.phi(), o2::constants::physics::MassElectron);
-          v2 = ROOT::Math::PtEtaPhiMVector(ele2.pt(), ele2.eta(), ele2.phi(), o2::constants::physics::MassElectron);
-          v12 = v1 + v2;
-          phiv = getPhivPair(ele1.px(), ele1.py(), ele1.pz(), ele2.px(), ele2.py(), ele2.pz(), ele1.sign(), ele2.sign(), collision1.bz());
-          values[0] = v12.M();
-          values[1] = v12.Pt();
-          values[2] = sqrt((pow(ele1.dcaXY() / sqrt(ele1.cYY()), 2) + pow(ele2.dcaXY() / sqrt(ele2.cYY()), 2)) / 2.); // pair DCAxy
-          values[3] = phiv;
-          if (cut.IsSelectedTrack(ele1) && cut.IsSelectedTrack(ele2) && cut.IsSelectedPair(v12.M(), phiv)) {
-            reinterpret_cast<THnSparseF*>(list_dalitzee_cut->FindObject("hs_dilepton_lsmm_mix"))->Fill(values);
-          }
-
-        } // end of different dileptn combinations
-      }   // end of cut loop
-    }     // end of different collision combinations
-  }
-  PROCESS_SWITCH(DalitzEEQC, processEventMixing, "run Dalitz EE QC event mixing", true);
-
-  void processDummy(MyCollisions const& collisions) {}
+  void processDummy(MyCollisions const&) {}
   PROCESS_SWITCH(DalitzEEQC, processDummy, "Dummy function", false);
 };
 

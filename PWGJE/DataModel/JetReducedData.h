@@ -18,8 +18,10 @@
 #define PWGJE_DATAMODEL_JETREDUCEDDATA_H_
 
 #include <cmath>
+#include <vector>
 #include "Framework/AnalysisDataModel.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
+#include "PWGJE/Core/JetDerivedDataUtilities.h"
 
 namespace o2::aod
 {
@@ -30,113 +32,210 @@ DECLARE_SOA_INDEX_COLUMN(BC, bc);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t);
 DECLARE_SOA_COLUMN(Timestamp, timestamp, uint64_t);
+DECLARE_SOA_BITMAP_COLUMN(Alias, alias, 32);
+DECLARE_SOA_BITMAP_COLUMN(Selection, selection, 64);
+DECLARE_SOA_COLUMN(ReadCounts, readCounts, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadCountsWithTVX, readCountsWithTVX, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadCountsWithTVXAndNoTFB, readCountsWithTVXAndNoTFB, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadCountsWithTVXAndNoTFBAndNoITSROFB, readCountsWithTVXAndNoTFBAndNoITSROFB, std::vector<int>);
 } // namespace jbc
 
-DECLARE_SOA_TABLE(JBCs, "AOD", "JBCs",
-                  o2::soa::Index<>,
-                  jbc::RunNumber,
-                  jbc::GlobalBC,
-                  jbc::Timestamp);
-
-using JBC = JBCs::iterator;
-
-DECLARE_SOA_TABLE(StoredJBCs, "DYN", "JBCs",
+DECLARE_SOA_TABLE(JBCs, "AOD", "JBC",
                   o2::soa::Index<>,
                   jbc::RunNumber,
                   jbc::GlobalBC,
                   jbc::Timestamp,
+                  jbc::Alias,
+                  jbc::Selection);
+
+using JBC = JBCs::iterator;
+
+DECLARE_SOA_TABLE(StoredJBCs, "AOD1", "JBC",
+                  o2::soa::Index<>,
+                  jbc::RunNumber,
+                  jbc::GlobalBC,
+                  jbc::Timestamp,
+                  jbc::Alias,
+                  jbc::Selection,
                   o2::soa::Marker<1>);
 
 using StoredJBC = StoredJBCs::iterator;
 
-DECLARE_SOA_TABLE(JBCPIs, "AOD", "JBCPIs",
+DECLARE_SOA_TABLE(JBCPIs, "AOD", "JBCPI",
                   jbc::BCId);
 
-DECLARE_SOA_TABLE(StoredJBCPIs, "DYN", "JBCPIs",
+DECLARE_SOA_TABLE(StoredJBCPIs, "AOD1", "JBCPI",
                   jbc::BCId,
+                  o2::soa::Marker<1>);
+
+DECLARE_SOA_TABLE(BCCounts, "AOD", "BCCOUNT",
+                  jbc::ReadCounts,
+                  jbc::ReadCountsWithTVX,
+                  jbc::ReadCountsWithTVXAndNoTFB,
+                  jbc::ReadCountsWithTVXAndNoTFBAndNoITSROFB);
+
+DECLARE_SOA_TABLE(StoredBCCounts, "AOD1", "BCCOUNT",
+                  jbc::ReadCounts,
+                  jbc::ReadCountsWithTVX,
+                  jbc::ReadCountsWithTVXAndNoTFB,
+                  jbc::ReadCountsWithTVXAndNoTFBAndNoITSROFB,
                   o2::soa::Marker<1>);
 
 namespace jcollision
 {
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);
 DECLARE_SOA_INDEX_COLUMN(JBC, bc);
+DECLARE_SOA_COLUMN(PosX, posX, float);
+DECLARE_SOA_COLUMN(PosY, posY, float);
 DECLARE_SOA_COLUMN(PosZ, posZ, float);
-DECLARE_SOA_COLUMN(EventSel, eventSel, uint8_t);
+DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float);
+DECLARE_SOA_COLUMN(Centrality, centrality, float);
+DECLARE_SOA_COLUMN(EventSel, eventSel, uint16_t);
 DECLARE_SOA_BITMAP_COLUMN(Alias, alias, 32);
-DECLARE_SOA_COLUMN(ChargedTriggerSel, chargedTriggerSel, uint16_t);
-DECLARE_SOA_COLUMN(FullTriggerSel, fullTriggerSel, uint16_t);
+DECLARE_SOA_COLUMN(TrackOccupancyInTimeRange, trackOccupancyInTimeRange, int);
+DECLARE_SOA_COLUMN(TriggerSel, triggerSel, uint64_t);
+DECLARE_SOA_COLUMN(ChargedTriggerSel, chargedTriggerSel, uint8_t);
+DECLARE_SOA_COLUMN(FullTriggerSel, fullTriggerSel, uint32_t);
+DECLARE_SOA_COLUMN(ChargedHFTriggerSel, chargedHFTriggerSel, uint8_t);
+DECLARE_SOA_COLUMN(ReadCounts, readCounts, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadCountsWithTVX, readCountsWithTVX, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSel8, readCountsWithTVXAndZVertexAndSel8, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSel8Full, readCountsWithTVXAndZVertexAndSel8Full, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSel8FullPbPb, readCountsWithTVXAndZVertexAndSel8FullPbPb, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSelMC, readCountsWithTVXAndZVertexAndSelMC, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSelMCFull, readCountsWithTVXAndZVertexAndSelMCFull, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSelMCFullPbPb, readCountsWithTVXAndZVertexAndSelMCFullPbPb, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSelUnanchoredMC, readCountsWithTVXAndZVertexAndSelUnanchoredMC, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSelTVX, readCountsWithTVXAndZVertexAndSelTVX, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSel7, readCountsWithTVXAndZVertexAndSel7, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSel7KINT7, readCountsWithTVXAndZVertexAndSel7KINT7, std::vector<int>);
+DECLARE_SOA_COLUMN(IsAmbiguous, isAmbiguous, bool);
+DECLARE_SOA_COLUMN(IsEMCALReadout, isEmcalReadout, bool);
 } // namespace jcollision
 
-DECLARE_SOA_TABLE(JCollisions, "AOD", "JCollisions",
+DECLARE_SOA_TABLE(JCollisions, "AOD", "JCOLLISION",
                   o2::soa::Index<>,
+                  jcollision::PosX,
+                  jcollision::PosY,
                   jcollision::PosZ,
+                  jcollision::Multiplicity,
+                  jcollision::Centrality,
+                  jcollision::TrackOccupancyInTimeRange,
                   jcollision::EventSel,
-                  jcollision::Alias);
+                  jcollision::Alias,
+                  jcollision::TriggerSel);
 
 using JCollision = JCollisions::iterator;
 
-DECLARE_SOA_TABLE(StoredJCollisions, "DYN", "JCollisions",
+DECLARE_SOA_TABLE(StoredJCollisions, "AOD1", "JCOLLISION",
                   o2::soa::Index<>,
+                  jcollision::PosX,
+                  jcollision::PosY,
                   jcollision::PosZ,
+                  jcollision::Multiplicity,
+                  jcollision::Centrality,
+                  jcollision::TrackOccupancyInTimeRange,
                   jcollision::EventSel,
                   jcollision::Alias,
+                  jcollision::TriggerSel,
                   o2::soa::Marker<1>);
 
 using StoredJCollision = StoredJCollisions::iterator;
 
-DECLARE_SOA_TABLE(JCollisionPIs, "AOD", "JCollisionPIs",
+DECLARE_SOA_TABLE(JEMCCollisionLbs, "AOD", "JEMCCOLLISIONLB",
+                  jcollision::IsAmbiguous,
+                  jcollision::IsEMCALReadout);
+using JEMCCollisionLb = JEMCCollisionLbs::iterator;
+
+DECLARE_SOA_TABLE(StoredJEMCCollisionLbs, "AOD1", "JEMCCOLLISIONLB",
+                  jcollision::IsAmbiguous,
+                  jcollision::IsEMCALReadout,
+                  o2::soa::Marker<1>);
+using StoredJEMCCollisionLb = StoredJEMCCollisionLbs::iterator;
+
+DECLARE_SOA_TABLE(JCollisionPIs, "AOD", "JCOLLISIONPI",
                   jcollision::CollisionId);
 
-DECLARE_SOA_TABLE(StoredJCollisionPIs, "DYN", "JCollisionPIs",
+DECLARE_SOA_TABLE(StoredJCollisionPIs, "AOD1", "JCOLLISIONPI",
                   jcollision::CollisionId,
                   o2::soa::Marker<1>);
 
-DECLARE_SOA_TABLE(JChTrigSels, "AOD", "JChrgTrigSels",
-                  jcollision::ChargedTriggerSel);
-
-DECLARE_SOA_TABLE(StoredJChTrigSels, "DYN", "JChargTrigSels",
-                  jcollision::ChargedTriggerSel,
-                  o2::soa::Marker<1>);
-
-DECLARE_SOA_TABLE(JFullTrigSels, "AOD", "JFullTrigSels",
-                  jcollision::FullTriggerSel);
-
-DECLARE_SOA_TABLE(StoredJFullTrigSels, "DYN", "JFullTrigSels",
-                  jcollision::FullTriggerSel,
-                  o2::soa::Marker<1>);
-
-DECLARE_SOA_TABLE(JCollisionBCs, "AOD", "JCollisionBcs",
+DECLARE_SOA_TABLE(JCollisionBCs, "AOD", "JCOLLISIONBC",
                   jcollision::JBCId);
 
-DECLARE_SOA_TABLE(StoredJCollisionBCs, "DYN", "JCollisionBcs",
+DECLARE_SOA_TABLE(StoredJCollisionBCs, "AOD1", "JCOLLISIONBC",
                   jcollision::JBCId,
+                  o2::soa::Marker<1>);
+
+DECLARE_SOA_TABLE(JChTrigSels, "AOD", "JCHTRIGSEL",
+                  jcollision::ChargedTriggerSel);
+
+DECLARE_SOA_TABLE(JFullTrigSels, "AOD", "JFULLTRIGSEL",
+                  jcollision::FullTriggerSel);
+
+DECLARE_SOA_TABLE(JChHFTrigSels, "AOD", "JCHHFTRIGSEL",
+                  jcollision::ChargedHFTriggerSel);
+
+DECLARE_SOA_TABLE(CollisionCounts, "AOD", "COLLCOUNT",
+                  jcollision::ReadCounts,
+                  jcollision::ReadCountsWithTVX,
+                  jcollision::ReadCountsWithTVXAndZVertexAndSel8,
+                  jcollision::ReadCountsWithTVXAndZVertexAndSel8Full,
+                  jcollision::ReadCountsWithTVXAndZVertexAndSel8FullPbPb,
+                  jcollision::ReadCountsWithTVXAndZVertexAndSelMC,
+                  jcollision::ReadCountsWithTVXAndZVertexAndSelMCFull,
+                  jcollision::ReadCountsWithTVXAndZVertexAndSelMCFullPbPb,
+                  jcollision::ReadCountsWithTVXAndZVertexAndSelUnanchoredMC,
+                  jcollision::ReadCountsWithTVXAndZVertexAndSelTVX,
+                  jcollision::ReadCountsWithTVXAndZVertexAndSel7,
+                  jcollision::ReadCountsWithTVXAndZVertexAndSel7KINT7);
+
+DECLARE_SOA_TABLE(StoredCollisionCounts, "AOD1", "COLLCOUNT",
+                  jcollision::ReadCounts,
+                  jcollision::ReadCountsWithTVX,
+                  jcollision::ReadCountsWithTVXAndZVertexAndSel8,
+                  jcollision::ReadCountsWithTVXAndZVertexAndSel8Full,
+                  jcollision::ReadCountsWithTVXAndZVertexAndSel8FullPbPb,
+                  jcollision::ReadCountsWithTVXAndZVertexAndSelMC,
+                  jcollision::ReadCountsWithTVXAndZVertexAndSelMCFull,
+                  jcollision::ReadCountsWithTVXAndZVertexAndSelMCFullPbPb,
+                  jcollision::ReadCountsWithTVXAndZVertexAndSelUnanchoredMC,
+                  jcollision::ReadCountsWithTVXAndZVertexAndSelTVX,
+                  jcollision::ReadCountsWithTVXAndZVertexAndSel7,
+                  jcollision::ReadCountsWithTVXAndZVertexAndSel7KINT7,
                   o2::soa::Marker<1>);
 
 namespace jmccollision
 {
 DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision);
+DECLARE_SOA_COLUMN(PosX, posX, float);
+DECLARE_SOA_COLUMN(PosY, posY, float);
 DECLARE_SOA_COLUMN(PosZ, posZ, float);
 DECLARE_SOA_COLUMN(Weight, weight, float);
 } // namespace jmccollision
-DECLARE_SOA_TABLE(JMcCollisions, "AOD", "JMcCollisions",
+DECLARE_SOA_TABLE(JMcCollisions, "AOD", "JMCCOLLISION",
                   o2::soa::Index<>,
+                  jmccollision::PosX,
+                  jmccollision::PosY,
                   jmccollision::PosZ,
                   jmccollision::Weight);
 
 using JMcCollision = JMcCollisions::iterator;
 
-DECLARE_SOA_TABLE(StoredJMcCollisions, "DYN", "JMcCollisions",
+DECLARE_SOA_TABLE(StoredJMcCollisions, "AOD1", "JMCCOLLISION",
                   o2::soa::Index<>,
+                  jmccollision::PosX,
+                  jmccollision::PosY,
                   jmccollision::PosZ,
                   jmccollision::Weight,
                   o2::soa::Marker<1>);
 
 using StoredJMcCollision = StoredJMcCollisions::iterator;
 
-DECLARE_SOA_TABLE(JMcCollisionPIs, "AOD", "JMcCollisionPIs",
+DECLARE_SOA_TABLE(JMcCollisionPIs, "AOD", "JMCCOLLISIONPI",
                   jmccollision::McCollisionId);
 
-DECLARE_SOA_TABLE(StoredJMcCollisionPIs, "DYN", "JMcCollisionPIs",
+DECLARE_SOA_TABLE(StoredJMcCollisionPIs, "AOD1", "JMCCOLLISIONPI",
                   jmccollision::McCollisionId,
                   o2::soa::Marker<1>);
 
@@ -145,10 +244,10 @@ namespace jmccollisionlb
 DECLARE_SOA_INDEX_COLUMN(JMcCollision, mcCollision);
 }
 
-DECLARE_SOA_TABLE(JMcCollisionLbs, "AOD", "JMcCollisionLbs",
+DECLARE_SOA_TABLE(JMcCollisionLbs, "AOD", "JMCCOLLISIONLB",
                   jmccollisionlb::JMcCollisionId);
 
-DECLARE_SOA_TABLE(StoredJMcCollisionLbs, "DYN", "JMcCollisionLbs",
+DECLARE_SOA_TABLE(StoredJMcCollisionLbs, "AOD1", "JMCCOLLISIONLB",
                   jmccollisionlb::JMcCollisionId,
                   o2::soa::Marker<1>);
 
@@ -159,8 +258,15 @@ DECLARE_SOA_INDEX_COLUMN(Track, track);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
-DECLARE_SOA_COLUMN(Energy, energy, float);
-DECLARE_SOA_COLUMN(Sign, sign, float);
+DECLARE_SOA_COLUMN(DCAX, dcaX, float);
+DECLARE_SOA_COLUMN(DCAY, dcaY, float);
+DECLARE_SOA_COLUMN(DCAZ, dcaZ, float);
+DECLARE_SOA_COLUMN(DCAXY, dcaXY, float);
+DECLARE_SOA_COLUMN(DCAXYZ, dcaXYZ, float);
+DECLARE_SOA_COLUMN(SigmaDCAZ, sigmadcaZ, float);
+DECLARE_SOA_COLUMN(SigmaDCAXY, sigmadcaXY, float);
+DECLARE_SOA_COLUMN(SigmaDCAXYZ, sigmadcaXYZ, float);
+DECLARE_SOA_COLUMN(Sigma1Pt, sigma1Pt, float);
 DECLARE_SOA_COLUMN(TrackSel, trackSel, uint8_t);
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px,
                            [](float pt, float phi) -> float { return pt * std::cos(phi); });
@@ -170,45 +276,72 @@ DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz,
                            [](float pt, float eta) -> float { return pt * std::sinh(eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(P, p,
                            [](float pt, float eta) -> float { return pt * std::cosh(eta); });
+DECLARE_SOA_DYNAMIC_COLUMN(Energy, energy,
+                           [](float pt, float eta) -> float { return std::sqrt((pt * std::cosh(eta) * pt * std::cosh(eta)) + (jetderiveddatautilities::mPion * jetderiveddatautilities::mPion)); });
+DECLARE_SOA_DYNAMIC_COLUMN(Sign, sign,
+                           [](uint8_t trackSel) -> int { if (trackSel & (1 << jetderiveddatautilities::JTrackSel::trackSign)){ return 1;} else{return -1;} });
 } // namespace jtrack
 
-DECLARE_SOA_TABLE(JTracks, "AOD", "JTracks",
+DECLARE_SOA_TABLE(JTracks, "AOD", "JTRACK",
                   o2::soa::Index<>,
                   jtrack::JCollisionId,
                   jtrack::Pt,
                   jtrack::Eta,
                   jtrack::Phi,
-                  jtrack::Energy,
-                  jtrack::Sign,
-                  jtrack::TrackSel,
-                  jtrack::Px<jtrack::Pt, jtrack::Phi>,
-                  jtrack::Py<jtrack::Pt, jtrack::Phi>,
-                  jtrack::Pz<jtrack::Pt, jtrack::Eta>,
-                  jtrack::P<jtrack::Pt, jtrack::Eta>);
-
-using JTrack = JTracks::iterator;
-
-DECLARE_SOA_TABLE(StoredJTracks, "DYN", "JTracks",
-                  o2::soa::Index<>,
-                  jtrack::JCollisionId,
-                  jtrack::Pt,
-                  jtrack::Eta,
-                  jtrack::Phi,
-                  jtrack::Energy,
-                  jtrack::Sign,
                   jtrack::TrackSel,
                   jtrack::Px<jtrack::Pt, jtrack::Phi>,
                   jtrack::Py<jtrack::Pt, jtrack::Phi>,
                   jtrack::Pz<jtrack::Pt, jtrack::Eta>,
                   jtrack::P<jtrack::Pt, jtrack::Eta>,
+                  jtrack::Energy<jtrack::Pt, jtrack::Eta>,
+                  jtrack::Sign<jtrack::TrackSel>);
+
+using JTrack = JTracks::iterator;
+
+DECLARE_SOA_TABLE(StoredJTracks, "AOD1", "JTRACK",
+                  o2::soa::Index<>,
+                  jtrack::JCollisionId,
+                  jtrack::Pt,
+                  jtrack::Eta,
+                  jtrack::Phi,
+                  jtrack::TrackSel,
+                  jtrack::Px<jtrack::Pt, jtrack::Phi>,
+                  jtrack::Py<jtrack::Pt, jtrack::Phi>,
+                  jtrack::Pz<jtrack::Pt, jtrack::Eta>,
+                  jtrack::P<jtrack::Pt, jtrack::Eta>,
+                  jtrack::Energy<jtrack::Pt, jtrack::Eta>,
+                  jtrack::Sign<jtrack::TrackSel>,
                   o2::soa::Marker<1>);
 
 using StoredJTrack = StoredJTracks::iterator;
 
-DECLARE_SOA_TABLE(JTrackPIs, "AOD", "JTrackPIs",
+DECLARE_SOA_TABLE(JTrackExtras, "AOD", "JTRACKEXTRA",
+                  jtrack::DCAX,
+                  jtrack::DCAY,
+                  jtrack::DCAZ,
+                  jtrack::DCAXY,
+                  jtrack::DCAXYZ,
+                  jtrack::SigmaDCAZ,
+                  jtrack::SigmaDCAXY,
+                  jtrack::SigmaDCAXYZ,
+                  jtrack::Sigma1Pt);
+
+DECLARE_SOA_TABLE(StoredJTrackExtras, "AOD1", "JTRACKEXTRA",
+                  jtrack::DCAX,
+                  jtrack::DCAY,
+                  jtrack::DCAZ,
+                  jtrack::DCAXY,
+                  jtrack::DCAXYZ,
+                  jtrack::SigmaDCAZ,
+                  jtrack::SigmaDCAXY,
+                  jtrack::SigmaDCAXYZ,
+                  jtrack::Sigma1Pt,
+                  o2::soa::Marker<1>);
+
+DECLARE_SOA_TABLE(JTrackPIs, "AOD", "JTRACKPI",
                   jtrack::TrackId);
 
-DECLARE_SOA_TABLE(StoredJTrackPIs, "DYN", "JTrackPIs",
+DECLARE_SOA_TABLE(StoredJTrackPIs, "AOD1", "JTRACKPI",
                   jtrack::TrackId,
                   o2::soa::Marker<1>);
 
@@ -235,30 +368,11 @@ DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz,
                            [](float pt, float eta) -> float { return pt * std::sinh(eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(P, p,
                            [](float pt, float eta) -> float { return pt * std::cosh(eta); });
+DECLARE_SOA_DYNAMIC_COLUMN(Energy, energy,
+                           [](float e) -> float { return e; });
 } // namespace jmcparticle
 
-DECLARE_SOA_TABLE(JMcParticles, "AOD", "JMcParticles",
-                  o2::soa::Index<>,
-                  jmcparticle::JMcCollisionId,
-                  jmcparticle::Pt,
-                  jmcparticle::Eta,
-                  jmcparticle::Phi,
-                  jmcparticle::Y,
-                  jmcparticle::E,
-                  jmcparticle::PdgCode,
-                  jmcparticle::GenStatusCode,
-                  jmcparticle::HepMCStatusCode,
-                  jmcparticle::IsPhysicalPrimary,
-                  jmcparticle::MothersIds,
-                  jmcparticle::DaughtersIdSlice,
-                  jmcparticle::Px<jmcparticle::Pt, jmcparticle::Phi>,
-                  jmcparticle::Py<jmcparticle::Pt, jmcparticle::Phi>,
-                  jmcparticle::Pz<jmcparticle::Pt, jmcparticle::Eta>,
-                  jmcparticle::P<jmcparticle::Pt, jmcparticle::Eta>);
-
-using JMcParticle = JMcParticles::iterator;
-
-DECLARE_SOA_TABLE(StoredJMcParticles, "DYN", "JMcParticles",
+DECLARE_SOA_TABLE(JMcParticles, "AOD", "JMCPARTICLE",
                   o2::soa::Index<>,
                   jmcparticle::JMcCollisionId,
                   jmcparticle::Pt,
@@ -276,14 +390,37 @@ DECLARE_SOA_TABLE(StoredJMcParticles, "DYN", "JMcParticles",
                   jmcparticle::Py<jmcparticle::Pt, jmcparticle::Phi>,
                   jmcparticle::Pz<jmcparticle::Pt, jmcparticle::Eta>,
                   jmcparticle::P<jmcparticle::Pt, jmcparticle::Eta>,
+                  jmcparticle::Energy<jmcparticle::E>);
+
+using JMcParticle = JMcParticles::iterator;
+
+DECLARE_SOA_TABLE(StoredJMcParticles, "AOD1", "JMCPARTICLE",
+                  o2::soa::Index<>,
+                  jmcparticle::JMcCollisionId,
+                  jmcparticle::Pt,
+                  jmcparticle::Eta,
+                  jmcparticle::Phi,
+                  jmcparticle::Y,
+                  jmcparticle::E,
+                  jmcparticle::PdgCode,
+                  jmcparticle::GenStatusCode,
+                  jmcparticle::HepMCStatusCode,
+                  jmcparticle::IsPhysicalPrimary,
+                  jmcparticle::MothersIds,
+                  jmcparticle::DaughtersIdSlice,
+                  jmcparticle::Px<jmcparticle::Pt, jmcparticle::Phi>,
+                  jmcparticle::Py<jmcparticle::Pt, jmcparticle::Phi>,
+                  jmcparticle::Pz<jmcparticle::Pt, jmcparticle::Eta>,
+                  jmcparticle::P<jmcparticle::Pt, jmcparticle::Eta>,
+                  jmcparticle::Energy<jmcparticle::E>,
                   o2::soa::Marker<1>);
 
 using StoredJMcParticle = StoredJMcParticles::iterator;
 
-DECLARE_SOA_TABLE(JMcParticlePIs, "AOD", "JMcParticlePIs",
+DECLARE_SOA_TABLE(JMcParticlePIs, "AOD", "JMCPARTICLEPI",
                   jmcparticle::McParticleId);
 
-DECLARE_SOA_TABLE(StoredJMcParticlePIs, "DYN", "JMcParticlePIs",
+DECLARE_SOA_TABLE(StoredJMcParticlePIs, "AOD1", "JMCPARTICLEPI",
                   jmcparticle::McParticleId,
                   o2::soa::Marker<1>);
 
@@ -292,10 +429,10 @@ namespace jmctracklb
 DECLARE_SOA_INDEX_COLUMN(JMcParticle, mcParticle);
 }
 
-DECLARE_SOA_TABLE(JMcTrackLbs, "AOD", "JMcTrackLbs", //! Table joined to the track table containing the MC index
+DECLARE_SOA_TABLE(JMcTrackLbs, "AOD", "JMCTRACKLB", //! Table joined to the track table containing the MC index
                   jmctracklb::JMcParticleId);
 
-DECLARE_SOA_TABLE(StoredJMcTrackLbs, "DYN", "JMcTrackLbs", //! Table joined to the track table containing the MC index
+DECLARE_SOA_TABLE(StoredJMcTrackLbs, "AOD1", "JMCTRACKLB", //! Table joined to the track table containing the MC index
                   jmctracklb::JMcParticleId,
                   o2::soa::Marker<1>);
 
@@ -325,7 +462,7 @@ DECLARE_SOA_COLUMN(SubleadingCellNumber, subleadingCellNumber, int);   //! energ
 
 } // namespace jcluster
 
-DECLARE_SOA_TABLE(JClusters, "AOD", "JClusters", //!
+DECLARE_SOA_TABLE(JClusters, "AOD", "JCLUSTER", //!
                   o2::soa::Index<>, jcluster::JCollisionId, jcluster::ID, jcluster::Energy,
                   jcluster::CoreEnergy, jcluster::RawEnergy, jcluster::Eta, jcluster::Phi,
                   jcluster::M02, jcluster::M20, jcluster::NCells, jcluster::Time,
@@ -334,7 +471,7 @@ DECLARE_SOA_TABLE(JClusters, "AOD", "JClusters", //!
 
 using JCluster = JClusters::iterator;
 
-DECLARE_SOA_TABLE(StoredJClusters, "DYN", "JClusters",
+DECLARE_SOA_TABLE(StoredJClusters, "AOD1", "JCLUSTER",
                   o2::soa::Index<>, jcluster::JCollisionId, jcluster::ID, jcluster::Energy,
                   jcluster::CoreEnergy, jcluster::RawEnergy, jcluster::Eta, jcluster::Phi,
                   jcluster::M02, jcluster::M20, jcluster::NCells, jcluster::Time,
@@ -344,18 +481,31 @@ DECLARE_SOA_TABLE(StoredJClusters, "DYN", "JClusters",
 
 using StoredJCluster = StoredJClusters::iterator;
 
-DECLARE_SOA_TABLE(JClusterPIs, "AOD", "JClusterPIs",
+DECLARE_SOA_TABLE(JClusterPIs, "AOD", "JCLUSTERPI",
                   jcluster::EMCALClusterId);
 
-DECLARE_SOA_TABLE(StoredJClusterPIs, "DYN", "JClusterPIs",
+DECLARE_SOA_TABLE(StoredJClusterPIs, "AOD1", "JCLUSTERPI",
                   jcluster::EMCALClusterId,
                   o2::soa::Marker<1>);
 
-DECLARE_SOA_TABLE(JClusterTracks, "AOD", "JClusterTracks", //!
+DECLARE_SOA_TABLE(JClusterTracks, "AOD", "JCLUSTERTRACK", //!
                   jcluster::JTrackIds);
 
-DECLARE_SOA_TABLE(StoredJClusterTracks, "DYN", "JClusterTracks", //!
+DECLARE_SOA_TABLE(StoredJClusterTracks, "AOD1", "JCLUSTERTRACK", //!
                   jcluster::JTrackIds,
+                  o2::soa::Marker<1>);
+
+namespace jmcclusterlb
+{
+DECLARE_SOA_ARRAY_INDEX_COLUMN(JMcParticle, mcParticle);
+DECLARE_SOA_COLUMN(AmplitudeA, amplitudeA, std::vector<float>);
+} // namespace jmcclusterlb
+
+DECLARE_SOA_TABLE(JMcClusterLbs, "AOD", "JMCCLUSTERLB", //!
+                  jmcclusterlb::JMcParticleIds, jmcclusterlb::AmplitudeA);
+
+DECLARE_SOA_TABLE(StoredJMcClusterLbs, "AOD1", "JMCCLUSTERLB", //!
+                  jmcclusterlb::JMcParticleIds, jmcclusterlb::AmplitudeA,
                   o2::soa::Marker<1>);
 
 namespace jdummy
@@ -364,11 +514,11 @@ namespace jdummy
 DECLARE_SOA_COLUMN(Dummy, dummy, bool);
 
 } // namespace jdummy
-DECLARE_SOA_TABLE(JDummys, "AOD", "JDummys",
+DECLARE_SOA_TABLE(JDummys, "AOD", "JDUMMY",
                   o2::soa::Index<>,
                   jdummy::Dummy);
 
-DECLARE_SOA_TABLE(StoredJDummys, "DYN", "JDummys",
+DECLARE_SOA_TABLE(StoredJDummys, "AOD1", "JDUMMY",
                   o2::soa::Index<>,
                   jdummy::Dummy,
                   o2::soa::Marker<1>);

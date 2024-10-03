@@ -16,6 +16,8 @@
 /// \author Chiara De Martin (chiara.de.martin@cern.ch)
 /// \author Francesca Ercolessi (francesca.ercolessi@cern.ch)
 
+#include <cmath>
+// #include <cstdlib>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -30,8 +32,6 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Multiplicity.h"
-#include <cmath>
-// #include <cstdlib>
 
 using namespace o2;
 using namespace o2::framework;
@@ -49,6 +49,9 @@ struct v0cascadesQA {
   Configurable<bool> isMC{"isMC", false, "does the data have MC info"};
   Configurable<bool> sel8{"sel8", 0, "Apply sel8 event selection"};
   Configurable<bool> doextraanalysis{"doextraanalysis", 0, "Add extra histograms"};
+
+  // configurable track properties
+  Configurable<bool> checkDauTPC{"checkDauTPC", false, "check if daughter tracks have TPC match"};
 
   // configurable binning of histograms
   ConfigurableAxis binPt{"binPt", {100, 0.0f, 10.0f}, ""};
@@ -74,13 +77,15 @@ struct v0cascadesQA {
   ConfigurableAxis binInvMassAntiLambda{"binInvMassAntiLambda", {200, 1.07f, 1.17f}, ""};
   ConfigurableAxis binResponsePionFromLambda{"binResponsePionFromLambda", {200, -20.f, 20.f}, ""};
   ConfigurableAxis binResponseProtonFromLambda{"binResponseProtonFromLambda", {200, -20.f, 20.f}, ""};
-  ConfigurableAxis binEtaSmall{"binEtaSmall", {2, -1.0f, 1.0f}, ""};
+  ConfigurableAxis binEtaFlag{"binEtaFlag", {3, -1.5f, 1.5f}, ""};
   ConfigurableAxis binEta{"binEta", {100, -1.0f, 1.0f}, ""};
-  ConfigurableAxis binPhi{"binPhi", {(int)TMath::Pi() * 10 / 2, 0.0f, 2. * TMath::Pi()}, ""};
+  ConfigurableAxis binPhi{"binPhi", {static_cast<int>(TMath::Pi()) * 10 / 2, 0.0f, 2. * static_cast<int>(TMath::Pi())}, ""};
   ConfigurableAxis binRadius{"binRadius", {100, 0.0f, 50.0f}, ""};
   ConfigurableAxis binRadiussmall{"binRadiussmall", {30, 0.0f, 30.0f}, ""};
   ConfigurableAxis binITSMapDaughters{"binITSMapDaughters", {8, -0.5f, 7.5f}, ""};
   ConfigurableAxis binInvMassCasc{"binInvMassCasc", {1000, 0.f, 1.0f}, ""};
+
+  int dauEtaFlag = 0;
 
   OutputObj<TH1F> V0SelectionSummary{TH1F("V0SelectionSummary", "V0SelectionSummary; Selections; Cut", 10, 0., 10.)};
 
@@ -168,7 +173,7 @@ struct v0cascadesQA {
     const AxisSpec axisResponseProtonFromLambda{binResponseProtonFromLambda, "Response Proton From Lambda"};
     const AxisSpec axisEta{binEta, "Eta"};
     const AxisSpec axisPhi{binPhi, "Phi"};
-    const AxisSpec axisEtaSmall{binEtaSmall, "Eta"};
+    const AxisSpec axisEtaFlag{binEtaFlag, "Eta"};
     const AxisSpec axisRadius{binRadius, "Radius"};
     const AxisSpec axisRadiussmall{binRadiussmall, "Radius"};
     const AxisSpec axisITSMapDaughters{binITSMapDaughters, "ITS Map Daughters"};
@@ -188,9 +193,9 @@ struct v0cascadesQA {
     histos_V0.add("V0DCAV0ToPVK0S", "V0DCAV0ToPVK0S", kTH1F, {axisV0DCAV0ToPVK0S});
     histos_V0.add("V0DCAV0ToPVLambda", "V0DCAV0ToPVLambda", kTH1F, {axisV0DCAV0ToPVLambda});
     histos_V0.add("V0DCAV0ToPVAntiLambda", "V0DCAV0ToPVAntiLambda", kTH1F, {axisV0DCAV0ToPVAntiLambda});
-    histos_V0.add("InvMassK0S", "InvMassK0S", kTH3F, {axisPt, axisInvMassK0S, axisEtaSmall});
-    histos_V0.add("InvMassLambda", "InvMassLambda", kTH3F, {axisPt, axisInvMassLambda, axisEtaSmall});
-    histos_V0.add("InvMassAntiLambda", "InvMassAntiLambda", kTH3F, {axisPt, axisInvMassAntiLambda, axisEtaSmall});
+    histos_V0.add("InvMassK0S", "InvMassK0S", kTH3F, {axisPt, axisInvMassK0S, axisEtaFlag});
+    histos_V0.add("InvMassLambda", "InvMassLambda", kTH3F, {axisPt, axisInvMassLambda, axisEtaFlag});
+    histos_V0.add("InvMassAntiLambda", "InvMassAntiLambda", kTH3F, {axisPt, axisInvMassAntiLambda, axisEtaFlag});
     histos_V0.add("ResponsePionFromLambda", "ResponsePionFromLambda", kTH2F, {axisPt, axisResponsePionFromLambda});
     histos_V0.add("ResponseProtonFromLambda", "ResponseProtonFromLambda", kTH2F, {axisPt, axisResponseProtonFromLambda});
     if (doextraanalysis) {
@@ -334,7 +339,7 @@ struct v0cascadesQA {
   Configurable<LabeledArray<float>> lifetimecut{"lifetimecut", {defaultLifetimeCuts[0], 2, {"lifetimecutLambda", "lifetimecutK0S"}}, "lifetimecut"};
   int ncoll = 0;
 
-  void processReconstructedV0(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::V0Datas const& fullV0s, DaughterTracks& dtracks)
+  void processReconstructedV0(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::V0Datas const& fullV0s, DaughterTracks&)
   {
     if (sel8 && !collision.sel8()) {
       return;
@@ -372,6 +377,19 @@ struct v0cascadesQA {
       auto posdau = v0.posTrack_as<DaughterTracks>();
       auto negdau = v0.negTrack_as<DaughterTracks>();
 
+      if (posdau.eta() < 0. && negdau.eta() < 0.) {
+        dauEtaFlag = -1;
+      } else if (posdau.eta() >= 0. && negdau.eta() >= 0.) {
+        dauEtaFlag = 1;
+      } else {
+        dauEtaFlag = 0;
+      }
+
+      // check TPC
+      if (checkDauTPC && (!posdau.hasTPC() || !negdau.hasTPC())) {
+        continue;
+      }
+
       Int_t posITSNhits = 0, negITSNhits = 0;
       for (unsigned int i = 0; i < 7; i++) {
         if (posdau.itsClusterMap() & (1 << i)) {
@@ -406,7 +424,7 @@ struct v0cascadesQA {
 
           histos_V0.fill(HIST("CtauK0s"), CtauK0s);
           histos_V0.fill(HIST("DecayLengthK0s"), decayLength);
-          histos_V0.fill(HIST("InvMassK0S"), v0.pt(), v0.mK0Short(), v0.eta());
+          histos_V0.fill(HIST("InvMassK0S"), v0.pt(), v0.mK0Short(), dauEtaFlag);
           histos_V0.fill(HIST("InvMassK0SVsPtVsPA"), v0.pt(), TMath::ACos(v0.v0cosPA()), v0.mK0Short());
           histos_V0.fill(HIST("V0DCAV0ToPVK0S"), v0.dcav0topv());
           if (doextraanalysis) {
@@ -425,7 +443,7 @@ struct v0cascadesQA {
 
           histos_V0.fill(HIST("DecayLengthLambda"), decayLength);
           histos_V0.fill(HIST("CtauLambda"), CtauLambda);
-          histos_V0.fill(HIST("InvMassLambda"), v0.pt(), v0.mLambda(), v0.eta());
+          histos_V0.fill(HIST("InvMassLambda"), v0.pt(), v0.mLambda(), dauEtaFlag);
           if (doextraanalysis)
             histos_V0.fill(HIST("InvMassLambdaVsPtVsPA"), v0.pt(), TMath::ACos(v0.v0cosPA()), v0.mLambda());
           histos_V0.fill(HIST("V0DCAV0ToPVLambda"), v0.dcav0topv());
@@ -450,7 +468,7 @@ struct v0cascadesQA {
 
           histos_V0.fill(HIST("DecayLengthAntiLambda"), decayLength);
           histos_V0.fill(HIST("CtauAntiLambda"), CtauLambda);
-          histos_V0.fill(HIST("InvMassAntiLambda"), v0.pt(), v0.mAntiLambda(), v0.eta());
+          histos_V0.fill(HIST("InvMassAntiLambda"), v0.pt(), v0.mAntiLambda(), dauEtaFlag);
           if (doextraanalysis)
             histos_V0.fill(HIST("InvMassAntiLambdaVsPtVsPA"), v0.pt(), TMath::ACos(v0.v0cosPA()), v0.mAntiLambda());
           histos_V0.fill(HIST("V0DCAV0ToPVAntiLambda"), v0.dcav0topv());
@@ -472,7 +490,7 @@ struct v0cascadesQA {
   ////////// V0 QA - MC //////////
   ////////////////////////////////
 
-  void processMcV0(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Join<aod::V0Datas, aod::McV0Labels> const& fullV0s, aod::McParticles const&, MyTracksMC const& tracks)
+  void processMcV0(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Join<aod::V0Datas, aod::McV0Labels> const& fullV0s, aod::McParticles const&, MyTracksMC const&)
   {
     if (sel8 && !collision.sel8()) {
       return;
@@ -553,22 +571,29 @@ struct v0cascadesQA {
   // if( (part==5) && (TMath::Abs(fCasc_NSigPosPion)>3 || TMath::Abs(fCasc_NSigNegProton)>3 || TMath::Abs(fCasc_NSigBacKaon)>3) ) return kFALSE;
   // if( (part==6) && (TMath::Abs(fCasc_NSigNegPion)>3 || TMath::Abs(fCasc_NSigPosProton)>3 || TMath::Abs(fCasc_NSigBacKaon)>3) ) return kFALSE;
 
-  void processReconstructedCascade(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::CascDataExt const& Cascades, aod::V0sLinked const&, aod::V0Datas const& fullV0s, DaughterTracks& dtracks)
+  void processReconstructedCascade(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::CascDataExt const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, DaughterTracks&)
   {
     if (sel8 && !collision.sel8()) {
       return;
     }
 
     for (auto& casc : Cascades) {
-
-      auto v0index = casc.v0_as<o2::aod::V0sLinked>();
-      if (!(v0index.has_v0Data())) {
-        continue; // skip those cascades for which V0 doesn't exist
-      }
-      auto v0 = v0index.v0Data(); // de-reference index to correct v0data in case it exists
       auto bachelor = casc.bachelor_as<DaughterTracks>();
-      auto posdau = v0.posTrack_as<DaughterTracks>();
-      auto negdau = v0.negTrack_as<DaughterTracks>();
+      auto posdau = casc.posTrack_as<DaughterTracks>();
+      auto negdau = casc.negTrack_as<DaughterTracks>();
+
+      if (posdau.eta() < 0. && negdau.eta() < 0. && bachelor.eta() < 0.) {
+        dauEtaFlag = -1;
+      } else if (posdau.eta() >= 0. && negdau.eta() >= 0. && bachelor.eta() >= 0.) {
+        dauEtaFlag = 1;
+      } else {
+        dauEtaFlag = 0;
+      }
+
+      // check TPC
+      if (checkDauTPC && (!posdau.hasTPC() || !negdau.hasTPC() || !bachelor.hasTPC())) {
+        continue;
+      }
 
       // histos_Casc.fill(HIST("XiProgSelections"), );
       // histos_Casc.fill(HIST("OmegaProgSelections"), );
@@ -646,7 +671,7 @@ struct v0cascadesQA {
   ////////// Cascade QA - MC ///////////
   //////////////////////////////////////
 
-  void processMcCascade(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::CascDataExt const& Cascades, aod::V0sLinked const&, aod::V0Datas const& fullV0s, MyTracksMC const& tracks, aod::McParticles const& mcParticles)
+  void processMcCascade(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::CascDataExt const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, MyTracksMC const&, aod::McParticles const&)
   {
     if (sel8 && !collision.sel8()) {
       return;
@@ -666,14 +691,8 @@ struct v0cascadesQA {
 
         histos_Casc.fill(HIST("QA_XiMinusCandidates"), 1.5);
 
-        auto v0index = casc.v0_as<o2::aod::V0sLinked>();
-        if (!(v0index.has_v0Data())) {
-          continue; // skip those cascades for which V0 doesn't exist
-        }
-        auto v0 = v0index.v0Data(); // de-reference index to correct v0data in case it exists
-
-        auto reconegtrack = v0.negTrack_as<MyTracksMC>();
-        auto recopostrack = v0.posTrack_as<MyTracksMC>();
+        auto reconegtrack = casc.negTrack_as<MyTracksMC>();
+        auto recopostrack = casc.posTrack_as<MyTracksMC>();
         auto recobachelor = casc.bachelor_as<MyTracksMC>();
         if (!reconegtrack.has_mcParticle() || !recopostrack.has_mcParticle() || !recobachelor.has_mcParticle()) {
           continue;

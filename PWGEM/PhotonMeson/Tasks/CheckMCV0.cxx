@@ -209,17 +209,17 @@ struct CheckMCV0 {
     }
 
     registry.add("V0Counter", "V0 counter", HistType::kTH1F, {{cutsBinLabels.size(), 0.5, 0.5 + cutsBinLabels.size()}});
-    for (int iBin = 0; iBin < cutsBinLabels.size(); ++iBin) {
+    for (size_t iBin = 0; iBin < cutsBinLabels.size(); ++iBin) {
       registry.get<TH1>(HIST("V0Counter"))->GetXaxis()->SetBinLabel(iBin + 1, cutsBinLabels[iBin].data());
     }
 
     registry.add("V0TypeCounter", "V0 Type counter", HistType::kTH1F, {{v0Types.size(), 0.5, 0.5 + v0Types.size()}});
-    for (int iBin = 0; iBin < v0Types.size(); ++iBin) {
+    for (size_t iBin = 0; iBin < v0Types.size(); ++iBin) {
       registry.get<TH1>(HIST("V0TypeCounter"))->GetXaxis()->SetBinLabel(iBin + 1, v0Types[iBin].data());
     }
 
     registry.add("CheckV0Leg", "CheckV0Leg", HistType::kTH1F, {{checkV0legLabels.size(), 0.5, 0.5 + checkV0legLabels.size()}});
-    for (int iBin = 0; iBin < checkV0legLabels.size(); ++iBin) {
+    for (size_t iBin = 0; iBin < checkV0legLabels.size(); ++iBin) {
       registry.get<TH1>(HIST("CheckV0Leg"))->GetXaxis()->SetBinLabel(iBin + 1, checkV0legLabels[iBin].data());
     }
   }
@@ -455,7 +455,7 @@ struct CheckMCV0 {
     v0TypesPassed[3] = isITSTPC_TPConly(track0, track1);
     v0TypesPassed[4] = isITSTPC_ITSonly(track0, track1);
     v0TypesPassed[5] = isTPConly_ITSonly(track0, track1);
-    for (int i = 0; i < v0TypesPassed.size(); ++i) {
+    for (size_t i = 0; i < v0TypesPassed.size(); ++i) {
       if (v0TypesPassed[i]) {
         registry.fill(HIST("V0TypeCounter"), i + 1);
       }

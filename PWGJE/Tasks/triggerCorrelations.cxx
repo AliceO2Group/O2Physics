@@ -42,110 +42,41 @@ using namespace o2::framework::expressions;
 
 struct TriggerCorrelationsTask {
 
-  HistogramRegistry registry{"registry",
-                             {{"h3_jetcharged_pt_jetfull_pt_photon_pt_triggered", ";#it{p}_{T,jet}^{charged} (GeV/#it{c}); #it{p}_{T,jet}^{full} (GeV/#it{c}); #it{p}_{T,photon} (GeV/#it{c})", {HistType::kTH3F, {{201, -1.0, 200}, {201, -1.0, 200}, {201, -1.0, 200}}}, true},
-                              {"h_collision_trigger_events", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}}, true}}};
+  HistogramRegistry registry;
 
-  Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
-  Configurable<bool> doChargedJetTrigger{"doChargedJetTrigger", true, "add the charged jeet trigger to the QA"};
-  Configurable<bool> doFullJetTrigger{"doFullJetTrigger", true, "add the full et trigger to the QA"};
-  Configurable<bool> doGammaTrigger{"doGammaTrigger", true, "add the gamma trigger to the QA"};
-  Configurable<float> jetsChargedR{"jetsChargedR", 0.6, "resolution parameter for triggered charged jets"};
-  Configurable<float> jetsFullR{"jetsFullR", 0.2, "resolution parameter for triggered full jets"};
-  Configurable<bool> rejectExoticClusters{"rejectExoticClusters", true, "reject exotic clusters"};
-  Configurable<float> clusterTimeMin{"clusterTimeMin", -999, "minimum cluster time for gamma trigger"};
-  Configurable<float> clusterTimeMax{"clusterTimeMax", 999, "maximum cluster time for gamma trigger"};
-  Configurable<int> emcalTriggered{"emcalTriggered", -1, "-1 = min bias, 0 = L0"};
-  Configurable<std::string> clusterDefinition{"clusterDefinition", "kV3Default", "cluster definition to be selected, e.g. V3Default"};
-
+  std::vector<int> triggerMaskBits;
   void init(o2::framework::InitContext&)
   {
+    triggerMaskBits = jetderiveddatautilities::initialiseTriggerMaskBits(jetderiveddatautilities::JTriggerMasks);
+
+    std::vector<std::string> trigSelLabels = {"JetChLowPt", "JetChHighPt", "TrackLowPt", "TrackHighPt", "JetD0ChLowPt", "JetD0ChHighPt", "JetLcChLowPt", "JetLcChHighPt", "EMCALReadout", "JetFullHighPt", "JetFullLowPt", "JetNeutralHighPt", "JetNeutralLowPt", "GammaVeryHighPtEMCAL", "GammaVeryHighPtDCAL", "GammaHighPtEMCAL", "GammaHighPtDCAL", "GammaLowPtEMCAL", "GammaLowPtDCAL", "GammaVeryLowPtEMCAL", "GammaVeryLowPtDCAL"};
+    registry.add("triggerCorrelations", "Correlation between jet triggers", HistType::kTH2D, {{static_cast<int>(trigSelLabels.size()), -0.5, static_cast<double>(trigSelLabels.size()) - 0.5, "primary trigger"}, {static_cast<int>(trigSelLabels.size()), -0.5, static_cast<double>(trigSelLabels.size()) - 0.5, "secondary trigger"}});
+    auto triggerCorrelation = registry.get<TH2>(HIST("triggerCorrelations"));
+    for (std::vector<std::string>::size_type iTrigs = 0; iTrigs < trigSelLabels.size(); iTrigs++) {
+      triggerCorrelation->GetXaxis()->SetBinLabel(iTrigs + 1, trigSelLabels[iTrigs].data());
+      triggerCorrelation->GetYaxis()->SetBinLabel(iTrigs + 1, trigSelLabels[iTrigs].data());
+    }
   }
 
-  aod::EMCALClusterDefinition clusterDef = aod::emcalcluster::getClusterDefinitionFromString(clusterDefinition.value);
-  Filter clusterDefinitionSelection = o2::aod::jcluster::definition == static_cast<int>(clusterDef);
-
-  void processTriggeredCorrelations(aod::JCollision const& collision,
-                                    soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jetsCharged,
-                                    soa::Join<aod::FullJets, aod::FullJetConstituents> const& jetsFull,
-                                    soa::Filtered<aod::JClusters> const& clusters,
-                                    aod::JTracks const& tracks)
+  template <typename T>
+  void fillCorrelationsHistogram(T const& collision, bool fill = false, int iCurrentTrig = -1)
   {
-
-    registry.fill(HIST("h_collision_trigger_events"), 0.5); // all events
-    if (collision.posZ() < vertexZCut) {
-      registry.fill(HIST("h_collision_trigger_events"), 1.5); // all events with z vertex cut
-    }
-    if (JetDerivedDataUtilities::selectCollision(collision, JetDerivedDataUtilities::JCollisionSel::sel8)) {
-      registry.fill(HIST("h_collision_trigger_events"), 2.5); // events with sel8()
-    }
-    if (collision.alias_bit(triggerAliases::kTVXinEMC)) {
-      registry.fill(HIST("h_collision_trigger_events"), 3.5); // events with emcal bit
-    }
-
-    float jetsChargedLeadingPt = -1.0;
-    float jetsFullLeadingPt = -1.0;
-    float gammaLeadingPt = -1.0;
-    if (JetDerivedDataUtilities::selectCollision(collision, JetDerivedDataUtilities::JCollisionSel::sel8)) {
-      if (doChargedJetTrigger) {
-        for (auto& jetCharged : jetsCharged) {
-          if (jetCharged.r() == round(jetsChargedR * 100.0f)) {
-            jetsChargedLeadingPt = jetCharged.pt();
-            break;
-          }
+    for (std::vector<int>::size_type iTrig = 0; iTrig < triggerMaskBits.size(); iTrig++) {
+      if (fill) {
+        if (jetderiveddatautilities::selectTrigger(collision, triggerMaskBits[iTrig])) {
+          registry.fill(HIST("triggerCorrelations"), iCurrentTrig, iTrig);
+        }
+      } else {
+        if (jetderiveddatautilities::selectTrigger(collision, triggerMaskBits[iTrig])) {
+          fillCorrelationsHistogram(collision, true, iTrig);
         }
       }
     }
+  }
 
-    if ((emcalTriggered == -1 && collision.alias_bit(triggerAliases::kTVXinEMC)) || (emcalTriggered == 0 && (collision.alias_bit(triggerAliases::kEMC7) || collision.alias_bit(triggerAliases::kDMC7)))) {
-      if (doFullJetTrigger) {
-        for (auto& jetFull : jetsFull) {
-          if (jetFull.r() == round(jetsFullR * 100.0f)) {
-            jetsFullLeadingPt = jetFull.pt();
-            break;
-          }
-        }
-      }
-
-      if (doGammaTrigger) {
-        for (const auto& cluster : clusters) {
-          if (rejectExoticClusters && cluster.isExotic()) {
-            continue;
-          }
-          if (cluster.time() < clusterTimeMin || cluster.time() > clusterTimeMax) {
-            continue;
-          }
-          double gammaPt = cluster.energy() / std::cosh(cluster.eta());
-          if (TVector2::Phi_0_2pi(cluster.phi()) < 4 && gammaPt > gammaLeadingPt) {
-            gammaLeadingPt = gammaPt;
-          }
-        }
-      }
-    }
-
-    float jetsChargedPtStart = 0.0;
-    float jetsFullPtStart = 0.0;
-    float gammaPtStart = 0.0;
-    if (jetsChargedLeadingPt < 0.0) {
-      jetsChargedPtStart = -1.0;
-    }
-    if (jetsFullLeadingPt < 0.0) {
-      jetsFullPtStart = -1.0;
-    }
-    if (gammaLeadingPt < 0.0) {
-      gammaPtStart = -1.0;
-    }
-
-    for (float jetChargedPt = jetsChargedPtStart; jetChargedPt <= jetsChargedLeadingPt; jetChargedPt += 1.0) {
-
-      for (float jetFullPt = jetsFullPtStart; jetFullPt <= jetsFullLeadingPt; jetFullPt += 1.0) {
-
-        for (float gammaPt = gammaPtStart; gammaPt <= gammaLeadingPt; gammaPt += 1.0) {
-
-          registry.fill(HIST("h3_jetcharged_pt_jetfull_pt_photon_pt_triggered"), jetChargedPt, jetFullPt, gammaPt);
-        }
-      }
-    }
+  void processTriggeredCorrelations(soa::Join<aod::JCollisions, aod::JChTrigSels, aod::JFullTrigSels, aod::JChHFTrigSels>::iterator const& collision)
+  {
+    fillCorrelationsHistogram(collision);
   }
   PROCESS_SWITCH(TriggerCorrelationsTask, processTriggeredCorrelations, "QA for trigger correlations", true);
 };

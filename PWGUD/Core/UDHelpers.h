@@ -21,6 +21,7 @@
 #include "TLorentzVector.h"
 #include "Framework/Logger.h"
 #include "DataFormatsFT0/Digit.h"
+#include "DataFormatsFIT/Triggers.h"
 #include "CommonConstants/LHCConstants.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -49,7 +50,6 @@ int8_t netCharge(TCs tracks)
   return nch;
 }
 
-// -----------------------------------------------------------------------------
 // return net charge of tracks
 template <bool onlyPV, typename std::enable_if<!onlyPV>::type* = nullptr, typename TCs>
 int8_t netCharge(TCs tracks)
@@ -101,20 +101,23 @@ float rPVtrwTOF(TCs tracks, int nPVTracks)
 // true BC.
 //
 template <typename T>
-T compatibleBCs(uint64_t meanBC, int deltaBC, T const& bcs);
+T compatibleBCs(uint64_t const& meanBC, int const& deltaBC, T const& bcs);
 
-template <typename I, typename T>
-T compatibleBCs(I& bcIter, uint64_t meanBC, int deltaBC, T const& bcs);
+template <typename B, typename T>
+T compatibleBCs(B const& bc, uint64_t const& meanBC, int const& deltaBC, T const& bcs);
 
 // In this variant of compatibleBCs the bcIter is ideally placed within
 // [minBC, maxBC], but it does not need to be. The range is given by meanBC +- delatBC.
-template <typename I, typename T>
-T compatibleBCs(I& bcIter, uint64_t meanBC, int deltaBC, T const& bcs)
+template <typename B, typename T>
+T compatibleBCs(B const& bc, uint64_t const& meanBC, int const& deltaBC, T const& bcs)
 {
+  // get BCs iterator
+  auto bcIter = bcs.iteratorAt(bc.globalIndex());
+
   // range of BCs to consider
   uint64_t minBC = (uint64_t)deltaBC < meanBC ? meanBC - (uint64_t)deltaBC : 0;
   uint64_t maxBC = meanBC + (uint64_t)deltaBC;
-  LOGF(debug, "  minBC %d maxBC %d bcIterator %d (%d)", minBC, maxBC, bcIter.globalBC(), bcIter.globalIndex());
+  LOGF(debug, "  minBC %d maxBC %d bcIterator %d (%d) #BCs %d", minBC, maxBC, bcIter.globalBC(), bcIter.globalIndex(), bcs.size());
 
   // check [min,max]BC to overlap with [bcs.iteratorAt([0,bcs.size() - 1])
   if (maxBC < bcs.iteratorAt(0).globalBC() || minBC > bcs.iteratorAt(bcs.size() - 1).globalBC()) {
@@ -123,7 +126,6 @@ T compatibleBCs(I& bcIter, uint64_t meanBC, int deltaBC, T const& bcs)
   }
 
   // find slice of BCs table with BC in [minBC, maxBC]
-  int moveCount = 0;
   int64_t minBCId = bcIter.globalIndex();
   int64_t maxBCId = bcIter.globalIndex();
 
@@ -131,14 +133,12 @@ T compatibleBCs(I& bcIter, uint64_t meanBC, int deltaBC, T const& bcs)
   if (bcIter.globalBC() < minBC) {
     while (bcIter != bcs.end() && bcIter.globalBC() < minBC) {
       ++bcIter;
-      ++moveCount;
       minBCId = bcIter.globalIndex();
     }
   } else {
     while (bcIter.globalIndex() > 0 && bcIter.globalBC() >= minBC) {
       minBCId = bcIter.globalIndex();
       --bcIter;
-      --moveCount;
     }
   }
 
@@ -147,26 +147,19 @@ T compatibleBCs(I& bcIter, uint64_t meanBC, int deltaBC, T const& bcs)
     while (bcIter != bcs.end() && bcIter.globalBC() <= maxBC) {
       maxBCId = bcIter.globalIndex();
       ++bcIter;
-      ++moveCount;
     }
-
   } else {
     while (bcIter.globalIndex() > 0 && bcIter.globalBC() > maxBC) {
       --bcIter;
-      --moveCount;
       maxBCId = bcIter.globalIndex();
     }
   }
-  LOGF(debug, "  BC range: %d - %d", minBCId, maxBCId);
-
-  // reset bcIter
-  bcIter.moveByIndex(-moveCount);
 
   // create bc slice
-  T slice{{bcs.asArrowTable()->Slice(minBCId, maxBCId - minBCId + 1)}, (uint64_t)minBCId};
-  bcs.copyIndexBindings(slice);
-  LOGF(debug, "  size of slice %d", slice.size());
-  return slice;
+  T bcslice{{bcs.asArrowTable()->Slice(minBCId, maxBCId - minBCId + 1)}, (uint64_t)minBCId};
+  bcs.copyIndexBindings(bcslice);
+  LOGF(debug, "  size of slice %d", bcslice.size());
+  return bcslice;
 }
 
 // In this variant of compatibleBCs the range of compatible BCs is calculated from the
@@ -200,7 +193,7 @@ T compatibleBCs(C const& collision, int ndt, T const& bcs, int nMinBCs = 7)
 
 // In this variant of compatibleBCs the range of compatible BCs is defined by meanBC +- deltaBC.
 template <typename T>
-T compatibleBCs(uint64_t meanBC, int deltaBC, T const& bcs)
+T compatibleBCs(uint64_t const& meanBC, int const& deltaBC, T const& bcs)
 {
   // find BC with globalBC ~ meanBC
   uint64_t ind = (uint64_t)(bcs.size() / 2);
@@ -212,13 +205,13 @@ T compatibleBCs(uint64_t meanBC, int deltaBC, T const& bcs)
 // -----------------------------------------------------------------------------
 // Same as above but for collisions with MC information
 template <typename F, typename T>
-T MCcompatibleBCs(F const& collision, int ndt, T const& bcs, int nMinBCs = 7)
+T MCcompatibleBCs(F const& collision, int const& ndt, T const& bcs, int const& nMinBCs = 7)
 {
   LOGF(debug, "Collision time / resolution [ns]: %f / %f", collision.collisionTime(), collision.collisionTimeRes());
 
   // return if collisions has no associated BC
   if (!collision.has_foundBC()) {
-    LOGF(info, "Collision %i - no BC found!", collision.globalIndex());
+    LOGF(debug, "Collision %i - no BC found!", collision.globalIndex());
     return T{{bcs.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
   }
 
@@ -295,58 +288,56 @@ bool hasGoodPID(DGCutparHolder diffCuts, TC track)
 }
 
 // -----------------------------------------------------------------------------
-float FV0AmplitudeA(aod::FV0A&& fv0)
+template <typename TFV0>
+float FV0AmplitudeA(TFV0 fv0)
 {
-  float totAmplitude = 0;
-  for (auto amp : fv0.amplitude()) {
-    totAmplitude += amp;
-  }
-
-  return totAmplitude;
+  const auto& ampsA = fv0.amplitude();
+  return std::accumulate(ampsA.begin(), ampsA.end(), 0.f);
 }
 
 // -----------------------------------------------------------------------------
-float FT0AmplitudeA(aod::FT0&& ft0)
+template <typename TFT0>
+float FT0AmplitudeA(TFT0 ft0)
 {
-  float totAmplitude = 0;
-  for (auto amp : ft0.amplitudeA()) {
-    totAmplitude += amp;
-  }
-
-  return totAmplitude;
+  const auto& ampsA = ft0.amplitudeA();
+  return std::accumulate(ampsA.begin(), ampsA.end(), 0.f);
 }
 
 // -----------------------------------------------------------------------------
-float FT0AmplitudeC(aod::FT0&& ft0)
+template <typename TFT0>
+float FT0AmplitudeC(TFT0 ft0)
 {
-  float totAmplitude = 0;
-  for (auto amp : ft0.amplitudeC()) {
-    totAmplitude += amp;
-  }
-
-  return totAmplitude;
+  const auto& ampsC = ft0.amplitudeC();
+  return std::accumulate(ampsC.begin(), ampsC.end(), 0.f);
 }
 
 // -----------------------------------------------------------------------------
-float FDDAmplitudeA(aod::FDD&& fdd)
+template <typename TFDD>
+float FDDAmplitudeA(TFDD fdd)
 {
-  float totAmplitude = 0;
-  for (auto amp : fdd.chargeA()) {
-    totAmplitude += amp;
-  }
-
-  return totAmplitude;
+  std::vector<int16_t> ampsA(fdd.chargeA(), fdd.chargeA() + 8);
+  return std::accumulate(ampsA.begin(), ampsA.end(), 0);
 }
 
 // -----------------------------------------------------------------------------
-float FDDAmplitudeC(aod::FDD&& fdd)
+template <typename TFDD>
+float FDDAmplitudeC(TFDD fdd)
 {
-  float totAmplitude = 0;
-  for (auto amp : fdd.chargeC()) {
-    totAmplitude += amp;
-  }
+  std::vector<int16_t> ampsC(fdd.chargeC(), fdd.chargeC() + 8);
+  return std::accumulate(ampsC.begin(), ampsC.end(), 0);
+}
 
-  return totAmplitude;
+// -----------------------------------------------------------------------------
+template <typename T>
+bool cleanFV0(T& bc, float maxFITtime, float limitA)
+{
+  if (bc.has_foundFV0() && limitA >= 0.) {
+    bool ota = std::abs(bc.foundFV0().time()) <= maxFITtime;
+    bool oma = FV0AmplitudeA(bc.foundFV0()) <= limitA;
+    return ota && oma;
+  } else {
+    return true;
+  }
 }
 
 // -----------------------------------------------------------------------------
@@ -356,12 +347,6 @@ bool cleanFT0A(T& bc, float maxFITtime, float limitA)
   if (bc.has_foundFT0() && limitA >= 0.) {
     bool ota = std::abs(bc.foundFT0().timeA()) <= maxFITtime;
     bool oma = FT0AmplitudeA(bc.foundFT0()) <= limitA;
-
-    // compare decisions with FT0 trigger decisions
-    std::bitset<8> triggers = bc.foundFT0().triggerMask();
-    bool ora = !triggers[o2::ft0::Triggers::bitA];
-    LOGF(debug, "ota %f ora/FT0AmplitudeA %d/%d", bc.foundFT0().timeA(), ora, oma);
-
     return ota && oma;
   } else {
     return true;
@@ -375,12 +360,6 @@ bool cleanFT0C(T& bc, float maxFITtime, float limitC)
   if (bc.has_foundFT0() && limitC >= 0.) {
     bool otc = std::abs(bc.foundFT0().timeC()) <= maxFITtime;
     bool omc = FT0AmplitudeC(bc.foundFT0()) <= limitC;
-
-    // compare decisions with FT0 trigger decisions
-    std::bitset<8> triggers = bc.foundFT0().triggerMask();
-    bool orc = !triggers[o2::ft0::Triggers::bitC];
-    LOGF(debug, "otc %f orc/FT0AmplitudeC %d/%d", bc.foundFT0().timeC(), orc, omc);
-
     return otc && omc;
   } else {
     return true;
@@ -408,19 +387,6 @@ bool cleanFDDC(T& bc, float maxFITtime, float limitC)
     bool otc = std::abs(bc.foundFDD().timeC()) <= maxFITtime;
     bool omc = FDDAmplitudeC(bc.foundFDD()) <= limitC;
     return otc && omc;
-  } else {
-    return true;
-  }
-}
-
-// -----------------------------------------------------------------------------
-template <typename T>
-bool cleanFV0(T& bc, float maxFITtime, float limitA)
-{
-  if (bc.has_foundFV0() && limitA >= 0.) {
-    bool ota = std::abs(bc.foundFV0().time()) <= maxFITtime;
-    bool oma = FV0AmplitudeA(bc.foundFV0()) <= limitA;
-    return ota && oma;
   } else {
     return true;
   }
@@ -495,110 +461,258 @@ bool cleanFITC(T& bc, float maxFITtime, std::vector<float> lims)
 }
 
 // -----------------------------------------------------------------------------
+template <typename T>
+bool TVX(T& bc)
+{
+  bool tvx = false;
+  if (bc.has_foundFT0()) {
+    auto ft0 = bc.foundFT0();
+    tvx = TESTBIT(ft0.triggerMask(), o2::fit::Triggers::bitVertex);
+  }
+  return tvx;
+}
+
+// -----------------------------------------------------------------------------
+template <typename T>
+bool TSC(T& bc)
+{
+  bool tsc = false;
+  if (bc.has_foundFT0()) {
+    auto ft0 = bc.foundFT0();
+    tsc = TESTBIT(ft0.triggerMask(), o2::fit::Triggers::bitSCen);
+  }
+  return tsc;
+}
+
+// -----------------------------------------------------------------------------
+template <typename T>
+bool TCE(T& bc)
+{
+  bool tce = false;
+  if (bc.has_foundFT0()) {
+    auto ft0 = bc.foundFT0();
+    tce = TESTBIT(ft0.triggerMask(), o2::fit::Triggers::bitCen);
+  }
+  return tce;
+}
+
+// -----------------------------------------------------------------------------
+template <typename T>
+bool TOR(T& bc, float maxFITtime, std::vector<float> lims)
+{
+  auto torA = !cleanFT0A(bc, maxFITtime, lims[1]);
+  auto torC = !cleanFT0C(bc, maxFITtime, lims[2]);
+  return torA || torC;
+}
+
+// -----------------------------------------------------------------------------
+// returns true if veto is active
+// return false if veto is not active
+template <typename T>
+bool FITveto(T const& bc, DGCutparHolder const& diffCuts)
+{
+  // return if FIT veto is found in bc
+  // Double Gap (DG) condition
+  // 4 types of vetoes:
+  //  0 TVX
+  //  1 TSC
+  //  2 TCE
+  //  3 TOR
+  if (diffCuts.withTVX()) {
+    return TVX(bc);
+  }
+  if (diffCuts.withTSC()) {
+    return TSC(bc);
+  }
+  if (diffCuts.withTCE()) {
+    return TCE(bc);
+  }
+  if (diffCuts.withTOR()) {
+    return !cleanFIT(bc, diffCuts.maxFITtime(), diffCuts.FITAmpLimits());
+  }
+  return false;
+}
+
+// -----------------------------------------------------------------------------
+
+template <typename T>
+bool cutNoTimeFrameBorder(T const& coll)
+// Reject collisions close to TF borders due to incomplete TPC drift volume.
+// https://its.cern.ch/jira/browse/O2-4623
+// Return true when event is good.
+{
+  return coll.selection_bit(o2::aod::evsel::kNoTimeFrameBorder);
+}
+
+// -----------------------------------------------------------------------------
+
+template <typename T>
+bool cutNoSameBunchPileup(T const& coll)
+// Rejects collisions which are associated with the same "found-by-T0" bunch crossing.
+// Could be partially due to the pileup with another collision in the same foundBC.
+// See more in slides 12-14 of https://indico.cern.ch/event/1396220/#1-event-selection-with-its-rof.
+// Return true when event is good.
+{
+  return coll.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
+}
+
+// -----------------------------------------------------------------------------
+
+template <typename T>
+bool cutNoITSROFrameBorder(T const& coll)
+// Reject events affected by the ITS ROF border.
+// https://its.cern.ch/jira/browse/O2-4309
+// Return true when event is good.
+{
+  return coll.selection_bit(o2::aod::evsel::kNoITSROFrameBorder);
+}
+
+// -----------------------------------------------------------------------------
+
+template <typename T>
+bool cutIsGoodZvtxFT0vsPV(T const& coll)
+// Removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference.
+// The large vertexZ difference can be due to the in-bunch pileup or wrong BC assigned to a collision.
+// Return true when event is good.
+{
+  return coll.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV);
+}
+
+// -----------------------------------------------------------------------------
+
+template <typename T>
+bool cutIsVertexITSTPC(T const& coll)
+// Selects collisions with at least one ITS-TPC PV track, and thus rejects vertices built from ITS-only tracks.
+// Has an effect only on the pp data, in Pb-Pb ITS-only vertices are already rejected by default.
+// Return true when event is good.
+{
+  return coll.selection_bit(o2::aod::evsel::kIsVertexITSTPC);
+}
+
+// -----------------------------------------------------------------------------
+
+template <typename T>
+bool cutIsVertexTRDmatched(T const& coll)
+// Selects collisions with at least one TRD PV track.
+// Return true when event is good.
+{
+  return coll.selection_bit(o2::aod::evsel::kIsVertexTRDmatched);
+}
+
+// -----------------------------------------------------------------------------
+
+template <typename T>
+bool cutIsVertexTOFmatched(T const& coll)
+// Selects collisions with at least one TOF PV track.
+// Return true when event is good.
+{
+  return coll.selection_bit(o2::aod::evsel::kIsVertexTOFmatched);
+}
+
+// -----------------------------------------------------------------------------
+
+template <typename T>
+bool goodCollision(T const& coll, DGCutparHolder const& diffCuts)
+// Return true if collision is accepted according to user-chosen rules from event selection task
+{
+  bool accepted = true;
+  std::vector<int> sels = diffCuts.collisionSel();
+  if (sels[0])
+    accepted = accepted && cutNoTimeFrameBorder(coll);
+  if (sels[1])
+    accepted = accepted && cutNoSameBunchPileup(coll);
+  if (sels[2])
+    accepted = accepted && cutNoITSROFrameBorder(coll);
+  if (sels[3])
+    accepted = accepted && cutIsGoodZvtxFT0vsPV(coll);
+  if (sels[4])
+    accepted = accepted && cutIsVertexITSTPC(coll);
+  if (sels[5])
+    accepted = accepted && cutIsVertexTRDmatched(coll);
+  if (sels[6])
+    accepted = accepted && cutIsVertexTOFmatched(coll);
+
+  return accepted;
+}
+
+// -----------------------------------------------------------------------------
 // fill BB and BG information into FITInfo
 template <typename BCR>
 void fillBGBBFlags(upchelpers::FITInfo& info, uint64_t const& minbc, BCR const& bcrange)
 {
-  for (auto const& bc2u : bcrange) {
+  for (auto const& bc : bcrange) {
 
     // 0 <= bit <= 31
-    auto bit = bc2u.globalBC() - minbc;
-    if (!bc2u.selection_bit(o2::aod::evsel::kNoBGT0A))
+    auto bit = bc.globalBC() - minbc;
+    if (bit < 0 || bit > 31)
+      continue;
+
+    if (!bc.selection_bit(o2::aod::evsel::kNoBGT0A))
       SETBIT(info.BGFT0Apf, bit);
-    if (!bc2u.selection_bit(o2::aod::evsel::kNoBGT0C))
+    if (!bc.selection_bit(o2::aod::evsel::kNoBGT0C))
       SETBIT(info.BGFT0Cpf, bit);
-    if (bc2u.selection_bit(o2::aod::evsel::kIsBBT0A))
+    if (bc.selection_bit(o2::aod::evsel::kIsBBT0A))
       SETBIT(info.BBFT0Apf, bit);
-    if (bc2u.selection_bit(o2::aod::evsel::kIsBBT0C))
+    if (bc.selection_bit(o2::aod::evsel::kIsBBT0C))
       SETBIT(info.BBFT0Cpf, bit);
-    if (!bc2u.selection_bit(o2::aod::evsel::kNoBGV0A))
+    if (!bc.selection_bit(o2::aod::evsel::kNoBGV0A))
       SETBIT(info.BGFV0Apf, bit);
-    if (bc2u.selection_bit(o2::aod::evsel::kIsBBV0A))
+    if (bc.selection_bit(o2::aod::evsel::kIsBBV0A))
       SETBIT(info.BBFV0Apf, bit);
-    if (!bc2u.selection_bit(o2::aod::evsel::kNoBGFDA))
+    if (!bc.selection_bit(o2::aod::evsel::kNoBGFDA))
       SETBIT(info.BGFDDApf, bit);
-    if (!bc2u.selection_bit(o2::aod::evsel::kNoBGFDC))
+    if (!bc.selection_bit(o2::aod::evsel::kNoBGFDC))
       SETBIT(info.BGFDDCpf, bit);
-    if (bc2u.selection_bit(o2::aod::evsel::kIsBBFDA))
+    if (bc.selection_bit(o2::aod::evsel::kIsBBFDA))
       SETBIT(info.BBFDDApf, bit);
-    if (bc2u.selection_bit(o2::aod::evsel::kIsBBFDC))
+    if (bc.selection_bit(o2::aod::evsel::kIsBBFDC))
       SETBIT(info.BBFDDCpf, bit);
   }
 }
 
 // -----------------------------------------------------------------------------
 // extract FIT information
-template <typename B>
-void getFITinfo(upchelpers::FITInfo& info, uint64_t const& bcnum, B const& bcs, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
+template <typename BC, typename BCS>
+void getFITinfo(upchelpers::FITInfo& info, BC& bc, BCS const& bcs, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
 {
-  // find bc with globalBC = bcnum
-  Partition<B> selbc = aod::bc::globalBC == bcnum;
-  selbc.bindTable(bcs);
+  // FV0A
+  if (bc.has_foundFV0()) {
+    auto fv0 = fv0as.iteratorAt(bc.foundFV0Id());
+    info.timeFV0A = fv0.time();
+    info.ampFV0A = FV0AmplitudeA(fv0);
+    info.triggerMaskFV0A = fv0.triggerMask();
+  }
 
-  // if BC exists then update FIT information for this BC
-  if (selbc.size() > 0) {
-    auto bc = selbc.begin();
+  // FT0
+  if (bc.has_foundFT0()) {
+    auto ft0 = ft0s.iteratorAt(bc.foundFT0Id());
+    info.timeFT0A = ft0.timeA();
+    info.timeFT0C = ft0.timeC();
+    info.ampFT0A = FT0AmplitudeA(ft0);
+    info.ampFT0C = FT0AmplitudeC(ft0);
+    info.triggerMaskFT0 = ft0.triggerMask();
+  }
 
-    // FT0
-    if (bc.has_foundFT0()) {
-      auto ft0 = ft0s.iteratorAt(bc.foundFT0Id());
-      info.timeFT0A = ft0.timeA();
-      info.timeFT0C = ft0.timeC();
-      const auto& ampsA = ft0.amplitudeA();
-      const auto& ampsC = ft0.amplitudeC();
-      info.ampFT0A = 0.;
-      for (auto amp : ampsA) {
-        info.ampFT0A += amp;
-      }
-      info.ampFT0C = 0.;
-      for (auto amp : ampsC) {
-        info.ampFT0C += amp;
-      }
-      info.triggerMaskFT0 = ft0.triggerMask();
-    }
-
-    // FV0A
-    if (bc.has_foundFV0()) {
-      auto fv0a = fv0as.iteratorAt(bc.foundFV0Id());
-      info.timeFV0A = fv0a.time();
-      const auto& amps = fv0a.amplitude();
-      info.ampFV0A = 0.;
-      for (auto amp : amps) {
-        info.ampFV0A += amp;
-      }
-      info.triggerMaskFV0A = fv0a.triggerMask();
-    }
-
-    // FDD
-    if (bc.has_foundFDD()) {
-      auto fdd = fdds.iteratorAt(bc.foundFDDId());
-      info.timeFDDA = fdd.timeA();
-      info.timeFDDC = fdd.timeC();
-      const auto& ampsA = fdd.chargeA();
-      const auto& ampsC = fdd.chargeC();
-      info.ampFDDA = 0.;
-      for (auto amp : ampsA) {
-        info.ampFDDA += amp;
-      }
-      info.ampFDDC = 0.;
-      for (auto amp : ampsC) {
-        info.ampFDDC += amp;
-      }
-      info.triggerMaskFDD = fdd.triggerMask();
-    }
+  // FDD
+  if (bc.has_foundFDD()) {
+    auto fdd = fdds.iteratorAt(bc.foundFDDId());
+    info.timeFDDA = fdd.timeA();
+    info.timeFDDC = fdd.timeC();
+    info.ampFDDA = FDDAmplitudeA(fdd);
+    info.ampFDDC = FDDAmplitudeC(fdd);
+    info.triggerMaskFDD = fdd.triggerMask();
   }
 
   // fill BG and BB flags
-  auto minbc = bcnum - 16;
-  auto maxbc = bcnum + 15;
-  Partition<B> bcrange = aod::bc::globalBC >= minbc && aod::bc::globalBC <= maxbc;
-  bcrange.bindTable(bcs);
-  fillBGBBFlags(info, minbc, bcrange);
+  auto bcnum = bc.globalBC();
+  auto bcrange = compatibleBCs(bc, bcnum, 16, bcs);
+  LOGF(debug, "size of bcrange %d", bcrange.size());
+  fillBGBBFlags(info, bcnum - 16, bcrange);
 }
 
 // -----------------------------------------------------------------------------
 template <typename T>
-bool cleanZDC(T const& bc, aod::Zdcs& zdcs, std::vector<float>& lims, SliceCache& cache)
+bool cleanZDC(T const& bc, aod::Zdcs& zdcs, std::vector<float>& /*lims*/, SliceCache& cache)
 {
   const auto& ZdcBC = zdcs.sliceByCached(aod::zdc::bcId, bc.globalIndex(), cache);
   return (ZdcBC.size() == 0);
@@ -606,7 +720,7 @@ bool cleanZDC(T const& bc, aod::Zdcs& zdcs, std::vector<float>& lims, SliceCache
 
 // -----------------------------------------------------------------------------
 template <typename T>
-bool cleanCalo(T const& bc, aod::Calos& calos, std::vector<float>& lims, SliceCache& cache)
+bool cleanCalo(T const& bc, aod::Calos& calos, std::vector<float>& /*lims*/, SliceCache& cache)
 {
   const auto& CaloBC = calos.sliceByCached(aod::calo::bcId, bc.globalIndex(), cache);
   return (CaloBC.size() == 0);
@@ -615,7 +729,7 @@ bool cleanCalo(T const& bc, aod::Calos& calos, std::vector<float>& lims, SliceCa
 // -----------------------------------------------------------------------------
 // check if all tracks come from same MCCollision
 template <typename T>
-int64_t sameMCCollision(T tracks, aod::McCollisions mccols, aod::McParticles mcparts)
+int64_t sameMCCollision(T tracks, aod::McCollisions, aod::McParticles)
 {
   int64_t colID = -1;
   for (auto const& track : tracks) {

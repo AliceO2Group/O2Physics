@@ -29,6 +29,9 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
 #include "TableHelper.h"
 #include "pidTOFBase.h"
 
@@ -38,23 +41,36 @@ using namespace o2::pid;
 using namespace o2::framework::expressions;
 using namespace o2::track;
 
-void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
+/// Selection criteria for tracks used for TOF event time
+float trackDistanceForGoodMatch = 999.f;
+float trackDistanceForGoodMatchLowMult = 999.f;
+int multiplicityThreshold = 0;
+using Run3Trks = o2::soa::Join<aod::TracksIU, aod::TracksExtra>;
+using Run3Cols = aod::Collisions;
+bool isTrackGoodMatchForTOFPID(const Run3Trks::iterator& tr, const Run3Cols& /*ev*/)
 {
-  std::vector<ConfigParamSpec> options{{"add-qa", VariantType::Int, 0, {"Legacy. No effect."}},
-                                       {"evtime", VariantType::Int, 1, {"Produce the table for the Event Time"}}};
-  std::swap(workflowOptions, options);
+  if (!tr.hasTOF()) {
+    return false;
+  }
+  return true;
 }
-
-#include "Framework/runDataProcessing.h"
 
 /// Task to produce the TOF signal from the trackTime information
 struct tofSignal {
   o2::framework::Produces<o2::aod::TOFSignal> table;
-  bool enableTable = false;
+  o2::framework::Produces<o2::aod::pidTOFFlags> tableFlags;
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+
+  bool enableTable = false;      // Flag to check if the TOF signal table is requested or not
+  bool enableTableFlags = false; // Flag to check if the TOF signal flags table is requested or not
   // CCDB configuration
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<int64_t> timestamp{"ccdb-timestamp", -1, "timestamp of the object"};
   Configurable<std::string> timeShiftCCDBPath{"timeShiftCCDBPath", "", "Path of the TOF time shift vs eta. If empty none is taken"};
+  Configurable<float> distanceForGoodMatch{"distanceForGoodMatch", 999.f, "Maximum distance to consider a good match"};
+  Configurable<float> distanceForGoodMatchLowMult{"distanceForGoodMatchLowMult", 999.f, "Maximum distance to consider a good match for low multiplicity events"};
+  Configurable<int> multThreshold{"multThreshold", 0, "Multiplicity threshold to consider a low multiplicity event"};
+  Configurable<bool> enableQaHistograms{"enableQaHistograms", false, "Flag to enable the QA histograms"};
 
   void init(o2::framework::InitContext& initContext)
   {
@@ -70,16 +86,45 @@ struct tofSignal {
     if (enableTable) {
       LOG(info) << "Table TOFSignal enabled!";
     }
+    enableTableFlags = isTableRequiredInWorkflow(initContext, "pidTOFFlags");
+    if (enableTableFlags) {
+      LOG(info) << "Table pidTOFFlags enabled!";
+    }
+    trackDistanceForGoodMatch = distanceForGoodMatch;
+    trackDistanceForGoodMatchLowMult = distanceForGoodMatchLowMult;
+    multiplicityThreshold = multThreshold;
+    LOG(info) << "Configuring selections for good match: " << trackDistanceForGoodMatch << " low mult " << trackDistanceForGoodMatchLowMult << " mult. threshold " << multiplicityThreshold;
+    if (!enableQaHistograms) {
+      return;
+    }
+    histos.add("tofSignal", "tofSignal", kTH1D, {{1000, -1000, 1000000, "tofSignal (ps)"}});
+    if (enableTableFlags) {
+      histos.add("goodForPIDFlags", "goodForPIDFlags", kTH1D, {{3, 0, 3, "flags"}});
+    }
   }
-  using Trks = o2::soa::Join<aod::TracksIU, aod::TracksExtra>;
-  void processRun3(Trks const& tracks)
+  void processRun3(Run3Trks const& tracks, Run3Cols const& collisions)
   {
     if (!enableTable) {
       return;
     }
     table.reserve(tracks.size());
+    if (enableTableFlags) {
+      tableFlags.reserve(tracks.size());
+    }
     for (auto& t : tracks) {
-      table(o2::pid::tof::TOFSignal<Trks::iterator>::GetTOFSignal(t));
+      const auto s = o2::pid::tof::TOFSignal<Run3Trks::iterator>::GetTOFSignal(t);
+      if (enableQaHistograms) {
+        histos.fill(HIST("tofSignal"), s);
+      }
+      table(s);
+      if (!enableTableFlags) {
+        continue;
+      }
+      const auto b = isTrackGoodMatchForTOFPID(t, collisions);
+      if (enableQaHistograms) {
+        histos.fill(HIST("goodForPIDFlags"), s);
+      }
+      tableFlags(b);
     }
   }
   PROCESS_SWITCH(tofSignal, processRun3, "Process Run3 data i.e. input is TrackIU", true);
@@ -91,8 +136,15 @@ struct tofSignal {
       return;
     }
     table.reserve(tracks.size());
+    if (enableTableFlags) {
+      tableFlags.reserve(tracks.size());
+    }
     for (auto& t : tracks) {
       table(o2::pid::tof::TOFSignal<TrksRun2::iterator>::GetTOFSignal(t));
+      if (!enableTableFlags) {
+        continue;
+      }
+      tableFlags(true);
     }
   }
   PROCESS_SWITCH(tofSignal, processRun2, "Process Run2 data i.e. input is Tracks", false);
@@ -493,9 +545,6 @@ struct tofEventTime {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   auto workflow = WorkflowSpec{adaptAnalysisTask<tofSignal>(cfgc)};
-  if (!cfgc.options().get<int>("evtime")) {
-    return workflow;
-  }
   workflow.push_back(adaptAnalysisTask<tofEventTime>(cfgc));
   return workflow;
 }

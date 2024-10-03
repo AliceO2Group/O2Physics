@@ -76,7 +76,7 @@ struct BCRangeSelector {
     std::vector<IRFrame> bcRanges;
     int nColl{0}, nSelected{0};
     for (auto collision : cols) {
-      if (filt.cefpSelected()) {
+      if (filt.cefpSelected0() || filt.cefpSelected1()) {
         if (firstSelectedCollision < 0) {
           firstSelectedCollision = nColl;
         }
@@ -127,7 +127,7 @@ struct BCRangeSelector {
   }
 
   // need a trivial process method: the parameters determine the tables available in the input
-  void process(CCs const& collisions, aod::BCs const& bcs, aod::CefpDecisions const& fdecisions)
+  void process(CCs const& /*collisions*/, aod::BCs const&, aod::CefpDecisions const&)
   {
   }
 };

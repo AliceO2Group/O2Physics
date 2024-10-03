@@ -310,7 +310,7 @@ struct tpc_dedx_qa {
 
   // Single-Track Selection
   template <typename T1, typename C>
-  bool passedSingleTrackSelection(const T1& track, const C& collision)
+  bool passedSingleTrackSelection(const T1& track, const C& /*collision*/)
   {
     // Single-Track Selections
     if (!track.hasTPC())
@@ -329,7 +329,7 @@ struct tpc_dedx_qa {
 
   // General V0 Selections
   template <typename T1, typename C>
-  bool passedV0Selection(const T1& v0, const C& collision)
+  bool passedV0Selection(const T1& v0, const C& /*collision*/)
   {
     if (v0.v0cosPA() < v0cospaMin)
       return false;

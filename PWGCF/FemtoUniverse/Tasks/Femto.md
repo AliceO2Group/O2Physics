@@ -2,12 +2,13 @@
 Here you can find a summary of the tasks and information about who is developing it!
 
 
-| Task name                                   | What it does?                     | Who is developing it? |
-|---------------------------------------------|-----------------------------------|-----------------------|
-| femtoUniversePairTaskTrackTrack.cxx         |                                   |                       |
-| femtoUniversePairTaskTrackTrackExtended.cxx |                                   |                       |
-| femtoUniversePairTaskTrackPhi.cxx           | Angular correlations of h--$\Phi$ | Zuzanna Chochulska    |
-| femtoUniversePairTaskTrackV0Extended.cxx    | Angular correlations of h--V0     | Shirajum Monira
+| Task name                                   | What it does?                      | Who is developing it? |
+|---------------------------------------------|------------------------------------|-----------------------|
+| femtoUniversePairTaskTrackTrack.cxx         |                                    |                       |
+| femtoUniversePairTaskTrackTrackExtended.cxx |                                    |                       |
+| femtoUniversePairTaskTrackPhi.cxx           | Angular correlations of h--$\Phi$  | Zuzanna Chochulska    |
+| femtoUniversePairTaskTrackV0Extended.cxx    | Angular correlations of h--V0      | Shirajum Monira       |
+| femtoUniversePairTaskTrackD0.cxx            | Angular correlations of h-D0/D0bar | Katarzyna Gwiździel   |
 
 
 > **Note:** If you have any issues or questions feel free to contact us via mattermost ;)

@@ -21,7 +21,7 @@ o2physics_add_dpl_workflow(skimmer-gamma-conversion-truthonlymc
 
 o2physics_add_dpl_workflow(photon-conversion-builder
                     SOURCES photonconversionbuilder.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DCAFitter O2Physics::AnalysisCore KFParticle::KFParticle
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DCAFitter O2Physics::AnalysisCore KFParticle::KFParticle O2Physics::TPCDriftManager
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(create-pcm
@@ -29,13 +29,13 @@ o2physics_add_dpl_workflow(create-pcm
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::DCAFitter O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(create-emreduced-event
-                    SOURCES createEMReducedEvent.cxx
+o2physics_add_dpl_workflow(create-emevent-photon
+                    SOURCES createEMEventPhoton.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(associate-mc-info
-                    SOURCES associateMCinfo.cxx
+o2physics_add_dpl_workflow(associate-mc-info-photon
+                    SOURCES associateMCinfoPhoton.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
@@ -49,23 +49,13 @@ o2physics_add_dpl_workflow(skimmer-phos
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::PHOSBase
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(skimmer-primary-electron
-                    SOURCES skimmerPrimaryElectron.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(skimmer-primary-muon
-                    SOURCES skimmerPrimaryMuon.cxx
+o2physics_add_dpl_workflow(skimmer-primary-electron-from-dalitzee
+                    SOURCES skimmerPrimaryElectronFromDalitzEE.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(skimmer-dalitz-ee
                     SOURCES skimmerDalitzEE.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(skimmer-dalitz-mumu
-                    SOURCES skimmerDalitzMuMu.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 

@@ -62,8 +62,18 @@ o2physics_add_dpl_workflow(cf-filter-qa
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(cf-filter-ppphi
+    SOURCES PWGCF/CFFilterPPPhi.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(je-filter
     SOURCES PWGJE/jetFilter.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(je-hf-filter
+    SOURCES PWGJE/jetHFFilter.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib
     COMPONENT_NAME Analysis)
 
@@ -82,12 +92,26 @@ o2physics_add_dpl_workflow(mult-filter
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(em-filter
-    SOURCES PWGEM/photonFilter.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
+o2physics_add_dpl_workflow(em-photon-filter
+    SOURCES PWGEM/EMPhotonFilter.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase O2Physics::PWGEMPhotonMesonCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(em-photon-filter-qc
+    SOURCES PWGEM/EMPhotonFilterQC.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase O2Physics::PWGEMPhotonMesonCore
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(lf-f1proton-filter
     SOURCES PWGLF/filterf1proton.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
     COMPONENT_NAME Analysis)
+
+o2physics_add_library(EventFilteringUtils
+    SOURCES Zorro.cxx ZorroSummary.cxx
+    INSTALL_HEADERS ZorroHelper.h ZorroSummary.h
+    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore Arrow::arrow_shared)
+
+o2physics_target_root_dictionary(EventFilteringUtils
+   HEADERS ZorroHelper.h ZorroSummary.h
+   LINKDEF EventFilteringUtilsLinkDef.h)

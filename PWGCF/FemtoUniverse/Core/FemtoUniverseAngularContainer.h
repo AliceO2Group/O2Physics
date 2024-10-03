@@ -15,7 +15,7 @@
 /// \author Valentina Mantovani Sarti, valentina.mantovani-sarti@tum.de
 /// \author Georgios Mantzaridis, TU München, georgios.mantzaridis@tum.de
 /// \author Anton Riedel, TU München, anton.riedel@tum.de
-/// \author Zuzanna Chochulska, WUT Warsaw, zuzanna.chochulska.stud@pw.edu.pl
+/// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEANGULARCONTAINER_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEANGULARCONTAINER_H_
@@ -71,7 +71,7 @@ class FemtoUniverseAngularContainer
   /// \param kTAxis axis object for the kT axis
   /// \param mTAxis axis object for the mT axis
   template <typename T>
-  void init_base(std::string folderName, std::string femtoObs, T femtoObsAxis, T multAxis, T kTAxis, T mTAxis, T multAxis3D, T mTAxis3D, T etaAxis, T phiAxis, bool use3dplots)
+  void init_base(std::string folderName, std::string /*femtoObs*/, T /*femtoObsAxis*/, T /*multAxis*/, T /*kTAxis*/, T /*mTAxis*/, T /*multAxis3D*/, T /*mTAxis3D*/, T etaAxis, T phiAxis, bool use3dplots)
   {
     mHistogramRegistry->add((folderName + "/DeltaEtaDeltaPhi").c_str(), ";  #Delta#varphi (rad); #Delta#eta", kTH2F, {phiAxis, etaAxis});
     if (use3dplots) {
@@ -85,7 +85,7 @@ class FemtoUniverseAngularContainer
   /// \param folderName Name of the directory in the output file (no suffix for reconstructed data/ Monte Carlo; "_MC" for Monte Carlo Truth)
   /// \param femtoObsAxis axis object for the femto observable axis
   template <typename T>
-  void init_MC(std::string folderName, std::string femtoObs, T femtoObsAxis, T multAxis, T mTAxis)
+  void init_MC(std::string /*folderName*/, std::string /*femtoObs*/, T /*femtoObsAxis*/, T /*multAxis*/, T /*mTAxis*/)
   {
   }
 
@@ -153,7 +153,7 @@ class FemtoUniverseAngularContainer
   /// \param part2 Particle two
   /// \param mult Multiplicity of the event
   template <o2::aod::femtouniverseMCparticle::MCType mc, typename T>
-  void setPair_base(const float femtoObs, const float mT, T const& part1, T const& part2, const int mult, bool use3dplots)
+  void setPair_base(const float /*femtoObs*/, const float /*mT*/, T const& part1, T const& part2, const int /*mult*/, bool use3dplots, float weight = 1.0f)
   {
     delta_eta = part1.eta() - part2.eta();
     delta_phi = part1.phi() - part2.phi();
@@ -165,7 +165,7 @@ class FemtoUniverseAngularContainer
       delta_phi -= o2::constants::math::TwoPI;
     }
 
-    mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[mc]) + HIST("/DeltaEtaDeltaPhi"), delta_phi, delta_eta);
+    mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtouniverseMCparticle::MCTypeName[mc]) + HIST("/DeltaEtaDeltaPhi"), delta_phi, delta_eta, weight);
     if (use3dplots) {
       // use 3d plots
     }
@@ -179,7 +179,7 @@ class FemtoUniverseAngularContainer
   /// \param part1 Particle one
   /// \param part2 Particle two
   /// \param mult Multiplicity of the event
-  void setPair_MC(const float femtoObsMC, const float femtoObs, const float mT, const int mult)
+  void setPair_MC(const float /*femtoObsMC*/, const float /*femtoObs*/, const float /*mT*/, const int /*mult*/)
   {
     if (mHistogramRegistry) {
       // Fill the kstar distributions with the reconstructed information but only for particles with the right PDG code
@@ -194,7 +194,7 @@ class FemtoUniverseAngularContainer
   /// \param part2 Particle two
   /// \param mult Multiplicity of the event
   template <bool isMC, typename T>
-  void setPair(T const& part1, T const& part2, const int mult, bool use3dplots)
+  void setPair(T const& part1, T const& part2, const int mult, bool use3dplots, float weight = 1.0f)
   {
     float femtoObs, femtoObsMC;
     // Calculate femto observable and the mT with reconstructed information
@@ -215,7 +215,7 @@ class FemtoUniverseAngularContainer
           const float mTMC = FemtoUniverseMath::getmT(part1.fdMCParticle(), mMassOne, part2.fdMCParticle(), mMassTwo);
 
           if (abs(part1.fdMCParticle().pdgMCTruth()) == abs(mPDGOne) && abs(part2.fdMCParticle().pdgMCTruth()) == abs(mPDGTwo)) { // Note: all pair-histogramms are filled with MC truth information ONLY in case of non-fake candidates
-            setPair_base<o2::aod::femtouniverseMCparticle::MCType::kTruth>(femtoObsMC, mTMC, part1.fdMCParticle(), part2.fdMCParticle(), mult, use3dplots);
+            setPair_base<o2::aod::femtouniverseMCparticle::MCType::kTruth>(femtoObsMC, mTMC, part1.fdMCParticle(), part2.fdMCParticle(), mult, use3dplots, weight);
             setPair_MC(femtoObsMC, femtoObs, mT, mult);
           } else {
           }

@@ -1,0 +1,51 @@
+{
+    "CodeName": "Default",
+    "_CodeName": "Name to identify the analysis",
+    "pathFileSE": "~/cernbox/DsCorrelationAnalysis/MasterDegreeAnalysis/AnalysisResultsFinal.root",
+    "pathFileME": "~/cernbox/DsCorrelationAnalysis/MasterDegreeAnalysis/AnalysisResultsFinalME.root",
+    "pathFileMass": "/data/dataalice/scattar/RawYieldsDs.root",
+    "InputDirSE": "hf-task-correlation-ds-hadrons",
+    "InputDirME": "hf-task-correlation-ds-hadrons",
+    "InputHistoCorrSignalName": "hCorrel2DVsPtSignalRegion",
+    "InputHistoCorrSidebaName": "hCorrel2DVsPtSidebands",
+    "InputHistoMassName": [
+        "hRawYieldsSignal",
+        "hRawYieldsBkg",
+        "hBackgroundSideband"
+    ],
+    "_InputHistoMassName": [
+        "Sgn yield vs pt",
+        "Bkg yield vs pt",
+        "SBs yield vs pt"
+    ],
+    "binsPtCandIntervals": [
+        2.0,
+        3.0,
+        4.0,
+        5.0,
+        8.0,
+        16.0
+    ],
+    "binsPtHadIntervals": [
+        0.0,
+        11.0
+    ],
+    "deltaEtaInterval": [
+        -0.8,
+        0.8
+    ],
+    "DmesonSpecie": 2,
+    "_DmesonSpecie": [
+        "0 for kD0toKpi",
+        "1 for kDplusKpipi",
+        "2 for kDsToKKPi",
+        "3 for kDStarD0pi"
+    ],
+    "NumberOfPools": 9,
+    "_NumberOfPools": "Number of pools for the event mixing",
+    "CorrectPoolsSeparately": false,
+    "_CorrectPoolsSeparately": "true = pool-by-pool ME correction; false = merged-pools ME correction",
+    "FitFunction": 1,
+    "FixBaseline": 0,
+    "FixMean": 3
+}

@@ -14,170 +14,366 @@
 // This code runs loop over v0 photons for PCM QC.
 //    Please write to: daiki.sekihata@cern.ch
 
-#include <array>
-#include "TString.h"
-#include "THashList.h"
-#include "TDirectory.h"
-#include "Math/Vector4D.h"
-#include "Math/Vector3D.h"
-#include "Math/LorentzRotation.h"
-#include "Math/Rotation3D.h"
-#include "Math/AxisAngle.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/Core/RecoDecay.h"
+
 #include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
-#include "PWGEM/PhotonMeson/Core/CutsLibrary.h"
-#include "PWGEM/PhotonMeson/Core/HistogramsLibrary.h"
+#include "PWGEM/PhotonMeson/Core/EMPhotonEventCut.h"
 
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
-using std::array;
+using namespace o2::aod::pwgem::photon;
 
-using MyCollisions = soa::Join<aod::EMReducedEvents, aod::EMReducedEventsMult, aod::EMReducedEventsCent>;
+using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent>;
 using MyCollision = MyCollisions::iterator;
 
-using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0Recalculation, aod::V0KFEMReducedEventIds>;
+using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0PhotonsKFCov, aod::V0KFEMEventIds>;
 using MyV0Photon = MyV0Photons::iterator;
 
 struct PCMQC {
+  Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
+  Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
+  Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
 
-  Configurable<std::string> fConfigPCMCuts{"cfgPCMCuts", "analysis,wwire_ib,qc,qc_ITSTPC,qc_ITSonly,qc_TPConly,nocut", "Comma separated list of v0 photon cuts"};
+  EMPhotonEventCut fEMEventCut;
+  struct : ConfigurableGroup {
+    std::string prefix = "eventcut_group";
+    Configurable<float> cfgZvtxMax{"cfgZvtxMax", 10.f, "max. Zvtx"};
+    Configurable<bool> cfgRequireSel8{"cfgRequireSel8", true, "require sel8 in event cut"};
+    Configurable<bool> cfgRequireFT0AND{"cfgRequireFT0AND", true, "require FT0AND in event cut"};
+    Configurable<bool> cfgRequireNoTFB{"cfgRequireNoTFB", true, "require No time frame border in event cut"};
+    Configurable<bool> cfgRequireNoITSROFB{"cfgRequireNoITSROFB", true, "require no ITS readout frame border in event cut"};
+    Configurable<bool> cfgRequireNoSameBunchPileup{"cfgRequireNoSameBunchPileup", false, "require no same bunch pileup in event cut"};
+    Configurable<bool> cfgRequireVertexITSTPC{"cfgRequireVertexITSTPC", false, "require Vertex ITSTPC in event cut"}; // ITS-TPC matched track contributes PV.
+    Configurable<bool> cfgRequireGoodZvtxFT0vsPV{"cfgRequireGoodZvtxFT0vsPV", false, "require good Zvtx between FT0 vs. PV in event cut"};
+    Configurable<int> cfgOccupancyMin{"cfgOccupancyMin", -1, "min. occupancy"};
+    Configurable<int> cfgOccupancyMax{"cfgOccupancyMax", 1000000000, "max. occupancy"};
+    Configurable<bool> cfgRequireNoCollInTimeRangeStandard{"cfgRequireNoCollInTimeRangeStandard", false, "require no collision in time range standard"};
+  } eventcuts;
 
-  std::vector<V0PhotonCut> fPCMCuts;
+  V0PhotonCut fV0PhotonCut;
+  struct : ConfigurableGroup {
+    std::string prefix = "pcmcut_group";
+    Configurable<bool> cfg_require_v0_with_itstpc{"cfg_require_v0_with_itstpc", false, "flag to select V0s with ITS-TPC matched tracks"};
+    Configurable<bool> cfg_require_v0_with_itsonly{"cfg_require_v0_with_itsonly", false, "flag to select V0s with ITSonly tracks"};
+    Configurable<bool> cfg_require_v0_with_tpconly{"cfg_require_v0_with_tpconly", false, "flag to select V0s with TPConly tracks"};
+    Configurable<bool> cfg_require_v0_on_wwire_ib{"cfg_require_v0_on_wwire_ib", false, "flag to select V0s on W wires ITSib"};
+    Configurable<float> cfg_min_pt_v0{"cfg_min_pt_v0", 0.1, "min pT for v0 photons at PV"};
+    Configurable<float> cfg_min_eta_v0{"cfg_min_eta_v0", -0.8, "min eta for v0 photons at PV"};
+    Configurable<float> cfg_max_eta_v0{"cfg_max_eta_v0", +0.8, "max eta for v0 photons at PV"};
+    Configurable<float> cfg_min_v0radius{"cfg_min_v0radius", 4.0, "min v0 radius"};
+    Configurable<float> cfg_max_v0radius{"cfg_max_v0radius", 90.0, "max v0 radius"};
+    Configurable<float> cfg_max_alpha_ap{"cfg_max_alpha_ap", 0.95, "max alpha for AP cut"};
+    Configurable<float> cfg_max_qt_ap{"cfg_max_qt_ap", 0.01, "max qT for AP cut"};
+    Configurable<float> cfg_min_cospa{"cfg_min_cospa", 0.997, "min V0 CosPA"};
+    Configurable<float> cfg_max_pca{"cfg_max_pca", 3.0, "max distance btween 2 legs"};
+    Configurable<bool> cfg_require_v0_with_correct_xz{"cfg_require_v0_with_correct_xz", true, "flag to select V0s with correct xz"};
+    Configurable<bool> cfg_reject_v0_on_itsib{"cfg_reject_v0_on_itsib", true, "flag to reject V0s on ITSib"};
+    Configurable<int> cfg_min_ncluster_tpc{"cfg_min_ncluster_tpc", 0, "min ncluster tpc"};
+    Configurable<int> cfg_min_ncrossedrows{"cfg_min_ncrossedrows", 40, "min ncrossed rows"};
+    Configurable<float> cfg_max_chi2tpc{"cfg_max_chi2tpc", 4.0, "max chi2/NclsTPC"};
+    Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 5.0, "max chi2/NclsITS"};
+    Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -3.0, "min. TPC n sigma for electron"};
+    Configurable<float> cfg_max_TPCNsigmaEl{"cfg_max_TPCNsigmaEl", +3.0, "max. TPC n sigma for electron"};
+    Configurable<bool> cfg_disable_itsonly_track{"cfg_disable_itsonly_track", false, "flag to disable ITSonly tracks"};
+  } pcmcuts;
 
-  OutputObj<THashList> fOutputEvent{"Event"};
-  OutputObj<THashList> fOutputV0Leg{"V0Leg"};
-  OutputObj<THashList> fOutputV0{"V0"};
-  THashList* fMainList = new THashList();
+  static constexpr std::string_view event_types[2] = {"before/", "after/"};
+  HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
-  // static constexpr std::string_view ambtracktypes[2] = {"NonAmb", "Amb"};
+  void init(InitContext&)
+  {
+    addhistograms();
+    DefineEMEventCut();
+    DefinePCMCut();
+  }
+
   void addhistograms()
   {
-    fMainList->SetOwner(true);
-    fMainList->SetName("fMainList");
+    // event info
+    auto hCollisionCounter = fRegistry.add<TH1>("Event/before/hCollisionCounter", "collision counter;;Number of events", kTH1F, {{10, 0.5, 10.5}}, false);
+    hCollisionCounter->GetXaxis()->SetBinLabel(1, "all");
+    hCollisionCounter->GetXaxis()->SetBinLabel(2, "No TF border");
+    hCollisionCounter->GetXaxis()->SetBinLabel(3, "No ITS ROF border");
+    hCollisionCounter->GetXaxis()->SetBinLabel(4, "No Same Bunch Pileup");
+    hCollisionCounter->GetXaxis()->SetBinLabel(5, "Is Vertex ITSTPC");
+    hCollisionCounter->GetXaxis()->SetBinLabel(6, "Is Good Zvtx FT0vsPV");
+    hCollisionCounter->GetXaxis()->SetBinLabel(7, "FT0AND");
+    hCollisionCounter->GetXaxis()->SetBinLabel(8, "sel8");
+    hCollisionCounter->GetXaxis()->SetBinLabel(9, "|Z_{vtx}| < 10 cm");
+    hCollisionCounter->GetXaxis()->SetBinLabel(10, "accepted");
 
-    // create sub lists first.
-    o2::aod::emphotonhistograms::AddHistClass(fMainList, "Event");
-    THashList* list_ev = reinterpret_cast<THashList*>(fMainList->FindObject("Event"));
-    o2::aod::emphotonhistograms::DefineHistograms(list_ev, "Event");
+    fRegistry.add("Event/before/hZvtx", "vertex z; Z_{vtx} (cm)", kTH1F, {{100, -50, +50}}, false);
+    fRegistry.add("Event/before/hMultNTracksPV", "hMultNTracksPV; N_{track} to PV", kTH1F, {{6001, -0.5, 6000.5}}, false);
+    fRegistry.add("Event/before/hMultNTracksPVeta1", "hMultNTracksPVeta1; N_{track} to PV", kTH1F, {{6001, -0.5, 6000.5}}, false);
+    fRegistry.add("Event/before/hMultFT0", "hMultFT0;mult. FT0A;mult. FT0C", kTH2F, {{300, 0, 6000}, {300, 0, 6000}}, false);
+    fRegistry.add("Event/before/hCentFT0A", "hCentFT0A;centrality FT0A (%)", kTH1F, {{110, 0, 110}}, false);
+    fRegistry.add("Event/before/hCentFT0C", "hCentFT0C;centrality FT0C (%)", kTH1F, {{110, 0, 110}}, false);
+    fRegistry.add("Event/before/hCentFT0M", "hCentFT0M;centrality FT0M (%)", kTH1F, {{110, 0, 110}}, false);
+    fRegistry.add("Event/before/hCentFT0MvsMultNTracksPV", "hCentFT0MvsMultNTracksPV;centrality FT0M (%);N_{track} to PV", kTH2F, {{110, 0, 110}, {600, 0, 6000}}, false);
+    fRegistry.add("Event/before/hMultFT0MvsMultNTracksPV", "hMultFT0MvsMultNTracksPV;mult. FT0M;N_{track} to PV", kTH2F, {{600, 0, 6000}, {600, 0, 6000}}, false);
+    fRegistry.addClone("Event/before/", "Event/after/");
 
-    o2::aod::emphotonhistograms::AddHistClass(fMainList, "V0Leg");
-    THashList* list_v0leg = reinterpret_cast<THashList*>(fMainList->FindObject("V0Leg"));
+    // v0 info
+    fRegistry.add("V0/hPt", "pT;p_{T,#gamma} (GeV/c)", kTH1F, {{2000, 0.0f, 20}}, false);
+    fRegistry.add("V0/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{90, 0, 2 * M_PI}, {40, -1.0f, 1.0f}}, false);
+    fRegistry.add("V0/hRadius", "V0Radius; radius in Z (cm);radius in XY (cm)", kTH2F, {{200, -100, 100}, {200, 0.0f, 100.0f}}, false);
+    fRegistry.add("V0/hCosPA", "V0CosPA;cosine pointing angle", kTH1F, {{100, 0.9f, 1.0f}}, false);
+    fRegistry.add("V0/hCosPA_Rxy", "cos PA vs. R_{xy};R_{xy} (cm);cosine pointing angle", kTH2F, {{200, 0.f, 100.f}, {100, 0.9f, 1.0f}}, false);
+    fRegistry.add("V0/hPCA", "distance between 2 legs;PCA (cm)", kTH1F, {{500, 0.0f, 5.0f}}, false);
+    fRegistry.add("V0/hPCA_Rxy", "distance between 2 legs vs. R_{xy};R_{xy} (cm);PCA (cm)", kTH2F, {{200, 0.f, 100.f}, {500, 0.0f, 5.0f}}, false);
+    fRegistry.add("V0/hPCA_CosPA", "distance between 2 legs vs. cosPA;cosine of pointing angle;PCA (cm)", kTH2F, {{100, 0.9f, 1.f}, {500, 0.0f, 5.0f}}, false);
+    fRegistry.add("V0/hDCAxyz", "DCA to PV;DCA_{xy} (cm);DCA_{z} (cm)", kTH2F, {{200, -5.f, +5.f}, {200, -5.f, +5.f}}, false);
+    fRegistry.add("V0/hAPplot", "AP plot;#alpha;q_{T} (GeV/c)", kTH2F, {{200, -1.0f, +1.0f}, {250, 0.0f, 0.25f}}, false);
+    fRegistry.add("V0/hMassGamma", "hMassGamma;R_{xy} (cm);m_{ee} (GeV/c^{2})", kTH2F, {{200, 0.0f, 100.0f}, {100, 0.0f, 0.1f}}, false);
+    fRegistry.add("V0/hGammaRxy", "conversion point in XY;V_{x} (cm);V_{y} (cm)", kTH2F, {{400, -100.0f, 100.0f}, {400, -100.0f, 100.0f}}, false);
+    fRegistry.add("V0/hKFChi2vsM", "KF chi2 vs. m_{ee};m_{ee} (GeV/c^{2});KF chi2/NDF", kTH2F, {{100, 0.0f, 0.1f}, {100, 0.f, 100.0f}}, false);
+    fRegistry.add("V0/hKFChi2vsR", "KF chi2 vs. conversion point in XY;R_{xy} (cm);KF chi2/NDF", kTH2F, {{200, 0.0f, 100.0f}, {100, 0.f, 100.0f}}, false);
+    fRegistry.add("V0/hKFChi2vsX", "KF chi2 vs. conversion point in X;X (cm);KF chi2/NDF", kTH2F, {{200, -100.0f, 100.0f}, {100, 0.f, 100.0f}}, false);
+    fRegistry.add("V0/hKFChi2vsY", "KF chi2 vs. conversion point in Y;Y (cm);KF chi2/NDF", kTH2F, {{200, -100.0f, 100.0f}, {100, 0.f, 100.0f}}, false);
+    fRegistry.add("V0/hKFChi2vsZ", "KF chi2 vs. conversion point in Z;Z (cm);KF chi2/NDF", kTH2F, {{200, -100.0f, 100.0f}, {100, 0.f, 100.0f}}, false);
+    fRegistry.add("V0/hPResolution", "p resolution;p_{#gamma} (GeV/c);#Deltap/p", kTH2F, {{1000, 0.0f, 10}, {100, 0, 0.1}}, false);
+    fRegistry.add("V0/hPtResolution", "p_{T} resolution;p_{#gamma} (GeV/c);#Deltap_{T}/p_{T}", kTH2F, {{1000, 0.0f, 10}, {100, 0, 0.1}}, false);
+    fRegistry.add("V0/hEtaResolution", "#eta resolution;p_{#gamma} (GeV/c);#Delta#eta", kTH2F, {{1000, 0.0f, 10}, {100, 0, 0.01}}, false);
+    fRegistry.add("V0/hThetaResolution", "#theta resolution;p_{#gamma} (GeV/c);#Delta#theta (rad.)", kTH2F, {{1000, 0.0f, 10}, {100, 0, 0.01}}, false);
+    fRegistry.add("V0/hPhiResolution", "#varphi resolution;p_{#gamma} (GeV/c);#Delta#varphi (rad.)", kTH2F, {{1000, 0.0f, 10}, {100, 0, 0.01}}, false);
+    fRegistry.add("V0/hNgamma", "Number of #gamma candidates per collision", kTH1F, {{101, -0.5f, 100.5f}});
 
-    o2::aod::emphotonhistograms::AddHistClass(fMainList, "V0");
-    THashList* list_v0 = reinterpret_cast<THashList*>(fMainList->FindObject("V0"));
+    // v0leg info
+    fRegistry.add("V0Leg/hPt", "pT;p_{T,e} (GeV/c)", kTH1F, {{1000, 0.0f, 10}}, false);
+    fRegistry.add("V0Leg/hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", kTH1F, {{1000, -50, 50}}, false);
+    fRegistry.add("V0Leg/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{90, 0, 2 * M_PI}, {40, -1.0f, 1.0f}}, false);
+    fRegistry.add("V0Leg/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", kTH2F, {{200, -50.0f, 50.0f}, {200, -50.0f, 50.0f}}, false);
+    fRegistry.add("V0Leg/hNclsTPC", "number of TPC clusters", kTH1F, {{161, -0.5, 160.5}}, false);
+    fRegistry.add("V0Leg/hNcrTPC", "number of TPC crossed rows", kTH1F, {{161, -0.5, 160.5}}, false);
+    fRegistry.add("V0Leg/hChi2TPC", "chi2/number of TPC clusters", kTH1F, {{100, 0, 10}}, false);
+    fRegistry.add("V0Leg/hTPCdEdx", "TPC dE/dx;p_{in} (GeV/c);TPC dE/dx (a.u.)", kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
+    fRegistry.add("V0Leg/hTPCNsigmaEl", "TPC n sigma el;p_{in} (GeV/c);n #sigma_{e}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+    fRegistry.add("V0Leg/hTPCNsigmaPi", "TPC n sigma pi;p_{in} (GeV/c);n #sigma_{#pi}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+    fRegistry.add("V0Leg/hTPCNcr2Nf", "TPC Ncr/Nfindable", kTH1F, {{200, 0, 2}}, false);
+    fRegistry.add("V0Leg/hTPCNcls2Nf", "TPC Ncls/Nfindable", kTH1F, {{200, 0, 2}}, false);
+    fRegistry.add("V0Leg/hTPCNclsShared", "TPC Ncls shared/Ncls;p_{T} (GeV/c);N_{cls}^{shared}/N_{cls} in TPC", kTH2F, {{1000, 0, 10}, {100, 0, 1}}, false);
+    fRegistry.add("V0Leg/hNclsITS", "number of ITS clusters", kTH1F, {{8, -0.5, 7.5}}, false);
+    fRegistry.add("V0Leg/hChi2ITS", "chi2/number of ITS clusters", kTH1F, {{100, 0, 10}}, false);
+    fRegistry.add("V0Leg/hITSClusterMap", "ITS cluster map", kTH1F, {{128, -0.5, 127.5}}, false);
+    fRegistry.add("V0Leg/hMeanClusterSizeITS", "mean cluster size ITS;<cluster size> on ITS #times cos(#lambda)", kTH2F, {{1000, 0, 10}, {160, 0, 16}}, false);
+    fRegistry.add("V0Leg/hXY", "X vs. Y;X (cm);Y (cm)", kTH2F, {{100, 0, 100}, {80, -20, 20}}, false);
+    fRegistry.add("V0Leg/hZX", "Z vs. X;Z (cm);X (cm)", kTH2F, {{200, -100, 100}, {100, 0, 100}}, false);
+    fRegistry.add("V0Leg/hZY", "Z vs. Y;Z (cm);Y (cm)", kTH2F, {{200, -100, 100}, {80, -20, 20}}, false);
+  }
 
-    for (const auto& cut : fPCMCuts) {
-      const char* cutname = cut.GetName();
-      o2::aod::emphotonhistograms::AddHistClass(list_v0leg, cutname);
-      o2::aod::emphotonhistograms::AddHistClass(list_v0, cutname);
+  void DefineEMEventCut()
+  {
+    fEMEventCut = EMPhotonEventCut("fEMEventCut", "fEMEventCut");
+    fEMEventCut.SetRequireSel8(eventcuts.cfgRequireSel8);
+    fEMEventCut.SetRequireFT0AND(eventcuts.cfgRequireFT0AND);
+    fEMEventCut.SetZvtxRange(-eventcuts.cfgZvtxMax, +eventcuts.cfgZvtxMax);
+    fEMEventCut.SetRequireNoTFB(eventcuts.cfgRequireNoTFB);
+    fEMEventCut.SetRequireNoITSROFB(eventcuts.cfgRequireNoITSROFB);
+    fEMEventCut.SetRequireNoSameBunchPileup(eventcuts.cfgRequireNoSameBunchPileup);
+    fEMEventCut.SetRequireVertexITSTPC(eventcuts.cfgRequireVertexITSTPC);
+    fEMEventCut.SetRequireGoodZvtxFT0vsPV(eventcuts.cfgRequireGoodZvtxFT0vsPV);
+    fEMEventCut.SetOccupancyRange(eventcuts.cfgOccupancyMin, eventcuts.cfgOccupancyMax);
+    fEMEventCut.SetRequireNoCollInTimeRangeStandard(eventcuts.cfgRequireNoCollInTimeRangeStandard);
+  }
+
+  void DefinePCMCut()
+  {
+    fV0PhotonCut = V0PhotonCut("fV0PhotonCut", "fV0PhotonCut");
+
+    // for v0
+    fV0PhotonCut.SetV0PtRange(pcmcuts.cfg_min_pt_v0, 1e10f);
+    fV0PhotonCut.SetV0EtaRange(pcmcuts.cfg_min_eta_v0, pcmcuts.cfg_max_eta_v0);
+    fV0PhotonCut.SetMinCosPA(pcmcuts.cfg_min_cospa);
+    fV0PhotonCut.SetMaxPCA(pcmcuts.cfg_max_pca);
+    fV0PhotonCut.SetRxyRange(pcmcuts.cfg_min_v0radius, pcmcuts.cfg_max_v0radius);
+    fV0PhotonCut.SetAPRange(pcmcuts.cfg_max_alpha_ap, pcmcuts.cfg_max_qt_ap);
+    fV0PhotonCut.RejectITSib(pcmcuts.cfg_reject_v0_on_itsib);
+
+    // for track
+    fV0PhotonCut.SetTrackPtRange(pcmcuts.cfg_min_pt_v0 * 0.4, 1e+10f);
+    fV0PhotonCut.SetTrackEtaRange(pcmcuts.cfg_min_eta_v0, pcmcuts.cfg_max_eta_v0);
+    fV0PhotonCut.SetMinNClustersTPC(pcmcuts.cfg_min_ncluster_tpc);
+    fV0PhotonCut.SetMinNCrossedRowsTPC(pcmcuts.cfg_min_ncrossedrows);
+    fV0PhotonCut.SetMinNCrossedRowsOverFindableClustersTPC(0.8);
+    fV0PhotonCut.SetChi2PerClusterTPC(0.0, pcmcuts.cfg_max_chi2tpc);
+    fV0PhotonCut.SetTPCNsigmaElRange(pcmcuts.cfg_min_TPCNsigmaEl, pcmcuts.cfg_max_TPCNsigmaEl);
+    fV0PhotonCut.SetChi2PerClusterITS(-1e+10, pcmcuts.cfg_max_chi2its);
+    fV0PhotonCut.SetDisableITSonly(pcmcuts.cfg_disable_itsonly_track);
+
+    if (pcmcuts.cfg_reject_v0_on_itsib) {
+      fV0PhotonCut.SetNClustersITS(2, 4);
+    } else {
+      fV0PhotonCut.SetNClustersITS(0, 7);
     }
+    fV0PhotonCut.SetMeanClusterSizeITSob(0.0, 16.0);
+    fV0PhotonCut.SetIsWithinBeamPipe(pcmcuts.cfg_require_v0_with_correct_xz);
 
-    // for single tracks
-    for (auto& cut : fPCMCuts) {
-      std::string_view cutname = cut.GetName();
-      THashList* list = reinterpret_cast<THashList*>(fMainList->FindObject("V0Leg")->FindObject(cutname.data()));
-      o2::aod::emphotonhistograms::DefineHistograms(list, "V0Leg");
+    if (pcmcuts.cfg_require_v0_with_itstpc) {
+      fV0PhotonCut.SetRequireITSTPC(true);
+      fV0PhotonCut.SetMaxPCA(1.0);
+      fV0PhotonCut.SetRxyRange(4, 40);
     }
-
-    // for V0s
-    for (auto& cut : fPCMCuts) {
-      std::string_view cutname = cut.GetName();
-      THashList* list = reinterpret_cast<THashList*>(fMainList->FindObject("V0")->FindObject(cutname.data()));
-      o2::aod::emphotonhistograms::DefineHistograms(list, "V0");
+    if (pcmcuts.cfg_require_v0_with_itsonly) {
+      fV0PhotonCut.SetRequireITSonly(true);
+      fV0PhotonCut.SetMaxPCA(1.0);
+      fV0PhotonCut.SetRxyRange(4, 24);
+    }
+    if (pcmcuts.cfg_require_v0_with_tpconly) {
+      fV0PhotonCut.SetRequireTPConly(true);
+      fV0PhotonCut.SetMaxPCA(3.0);
+      fV0PhotonCut.SetRxyRange(36, 90);
+    }
+    if (pcmcuts.cfg_require_v0_on_wwire_ib) {
+      fV0PhotonCut.SetMaxPCA(0.3);
+      fV0PhotonCut.SetOnWwireIB(true);
+      fV0PhotonCut.SetOnWwireOB(false);
+      fV0PhotonCut.SetRxyRange(7, 14);
     }
   }
 
-  void DefineCuts()
+  template <const int ev_id, typename TCollision>
+  void fillEventInfo(TCollision const& collision, const float /*weight*/ = 1.f)
   {
-    TString cutNamesStr = fConfigPCMCuts.value;
-    if (!cutNamesStr.IsNull()) {
-      std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
-      for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
-        const char* cutname = objArray->At(icut)->GetName();
-        LOGF(info, "add cut : %s", cutname);
-        fPCMCuts.push_back(*pcmcuts::GetCut(cutname));
-      }
+    fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 1.0);
+    if (collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 2.0);
     }
-    LOGF(info, "Number of PCM cuts = %d", fPCMCuts.size());
+    if (collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 3.0);
+    }
+    if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 4.0);
+    }
+    if (collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 5.0);
+    }
+    if (collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 6.0);
+    }
+    if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 7.0);
+    }
+    if (collision.sel8()) {
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 8.0);
+    }
+    if (abs(collision.posZ()) < 10.0) {
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 9.0);
+    }
+    fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hZvtx"), collision.posZ());
+
+    fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hMultNTracksPV"), collision.multNTracksPV());
+    fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hMultNTracksPVeta1"), collision.multNTracksPVeta1());
+    fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hMultFT0"), collision.multFT0A(), collision.multFT0C());
+    fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCentFT0A"), collision.centFT0A());
+    fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCentFT0C"), collision.centFT0C());
+    fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCentFT0M"), collision.centFT0M());
+    fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCentFT0MvsMultNTracksPV"), collision.centFT0M(), collision.multNTracksPV());
+    fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hMultFT0MvsMultNTracksPV"), collision.multFT0A() + collision.multFT0C(), collision.multNTracksPV());
   }
 
-  void init(InitContext& context)
+  template <typename TV0>
+  void fillV0Info(TV0 const& v0)
   {
-    DefineCuts();
-    addhistograms(); // please call this after DefinCuts();
-
-    fOutputEvent.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("Event")));
-    fOutputV0Leg.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("V0Leg")));
-    fOutputV0.setObject(reinterpret_cast<THashList*>(fMainList->FindObject("V0")));
+    fRegistry.fill(HIST("V0/hPt"), v0.pt());
+    fRegistry.fill(HIST("V0/hEtaPhi"), v0.phi(), v0.eta());
+    fRegistry.fill(HIST("V0/hRadius"), v0.vz(), v0.v0radius());
+    fRegistry.fill(HIST("V0/hCosPA"), v0.cospa());
+    fRegistry.fill(HIST("V0/hCosPA_Rxy"), v0.v0radius(), v0.cospa());
+    fRegistry.fill(HIST("V0/hPCA"), v0.pca());
+    fRegistry.fill(HIST("V0/hPCA_CosPA"), v0.cospa(), v0.pca());
+    fRegistry.fill(HIST("V0/hPCA_Rxy"), v0.v0radius(), v0.pca());
+    fRegistry.fill(HIST("V0/hDCAxyz"), v0.dcaXYtopv(), v0.dcaZtopv());
+    fRegistry.fill(HIST("V0/hAPplot"), v0.alpha(), v0.qtarm());
+    fRegistry.fill(HIST("V0/hMassGamma"), v0.v0radius(), v0.mGamma());
+    fRegistry.fill(HIST("V0/hGammaRxy"), v0.vx(), v0.vy());
+    fRegistry.fill(HIST("V0/hKFChi2vsM"), v0.mGamma(), v0.chiSquareNDF());
+    fRegistry.fill(HIST("V0/hKFChi2vsR"), v0.v0radius(), v0.chiSquareNDF());
+    fRegistry.fill(HIST("V0/hKFChi2vsX"), v0.vx(), v0.chiSquareNDF());
+    fRegistry.fill(HIST("V0/hKFChi2vsY"), v0.vy(), v0.chiSquareNDF());
+    fRegistry.fill(HIST("V0/hKFChi2vsZ"), v0.vz(), v0.chiSquareNDF());
+    fRegistry.fill(HIST("V0/hPResolution"), v0.p(), getPResolution(v0) / v0.p());
+    fRegistry.fill(HIST("V0/hPtResolution"), v0.p(), getPtResolution(v0) / v0.pt());
+    fRegistry.fill(HIST("V0/hEtaResolution"), v0.p(), getEtaResolution(v0));
+    fRegistry.fill(HIST("V0/hThetaResolution"), v0.p(), getThetaResolution(v0));
+    fRegistry.fill(HIST("V0/hPhiResolution"), v0.p(), getPhiResolution(v0));
   }
 
-  Preslice<MyV0Photons> perCollision = aod::v0photonkf::emreducedeventId;
-  void processQC(MyCollisions const& collisions, MyV0Photons const& v0photons, aod::V0Legs const& v0legs)
+  template <typename TLeg>
+  void fillV0LegInfo(TLeg const& leg)
   {
-    THashList* list_ev = static_cast<THashList*>(fMainList->FindObject("Event"));
-    THashList* list_v0 = static_cast<THashList*>(fMainList->FindObject("V0"));
-    THashList* list_v0leg = static_cast<THashList*>(fMainList->FindObject("V0Leg"));
+    fRegistry.fill(HIST("V0Leg/hPt"), leg.pt());
+    fRegistry.fill(HIST("V0Leg/hQoverPt"), leg.sign() / leg.pt());
+    fRegistry.fill(HIST("V0Leg/hEtaPhi"), leg.phi(), leg.eta());
+    fRegistry.fill(HIST("V0Leg/hDCAxyz"), leg.dcaXY(), leg.dcaZ());
+    fRegistry.fill(HIST("V0Leg/hNclsITS"), leg.itsNCls());
+    fRegistry.fill(HIST("V0Leg/hNclsTPC"), leg.tpcNClsFound());
+    fRegistry.fill(HIST("V0Leg/hNcrTPC"), leg.tpcNClsCrossedRows());
+    fRegistry.fill(HIST("V0Leg/hTPCNcr2Nf"), leg.tpcCrossedRowsOverFindableCls());
+    fRegistry.fill(HIST("V0Leg/hTPCNcls2Nf"), leg.tpcFoundOverFindableCls());
+    fRegistry.fill(HIST("V0Leg/hTPCNclsShared"), leg.pt(), leg.tpcFractionSharedCls());
+    fRegistry.fill(HIST("V0Leg/hChi2TPC"), leg.tpcChi2NCl());
+    fRegistry.fill(HIST("V0Leg/hChi2ITS"), leg.itsChi2NCl());
+    fRegistry.fill(HIST("V0Leg/hITSClusterMap"), leg.itsClusterMap());
+    if (leg.hasITS()) {
+      fRegistry.fill(HIST("V0Leg/hMeanClusterSizeITS"), leg.p(), leg.meanClusterSizeITS() * std::cos(std::atan(leg.tgl())));
+    }
+    fRegistry.fill(HIST("V0Leg/hTPCdEdx"), leg.tpcInnerParam(), leg.tpcSignal());
+    fRegistry.fill(HIST("V0Leg/hTPCNsigmaEl"), leg.tpcInnerParam(), leg.tpcNSigmaEl());
+    fRegistry.fill(HIST("V0Leg/hTPCNsigmaPi"), leg.tpcInnerParam(), leg.tpcNSigmaPi());
+    fRegistry.fill(HIST("V0Leg/hXY"), leg.x(), leg.y());
+    fRegistry.fill(HIST("V0Leg/hZX"), leg.z(), leg.x());
+    fRegistry.fill(HIST("V0Leg/hZY"), leg.z(), leg.y());
+  }
 
+  Preslice<MyV0Photons> perCollision = aod::v0photonkf::emeventId;
+  Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
+  Filter collisionFilter_occupancy = eventcuts.cfgOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgOccupancyMax;
+  using FilteredMyCollisions = soa::Filtered<MyCollisions>;
+
+  void processQC(FilteredMyCollisions const& collisions, MyV0Photons const& v0photons, aod::V0Legs const&)
+  {
     for (auto& collision : collisions) {
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hZvtx_before"))->Fill(collision.posZ());
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->Fill(1.0);
-      if (!collision.sel8()) {
+      const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->Fill(2.0);
 
-      if (collision.numContrib() < 0.5) {
+      fillEventInfo<0>(collision);
+      if (!fEMEventCut.IsSelected(collision)) {
         continue;
       }
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->Fill(3.0);
+      fillEventInfo<1>(collision);
+      fRegistry.fill(HIST("Event/before/hCollisionCounter"), 10.0); // accepted
+      fRegistry.fill(HIST("Event/after/hCollisionCounter"), 10.0);  // accepted
 
-      if (abs(collision.posZ()) > 10.0) {
-        continue;
-      }
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hCollisionCounter"))->Fill(4.0);
-      reinterpret_cast<TH1F*>(fMainList->FindObject("Event")->FindObject("hZvtx_after"))->Fill(collision.posZ());
-      o2::aod::emphotonhistograms::FillHistClass<EMHistType::kEvent>(list_ev, "", collision);
+      int nv0 = 0;
+      auto v0photons_coll = v0photons.sliceBy(perCollision, collision.globalIndex());
+      for (auto& v0 : v0photons_coll) {
+        auto pos = v0.posTrack_as<aod::V0Legs>();
+        auto ele = v0.negTrack_as<aod::V0Legs>();
 
-      auto V0Photons_coll = v0photons.sliceBy(perCollision, collision.globalIndex());
-      for (const auto& cut : fPCMCuts) {
-        THashList* list_v0_cut = static_cast<THashList*>(list_v0->FindObject(cut.GetName()));
-        THashList* list_v0leg_cut = static_cast<THashList*>(list_v0leg->FindObject(cut.GetName()));
+        if (!fV0PhotonCut.IsSelected<aod::V0Legs>(v0)) {
+          continue;
+        }
+        fillV0Info(v0);
+        for (auto& leg : {pos, ele}) {
+          fillV0LegInfo(leg);
+        }
+        nv0++;
+      } // end of v0 loop
+      fRegistry.fill(HIST("V0/hNgamma"), nv0);
+    } // end of collision loop
+  } // end of process
 
-        int nv0 = 0;
-        for (auto& v0 : V0Photons_coll) {
-          auto pos = v0.posTrack_as<aod::V0Legs>();
-          auto ele = v0.negTrack_as<aod::V0Legs>();
-          if (cut.IsSelected<aod::V0Legs>(v0)) {
-            o2::aod::emphotonhistograms::FillHistClass<EMHistType::kV0>(list_v0_cut, "", v0);
-            nv0++;
-
-            for (auto& leg : {pos, ele}) {
-              o2::aod::emphotonhistograms::FillHistClass<EMHistType::kV0Leg>(list_v0leg_cut, "", leg);
-            }
-          }
-        } // end of v0 loop
-        reinterpret_cast<TH1F*>(fMainList->FindObject("V0")->FindObject(cut.GetName())->FindObject("hNgamma"))->Fill(nv0);
-      } // end of cut loop
-    }   // end of collision loop
-  }     // end of process
-
-  void processDummy(MyCollisions const& collisions) {}
+  void processDummy(MyCollisions const&) {}
 
   PROCESS_SWITCH(PCMQC, processQC, "run PCM QC", true);
   PROCESS_SWITCH(PCMQC, processDummy, "Dummy function", false);

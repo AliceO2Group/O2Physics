@@ -312,9 +312,9 @@ struct flatenictyFV0 {
 
   void process(CollisionTableData::iterator const& collision,
                TrackCandidates const& tracks,
-               soa::Join<aod::BCs, aod::Timestamps> const& bcs,
-               aod::MFTTracks const& mfttracks, aod::FT0s const& ft0s,
-               aod::FV0As const& fv0s)
+               soa::Join<aod::BCs, aod::Timestamps> const& /*bcs*/,
+               aod::MFTTracks const& /*mfttracks*/, aod::FT0s const& /*ft0s*/,
+               aod::FV0As const& /*fv0s*/)
   {
     bool isAcceptedEvent = false;
     if (isRun3 ? collision.sel8() : collision.sel7()) {

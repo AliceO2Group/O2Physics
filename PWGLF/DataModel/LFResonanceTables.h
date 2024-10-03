@@ -26,28 +26,73 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Common/DataModel/Multiplicity.h"
 
 namespace o2::aod
 {
 /// Resonance Collisions
 namespace resocollision
 {
+enum {
+  kECbegin = 0,
+  kINEL = 1,
+  kINEL10,
+  kINELg0,
+  kINELg010,
+  kTrig,
+  kTrig10,
+  kTrigINELg0,
+  kTrigINELg010,
+  kSel8,
+  kSel810,
+  kSel8INELg0,
+  kSel8INELg010,
+  kAllCuts,
+  kAllCuts10,
+  kAllCutsINELg0,
+  kAllCutsINELg010,
+  kECend,
+};
 DECLARE_SOA_COLUMN(Cent, cent, float);             //! Centrality (Multiplicity) percentile (Default: FT0M)
-DECLARE_SOA_COLUMN(Mult, mult, int);               //! FT0 multiplicity
 DECLARE_SOA_COLUMN(Spherocity, spherocity, float); //! Spherocity of the event
+DECLARE_SOA_COLUMN(EvtPl, evtPl, float);           //! Second harmonic event plane
+DECLARE_SOA_COLUMN(EvtPlResAB, evtPlResAB, float); //! Second harmonic event plane resolution of A-B sub events
+DECLARE_SOA_COLUMN(EvtPlResAC, evtPlResAC, float); //! Second harmonic event plane resolution of A-C sub events
+DECLARE_SOA_COLUMN(EvtPlResBC, evtPlResBC, float); //! Second harmonic event plane resolution of B-C sub events
 DECLARE_SOA_COLUMN(BMagField, bMagField, float);   //! Magnetic field
+// MC
+DECLARE_SOA_COLUMN(IsVtxIn10, isVtxIn10, bool);               //! Vtx10
+DECLARE_SOA_COLUMN(IsINELgt0, isINELgt0, bool);               //! INEL>0
+DECLARE_SOA_COLUMN(IsTriggerTVX, isTriggerTVX, bool);         //! TriggerTVX
+DECLARE_SOA_COLUMN(IsInSel8, isInSel8, bool);                 //! InSel8
+DECLARE_SOA_COLUMN(IsInAfterAllCuts, isInAfterAllCuts, bool); //! InAfterAllCuts
+DECLARE_SOA_COLUMN(ImpactParameter, impactParameter, float);  //! ImpactParameter
+
 } // namespace resocollision
-DECLARE_SOA_TABLE(ResoCollisions, "AOD", "RESOCOL",
+DECLARE_SOA_TABLE(ResoCollisions, "AOD", "RESOCOLLISION",
                   o2::soa::Index<>,
+                  o2::aod::mult::MultNTracksPV,
                   collision::PosX,
                   collision::PosY,
                   collision::PosZ,
                   resocollision::Cent,
-                  resocollision::Mult,
                   resocollision::Spherocity,
+                  resocollision::EvtPl,
+                  resocollision::EvtPlResAB,
+                  resocollision::EvtPlResAC,
+                  resocollision::EvtPlResBC,
                   resocollision::BMagField,
                   timestamp::Timestamp);
 using ResoCollision = ResoCollisions::iterator;
+
+DECLARE_SOA_TABLE(ResoMCCollisions, "AOD", "RESOMCCOL",
+                  resocollision::IsVtxIn10,
+                  resocollision::IsINELgt0,
+                  resocollision::IsTriggerTVX,
+                  resocollision::IsInSel8,
+                  resocollision::IsInAfterAllCuts,
+                  resocollision::ImpactParameter);
+using ResoMCCollision = ResoMCCollisions::iterator;
 
 // Resonance Daughters
 // inspired from PWGCF/DataModel/FemtoDerived.h
@@ -64,11 +109,17 @@ DECLARE_SOA_COLUMN(Phi, phi, float);                                 //! Phi
 DECLARE_SOA_COLUMN(PartType, partType, uint8_t);                     //! Type of the particle, according to resodaughter::ParticleType
 DECLARE_SOA_COLUMN(TempFitVar, tempFitVar, float);                   //! Observable for the template fitting (Track: DCA_xy, V0: CPA)
 DECLARE_SOA_COLUMN(Indices, indices, int[2]);                        //! Field for the track indices to remove auto-correlations
+DECLARE_SOA_COLUMN(CascadeIndices, cascIndices, int[3]);             //! Field for the track indices to remove auto-correlations (ordered: positive, negative, bachelor)
 DECLARE_SOA_COLUMN(Sign, sign, int8_t);                              //! Sign of the track charge
 DECLARE_SOA_COLUMN(TPCNClsCrossedRows, tpcNClsCrossedRows, uint8_t); //! Number of TPC crossed rows
+DECLARE_SOA_COLUMN(TPCNClsFound, tpcNClsFound, uint8_t);             //! Number of TPC clusters found
+DECLARE_SOA_COLUMN(ITSNCls, itsNCls, uint8_t);                       //! Number of ITS clusters found
 DECLARE_SOA_COLUMN(IsGlobalTrackWoDCA, isGlobalTrackWoDCA, bool);    //! Is global track without DCA
+DECLARE_SOA_COLUMN(IsGlobalTrack, isGlobalTrack, bool);              //! Is global track
 DECLARE_SOA_COLUMN(IsPrimaryTrack, isPrimaryTrack, bool);            //! Is primary track
 DECLARE_SOA_COLUMN(IsPVContributor, isPVContributor, bool);          //! Is primary vertex contributor
+DECLARE_SOA_COLUMN(HasITS, hasITS, bool);                            //! Has ITS
+DECLARE_SOA_COLUMN(HasTPC, hasTPC, bool);                            //! Has TPC
 DECLARE_SOA_COLUMN(HasTOF, hasTOF, bool);                            //! Has TOF
 DECLARE_SOA_COLUMN(TPCCrossedRowsOverFindableCls, tpcCrossedRowsOverFindableCls, float);
 DECLARE_SOA_COLUMN(DaughDCA, daughDCA, float);               //! DCA between daughters
@@ -109,21 +160,28 @@ DECLARE_SOA_TABLE(ResoTracks, "AOD", "RESOTRACKS",
                   resodaughter::Phi,
                   resodaughter::Sign,
                   resodaughter::TPCNClsCrossedRows,
+                  resodaughter::TPCNClsFound,
+                  resodaughter::ITSNCls,
                   o2::aod::track::DcaXY,
                   o2::aod::track::DcaZ,
                   o2::aod::track::X,
                   o2::aod::track::Alpha,
+                  resodaughter::HasITS,
+                  resodaughter::HasTPC,
                   resodaughter::HasTOF,
                   o2::aod::pidtpc::TPCNSigmaPi,
                   o2::aod::pidtpc::TPCNSigmaKa,
                   o2::aod::pidtpc::TPCNSigmaPr,
+                  o2::aod::pidtpc::TPCNSigmaEl,
                   o2::aod::pidtof::TOFNSigmaPi,
                   o2::aod::pidtof::TOFNSigmaKa,
                   o2::aod::pidtof::TOFNSigmaPr,
+                  o2::aod::pidtof::TOFNSigmaEl,
                   o2::aod::track::TPCSignal,
                   o2::aod::track::PassedITSRefit,
                   o2::aod::track::PassedTPCRefit,
                   resodaughter::IsGlobalTrackWoDCA,
+                  resodaughter::IsGlobalTrack,
                   resodaughter::IsPrimaryTrack,
                   resodaughter::IsPVContributor,
                   resodaughter::TPCCrossedRowsOverFindableCls,
@@ -164,7 +222,7 @@ DECLARE_SOA_TABLE(ResoCascades, "AOD", "RESOCASCADES",
                   resodaughter::Pz,
                   resodaughter::Eta,
                   resodaughter::Phi,
-                  resodaughter::Indices,
+                  resodaughter::CascadeIndices,
                   resodaughter::V0CosPA,
                   resodaughter::CascCosPA,
                   resodaughter::DaughDCA,
@@ -175,6 +233,7 @@ DECLARE_SOA_TABLE(ResoCascades, "AOD", "RESOCASCADES",
                   v0data::DCAV0ToPV,
                   cascdata::DCAXYCascToPV,
                   cascdata::DCAZCascToPV,
+                  cascdata::Sign,
                   resodaughter::MXi,
                   resodaughter::TransRadius,
                   resodaughter::CascTransRadius,
@@ -236,7 +295,7 @@ using ResoMCParent = ResoMCParents::iterator;
 
 using Reso2TracksExt = soa::Join<aod::FullTracks, aod::TracksDCA>; // without Extra
 using Reso2TracksMC = soa::Join<aod::FullTracks, McTrackLabels>;
-using Reso2TracksPID = soa::Join<aod::FullTracks, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
+using Reso2TracksPID = soa::Join<aod::FullTracks, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTPCEl, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFEl>;
 using Reso2TracksPIDExt = soa::Join<Reso2TracksPID, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension>; // Without Extra
 
 } // namespace o2::aod

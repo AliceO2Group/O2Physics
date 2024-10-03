@@ -59,7 +59,7 @@ struct tracksWGTInBCs {
   // This process functions fills the TracksWGTInBCs table.
   // It loops over all tracks. For the tracks with a 'good' timing it finds the associated BC.
   // If a track is ambiguous, then the associated BC is calculated with help of the trackTime.
-  void processBarrel(BCs const& bcs, CCs const& collisions, TCs const& tracks, ATs const& ambTracks)
+  void processBarrel(BCs const& bcs, CCs const& /*collisions*/, TCs const& tracks, ATs const& ambTracks)
   {
     // run number
     if (bcs.size() <= 0) {
@@ -148,7 +148,7 @@ struct tracksWGTInBCs {
   // This process functions fills the FwdTracksWGTInBCs table.
   // It loops over all forward tracks. For the tracks with a 'good' timing it finds the associated BC.
   // If a track is ambiguous, then the associated BC is calculated with help of the trackTime.
-  void processForward(BCs& bcs, CCs& collisions, aod::FwdTracks& fwdTracks, aod::AmbiguousFwdTracks& ambFwdTracks)
+  void processForward(BCs& bcs, CCs& /*collisions*/, aod::FwdTracks& fwdTracks, aod::AmbiguousFwdTracks& ambFwdTracks)
   {
     // run number
     if (bcs.size() <= 0) {
@@ -331,7 +331,7 @@ struct DGBCCandProducer {
                     track.tofNSigmaKa(),
                     track.tofNSigmaPr());
     outputTracksExtra(track.tpcInnerParam(),
-                      track.itsClusterMap(),
+                      track.itsClusterSizes(),
                       track.tpcNClsFindable(),
                       track.tpcNClsFindableMinusFound(),
                       track.tpcNClsFindableMinusCrossedRows(),
@@ -375,12 +375,11 @@ struct DGBCCandProducer {
   // If the BC is not associated with a collision, then fill the UDtables with information availabl for the BC.
   void processTinBCs(TIBC const& tibc, BCs const& bcs, CCs const& collisions,
                      TCs const& tracks, aod::FwdTracks const& fwdtracks, FTIBCs const& ftibcs,
-                     aod::Zdcs const& zdcs, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
+                     aod::Zdcs const& /*zdcs*/, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
   {
     // fill FITInfo
     auto bcnum = tibc.bcnum();
     upchelpers::FITInfo fitInfo{};
-    udhelpers::getFITinfo(fitInfo, bcnum, bcs, ft0s, fv0as, fdds);
 
     // check if DG event
     // distinguish between cases with and without associated BC
@@ -395,6 +394,7 @@ struct DGBCCandProducer {
 
       // get associated bc
       auto bc = tibc.bc_as<BCs>();
+      udhelpers::getFITinfo(fitInfo, bc, bcs, ft0s, fv0as, fdds);
 
       // is there an associated collision?
       Partition<CCs> colSlize = aod::evsel::foundBCId == bc.globalIndex();
@@ -517,7 +517,7 @@ struct DGBCCandProducer {
   //                is not in BCs table and hence does not have assoc. Collision: [-3., 3., -3.]
   void processFull(BCs const& bcs, CCs const& collisions,
                    TCs const& tracks, FTCs const& fwdtracks, TIBCs const& tibcs, FTIBCs const& ftibcs,
-                   aod::Zdcs const& zdcs, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
+                   aod::Zdcs const& /*zdcs*/, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
   {
     int isDG1, isDG2;
     int ntr1, ntr2;
@@ -536,7 +536,7 @@ struct DGBCCandProducer {
     }
 
     // run over all BC in bcs and tibcs
-    int64_t lastCollision = 0;
+    // int64_t lastCollision = 0;
     float vpos[3];
     upchelpers::FITInfo fitInfo{};
     auto col = collisions.iteratorAt(0);
@@ -596,7 +596,7 @@ struct DGBCCandProducer {
         if (withCollision) {
           // -> vertex position: col.[posX(), posY(), posZ()]
           SETBIT(bcFlag, 2);
-          lastCollision = col.globalIndex();
+          // lastCollision = col.globalIndex();
 
           ntr1 = col.numContrib();
           auto bcRange = udhelpers::compatibleBCs(bc, bcnum, diffCuts.minNBCs(), bcs);
@@ -611,7 +611,7 @@ struct DGBCCandProducer {
 
             auto rtrwTOF = udhelpers::rPVtrwTOF<true>(colTracks, col.numContrib());
             auto nCharge = udhelpers::netCharge<true>(colTracks);
-            udhelpers::getFITinfo(fitInfo, bcnum, bcs, ft0s, fv0as, fdds);
+            udhelpers::getFITinfo(fitInfo, bc, bcs, ft0s, fv0as, fdds);
             updateUDTables(false, col.globalIndex(), bcnum, bc.runNumber(), col.posX(), col.posY(), col.posZ(),
                            col.numContrib(), nCharge, rtrwTOF, colTracks, fitInfo);
             // fill UDZdcs
@@ -661,7 +661,7 @@ struct DGBCCandProducer {
 
             auto rtrwTOF = udhelpers::rPVtrwTOF<false>(tracksArray, tracksArray.size());
             auto nCharge = udhelpers::netCharge<false>(tracksArray);
-            udhelpers::getFITinfo(fitInfo, bcnum, bcs, ft0s, fv0as, fdds);
+            udhelpers::getFITinfo(fitInfo, bc, bcs, ft0s, fv0as, fdds);
 
             // distinguish different cases
             if (bc.globalBC() == bcnum) {
@@ -737,8 +737,8 @@ struct DGBCCandProducer {
   PROCESS_SWITCH(DGBCCandProducer, processFull, "Produce UDTables", true);
 
   void processDummy(BCs const& bcs, CCs const& collisions,
-                    TCs const& tracks, FTCs const& fwdtracks, TIBCs const& tibcs, FTIBCs const& ftibcs,
-                    aod::Zdcs const& zdcs, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
+                    TCs const& tracks, FTCs const& fwdtracks, TIBCs const& /*tibcs*/, FTIBCs const& /*ftibcs*/,
+                    aod::Zdcs const& /*zdcs*/, aod::FT0s const& /*ft0s*/, aod::FV0As const& /*fv0as*/, aod::FDDs const& /*fdds*/)
   {
     LOGF(info, "size of");
     LOGF(info, "bcs %d", bcs.size());

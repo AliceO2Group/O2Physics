@@ -150,7 +150,7 @@ struct HfTaskLcCentralityMc {
 
   void process(soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>> const& candidates,
                soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
-               aod::TracksWMc const& tracks)
+               aod::TracksWMc const&)
   {
     // MC rec.
     for (const auto& candidate : candidates) {
@@ -183,7 +183,7 @@ struct HfTaskLcCentralityMc {
     // MC gen.
     for (const auto& particle : mcParticles) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::LcToPKPi) {
-        if (yCandMax >= 0. && std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassLambdaCPlus)) > yCandMax) {
+        if (yCandMax >= 0. && std::abs(RecoDecay::y(particle.pVector(), o2::constants::physics::MassLambdaCPlus)) > yCandMax) {
           continue;
         }
         auto ptGen = particle.pt();

@@ -71,8 +71,8 @@ void FlowContainer::Initialize(TObjArray* inputList, const o2::framework::AxisSp
     fProfRand = new TObjArray();
     fProfRand->SetOwner(kTRUE);
     for (int i = 0; i < nRandom; i++) {
-      fProfRand->Add(reinterpret_cast<TProfile2D*>(fProf->Clone(Form("%s_Rand_%i", fProf->GetName(), i))));
-      reinterpret_cast<TProfile2D*>(fProfRand->At(i))->Sumw2();
+      fProfRand->Add(dynamic_cast<TProfile2D*>(fProf->Clone(Form("%s_Rand_%i", fProf->GetName(), i))));
+      dynamic_cast<TProfile2D*>(fProfRand->At(i))->Sumw2();
     }
   }
 };
@@ -96,8 +96,8 @@ void FlowContainer::Initialize(TObjArray* inputList, int nMultiBins, double Mult
     fProfRand = new TObjArray();
     fProfRand->SetOwner(kTRUE);
     for (int i = 0; i < nRandom; i++) {
-      fProfRand->Add(reinterpret_cast<TProfile2D*>(fProf->Clone(Form("%s_Rand_%i", fProf->GetName(), i))));
-      reinterpret_cast<TProfile2D*>(fProfRand->At(i))->Sumw2();
+      fProfRand->Add(dynamic_cast<TProfile2D*>(fProf->Clone(Form("%s_Rand_%i", fProf->GetName(), i))));
+      dynamic_cast<TProfile2D*>(fProfRand->At(i))->Sumw2();
     }
   }
 };
@@ -113,7 +113,7 @@ bool FlowContainer::CreateBinsFromAxis(TAxis* inax)
 }
 void FlowContainer::SetXAxis(TAxis* inax)
 {
-  fXAxis = reinterpret_cast<TAxis*>(inax->Clone("pTAxis"));
+  fXAxis = dynamic_cast<TAxis*>(inax->Clone("pTAxis"));
   bool success = CreateBinsFromAxis(fXAxis);
   if (!success)
     printf("Something went wrong setting the x axis!\n");
@@ -145,7 +145,7 @@ int FlowContainer::FillProfile(const char* hname, double multi, double corr, dou
   fProf->Fill(multi, yin, corr, w);
   if (fNRandom) {
     double rnind = rn * fNRandom;
-    reinterpret_cast<TProfile2D*>(fProfRand->At(static_cast<int>(rnind)))->Fill(multi, yin, corr, w);
+    dynamic_cast<TProfile2D*>(fProfRand->At(static_cast<int>(rnind)))->Fill(multi, yin, corr, w);
   }
   return 0;
 };
@@ -183,16 +183,19 @@ void FlowContainer::OverrideProfileErrors(TProfile2D* inpf)
     }
   }
 }
+
 Long64_t FlowContainer::Merge(TCollection* collist)
 {
   Long64_t nmerged = 0;
   FlowContainer* l_FC = 0;
   TIter all_FC(collist);
-  while ((l_FC = reinterpret_cast<FlowContainer*>(all_FC()))) {
+  while ((l_FC = dynamic_cast<FlowContainer*>(all_FC()))) {
+    if (!fProf)
+      continue;
     TProfile2D* tpro = GetProfile();
     TProfile2D* spro = l_FC->GetProfile();
     if (!tpro) {
-      fProf = reinterpret_cast<TProfile2D*>(spro->Clone(spro->GetName()));
+      fProf = dynamic_cast<TProfile2D*>(spro->Clone(spro->GetName()));
       fProf->SetDirectory(0);
     } else {
       tpro->Add(spro);
@@ -207,15 +210,16 @@ Long64_t FlowContainer::Merge(TCollection* collist)
     }
     for (int i = 0; i < tarr->GetEntries(); i++) {
       if (!(fProfRand->FindObject(tarr->At(i)->GetName()))) {
-        fProfRand->Add(reinterpret_cast<TProfile2D*>(tarr->At(i)->Clone(tarr->At(i)->GetName())));
-        reinterpret_cast<TProfile2D*>(fProfRand->At(fProfRand->GetEntries() - 1))->SetDirectory(0);
+        fProfRand->Add(dynamic_cast<TProfile2D*>(tarr->At(i)->Clone(tarr->At(i)->GetName())));
+        dynamic_cast<TProfile2D*>(fProfRand->At(fProfRand->GetEntries() - 1))->SetDirectory(0);
       } else {
-        reinterpret_cast<TProfile2D*>(fProfRand->FindObject(tarr->At(i)->GetName()))->Add(reinterpret_cast<TProfile2D*>(tarr->At(i)));
+        dynamic_cast<TProfile2D*>(fProfRand->FindObject(tarr->At(i)->GetName()))->Add(dynamic_cast<TProfile2D*>(tarr->At(i)));
       }
     }
   }
   return nmerged;
-};
+}
+
 void FlowContainer::ReadAndMerge(const char* filelist)
 {
   FILE* flist = fopen(filelist, "r");
@@ -240,10 +244,10 @@ void FlowContainer::ReadAndMerge(const char* filelist)
     PickAndMerge(tf);
     tf->Close();
   }
-};
+}
 void FlowContainer::PickAndMerge(TFile* tfi)
 {
-  FlowContainer* lfc = reinterpret_cast<FlowContainer*>(tfi->Get(this->GetName()));
+  FlowContainer* lfc = dynamic_cast<FlowContainer*>(tfi->Get(this->GetName()));
   if (!lfc) {
     printf("Could not pick up the %s from %s\n", this->GetName(), tfi->GetName());
     return;
@@ -251,7 +255,7 @@ void FlowContainer::PickAndMerge(TFile* tfi)
   TProfile2D* spro = lfc->GetProfile();
   TProfile2D* tpro = GetProfile();
   if (!tpro) {
-    fProf = reinterpret_cast<TProfile2D*>(spro->Clone(spro->GetName()));
+    fProf = dynamic_cast<TProfile2D*>(spro->Clone(spro->GetName()));
     fProf->SetDirectory(0);
   } else {
     tpro->Add(spro);
@@ -266,13 +270,13 @@ void FlowContainer::PickAndMerge(TFile* tfi)
   }
   for (int i = 0; i < tarr->GetEntries(); i++) {
     if (!(fProfRand->FindObject(tarr->At(i)->GetName()))) {
-      fProfRand->Add(reinterpret_cast<TProfile2D*>(tarr->At(i)->Clone(tarr->At(i)->GetName())));
-      reinterpret_cast<TProfile2D*>(fProfRand->At(fProfRand->GetEntries() - 1))->SetDirectory(0);
+      fProfRand->Add(dynamic_cast<TProfile2D*>(tarr->At(i)->Clone(tarr->At(i)->GetName())));
+      dynamic_cast<TProfile2D*>(fProfRand->At(fProfRand->GetEntries() - 1))->SetDirectory(0);
     } else {
-      reinterpret_cast<TProfile2D*>(fProfRand->FindObject(tarr->At(i)->GetName()))->Add(reinterpret_cast<TProfile2D*>(tarr->At(i)));
+      dynamic_cast<TProfile2D*>(fProfRand->FindObject(tarr->At(i)->GetName()))->Add(dynamic_cast<TProfile2D*>(tarr->At(i)));
     }
   }
-};
+}
 bool FlowContainer::OverrideBinsWithZero(int xb1, int yb1, int xb2, int yb2)
 {
   ProfileSubset* t_apf = new ProfileSubset(*fProf);
@@ -281,7 +285,7 @@ bool FlowContainer::OverrideBinsWithZero(int xb1, int yb1, int xb2, int yb2)
     return kFALSE;
   }
   delete fProf;
-  fProf = reinterpret_cast<TProfile2D*>(t_apf);
+  fProf = dynamic_cast<TProfile2D*>(t_apf);
   return kTRUE;
 }
 bool FlowContainer::OverrideMainWithSub(int ind, bool ExcludeChosen)
@@ -291,14 +295,14 @@ bool FlowContainer::OverrideMainWithSub(int ind, bool ExcludeChosen)
     return kFALSE;
   }
   if (!ExcludeChosen) {
-    TProfile2D* tarprof = reinterpret_cast<TProfile2D*>(fProfRand->At(ind));
+    TProfile2D* tarprof = dynamic_cast<TProfile2D*>(fProfRand->At(ind));
     if (!tarprof) {
       printf("Target random histogram does not exist.\n");
       return kFALSE;
     }
     TString ts(fProf->GetName());
     delete fProf;
-    fProf = reinterpret_cast<TProfile2D*>(tarprof->Clone(ts.Data()));
+    fProf = dynamic_cast<TProfile2D*>(tarprof->Clone(ts.Data()));
     return kTRUE;
   } else {
     TString ts(fProf->GetName());
@@ -307,9 +311,9 @@ bool FlowContainer::OverrideMainWithSub(int ind, bool ExcludeChosen)
     for (int i = 0; i < fProfRand->GetEntries(); i++) {
       if (i == ind)
         continue;
-      TProfile2D* tarprof = reinterpret_cast<TProfile2D*>(fProfRand->At(i));
+      TProfile2D* tarprof = dynamic_cast<TProfile2D*>(fProfRand->At(i));
       if (!fProf)
-        fProf = reinterpret_cast<TProfile2D*>(tarprof->Clone(ts.Data()));
+        fProf = dynamic_cast<TProfile2D*>(tarprof->Clone(ts.Data()));
       else
         fProf->Add(tarprof);
     }
@@ -329,9 +333,9 @@ bool FlowContainer::RandomizeProfile(int nSubsets)
     if (!i) {
       TString ts(fProf->GetName());
       delete fProf;
-      fProf = reinterpret_cast<TProfile2D*>(fProfRand->At(rInd)->Clone(ts.Data()));
+      fProf = dynamic_cast<TProfile2D*>(fProfRand->At(rInd)->Clone(ts.Data()));
     } else {
-      fProf->Add(reinterpret_cast<TProfile2D*>(fProfRand->At(rInd)));
+      fProf->Add(dynamic_cast<TProfile2D*>(fProfRand->At(rInd)));
     }
   }
   return kTRUE;
@@ -356,7 +360,7 @@ bool FlowContainer::CreateStatisticsProfile(StatisticsType StatType, int arg)
 void FlowContainer::SetIDName(TString newname)
 {
   fIDName = newname;
-};
+}
 TProfile* FlowContainer::GetCorrXXVsMulti(const char* order, int l_pti)
 {
   TProfile* retSubset = 0;
@@ -370,10 +374,10 @@ TProfile* FlowContainer::GetCorrXXVsMulti(const char* order, int l_pti)
       printf("Could not find %s!\n", ybinlab);
       return 0;
     }
-    TProfile* rethist = reinterpret_cast<TProfile*>(fProf->ProfileX("temp_prof", ybinno, ybinno));
+    TProfile* rethist = dynamic_cast<TProfile*>(fProf->ProfileX("temp_prof", ybinno, ybinno));
     rethist->SetTitle(Form(";multi.;#LT#LT%s#GT#GT", order));
     if (!retSubset) {
-      retSubset = reinterpret_cast<TProfile*>(rethist->Clone(Form("corr_%s", order)));
+      retSubset = dynamic_cast<TProfile*>(rethist->Clone(Form("corr_%s", order)));
     } else {
       retSubset->Add(rethist);
     }
@@ -381,9 +385,9 @@ TProfile* FlowContainer::GetCorrXXVsMulti(const char* order, int l_pti)
   }
   if (fMultiRebin > 0) {
     TString temp_name(retSubset->GetName());
-    TProfile* tempprof = reinterpret_cast<TProfile*>(retSubset->Clone("tempProfile"));
+    TProfile* tempprof = dynamic_cast<TProfile*>(retSubset->Clone("tempProfile"));
     delete retSubset;
-    retSubset = reinterpret_cast<TProfile*>(tempprof->Rebin(fMultiRebin, temp_name.Data(), fMultiRebinEdges));
+    retSubset = dynamic_cast<TProfile*>(tempprof->Rebin(fMultiRebin, temp_name.Data(), fMultiRebinEdges));
     delete tempprof;
   }
   return retSubset;
@@ -413,7 +417,7 @@ TProfile* FlowContainer::GetCorrXXVsPt(const char* order, double lminmulti, doub
     TProfile* tempprof = rhProfSub->GetSubset(kFALSE, "tempprof", minm, maxm, fNbinsPt, fbinsPt);
     if (!retSubset) {
       TString profname = Form("%s_MultiB_%i_%i", order, minm, maxm);
-      retSubset = reinterpret_cast<TProfile*>(tempprof->Clone(profname.Data()));
+      retSubset = dynamic_cast<TProfile*>(tempprof->Clone(profname.Data()));
     } else {
       retSubset->Add(tempprof);
     }
@@ -423,7 +427,7 @@ TProfile* FlowContainer::GetCorrXXVsPt(const char* order, double lminmulti, doub
   if (fPtRebinEdges) {
     TString pnbu(retSubset->GetName());
     retSubset->SetName("TempName");
-    TProfile* tempprof = reinterpret_cast<TProfile*>(retSubset->Rebin(fPtRebin, pnbu.Data(), fPtRebinEdges));
+    TProfile* tempprof = dynamic_cast<TProfile*>(retSubset->Rebin(fPtRebin, pnbu.Data(), fPtRebinEdges));
     delete retSubset;
     retSubset = tempprof;
   } else {
@@ -445,14 +449,14 @@ TH1D* FlowContainer::ProfToHist(TProfile* inpf)
     }
   }
   return rethist;
-};
+}
 TH1D* FlowContainer::GetHistCorrXXVsMulti(const char* order, int l_pti)
 {
   TProfile* tpf = GetCorrXXVsMulti(order, l_pti);
   TH1D* rethist = ProfToHist(tpf);
   delete tpf;
   return rethist;
-};
+}
 TH1D* FlowContainer::GetHistCorrXXVsPt(const char* order, double lminmulti, double lmaxmulti)
 {
   TProfile* tpf = GetCorrXXVsPt(order, lminmulti, lmaxmulti);
@@ -464,10 +468,10 @@ TH1D* FlowContainer::GetHistCorrXXVsPt(const char* order, double lminmulti, doub
   delete refflow;
   delete tpf;
   return rethist;
-};
+}
 TH1D* FlowContainer::GetVN2(TH1D* cn2)
 {
-  TH1D* rethist = reinterpret_cast<TH1D*>(cn2->Clone(Form("vn2_%s", cn2->GetName())));
+  TH1D* rethist = dynamic_cast<TH1D*>(cn2->Clone(Form("vn2_%s", cn2->GetName())));
   rethist->Reset();
   double rf2 = cn2->GetBinContent(0);
   double rf2e = cn2->GetBinError(0);
@@ -524,14 +528,14 @@ TH1D* FlowContainer::GetVN2VsX(int n, bool onPt, double arg1, double arg2)
   }
   delete nam;
   return rethist;
-};
+}
 
 TH1D* FlowContainer::GetCN2(TH1D* corrN2)
 {
   double rf2 = corrN2->GetBinContent(0);
   double rf2e = corrN2->GetBinError(0);
   bool OnPt = (rf2 != 0);
-  TH1D* rethist = reinterpret_cast<TH1D*>(corrN2->Clone(Form("cN2_%s", corrN2->GetName())));
+  TH1D* rethist = dynamic_cast<TH1D*>(corrN2->Clone(Form("cN2_%s", corrN2->GetName())));
   rethist->Reset();
   for (int i = 1; i <= rethist->GetNbinsX(); i++) {
     double cor2v = corrN2->GetBinContent(i);
@@ -547,7 +551,7 @@ TH1D* FlowContainer::GetCN2(TH1D* corrN2)
     rethist->SetBinError(0, 0);
   }
   return rethist;
-};
+}
 
 TH1D* FlowContainer::GetCN4(TH1D* corrN4, TH1D* corrN2)
 {
@@ -556,7 +560,7 @@ TH1D* FlowContainer::GetCN4(TH1D* corrN4, TH1D* corrN2)
   double rf4 = corrN4->GetBinContent(0);
   double rf4e = corrN4->GetBinError(0);
   bool OnPt = (rf2 != 0);
-  TH1D* rethist = reinterpret_cast<TH1D*>(corrN4->Clone(Form("cN4_%s", corrN4->GetName())));
+  TH1D* rethist = dynamic_cast<TH1D*>(corrN4->Clone(Form("cN4_%s", corrN4->GetName())));
   rethist->Reset();
   for (int i = 1; i <= rethist->GetNbinsX(); i++) {
     double cor4v = corrN4->GetBinContent(i);
@@ -578,9 +582,9 @@ TH1D* FlowContainer::GetCN4(TH1D* corrN4, TH1D* corrN2)
 
 TH1D* FlowContainer::GetCN6(TH1D* corrN6, TH1D* corrN4, TH1D* corrN2)
 {
-  TH1D* tn2 = reinterpret_cast<TH1D*>(corrN2->Clone(Form("tn2_%s", corrN2->GetName())));
-  TH1D* tn4 = reinterpret_cast<TH1D*>(corrN4->Clone(Form("tn4_%s", corrN4->GetName())));
-  TH1D* tn6 = reinterpret_cast<TH1D*>(corrN6->Clone(Form("tn6_%s", corrN6->GetName())));
+  TH1D* tn2 = dynamic_cast<TH1D*>(corrN2->Clone(Form("tn2_%s", corrN2->GetName())));
+  TH1D* tn4 = dynamic_cast<TH1D*>(corrN4->Clone(Form("tn4_%s", corrN4->GetName())));
+  TH1D* tn6 = dynamic_cast<TH1D*>(corrN6->Clone(Form("tn6_%s", corrN6->GetName())));
 
   double rf2 = corrN2->GetBinContent(0);
   double rf2e = corrN2->GetBinError(0);
@@ -589,7 +593,7 @@ TH1D* FlowContainer::GetCN6(TH1D* corrN6, TH1D* corrN4, TH1D* corrN2)
   double rf6 = corrN6->GetBinContent(0);
   double rf6e = corrN6->GetBinError(0);
   bool OnPt = (rf2 != 0);
-  TH1D* rethist = reinterpret_cast<TH1D*>(corrN6->Clone(Form("cN6_%s", corrN6->GetName())));
+  TH1D* rethist = dynamic_cast<TH1D*>(corrN6->Clone(Form("cN6_%s", corrN6->GetName())));
   rethist->Reset();
   for (int i = 1; i <= rethist->GetNbinsX(); i++) {
     double cor6v = corrN6->GetBinContent(i);
@@ -615,10 +619,10 @@ TH1D* FlowContainer::GetCN6(TH1D* corrN6, TH1D* corrN4, TH1D* corrN2)
 }
 TH1D* FlowContainer::GetCN8(TH1D* corrN8, TH1D* corrN6, TH1D* corrN4, TH1D* corrN2)
 {
-  TH1D* tn2 = reinterpret_cast<TH1D*>(corrN2->Clone(Form("tn2_%s", corrN2->GetName())));
-  TH1D* tn4 = reinterpret_cast<TH1D*>(corrN4->Clone(Form("tn4_%s", corrN4->GetName())));
-  TH1D* tn6 = reinterpret_cast<TH1D*>(corrN6->Clone(Form("tn6_%s", corrN6->GetName())));
-  TH1D* tn8 = reinterpret_cast<TH1D*>(corrN8->Clone(Form("tn8_%s", corrN6->GetName())));
+  TH1D* tn2 = dynamic_cast<TH1D*>(corrN2->Clone(Form("tn2_%s", corrN2->GetName())));
+  TH1D* tn4 = dynamic_cast<TH1D*>(corrN4->Clone(Form("tn4_%s", corrN4->GetName())));
+  TH1D* tn6 = dynamic_cast<TH1D*>(corrN6->Clone(Form("tn6_%s", corrN6->GetName())));
+  TH1D* tn8 = dynamic_cast<TH1D*>(corrN8->Clone(Form("tn8_%s", corrN6->GetName())));
 
   double rf2 = corrN2->GetBinContent(0);
   double rf2e = corrN2->GetBinError(0);
@@ -629,7 +633,7 @@ TH1D* FlowContainer::GetCN8(TH1D* corrN8, TH1D* corrN6, TH1D* corrN4, TH1D* corr
   double rf8 = corrN8->GetBinContent(0);
   double rf8e = corrN8->GetBinError(0);
   bool OnPt = (rf2 != 0);
-  TH1D* rethist = reinterpret_cast<TH1D*>(corrN8->Clone(Form("cN8_%s", corrN8->GetName())));
+  TH1D* rethist = dynamic_cast<TH1D*>(corrN8->Clone(Form("cN8_%s", corrN8->GetName())));
   rethist->Reset();
   for (int i = 1; i <= rethist->GetNbinsX(); i++) {
     double cor8v = corrN8->GetBinContent(i);
@@ -689,7 +693,7 @@ TH1D* FlowContainer::GetCN4VsX(int n, bool onPt, double arg1, double arg2)
 }
 TH1D* FlowContainer::GetVN4(TH1D* inh)
 {
-  TH1D* rethist = reinterpret_cast<TH1D*>(inh->Clone(Form("v24_%s", inh->GetName())));
+  TH1D* rethist = dynamic_cast<TH1D*>(inh->Clone(Form("v24_%s", inh->GetName())));
   double c4 = inh->GetBinContent(0);
   double c4e = inh->GetBinError(0);
   bool OnPt = ((!c4) == 0);
@@ -707,7 +711,7 @@ TH1D* FlowContainer::GetVN4(TH1D* inh)
 }
 TH1D* FlowContainer::GetVN6(TH1D* inh)
 {
-  TH1D* rethist = reinterpret_cast<TH1D*>(inh->Clone(Form("v26_%s", inh->GetName())));
+  TH1D* rethist = dynamic_cast<TH1D*>(inh->Clone(Form("v26_%s", inh->GetName())));
   double c6 = inh->GetBinContent(0);
   double c6e = inh->GetBinError(0);
   bool OnPt = ((!c6) == 0);
@@ -725,7 +729,7 @@ TH1D* FlowContainer::GetVN6(TH1D* inh)
 }
 TH1D* FlowContainer::GetVN8(TH1D* inh)
 {
-  TH1D* rethist = reinterpret_cast<TH1D*>(inh->Clone(Form("v28_%s", inh->GetName())));
+  TH1D* rethist = dynamic_cast<TH1D*>(inh->Clone(Form("v28_%s", inh->GetName())));
   double c8 = inh->GetBinContent(0);
   double c8e = inh->GetBinError(0);
   bool OnPt = ((!c8) == 0);
@@ -906,7 +910,7 @@ TProfile* FlowContainer::GetRefFlowProfile(const char* order, double m1, double 
     int ybin = fProf->GetYaxis()->FindBin(l_name.Data());
     TProfile* tempprof = rhSubset->GetSubset(kTRUE, "tempprof", ybin, ybin, nBins, l_bins);
     if (!retpf)
-      retpf = reinterpret_cast<TProfile*>(tempprof->Clone("RefFlowProf"));
+      retpf = dynamic_cast<TProfile*>(tempprof->Clone("RefFlowProf"));
     else
       retpf->Add(tempprof);
     delete tempprof;

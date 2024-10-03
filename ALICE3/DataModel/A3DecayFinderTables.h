@@ -43,7 +43,10 @@ enum a3selectionBit : uint32_t { kDCAxy = 0,
                                  kTruePrPlusFromLc,
                                  kTruePiMinusFromLc,
                                  kTrueKaMinusFromLc,
-                                 kTruePrMinusFromLc };
+                                 kTruePrMinusFromLc,
+                                 kTrueXiFromXiC,
+                                 kTruePiFromXiC,
+                                 kTruePiFromXiCC };
 
 namespace o2::aod
 {
@@ -51,7 +54,7 @@ namespace a3DecayMap
 {
 DECLARE_SOA_COLUMN(DecayMap, decayMap, uint32_t); //! simple map to process passing / not passing criteria
 } // namespace a3DecayMap
-DECLARE_SOA_TABLE(Alice3DecayMaps, "AOD", "ALICE3DECAYMAP",
+DECLARE_SOA_TABLE(Alice3DecayMaps, "AOD", "ALICE3DECAYMAPS",
                   a3DecayMap::DecayMap);
 
 using Alice3DecayMap = Alice3DecayMaps::iterator;

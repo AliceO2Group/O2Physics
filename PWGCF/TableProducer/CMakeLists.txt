@@ -14,6 +14,11 @@ o2physics_add_dpl_workflow(filter-correlations
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(filter-correlations-2prong
+                    SOURCES filter2Prong.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(dptdpt-filter
                            SOURCES dptdptfilter.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore

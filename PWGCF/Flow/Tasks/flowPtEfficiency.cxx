@@ -73,7 +73,7 @@ struct flowPtEfficiency {
     registry.add("hPtMCGen", "Monte Carlo Truth", {HistType::kTH1D, {axisPt}});
   }
 
-  void processReco(o2::aod::Collision const& collision, myTracks const& tracks, aod::McParticles const&)
+  void processReco(o2::aod::Collision const&, myTracks const& tracks, aod::McParticles const&)
   {
     registry.fill(HIST("eventCounter"), 0.5);
     for (const auto& track : tracks) {
@@ -89,7 +89,7 @@ struct flowPtEfficiency {
   }
   PROCESS_SWITCH(flowPtEfficiency, processReco, "process reconstructed information", true);
 
-  void processSim(aod::McCollision const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions, myMcParticles const& mcParticles)
+  void processSim(aod::McCollision const&, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions, myMcParticles const& mcParticles)
   {
     if (collisions.size() > -1) {
       registry.fill(HIST("mcEventCounter"), 0.5);

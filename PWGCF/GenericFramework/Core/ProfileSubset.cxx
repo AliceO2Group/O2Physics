@@ -61,7 +61,7 @@ TProfile* ProfileSubset::GetSubset(bool onX, const char* name, int firstbin, int
   p1->SetEntries(p1->GetEffectiveEntries());
   return p1;
 };
-void ProfileSubset::OverrideBinContent(double x, double y, double x2, double y2, double val)
+void ProfileSubset::OverrideBinContent(double x, double y, double x2, double y2, double /*val*/)
 {
   if (!fBinSumw2.fN)
     Sumw2();

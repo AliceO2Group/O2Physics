@@ -86,7 +86,7 @@ void GFWWeights::Init(bool AddData, bool AddMC)
   }
 };
 
-void GFWWeights::Fill(double phi, double eta, double vz, double pt, double cent, int htype, double weight)
+void GFWWeights::Fill(double phi, double eta, double vz, double pt, double /*cent*/, int htype, double weight)
 {
   TObjArray* tar = 0;
   const char* pf = "";
@@ -112,7 +112,7 @@ void GFWWeights::Fill(double phi, double eta, double vz, double pt, double cent,
   }
   th3->Fill(htype ? pt : phi, eta, vz, weight);
 };
-double GFWWeights::GetWeight(double phi, double eta, double vz, double pt, double cent, int htype)
+double GFWWeights::GetWeight(double phi, double eta, double vz, double pt, double /*cent*/, int htype)
 {
   TObjArray* tar = 0;
   const char* pf = "";

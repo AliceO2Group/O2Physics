@@ -29,7 +29,7 @@ o2physics_add_dpl_workflow(track-iteration
                   COMPONENT_NAME AnalysisTutorial)
 
 o2physics_add_dpl_workflow(pid
-                  SOURCES src/pid.cxx
+                  SOURCES src/pidTpcTof.cxx
                   PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                   COMPONENT_NAME AnalysisTutorial)
 
@@ -109,6 +109,11 @@ o2physics_add_dpl_workflow(event-mixing-validation
 
 o2physics_add_dpl_workflow(mc-histograms
                   SOURCES src/mcHistograms.cxx
+                  PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                  COMPONENT_NAME AnalysisTutorial)
+
+o2physics_add_dpl_workflow(mc-only
+                  SOURCES src/mcOnly.cxx
                   PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                   COMPONENT_NAME AnalysisTutorial)
 

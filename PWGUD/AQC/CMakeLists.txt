@@ -13,3 +13,13 @@ o2physics_add_dpl_workflow(udqc
                            SOURCES udQC.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGCutparHolder
                            COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(fittest
+                           SOURCES FITtest.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGCutparHolder
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(udqcmidrap
+                           SOURCES udQCmidRap.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::DGCutparHolder
+                           COMPONENT_NAME Analysis)

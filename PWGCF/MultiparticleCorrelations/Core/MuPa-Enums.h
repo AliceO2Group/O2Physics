@@ -13,23 +13,60 @@
 #define PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_ENUMS_H_
 
 enum eConfiguration {
-  eTaskName = 1,
-  eRunNumber = 2,
-  eVerbose = 3,
-  eVerboseForEachParticle = 4,
-  eUseCCDB = 5,
+  eTaskName = 1, // here I start from 1 exceptionally, because these enums are used as bin contents, and ROOT starts counting bins from 1
+  eRunNumber,
+  eDryRun,
+  eVerbose,
+  eVerboseForEachParticle,
+  eDoAdditionalInsanityChecks,
+  eInsanityCheckForEachParticle,
+  eUseCCDB,
+  eWhichProcess,
+  eRandomSeed,
+  eUseFisherYates,
+  eFixedNumberOfRandomlySelectedTracks,
+  eUseStopwatch,
   eConfiguration_N
 };
 
-enum eRecSim { eRec = 0,
-               eSim = 1,
-               eRecAndSim = 2 }; // TBI 20231021 find a better name?
+enum eProcess {
+  eProcessRec = 0,     // Run 3, only reconstructed
+  eProcessRecSim,      // Run 3, both reconstructed and simulated
+  eProcessSim,         // Run 3, only simulated
+  eProcessRec_Run2,    // Run 2, only reconstructed
+  eProcessRecSim_Run2, // Run 2, both reconstructed and simulated
+  eProcessSim_Run2,    // Run 2, only simulated
+  eProcessRec_Run1,    // Run 1, only reconstructed
+  eProcessRecSim_Run1, // Run 1, both reconstructed and simulated
+  eProcessSim_Run1,    // Run 1, only simulated
+  eProcessTest,        // minimum subscription to the tables, for testing purposes
+  // Generic flags, calculated and set from individual flags above in DefaultConfiguration(), AFTER process switch was taken into account:
+  eGenericRec,    // generic "Rec" case, eTest is treated for the time being as "Rec"
+  eGenericRecSim, // generic "RecSim" case
+  eGenericSim,    // generic "Sim" case
+  eProcess_N
+};
 
-enum eBeforeAfter { eBefore = 0,
+enum eRecSim { eRec = 0,
+               eSim,
+               eRecAndSim,
+               eRec_Run2, // converted Run 2 data
+               eSim_Run2,
+               eRecAndSim_Run2,
+               eRec_Run1, // converted Run 1 data
+               eSim_Run1,
+               eRecAndSim_Run1,
+               eTest };
+
+enum eBeforeAfter { eBefore = 0, // use this one for cuts
                     eAfter = 1 };
 
 enum eMinMax { eMin = 0,
                eMax = 1 };
+
+enum eXYZ { eX = 0,
+            eY = 1,
+            eZ = 2 };
 
 enum eDefaultColors { eColor = kBlack,
                       eFillColor = kGray };
@@ -39,27 +76,176 @@ enum eWeights { wPHI = 0,
                 wETA = 2,
                 eWeights_N };
 
+enum eDiffWeights {
+  wPHIPT = 0,
+  wPHIETA,
+  eDiffWeights_N
+};
+
+enum eVnPsin { eVn = 0,
+               ePsin = 1 };
+
 enum eEventHistograms {
-  eNumberOfEvents,
+  eNumberOfEvents = 0, // Total events = eNumberOfEvents + eBefore, Selected events = eNumberOfEvents + eAfter
   eTotalMultiplicity,
   eSelectedTracks,
-  eCentrality,
+  eMultFV0M,      // ref. mult from helper task o2-analysis-multiplicity-table
+  eMultFT0M,      // ref. mult from helper task o2-analysis-multiplicity-table
+  eMultTPC,       // ref. mult from helper task o2-analysis-multiplicity-table
+  eMultNTracksPV, // ref. mult from helper task o2-analysis-multiplicity-table
+  eMultTracklets, // ref. mult from helper task o2-analysis-multiplicity-table, use only for Run 2
+  eCentrality,    // default centrality estimator
   eVertex_x,
   eVertex_y,
   eVertex_z,
-  eNContributors, // Number of tracks used for the vertex
+  eNContributors, // number of tracks used for the vertex
   eImpactParameter,
   eEventHistograms_N
 };
 
+enum eEventCuts {
+  // a) For available event selection bits, check https://github.com/ekryshen/O2Physics/blob/ede841e3d9037919680f34acc1d555dfc6d5df55/Common/CCDB/EventSelectionParams.cxx
+  // b) Some settings are configurable, check: https://github.com/ekryshen/O2Physics/blob/master/Common/TableProducer/eventSelection.cxx#L44
+  eTrigger = eEventHistograms_N, // Do NOT use eTrigger for Run 3. Validated only for Run 2, and it has to be "kINT7" . TBI 20240522 investigate for Run 1
+  eSel7,                         // Event selection decision based on V0A & V0C => use only in Run 2 and Run 1. TBI 20240522 I stil need to validate this one over MC
+  eSel8,                         // Event selection decision based on TVX => use only in Run 3, both for data and MC
+                                 // *) As of 20240410, kNoITSROFrameBorder (only in MC) and kNoTimeFrameBorder event selection cuts are part of Sel8 => see def. of sel8 in Ref. a)
+                                 //    See also email from EK from 20240410
+  eCentralityEstimator,          // the default centrality estimator, set via configurable. All supported centrality estimatos, for QA, etc, are in enum eCentralityEstimators
+  eSelectedEvents,               // selected events = eNumberOfEvents + eAfter => therefore I do not need a special histogram for it
+  eNoSameBunchPileup,            // reject collisions in case of pileup with another collision in the same foundBC (emails from IA on 20240404 and EK on 20240410)
+  eIsGoodZvtxFT0vsPV,            // small difference between z-vertex from PV and from FT0 (emails from IA on 20240404 and EK on 20240410)
+  eIsVertexITSTPC,               // at least one ITS-TPC track (reject vertices built from ITS-only tracks) (emails from IA on 20240404 and EK on 20240410
+  eIsVertexTOFmatched,           // at least one of vertex contributors is matched to TOF
+  eIsVertexTRDmatched,           // at least one of vertex contributors is matched to TRD
+  eEventCuts_N
+};
+
 enum eParticleHistograms {
-  ePhi,
+
+  // from o2::aod::Tracks: (Track parameters at collision vertex)
+  ePhi = 0,
   ePt,
   eEta,
-  etpcNClsCrossedRows, // from aod::TracksExtra
-  eDCA_xy,             // from aod::TracksDCA
-  eDCA_z,
+  eCharge, // Charge: positive: 1, negative: -1
+
+  // from o2::aod::TracksExtra_001
+  etpcNClsFindable,
+  etpcNClsShared,
+  etpcNClsFound,
+  etpcNClsCrossedRows,
+  eitsNCls,
+  eitsNClsInnerBarrel,
+  etpcCrossedRowsOverFindableCls,
+  etpcFoundOverFindableCls,
+  etpcFractionSharedCls,
+
+  // from o2::aod::TracksDCA
+  edcaXY,
+  edcaZ,
+
+  // the rest:
+  ePDG,
+
+  // counter:
   eParticleHistograms_N
+};
+
+enum eParticleHistograms2D { // All 2D histograms are first implemented in eQAParticleHistograms2D, the ones which I need regularly, are then promoted to this category.
+  ePhiPt = 0,
+  ePhiEta,
+  eParticleHistograms2D_N
+};
+
+enum eParticleCuts {
+
+  // from o2::aod::TrackSelection
+  etrackCutFlagFb1 = eParticleHistograms_N, // do not use in Run 2 and 1
+  etrackCutFlagFb2,                         // do not use in Run 2 and 1
+  eisQualityTrack,                          // not validated in Run 3, but it can be used in Run 2 and Run 1 (for the latter, it yields to large NUA)
+  eisPrimaryTrack,
+  eisInAcceptanceTrack, // TBI 20240516 check and document how acceptance window is defined
+  eisGlobalTrack,       // not validated in Run 3, but it can be used in Run 2 and Run 1 (for the latter, it yields to real holes in NUA)
+
+  // special treatment:
+  ePtDependentDCAxyParameterization,
+
+  eParticleCuts_N
+};
+
+enum eAsFunctionOf {
+  AFO_INTEGRATED = 0,
+  AFO_MULTIPLICITY = 1, // vs. default multiplicity, which is (at the moment) fSelectedTracks, i.e. number of tracks in Q-vector
+  AFO_CENTRALITY = 2,   // vs. default centrality estimator, see how it's calculated in DetermineCentrality(...)
+  AFO_PT = 3,
+  AFO_ETA = 4,
+  eAsFunctionOf_N
+}; // prefix is needed, to avoid conflict with enum eKinematics
+
+enum eNUAPDF {
+  ePhiNUAPDF = 0,
+  ePtNUAPDF,
+  eEtaNUAPDF,
+  eNUAPDF_N
+};
+
+enum eqvectorKine { // Here "kine" originally meant "kinematic", i.e. vs. pt or vs. eta, now it's general.
+  PTq = 0,
+  ETAq,
+  eqvectorKine_N
+};
+
+enum eTimer {
+  eGlobal = 0,
+  eLocal,
+  eTimer_N
+};
+
+enum eEventCounter {
+  eFill = 0,
+  ePrint
+};
+
+enum eCutModus {
+  eCut = 0,           // standard, i.e. no cut counters are used
+  eCutCounterBinning, // dry call to EventCuts and ParticleCuts, just to establish order of binning in CutCountets, which resembles order of cut implementation
+  eCutCounterAbsolute,
+  eCutCounterSequential
+};
+
+enum eCutCounter {
+  eAbsolute = 0,
+  eSequential,
+  eCutCounter_N
+};
+
+enum eQAEventHistograms2D {
+  // Common:
+  eMultTPC_vs_NContributors = 0,
+  eVertex_z_vs_MultTPC,
+  eVertex_z_vs_NContributors,
+  // Run 3:
+  eCentFT0M_vs_CentNTPV,
+  // Run 2 (do not use in Run 1 converted, because there is no centrality information):
+  eCentRun2V0M_vs_CentRun2SPDTracklets,
+  eCentRun2V0M_vs_NContributors,
+  eQAEventHistograms2D_N
+};
+
+enum eQAParticleHistograms2D {
+  edcaXY_vs_Pt,
+  eQAParticleHistograms2D_N
+};
+
+enum eCentralityEstimators {
+  // Run 3:
+  eCentFT0M = 0,
+  eCentFV0A,
+  eCentNTPV,
+  // Run 2:
+  eCentRun2V0M,
+  eCentRun2SPDTracklets,
+  eCentralityEstimators_N
 };
 
 #endif // PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_ENUMS_H_

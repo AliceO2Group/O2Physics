@@ -30,6 +30,9 @@
 #include <TH2D.h>
 #include <TProfile.h>
 
+#include "FV0Base/Geometry.h"
+#include "FT0Base/Geometry.h"
+
 class EventPlaneHelper
 {
  public:
@@ -58,12 +61,12 @@ class EventPlaneHelper
   }
 
   // Methods to calculate the azimuthal angles for each part of FIT, given the channel number.
-  double GetPhiFT0(int chno);
-  double GetPhiFV0(int chno);
+  double GetPhiFT0(int chno, o2::ft0::Geometry ft0geom);
+  double GetPhiFV0(int chno, o2::fv0::Geometry* fv0geom);
 
   // Method to get the Q-vector and sum of amplitudes for any channel in FIT, given
   // the detector and amplitude.
-  void SumQvectors(int det, int chno, float ampl, int nmod, TComplex& Qvec, float& sum);
+  void SumQvectors(int det, int chno, float ampl, int nmod, TComplex& Qvec, float& sum, o2::ft0::Geometry ft0geom, o2::fv0::Geometry* fv0geom);
 
   // Method to get the bin corresponding to a centrality percentile, according to the
   // centClasses[] array defined in Tasks/qVectorsQA.cxx.
@@ -93,7 +96,7 @@ class EventPlaneHelper
   float GetEventPlane(const float qx, const float qy, int nmode = 2);
 
   // Method to calculate the resolution R2 for the provided profile.
-  float GetResolution(const float RefA, const float RefB, const float sig, int nmode = 2);
+  float GetResolution(const float RefA, const float RefB, int nmode = 2);
 
  private:
   double mOffsetFT0AX = 0.;     // X-coordinate of the offset of FT0-A.

@@ -62,11 +62,11 @@ class Response
   const std::array<float, 5> GetBetheBlochParams() const { return mBetheBlochParams; }
   const std::array<float, 2> GetResolutionParamsDefault() const { return mResolutionParamsDefault; }
   const std::vector<double> GetResolutionParams() const { return mResolutionParams; }
-  const float GetMIP() const { return mMIP; }
-  const float GetNClNormalization() const { return nClNorm; }
-  const float GetChargeFactor() const { return mChargeFactor; }
-  const float GetMultiplicityNormalization() const { return mMultNormalization; }
-  const bool GetUseDefaultResolutionParam() const { return mUseDefaultResolutionParam; }
+  float GetMIP() const { return mMIP; }
+  float GetNClNormalization() const { return nClNorm; }
+  float GetChargeFactor() const { return mChargeFactor; }
+  float GetMultiplicityNormalization() const { return mMultNormalization; }
+  bool GetUseDefaultResolutionParam() const { return mUseDefaultResolutionParam; }
 
   /// Gets the expected signal of the track
   template <typename TrackType>
@@ -77,6 +77,9 @@ class Response
   /// Gets the number of sigmas with respect the expected value
   template <typename CollisionType, typename TrackType>
   float GetNumberOfSigma(const CollisionType& collision, const TrackType& trk, const o2::track::PID::ID id) const;
+  // Number of sigmas with respect to expected for MC, defining a tune-on-data signal value
+  template <typename CollisionType, typename TrackType>
+  float GetNumberOfSigmaMCTuned(const CollisionType& collision, const TrackType& trk, const o2::track::PID::ID id, float mcTunedTPCSignal) const;
   /// Gets the deviation to the expected signal
   template <typename TrackType>
   float GetSignalDelta(const TrackType& trk, const o2::track::PID::ID id) const;
@@ -152,6 +155,21 @@ inline float Response::GetNumberOfSigma(const CollisionType& collision, const Tr
     return -999.f;
   }
   return ((trk.tpcSignal() - GetExpectedSignal(trk, id)) / GetExpectedSigma(collision, trk, id));
+}
+
+template <typename CollisionType, typename TrackType>
+inline float Response::GetNumberOfSigmaMCTuned(const CollisionType& collision, const TrackType& trk, const o2::track::PID::ID id, float mcTunedTPCSignal) const
+{
+  if (GetExpectedSigma(collision, trk, id) < 0.) {
+    return -999.f;
+  }
+  if (GetExpectedSignal(trk, id) < 0.) {
+    return -999.f;
+  }
+  if (!trk.hasTPC()) {
+    return -999.f;
+  }
+  return ((mcTunedTPCSignal - GetExpectedSignal(trk, id)) / GetExpectedSigma(collision, trk, id));
 }
 
 /// Gets the deviation between the actual signal and the expected signal

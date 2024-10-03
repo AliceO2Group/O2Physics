@@ -13,3 +13,37 @@ o2physics_add_dpl_workflow(twopartcorr
                            SOURCES twoParticleCorrelations.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::TwoPartCorrCore
                            COMPONENT_NAME Analysis)
+o2physics_add_dpl_workflow(r2p24id
+                           SOURCES r2p2-4-id.cxx
+                           PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(lambdacorr
+                           SOURCES lambdaR2Correlation.cxx
+                           PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(identifiedbf
+                           SOURCES identifiedbf.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(identifiedbf-filter-qa
+                           SOURCES identifiedbfqa.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(twopartcorr-efficiency-qc
+                           SOURCES efficiencyAndQc.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(twopartcorr-per-run-qc
+                           SOURCES perRunQc.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore O2Physics::AnalysisCCDB
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(twopartcorr-per-run-extraqc
+                           SOURCES perRunExtraQc.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore O2Physics::AnalysisCCDB
+                           COMPONENT_NAME Analysis)

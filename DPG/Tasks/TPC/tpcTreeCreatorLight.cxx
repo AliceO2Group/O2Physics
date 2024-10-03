@@ -103,7 +103,7 @@ struct TreeWriterTPCTOF {
 
   /// Event selection
   template <typename CollisionType, typename TrackType>
-  bool isEventSelected(const CollisionType& collision, const TrackType& tracks)
+  bool isEventSelected(const CollisionType& collision, const TrackType& /*tracks*/)
   {
     if (applyEvSel == 1) {
       if (!collision.sel7()) {
@@ -119,7 +119,7 @@ struct TreeWriterTPCTOF {
 
   /// Track selection
   template <typename CollisionType, typename TrackType>
-  bool isTrackSelected(const CollisionType& collision, const TrackType& track)
+  bool isTrackSelected(const CollisionType&, const TrackType& track)
   {
     if (!track.isGlobalTrack()) { // Skipping non global tracks
       return false;
@@ -172,7 +172,7 @@ struct TreeWriterTPCTOF {
     }
   }
 
-  void init(o2::framework::InitContext& initContext)
+  void init(o2::framework::InitContext&)
   {
   }
   void process(Coll::iterator const& collision, Trks const& tracks, aod::BCsWithTimestamps const&)

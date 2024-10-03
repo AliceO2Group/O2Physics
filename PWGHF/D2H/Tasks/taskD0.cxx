@@ -30,6 +30,15 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 /// D0 analysis task
+namespace
+{
+enum CandTypeSel {
+  SigD0 = 0,     // Signal D0
+  SigD0bar,      // Signal D0bar
+  ReflectedD0,   // Reflected D0
+  ReflectedD0bar // Reflected D0bar
+};
+} // namespace
 struct HfTaskD0 {
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
   Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
@@ -40,6 +49,20 @@ struct HfTaskD0 {
   Configurable<int> selectionCand{"selectionCand", 1, "Selection Flag for conj. topol. selected candidates"};
   Configurable<int> selectionPid{"selectionPid", 1, "Selection Flag for reco PID candidates"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits"};
+  // ML inference
+  Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
+
+  // ThnSparse for ML outputScores and Vars
+  ConfigurableAxis thnConfigAxisBkgScore{"thnConfigAxisBkgScore", {50, 0, 1}, "Bkg score bins"};
+  ConfigurableAxis thnConfigAxisNonPromptScore{"thnConfigAxisNonPromptScore", {50, 0, 1}, "Non-prompt score bins"};
+  ConfigurableAxis thnConfigAxisMass{"thnConfigAxisMass", {120, 1.5848, 2.1848}, "Cand. inv-mass bins"};
+  ConfigurableAxis thnConfigAxisPtB{"thnConfigAxisPtB", {1000, 0, 100}, "Cand. beauty mother pTB bins"};
+  ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {500, 0, 50}, "Cand. pT bins"};
+  ConfigurableAxis thnConfigAxisY{"thnConfigAxisY", {20, -1, 1}, "Cand. rapidity bins"};
+  ConfigurableAxis thnConfigAxisOrigin{"thnConfigAxisOrigin", {3, -0.5, 2.5}, "Cand. origin type"};
+  ConfigurableAxis thnConfigAxisCandType{"thnConfigAxisCandType", {4, -0.5, 3.5}, "D0 type"};
+  ConfigurableAxis thnConfigAxisGenPtD{"thnConfigAxisGenPtD", {500, 0, 50}, "Gen Pt D"};
+  ConfigurableAxis thnConfigAxisGenPtB{"thnConfigAxisGenPtB", {1000, 0, 100}, "Gen Pt B"};
 
   HfHelper hfHelper;
 
@@ -48,10 +71,20 @@ struct HfTaskD0 {
   using D0CandidatesKF = soa::Join<D0Candidates, aod::HfCand2ProngKF>;
   using D0CandidatesMcKF = soa::Join<D0CandidatesKF, aod::HfCand2ProngMcRec>;
 
+  using D0CandidatesMl = soa::Join<D0Candidates, aod::HfMlD0>;
+  using D0CandidatesMlMc = soa::Join<D0CandidatesMl, aod::HfCand2ProngMcRec>;
+  using D0CandidatesMlKF = soa::Join<D0CandidatesMl, aod::HfCand2ProngKF>;
+  using D0CandidatesMlMcKF = soa::Join<D0CandidatesMlKF, aod::HfCand2ProngMcRec>;
+
   Partition<D0Candidates> selectedD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
   Partition<D0CandidatesKF> selectedD0CandidatesKF = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
   Partition<D0CandidatesMc> selectedD0CandidatesMc = aod::hf_sel_candidate_d0::isRecoHfFlag >= selectionFlagHf;
   Partition<D0CandidatesMcKF> selectedD0CandidatesMcKF = aod::hf_sel_candidate_d0::isRecoHfFlag >= selectionFlagHf;
+
+  Partition<D0CandidatesMl> selectedD0CandidatesMl = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
+  Partition<D0CandidatesMlKF> selectedD0CandidatesMlKF = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
+  Partition<D0CandidatesMlMc> selectedD0CandidatesMlMc = aod::hf_sel_candidate_d0::isRecoHfFlag >= selectionFlagHf;
+  Partition<D0CandidatesMlMcKF> selectedD0CandidatesMlMcKF = aod::hf_sel_candidate_d0::isRecoHfFlag >= selectionFlagHf;
 
   HistogramRegistry registry{
     "registry",
@@ -131,11 +164,11 @@ struct HfTaskD0 {
 
   void init(InitContext&)
   {
-    std::array<bool, 4> doprocess{doprocessDataWithDCAFitterN, doprocessDataWithKFParticle, doprocessMcWithDCAFitterN, doprocessMcWithKFParticle};
+    std::array<bool, 8> doprocess{doprocessDataWithDCAFitterN, doprocessDataWithKFParticle, doprocessMcWithDCAFitterN, doprocessMcWithKFParticle, doprocessDataWithDCAFitterNMl, doprocessDataWithKFParticleMl, doprocessMcWithDCAFitterNMl, doprocessMcWithKFParticleMl};
     if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) == 0) {
       LOGP(fatal, "At least one process function should be enabled at a time.");
     }
-    if ((doprocessDataWithDCAFitterN || doprocessMcWithDCAFitterN) && (doprocessDataWithKFParticle || doprocessMcWithKFParticle)) {
+    if ((doprocessDataWithDCAFitterN || doprocessMcWithDCAFitterN || doprocessDataWithDCAFitterNMl || doprocessMcWithDCAFitterNMl) && (doprocessDataWithKFParticle || doprocessMcWithKFParticle || doprocessDataWithKFParticleMl || doprocessMcWithKFParticleMl)) {
       LOGP(fatal, "DCAFitterN and KFParticle can not be enabled at a time.");
     }
 
@@ -177,9 +210,32 @@ struct HfTaskD0 {
     registry.add("hNormalisedDecLengthxyVsPtSig", "2-prong candidates;decay length xy (cm) vs #it{p}_{T} for signal;entries", {HistType::kTH2F, {{800, 0., 40.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecLengthVsPtSig", "2-prong candidates;decay length (cm) vs #it{p}_{T} for signal;entries", {HistType::kTH2F, {{800, 0., 4.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDecLengthxyVsPtSig", "2-prong candidates;decay length xy (cm) vs #it{p}_{T} for signal;entries", {HistType::kTH2F, {{800, 0., 4.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+
+    const AxisSpec thnAxisMass{thnConfigAxisMass, "inv. mass (#pi K) (GeV/#it{c}^{2})"};
+    const AxisSpec thnAxisPt{thnConfigAxisPt, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec thnAxisPtB{thnConfigAxisPtB, "#it{p}_{T}^{B} (GeV/#it{c})"};
+    const AxisSpec thnAxisY{thnConfigAxisY, "y"};
+    const AxisSpec thnAxisOrigin{thnConfigAxisOrigin, "Origin"};
+    const AxisSpec thnAxisCandType{thnConfigAxisCandType, "D0 type"};
+    const AxisSpec thnAxisGenPtD{thnConfigAxisGenPtD, "#it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec thnAxisGenPtB{thnConfigAxisGenPtB, "#it{p}_{T}^{B} (GeV/#it{c})"};
+
+    registry.add("hSparseAcc", "Thn for generated D0 from charm and beauty", HistType::kTHnSparseD, {thnAxisGenPtD, thnAxisGenPtB, thnAxisY, thnAxisOrigin});
+    registry.get<THnSparse>(HIST("hSparseAcc"))->Sumw2();
+
+    if (applyMl) {
+      const AxisSpec thnAxisBkgScore{thnConfigAxisBkgScore, "BDT score bkg."};
+      const AxisSpec thnAxisNonPromptScore{thnConfigAxisNonPromptScore, "BDT score non-prompt."};
+
+      registry.add("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type", "Thn for D0 candidates with BDT scores", HistType::kTHnSparseD, {thnAxisBkgScore, thnAxisNonPromptScore, thnAxisMass, thnAxisPt, thnAxisPtB, thnAxisY, thnAxisOrigin, thnAxisCandType});
+      registry.get<THnSparse>(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"))->Sumw2();
+    } else {
+      registry.add("hMassVsPtVsPtBVsYVsOriginVsD0Type", "Thn for D0 candidates without BDT scores", HistType::kTHnSparseD, {thnAxisMass, thnAxisPt, thnAxisPtB, thnAxisY, thnAxisOrigin, thnAxisCandType});
+      registry.get<THnSparse>(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"))->Sumw2();
+    }
   }
 
-  template <int reconstructionType, typename CandType>
+  template <int reconstructionType, bool applyMl, typename CandType>
   void processData(CandType const& candidates)
   {
     for (const auto& candidate : candidates) {
@@ -238,24 +294,52 @@ struct HfTaskD0 {
       registry.fill(HIST("hCtFinerBinning"), hfHelper.ctD0(candidate), ptCandidate);
       registry.fill(HIST("hCPAFinerBinning"), candidate.cpa(), ptCandidate);
       registry.fill(HIST("hCPAXYFinerBinning"), candidate.cpaXY(), ptCandidate);
+
+      if constexpr (applyMl) {
+        if (candidate.isSelD0() >= selectionFlagD0) {
+          registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], massD0, ptCandidate, -1, hfHelper.yD0(candidate), 0, SigD0);
+        }
+        if (candidate.isSelD0bar() >= selectionFlagD0bar) {
+          registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], massD0bar, ptCandidate, -1, hfHelper.yD0(candidate), 0, SigD0bar);
+        }
+      } else {
+        if (candidate.isSelD0() >= selectionFlagD0) {
+          registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, -1, hfHelper.yD0(candidate), 0, SigD0);
+        }
+        if (candidate.isSelD0bar() >= selectionFlagD0bar) {
+          registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, -1, hfHelper.yD0(candidate), 0, SigD0bar);
+        }
+      }
     }
   }
   void processDataWithDCAFitterN(D0Candidates const&)
   {
-    processData<aod::hf_cand::VertexerType::DCAFitter>(selectedD0Candidates);
+    processData<aod::hf_cand::VertexerType::DCAFitter, false>(selectedD0Candidates);
   }
   PROCESS_SWITCH(HfTaskD0, processDataWithDCAFitterN, "process taskD0 with DCAFitterN", true);
 
   void processDataWithKFParticle(D0CandidatesKF const&)
   {
-    processData<aod::hf_cand::VertexerType::KfParticle>(selectedD0CandidatesKF);
+    processData<aod::hf_cand::VertexerType::KfParticle, false>(selectedD0CandidatesKF);
   }
   PROCESS_SWITCH(HfTaskD0, processDataWithKFParticle, "process taskD0 with KFParticle", false);
 
-  template <int reconstructionType, typename CandType>
+  void processDataWithDCAFitterNMl(D0CandidatesMl const&)
+  {
+    processData<aod::hf_cand::VertexerType::DCAFitter, true>(selectedD0CandidatesMl);
+  }
+  PROCESS_SWITCH(HfTaskD0, processDataWithDCAFitterNMl, "process taskD0 with DCAFitterN and ML selections", false);
+
+  void processDataWithKFParticleMl(D0CandidatesMlKF const&)
+  {
+    processData<aod::hf_cand::VertexerType::KfParticle, true>(selectedD0CandidatesMlKF);
+  }
+  PROCESS_SWITCH(HfTaskD0, processDataWithKFParticleMl, "process taskD0 with KFParticle and ML selections", false);
+
+  template <int reconstructionType, bool applyMl, typename CandType>
   void processMc(CandType const& candidates,
                  soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
-                 aod::TracksWMc const& tracks)
+                 aod::TracksWMc const&)
   {
     // MC rec.
     for (const auto& candidate : candidates) {
@@ -277,9 +361,9 @@ struct HfTaskD0 {
         // Get the corresponding MC particle.
         auto indexMother = RecoDecay::getMother(mcParticles, candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>(), o2::constants::physics::Pdg::kD0, true);
         auto particleMother = mcParticles.rawIteratorAt(indexMother);
-        auto ptGen = particleMother.pt();                                                                                                                     // gen. level pT
-        auto yGen = RecoDecay::y(std::array{particleMother.px(), particleMother.py(), particleMother.pz()}, o2::constants::physics::MassD0);                  // gen. level y
-        registry.fill(HIST("hPtGenSig"), ptGen);                                                                                                              // gen. level pT
+        auto ptGen = particleMother.pt();                                                   // gen. level pT
+        auto yGen = RecoDecay::y(particleMother.pVector(), o2::constants::physics::MassD0); // gen. level y
+        registry.fill(HIST("hPtGenSig"), ptGen);                                            // gen. level pT
         auto ptRec = candidate.pt();
         auto yRec = hfHelper.yD0(candidate);
         if (candidate.isRecoHfFlag() >= selectionFlagHf) {
@@ -389,6 +473,11 @@ struct HfTaskD0 {
           registry.fill(HIST("hDecLengthVsPtSig"), declengthCandidate, ptCandidate);
           registry.fill(HIST("hDecLengthxyVsPtSig"), declengthxyCandidate, ptCandidate);
           registry.fill(HIST("hMassSigD0"), massD0, ptCandidate, rapidityCandidate);
+          if constexpr (applyMl) {
+            registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], massD0, ptCandidate, candidate.ptBhadMotherPart(), rapidityCandidate, candidate.originMcRec(), SigD0);
+          } else {
+            registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, candidate.ptBhadMotherPart(), rapidityCandidate, candidate.originMcRec(), SigD0);
+          }
         } else {
           registry.fill(HIST("hPtProng0Bkg"), ptProng0, rapidityCandidate);
           registry.fill(HIST("hPtProng1Bkg"), ptProng1, rapidityCandidate);
@@ -406,6 +495,11 @@ struct HfTaskD0 {
           registry.fill(HIST("hMassBkgD0"), massD0, ptCandidate, rapidityCandidate);
           if (candidate.flagMcMatchRec() == -(1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
             registry.fill(HIST("hMassReflBkgD0"), massD0, ptCandidate, rapidityCandidate);
+            if constexpr (applyMl) {
+              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], massD0, ptCandidate, candidate.ptBhadMotherPart(), rapidityCandidate, candidate.originMcRec(), ReflectedD0);
+            } else {
+              registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0, ptCandidate, candidate.ptBhadMotherPart(), rapidityCandidate, candidate.originMcRec(), ReflectedD0);
+            }
           }
         }
       }
@@ -413,10 +507,20 @@ struct HfTaskD0 {
         registry.fill(HIST("hMassSigBkgD0bar"), massD0bar, ptCandidate, rapidityCandidate);
         if (candidate.flagMcMatchRec() == -(1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
           registry.fill(HIST("hMassSigD0bar"), massD0bar, ptCandidate, rapidityCandidate);
+          if constexpr (applyMl) {
+            registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], massD0bar, ptCandidate, candidate.ptBhadMotherPart(), rapidityCandidate, candidate.originMcRec(), SigD0bar);
+          } else {
+            registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, candidate.ptBhadMotherPart(), rapidityCandidate, candidate.originMcRec(), SigD0bar);
+          }
         } else {
           registry.fill(HIST("hMassBkgD0bar"), massD0bar, ptCandidate, rapidityCandidate);
           if (candidate.flagMcMatchRec() == (1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
             registry.fill(HIST("hMassReflBkgD0bar"), massD0bar, ptCandidate, rapidityCandidate);
+            if constexpr (applyMl) {
+              registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], massD0bar, ptCandidate, candidate.ptBhadMotherPart(), rapidityCandidate, candidate.originMcRec(), ReflectedD0bar);
+            } else {
+              registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsD0Type"), massD0bar, ptCandidate, candidate.ptBhadMotherPart(), rapidityCandidate, candidate.originMcRec(), ReflectedD0bar);
+            }
           }
         }
       }
@@ -424,21 +528,26 @@ struct HfTaskD0 {
     // MC gen.
     for (const auto& particle : mcParticles) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) {
-        if (yCandGenMax >= 0. && std::abs(RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassD0)) > yCandGenMax) {
+        if (yCandGenMax >= 0. && std::abs(RecoDecay::y(particle.pVector(), o2::constants::physics::MassD0)) > yCandGenMax) {
           continue;
         }
+        float ptGenB = -1;
         auto ptGen = particle.pt();
-        auto yGen = RecoDecay::y(std::array{particle.px(), particle.py(), particle.pz()}, o2::constants::physics::MassD0);
+        auto yGen = RecoDecay::y(particle.pVector(), o2::constants::physics::MassD0);
         registry.fill(HIST("hPtGen"), ptGen);
         registry.fill(HIST("hPtVsYGen"), ptGen, yGen);
+
         if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
           registry.fill(HIST("hPtGenPrompt"), ptGen);
           registry.fill(HIST("hYGenPrompt"), yGen);
           registry.fill(HIST("hPtVsYGenPrompt"), ptGen, yGen);
+          registry.fill(HIST("hSparseAcc"), ptGen, ptGenB, yGen, 1);
         } else {
+          ptGenB = mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt();
           registry.fill(HIST("hPtGenNonPrompt"), ptGen);
           registry.fill(HIST("hYGenNonPrompt"), yGen);
           registry.fill(HIST("hPtVsYGenNonPrompt"), ptGen, yGen);
+          registry.fill(HIST("hSparseAcc"), ptGen, ptGenB, yGen, 2);
         }
         registry.fill(HIST("hEtaGen"), particle.eta());
       }
@@ -449,7 +558,7 @@ struct HfTaskD0 {
                                soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
                                aod::TracksWMc const& tracks)
   {
-    processMc<aod::hf_cand::VertexerType::DCAFitter>(selectedD0CandidatesMc, mcParticles, tracks);
+    processMc<aod::hf_cand::VertexerType::DCAFitter, false>(selectedD0CandidatesMc, mcParticles, tracks);
   }
   PROCESS_SWITCH(HfTaskD0, processMcWithDCAFitterN, "Process MC with DCAFitterN", false);
 
@@ -457,9 +566,25 @@ struct HfTaskD0 {
                                soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
                                aod::TracksWMc const& tracks)
   {
-    processMc<aod::hf_cand::VertexerType::KfParticle>(selectedD0CandidatesMcKF, mcParticles, tracks);
+    processMc<aod::hf_cand::VertexerType::KfParticle, false>(selectedD0CandidatesMcKF, mcParticles, tracks);
   }
   PROCESS_SWITCH(HfTaskD0, processMcWithKFParticle, "Process MC with KFParticle", false);
+
+  void processMcWithDCAFitterNMl(D0CandidatesMlMc const&,
+                                 soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
+                                 aod::TracksWMc const& tracks)
+  {
+    processMc<aod::hf_cand::VertexerType::DCAFitter, true>(selectedD0CandidatesMlMc, mcParticles, tracks);
+  }
+  PROCESS_SWITCH(HfTaskD0, processMcWithDCAFitterNMl, "Process MC with DCAFitterN and ML selection", false);
+
+  void processMcWithKFParticleMl(D0CandidatesMlMcKF const&,
+                                 soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
+                                 aod::TracksWMc const& tracks)
+  {
+    processMc<aod::hf_cand::VertexerType::KfParticle, true>(selectedD0CandidatesMlMcKF, mcParticles, tracks);
+  }
+  PROCESS_SWITCH(HfTaskD0, processMcWithKFParticleMl, "Process MC with KFParticle and ML selections", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

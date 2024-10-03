@@ -148,8 +148,8 @@ struct HfCandidateSelectorLcParametrizedPid {
   }
 
   void process(aod::HfCand3Prong const& candidates,
-               TracksSel const& barreltracks,
-               aod::McParticles const& mcParticles,
+               TracksSel const&,
+               aod::McParticles const&,
                aod::RICHs const&,
                aod::FRICHs const&)
   {

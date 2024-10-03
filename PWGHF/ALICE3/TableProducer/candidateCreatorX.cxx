@@ -62,6 +62,8 @@ struct HfCandidateCreatorX {
   Configurable<double> yCandMax{"yCandMax", -1., "max. cand. rapidity"};
   Configurable<double> diffMassJpsiMax{"diffMassJpsiMax", 0.07, "max. diff. between Jpsi rec. and PDG mass"};
 
+  o2::vertexing::DCAFitterN<2> df2; // 2-prong vertex fitter (to rebuild Jpsi vertex)
+  o2::vertexing::DCAFitterN<3> df3; // 3-prong vertex fitter
   HfHelper hfHelper;
 
   double massPi{0.};
@@ -83,16 +85,7 @@ struct HfCandidateCreatorX {
   {
     massPi = MassPiPlus;
     massJpsi = MassJPsi;
-  }
 
-  void process(aod::Collision const& collision,
-               soa::Filtered<soa::Join<
-                 aod::HfCand2Prong,
-                 aod::HfSelJpsi>> const& jpsiCands,
-               aod::TracksWCov const& tracks)
-  {
-    // 2-prong vertex fitter (to rebuild Jpsi vertex)
-    o2::vertexing::DCAFitterN<2> df2;
     df2.setBz(bz);
     df2.setPropagateToPCA(propagateToPCA);
     df2.setMaxR(maxR);
@@ -102,8 +95,6 @@ struct HfCandidateCreatorX {
     df2.setUseAbsDCA(useAbsDCA);
     df2.setWeightedFinalPCA(useWeightedFinalPCA);
 
-    // 3-prong vertex fitter
-    o2::vertexing::DCAFitterN<3> df3;
     df3.setBz(bz);
     df3.setPropagateToPCA(propagateToPCA);
     df3.setMaxR(maxR);
@@ -112,7 +103,14 @@ struct HfCandidateCreatorX {
     df3.setMinRelChi2Change(minRelChi2Change);
     df3.setUseAbsDCA(useAbsDCA);
     df3.setWeightedFinalPCA(useWeightedFinalPCA);
+  }
 
+  void process(aod::Collision const& collision,
+               soa::Filtered<soa::Join<
+                 aod::HfCand2Prong,
+                 aod::HfSelJpsi>> const& jpsiCands,
+               aod::TracksWCov const& tracks)
+  {
     // loop over Jpsi candidates
     for (const auto& jpsiCand : jpsiCands) {
       if (!(jpsiCand.hfflag() & 1 << hf_cand_2prong::DecayType::JpsiToEE) && !(jpsiCand.hfflag() & 1 << hf_cand_2prong::DecayType::JpsiToMuMu)) {
@@ -138,7 +136,7 @@ struct HfCandidateCreatorX {
       hCPAJpsi->Fill(jpsiCand.cpa());
       // create Jpsi track to pass to DCA fitter; use cand table + rebuild vertex
       const std::array<float, 3> vertexJpsi = {jpsiCand.xSecondaryVertex(), jpsiCand.ySecondaryVertex(), jpsiCand.zSecondaryVertex()};
-      std::array<float, 3> pvecJpsi = {jpsiCand.px(), jpsiCand.py(), jpsiCand.pz()};
+      std::array<float, 3> pvecJpsi = jpsiCand.pVector();
       auto prong0 = jpsiCand.prong0_as<aod::TracksWCov>();
       auto prong1 = jpsiCand.prong1_as<aod::TracksWCov>();
       auto prong0TrackParCov = getTrackParCov(prong0);
@@ -273,7 +271,7 @@ struct HfCandidateCreatorXMc {
 
   void process(aod::HfCandX const& candidates,
                aod::HfCand2Prong const&,
-               aod::TracksWMc const& tracks,
+               aod::TracksWMc const&,
                aod::McParticles const& mcParticles)
   {
     int indexRec = -1;

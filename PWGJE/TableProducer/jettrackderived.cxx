@@ -48,7 +48,7 @@ struct jetspectraDerivedMaker {
 
   // Custom track cuts for the cut variation study
   TrackSelection customTrackCuts;
-  Configurable<int> itsPattern{"itsPattern", 1, "0 = Run3ITSibAny, 1 = Run3ITSallAny, 2 = Run3ITSall7Layers, 3 = Run3ITSibTwo"};
+  Configurable<int> itsPattern{"itsPattern", 2, "0 = Run3ITSibAny, 1 = Run3ITSibTwo, 2 = Run3ITSallAny, 3 = Run3ITSall7Layers"};
   Configurable<bool> requireITS{"requireITS", true, "Additional cut on the ITS requirement"};
   Configurable<bool> requireTPC{"requireTPC", true, "Additional cut on the TPC requirement"};
   Configurable<bool> requireGoldenChi2{"requireGoldenChi2", true, "Additional cut on the GoldenChi2"};
@@ -56,8 +56,7 @@ struct jetspectraDerivedMaker {
   Configurable<float> minNCrossedRowsOverFindableClustersTPC{"minNCrossedRowsOverFindableClustersTPC", 0.7f, "Additional cut on the minimum value of the ratio between crossed rows and findable clusters in the TPC"};
   Configurable<float> maxChi2PerClusterTPC{"maxChi2PerClusterTPC", 7.f, "Additional cut on the maximum value of the chi2 per cluster in the TPC"};
   Configurable<float> maxChi2PerClusterITS{"maxChi2PerClusterITS", 36.f, "Additional cut on the maximum value of the chi2 per cluster in the ITS"};
-  Configurable<float> maxDcaXYFactor{"maxDcaXYFactor", 1.f, "Additional cut on the maximum value of the DCA xy (multiplicative factor)"};
-  Configurable<float> maxDcaXY{"maxDcaXY", 3.f, "Additional cut on the maximum value of the DCA xy"};
+  Configurable<float> maxDcaXY{"maxDcaXY", 0.25f, "Cut on the maximum value of the DCA xy "};
   Configurable<float> maxDcaZ{"maxDcaZ", 3.f, "Additional cut on the maximum value of the DCA z"};
   Configurable<float> minTPCNClsFound{"minTPCNClsFound", 0.f, "Additional cut on the minimum value of the number of found clusters in the TPC"};
 
@@ -79,8 +78,8 @@ struct jetspectraDerivedMaker {
     LOG(info) << "\tminTPCNClsFound=" << minTPCNClsFound.value;
     LOG(info) << "\tmaxChi2PerClusterITS=" << maxChi2PerClusterITS.value;
     LOG(info) << "\tRequireHitsInITSLayers=" << maxChi2PerClusterITS.value;
-    LOG(info) << "\tmaxDcaZ=" << maxDcaZ.value;
     LOG(info) << "\tmaxDcaXY=" << maxDcaXY.value;
+    LOG(info) << "\tmaxDcaZ=" << maxDcaZ.value;
     LOG(info) << "\tminPt=" << minPt.value;
     LOG(info) << "\tmaxPt=" << maxPt.value;
     LOG(info) << "\tmaxEta=" << ValCutEta.value;
@@ -96,17 +95,14 @@ struct jetspectraDerivedMaker {
     customTrackCuts.SetMaxChi2PerClusterITS(maxChi2PerClusterITS.value);
     customTrackCuts.SetMinNCrossedRowsTPC(minNCrossedRowsTPC.value);
     customTrackCuts.SetMinNClustersTPC(minTPCNClsFound.value);
-    // customTrackCuts.SetRequireHitsInITSLayers(nHits.value, {0, 1}); // one hit in any SPD layer (#hits, {layer0, layer1,...}) -> Defaults (1, {0, 1})
+    // customTrackCuts.SetRequireHitsInITSLayers(nHits.value, {0, 1}); // one hit in any SPD layer (#hits, {layer0, layer1,...})
     customTrackCuts.SetMinNCrossedRowsOverFindableClustersTPC(minNCrossedRowsOverFindableClustersTPC.value);
-    customTrackCuts.SetMaxDcaXYPtDep([](float pt) { return 1e+10; });
     customTrackCuts.SetMaxDcaXY(maxDcaXY.value);
     customTrackCuts.SetMaxDcaZ(maxDcaZ.value);
     customTrackCuts.print();
 
     // event property histograms
     histos.add("EventProp/collisionVtxZ", "Collsion Vertex Z;#it{Vtx}_{z} [cm];number of entries", HistType::kTH1F, {{nBins, -20, 20}});
-    histos.add("EventProp/collisionVtxZnoSel", "Collsion Vertex Z without event selection;#it{Vtx}_{z} [cm];number of entries", HistType::kTH1F, {{nBins, -20, 20}});
-    histos.add("EventProp/collisionVtxZSel8", "Collsion Vertex Z with event selection;#it{Vtx}_{z} [cm];number of entries", HistType::kTH1F, {{nBins, -20, 20}});
     histos.add("EventProp/sampledvertexz", "Sampled collsion Vertex Z with event (sel8) selection;#it{Vtx}_{z} [cm];number of entries", HistType::kTH1F, {{nBins, -20, 20}});
     histos.add("EventProp/NumContrib", "Number of contributors to vertex of collision; number of contributors to vtx; number of entries", HistType::kTH1F, {{nBins, 0, 600}});
     histos.add("EventProp/rejectedCollId", "CollisionId of collisions that did not pass the event selection; collisionId; number of entries", HistType::kTH1F, {{10, 0, 5}});
@@ -155,55 +151,74 @@ struct jetspectraDerivedMaker {
     return true;
   }
 
+  Preslice<aod::Track> trackPerColl = aod::track::collisionId;
   Produces<o2::aod::JeTracks> tableTrack;
+  Produces<o2::aod::JeColls> tableColl;
   using CollisionCandidate = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
   using TrackCandidates = soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::TracksCov>;
   unsigned int randomSeed = 0;
   void processData(CollisionCandidate const& collisions,
-                   TrackCandidates const& tracks)
+                   TrackCandidates const& tracks, aod::BCs const&)
   {
     for (const auto& collision : collisions) {
       if (!isEventSelected(collision)) {
         histos.fill(HIST("EventProp/rejectedCollId"), 1);
-      }
-    }
-    tableTrack.reserve(tracks.size());
-    for (const auto& trk : tracks) {
-      if (!customTrackCuts.IsSelected(trk)) { // we fill all tracks that have a collision(rejected or not) and pass this check !
         continue;
       } else {
-        tableTrack(trk.collisionId(),
-                   trk.trackTime(),
-                   trk.signed1Pt(), trk.eta(), trk.phi(), trk.pt(),
-                   trk.sigma1Pt(),
-                   trk.alpha(),
-                   trk.x(), trk.y(), trk.z(),
-                   trk.snp(),
-                   trk.tgl(),
-                   trk.isPVContributor(),
-                   trk.hasTRD(),
-                   trk.hasITS(),
-                   trk.hasTPC(),
-                   trk.isGlobalTrack(),
-                   trk.isGlobalTrackWoDCA(),
-                   trk.isGlobalTrackWoPtEta(),
-                   trk.flags(),
-                   trk.trackType(),
-                   trk.length(),
-                   trk.tpcChi2NCl(), trk.itsChi2NCl(), trk.tofChi2(),
-                   trk.tpcNClsShared(),
-                   trk.tpcNClsFindable(),
-                   trk.tpcNClsFindableMinusFound(),
-                   trk.tpcNClsFindableMinusCrossedRows(),
-                   trk.itsClusterMap(),
-                   trk.itsNCls(),
-                   trk.tpcFractionSharedCls(),
-                   trk.tpcNClsFound(),
-                   trk.tpcNClsCrossedRows(),
-                   trk.tpcCrossedRowsOverFindableCls(),
-                   trk.tpcFoundOverFindableCls(),
-                   trk.dcaXY(),
-                   trk.dcaZ());
+        auto tracksInCollision = tracks.sliceBy(trackPerColl, collision.globalIndex());
+        tableColl(collision.globalIndex(),
+                  collision.collisionTime(),
+                  collision.numContrib(),
+                  collision.posX(),
+                  collision.posY(),
+                  collision.posZ(),
+                  collision.sel8(),
+                  tracksInCollision.size(),
+                  collision.multNTracksPV(),
+                  collision.multFT0A(),
+                  collision.multFT0C(),
+                  collision.centFT0A(),
+                  collision.centFT0C(),
+                  collision.bc().runNumber());
+        tableTrack.reserve(tracks.size());
+        for (const auto& trk : tracksInCollision) {
+          if (!customTrackCuts.IsSelected(trk)) {
+            continue;
+          } else {
+            tableTrack(trk.collisionId(),
+                       trk.trackTime(),
+                       trk.signed1Pt(), trk.eta(), trk.phi(), trk.pt(),
+                       trk.sigma1Pt(),
+                       trk.alpha(),
+                       trk.x(), trk.y(), trk.z(),
+                       trk.snp(),
+                       trk.tgl(),
+                       trk.isPVContributor(),
+                       trk.hasTRD(),
+                       trk.hasITS(),
+                       trk.hasTPC(),
+                       trk.isGlobalTrack(),
+                       trk.isGlobalTrackWoDCA(),
+                       trk.isGlobalTrackWoPtEta(),
+                       trk.flags(),
+                       trk.trackType(),
+                       trk.length(),
+                       trk.tpcChi2NCl(), trk.itsChi2NCl(), trk.tofChi2(),
+                       trk.tpcNClsShared(),
+                       trk.tpcNClsFindable(),
+                       trk.tpcNClsFindableMinusFound(),
+                       trk.tpcNClsFindableMinusCrossedRows(),
+                       trk.itsClusterMap(),
+                       trk.itsNCls(),
+                       trk.tpcFractionSharedCls(),
+                       trk.tpcNClsFound(),
+                       trk.tpcNClsCrossedRows(),
+                       trk.tpcCrossedRowsOverFindableCls(),
+                       trk.tpcFoundOverFindableCls(),
+                       trk.dcaXY(),
+                       trk.dcaZ());
+          }
+        }
       }
     }
   }

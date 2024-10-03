@@ -268,7 +268,7 @@ struct UDTutorial03a {
   }
 
   // ...............................................................................................................
-  void processMCTruth(aod::McCollisions const& mccollisions, CCs const& collisions, aod::McParticles const& McParts, TCs const& tracks)
+  void processMCTruth(aod::McCollisions const& mccollisions, CCs const& /*collisions*/, aod::McParticles const& McParts, TCs const& /*tracks*/)
   {
     // number of McCollisions in DF
     if (verbosity > 0) {
@@ -329,7 +329,7 @@ struct UDTutorial03a {
   PROCESS_SWITCH(UDTutorial03a, processMCTruth, "Process MC truth", true);
 
   // ...............................................................................................................
-  void processReco(CC const& collision, TCs const& tracks, aod::McCollisions const& mccollisions, aod::McParticles const& McParts)
+  void processReco(CC const& collision, TCs const& tracks, aod::McCollisions const& /*mccollisions*/, aod::McParticles const& /*McParts*/)
   {
     registry.get<TH1>(HIST("Reco/Stat"))->Fill(0., 1.);
     registry.get<TH1>(HIST("Reco/nTracks"))->Fill(tracks.size(), 1.);

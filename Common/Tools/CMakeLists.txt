@@ -10,21 +10,16 @@
 # or submit itself to any jurisdiction.
 
 add_subdirectory(Multiplicity)
+add_subdirectory(PID)
 
 o2physics_add_executable(aod-data-model-graph
-                  SOURCES aodDataModelGraph.cxx
-                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                 )
-
-o2physics_add_executable(pidparam-tpc-response
-                  SOURCES handleParamTPCResponse.cxx
-                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                 )
+    SOURCES aodDataModelGraph.cxx
+    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore)
 
 o2physics_add_library(trackSelectionRequest
-               SOURCES trackSelectionRequest.cxx
-               PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore)
+    SOURCES trackSelectionRequest.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore)
 
 o2physics_target_root_dictionary(trackSelectionRequest
-                          HEADERS trackSelectionRequest.h
-                          LINKDEF trackSelectionRequestLinkDef.h)
+    HEADERS trackSelectionRequest.h
+    LINKDEF trackSelectionRequestLinkDef.h)

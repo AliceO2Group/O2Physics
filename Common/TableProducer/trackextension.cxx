@@ -59,7 +59,7 @@ struct TrackExtension {
   int mRunNumber;
   float mMagField;
 
-  void init(InitContext& context)
+  void init(InitContext&)
   {
     using namespace analysis::trackextension;
 

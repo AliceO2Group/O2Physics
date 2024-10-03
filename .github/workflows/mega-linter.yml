@@ -23,13 +23,12 @@ jobs:
     steps:
       # Git Checkout
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           # Checkout the HEAD of the PR instead of the merge commit.
-          # This may include unrelated files if the PR branch is not up to date with the upstream.
-          # ref: ${{ github.event.pull_request.head.sha }}
-          # Checkout the merge commit.
-          ref: refs/pull/${{ github.event.number }}/merge
+          ref: ${{ github.event.pull_request.head.sha }}
+          # Checkout the merge commit. (If a fixing PR is made, it will include also missing commits from upstream.)
+          # ref: refs/pull/${{ github.event.number }}/merge
           fetch-depth: 0
           # So we can use secrets.ALIBUILD_GITHUB_TOKEN to push later.
           persist-credentials: false
@@ -39,7 +38,7 @@ jobs:
         id: ml
         # You can override MegaLinter flavor used to have faster performances
         # More info at https://megalinter.io/flavors/
-        uses: oxsecurity/megalinter@v7
+        uses: oxsecurity/megalinter@v8
         env:
           # All available variables are described in documentation:
           # https://megalinter.io/configuration/
@@ -47,6 +46,16 @@ jobs:
           # master. Override with true if you always want to lint all sources.
           VALIDATE_ALL_CODEBASE: false
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Upload MegaLinter artifacts
+      - name: Archive production artifacts
+        uses: actions/upload-artifact@v4
+        if: success() || failure()
+        with:
+          name: MegaLinter reports
+          path: |
+            megalinter-reports
+            mega-linter.log
 
       # Create or delete the cleanup branch
       - name: Update cleanup branch

@@ -60,6 +60,8 @@ struct HfCandidateCreatorXicc {
   Configurable<int> selectionFlagXic{"selectionFlagXic", 1, "Selection Flag for Xic"};
   Configurable<double> cutPtPionMin{"cutPtPionMin", 1., "min. pt pion track"};
 
+  o2::vertexing::DCAFitterN<3> df3; // 3-prong vertex fitter to rebuild the Xic vertex
+  o2::vertexing::DCAFitterN<2> df2; // 2-prong vertex fitter to build the Xicc vertex
   HfHelper hfHelper;
 
   double massPi{0.};
@@ -78,14 +80,7 @@ struct HfCandidateCreatorXicc {
     massPi = MassPiPlus;
     massK = MassKPlus;
     massXic = MassXiCPlus;
-  }
 
-  void process(aod::Collision const& collision,
-               soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi>> const& xicCands,
-               aod::TracksWCov const& tracks)
-  {
-    // 3-prong vertex fitter to rebuild the Xic vertex
-    o2::vertexing::DCAFitterN<3> df3;
     df3.setBz(bz);
     df3.setPropagateToPCA(propagateToPCA);
     df3.setMaxR(maxR);
@@ -95,8 +90,6 @@ struct HfCandidateCreatorXicc {
     df3.setUseAbsDCA(useAbsDCA);
     df3.setWeightedFinalPCA(useWeightedFinalPCA);
 
-    // 2-prong vertex fitter to build the Xicc vertex
-    o2::vertexing::DCAFitterN<2> df2;
     df2.setBz(bz);
     df2.setPropagateToPCA(propagateToPCA);
     df2.setMaxR(maxR);
@@ -105,7 +98,12 @@ struct HfCandidateCreatorXicc {
     df2.setMinRelChi2Change(minRelChi2Change);
     df2.setUseAbsDCA(useAbsDCA);
     df2.setWeightedFinalPCA(useWeightedFinalPCA);
+  }
 
+  void process(aod::Collision const&,
+               soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelXicToPKPi>> const& xicCands,
+               aod::TracksWCov const& tracks)
+  {
     for (const auto& xicCand : xicCands) {
       if (!(xicCand.hfflag() & 1 << o2::aod::hf_cand_3prong::XicToPKPi)) {
         continue;
@@ -133,8 +131,8 @@ struct HfCandidateCreatorXicc {
       trackParVar1.propagateTo(secondaryVertex[0], bz);
       trackParVar2.propagateTo(secondaryVertex[0], bz);
 
-      std::array<float, 3> pvecpK = {track0.px() + track1.px(), track0.py() + track1.py(), track0.pz() + track1.pz()};
-      std::array<float, 3> pvecxic = {pvecpK[0] + track2.px(), pvecpK[1] + track2.py(), pvecpK[2] + track2.pz()};
+      std::array<float, 3> pvecpK = RecoDecay::pVec(track0.pVector(), track1.pVector());
+      std::array<float, 3> pvecxic = RecoDecay::pVec(pvecpK, track2.pVector());
       auto trackpK = o2::dataformats::V0(df3.getPCACandidatePos(), pvecpK, df3.calcPCACovMatrixFlat(), trackParVar0, trackParVar1);
       auto trackxic = o2::dataformats::V0(df3.getPCACandidatePos(), pvecxic, df3.calcPCACovMatrixFlat(), trackpK, trackParVar2);
 
@@ -215,7 +213,7 @@ struct HfCandidateCreatorXiccMc {
 
   void process(aod::HfCandXicc const& candidates,
                aod::HfCand3Prong const&,
-               aod::TracksWMc const& tracks,
+               aod::TracksWMc const&,
                aod::McParticles const& mcParticles)
   {
     int indexRec = -1;

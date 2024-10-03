@@ -57,10 +57,15 @@ enum class InputFeaturesXicToPKPi : uint8_t {
   impactParameterXY0,
   impactParameterXY1,
   impactParameterXY2,
+  impactParameterZ0,
+  impactParameterZ1,
+  impactParameterZ2,
   decayLength,
+  decayLengthXY,
   decayLengthXYNormalised,
   cpa,
   cpaXY,
+  chi2PCA,
   tpcNSigmaP0,  // 0
   tpcNSigmaKa0, // 0
   tpcNSigmaPi0, // 0
@@ -78,7 +83,17 @@ enum class InputFeaturesXicToPKPi : uint8_t {
   tofNSigmaPi1,
   tofNSigmaP2,
   tofNSigmaKa2,
-  tofNSigmaPi2
+  tofNSigmaPi2,
+  tpcTofNSigmaPi0,
+  tpcTofNSigmaPi1,
+  tpcTofNSigmaPi2,
+  tpcTofNSigmaKa0,
+  tpcTofNSigmaKa1,
+  tpcTofNSigmaKa2,
+  tpcTofNSigmaPr0,
+  tpcTofNSigmaPr1,
+  tpcTofNSigmaPr2
+
 };
 
 template <typename TypeOutputScore = float>
@@ -110,10 +125,15 @@ class HfMlResponseXicToPKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_XIC_FULL(candidate, impactParameterXY0, impactParameter0);
         CHECK_AND_FILL_VEC_XIC_FULL(candidate, impactParameterXY1, impactParameter1);
         CHECK_AND_FILL_VEC_XIC_FULL(candidate, impactParameterXY2, impactParameter2);
+        CHECK_AND_FILL_VEC_XIC(impactParameterZ0);
+        CHECK_AND_FILL_VEC_XIC(impactParameterZ1);
+        CHECK_AND_FILL_VEC_XIC(impactParameterZ2);
         CHECK_AND_FILL_VEC_XIC(decayLength);
+        CHECK_AND_FILL_VEC_XIC(decayLengthXY);
         CHECK_AND_FILL_VEC_XIC(decayLengthXYNormalised);
         CHECK_AND_FILL_VEC_XIC(cpa);
         CHECK_AND_FILL_VEC_XIC(cpaXY);
+        CHECK_AND_FILL_VEC_XIC(chi2PCA);
         // TPC PID variables
         CHECK_AND_FILL_VEC_XIC_FULL(prong0, tpcNSigmaP0, tpcNSigmaPr);
         CHECK_AND_FILL_VEC_XIC_FULL(prong0, tpcNSigmaKa0, tpcNSigmaKa);
@@ -134,6 +154,16 @@ class HfMlResponseXicToPKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_XIC_FULL(prong2, tofNSigmaP2, tofNSigmaPr);
         CHECK_AND_FILL_VEC_XIC_FULL(prong2, tofNSigmaKa2, tofNSigmaKa);
         CHECK_AND_FILL_VEC_XIC_FULL(prong2, tofNSigmaPi2, tofNSigmaPi);
+        // Combined PID variables
+        CHECK_AND_FILL_VEC_XIC_FULL(prong0, tpcTofNSigmaPi0, tpcTofNSigmaPi);
+        CHECK_AND_FILL_VEC_XIC_FULL(prong1, tpcTofNSigmaPi1, tpcTofNSigmaPi);
+        CHECK_AND_FILL_VEC_XIC_FULL(prong2, tpcTofNSigmaPi2, tpcTofNSigmaPi);
+        CHECK_AND_FILL_VEC_XIC_FULL(prong0, tpcTofNSigmaKa0, tpcTofNSigmaKa);
+        CHECK_AND_FILL_VEC_XIC_FULL(prong1, tpcTofNSigmaKa1, tpcTofNSigmaKa);
+        CHECK_AND_FILL_VEC_XIC_FULL(prong2, tpcTofNSigmaKa2, tpcTofNSigmaKa);
+        CHECK_AND_FILL_VEC_XIC_FULL(prong0, tpcTofNSigmaPr0, tpcTofNSigmaPr);
+        CHECK_AND_FILL_VEC_XIC_FULL(prong1, tpcTofNSigmaPr1, tpcTofNSigmaPr);
+        CHECK_AND_FILL_VEC_XIC_FULL(prong2, tpcTofNSigmaPr2, tpcTofNSigmaPr);
       }
     }
 
@@ -151,10 +181,15 @@ class HfMlResponseXicToPKPi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_XIC(impactParameterXY0),
       FILL_MAP_XIC(impactParameterXY1),
       FILL_MAP_XIC(impactParameterXY2),
+      FILL_MAP_XIC(impactParameterZ0),
+      FILL_MAP_XIC(impactParameterZ1),
+      FILL_MAP_XIC(impactParameterZ2),
       FILL_MAP_XIC(decayLength),
+      FILL_MAP_XIC(decayLengthXY),
       FILL_MAP_XIC(decayLengthXYNormalised),
       FILL_MAP_XIC(cpa),
       FILL_MAP_XIC(cpaXY),
+      FILL_MAP_XIC(chi2PCA),
       // TPC PID variables
       FILL_MAP_XIC(tpcNSigmaP0),
       FILL_MAP_XIC(tpcNSigmaKa0),
@@ -174,7 +209,17 @@ class HfMlResponseXicToPKPi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_XIC(tofNSigmaPi1),
       FILL_MAP_XIC(tofNSigmaP2),
       FILL_MAP_XIC(tofNSigmaKa2),
-      FILL_MAP_XIC(tofNSigmaPi2)};
+      FILL_MAP_XIC(tofNSigmaPi2),
+      // Combined PID variables
+      FILL_MAP_XIC(tpcTofNSigmaPi0),
+      FILL_MAP_XIC(tpcTofNSigmaPi1),
+      FILL_MAP_XIC(tpcTofNSigmaPi2),
+      FILL_MAP_XIC(tpcTofNSigmaKa0),
+      FILL_MAP_XIC(tpcTofNSigmaKa1),
+      FILL_MAP_XIC(tpcTofNSigmaKa2),
+      FILL_MAP_XIC(tpcTofNSigmaPr0),
+      FILL_MAP_XIC(tpcTofNSigmaPr1),
+      FILL_MAP_XIC(tpcTofNSigmaPr2)};
   }
 };
 

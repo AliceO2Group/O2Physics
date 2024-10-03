@@ -146,7 +146,11 @@ void MCProng::Print() const
   for (int i = 0; i < fNGenerations; i++) {
     std::cout << "Generation #" << i << " PDGcode(" << fPDGcodes[i] << ") CheckBothCharges(" << fCheckBothCharges[i]
               << ") ExcludePDG(" << fExcludePDG[i] << ")  SourceBits(" << fSourceBits[i] << ") ExcludeSource(" << fExcludeSource[i]
-              << ") UseANDonSource(" << fUseANDonSourceBitMap[i] << ") CheckGenerationsInTime(" << fCheckGenerationsInTime << ") PDGInHistory(" << fPDGInHistory[i] << ") ExcludePDGInHistory(" << fExcludePDGInHistory[i] << ")" << std::endl;
+              << ") UseANDonSource(" << fUseANDonSourceBitMap[i] << ") CheckGenerationsInTime(" << fCheckGenerationsInTime << ")";
+    for (int j = 0; j < fPDGInHistory.size(); j++) {
+      std::cout << " #" << j << " PDGInHistory(" << fPDGInHistory[j] << ") ExcludePDGInHistory(" << fExcludePDGInHistory[j] << ")";
+    }
+    std::cout << std::endl;
   }
 }
 
@@ -408,6 +412,12 @@ bool MCProng::ComparePDG(int pdg, int prongPDG, bool checkBothCharges, bool excl
                  absPDG == 113 || // rho
                  absPDG == 223 || // omega
                  absPDG == 333    // phi
+        ;
+      break;
+    case 904:
+      decision = absPDG == 20443 || // chic1
+                 absPDG == 445 ||   // chic2
+                 absPDG == 10441    // chic0
         ;
       break;
     default: // all explicit PDG code cases

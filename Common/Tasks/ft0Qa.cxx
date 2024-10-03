@@ -232,7 +232,7 @@ struct ft0QaTask {
   void
     processCollisions(soa::Join<aod::Collisions, aod::EvSels, aod::Mults,
                                 aod::FT0sCorrected>::iterator const& collision,
-                      aod::FT0s const& ft0s, aod::FV0As const& fv0s)
+                      aod::FT0s const&, aod::FV0As const&)
   {
 
     if (selection == 8 && !collision.sel8()) {
@@ -405,7 +405,7 @@ struct ft0QaTask {
 
     histos.fill(HIST("hBcCounterAll"), 1);
 
-    float multFV0A = 0.f;
+    // float multFV0A = 0.f;
     float multFT0A = 0.f;
     float multFT0C = 0.f;
     float multFT0M = 0.f;
@@ -503,12 +503,12 @@ struct ft0QaTask {
       }
     }
 
-    if (bc.has_fv0a()) {
-      auto fv0a = bc.fv0a();
-      for (auto amplitude : fv0a.amplitude()) {
-        multFV0A += amplitude;
-      }
-    }
+    // if (bc.has_fv0a()) {
+    //   auto fv0a = bc.fv0a();
+    //   for (auto amplitude : fv0a.amplitude()) {
+    //     multFV0A += amplitude;
+    //   }
+    // }
   }
   PROCESS_SWITCH(ft0QaTask, processBCs, "per-BC analysis", true);
 

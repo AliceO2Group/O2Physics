@@ -133,8 +133,8 @@ struct vertexingfwd {
     // initCCDB(bcs.begin()); if Bz is needed
     ambTrackIds.clear();
 
-    float dcaXY;
-    float bestDCA, bestDCAX, bestDCAY;
+    float dcaXY = 0.f;
+    float bestDCA = 0.f, bestDCAX = 0.f, bestDCAY = 0.f;
     o2::track::TrackParCovFwd bestTrackPar;
 
     for (auto& atrack : atracks) {
@@ -238,8 +238,7 @@ struct vertexingfwd {
         if (collOrig.mcCollisionId() == mcCollID) { // initially correctly assigned
           registry.fill(HIST("AmbiguousTrackStatus"), 5);
         }
-      } else // the track has a collision and track.collisionId() == bestCol
-      {
+      } else { // the track has a collision and track.collisionId() == bestCol
         if (track.collisionId() != bestCol) {
           printf("------------------- PROBLEM HERE track.collisionId() %d, bestCollid %d\n", track.collisionId(), bestCol);
         }

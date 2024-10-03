@@ -22,6 +22,7 @@
 
 #include <vector>
 #include <memory>
+#include <utility>
 
 #include "CommonConstants/LHCConstants.h"
 #include "Framework/AnalysisDataModel.h"
@@ -120,108 +121,156 @@ class CollisionAssociation
                         TTracksUnfiltered const& tracksUnfiltered,
                         TTracks const& tracks,
                         TAmbiTracks const& ambiguousTracks,
-                        o2::aod::BCs const& bcs,
+                        o2::aod::BCs const&,
                         Assoc& association,
                         RevIndices& reverseIndices)
   {
-    // cache globalBC
-    std::vector<uint64_t> globalBC;
-    for (const auto& track : tracks) {
+    // cache globalBC and track time in BC for optimization
+    std::vector<int64_t> globalBC;
+    std::vector<int64_t> trackBCCache;
+    std::vector<std::pair<typename TTracks::iterator, typename TTracks::iterator>> trackIterationWindows; // continous regions in which we can count on increasing globalBC numbers
+    globalBC.reserve(tracks.size());
+    trackBCCache.reserve(tracks.size());
+    auto trackBegin = tracks.begin();
+    int lastCollisionId = 0;
+    if (tracks.size() > 0) {
+      lastCollisionId = trackBegin.collisionId();
+    }
+    auto track = trackBegin;
+    for (; track != tracks.end(); ++track) {
+      int64_t trackBC = -1;
       if (track.has_collision()) {
-        globalBC.push_back(track.collision().bc().globalBC());
-      } else {
+        trackBC = track.collision().bc().globalBC();
+      } else if (mIncludeUnassigned) {
         for (const auto& ambTrack : ambiguousTracks) {
           if constexpr (isCentralBarrel) { // FIXME: to be removed as soon as it is possible to use getId<Table>() for joined tables
             if (ambTrack.trackId() == track.globalIndex()) {
               if (!ambTrack.has_bc() || ambTrack.bc().size() == 0) {
-                globalBC.push_back(-1);
                 break;
               }
-              globalBC.push_back(ambTrack.bc().begin().globalBC());
+              trackBC = ambTrack.bc().begin().globalBC();
               break;
             }
           } else {
             if (ambTrack.template getId<TTracks>() == track.globalIndex()) {
-              globalBC.push_back(ambTrack.bc().begin().globalBC());
+              trackBC = ambTrack.bc().begin().globalBC();
               break;
             }
           }
         }
       }
+      globalBC.push_back(trackBC);
+      trackBCCache.push_back(trackBC + track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS);
+      // find uniform blocks
+      if ((track.collisionId() < lastCollisionId) || (lastCollisionId < 0 && track.collisionId() >= 0)) {
+        if (lastCollisionId >= 0 || mIncludeUnassigned) {
+          LOGP(debug, "Found track block from {} to {}, current id {}, last id {}", trackBegin.filteredIndex(), track.filteredIndex() - 1, track.collisionId(), lastCollisionId);
+          trackIterationWindows.push_back(std::make_pair(trackBegin, track));
+        }
+        trackBegin = track;
+      }
+      lastCollisionId = track.collisionId();
+    }
+    // trackIterationWindows.push_back(std::make_pair(trackBegin, tracks.end()));
+    if (lastCollisionId >= 0 || mIncludeUnassigned) {
+      LOGP(debug, "Found track block from {} to {}", trackBegin.filteredIndex(), tracks.size() - 1);
+      trackIterationWindows.push_back(std::make_pair(trackBegin, track));
     }
 
     // define vector of vectors to store indices of compatible collisions per track
     std::vector<std::unique_ptr<std::vector<int>>> collsPerTrack(tracksUnfiltered.size());
 
     // loop over collisions to find time-compatible tracks
-    auto trackBegin = tracks.begin();
-    auto bOffsetMax = mBcWindowForOneSigma * mNumSigmaForTimeCompat + mTimeMargin / o2::constants::lhc::LHCBunchSpacingNS;
+    int64_t bcOffsetMax = mBcWindowForOneSigma * mNumSigmaForTimeCompat + mTimeMargin / o2::constants::lhc::LHCBunchSpacingNS;
     for (const auto& collision : collisions) {
       const float collTime = collision.collisionTime();
       const float collTimeRes2 = collision.collisionTimeRes() * collision.collisionTimeRes();
       uint64_t collBC = collision.bc().globalBC();
-      // bool iteratorMoved = false;
-      for (auto track = trackBegin; track != tracks.end(); ++track) {
-        if (!mIncludeUnassigned && !track.has_collision()) {
-          continue;
-        }
 
-        float trackTime = track.trackTime();
-        if (globalBC[track.filteredIndex()] < 0) {
-          continue;
-        }
-        const int64_t bcOffsetWindow = (int64_t)globalBC[track.filteredIndex()] + trackTime / o2::constants::lhc::LHCBunchSpacingNS - (int64_t)collBC;
-        if (std::abs(bcOffsetWindow) > bOffsetMax) {
-          continue;
-        }
-
-        float trackTimeRes = track.trackTimeRes();
-        if constexpr (isCentralBarrel) {
-          if (mUsePvAssociation && track.isPVContributor()) {
-            trackTime = track.collision().collisionTime();    // if PV contributor, we assume the time to be the one of the collision
-            trackTimeRes = o2::constants::lhc::LHCBunchSpacingNS; // 1 BC
+      // This is done per block to allow optimization below. Within each block the globalBC increase continously
+      for (auto& iterationWindow : trackIterationWindows) {
+        bool iteratorMoved = false;
+        const bool isAssignedTrackWindow = (iterationWindow.first != iterationWindow.second) ? iterationWindow.first.has_collision() : false;
+        for (auto track = iterationWindow.first; track != iterationWindow.second; ++track) {
+          int64_t trackBC = globalBC[track.filteredIndex()];
+          if (trackBC < 0) {
+            continue;
           }
-        }
 
-        const int64_t bcOffset = (int64_t)globalBC[track.filteredIndex()] - (int64_t)collBC;
-        const float deltaTime = trackTime - collTime + bcOffset * o2::constants::lhc::LHCBunchSpacingNS;
-        float sigmaTimeRes2 = collTimeRes2 + trackTimeRes * trackTimeRes;
-        LOGP(debug, "collision time={}, collision time res={}, track time={}, track time res={}, bc collision={}, bc track={}, delta time={}", collTime, collision.collisionTimeRes(), track.trackTime(), track.trackTimeRes(), collBC, globalBC[track.filteredIndex()], deltaTime);
-
-        // optimization to avoid looping over the full track list each time. This assumes that tracks are sorted by BCs (which they should be because collisions are sorted by BCs)
-        // NOTE this does not work anymore if mIncludeUnassigned is set as the unassigned blocks can be somewhere (and we can have merged DFs, too)
-        // if (!iteratorMoved && bcOffset > -bOffsetMax) {
-        //   trackBegin.setCursor(track.filteredIndex());
-        //   iteratorMoved = true;
-        //   LOGP(debug, "Moving iterator begin {}", track.globalIndex());
-        // } else if (bcOffset > bOffsetMax) {
-        //   LOGP(debug, "Stopping iterator {}", track.globalIndex());
-        //   break;
-        // }
-
-        float thresholdTime = 0.;
-        if constexpr (isCentralBarrel) {
-          if (mUsePvAssociation && track.isPVContributor()) {
-            thresholdTime = trackTimeRes;
-          } else if (TESTBIT(track.flags(), o2::aod::track::TrackTimeResIsRange)) {
-            thresholdTime = std::sqrt(sigmaTimeRes2) + mTimeMargin;
-          } else {
-            thresholdTime = mNumSigmaForTimeCompat * std::sqrt(sigmaTimeRes2) + mTimeMargin;
-          }
-        } else {
-          thresholdTime = mNumSigmaForTimeCompat * std::sqrt(sigmaTimeRes2) + mTimeMargin;
-        }
-
-        if (std::abs(deltaTime) < thresholdTime) {
-          const auto collIdx = collision.globalIndex();
-          const auto trackIdx = track.globalIndex();
-          LOGP(debug, "Filling track id {} for coll id {}", trackIdx, collIdx);
-          association(collIdx, trackIdx);
-          if (mFillTableOfCollIdsPerTrack) {
-            if (collsPerTrack[trackIdx] == nullptr) {
-              collsPerTrack[trackIdx] = std::make_unique<std::vector<int>>();
+          // Optimization to avoid looping over the full track list each time. This builds on that tracks are sorted by BCs (which they should be because collisions are sorted by BCs)
+          const int64_t bcOffset = trackBC - (int64_t)collBC;
+          if constexpr (isCentralBarrel) {
+            // only for blocks with collision association
+            if (isAssignedTrackWindow) {
+              constexpr int margin = 200;
+              if (!iteratorMoved && bcOffset > -bcOffsetMax - margin) {
+                iterationWindow.first.setCursor(track.filteredIndex());
+                iteratorMoved = true;
+                LOGP(debug, "Moving iterator begin {}", track.filteredIndex());
+              } else if (bcOffset > bcOffsetMax + margin) {
+                LOGP(debug, "Stopping iterator {}", track.filteredIndex());
+                break;
+              }
             }
-            collsPerTrack[trackIdx].get()->push_back(collIdx);
+          }
+
+          int64_t bcOffsetWindow = trackBCCache[track.filteredIndex()] - (int64_t)collBC;
+          if (std::abs(bcOffsetWindow) > bcOffsetMax) {
+            continue;
+          }
+
+          float trackTime = 0;
+          float trackTimeRes = 0;
+          if constexpr (isCentralBarrel) {
+            if (mUsePvAssociation && track.isPVContributor()) {
+              trackTime = track.collision().collisionTime();        // if PV contributor, we assume the time to be the one of the collision
+              trackTimeRes = o2::constants::lhc::LHCBunchSpacingNS; // 1 BC
+            } else {
+              trackTime = track.trackTime();
+              trackTimeRes = track.trackTimeRes();
+            }
+          } else {
+            trackTime = track.trackTime();
+            trackTimeRes = track.trackTimeRes();
+          }
+
+          const float deltaTime = trackTime - collTime + bcOffset * o2::constants::lhc::LHCBunchSpacingNS;
+          float sigmaTimeRes2 = collTimeRes2 + trackTimeRes * trackTimeRes;
+          LOGP(debug, "collision time={}, collision time res={}, track time={}, track time res={}, bc collision={}, bc track={}, delta time={}", collTime, collision.collisionTimeRes(), track.trackTime(), track.trackTimeRes(), collBC, trackBC, deltaTime);
+
+          float thresholdTime = 0.;
+          if constexpr (isCentralBarrel) {
+            if (mUsePvAssociation && track.isPVContributor()) {
+              thresholdTime = trackTimeRes;
+            } else if (TESTBIT(track.flags(), o2::aod::track::TrackTimeResIsRange)) {
+              // the track time resolution is a range, not a gaussian resolution
+              thresholdTime = trackTimeRes + mNumSigmaForTimeCompat * std::sqrt(collTimeRes2) + mTimeMargin;
+            } else {
+              thresholdTime = mNumSigmaForTimeCompat * std::sqrt(sigmaTimeRes2) + mTimeMargin;
+            }
+          } else {
+            // the track is not a central track
+            if constexpr (TTracks::template contains<o2::aod::MFTTracks>()) {
+              // then the track is an MFT track, or an MFT track with additionnal joined info
+              // in this case TrackTimeResIsRange
+              thresholdTime = trackTimeRes + mNumSigmaForTimeCompat * std::sqrt(collTimeRes2) + mTimeMargin;
+            } else if constexpr (TTracks::template contains<o2::aod::FwdTracks>()) {
+              // the track is a fwd track, with a gaussian time resolution
+              thresholdTime = mNumSigmaForTimeCompat * std::sqrt(sigmaTimeRes2) + mTimeMargin;
+            }
+          }
+
+          if (std::abs(deltaTime) < thresholdTime) {
+            const auto collIdx = collision.globalIndex();
+            const auto trackIdx = track.globalIndex();
+            LOGP(debug, "Filling track id {} for coll id {}", trackIdx, collIdx);
+            association(collIdx, trackIdx);
+            if (mFillTableOfCollIdsPerTrack) {
+              if (collsPerTrack[trackIdx] == nullptr) {
+                collsPerTrack[trackIdx] = std::make_unique<std::vector<int>>();
+              }
+              collsPerTrack[trackIdx].get()->push_back(collIdx);
+            }
           }
         }
       }

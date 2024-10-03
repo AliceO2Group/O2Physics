@@ -73,10 +73,10 @@ struct ecalQaMc {
 
   using Trks = soa::Join<aod::Tracks, aod::ECALTracksIndex, aod::TracksExtra>;
   void process(const soa::Join<aod::McParticles, aod::ECALMcPartIndex>& mcParticles,
-               const Trks& tracks,
-               const aod::McTrackLabels& labels,
-               const aod::ECALs& ecals,
-               const aod::Collisions& colls)
+               const Trks&,
+               const aod::McTrackLabels&,
+               const aod::ECALs&,
+               const aod::Collisions&)
   {
     for (auto& particle : mcParticles) {
       if (!particle.has_ecal())

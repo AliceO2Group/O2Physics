@@ -67,7 +67,7 @@ struct qaCascades {
                        ((applyEvSel.node() == 1) && (o2::aod::evsel::sel7 == true)) ||
                        ((applyEvSel.node() == 2) && (o2::aod::evsel::sel8 == true));
 
-  void process(soa::Filtered<CollisionCandidates>::iterator const& collision, aod::CascDataExt const& cascades)
+  void process(soa::Filtered<CollisionCandidates>::iterator const&, aod::CascDataExt const& cascades)
   {
     // Monitor average number of cascades per event (for trending vs run number)
     for (auto& casc : cascades) {

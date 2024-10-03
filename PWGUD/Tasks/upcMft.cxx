@@ -130,8 +130,8 @@ struct UpcMftRec {
   }
 
   void process(aod::BCs const& bcs,
-               aod::Collisions const& collisions,
-               aod::MFTTracks const& tracksMFT,
+               aod::Collisions const& /*collisions*/,
+               aod::MFTTracks const& /*tracksMFT*/,
                aod::AmbiguousMFTTracks const& ambiguousTracksMFT,
                aod::FT0s const& ft0s,
                ExtBCs const& ebcs)

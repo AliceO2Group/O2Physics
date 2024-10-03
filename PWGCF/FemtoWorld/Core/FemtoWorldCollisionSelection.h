@@ -134,7 +134,7 @@ class FemtoWorldCollisionSelection
   /// \param tracks All tracks
   /// \return value of the sphericity of the event
   template <typename T1, typename T2>
-  float computeSphericity(T1 const& col, T2 const& tracks)
+  float computeSphericity(T1 const& /*col*/, T2 const& /*tracks*/)
   {
     return 2.f;
   }
