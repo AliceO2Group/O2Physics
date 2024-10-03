@@ -598,7 +598,8 @@ struct nuclei_in_jets {
 
     if (n_jets_selected > n_jets_per_event_max)
       return;
-      jet_ue_overlaps
+    registryData.fill(HIST("number_of_events_data"), 4.5);
+
     if (requireNoOverlap && nOverlaps > 0)
       return;
     registryData.fill(HIST("number_of_events_data"), 5.5);
