@@ -416,7 +416,7 @@ struct nuclei_in_jets {
     }
     twod_weights_antip_ue = static_cast<TH2F*>(l->FindObject(Form("%s_antiproton", histname_antip_ue.Data())));
     if (!twod_weights_antip_ue) {
-    LOGP(error, "Could not open histogram {}", Form("%s_antiproton", histname_antip_ue.Data()));
+      LOGP(error, "Could not open histogram {}", Form("%s_antiproton", histname_antip_ue.Data()));
       return;
     }
     LOGP(info, "Opened histogram {}", Form("%s_antiproton", histname_antip_jet.Data())));
@@ -720,18 +720,18 @@ struct nuclei_in_jets {
 
         double w_antip_jet(1.0);
         double w_antip_ue(1.0);
-        int ix = twod_weights_antip_jet -> GetXaxis() -> FindBin(particle.pt());
-        int iy = twod_weights_antip_jet -> GetYaxis() -> FindBin(particle.eta());
+        int ix = twod_weights_antip_jet->GetXaxis()->FindBin(particle.pt());
+        int iy = twod_weights_antip_jet->GetYaxis()->FindBin(particle.eta());
         if (applyReweighting) {
-          w_antip_jet = twod_weights_antip_jet -> GetBinContent(ix, iy);
-          w_antip_ue = twod_weights_antip_ue -> GetBinContent(ix, iy);
+          w_antip_jet = twod_weights_antip_jet->GetBinContent(ix, iy);
+          w_antip_ue = twod_weights_antip_ue->GetBinContent(ix, iy);
         }
         // protection
-        if (ix == 0 || ix > twod_weights_antip_jet -> GetNbinsX()) {
+        if (ix == 0 || ix > twod_weights_antip_jet->GetNbinsX()) {
           w_antip_jet = 1.0;
           w_antip_ue = 1.0;
         }
-        if (iy == 0 || iy > twod_weights_antip_jet -> GetNbinsY()) {
+        if (iy == 0 || iy > twod_weights_antip_jet->GetNbinsY()) {
           w_antip_jet = 1.0;
           w_antip_ue = 1.0;
         }
@@ -819,18 +819,18 @@ struct nuclei_in_jets {
 
         double w_antip_jet(1.0);
         double w_antip_ue(1.0);
-        int ix = twod_weights_antip_jet -> GetXaxis() -> FindBin(particle.pt());
-        int iy = twod_weights_antip_jet -> GetYaxis() -> FindBin(particle.eta());
+        int ix = twod_weights_antip_jet->GetXaxis()->FindBin(particle.pt());
+        int iy = twod_weights_antip_jet->GetYaxis()->FindBin(particle.eta());
         if (applyReweighting) {
-          w_antip_jet = twod_weights_antip_jet -> GetBinContent(ix, iy);
-          w_antip_ue = twod_weights_antip_ue -> GetBinContent(ix, iy);
+          w_antip_jet = twod_weights_antip_jet->GetBinContent(ix, iy);
+          w_antip_ue = twod_weights_antip_ue->GetBinContent(ix, iy);
         }
         // protection
-        if (ix == 0 || ix > twod_weights_antip_jet -> GetNbinsX()) {
+        if (ix == 0 || ix > twod_weights_antip_jet->GetNbinsX()) {
           w_antip_jet = 1.0;
           w_antip_ue = 1.0;
         }
-        if (iy == 0 || iy > twod_weights_antip_jet -> GetNbinsY()) {
+        if (iy == 0 || iy > twod_weights_antip_jet->GetNbinsY()) {
           w_antip_jet = 1.0;
           w_antip_ue = 1.0;
         }
