@@ -138,6 +138,14 @@ struct emcalQC {
     DefineEMEventCut();
 
     o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&fRegistry);
+    auto hEMCCollisionCounter = fRegistry.add<TH1>("Event/hEMCCollisionCounter", "Number of collisions after event cuts", HistType::kTH1F, {{7, 0.5, 7.5}}, false);
+    hEMCCollisionCounter->GetXaxis()->SetBinLabel(1, "all");
+    hEMCCollisionCounter->GetXaxis()->SetBinLabel(2, "+TVX");         // TVX
+    hEMCCollisionCounter->GetXaxis()->SetBinLabel(3, "+|z|<10cm");    // TVX with z < 10cm
+    hEMCCollisionCounter->GetXaxis()->SetBinLabel(4, "+Sel8");        // TVX with z < 10cm and Sel8
+    hEMCCollisionCounter->GetXaxis()->SetBinLabel(5, "+Good z vtx");  // TVX with z < 10cm and Sel8 and good z xertex
+    hEMCCollisionCounter->GetXaxis()->SetBinLabel(6, "+unique");      // TVX with z < 10cm and Sel8 and good z xertex and unique (only collision in the BC)
+    hEMCCollisionCounter->GetXaxis()->SetBinLabel(7, "+EMC readout"); // TVX with z < 10cm and Sel8 and good z xertex and unique (only collision in the BC) and kTVXinEMC
     o2::aod::pwgem::photonmeson::utils::clusterhistogram::addClusterHistograms(&fRegistry, cfgDo2DQA);
   }
 
@@ -149,6 +157,25 @@ struct emcalQC {
 
       if (eventcuts.onlyKeepWeightedEvents && fabs(collision.weight() - 1.) < 1E-10) {
         continue;
+      }
+
+      fRegistry.fill(HIST("Event/hEMCCollisionCounter"), 1);
+      if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+        fRegistry.fill(HIST("Event/hEMCCollisionCounter"), 2);
+        if (abs(collision.posZ()) < eventcuts.cfgZvtxMax) {
+          fRegistry.fill(HIST("Event/hEMCCollisionCounter"), 3);
+          if (collision.sel8()) {
+            fRegistry.fill(HIST("Event/hEMCCollisionCounter"), 4);
+            if (collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+              fRegistry.fill(HIST("Event/hEMCCollisionCounter"), 5);
+              if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+                fRegistry.fill(HIST("Event/hEMCCollisionCounter"), 6);
+                if (collision.alias_bit(kTVXinEMC))
+                  fRegistry.fill(HIST("Event/hEMCCollisionCounter"), 7);
+              }
+            }
+          }
+        }
       }
 
       o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<0>(&fRegistry, collision);

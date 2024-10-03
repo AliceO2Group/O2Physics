@@ -70,11 +70,14 @@ struct tagRun2V0MCalibration {
 
 enum PartTypes {
   kPi = 0,
-  kKa,
-  kPr,
-  kEl,
-  kMu,
-  kOther
+  kKa = 1,
+  kPr = 2,
+  kEl = 3,
+  kMu = 4,
+  kSig = 5,
+  kXi = 6,
+  kOm = 7,
+  kOther = 8
 };
 
 struct ebyeMult {
@@ -122,6 +125,14 @@ struct ebyeMult {
         return PartTypes::kEl;
       case 13:
         return PartTypes::kMu;
+      case 3222:
+        return PartTypes::kSig;
+      case 3112:
+        return PartTypes::kSig;
+      case 3312:
+        return PartTypes::kXi;
+      case 3334:
+        return PartTypes::kOm;
       default:
         return PartTypes::kOther;
     }
@@ -261,16 +272,16 @@ struct ebyeMult {
     histos.add<TH1>("QA/TrklEta", ";Tracklets #eta; Entries", HistType::kTH1D, {{100, -3., 3.}});
 
     // rec tracks
-    histos.add<TH3>("RecTracks", ";Tracklets |#eta| > 0.7;#it{p}_{T} (GeV/#it{c});DCA_{#it{xy}} (cm)", HistType::kTH3D, {{201, -0.5, 200.5}, {50, 0., 5.}, {200, -1., 1.}});
+    histos.add<TH3>("RecTracks", ";Tracklets |#eta| > 0.7;#it{p}_{T} (GeV/#it{c});DCA_{#it{xy}} (cm)", HistType::kTH3D, {{201, -0.5, 200.5}, {100, -5., 5.}, {200, -1., 1.}});
 
     // rec & gen particles (per species)
-    histos.add<TH3>("RecPart", ";Tracklets |#eta| > 0.7;#it{p}_{T} (GeV/#it{c});Species", HistType::kTH3D, {{201, -0.5, 200.5}, {50, 0., 5.}, {10, 0, 10}});
-    histos.add<TH3>("GenPart", ";Tracklets |#eta| > 0.7;#it{p}_{T} (GeV/#it{c});Species", HistType::kTH3D, {{201, -0.5, 200.5}, {50, 0., 5.}, {10, 0, 10}});
+    histos.add<TH3>("RecPart", ";Tracklets |#eta| > 0.7;#it{p}_{T} (GeV/#it{c});Species", HistType::kTH3D, {{201, -0.5, 200.5}, {100, -5., 5.}, {10, 0, 10}});
+    histos.add<TH3>("GenPart", ";Tracklets |#eta| > 0.7;#it{p}_{T} (GeV/#it{c});Species", HistType::kTH3D, {{201, -0.5, 200.5}, {100, -5., 5.}, {10, 0, 10}});
 
     // dca_xy templates
-    histos.add<TH3>("PrimTracks", ";Tracklets |#eta| > 0.7;#it{p}_{T} (GeV/#it{c});DCA_{#it{xy}} (cm)", HistType::kTH3D, {{201, -0.5, 200.5}, {50, 0., 5.}, {200, -1., 1.}});
-    histos.add<TH3>("SecWDTracks", ";Tracklets |#eta| > 0.7;#it{p}_{T} (GeV/#it{c});DCA_{#it{xy}} (cm)", HistType::kTH3D, {{201, -0.5, 200.5}, {50, 0., 5.}, {200, -1., 1.}});
-    histos.add<TH3>("SecTracks", ";Tracklets |#eta| > 0.7;#it{p}_{T} (GeV/#it{c});DCA_{#it{xy}} (cm)", HistType::kTH3D, {{201, -0.5, 200.5}, {50, 0., 5.}, {200, -1., 1.}});
+    histos.add<TH3>("PrimTracks", ";Tracklets |#eta| > 0.7;#it{p}_{T} (GeV/#it{c});DCA_{#it{xy}} (cm)", HistType::kTH3D, {{201, -0.5, 200.5}, {100, -5., 5.}, {200, -1., 1.}});
+    histos.add<TH3>("SecWDTracks", ";Tracklets |#eta| > 0.7;#it{p}_{T} (GeV/#it{c});DCA_{#it{xy}} (cm)", HistType::kTH3D, {{201, -0.5, 200.5}, {100, -5., 5.}, {200, -1., 1.}});
+    histos.add<TH3>("SecTracks", ";Tracklets |#eta| > 0.7;#it{p}_{T} (GeV/#it{c});DCA_{#it{xy}} (cm)", HistType::kTH3D, {{201, -0.5, 200.5}, {100, -5., 5.}, {200, -1., 1.}});
   }
 
   template <class C, class T>
@@ -333,18 +344,25 @@ struct ebyeMult {
         auto mcTrack = mcLab.template mcParticle_as<aod::McParticles>();
         if (((mcTrack.flags() & 0x8) && (doprocessMcRun2)) || (mcTrack.flags() & 0x2))
           continue;
+        if (!mcTrack.isPhysicalPrimary()) {
+          if (mcTrack.has_mothers()) { // sec WD
+            histos.fill(HIST("SecWDTracks"), nTrackletsColl, candidateTrack.pt, candidateTrack.dcaxypv);
+          } else { // from material
+            histos.fill(HIST("SecTracks"), nTrackletsColl, candidateTrack.pt, candidateTrack.dcaxypv);
+          }
+        }
+        if ((mcTrack.flags() & 0x1))
+          continue;
         if (mcTrack.isPhysicalPrimary()) { // primary
-          histos.fill(HIST("PrimTracks"), nTrackletsColl, std::abs(candidateTrack.pt), candidateTrack.dcaxypv);
-        } else if (mcTrack.has_mothers()) { // sec WD
-          histos.fill(HIST("SecWDTracks"), nTrackletsColl, std::abs(candidateTrack.pt), candidateTrack.dcaxypv);
-        } else { // from material
-          histos.fill(HIST("SecTracks"), nTrackletsColl, std::abs(candidateTrack.pt), candidateTrack.dcaxypv);
+          histos.fill(HIST("PrimTracks"), nTrackletsColl, candidateTrack.pt, candidateTrack.dcaxypv);
         }
 
         if (std::abs(candidateTrack.dcaxypv) > cfgDcaSels->get("dcaxy"))
           continue;
         int partType = getPartType(mcTrack.pdgCode());
-        histos.fill(HIST("RecPart"), nTrackletsColl, std::abs(candidateTrack.pt), partType);
+        if (mcTrack.isPhysicalPrimary()) { // primary
+          histos.fill(HIST("RecPart"), nTrackletsColl, candidateTrack.pt, partType);
+        }
         auto genPt = std::hypot(mcTrack.px(), mcTrack.py());
         candidateTrack.pdgcode = mcTrack.pdgCode();
         candidateTrack.genpt = genPt;
@@ -362,9 +380,9 @@ struct ebyeMult {
       if (std::abs(genEta) > etaMax) {
         continue;
       }
-      if (((mcPart.flags() & 0x8) && (doprocessMcRun2)) || (mcPart.flags() & 0x2))
+      if (((mcPart.flags() & 0x8) && (doprocessMcRun2)) || (mcPart.flags() & 0x2) || (mcPart.flags() & 0x1))
         continue;
-      if (!mcPart.isPhysicalPrimary() && !mcPart.has_mothers())
+      if (!mcPart.isPhysicalPrimary() /* && !mcPart.has_mothers() */)
         continue;
       auto genPt = std::hypot(mcPart.px(), mcPart.py());
       CandidateTrack candTrack;
@@ -373,7 +391,7 @@ struct ebyeMult {
       candTrack.pdgcode = mcPart.pdgCode();
 
       int partType = getPartType(mcPart.pdgCode());
-      histos.fill(HIST("GenPart"), nTrackletsColl, genPt, partType);
+      histos.fill(HIST("GenPart"), nTrackletsColl, mcPart.pdgCode() > 0 ? genPt : -genPt, partType);
 
       auto it = find_if(candidateTracks.begin(), candidateTracks.end(), [&](CandidateTrack trk) { return trk.mcIndex == mcPart.globalIndex(); });
       if (it != candidateTracks.end()) {
@@ -408,7 +426,7 @@ struct ebyeMult {
       fillRecoEvent(collision, tracks /* , cV0M */);
 
       for (auto t : candidateTracks) {
-        histos.fill(HIST("RecTracks"), nTrackletsColl, std::abs(t.pt), t.dcaxypv);
+        histos.fill(HIST("RecTracks"), nTrackletsColl, t.pt, t.dcaxypv);
       }
     }
   }

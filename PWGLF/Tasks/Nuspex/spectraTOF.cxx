@@ -36,7 +36,7 @@
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "PWGLF/Utils/inelGt.h"
 #include "PWGLF/DataModel/mcCentrality.h"
-
+#include "Common/Core/RecoDecay.h"
 #include "TPDGCode.h"
 
 using namespace o2;
@@ -52,6 +52,16 @@ std::array<std::shared_ptr<TH3>, NpCharge> hDcaXYZMat;
 std::array<std::shared_ptr<TH2>, NpCharge> hDcaXYWrongCollisionPrm;
 std::array<std::shared_ptr<TH2>, NpCharge> hDcaXYWrongCollisionStr;
 std::array<std::shared_ptr<TH2>, NpCharge> hDcaXYWrongCollisionMat;
+std::array<std::shared_ptr<TH2>, NpCharge> hDcaXYMC;       // DCA xy in the MC
+std::array<std::shared_ptr<TH2>, NpCharge> hDcaZMC;        // DCA z in the MC
+std::array<std::shared_ptr<TH2>, NpCharge> hDcaXYMCD0;     // DCA xy in the MC for particles from D0
+std::array<std::shared_ptr<TH2>, NpCharge> hDcaZMCD0;      // DCA z in the MC for particles from D0
+std::array<std::shared_ptr<TH2>, NpCharge> hDcaXYMCCharm;  // DCA xy in the MC for particles from charm
+std::array<std::shared_ptr<TH2>, NpCharge> hdcaZMCCharm;   // DCA z in the MC for particles from charm
+std::array<std::shared_ptr<TH2>, NpCharge> hDcaXYMCBeauty; // DCA xy in the MC for particles from beauty
+std::array<std::shared_ptr<TH2>, NpCharge> hDcaZMCBeauty;  // DCA z in the MC for particles from beauty
+std::array<std::shared_ptr<TH2>, NpCharge> hDcaXYMCNotHF;  // DCA xy in the MC for particles from not a HF
+std::array<std::shared_ptr<TH2>, NpCharge> hDcaZMCNotHF;   // DCA z in the MC for particles from not a HF
 
 // Spectra task
 struct tofSpectra {
@@ -83,6 +93,7 @@ struct tofSpectra {
   Configurable<bool> enableTPCTOFHistograms{"enableTPCTOFHistograms", true, "Enables TPC TOF histograms"};
   Configurable<bool> enableDCAxyzHistograms{"enableDCAxyzHistograms", false, "Enables DCAxyz correlation histograms"};
   Configurable<bool> enableDCAxyphiHistograms{"enableDCAxyphiHistograms", false, "Enables DCAxyphi correlation histograms"};
+  Configurable<bool> enableDCAvsmotherHistograms{"enableDCAvsmotherHistograms", false, "Enables DCA vs mother histograms"};
 
   struct : ConfigurableGroup {
     ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.2, 4.4, 4.6, 4.8, 5.0}, "Binning of the pT axis"};
@@ -611,17 +622,19 @@ struct tofSpectra {
         histos.add(hpt_den_prm_mcgoodev[i].data(), pTCharge[i], kTH2D, {ptAxis, multAxis});
         histos.add(hpt_den_prm_mcbadev[i].data(), pTCharge[i], kTH2D, {ptAxis, multAxis});
 
+        const std::string cpName = Form("/%s/%s", (i < Np) ? "pos" : "neg", pN[i % Np]);
         if (enableDCAxyzHistograms) {
-          hDcaXYZPrm[i] = histos.add<TH3>(Form("dcaprm/%s/%s", (i < Np) ? "pos" : "neg", pN[i % Np]), pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, dcaZAxis});
-          hDcaXYZStr[i] = histos.add<TH3>(Form("dcastr/%s/%s", (i < Np) ? "pos" : "neg", pN[i % Np]), pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, dcaZAxis});
-          hDcaXYZMat[i] = histos.add<TH3>(Form("dcamat/%s/%s", (i < Np) ? "pos" : "neg", pN[i % Np]), pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, dcaZAxis});
+          hDcaXYZPrm[i] = histos.add<TH3>("dcaprm" + cpName, pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, dcaZAxis});
+          hDcaXYZStr[i] = histos.add<TH3>("dcastr" + cpName, pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, dcaZAxis});
+          hDcaXYZMat[i] = histos.add<TH3>("dcamat" + cpName, pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, dcaZAxis});
           if (enableDcaGoodEvents) {
             histos.add(hdcaxyprmgoodevs[i].data(), pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, dcaZAxis});
           }
         } else {
-          hDcaXYWrongCollisionPrm[i] = histos.add<TH2>(Form("dcaxywrongcollprm/%s/%s", (i < Np) ? "pos" : "neg", pN[i % Np]), pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
-          hDcaXYWrongCollisionStr[i] = histos.add<TH2>(Form("dcaxywrongcollstr/%s/%s", (i < Np) ? "pos" : "neg", pN[i % Np]), pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
-          hDcaXYWrongCollisionMat[i] = histos.add<TH2>(Form("dcaxywrongcollmat/%s/%s", (i < Np) ? "pos" : "neg", pN[i % Np]), pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
+          hDcaXYWrongCollisionPrm[i] = histos.add<TH2>("dcaxywrongcollprm" + cpName, pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
+          hDcaXYWrongCollisionStr[i] = histos.add<TH2>("dcaxywrongcollstr" + cpName, pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
+          hDcaXYWrongCollisionMat[i] = histos.add<TH2>("dcaxywrongcollmat" + cpName, pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
+
           histos.add(hdcaxyprm[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
           histos.add(hdcazprm[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaZAxis});
           histos.add(hdcaxystr[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
@@ -631,6 +644,18 @@ struct tofSpectra {
           if (enableDcaGoodEvents) {
             histos.add(hdcaxyprmgoodevs[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
             histos.add(hdcazprmgoodevs[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaZAxis});
+          }
+          if (enableDCAvsmotherHistograms) {
+            hDcaXYMC[i] = histos.add<TH2>("dcaxymc" + cpName, pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
+            hDcaZMC[i] = histos.add<TH2>("dcazmc" + cpName, pTCharge[i], kTH2D, {ptAxis, dcaZAxis});
+            hDcaXYMCNotHF[i] = histos.add<TH2>("dcaxynothf" + cpName, pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
+            hDcaZMCNotHF[i] = histos.add<TH2>("dcaznothf" + cpName, pTCharge[i], kTH2D, {ptAxis, dcaZAxis});
+            hDcaXYMCD0[i] = histos.add<TH2>("dcaxyD0" + cpName, pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
+            hDcaZMCD0[i] = histos.add<TH2>("dcazD0" + cpName, pTCharge[i], kTH2D, {ptAxis, dcaZAxis});
+            hDcaXYMCCharm[i] = histos.add<TH2>("dcaxycharm" + cpName, pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
+            hdcaZMCCharm[i] = histos.add<TH2>("dcazcharm" + cpName, pTCharge[i], kTH2D, {ptAxis, dcaZAxis});
+            hDcaXYMCBeauty[i] = histos.add<TH2>("dcaxybeauty" + cpName, pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
+            hDcaZMCBeauty[i] = histos.add<TH2>("dcazbeauty" + cpName, pTCharge[i], kTH2D, {ptAxis, dcaZAxis});
           }
         }
 
@@ -1314,7 +1339,7 @@ struct tofSpectra {
       histos.fill(HIST("nsigmatof/test_occupancy/neg/pr"), track.pt(), nsigmaTOFPr, multiplicity, occupancy);
 
     } // track
-  }   // process function
+  } // process function
   PROCESS_SWITCH(tofSpectra, processOccupancy, "check for occupancy plots", false);
 
   void processStandard(CollisionCandidates::iterator const& collision,
@@ -1525,7 +1550,10 @@ struct tofSpectra {
 
   using RecoMCCollisions = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0As, aod::CentFT0Cs, aod::TPCMults, aod::PVMults, aod::MultZeqs, aod::CentFT0Ms>; // RD
   template <std::size_t i, typename TrackType, typename ParticleType>
-  void fillTrackHistograms_MC(TrackType const& track, ParticleType const& mcParticle, RecoMCCollisions::iterator const& collision)
+  void fillTrackHistograms_MC(TrackType const& track,
+                              ParticleType::iterator const& mcParticle,
+                              RecoMCCollisions::iterator const& collision,
+                              ParticleType const& mcParticles)
   {
     if (!isParticleEnabled<i>()) { // Check if the particle is enabled
       return;
@@ -1549,7 +1577,12 @@ struct tofSpectra {
     if (std::abs(mcParticle.y()) > trkselOptions.cfgCutY) {
       return;
     }
-    if (!mcParticle.isPhysicalPrimary()) {
+
+    if (enableDCAvsmotherHistograms) {
+      hDcaXYMC[i]->Fill(track.pt(), track.dcaXY());
+      hDcaZMC[i]->Fill(track.pt(), track.dcaZ());
+    }
+    if (!mcParticle.isPhysicalPrimary()) { // Secondaries (weak decays and material)
       if (mcParticle.getProcess() == 4) {
         if (enableDCAxyzHistograms) {
           hDcaXYZStr[i]->Fill(track.pt(), track.dcaXY(), track.dcaZ());
@@ -1565,18 +1598,61 @@ struct tofSpectra {
           histos.fill(HIST(hdcazmat[i]), track.pt(), track.dcaZ());
         }
       }
-    } else {
+    } else { // Primaries
       if (enableDCAxyzHistograms) {
         hDcaXYZPrm[i]->Fill(track.pt(), track.dcaXY(), track.dcaZ());
         if (enableDcaGoodEvents.value && collision.has_mcCollision()) {
           histos.fill(HIST(hdcaxyprmgoodevs[i]), track.pt(), track.dcaXY(), track.dcaZ());
         }
       } else {
+        // DCAxy for all primaries
         histos.fill(HIST(hdcaxyprm[i]), track.pt(), track.dcaXY());
         histos.fill(HIST(hdcazprm[i]), track.pt(), track.dcaZ());
-        if (enableDcaGoodEvents.value && collision.has_mcCollision()) {
-          histos.fill(HIST(hdcaxyprmgoodevs[i]), track.pt(), track.dcaXY());
-          histos.fill(HIST(hdcazprmgoodevs[i]), track.pt(), track.dcaZ());
+      }
+      if (enableDcaGoodEvents.value && collision.has_mcCollision()) {
+        histos.fill(HIST(hdcaxyprmgoodevs[i]), track.pt(), track.dcaXY());
+        histos.fill(HIST(hdcazprmgoodevs[i]), track.pt(), track.dcaZ());
+      }
+
+      if (enableDCAvsmotherHistograms) {
+        bool IsD0Mother = false;
+        bool IsCharmMother = false;
+        bool IsBeautyMother = false;
+
+        if (mcParticle.has_mothers()) {
+          const int charmOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, false);
+          for (const auto& mother : mcParticle.template mothers_as<aod::McParticles>()) {
+            const int motherPdgCode = mother.pdgCode();
+            if (motherPdgCode == 421) {
+              IsD0Mother = true;
+            }
+            if (charmOrigin == RecoDecay::OriginType::NonPrompt) {
+              if ((motherPdgCode) / 1000 == 5 || (motherPdgCode) / 100 == 5) {
+                IsBeautyMother = true;
+              }
+            }
+            if (charmOrigin == RecoDecay::OriginType::Prompt) {
+              if ((motherPdgCode) / 1000 == 4 || (motherPdgCode) / 100 == 4) {
+                IsCharmMother = true;
+              }
+            }
+          }
+        }
+        if (IsD0Mother) {
+          hDcaXYMCD0[i]->Fill(track.pt(), track.dcaXY());
+          hDcaZMCD0[i]->Fill(track.pt(), track.dcaZ());
+        }
+        if (IsCharmMother) {
+          hDcaXYMCCharm[i]->Fill(track.pt(), track.dcaXY());
+          hdcaZMCCharm[i]->Fill(track.pt(), track.dcaZ());
+        }
+        if (IsBeautyMother) {
+          hDcaXYMCBeauty[i]->Fill(track.pt(), track.dcaXY());
+          hDcaZMCBeauty[i]->Fill(track.pt(), track.dcaZ());
+        }
+        if (!IsCharmMother && !IsBeautyMother) {
+          hDcaXYMCNotHF[i]->Fill(track.pt(), track.dcaXY());
+          hDcaZMCNotHF[i]->Fill(track.pt(), track.dcaZ());
         }
       }
     }
@@ -1817,7 +1893,7 @@ struct tofSpectra {
       const auto& mcParticle = track.mcParticle();
 
       static_for<0, 17>([&](auto i) {
-        fillTrackHistograms_MC<i>(track, mcParticle, track.collision_as<RecoMCCollisions>());
+        fillTrackHistograms_MC<i>(track, mcParticle, track.collision_as<RecoMCCollisions>(), mcParticles);
       });
     }
     if (includeCentralityMC) {

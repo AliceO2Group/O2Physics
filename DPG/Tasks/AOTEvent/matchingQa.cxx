@@ -15,6 +15,7 @@
 #include "Framework/HistogramRegistry.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsFT0/Digit.h"
+#include "DataFormatsParameters/GRPLHCIFData.h"
 #include "MetadataHelper.h"
 
 using namespace o2;
@@ -38,6 +39,13 @@ struct MatchingQaTask {
   Configurable<bool> useVtxDiff{"useVtxDiff", 1, "use vertex difference for selection"};
   Configurable<bool> removeTOFmatches{"removeTOFmatches", 1, "remove TVX bcs matched to collisions with TOF tracks"};
   Configurable<bool> removeColsWithAmbiguousTOF{"removeColsWithAmbiguousTOF", 0, "remove collisions with ambiguous TOF signals"};
+  Configurable<bool> removeNoncollidingBCs{"removeNoncollidingBCs", 1, "Remove TVX from non-colliding bcs"};
+  Configurable<bool> useITSROFconstraint{"useITSROFconstraint", 1, "use ITS ROF constraints for ITS-TPC vertices"};
+  Configurable<int> additionalDeltaBC{"additionalDeltaBC", 0, "Additional BC margin added to deltaBC for ITS-TPC vertices"};
+  Configurable<int> deltaBCforTOFcollisions{"deltaBCforTOFcollisions", 1, "bc margin for TOF-matched collisions"};
+  Configurable<int> minimumDeltaBC{"minimumDeltaBC", -1, "minimum delta BC for ITS-TPC vertices"};
+
+  std::bitset<o2::constants::lhc::LHCMaxBunches> bcPatternB; // bc pattern of colliding bunches
   int lastRun = -1;
   int64_t bcSOR = -1;     // global bc of the start of the first orbit
   int32_t nBCsPerTF = -1; // duration of TF in bcs, should be 128*3564 or 32*3564
@@ -78,12 +86,12 @@ struct MatchingQaTask {
       }
     }
 
-    const AxisSpec axisNcontrib{isLowFlux ? 150 : 8000, 0., isLowFlux ? 150. : 8000., "n contributors"};
+    const AxisSpec axisNcontrib{isLowFlux ? 200 : 8000, 0., isLowFlux ? 200. : 8000., "n contributors"};
     const AxisSpec axisColTimeRes{1500, 0., 1500., "collision time resolution (ns)"};
     const AxisSpec axisFraction{1000, 0., 1., ""};
     const AxisSpec axisBcDiff{800, -400., 400., "bc diff"};
     const AxisSpec axisBcs{nBCsPerOrbit, 0., static_cast<float>(nBCsPerOrbit), "bc"};
-    const AxisSpec axisMultT0C{200, 0., isLowFlux ? 1600. : 60000., "Rec. mult. T0C"};
+    const AxisSpec axisMultT0C{200, 0., isLowFlux ? 2000. : 60000., "Rec. mult. T0C"};
     const AxisSpec axisZvtxDiff{200, -20., 20., "Zvtx difference, cm"};
 
     histos.add("hRecMultT0C", "", kTH1D, {axisMultT0C});
@@ -95,6 +103,7 @@ struct MatchingQaTask {
 
     histos.add("hBCsITS", "", kTH1F, {axisBcs});
     histos.add("hNcontribCandidates", "", kTH1F, {axisNcontrib});
+    histos.add("hNcontribCounts", "", kTH1F, {axisNcontrib});
     histos.add("hNcontribSigma", "", kTH2F, {axisNcontrib, axisColTimeRes});
 
     histos.add("hNcontribAll", "", kTH1F, {axisNcontrib});
@@ -172,6 +181,9 @@ struct MatchingQaTask {
       lastRun = run;
       auto runDuration = ccdb->getRunDuration(run, true);
       int64_t tsSOR = runDuration.first;
+      auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", tsSOR);
+      bcPatternB = grplhcif->getBunchFilling().getBCPattern();
+
       auto ctpx = ccdb->getForTimeStamp<std::vector<Long64_t>>("CTP/Calib/OrbitReset", tsSOR);
       int64_t tsOrbitReset = (*ctpx)[0];
       uint32_t nOrbitsPerTF = run < 534133 ? 128 : 32;
@@ -180,12 +192,21 @@ struct MatchingQaTask {
       bcSOR = orbitSOR * nBCsPerOrbit + customOrbitOffset * nBCsPerOrbit;
       nBCsPerTF = nOrbitsPerTF * nBCsPerOrbit;
       nBCsPerITSROF = (run >= 543437 && run <= 545367) ? 594 : 198;
+      const AxisSpec axisBcDiff{800, -400., 400., "bc diff"};
       const AxisSpec axisBcsInTF{nBCsPerTF, 0., static_cast<float>(nBCsPerTF), "bc"};
       const AxisSpec axisBcsInITSROF{nBCsPerITSROF, 0., static_cast<float>(nBCsPerITSROF), "bc"};
       histos.add("hBcInTFall", "", kTH1F, {axisBcsInTF});
       histos.add("hBcInTFcut", "", kTH1F, {axisBcsInTF});
       histos.add("hBcInITSROFall", "", kTH1F, {axisBcsInITSROF});
       histos.add("hBcInITSROFcut", "", kTH1F, {axisBcsInITSROF});
+
+      histos.add("hBcInTFITS", "", kTH1F, {axisBcsInTF});
+      histos.add("hBcInTFTPC", "", kTH1F, {axisBcsInTF});
+
+      histos.add("hBcInITSROFITS", "", kTH1F, {axisBcsInITSROF});
+      histos.add("hBcInITSROFTPC", "", kTH1F, {axisBcsInITSROF});
+
+      histos.add("hBcInITSROFTPCDiff", "", kTH2F, {axisBcsInITSROF, axisBcDiff});
     }
 
     int nCols = cols.size();
@@ -200,6 +221,11 @@ struct MatchingQaTask {
     std::fill(vNumTRDtracks.begin(), vNumTRDtracks.end(), 0);
     std::fill(vNumTPCtracks.begin(), vNumTPCtracks.end(), 0);
 
+    std::vector<std::vector<float>> vTOFtracksTimes(cols.size());
+    std::vector<std::vector<float>> vTPCtracksTimes(cols.size());
+    std::vector<std::vector<float>> vITStracksTimes(cols.size());
+    std::vector<std::vector<float>> vTPCtracksTimeRes(cols.size());
+
     std::vector<float> vTOFtracksSumWeightedTimes(cols.size(), 0);
     std::vector<float> vTRDtracksSumWeightedTimes(cols.size(), 0);
     std::vector<float> vTPCtracksSumWeightedTimes(cols.size(), 0);
@@ -211,6 +237,7 @@ struct MatchingQaTask {
     std::vector<float> vMinTimeTOFtracks(cols.size(), 10000);
     std::vector<float> vMaxTimeTOFtracks(cols.size(), -10000);
     std::vector<float> vWeightedSigma(cols.size(), 0);
+    std::map<int64_t, int32_t> mapGlobalBcWithT0B;
     std::map<int64_t, int32_t> mapGlobalBcWithTVX;
     std::map<int64_t, float> mapGlobalBcVtxZ;
     std::map<int64_t, float> mapGlobalBcMultT0C;
@@ -226,11 +253,17 @@ struct MatchingQaTask {
     for (auto& ft0 : ft0s) {
       auto bc = ft0.bc_as<BCsRun3>();
       int64_t globalBC = bc.globalBC();
+      // remove noise from non-colliding bcs
+      if (removeNoncollidingBCs && bcPatternB[globalBC % o2::constants::lhc::LHCMaxBunches] == 0)
+        continue;
       if (ft0.triggerMask() & BIT(o2::ft0::Triggers::bitVertex)) {
         mapGlobalBcWithTVX[globalBC] = bc.globalIndex();
         mapGlobalBcVtxZ[globalBC] = ft0.posZ();
         mapGlobalBcVtxZ2[globalBC] = ft0.posZ();
         mapGlobalBcMultT0C[globalBC] = ft0.sumAmpC();
+      }
+      if (fabs(ft0.timeA()) < 1 && fabs(ft0.timeC()) < 1) {
+        mapGlobalBcWithT0B[globalBC] = bc.globalIndex();
       }
     }
 
@@ -251,6 +284,7 @@ struct MatchingQaTask {
       float trackTimeRes = track.trackTimeRes();
       float w = 1. / (trackTimeRes * trackTimeRes);
       if (track.hasTOF()) {
+        vTOFtracksTimes[colId].push_back(trackTime);
         vNumTOFtracks[colId]++;
         vTOFtracksSumWeightedTimes[colId] += trackTime * w;
         vTOFtracksSumWeights[colId] += w;
@@ -263,10 +297,13 @@ struct MatchingQaTask {
         vTRDtracksSumWeightedTimes[colId] += trackTime * w;
         vTRDtracksSumWeights[colId] += w;
       } else if (track.hasTPC()) {
+        vTPCtracksTimes[colId].push_back(trackTime);
+        vTPCtracksTimeRes[colId].push_back(trackTimeRes);
         vNumTPCtracks[colId]++;
         vTPCtracksSumWeightedTimes[colId] += trackTime * w;
         vTPCtracksSumWeights[colId] += w;
       } else {
+        vITStracksTimes[colId].push_back(trackTime);
         vNumITStracks[colId]++;
         vITStracksSumWeightedTimes[colId] += trackTime * w;
         vITStracksSumWeights[colId] += w;
@@ -280,14 +317,43 @@ struct MatchingQaTask {
         continue;
       auto bc = col.bc_as<BCsRun3>();
       int64_t globalBC = bc.globalBC();
+
       // todo: bypass ambiguous collisions with TOF tracks pointing to different bcs
-      float weightedTime = vTOFtracksSumWeightedTimes[colId] / vTOFtracksSumWeights[colId];
-      int64_t tofGlobalBC = globalBC + TMath::Nint(weightedTime / bcNS);
+      // float weightedTime = vTOFtracksSumWeightedTimes[colId] / vTOFtracksSumWeights[colId];
+
+      // TOF track time median calculation using std::nth_element
+      auto& vTOFtracks = vTOFtracksTimes[colId];
+      int median = vTOFtracks.size() / 2;
+      std::nth_element(vTOFtracks.begin(), vTOFtracks.begin() + median, vTOFtracks.end());
+      float medianTime = vTOFtracks[median];
+
+      //      int64_t tofGlobalBC = globalBC + TMath::Nint(weightedTime / bcNS);
+      int64_t tofGlobalBC = globalBC + TMath::Nint(medianTime / bcNS);
+
       int32_t foundBC = findClosest(tofGlobalBC, mapGlobalBcWithTVX);
+      int64_t foundGlobalBC = bcs.iteratorAt(foundBC).globalBC();
       // todo: check what to do if foundBC is too far from tofGlobalBC
-      if (fabs(bcs.iteratorAt(foundBC).globalBC() - tofGlobalBC) > 0) {
+      if (fabs(foundGlobalBC - tofGlobalBC) > deltaBCforTOFcollisions) {
         foundBC = -1;
+
+        int32_t nContrib = col.numContrib();
+        if (nContrib > 100) {
+          int32_t foundBCwithT0B = findClosest(tofGlobalBC, mapGlobalBcWithT0B);
+          int64_t foundGlobalBCwithT0B = bcs.iteratorAt(foundBCwithT0B).globalBC();
+
+          LOGP(info, "Total number of TOF tracks: {}", vTOFtracks.size());
+          LOGP(info, "Median time: {}", medianTime);
+          LOGP(info, "globalBC: {}", globalBC % 3564);
+          LOGP(info, "TOF global BC: {}", tofGlobalBC % 3564);
+          LOGP(info, "Found global BC: {}", foundGlobalBC % 3564);
+          LOGP(info, "Found global BC with T0B: {}", foundGlobalBCwithT0B % 3564);
+          sort(vTOFtracks.begin(), vTOFtracks.end());
+          for (float t : vTOFtracks) {
+            LOGP(info, "  {}", t);
+          }
+        }
       }
+
       vFoundBCindex[colId] = foundBC;
       if (removeTOFmatches)
         mapGlobalBcVtxZ.erase(globalBC);
@@ -298,34 +364,66 @@ struct MatchingQaTask {
       int32_t colId = col.globalIndex();
       if (vNumTOFtracks[colId] > 0)
         continue;
-      if (vNumTRDtracks[colId] > 0)
-        continue;
       if (vNumTPCtracks[colId] == 0)
         continue;
       auto bc = col.bc_as<BCsRun3>();
       int64_t globalBC = bc.globalBC();
+
       float weightedTime = vTPCtracksSumWeightedTimes[colId] / vTPCtracksSumWeights[colId];
       float weightedSigma = sqrt(1. / vTPCtracksSumWeights[colId]);
+
+      int64_t minROF = 0;
+      int64_t maxROF = 0;
+      if (useITSROFconstraint) {
+        float medianTime = 0;
+        auto vTPCtracks = vTPCtracksTimes[colId];
+        int median = vTPCtracks.size() / 2;
+        std::nth_element(vTPCtracks.begin(), vTPCtracks.begin() + median, vTPCtracks.end());
+        medianTime = vTPCtracks[median];
+
+        int64_t itsGlobalBC = globalBC + TMath::Nint(medianTime / bcNS);
+        minROF = (itsGlobalBC - offsetITSROF) / nBCsPerITSROF * nBCsPerITSROF + offsetITSROF;
+        maxROF = minROF + nBCsPerITSROF;
+        LOGP(debug, "{} {}", minROF, maxROF);
+        float sumTime = 0;
+        float sumW = 0;
+        for (uint32_t i = 0; i < vTPCtracksTimes[colId].size(); ++i) {
+          float trackTime = vTPCtracksTimes[colId][i];
+          int64_t trackGlobalBC = globalBC + TMath::Nint(trackTime / bcNS);
+          LOGP(debug, "   {}", trackGlobalBC);
+          if (trackGlobalBC < minROF || trackGlobalBC > maxROF)
+            continue;
+          float r = vTPCtracksTimeRes[colId][i];
+          float w = 1. / (r * r);
+          sumTime += trackTime * w;
+          sumW += w;
+        }
+        weightedTime = sumTime / sumW;
+        weightedSigma = sqrt(1. / sumW);
+      }
+
       int64_t deltaBC = std::ceil(weightedSigma / bcNS * 3);
       int64_t tpcGlobalBC = globalBC + TMath::Nint(weightedTime / bcNS);
 
-      // if (deltaBC>20) deltaBC = 20;
+      LOGP(debug, "{} {}", tpcGlobalBC, deltaBC);
+
+      deltaBC += additionalDeltaBC;
+
+      if (minimumDeltaBC >= 0) {
+        deltaBC = deltaBC < minimumDeltaBC ? minimumDeltaBC : deltaBC;
+      }
 
       int64_t minBC = tpcGlobalBC - deltaBC;
       int64_t maxBC = tpcGlobalBC + deltaBC;
 
-      if (vNumITStracks[colId] > 0) {
-        float weightedTimeITS = vITStracksSumWeightedTimes[colId] / vITStracksSumWeights[colId];
-        int64_t itsGlobalBC = globalBC + TMath::Nint(weightedTimeITS / bcNS);
-        int64_t minROF = (itsGlobalBC - offsetITSROF) / nBCsPerITSROF * nBCsPerITSROF + offsetITSROF;
-        int64_t maxROF = minROF + nBCsPerITSROF;
-        histos.fill(HIST("hBCsITS"), minROF % 3564);
+      if (useITSROFconstraint) {
         minBC = minBC < minROF ? minROF : minBC;
         maxBC = maxBC > maxROF ? maxROF : maxBC;
-        // LOGP(info,"{} {} {} {}",minBC, maxBC, minROF, maxROF);
+        if (minBC > maxBC) {
+          LOGP(debug, "{} {} {} {}", minBC, maxBC, minROF, maxROF);
+          continue;
+        }
       }
-      if (minBC > maxBC)
-        continue;
 
       int32_t nContrib = col.numContrib();
       float zVtxCol = col.posZ();
@@ -361,6 +459,7 @@ struct MatchingQaTask {
         LOGP(info, "{} {}", minBC, maxBC);
 
       histos.fill(HIST("hNcontribCandidates"), nContrib, nCandidates);
+      histos.fill(HIST("hNcontribCounts"), nContrib);
 
       if (globalBcBest != 0)
         vFoundBCindex[colId] = mapGlobalBcWithTVX[globalBcBest];
@@ -386,9 +485,11 @@ struct MatchingQaTask {
 
       float zVtxDiff = 1e+10;
       float multT0C = 0;
+      int64_t foundGlobalBC = 0;
 
       if (foundBC >= 0 && foundBC < bcs.size()) {
         auto bc = bcs.iteratorAt(foundBC);
+        foundGlobalBC = bc.globalBC();
         // LOGP(info,"{}",bc.has_ft0());
         if (bc.has_ft0()) {
           zVtxDiff = bc.ft0().posZ() - col.posZ();
@@ -421,6 +522,25 @@ struct MatchingQaTask {
           histos.fill(HIST("hZvtxDiffVsNcontribTOF"), nContrib, zVtxDiff);
         }
         histos.fill(HIST("hColBcDiffVsNcontribTOF"), nContrib, bcDiff);
+        for (auto t : vTPCtracksTimes[colId]) {
+          int foundBCinITSROF = (foundGlobalBC + nBCsPerOrbit - offsetITSROF) % nBCsPerITSROF;
+          int64_t tpcTrackGlobalBC = globalBC + TMath::Nint(t / bcNS);
+          int64_t deltaBC = tpcTrackGlobalBC - foundGlobalBC;
+          histos.fill(HIST("hBcInITSROFTPCDiff"), foundBCinITSROF, deltaBC);
+        }
+      } else if (vNumTPCtracks[colId] > 0) {
+        histos.fill(HIST("hNcontribSigma"), nContrib, vWeightedSigma[colId]);
+        histos.fill(HIST("hNcontribColTPC"), nContrib);
+        histos.fill(HIST("hColBcDiffVsNcontribTPC"), nContrib, bcDiff);
+        if (nContrib > 180) {
+          histos.fill(HIST("hBcInTFTPC"), (globalBC - bcSOR) % nBCsPerTF);
+          histos.fill(HIST("hBcInITSROFTPC"), (globalBC + nBCsPerOrbit - offsetITSROF) % nBCsPerITSROF);
+        }
+        if (isFoundTVX) {
+          histos.fill(HIST("hNcontribAccTPC"), nContrib);
+          histos.fill(HIST("hRecMultT0CvsNcontribTPC"), multT0C, nContrib);
+          histos.fill(HIST("hZvtxDiffVsNcontribTPC"), nContrib, zVtxDiff);
+        }
       } else if (vNumTRDtracks[colId] > 0) {
         histos.fill(HIST("hNcontribColTRD"), nContrib);
         if (isFoundTVX) {
@@ -429,17 +549,13 @@ struct MatchingQaTask {
           histos.fill(HIST("hZvtxDiffVsNcontribTRD"), nContrib, zVtxDiff);
         }
         histos.fill(HIST("hColBcDiffVsNcontribTRD"), nContrib, bcDiff);
-      } else if (vNumTPCtracks[colId] > 0) {
-        histos.fill(HIST("hNcontribSigma"), nContrib, vWeightedSigma[colId]);
-        histos.fill(HIST("hNcontribColTPC"), nContrib);
-        histos.fill(HIST("hColBcDiffVsNcontribTPC"), nContrib, bcDiff);
-        if (isFoundTVX) {
-          histos.fill(HIST("hNcontribAccTPC"), nContrib);
-          histos.fill(HIST("hRecMultT0CvsNcontribTPC"), multT0C, nContrib);
-          histos.fill(HIST("hZvtxDiffVsNcontribTPC"), nContrib, zVtxDiff);
-        }
       } else if (vNumITStracks[colId] > 0) {
         histos.fill(HIST("hNcontribColITS"), nContrib);
+        if (nContrib > 180) {
+          histos.fill(HIST("hBcInTFITS"), (globalBC - bcSOR) % nBCsPerTF);
+          histos.fill(HIST("hBcInITSROFITS"), (globalBC + nBCsPerOrbit - offsetITSROF) % nBCsPerITSROF);
+        }
+
         if (isFoundTVX)
           histos.fill(HIST("hNcontribAccITS"), nContrib);
       }

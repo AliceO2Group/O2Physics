@@ -201,6 +201,7 @@ struct ebyeMaker {
   int mRunNumber;
   float d_bz;
   uint8_t nTrackletsColl;
+  uint8_t nTrackletsCollMid;
   // o2::base::MatLayerCylSet* lut = nullptr;
 
   Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrNONE), "Type of material correction"};
@@ -526,7 +527,7 @@ struct ebyeMaker {
     } else if (doprocessRun2 || doprocessMiniRun2 || doprocessMcRun2 || doprocessMiniMcRun2) {
       histos.add<TH2>("QA/V0MvsCL0", ";Centrality CL0 (%);Centrality V0M (%)", HistType::kTH2F, {centAxis, centAxis});
       histos.add<TH2>("QA/trackletsVsV0M", ";Centrality CL0 (%);Centrality V0M (%)", HistType::kTH2F, {centAxis, multAxis});
-      histos.add<TH2>("QA/nTrklCorrelation", ";Tracklets |#eta| > 0.7; Tracklets |#eta| < 0.6", HistType::kTH2D, {{201, -0.5, 200.5}, {201, -0.5, 200.5}});
+      histos.add<TH2>("QA/nTrklCorrelation", ";Tracklets |#eta| < 0.6; Tracklets |#eta| > 0.7", HistType::kTH2D, {{201, -0.5, 200.5}, {201, -0.5, 200.5}});
       histos.add<TH1>("QA/TrklEta", ";Tracklets #eta; Entries", HistType::kTH1D, {{100, -3., 3.}});
     }
 
@@ -655,6 +656,7 @@ struct ebyeMaker {
     }
     if (doprocessRun2 || doprocessMcRun2 || doprocessMiniRun2 || doprocessMiniMcRun2) {
       histos.fill(HIST("QA/nTrklCorrelation"), nTracklets[0], nTracklets[1]);
+      nTrackletsCollMid = nTracklets[0];
       nTrackletsColl = nTracklets[1];
     }
 
@@ -1094,7 +1096,7 @@ struct ebyeMaker {
       fillRecoEvent(collision, tracks, V0Table_thisCollision, cV0M);
 
       uint8_t trigger = collision.alias_bit(kINT7) ? 0x1 : 0x0;
-      miniCollTable(std::abs(collision.posZ()), trigger, nTrackletsColl, cV0M);
+      miniCollTable(std::abs(collision.posZ()), trigger, nTrackletsColl, nTrackletsCollMid, cV0M);
 
       for (auto& candidateTrack : candidateTracks[0]) { // protons
         auto tk = tracks.rawIteratorAt(candidateTrack.globalIndex);
@@ -1273,7 +1275,7 @@ struct ebyeMaker {
       fillMcEvent(collision, tracks, V0Table_thisCollision, cV0M, mcParticles, mcLab);
       fillMcGen(mcParticles, mcLab, collision.mcCollisionId());
 
-      miniCollTable(std::abs(collision.posZ()), 0x0, nTrackletsColl, cV0M);
+      miniCollTable(std::abs(collision.posZ()), 0x0, nTrackletsColl, nTrackletsCollMid, cV0M);
 
       for (auto& candidateTrack : candidateTracks[0]) { // protons
         int selMask = -1;
