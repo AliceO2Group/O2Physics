@@ -26,7 +26,6 @@ using namespace o2;
 using namespace o2::framework;
 
 struct HfPidCreator {
-  /// single-track tables
   Produces<aod::PidTpcTofFullEl> trackPidFullEl;
   Produces<aod::PidTpcTofTinyEl> trackPidTinyEl;
   Produces<aod::PidTpcTofFullMu> trackPidFullMu;
@@ -37,9 +36,6 @@ struct HfPidCreator {
   Produces<aod::PidTpcTofTinyKa> trackPidTinyKa;
   Produces<aod::PidTpcTofFullPr> trackPidFullPr;
   Produces<aod::PidTpcTofTinyPr> trackPidTinyPr;
-  /// 2-prong candidate tables
-  Produces<aod::PidTpcTofCand2ProngFullPi> cand2ProngPidFullPi;
-  Produces<aod::PidTpcTofCand2ProngFullKa> cand2ProngPidFullKa;
 
   static constexpr float defaultNSigmaTolerance = .1f;
   static constexpr float defaultNSigma = -999.f + defaultNSigmaTolerance; // -999.f is the default value set in TPCPIDResponse.h and PIDTOF.h
@@ -65,7 +61,6 @@ struct HfPidCreator {
   void init(InitContext& initContext)
   {
     // Check whether the right process functions are enabled.
-    // tracks
     checkTableSwitch(initContext, "PidTpcTofFullEl", doprocessFullEl);
     checkTableSwitch(initContext, "PidTpcTofTinyEl", doprocessTinyEl);
     checkTableSwitch(initContext, "PidTpcTofFullMu", doprocessFullMu);
@@ -76,9 +71,6 @@ struct HfPidCreator {
     checkTableSwitch(initContext, "PidTpcTofTinyKa", doprocessTinyKa);
     checkTableSwitch(initContext, "PidTpcTofFullPr", doprocessFullPr);
     checkTableSwitch(initContext, "PidTpcTofTinyPr", doprocessTinyPr);
-    // 2-prong candidates
-    checkTableSwitch(initContext, "PidTpcTofCand2ProngFullPi", doprocessPIDCand2ProngFullPi);
-    checkTableSwitch(initContext, "PidTpcTofCand2ProngFullKa", doprocessPIDCand2ProngFullKa);
   }
 
   /// Function to combine TPC and TOF NSigma
@@ -134,23 +126,6 @@ struct HfPidCreator {
   PROCESS_PID(Pr)
 
 #undef PROCESS_PID
-
-// Macro for declaring process functions per species taking PID information from the candidate table
-#define PROCESS_PID_CANDIDATE_2PRONG(_Species_, _Id0_, _Id1_)                                                                           \
-  void processPIDCand2ProngFull##_Species_(aod::HfCand2Prong const& candidates)                                                         \
-  {                                                                                                                                     \
-    for (const auto& candidate : candidates) {                                                                                          \
-      cand2ProngPidFull##_Species_(combineNSigma<false>(candidate.nSigTpc##_Species_##_Id0_(), candidate.nSigTof##_Species_##_Id0_()),  \
-                                   combineNSigma<false>(candidate.nSigTpc##_Species_##_Id1_(), candidate.nSigTof##_Species_##_Id1_())); \
-    }                                                                                                                                   \
-  }                                                                                                                                     \
-  PROCESS_SWITCH(HfPidCreator, processPIDCand2ProngFull##_Species_, "Process 2-prong candidate full " #_Species_, false);
-
-  // Declare process functions for all species.
-  PROCESS_PID_CANDIDATE_2PRONG(Pi, 0, 1)
-  PROCESS_PID_CANDIDATE_2PRONG(Ka, 0, 1)
-
-#undef PROCESS_PID_CANDIDATE_2PRONG
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

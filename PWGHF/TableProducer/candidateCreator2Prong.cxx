@@ -57,6 +57,7 @@ using namespace o2::framework;
 /// Reconstruction of heavy-flavour 2-prong decay candidates
 struct HfCandidateCreator2Prong {
   Produces<aod::HfCand2ProngBase> rowCandidateBase;
+  Produces<aod::HfCand2ProngPidTable> rowCandidatePid;
   Produces<aod::HfCand2ProngKF> rowCandidateKF;
 
   // vertexing
@@ -323,9 +324,10 @@ struct HfCandidateCreator2Prong {
                        impactParameter0.getZ(), impactParameter1.getZ(),
                        std::sqrt(impactParameter0.getSigmaZ2()), std::sqrt(impactParameter1.getSigmaZ2()),
                        rowTrackIndexProng2.prong0Id(), rowTrackIndexProng2.prong1Id(), nProngsContributorsPV,
-                       rowTrackIndexProng2.hfflag(),
-                       nSigTpcPi0, nSigTpcKa0, nSigTofPi0, nSigTofKa0,
-                       nSigTpcPi1, nSigTpcKa1, nSigTofPi1, nSigTofKa1);
+                       rowTrackIndexProng2.hfflag());
+      // fill candidate prong PID rows
+      rowCandidatePid(nSigTpcPi0, nSigTpcKa0, nSigTofPi0, nSigTofKa0,
+                      nSigTpcPi1, nSigTpcKa1, nSigTofPi1, nSigTofKa1);
 
       // fill histograms
       if (fillHistograms) {
@@ -497,9 +499,11 @@ struct HfCandidateCreator2Prong {
                        0.f, 0.f,
                        0.f, 0.f,
                        rowTrackIndexProng2.prong0Id(), rowTrackIndexProng2.prong1Id(), nProngsContributorsPV,
-                       rowTrackIndexProng2.hfflag(),
-                       nSigTpcPi0, nSigTpcKa0, nSigTofPi0, nSigTofKa0,
-                       nSigTpcPi1, nSigTpcKa1, nSigTofPi1, nSigTofKa1);
+                       rowTrackIndexProng2.hfflag());
+      // fill candidate prong PID rows
+      rowCandidatePid(nSigTpcPi0, nSigTpcKa0, nSigTofPi0, nSigTofKa0,
+                      nSigTpcPi1, nSigTpcKa1, nSigTofPi1, nSigTofKa1);
+      // fill KF info
       rowCandidateKF(topolChi2PerNdfD0,
                      massD0, massD0bar);
 

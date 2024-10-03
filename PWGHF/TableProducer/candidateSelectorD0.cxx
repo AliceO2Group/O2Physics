@@ -428,11 +428,11 @@ struct HfCandidateSelectorD0 {
         bool isSelectedMlD0bar = false;
 
         if (statusD0 > 0) {
-          std::vector<float> inputFeaturesD0 = hfMlResponse.getInputFeatures(candidate, trackPos, trackNeg, o2::constants::physics::kD0);
+          std::vector<float> inputFeaturesD0 = hfMlResponse.getInputFeatures(candidate, o2::constants::physics::kD0);
           isSelectedMlD0 = hfMlResponse.isSelectedMl(inputFeaturesD0, ptCand, outputMlD0);
         }
         if (statusD0bar > 0) {
-          std::vector<float> inputFeaturesD0bar = hfMlResponse.getInputFeatures(candidate, trackPos, trackNeg, o2::constants::physics::kD0Bar);
+          std::vector<float> inputFeaturesD0bar = hfMlResponse.getInputFeatures(candidate, o2::constants::physics::kD0Bar);
           isSelectedMlD0bar = hfMlResponse.isSelectedMl(inputFeaturesD0bar, ptCand, outputMlD0bar);
         }
 
