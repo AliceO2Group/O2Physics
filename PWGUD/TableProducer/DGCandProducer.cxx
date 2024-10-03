@@ -54,7 +54,7 @@ struct DGCandProducer {
     {}};
 
   // data inputs
-  using CCs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
+  using CCs = soa::Join<aod::Collisions, aod::EvSels>;
   using CC = CCs::iterator;
   using BCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
   using BC = BCs::iterator;
