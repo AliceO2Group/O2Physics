@@ -1327,7 +1327,7 @@ struct strangeness_in_jets {
 
       for (auto& mcParticle : mcParticles_per_coll) {
 
-        if (mcParticle.y() < yMin || mcParticle.y() > yMax)
+        if (mcParticle.eta() < etaMin || mcParticle.eta() > etaMax)
           continue;
         if (!mcParticle.isPhysicalPrimary())
           continue;
