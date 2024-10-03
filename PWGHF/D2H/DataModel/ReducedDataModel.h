@@ -295,6 +295,7 @@ DECLARE_SOA_TABLE(HfMcRecRedDpPis, "AOD", "HFMCRECREDDPPI", //! Table with recon
                   hf_cand_b0_reduced::Prong0Id,
                   hf_cand_b0_reduced::Prong1Id,
                   hf_cand_b0::FlagMcMatchRec,
+                  hf_cand_b0::FlagWrongCollision,
                   hf_cand_b0::DebugMcRec,
                   hf_b0_mc::PtMother);
 
@@ -312,6 +313,7 @@ DECLARE_SOA_TABLE(HfMcCheckDpPis, "AOD", "HFMCCHECKDPPI", //! Table with reconst
 // Table with same size as HFCANDB0
 DECLARE_SOA_TABLE(HfMcRecRedB0s, "AOD", "HFMCRECREDB0", //! Reconstruction-level MC information on B0 candidates for reduced workflow
                   hf_cand_b0::FlagMcMatchRec,
+                  hf_cand_b0::FlagWrongCollision,
                   hf_cand_b0::DebugMcRec,
                   hf_b0_mc::PtMother);
 
@@ -374,6 +376,7 @@ DECLARE_SOA_TABLE(HfMcRecRedD0Pis, "AOD", "HFMCRECREDD0PI", //! Table with recon
                   hf_cand_bplus_reduced::Prong0Id,
                   hf_cand_bplus_reduced::Prong1Id,
                   hf_cand_bplus::FlagMcMatchRec,
+                  hf_cand_bplus::FlagWrongCollision,
                   hf_cand_bplus::DebugMcRec,
                   hf_bplus_mc::PtMother);
 
@@ -388,6 +391,7 @@ DECLARE_SOA_TABLE(HfMcCheckD0Pis, "AOD", "HFMCCHECKD0PI", //! Table with reconst
 // Table with same size as HFCANDBPLUS
 DECLARE_SOA_TABLE(HfMcRecRedBps, "AOD", "HFMCRECREDBP", //! Reconstruction-level MC information on B+ candidates for reduced workflow
                   hf_cand_bplus::FlagMcMatchRec,
+                  hf_cand_bplus::FlagWrongCollision,
                   hf_cand_bplus::DebugMcRec,
                   hf_bplus_mc::PtMother);
 
