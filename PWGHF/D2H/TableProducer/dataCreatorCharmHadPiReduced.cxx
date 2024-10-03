@@ -58,7 +58,8 @@ enum DecayChannel : uint8_t {
 };
 
 enum WrongCollisionType : uint8_t {
-  WrongAssociation = 0,
+  None = 0,
+  WrongAssociation,
   SplitCollision,
 };
 
@@ -333,10 +334,10 @@ struct HfDataCreatorCharmHadPiReduced {
   {
 
     if (particleMother.mcCollision().globalIndex() != collision.mcCollisionId()) {
-      flagWrongCollision = BIT(WrongCollisionType::WrongAssociation);
+      flagWrongCollision = WrongCollisionType::WrongAssociation;
     } else {
       if (collision.globalIndex() != indexCollisionMaxNumContrib) {
-        flagWrongCollision = BIT(WrongCollisionType::SplitCollision);
+        flagWrongCollision = WrongCollisionType::SplitCollision;
       }
     }
   }
@@ -352,13 +353,13 @@ struct HfDataCreatorCharmHadPiReduced {
                       const std::vector<TTrack>& vecDaughtersB,
                       int& indexHfCandCharm,
                       std::map<int64_t, int64_t> selectedTracksPion,
-                      const int64_t& indexCollisionMaxNumContrib)
+                      const int64_t indexCollisionMaxNumContrib)
   {
 
     // we check the MC matching to be stored
     int8_t sign{0};
     int8_t flag{0};
-    int8_t flagWrongCollision{0};
+    int8_t flagWrongCollision{WrongCollisionType::None};
     int8_t debug{0};
     int pdgCodeBeautyMother{-1};
     int pdgCodeCharmMother{-1};
