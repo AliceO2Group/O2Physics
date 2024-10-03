@@ -93,7 +93,7 @@ struct lambdapolsp {
   Configurable<double> ConfV0CPAMin{"ConfV0CPAMin", 0.9998f, "Minimum CPA of V0"};
   Configurable<float> ConfV0TranRadV0Min{"ConfV0TranRadV0Min", 1.5f, "Minimum transverse radius"};
   Configurable<float> ConfV0TranRadV0Max{"ConfV0TranRadV0Max", 100.f, "Maximum transverse radius"};
-  Configurable<double> cMaxV0DCA{"cMaxV0DCA", 0.2, "Maximum V0 DCA to PV"};
+  Configurable<double> cMinV0DCA{"cMinV0DCA", 0.05, "Minimum V0 daughters DCA to PV"};
   Configurable<float> cMaxV0LifeTime{"cMaxV0LifeTime", 20, "Maximum V0 life time"};
   Configurable<float> cSigmaMassKs0{"cSigmaMassKs0", 0.006, "Sigma cut on KS0 mass"};
   Configurable<float> cMinLambdaMass{"cMinLambdaMass", 1.0, "Minimum lambda mass"};
@@ -156,20 +156,24 @@ struct lambdapolsp {
   template <typename Collision, typename V0>
   bool SelectionV0(Collision const& collision, V0 const& candidate)
   {
-    if (TMath::Abs(candidate.dcav0topv()) > cMaxV0DCA) {
-      return false;
-    }
-    const float pT = candidate.pt();
-    const std::vector<float> decVtx = {candidate.x(), candidate.y(), candidate.z()};
-    const float tranRad = candidate.v0radius();
-    const double dcaDaughv0 = TMath::Abs(candidate.dcaV0daughters());
-    const double cpav0 = candidate.v0cosPA();
 
-    float CtauLambda = candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * TDatabasePDG::Instance()->GetParticle(kLambda0)->Mass();
-    float lowmasscutlambda = cMinLambdaMass;
-    float highmasscutlambda = cMaxLambdaMass;
+    const float pT = candidate.pt();
+    // const std::vector<float> decVtx = {candidate.x(), candidate.y(), candidate.z()};
+    const float tranRad = candidate.v0radius();
+    const float dcaDaughv0 = TMath::Abs(candidate.dcaV0daughters());
+    const float cpav0 = candidate.v0cosPA();
+
+    float CtauLambda = candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * massLambda;
+    // float lowmasscutlambda = cMinLambdaMass;
+    // float highmasscutlambda = cMaxLambdaMass;
 
     if (pT < ConfV0PtMin) {
+      return false;
+    }
+    if (TMath::Abs(candidate.dcapostopv()) < cMinV0DCA) {
+      return false;
+    }
+    if (TMath::Abs(candidate.dcanegtopv()) < cMinV0DCA) {
       return false;
     }
     if (dcaDaughv0 > ConfV0DCADaughMax) {
@@ -184,7 +188,7 @@ struct lambdapolsp {
     if (tranRad > ConfV0TranRadV0Max) {
       return false;
     }
-    if (TMath::Abs(CtauLambda) > cMaxV0LifeTime || candidate.mLambda() < lowmasscutlambda || candidate.mLambda() > highmasscutlambda) {
+    if (TMath::Abs(CtauLambda) > cMaxV0LifeTime) {
       return false;
     }
     if (TMath::Abs(candidate.yLambda()) > ConfV0Rap) {
@@ -193,34 +197,36 @@ struct lambdapolsp {
     return true;
   }
   template <typename T>
-  bool isSelectedV0Daughter(T const& track, float charge, int pid)
+  bool isSelectedV0Daughter(T const& track, int pid)
   {
     const auto eta = track.eta();
     const auto pt = track.pt();
     const auto tpcNClsF = track.tpcNClsFound();
-    const auto dcaXY = track.dcaXY();
-    const auto sign = track.sign();
+    // const auto dcaXY = track.dcaXY();
+    // const auto sign = track.sign();
+    /*
     if (charge < 0 && sign > 0) {
       return false;
     }
     if (charge > 0 && sign < 0) {
       return false;
-    }
+      }*/
     if (TMath::Abs(eta) > ConfDaughEta) {
       return false;
     }
-    if (TMath::Abs(pt) < ConfDaughPt) {
+    if (pt < ConfDaughPt) {
       return false;
     }
     if (tpcNClsF < ConfDaughTPCnclsMin) {
       return false;
     }
+    /*
     if (track.tpcCrossedRowsOverFindableCls() < 0.8) {
       return false;
-    }
+      }
     if (TMath::Abs(dcaXY) < ConfDaughDCAMin) {
       return false;
-    }
+      }*/
     if (pid == 0 && TMath::Abs(track.tpcNSigmaPr()) > ConfDaughPIDCuts) {
       return false;
     }
@@ -247,14 +253,17 @@ struct lambdapolsp {
   // ROOT::Math::XYZVector threeVecDauCM, threeVecDauCMXY, eventplaneVec, eventplaneVecNorm, beamvector;
   ROOT::Math::XYZVector threeVecDauCM, threeVecDauCMXY;
   float phiangle = 0.0;
-  double massPi = TDatabasePDG::Instance()->GetParticle(kPiPlus)->Mass();
-  double massPr = TDatabasePDG::Instance()->GetParticle(kProton)->Mass();
-  double massLambda = TDatabasePDG::Instance()->GetParticle(kLambda0)->Mass();
+  // double massPi = TDatabasePDG::Instance()->GetParticle(kPiPlus)->Mass();
+  // double massPr = TDatabasePDG::Instance()->GetParticle(kProton)->Mass();
+  // double massLambda = TDatabasePDG::Instance()->GetParticle(kLambda0)->Mass();
+  double massLambda = o2::constants::physics::MassLambda;
+  double massPr = o2::constants::physics::MassProton;
+  double massPi = o2::constants::physics::MassPionCharged;
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter centralityFilter = (nabs(aod::cent::centFT0C) < cfgCutCentralityMax && nabs(aod::cent::centFT0C) > cfgCutCentralityMin);
-  Filter acceptanceFilter = (nabs(aod::track::eta) < cfgCutEta && nabs(aod::track::pt) > cfgCutPT);
-  Filter dcaCutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
+  // Filter acceptanceFilter = (nabs(aod::track::eta) < cfgCutEta && nabs(aod::track::pt) > cfgCutPT);
+  // Filter dcaCutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
 
   using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::SPCalibrationTables, aod::Mults>>;
   using AllTrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr>;
@@ -296,9 +305,6 @@ struct lambdapolsp {
     histos.fill(HIST("hpSinPsiC"), centrality, (TMath::Sin(psiZDCC)));
 
     for (auto v0 : V0s) {
-      if (!SelectionV0(collision, v0)) {
-        continue;
-      }
 
       auto postrack = v0.template posTrack_as<AllTrackCandidates>();
       auto negtrack = v0.template negTrack_as<AllTrackCandidates>();
@@ -306,15 +312,19 @@ struct lambdapolsp {
       int LambdaTag = 0;
       int aLambdaTag = 0;
 
-      if (isSelectedV0Daughter(postrack, 1, 0) && isSelectedV0Daughter(negtrack, -1, 1)) {
+      if (isSelectedV0Daughter(postrack, 0) && isSelectedV0Daughter(negtrack, 1)) {
         LambdaTag = 1;
       }
-      if (isSelectedV0Daughter(negtrack, -1, 0) && isSelectedV0Daughter(postrack, 1, 1)) {
+      if (isSelectedV0Daughter(negtrack, 0) && isSelectedV0Daughter(postrack, 1)) {
         aLambdaTag = 1;
       }
 
       if (LambdaTag == aLambdaTag)
         continue;
+
+      if (!SelectionV0(collision, v0)) {
+        continue;
+      }
 
       if (LambdaTag) {
         Proton = ROOT::Math::PxPyPzMVector(postrack.px(), postrack.py(), postrack.pz(), massPr);
@@ -331,8 +341,8 @@ struct lambdapolsp {
       fourVecDauCM = boost(Proton);
       threeVecDauCM = fourVecDauCM.Vect();
       // beamvector = ROOT::Math::XYZVector(0, 0, 1);
-      //  eventplaneVec = ROOT::Math::XYZVector(collision.qFT0C(), collision.qFT0A(), 0); //this needs to be changed
-      //  eventplaneVecNorm = eventplaneVec.Cross(beamvector); //z'
+      // eventplaneVec = ROOT::Math::XYZVector(collision.qFT0C(), collision.qFT0A(), 0); //this needs to be changed
+      // eventplaneVecNorm = eventplaneVec.Cross(beamvector); //z'
       phiangle = TMath::ATan2(fourVecDauCM.Py(), fourVecDauCM.Px());
 
       auto phiminuspsiC = GetPhiInRange(phiangle - psiZDCC);
@@ -349,20 +359,20 @@ struct lambdapolsp {
 
       if (LambdaTag) {
         if (correction) {
-          histos.fill(HIST("hSparseLambdaPolA_corr"), v0.mLambda(), Lambda.Pt(), cosThetaStar, sinPhiStar, cosPhiStar, PolA, centrality);
-          histos.fill(HIST("hSparseLambdaPolC_corr"), v0.mLambda(), Lambda.Pt(), cosThetaStar, sinPhiStar, cosPhiStar, PolC, centrality);
+          histos.fill(HIST("hSparseLambdaPolA_corr"), v0.mLambda(), v0.pt(), cosThetaStar, sinPhiStar, cosPhiStar, PolA, centrality);
+          histos.fill(HIST("hSparseLambdaPolC_corr"), v0.mLambda(), v0.pt(), cosThetaStar, sinPhiStar, cosPhiStar, PolC, centrality);
         } else {
-          histos.fill(HIST("hSparseLambdaPolA"), v0.mLambda(), Lambda.Pt(), PolA, centrality);
-          histos.fill(HIST("hSparseLambdaPolC"), v0.mLambda(), Lambda.Pt(), PolC, centrality);
+          histos.fill(HIST("hSparseLambdaPolA"), v0.mLambda(), v0.pt(), PolA, centrality);
+          histos.fill(HIST("hSparseLambdaPolC"), v0.mLambda(), v0.pt(), PolC, centrality);
         }
       }
       if (aLambdaTag) {
         if (correction) {
-          histos.fill(HIST("hSparseAntiLambdaPolA_corr"), v0.mLambda(), Lambda.Pt(), cosThetaStar, sinPhiStar, cosPhiStar, PolA, centrality);
-          histos.fill(HIST("hSparseAntiLambdaPolC_corr"), v0.mLambda(), Lambda.Pt(), cosThetaStar, sinPhiStar, cosPhiStar, PolC, centrality);
+          histos.fill(HIST("hSparseAntiLambdaPolA_corr"), v0.mAntiLambda(), v0.pt(), cosThetaStar, sinPhiStar, cosPhiStar, PolA, centrality);
+          histos.fill(HIST("hSparseAntiLambdaPolC_corr"), v0.mAntiLambda(), v0.pt(), cosThetaStar, sinPhiStar, cosPhiStar, PolC, centrality);
         } else {
-          histos.fill(HIST("hSparseAntiLambdaPolA"), v0.mLambda(), Lambda.Pt(), PolA, centrality);
-          histos.fill(HIST("hSparseAntiLambdaPolC"), v0.mLambda(), Lambda.Pt(), PolC, centrality);
+          histos.fill(HIST("hSparseAntiLambdaPolA"), v0.mAntiLambda(), v0.pt(), PolA, centrality);
+          histos.fill(HIST("hSparseAntiLambdaPolC"), v0.mAntiLambda(), v0.pt(), PolC, centrality);
         }
       }
     }

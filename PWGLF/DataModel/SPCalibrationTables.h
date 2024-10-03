@@ -31,6 +31,9 @@ namespace spcalibrationtable
 DECLARE_SOA_COLUMN(TriggerEvent, triggerevent, bool);
 DECLARE_SOA_COLUMN(TriggerEventRunNo, triggereventrunno, int);
 DECLARE_SOA_COLUMN(Cent, cent, float);
+DECLARE_SOA_COLUMN(Vx, vx, float);
+DECLARE_SOA_COLUMN(Vy, vy, float);
+DECLARE_SOA_COLUMN(Vz, vz, float);
 DECLARE_SOA_COLUMN(QXZDCA, qxZDCA, float);
 DECLARE_SOA_COLUMN(QXZDCC, qxZDCC, float);
 DECLARE_SOA_COLUMN(QYZDCA, qyZDCA, float);
@@ -42,6 +45,9 @@ DECLARE_SOA_TABLE(SPCalibrationTables, "AOD", "SPCALCOLS",
                   spcalibrationtable::TriggerEvent,
                   spcalibrationtable::TriggerEventRunNo,
                   spcalibrationtable::Cent,
+                  spcalibrationtable::Vx,
+                  spcalibrationtable::Vy,
+                  spcalibrationtable::Vz,
                   spcalibrationtable::QXZDCA,
                   spcalibrationtable::QXZDCC,
                   spcalibrationtable::QYZDCA,

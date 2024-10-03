@@ -29,6 +29,7 @@
 #include <iostream>
 #include <utility>
 #include <complex>
+#include <algorithm>
 
 #include <TObject.h>
 #include <TString.h>
@@ -145,6 +146,7 @@ class VarManager : public TObject
     kDecayToKPi,                // e.g. D0           -> K+ pi- or cc.
     kTripleCandidateToKPiPi,    // e.g. D+ -> K- pi+ pi+
     kTripleCandidateToPKPi,     // e.g. Lambda_c -> p K- pi+
+    kTripleCandidateToKKPi,     // e.g. D_s -> K+ K- pi+
     kNMaxCandidateTypes
   };
 
@@ -2721,6 +2723,21 @@ void VarManager::FillTriple(T1 const& t1, T2 const& t2, T3 const& t3, float* val
     ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), m1);
     ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), m2);
     ROOT::Math::PtEtaPhiMVector v3(t3.pt(), t3.eta(), t3.phi(), m3);
+    ROOT::Math::PtEtaPhiMVector v123 = v1 + v2 + v3;
+    values[kMass] = v123.M();
+    values[kPt] = v123.Pt();
+    values[kEta] = v123.Eta();
+    values[kPhi] = v123.Phi();
+    values[kRap] = -v123.Rapidity();
+  }
+
+  if (pairType == kTripleCandidateToKKPi) {
+    float m1 = o2::constants::physics::MassKaonCharged;
+    float m2 = o2::constants::physics::MassPionCharged;
+
+    ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), m1);
+    ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), m1);
+    ROOT::Math::PtEtaPhiMVector v3(t3.pt(), t3.eta(), t3.phi(), m2);
     ROOT::Math::PtEtaPhiMVector v123 = v1 + v2 + v3;
     values[kMass] = v123.M();
     values[kPt] = v123.Pt();
