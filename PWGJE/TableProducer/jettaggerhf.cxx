@@ -49,6 +49,7 @@ struct JetTaggerHFTask {
   Configurable<float> prongIPxyMax{"prongIpxyMax", 1, "minimum impact parmeter of prongs on xy plane [cm]"};
   Configurable<float> prongChi2PCAMin{"prongChi2PCAMin", 4, "minimum Chi2 PCA of decay length of prongs"};
   Configurable<float> prongChi2PCAMax{"prongChi2PCAMax", 100, "maximum Chi2 PCA of decay length of prongs"};
+  Configurable<float> prongDispersionMax{"prongDispersionMax", 1, "maximum dispersion of sv"};
 
   // jet flavour definition
   Configurable<float> maxDeltaR{"maxDeltaR", 0.25, "maximum distance of jet axis from flavour initiating parton"};
@@ -67,7 +68,7 @@ struct JetTaggerHFTask {
   Configurable<std::vector<float>> paramsResoFuncLfJetMC{"paramsResoFuncLfJetMC", std::vector<float>{1539435.343, -0.061, 0.896, 13.272, 1.034, 5.884, 0.004, 7.843, 0.090}, "parameters of gaus(0)+expo(3)+expo(5)+expo(7)))"};
   Configurable<float> minSignImpXYSig{"minsIPs", -40.0, "minimum of signed impact parameter significance"};
   Configurable<float> tagPointForIP{"tagPointForIP", 2.5, "tagging working point for IP"};
-  Configurable<int> minIPCount{"minSipCount", 2, "Select at least N signed impact parameter significance in jets"}; // default 2
+  Configurable<int> minIPCount{"minIPCount", 2, "Select at least N signed impact parameter significance in jets"}; // default 2
   // configuration about SV method
   Configurable<bool> doSV{"doSV", false, "fill table for secondary vertex algorithm"};
   Configurable<bool> useXYZForTagging{"useXYZForTagging", false, "Enable tagging decision using full XYZ DCA for secondary vertex algorithm"};
@@ -270,9 +271,9 @@ struct JetTaggerHFTask {
       if (jettaggingutilities::isGreaterThanTaggingPoint(jet, jtracks, trackDcaXYMax, trackDcaZMax, tagPointForIP, minIPCount))
         flagtaggedjetIP = true;
       if (!useXYZForTagging) {
-        flagtaggedjetSV = jettaggingutilities::isTaggedJetSV(jet, prongs, prongChi2PCAMin, prongChi2PCAMax, prongsigmaLxyMax, useXYZForTagging, tagPointForSV);
+        flagtaggedjetSV = jettaggingutilities::isTaggedJetSV(jet, prongs, prongChi2PCAMin, prongChi2PCAMax, prongsigmaLxyMax, prongDispersionMax, useXYZForTagging, tagPointForSV);
       } else {
-        flagtaggedjetSV = jettaggingutilities::isTaggedJetSV(jet, prongs, prongChi2PCAMin, prongChi2PCAMax, prongsigmaLxyzMax, useXYZForTagging, tagPointForSV);
+        flagtaggedjetSV = jettaggingutilities::isTaggedJetSV(jet, prongs, prongChi2PCAMin, prongChi2PCAMax, prongsigmaLxyzMax, prongDispersionMax, useXYZForTagging, tagPointForSV);
       }
       taggingTableData(0, jetProb, flagtaggedjetIP, flagtaggedjetSV);
     }
@@ -323,9 +324,9 @@ struct JetTaggerHFTask {
       if (jettaggingutilities::isGreaterThanTaggingPoint(mcdjet, jtracks, trackDcaXYMax, trackDcaZMax, tagPointForIP, minIPCount))
         flagtaggedjetIP = true;
       if (!useXYZForTagging) {
-        flagtaggedjetSV = jettaggingutilities::isTaggedJetSV(mcdjet, prongs, prongChi2PCAMin, prongChi2PCAMax, prongsigmaLxyzMax, prongIPxyMin, prongIPxyMax, useXYZForTagging, tagPointForSV);
+        flagtaggedjetSV = jettaggingutilities::isTaggedJetSV(mcdjet, prongs, prongChi2PCAMin, prongChi2PCAMax, prongsigmaLxyzMax, prongIPxyMin, prongIPxyMax, prongDispersionMax, useXYZForTagging, tagPointForSV);
       } else {
-        flagtaggedjetSV = jettaggingutilities::isTaggedJetSV(mcdjet, prongs, prongChi2PCAMin, prongChi2PCAMax, prongsigmaLxyzMax, prongIPxyMin, prongIPxyMax, useXYZForTagging, tagPointForSV);
+        flagtaggedjetSV = jettaggingutilities::isTaggedJetSV(mcdjet, prongs, prongChi2PCAMin, prongChi2PCAMax, prongsigmaLxyzMax, prongIPxyMin, prongIPxyMax, prongDispersionMax, useXYZForTagging, tagPointForSV);
       }
       taggingTableMCD(origin, jetProb, flagtaggedjetIP, flagtaggedjetSV);
     }
