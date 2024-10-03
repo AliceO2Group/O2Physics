@@ -159,12 +159,9 @@ class HfMlResponseD0ToKPi : public HfMlResponse<TypeOutputScore>
 
   /// Method to get the input features vector needed for ML inference
   /// \param candidate is the D0 candidate
-  /// \param prong0 is the candidate's prong0
-  /// \param prong1 is the candidate's prong1
   /// \return inputFeatures vector
-  template <typename T1, typename T2>
-  std::vector<float> getInputFeatures(T1 const& candidate,
-                                      T2 const& prong0, T2 const& prong1, int const& pdgCode)
+  template <typename T1>
+  std::vector<float> getInputFeatures(T1 const& candidate, int const& pdgCode)
   {
     std::vector<float> inputFeatures;
 
