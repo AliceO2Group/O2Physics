@@ -566,8 +566,8 @@ struct Dilepton {
       fRegistry.addClone("Pair/same/", "Pair/mix/");
     } else if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kHFll)) {
       const AxisSpec axis_dphi_ee{18, 0, M_PI, "#Delta#varphi = #varphi_{e1} - #varphi_{e2} (rad.)"};
-      const AxisSpec axis_deta_ee{20, -1., 1., "#Delta#eta = #eta_{l1} - #eta_{l2}"};
-      fRegistry.add("Pair/same/uls/hs", "dilepton", kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_deta_ee, axis_dphi_ee}, true);
+      const AxisSpec axis_deta_ee{40, -2., 2., "#Delta#eta = #eta_{l1} - #eta_{l2}"};
+      fRegistry.add("Pair/same/uls/hs", "dilepton", kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_dphi_ee, axis_deta_ee}, true);
       fRegistry.addClone("Pair/same/uls/", "Pair/same/lspp/");
       fRegistry.addClone("Pair/same/uls/", "Pair/same/lsmm/");
       fRegistry.addClone("Pair/same/", "Pair/mix/");
