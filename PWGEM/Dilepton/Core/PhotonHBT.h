@@ -25,6 +25,7 @@
 #include <utility>
 #include <tuple>
 #include <vector>
+#include <random>
 
 #include "TString.h"
 #include "Math/Vector4D.h"
@@ -175,10 +176,13 @@ struct PhotonHBT {
     Configurable<bool> cfg_require_itsib_1st{"cfg_require_itsib_1st", true, "flag to require ITS ib 1st hit"};
     Configurable<float> cfg_phiv_slope{"cfg_phiv_slope", 0.0185, "slope for m vs. phiv"};
     Configurable<float> cfg_phiv_intercept{"cfg_phiv_intercept", -0.0280, "intercept for m vs. phiv"};
+    Configurable<bool> cfg_apply_phiv_meedep{"cfg_apply_phiv_meedep", false, "flag to apply mee-dependent phiv cut"};
+    Configurable<float> cfg_max_phiv{"cfg_max_phiv", 3.2, "max phiv (constant)"};
 
     Configurable<float> cfg_min_pt_track{"cfg_min_pt_track", 0.2, "min pT for single track"};
     Configurable<float> cfg_min_eta_track{"cfg_min_eta_track", -0.8, "max eta for single track"};
     Configurable<float> cfg_max_eta_track{"cfg_max_eta_track", +0.8, "max eta for single track"};
+    Configurable<float> cfg_max_dca3dsigma_track{"cfg_max_dca3dsigma_track", 1e+10, "max DCA 3D in sigma"};
     Configurable<int> cfg_min_ncluster_tpc{"cfg_min_ncluster_tpc", 0, "min ncluster tpc"};
     Configurable<int> cfg_min_ncluster_its{"cfg_min_ncluster_its", 5, "min ncluster its"};
     Configurable<int> cfg_min_ncrossedrows{"cfg_min_ncrossedrows", 100, "min ncrossed rows"};
@@ -203,6 +207,7 @@ struct PhotonHBT {
     Configurable<float> cfg_max_TPCNsigmaPr{"cfg_max_TPCNsigmaPr", +3.0, "max. TPC n sigma for proton exclusion"};
     Configurable<float> cfg_min_TOFNsigmaEl{"cfg_min_TOFNsigmaEl", -3.0, "min. TOF n sigma for electron inclusion"};
     Configurable<float> cfg_max_TOFNsigmaEl{"cfg_max_TOFNsigmaEl", +3.0, "max. TOF n sigma for electron inclusion"};
+    Configurable<float> cfg_max_pin_pirejTPC{"cfg_max_pin_pirejTPC", 0.5, "max. pin for pion rejection in TPC"};
     Configurable<bool> enableTTCA{"enableTTCA", true, "Flag to enable or disable TTCA"};
 
     // CCDB configuration for PID ML
@@ -216,7 +221,8 @@ struct PhotonHBT {
 
   struct : ConfigurableGroup {
     std::string prefix = "ggpaircut_group";
-    Configurable<bool> applydR{"applydR", false, "apply deta-dphi cut to avoid track splitting/merging"};
+    Configurable<bool> applydRdZ{"applydRdZ", false, "apply dr-dz cut to avoid track splitting/merging only for kPCMPCM"};
+    Configurable<bool> applydEtadPhi{"applydEtadPhi", false, "apply deta-dphi cut to avoid track splitting/merging"};
     Configurable<float> cfgMinDeltaEta{"cfgMinDeltaEta", 0.f, "min. delta-eta between 2 photons"};
     Configurable<float> cfgMinDeltaPhi{"cfgMinDeltaPhi", 0.f, "min. delta-phi between 2 photons"};
     Configurable<float> cfgMinDeltaR{"cfgMinDeltaR", 0.f, "min. delta-r between 2 photons"};
@@ -245,6 +251,9 @@ struct PhotonHBT {
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
   static constexpr std::string_view event_types[2] = {"before", "after"};
   static constexpr std::string_view event_pair_types[2] = {"same/", "mix/"};
+
+  std::mt19937 engine;
+  std::uniform_int_distribution<int> dist01;
 
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -339,6 +348,10 @@ struct PhotonHBT {
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
 
+    std::random_device seed_gen;
+    engine = std::mt19937(seed_gen());
+    dist01 = std::uniform_int_distribution<int>(0, 1);
+
     fRegistry.add("Pair/mix/hDiffBC", "diff. global BC in mixed event;|BC_{current} - BC_{mixed}|", kTH1D, {{1001, -0.5, 1000.5}}, true);
     if (doprocessTriggerAnalysis) {
       fRegistry.add("Event/hNInspectedTVX", "N inspected TVX;run number;N_{TVX}", kTProfile, {{80000, 520000.5, 600000.5}}, true);
@@ -416,10 +429,9 @@ struct PhotonHBT {
       }
     }
 
-    if constexpr (pairtype == ggHBTPairType::kPCMPCM) { // dr, dz of conversion points
-      fRegistry.add("Pair/same/hDeltaRDeltaZ", "diphoton distance in RZ;#Deltar = #sqrt{(#Deltax)^{2} + (#Deltay)^{2}} (cm);#Deltaz (cm)", kTH2D, {{100, 0, +10}, {200, -10, 10}}, true);
-    } else { // deta, dphi of track momentum
-      fRegistry.add("Pair/same/hDeltaEtaDeltaPhi", "diphoton distance in #eta-#varphi plane;#Delta#varphi (rad.);#Delta#eta", kTH2D, {{200, -0.1, +0.1}, {200, -0.1, 0.1}}, true);
+    fRegistry.add("Pair/same/hDeltaEtaDeltaPhi", "distance between 2 LS tracks in #eta-#varphi plane;#Delta#varphi (rad.);#Delta#eta", kTH2D, {{80, -0.2, +0.2}, {80, -0.2, 0.2}}, true); // deta, dphi of track momentum
+    if constexpr (pairtype == ggHBTPairType::kPCMPCM) {                                                                                                                                   // dr, dz of conversion points
+      fRegistry.add("Pair/same/hDeltaRDeltaZ", "diphoton distance in RZ;#Deltar = #sqrt{(#Deltax)^{2} + (#Deltay)^{2}} (cm);|#Deltaz| (cm)", kTH2D, {{40, 0, 20}, {40, 0, 20}}, true);
     }
 
     fRegistry.addClone("Pair/same/", "Pair/mix/");
@@ -504,7 +516,11 @@ struct PhotonHBT {
     fDielectronCut.SetMeeRange(dielectroncuts.cfg_min_mass, dielectroncuts.cfg_max_mass);
     fDielectronCut.SetPairPtRange(dielectroncuts.cfg_min_pair_pt, dielectroncuts.cfg_max_pair_pt);
     fDielectronCut.SetPairYRange(dielectroncuts.cfg_min_pair_y, dielectroncuts.cfg_max_pair_y);
-    fDielectronCut.SetMaxPhivPairMeeDep([&](float mll) { return (mll - dielectroncuts.cfg_phiv_intercept) / dielectroncuts.cfg_phiv_slope; });
+    if (dielectroncuts.cfg_apply_phiv_meedep) {
+      fDielectronCut.SetMaxPhivPairMeeDep([&](float mll) { return (mll - dielectroncuts.cfg_phiv_intercept) / dielectroncuts.cfg_phiv_slope; });
+    } else {
+      fDielectronCut.SetPhivPairRange(0.f, dielectroncuts.cfg_max_phiv);
+    }
     fDielectronCut.SetPairDCARange(dielectroncuts.cfg_min_pair_dca3d, dielectroncuts.cfg_max_pair_dca3d); // in sigma
     fDielectronCut.ApplyPhiV(dielectroncuts.cfg_apply_phiv);
     fDielectronCut.ApplyPrefilter(dielectroncuts.cfg_apply_pf);
@@ -514,6 +530,7 @@ struct PhotonHBT {
     // for track
     fDielectronCut.SetTrackPtRange(dielectroncuts.cfg_min_pt_track, 1e+10f);
     fDielectronCut.SetTrackEtaRange(dielectroncuts.cfg_min_eta_track, dielectroncuts.cfg_max_eta_track);
+    fDielectronCut.SetTrackDca3DRange(0.f, dielectroncuts.cfg_max_dca3dsigma_track); // in sigma
     fDielectronCut.SetMinNClustersTPC(dielectroncuts.cfg_min_ncluster_tpc);
     fDielectronCut.SetMinNCrossedRowsTPC(dielectroncuts.cfg_min_ncrossedrows);
     fDielectronCut.SetMinNCrossedRowsOverFindableClustersTPC(0.8);
@@ -521,8 +538,8 @@ struct PhotonHBT {
     fDielectronCut.SetChi2PerClusterITS(0.0, dielectroncuts.cfg_max_chi2its);
     fDielectronCut.SetNClustersITS(dielectroncuts.cfg_min_ncluster_its, 7);
     fDielectronCut.SetMeanClusterSizeITS(dielectroncuts.cfg_min_its_cluster_size, dielectroncuts.cfg_max_its_cluster_size, dielectroncuts.cfg_max_p_its_cluster_size);
-    fDielectronCut.SetMaxDcaXY(dielectroncuts.cfg_max_dcaxy);
-    fDielectronCut.SetMaxDcaZ(dielectroncuts.cfg_max_dcaz);
+    fDielectronCut.SetTrackMaxDcaXY(dielectroncuts.cfg_max_dcaxy);
+    fDielectronCut.SetTrackMaxDcaZ(dielectroncuts.cfg_max_dcaz);
 
     // for eID
     fDielectronCut.SetPIDScheme(dielectroncuts.cfg_pid_scheme);
@@ -532,6 +549,7 @@ struct PhotonHBT {
     fDielectronCut.SetTPCNsigmaKaRange(dielectroncuts.cfg_min_TPCNsigmaKa, dielectroncuts.cfg_max_TPCNsigmaKa);
     fDielectronCut.SetTPCNsigmaPrRange(dielectroncuts.cfg_min_TPCNsigmaPr, dielectroncuts.cfg_max_TPCNsigmaPr);
     fDielectronCut.SetTOFNsigmaElRange(dielectroncuts.cfg_min_TOFNsigmaEl, dielectroncuts.cfg_max_TOFNsigmaEl);
+    fDielectronCut.SetMaxPinForPionRejectionTPC(dielectroncuts.cfg_max_pin_pirejTPC);
 
     if (dielectroncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) { // please call this at the end of DefineDileptonCut
       eid_bdt = new o2::ml::OnnxModel();
@@ -555,20 +573,20 @@ struct PhotonHBT {
   template <int ev_id, typename TCollision>
   void fillPairHistogram(TCollision const&, const ROOT::Math::PtEtaPhiMVector v1, const ROOT::Math::PtEtaPhiMVector v2, const float weight = 1.f)
   {
+    float rndm = std::pow(-1, dist01(engine) % 2); // +1 or -1 to randomize order between 1 and 2.
     // Lab. frame
-    ROOT::Math::PtEtaPhiMVector q12 = v1 - v2;
+    ROOT::Math::PtEtaPhiMVector q12 = (v1 - v2) * rndm;
     ROOT::Math::PtEtaPhiMVector k12 = 0.5 * (v1 + v2);
     float qinv = -q12.M(); // for identical particles -> qinv = 2 x kstar
     float kt = k12.Pt();
 
-    // ROOT::Math::XYZVector q_3d = q12.Vect();                                   // 3D q vector
     ROOT::Math::XYZVector uv_out(k12.Px() / k12.Pt(), k12.Py() / k12.Pt(), 0); // unit vector for out. i.e. parallel to kt
     ROOT::Math::XYZVector uv_long(0, 0, 1);                                    // unit vector for long, beam axis
     ROOT::Math::XYZVector uv_side = uv_out.Cross(uv_long);                     // unit vector for side
 
     ROOT::Math::PxPyPzEVector v1_cartesian(v1);
     ROOT::Math::PxPyPzEVector v2_cartesian(v2);
-    ROOT::Math::PxPyPzEVector q12_cartesian = v1_cartesian - v2_cartesian;
+    ROOT::Math::PxPyPzEVector q12_cartesian = (v1_cartesian - v2_cartesian) * rndm;
     float beta = (v1 + v2).Beta();
     float beta_x = beta * std::cos((v1 + v2).Phi()) * std::sin((v1 + v2).Theta());
     float beta_y = beta * std::sin((v1 + v2).Phi()) * std::sin((v1 + v2).Theta());
@@ -590,7 +608,7 @@ struct PhotonHBT {
     ROOT::Math::Boost boostPRF = ROOT::Math::Boost(-beta_x, -beta_y, -beta_z);
     ROOT::Math::PxPyPzEVector v1_prf = boostPRF(v1_cartesian);
     ROOT::Math::PxPyPzEVector v2_prf = boostPRF(v2_cartesian);
-    ROOT::Math::PxPyPzEVector rel_k = v1_prf - v2_prf;
+    ROOT::Math::PxPyPzEVector rel_k = (v1_prf - v2_prf) * rndm;
     float kstar = 0.5 * rel_k.P();
     // LOGF(info, "qabs_lcms = %f, qinv = %f, kstar = %f", qabs_lcms, qinv, kstar);
 
@@ -706,10 +724,26 @@ struct PhotonHBT {
 
           float dz = g1.vz() - g2.vz();
           float dr = std::sqrt(std::pow(g1.vx() - g2.vx(), 2) + std::pow(g1.vy() - g2.vy(), 2));
-          if (ggpaircuts.applydR && std::pow(dz / ggpaircuts.cfgMinDeltaZ, 2) + std::pow(dr / ggpaircuts.cfgMinDeltaR, 2) < 1.f) {
+          if (ggpaircuts.applydRdZ && std::pow(dz / ggpaircuts.cfgMinDeltaZ, 2) + std::pow(dr / ggpaircuts.cfgMinDeltaR, 2) < 1.f) {
             continue;
           }
-          fRegistry.fill(HIST("Pair/same/hDeltaRDeltaZ"), dr, dz, 1.f);
+
+          float deta_pos = pos1.eta() - pos2.eta();
+          float dphi_pos = pos1.phi() - pos2.phi();
+          o2::math_utils::bringToPMPi(dphi_pos);
+          float deta_ele = ele1.eta() - ele2.eta();
+          float dphi_ele = ele1.phi() - ele2.phi();
+          o2::math_utils::bringToPMPi(dphi_ele);
+          if (ggpaircuts.applydEtadPhi && std::pow(deta_pos / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi_pos / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
+            continue;
+          }
+          if (ggpaircuts.applydEtadPhi && std::pow(deta_ele / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi_ele / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
+            continue;
+          }
+
+          fRegistry.fill(HIST("Pair/same/hDeltaRDeltaZ"), dr, fabs(dz), 1.f);
+          fRegistry.fill(HIST("Pair/same/hDeltaEtaDeltaPhi"), pos1.phi() - pos2.phi(), pos1.eta() - pos2.eta(), 1.f); // distance between 2 LS tracks
+          fRegistry.fill(HIST("Pair/same/hDeltaEtaDeltaPhi"), ele1.phi() - ele2.phi(), ele1.eta() - ele2.eta(), 1.f); // distance between 2 LS tracks
 
           fillPairHistogram<0>(collision, v1, v2, 1.f);
           ndiphoton++;
@@ -719,12 +753,16 @@ struct PhotonHBT {
           if (std::find(used_photonIds.begin(), used_photonIds.end(), pair_tmp_id1) == used_photonIds.end()) {
             EMTrack g1tmp = EMTrack(ndf, g1.globalIndex(), collision.globalIndex(), g1.globalIndex(), g1.pt(), g1.eta(), g1.phi(), 0);
             g1tmp.setConversionPointXYZ(g1.vx(), g1.vy(), g1.vz());
+            g1tmp.setPositiveLegPtEtaPhiM(pos1.pt(), pos1.eta(), pos1.phi(), o2::constants::physics::MassElectron);
+            g1tmp.setNegativeLegPtEtaPhiM(ele1.pt(), ele1.eta(), ele1.phi(), o2::constants::physics::MassElectron);
             emh1->AddTrackToEventPool(key_df_collision, g1tmp);
             used_photonIds.emplace_back(pair_tmp_id1);
           }
           if (std::find(used_photonIds.begin(), used_photonIds.end(), pair_tmp_id2) == used_photonIds.end()) {
             EMTrack g2tmp = EMTrack(ndf, g2.globalIndex(), collision.globalIndex(), g2.globalIndex(), g2.pt(), g2.eta(), g2.phi(), 0);
             g2tmp.setConversionPointXYZ(g2.vx(), g2.vy(), g2.vz());
+            g2tmp.setPositiveLegPtEtaPhiM(pos2.pt(), pos2.eta(), pos2.phi(), o2::constants::physics::MassElectron);
+            g2tmp.setNegativeLegPtEtaPhiM(ele2.pt(), ele2.eta(), ele2.phi(), o2::constants::physics::MassElectron);
             emh1->AddTrackToEventPool(key_df_collision, g2tmp);
             used_photonIds.emplace_back(pair_tmp_id2);
           }
@@ -799,21 +837,21 @@ struct PhotonHBT {
 
             std::pair pair_tmp = std::make_pair(std::make_pair(pos1.trackId(), ele1.trackId()), std::make_pair(pos2.trackId(), ele2.trackId()));
             if (std::find(used_pairs_per_collision.begin(), used_pairs_per_collision.end(), pair_tmp) == used_pairs_per_collision.end()) {
-              float deta_pos = v_pos1.Eta() - v_pos2.Eta();
-              float dphi_pos = v_pos1.Phi() - v_pos2.Phi();
+              float deta_pos = pos1.eta() - pos2.eta();
+              float dphi_pos = pos1.phi() - pos2.phi();
               o2::math_utils::bringToPMPi(dphi_pos);
-              float deta_ele = v_ele1.Eta() - v_ele2.Eta();
-              float dphi_ele = v_ele1.Phi() - v_ele2.Phi();
+              float deta_ele = ele1.eta() - ele2.eta();
+              float dphi_ele = ele1.phi() - ele2.phi();
               o2::math_utils::bringToPMPi(dphi_ele);
-              if (ggpaircuts.applydR && std::pow(deta_pos / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi_pos / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
+              if (ggpaircuts.applydEtadPhi && std::pow(deta_pos / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi_pos / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
                 continue;
               }
-              if (ggpaircuts.applydR && std::pow(deta_ele / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi_ele / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
+              if (ggpaircuts.applydEtadPhi && std::pow(deta_ele / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi_ele / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
                 continue;
               }
 
-              fRegistry.fill(HIST("Pair/same/hDeltaEtaDeltaPhi"), v_pos1.Phi() - v_pos2.Phi(), v_pos1.Eta() - v_pos2.Eta(), weight1 * weight2); // distance between 2 LS tracks
-              fRegistry.fill(HIST("Pair/same/hDeltaEtaDeltaPhi"), v_ele1.Phi() - v_ele2.Phi(), v_ele1.Eta() - v_ele2.Eta(), weight1 * weight2); // distance between 2 LS tracks
+              fRegistry.fill(HIST("Pair/same/hDeltaEtaDeltaPhi"), dphi_pos, deta_pos, weight1 * weight2); // distance between 2 LS tracks
+              fRegistry.fill(HIST("Pair/same/hDeltaEtaDeltaPhi"), dphi_ele, deta_ele, weight1 * weight2); // distance between 2 LS tracks
               fillPairHistogram<0>(collision, v1_ee, v2_ee, weight1 * weight2);
               ndiphoton++;
               used_pairs_per_collision.emplace_back(std::make_pair(pair_tmp.first, pair_tmp.second));
@@ -831,8 +869,8 @@ struct PhotonHBT {
                 g1pair.setGlobalPosId(pos1.globalIndex());
                 g1pair.setGlobalNegId(ele1.globalIndex());
                 g1pair.setPairDca3DinSigmaOTF(dca1_3d);
-                g1pair.setPositiveLegPtEtaPhiM(v_pos1.Pt(), v_pos1.Eta(), v_pos1.Phi(), o2::constants::physics::MassElectron);
-                g1pair.setNegativeLegPtEtaPhiM(v_ele1.Pt(), v_ele1.Eta(), v_ele1.Phi(), o2::constants::physics::MassElectron);
+                g1pair.setPositiveLegPtEtaPhiM(pos1.pt(), pos1.eta(), pos1.phi(), o2::constants::physics::MassElectron);
+                g1pair.setNegativeLegPtEtaPhiM(ele1.pt(), ele1.eta(), ele1.phi(), o2::constants::physics::MassElectron);
                 g1pair.setAmbPosLegSelfIds(possibleIds_pos1);
                 g1pair.setAmbNegLegSelfIds(possibleIds_ele1);
                 emh1->AddTrackToEventPool(key_df_collision, g1pair);
@@ -848,8 +886,8 @@ struct PhotonHBT {
                 g2pair.setGlobalPosId(pos2.globalIndex());
                 g2pair.setGlobalNegId(ele2.globalIndex());
                 g2pair.setPairDca3DinSigmaOTF(dca2_3d);
-                g2pair.setPositiveLegPtEtaPhiM(v_pos2.Pt(), v_pos2.Eta(), v_pos2.Phi(), o2::constants::physics::MassElectron);
-                g2pair.setNegativeLegPtEtaPhiM(v_ele2.Pt(), v_ele2.Eta(), v_ele2.Phi(), o2::constants::physics::MassElectron);
+                g2pair.setPositiveLegPtEtaPhiM(pos2.pt(), pos2.eta(), pos2.phi(), o2::constants::physics::MassElectron);
+                g2pair.setNegativeLegPtEtaPhiM(ele2.pt(), ele2.eta(), ele2.phi(), o2::constants::physics::MassElectron);
                 g2pair.setAmbPosLegSelfIds(possibleIds_pos2);
                 g2pair.setAmbNegLegSelfIds(possibleIds_ele2);
                 emh1->AddTrackToEventPool(key_df_collision, g2pair);
@@ -907,25 +945,40 @@ struct PhotonHBT {
             ROOT::Math::PtEtaPhiMVector v_pos2(pos2.pt(), pos2.eta(), pos2.phi(), o2::constants::physics::MassElectron);
             ROOT::Math::PtEtaPhiMVector v_ele2(ele2.pt(), ele2.eta(), ele2.phi(), o2::constants::physics::MassElectron);
             ROOT::Math::PtEtaPhiMVector v2_ee = v_pos2 + v_ele2;
-            float deta = v1_gamma.Eta() - v2_ee.Eta();
-            float dphi = v1_gamma.Phi() - v2_ee.Phi();
-            o2::math_utils::bringToPMPi(dphi);
-            if (ggpaircuts.applydR && std::pow(deta / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
+
+            float deta_pos = pos1.eta() - pos2.eta();
+            float dphi_pos = pos1.phi() - pos2.phi();
+            o2::math_utils::bringToPMPi(dphi_pos);
+            float deta_ele = ele1.eta() - ele2.eta();
+            float dphi_ele = ele1.phi() - ele2.phi();
+            o2::math_utils::bringToPMPi(dphi_ele);
+            if (ggpaircuts.applydEtadPhi && std::pow(deta_pos / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi_pos / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
               continue;
             }
-            fRegistry.fill(HIST("Pair/same/hDeltaEtaDeltaPhi"), dphi, deta, weight);
+            if (ggpaircuts.applydEtadPhi && std::pow(deta_ele / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi_ele / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
+              continue;
+            }
+
+            fRegistry.fill(HIST("Pair/same/hDeltaEtaDeltaPhi"), dphi_pos, deta_pos, weight);
+            fRegistry.fill(HIST("Pair/same/hDeltaEtaDeltaPhi"), dphi_ele, deta_ele, weight);
 
             fillPairHistogram<0>(collision, v1_gamma, v2_ee, weight);
             ndiphoton++;
             std::pair<int, int> pair_tmp_id1 = std::make_pair(ndf, g1.globalIndex());
             std::tuple<int, int, int, int> tuple_tmp_id2 = std::make_tuple(ndf, collision.globalIndex(), pos2.globalIndex(), ele2.globalIndex());
             if (std::find(used_photonIds.begin(), used_photonIds.end(), pair_tmp_id1) == used_photonIds.end()) {
-              emh1->AddTrackToEventPool(key_df_collision, EMTrack(ndf, g1.globalIndex(), collision.globalIndex(), g1.globalIndex(), g1.pt(), g1.eta(), g1.phi(), 0));
+              EMTrack g1tmp = EMTrack(ndf, g1.globalIndex(), collision.globalIndex(), g1.globalIndex(), g1.pt(), g1.eta(), g1.phi(), 0);
+              g1tmp.setConversionPointXYZ(g1.vx(), g1.vy(), g1.vz());
+              g1tmp.setPositiveLegPtEtaPhiM(pos1.pt(), pos1.eta(), pos1.phi(), o2::constants::physics::MassElectron);
+              g1tmp.setNegativeLegPtEtaPhiM(ele1.pt(), ele1.eta(), ele1.phi(), o2::constants::physics::MassElectron);
+              emh1->AddTrackToEventPool(key_df_collision, g1tmp);
               used_photonIds.emplace_back(pair_tmp_id1);
             }
             if (std::find(used_dileptonIds.begin(), used_dileptonIds.end(), tuple_tmp_id2) == used_dileptonIds.end()) {
               EMTrack g2pair = EMTrack(ndf, -1, collision.globalIndex(), -1, v2_ee.Pt(), v2_ee.Eta(), v2_ee.Phi(), v2_ee.M());
               g2pair.setPairDca3DinSigmaOTF(dca2_3d);
+              g2pair.setPositiveLegPtEtaPhiM(pos2.pt(), pos2.eta(), pos2.phi(), o2::constants::physics::MassElectron);
+              g2pair.setNegativeLegPtEtaPhiM(ele2.pt(), ele2.eta(), ele2.phi(), o2::constants::physics::MassElectron);
               emh2->AddTrackToEventPool(key_df_collision, g2pair);
               used_dileptonIds.emplace_back(tuple_tmp_id2);
             }
@@ -969,12 +1022,33 @@ struct PhotonHBT {
               ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
               ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
 
+              auto pos1 = g1.getPositiveLeg();
+              auto ele1 = g1.getNegativeLeg();
+              auto pos2 = g2.getPositiveLeg();
+              auto ele2 = g2.getNegativeLeg();
+
               float dz = g1.vz() - g2.vz();
               float dr = std::sqrt(std::pow(g1.vx() - g2.vx(), 2) + std::pow(g1.vy() - g2.vy(), 2));
-              if (ggpaircuts.applydR && std::pow(dz / ggpaircuts.cfgMinDeltaZ, 2) + std::pow(dr / ggpaircuts.cfgMinDeltaR, 2) < 1.f) {
+              if (ggpaircuts.applydRdZ && std::pow(dz / ggpaircuts.cfgMinDeltaZ, 2) + std::pow(dr / ggpaircuts.cfgMinDeltaR, 2) < 1.f) {
                 continue;
               }
-              fRegistry.fill(HIST("Pair/mix/hDeltaRDeltaZ"), dr, dz, 1.f);
+
+              float deta_pos = pos1.Eta() - pos2.Eta();
+              float dphi_pos = pos1.Phi() - pos2.Phi();
+              o2::math_utils::bringToPMPi(dphi_pos);
+              float deta_ele = ele1.Eta() - ele2.Eta();
+              float dphi_ele = ele1.Phi() - ele2.Phi();
+              o2::math_utils::bringToPMPi(dphi_ele);
+              if (ggpaircuts.applydEtadPhi && std::pow(deta_pos / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi_pos / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
+                continue;
+              }
+              if (ggpaircuts.applydEtadPhi && std::pow(deta_ele / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi_ele / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
+                continue;
+              }
+
+              fRegistry.fill(HIST("Pair/mix/hDeltaRDeltaZ"), dr, fabs(dz), 1.f);
+              fRegistry.fill(HIST("Pair/mix/hDeltaEtaDeltaPhi"), dphi_pos, deta_pos, 1.f); // distance between 2 LS tracks
+              fRegistry.fill(HIST("Pair/mix/hDeltaEtaDeltaPhi"), dphi_ele, deta_ele, 1.f); // distance between 2 LS tracks
               fillPairHistogram<1>(collision, v1, v2, 1.f);
             }
           }
@@ -1022,20 +1096,21 @@ struct PhotonHBT {
 
               ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), g1.mass());
               ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), g2.mass());
+
               float deta_pos = pos1.Eta() - pos2.Eta();
               float dphi_pos = pos1.Phi() - pos2.Phi();
               o2::math_utils::bringToPMPi(dphi_pos);
               float deta_ele = ele1.Eta() - ele2.Eta();
               float dphi_ele = ele1.Phi() - ele2.Phi();
               o2::math_utils::bringToPMPi(dphi_ele);
-              if (ggpaircuts.applydR && std::pow(deta_pos / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi_pos / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
+              if (ggpaircuts.applydEtadPhi && std::pow(deta_pos / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi_pos / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
                 continue;
               }
-              if (ggpaircuts.applydR && std::pow(deta_ele / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi_ele / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
+              if (ggpaircuts.applydEtadPhi && std::pow(deta_ele / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi_ele / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
                 continue;
               }
-              fRegistry.fill(HIST("Pair/mix/hDeltaEtaDeltaPhi"), pos1.Phi() - pos2.Phi(), pos1.Eta() - pos2.Eta(), 1.f);
-              fRegistry.fill(HIST("Pair/mix/hDeltaEtaDeltaPhi"), ele1.Phi() - ele2.Phi(), ele1.Eta() - ele2.Eta(), 1.f);
+              fRegistry.fill(HIST("Pair/mix/hDeltaEtaDeltaPhi"), dphi_pos, deta_pos, 1.f); // distance between 2 LS tracks
+              fRegistry.fill(HIST("Pair/mix/hDeltaEtaDeltaPhi"), dphi_ele, deta_ele, 1.f); // distance between 2 LS tracks
               fillPairHistogram<1>(collision, v1, v2, 1.f);
             }
           }
@@ -1062,13 +1137,27 @@ struct PhotonHBT {
             for (auto& g2 : photons2_from_event_pool) {                         // dielectron
               ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.0); // keep v1 for PCM
               ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), g2.mass());
-              float deta = v1.Eta() - v2.Eta();
-              float dphi = v1.Phi() - v2.Phi();
-              o2::math_utils::bringToPMPi(dphi);
-              if (ggpaircuts.applydR && std::pow(deta / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
+
+              auto pos1 = g1.getPositiveLeg();
+              auto ele1 = g1.getNegativeLeg();
+              auto pos2 = g2.getPositiveLeg();
+              auto ele2 = g2.getNegativeLeg();
+
+              float deta_pos = pos1.Eta() - pos2.Eta();
+              float dphi_pos = pos1.Phi() - pos2.Phi();
+              o2::math_utils::bringToPMPi(dphi_pos);
+              float deta_ele = ele1.Eta() - ele2.Eta();
+              float dphi_ele = ele1.Phi() - ele2.Phi();
+              o2::math_utils::bringToPMPi(dphi_ele);
+              if (ggpaircuts.applydEtadPhi && std::pow(deta_pos / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi_pos / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
                 continue;
               }
-              fRegistry.fill(HIST("Pair/mix/hDeltaEtaDeltaPhi"), dphi, deta, 1.f);
+              if (ggpaircuts.applydEtadPhi && std::pow(deta_ele / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi_ele / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
+                continue;
+              }
+
+              fRegistry.fill(HIST("Pair/mix/hDeltaEtaDeltaPhi"), dphi_pos, deta_pos, 1.f); // distance between 2 LS tracks
+              fRegistry.fill(HIST("Pair/mix/hDeltaEtaDeltaPhi"), dphi_ele, deta_ele, 1.f); // distance between 2 LS tracks
               fillPairHistogram<1>(collision, v1, v2, 1.f);
             }
           }
@@ -1095,13 +1184,27 @@ struct PhotonHBT {
             for (auto& g2 : photons1_from_event_pool) {                         // PCM
               ROOT::Math::PtEtaPhiMVector v1(g2.pt(), g2.eta(), g2.phi(), 0.0); // keep v1 for PCM
               ROOT::Math::PtEtaPhiMVector v2(g1.pt(), g1.eta(), g1.phi(), g1.mass());
-              float deta = v1.Eta() - v2.Eta();
-              float dphi = v1.Phi() - v2.Phi();
-              o2::math_utils::bringToPMPi(dphi);
-              if (ggpaircuts.applydR && std::pow(deta / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
+
+              auto pos1 = g1.getPositiveLeg();
+              auto ele1 = g1.getNegativeLeg();
+              auto pos2 = g2.getPositiveLeg();
+              auto ele2 = g2.getNegativeLeg();
+
+              float deta_pos = pos1.Eta() - pos2.Eta();
+              float dphi_pos = pos1.Phi() - pos2.Phi();
+              o2::math_utils::bringToPMPi(dphi_pos);
+              float deta_ele = ele1.Eta() - ele2.Eta();
+              float dphi_ele = ele1.Phi() - ele2.Phi();
+              o2::math_utils::bringToPMPi(dphi_ele);
+              if (ggpaircuts.applydEtadPhi && std::pow(deta_pos / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi_pos / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
                 continue;
               }
-              fRegistry.fill(HIST("Pair/mix/hDeltaEtaDeltaPhi"), dphi, deta, 1.f);
+              if (ggpaircuts.applydEtadPhi && std::pow(deta_ele / ggpaircuts.cfgMinDeltaEta, 2) + std::pow(dphi_ele / ggpaircuts.cfgMinDeltaPhi, 2) < 1.f) {
+                continue;
+              }
+
+              fRegistry.fill(HIST("Pair/mix/hDeltaEtaDeltaPhi"), dphi_pos, deta_pos, 1.f); // distance between 2 LS tracks
+              fRegistry.fill(HIST("Pair/mix/hDeltaEtaDeltaPhi"), dphi_ele, deta_ele, 1.f); // distance between 2 LS tracks
               fillPairHistogram<1>(collision, v1, v2, 1.f);
             }
           }

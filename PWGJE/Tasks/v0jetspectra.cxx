@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// jet spectra for v0 fragmentation study
-//
+/// \brief Jet spectra for ch+V0 jets
+///
 /// \author Gijs van Weelden <g.van.weelden@cern.ch>
 //
 

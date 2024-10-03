@@ -186,7 +186,7 @@ struct QAHistograms {
       if (_requestNoCollInTimeRangeStandard && !track.template singleCollSel_as<ColsType>().noCollInTimeRangeStandard())
         continue;
 
-      if (abs(track.template singleCollSel_as<ColsType>().posZ()) > _vertexZ)
+      if (std::fabs(track.template singleCollSel_as<ColsType>().posZ()) > _vertexZ)
         continue;
       if (track.template singleCollSel_as<ColsType>().multPerc() < _centCut.value.first || track.template singleCollSel_as<ColsType>().multPerc() >= _centCut.value.second)
         continue;
@@ -196,7 +196,7 @@ struct QAHistograms {
         continue;
       if ((track.tpcFractionSharedCls()) > _tpcFractionSharedCls || (track.itsNCls()) < _itsNCls)
         continue;
-      if (abs(track.dcaXY()) > _dcaXY.value[0] + _dcaXY.value[1] * std::pow(track.pt(), _dcaXY.value[2]) || abs(track.dcaZ()) > _dcaZ.value[0] + _dcaZ.value[1] * std::pow(track.pt(), _dcaZ.value[2]))
+      if (std::fabs(track.dcaXY()) > _dcaXY.value[0] + _dcaXY.value[1] * std::pow(track.pt(), _dcaXY.value[2]) || std::fabs(track.dcaZ()) > _dcaZ.value[0] + _dcaZ.value[1] * std::pow(track.pt(), _dcaZ.value[2]))
         continue;
 
       if constexpr (FillExtra) {

@@ -137,6 +137,7 @@ struct hyperRecoTask {
   Configurable<double> v0cospacut{"hypcospa", 0.95, "V0 CosPA"};
   Configurable<float> masswidth{"hypmasswidth", 0.06, "Mass width (GeV/c^2)"};
   Configurable<float> dcaToPvPion{"dcapvPi", 0., "DCA to PV pion"};
+  Configurable<float> dcaToPvHe{"dcapvHe", 0., "DCA to PV helium"};
   Configurable<float> dcav0dau{"hypdcaDau", 1.0, "DCA V0 Daughters"};
   Configurable<float> ptMin{"ptMin", 0.5, "Minimum pT of the hypercandidate"};
   Configurable<float> TPCRigidityMinHe{"TPCRigidityMinHe", 0.2, "Minimum rigidity of the helium candidate"};
@@ -387,6 +388,8 @@ struct hyperRecoTask {
     hypCand.clusterSizeITSPi = piTrack.itsClusterSizes();
     bool heliumPID = heTrack.pidForTracking() == o2::track::PID::Helium3 || heTrack.pidForTracking() == o2::track::PID::Alpha;
     hypCand.momHe3TPC = (heliumPID && cfgCompensatePIDinTracking) ? heTrack.tpcInnerParam() / 2 : heTrack.tpcInnerParam();
+    if (hypCand.momHe3TPC < TPCRigidityMinHe)
+      return;
     hypCand.momPiTPC = piTrack.tpcInnerParam();
     hDeDxTot->Fill(hypCand.momHe3TPC * heTrack.sign(), heTrack.tpcSignal());
     hDeDxTot->Fill(hypCand.momPiTPC * piTrack.sign(), piTrack.tpcSignal());
@@ -487,7 +490,7 @@ struct hyperRecoTask {
     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, piTrackCov, 2.f, fitter.getMatCorrType(), &dcaInfo);
     hypCand.piDCAXY = dcaInfo[0];
 
-    if (abs(hypCand.piDCAXY) < dcaToPvPion) {
+    if (abs(hypCand.piDCAXY) < dcaToPvPion || abs(hypCand.he3DCAXY) < dcaToPvHe) {
       return;
     }
 
@@ -640,6 +643,7 @@ struct hyperRecoTask {
 
     for (auto& hypCand : hyperCandidates) {
       auto collision = collisions.rawIteratorAt(hypCand.collisionID);
+      float trackedHypClSize = !trackedClSize.empty() ? trackedClSize[hypCand.v0ID] : 0;
       outputDataTable(collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
                       collision.posX(), collision.posY(), collision.posZ(),
                       hypCand.isMatter,
@@ -649,7 +653,7 @@ struct hyperRecoTask {
                       hypCand.dcaV0dau, hypCand.he3DCAXY, hypCand.piDCAXY,
                       hypCand.nSigmaHe3, hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi,
                       hypCand.momHe3TPC, hypCand.momPiTPC, hypCand.tpcSignalHe3, hypCand.tpcSignalPi, hypCand.tpcChi2He3,
-                      hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags, trackedClSize[hypCand.v0ID]);
+                      hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags, trackedHypClSize);
     }
   }
   PROCESS_SWITCH(hyperRecoTask, processData, "Data analysis", true);
@@ -666,6 +670,7 @@ struct hyperRecoTask {
 
     for (auto& hypCand : hyperCandidates) {
       auto collision = collisions.rawIteratorAt(hypCand.collisionID);
+      float trackedHypClSize = !trackedClSize.empty() ? trackedClSize[hypCand.v0ID] : 0;
       outputDataTableWithFlow(collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
                               collision.psiFT0A(), collision.multFT0A(),
                               collision.psiFT0C(), collision.multFT0C(),
@@ -678,7 +683,7 @@ struct hyperRecoTask {
                               hypCand.dcaV0dau, hypCand.he3DCAXY, hypCand.piDCAXY,
                               hypCand.nSigmaHe3, hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi,
                               hypCand.momHe3TPC, hypCand.momPiTPC, hypCand.tpcSignalHe3, hypCand.tpcSignalPi, hypCand.tpcChi2He3,
-                              hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags, trackedClSize[hypCand.v0ID]);
+                              hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags, trackedHypClSize);
     }
   }
   PROCESS_SWITCH(hyperRecoTask, processDataWithFlow, "Data analysis with flow", false);
@@ -702,6 +707,7 @@ struct hyperRecoTask {
       if (!hypCand.isSignal && mcSignalOnly)
         continue;
       int chargeFactor = -1 + 2 * (hypCand.pdgCode > 0);
+      float trackedHypClSize = !trackedClSize.empty() ? trackedClSize[hypCand.v0ID] : 0;
       outputMCTable(collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
                     collision.posX(), collision.posY(), collision.posZ(),
                     hypCand.isMatter,
@@ -711,7 +717,7 @@ struct hyperRecoTask {
                     hypCand.dcaV0dau, hypCand.he3DCAXY, hypCand.piDCAXY,
                     hypCand.nSigmaHe3, hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi,
                     hypCand.momHe3TPC, hypCand.momPiTPC, hypCand.tpcSignalHe3, hypCand.tpcSignalPi, hypCand.tpcChi2He3,
-                    hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags, trackedClSize[hypCand.v0ID],
+                    hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags, trackedHypClSize,
                     chargeFactor * hypCand.genPt(), hypCand.genPhi(), hypCand.genEta(), hypCand.genPtHe3(),
                     hypCand.gDecVtx[0], hypCand.gDecVtx[1], hypCand.gDecVtx[2],
                     hypCand.isReco, hypCand.isSignal, hypCand.isRecoMCCollision, hypCand.isSurvEvSelection);
@@ -783,8 +789,8 @@ struct hyperRecoTask {
                     -1, -1, -1,
                     -1, -1, -1,
                     -1, -1, -1,
-                    -1, -1, -1, -1,
-                    -1, -1, -1, false, -1,
+                    -1, -1, -1, -1, -1,
+                    -1, -1, -1, false,
                     chargeFactor * hypCand.genPt(), hypCand.genPhi(), hypCand.genEta(), hypCand.genPtHe3(),
                     hypCand.gDecVtx[0], hypCand.gDecVtx[1], hypCand.gDecVtx[2],
                     hypCand.isReco, hypCand.isSignal, hypCand.isRecoMCCollision, hypCand.isSurvEvSelection);

@@ -756,7 +756,7 @@ DECLARE_SOA_TABLE_VERSIONED(V0MCCores_002, "AOD", "V0MCCORE", 2, //! debug infor
                             v0data::RapidityMC<v0data::PxMC, v0data::PyMC, v0data::PzMC>,
                             v0data::NegativePtMC<v0data::PxNegMC, v0data::PyNegMC>,
                             v0data::PositivePtMC<v0data::PxPosMC, v0data::PyPosMC>,
-                            v0data::PtMC<v0data::PxMC, v0data::PyMC, v0data::PzMC>);
+                            v0data::PtMC<v0data::PxMC, v0data::PyMC>);
 
 DECLARE_SOA_TABLE(StoredV0MCCores_000, "AOD", "V0MCCORE", //! MC properties of the V0 for posterior analysis
                   v0data::PDGCode, v0data::PDGCodeMother,
