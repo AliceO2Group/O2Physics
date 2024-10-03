@@ -225,23 +225,24 @@ struct HfTaskFlow {
 
     // DATA : trigger particles (candidates) histograms for TPC-TPC h-h same event
     auto vbins = (std::vector<double>)binsPt;
-    registry.add("Data/TpcTpc/HfHadron/hPtCand", "2-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0, 10.}}});
-    registry.add("Data/TpcTpc/HfHadron/hPtProng0", "2-prong candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0, 10.}}});
-    registry.add("Data/TpcTpc/HfHadron/hPtProng1", "2-prong candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0, 10.}}});
-    registry.add("Data/TpcTpc/HfHadron/hMass", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{500, 0., 5.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("Data/TpcTpc/HfHadron/hDecLength", "2-prong candidates;decay length (cm);entries", {HistType::kTH2F, {{200, 0., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("Data/TpcTpc/HfHadron/hDecLengthXY", "2-prong candidates;decay length xy (cm);entries", {HistType::kTH2F, {{200, 0., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("Data/TpcTpc/HfHadron/hd0Prong0", "2-prong candidates;prong 0 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("Data/TpcTpc/HfHadron/hd0Prong1", "2-prong candidates;prong 1 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("Data/TpcTpc/HfHadron/hd0d0", "2-prong candidates;product of DCAxy to prim. vertex (cm^{2});entries", {HistType::kTH2F, {{500, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("Data/TpcTpc/HfHadron/hCTS", "2-prong candidates;cos #it{#theta}* (D^{0});entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("Data/TpcTpc/HfHadron/hCt", "2-prong candidates;proper lifetime (D^{0}) * #it{c} (cm);entries", {HistType::kTH2F, {{120, -20., 100.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("Data/TpcTpc/HfHadron/hCPA", "2-prong candidates;cosine of pointing angle;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("Data/TpcTpc/HfHadron/hEtaCand", "2-prong candidates;candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("Data/TpcTpc/HfHadron/hSelectionStatus", "2-prong candidates;selection status;entries", {HistType::kTH2F, {{5, -0.5, 4.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("Data/TpcTpc/HfHadron/hImpParErr", "2-prong candidates;impact parameter error (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("Data/TpcTpc/HfHadron/hDecLenErr", "2-prong candidates;decay length error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("Data/TpcTpc/HfHadron/hDecLenXYErr", "2-prong candidates;decay length xy error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/TpcTpc/HfHadron/SameEvent/hPtCand", "2-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0, 10.}}});
+    registry.add("Data/TpcTpc/HfHadron/SameEvent/hPtProng0", "2-prong candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0, 10.}}});
+    registry.add("Data/TpcTpc/HfHadron/SameEvent/hPtProng1", "2-prong candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0, 10.}}});
+    registry.add("Data/TpcTpc/HfHadron/SameEvent/hMassVsPt", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{500, 0., 5.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/TpcTpc/HfHadron/SameEvent/hMass", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{100, 0., 10.}}});
+    registry.add("Data/TpcTpc/HfHadron/SameEvent/hDecLength", "2-prong candidates;decay length (cm);entries", {HistType::kTH2F, {{200, 0., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/TpcTpc/HfHadron/SameEvent/hDecLengthXY", "2-prong candidates;decay length xy (cm);entries", {HistType::kTH2F, {{200, 0., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/TpcTpc/HfHadron/SameEvent/hd0Prong0", "2-prong candidates;prong 0 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/TpcTpc/HfHadron/SameEvent/hd0Prong1", "2-prong candidates;prong 1 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/TpcTpc/HfHadron/SameEvent/hd0d0", "2-prong candidates;product of DCAxy to prim. vertex (cm^{2});entries", {HistType::kTH2F, {{500, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/TpcTpc/HfHadron/SameEvent/hCTS", "2-prong candidates;cos #it{#theta}* (D^{0});entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/TpcTpc/HfHadron/SameEvent/hCt", "2-prong candidates;proper lifetime (D^{0}) * #it{c} (cm);entries", {HistType::kTH2F, {{120, -20., 100.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/TpcTpc/HfHadron/SameEvent/hCPA", "2-prong candidates;cosine of pointing angle;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/TpcTpc/HfHadron/SameEvent/hEtaCand", "2-prong candidates;candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/TpcTpc/HfHadron/SameEvent/hSelectionStatus", "2-prong candidates;selection status;entries", {HistType::kTH2F, {{5, -0.5, 4.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/TpcTpc/HfHadron/SameEvent/hImpParErr", "2-prong candidates;impact parameter error (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/TpcTpc/HfHadron/SameEvent/hDecLenErr", "2-prong candidates;decay length error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/TpcTpc/HfHadron/SameEvent/hDecLenXYErr", "2-prong candidates;decay length xy error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
 
     // DATA : trigger particles (candidates) histograms for TPC-TPC h-h mixed event
     registry.add("Data/TpcTpc/HfHadron/MixedEvent/hPtHFMixing", "pT", {HistType::kTH1F, {{100, 0, 10, "p_{T}"}}});
@@ -300,24 +301,25 @@ struct HfTaskFlow {
     registry.add("Data/TpcMft/HfHadron/SameEvent/hYieldsCandidate", "multiplicity vs pT vs eta", {HistType::kTH3F, {{200, 0, 200, "multiplicity"}, {40, 0, 20, "p_{T}"}, {100, -2, 2, "#eta"}}});
     registry.add("Data/TpcTpc/HfHadron/SameEvent/hNtracksCandidate", "hNtracks", {HistType::kTH1F, {{500, 0, 500}}});
 
-    // DATA : trigger particles (candidates) histograms for TPC-TPC h-h same event
-    registry.add("Data/TpcMft/HfHadron/hPtCand", "2-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0, 10.}}});
-    registry.add("Data/TpcMft/HfHadron/hPtProng0", "2-prong candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0, 10.}}});
-    registry.add("Data/TpcMft/HfHadron/hPtProng1", "2-prong candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0, 10.}}});
-    registry.add("Data/TpcMft/HfHadron/hMass", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{500, 0., 5.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("Data/TpcMft/HfHadron/hDecLength", "2-prong candidates;decay length (cm);entries", {HistType::kTH2F, {{200, 0., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("Data/TpcMft/HfHadron/hDecLengthXY", "2-prong candidates;decay length xy (cm);entries", {HistType::kTH2F, {{200, 0., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("Data/TpcMft/HfHadron/hd0Prong0", "2-prong candidates;prong 0 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("Data/TpcMft/HfHadron/hd0Prong1", "2-prong candidates;prong 1 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("Data/TpcMft/HfHadron/hd0d0", "2-prong candidates;product of DCAxy to prim. vertex (cm^{2});entries", {HistType::kTH2F, {{500, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("Data/TpcMft/HfHadron/hCTS", "2-prong candidates;cos #it{#theta}* (D^{0});entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("Data/TpcMft/HfHadron/hCt", "2-prong candidates;proper lifetime (D^{0}) * #it{c} (cm);entries", {HistType::kTH2F, {{120, -20., 100.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("Data/TpcMft/HfHadron/hCPA", "2-prong candidates;cosine of pointing angle;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("Data/TpcMft/HfHadron/hEtaCand", "2-prong candidates;candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("Data/TpcMft/HfHadron/hSelectionStatus", "2-prong candidates;selection status;entries", {HistType::kTH2F, {{5, -0.5, 4.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("Data/TpcMft/HfHadron/hImpParErr", "2-prong candidates;impact parameter error (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("Data/TpcMft/HfHadron/hDecLenErr", "2-prong candidates;decay length error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("Data/TpcMft/HfHadron/hDecLenXYErr", "2-prong candidates;decay length xy error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    // DATA : trigger particles (candidates) histograms for TPC-TPC HF-h same event
+    registry.add("Data/TpcMft/HfHadron/SameEvent/hPtCand", "2-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0, 10.}}});
+    registry.add("Data/TpcMft/HfHadron/SameEvent/hPtProng0", "2-prong candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0, 10.}}});
+    registry.add("Data/TpcMft/HfHadron/SameEvent/hPtProng1", "2-prong candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0, 10.}}});
+    registry.add("Data/TpcMft/HfHadron/SameEvent/hMassVsPt", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{500, 0., 5.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/TpcMft/HfHadron/SameEvent/hMass", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{100, 0., 10.}}});
+    registry.add("Data/TpcMft/HfHadron/SameEvent/hDecLength", "2-prong candidates;decay length (cm);entries", {HistType::kTH2F, {{200, 0., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/TpcMft/HfHadron/SameEvent/hDecLengthXY", "2-prong candidates;decay length xy (cm);entries", {HistType::kTH2F, {{200, 0., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/TpcMft/HfHadron/SameEvent/hd0Prong0", "2-prong candidates;prong 0 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/TpcMft/HfHadron/SameEvent/hd0Prong1", "2-prong candidates;prong 1 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/TpcMft/HfHadron/SameEvent/hd0d0", "2-prong candidates;product of DCAxy to prim. vertex (cm^{2});entries", {HistType::kTH2F, {{500, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/TpcMft/HfHadron/SameEvent/hCTS", "2-prong candidates;cos #it{#theta}* (D^{0});entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/TpcMft/HfHadron/SameEvent/hCt", "2-prong candidates;proper lifetime (D^{0}) * #it{c} (cm);entries", {HistType::kTH2F, {{120, -20., 100.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/TpcMft/HfHadron/SameEvent/hCPA", "2-prong candidates;cosine of pointing angle;entries", {HistType::kTH2F, {{110, -1.1, 1.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/TpcMft/HfHadron/SameEvent/hEtaCand", "2-prong candidates;candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/TpcMft/HfHadron/SameEvent/hSelectionStatus", "2-prong candidates;selection status;entries", {HistType::kTH2F, {{5, -0.5, 4.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/TpcMft/HfHadron/SameEvent/hImpParErr", "2-prong candidates;impact parameter error (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/TpcMft/HfHadron/SameEvent/hDecLenErr", "2-prong candidates;decay length error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Data/TpcMft/HfHadron/SameEvent/hDecLenXYErr", "2-prong candidates;decay length xy error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
 
     // DATA : associated particles (MFT tracks) histograms for TPC-MFT h-h same event
     registry.add("Data/TpcMft/HfHadron/SameEvent/hEtaPhiMFT", "multiplicity vs eta vs phi in MFT", {HistType::kTH3F, {{200, 0, 200, "multiplicity"}, {100, -2, 2, "#eta"}, {200, 0, TwoPI, "#varphi"}}});
@@ -742,29 +744,31 @@ struct HfTaskFlow {
       }
 
       if (candidate.isSelD0() >= selectionFlagD0) {
-        registry.fill(HIST("Data/TpcTpc/HfHadron/hMass"), hfHelper.invMassD0ToPiK(candidate), candidate.pt());
+        registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/hMassVsPt"), hfHelper.invMassD0ToPiK(candidate), candidate.pt());
+        registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/hMass"), hfHelper.invMassD0ToPiK(candidate));
       }
       if (candidate.isSelD0bar() >= selectionFlagD0bar) {
-        registry.fill(HIST("Data/TpcTpc/HfHadron/hMass"), hfHelper.invMassD0barToKPi(candidate), candidate.pt());
+        registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/hMassVsPt"), hfHelper.invMassD0barToKPi(candidate), candidate.pt());
+        registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/hMass"), hfHelper.invMassD0barToKPi(candidate));
       }
 
-      registry.fill(HIST("Data/TpcTpc/HfHadron/hPtCand"), candidate.pt());
-      registry.fill(HIST("Data/TpcTpc/HfHadron/hPtProng0"), candidate.ptProng0());
-      registry.fill(HIST("Data/TpcTpc/HfHadron/hPtProng1"), candidate.ptProng1());
-      registry.fill(HIST("Data/TpcTpc/HfHadron/hDecLength"), candidate.decayLength(), candidate.pt());
-      registry.fill(HIST("Data/TpcTpc/HfHadron/hDecLengthXY"), candidate.decayLengthXY(), candidate.pt());
-      registry.fill(HIST("Data/TpcTpc/HfHadron/hd0Prong0"), candidate.impactParameter0(), candidate.pt());
-      registry.fill(HIST("Data/TpcTpc/HfHadron/hd0Prong1"), candidate.impactParameter1(), candidate.pt());
-      registry.fill(HIST("Data/TpcTpc/HfHadron/hd0d0"), candidate.impactParameterProduct(), candidate.pt());
-      registry.fill(HIST("Data/TpcTpc/HfHadron/hCTS"), hfHelper.cosThetaStarD0(candidate), candidate.pt());
-      registry.fill(HIST("Data/TpcTpc/HfHadron/hCt"), hfHelper.ctD0(candidate), candidate.pt());
-      registry.fill(HIST("Data/TpcTpc/HfHadron/hCPA"), candidate.cpa(), candidate.pt());
-      registry.fill(HIST("Data/TpcTpc/HfHadron/hEtaCand"), candidate.eta(), candidate.pt());
-      registry.fill(HIST("Data/TpcTpc/HfHadron/hSelectionStatus"), candidate.isSelD0() + (candidate.isSelD0bar() * 2), candidate.pt());
-      registry.fill(HIST("Data/TpcTpc/HfHadron/hImpParErr"), candidate.errorImpactParameter0(), candidate.pt());
-      registry.fill(HIST("Data/TpcTpc/HfHadron/hImpParErr"), candidate.errorImpactParameter1(), candidate.pt());
-      registry.fill(HIST("Data/TpcTpc/HfHadron/hDecLenErr"), candidate.errorDecayLength(), candidate.pt());
-      registry.fill(HIST("Data/TpcTpc/HfHadron/hDecLenXYErr"), candidate.errorDecayLengthXY(), candidate.pt());
+      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/hPtCand"), candidate.pt());
+      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/hPtProng0"), candidate.ptProng0());
+      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/hPtProng1"), candidate.ptProng1());
+      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/hDecLength"), candidate.decayLength(), candidate.pt());
+      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/hDecLengthXY"), candidate.decayLengthXY(), candidate.pt());
+      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/hd0Prong0"), candidate.impactParameter0(), candidate.pt());
+      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/hd0Prong1"), candidate.impactParameter1(), candidate.pt());
+      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/hd0d0"), candidate.impactParameterProduct(), candidate.pt());
+      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/hCTS"), hfHelper.cosThetaStarD0(candidate), candidate.pt());
+      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/hCt"), hfHelper.ctD0(candidate), candidate.pt());
+      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/hCPA"), candidate.cpa(), candidate.pt());
+      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/hEtaCand"), candidate.eta(), candidate.pt());
+      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/hSelectionStatus"), candidate.isSelD0() + (candidate.isSelD0bar() * 2), candidate.pt());
+      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/hImpParErr"), candidate.errorImpactParameter0(), candidate.pt());
+      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/hImpParErr"), candidate.errorImpactParameter1(), candidate.pt());
+      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/hDecLenErr"), candidate.errorDecayLength(), candidate.pt());
+      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/hDecLenXYErr"), candidate.errorDecayLengthXY(), candidate.pt());
     }
   }
 
@@ -779,29 +783,31 @@ struct HfTaskFlow {
       }
 
       if (candidate.isSelD0() >= selectionFlagD0) {
-        registry.fill(HIST("Data/TpcMft/HfHadron/hMass"), hfHelper.invMassD0ToPiK(candidate), candidate.pt());
+        registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/hMassVsPt"), hfHelper.invMassD0ToPiK(candidate), candidate.pt());
+        registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/hMass"), hfHelper.invMassD0ToPiK(candidate));
       }
       if (candidate.isSelD0bar() >= selectionFlagD0bar) {
-        registry.fill(HIST("Data/TpcMft/HfHadron/hMass"), hfHelper.invMassD0barToKPi(candidate), candidate.pt());
+        registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/hMassVsPt"), hfHelper.invMassD0barToKPi(candidate), candidate.pt());
+        registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/hMass"), hfHelper.invMassD0barToKPi(candidate));
       }
 
-      registry.fill(HIST("Data/TpcMft/HfHadron/hPtCand"), candidate.pt());
-      registry.fill(HIST("Data/TpcMft/HfHadron/hPtProng0"), candidate.ptProng0());
-      registry.fill(HIST("Data/TpcMft/HfHadron/hPtProng1"), candidate.ptProng1());
-      registry.fill(HIST("Data/TpcMft/HfHadron/hDecLength"), candidate.decayLength(), candidate.pt());
-      registry.fill(HIST("Data/TpcMft/HfHadron/hDecLengthXY"), candidate.decayLengthXY(), candidate.pt());
-      registry.fill(HIST("Data/TpcMft/HfHadron/hd0Prong0"), candidate.impactParameter0(), candidate.pt());
-      registry.fill(HIST("Data/TpcMft/HfHadron/hd0Prong1"), candidate.impactParameter1(), candidate.pt());
-      registry.fill(HIST("Data/TpcMft/HfHadron/hd0d0"), candidate.impactParameterProduct(), candidate.pt());
-      registry.fill(HIST("Data/TpcMft/HfHadron/hCTS"), hfHelper.cosThetaStarD0(candidate), candidate.pt());
-      registry.fill(HIST("Data/TpcMft/HfHadron/hCt"), hfHelper.ctD0(candidate), candidate.pt());
-      registry.fill(HIST("Data/TpcMft/HfHadron/hCPA"), candidate.cpa(), candidate.pt());
-      registry.fill(HIST("Data/TpcMft/HfHadron/hEtaCand"), candidate.eta(), candidate.pt());
-      registry.fill(HIST("Data/TpcMft/HfHadron/hSelectionStatus"), candidate.isSelD0() + (candidate.isSelD0bar() * 2), candidate.pt());
-      registry.fill(HIST("Data/TpcMft/HfHadron/hImpParErr"), candidate.errorImpactParameter0(), candidate.pt());
-      registry.fill(HIST("Data/TpcMft/HfHadron/hImpParErr"), candidate.errorImpactParameter1(), candidate.pt());
-      registry.fill(HIST("Data/TpcMft/HfHadron/hDecLenErr"), candidate.errorDecayLength(), candidate.pt());
-      registry.fill(HIST("Data/TpcMft/HfHadron/hDecLenXYErr"), candidate.errorDecayLengthXY(), candidate.pt());
+      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/hPtCand"), candidate.pt());
+      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/hPtProng0"), candidate.ptProng0());
+      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/hPtProng1"), candidate.ptProng1());
+      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/hDecLength"), candidate.decayLength(), candidate.pt());
+      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/hDecLengthXY"), candidate.decayLengthXY(), candidate.pt());
+      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/hd0Prong0"), candidate.impactParameter0(), candidate.pt());
+      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/hd0Prong1"), candidate.impactParameter1(), candidate.pt());
+      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/hd0d0"), candidate.impactParameterProduct(), candidate.pt());
+      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/hCTS"), hfHelper.cosThetaStarD0(candidate), candidate.pt());
+      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/hCt"), hfHelper.ctD0(candidate), candidate.pt());
+      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/hCPA"), candidate.cpa(), candidate.pt());
+      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/hEtaCand"), candidate.eta(), candidate.pt());
+      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/hSelectionStatus"), candidate.isSelD0() + (candidate.isSelD0bar() * 2), candidate.pt());
+      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/hImpParErr"), candidate.errorImpactParameter0(), candidate.pt());
+      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/hImpParErr"), candidate.errorImpactParameter1(), candidate.pt());
+      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/hDecLenErr"), candidate.errorDecayLength(), candidate.pt());
+      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/hDecLenXYErr"), candidate.errorDecayLengthXY(), candidate.pt());
     }
   }
 
