@@ -73,7 +73,7 @@ struct f0980pbpbanalysis {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::ccdb::CcdbApi ccdbApi;
 
-  Configurable<std::string> cfgURL{"cfgURL","http://alice-ccdb.cern.ch", "Address of the CCDB to browse"};
+  Configurable<std::string> cfgURL{"cfgURL", "http://alice-ccdb.cern.ch", "Address of the CCDB to browse"};
   Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "Latest acceptable timestamp of creation for the object"};
 
   Configurable<float> cfgCentSel{"cfgCentSel", 80., "Centrality selection"};
@@ -89,10 +89,10 @@ struct f0980pbpbanalysis {
   Configurable<float> cfgMinRap{"cfgMinRap", -0.5, "Minimum rapidity for pair"};
   Configurable<float> cfgMaxRap{"cfgMaxRap", 0.5, "Maximum rapidity for pair"};
 
-  Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", true, "Primary track selection"}; 
-  Configurable<bool> cfgGlobalWoDCATrack{ "cfgGlobalWoDCATrack", true, "Global track selection without DCA"};
+  Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", true, "Primary track selection"};
+  Configurable<bool> cfgGlobalWoDCATrack{"cfgGlobalWoDCATrack", true, "Global track selection without DCA"};
   Configurable<bool> cfgPVContributor{"cfgPVContributor", true, "PV contributor track selection"};
-        
+
   Configurable<double> cMaxTOFnSigmaPion{"cMaxTOFnSigmaPion", 3.0, "TOF nSigma cut for Pion"}; // TOF
   Configurable<double> cMaxTPCnSigmaPion{"cMaxTPCnSigmaPion", 5.0, "TPC nSigma cut for Pion"}; // TPC
   Configurable<double> cMaxTPCnSigmaPionS{"cMaxTPCnSigmaPionS", 3.0, "TPC nSigma cut for Pion as a standalone"};
@@ -285,21 +285,21 @@ struct f0980pbpbanalysis {
 
       if (trk1.sign() * trk2.sign() < 0) {
         histos.fill(HIST("hInvMass_f0980_US_EPA"), Reco.M(), Reco.Pt(), centrality, relPhi);
-/*
-        if constexpr (IsMC) {
-          if (abs(trk1.pdgCode()) != 211 || abs(trk2.pdgCode()) != 211)
-            continue;
-          if (trk1.motherId() != trk2.motherId())
-            continue;
-          if (abs(trk1.motherPDG()) != 9010221)
-            continue;
-          histos.fill(HIST("MCL/hpT_f0980_REC"), Reco.M(), Reco.Pt(), centrality);
-        }
-*/
+        /*
+                if constexpr (IsMC) {
+                  if (abs(trk1.pdgCode()) != 211 || abs(trk2.pdgCode()) != 211)
+                    continue;
+                  if (trk1.motherId() != trk2.motherId())
+                    continue;
+                  if (abs(trk1.motherPDG()) != 9010221)
+                    continue;
+                  histos.fill(HIST("MCL/hpT_f0980_REC"), Reco.M(), Reco.Pt(), centrality);
+                }
+        */
       } else if (trk1.sign() > 0 && trk2.sign() > 0) {
-          histos.fill(HIST("hInvMass_f0980_LSpp_EPA"), Reco.M(), Reco.Pt(), centrality, relPhi);
+        histos.fill(HIST("hInvMass_f0980_LSpp_EPA"), Reco.M(), Reco.Pt(), centrality, relPhi);
       } else if (trk1.sign() < 0 && trk2.sign() < 0) {
-          histos.fill(HIST("hInvMass_f0980_LSmm_EPA"), Reco.M(), Reco.Pt(), centrality, relPhi);
+        histos.fill(HIST("hInvMass_f0980_LSmm_EPA"), Reco.M(), Reco.Pt(), centrality, relPhi);
       }
     }
   }
@@ -330,7 +330,6 @@ struct f0980pbpbanalysis {
     histos.add("QA/EPResAC", "", {HistType::kTH2F, {centQaAxis, epresAxis}});
     histos.add("QA/EPResBC", "", {HistType::kTH2F, {centQaAxis, epresAxis}});
 
-
     histos.add("hInvMass_f0980_US_EPA", "unlike invariant mass",
                {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, epAxis}});
     histos.add("hInvMass_f0980_LSpp_EPA", "++ invariant mass",
@@ -338,10 +337,10 @@ struct f0980pbpbanalysis {
     histos.add("hInvMass_f0980_LSmm_EPA", "-- invariant mass",
                {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, epAxis}});
 
-//    if (doprocessMCLight) {
-//      histos.add("MCL/hpT_f0980_GEN", "generated f0 signals", HistType::kTH1F, {pTqaAxis});
-//      histos.add("MCL/hpT_f0980_REC", "reconstructed f0 signals", HistType::kTH3F, {massAxis, pTqaAxis, centAxis});
-//    }
+    //    if (doprocessMCLight) {
+    //      histos.add("MCL/hpT_f0980_GEN", "generated f0 signals", HistType::kTH1F, {pTqaAxis});
+    //      histos.add("MCL/hpT_f0980_REC", "reconstructed f0 signals", HistType::kTH3F, {massAxis, pTqaAxis, centAxis});
+    //    }
 
     DetId = GetDetId(cfgQvecDetName);
     RefAId = GetDetId(cfgQvecRefAName);
@@ -380,7 +379,7 @@ struct f0980pbpbanalysis {
     histos.fill(HIST("QA/CentDist"), centrality, 1.0);
     histos.fill(HIST("QV/Vz"), collision.posZ(), 1.0);
 
-    FillHistograms<false>(collision, tracks, 2); //second order
+    FillHistograms<false>(collision, tracks, 2); // second order
   };
   PROCESS_SWITCH(f0980pbpbanalysis, processData, "Process Event for data", true);
 };
