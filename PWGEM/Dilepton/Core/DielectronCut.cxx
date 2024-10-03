@@ -61,6 +61,13 @@ void DielectronCut::SelectPhotonConversion(bool flag)
   mSelectPC = flag;
   LOG(info) << "Dielectron Cut, select photon conversion: " << mSelectPC;
 }
+void DielectronCut::SetMindEtadPhi(bool flag, float min_deta, float min_dphi)
+{
+  mApplydEtadPhi = flag;
+  mMinDeltaEta = min_deta;
+  mMinDeltaPhi = min_dphi;
+  LOG(info) << "Dielectron Cut, set apply deta-dphi cut: " << mApplydEtadPhi << " min_deta: " << mMinDeltaEta << " min_dphi: " << mMinDeltaPhi;
+}
 void DielectronCut::SetTrackPtRange(float minPt, float maxPt)
 {
   mMinTrackPt = minPt;
