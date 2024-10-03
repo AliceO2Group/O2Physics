@@ -248,7 +248,7 @@ struct LfV0qaanalysis {
               v0.negTrack_as<DauTracks>().tofNSigmaPr(), v0.posTrack_as<DauTracks>().tofNSigmaPr(),
               v0.negTrack_as<DauTracks>().tofNSigmaPi(), v0.posTrack_as<DauTracks>().tofNSigmaPi(),
               v0.posTrack_as<DauTracks>().hasTOF(), v0.negTrack_as<DauTracks>().hasTOF(), lPDG, isPhysicalPrimary,
-              collision.centFT0M(), collision.centFV0A(), evFlag);
+              collision.centFT0M(), collision.centFV0A(), evFlag, v0.alpha(), v0.qtarm());
       }
     }
   }
@@ -360,7 +360,7 @@ struct LfV0qaanalysis {
                 v0.negTrack_as<DauTracksMC>().tofNSigmaPr(), v0.posTrack_as<DauTracksMC>().tofNSigmaPr(),
                 v0.negTrack_as<DauTracksMC>().tofNSigmaPi(), v0.posTrack_as<DauTracksMC>().tofNSigmaPi(),
                 v0.posTrack_as<DauTracksMC>().hasTOF(), v0.negTrack_as<DauTracksMC>().hasTOF(), lPDG, isprimary,
-                mcCollision.centFT0M(), cent, evFlag);
+                mcCollision.centFT0M(), cent, evFlag, v0.alpha(), v0.qtarm());
         }
       }
 
