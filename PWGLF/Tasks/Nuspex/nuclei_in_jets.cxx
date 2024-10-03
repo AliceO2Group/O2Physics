@@ -120,7 +120,7 @@ struct nuclei_in_jets {
 
   TH2F* twod_weights_antip_jet;
   TH2F* twod_weights_antip_ue;
-    
+
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::ccdb::CcdbApi ccdbApi;
 
@@ -138,7 +138,7 @@ struct nuclei_in_jets {
       twod_weights_antip_jet = nullptr;
       twod_weights_antip_ue = nullptr;
     }
-      
+
     // QC Histograms
     registryQC.add("deltaEtadeltaPhi_jet", "deltaEtadeltaPhi_jet", HistType::kTH2F, {{200, -0.5, 0.5, "#Delta#eta"}, {200, 0, 0.5 * TMath::Pi(), "#Delta#phi"}});
     registryQC.add("deltaEtadeltaPhi_ue", "deltaEtadeltaPhi_ue", HistType::kTH2F, {{200, -0.5, 0.5, "#Delta#eta"}, {200, 0, 0.5 * TMath::Pi(), "#Delta#phi"}});
