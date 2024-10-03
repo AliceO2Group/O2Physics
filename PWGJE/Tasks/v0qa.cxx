@@ -144,6 +144,36 @@ struct V0QA {
       registry.add("collisions/XiPlusPtYAntiLambdaPt", "#Xi^{+} Pt, Y, #bar{#Lambda} Pt", HistType::kTH3D, {axisV0Pt, axisEta, axisV0Pt});
       registry.add("collisions/XiPlusPtYAntiLambdaPtWrongColl", "#Xi^{+} Pt, Y, #bar{#Lambda} Pt, wrong collision", HistType::kTH3D, {axisV0Pt, axisEta, axisV0Pt});
     }
+    if (doprocessCollisionAssociationJets) {
+      registry.add("collisions/JetPtEtaV0Pt", "Jet Pt, Eta, V0 Pt", HistType::kTH3D, {axisJetPt, axisEta, axisV0Pt});
+      registry.add("collisions/JetPtEtaV0PtWrongColl", "Jet Pt, Eta, V0 Pt", HistType::kTH3D, {axisJetPt, axisEta, axisV0Pt});
+      registry.add("collisions/JetPtEtaK0SPtMass", "Jet Pt, Eta, K0S Pt Mass", HistType::kTHnSparseD, {axisJetPt, axisEta, axisV0Pt, axisK0SM});
+      registry.add("collisions/JetPtEtaK0SPtMassWrongColl", "Jet Pt, Eta, K0S Pt Mass", HistType::kTHnSparseD, {axisJetPt, axisEta, axisV0Pt, axisK0SM});
+      registry.add("collisions/JetPtEtaLambdaPtMass", "Jet Pt, Eta, Lambda Pt Mass", HistType::kTHnSparseD, {axisJetPt, axisEta, axisV0Pt, axisLambdaM});
+      registry.add("collisions/JetPtEtaLambdaPtMassWrongColl", "Jet Pt, Eta, Lambda Pt Mass", HistType::kTHnSparseD, {axisJetPt, axisEta, axisV0Pt, axisLambdaM});
+      registry.add("collisions/JetPtEtaAntiLambdaPtMass", "Jet Pt, Eta, AntiLambda Pt Mass", HistType::kTHnSparseD, {axisJetPt, axisEta, axisV0Pt, axisAntiLambdaM});
+      registry.add("collisions/JetPtEtaAntiLambdaPtMassWrongColl", "Jet Pt, Eta, AntiLambda Pt Mass", HistType::kTHnSparseD, {axisJetPt, axisEta, axisV0Pt, axisAntiLambdaM});
+
+      registry.add("collisions/JetPtEtaXiMinusPtLambdaPt", "Jet Pt, #Xi^{-} Pt, #Lambda Pt", HistType::kTHnSparseD, {axisJetPt, axisEta, axisV0Pt, axisV0Pt});
+      registry.add("collisions/JetPtEtaXiMinusPtLambdaPtWrongColl", "Jet Pt, #Xi^{-} Pt, #Lambda Pt", HistType::kTHnSparseD, {axisJetPt, axisEta, axisV0Pt, axisV0Pt});
+      registry.add("collisions/JetPtEtaXiPlusPtAntiLambdaPt", "Jet Pt, #Xi^{+} Pt, #bar{#Lambda} Pt", HistType::kTHnSparseD, {axisJetPt, axisEta, axisV0Pt, axisV0Pt});
+      registry.add("collisions/JetPtEtaXiPlusPtAntiLambdaPtWrongColl", "Jet Pt, #Xi^{+} Pt, #bar{#Lambda} Pt", HistType::kTHnSparseD, {axisJetPt, axisEta, axisV0Pt, axisV0Pt});
+    }
+    if (doprocessCollisionAssociationMatchedJets) {
+      registry.add("collisions/JetsPtEtaV0Pt", "Jets Pt, Eta, V0 Pt", HistType::kTHnSparseD, {axisJetPt, axisJetPt, axisEta, axisV0Pt});
+      registry.add("collisions/JetsPtEtaV0PtWrongColl", "Jets Pt, Eta, V0 Pt", HistType::kTHnSparseD, {axisJetPt, axisJetPt, axisEta, axisV0Pt});
+      registry.add("collisions/JetsPtEtaK0SPtMass", "Jets Pt, Eta, K0S Pt Mass", HistType::kTHnSparseD, {axisJetPt, axisJetPt, axisEta, axisV0Pt, axisK0SM});
+      registry.add("collisions/JetsPtEtaK0SPtMassWrongColl", "Jets Pt, Eta, K0S Pt Mass", HistType::kTHnSparseD, {axisJetPt, axisJetPt, axisEta, axisV0Pt, axisK0SM});
+      registry.add("collisions/JetsPtEtaLambdaPtMass", "Jets Pt, Eta, Lambda Pt Mass", HistType::kTHnSparseD, {axisJetPt, axisJetPt, axisEta, axisV0Pt, axisLambdaM});
+      registry.add("collisions/JetsPtEtaLambdaPtMassWrongColl", "Jets Pt, Eta, Lambda Pt Mass", HistType::kTHnSparseD, {axisJetPt, axisJetPt, axisEta, axisV0Pt, axisLambdaM});
+      registry.add("collisions/JetsPtEtaAntiLambdaPtMass", "Jets Pt, Eta, AntiLambda Pt Mass", HistType::kTHnSparseD, {axisJetPt, axisJetPt, axisEta, axisV0Pt, axisAntiLambdaM});
+      registry.add("collisions/JetsPtEtaAntiLambdaPtMassWrongColl", "Jets Pt, Eta, AntiLambda Pt Mass", HistType::kTHnSparseD, {axisJetPt, axisJetPt, axisEta, axisV0Pt, axisAntiLambdaM});
+
+      registry.add("collisions/JetsPtEtaXiMinusPtLambdaPt", "Jets Pt, Eta, #Xi^{-} Pt, #Lambda Pt", HistType::kTHnSparseD, {axisJetPt, axisJetPt, axisEta, axisV0Pt, axisV0Pt});
+      registry.add("collisions/JetsPtEtaXiMinusPtLambdaPtWrongColl", "Jets Pt, Eta, #Xi^{-} Pt, #Lambda Pt", HistType::kTHnSparseD, {axisJetPt, axisJetPt, axisEta, axisV0Pt, axisV0Pt});
+      registry.add("collisions/JetsPtEtaXiPlusPtAntiLambdaPt", "Jets Pt, Eta, #Xi^{+} Pt, #bar{#Lambda} Pt", HistType::kTHnSparseD, {axisJetPt, axisJetPt, axisEta, axisV0Pt, axisV0Pt});
+      registry.add("collisions/JetsPtEtaXiPlusPtAntiLambdaPtWrongColl", "Jets Pt, Eta, #Xi^{+} Pt, #bar{#Lambda} Pt", HistType::kTHnSparseD, {axisJetPt, axisJetPt, axisEta, axisV0Pt, axisV0Pt});
+    }
     if (doprocessFeeddown) {
       registry.add("feeddown/XiMinusPtYLambdaPt", "#Xi^{-} Pt, Y, #Lambda Pt", HistType::kTH3D, {axisV0Pt, axisEta, axisV0Pt});
       registry.add("feeddown/XiPlusPtYAntiLambdaPt", "#Xi^{-} Pt, Y, #Lambda Pt", HistType::kTH3D, {axisV0Pt, axisEta, axisV0Pt});
@@ -460,8 +490,8 @@ struct V0QA {
       }
 
       auto pv0 = v0.mcParticle();
-      bool correctCollision = (mcColl.mcCollisionId() == v0.mcParticle().mcCollisionId());
-      int pdg = v0.mcParticle().pdgCode();
+      bool correctCollision = (mcColl.mcCollisionId() == pv0.mcCollisionId());
+      int pdg = pv0.pdgCode();
 
       // Check V0 decay kinematics
       if (!isV0Reconstructed(jcoll, v0, pdg))
@@ -513,6 +543,147 @@ struct V0QA {
   }
   PROCESS_SWITCH(V0QA, processCollisionAssociation, "V0 collision association", false);
 
+  void processCollisionAssociationJets(soa::Filtered<JetCollisionsMCD>::iterator const& jcoll, MCDV0JetsWithConstituents const& mcdjets, soa::Join<CandidatesV0MCD, aod::McV0Labels> const&, soa::Join<JetMcCollisions, aod::JMcCollisionPIs> const&, aod::McCollisions const&, aod::McParticles const&)
+  {
+    if (!jcoll.has_mcCollision()) {
+      return;
+    }
+    auto mcColl = jcoll.template mcCollision_as<soa::Join<JetMcCollisions, aod::JMcCollisionPIs>>();
+    double weight = mcColl.weight();
+
+    for (const auto& mcdjet : mcdjets) {
+      // Eta cut?
+      for (const auto& v0 : mcdjet.template candidates_as<soa::Join<CandidatesV0MCD, aod::McV0Labels>>()) {
+        if (!v0.has_mcParticle()) {
+          continue;
+        }
+
+        auto pv0 = v0.mcParticle();
+        bool correctCollision = (mcColl.mcCollisionId() == pv0.mcCollisionId());
+        int pdg = pv0.pdgCode();
+
+        // Check V0 decay kinematics
+        if (!isV0Reconstructed(jcoll, v0, pdg))
+          continue;
+
+        registry.fill(HIST("collisions/JetPtEtaV0Pt"), mcdjet.pt(), mcdjet.eta(), pv0.pt(), weight);
+        if (!correctCollision) {
+          registry.fill(HIST("collisions/JetPtEtaV0PtWrongColl"), mcdjet.pt(), mcdjet.eta(), pv0.pt(), weight);
+        }
+        if (TMath::Abs(pdg) == 310) {
+          registry.fill(HIST("collisions/JetPtEtaK0SPtMass"), mcdjet.pt(), mcdjet.eta(), pv0.pt(), v0.mK0Short(), weight);
+          if (!correctCollision) {
+            registry.fill(HIST("collisions/JetPtEtaK0SPtMassWrongColl"), mcdjet.pt(), mcdjet.eta(), pv0.pt(), v0.mK0Short(), weight);
+          }
+        }
+        if (pdg == 3122) {
+          registry.fill(HIST("collisions/JetPtEtaLambdaPtMass"), mcdjet.pt(), mcdjet.eta(), pv0.pt(), v0.mLambda(), weight);
+          if (!correctCollision) {
+            registry.fill(HIST("collisions/JetPtEtaLambdaPtMassWrongColl"), mcdjet.pt(), mcdjet.eta(), pv0.pt(), v0.mLambda(), weight);
+          }
+        }
+        if (pdg == -3122) {
+          registry.fill(HIST("collisions/JetPtEtaAntiLambdaPtMass"), mcdjet.pt(), mcdjet.eta(), pv0.pt(), v0.mAntiLambda(), weight);
+          if (!correctCollision) {
+            registry.fill(HIST("collisions/JetPtEtaAntiLambdaPtMassWrongColl"), mcdjet.pt(), mcdjet.eta(), pv0.pt(), v0.mAntiLambda(), weight);
+          }
+        }
+
+        if (!v0.has_mcMotherParticle()) {
+          continue;
+        }
+        auto mother = v0.mcMotherParticle();
+        pdg = mother.pdgCode();
+        correctCollision = (mcColl.mcCollisionId() == mother.mcCollisionId());
+        if (pdg == 3312) { // Xi-
+          registry.fill(HIST("collisions/JetPtEtaXiMinusPtLambdaPt"), mcdjet.pt(), mcdjet.eta(), mother.pt(), pv0.pt(), weight);
+          if (!correctCollision) {
+            registry.fill(HIST("collisions/JetPtEtaXiMinusPtLambdaPtWrongColl"), mcdjet.pt(), mcdjet.eta(), mother.pt(), pv0.pt(), weight);
+          }
+        }
+        if (pdg == -3312) { // Xi+
+          registry.fill(HIST("collisions/JetPtEtaXiPlusPtAntiLambdaPt"), mcdjet.pt(), mcdjet.eta(), mother.pt(), pv0.pt(), weight);
+          if (!correctCollision) {
+            registry.fill(HIST("collisions/JetPtEtaXiPlusPtAntiLambdaPtWrongColl"), mcdjet.pt(), mcdjet.eta(), mother.pt(), pv0.pt(), weight);
+          }
+        }
+      } // for v0s
+    } // for mcdjets
+  }
+  PROCESS_SWITCH(V0QA, processCollisionAssociationJets, "V0 in jets collision association", false);
+
+  void processCollisionAssociationMatchedJets(soa::Filtered<JetCollisionsMCD>::iterator const& jcoll, MatchedMCDV0JetsWithConstituents const& mcdjets, MatchedMCPV0JetsWithConstituents const&, soa::Join<CandidatesV0MCD, aod::McV0Labels> const&, soa::Join<JetMcCollisions, aod::JMcCollisionPIs> const&, aod::McCollisions const&, aod::McParticles const&, JetTracksMCD const& jTracks)
+  {
+    if (!jcoll.has_mcCollision()) {
+      return;
+    }
+    auto mcColl = jcoll.template mcCollision_as<soa::Join<JetMcCollisions, aod::JMcCollisionPIs>>();
+    double weight = mcColl.weight();
+
+    for (const auto& mcdjet : mcdjets) {
+      for (const auto& mcpjet : mcdjet.template matchedJetGeo_as<MatchedMCPV0JetsWithConstituents>()) {
+        for (const auto& v0 : mcdjet.template candidates_as<soa::Join<CandidatesV0MCD, aod::McV0Labels>>()) {
+          if (!v0.has_mcParticle())
+            continue;
+
+          for (const auto& pv0 : mcpjet.template candidates_as<CandidatesV0MCP>()) {
+            if (!V0sAreMatched(v0, pv0, jTracks))
+              continue;
+            int pdg = pv0.pdgCode();
+            bool correctCollision = (mcColl.mcCollisionId() == pv0.mcCollisionId());
+
+            // Check V0 decay kinematics
+            if (!isV0Reconstructed(jcoll, v0, pdg))
+              continue;
+
+            registry.fill(HIST("collisions/JetsPtEtaV0Pt"), mcpjet.pt(), mcdjet.pt(), mcdjet.eta(), pv0.pt(), weight);
+            if (!correctCollision) {
+              registry.fill(HIST("collisions/JetsPtEtaV0PtWrongColl"), mcpjet.pt(), mcdjet.pt(), mcdjet.eta(), pv0.pt(), weight);
+            }
+            if (TMath::Abs(pdg) == 310) {
+              registry.fill(HIST("collisions/JetsPtEtaK0SPtMass"), mcpjet.pt(), mcdjet.pt(), mcdjet.eta(), pv0.pt(), v0.mK0Short(), weight);
+              if (!correctCollision) {
+                registry.fill(HIST("collisions/JetsPtEtaK0SPtMassWrongColl"), mcpjet.pt(), mcdjet.pt(), mcdjet.eta(), pv0.pt(), v0.mK0Short(), weight);
+              }
+            }
+            if (pdg == 3122) {
+              registry.fill(HIST("collisions/JetsPtEtaLambdaPtMass"), mcpjet.pt(), mcdjet.pt(), mcdjet.eta(), pv0.pt(), v0.mLambda(), weight);
+              if (!correctCollision) {
+                registry.fill(HIST("collisions/JetsPtEtaLambdaPtMassWrongColl"), mcpjet.pt(), mcdjet.pt(), mcdjet.eta(), pv0.pt(), v0.mLambda(), weight);
+              }
+            }
+            if (pdg == -3122) {
+              registry.fill(HIST("collisions/JetsPtEtaAntiLambdaPtMass"), mcpjet.pt(), mcdjet.pt(), mcdjet.eta(), pv0.pt(), v0.mAntiLambda(), weight);
+              if (!correctCollision) {
+                registry.fill(HIST("collisions/JetsPtEtaAntiLambdaPtMassWrongColl"), mcpjet.pt(), mcdjet.pt(), mcdjet.eta(), pv0.pt(), v0.mAntiLambda(), weight);
+              }
+            }
+
+            if (!v0.has_mcMotherParticle()) {
+              continue;
+            }
+            auto mother = v0.mcMotherParticle();
+            pdg = mother.pdgCode();
+            correctCollision = (mcColl.mcCollisionId() == mother.mcCollisionId());
+            if (pdg == 3312) { // Xi-
+              registry.fill(HIST("collisions/JetsPtEtaXiMinusPtLambdaPt"), mcpjet.pt(), mcdjet.pt(), mcdjet.eta(), mother.pt(), pv0.pt(), weight);
+              if (!correctCollision) {
+                registry.fill(HIST("collisions/JetsPtEtaXiMinusPtLambdaPtWrongColl"), mcpjet.pt(), mcdjet.pt(), mcdjet.eta(), mother.pt(), pv0.pt(), weight);
+              }
+            }
+            if (pdg == -3312) { // Xi+
+              registry.fill(HIST("collisions/JetsPtEtaXiPlusPtAntiLambdaPt"), mcpjet.pt(), mcdjet.pt(), mcdjet.eta(), mother.pt(), pv0.pt(), weight);
+              if (!correctCollision) {
+                registry.fill(HIST("collisions/JetsPtEtaXiPlusPtAntiLambdaPtWrongColl"), mcpjet.pt(), mcdjet.pt(), mcdjet.eta(), mother.pt(), pv0.pt(), weight);
+              }
+            }
+          } // for pv0
+        } // for v0
+      } // for mcpjet
+    } // for mcdjet
+  }
+  PROCESS_SWITCH(V0QA, processCollisionAssociationMatchedJets, "V0 in matched jets collision association", false);
+
   void processFeeddown(soa::Filtered<JetCollisionsMCD>::iterator const& jcoll, soa::Join<CandidatesV0MCD, aod::McV0Labels> const& v0s, CandidatesV0MCP const&, soa::Join<JetMcCollisions, aod::JMcCollisionPIs> const&, aod::McCollisions const&, aod::McParticles const&)
   {
     // Based on PWGLF/Tasks/Strangeness/derivedlambdakzeroanalysis.cxx
@@ -563,7 +734,8 @@ struct V0QA {
         if (!v0.has_mcParticle()) {
           continue;
         }
-        int pdg = v0.mcParticle().pdgCode();
+        auto pv0 = v0.mcParticle();
+        int pdg = pv0.pdgCode();
 
         // Check V0 decay kinematics
         if (!isV0Reconstructed(jcoll, v0, pdg))
@@ -572,7 +744,6 @@ struct V0QA {
         if (!v0.has_mcMotherParticle())
           continue;
 
-        auto pv0 = v0.mcParticle();
         auto mother = v0.mcMotherParticle();
         pdg = mother.pdgCode();
 
