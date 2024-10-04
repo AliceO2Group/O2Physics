@@ -19,27 +19,19 @@
 #include "Framework/ASoAHelpers.h"
 #include "Framework/RunningWorkflowInfo.h"
 
-#include "Common/DataModel/EventSelection.h"
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
-#include "CCDB/BasicCCDBManager.h"
-#include <DataFormatsParameters/GRPObject.h>
-#include <DataFormatsParameters/GRPMagField.h>
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "ReconstructionDataFormats/GlobalTrackID.h"
-#include "ReconstructionDataFormats/Track.h"
-
-#include <cmath>
-#include <algorithm>
-#include <numeric>
-#include <vector>
-#include "Framework/ASoAHelpers.h"
-#include "Framework/RunningWorkflowInfo.h"
-
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/Centrality.h
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/EventSelection.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "ReconstructionDataFormats/GlobalTrackID.h"
+#include "ReconstructionDataFormats/Track.h"
 
 #include "TH1F.h"
 #include "TH2F.h"
@@ -51,6 +43,10 @@
 #include "TCanvas.h"
 #include "TSystem.h"
 #include <TROOT.h>
+#include <cmath>
+#include <algorithm>
+#include <numeric>
+#include <vector>
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
@@ -88,7 +84,7 @@ std::vector<TString> names_Ecal(10, "");
 // https://alice-notes.web.cern.ch/system/files/notes/analysis/620/017-May-31-analysis_note-ALICE_analysis_note_v2.pdf
 std::vector<double> ZDC_px = {-1.75, 1.75, -1.75, 1.75};
 std::vector<double> ZDC_py = {-1.75, -1.75, 1.75, 1.75};
-double alphaZDC = 0.395; // Dit is oud PAS OP!!
+double alphaZDC = 0.395; // old!!
 
 // step 0 tm 5 A&C
 std::vector<std::vector<double>> q(6, std::vector<double>(4, 0)); // 6 steps, each with 4 values
