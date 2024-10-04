@@ -39,7 +39,7 @@ struct SGCandProducer {
   Configurable<bool> IsGoodVertex{"IsGoodVertex", false, "Select FT0 PV vertex matching"};
   Configurable<bool> ITSTPCVertex{"ITSTPCVertex", true, "reject ITS-only vertex"}; // if one wants to look at Single Gap pp events
 
-  //Configurables to decide which tables are filled
+  // Configurables to decide which tables are filled
   Configurable<bool> fillTrackTables{"fillTrackTables", true, "Fill track tables"};
   Configurable<bool> fillFwdTrackTables{"fillFwdTrackTables", true, "Fill forward track tables"};
 
