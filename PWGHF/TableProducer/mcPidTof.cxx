@@ -228,7 +228,7 @@ struct mcPidTof {
 
   /// Retrieve MC postcalibration objects from CCDB
   /// \param timestamp timestamp
-  void retrieveMcPostCalibFromCcdb(int timestamp)
+  void retrieveMcPostCalibFromCcdb(int64_t timestamp)
   {
     std::map<std::string, std::string> metadata;
     metadata["RecoPassName"] = mcRecalib.passName;
