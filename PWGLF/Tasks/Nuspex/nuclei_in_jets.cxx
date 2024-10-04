@@ -55,7 +55,7 @@ using std::array;
 using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels>;
 using SimCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
 
-using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe>;
+using FullNucleiTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe>;
 
 using MCTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe, aod::McTrackLabels>;
 
@@ -424,7 +424,7 @@ struct nuclei_in_jets {
   }
 
   // Process Data
-  void processData(SelectedCollisions::iterator const& collision, FullTracks const& tracks)
+  void processData(SelectedCollisions::iterator const& collision, FullNucleiTracks const& tracks)
   {
     // Event Counter: before event selection
     registryData.fill(HIST("number_of_events_data"), 0.5);
