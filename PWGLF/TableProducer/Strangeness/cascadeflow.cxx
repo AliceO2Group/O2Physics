@@ -121,7 +121,7 @@ static const std::vector<std::string> labelsCutScore = {"Background score", "Sig
 struct cascadeFlow {
 
   PresliceUnsorted<soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraCollLabels>> perMcCollision = aod::v0data::straMCCollisionId;
-  
+
   // axes
   ConfigurableAxis axisQVs{"axisQVs", {500, -10.f, 10.f}, "axisQVs"};
   ConfigurableAxis axisQVsNorm{"axisQVsNorm", {200, -1.f, 1.f}, "axisQVsNorm"};
@@ -389,7 +389,7 @@ struct cascadeFlow {
     histosMCGen.add("h2DGenXi", "h2DGenXi", HistType::kTH2F, {{100, 0, 00}, {200, 0, 20}});
     histosMCGen.add("h2DGenOmega", "h2DGenOmega", HistType::kTH2F, {{100, 0, 100}, {200, 0, 20}});
     histosMCGen.add("hGenEta", "hGenEta", HistType::kTH1F, {{100, -1, 1}});
-    
+
     for (int iS{0}; iS < 2; ++iS) {
       cascadev2::hMassBeforeSelVsPt[iS] = histos.add<TH2>(Form("hMassBeforeSelVsPt%s", cascadev2::speciesNames[iS].data()), "hMassBeforeSelVsPt", HistType::kTH2F, {massCascAxis[iS], ptAxis});
       cascadev2::hMassAfterSelVsPt[iS] = histos.add<TH2>(Form("hMassAfterSelVsPt%s", cascadev2::speciesNames[iS].data()), "hMassAfterSelVsPt", HistType::kTH2F, {massCascAxis[iS], ptAxis});
@@ -866,18 +866,18 @@ struct cascadeFlow {
     float centrality = 100.5f;
     int nCollisions = 0;
     for (auto const& collision : groupedCollisions) {
-      
+
       if (!AcceptEvent(collision)) {
         continue;
       }
       if (biggestNContribs < collision.multPVTotalContributors()) {
-	biggestNContribs = collision.multPVTotalContributors();
-	bestCollisionIndex = collision.globalIndex();
-	centrality = collision.centFT0C();
+        biggestNContribs = collision.multPVTotalContributors();
+        bestCollisionIndex = collision.globalIndex();
+        centrality = collision.centFT0C();
       }
       nCollisions++;
     }
-    if (nCollisions <1) {
+    if (nCollisions < 1) {
       return;
     }
     for (auto const& cascMC : CascMCCores) {
@@ -889,24 +889,25 @@ struct cascadeFlow {
 
       float ptmc = RecoDecay::sqrtSumOfSquares(cascMC.pxMC(), cascMC.pyMC());
 
-      float theta = std::atan(ptmc/cascMC.pzMC()); //-pi/2 < theta < pi/2
-      
+      float theta = std::atan(ptmc / cascMC.pzMC()); //-pi/2 < theta < pi/2
+
       float theta1 = 0;
-      
-      //if pz is positive (i.e. positive rapidity): 0 < theta < pi/2
-      if (theta > 0) theta1 = theta; //0 < theta1/2 < pi/4 --> 0 < tan (theta1/2) < 1 --> positive eta
-      //if pz is negative (i.e. negative rapidity): -pi/2 < theta < 0 --> we need 0 < theta1/2 < pi/2 for the ln to be defined
-      else theta1 = TMath::Pi() + theta; //pi/2 < theta1 < pi --> pi/4 < theta1/2 <  pi/2 --> 1 < tan (theta1/2) --> negative eta
-      
-      float cascMCeta = -log(std::tan(theta1/2));
+
+      // if pz is positive (i.e. positive rapidity): 0 < theta < pi/2
+      if (theta > 0)
+        theta1 = theta; // 0 < theta1/2 < pi/4 --> 0 < tan (theta1/2) < 1 --> positive eta
+      // if pz is negative (i.e. negative rapidity): -pi/2 < theta < 0 --> we need 0 < theta1/2 < pi/2 for the ln to be defined
+      else
+        theta1 = TMath::Pi() + theta; // pi/2 < theta1 < pi --> pi/4 < theta1/2 <  pi/2 --> 1 < tan (theta1/2) --> negative eta
+
+      float cascMCeta = -log(std::tan(theta1 / 2));
       if (TMath::Abs(cascMCeta) > etaCascMCGen)
         continue;
       histosMCGen.fill(HIST("hGenEta"), cascMCeta);
 
       if (TMath::Abs(cascMC.pdgCode()) == 3312) {
         histosMCGen.fill(HIST("h2dGenXi"), centrality, ptmc);
-      }
-      else if (TMath::Abs(cascMC.pdgCode() == 3334)) {
+      } else if (TMath::Abs(cascMC.pdgCode() == 3334)) {
         histosMCGen.fill(HIST("h2dGenOmega"), centrality, ptmc);
       }
     }
