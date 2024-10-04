@@ -393,7 +393,7 @@ struct strangederivedbuilder {
     for (const auto& casc : KFCascades) {
       kfcasccollref(KFCascadeCollIndices[casc.globalIndex()]);
     }
-    for (const auto& casc : KFCascades) {
+    for (const auto& casc : TraCascades) {
       tracasccollref(TraCascadeCollIndices[casc.globalIndex()]);
     }
   }

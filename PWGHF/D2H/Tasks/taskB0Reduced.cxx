@@ -58,6 +58,7 @@ DECLARE_SOA_COLUMN(Cpa, cpa, float);                                         //!
 DECLARE_SOA_COLUMN(CpaXY, cpaXY, float);                                     //! Cosine pointing angle of candidate in transverse plane
 DECLARE_SOA_COLUMN(MaxNormalisedDeltaIP, maxNormalisedDeltaIP, float);       //! Maximum normalized difference between measured and expected impact parameter of candidate prongs
 DECLARE_SOA_COLUMN(MlScoreSig, mlScoreSig, float);                           //! ML score for signal class
+DECLARE_SOA_COLUMN(FlagWrongCollision, flagWrongCollision, int8_t);          //! Flag for association with wrong collision
 } // namespace hf_cand_b0_lite
 
 DECLARE_SOA_TABLE(HfRedCandB0Lites, "AOD", "HFREDCANDB0LITE", //! Table with some B0 properties
@@ -89,10 +90,12 @@ DECLARE_SOA_TABLE(HfRedCandB0Lites, "AOD", "HFREDCANDB0LITE", //! Table with som
                   hf_cand_b0_lite::Y,
                   hf_cand_3prong::FlagMcMatchRec,
                   hf_cand_3prong::OriginMcRec,
+                  hf_cand_b0_lite::FlagWrongCollision,
                   hf_cand_b0_lite::PtGen);
 
 DECLARE_SOA_TABLE(HfRedB0McCheck, "AOD", "HFREDB0MCCHECK", //! Table with MC decay type check
                   hf_cand_3prong::FlagMcMatchRec,
+                  hf_cand_b0_lite::FlagWrongCollision,
                   hf_cand_b0_lite::MProng0,
                   hf_cand_b0_lite::PtProng0,
                   hf_cand_b0_lite::M,
@@ -346,9 +349,11 @@ struct HfTaskB0Reduced {
     auto decLenXyD = RecoDecay::distanceXY(posPv, posSvD);
 
     int8_t flagMcMatchRec = 0;
+    int8_t flagWrongCollision = 0;
     bool isSignal = false;
     if constexpr (doMc) {
       flagMcMatchRec = candidate.flagMcMatchRec();
+      flagWrongCollision = candidate.flagWrongCollision();
       isSignal = TESTBIT(std::abs(flagMcMatchRec), hf_cand_b0::DecayTypeMc::B0ToDplusPiToPiKPiPi);
     }
 
@@ -524,6 +529,7 @@ struct HfTaskB0Reduced {
           hfHelper.yB0(candidate),
           flagMcMatchRec,
           isSignal,
+          flagWrongCollision,
           ptMother);
       }
       if constexpr (withDecayTypeCheck) {
@@ -533,6 +539,7 @@ struct HfTaskB0Reduced {
         }
         hfRedB0McCheck(
           flagMcMatchRec,
+          flagWrongCollision,
           invMassD,
           ptD,
           invMassB0,
