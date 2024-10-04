@@ -383,7 +383,7 @@ struct nuclei_in_jets {
     registryData.fill(HIST("number_of_events_data"), 1.5);
 
     // Cut on z-vertex
-    if (abs(collision.posZ()) > zVtx)
+    if (std::abs(collision.posZ()) > zVtx)
       return;
 
     // Event Counter: after z-vertex cut
@@ -454,7 +454,7 @@ struct nuclei_in_jets {
     int n_jets_selected(0);
     for (int i = 0; i < static_cast<int>(jet.size()); i++) {
 
-      if ((abs(jet[i].Eta()) + Rjet) > max_eta)
+      if ((std::abs(jet[i].Eta()) + Rjet) > max_eta)
         continue;
 
       // Perpendicular cones
@@ -688,7 +688,7 @@ struct nuclei_in_jets {
       if (!collision.sel8())
         continue;
 
-      if (abs(collision.posZ()) > 10)
+      if (std::abs(collision.posZ()) > 10)
         continue;
 
       // Event Counter (after event sel)
@@ -792,7 +792,7 @@ struct nuclei_in_jets {
         continue;
       registryMC.fill(HIST("number_of_events_mc"), 4.5);
 
-      if (abs(collision.posZ()) > zVtx)
+      if (std::abs(collision.posZ()) > zVtx)
         continue;
       registryMC.fill(HIST("number_of_events_mc"), 5.5);
 
@@ -859,7 +859,7 @@ struct nuclei_in_jets {
       int n_jets_selected(0);
       for (int i = 0; i < static_cast<int>(jet.size()); i++) {
 
-        if ((abs(jet[i].Eta()) + Rjet) > max_eta)
+        if ((std::abs(jet[i].Eta()) + Rjet) > max_eta)
           continue;
 
         // Perpendicular cones
@@ -973,7 +973,7 @@ struct nuclei_in_jets {
       registryMC.fill(HIST("number_of_events_mc"), 7.5);
 
       // Selection on z_{vertex}
-      if (abs(mccollision.posZ()) > 10)
+      if (std::abs(mccollision.posZ()) > 10)
         continue;
       registryMC.fill(HIST("number_of_events_mc"), 8.5);
 
@@ -993,7 +993,7 @@ struct nuclei_in_jets {
         double dy = particle.vy() - mccollision.posY();
         double dz = particle.vz() - mccollision.posZ();
         double dcaxy = sqrt(dx * dx + dy * dy);
-        double dcaz = abs(dz);
+        double dcaz = std::abs(dz);
 
         if (setDCAselectionPtDep) {
           if (dcaxy > (0.004f + 0.013f / particle.pt()))
@@ -1008,7 +1008,7 @@ struct nuclei_in_jets {
             continue;
         }
 
-        if (abs(particle.eta()) > 0.8)
+        if (std::abs(particle.eta()) > 0.8)
           continue;
         if (particle.pt() < 0.15)
           continue;
@@ -1071,7 +1071,7 @@ struct nuclei_in_jets {
       int n_jets_selected(0);
       for (int i = 0; i < static_cast<int>(jet.size()); i++) {
 
-        if ((abs(jet[i].Eta()) + Rjet) > max_eta)
+        if ((std::abs(jet[i].Eta()) + Rjet) > max_eta)
           continue;
 
         // Perpendicular cones
@@ -1094,7 +1094,7 @@ struct nuclei_in_jets {
           double dy = particle.vy() - mccollision.posY();
           double dz = particle.vz() - mccollision.posZ();
           double dcaxy = sqrt(dx * dx + dy * dy);
-          double dcaz = abs(dz);
+          double dcaz = std::abs(dz);
 
           if (setDCAselectionPtDep) {
             if (dcaxy > (0.004f + 0.013f / particle.pt()))
@@ -1109,7 +1109,7 @@ struct nuclei_in_jets {
               continue;
           }
 
-          if (abs(particle.eta()) > 0.8)
+          if (std::abs(particle.eta()) > 0.8)
             continue;
           if (particle.pt() < 0.15)
             continue;
