@@ -117,12 +117,15 @@ struct mcPidTof {
     std::array<int, 3> supportedSpecies = {2, 3, 4};
     for (auto iSpecie{0u}; iSpecie < supportedSpecies.size(); ++iSpecie) {
       int flag = -1;
-      enableFlagIfTableRequired(initContext, "mcPidTof" + particleNames[supportedSpecies[iSpecie]], flag);
+      enableFlagIfTableRequired(initContext, "pidTOFFull" + particleNames[supportedSpecies[iSpecie]], flag);
+      if (flag == 1) {
+        mEnabledParticles.push_back(supportedSpecies[iSpecie]);
+      }
     }
     // Printing enabled tables
     LOG(info) << "++ Enabled tables:";
     for (const int& pidId : mEnabledParticles) {
-      LOG(info) << "++  mcPidTof" << particleNames[pidId] << " is enabled";
+      LOG(info) << "++  pidTOFFull" << particleNames[pidId] << " is enabled";
     }
 
     // Getting the parametrization parameters
@@ -228,7 +231,7 @@ struct mcPidTof {
 
   /// Retrieve MC postcalibration objects from CCDB
   /// \param timestamp timestamp
-  void retrieveMcPostCalibFromCcdb(int timestamp)
+  void retrieveMcPostCalibFromCcdb(int64_t timestamp)
   {
     std::map<std::string, std::string> metadata;
     metadata["RecoPassName"] = mcRecalib.passName;
