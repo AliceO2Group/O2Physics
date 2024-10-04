@@ -73,6 +73,7 @@ struct decay3bodyBuilder {
 
   Produces<aod::StoredVtx3BodyDatas> vtx3bodydata;
   Produces<aod::KFVtx3BodyDatas> kfvtx3bodydata;
+  Produces<aod::KFVtx3BodyDatasLite> kfvtx3bodydatalite;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
@@ -97,9 +98,9 @@ struct decay3bodyBuilder {
                    kKfVtxCollIds,
                    kKfVtxCharge,
                    kKfVtxEta,
-                   kKfVtxTPCPID,
                    kKfVtxTPCNcls,
                    kKfVtxTPCRows,
+                   kKfVtxTPCPID,
                    kKfVtxDCAxyPV,
                    kKfVtxDCAzPV,
                    kKfVtxV0MassConst,
@@ -197,6 +198,7 @@ struct decay3bodyBuilder {
     Configurable<bool> doVertexQA{"kfparticleConfigurations.doVertexQA", false, "Flag to fill QA histograms for KFParticle PV."};
     Configurable<bool> useLambdaMassConstraint{"kfparticleConfigurations.useLambdaMassConstraint", false, "Apply Lambda mass constraint on proton-pion vertex"};
     Configurable<float> maxEta{"kfparticleConfigurations.maxEta", 0.9, "Maximum eta for daughter tracks"};
+    Configurable<bool> useTPCforPion{"kfparticleConfigurations.useTPCforPion", true, "Flag to ask for TPC info for pion track (PID, nClusters), false: pion track can be ITS only"};
     Configurable<float> mintpcNClsProton{"kfparticleConfigurations.mintpcNClsProton", 70, "Minimum number of TPC clusters for proton track"};
     Configurable<float> mintpcNClsPion{"kfparticleConfigurations.mintpcNClsPion", 70, "Minimum number of TPC clusters for pion track"};
     Configurable<float> mintpcNClsBach{"kfparticleConfigurations.mintpcNClsBach", 70, "Minimum number of TPC clusters for bachelor track"};
@@ -313,9 +315,9 @@ struct decay3bodyBuilder {
     registry.get<TH1>(HIST("hVtx3BodyCounterKFParticle"))->GetXaxis()->SetBinLabel(2, "CollIds");
     registry.get<TH1>(HIST("hVtx3BodyCounterKFParticle"))->GetXaxis()->SetBinLabel(3, "Charge");
     registry.get<TH1>(HIST("hVtx3BodyCounterKFParticle"))->GetXaxis()->SetBinLabel(4, "Eta");
-    registry.get<TH1>(HIST("hVtx3BodyCounterKFParticle"))->GetXaxis()->SetBinLabel(5, "TPCpid");
-    registry.get<TH1>(HIST("hVtx3BodyCounterKFParticle"))->GetXaxis()->SetBinLabel(6, "TPCNcls");
-    registry.get<TH1>(HIST("hVtx3BodyCounterKFParticle"))->GetXaxis()->SetBinLabel(7, "TPCRows");
+    registry.get<TH1>(HIST("hVtx3BodyCounterKFParticle"))->GetXaxis()->SetBinLabel(5, "TPCNcls");
+    registry.get<TH1>(HIST("hVtx3BodyCounterKFParticle"))->GetXaxis()->SetBinLabel(6, "TPCRows");
+    registry.get<TH1>(HIST("hVtx3BodyCounterKFParticle"))->GetXaxis()->SetBinLabel(7, "TPCpid");
     registry.get<TH1>(HIST("hVtx3BodyCounterKFParticle"))->GetXaxis()->SetBinLabel(8, "DCAxyPV");
     registry.get<TH1>(HIST("hVtx3BodyCounterKFParticle"))->GetXaxis()->SetBinLabel(9, "DCAzPV");
     registry.get<TH1>(HIST("hVtx3BodyCounterKFParticle"))->GetXaxis()->SetBinLabel(10, "V0MassConst");
@@ -505,10 +507,10 @@ struct decay3bodyBuilder {
     if (std::abs(trackProton.tpcNSigmaPr()) > kfparticleConfigurations.maxtpcnSigma) {
       return false;
     }
-    if (std::abs(trackPion.tpcNSigmaPi()) > kfparticleConfigurations.maxtpcnSigma) {
+    if (std::abs(trackDeuteron.tpcNSigmaDe()) > kfparticleConfigurations.maxtpcnSigma) {
       return false;
     }
-    if (std::abs(trackDeuteron.tpcNSigmaDe()) > kfparticleConfigurations.maxtpcnSigma) {
+    if (kfparticleConfigurations.useTPCforPion && std::abs(trackPion.tpcNSigmaPi()) > kfparticleConfigurations.maxtpcnSigma) {
       return false;
     }
     return true;
@@ -625,7 +627,7 @@ struct decay3bodyBuilder {
   //------------------------------------------------------------------
   // 3body candidate builder with KFParticle
   template <class TTrackTo, typename TCollision>
-  void buildVtx3BodyDataTableKFParticle(TCollision const& collision, aod::Decay3Bodys const& decay3bodys, int bachelorcharge)
+  void buildVtx3BodyDataTableKFParticle(TCollision const& collision, aod::Decay3Bodys const& decay3bodys, int bachelorcharge = 1)
   {
     LOG(debug) << "buildVtx3BodyDataTableKFParticle called.";
     for (auto& vtx3body : decay3bodys) {
@@ -712,21 +714,13 @@ struct decay3bodyBuilder {
       }
       registry.fill(HIST("hVtx3BodyCounterKFParticle"), kKfVtxEta);
 
-      // TPC PID
-      if (isMatter && !selectTPCPID(trackPos, trackNeg, trackBach)) { // hypertriton (proton, pi-, deuteron)
-        continue;
-      } else if (!isMatter && !selectTPCPID(trackNeg, trackPos, trackBach)) { // anti-hypertriton (anti-proton, pi+, deuteron)
-        continue;
-      }
-      registry.fill(HIST("hVtx3BodyCounterKFParticle"), kKfVtxTPCPID);
-
       // number of TPC clusters
       if (trackBach.tpcNClsFound() <= kfparticleConfigurations.mintpcNClsBach) {
         continue;
       }
-      if (isMatter && (trackNeg.tpcNClsFound() <= kfparticleConfigurations.mintpcNClsPion || trackPos.tpcNClsFound() <= kfparticleConfigurations.mintpcNClsProton)) {
+      if (isMatter && ((kfparticleConfigurations.useTPCforPion && trackNeg.tpcNClsFound() <= kfparticleConfigurations.mintpcNClsPion) || trackPos.tpcNClsFound() <= kfparticleConfigurations.mintpcNClsProton)) {
         continue;
-      } else if (!isMatter && (trackPos.tpcNClsFound() <= kfparticleConfigurations.mintpcNClsPion || trackNeg.tpcNClsFound() <= kfparticleConfigurations.mintpcNClsProton)) {
+      } else if (!isMatter && ((kfparticleConfigurations.useTPCforPion && trackPos.tpcNClsFound() <= kfparticleConfigurations.mintpcNClsPion) || trackNeg.tpcNClsFound() <= kfparticleConfigurations.mintpcNClsProton)) {
         continue;
       }
       registry.fill(HIST("hVtx3BodyCounterKFParticle"), kKfVtxTPCNcls);
@@ -735,12 +729,20 @@ struct decay3bodyBuilder {
       if (trackBach.tpcNClsCrossedRows() <= kfparticleConfigurations.mintpcCrossedRows) {
         continue;
       }
-      if (isMatter && (trackNeg.tpcNClsCrossedRows() <= kfparticleConfigurations.mintpcCrossedRowsPion || trackPos.tpcNClsCrossedRows() <= kfparticleConfigurations.mintpcCrossedRows)) {
+      if (isMatter && ((kfparticleConfigurations.useTPCforPion && trackNeg.tpcNClsCrossedRows() <= kfparticleConfigurations.mintpcCrossedRowsPion) || trackPos.tpcNClsCrossedRows() <= kfparticleConfigurations.mintpcCrossedRows)) {
         continue;
-      } else if (!isMatter && (trackPos.tpcNClsCrossedRows() <= kfparticleConfigurations.mintpcCrossedRowsPion || trackNeg.tpcNClsCrossedRows() <= kfparticleConfigurations.mintpcCrossedRows)) {
+      } else if (!isMatter && ((kfparticleConfigurations.useTPCforPion && trackPos.tpcNClsCrossedRows() <= kfparticleConfigurations.mintpcCrossedRowsPion) || trackNeg.tpcNClsCrossedRows() <= kfparticleConfigurations.mintpcCrossedRows)) {
         continue;
       }
       registry.fill(HIST("hVtx3BodyCounterKFParticle"), kKfVtxTPCRows);
+
+      // TPC PID
+      if (isMatter && !selectTPCPID(trackPos, trackNeg, trackBach)) { // hypertriton (proton, pi-, deuteron)
+        continue;
+      } else if (!isMatter && !selectTPCPID(trackNeg, trackPos, trackBach)) { // anti-hypertriton (anti-proton, pi+, deuteron)
+        continue;
+      }
+      registry.fill(HIST("hVtx3BodyCounterKFParticle"), kKfVtxTPCPID);
       LOG(debug) << "Basic track selections done.";
 
       // track DCAxy and DCAz to PV associated with decay3body
@@ -797,18 +799,13 @@ struct decay3bodyBuilder {
       }
 
       // create KFParticle objects from tracks
-      auto signProton, signPion;
       KFParticle kfpProton, kfpPion;
       if (isMatter) {
         kfpProton = createKFParticleFromTrackParCov(trackParCovPos, trackPos.sign(), constants::physics::MassProton);
         kfpPion = createKFParticleFromTrackParCov(trackParCovNeg, trackNeg.sign(), constants::physics::MassPionCharged);
-        signProton = trackPos.sign();
-        signPion = trackNeg.sign();
       } else if (!isMatter) {
         kfpProton = createKFParticleFromTrackParCov(trackParCovNeg, trackNeg.sign(), constants::physics::MassProton);
         kfpPion = createKFParticleFromTrackParCov(trackParCovPos, trackPos.sign(), constants::physics::MassPionCharged);
-        signProton = trackNeg.sign();
-        signPion = trackPos.sign();
       }
       LOG(debug) << "KFParticle objects created from daughter tracks.";
 
@@ -876,9 +873,9 @@ struct decay3bodyBuilder {
       }
       registry.fill(HIST("hVtx3BodyCounterKFParticle"), kKfVtxDcaDauVtx);
       LOG(debug) << "DCA to vertex selection after vertex fit applied.";
-      
+
       // daughter pT
-      if (kfpProton.GetPt() < minPtProton || kfpProton.GetPt() > maxPtProton || kfpPion.GetPt() < minPtPion || kfpPion.GetPt() > maxPtPion || kfpDeuteron.GetPt() < minPtDeuteron || kfpDeuteron.GetPt() > maxPtDeuteron) {
+      if (kfpProton.GetPt() < kfparticleConfigurations.minPtProton || kfpProton.GetPt() > kfparticleConfigurations.maxPtProton || kfpPion.GetPt() < kfparticleConfigurations.minPtPion || kfpPion.GetPt() > kfparticleConfigurations.maxPtPion || kfpDeuteron.GetPt() < kfparticleConfigurations.minPtDeuteron || kfpDeuteron.GetPt() > kfparticleConfigurations.maxPtDeuteron) {
         continue;
       }
       registry.fill(HIST("hVtx3BodyCounterKFParticle"), kKfVtxDauPt);
@@ -886,7 +883,7 @@ struct decay3bodyBuilder {
 
       // -------- STEP 5: candidate selection after geometrical vertex fit --------
       // Rapidity
-      float rapHt = RecoDecay::y(std::array{KFHt.GetPX(), KFHt.GetPY(). KFHt.GetPZ()}, o2::constants::physics::MassHyperTriton)
+      float rapHt = RecoDecay::y(std::array{KFHt.GetPx(), KFHt.GetPy(), KFHt.GetPz()}, o2::constants::physics::MassHyperTriton);
       if (std::abs(rapHt) > kfparticleConfigurations.maxRapidityHt) {
         continue;
       }
@@ -961,7 +958,7 @@ struct decay3bodyBuilder {
         KFHtPV.GetDecayLength(), KFHtPV.GetDecayLengthXY(),   // decay length defined after topological constraint
         KFHtPV.GetDecayLength() / KFHtPV.GetErrDecayLength(), // ldl
         chi2geoNDF, chi2topoNDF,
-        KFHt.GetLifetime(), KFHtPV.GetLifetime(),
+        KFHt.GetLifeTime(), KFHtPV.GetLifeTime(),
         // V0
         massV0, chi2massV0,
         // daughter momenta
@@ -987,18 +984,17 @@ struct decay3bodyBuilder {
         // daughter DCAs to PV in 3D propagated with material
         TrackPosDca, TrackNegDca, TrackBachDca,
         // daughter signs
-        signProton,
-        signPion,
+        kfpProton.GetQ(),
+        kfpPion.GetQ(),
         trackBach.sign());
 
-      if (fillCandidateLiteTable) {
-        kfvtx3bodydata(
+      if (kfparticleConfigurations.fillCandidateLiteTable) {
+        kfvtx3bodydatalite(
           // hypertriton
           massHt,
           KFHt.GetX(), KFHt.GetY(), KFHt.GetZ(),
           KFHt.GetErrX(), KFHt.GetErrY(), KFHt.GetErrZ(),
           KFHt.GetPx(), KFHt.GetPy(), KFHt.GetPz(), KFHt.GetPt(),
-          KFHt.GetErrPx(), KFHt.GetErrPy(), KFHt.GetErrPz(), KFHt.GetErrPt(),
           KFHt.GetQ(),
           KFHt.GetDistanceFromVertex(kfpv), KFHt.GetDistanceFromVertexXY(kfpv),
           cpaFromKF(KFHt, kfpv), // before topo constraint
@@ -1008,7 +1004,7 @@ struct decay3bodyBuilder {
           KFHtPV.GetDecayLength(), KFHtPV.GetDecayLengthXY(),   // decay length defined after topological constraint
           KFHtPV.GetDecayLength() / KFHtPV.GetErrDecayLength(), // ldl
           chi2geoNDF, chi2topoNDF,
-          KFHt.GetLifetime(), KFHtPV.GetLifetime(),
+          KFHt.GetLifeTime(), KFHtPV.GetLifeTime(),
           // V0
           massV0, chi2massV0,
           // daughter momenta
@@ -1034,15 +1030,15 @@ struct decay3bodyBuilder {
           // daughter DCAs to PV in 3D propagated with material
           TrackPosDca, TrackNegDca, TrackBachDca,
           // daughter signs
-          signProton,
-          signPion,
+          kfpProton.GetQ(),
+          kfpPion.GetQ(),
           trackBach.sign());
       }
       LOG(debug) << "Table filled.";
-    }
 
-    // fill event counter hist (has selected candidate)
-    registry.fill(HIST("hEventCounterKFParticle"), 3.5);
+      // fill event counter hist (has selected candidate)
+      registry.fill(HIST("hEventCounterKFParticle"), 3.5);
+    }
   }
 
   //------------------------------------------------------------------
