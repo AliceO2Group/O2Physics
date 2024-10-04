@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// In this task the energy calibration and recentring of Q-vectors constructed in the ZDCs will be done 
+// In this task the energy calibration and recentring of Q-vectors constructed in the ZDCs will be done
 // Start with step one and add other steps later.
 
 #include "Framework/AnalysisTask.h"
@@ -81,26 +81,24 @@ std::vector<const char*> sides = {"A", "C"};
 std::vector<const char*> coords = {"x", "y", "z"};
 std::vector<const char*> COORDS = {"X", "Y"};
 
-
-// Define histogrm names here to use same names for creating and later uploading and retrieving data from ccdb 
-// Eneergy calibration: 
-std::vector<TString> names_Ecal(10,"");
-
+// Define histogrm names here to use same names for creating and later uploading and retrieving data from ccdb
+// Eneergy calibration:
+std::vector<TString> names_Ecal(10, "");
 
 // https://alice-notes.web.cern.ch/system/files/notes/analysis/620/017-May-31-analysis_note-ALICE_analysis_note_v2.pdf
 std::vector<double> ZDC_px = {-1.75, 1.75, -1.75, 1.75};
 std::vector<double> ZDC_py = {-1.75, -1.75, 1.75, 1.75};
-double alphaZDC = 0.395; // Dit is oud PAS OP!! 
+double alphaZDC = 0.395; // Dit is oud PAS OP!!
 
 // step 0 tm 5 A&C
-std::vector<std::vector<double>> q(6,std::vector<double>(4,0));   // 6 steps, each with 4 values
+std::vector<std::vector<double>> q(6, std::vector<double>(4, 0)); // 6 steps, each with 4 values
 std::vector<double> v(3);                                         // vx, vy, vz
 std::vector<double> v_mean(3);                                    // vx_mean, vy_mean, vz_mean
 
 // for energy calibration
 std::vector<double> EZN(8);      // uncalibrated energy for the 2x4 towers (a1, a2, a3, a4, c1, c2, c3, c4)
 std::vector<double> meanEZN(10); // mean energies from calibration histos (common A, t1-4 A,common C, t1-4C)
-std::vector<double> e(8,0.);     // calibrated energies (a1, a2, a3, a4, c1, c2, c3, c4))
+std::vector<double> e(8, 0.);    // calibrated energies (a1, a2, a3, a4, c1, c2, c3, c4))
 
 } // namespace o2::analysis::qvectortask
 
@@ -146,10 +144,10 @@ struct ZDCqvectors {
 
   Service<ccdb::BasicCCDBManager> ccdb;
 
-  // keep calibration histos for each given step 
+  // keep calibration histos for each given step
   struct Calib {
-      std::vector<TList*> calibList = std::vector<TList*>(8, nullptr);
-      std::vector<bool> calibfilesLoaded = std::vector<bool>(8, false);
+    std::vector<TList*> calibList = std::vector<TList*>(8, nullptr);
+    std::vector<bool> calibfilesLoaded = std::vector<bool>(8, false);
   } cal;
 
   void init(InitContext const&)
@@ -164,19 +162,19 @@ struct ZDCqvectors {
     // Tower mean energies vs. centrality used for tower gain equalisation
     for (int tower = 0; tower < 10; tower++) {
       names_Ecal[tower] = TString::Format("hZN%s_mean_t%i_cent", sides[(tower < 5) ? 0 : 1], tower % 5);
-      ZN_Energy[tower]  = registry.add<TProfile2D>(Form("Energy/%s", names_Ecal[tower].Data()), Form("%s", names_Ecal[tower].Data()), kTProfile2D, {{1, 0, 1}, axisCent});
+      ZN_Energy[tower] = registry.add<TProfile2D>(Form("Energy/%s", names_Ecal[tower].Data()), Form("%s", names_Ecal[tower].Data()), kTProfile2D, {{1, 0, 1}, axisCent});
     }
-    
+
     // Qx_vs_Qy before recentering for ZNA and ZNC
     int step = 0;
     for (const char* side : sides) {
-    hQx_vs_Qy[step] = registry.add<TH2>(Form("step%i/hZN%s_Qx_vs_Qy", step, side), Form("hZN%s_Qx_vs_Qy", side), kTH2F, {axisQ, axisQ});
+      hQx_vs_Qy[step] = registry.add<TH2>(Form("step%i/hZN%s_Qx_vs_Qy", step, side), Form("hZN%s_Qx_vs_Qy", side), kTH2F, {axisQ, axisQ});
     }
     for (const char* COORD1 : COORDS) {
-        for (const char* COORD2 : COORDS) {
+      for (const char* COORD2 : COORDS) {
         // Now we get: <XX> <XY> & <YX> <YY> vs. Centrality : do only before (step0) and after (step5) of recentring.
         COORD_correlations[step][0] = registry.add<TProfile>(Form("step%i/hQ%sA_Q%sC_vs_cent", step, COORD1, COORD2), Form("hQ%sA_Q%sC_vs_cent", COORD1, COORD2), kTProfile, {axisCent10});
-        }
+      }
     }
 
     // recentered q-vectors (to check what steps are finished in the end)
@@ -202,32 +200,32 @@ struct ZDCqvectors {
     }
   }
 
-
-  
   void loadCalibrations(int step, uint64_t timestamp)
   {
     std::string ccdb_dir = cfgEnergyCal;
 
     // for now return if step!=0 because only energy calibration is implemented
-    if(step!=0) return; 
+    if (step != 0)
+      return;
 
-    if (cfgEnergyCal.value.empty() == false){ //only proceed if string is not empty
+    if (cfgEnergyCal.value.empty() == false) { // only proceed if string is not empty
       cal.calibList[step] = ccdb->getForTimeStamp<TList>(ccdb_dir, timestamp);
 
-      if (cal.calibList[step]){
+      if (cal.calibList[step]) {
         for (int i = 0; i < 10; i++) {
-          TProfile2D* vec = nullptr;  
+          TProfile2D* vec = nullptr;
           vec = (TProfile2D*)cal.calibList[step]->FindObject(Form("%s", names_Ecal[i].Data()));
           if (vec == nullptr || vec->GetEntries() < 1) {
             LOGF(info, "%s not found or empty! Produce calibration file at given step", names_Ecal[i].Data());
-            cal.calibfilesLoaded[step] =  false;
-            break; 
+            cal.calibfilesLoaded[step] = false;
+            break;
           }
         }
-          cal.calibfilesLoaded[step] = true; 
-          } else {
-          LOGF(warning, "Could not load TList with calibration histos from %s", ccdb_dir);
-          cal.calibfilesLoaded[step] = false; }
+        cal.calibfilesLoaded[step] = true;
+      } else {
+        LOGF(warning, "Could not load TList with calibration histos from %s", ccdb_dir);
+        cal.calibfilesLoaded[step] = false;
+      }
     }
   }
 
@@ -245,22 +243,22 @@ struct ZDCqvectors {
     return grpo->getNominalL3Field();
   }
 
-  
-  double getCorrectionStep0(int runnumber, double centrality, int tower){ 
+  double getCorrectionStep0(int runnumber, double centrality, int tower)
+  {
 
-    TProfile2D* hist = nullptr;  
+    TProfile2D* hist = nullptr;
 
-    hist = (TProfile2D*)cal.calibList[0]->FindObject(Form("%s",names_Ecal[tower].Data()));
-    if(!hist) {
+    hist = (TProfile2D*)cal.calibList[0]->FindObject(Form("%s", names_Ecal[tower].Data()));
+    if (!hist) {
       LOGF(fatal, "Histo with calib. conatants for tower %i not available.. Abort..", tower);
     }
-    int binrunnumber = hist->GetXaxis()->FindBin(TString::Format("%i",runnumber)); 
-    if(binrunnumber!=1) LOGF(fatal, "bin runnumber is wrong.."); 
+    int binrunnumber = hist->GetXaxis()->FindBin(TString::Format("%i", runnumber));
+    if (binrunnumber != 1)
+      LOGF(fatal, "bin runnumber is wrong..");
     double calibConstant = hist->GetBinContent(int(binrunnumber), int(centrality) + 1);
 
-    return calibConstant; 
+    return calibConstant;
   }
-
 
   void process(myCollisions::iterator const& collision,
                BCsRun3 const& /*bcs*/,
@@ -270,9 +268,9 @@ struct ZDCqvectors {
 
     // for Q-vector calculation
     //  A[0] & C[1]
-    std::vector<double> sumZN(2,0.);  
-    std::vector<double> xEnZN(2,0.); 
-    std::vector<double> yEnZN(2,0.); 
+    std::vector<double> sumZN(2, 0.);
+    std::vector<double> xEnZN(2, 0.);
+    std::vector<double> yEnZN(2, 0.);
 
     if (!collision.sel8())
       return;
@@ -301,7 +299,7 @@ struct ZDCqvectors {
       }
 
       // load the calibration histos for step 0 (Energy Calibration)
-      loadCalibrations(0, foundBC.timestamp()); 
+      loadCalibrations(0, foundBC.timestamp());
 
       if (!cal.calibfilesLoaded[0]) {
         if (counter < 1) {
@@ -310,17 +308,20 @@ struct ZDCqvectors {
         }
       }
 
-      bool isZNAhit = true; 
-      bool isZNChit = true; 
+      bool isZNAhit = true;
+      bool isZNChit = true;
 
       for (int i = 0; i < 8; ++i) {
-        if (i<4 && EZN[i] <= 0) isZNAhit = false;
-        if (i>3 && EZN[i] <= 0) isZNChit = false;
+        if (i < 4 && EZN[i] <= 0)
+          isZNAhit = false;
+        if (i > 3 && EZN[i] <= 0)
+          isZNChit = false;
       }
-      
-      if(zdcCol.energyCommonZNA() <= 0 ) isZNAhit = false; 
-      if(zdcCol.energyCommonZNC() <= 0 ) isZNChit = false; 
 
+      if (zdcCol.energyCommonZNA() <= 0)
+        isZNAhit = false;
+      if (zdcCol.energyCommonZNC() <= 0)
+        isZNChit = false;
 
       // Fill to get mean energy per tower in 1% centrality bins
       for (int tower = 0; tower < 5; tower++) {
@@ -329,20 +330,20 @@ struct ZDCqvectors {
             ZN_Energy[tower]->Fill(Form("%d", runnumber), cent, zdcCol.energyCommonZNA(), 1);
           if (isZNChit)
             ZN_Energy[tower + 5]->Fill(Form("%d", runnumber), cent, zdcCol.energyCommonZNC(), 1);
-          LOGF(debug, "Common A tower filled with: %i, %.2f, %.2f", runnumber, cent,zdcCol.energyCommonZNA() );
+          LOGF(debug, "Common A tower filled with: %i, %.2f, %.2f", runnumber, cent, zdcCol.energyCommonZNA());
         } else {
           if (isZNAhit)
             ZN_Energy[tower]->Fill(Form("%d", runnumber), cent, EZN[tower - 1], 1);
           if (isZNChit)
-            ZN_Energy[tower + 5]->Fill(Form("%d", runnumber), cent, EZN[tower-1+4], 1);
-          LOGF(debug, "Tower ZNC[%i] filled with: %i, %.2f, %.2f", tower, runnumber, cent,EZN[tower-1+4]);
+            ZN_Energy[tower + 5]->Fill(Form("%d", runnumber), cent, EZN[tower - 1 + 4], 1);
+          LOGF(debug, "Tower ZNC[%i] filled with: %i, %.2f, %.2f", tower, runnumber, cent, EZN[tower - 1 + 4]);
         }
       }
 
-      if(!isZNAhit || !isZNChit) {
-        LOGF(info, "ZDC not hit (correctly) ... don't use event!"); 
+      if (!isZNAhit || !isZNChit) {
+        LOGF(info, "ZDC not hit (correctly) ... don't use event!");
         counter++;
-        return; 
+        return;
       }
 
       if (cal.calibfilesLoaded[0]) {
@@ -354,31 +355,30 @@ struct ZDCqvectors {
         }
 
         // Now start gain equalisation!
-        //Fill the list with calibration constants. 
+        // Fill the list with calibration constants.
         for (int tower = 0; tower < 10; tower++) {
           meanEZN[tower] = getCorrectionStep0(runnumber, centrality, tower);
-          }
+        }
 
-       
         // Use the calibration constants but now only loop over towers 1-4
-        int calibtower=0; 
-        std::vector<int> towers_nocom = {1,2,3,4,6,7,8,9}; 
+        int calibtower = 0;
+        std::vector<int> towers_nocom = {1, 2, 3, 4, 6, 7, 8, 9};
 
-        for (int tower : towers_nocom) { 
+        for (int tower : towers_nocom) {
           if (meanEZN[tower] > 0) {
-            double ecommon = (tower>4) ? meanEZN[5] : meanEZN[0]; 
+            double ecommon = (tower > 4) ? meanEZN[5] : meanEZN[0];
             e[calibtower] = EZN[calibtower] * (0.25 * ecommon) / meanEZN[tower];
           }
-          calibtower++; 
+          calibtower++;
         }
 
         // Now calculate Q-vector
         for (int tower = 0; tower < 8; tower++) {
-          int side = (tower > 3) ? 1 : 0; 
+          int side = (tower > 3) ? 1 : 0;
           int sector = tower % 4;
           double energy = TMath::Power(e[tower], alphaZDC);
-          sumZN[side] += energy; 
-          xEnZN[side] += ZDC_px[sector] * energy; 
+          sumZN[side] += energy;
+          xEnZN[side] += ZDC_px[sector] * energy;
           yEnZN[side] += ZDC_py[sector] * energy;
         }
 
@@ -388,15 +388,14 @@ struct ZDCqvectors {
             q[0][i * 2] = xEnZN[i] / sumZN[i];     // for QXA[0] and QXC[2]
             q[0][i * 2 + 1] = yEnZN[i] / sumZN[i]; // for QYA[1] and QYC[3]
           }
-        }     
-        
+        }
 
         if (!cal.calibfilesLoaded[1]) {
           if (counter < 1)
             LOGF(warning, "Calibation files for recentring does not exist (yet) | Output created with non-recentered q-vectors!!!!");
-          // LOGF(info,"Start filling: "); 
-          // for (double vecc : q[0]) LOGF(info,"%.2f", vecc); 
-          fillRegistry(0, q[0][0], q[0][1], q[0][2], q[0][3]); 
+          // LOGF(info,"Start filling: ");
+          // for (double vecc : q[0]) LOGF(info,"%.2f", vecc);
+          fillRegistry(0, q[0][0], q[0][1], q[0][2], q[0][3]);
           counter++;
 
           return;
@@ -406,7 +405,6 @@ struct ZDCqvectors {
     } // end collision found ZDC
     counter++;
   } // end of process
-  
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
