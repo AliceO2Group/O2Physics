@@ -30,7 +30,7 @@ struct v0mlscoresconverter {
       gammaMLSelections(-1);
       lambdaMLSelections(-1);
       antiLambdaMLSelections(-1);
-      k0ShortMLSelections(-1);  
+      k0ShortMLSelections(-1);
     }
   }
 };
