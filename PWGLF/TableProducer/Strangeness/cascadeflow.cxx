@@ -298,7 +298,7 @@ struct cascadeFlow {
   }
 
   template <class collision_t, class cascade_t>
-  void fillAnalysedTable(collision_t coll, cascade_t casc, float v2CSP, float v2CEP, float PsiT0C, float BDTresponseXi, float BDTresponseOmega)
+  void fillAnalysedTable(collision_t coll, cascade_t casc, float v2CSP, float v2CEP, float PsiT0C, float BDTresponseXi, float BDTresponseOmega, int pdgCode)
   {
     double masses[2]{o2::constants::physics::MassXiMinus, o2::constants::physics::MassOmegaMinus};
     ROOT::Math::PxPyPzMVector cascadeVector[2], lambdaVector, protonVector;
@@ -333,7 +333,8 @@ struct cascadeFlow {
                    BDTresponseOmega,
                    cosThetaStarLambda[0],
                    cosThetaStarLambda[1],
-                   cosThetaStarProton);
+                   cosThetaStarProton,
+                   pdgCode);
   }
 
   void init(InitContext const&)
@@ -610,7 +611,7 @@ struct cascadeFlow {
         BDTresponse[1] = bdtScore[1][1];
       }
       if (isSelectedCasc[0] || isSelectedCasc[1])
-        fillAnalysedTable(coll, casc, v2CSP, v2CEP, PsiT0C, BDTresponse[0], BDTresponse[1]);
+        fillAnalysedTable(coll, casc, v2CSP, v2CEP, PsiT0C, BDTresponse[0], BDTresponse[1], 0);
     }
   }
 
@@ -738,7 +739,108 @@ struct cascadeFlow {
         BDTresponse[1] = bdtScore[1][1];
       }
       if (isSelectedCasc[0] || isSelectedCasc[1])
-        fillAnalysedTable(coll, casc, v2CSP, v2CEP, PsiT0C, BDTresponse[0], BDTresponse[1]);
+        fillAnalysedTable(coll, casc, v2CSP, v2CEP, PsiT0C, BDTresponse[0], BDTresponse[1], 0);
+    }
+  }
+
+  void processAnalyseMC(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraRawCents>::iterator const& coll, CascMCCandidates const& Cascades, DauTracks const&, soa::Join<aod::CascMCCores, aod::CascMCCollRefs> const&)
+  {
+
+    if (!AcceptEvent(coll)) {
+      return;
+    }
+
+    histos.fill(HIST("hNEvents"), 7.5);
+    histos.fill(HIST("hEventNchCorrelationAfterEP"), coll.multNTracksPVeta1(), coll.multNTracksGlobal());
+    histos.fill(HIST("hEventPVcontributorsVsCentralityAfterEP"), coll.centFT0C(), coll.multNTracksPVeta1());
+    histos.fill(HIST("hEventGlobalTracksVsCentralityAfterEP"), coll.centFT0C(), coll.multNTracksGlobal());
+    histos.fill(HIST("hEventCentrality"), coll.centFT0C());
+    histos.fill(HIST("hEventVertexZ"), coll.posZ());
+
+    std::vector<float> bdtScore[2];
+    for (auto& casc : Cascades) {
+
+      if (!casc.has_cascMCCore())
+        continue;
+
+      auto cascMC = casc.cascMCCore_as<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>();
+      int pdgCode{cascMC.pdgCode()};
+      if (!(std::abs(pdgCode) == 3312 && std::abs(cascMC.pdgCodeV0()) == 3122 && std::abs(cascMC.pdgCodeBachelor()) == 211)     // Xi
+          && !(std::abs(pdgCode) == 3334 && std::abs(cascMC.pdgCodeV0()) == 3122 && std::abs(cascMC.pdgCodeBachelor()) == 321)) // Omega
+      {
+        pdgCode = 0;
+      }
+
+      /// Add some minimal cuts for single track variables (min number of TPC clusters)
+      auto negExtra = casc.negTrackExtra_as<DauTracks>();
+      auto posExtra = casc.posTrackExtra_as<DauTracks>();
+      auto bachExtra = casc.bachTrackExtra_as<DauTracks>();
+
+      int counter = 0;
+      IsCascAccepted(casc, negExtra, posExtra, bachExtra, counter);
+      histos.fill(HIST("hCascade"), counter);
+
+      // ML selections
+      bool isSelectedCasc[2]{false, false};
+
+      std::vector<float> inputFeaturesCasc{casc.cascradius(),
+                                           casc.v0radius(),
+                                           casc.casccosPA(coll.posX(), coll.posY(), coll.posZ()),
+                                           casc.v0cosPA(coll.posX(), coll.posY(), coll.posZ()),
+                                           casc.dcapostopv(),
+                                           casc.dcanegtopv(),
+                                           casc.dcabachtopv(),
+                                           casc.dcacascdaughters(),
+                                           casc.dcaV0daughters(),
+                                           casc.dcav0topv(coll.posX(), coll.posY(), coll.posZ()),
+                                           casc.bachBaryonCosPA(),
+                                           casc.bachBaryonDCAxyToPV()};
+
+      float massCasc[2]{casc.mXi(), casc.mOmega()};
+
+      // inv mass loose cut
+      if (casc.pt() < MinPt || casc.pt() > MaxPt) {
+        continue;
+      }
+
+      cascadev2::hMassBeforeSelVsPt[0]->Fill(massCasc[0], casc.pt());
+      cascadev2::hMassBeforeSelVsPt[1]->Fill(massCasc[1], casc.pt());
+
+      if (isApplyML) {
+        // Retrieve model output and selection outcome
+        isSelectedCasc[0] = mlResponseXi.isSelectedMl(inputFeaturesCasc, casc.pt(), bdtScore[0]);
+        isSelectedCasc[1] = mlResponseOmega.isSelectedMl(inputFeaturesCasc, casc.pt(), bdtScore[1]);
+
+        for (int iS{0}; iS < 2; ++iS) {
+          // Fill BDT score histograms before selection
+          cascadev2::hSignalScoreBeforeSel[iS]->Fill(bdtScore[0][1]);
+          cascadev2::hBkgScoreBeforeSel[iS]->Fill(bdtScore[1][0]);
+
+          // Fill histograms for selected candidates
+          if (isSelectedCasc[iS]) {
+            cascadev2::hSignalScoreAfterSel[iS]->Fill(bdtScore[0][1]);
+            cascadev2::hBkgScoreAfterSel[iS]->Fill(bdtScore[1][0]);
+            cascadev2::hMassAfterSelVsPt[iS]->Fill(massCasc[iS], casc.pt());
+          }
+        }
+      } else {
+        isSelectedCasc[0] = true;
+        isSelectedCasc[1] = true;
+      }
+
+      histos.fill(HIST("hCascadePhi"), casc.phi());
+
+      float BDTresponse[2]{0.f, 0.f};
+      const float PsiT0C = 0; // not defined in MC for now
+      auto v2CSP = 0;         // not defined in MC for now
+      auto v2CEP = 0;         // not defined in MC for now
+
+      if (isApplyML) {
+        BDTresponse[0] = bdtScore[0][1];
+        BDTresponse[1] = bdtScore[1][1];
+      }
+      if (isSelectedCasc[0] || isSelectedCasc[1])
+        fillAnalysedTable(coll, casc, v2CSP, v2CEP, PsiT0C, BDTresponse[0], BDTresponse[1], pdgCode);
     }
   }
 
@@ -746,6 +848,7 @@ struct cascadeFlow {
   PROCESS_SWITCH(cascadeFlow, processTrainingSignal, "Process to create the training dataset for the signal", false);
   PROCESS_SWITCH(cascadeFlow, processAnalyseData, "Process to apply ML model to the data", false);
   PROCESS_SWITCH(cascadeFlow, processAnalyseDataEPCentralFW, "Process to apply ML model to the data - event plane calibration from central framework", false);
+  PROCESS_SWITCH(cascadeFlow, processAnalyseMC, "Process to apply ML model to the MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
