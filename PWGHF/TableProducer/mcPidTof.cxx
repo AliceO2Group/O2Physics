@@ -279,10 +279,6 @@ struct mcPidTof {
     constexpr auto responsePr = ResponseImplementation<PID::Proton>();
 
     for (auto const& pidId : mEnabledParticles) {
-      std::cout << pidId << std::endl;
-    }
-
-    for (auto const& pidId : mEnabledParticles) {
       reserveTable(pidId, tracks.size());
     }
 
