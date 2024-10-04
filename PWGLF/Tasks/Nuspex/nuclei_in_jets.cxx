@@ -419,8 +419,8 @@ struct nuclei_in_jets {
       LOGP(error, "Could not open histogram {}", Form("%s_antiproton", histname_antip_ue.Data()));
       return;
     }
-    LOGP(info, "Opened histogram {}", Form("%s_antiproton", histname_antip_jet.Data())));
-    LOGP(info, "Opened histogram {}", Form("%s_antiproton", histname_antip_ue.Data())));
+    LOGP(info, "Opened histogram {}", Form("%s_antiproton", histname_antip_jet.Data()));
+    LOGP(info, "Opened histogram {}", Form("%s_antiproton", histname_antip_ue.Data()));
   }
 
   // Process Data
