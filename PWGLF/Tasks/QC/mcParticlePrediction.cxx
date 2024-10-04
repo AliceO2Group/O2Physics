@@ -263,7 +263,7 @@ struct mcParticlePrediction {
       hestimators[i]->GetXaxis()->SetTitle(Form("Multiplicity %s", name));
 
       auto make2DH = [&](const std::string& h, const char* ytitle) {
-        auto hist = histos.add<TH2>(Form("%s/%s", h.c_str(), name),
+        auto hist = histos.add<TH2>(Form("%s%s", h.c_str(), name),
                                     name,
                                     kTH2D,
                                     {axisMultiplicity, axisMultiplicity});
