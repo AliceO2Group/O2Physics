@@ -660,10 +660,10 @@ struct strangeness_in_jets {
   template <typename pionTrack>
   bool isHighPurityPion(const pionTrack& track)
   {
-    if (track.p() < 0.6 && abs(track.tpcNSigmaPi()) < 3.0)
+    if (track.p() < 0.6 && std::abs(track.tpcNSigmaPi()) < 3.0)
       return true;
-    if (track.p() > 0.6 && abs(track.tpcNSigmaPi()) < 3.0 &&
-        abs(track.tofNSigmaPi()) < 3.0)
+    if (track.p() > 0.6 && std::abs(track.tpcNSigmaPi()) < 3.0 &&
+        std::abs(track.tofNSigmaPi()) < 3.0)
       return true;
     return false;
   }
@@ -779,7 +779,7 @@ struct strangeness_in_jets {
     registryData.fill(HIST("number_of_events_data"), 1.5);
 
     // Cut on z-vertex
-    if (abs(collision.posZ()) > zVtx)
+    if (std::abs(collision.posZ()) > zVtx)
       return;
 
     // Event Counter: after z-vertex cut
@@ -847,7 +847,7 @@ struct strangeness_in_jets {
     int n_jets_selected(0);
     for (int i = 0; i < static_cast<int>(jet.size()); i++) {
 
-      if ((abs(jet[i].Eta()) + Rjet) > etaMax)
+      if ((std::abs(jet[i].Eta()) + Rjet) > etaMax)
         continue;
 
       // Perpendicular cones
@@ -1152,7 +1152,7 @@ struct strangeness_in_jets {
         continue;
 
       registryMC.fill(HIST("number_of_events_mc"), 1.5);
-      if (abs(collision.posZ()) > 10.0)
+      if (std::abs(collision.posZ()) > 10.0)
         continue;
 
       registryMC.fill(HIST("number_of_events_mc"), 2.5);
@@ -1387,7 +1387,7 @@ struct strangeness_in_jets {
       registryMC.fill(HIST("number_of_events_mc"), 3.5);
 
       // Selection on z_{vertex}
-      if (abs(mccollision.posZ()) > 10)
+      if (std::abs(mccollision.posZ()) > 10)
         continue;
       registryMC.fill(HIST("number_of_events_mc"), 4.5);
 
@@ -1422,12 +1422,12 @@ struct strangeness_in_jets {
         double dy = particle.vy() - mccollision.posY();
         double dz = particle.vz() - mccollision.posZ();
         double dcaxy = sqrt(dx * dx + dy * dy);
-        double dcaz = abs(dz);
+        double dcaz = std::abs(dz);
         if (dcaxy > (par0 + par1 / particle.pt()))
           continue;
         if (dcaz > (par0 + par1 / particle.pt()))
           continue;
-        if (abs(particle.eta()) > 0.8)
+        if (std::abs(particle.eta()) > 0.8)
           continue;
         if (particle.pt() < 0.15)
           continue;
@@ -1489,7 +1489,7 @@ struct strangeness_in_jets {
       int n_jets_selected(0);
       for (int i = 0; i < static_cast<int>(jet.size()); i++) {
 
-        if ((abs(jet[i].Eta()) + Rjet) > etaMax)
+        if ((std::abs(jet[i].Eta()) + Rjet) > etaMax)
           continue;
 
         // Perpendicular cones
@@ -1512,13 +1512,13 @@ struct strangeness_in_jets {
           double dy = particle.vy() - mccollision.posY();
           double dz = particle.vz() - mccollision.posZ();
           double dcaxy = sqrt(dx * dx + dy * dy);
-          double dcaz = abs(dz);
+          double dcaz = std::abs(dz);
 
           if (dcaxy > (par0 + par1 / particle.pt()))
             continue;
           if (dcaz > (par0 + par1 / particle.pt()))
             continue;
-          if (abs(particle.eta()) > 0.8)
+          if (std::abs(particle.eta()) > 0.8)
             continue;
           if (particle.pt() < 0.15)
             continue;
