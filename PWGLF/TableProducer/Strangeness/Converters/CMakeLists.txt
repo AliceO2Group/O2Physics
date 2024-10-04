@@ -31,7 +31,7 @@ o2physics_add_dpl_workflow(straevselsconverter
 
 o2physics_add_dpl_workflow(straevselsconverter2
                     SOURCES straevselsconverter2.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::ITStracking
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(straevselsconverter2rawcents

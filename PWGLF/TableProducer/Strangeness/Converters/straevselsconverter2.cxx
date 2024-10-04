@@ -11,7 +11,7 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
-#include "ReconstructionDataFormats/Vertex.h"
+#include "ITStracking/Vertexer.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 using namespace o2;
@@ -19,7 +19,7 @@ using namespace o2::framework;
 
 // Converts Stra Event selections from 000 to 001
 struct straevselsconverter2 {
-  Produces<aod::StraEvSels_001> straEvSels_001;
+  Produces<aod::StraEvSels_002> straEvSels_002;
 
   void process(aod::StraEvSels_001 const& straEvSels_001)
   {
@@ -52,7 +52,7 @@ struct straevselsconverter2 {
                      -999. /*dummy FDD-C value*/,
                      -999. /*dummy ZN-A value*/,
                      -999. /*dummy ZN-C value*/,
-                     Vertex::FlagsMask /*dummy flag value*/);
+                     o2::its::Vertex::FlagsMask /*dummy flag value*/);
     }
   }
 };
