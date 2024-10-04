@@ -201,7 +201,6 @@ struct ebyeMaker {
   int mRunNumber;
   float d_bz;
   uint8_t nTrackletsColl;
-  uint8_t nTrackletsCollMid;
   // o2::base::MatLayerCylSet* lut = nullptr;
 
   Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrNONE), "Type of material correction"};
@@ -656,7 +655,6 @@ struct ebyeMaker {
     }
     if (doprocessRun2 || doprocessMcRun2 || doprocessMiniRun2 || doprocessMiniMcRun2) {
       histos.fill(HIST("QA/nTrklCorrelation"), nTracklets[0], nTracklets[1]);
-      nTrackletsCollMid = nTracklets[0];
       nTrackletsColl = nTracklets[1];
     }
 
@@ -1096,7 +1094,7 @@ struct ebyeMaker {
       fillRecoEvent(collision, tracks, V0Table_thisCollision, cV0M);
 
       uint8_t trigger = collision.alias_bit(kINT7) ? 0x1 : 0x0;
-      miniCollTable(std::abs(collision.posZ()), trigger, nTrackletsColl, nTrackletsCollMid, cV0M);
+      miniCollTable(static_cast<int8_t>(collision.posZ() * 10), trigger, nTrackletsColl, cV0M);
 
       for (auto& candidateTrack : candidateTracks[0]) { // protons
         auto tk = tracks.rawIteratorAt(candidateTrack.globalIndex);
@@ -1108,7 +1106,7 @@ struct ebyeMaker {
         miniTrkTable(
           miniCollTable.lastIndex(),
           candidateTrack.pt,
-          std::abs(candidateTrack.eta) * 10.,
+          static_cast<int8_t>(candidateTrack.eta * 100),
           selMask,
           candidateTrack.outerPID);
       }
@@ -1275,7 +1273,7 @@ struct ebyeMaker {
       fillMcEvent(collision, tracks, V0Table_thisCollision, cV0M, mcParticles, mcLab);
       fillMcGen(mcParticles, mcLab, collision.mcCollisionId());
 
-      miniCollTable(std::abs(collision.posZ()), 0x0, nTrackletsColl, nTrackletsCollMid, cV0M);
+      miniCollTable(static_cast<int8_t>(collision.posZ() * 10), 0x0, nTrackletsColl, cV0M);
 
       for (auto& candidateTrack : candidateTracks[0]) { // protons
         int selMask = -1;
@@ -1290,11 +1288,11 @@ struct ebyeMaker {
         mcMiniTrkTable(
           miniCollTable.lastIndex(),
           candidateTrack.pt,
-          std::abs(candidateTrack.eta) * 10.,
+          static_cast<int8_t>(candidateTrack.eta * 100),
           selMask,
           candidateTrack.outerPID,
           candidateTrack.pdgcode > 0 ? candidateTrack.genpt : -candidateTrack.genpt,
-          candidateTrack.geneta,
+          static_cast<int8_t>(candidateTrack.geneta * 100),
           candidateTrack.isreco);
       }
     }
