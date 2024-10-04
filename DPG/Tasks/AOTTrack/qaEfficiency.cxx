@@ -37,7 +37,11 @@
 
 using namespace o2::framework;
 
-static_assert(fabs((abs(0.9) - std::fabs(0.9))) < 0.01); // Test if the abs is behaving like expected
+static constexpr float avalue = abs(0.9);
+static constexpr float svalue = std::abs(0.9);
+static constexpr float fvalue = std::fabs(0.9);
+static_assert(svalue >= favalue); // Test if the abs is behaving like expected
+static_assert(avalue >= favalue); // Test if the abs is behaving like expected
 
 // Indices for the track cut histogram
 static constexpr int trkCutIdxTrkRead = 1;
