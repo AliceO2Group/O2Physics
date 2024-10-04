@@ -53,7 +53,7 @@ struct femtoUniverseDebugTrack {
     Configurable<bool> ConfIsTrackIdentified{"ConfIsTrackIdentified", true, "Enable PID for the track"};
     Configurable<bool> ConfIsMC{"ConfIsMC", false, "Enable additional Histogramms in the case of a MonteCarlo Run"};
     Configurable<int> ConfTrackChoicePartOne{"ConfTrackChoicePartOne", 1, "Type of particle (track1): {0:Proton, 1:Pion, 2:Kaon}"};
-    Configurable<int8_t> ConfTrackSign{"ConfTrackSign", 1, "Track sign"};
+    Configurable<int> ConfTrackSign{"ConfTrackSign", 1, "Track sign"};
   } trackonefilter;
 
   struct : o2::framework::ConfigurableGroup {

@@ -65,7 +65,9 @@ using MyBcs = soa::Join<aod::BCsWithTimestamps, aod::Run3MatchedToBCSparse>;
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
 using MyEventsWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>;
 using MyEventsWithCentRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
-using MyEventsWithCentQvectRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
+// using MyEventsWithCentQvectRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorBPoss, aod::QvectorBNegs, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
+// using MyEventsWithCentQvectRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::QvectorFT0CVecs, aod::QvectorFT0AVecs, aod::QvectorFT0MVecs, aod::QvectorFV0AVecs, aod::QvectorTPCposVecs, aod::QvectorTPCnegVecs, aod::QvectorTPCallVecs, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
+using MyEventsWithCentQvectRun3 = soa::Join<aod::Collisions, aod::EvSels, aod::QvectorFT0Cs, aod::QvectorFT0As, aod::QvectorFT0Ms, aod::QvectorFV0As, aod::QvectorTPCposs, aod::QvectorTPCnegs, aod::QvectorTPCalls, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
 
 using MyBarrelTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                                  aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
@@ -83,7 +85,7 @@ using MyMuonsWithCov = soa::Join<aod::FwdTracks, aod::FwdTracksCov>;
 
 constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCentRun2;
 constexpr static uint32_t gkEventFillMapRun3 = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent;
-constexpr static uint32_t gkEventFillMapRun3Qvect = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent | VarManager::ObjTypes::CollisionQvect;
+constexpr static uint32_t gkEventFillMapRun3Qvect = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent | VarManager::ObjTypes::CollisionQvectCentr;
 constexpr static uint32_t gkTrackFillMap = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackPID;
 
 void DefineHistograms(HistogramManager* histMan, TString histClasses);
@@ -99,8 +101,11 @@ struct DQEventQvector {
   Produces<ReducedEventsQvector> eventQvector;
   Produces<ReducedEventsQvectorExtra> eventQvectorExtra;
   Produces<ReducedEventsQvectorCentr> eventQvectorCentr;
+  Produces<ReducedEventsQvectorCentrExtra> eventQvectorCentrExtra;
   Produces<ReducedEventsRefFlow> eventRefFlow;
   Produces<ReducedEventsQvectorZN> eventQvectorZN;
+  Produces<ReducedZdc> eventReducedZdc;
+  Produces<ReducedZdcExtra> eventReducedZdcExtra;
 
   Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Event selection"};
   Configurable<bool> fConfigQA{"cfgQA", true, "If true, fill QA histograms"};
@@ -291,8 +296,9 @@ struct DQEventQvector {
 
     // Fill the tree for the reduced event table with Q vector quantities
     if (fEventCut->IsSelected(VarManager::fgValues)) {
-      eventQvectorCentr(collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.qvecBPosRe(), collision.qvecBPosIm(), collision.qvecBNegRe(), collision.qvecBNegIm(),
-                        collision.sumAmplFT0A(), collision.sumAmplFT0C(), collision.sumAmplFT0M(), collision.sumAmplFV0A(), collision.nTrkBPos(), collision.nTrkBNeg());
+      eventQvectorCentr(collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.qvecTPCposRe(), collision.qvecTPCposIm(), collision.qvecTPCnegRe(), collision.qvecTPCnegIm(),
+                        collision.sumAmplFT0A(), collision.sumAmplFT0C(), collision.sumAmplFT0M(), collision.sumAmplFV0A(), collision.nTrkTPCpos(), collision.nTrkTPCneg());
+      eventQvectorCentrExtra(collision.qvecTPCallRe(), collision.qvecTPCallIm(), collision.nTrkTPCall());
     }
   }
 
@@ -460,14 +466,13 @@ struct DQEventQvector {
       eventRefFlow(VarManager::fgValues[VarManager::kM11REF], VarManager::fgValues[VarManager::kM1111REF], VarManager::fgValues[VarManager::kCORR2REF], VarManager::fgValues[VarManager::kCORR4REF], centrality);
     }
 
-    if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionQvect) > 0) {
+    if constexpr ((TEventFillMap & VarManager::ObjTypes::CollisionQvectCentr) > 0) {
       VarManager::FillQVectorFromCentralFW(collision);
 
-      if (!bc.has_zdc()) {
-        return;
+      if (bc.has_zdc()) {
+        auto zdc = bc.zdc();
+        VarManager::FillSpectatorPlane(zdc);
       }
-      auto zdc = bc.zdc();
-      VarManager::FillSpectatorPlane(zdc);
 
       if ((tracks1.size() > 0) && (VarManager::fgValues[VarManager::kMultA] * VarManager::fgValues[VarManager::kMultB] * VarManager::fgValues[VarManager::kMultC] != 0.0)) {
         if (fConfigQA) {
@@ -478,9 +483,20 @@ struct DQEventQvector {
         }
       }
       if (fEventCut->IsSelected(VarManager::fgValues)) {
-        eventQvectorCentr(collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.qvecBPosRe(), collision.qvecBPosIm(), collision.qvecBNegRe(), collision.qvecBNegIm(),
-                          collision.sumAmplFT0A(), collision.sumAmplFT0C(), collision.sumAmplFT0M(), collision.sumAmplFV0A(), collision.nTrkBPos(), collision.nTrkBNeg());
-        eventQvectorZN(VarManager::fgValues[VarManager::kQ1ZNAX], VarManager::fgValues[VarManager::kQ1ZNAY], VarManager::fgValues[VarManager::kQ1ZNCX], VarManager::fgValues[VarManager::kQ1ZNCY]);
+        eventQvectorCentr(collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.qvecFV0ARe(), collision.qvecFV0AIm(), collision.qvecTPCposRe(), collision.qvecTPCposIm(), collision.qvecTPCnegRe(), collision.qvecTPCnegIm(),
+                          collision.sumAmplFT0A(), collision.sumAmplFT0C(), collision.sumAmplFT0M(), collision.sumAmplFV0A(), collision.nTrkTPCpos(), collision.nTrkTPCneg());
+        eventQvectorCentrExtra(collision.qvecTPCallRe(), collision.qvecTPCallIm(), collision.nTrkTPCall());
+        if (bc.has_zdc()) {
+          eventQvectorZN(VarManager::fgValues[VarManager::kQ1ZNAX], VarManager::fgValues[VarManager::kQ1ZNAY], VarManager::fgValues[VarManager::kQ1ZNCX], VarManager::fgValues[VarManager::kQ1ZNCY]);
+          eventReducedZdc(VarManager::fgValues[VarManager::kEnergyCommonZNA], VarManager::fgValues[VarManager::kEnergyCommonZNC], VarManager::fgValues[VarManager::kEnergyCommonZPA], VarManager::fgValues[VarManager::kEnergyCommonZPC],
+                          VarManager::fgValues[VarManager::kTimeZNA], VarManager::fgValues[VarManager::kTimeZNC], VarManager::fgValues[VarManager::kTimeZPA], VarManager::fgValues[VarManager::kTimeZPC]);
+          eventReducedZdcExtra(VarManager::fgValues[VarManager::kEnergyZNA1], VarManager::fgValues[VarManager::kEnergyZNA2], VarManager::fgValues[VarManager::kEnergyZNA3], VarManager::fgValues[VarManager::kEnergyZNA4],
+                               VarManager::fgValues[VarManager::kEnergyZNC1], VarManager::fgValues[VarManager::kEnergyZNC2], VarManager::fgValues[VarManager::kEnergyZNC3], VarManager::fgValues[VarManager::kEnergyZNC4]);
+        } else {
+          eventQvectorZN(-999, -999, -999, -999);
+          eventReducedZdc(-999, -999, -999, -999, -999, -999, -999, -999);
+          eventReducedZdcExtra(-999, -999, -999, -999, -999, -999, -999, -999);
+        }
       }
     }
   }

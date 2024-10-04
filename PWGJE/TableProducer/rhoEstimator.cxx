@@ -34,6 +34,7 @@ struct RhoEstimatorTask {
   Produces<aod::BkgD0Rhos> rhoD0Table;
   Produces<aod::BkgLcRhos> rhoLcTable;
   Produces<aod::BkgBplusRhos> rhoBplusTable;
+  Produces<aod::BkgDielectronRhos> rhoDielectronTable;
 
   Configurable<float> trackPtMin{"trackPtMin", 0.15, "minimum track pT"};
   Configurable<float> trackPtMax{"trackPtMax", 1000.0, "maximum track pT"};
@@ -41,6 +42,7 @@ struct RhoEstimatorTask {
   Configurable<float> trackEtaMax{"trackEtaMax", 0.9, "maximum track eta"};
   Configurable<float> trackPhiMin{"trackPhiMin", -999, "minimum track phi"};
   Configurable<float> trackPhiMax{"trackPhiMax", 999, "maximum track phi"};
+  Configurable<double> trackingEfficiency{"trackingEfficiency", 1.0, "tracking efficiency applied to jet finding"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
 
   Configurable<float> bkgjetR{"bkgjetR", 0.2, "jet resolution parameter for determining background density"};
@@ -72,9 +74,9 @@ struct RhoEstimatorTask {
   void processChargedCollisions(JetCollision const& collision, soa::Filtered<JetTracks> const& tracks)
   {
     inputParticles.clear();
-    jetfindingutilities::analyseTracks<soa::Filtered<JetTracks>, soa::Filtered<JetTracks>::iterator>(inputParticles, tracks, trackSelection);
+    jetfindingutilities::analyseTracks<soa::Filtered<JetTracks>, soa::Filtered<JetTracks>::iterator>(inputParticles, tracks, trackSelection, trackingEfficiency);
     auto [rho, rhoM] = bkgSub.estimateRhoAreaMedian(inputParticles, doSparse);
-    rhoChargedTable(collision.globalIndex(), rho, rhoM);
+    rhoChargedTable(rho, rhoM);
   }
   PROCESS_SWITCH(RhoEstimatorTask, processChargedCollisions, "Fill rho tables for collisions using charged tracks", true);
 
@@ -83,10 +85,10 @@ struct RhoEstimatorTask {
     inputParticles.clear();
     for (auto& candidate : candidates) {
       inputParticles.clear();
-      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, std::optional{candidate});
+      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, trackingEfficiency, std::optional{candidate});
 
       auto [rho, rhoM] = bkgSub.estimateRhoAreaMedian(inputParticles, doSparse);
-      rhoD0Table(candidate.globalIndex(), rho, rhoM);
+      rhoD0Table(rho, rhoM);
     }
   }
   PROCESS_SWITCH(RhoEstimatorTask, processD0Collisions, "Fill rho tables for collisions with D0 candidates", false);
@@ -96,10 +98,10 @@ struct RhoEstimatorTask {
     inputParticles.clear();
     for (auto& candidate : candidates) {
       inputParticles.clear();
-      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, std::optional{candidate});
+      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, trackingEfficiency, std::optional{candidate});
 
       auto [rho, rhoM] = bkgSub.estimateRhoAreaMedian(inputParticles, doSparse);
-      rhoLcTable(candidate.globalIndex(), rho, rhoM);
+      rhoLcTable(rho, rhoM);
     }
   }
   PROCESS_SWITCH(RhoEstimatorTask, processLcCollisions, "Fill rho tables for collisions with Lc candidates", false);
@@ -109,13 +111,26 @@ struct RhoEstimatorTask {
     inputParticles.clear();
     for (auto& candidate : candidates) {
       inputParticles.clear();
-      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, std::optional{candidate});
+      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, trackingEfficiency, std::optional{candidate});
 
       auto [rho, rhoM] = bkgSub.estimateRhoAreaMedian(inputParticles, doSparse);
-      rhoBplusTable(candidate.globalIndex(), rho, rhoM);
+      rhoBplusTable(rho, rhoM);
     }
   }
   PROCESS_SWITCH(RhoEstimatorTask, processBplusCollisions, "Fill rho tables for collisions with Bplus candidates", false);
+
+  void processDielectronCollisions(JetCollision const&, soa::Filtered<JetTracks> const& tracks, CandidatesDielectronData const& candidates)
+  {
+    inputParticles.clear();
+    for (auto& candidate : candidates) {
+      inputParticles.clear();
+      jetfindingutilities::analyseTracks(inputParticles, tracks, trackSelection, trackingEfficiency, std::optional{candidate});
+
+      auto [rho, rhoM] = bkgSub.estimateRhoAreaMedian(inputParticles, doSparse);
+      rhoDielectronTable(rho, rhoM);
+    }
+  }
+  PROCESS_SWITCH(RhoEstimatorTask, processDielectronCollisions, "Fill rho tables for collisions with Dielectron candidates", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<RhoEstimatorTask>(cfgc, TaskName{"estimator-rho"})}; }

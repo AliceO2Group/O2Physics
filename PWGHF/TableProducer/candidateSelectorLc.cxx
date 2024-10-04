@@ -101,6 +101,8 @@ struct HfCandidateSelectorLc {
 
   HistogramRegistry registry{"registry"};
 
+  double massK0Star892;
+
   void init(InitContext const&)
   {
     std::array<bool, 2> processes = {doprocessNoBayesPid, doprocessBayesPid};
@@ -144,6 +146,8 @@ struct HfCandidateSelectorLc {
       hfMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
       hfMlResponse.init();
     }
+
+    massK0Star892 = o2::constants::physics::MassK0Star892;
   }
 
   /// Single track quality cuts
@@ -225,6 +229,7 @@ struct HfCandidateSelectorLc {
       return false;
     }
 
+    // cut on Lc->pKpi, piKp mass values
     if (trackProton.globalIndex() == candidate.prong0Id()) {
       if (std::abs(hfHelper.invMassLcToPKPi(candidate) - o2::constants::physics::MassLambdaCPlus) > cuts->get(pTBin, "m")) {
         return false;
@@ -232,6 +237,24 @@ struct HfCandidateSelectorLc {
     } else {
       if (std::abs(hfHelper.invMassLcToPiKP(candidate) - o2::constants::physics::MassLambdaCPlus) > cuts->get(pTBin, "m")) {
         return false;
+      }
+    }
+
+    /// cut on the Kpi pair invariant mass, to study Lc->pK*(->Kpi)
+    const double cutMassKPi = cuts->get(pTBin, "mass (Kpi)");
+    if (cutMassKPi > 0) {
+      if (trackProton.globalIndex() == candidate.prong0Id()) {
+        // inspecting the pKpi hypothesis
+        // K: prong1, pi: prong 2
+        if (std::abs(hfHelper.invMassKPiPairLcToPKPi(candidate) - massK0Star892) > cutMassKPi) {
+          return false;
+        }
+      } else {
+        // inspecting the piKp hypothesis
+        // K: prong1, pi: prong 0
+        if (std::abs(hfHelper.invMassKPiPairLcToPiKP(candidate) - massK0Star892) > cutMassKPi) {
+          return false;
+        }
       }
     }
 

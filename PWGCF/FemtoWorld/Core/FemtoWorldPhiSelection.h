@@ -388,7 +388,7 @@ void FemtoWorldPhiSelection::initPhi(HistogramRegistry* registry)
 }
 
 template <typename C, typename V, typename T>
-bool FemtoWorldPhiSelection::isSelectedMinimal(C const& col, V const& v0, T const& posTrack, T const& negTrack)
+bool FemtoWorldPhiSelection::isSelectedMinimal(C const& /*col*/, V const& v0, T const& posTrack, T const& negTrack)
 {
   const auto signPos = posTrack.sign();
   const auto signNeg = negTrack.sign();
@@ -460,7 +460,7 @@ bool FemtoWorldPhiSelection::isSelectedMinimal(C const& col, V const& v0, T cons
 }
 
 template <typename C, typename V, typename T>
-void FemtoWorldPhiSelection::fillPhiQA(C const& col, V const& v0, T const& posTrack, T const& negTrack)
+void FemtoWorldPhiSelection::fillPhiQA(C const& /*col*/, V const& v0, T const& posTrack, T const& negTrack)
 {
   const auto signPos = posTrack.sign();
   const auto signNeg = negTrack.sign();
@@ -510,7 +510,7 @@ void FemtoWorldPhiSelection::fillPhiQA(C const& col, V const& v0, T const& posTr
 }
 
 template <typename C, typename V, typename T, typename P>
-void FemtoWorldPhiSelection::fillPhiQAMass(C const& col, V const& MassPhi, T const& posTrack, T const& negTrack, P const& ConfInvMassLowLimit, P const& ConfInvMassUpLimit)
+void FemtoWorldPhiSelection::fillPhiQAMass(C const& /*col*/, V const& MassPhi, T const& posTrack, T const& negTrack, P const& /*ConfInvMassLowLimit*/, P const& /*ConfInvMassUpLimit*/)
 {
   const auto signPos = posTrack.sign();
   const auto signNeg = negTrack.sign();
@@ -652,7 +652,7 @@ void FemtoWorldPhiSelection::fillQA(C const& /*col*/, V const& /*v0*/, T const& 
 }
 
 template <o2::aod::femtoworldparticle::ParticleType part, o2::aod::femtoworldparticle::ParticleType daugh, typename C, typename V, typename T>
-void FemtoWorldPhiSelection::fillQAPhi(C const& col, V const& v0, T const& posTrack, T const& negTrack)
+void FemtoWorldPhiSelection::fillQAPhi(C const& /*col*/, V const& v0, T const& posTrack, T const& negTrack)
 {
   if (mHistogramRegistry) {
     mHistogramRegistry->fill(HIST(o2::aod::femtoworldparticle::ParticleTypeName[part]) + HIST("/hPtPhi"), v0.pt());

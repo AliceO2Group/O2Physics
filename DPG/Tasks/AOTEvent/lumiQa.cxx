@@ -40,13 +40,15 @@ struct LumiQaTask {
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
-    const AxisSpec axisMultZNA{1000, 0., 1000., "ZNA multiplicity"};
-    const AxisSpec axisMultZNC{1000, 0., 1000., "ZNC multiplicity"};
+    const AxisSpec axisMultZNA{2000, 0., 400., "ZNA multiplicity"};
+    const AxisSpec axisMultZNC{2000, 0., 400., "ZNC multiplicity"};
     const AxisSpec axisMultT0M{1000, 0., 270000., "T0M multiplicity"};
     const AxisSpec axisMultT0A{1000, 0., 200000., "T0A multiplicity"};
     const AxisSpec axisMultT0C{1000, 0., 70000., "T0C multiplicity"};
     const AxisSpec axisCentT0C{100, 0., 100., "T0C centrality"};
     const AxisSpec axisTime{700, -35., 35., "time (ns)"};
+    const AxisSpec axisMultChannelT0A{5000, 0., 5000., "T0A channel multiplicity"};
+    const AxisSpec axisMultChannelT0C{5000, 0., 5000., "T0C channel multiplicity"};
     int nChannelsT0A = 96;
     int nChannelsT0C = 112;
     const AxisSpec axisChannelsT0A{nChannelsT0A, 0, static_cast<double>(nChannelsT0A)};
@@ -82,8 +84,8 @@ struct LumiQaTask {
     histos.add("hCounterZNA", "", kTH1D, {{1, 0., 1.}});
     histos.add("hCounterZNC", "", kTH1D, {{1, 0., 1.}});
     histos.add("hCounterZEM", "", kTH1D, {{1, 0., 1.}});
-    histos.add("hMultT0AperChannel", "", kTH2D, {axisMultT0A, axisChannelsT0A});
-    histos.add("hMultT0CperChannel", "", kTH2D, {axisMultT0C, axisChannelsT0C});
+    histos.add("hMultT0AperChannel", "", kTH2D, {axisMultChannelT0A, axisChannelsT0A});
+    histos.add("hMultT0CperChannel", "", kTH2D, {axisMultChannelT0C, axisChannelsT0C});
   }
 
   void process(BCsRun3 const& bcs, aod::Zdcs const&, aod::FT0s const&)
@@ -145,13 +147,23 @@ struct LumiQaTask {
           histos.fill(HIST("hTimeZNCselC"), timeZNC);
         }
 
-        if (fabs(timeZNA) < 2) {
+        double meanTimeZNA = 0;
+        double meanTimeZNC = 0;
+        if (runNumber == 544795) {
+          meanTimeZNA = 0.49;
+          meanTimeZNC = -5.19;
+        } else if (runNumber == 544911) {
+          meanTimeZNA = -1.44;
+          meanTimeZNC = -11.39;
+        }
+
+        if (fabs(timeZNA - meanTimeZNA) < 2) {
           histos.get<TH1>(HIST("hCounterZNA"))->Fill(srun, 1);
         }
-        if (fabs(timeZNC) < 2) {
+        if (fabs(timeZNC - meanTimeZNC) < 2) {
           histos.get<TH1>(HIST("hCounterZNC"))->Fill(srun, 1);
         }
-        if (fabs(timeZNA) < 2 || fabs(timeZNC) < 2) {
+        if (fabs(timeZNA - meanTimeZNA) < 2 || fabs(timeZNC - meanTimeZNC) < 2) {
           histos.get<TH1>(HIST("hCounterZEM"))->Fill(srun, 1);
         }
       }
@@ -160,10 +172,10 @@ struct LumiQaTask {
         continue;
       }
       for (unsigned int ic = 0; ic < bc.ft0().amplitudeA().size(); ic++) {
-        histos.fill(HIST("hMultT0AperChannel"), bc.ft0().channelA()[ic], bc.ft0().amplitudeA()[ic]);
+        histos.fill(HIST("hMultT0AperChannel"), bc.ft0().amplitudeA()[ic], bc.ft0().channelA()[ic]);
       }
       for (unsigned int ic = 0; ic < bc.ft0().amplitudeC().size(); ic++) {
-        histos.fill(HIST("hMultT0CperChannel"), bc.ft0().channelC()[ic], bc.ft0().amplitudeC()[ic]);
+        histos.fill(HIST("hMultT0CperChannel"), bc.ft0().amplitudeC()[ic], bc.ft0().channelC()[ic]);
       }
 
       float multT0A = bc.ft0().sumAmpA();

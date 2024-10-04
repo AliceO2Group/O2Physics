@@ -181,7 +181,7 @@ struct hadronnucleicorrelation {
     AxisSpec etaBinnedAxis = {etaBins, "#eta"};
     AxisSpec phiBinnedAxis = {phiBins, "#phi"};
     AxisSpec etaAxis = {100, -1.5, 1.5, "#Delta#eta"};
-    AxisSpec phiAxis = {100, -TMath::Pi() / 2, 1.5 * TMath::Pi(), "#Delta#phi"};
+    AxisSpec phiAxis = {60, -TMath::Pi() / 2, 1.5 * TMath::Pi(), "#Delta#phi"};
     AxisSpec pTAxis = {200, -10.f, 10.f, "p_{T} GeV/c"};
 
     registry.add("hNEvents", "hNEvents", {HistType::kTH1I, {{3, 0.f, 3.f}}});
@@ -357,6 +357,9 @@ struct hadronnucleicorrelation {
       registry.add("hReco_PID_EtaPhiPt_Deuteron", "Gen (anti)deuteron + PID in reco collisions", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., 2 * TMath::Pi(), "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
       registry.add("hReco_EtaPhiPtMC_Proton", "Gen (anti)protons in reco collisions (MC info used)", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., 2 * TMath::Pi(), "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
       registry.add("hReco_EtaPhiPtMC_Deuteron", "Gen (anti)deuteron in reco collisions (MC info used)", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., 2 * TMath::Pi(), "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
+
+      registry.add("hSec_EtaPhiPt_Proton", "Secondary (anti)protons", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., 2 * TMath::Pi(), "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
+      registry.add("hPrimSec_EtaPhiPt_Proton", "Primary + Secondary (anti)protons", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., 2 * TMath::Pi(), "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
 
       registry.add("hnSigmaTPCVsPt_Pr_MC", "n#sigma TPC vs p_{T} for p hypothesis true MC; p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2F, {pTAxis, AxisNSigma}});
       registry.add("hnSigmaTPCVsPt_De_MC", "n#sigma TPC vs p_{T} for d hypothesis true MC; p_{T} (GeV/c); n#sigma TPC", {HistType::kTH2F, {pTAxis, AxisNSigma}});
@@ -568,6 +571,9 @@ struct hadronnucleicorrelation {
       if (abs(track.dcaXY()) > max_dcaxy || abs(track.dcaZ()) > max_dcaz) { // For now no filtering on the DCAxy or DCAz (casting not supported)
         continue;
       }
+      if (track.tpcFractionSharedCls() > max_tpcSharedCls || track.itsNCls() < min_itsNCls)
+        continue;
+
       if (doQA) {
         QA.fill(HIST("QA/hTPCnClusters"), track.tpcNClsFound());
         QA.fill(HIST("QA/hTPCchi2"), track.tpcChi2NCl());
@@ -583,10 +589,6 @@ struct hadronnucleicorrelation {
       }
 
       if (track.pt() > pTBins.value.at(nBinspT) || track.pt() < pTBins.value.at(0))
-        continue;
-
-      // Additional track cuts
-      if (track.tpcFractionSharedCls() > max_tpcSharedCls || track.itsNCls() < min_itsNCls)
         continue;
 
       bool isPr = false;
@@ -608,10 +610,13 @@ struct hadronnucleicorrelation {
           isAntiPr = true;
         }
       }
-      if (TMath::Abs(track.tpcNSigmaDe()) < nsigmaTPC && TMath::Abs(track.tofNSigmaDe()) < nsigmaTOF && track.sign() > 0)
-        isDeTPCTOF = true;
-      if (TMath::Abs(track.tpcNSigmaDe()) < nsigmaTPC && TMath::Abs(track.tofNSigmaDe()) < nsigmaTOF && track.sign() < 0)
-        isAntiDeTPCTOF = true;
+      if (TMath::Abs(track.tpcNSigmaDe()) < nsigmaTPC && TMath::Abs(track.tofNSigmaDe()) < nsigmaTOF && TMath::Abs(track.tofNSigmaPr()) >= nsigmaTOF) {
+        if (track.sign() > 0) {
+          isDeTPCTOF = true;
+        } else if (track.sign() < 0) {
+          isAntiDeTPCTOF = true;
+        }
+      }
 
       if (!isPr && !isAntiPr && !isDeTPCTOF && !isAntiDeTPCTOF)
         continue;
@@ -832,6 +837,8 @@ struct hadronnucleicorrelation {
       if (abs(track.dcaXY()) > max_dcaxy || abs(track.dcaZ()) > max_dcaz) { // For now no filtering on the DCAxy or DCAz (casting not supported)
         continue;
       }
+      if (abs(track.pdgCode()) != pdgProton && abs(track.pdgCode()) != pdgDeuteron)
+        continue;
 
       if (doQA) {
         QA.fill(HIST("QA/hTPCnClusters"), track.tpcNClsFound());
@@ -847,10 +854,35 @@ struct hadronnucleicorrelation {
         QA.fill(HIST("QA/hnSigmaTOFVsPt_De"), track.pt() * track.sign(), track.tofNSigmaDe());
       }
 
-      if (track.origin() != 0)
-        continue;
+      int s = +1;
+      if (track.pdgCode() == -pdgProton) {
+        s = -1;
+      }
 
-      if (abs(track.pdgCode()) != pdgProton && abs(track.pdgCode()) != pdgDeuteron)
+      if (track.origin() == 1) { // secondaries
+        if (TMath::Abs(track.pdgCode()) == pdgProton) {
+          if (TMath::Abs(track.tpcNSigmaPr()) < nsigmaTPC) {
+            if (track.pt() < pTthrpr_TOF) {
+              registry.fill(HIST("hSec_EtaPhiPt_Proton"), track.eta(), track.phi(), track.pt() * s);
+            } else if (TMath::Abs(track.tofNSigmaPr()) < nsigmaTOF) {
+              registry.fill(HIST("hSec_EtaPhiPt_Proton"), track.eta(), track.phi(), track.pt() * s);
+            }
+          }
+        }
+      }
+      if (track.origin() == 1 || track.origin() == 0) { // primaries and secondaries
+        if (TMath::Abs(track.pdgCode()) == pdgProton) {
+          if (TMath::Abs(track.tpcNSigmaPr()) < nsigmaTPC) {
+            if (track.pt() < pTthrpr_TOF) {
+              registry.fill(HIST("hPrimSec_EtaPhiPt_Proton"), track.eta(), track.phi(), track.pt() * s);
+            } else if (TMath::Abs(track.tofNSigmaPr()) < nsigmaTOF) {
+              registry.fill(HIST("hPrimSec_EtaPhiPt_Proton"), track.eta(), track.phi(), track.pt() * s);
+            }
+          }
+        }
+      }
+
+      if (track.origin() != 0)
         continue;
 
       bool isPr = false;
@@ -902,7 +934,7 @@ struct hadronnucleicorrelation {
         registry.fill(HIST("hResEta_Deuteron"), track.eta_MC(), track.eta() - track.eta_MC());
         registry.fill(HIST("hResPhi_Deuteron"), track.phi_MC(), track.phi() - track.phi_MC());
 
-        if (TMath::Abs(track.tpcNSigmaDe()) < nsigmaTPC && TMath::Abs(track.tofNSigmaDe()) < nsigmaTOF) {
+        if (TMath::Abs(track.tpcNSigmaDe()) < nsigmaTPC && TMath::Abs(track.tofNSigmaDe()) < nsigmaTOF && TMath::Abs(track.tofNSigmaPr()) >= nsigmaTOF) {
           registry.fill(HIST("hReco_PID_EtaPhiPt_Deuteron"), track.eta(), track.phi(), track.pt());
         }
         registry.fill(HIST("hnSigmaTPCVsPt_De_MC"), track.pt(), track.tpcNSigmaDe());
@@ -915,7 +947,7 @@ struct hadronnucleicorrelation {
         registry.fill(HIST("hResEta_AntiDeuteron"), track.eta_MC(), track.eta() - track.eta_MC());
         registry.fill(HIST("hResPhi_AntiDeuteron"), track.phi_MC(), track.phi() - track.phi_MC());
 
-        if (TMath::Abs(track.tpcNSigmaDe()) < nsigmaTPC && TMath::Abs(track.tofNSigmaDe()) < nsigmaTOF) {
+        if (TMath::Abs(track.tpcNSigmaDe()) < nsigmaTPC && TMath::Abs(track.tofNSigmaDe()) < nsigmaTOF && TMath::Abs(track.tofNSigmaPr()) >= nsigmaTOF) {
           isAntiDeTPCTOF = true;
           registry.fill(HIST("hReco_PID_EtaPhiPt_Deuteron"), track.eta(), track.phi(), track.pt() * -1);
         }

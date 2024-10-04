@@ -195,7 +195,7 @@ struct HfFragmentationFunctionTask {
       // obtaining jet 3-vector
       TVector3 jetVector(jet.px(), jet.py(), jet.pz());
 
-      for (auto& d0Candidate : jet.hfcandidates_as<CandidatesD0Data>()) {
+      for (auto& d0Candidate : jet.candidates_as<CandidatesD0Data>()) {
 
         // obtaining jet 3-vector
         TVector3 d0Vector(d0Candidate.px(), d0Candidate.py(), d0Candidate.pz());
@@ -246,7 +246,7 @@ struct HfFragmentationFunctionTask {
         for (const auto& mcdjet : d0mcdJetsPerCollision) {
 
           // obtain leading HF candidate in jet
-          auto mcdd0cand = mcdjet.hfcandidates_first_as<CandidatesD0MCD>();
+          auto mcdd0cand = mcdjet.candidates_first_as<CandidatesD0MCD>();
 
           // store data in MC detector level table
           mcddistJetTable(RecoDecay::sqrtSumOfSquares(mcdjet.eta() - mcdd0cand.eta(), deltaPhi(mcdjet.phi(), mcdd0cand.phi())),
@@ -261,7 +261,7 @@ struct HfFragmentationFunctionTask {
       for (const auto& mcpjet : d0mcpJetsPerMCCollision) {
 
         // obtain leading HF particle in jet
-        auto mcpd0cand = mcpjet.hfcandidates_first_as<CandidatesD0MCP>();
+        auto mcpd0cand = mcpjet.candidates_first_as<CandidatesD0MCP>();
 
         // store data in MC detector level table (calculate angular distance in eta-phi plane on the fly)
         mcpdistJetTable(RecoDecay::sqrtSumOfSquares(mcpjet.eta() - mcpd0cand.eta(), deltaPhi(mcpjet.phi(), mcpd0cand.phi())),
@@ -286,13 +286,13 @@ struct HfFragmentationFunctionTask {
     for (const auto& mcpjet : mcpjets) {
 
       // obtain leading HF particle in jet
-      auto mcpd0cand = mcpjet.hfcandidates_first_as<CandidatesD0MCP>();
+      auto mcpd0cand = mcpjet.candidates_first_as<CandidatesD0MCP>();
 
       // loop through detector level matched to current particle level
       for (auto& mcdjet : mcpjet.matchedJetCand_as<JetMCDTable>()) {
 
         // obtain leading HF candidate in jet
-        auto mcdd0cand = mcdjet.hfcandidates_first_as<CandidatesD0MCD>();
+        auto mcdd0cand = mcdjet.candidates_first_as<CandidatesD0MCD>();
 
         // store matched particle and detector level data in one single table (calculate angular distance in eta-phi plane on the fly)
         matchJetTable(RecoDecay::sqrtSumOfSquares(mcpjet.eta() - mcpd0cand.eta(), deltaPhi(mcpjet.phi(), mcpd0cand.phi())), mcpjet.pt(), mcpjet.eta(), mcpjet.phi(), // particle level jet

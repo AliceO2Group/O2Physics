@@ -37,6 +37,8 @@ using std::array;
 using DauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
 using CollEventPlane = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraFT0CQVs, aod::StraRawCents, aod::StraFT0CQVsEv, aod::StraTPCQVs>::iterator;
 using CollEventPlaneCentralFW = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraFT0CQVs, aod::StraRawCents, aod::StraTPCQVs>::iterator;
+using CascCandidates = soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs>;
+using CascMCCandidates = soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs, aod::CascMCMothers, aod::CascCoreMCLabels>;
 
 namespace cascadev2
 {
@@ -128,6 +130,10 @@ struct cascadeFlow {
   Configurable<bool> isNoSameBunchPileupCut{"isNoSameBunchPileupCut", 1, "Same found-by-T0 bunch crossing rejection"};
   Configurable<bool> isGoodZvtxFT0vsPVCut{"isGoodZvtxFT0vsPVCut", 1, "z of PV by tracks and z of PV from FT0 A-C time difference cut"};
   Configurable<bool> isGoodEventEP{"isGoodEventEP", 1, "Event is used to calibrate event plane"};
+  Configurable<int> MinOccupancy{"MinOccupancy", 0, "MinOccupancy"};
+  Configurable<int> MaxOccupancy{"MaxOccupancy", 500, "MaxOccupancy"};
+  Configurable<bool> isCollInStandardTimeRange{"isCollInStandardTimeRange", 1, "To remove collisions in +-10 micros time range"};
+  Configurable<bool> isCollInNarrowTimeRange{"isCollInNarrowTimeRange", 0, "To remove collisions in +-4 micros time range"};
 
   Configurable<float> MinPt{"MinPt", 0.6, "Min pt of cascade"};
   Configurable<float> MaxPt{"MaxPt", 10, "Max pt of cascade"};
@@ -191,6 +197,22 @@ struct cascadeFlow {
       return false;
     }
     histos.fill(HIST("hNEvents"), 4.5);
+
+    // occupancy cut
+    int occupancy = collision.trackOccupancyInTimeRange();
+    if (occupancy < MinOccupancy || occupancy > MaxOccupancy) {
+      return false;
+    }
+    histos.fill(HIST("hNEvents"), 5.5);
+
+    if (isCollInStandardTimeRange && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+      return false;
+    }
+
+    if (isCollInNarrowTimeRange && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
+      return false;
+    }
+    histos.fill(HIST("hNEvents"), 6.5);
 
     histos.fill(HIST("hEventNchCorrelation"), collision.multNTracksPVeta1(), collision.multNTracksGlobal());
     histos.fill(HIST("hEventPVcontributorsVsCentrality"), collision.centFT0C(), collision.multNTracksPVeta1());
@@ -278,6 +300,25 @@ struct cascadeFlow {
   template <class collision_t, class cascade_t>
   void fillAnalysedTable(collision_t coll, cascade_t casc, float v2CSP, float v2CEP, float PsiT0C, float BDTresponseXi, float BDTresponseOmega)
   {
+    double masses[2]{o2::constants::physics::MassXiMinus, o2::constants::physics::MassOmegaMinus};
+    ROOT::Math::PxPyPzMVector cascadeVector[2], lambdaVector, protonVector;
+    float cosThetaStarLambda[2], cosThetaStarProton;
+    lambdaVector.SetCoordinates(casc.pxlambda(), casc.pylambda(), casc.pzlambda(), o2::constants::physics::MassLambda);
+    ROOT::Math::Boost lambdaBoost{lambdaVector.BoostToCM()};
+    if (casc.sign() < 0) {
+      protonVector.SetCoordinates(casc.pxneg(), casc.pyneg(), casc.pzneg(), o2::constants::physics::MassProton);
+    } else {
+      protonVector.SetCoordinates(casc.pxpos(), casc.pypos(), casc.pzpos(), o2::constants::physics::MassProton);
+    }
+    auto boostedProton{lambdaBoost(protonVector)};
+    cosThetaStarProton = boostedProton.Pz() / boostedProton.P();
+    for (int i{0}; i < 2; ++i) {
+      cascadeVector[i].SetCoordinates(casc.px(), casc.py(), casc.pz(), masses[i]);
+      ROOT::Math::Boost cascadeBoost{cascadeVector[i].BoostToCM()};
+      auto boostedLambda{cascadeBoost(lambdaVector)};
+      cosThetaStarLambda[i] = boostedLambda.Pz() / boostedLambda.P();
+    }
+
     analysisSample(coll.centFT0C(),
                    casc.sign(),
                    casc.pt(),
@@ -289,7 +330,10 @@ struct cascadeFlow {
                    v2CEP,
                    PsiT0C,
                    BDTresponseXi,
-                   BDTresponseOmega);
+                   BDTresponseOmega,
+                   cosThetaStarLambda[0],
+                   cosThetaStarLambda[1],
+                   cosThetaStarProton);
   }
 
   void init(InitContext const&)
@@ -302,7 +346,7 @@ struct cascadeFlow {
     const AxisSpec ptAxis{static_cast<int>((MaxPt - MinPt) / 0.2), MinPt, MaxPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec v2Axis{200, -1., 1., "#it{v}_{2}"};
     const AxisSpec CentAxis{18, 0., 90., "FT0C centrality percentile"};
-    TString hNEventsLabels[6] = {"All", "sel8", "z vrtx", "kNoSameBunchPileup", "kIsGoodZvtxFT0vsPV", "kIsGoodEventEP"};
+    TString hNEventsLabels[8] = {"All", "sel8", "z vrtx", "kNoSameBunchPileup", "kIsGoodZvtxFT0vsPV", "trackOccupancyInTimeRange", "kNoCollInTimeRange", "kIsGoodEventEP"};
 
     resolution.add("QVectorsT0CTPCA", "QVectorsT0CTPCA", HistType::kTH2F, {axisQVs, CentAxis});
     resolution.add("QVectorsT0CTPCC", "QVectorsT0CTPCC", HistType::kTH2F, {axisQVs, CentAxis});
@@ -311,7 +355,7 @@ struct cascadeFlow {
     resolution.add("QVectorsNormT0CTPCC", "QVectorsNormT0CTPCC", HistType::kTH2F, {axisQVsNorm, CentAxis});
     resolution.add("QVectorsNormTPCAC", "QVectorsNormTPCCB", HistType::kTH2F, {axisQVsNorm, CentAxis});
 
-    histos.add("hNEvents", "hNEvents", {HistType::kTH1F, {{6, 0.f, 6.f}}});
+    histos.add("hNEvents", "hNEvents", {HistType::kTH1F, {{8, 0.f, 8.f}}});
     for (Int_t n = 1; n <= histos.get<TH1>(HIST("hNEvents"))->GetNbinsX(); n++) {
       histos.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(n, hNEventsLabels[n - 1]);
     }
@@ -416,7 +460,7 @@ struct cascadeFlow {
     }
   }
 
-  void processTrainingSignal(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraRawCents>::iterator const& coll, soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascMCCores, aod::CascExtras, aod::CascBBs> const& Cascades, DauTracks const&)
+  void processTrainingSignal(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraRawCents>::iterator const& coll, CascMCCandidates const& Cascades, DauTracks const&, soa::Join<aod::CascMCCores, aod::CascMCCollRefs> const&)
   {
 
     if (!AcceptEvent(coll)) {
@@ -426,9 +470,13 @@ struct cascadeFlow {
     histos.fill(HIST("hEventVertexZ"), coll.posZ());
 
     for (auto& casc : Cascades) {
-      int pdgCode{casc.pdgCode()};
-      if (!(std::abs(pdgCode) == 3312 && std::abs(casc.pdgCodeV0()) == 3122 && std::abs(casc.pdgCodeBachelor()) == 211)     // Xi
-          && !(std::abs(pdgCode) == 3334 && std::abs(casc.pdgCodeV0()) == 3122 && std::abs(casc.pdgCodeBachelor()) == 321)) // Omega
+      if (!casc.has_cascMCCore())
+        continue;
+
+      auto cascMC = casc.cascMCCore_as<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>();
+      int pdgCode{cascMC.pdgCode()};
+      if (!(std::abs(pdgCode) == 3312 && std::abs(cascMC.pdgCodeV0()) == 3122 && std::abs(cascMC.pdgCodeBachelor()) == 211)     // Xi
+          && !(std::abs(pdgCode) == 3334 && std::abs(cascMC.pdgCodeV0()) == 3122 && std::abs(cascMC.pdgCodeBachelor()) == 321)) // Omega
         continue;
 
       auto negExtra = casc.negTrackExtra_as<DauTracks>();
@@ -444,7 +492,7 @@ struct cascadeFlow {
     }
   }
 
-  void processAnalyseData(CollEventPlane const& coll, soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs> const& Cascades, DauTracks const&)
+  void processAnalyseData(CollEventPlane const& coll, CascCandidates const& Cascades, DauTracks const&)
   {
 
     if (!AcceptEvent(coll)) {
@@ -455,7 +503,7 @@ struct cascadeFlow {
     if (isGoodEventEP && !coll.triggereventep()) {
       return;
     }
-    histos.fill(HIST("hNEvents"), 5.5);
+    histos.fill(HIST("hNEvents"), 7.5);
     histos.fill(HIST("hEventNchCorrelationAfterEP"), coll.multNTracksPVeta1(), coll.multNTracksGlobal());
     histos.fill(HIST("hEventPVcontributorsVsCentralityAfterEP"), coll.centFT0C(), coll.multNTracksPVeta1());
     histos.fill(HIST("hEventGlobalTracksVsCentralityAfterEP"), coll.centFT0C(), coll.multNTracksGlobal());
@@ -566,7 +614,7 @@ struct cascadeFlow {
     }
   }
 
-  void processAnalyseDataEPCentralFW(CollEventPlaneCentralFW const& coll, soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs> const& Cascades, DauTracks const&)
+  void processAnalyseDataEPCentralFW(CollEventPlaneCentralFW const& coll, CascCandidates const& Cascades, DauTracks const&)
   {
 
     if (!AcceptEvent(coll)) {
@@ -580,7 +628,7 @@ struct cascadeFlow {
       }
     }
 
-    histos.fill(HIST("hNEvents"), 5.5);
+    histos.fill(HIST("hNEvents"), 7.5);
     histos.fill(HIST("hEventNchCorrelationAfterEP"), coll.multNTracksPVeta1(), coll.multNTracksGlobal());
     histos.fill(HIST("hEventPVcontributorsVsCentralityAfterEP"), coll.centFT0C(), coll.multNTracksPVeta1());
     histos.fill(HIST("hEventGlobalTracksVsCentralityAfterEP"), coll.centFT0C(), coll.multNTracksGlobal());

@@ -67,8 +67,19 @@ struct strangeness_in_jets {
     true,
     true};
 
+  // QC Histograms
+  HistogramRegistry registryQC{
+    "registryQC",
+    {},
+    OutputObjHandlingPolicy::AnalysisObject,
+    true,
+    true};
+
   // Global Parameters
+  Configurable<int> particle_of_interest{"particle_of_interest", 0, "0=v0, 1=cascade, 2=pions"};
   Configurable<float> ptLeadingMin{"ptLeadingMin", 5.0f, "pt leading min"};
+  Configurable<float> ptJetMin{"ptJetMin", 5.0f, "Minimum pt of the jet"};
+  Configurable<int> nPartInJetMin{"nPartInJetMin", 2, "Minimum number of particles inside jet"};
   Configurable<float> Rjet{"Rjet", 0.3f, "jet resolution parameter R"};
   Configurable<float> Rmax{"Rmax", 0.3f, "radius of the jet and UE cones"};
   Configurable<float> zVtx{"zVtx", 10.0f, "z vertex cut"};
@@ -114,11 +125,17 @@ struct strangeness_in_jets {
   Configurable<float> dcaV0topvMin{"dcaV0topvMin", 0.1f, "Minimum DCA V0 to PV"};
   Configurable<float> dcaCascDaughtersMax{"dcaCascDaughtersMax", 0.5f, "Maximum DCA Daughters"};
 
+  // List of Particles
+  enum option { vzeros,
+                cascades,
+                pions };
+
   void init(InitContext const&)
   {
     // Event Counters
     registryData.add("number_of_events_data", "number of events in data", HistType::kTH1F, {{10, 0, 10, "Event Cuts"}});
     registryMC.add("number_of_events_mc", "number of events in mc", HistType::kTH1F, {{10, 0, 10, "Event Cuts"}});
+    registryQC.add("deltaPt_leading", "deltaPt leading part", HistType::kTH1F, {{1000, -0.1, 0.1, "#Delta p_{T}"}});
 
     // Multiplicity Binning
     std::vector<double> multBinning = {0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
@@ -223,11 +240,9 @@ struct strangeness_in_jets {
   {
     if (!track.hasITS())
       return false;
-    if (track.itsNCls() < 2)
+    if (track.itsNCls() < 3)
       return false;
     if (!track.hasTPC())
-      return false;
-    if (track.tpcNClsFound() < 70)
       return false;
     if (track.tpcNClsCrossedRows() < 70)
       return false;
@@ -235,13 +250,13 @@ struct strangeness_in_jets {
       return false;
     if (track.itsChi2NCl() > 36)
       return false;
-    if (abs(track.eta()) > 0.8)
+    if (track.eta() < -0.8 || track.eta() > 0.8)
       return false;
-    if (track.pt() < 0.15)
+    if (track.pt() < 0.1)
       return false;
-    if (TMath::Abs(track.dcaXY()) > 0.5)
+    if (TMath::Abs(track.dcaXY()) > (0.0105 * 0.035 / TMath::Power(track.pt(), 1.1)))
       return false;
-    if (TMath::Abs(track.dcaZ()) > 0.5)
+    if (TMath::Abs(track.dcaZ()) > 2.0)
       return false;
     return true;
   }
@@ -768,7 +783,7 @@ struct strangeness_in_jets {
     return;
   }
 
-  void processData(SelCollisions::iterator const& collision, aod::V0Datas const& fullV0s, aod::CascDataExt const& Cascades, aod::V0sLinked const& V0linked, FullTracks const& tracks)
+  void processData(SelCollisions::iterator const& collision, aod::V0Datas const& fullV0s, aod::CascDataExt const& Cascades, FullTracks const& tracks)
   {
     registryData.fill(HIST("number_of_events_data"), 0.5);
     if (!collision.sel8())
@@ -782,6 +797,7 @@ struct strangeness_in_jets {
 
     // Find Leading Particle
     std::vector<int> particle_ID;
+    std::vector<int> particle_ID_copy;
     int leading_ID(0);
     float ptMax(0);
 
@@ -798,19 +814,25 @@ struct strangeness_in_jets {
         ptMax = track.pt();
       }
       particle_ID.push_back(i);
+      particle_ID_copy.push_back(i);
     }
 
+    // Reject events with ptLeading lower than threshold
     if (ptMax < ptLeadingMin)
       return;
     registryData.fill(HIST("number_of_events_data"), 3.5);
 
+    // Momentum of the Leading Particle
     auto const& leading_track = tracks.iteratorAt(leading_ID);
-    TVector3 p_leading(leading_track.px(), leading_track.py(), leading_track.pz());
-    int nParticles = static_cast<int>(particle_ID.size());
+    TVector3 p_jet(leading_track.px(), leading_track.py(), leading_track.pz());
 
     // Jet Finder
     int exit(0);
     int nPartAssociated(0);
+    int nParticles = static_cast<int>(particle_ID.size());
+    std::vector<int> jet_particle_ID;
+    jet_particle_ID.push_back(leading_ID);
+
     do {
       // Initialization
       float distance_jet_min(1e+08);
@@ -829,12 +851,12 @@ struct strangeness_in_jets {
         TVector3 p_particle(stored_track.px(), stored_track.py(), stored_track.pz());
 
         // Variables
-        float one_over_pt2_part = 1.0 / (p_particle.Pt() * p_particle.Pt());
-        float one_over_pt2_lead = 1.0 / (p_leading.Pt() * p_leading.Pt());
-        float deltaEta = p_particle.Eta() - p_leading.Eta();
-        float deltaPhi = GetDeltaPhi(p_particle.Phi(), p_leading.Phi());
-        float min = Minimum(one_over_pt2_part, one_over_pt2_lead);
-        float Delta2 = deltaEta * deltaEta + deltaPhi * deltaPhi;
+        double one_over_pt2_part = 1.0 / (p_particle.Pt() * p_particle.Pt());
+        double one_over_pt2_lead = 1.0 / (p_jet.Pt() * p_jet.Pt());
+        double deltaEta = p_particle.Eta() - p_jet.Eta();
+        double deltaPhi = GetDeltaPhi(p_particle.Phi(), p_jet.Phi());
+        double min = Minimum(one_over_pt2_part, one_over_pt2_lead);
+        double Delta2 = deltaEta * deltaEta + deltaPhi * deltaPhi;
 
         // Distances
         float distance_jet = min * Delta2 / (Rjet * Rjet);
@@ -856,12 +878,12 @@ struct strangeness_in_jets {
       if (distance_jet_min <= distance_bkg_min) {
 
         // Add Particle to Jet
-        // jet_particle_ID.push_back(label_jet_particle);
+        jet_particle_ID.push_back(label_jet_particle);
 
         // Update Momentum of Leading Particle
         auto jet_track = tracks.iteratorAt(label_jet_particle);
         TVector3 p_i(jet_track.px(), jet_track.py(), jet_track.pz());
-        p_leading = p_leading + p_i;
+        p_jet = p_jet + p_i;
 
         // Remove Element
         particle_ID[i_jet_particle] = -1;
@@ -875,19 +897,16 @@ struct strangeness_in_jets {
 
     } while (exit == 0);
 
-    // Jet Axis
-    TVector3 jet_axis(p_leading.X(), p_leading.Y(), p_leading.Z());
-
     // Cut events with jet not fully inside acceptance
-    if ((abs(jet_axis.Eta()) + Rmax) > etaMax)
+    if ((abs(p_jet.Eta()) + Rmax) > etaMax)
       return;
     registryData.fill(HIST("number_of_events_data"), 4.5);
 
     // Perpendicular Cones for UE
     TVector3 ue_axis1(0.0, 0.0, 0.0);
     TVector3 ue_axis2(0.0, 0.0, 0.0);
-    get_perpendicular_axis(jet_axis, ue_axis1, +1.0);
-    get_perpendicular_axis(jet_axis, ue_axis2, -1.0);
+    get_perpendicular_axis(p_jet, ue_axis1, +1.0);
+    get_perpendicular_axis(p_jet, ue_axis2, -1.0);
 
     // Protection against delta<0
     if (ue_axis1.X() == 0 && ue_axis1.Y() == 0 && ue_axis1.Z() == 0)
@@ -896,191 +915,228 @@ struct strangeness_in_jets {
       return;
     registryData.fill(HIST("number_of_events_data"), 5.5);
 
+    // Loop over particles
+    double nChJetPlusUE(0);
+    double ptJetPlusUE(0);
+    double ptUE(0);
+    double ptJet(0);
+
+    for (int i = 0; i < nParticles; i++) {
+
+      auto track = tracks.iteratorAt(particle_ID_copy[i]);
+      TVector3 particle_dir(track.px(), track.py(), track.pz());
+      double deltaEta_jet = particle_dir.Eta() - p_jet.Eta();
+      double deltaPhi_jet = GetDeltaPhi(particle_dir.Phi(), p_jet.Phi());
+      double deltaR_jet = sqrt(deltaEta_jet * deltaEta_jet + deltaPhi_jet * deltaPhi_jet);
+      double deltaEta_ue1 = particle_dir.Eta() - ue_axis1.Eta();
+      double deltaPhi_ue1 = GetDeltaPhi(particle_dir.Phi(), ue_axis1.Phi());
+      double deltaR_ue1 = sqrt(deltaEta_ue1 * deltaEta_ue1 + deltaPhi_ue1 * deltaPhi_ue1);
+      double deltaEta_ue2 = particle_dir.Eta() - ue_axis2.Eta();
+      double deltaPhi_ue2 = GetDeltaPhi(particle_dir.Phi(), ue_axis2.Phi());
+      double deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
+
+      if (deltaR_jet < Rmax) {
+        nChJetPlusUE++;
+        ptJetPlusUE = ptJetPlusUE + track.pt();
+      }
+      if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax) {
+        ptUE = ptUE + track.pt();
+      }
+    }
+    ptJet = ptJetPlusUE - 0.5 * ptUE;
+
+    // Event Counter: Skip Events with n. particles in jet less than given value
+    if (nChJetPlusUE < nPartInJetMin)
+      return;
+    registryData.fill(HIST("number_of_events_data"), 6.5);
+
+    // Event Counter: Skip Events with Jet Pt lower than threshold
+    if (ptJet < ptJetMin)
+      return;
+    registryData.fill(HIST("number_of_events_data"), 7.5);
+
     // Event multiplicity
     float multiplicity = collision.centFT0M();
 
-    for (auto& v0 : fullV0s) {
+    // Vzeros
+    if (particle_of_interest == option::vzeros) {
+      for (auto& v0 : fullV0s) {
 
-      const auto& pos = v0.posTrack_as<FullTracks>();
-      const auto& neg = v0.negTrack_as<FullTracks>();
+        const auto& pos = v0.posTrack_as<FullTracks>();
+        const auto& neg = v0.negTrack_as<FullTracks>();
+        TVector3 v0dir(v0.px(), v0.py(), v0.pz());
 
-      TVector3 v0dir(v0.px(), v0.py(), v0.pz());
+        float deltaEta_jet = v0dir.Eta() - p_jet.Eta();
+        float deltaPhi_jet = GetDeltaPhi(v0dir.Phi(), p_jet.Phi());
+        float deltaR_jet = sqrt(deltaEta_jet * deltaEta_jet + deltaPhi_jet * deltaPhi_jet);
+        float deltaEta_ue1 = v0dir.Eta() - ue_axis1.Eta();
+        float deltaPhi_ue1 = GetDeltaPhi(v0dir.Phi(), ue_axis1.Phi());
+        float deltaR_ue1 = sqrt(deltaEta_ue1 * deltaEta_ue1 + deltaPhi_ue1 * deltaPhi_ue1);
+        float deltaEta_ue2 = v0dir.Eta() - ue_axis2.Eta();
+        float deltaPhi_ue2 = GetDeltaPhi(v0dir.Phi(), ue_axis2.Phi());
+        float deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
 
-      float deltaEta_jet = v0dir.Eta() - jet_axis.Eta();
-      float deltaPhi_jet = GetDeltaPhi(v0dir.Phi(), jet_axis.Phi());
-      float deltaR_jet = sqrt(deltaEta_jet * deltaEta_jet + deltaPhi_jet * deltaPhi_jet);
-
-      float deltaEta_ue1 = v0dir.Eta() - ue_axis1.Eta();
-      float deltaPhi_ue1 = GetDeltaPhi(v0dir.Phi(), ue_axis1.Phi());
-      float deltaR_ue1 = sqrt(deltaEta_ue1 * deltaEta_ue1 + deltaPhi_ue1 * deltaPhi_ue1);
-
-      float deltaEta_ue2 = v0dir.Eta() - ue_axis2.Eta();
-      float deltaPhi_ue2 = GetDeltaPhi(v0dir.Phi(), ue_axis2.Phi());
-      float deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
-
-      // K0s
-      if (passedK0ShortSelection(v0, pos, neg)) {
-        if (deltaR_jet < Rmax) {
-          registryData.fill(HIST("K0s_in_jet"), multiplicity, v0.pt(), v0.mK0Short());
+        // K0s
+        if (passedK0ShortSelection(v0, pos, neg)) {
+          if (deltaR_jet < Rmax) {
+            registryData.fill(HIST("K0s_in_jet"), multiplicity, v0.pt(), v0.mK0Short());
+          }
+          if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax) {
+            registryData.fill(HIST("K0s_in_ue"), multiplicity, v0.pt(), v0.mK0Short());
+          }
         }
-        if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax) {
-          registryData.fill(HIST("K0s_in_ue"), multiplicity, v0.pt(), v0.mK0Short());
+        // Lambda
+        if (passedLambdaSelection(v0, pos, neg)) {
+          if (deltaR_jet < Rmax) {
+            registryData.fill(HIST("Lambda_in_jet"), multiplicity, v0.pt(), v0.mLambda());
+          }
+          if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax) {
+            registryData.fill(HIST("Lambda_in_ue"), multiplicity, v0.pt(), v0.mLambda());
+          }
         }
-      }
-
-      // Lambda
-      if (passedLambdaSelection(v0, pos, neg)) {
-        if (deltaR_jet < Rmax) {
-          registryData.fill(HIST("Lambda_in_jet"), multiplicity, v0.pt(), v0.mLambda());
-        }
-        if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax) {
-          registryData.fill(HIST("Lambda_in_ue"), multiplicity, v0.pt(), v0.mLambda());
-        }
-      }
-
-      // AntiLambda
-      if (passedAntiLambdaSelection(v0, pos, neg)) {
-        if (deltaR_jet < Rmax) {
-          registryData.fill(HIST("AntiLambda_in_jet"), multiplicity, v0.pt(), v0.mAntiLambda());
-        }
-        if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax) {
-          registryData.fill(HIST("AntiLambda_in_ue"), multiplicity, v0.pt(), v0.mAntiLambda());
+        // AntiLambda
+        if (passedAntiLambdaSelection(v0, pos, neg)) {
+          if (deltaR_jet < Rmax) {
+            registryData.fill(HIST("AntiLambda_in_jet"), multiplicity, v0.pt(), v0.mAntiLambda());
+          }
+          if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax) {
+            registryData.fill(HIST("AntiLambda_in_ue"), multiplicity, v0.pt(), v0.mAntiLambda());
+          }
         }
       }
     }
 
     // Cascades
-    for (auto& casc : Cascades) {
+    if (particle_of_interest == option::cascades) {
+      for (auto& casc : Cascades) {
 
-      auto bach = casc.bachelor_as<FullTracks>();
-      auto pos = casc.posTrack_as<FullTracks>();
-      auto neg = casc.negTrack_as<FullTracks>();
+        auto bach = casc.bachelor_as<FullTracks>();
+        auto pos = casc.posTrack_as<FullTracks>();
+        auto neg = casc.negTrack_as<FullTracks>();
 
-      TVector3 cascade_dir(casc.px(), casc.py(), casc.pz());
+        TVector3 cascade_dir(casc.px(), casc.py(), casc.pz());
+        float deltaEta_jet = cascade_dir.Eta() - p_jet.Eta();
+        float deltaPhi_jet = GetDeltaPhi(cascade_dir.Phi(), p_jet.Phi());
+        float deltaR_jet = sqrt(deltaEta_jet * deltaEta_jet + deltaPhi_jet * deltaPhi_jet);
+        float deltaEta_ue1 = cascade_dir.Eta() - ue_axis1.Eta();
+        float deltaPhi_ue1 = GetDeltaPhi(cascade_dir.Phi(), ue_axis1.Phi());
+        float deltaR_ue1 = sqrt(deltaEta_ue1 * deltaEta_ue1 + deltaPhi_ue1 * deltaPhi_ue1);
+        float deltaEta_ue2 = cascade_dir.Eta() - ue_axis2.Eta();
+        float deltaPhi_ue2 = GetDeltaPhi(cascade_dir.Phi(), ue_axis2.Phi());
+        float deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
 
-      float deltaEta_jet = cascade_dir.Eta() - jet_axis.Eta();
-      float deltaPhi_jet = GetDeltaPhi(cascade_dir.Phi(), jet_axis.Phi());
-      float deltaR_jet = sqrt(deltaEta_jet * deltaEta_jet + deltaPhi_jet * deltaPhi_jet);
-      float deltaEta_ue1 = cascade_dir.Eta() - ue_axis1.Eta();
-      float deltaPhi_ue1 = GetDeltaPhi(cascade_dir.Phi(), ue_axis1.Phi());
-      float deltaR_ue1 = sqrt(deltaEta_ue1 * deltaEta_ue1 + deltaPhi_ue1 * deltaPhi_ue1);
-      float deltaEta_ue2 = cascade_dir.Eta() - ue_axis2.Eta();
-      float deltaPhi_ue2 = GetDeltaPhi(cascade_dir.Phi(), ue_axis2.Phi());
-      float deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
-
-      // Xi+
-      if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() > 0) {
-        if (deltaR_jet < Rmax) {
-          registryData.fill(HIST("XiPos_in_jet"), multiplicity, casc.pt(), casc.mXi());
+        // Xi+
+        if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() > 0) {
+          if (deltaR_jet < Rmax) {
+            registryData.fill(HIST("XiPos_in_jet"), multiplicity, casc.pt(), casc.mXi());
+          }
+          if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax) {
+            registryData.fill(HIST("XiPos_in_ue"), multiplicity, casc.pt(), casc.mXi());
+          }
         }
-        if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax) {
-          registryData.fill(HIST("XiPos_in_ue"), multiplicity, casc.pt(), casc.mXi());
+        // Xi-
+        if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() < 0) {
+          if (deltaR_jet < Rmax) {
+            registryData.fill(HIST("XiNeg_in_jet"), multiplicity, casc.pt(), casc.mXi());
+          }
+          if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax) {
+            registryData.fill(HIST("XiNeg_in_ue"), multiplicity, casc.pt(), casc.mXi());
+          }
         }
-      }
-      // Xi-
-      if (passedXiSelection(casc, pos, neg, bach, collision) && bach.sign() < 0) {
-        if (deltaR_jet < Rmax) {
-          registryData.fill(HIST("XiNeg_in_jet"), multiplicity, casc.pt(), casc.mXi());
+        // Omega+
+        if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() > 0) {
+          if (deltaR_jet < Rmax) {
+            registryData.fill(HIST("OmegaPos_in_jet"), multiplicity, casc.pt(), casc.mOmega());
+          }
+          if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax) {
+            registryData.fill(HIST("OmegaPos_in_ue"), multiplicity, casc.pt(), casc.mOmega());
+          }
         }
-        if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax) {
-          registryData.fill(HIST("XiNeg_in_ue"), multiplicity, casc.pt(), casc.mXi());
-        }
-      }
-
-      // Omega+
-      if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() > 0) {
-        if (deltaR_jet < Rmax) {
-          registryData.fill(HIST("OmegaPos_in_jet"), multiplicity, casc.pt(), casc.mOmega());
-        }
-        if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax) {
-          registryData.fill(HIST("OmegaPos_in_ue"), multiplicity, casc.pt(), casc.mOmega());
-        }
-      }
-      // Omega-
-      if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() < 0) {
-        if (deltaR_jet < Rmax) {
-          registryData.fill(HIST("OmegaNeg_in_jet"), multiplicity, casc.pt(), casc.mOmega());
-        }
-        if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax) {
-          registryData.fill(HIST("OmegaNeg_in_ue"), multiplicity, casc.pt(), casc.mOmega());
+        // Omega-
+        if (passedOmegaSelection(casc, pos, neg, bach, collision) && bach.sign() < 0) {
+          if (deltaR_jet < Rmax) {
+            registryData.fill(HIST("OmegaNeg_in_jet"), multiplicity, casc.pt(), casc.mOmega());
+          }
+          if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax) {
+            registryData.fill(HIST("OmegaNeg_in_ue"), multiplicity, casc.pt(), casc.mOmega());
+          }
         }
       }
     }
 
     // Pions
-    for (auto track : tracks) {
+    if (particle_of_interest == option::pions) {
+      for (auto track : tracks) {
 
-      if (!passedTrackSelectionForPions(track))
-        continue;
+        if (!passedTrackSelectionForPions(track))
+          continue;
 
-      TVector3 track_dir(track.px(), track.py(), track.pz());
-      float deltaEta_jet = track_dir.Eta() - jet_axis.Eta();
-      float deltaPhi_jet = GetDeltaPhi(track_dir.Phi(), jet_axis.Phi());
-      float deltaR_jet = sqrt(deltaEta_jet * deltaEta_jet + deltaPhi_jet * deltaPhi_jet);
-      float deltaEta_ue1 = track_dir.Eta() - ue_axis1.Eta();
-      float deltaPhi_ue1 = GetDeltaPhi(track_dir.Phi(), ue_axis1.Phi());
-      float deltaR_ue1 = sqrt(deltaEta_ue1 * deltaEta_ue1 + deltaPhi_ue1 * deltaPhi_ue1);
-      float deltaEta_ue2 = track_dir.Eta() - ue_axis2.Eta();
-      float deltaPhi_ue2 = GetDeltaPhi(track_dir.Phi(), ue_axis2.Phi());
-      float deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
+        TVector3 track_dir(track.px(), track.py(), track.pz());
+        float deltaEta_jet = track_dir.Eta() - p_jet.Eta();
+        float deltaPhi_jet = GetDeltaPhi(track_dir.Phi(), p_jet.Phi());
+        float deltaR_jet = sqrt(deltaEta_jet * deltaEta_jet + deltaPhi_jet * deltaPhi_jet);
+        float deltaEta_ue1 = track_dir.Eta() - ue_axis1.Eta();
+        float deltaPhi_ue1 = GetDeltaPhi(track_dir.Phi(), ue_axis1.Phi());
+        float deltaR_ue1 = sqrt(deltaEta_ue1 * deltaEta_ue1 + deltaPhi_ue1 * deltaPhi_ue1);
+        float deltaEta_ue2 = track_dir.Eta() - ue_axis2.Eta();
+        float deltaPhi_ue2 = GetDeltaPhi(track_dir.Phi(), ue_axis2.Phi());
+        float deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
 
-      bool isInJet = false;
-      bool isInUe = false;
-      if (deltaR_jet < Rmax)
-        isInJet = true;
-      if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax)
-        isInUe = true;
+        bool isInJet = false;
+        bool isInUe = false;
+        if (deltaR_jet < Rmax)
+          isInJet = true;
+        if (deltaR_ue1 < Rmax || deltaR_ue2 < Rmax)
+          isInUe = true;
 
-      if (isHighPurityPion(track) && track.sign() > 0) {
-        if (isInJet)
-          registryData.fill(HIST("piplus_dcaxy_in_jet"), multiplicity, track.pt(), track.dcaXY());
-        if (isInUe)
-          registryData.fill(HIST("piplus_dcaxy_in_ue"), multiplicity, track.pt(), track.dcaXY());
-      }
+        if (isHighPurityPion(track) && track.sign() > 0) {
+          if (isInJet)
+            registryData.fill(HIST("piplus_dcaxy_in_jet"), multiplicity, track.pt(), track.dcaXY());
+          if (isInUe)
+            registryData.fill(HIST("piplus_dcaxy_in_ue"), multiplicity, track.pt(), track.dcaXY());
+        }
+        if (isHighPurityPion(track) && track.sign() < 0) {
+          if (isInJet)
+            registryData.fill(HIST("piminus_dcaxy_in_jet"), multiplicity, track.pt(), track.dcaXY());
+          if (isInUe)
+            registryData.fill(HIST("piminus_dcaxy_in_ue"), multiplicity, track.pt(), track.dcaXY());
+        }
 
-      if (isHighPurityPion(track) && track.sign() < 0) {
-        if (isInJet)
-          registryData.fill(HIST("piminus_dcaxy_in_jet"), multiplicity, track.pt(), track.dcaXY());
-        if (isInUe)
-          registryData.fill(HIST("piminus_dcaxy_in_ue"), multiplicity, track.pt(), track.dcaXY());
-      }
+        // DCAxy Selection
+        if (TMath::Abs(track.dcaXY()) > dcaxyMax)
+          continue;
 
-      // DCAxy Selection
-      if (TMath::Abs(track.dcaXY()) > dcaxyMax)
-        continue;
+        // TPC
+        if (isInJet && track.sign() > 0) {
+          registryData.fill(HIST("piplus_tpc_in_jet"), multiplicity, track.pt(), track.tpcNSigmaPi());
+        }
+        if (isInUe && track.sign() > 0) {
+          registryData.fill(HIST("piplus_tpc_in_ue"), multiplicity, track.pt(), track.tpcNSigmaPi());
+        }
+        if (isInJet && track.sign() < 0) {
+          registryData.fill(HIST("piminus_tpc_in_jet"), multiplicity, track.pt(), track.tpcNSigmaPi());
+        }
+        if (isInUe && track.sign() < 0) {
+          registryData.fill(HIST("piminus_tpc_in_ue"), multiplicity, track.pt(), track.tpcNSigmaPi());
+        }
+        if (track.tpcNSigmaPi() < nsigmaTPCmin || track.tpcNSigmaPi() > nsigmaTPCmax)
+          continue;
+        if (!track.hasTOF())
+          continue;
 
-      // TPC
-      if (isInJet && track.sign() > 0) {
-        registryData.fill(HIST("piplus_tpc_in_jet"), multiplicity, track.pt(), track.tpcNSigmaPi());
-      }
-      if (isInUe && track.sign() > 0) {
-        registryData.fill(HIST("piplus_tpc_in_ue"), multiplicity, track.pt(), track.tpcNSigmaPi());
-      }
-      if (isInJet && track.sign() < 0) {
-        registryData.fill(HIST("piminus_tpc_in_jet"), multiplicity, track.pt(), track.tpcNSigmaPi());
-      }
-      if (isInUe && track.sign() < 0) {
-        registryData.fill(HIST("piminus_tpc_in_ue"), multiplicity, track.pt(), track.tpcNSigmaPi());
-      }
-
-      if (track.tpcNSigmaPi() < nsigmaTPCmin || track.tpcNSigmaPi() > nsigmaTPCmax)
-        continue;
-
-      if (!track.hasTOF())
-        continue;
-
-      // TOF
-      if (isInJet && track.sign() > 0) {
-        registryData.fill(HIST("piplus_tof_in_jet"), multiplicity, track.pt(), track.tofNSigmaPi());
-      }
-      if (isInUe && track.sign() > 0) {
-        registryData.fill(HIST("piplus_tof_in_ue"), multiplicity, track.pt(), track.tofNSigmaPi());
-      }
-      if (isInJet && track.sign() < 0) {
-        registryData.fill(HIST("piminus_tof_in_jet"), multiplicity, track.pt(), track.tofNSigmaPi());
-      }
-      if (isInUe && track.sign() < 0) {
-        registryData.fill(HIST("piminus_tof_in_ue"), multiplicity, track.pt(), track.tofNSigmaPi());
+        // TOF
+        if (isInJet && track.sign() > 0) {
+          registryData.fill(HIST("piplus_tof_in_jet"), multiplicity, track.pt(), track.tofNSigmaPi());
+        }
+        if (isInUe && track.sign() > 0) {
+          registryData.fill(HIST("piplus_tof_in_ue"), multiplicity, track.pt(), track.tofNSigmaPi());
+        }
+        if (isInJet && track.sign() < 0) {
+          registryData.fill(HIST("piminus_tof_in_jet"), multiplicity, track.pt(), track.tofNSigmaPi());
+        }
+        if (isInUe && track.sign() < 0) {
+          registryData.fill(HIST("piminus_tof_in_ue"), multiplicity, track.pt(), track.tofNSigmaPi());
+        }
       }
     }
   }
@@ -1091,7 +1147,7 @@ struct strangeness_in_jets {
   Preslice<aod::McParticles> perMCCollision = o2::aod::mcparticle::mcCollisionId;
   Preslice<MCTracks> perCollisionTrk = o2::aod::track::collisionId;
 
-  void processMCefficiency(SimCollisions const& collisions, MCTracks const& mcTracks, aod::V0Datas const& fullV0s, aod::CascDataExt const& Cascades, aod::McCollisions const& mcCollisions, const aod::McParticles& mcParticles)
+  void processMCefficiency(SimCollisions const& collisions, MCTracks const& mcTracks, aod::V0Datas const& fullV0s, aod::CascDataExt const& Cascades, const aod::McParticles& mcParticles)
   {
     for (const auto& collision : collisions) {
       registryMC.fill(HIST("number_of_events_mc"), 0.5);
@@ -1343,13 +1399,14 @@ struct strangeness_in_jets {
       auto mcParticles_per_coll = mcParticles.sliceBy(perMCCollision, collision.globalIndex());
 
       std::vector<int> particle_ID;
-      int leading_ID = 0;
+      int leading_ID(0);
       float pt_max(0);
+      int i = -1;
 
       for (auto& particle : mcParticles_per_coll) {
 
-        // Global Index
-        int i = particle.globalIndex();
+        // Particle Index
+        i++;
 
         // Select Primary Particles
         float deltaX = particle.vx() - collision.posX();
@@ -1391,6 +1448,7 @@ struct strangeness_in_jets {
       // Momentum of the Leading Particle
       auto const& leading_track = mcParticles_per_coll.iteratorAt(leading_ID);
       TVector3 p_leading(leading_track.px(), leading_track.py(), leading_track.pz());
+      registryQC.fill(HIST("deltaPt_leading"), pt_max - leading_track.pt());
 
       // Labels
       int exit(0);
@@ -1462,16 +1520,16 @@ struct strangeness_in_jets {
       } while (exit == 0);
 
       // Jet Axis
-      TVector3 jet_axis(p_leading.X(), p_leading.Y(), p_leading.Z());
+      TVector3 p_jet(p_leading.X(), p_leading.Y(), p_leading.Z());
 
-      if ((abs(jet_axis.Eta()) + Rmax) > etaMax)
+      if ((abs(p_jet.Eta()) + Rmax) > etaMax)
         return;
 
       // Perpendicular Cones for UE
       TVector3 ue_axis1(0.0, 0.0, 0.0);
       TVector3 ue_axis2(0.0, 0.0, 0.0);
-      get_perpendicular_axis(jet_axis, ue_axis1, +1.0);
-      get_perpendicular_axis(jet_axis, ue_axis2, -1.0);
+      get_perpendicular_axis(p_jet, ue_axis1, +1.0);
+      get_perpendicular_axis(p_jet, ue_axis2, -1.0);
 
       // Protection against delta<0
       if (ue_axis1.X() == 0 && ue_axis1.Y() == 0 && ue_axis1.Z() == 0)
@@ -1491,8 +1549,8 @@ struct strangeness_in_jets {
           continue;
 
         TVector3 p_particle(particle.px(), particle.py(), particle.pz());
-        float deltaEta_jet = p_particle.Eta() - jet_axis.Eta();
-        float deltaPhi_jet = GetDeltaPhi(p_particle.Phi(), jet_axis.Phi());
+        float deltaEta_jet = p_particle.Eta() - p_jet.Eta();
+        float deltaPhi_jet = GetDeltaPhi(p_particle.Phi(), p_jet.Phi());
         float deltaR_jet = sqrt(deltaEta_jet * deltaEta_jet + deltaPhi_jet * deltaPhi_jet);
         float deltaEta_ue1 = p_particle.Eta() - ue_axis1.Eta();
         float deltaPhi_ue1 = GetDeltaPhi(p_particle.Phi(), ue_axis1.Phi());
