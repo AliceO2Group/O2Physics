@@ -101,7 +101,7 @@ struct HfTaskFlow {
 
   // Even add McCollisions in the join ?
   // Kata adds subscribes to it but do not add it in the join
-  //using FilteredCollisionsWSelMultMC = soa::Filtered<soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::Mults, aod::McCollisions>>;
+  // using FilteredCollisionsWSelMultMC = soa::Filtered<soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::Mults, aod::McCollisions>>;
   using FilteredCollisionsWSelMultMC = soa::Filtered<soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::Mults>>;
   using TracksWDcaSelMC = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection, aod::McTrackLabels>>;
 
@@ -116,7 +116,7 @@ struct HfTaskFlow {
   using aodMcCollisions = soa::Filtered<aod::McCollisions>;
 
   using aodMcParticles = soa::Filtered<aod::McParticles>;
-  
+
   using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels>>;
 
   // From Katarina's code, but not sure if I use it
@@ -947,15 +947,15 @@ struct HfTaskFlow {
       if constexpr (std::is_same_v<FilteredCollisionsWSelMultMC, TCollisions>) { // If MC
         registry.fill(HIST("MC/Rec/TpcTpc/HadronHadron/MixedEvent/hEventCountMixing"), bin);
         fillTpcTpcChChMixedEventQAmc(multiplicityTracks2, vz, tracks1);
-        
-        //if constexpr (std::is_same_v<HfCandidatesSel, TTracksTrig>) {
-        //  registry.fill(HIST("Data/TpcTpc/HfHadron/MixedEvent/hEventCountHFMixing"), bin);
-        //  fillHFMixingQA(multiplicity, vz, tracks1);
-        //} else {
-        //  registry.fill(HIST("Data/TpcTpc/HadronHadron/MixedEvent/hEventCountMixing"), bin);
-        //  fillMixingQA(multiplicity, vz, tracks1);
-        //}
-        
+
+        // if constexpr (std::is_same_v<HfCandidatesSel, TTracksTrig>) {
+        //   registry.fill(HIST("Data/TpcTpc/HfHadron/MixedEvent/hEventCountHFMixing"), bin);
+        //   fillHFMixingQA(multiplicity, vz, tracks1);
+        // } else {
+        //   registry.fill(HIST("Data/TpcTpc/HadronHadron/MixedEvent/hEventCountMixing"), bin);
+        //   fillMixingQA(multiplicity, vz, tracks1);
+        // }
+
       } else {                                                        // If not MC
         if constexpr (std::is_same_v<HfCandidatesSel, TTracksTrig>) { // DATA :  If TPC-TPC Hf-h case
           registry.fill(HIST("Data/TpcTpc/HfHadron/MixedEvent/hEventCountHFMixing"), bin);
@@ -1013,15 +1013,14 @@ struct HfTaskFlow {
       // TODO : FILL NEW PLOTS FOR MCTRUTH ONLY
       registry.fill(HIST("MC/Gen/TpcTpc/HadronHadron/MixedEvent/hEventCountMixing"), bin);
       fillTpcTpcChChMixedEventQAmc(multiplicity, vz, tracks1);
-      
-      //if constexpr (std::is_same_v<HfCandidatesSel, TTracksTrig>) {
-      //  registry.fill(HIST("Data/TpcTpc/HfHadron/MixedEvent/hEventCountHFMixing"), bin);
-      //  fillHFMixingQA(multiplicity, vz, tracks1);
-      //} else {
-      //  registry.fill(HIST("Data/TpcTpc/HadronHadron/MixedEvent/hEventCountMixing"), bin);
-      //  fillMixingQA(multiplicity, vz, tracks1);
-      //}
-      
+
+      // if constexpr (std::is_same_v<HfCandidatesSel, TTracksTrig>) {
+      //   registry.fill(HIST("Data/TpcTpc/HfHadron/MixedEvent/hEventCountHFMixing"), bin);
+      //   fillHFMixingQA(multiplicity, vz, tracks1);
+      // } else {
+      //   registry.fill(HIST("Data/TpcTpc/HadronHadron/MixedEvent/hEventCountMixing"), bin);
+      //   fillMixingQA(multiplicity, vz, tracks1);
+      // }
 
       corrContainer->fillEvent(multiplicity, CorrelationContainer::kCFStepAll);
       // TO-DO : probably put the step of the correlation container in the template of this function
@@ -1137,7 +1136,7 @@ struct HfTaskFlow {
     // if (!(isCollisionSelected(mcCollision, true))) {
     //  return;
     //}
-    //if (!(isCollisionSelected(mcCollision, true))) {
+    // if (!(isCollisionSelected(mcCollision, true))) {
     //  return;
     //}
 
@@ -1233,13 +1232,11 @@ struct HfTaskFlow {
       return size;
     };
 
-    
-    //auto getTracksSize = [&candidates, this](FilteredCollisionsWSelMult::iterator const& col) {
-    //  auto associatedTracks = candidates.sliceByCached(o2::aod::track::collisionId, col.globalIndex(), this->cache);
-    //  auto size = associatedTracks.size();
-    //  return size;
-    //};
-    
+    // auto getTracksSize = [&candidates, this](FilteredCollisionsWSelMult::iterator const& col) {
+    //   auto associatedTracks = candidates.sliceByCached(o2::aod::track::collisionId, col.globalIndex(), this->cache);
+    //   auto size = associatedTracks.size();
+    //   return size;
+    // };
 
     mixCollisions(collisions, candidates, tracks, getTracksSize, mixedTPCTPCHfCh);
   }
