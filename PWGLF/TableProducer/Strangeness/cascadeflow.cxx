@@ -120,6 +120,8 @@ static const std::vector<std::string> labelsCutScore = {"Background score", "Sig
 
 struct cascadeFlow {
 
+  PresliceUnsorted<soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraCollLabels>> perMcCollision = aod::v0data::straMCCollisionId;
+  
   // axes
   ConfigurableAxis axisQVs{"axisQVs", {500, -10.f, 10.f}, "axisQVs"};
   ConfigurableAxis axisQVsNorm{"axisQVsNorm", {200, -1.f, 1.f}, "axisQVsNorm"};
@@ -144,6 +146,7 @@ struct cascadeFlow {
   Configurable<float> nsigmatpcPr{"nsigmatpcPr", 5, "nsigmatpcPr"};
   Configurable<float> nsigmatpcPi{"nsigmatpcPi", 5, "nsigmatpcPi"};
   Configurable<float> mintpccrrows{"mintpccrrows", 70, "mintpccrrows"};
+  Configurable<float> etaCascMCGen{"etaCascMCGen", 0.8, "etaCascMCGen"};
 
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::vector<std::string>> modelPathsCCDBXi{"modelPathsCCDBXi", std::vector<std::string>{"Users/c/chdemart/CascadesFlow"}, "Paths of models on CCDB"};
@@ -255,6 +258,7 @@ struct cascadeFlow {
   }
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry histosMCGen{"histosMCGen", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry resolution{"resolution", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // Tables to produce
@@ -381,6 +385,11 @@ struct cascadeFlow {
     histos.add("hcascminuspsiT0C", "hcascminuspsiT0C", HistType::kTH1F, {{100, 0, TMath::Pi()}});
     histos.add("hv2CEPvsFT0C", "hv2CEPvsFT0C", HistType::kTH2F, {CentAxis, {100, -1, 1}});
     histos.add("hv2CEPvsv2CSP", "hv2CEPvsV2CSP", HistType::kTH2F, {{100, -1, 1}, {100, -1, 1}});
+
+    histosMCGen.add("h2DGenXi", "h2DGenXi", HistType::kTH2F, {{100, 0, 00}, {200, 0, 20}});
+    histosMCGen.add("h2DGenOmega", "h2DGenOmega", HistType::kTH2F, {{100, 0, 100}, {200, 0, 20}});
+    histosMCGen.add("hGenEta", "hGenEta", HistType::kTH1F, {{100, -1, 1}});
+    
     for (int iS{0}; iS < 2; ++iS) {
       cascadev2::hMassBeforeSelVsPt[iS] = histos.add<TH2>(Form("hMassBeforeSelVsPt%s", cascadev2::speciesNames[iS].data()), "hMassBeforeSelVsPt", HistType::kTH2F, {massCascAxis[iS], ptAxis});
       cascadev2::hMassAfterSelVsPt[iS] = histos.add<TH2>(Form("hMassAfterSelVsPt%s", cascadev2::speciesNames[iS].data()), "hMassAfterSelVsPt", HistType::kTH2F, {massCascAxis[iS], ptAxis});
@@ -843,12 +852,72 @@ struct cascadeFlow {
         fillAnalysedTable(coll, casc, v2CSP, v2CEP, PsiT0C, BDTresponse[0], BDTresponse[1], pdgCode);
     }
   }
+  void processMCGen(soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>::iterator const& mcCollision, soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraCollLabels> const& collisions, soa::Join<aod::CascMCCores, aod::CascMCCollRefs> const& CascMCCores)
+  {
+    // Generated with accepted z vertex
+    if (TMath::Abs(mcCollision.posZ()) > cutzvertex) {
+      return;
+    }
+
+    // Check if there is at least one of the reconstructed collisions associated to this MC collision
+    auto groupedCollisions = collisions.sliceBy(perMcCollision, mcCollision.globalIndex());
+    int biggestNContribs = -1;
+    int bestCollisionIndex = -1;
+    float centrality = 100.5f;
+    int nCollisions = 0;
+    for (auto const& collision : groupedCollisions) {
+      
+      if (!AcceptEvent(collision)) {
+        continue;
+      }
+      if (biggestNContribs < collision.multPVTotalContributors()) {
+	biggestNContribs = collision.multPVTotalContributors();
+	bestCollisionIndex = collision.globalIndex();
+	centrality = collision.centFT0C();
+      }
+      nCollisions++;
+    }
+    if (nCollisions <1) {
+      return;
+    }
+    for (auto const& cascMC : CascMCCores) {
+      if (!cascMC.has_straMCCollision())
+        continue;
+
+      if (!cascMC.isPhysicalPrimary())
+        continue;
+
+      float ptmc = RecoDecay::sqrtSumOfSquares(cascMC.pxMC(), cascMC.pyMC());
+
+      float theta = std::atan(ptmc/cascMC.pzMC()); //-pi/2 < theta < pi/2
+      
+      float theta1 = 0;
+      
+      //if pz is positive (i.e. positive rapidity): 0 < theta < pi/2
+      if (theta > 0) theta1 = theta; //0 < theta1/2 < pi/4 --> 0 < tan (theta1/2) < 1 --> positive eta
+      //if pz is negative (i.e. negative rapidity): -pi/2 < theta < 0 --> we need 0 < theta1/2 < pi/2 for the ln to be defined
+      else theta1 = TMath::Pi() + theta; //pi/2 < theta1 < pi --> pi/4 < theta1/2 <  pi/2 --> 1 < tan (theta1/2) --> negative eta
+      
+      float cascMCeta = -log(std::tan(theta1/2));
+      if (TMath::Abs(cascMCeta) > etaCascMCGen)
+        continue;
+      histosMCGen.fill(HIST("hGenEta"), cascMCeta);
+
+      if (TMath::Abs(cascMC.pdgCode()) == 3312) {
+        histosMCGen.fill(HIST("h2dGenXi"), centrality, ptmc);
+      }
+      else if (TMath::Abs(cascMC.pdgCode() == 3334)) {
+        histosMCGen.fill(HIST("h2dGenOmega"), centrality, ptmc);
+      }
+    }
+  }
 
   PROCESS_SWITCH(cascadeFlow, processTrainingBackground, "Process to create the training dataset for the background", true);
   PROCESS_SWITCH(cascadeFlow, processTrainingSignal, "Process to create the training dataset for the signal", false);
   PROCESS_SWITCH(cascadeFlow, processAnalyseData, "Process to apply ML model to the data", false);
   PROCESS_SWITCH(cascadeFlow, processAnalyseDataEPCentralFW, "Process to apply ML model to the data - event plane calibration from central framework", false);
   PROCESS_SWITCH(cascadeFlow, processAnalyseMC, "Process to apply ML model to the MC", false);
+  PROCESS_SWITCH(cascadeFlow, processMCGen, "Process to store MC generated particles", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
