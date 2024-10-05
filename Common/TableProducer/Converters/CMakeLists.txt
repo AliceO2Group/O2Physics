@@ -49,6 +49,11 @@ o2physics_add_dpl_workflow(bc-converter
                     PUBLIC_LINK_LIBRARIES O2::Framework
                 COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(bc-flags-creator
+                    SOURCES bcFlagsCreator.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework
+                COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(calo-label-converter
                     SOURCES caloLabelConverter.cxx
                     PUBLIC_LINK_LIBRARIES

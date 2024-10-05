@@ -53,6 +53,7 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/LFStrangenessMLTables.h"
 #include "PWGLF/DataModel/LFParticleIdentification.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -124,6 +125,10 @@ struct cascadeBuilder {
   Produces<aod::CascBBs> cascbb;          // if enabled
   Produces<aod::CascCovs> casccovs;       // if requested by someone
   Produces<aod::KFCascCovs> kfcasccovs;   // if requested by someone
+
+  // produces calls for machine-learning selections
+  Produces<aod::CascXiMLScores> xiMLSelections;    // Xi scores
+  Produces<aod::CascOmMLScores> omegaMLSelections; // Omega scores
 
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -1092,13 +1097,6 @@ struct cascadeBuilder {
     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, lCascadeTrack, 2.f, matCorrCascade, &dcaInfo);
     cascadecandidate.cascDCAxy = dcaInfo[0];
     cascadecandidate.cascDCAz = dcaInfo[1];
-    if (useCascadeMomentumAtPrimVtx) {
-      lCascadeTrack.getPxPyPzGlo(cascadecandidate.cascademom);
-    } else {
-      cascadecandidate.cascademom[0] = cascadecandidate.bachP[0] + cascadecandidate.v0mompos[0] + cascadecandidate.v0momneg[0];
-      cascadecandidate.cascademom[1] = cascadecandidate.bachP[1] + cascadecandidate.v0mompos[1] + cascadecandidate.v0momneg[1];
-      cascadecandidate.cascademom[2] = cascadecandidate.bachP[2] + cascadecandidate.v0mompos[2] + cascadecandidate.v0momneg[2];
-    }
 
     // Calculate masses a priori
     cascadecandidate.mXi = RecoDecay::m(array{array{cascadecandidate.bachP[0], cascadecandidate.bachP[1], cascadecandidate.bachP[2]}, array{v0.pxpos() + v0.pxneg(), v0.pypos() + v0.pyneg(), v0.pzpos() + v0.pzneg()}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassLambda});
@@ -1126,6 +1124,14 @@ struct cascadeBuilder {
     cascadecandidate.v0dcadau = v0.dcaV0daughters();
     cascadecandidate.v0dcapostopv = v0.dcapostopv();
     cascadecandidate.v0dcanegtopv = v0.dcanegtopv();
+
+    if (useCascadeMomentumAtPrimVtx) {
+      lCascadeTrack.getPxPyPzGlo(cascadecandidate.cascademom);
+    } else {
+      cascadecandidate.cascademom[0] = cascadecandidate.bachP[0] + cascadecandidate.v0mompos[0] + cascadecandidate.v0momneg[0];
+      cascadecandidate.cascademom[1] = cascadecandidate.bachP[1] + cascadecandidate.v0mompos[1] + cascadecandidate.v0momneg[1];
+      cascadecandidate.cascademom[2] = cascadecandidate.bachP[2] + cascadecandidate.v0mompos[2] + cascadecandidate.v0momneg[2];
+    }
 
     if (d_doTrackQA) {
       if (posTrack.itsNCls() < 10)
@@ -1572,6 +1578,13 @@ struct cascadeBuilder {
       cascTrackXs(cascadecandidate.positiveX, cascadecandidate.negativeX, cascadecandidate.bachelorX);
     }
     cascbb(cascadecandidate.bachBaryonCosPA, cascadecandidate.bachBaryonDCAxyToPV);
+    if (cascadecandidate.charge < 0) {
+      xiMLSelections(cascadecandidate.mlXiMinusScore);
+      omegaMLSelections(cascadecandidate.mlOmegaMinusScore);
+    } else {
+      xiMLSelections(cascadecandidate.mlXiPlusScore);
+      omegaMLSelections(cascadecandidate.mlOmegaPlusScore);
+    }
 
     // populate cascade covariance matrices if required by any other task
     if (createCascCovMats) {
@@ -1742,6 +1755,13 @@ struct cascadeBuilder {
         cascTrackXs(cascadecandidate.positiveX, cascadecandidate.negativeX, cascadecandidate.bachelorX);
       }
       cascbb(cascadecandidate.bachBaryonCosPA, cascadecandidate.bachBaryonDCAxyToPV);
+      if (cascadecandidate.charge < 0) {
+        xiMLSelections(cascadecandidate.mlXiMinusScore);
+        omegaMLSelections(cascadecandidate.mlOmegaMinusScore);
+      } else {
+        xiMLSelections(cascadecandidate.mlXiPlusScore);
+        omegaMLSelections(cascadecandidate.mlOmegaPlusScore);
+      }
 
       // populate cascade covariance matrices if required by any other task
       if (createCascCovMats) {

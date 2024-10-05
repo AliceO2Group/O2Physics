@@ -476,9 +476,9 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
         float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass2);
 
         if (!cfgProcessMultBins) {
-          sameEventCont.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D, ConfIsIden, ConfIsLCMS);
+          sameEventCont.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D, ConfIsIden);
         } else {
-          std::vector<double> k3d = FemtoUniverseMath::getpairmom3d(p1, mass1, p2, mass2, ConfIsIden, ConfIsLCMS);
+          std::vector<double> k3d = FemtoUniverseMath::newpairfunc(p1, mass1, p2, mass2, ConfIsIden);
           sameEventMultCont.fill_3D<float>(k3d[1], k3d[2], k3d[3], multCol, kT);
         }
       }
@@ -515,16 +515,16 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
 
             if (rand > 0.5) {
               if (!cfgProcessMultBins) {
-                sameEventContPP.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D, ConfIsIden, ConfIsLCMS);
+                sameEventContPP.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D, ConfIsIden);
               } else {
-                k3d = FemtoUniverseMath::getpairmom3d(p1, mass1, p2, mass2, ConfIsIden, ConfIsLCMS);
+                k3d = FemtoUniverseMath::newpairfunc(p1, mass1, p2, mass2, ConfIsIden);
                 sameEventMultContPP.fill_3D<float>(k3d[1], k3d[2], k3d[3], multCol, kT);
               }
             } else {
               if (!cfgProcessMultBins) {
-                sameEventContPP.setPair<isMC>(p2, p1, multCol, twotracksconfigs.ConfUse3D, ConfIsIden, ConfIsLCMS);
+                sameEventContPP.setPair<isMC>(p2, p1, multCol, twotracksconfigs.ConfUse3D, ConfIsIden);
               } else {
-                k3d = FemtoUniverseMath::getpairmom3d(p2, mass2, p1, mass1, ConfIsIden, ConfIsLCMS);
+                k3d = FemtoUniverseMath::newpairfunc(p2, mass2, p1, mass1, ConfIsIden);
                 sameEventMultContPP.fill_3D<float>(k3d[1], k3d[2], k3d[3], multCol, kT);
               }
             }
@@ -538,16 +538,16 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
 
             if (rand > 0.5) {
               if (!cfgProcessMultBins) {
-                sameEventContMM.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D, ConfIsIden, ConfIsLCMS);
+                sameEventContMM.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D, ConfIsIden);
               } else {
-                k3d = FemtoUniverseMath::getpairmom3d(p1, mass1, p2, mass2, ConfIsIden, ConfIsLCMS);
+                k3d = FemtoUniverseMath::newpairfunc(p1, mass1, p2, mass2, ConfIsIden);
                 sameEventMultContMM.fill_3D<float>(k3d[1], k3d[2], k3d[3], multCol, kT);
               }
             } else {
               if (!cfgProcessMultBins) {
-                sameEventContMM.setPair<isMC>(p2, p1, multCol, twotracksconfigs.ConfUse3D, ConfIsIden, ConfIsLCMS);
+                sameEventContMM.setPair<isMC>(p2, p1, multCol, twotracksconfigs.ConfUse3D, ConfIsIden);
               } else {
-                k3d = FemtoUniverseMath::getpairmom3d(p2, mass2, p1, mass1, ConfIsIden, ConfIsLCMS);
+                k3d = FemtoUniverseMath::newpairfunc(p2, mass2, p1, mass1, ConfIsIden);
                 sameEventMultContMM.fill_3D<float>(k3d[1], k3d[2], k3d[3], multCol, kT);
               }
             }
@@ -650,9 +650,9 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
         case 1: {
           float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass2);
           if (!cfgProcessMultBins) {
-            mixedEventCont.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D, ConfIsIden, ConfIsLCMS);
+            mixedEventCont.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D, ConfIsIden);
           } else {
-            std::vector<double> k3d = FemtoUniverseMath::getpairmom3d(p1, mass1, p2, mass2, ConfIsIden, ConfIsLCMS);
+            std::vector<double> k3d = FemtoUniverseMath::newpairfunc(p1, mass1, p2, mass2, ConfIsIden);
             mixedEventMultCont.fill_3D<float>(k3d[1], k3d[2], k3d[3], multCol, kT);
           }
           break;
@@ -660,9 +660,9 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
         case 2: {
           float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass1);
           if (!cfgProcessMultBins) {
-            mixedEventContPP.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D, ConfIsIden, ConfIsLCMS);
+            mixedEventContPP.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D, ConfIsIden);
           } else {
-            std::vector<double> k3d = FemtoUniverseMath::getpairmom3d(p1, mass1, p2, mass2, ConfIsIden, ConfIsLCMS);
+            std::vector<double> k3d = FemtoUniverseMath::newpairfunc(p1, mass1, p2, mass2, ConfIsIden);
             mixedEventMultContPP.fill_3D<float>(k3d[1], k3d[2], k3d[3], multCol, kT);
           }
           break;
@@ -671,9 +671,9 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
         case 3: {
           float kT = FemtoUniverseMath::getkT(p1, mass2, p2, mass2);
           if (!cfgProcessMultBins) {
-            mixedEventContMM.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D, ConfIsIden, ConfIsLCMS);
+            mixedEventContMM.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D, ConfIsIden);
           } else {
-            std::vector<double> k3d = FemtoUniverseMath::getpairmom3d(p1, mass1, p2, mass2, ConfIsIden, ConfIsLCMS);
+            std::vector<double> k3d = FemtoUniverseMath::newpairfunc(p1, mass1, p2, mass2, ConfIsIden);
             mixedEventMultContMM.fill_3D<float>(k3d[1], k3d[2], k3d[3], multCol, kT);
           }
           break;

@@ -38,6 +38,7 @@
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
 #include <TFile.h>
 #include <TH1.h>
+#include "CCDB/BasicCCDBManager.h"
 
 using namespace o2;
 using namespace o2::analysis::femtoUniverse;
@@ -67,15 +68,25 @@ struct femtoUniversePairTaskTrackPhi {
   using FemtoRecoParticles = soa::Join<aod::FDParticles, aod::FDExtParticles, aod::FDMCLabels>;
   Preslice<FemtoRecoParticles> perColMC = aod::femtouniverseparticle::fdCollisionId;
 
-  Configurable<bool> ConfIsCPR{"ConfIsCPR", true, "Close Pair Rejection"};
-  Configurable<bool> ConfCPRPlotPerRadii{"ConfCPRPlotPerRadii", false, "Plot CPR per radii"};
-  Configurable<float> ConfCPRdeltaPhiCutMax{"ConfCPRdeltaPhiCutMax", 0.0, "Delta Phi max cut for Close Pair Rejection"};
-  Configurable<float> ConfCPRdeltaPhiCutMin{"ConfCPRdeltaPhiCutMin", 0.0, "Delta Phi min cut for Close Pair Rejection"};
-  Configurable<float> ConfCPRdeltaEtaCutMax{"ConfCPRdeltaEtaCutMax", 0.0, "Delta Eta max cut for Close Pair Rejection"};
-  Configurable<float> ConfCPRdeltaEtaCutMin{"ConfCPRdeltaEtaCutMin", 0.0, "Delta Eta min cut for Close Pair Rejection"};
-  Configurable<float> ConfCPRInvMassCutMin{"ConfCPRInvMassCutMin", 1.014, "Invariant mass (low) cut for Close Pair Rejection"};
-  Configurable<float> ConfCPRInvMassCutMax{"ConfCPRInvMassCutMax", 1.026, "Invariant mass (high) cut for Close Pair Rejection"};
-  Configurable<float> ConfCPRChosenRadii{"ConfCPRChosenRadii", 0.80, "Delta Eta cut for Close Pair Rejection"};
+  // Efficiency
+  struct : o2::framework::ConfigurableGroup {
+    Configurable<std::string> ConfLocalEfficiencyProton{"ConfLocalEfficiencyProton", "", "Local path to proton efficiency TH2F file"};
+    Configurable<std::string> ConfLocalEfficiencyPhi{"ConfLocalEfficiencyPhi", "", "Local path to Phi efficiency TH2F file"};
+    Configurable<long> ConfEffProtonTimestamp{"ConfEffProtonTimestamp", 0, "(long int) Timestamp for hadron"};
+    Configurable<long> ConfEffPhiTimestamp{"ConfEffPhiTimestamp", 0, "(long int) Timestamp for phi"};
+  } ConfEff;
+
+  struct : o2::framework::ConfigurableGroup {
+    Configurable<bool> ConfIsCPR{"ConfIsCPR", true, "Close Pair Rejection"};
+    Configurable<bool> ConfCPRPlotPerRadii{"ConfCPRPlotPerRadii", false, "Plot CPR per radii"};
+    Configurable<float> ConfCPRdeltaPhiCutMax{"ConfCPRdeltaPhiCutMax", 0.0, "Delta Phi max cut for Close Pair Rejection"};
+    Configurable<float> ConfCPRdeltaPhiCutMin{"ConfCPRdeltaPhiCutMin", 0.0, "Delta Phi min cut for Close Pair Rejection"};
+    Configurable<float> ConfCPRdeltaEtaCutMax{"ConfCPRdeltaEtaCutMax", 0.0, "Delta Eta max cut for Close Pair Rejection"};
+    Configurable<float> ConfCPRdeltaEtaCutMin{"ConfCPRdeltaEtaCutMin", 0.0, "Delta Eta min cut for Close Pair Rejection"};
+    Configurable<float> ConfCPRInvMassCutMin{"ConfCPRInvMassCutMin", 1.014, "Invariant mass (low) cut for Close Pair Rejection"};
+    Configurable<float> ConfCPRInvMassCutMax{"ConfCPRInvMassCutMax", 1.026, "Invariant mass (high) cut for Close Pair Rejection"};
+    Configurable<float> ConfCPRChosenRadii{"ConfCPRChosenRadii", 0.80, "Delta Eta cut for Close Pair Rejection"};
+  } ConfCPR;
 
   /// Table for both particles
   struct : o2::framework::ConfigurableGroup {
@@ -158,9 +169,6 @@ struct femtoUniversePairTaskTrackPhi {
   ConfigurableAxis ConfkTBins{"ConfkTBins", {150, 0., 9.}, "binning kT"};
   ConfigurableAxis ConfmTBins{"ConfmTBins", {225, 0., 7.5}, "binning mT"};
 
-  // Efficiency
-  Configurable<std::string> ConfLocalEfficiency{"ConfLocalEfficiency", "", "Local path to efficiency .root file"};
-
   FemtoUniverseAngularContainer<femtoUniverseAngularContainer::EventType::same, femtoUniverseAngularContainer::Observable::kstar> sameEventAngularCont;
   FemtoUniverseAngularContainer<femtoUniverseAngularContainer::EventType::mixed, femtoUniverseAngularContainer::Observable::kstar> mixedEventAngularCont;
   FemtoUniversePairCleaner<aod::femtouniverseparticle::ParticleType::kTrack, aod::femtouniverseparticle::ParticleType::kPhi> pairCleaner;
@@ -175,9 +183,9 @@ struct femtoUniversePairTaskTrackPhi {
   HistogramRegistry registryMCreco{"MCrecoHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry registryPhiMinvBackground{"registryPhiMinvBackground", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
 
-  std::unique_ptr<TFile> plocalEffFile;
-  std::unique_ptr<TH1> plocalEffp1;
-  std::unique_ptr<TH1> plocalEffp2;
+  Service<ccdb::BasicCCDBManager> ccdb;
+  TH2F* protoneff;
+  TH2F* phieff;
 
   // PID for protons
   bool IsProtonNSigma(float mom, float nsigmaTPCPr, float nsigmaTOFPr) // previous version from: https://github.com/alisw/AliPhysics/blob/master/PWGCF/FEMTOSCOPY/AliFemtoUser/AliFemtoMJTrackCut.cxx
@@ -419,19 +427,29 @@ struct femtoUniversePairTaskTrackPhi {
     mixedEventAngularCont.setPDGCodes(ConfPhi.ConfPDGCodePhi, ConfTrack.ConfPDGCodeTrack);
 
     pairCleaner.init(&qaRegistry);
-    if (ConfIsCPR.value) {
-      pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPRdeltaPhiCutMin.value, ConfCPRdeltaPhiCutMax.value, ConfCPRdeltaEtaCutMin.value, ConfCPRdeltaEtaCutMax.value, ConfCPRChosenRadii.value, ConfCPRPlotPerRadii.value, ConfCPRInvMassCutMin.value, ConfCPRInvMassCutMax.value);
+    if (ConfCPR.ConfIsCPR.value) {
+      pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPR.ConfCPRdeltaPhiCutMin.value, ConfCPR.ConfCPRdeltaPhiCutMax.value, ConfCPR.ConfCPRdeltaEtaCutMin.value, ConfCPR.ConfCPRdeltaEtaCutMax.value, ConfCPR.ConfCPRChosenRadii.value, ConfCPR.ConfCPRPlotPerRadii.value, ConfCPR.ConfCPRInvMassCutMin.value, ConfCPR.ConfCPRInvMassCutMax.value);
     }
 
-    if (!ConfLocalEfficiency.value.empty()) {
-      plocalEffFile = std::unique_ptr<TFile>(TFile::Open(ConfLocalEfficiency.value.c_str(), "read"));
-      if (!plocalEffFile || plocalEffFile.get()->IsZombie()) {
-        LOGF(fatal, "Could not load efficiency histogram from %s", ConfLocalEfficiency.value.c_str());
-      }
+    /// Initializing CCDB
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
 
-      plocalEffp1 = (ConfTrack.ConfTrackSign > 0) ? std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("PrPlus")) : std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("PrMinus"));
-      plocalEffp2 = std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("Phi"));
-      LOGF(info, "Loaded efficiency histograms for track-Phi.");
+    long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    ccdb->setCreatedNotAfter(now);
+
+    if (!ConfEff.ConfLocalEfficiencyProton.value.empty()) {
+      protoneff = ccdb->getForTimeStamp<TH2F>(ConfEff.ConfLocalEfficiencyProton.value.c_str(), ConfEff.ConfEffProtonTimestamp.value);
+      if (!protoneff || protoneff->IsZombie()) {
+        LOGF(fatal, "Could not load efficiency protoneff histogram from %s", ConfEff.ConfLocalEfficiencyProton.value.c_str());
+      }
+    }
+    if (!ConfEff.ConfLocalEfficiencyPhi.value.empty()) {
+      phieff = ccdb->getForTimeStamp<TH2F>(ConfEff.ConfLocalEfficiencyPhi.value.c_str(), ConfEff.ConfEffPhiTimestamp.value);
+      if (!phieff || phieff->IsZombie()) {
+        LOGF(fatal, "Could not load efficiency phieff histogram from %s", ConfEff.ConfLocalEfficiencyPhi.value.c_str());
+      }
     }
 
     vPIDPhiCandidate = ConfPhi.ConfPIDPhi.value;
@@ -537,7 +555,7 @@ struct femtoUniversePairTaskTrackPhi {
       }
 
       // // Close Pair Rejection
-      if (ConfIsCPR.value) {
+      if (ConfCPR.ConfIsCPR.value) {
         if (pairCloseRejection.isClosePair(track, phicandidate, parts, magFieldTesla, femtoUniverseContainer::EventType::same)) {
           continue;
         }
@@ -549,8 +567,8 @@ struct femtoUniversePairTaskTrackPhi {
       }
 
       float weight = 1.0f;
-      if (plocalEffp1) {
-        weight = plocalEffp1.get()->GetBinContent(plocalEffp1->FindBin(track.pt(), track.eta())) * plocalEffp2.get()->GetBinContent(plocalEffp2->FindBin(phicandidate.pt(), phicandidate.eta()));
+      if (phieff) {
+        weight = protoneff->GetBinContent(protoneff->FindBin(track.pt(), track.eta())) * phieff->GetBinContent(phieff->FindBin(phicandidate.pt(), phicandidate.eta()));
         sameEventAngularCont.setPair<isMC>(track, phicandidate, multCol, ConfBothTracks.ConfUse3D, weight);
       } else {
         sameEventAngularCont.setPair<isMC>(track, phicandidate, multCol, ConfBothTracks.ConfUse3D, weight);
@@ -564,6 +582,10 @@ struct femtoUniversePairTaskTrackPhi {
     float mMassTwo = TDatabasePDG::Instance()->GetParticle(-321)->Mass(); // FIXME: Get from the PDG service of the common header
 
     for (auto& [kaon1, kaon2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsKaons, groupPartsKaons))) {
+      if (!IsKaonNSigma(kaon1.p(), trackCuts.getNsigmaTPC(kaon1, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(kaon1, o2::track::PID::Kaon))) {
+      }
+      if (!IsKaonNSigma(kaon2.p(), trackCuts.getNsigmaTPC(kaon2, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(kaon2, o2::track::PID::Kaon))) {
+      }
       if ((kaon1.mAntiLambda() == 1) && (kaon2.mAntiLambda() == 1)) {
         part1Vec.SetPtEtaPhiM(kaon1.pt(), kaon1.eta(), kaon1.phi(), mMassOne);
         part2Vec.SetPtEtaPhiM(kaon2.pt(), kaon2.eta(), kaon2.phi(), mMassOne);
@@ -645,15 +667,15 @@ struct femtoUniversePairTaskTrackPhi {
         }
       }
 
-      if (ConfIsCPR.value) {
+      if (ConfCPR.ConfIsCPR.value) {
         if (pairCloseRejection.isClosePair(track, phicandidate, parts, magFieldTesla, femtoUniverseContainer::EventType::mixed)) {
           continue;
         }
       }
 
       float weight = 1.0f;
-      if (plocalEffp1) {
-        weight = plocalEffp1.get()->GetBinContent(plocalEffp1->FindBin(track.pt(), track.eta())) * plocalEffp2.get()->GetBinContent(plocalEffp2->FindBin(phicandidate.pt(), phicandidate.eta()));
+      if (protoneff) {
+        weight = protoneff->GetBinContent(protoneff->FindBin(track.pt(), track.eta())) * phieff->GetBinContent(phieff->FindBin(phicandidate.pt(), phicandidate.eta()));
         mixedEventAngularCont.setPair<isMC>(track, phicandidate, multCol, ConfBothTracks.ConfUse3D, weight);
       } else {
         mixedEventAngularCont.setPair<isMC>(track, phicandidate, multCol, ConfBothTracks.ConfUse3D, weight);
@@ -741,7 +763,7 @@ struct femtoUniversePairTaskTrackPhi {
         registryMCtruth.fill(HIST("MCtruthKp"), part.pt(), part.eta());
         registryMCtruth.fill(HIST("MCtruthKpPt"), part.pt());
       }
-      if (pdgCode == 333) {
+      if ((pdgCode == 333)) {
         registryMCtruth.fill(HIST("MCtruthPhi"), part.pt(), part.eta());
         continue;
       }
@@ -771,7 +793,7 @@ struct femtoUniversePairTaskTrackPhi {
         continue; // no MC particle
       const auto& mcpart = mcparts.iteratorAt(mcPartId);
       if (part.partType() == aod::femtouniverseparticle::ParticleType::kPhi) {
-        if (mcpart.pdgMCTruth() == 333) {
+        if ((mcpart.pdgMCTruth() == 333) && (mcpart.partOriginMCTruth() == aod::femtouniverseMCparticle::ParticleOriginMCTruth::kPrimary)) {
           registryMCreco.fill(HIST("MCrecoPhi"), mcpart.pt(), mcpart.eta()); // phi
         }
       } else if (part.partType() == aod::femtouniverseparticle::ParticleType::kTrack) {

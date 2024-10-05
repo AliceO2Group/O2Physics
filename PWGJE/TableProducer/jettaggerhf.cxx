@@ -33,18 +33,23 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-template <typename JetTableData, typename JetTableMCD, typename JetTaggingTableData, typename JetTaggingTableMCD>
+template <typename JetTableData, typename JetTableMCD, typename JetTableMCP, typename JetTaggingTableData, typename JetTaggingTableMCD, typename JetTaggingTableMCP>
 struct JetTaggerHFTask {
 
   Produces<JetTaggingTableData> taggingTableData;
   Produces<JetTaggingTableMCD> taggingTableMCD;
+  Produces<JetTaggingTableMCP> taggingTableMCP;
 
   // configuration topological cut for track and sv
   Configurable<float> trackDcaXYMax{"trackDcaXYMax", 1, "minimum DCA xy acceptance for tracks [cm]"};
   Configurable<float> trackDcaZMax{"trackDcaZMax", 2, "minimum DCA z acceptance for tracks [cm]"};
   Configurable<float> prongsigmaLxyMax{"prongsigmaLxyMax", 100, "maximum sigma of decay length of prongs on xy plane"};
   Configurable<float> prongsigmaLxyzMax{"prongsigmaLxyzMax", 100, "maximum sigma of decay length of prongs on xyz plane"};
-  Configurable<float> prongChi2PCAMax{"prongChi2PCAMax", 10, "maximum Chi2 PCA of decay length of prongs"};
+  Configurable<float> prongIPxyMin{"prongIPxyMin", 0.008, "maximum impact paramter of prongs on xy plane [cm]"};
+  Configurable<float> prongIPxyMax{"prongIpxyMax", 1, "minimum impact parmeter of prongs on xy plane [cm]"};
+  Configurable<float> prongChi2PCAMin{"prongChi2PCAMin", 4, "minimum Chi2 PCA of decay length of prongs"};
+  Configurable<float> prongChi2PCAMax{"prongChi2PCAMax", 100, "maximum Chi2 PCA of decay length of prongs"};
+  Configurable<float> prongDispersionMax{"prongDispersionMax", 1, "maximum dispersion of sv"};
 
   // jet flavour definition
   Configurable<float> maxDeltaR{"maxDeltaR", 0.25, "maximum distance of jet axis from flavour initiating parton"};
@@ -63,7 +68,7 @@ struct JetTaggerHFTask {
   Configurable<std::vector<float>> paramsResoFuncLfJetMC{"paramsResoFuncLfJetMC", std::vector<float>{1539435.343, -0.061, 0.896, 13.272, 1.034, 5.884, 0.004, 7.843, 0.090}, "parameters of gaus(0)+expo(3)+expo(5)+expo(7)))"};
   Configurable<float> minSignImpXYSig{"minsIPs", -40.0, "minimum of signed impact parameter significance"};
   Configurable<float> tagPointForIP{"tagPointForIP", 2.5, "tagging working point for IP"};
-  Configurable<int> minIPCount{"minSipCount", 2, "Select at least N signed impact parameter significance in jets"}; // default 2
+  Configurable<int> minIPCount{"minIPCount", 2, "Select at least N signed impact parameter significance in jets"}; // default 2
   // configuration about SV method
   Configurable<bool> doSV{"doSV", false, "fill table for secondary vertex algorithm"};
   Configurable<bool> useXYZForTagging{"useXYZForTagging", false, "Enable tagging decision using full XYZ DCA for secondary vertex algorithm"};
@@ -111,6 +116,9 @@ struct JetTaggerHFTask {
           }
           if (origin == JetTaggingSpecies::lightflavour) {
             jetProb.push_back(jettaggingutilities::getJetProbability(fSignImpXYSigLfJetMC, jet, jtracks, trackDcaXYMax, trackDcaZMax, order, tagPointForIP, minSignImpXYSig));
+          }
+          if (origin != JetTaggingSpecies::charm && origin != JetTaggingSpecies::beauty && origin != JetTaggingSpecies::lightflavour) {
+            jetProb.push_back(-1);
           }
         }
       }
@@ -263,9 +271,9 @@ struct JetTaggerHFTask {
       if (jettaggingutilities::isGreaterThanTaggingPoint(jet, jtracks, trackDcaXYMax, trackDcaZMax, tagPointForIP, minIPCount))
         flagtaggedjetIP = true;
       if (!useXYZForTagging) {
-        flagtaggedjetSV = jettaggingutilities::isTaggedJetSV(jet, prongs, prongChi2PCAMax, prongsigmaLxyMax, useXYZForTagging, tagPointForSV);
+        flagtaggedjetSV = jettaggingutilities::isTaggedJetSV(jet, prongs, prongChi2PCAMin, prongChi2PCAMax, prongsigmaLxyMax, prongDispersionMax, useXYZForTagging, tagPointForSV);
       } else {
-        flagtaggedjetSV = jettaggingutilities::isTaggedJetSV(jet, prongs, prongChi2PCAMax, prongsigmaLxyzMax, useXYZForTagging, tagPointForSV);
+        flagtaggedjetSV = jettaggingutilities::isTaggedJetSV(jet, prongs, prongChi2PCAMin, prongChi2PCAMax, prongsigmaLxyzMax, prongDispersionMax, useXYZForTagging, tagPointForSV);
       }
       taggingTableData(0, jetProb, flagtaggedjetIP, flagtaggedjetSV);
     }
@@ -316,14 +324,41 @@ struct JetTaggerHFTask {
       if (jettaggingutilities::isGreaterThanTaggingPoint(mcdjet, jtracks, trackDcaXYMax, trackDcaZMax, tagPointForIP, minIPCount))
         flagtaggedjetIP = true;
       if (!useXYZForTagging) {
-        flagtaggedjetSV = jettaggingutilities::isTaggedJetSV(mcdjet, prongs, prongChi2PCAMax, prongsigmaLxyMax, useXYZForTagging, tagPointForSV);
+        flagtaggedjetSV = jettaggingutilities::isTaggedJetSV(mcdjet, prongs, prongChi2PCAMin, prongChi2PCAMax, prongsigmaLxyzMax, prongIPxyMin, prongIPxyMax, prongDispersionMax, useXYZForTagging, tagPointForSV);
       } else {
-        flagtaggedjetSV = jettaggingutilities::isTaggedJetSV(mcdjet, prongs, prongChi2PCAMax, prongsigmaLxyzMax, useXYZForTagging, tagPointForSV);
+        flagtaggedjetSV = jettaggingutilities::isTaggedJetSV(mcdjet, prongs, prongChi2PCAMin, prongChi2PCAMax, prongsigmaLxyzMax, prongIPxyMin, prongIPxyMax, prongDispersionMax, useXYZForTagging, tagPointForSV);
       }
       taggingTableMCD(origin, jetProb, flagtaggedjetIP, flagtaggedjetSV);
     }
   }
   PROCESS_SWITCH(JetTaggerHFTask, processMCDWithSV, "Fill tagging decision for mcd jets with sv", false);
+
+  void processMCP(JetMcCollision const& /*collision*/, JetTableMCP const& mcpjets, JetParticles const& particles)
+  {
+    for (auto& mcpjet : mcpjets) {
+      bool flagtaggedjetIP = 0;
+      bool flagtaggedjetSV = 0;
+      typename JetParticles::iterator hfparticle;
+      int origin = 0;
+      // TODO
+      if (removeGluonShower) {
+        if (jettaggingutilities::mcpJetFromHFShower(mcpjet, particles, maxDeltaR, searchUpToQuark))
+          origin = jettaggingutilities::mcpJetFromHFShower(mcpjet, particles, maxDeltaR, searchUpToQuark);
+        else
+          origin = 0;
+      } else {
+        if (jettaggingutilities::jetParticleFromHFShower(mcpjet, particles, hfparticle, searchUpToQuark))
+          origin = jettaggingutilities::jetParticleFromHFShower(mcpjet, particles, hfparticle, searchUpToQuark);
+        else
+          origin = 0;
+      }
+      jetProb.clear();
+      jetProb.reserve(maxOrder);
+      jetProb.push_back(-1);
+      taggingTableMCP(origin, jetProb, flagtaggedjetIP, flagtaggedjetSV);
+    }
+  }
+  PROCESS_SWITCH(JetTaggerHFTask, processMCP, "Fill tagging decision for mcp jets with sv", false);
 
   void processTraining(JetCollision const& /*collision*/, JetTableMCD const& /*mcdjets*/, JetTagTracksMCD const& /*tracks*/)
   {
@@ -332,8 +367,8 @@ struct JetTaggerHFTask {
   PROCESS_SWITCH(JetTaggerHFTask, processTraining, "Fill tagging decision for mcd jets", false);
 };
 
-using JetTaggerChargedJets = JetTaggerHFTask<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>, aod::ChargedJetTags, aod::ChargedMCDetectorLevelJetTags>;
-using JetTaggerFullJets = JetTaggerHFTask<soa::Join<aod::FullJets, aod::FullJetConstituents>, soa::Join<aod::FullMCDetectorLevelJets, aod::FullMCDetectorLevelJetConstituents>, aod::FullJetTags, aod::FullMCDetectorLevelJetTags>;
+using JetTaggerChargedJets = JetTaggerHFTask<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>, soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>, aod::ChargedJetTags, aod::ChargedMCDetectorLevelJetTags, aod::ChargedMCParticleLevelJetTags>;
+using JetTaggerFullJets = JetTaggerHFTask<soa::Join<aod::FullJets, aod::FullJetConstituents>, soa::Join<aod::FullMCDetectorLevelJets, aod::FullMCDetectorLevelJetConstituents>, soa::Join<aod::FullMCParticleLevelJets, aod::FullMCParticleLevelJetConstituents>, aod::FullJetTags, aod::FullMCDetectorLevelJetTags, aod::FullMCParticleLevelJetTags>;
 // using JetTaggerNeutralJets = JetTaggerHFTask<soa::Join<aod::NeutralJets, aod::NeutralJetConstituents>,soa::Join<aod::NeutralMCDetectorLevelJets, aod::NeutralMCDetectorLevelJetConstituents>, aod::NeutralJetTags, aod::NeutralMCDetectorLevelJetTags>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
