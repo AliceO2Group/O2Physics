@@ -540,7 +540,7 @@ struct EventSelectionTask {
                BCsWithBcSelsRun3 const& bcs,
                aod::FT0s const&)
   {
-    evsel.reserve(collisions.size());
+    evsel.reserve(cols.size());
     int run = bcs.iteratorAt(0).runNumber();
     // extract bc pattern from CCDB for data or anchored MC only
     if (run != lastRun && run >= 500000) {
@@ -945,7 +945,6 @@ struct EventSelectionTaskRun2 {
                aod::Tracks const&,
                aod::FV0Cs const&)
   {
-    evsel.reserve(collisions.size());
     auto bc = col.bc_as<BCsWithBcSelsRun2>();
     EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", bc.timestamp());
     bool* applySelection = par->GetSelection(muonSelection);
