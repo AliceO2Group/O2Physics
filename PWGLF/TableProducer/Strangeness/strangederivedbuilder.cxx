@@ -369,7 +369,9 @@ struct strangederivedbuilder {
                       gapSide,
                       totalFT0AmplitudeA, totalFT0AmplitudeC, totalFV0AmplitudeA,
                       totalFDDAmplitudeA, totalFDDAmplitudeC,
-                      energyCommonZNA, energyCommonZNC);
+                      energyCommonZNA, energyCommonZNC,
+                      // Collision flags
+                      collision.flags());
         strangeStamps(bc.runNumber(), bc.timestamp());
       }
       for (const auto& v0 : V0Table_thisColl)
