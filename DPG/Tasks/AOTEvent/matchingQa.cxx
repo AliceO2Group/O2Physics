@@ -111,6 +111,7 @@ struct MatchingQaTask {
     histos.add("hRecMultT0CvsNcontribTPC", "", kTH2D, {axisMultT0C, axisNcontrib});
     histos.add("hRecMultT0CvsNcontribTOF", "", kTH2D, {axisMultT0C, axisNcontrib});
     histos.add("hRecMultT0CvsNcontribTRD", "", kTH2D, {axisMultT0C, axisNcontrib});
+    histos.add("hRecMultT0CvsNcontribTPCHighPt", "", kTH2D, {axisMultT0C, axisNcontrib});
 
     histos.add("hBCsITS", "", kTH1F, {axisBcs});
 
@@ -135,6 +136,7 @@ struct MatchingQaTask {
     histos.add("hNcontribAccTRD", "", kTH1F, {axisNcontrib});
     histos.add("hNcontribAccTPC", "", kTH1F, {axisNcontrib});
     histos.add("hNcontribAccITS", "", kTH1F, {axisNcontrib});
+    histos.add("hNcontribAccTPCHighPt", "", kTH1F, {axisNcontrib});
 
     histos.add("hTrackBcDiffVsPt", "", kTH2F, {axisPt, axisBcDiff});
     histos.add("hTrackBcResVsPt", "", kTH2F, {axisPt, axisBcDiff});
@@ -361,7 +363,6 @@ struct MatchingQaTask {
       // todo: check what to do if foundBC is too far from tofGlobalBC
       if (fabs(foundGlobalBC - tofGlobalBC) > deltaBCforTOFcollisions) {
         foundBC = -1;
-
         int32_t nContrib = col.numContrib();
         if (nContrib > 100) {
           int32_t foundBCwithT0B = findClosest(tofGlobalBC, mapGlobalBcWithT0B);
@@ -381,8 +382,9 @@ struct MatchingQaTask {
       }
 
       vFoundBCindex[colId] = foundBC;
-      if (removeTOFmatches && foundBC >= 0)
-        mapGlobalBcVtxZ.erase(globalBC);
+      if (removeTOFmatches && foundBC >= 0) {
+        mapGlobalBcVtxZ.erase(foundGlobalBC);
+      }
     }
 
     // second loop to match collisions with high-pt ITS-TPC tracks
@@ -649,6 +651,10 @@ struct MatchingQaTask {
         }
       } else if (vNumTPCtracksHighPt[colId] > 0) {
         histos.fill(HIST("hNcontribColTPCHighPt"), nContrib);
+        if (isFoundTVX) {
+          histos.fill(HIST("hNcontribAccTPCHighPt"), nContrib);
+          histos.fill(HIST("hRecMultT0CvsNcontribTPCHighPt"), multT0C, nContrib);
+        }
       } else if (vNumTPCtracks[colId] > 0) {
         histos.fill(HIST("hNcontribSigma"), nContrib, vWeightedSigma[colId]);
         histos.fill(HIST("hNcontribColTPC"), nContrib);
