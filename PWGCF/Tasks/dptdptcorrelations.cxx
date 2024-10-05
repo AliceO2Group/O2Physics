@@ -72,6 +72,7 @@ bool fUseTwoTrackCut = false;    // suppress too close tracks
 
 std::vector<std::string> poinames;                     ///< the species of interest names
 std::vector<std::string> tnames;                       ///< the track names
+std::vector<double> poimass;                           ///< the species of interest mass
 std::vector<std::vector<std::string>> trackPairsNames; ///< the track pairs names
 } // namespace correlationstask
 
@@ -102,6 +103,7 @@ struct DptDptCorrelationsTask {
     std::vector<std::vector<TH2F*>> fhSum2DptDpt_vsDEtaDPhi{nch, {nch, nullptr}}; //!<! two-particle  \f$\sum ({p_T}_1- <{p_T}_1>) ({p_T}_2 - <{p_T}_2>) \f$ distribution vs \f$\Delta\eta,\;\Delta\phi\f$ for the different species combinations
     std::vector<std::vector<TH2F*>> fhSupN1N1_vsDEtaDPhi{nch, {nch, nullptr}};    //!<! suppressed n1n1 two-particle distribution vs \f$\Delta\eta,\;\Delta\phi\f$ for the different species combinations
     std::vector<std::vector<TH2F*>> fhSupPt1Pt1_vsDEtaDPhi{nch, {nch, nullptr}};  //!<! suppressed \f${p_T}_1 {p_T}_2\f$ two-particle distribution vs \f$\Delta\eta,\;\Delta\phi\f$ for the different species combinations
+    std::vector<std::vector<TH1D*>> fhInvMass{nch, {nch, nullptr}};               //!<! the pair invariant mass
     /* versus centrality/multiplicity  profiles */
     std::vector<TProfile*> fhN1_vsC{nch, nullptr};                               //!<! weighted single particle distribution vs event centrality/multiplicity, track 1 and 2
     std::vector<TProfile*> fhSum1Pt_vsC{nch, nullptr};                           //!<! accumulated sum of weighted \f$p_T\f$ vs event centrality/multiplicity, track 1 and 2
@@ -192,6 +194,39 @@ struct DptDptCorrelationsTask {
       }
 
       return fhN2_vsDEtaDPhi[0][0]->GetBin(deltaeta_ix + 1, deltaphi_ix + 1);
+    }
+
+    /* taken from PWGCF/Core/PairCuts.h implemented by JFGO */
+    template <typename TrackObject>
+    double getInvMassSquared(TrackObject const& track1, double m0_1, TrackObject const& track2, double m0_2)
+    {
+      // calculate inv mass squared
+      // same can be achieved, but with more computing time with
+      /*TLorentzVector photon, p1, p2;
+      p1.SetPtEtaPhiM(triggerParticle->Pt(), triggerEta, triggerParticle->Phi(), 0.510e-3);
+      p2.SetPtEtaPhiM(particle->Pt(), eta[j], particle->Phi(), 0.510e-3);
+      photon = p1+p2;
+      photon.M()*/
+
+      float tantheta1 = 1e10;
+
+      if (track1.eta() < -1e-10 || track1.eta() > 1e-10) {
+        float expTmp = std::exp(-track1.eta());
+        tantheta1 = 2.0 * expTmp / (1.0 - expTmp * expTmp);
+      }
+
+      float tantheta2 = 1e10;
+      if (track2.eta() < -1e-10 || track2.eta() > 1e-10) {
+        float expTmp = std::exp(-track2.eta());
+        tantheta2 = 2.0 * expTmp / (1.0 - expTmp * expTmp);
+      }
+
+      float e1squ = m0_1 * m0_1 + track1.pt() * track1.pt() * (1.0 + 1.0 / tantheta1 / tantheta1);
+      float e2squ = m0_2 * m0_2 + track2.pt() * track2.pt() * (1.0 + 1.0 / tantheta2 / tantheta2);
+
+      float mass2 = m0_1 * m0_1 + m0_2 * m0_2 + 2 * (std::sqrt(e1squ * e2squ) - (track1.pt() * track2.pt() * (std::cos(track1.phi() - track2.phi()) + 1.0 / tantheta1 / tantheta2)));
+
+      return mass2;
     }
 
     void storeTrackCorrections(std::vector<TH3*> corrs)
@@ -383,6 +418,7 @@ struct DptDptCorrelationsTask {
             fhN2cont_vsDEtaDPhi[track1.trackacceptedid()][track2.trackacceptedid()]->Fill(deltaeta, deltaphi, corr);
             fhSum2DptDpt_vsDEtaDPhi[track1.trackacceptedid()][track2.trackacceptedid()]->AddBinContent(globalbin, dptdptw);
             fhSum2PtPt_vsDEtaDPhi[track1.trackacceptedid()][track2.trackacceptedid()]->AddBinContent(globalbin, track1.pt() * track2.pt() * corr);
+            fhInvMass[track1.trackacceptedid()][track2.trackacceptedid()]->Fill(std::sqrt(getInvMassSquared(track1, poimass[track1.trackacceptedid()], track2, poimass[track2.trackacceptedid()])) * 1000.0f);
           }
           fhN2_vsPtPt[track1.trackacceptedid()][track2.trackacceptedid()]->Fill(track1.pt(), track2.pt(), corr);
           index2++;
@@ -608,6 +644,7 @@ struct DptDptCorrelationsTask {
                                                   deltaetabins, deltaetalow, deltaetaup, deltaphibins, deltaphilow, deltaphiup);
             fhSupPt1Pt1_vsDEtaDPhi[i][j] = new TH2F(TString::Format("suppPtPt_12_vsDEtaDPhi_%s", pname), TString::Format("Suppressed #LT p_{t,1} #GT#LT p_{t,2} #GT (%s);#Delta#eta;#Delta#varphi;#LT p_{t,1} #GT#LT p_{t,2} #GT (GeV^{2})", pname),
                                                     deltaetabins, deltaetalow, deltaetaup, deltaphibins, deltaphilow, deltaphiup);
+            fhInvMass[i][j] = new TH1D(TString::Format("n2_invMass_%s", pname), TString::Format("%s invariant mass;Mass ((GeV/#it{c})^{2})", pname), 5000, 0, 5000);
             /* we return it back to previuos state */
             TH1::SetDefaultSumw2(defSumw2);
 
@@ -634,6 +671,8 @@ struct DptDptCorrelationsTask {
             fhSupN1N1_vsDEtaDPhi[i][j]->Sumw2(false);
             fhSupPt1Pt1_vsDEtaDPhi[i][j]->SetBit(TH1::kIsNotW);
             fhSupPt1Pt1_vsDEtaDPhi[i][j]->Sumw2(false);
+            fhInvMass[i][j]->SetBit(TH1::kIsNotW);
+            fhInvMass[i][j]->Sumw2(false);
 
             fOutputList->Add(fhN2_vsDEtaDPhi[i][j]);
             fOutputList->Add(fhN2cont_vsDEtaDPhi[i][j]);
@@ -642,6 +681,7 @@ struct DptDptCorrelationsTask {
             fOutputList->Add(fhSupN1N1_vsDEtaDPhi[i][j]);
             fOutputList->Add(fhSupPt1Pt1_vsDEtaDPhi[i][j]);
             fOutputList->Add(fhN2_vsPtPt[i][j]);
+            fOutputList->Add(fhInvMass[i][j]);
             fOutputList->Add(fhN2_vsC[i][j]);
             fOutputList->Add(fhSum2PtPt_vsC[i][j]);
             fOutputList->Add(fhSum2DptDpt_vsC[i][j]);
@@ -803,6 +843,7 @@ struct DptDptCorrelationsTask {
           poinames.push_back(std::string(pidselector.getSpeciesFName(ix)));
           tnames.push_back(std::string(TString::Format("%sP", pidselector.getSpeciesFName(ix)).Data()));
           tnames.push_back(std::string(TString::Format("%sM", pidselector.getSpeciesFName(ix)).Data()));
+          poimass.push_back(pidselector.getSpeciesMass(ix));
           LOGF(info, "Incorporated species name %s to the analysis", poinames[ix].c_str());
         }
       }

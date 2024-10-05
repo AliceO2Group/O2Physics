@@ -986,6 +986,7 @@ struct PIDSpeciesSelection {
   const std::vector<std::string_view> sptitles = {"e", "#mu", "#pi", "K", "p"};
   const std::vector<std::string_view> spfnames = {"E", "Mu", "Pi", "Ka", "Pr"};
   const std::vector<std::string_view> spadjnames = {"Electron", "Muon", "Pion", "Kaon", "Proton"};
+  const std::vector<double> spmasses = {o2::constants::physics::MassElectron, o2::constants::physics::MassMuon, o2::constants::physics::MassPionCharged, o2::constants::physics::MassKaonCharged, o2::constants::physics::MassProton};
   const std::vector<std::string_view> chadjnames = {"P", "M"};
   const char* hadname = "h";
   const char* hadtitle = "h";
@@ -994,6 +995,7 @@ struct PIDSpeciesSelection {
   const char* getSpeciesName(uint8_t ix) { return spnames[species[ix]].data(); }
   const char* getSpeciesTitle(uint8_t ix) { return sptitles[species[ix]].data(); }
   const char* getSpeciesFName(uint8_t ix) { return spfnames[species[ix]].data(); }
+  double getSpeciesMass(uint8_t ix) { return spmasses[species[ix]]; }
   const char* getHadName() { return hadname; }
   const char* getHadTitle() { return hadtitle; }
   const char* getHadFName() { return hadfname; }
