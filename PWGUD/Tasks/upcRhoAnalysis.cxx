@@ -37,6 +37,7 @@ struct upcRhoAnalysis {
   double PcEtaCut = 0.9; // physics coordination recommendation
 
   Configurable<bool> specifyGapSide{"specifyGapSide", true, "specify gap side for SG/DG produced data"};
+  Configurable<int> gapSide{"gapSide", 2, "gap side for SG produced data"};
   Configurable<bool> requireTof{"requireTof", false, "require TOF signal"};
 
   Configurable<double> collisionsPosZMaxCut{"collisionsPosZMaxCut", 10.0, "max Z position cut on collisions"};
@@ -48,7 +49,7 @@ struct upcRhoAnalysis {
 
   Configurable<double> systemMassMinCut{"systemMassMinCut", 0.5, "min M cut for reco system"};
   Configurable<double> systemMassMaxCut{"systemMassMaxCut", 1.2, "max M cut for reco system"};
-  Configurable<double> systemPtCut{"systemPtMaxCut", 0.3, "max pT cut for reco system"};
+  Configurable<double> systemPtCut{"systemPtMaxCut", 0.1, "max pT cut for reco system"};
   Configurable<double> systemYCut{"systemYCut", 0.9, "rapiditiy cut for reco system"};
 
   ConfigurableAxis mAxis{"mAxis", {1000, 0.0, 10.0}, "m (GeV/#it{c}^{2})"};
@@ -114,6 +115,11 @@ struct upcRhoAnalysis {
     registry.add("reco/system/2pi/raw/like-sign/negative/hY", ";y;counts", kTH1D, {yAxis});
 
     // SELECTED RHOS
+    std::vector<double> ptQuantileBins = {0, 0.0140109, 0.0224596, 0.0292742, 0.035421, 0.0415497, 0.0478679, 0.0549571, 0.0632499, 0.0747945, 0.1};
+    AxisSpec ptQuantileAxis = {ptQuantileBins, "p_{T} (GeV/#it{c})"};
+    // std::vector<double> yQuantileBins = {-0.9, -0.514876, -0.363311, -0.235709, -0.121082, -0.00931615, 0.105635, 0.220429, 0.349641, 0.505222, 0.9};
+    // AxisSpec yQuantileAxis = {yQuantileBins, "y"};
+
     // no selection
     registry.add("reco/system/2pi/cut/no-selection/unlike-sign/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mCutAxis});
     registry.add("reco/system/2pi/cut/no-selection/unlike-sign/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptCutAxis});
@@ -128,6 +134,8 @@ struct upcRhoAnalysis {
     registry.add("reco/system/2pi/cut/no-selection/unlike-sign/hPhiChargeVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
     registry.add("reco/system/2pi/cut/no-selection/unlike-sign/hPyVsPxRandom", ";p_{x} (GeV/#it{c});p_{y} (GeV/#it{c});counts", kTH2D, {momentumFromPhiAxis, momentumFromPhiAxis});
     registry.add("reco/system/2pi/cut/no-selection/unlike-sign/hPyVsPxCharge", ";p_{x} (GeV/#it{c});p_{y} (GeV/#it{c});counts", kTH2D, {momentumFromPhiAxis, momentumFromPhiAxis});
+    registry.add("reco/system/2pi/cut/no-selection/unlike-sign/hMInPtQuantileBins", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mCutAxis, ptQuantileAxis});
+    
     registry.add("reco/system/2pi/cut/no-selection/like-sign/positive/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mCutAxis});
     registry.add("reco/system/2pi/cut/no-selection/like-sign/positive/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptCutAxis});
     registry.add("reco/system/2pi/cut/no-selection/like-sign/positive/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
@@ -139,6 +147,8 @@ struct upcRhoAnalysis {
     registry.add("reco/system/2pi/cut/no-selection/like-sign/positive/hCosTwoPhiCharge", ";cos(2#phi);counts", kTH1D, {cosTwoPhiAxis});
     registry.add("reco/system/2pi/cut/no-selection/like-sign/positive/hPhiRandomVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
     registry.add("reco/system/2pi/cut/no-selection/like-sign/positive/hPhiChargeVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
+    registry.add("reco/system/2pi/cut/no-selection/like-sign/positive/hMInPtQuantileBins", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mCutAxis, ptQuantileAxis});
+
     registry.add("reco/system/2pi/cut/no-selection/like-sign/negative/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mCutAxis});
     registry.add("reco/system/2pi/cut/no-selection/like-sign/negative/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptCutAxis});
     registry.add("reco/system/2pi/cut/no-selection/like-sign/negative/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
@@ -150,6 +160,8 @@ struct upcRhoAnalysis {
     registry.add("reco/system/2pi/cut/no-selection/like-sign/negative/hCosTwoPhiCharge", ";cos(2#phi);counts", kTH1D, {cosTwoPhiAxis});
     registry.add("reco/system/2pi/cut/no-selection/like-sign/negative/hPhiRandomVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
     registry.add("reco/system/2pi/cut/no-selection/like-sign/negative/hPhiChargeVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
+    registry.add("reco/system/2pi/cut/no-selection/like-sign/negative/hMInPtQuantileBins", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mCutAxis, ptQuantileAxis});
+   
     // 0n0n
     registry.add("reco/system/2pi/cut/0n0n/unlike-sign/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mCutAxis});
     registry.add("reco/system/2pi/cut/0n0n/unlike-sign/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptCutAxis});
@@ -162,6 +174,8 @@ struct upcRhoAnalysis {
     registry.add("reco/system/2pi/cut/0n0n/unlike-sign/hCosTwoPhiCharge", ";cos(2#phi);counts", kTH1D, {cosTwoPhiAxis});
     registry.add("reco/system/2pi/cut/0n0n/unlike-sign/hPhiRandomVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
     registry.add("reco/system/2pi/cut/0n0n/unlike-sign/hPhiChargeVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
+    registry.add("reco/system/2pi/cut/0n0n/unlike-sign/hMInPtQuantileBins", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mCutAxis, ptQuantileAxis});
+
     registry.add("reco/system/2pi/cut/0n0n/like-sign/positive/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mCutAxis});
     registry.add("reco/system/2pi/cut/0n0n/like-sign/positive/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptCutAxis});
     registry.add("reco/system/2pi/cut/0n0n/like-sign/positive/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
@@ -173,6 +187,8 @@ struct upcRhoAnalysis {
     registry.add("reco/system/2pi/cut/0n0n/like-sign/positive/hCosTwoPhiCharge", ";cos(2#phi);counts", kTH1D, {cosTwoPhiAxis});
     registry.add("reco/system/2pi/cut/0n0n/like-sign/positive/hPhiRandomVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
     registry.add("reco/system/2pi/cut/0n0n/like-sign/positive/hPhiChargeVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
+    registry.add("reco/system/2pi/cut/0n0n/like-sign/positive/hMInPtQuantileBins", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mCutAxis, ptQuantileAxis});
+
     registry.add("reco/system/2pi/cut/0n0n/like-sign/negative/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mCutAxis});
     registry.add("reco/system/2pi/cut/0n0n/like-sign/negative/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptCutAxis});
     registry.add("reco/system/2pi/cut/0n0n/like-sign/negative/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
@@ -184,6 +200,8 @@ struct upcRhoAnalysis {
     registry.add("reco/system/2pi/cut/0n0n/like-sign/negative/hCosTwoPhiCharge", ";cos(2#phi);counts", kTH1D, {cosTwoPhiAxis});
     registry.add("reco/system/2pi/cut/0n0n/like-sign/negative/hPhiRandomVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
     registry.add("reco/system/2pi/cut/0n0n/like-sign/negative/hPhiChargeVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
+    registry.add("reco/system/2pi/cut/0n0n/like-sign/negative/hMInPtQuantileBins", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mCutAxis, ptQuantileAxis});
+   
     // Xn0n
     registry.add("reco/system/2pi/cut/Xn0n/unlike-sign/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mCutAxis});
     registry.add("reco/system/2pi/cut/Xn0n/unlike-sign/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptCutAxis});
@@ -196,6 +214,8 @@ struct upcRhoAnalysis {
     registry.add("reco/system/2pi/cut/Xn0n/unlike-sign/hCosTwoPhiCharge", ";cos(2#phi);counts", kTH1D, {cosTwoPhiAxis});
     registry.add("reco/system/2pi/cut/Xn0n/unlike-sign/hPhiRandomVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
     registry.add("reco/system/2pi/cut/Xn0n/unlike-sign/hPhiChargeVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
+    registry.add("reco/system/2pi/cut/Xn0n/unlike-sign/hMInPtQuantileBins", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mCutAxis, ptQuantileAxis});
+
     registry.add("reco/system/2pi/cut/Xn0n/like-sign/positive/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mCutAxis});
     registry.add("reco/system/2pi/cut/Xn0n/like-sign/positive/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptCutAxis});
     registry.add("reco/system/2pi/cut/Xn0n/like-sign/positive/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
@@ -207,6 +227,8 @@ struct upcRhoAnalysis {
     registry.add("reco/system/2pi/cut/Xn0n/like-sign/positive/hCosTwoPhiCharge", ";cos(2#phi);counts", kTH1D, {cosTwoPhiAxis});
     registry.add("reco/system/2pi/cut/Xn0n/like-sign/positive/hPhiRandomVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
     registry.add("reco/system/2pi/cut/Xn0n/like-sign/positive/hPhiChargeVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
+    registry.add("reco/system/2pi/cut/Xn0n/like-sign/positive/hMInPtQuantileBins", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mCutAxis, ptQuantileAxis});
+
     registry.add("reco/system/2pi/cut/Xn0n/like-sign/negative/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mCutAxis});
     registry.add("reco/system/2pi/cut/Xn0n/like-sign/negative/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptCutAxis});
     registry.add("reco/system/2pi/cut/Xn0n/like-sign/negative/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
@@ -218,6 +240,8 @@ struct upcRhoAnalysis {
     registry.add("reco/system/2pi/cut/Xn0n/like-sign/negative/hCosTwoPhiCharge", ";cos(2#phi);counts", kTH1D, {cosTwoPhiAxis});
     registry.add("reco/system/2pi/cut/Xn0n/like-sign/negative/hPhiRandomVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
     registry.add("reco/system/2pi/cut/Xn0n/like-sign/negative/hPhiChargeVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
+    registry.add("reco/system/2pi/cut/Xn0n/like-sign/negative/hMInPtQuantileBins", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mCutAxis, ptQuantileAxis});
+    
     // 0nXn
     registry.add("reco/system/2pi/cut/0nXn/unlike-sign/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mCutAxis});
     registry.add("reco/system/2pi/cut/0nXn/unlike-sign/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptCutAxis});
@@ -230,6 +254,8 @@ struct upcRhoAnalysis {
     registry.add("reco/system/2pi/cut/0nXn/unlike-sign/hCosTwoPhiCharge", ";cos(2#phi);counts", kTH1D, {cosTwoPhiAxis});
     registry.add("reco/system/2pi/cut/0nXn/unlike-sign/hPhiRandomVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
     registry.add("reco/system/2pi/cut/0nXn/unlike-sign/hPhiChargeVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
+    registry.add("reco/system/2pi/cut/0nXn/unlike-sign/hMInPtQuantileBins", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mCutAxis, ptQuantileAxis});
+
     registry.add("reco/system/2pi/cut/0nXn/like-sign/positive/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mCutAxis});
     registry.add("reco/system/2pi/cut/0nXn/like-sign/positive/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptCutAxis});
     registry.add("reco/system/2pi/cut/0nXn/like-sign/positive/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
@@ -241,6 +267,8 @@ struct upcRhoAnalysis {
     registry.add("reco/system/2pi/cut/0nXn/like-sign/positive/hCosTwoPhiCharge", ";cos(2#phi);counts", kTH1D, {cosTwoPhiAxis});
     registry.add("reco/system/2pi/cut/0nXn/like-sign/positive/hPhiRandomVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
     registry.add("reco/system/2pi/cut/0nXn/like-sign/positive/hPhiChargeVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
+    registry.add("reco/system/2pi/cut/0nXn/like-sign/positive/hMInPtQuantileBins", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mCutAxis, ptQuantileAxis});
+
     registry.add("reco/system/2pi/cut/0nXn/like-sign/negative/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mCutAxis});
     registry.add("reco/system/2pi/cut/0nXn/like-sign/negative/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptCutAxis});
     registry.add("reco/system/2pi/cut/0nXn/like-sign/negative/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
@@ -252,6 +280,8 @@ struct upcRhoAnalysis {
     registry.add("reco/system/2pi/cut/0nXn/like-sign/negative/hCosTwoPhiCharge", ";cos(2#phi);counts", kTH1D, {cosTwoPhiAxis});
     registry.add("reco/system/2pi/cut/0nXn/like-sign/negative/hPhiRandomVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
     registry.add("reco/system/2pi/cut/0nXn/like-sign/negative/hPhiChargeVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
+    registry.add("reco/system/2pi/cut/0nXn/like-sign/negative/hMInPtQuantileBins", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mCutAxis, ptQuantileAxis});
+
     // XnXn
     registry.add("reco/system/2pi/cut/XnXn/unlike-sign/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mCutAxis});
     registry.add("reco/system/2pi/cut/XnXn/unlike-sign/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptCutAxis});
@@ -264,6 +294,8 @@ struct upcRhoAnalysis {
     registry.add("reco/system/2pi/cut/XnXn/unlike-sign/hCosTwoPhiCharge", ";cos(2#phi);counts", kTH1D, {cosTwoPhiAxis});
     registry.add("reco/system/2pi/cut/XnXn/unlike-sign/hPhiRandomVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
     registry.add("reco/system/2pi/cut/XnXn/unlike-sign/hPhiChargeVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
+    registry.add("reco/system/2pi/cut/XnXn/unlike-sign/hMInPtQuantileBins", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mCutAxis, ptQuantileAxis});
+
     registry.add("reco/system/2pi/cut/XnXn/like-sign/positive/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mCutAxis});
     registry.add("reco/system/2pi/cut/XnXn/like-sign/positive/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptCutAxis});
     registry.add("reco/system/2pi/cut/XnXn/like-sign/positive/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
@@ -275,6 +307,8 @@ struct upcRhoAnalysis {
     registry.add("reco/system/2pi/cut/XnXn/like-sign/positive/hCosTwoPhiCharge", ";cos(2#phi);counts", kTH1D, {cosTwoPhiAxis});
     registry.add("reco/system/2pi/cut/XnXn/like-sign/positive/hPhiRandomVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
     registry.add("reco/system/2pi/cut/XnXn/like-sign/positive/hPhiChargeVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
+    registry.add("reco/system/2pi/cut/XnXn/like-sign/positive/hMInPtQuantileBins", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mCutAxis, ptQuantileAxis});
+
     registry.add("reco/system/2pi/cut/XnXn/like-sign/negative/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mCutAxis});
     registry.add("reco/system/2pi/cut/XnXn/like-sign/negative/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptCutAxis});
     registry.add("reco/system/2pi/cut/XnXn/like-sign/negative/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
@@ -286,6 +320,7 @@ struct upcRhoAnalysis {
     registry.add("reco/system/2pi/cut/XnXn/like-sign/negative/hCosTwoPhiCharge", ";cos(2#phi);counts", kTH1D, {cosTwoPhiAxis});
     registry.add("reco/system/2pi/cut/XnXn/like-sign/negative/hPhiRandomVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
     registry.add("reco/system/2pi/cut/XnXn/like-sign/negative/hPhiChargeVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
+    registry.add("reco/system/2pi/cut/XnXn/like-sign/negative/hMInPtQuantileBins", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mCutAxis, ptQuantileAxis});
 
     // 4PI AND 6PI SYSTEM
     registry.add("reco/system/4pi/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
@@ -303,7 +338,7 @@ struct upcRhoAnalysis {
   {
     if (std::abs(collision.posZ()) > collisionsPosZMaxCut)
       return false;
-    if (specifyGapSide && collision.gapSide() != 2)
+    if (specifyGapSide && collision.gapSide() != gapSide)
       return false;
     return true;
   }
@@ -381,8 +416,8 @@ struct upcRhoAnalysis {
     return deltaPhi(pPlus, pMinus);
   }
 
-  template <typename T, typename V>
-  double getPhiCharge(const T& cutTracks, const V& cutTracks4Vecs)
+  template <typename T>
+  double getPhiCharge(const T& cutTracks, const std::vector<ROOT::Math::PxPyPzMVector>& cutTracks4Vecs)
   { // two possible definitions of phi: charge-based assignment
     ROOT::Math::PxPyPzMVector pOne, pTwo;
     if (cutTracks[0].sign() > 0) {
@@ -500,6 +535,7 @@ struct upcRhoAnalysis {
           registry.fill(HIST("reco/system/2pi/cut/no-selection/unlike-sign/hPhiChargeVsM"), system.M(), getPhiCharge(cutTracks, cutTracks4Vecs));
           registry.fill(HIST("reco/system/2pi/cut/no-selection/unlike-sign/hPyVsPxRandom"), system.Pt() * std::cos(getPhiRandom(cutTracks4Vecs)), system.Pt() * std::sin(getPhiRandom(cutTracks4Vecs)));
           registry.fill(HIST("reco/system/2pi/cut/no-selection/unlike-sign/hPyVsPxCharge"), system.Pt() * std::cos(getPhiCharge(cutTracks, cutTracks4Vecs)), system.Pt() * std::sin(getPhiCharge(cutTracks, cutTracks4Vecs)));
+          registry.fill(HIST("reco/system/2pi/cut/no-selection/unlike-sign/hMInPtQuantileBins"), system.M(),system.Pt());
           if (OnOn) {
             registry.fill(HIST("reco/system/2pi/cut/0n0n/unlike-sign/hM"), system.M());
             registry.fill(HIST("reco/system/2pi/cut/0n0n/unlike-sign/hPt"), system.Pt());
@@ -512,6 +548,7 @@ struct upcRhoAnalysis {
             registry.fill(HIST("reco/system/2pi/cut/0n0n/unlike-sign/hCosTwoPhiCharge"), std::cos(2. * getPhiCharge(cutTracks, cutTracks4Vecs)));
             registry.fill(HIST("reco/system/2pi/cut/0n0n/unlike-sign/hPhiRandomVsM"), system.M(), getPhiRandom(cutTracks4Vecs));
             registry.fill(HIST("reco/system/2pi/cut/0n0n/unlike-sign/hPhiChargeVsM"), system.M(), getPhiCharge(cutTracks, cutTracks4Vecs));
+            registry.fill(HIST("reco/system/2pi/cut/0n0n/unlike-sign/hMInPtQuantileBins"), system.M(),system.Pt());
           } else if (XnOn) {
             registry.fill(HIST("reco/system/2pi/cut/Xn0n/unlike-sign/hM"), system.M());
             registry.fill(HIST("reco/system/2pi/cut/Xn0n/unlike-sign/hPt"), system.Pt());
@@ -524,6 +561,7 @@ struct upcRhoAnalysis {
             registry.fill(HIST("reco/system/2pi/cut/Xn0n/unlike-sign/hCosTwoPhiCharge"), std::cos(2. * getPhiCharge(cutTracks, cutTracks4Vecs)));
             registry.fill(HIST("reco/system/2pi/cut/Xn0n/unlike-sign/hPhiRandomVsM"), system.M(), getPhiRandom(cutTracks4Vecs));
             registry.fill(HIST("reco/system/2pi/cut/Xn0n/unlike-sign/hPhiChargeVsM"), system.M(), getPhiCharge(cutTracks, cutTracks4Vecs));
+            registry.fill(HIST("reco/system/2pi/cut/Xn0n/unlike-sign/hMInPtQuantileBins"), system.M(),system.Pt());
           } else if (OnXn) {
             registry.fill(HIST("reco/system/2pi/cut/0nXn/unlike-sign/hM"), system.M());
             registry.fill(HIST("reco/system/2pi/cut/0nXn/unlike-sign/hPt"), system.Pt());
@@ -536,6 +574,7 @@ struct upcRhoAnalysis {
             registry.fill(HIST("reco/system/2pi/cut/0nXn/unlike-sign/hCosTwoPhiCharge"), std::cos(2. * getPhiCharge(cutTracks, cutTracks4Vecs)));
             registry.fill(HIST("reco/system/2pi/cut/0nXn/unlike-sign/hPhiRandomVsM"), system.M(), getPhiRandom(cutTracks4Vecs));
             registry.fill(HIST("reco/system/2pi/cut/0nXn/unlike-sign/hPhiChargeVsM"), system.M(), getPhiCharge(cutTracks, cutTracks4Vecs));
+            registry.fill(HIST("reco/system/2pi/cut/0nXn/unlike-sign/hMInPtQuantileBins"), system.M(),system.Pt());
           } else if (XnXn) {
             registry.fill(HIST("reco/system/2pi/cut/XnXn/unlike-sign/hM"), system.M());
             registry.fill(HIST("reco/system/2pi/cut/XnXn/unlike-sign/hPt"), system.Pt());
@@ -548,6 +587,7 @@ struct upcRhoAnalysis {
             registry.fill(HIST("reco/system/2pi/cut/XnXn/unlike-sign/hCosTwoPhiCharge"), std::cos(2. * getPhiCharge(cutTracks, cutTracks4Vecs)));
             registry.fill(HIST("reco/system/2pi/cut/XnXn/unlike-sign/hPhiRandomVsM"), system.M(), getPhiRandom(cutTracks4Vecs));
             registry.fill(HIST("reco/system/2pi/cut/XnXn/unlike-sign/hPhiChargeVsM"), system.M(), getPhiCharge(cutTracks, cutTracks4Vecs));
+            registry.fill(HIST("reco/system/2pi/cut/XnXn/unlike-sign/hMInPtQuantileBins"), system.M(),system.Pt());
           }
           break;
 
@@ -563,6 +603,7 @@ struct upcRhoAnalysis {
           registry.fill(HIST("reco/system/2pi/cut/no-selection/like-sign/positive/hCosTwoPhiCharge"), std::cos(2. * getPhiCharge(cutTracks, cutTracks4Vecs)));
           registry.fill(HIST("reco/system/2pi/cut/no-selection/like-sign/positive/hPhiRandomVsM"), system.M(), getPhiRandom(cutTracks4Vecs));
           registry.fill(HIST("reco/system/2pi/cut/no-selection/like-sign/positive/hPhiChargeVsM"), system.M(), getPhiCharge(cutTracks, cutTracks4Vecs));
+          registry.fill(HIST("reco/system/2pi/cut/no-selection/like-sign/positive/hMInPtQuantileBins"), system.M(),system.Pt());
           if (OnOn) {
             registry.fill(HIST("reco/system/2pi/cut/0n0n/like-sign/positive/hM"), system.M());
             registry.fill(HIST("reco/system/2pi/cut/0n0n/like-sign/positive/hPt"), system.Pt());
@@ -575,6 +616,7 @@ struct upcRhoAnalysis {
             registry.fill(HIST("reco/system/2pi/cut/0n0n/like-sign/positive/hCosTwoPhiCharge"), std::cos(2. * getPhiCharge(cutTracks, cutTracks4Vecs)));
             registry.fill(HIST("reco/system/2pi/cut/0n0n/like-sign/positive/hPhiRandomVsM"), system.M(), getPhiRandom(cutTracks4Vecs));
             registry.fill(HIST("reco/system/2pi/cut/0n0n/like-sign/positive/hPhiChargeVsM"), system.M(), getPhiCharge(cutTracks, cutTracks4Vecs));
+            registry.fill(HIST("reco/system/2pi/cut/0n0n/like-sign/positive/hMInPtQuantileBins"), system.M(),system.Pt());
           } else if (XnOn) {
             registry.fill(HIST("reco/system/2pi/cut/Xn0n/like-sign/positive/hM"), system.M());
             registry.fill(HIST("reco/system/2pi/cut/Xn0n/like-sign/positive/hPt"), system.Pt());
@@ -587,6 +629,7 @@ struct upcRhoAnalysis {
             registry.fill(HIST("reco/system/2pi/cut/Xn0n/like-sign/positive/hCosTwoPhiCharge"), std::cos(2. * getPhiCharge(cutTracks, cutTracks4Vecs)));
             registry.fill(HIST("reco/system/2pi/cut/Xn0n/like-sign/positive/hPhiRandomVsM"), system.M(), getPhiRandom(cutTracks4Vecs));
             registry.fill(HIST("reco/system/2pi/cut/Xn0n/like-sign/positive/hPhiChargeVsM"), system.M(), getPhiCharge(cutTracks, cutTracks4Vecs));
+            registry.fill(HIST("reco/system/2pi/cut/Xn0n/like-sign/positive/hMInPtQuantileBins"), system.M(),system.Pt());
           } else if (OnXn) {
             registry.fill(HIST("reco/system/2pi/cut/0nXn/like-sign/positive/hM"), system.M());
             registry.fill(HIST("reco/system/2pi/cut/0nXn/like-sign/positive/hPt"), system.Pt());
@@ -599,6 +642,7 @@ struct upcRhoAnalysis {
             registry.fill(HIST("reco/system/2pi/cut/0nXn/like-sign/positive/hCosTwoPhiCharge"), std::cos(2. * getPhiCharge(cutTracks, cutTracks4Vecs)));
             registry.fill(HIST("reco/system/2pi/cut/0nXn/like-sign/positive/hPhiRandomVsM"), system.M(), getPhiRandom(cutTracks4Vecs));
             registry.fill(HIST("reco/system/2pi/cut/0nXn/like-sign/positive/hPhiChargeVsM"), system.M(), getPhiCharge(cutTracks, cutTracks4Vecs));
+            registry.fill(HIST("reco/system/2pi/cut/0nXn/like-sign/positive/hMInPtQuantileBins"), system.M(),system.Pt());
           } else if (XnXn) {
             registry.fill(HIST("reco/system/2pi/cut/XnXn/like-sign/positive/hM"), system.M());
             registry.fill(HIST("reco/system/2pi/cut/XnXn/like-sign/positive/hPt"), system.Pt());
@@ -611,6 +655,7 @@ struct upcRhoAnalysis {
             registry.fill(HIST("reco/system/2pi/cut/XnXn/like-sign/positive/hCosTwoPhiCharge"), std::cos(2. * getPhiCharge(cutTracks, cutTracks4Vecs)));
             registry.fill(HIST("reco/system/2pi/cut/XnXn/like-sign/positive/hPhiRandomVsM"), system.M(), getPhiRandom(cutTracks4Vecs));
             registry.fill(HIST("reco/system/2pi/cut/XnXn/like-sign/positive/hPhiChargeVsM"), system.M(), getPhiCharge(cutTracks, cutTracks4Vecs));
+            registry.fill(HIST("reco/system/2pi/cut/XnXn/like-sign/positive/hMInPtQuantileBins"), system.M(),system.Pt());
           }
           break;
 
@@ -626,6 +671,7 @@ struct upcRhoAnalysis {
           registry.fill(HIST("reco/system/2pi/cut/no-selection/like-sign/negative/hCosTwoPhiCharge"), std::cos(2. * getPhiCharge(cutTracks, cutTracks4Vecs)));
           registry.fill(HIST("reco/system/2pi/cut/no-selection/like-sign/negative/hPhiRandomVsM"), system.M(), getPhiRandom(cutTracks4Vecs));
           registry.fill(HIST("reco/system/2pi/cut/no-selection/like-sign/negative/hPhiChargeVsM"), system.M(), getPhiCharge(cutTracks, cutTracks4Vecs));
+          registry.fill(HIST("reco/system/2pi/cut/no-selection/like-sign/negative/hMInPtQuantileBins"), system.M(),system.Pt());
           if (OnOn) {
             registry.fill(HIST("reco/system/2pi/cut/0n0n/like-sign/negative/hM"), system.M());
             registry.fill(HIST("reco/system/2pi/cut/0n0n/like-sign/negative/hPt"), system.Pt());
@@ -638,6 +684,7 @@ struct upcRhoAnalysis {
             registry.fill(HIST("reco/system/2pi/cut/0n0n/like-sign/negative/hCosTwoPhiCharge"), std::cos(2. * getPhiCharge(cutTracks, cutTracks4Vecs)));
             registry.fill(HIST("reco/system/2pi/cut/0n0n/like-sign/negative/hPhiRandomVsM"), system.M(), getPhiRandom(cutTracks4Vecs));
             registry.fill(HIST("reco/system/2pi/cut/0n0n/like-sign/negative/hPhiChargeVsM"), system.M(), getPhiCharge(cutTracks, cutTracks4Vecs));
+            registry.fill(HIST("reco/system/2pi/cut/0n0n/like-sign/negative/hMInPtQuantileBins"), system.M(),system.Pt());
           } else if (XnOn) {
             registry.fill(HIST("reco/system/2pi/cut/Xn0n/like-sign/negative/hM"), system.M());
             registry.fill(HIST("reco/system/2pi/cut/Xn0n/like-sign/negative/hPt"), system.Pt());
@@ -650,6 +697,7 @@ struct upcRhoAnalysis {
             registry.fill(HIST("reco/system/2pi/cut/Xn0n/like-sign/negative/hCosTwoPhiCharge"), std::cos(2. * getPhiCharge(cutTracks, cutTracks4Vecs)));
             registry.fill(HIST("reco/system/2pi/cut/Xn0n/like-sign/negative/hPhiRandomVsM"), system.M(), getPhiRandom(cutTracks4Vecs));
             registry.fill(HIST("reco/system/2pi/cut/Xn0n/like-sign/negative/hPhiChargeVsM"), system.M(), getPhiCharge(cutTracks, cutTracks4Vecs));
+            registry.fill(HIST("reco/system/2pi/cut/Xn0n/like-sign/negative/hMInPtQuantileBins"), system.M(),system.Pt());
           } else if (OnXn) {
             registry.fill(HIST("reco/system/2pi/cut/0nXn/like-sign/negative/hM"), system.M());
             registry.fill(HIST("reco/system/2pi/cut/0nXn/like-sign/negative/hPt"), system.Pt());
@@ -662,6 +710,7 @@ struct upcRhoAnalysis {
             registry.fill(HIST("reco/system/2pi/cut/0nXn/like-sign/negative/hCosTwoPhiCharge"), std::cos(2. * getPhiCharge(cutTracks, cutTracks4Vecs)));
             registry.fill(HIST("reco/system/2pi/cut/0nXn/like-sign/negative/hPhiRandomVsM"), system.M(), getPhiRandom(cutTracks4Vecs));
             registry.fill(HIST("reco/system/2pi/cut/0nXn/like-sign/negative/hPhiChargeVsM"), system.M(), getPhiCharge(cutTracks, cutTracks4Vecs));
+            registry.fill(HIST("reco/system/2pi/cut/0nXn/like-sign/negative/hMInPtQuantileBins"), system.M(),system.Pt());
           } else if (XnXn) {
             registry.fill(HIST("reco/system/2pi/cut/XnXn/like-sign/negative/hM"), system.M());
             registry.fill(HIST("reco/system/2pi/cut/XnXn/like-sign/negative/hPt"), system.Pt());
@@ -674,6 +723,7 @@ struct upcRhoAnalysis {
             registry.fill(HIST("reco/system/2pi/cut/XnXn/like-sign/negative/hCosTwoPhiCharge"), std::cos(2. * getPhiCharge(cutTracks, cutTracks4Vecs)));
             registry.fill(HIST("reco/system/2pi/cut/XnXn/like-sign/negative/hPhiRandomVsM"), system.M(), getPhiRandom(cutTracks4Vecs));
             registry.fill(HIST("reco/system/2pi/cut/XnXn/like-sign/negative/hPhiChargeVsM"), system.M(), getPhiCharge(cutTracks, cutTracks4Vecs));
+            registry.fill(HIST("reco/system/2pi/cut/XnXn/like-sign/negative/hMInPtQuantileBins"), system.M(),system.Pt());
           }
           break;
 
@@ -692,18 +742,18 @@ struct upcRhoAnalysis {
       registry.fill(HIST("reco/system/6pi/hY"), system.Rapidity());
     }
   }
-  PROCESS_SWITCH(upcRhoAnalysis, processReco, "analyse reco tracks", false);
+  PROCESS_SWITCH(upcRhoAnalysis, processReco, "analyse reco tracks", true);
 
-  void processMC(aod::UDMcCollisions::iterator const&, aod::UDMcParticles const& mcparticles)
-  {
-    // loop over all particles in the event
-    for (auto const& mcparticle : mcparticles) {
-      // only consider charged pions
-      if (std::abs(mcparticle.pdgCode()) != 211)
-        continue;
-    }
-  }
-  PROCESS_SWITCH(upcRhoAnalysis, processMC, "analyse MC tracks", true);
+  // void processMC(aod::UDMcCollisions::iterator const&, aod::UDMcParticles const& mcparticles)
+  // {
+  //   // loop over all particles in the event
+  //   for (auto const& mcparticle : mcparticles) {
+  //     // only consider charged pions
+  //     if (std::abs(mcparticle.pdgCode()) != 211)
+  //       continue;
+  //   }
+  // }
+  // PROCESS_SWITCH(upcRhoAnalysis, processMC, "analyse MC tracks", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
