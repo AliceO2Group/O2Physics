@@ -1217,6 +1217,24 @@ struct decay3bodyLabelBuilder {
       }
       registry.fill(HIST("hLabelCounter"), 1.5);
 
+      // Intended for hypertriton cross-checks only
+      if (lPDG == 1010010030 && lMCTrack0.pdgCode() == 2212 && lMCTrack1.pdgCode() == -211 && lMCTrack2.pdgCode() == 1000010020) {
+        lLabel = lGlobalIndex;
+        double hypertritonMCMass = RecoDecay::m(array{array{lMCTrack0.px(), lMCTrack0.py(), lMCTrack0.pz()}, array{lMCTrack1.px(), lMCTrack1.py(), lMCTrack1.pz()}, array{lMCTrack2.px(), lMCTrack2.py(), lMCTrack2.pz()}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged, o2::constants::physics::MassDeuteron});
+        registry.fill(HIST("hLabelCounter"), 2.5);
+        registry.fill(HIST("hHypertritonMCPt"), lPt);
+        registry.fill(HIST("hHypertritonMCLifetime"), MClifetime);
+        registry.fill(HIST("hHypertritonMCMass"), hypertritonMCMass);
+      }
+      if (lPDG == -1010010030 && lMCTrack0.pdgCode() == 211 && lMCTrack1.pdgCode() == -2212 && lMCTrack2.pdgCode() == -1000010020) {
+        lLabel = lGlobalIndex;
+        double antiHypertritonMCMass = RecoDecay::m(array{array{lMCTrack0.px(), lMCTrack0.py(), lMCTrack0.pz()}, array{lMCTrack1.px(), lMCTrack1.py(), lMCTrack1.pz()}, array{lMCTrack2.px(), lMCTrack2.py(), lMCTrack2.pz()}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassProton, o2::constants::physics::MassDeuteron});
+        registry.fill(HIST("hLabelCounter"), 2.5);
+        registry.fill(HIST("hAntiHypertritonMCPt"), lPt);
+        registry.fill(HIST("hAntiHypertritonMCLifetime"), MClifetime);
+        registry.fill(HIST("hAntiHypertritonMCMass"), antiHypertritonMCMass);
+      }
+
       // Construct label table, only vtx which corresponds to true mother and true daughters with a specified order is labeled
       // for matter: track0->p, track1->pi, track2->bachelor
       // for antimatter: track0->pi, track1->p, track2->bachelor
@@ -1242,10 +1260,6 @@ struct decay3bodyLabelBuilder {
     for (auto& decay3body : decay3bodys) {
 
       int lLabel = -1;
-      int lPDG = -1;
-      float lPt = -1;
-      double MClifetime = -1;
-      int lGlobalIndex = -1;
 
       auto lTrack0 = decay3body.track0_as<MCLabeledTracksIU>();
       auto lTrack1 = decay3body.track1_as<MCLabeledTracksIU>();
@@ -1265,11 +1279,7 @@ struct decay3bodyLabelBuilder {
             for (auto& lMother1 : lMCTrack1.mothers_as<aod::McParticles>()) {
               for (auto& lMother2 : lMCTrack2.mothers_as<aod::McParticles>()) {
                 if (lMother0.globalIndex() == lMother1.globalIndex() && lMother0.globalIndex() == lMother2.globalIndex()) {
-                  lGlobalIndex = lMother1.globalIndex();
                   lLabel = lMother1.globalIndex();
-                  lPt = lMother1.pt();
-                  lPDG = lMother1.pdgCode();
-                  MClifetime = RecoDecay::sqrtSumOfSquares(lMCTrack2.vx() - lMother2.vx(), lMCTrack2.vy() - lMother2.vy(), lMCTrack2.vz() - lMother2.vz()) * o2::constants::physics::MassHyperTriton / lMother2.p(); // only for hypertriton                                                                                                                                                                         // vtxs with the same mother
                   // fill counter same mother
                   registry.fill(HIST("hLabelCounter"), 1.5);
                 } // end same mother conditional
@@ -1277,26 +1287,6 @@ struct decay3bodyLabelBuilder {
             }
           } // end loop over daughters
         } // end conditional of mothers existing
-
-        // Intended for hypertriton cross-checks only
-        if (lPDG == 1010010030 && lMCTrack0.pdgCode() == 2212 && lMCTrack1.pdgCode() == -211 && lMCTrack2.pdgCode() == 1000010020) {
-          lLabel = lGlobalIndex;
-          double hypertritonMCMass = RecoDecay::m(array{array{lMCTrack0.px(), lMCTrack0.py(), lMCTrack0.pz()}, array{lMCTrack1.px(), lMCTrack1.py(), lMCTrack1.pz()}, array{lMCTrack2.px(), lMCTrack2.py(), lMCTrack2.pz()}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged, o2::constants::physics::MassDeuteron});
-          // fill counter true H3
-          registry.fill(HIST("hLabelCounter"), 2.5);
-          registry.fill(HIST("hHypertritonMCPt"), lPt);
-          registry.fill(HIST("hHypertritonMCLifetime"), MClifetime);
-          registry.fill(HIST("hHypertritonMCMass"), hypertritonMCMass);
-        }
-        if (lPDG == -1010010030 && lMCTrack0.pdgCode() == 211 && lMCTrack1.pdgCode() == -2212 && lMCTrack2.pdgCode() == -1000010020) {
-          lLabel = lGlobalIndex;
-          double antiHypertritonMCMass = RecoDecay::m(array{array{lMCTrack0.px(), lMCTrack0.py(), lMCTrack0.pz()}, array{lMCTrack1.px(), lMCTrack1.py(), lMCTrack1.pz()}, array{lMCTrack2.px(), lMCTrack2.py(), lMCTrack2.pz()}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassProton, o2::constants::physics::MassDeuteron});
-          // fill counter true H3
-          registry.fill(HIST("hLabelCounter"), 2.5);
-          registry.fill(HIST("hAntiHypertritonMCPt"), lPt);
-          registry.fill(HIST("hAntiHypertritonMCLifetime"), MClifetime);
-          registry.fill(HIST("hAntiHypertritonMCMass"), antiHypertritonMCMass);
-        }
       } // end association check
 
       // Construct label table, only vtx which corresponds to true mother and true daughters with a specified order is labeled
