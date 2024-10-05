@@ -62,9 +62,10 @@ float deltaphibinwidth = constants::math::TwoPI / deltaphibins;
 float deltaphilow = 0.0 - deltaphibinwidth / 2.0;
 float deltaphiup = constants::math::TwoPI - deltaphibinwidth / 2.0;
 
-bool processpairs = false;
-bool processmixedevents = false;
-bool ptorder = false;
+bool processpairs = false;       // process pairs analysis
+bool processmixedevents = false; // process mixed events
+bool ptorder = false;            // consider pt ordering
+bool invmass = false;            // produce the invariant mass histograms
 
 PairCuts fPairCuts;              // pair suppression engine
 bool fUseConversionCuts = false; // suppress resonances and conversions
@@ -350,7 +351,7 @@ struct DptDptCorrelationsTask {
     /// \param trks2 filtered table with the tracks associated to the second track in the pair
     /// \param cmul centrality - multiplicity for the collision being analyzed
     /// Be aware that in most of the cases traks1 and trks2 will have the same content (exception: mixed events)
-    template <bool doptorder, typename TrackOneListObject, typename TrackTwoListObject>
+    template <bool doptorder, bool doinvmass, typename TrackOneListObject, typename TrackTwoListObject>
     void processTrackPairs(TrackOneListObject const& trks1, TrackTwoListObject const& trks2, std::vector<float>* corrs1, std::vector<float>* corrs2, std::vector<float>* ptavgs1, std::vector<float>* ptavgs2, float cmul, int bfield)
     {
       using namespace correlationstask;
@@ -418,7 +419,9 @@ struct DptDptCorrelationsTask {
             fhN2cont_vsDEtaDPhi[track1.trackacceptedid()][track2.trackacceptedid()]->Fill(deltaeta, deltaphi, corr);
             fhSum2DptDpt_vsDEtaDPhi[track1.trackacceptedid()][track2.trackacceptedid()]->AddBinContent(globalbin, dptdptw);
             fhSum2PtPt_vsDEtaDPhi[track1.trackacceptedid()][track2.trackacceptedid()]->AddBinContent(globalbin, track1.pt() * track2.pt() * corr);
-            fhInvMass[track1.trackacceptedid()][track2.trackacceptedid()]->Fill(std::sqrt(getInvMassSquared(track1, poimass[track1.trackacceptedid()], track2, poimass[track2.trackacceptedid()])) * 1000.0f);
+            if constexpr (doinvmass) {
+              fhInvMass[track1.trackacceptedid()][track2.trackacceptedid()]->Fill(std::sqrt(getInvMassSquared(track1, poimass[track1.trackacceptedid()], track2, poimass[track2.trackacceptedid()])) * 1000.0f);
+            }
           }
           fhN2_vsPtPt[track1.trackacceptedid()][track2.trackacceptedid()]->Fill(track1.pt(), track2.pt(), corr);
           index2++;
@@ -478,15 +481,24 @@ struct DptDptCorrelationsTask {
         /* process pair magnitudes */
         if constexpr (mixed) {
           if (ptorder) {
-            processTrackPairs<true>(Tracks1, Tracks2, corrs1, corrs2, ptavgs1, ptavgs2, centmult, bfield);
+            /* no invariant mass analysis on a mixed event data collection */
+            processTrackPairs<true, false>(Tracks1, Tracks2, corrs1, corrs2, ptavgs1, ptavgs2, centmult, bfield);
           } else {
-            processTrackPairs<false>(Tracks1, Tracks2, corrs1, corrs2, ptavgs1, ptavgs2, centmult, bfield);
+            processTrackPairs<false, false>(Tracks1, Tracks2, corrs1, corrs2, ptavgs1, ptavgs2, centmult, bfield);
           }
         } else {
           if (ptorder) {
-            processTrackPairs<true>(Tracks1, Tracks1, corrs1, corrs1, ptavgs1, ptavgs1, centmult, bfield);
+            if (invmass) {
+              processTrackPairs<true, true>(Tracks1, Tracks1, corrs1, corrs1, ptavgs1, ptavgs1, centmult, bfield);
+            } else {
+              processTrackPairs<true, false>(Tracks1, Tracks1, corrs1, corrs1, ptavgs1, ptavgs1, centmult, bfield);
+            }
           } else {
-            processTrackPairs<false>(Tracks1, Tracks1, corrs1, corrs1, ptavgs1, ptavgs1, centmult, bfield);
+            if (invmass) {
+              processTrackPairs<false, true>(Tracks1, Tracks1, corrs1, corrs1, ptavgs1, ptavgs1, centmult, bfield);
+            } else {
+              processTrackPairs<false, false>(Tracks1, Tracks1, corrs1, corrs1, ptavgs1, ptavgs1, centmult, bfield);
+            }
           }
         }
 
@@ -501,6 +513,7 @@ struct DptDptCorrelationsTask {
       }
     }
 
+    template <bool doinvmass>
     void init(TList* fOutputList)
     {
       using namespace correlationstask;
@@ -644,7 +657,9 @@ struct DptDptCorrelationsTask {
                                                   deltaetabins, deltaetalow, deltaetaup, deltaphibins, deltaphilow, deltaphiup);
             fhSupPt1Pt1_vsDEtaDPhi[i][j] = new TH2F(TString::Format("suppPtPt_12_vsDEtaDPhi_%s", pname), TString::Format("Suppressed #LT p_{t,1} #GT#LT p_{t,2} #GT (%s);#Delta#eta;#Delta#varphi;#LT p_{t,1} #GT#LT p_{t,2} #GT (GeV^{2})", pname),
                                                     deltaetabins, deltaetalow, deltaetaup, deltaphibins, deltaphilow, deltaphiup);
-            fhInvMass[i][j] = new TH1D(TString::Format("n2_invMass_%s", pname), TString::Format("%s invariant mass;Mass ((GeV/#it{c})^{2})", pname), 5000, 0, 5000);
+            if constexpr (doinvmass) {
+              fhInvMass[i][j] = new TH1D(TString::Format("n2_invMass_%s", pname), TString::Format("%s invariant mass;Mass (MeV/#it{c}^{2})", pname), 5000, 0, 5000);
+            }
             /* we return it back to previuos state */
             TH1::SetDefaultSumw2(defSumw2);
 
@@ -671,8 +686,10 @@ struct DptDptCorrelationsTask {
             fhSupN1N1_vsDEtaDPhi[i][j]->Sumw2(false);
             fhSupPt1Pt1_vsDEtaDPhi[i][j]->SetBit(TH1::kIsNotW);
             fhSupPt1Pt1_vsDEtaDPhi[i][j]->Sumw2(false);
-            fhInvMass[i][j]->SetBit(TH1::kIsNotW);
-            fhInvMass[i][j]->Sumw2(false);
+            if constexpr (doinvmass) {
+              fhInvMass[i][j]->SetBit(TH1::kIsNotW);
+              fhInvMass[i][j]->Sumw2(false);
+            }
 
             fOutputList->Add(fhN2_vsDEtaDPhi[i][j]);
             fOutputList->Add(fhN2cont_vsDEtaDPhi[i][j]);
@@ -681,7 +698,9 @@ struct DptDptCorrelationsTask {
             fOutputList->Add(fhSupN1N1_vsDEtaDPhi[i][j]);
             fOutputList->Add(fhSupPt1Pt1_vsDEtaDPhi[i][j]);
             fOutputList->Add(fhN2_vsPtPt[i][j]);
-            fOutputList->Add(fhInvMass[i][j]);
+            if constexpr (doinvmass) {
+              fOutputList->Add(fhInvMass[i][j]);
+            }
             fOutputList->Add(fhN2_vsC[i][j]);
             fOutputList->Add(fhSum2PtPt_vsC[i][j]);
             fOutputList->Add(fhSum2DptDpt_vsC[i][j]);
@@ -724,6 +743,7 @@ struct DptDptCorrelationsTask {
   Configurable<float> cfgTwoTrackCutMinRadius{"twotrackcutminradius", 0.8f, "Two-tracks cut: radius in m from which two-tracks cut is applied"};
 
   Configurable<bool> cfgSmallDCE{"smalldce", true, "Use small data collecting engine for singles processing, true = yes. Default = true"};
+  Configurable<bool> cfgDoInvMass{"doinvmass", false, "Do the invariant mass analyis, true = yes. Default = false"};
   Configurable<bool> cfgProcessPairs{"processpairs", false, "Process pairs: false = no, just singles, true = yes, process pairs"};
   Configurable<bool> cfgProcessME{"processmixedevents", false, "Process mixed events: false = no, just same event, true = yes, also process mixed events"};
   Configurable<bool> cfgPtOrder{"ptorder", false, "enforce pT_1 < pT_2. Defalut: false"};
@@ -767,6 +787,7 @@ struct DptDptCorrelationsTask {
     processpairs = cfgProcessPairs.value;
     processmixedevents = cfgProcessME.value;
     ptorder = cfgPtOrder.value;
+    invmass = cfgDoInvMass.value;
 
     /* self configure the CCDB access to the input file */
     getTaskOptionValue(initContext, "dpt-dpt-filter", "input_ccdburl", cfgCCDBUrl, false);
@@ -880,7 +901,6 @@ struct DptDptCorrelationsTask {
         fCentMultMin[0] = 0.0f;
         fCentMultMax[0] = 100.0f;
       }
-      dataCE = new DataCollectingEngine<false>*[ncmranges];
       if (cfgSmallDCE) {
         dataCE_small = new DataCollectingEngine<true>*[ncmranges];
       } else {
@@ -891,23 +911,27 @@ struct DptDptCorrelationsTask {
       }
 
       for (int i = 0; i < ncmranges; ++i) {
-        auto initializeCEInstance = [&fGlobalOutputList](auto dce, auto name) {
+        auto initializeCEInstance = [&fGlobalOutputList](auto dce, auto name, bool im) {
           /* crete the output list for the passed centrality/multiplicity range */
           TList* fOutputList = new TList();
           fOutputList->SetName(name);
           fOutputList->SetOwner(true);
           /* init the data collection instance */
-          dce->init(fOutputList);
+          if (im) {
+            dce->template init<true>(fOutputList);
+          } else {
+            dce->template init<false>(fOutputList);
+          }
           fGlobalOutputList->Add(fOutputList);
         };
         auto builSmallDCEInstance = [&initializeCEInstance](auto rg, bool me = false) {
           DataCollectingEngine<true>* dce = new DataCollectingEngine<true>();
-          initializeCEInstance(dce, TString::Format("DptDptCorrelationsData%s-%s", me ? "ME" : "", rg));
+          initializeCEInstance(dce, TString::Format("DptDptCorrelationsData%s-%s", me ? "ME" : "", rg), false);
           return dce;
         };
-        auto buildCEInstance = [&initializeCEInstance](auto rg, bool me = false) {
+        auto buildCEInstance = [&initializeCEInstance](auto rg, bool im, bool me = false) {
           DataCollectingEngine<false>* dce = new DataCollectingEngine<false>();
-          initializeCEInstance(dce, TString::Format("DptDptCorrelationsData%s-%s", me ? "ME" : "", rg));
+          initializeCEInstance(dce, TString::Format("DptDptCorrelationsData%s-%s", me ? "ME" : "", rg), im);
           return dce;
         };
         TString range = TString::Format("%d-%d", static_cast<int>(fCentMultMin[i]), static_cast<int>(fCentMultMax[i]));
@@ -915,16 +939,30 @@ struct DptDptCorrelationsTask {
           if (processpairs) {
             LOGF(fatal, "Processing pairs cannot be used with the small DCE, please configure properly!!");
           }
+          if (invmass) {
+            LOGF(fatal, "Invariant mass cannot be used with singles in the small DCE mode, please configure properly!!");
+          }
           dataCE_small[i] = builSmallDCEInstance(range.Data());
         } else {
-          dataCE[i] = buildCEInstance(range.Data());
+          if (invmass) {
+            if (!processpairs) {
+              LOGF(fatal, "Invariant mass cannot be used in processing singles, please configure properly!!");
+            } else {
+              dataCE[i] = buildCEInstance(range.Data(), true);
+            }
+          } else {
+            dataCE[i] = buildCEInstance(range.Data(), false);
+          }
         }
         if (processmixedevents) {
           /* consistency check */
           if (cfgSmallDCE.value) {
             LOGF(fatal, "Mixed events cannot be used with the small DCE, please configure properly!!");
           }
-          dataCEME[i] = buildCEInstance(range.Data(), true);
+          if (invmass) {
+            LOGF(warning, "Invariant mass will not be  used with Mixed events!!");
+          }
+          dataCEME[i] = buildCEInstance(range.Data(), false, true);
         }
       }
       for (int i = 0; i < ncmranges; ++i) {
