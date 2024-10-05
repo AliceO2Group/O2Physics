@@ -135,6 +135,7 @@ float zvtxlow = -10.0, zvtxup = 10.0;
 int phibins = 72;
 float philow = 0.0;
 float phiup = constants::math::TwoPI;
+bool onlyInOneSide = false; /* select only tracks that don't cross the TPC central membrane */
 
 /* selection criteria from PWGMM */
 // default quality criteria for tracks with ITS contribution
@@ -797,7 +798,14 @@ inline bool IsEvtSelected(CollisionObject const& collision, float& centormult)
   bool zvtxsel = false;
   /* TODO: vertex quality checks */
   if (zvtxlow < collision.posZ() && collision.posZ() < zvtxup) {
-    zvtxsel = true;
+    if (onlyInOneSide) {
+      if (collision.posZ() != 0.0) {
+        /* if only one side, we accept collisions which have zvtx different than zero */
+        zvtxsel = true;
+      }
+    } else {
+      zvtxsel = true;
+    }
   }
 
   bool centmultsel = centralitySelection(collision, centormult);
@@ -861,9 +869,12 @@ inline bool matchTrackType(TrackObject const& track)
 /// \brief Checks if the passed track is within the acceptance conditions of the analysis
 /// \param track the track of interest
 /// \return true if the track is in the acceptance, otherwise false
-template <typename TrackObject>
+template <typename CollisionsObject, typename TrackObject>
 inline bool InTheAcceptance(TrackObject const& track)
 {
+  /* the side on which the collision happened */
+  float side = track.template collision_as<CollisionsObject>().posZ();
+
   /* overall minimum momentum cut for the analysis */
   if (!(overallminp < track.p())) {
     return false;
@@ -872,6 +883,22 @@ inline bool InTheAcceptance(TrackObject const& track)
   if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
     if (track.mcParticleId() < 0) {
       return false;
+    }
+  }
+
+  /* check the side of the collision and decide if one side */
+  if (onlyInOneSide) {
+    if (side < 0) {
+      if (track.eta() >= 0.0) {
+        return false;
+      }
+    } else if (side > 0) {
+      if (track.eta() <= 0.0) {
+        return false;
+      }
+    } else {
+      /* if only one side we should not have collisions with zvtx = 0 */
+      LOGF(fatal, "Selecting one side tracks with a zvtx zero collision");
     }
   }
 
@@ -884,10 +911,10 @@ inline bool InTheAcceptance(TrackObject const& track)
 /// \brief Accepts or not the passed track
 /// \param track the track of interest
 /// \return true if the track is accepted, otherwise false
-template <typename TrackObject>
+template <typename CollisionsObject, typename TrackObject>
 inline bool AcceptTrack(TrackObject const& track)
 {
-  if (InTheAcceptance(track)) {
+  if (InTheAcceptance<CollisionsObject>(track)) {
     if (matchTrackType(track)) {
       return true;
     }
