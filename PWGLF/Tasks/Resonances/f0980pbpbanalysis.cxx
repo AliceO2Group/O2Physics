@@ -377,7 +377,7 @@ struct f0980pbpbanalysis {
       return;
     }
     histos.fill(HIST("QA/CentDist"), centrality, 1.0);
-    histos.fill(HIST("QV/Vz"), collision.posZ(), 1.0);
+    histos.fill(HIST("QA/Vz"), collision.posZ(), 1.0);
 
     FillHistograms<false>(collision, tracks, 2); // second order
   };
