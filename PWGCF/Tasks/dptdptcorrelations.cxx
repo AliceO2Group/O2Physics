@@ -420,7 +420,10 @@ struct DptDptCorrelationsTask {
             fhSum2DptDpt_vsDEtaDPhi[track1.trackacceptedid()][track2.trackacceptedid()]->AddBinContent(globalbin, dptdptw);
             fhSum2PtPt_vsDEtaDPhi[track1.trackacceptedid()][track2.trackacceptedid()]->AddBinContent(globalbin, track1.pt() * track2.pt() * corr);
             if constexpr (doinvmass) {
-              fhInvMass[track1.trackacceptedid()][track2.trackacceptedid()]->Fill(std::sqrt(getInvMassSquared(track1, poimass[track1.trackacceptedid()], track2, poimass[track2.trackacceptedid()])) * 1000.0f);
+              if ((track1.trackacceptedid() % 2) != (track2.trackacceptedid() % 2)) {
+                /* only opposite charge invariant mass*/
+                fhInvMass[track1.trackacceptedid()][track2.trackacceptedid()]->Fill(std::sqrt(getInvMassSquared(track1, poimass[static_cast<int>(track1.trackacceptedid() / 2)], track2, poimass[static_cast<int>(track2.trackacceptedid() / 2)])) * 1000.0f);
+              }
             }
           }
           fhN2_vsPtPt[track1.trackacceptedid()][track2.trackacceptedid()]->Fill(track1.pt(), track2.pt(), corr);
@@ -865,7 +868,7 @@ struct DptDptCorrelationsTask {
           tnames.push_back(std::string(TString::Format("%sP", pidselector.getSpeciesFName(ix)).Data()));
           tnames.push_back(std::string(TString::Format("%sM", pidselector.getSpeciesFName(ix)).Data()));
           poimass.push_back(pidselector.getSpeciesMass(ix));
-          LOGF(info, "Incorporated species name %s to the analysis", poinames[ix].c_str());
+          LOGF(info, "Incorporated species name %s with mass %f to the analysis", poinames[ix].c_str(), poimass[ix]);
         }
       }
       uint ntracknames = tnames.size();
