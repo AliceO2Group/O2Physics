@@ -422,7 +422,7 @@ struct DptDptCorrelationsTask {
             if constexpr (doinvmass) {
               if ((track1.trackacceptedid() % 2) != (track2.trackacceptedid() % 2)) {
                 /* only opposite charge invariant mass*/
-                fhInvMass[track1.trackacceptedid()][track2.trackacceptedid()]->Fill(std::sqrt(getInvMassSquared(track1, poimass[int(track1.trackacceptedid() / 2)], track2, poimass[int(track2.trackacceptedid() / 2)])) * 1000.0f);
+                fhInvMass[track1.trackacceptedid()][track2.trackacceptedid()]->Fill(std::sqrt(getInvMassSquared(track1, poimass[static_cast<int>(track1.trackacceptedid() / 2)], track2, poimass[static_cast<int>(track2.trackacceptedid() / 2)])) * 1000.0f);
               }
             }
           }
