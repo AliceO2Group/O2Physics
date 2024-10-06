@@ -473,7 +473,7 @@ struct FlowGFWPbPb
                                          ifnode(dcaZ.node() > 0.f, nabs(aod::track::dcaZ) <= dcaZ && ncheckbit(aod::track::trackCutFlag, trackSelectionDCAXYonly),
                                                 ncheckbit(aod::track::trackCutFlag, trackSelectionDCA)) &&
                                          (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) ;
-    
+
 
     using Colls = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::CentFT0Cs>>; // collisions filter
     using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksDCA, aod::TracksExtra>>; // tracks filter
@@ -542,7 +542,7 @@ struct FlowGFWPbPb
       int itsonly_nch{0};
 
     for (auto& track : tracks) {
-        
+
       if (cfgUseAdditionalTrackCut && !trackSelected(track, Magnetfield))
         continue;
       if (cfgOutputNUAWeights)
@@ -597,7 +597,7 @@ struct FlowGFWPbPb
 
     } // End of track loop
 
-      
+
       registry.fill(HIST("Events_per_Centrality_Bin"), cent);
       registry.fill(HIST("GlobalplusITS_Nch_vs_Cent"), cent, globalplusits_nch);
       registry.fill(HIST("Globalonly_Nch_vs_Cent"), cent, gloabalonly_nch);
