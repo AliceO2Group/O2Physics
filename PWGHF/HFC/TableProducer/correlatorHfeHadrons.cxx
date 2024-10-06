@@ -125,7 +125,7 @@ struct HfCorrelatorHfeHadrons {
       ptElectron = eTrack.ptTrack();
       phiElectron = eTrack.phiTrack();
       etaElectron = eTrack.etaTrack();
-      electronTrackId = eTrack.gtrackId();
+      electronTrackId = eTrack.gTrackId();
       double deltaPhi = -999;
       double deltaEta = -999;
       double ptHadron = -999;
