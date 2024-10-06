@@ -123,6 +123,8 @@ struct Dilepton {
 
   // ConfigurableAxis ConfMmumuBins{"ConfMmumuBins", {VARIABLE_WIDTH, 0.20, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.30, 0.31, 0.32, 0.33, 0.34, 0.35, 0.36, 0.37, 0.38, 0.39, 0.40, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49, 0.50, 0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.60, 0.61, 0.62, 0.63, 0.64, 0.65, 0.66, 0.67, 0.68, 0.69, 0.70, 0.71, 0.72, 0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 0.80, 0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.90, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.00, 1.01, 1.02, 1.03, 1.04, 1.05, 1.06, 1.07, 1.08, 1.09, 1.10, 1.11,1.12,1.13,1.14,1.15,1.16,1.17,1.18,1.19, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.10, 2.20, 2.30, 2.40, 2.50, 2.60, 2.70, 2.75, 2.80, 2.85, 2.90, 2.95, 3.00, 3.05, 3.10, 3.15, 3.20, 3.25, 3.30, 3.35, 3.40, 3.45, 3.50, 3.55, 3.60, 3.65, 3.70, 3.75, 3.80, 3.85, 3.90, 3.95, 4.00, 4.10, 4.20, 4.30, 4.40, 4.50, 4.60, 4.70, 4.80, 4.90, 5.00, 5.10, 5.20, 5.30, 5.40, 5.50, 5.60, 5.70, 5.80, 5.90, 6.00, 6.10, 6.20, 6.30, 6.40, 6.50, 6.60, 6.70, 6.80, 6.90, 7.00, 7.10, 7.20, 7.30, 7.40, 7.50, 7.60, 7.70, 7.80, 7.90, 8.00, 8.10, 8.20, 8.30, 8.40, 8.50, 8.60, 8.70, 8.80, 8.90, 9.00, 9.10, 9.20, 9.30, 9.40, 9.50, 9.60, 9.70, 9.80, 9.90, 10.00, 10.10, 10.20, 10.30, 10.40, 10.50, 10.60, 10.70, 10.80, 10.90, 11.00, 11.50, 12.00}, "mmumu bins for output histograms"}; // for dimuon. one can copy bins here to hyperloop page.
 
+  ConfigurableAxis ConfSPBins{"ConfSPBins", {200, -5, 5}, "SP bins for flow analysis"};
+
   EMEventCut fEMEventCut;
   struct : ConfigurableGroup {
     std::string prefix = "eventcut_group";
@@ -448,10 +450,10 @@ struct Dilepton {
     delete emh_neg;
     emh_neg = 0x0;
 
-    map_mixed_eventId_to_centrality.clear();
-    map_mixed_eventId_to_occupancy.clear();
-    map_mixed_eventId_to_qvector.clear();
-    map_mixed_eventId_to_globalBC.clear();
+    // map_mixed_eventId_to_centrality.clear();
+    // map_mixed_eventId_to_occupancy.clear();
+    // map_mixed_eventId_to_qvector.clear();
+    // map_mixed_eventId_to_globalBC.clear();
 
     used_trackIds.clear();
     used_trackIds.shrink_to_fit();
@@ -512,37 +514,20 @@ struct Dilepton {
         nmod = 3;
       }
 
-      fRegistry.add("Pair/same/uls/hs", "dilepton", kTHnSparseD, {axis_mass, axis_pt, axis_dca}, true);
-      fRegistry.add("Pair/same/uls/hPrfUQ", Form("dilepton <#vec{u}_{%d,ll} #upoint #vec{Q}_{%d}^{%s}>", nmod, nmod, qvec_det_names[cfgQvecEstimator].data()), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
+      const AxisSpec axis_sp{ConfSPBins, Form("#vec{u}_{%d,ll} #upoint #vec{Q}_{%d}^{%s}", nmod, nmod, qvec_det_names[cfgQvecEstimator].data())};
+
+      fRegistry.add("Pair/same/uls/hs", "dilepton", kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_sp}, true);
+      // fRegistry.add("Pair/same/uls/hPrfUQ", Form("dilepton <#vec{u}_{%d,ll} #upoint #vec{Q}_{%d}^{%s}>", nmod, nmod, qvec_det_names[cfgQvecEstimator].data()), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
       fRegistry.addClone("Pair/same/uls/", "Pair/same/lspp/");
       fRegistry.addClone("Pair/same/uls/", "Pair/same/lsmm/");
 
       fRegistry.add("Pair/mix/uls/hs", "dilepton", kTHnSparseD, {axis_mass, axis_pt, axis_dca}, true);
-      fRegistry.add("Pair/mix/uls/hs_woEPmix", "dilepton", kTHnSparseD, {axis_mass, axis_pt, axis_dca}, true);
-      fRegistry.add("Pair/mix/uls/hPrfUQCosDPhi", Form("dilepton <#vec{u}_{%d,l1} #upoint #vec{Q}_{%d,ev1}^{%s} cos(%d(#varphi_{l1} - #varphi_{ll}))> + <#vec{u}_{%d,l2} #upoint #vec{Q}_{%d,ev2}^{%s} cos(%d(#varphi_{l2} - #varphi_{ll}))>", nmod, nmod, qvec_det_names[cfgQvecEstimator].data(), nmod, nmod, nmod, qvec_det_names[cfgQvecEstimator].data(), nmod), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
-      fRegistry.add("Pair/mix/uls/hPrf2UQ1UQ2CosDPhi12", Form("dilepton <2 #vec{u}_{%d,l1} #upoint #vec{Q}_{%d,ev1}^{%s} #vec{u}_{%d,l2} #upoint #vec{Q}_{%d,ev2}^{%s} cos(%d(#varphi_{l1} - #varphi_{l2}))>", nmod, nmod, qvec_det_names[cfgQvecEstimator].data(), nmod, nmod, qvec_det_names[cfgQvecEstimator].data(), nmod), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
+      // fRegistry.add("Pair/mix/uls/hs_woEPmix", "dilepton", kTHnSparseD, {axis_mass, axis_pt, axis_dca}, true);
+      // fRegistry.add("Pair/mix/uls/hPrfUQCosDPhi", Form("dilepton <#vec{u}_{%d,l1} #upoint #vec{Q}_{%d,ev1}^{%s} cos(%d(#varphi_{l1} - #varphi_{ll}))> + <#vec{u}_{%d,l2} #upoint #vec{Q}_{%d,ev2}^{%s} cos(%d(#varphi_{l2} - #varphi_{ll}))>", nmod, nmod, qvec_det_names[cfgQvecEstimator].data(), nmod, nmod, nmod, qvec_det_names[cfgQvecEstimator].data(), nmod), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
+      // fRegistry.add("Pair/mix/uls/hPrf2UQ1UQ2CosDPhi12", Form("dilepton <2 #vec{u}_{%d,l1} #upoint #vec{Q}_{%d,ev1}^{%s} #vec{u}_{%d,l2} #upoint #vec{Q}_{%d,ev2}^{%s} cos(%d(#varphi_{l1} - #varphi_{l2}))>", nmod, nmod, qvec_det_names[cfgQvecEstimator].data(), nmod, nmod, qvec_det_names[cfgQvecEstimator].data(), nmod), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
       fRegistry.addClone("Pair/mix/uls/", "Pair/mix/lspp/");
       fRegistry.addClone("Pair/mix/uls/", "Pair/mix/lsmm/");
 
-      // std::string detname1 = qvec_det_names[cfgQvecEstimator];
-      // std::string detname2 = "";
-      // std::string detname3 = "";
-      // if (detname1.find("FT0") != std::string::npos) { // for dielectrons
-      //   detname2 = qvec_det_names[4];
-      //   detname3 = qvec_det_names[5];
-      //   subdet2 = 4;
-      //   subdet3 = 5;
-      // } else if (detname1.find("B") != std::string::npos) { // for dimuon
-      //   detname2 = qvec_det_names[1];
-      //   detname3 = qvec_det_names[2];
-      //   subdet2 = 1;
-      //   subdet3 = 2;
-      // }
-
-      // fRegistry.add("Pair/mix/ev1/hPrf_SP12_CentFT0C", Form("Q_{%d}^{%s} #upoint Q_{%d}^{%s};centrality FT0C (%%);Q_{%d}^{%s} #upoint Q_{%d}^{%s}", nmod, detname1.data(), nmod, detname2.data(), nmod, detname1.data(), nmod, detname2.data()), kTProfile, {{110, 0, 110}}, true);
-      // fRegistry.add("Pair/mix/ev1/hPrf_SP13_CentFT0C", Form("Q_{%d}^{%s} #upoint Q_{%d}^{%s};centrality FT0C (%%);Q_{%d}^{%s} #upoint Q_{%d}^{%s}", nmod, detname1.data(), nmod, detname3.data(), nmod, detname1.data(), nmod, detname3.data()), kTProfile, {{110, 0, 110}}, true);
-      // fRegistry.add("Pair/mix/ev1/hPrf_SP23_CentFT0C", Form("Q_{%d}^{%s} #upoint Q_{%d}^{%s};centrality FT0C (%%);Q_{%d}^{%s} #upoint Q_{%d}^{%s}", nmod, detname2.data(), nmod, detname3.data(), nmod, detname2.data(), nmod, detname3.data()), kTProfile, {{110, 0, 110}}, true);
-      // fRegistry.addClone("Pair/mix/ev1/", "Pair/mix/ev2/");
     } else if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kPolarization)) {
       const AxisSpec axis_cos_theta_cs{10, 0.f, 1.f, "|cos(#theta_{CS})|"};
       const AxisSpec axis_phi_cs{18, 0.f, M_PI, "|#varphi_{CS}| (rad.)"};
@@ -893,14 +878,14 @@ struct Dilepton {
 
         float sp = RecoDecay::dotProd(std::array<float, 2>{static_cast<float>(std::cos(nmod * v12.Phi())), static_cast<float>(std::sin(nmod * v12.Phi()))}, qvectors[nmod][cfgQvecEstimator]) / getSPresolution(collision.centFT0C(), collision.trackOccupancyInTimeRange());
         if (t1.sign() * t2.sign() < 0) { // ULS
-          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), pair_dca, weight);
-          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hPrfUQ"), v12.M(), v12.Pt(), pair_dca, sp, weight);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), pair_dca, sp, weight);
+          // fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hPrfUQ"), v12.M(), v12.Pt(), pair_dca, sp, weight);
         } else if (t1.sign() > 0 && t2.sign() > 0) { // LS++
-          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hs"), v12.M(), v12.Pt(), pair_dca, weight);
-          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hPrfUQ"), v12.M(), v12.Pt(), pair_dca, sp, weight);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hs"), v12.M(), v12.Pt(), pair_dca, sp, weight);
+          // fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hPrfUQ"), v12.M(), v12.Pt(), pair_dca, sp, weight);
         } else if (t1.sign() < 0 && t2.sign() < 0) { // LS--
-          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hs"), v12.M(), v12.Pt(), pair_dca, weight);
-          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hPrfUQ"), v12.M(), v12.Pt(), pair_dca, sp, weight);
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hs"), v12.M(), v12.Pt(), pair_dca, sp, weight);
+          // fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hPrfUQ"), v12.M(), v12.Pt(), pair_dca, sp, weight);
         }
       } else if constexpr (ev_id == 1) {
         if (t1.sign() * t2.sign() < 0) { // ULS
@@ -1054,9 +1039,9 @@ struct Dilepton {
 
   TEMH* emh_pos = nullptr;
   TEMH* emh_neg = nullptr;
-  std::map<std::pair<int, int>, std::vector<std::vector<std::array<float, 2>>>> map_mixed_eventId_to_qvector;
-  std::map<std::pair<int, int>, float> map_mixed_eventId_to_centrality;
-  std::map<std::pair<int, int>, int> map_mixed_eventId_to_occupancy;
+  // std::map<std::pair<int, int>, std::vector<std::vector<std::array<float, 2>>>> map_mixed_eventId_to_qvector;
+  // std::map<std::pair<int, int>, float> map_mixed_eventId_to_centrality;
+  // std::map<std::pair<int, int>, int> map_mixed_eventId_to_occupancy;
   std::map<std::pair<int, int>, uint64_t> map_mixed_eventId_to_globalBC;
 
   std::vector<std::pair<int, int>> used_trackIds;
@@ -1247,68 +1232,68 @@ struct Dilepton {
         }
       } // end of loop over mixed event pool
 
-      // run mixed event loop for flow measurement. Don't divide mixed-event categories by event planes, if you do flow measurement.
-      if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kFlowV2) || cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kFlowV3)) {
-        for (int epbin_tmp = 0; epbin_tmp < static_cast<int>(ep_bin_edges.size()) - 1; epbin_tmp++) {
-          std::tuple<int, int, int, int> key_bin = std::make_tuple(zbin, centbin, epbin_tmp, occbin);
-          auto collisionIds_in_mixing_pool = emh_pos->GetCollisionIdsFromEventPool(key_bin); // pos/neg does not matter.
-          // LOGF(info, "collisionIds_in_mixing_pool.size() = %d", collisionIds_in_mixing_pool.size());
+      // // run mixed event loop for flow measurement. Don't divide mixed-event categories by event planes, if you do flow measurement.
+      // if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kFlowV2) || cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kFlowV3)) {
+      //   for (int epbin_tmp = 0; epbin_tmp < static_cast<int>(ep_bin_edges.size()) - 1; epbin_tmp++) {
+      //     std::tuple<int, int, int, int> key_bin = std::make_tuple(zbin, centbin, epbin_tmp, occbin);
+      //     auto collisionIds_in_mixing_pool = emh_pos->GetCollisionIdsFromEventPool(key_bin); // pos/neg does not matter.
+      //     // LOGF(info, "collisionIds_in_mixing_pool.size() = %d", collisionIds_in_mixing_pool.size());
 
-          for (auto& mix_dfId_collisionId : collisionIds_in_mixing_pool) {
-            int mix_dfId = mix_dfId_collisionId.first;
-            int mix_collisionId = mix_dfId_collisionId.second;
-            if (collision.globalIndex() == mix_collisionId && ndf == mix_dfId) { // this never happens. only protection.
-              continue;
-            }
+      //     for (auto& mix_dfId_collisionId : collisionIds_in_mixing_pool) {
+      //       int mix_dfId = mix_dfId_collisionId.first;
+      //       int mix_collisionId = mix_dfId_collisionId.second;
+      //       if (collision.globalIndex() == mix_collisionId && ndf == mix_dfId) { // this never happens. only protection.
+      //         continue;
+      //       }
 
-            auto centrality_mix = map_mixed_eventId_to_centrality[mix_dfId_collisionId];
-            auto occupancy_mix = map_mixed_eventId_to_occupancy[mix_dfId_collisionId];
-            auto qvectors_mix = map_mixed_eventId_to_qvector[mix_dfId_collisionId];
-            auto globalBC_mix = map_mixed_eventId_to_globalBC[mix_dfId_collisionId];
-            uint64_t diffBC = std::max(collision.globalBC(), globalBC_mix) - std::min(collision.globalBC(), globalBC_mix);
-            if (diffBC < ndiff_bc_mix) {
-              continue;
-            }
+      //       auto centrality_mix = map_mixed_eventId_to_centrality[mix_dfId_collisionId];
+      //       auto occupancy_mix = map_mixed_eventId_to_occupancy[mix_dfId_collisionId];
+      //       auto qvectors_mix = map_mixed_eventId_to_qvector[mix_dfId_collisionId];
+      //       auto globalBC_mix = map_mixed_eventId_to_globalBC[mix_dfId_collisionId];
+      //       uint64_t diffBC = std::max(collision.globalBC(), globalBC_mix) - std::min(collision.globalBC(), globalBC_mix);
+      //       if (diffBC < ndiff_bc_mix) {
+      //         continue;
+      //       }
 
-            auto posTracks_from_event_pool = emh_pos->GetTracksPerCollision(mix_dfId_collisionId);
-            auto negTracks_from_event_pool = emh_neg->GetTracksPerCollision(mix_dfId_collisionId);
-            // LOGF(info, "Do event mixing: current event (%d, %d) | event pool (%d, %d), npos = %d , nneg = %d", ndf, collision.globalIndex(), mix_dfId, mix_collisionId, posTracks_from_event_pool.size(), negTracks_from_event_pool.size());
+      //       auto posTracks_from_event_pool = emh_pos->GetTracksPerCollision(mix_dfId_collisionId);
+      //       auto negTracks_from_event_pool = emh_neg->GetTracksPerCollision(mix_dfId_collisionId);
+      //       // LOGF(info, "Do event mixing: current event (%d, %d) | event pool (%d, %d), npos = %d , nneg = %d", ndf, collision.globalIndex(), mix_dfId, mix_collisionId, posTracks_from_event_pool.size(), negTracks_from_event_pool.size());
 
-            for (auto& pos : selected_posTracks_in_this_event) { // ULS mix
-              for (auto& neg : negTracks_from_event_pool) {
-                fillMixedPairInfoForFlow(pos, neg, cut, qvectors, qvectors_mix, collision.centFT0C(), centrality_mix, collision.trackOccupancyInTimeRange(), occupancy_mix);
-              }
-            }
+      //       for (auto& pos : selected_posTracks_in_this_event) { // ULS mix
+      //         for (auto& neg : negTracks_from_event_pool) {
+      //           fillMixedPairInfoForFlow(pos, neg, cut, qvectors, qvectors_mix, collision.centFT0C(), centrality_mix, collision.trackOccupancyInTimeRange(), occupancy_mix);
+      //         }
+      //       }
 
-            for (auto& neg : selected_negTracks_in_this_event) { // ULS mix
-              for (auto& pos : posTracks_from_event_pool) {
-                fillMixedPairInfoForFlow(neg, pos, cut, qvectors, qvectors_mix, collision.centFT0C(), centrality_mix, collision.trackOccupancyInTimeRange(), occupancy_mix);
-              }
-            }
+      //       for (auto& neg : selected_negTracks_in_this_event) { // ULS mix
+      //         for (auto& pos : posTracks_from_event_pool) {
+      //           fillMixedPairInfoForFlow(neg, pos, cut, qvectors, qvectors_mix, collision.centFT0C(), centrality_mix, collision.trackOccupancyInTimeRange(), occupancy_mix);
+      //         }
+      //       }
 
-            for (auto& pos1 : selected_posTracks_in_this_event) { // LS++ mix
-              for (auto& pos2 : posTracks_from_event_pool) {
-                fillMixedPairInfoForFlow(pos1, pos2, cut, qvectors, qvectors_mix, collision.centFT0C(), centrality_mix, collision.trackOccupancyInTimeRange(), occupancy_mix);
-              }
-            }
+      //       for (auto& pos1 : selected_posTracks_in_this_event) { // LS++ mix
+      //         for (auto& pos2 : posTracks_from_event_pool) {
+      //           fillMixedPairInfoForFlow(pos1, pos2, cut, qvectors, qvectors_mix, collision.centFT0C(), centrality_mix, collision.trackOccupancyInTimeRange(), occupancy_mix);
+      //         }
+      //       }
 
-            for (auto& neg1 : selected_negTracks_in_this_event) { // LS-- mix
-              for (auto& neg2 : negTracks_from_event_pool) {
-                fillMixedPairInfoForFlow(neg1, neg2, cut, qvectors, qvectors_mix, collision.centFT0C(), centrality_mix, collision.trackOccupancyInTimeRange(), occupancy_mix);
-              }
-            }
-          } // end of loop over mixed event pool
+      //       for (auto& neg1 : selected_negTracks_in_this_event) { // LS-- mix
+      //         for (auto& neg2 : negTracks_from_event_pool) {
+      //           fillMixedPairInfoForFlow(neg1, neg2, cut, qvectors, qvectors_mix, collision.centFT0C(), centrality_mix, collision.trackOccupancyInTimeRange(), occupancy_mix);
+      //         }
+      //       }
+      //     } // end of loop over mixed event pool
 
-        } // end of ep bin loop
+      //   } // end of ep bin loop
 
-      } // end of mixing loop for flow
+      // } // end of mixing loop for flow
 
       if (nuls > 0 || nlspp > 0 || nlsmm > 0) {
-        if (nmod > 0) {
-          map_mixed_eventId_to_qvector[key_df_collision] = qvectors;
-          map_mixed_eventId_to_centrality[key_df_collision] = collision.centFT0C();
-          map_mixed_eventId_to_occupancy[key_df_collision] = collision.trackOccupancyInTimeRange();
-        }
+        // if (nmod > 0) {
+        //   map_mixed_eventId_to_qvector[key_df_collision] = qvectors;
+        //   map_mixed_eventId_to_centrality[key_df_collision] = collision.centFT0C();
+        //   map_mixed_eventId_to_occupancy[key_df_collision] = collision.trackOccupancyInTimeRange();
+        // }
         map_mixed_eventId_to_globalBC[key_df_collision] = collision.globalBC();
         emh_pos->AddCollisionIdAtLast(key_bin, key_df_collision);
         emh_neg->AddCollisionIdAtLast(key_bin, key_df_collision);
@@ -1319,70 +1304,70 @@ struct Dilepton {
     ndf++;
   } // end of DF
 
-  template <typename TTrack1, typename TTrack2, typename TCut, typename TQvectors, typename TMixedQvectors>
-  bool fillMixedPairInfoForFlow(TTrack1 const& t1, TTrack2 const& t2, TCut const& cut, TQvectors const& qvectors, TMixedQvectors const& qvectors_mix, const float centrality, const float centrality_mix, const int occupancy, const int occupancy_mix)
-  {
-    if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
-      auto v1ambIds = t1.ambiguousElectronsIds();
-      auto v2ambIds = t2.ambiguousElectronsIds();
-      if ((t1.dfId() == t2.dfId()) && std::find(v2ambIds.begin(), v2ambIds.end(), t1.globalIndex()) != v2ambIds.end() && std::find(v1ambIds.begin(), v1ambIds.end(), t2.globalIndex()) != v1ambIds.end()) {
-        return false; // this is protection against pairing 2 identical tracks. This happens, when TTCA is used. TTCA can assign a track to several possible collisions.
-      }
-    } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
-      auto v1ambIds = t1.ambiguousMuonsIds();
-      auto v2ambIds = t2.ambiguousMuonsIds();
-      if ((t1.dfId() == t2.dfId()) && std::find(v2ambIds.begin(), v2ambIds.end(), t1.globalIndex()) != v2ambIds.end() && std::find(v1ambIds.begin(), v1ambIds.end(), t2.globalIndex()) != v1ambIds.end()) {
-        return false; // this is protection against pairing 2 identical tracks. This happens, when TTCA is used. TTCA can assign a track to several possible collisions.
-      }
-    }
+  // template <typename TTrack1, typename TTrack2, typename TCut, typename TQvectors, typename TMixedQvectors>
+  // bool fillMixedPairInfoForFlow(TTrack1 const& t1, TTrack2 const& t2, TCut const& cut, TQvectors const& qvectors, TMixedQvectors const& qvectors_mix, const float centrality, const float centrality_mix, const int occupancy, const int occupancy_mix)
+  // {
+  //   if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
+  //     auto v1ambIds = t1.ambiguousElectronsIds();
+  //     auto v2ambIds = t2.ambiguousElectronsIds();
+  //     if ((t1.dfId() == t2.dfId()) && std::find(v2ambIds.begin(), v2ambIds.end(), t1.globalIndex()) != v2ambIds.end() && std::find(v1ambIds.begin(), v1ambIds.end(), t2.globalIndex()) != v1ambIds.end()) {
+  //       return false; // this is protection against pairing 2 identical tracks. This happens, when TTCA is used. TTCA can assign a track to several possible collisions.
+  //     }
+  //   } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
+  //     auto v1ambIds = t1.ambiguousMuonsIds();
+  //     auto v2ambIds = t2.ambiguousMuonsIds();
+  //     if ((t1.dfId() == t2.dfId()) && std::find(v2ambIds.begin(), v2ambIds.end(), t1.globalIndex()) != v2ambIds.end() && std::find(v1ambIds.begin(), v1ambIds.end(), t2.globalIndex()) != v1ambIds.end()) {
+  //       return false; // this is protection against pairing 2 identical tracks. This happens, when TTCA is used. TTCA can assign a track to several possible collisions.
+  //     }
+  //   }
 
-    if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
-      if (!cut.template IsSelectedPair(t1, t2, d_bz)) {
-        return false;
-      }
-    } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
-      if (!cut.template IsSelectedPair(t1, t2)) {
-        return false;
-      }
-    }
+  //   if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
+  //     if (!cut.template IsSelectedPair(t1, t2, d_bz)) {
+  //       return false;
+  //     }
+  //   } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
+  //     if (!cut.template IsSelectedPair(t1, t2)) {
+  //       return false;
+  //     }
+  //   }
 
-    ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), leptonM1);
-    ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), leptonM2);
-    ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
+  //   ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), leptonM1);
+  //   ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), leptonM2);
+  //   ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
 
-    float dca_t1 = 999.f, dca_t2 = 999.f, pair_dca = 999.f;
-    if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
-      dca_t1 = dca3DinSigma(t1);
-      dca_t2 = dca3DinSigma(t2);
-      pair_dca = std::sqrt((dca_t1 * dca_t1 + dca_t2 * dca_t2) / 2.);
-    } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
-      dca_t1 = fwdDcaXYinSigma(t1);
-      dca_t2 = fwdDcaXYinSigma(t2);
-      pair_dca = std::sqrt((dca_t1 * dca_t1 + dca_t2 * dca_t2) / 2.);
-    }
+  //   float dca_t1 = 999.f, dca_t2 = 999.f, pair_dca = 999.f;
+  //   if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
+  //     dca_t1 = dca3DinSigma(t1);
+  //     dca_t2 = dca3DinSigma(t2);
+  //     pair_dca = std::sqrt((dca_t1 * dca_t1 + dca_t2 * dca_t2) / 2.);
+  //   } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
+  //     dca_t1 = fwdDcaXYinSigma(t1);
+  //     dca_t2 = fwdDcaXYinSigma(t2);
+  //     pair_dca = std::sqrt((dca_t1 * dca_t1 + dca_t2 * dca_t2) / 2.);
+  //   }
 
-    float sp1 = RecoDecay::dotProd(std::array<float, 2>{static_cast<float>(std::cos(nmod * v1.Phi())), static_cast<float>(std::sin(nmod * v1.Phi()))}, qvectors[nmod][cfgQvecEstimator]) / getSPresolution(centrality, occupancy);
-    float sp2 = RecoDecay::dotProd(std::array<float, 2>{static_cast<float>(std::cos(nmod * v2.Phi())), static_cast<float>(std::sin(nmod * v2.Phi()))}, qvectors_mix[nmod][cfgQvecEstimator]) / getSPresolution(centrality_mix, occupancy_mix);
-    float cos_dphi1 = std::cos(nmod * (v1.Phi() - v12.Phi()));
-    float cos_dphi2 = std::cos(nmod * (v2.Phi() - v12.Phi()));
-    float cos_dphi12 = std::cos(nmod * (v1.Phi() - v2.Phi()));
-    const float weight = 1.f;
+  //   float sp1 = RecoDecay::dotProd(std::array<float, 2>{static_cast<float>(std::cos(nmod * v1.Phi())), static_cast<float>(std::sin(nmod * v1.Phi()))}, qvectors[nmod][cfgQvecEstimator]) / getSPresolution(centrality, occupancy);
+  //   float sp2 = RecoDecay::dotProd(std::array<float, 2>{static_cast<float>(std::cos(nmod * v2.Phi())), static_cast<float>(std::sin(nmod * v2.Phi()))}, qvectors_mix[nmod][cfgQvecEstimator]) / getSPresolution(centrality_mix, occupancy_mix);
+  //   float cos_dphi1 = std::cos(nmod * (v1.Phi() - v12.Phi()));
+  //   float cos_dphi2 = std::cos(nmod * (v2.Phi() - v12.Phi()));
+  //   float cos_dphi12 = std::cos(nmod * (v1.Phi() - v2.Phi()));
+  //   const float weight = 1.f;
 
-    if (t1.sign() * t2.sign() < 0) { // ULS
-      fRegistry.fill(HIST("Pair/mix/uls/hs_woEPmix"), v12.M(), v12.Pt(), pair_dca, weight);
-      fRegistry.fill(HIST("Pair/mix/uls/hPrfUQCosDPhi"), v12.M(), v12.Pt(), pair_dca, sp1 * cos_dphi1 + sp2 * cos_dphi2, weight);
-      fRegistry.fill(HIST("Pair/mix/uls/hPrf2UQ1UQ2CosDPhi12"), v12.M(), v12.Pt(), pair_dca, 2.f * sp1 * sp2 * cos_dphi12, weight);
-    } else if (t1.sign() > 0 && t2.sign() > 0) { // LS++
-      fRegistry.fill(HIST("Pair/mix/lspp/hs_woEPmix"), v12.M(), v12.Pt(), pair_dca, weight);
-      fRegistry.fill(HIST("Pair/mix/lspp/hPrfUQCosDPhi"), v12.M(), v12.Pt(), pair_dca, sp1 * cos_dphi1 + sp2 * cos_dphi2, weight);
-      fRegistry.fill(HIST("Pair/mix/lspp/hPrf2UQ1UQ2CosDPhi12"), v12.M(), v12.Pt(), pair_dca, 2.f * sp1 * sp2 * cos_dphi12, weight);
-    } else if (t1.sign() < 0 && t2.sign() < 0) { // LS--
-      fRegistry.fill(HIST("Pair/mix/lsmm/hs_woEPmix"), v12.M(), v12.Pt(), pair_dca, weight);
-      fRegistry.fill(HIST("Pair/mix/lsmm/hPrfUQCosDPhi"), v12.M(), v12.Pt(), pair_dca, sp1 * cos_dphi1 + sp2 * cos_dphi2, weight);
-      fRegistry.fill(HIST("Pair/mix/lsmm/hPrf2UQ1UQ2CosDPhi12"), v12.M(), v12.Pt(), pair_dca, 2.f * sp1 * sp2 * cos_dphi12, weight);
-    }
-    return true;
-  }
+  //   if (t1.sign() * t2.sign() < 0) { // ULS
+  //     fRegistry.fill(HIST("Pair/mix/uls/hs_woEPmix"), v12.M(), v12.Pt(), pair_dca, weight);
+  //     fRegistry.fill(HIST("Pair/mix/uls/hPrfUQCosDPhi"), v12.M(), v12.Pt(), pair_dca, sp1 * cos_dphi1 + sp2 * cos_dphi2, weight);
+  //     fRegistry.fill(HIST("Pair/mix/uls/hPrf2UQ1UQ2CosDPhi12"), v12.M(), v12.Pt(), pair_dca, 2.f * sp1 * sp2 * cos_dphi12, weight);
+  //   } else if (t1.sign() > 0 && t2.sign() > 0) { // LS++
+  //     fRegistry.fill(HIST("Pair/mix/lspp/hs_woEPmix"), v12.M(), v12.Pt(), pair_dca, weight);
+  //     fRegistry.fill(HIST("Pair/mix/lspp/hPrfUQCosDPhi"), v12.M(), v12.Pt(), pair_dca, sp1 * cos_dphi1 + sp2 * cos_dphi2, weight);
+  //     fRegistry.fill(HIST("Pair/mix/lspp/hPrf2UQ1UQ2CosDPhi12"), v12.M(), v12.Pt(), pair_dca, 2.f * sp1 * sp2 * cos_dphi12, weight);
+  //   } else if (t1.sign() < 0 && t2.sign() < 0) { // LS--
+  //     fRegistry.fill(HIST("Pair/mix/lsmm/hs_woEPmix"), v12.M(), v12.Pt(), pair_dca, weight);
+  //     fRegistry.fill(HIST("Pair/mix/lsmm/hPrfUQCosDPhi"), v12.M(), v12.Pt(), pair_dca, sp1 * cos_dphi1 + sp2 * cos_dphi2, weight);
+  //     fRegistry.fill(HIST("Pair/mix/lsmm/hPrf2UQ1UQ2CosDPhi12"), v12.M(), v12.Pt(), pair_dca, 2.f * sp1 * sp2 * cos_dphi12, weight);
+  //   }
+  //   return true;
+  // }
 
   template <typename TCollision, typename TTrack1, typename TTrack2, typename TCut>
   bool isPairOK(TCollision const& collision, TTrack1 const& t1, TTrack2 const& t2, TCut const& cut)
