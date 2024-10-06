@@ -678,7 +678,6 @@ struct DileptonMC {
 
     float dphi = v1.Phi() - v2.Phi();
     o2::math_utils::bringToPMPi(dphi);
-
     float deta = v1.Eta() - v2.Eta();
 
     float aco = 1.f - abs(dphi) / M_PI;
