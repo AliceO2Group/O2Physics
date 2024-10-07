@@ -248,6 +248,10 @@ struct mcPidTof {
   template <typename T>
   T applyMcRecalib(int pidId, T trackPt, T nSigma)
   {
+    if (nSigma < -998) {
+      return nSigma;
+    }
+
     float shift{0.f}, scaleWidth{0.f};
     int nPoints = gMcPostCalibMean[pidId]->GetN();
     double ptMin = gMcPostCalibMean[pidId]->GetX()[0];
