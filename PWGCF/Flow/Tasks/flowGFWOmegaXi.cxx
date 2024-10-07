@@ -445,7 +445,7 @@ struct FlowGFWOmegaXi {
         continue;
       if (v0.dcaV0daughters() > cfgv0_dcav0dau)
         continue;
-      if (partical ==  310) {
+      if (partical == 310) {
         if (TMath::Abs(v0.mK0Short() - 0.49761) < cfgv0_mk0swindow) {
           registry.fill(HIST("InvMassK0s"), v0.pt(), v0.mK0Short(), v0.eta(), cent);
           registry.fill(HIST("hEtaPhiPOIK0s"), v0.eta(), v0.phi());
