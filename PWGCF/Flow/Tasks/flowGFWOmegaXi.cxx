@@ -417,7 +417,7 @@ struct FlowGFWOmegaXi {
       }
     }
     // fill GFW of V0 flow
-    for (auto& v0 : V0s){
+    for (auto& v0 : V0s) {
       auto v0posdau = v0.posTrack_as<DaughterTracks>();
       auto v0negdau = v0.negTrack_as<DaughterTracks>();
       // check tpc
@@ -445,13 +445,13 @@ struct FlowGFWOmegaXi {
         continue;
       if (v0.dcaV0daughters() > cfgv0_dcav0dau)
         continue;
-      if (partical ==  310){
+      if (partical ==  310) {
         if (TMath::Abs(v0.mK0Short() - 0.49761) < cfgv0_mk0swindow) {
           registry.fill(HIST("InvMassK0s"), v0.pt(), v0.mK0Short(), v0.eta(), cent);
           registry.fill(HIST("hEtaPhiPOIK0s"), v0.eta(), v0.phi());
           fGFW->Fill(v0.eta(), fPtAxis->FindBin(v0.pt()) - 1 + ((fK0sMass->FindBin(v0.mK0Short()) - 1) * nPtBins), v0.phi(), wacc * weff, 8);
         }
-      } else if (partical == 3122){
+      } else if (partical == 3122) {
         if (TMath::Abs(v0.mLambda() - 1.115683) < cfgv0_mlambdawindow) {
           registry.fill(HIST("InvMassLambda"), v0.pt(), v0.mLambda(), v0.eta(), cent);
           registry.fill(HIST("hEtaPhiPOILambda"), v0.eta(), v0.phi());
