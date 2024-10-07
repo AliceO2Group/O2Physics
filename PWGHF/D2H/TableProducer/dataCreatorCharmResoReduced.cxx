@@ -920,7 +920,7 @@ struct HfDataCreatorCharmResoReduced {
         else{
           if (std::abs(particle.pdgCode()) == Pdg::kDS2Star){
             origin = RecoDecay::getCharmHadronOrigin(particlesMc, particle, false, &idxBhadMothers);
-            LOGF(info, "Found DS2Star that decays into %d, %d", particlesMc.rawIteratorAt(particle.daughtersIds().front()).pdgCode(),particlesMc.rawIteratorAt(particle.daughtersIds().back()).pdgCode());
+            // LOGF(info, "Found DS2Star that decays into %d, %d", particlesMc.rawIteratorAt(particle.daughtersIds().front()).pdgCode(),particlesMc.rawIteratorAt(particle.daughtersIds().back()).pdgCode());
             registry.fill(HIST("hMCOriginCounterWrongDecay"), origin);
           }
         }
@@ -1022,6 +1022,31 @@ struct HfDataCreatorCharmResoReduced {
   }
   PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDplusV0WithMl, "Process Dplus candidates paired with V0s with ML info", false);
 
+  void processDplusV0MCWithMl(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+                      CandsDplusFilteredWithMl const& candsDplus,
+                      aod::V0s const& V0s,
+                      TracksIUWithPIDAndMC const& tracks,
+                      aod::McParticles const& particlesMc,
+                      aod::BCsWithTimestamps const& bcs)
+  {
+    int zvtxColl{0};
+    int sel8Coll{0};
+    int zvtxAndSel8Coll{0};
+    int zvtxAndSel8CollAndSoftTrig{0};
+    int allSelColl{0};
+    for (const auto& collision : collisions) {
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
+      auto thisCollId = collision.globalIndex();
+      auto candsDThisColl = candsDplus.sliceBy(candsDplusPerCollision, thisCollId);
+      auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
+      runDataCreation<true, true, DecayChannel::DplusV0>(collision, candsDThisColl, V0sThisColl, tracks, particlesMc, bcs);
+    }
+    runMcGen<DecayChannel::DplusV0>(particlesMc);
+    // handle normalization by the right number of collisions
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
+  }
+  PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDplusV0MCWithMl, "Process DPlus candidates paired with V0s with MC matching and with ML info", false);
+
   void processDstarV0(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                       CandDstarFiltered const& candsDstar,
                       aod::V0s const& V0s,
@@ -1093,6 +1118,31 @@ struct HfDataCreatorCharmResoReduced {
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
   }
   PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDstarV0WithMl, "Process DStar candidates paired with V0s with ML info", false);
+
+  void processDstarV0MCWithMl(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+                      CandDstarFilteredWithMl const& candsDstar,
+                      aod::V0s const& V0s,
+                      TracksIUWithPIDAndMC const& tracks,
+                      aod::McParticles const& particlesMc,
+                      aod::BCsWithTimestamps const& bcs)
+  {
+    int zvtxColl{0};
+    int sel8Coll{0};
+    int zvtxAndSel8Coll{0};
+    int zvtxAndSel8CollAndSoftTrig{0};
+    int allSelColl{0};
+    for (const auto& collision : collisions) {
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
+      auto thisCollId = collision.globalIndex();
+      auto candsDThisColl = candsDstar.sliceBy(candsDstarPerCollision, thisCollId);
+      auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
+      runDataCreation<true, true, DecayChannel::DstarV0>(collision, candsDThisColl, V0sThisColl, tracks, particlesMc, bcs);
+    }
+    runMcGen<DecayChannel::DstarV0>(particlesMc);
+    // handle normalization by the right number of collisions
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
+  }
+    PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDstarV0MCWithMl, "Process MC DStar candidates paired with V0s with ML info", false);
 
   void processDstarTrack(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                          CandDstarFiltered const& candsDstar,
