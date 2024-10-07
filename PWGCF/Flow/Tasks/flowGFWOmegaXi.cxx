@@ -265,10 +265,10 @@ struct FlowGFWOmegaXi {
     } else if (partical == 3334) {
       nMassBins = nOmegaMassBins;
       fMass = fOmegaMass;
-    } else if (partical == 310){
+    } else if (partical == 310) {
       nMassBins = nK0sMassBins;
       fMass = fK0sMass;
-    } else if (partical == 3122){
+    } else if (partical == 3122) {
       nMassBins = nLambdaMassBins;
       fMass = fLambdaMass;
     } else {
@@ -417,15 +417,15 @@ struct FlowGFWOmegaXi {
       }
     }
     // fill GFW of V0 flow
-    for ( auto& v0 : V0s){
+    for (auto& v0 : V0s){
       auto v0posdau = v0.posTrack_as<DaughterTracks>();
       auto v0negdau = v0.negTrack_as<DaughterTracks>();
       // check tpc
       int partical = 0;
-      if (v0.qtarm() / TMath::Abs(v0.alpha()) > cfgv0_ArmPodocut && TMath::Abs(v0posdau.tpcNSigmaPi()) < cfgNSigmaCascPion && TMath::Abs(v0negdau.tpcNSigmaPi()) < cfgNSigmaCascPion){
+      if (v0.qtarm() / TMath::Abs(v0.alpha()) > cfgv0_ArmPodocut && TMath::Abs(v0posdau.tpcNSigmaPi()) < cfgNSigmaCascPion && TMath::Abs(v0negdau.tpcNSigmaPi()) < cfgNSigmaCascPion) {
         registry.fill(HIST("InvMassK0s_all"), v0.pt(), v0.mK0Short(), v0.eta(), cent);
         partical = 310;
-      } else if (v0.qtarm() / TMath::Abs(v0.alpha()) < cfgv0_ArmPodocut && TMath::Abs(v0posdau.tpcNSigmaPr()) < cfgNSigmaCascProton && TMath::Abs(v0negdau.tpcNSigmaPi()) < cfgNSigmaCascPion){
+      } else if (v0.qtarm() / TMath::Abs(v0.alpha()) < cfgv0_ArmPodocut && TMath::Abs(v0posdau.tpcNSigmaPr()) < cfgNSigmaCascProton && TMath::Abs(v0negdau.tpcNSigmaPi()) < cfgNSigmaCascPion) {
         registry.fill(HIST("InvMassLambda_all"), v0.pt(), v0.mLambda(), v0.eta(), cent);
         partical = 3122;
       }
@@ -446,13 +446,13 @@ struct FlowGFWOmegaXi {
       if (v0.dcaV0daughters() > cfgv0_dcav0dau)
         continue;
       if (partical ==  310){
-        if (TMath::Abs(v0.mK0Short() - 0.49761) < cfgv0_mk0swindow){
+        if (TMath::Abs(v0.mK0Short() - 0.49761) < cfgv0_mk0swindow) {
           registry.fill(HIST("InvMassK0s"), v0.pt(), v0.mK0Short(), v0.eta(), cent);
           registry.fill(HIST("hEtaPhiPOIK0s"), v0.eta(), v0.phi());
           fGFW->Fill(v0.eta(), fPtAxis->FindBin(v0.pt()) - 1 + ((fK0sMass->FindBin(v0.mK0Short()) - 1) * nPtBins), v0.phi(), wacc * weff, 8);
         }
       } else if (partical == 3122){
-        if (TMath::Abs(v0.mLambda() - 1.115683) < cfgv0_mlambdawindow){
+        if (TMath::Abs(v0.mLambda() - 1.115683) < cfgv0_mlambdawindow) {
           registry.fill(HIST("InvMassLambda"), v0.pt(), v0.mLambda(), v0.eta(), cent);
           registry.fill(HIST("hEtaPhiPOILambda"), v0.eta(), v0.phi());
           fGFW->Fill(v0.eta(), fPtAxis->FindBin(v0.pt()) - 1 + ((fLambdaMass->FindBin(v0.mLambda()) - 1) * nPtBins), v0.phi(), wacc * weff, 16);
