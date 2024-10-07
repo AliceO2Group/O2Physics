@@ -844,7 +844,6 @@ struct HfTaskFlow {
         invmass = hfHelper.invMassD0ToPiK(track1);
       }
 
-
       // From Katarina's code
       //  in case of MC-generated, do additional selection on MCparticles : charge and isPhysicalPrimary
       // if (processMc) {
@@ -1128,7 +1127,6 @@ struct HfTaskFlow {
   //    MONTE-CARLO : process same event correlations: TPC-TPC h-h case
   // =====================================
 
-
   void processSameTpcTpcChChmcREC(FilteredCollisionsWSelMultMC::iterator const& mcCollision,
                                   TracksWDcaSelMC const& mcTracks)
   {
@@ -1190,9 +1188,9 @@ struct HfTaskFlow {
     //  fill correlations for MC collisions that have a reconstructed collision
     // got rid of the second const auto for multPrimaryCharge0
     // This line below for sure induce that some plots are filled two times
-    //multPrimaryCharge0 = fillTpcTpcChChSameEventQAmc<CorrelationContainer::kCFStepVertex>(multiplicity, mcParticles);
-    //sameTPCTPCChChMC->fillEvent(multPrimaryCharge0, CorrelationContainer::kCFStepVertex);
-    //fillCorrelations<CorrelationContainer::kCFStepVertex>(sameTPCTPCChChMC, mcParticles, mcParticles, multPrimaryCharge0, mcCollision.posZ());
+    // multPrimaryCharge0 = fillTpcTpcChChSameEventQAmc<CorrelationContainer::kCFStepVertex>(multiplicity, mcParticles);
+    // sameTPCTPCChChMC->fillEvent(multPrimaryCharge0, CorrelationContainer::kCFStepVertex);
+    // fillCorrelations<CorrelationContainer::kCFStepVertex>(sameTPCTPCChChMC, mcParticles, mcParticles, multPrimaryCharge0, mcCollision.posZ());
   }
   PROCESS_SWITCH(HfTaskFlow, processSameTpcTpcChChmcGEN, "MONTE-CARLO : Process same-event correlations for TPC-TPC h-h case", true);
 
