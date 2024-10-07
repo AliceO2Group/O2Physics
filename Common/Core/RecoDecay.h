@@ -662,6 +662,7 @@ struct RecoDecay {
 
   /// Checks whether the reconstructed decay candidate is the expected decay.
   /// \param checkProcess  switch to accept only decay daughters by checking the production process of MC particles
+  /// \param acceptIncompleteReco  switch to accept candidates with only part of the daughters reconstructed
   /// \param particlesMC  table with MC particles
   /// \param arrDaughters  array of candidate daughters
   /// \param PDGMother  expected mother PDG code
@@ -726,7 +727,7 @@ struct RecoDecay {
           return -1;
         }
         // Check that the number of direct daughters is not larger than the number of expected final daughters.
-        if constexpr (!checkProcess) {
+        if constexpr (!acceptIncompleteReco && !checkProcess) {
           if (particleMother.daughtersIds().back() - particleMother.daughtersIds().front() + 1 > static_cast<int>(N)) {
             // Printf("MC Rec: Rejected: too many direct daughters: %d (expected %ld final)", particleMother.daughtersIds().back() - particleMother.daughtersIds().front() + 1, N);
             return -1;
