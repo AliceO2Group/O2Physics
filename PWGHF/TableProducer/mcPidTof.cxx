@@ -13,8 +13,10 @@
 /// \file   mcPidTof.cxx
 /// \author Fabrizio Grosa fabrizio.grosa@cern.ch
 /// \brief  Task to produce PID tables for TOF split for pi, K, p, copied from https://github.com/AliceO2Group/O2Physics/blob/master/Common/TableProducer/PID/pidTOFFull.cxx
-///         In addition, it applies postcalibrations for MC.
+///         It works only for MC and adds the possibility to apply postcalibrations for MC.
 ///
+
+#include <TPDGCode.h>
 
 // O2 includes
 #include <CCDB/BasicCCDBManager.h>
@@ -248,6 +250,10 @@ struct mcPidTof {
   template <typename T>
   T applyMcRecalib(int pidId, T trackPt, T nSigma)
   {
+    if (nSigma < -998) {
+      return nSigma;
+    }
+
     float shift{0.f}, scaleWidth{0.f};
     int nPoints = gMcPostCalibMean[pidId]->GetN();
     double ptMin = gMcPostCalibMean[pidId]->GetX()[0];
@@ -267,12 +273,12 @@ struct mcPidTof {
     return nSigmaCorr;
   }
 
-  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::pidEvTimeFlags>;
+  using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::pidEvTimeFlags, aod::McTrackLabels>;
   // Define slice per collision
   Preslice<Trks> perCollision = aod::track::collisionId;
   template <o2::track::PID::ID pid>
   using ResponseImplementation = o2::pid::tof::ExpTimes<Trks::iterator, pid>;
-  void processWSlice(Trks const& tracks, aod::Collisions const&, aod::BCsWithTimestamps const&)
+  void processWSlice(Trks const& tracks, aod::Collisions const&, aod::BCsWithTimestamps const&, aod::McParticles const&)
   {
     constexpr auto responsePi = ResponseImplementation<PID::Pion>();
     constexpr auto responseKa = ResponseImplementation<PID::Kaon>();
@@ -328,24 +334,30 @@ struct mcPidTof {
             case 2:
               resolution = responsePi.GetExpectedSigma(mRespParamsV2, trkInColl);
               nSigma = responsePi.GetSeparation(mRespParamsV2, trkInColl, resolution);
-              if (mcRecalib.enable) {
-                nSigma = applyMcRecalib(pidId, trkInColl.pt(), nSigma);
+              if (mcRecalib.enable && trkInColl.has_mcParticle()) {
+                if (std::abs(trkInColl.mcParticle().pdgCode()) == kPiPlus) { // we rescale only true signal
+                  nSigma = applyMcRecalib(pidId, trkInColl.pt(), nSigma);
+                }
               }
               tablePIDPi(resolution, nSigma);
               break;
             case 3:
               resolution = responseKa.GetExpectedSigma(mRespParamsV2, trkInColl);
               nSigma = responseKa.GetSeparation(mRespParamsV2, trkInColl, resolution);
-              if (mcRecalib.enable) {
-                nSigma = applyMcRecalib(pidId, trkInColl.pt(), nSigma);
+              if (mcRecalib.enable && trkInColl.has_mcParticle()) {
+                if (std::abs(trkInColl.mcParticle().pdgCode()) == kKPlus) { // we rescale only true signal
+                  nSigma = applyMcRecalib(pidId, trkInColl.pt(), nSigma);
+                }
               }
               tablePIDKa(resolution, nSigma);
               break;
             case 4:
               resolution = responsePr.GetExpectedSigma(mRespParamsV2, trkInColl);
               nSigma = responsePr.GetSeparation(mRespParamsV2, trkInColl, resolution);
-              if (mcRecalib.enable) {
-                nSigma = applyMcRecalib(pidId, trkInColl.pt(), nSigma);
+              if (mcRecalib.enable && trkInColl.has_mcParticle()) {
+                if (std::abs(trkInColl.mcParticle().pdgCode()) == kProton) { // we rescale only true signal
+                  nSigma = applyMcRecalib(pidId, trkInColl.pt(), nSigma);
+                }
               }
               tablePIDPr(resolution, nSigma);
               break;
@@ -359,10 +371,10 @@ struct mcPidTof {
   }
   PROCESS_SWITCH(mcPidTof, processWSlice, "Process with track slices", true);
 
-  using TrksIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::pidEvTimeFlags>;
+  using TrksIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::pidEvTimeFlags, aod::McTrackLabels>;
   template <o2::track::PID::ID pid>
   using ResponseImplementationIU = o2::pid::tof::ExpTimes<TrksIU::iterator, pid>;
-  void processWoSlice(TrksIU const& tracks, aod::Collisions const&, aod::BCsWithTimestamps const&)
+  void processWoSlice(TrksIU const& tracks, aod::Collisions const&, aod::BCsWithTimestamps const&, aod::McParticles const&)
   {
     constexpr auto responsePi = ResponseImplementationIU<PID::Pion>();
     constexpr auto responseKa = ResponseImplementationIU<PID::Kaon>();
@@ -409,24 +421,30 @@ struct mcPidTof {
           case 2:
             resolution = responsePi.GetExpectedSigma(mRespParamsV2, track);
             nSigma = responsePi.GetSeparation(mRespParamsV2, track, resolution);
-            if (mcRecalib.enable) {
-              nSigma = applyMcRecalib(pidId, track.pt(), nSigma);
+            if (mcRecalib.enable && track.has_mcParticle()) {
+              if (std::abs(track.mcParticle().pdgCode()) == kPiPlus) { // we rescale only true signal
+                nSigma = applyMcRecalib(pidId, track.pt(), nSigma);
+              }
             }
             tablePIDPi(resolution, nSigma);
             break;
           case 3:
             resolution = responseKa.GetExpectedSigma(mRespParamsV2, track);
             nSigma = responseKa.GetSeparation(mRespParamsV2, track, resolution);
-            if (mcRecalib.enable) {
-              nSigma = applyMcRecalib(pidId, track.pt(), nSigma);
+            if (mcRecalib.enable && track.has_mcParticle()) {
+              if (std::abs(track.mcParticle().pdgCode()) == kKPlus) { // we rescale only true signal
+                nSigma = applyMcRecalib(pidId, track.pt(), nSigma);
+              }
             }
             tablePIDKa(resolution, nSigma);
             break;
           case 4:
             resolution = responsePr.GetExpectedSigma(mRespParamsV2, track);
             nSigma = responsePr.GetSeparation(mRespParamsV2, track, resolution);
-            if (mcRecalib.enable) {
-              nSigma = applyMcRecalib(pidId, track.pt(), nSigma);
+            if (mcRecalib.enable && track.has_mcParticle()) {
+              if (std::abs(track.mcParticle().pdgCode()) == kProton) { // we rescale only true signal
+                nSigma = applyMcRecalib(pidId, track.pt(), nSigma);
+              }
             }
             tablePIDPr(resolution, nSigma);
             break;
