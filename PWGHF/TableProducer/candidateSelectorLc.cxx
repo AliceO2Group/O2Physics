@@ -211,11 +211,6 @@ struct HfCandidateSelectorLc {
       return false;
     }
 
-    // candidate ct
-    if (hfHelper.ctXic(candidate) > cuts->get(pTBin, "ct")) {
-      return false;
-    }
-
     // candidate impact parameter XY
     if (std::abs(candidate.impactParameterXY()) > cuts->get(pTBin, "impParXY")) {
       return false;
