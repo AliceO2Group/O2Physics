@@ -113,12 +113,6 @@ struct HfTaskFlow {
 
   using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels>>;
 
-  using aodMcCollisions = soa::Filtered<aod::McCollisions>;
-
-  using aodMcParticles = soa::Filtered<aod::McParticles>;
-
-  using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels>>;
-
   // From Katarina's code, but not sure if I use it
   Filter mcCollisionFilter = nabs(aod::mccollision::posZ) < zVertexMax;
 
@@ -719,8 +713,16 @@ struct HfTaskFlow {
   bool isMcParticleSelected(TTrack& track)
   {
     //  remove MC particles with charge = 0
+    // TParticlePDG* pdgparticle = pdg->GetParticle(track.pdgCode());
+    // if (pdgparticle->Charge() == 0) {
+    //    return false;
+    //}
+    int8_t sign = 0;
     TParticlePDG* pdgparticle = pdg->GetParticle(track.pdgCode());
-    if (pdgparticle->Charge() == 0) {
+    if (pdgparticle != nullptr) {
+      sign = (pdgparticle->Charge() > 0) ? 1.0 : ((pdgparticle->Charge() < 0) ? -1.0 : 0.0);
+    }
+    if (sign == 0) {
       return false;
     }
 
@@ -842,6 +844,7 @@ struct HfTaskFlow {
         invmass = hfHelper.invMassD0ToPiK(track1);
       }
 
+
       // From Katarina's code
       //  in case of MC-generated, do additional selection on MCparticles : charge and isPhysicalPrimary
       // if (processMc) {
@@ -855,9 +858,9 @@ struct HfTaskFlow {
 
       //  fill single-track distributions
       if (!fillingHFcontainer) {
-        target->getTriggerHist()->Fill(CorrelationContainer::kCFStepReconstructed, pt1, multiplicity, posZ, triggerWeight);
+        target->getTriggerHist()->Fill(step, pt1, multiplicity, posZ, triggerWeight);
       } else {
-        target->getTriggerHist()->Fill(CorrelationContainer::kCFStepReconstructed, pt1, multiplicity, posZ, invmass, triggerWeight);
+        target->getTriggerHist()->Fill(step, pt1, multiplicity, posZ, invmass, triggerWeight);
       }
 
       for (const auto& track2 : tracks2) {
@@ -902,12 +905,10 @@ struct HfTaskFlow {
 
         if (!fillingHFcontainer) {
           //  fill pair correlations
-          target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
-                                      eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ,
+          target->getPairHist()->Fill(step, eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ,
                                       triggerWeight * associatedWeight);
         } else {
-          target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
-                                      eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ, invmass,
+          target->getPairHist()->Fill(step, eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ, invmass,
                                       triggerWeight * associatedWeight);
         }
       }
@@ -994,14 +995,14 @@ struct HfTaskFlow {
 
       // added this to try to compile when doing mixed event with aodMcParticles and aodMcCollisions (MC truth)
       // TODO : GET RID OF THE COLLISION SELECTION FOR MC TRUTH
-      if constexpr (!std::is_same_v<aodMcCollisions, TCollisions>) {
-        if (!(isCollisionSelected(collision1, false))) {
-          continue;
-        }
-        if (!(isCollisionSelected(collision2, false))) {
-          continue;
-        }
-      }
+      // if constexpr (!std::is_same_v<aodMcCollisions, TCollisions>) {
+      //    if (!(isCollisionSelected(collision1, false))) {
+      //      continue;
+      //  }
+      //  if (!(isCollisionSelected(collision2, false))) {
+      //      continue;
+      //  }
+      //}
 
       auto binningValues = binningWithTracksSize.getBinningValues(collision1, collisions);
       int bin = binningWithTracksSize.getBin(binningValues);
@@ -1023,7 +1024,6 @@ struct HfTaskFlow {
       // }
 
       corrContainer->fillEvent(multiplicity, CorrelationContainer::kCFStepAll);
-      // TO-DO : probably put the step of the correlation container in the template of this function
       fillCorrelations<CorrelationContainer::kCFStepAll>(corrContainer, tracks1, tracks2, multiplicity, collision1.posZ());
     }
   }
@@ -1128,14 +1128,12 @@ struct HfTaskFlow {
   //    MONTE-CARLO : process same event correlations: TPC-TPC h-h case
   // =====================================
 
+
   void processSameTpcTpcChChmcREC(FilteredCollisionsWSelMultMC::iterator const& mcCollision,
                                   TracksWDcaSelMC const& mcTracks)
   {
 
     // NEED TO COMMENT THIS
-    // if (!(isCollisionSelected(mcCollision, true))) {
-    //  return;
-    //}
     // if (!(isCollisionSelected(mcCollision, true))) {
     //  return;
     //}
@@ -1157,7 +1155,6 @@ struct HfTaskFlow {
 
   // Katarina's version = MC Truth
   void processSameTpcTpcChChmcGEN(aodMcCollisions::iterator const& mcCollision,
-                                  // FilteredCollisionsWSelMultMC const& collisions,
                                   aodMcParticles const& mcParticles)
   {
 
@@ -1192,9 +1189,10 @@ struct HfTaskFlow {
 
     //  fill correlations for MC collisions that have a reconstructed collision
     // got rid of the second const auto for multPrimaryCharge0
-    multPrimaryCharge0 = fillTpcTpcChChSameEventQAmc<CorrelationContainer::kCFStepVertex>(multiplicity, mcParticles);
-    sameTPCTPCChChMC->fillEvent(multPrimaryCharge0, CorrelationContainer::kCFStepVertex);
-    fillCorrelations<CorrelationContainer::kCFStepVertex>(sameTPCTPCChChMC, mcParticles, mcParticles, multPrimaryCharge0, mcCollision.posZ());
+    // This line below for sure induce that some plots are filled two times
+    //multPrimaryCharge0 = fillTpcTpcChChSameEventQAmc<CorrelationContainer::kCFStepVertex>(multiplicity, mcParticles);
+    //sameTPCTPCChChMC->fillEvent(multPrimaryCharge0, CorrelationContainer::kCFStepVertex);
+    //fillCorrelations<CorrelationContainer::kCFStepVertex>(sameTPCTPCChChMC, mcParticles, mcParticles, multPrimaryCharge0, mcCollision.posZ());
   }
   PROCESS_SWITCH(HfTaskFlow, processSameTpcTpcChChmcGEN, "MONTE-CARLO : Process same-event correlations for TPC-TPC h-h case", true);
 
@@ -1317,6 +1315,8 @@ struct HfTaskFlow {
     };
 
     mixCollisionsMcTruth(mcCollisions, mcParticles, mcParticles, getTracksSize, mixedTPCTPCChChMC);
+
+    // TO-DO : mixed event for particles that have a reconstructed collision kCFStepVertex
   }
   PROCESS_SWITCH(HfTaskFlow, processMixedTpcTpcChChmcGEN, "MONTE-CARLO : Process mixed-event correlations for TPC-TPC h-h case", true);
 }; // End of struct
