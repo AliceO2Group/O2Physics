@@ -149,7 +149,6 @@ struct lnnRecoTask {
   Configurable<float> nSigma3HMax{"nSigma3HMax", 3., "nSigma Triton cut max"};
   Configurable<float> TrTOFMass2Cut{"TrTOFMass2Cut", 5.5, "minimum Triton mass square to TOF"};
   Configurable<bool> mcSignalOnly{"mcSignalOnly", true, "If true, save only signal in MC"};
-  
 
   // Define o2 fitter, 2-prong, active memory (no need to redefine per event)
   o2::vertexing::DCAFitterN<2> fitter;
@@ -391,14 +390,14 @@ struct lnnRecoTask {
       hNsigma3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, lnnCand.nSigma3H);
       hDCAxy3H->Fill(h3track.pt(), h3track.dcaXY());
       if (is3H) {
-          hdEdx3HPosTrack->Fill(lnnCand.mom3HTPC, h3track.tpcSignal());
-        }
+        hdEdx3HPosTrack->Fill(lnnCand.mom3HTPC, h3track.tpcSignal());
+      }
       if (h3track.hasTOF()) {
         float beta = h3track.beta();
         lnnCand.mass2TrTOF = h3track.mass() * h3track.mass();
         if (lnnCand.mass2TrTOF >= TrTOFMass2Cut) {
           h3HMassPtTOF->Fill(chargeFactor * h3track.pt(), lnnCand.mass2TrTOF);
-          hdEdxAfterMassTr2Cut->Fill(chargeFactor * h3track.tpcInnerParam(),  h3track.tpcSignal());
+          hdEdxAfterMassTr2Cut->Fill(chargeFactor * h3track.tpcInnerParam(), h3track.tpcSignal());
         }
         if (h3track.pt() >= ptMinTOF && h3track.pt() <= ptMaxTOF) {
           h3HSignalPtTOF->Fill(chargeFactor * h3track.pt(), beta);
@@ -438,19 +437,19 @@ struct lnnRecoTask {
         lnnMom[i] = lnnCand.mom3H[i] + lnnCand.momPi[i];
       }
       double massLNNL = std::sqrt(h3lE * h3lE - lnnMom[0] * lnnMom[0] - lnnMom[1] * lnnMom[1] - lnnMom[2] * lnnMom[2]);
-      
-      //Armenteros Podolanski 
-      
-      //Alpha variables
-      float pLnn = std::sqrt(RecoDecay::p2(std::array{lnnMom[0], lnnMom[1], lnnMom[2]})); //Module(pVO)
+
+      // Armenteros Podolanski
+
+      // Alpha variables
+      float pLnn = std::sqrt(RecoDecay::p2(std::array{lnnMom[0], lnnMom[1], lnnMom[2]})); // Module(pVO)
       float lQlNeg = RecoDecay::dotProd(std::array{lnnCand.momPi[0], lnnCand.momPi[1], lnnCand.momPi[2]}, std::array{lnnMom[0], lnnMom[1], lnnMom[2]}) / pLnn;
       float lQlPos = RecoDecay::dotProd(std::array{lnnCand.mom3H[0], lnnCand.mom3H[1], lnnCand.mom3H[2]}, std::array{lnnMom[0], lnnMom[1], lnnMom[2]}) / pLnn;
-      //qT variables 
-      std::array<double, 3>  CrossProd3HLnn = RecoDecay::crossProd(std::array{lnnCand.mom3H[0], lnnCand.mom3H[1], lnnCand.mom3H[2]}, std::array{lnnMom[0], lnnMom[1], lnnMom[2]});
-      
-      //Fill
+      // qT variables
+      std::array<double, 3> CrossProd3HLnn = RecoDecay::crossProd(std::array{lnnCand.mom3H[0], lnnCand.mom3H[1], lnnCand.mom3H[2]}, std::array{lnnMom[0], lnnMom[1], lnnMom[2]});
+
+      // Fill
       float qT = std::sqrt(CrossProd3HLnn[0] * CrossProd3HLnn[0] + CrossProd3HLnn[1] * CrossProd3HLnn[1] + CrossProd3HLnn[2] * CrossProd3HLnn[2]) / pLnn;
-      float alpha = (lQlPos - lQlNeg) / (lQlPos + lQlNeg); 
+      float alpha = (lQlPos - lQlNeg) / (lQlPos + lQlNeg);
       hArmenterosPodolanski->Fill(alpha, qT);
 
       float lnnPt = std::hypot(lnnMom[0], lnnMom[1]);
@@ -582,7 +581,7 @@ struct lnnRecoTask {
                         lnnCand.dcaV0dau, lnnCand.h3DCAXY, lnnCand.piDCAXY,
                         lnnCand.nSigma3H, lnnCand.nTPCClusters3H, lnnCand.nTPCClustersPi,
                         lnnCand.mom3HTPC, lnnCand.momPiTPC, lnnCand.tpcSignal3H, lnnCand.tpcSignalPi,
-                        lnnCand.mass2TrTOF, 
+                        lnnCand.mass2TrTOF,
                         lnnCand.clusterSizeITS3H, lnnCand.clusterSizeITSPi, lnnCand.flags);
       }
     }
@@ -639,7 +638,7 @@ struct lnnRecoTask {
                       lnnCand.dcaV0dau, lnnCand.h3DCAXY, lnnCand.piDCAXY,
                       lnnCand.nSigma3H, lnnCand.nTPCClusters3H, lnnCand.nTPCClustersPi,
                       lnnCand.mom3HTPC, lnnCand.momPiTPC, lnnCand.tpcSignal3H, lnnCand.tpcSignalPi,
-                      lnnCand.mass2TrTOF, 
+                      lnnCand.mass2TrTOF,
                       lnnCand.clusterSizeITS3H, lnnCand.clusterSizeITSPi, lnnCand.flags,
                       chargeFactor * lnnCand.genPt(), lnnCand.genPhi(), lnnCand.genEta(), lnnCand.genPt3H(),
                       lnnCand.gDecVtx[0], lnnCand.gDecVtx[1], lnnCand.gDecVtx[2], lnnCand.isReco, lnnCand.isSignal, lnnCand.survEvSelection);
@@ -709,7 +708,7 @@ struct lnnRecoTask {
                     -1, -1, -1,
                     -1, -1, -1,
                     -1, -1, -1, -1,
-                    -1, 
+                    -1,
                     -1, -1, -1,
                     chargeFactor * lnnCand.genPt(), lnnCand.genPhi(), lnnCand.genEta(), lnnCand.genPt3H(),
                     lnnCand.gDecVtx[0], lnnCand.gDecVtx[1], lnnCand.gDecVtx[2], lnnCand.isReco, lnnCand.isSignal, lnnCand.survEvSelection);
