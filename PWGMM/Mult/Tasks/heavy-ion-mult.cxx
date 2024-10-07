@@ -1,3 +1,23 @@
+// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
+//
+// This software is distributed under the terms of the GNU General Public
+// License v3 (GPL Version 3), copied verbatim in the file "COPYING".
+//
+// In applying this license CERN does not waive the privileges and immunities
+// granted to it by virtue of its status as an Intergovernmental Organization
+// or submit itself to any jurisdiction.
+///
+/// \brief This task is an empty skeleton that fills a simple eta histogram.
+///        it is meant to be a blank page for further developments.
+/// \author Abhi Modak (contact: abhi.modak@cern.ch)
+/// \help: To develop this code, I took help from the following codes and O2 analysis tutorial
+// 1. https://github.com/AliceO2Group/O2Physics/blob/master/PWGMM/Mult/Tasks/dndeta.cxx
+// 2. https://github.com/AliceO2Group/O2Physics/blob/master/PWGMM/Mult/Tasks/dndeta-hi.cxx
+// 3. https://github.com/AliceO2Group/O2Physics/blob/master/PWGMM/Mult/Tasks/puremc-dndeta.cxx
+// 4. O2 analysis tutorial: https://indico.cern.ch/event/1267433/
+
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
