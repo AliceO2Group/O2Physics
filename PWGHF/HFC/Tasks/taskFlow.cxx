@@ -844,6 +844,7 @@ struct HfTaskFlow {
         invmass = hfHelper.invMassD0ToPiK(track1);
       }
 
+
       // From Katarina's code
       //  in case of MC-generated, do additional selection on MCparticles : charge and isPhysicalPrimary
       // if (processMc) {
@@ -1126,6 +1127,7 @@ struct HfTaskFlow {
   // =====================================
   //    MONTE-CARLO : process same event correlations: TPC-TPC h-h case
   // =====================================
+
 
   void processSameTpcTpcChChmcREC(FilteredCollisionsWSelMultMC::iterator const& mcCollision,
                                   TracksWDcaSelMC const& mcTracks)
