@@ -369,7 +369,9 @@ struct strangederivedbuilder {
                       gapSide,
                       totalFT0AmplitudeA, totalFT0AmplitudeC, totalFV0AmplitudeA,
                       totalFDDAmplitudeA, totalFDDAmplitudeC,
-                      energyCommonZNA, energyCommonZNC);
+                      energyCommonZNA, energyCommonZNC,
+                      // Collision flags
+                      collision.flags());
         strangeStamps(bc.runNumber(), bc.timestamp());
       }
       for (const auto& v0 : V0Table_thisColl)
@@ -393,7 +395,7 @@ struct strangederivedbuilder {
     for (const auto& casc : KFCascades) {
       kfcasccollref(KFCascadeCollIndices[casc.globalIndex()]);
     }
-    for (const auto& casc : KFCascades) {
+    for (const auto& casc : TraCascades) {
       tracasccollref(TraCascadeCollIndices[casc.globalIndex()]);
     }
   }

@@ -168,6 +168,68 @@ struct strangeness_in_jets {
     registryData.add("OmegaPos_in_ue", "OmegaPos_in_ue", HistType::kTH3F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {200, 1.63, 1.71, "m_{p#piK} (GeV/#it{c}^{2})"}});
     registryData.add("OmegaNeg_in_jet", "OmegaNeg_in_jet", HistType::kTH3F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {200, 1.63, 1.71, "m_{p#piK} (GeV/#it{c}^{2})"}});
     registryData.add("OmegaNeg_in_ue", "OmegaNeg_in_ue", HistType::kTH3F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {200, 1.63, 1.71, "m_{p#piK} (GeV/#it{c}^{2})"}});
+
+    // Histograms for efficiency (generated)
+    registryMC.add("K0s_generated", "K0s_generated", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("Lambda_generated", "Lambda_generated", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("AntiLambda_generated", "AntiLambda_generated", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("XiPos_generated", "XiPos_generated", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("XiNeg_generated", "XiNeg_generated", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("OmegaPos_generated", "OmegaPos_generated", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("OmegaNeg_generated", "OmegaNeg_generated", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+
+    // Histograms for efficiency (reconstructed)
+    registryMC.add("K0s_reconstructed", "K0s_reconstructed", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("Lambda_reconstructed", "Lambda_reconstructed", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("AntiLambda_reconstructed", "AntiLambda_reconstructed", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("XiPos_reconstructed", "XiPos_reconstructed", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("XiNeg_reconstructed", "XiNeg_reconstructed", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("OmegaPos_reconstructed", "OmegaPos_reconstructed", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("OmegaNeg_reconstructed", "OmegaNeg_reconstructed", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+
+    // Histograms for secondary hadrons
+    registryMC.add("K0s_reconstructed_incl", "K0s_reconstructed_incl", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("Lambda_reconstructed_incl", "Lambda_reconstructed_incl", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("AntiLambda_reconstructed_incl", "AntiLambda_reconstructed_incl", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+
+    // Histograms for 2d reweighting (pion)
+    registryMC.add("Pion_eta_pt_jet", "Pion_eta_pt_jet", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
+    registryMC.add("Pion_eta_pt_ue", "Pion_eta_pt_ue", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
+    registryMC.add("Pion_eta_pt_pythia", "Pion_eta_pt_pythia", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
+
+    // Histograms for 2d reweighting (K0s)
+    registryMC.add("K0s_eta_pt_jet", "K0s_eta_pt_jet", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
+    registryMC.add("K0s_eta_pt_ue", "K0s_eta_pt_ue", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
+    registryMC.add("K0s_eta_pt_pythia", "K0s_eta_pt_pythia", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
+
+    // Histograms for 2d reweighting (Lambda)
+    registryMC.add("Lambda_eta_pt_jet", "Lambda_eta_pt_jet", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
+    registryMC.add("Lambda_eta_pt_ue", "Lambda_eta_pt_ue", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
+    registryMC.add("Lambda_eta_pt_pythia", "Lambda_eta_pt_pythia", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
+
+    // Histograms for 2d reweighting (Xi)
+    registryMC.add("Xi_eta_pt_jet", "Xi_eta_pt_jet", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
+    registryMC.add("Xi_eta_pt_ue", "Xi_eta_pt_ue", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
+    registryMC.add("Xi_eta_pt_pythia", "Xi_eta_pt_pythia", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
+
+    // Histograms for 2d reweighting (Omega)
+    registryMC.add("Omega_eta_pt_jet", "Omega_eta_pt_jet", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
+    registryMC.add("Omega_eta_pt_ue", "Omega_eta_pt_ue", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
+    registryMC.add("Omega_eta_pt_pythia", "Omega_eta_pt_pythia", HistType::kTH2F, {{100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
+
+    // Histograms for efficiency (pions)
+    registryMC.add("pi_plus_gen", "pi_plus_gen", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("pi_plus_rec_tpc", "pi_plus_rec_tpc", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("pi_plus_rec_tof", "pi_plus_rec_tof", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("pi_minus_gen", "pi_minus_gen", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("pi_minus_rec_tpc", "pi_minus_rec_tpc", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+    registryMC.add("pi_minus_rec_tof", "pi_minus_rec_tof", HistType::kTH2F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}});
+
+    // MC Templates
+    registryMC.add("piplus_dcaxy_prim", "piplus_dcaxy_prim", HistType::kTH3F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -1, 1, "DCA_{xy} (cm)"}});
+    registryMC.add("piminus_dcaxy_prim", "piminus_dcaxy_prim", HistType::kTH3F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -1, 1, "DCA_{xy} (cm)"}});
+    registryMC.add("piplus_dcaxy_sec", "piplus_dcaxy_sec", HistType::kTH3F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -1, 1, "DCA_{xy} (cm)"}});
+    registryMC.add("piminus_dcaxy_sec", "piminus_dcaxy_sec", HistType::kTH3F, {multBinning, {100, 0.0, 10.0, "#it{p}_{T} (GeV/#it{c})"}, {200, -1, 1, "DCA_{xy} (cm)"}});
   }
 
   template <typename chargedTrack>
@@ -598,10 +660,10 @@ struct strangeness_in_jets {
   template <typename pionTrack>
   bool isHighPurityPion(const pionTrack& track)
   {
-    if (track.p() < 0.6 && abs(track.tpcNSigmaPi()) < 3.0)
+    if (track.p() < 0.6 && std::abs(track.tpcNSigmaPi()) < 3.0)
       return true;
-    if (track.p() > 0.6 && abs(track.tpcNSigmaPi()) < 3.0 &&
-        abs(track.tofNSigmaPi()) < 3.0)
+    if (track.p() > 0.6 && std::abs(track.tpcNSigmaPi()) < 3.0 &&
+        std::abs(track.tofNSigmaPi()) < 3.0)
       return true;
     return false;
   }
@@ -717,7 +779,7 @@ struct strangeness_in_jets {
     registryData.fill(HIST("number_of_events_data"), 1.5);
 
     // Cut on z-vertex
-    if (abs(collision.posZ()) > zVtx)
+    if (std::abs(collision.posZ()) > zVtx)
       return;
 
     // Event Counter: after z-vertex cut
@@ -785,7 +847,7 @@ struct strangeness_in_jets {
     int n_jets_selected(0);
     for (int i = 0; i < static_cast<int>(jet.size()); i++) {
 
-      if ((abs(jet[i].Eta()) + Rjet) > etaMax)
+      if ((std::abs(jet[i].Eta()) + Rjet) > etaMax)
         continue;
 
       // Perpendicular cones
@@ -1076,6 +1138,500 @@ struct strangeness_in_jets {
     }
   }
   PROCESS_SWITCH(strangeness_in_jets, processData, "Process data", true);
+
+  Preslice<aod::V0Datas> perCollisionV0 = o2::aod::v0data::collisionId;
+  Preslice<aod::CascDataExt> perCollisionCasc = o2::aod::cascade::collisionId;
+  Preslice<aod::McParticles> perMCCollision = o2::aod::mcparticle::mcCollisionId;
+  Preslice<MCTracks> perCollisionTrk = o2::aod::track::collisionId;
+
+  void processMCefficiency(SimCollisions const& collisions, MCTracks const& mcTracks, aod::V0Datas const& fullV0s, aod::CascDataExt const& Cascades, const aod::McParticles& mcParticles)
+  {
+    for (const auto& collision : collisions) {
+      registryMC.fill(HIST("number_of_events_mc"), 0.5);
+      if (!collision.sel8())
+        continue;
+
+      registryMC.fill(HIST("number_of_events_mc"), 1.5);
+      if (std::abs(collision.posZ()) > 10.0)
+        continue;
+
+      registryMC.fill(HIST("number_of_events_mc"), 2.5);
+      float multiplicity = collision.centFT0M();
+
+      auto v0s_per_coll = fullV0s.sliceBy(perCollisionV0, collision.globalIndex());
+      auto casc_per_coll = Cascades.sliceBy(perCollisionCasc, collision.globalIndex());
+      auto mcParticles_per_coll = mcParticles.sliceBy(perMCCollision, collision.globalIndex());
+      auto tracks_per_coll = mcTracks.sliceBy(perCollisionTrk, collision.globalIndex());
+
+      for (auto& v0 : v0s_per_coll) {
+
+        const auto& pos = v0.posTrack_as<MCTracks>();
+        const auto& neg = v0.negTrack_as<MCTracks>();
+        if (!pos.has_mcParticle())
+          continue;
+        if (!neg.has_mcParticle())
+          continue;
+
+        auto posParticle = pos.mcParticle_as<aod::McParticles>();
+        auto negParticle = neg.mcParticle_as<aod::McParticles>();
+        if (!posParticle.has_mothers())
+          continue;
+        if (!negParticle.has_mothers())
+          continue;
+
+        int pdg_parent(0);
+        bool isPhysPrim = false;
+        for (auto& particleMotherOfNeg : negParticle.mothers_as<aod::McParticles>()) {
+          for (auto& particleMotherOfPos : posParticle.mothers_as<aod::McParticles>()) {
+            if (particleMotherOfNeg == particleMotherOfPos) {
+              pdg_parent = particleMotherOfNeg.pdgCode();
+              isPhysPrim = particleMotherOfNeg.isPhysicalPrimary();
+            }
+          }
+        }
+        if (pdg_parent == 0)
+          continue;
+
+        if (passedK0ShortSelection(v0, pos, neg) && pdg_parent == 310) {
+          registryMC.fill(HIST("K0s_reconstructed_incl"), multiplicity, v0.pt());
+        }
+        if (passedLambdaSelection(v0, pos, neg) && pdg_parent == 3122) {
+          registryMC.fill(HIST("Lambda_reconstructed_incl"), multiplicity, v0.pt());
+        }
+        if (passedAntiLambdaSelection(v0, pos, neg) && pdg_parent == -3122) {
+          registryMC.fill(HIST("AntiLambda_reconstructed_incl"), multiplicity, v0.pt());
+        }
+        if (!isPhysPrim)
+          continue;
+
+        if (passedK0ShortSelection(v0, pos, neg) && pdg_parent == 310) {
+          registryMC.fill(HIST("K0s_reconstructed"), multiplicity, v0.pt());
+        }
+        if (passedLambdaSelection(v0, pos, neg) && pdg_parent == 3122) {
+          registryMC.fill(HIST("Lambda_reconstructed"), multiplicity, v0.pt());
+        }
+        if (passedAntiLambdaSelection(v0, pos, neg) && pdg_parent == -3122) {
+          registryMC.fill(HIST("AntiLambda_reconstructed"), multiplicity, v0.pt());
+        }
+      }
+
+      // Cascades
+      for (auto& casc : casc_per_coll) {
+        auto bach = casc.template bachelor_as<MCTracks>();
+        auto neg = casc.template negTrack_as<MCTracks>();
+        auto pos = casc.template posTrack_as<MCTracks>();
+
+        if (!bach.has_mcParticle())
+          continue;
+        if (!pos.has_mcParticle())
+          continue;
+        if (!neg.has_mcParticle())
+          continue;
+
+        auto posParticle = pos.mcParticle_as<aod::McParticles>();
+        auto negParticle = neg.mcParticle_as<aod::McParticles>();
+        auto bachParticle = bach.mcParticle_as<aod::McParticles>();
+        if (!posParticle.has_mothers())
+          continue;
+        if (!negParticle.has_mothers())
+          continue;
+        if (!bachParticle.has_mothers())
+          continue;
+
+        int pdg_parent(0);
+        for (auto& particleMotherOfNeg : negParticle.mothers_as<aod::McParticles>()) {
+          for (auto& particleMotherOfPos : posParticle.mothers_as<aod::McParticles>()) {
+            for (auto& particleMotherOfBach : bachParticle.mothers_as<aod::McParticles>()) {
+              if (particleMotherOfNeg != particleMotherOfPos)
+                continue;
+              if (abs(particleMotherOfNeg.pdgCode()) != 3122)
+                continue;
+              if (!particleMotherOfBach.isPhysicalPrimary())
+                continue;
+              pdg_parent = particleMotherOfBach.pdgCode();
+            }
+          }
+        }
+        if (pdg_parent == 0)
+          continue;
+
+        // Xi+
+        if (passedXiSelection(casc, pos, neg, bach, collision) && pdg_parent == -3312) {
+          registryMC.fill(HIST("XiPos_reconstructed"), multiplicity, casc.pt());
+        }
+        // Xi-
+        if (passedXiSelection(casc, pos, neg, bach, collision) && pdg_parent == 3312) {
+          registryMC.fill(HIST("XiNeg_reconstructed"), multiplicity, casc.pt());
+        }
+        // Omega+
+        if (passedOmegaSelection(casc, pos, neg, bach, collision) && pdg_parent == -3334) {
+          registryMC.fill(HIST("OmegaPos_reconstructed"), multiplicity, casc.pt());
+        }
+        // Omega-
+        if (passedOmegaSelection(casc, pos, neg, bach, collision) && pdg_parent == 3334) {
+          registryMC.fill(HIST("OmegaNeg_reconstructed"), multiplicity, casc.pt());
+        }
+      }
+
+      // Reconstructed Tracks
+      for (auto track : tracks_per_coll) {
+
+        // Get MC Particle
+        if (!track.has_mcParticle())
+          continue;
+        // Track Selection
+        if (!passedTrackSelectionForPions(track))
+          continue;
+
+        const auto particle = track.mcParticle();
+        if (abs(particle.pdgCode()) != 211)
+          continue;
+
+        if (particle.isPhysicalPrimary()) {
+          if (track.sign() > 0)
+            registryMC.fill(HIST("piplus_dcaxy_prim"), multiplicity, track.pt(), track.dcaXY());
+          if (track.sign() < 0)
+            registryMC.fill(HIST("piminus_dcaxy_prim"), multiplicity, track.pt(), track.dcaXY());
+        }
+        if (!particle.isPhysicalPrimary()) {
+          if (track.sign() > 0)
+            registryMC.fill(HIST("piplus_dcaxy_sec"), multiplicity, track.pt(), track.dcaXY());
+          if (track.sign() < 0)
+            registryMC.fill(HIST("piminus_dcaxy_sec"), multiplicity, track.pt(), track.dcaXY());
+        }
+
+        if (TMath::Abs(track.dcaXY()) > dcaxyMax)
+          continue;
+
+        if (track.tpcNSigmaPi() < nsigmaTPCmin || track.tpcNSigmaPi() > nsigmaTPCmax)
+          continue;
+
+        if (!particle.isPhysicalPrimary())
+          continue;
+
+        if (track.sign() > 0)
+          registryMC.fill(HIST("pi_plus_rec_tpc"), multiplicity, track.pt());
+        if (track.sign() < 0)
+          registryMC.fill(HIST("pi_minus_rec_tpc"), multiplicity, track.pt());
+
+        if (!track.hasTOF())
+          continue;
+        if (track.tofNSigmaPi() < nsigmaTOFmin || track.tofNSigmaPi() > nsigmaTOFmax)
+          continue;
+
+        if (track.sign() > 0)
+          registryMC.fill(HIST("pi_plus_rec_tof"), multiplicity, track.pt());
+        if (track.sign() < 0)
+          registryMC.fill(HIST("pi_minus_rec_tof"), multiplicity, track.pt());
+      }
+
+      for (auto& mcParticle : mcParticles_per_coll) {
+
+        if (mcParticle.eta() < etaMin || mcParticle.eta() > etaMax)
+          continue;
+        if (!mcParticle.isPhysicalPrimary())
+          continue;
+
+        // Pi+
+        if (mcParticle.pdgCode() == 211) {
+          registryMC.fill(HIST("pi_plus_gen"), multiplicity, mcParticle.pt());
+        }
+        // Pi-
+        if (mcParticle.pdgCode() == -211) {
+          registryMC.fill(HIST("pi_minus_gen"), multiplicity, mcParticle.pt());
+        }
+        // K0s
+        if (mcParticle.pdgCode() == 310) {
+          registryMC.fill(HIST("K0s_generated"), multiplicity, mcParticle.pt());
+          registryMC.fill(HIST("K0s_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
+        }
+        // Lambda
+        if (mcParticle.pdgCode() == 3122) {
+          registryMC.fill(HIST("Lambda_generated"), multiplicity, mcParticle.pt());
+          registryMC.fill(HIST("Lambda_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
+        }
+        // AntiLambda
+        if (mcParticle.pdgCode() == -3122) {
+          registryMC.fill(HIST("AntiLambda_generated"), multiplicity, mcParticle.pt());
+          registryMC.fill(HIST("Lambda_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
+        }
+        // Xi Pos
+        if (mcParticle.pdgCode() == -3312) {
+          registryMC.fill(HIST("XiPos_generated"), multiplicity, mcParticle.pt());
+          registryMC.fill(HIST("Xi_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
+        }
+        // Xi Neg
+        if (mcParticle.pdgCode() == 3312) {
+          registryMC.fill(HIST("XiNeg_generated"), multiplicity, mcParticle.pt());
+          registryMC.fill(HIST("Xi_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
+        }
+        // Omega Pos
+        if (mcParticle.pdgCode() == -3334) {
+          registryMC.fill(HIST("OmegaPos_generated"), multiplicity, mcParticle.pt());
+          registryMC.fill(HIST("Omega_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
+        }
+        // Omega Neg
+        if (mcParticle.pdgCode() == 3334) {
+          registryMC.fill(HIST("OmegaNeg_generated"), multiplicity, mcParticle.pt());
+          registryMC.fill(HIST("Omega_eta_pt_pythia"), mcParticle.pt(), mcParticle.eta());
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(strangeness_in_jets, processMCefficiency, "Process MC Efficiency", false);
+
+  void processGen(o2::aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
+  {
+    for (const auto& mccollision : mcCollisions) {
+
+      registryMC.fill(HIST("number_of_events_mc"), 3.5);
+
+      // Selection on z_{vertex}
+      if (std::abs(mccollision.posZ()) > 10)
+        continue;
+      registryMC.fill(HIST("number_of_events_mc"), 4.5);
+
+      // MC Particles per Collision
+      auto mcParticles_per_coll = mcParticles.sliceBy(perMCCollision, mccollision.globalIndex());
+
+      // List of Tracks
+      std::vector<TVector3> trk;
+
+      for (auto& particle : mcParticles_per_coll) {
+
+        int pdg = abs(particle.pdgCode());
+
+        if (particle.isPhysicalPrimary() && pdg == 211) {
+          registryMC.fill(HIST("Pion_eta_pt_pythia"), particle.pt(), particle.eta());
+        }
+        if (particle.isPhysicalPrimary() && pdg == 310) {
+          registryMC.fill(HIST("K0s_eta_pt_pythia"), particle.pt(), particle.eta());
+        }
+        if (particle.isPhysicalPrimary() && pdg == 3122) {
+          registryMC.fill(HIST("Lambda_eta_pt_pythia"), particle.pt(), particle.eta());
+        }
+        if (particle.isPhysicalPrimary() && pdg == 3312) {
+          registryMC.fill(HIST("Xi_eta_pt_pythia"), particle.pt(), particle.eta());
+        }
+        if (particle.isPhysicalPrimary() && pdg == 3334) {
+          registryMC.fill(HIST("Omega_eta_pt_pythia"), particle.pt(), particle.eta());
+        }
+
+        // Select Primary Particles
+        double dx = particle.vx() - mccollision.posX();
+        double dy = particle.vy() - mccollision.posY();
+        double dz = particle.vz() - mccollision.posZ();
+        double dcaxy = sqrt(dx * dx + dy * dy);
+        double dcaz = std::abs(dz);
+        if (dcaxy > (par0 + par1 / particle.pt()))
+          continue;
+        if (dcaz > (par0 + par1 / particle.pt()))
+          continue;
+        if (std::abs(particle.eta()) > 0.8)
+          continue;
+        if (particle.pt() < 0.15)
+          continue;
+
+        // PDG Selection
+        if ((pdg != 11) && (pdg != 211) && (pdg != 321) && (pdg != 2212))
+          continue;
+
+        TVector3 momentum(particle.px(), particle.py(), particle.pz());
+        trk.push_back(momentum);
+      }
+
+      // Anti-kt Jet Finder
+      int n_particles_removed(0);
+      std::vector<TVector3> jet;
+      std::vector<TVector3> ue1;
+      std::vector<TVector3> ue2;
+
+      do {
+        double dij_min(1e+06), diB_min(1e+06);
+        int i_min(0), j_min(0), iB_min(0);
+        for (int i = 0; i < static_cast<int>(trk.size()); i++) {
+          if (trk[i].Mag() == 0)
+            continue;
+          double diB = 1.0 / (trk[i].Pt() * trk[i].Pt());
+          if (diB < diB_min) {
+            diB_min = diB;
+            iB_min = i;
+          }
+          for (int j = (i + 1); j < static_cast<int>(trk.size()); j++) {
+            if (trk[j].Mag() == 0)
+              continue;
+            double dij = calculate_dij(trk[i], trk[j], Rjet);
+            if (dij < dij_min) {
+              dij_min = dij;
+              i_min = i;
+              j_min = j;
+            }
+          }
+        }
+        if (dij_min < diB_min) {
+          trk[i_min] = trk[i_min] + trk[j_min];
+          trk[j_min].SetXYZ(0, 0, 0);
+          n_particles_removed++;
+        }
+        if (dij_min > diB_min) {
+          jet.push_back(trk[iB_min]);
+          trk[iB_min].SetXYZ(0, 0, 0);
+          n_particles_removed++;
+        }
+      } while (n_particles_removed < static_cast<int>(trk.size()));
+
+      // Jet Selection
+      std::vector<int> isSelected;
+      for (int i = 0; i < static_cast<int>(jet.size()); i++) {
+        isSelected.push_back(0);
+      }
+
+      int n_jets_selected(0);
+      for (int i = 0; i < static_cast<int>(jet.size()); i++) {
+
+        if ((std::abs(jet[i].Eta()) + Rjet) > etaMax)
+          continue;
+
+        // Perpendicular cones
+        TVector3 ue_axis1(0, 0, 0);
+        TVector3 ue_axis2(0, 0, 0);
+        get_perpendicular_axis(jet[i], ue_axis1, +1);
+        get_perpendicular_axis(jet[i], ue_axis2, -1);
+        ue1.push_back(ue_axis1);
+        ue2.push_back(ue_axis2);
+
+        double nPartJetPlusUE(0);
+        double ptJetPlusUE(0);
+        double ptJet(0);
+        double ptUE(0);
+
+        for (auto& particle : mcParticles_per_coll) {
+
+          // Select Primary Particles
+          double dx = particle.vx() - mccollision.posX();
+          double dy = particle.vy() - mccollision.posY();
+          double dz = particle.vz() - mccollision.posZ();
+          double dcaxy = sqrt(dx * dx + dy * dy);
+          double dcaz = std::abs(dz);
+
+          if (dcaxy > (par0 + par1 / particle.pt()))
+            continue;
+          if (dcaz > (par0 + par1 / particle.pt()))
+            continue;
+          if (std::abs(particle.eta()) > 0.8)
+            continue;
+          if (particle.pt() < 0.15)
+            continue;
+
+          // PDG Selection
+          int pdg = abs(particle.pdgCode());
+          if ((pdg != 11) && (pdg != 211) && (pdg != 321) && (pdg != 2212))
+            continue;
+
+          TVector3 sel_track(particle.px(), particle.py(), particle.pz());
+
+          double deltaEta_jet = sel_track.Eta() - jet[i].Eta();
+          double deltaPhi_jet = GetDeltaPhi(sel_track.Phi(), jet[i].Phi());
+          double deltaR_jet = sqrt(deltaEta_jet * deltaEta_jet + deltaPhi_jet * deltaPhi_jet);
+          double deltaEta_ue1 = sel_track.Eta() - ue_axis1.Eta();
+          double deltaPhi_ue1 = GetDeltaPhi(sel_track.Phi(), ue_axis1.Phi());
+          double deltaR_ue1 = sqrt(deltaEta_ue1 * deltaEta_ue1 + deltaPhi_ue1 * deltaPhi_ue1);
+          double deltaEta_ue2 = sel_track.Eta() - ue_axis2.Eta();
+          double deltaPhi_ue2 = GetDeltaPhi(sel_track.Phi(), ue_axis2.Phi());
+          double deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
+
+          if (deltaR_jet < Rjet) {
+            nPartJetPlusUE++;
+            ptJetPlusUE = ptJetPlusUE + sel_track.Pt();
+          }
+          if (deltaR_ue1 < Rjet) {
+            ptUE = ptUE + sel_track.Pt();
+          }
+          if (deltaR_ue2 < Rjet) {
+            ptUE = ptUE + sel_track.Pt();
+          }
+        }
+        ptJet = ptJetPlusUE - 0.5 * ptUE;
+
+        if (ptJet < min_jet_pt)
+          continue;
+        if (nPartJetPlusUE < min_nPartInJet)
+          continue;
+        n_jets_selected++;
+        isSelected[i] = 1;
+      }
+      if (n_jets_selected == 0)
+        continue;
+
+      for (int i = 0; i < static_cast<int>(jet.size()); i++) {
+
+        if (isSelected[i] == 0)
+          continue;
+
+        // Generated Particles
+        for (auto& particle : mcParticles_per_coll) {
+
+          if (!particle.isPhysicalPrimary())
+            continue;
+
+          TVector3 particle_dir(particle.px(), particle.py(), particle.pz());
+          double deltaEta_jet = particle_dir.Eta() - jet[i].Eta();
+          double deltaPhi_jet = GetDeltaPhi(particle_dir.Phi(), jet[i].Phi());
+          double deltaR_jet = sqrt(deltaEta_jet * deltaEta_jet + deltaPhi_jet * deltaPhi_jet);
+          double deltaEta_ue1 = particle_dir.Eta() - ue1[i].Eta();
+          double deltaPhi_ue1 = GetDeltaPhi(particle_dir.Phi(), ue1[i].Phi());
+          double deltaR_ue1 = sqrt(deltaEta_ue1 * deltaEta_ue1 + deltaPhi_ue1 * deltaPhi_ue1);
+          double deltaEta_ue2 = particle_dir.Eta() - ue2[i].Eta();
+          double deltaPhi_ue2 = GetDeltaPhi(particle_dir.Phi(), ue2[i].Phi());
+          double deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
+
+          int pdg = abs(particle.pdgCode());
+
+          if (pdg == 211) {
+            if (deltaR_jet < Rjet) {
+              registryMC.fill(HIST("Pion_eta_pt_jet"), particle.pt(), particle.eta());
+            }
+            if (deltaR_ue1 < Rjet || deltaR_ue2 < Rjet) {
+              registryMC.fill(HIST("Pion_eta_pt_ue"), particle.pt(), particle.eta());
+            }
+          }
+          if (pdg == 310) {
+            if (deltaR_jet < Rjet) {
+              registryMC.fill(HIST("K0s_eta_pt_jet"), particle.pt(), particle.eta());
+            }
+            if (deltaR_ue1 < Rjet || deltaR_ue2 < Rjet) {
+              registryMC.fill(HIST("K0s_eta_pt_ue"), particle.pt(), particle.eta());
+            }
+          }
+          if (pdg == 3122) {
+            if (deltaR_jet < Rjet) {
+              registryMC.fill(HIST("Lambda_eta_pt_jet"), particle.pt(), particle.eta());
+            }
+            if (deltaR_ue1 < Rjet || deltaR_ue2 < Rjet) {
+              registryMC.fill(HIST("Lambda_eta_pt_ue"), particle.pt(), particle.eta());
+            }
+          }
+          if (pdg == 3312) {
+            if (deltaR_jet < Rjet) {
+              registryMC.fill(HIST("Xi_eta_pt_jet"), particle.pt(), particle.eta());
+            }
+            if (deltaR_ue1 < Rjet || deltaR_ue2 < Rjet) {
+              registryMC.fill(HIST("Xi_eta_pt_ue"), particle.pt(), particle.eta());
+            }
+          }
+          if (pdg == 3334) {
+            if (deltaR_jet < Rjet) {
+              registryMC.fill(HIST("Omega_eta_pt_jet"), particle.pt(), particle.eta());
+            }
+            if (deltaR_ue1 < Rjet || deltaR_ue2 < Rjet) {
+              registryMC.fill(HIST("Omega_eta_pt_ue"), particle.pt(), particle.eta());
+            }
+          }
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(strangeness_in_jets, processGen, "Process generated MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
