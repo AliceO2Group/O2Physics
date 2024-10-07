@@ -131,6 +131,14 @@ class DielectronCut : public TNamed
     if (dca_ee_3d < mMinPairDCA3D || mMaxPairDCA3D < dca_ee_3d) { // in sigma for pair
       return false;
     }
+
+    float deta = v1.Eta() - v2.Eta();
+    float dphi = v1.Phi() - v2.Phi();
+    o2::math_utils::bringToPMPi(dphi);
+    if (mApplydEtadPhi && std::pow(deta / mMinDeltaEta, 2) + std::pow(dphi / mMinDeltaPhi, 2) < 1.f) {
+      return false;
+    }
+
     return true;
   }
 
@@ -364,7 +372,9 @@ class DielectronCut : public TNamed
   void SetPairDCARange(float min = 0.f, float max = 1e10f); // 3D DCA in sigma
   void SetMeeRange(float min = 0.f, float max = 0.5);
   void SetMaxPhivPairMeeDep(std::function<float(float)> meeDepCut);
+  void SetPhivPairRange(float min, float max);
   void SelectPhotonConversion(bool flag);
+  void SetMindEtadPhi(bool flag, float min_deta, float min_dphi);
 
   void SetTrackPtRange(float minPt = 0.f, float maxPt = 1e10f);
   void SetTrackEtaRange(float minEta = -1e10f, float maxEta = 1e10f);
@@ -396,10 +406,10 @@ class DielectronCut : public TNamed
   void RequireITSibAny(bool flag);
   void RequireITSib1st(bool flag);
 
-  void SetDca3DRange(float min, float max); // in sigma
-  void SetMaxDcaXY(float maxDcaXY);         // in cm
-  void SetMaxDcaZ(float maxDcaZ);           // in cm
-  void SetMaxDcaXYPtDep(std::function<float(float)> ptDepCut);
+  void SetTrackDca3DRange(float min, float max); // in sigma
+  void SetTrackMaxDcaXY(float maxDcaXY);         // in cm
+  void SetTrackMaxDcaZ(float maxDcaZ);           // in cm
+  void SetTrackMaxDcaXYPtDep(std::function<float(float)> ptDepCut);
   void ApplyPrefilter(bool flag);
   void ApplyPhiV(bool flag);
 
@@ -422,6 +432,9 @@ class DielectronCut : public TNamed
   float mMinPhivPair{0.f}, mMaxPhivPair{+3.2};
   std::function<float(float)> mMaxPhivPairMeeDep{}; // max phiv as a function of mee
   bool mSelectPC{false};                            // flag to select photon conversion used in mMaxPhivPairMeeDep
+  bool mApplydEtadPhi{false};                       // flag to apply deta, dphi cut between 2 tracks
+  float mMinDeltaEta{0.f};
+  float mMinDeltaPhi{0.f};
 
   // kinematic cuts
   float mMinTrackPt{0.f}, mMaxTrackPt{1e10f};        // range in pT

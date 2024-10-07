@@ -765,6 +765,18 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("posTrackKaonRej")) {
+    cut->AddCut(GetAnalysisCut("posTrack"));
+    cut->AddCut(GetAnalysisCut("kaonRejNsigma"));
+    return cut;
+  }
+
+  if (!nameStr.compare("negTrackKaonRej")) {
+    cut->AddCut(GetAnalysisCut("negTrack"));
+    cut->AddCut(GetAnalysisCut("kaonRejNsigma"));
+    return cut;
+  }
+
   if (!nameStr.compare("pTLow04")) {
     cut->AddCut(GetAnalysisCut("pTLow04"));
     return cut;
@@ -889,7 +901,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
-  for (int iCut = 0; iCut < 7; iCut++) {
+  for (int iCut = 0; iCut < 10; iCut++) {
     if (!nameStr.compare(Form("jpsiEleSel%d_ionut", iCut))) {
       cut->AddCut(GetAnalysisCut("kineJpsiEle_ionut"));
       cut->AddCut(GetAnalysisCut("dcaCut1_ionut"));
@@ -4093,6 +4105,24 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("pidJpsiEle7_ionut")) {
+    cut->AddCut(VarManager::kTOFnSigmaEl, -3.0, 4.0);
+    cut->AddCut(VarManager::kTPCnSigmaEl, -1.0, 4.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("pidJpsiEle8_ionut")) {
+    cut->AddCut(VarManager::kTOFnSigmaEl, -3.0, 4.0);
+    cut->AddCut(VarManager::kTPCnSigmaEl, -1.5, 4.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("pidJpsiEle9_ionut")) {
+    cut->AddCut(VarManager::kTOFnSigmaEl, -3.0, 4.0);
+    cut->AddCut(VarManager::kTPCnSigmaEl, -2.0, 4.0);
+    return cut;
+  }
+
   if (!nameStr.compare("standardPrimaryTrackDCAz")) {
     cut->AddCut(VarManager::kTrackDCAxy, -3.0, 3.0);
     cut->AddCut(VarManager::kTrackDCAz, -1.0, 1.0);
@@ -4766,6 +4796,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (!nameStr.compare("kaonPIDnsigma")) {
     cut->AddCut(VarManager::kTPCnSigmaKa, -3.0, 3.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("kaonRejNsigma")) {
+    cut->AddCut(VarManager::kTPCnSigmaKa, -3.0, 3.0, true);
     return cut;
   }
 

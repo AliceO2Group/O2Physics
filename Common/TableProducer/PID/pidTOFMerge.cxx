@@ -210,9 +210,9 @@ struct TOFCalibConfig {
     mTimestamp = bc.timestamp();
 
     // Check the beam type
-    o2::parameters::GRPLHCIFData* grpo = ccdb->template getForTimeStamp<o2::parameters::GRPLHCIFData>(mPathGrpLhcIf,
-                                                                                                      mTimestamp);
     if (mCollisionSystem == -1) {
+      o2::parameters::GRPLHCIFData* grpo = ccdb->template getForTimeStamp<o2::parameters::GRPLHCIFData>(mPathGrpLhcIf,
+                                                                                                        mTimestamp);
       mCollisionSystem = CollisionSystemType::getCollisionTypeFromGrp(grpo);
     } else {
       LOG(debug) << "Not setting collisions system as already set to " << mCollisionSystem << " " << CollisionSystemType::getCollisionSystemName(mCollisionSystem);
@@ -838,10 +838,22 @@ struct tofPidMerge {
     }
     if (mEnabledParticlesFull.size() == 0 && mEnabledParticles.size() == 0) {
       LOG(info) << "No PID tables are required, disabling the task";
-      doprocessData.value = false;
+      doprocessRun3.value = false;
+      doprocessRun2.value = false;
       return;
-    } else if (doprocessData.value == false) {
+    } else if (doprocessRun3.value == false && doprocessRun2.value == false) {
       LOG(fatal) << "PID tables are required but process data is disabled. Please enable it";
+    }
+    if (doprocessRun3.value == true && doprocessRun2.value == true) {
+      LOG(fatal) << "Both processRun2 and processRun3 are enabled. Pick one of the two";
+    }
+    if (metadataInfo.isFullyDefined()) {
+      if (metadataInfo.isRun3() && doprocessRun2) {
+        LOG(fatal) << "Run2 process function is enabled but the metadata says it is Run3";
+      }
+      if (!metadataInfo.isRun3() && doprocessRun3) {
+        LOG(fatal) << "Run3 process function is enabled but the metadata says it is Run2";
+      }
     }
     mTOFCalibConfig.initSetup(mRespParamsV3, ccdb); // Getting the parametrization parameters
 
@@ -1033,7 +1045,7 @@ struct tofPidMerge {
 
   template <o2::track::PID::ID pid>
   using ResponseImplementation = o2::pid::tof::ExpTimes<Run3TrksWtofWevTime::iterator, pid>;
-  void processData(Run3TrksWtofWevTime const& tracks,
+  void processRun3(Run3TrksWtofWevTime const& tracks,
                    Run3Cols const&,
                    aod::BCsWithTimestamps const&)
   {
@@ -1201,7 +1213,179 @@ struct tofPidMerge {
       }
     }
   }
-  PROCESS_SWITCH(tofPidMerge, processData, "Produce tables. Set to off if the tables are not required", true);
+  PROCESS_SWITCH(tofPidMerge, processRun3, "Produce tables. Set to off if the tables are not required", true);
+
+  template <o2::track::PID::ID pid>
+  using ResponseImplementationRun2 = o2::pid::tof::ExpTimes<Run2TrksWtofWevTime::iterator, pid>;
+  void processRun2(Run2TrksWtofWevTime const& tracks,
+                   Run3Cols const&,
+                   aod::BCsWithTimestamps const&)
+  {
+    constexpr auto responseEl = ResponseImplementationRun2<PID::Electron>();
+    constexpr auto responseMu = ResponseImplementationRun2<PID::Muon>();
+    constexpr auto responsePi = ResponseImplementationRun2<PID::Pion>();
+    constexpr auto responseKa = ResponseImplementationRun2<PID::Kaon>();
+    constexpr auto responsePr = ResponseImplementationRun2<PID::Proton>();
+    constexpr auto responseDe = ResponseImplementationRun2<PID::Deuteron>();
+    constexpr auto responseTr = ResponseImplementationRun2<PID::Triton>();
+    constexpr auto responseHe = ResponseImplementationRun2<PID::Helium3>();
+    constexpr auto responseAl = ResponseImplementationRun2<PID::Alpha>();
+
+    for (auto const& track : tracks) { // Loop on all tracks
+      if (!track.has_collision()) {    // Skipping tracks without collisions
+        continue;
+      }
+      const auto& coll = track.collision();
+      if (!coll.has_bc()) {
+        continue;
+      }
+      mTOFCalibConfig.processSetup(mRespParamsV3, ccdb, coll.bc_as<aod::BCsWithTimestamps>()); // Update the calibration parameters
+      break;
+    }
+
+    for (auto const& pidId : mEnabledParticles) {
+      reserveTable(pidId, tracks.size(), false);
+    }
+
+    for (auto const& pidId : mEnabledParticlesFull) {
+      reserveTable(pidId, tracks.size(), true);
+    }
+
+    float resolution = 1.f; // Last resolution assigned
+    float nsigma = 0;
+    for (auto const& trk : tracks) { // Loop on all tracks
+      if (!trk.has_collision()) {    // Track was not assigned, cannot compute NSigma (no event time) -> filling with empty table
+        for (auto const& pidId : mEnabledParticles) {
+          makeTableEmpty(pidId, false);
+        }
+        for (auto const& pidId : mEnabledParticlesFull) {
+          makeTableEmpty(pidId, true);
+        }
+        continue;
+      }
+
+      for (auto const& pidId : mEnabledParticles) { // Loop on enabled particle hypotheses
+        switch (pidId) {
+          case idxEl: {
+            nsigma = responseEl.GetSeparation(mRespParamsV3, trk);
+            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDEl);
+            break;
+          }
+          case idxMu: {
+            nsigma = responseMu.GetSeparation(mRespParamsV3, trk);
+            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDMu);
+            break;
+          }
+          case idxPi: {
+            nsigma = responsePi.GetSeparation(mRespParamsV3, trk);
+            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDPi);
+            break;
+          }
+          case idxKa: {
+            nsigma = responseKa.GetSeparation(mRespParamsV3, trk);
+            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDKa);
+            break;
+          }
+          case idxPr: {
+            nsigma = responsePr.GetSeparation(mRespParamsV3, trk);
+            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDPr);
+            break;
+          }
+          case idxDe: {
+            nsigma = responseDe.GetSeparation(mRespParamsV3, trk);
+            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDDe);
+            break;
+          }
+          case idxTr: {
+            nsigma = responseTr.GetSeparation(mRespParamsV3, trk);
+            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDTr);
+            break;
+          }
+          case idxHe: {
+            nsigma = responseHe.GetSeparation(mRespParamsV3, trk);
+            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDHe);
+            break;
+          }
+          case idxAl: {
+            nsigma = responseAl.GetSeparation(mRespParamsV3, trk);
+            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nsigma, tablePIDAl);
+            break;
+          }
+          default:
+            LOG(fatal) << "Wrong particle ID for standard tables";
+            break;
+        }
+        if (enableQaHistograms) {
+          hnsigma[pidId]->Fill(trk.p(), nsigma);
+        }
+      }
+      for (auto const& pidId : mEnabledParticlesFull) { // Loop on enabled particle hypotheses with full tables
+        switch (pidId) {
+          case idxEl: {
+            resolution = responseEl.GetExpectedSigma(mRespParamsV3, trk);
+            nsigma = responseEl.GetSeparation(mRespParamsV3, trk, resolution);
+            tablePIDFullEl(resolution, nsigma);
+            break;
+          }
+          case idxMu: {
+            resolution = responseMu.GetExpectedSigma(mRespParamsV3, trk);
+            nsigma = responseMu.GetSeparation(mRespParamsV3, trk, resolution);
+            tablePIDFullMu(resolution, nsigma);
+            break;
+          }
+          case idxPi: {
+            resolution = responsePi.GetExpectedSigma(mRespParamsV3, trk);
+            nsigma = responsePi.GetSeparation(mRespParamsV3, trk);
+            tablePIDFullPi(resolution, nsigma);
+            break;
+          }
+          case idxKa: {
+            resolution = responseKa.GetExpectedSigma(mRespParamsV3, trk);
+            nsigma = responseKa.GetSeparation(mRespParamsV3, trk, resolution);
+            tablePIDFullKa(resolution, nsigma);
+            break;
+          }
+          case idxPr: {
+            resolution = responsePr.GetExpectedSigma(mRespParamsV3, trk);
+            nsigma = responsePr.GetSeparation(mRespParamsV3, trk, resolution);
+            tablePIDFullPr(resolution, nsigma);
+            break;
+          }
+          case idxDe: {
+            resolution = responseDe.GetExpectedSigma(mRespParamsV3, trk);
+            nsigma = responseDe.GetSeparation(mRespParamsV3, trk, resolution);
+            tablePIDFullDe(resolution, nsigma);
+            break;
+          }
+          case idxTr: {
+            resolution = responseTr.GetExpectedSigma(mRespParamsV3, trk);
+            nsigma = responseTr.GetSeparation(mRespParamsV3, trk, resolution);
+            tablePIDFullTr(resolution, nsigma);
+            break;
+          }
+          case idxHe: {
+            resolution = responseHe.GetExpectedSigma(mRespParamsV3, trk);
+            nsigma = responseHe.GetSeparation(mRespParamsV3, trk, resolution);
+            tablePIDFullHe(resolution, nsigma);
+            break;
+          }
+          case idxAl: {
+            resolution = responseAl.GetExpectedSigma(mRespParamsV3, trk);
+            nsigma = responseAl.GetSeparation(mRespParamsV3, trk, resolution);
+            tablePIDFullAl(resolution, nsigma);
+            break;
+          }
+          default:
+            LOG(fatal) << "Wrong particle ID for full tables";
+            break;
+        }
+        if (enableQaHistograms) {
+          hnsigmaFull[pidId]->Fill(trk.p(), nsigma);
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(tofPidMerge, processRun2, "Produce tables. Set to off if the tables are not required", false);
 };
 
 // Part 4 Beta and TOF mass computation

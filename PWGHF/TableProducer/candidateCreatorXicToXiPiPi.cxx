@@ -13,6 +13,7 @@
 /// \brief Reconstruction of Ξc± → (Ξ∓ → (Λ → p π∓) π∓) π± π± candidates
 ///
 /// \author Phil Lennart Stahlhut <phil.lennart.stahlhut@cern.ch>, Heidelberg University
+/// \author Carolina Reetz <c.reetz@cern.ch>, Heidelberg University
 /// \author Jinjoo Seo <jseo@cern.ch>, Heidelberg University
 
 #ifndef HomogeneousField

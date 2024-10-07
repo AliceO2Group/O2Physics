@@ -58,7 +58,6 @@ struct vpPairQC {
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
   Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
-  Configurable<float> maxY{"maxY", 0.9, "maximum rapidity for reconstructed particles"};
   ConfigurableAxis ConfPtlBins{"ConfPtlBins", {VARIABLE_WIDTH, 0.00, 0.10, 0.11, 0.12, 0.13, 0.14, 0.15, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.50, 3.00, 3.50, 4.00, 4.50, 5.00, 6.00, 7.00, 8.00, 9.00, 10.00}, "pTl bins for output histograms"};
 
   EMEventCut fEMEventCut;
@@ -94,10 +93,13 @@ struct vpPairQC {
     Configurable<bool> cfg_require_itsib_1st{"cfg_require_itsib_1st", true, "flag to require ITS ib 1st hit"};
     Configurable<float> cfg_phiv_slope{"cfg_phiv_slope", 0.0185, "slope for m vs. phiv"};
     Configurable<float> cfg_phiv_intercept{"cfg_phiv_intercept", -0.0280, "intercept for m vs. phiv"};
+    Configurable<bool> cfg_apply_phiv_meedep{"cfg_apply_phiv_meedep", false, "flag to apply mee-dependent phiv cut"};
+    Configurable<float> cfg_max_phiv{"cfg_max_phiv", 3.2, "max phiv (constant)"};
 
     Configurable<float> cfg_min_pt_track{"cfg_min_pt_track", 0.1, "min pT for single track"};
     Configurable<float> cfg_min_eta_track{"cfg_min_eta_track", -0.9, "min eta for single track"};
     Configurable<float> cfg_max_eta_track{"cfg_max_eta_track", +0.9, "max eta for single track"};
+    Configurable<float> cfg_max_dca3dsigma_track{"cfg_max_dca3dsigma_track", 1e+10, "max DCA 3D in sigma"};
     Configurable<int> cfg_min_ncluster_tpc{"cfg_min_ncluster_tpc", 0, "min ncluster tpc"};
     Configurable<int> cfg_min_ncluster_its{"cfg_min_ncluster_its", 5, "min ncluster its"};
     Configurable<int> cfg_min_ncrossedrows{"cfg_min_ncrossedrows", 100, "min ncrossed rows"};
@@ -215,8 +217,9 @@ struct vpPairQC {
     fRegistry.add("Track/positive/hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", kTH1F, {{400, -20, 20}}, false);
     fRegistry.add("Track/positive/hPResolution", "p resolution;p (GeV/c);#Deltap/p", kTH2F, {{1000, 0.0f, 10.0f}, {100, 0.0f, 0.1f}}, false);
     fRegistry.add("Track/positive/hPtResolution", "p_{T} resolution;p (GeV/c);#Deltap_{T}/p_{T}", kTH2F, {{1000, 0.0f, 10.0f}, {100, 0.0f, 0.1f}}, false);
-    fRegistry.add("Track/positive/hThetaResolution", "#theta resolution;p (GeV/c);#Delta#theta (rad.)", kTH2F, {{1000, 0.0f, 10.0f}, {200, 0.0f, 0.02f}}, false);
-    fRegistry.add("Track/positive/hPhiResolution", "#varphi resolution;p (GeV/c);#Delta#varphi (rad.)", kTH2F, {{1000, 0.0f, 10.0f}, {200, 0.0f, 0.02f}}, false);
+    fRegistry.add("Track/positive/hThetaResolution", "#theta resolution;p (GeV/c);#Delta#theta (rad.)", kTH2F, {{1000, 0.0f, 10.0f}, {100, 0.0f, 0.01f}}, false);
+    fRegistry.add("Track/positive/hEtaResolution", "#eta resolution;p (GeV/c);#Delta#eta", kTH2F, {{1000, 0.0f, 10.0f}, {100, 0.0f, 0.01f}}, false);
+    fRegistry.add("Track/positive/hPhiResolution", "#varphi resolution;p (GeV/c);#Delta#varphi (rad.)", kTH2F, {{1000, 0.0f, 10.0f}, {100, 0.0f, 0.01f}}, false);
     fRegistry.add("Track/positive/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", kTH2F, {{200, -1.0f, 1.0f}, {200, -1.0f, 1.0f}}, false);
     fRegistry.add("Track/positive/hDCAxyzSigma", "DCA xy vs. z;DCA_{xy} (#sigma);DCA_{z} (#sigma)", kTH2F, {{200, -10.0f, 10.0f}, {200, -10.0f, 10.0f}}, false);
     fRegistry.add("Track/positive/hDCAxyRes_Pt", "DCA_{xy} resolution vs. pT;p_{T} (GeV/c);DCA_{xy} resolution (#mum)", kTH2F, {{200, 0, 10}, {200, 0., 400}}, false);
@@ -245,7 +248,7 @@ struct vpPairQC {
     fRegistry.addClone("Track/positive/", "Track/negative/");
 
     const AxisSpec axis_mass{50, 0, 0.05, "m_{ee} (GeV/c^{2})"};
-    const AxisSpec axis_pair_pt{500, 0, 5, "p_{T,ee} (GeV/c)"};
+    const AxisSpec axis_pair_pt{200, 0, 2, "p_{T,ee} (GeV/c)"};
     const AxisSpec axis_pair_dca_3d{100, 0, 10, "DCA_{ee}^{3D} (#sigma)"};
     const AxisSpec axis_pair_dca_xy{100, 0, 10, "DCA_{ee}^{XY} (#sigma)"};
     const AxisSpec axis_phiv{90, 0, M_PI, "#varphi_{V} (rad.)"};
@@ -281,7 +284,11 @@ struct vpPairQC {
     fDielectronCut.SetPairPtRange(dielectroncuts.cfg_min_pair_pt, dielectroncuts.cfg_max_pair_pt);
     fDielectronCut.SetPairYRange(dielectroncuts.cfg_min_pair_y, dielectroncuts.cfg_max_pair_y);
     fDielectronCut.SetPairDCARange(dielectroncuts.cfg_min_pair_dca3d, dielectroncuts.cfg_max_pair_dca3d); // in sigma
-    fDielectronCut.SetMaxPhivPairMeeDep([&](float mll) { return (mll - dielectroncuts.cfg_phiv_intercept) / dielectroncuts.cfg_phiv_slope; });
+    if (dielectroncuts.cfg_apply_phiv_meedep) {
+      fDielectronCut.SetMaxPhivPairMeeDep([&](float mll) { return (mll - dielectroncuts.cfg_phiv_intercept) / dielectroncuts.cfg_phiv_slope; });
+    } else {
+      fDielectronCut.SetPhivPairRange(0.f, dielectroncuts.cfg_max_phiv);
+    }
     fDielectronCut.ApplyPhiV(dielectroncuts.cfg_apply_phiv);
     fDielectronCut.ApplyPrefilter(dielectroncuts.cfg_apply_pf);
     fDielectronCut.RequireITSibAny(dielectroncuts.cfg_require_itsib_any);
@@ -290,6 +297,7 @@ struct vpPairQC {
     // for track
     fDielectronCut.SetTrackPtRange(dielectroncuts.cfg_min_pt_track, 1e+10f);
     fDielectronCut.SetTrackEtaRange(dielectroncuts.cfg_min_eta_track, dielectroncuts.cfg_max_eta_track);
+    fDielectronCut.SetTrackDca3DRange(0.f, dielectroncuts.cfg_max_dca3dsigma_track); // in sigma
     fDielectronCut.SetMinNClustersTPC(dielectroncuts.cfg_min_ncluster_tpc);
     fDielectronCut.SetMinNCrossedRowsTPC(dielectroncuts.cfg_min_ncrossedrows);
     fDielectronCut.SetMinNCrossedRowsOverFindableClustersTPC(0.8);
@@ -297,8 +305,8 @@ struct vpPairQC {
     fDielectronCut.SetChi2PerClusterITS(0.0, dielectroncuts.cfg_max_chi2its);
     fDielectronCut.SetNClustersITS(dielectroncuts.cfg_min_ncluster_its, 7);
     fDielectronCut.SetMeanClusterSizeITS(dielectroncuts.cfg_min_its_cluster_size, dielectroncuts.cfg_max_its_cluster_size, dielectroncuts.cfg_max_p_its_cluster_size);
-    fDielectronCut.SetMaxDcaXY(dielectroncuts.cfg_max_dcaxy);
-    fDielectronCut.SetMaxDcaZ(dielectroncuts.cfg_max_dcaz);
+    fDielectronCut.SetTrackMaxDcaXY(dielectroncuts.cfg_max_dcaxy);
+    fDielectronCut.SetTrackMaxDcaZ(dielectroncuts.cfg_max_dcaz);
 
     // for eID
     fDielectronCut.SetPIDScheme(dielectroncuts.cfg_pid_scheme);
@@ -347,9 +355,6 @@ struct vpPairQC {
     ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron);
     ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
     ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-    if (abs(v12.Rapidity()) > maxY) {
-      return false;
-    }
     float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), d_bz);
 
     float dca_t1 = dca3DinSigma(t1);
@@ -384,7 +389,8 @@ struct vpPairQC {
       fRegistry.fill(HIST("Track/positive/hQoverPt"), track.sign() / track.pt());
       fRegistry.fill(HIST("Track/positive/hPResolution"), track.p(), sigmaP(track) / track.p());
       fRegistry.fill(HIST("Track/positive/hPtResolution"), track.p(), sigmaPt(track) / track.pt());
-      fRegistry.fill(HIST("Track/positive/hThetaResolution"), track.p(), sigmaLambda(track));
+      fRegistry.fill(HIST("Track/positive/hThetaResolution"), track.p(), sigmaTheta(track));
+      fRegistry.fill(HIST("Track/positive/hEtaResolution"), track.p(), sigmaEta(track));
       fRegistry.fill(HIST("Track/positive/hPhiResolution"), track.p(), sigmaPhi(track));
       fRegistry.fill(HIST("Track/positive/hDCAxyz"), track.dcaXY(), track.dcaZ());
       fRegistry.fill(HIST("Track/positive/hDCAxyzSigma"), track.dcaXY() / sqrt(track.cYY()), track.dcaZ() / sqrt(track.cZZ()));
@@ -417,7 +423,8 @@ struct vpPairQC {
       fRegistry.fill(HIST("Track/negative/hQoverPt"), track.sign() / track.pt());
       fRegistry.fill(HIST("Track/negative/hPResolution"), track.p(), sigmaP(track) / track.p());
       fRegistry.fill(HIST("Track/negative/hPtResolution"), track.p(), sigmaPt(track) / track.pt());
-      fRegistry.fill(HIST("Track/negative/hThetaResolution"), track.p(), sigmaLambda(track));
+      fRegistry.fill(HIST("Track/negative/hThetaResolution"), track.p(), sigmaTheta(track));
+      fRegistry.fill(HIST("Track/negative/hEtaResolution"), track.p(), sigmaEta(track));
       fRegistry.fill(HIST("Track/negative/hPhiResolution"), track.p(), sigmaPhi(track));
       fRegistry.fill(HIST("Track/negative/hDCAxyz"), track.dcaXY(), track.dcaZ());
       fRegistry.fill(HIST("Track/negative/hDCAxyzSigma"), track.dcaXY() / sqrt(track.cYY()), track.dcaZ() / sqrt(track.cZZ()));

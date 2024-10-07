@@ -1182,16 +1182,11 @@ struct lambdakzeroBuilder {
         if (V0.v0Type() > 1 && !storePhotonCandidates)
           continue;
 
-        if (mlConfigurations.calculateK0ShortScores ||
-            mlConfigurations.calculateLambdaScores ||
-            mlConfigurations.calculateAntiLambdaScores ||
-            mlConfigurations.calculateGammaScores) {
-          // at this stage, the candidate is interesting -> populate table
-          gammaMLSelections(gammaScore);
-          lambdaMLSelections(lambdaScore);
-          antiLambdaMLSelections(antiLambdaScore);
-          k0ShortMLSelections(k0ShortScore);
-        }
+        // at this stage, the candidate is interesting -> populate table
+        gammaMLSelections(gammaScore);
+        lambdaMLSelections(lambdaScore);
+        antiLambdaMLSelections(antiLambdaScore);
+        k0ShortMLSelections(k0ShortScore);
 
         // populates the various tables for analysis
         statisticsRegistry.v0stats[kCountStandardV0]++;
