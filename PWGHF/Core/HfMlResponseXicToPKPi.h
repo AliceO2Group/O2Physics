@@ -52,8 +52,8 @@
 // where GETTER1 and GETTER2 are methods of hfHelper, and the variable
 // is filled depending on whether it is a XicToPKPi or a XicToPiKP
 #define CHECK_AND_FILL_VEC_XIC_OBJECT_HFHELPER_SIGNED(OBJECT1, OBJECT2, FEATURE, GETTER) \
-  case static_cast<uint8_t>(InputFeaturesXicToPKPi::FEATURE): {                           \
-    if (caseXicToPKPi) {                                                                  \
+  case static_cast<uint8_t>(InputFeaturesXicToPKPi::FEATURE): {                          \
+    if (caseXicToPKPi) {                                                                 \
       inputFeatures.emplace_back(OBJECT1.GETTER());                                      \
     } else {                                                                             \
       inputFeatures.emplace_back(OBJECT2.GETTER());                                      \
