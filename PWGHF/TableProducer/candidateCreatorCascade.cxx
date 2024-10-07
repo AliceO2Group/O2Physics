@@ -25,6 +25,7 @@
 #include "Framework/RunningWorkflowInfo.h"
 #include "ReconstructionDataFormats/DCA.h"
 #include "ReconstructionDataFormats/V0.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "Common/Core/trackUtilities.h"
 
@@ -136,20 +137,24 @@ struct HfCandidateCreatorCascade {
     setLabelHistoCands(hCandidates);
   }
 
+  using V0full = soa::Join<aod::V0Datas, aod::V0Covs>;
+  using V0fCfull = soa::Join<aod::V0fCDatas, aod::V0fCCovs>;
+
   template <o2::hf_centrality::CentralityEstimator centEstimator, typename Coll>
   void runCreatorCascade(Coll const&,
                          aod::HfCascades const& rowsTrackIndexCasc,
                          aod::V0sLinked const&,
-                         aod::V0Datas const&,
-                         aod::V0fCDatas const&,
+                         V0full const&,
+                         V0fCfull const&,
                          aod::TracksWCov const&,
                          aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
   {
+
     // loop over pairs of track indices
     for (const auto& casc : rowsTrackIndexCasc) {
 
-      /// reject candidates in collisions not satisfying the event selections
       auto collision = casc.template collision_as<Coll>();
+      /// reject candidates in collisions not satisfying the event selections
       float centrality{-1.f};
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, centEstimator, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
       if (rejectionMask != 0) {
@@ -168,18 +173,14 @@ struct HfCandidateCreatorCascade {
       float v0x, v0y, v0z, v0px, v0py, v0pz;
       float v0PosPx, v0PosPy, v0PosPz, v0NegPx, v0NegPy, v0NegPz;
       float dcaV0dau, dcaPosToPV, dcaNegToPV, v0cosPA;
-      float posTrackX, negTrackX;
-      o2::track::TrackParCov trackParCovV0DaughPos;
-      o2::track::TrackParCov trackParCovV0DaughNeg;
+      std::array<float, 21> covV = {0.};
 
-      auto v0index = casc.v0_as<o2::aod::V0sLinked>();
+      auto v0index = casc.template v0_as<o2::aod::V0sLinked>();
       if (v0index.has_v0Data()) {
         // this V0 passed both standard V0 and cascade V0 selections
-        auto v0row = v0index.v0Data();
+        auto v0row = v0index.template v0Data_as<V0full>();
         const auto& trackV0DaughPos = v0row.posTrack_as<aod::TracksWCov>();
         const auto& trackV0DaughNeg = v0row.negTrack_as<aod::TracksWCov>();
-        trackParCovV0DaughPos = getTrackParCov(trackV0DaughPos); // check that aod::TracksWCov does not need TracksDCA!
-        trackParCovV0DaughNeg = getTrackParCov(trackV0DaughNeg); // check that aod::TracksWCov does not need TracksDCA!
         posGlobalIndex = trackV0DaughPos.globalIndex();
         negGlobalIndex = trackV0DaughNeg.globalIndex();
         v0x = v0row.x();
@@ -198,15 +199,17 @@ struct HfCandidateCreatorCascade {
         dcaPosToPV = v0row.dcapostopv();
         dcaNegToPV = v0row.dcanegtopv();
         v0cosPA = v0row.v0cosPA();
-        posTrackX = v0row.posX();
-        negTrackX = v0row.negX();
+
+        constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
+        for (int i = 0; i < 6; i++) {
+          covV[MomInd[i]] = v0row.momentumCovMat()[i];
+          covV[i] = v0row.positionCovMat()[i];
+        }
       } else if (v0index.has_v0fCData()) {
         // this V0 passes only V0-for-cascade selections, use that instead
-        auto v0row = v0index.v0fCData();
+        auto v0row = v0index.template v0fCData_as<V0fCfull>();
         const auto& trackV0DaughPos = v0row.posTrack_as<aod::TracksWCov>();
         const auto& trackV0DaughNeg = v0row.negTrack_as<aod::TracksWCov>();
-        trackParCovV0DaughPos = getTrackParCov(trackV0DaughPos); // check that aod::TracksWCov does not need TracksDCA!
-        trackParCovV0DaughNeg = getTrackParCov(trackV0DaughNeg); // check that aod::TracksWCov does not need TracksDCA!
         posGlobalIndex = trackV0DaughPos.globalIndex();
         negGlobalIndex = trackV0DaughNeg.globalIndex();
         v0x = v0row.x();
@@ -225,8 +228,12 @@ struct HfCandidateCreatorCascade {
         dcaPosToPV = v0row.dcapostopv();
         dcaNegToPV = v0row.dcanegtopv();
         v0cosPA = v0row.v0cosPA();
-        posTrackX = v0row.posX();
-        negTrackX = v0row.negX();
+
+        constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
+        for (int i = 0; i < 6; i++) {
+          covV[MomInd[i]] = v0row.momentumCovMat()[i];
+          covV[i] = v0row.positionCovMat()[i];
+        }
       } else {
         LOGF(warning, "V0Data/V0fCData not there for V0 %d in HF cascade %d. Skipping candidate.", casc.v0Id(), casc.globalIndex());
         continue; // this was inadequately linked, should not happen
@@ -243,18 +250,18 @@ struct HfCandidateCreatorCascade {
       }
       df.setBz(bz);
 
-      auto trackParCovBach = getTrackParCov(bach);
-      trackParCovV0DaughPos.propagateTo(posTrackX, bz); // propagate the track to the X closest to the V0 vertex
-      trackParCovV0DaughNeg.propagateTo(negTrackX, bz); // propagate the track to the X closest to the V0 vertex
+      auto trackBach = getTrackParCov(bach);
       const std::array<float, 3> vertexV0 = {v0x, v0y, v0z};
       const std::array<float, 3> momentumV0 = {v0px, v0py, v0pz};
       // we build the neutral track to then build the cascade
-      auto trackV0 = o2::dataformats::V0(vertexV0, momentumV0, {0, 0, 0, 0, 0, 0}, trackParCovV0DaughPos, trackParCovV0DaughNeg); // build the V0 track (indices for v0 daughters set to 0 for now)
+      auto trackV0 = o2::track::TrackParCov(vertexV0, momentumV0, covV, 0, true);
+      trackV0.setAbsCharge(0);
+      trackV0.setPID(o2::track::PID::K0);
 
       // reconstruct the cascade secondary vertex
       hCandidates->Fill(SVFitting::BeforeFit);
       try {
-        if (df.process(trackV0, trackParCovBach) == 0) {
+        if (df.process(trackV0, trackBach) == 0) {
           continue;
         } else {
           // LOG(info) << "Vertexing succeeded for Lc candidate";
@@ -308,7 +315,6 @@ struct HfCandidateCreatorCascade {
                        std::sqrt(impactParameterBach.getSigmaY2()), std::sqrt(impactParameterV0.getSigmaY2()),
                        casc.prong0Id(), casc.v0Id(),
                        v0x, v0y, v0z,
-                       // v0.posTrack(), v0.negTrack(), // why this was not fine?
                        posGlobalIndex, negGlobalIndex,
                        v0PosPx, v0PosPy, v0PosPz,
                        v0NegPx, v0NegPy, v0NegPz,
@@ -332,12 +338,12 @@ struct HfCandidateCreatorCascade {
   void processNoCent(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                      aod::HfCascades const& rowsTrackIndexCasc,
                      aod::V0sLinked const& v0sLinked,
-                     aod::V0Datas const& v0Data,
-                     aod::V0fCDatas const& v0fCDatas,
+                     V0full const& v0Full,
+                     V0fCfull const& v0fcFull,
                      aod::TracksWCov const& tracks,
                      aod::BCsWithTimestamps const& bcs)
   {
-    runCreatorCascade<CentralityEstimator::None>(collisions, rowsTrackIndexCasc, v0sLinked, v0Data, v0fCDatas, tracks, bcs);
+    runCreatorCascade<CentralityEstimator::None>(collisions, rowsTrackIndexCasc, v0sLinked, v0Full, v0fcFull, tracks, bcs);
   }
   PROCESS_SWITCH(HfCandidateCreatorCascade, processNoCent, " Run candidate creator w/o centrality selections", true);
 
@@ -345,12 +351,12 @@ struct HfCandidateCreatorCascade {
   void processCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
                        aod::HfCascades const& rowsTrackIndexCasc,
                        aod::V0sLinked const& v0sLinked,
-                       aod::V0Datas const& v0Data,
-                       aod::V0fCDatas const& v0fCDatas,
+                       V0full const& v0Full,
+                       V0fCfull const& v0fcFull,
                        aod::TracksWCov const& tracks,
                        aod::BCsWithTimestamps const& bcs)
   {
-    runCreatorCascade<CentralityEstimator::FT0C>(collisions, rowsTrackIndexCasc, v0sLinked, v0Data, v0fCDatas, tracks, bcs);
+    runCreatorCascade<CentralityEstimator::FT0C>(collisions, rowsTrackIndexCasc, v0sLinked, v0Full, v0fcFull, tracks, bcs);
   }
   PROCESS_SWITCH(HfCandidateCreatorCascade, processCentFT0C, " Run candidate creator w/ centrality selection on FT0C", false);
 
@@ -358,12 +364,12 @@ struct HfCandidateCreatorCascade {
   void processCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
                        aod::HfCascades const& rowsTrackIndexCasc,
                        aod::V0sLinked const& v0sLinked,
-                       aod::V0Datas const& v0Data,
-                       aod::V0fCDatas const& v0fCDatas,
+                       V0full const& v0Full,
+                       V0fCfull const& v0fcFull,
                        aod::TracksWCov const& tracks,
                        aod::BCsWithTimestamps const& bcs)
   {
-    runCreatorCascade<CentralityEstimator::FT0M>(collisions, rowsTrackIndexCasc, v0sLinked, v0Data, v0fCDatas, tracks, bcs);
+    runCreatorCascade<CentralityEstimator::FT0M>(collisions, rowsTrackIndexCasc, v0sLinked, v0Full, v0fcFull, tracks, bcs);
   }
   PROCESS_SWITCH(HfCandidateCreatorCascade, processCentFT0M, " Run candidate creator w/ centrality selection on FT0M", false);
 

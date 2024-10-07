@@ -79,10 +79,12 @@ struct phianalysisrun3_PbPb {
   Configurable<int> cfgOccupancyCut{"cfgOccupancyCut", 2500, "Occupancy cut"};
   Configurable<bool> isNoTOF{"isNoTOF", false, "isNoTOF"};
   Configurable<bool> isEtaAssym{"isEtaAssym", false, "isEtaAssym"};
+  Configurable<bool> additionalEvSel2{"additionalEvSel2", true, "Additional evsel2"};
   Configurable<bool> cfgMultFT0{"cfgMultFT0", true, "cfgMultFT0"};
   Configurable<bool> iscustomDCAcut{"iscustomDCAcut", false, "iscustomDCAcut"};
   Configurable<bool> ismanualDCAcut{"ismanualDCAcut", true, "ismanualDCAcut"};
   Configurable<bool> isITSOnlycut{"isITSOnlycut", true, "isITSOnlycut"};
+  Configurable<bool> ispTdepPID{"ispTdepPID", true, "pT dependent PID"};
   Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"};
   Configurable<double> confRapidity{"confRapidity", 0.5, "Rapidity cut"};
   Configurable<bool> timFrameEvsel{"timFrameEvsel", false, "TPC Time frame boundary cut"};
@@ -120,6 +122,7 @@ struct phianalysisrun3_PbPb {
     } else if (isMC) {
       histos.add("hMC", "MC Event statistics", kTH1F, {{10, 0.0f, 10.0f}});
       histos.add("h1PhiGen", "Phi meson Gen", kTH1F, {{200, 0.0f, 20.0f}});
+      histos.add("h1PhiGen1", "Phi meson Gen", kTH1F, {{200, 0.0f, 20.0f}});
       histos.add("h1PhiRecsplit", "Phi meson Rec split", kTH1F, {{200, 0.0f, 20.0f}});
       histos.add("Centrec", "MC Centrality", kTH1F, {{200, 0.0, 200.0}});
       histos.add("h2PhiRec2", "Phi meson Rec", kTH2F, {{200, 0.0f, 20.0f}, {200, 0.0, 200.0}});
@@ -185,7 +188,17 @@ struct phianalysisrun3_PbPb {
     }
     return false;
   }
-
+  template <typename T>
+  bool selectionPIDpTdependent(const T& candidate)
+  {
+    if (candidate.pt() < 0.5 && TMath::Abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC) {
+      return true;
+    }
+    if (candidate.pt() >= 0.5 && candidate.hasTOF() && ((candidate.tofNSigmaKa() * candidate.tofNSigmaKa()) + (candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa())) < (nsigmaCutCombined * nsigmaCutCombined)) {
+      return true;
+    }
+    return false;
+  }
   // deep angle cut on pair to remove photon conversion
   template <typename T1, typename T2>
   bool selectionPair(const T1& candidate1, const T2& candidate2)
@@ -302,6 +315,9 @@ struct phianalysisrun3_PbPb {
     if (!collision.sel8()) {
       return;
     }
+    if (additionalEvSel2 && (!collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+      return;
+    }
     int occupancy = collision.trackOccupancyInTimeRange();
     if (fillOccupancy && occupancy < cfgOccupancyCut) // occupancy info is available for this collision (*)
     {
@@ -354,7 +370,15 @@ struct phianalysisrun3_PbPb {
           histos.fill(HIST("QAafter/TOF_TPC_Mapka_all"), track1.tofNSigmaKa(), track1.tpcNSigmaKa());
           FillinvMass(track1, track2, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
         }
-        if (!isITSOnlycut && selectionPID(track1) && selectionPID(track2)) {
+        if (!isITSOnlycut && !ispTdepPID && selectionPID(track1) && selectionPID(track2)) {
+          histos.fill(HIST("QAafter/TPC_Nsigma_all"), track1.pt(), track1.tpcNSigmaKa());
+          histos.fill(HIST("QAafter/TOF_Nsigma_all"), track1.pt(), track1.tofNSigmaKa());
+          histos.fill(HIST("QAafter/trkDCAxy"), track1.dcaXY());
+          histos.fill(HIST("QAafter/trkDCAz"), track1.dcaZ());
+          histos.fill(HIST("QAafter/TOF_TPC_Mapka_all"), track1.tofNSigmaKa(), track1.tpcNSigmaKa());
+          FillinvMass(track1, track2, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
+        }
+        if (!isITSOnlycut && ispTdepPID && selectionPIDpTdependent(track1) && selectionPIDpTdependent(track2)) {
           histos.fill(HIST("QAafter/TPC_Nsigma_all"), track1.pt(), track1.tpcNSigmaKa());
           histos.fill(HIST("QAafter/TOF_Nsigma_all"), track1.pt(), track1.tofNSigmaKa());
           histos.fill(HIST("QAafter/trkDCAxy"), track1.dcaXY());
@@ -378,6 +402,12 @@ struct phianalysisrun3_PbPb {
         continue;
       }
       if (!c2.sel8()) {
+        continue;
+      }
+      if (additionalEvSel2 && (!c1.selection_bit(aod::evsel::kNoSameBunchPileup) || !c1.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+        continue;
+      }
+      if (additionalEvSel2 && (!c2.selection_bit(aod::evsel::kNoSameBunchPileup) || !c2.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
         continue;
       }
       int occupancy = c1.trackOccupancyInTimeRange();
@@ -408,7 +438,10 @@ struct phianalysisrun3_PbPb {
         if (isITSOnlycut) {
           FillinvMass(t1, t2, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
         }
-        if (!isITSOnlycut && selectionPID(t1) && selectionPID(t2)) {
+        if (!isITSOnlycut && !ispTdepPID && selectionPID(t1) && selectionPID(t2)) {
+          FillinvMass(t1, t2, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
+        }
+        if (!isITSOnlycut && ispTdepPID && selectionPIDpTdependent(t1) && selectionPIDpTdependent(t2)) {
           FillinvMass(t1, t2, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
         }
       }
@@ -452,7 +485,10 @@ struct phianalysisrun3_PbPb {
         if (!selectionTrack(track1)) {
           continue;
         }
-        if (!selectionPID(track1)) {
+        if (!ispTdepPID && !selectionPID(track1)) {
+          continue;
+        }
+        if (ispTdepPID && !selectionPIDpTdependent(track1)) {
           continue;
         }
         if (!track1.has_mcParticle()) {
@@ -467,7 +503,10 @@ struct phianalysisrun3_PbPb {
           if (!selectionTrack(track2)) {
             continue;
           }
-          if (!selectionPID(track2)) {
+          if (!ispTdepPID && !selectionPID(track2)) {
+            continue;
+          }
+          if (ispTdepPID && !selectionPIDpTdependent(track2)) {
             continue;
           }
           if (!track2.has_mcParticle()) {
@@ -506,7 +545,10 @@ struct phianalysisrun3_PbPb {
               if (TMath::Abs(mothertrack1.pdgCode()) != 333) {
                 continue;
               }
-              if (!selectionPID(track1) || !selectionPID(track2)) {
+              if (!ispTdepPID && (!selectionPID(track1) || !selectionPID(track2))) {
+                continue;
+              }
+              if (ispTdepPID && (!selectionPIDpTdependent(track1) || !selectionPIDpTdependent(track2))) {
                 continue;
               }
               if (avoidsplitrackMC && oldindex == mothertrack1.globalIndex()) {
