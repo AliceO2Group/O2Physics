@@ -75,6 +75,8 @@ std::shared_ptr<TH1> hDecayChannel;
 std::shared_ptr<TH1> hIsMatterGen;
 std::shared_ptr<TH1> hIsMatterGenTwoBody;
 std::shared_ptr<TH2> hDCAxy3H;
+std::shared_ptr<TH2> hdEdxAfterMassTr2Cut;
+std::shared_ptr<TH2> hArmenterosPodolanski;
 
 } // namespace
 
@@ -138,11 +140,13 @@ struct lnnRecoTask {
   Configurable<float> ptMin{"ptMin", 0.5, "Minimum pT of the lnncandidate"};
   Configurable<float> etaMax{"eta", 0.8, "eta daughter"};
   Configurable<float> TPCRigidityMin3H{"TPCRigidityMin3H", 0.2, "Minimum rigidity of the triton candidate"};
-  Configurable<float> nSigmaCutMinTPC{"nSigmaCutMinTPC", -5, "triton dEdx cut (n sigma)"};
-  Configurable<float> nSigmaCutMaxTPC{"nSigmaCutMaxTPC", 5, "triton dEdx cut (n sigma)"};
+  Configurable<float> nSigmaCutMinTPC{"nSigmaCutMinTPC", -2, "triton dEdx cut (n sigma)"};
+  Configurable<float> nSigmaCutMaxTPC{"nSigmaCutMaxTPC", 2, "triton dEdx cut (n sigma)"};
   Configurable<float> nTPCClusMin3H{"nTPCClusMin3H", 80, "triton NTPC clusters cut"};
   Configurable<float> ptMinTOF{"ptMinTOF", 0.8, "minimum pt for TOF cut"};
   Configurable<float> ptMaxTOF{"ptMaxTOF", 3.5, "minimum pt for TOF cut"};
+  Configurable<float> nSigma3HMin{"nSigma3HMin", 3., "nSigma Triton cut min"};
+  Configurable<float> nSigma3HMax{"nSigma3HMax", 3., "nSigma Triton cut max"};
   Configurable<float> TrTOFMass2Cut{"TrTOFMass2Cut", 5.5, "minimum Triton mass square to TOF"};
   Configurable<bool> mcSignalOnly{"mcSignalOnly", true, "If true, save only signal in MC"};
   
@@ -183,6 +187,8 @@ struct lnnRecoTask {
   ConfigurableAxis PtPosTritonBins{"PtPosTritonBins", {200, 0.f, 5.f}, "Binning for Triton pt positive values"};
   ConfigurableAxis BetaBins{"BetaBins", {550, 0.f, 1.1f}, "Binning for Beta"};
   ConfigurableAxis DCAxyBins{"DCAxyBins", {550, -5.f, 5.f}, "Binning for DCAxy"};
+  ConfigurableAxis AlphaBins{"AlphaBins", {50, -1.15f, 1.15f}, "Binning for DCAxy"};
+  ConfigurableAxis PtLnnBins{"PtLnnBins", {50, 0., 0.3f}, "Binning for DCAxy"};
 
   // std vector of candidates
   std::vector<lnnCandidate> lnnCandidates;
@@ -232,6 +238,8 @@ struct lnnRecoTask {
     const AxisSpec MassTOFAxis{MassTOFBins, "{m}^{2}/{z}^{2}"};
     const AxisSpec BetaAxis{BetaBins, "#beta (TOF)"};
     const AxisSpec DCAxyAxis(DCAxyBins, "DCAxy ({}^{3}H) (cm)");
+    const AxisSpec AlphaAxis(AlphaBins, "#alpha");
+    const AxisSpec PtLnnAxis(PtLnnBins, "#it{p}_{T}");
 
     hNsigma3HSel = qaRegistry.add<TH2>("hNsigma3HSel", "; #it{p}_{TPC}/z (GeV/#it{c}); n_{#sigma} ({}^{3}H)", HistType::kTH2F, {rigidityAxis, nSigma3HAxis});
     hNsigma3HSelTOF = qaRegistry.add<TH2>("hNsigma3HSelTOF", "; Signed p_{T} ({}^{3}H) (GeV/#it{c^2}); n#sigma_{TOF} ({}^{3}H)", HistType::kTH2F, {PtTrAxis, nSigma3HAxis});
@@ -241,6 +249,8 @@ struct lnnRecoTask {
     h3HMassPtTOF = qaRegistry.add<TH2>("hTrMassPtTOF", "; #it{p}_{T}({}^{3}H) (#it{GeV}^2/#it{c}^4); m^{2}/z", HistType::kTH2F, {PtTrAxis, MassTOFAxis});
     h3HSignalPtTOF = qaRegistry.add<TH2>("h3HSignalPtTOF", "; #it{p}_{T}({}^{3}H) (GeV/#it{c}); #beta (TOF)", HistType::kTH2F, {PtTrAxis, BetaAxis});
     hDCAxy3H = qaRegistry.add<TH2>("hDCAxy3H", "; #it{p}_{T}({}^{3}H) (GeV/#it{c}); #it{DCA}_{xy} 3H", HistType::kTH2F, {PtPosTrAxis, DCAxyAxis});
+    hdEdxAfterMassTr2Cut = qaRegistry.add<TH2>("hdEdxAfterMassTr2Cut", ";#it{p}_{TPC}/z (GeV/#it{c}); dE/dx", HistType::kTH2F, {rigidityAxis, dEdxAxis});
+    hArmenterosPodolanski = qaRegistry.add<TH2>("hArmenterosPodolanski", "; #alpha; #it{p}_{T}", HistType::kTH2F, {AlphaAxis, PtLnnAxis});
     hEvents = qaRegistry.add<TH1>("hEvents", ";Events; ", HistType::kTH1D, {{2, -0.5, 1.5}});
 
     hEvents->GetXaxis()->SetBinLabel(1, "All");
@@ -381,15 +391,18 @@ struct lnnRecoTask {
       hNsigma3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, lnnCand.nSigma3H);
       hDCAxy3H->Fill(h3track.pt(), h3track.dcaXY());
       if (is3H) {
-        hdEdx3HPosTrack->Fill(lnnCand.mom3HTPC, h3track.tpcSignal());
-      }
+          hdEdx3HPosTrack->Fill(lnnCand.mom3HTPC, h3track.tpcSignal());
+        }
       if (h3track.hasTOF()) {
         float beta = h3track.beta();
         lnnCand.mass2TrTOF = h3track.mass() * h3track.mass();
-        if (h3track.pt() >= ptMinTOF && h3track.pt() <= ptMaxTOF && lnnCand.mass2TrTOF >= TrTOFMass2Cut) {
+        if (lnnCand.mass2TrTOF >= TrTOFMass2Cut) {
+          h3HMassPtTOF->Fill(chargeFactor * h3track.pt(), lnnCand.mass2TrTOF);
+          hdEdxAfterMassTr2Cut->Fill(chargeFactor * h3track.tpcInnerParam(),  h3track.tpcSignal());
+        }
+        if (h3track.pt() >= ptMinTOF && h3track.pt() <= ptMaxTOF) {
           h3HSignalPtTOF->Fill(chargeFactor * h3track.pt(), beta);
           hNsigma3HSelTOF->Fill(chargeFactor * h3track.pt(), h3track.tofNSigmaTr());
-          h3HMassPtTOF->Fill(chargeFactor * h3track.pt(), lnnCand.mass2TrTOF);
         }
       }
 
@@ -424,6 +437,21 @@ struct lnnRecoTask {
         lnnCand.decVtx[i] = vtx[i];
         lnnMom[i] = lnnCand.mom3H[i] + lnnCand.momPi[i];
       }
+      double massLNNL = std::sqrt(h3lE * h3lE - lnnMom[0] * lnnMom[0] - lnnMom[1] * lnnMom[1] - lnnMom[2] * lnnMom[2]);
+      
+      //Armenteros Podolanski 
+      
+      //Alpha variables
+      float pLnn = std::sqrt(RecoDecay::p2(std::array{lnnMom[0], lnnMom[1], lnnMom[2]})); //Module(pVO)
+      float lQlNeg = RecoDecay::dotProd(std::array{lnnCand.momPi[0], lnnCand.momPi[1], lnnCand.momPi[2]}, std::array{lnnMom[0], lnnMom[1], lnnMom[2]}) / pLnn;
+      float lQlPos = RecoDecay::dotProd(std::array{lnnCand.mom3H[0], lnnCand.mom3H[1], lnnCand.mom3H[2]}, std::array{lnnMom[0], lnnMom[1], lnnMom[2]}) / pLnn;
+      //qT variables 
+      std::array<double, 3>  CrossProd3HLnn = RecoDecay::crossProd(std::array{lnnCand.mom3H[0], lnnCand.mom3H[1], lnnCand.mom3H[2]}, std::array{lnnMom[0], lnnMom[1], lnnMom[2]});
+      
+      //Fill
+      float qT = std::sqrt(CrossProd3HLnn[0] * CrossProd3HLnn[0] + CrossProd3HLnn[1] * CrossProd3HLnn[1] + CrossProd3HLnn[2] * CrossProd3HLnn[2]) / pLnn;
+      float alpha = (lQlPos - lQlNeg) / (lQlPos + lQlNeg); 
+      hArmenterosPodolanski->Fill(alpha, qT);
 
       float lnnPt = std::hypot(lnnMom[0], lnnMom[1]);
       if (lnnPt < ptMin) {
@@ -431,8 +459,7 @@ struct lnnRecoTask {
       }
 
       // Definition of lnn mass
-      float mLNN_HypHI = 3.00; // , but 2993.7 MeV/c**2
-      float massLNNL = std::sqrt(h3lE * h3lE - lnnMom[0] * lnnMom[0] - lnnMom[1] * lnnMom[1] - lnnMom[2] * lnnMom[2]);
+      double mLNN_HypHI = 3.00; // , but 2993.7 MeV/c**2
       bool isLNNMass = false;
       if (massLNNL > mLNN_HypHI - masswidth && massLNNL < mLNN_HypHI + masswidth) {
         isLNNMass = true;
