@@ -620,14 +620,6 @@ struct LumiStabilityTask {
               }
             }
           }
-          if (bcPatternB[localBC]) {
-            histos.fill(HIST("FDD/timeACbcBVertex"), fdd.timeA(), fdd.timeC());
-            histos.fill(HIST("FDD/hBcBVertex"), localBC);
-          }
-          if (bcPatternE[localBC]) {
-            histos.fill(HIST("FDD/timeACbcEVertex"), fdd.timeA(), fdd.timeC());
-            histos.fill(HIST("FDD/hBcEVertex"), localBC);
-          }
         }
 
 
@@ -647,8 +639,8 @@ struct LumiStabilityTask {
           if (bcPatternB[localBC]) {
             histos.fill(HIST("FDD/timeACbcB"), fdd.timeA(), fdd.timeC());
             histos.fill(HIST("FDD/hBcB"), localBC);
-            histos.fill(HIST("FDD/hTimeA"), fdd.timeA());
-            histos.fill(HIST("FDD/hTimeC"), fdd.timeC());
+            histos.fill(HIST("FDD/hTimeACoinc"), fdd.timeA());
+            histos.fill(HIST("FDD/hTimeCCoinc"), fdd.timeC());
 
           }
           if (bcPatternE[localBC]) {
