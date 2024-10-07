@@ -220,7 +220,7 @@ struct HfCandidateSelectorLc {
     if (std::abs(candidate.impactParameterXY()) > cuts->get(pTBin, "impParXY")) {
       return false;
     }
-    
+
     if (!isSelectedCandidateProngDca(candidate)) {
       return false;
     }

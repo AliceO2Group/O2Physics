@@ -505,7 +505,7 @@ static const std::vector<std::string> labelsPt = {
   "pT bin 9"};
 
 // column labels
-static const std::vector<std::string> labelsCutVar = {"m", "pT p", "pT K", "pT Pi", "Chi2PCA", "decay length", "cos pointing angle" ,"decLengthXY", "normDecLXY", "ct", "impParXY", "mass (Kpi)"};
+static const std::vector<std::string> labelsCutVar = {"m", "pT p", "pT K", "pT Pi", "Chi2PCA", "decay length", "cos pointing angle", "decLengthXY", "normDecLXY", "ct", "impParXY", "mass (Kpi)"};
 } // namespace hf_cuts_lc_to_p_k_pi
 
 namespace hf_cuts_lc_to_k0s_p
