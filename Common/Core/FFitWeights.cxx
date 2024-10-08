@@ -11,6 +11,7 @@
 
 /*
 Author: Joachim Hansen
+See FFitWeights.h for class descripton
 */
 
 #include "FFitWeights.h"

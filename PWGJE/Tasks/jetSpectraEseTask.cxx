@@ -124,7 +124,7 @@ struct JetSpectraEseTask {
       registry.fill(HIST("h_Psi2"), vPsi2);
       registry.fill(HIST("h_jet_area"), jet.area());
 
-      float dPhi = DeltaRPhi(jet.phi(), vPsi2);
+      float dPhi = RecoDecay::constrainAngle(jet.phi() - vPsi2, -o2::constants::math::PI);
       registry.fill(HIST("h_dPhi"), dPhi);
       if (qPerc[0] < 0)
         continue;
@@ -133,27 +133,6 @@ struct JetSpectraEseTask {
     registry.fill(HIST("h_collisions"), 5.5);
   }
   PROCESS_SWITCH(JetSpectraEseTask, processESEDataCharged, "process ese collisions", true);
-
-  float DeltaRPhi(Double_t mphi, Double_t vphi)
-  {
-    if (vphi < -1 * TMath::Pi())
-      vphi += (2 * TMath::Pi());
-    else if (vphi > TMath::Pi())
-      vphi -= (2 * TMath::Pi());
-
-    if (mphi < -1 * TMath::Pi())
-      mphi += (2 * TMath::Pi());
-    else if (mphi > TMath::Pi())
-      mphi -= (2 * TMath::Pi());
-    float dphi = mphi - vphi;
-
-    if (dphi < -1 * TMath::Pi())
-      dphi += (2 * TMath::Pi());
-    else if (dphi > TMath::Pi())
-      dphi -= (2 * TMath::Pi());
-
-    return dphi; // dphi in [-Pi, Pi]
-  }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<JetSpectraEseTask>(cfgc)}; }
