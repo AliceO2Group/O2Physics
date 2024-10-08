@@ -243,6 +243,7 @@ struct HfElectronSelectionWithTpcEmcal {
     float dcaxyTrack = -999;
     float dcazTrack = -999;
     float tpcNsigmaTrack = -999;
+    int electronId = -999;
     for (const auto& track : tracks) {
       // std:: cout << "collision iD" <<  track.collisionId() << "global INdex" <<  collision.globalIndex() << std::endl;
       phiTrack = track.phi();
@@ -252,7 +253,7 @@ struct HfElectronSelectionWithTpcEmcal {
       dcaxyTrack = track.dcaXY();
       dcazTrack = track.dcaZ();
       tpcNsigmaTrack = track.tpcNSigmaEl();
-
+      electronId = track.globalIndex();
       // Apply Track Selection
       if (!selTracks(track)) {
         continue;
@@ -286,6 +287,7 @@ struct HfElectronSelectionWithTpcEmcal {
       float deltaPhiMatch = -999.;
       float deltaEtaMatch = -999.;
       float eop = -999;
+      int elecrtonMatchId = -999;
       bool isEMcal = false;
 
       float trackRapidity = track.rapidity(MassElectron);
@@ -308,6 +310,7 @@ struct HfElectronSelectionWithTpcEmcal {
         m20MatchEmcCluster = emcCluster.m20();
         timeEmcCluster = emcCluster.time();
         cellEmcCluster = emcCluster.nCells();
+        elecrtonMatchId = matchTrack.globalIndex();
 
         deltaPhiMatch = matchTrack.trackPhiEmcal() - phiMatchEmcCluster;
         deltaEtaMatch = matchTrack.trackEtaEmcal() - etaMatchEmcCluster;
@@ -367,7 +370,7 @@ struct HfElectronSelectionWithTpcEmcal {
 
         isEMcal = true;
 
-        electronSel(matchTrack.collisionId(), etaMatchTrack, phiMatchTrack, ptMatchTrack, pMatchTrack, trackRapidity, matchTrack.dcaXY(), matchTrack.dcaZ(), matchTrack.tpcNSigmaEl(), matchTrack.tofNSigmaEl(),
+        electronSel(matchTrack.collisionId(), elecrtonMatchId, etaMatchTrack, phiMatchTrack, ptMatchTrack, pMatchTrack, trackRapidity, matchTrack.dcaXY(), matchTrack.dcaZ(), matchTrack.tpcNSigmaEl(), matchTrack.tofNSigmaEl(),
                     eMatchEmcCluster, etaMatchEmcCluster, phiMatchEmcCluster, m02MatchEmcCluster, m20MatchEmcCluster, cellEmcCluster, timeEmcCluster, deltaEtaMatch, deltaPhiMatch, isEMcal);
       }
 
@@ -375,7 +378,7 @@ struct HfElectronSelectionWithTpcEmcal {
       if (isEMcal) {
         continue;
       }
-      electronSel(track.collisionId(), etaTrack, phiTrack, ptTrack, pTrack, trackRapidity, dcaxyTrack, dcazTrack, track.tpcNSigmaEl(), track.tofNSigmaEl(),
+      electronSel(track.collisionId(), electronId, etaTrack, phiTrack, ptTrack, pTrack, trackRapidity, dcaxyTrack, dcazTrack, track.tpcNSigmaEl(), track.tofNSigmaEl(),
                   eMatchEmcCluster, etaMatchEmcCluster, phiMatchEmcCluster, m02MatchEmcCluster, m20MatchEmcCluster, cellEmcCluster, timeEmcCluster, deltaEtaMatch, deltaPhiMatch, isEMcal);
     }
   }
