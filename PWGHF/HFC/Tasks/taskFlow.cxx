@@ -709,26 +709,21 @@ struct HfTaskFlow {
     return true;
   }
 
-  template <CorrelationContainer::CFStep step, typename TTrack>
-  bool isMcParticleSelected(TTrack& track)
+  // I am not sure if to template McParticles is useful, I'll address this when doing the MC Gen case of HF-h correlations
+  template <CorrelationContainer::CFStep step, typename TMcParticles>
+  bool isMcParticleSelected(TMcParticles& mcParticles)
   {
     //  remove MC particles with charge = 0
-    // TParticlePDG* pdgparticle = pdg->GetParticle(track.pdgCode());
-    // if (pdgparticle->Charge() == 0) {
-    //    return false;
-    //}
-    int8_t sign = 0;
-    TParticlePDG* pdgparticle = pdg->GetParticle(track.pdgCode());
+    TParticlePDG* pdgparticle = pdg->GetParticle(mcParticles.pdgCode());
     if (pdgparticle != nullptr) {
-      sign = (pdgparticle->Charge() > 0) ? 1.0 : ((pdgparticle->Charge() < 0) ? -1.0 : 0.0);
-    }
-    if (sign == 0) {
-      return false;
+      if (pdgparticle->Charge() == 0) {
+          return false;
+      }
     }
 
     //  MC particle has to be primary
     if constexpr (step <= CorrelationContainer::kCFStepAnaTopology) {
-      return track.isPhysicalPrimary();
+      return mcParticles.isPhysicalPrimary();
     }
     return true;
   }
