@@ -180,7 +180,7 @@ struct PhotonIsolationQA {
         dphi = 2. * M_PI - abs(dphi);
       }
       double distance = sqrt(pow((cluster.eta() - match.track_as<myGlobTracks>().eta()), 2) + pow(dphi, 2));
-      if (distance < Track_matching_Radius){
+      if (distance < Track_matching_Radius) {
         double abs_pt = abs(match.track_as<myGlobTracks>().pt());
         if ((cluster.energy() / abs_pt) < 1.75) {
           return true;
@@ -274,7 +274,7 @@ struct PhotonIsolationQA {
     }
   }
 
-  //iterates over all mothers to check if photon originated from hard scattering (statuscode = abs(23))
+  // iterates over all mothers to check if photon originated from hard scattering (statuscode = abs(23))
   template <typename T>
   int getOriginalMotherIndex(const typename T::iterator& particle)
   {
@@ -300,7 +300,7 @@ struct PhotonIsolationQA {
     return -1.0;
   }
 
-  //Calculates the number of local maxima within a cluster
+  // Calculates the number of local maxima within a cluster
   std::pair<int, int> CalculateNLM(const auto& ClusterCells)
   {
     std::vector<std::vector<float>> Cell_Info(ClusterCells.size(), std::vector<float>(3));
@@ -345,7 +345,7 @@ struct PhotonIsolationQA {
 
     int NLM = uniqueRows.size();
 
-    //flag = 0 if cluster falls in 1 supermodule. flag = 1 if cluster falls in multiple supermodules and will have automatically more local maxima
+    // flag = 0 if cluster falls in 1 supermodule. flag = 1 if cluster falls in multiple supermodules and will have automatically more local maxima
     int flag = (std::unordered_set<int>(supermodules.begin(), supermodules.end()).size() > 1) ? 1 : 0;
     return std::make_pair(NLM, flag);
   }
