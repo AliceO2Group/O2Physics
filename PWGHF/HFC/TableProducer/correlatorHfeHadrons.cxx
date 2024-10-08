@@ -138,8 +138,8 @@ struct HfCorrelatorHfeHadrons {
       registry.fill(HIST("hptElectron"), ptElectron);
       for (const auto& hTrack : tracks) {
         hadronTrackId = hTrack.globalIndex();
-        if (hadronTrackId == electronTrackId)
-          continue;
+        //if (hadronTrackId == electronTrackId)
+          //continue;
         // Apply Hadron cut
         if (!selAssoHadron(hTrack))
           continue;
