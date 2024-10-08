@@ -983,6 +983,7 @@ struct correlateStrangeness {
       if (!isValidTrigger(track))
         continue;
       histos.fill(HIST("hTriggerAllSelectedEtaVsPt"), track.pt(), track.eta(), collision.centFT0M());
+      histos.fill(HIST("hTriggerPtResolution"), track.pt(), triggerTrack.mcOriginalPt());
       if (doTriggPhysicalPrimary && !triggerTrack.mcPhysicalPrimary())
         continue;
       histos.fill(HIST("hTriggerPrimaryEtaVsPt"), track.pt(), track.eta(), collision.centFT0M());
@@ -1034,6 +1035,7 @@ struct correlateStrangeness {
         if (!isValidTrigger(track))
           continue;
         histos.fill(HIST("hTriggerAllSelectedEtaVsPt"), track.pt(), track.eta(), collision.centFT0M());
+        histos.fill(HIST("hTriggerPtResolution"), track.pt(), triggerTrack.mcOriginalPt());
         if (doTriggPhysicalPrimary && !triggerTrack.mcPhysicalPrimary())
           continue;
         histos.fill(HIST("hTriggerPrimaryEtaVsPt"), track.pt(), track.eta(), collision.centFT0M());
