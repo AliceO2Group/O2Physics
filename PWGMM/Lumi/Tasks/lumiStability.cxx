@@ -641,7 +641,6 @@ struct LumiStabilityTask {
             histos.fill(HIST("FDD/hBcB"), localBC);
             histos.fill(HIST("FDD/hTimeACoinc"), fdd.timeA());
             histos.fill(HIST("FDD/hTimeCCoinc"), fdd.timeC());
-
           }
           if (bcPatternE[localBC]) {
             histos.fill(HIST("FDD/timeACbcE"), fdd.timeA(), fdd.timeC());
