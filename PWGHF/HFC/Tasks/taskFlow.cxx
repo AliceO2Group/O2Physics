@@ -717,7 +717,7 @@ struct HfTaskFlow {
     TParticlePDG* pdgparticle = pdg->GetParticle(mcParticles.pdgCode());
     if (pdgparticle != nullptr) {
       if (pdgparticle->Charge() == 0) {
-        return false;
+          return false;
       }
     }
 
