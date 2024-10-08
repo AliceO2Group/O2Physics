@@ -478,15 +478,14 @@ struct HfCandidateCreatorCascadeMc {
                         aod::McCollisions const& mcCollisions,
                         BCsInfo const&)
   {
-    int8_t sign = 0;
-    int8_t origin = 0;
-    int indexRec = -1;
-    int8_t flag = 0;
-
     // Match reconstructed candidates.
     rowCandidateCasc->bindExternalIndices(&tracks);
     for (const auto& candidate : *rowCandidateCasc) {
-      origin = 0;
+
+      int8_t sign = 0;
+      int8_t origin = 0;
+      int indexRec = -1;
+
       std::vector<int> idxBhadMothers{};
 
       const auto& bach = candidate.prong0_as<MyTracksWMc>();
@@ -521,7 +520,7 @@ struct HfCandidateCreatorCascadeMc {
       }
 
       // Check whether the particle is non-prompt (from a b quark).
-      if (indexK0SRecoDecay >= 0) {
+      if (indexRec >= 0) {
         auto particle = mcParticles.rawIteratorAt(indexRec);
         origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
       }
@@ -561,7 +560,11 @@ struct HfCandidateCreatorCascadeMc {
 
       // Match generated particles.
       for (const auto& particle : mcParticlesPerMcColl) {
-        origin = 0;
+
+        int8_t sign = 0;
+        int8_t origin = 0;
+        int8_t flag = 0;
+
         std::vector<int> idxBhadMothers{};
         // Reject particles from background events
         if (particle.fromBackgroundEvent() && rejectBackground) {
