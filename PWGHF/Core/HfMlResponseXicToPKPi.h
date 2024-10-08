@@ -48,17 +48,17 @@
     break;                                                     \
   }
 
-// Variation of CHECK_AND_FILL_VEC_XIC_FULL(OBJECT, FEATURE, GETTER)
-// where GETTER1 and GETTER2 are methods of hfHelper, and the variable
+// Variation of CHECK_AND_FILL_VEC_XIC_OBJECT_SIGNED(OBJECT1, OBJECT2, FEATURE, GETTER)
+// where OBJECT1 and OBJECT2 are the objects from which we call the GETTER method, and the variable
 // is filled depending on whether it is a XicToPKPi or a XicToPiKP
-#define CHECK_AND_FILL_VEC_XIC_OBJECT_HFHELPER_SIGNED(OBJECT1, OBJECT2, FEATURE, GETTER) \
-  case static_cast<uint8_t>(InputFeaturesXicToPKPi::FEATURE): {                          \
-    if (caseXicToPKPi) {                                                                 \
-      inputFeatures.emplace_back(OBJECT1.GETTER());                                      \
-    } else {                                                                             \
-      inputFeatures.emplace_back(OBJECT2.GETTER());                                      \
-    }                                                                                    \
-    break;                                                                               \
+#define CHECK_AND_FILL_VEC_XIC_OBJECT_SIGNED(OBJECT1, OBJECT2, FEATURE, GETTER) \
+  case static_cast<uint8_t>(InputFeaturesXicToPKPi::FEATURE): {                 \
+    if (caseXicToPKPi) {                                                        \
+      inputFeatures.emplace_back(OBJECT1.GETTER());                             \
+    } else {                                                                    \
+      inputFeatures.emplace_back(OBJECT2.GETTER());                             \
+    }                                                                           \
+    break;                                                                      \
   }
 
 namespace o2::analysis
@@ -162,8 +162,8 @@ class HfMlResponseXicToPKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_XIC_FULL(prong2, tpcNSigmaP2, tpcNSigmaPr);
         CHECK_AND_FILL_VEC_XIC_FULL(prong2, tpcNSigmaKa2, tpcNSigmaKa);
         CHECK_AND_FILL_VEC_XIC_FULL(prong2, tpcNSigmaPi2, tpcNSigmaPi);
-        CHECK_AND_FILL_VEC_XIC_OBJECT_HFHELPER_SIGNED(prong0, prong2, tpcNSigmaPrExpPr0, tpcNSigmaPr);
-        CHECK_AND_FILL_VEC_XIC_OBJECT_HFHELPER_SIGNED(prong2, prong0, tpcNSigmaPiExpPi2, tpcNSigmaPi);
+        CHECK_AND_FILL_VEC_XIC_OBJECT_SIGNED(prong0, prong2, tpcNSigmaPrExpPr0, tpcNSigmaPr);
+        CHECK_AND_FILL_VEC_XIC_OBJECT_SIGNED(prong2, prong0, tpcNSigmaPiExpPi2, tpcNSigmaPi);
         // TOF PID variables
         CHECK_AND_FILL_VEC_XIC_FULL(prong0, tofNSigmaP0, tofNSigmaPr);
         CHECK_AND_FILL_VEC_XIC_FULL(prong0, tofNSigmaKa0, tofNSigmaKa);
@@ -174,8 +174,8 @@ class HfMlResponseXicToPKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_XIC_FULL(prong2, tofNSigmaP2, tofNSigmaPr);
         CHECK_AND_FILL_VEC_XIC_FULL(prong2, tofNSigmaKa2, tofNSigmaKa);
         CHECK_AND_FILL_VEC_XIC_FULL(prong2, tofNSigmaPi2, tofNSigmaPi);
-        CHECK_AND_FILL_VEC_XIC_OBJECT_HFHELPER_SIGNED(prong0, prong2, tofNSigmaPrExpPr0, tofNSigmaPr);
-        CHECK_AND_FILL_VEC_XIC_OBJECT_HFHELPER_SIGNED(prong2, prong0, tofNSigmaPiExpPi2, tofNSigmaPi);
+        CHECK_AND_FILL_VEC_XIC_OBJECT_SIGNED(prong0, prong2, tofNSigmaPrExpPr0, tofNSigmaPr);
+        CHECK_AND_FILL_VEC_XIC_OBJECT_SIGNED(prong2, prong0, tofNSigmaPiExpPi2, tofNSigmaPi);
         // Combined PID variables
         CHECK_AND_FILL_VEC_XIC_FULL(prong0, tpcTofNSigmaPi0, tpcTofNSigmaPi);
         CHECK_AND_FILL_VEC_XIC_FULL(prong1, tpcTofNSigmaPi1, tpcTofNSigmaPi);
@@ -186,8 +186,8 @@ class HfMlResponseXicToPKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_XIC_FULL(prong0, tpcTofNSigmaPr0, tpcTofNSigmaPr);
         CHECK_AND_FILL_VEC_XIC_FULL(prong1, tpcTofNSigmaPr1, tpcTofNSigmaPr);
         CHECK_AND_FILL_VEC_XIC_FULL(prong2, tpcTofNSigmaPr2, tpcTofNSigmaPr);
-        CHECK_AND_FILL_VEC_XIC_OBJECT_HFHELPER_SIGNED(prong0, prong2, tpcTofNSigmaPrExpPr0, tpcTofNSigmaPr);
-        CHECK_AND_FILL_VEC_XIC_OBJECT_HFHELPER_SIGNED(prong2, prong0, tpcTofNSigmaPiExpPi2, tpcTofNSigmaPi);
+        CHECK_AND_FILL_VEC_XIC_OBJECT_SIGNED(prong0, prong2, tpcTofNSigmaPrExpPr0, tpcTofNSigmaPr);
+        CHECK_AND_FILL_VEC_XIC_OBJECT_SIGNED(prong2, prong0, tpcTofNSigmaPiExpPi2, tpcTofNSigmaPi);
       }
     }
 
@@ -258,6 +258,6 @@ class HfMlResponseXicToPKPi : public HfMlResponse<TypeOutputScore>
 #undef FILL_MAP_XIC
 #undef CHECK_AND_FILL_VEC_XIC_FULL
 #undef CHECK_AND_FILL_VEC_XIC
-#undef CHECK_AND_FILL_VEC_XIC_OBJECT_HFHELPER_SIGNED
+#undef CHECK_AND_FILL_VEC_XIC_OBJECT_SIGNED
 
 #endif // PWGHF_CORE_HFMLRESPONSEXICTOPKPI_H_

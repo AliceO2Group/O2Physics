@@ -69,16 +69,16 @@
   }
 
 // Variation of CHECK_AND_FILL_VEC_DS_HFHELPER(OBJECT, FEATURE, GETTER)
-// where GETTER1 and GETTER2 are methods of hfHelper, and the variable
+// where OBJECT1 and OBJECT2 are the objects from which we call the GETTER method, and the variable
 // is filled depending on whether it is a DsToKKPi or a DsToPiKK
-#define CHECK_AND_FILL_VEC_DS_OBJECT_HFHELPER_SIGNED(OBJECT1, OBJECT2, FEATURE, GETTER) \
-  case static_cast<uint8_t>(InputFeaturesDsToKKPi::FEATURE): {                          \
-    if (caseDsToKKPi) {                                                                 \
-      inputFeatures.emplace_back(OBJECT1.GETTER());                                     \
-    } else {                                                                            \
-      inputFeatures.emplace_back(OBJECT2.GETTER());                                     \
-    }                                                                                   \
-    break;                                                                              \
+#define CHECK_AND_FILL_VEC_DS_OBJECT_SIGNED(OBJECT1, OBJECT2, FEATURE, GETTER) \
+  case static_cast<uint8_t>(InputFeaturesDsToKKPi::FEATURE): {                 \
+    if (caseDsToKKPi) {                                                        \
+      inputFeatures.emplace_back(OBJECT1.GETTER());                            \
+    } else {                                                                   \
+      inputFeatures.emplace_back(OBJECT2.GETTER());                            \
+    }                                                                          \
+    break;                                                                     \
   }
 
 namespace o2::analysis
@@ -187,10 +187,10 @@ class HfMlResponseDsToKKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_DS_FULL(prong0, nSigTofKa0, tofNSigmaKa);
         CHECK_AND_FILL_VEC_DS_FULL(prong1, nSigTofKa1, tofNSigmaKa);
         CHECK_AND_FILL_VEC_DS_FULL(prong2, nSigTofKa2, tofNSigmaKa);
-        CHECK_AND_FILL_VEC_DS_OBJECT_HFHELPER_SIGNED(prong0, prong2, nSigTpcKaExpKa0, tpcNSigmaKa);
-        CHECK_AND_FILL_VEC_DS_OBJECT_HFHELPER_SIGNED(prong2, prong0, nSigTpcPiExpPi2, tpcNSigmaPi);
-        CHECK_AND_FILL_VEC_DS_OBJECT_HFHELPER_SIGNED(prong0, prong2, nSigTofKaExpKa0, tofNSigmaKa);
-        CHECK_AND_FILL_VEC_DS_OBJECT_HFHELPER_SIGNED(prong2, prong0, nSigTofPiExpPi2, tofNSigmaPi);
+        CHECK_AND_FILL_VEC_DS_OBJECT_SIGNED(prong0, prong2, nSigTpcKaExpKa0, tpcNSigmaKa);
+        CHECK_AND_FILL_VEC_DS_OBJECT_SIGNED(prong2, prong0, nSigTpcPiExpPi2, tpcNSigmaPi);
+        CHECK_AND_FILL_VEC_DS_OBJECT_SIGNED(prong0, prong2, nSigTofKaExpKa0, tofNSigmaKa);
+        CHECK_AND_FILL_VEC_DS_OBJECT_SIGNED(prong2, prong0, nSigTofPiExpPi2, tofNSigmaPi);
 
         // Combined PID variables
         CHECK_AND_FILL_VEC_DS_FULL(prong0, nSigTpcTofPi0, tpcTofNSigmaPi);
@@ -199,8 +199,8 @@ class HfMlResponseDsToKKPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_DS_FULL(prong0, nSigTpcTofKa0, tpcTofNSigmaKa);
         CHECK_AND_FILL_VEC_DS_FULL(prong1, nSigTpcTofKa1, tpcTofNSigmaKa);
         CHECK_AND_FILL_VEC_DS_FULL(prong2, nSigTpcTofKa2, tpcTofNSigmaKa);
-        CHECK_AND_FILL_VEC_DS_OBJECT_HFHELPER_SIGNED(prong0, prong2, nSigTpcTofKaExpKa0, tpcTofNSigmaKa);
-        CHECK_AND_FILL_VEC_DS_OBJECT_HFHELPER_SIGNED(prong2, prong0, nSigTpcTofPiExpPi2, tpcTofNSigmaPi);
+        CHECK_AND_FILL_VEC_DS_OBJECT_SIGNED(prong0, prong2, nSigTpcTofKaExpKa0, tpcTofNSigmaKa);
+        CHECK_AND_FILL_VEC_DS_OBJECT_SIGNED(prong2, prong0, nSigTpcTofPiExpPi2, tpcTofNSigmaPi);
 
         // Ds specific variables
         CHECK_AND_FILL_VEC_DS_HFHELPER_SIGNED(candidate, absCos3PiK, absCos3PiKDsToKKPi, absCos3PiKDsToPiKK);
@@ -255,6 +255,8 @@ class HfMlResponseDsToKKPi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_DS(nSigTpcTofKa0),
       FILL_MAP_DS(nSigTpcTofKa1),
       FILL_MAP_DS(nSigTpcTofKa2),
+      FILL_MAP_DS(nSigTpcTofKaExpKa0),
+      FILL_MAP_DS(nSigTpcTofPiExpPi2),
 
       // Ds specific variables
       FILL_MAP_DS(absCos3PiK),
