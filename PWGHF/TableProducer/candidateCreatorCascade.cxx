@@ -512,8 +512,8 @@ struct HfCandidateCreatorCascadeMc {
         }
       }
 
-      int indexK0SRecoDecay = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughtersV0, kK0Short, std::array{+kPiPlus, -kPiPlus}, false, &sign, 1);
-      if (indexK0SRecoDecay >= 0) { // we have already positively checked the K0s
+      int indexK0SRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughtersV0, kK0Short, std::array{+kPiPlus, -kPiPlus}, false, &sign, 1);
+      if (indexK0SRec >= 0) { // we have already positively checked the K0s
         // then we check the Lc
         indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughtersLc, Pdg::kLambdaCPlus, std::array{+kProton, +kPiPlus, -kPiPlus}, true, &sign, 3); // 3-levels Lc --> p + K0 --> p + K0s --> p + pi+ pi-
       }
