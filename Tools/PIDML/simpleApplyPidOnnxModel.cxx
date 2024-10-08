@@ -39,7 +39,6 @@ DECLARE_SOA_TABLE(MlPidResults, "AOD", "MLPIDRESULTS", o2::soa::Index<>, mlpidre
 } // namespace o2::aod
 
 struct SimpleApplyOnnxModel {
-  PidONNXModel pidModel; // One instance per model, e.g., one per each pid to predict
   Configurable<int> cfgPid{"pid", 211, "PID to predict"};
   Configurable<double> cfgCertainty{"certainty", 0.5, "Min certainty of the model to accept given particle to be of given kind"};
 
@@ -61,13 +60,14 @@ struct SimpleApplyOnnxModel {
   // TPC signal (FullTracks), TOF signal (TOFSignal), TOF beta (pidTOFbeta), dcaXY and dcaZ (TracksDCA)
   // Filter on isGlobalTrack (TracksSelection)
   using BigTracks = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTOFbeta, aod::TrackSelection, aod::TOFSignal>>;
+  PidONNXModel<BigTracks> pidModel; // One instance per model, e.g., one per each pid to predict
 
   void init(InitContext const&)
   {
     if (cfgUseCCDB) {
       ccdbApi.init(cfgCCDBURL);
     } else {
-      pidModel = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, cfgPid.value, cfgCertainty.value);
+      pidModel = PidONNXModel<BigTracks>(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, cfgPid.value, cfgCertainty.value);
     }
   }
 
@@ -76,7 +76,7 @@ struct SimpleApplyOnnxModel {
     auto bc = collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>();
     if (cfgUseCCDB && bc.runNumber() != currentRunNumber) {
       uint64_t timestamp = cfgUseFixedTimestamp ? cfgTimestamp.value : bc.timestamp();
-      pidModel = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, timestamp, cfgPid.value, cfgCertainty.value);
+      pidModel = PidONNXModel<BigTracks>(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, timestamp, cfgPid.value, cfgCertainty.value);
     }
 
     for (auto& track : tracks) {
