@@ -53,7 +53,6 @@ DECLARE_SOA_COLUMN(ISEmcal, isEmcal, bool);              //! electron informatio
 DECLARE_SOA_TABLE(HfSelEl, "AOD", "HFSELEL", //! Electron Informations
                   o2::soa::Index<>,
                   hf_sel_electron::CollisionId,
-                  hf_sel_electron::TrackId,
                   hf_sel_electron::EtaTrack,
                   hf_sel_electron::PhiTrack,
                   hf_sel_electron::PtTrack,
