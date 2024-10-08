@@ -184,7 +184,7 @@ struct HfTaskMcValidationGen {
       registry.get<TH2>(HIST("PromptCharmBaryons/hPromptBaryonsYDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nMesonChannels - 1].data());
       registry.get<TH2>(HIST("PromptCharmBaryons/hPromptBaryonsDecLenDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nMesonChannels - 1].data());
       registry.get<TH2>(HIST("NonPromptCharmBaryons/hNonPromptBaryonsPtDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nMesonChannels - 1].data());
-      registry.get<TH3>(HIST("NonPromptCharmBaryons/hNonPromptBaryonsPtCentDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nMesonChannels- 1].data());
+      registry.get<TH3>(HIST("NonPromptCharmBaryons/hNonPromptBaryonsPtCentDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nMesonChannels - 1].data());
       registry.get<TH2>(HIST("NonPromptCharmBaryons/hNonPromptBaryonsYDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nMesonChannels - 1].data());
       registry.get<TH2>(HIST("NonPromptCharmBaryons/hNonPromptBaryonsDecLenDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nMesonChannels - 1].data());
     }
@@ -922,7 +922,7 @@ struct HfTaskMcValidationRec {
   }
   PROCESS_SWITCH(HfTaskMcValidationRec, processCollAssocWithCentFTOM, "Process collision-association information with centrality selection with FT0M, requires extra table from TrackToCollisionAssociation task (fillTableOfCollIdsPerTrack=true)", false);
 
-  template <CentralityEstimator centEstimator, typename Coll> 
+  template <CentralityEstimator centEstimator, typename Coll>
   void processEff(HfCand2ProngWithMCRec const& cand2Prongs,
                   HfCand3ProngWithMCRec const& cand3Prongs,
                   aod::TracksWMc const&,
@@ -934,7 +934,7 @@ struct HfTaskMcValidationRec {
                   Preslice<HfCand3ProngWithMCRec> cand3ProngsPerCollision)
   {
     // loop over collisions
-    for (const auto& collision : collisions) { 
+    for (const auto& collision : collisions) {
       // apply event selection
       float centrality{-1.f};
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, centEstimator, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry); // only needed to update centrality, no bitmask selection applied
