@@ -514,8 +514,7 @@ struct HfDataCreatorCharmResoReduced {
         auto indexRecK0 = RecoDecay::getMatchedMCRec(particlesMc, std::array{vecDaughtersReso[3], vecDaughtersReso[4]}, kK0, std::array{+kPiPlus, -kPiPlus}, true, &signV0, 2);
         if (indexRec > -1 && indexRecD0 > -1 && indexRecK0 > -1) {
           flag = sign * BIT(DecayTypeMc::Ds1ToDStarK0ToD0PiK0s);
-        } // move the following in D+V0 channel
-        else {
+        } else {
           if (indexRec <= -1) {
             debug = 1;
             LOGF(debug, "DS1 decays in the expected final state but Dstar does not!");
@@ -871,9 +870,7 @@ struct HfDataCreatorCharmResoReduced {
         rowHfResoMcGenReduced(flag, ptParticle, yParticle, etaParticle,
                               ptProngs[0], yProngs[0], etaProngs[0],
                               ptProngs[1], yProngs[1], etaProngs[1]);
-      } // Dstar V0
-      else if constexpr (decayChannel == DecayChannel::DplusV0) {
-        // Ds2Star → D+ K0
+      } else if constexpr (decayChannel == DecayChannel::DplusV0) { // Ds2Star → D+ K0
         if (RecoDecay::isMatchedMCGen(particlesMc, particle, Pdg::kDS2Star, std::array{static_cast<int>(Pdg::kDPlus), +kK0}, true, &sign, 1)) {
           registry.fill(HIST("hMCSignCounter"), sign);
           origin = RecoDecay::getCharmHadronOrigin(particlesMc, particle, false, &idxBhadMothers);
@@ -897,9 +894,7 @@ struct HfDataCreatorCharmResoReduced {
               flag = sign * BIT(DecayTypeMc::Ds1ToDStarK0ToDPlusGammaK0s);
             } else if (RecoDecay::isMatchedMCGen(particlesMc, candDStarMC, Pdg::kDStar, std::array{static_cast<int>(Pdg::kDPlus), -static_cast<int>(kGamma)}, true, &signDPlus, 1)) {
               flag = sign * BIT(DecayTypeMc::Ds1ToDStarK0ToDPlusGammaK0s);
-            }
-            // D* -> D+ π0
-            else if (RecoDecay::isMatchedMCGen(particlesMc, candDStarMC, Pdg::kDStar, std::array{static_cast<int>(Pdg::kDPlus), static_cast<int>(kPi0)}, true, &signDPlus, 1)) {
+            } else if (RecoDecay::isMatchedMCGen(particlesMc, candDStarMC, Pdg::kDStar, std::array{static_cast<int>(Pdg::kDPlus), static_cast<int>(kPi0)}, true, &signDPlus, 1)) {
               flag = sign * BIT(DecayTypeMc::Ds1ToDStarK0ToDPlusPi0K0s);
             } else if (RecoDecay::isMatchedMCGen(particlesMc, candDStarMC, Pdg::kDStar, std::array{static_cast<int>(Pdg::kDPlus), -static_cast<int>(kPi0)}, true, &signDPlus, 1)) {
               flag = sign * BIT(DecayTypeMc::Ds1ToDStarK0ToDPlusPi0K0s);
