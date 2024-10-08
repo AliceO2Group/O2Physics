@@ -17,6 +17,7 @@
 #ifndef TOOLS_PIDML_PIDONNXMODEL_H_
 #define TOOLS_PIDML_PIDONNXMODEL_H_
 
+#include <Framework/ASoA.h>
 #include <array>
 #include <algorithm>
 #include <cstdint>
@@ -76,6 +77,7 @@ bool readJsonFile(const std::string& config, rapidjson::Document& d)
 }
 } // namespace
 
+template <typename T>
 struct PidONNXModel {
  public:
   PidONNXModel(std::string& localPath, std::string& ccdbPath, bool useCCDB, o2::ccdb::CcdbApi& ccdbApi, uint64_t timestamp,
@@ -138,14 +140,12 @@ struct PidONNXModel {
   PidONNXModel& operator=(const PidONNXModel&) = delete;
   ~PidONNXModel() = default;
 
-  template <typename T>
-  float applyModel(const T& track)
+  float applyModel(const typename T::iterator& track)
   {
     return getModelOutput(track);
   }
 
-  template <typename T>
-  bool applyModelBoolean(const T& track)
+  bool applyModelBoolean(const typename T::iterator& track)
   {
     return getModelOutput(track) >= mMinCertainty;
   }
@@ -206,7 +206,9 @@ struct PidONNXModel {
     LOG(info) << "Using configuration files: " << localTrainColumnsPath << ", " << localScalingParamsPath;
     if (readJsonFile(localTrainColumnsPath, trainColumnsDoc)) {
       for (auto& param : trainColumnsDoc["columns_for_training"].GetArray()) {
-        mTrainColumns.emplace_back(param.GetString());
+        auto columnLabel = param.GetString();
+        mTrainColumns.emplace_back(columnLabel);
+        mGetters.emplace_back(o2::soa::row_helpers::getColumnGetterByLabel<float, T>(columnLabel));
       }
     }
     if (readJsonFile(localScalingParamsPath, scalingParamsDoc)) {
@@ -216,68 +218,12 @@ struct PidONNXModel {
     }
   }
 
-  template <typename... P1, typename... P2>
-  static constexpr bool is_equal_size(o2::framework::pack<P1...>, o2::framework::pack<P2...>)
-  {
-    return sizeof...(P1) == sizeof...(P2);
-  }
-
   static float scale(float value, const std::pair<float, float>& scalingParams)
   {
     return (value - scalingParams.first) / scalingParams.second;
   }
 
-  template <typename C, typename T>
-  typename C::type getPersistentValue(const T& rowIterator)
-  {
-    return *(static_cast<C>(rowIterator).getIterator());
-  }
-
-  template <typename T, typename... C>
-  std::optional<float> getColumnValueByLabel(o2::framework::pack<C...>, const T& rowIterator, const std::string& columnLabel)
-  {
-    std::optional<float> value = std::nullopt;
-
-    ([&]() {
-      if (value) {
-        return;
-      }
-
-      if constexpr (std::is_arithmetic_v<typename C::type>) {
-        if constexpr (o2::soa::is_dynamic_v<C>) {
-          // check if bindings have the same size as lambda parameters (getter do not have additional parameters)
-          if constexpr (is_equal_size(typename C::bindings_t{}, typename C::callable_t::args{})) {
-            std::string label = C::columnLabel();
-
-            // dynamic columns do not have "f" prefix in columnLabel() return string
-            if (std::strcmp(&columnLabel[1], label.data()) != 0 && columnLabel != label) {
-              return;
-            }
-
-            value = static_cast<float>(rowIterator.template getDynamicColumn<C>());
-          }
-        } else if constexpr (o2::soa::is_persistent_v<C> && !o2::soa::is_index_column_v<C>) {
-          if (columnLabel != C::columnLabel()) {
-            return;
-          }
-
-          value = static_cast<float>(getPersistentValue<C>(rowIterator));
-        }
-      }
-    }(),
-     ...);
-
-    return value;
-  }
-
-  template <typename T>
-  std::optional<float> getColumnValueByLabel(const T& rowIterator, const std::string& columnLabel)
-  {
-    return getColumnValueByLabel(typename T::parent_t::table_t::columns{}, rowIterator, columnLabel);
-  }
-
-  template <typename T>
-  std::vector<float> getValues(const T& track)
+  std::vector<float> getValues(const typename T::iterator& track)
   {
     std::vector<float> output;
     output.reserve(mTrainColumns.size());
@@ -285,7 +231,9 @@ struct PidONNXModel {
     bool useTOF = !tofMissing(track) && inPLimit(track, mPLimits[kTPCTOF]);
     bool useTRD = !trdMissing(track) && inPLimit(track, mPLimits[kTPCTOFTRD]);
 
-    for (const std::string& columnLabel : mTrainColumns) {
+    for (uint32_t i = 0; i < mTrainColumns.size(); ++i) {
+      auto& columnLabel = mTrainColumns[i];
+
       if (
         ((columnLabel == "fTRDSignal" || columnLabel == "fTRDPattern") && !useTRD) ||
         ((columnLabel == "fTOFSignal" || columnLabel == "fBeta") && !useTOF)) {
@@ -300,24 +248,19 @@ struct PidONNXModel {
         scalingParams = scalingParamsEntry->second;
       }
 
-      std::optional<float> value = getColumnValueByLabel(track, columnLabel);
-
-      if (!value) {
-        LOG(fatal) << "Cannot obtain column of name: " << columnLabel;
-      }
+      float value = mGetters[i](track);
 
       if (scalingParams) {
-        value = scale(value.value(), scalingParams.value());
+        value = scale(value, scalingParams.value());
       }
 
-      output.push_back(value.value());
+      output.push_back(value);
     }
 
     return output;
   }
 
-  template <typename T>
-  float getModelOutput(const T& track)
+  float getModelOutput(const typename T::iterator& track)
   {
     // First rank of the expected model input is -1 which means that it is dynamic axis.
     // Axis is exported as dynamic to make it possible to run model inference with the batch of
@@ -382,6 +325,7 @@ struct PidONNXModel {
   }
 
   std::vector<std::string> mTrainColumns;
+  std::vector<float(*)(const typename T::iterator&)> mGetters;
   std::map<std::string, std::pair<float, float>> mScalingParams;
 
   std::shared_ptr<Ort::Env> mEnv = nullptr;

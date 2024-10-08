@@ -68,7 +68,6 @@ struct PidMlBatchEffAndPurProducer {
   std::array<std::shared_ptr<TH1>, kNPids> hMCPositive;
 
   o2::ccdb::CcdbApi ccdbApi;
-  std::vector<PidONNXModel> models;
 
   Configurable<std::vector<int32_t>> cfgPids{"pids", std::vector<int32_t>(kPids, kPids + kNPids), "PIDs to predict"};
   Configurable<std::array<double, kNDetectors>> cfgDetectorsPLimits{"detectors-p-limits", std::array<double, kNDetectors>(pidml_pt_cuts::defaultModelPLimits), "\"use {detector} when p >= y_{detector}\": array of 3 doubles [y_TPC, y_TOF, y_TRD]"};
@@ -84,6 +83,7 @@ struct PidMlBatchEffAndPurProducer {
   using BigTracks = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTOFbeta, aod::TrackSelection, aod::TOFSignal, aod::McTrackLabels,
                                             aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullEl, aod::pidTPCFullMu,
                                             aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullEl, aod::pidTOFFullMu>>;
+  std::vector<PidONNXModel<BigTracks>> models;
 
   void initHistos()
   {
@@ -205,11 +205,11 @@ struct PidMlBatchEffAndPurProducer {
     if (cfgUseCCDB && bc.runNumber() != currentRunNumber) {
       uint64_t timestamp = cfgUseFixedTimestamp ? cfgTimestamp.value : bc.timestamp();
       for (const int32_t& pid : cfgPids.value)
-        models.emplace_back(PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value,
+        models.emplace_back(PidONNXModel<BigTracks>(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value,
                                          ccdbApi, timestamp, pid, 1.1, &cfgDetectorsPLimits.value[0]));
     } else {
       for (int32_t& pid : cfgPids.value)
-        models.emplace_back(PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value,
+        models.emplace_back(PidONNXModel<BigTracks>(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value,
                                          ccdbApi, -1, pid, 1.1, &cfgDetectorsPLimits.value[0]));
     }
 
