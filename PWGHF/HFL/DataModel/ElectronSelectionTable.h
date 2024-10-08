@@ -26,7 +26,6 @@ namespace o2::aod
 namespace hf_sel_electron
 {
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);                //! collisioniD of the electron track
-DECLARE_SOA_COLUMN(GTrackId, gTrackId, int);                   //! trackid of of the electron track
 DECLARE_SOA_COLUMN(EtaTrack, etaTrack, float);                 //! pseudorapidity of the electron track
 DECLARE_SOA_COLUMN(PhiTrack, phiTrack, float);                 //! azimuth of the electron track
 DECLARE_SOA_COLUMN(PtTrack, ptTrack, float);                   //! transverse momentum of the electron track
@@ -54,7 +53,6 @@ DECLARE_SOA_COLUMN(ISEmcal, isEmcal, bool);              //! electron informatio
 DECLARE_SOA_TABLE(HfSelEl, "AOD", "HFSELEL", //! Electron Informations
                   o2::soa::Index<>,
                   hf_sel_electron::CollisionId,
-                  hf_sel_electron::GTrackId,
                   hf_sel_electron::EtaTrack,
                   hf_sel_electron::PhiTrack,
                   hf_sel_electron::PtTrack,
