@@ -13,7 +13,6 @@
 /// \brief Class for handling fit weights. Right now holds FT0, will hold methods for loading and calculating all ESE splines in the future.
 ///
 /// \author Joachim C. K. B. Hansen, Lund University
-  
 
 #ifndef COMMON_CORE_FFITWEIGHTS_H_
 #define COMMON_CORE_FFITWEIGHTS_H_
