@@ -123,6 +123,15 @@ struct lumiStabilityTask {
     histos.add("FDD/hTimeCVertex", "FDD time C; ns ; count", kTH1F, {axisTimeFDD});
     histos.add("FDD/hTimeACoinc", "FDD time A; ns ; count", kTH1F, {axisTimeFDD});
     histos.add("FDD/hTimeCCoinc", "FDD time C; ns ; count", kTH1F, {axisTimeFDD});
+    histos.add("FDD/hCountsTimeA2022", "0 Dummy Time - 1 Valid Time ; Kind of Time; counts", kTH1F, {axisCounts});
+    histos.add("FDD/hCountsTimeC2022", "0 Dummy Time - 1 Valid Time ; Kind of Time; counts", kTH1F, {axisCounts});
+    histos.add("FDD/hCountsTime2022", "0 Dummy Time - 1 Valid Time ; Kind of Time; counts", kTH1F, {axisCounts});
+    histos.add("FDD/hValidTimeAvsBC2022", "Valid Time A vs BC id;BC in FT0;valid time counts", kTH1F, {axisTriggger});
+    histos.add("FDD/hInvTimeAvsBC2022", "Invalid Time A vs BC id;BC in FT0;invalid time counts", kTH1F, {axisTriggger});
+    histos.add("FDD/hValidTimeCvsBC2022", "Valid Time C vs BC id;BC in FT0;valid time counts", kTH1F, {axisTriggger});
+    histos.add("FDD/hInvTimeCvsBC2022", "Invalid Time C vs BC id;BC in FT0;invalid time counts", kTH1F, {axisTriggger});
+    histos.add("FDD/hValidTimevsBC2022", "Valid Time vs BC id;BC in FT0;valid time counts", kTH1F, {axisTriggger});
+    histos.add("FDD/hInvTimevsBC2022", "Invalid Time vs BC id;BC in FT0;invalid time counts", kTH1F, {axisTriggger});
     histos.add("FDD/hCountsTimeA", "0 Dummy Time - 1 Valid Time ; Kind of Time; counts", kTH1F, {axisCounts});
     histos.add("FDD/hCountsTimeC", "0 Dummy Time - 1 Valid Time ; Kind of Time; counts", kTH1F, {axisCounts});
     histos.add("FDD/hCountsTime", "0 Dummy Time - 1 Valid Time ; Kind of Time; counts", kTH1F, {axisCounts});
@@ -330,7 +339,6 @@ struct lumiStabilityTask {
         if (pastActivityFDDVertex == false) {
           histos.fill(HIST("FDD/hCounts"), 2);
           histos.fill(HIST("FDD/bcVertexTriggerPP"), localBC);
-          if (is2022Data) {
             if (bcPatternA[localBC]) {
               histos.fill(HIST("FDD/timeACbcAVertex"), fdd.timeA(), fdd.timeC());
               histos.fill(HIST("FDD/hBcAVertex"), localBC);
@@ -345,6 +353,59 @@ struct lumiStabilityTask {
               histos.fill(HIST("FDD/hBcBVertex"), localBC);
               histos.fill(HIST("FDD/hTimeAVertex"), fdd.timeA());
               histos.fill(HIST("FDD/hTimeCVertex"), fdd.timeC());
+              if (is2022Data) {
+                if (fdd.timeA() > 30) {
+                  histos.fill(HIST("FDD/hCountsTimeA2022"), 0);
+                  histos.fill(HIST("FDD/hInvTimeAvsBC2022"), localBC);
+                } else {
+                  histos.fill(HIST("FDD/hCountsTimeA2022"), 1);
+                  histos.fill(HIST("FDD/hValidTimeAvsBC2022"), localBC);
+                }
+
+                if (fdd.timeC() > 30) {
+                  histos.fill(HIST("FDD/hCountsTimeC2022"), 0);
+                  histos.fill(HIST("FDD/hInvTimeCvsBC2022"), localBC);
+                } else {
+                  histos.fill(HIST("FDD/hCountsTimeC2022"), 1);
+                  histos.fill(HIST("FDD/hValidTimeCvsBC2022"), localBC);
+                }
+
+                if (fdd.timeA() > 30 || fdd.timeC() > 30) {
+                  histos.fill(HIST("FDD/hCountsTime2022"), 0);
+                  histos.fill(HIST("FDD/hInvTimevsBC2022"), localBC);
+                }
+                if (fdd.timeA() < 30 && fdd.timeC() < 30) {
+                  histos.fill(HIST("FDD/hCountsTime2022"), 1);
+                  histos.fill(HIST("FDD/hValidTimevsBC2022"), localBC);
+                }
+              }
+            }
+            if (bcPatternE[localBC]) {
+              histos.fill(HIST("FDD/timeACbcEVertex"), fdd.timeA(), fdd.timeC());
+              histos.fill(HIST("FDD/hBcEVertex"), localBC);
+            }
+        }
+
+
+        if (isCoinA && isCoinC) {
+          histos.fill(HIST("FDD/bcVertexTriggerCoincidence"), localBC);
+          histos.fill(HIST("FDD/hCounts"), 3);
+          histos.fill(HIST("hOrbitFDDVertexCoinc"), orbit - minOrbit);
+
+          if (bcPatternA[localBC]) {
+            histos.fill(HIST("FDD/timeACbcA"), fdd.timeA(), fdd.timeC());
+            histos.fill(HIST("FDD/hBcA"), localBC);
+          }
+          if (bcPatternC[localBC]) {
+            histos.fill(HIST("FDD/timeACbcC"), fdd.timeA(), fdd.timeC());
+            histos.fill(HIST("FDD/hBcC"), localBC);
+          }
+          if (bcPatternB[localBC]) {
+            histos.fill(HIST("FDD/timeACbcB"), fdd.timeA(), fdd.timeC());
+            histos.fill(HIST("FDD/hBcB"), localBC);
+            histos.fill(HIST("FDD/hTimeACoinc"), fdd.timeA());
+            histos.fill(HIST("FDD/hTimeCCoinc"), fdd.timeC());
+            if (!is2022Data) {
               if (fdd.timeA() > 30) {
                 histos.fill(HIST("FDD/hCountsTimeA"), 0);
                 histos.fill(HIST("FDD/hInvTimeAvsBC"), localBC);
@@ -370,33 +431,6 @@ struct lumiStabilityTask {
                 histos.fill(HIST("FDD/hValidTimevsBC"), localBC);
               }
             }
-            if (bcPatternE[localBC]) {
-              histos.fill(HIST("FDD/timeACbcEVertex"), fdd.timeA(), fdd.timeC());
-              histos.fill(HIST("FDD/hBcEVertex"), localBC);
-            }
-          }
-        }
-
-
-        if (isCoinA && isCoinC) {
-          histos.fill(HIST("FDD/bcVertexTriggerCoincidence"), localBC);
-          histos.fill(HIST("FDD/hCounts"), 3);
-          histos.fill(HIST("hOrbitFDDVertexCoinc"), orbit - minOrbit);
-
-          if (bcPatternA[localBC]) {
-            histos.fill(HIST("FDD/timeACbcA"), fdd.timeA(), fdd.timeC());
-            histos.fill(HIST("FDD/hBcA"), localBC);
-          }
-          if (bcPatternC[localBC]) {
-            histos.fill(HIST("FDD/timeACbcC"), fdd.timeA(), fdd.timeC());
-            histos.fill(HIST("FDD/hBcC"), localBC);
-          }
-          if (bcPatternB[localBC]) {
-            histos.fill(HIST("FDD/timeACbcB"), fdd.timeA(), fdd.timeC());
-            histos.fill(HIST("FDD/hBcB"), localBC);
-            histos.fill(HIST("FDD/hTimeACoinc"), fdd.timeA());
-            histos.fill(HIST("FDD/hTimeCCoinc"), fdd.timeC());
-
           }
           if (bcPatternE[localBC]) {
             histos.fill(HIST("FDD/timeACbcE"), fdd.timeA(), fdd.timeC());
