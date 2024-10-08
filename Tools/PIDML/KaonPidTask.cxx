@@ -46,7 +46,7 @@ struct KaonPidTask {
   SliceCache cache;
   Preslice<aod::Tracks> perCol = aod::track::collisionId;
 
-  std::shared_ptr<PidONNXModel> pidModel; // creates a shared pointer to a new instance 'pidmodel'.
+  std::shared_ptr<PidONNXModel<o2::aod::MyTracks>> pidModel; // creates a shared pointer to a new instance 'pidmodel'.
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   Configurable<float> cfgZvtxCut{"cfgZvtxCut", 10, "Z vtx cut"};
@@ -84,7 +84,7 @@ struct KaonPidTask {
     if (cfgUseCCDB) {
       ccdbApi.init(cfgCCDBURL); // Initializes ccdbApi when cfgUseCCDB is set to 'true'
     }
-    pidModel = std::make_shared<PidONNXModel>(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, cfgTimestamp.value, cfgPid.value, cfgCertainty.value);
+    pidModel = std::make_shared<PidONNXModel<o2::aod::MyTracks>>(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, cfgTimestamp.value, cfgPid.value, cfgCertainty.value);
 
     histos.add("hChargePos", ";z;", kTH1F, {{3, -1.5, 1.5}});
     histos.add("hChargeNeg", ";z;", kTH1F, {{3, -1.5, 1.5}});

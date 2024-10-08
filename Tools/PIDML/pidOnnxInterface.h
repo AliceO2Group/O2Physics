@@ -45,6 +45,7 @@ static const std::vector<std::string> cutVarLabels = {
 
 } // namespace pidml_pt_cuts
 
+template <typename T>
 struct PidONNXInterface {
   PidONNXInterface(std::string& localPath, std::string& ccdbPath, bool useCCDB, o2::ccdb::CcdbApi& ccdbApi, uint64_t timestamp, std::vector<int> const& pids, o2::framework::LabeledArray<double> const& pLimits, std::vector<double> const& minCertainties, bool autoMode) : mNPids{pids.size()}, mPLimits{pLimits}
   {
@@ -78,8 +79,7 @@ struct PidONNXInterface {
   PidONNXInterface& operator=(const PidONNXInterface&) = delete;
   ~PidONNXInterface() = default;
 
-  template <typename T>
-  float applyModel(const T& track, int pid)
+  float applyModel(const T::iterator& track, int pid)
   {
     for (std::size_t i = 0; i < mNPids; i++) {
       if (mModels[i].mPid == pid) {
@@ -90,8 +90,7 @@ struct PidONNXInterface {
     return -1.0f;
   }
 
-  template <typename T>
-  bool applyModelBoolean(const T& track, int pid)
+  bool applyModelBoolean(const T::iterator& track, int pid)
   {
     for (std::size_t i = 0; i < mNPids; i++) {
       if (mModels[i].mPid == pid) {
@@ -110,7 +109,7 @@ struct PidONNXInterface {
     minCertainties = std::vector<double>(mNPids, 0.5);
   }
 
-  std::vector<PidONNXModel> mModels;
+  std::vector<PidONNXModel<T>> mModels;
   std::size_t mNPids;
   o2::framework::LabeledArray<double> mPLimits;
 };
