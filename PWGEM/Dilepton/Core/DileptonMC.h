@@ -91,7 +91,7 @@ struct DileptonMC {
   Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
 
   Configurable<int> cfgEventGeneratorType{"cfgEventGeneratorType", -1, "if positive, select event generator type. i.e. gap or signal"};
-  Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2, NTPV:3"};
+  Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
   Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
   Configurable<int> cfgNtracksPV08Min{"cfgNtracksPV08Min", -1, "min. multNTracksPV"};
@@ -151,8 +151,8 @@ struct DileptonMC {
     Configurable<int> cfg_min_ncrossedrows{"cfg_min_ncrossedrows", 100, "min ncrossed rows"};
     Configurable<float> cfg_max_chi2tpc{"cfg_max_chi2tpc", 4.0, "max chi2/NclsTPC"};
     Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 5.0, "max chi2/NclsITS"};
-    Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 1.0, "max dca XY for single track in cm"};
-    Configurable<float> cfg_max_dcaz{"cfg_max_dcaz", 1.0, "max dca Z for single track in cm"};
+    Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 0.2, "max dca XY for single track in cm"};
+    Configurable<float> cfg_max_dcaz{"cfg_max_dcaz", 0.2, "max dca Z for single track in cm"};
     Configurable<bool> cfg_require_itsib_any{"cfg_require_itsib_any", false, "flag to require ITS ib any hits"};
     Configurable<bool> cfg_require_itsib_1st{"cfg_require_itsib_1st", true, "flag to require ITS ib 1st hit"};
 
@@ -401,6 +401,7 @@ struct DileptonMC {
       // fwdfitter.setUseAbsDCA(true);
       // fwdfitter.setTGeoMat(false);
     }
+    fRegistry.addClone("Event/before/hCollisionCounter", "Event/norm/hCollisionCounter");
   }
 
   template <typename TCollision>
@@ -911,7 +912,7 @@ struct DileptonMC {
   {
     for (auto& collision : collisions) {
       initCCDB(collision);
-      float centralities[4] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C(), collision.centNTPV()};
+      float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
@@ -983,7 +984,7 @@ struct DileptonMC {
     // all MC tracks which belong to the MC event corresponding to the current reconstructed event
 
     for (auto& collision : collisions) {
-      float centralities[4] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C(), collision.centNTPV()};
+      float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
@@ -1521,7 +1522,7 @@ struct DileptonMC {
 
     for (auto& collision : collisions) {
       initCCDB(collision);
-      const float centralities[4] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C(), collision.centNTPV()};
+      const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
@@ -1682,7 +1683,7 @@ struct DileptonMC {
   {
     // for oemga, phi efficiency
     for (auto& collision : collisions) {
-      float centralities[4] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C(), collision.centNTPV()};
+      float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
@@ -1727,6 +1728,51 @@ struct DileptonMC {
     } // end of collision loop
   }
   PROCESS_SWITCH(DileptonMC, processGen_VM, "process generated info for vector mesons", false);
+
+  void processNorm(aod::EMEventNormInfos const& collisions)
+  {
+    for (auto& collision : collisions) {
+      fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 1.0);
+      if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 2.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 3.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 4.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 5.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 6.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 7.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 8.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 9.0);
+      }
+      if (collision.sel8()) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 10.0);
+      }
+      if (abs(collision.posZ()) < 10.0) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 11.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 12.0);
+      }
+      if (!fEMEventCut.IsSelected(collision)) {
+        continue;
+      }
+      fRegistry.fill(HIST("Event/norm/hCollisionCounter"), o2::aod::pwgem::dilepton::utils::eventhistogram::nbin_ev); // accepted
+    } // end of collision loop
+  }
+  PROCESS_SWITCH(DileptonMC, processNorm, "process normalization info", true);
 
   void processDummy(MyCollisions const&) {}
   PROCESS_SWITCH(DileptonMC, processDummy, "Dummy function", false);
