@@ -89,8 +89,8 @@ struct statPromptPhoton {
     histos.add("REC_nEvents", "REC_nEvents", kTH1F, {{4, 0.0, 4.0}});
     histos.add("REC_Cluster_QA", "REC_Cluster_QA", kTH1F, {{10, -0.5, 9.5}});
     histos.add("REC_PtHadSum_Photon", "REC_PtHadSum_Photon", kTH1F, {pthadAxis});
-    histos.add("REC_TrackPhi_photontrigger", "REC_TrackPhi_photontrigger", kTH1F, {{64, 0, 2*TMath::Pi()}}); 
-    histos.add("REC_TrackEta_photontrigger", "REC_TrackEta_photontrigger", kTH1F, {{100,-1,1}});
+    histos.add("REC_TrackPhi_photontrigger", "REC_TrackPhi_photontrigger", kTH1F, {{64, 0, 2 * TMath::Pi()}});
+    histos.add("REC_TrackEta_photontrigger", "REC_TrackEta_photontrigger", kTH1F, {{100, -1, 1}});
     histos.add("REC_True_v_Cluster_Phi", "REC_True_v_Cluster_Phi", kTH1F, {{628, -2 * TMath::Pi(), 2 * TMath::Pi()}});
     histos.add("REC_True_v_Cluster_Eta", "REC_True_v_Cluster_Eta", kTH1F, {{628, -2 * TMath::Pi(), 2 * TMath::Pi()}});
     histos.add("REC_Track_v_Cluster_Phi", "REC_Track_v_Cluster_Phi", kTH1F, {{628, -2 * TMath::Pi(), 2 * TMath::Pi()}});
@@ -104,7 +104,7 @@ struct statPromptPhoton {
 
     histos.add("REC_Trigger_Purity", "REC_Trigger_Purity", kTH1F, {{4, 0.0, 4.0}});
     histos.add("REC_Trigger_Energy", "REC_Trigger_Energy", kTH1F, {{82, -1.0, 40.0}});
-    
+
     histos.add("REC_Trigger_Energy_GOOD", "REC_Trigger_Energy_GOOD", kTH1F, {{82, -1.0, 40.0}});
     histos.add("REC_Trigger_Energy_MISS", "REC_Trigger_Energy_MISS", kTH1F, {{82, -1.0, 40.0}});
     histos.add("REC_Trigger_Energy_FAKE", "REC_Trigger_Energy_FAKE", kTH1F, {{82, -1.0, 40.0}});
@@ -177,19 +177,19 @@ struct statPromptPhoton {
       double pt_track = track.pt();
 
       if (!IsParticle) {
-	if constexpr (requires { track.trackId(); }) {
-	  auto originaltrack = track.template track_as<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>>();
-	  if (!trackSelection(originaltrack)) {
-	    continue;	    
-	  } //reject track
-	}  else if constexpr (requires { track.sign(); }) { //checking for JTrack
-	  //done checking for JTrack, now default to normal tracks
-	  if (!trackSelection(track)) {
-	    continue;
-	  } //reject track
-	}// done checking for JTrack 
+        if constexpr (requires { track.trackId(); }) {
+          auto originaltrack = track.template track_as<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>>();
+          if (!trackSelection(originaltrack)) {
+            continue;
+          } // reject track
+        } else if constexpr (requires { track.sign(); }) { // checking for JTrack
+          // done checking for JTrack, now default to normal tracks
+          if (!trackSelection(track)) {
+            continue;
+          } // reject track
+        } // done checking for JTrack
       } else {
-	if constexpr (requires { track.isPhysicalPrimary(); }) {
+        if constexpr (requires { track.isPhysicalPrimary(); }) {
           if (track.pt() < 0.15) {
             continue;
           }
@@ -205,8 +205,8 @@ struct statPromptPhoton {
           int pdg = std::abs(track.pdgCode());
           if (pdg != 211 && pdg != 321 && pdg != 2212) {
             continue;
-	  }
-	}
+          }
+        }
       }
       if (IsStern || IsParticle) {
         if constexpr (requires { trigger.globalIndex(); }) {
@@ -316,7 +316,7 @@ struct statPromptPhoton {
         return;
       histos.fill(HIST("GEN_nEvents"), 1.5);
       if (!recocoll.alias_bit(kTVXinEMC))
-	return;
+        return;
       histos.fill(HIST("GEN_nEvents"), 2.5);
     }
 
@@ -397,234 +397,231 @@ struct statPromptPhoton {
 
   Filter PosZFilter_JE = nabs(aod::jcollision::posZ) < cfgVtxCut;
   Filter clusterDefinitionSelection_JE = (o2::aod::jcluster::definition == cfgClusterDefinition) && (o2::aod::jcluster::time >= cfgMinTime) && (o2::aod::jcluster::time <= cfgMaxTime) && (o2::aod::jcluster::energy > cfgMinClusterEnergy) && (o2::aod::jcluster::nCells >= cfgMinNCells) && (o2::aod::jcluster::nlm <= cfgMaxNLM) && (o2::aod::jcluster::isExotic == cfgExoticContribution);
-  
+
   using jTrackCandidates = soa::Join<aod::JTracks, aod::JTrackPIs, aod::McTrackLabels>;
   using jMCClusters = o2::soa::Join<o2::aod::JMcClusterLbs, o2::aod::JClusters, o2::aod::JClusterTracks>;
   using jselectedCollisions = soa::Join<aod::JCollisions, aod::EvSels, aod::JEMCCollisionLbs>;
   using jfilteredCollisions = soa::Filtered<jselectedCollisions>;
   using jfilteredMCClusters = soa::Filtered<jMCClusters>;
-  
-  int nEventsRecMC_JE   = 0;
-  void processMCRec_JE(jfilteredCollisions::iterator const& collision, jfilteredMCClusters const& mcclusters, jTrackCandidates const& tracks, soa::Join<aod::JTracks, aod::JTrackExtras, aod::JTrackPIs> const& caltracks, aod::JMcParticles const&, TrackCandidates const&){
+
+  int nEventsRecMC_JE = 0;
+  void processMCRec_JE(jfilteredCollisions::iterator const& collision, jfilteredMCClusters const& mcclusters, jTrackCandidates const& tracks, soa::Join<aod::JTracks, aod::JTrackExtras, aod::JTrackPIs> const& caltracks, aod::JMcParticles const&, TrackCandidates const&)
+  {
 
     nEventsRecMC_JE++;
     if ((nEventsRecMC_JE + 1) % 10000 == 0) {
       std::cout << "Processed JE Rec MC Events: " << nEventsRecMC_JE << std::endl;
     }
 
-        histos.fill(HIST("REC_nEvents"), 0.5);
+    histos.fill(HIST("REC_nEvents"), 0.5);
 
     if (fabs(collision.posZ()) > cfgVtxCut)
       return;
     if (!collision.sel8())
       return;
-    
+
     histos.fill(HIST("REC_nEvents"), 1.5);
-    
-   if (!collision.isEmcalReadout())
+
+    if (!collision.isEmcalReadout())
       return;
 
     histos.fill(HIST("REC_nEvents"), 2.5);
 
     // now we do clusters
-    bool clustertrigger =false;
+    bool clustertrigger = false;
     for (auto& mccluster : mcclusters) {
       histos.fill(HIST("REC_M02_BC"), mccluster.energy());
-      if(mccluster.m02()<0.1)
-	continue;
-      histos.fill(HIST("REC_Cluster_QA"), 0.5);      
+      if (mccluster.m02() < 0.1)
+        continue;
+      histos.fill(HIST("REC_Cluster_QA"), 0.5);
       histos.fill(HIST("REC_M02_AC"), mccluster.energy());
       histos.fill(HIST("REC_All_Energy"), mccluster.energy());
-      bool photontrigger = false; //is a neutral cluster
-      bool nonvetotrigger = false; //probably is not a neutral cluster
-      bool vetotrigger = false; //might be a neutral cluster
-      bool chargetrigger = false; //is definitely not a neutral cluster
+      bool photontrigger = false;  // is a neutral cluster
+      bool nonvetotrigger = false; // probably is not a neutral cluster
+      bool vetotrigger = false;    // might be a neutral cluster
+      bool chargetrigger = false;  // is definitely not a neutral cluster
       double photonPt = 0.0;
       double truephotonPt = 0.0;
       auto tracksofcluster = mccluster.matchedTracks_as<soa::Join<aod::JTracks, aod::JTrackExtras, aod::JTrackPIs>>();
-      
-      //first, we check if veto is required
+
+      // first, we check if veto is required
       double sumptT = 0;
       double sumptTAC = 0;
       for (auto& ctrack : tracksofcluster) {
-	auto ogtrack = ctrack.track_as<TrackCandidates>();
-	if (!trackSelection(ogtrack)) {
-	  continue;
-	}
-	if(!ogtrack.isGlobalTrack()) {
-	  continue;
-	}
-	
-	double ptT = ctrack.pt();
-	sumptT+=ptT;
-	double phidiff = TVector2::Phi_mpi_pi(mccluster.phi()-ctrack.phi());
-	double etadiff = mccluster.eta()-ctrack.eta();
-	histos.fill(HIST("REC_Track_v_Cluster_Phi"), phidiff);
-	histos.fill(HIST("REC_Track_v_Cluster_Eta"), etadiff);
+        auto ogtrack = ctrack.track_as<TrackCandidates>();
+        if (!trackSelection(ogtrack)) {
+          continue;
+        }
+        if (!ogtrack.isGlobalTrack()) {
+          continue;
+        }
+
+        double ptT = ctrack.pt();
+        sumptT += ptT;
+        double phidiff = TVector2::Phi_mpi_pi(mccluster.phi() - ctrack.phi());
+        double etadiff = mccluster.eta() - ctrack.eta();
+        histos.fill(HIST("REC_Track_v_Cluster_Phi"), phidiff);
+        histos.fill(HIST("REC_Track_v_Cluster_Eta"), etadiff);
       }
-      
-      if(sumptT>0) {
-	double mccluster_over_sumptT = mccluster.energy()/sumptT;
-	histos.fill(HIST("REC_SumPt_BC"), mccluster_over_sumptT);
-	if(mccluster_over_sumptT < 1.7) {
-	  histos.fill(HIST("REC_Cluster_QA"), 2.5);      
-	  vetotrigger = true;
-	}
-	else {
-	  nonvetotrigger = true;
-	  photontrigger = true;
-	  histos.fill(HIST("REC_Cluster_QA"), 1.5);      
 
-	}
+      if (sumptT > 0) {
+        double mccluster_over_sumptT = mccluster.energy() / sumptT;
+        histos.fill(HIST("REC_SumPt_BC"), mccluster_over_sumptT);
+        if (mccluster_over_sumptT < 1.7) {
+          histos.fill(HIST("REC_Cluster_QA"), 2.5);
+          vetotrigger = true;
+        } else {
+          nonvetotrigger = true;
+          photontrigger = true;
+          histos.fill(HIST("REC_Cluster_QA"), 1.5);
+        }
+      } else {
+        photontrigger = true;
       }
-      else {
-	photontrigger = true;
+
+      // veto is required
+      if (vetotrigger) {
+        for (auto& ctrack : tracksofcluster) {
+          auto ogtrack = ctrack.track_as<TrackCandidates>();
+          if (!trackSelection(ogtrack)) {
+            continue;
+          }
+          if (!ogtrack.isGlobalTrack()) {
+            continue;
+          }
+
+          double etaT = ctrack.eta();
+          double etaC = mccluster.eta();
+          double phiT = ctrack.phi();
+          double phiC = mccluster.phi();
+          double ptT = ctrack.pt();
+
+          if (fabs(etaT - etaC) < (0.010 + pow(ptT + 4.07, -2.5))) {
+            chargetrigger = true;
+          }
+          if (fabs(TVector2::Phi_mpi_pi(phiT - phiC)) < (0.015 + pow(ptT + 3.65, -2.0))) {
+            chargetrigger = true;
+          }
+          if (chargetrigger) {
+            histos.fill(HIST("REC_Cluster_QA"), 3.5);
+            break;
+          }
+        } // tracks
+      } // veto
+
+      // check if cluster is good
+      if (!chargetrigger) {
+        for (auto& ctrack : tracksofcluster) {
+          auto ogtrack = ctrack.track_as<TrackCandidates>();
+          if (!trackSelection(ogtrack)) {
+            continue;
+          }
+          if (!ogtrack.isGlobalTrack()) {
+            continue;
+          }
+
+          double ptT = ctrack.pt();
+          sumptTAC += ptT;
+          double phidiff = TVector2::Phi_mpi_pi(mccluster.phi() - ctrack.phi());
+          double etadiff = mccluster.eta() - ctrack.eta();
+          histos.fill(HIST("REC_Track_v_Cluster_Phi_AC"), phidiff);
+          histos.fill(HIST("REC_Track_v_Cluster_Eta_AC"), etadiff);
+        } // tracks
+
+        if (sumptTAC > 0) {
+          double mccluster_over_sumptTAC = mccluster.energy() / sumptTAC;
+          histos.fill(HIST("REC_SumPt_AC"), mccluster_over_sumptTAC);
+        }
+
+        photontrigger = true;
+      } // check if there is no charge trigger
+
+      if (photontrigger) { // if no charge trigger, cluster is good!
+        histos.fill(HIST("REC_Cluster_QA"), 4.5);
+        clustertrigger = true;
+        double pthadsum = GetPtHadSum(tracks, mccluster, cfgMinR, cfgMaxR, false, false, true);
+        histos.fill(HIST("REC_Trigger_V_PtHadSum_Photon"), photonPt, pthadsum);
+        histos.fill(HIST("REC_PtHadSum_Photon"), pthadsum);
+        histos.fill(HIST("REC_Trigger_Energy"), mccluster.energy());
       }
-        
-      //veto is required
-      if(vetotrigger) {
-	for (auto& ctrack : tracksofcluster) {
-	  auto ogtrack = ctrack.track_as<TrackCandidates>();
-	  if (!trackSelection(ogtrack)) {
-	    continue;
-	  }
-	  if(!ogtrack.isGlobalTrack()) {
-	    continue;
-	  }
 
-	  double etaT = ctrack.eta();
-	  double etaC = mccluster.eta();
-	  double phiT = ctrack.phi();
-	  double phiC = mccluster.phi();
-	  double ptT = ctrack.pt();
-
-	  if(fabs(etaT - etaC) < (0.010 + pow(ptT+4.07,-2.5)) ) {
-	    chargetrigger = true;
-	  }
-	  if(fabs(TVector2::Phi_mpi_pi(phiT - phiC)) < (0.015 + pow(ptT+3.65,-2.0)) ) {
-	    chargetrigger = true;
-	  }
-	  if(chargetrigger){
-	    histos.fill(HIST("REC_Cluster_QA"), 3.5);      
-	    break;
-	  }
-	}//tracks
-      }//veto
-
-      //check if cluster is good
-      if(!chargetrigger) {
-	for (auto& ctrack : tracksofcluster) {
-	  auto ogtrack = ctrack.track_as<TrackCandidates>();
-	  if (!trackSelection(ogtrack)) {
-	    continue;
-	  }
-	  if(!ogtrack.isGlobalTrack()) {
-	    continue;
-	  }
-
-	  double ptT = ctrack.pt();
-	  sumptTAC += ptT;
-	  double phidiff = TVector2::Phi_mpi_pi(mccluster.phi()-ctrack.phi());
-	  double etadiff = mccluster.eta()-ctrack.eta();
-	  histos.fill(HIST("REC_Track_v_Cluster_Phi_AC"), phidiff);
-	  histos.fill(HIST("REC_Track_v_Cluster_Eta_AC"), etadiff);
-	}//tracks
-	
-	if(sumptTAC>0) {
-	  double mccluster_over_sumptTAC = mccluster.energy()/sumptTAC;
-	  histos.fill(HIST("REC_SumPt_AC"), mccluster_over_sumptTAC);
-	}
-	
-	photontrigger = true;
-      }//check if there is no charge trigger
-      
-      if(photontrigger) { //if no charge trigger, cluster is good!
-	histos.fill(HIST("REC_Cluster_QA"), 4.5);
-	clustertrigger=true;
-	double pthadsum = GetPtHadSum(tracks, mccluster, cfgMinR, cfgMaxR, false, false, true);
-	histos.fill(HIST("REC_Trigger_V_PtHadSum_Photon"), photonPt, pthadsum);
-	histos.fill(HIST("REC_PtHadSum_Photon"), pthadsum);
-	histos.fill(HIST("REC_Trigger_Energy"), mccluster.energy());
-      }
-      
-      //now we check the realness of our prompt photons
+      // now we check the realness of our prompt photons
       auto ClusterParticles = mccluster.mcParticle_as<aod::JMcParticles>();
-      bool goodgentrigger =true;
+      bool goodgentrigger = true;
       for (auto& clusterparticle : ClusterParticles) {
-	if(clusterparticle.pdgCode() == 211 || clusterparticle.pdgCode() == 321 || clusterparticle.pdgCode() == 2212) {
-	  goodgentrigger=false;
-	}
-	
-	double phidiff = TVector2::Phi_mpi_pi(mccluster.phi()-clusterparticle.phi());
-	double etadiff = mccluster.eta()-clusterparticle.eta();
-	histos.fill(HIST("REC_True_v_Cluster_Phi"), phidiff);
-	histos.fill(HIST("REC_True_v_Cluster_Eta"), etadiff);
-	
-	if(!photontrigger) {
-	  continue;
-	}
-	if (clusterparticle.pdgCode() == 22) {
-	  histos.fill(HIST("REC_True_Trigger_Energy"), clusterparticle.e());
-	  if(std::abs(clusterparticle.getGenStatusCode()) > 19 && std::abs(clusterparticle.getGenStatusCode())<70) {
-	    histos.fill(HIST("REC_True_Prompt_Trigger_Energy"), clusterparticle.e());
-	    TLorentzVector lRealPhoton;
-	    lRealPhoton.SetPxPyPzE(clusterparticle.px(), clusterparticle.py(), clusterparticle.pz(), clusterparticle.e());
-	    double truepthadsum = GetPtHadSum(tracks, lRealPhoton, cfgMinR, cfgMaxR, false, false, false);
-	    truephotonPt = clusterparticle.e();
-	    histos.fill(HIST("REC_TrueTrigger_V_PtHadSum_Photon"), truephotonPt, truepthadsum);
-	  }
-	} //photon check
-      }// clusterparticle loop
-      if(goodgentrigger && photontrigger) {
-	histos.fill(HIST("REC_Trigger_Purity"), 0.5);      
-	histos.fill(HIST("REC_Trigger_Energy_GOOD"), mccluster.energy());
-      }
-      if(goodgentrigger && !photontrigger) {
-	histos.fill(HIST("REC_Trigger_Purity"), 1.5);
-	histos.fill(HIST("REC_Trigger_Energy_MISS"), mccluster.energy());
-      }
-      if(!goodgentrigger && photontrigger) {
-	histos.fill(HIST("REC_Trigger_Purity"), 2.5);
-	histos.fill(HIST("REC_Trigger_Energy_FAKE"), mccluster.energy());
-      }
-    }// cluster loop
-    
+        if (clusterparticle.pdgCode() == 211 || clusterparticle.pdgCode() == 321 || clusterparticle.pdgCode() == 2212) {
+          goodgentrigger = false;
+        }
 
-    //clusters done, now we do the sternheimer tracks    
-    for ( auto& track : tracks) {
+        double phidiff = TVector2::Phi_mpi_pi(mccluster.phi() - clusterparticle.phi());
+        double etadiff = mccluster.eta() - clusterparticle.eta();
+        histos.fill(HIST("REC_True_v_Cluster_Phi"), phidiff);
+        histos.fill(HIST("REC_True_v_Cluster_Eta"), etadiff);
+
+        if (!photontrigger) {
+          continue;
+        }
+        if (clusterparticle.pdgCode() == 22) {
+          histos.fill(HIST("REC_True_Trigger_Energy"), clusterparticle.e());
+          if (std::abs(clusterparticle.getGenStatusCode()) > 19 && std::abs(clusterparticle.getGenStatusCode()) < 70) {
+            histos.fill(HIST("REC_True_Prompt_Trigger_Energy"), clusterparticle.e());
+            TLorentzVector lRealPhoton;
+            lRealPhoton.SetPxPyPzE(clusterparticle.px(), clusterparticle.py(), clusterparticle.pz(), clusterparticle.e());
+            double truepthadsum = GetPtHadSum(tracks, lRealPhoton, cfgMinR, cfgMaxR, false, false, false);
+            truephotonPt = clusterparticle.e();
+            histos.fill(HIST("REC_TrueTrigger_V_PtHadSum_Photon"), truephotonPt, truepthadsum);
+          }
+        } // photon check
+      } // clusterparticle loop
+      if (goodgentrigger && photontrigger) {
+        histos.fill(HIST("REC_Trigger_Purity"), 0.5);
+        histos.fill(HIST("REC_Trigger_Energy_GOOD"), mccluster.energy());
+      }
+      if (goodgentrigger && !photontrigger) {
+        histos.fill(HIST("REC_Trigger_Purity"), 1.5);
+        histos.fill(HIST("REC_Trigger_Energy_MISS"), mccluster.energy());
+      }
+      if (!goodgentrigger && photontrigger) {
+        histos.fill(HIST("REC_Trigger_Purity"), 2.5);
+        histos.fill(HIST("REC_Trigger_Energy_FAKE"), mccluster.energy());
+      }
+    } // cluster loop
+
+    // clusters done, now we do the sternheimer tracks
+    for (auto& track : tracks) {
       bool sterntrigger = false;
       double sternPt = 0.0;
       auto ogtrack = track.track_as<TrackCandidates>();
       if (!trackSelection(ogtrack)) {
-	continue;
+        continue;
       }
       if (clustertrigger) {
-	histos.fill(HIST("REC_TrackPhi_photontrigger"),track.phi());
-	histos.fill(HIST("REC_TrackEta_photontrigger"),track.eta());
+        histos.fill(HIST("REC_TrackPhi_photontrigger"), track.phi());
+        histos.fill(HIST("REC_TrackEta_photontrigger"), track.eta());
       }
-      if(track.pt() > cfgMinTrig && track.pt() < cfgMaxTrig) {
-	if(fabs(track.eta()) <= cfgtrkMaxEta) {	    
-	  sterntrigger=true;
-	  sternPt=track.pt();
-	}
+      if (track.pt() > cfgMinTrig && track.pt() < cfgMaxTrig) {
+        if (fabs(track.eta()) <= cfgtrkMaxEta) {
+          sterntrigger = true;
+          sternPt = track.pt();
+        }
       }
 
-      if(sterntrigger) {
-	bool doStern = true;
-	double sterncount = 1.0;
-	while(doStern) {
-	   double pthadsum = GetPtHadSum(tracks, track, cfgMinR, cfgMaxR, true, false, true);
-	   histos.fill(HIST("REC_Trigger_V_PtHadSum_Stern"), sterncount, pthadsum, 2.0/sternPt);
-	  if(sterncount<sternPt) {
-	    sterncount++;
-	  } else {
-	    doStern=false;
-	  }
-	}// While sternin'
-      }// stern trigger loop      
-    }// track loop
-    
-  }// end of process
+      if (sterntrigger) {
+        bool doStern = true;
+        double sterncount = 1.0;
+        while (doStern) {
+          double pthadsum = GetPtHadSum(tracks, track, cfgMinR, cfgMaxR, true, false, true);
+          histos.fill(HIST("REC_Trigger_V_PtHadSum_Stern"), sterncount, pthadsum, 2.0 / sternPt);
+          if (sterncount < sternPt) {
+            sterncount++;
+          } else {
+            doStern = false;
+          }
+        } // While sternin'
+      } // stern trigger loop
+    } // track loop
+
+  } // end of process
 
   PROCESS_SWITCH(statPromptPhoton, processMCRec_JE, "processJE  MC data", false);
 
