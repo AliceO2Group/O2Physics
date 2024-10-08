@@ -237,7 +237,7 @@ struct HfDataCreatorCharmResoReduced {
     registry.add("hMCRecCounter", "Number of Reconstructed MC Matched candidates per channel",{HistType::kTH1F, {{11, -5.5, 5.5}}});
     registry.add("hMCRecDebug", "Debug of MC Reco",{HistType::kTH1F, {{5, -0.5, 4.5}}});
 
-    registry.add("hMCGenCounter", "Number of Generated particles",{HistType::kTH1F, {{11, -5.5, 5.5}}});
+    registry.add("hMCGenCounter", "Number of Generated particles; Decay Channel Flag; pT [GeV/c]",{HistType::kTH2F, {{11, -5.5, 5.5}, {100, 0, 50}}});
     registry.add("hMCSignCounter", "Sign of Generated particles",{HistType::kTH1F, {{3, -1.5, 1.5}}});
     registry.add("hMCOriginCounter", "Origin of Generated particles",{HistType::kTH1F, {{3, -0.5, 2.5}}});
     registry.add("hMCOriginCounterWrongDecay", "Origin of Generated particles in Wrong decay",{HistType::kTH1F, {{3, -0.5, 2.5}}});
@@ -875,7 +875,7 @@ struct HfDataCreatorCharmResoReduced {
           yProngs[counter] = RecoDecay::y(daught.pVector(), pdg->Mass(daught.pdgCode()));
           counter++;
         }
-        registry.fill(HIST("hMCGenCounter"), flag);
+        registry.fill(HIST("hMCGenCounter"), flag, ptParticle);
         rowHfResoMcGenReduced(flag, ptParticle, yParticle, etaParticle,
                             ptProngs[0], yProngs[0], etaProngs[0],
                             ptProngs[1], yProngs[1], etaProngs[1]);
@@ -943,7 +943,7 @@ struct HfDataCreatorCharmResoReduced {
           yProngs[counter] = RecoDecay::y(daught.pVector(), pdg->Mass(daught.pdgCode()));
           counter++;
         }
-        registry.fill(HIST("hMCGenCounter"), flag);
+        registry.fill(HIST("hMCGenCounter"), flag, ptParticle);
         rowHfResoMcGenReduced(flag, ptParticle, yParticle, etaParticle,
                             ptProngs[0], yProngs[0], etaProngs[0],
                             ptProngs[1], yProngs[1], etaProngs[1]);
