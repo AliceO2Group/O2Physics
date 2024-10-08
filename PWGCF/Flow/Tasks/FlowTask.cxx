@@ -559,12 +559,18 @@ struct FlowTask {
   template <typename TTrack>
   bool trackSelected(TTrack track)
   {
-    if (cfgFilterFlag == 0) return track.isGlobalTrack();
-    else if (cfgFilterFlag == 1) return (track.isGlobalTrackSDD() == (uint8_t) true);
-    else if (cfgFilterFlag == 2) return (track.isGlobalTrackWoTPCCluster() && track.tpcNClsFound() >= cfgCutTPCclu);
-    else if (cfgFilterFlag == 3) return (track.isGlobalTrackWoPtEta() && (abs(track.eta()) < cfgCutEta) && (track.pt() > cfgCutPtMin) && (track.pt() < cfgCutPtMax));
-    else if (cfgFilterFlag == 4) return (track.isGlobalTrackWoDCA() && track.dcaZ() <= cfgCutDCAz && track.dcaXY() <= cfgCutDCAxy * pow(track.pt(), -1.1));
-    else if (cfgFilterFlag == 5) return (track.isGlobalTrackWoDCATPCCluster() && track.dcaZ() <= cfgCutDCAz && track.dcaXY() <= cfgCutDCAxy * pow(track.pt(), -1.1) && track.tpcNClsFound() >= cfgCutTPCclu);
+    if (cfgFilterFlag == 0)
+      return track.isGlobalTrack();
+    else if (cfgFilterFlag == 1)
+      return (track.isGlobalTrackSDD() == (uint8_t) true);
+    else if (cfgFilterFlag == 2)
+      return (track.isGlobalTrackWoTPCCluster() && track.tpcNClsFound() >= cfgCutTPCclu);
+    else if (cfgFilterFlag == 3)
+      return (track.isGlobalTrackWoPtEta() && (abs(track.eta()) < cfgCutEta) && (track.pt() > cfgCutPtMin) && (track.pt() < cfgCutPtMax));
+    else if (cfgFilterFlag == 4)
+      return (track.isGlobalTrackWoDCA() && track.dcaZ() <= cfgCutDCAz && track.dcaXY() <= cfgCutDCAxy * pow(track.pt(), -1.1));
+    else if (cfgFilterFlag == 5)
+      return (track.isGlobalTrackWoDCATPCCluster() && track.dcaZ() <= cfgCutDCAz && track.dcaXY() <= cfgCutDCAxy * pow(track.pt(), -1.1) && track.tpcNClsFound() >= cfgCutTPCclu);
   }
 
   template <typename TTrack>
@@ -678,7 +684,7 @@ struct FlowTask {
       if (!setCurrentParticleWeights(weff, wacc, track.phi(), track.eta(), track.pt(), vtxz))
         continue;
       bool WithinPtPOI = (cfgCutPtPOIMin < track.pt()) && (track.pt() < cfgCutPtPOIMax); // within POI pT range
-      bool WithinPtRef = (cfgCutPtRefMin < track.pt()) && (track.pt() < cfgCutPtRefMax);       // within RF pT range
+      bool WithinPtRef = (cfgCutPtRefMin < track.pt()) && (track.pt() < cfgCutPtRefMax); // within RF pT range
       bool WithinEtaGap08 = (track.eta() >= -0.4) && (track.eta() <= 0.4);
       registry.fill(HIST("hPt"), track.pt());
       if (WithinPtRef) {
