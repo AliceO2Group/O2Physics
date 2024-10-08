@@ -304,13 +304,13 @@ struct EseTableProducer {
         qVecFT0C[1] = Qvec.Im();
         fCalc = true;
       } else {
-        qVecFT0C[0] = 999.;
-        qVecFT0C[1] = 999.;
+        qVecFT0C[0] = 9999.;
+        qVecFT0C[1] = 9999.;
         fCalc = false;
       }
     } else {
-      qVecFT0C[0] = 999.;
-      qVecFT0C[1] = 999.;
+      qVecFT0C[0] = 9999.;
+      qVecFT0C[1] = 9999.;
     }
 
     if (fCalc) {

@@ -67,8 +67,10 @@ class FFitWeights : public TNamed
 
   void CreateRecenter(const char* xy);
   float GetRecVal(int cent, const char* xy, const int nHarm);
+  TH1F* GetRecHist(const char* xy, const int nHarm);
   void CreateRMS(const char* xy);
   float GetRMSVal(int cent, const char* xy, const int nHarm);
+  TH1F* GetRmsHist(const char* xy, const int nHarm);
 
   template <typename CollType>
   static float EventPlane(const CollType& coll, float nHarm)

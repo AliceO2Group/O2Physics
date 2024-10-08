@@ -125,13 +125,26 @@ void FFitWeights::CreateGain()
     return;
 
   TH2F* hGain = reinterpret_cast<TH2F*>(fW_data->At(0)->Clone("FT0Ampl"));
-  double vMean = hGain->GetMean(2);
+  double vMean{0}; // = hGain->GetMean(2);
+  // c-side first bin ich: 97 (last 208)'
+  // gain split for c-side 144
+  hGain->GetXaxis()->SetRangeUser(96, 144);
+  float vMeanC_inner = hGain->GetMean(2);
+
+  hGain->GetXaxis()->SetRangeUser(144, 208);
+  float vMeanC_outer = hGain->GetMean(2);
+
+  hGain->GetXaxis()->SetRangeUser(0, -1);
 
   for (int iCh{0}; iCh < hGain->GetNbinsX(); iCh++) {
     h1 = static_cast<TH1D*>(hGain->ProjectionY(Form("proj%i", iCh), iCh, iCh));
     double mean = h1->GetMean();
     double meanErr = h1->GetMeanError();
 
+    if (iCh > 95 && iCh < 144)
+      vMean = vMeanC_inner;
+    else if (iCh > 144)
+      vMean = vMeanC_outer;
     double fWeight = mean / vMean;
 
     if (fWeight > 0) {
@@ -251,6 +264,28 @@ float FFitWeights::GetRMSVal(int cent, const char* xy, const int nHarm)
   TH1F* htmp = reinterpret_cast<TH1F*>(tar->FindObject(Form("hrmsQ%s%i_FT0C", xy, nHarm)));
 
   return htmp->GetBinContent(cent);
+};
+
+TH1F* FFitWeights::GetRecHist(const char* xy, const int nHarm)
+{
+  TObjArray* tar{nullptr};
+
+  tar = fW_data;
+  if (!tar)
+    return nullptr;
+
+  return reinterpret_cast<TH1F*>(tar->FindObject(Form("havgQ%s%i_FT0C", xy, nHarm)));
+};
+
+TH1F* FFitWeights::GetRmsHist(const char* xy, const int nHarm)
+{
+  TObjArray* tar{nullptr};
+
+  tar = fW_data;
+  if (!tar)
+    return nullptr;
+
+  return reinterpret_cast<TH1F*>(tar->FindObject(Form("hrmsQ%s%i_FT0C", xy, nHarm)));
 };
 
 // float FFitWeights::EventPlane(const float& x, const float& y, const float& nHarm) {
