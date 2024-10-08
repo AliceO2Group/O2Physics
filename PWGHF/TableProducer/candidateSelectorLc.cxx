@@ -201,6 +201,21 @@ struct HfCandidateSelectorLc {
       return false;
     }
 
+    // candidate decay length XY
+    if (candidate.decayLengthXY() <= cuts->get(pTBin, "decLengthXY")) {
+      return false;
+    }
+
+    // candidate normalized decay length XY
+    if (candidate.decayLengthXYNormalised() < cuts->get(pTBin, "normDecLXY")) {
+      return false;
+    }
+
+    // candidate impact parameter XY
+    if (std::abs(candidate.impactParameterXY()) > cuts->get(pTBin, "impParXY")) {
+      return false;
+    }
+
     if (!isSelectedCandidateProngDca(candidate)) {
       return false;
     }

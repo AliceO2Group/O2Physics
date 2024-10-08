@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef PIDTOFGENERIC_H_
-#define PIDTOFGENERIC_H_
+#ifndef PWGLF_DATAMODEL_PIDTOFGENERIC_H_
+#define PWGLF_DATAMODEL_PIDTOFGENERIC_H_
 #include "CommonDataFormat/InteractionRecord.h"
 #include "Common/Core/PID/PIDTOF.h"
 
@@ -59,6 +59,7 @@ class TofPidNewCollision
   ~TofPidNewCollision() = default;
 
   o2::pid::tof::TOFResoParamsV2 mRespParamsV2;
+  o2::track::PID::ID pidType;
 
   template <o2::track::PID::ID pid>
   using ResponseImplementation = o2::pid::tof::ExpTimes<TTrack, pid>;
@@ -75,6 +76,11 @@ class TofPidNewCollision
   void SetParams(o2::pid::tof::TOFResoParamsV2 const& para)
   {
     mRespParamsV2.setParameters(para);
+  }
+
+  void SetPidType(o2::track::PID::ID pidId)
+  {
+    pidType = pidId;
   }
 
   float GetTOFNSigma(o2::track::PID::ID pidId, TTrack const& track, TCollision const& originalcol, TCollision const& correctedcol, bool EnableBCAO2D = true)
@@ -150,9 +156,14 @@ class TofPidNewCollision
 
     return tofNsigma;
   }
+
+  float GetTOFNSigma(TTrack const& track, TCollision const& originalcol, TCollision const& correctedcol, bool EnableBCAO2D = true)
+  {
+    return GetTOFNSigma(pidType, track, originalcol, correctedcol, EnableBCAO2D);
+  }
 };
 
 } // namespace pidtofgeneric
 } // namespace o2::aod
 
-#endif
+#endif // PWGLF_DATAMODEL_PIDTOFGENERIC_H_

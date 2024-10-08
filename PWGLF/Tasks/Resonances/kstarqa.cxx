@@ -63,7 +63,6 @@ struct kstarqa {
   // Confugrable for QA histograms
   Configurable<bool> CalcLikeSign{"CalcLikeSign", true, "Calculate Like Sign"};
   Configurable<bool> CalcRotational{"CalcRotational", true, "Calculate Rotational"};
-  Configurable<bool> QA{"QA", false, "QA"};
   Configurable<bool> QAbefore{"QAbefore", true, "QAbefore"};
   Configurable<bool> QAafter{"QAafter", true, "QAafter"};
   Configurable<bool> QAevents{"QAevents", true, "Multiplicity dist, DCAxy, DCAz"};
@@ -125,6 +124,7 @@ struct kstarqa {
   Configurable<bool> activateTHnSparseCosThStarRandom{"activateTHnSparseCosThStarRandom", false, "Activate the THnSparse with cosThStar w.r.t. random axis"};
   Configurable<int> c_nof_rotations{"c_nof_rotations", 3, "Number of random rotations in the rotational background"};
   ConfigurableAxis configThnAxisPOL{"configThnAxisPOL", {20, -1.0, 1.0}, "Costheta axis"};
+  TRandom* rn = new TRandom();
 
   void init(InitContext const&)
   {
@@ -156,12 +156,10 @@ struct kstarqa {
     }
 
     // KStar histograms
-    histos.add("h3KstarInvMassUnlikeSign", "kstar Unlike Sign", kTHnSparseF, {binsMultPlot, ptAxis, invmassAxis, thnAxisPOL}, true);
-    histos.add("h3KstarInvMassMixed", "kstar Mixed", kTHnSparseF, {binsMultPlot, ptAxis, invmassAxis, thnAxisPOL}, true);
-    if (CalcLikeSign)
-      histos.add("h3KstarInvMasslikeSign", "kstar like Sign", kTHnSparseF, {binsMultPlot, ptAxis, invmassAxis, thnAxisPOL}, true);
-    if (CalcRotational)
-      histos.add("h3KstarInvMassRotated", "kstar rotated", kTHnSparseF, {binsMultPlot, ptAxis, invmassAxis, thnAxisPOL}, true);
+    histos.add("h3KstarInvMassUnlikeSign", "kstar Unlike Sign", kTHnSparseF, {binsMultPlot, ptAxis, invmassAxis, thnAxisPOL});
+    histos.add("h3KstarInvMasslikeSign", "kstar like Sign", kTHnSparseF, {binsMultPlot, ptAxis, invmassAxis, thnAxisPOL});
+    histos.add("h3KstarInvMassRotated", "kstar rotated", kTHnSparseF, {binsMultPlot, ptAxis, invmassAxis, thnAxisPOL});
+    histos.add("h3KstarInvMassMixed", "kstar Mixed", kTHnSparseF, {binsMultPlot, ptAxis, invmassAxis, thnAxisPOL});
 
     // MC generated histograms
     histos.add("k892Gen", "pT distribution of True MC K(892)0", kTH1D, {ptAxis});
@@ -182,7 +180,7 @@ struct kstarqa {
       histos.add("multdist_FT0M", "FT0M Multiplicity distribution", kTH1F, {axisMultdist});
       histos.add("multdist_FT0A", "FT0A Multiplicity distribution", kTH1F, {axisMultdist});
       histos.add("multdist_FT0C", "FT0C Multiplicity distribution", kTH1F, {axisMultdist});
-      histos.add("hNcontributor", "Number of primary vertex contributor", kTH1F, {{2000, 0.0f, 10000.0f}});
+      // histos.add("hNcontributor", "Number of primary vertex contributor", kTH1F, {{2000, 0.0f, 10000.0f}});
       histos.add("hDcaxy", "Dcaxy distribution", kTH1F, {{200, -1.0f, 1.0f}});
       histos.add("hDcaz", "Dcaz distribution", kTH1F, {{200, -1.0f, 1.0f}});
     }
@@ -379,7 +377,6 @@ struct kstarqa {
 
   using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>>;
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TrackSelectionExtension>>;
-  using V0TrackCandidate = aod::V0Datas;
   using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
 
   using TrackCandidatesMC = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::McTrackLabels>>;
@@ -396,8 +393,6 @@ struct kstarqa {
     TLorentzVector lv4, lv5;
     // polarization calculations
 
-    auto phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
-    auto thetaRandom = gRandom->Uniform(0.f, constants::math::PI);
     ROOT::Math::PxPyPzMVector fourVecDau1 = ROOT::Math::PxPyPzMVector(daughter_selected.Px(), daughter_selected.Py(), daughter_selected.Pz(), selected_dau_mass); // Kaon or Pion
 
     ROOT::Math::PxPyPzMVector fourVecMother = ROOT::Math::PxPyPzMVector(lv3.Px(), lv3.Py(), lv3.Pz(), lv3.M()); // mass of KshortKshort pair
@@ -405,10 +400,7 @@ struct kstarqa {
     ROOT::Math::PxPyPzMVector fourVecDauCM = boost(fourVecDau1);                                                // boost the frame of daughter same as mother
     ROOT::Math::XYZVector threeVecDauCM = fourVecDauCM.Vect();                                                  // get the 3 vector of daughter in the frame of mother
 
-    TRandom* rn = new TRandom();
-
     if (TMath::Abs(lv3.Rapidity() < 0.5)) {
-
       if (activateTHnSparseCosThStarHelicity) {
         ROOT::Math::XYZVector helicityVec = fourVecMother.Vect(); // 3 vector of mother in COM frame
         auto cosThetaStarHelicity = helicityVec.Dot(threeVecDauCM) / (std::sqrt(threeVecDauCM.Mag2()) * std::sqrt(helicityVec.Mag2()));
@@ -479,6 +471,9 @@ struct kstarqa {
             histos.fill(HIST("h3KstarInvMasslikeSign"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarBeam);
         }
       } else if (activateTHnSparseCosThStarRandom) {
+        auto phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
+        auto thetaRandom = gRandom->Uniform(0.f, constants::math::PI);
+
         ROOT::Math::XYZVector randomVec = ROOT::Math::XYZVector(std::sin(thetaRandom) * std::cos(phiRandom), std::sin(thetaRandom) * std::sin(phiRandom), std::cos(thetaRandom));
         auto cosThetaStarRandom = randomVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
 
@@ -536,7 +531,7 @@ struct kstarqa {
       histos.fill(HIST("multdist_FT0M"), collision.multFT0M());
       histos.fill(HIST("multdist_FT0A"), collision.multFT0A());
       histos.fill(HIST("multdist_FT0C"), collision.multFT0C());
-      histos.fill(HIST("hNcontributor"), collision.numContrib());
+      // histos.fill(HIST("hNcontributor"), collision.numContrib());
     }
 
     for (auto& [track1, track2] : combinations(CombinationsFullIndexPolicy(tracks, tracks))) {
@@ -609,7 +604,7 @@ struct kstarqa {
   ConfigurableAxis axisMultiplicityClass{"axisMultiplicityClass", {10, 0, 100}, "multiplicity percentile for ME mixing"};
   // ConfigurableAxis axisMultiplicity{"axisMultiplicity", {2000, 0, 10000}, "TPC multiplicity  for bin for ME mixing"};
 
-  using BinningTypeTPCMultiplicity = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultTPC>;
+  // using BinningTypeTPCMultiplicity = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultTPC>;
   using BinningTypeCentralityM = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
   using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
 
@@ -668,10 +663,8 @@ struct kstarqa {
           TLorentzVector Kstar = KAON + PION;
           bool isMix = true;
 
-          if (!QA) {
-            if (TMath::Abs(Kstar.Rapidity()) < 0.5) {
-              fillInvMass(t1, t2, PION, Kstar, multiplicity, isMix);
-            }
+          if (TMath::Abs(Kstar.Rapidity()) < 0.5) {
+            fillInvMass(t1, t2, PION, Kstar, multiplicity, isMix);
           }
         }
       }
@@ -693,7 +686,7 @@ struct kstarqa {
           return;
         }
 
-        auto multiplicity = c1.centFT0M();
+        auto multiplicity = c1.centFT0C();
 
         for (auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
 
@@ -722,10 +715,8 @@ struct kstarqa {
           TLorentzVector Kstar = KAON + PION;
           bool isMix = true;
 
-          if (!QA) {
-            if (TMath::Abs(Kstar.Rapidity()) < 0.5) {
-              fillInvMass(t1, t2, PION, Kstar, multiplicity, isMix);
-            }
+          if (TMath::Abs(Kstar.Rapidity()) < 0.5) {
+            fillInvMass(t1, t2, PION, Kstar, multiplicity, isMix);
           }
         }
       }

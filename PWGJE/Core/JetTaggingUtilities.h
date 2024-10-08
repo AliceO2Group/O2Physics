@@ -387,15 +387,28 @@ bool trackAcceptanceWithDca(T const& track, float trackDcaXYMax, float trackDcaZ
  * retrun acceptance of prong about chi2 and error of decay length due to cut for high quality secondary vertex
  */
 template <typename T>
-bool prongAcceptance(T const& prong, float prongChi2PCAMax, float prongsigmaLxyMax, bool doXYZ)
+bool prongAcceptance(T const& prong, float prongChi2PCAMin, float prongChi2PCAMax, float prongsigmaLxyMax, float prongIPxyMin, float prongIPxyMax, float prongDispersionMax, bool doXYZ)
 {
+  if (prong.chi2PCA() < prongChi2PCAMin)
+    return false;
   if (prong.chi2PCA() > prongChi2PCAMax)
+    return false;
+  if (prong.dispersion() > prongDispersionMax)
     return false;
   if (!doXYZ) {
     if (prong.errorDecayLengthXY() > prongsigmaLxyMax)
       return false;
+    if (std::abs(prong.impactParameterXY()) < prongIPxyMin)
+      return false;
+    if (std::abs(prong.impactParameterXY()) > prongIPxyMax)
+      return false;
   } else {
     if (prong.errorDecayLength() > prongsigmaLxyMax)
+      return false;
+    // TODO
+    if (std::abs(prong.impactParameterXY()) < prongIPxyMin)
+      return false;
+    if (std::abs(prong.impactParameterXY()) > prongIPxyMax)
       return false;
   }
   return true;
@@ -563,13 +576,13 @@ class bjetCandSV
 
   bjetCandSV(float xpv, float ypv, float zpv, float xsv, float ysv, float zsv,
              float pxVal, float pyVal, float pzVal, float eVal, float mVal, float chi2Val,
-             float errDecayLength, float errDecayLengthXY,
+             float dispersion, float errDecayLength, float errDecayLengthXY,
              float rSecVertex, float ptVal, float pVal,
              std::array<float, 3> pVec, float etaVal, float phiVal,
              float yVal, float decayLen, float decayLenXY,
              float decayLenNorm, float decayLenXYNorm,
              float cpaVal, float impParXY)
-    : m_xPVertex(xpv), m_yPVertex(ypv), m_zPVertex(zpv), m_xSecondaryVertex(xsv), m_ySecondaryVertex(ysv), m_zSecondaryVertex(zsv), m_px(pxVal), m_py(pyVal), m_pz(pzVal), m_e(eVal), m_m(mVal), m_chi2PCA(chi2Val), m_errorDecayLength(errDecayLength), m_errorDecayLengthXY(errDecayLengthXY), m_rSecondaryVertex(rSecVertex), m_pt(ptVal), m_p(pVal), m_pVector(pVec), m_eta(etaVal), m_phi(phiVal), m_y(yVal), m_decayLength(decayLen), m_decayLengthXY(decayLenXY), m_decayLengthNormalised(decayLenNorm), m_decayLengthXYNormalised(decayLenXYNorm), m_cpa(cpaVal), m_impactParameterXY(impParXY)
+    : m_xPVertex(xpv), m_yPVertex(ypv), m_zPVertex(zpv), m_xSecondaryVertex(xsv), m_ySecondaryVertex(ysv), m_zSecondaryVertex(zsv), m_px(pxVal), m_py(pyVal), m_pz(pzVal), m_e(eVal), m_m(mVal), m_chi2PCA(chi2Val), m_dispersion(dispersion), m_errorDecayLength(errDecayLength), m_errorDecayLengthXY(errDecayLengthXY), m_rSecondaryVertex(rSecVertex), m_pt(ptVal), m_p(pVal), m_pVector(pVec), m_eta(etaVal), m_phi(phiVal), m_y(yVal), m_decayLength(decayLen), m_decayLengthXY(decayLenXY), m_decayLengthNormalised(decayLenNorm), m_decayLengthXYNormalised(decayLenXYNorm), m_cpa(cpaVal), m_impactParameterXY(impParXY)
   {
   }
 
@@ -587,6 +600,7 @@ class bjetCandSV
   float e() const { return m_e; }
   float m() const { return m_m; }
   float chi2PCA() const { return m_chi2PCA; }
+  float dispersion() const { return m_dispersion; }
 
   float errorDecayLength() const { return m_errorDecayLength; }
   float errorDecayLengthXY() const { return m_errorDecayLengthXY; }
@@ -612,7 +626,7 @@ class bjetCandSV
  private:
   float m_xPVertex, m_yPVertex, m_zPVertex;
   float m_xSecondaryVertex, m_ySecondaryVertex, m_zSecondaryVertex;
-  float m_px, m_py, m_pz, m_e, m_m, m_chi2PCA;
+  float m_px, m_py, m_pz, m_e, m_m, m_chi2PCA, m_dispersion;
   float m_errorDecayLength, m_errorDecayLengthXY;
   float m_rSecondaryVertex, m_pt, m_p;
   std::array<float, 3> m_pVector;
@@ -622,7 +636,7 @@ class bjetCandSV
 };
 
 template <typename ProngType, typename JetType>
-bjetCandSV jetFromProngMaxDecayLength(const JetType& jet, float const& prongChi2PCAMax, float const& prongsigmaLxyMax, const bool& doXYZ = false)
+bjetCandSV jetFromProngMaxDecayLength(const JetType& jet, float const& prongChi2PCAMin, float const& prongChi2PCAMax, float const& prongsigmaLxyMax, float const& prongIPxyMin, float const& prongIPxyMax, const bool& doXYZ = false)
 {
   float xPVertex = 0.0f;
   float yPVertex = 0.0f;
@@ -636,6 +650,7 @@ bjetCandSV jetFromProngMaxDecayLength(const JetType& jet, float const& prongChi2
   float e = 0.0f;
   float m = 0.0f;
   float chi2PCA = 0.0f;
+  float dispersion = 0.0f;
   float errorDecayLength = 0.0f;
   float errorDecayLengthXY = 0.0f;
 
@@ -662,8 +677,6 @@ bjetCandSV jetFromProngMaxDecayLength(const JetType& jet, float const& prongChi2
     } else {
       Sxy = prong.decayLength() / prong.errorDecayLength();
     }
-    if (!prongAcceptance(prong, prongChi2PCAMax, prongsigmaLxyMax, doXYZ))
-      continue;
 
     if (maxSxy < Sxy) {
       maxSxy = Sxy;
@@ -680,6 +693,7 @@ bjetCandSV jetFromProngMaxDecayLength(const JetType& jet, float const& prongChi2
       e = prong.e();
       m = prong.m();
       chi2PCA = prong.chi2PCA();
+      dispersion = prong.dispersion();
       errorDecayLength = prong.errorDecayLength();
       errorDecayLengthXY = prong.errorDecayLengthXY();
       rSecondaryVertex = prong.rSecondaryVertex();
@@ -702,7 +716,7 @@ bjetCandSV jetFromProngMaxDecayLength(const JetType& jet, float const& prongChi2
     xPVertex, yPVertex, zPVertex,
     xSecondaryVertex, ySecondaryVertex, zSecondaryVertex,
     px, py, pz, e, m, chi2PCA,
-    errorDecayLength, errorDecayLengthXY,
+    dispersion, errorDecayLength, errorDecayLengthXY,
     rSecondaryVertex, pt, p,
     pVector, eta, phi,
     y, decayLength, decayLengthXY,
@@ -711,9 +725,11 @@ bjetCandSV jetFromProngMaxDecayLength(const JetType& jet, float const& prongChi2
 }
 
 template <typename T, typename U>
-bool isTaggedJetSV(T const jet, U const& /*prongs*/, float const& prongChi2PCAMax, float const& prongsigmaLxyMax, float const& doXYZ = false, float const& tagPointForSV = 15.)
+bool isTaggedJetSV(T const jet, U const& /*prongs*/, float const& prongChi2PCAMin, float const& prongChi2PCAMax, float const& prongsigmaLxyMax, float const& prongIPxyMin, float const& prongIPxyMax, float prongDispersionMax, float const& doXYZ = false, float const& tagPointForSV = 15.)
 {
-  auto bjetCand = jetFromProngMaxDecayLength<U>(jet, prongChi2PCAMax, prongsigmaLxyMax, doXYZ);
+  auto bjetCand = jetFromProngMaxDecayLength<U>(jet, prongChi2PCAMin, prongChi2PCAMax, prongsigmaLxyMax, prongIPxyMin, prongIPxyMax, doXYZ);
+  if (!prongAcceptance(bjetCand, prongChi2PCAMin, prongChi2PCAMax, prongsigmaLxyMax, prongIPxyMin, prongIPxyMax, prongDispersionMax, doXYZ))
+    return false;
   if (!doXYZ) {
     auto maxSxy = bjetCand.decayLengthXY() / bjetCand.errorDecayLengthXY();
     if (maxSxy < tagPointForSV)

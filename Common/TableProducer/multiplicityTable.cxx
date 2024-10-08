@@ -43,7 +43,7 @@ static constexpr int kFV0MultZeqs = 9;
 static constexpr int kFT0MultZeqs = 10;
 static constexpr int kFDDMultZeqs = 11;
 static constexpr int kPVMultZeqs = 12;
-static constexpr int kMultsExtraMC = 13;
+static constexpr int kMultMCExtras = 13;
 static constexpr int nTables = 14;
 
 // Checking that the Zeq tables are after the normal ones
@@ -66,7 +66,7 @@ static const std::vector<std::string> tableNames{"FV0Mults",       // 0
                                                  "FT0MultZeqs",    // 10
                                                  "FDDMultZeqs",    // 11
                                                  "PVMultZeqs",     // 12
-                                                 "MultsExtraMC"};  // 13
+                                                 "MultMCExtras"};  // 13
 static const std::vector<std::string> parameterNames{"Enable"};
 static const int defaultParameters[nTables][nParameters]{{-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}, {-1}};
 
@@ -85,7 +85,8 @@ struct MultiplicityTable {
   Produces<aod::FT0MultZeqs> tableFT0Zeqs;      // 10
   Produces<aod::FDDMultZeqs> tableFDDZeqs;      // 11
   Produces<aod::PVMultZeqs> tablePVZeqs;        // 12
-  Produces<aod::MultsExtraMC> tableExtraMc;     // 13
+  Produces<aod::MultMCExtras> tableExtraMc;     // 13
+  Produces<aod::Mult2MCExtras> tableExtraMult2MCExtras;
   Produces<aod::MultsGlobal> multsGlobal;       // Not accounted for, produced based on process function processGlobalTrackingCounters
 
   // For vertex-Z corrections in calibration
@@ -163,10 +164,10 @@ struct MultiplicityTable {
       }
     }
     // Handle the custom cases.
-    if (tEnabled[kMultsExtraMC]) {
-      if (enabledTables->get(tableNames[kMultsExtraMC].c_str(), "Enable") == -1) {
+    if (tEnabled[kMultMCExtras]) {
+      if (enabledTables->get(tableNames[kMultMCExtras].c_str(), "Enable") == -1) {
         doprocessMC.value = true;
-        LOG(info) << "Enabling MC processing due to " << tableNames[kMultsExtraMC] << " table being enabled.";
+        LOG(info) << "Enabling MC processing due to " << tableNames[kMultMCExtras] << " table being enabled.";
       }
     }
 
@@ -335,7 +336,7 @@ struct MultiplicityTable {
         case kPVMultZeqs: // Equalized multiplicity for PV
           tablePVZeqs.reserve(collisions.size());
           break;
-        case kMultsExtraMC: // MC extra information (nothing to do in the data)
+        case kMultMCExtras: // MC extra information (nothing to do in the data)
           break;
         default:
           LOG(fatal) << "Unknown table requested: " << i;
@@ -567,7 +568,7 @@ struct MultiplicityTable {
             tableExtra(collision.numContrib(), collision.chi2(), collision.collisionTimeRes(),
                        mRunNumber, collision.posZ(), collision.sel8(),
                        nHasITS, nHasTPC, nHasTOF, nHasTRD, nITSonly, nTPConly, nITSTPC,
-                       nAllTracksTPCOnly, nAllTracksITSTPC, bcNumber, collision.trackOccupancyInTimeRange());
+                       nAllTracksTPCOnly, nAllTracksITSTPC, collision.trackOccupancyInTimeRange(), collision.flags());
           } break;
           case kMultSelections: // Multiplicity selections
           {
@@ -609,7 +610,7 @@ struct MultiplicityTable {
             }
             tablePVZeqs(multZeqNContribs);
           } break;
-          case kMultsExtraMC: // MC only (nothing to do)
+          case kMultMCExtras: // MC only (nothing to do)
           {
           } break;
           default: // Default
@@ -627,7 +628,7 @@ struct MultiplicityTable {
   Filter mcParticleFilter = (aod::mcparticle::eta < 4.9f) && (aod::mcparticle::eta > -3.3f);
   using mcParticlesFiltered = soa::Filtered<aod::McParticles>;
 
-  void processMC(aod::McCollision const&, mcParticlesFiltered const& mcParticles)
+  void processMC(aod::McCollision const& mcCollision, mcParticlesFiltered const& mcParticles)
   {
     int multFT0A = 0;
     int multFT0C = 0;
@@ -662,7 +663,12 @@ struct MultiplicityTable {
       if (3.5 < mcPart.eta() && mcPart.eta() < 4.9)
         multFT0A++;
     }
-    tableExtraMc(multFT0A, multFT0C, multBarrelEta05, multBarrelEta08, multBarrelEta10);
+    tableExtraMc(multFT0A, multFT0C, multBarrelEta05, multBarrelEta08, multBarrelEta10, mcCollision.posZ());
+  }
+
+  void processMC2Mults(soa::Join<aod::McCollisionLabels, aod::Collisions>::iterator const& collision)
+  {
+    tableExtraMult2MCExtras(collision.mcCollisionId()); // interlink
   }
 
   Configurable<float> min_pt_globaltrack{"min_pt_globaltrack", 0.15, "min. pT for global tracks"};
@@ -715,6 +721,7 @@ struct MultiplicityTable {
   PROCESS_SWITCH(MultiplicityTable, processRun3, "Produce Run 3 multiplicity tables", true);
   PROCESS_SWITCH(MultiplicityTable, processGlobalTrackingCounters, "Produce Run 3 global counters", false);
   PROCESS_SWITCH(MultiplicityTable, processMC, "Produce MC multiplicity tables", false);
+  PROCESS_SWITCH(MultiplicityTable, processMC2Mults, "Produce MC -> Mult map", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

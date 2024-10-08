@@ -42,6 +42,13 @@ void DimuonCut::SetPairDCAxyRange(float min, float max)
   mMaxPairDCAxy = max;
   LOG(info) << "Dimuon Cut, set pair 3d dca range: " << mMinPairDCAxy << " - " << mMaxPairDCAxy;
 }
+void DimuonCut::SetMindEtadPhi(bool flag, float min_deta, float min_dphi)
+{
+  mApplydEtadPhi = flag;
+  mMinDeltaEta = min_deta;
+  mMinDeltaPhi = min_dphi;
+  LOG(info) << "Dimuon Cut, set apply deta-dphi cut: " << mApplydEtadPhi << " min_deta: " << mMinDeltaEta << " min_dphi: " << mMinDeltaPhi;
+}
 void DimuonCut::SetTrackType(int track_type)
 {
   mTrackType = track_type;
@@ -58,6 +65,12 @@ void DimuonCut::SetTrackEtaRange(float minEta, float maxEta)
   mMinTrackEta = minEta;
   mMaxTrackEta = maxEta;
   LOG(info) << "Dimuon Cut, set track eta range: " << mMinTrackEta << " - " << mMaxTrackEta;
+}
+void DimuonCut::SetTrackPhiRange(float minPhi, float maxPhi)
+{
+  mMinTrackPhi = minPhi;
+  mMaxTrackPhi = maxPhi;
+  LOG(info) << "Dimuon Cut, set track phi range (rad.): " << mMinTrackPhi << " - " << mMaxTrackPhi;
 }
 void DimuonCut::SetChi2(float min, float max)
 {

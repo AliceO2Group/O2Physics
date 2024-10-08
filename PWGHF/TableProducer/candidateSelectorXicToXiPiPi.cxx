@@ -12,7 +12,7 @@
 /// \file candidateSelectorXicToXiPiPi.cxx
 /// \brief Ξc± → Ξ∓ π± π± candidate selector
 ///
-/// \author Phil Lennart Stahlhut <phil.lennart.stahlhut@cern.ch>, CERN
+/// \author Phil Lennart Stahlhut <phil.lennart.stahlhut@cern.ch>, Heidelberg University
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"

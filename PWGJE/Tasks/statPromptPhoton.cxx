@@ -104,6 +104,7 @@ struct statPromptPhoton {
 
     histos.add("REC_Trigger_Purity", "REC_Trigger_Purity", kTH1F, {{4, 0.0, 4.0}});
     histos.add("REC_Trigger_Energy", "REC_Trigger_Energy", kTH1F, {{82, -1.0, 40.0}});
+    
     histos.add("REC_Trigger_Energy_GOOD", "REC_Trigger_Energy_GOOD", kTH1F, {{82, -1.0, 40.0}});
     histos.add("REC_Trigger_Energy_MISS", "REC_Trigger_Energy_MISS", kTH1F, {{82, -1.0, 40.0}});
     histos.add("REC_Trigger_Energy_FAKE", "REC_Trigger_Energy_FAKE", kTH1F, {{82, -1.0, 40.0}});
@@ -157,6 +158,7 @@ struct statPromptPhoton {
   /////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////
   template <typename Tracks, typename Trigger>
+
   double GetPtHadSum(const Tracks& tracks, const Trigger& trigger, double MinR, double MaxR, bool IsStern, bool IsParticle, bool DodR)
   {
     double eta_trigger, phi_trigger;
@@ -310,6 +312,7 @@ struct statPromptPhoton {
       if (!recocoll.sel8())
         return;
       if (fabs(recocoll.posZ()) > cfgVtxCut)
+
         return;
       histos.fill(HIST("GEN_nEvents"), 1.5);
       if (!recocoll.alias_bit(kTVXinEMC))
@@ -394,6 +397,7 @@ struct statPromptPhoton {
 
   Filter PosZFilter_JE = nabs(aod::jcollision::posZ) < cfgVtxCut;
   Filter clusterDefinitionSelection_JE = (o2::aod::jcluster::definition == cfgClusterDefinition) && (o2::aod::jcluster::time >= cfgMinTime) && (o2::aod::jcluster::time <= cfgMaxTime) && (o2::aod::jcluster::energy > cfgMinClusterEnergy) && (o2::aod::jcluster::nCells >= cfgMinNCells) && (o2::aod::jcluster::nlm <= cfgMaxNLM) && (o2::aod::jcluster::isExotic == cfgExoticContribution);
+  
   using jTrackCandidates = soa::Join<aod::JTracks, aod::JTrackPIs, aod::McTrackLabels>;
   using jMCClusters = o2::soa::Join<o2::aod::JMcClusterLbs, o2::aod::JClusters, o2::aod::JClusterTracks>;
   using jselectedCollisions = soa::Join<aod::JCollisions, aod::EvSels, aod::JEMCCollisionLbs>;
@@ -623,8 +627,6 @@ struct statPromptPhoton {
   }// end of process
 
   PROCESS_SWITCH(statPromptPhoton, processMCRec_JE, "processJE  MC data", false);
-
-
 
 }; // end of main struct
 
