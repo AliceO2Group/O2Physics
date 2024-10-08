@@ -54,8 +54,8 @@ struct strangederivedqa {
     h->GetXaxis()->SetBinLabel(2, "Ordered");
     h->GetXaxis()->SetBinLabel(3, "Unordered");
 
-    auto h = histos.add<TH1>("hEventCounter", "hEventCounter", kTH1D, {{1, -0.5f, 0.5f}});
-    auto h = histos.add<TH1>("hEventsPerDF", "hEventsPerDF", kTH1D, {axisNCollisions});
+    auto h2 = histos.add<TH1>("hEventCounter", "hEventCounter", kTH1D, {{1, -0.5f, 0.5f}});
+    auto h3 = histos.add<TH1>("hEventsPerDF", "hEventsPerDF", kTH1D, {axisNCollisions});
   }
 
 _____________________________________________
