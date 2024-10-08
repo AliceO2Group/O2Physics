@@ -9,12 +9,12 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/*
-Author: Joachim Hansen
+/// \file FFitWeights.h
+/// \brief Class for handling fit weights. Right now holds FT0, will hold methods for loading and calculating all ESE splines in the future.
+///
+/// \author Joachim C. K. B. Hansen, Lund University
+  
 
-  Class for handling fit weights.
-  Right now holds FT0, will hold methods for loading and calculating all ESE splines in the future.
-*/
 #ifndef COMMON_CORE_FFITWEIGHTS_H_
 #define COMMON_CORE_FFITWEIGHTS_H_
 

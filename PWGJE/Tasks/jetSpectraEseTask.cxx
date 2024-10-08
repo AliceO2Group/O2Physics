@@ -9,10 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// jet analysis framework with ESE (19/08/2024)
-//
-/// \author Joachim Hansen <joachim.hansen@cern.ch>
-//
+/// \file jetSpectraEseTask.cxx
+/// \brief jet spectra analysis framework with ESE (19/08/2024)
+///
+/// \author Joachim C. K. B. Hansen, Lund University
 
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"

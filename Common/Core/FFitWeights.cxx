@@ -9,10 +9,10 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/*
-Author: Joachim Hansen
-See FFitWeights.h for class descripton
-*/
+/// \file FFitWeights.cxx
+/// \brief Implementation file for FFitWeights.h, see the header fore more information
+///
+/// \author Joachim C. K. B. Hansen, Lund University
 
 #include "FFitWeights.h"
 
