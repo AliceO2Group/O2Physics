@@ -152,9 +152,11 @@ struct lithium4analysis {
   Configurable<float> setting_cutVertex{"setting_cutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> setting_cutPT{"setting_cutPT", 0.2, "PT cut on daughter track"};
   Configurable<float> setting_cutMaxPrPT{"setting_cutMaxPrPT", 1.8, "Max PT cut on proton"};
-  Configurable<float> setting_cutEta{"setting_cutEta", 0.8, "Eta cut on daughter track"};
+  Configurable<float> setting_cutEta{"setting_cutEta", 0.9, "Eta cut on daughter track"};
   Configurable<float> setting_cutDCAxy{"setting_cutDCAxy", 2.0f, "DCAxy range for tracks"};
   Configurable<float> setting_cutDCAz{"setting_cutDCAz", 2.0f, "DCAz range for tracks"};
+  Configurable<float> setting_cutInvMass{"setting_cutInvMass", 0., "Invariant mass upper limit"};
+  Configurable<float> setting_cutPtMinLi{"setting_cutPtMinLi", 0.0, "Minimum PT cut on Li4"};
   Configurable<float> setting_nsigmaCutTPC{"setting_nsigmaCutTPC", 3.0, "Value of the TPC Nsigma cut"};
   Configurable<float> setting_nsigmaCutTOF{"setting_nsigmaCutTOF", 3.0, "Value of the TOF Nsigma cut"};
   Configurable<int> setting_noMixedEvents{"setting_noMixedEvents", 5, "Number of mixed events per event"};
@@ -353,7 +355,9 @@ struct lithium4analysis {
   template <typename Ttrack>
   bool selectTrack(const Ttrack& candidate)
   {
-
+    if (std::abs(candidate.eta()) > setting_cutEta) {
+      return false;
+    }
     if (candidate.itsNCls() < 5 ||
         candidate.tpcNClsFound() < 90 || // candidate.tpcNClsFound() < 70 ||
         candidate.tpcNClsCrossedRows() < 70 ||
@@ -455,7 +459,15 @@ struct lithium4analysis {
     for (int i = 0; i < 3; i++)
       li4cand.momHe3[i] = li4cand.momHe3[i] * 2;
     li4cand.momPr = std::array{trackPr.px(), trackPr.py(), trackPr.pz()};
+
     float invMass = RecoDecay::m(std::array{li4cand.momHe3, li4cand.momPr}, std::array{o2::constants::physics::MassHelium3, o2::constants::physics::MassProton});
+    if (setting_cutInvMass > 0 && invMass > setting_cutInvMass) {
+      return false;
+    }
+    float ptLi = std::hypot(li4cand.momHe3[0] + li4cand.momPr[0], li4cand.momHe3[1] + li4cand.momPr[1]);
+    if (ptLi < setting_cutPtMinLi) {
+      return false;
+    }
 
     li4cand.sign = trackHe3.sign();
 
