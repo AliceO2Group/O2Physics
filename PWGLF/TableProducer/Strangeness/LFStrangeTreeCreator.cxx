@@ -70,6 +70,15 @@ float alphaAP(std::array<float, 3> const& momA, std::array<float, 3> const& momB
   float lQlNeg = (momC[0] * momA[0] + momC[1] * momA[1] + momC[2] * momA[2]) / momTot;
   return (lQlPos - lQlNeg) / (lQlPos + lQlNeg);
 }
+
+float qtAP(std::array<float, 3> const& momA, std::array<float, 3> const& momB)
+{
+  float dp = momA[0] * momB[0] + momA[1] * momB[1] + momA[2] * momB[2];
+  float p2A = momA[0] * momA[0] + momA[1] * momA[1] + momA[2] * momA[2];
+  float p2B = momB[0] * momB[0] + momB[1] * momB[1] + momB[2] * momB[2];
+  return std::sqrt(p2B - dp * dp / p2A);
+}
+
 float etaFromMom(std::array<float, 3> const& momA, std::array<float, 3> const& momB)
 {
   if (std::sqrt((1.f * momA[0] + 1.f * momB[0]) * (1.f * momA[0] + 1.f * momB[0]) +
@@ -104,10 +113,14 @@ struct CandidateV0 {
   float mass = -999.f;
   float radius = -999.f;
   float cpa = -999.f;
+  float alphaAP = -999.f;
+  float qtAP = -999.f;
   uint8_t isFD = 0u;
   o2::track::TrackParCov trackv0;
   std::array<float, 3> mompos;
   std::array<float, 3> momneg;
+  std::array<float, 3> momposMC;
+  std::array<float, 3> momnegMC;
   float dcav0daugh = -999.f;
   float dcanegpv = -999.f;
   float dcapospv = -999.f;
@@ -120,7 +133,12 @@ struct CandidateV0 {
   float genlen = -999.f;
   int pdgcode = -999;
   int pdgcodemother = -999;
+  int pdgposdau = -999;
+  int pdgcodemotherdaupos = -999;
+  int pdgnegdau = -999;
+  int pdgcodemotherdauneg = -999;
   bool isreco = 0;
+  int64_t pdgmatchmothersecondmother = -999;
   int64_t mcIndex = -999;
   int64_t globalIndex = -999;
   int64_t globalIndexPos = -999;
@@ -144,8 +162,6 @@ struct LFStrangeTreeCreator {
 
   ConfigurableAxis centAxis{"centAxis", {106, 0, 106}, "binning for the centrality"};
   ConfigurableAxis zVtxAxis{"zVtxBins", {100, -20.f, 20.f}, "Binning for the vertex z in cm"};
-  ConfigurableAxis multAxis{"multAxis", {100, 0, 10000}, "Binning for the multiplicity axis"};
-  ConfigurableAxis multFt0Axis{"multFt0Axis", {100, 0, 100000}, "Binning for the ft0 multiplicity axis"};
 
   // binning of (anti)lambda mass QA histograms
   ConfigurableAxis massLambdaAxis{"massLambdaAxis", {400, o2::constants::physics::MassLambda0 - 0.03f, o2::constants::physics::MassLambda0 + 0.03f}, "binning for the lambda invariant-mass"};
@@ -158,7 +174,6 @@ struct LFStrangeTreeCreator {
 
   Configurable<float> downscaleFactor{"downscaleFactor", 1.f, "downscaling factor"};
   Configurable<bool> applyAdditionalEvSel{"applyAdditionalEvSel", false, "apply additional event selections"};
-  Configurable<bool> fillOnlySignal{"fillOnlySignal", false, "fill histograms only for true signal candidates (MC)"};
 
   Configurable<float> lambdaPtMin{"lambdaPtMin", 1.f, "minimum (anti)lambda pT (GeV/c)"};
   Configurable<float> lambdaPtMax{"lambdaPtMax", 4.f, "maximum (anti)lambda pT (GeV/c)"};
@@ -183,6 +198,7 @@ struct LFStrangeTreeCreator {
   Configurable<float> cascsetting_vetoOm{"cascsetting_vetoOm", 0.01f, "vetoOm"};
   Configurable<float> cascsetting_mXi{"cascsetting_mXi", 0.02f, "mXi"};
   Configurable<float> lambdaMassCut{"lambdaMassCut", 0.02f, "maximum deviation from PDG mass (for QA histograms)"};
+  Configurable<bool> k0short{"k0short", false, "process for k0short (true) or lambda (false)"};
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -261,8 +277,6 @@ struct LFStrangeTreeCreator {
 
     // event QA
     histos.add<TH1>("QA/zVtx", ";#it{z}_{vtx} (cm);Entries", HistType::kTH1F, {zVtxAxis});
-    histos.add<TH2>("QA/PvMultVsCent", ";Centrality T0C (%);#it{N}_{PV contributors};", HistType::kTH2F, {centAxis, multAxis});
-    histos.add<TH2>("QA/MultVsCent", ";Centrality T0C (%);Multiplicity T0C;", HistType::kTH2F, {centAxis, multFt0Axis});
 
     // v0 QA
     histos.add<TH3>("QA/massLambda", ";Centrality (%);#it{p}_{T} (GeV/#it{c});#it{M}(p + #pi^{-}) (GeV/#it{c}^{2});Entries", HistType::kTH3F, {centAxis, momAxis, massLambdaAxis});
@@ -302,9 +316,9 @@ struct LFStrangeTreeCreator {
       auto& posPropTrack = fitter.getTrack(0);
       auto& negPropTrack = fitter.getTrack(1);
 
-      std::array<float, 3> momPos;
-      std::array<float, 3> momNeg;
-      std::array<float, 3> momV0;
+      std::array<float, 3> momPos = std::array{static_cast<float>(-999.), static_cast<float>(-999.), static_cast<float>(-999.)};
+      std::array<float, 3> momNeg = std::array{static_cast<float>(-999.), static_cast<float>(-999.), static_cast<float>(-999.)};
+      std::array<float, 3> momV0 = std::array{static_cast<float>(-999.), static_cast<float>(-999.), static_cast<float>(-999.)};
       posPropTrack.getPxPyPzGlo(momPos);
       negPropTrack.getPxPyPzGlo(momNeg);
       momTotXYZ(momV0, momPos, momNeg);
@@ -329,13 +343,18 @@ struct LFStrangeTreeCreator {
       // pid selections
       auto nSigmaTPCPos = matter ? posTrack.tpcNSigmaPr() : posTrack.tpcNSigmaPi();
       auto nSigmaTPCNeg = matter ? negTrack.tpcNSigmaPi() : negTrack.tpcNSigmaPr();
+      // change for k0
+      if (k0short) {
+        nSigmaTPCPos = posTrack.tpcNSigmaPi();
+        nSigmaTPCNeg = negTrack.tpcNSigmaPi();
+      }
 
       if (std::abs(nSigmaTPCPos) > v0setting_nsigmatpc || std::abs(nSigmaTPCNeg) > v0setting_nsigmatpc) {
         continue;
       }
 
-      // veto on K0s mass
-      if (std::abs(mK0Short - o2::constants::physics::MassK0Short) < vetoMassK0Short) {
+      // veto on K0s mass (only for lambda)
+      if (!k0short && (std::abs(mK0Short - o2::constants::physics::MassK0Short) < vetoMassK0Short)) {
         continue;
       }
 
@@ -369,8 +388,15 @@ struct LFStrangeTreeCreator {
 
       auto ptotal = RecoDecay::sqrtSumOfSquares(momV0[0], momV0[1], momV0[2]);
       auto lengthTraveled = RecoDecay::sqrtSumOfSquares(vtx[0] - primVtx[0], vtx[1] - primVtx[1], vtx[2] - primVtx[2]);
-      float ML2P_Lambda = o2::constants::physics::MassLambda * lengthTraveled / ptotal;
-      if (ML2P_Lambda > v0setting_lifetime) {
+      // change calculation of ML2P for k0 and lambda
+      float particlemass;
+      if (k0short) {
+        particlemass = o2::constants::physics::MassK0;
+      } else {
+        particlemass = o2::constants::physics::MassLambda;
+      }
+      float ML2P = particlemass * lengthTraveled / ptotal;
+      if (ML2P > v0setting_lifetime) {
         continue;
       }
 
@@ -394,11 +420,13 @@ struct LFStrangeTreeCreator {
       CandidateV0 candV0;
       candV0.pt = matter > 0. ? ptV0 : -ptV0;
       candV0.eta = etaV0;
-      candV0.ct = ML2P_Lambda;
+      candV0.ct = ML2P;
       candV0.len = lengthTraveled;
       candV0.mass = mLambda;
       candV0.radius = radiusV0;
       candV0.cpa = cosPA;
+      candV0.alphaAP = alpha;
+      candV0.qtAP = qtAP(momV0, momPos);
       candV0.trackv0 = fitter.createParentTrackParCov();
       candV0.mompos = std::array{momPos[0], momPos[1], momPos[2]};
       candV0.momneg = std::array{momNeg[0], momNeg[1], momNeg[2]};
@@ -485,46 +513,116 @@ struct LFStrangeTreeCreator {
       if (mcLabPos.has_mcParticle() && mcLabNeg.has_mcParticle()) {
         auto mcTrackPos = mcLabPos.template mcParticle_as<aod::McParticles>();
         auto mcTrackNeg = mcLabNeg.template mcParticle_as<aod::McParticles>();
+        candidateV0.pdgposdau = mcTrackPos.pdgCode();
+        candidateV0.pdgnegdau = mcTrackNeg.pdgCode();
+        auto pdgCodeMotherDauPos = -999;
+        auto pdgCodeMotherDauNeg = -999;
+        auto pdgMatchMotherSecondMother = -999;
         if (mcTrackPos.has_mothers() && mcTrackNeg.has_mothers()) {
           for (auto& negMother : mcTrackNeg.template mothers_as<aod::McParticles>()) {
             for (auto& posMother : mcTrackPos.template mothers_as<aod::McParticles>()) {
-              if (posMother.globalIndex() != negMother.globalIndex())
-                continue;
-              if (!((mcTrackPos.pdgCode() == 2212 && mcTrackNeg.pdgCode() == -211) || (mcTrackPos.pdgCode() == 211 && mcTrackNeg.pdgCode() == -2212)))
-                continue;
-              if (std::abs(posMother.pdgCode()) != 3122) {
-                continue;
-              }
-              if (!posMother.isPhysicalPrimary() && !posMother.has_mothers())
-                continue;
-              if ((posMother.flags() & 0x2) || (posMother.flags() & 0x1))
-                continue;
-
-              auto pdgCodeMother = -999;
-              if (posMother.isPhysicalPrimary()) {
-                pdgCodeMother = 0;
-              } else if (posMother.has_mothers()) {
-                for (auto& mcMother : posMother.mothers_as<aod::McParticles>()) {
-                  if (std::abs(mcMother.pdgCode()) == 3322 || std::abs(mcMother.pdgCode()) == 3312 || std::abs(mcMother.pdgCode()) == 3334) {
-                    pdgCodeMother = mcMother.pdgCode();
-                    break;
+              if (posMother.globalIndex() != negMother.globalIndex()) {
+                pdgCodeMotherDauPos = posMother.pdgCode();
+                pdgCodeMotherDauNeg = negMother.pdgCode();
+                if (negMother.pdgCode() == -211) {
+                  if (negMother.has_mothers()) {
+                    for (auto& negSecondMother : negMother.template mothers_as<aod::McParticles>()) {
+                      if (negSecondMother.globalIndex() == posMother.globalIndex()) {
+                        pdgMatchMotherSecondMother = negSecondMother.pdgCode();
+                      }
+                    }
                   }
                 }
+                if (posMother.pdgCode() == 211) {
+                  if (posMother.has_mothers()) {
+                    for (auto& posSecondMother : posMother.template mothers_as<aod::McParticles>()) {
+                      if (posSecondMother.globalIndex() == negMother.globalIndex()) {
+                        pdgMatchMotherSecondMother = posSecondMother.pdgCode();
+                      }
+                    }
+                  }
+                }
+              } else {
+                candidateV0.pdgcode = posMother.pdgCode();
+                pdgCodeMotherDauPos = posMother.pdgCode();
+                pdgCodeMotherDauNeg = negMother.pdgCode();
+                // build  conditions for mother/daughter for k0short or lambda
+                bool mother;
+                bool daughter;
+                if (k0short) {
+                  // mother is k0short (310) and daughters are pions (211/-211)
+                  mother = posMother.pdgCode() == 310;
+                  daughter = (mcTrackPos.pdgCode() == 211 && mcTrackNeg.pdgCode() == -211);
+                } else {
+                  // mother is lambda (3122) and daughters are proton (2212) and pion(211)
+                  mother = posMother.pdgCode() == 3122;
+                  daughter = ((mcTrackPos.pdgCode() == 2212 && mcTrackNeg.pdgCode() == -211) || (mcTrackPos.pdgCode() == 211 && mcTrackNeg.pdgCode() == -2212));
+                }
+                // check conditions
+                if (!mother || !daughter) {
+                  continue;
+                }
+
+                if (!posMother.isPhysicalPrimary() && !posMother.has_mothers())
+                  continue;
+
+                auto pdgCodeMother = -999;
+                if (posMother.isPhysicalPrimary()) {
+                  pdgCodeMother = 0;
+                } else if (posMother.has_mothers()) {
+                  for (auto& mcMother : posMother.mothers_as<aod::McParticles>()) {
+                    // feed-down: xi and omega decaying to lambda, ignore for k0
+                    if (!k0short && (std::abs(mcMother.pdgCode()) == 3322 || std::abs(mcMother.pdgCode()) == 3312 || std::abs(mcMother.pdgCode()) == 3334)) {
+                      pdgCodeMother = mcMother.pdgCode();
+                      break;
+                    }
+                  }
+                }
+                auto genPt = std::hypot(posMother.px(), posMother.py());
+                auto posPrimVtx = std::array{posMother.vx(), posMother.vy(), posMother.vz()};
+                auto secVtx = std::array{mcTrackPos.vx(), mcTrackPos.vy(), mcTrackPos.vz()};
+                auto mom = std::sqrt(std::pow(posMother.px(), 2) + std::pow(posMother.py(), 2) + std::pow(posMother.pz(), 2));
+                auto len = std::sqrt(std::pow(secVtx[0] - posPrimVtx[0], 2) + std::pow(secVtx[1] - posPrimVtx[1], 2) + std::pow(secVtx[2] - posPrimVtx[2], 2));
+                candidateV0.genpt = genPt;
+                candidateV0.genlen = len;
+                candidateV0.genct = len / (mom + 1e-10) * o2::constants::physics::MassLambda0;
+                candidateV0.pdgcodemother = pdgCodeMother;
+                candidateV0.geneta = posMother.eta();
+                candidateV0.mcIndex = posMother.globalIndex();
               }
-              auto genPt = std::hypot(posMother.px(), posMother.py());
-              auto posPrimVtx = std::array{posMother.vx(), posMother.vy(), posMother.vz()};
-              auto secVtx = std::array{mcTrackPos.vx(), mcTrackPos.vy(), mcTrackPos.vz()};
-              auto mom = std::sqrt(std::pow(posMother.px(), 2) + std::pow(posMother.py(), 2) + std::pow(posMother.pz(), 2));
-              auto len = std::sqrt(std::pow(secVtx[0] - posPrimVtx[0], 2) + std::pow(secVtx[1] - posPrimVtx[1], 2) + std::pow(secVtx[2] - posPrimVtx[2], 2));
-              candidateV0.genpt = genPt;
-              candidateV0.genct = len / (mom + 1e-10) * o2::constants::physics::MassLambda0;
-              candidateV0.pdgcode = posMother.pdgCode();
-              candidateV0.pdgcodemother = pdgCodeMother;
-              candidateV0.geneta = posMother.eta();
-              candidateV0.mcIndex = posMother.globalIndex();
             }
           }
         }
+        if ((!mcTrackPos.has_mothers()) && mcTrackNeg.has_mothers()) {
+          pdgCodeMotherDauPos = -999;
+          for (auto& negMother : mcTrackNeg.template mothers_as<aod::McParticles>()) {
+            pdgCodeMotherDauNeg = negMother.pdgCode();
+          }
+        }
+        if ((!mcTrackNeg.has_mothers()) && mcTrackPos.has_mothers()) {
+          pdgCodeMotherDauNeg = -999;
+          for (auto& posMother : mcTrackPos.template mothers_as<aod::McParticles>()) {
+            pdgCodeMotherDauPos = posMother.pdgCode();
+          }
+        }
+        if ((!mcTrackNeg.has_mothers()) && (!mcTrackPos.has_mothers())) {
+          pdgCodeMotherDauNeg = -999;
+          pdgCodeMotherDauPos = -999;
+        }
+        candidateV0.pdgcodemotherdauneg = pdgCodeMotherDauNeg;
+        candidateV0.pdgcodemotherdaupos = pdgCodeMotherDauPos;
+        candidateV0.pdgmatchmothersecondmother = pdgMatchMotherSecondMother;
+        // momentum of daughters
+        std::array<float, 3> momPosMC = std::array{static_cast<float>(-999.), static_cast<float>(-999.), static_cast<float>(-999.)};
+        std::array<float, 3> momNegMC = std::array{static_cast<float>(-999.), static_cast<float>(-999.), static_cast<float>(-999.)};
+        momPosMC[0] = mcTrackPos.px();
+        momPosMC[1] = mcTrackPos.py();
+        momPosMC[2] = mcTrackPos.pz();
+        momNegMC[0] = mcTrackNeg.px();
+        momNegMC[1] = mcTrackNeg.py();
+        momNegMC[2] = mcTrackNeg.pz();
+        candidateV0.momposMC = std::array{momPosMC[0], momPosMC[1], momPosMC[2]};
+        candidateV0.momnegMC = std::array{momNegMC[0], momNegMC[1], momNegMC[2]};
       }
     }
   }
@@ -537,22 +635,48 @@ struct LFStrangeTreeCreator {
       if (std::abs(genEta) > etaMax) {
         continue;
       }
-      if ((mcPart.flags() & 0x2) || (mcPart.flags() & 0x1))
-        continue;
+
       auto pdgCode = mcPart.pdgCode();
       std::array<float, 3> secVtx;
-      if (std::abs(pdgCode) == 3122) {
+      std::array<float, 3> momPosMC = std::array{static_cast<float>(-999.), static_cast<float>(-999.), static_cast<float>(-999.)};
+      std::array<float, 3> momNegMC = std::array{static_cast<float>(-999.), static_cast<float>(-999.), static_cast<float>(-999.)};
+
+      // look for lambda (3122) or k0short (310)
+      int pdg_test = 3122;
+      if (k0short)
+        pdg_test = 310;
+
+      if (std::abs(pdgCode) == pdg_test) {
         if (!mcPart.isPhysicalPrimary() && !mcPart.has_mothers())
           continue;
-        bool foundPr = false;
+        // check if its the right decay containing proton (2122) for lambda and charged pion (211) for k0short
+        int pdg_particle;
+        if (k0short) {
+          pdg_particle = 211;
+        } else {
+          pdg_particle = 2212;
+        }
+        bool foundParticle = false;
         for (auto& mcDaught : mcPart.daughters_as<aod::McParticles>()) {
-          if (std::abs(mcDaught.pdgCode()) == 2212) {
-            foundPr = true;
+          if (std::abs(mcDaught.pdgCode()) == pdg_particle) {
+            foundParticle = true;
             secVtx = std::array{mcDaught.vx(), mcDaught.vy(), mcDaught.vz()};
             break;
           }
         }
-        if (!foundPr) {
+        // momentum of daughters
+        for (auto& mcDaught : mcPart.daughters_as<aod::McParticles>()) {
+          if (mcDaught.pdgCode() < 0) {
+            momNegMC[0] = mcDaught.px();
+            momNegMC[1] = mcDaught.py();
+            momNegMC[2] = mcDaught.pz();
+          } else {
+            momPosMC[0] = mcDaught.px();
+            momPosMC[1] = mcDaught.py();
+            momPosMC[2] = mcDaught.pz();
+          }
+        }
+        if (!foundParticle) {
           continue;
         }
         auto pdgCodeMother = -999;
@@ -560,7 +684,8 @@ struct LFStrangeTreeCreator {
           pdgCodeMother = 0;
         } else if (mcPart.has_mothers()) {
           for (auto& mcMother : mcPart.mothers_as<aod::McParticles>()) {
-            if (std::abs(mcMother.pdgCode()) == 3322 || std::abs(mcMother.pdgCode()) == 3312 || std::abs(mcMother.pdgCode()) == 3334) {
+            // feed-down: xi and omega decaying to lambda, ignore for k0
+            if (!k0short && (std::abs(mcMother.pdgCode()) == 3322 || std::abs(mcMother.pdgCode()) == 3312 || std::abs(mcMother.pdgCode()) == 3334)) {
               pdgCodeMother = mcMother.pdgCode();
               break;
             }
@@ -573,15 +698,18 @@ struct LFStrangeTreeCreator {
 
         CandidateV0 candV0;
         candV0.genpt = genPt;
+        candV0.genlen = len;
         candV0.genct = len / (mom + 1e-10) * o2::constants::physics::MassLambda0;
         candV0.geneta = mcPart.eta();
         candV0.pdgcode = pdgCode;
         candV0.pdgcodemother = pdgCodeMother;
+        candV0.momposMC = std::array{momPosMC[0], momPosMC[1], momPosMC[2]};
+        candV0.momnegMC = std::array{momNegMC[0], momNegMC[1], momNegMC[2]};
         auto it = find_if(candidateV0s.begin(), candidateV0s.end(), [&](CandidateV0 v0) { return v0.mcIndex == mcPart.globalIndex(); });
-        if (it != candidateV0s.end()) {
-          continue;
-        } else {
+        if (it == candidateV0s.end()) {
           candidateV0s.emplace_back(candV0);
+        } else {
+          continue;
         }
       }
     }
@@ -618,12 +746,8 @@ struct LFStrangeTreeCreator {
       CascTable_thisCollision.bindExternalIndices(&tracks);
       CascTable_thisCollision.bindExternalIndices(&V0s);
 
-      auto multiplicity = collision.multFT0C();
       auto centrality = collision.centFT0C();
       fillRecoEvent(collision, tracks, V0Table_thisCollision, V0s, CascTable_thisCollision, centrality);
-
-      histos.fill(HIST("QA/PvMultVsCent"), centrality, collision.numContrib());
-      histos.fill(HIST("QA/MultVsCent"), centrality, multiplicity);
 
       for (auto& candidateV0 : candidateV0s) {
         lambdaTableML(
@@ -637,6 +761,8 @@ struct LFStrangeTreeCreator {
           candidateV0.dcanegpv,
           candidateV0.dcav0daugh,
           candidateV0.cpa,
+          candidateV0.alphaAP,
+          candidateV0.qtAP,
           candidateV0.tpcnsigmapos,
           candidateV0.tpcnsigmaneg,
           candidateV0.isFD);
@@ -661,7 +787,7 @@ struct LFStrangeTreeCreator {
   }
   PROCESS_SWITCH(LFStrangeTreeCreator, processRun3, "process (Run 3)", false);
 
-  void processMcRun3(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs> const& collisions, aod::McCollisions const& mcCollisions, TracksFullIU const& tracks, aod::V0s const& V0s, aod::Cascades const& cascades, aod::McParticles const& mcParticles, aod::McTrackLabels const& mcLab, aod::BCsWithTimestamps const&)
+  void processMcRun3(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs> const& collisions, aod::McCollisions const& /*mcCollisions*/, TracksFullIU const& tracks, aod::V0s const& V0s, aod::Cascades const& cascades, aod::McParticles const& mcParticles, aod::McTrackLabels const& mcLab, aod::BCsWithTimestamps const&)
   {
     for (auto& collision : collisions) {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -670,7 +796,7 @@ struct LFStrangeTreeCreator {
       if (!collision.sel8())
         continue;
 
-      if (!collision.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
+      if ((!collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) && applyAdditionalEvSel)
         continue;
 
       if (std::abs(collision.posZ()) > zVtxMax)
@@ -702,14 +828,21 @@ struct LFStrangeTreeCreator {
           candidateV0.dcanegpv,
           candidateV0.dcav0daugh,
           candidateV0.cpa,
+          candidateV0.alphaAP,
+          candidateV0.qtAP,
           candidateV0.tpcnsigmapos,
           candidateV0.tpcnsigmaneg,
           candidateV0.genpt,
           candidateV0.geneta,
           candidateV0.genct,
+          candidateV0.pdgposdau,
+          candidateV0.pdgcodemotherdaupos,
+          candidateV0.pdgnegdau,
+          candidateV0.pdgcodemotherdauneg,
           candidateV0.pdgcode,
           candidateV0.pdgcodemother,
-          candidateV0.isreco);
+          candidateV0.isreco,
+          candidateV0.pdgmatchmothersecondmother);
 
         mcV0TableAP(
           candidateV0.eta,
@@ -720,6 +853,12 @@ struct LFStrangeTreeCreator {
           candidateV0.momneg[0],
           candidateV0.momneg[1],
           candidateV0.momneg[2],
+          candidateV0.momposMC[0],
+          candidateV0.momposMC[1],
+          candidateV0.momposMC[2],
+          candidateV0.momnegMC[0],
+          candidateV0.momnegMC[1],
+          candidateV0.momnegMC[2],
           candidateV0.radius,
           candidateV0.dcav0pv,
           candidateV0.dcapospv,

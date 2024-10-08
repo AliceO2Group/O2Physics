@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// temporary task to produce HF tables needed when making inclusive derived data - should become obsolete when tables are able to be prouduced based on a configurable
+// temporary task to produce HF and DQ tables needed when making D0 jet derived data - should become obsolete when tables are able to be prouduced based on a configurable
 //
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
@@ -19,6 +19,7 @@
 #include "Framework/runDataProcessing.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGHF/DataModel/DerivedTables.h"
+#include "PWGDQ/DataModel/ReducedInfoTables.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -36,6 +37,9 @@ struct JetDerivedDataProducerDummyD0Task {
   Produces<aod::Hf3PMcs> lcMcsTable;
   Produces<aod::Hf3PMcCollBases> lcMcCollisionsTable;
   Produces<aod::Hf3PPBases> lcParticlesTable;
+
+  Produces<aod::ReducedEvents> dielectronCollisionsTable;
+  Produces<aod::Dielectrons> dielectronTable;
 
   void init(InitContext const&)
   {

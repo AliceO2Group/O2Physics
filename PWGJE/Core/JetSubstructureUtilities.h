@@ -33,7 +33,7 @@
 #include "PWGJE/Core/FastJetUtilities.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetFinder.h"
-#include "PWGJE/Core/JetHFUtilities.h"
+#include "PWGJE/Core/JetCandidateUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "fastjet/contrib/Nsubjettiness.hh"
 #include "fastjet/contrib/AxesDefinition.hh"
@@ -64,9 +64,9 @@ fastjet::ClusterSequenceArea jetToPseudoJet(T const& jet, U const& /*tracks*/, V
       fastjetutilities::fillClusters(jetClusterConstituent, jetConstituents, jetClusterConstituent.globalIndex());
     }
   }
-  if constexpr (jethfutilities::isHFTable<O>() || jethfutilities::isHFMcTable<O>()) {
-    for (auto& jetHFConstituent : jet.template hfcandidates_as<O>()) {
-      fastjetutilities::fillTracks(jetHFConstituent, jetConstituents, jetHFConstituent.globalIndex(), static_cast<int>(JetConstituentStatus::candidateHF), jethfutilities::getTablePDGMass<O>());
+  if constexpr (jetcandidateutilities::isCandidateTable<O>() || jetcandidateutilities::isCandidateMcTable<O>()) {
+    for (auto& jetHFConstituent : jet.template candidates_as<O>()) {
+      fastjetutilities::fillTracks(jetHFConstituent, jetConstituents, jetHFConstituent.globalIndex(), static_cast<int>(JetConstituentStatus::candidate), jetcandidateutilities::getTablePDGMass<O>());
     }
   }
   std::vector<fastjet::PseudoJet> jetReclustered;
@@ -96,7 +96,7 @@ fastjet::ClusterSequenceArea jetToPseudoJet(T const& jet, U const& /*tracks*/, V
 
 // function that returns the N-subjettiness ratio and the distance betewwen the two axes considered for tau2, in the form of a vector
 template <typename T, typename U, typename V, typename O, typename M>
-std::vector<float> getNSubjettiness(T const& jet, U const& tracks, V const& clusters, O const& candidates, int nMax, M const& reclusteringAlgorithm, bool doSoftDrop = false, float zCut = 0.1, float beta = 0.0)
+std::vector<float> getNSubjettiness(T const& jet, U const& tracks, V const& clusters, O const& candidates, std::vector<fastjet::PseudoJet>::size_type nMax, M const& reclusteringAlgorithm, bool doSoftDrop = false, float zCut = 0.1, float beta = 0.0)
 {
   std::vector<float> result;
   fastjet::PseudoJet pseudoJet;
@@ -106,11 +106,11 @@ std::vector<float> getNSubjettiness(T const& jet, U const& tracks, V const& clus
     pseudoJet = softDrop(pseudoJet);
   }
 
-  for (auto n = 0; n < nMax + 1; n++) {
+  for (std::vector<fastjet::PseudoJet>::size_type n = 0; n < nMax + 1; n++) {
     result.push_back(-1.0 * (n + 1));
   }
 
-  for (auto n = 1; n <= nMax; n++) {
+  for (std::vector<fastjet::PseudoJet>::size_type n = 1; n <= nMax; n++) {
     if (pseudoJet.constituents().size() < n) { // Tau_N needs at least N tracks
       return result;
     }

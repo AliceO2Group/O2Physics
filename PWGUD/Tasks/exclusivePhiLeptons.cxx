@@ -24,7 +24,7 @@ using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-/// \brief Exclusive phi->ll task
+/// \brief Exclusive phi->ee task
 /// \author Simone Ragoni, Creighton
 /// \date 5/5/2024
 
@@ -35,6 +35,9 @@ struct ExclusivePhiLeptons {
   Configurable<float> FT0C_cut{"FT0C", 100., "FT0C threshold"};
   Configurable<float> ZDC_cut{"ZDC", 10., "ZDC threshold"};
   Configurable<float> gap_Side{"gap", 2, "gap selection"};
+  Configurable<float> pid2d_cut{"PID2D", 2., "PID cut in 2D"};
+  Configurable<float> pid_cut{"PID", 2., "PID cut in 1D"};
+  Configurable<int> electronsInTOF{"eTOF", 2, "electrons in TOF"};
   // defining histograms using histogram registry
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -62,8 +65,8 @@ struct ExclusivePhiLeptons {
     registry.add("hClusterSizeElectronsTOF", "ClusterSizeElectronsTOF;Average cls size in the ITS layers;", kTH1F, {{1000, 0., 100.}});
     registry.add("hEta1", "#eta_{#ka};#it{#eta_{trk}}, GeV/c;", kTH1F, {{100, -2., 2.}});
     registry.add("hPtLikeSignElectron", "Pt;#it{p_{t}}, GeV/c;", kTH1F, {{500, 0., 5.}});
-    registry.add("hMassLikeSignElectron", "Raw Inv.M;#it{m_{pp}}, GeV/c^{2};", kTH1F, {{1000, 0., 10.}});
-    registry.add("hMassPtLikeSignElectron", "Raw Inv.M;#it{m_{PP}}, GeV/c^{2};Pt;#it{p_{t}}, GeV/c;", kTH2F, {{1000, 0., 10.}, {400, 0., 4.}});
+    registry.add("hMassLikeSignElectron", "Raw Inv.M;#it{m_{ee}}, GeV/c^{2};", kTH1F, {{1000, 0., 10.}});
+    registry.add("hMassPtLikeSignElectron", "Raw Inv.M;#it{m_{ee}}, GeV/c^{2};Pt;#it{p_{t}}, GeV/c;", kTH2F, {{1000, 0., 10.}, {400, 0., 4.}});
 
     auto hSelectionCounter = registry.add<TH1>("hSelectionCounter", "hSelectionCounter;;NEvents", HistType::kTH1I, {{10, 0., 10.}});
 
@@ -75,30 +78,34 @@ struct ExclusivePhiLeptons {
     }
 
     // Unlike sign pp
-    registry.add("PP/hRapidity", "Rapidity;#it{y_{pp}};", kTH1F, {{100, -2., 2.}});
+    registry.add("PP/hRapidity", "Rapidity;#it{y_{ee}};", kTH1F, {{100, -2., 2.}});
     registry.add("PP/hPtElectronVsElectron", "Pt1 vs Pt2;p_{T};p_{T};", kTH2F, {{100, 0., 3.}, {100, 0., 3.}});
-    registry.add("PP/hMassPtUnlikeSignElectron", "Raw Inv.M;#it{m_{pp}}, GeV/c^{2};Pt;#it{p_{t}}, GeV/c;", kTH2F, {{400, 0., 4.}, {400, 0., 4.}});
-    registry.add("PP/hMassUnlike", "m_{#pi#pi} [GeV/#it{c}^{2}]", kTH1F, {{1000, 0., 10.}});
+    registry.add("PP/hMassPtUnlikeSignElectron", "Raw Inv.M;#it{m_{ee}}, GeV/c^{2};Pt;#it{p_{t}}, GeV/c;", kTH2F, {{400, 0., 4.}, {400, 0., 4.}});
+    registry.add("PP/hMassUnlike", "m_{ee} [GeV/#it{c}^{2}]", kTH1F, {{1000, 0., 10.}});
     registry.add("PP/hUnlikePt", "Pt;#it{p_{t}}, GeV/c;", kTH1F, {{500, 0., 5.}});
     registry.add("PP/hUnlikePt2", "Pt;#it{p_{t}}, GeV/c;", kTH1F, {{500, 0., 5.}});
     registry.add("PP/hUnlikePt3", "Pt;#it{p_{t}}, GeV/c;", kTH1F, {{500, 0., 5.}});
     registry.add("PP/hUnlikePt4", "Pt;#it{p_{t}}, GeV/c;", kTH1F, {{500, 0., 5.}});
     registry.add("PP/hUnlikePt5", "Pt;#it{p_{t}}, GeV/c;", kTH1F, {{500, 0., 5.}});
-    registry.add("PP/hCoherentMass", "Raw Inv.M;#it{m_{pp}}, GeV/c^{2};", kTH1F, {{1000, 0., 10.}});
-    registry.add("PP/hCoherentMass2", "Raw Inv.M;#it{m_{pp}}, GeV/c^{2};", kTH1F, {{1000, 0., 10.}});
-    registry.add("PP/hCoherentMass3", "Raw Inv.M;#it{m_{pp}}, GeV/c^{2};", kTH1F, {{1000, 0., 10.}});
-    registry.add("PP/hCoherentMass4", "Raw Inv.M;#it{m_{pp}}, GeV/c^{2};", kTH1F, {{1000, 0., 10.}});
-    registry.add("PP/hCoherentMass5", "Raw Inv.M;#it{m_{pp}}, GeV/c^{2};", kTH1F, {{1000, 0., 10.}});
-    registry.add("PP/hIncoherentMass", "Raw Inv.M;#it{m_{pp}}, GeV/c^{2};", kTH1F, {{1000, 0., 10.}});
-    registry.add("PP/hIncoherentMass2", "Raw Inv.M;#it{m_{pp}}, GeV/c^{2};", kTH1F, {{1000, 0., 10.}});
-    registry.add("PP/hIncoherentMass3", "Raw Inv.M;#it{m_{pp}}, GeV/c^{2};", kTH1F, {{1000, 0., 10.}});
-    registry.add("PP/hIncoherentMass4", "Raw Inv.M;#it{m_{pp}}, GeV/c^{2};", kTH1F, {{1000, 0., 10.}});
-    registry.add("PP/hIncoherentMass5", "Raw Inv.M;#it{m_{pp}}, GeV/c^{2};", kTH1F, {{1000, 0., 10.}});
+    registry.add("PP/hUnlikePt6", "Pt;#it{p_{t}}, GeV/c;", kTH1F, {{500, 0., 5.}});
+    registry.add("PP/hCoherentMass", "Raw Inv.M;#it{m_{ee}}, GeV/c^{2};", kTH1F, {{1000, 0., 10.}});
+    registry.add("PP/hCoherentMass2", "Raw Inv.M;#it{m_{ee}}, GeV/c^{2};", kTH1F, {{1000, 0., 10.}});
+    registry.add("PP/hCoherentMass3", "Raw Inv.M;#it{m_{ee}}, GeV/c^{2};", kTH1F, {{1000, 0., 10.}});
+    registry.add("PP/hCoherentMass4", "Raw Inv.M;#it{m_{ee}}, GeV/c^{2};", kTH1F, {{1000, 0., 10.}});
+    registry.add("PP/hCoherentMass5", "Raw Inv.M;#it{m_{ee}}, GeV/c^{2};", kTH1F, {{1000, 0., 10.}});
+    registry.add("PP/hCoherentMass6", "Raw Inv.M;#it{m_{ee}}, GeV/c^{2};", kTH1F, {{1000, 0., 10.}});
+    registry.add("PP/hIncoherentMass", "Raw Inv.M;#it{m_{ee}}, GeV/c^{2};", kTH1F, {{1000, 0., 10.}});
+    registry.add("PP/hIncoherentMass2", "Raw Inv.M;#it{m_{ee}}, GeV/c^{2};", kTH1F, {{1000, 0., 10.}});
+    registry.add("PP/hIncoherentMass3", "Raw Inv.M;#it{m_{ee}}, GeV/c^{2};", kTH1F, {{1000, 0., 10.}});
+    registry.add("PP/hIncoherentMass4", "Raw Inv.M;#it{m_{ee}}, GeV/c^{2};", kTH1F, {{1000, 0., 10.}});
+    registry.add("PP/hIncoherentMass5", "Raw Inv.M;#it{m_{ee}}, GeV/c^{2};", kTH1F, {{1000, 0., 10.}});
+    registry.add("PP/hIncoherentMass6", "Raw Inv.M;#it{m_{ee}}, GeV/c^{2};", kTH1F, {{1000, 0., 10.}});
     registry.add("PP/hAngle", "Angular distrib helicity frame;#theta;", kTH1F, {{100, 0. * TMath::Pi(), 2. * TMath::Pi()}});
     registry.add("PP/hAngle2", "Angular distrib helicity frame;#theta;", kTH1F, {{100, 0. * TMath::Pi(), 2. * TMath::Pi()}});
     registry.add("PP/hAngle3", "Angular distrib helicity frame;#theta;", kTH1F, {{100, 0. * TMath::Pi(), 2. * TMath::Pi()}});
     registry.add("PP/hAngle4", "Angular distrib helicity frame;#theta;", kTH1F, {{100, 0. * TMath::Pi(), 2. * TMath::Pi()}});
     registry.add("PP/hAngle5", "Angular distrib helicity frame;#theta;", kTH1F, {{100, 0. * TMath::Pi(), 2. * TMath::Pi()}});
+    registry.add("PP/hAngle6", "Angular distrib helicity frame;#theta;", kTH1F, {{100, 0. * TMath::Pi(), 2. * TMath::Pi()}});
   }
 
   using udtracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksPID>;
@@ -188,11 +195,11 @@ struct ExclusivePhiLeptons {
       if (trk.hasTOF()) {
         registry.fill(HIST("hdSigmaElectron"), momentum, nSigmaElTOF);
       }
-      if (fabs(nSigmaEl) < 4.) {
+      if (fabs(nSigmaEl) < pid_cut) {
         registry.fill(HIST("hdEdx2"), momentum, dEdx);
         registry.fill(HIST("hdSigmaElectron2"), momentum, nSigmaEl);
         registry.fill(HIST("hMomentum"), momentum);
-        if (trk.hasTOF() && fabs(nSigmaElTOF) < 4.) {
+        if (trk.hasTOF() && fabs(nSigmaElTOF) < pid_cut) {
           registry.fill(HIST("hdSigmaElectron3"), momentum, nSigmaElTOF);
           registry.fill(HIST("hClusterSizeElectronsTOF"), averageClusterSize);
           onlyElectronTracksTOF.push_back(electron);
@@ -213,14 +220,41 @@ struct ExclusivePhiLeptons {
       return;
     }
     registry.fill(HIST("hSelectionCounter"), 5);
-    if ((onlyElectronTracksTOF.size() > 0) && (onlyElectronTracks.size() + onlyElectronTracksTOF.size()) == 2) {
+    if ((onlyElectronTracksTOF.size() >= electronsInTOF) && (onlyElectronTracks.size() + onlyElectronTracksTOF.size()) == 2) {
       registry.fill(HIST("hSelectionCounter"), 6);
 
       int signSum = -999.;
       double sigmaTotal = -999.;
       TVector3 momentum[2];
       int restrictedMomenta = -1;
-      if (onlyElectronTracksTOF.size() == 1) {
+      // two electrons in the TPC
+      if (onlyElectronTracksTOF.size() == 0) {
+
+        if (!(fabs(onlyElectronTracks[0].Eta()) < 0.8 && fabs(onlyElectronTracks[1].Eta()) < 0.8)) {
+          return;
+        }
+        if (!(onlyElectronTracks[0].P() < 0.8 && onlyElectronTracks[0].P() > 0.3 && onlyElectronTracks[1].P() < 0.8 && onlyElectronTracks[1].P() > 0.3)) {
+          return;
+        }
+        if (!(onlyElectronTracks[0].P() < 0.6 && onlyElectronTracks[0].P() > 0.4 && onlyElectronTracks[1].P() < 0.6 && onlyElectronTracks[1].P() > 0.4)) {
+          restrictedMomenta = 1;
+        }
+        momentum[0] = onlyElectronTracks[0].Vect();
+        momentum[1] = onlyElectronTracks[1].Vect();
+        registry.fill(HIST("hEta1"), onlyElectronTracks[0].Eta());
+        registry.fill(HIST("hEta1"), onlyElectronTracks[1].Eta());
+        resonance += onlyElectronTracks[0];
+        resonance += onlyElectronTracks[1];
+        sigmaTotal = 0;
+        sigmaTotal = onlyElectronSigma[0] * onlyElectronSigma[0] + onlyElectronSigma[1] * onlyElectronSigma[1];
+        ;
+        registry.fill(HIST("hNsigEvsKa1"), onlyElectronSigma[0], onlyElectronSigma[1]);
+        signSum = rawElectronTracks[0].sign() + rawElectronTracks[1].sign();
+        if (signSum == 0) {
+          registry.fill(HIST("PP/hPtElectronVsElectron"), onlyElectronTracks[0].Pt(), onlyElectronTracks[1].Pt());
+        }
+
+      } else if (onlyElectronTracksTOF.size() == 1) {
 
         if (!(fabs(onlyElectronTracks[0].Eta()) < 0.8 && fabs(onlyElectronTracksTOF[0].Eta()) < 0.8)) {
           return;
@@ -273,7 +307,7 @@ struct ExclusivePhiLeptons {
         }
       }
 
-      if (sigmaTotal > 4.) {
+      if (sigmaTotal > pid2d_cut * pid2d_cut) {
         return;
       }
       if (onlyElectronTracksTOF.size() == 1) {
@@ -301,7 +335,9 @@ struct ExclusivePhiLeptons {
         registry.fill(HIST("hSelectionCounter"), 8);
         if (fabs(angleBetweenMomenta - TMath::Pi()) < TMath::Pi() / 18.) {
           registry.fill(HIST("PP/hAngle2"), angleBetweenMomenta);
-          registry.fill(HIST("PP/hUnlikePt"), resonance.Pt());
+          if (resonance.M() > 1.02 && resonance.M() < 1.06) {
+            registry.fill(HIST("PP/hUnlikePt"), resonance.Pt());
+          }
           registry.fill(HIST("PP/hMassUnlike"), resonance.M());
           registry.fill(HIST("PP/hRapidity"), resonance.Rapidity());
           if (resonance.Pt() > 0.1) {
@@ -313,7 +349,7 @@ struct ExclusivePhiLeptons {
         if (fabs(angleBetweenMomenta - TMath::Pi()) < TMath::Pi() / 90.) {
           // two degs
           registry.fill(HIST("PP/hAngle3"), angleBetweenMomenta);
-          if (resonance.M() > 1. && resonance.M() < 1.05) {
+          if (resonance.M() > 1.02 && resonance.M() < 1.06) {
             registry.fill(HIST("PP/hUnlikePt3"), resonance.Pt());
           }
           if (resonance.Pt() > 0.1) {
@@ -325,7 +361,7 @@ struct ExclusivePhiLeptons {
         if (fabs(angleBetweenMomenta - TMath::Pi()) < TMath::Pi() / 180.) {
           // one deg
           registry.fill(HIST("PP/hAngle4"), angleBetweenMomenta);
-          if (resonance.M() > 1. && resonance.M() < 1.05) {
+          if (resonance.M() > 1.02 && resonance.M() < 1.06) {
             registry.fill(HIST("PP/hUnlikePt4"), resonance.Pt());
           }
           if (resonance.Pt() > 0.1) {
@@ -336,7 +372,7 @@ struct ExclusivePhiLeptons {
         }
         if (fabs(angleBetweenMomenta - TMath::Pi()) < TMath::Pi() / 180.) {
           // one deg
-          if (resonance.M() > 1. && resonance.M() < 1.05) {
+          if (resonance.M() > 1.02 && resonance.M() < 1.06) {
             registry.fill(HIST("PP/hUnlikePt4"), resonance.Pt());
           }
           if (resonance.Pt() > 0.1) {
@@ -346,9 +382,9 @@ struct ExclusivePhiLeptons {
           }
         }
         if (fabs(angleBetweenMomenta - TMath::Pi()) < TMath::Pi() / 18. && restrictedMomenta == 1) {
-          // two degs
+          // ten degs
           registry.fill(HIST("PP/hAngle5"), angleBetweenMomenta);
-          if (resonance.M() > 1. && resonance.M() < 1.05) {
+          if (resonance.M() > 1.02 && resonance.M() < 1.06) {
             registry.fill(HIST("PP/hUnlikePt5"), resonance.Pt());
           }
           if (resonance.Pt() > 0.1) {
@@ -357,7 +393,19 @@ struct ExclusivePhiLeptons {
             registry.fill(HIST("PP/hCoherentMass5"), resonance.M());
           }
         }
-        if (resonance.M() > 1. && resonance.M() < 1.05) {
+        if (fabs(angleBetweenMomenta - TMath::Pi()) < TMath::Pi() / 90. && restrictedMomenta == 1) {
+          // two degs
+          registry.fill(HIST("PP/hAngle6"), angleBetweenMomenta);
+          if (resonance.M() > 1.02 && resonance.M() < 1.06) {
+            registry.fill(HIST("PP/hUnlikePt6"), resonance.Pt());
+          }
+          if (resonance.Pt() > 0.1) {
+            registry.fill(HIST("PP/hIncoherentMass6"), resonance.M());
+          } else {
+            registry.fill(HIST("PP/hCoherentMass6"), resonance.M());
+          }
+        }
+        if (resonance.M() > 1.02 && resonance.M() < 1.06) {
           registry.fill(HIST("PP/hUnlikePt2"), resonance.Pt());
         }
       }

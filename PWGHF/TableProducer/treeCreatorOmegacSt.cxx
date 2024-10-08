@@ -48,10 +48,40 @@ using namespace o2::hf_trkcandsel;
 
 namespace o2::aod
 {
+namespace hf_st_charmed_baryon_gen
+{
+DECLARE_SOA_COLUMN(PxCharmedBaryon, pxCharmedBaryon, float);
+DECLARE_SOA_COLUMN(PyCharmedBaryon, pyCharmedBaryon, float);
+DECLARE_SOA_COLUMN(PzCharmedBaryon, pzCharmedBaryon, float);
+DECLARE_SOA_COLUMN(PdgCodeCharmedBaryon, pdgCodeCharmedBaryon, int);
+DECLARE_SOA_COLUMN(PxCasc, pxCasc, float);
+DECLARE_SOA_COLUMN(PyCasc, pyCasc, float);
+DECLARE_SOA_COLUMN(PzCasc, pzCasc, float);
+DECLARE_SOA_COLUMN(PdgCodeCasc, pdgCodeCasc, int);
+DECLARE_SOA_COLUMN(DecayLengthCharmedBaryon, decayLengthCharmedBaryon, float);
+DECLARE_SOA_COLUMN(DecayLengthXYCharmedBaryon, decayLengthXYCharmedBaryon, float);
+DECLARE_SOA_COLUMN(DecayLengthCasc, decayLengthCasc, float);
+DECLARE_SOA_COLUMN(DecayLengthXYCasc, decayLengthXYCasc, float);
+} // namespace hf_st_charmed_baryon_gen
+
+DECLARE_SOA_TABLE(HfStChBarGens, "AOD", "HFSTCHBARGEN",
+                  hf_st_charmed_baryon_gen::PxCharmedBaryon,
+                  hf_st_charmed_baryon_gen::PyCharmedBaryon,
+                  hf_st_charmed_baryon_gen::PzCharmedBaryon,
+                  hf_st_charmed_baryon_gen::PdgCodeCharmedBaryon,
+                  hf_st_charmed_baryon_gen::PxCasc,
+                  hf_st_charmed_baryon_gen::PyCasc,
+                  hf_st_charmed_baryon_gen::PzCasc,
+                  hf_st_charmed_baryon_gen::PdgCodeCasc,
+                  hf_st_charmed_baryon_gen::DecayLengthCharmedBaryon,
+                  hf_st_charmed_baryon_gen::DecayLengthXYCharmedBaryon,
+                  hf_st_charmed_baryon_gen::DecayLengthCasc,
+                  hf_st_charmed_baryon_gen::DecayLengthXYCasc);
+
 // CharmedBaryon -> Casc + Pion
 //                   -> Lambda + BachPi/BachKa
 //                        -> Pr + Pi
-namespace st_omegac
+namespace hf_st_charmed_baryon
 {
 DECLARE_SOA_COLUMN(MassOmega, massOmega, float);
 DECLARE_SOA_COLUMN(MassXi, massXi, float);
@@ -97,92 +127,70 @@ DECLARE_SOA_COLUMN(Chi2TopologicalCharmedBaryon, chi2TopologicalCharmedBaryon, f
 DECLARE_SOA_COLUMN(Chi2TopologicalCasc, chi2TopologicalCasc, float);
 DECLARE_SOA_COLUMN(DecayLengthCharmedBaryon, decayLengthCharmedBaryon, float);
 DECLARE_SOA_COLUMN(DecayLengthXYCharmedBaryon, decayLengthXYCharmedBaryon, float);
+DECLARE_SOA_COLUMN(DecayLengthCharmedBaryonUntracked, decayLengthCharmedBaryonUntracked, float);
+DECLARE_SOA_COLUMN(DecayLengthXYCharmedBaryonUntracked, decayLengthXYCharmedBaryonUntracked, float);
 DECLARE_SOA_COLUMN(DecayLengthCasc, decayLengthCasc, float);
 DECLARE_SOA_COLUMN(DecayLengthXYCasc, decayLengthXYCasc, float);
-} // namespace st_omegac
+DECLARE_SOA_INDEX_COLUMN_FULL(MotherCasc, motherCasc, int, HfStChBarGens, "_Casc");
+DECLARE_SOA_INDEX_COLUMN_FULL(MotherPion, motherPion, int, HfStChBarGens, "_Pion");
+} // namespace hf_st_charmed_baryon
 
-namespace st_omegac_gen
-{
-DECLARE_SOA_COLUMN(PxOmegac, pxOmegac, float);
-DECLARE_SOA_COLUMN(PyOmegac, pyOmegac, float);
-DECLARE_SOA_COLUMN(PzOmegac, pzOmegac, float);
-DECLARE_SOA_COLUMN(IsPositiveOmegac, isPositiveOmegac, bool);
-DECLARE_SOA_COLUMN(PxOmega, pxOmega, float);
-DECLARE_SOA_COLUMN(PyOmega, pyOmega, float);
-DECLARE_SOA_COLUMN(PzOmega, pzOmega, float);
-DECLARE_SOA_COLUMN(IsPositiveOmega, isPositiveOmega, bool);
-DECLARE_SOA_COLUMN(DecayLengthOmegac, decayLengthOmegac, float);
-DECLARE_SOA_COLUMN(DecayLengthXYOmegac, decayLengthXYOmegac, float);
-DECLARE_SOA_COLUMN(DecayLengthOmega, decayLengthOmega, float);
-DECLARE_SOA_COLUMN(DecayLengthXYOmega, decayLengthXYOmega, float);
-} // namespace st_omegac_gen
-
-DECLARE_SOA_TABLE(HfOmegacSt, "AOD", "HFOMEGACST",
-                  st_omegac::MassOmega,
-                  st_omegac::MassXi,
-                  st_omegac::MassLambda,
-                  st_omegac::NSigmaTpcPion,
-                  st_omegac::NSigmaTofPion,
-                  st_omegac::NSigmaTpcV0Pr,
-                  st_omegac::NSigmaTofV0Pr,
-                  st_omegac::NSigmaTpcV0Pi,
-                  st_omegac::NSigmaTofV0Pi,
-                  st_omegac::NSigmaTpcBachPi,
-                  st_omegac::NSigmaTofBachPi,
-                  st_omegac::NSigmaTpcBachKa,
-                  st_omegac::NSigmaTofBachKa,
-                  st_omegac::PxCasc,
-                  st_omegac::PyCasc,
-                  st_omegac::PzCasc,
-                  st_omegac::IsPositiveCasc,
-                  st_omegac::PxPion,
-                  st_omegac::PyPion,
-                  st_omegac::PzPion,
-                  st_omegac::IsPositivePion,
-                  st_omegac::ITSClusterMapPion,
-                  st_omegac::CpaCharmedBaryon,
-                  st_omegac::CpaXYCharmedBaryon,
-                  st_omegac::CpaCasc,
-                  st_omegac::CpaXYCasc,
-                  st_omegac::DcaXYCasc,
-                  st_omegac::DcaXYUncCasc,
-                  st_omegac::DcaZCasc,
-                  st_omegac::DcaZUncCasc,
-                  st_omegac::DcaXYPion,
-                  st_omegac::DcaXYUncPion,
-                  st_omegac::DcaZPion,
-                  st_omegac::DcaZUncPion,
-                  st_omegac::DcaXYPr,
-                  st_omegac::DcaZPr,
-                  st_omegac::DcaXYKa,
-                  st_omegac::DcaZKa,
-                  st_omegac::DcaXYPi,
-                  st_omegac::DcaZPi,
-                  st_omegac::Chi2TopologicalCharmedBaryon,
-                  st_omegac::Chi2TopologicalCasc,
-                  st_omegac::DecayLengthCharmedBaryon,
-                  st_omegac::DecayLengthXYCharmedBaryon,
-                  st_omegac::DecayLengthCasc,
-                  st_omegac::DecayLengthXYCasc);
-
-DECLARE_SOA_TABLE(HfOmegaStGen, "AOD", "HFOMEGACSTGEN",
-                  st_omegac_gen::PxOmegac,
-                  st_omegac_gen::PyOmegac,
-                  st_omegac_gen::PzOmegac,
-                  st_omegac_gen::IsPositiveOmegac,
-                  st_omegac_gen::PxOmega,
-                  st_omegac_gen::PyOmega,
-                  st_omegac_gen::PzOmega,
-                  st_omegac_gen::IsPositiveOmega,
-                  st_omegac_gen::DecayLengthOmegac,
-                  st_omegac_gen::DecayLengthXYOmegac,
-                  st_omegac_gen::DecayLengthOmega,
-                  st_omegac_gen::DecayLengthXYOmega);
+DECLARE_SOA_TABLE(HfStChBars, "AOD", "HFSTCHBAR",
+                  hf_st_charmed_baryon::MassOmega,
+                  hf_st_charmed_baryon::MassXi,
+                  hf_st_charmed_baryon::MassLambda,
+                  hf_st_charmed_baryon::NSigmaTpcPion,
+                  hf_st_charmed_baryon::NSigmaTofPion,
+                  hf_st_charmed_baryon::NSigmaTpcV0Pr,
+                  hf_st_charmed_baryon::NSigmaTofV0Pr,
+                  hf_st_charmed_baryon::NSigmaTpcV0Pi,
+                  hf_st_charmed_baryon::NSigmaTofV0Pi,
+                  hf_st_charmed_baryon::NSigmaTpcBachPi,
+                  hf_st_charmed_baryon::NSigmaTofBachPi,
+                  hf_st_charmed_baryon::NSigmaTpcBachKa,
+                  hf_st_charmed_baryon::NSigmaTofBachKa,
+                  hf_st_charmed_baryon::PxCasc,
+                  hf_st_charmed_baryon::PyCasc,
+                  hf_st_charmed_baryon::PzCasc,
+                  hf_st_charmed_baryon::IsPositiveCasc,
+                  hf_st_charmed_baryon::PxPion,
+                  hf_st_charmed_baryon::PyPion,
+                  hf_st_charmed_baryon::PzPion,
+                  hf_st_charmed_baryon::IsPositivePion,
+                  hf_st_charmed_baryon::ITSClusterMapPion,
+                  hf_st_charmed_baryon::CpaCharmedBaryon,
+                  hf_st_charmed_baryon::CpaXYCharmedBaryon,
+                  hf_st_charmed_baryon::CpaCasc,
+                  hf_st_charmed_baryon::CpaXYCasc,
+                  hf_st_charmed_baryon::DcaXYCasc,
+                  hf_st_charmed_baryon::DcaXYUncCasc,
+                  hf_st_charmed_baryon::DcaZCasc,
+                  hf_st_charmed_baryon::DcaZUncCasc,
+                  hf_st_charmed_baryon::DcaXYPion,
+                  hf_st_charmed_baryon::DcaXYUncPion,
+                  hf_st_charmed_baryon::DcaZPion,
+                  hf_st_charmed_baryon::DcaZUncPion,
+                  hf_st_charmed_baryon::DcaXYPr,
+                  hf_st_charmed_baryon::DcaZPr,
+                  hf_st_charmed_baryon::DcaXYKa,
+                  hf_st_charmed_baryon::DcaZKa,
+                  hf_st_charmed_baryon::DcaXYPi,
+                  hf_st_charmed_baryon::DcaZPi,
+                  hf_st_charmed_baryon::Chi2TopologicalCharmedBaryon,
+                  hf_st_charmed_baryon::Chi2TopologicalCasc,
+                  hf_st_charmed_baryon::DecayLengthCharmedBaryon,
+                  hf_st_charmed_baryon::DecayLengthXYCharmedBaryon,
+                  hf_st_charmed_baryon::DecayLengthCharmedBaryonUntracked,
+                  hf_st_charmed_baryon::DecayLengthXYCharmedBaryonUntracked,
+                  hf_st_charmed_baryon::DecayLengthCasc,
+                  hf_st_charmed_baryon::DecayLengthXYCasc,
+                  hf_st_charmed_baryon::MotherCascId,
+                  hf_st_charmed_baryon::MotherPionId);
 } // namespace o2::aod
 
 struct HfTreeCreatorOmegacSt {
-  Produces<aod::HfOmegacSt> outputTable;
-  Produces<aod::HfOmegaStGen> outputTableGen;
+  Produces<aod::HfStChBars> outputTable;
+  Produces<aod::HfStChBarGens> outputTableGen;
 
   Configurable<int> materialCorrectionType{"materialCorrectionType", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrLUT), "Type of material correction"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -218,6 +226,7 @@ struct HfTreeCreatorOmegacSt {
 
   float bz = 0.;
   int runNumber{0};
+  std::map<int, int> mapMcPartToGenTable;
 
   using Collisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>;
   using TracksExt = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>;
@@ -227,8 +236,8 @@ struct HfTreeCreatorOmegacSt {
                            (filterCollisions.node() == 8 && o2::aod::evsel::sel8 == true);
 
   // Preslice<aod::Tracks> perCol = aod::track::collisionId;
-  Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
-  Preslice<aod::AssignedTrackedCascades> assignedTrackedCascadesPerCollision = aod::track::collisionId;
+  PresliceUnsorted<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
+  PresliceUnsorted<aod::AssignedTrackedCascades> assignedTrackedCascadesPerCollision = aod::track::collisionId;
 
   std::shared_ptr<TH1> hCandidatesPrPi, hCandidatesV0Pi, hCandidatesCascPi;
   HistogramRegistry registry{
@@ -289,30 +298,68 @@ struct HfTreeCreatorOmegacSt {
   // processData: loop over reconstructed objects, no MC information
   // processGen: loop over reconstructed objects, use MC information (mutually exclusive? combine?)
 
-  void processMc(aod::McCollision const&,
+  void processMc(aod::McCollisions const&,
                  aod::McParticles const& mcParticles)
   {
+    mapMcPartToGenTable.clear();
     for (const auto& mcParticle : mcParticles) {
-      if ((mcParticle.pdgCode() == kOmegaMinus) &&
-          mcParticle.has_mothers() &&
-          (mcParticle.mothers_first_as<aod::McParticles>().pdgCode() == constants::physics::Pdg::kOmegaC0)) {
-        const auto& mcColl = mcParticle.mcCollision();
-        std::array<double, 3> primaryVertexPosGen = {mcColl.posX(), mcColl.posY(), mcColl.posZ()};
-        std::array<double, 3> secondaryVertexGen = {mcParticle.vx(), mcParticle.vy(), mcParticle.vz()};
-        const auto decayLengthGen = RecoDecay::distance(secondaryVertexGen, primaryVertexPosGen);
-        registry.fill(HIST("hDecayLengthScaledMc"), decayLengthGen * o2::constants::physics::MassOmegaC0 / mcParticle.mothers_first_as<aod::McParticles>().p() * 1e4);
+      const bool isOmegaC = std::abs(mcParticle.pdgCode()) == constants::physics::Pdg::kOmegaC0;
+      const bool isXiC = std::abs(mcParticle.pdgCode()) == constants::physics::Pdg::kXiC0;
+      if (isOmegaC || isXiC) {
+        const auto daughters = mcParticle.daughters_as<aod::McParticles>();
+        if (daughters.size() == 2) {
+          int idxPionDaughter = -1;
+          int idxCascDaughter = -1;
+          const auto daughters = mcParticle.daughters_as<aod::McParticles>();
+          for (const auto& daughter : daughters) {
+            if (idxCascDaughter < 0 && (std::abs(daughter.pdgCode()) == (isOmegaC ? kOmegaMinus : kXiMinus))) {
+              idxCascDaughter = daughter.globalIndex();
+            }
+            if (idxPionDaughter < 0 && (std::abs(daughter.pdgCode()) == kPiPlus)) {
+              idxPionDaughter = daughter.globalIndex();
+            }
+          }
+          if ((idxPionDaughter >= 0) && (idxCascDaughter >= 0)) {
+            const auto& cascDaughter = mcParticles.iteratorAt(idxCascDaughter);
+            const auto& mcColl = mcParticle.mcCollision();
+            std::array<double, 3> primaryVertexPosGen = {mcColl.posX(), mcColl.posY(), mcColl.posZ()};
+            std::array<double, 3> secondaryVertexGen = {cascDaughter.vx(), cascDaughter.vy(), cascDaughter.vz()};
+            float decayLengthCascGen = -1.;
+            float decayLengthXYCascGen = -1.;
+            if (cascDaughter.has_daughters()) {
+              const auto& cascDecayDaughter = cascDaughter.daughters_as<aod::McParticles>().iteratorAt(0);
+              std::array<double, 3> tertiaryVertexGen = {cascDecayDaughter.vx(), cascDecayDaughter.vy(), cascDecayDaughter.vz()};
+              decayLengthCascGen = RecoDecay::distance(tertiaryVertexGen, primaryVertexPosGen);
+              decayLengthXYCascGen = RecoDecay::distanceXY(tertiaryVertexGen, primaryVertexPosGen);
+            }
+            const auto decayLengthGen = RecoDecay::distance(secondaryVertexGen, primaryVertexPosGen);
+            const auto decayLengthXYGen = RecoDecay::distanceXY(secondaryVertexGen, primaryVertexPosGen);
+            registry.fill(HIST("hDecayLengthScaledMc"), decayLengthGen * o2::constants::physics::MassOmegaC0 / mcParticle.mothers_first_as<aod::McParticles>().p() * 1e4);
+            outputTableGen(
+              mcParticle.px(),
+              mcParticle.py(),
+              mcParticle.pz(),
+              mcParticle.pdgCode(),
+              cascDaughter.px(),
+              cascDaughter.py(),
+              cascDaughter.pz(),
+              cascDaughter.pdgCode(),
+              decayLengthGen,
+              decayLengthXYGen,
+              decayLengthCascGen,
+              decayLengthXYCascGen);
+            mapMcPartToGenTable[mcParticle.globalIndex()] = outputTableGen.lastIndex();
+          }
+        }
       }
     }
   }
   PROCESS_SWITCH(HfTreeCreatorOmegacSt, processMc, "Process MC", true);
 
-  void processData(Collisions const& collisions,
-                   aod::AssignedTrackedCascades const& trackedCascades,
-                   aod::TrackAssoc const& trackIndices,
-                   aod::Cascades const&,
-                   aod::V0s const&,
-                   TracksExt const&,
-                   aod::BCsWithTimestamps const&)
+  template <typename TracksType>
+  void fillTable(Collisions const& collisions,
+                 aod::AssignedTrackedCascades const& trackedCascades,
+                 aod::TrackAssoc const& trackIndices)
   {
     const auto matCorr = static_cast<o2::base::Propagator::MatCorrType>(materialCorrectionType.value);
 
@@ -343,7 +390,15 @@ struct HfTreeCreatorOmegacSt {
 
       o2::dataformats::DCA impactParameterCasc;
       for (const auto& trackedCascade : groupedTrackedCascades) {
-        const auto trackCasc = trackedCascade.track_as<TracksExt>();
+        const auto trackCasc = trackedCascade.track_as<TracksType>();
+        int trackCascMotherId = -1;
+        if constexpr (std::is_same<TracksType, TracksExtMc>::value) {
+          if (trackCasc.has_mcParticle() && trackCasc.mcParticle().has_mothers()) {
+            if (auto res = mapMcPartToGenTable.find(trackCasc.mcParticle().mothersIds()[0]); res != mapMcPartToGenTable.end()) {
+              trackCascMotherId = res->second;
+            }
+          }
+        }
         auto trackParCovCasc = getTrackParCov(trackCasc);
         if (bzOnly) {
           o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, trackParCovCasc, bz, 2.f, matCorr, &impactParameterCasc);
@@ -352,10 +407,10 @@ struct HfTreeCreatorOmegacSt {
         }
 
         const auto& casc = trackedCascade.cascade();
-        const auto& bachelor = casc.bachelor_as<TracksExt>();
+        const auto& bachelor = casc.bachelor_as<TracksType>();
         const auto& v0 = casc.v0();
-        const auto& v0TrackPos = v0.posTrack_as<TracksExt>();
-        const auto& v0TrackNeg = v0.negTrack_as<TracksExt>();
+        const auto& v0TrackPos = v0.posTrack_as<TracksType>();
+        const auto& v0TrackNeg = v0.negTrack_as<TracksType>();
 
         if (!v0TrackPos.hasTPC() || !v0TrackNeg.hasTPC() || !bachelor.hasTPC() ||
             v0TrackPos.tpcNClsFindable() < minNoClsTrackedCascade ||
@@ -374,7 +429,7 @@ struct HfTreeCreatorOmegacSt {
             continue;
           }
         } catch (const std::runtime_error& error) {
-          LOG(info) << "Run time error found: " << error.what() << ". DCFitterN for Pr-Pi cannot work, skipping the candidate.";
+          LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN for Pr-Pi cannot work, skipping the candidate.";
           hCandidatesPrPi->Fill(SVFitting::Fail);
           continue;
         }
@@ -395,7 +450,7 @@ struct HfTreeCreatorOmegacSt {
             continue;
           }
         } catch (const std::runtime_error& error) {
-          LOG(info) << "Run time error found: " << error.what() << ". DCFitterN for V0-bachelor cannot work, skipping the candidate.";
+          LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN for V0-bachelor cannot work, skipping the candidate.";
           hCandidatesV0Pi->Fill(SVFitting::Fail);
           continue;
         }
@@ -409,8 +464,9 @@ struct HfTreeCreatorOmegacSt {
         std::array<std::array<float, 3>, 2> momentaCascDaughters;
         trackParV0.getPxPyPzGlo(momentaCascDaughters[0]);
         trackParBachelor.getPxPyPzGlo(momentaCascDaughters[1]);
+        o2::track::TrackParCov trackParCovCascUntracked = df2.createParentTrackParCov(0);
         std::array<float, 3> pCasc;
-        df2.createParentTrackParCov().getPxPyPzGlo(pCasc);
+        trackParCovCascUntracked.getPxPyPzGlo(pCasc);
         const auto cpaCasc = RecoDecay::cpa(primaryVertexPos, df2.getPCACandidate(), pCasc);
         const auto cpaXYCasc = RecoDecay::cpaXY(primaryVertexPos, df2.getPCACandidate(), pCasc);
 
@@ -454,7 +510,7 @@ struct HfTreeCreatorOmegacSt {
             }
 
             for (auto trackId : groupedTrackIds) {
-              const auto track = trackId.template track_as<TracksExt>();
+              const auto track = trackId.template track_as<TracksType>();
               if (track.globalIndex() == v0TrackPr.globalIndex() ||
                   track.globalIndex() == v0TrackPi.globalIndex() ||
                   track.globalIndex() == bachelor.globalIndex()) {
@@ -468,6 +524,14 @@ struct HfTreeCreatorOmegacSt {
                   (track.itsChi2NCl() <= 36.f) &&
                   (std::abs(track.tpcNSigmaPi()) < maxNSigmaPion)) {
                 LOGF(debug, "  .. combining with pion candidate %d", track.globalIndex());
+                int trackMotherId = -1;
+                if constexpr (std::is_same<TracksType, TracksExtMc>::value) {
+                  if (track.has_mcParticle() && track.mcParticle().has_mothers()) {
+                    if (auto res = mapMcPartToGenTable.find(track.mcParticle().mothersIds()[0]); res != mapMcPartToGenTable.end()) {
+                      trackMotherId = res->second;
+                    }
+                  }
+                }
                 auto trackParCovCasc = getTrackParCov(trackCasc);
                 auto trackParCovPion = getTrackParCov(track);
                 o2::dataformats::DCA impactParameterPion;
@@ -479,6 +543,13 @@ struct HfTreeCreatorOmegacSt {
 
                 hCandidatesCascPi->Fill(SVFitting::BeforeFit);
                 try {
+                  auto decayLengthUntracked = -1.;
+                  auto decayLengthXYUntracked = -1.;
+                  if (df2.process(trackParCovCascUntracked, trackParCovPion)) {
+                    const auto& secondaryVertexUntracked = df2.getPCACandidate();
+                    decayLengthUntracked = RecoDecay::distance(secondaryVertexUntracked, primaryVertexPos);
+                    decayLengthXYUntracked = RecoDecay::distanceXY(secondaryVertexUntracked, primaryVertexPos);
+                  }
                   if (df2.process(trackParCovCasc, trackParCovPion)) {
                     const auto& secondaryVertex = df2.getPCACandidate();
                     const auto decayLength = RecoDecay::distance(secondaryVertex, primaryVertexPos);
@@ -544,14 +615,18 @@ struct HfTreeCreatorOmegacSt {
                                   trackedCascade.topologyChi2(),
                                   decayLength,
                                   decayLengthXY,
+                                  decayLengthUntracked,
+                                  decayLengthXYUntracked,
                                   decayLengthCasc,
-                                  decayLengthCascXY);
+                                  decayLengthCascXY,
+                                  trackCascMotherId,
+                                  trackMotherId);
                     }
                   } else {
                     continue;
                   }
                 } catch (const std::runtime_error& error) {
-                  LOG(info) << "Run time error found: " << error.what() << ". DCFitterN for Casc-Pi cannot work, skipping the candidate.";
+                  LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN for Casc-Pi cannot work, skipping the candidate.";
                   hCandidatesCascPi->Fill(SVFitting::Fail);
                   continue;
                 }
@@ -563,11 +638,37 @@ struct HfTreeCreatorOmegacSt {
       }
     }
   }
+
+  void processData(Collisions const& collisions,
+                   soa::SmallGroups<aod::AssignedTrackedCascades> const& trackedCascades,
+                   aod::TrackAssoc const& trackIndices,
+                   aod::Cascades const&,
+                   aod::V0s const&,
+                   TracksExt const&,
+                   aod::BCsWithTimestamps const&)
+  {
+    fillTable<TracksExt>(collisions, trackedCascades, trackIndices);
+  }
   PROCESS_SWITCH(HfTreeCreatorOmegacSt, processData, "Process data", true);
+
+  void processMcRec(Collisions const& collisions,
+                    aod::McCollisions const&,
+                    soa::SmallGroups<aod::AssignedTrackedCascades> const& trackedCascades,
+                    aod::TrackAssoc const& trackIndices,
+                    aod::Cascades const&,
+                    aod::V0s const&,
+                    // TracksExt const& tracks, // TODO: should be TracksExtMc
+                    TracksExtMc const&,
+                    aod::McParticles const&,
+                    aod::BCsWithTimestamps const&)
+  {
+    fillTable<TracksExtMc>(collisions, trackedCascades, trackIndices);
+  }
+  PROCESS_SWITCH(HfTreeCreatorOmegacSt, processMcRec, "Process MC reco", true);
 
   void processMcGen(aod::Collision const& collision,
                     aod::McCollisions const&,
-                    aod::AssignedTrackedCascades const& trackedCascades,
+                    soa::SmallGroups<aod::AssignedTrackedCascades> const& trackedCascades,
                     aod::Cascades const&,
                     aod::V0s const&,
                     TracksExtMc const& tracks,
@@ -677,7 +778,7 @@ struct HfTreeCreatorOmegacSt {
                     hCandidatesCascPi->Fill(SVFitting::FitOk);
                   }
                 } catch (const std::runtime_error& error) {
-                  LOG(info) << "Run time error found: " << error.what() << ". DCFitterN for Casc-Pi cannot work, skipping the candidate.";
+                  LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN for Casc-Pi cannot work, skipping the candidate.";
                   hCandidatesCascPi->Fill(SVFitting::Fail);
                   continue;
                 }

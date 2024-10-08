@@ -17,6 +17,7 @@
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/ASoAHelpers.h"
 #include "Framework/runDataProcessing.h"
 
 #include "PWGHF/Core/SelectorCuts.h"
@@ -27,6 +28,7 @@ using namespace o2;
 using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::soa;
 
 /// Dstar analysis task
 struct HfTaskDstarToD0Pi {
@@ -42,12 +44,22 @@ struct HfTaskDstarToD0Pi {
   using CandDstarWSelFlagMcRec = soa::Join<aod::HfD0FromDstar, aod::HfCandDstars, aod::HfSelDstarToD0Pi, aod::HfCandDstarMcRec>;
   using CandDstarMcGen = soa::Join<aod::McParticles, aod::HfCandDstarMcGen>;
 
-  Partition<CandDstarWSelFlag> rowsSelectedCandDstar = aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == selectionFlagDstarToD0Pi;
+  using CollisionsWCent = soa::Join<aod::Collisions, aod::CentFT0Ms>;
+  using CollisionsWCentMcLabel = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentFT0Ms>;
+
+  Filter candFilter = aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == selectionFlagDstarToD0Pi;
+  Preslice<soa::Filtered<CandDstarWSelFlag>> preslicSelectedCandDstarPerCol = aod::hf_cand::collisionId;
+
+  PresliceUnsorted<CollisionsWCentMcLabel> colsPerMcCollision = aod::mccollisionlabel::mcCollisionId;
+  SliceCache cache;
+
   Partition<CandDstarWSelFlagMcRec> rowsSelectedCandDstarMcRec = aod::hf_sel_candidate_dstar::isRecoD0Flag == selectionFlagHfD0ToPiK;
 
   ConfigurableAxis binningImpactParam{"binningImpactParam", {1000, 0.1, -0.1}, " Bins of Impact Parameter"};
   ConfigurableAxis binningDecayLength{"binningDecayLength", {1000, 0.0, 0.7}, "Bins of Decay Length"};
   ConfigurableAxis binningNormDecayLength{"binningNormDecayLength", {1000, 0.0, 40.0}, "Bins of Normalised Decay Length"};
+  ConfigurableAxis binningCentrality{"binningCentrality", {VARIABLE_WIDTH, 0.0, 10.0, 20.0, 30.0, 60.0, 100.0}, "centrality binning"};
+  ConfigurableAxis binningDeltaInvMass{"binningDeltaInvMass", {100, 0.13, 0.16}, "Bins of Delta InvMass of Dstar"};
 
   HistogramRegistry registry{
     "registry",
@@ -57,7 +69,8 @@ struct HfTaskDstarToD0Pi {
      {"QA/hPtProng1D0", "Prong1 of D0 Candidates; Prong1 #it{p}_{T} (GeV/#it{c}); entries", {HistType::kTH1F, {{360, 0., 36.}}}},
      {"QA/hPtProng0D0Bar", "Prong0 of D0Bar Candidates; Prong0 #it{p}_{T} (GeV/#it{c}); entries", {HistType::kTH1F, {{360, 0., 36.}}}},
      {"QA/hPtProng1D0Bar", "Prong1 of D0Bar Candidates; Prong1 #it{p}_{T} (GeV/#it{c}); entries", {HistType::kTH1F, {{360, 0., 36.}}}},
-     {"QA/hPtSoftPi", "Soft Pi ; Soft Pi #it{p}_{T} (GeV/#it{c}); entries", {HistType::kTH1F, {{100, 0., 1.}}}}}};
+     {"QA/hPtSoftPi", "Soft Pi ; Soft Pi #it{p}_{T} (GeV/#it{c}); entries", {HistType::kTH1F, {{100, 0., 1.}}}},
+     {"QA/hDeltaCentGen", "#{Delta}Cent % distribution of Collisions having same MC Collision;FT0M #{Delta}Cent %; Counts", {HistType::kTH1F, {{100, 0.0, 100.0}}}}}};
 
   void init(InitContext&)
   {
@@ -66,9 +79,12 @@ struct HfTaskDstarToD0Pi {
     AxisSpec axisImpactParam = {binningImpactParam, "impact parameter (cm)"};
     AxisSpec axisDecayLength = {binningDecayLength, " decay length (cm)"};
     AxisSpec axisNormDecayLength = {binningNormDecayLength, "normalised decay length (cm)"};
+    AxisSpec axisCentrality = {binningCentrality, "centrality (%)"};
+    AxisSpec axisDeltaInvMass = {binningDeltaInvMass, "#Delta #it{M}_{inv} D*"};
 
-    registry.add("Yield/hDeltaInvMassDstar2D", "#Delta #it{M}_{inv} D* Candidate; inv. mass ((#pi #pi k) - (#pi k)) (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{100, 0.13, 0.16}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}}, true);
-    registry.add("Yield/hDeltaInvMassDstar1D", "#Delta #it{M}_{inv} D* Candidate; inv. mass ((#pi #pi k) - (#pi k)) (GeV/#it{c}^{2}); entries", {HistType::kTH1F, {{100, 0.13, 0.16}}}, true);
+    registry.add("Yield/hDeltaInvMassDstar3D", "#Delta #it{M}_{inv} D* Candidate; inv. mass ((#pi #pi k) - (#pi k)) (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c}); FT0M centrality", {HistType::kTH3F, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisCentrality}}}, true);
+    registry.add("Yield/hDeltaInvMassDstar2D", "#Delta #it{M}_{inv} D* Candidate; inv. mass ((#pi #pi k) - (#pi k)) (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}}, true);
+    registry.add("Yield/hDeltaInvMassDstar1D", "#Delta #it{M}_{inv} D* Candidate; inv. mass ((#pi #pi k) - (#pi k)) (GeV/#it{c}^{2}); entries", {HistType::kTH1F, {{axisDeltaInvMass}}}, true);
     registry.add("Yield/hInvMassDstar", "#Delta #it{M}_{inv} D* Candidate; inv. mass (#pi #pi k) (GeV/#it{c}^{2}); entries", {HistType::kTH1F, {{500, 0., 5.0}}}, true);
     registry.add("Yield/hInvMassD0", "#it{M}_{inv}D^{0} candidate;#it{M}_{inv} D^{0} (GeV/#it{c});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{500, 0., 5.0}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}}, true);
     // only QA
@@ -94,7 +110,8 @@ struct HfTaskDstarToD0Pi {
     registry.add("QA/hEtaSkimD0RecSig", "MC Matched Skimed D* Candidates at Reconstruction Level; #it{#eta} of D0 Prong", {HistType::kTH1F, {{100, -2., 2.}}});
     registry.add("QA/hEtaSkimDstarRecSig", "MC Matched Skimed D* Candidates at Reconstruction Level; #it{#eta} of D* Candidate", {HistType::kTH1F, {{100, -2., 2.}}});
     // pt vs y
-    registry.add("QA/hPtSkimDstarGenSig", "MC Matched Skimed D* Reconstructed Candidates at Generator Level; #it{p}_{T} of D* at Generator Level (GeV/#it{c})", {HistType::kTH1F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("QA/hPtSkimDstarGenSig", "MC Matched Skimed D* Reconstructed Candidates at Generator Level; #it{p}_{T} of D* at Generator Level (GeV/#it{c})", {HistType::kTH1F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}}, true);
+    registry.add("Efficiency/hPtVsCentSkimDstarGenSig", "MC Matched Skimed D* Reconstructed Candidates at Generator Level; #it{p}_{T} of D* at Generator Level (GeV/#it{c}); Centrality (%)", {HistType::kTH2F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisCentrality}}}, true);
     registry.add("QA/hPtVsYSkimDstarRecSig", "MC Matched Skimed D* Candidates at Reconstruction Level; #it{p}_{T} of D* at Reconstruction Level (GeV/#it{c}); #it{y}", {HistType::kTH2F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
     registry.add("QA/hPtVsYRecoTopolDstarRecSig", "MC Matched RecoTopol D* Candidates at Reconstruction Level; #it{p}_{T} of D* at Reconstruction Level (GeV/#it{c}); #it{y}", {HistType::kTH2F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
     registry.add("QA/hPtVsYRecoPidDstarRecSig", "MC Matched RecoPid D* Candidates at Reconstruction Level; #it{p}_{T} of  D* at Reconstruction Level (GeV/#it{c}); #it{y}", {HistType::kTH2F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
@@ -118,6 +135,7 @@ struct HfTaskDstarToD0Pi {
     // MC Matching at Generator level Successful
     registry.add("QA/hEtaDstarGen", "MC Matched D* Candidates at Generator Level; #it{#eta}", {HistType::kTH1F, {{100, -2., 2.}}});
     registry.add("QA/hPtDstarGen", "MC Matched D* Candidates at Generator Level; #it{p}_{T} of  D*", {HistType::kTH1F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Efficiency/hPtVsCentDstarGen", "MC Matched D* Candidates at Generator Level; #it{p}_{T} of  D*;Centrality (%) ", {HistType::kTH2F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisCentrality}}}, true);
     registry.add("QA/hPtVsYDstarGen", "MC Matched D* Candidates at Generator Level; #it{p}_{T} of  D*; #it{y}", {HistType::kTH2F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
     // Prompt Gen
     registry.add("QA/hPtPromptDstarGen", "MC Matched Prompt D* Candidates at Generator Level; #it{p}_{T} of  D*", {HistType::kTH1F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -125,68 +143,105 @@ struct HfTaskDstarToD0Pi {
     // Non Prmpt Gen
     registry.add("QA/hPtNonPromptDstarGen", "MC Matched Non-Prompt D* Candidates at Generator Level; #it{p}_{T} of  D*", {HistType::kTH1F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("QA/hPtVsYNonPromptDstarGen", "MC Matched Non-Prompt D* Candidates at Generator Level; #it{p}_{T} of  D*; #it{y}", {HistType::kTH2F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
+
+    // Checking PV contributors from Data as well MC rec
+    registry.add("Efficiency/hNumPvContributorsAll", "PV Contributors; PV Contributor; FT0M Centrality", {HistType::kTH2F, {{100, 0, 300}, {axisCentrality}}}, true);
+    registry.add("Efficiency/hNumPvContributorsCand", "PV Contributors; PV Contributor; FT0M Centrality", {HistType::kTH2F, {{100, 0, 300}, {axisCentrality}}}, true);
+    registry.add("Efficiency/hNumPvContributorsCandInMass", "PV Contributors; PV Contributor; FT0M Centrality", {HistType::kTH2F, {{100, 0, 300}, {axisCentrality}}}, true);
   }
 
-  void process(CandDstarWSelFlag const&)
+  void process(CollisionsWCent const& cols, soa::Filtered<CandDstarWSelFlag> const& selectedCands)
   {
-    for (const auto& candDstar : rowsSelectedCandDstar) {
-      auto yDstar = candDstar.y(constants::physics::MassDStar);
-      if (yCandDstarRecoMax >= 0. && std::abs(yDstar) > yCandDstarRecoMax) {
-        continue;
-      }
-      registry.fill(HIST("QA/hPtDstar"), candDstar.pt());
-      registry.fill(HIST("QA/hPtD0"), candDstar.ptD0());
-      registry.fill(HIST("QA/hPtSoftPi"), candDstar.ptSoftPi());
-      registry.fill(HIST("QA/hEtaDstar"), candDstar.eta(), candDstar.pt());
-      registry.fill(HIST("QA/hCtD0"), candDstar.ctD0(), candDstar.pt());
-      registry.fill(HIST("QA/hDecayLengthD0"), candDstar.decayLengthD0(), candDstar.pt());
-      registry.fill(HIST("QA/hDecayLengthXYD0"), candDstar.decayLengthXYD0(), candDstar.pt());
-      registry.fill(HIST("QA/hDecayLengthNormalisedD0"), candDstar.decayLengthNormalisedD0(), candDstar.pt());
-      registry.fill(HIST("QA/hDecayLengthXYNormalisedD0"), candDstar.decayLengthXYNormalisedD0(), candDstar.pt());
-      registry.fill(HIST("QA/hCPAD0"), candDstar.cpaD0(), candDstar.pt());
-      registry.fill(HIST("QA/hCPAxyD0"), candDstar.cpaXYD0(), candDstar.pt());
-      registry.fill(HIST("QA/hImpactParameterXYD0"), candDstar.impactParameterXYD0(), candDstar.pt());
-      registry.fill(HIST("QA/hDeltaIPMaxNormalisedD0"), candDstar.deltaIPNormalisedMaxD0(), candDstar.pt());
-      registry.fill(HIST("QA/hSqSumProngsImpactParameterD0"), candDstar.impactParameterProngSqSumD0(), candDstar.pt());
-      registry.fill(HIST("QA/hDecayLengthErrorD0"), candDstar.errorDecayLengthD0(), candDstar.pt());
-      registry.fill(HIST("QA/hDecayLengthXYErrorD0"), candDstar.errorDecayLengthXYD0(), candDstar.pt());
-      registry.fill(HIST("QA/hImpactParameterError"), candDstar.errorImpactParameter0(), candDstar.pt());
-      registry.fill(HIST("QA/hImpactParameterError"), candDstar.errorImpactParameter1(), candDstar.pt());
-      registry.fill(HIST("QA/hImpactParameterError"), candDstar.errorImpParamSoftPi(), candDstar.pt());
-      registry.fill(HIST("QA/hd0Prong0"), candDstar.impactParameter0(), candDstar.pt());
-      registry.fill(HIST("QA/hd0Prong1"), candDstar.impactParameter1(), candDstar.pt());
-      registry.fill(HIST("QA/hd0ProngSoftPi"), candDstar.impParamSoftPi(), candDstar.pt());
+    for (const auto& col : cols) {
+      auto nPVContributors = col.numContrib();
+      auto centrality = col.centFT0M();
+      registry.fill(HIST("Efficiency/hNumPvContributorsAll"), nPVContributors, centrality);
 
-      auto invDstar = candDstar.invMassDstar();
-      auto invAntiDstar = candDstar.invMassAntiDstar();
-      auto invD0 = candDstar.invMassD0();
-      auto invD0Bar = candDstar.invMassD0Bar();
+      auto gIndexCol = col.globalIndex();
+      auto selectedCandsCurrentCol = selectedCands.sliceBy(preslicSelectedCandDstarPerCol, gIndexCol);
+      auto nCandsCurrentCol = selectedCandsCurrentCol.size();
 
-      auto signDstar = candDstar.signSoftPi();
-      if (signDstar > 0) {
-        registry.fill(HIST("Yield/hDeltaInvMassDstar2D"), (invDstar - invD0), candDstar.pt());
-        registry.fill(HIST("Yield/hInvMassD0"), invD0, candDstar.ptD0());
-        registry.fill(HIST("Yield/hDeltaInvMassDstar1D"), (invDstar - invD0));
-        registry.fill(HIST("Yield/hInvMassDstar"), invDstar);
-        // filling pt of two pronges of D0
-        registry.fill(HIST("QA/hPtProng0D0"), candDstar.ptProng0());
-        registry.fill(HIST("QA/hPtProng1D0"), candDstar.ptProng1());
-      } else if (signDstar < 0) {
-        registry.fill(HIST("Yield/hDeltaInvMassDstar2D"), (invAntiDstar - invD0Bar), candDstar.pt());
-        registry.fill(HIST("Yield/hInvMassD0"), invD0Bar, candDstar.ptD0());
-        registry.fill(HIST("Yield/hDeltaInvMassDstar1D"), (invAntiDstar - invD0Bar));
-        registry.fill(HIST("Yield/hInvMassDstar"), invAntiDstar);
-        // filling pt of two pronges of D0Bar
-        registry.fill(HIST("QA/hPtProng0D0Bar"), candDstar.ptProng0());
-        registry.fill(HIST("QA/hPtProng1D0Bar"), candDstar.ptProng1());
+      if (nCandsCurrentCol > 0) {
+        LOGF(debug, "size of selectedCandsCurrentCol: %d", nCandsCurrentCol);
+        registry.fill(HIST("Efficiency/hNumPvContributorsCand"), nPVContributors, centrality);
       }
-    }
+
+      int nCandsSignalRegion = 0;
+      for (const auto& candDstar : selectedCandsCurrentCol) {
+        auto yDstar = candDstar.y(constants::physics::MassDStar);
+        if (yCandDstarRecoMax >= 0. && std::abs(yDstar) > yCandDstarRecoMax) {
+          continue;
+        }
+
+        registry.fill(HIST("QA/hPtDstar"), candDstar.pt());
+        registry.fill(HIST("QA/hPtD0"), candDstar.ptD0());
+        registry.fill(HIST("QA/hPtSoftPi"), candDstar.ptSoftPi());
+        registry.fill(HIST("QA/hEtaDstar"), candDstar.eta(), candDstar.pt());
+        registry.fill(HIST("QA/hCtD0"), candDstar.ctD0(), candDstar.pt());
+        registry.fill(HIST("QA/hDecayLengthD0"), candDstar.decayLengthD0(), candDstar.pt());
+        registry.fill(HIST("QA/hDecayLengthXYD0"), candDstar.decayLengthXYD0(), candDstar.pt());
+        registry.fill(HIST("QA/hDecayLengthNormalisedD0"), candDstar.decayLengthNormalisedD0(), candDstar.pt());
+        registry.fill(HIST("QA/hDecayLengthXYNormalisedD0"), candDstar.decayLengthXYNormalisedD0(), candDstar.pt());
+        registry.fill(HIST("QA/hCPAD0"), candDstar.cpaD0(), candDstar.pt());
+        registry.fill(HIST("QA/hCPAxyD0"), candDstar.cpaXYD0(), candDstar.pt());
+        registry.fill(HIST("QA/hImpactParameterXYD0"), candDstar.impactParameterXYD0(), candDstar.pt());
+        registry.fill(HIST("QA/hDeltaIPMaxNormalisedD0"), candDstar.deltaIPNormalisedMaxD0(), candDstar.pt());
+        registry.fill(HIST("QA/hSqSumProngsImpactParameterD0"), candDstar.impactParameterProngSqSumD0(), candDstar.pt());
+        registry.fill(HIST("QA/hDecayLengthErrorD0"), candDstar.errorDecayLengthD0(), candDstar.pt());
+        registry.fill(HIST("QA/hDecayLengthXYErrorD0"), candDstar.errorDecayLengthXYD0(), candDstar.pt());
+        registry.fill(HIST("QA/hImpactParameterError"), candDstar.errorImpactParameter0(), candDstar.pt());
+        registry.fill(HIST("QA/hImpactParameterError"), candDstar.errorImpactParameter1(), candDstar.pt());
+        registry.fill(HIST("QA/hImpactParameterError"), candDstar.errorImpParamSoftPi(), candDstar.pt());
+        registry.fill(HIST("QA/hd0Prong0"), candDstar.impactParameter0(), candDstar.pt());
+        registry.fill(HIST("QA/hd0Prong1"), candDstar.impactParameter1(), candDstar.pt());
+        registry.fill(HIST("QA/hd0ProngSoftPi"), candDstar.impParamSoftPi(), candDstar.pt());
+
+        auto invDstar = candDstar.invMassDstar();
+        auto invAntiDstar = candDstar.invMassAntiDstar();
+        auto invD0 = candDstar.invMassD0();
+        auto invD0Bar = candDstar.invMassD0Bar();
+
+        auto signDstar = candDstar.signSoftPi();
+        if (signDstar > 0) {
+          auto deltaMDstar = std::abs(invDstar - invD0);
+          if (0.142f < deltaMDstar && deltaMDstar < 0.15f) {
+            nCandsSignalRegion++;
+          }
+          registry.fill(HIST("Yield/hDeltaInvMassDstar3D"), deltaMDstar, candDstar.pt(), centrality);
+          registry.fill(HIST("Yield/hDeltaInvMassDstar2D"), deltaMDstar, candDstar.pt());
+          registry.fill(HIST("Yield/hInvMassD0"), invD0, candDstar.ptD0());
+          registry.fill(HIST("Yield/hDeltaInvMassDstar1D"), deltaMDstar);
+          registry.fill(HIST("Yield/hInvMassDstar"), invDstar);
+          // filling pt of two pronges of D0
+          registry.fill(HIST("QA/hPtProng0D0"), candDstar.ptProng0());
+          registry.fill(HIST("QA/hPtProng1D0"), candDstar.ptProng1());
+        } else if (signDstar < 0) {
+          auto deltaMAntiDstar = std::abs(invAntiDstar - invD0Bar);
+          if (0.142f < deltaMAntiDstar && deltaMAntiDstar < 0.15f) {
+            nCandsSignalRegion++;
+          }
+          registry.fill(HIST("Yield/hDeltaInvMassDstar3D"), deltaMAntiDstar, candDstar.pt(), centrality);
+          registry.fill(HIST("Yield/hDeltaInvMassDstar2D"), deltaMAntiDstar, candDstar.pt());
+          registry.fill(HIST("Yield/hInvMassD0"), invD0Bar, candDstar.ptD0());
+          registry.fill(HIST("Yield/hDeltaInvMassDstar1D"), deltaMAntiDstar);
+          registry.fill(HIST("Yield/hInvMassDstar"), invAntiDstar);
+          // filling pt of two pronges of D0Bar
+          registry.fill(HIST("QA/hPtProng0D0Bar"), candDstar.ptProng0());
+          registry.fill(HIST("QA/hPtProng1D0Bar"), candDstar.ptProng1());
+        }
+      } // candidate loop for current collision ends
+
+      if (nCandsSignalRegion > 0) {
+        registry.fill(HIST("Efficiency/hNumPvContributorsCandInMass"), nPVContributors, centrality);
+      }
+    } // collision loop ends
   }
 
-  void processMC(CandDstarWSelFlagMcRec const&,
+  void processMC(aod::McCollisions const&, CollisionsWCentMcLabel const& collisions, CandDstarWSelFlagMcRec const&,
                  CandDstarMcGen const& rowsMcPartilces,
                  aod::TracksWMc const&)
   {
+    rowsSelectedCandDstarMcRec.bindExternalIndices(&collisions);
 
     int8_t signDstar = 0;
     // MC at Reconstruction level
@@ -196,11 +251,18 @@ struct HfTaskDstarToD0Pi {
       if (yCandDstarRecoMax >= 0. && std::abs(yDstarRecSig) > yCandDstarRecoMax) {
         continue;
       }
+      auto collision = candDstarMcRec.collision_as<CollisionsWCentMcLabel>();
+      auto centrality = collision.centFT0M();                                                               // 0-100%
       if (TESTBIT(std::abs(candDstarMcRec.flagMcMatchRec()), aod::hf_cand_dstar::DecayType::DstarToD0Pi)) { // if MC matching is successful at Reconstruction Level
         // get MC Mother particle
         auto indexMother = RecoDecay::getMother(rowsMcPartilces, candDstarMcRec.prong0_as<aod::TracksWMc>().mcParticle_as<CandDstarMcGen>(), o2::constants::physics::Pdg::kDStar, true, &signDstar, 2);
         auto particleMother = rowsMcPartilces.rawIteratorAt(indexMother);  // What is difference between rawIterator() or iteratorAt() methods?
         registry.fill(HIST("QA/hPtSkimDstarGenSig"), particleMother.pt()); // generator level pt
+        registry.fill(HIST("Efficiency/hPtVsCentSkimDstarGenSig"), particleMother.pt(), centrality);
+
+        // auto recCollision = candDstarMcRec.collision_as<CollisionsWCentMcLabel>();
+        // float centFT0M = recCollision.centFT0M();
+        // LOGF(info, "centFT0M: %f", centFT0M);
 
         registry.fill(HIST("QA/hPtVsYSkimDstarRecSig"), ptDstarRecSig, yDstarRecSig); // Skimed at level of trackIndexSkimCreator
         if (candDstarMcRec.isRecoTopol()) {                                           // if Topological selection are passed
@@ -253,15 +315,48 @@ struct HfTaskDstarToD0Pi {
     // MC at Generator Level
     for (const auto& mcParticle : rowsMcPartilces) {
       if (TESTBIT(std::abs(mcParticle.flagMcMatchGen()), aod::hf_cand_dstar::DecayType::DstarToD0Pi)) { // MC Matching is successful at Generator Level
+
         auto ptGen = mcParticle.pt();
         // auto yGen = mcParticle.y(); // Can we use this definition?
         auto yGen = RecoDecay::y(mcParticle.pVector(), o2::constants::physics::MassDStar);
         if (yCandDstarGenMax >= 0. && std::abs(yGen) > yCandDstarGenMax) {
           continue;
         }
+
+        auto mcCollision = mcParticle.mcCollision_as<aod::McCollisions>();
+        auto recCollisions = collisions.sliceBy(colsPerMcCollision, mcCollision.globalIndex());
+        // auto recCollisions = collisions.sliceByCached(aod::mccollisionlabel::mcCollisionId, mcCollision.globalIndex(), cache);
+        // auto recCollisions = collisions.sliceByCachedUnsorted(aod::mccollisionlabel::mcCollisionId, mcCollision.globalIndex(), cache);
+
+        // looking if a generated collision reconstructed more than a times.
+        if (recCollisions.size() > 1) {
+          for (const auto& [c1, c2] : combinations(CombinationsStrictlyUpperIndexPolicy(recCollisions, recCollisions))) {
+            auto deltaCent = abs(c1.centFT0M() - c2.centFT0M());
+            registry.fill(HIST("QA/hDeltaCentGen"), deltaCent);
+          }
+        }
+
+        float centFT0MGen;
+        // assigning centrality to MC Collision using max FT0M amplitute from Reconstructed collisions
+        if (recCollisions.size()) {
+          std::vector<std::pair<soa::Filtered<CollisionsWCentMcLabel>::iterator, int>> tempRecCols;
+
+          for (const auto& recCol : recCollisions) {
+            // if(recCollisions.size()>1) LOGF(info, "cuurent cent: %f",recCol.centFT0M());
+            tempRecCols.push_back(std::make_pair(recCol, recCol.numContrib()));
+          }
+          std::sort(tempRecCols.begin(), tempRecCols.end(), compare);
+          centFT0MGen = tempRecCols.at(0).first.centFT0M();
+          // if(recCollisions.size()>1) LOGF(info, "assigned cent: %f",centFT0MGen);
+        } else {
+          centFT0MGen = -999.;
+        }
+
         registry.fill(HIST("QA/hEtaDstarGen"), mcParticle.eta());
         registry.fill(HIST("QA/hPtDstarGen"), ptGen);
         registry.fill(HIST("QA/hPtVsYDstarGen"), ptGen, yGen);
+        registry.fill(HIST("Efficiency/hPtVsCentDstarGen"), ptGen, centFT0MGen);
+
         // only promt Dstar candidate at Generator level
         if (mcParticle.originMcGen() == RecoDecay::OriginType::Prompt) {
           registry.fill(HIST("QA/hPtPromptDstarGen"), ptGen);
@@ -274,6 +369,12 @@ struct HfTaskDstarToD0Pi {
     }
   }
   PROCESS_SWITCH(HfTaskDstarToD0Pi, processMC, "Process MC Data", false);
+
+  // Comparator function to sort based on the second argument of a tuple
+  static bool compare(const std::pair<soa::Filtered<CollisionsWCentMcLabel>::iterator, int>& a, const std::pair<soa::Filtered<CollisionsWCentMcLabel>::iterator, int>& b)
+  {
+    return a.second > b.second;
+  }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

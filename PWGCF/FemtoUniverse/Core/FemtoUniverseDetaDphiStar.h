@@ -27,6 +27,7 @@
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseAngularContainer.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseContainer.h"
 #include "Framework/HistogramRegistry.h"
+#include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
 
 using namespace o2;
 using namespace o2::analysis::femtoUniverse;
@@ -47,6 +48,7 @@ template <o2::aod::femtouniverseparticle::ParticleType partOne, o2::aod::femtoun
 class FemtoUniverseDetaDphiStar
 {
  public:
+  FemtoUniverseTrackSelection trackCuts;
   /// Destructor
   virtual ~FemtoUniverseDetaDphiStar() = default;
   /// Initialization of the histograms and setting required values
@@ -137,6 +139,7 @@ class FemtoUniverseDetaDphiStar
       }
     }
   }
+
   ///  Check if pair is close or not
   template <typename Part, typename Parts>
   bool isClosePair(Part const& part1, Part const& part2, Parts const& particles, float lmagfield, uint8_t ChosenEventType)
@@ -222,8 +225,6 @@ class FemtoUniverseDetaDphiStar
       for (int i = 0; i < 2; i++) {
         auto indexOfDaughterpart1 = (ChosenEventType == femtoUniverseContainer::EventType::mixed ? part1.globalIndex() : part1.index()) - 2 + i;
         auto indexOfDaughterpart2 = (ChosenEventType == femtoUniverseContainer::EventType::mixed ? part2.globalIndex() : part2.index()) - 2 + i;
-        // auto indexOfDaughterpart1 = part1.globalIndex() - 2 + i;
-        // auto indexOfDaughterpart2 = part2.globalIndex() - 2 + i;
         auto daughterpart1 = particles.begin() + indexOfDaughterpart1;
         auto daughterpart2 = particles.begin() + indexOfDaughterpart2;
         auto deta = daughterpart1.eta() - daughterpart2.eta();
@@ -236,7 +237,8 @@ class FemtoUniverseDetaDphiStar
           LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar's type of events! Please provide same or mixed.";
         }
 
-        if (pow(dphiAvg, 2) / pow(CutDeltaPhiStarMax, 2) + pow(deta, 2) / pow(CutDeltaEtaMax, 2) < 1.) {
+        // if (pow(dphiAvg, 2) / pow(CutDeltaPhiStarMax, 2) + pow(deta, 2) / pow(CutDeltaEtaMax, 2) < 1.) {
+        if ((dphiAvg > CutDeltaPhiStarMin) && (dphiAvg < CutDeltaPhiStarMax) && (deta > CutDeltaEtaMin) && (deta < CutDeltaEtaMax)) {
           pass = true;
         } else {
           if (ChosenEventType == femtoUniverseContainer::EventType::same) {
@@ -331,12 +333,13 @@ class FemtoUniverseDetaDphiStar
         TLorentzVector sumVec(part1Vec);
         sumVec += part2Vec;
         float phiM = sumVec.M();
+        if ((phiM > CutPhiInvMassLow) && (phiM < CutPhiInvMassHigh)) {
+          pass = true; // pair comes from Phi meson decay
+        }
 
         // APPLYING THE CUTS
         if ((dphiAvg > CutDeltaPhiStarMin) && (dphiAvg < CutDeltaPhiStarMax) && (deta > CutDeltaEtaMin) && (deta < CutDeltaEtaMax)) {
           pass = true; // pair is close
-        } else if ((phiM > CutPhiInvMassLow) && (phiM < CutPhiInvMassHigh)) {
-          pass = true; // pair comes from Phi meson decay
         } else {
           if (ChosenEventType == femtoUniverseContainer::EventType::same) {
             histdetadpisame[i][1]->Fill(deta, dphiAvg);

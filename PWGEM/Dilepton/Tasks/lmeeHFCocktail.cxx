@@ -20,15 +20,15 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
-#include "PWGDQ/DataModel/ReducedInfoTables.h"
 #include "PWGEM/Dilepton/Utils/MCUtilities.h"
+#include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::aod::pwgem::dilepton::mcutil;
+using namespace o2::aod::pwgem::dilepton::utils::mcutil;
 
-using McParticlesSmeared = soa::Join<aod::McParticles, aod::SmearedTracks>;
+using McParticlesSmeared = soa::Join<aod::McParticles, aod::SmearedElectrons>;
 
 enum EFromHFType {
   kNoE = -1,
@@ -115,7 +115,6 @@ struct MyConfigs : ConfigurableGroup {
   ConfigurableAxis fConfigEtaBins{"cfgEtaBins", {200, -10.f, 10.f}, "eta binning"};
   ConfigurableAxis fConfigMeeBins{"cfgMeeBins", {800, 0.f, 8.f}, "Mee binning"};
   ConfigurableAxis fConfigPteeBins{"cfgPteeBins", {400, 0.f, 10.f}, "pTee binning"};
-  Configurable<bool> fConfigCheckPartonic{"cfgCheckPartonic", true, "check entire partonic history for pairs"};
 };
 
 struct lmeehfcocktailprefilter {
@@ -148,15 +147,16 @@ struct lmeehfcocktailprefilter {
       int bQuarkOriginId = -1;
 
       int isHF = EFromHFType::kNoHFE;
-      if (direct_charm_mother && bHadronId < 0) { // c->e
-        isHF = EFromHFType::kCE;
-        auto cHadron = mcParticles.iteratorAt(cHadronId);
-        cQuarkId = searchMothers(cHadron, mcParticles, 4, true);
-        if (cQuarkId > -1) {
-          auto cQuark = mcParticles.iteratorAt(cQuarkId);
-          cQuarkOriginId = searchMothers(cQuark, mcParticles, 4, false);
+
+      if (direct_beauty_mother) { // b->e
+        isHF = EFromHFType::kBE;
+        auto bHadron = mcParticles.iteratorAt(bHadronId);
+        bQuarkId = searchMothers(bHadron, mcParticles, 5, true);
+        if (bQuarkId > -1) {
+          auto bQuark = mcParticles.iteratorAt(bQuarkId);
+          bQuarkOriginId = searchMothers(bQuark, mcParticles, 5, false);
         }
-      } else if (direct_charm_mother && bHadronId > -1) { // b->c->e
+      } else if (bHadronId > -1 && direct_charm_mother) { // b->c->e
         isHF = EFromHFType::kBCE;
         auto bHadron = mcParticles.iteratorAt(bHadronId);
         bQuarkId = searchMothers(bHadron, mcParticles, 5, true);
@@ -170,15 +170,16 @@ struct lmeehfcocktailprefilter {
           auto cQuark = mcParticles.iteratorAt(cQuarkId);
           cQuarkOriginId = searchMothers(cQuark, mcParticles, 4, false);
         }
-      } else if (direct_beauty_mother) { // b->e
-        isHF = EFromHFType::kBE;
-        auto bHadron = mcParticles.iteratorAt(bHadronId);
-        bQuarkId = searchMothers(bHadron, mcParticles, 5, true);
-        if (bQuarkId > -1) {
-          auto bQuark = mcParticles.iteratorAt(bQuarkId);
-          bQuarkOriginId = searchMothers(bQuark, mcParticles, 5, false);
+      } else if (bHadronId < 0 && direct_charm_mother) { // c->e
+        isHF = EFromHFType::kCE;
+        auto cHadron = mcParticles.iteratorAt(cHadronId);
+        cQuarkId = searchMothers(cHadron, mcParticles, 4, true);
+        if (cQuarkId > -1) {
+          auto cQuark = mcParticles.iteratorAt(cQuarkId);
+          cQuarkOriginId = searchMothers(cQuark, mcParticles, 4, false);
         }
       }
+
       hfTable(isHF, bHadronId, cHadronId, bQuarkId, cQuarkId, bQuarkOriginId, cQuarkOriginId);
     }
   }
@@ -188,15 +189,18 @@ struct lmeehfcocktailbeauty {
 
   HistogramRegistry registry{"registry", {}};
 
-  std::vector<std::vector<std::shared_ptr<TH1>>> hEta, hPt, hULS_Mee;
-  std::vector<std::vector<std::shared_ptr<TH2>>> hPtEta, hULS_MeePtee;
-  std::vector<std::shared_ptr<TH1>> hLSpp_Mee, hLSmm_Mee;
-  std::vector<std::shared_ptr<TH2>> hLSpp_MeePtee, hLSmm_MeePtee;
+  std::vector<std::vector<std::shared_ptr<TH1>>> hEta, hPt;
+  std::vector<std::vector<std::shared_ptr<TH2>>> hPtEta;
+  std::vector<std::shared_ptr<TH1>> hLS_Mee, hULS_Mee;
+  std::vector<std::shared_ptr<TH2>> hLS_MeePtee, hULS_MeePtee;
+
+  std::vector<std::shared_ptr<TH1>> hLS_Mee_wPartonicCheck, hULS_Mee_wPartonicCheck;
+  std::vector<std::shared_ptr<TH2>> hLS_MeePtee_wPartonicCheck, hULS_MeePtee_wPartonicCheck;
 
   MyConfigs myConfigs;
 
   Filter hfFilter = o2::aod::hftable::isHF == static_cast<int>(EFromHFType::kBE) || o2::aod::hftable::isHF == static_cast<int>(EFromHFType::kBCE);
-  using MyFilteredMcParticlesSmeared = soa::Filtered<soa::Join<aod::McParticles, aod::SmearedTracks, aod::HfTable>>;
+  using MyFilteredMcParticlesSmeared = soa::Filtered<soa::Join<aod::McParticles, aod::SmearedElectrons, aod::HfTable>>;
 
   Preslice<MyFilteredMcParticlesSmeared> perCollision = aod::mcparticle::mcCollisionId;
 
@@ -207,8 +211,6 @@ struct lmeehfcocktailbeauty {
   {
     registry.add<TH1>("NEvents", "NEvents", HistType::kTH1F, {{1, 0, 1}}, false);
 
-    const char* typeNamesPairULS[4] = {"Be_Be", "BCe_BCe", "BCe_Be_SameB", "allB"};
-    const char* typeNamesPairLS = "BCe_Be_DiffB";
     const char* typeNamesSingle[2] = {"be", "bce"};
     const char* typeTitlesSingle[2] = {"b->e", "b->c->e"};
 
@@ -233,31 +235,26 @@ struct lmeehfcocktailbeauty {
 
     // pair histograms
     // ULS
-    for (int i = 0; i < 4; i++) {
-      std::vector<std::shared_ptr<TH1>> hMee_temp;
-      std::vector<std::shared_ptr<TH2>> hMeePtee_temp;
-      for (int j = 0; j < 3; j++) {
-        hMee_temp.push_back(registry.add<TH1>(Form("ULS_Mee_%s_%s", typeNamesPairULS[i], stageNames[j]), Form("ULS Mee %s %s", typeNamesPairULS[i], stageNames[j]), HistType::kTH1F, {mass_axis}, true));
-        hMeePtee_temp.push_back(registry.add<TH2>(Form("ULS_MeePtee_%s_%s", typeNamesPairULS[i], stageNames[j]), Form("ULS Mee vs. Ptee %s %s", typeNamesPairULS[i], stageNames[j]), HistType::kTH2F, {mass_axis, ptee_axis}, true));
-      }
-      hULS_Mee.push_back(hMee_temp);
-      hULS_MeePtee.push_back(hMeePtee_temp);
+    for (int j = 0; j < 3; j++) {
+      hULS_Mee.push_back(registry.add<TH1>(Form("ULS_Mee_%s", stageNames[j]), Form("ULS Mee %s", stageNames[j]), HistType::kTH1F, {mass_axis}, true));
+      hULS_MeePtee.push_back(registry.add<TH2>(Form("ULS_MeePtee_%s", stageNames[j]), Form("ULS Mee vs. Ptee %s", stageNames[j]), HistType::kTH2F, {mass_axis, ptee_axis}, true));
+
+      hULS_Mee_wPartonicCheck.push_back(registry.add<TH1>(Form("ULS_Mee_wPartonicCheck_%s", stageNames[j]), Form("ULS Mee wPartonicCheck %s", stageNames[j]), HistType::kTH1F, {mass_axis}, true));
+      hULS_MeePtee_wPartonicCheck.push_back(registry.add<TH2>(Form("ULS_MeePtee_wPartonicCheck_%s", stageNames[j]), Form("ULS Mee vs. Ptee wPartonicCheck %s", stageNames[j]), HistType::kTH2F, {mass_axis, ptee_axis}, true));
     }
     // LS
     for (int j = 0; j < 3; j++) {
-      hLSpp_Mee.push_back(registry.add<TH1>(Form("LSpp_Mee_%s_%s", typeNamesPairLS, stageNames[j]), Form("LS++ Mee %s %s", typeNamesPairLS, stageNames[j]), HistType::kTH1F, {mass_axis}, true));
-      hLSmm_Mee.push_back(registry.add<TH1>(Form("LSmm_Mee_%s_%s", typeNamesPairLS, stageNames[j]), Form("LS-- Mee %s %s", typeNamesPairLS, stageNames[j]), HistType::kTH1F, {mass_axis}, true));
-      hLSpp_MeePtee.push_back(registry.add<TH2>(Form("LSpp_MeePtee_%s_%s", typeNamesPairLS, stageNames[j]), Form("LS++ Mee vs. Ptee %s %s", typeNamesPairLS, stageNames[j]), HistType::kTH2F, {mass_axis, ptee_axis}, true));
-      hLSmm_MeePtee.push_back(registry.add<TH2>(Form("LSmm_MeePtee_%s_%s", typeNamesPairLS, stageNames[j]), Form("LS-- Mee vs. Ptee %s %s", typeNamesPairLS, stageNames[j]), HistType::kTH2F, {mass_axis, ptee_axis}, true));
+      hLS_Mee.push_back(registry.add<TH1>(Form("LS_Mee_%s", stageNames[j]), Form("LS Mee %s", stageNames[j]), HistType::kTH1F, {mass_axis}, true));
+      hLS_MeePtee.push_back(registry.add<TH2>(Form("LS_MeePtee_%s", stageNames[j]), Form("LS Mee vs. Ptee %s", stageNames[j]), HistType::kTH2F, {mass_axis, ptee_axis}, true));
+
+      hLS_Mee_wPartonicCheck.push_back(registry.add<TH1>(Form("LS_Mee_wPartonicCheck_%s", stageNames[j]), Form("LS Mee wPartonicCheck %s", stageNames[j]), HistType::kTH1F, {mass_axis}, true));
+      hLS_MeePtee_wPartonicCheck.push_back(registry.add<TH2>(Form("LS_MeePtee_wPartonicCheck_%s", stageNames[j]), Form("LS Mee vs. Ptee wPartonicCheck %s", stageNames[j]), HistType::kTH2F, {mass_axis, ptee_axis}, true));
     }
   }
 
-  void processBeauty(aod::McCollisions const& collisions, MyFilteredMcParticlesSmeared const& mcParticles, aod::McParticles const& mcParticlesAll)
+  void processBeauty(aod::McCollisions const& collisions, MyFilteredMcParticlesSmeared const& mcParticles)
   {
     for (auto const& p : mcParticles) {
-      if (myConfigs.fConfigCheckPartonic && p.bQuarkOriginId() < 0) {
-        continue;
-      }
       int from_quark = p.isHF() - 2;
       doSingle(p, hEta[from_quark], hPt[from_quark], hPtEta[from_quark], myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
     }
@@ -270,49 +267,41 @@ struct lmeehfcocktailbeauty {
       auto const positronsGrouped = Positrons->sliceBy(perCollision, collision.globalIndex());
       // ULS spectrum
       for (auto const& [particle1, particle2] : combinations(o2::soa::CombinationsFullIndexPolicy(electronsGrouped, positronsGrouped))) {
-        if (myConfigs.fConfigCheckPartonic) {
-          if (particle1.bQuarkOriginId() < 0 || particle2.bQuarkOriginId() < 0 || particle1.bQuarkOriginId() != particle2.bQuarkOriginId())
-            continue;
+
+        if (particle1.mothersIds()[0] == particle2.mothersIds()[0]) {
+          LOG(error) << "Something is wrong here. There should not be dielectrons with same mother.";
         }
-        int type = IsHF(particle1, particle2, mcParticlesAll);
-        if (type == static_cast<int>(EM_HFeeType::kUndef))
+
+        doPair(particle1, particle2, hULS_Mee, hULS_MeePtee, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
+
+        if (particle1.bQuarkOriginId() < 0 || particle2.bQuarkOriginId() < 0 || particle1.bQuarkOriginId() != particle2.bQuarkOriginId())
           continue;
-        if ((type < static_cast<int>(EM_HFeeType::kBe_Be)) || (type > static_cast<int>(EM_HFeeType::kBCe_Be_SameB))) {
-          LOG(error) << "Something is wrong here. There should only be pairs of type kBe_Be = 1, kBCe_BCe = 2 and kBCe_Be_SameB = 3 left at this point.";
-        }
-        doPair(particle1, particle2, hULS_Mee[type - 1], hULS_MeePtee[type - 1], myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
-        doPair(particle1, particle2, hULS_Mee[3], hULS_MeePtee[3], myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax); // fill the 'allB' histograms that holds the sum of the others
+        doPair(particle1, particle2, hULS_Mee_wPartonicCheck, hULS_MeePtee_wPartonicCheck, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
       }
       // LS spectrum
       for (auto const& [particle1, particle2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(electronsGrouped, electronsGrouped))) {
-        if (myConfigs.fConfigCheckPartonic) {
-          if (particle1.bQuarkOriginId() < 0 || particle2.bQuarkOriginId() < 0 || particle1.bQuarkOriginId() != particle2.bQuarkOriginId())
-            continue;
+
+        if (particle1.mothersIds()[0] == particle2.mothersIds()[0]) {
+          LOG(error) << "Something is wrong here. There should not be dielectrons with same mother.";
         }
-        int type = IsHF(particle1, particle2, mcParticlesAll);
-        if (type == static_cast<int>(EM_HFeeType::kUndef))
+
+        doPair(particle1, particle2, hLS_Mee, hLS_MeePtee, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
+
+        if (particle1.bQuarkOriginId() < 0 || particle2.bQuarkOriginId() < 0 || particle1.bQuarkOriginId() != particle2.bQuarkOriginId())
           continue;
-        if (myConfigs.fConfigCheckPartonic) {
-          if (type != static_cast<int>(EM_HFeeType::kBCe_Be_DiffB)) {
-            LOG(error) << "Something is wrong here. There should only be pairs of type kBCe_Be_DiffB = 4 left at this point.";
-          }
-        }
-        doPair(particle1, particle2, hLSmm_Mee, hLSmm_MeePtee, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
+        doPair(particle1, particle2, hLS_Mee_wPartonicCheck, hLS_MeePtee_wPartonicCheck, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
       }
       for (auto const& [particle1, particle2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(positronsGrouped, positronsGrouped))) {
-        if (myConfigs.fConfigCheckPartonic) {
-          if (particle1.bQuarkOriginId() < 0 || particle2.bQuarkOriginId() < 0 || particle1.bQuarkOriginId() != particle2.bQuarkOriginId())
-            continue;
+
+        if (particle1.mothersIds()[0] == particle2.mothersIds()[0]) {
+          LOG(error) << "Something is wrong here. There should not be dielectrons with same mother.";
         }
-        int type = IsHF(particle1, particle2, mcParticlesAll);
-        if (type == static_cast<int>(EM_HFeeType::kUndef))
+
+        doPair(particle1, particle2, hLS_Mee, hLS_MeePtee, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
+
+        if (particle1.bQuarkOriginId() < 0 || particle2.bQuarkOriginId() < 0 || particle1.bQuarkOriginId() != particle2.bQuarkOriginId())
           continue;
-        if (myConfigs.fConfigCheckPartonic) {
-          if (type != static_cast<int>(EM_HFeeType::kBCe_Be_DiffB)) {
-            LOG(error) << "Something is wrong here. There should only be pairs of type kBCe_Be_DiffB = 4 left at this point.";
-          }
-        }
-        doPair(particle1, particle2, hLSpp_Mee, hLSpp_MeePtee, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
+        doPair(particle1, particle2, hLS_Mee_wPartonicCheck, hLS_MeePtee_wPartonicCheck, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
       }
     }
   }
@@ -332,11 +321,13 @@ struct lmeehfcocktailcharm {
 
   std::vector<std::shared_ptr<TH1>> hEta, hPt, hULS_Mee, hLS_Mee;
   std::vector<std::shared_ptr<TH2>> hPtEta, hULS_MeePtee, hLS_MeePtee;
+  std::vector<std::shared_ptr<TH1>> hULS_Mee_wPartonicCheck, hLS_Mee_wPartonicCheck;
+  std::vector<std::shared_ptr<TH2>> hULS_MeePtee_wPartonicCheck, hLS_MeePtee_wPartonicCheck;
 
   MyConfigs myConfigs;
 
   Filter hfFilter = o2::aod::hftable::isHF == static_cast<int>(EFromHFType::kCE);
-  using MyFilteredMcParticlesSmeared = soa::Filtered<soa::Join<aod::McParticles, aod::SmearedTracks, aod::HfTable>>;
+  using MyFilteredMcParticlesSmeared = soa::Filtered<soa::Join<aod::McParticles, aod::SmearedElectrons, aod::HfTable>>;
 
   Preslice<MyFilteredMcParticlesSmeared> perCollision = aod::mcparticle::mcCollisionId;
 
@@ -347,7 +338,6 @@ struct lmeehfcocktailcharm {
   {
     registry.add<TH1>("NEvents", "NEvents", HistType::kTH1F, {{1, 0, 1}}, false);
 
-    const char* typeNamesPairULS = "Ce_Ce";
     const char* typeNamesSingle = "ce";
     const char* typeTitlesSingle = "c->e";
 
@@ -366,21 +356,25 @@ struct lmeehfcocktailcharm {
     // pair histograms
     // ULS
     for (int j = 0; j < 3; j++) {
-      hULS_Mee.push_back(registry.add<TH1>(Form("ULS_Mee_%s_%s", typeNamesPairULS, stageNames[j]), Form("ULS Mee %s %s", typeNamesPairULS, stageNames[j]), HistType::kTH1F, {mass_axis}, true));
-      hULS_MeePtee.push_back(registry.add<TH2>(Form("ULS_MeePtee_%s_%s", typeNamesPairULS, stageNames[j]), Form("ULS MeePtee %s %s", typeNamesPairULS, stageNames[j]), HistType::kTH2F, {mass_axis, ptee_axis}, true));
+      hULS_Mee.push_back(registry.add<TH1>(Form("ULS_Mee_%s", stageNames[j]), Form("ULS Mee %s", stageNames[j]), HistType::kTH1F, {mass_axis}, true));
+      hULS_MeePtee.push_back(registry.add<TH2>(Form("ULS_MeePtee_%s", stageNames[j]), Form("ULS Mee vs Ptee %s", stageNames[j]), HistType::kTH2F, {mass_axis, ptee_axis}, true));
+
+      hULS_Mee_wPartonicCheck.push_back(registry.add<TH1>(Form("ULS_Mee_wPartonicCheck_%s", stageNames[j]), Form("ULS Mee wPartonicCheck %s", stageNames[j]), HistType::kTH1F, {mass_axis}, true));
+      hULS_MeePtee_wPartonicCheck.push_back(registry.add<TH2>(Form("ULS_MeePtee_wPartonicCheck_%s", stageNames[j]), Form("ULS Mee vs Ptee wPartonicCheck %s", stageNames[j]), HistType::kTH2F, {mass_axis, ptee_axis}, true));
     }
+    // LS
     for (int j = 0; j < 3; j++) {
-      hLS_Mee.push_back(registry.add<TH1>(Form("LS_Mee_%s_%s", typeNamesPairULS, stageNames[j]), Form("LS Mee %s %s", typeNamesPairULS, stageNames[j]), HistType::kTH1F, {mass_axis}, true));
-      hLS_MeePtee.push_back(registry.add<TH2>(Form("LS_MeePtee_%s_%s", typeNamesPairULS, stageNames[j]), Form("LS MeePtee %s %s", typeNamesPairULS, stageNames[j]), HistType::kTH2F, {mass_axis, ptee_axis}, true));
+      hLS_Mee.push_back(registry.add<TH1>(Form("LS_Mee_%s", stageNames[j]), Form("LS Mee %s", stageNames[j]), HistType::kTH1F, {mass_axis}, true));
+      hLS_MeePtee.push_back(registry.add<TH2>(Form("LS_MeePtee_%s", stageNames[j]), Form("LS Mee vs Ptee %s", stageNames[j]), HistType::kTH2F, {mass_axis, ptee_axis}, true));
+
+      hLS_Mee_wPartonicCheck.push_back(registry.add<TH1>(Form("LS_Mee_wPartonicCheck_%s", stageNames[j]), Form("LS Mee wPartonicCheck %s", stageNames[j]), HistType::kTH1F, {mass_axis}, true));
+      hLS_MeePtee_wPartonicCheck.push_back(registry.add<TH2>(Form("LS_MeePtee_wPartonicCheck_%s", stageNames[j]), Form("LS Mee vs Ptee wPartonicCheck %s", stageNames[j]), HistType::kTH2F, {mass_axis, ptee_axis}, true));
     }
   }
 
-  void processCharm(aod::McCollisions const& collisions, MyFilteredMcParticlesSmeared const& mcParticles, aod::McParticles const& mcParticlesAll)
+  void processCharm(aod::McCollisions const& collisions, MyFilteredMcParticlesSmeared const& mcParticles)
   {
     for (auto const& p : mcParticles) {
-      if (myConfigs.fConfigCheckPartonic && p.cQuarkOriginId() < 0) {
-        continue;
-      }
       doSingle(p, hEta, hPt, hPtEta, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
     }
 
@@ -392,29 +386,41 @@ struct lmeehfcocktailcharm {
       auto const positronsGrouped = Positrons->sliceBy(perCollision, collision.globalIndex());
       // ULS spectrum
       for (auto const& [particle1, particle2] : combinations(o2::soa::CombinationsFullIndexPolicy(electronsGrouped, positronsGrouped))) {
-        if (myConfigs.fConfigCheckPartonic) {
-          if (particle1.cQuarkOriginId() < 0 || particle2.cQuarkOriginId() < 0 || particle1.cQuarkOriginId() != particle2.cQuarkOriginId())
-            continue;
+
+        if (particle1.mothersIds()[0] == particle2.mothersIds()[0]) {
+          LOG(error) << "Something is wrong here. There should not be dielectrons with same mother.";
         }
-        if (IsHF(particle1, particle2, mcParticlesAll) != static_cast<int>(EM_HFeeType::kCe_Ce)) {
-          LOG(error) << "Something is wrong here. There should only be pairs of type kCe_Ce = 0 left at this point.";
-        }
+
         doPair(particle1, particle2, hULS_Mee, hULS_MeePtee, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
+
+        if (particle1.cQuarkOriginId() < 0 || particle2.cQuarkOriginId() < 0 || particle1.cQuarkOriginId() != particle2.cQuarkOriginId())
+          continue;
+        doPair(particle1, particle2, hULS_Mee_wPartonicCheck, hULS_MeePtee_wPartonicCheck, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
       }
       // LS
       for (auto const& [particle1, particle2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(electronsGrouped, electronsGrouped))) {
-        if (myConfigs.fConfigCheckPartonic) {
-          if (particle1.cQuarkOriginId() < 0 || particle2.cQuarkOriginId() < 0 || particle1.cQuarkOriginId() != particle2.cQuarkOriginId())
-            continue;
+
+        if (particle1.mothersIds()[0] == particle2.mothersIds()[0]) {
+          LOG(error) << "Something is wrong here. There should not be dielectrons with same mother.";
         }
+
         doPair(particle1, particle2, hLS_Mee, hLS_MeePtee, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
+
+        if (particle1.cQuarkOriginId() < 0 || particle2.cQuarkOriginId() < 0 || particle1.cQuarkOriginId() != particle2.cQuarkOriginId())
+          continue;
+        doPair(particle1, particle2, hLS_Mee_wPartonicCheck, hLS_MeePtee_wPartonicCheck, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
       }
       for (auto const& [particle1, particle2] : combinations(o2::soa::CombinationsStrictlyUpperIndexPolicy(positronsGrouped, positronsGrouped))) {
-        if (myConfigs.fConfigCheckPartonic) {
-          if (particle1.cQuarkOriginId() < 0 || particle2.cQuarkOriginId() < 0 || particle1.cQuarkOriginId() != particle2.cQuarkOriginId())
-            continue;
+
+        if (particle1.mothersIds()[0] == particle2.mothersIds()[0]) {
+          LOG(error) << "Something is wrong here. There should not be dielectrons with same mother.";
         }
+
         doPair(particle1, particle2, hLS_Mee, hLS_MeePtee, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
+
+        if (particle1.cQuarkOriginId() < 0 || particle2.cQuarkOriginId() < 0 || particle1.cQuarkOriginId() != particle2.cQuarkOriginId())
+          continue;
+        doPair(particle1, particle2, hLS_Mee_wPartonicCheck, hLS_MeePtee_wPartonicCheck, myConfigs.fConfigPtMin, myConfigs.fConfigEtaMax);
       }
     }
   }

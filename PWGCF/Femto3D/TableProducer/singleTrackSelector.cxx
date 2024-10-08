@@ -204,22 +204,21 @@ struct singleTrackSelector {
                    track.tpcNClsShared(),
                    track.itsClusterMap(),
                    track.itsClusterSizes(),
-
-                   singletrackselector::packInTable<singletrackselector::binning::dca>(track.dcaXY()),
-                   singletrackselector::packInTable<singletrackselector::binning::dca>(track.dcaZ()),
+                   singletrackselector::packSymmetric<singletrackselector::binning::dca>(track.dcaXY()),
+                   singletrackselector::packSymmetric<singletrackselector::binning::dca>(track.dcaZ()),
                    singletrackselector::packInTable<singletrackselector::binning::chi2>(track.tpcChi2NCl()),
                    singletrackselector::packInTable<singletrackselector::binning::chi2>(track.itsChi2NCl()),
                    singletrackselector::packInTable<singletrackselector::binning::rowsOverFindable>(track.tpcCrossedRowsOverFindableCls()),
-                   singletrackselector::packInTable<singletrackselector::binning::nsigma>(track.tofNSigmaPi()),
-                   singletrackselector::packInTable<singletrackselector::binning::nsigma>(track.tpcNSigmaPi()),
-                   singletrackselector::packInTable<singletrackselector::binning::nsigma>(track.tofNSigmaKa()),
-                   singletrackselector::packInTable<singletrackselector::binning::nsigma>(track.tpcNSigmaKa()),
-                   singletrackselector::packInTable<singletrackselector::binning::nsigma>(track.tofNSigmaPr()),
-                   singletrackselector::packInTable<singletrackselector::binning::nsigma>(track.tpcNSigmaPr()),
-                   singletrackselector::packInTable<singletrackselector::binning::nsigma>(track.tofNSigmaDe()),
-                   singletrackselector::packInTable<singletrackselector::binning::nsigma>(track.tpcNSigmaDe()),
-                   singletrackselector::packInTable<singletrackselector::binning::nsigma>(track.tofNSigmaHe()),
-                   singletrackselector::packInTable<singletrackselector::binning::nsigma>(track.tpcNSigmaHe()));
+                   singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tofNSigmaPi()),
+                   singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tpcNSigmaPi()),
+                   singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tofNSigmaKa()),
+                   singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tpcNSigmaKa()),
+                   singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tofNSigmaPr()),
+                   singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tpcNSigmaPr()),
+                   singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tofNSigmaDe()),
+                   singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tpcNSigmaDe()),
+                   singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tofNSigmaHe()),
+                   singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tpcNSigmaHe()));
 
           tableRowExtra(track.tpcInnerParam(),
                         track.tpcSignal(),
@@ -293,6 +292,7 @@ struct singleTrackSelector {
     if (fetchRate) {
       hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; // fetch IR
     }
+    int occupancy = collision.trackOccupancyInTimeRange();
 
     float centValue = -100.0f;
 
@@ -342,10 +342,9 @@ struct singleTrackSelector {
                    collision.posZ(),
                    d_bz);
 
-      tableRowCollExtra(collision.selection_bit(aod::evsel::kNoSameBunchPileup),
-                        collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV),
-                        collision.selection_bit(aod::evsel::kIsVertexITSTPC),
-                        hadronicRate);
+      tableRowCollExtra(collision.selection_raw(),
+                        hadronicRate,
+                        occupancy);
 
       fillTrackTables<false>(tracks);
     }
@@ -390,6 +389,11 @@ struct singleTrackSelector {
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
+    double hadronicRate = 0.;
+    if (fetchRate) {
+      hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; // fetch IR
+    }
+    int occupancy = collision.trackOccupancyInTimeRange();
 
     float centValue = -100.0f;
 
@@ -440,10 +444,9 @@ struct singleTrackSelector {
                    collision.posZ(),
                    d_bz);
 
-      tableRowCollExtra(collision.selection_bit(aod::evsel::kNoSameBunchPileup),
-                        collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV),
-                        collision.selection_bit(aod::evsel::kIsVertexITSTPC),
-                        0.);
+      tableRowCollExtra(collision.selection_raw(),
+                        hadronicRate,
+                        occupancy);
 
       fillTrackTables<true>(tracks);
 
@@ -488,7 +491,7 @@ struct singleTrackSelector {
       return;
     }
 
-    if (abs(mcCollision.posZ()) > _vertexZ) {
+    if (std::fabs(mcCollision.posZ()) > _vertexZ) {
       return;
     }
 

@@ -32,7 +32,7 @@ using namespace o2::framework::expressions;
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels>;
 using MyCollision = MyCollisions::iterator;
 
-using MyPrimaryElectrons = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronsPrefilterBit>;
+using MyPrimaryElectrons = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronsCov, aod::EMPrimaryElectronsPrefilterBit>;
 using MyPrimaryElectron = MyPrimaryElectrons::iterator;
 
 struct EMPhotonFilter {

@@ -132,11 +132,16 @@ struct DGFilterRun3 {
   // using MFs = aod::MFTTracks;
   using FWs = aod::FwdTracks;
 
+  // filter for global tracks
+  Filter globalTrackFilter = requireGlobalTrackInFilter();
+  using globalTracks = soa::Filtered<TCs>;
+
   void process(CC const& collision,
                BCs const& bcs,
                TCs& tracks,
                // MFs& mfttracks,
                FWs& fwdtracks,
+               globalTracks& goodTracks,
                aod::Zdcs& /*zdcs*/,
                aod::FT0s& /*ft0s*/,
                aod::FV0As& /*fv0as*/,
@@ -162,6 +167,7 @@ struct DGFilterRun3 {
 
     // apply DG selection
     auto isDGEvent = dgSelector.IsSelected(diffCuts, collision, bcRange, tracks, fwdtracks);
+    LOGF(debug, "isDGEvent %d", isDGEvent);
 
     // update after cut histogram
     registry.fill(HIST("stat/aftercuts"), isDGEvent + 2);
@@ -226,8 +232,9 @@ struct DGFilterRun3 {
     // collisions
     registry.fill(HIST("collisions/tracksAll"), tracks.size());
     registry.fill(HIST("collisions/PVTracksAll"), collision.numContrib());
-    Partition<TCs> goodTracks = requireGlobalTrackInFilter();
-    goodTracks.bindTable(tracks);
+    // Partition<TCs> goodTracks = requireGlobalTrackInFilter();
+    // goodTracks.bindTable(tracks);
+    // LOGF(info, "# good tracks %d", goodTracks.size());
     registry.get<TH1>(HIST("collisions/globalTracksAll"))->Fill(goodTracks.size());
     auto netCharge = udhelpers::netCharge<true>(tracks);
     registry.fill(HIST("collisions/netChargeAll"), collision.numContrib(), netCharge);

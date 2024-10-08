@@ -61,7 +61,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
-using recoStraCollisions = soa::Join<aod::StraCollisions, aod::StraEvSels, aod::StraCents, aod::StraRawCents_003, aod::StraCollLabels>;
+using recoStraCollisions = soa::Join<aod::StraCollisions, aod::StraEvSels, aod::StraCents, aod::StraRawCents, aod::StraCollLabels>;
 using reconstructedV0s = soa::Join<aod::V0CoreMCLabels, aod::V0Cores, aod::V0FoundTags, aod::V0MCCollRefs, aod::V0CollRefs, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas>;
 using reconstructedV0sNoMC = soa::Join<aod::V0Cores, aod::V0Extras>;
 
@@ -280,161 +280,165 @@ struct findableStudy {
       // Detailed analysis level
       bool topoV0RadiusOK = false, topoV0RadiusMaxOK = false, topoV0CosPAOK = false, topoDcaPosToPVOK = false, topoDcaNegToPVOK = false, topoDcaV0DauOK = false;
 
-      auto coll = recv0.straCollision_as<recoStraCollisions>();
-      int mcCollID_fromCollision = coll.straMCCollisionId();
-      int mcCollID_fromV0 = recv0.straMCCollisionId();
-      if (mcCollID_fromCollision != mcCollID_fromV0) {
-        hasWrongCollision = true;
+      if (recv0.has_straCollision()) {
+        auto coll = recv0.straCollision_as<recoStraCollisions>();
+        int mcCollID_fromCollision = coll.straMCCollisionId();
+        int mcCollID_fromV0 = recv0.straMCCollisionId();
+        if (mcCollID_fromCollision != mcCollID_fromV0) {
+          hasWrongCollision = true;
+        } else {
+          // if this is a correctly collision-associated V0, take centrality from here
+          // N.B.: this could still be an issue if collision <-> mc collision is imperfect
+          centrality = coll.centFT0C();
+        }
+
+        if (recv0.isFound()) {
+          hasBeenFoundAny = true; // includes also ITS-only, checked before skipITSonly check
+        }
+
+        if (
+          (pTrack.hasTPC() && pTrack.hasITS()) ||     // full global track
+          (pTrack.hasTPC() && pTrack.hasTOF()) ||     // TPC + TOF is accepted
+          (pTrack.hasTPC() && pTrack.hasTRD()) ||     // TPC + TRD is accepted
+          (!pTrack.hasTPC() && pTrack.itsNCls() >= 6) // long ITS-only
+        ) {
+          pTrackOK = true; // for this V0 only
+        }
+        if (
+          (nTrack.hasTPC() && nTrack.hasITS()) ||
+          (nTrack.hasTPC() && nTrack.hasTOF()) || // TPC + TOF is accepted
+          (nTrack.hasTPC() && nTrack.hasTRD()) || // TPC + TRD is accepted
+          (!nTrack.hasTPC() && nTrack.itsNCls() >= 6)) {
+          nTrackOK = true; // for this V0 only
+        }
+
+        if (pTrackOK && nTrackOK)
+          hasBeenAcceptablyTracked = true;
+
+        // cross-check correctness of new getter
+        if (pTrack.hasITSTracker() && (pTrack.hasITS() && pTrack.itsChi2PerNcl() < -1e-3)) {
+          LOGF(fatal, "Positive track: inconsistent outcome of ITS tracker getter and explicit check!");
+        }
+        if (nTrack.hasITSTracker() && (pTrack.hasITS() && nTrack.itsChi2PerNcl() < -1e-3)) {
+          LOGF(fatal, "Negative track: inconsistent outcome of ITS tracker getter and explicit check!");
+        }
+        if (pTrack.hasITSAfterburner() && (pTrack.hasITS() && pTrack.itsChi2PerNcl() > -1e-3)) {
+          LOGF(fatal, "Positive track: inconsistent outcome of ITS tracker getter and explicit check!");
+        }
+        if (nTrack.hasITSAfterburner() && (pTrack.hasITS() && nTrack.itsChi2PerNcl() > -1e-3)) {
+          LOGF(fatal, "Negative track: inconsistent outcome of ITS tracker getter and explicit check!");
+        }
+
+        // Cross-checking consistency: found should be a subset of nTrack, pTrack OK
+        histos.fill(HIST("hFoundVsTracksOK"), nTrackOK && pTrackOK, recv0.isFound());
+
+        // encode conditions of tracks
+        uint8_t positiveTrackCode = ((uint8_t(pTrack.hasTPC()) << hasTPC) |
+                                     (uint8_t(pTrack.hasITSTracker()) << hasITSTracker) |
+                                     (uint8_t(pTrack.hasITSAfterburner()) << hasITSAfterburner) |
+                                     (uint8_t(pTrack.hasTRD()) << hasTRD) |
+                                     (uint8_t(pTrack.hasTOF()) << hasTOF));
+
+        uint8_t negativeTrackCode = ((uint8_t(nTrack.hasTPC()) << hasTPC) |
+                                     (uint8_t(nTrack.hasITSTracker()) << hasITSTracker) |
+                                     (uint8_t(nTrack.hasITSAfterburner()) << hasITSAfterburner) |
+                                     (uint8_t(nTrack.hasTRD()) << hasTRD) |
+                                     (uint8_t(nTrack.hasTOF()) << hasTOF));
+
+        if (pTrackOK && nTrackOK && ptmc > 1.0 && ptmc < 1.1) {
+          // this particular V0 reco entry has been acceptably tracked. Do bookkeeping
+          histos.fill(HIST("h2dTrackPropAcceptablyTracked"), positiveTrackCode, negativeTrackCode, centrality);
+        }
+
+        // determine if this V0 would go to analysis or not
+        if (recv0.isFound() && pTrackOK && nTrackOK) { // hack to avoid type check; only interested in found type 1
+          // at this stage, this should be REALLY mostly unique (unless you switch skipITSonly to false or so)
+          // ... but we will cross-check this assumption (hNRecoV0sWithTPC, h2dPtVsCentrality_FoundInLoop)
+          if (pTrack.hasTPC() && !pTrack.hasITS() && !pTrack.hasTRD() && !pTrack.hasTOF()) {
+            LOGF(info, "Positive track is TPC only and this is a found V0. Puzzling!");
+          }
+          if (nTrack.hasTPC() && !nTrack.hasITS() && !nTrack.hasTRD() && !nTrack.hasTOF()) {
+            LOGF(info, "Negative track is TPC only and this is a found V0. Puzzling!");
+          }
+
+          nCandidatesWithTPC++;
+          hasBeenFound = true;
+          histos.fill(HIST("h2dPtVsCentrality_FoundInLoop"), centrality, ptmc);
+          if (ptmc > 1.0 && ptmc < 1.1) {
+            histos.fill(HIST("h2dTrackPropFound"), positiveTrackCode, negativeTrackCode, centrality);
+          }
+
+          uint64_t selMap = v0data::computeReconstructionBitmap(recv0, pTrack, nTrack, coll, recv0.yLambda(), recv0.yK0Short(), v0Selections);
+
+          // Consider in all cases
+          selMap = selMap | (uint64_t(1) << v0data::selConsiderK0Short) | (uint64_t(1) << v0data::selConsiderLambda) | (uint64_t(1) << v0data::selConsiderAntiLambda);
+
+          // selection checker: ensure this works on subset of actual svertexer-findable
+          bool validTrackProperties = v0Selections->verifyMask(selMap, maskTrackProperties) && pTrackOK && nTrackOK;
+          bool validTopology = v0Selections->verifyMask(selMap, maskTopological);
+
+          uint64_t thisSpeciesMask = maskK0ShortSpecific;
+          if (pdgCode == 3122)
+            thisSpeciesMask = maskLambdaSpecific;
+          if (pdgCode == -3122)
+            thisSpeciesMask = maskAntiLambdaSpecific;
+          // add other species masks as necessary
+
+          bool validThisSpecies = v0Selections->verifyMask(selMap, thisSpeciesMask);
+
+          // specific selection (not cumulative)
+          topoV0RadiusOK = v0Selections->verifyMask(selMap, uint64_t(1) << v0data::selRadius);
+          topoV0RadiusMaxOK = v0Selections->verifyMask(selMap, uint64_t(1) << v0data::selRadiusMax);
+          topoV0CosPAOK = v0Selections->verifyMask(selMap, uint64_t(1) << v0data::selCosPA);
+          topoDcaPosToPVOK = v0Selections->verifyMask(selMap, uint64_t(1) << v0data::selDCAPosToPV);
+          topoDcaNegToPVOK = v0Selections->verifyMask(selMap, uint64_t(1) << v0data::selDCANegToPV);
+          topoDcaV0DauOK = v0Selections->verifyMask(selMap, uint64_t(1) << v0data::selDCAV0Dau);
+          // trackTPCRowsOK = v0Selections->verifyMask(selMap, (uint64_t(1) << v0data::selPosGoodTPCTrack) | (uint64_t(1) << v0data::selNegGoodTPCTrack) );
+
+          // uint64_t tpcPidMask = (uint64_t(1) << v0data::selTPCPIDPositivePion) | (uint64_t(1) << v0data::selTPCPIDNegativePion);
+          // if(pdgCode==3122)
+          //   tpcPidMask = (uint64_t(1) << v0data::selTPCPIDPositiveProton) | (uint64_t(1) << v0data::selTPCPIDNegativePion);
+          // if(pdgCode==-3122)
+          //   tpcPidMask = (uint64_t(1) << v0data::selTPCPIDPositivePion) | (uint64_t(1) << v0data::selTPCPIDNegativeProton);
+
+          // trackTPCPIDOK = v0Selections->verifyMask(selMap, tpcPidMask);
+
+          // Broad level
+          if (validTrackProperties) {
+            histos.fill(HIST("h2dPtVsCentrality_PassesTrackQuality"), centrality, ptmc);
+            if (ptmc > 1.0 && ptmc < 1.1) {
+              histos.fill(HIST("h2dTrackPropAnalysisTracks"), positiveTrackCode, negativeTrackCode, centrality);
+            }
+          }
+          if (validTrackProperties && validTopology) {
+            histos.fill(HIST("h2dPtVsCentrality_PassesTopological"), centrality, ptmc);
+            if (ptmc > 1.0 && ptmc < 1.1) {
+              histos.fill(HIST("h2dTrackPropAnalysisTopo"), positiveTrackCode, negativeTrackCode, centrality);
+            }
+          }
+          if (validTrackProperties && validTopology && validThisSpecies) {
+            histos.fill(HIST("h2dPtVsCentrality_PassesThisSpecies"), centrality, ptmc);
+            if (ptmc > 1.0 && ptmc < 1.1) {
+              histos.fill(HIST("h2dTrackPropAnalysisSpecies"), positiveTrackCode, negativeTrackCode, centrality);
+            }
+          }
+
+          // topological
+          if (validTrackProperties && validThisSpecies && topoV0RadiusOK)
+            histos.fill(HIST("h2dPtVsCentrality_V0Radius"), centrality, ptmc);
+          if (validTrackProperties && validThisSpecies && topoV0RadiusMaxOK)
+            histos.fill(HIST("h2dPtVsCentrality_V0RadiusMax"), centrality, ptmc);
+          if (validTrackProperties && validThisSpecies && topoV0CosPAOK)
+            histos.fill(HIST("h2dPtVsCentrality_V0CosPA"), centrality, ptmc);
+          if (validTrackProperties && validThisSpecies && topoDcaPosToPVOK)
+            histos.fill(HIST("h2dPtVsCentrality_DcaPosToPV"), centrality, ptmc);
+          if (validTrackProperties && validThisSpecies && topoDcaNegToPVOK)
+            histos.fill(HIST("h2dPtVsCentrality_DcaNegToPV"), centrality, ptmc);
+          if (validTrackProperties && validThisSpecies && topoDcaV0DauOK)
+            histos.fill(HIST("h2dPtVsCentrality_DcaV0Dau"), centrality, ptmc);
+        }
       } else {
-        // if this is a correctly collision-associated V0, take centrality from here
-        // N.B.: this could still be an issue if collision <-> mc collision is imperfect
-        centrality = coll.centFT0C();
-      }
-
-      if (recv0.isFound()) {
-        hasBeenFoundAny = true; // includes also ITS-only, checked before skipITSonly check
-      }
-
-      if (
-        (pTrack.hasTPC() && pTrack.hasITS()) ||     // full global track
-        (pTrack.hasTPC() && pTrack.hasTOF()) ||     // TPC + TOF is accepted
-        (pTrack.hasTPC() && pTrack.hasTRD()) ||     // TPC + TRD is accepted
-        (!pTrack.hasTPC() && pTrack.itsNCls() >= 6) // long ITS-only
-      ) {
-        pTrackOK = true; // for this V0 only
-      }
-      if (
-        (nTrack.hasTPC() && nTrack.hasITS()) ||
-        (nTrack.hasTPC() && nTrack.hasTOF()) || // TPC + TOF is accepted
-        (nTrack.hasTPC() && nTrack.hasTRD()) || // TPC + TRD is accepted
-        (!nTrack.hasTPC() && nTrack.itsNCls() >= 6)) {
-        nTrackOK = true; // for this V0 only
-      }
-
-      if (pTrackOK && nTrackOK)
-        hasBeenAcceptablyTracked = true;
-
-      // cross-check correctness of new getter
-      if (pTrack.hasITSTracker() && (pTrack.hasITS() && pTrack.itsChi2PerNcl() < -1e-3)) {
-        LOGF(fatal, "Positive track: inconsistent outcome of ITS tracker getter and explicit check!");
-      }
-      if (nTrack.hasITSTracker() && (pTrack.hasITS() && nTrack.itsChi2PerNcl() < -1e-3)) {
-        LOGF(fatal, "Negative track: inconsistent outcome of ITS tracker getter and explicit check!");
-      }
-      if (pTrack.hasITSAfterburner() && (pTrack.hasITS() && pTrack.itsChi2PerNcl() > -1e-3)) {
-        LOGF(fatal, "Positive track: inconsistent outcome of ITS tracker getter and explicit check!");
-      }
-      if (nTrack.hasITSAfterburner() && (pTrack.hasITS() && nTrack.itsChi2PerNcl() > -1e-3)) {
-        LOGF(fatal, "Negative track: inconsistent outcome of ITS tracker getter and explicit check!");
-      }
-
-      // Cross-checking consistency: found should be a subset of nTrack, pTrack OK
-      histos.fill(HIST("hFoundVsTracksOK"), nTrackOK && pTrackOK, recv0.isFound());
-
-      // encode conditions of tracks
-      uint8_t positiveTrackCode = ((uint8_t(pTrack.hasTPC()) << hasTPC) |
-                                   (uint8_t(pTrack.hasITSTracker()) << hasITSTracker) |
-                                   (uint8_t(pTrack.hasITSAfterburner()) << hasITSAfterburner) |
-                                   (uint8_t(pTrack.hasTRD()) << hasTRD) |
-                                   (uint8_t(pTrack.hasTOF()) << hasTOF));
-
-      uint8_t negativeTrackCode = ((uint8_t(nTrack.hasTPC()) << hasTPC) |
-                                   (uint8_t(nTrack.hasITSTracker()) << hasITSTracker) |
-                                   (uint8_t(nTrack.hasITSAfterburner()) << hasITSAfterburner) |
-                                   (uint8_t(nTrack.hasTRD()) << hasTRD) |
-                                   (uint8_t(nTrack.hasTOF()) << hasTOF));
-
-      if (pTrackOK && nTrackOK && ptmc > 1.0 && ptmc < 1.1) {
-        // this particular V0 reco entry has been acceptably tracked. Do bookkeeping
-        histos.fill(HIST("h2dTrackPropAcceptablyTracked"), positiveTrackCode, negativeTrackCode, centrality);
-      }
-
-      // determine if this V0 would go to analysis or not
-      if (recv0.isFound() && pTrackOK && nTrackOK) { // hack to avoid type check; only interested in found type 1
-        // at this stage, this should be REALLY mostly unique (unless you switch skipITSonly to false or so)
-        // ... but we will cross-check this assumption (hNRecoV0sWithTPC, h2dPtVsCentrality_FoundInLoop)
-        if (pTrack.hasTPC() && !pTrack.hasITS() && !pTrack.hasTRD() && !pTrack.hasTOF()) {
-          LOGF(info, "Positive track is TPC only and this is a found V0. Puzzling!");
-        }
-        if (nTrack.hasTPC() && !nTrack.hasITS() && !nTrack.hasTRD() && !nTrack.hasTOF()) {
-          LOGF(info, "Negative track is TPC only and this is a found V0. Puzzling!");
-        }
-
-        nCandidatesWithTPC++;
-        hasBeenFound = true;
-        histos.fill(HIST("h2dPtVsCentrality_FoundInLoop"), centrality, ptmc);
-        if (ptmc > 1.0 && ptmc < 1.1) {
-          histos.fill(HIST("h2dTrackPropFound"), positiveTrackCode, negativeTrackCode, centrality);
-        }
-
-        uint64_t selMap = v0data::computeReconstructionBitmap(recv0, pTrack, nTrack, coll, recv0.yLambda(), recv0.yK0Short(), v0Selections);
-
-        // Consider in all cases
-        selMap = selMap | (uint64_t(1) << v0data::selConsiderK0Short) | (uint64_t(1) << v0data::selConsiderLambda) | (uint64_t(1) << v0data::selConsiderAntiLambda);
-
-        // selection checker: ensure this works on subset of actual svertexer-findable
-        bool validTrackProperties = v0Selections->verifyMask(selMap, maskTrackProperties) && pTrackOK && nTrackOK;
-        bool validTopology = v0Selections->verifyMask(selMap, maskTopological);
-
-        uint64_t thisSpeciesMask = maskK0ShortSpecific;
-        if (pdgCode == 3122)
-          thisSpeciesMask = maskLambdaSpecific;
-        if (pdgCode == -3122)
-          thisSpeciesMask = maskAntiLambdaSpecific;
-        // add other species masks as necessary
-
-        bool validThisSpecies = v0Selections->verifyMask(selMap, thisSpeciesMask);
-
-        // specific selection (not cumulative)
-        topoV0RadiusOK = v0Selections->verifyMask(selMap, uint64_t(1) << v0data::selRadius);
-        topoV0RadiusMaxOK = v0Selections->verifyMask(selMap, uint64_t(1) << v0data::selRadiusMax);
-        topoV0CosPAOK = v0Selections->verifyMask(selMap, uint64_t(1) << v0data::selCosPA);
-        topoDcaPosToPVOK = v0Selections->verifyMask(selMap, uint64_t(1) << v0data::selDCAPosToPV);
-        topoDcaNegToPVOK = v0Selections->verifyMask(selMap, uint64_t(1) << v0data::selDCANegToPV);
-        topoDcaV0DauOK = v0Selections->verifyMask(selMap, uint64_t(1) << v0data::selDCAV0Dau);
-        // trackTPCRowsOK = v0Selections->verifyMask(selMap, (uint64_t(1) << v0data::selPosGoodTPCTrack) | (uint64_t(1) << v0data::selNegGoodTPCTrack) );
-
-        // uint64_t tpcPidMask = (uint64_t(1) << v0data::selTPCPIDPositivePion) | (uint64_t(1) << v0data::selTPCPIDNegativePion);
-        // if(pdgCode==3122)
-        //   tpcPidMask = (uint64_t(1) << v0data::selTPCPIDPositiveProton) | (uint64_t(1) << v0data::selTPCPIDNegativePion);
-        // if(pdgCode==-3122)
-        //   tpcPidMask = (uint64_t(1) << v0data::selTPCPIDPositivePion) | (uint64_t(1) << v0data::selTPCPIDNegativeProton);
-
-        // trackTPCPIDOK = v0Selections->verifyMask(selMap, tpcPidMask);
-
-        // Broad level
-        if (validTrackProperties) {
-          histos.fill(HIST("h2dPtVsCentrality_PassesTrackQuality"), centrality, ptmc);
-          if (ptmc > 1.0 && ptmc < 1.1) {
-            histos.fill(HIST("h2dTrackPropAnalysisTracks"), positiveTrackCode, negativeTrackCode, centrality);
-          }
-        }
-        if (validTrackProperties && validTopology) {
-          histos.fill(HIST("h2dPtVsCentrality_PassesTopological"), centrality, ptmc);
-          if (ptmc > 1.0 && ptmc < 1.1) {
-            histos.fill(HIST("h2dTrackPropAnalysisTopo"), positiveTrackCode, negativeTrackCode, centrality);
-          }
-        }
-        if (validTrackProperties && validTopology && validThisSpecies) {
-          histos.fill(HIST("h2dPtVsCentrality_PassesThisSpecies"), centrality, ptmc);
-          if (ptmc > 1.0 && ptmc < 1.1) {
-            histos.fill(HIST("h2dTrackPropAnalysisSpecies"), positiveTrackCode, negativeTrackCode, centrality);
-          }
-        }
-
-        // topological
-        if (validTrackProperties && validThisSpecies && topoV0RadiusOK)
-          histos.fill(HIST("h2dPtVsCentrality_V0Radius"), centrality, ptmc);
-        if (validTrackProperties && validThisSpecies && topoV0RadiusMaxOK)
-          histos.fill(HIST("h2dPtVsCentrality_V0RadiusMax"), centrality, ptmc);
-        if (validTrackProperties && validThisSpecies && topoV0CosPAOK)
-          histos.fill(HIST("h2dPtVsCentrality_V0CosPA"), centrality, ptmc);
-        if (validTrackProperties && validThisSpecies && topoDcaPosToPVOK)
-          histos.fill(HIST("h2dPtVsCentrality_DcaPosToPV"), centrality, ptmc);
-        if (validTrackProperties && validThisSpecies && topoDcaNegToPVOK)
-          histos.fill(HIST("h2dPtVsCentrality_DcaNegToPV"), centrality, ptmc);
-        if (validTrackProperties && validThisSpecies && topoDcaV0DauOK)
-          histos.fill(HIST("h2dPtVsCentrality_DcaV0Dau"), centrality, ptmc);
+        continue;
       }
     }
     histos.fill(HIST("hNRecoV0sWithTPC"), nCandidatesWithTPC);

@@ -9,6 +9,8 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
+add_subdirectory(Converters)
+
 o2physics_add_dpl_workflow(cascadebuilder
     SOURCES cascadebuilder.cxx
     PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore KFParticle::KFParticle O2Physics::MLCore
@@ -53,6 +55,12 @@ o2physics_add_dpl_workflow(hstrangecorrelationfilter
     SOURCES hStrangeCorrelationFilter.cxx
     PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(double-casc-tree-creator
+    SOURCES doubleCascTreeCreator.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::EventFilteringUtils
+    COMPONENT_NAME Analysis)
+
 
 o2physics_add_dpl_workflow(lambdakzerobuilder
     SOURCES lambdakzerobuilder.cxx
