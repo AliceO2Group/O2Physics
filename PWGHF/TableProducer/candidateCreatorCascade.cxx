@@ -512,7 +512,6 @@ struct HfCandidateCreatorCascadeMc {
         }
       }
 
-      indexRec = -1;
       int indexK0SRecoDecay = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughtersV0, kK0Short, std::array{+kPiPlus, -kPiPlus}, false, &sign, 1);
       if (indexK0SRecoDecay >= 0) { // we have already positively checked the K0s
         // then we check the Lc
