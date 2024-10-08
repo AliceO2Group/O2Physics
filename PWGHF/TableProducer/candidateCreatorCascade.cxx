@@ -584,7 +584,7 @@ struct HfCandidateCreatorCascadeMc {
             }
             for (const auto& daughterK0S : daughterK0.daughters_as<aod::McParticles>()) {
               if (daughterK0S.pdgCode() != kK0Short) {
-                  continue;
+                continue;
               }
               if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterK0S, kK0Short, std::array{+kPiPlus, -kPiPlus}, true)) {
                 flag = sign;
