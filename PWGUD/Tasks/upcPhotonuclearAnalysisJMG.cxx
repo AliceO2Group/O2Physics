@@ -77,6 +77,8 @@ struct upcPhotonuclearAnalysisJMG {
   Configurable<float> cutMyTPCNClsCrossedRowsOverNClsFindableMin{"cutMyTPCNClsCrossedRowsOverNClsFindableMin", 0.8f, {"My Track cut"}};
   Configurable<float> cutMyTPCNClsOverFindableNClsMin{"cutMyTPCNClsOverFindableNClsMin", 0.5f, {"My Track cut"}};
   Configurable<float> cutMyTPCChi2NclMax{"cutMyTPCChi2NclMax", 4.f, {"My Track cut"}};
+  // Declare configurables for correlations
+  Configurable<float> cfgTwoTrackCut{"cfgTwoTrackCut", -1, {"Two track cut"}};
 
   using FullSGUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::SGCollisions, aod::UDZdcsReduced>::iterator;
   using FullUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksFlags>;
@@ -86,6 +88,15 @@ struct upcPhotonuclearAnalysisJMG {
   OutputObj<CorrelationContainer> mixed{"mixedEvent"};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
+
+  PairCuts mPairCuts;
+
+  struct Config {
+    bool mPairCuts = false;
+    THn* mEfficiencyTrigger = nullptr;
+    THn* mEfficiencyAssociated = nullptr;
+    bool efficiencyLoaded = false;
+  } cfg;
 
   void init(InitContext const&)
   {
@@ -194,20 +205,6 @@ struct upcPhotonuclearAnalysisJMG {
     ccdb->setLocalObjectValidityChecking();
   }
 
-  int getMagneticField()
-  {
-    static o2::parameters::GRPObject* grpo = nullptr;
-    if (grpo == nullptr) {
-      grpo = ccdb->get<o2::parameters::GRPObject>("GLO/GRP/GRP");
-      if (grpo == nullptr) {
-        LOGF(fatal, "GRP object not found for timestamp %llu");
-        return 0;
-      }
-      LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %d kG", grpo->getNominalL3Field());
-    }
-    return grpo->getNominalL3Field();
-  }
-
   template <typename C>
   bool isGlobalCollisionCut(C const& collision)
   {
@@ -310,13 +307,51 @@ struct upcPhotonuclearAnalysisJMG {
     return true;
   }
 
+  template <CorrelationContainer::CFStep step, typename TTarget, typename TTracks1, typename TTracks2>
+  void fillCorrelationUPC(TTarget target, TTracks1& tracks1, TTracks2& tracks2, float multiplicity, float posZ, int magField, float eventWeight)
+  {
+    for (auto& track1: tracks1) {
+      for (auto& track2: tracks2) {
+        if constexpr (std::is_same<TTracks1, TTracks2>::value) {
+          if (track1.globalIndex() == track2.globalIndex()) {
+            continue;
+          }
+        }
+
+        if constexpr (std::is_same<TTracks1, TTracks2>::value) {
+          if constexpr (step >= CorrelationContainer::kCFStepReconstructed) {
+            if (cfg.mPairCuts && mPairCuts.conversionCuts(track1, track2)) {
+              continue;
+            }
+
+            if (cfgTwoTrackCut > 0 && mPairCuts.twoTrackCut(track1, track2, magField)) {
+              continue;
+            }
+          }
+        }
+
+        float associatedWeight = eventWeight;
+        float deltaPhi = phi(track1.px(), track1.py()) - phi(track2.px(), track2.py());
+        if (deltaPhi > 1.5f * PI) {
+          deltaPhi -= TwoPI;
+        }
+        if (deltaPhi < -PIHalf) {
+          deltaPhi += TwoPI;
+        }
+
+        //target->getPairHist()->Fill(step, eta(track1.px(), track1.py(), track1.pz()) - eta(track2.px(), track2.py(), track2.pz()), track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ, associatedWeight);
+
+      }
+    }
+  }
+
   void processSG(FullSGUDCollision const& reconstructedCollision, FullUDTracks const& reconstructedTracks)
   {
     histos.fill(HIST("Events/hCountCollisions"), 0);
     int SGside = reconstructedCollision.gapSide();
     int nTracksCharged = 0;
     float sumPt = 0;
-
+    int multiplicity = 0;
 
     if (isGlobalCollisionCut(reconstructedCollision) == false) {
       return;
@@ -327,7 +362,6 @@ struct upcPhotonuclearAnalysisJMG {
         if (isCollisionCutSG(reconstructedCollision, 0) == false) {
           return;
         }
-        std::cout << "Magnetic Field: " << getMagneticField() << std::endl;
         histos.fill(HIST("Events/hCountCollisions"), 1);
         histos.fill(HIST("Events/SGsideA/hEnergyZNA"), reconstructedCollision.energyCommonZNA());
         histos.fill(HIST("Events/SGsideA/hEnergyZNC"), reconstructedCollision.energyCommonZNC());
@@ -363,6 +397,8 @@ struct upcPhotonuclearAnalysisJMG {
             histos.fill(HIST("Tracks/SGsideA/hTrackITSNClsTPCCls"), track.tpcNClsFindable() - track.tpcNClsFindableMinusFound(), track.itsNCls());
           }
         }
+        multiplicity = nTracksCharged;
+        //fillCorrelationUPC<CorrelationContainer::kCFStepReconstructed>(same, reconstructedTracks, reconstructedTracks, multiplicity, reconstructedCollision.posZ(), 5, 1.0f);
         histos.fill(HIST("Events/SGsideA/hNch"), nTracksCharged);
         histos.fill(HIST("Events/SGsideA/hPtVSNch"), nTracksCharged, (sumPt / nTracksCharged));
         nTracksCharged = sumPt = 0;
