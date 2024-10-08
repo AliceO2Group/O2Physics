@@ -40,12 +40,10 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
 
-using v0Candidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0TOFPIDs>;
-
 struct strangederivedqa {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-    ConfigurableAxis axisNCollisions{"axisNCollisions", {50000, -0.5f, 49999.5f}, "collisions"};
+  ConfigurableAxis axisNCollisions{"axisNCollisions", {50000, -0.5f, 49999.5f}, "collisions"};
 
   void init(InitContext const&)
   {
@@ -58,9 +56,8 @@ struct strangederivedqa {
     auto h3 = histos.add<TH1>("hEventsPerDF", "hEventsPerDF", kTH1D, {axisNCollisions});
   }
 
-_____________________________________________
   // Real data processing - no MC subscription
-  void process(aod::StraCollisions const& collisions, v0Candidates const& fullV0s)
+  void process(aod::StraCollisions const& collisions, soa::Join<aod::V0CollRefs, aod::V0Cores> const& fullV0s)
   {
     histos.fill(HIST("hDFCounter"), 0.0f);
     histos.fill(HIST("hEventCounter"), 0.0, collisions.size());
