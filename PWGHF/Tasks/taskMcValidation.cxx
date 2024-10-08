@@ -207,6 +207,7 @@ struct HfTaskMcValidationGen {
     if (eventGeneratorType >= 0 && mcCollision.getSubGeneratorId() != eventGeneratorType) {
       return;
     }
+    registry.fill(HIST("hNevGen"), 1);
 
     // Slice the collisions table to get the collision info for the current MC collision
     float centrality{-1.f};
@@ -222,7 +223,6 @@ struct HfTaskMcValidationGen {
     if (rejectionMask != 0) {
       return;
     }
-    registry.fill(HIST("hNevGen"), 1);
 
     int cPerCollision = 0;
     int cBarPerCollision = 0;
@@ -514,7 +514,6 @@ struct HfTaskMcValidationRec {
   std::array<std::shared_ptr<TH1>, nChannels> histDeltaPt, histDeltaPx, histDeltaPy, histDeltaPz, histDeltaSecondaryVertexX, histDeltaSecondaryVertexY, histDeltaSecondaryVertexZ, histDeltaDecayLength;
   std::array<std::array<std::shared_ptr<TH2>, 2>, nChannels> histPtCentReco;
   std::array<std::array<std::array<std::shared_ptr<TH1>, 5>, 2>, nChannels> histPtDau, histEtaDau, histImpactParameterDau;
-  std::array<std::array<std::shared_ptr<TH1>, 2>, nChannels> histPtReco;
   std::array<std::shared_ptr<THnSparse>, 4> histOriginTracks;
   std::shared_ptr<TH2> histAmbiguousTracks, histTracks;
   std::shared_ptr<TH1> histContributors;
@@ -609,7 +608,6 @@ struct HfTaskMcValidationRec {
     std::array<double, 3> momDau1 = {candidate.pxProng1(),
                                      candidate.pyProng1(),
                                      candidate.pzProng1()};
-    histPtReco[whichHad][whichOrigin]->Fill(candidate.pt());
     histPtCentReco[whichHad][whichOrigin]->Fill(candidate.pt(), centrality);
     histPtDau[whichHad][whichOrigin][0]->Fill(RecoDecay::pt(momDau0));
     histEtaDau[whichHad][whichOrigin][0]->Fill(RecoDecay::eta(momDau0));
@@ -662,7 +660,6 @@ struct HfTaskMcValidationRec {
         histDeltaSecondaryVertexZ[iHad] = registryMesons.add<TH1>(Form("%s/histDeltaSecondaryVertexZ", particleNames[iHad].data()), Form("Sec. Vertex difference reco - MC (MC matched) - %s; #Delta z (cm); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaVtx});
         histDeltaDecayLength[iHad] = registryMesons.add<TH1>(Form("%s/histDeltaDecayLength", particleNames[iHad].data()), Form("Decay length difference reco - MC (%s); #Delta L (cm); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaVtx});
         for (auto iOrigin = 0; iOrigin < 2; ++iOrigin) {
-          histPtReco[iHad][iOrigin] = registryMesons.add<TH1>(Form("%s/histPtReco%s", particleNames[iHad].data(), originNames[iOrigin].data()), Form("Pt reco %s %s; #it{p}_{T}^{reco} (GeV/#it{c}); entries", originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {axisPtD});
           histPtCentReco[iHad][iOrigin] = registryMesons.add<TH2>(Form("%s/histPtCentReco%s", particleNames[iHad].data(), originNames[iOrigin].data()), Form("Pt Cent reco %s %s; #it{p}_{T}^{reco} (GeV/#it{c}); Centrality (%); entries", originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH2F, {axisPtD, axisCent});
           for (unsigned int iDau = 0; iDau < nDaughters[iHad]; ++iDau) {
             histPtDau[iHad][iOrigin][iDau] = registryMesons.add<TH1>(Form("%s/histPtDau%d%s", particleNames[iHad].data(), iDau, originNames[iOrigin].data()), Form("Daughter %d Pt reco - %s %s; #it{p}_{T}^{dau, reco} (GeV/#it{c}); entries", iDau, originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {axisPt});
@@ -680,7 +677,6 @@ struct HfTaskMcValidationRec {
         histDeltaSecondaryVertexZ[iHad] = registryBaryons.add<TH1>(Form("%s/histDeltaSecondaryVertexZ", particleNames[iHad].data()), Form("Sec. Vertex difference reco - MC (MC matched) - %s; #Delta z (cm); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaVtx});
         histDeltaDecayLength[iHad] = registryBaryons.add<TH1>(Form("%s/histDeltaDecayLength", particleNames[iHad].data()), Form("Decay length difference reco - MC (%s); #Delta L (cm); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaVtx});
         for (auto iOrigin = 0; iOrigin < 2; ++iOrigin) {
-          histPtReco[iHad][iOrigin] = registryBaryons.add<TH1>(Form("%s/histPtReco%s", particleNames[iHad].data(), originNames[iOrigin].data()), Form("Pt reco %s %s; #it{p}_{T}^{reco} (GeV/#it{c}); entries", originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {axisPtD});
           histPtCentReco[iHad][iOrigin] = registryBaryons.add<TH2>(Form("%s/histPtCentReco%s", particleNames[iHad].data(), originNames[iOrigin].data()), Form("Pt Cent reco %s %s; #it{p}_{T}^{reco} (GeV/#it{c}); Centrality (%); entries", originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH2F, {axisPtD, axisCent});
           for (unsigned int iDau = 0; iDau < nDaughters[iHad]; ++iDau) {
             histPtDau[iHad][iOrigin][iDau] = registryBaryons.add<TH1>(Form("%s/histPtDau%d%s", particleNames[iHad].data(), iDau, originNames[iOrigin].data()), Form("Daughter %d Pt reco - %s %s; #it{p}_{T}^{dau, reco} (GeV/#it{c}); entries", iDau, originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {axisPt});
