@@ -218,16 +218,20 @@ DECLARE_SOA_COLUMN(Ct, ct, float);            //! ct
 DECLARE_SOA_COLUMN(CosPA, cospa, float);
 DECLARE_SOA_COLUMN(DCADaughters, dcaDaughters, float); //! DCA among daughters
 DECLARE_SOA_COLUMN(DCACandToPV, dcaCandtopv, float);   //! DCA of the reconstructed track to pv
+DECLARE_SOA_COLUMN(VtxRadius, vtxRadius, float);       //! Radius of SV
 // kinematic infomation of daughter tracks
-DECLARE_SOA_COLUMN(PtProton, ptProton, float);       //! pT of the proton daughter
-DECLARE_SOA_COLUMN(EtaProton, etaProton, float);     //! eta of the proton daughter
-DECLARE_SOA_COLUMN(PhiProton, phiProton, float);     //! phi of the proton daughter
-DECLARE_SOA_COLUMN(PtPion, ptPion, float);           //! pT of the pion daughter
-DECLARE_SOA_COLUMN(EtaPion, etaPion, float);         //! eta of the pion daughter
-DECLARE_SOA_COLUMN(PhiPion, phiPion, float);         //! phi of the pion daughter
-DECLARE_SOA_COLUMN(PtBachelor, ptBachelor, float);   //! pT of the bachelor daughter
-DECLARE_SOA_COLUMN(EtaBachelor, etaBachelor, float); //! eta of the bachelor daughter
-DECLARE_SOA_COLUMN(PhiBachelor, phiBachelor, float); //! phi of the bachelor daughter
+DECLARE_SOA_COLUMN(PtProton, ptProton, float);             //! pT of the proton daughter
+DECLARE_SOA_COLUMN(EtaProton, etaProton, float);           //! eta of the proton daughter
+DECLARE_SOA_COLUMN(PhiProton, phiProton, float);           //! phi of the proton daughter
+DECLARE_SOA_COLUMN(RadiusProton, radiusProton, float);     //! radius of innermost hit of the proton daughter
+DECLARE_SOA_COLUMN(PtPion, ptPion, float);                 //! pT of the pion daughter
+DECLARE_SOA_COLUMN(EtaPion, etaPion, float);               //! eta of the pion daughter
+DECLARE_SOA_COLUMN(PhiPion, phiPion, float);               //! phi of the pion daughter
+DECLARE_SOA_COLUMN(RadiusPion, radiusPion, float);         //! radius of innermost hit of the pion daughter
+DECLARE_SOA_COLUMN(PtBachelor, ptBachelor, float);         //! pT of the bachelor daughter
+DECLARE_SOA_COLUMN(EtaBachelor, etaBachelor, float);       //! eta of the bachelor daughter
+DECLARE_SOA_COLUMN(PhiBachelor, phiBachelor, float);       //! phi of the bachelor daughter
+DECLARE_SOA_COLUMN(RadiusBachelor, radiusBachelor, float); //! radius of innermost hit of the bachelor daughter
 // track quality
 DECLARE_SOA_COLUMN(TPCNclusProton, tpcNclusProton, uint8_t);             //! number of TPC clusters of the proton daughter
 DECLARE_SOA_COLUMN(TPCNclusPion, tpcNclusPion, uint8_t);                 //! number of TPC clusters of the pion daughter
@@ -273,10 +277,11 @@ DECLARE_SOA_TABLE(Hyp3BodyCands, "AOD", "HYP3BODYCANDS",
                   hyp3body::CosPA,
                   hyp3body::DCADaughters,
                   hyp3body::DCACandToPV,
+                  hyp3body::VtxRadius,
                   // daughter tracks
-                  hyp3body::PtProton, hyp3body::EtaProton, hyp3body::PhiProton,
-                  hyp3body::PtPion, hyp3body::EtaPion, hyp3body::PhiPion,
-                  hyp3body::PtBachelor, hyp3body::EtaBachelor, hyp3body::PhiBachelor,
+                  hyp3body::PtProton, hyp3body::EtaProton, hyp3body::PhiProton, hyp3body::RadiusProton,
+                  hyp3body::PtPion, hyp3body::EtaPion, hyp3body::PhiPion, hyp3body::RadiusPion,
+                  hyp3body::PtBachelor, hyp3body::EtaBachelor, hyp3body::PhiBachelor, hyp3body::RadiusBachelor,
                   hyp3body::TPCNclusProton, hyp3body::TPCNclusPion, hyp3body::TPCNclusBachelor,
                   hyp3body::ITSNclusSizeProton, hyp3body::ITSNclusSizePion, hyp3body::ITSNclusSizeBachelor,
                   hyp3body::TPCNSigmaProton, hyp3body::TPCNSigmaPion, hyp3body::TPCNSigmaBachelor,
@@ -297,10 +302,11 @@ DECLARE_SOA_TABLE(MCHyp3BodyCands, "AOD", "MCHYP3BODYCANDS",
                   hyp3body::CosPA,
                   hyp3body::DCADaughters,
                   hyp3body::DCACandToPV,
+                  hyp3body::VtxRadius,
                   // daughter tracks
-                  hyp3body::PtProton, hyp3body::EtaProton, hyp3body::PhiProton,
-                  hyp3body::PtPion, hyp3body::EtaPion, hyp3body::PhiPion,
-                  hyp3body::PtBachelor, hyp3body::EtaBachelor, hyp3body::PhiBachelor,
+                  hyp3body::PtProton, hyp3body::EtaProton, hyp3body::PhiProton, hyp3body::RadiusProton,
+                  hyp3body::PtPion, hyp3body::EtaPion, hyp3body::PhiPion, hyp3body::RadiusPion,
+                  hyp3body::PtBachelor, hyp3body::EtaBachelor, hyp3body::PhiBachelor, hyp3body::RadiusBachelor,
                   hyp3body::TPCNclusProton, hyp3body::TPCNclusPion, hyp3body::TPCNclusBachelor,
                   hyp3body::ITSNclusSizeProton, hyp3body::ITSNclusSizePion, hyp3body::ITSNclusSizeBachelor,
                   hyp3body::TPCNSigmaProton, hyp3body::TPCNSigmaPion, hyp3body::TPCNSigmaBachelor,
