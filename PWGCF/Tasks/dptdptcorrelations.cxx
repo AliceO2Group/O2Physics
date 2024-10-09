@@ -168,7 +168,7 @@ struct DptDptCorrelationsTask {
     /// \brief Returns the delta eta value for the differential eta
     /// \param t1 the intended track one
     /// \param t2 the intended track two
-    /// \return the zero based bin index for delta eta
+    /// \return the delta eta value for delta eta
     ///
     /// WARNING: for performance reasons no checks are done about the consistency
     /// of tracks' eta and phi within the corresponding ranges so, it is suppossed
@@ -192,7 +192,7 @@ struct DptDptCorrelationsTask {
     /// \brief Returns the delta phi value for the differential phi
     /// \param t1 the intended track one
     /// \param t2 the intended track two
-    /// \return the zero based bin index for delta phi
+    /// \return the delta phi value within [-pi,pi] for delta phi
     ///
     /// WARNING: for performance reasons no checks are done about the consistency
     /// of tracks' eta and phi within the corresponding ranges so, it is suppossed
@@ -217,7 +217,9 @@ struct DptDptCorrelationsTask {
         deltaphi_ix += phibins;
       }
 
-      return deltaphilow + (deltaphi_ix + 0.5) * deltaphibinwidth;
+      float value = deltaphilow + (deltaphi_ix + 0.5) * deltaphibinwidth;
+
+      return (value < (deltaphiup - constants::math::PI)) ? value : value - constants::math::TwoPI;
     }
 
     /// \brief Returns the TH2 global bin for the differential histograms
@@ -490,7 +492,7 @@ struct DptDptCorrelationsTask {
                 /* only 12 combinations, 21 are exactly the same */
                 double invariantMass = std::sqrt(getInvMassSquared(track1, poimass[static_cast<int>(track1.trackacceptedid() / 2)], track2, poimass[static_cast<int>(track2.trackacceptedid() / 2)])) * 1000.0f;
                 fhInvMassDEta[track1.trackacceptedid()][track2.trackacceptedid()]->Fill(GetDEtaValue(track1, track2), invariantMass);
-                fhInvMassDPhi[track1.trackacceptedid()][track2.trackacceptedid()]->Fill(GetDPhiValue(track1, track2) - constants::math::PI, invariantMass);
+                fhInvMassDPhi[track1.trackacceptedid()][track2.trackacceptedid()]->Fill(GetDPhiValue(track1, track2), invariantMass);
               }
             }
           }
