@@ -517,16 +517,6 @@ struct HfDataCreatorCharmHadPiReduced {
                 pdgCodeProng0 = particleProng0.pdgCode();
                 pdgCodeProng1 = particleProng1.pdgCode();
                 pdgCodeProng2 = particleProng2.pdgCode();
-
-                // B+ → D0(bar) K+ → (K+ π-) K+
-                indexRec = RecoDecay::getMatchedMCRec(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2]}, Pdg::kBPlus, std::array{+kKPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
-                if (indexRec > -1) {
-                  // D0(bar) → K+ π-
-                  indexRec = RecoDecay::getMatchedMCRec(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1]}, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign, 1);
-                  if (indexRec > -1) {
-                    flag = sign * BIT(hf_cand_bplus::DecayTypeMc::OtherDecay);
-                  }
-                }
                 break;
               }
             }
