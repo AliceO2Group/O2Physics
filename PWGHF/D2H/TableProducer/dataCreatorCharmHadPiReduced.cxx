@@ -494,7 +494,7 @@ struct HfDataCreatorCharmHadPiReduced {
       }
       // additional checks for correlated backgrounds
       if (checkDecayTypeMc) {
-        // Partly reconstructed decays, i.e. the 3 prongs have a common b-hadron ancestor, or other 3-prongs decays with a D0
+        // Partly reconstructed decays, i.e. the 3 prongs have a common b-hadron ancestor
         // convention: final state particles are prong0,1,2
         if (!flag) {
           auto particleProng0 = vecDaughtersB[0].mcParticle();
