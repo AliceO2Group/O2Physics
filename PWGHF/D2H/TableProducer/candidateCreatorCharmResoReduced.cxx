@@ -241,7 +241,7 @@ struct HfCandidateCreatorCharmResoReduced {
         invMassD = candD.invMassAntiDstar();
       std::array<float, 3> pVecD = {candD.px(), candD.py(), candD.pz()};
       std::array<int, 3> dDaughtersIds = {candD.prong0Id(), candD.prong1Id(), candD.prong2Id()};
-      ;
+
       // loop on V0 candidates
       bool alreadyCounted{false};
       for (const auto& candV0 : candsV0) {
@@ -297,6 +297,8 @@ struct HfCandidateCreatorCharmResoReduced {
         }
         // Filling Output table
         rowCandidateReso(collision.globalIndex(),
+                         candD.globalIndex(),
+                         candV0.globalIndex(),
                          pVecD[0], pVecD[1], pVecD[2],
                          pVecV0[0], pVecV0[1], pVecV0[2],
                          invMassReso,

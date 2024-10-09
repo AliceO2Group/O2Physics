@@ -478,17 +478,14 @@ struct HfCandidateCreatorCascadeMc {
                         aod::McCollisions const& mcCollisions,
                         BCsInfo const&)
   {
-    int8_t sign = 0;
-    int8_t origin = 0;
-    int indexRec = -1;
-    std::vector<int> arrDaughLcIndex;
-    std::array<int, 3> arrDaughLcPDG;
-    std::array<int, 3> arrDaughLcPDGRef = {+kProton, +kPiPlus, -kPiPlus};
-
     // Match reconstructed candidates.
     rowCandidateCasc->bindExternalIndices(&tracks);
     for (const auto& candidate : *rowCandidateCasc) {
-      origin = 0;
+
+      int8_t sign = 0;
+      int8_t origin = 0;
+      int indexRec = -1;
+
       std::vector<int> idxBhadMothers{};
 
       const auto& bach = candidate.prong0_as<MyTracksWMc>();
@@ -515,14 +512,14 @@ struct HfCandidateCreatorCascadeMc {
         }
       }
 
-      RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersV0, kK0Short, std::array{+kPiPlus, -kPiPlus}, false, &sign, 1);
-      if (sign != 0) { // we have already positively checked the K0s
+      int indexK0SRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughtersV0, kK0Short, std::array{+kPiPlus, -kPiPlus}, false, &sign, 1);
+      if (indexK0SRec >= 0) { // we have already positively checked the K0s
         // then we check the Lc
-        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersLc, Pdg::kLambdaCPlus, std::array{+kProton, +kPiPlus, -kPiPlus}, true, &sign, 3); // 3-levels Lc --> p + K0 --> p + K0s --> p + pi+ pi-
+        indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughtersLc, Pdg::kLambdaCPlus, std::array{+kProton, +kPiPlus, -kPiPlus}, true, &sign, 3); // 3-levels Lc --> p + K0 --> p + K0s --> p + pi+ pi-
       }
 
       // Check whether the particle is non-prompt (from a b quark).
-      if (sign != 0) {
+      if (indexRec >= 0) {
         auto particle = mcParticles.rawIteratorAt(indexRec);
         origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
       }
@@ -562,7 +559,11 @@ struct HfCandidateCreatorCascadeMc {
 
       // Match generated particles.
       for (const auto& particle : mcParticlesPerMcColl) {
-        origin = 0;
+
+        int8_t sign = 0;
+        int8_t origin = 0;
+        int8_t flag = 0;
+
         std::vector<int> idxBhadMothers{};
         // Reject particles from background events
         if (particle.fromBackgroundEvent() && rejectBackground) {
@@ -570,35 +571,35 @@ struct HfCandidateCreatorCascadeMc {
           continue;
         }
         // checking if I have a Lc --> K0S + p
-        RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kLambdaCPlus, std::array{+kProton, +kK0Short}, false, &sign, 2);
+        RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, Pdg::kLambdaCPlus, std::array{+kProton, +kK0Short}, false, &sign, 2);
         if (sign == 0) { // now check for anti-Lc
-          RecoDecay::isMatchedMCGen(mcParticles, particle, -Pdg::kLambdaCPlus, std::array{-kProton, +kK0Short}, false, &sign, 2);
+          RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, -Pdg::kLambdaCPlus, std::array{-kProton, +kK0Short}, false, &sign, 2);
           sign = -sign;
         }
         if (sign != 0) {
-          arrDaughLcIndex.clear();
-          // checking that the final daughters (decay depth = 3) are p, pi+, pi-
-          RecoDecay::getDaughters(particle, &arrDaughLcIndex, arrDaughLcPDGRef, 3); // best would be to check the K0S daughters
-          if (arrDaughLcIndex.size() == 3) {
-            for (std::size_t iProng = 0; iProng < arrDaughLcIndex.size(); ++iProng) {
-              auto daughI = mcParticles.rawIteratorAt(arrDaughLcIndex[iProng]);
-              arrDaughLcPDG[iProng] = daughI.pdgCode();
+          // we check the K0S
+          for (const auto& daughterK0 : particle.daughters_as<aod::McParticles>()) {
+            if (std::abs(daughterK0.pdgCode()) != kK0) {
+              continue;
             }
-            if (!(arrDaughLcPDG[0] == sign * arrDaughLcPDGRef[0] && arrDaughLcPDG[1] == arrDaughLcPDGRef[1] && arrDaughLcPDG[2] == arrDaughLcPDGRef[2])) { // this should be the condition, first bach, then v0
-              sign = 0;
-            } else {
-              LOG(debug) << "Lc --> K0S+p found in MC table";
+            for (const auto& daughterK0S : daughterK0.daughters_as<aod::McParticles>()) {
+              if (daughterK0S.pdgCode() != kK0Short) {
+                continue;
+              }
+              if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterK0S, kK0Short, std::array{+kPiPlus, -kPiPlus}, true)) {
+                flag = sign;
+              }
             }
           }
         }
         // Check whether the particle is non-prompt (from a b quark).
-        if (sign != 0) {
+        if (flag != 0) {
           origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
         }
         if (origin == RecoDecay::OriginType::NonPrompt) {
-          rowMcMatchGen(sign, origin, idxBhadMothers[0]);
+          rowMcMatchGen(flag, origin, idxBhadMothers[0]);
         } else {
-          rowMcMatchGen(sign, origin, -1);
+          rowMcMatchGen(flag, origin, -1);
         }
       }
     }
