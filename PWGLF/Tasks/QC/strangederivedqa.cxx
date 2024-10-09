@@ -55,7 +55,7 @@ struct strangederivedqa {
 
     auto h2 = histos.add<TH2>("hEventCounter", "hEventCounter", kTH2D, {{1, -0.5f, 0.5f}, {3, -0.5f, 2.5f}});
     auto h3 = histos.add<TH2>("hEventsPerDF", "hEventsPerDF", kTH2D, {axisNCollisions, {3, -0.5f, 2.5f}});
-    auto h4 = histos.add<TH2>("V0sPerDF", "V0sPerDF", kTH2D, {axisNV0s, {3, -0.5f, 2.5f}});
+    auto h4 = histos.add<TH2>("hV0sPerDF", "hV0sPerDF", kTH2D, {axisNV0s, {3, -0.5f, 2.5f}});
 
     h2->GetYaxis()->SetBinLabel(1, "All");
     h2->GetYaxis()->SetBinLabel(2, "Ordered");
