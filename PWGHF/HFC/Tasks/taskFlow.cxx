@@ -70,7 +70,7 @@ struct HfTaskFlow {
   SliceCache cache;
 
   // =========================
-  //      using declarations : DATA 
+  //      using declarations : DATA
   // =========================
 
   using FilteredCollisionsWSelMult = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults>>;
@@ -89,14 +89,14 @@ struct HfTaskFlow {
   using FilteredMcParticles = soa::Filtered<aod::McParticles>;
   using TracksWDcaSelMC = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection, aod::McTrackLabels>>;
 
-  // Remnants, need Katarina's info 
+  // Remnants, need Katarina's info
   // using FilteredCollisionsWDcaSelMcLabels = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>>;
   // using FilteredTracksWDcaSelMcLabels = soa::Filtered<soa::Join<aod::Tracks, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels>>;
 
   // =========================
-  //      Filters & partitions : DATA 
+  //      Filters & partitions : DATA
   // =========================
-  
+
   //  HF candidate filter
   //  TODO: use Partition instead of filter
   Filter candidateFilter = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 ||
@@ -131,7 +131,7 @@ struct HfTaskFlow {
   // =========================
   //      Preslice : DATA
   // =========================
-  
+
   Preslice<aod::Tracks> dataPerCol = aod::track::collisionId;
 
   // =========================
@@ -141,8 +141,6 @@ struct HfTaskFlow {
   Preslice<aod::McParticles> mcTruthPerCol = aod::mcparticle::mcCollisionId;
   // Do I have to adapt this preslice to MC ? How does it work exactly ?
   // Preslice<aod::Tracks> mcRecPerCol = aod::track::collisionId;
-
-  
 
   //  configurables for containers
   ConfigurableAxis axisVertex{"axisVertex", {14, -7, 7}, "vertex axis for histograms"};
@@ -732,7 +730,7 @@ struct HfTaskFlow {
     TParticlePDG* pdgparticle = pdg->GetParticle(mcParticles.pdgCode());
     if (pdgparticle != nullptr) {
       if (pdgparticle->Charge() == 0) {
-          return false;
+        return false;
       }
     }
 
@@ -853,7 +851,6 @@ struct HfTaskFlow {
         fillingHFcontainer = true;
         invmass = hfHelper.invMassD0ToPiK(track1);
       }
-
 
       // From Katarina's code
       //  in case of MC-generated, do additional selection on MCparticles : charge and isPhysicalPrimary
@@ -1138,7 +1135,6 @@ struct HfTaskFlow {
   //    MONTE-CARLO : process same event correlations: TPC-TPC h-h case
   // =====================================
 
-
   void processSameTpcTpcChChmcREC(FilteredCollisionsWSelMultMC::iterator const& mcCollision,
                                   TracksWDcaSelMC const& mcTracks)
   {
@@ -1200,9 +1196,9 @@ struct HfTaskFlow {
     // TO-DO : fill correlation container for MC collisions that have a reconstructed collision
     // got rid of the second const auto for multPrimaryCharge0
     // This line below for sure induce that some plots are filled two times
-    //multPrimaryCharge0 = fillTpcTpcChChSameEventQaMc<CorrelationContainer::kCFStepVertex>(multiplicity, mcParticles);
-    //sameTPCTPCChChMC->fillEvent(multPrimaryCharge0, CorrelationContainer::kCFStepVertex);
-    //fillCorrelations<CorrelationContainer::kCFStepVertex>(sameTPCTPCChChMC, mcParticles, mcParticles, multPrimaryCharge0, mcCollision.posZ());
+    // multPrimaryCharge0 = fillTpcTpcChChSameEventQaMc<CorrelationContainer::kCFStepVertex>(multiplicity, mcParticles);
+    // sameTPCTPCChChMC->fillEvent(multPrimaryCharge0, CorrelationContainer::kCFStepVertex);
+    // fillCorrelations<CorrelationContainer::kCFStepVertex>(sameTPCTPCChChMC, mcParticles, mcParticles, multPrimaryCharge0, mcCollision.posZ());
   }
   PROCESS_SWITCH(HfTaskFlow, processSameTpcTpcChChmcGEN, "MONTE-CARLO : Process same-event correlations for TPC-TPC h-h case", true);
 
