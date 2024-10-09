@@ -26,11 +26,13 @@ struct ThreePartCorr {
   // Histogram registry
   HistogramRegistry MECorrRegistry{"MECorrRegistry", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry SECorrRegistry{"SECorrRegistry", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
+  HistogramRegistry MCRegistry{"MCRegistry", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry QARegistry{"QARegistry", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
 
   // Collision filters
   Filter CollCent = aod::cent::centFT0C > 0.0f && aod::cent::centFT0C < 90.0f;
   Filter CollZvtx = nabs(aod::collision::posZ) < 7.0f;
+  Filter MCCollZvtx = nabs(aod::mccollision::posZ) < 7.0f;
 
   // V0 filters
   Filter V0Pt = aod::v0data::pt > 0.6f && aod::v0data::pt < 12.0f;
@@ -40,13 +42,23 @@ struct ThreePartCorr {
   Filter TrackPt = aod::track::pt > 0.2f && aod::track::pt < 3.0f;
   Filter TrackEta = nabs(aod::track::eta) < 0.8f;
 
-  // Table aliases
+  // Track filters
+  Filter ParticlePt = aod::mcparticle::pt > 0.2f && aod::mcparticle::pt < 3.0f;
+  Filter ParticleEta = nabs(aod::mcparticle::eta) < 0.8f;
+
+  // Table aliases - Data
   using MyFilteredCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::CentFT0Cs>>;
   using MyFilteredCollision = MyFilteredCollisions::iterator;
   using MyFilteredV0s = soa::Filtered<aod::V0Datas>;
   using MyFilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra,
                                                    aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr,
                                                    aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFbeta>>;
+
+  // Table aliases - MC
+  using MyFilteredMCGenCollision = soa::Filtered<aod::McCollisions>::iterator;
+  using MyFilteredMCParticles = soa::Filtered<aod::McParticles>;
+  using MyFilteredMCRecCollision = soa::Filtered<soa::Join<aod::Collisions, aod::McCollisionLabels>>::iterator;
+  using MyFilteredMCTracks = soa::Filtered<soa::Join<aod::Tracks, aod::McTrackLabels>>;
 
   // Mixed-events binning policy
   SliceCache cache;
@@ -57,6 +69,9 @@ struct ThreePartCorr {
   BinningType CollBinning{{ConfCentBins, ConfZvtxBins}, true};
   Pair<MyFilteredCollisions, MyFilteredV0s, MyFilteredTracks, BinningType> pair{CollBinning, 5, -1, &cache};
 
+  // Process configurables
+  Configurable<bool> FilterSwitch{"FilterSwitch", false, "Switch for the FakeV0Filter function"};
+  
   // Particle masses
   Double_t massLambda = 1.115683;
   Double_t DGaussSigma = 0.0021;
@@ -77,7 +92,8 @@ struct ThreePartCorr {
     const AxisSpec ZvtxAxis{ConfZvtxBins};
     const AxisSpec PhiAxis{36, (-1. / 2) * M_PI, (3. / 2) * M_PI};
     const AxisSpec EtaAxis{32, -1.52, 1.52};
-    const AxisSpec PtAxis{120, 0, 12};
+    const AxisSpec V0PtAxis{114, 0.6, 12};
+    const AxisSpec TrackPtAxis{28, 0.2, 3};
     const AxisSpec LambdaInvMassAxis{100, 1.08, 1.16};
 
     QARegistry.add("hTrackPt", "hTrackPt", {HistType::kTH1D, {{100, 0, 4}}});
@@ -85,7 +101,7 @@ struct ThreePartCorr {
     QARegistry.add("hTrackPhi", "hTrackPhi", {HistType::kTH1D, {{100, (-1. / 2) * M_PI, (5. / 2) * M_PI}}});
     QARegistry.add("hEventCentrality", "hEventCentrality", {HistType::kTH1D, {{CentralityAxis}}});
     QARegistry.add("hEventZvtx", "hEventZvtx", {HistType::kTH1D, {{ZvtxAxis}}});
-
+    
     QARegistry.add("hdEdx", "hdEdx", {HistType::kTH2D, {{56, 0.2, 3.0}, {180, 20, 200}}});
     QARegistry.add("hdEdxPion", "hdEdxPion", {HistType::kTH2D, {{56, 0.2, 3.0}, {180, 20, 200}}});
     QARegistry.add("hdEdxKaon", "hdEdxKaon", {HistType::kTH2D, {{56, 0.2, 3.0}, {180, 20, 200}}});
@@ -98,8 +114,21 @@ struct ThreePartCorr {
     QARegistry.add("hNSigmaKaon", "hNSigmaKaon", {HistType::kTH2D, {{201, -5.025, 5.025}, {201, -5.025, 5.025}}});
     QARegistry.add("hNSigmaProton", "hNSigmaProton", {HistType::kTH2D, {{201, -5.025, 5.025}, {201, -5.025, 5.025}}});
 
-    QARegistry.add("hInvMassLambda", "hInvMassLambda", {HistType::kTH3D, {{LambdaInvMassAxis}, {PtAxis}, {CentralityAxis}}});
-    QARegistry.add("hInvMassAntiLambda", "hInvMassAntiLambda", {HistType::kTH3D, {{LambdaInvMassAxis}, {PtAxis}, {CentralityAxis}}});
+    QARegistry.add("hInvMassLambda", "hInvMassLambda", {HistType::kTH3D, {{LambdaInvMassAxis}, {V0PtAxis}, {CentralityAxis}}});
+    QARegistry.add("hInvMassAntiLambda", "hInvMassAntiLambda", {HistType::kTH3D, {{LambdaInvMassAxis}, {V0PtAxis}, {CentralityAxis}}});
+
+    MCRegistry.add("hGenPionP", "hGenMomPionP", {HistType::kTH1D, {TrackPtAxis}});
+    MCRegistry.add("hGenPionN", "hGenMomPionN", {HistType::kTH1D, {TrackPtAxis}});
+    MCRegistry.add("hGenKaonP", "hGenMomKaonP", {HistType::kTH1D, {TrackPtAxis}});
+    MCRegistry.add("hGenKaonN", "hGenMomKaonN", {HistType::kTH1D, {TrackPtAxis}});
+    MCRegistry.add("hGenProtonP", "hGenMomProtonP", {HistType::kTH1D, {TrackPtAxis}});
+    MCRegistry.add("hGenProtonN", "hGenMomProtonN", {HistType::kTH1D, {TrackPtAxis}});
+    MCRegistry.add("hRecPionP", "hRecMomPionP", {HistType::kTH1D, {TrackPtAxis}});
+    MCRegistry.add("hRecPionN", "hRecMomPionN", {HistType::kTH1D, {TrackPtAxis}});
+    MCRegistry.add("hRecKaonP", "hRecMomKaonP", {HistType::kTH1D, {TrackPtAxis}});
+    MCRegistry.add("hRecKaonN", "hRecMomKaonN", {HistType::kTH1D, {TrackPtAxis}});
+    MCRegistry.add("hRecProtonP", "hRecMomProtonP", {HistType::kTH1D, {TrackPtAxis}});
+    MCRegistry.add("hRecProtonN", "hRecMomProtonN", {HistType::kTH1D, {TrackPtAxis}});
 
     SECorrRegistry.add("hSameLambdaPion_SGNL", "Same-event #Lambda - #pi correlator (SGNL region)", {HistType::kTHnSparseD, {{PhiAxis}, {EtaAxis}, {CentralityAxis}, {ZvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
     SECorrRegistry.add("hSameLambdaPion_SB", "Same-event #Lambda - #pi correlator (SB region)", {HistType::kTHnSparseD, {{PhiAxis}, {EtaAxis}, {CentralityAxis}, {ZvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
@@ -172,19 +201,19 @@ struct ThreePartCorr {
               DeltaEta = trigger.eta() - associate.eta();
 
               if (CandMass >= massLambda - 4 * DGaussSigma && CandMass <= massLambda + 4 * DGaussSigma) {
-                if (A_PID[0] == 0) { // Pions
+                if (A_PID[0] == 0.0) { // Pions
                   SECorrRegistry.fill(HIST("hSameLambdaPion_SGNL"), DeltaPhi, DeltaEta, collision.centFT0C(), collision.posZ(), T_Sign, associate.sign());
-                } else if (A_PID[0] == 1) { // Kaons
+                } else if (A_PID[0] == 1.0) { // Kaons
                   SECorrRegistry.fill(HIST("hSameLambdaKaon_SGNL"), DeltaPhi, DeltaEta, collision.centFT0C(), collision.posZ(), T_Sign, associate.sign());
-                } else if (A_PID[0] == 2) { // Protons
+                } else if (A_PID[0] == 2.0) { // Protons
                   SECorrRegistry.fill(HIST("hSameLambdaProton_SGNL"), DeltaPhi, DeltaEta, collision.centFT0C(), collision.posZ(), T_Sign, associate.sign());
                 }
               } else if (CandMass >= massLambda - 8 * DGaussSigma && CandMass <= massLambda + 8 * DGaussSigma) {
-                if (A_PID[0] == 0) { // Pions
+                if (A_PID[0] == 0.0) { // Pions
                   SECorrRegistry.fill(HIST("hSameLambdaPion_SB"), DeltaPhi, DeltaEta, collision.centFT0C(), collision.posZ(), T_Sign, associate.sign());
-                } else if (A_PID[0] == 1) { // Kaons
+                } else if (A_PID[0] == 1.0) { // Kaons
                   SECorrRegistry.fill(HIST("hSameLambdaKaon_SB"), DeltaPhi, DeltaEta, collision.centFT0C(), collision.posZ(), T_Sign, associate.sign());
-                } else if (A_PID[0] == 2) { // Protons
+                } else if (A_PID[0] == 2.0) { // Protons
                   SECorrRegistry.fill(HIST("hSameLambdaProton_SB"), DeltaPhi, DeltaEta, collision.centFT0C(), collision.posZ(), T_Sign, associate.sign());
                 }
               }
@@ -195,12 +224,9 @@ struct ThreePartCorr {
     }
     // End of the V0-Track Correlations
   }
-  PROCESS_SWITCH(ThreePartCorr, processSame, "Process same-event correlations", true);
 
-  void processMixed(MyFilteredCollisions const& collisions, MyFilteredV0s const& v0s, MyFilteredTracks const& tracks)
+  void processMixed(MyFilteredCollisions const&, MyFilteredV0s const&, MyFilteredTracks const&)
   {
-
-    LOGF(info, "Input data Collisions %d, V0s %d, Tracks %d ", collisions.size(), v0s.size(), tracks.size());
 
     // Start of the Mixed-events Correlations
     for (const auto& [coll_1, v0_1, coll_2, track_2] : pair) {
@@ -220,19 +246,19 @@ struct ThreePartCorr {
             DeltaEta = trigger.eta() - associate.eta();
 
             if (CandMass >= massLambda - 4 * DGaussSigma && CandMass <= massLambda + 4 * DGaussSigma) {
-              if (A_PID[0] == 0) { // Pions
+              if (A_PID[0] == 0.0) { // Pions
                 MECorrRegistry.fill(HIST("hMixLambdaPion_SGNL"), DeltaPhi, DeltaEta, coll_1.centFT0C(), coll_1.posZ(), T_Sign, associate.sign());
-              } else if (A_PID[0] == 1) { // Kaons
+              } else if (A_PID[0] == 1.0) { // Kaons
                 MECorrRegistry.fill(HIST("hMixLambdaKaon_SGNL"), DeltaPhi, DeltaEta, coll_1.centFT0C(), coll_1.posZ(), T_Sign, associate.sign());
-              } else if (A_PID[0] == 2) { // Protons
+              } else if (A_PID[0] == 2.0) { // Protons
                 MECorrRegistry.fill(HIST("hMixLambdaProton_SGNL"), DeltaPhi, DeltaEta, coll_1.centFT0C(), coll_1.posZ(), T_Sign, associate.sign());
               }
             } else if (CandMass >= massLambda - 8 * DGaussSigma && CandMass <= massLambda + 8 * DGaussSigma) {
-              if (A_PID[0] == 0) { // Pions
+              if (A_PID[0] == 0.0) { // Pions
                 MECorrRegistry.fill(HIST("hMixLambdaPion_SB"), DeltaPhi, DeltaEta, coll_1.centFT0C(), coll_1.posZ(), T_Sign, associate.sign());
-              } else if (A_PID[0] == 1) { // Kaons
+              } else if (A_PID[0] == 1.0) { // Kaons
                 MECorrRegistry.fill(HIST("hMixLambdaKaon_SB"), DeltaPhi, DeltaEta, coll_1.centFT0C(), coll_1.posZ(), T_Sign, associate.sign());
-              } else if (A_PID[0] == 2) { // Protons
+              } else if (A_PID[0] == 2.0) { // Protons
                 MECorrRegistry.fill(HIST("hMixLambdaProton_SB"), DeltaPhi, DeltaEta, coll_1.centFT0C(), coll_1.posZ(), T_Sign, associate.sign());
               }
             }
@@ -242,7 +268,57 @@ struct ThreePartCorr {
     }
     // End of the Mixed-events Correlations
   }
+
+  void processMCGen(MyFilteredMCGenCollision const&, MyFilteredMCParticles const& particles)
+  {
+
+    for (const auto& particle : particles) {
+      
+      if (particle.pdgCode() == 211) { // Pos pions
+	MCRegistry.fill(HIST("hGenPionP"), particle.pt());
+      } else if (particle.pdgCode() == -211) { // Neg pions
+	MCRegistry.fill(HIST("hGenPionN"), particle.pt());
+      } else if (particle.pdgCode() == 310) { // Pos kaons
+	MCRegistry.fill(HIST("hGenKaonP"), particle.pt());
+      } else if (particle.pdgCode() == -310) { // Neg kaons
+	MCRegistry.fill(HIST("hGenKaonN"), particle.pt());
+      } else if (particle.pdgCode() == 2212) { // Pos protons
+	MCRegistry.fill(HIST("hGenProtonP"), particle.pt());
+      } else if (particle.pdgCode() == -2212) { // Neg protons
+	MCRegistry.fill(HIST("hGenProtonN"), particle.pt());
+      }
+    }   
+  }
+
+  void processMCRec(MyFilteredMCRecCollision const&, MyFilteredMCTracks const& tracks, aod::McCollisions const&, aod::McParticles const&)
+  {
+
+    for (const auto& track : tracks) {
+      if (!track.has_mcParticle()) {
+	continue;
+      }
+
+      auto particle = track.mcParticle();
+      if (particle.pdgCode() == 211) { // Pos pions
+	MCRegistry.fill(HIST("hRecPionP"), particle.pt());
+      } else if (particle.pdgCode() == -211) { // Neg pions
+	MCRegistry.fill(HIST("hRecPionN"), particle.pt());
+      } else if (particle.pdgCode() == 310) { // Pos kaons
+	MCRegistry.fill(HIST("hRecKaonP"), particle.pt());
+      } else if (particle.pdgCode() == -310) { // Neg kaons
+	MCRegistry.fill(HIST("hRecKaonN"), particle.pt());
+      } else if (particle.pdgCode() == 2212) { // Pos protons
+	MCRegistry.fill(HIST("hRecProtonP"), particle.pt());
+      } else if (particle.pdgCode() == -2212) { // Neg protons
+	MCRegistry.fill(HIST("hRecProtonN"), particle.pt());
+      }
+    }
+  }   
+
+  PROCESS_SWITCH(ThreePartCorr, processSame, "Process same-event correlations", true);
   PROCESS_SWITCH(ThreePartCorr, processMixed, "Process mixed-event correlations", true);
+  PROCESS_SWITCH(ThreePartCorr, processMCGen, "Process Monte-Carlo, generator level", false);
+  PROCESS_SWITCH(ThreePartCorr, processMCRec, "Process Monte-Carlo, reconstructed level", false);
 
   //================================================================================================================================================================================================================
 
@@ -276,7 +352,7 @@ struct ThreePartCorr {
       NSigmaTOF[1] = Track.tofNSigmaKa();
       NSigmaTOF[2] = Track.tofNSigmaPr();
     }
-
+    
     NSigma[0] = TMath::Sqrt(pow(NSigmaTPC[0], 2) + pow(NSigmaTOF[0], 2));
     NSigma[1] = TMath::Sqrt(pow(NSigmaTPC[1], 2) + pow(NSigmaTOF[1], 2));
     NSigma[2] = TMath::Sqrt(pow(NSigmaTPC[2], 2) + pow(NSigmaTOF[2], 2));
@@ -291,7 +367,7 @@ struct ThreePartCorr {
       ID[0] = 2.0;
       ID[1] = NSigma[2];
     }
-
+	
     return ID;
   }
 
@@ -345,29 +421,32 @@ struct ThreePartCorr {
   Bool_t FakeV0Filter(const V0Cand& V0, const TrackCand& Track)
   {
 
-    TLorentzVector Daughter, Associate;
-    if (TrackPID(Track)[0] == 1.0) { // Kaons
-      return kTRUE;
-    } else if (V0Sign(V0) == 1 && TrackPID(Track)[0] == 0 && Track.sign() == -1) { // Lambda - Pi_min
-      const auto& dTrack = V0.template posTrack_as<MyFilteredTracks>();
-      Daughter.SetPtEtaPhiM(dTrack.pt(), dTrack.eta(), dTrack.phi(), o2::constants::physics::MassProton);
-      Associate.SetPtEtaPhiM(Track.pt(), Track.eta(), Track.phi(), o2::constants::physics::MassPionCharged);
-    } else if (V0Sign(V0) == -1 && TrackPID(Track)[0] == 0 && Track.sign() == 1) { // Antilambda - Pi_plus
-      const auto& dTrack = V0.template negTrack_as<MyFilteredTracks>();
-      Daughter.SetPtEtaPhiM(dTrack.pt(), dTrack.eta(), dTrack.phi(), o2::constants::physics::MassProton);
-      Associate.SetPtEtaPhiM(Track.pt(), Track.eta(), Track.phi(), o2::constants::physics::MassPionCharged);
-    } else if (V0Sign(V0) == 1 && TrackPID(Track)[0] == 2 && Track.sign() == 1) { // Lambda - Proton
-      const auto& dTrack = V0.template negTrack_as<MyFilteredTracks>();
-      Daughter.SetPtEtaPhiM(dTrack.pt(), dTrack.eta(), dTrack.phi(), o2::constants::physics::MassPionCharged);
-      Associate.SetPtEtaPhiM(Track.pt(), Track.eta(), Track.phi(), o2::constants::physics::MassProton);
-    } else if (V0Sign(V0) == -1 && TrackPID(Track)[0] == 2 && Track.sign() == -1) { // Antilambda - Antiproton
-      const auto& dTrack = V0.template posTrack_as<MyFilteredTracks>();
-      Daughter.SetPtEtaPhiM(dTrack.pt(), dTrack.eta(), dTrack.phi(), o2::constants::physics::MassPionCharged);
-      Associate.SetPtEtaPhiM(Track.pt(), Track.eta(), Track.phi(), o2::constants::physics::MassProton);
-    }
-
-    if ((Daughter + Associate).M() >= massLambda - 4 * DGaussSigma && (Daughter + Associate).M() <= massLambda + 4 * DGaussSigma) {
-      return kFALSE;
+    if (FilterSwitch) {
+      
+      TLorentzVector Daughter, Associate;
+      if (TrackPID(Track)[0] == 1.0) { // Kaons
+	return kTRUE;
+      } else if (V0Sign(V0) == 1 && TrackPID(Track)[0] == 0.0 && Track.sign() == -1) { // Lambda - Pi_min
+	const auto& dTrack = V0.template posTrack_as<MyFilteredTracks>();
+	Daughter.SetPtEtaPhiM(dTrack.pt(), dTrack.eta(), dTrack.phi(), o2::constants::physics::MassProton);
+	Associate.SetPtEtaPhiM(Track.pt(), Track.eta(), Track.phi(), o2::constants::physics::MassPionCharged);
+      } else if (V0Sign(V0) == -1 && TrackPID(Track)[0] == 0.0 && Track.sign() == 1) { // Antilambda - Pi_plus
+	const auto& dTrack = V0.template negTrack_as<MyFilteredTracks>();
+	Daughter.SetPtEtaPhiM(dTrack.pt(), dTrack.eta(), dTrack.phi(), o2::constants::physics::MassProton);
+	Associate.SetPtEtaPhiM(Track.pt(), Track.eta(), Track.phi(), o2::constants::physics::MassPionCharged);
+      } else if (V0Sign(V0) == 1 && TrackPID(Track)[0] == 2.0 && Track.sign() == 1) { // Lambda - Proton
+	const auto& dTrack = V0.template negTrack_as<MyFilteredTracks>();
+	Daughter.SetPtEtaPhiM(dTrack.pt(), dTrack.eta(), dTrack.phi(), o2::constants::physics::MassPionCharged);
+	Associate.SetPtEtaPhiM(Track.pt(), Track.eta(), Track.phi(), o2::constants::physics::MassProton);
+      } else if (V0Sign(V0) == -1 && TrackPID(Track)[0] == 2.0 && Track.sign() == -1) { // Antilambda - Antiproton
+	const auto& dTrack = V0.template posTrack_as<MyFilteredTracks>();
+	Daughter.SetPtEtaPhiM(dTrack.pt(), dTrack.eta(), dTrack.phi(), o2::constants::physics::MassPionCharged);
+	Associate.SetPtEtaPhiM(Track.pt(), Track.eta(), Track.phi(), o2::constants::physics::MassProton);
+      }
+      
+      if ((Daughter + Associate).M() >= massLambda - 4 * DGaussSigma && (Daughter + Associate).M() <= massLambda + 4 * DGaussSigma) {
+	return kFALSE;
+      }
     }
 
     return kTRUE;
