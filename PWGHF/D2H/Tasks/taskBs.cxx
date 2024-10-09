@@ -155,9 +155,6 @@ struct HfTaskBs {
                TracksWithSel const&)
   {
     for (const auto& candidate : candidates) {
-      if (!TESTBIT(candidate.hfflag(), hf_cand_bs::DecayType::BsToDsPi)) {
-        continue;
-      }
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yBs(candidate)) > yCandRecoMax) {
         continue;
       }
@@ -194,9 +191,6 @@ struct HfTaskBs {
   {
     // MC rec
     for (const auto& candidate : candidates) {
-      if (!TESTBIT(candidate.hfflag(), hf_cand_bs::DecayType::BsToDsPi)) {
-        continue;
-      }
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yBs(candidate)) > yCandRecoMax) {
         continue;
       }
