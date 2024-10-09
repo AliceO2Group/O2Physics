@@ -1228,7 +1228,6 @@ struct strangeness_in_jets {
   }
   PROCESS_SWITCH(strangeness_in_jets, processK0s, "Process K0s", false);
 
-
   Preslice<aod::V0Datas> perCollisionV0 = o2::aod::v0data::collisionId;
   Preslice<aod::CascDataExt> perCollisionCasc = o2::aod::cascade::collisionId;
   Preslice<aod::McParticles> perMCCollision = o2::aod::mcparticle::mcCollisionId;
