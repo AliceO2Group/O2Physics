@@ -149,7 +149,7 @@ struct HfCorrelatorHfeHadrons {
 
         if (hTrack.globalIndex() == eTrack.globalIndex())
 
-          continue;
+           continue;
         // Apply Hadron cut
         if (!selAssoHadron(hTrack))
           continue;
