@@ -1772,7 +1772,7 @@ struct DileptonMC {
       fRegistry.fill(HIST("Event/norm/hCollisionCounter"), o2::aod::pwgem::dilepton::utils::eventhistogram::nbin_ev); // accepted
     } // end of collision loop
   }
-  PROCESS_SWITCH(DileptonMC, processNorm, "process normalization info", true);
+  PROCESS_SWITCH(DileptonMC, processNorm, "process normalization info", false);
 
   void processDummy(MyCollisions const&) {}
   PROCESS_SWITCH(DileptonMC, processDummy, "Dummy function", false);
