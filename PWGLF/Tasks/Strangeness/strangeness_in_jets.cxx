@@ -1334,7 +1334,7 @@ struct strangeness_in_jets {
             for (auto& particleMotherOfBach : bachParticle.mothers_as<aod::McParticles>()) {
               if (particleMotherOfNeg != particleMotherOfPos)
                 continue;
-              if (TMath::Abs(particleMotherOfNeg.pdgCode()) != 3122)// BUG!!!!
+              if (TMath::Abs(particleMotherOfNeg.pdgCode()) != 3122)
                 continue;
               if (!particleMotherOfBach.isPhysicalPrimary())
                 continue;
