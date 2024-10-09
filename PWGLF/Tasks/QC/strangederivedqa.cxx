@@ -44,6 +44,7 @@ struct strangederivedqa {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   ConfigurableAxis axisNCollisions{"axisNCollisions", {50000, -0.5f, 49999.5f}, "collisions"};
+  ConfigurableAxis axisNV0s{"axisNV0s", {50000, -0.5f, 49999.5f}, "V0s"};
 
   void init(InitContext const&)
   {
@@ -52,16 +53,28 @@ struct strangederivedqa {
     h->GetXaxis()->SetBinLabel(2, "Ordered");
     h->GetXaxis()->SetBinLabel(3, "Unordered");
 
-    auto h2 = histos.add<TH1>("hEventCounter", "hEventCounter", kTH1D, {{1, -0.5f, 0.5f}});
-    auto h3 = histos.add<TH1>("hEventsPerDF", "hEventsPerDF", kTH1D, {axisNCollisions});
+    auto h2 = histos.add<TH2>("hEventCounter", "hEventCounter", kTH1D, {{1, -0.5f, 0.5f}, {3, -0.5f, 2.5f}});
+    auto h3 = histos.add<TH2>("hEventsPerDF", "hEventsPerDF", kTH1D, {axisNCollisions, {3, -0.5f, 2.5f}});
+    auto h4 = histos.add<TH2>("V0sPerDF", "V0sPerDF", kTH1D, {axisNV0s, {3, -0.5f, 2.5f}});
+
+    h2->GetYaxis()->SetBinLabel(1, "All");
+    h2->GetYaxis()->SetBinLabel(2, "Ordered");
+    h2->GetYaxis()->SetBinLabel(3, "Unordered");
+    h3->GetYaxis()->SetBinLabel(1, "All");
+    h3->GetYaxis()->SetBinLabel(2, "Ordered");
+    h3->GetYaxis()->SetBinLabel(3, "Unordered");
+    h4->GetYaxis()->SetBinLabel(1, "All");
+    h4->GetYaxis()->SetBinLabel(2, "Ordered");
+    h4->GetYaxis()->SetBinLabel(3, "Unordered");
   }
 
   // Real data processing
   void processOriginal(aod::Collisions const& collisions, soa::Join<aod::V0Indices, aod::V0Cores> const& fullV0s)
   {
     histos.fill(HIST("hDFCounter"), 0.0f);
-    histos.fill(HIST("hEventCounter"), 0.0, collisions.size());
-    histos.fill(HIST("hEventsPerDF"), collisions.size());
+    histos.fill(HIST("hEventCounter"), 0.0f, 0.0f, collisions.size());
+    histos.fill(HIST("hEventsPerDF"), collisions.size(), 0.0f);
+    histos.fill(HIST("hV0sPerDF"), fullV0s.size(), 0.0f);
     bool ordered = true;
     int previousIndex = -100;
     for (auto const& v0 : fullV0s) {
@@ -71,9 +84,13 @@ struct strangederivedqa {
       previousIndex = v0.collisionId(); 
     }
     if(ordered){ 
-      histos.fill(HIST("hDFCounter"), 1.0f);
+      histos.fill(HIST("hEventCounter"), 0.0f, 1.0f, collisions.size());
+      histos.fill(HIST("hEventsPerDF"), collisions.size(), 1.0f);
+      histos.fill(HIST("hV0sPerDF"), fullV0s.size(), 1.0f);
     }else{ 
-      histos.fill(HIST("hDFCounter"), 2.0f);
+      histos.fill(HIST("hEventCounter"), 0.0f, 2.0f, collisions.size());
+      histos.fill(HIST("hEventsPerDF"), collisions.size(), 2.0f);
+      histos.fill(HIST("hV0sPerDF"), fullV0s.size(), 2.0f);
     }
   }
 
@@ -81,8 +98,9 @@ struct strangederivedqa {
   void processDerived(aod::StraCollisions const& collisions, soa::Join<aod::V0CollRefs, aod::V0Cores> const& fullV0s)
   {
     histos.fill(HIST("hDFCounter"), 0.0f);
-    histos.fill(HIST("hEventCounter"), 0.0, collisions.size());
-    histos.fill(HIST("hEventsPerDF"), collisions.size());
+    histos.fill(HIST("hEventCounter"), 0.0f, 0.0f, collisions.size());
+    histos.fill(HIST("hEventsPerDF"), collisions.size(), 0.0f);
+    histos.fill(HIST("hV0sPerDF"), fullV0s.size(), 0.0f);
     bool ordered = true;
     int previousIndex = -100;
     for (auto const& v0 : fullV0s) {
@@ -92,9 +110,13 @@ struct strangederivedqa {
       previousIndex = v0.straCollisionId(); 
     }
     if(ordered){ 
-      histos.fill(HIST("hDFCounter"), 1.0f);
+      histos.fill(HIST("hEventCounter"), 0.0f, 1.0f, collisions.size());
+      histos.fill(HIST("hEventsPerDF"), collisions.size(), 1.0f);
+      histos.fill(HIST("hV0sPerDF"), fullV0s.size(), 1.0f);
     }else{ 
-      histos.fill(HIST("hDFCounter"), 2.0f);
+      histos.fill(HIST("hEventCounter"), 0.0f, 2.0f, collisions.size());
+      histos.fill(HIST("hEventsPerDF"), collisions.size(), 2.0f);
+      histos.fill(HIST("hV0sPerDF"), fullV0s.size(), 2.0f);
     }
   }
 
