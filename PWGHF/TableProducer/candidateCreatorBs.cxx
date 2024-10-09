@@ -495,7 +495,7 @@ struct HfCandidateCreatorBsExpressions {
 
       rowMcMatchGen(flag);
     } // gen
-  }   // processMc
+  } // processMc
   PROCESS_SWITCH(HfCandidateCreatorBsExpressions, processMc, "Process MC", false);
 }; // struct
 
