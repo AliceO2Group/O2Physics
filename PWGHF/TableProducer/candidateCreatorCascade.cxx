@@ -264,10 +264,10 @@ struct HfCandidateCreatorCascade {
         if (df.process(trackV0, trackBach) == 0) {
           continue;
         } else {
-          // LOG(info) << "Vertexing succeeded for Lc candidate";
+          LOG(debug) << "Vertexing succeeded for Lc candidate";
         }
       } catch (const std::runtime_error& error) {
-        LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN cannot work, skipping the candidate.";
+        LOG(debug) << "Run time error found: " << error.what() << ". DCAFitterN cannot work, skipping the candidate.";
         hCandidates->Fill(SVFitting::Fail);
         continue;
       }
