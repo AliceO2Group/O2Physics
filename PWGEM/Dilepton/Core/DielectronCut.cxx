@@ -18,8 +18,6 @@
 
 ClassImp(DielectronCut);
 
-const char* DielectronCut::mCutNames[static_cast<int>(DielectronCut::DielectronCuts::kNCuts)] = {"Mee", "PairPtRange", "PairRapidityRange", "PairDCARange", "PhivPair", "TrackPtRange", "TrackEtaRange", "TPCNCls", "TPCCrossedRows", "TPCCrossedRowsOverNCls", "TPCChi2NDF", "TPCNsigmaEl", "TPCNsigmaMu", "TPCNsigmaPi", "TPCNsigmaKa", "TPCNsigmaPr", "TOFNsigmaEl", "TOFNsigmaMu", "TOFNsigmaPi", "TOFNsigmaKa", "TOFNsigmaPr", "DCA3Dsigma", "DCAxy", "DCAz", "ITSNCls", "ITSChi2NDF", "ITSClusterSize", "Prefilter"};
-
 const std::pair<int8_t, std::set<uint8_t>> DielectronCut::its_ib_any_Requirement = {1, {0, 1, 2}}; // hits on any ITS ib layers.
 const std::pair<int8_t, std::set<uint8_t>> DielectronCut::its_ib_1st_Requirement = {1, {0}};       // hit on 1st ITS ib layers.
 
@@ -52,10 +50,23 @@ void DielectronCut::SetMaxPhivPairMeeDep(std::function<float(float)> meeDepCut)
   mMaxPhivPairMeeDep = meeDepCut;
   LOG(info) << "Dielectron Cut, set max phiv pair mee dep: " << mMaxPhivPairMeeDep(0.02);
 }
+void DielectronCut::SetPhivPairRange(float min, float max)
+{
+  mMinPhivPair = min;
+  mMaxPhivPair = max;
+  LOG(info) << "Dielectron Cut, set phiv range: " << mMinPhivPair << " - " << mMaxPhivPair;
+}
 void DielectronCut::SelectPhotonConversion(bool flag)
 {
   mSelectPC = flag;
   LOG(info) << "Dielectron Cut, select photon conversion: " << mSelectPC;
+}
+void DielectronCut::SetMindEtadPhi(bool flag, float min_deta, float min_dphi)
+{
+  mApplydEtadPhi = flag;
+  mMinDeltaEta = min_deta;
+  mMinDeltaPhi = min_dphi;
+  LOG(info) << "Dielectron Cut, set apply deta-dphi cut: " << mApplydEtadPhi << " min_deta: " << mMinDeltaEta << " min_dphi: " << mMinDeltaPhi;
 }
 void DielectronCut::SetTrackPtRange(float minPt, float maxPt)
 {
@@ -68,6 +79,12 @@ void DielectronCut::SetTrackEtaRange(float minEta, float maxEta)
   mMinTrackEta = minEta;
   mMaxTrackEta = maxEta;
   LOG(info) << "Dielectron Cut, set track eta range: " << mMinTrackEta << " - " << mMaxTrackEta;
+}
+void DielectronCut::SetTrackPhiRange(float minPhi, float maxPhi)
+{
+  mMinTrackPhi = minPhi;
+  mMaxTrackPhi = maxPhi;
+  LOG(info) << "Dielectron Cut, set track phi range (rad.): " << mMinTrackPhi << " - " << mMaxTrackPhi;
 }
 void DielectronCut::SetMinNClustersTPC(int minNClustersTPC)
 {
@@ -103,30 +120,31 @@ void DielectronCut::SetChi2PerClusterITS(float min, float max)
   mMaxChi2PerClusterITS = max;
   LOG(info) << "Dielectron Cut, set chi2 per cluster ITS range: " << mMinChi2PerClusterITS << " - " << mMaxChi2PerClusterITS;
 }
-void DielectronCut::SetMeanClusterSizeITSob(float min, float max)
+void DielectronCut::SetMeanClusterSizeITS(float min, float max, float maxP)
 {
   mMinMeanClusterSizeITS = min;
   mMaxMeanClusterSizeITS = max;
+  mMaxP_ITSClusterSize = maxP;
   LOG(info) << "Dielectron Cut, set mean cluster size ITS range: " << mMinMeanClusterSizeITS << " - " << mMaxMeanClusterSizeITS;
 }
-void DielectronCut::SetDca3DRange(float min, float max)
+void DielectronCut::SetTrackDca3DRange(float min, float max)
 {
   mMinDca3D = min;
   mMaxDca3D = max;
   LOG(info) << "Dielectron Cut, set DCA 3D range in sigma: " << mMinDca3D << " - " << mMaxDca3D;
 }
-void DielectronCut::SetMaxDcaXY(float maxDcaXY)
+void DielectronCut::SetTrackMaxDcaXY(float maxDcaXY)
 {
   mMaxDcaXY = maxDcaXY;
   LOG(info) << "Dielectron Cut, set max DCA xy: " << mMaxDcaXY;
 }
-void DielectronCut::SetMaxDcaZ(float maxDcaZ)
+void DielectronCut::SetTrackMaxDcaZ(float maxDcaZ)
 {
   mMaxDcaZ = maxDcaZ;
   LOG(info) << "Dielectron Cut, set max DCA z: " << mMaxDcaZ;
 }
 
-void DielectronCut::SetMaxDcaXYPtDep(std::function<float(float)> ptDepCut)
+void DielectronCut::SetTrackMaxDcaXYPtDep(std::function<float(float)> ptDepCut)
 {
   mMaxDcaXYPtDep = ptDepCut;
   LOG(info) << "Dielectron Cut, set max DCA xy pt dep: " << mMaxDcaXYPtDep(1.0);
@@ -159,12 +177,11 @@ void DielectronCut::SetMuonExclusionTPC(bool flag)
   LOG(info) << "Dielectron Cut, set flag for muon exclusion in TPC: " << mMuonExclusionTPC;
 }
 
-void DielectronCut::SetTOFbetaRange(bool flag, float min, float max)
+void DielectronCut::SetTOFbetaRange(float min, float max)
 {
-  mApplyTOFbeta = flag;
   mMinTOFbeta = min;
   mMaxTOFbeta = max;
-  LOG(info) << "Dielectron Cut, set TOF beta rejection range: " << mMinTOFbeta << " - " << mMaxTOFbeta;
+  LOG(info) << "Dielectron Cut, set TOF beta range (TOFif): " << mMinTOFbeta << " - " << mMaxTOFbeta;
 }
 
 void DielectronCut::SetTPCNsigmaElRange(float min, float max)
@@ -233,6 +250,11 @@ void DielectronCut::SetMaxPinMuonTPConly(float max)
   mMaxPinMuonTPConly = max;
   LOG(info) << "Dielectron Cut, set max pin for Muon ID with TPC only: " << mMaxPinMuonTPConly;
 }
+void DielectronCut::SetMaxPinForPionRejectionTPC(float max)
+{
+  mMaxPinForPionRejectionTPC = max;
+  LOG(info) << "Dielectron Cut, set max pin for pion rejection in TPC: " << mMaxPinForPionRejectionTPC;
+}
 void DielectronCut::RequireITSibAny(bool flag)
 {
   mRequireITSibAny = flag;
@@ -242,39 +264,4 @@ void DielectronCut::RequireITSib1st(bool flag)
 {
   mRequireITSib1st = flag;
   LOG(info) << "Dielectron Cut, require ITS ib 1st: " << mRequireITSib1st;
-}
-
-void DielectronCut::print() const
-{
-  LOG(info) << "Dalitz EE Cut:";
-  for (int i = 0; i < static_cast<int>(DielectronCuts::kNCuts); i++) {
-    switch (static_cast<DielectronCuts>(i)) {
-      case DielectronCuts::kTrackPtRange:
-        LOG(info) << mCutNames[i] << " in [" << mMinTrackPt << ", " << mMaxTrackPt << "]";
-        break;
-      case DielectronCuts::kTrackEtaRange:
-        LOG(info) << mCutNames[i] << " in [" << mMinTrackEta << ", " << mMaxTrackEta << "]";
-        break;
-      case DielectronCuts::kTPCNCls:
-        LOG(info) << mCutNames[i] << " > " << mMinNClustersTPC;
-        break;
-      case DielectronCuts::kTPCCrossedRows:
-        LOG(info) << mCutNames[i] << " > " << mMinNCrossedRowsTPC;
-        break;
-      case DielectronCuts::kTPCCrossedRowsOverNCls:
-        LOG(info) << mCutNames[i] << " > " << mMinNCrossedRowsOverFindableClustersTPC;
-        break;
-      case DielectronCuts::kTPCChi2NDF:
-        LOG(info) << mCutNames[i] << " < " << mMaxChi2PerClusterTPC;
-        break;
-      case DielectronCuts::kDCAxy:
-        LOG(info) << mCutNames[i] << " < " << mMaxDcaXY;
-        break;
-      case DielectronCuts::kDCAz:
-        LOG(info) << mCutNames[i] << " < " << mMaxDcaZ;
-        break;
-      default:
-        LOG(fatal) << "Cut unknown!";
-    }
-  }
 }

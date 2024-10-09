@@ -372,17 +372,31 @@ DECLARE_SOA_TABLE(UDFwdIndices, "AOD", "UDFWDINDEX",
                   udfwdmatchindex::MFTTrackId);
 
 // Muon track quality details
-DECLARE_SOA_TABLE(UDFwdTracksExtra, "AOD", "UDFWDTRACKEXTRA",
-                  fwdtrack::TrackType,
+// Version with only MCH-MID tracks
+DECLARE_SOA_TABLE(UDFwdTracksExtra_000, "AOD", "UDFWDTRACKEXTRA",
                   fwdtrack::NClusters,
                   fwdtrack::PDca,
                   fwdtrack::RAtAbsorberEnd,
                   fwdtrack::Chi2,
                   fwdtrack::Chi2MatchMCHMID,
-                  fwdtrack::Chi2MatchMCHMFT,
                   fwdtrack::MCHBitMap,
                   fwdtrack::MIDBitMap,
                   fwdtrack::MIDBoards);
+
+// Version with global tracks
+DECLARE_SOA_TABLE_VERSIONED(UDFwdTracksExtra_001, "AOD", "UDFWDTRACKEXTRA", 1,
+                            fwdtrack::TrackType,
+                            fwdtrack::NClusters,
+                            fwdtrack::PDca,
+                            fwdtrack::RAtAbsorberEnd,
+                            fwdtrack::Chi2,
+                            fwdtrack::Chi2MatchMCHMID,
+                            fwdtrack::Chi2MatchMCHMFT,
+                            fwdtrack::MCHBitMap,
+                            fwdtrack::MIDBitMap,
+                            fwdtrack::MIDBoards);
+
+using UDFwdTracksExtra = UDFwdTracksExtra_001;
 
 using UDFwdTrack = UDFwdTracks::iterator;
 using UDFwdIndex = UDFwdIndices::iterator;

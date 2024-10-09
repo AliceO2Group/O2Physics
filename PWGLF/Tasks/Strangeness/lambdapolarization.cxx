@@ -87,6 +87,10 @@ struct lambdapolarization {
   Configurable<float> cfgCentSel{"cfgCentSel", 80., "Centrality selection"};
   Configurable<int> cfgCentEst{"cfgCentEst", 1, "Centrality estimator, 1: FT0C, 2: FT0M"};
 
+  Configurable<bool> cfgPVSel{"cfgPVSel", false, "Additional PV selection flag for syst"};
+  Configurable<float> cfgPV{"cfgPV", 8.0, "Additional PV selection range for syst"};
+  Configurable<bool> cfgAddEvtSelPileup{"cfgAddEvtSelPileup", false, "flag for additional pileup selection"};
+
   Configurable<float> cfgv0radiusMin{"cfgv0radiusMin", 1.2, "minimum decay radius"};
   Configurable<float> cfgDCAPosToPVMin{"cfgDCAPosToPVMin", 0.05, "minimum DCA to PV for positive track"};
   Configurable<float> cfgDCANegToPVMin{"cfgDCANegToPVMin", 0.2, "minimum DCA to PV for negative track"};
@@ -118,6 +122,10 @@ struct lambdapolarization {
   Configurable<bool> cfgShiftCorr{"cfgShiftCorr", false, "additional shift correction"};
   Configurable<bool> cfgShiftCorrDef{"cfgShiftCorrDef", false, "additional shift correction definition"};
   Configurable<std::string> cfgShiftPath{"cfgShiftPath", "Users/j/junlee/Qvector/QvecCalib/Shift", "Path for Shift"};
+
+  ConfigurableAxis massAxis{"massAxis", {30, 1.1, 1.13}, "Invariant mass axis"};
+  ConfigurableAxis ptAxis{"ptAxis", {VARIABLE_WIDTH, 0.2, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.5, 8.0, 10.0, 100.0}, "Transverse momentum bins"};
+  ConfigurableAxis centAxis{"centAxis", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 100}, "Centrality interval"};
 
   TF1* fMultPVCutLow = nullptr;
   TF1* fMultPVCutHigh = nullptr;
@@ -163,10 +171,7 @@ struct lambdapolarization {
 
   void init(o2::framework::InitContext&)
   {
-    AxisSpec massAxis = {100, 1.065, 1.165};
-    AxisSpec ptAxis = {100, 0.0, 10.0};
     AxisSpec cosAxis = {110, -1.05, 1.05};
-    AxisSpec centAxis = {8, 0.0, 80.0};
     AxisSpec centQaAxis = {80, 0.0, 80.0};
     AxisSpec epAxis = {6, 0.0, 2.0 * constants::math::PI};
     AxisSpec epQaAxis = {100, -1.0 * constants::math::PI, constants::math::PI};
@@ -271,6 +276,12 @@ struct lambdapolarization {
       return 0;
     }
     if (!collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
+      return 0;
+    }
+    if (cfgPVSel && std::abs(collision.posZ()) > cfgPV) {
+      return 0;
+    }
+    if (cfgAddEvtSelPileup && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       return 0;
     }
 

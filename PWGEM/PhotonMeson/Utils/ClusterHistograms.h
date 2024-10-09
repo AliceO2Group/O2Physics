@@ -30,17 +30,13 @@ void addClusterHistograms(HistogramRegistry* fRegistry, bool do2DQA)
   if (do2DQA) { // Check if 2D QA histograms were selected in em-qc task
     fRegistry->add("Cluster/before/hNCell", "#it{N}_{cells};N_{cells} (GeV);#it{E}_{cluster} (GeV)", kTH2F, {{51, -0.5, 50.5}, {200, 0, 20}}, true);
     fRegistry->add("Cluster/before/hM02", "Long ellipse axis;#it{M}_{02} (cm);#it{E}_{cluster} (GeV)", kTH2F, {{500, 0, 5}, {200, 0, 20}}, true);
-    fRegistry->add("Cluster/before/hM20", "Short ellipse axis;#it{M}_{20} (cm);#it{E}_{cluster} (GeV)", kTH2F, {{250, 0, 2.5}, {200, 0, 20}}, true);
     fRegistry->add("Cluster/before/hTime", "Cluster time;#it{t}_{cls} (ns);#it{E}_{cluster} (GeV)", kTH2F, {{100, -250, 250}, {200, 0, 20}}, true);
     fRegistry->add("Cluster/before/hCellTime", "Cell time;#it{t}_{cell} (ns);#it{E}_{cluster} (GeV)", kTH2F, {{100, -250, 250}, {200, 0, 20}}, true);
-    fRegistry->add("Cluster/before/hDistToBC", "distance to bad channel;#it{d};#it{E}_{cluster} (GeV)", kTH2F, {{100, 0, 1500}, {200, 0, 20}}, true);
   } else {
     fRegistry->add("Cluster/before/hNCell", "#it{N}_{cells};N_{cells} (GeV);#it{N}_{cluster}", kTH1F, {{51, -0.5, 50.5}}, true);
     fRegistry->add("Cluster/before/hM02", "Long ellipse axis;#it{M}_{02} (cm);#it{N}_{cluster}", kTH1F, {{500, 0, 5}}, true);
-    fRegistry->add("Cluster/before/hM20", "Short ellipse axis;#it{M}_{20} (cm);#it{N}_{cluster}", kTH1F, {{250, 0, 2.5}}, true);
     fRegistry->add("Cluster/before/hTime", "Cluster time;#it{t}_{cls} (ns);#it{N}_{cluster}", kTH1F, {{500, -250, 250}}, true);
     fRegistry->add("Cluster/before/hCellTime", "Cluster time;#it{t}_{cell} (ns);#it{N}_{cluster}", kTH1F, {{500, -250, 250}}, true);
-    fRegistry->add("Cluster/before/hDistToBC", "distance to bad channel;#it{d};#it{N}_{cluster}", kTH1F, {{100, 0, 1500}}, true);
   }
 
   auto hClusterQualityCuts = fRegistry->add<TH2>("Cluster/hClusterQualityCuts", "Energy at which clusters are removed by a given cut;;#it{E} (GeV)", kTH2F, {{8, -0.5, 7.5}, {500, 0, 50}}, true);
@@ -57,27 +53,23 @@ void addClusterHistograms(HistogramRegistry* fRegistry, bool do2DQA)
 }
 
 template <const int cls_id>
-void fillClusterHistograms(HistogramRegistry* fRegistry, SkimEMCCluster cluster, bool do2DQA)
+void fillClusterHistograms(HistogramRegistry* fRegistry, SkimEMCCluster cluster, bool do2DQA, float weight = 1.f)
 {
   static constexpr std::string_view cluster_types[2] = {"before/", "after/"};
-  fRegistry->fill(HIST("Cluster/") + HIST(cluster_types[cls_id]) + HIST("hE"), cluster.pt());
-  fRegistry->fill(HIST("Cluster/") + HIST(cluster_types[cls_id]) + HIST("hPt"), cluster.e());
-  fRegistry->fill(HIST("Cluster/") + HIST(cluster_types[cls_id]) + HIST("hEtaPhi"), cluster.eta(), cluster.phi());
+  fRegistry->fill(HIST("Cluster/") + HIST(cluster_types[cls_id]) + HIST("hE"), cluster.e(), weight);
+  fRegistry->fill(HIST("Cluster/") + HIST(cluster_types[cls_id]) + HIST("hPt"), cluster.pt(), weight);
+  fRegistry->fill(HIST("Cluster/") + HIST(cluster_types[cls_id]) + HIST("hEtaPhi"), cluster.eta(), cluster.phi(), weight);
   for (size_t itrack = 0; itrack < cluster.tracketa().size(); itrack++) { // Fill TrackEtaPhi histogram with delta phi and delta eta of all tracks saved in the vectors in skimmerGammaCalo.cxx
-    fRegistry->fill(HIST("Cluster/") + HIST(cluster_types[cls_id]) + HIST("hTrackEtaPhi"), cluster.tracketa()[itrack] - cluster.eta(), cluster.trackphi()[itrack] - cluster.phi());
+    fRegistry->fill(HIST("Cluster/") + HIST(cluster_types[cls_id]) + HIST("hTrackEtaPhi"), cluster.tracketa()[itrack] - cluster.eta(), cluster.trackphi()[itrack] - cluster.phi(), weight);
   }
   if (do2DQA) {
-    fRegistry->fill(HIST("Cluster/") + HIST(cluster_types[cls_id]) + HIST("hNCell"), cluster.nCells(), cluster.e());
-    fRegistry->fill(HIST("Cluster/") + HIST(cluster_types[cls_id]) + HIST("hM02"), cluster.m02(), cluster.e());
-    fRegistry->fill(HIST("Cluster/") + HIST(cluster_types[cls_id]) + HIST("hM20"), cluster.m20(), cluster.e());
-    fRegistry->fill(HIST("Cluster/") + HIST(cluster_types[cls_id]) + HIST("hTime"), cluster.time(), cluster.e());
-    fRegistry->fill(HIST("Cluster/") + HIST(cluster_types[cls_id]) + HIST("hDistToBC"), cluster.distanceToBadChannel(), cluster.e());
+    fRegistry->fill(HIST("Cluster/") + HIST(cluster_types[cls_id]) + HIST("hNCell"), cluster.nCells(), cluster.e(), weight);
+    fRegistry->fill(HIST("Cluster/") + HIST(cluster_types[cls_id]) + HIST("hM02"), cluster.m02(), cluster.e(), weight);
+    fRegistry->fill(HIST("Cluster/") + HIST(cluster_types[cls_id]) + HIST("hTime"), cluster.time(), cluster.e(), weight);
   } else {
-    fRegistry->fill(HIST("Cluster/") + HIST(cluster_types[cls_id]) + HIST("hNCell"), cluster.nCells());
-    fRegistry->fill(HIST("Cluster/") + HIST(cluster_types[cls_id]) + HIST("hM02"), cluster.m02());
-    fRegistry->fill(HIST("Cluster/") + HIST(cluster_types[cls_id]) + HIST("hM20"), cluster.m20());
-    fRegistry->fill(HIST("Cluster/") + HIST(cluster_types[cls_id]) + HIST("hTime"), cluster.time());
-    fRegistry->fill(HIST("Cluster/") + HIST(cluster_types[cls_id]) + HIST("hDistToBC"), cluster.distanceToBadChannel());
+    fRegistry->fill(HIST("Cluster/") + HIST(cluster_types[cls_id]) + HIST("hNCell"), cluster.nCells(), weight);
+    fRegistry->fill(HIST("Cluster/") + HIST(cluster_types[cls_id]) + HIST("hM02"), cluster.m02(), weight);
+    fRegistry->fill(HIST("Cluster/") + HIST(cluster_types[cls_id]) + HIST("hTime"), cluster.time(), weight);
   }
 }
 

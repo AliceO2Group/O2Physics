@@ -13,6 +13,7 @@
 /// \brief Reconstruction of Ξc± → (Ξ∓ → (Λ → p π∓) π∓) π± π± candidates
 ///
 /// \author Phil Lennart Stahlhut <phil.lennart.stahlhut@cern.ch>, Heidelberg University
+/// \author Carolina Reetz <c.reetz@cern.ch>, Heidelberg University
 /// \author Jinjoo Seo <jseo@cern.ch>, Heidelberg University
 
 #ifndef HomogeneousField
@@ -75,7 +76,8 @@ struct HfCandidateCreatorXicToXiPiPi {
   Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
   //  KFParticle
   Configurable<bool> constrainXicPlusToPv{"constrainXicPlusToPv", false, "Constrain XicPlus to PV"};
-  Configurable<int> kfConstructMethod{"kfConstructMethod", 0, "Construct method of XicPlus: 0 no mass constraint, 2 mass constraint"};
+  Configurable<bool> constrainXiToXicPlus{"constrainXiToXicPlus", false, "Constrain Xi to XicPlus"};
+  Configurable<int> kfConstructMethod{"kfConstructMethod", 2, "Construct method of XicPlus: 0 fast mathematics without constraint of fixed daughter particle masses, 2 daughter particle masses stay fixed in construction process"};
   Configurable<bool> rejDiffCollTrack{"rejDiffCollTrack", true, "Reject tracks coming from different collisions (effective only for KFParticle w/o derived data)"};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -410,28 +412,59 @@ struct HfCandidateCreatorXicToXiPiPi {
         continue;
       }
 
-      // topological constraint
-      if (constrainXicPlusToPv) {
-        kfXicPlus.SetProductionVertex(KFPV);
-      }
-      auto covMatrixXicPlus = kfXicPlus.CovarianceMatrix();
+      // get geometrical chi2 of XicPlus
+      float chi2GeoXicPlus = kfXicPlus.GetChi2() / kfXicPlus.GetNDF();
 
-      // transport daughter particles to XicPlus decay vertex
-      kfCharmBachelor0.TransportToParticle(kfXicPlus);
-      kfCharmBachelor1.TransportToParticle(kfXicPlus);
-      kfXi.TransportToParticle(kfXicPlus);
+      // topological constraint of Xic to PV
+      KFParticle kfXicPlusToPV = kfXicPlus;
+      kfXicPlusToPV.SetProductionVertex(KFPV);
+      float chi2topoXicPlusPV = kfXicPlusToPV.GetChi2() / kfXicPlusToPV.GetNDF();
+      if (constrainXicPlusToPv) {
+        kfXicPlus = kfXicPlusToPV;
+        kfXicPlus.TransportToDecayVertex();
+      }
+
+      // topological constraint of Xi to XicPlus
+      KFParticle kfXiToXicPlus = kfXi;
+      kfXiToXicPlus.SetProductionVertex(kfXicPlus);
+      float chi2topoXiToXicPlus = kfXiToXicPlus.GetChi2() / kfXiToXicPlus.GetNDF();
+      kfXiToXicPlus.TransportToDecayVertex();
+      if (constrainXiToXicPlus) {
+        KFParticle kfXicPlusWithXiToXicPlus;
+        const KFParticle* kfDaughtersXicPlusWithXiToXicPlus[3] = {&kfCharmBachelor0, &kfCharmBachelor1, &kfXiToXicPlus};
+        kfXicPlusWithXiToXicPlus.SetConstructMethod(kfConstructMethod);
+        try {
+          kfXicPlusWithXiToXicPlus.Construct(kfDaughtersXicPlusWithXiToXicPlus, 3);
+        } catch (std::runtime_error& e) {
+          LOG(debug) << "Failed to construct XicPlus with Xi connstrained to XicPlus: " << e.what();
+          continue;
+        }
+        kfXicPlus = kfXicPlusWithXiToXicPlus;
+      }
+
+      // get covariance matrix of XicPlus
+      auto covMatrixXicPlus = kfXicPlus.CovarianceMatrix();
 
       //---------------------calculate physical parameters of XicPlus candidate----------------------
       // sign of charm baryon
       int signXic = casc.sign() < 0 ? +1 : -1;
 
-      // get impact parameters of XicPlus daughters
+      // get updated daughter tracks after vertex fit
+      // after production vertex constraint the parameters of the particle are stored at the position of the production vertex
+      KFParticle kfCharmBachelor0Upd = kfCharmBachelor0;
+      KFParticle kfCharmBachelor1Upd = kfCharmBachelor1;
+      KFParticle kfXiUpd = kfXi;
+      kfCharmBachelor0Upd.SetProductionVertex(kfXicPlus);
+      kfCharmBachelor1Upd.SetProductionVertex(kfXicPlus);
+      kfXiUpd.SetProductionVertex(kfXicPlus);
+
+      // get impact parameters of updated XicPlus daughters
       float impactParameterPi0XY = 0., errImpactParameterPi0XY = 0.;
       float impactParameterPi1XY = 0., errImpactParameterPi1XY = 0.;
       float impactParameterXiXY = 0., errImpactParameterXiXY = 0.;
-      kfCharmBachelor0.GetDistanceFromVertexXY(KFPV, impactParameterPi0XY, errImpactParameterPi0XY);
-      kfCharmBachelor1.GetDistanceFromVertexXY(KFPV, impactParameterPi1XY, errImpactParameterPi1XY);
-      kfXi.GetDistanceFromVertexXY(KFPV, impactParameterXiXY, errImpactParameterXiXY);
+      kfCharmBachelor0Upd.GetDistanceFromVertexXY(KFPV, impactParameterPi0XY, errImpactParameterPi0XY);
+      kfCharmBachelor1Upd.GetDistanceFromVertexXY(KFPV, impactParameterPi1XY, errImpactParameterPi1XY);
+      kfXiUpd.GetDistanceFromVertexXY(KFPV, impactParameterXiXY, errImpactParameterXiXY);
 
       // calculate cosine of pointing angle
       std::array<float, 3> pvCoord = {collision.posX(), collision.posY(), collision.posZ()};
@@ -441,36 +474,45 @@ struct HfCandidateCreatorXicToXiPiPi {
       double cpaXYXi = RecoDecay::cpaXY(pvCoord, vertexCasc, pVecCasc);
 
       // get DCAs of Pi0-Pi1, Pi0-Xi, Pi1-Xi
-      float dcaXYPi0Pi1 = kfCharmBachelor0.GetDistanceFromParticleXY(kfCharmBachelor1);
-      float dcaXYPi0Xi = kfCharmBachelor0.GetDistanceFromParticleXY(kfXi);
-      float dcaXYPi1Xi = kfCharmBachelor1.GetDistanceFromParticleXY(kfXi);
+      float dcaXYPi0Pi1 = kfCharmBachelor0Upd.GetDistanceFromParticleXY(kfCharmBachelor1Upd);
+      float dcaXYPi0Xi = kfCharmBachelor0Upd.GetDistanceFromParticleXY(kfXiUpd);
+      float dcaXYPi1Xi = kfCharmBachelor1Upd.GetDistanceFromParticleXY(kfXiUpd);
+      float dcaPi0Pi1 = kfCharmBachelor0Upd.GetDistanceFromParticle(kfCharmBachelor1Upd);
+      float dcaPi0Xi = kfCharmBachelor0Upd.GetDistanceFromParticle(kfXiUpd);
+      float dcaPi1Xi = kfCharmBachelor1Upd.GetDistanceFromParticle(kfXiUpd);
 
       // mass of Xi-Pi0 pair
       KFParticle kfXiPi0;
+      float errMassXiPi0;
       const KFParticle* kfXiResonanceDaughtersPi0[2] = {&kfXi, &kfCharmBachelor0};
       kfXiPi0.SetConstructMethod(kfConstructMethod);
       try {
         kfXiPi0.Construct(kfXiResonanceDaughtersPi0, 2);
-        massXiPi0 = kfXiPi0.GetMass();
       } catch (...) {
         LOG(info) << "Failed to construct Xi(1530) with Pi 0";
       }
+      kfXiPi0.GetMass(massXiPi0, errMassXiPi0);
 
       // mass of Xi-Pi1 pair
       KFParticle kfXiPi1;
+      float errMassXiPi1;
       const KFParticle* kfXiResonanceDaughtersPi1[2] = {&kfXi, &kfCharmBachelor1};
       kfXiPi1.SetConstructMethod(kfConstructMethod);
       try {
         kfXiPi1.Construct(kfXiResonanceDaughtersPi1, 2);
-        massXiPi1 = kfXiPi1.GetMass();
       } catch (...) {
         LOG(info) << "Failed to construct Xi(1530) with Pi 1";
       }
+      kfXiPi1.GetMass(massXiPi1, errMassXiPi1);
+
+      // get invariant mass of Xic candidate
+      float errMassXiPiPi;
+      kfXicPlus.GetMass(massXiPiPi, errMassXiPiPi);
 
       //-------------------------------fill histograms--------------------------------------------
       if (fillHistograms) {
         // invariant mass
-        registry.fill(HIST("hMass3"), kfXicPlus.GetMass());
+        registry.fill(HIST("hMass3"), massXiPiPi);
         // covariance matrix elements of PV
         registry.fill(HIST("hCovPVXX"), covMatrixPV[0]);
         registry.fill(HIST("hCovPVYY"), covMatrixPV[2]);
@@ -497,7 +539,7 @@ struct HfCandidateCreatorXicToXiPiPi {
                        kfXicPlus.GetX(), kfXicPlus.GetY(), kfXicPlus.GetZ(),
                        kfXicPlus.GetErrX(), kfXicPlus.GetErrY(), kfXicPlus.GetErrZ(),
                        kfXicPlus.GetErrDecayLength(), kfXicPlus.GetErrDecayLengthXY(),
-                       kfXicPlus.GetChi2(), kfXicPlus.GetMass(), signXic,
+                       chi2GeoXicPlus, massXiPiPi, signXic,
                        kfXi.GetPx(), kfXi.GetPy(), kfXi.GetPz(),
                        kfCharmBachelor0.GetPx(), kfCharmBachelor0.GetPy(), kfCharmBachelor0.GetPz(),
                        kfCharmBachelor1.GetPx(), kfCharmBachelor1.GetPy(), kfCharmBachelor1.GetPz(),
@@ -508,8 +550,10 @@ struct HfCandidateCreatorXicToXiPiPi {
                        casc.xlambda(), casc.ylambda(), casc.zlambda(),
                        cpaXi, cpaXYXi, cpaLambda, cpaXYLambda,
                        massXiPi0, massXiPi1);
-      rowCandidateKF(casc.kfCascadeChi2(), casc.kfV0Chi2(),
-                     dcaXYPi0Pi1, dcaXYPi0Xi, dcaXYPi1Xi);
+      rowCandidateKF(casc.kfCascadeChi2(), casc.kfV0Chi2(), chi2topoXicPlusPV, chi2topoXiToXicPlus,
+                     dcaXYPi0Pi1, dcaXYPi0Xi, dcaXYPi1Xi,
+                     dcaPi0Pi1, dcaPi0Xi, dcaPi1Xi,
+                     casc.dcacascdaughters());
     } // loop over track triplets
   }
   PROCESS_SWITCH(HfCandidateCreatorXicToXiPiPi, processXicplusWithKFParticle, "Run candidate creator with KFParticle using derived data from HfTrackIndexSkimCreatorLfCascades.", false);

@@ -28,6 +28,11 @@ o2physics_add_dpl_workflow(pid-creator
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(mc-pid-tof
+                    SOURCES mcPidTof.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::TOFWorkflowUtils
+                    COMPONENT_NAME Analysis)
+
 # Candidate creators
 
 o2physics_add_dpl_workflow(candidate-creator-2prong
@@ -82,7 +87,7 @@ o2physics_add_dpl_workflow(candidate-creator-sigmac0plusplus-cascade
 
 o2physics_add_dpl_workflow(candidate-creator-xic0-omegac0
                     SOURCES candidateCreatorXic0Omegac0.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter O2Physics::EventFilteringUtils
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter O2Physics::EventFilteringUtils KFParticle::KFParticle
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(candidate-creator-xic-to-xi-pi-pi

@@ -52,6 +52,17 @@ DECLARE_SOA_COLUMN(NTPCpileupZC, nTPCpileupZC, float);           //!  Median Z p
 DECLARE_SOA_COLUMN(NTPCtracksInPast, nTPCtracksInPast, int);     //!  Number of TPC tracks in the past events (configurable, but e.g. one drift time)
 DECLARE_SOA_COLUMN(NTPCtracksInFuture, nTPCtracksInFuture, int); //!  Number of TPC tracks in the future events (configurable, but e.g. one drift time)
 
+// Columns declared to guarantee the backward compatibility of the tables
+DECLARE_SOA_COLUMN(QvecBPosRe, qvecBPosRe, float);
+DECLARE_SOA_COLUMN(QvecBPosIm, qvecBPosIm, float);
+DECLARE_SOA_COLUMN(QvecBNegRe, qvecBNegRe, float);
+DECLARE_SOA_COLUMN(QvecBNegIm, qvecBNegIm, float);
+DECLARE_SOA_COLUMN(QvecBAllRe, qvecBAllRe, float);
+DECLARE_SOA_COLUMN(QvecBAllIm, qvecBAllIm, float);
+DECLARE_SOA_COLUMN(NTrkBPos, nTrkBPos, int);
+DECLARE_SOA_COLUMN(NTrkBNeg, nTrkBNeg, int);
+DECLARE_SOA_COLUMN(NTrkBAll, nTrkBAll, int);
+
 DECLARE_SOA_COLUMN(Q1ZNAX, q1znax, float);     //!  Q-vector x component, evaluated with ZNA (harmonic 1 and power 1)
 DECLARE_SOA_COLUMN(Q1ZNAY, q1znay, float);     //!  Q-vector y component, evaluated with ZNA (harmonic 1 and power 1)
 DECLARE_SOA_COLUMN(Q1ZNCX, q1zncx, float);     //!  Q-vector x component, evaluated with ZNC (harmonic 1 and power 1)
@@ -142,8 +153,11 @@ DECLARE_SOA_TABLE(ReducedEventsQvectorExtra, "AOD", "REQVECTOREXTRA", //!    Eve
                   reducedevent::S11A, reducedevent::S12A, reducedevent::S13A, reducedevent::S31A);
 
 DECLARE_SOA_TABLE(ReducedEventsQvectorCentr, "AOD", "REQVECTORCTR", //!    Event Q-vector information from central framework
-                  qvec::QvecFT0ARe, qvec::QvecFT0AIm, qvec::QvecFT0CRe, qvec::QvecFT0CIm, qvec::QvecFT0MRe, qvec::QvecFT0MIm, qvec::QvecFV0ARe, qvec::QvecFV0AIm, qvec::QvecBPosRe, qvec::QvecBPosIm, qvec::QvecBNegRe, qvec::QvecBNegIm,
-                  qvec::SumAmplFT0A, qvec::SumAmplFT0C, qvec::SumAmplFT0M, qvec::SumAmplFV0A, qvec::NTrkBPos, qvec::NTrkBNeg);
+                  qvec::QvecFT0ARe, qvec::QvecFT0AIm, qvec::QvecFT0CRe, qvec::QvecFT0CIm, qvec::QvecFT0MRe, qvec::QvecFT0MIm, qvec::QvecFV0ARe, qvec::QvecFV0AIm, reducedevent::QvecBPosRe, reducedevent::QvecBPosIm, reducedevent::QvecBNegRe, reducedevent::QvecBNegIm,
+                  qvec::SumAmplFT0A, qvec::SumAmplFT0C, qvec::SumAmplFT0M, qvec::SumAmplFV0A, reducedevent::NTrkBPos, reducedevent::NTrkBNeg);
+
+DECLARE_SOA_TABLE(ReducedEventsQvectorCentrExtra, "AOD", "REQVECCTREXTA", //!    Event Q-vector information from central framework with TPC all
+                  reducedevent::QvecBAllRe, reducedevent::QvecBAllIm, reducedevent::NTrkBAll);
 
 DECLARE_SOA_TABLE(ReducedEventsRefFlow, "AOD", "REREFFLOW", //!    Event Ref Flow information
                   reducedevent::M11REF, reducedevent::M1111REF, reducedevent::CORR2REF, reducedevent::CORR4REF, cent::CentFT0C);
@@ -172,6 +186,7 @@ using ReducedEventMultAll = ReducedEventsMultAll::iterator;
 using ReducedEventQvector = ReducedEventsQvector::iterator;
 using ReducedEventQvectorExtra = ReducedEventsQvectorExtra::iterator;
 using ReducedEventQvectorCentr = ReducedEventsQvectorCentr::iterator;
+using ReducedEventQvectorCentrExtra = ReducedEventsQvectorCentrExtra::iterator;
 using ReducedEventRefFlow = ReducedEventsRefFlow::iterator;
 using ReducedEventQvectorZN = ReducedEventsQvectorZN::iterator;
 using ReducedMCEvent = ReducedMCEvents::iterator;
@@ -506,18 +521,6 @@ DECLARE_SOA_TABLE(ReducedMFTAssoc, "AOD", "RMFTASSOC", //! Table for reducemft-t
                   reducedtrack_association::ReducedEventId,
                   reducedtrack_association::ReducedMFTId);
 
-namespace smearedtrack
-{
-DECLARE_SOA_COLUMN(PtSmeared, ptSmeared, float);
-DECLARE_SOA_COLUMN(EtaSmeared, etaSmeared, float);
-DECLARE_SOA_COLUMN(PhiSmeared, phiSmeared, float);
-DECLARE_SOA_COLUMN(Efficiency, efficiency, float);
-} // namespace smearedtrack
-
-DECLARE_SOA_TABLE(SmearedTracks, "AOD", "SMEAREDTRACK", // use like this Join<ReducedMCTracks, SmearedTracks>
-                  smearedtrack::PtSmeared, smearedtrack::EtaSmeared, smearedtrack::PhiSmeared, smearedtrack::Efficiency);
-using SmearedTrack = SmearedTracks::iterator;
-
 namespace dilepton_track_index
 {
 DECLARE_SOA_INDEX_COLUMN_FULL(Index0, index0, int, ReducedMuons, "_0"); //! Index to first prong
@@ -625,6 +628,7 @@ DECLARE_SOA_COLUMN(Phi, phi, float);                                     //!
 DECLARE_SOA_COLUMN(Sign, sign, int);                                     //!
 DECLARE_SOA_BITMAP_COLUMN(FilterMap, filterMap, 32);                     //!
 DECLARE_SOA_BITMAP_COLUMN(PairFilterMap, pairFilterMap, 32);             //!
+DECLARE_SOA_BITMAP_COLUMN(CommonFilterMap, commonFilterMap, 32);         //!
 DECLARE_SOA_COLUMN(McDecision, mcDecision, uint32_t);                    //!
 DECLARE_SOA_COLUMN(Tauz, tauz, float);                                   //! Longitudinal pseudo-proper time of lepton pair (in ns)
 DECLARE_SOA_COLUMN(TauzErr, tauzErr, float);                             //! Error on longitudinal pseudo-proper time of lepton pair (in ns)
@@ -805,6 +809,9 @@ DECLARE_SOA_TABLE(DimuonsAll, "AOD", "RTDIMUONALL", //!
                   reducedpair::VertexPz,
                   reducedpair::SVertex);
 
+DECLARE_SOA_TABLE(DileptonsMiniTree, "AOD", "RTDILEPTMTREE", //!
+                  reducedpair::Mass, reducedpair::Pt, reducedpair::Eta, reducedpair::CentFT0C, reducedpair::Cos2DeltaPhi);
+
 using Dielectron = Dielectrons::iterator;
 using StoredDielectron = StoredDielectrons::iterator;
 using Dimuon = Dimuons::iterator;
@@ -815,12 +822,13 @@ using DileptonFlow = DileptonsFlow::iterator;
 using DileptonInfo = DileptonsInfo::iterator;
 using DielectronAll = DielectronsAll::iterator;
 using DimuonAll = DimuonsAll::iterator;
+using DileptonMiniTree = DileptonsMiniTree::iterator;
 
 // Tables for using analysis-dilepton-track with analysis-asymmetric-pairing
 DECLARE_SOA_TABLE(Ditracks, "AOD", "RTDITRACK", //!
                   o2::soa::Index<>, reducedpair::ReducedEventId,
                   reducedpair::Mass, reducedpair::Pt, reducedpair::Eta, reducedpair::Phi, reducedpair::Sign,
-                  reducedpair::FilterMap, reducedpair::PairFilterMap,
+                  reducedpair::FilterMap, reducedpair::PairFilterMap, reducedpair::CommonFilterMap,
                   reducedpair::Rap<reducedpair::Pt, reducedpair::Eta, reducedpair::Mass>,
                   reducedpair::Y<reducedpair::Pt, reducedpair::Eta, reducedpair::Mass>,
                   reducedpair::Px<reducedpair::Pt, reducedpair::Phi>,
@@ -990,6 +998,33 @@ DECLARE_SOA_TABLE(RedDleptDmesAll, "AOD", "RTDILPTDMESALL", //!
                   jpsidmescorr::BdtBkg,
                   jpsidmescorr::BdtPrompt,
                   jpsidmescorr::BdtNonprompt);
+
+namespace muondca
+{
+DECLARE_SOA_COLUMN(pDCA, pdca, float); //!
+DECLARE_SOA_COLUMN(DCA, dca, float);   //!
+DECLARE_SOA_COLUMN(DCAx, dcax, float); //!
+DECLARE_SOA_COLUMN(DCAy, dcay, float); //!
+DECLARE_SOA_COLUMN(Rabs, rabs, float); //!
+DECLARE_SOA_COLUMN(Px, px, float);     //!
+DECLARE_SOA_COLUMN(Py, py, float);     //!
+DECLARE_SOA_COLUMN(Pz, pz, float);     //!
+} // namespace muondca
+
+DECLARE_SOA_TABLE(ReducedMuonsDca, "AOD", "RTMUONDCA",
+                  muondca::pDCA,
+                  muondca::DCA,
+                  muondca::DCAx,
+                  muondca::DCAy,
+                  muondca::Rabs,
+                  reducedmuon::Pt,
+                  reducedmuon::Eta, reducedmuon::Phi,
+                  reducedmuon::Sign, reducedmuon::IsAmbiguous,
+                  muondca::Px,
+                  muondca::Py,
+                  muondca::Pz);
+
+using ReducedMuonDca = ReducedMuonsDca::iterator;
 } // namespace o2::aod
 
 #endif // PWGDQ_DATAMODEL_REDUCEDINFOTABLES_H_

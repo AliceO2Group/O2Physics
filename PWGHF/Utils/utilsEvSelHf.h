@@ -24,8 +24,10 @@
 #include "Framework/Configurable.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/HistogramSpec.h"
+#include "Framework/OutputObjHeader.h"
 
 #include "EventFiltering/Zorro.h"
+#include "EventFiltering/ZorroSummary.h"
 #include "PWGHF/Core/CentralityEstimation.h"
 
 namespace o2::hf_evsel
@@ -33,6 +35,7 @@ namespace o2::hf_evsel
 // event rejection types
 enum EventRejection {
   None = 0,
+  SoftwareTrigger,
   Centrality,
   Trigger,
   TvxTrigger,
@@ -44,7 +47,6 @@ enum EventRejection {
   NContrib,
   Chi2,
   PositionZ,
-  SoftwareTrigger,
   NEventRejection
 };
 
@@ -52,11 +54,13 @@ o2::framework::AxisSpec axisEvents = {EventRejection::NEventRejection, -0.5f, +E
 
 /// \brief Function to put labels on monitoring histogram
 /// \param hRejection monitoring histogram
+/// \param softwareTriggerLabel bin label for software trigger rejection
 template <typename Histo>
 void setEventRejectionLabels(Histo& hRejection, std::string softwareTriggerLabel = "")
 {
   // Puts labels on the collision monitoring histogram.
   hRejection->GetXaxis()->SetBinLabel(EventRejection::None + 1, "All");
+  hRejection->GetXaxis()->SetBinLabel(EventRejection::SoftwareTrigger + 1, softwareTriggerLabel.data());
   hRejection->GetXaxis()->SetBinLabel(EventRejection::Centrality + 1, "Centrality");
   hRejection->GetXaxis()->SetBinLabel(EventRejection::Trigger + 1, "Trigger");
   hRejection->GetXaxis()->SetBinLabel(EventRejection::TvxTrigger + 1, "TVX Trigger");
@@ -68,7 +72,6 @@ void setEventRejectionLabels(Histo& hRejection, std::string softwareTriggerLabel
   hRejection->GetXaxis()->SetBinLabel(EventRejection::NContrib + 1, "# of PV contributors");
   hRejection->GetXaxis()->SetBinLabel(EventRejection::Chi2 + 1, "PV #it{#chi}^{2}");
   hRejection->GetXaxis()->SetBinLabel(EventRejection::PositionZ + 1, "PV #it{z}");
-  hRejection->GetXaxis()->SetBinLabel(EventRejection::SoftwareTrigger + 1, softwareTriggerLabel.data());
 }
 
 struct HfEventSelection : o2::framework::ConfigurableGroup {
@@ -90,7 +93,9 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> chi2PvMax{"chi2PvMax", -1.f, "Maximum PV chi2"};
   o2::framework::Configurable<float> zPvPosMin{"zPvPosMin", -10.f, "Minimum PV posZ (cm)"};
   o2::framework::Configurable<float> zPvPosMax{"zPvPosMax", 10.f, "Maximum PV posZ (cm)"};
-  o2::framework::Configurable<std::string> softwareTrigger{"softwareTrigger", "", "Label of software trigger. Multiple triggers can be selected dividing them by a comma"};
+  o2::framework::Configurable<std::string> softwareTrigger{"softwareTrigger", "", "Label of software trigger. Multiple triggers can be selected dividing them by a comma. Set None if you want bcs that are not selected by any trigger"};
+  o2::framework::Configurable<uint64_t> bcMarginForSoftwareTrigger{"bcMarginForSoftwareTrigger", 100, "Number of BCs of margin for software triggers"};
+  o2::framework::Configurable<std::string> ccdbPathSoftwareTrigger{"ccdbPathSoftwareTrigger", "Users/m/mpuccio/EventFiltering/OTS/", "ccdb path for ZORRO objects"};
 
   // histogram names
   static constexpr char nameHistCollisions[] = "hCollisions";
@@ -105,6 +110,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
 
   // util to retrieve trigger mask in case of software triggers
   Zorro zorro;
+  o2::framework::OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
   int currentRun{-1};
 
   /// \brief Adds collision monitoring histograms in the histogram registry.
@@ -118,7 +124,12 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
     hPosXAfterEvSel = registry.add<TH1>(nameHistPosXAfterEvSel, "selected events;#it{x}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{200, -0.5, 0.5}}});
     hPosYAfterEvSel = registry.add<TH1>(nameHistPosYAfterEvSel, "selected events;#it{y}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{200, -0.5, 0.5}}});
     hNumPvContributorsAfterSel = registry.add<TH1>(nameHistNumPvContributorsAfterSel, "selected events;#it{y}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{500, -0.5, 499.5}}});
-    setEventRejectionLabels(hCollisions);
+    setEventRejectionLabels(hCollisions, softwareTrigger);
+
+    // we initialise the summary object
+    if (softwareTrigger.value != "") {
+      zorroSummary.setObject(zorro.getZorroSummary());
+    }
   }
 
   /// \brief Applies event selection.
@@ -127,9 +138,10 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   /// \param collision collision to test against the selection criteria
   /// \param centrality collision centrality variable to be set in this function
   /// \param ccdb ccdb service needed to retrieve the needed info for zorro
+  /// \param registry reference to the histogram registry needed for zorro
   /// \return bitmask with the event selection criteria not satisfied by the collision
   template <bool useEvSel, o2::hf_centrality::CentralityEstimator centEstimator, typename BCs, typename Coll>
-  uint16_t getHfCollisionRejectionMask(const Coll& collision, float& centrality, o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb)
+  uint16_t getHfCollisionRejectionMask(const Coll& collision, float& centrality, o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb, o2::framework::HistogramRegistry& registry)
   {
     uint16_t rejectionMask{0}; // 16 bits, in case new ev. selections will be added
 
@@ -206,12 +218,21 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
 
       int runNumber = bc.runNumber();
       if (runNumber != currentRun) { // We might need to update Zorro from CCDB if the run number changes
+        zorro.setCCDBpath(ccdbPathSoftwareTrigger);
+        zorro.setBCtolerance(bcMarginForSoftwareTrigger);
         zorro.initCCDB(ccdb.service, runNumber, bc.timestamp(), softwareTrigger.value);
         currentRun = runNumber;
       }
+      zorro.populateHistRegistry(registry, runNumber);
 
-      if (!zorro.isSelected(bc.globalBC())) { /// Just let Zorro do the accounting
-        SETBIT(rejectionMask, EventRejection::SoftwareTrigger);
+      if (softwareTrigger.value != "None") {
+        if (!zorro.isSelected(bc.globalBC(), bcMarginForSoftwareTrigger)) { /// Just let Zorro do the accounting
+          SETBIT(rejectionMask, EventRejection::SoftwareTrigger);
+        }
+      } else {
+        if (!zorro.isNotSelectedByAny(bc.globalBC(), bcMarginForSoftwareTrigger)) { /// Just let Zorro do the accounting of not selected BCs
+          SETBIT(rejectionMask, EventRejection::SoftwareTrigger);
+        }
       }
     }
 

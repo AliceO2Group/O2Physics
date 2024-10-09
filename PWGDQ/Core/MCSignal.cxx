@@ -21,6 +21,7 @@ MCSignal::MCSignal() : TNamed("", ""),
                        fProngs({}),
                        fNProngs(0),
                        fCommonAncestorIdxs({}),
+                       fExcludeCommonAncestor(false),
                        fTempAncestorLabel(-1)
 {
 }
@@ -30,17 +31,19 @@ MCSignal::MCSignal(int nProngs, const char* name /*= ""*/, const char* title /*=
                                                                                          fProngs({}),
                                                                                          fNProngs(nProngs),
                                                                                          fCommonAncestorIdxs({}),
+                                                                                         fExcludeCommonAncestor(false),
                                                                                          fTempAncestorLabel(-1)
 {
   fProngs.reserve(nProngs);
 }
 
 //________________________________________________________________________________________________
-MCSignal::MCSignal(const char* name, const char* title, std::vector<MCProng> prongs, std::vector<short> commonAncestors) : TNamed(name, title),
-                                                                                                                           fProngs(prongs),
-                                                                                                                           fNProngs(prongs.size()),
-                                                                                                                           fCommonAncestorIdxs(commonAncestors),
-                                                                                                                           fTempAncestorLabel(-1)
+MCSignal::MCSignal(const char* name, const char* title, std::vector<MCProng> prongs, std::vector<short> commonAncestors, bool excludeCommonAncestor) : TNamed(name, title),
+                                                                                                                                                       fProngs(prongs),
+                                                                                                                                                       fNProngs(prongs.size()),
+                                                                                                                                                       fCommonAncestorIdxs(commonAncestors),
+                                                                                                                                                       fExcludeCommonAncestor(excludeCommonAncestor),
+                                                                                                                                                       fTempAncestorLabel(-1)
 {
 }
 
@@ -67,10 +70,11 @@ void MCSignal::AddProng(MCProng prong, short commonAncestor)
 void MCSignal::PrintConfig()
 {
   cout << "Name/Title: " << fName << " / " << fTitle << endl;
+  cout << "Exclude common ancestor combinations: " << fExcludeCommonAncestor << endl;
   cout << "Printing " << fNProngs << "/" << fProngs.size() << " prongs:" << endl;
   int i = 0;
   for (auto& pr : fProngs) {
-    cout << "Prong #" << i << "  commonAncestor" << fCommonAncestorIdxs[i] << " ================ " << endl;
+    cout << "Prong #" << i << "  commonAncestor: " << fCommonAncestorIdxs[i] << " ================ " << endl;
     i++;
     pr.Print();
   }

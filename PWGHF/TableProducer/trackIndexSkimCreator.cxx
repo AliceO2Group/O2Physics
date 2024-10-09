@@ -134,7 +134,7 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
   void selectCollision(const Col& collision, const BCs&)
   {
     float centrality = -1.;
-    const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<applyTrigSel, centEstimator, BCs>(collision, centrality, ccdb);
+    const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<applyTrigSel, centEstimator, BCs>(collision, centrality, ccdb, registry);
 
     if (fillHistograms) {
       hfEvSel.fillHistograms(collision, rejectionMask, centrality);
@@ -2962,10 +2962,8 @@ struct HfTrackIndexSkimCreatorCascades {
   struct : ConfigurableGroup {
     Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
     Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
-    // event selection
-    // Configurable<int> triggerindex{"triggerindex", -1, "trigger index"};
     // vertexing
-    // Configurable<double> bz{"bz", 5., "magnetic field"};
+    Configurable<bool> useDCAFitter{"useDCAFitter", true, "flag to optionally turn on/off the vertex reconstruction with the DCAFitter"};
     Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
     Configurable<double> maxR{"maxR", 200., "reject PCA's above this radius"};
     Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
@@ -2973,24 +2971,12 @@ struct HfTrackIndexSkimCreatorCascades {
     Configurable<double> minRelChi2Change{"minRelChi2Change", 0.9, "stop iterations if chi2/chi2old > this"};
     Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
     Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", true, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
-    // quality cut
-    Configurable<bool> doCutQuality{"doCutQuality", true, "apply quality cuts"};
-    // track cuts for bachelor
-    Configurable<bool> tpcRefitBach{"tpcRefitBach", true, "request TPC refit bachelor"};
-    Configurable<int> nCrossedRowsMinBach{"nCrossedRowsMinBach", 50, "min crossed rows bachelor"};
     // track cuts for V0 daughters
-    Configurable<bool> tpcRefitV0Daugh{"tpcRefitV0Daugh", true, "request TPC refit V0 daughters"};
-    Configurable<int> nCrossedRowsMinV0Daugh{"nCrossedRowsMinV0Daugh", 50, "min crossed rows V0 daughters"};
     Configurable<double> etaMinV0Daugh{"etaMinV0Daugh", -99999., "min. pseudorapidity V0 daughters"};
     Configurable<double> etaMaxV0Daugh{"etaMaxV0Daugh", 1.1, "max. pseudorapidity V0 daughters"};
     Configurable<double> ptMinV0Daugh{"ptMinV0Daugh", 0.05, "min. pT V0 daughters"};
-    // bachelor cuts
-    //  Configurable<float> dcabachtopv{"dcabachtopv", .1, "DCA Bach To PV"};
-    //  Configurable<double> ptminbach{"ptminbach", -1., "min. track pT bachelor"};
     // v0 cuts
-    Configurable<double> cpaV0Min{"cpaV0Min", .995, "min. cos PA V0"};                    // as in the task that create the V0s
-    Configurable<double> dcaXYNegToPvMin{"dcaXYNegToPvMin", .1, "min. DCA_XY Neg To PV"}; // check: in HF Run 2, it was 0 at filtering
-    Configurable<double> dcaXYPosToPvMin{"dcaXYPosToPvMin", .1, "min. DCA_XY Pos To PV"}; // check: in HF Run 2, it was 0 at filtering
+    Configurable<double> cpaV0Min{"cpaV0Min", 0.95, "min. cos PA V0"}; // as in the task that create the V0s
     Configurable<double> cutInvMassV0{"cutInvMassV0", 0.05, "V0 candidate invariant mass difference wrt PDG"};
     // cascade cuts
     Configurable<double> ptCascCandMin{"ptCascCandMin", -1., "min. pT of the cascade candidate"};                    // PbPb 2018: use 1
@@ -3011,11 +2997,11 @@ struct HfTrackIndexSkimCreatorCascades {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::MatLayerCylSet* lut;
   o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
-  int runNumber;
+  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
+  int runNumber{0};
 
   double massP{0.};
   double massK0s{0.};
-  double massPi{0.};
   double massLc{0.};
 
   using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::HfSelCollision>>;
@@ -3042,23 +3028,22 @@ struct HfTrackIndexSkimCreatorCascades {
 
     massP = o2::constants::physics::MassProton;
     massK0s = o2::constants::physics::MassK0Short;
-    massPi = o2::constants::physics::MassPiPlus;
     massLc = o2::constants::physics::MassLambdaCPlus;
 
-    df2.setPropagateToPCA(config.propagateToPCA);
-    df2.setMaxR(config.maxR);
-    df2.setMinParamChange(config.minParamChange);
-    df2.setMinRelChi2Change(config.minRelChi2Change);
-    // df2.setMaxDZIni(1e9); // used in cascadeproducer.cxx, but not for the 2 prongs
-    // df2.setMaxChi2(1e9);  // used in cascadeproducer.cxx, but not for the 2 prongs
-    df2.setUseAbsDCA(config.useAbsDCA);
-    df2.setWeightedFinalPCA(config.useWeightedFinalPCA);
+    if (config.useDCAFitter) {
+      df2.setPropagateToPCA(config.propagateToPCA);
+      df2.setMaxR(config.maxR);
+      df2.setMinParamChange(config.minParamChange);
+      df2.setMinRelChi2Change(config.minRelChi2Change);
+      df2.setMaxDZIni(config.maxDZIni);
+      df2.setUseAbsDCA(config.useAbsDCA);
+      df2.setWeightedFinalPCA(config.useWeightedFinalPCA);
+    }
 
     ccdb->setURL(config.ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(config.ccdbPathLut));
-    runNumber = 0;
 
     if (config.fillHistograms) {
       registry.add("hVtx2ProngX", "2-prong candidates;#it{x}_{sec. vtx.} (cm);entries", {HistType::kTH1D, {{1000, -2., 2.}}});
@@ -3075,7 +3060,7 @@ struct HfTrackIndexSkimCreatorCascades {
   PROCESS_SWITCH(HfTrackIndexSkimCreatorCascades, processNoCascades, "Do not skim HF -> V0 cascades", true);
 
   void processCascades(SelectedCollisions const& collisions,
-                       aod::V0Datas const& v0s,
+                       soa::Join<aod::V0Datas, aod::V0Covs> const& v0s,
                        FilteredTrackAssocSel const& trackIndices,
                        aod::TracksWCovDcaExtra const&,
                        aod::BCsWithTimestamps const&)
@@ -3084,67 +3069,52 @@ struct HfTrackIndexSkimCreatorCascades {
     for (const auto& collision : collisions) {
       auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
       initCCDB(bc, runNumber, ccdb, config.isRun2 ? config.ccdbPathGrp : config.ccdbPathGrpMag, lut, config.isRun2);
-      df2.setBz(o2::base::Propagator::Instance()->getNominalBz());
-
-      // fist we loop over the bachelor candidate
+      if (config.useDCAFitter) {
+        df2.setBz(o2::base::Propagator::Instance()->getNominalBz());
+        df2.setMatCorrType(matCorr);
+      }
 
       const auto thisCollId = collision.globalIndex();
       auto groupedBachTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
+      auto groupedV0s = v0s.sliceBy(v0sPerCollision, thisCollId);
 
-      // for (const auto& bach : selectedTracks) {
+      // fist we loop over the bachelor candidate
       for (const auto& bachIdx : groupedBachTrackIndices) {
 
         auto bach = bachIdx.track_as<aod::TracksWCovDcaExtra>();
-
-        // selections on the bachelor
-
-        // pT cut
-        // FIXME: this should go in the tag-sel-tracks
-        if (config.tpcRefitBach) {
-          if (!(bach.trackType() & o2::aod::track::TPCrefit)) {
-            continue;
-          }
-        }
-        if (bach.tpcNClsCrossedRows() < config.nCrossedRowsMinBach) {
-          continue;
-        }
-
+        std::array<float, 3> pVecBach{bach.pVector()};
         auto trackBach = getTrackParCov(bach);
+        if (thisCollId != bach.collisionId()) { // this is not the "default" collision for this track, we have to re-propagate it
+          o2::gpu::gpustd::array<float, 2> dcaInfoBach{bach.dcaXY(), bach.dcaZ()};
+          o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackBach, 2.f, noMatCorr, &dcaInfoBach);
+          getPxPyPz(trackBach, pVecBach);
+        }
 
-        auto groupedV0s = v0s.sliceBy(v0sPerCollision, thisCollId);
         // now we loop over the V0s
         for (const auto& v0 : groupedV0s) {
           // selections on the V0 daughters
-          const auto& trackV0DaughPos = v0.posTrack_as<aod::TracksWCovDcaExtra>();
-          const auto& trackV0DaughNeg = v0.negTrack_as<aod::TracksWCovDcaExtra>();
+          const auto& trackV0DaughPos = v0.posTrack_as<aod::TracksWCovDcaExtra>(); // only used for indices and track cuts (TPC clusters, TPC refit)
+          const auto& trackV0DaughNeg = v0.negTrack_as<aod::TracksWCovDcaExtra>(); // only used for indices and track cuts (TPC clusters, TPC refit)
 
           // check not to take the same track twice (as bachelor and V0 daughter)
           if (trackV0DaughPos.globalIndex() == bach.globalIndex() || trackV0DaughNeg.globalIndex() == bach.globalIndex()) {
             continue;
           }
 
-          if (config.tpcRefitV0Daugh) {
-            if (!(trackV0DaughPos.trackType() & o2::aod::track::TPCrefit) ||
-                !(trackV0DaughNeg.trackType() & o2::aod::track::TPCrefit)) {
-              continue;
-            }
-          }
-          if (trackV0DaughPos.tpcNClsCrossedRows() < config.nCrossedRowsMinV0Daugh ||
-              trackV0DaughNeg.tpcNClsCrossedRows() < config.nCrossedRowsMinV0Daugh) {
+          std::array<float, 3> pVecPos = {v0.pxpos(), v0.pypos(), v0.pzpos()};
+          std::array<float, 3> pVecNeg = {v0.pxneg(), v0.pyneg(), v0.pzneg()};
+
+          float ptPos = RecoDecay::pt(pVecPos);
+          float ptNeg = RecoDecay::pt(pVecNeg);
+          if (ptPos < config.ptMinV0Daugh || // to the filters? I can't for now, it is not in the tables
+              ptNeg < config.ptMinV0Daugh) {
             continue;
           }
-          //
-          // if (trackV0DaughPos.dcaXY() < dcaXYPosToPvMin ||   // to the filters?
-          //     trackV0DaughNeg.dcaXY() < dcaXYNegToPvMin) {
-          //   continue;
-          // }
-          //
-          if (trackV0DaughPos.pt() < config.ptMinV0Daugh || // to the filters? I can't for now, it is not in the tables
-              trackV0DaughNeg.pt() < config.ptMinV0Daugh) {
-            continue;
-          }
-          if ((trackV0DaughPos.eta() > config.etaMaxV0Daugh || trackV0DaughPos.eta() < config.etaMinV0Daugh) || // to the filters? I can't for now, it is not in the tables
-              (trackV0DaughNeg.eta() > config.etaMaxV0Daugh || trackV0DaughNeg.eta() < config.etaMinV0Daugh)) {
+
+          float etaPos = RecoDecay::eta(pVecPos);
+          float etaNeg = RecoDecay::eta(pVecNeg);
+          if ((etaPos > config.etaMaxV0Daugh || etaPos < config.etaMinV0Daugh) || // to the filters? I can't for now, it is not in the tables
+              (etaNeg > config.etaMaxV0Daugh || etaNeg < config.etaMinV0Daugh)) {
             continue;
           }
 
@@ -3158,40 +3128,44 @@ struct HfTrackIndexSkimCreatorCascades {
             continue;
           }
 
-          const std::array<float, 3> momentumV0 = {v0.px(), v0.py(), v0.pz()};
+          std::array<float, 3> pVecV0 = {v0.px(), v0.py(), v0.pz()};
 
           // invariant-mass cut: we do it here, before updating the momenta of bach and V0 during the fitting to save CPU
           // TODO: but one should better check that the value here and after the fitter do not change significantly!!!
-          double mass2K0sP = RecoDecay::m(std::array{bach.pVector(), momentumV0}, std::array{massP, massK0s});
+          double mass2K0sP = RecoDecay::m(std::array{pVecBach, pVecV0}, std::array{massP, massK0s});
           if ((config.cutInvMassCascLc >= 0.) && (std::abs(mass2K0sP - massLc) > config.cutInvMassCascLc)) {
             continue;
           }
 
-          auto trackParCovV0DaughPos = getTrackParCov(trackV0DaughPos);
-          trackParCovV0DaughPos.propagateTo(v0.posX(), o2::base::Propagator::Instance()->getNominalBz()); // propagate the track to the X closest to the V0 vertex
-          auto trackParCovV0DaughNeg = getTrackParCov(trackV0DaughNeg);
-          trackParCovV0DaughNeg.propagateTo(v0.negX(), o2::base::Propagator::Instance()->getNominalBz()); // propagate the track to the X closest to the V0 vertex
-          std::array<float, 3> pVecV0 = {0., 0., 0.};
-          std::array<float, 3> pVecBach = {0., 0., 0.};
-
-          const std::array<float, 3> vertexV0 = {v0.x(), v0.y(), v0.z()};
-          // we build the neutral track to then build the cascade
-          auto trackV0 = o2::dataformats::V0(vertexV0, momentumV0, {0, 0, 0, 0, 0, 0}, trackParCovV0DaughPos, trackParCovV0DaughNeg); // build the V0 track
-
           // now we find the DCA between the V0 and the bachelor, for the cascade
-          int nCand2 = 0;
-          try {
-            nCand2 = df2.process(trackV0, trackBach);
-          } catch (...) {
-            continue;
-          }
+          if (config.useDCAFitter) {
 
-          if (nCand2 == 0) {
-            continue;
+            const std::array<float, 3> vertexV0 = {v0.x(), v0.y(), v0.z()};
+            // we build the neutral track to then build the cascade
+            std::array<float, 21> covV = {0.};
+            constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
+            for (int i = 0; i < 6; i++) {
+              covV[MomInd[i]] = v0.momentumCovMat()[i];
+              covV[i] = v0.positionCovMat()[i];
+            }
+            auto trackV0 = o2::track::TrackParCov(vertexV0, pVecV0, covV, 0, true);
+            trackV0.setAbsCharge(0);
+            trackV0.setPID(o2::track::PID::K0);
+
+            int nCand2 = 0;
+            try {
+              nCand2 = df2.process(trackV0, trackBach);
+            } catch (...) {
+              continue;
+            }
+
+            if (nCand2 == 0) {
+              continue;
+            }
+            df2.propagateTracksToVertex();        // propagate the bach and V0 to the Lc vertex
+            df2.getTrack(0).getPxPyPzGlo(pVecV0); // take the momentum at the Lc vertex
+            df2.getTrack(1).getPxPyPzGlo(pVecBach);
           }
-          df2.propagateTracksToVertex();        // propagate the bach and V0 to the Lc vertex
-          df2.getTrack(0).getPxPyPzGlo(pVecV0); // take the momentum at the Lc vertex
-          df2.getTrack(1).getPxPyPzGlo(pVecBach);
 
           // cascade candidate pT cut
           auto ptCascCand = RecoDecay::pt(pVecBach, pVecV0);
@@ -3202,11 +3176,12 @@ struct HfTrackIndexSkimCreatorCascades {
           // invariant mass
           // re-calculate invariant masses with updated momenta, to fill the histogram
           mass2K0sP = RecoDecay::m(std::array{pVecBach, pVecV0}, std::array{massP, massK0s});
-
           std::array<float, 3> posCasc = {0., 0., 0.};
-          const auto& cascVtx = df2.getPCACandidate();
-          for (int i = 0; i < 3; i++) {
-            posCasc[i] = cascVtx[i];
+          if (config.useDCAFitter) {
+            const auto& cascVtx = df2.getPCACandidate();
+            for (int iCoord{0}; iCoord < 3; ++iCoord) {
+              posCasc[iCoord] = cascVtx[iCoord];
+            }
           }
 
           // fill table row

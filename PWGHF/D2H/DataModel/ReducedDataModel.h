@@ -37,6 +37,7 @@ namespace aod
 namespace hf_reduced_collision
 {
 DECLARE_SOA_COLUMN(Bz, bz, float); //! Magnetic field in z-direction
+DECLARE_SOA_COLUMN(HfCollisionRejectionMap, hfCollisionRejectionMap, uint16_t); //! Bitmask with failed selection criteria
 // keep track of the number of studied events (for normalization purposes)
 DECLARE_SOA_COLUMN(OriginalCollisionCount, originalCollisionCount, int); //! Size of COLLISION table processed
 DECLARE_SOA_COLUMN(ZvtxSelectedCollisionCount, zvtxSelectedCollisionCount, int);                                                 //! Number of COLLISIONS with |zvtx| < zvtxMax
@@ -51,6 +52,9 @@ DECLARE_SOA_TABLE(HfRedCollisions, "AOD", "HFREDCOLLISION", //! Table with colli
                   collision::PosX,
                   collision::PosY,
                   collision::PosZ,
+                  collision::NumContrib,
+                  hf_reduced_collision::HfCollisionRejectionMap,
+                  hf_reduced_collision::Bz,
                   o2::soa::Marker<1>);
 
 DECLARE_SOA_TABLE(HfRedCollExtras, "AOD", "HFREDCOLLEXTRA", //! Table with collision extras for reduced workflow
@@ -59,8 +63,7 @@ DECLARE_SOA_TABLE(HfRedCollExtras, "AOD", "HFREDCOLLEXTRA", //! Table with colli
                   collision::CovYY,
                   collision::CovXZ,
                   collision::CovYZ,
-                  collision::CovZZ,
-                  hf_reduced_collision::Bz);
+                  collision::CovZZ);
 
 using HfRedCollision = HfRedCollisions::iterator;
 
@@ -292,6 +295,7 @@ DECLARE_SOA_TABLE(HfMcRecRedDpPis, "AOD", "HFMCRECREDDPPI", //! Table with recon
                   hf_cand_b0_reduced::Prong0Id,
                   hf_cand_b0_reduced::Prong1Id,
                   hf_cand_b0::FlagMcMatchRec,
+                  hf_cand_b0::FlagWrongCollision,
                   hf_cand_b0::DebugMcRec,
                   hf_b0_mc::PtMother);
 
@@ -309,6 +313,7 @@ DECLARE_SOA_TABLE(HfMcCheckDpPis, "AOD", "HFMCCHECKDPPI", //! Table with reconst
 // Table with same size as HFCANDB0
 DECLARE_SOA_TABLE(HfMcRecRedB0s, "AOD", "HFMCRECREDB0", //! Reconstruction-level MC information on B0 candidates for reduced workflow
                   hf_cand_b0::FlagMcMatchRec,
+                  hf_cand_b0::FlagWrongCollision,
                   hf_cand_b0::DebugMcRec,
                   hf_b0_mc::PtMother);
 
@@ -371,6 +376,7 @@ DECLARE_SOA_TABLE(HfMcRecRedD0Pis, "AOD", "HFMCRECREDD0PI", //! Table with recon
                   hf_cand_bplus_reduced::Prong0Id,
                   hf_cand_bplus_reduced::Prong1Id,
                   hf_cand_bplus::FlagMcMatchRec,
+                  hf_cand_bplus::FlagWrongCollision,
                   hf_cand_bplus::DebugMcRec,
                   hf_bplus_mc::PtMother);
 
@@ -385,6 +391,7 @@ DECLARE_SOA_TABLE(HfMcCheckD0Pis, "AOD", "HFMCCHECKD0PI", //! Table with reconst
 // Table with same size as HFCANDBPLUS
 DECLARE_SOA_TABLE(HfMcRecRedBps, "AOD", "HFMCRECREDBP", //! Reconstruction-level MC information on B+ candidates for reduced workflow
                   hf_cand_bplus::FlagMcMatchRec,
+                  hf_cand_bplus::FlagWrongCollision,
                   hf_cand_bplus::DebugMcRec,
                   hf_bplus_mc::PtMother);
 
@@ -422,19 +429,6 @@ DECLARE_SOA_TABLE(HfCandBpConfigs, "AOD", "HFCANDBPCONFIG", //! Table with confi
                   hf_cand_bplus_config::MyInvMassWindowD0Pi);
 
 // Charm resonances analysis
-namespace hf_reso_cand_reduced
-{
-DECLARE_SOA_COLUMN(InvMass, invMass, float); //! Invariant mass in GeV/c2
-DECLARE_SOA_COLUMN(Pt, pt, float);           //! Pt of Resonance candidate in GeV/c
-DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);           //! Pt of D daughter in GeV/c
-DECLARE_SOA_COLUMN(PtProng1, ptProng1, float);           //! Pt of V0 daughter in GeV/c
-DECLARE_SOA_COLUMN(InvMassProng0, invMassProng0, float); //! Invariant Mass of D daughter in GeV/c
-DECLARE_SOA_COLUMN(InvMassProng1, invMassProng1, float); //! Invariant Mass of V0 daughter in GeV/c
-DECLARE_SOA_COLUMN(MlScoreBkgProng0, mlScoreBkgProng0, float);             //! Bkg ML score of the D daughter
-DECLARE_SOA_COLUMN(MlScorePromptProng0, mlScorePromptProng0, float);       //! Prompt ML score of the D daughter
-DECLARE_SOA_COLUMN(MlScoreNonpromptProng0, mlScoreNonpromptProng0, float); //! Nonprompt ML score of the D daughter
-} // namespace hf_reso_cand_reduced
-
 namespace hf_reso_3_prong
 {
 DECLARE_SOA_COLUMN(DType, dType, int8_t); //! Integer with selected D candidate type: 1 = Dplus, -1 = Dminus, 2 = DstarPlus, -2 = DstarMinus
@@ -471,7 +465,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, //!
                            [](float pzProng0, float pzProng1) -> float { return 1.f * pzProng0 + 1.f * pzProng1; });
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //!
                            [](float pxProng0, float pxProng1, float pyProng0, float pyProng1) -> float { return RecoDecay::pt((1.f * pxProng0 + 1.f * pxProng1), (1.f * pyProng0 + 1.f * pyProng1)); });
-DECLARE_SOA_DYNAMIC_COLUMN(V0Radius, v0radius, //! V0 decay radius (2D, centered at zero)
+DECLARE_SOA_DYNAMIC_COLUMN(V0Radius, v0Radius, //! V0 decay radius (2D, centered at zero)
                            [](float x, float y) -> float { return RecoDecay::sqrtSumOfSquares(x, y); });
 DECLARE_SOA_DYNAMIC_COLUMN(InvMassLambda, invMassLambda, //! mass under lambda hypothesis
                            [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) -> float { return RecoDecay::m(std::array{std::array{pxpos, pypos, pzpos}, std::array{pxneg, pyneg, pzneg}}, std::array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged}); });
@@ -566,23 +560,87 @@ DECLARE_SOA_TABLE(HfRed3PrNoTrks, "AOD", "HFRED3PRNOTRK", //! Table with 3 prong
                   hf_reso_3_prong::InvMassAntiDstar<hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2, hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
                   hf_reso_3_prong::Pt<hf_cand::PxProng0, hf_cand::PxProng1, hf_cand::PxProng2, hf_cand::PyProng0, hf_cand::PyProng1, hf_cand::PyProng2>);
 
+namespace hf_reso_cand_reduced
+{
+DECLARE_SOA_COLUMN(InvMass, invMass, float);                               //! Invariant mass in GeV/c2
+DECLARE_SOA_COLUMN(InvMassProng0, invMassProng0, float);                   //! Invariant Mass of D daughter in GeV/c
+DECLARE_SOA_COLUMN(InvMassProng1, invMassProng1, float);                   //! Invariant Mass of V0 daughter in GeV/c
+DECLARE_SOA_COLUMN(MlScoreBkgProng0, mlScoreBkgProng0, float);             //! Bkg ML score of the D daughter
+DECLARE_SOA_COLUMN(MlScorePromptProng0, mlScorePromptProng0, float);       //! Prompt ML score of the D daughter
+DECLARE_SOA_COLUMN(MlScoreNonpromptProng0, mlScoreNonpromptProng0, float); //! Nonprompt ML score of the D daughter
+
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfRed3PrNoTrks, "_0"); //! Prong0 index (D daughter)
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, HfRedVzeros, "_1");    //! Prong1 index (V0 daughter)
+DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t);               // flag for decay channel classification reconstruction level
+DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t);               // flag for decay channel classification generator level
+DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);                       // debug flag for mis-association reconstruction level
+
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //!
+                           [](float pxProng0, float pxProng1, float pyProng0, float pyProng1) -> float { return RecoDecay::pt((1.f * pxProng0 + 1.f * pxProng1), (1.f * pyProng0 + 1.f * pyProng1)); });
+DECLARE_SOA_DYNAMIC_COLUMN(PtProng0, ptProng0, //!
+                           [](float pxProng0, float pyProng0) -> float { return RecoDecay::pt(pxProng0, pyProng0); });
+DECLARE_SOA_DYNAMIC_COLUMN(PtProng1, ptProng1, //!
+                           [](float pxProng1, float pyProng1) -> float { return RecoDecay::pt(pxProng1, pyProng1); });
+DECLARE_SOA_DYNAMIC_COLUMN(CosThetaStarDs1, cosThetaStarDs1, //! costhetastar under Ds1 hypothesis
+                           [](float px0, float py0, float pz0, float px1, float py1, float pz1, float invMass) -> float { return RecoDecay::cosThetaStar(std::array{std::array{px0, py0, pz0}, std::array{px1, py1, pz1}}, std::array{o2::constants::physics::MassDStar, o2::constants::physics::MassK0}, invMass, 1); });
+DECLARE_SOA_DYNAMIC_COLUMN(CosThetaStarDs2Star, cosThetaStarDs2Star, //! costhetastar under Ds2Star hypothesis
+                           [](float px0, float py0, float pz0, float px1, float py1, float pz1, float invMass) -> float { return RecoDecay::cosThetaStar(std::array{std::array{px0, py0, pz0}, std::array{px1, py1, pz1}}, std::array{o2::constants::physics::MassDPlus, o2::constants::physics::MassK0}, invMass, 1); });
+DECLARE_SOA_DYNAMIC_COLUMN(CosThetaStarXiC3055, cosThetaStarXiC3055, //! costhetastar under XiC3055 hypothesis
+                           [](float px0, float py0, float pz0, float px1, float py1, float pz1, float invMass) -> float { return RecoDecay::cosThetaStar(std::array{std::array{px0, py0, pz0}, std::array{px1, py1, pz1}}, std::array{o2::constants::physics::MassDPlus, o2::constants::physics::MassLambda0}, invMass, 1); });
+} // namespace hf_reso_cand_reduced
+
 DECLARE_SOA_TABLE(HfCandCharmReso, "AOD", "HFCANDCHARMRESO", //! Table with Resonance candidate information for resonances reduced workflow
                   o2::soa::Index<>,
+                  // Indices
                   hf_track_index_reduced::HfRedCollisionId,
+                  hf_reso_cand_reduced::Prong0Id,
+                  hf_reso_cand_reduced::Prong1Id,
+                  // Static
+                  hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0,
+                  hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1,
                   hf_reso_cand_reduced::InvMass,
-                  hf_reso_cand_reduced::Pt,
                   hf_reso_cand_reduced::InvMassProng0,
-                  hf_reso_cand_reduced::PtProng0,
                   hf_reso_cand_reduced::InvMassProng1,
-                  hf_reso_cand_reduced::PtProng1,
                   hf_reso_v0::Cpa,
                   hf_reso_v0::Dca,
-                  hf_reso_v0::Radius);
+                  hf_reso_v0::Radius,
+                  // Dynamic
+                  hf_reso_cand_reduced::Pt<hf_cand::PxProng0, hf_cand::PxProng1, hf_cand::PyProng0, hf_cand::PyProng1>,
+                  hf_reso_cand_reduced::PtProng0<hf_cand::PxProng0, hf_cand::PyProng0>,
+                  hf_reso_cand_reduced::PtProng1<hf_cand::PxProng1, hf_cand::PyProng1>,
+                  hf_cand::PVectorProng0<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0>,
+                  hf_cand::PVectorProng1<hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
+                  hf_reso_cand_reduced::CosThetaStarDs1<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1, hf_reso_cand_reduced::InvMass>,
+                  hf_reso_cand_reduced::CosThetaStarDs2Star<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1, hf_reso_cand_reduced::InvMass>,
+                  hf_reso_cand_reduced::CosThetaStarXiC3055<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1, hf_reso_cand_reduced::InvMass>);
 
 DECLARE_SOA_TABLE(HfCharmResoMLs, "AOD", "HFCHARMRESOML", //! Table with ML scores for the D daughter
                   hf_reso_cand_reduced::MlScoreBkgProng0,
                   hf_reso_cand_reduced::MlScorePromptProng0,
                   hf_reso_cand_reduced::MlScoreNonpromptProng0,
+                  o2::soa::Marker<1>);
+
+// Tables for MC Resonance analysis
+// table with results of reconstruction level MC matching
+DECLARE_SOA_TABLE(HfMcRecRedDV0s, "AOD", "HFMCRECREDDV0", //! Table with reconstructed MC information on DV0(<-Ds*) pairs for reduced workflow
+                  hf_reso_cand_reduced::Prong0Id,
+                  hf_reso_cand_reduced::Prong1Id,
+                  hf_reso_cand_reduced::FlagMcMatchRec,
+                  hf_reso_cand_reduced::DebugMcRec,
+                  hf_b0_mc::PtMother,
+                  o2::soa::Marker<1>);
+
+DECLARE_SOA_TABLE(HfMcGenRedResos, "AOD", "HFMCGENREDRESO", //! Generation-level MC information on B0 candidates for reduced workflow
+                  hf_cand_b0::FlagMcMatchGen,
+                  hf_b0_mc::PtTrack,
+                  hf_b0_mc::YTrack,
+                  hf_b0_mc::EtaTrack,
+                  hf_b0_mc::PtProng0,
+                  hf_b0_mc::YProng0,
+                  hf_b0_mc::EtaProng0,
+                  hf_b0_mc::PtProng1,
+                  hf_b0_mc::YProng1,
+                  hf_b0_mc::EtaProng1,
                   o2::soa::Marker<1>);
 } // namespace aod
 

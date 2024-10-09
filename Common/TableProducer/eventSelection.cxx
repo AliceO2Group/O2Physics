@@ -23,12 +23,15 @@
 #include "DataFormatsParameters/GRPLHCIFData.h"
 #include "DataFormatsParameters/GRPECSObject.h"
 #include "ITSMFTBase/DPLAlpideParam.h"
+#include "MetadataHelper.h"
 
 #include "TH1D.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::aod::evsel;
+
+MetadataHelper metadataInfo; // Metadata helper
 
 using BCsWithRun2InfosTimestampsAndMatches = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps, aod::Run2MatchedToBCSparse>;
 using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
@@ -45,6 +48,7 @@ struct BcSelectionTask {
   Configurable<int> confITSROFrameEndBorderMargin{"ITSROFrameEndBorderMargin", -1, "Number of bcs at the end of ITS RO Frame border. Take from CCDB if -1"};
   Configurable<int> confTimeFrameStartBorderMargin{"TimeFrameStartBorderMargin", -1, "Number of bcs to cut at the start of the Time Frame. Take from CCDB if -1"};
   Configurable<int> confTimeFrameEndBorderMargin{"TimeFrameEndBorderMargin", -1, "Number of bcs to cut at the end of the Time Frame. Take from CCDB if -1"};
+  Configurable<bool> confCheckRunDurationLimits{"checkRunDurationLimits", false, "Check if the BCs are within the run duration limits"};
 
   int lastRunNumber = -1;
   int64_t bcSOR = -1;                    // global bc of the start of the first orbit
@@ -56,6 +60,15 @@ struct BcSelectionTask {
 
   void init(InitContext&)
   {
+    if (metadataInfo.isFullyDefined() && !doprocessRun2 && !doprocessRun3) { // Check if the metadata is initialized (only if not forced from the workflow configuration)
+      LOG(info) << "Autosetting the processing mode (Run2 or Run3) based on metadata";
+      if (metadataInfo.isRun3()) {
+        doprocessRun3.value = true;
+      } else {
+        doprocessRun2.value = false;
+      }
+    }
+
     // ccdb->setURL("http://ccdb-test.cern.ch:8080");
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
@@ -69,6 +82,7 @@ struct BcSelectionTask {
     histos.add("hCounterTCEafterBCcuts", "", kTH1D, {{1, 0., 1.}});
     histos.add("hCounterZEMafterBCcuts", "", kTH1D, {{1, 0., 1.}});
     histos.add("hCounterZNCafterBCcuts", "", kTH1D, {{1, 0., 1.}});
+    histos.add("hCounterInvalidBCTimestamp", "", kTH1D, {{1, 0., 1.}});
     histos.add("hLumiTVX", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
     histos.add("hLumiTCE", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
     histos.add("hLumiZEM", ";;Luminosity, 1/#mub", kTH1D, {{1, 0., 1.}});
@@ -216,10 +230,14 @@ struct BcSelectionTask {
 
     bcsel.reserve(bcs.size());
     // extract ITS time frame parameters
-
-    int64_t ts = bcs.iteratorAt(0).timestamp();
+    int run = bcs.iteratorAt(0).runNumber();
+    auto timestamps = ccdb->getRunDuration(run, true); /// fatalise if timestamps are not found
+    int64_t sorTimestamp = timestamps.first;           // timestamp of the SOR/SOX/STF in ms
+    int64_t eorTimestamp = timestamps.second;          // timestamp of the EOR/EOX/ETF in ms
+    int64_t ts = eorTimestamp / 2 + sorTimestamp / 2;  // timestamp of the middle of the run
     auto alppar = ccdb->getForTimeStamp<o2::itsmft::DPLAlpideParam<0>>("ITS/Config/AlpideParam", ts);
-
+    EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", ts);
+    TriggerAliases* aliases = ccdb->getForTimeStamp<TriggerAliases>("EventSelection/TriggerAliases", ts);
     // map from GlobalBC to BcId needed to find triggerBc
     std::map<uint64_t, int32_t> mapGlobalBCtoBcId;
     for (auto& bc : bcs) {
@@ -227,12 +245,10 @@ struct BcSelectionTask {
     }
     int triggerBcShift = confTriggerBcShift;
     if (confTriggerBcShift == 999) {
-      int run = bcs.iteratorAt(0).runNumber();
       triggerBcShift = (run <= 526766 || (run >= 526886 && run <= 527237) || (run >= 527259 && run <= 527518) || run == 527523 || run == 527734 || run >= 534091) ? 0 : 294;
     }
 
     // extract run number and related information
-    int run = bcs.iteratorAt(0).runNumber();
     if (run != lastRunNumber) {
       lastRunNumber = run; // do it only once
       if (run >= 500000) { // access CCDB for data or anchored MC only
@@ -266,8 +282,6 @@ struct BcSelectionTask {
 
     // bc loop
     for (auto bc : bcs) {
-      EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", bc.timestamp());
-      TriggerAliases* aliases = ccdb->getForTimeStamp<TriggerAliases>("EventSelection/TriggerAliases", bc.timestamp());
       uint32_t alias{0};
       // workaround for pp2022 (trigger info is shifted by -294 bcs)
       int32_t triggerBcId = mapGlobalBCtoBcId[bc.globalBC() + triggerBcShift];
@@ -410,6 +424,15 @@ struct BcSelectionTask {
         }
       }
 
+      if (bc.timestamp() < static_cast<uint64_t>(sorTimestamp) || bc.timestamp() > static_cast<uint64_t>(eorTimestamp)) {
+        histos.get<TH1>(HIST("hCounterInvalidBCTimestamp"))->Fill(srun, 1);
+        if (confCheckRunDurationLimits.value) {
+          LOGF(warn, "Invalid BC timestamp: %d, run: %d, sor: %d, eor: %d", bc.timestamp(), run, sorTimestamp, eorTimestamp);
+          alias = 0u;
+          selection = 0u;
+        }
+      }
+
       // Fill bc selection columns
       bcsel(alias, selection, foundFT0, foundFV0, foundFDD, foundZDC);
     }
@@ -420,10 +443,9 @@ struct BcSelectionTask {
 struct EventSelectionTask {
   SliceCache cache;
   Produces<aod::EvSels> evsel;
-  Configurable<std::string> syst{"syst", "PbPb", "pp, pPb, Pbp, PbPb, XeXe"}; // TODO determine from AOD metadata or from CCDB
   Configurable<int> muonSelection{"muonSelection", 0, "0 - barrel, 1 - muon selection with pileup cuts, 2 - muon selection without pileup cuts"};
   Configurable<float> maxDiffZvtxFT0vsPV{"maxDiffZvtxFT0vsPV", 1., "maximum difference (in cm) between z-vertex from FT0 and PV"};
-  Configurable<bool> isMC{"isMC", 0, "0 - data, 1 - MC"};
+  Configurable<int> isMC{"isMC", 0, "-1 - autoset, 0 - data, 1 - MC"};
   // configurables for occupancy-based event selection
   Configurable<float> confTimeIntervalForOccupancyCalculationMin{"TimeIntervalForOccupancyCalculationMin", -40, "Min time diff window for TPC occupancy calculation, us"};
   Configurable<float> confTimeIntervalForOccupancyCalculationMax{"TimeIntervalForOccupancyCalculationMax", 100, "Max time diff window for TPC occupancy calculation, us"};
@@ -460,6 +482,25 @@ struct EventSelectionTask {
 
   void init(InitContext&)
   {
+    if (metadataInfo.isFullyDefined()) { // Check if the metadata is initialized (only if not forced from the workflow configuration)
+      if (!doprocessRun2 && !doprocessRun3) {
+        LOG(info) << "Autosetting the processing mode (Run2 or Run3) based on metadata";
+        if (metadataInfo.isRun3()) {
+          doprocessRun3.value = true;
+        } else {
+          doprocessRun2.value = false;
+        }
+      }
+      if (isMC == -1) {
+        LOG(info) << "Autosetting the MC mode based on metadata";
+        if (metadataInfo.isMC()) {
+          isMC.value = 1;
+        } else {
+          isMC.value = 0;
+        }
+      }
+    }
+
     // ccdb->setURL("http://ccdb-test.cern.ch:8080");
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
@@ -481,7 +522,7 @@ struct EventSelectionTask {
     auto bc = col.bc_as<BCsWithBcSelsRun2>();
     EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", bc.timestamp());
     bool* applySelection = par->GetSelection(muonSelection);
-    if (isMC) {
+    if (isMC == 1) {
       applySelection[kIsBBZAC] = 0;
       applySelection[kNoV0MOnVsOfPileup] = 0;
       applySelection[kNoSPDOnVsOfPileup] = 0;
@@ -537,7 +578,7 @@ struct EventSelectionTask {
     bool isINT1period = bc.runNumber() <= 136377 || (bc.runNumber() >= 144871 && bc.runNumber() <= 159582);
 
     // fill counters
-    if (isMC || (!isINT1period && bc.alias_bit(kINT7)) || (isINT1period && bc.alias_bit(kINT1))) {
+    if (isMC == 1 || (!isINT1period && bc.alias_bit(kINT7)) || (isINT1period && bc.alias_bit(kINT1))) {
       histos.get<TH1>(HIST("hColCounterAll"))->Fill(Form("%d", bc.runNumber()), 1);
       if ((!isINT1period && sel7) || (isINT1period && sel1)) {
         histos.get<TH1>(HIST("hColCounterAcc"))->Fill(Form("%d", bc.runNumber()), 1);
@@ -889,6 +930,9 @@ struct EventSelectionTask {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
+  // Parse the metadata
+  metadataInfo.initMetadata(cfgc);
+
   return WorkflowSpec{
     adaptAnalysisTask<BcSelectionTask>(cfgc),
     adaptAnalysisTask<EventSelectionTask>(cfgc)};

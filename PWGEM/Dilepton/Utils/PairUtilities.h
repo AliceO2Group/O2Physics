@@ -27,6 +27,7 @@
 //_______________________________________________________________________
 namespace o2::aod::pwgem::dilepton::utils::pairutil
 {
+
 enum class DileptonPairType : int {
   kDielectron = 0,
   kDimuon = 1,
@@ -36,8 +37,8 @@ enum class DileptonAnalysisType : int {
   kUPC = 1,
   kFlowV2 = 2,
   kFlowV3 = 3,
-  kFlowV4 = 4,
-  kPolarization = 5,
+  kPolarization = 4,
+  kVM = 5,
   kHFll = 6,
 };
 

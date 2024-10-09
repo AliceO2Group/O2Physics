@@ -85,12 +85,19 @@ DECLARE_SOA_COLUMN(etaXcandidate, EtaXcandidate, float);
 DECLARE_SOA_COLUMN(massJpsicandidate, MJpsicandidate, float);
 DECLARE_SOA_COLUMN(massDipioncandidate, MDipioncandidate, float);
 DECLARE_SOA_COLUMN(pTJpsicandidate, PtJpsicandidate, float);
+DECLARE_SOA_COLUMN(pTDipioncandidate, PtDipioncandidate, float);
 DECLARE_SOA_COLUMN(massDiff, Q, float);
 DECLARE_SOA_COLUMN(angDistPion1, DeltaR1, float);
 DECLARE_SOA_COLUMN(angDistPion2, DeltaR2, float);
 DECLARE_SOA_COLUMN(cosDileptonDipion, CosDileptonDipion, float);
-DECLARE_SOA_COLUMN(dcaxy, DcaXY, float);
-DECLARE_SOA_COLUMN(dcaz, DcaZ, float);
+DECLARE_SOA_COLUMN(dcaxyPion1, DcaXYPion1, float);
+DECLARE_SOA_COLUMN(dcazPion1, DcaZPion1, float);
+DECLARE_SOA_COLUMN(dcaxyPion2, DcaXYPion2, float);
+DECLARE_SOA_COLUMN(dcazPion2, DcaZPion2, float);
+DECLARE_SOA_COLUMN(pTPion1, PtPion1, float);
+DECLARE_SOA_COLUMN(pTPion2, PtPion2, float);
+DECLARE_SOA_COLUMN(dileptonSign, DileptonSign, int);
+DECLARE_SOA_COLUMN(ditrackSign, DitrackSign, int);
 
 } // namespace dqanalysisflags
 
@@ -100,7 +107,7 @@ DECLARE_SOA_TABLE(BarrelTrackCuts, "AOD", "DQANATRKCUTS", dqanalysisflags::IsBar
 DECLARE_SOA_TABLE(MuonTrackCuts, "AOD", "DQANAMUONCUTS", dqanalysisflags::IsMuonSelected);
 DECLARE_SOA_TABLE(Prefilter, "AOD", "DQPREFILTER", dqanalysisflags::IsPrefilterVetoed);
 DECLARE_SOA_TABLE(BmesonCandidates, "AOD", "DQBMESONS", dqanalysisflags::massBcandidate, dqanalysisflags::pTBcandidate, dqanalysisflags::LxyBcandidate, dqanalysisflags::LxyzBcandidate, dqanalysisflags::LzBcandidate, dqanalysisflags::TauxyBcandidate, dqanalysisflags::TauzBcandidate, dqanalysisflags::CosPBcandidate, dqanalysisflags::Chi2Bcandidate);
-DECLARE_SOA_TABLE(XCandidates, "AOD", "DQX3872", dqanalysisflags::massXcandidate, dqanalysisflags::pTXcandidate, dqanalysisflags::rapidityXcandidate, dqanalysisflags::etaXcandidate, dqanalysisflags::massJpsicandidate, dqanalysisflags::massDipioncandidate, dqanalysisflags::pTJpsicandidate, dqanalysisflags::massDiff, dqanalysisflags::angDistPion1, dqanalysisflags::angDistPion2, dqanalysisflags::cosDileptonDipion, dqanalysisflags::dcaxy, dqanalysisflags::dcaz);
+DECLARE_SOA_TABLE(XCandidates, "AOD", "DQX3872", dqanalysisflags::massXcandidate, dqanalysisflags::pTXcandidate, dqanalysisflags::rapidityXcandidate, dqanalysisflags::etaXcandidate, dqanalysisflags::massJpsicandidate, dqanalysisflags::massDipioncandidate, dqanalysisflags::pTJpsicandidate, dqanalysisflags::pTDipioncandidate, dqanalysisflags::massDiff, dqanalysisflags::angDistPion1, dqanalysisflags::angDistPion2, dqanalysisflags::cosDileptonDipion, dqanalysisflags::dcaxyPion1, dqanalysisflags::dcazPion1, dqanalysisflags::dcaxyPion2, dqanalysisflags::dcazPion2, dqanalysisflags::pTPion1, dqanalysisflags::pTPion2, dqanalysisflags::dileptonSign, dqanalysisflags::ditrackSign);
 } // namespace o2::aod
 
 // Declarations of various short names
@@ -168,6 +175,7 @@ struct AnalysisEventSelection {
   Configurable<string> fConfigMixingVariables{"cfgMixingVars", "", "Mixing configs separated by a comma, default no mixing"};
   Configurable<string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Event selection"};
   Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
+  Configurable<bool> fConfigRunZorro{"cfgRunZorro", false, "Enable event selection with zorro [WARNING: under debug, do not enable!]"};
   Configurable<int> fConfigITSROFrameStartBorderMargin{"ITSROFrameStartBorderMargin", -1, "Number of bcs at the start of ITS RO Frame border. Take from CCDB if -1"};
   Configurable<int> fConfigITSROFrameEndBorderMargin{"ITSROFrameEndBorderMargin", -1, "Number of bcs at the end of ITS RO Frame border. Take from CCDB if -1"};
   Configurable<std::string> fConfigAddEventHistogram{"cfgAddEventHistogram", "", "Comma separated list of histograms"};
@@ -180,8 +188,12 @@ struct AnalysisEventSelection {
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
 
-  void init(o2::framework::InitContext&)
+  void init(o2::framework::InitContext& context)
   {
+    if (context.mOptions.get<bool>("processDummy")) {
+      return;
+    }
+
     fEventCut = new AnalysisCompositeCut(true);
     TString eventCutStr = fConfigEventCuts.value;
     fEventCut->AddCut(dqcuts::GetAnalysisCut(eventCutStr.Data()));
@@ -237,13 +249,25 @@ struct AnalysisEventSelection {
     if (fConfigQA) {
       fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues); // automatically fill all the histograms in the class Event
     }
-    if (fEventCut->IsSelected(VarManager::fgValues)) {
-      if (fConfigQA) {
-        fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
+
+    if (!fConfigRunZorro) {
+      if (fEventCut->IsSelected(VarManager::fgValues)) {
+        if (fConfigQA) {
+          fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
+        }
+        eventSel(1);
+      } else {
+        eventSel(0);
       }
-      eventSel(1);
     } else {
-      eventSel(0);
+      if (fEventCut->IsSelected(VarManager::fgValues) && event.tag_bit(56)) { // This is the bit used for the software trigger event selections [TO BE DONE: find a more clear way to use it]
+        if (fConfigQA) {
+          fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
+        }
+        eventSel(1);
+      } else {
+        eventSel(0);
+      }
     }
 
     if (fMixHandler != nullptr) {
@@ -312,8 +336,12 @@ struct AnalysisTrackSelection {
 
   int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
 
-  void init(o2::framework::InitContext&)
+  void init(o2::framework::InitContext& context)
   {
+    if (context.mOptions.get<bool>("processDummy")) {
+      return;
+    }
+
     fCurrentRun = 0;
 
     TString cutNamesStr = fConfigCuts.value;
@@ -436,8 +464,12 @@ struct AnalysisMuonSelection {
   HistogramManager* fHistMan;
   std::vector<AnalysisCompositeCut> fMuonCuts;
 
-  void init(o2::framework::InitContext&)
+  void init(o2::framework::InitContext& context)
   {
+    if (context.mOptions.get<bool>("processDummy")) {
+      return;
+    }
+
     TString cutNamesStr = fConfigCuts.value;
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
@@ -530,8 +562,12 @@ struct AnalysisPrefilterSelection {
   std::map<int, bool> fPrefiltermap;
   AnalysisCompositeCut* fPairCut;
 
-  void init(o2::framework::InitContext&)
+  void init(o2::framework::InitContext& context)
   {
+    if (context.mOptions.get<bool>("processDummy")) {
+      return;
+    }
+
     fCurrentRun = 0;
 
     ccdb->setURL(ccdburl.value);
@@ -642,6 +678,10 @@ struct AnalysisEventMixing {
 
   void init(o2::framework::InitContext& context)
   {
+    if (context.mOptions.get<bool>("processDummy")) {
+      return;
+    }
+
     fCurrentRun = 0;
 
     ccdb->setURL(ccdburl.value);
@@ -898,6 +938,7 @@ struct AnalysisSameEventPairing {
   Produces<aod::DimuonsAll> dimuonAllList;
   Produces<aod::DileptonFlow> dileptonFlowList;
   Produces<aod::DileptonsInfo> dileptonInfoList;
+  Produces<aod::DileptonsMiniTree> dileptonMiniTree;
   float mMagField = 0.0;
   o2::parameters::GRPMagField* grpmag = nullptr;
   o2::base::MatLayerCylSet* lut = nullptr;
@@ -928,6 +969,13 @@ struct AnalysisSameEventPairing {
   Configurable<std::string> fCollisionSystem{"syst", "pp", "Collision system, pp or PbPb"};
   Configurable<float> fCenterMassEnergy{"energy", 13600, "Center of mass energy in GeV"};
 
+  // Configurables to create output tree (flat tables or minitree)
+  struct : ConfigurableGroup {
+    Configurable<bool> fConfigMiniTree{"useMiniTree.cfgMiniTree", false, "Produce a single flat table with minimal information for analysis"};
+    Configurable<float> fConfigMiniTreeMinMass{"useMiniTree.cfgMiniTreeMinMass", 2, "Min. mass cut for minitree"};
+    Configurable<float> fConfigMiniTreeMaxMass{"useMiniTree.cfgMiniTreeMaxMass", 5, "Max. mass cut for minitree"};
+  } useMiniTree;
+
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Filter filterEventSelected = aod::dqanalysisflags::isEventSelected == 1;
   // NOTE: the barrel filter map contains decisions for both electrons and hadrons used in the correlation task
@@ -949,6 +997,10 @@ struct AnalysisSameEventPairing {
 
   void init(o2::framework::InitContext& context)
   {
+    if (context.mOptions.get<bool>("processDummy")) {
+      return;
+    }
+
     fCurrentRun = 0;
 
     ccdb->setURL(ccdburl.value);
@@ -1160,6 +1212,9 @@ struct AnalysisSameEventPairing {
       dielectronAllList.reserve(1);
       dimuonAllList.reserve(1);
     }
+    if (useMiniTree.fConfigMiniTree) {
+      dileptonMiniTree.reserve(1);
+    }
 
     if (fConfigMultDimuons.value) {
 
@@ -1297,6 +1352,16 @@ struct AnalysisSameEventPairing {
             fHistMan->FillHistClass(histNames[iCut][0].Data(), VarManager::fgValues);
             if (fConfigAmbiguousHist && !(t1.isAmbiguous() || t2.isAmbiguous())) {
               fHistMan->FillHistClass(Form("%s_unambiguous", histNames[iCut][0].Data()), VarManager::fgValues);
+            }
+            if (useMiniTree.fConfigMiniTree) {
+              float dileptonMass = VarManager::fgValues[VarManager::kMass];
+              if (dileptonMass > useMiniTree.fConfigMiniTreeMinMass && dileptonMass < useMiniTree.fConfigMiniTreeMaxMass) {
+                dileptonMiniTree(VarManager::fgValues[VarManager::kMass],
+                                 VarManager::fgValues[VarManager::kPt],
+                                 VarManager::fgValues[VarManager::kRap],
+                                 VarManager::fgValues[VarManager::kCentFT0C],
+                                 VarManager::fgValues[VarManager::kCos2DeltaPhi]);
+              }
             }
           } else {
             if (t1.sign() > 0) {
@@ -1522,8 +1587,11 @@ struct AnalysisFwdTrackPid {
 
   Configurable<float> fConfigMaxDCA{"cfgMaxDCA", 0.5f, "Manually set maximum DCA of the track"};
 
-  void init(o2::framework::InitContext&)
+  void init(o2::framework::InitContext& context)
   {
+    if (context.mOptions.get<bool>("processDummy")) {
+      return;
+    }
   }
 
   // Template function to pair mft tracks and muon tracks
@@ -1622,6 +1690,10 @@ struct AnalysisDileptonHadron {
 
   void init(o2::framework::InitContext& context)
   {
+    if (context.mOptions.get<bool>("processDummy")) {
+      return;
+    }
+
     fCurrentRun = 0;
     fValuesDilepton = new float[VarManager::kNVars];
     fValuesHadron = new float[VarManager::kNVars];
@@ -1830,6 +1902,10 @@ struct AnalysisDileptonTrackTrack {
 
   void init(o2::framework::InitContext& context)
   {
+    if (context.mOptions.get<bool>("processDummy")) {
+      return;
+    }
+
     fValuesDitrack = new float[VarManager::kNVars];
     fValuesQuadruplet = new float[VarManager::kNVars];
     VarManager::SetDefaultVarNames();
@@ -1936,11 +2012,10 @@ struct AnalysisDileptonTrackTrack {
             if (t1.isBarrelSelected() & (uint32_t(1) << (iTrackCut + 1)) && t2.isBarrelSelected() & (uint32_t(1) << (iTrackCut + 1))) {
               fHistMan->FillHistClass(Form("DitrackSelected_%s_%s", fDitrackCut.GetName(), (*cutname).Data()), fValuesDitrack);
               if (fQuadrupletCut.IsSelected(fValuesQuadruplet)) {
+                XTable(fValuesQuadruplet[VarManager::kQuadMass], fValuesQuadruplet[VarManager::kQuadPt], fValuesQuadruplet[VarManager::kRap], fValuesQuadruplet[VarManager::kQuadEta], fValuesQuadruplet[VarManager::kPairMass], fValuesQuadruplet[VarManager::kDitrackMass], fValuesQuadruplet[VarManager::kPairPt], fValuesQuadruplet[VarManager::kDitrackPt], fValuesQuadruplet[VarManager::kQ], fValuesQuadruplet[VarManager::kDeltaR1], fValuesQuadruplet[VarManager::kDeltaR2], fValuesQuadruplet[VarManager::kCosthetaDileptonDitrack], fValuesQuadruplet[VarManager::kTrackDCAxyProng1], fValuesQuadruplet[VarManager::kTrackDCAzProng1], fValuesQuadruplet[VarManager::kTrackDCAxyProng2], fValuesQuadruplet[VarManager::kTrackDCAzProng2], fValuesQuadruplet[VarManager::kPt1], fValuesQuadruplet[VarManager::kPt2], dilepton.sign(), t1.sign() + t2.sign());
                 if (fIsUnlikeSignDilepton) {
                   if (fIsUnlikeSignDitrack) {
                     fHistMan->FillHistClass(Form("QuadrupletSEUSUS_%s_%s_%s", fDileptonCut.GetName(), fDitrackCut.GetName(), (*cutname).Data()), fValuesQuadruplet);
-                    XTable(fValuesQuadruplet[VarManager::kQuadMass], fValuesQuadruplet[VarManager::kQuadPt], fValuesQuadruplet[VarManager::kRap], fValuesQuadruplet[VarManager::kQuadEta], fValuesQuadruplet[VarManager::kPairMass], fValuesQuadruplet[VarManager::kDitrackMass], fValuesQuadruplet[VarManager::kPairPt], fValuesQuadruplet[VarManager::kQ], fValuesQuadruplet[VarManager::kDeltaR1], fValuesQuadruplet[VarManager::kDeltaR2], fValuesQuadruplet[VarManager::kCosthetaDileptonDitrack], fValuesQuadruplet[VarManager::kTrackDCAxy], fValuesQuadruplet[VarManager::kTrackDCAz]);
-
                   } else {
                     fHistMan->FillHistClass(Form("QuadrupletSEUSLS_%s_%s_%s", fDileptonCut.GetName(), fDitrackCut.GetName(), (*cutname).Data()), fValuesQuadruplet);
                   }

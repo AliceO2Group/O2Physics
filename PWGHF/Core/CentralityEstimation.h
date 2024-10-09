@@ -28,6 +28,91 @@ enum CentralityEstimator {
   NTracksPV,
   NCentralityEstimators
 };
+
+template <typename T>
+concept hasFT0ACent = requires(T collision)
+{
+  collision.centFT0A();
+};
+
+template <typename T>
+concept hasFT0CCent = requires(T collision)
+{
+  collision.centFT0C();
+};
+
+template <typename T>
+concept hasFT0MCent = requires(T collision)
+{
+  collision.centFT0M();
+};
+
+template <typename T>
+concept hasFV0ACent = requires(T collision)
+{
+  collision.centFV0A();
+};
+
+template <typename T>
+concept hasNTracksPVCent = requires(T collision)
+{
+  collision.centNTPV();
+};
+
+/// Evaluate centrality/multiplicity percentile using FT0A estimator
+/// \param candidate is candidate
+/// \return centrality/multiplicity percentile of the collision
+template <hasFT0ACent Coll>
+float getCentralityColl(const Coll& collision)
+{
+  return collision.centFT0A();
+}
+
+/// Evaluate centrality/multiplicity percentile using FT0C estimator
+/// \param candidate is candidate
+/// \return centrality/multiplicity percentile of the collision
+template <hasFT0CCent Coll>
+float getCentralityColl(const Coll& collision)
+{
+  return collision.centFT0C();
+}
+
+/// Evaluate centrality/multiplicity percentile using FT0M estimator
+/// \param candidate is candidate
+/// \return centrality/multiplicity percentile of the collision
+template <hasFT0MCent Coll>
+float getCentralityColl(const Coll& collision)
+{
+  return collision.centFT0M();
+}
+
+/// Evaluate centrality/multiplicity percentile using FV0A estimator
+/// \param candidate is candidate
+/// \return centrality/multiplicity percentile of the collision
+template <hasFV0ACent Coll>
+float getCentralityColl(const Coll& collision)
+{
+  return collision.centFV0A();
+}
+
+/// Evaluate centrality/multiplicity percentile using NTracksPV estimator
+/// \param candidate is candidate
+/// \return centrality/multiplicity percentile of the collision
+template <hasNTracksPVCent Coll>
+float getCentralityColl(const Coll& collision)
+{
+  return collision.centNTPV();
+}
+
+/// Default case if no centrality/multiplicity estimator is provided
+/// \param candidate is candidate
+/// \return dummy value for centrality/multiplicity percentile of the collision
+template <typename Coll>
+float getCentralityColl(const Coll&)
+{
+  return 105.0f;
+}
+
 } // namespace o2::hf_centrality
 
 #endif // PWGHF_CORE_CENTRALITYESTIMATION_H_

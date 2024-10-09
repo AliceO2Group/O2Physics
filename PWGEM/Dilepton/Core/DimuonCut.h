@@ -24,15 +24,21 @@
 #include "TNamed.h"
 #include "Math/Vector4D.h"
 
+#include "MathUtils/Utils.h"
 #include "Framework/Logger.h"
 #include "Framework/DataTypes.h"
 #include "CommonConstants/PhysicsConstants.h"
+#include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
+
+using namespace o2::aod::pwgem::dilepton::utils::emtrackutil;
 
 class DimuonCut : public TNamed
 {
  public:
   DimuonCut() = default;
   DimuonCut(const char* name, const char* title) : TNamed(name, title) {}
+
+  ~DimuonCut() {}
 
   enum class DimuonCuts : int {
     // pair cut
@@ -44,6 +50,7 @@ class DimuonCut : public TNamed
     kTrackType,
     kTrackPtRange,
     kTrackEtaRange,
+    kTrackPhiRange,
     kDCAxy,
     kMFTNCls,
     kMCHMIDNCls,
@@ -79,36 +86,9 @@ class DimuonCut : public TNamed
     ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassMuon);
     ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
 
-    float dcaX1 = t1.fwdDcaX();
-    float dcaY1 = t1.fwdDcaY();
-    float cXX1 = t1.cXX();
-    float cYY1 = t1.cYY();
-    float cXY1 = t1.cXY();
-    float dcaX2 = t2.fwdDcaX();
-    float dcaY2 = t2.fwdDcaY();
-    float cXX2 = t2.cXX();
-    float cYY2 = t2.cYY();
-    float cXY2 = t2.cXY();
-
-    float dca_xy1 = 999.f;
-    float det1 = cXX1 * cYY1 - cXY1 * cXY1;
-    if (det1 < 0) {
-      dca_xy1 = 999.f;
-    } else {
-      float chi2 = (dcaX1 * dcaX1 * cYY1 + dcaY1 * dcaY1 * cXX1 - 2. * dcaX1 * dcaY1 * cXY1) / det1;
-      dca_xy1 = std::sqrt(std::abs(chi2) / 2.); // in sigma
-    }
-
-    float dca_xy2 = 999.f;
-    float det2 = cXX2 * cYY2 - cXY2 * cXY2;
-    if (det2 < 0) {
-      dca_xy2 = 999.f;
-    } else {
-      float chi2 = (dcaX2 * dcaX2 * cYY2 + dcaY2 * dcaY2 * cXX2 - 2. * dcaX2 * dcaY2 * cXY2) / det2;
-      dca_xy2 = std::sqrt(std::abs(chi2) / 2.); // in sigma
-    }
-
-    float pair_dca_xy = std::sqrt((std::pow(dca_xy1, 2) + std::pow(dca_xy2, 2)) / 2.);
+    float dca_xy_t1 = fwdDcaXYinSigma(t1);
+    float dca_xy_t2 = fwdDcaXYinSigma(t2);
+    float pair_dca_xy = std::sqrt((dca_xy_t1 * dca_xy_t1 + dca_xy_t2 * dca_xy_t2) / 2.);
 
     if (v12.M() < mMinMass || mMaxMass < v12.M()) {
       return false;
@@ -125,6 +105,14 @@ class DimuonCut : public TNamed
     if (pair_dca_xy < mMinPairDCAxy || mMaxPairDCAxy < pair_dca_xy) { // in sigma for pair
       return false;
     }
+
+    float deta = v1.Eta() - v2.Eta();
+    float dphi = v1.Phi() - v2.Phi();
+    o2::math_utils::bringToPMPi(dphi);
+    if (mApplydEtadPhi && std::pow(deta / mMinDeltaEta, 2) + std::pow(dphi / mMinDeltaPhi, 2) < 1.f) {
+      return false;
+    }
+
     return true;
   }
 
@@ -138,6 +126,9 @@ class DimuonCut : public TNamed
       return false;
     }
     if (!IsSelectedTrack(track, DimuonCuts::kTrackEtaRange)) {
+      return false;
+    }
+    if (!IsSelectedTrack(track, DimuonCuts::kTrackPhiRange)) {
       return false;
     }
     if (!IsSelectedTrack(track, DimuonCuts::kDCAxy)) {
@@ -181,6 +172,9 @@ class DimuonCut : public TNamed
       case DimuonCuts::kTrackEtaRange:
         return track.eta() > mMinTrackEta && track.eta() < mMaxTrackEta;
 
+      case DimuonCuts::kTrackPhiRange:
+        return track.phi() > mMinTrackPhi && track.phi() < mMaxTrackPhi;
+
       case DimuonCuts::kDCAxy:
         return mMinDcaXY < std::sqrt(std::pow(track.fwdDcaX(), 2) + std::pow(track.fwdDcaY(), 2)) && std::sqrt(std::pow(track.fwdDcaX(), 2) + std::pow(track.fwdDcaY(), 2)) < mMaxDcaXY;
 
@@ -215,10 +209,12 @@ class DimuonCut : public TNamed
   void SetPairPtRange(float minPt = 0.f, float maxPt = 1e10f);
   void SetPairYRange(float minY = -1e10f, float maxY = 1e10f);
   void SetPairDCAxyRange(float min = 0.f, float max = 1e10f); // DCAxy in cm
+  void SetMindEtadPhi(bool flag, float min_deta, float min_dphi);
 
   void SetTrackType(int track_type); // 0: MFT-MCH-MID (global muon), 3: MCH-MID (standalone muon)
   void SetTrackPtRange(float minPt = 0.f, float maxPt = 1e10f);
   void SetTrackEtaRange(float minEta = -1e10f, float maxEta = 1e10f);
+  void SetTrackPhiRange(float minPhi = 0.f, float maxPhi = 2.f * M_PI);
   void SetNClustersMFT(int min, int max);
   void SetNClustersMCHMID(int min, int max);
   void SetChi2(float min, float max);
@@ -234,10 +230,14 @@ class DimuonCut : public TNamed
   float mMinPairPt{0.f}, mMaxPairPt{1e10f};       // range in pT
   float mMinPairY{-1e10f}, mMaxPairY{1e10f};      // range in rapidity
   float mMinPairDCAxy{0.f}, mMaxPairDCAxy{1e10f}; // range in 3D DCA in sigma
+  bool mApplydEtadPhi{false};                     // flag to apply deta, dphi cut between 2 tracks
+  float mMinDeltaEta{0.f};
+  float mMinDeltaPhi{0.f};
 
   // kinematic cuts
-  float mMinTrackPt{0.f}, mMaxTrackPt{1e10f};      // range in pT
-  float mMinTrackEta{-1e10f}, mMaxTrackEta{1e10f}; // range in eta
+  float mMinTrackPt{0.f}, mMaxTrackPt{1e10f};        // range in pT
+  float mMinTrackEta{-1e10f}, mMaxTrackEta{1e10f};   // range in eta
+  float mMinTrackPhi{0.f}, mMaxTrackPhi{2.f * M_PI}; // range in phi
 
   // track quality cuts
   int mTrackType{3};

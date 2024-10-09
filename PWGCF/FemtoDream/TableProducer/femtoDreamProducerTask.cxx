@@ -32,11 +32,12 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
-#include "Math/Vector4D.h"
+#include "EventFiltering/Zorro.h"
 #include "PWGCF/DataModel/FemtoDerived.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "TMath.h"
+#include "Math/Vector4D.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -47,6 +48,7 @@ namespace o2::aod
 {
 
 using FemtoFullCollision = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms>::iterator;
+using FemtoFullCollision_noCent = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator;
 using FemtoFullCollisionMC = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::McCollisionLabels>::iterator;
 using FemtoFullCollision_noCent_MC = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>::iterator;
 using FemtoFullMCgenCollisions = soa::Join<aod::McCollisions, MultsExtraMC>;
@@ -57,6 +59,14 @@ using FemtoFullTracks =
             aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
             aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe>;
 } // namespace o2::aod
+
+namespace softwareTriggers
+{
+static const int nTriggers = 6;
+static const std::vector<std::string> triggerNames{"fPPP", "fPPL", "fPLL", "fLLL", "fPD", "fLD"};
+static const float triggerSwitches[1][nTriggers]{
+  {0, 0, 0, 0, 0, 0}};
+} // namespace softwareTriggers
 
 template <typename T>
 int getRowDaughters(int daughID, T const& vecID)
@@ -72,6 +82,8 @@ int getRowDaughters(int daughID, T const& vecID)
 }
 
 struct femtoDreamProducerTask {
+
+  Zorro zorro;
 
   Produces<aod::FDCollisions> outputCollision;
   Produces<aod::FDMCCollisions> outputMCCollision;
@@ -89,6 +101,14 @@ struct femtoDreamProducerTask {
 
   /// Event cuts
   FemtoDreamCollisionSelection colCuts;
+  // Event cuts - Triggers
+  Configurable<bool> ConfEnableTriggerSelection{"ConfEnableTriggerSelection", false, "Should the trigger selection be enabled for collisions?"};
+  Configurable<LabeledArray<float>> ConfTriggerSwitches{
+    "ConfTriggerSwitches",
+    {softwareTriggers::triggerSwitches[0], 1, softwareTriggers::nTriggers, std::vector<std::string>{"Switch"}, softwareTriggers::triggerNames},
+    "Turn on which trigger should be checked for recorded events to pass selection"};
+
+  // Event cuts - usual selection criteria
   Configurable<float> ConfEvtZvtx{"ConfEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
   Configurable<bool> ConfEvtTriggerCheck{"ConfEvtTriggerCheck", true, "Evt sel: check for trigger"};
   Configurable<int> ConfEvtTriggerSel{"ConfEvtTriggerSel", kINT7, "Evt sel: trigger"};
@@ -172,14 +192,15 @@ struct femtoDreamProducerTask {
 
   int mRunNumber;
   float mMagField;
+  std::string zorroTriggerNames = "";
   Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
 
   void init(InitContext&)
   {
-    if (doprocessData == false && doprocessMC == false && doprocessMC_noCentrality == false) {
+    if (doprocessData == false && doprocessData_noCentrality == false && doprocessMC == false && doprocessMC_noCentrality == false) {
       LOGF(fatal, "Neither processData nor processMC enabled. Please choose one.");
     }
-    if ((doprocessData == true && doprocessMC == true) || (doprocessData == true && doprocessMC_noCentrality == true) || (doprocessMC == true && doprocessMC_noCentrality == true)) {
+    if ((doprocessData == true && doprocessMC == true) || (doprocessData == true && doprocessMC_noCentrality == true) || (doprocessMC == true && doprocessMC_noCentrality == true) || (doprocessData_noCentrality == true && doprocessData == true) || (doprocessData_noCentrality == true && doprocessMC == true) || (doprocessData_noCentrality == true && doprocessMC_noCentrality == true)) {
       LOGF(fatal,
            "Cannot enable more than one process switch at the same time. "
            "Please choose one.");
@@ -198,6 +219,15 @@ struct femtoDreamProducerTask {
     ResoRegistry.add("AnalysisQA/Reso/Daughter2/Phi", "Azimuthal angle of all processed tracks;#phi;Entries", HistType::kTH1F, {{720, 0, TMath::TwoPi()}});
     ResoRegistry.add("AnalysisQA/Reso/PtD1_selected", "Transverse momentum of all processed tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
     ResoRegistry.add("AnalysisQA/Reso/PtD2_selected", "Transverse momentum of all processed tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
+
+    if (ConfEnableTriggerSelection) {
+      for (const std::string& triggerName : softwareTriggers::triggerNames) {
+        if (ConfTriggerSwitches->get("Switch", triggerName.c_str())) {
+          zorroTriggerNames += triggerName + ",";
+        }
+      }
+      zorroTriggerNames.pop_back();
+    }
 
     colCuts.setCuts(ConfEvtZvtx.value, ConfEvtTriggerCheck.value, ConfEvtTriggerSel.value, ConfEvtOfflineCheck.value, ConfEvtAddOfflineCheck.value, ConfIsRun3.value);
     colCuts.init(&qaRegistry);
@@ -272,7 +302,7 @@ struct femtoDreamProducerTask {
   }
 
   /// Function to retrieve the nominal magnetic field in kG (0.1T) and convert it directly to T
-  void getMagneticFieldTesla(aod::BCsWithTimestamps::iterator bc)
+  void initCCDB_Mag_Trig(aod::BCsWithTimestamps::iterator bc)
   {
     // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
     // get magnetic field for run
@@ -306,6 +336,11 @@ struct femtoDreamProducerTask {
     }
     mMagField = output;
     mRunNumber = bc.runNumber();
+
+    // Init for zorro to get trigger flags
+    if (ConfEnableTriggerSelection) {
+      zorro.initCCDB(ccdb.service, mRunNumber, timestamp, zorroTriggerNames);
+    }
   }
 
   template <bool isTrackOrV0, typename ParticleType>
@@ -419,6 +454,14 @@ struct femtoDreamProducerTask {
   template <bool isMC, bool useCentrality, typename V0Type, typename TrackType, typename CollisionType>
   void fillCollisionsAndTracksAndV0(CollisionType const& col, TrackType const& tracks, V0Type const& fullV0s)
   {
+    // If triggering is enabled, select only events which were triggered wit our triggers
+    if (ConfEnableTriggerSelection) {
+      bool zorroSelected = zorro.isSelected(col.template bc_as<aod::BCsWithTimestamps>().globalBC()); /// check if event was selected by triggers of interest
+      if (!zorroSelected) {
+        return;
+      }
+    }
+
     const auto vtxZ = col.posZ();
     const auto spher = colCuts.computeSphericity(col, tracks);
     float mult = 0;
@@ -675,12 +718,26 @@ struct femtoDreamProducerTask {
                 o2::aod::V0Datas const& fullV0s)
   {
     // get magnetic field for run
-    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+    initCCDB_Mag_Trig(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
     fillCollisionsAndTracksAndV0<false, true>(col, tracks, fullV0s);
   }
   PROCESS_SWITCH(femtoDreamProducerTask, processData,
                  "Provide experimental data", true);
+
+  void
+    processData_noCentrality(aod::FemtoFullCollision_noCent const& col,
+                             aod::BCsWithTimestamps const&,
+                             aod::FemtoFullTracks const& tracks,
+                             o2::aod::V0Datas const& fullV0s)
+  {
+    // get magnetic field for run
+    initCCDB_Mag_Trig(col.bc_as<aod::BCsWithTimestamps>());
+    // fill the tables
+    fillCollisionsAndTracksAndV0<false, false>(col, tracks, fullV0s);
+  }
+  PROCESS_SWITCH(femtoDreamProducerTask, processData_noCentrality,
+                 "Provide experimental data without centrality information", false);
 
   void processMC(aod::FemtoFullCollisionMC const& col,
                  aod::BCsWithTimestamps const&,
@@ -690,7 +747,7 @@ struct femtoDreamProducerTask {
                  soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s) /// \todo with FilteredFullV0s
   {
     // get magnetic field for run
-    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+    initCCDB_Mag_Trig(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
     fillCollisionsAndTracksAndV0<true, true>(col, tracks, fullV0s);
   }
@@ -704,7 +761,7 @@ struct femtoDreamProducerTask {
                               soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s) /// \todo with FilteredFullV0s
   {
     // get magnetic field for run
-    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+    initCCDB_Mag_Trig(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
     fillCollisionsAndTracksAndV0<true, false>(col, tracks, fullV0s);
   }

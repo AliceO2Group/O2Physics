@@ -111,6 +111,39 @@ class OnnxModel
     return evalModel<T>(inputTensors);
   }
 
+  // For 2D inputs
+  template <typename T>
+  T* evalModel(std::vector<std::vector<T>>& input)
+  {
+    std::vector<Ort::Value> inputTensors;
+
+#if !__has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
+    Ort::MemoryInfo mem_info = Ort::MemoryInfo::CreateCpu(OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault);
+#endif
+
+    for (size_t iinput = 0; iinput < input.size(); iinput++) {
+      [[maybe_unused]] int totalSize = 1;
+      int64_t size = input[iinput].size();
+      for (size_t idim = 1; idim < mInputShapes[iinput].size(); idim++) {
+        totalSize *= mInputShapes[iinput][idim];
+      }
+      assert(size % totalSize == 0);
+
+      std::vector<int64_t> inputShape{static_cast<int64_t>(size / totalSize)};
+      for (size_t idim = 1; idim < mInputShapes[iinput].size(); idim++) {
+        inputShape.push_back(mInputShapes[iinput][idim]);
+      }
+
+#if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
+      inputTensors.emplace_back(Ort::Experimental::Value::CreateTensor<T>(input[iinput].data(), size, inputShape));
+#else
+      inputTensors.emplace_back(Ort::Value::CreateTensor<T>(mem_info, input[iinput].data(), size, inputShape.data(), inputShape.size()));
+#endif
+    }
+
+    return evalModel<T>(inputTensors);
+  }
+
   // Reset session
 #if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
   void resetSession() { mSession.reset(new Ort::Experimental::Session{*mEnv, modelPath, sessionOptions}); }

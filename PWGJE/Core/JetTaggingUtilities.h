@@ -46,6 +46,28 @@ namespace jettaggingutilities
 {
 const int cmTomum = 10000; // using cm -> #mum for impact parameter (dca)
 
+//________________________________________________________________________
+bool isBHadron(int pc)
+{
+  std::vector<int> bPdG = {511, 521, 10511, 10521, 513, 523, 10513, 10523, 20513, 20523, 20513, 20523, 515, 525, 531, 10531, 533, 10533,
+                           20533, 535, 541, 10541, 543, 10543, 20543, 545, 551, 10551, 100551, 110551, 200551, 210551, 553, 10553, 20553,
+                           30553, 100553, 110553, 120553, 130553, 200553, 210553, 220553, 300553, 9000533, 9010553, 555, 10555, 20555,
+                           100555, 110555, 120555, 200555, 557, 100557, 5122, 5112, 5212, 5222, 5114, 5214, 5224, 5132, 5232, 5312, 5322,
+                           5314, 5324, 5332, 5334, 5142, 5242, 5412, 5422, 5414, 5424, 5342, 5432, 5434, 5442, 5444, 5512, 5522, 5514, 5524,
+                           5532, 5534, 5542, 5544, 5554};
+
+  return (std::find(bPdG.begin(), bPdG.end(), std::abs(pc)) != bPdG.end());
+}
+//________________________________________________________________________
+bool isCHadron(int pc)
+{
+  std::vector<int> bPdG = {411, 421, 10411, 10421, 413, 423, 10413, 10423, 20431, 20423, 415, 425, 431, 10431, 433, 10433, 20433, 435, 441,
+                           10441, 100441, 443, 10443, 20443, 100443, 30443, 9000443, 9010443, 9020443, 445, 100445, 4122, 4222, 4212, 4112,
+                           4224, 4214, 4114, 4232, 4132, 4322, 4312, 4324, 4314, 4332, 4334, 4412, 4422, 4414, 4424, 4432, 4434, 4444};
+
+  return (std::find(bPdG.begin(), bPdG.end(), std::abs(pc)) != bPdG.end());
+}
+
 /**
  * returns the globalIndex of the earliest mother of a particle in the shower. returns -1 if a suitable mother is not found
  *
@@ -109,7 +131,7 @@ int getOriginalHFMotherIndex(const typename T::iterator& hfparticle)
  * @param hftrack track passed as reference which is then replaced by the first track that originated from an HF shower
  */
 template <typename T, typename U, typename V>
-int jetTrackFromHFShower(T const& jet, U const& /*tracks*/, V const& particles, typename U::iterator& hftrack)
+int jetTrackFromHFShower(T const& jet, U const& /*tracks*/, V const& particles, typename U::iterator& hftrack, bool searchUpToQuark)
 {
 
   bool hasMcParticle = false;
@@ -120,7 +142,7 @@ int jetTrackFromHFShower(T const& jet, U const& /*tracks*/, V const& particles, 
     }
     hasMcParticle = true;
     auto const& particle = track.template mcParticle_as<V>();
-    origin = RecoDecay::getCharmHadronOrigin(particles, particle, true);
+    origin = RecoDecay::getCharmHadronOrigin(particles, particle, searchUpToQuark);
     if (origin == 1 || origin == 2) { // 1=charm , 2=beauty
       hftrack = track;
       if (origin == 1) {
@@ -146,12 +168,12 @@ int jetTrackFromHFShower(T const& jet, U const& /*tracks*/, V const& particles, 
  * @param hfparticle particle passed as reference which is then replaced by the first track that originated from an HF shower
  */
 template <typename T, typename U>
-int jetParticleFromHFShower(T const& jet, U const& particles, typename U::iterator& hfparticle)
+int jetParticleFromHFShower(T const& jet, U const& particles, typename U::iterator& hfparticle, bool searchUpToQuark)
 {
 
   int origin = -1;
   for (const auto& particle : jet.template tracks_as<U>()) {
-    origin = RecoDecay::getCharmHadronOrigin(particles, particle, true);
+    origin = RecoDecay::getCharmHadronOrigin(particles, particle, searchUpToQuark);
     if (origin == 1 || origin == 2) { // 1=charm , 2=beauty
       hfparticle = particle;
       if (origin == 1) {
@@ -174,11 +196,11 @@ int jetParticleFromHFShower(T const& jet, U const& particles, typename U::iterat
  */
 
 template <typename T, typename U, typename V>
-int mcdJetFromHFShower(T const& jet, U const& tracks, V const& particles, float dRMax = 0.25)
+int mcdJetFromHFShower(T const& jet, U const& tracks, V const& particles, float dRMax = 0.25, bool searchUpToQuark = false)
 {
 
   typename U::iterator hftrack;
-  int origin = jetTrackFromHFShower(jet, tracks, particles, hftrack);
+  int origin = jetTrackFromHFShower(jet, tracks, particles, hftrack, searchUpToQuark);
   if (origin == JetTaggingSpecies::charm || origin == JetTaggingSpecies::beauty) {
     if (!hftrack.has_mcParticle()) {
       return JetTaggingSpecies::none;
@@ -215,11 +237,11 @@ int mcdJetFromHFShower(T const& jet, U const& tracks, V const& particles, float 
  */
 
 template <typename T, typename U>
-int mcpJetFromHFShower(T const& jet, U const& particles, float dRMax = 0.25)
+int mcpJetFromHFShower(T const& jet, U const& particles, float dRMax = 0.25, bool searchUpToQuark = false)
 {
 
   typename U::iterator hfparticle;
-  int origin = jetParticleFromHFShower(jet, particles, hfparticle);
+  int origin = jetParticleFromHFShower(jet, particles, hfparticle, searchUpToQuark);
   if (origin == JetTaggingSpecies::charm || origin == JetTaggingSpecies::beauty) {
 
     int originalHFMotherIndex = getOriginalHFMotherIndex<U>(hfparticle);
@@ -292,11 +314,7 @@ int jetOrigin(T const& jet, U const& particles, float dRMax = 0.25)
 template <typename AnyJet, typename AllMCParticles>
 int16_t getJetFlavor(AnyJet const& jet, AllMCParticles const& mcparticles)
 {
-  const int arraySize = 99;
-
-  std::array<int, arraySize> countpartcode;
-  int count = 0;
-
+  bool charmQuark = false;
   for (auto& mcpart : mcparticles) {
     int pdgcode = mcpart.pdgCode();
     if (TMath::Abs(pdgcode) == 21 || (TMath::Abs(pdgcode) >= 1 && TMath::Abs(pdgcode) <= 5)) {
@@ -304,23 +322,96 @@ int16_t getJetFlavor(AnyJet const& jet, AllMCParticles const& mcparticles)
 
       if (dR < jet.r() / 100.f) {
         if (TMath::Abs(pdgcode) == 5) {
-          return 2; // Beauty jet
-        } else {
-          if (count > arraySize - 1)
-            return 0;
-          countpartcode[count] = pdgcode;
-          count++;
+          return JetTaggingSpecies::beauty; // Beauty jet
+        } else if (TMath::Abs(pdgcode) == 4) {
+          charmQuark = true;
         }
       }
     }
   }
 
-  for (int ij = 0; ij < count; ij++) {
-    if (TMath::Abs(countpartcode[ij]) == 4)
-      return 1; // Charm jet
+  if (charmQuark) {
+    return JetTaggingSpecies::charm; // Charm jet
   }
 
-  return 0; // Light flavor jet
+  return JetTaggingSpecies::lightflavour; // Light flavor jet
+}
+
+/**
+ * return the jet flavor if it finds a HF hadron inside the jet: 0 for lf-jet, 1 for c-jet, 2 for b-jet
+ *
+ * @param AnyJet the jet that we need to study its flavor
+ * @param AllMCParticles a vector of all the mc particles stack
+ */
+template <typename AnyJet, typename AllMCParticles>
+int16_t getJetFlavorHadron(AnyJet const& jet, AllMCParticles const& mcparticles)
+{
+  bool charmHadron = false;
+
+  for (auto& mcpart : mcparticles) {
+    int pdgcode = mcpart.pdgCode();
+    if (isBHadron(pdgcode) || isCHadron(pdgcode)) {
+      double dR = jetutilities::deltaR(jet, mcpart);
+
+      if (dR < jet.r() / 100.f) {
+        if (isBHadron(pdgcode)) {
+          return JetTaggingSpecies::beauty; // Beauty jet
+        } else if (isCHadron(pdgcode)) {
+          charmHadron = true;
+        }
+      }
+    }
+  }
+
+  if (charmHadron) {
+    return JetTaggingSpecies::charm; // Charm jet
+  }
+
+  return JetTaggingSpecies::lightflavour; // Light flavor jet
+}
+
+/**
+ * return acceptance of track about DCA xy and z due to cut for QualityTracks
+ */
+template <typename T>
+bool trackAcceptanceWithDca(T const& track, float trackDcaXYMax, float trackDcaZMax)
+{
+  if (std::abs(track.dcaXY()) > trackDcaXYMax)
+    return false;
+  if (std::abs(track.dcaZ()) > trackDcaZMax)
+    return false;
+  return true;
+}
+
+/**
+ * retrun acceptance of prong about chi2 and error of decay length due to cut for high quality secondary vertex
+ */
+template <typename T>
+bool prongAcceptance(T const& prong, float prongChi2PCAMin, float prongChi2PCAMax, float prongsigmaLxyMax, float prongIPxyMin, float prongIPxyMax, float prongDispersionMax, bool doXYZ)
+{
+  if (prong.chi2PCA() < prongChi2PCAMin)
+    return false;
+  if (prong.chi2PCA() > prongChi2PCAMax)
+    return false;
+  if (prong.dispersion() > prongDispersionMax)
+    return false;
+  if (!doXYZ) {
+    if (prong.errorDecayLengthXY() > prongsigmaLxyMax)
+      return false;
+    if (std::abs(prong.impactParameterXY()) < prongIPxyMin)
+      return false;
+    if (std::abs(prong.impactParameterXY()) > prongIPxyMax)
+      return false;
+  } else {
+    if (prong.errorDecayLength() > prongsigmaLxyMax)
+      return false;
+    // TODO
+    if (std::abs(prong.impactParameterXY()) < prongIPxyMin)
+      return false;
+    if (std::abs(prong.impactParameterXY()) > prongIPxyMax)
+      return false;
+  }
+  return true;
 }
 
 /**
@@ -328,18 +419,13 @@ int16_t getJetFlavor(AnyJet const& jet, AllMCParticles const& mcparticles)
  * positive and negative value are expected from primary vertex
  * positive value is expected from secondary vertex
  *
- * @param collision which is needed external table of collision due to postion X and Y
  * @param jet
- * @param track which is needed each DCA_X and Y which is measured in jettaggerhfExtension.cxx
+ * @param jtrack which is needed aod::JTrackExtras
  */
-template <typename T, typename U, typename V>
-int getGeoSign(T const& collision, U const& jet, V const& track)
+template <typename T, typename U>
+int getGeoSign(T const& jet, U const& jtrack)
 {
-  auto trackPar = getTrackPar(track);
-  auto xyz = trackPar.getXYZGlo();
-  auto dcaX = xyz.X() - collision.posX();
-  auto dcaY = xyz.Y() - collision.posY();
-  auto sign = TMath::Sign(1, dcaX * jet.px() + dcaY * jet.py() + track.dcaZ() * jet.pz());
+  auto sign = TMath::Sign(1, jtrack.dcaX() * jet.px() + jtrack.dcaY() * jet.py() + jtrack.dcaZ() * jet.pz());
   if (sign < -1 || sign > 1)
     LOGF(info, Form("Sign is %d", sign));
   return sign;
@@ -349,13 +435,14 @@ int getGeoSign(T const& collision, U const& jet, V const& track)
  * Orders the tracks associated with a jet based on signed impact parameter significance and stores them
  * in a vector in descending order.
  */
-template <typename T, typename U, typename V, typename W, typename Vec = std::vector<float>>
-void orderForIPJetTracks(T const& collision, U const& jet, V const& /*jtracks*/, W const& /*tracks*/, Vec& vecSignImpSig)
+template <typename T, typename U, typename Vec = std::vector<float>>
+void orderForIPJetTracks(T const& jet, U const& /*jtracks*/, float const& trackDcaXYMax, float const& trackDcaZMax, Vec& vecSignImpSig)
 {
-  for (auto& jtrack : jet.template tracks_as<V>()) {
-    auto track = jtrack.template track_as<W>();
-    auto geoSign = getGeoSign(collision, jet, track);
-    auto varSignImpXYSig = geoSign * TMath::Abs(track.dcaXY()) / TMath::Sqrt(track.sigmaDcaXY2());
+  for (auto& jtrack : jet.template tracks_as<U>()) {
+    if (!trackAcceptanceWithDca(jtrack, trackDcaXYMax, trackDcaZMax))
+      continue;
+    auto geoSign = getGeoSign(jet, jtrack);
+    auto varSignImpXYSig = geoSign * std::abs(jtrack.dcaXY()) / jtrack.sigmadcaXY();
     vecSignImpSig.push_back(varSignImpXYSig);
   }
   std::sort(vecSignImpSig.begin(), vecSignImpSig.end(), std::greater<float>());
@@ -364,14 +451,14 @@ void orderForIPJetTracks(T const& collision, U const& jet, V const& /*jtracks*/,
 /**
  * Checks if a jet is greater than the given tagging working point based on the signed impact parameter significances
  */
-template <typename T, typename U, typename V, typename W, typename X, typename Y>
-bool isGreaterThanTaggingPoint(T const& collision, U const& jet, V const& jtracks, W const& tracks, X const& taggingPoint = 1.0, Y const& cnt = 1)
+template <typename T, typename U>
+bool isGreaterThanTaggingPoint(T const& jet, U const& jtracks, float const& trackDcaXYMax, float const& trackDcaZMax, float const& taggingPoint = 1.0, int const& cnt = 1)
 {
   if (cnt == 0) {
     return true; // untagged
   }
   std::vector<float> vecSignImpSig;
-  orderForIPJetTracks(collision, jet, jtracks, tracks, vecSignImpSig);
+  orderForIPJetTracks(jet, jtracks, trackDcaXYMax, trackDcaZMax, vecSignImpSig);
   if (vecSignImpSig.size() > static_cast<std::vector<float>::size_type>(cnt) - 1) {
     for (int i = 0; i < cnt; i++) {
       if (vecSignImpSig[i] < taggingPoint) { // tagger point set
@@ -420,7 +507,7 @@ template <typename T, typename U>
 float getTrackProbability(T const& fResoFuncjet, U const& track, const float& minSignImpXYSig = -40)
 {
   float probTrack = 0;
-  auto varSignImpXYSig = TMath::Abs(track.dcaXY()) / TMath::Sqrt(track.sigmaDcaXY2());
+  auto varSignImpXYSig = TMath::Abs(track.dcaXY()) / track.sigmadcaXY();
   if (-varSignImpXYSig < minSignImpXYSig)
     varSignImpXYSig = -minSignImpXYSig - 0.01; // To avoid overflow for integral
   probTrack = fResoFuncjet->Integral(minSignImpXYSig, -varSignImpXYSig) / fResoFuncjet->Integral(minSignImpXYSig, 0);
@@ -439,7 +526,6 @@ float getTrackProbability(T const& fResoFuncjet, U const& track, const float& mi
  * @param collision: The collision event data, necessary for geometric sign calculations.
  * @param jet: The jet for which the probability is being calculated.
  * @param jtracks: Tracks in jets
- * @param tracks: The original tracks to transform from jtracks.
  * @param cnt: ordering number of impact parameter cnt=0: untagged, cnt=1: first, cnt=2: seconde, cnt=3: third.
  * @param tagPoint: tagging working point which is selected by condiered efficiency and puriy
  * @param minSignImpXYSig: To avoid over fitting
@@ -447,24 +533,25 @@ float getTrackProbability(T const& fResoFuncjet, U const& track, const float& mi
  *         specific flavor. Returns -1 if the jet contains fewer than two tracks with a positive
  *         geometric sign.
  */
-template <typename T, typename U, typename V, typename W, typename X>
-float getJetProbability(T const& fResoFuncjet, U const& collision, V const& jet, W const& jtracks, X const& tracks, const int& cnt, const float& tagPoint = 1.0, const float& minSignImpXYSig = -10)
+template <typename T, typename U, typename V>
+float getJetProbability(T const& fResoFuncjet, U const& jet, V const& jtracks, float const& trackDcaXYMax, float const& trackDcaZMax, const int& cnt, const float& tagPoint = 1.0, const float& minSignImpXYSig = -10)
 {
-  if (!(isGreaterThanTaggingPoint(collision, jet, jtracks, tracks, tagPoint, cnt)))
+  if (!(isGreaterThanTaggingPoint(jet, jtracks, trackDcaXYMax, trackDcaZMax, tagPoint, cnt)))
     return -1;
 
   std::vector<float> jetTracksPt;
   float trackjetProb = 1.;
 
-  for (auto& jtrack : jet.template tracks_as<W>()) {
-    auto track = jtrack.template track_as<X>();
+  for (auto& jtrack : jet.template tracks_as<V>()) {
+    if (!trackAcceptanceWithDca(jtrack, trackDcaXYMax, trackDcaZMax))
+      continue;
 
-    float probTrack = getTrackProbability(fResoFuncjet, track, minSignImpXYSig);
+    float probTrack = getTrackProbability(fResoFuncjet, jtrack, minSignImpXYSig);
 
-    auto geoSign = getGeoSign(collision, jet, track);
+    auto geoSign = getGeoSign(jet, jtrack);
     if (geoSign > 0) { // only take positive sign track for JP calculation
       trackjetProb *= probTrack;
-      jetTracksPt.push_back(track.pt());
+      jetTracksPt.push_back(jtrack.pt());
     }
   }
 
@@ -479,6 +566,180 @@ float getJetProbability(T const& fResoFuncjet, U const& collision, V const& jet,
 
   JP = trackjetProb * sumjetProb;
   return JP;
+}
+
+// For secaondy vertex method utilites
+class bjetCandSV
+{
+ public:
+  bjetCandSV() = default;
+
+  bjetCandSV(float xpv, float ypv, float zpv, float xsv, float ysv, float zsv,
+             float pxVal, float pyVal, float pzVal, float eVal, float mVal, float chi2Val,
+             float dispersion, float errDecayLength, float errDecayLengthXY,
+             float rSecVertex, float ptVal, float pVal,
+             std::array<float, 3> pVec, float etaVal, float phiVal,
+             float yVal, float decayLen, float decayLenXY,
+             float decayLenNorm, float decayLenXYNorm,
+             float cpaVal, float impParXY)
+    : m_xPVertex(xpv), m_yPVertex(ypv), m_zPVertex(zpv), m_xSecondaryVertex(xsv), m_ySecondaryVertex(ysv), m_zSecondaryVertex(zsv), m_px(pxVal), m_py(pyVal), m_pz(pzVal), m_e(eVal), m_m(mVal), m_chi2PCA(chi2Val), m_dispersion(dispersion), m_errorDecayLength(errDecayLength), m_errorDecayLengthXY(errDecayLengthXY), m_rSecondaryVertex(rSecVertex), m_pt(ptVal), m_p(pVal), m_pVector(pVec), m_eta(etaVal), m_phi(phiVal), m_y(yVal), m_decayLength(decayLen), m_decayLengthXY(decayLenXY), m_decayLengthNormalised(decayLenNorm), m_decayLengthXYNormalised(decayLenXYNorm), m_cpa(cpaVal), m_impactParameterXY(impParXY)
+  {
+  }
+
+  float xPVertex() const { return m_xPVertex; }
+  float yPVertex() const { return m_yPVertex; }
+  float zPVertex() const { return m_zPVertex; }
+
+  float xSecondaryVertex() const { return m_xSecondaryVertex; }
+  float ySecondaryVertex() const { return m_ySecondaryVertex; }
+  float zSecondaryVertex() const { return m_zSecondaryVertex; }
+
+  float px() const { return m_px; }
+  float py() const { return m_py; }
+  float pz() const { return m_pz; }
+  float e() const { return m_e; }
+  float m() const { return m_m; }
+  float chi2PCA() const { return m_chi2PCA; }
+  float dispersion() const { return m_dispersion; }
+
+  float errorDecayLength() const { return m_errorDecayLength; }
+  float errorDecayLengthXY() const { return m_errorDecayLengthXY; }
+
+  float rSecondaryVertex() const { return m_rSecondaryVertex; }
+  float pt() const { return m_pt; }
+  float p() const { return m_p; }
+
+  std::array<float, 3> pVector() const { return m_pVector; }
+
+  float eta() const { return m_eta; }
+  float phi() const { return m_phi; }
+  float y() const { return m_y; }
+
+  float decayLength() const { return m_decayLength; }
+  float decayLengthXY() const { return m_decayLengthXY; }
+  float decayLengthNormalised() const { return m_decayLengthNormalised; }
+  float decayLengthXYNormalised() const { return m_decayLengthXYNormalised; }
+
+  float cpa() const { return m_cpa; }
+  float impactParameterXY() const { return m_impactParameterXY; }
+
+ private:
+  float m_xPVertex, m_yPVertex, m_zPVertex;
+  float m_xSecondaryVertex, m_ySecondaryVertex, m_zSecondaryVertex;
+  float m_px, m_py, m_pz, m_e, m_m, m_chi2PCA, m_dispersion;
+  float m_errorDecayLength, m_errorDecayLengthXY;
+  float m_rSecondaryVertex, m_pt, m_p;
+  std::array<float, 3> m_pVector;
+  float m_eta, m_phi, m_y;
+  float m_decayLength, m_decayLengthXY, m_decayLengthNormalised, m_decayLengthXYNormalised;
+  float m_cpa, m_impactParameterXY;
+};
+
+template <typename ProngType, typename JetType>
+bjetCandSV jetFromProngMaxDecayLength(const JetType& jet, float const& prongChi2PCAMin, float const& prongChi2PCAMax, float const& prongsigmaLxyMax, float const& prongIPxyMin, float const& prongIPxyMax, const bool& doXYZ = false)
+{
+  float xPVertex = 0.0f;
+  float yPVertex = 0.0f;
+  float zPVertex = 0.0f;
+  float xSecondaryVertex = 0.0f;
+  float ySecondaryVertex = 0.0f;
+  float zSecondaryVertex = 0.0f;
+  float px = 0.0f;
+  float py = 0.0f;
+  float pz = 0.0f;
+  float e = 0.0f;
+  float m = 0.0f;
+  float chi2PCA = 0.0f;
+  float dispersion = 0.0f;
+  float errorDecayLength = 0.0f;
+  float errorDecayLengthXY = 0.0f;
+
+  float rSecondaryVertex = 0.0f;
+  float pt = 0.0f;
+  float p = 0.0f;
+  std::array<float, 3> pVector = {0.0f, 0.0f, 0.0f};
+  float eta = 0.0f;
+  float phi = 0.0f;
+  float y = 0.0f;
+  float decayLength = 0.0f;
+  float decayLengthXY = 0.0f;
+  float decayLengthNormalised = 0.0f;
+  float decayLengthXYNormalised = 0.0f;
+  float cpa = 0.0f;
+  float impactParameterXY = 0.0f;
+
+  float maxSxy = -1.0f;
+
+  for (const auto& prong : jet.template secondaryVertices_as<ProngType>()) {
+    float Sxy = -1.;
+    if (!doXYZ) {
+      Sxy = prong.decayLengthXY() / prong.errorDecayLengthXY();
+    } else {
+      Sxy = prong.decayLength() / prong.errorDecayLength();
+    }
+
+    if (maxSxy < Sxy) {
+      maxSxy = Sxy;
+
+      xPVertex = prong.xPVertex();
+      yPVertex = prong.yPVertex();
+      zPVertex = prong.zPVertex();
+      xSecondaryVertex = prong.xSecondaryVertex();
+      ySecondaryVertex = prong.ySecondaryVertex();
+      zSecondaryVertex = prong.zSecondaryVertex();
+      px = prong.px();
+      py = prong.py();
+      pz = prong.pz();
+      e = prong.e();
+      m = prong.m();
+      chi2PCA = prong.chi2PCA();
+      dispersion = prong.dispersion();
+      errorDecayLength = prong.errorDecayLength();
+      errorDecayLengthXY = prong.errorDecayLengthXY();
+      rSecondaryVertex = prong.rSecondaryVertex();
+      pt = prong.pt();
+      p = prong.p();
+      pVector = prong.pVector();
+      eta = prong.eta();
+      phi = prong.phi();
+      y = prong.y();
+      decayLength = prong.decayLength();
+      decayLengthXY = prong.decayLengthXY();
+      decayLengthNormalised = prong.decayLengthNormalised();
+      decayLengthXYNormalised = prong.decayLengthXYNormalised();
+      cpa = prong.cpa();
+      impactParameterXY = prong.impactParameterXY();
+    }
+  }
+
+  return bjetCandSV(
+    xPVertex, yPVertex, zPVertex,
+    xSecondaryVertex, ySecondaryVertex, zSecondaryVertex,
+    px, py, pz, e, m, chi2PCA,
+    dispersion, errorDecayLength, errorDecayLengthXY,
+    rSecondaryVertex, pt, p,
+    pVector, eta, phi,
+    y, decayLength, decayLengthXY,
+    decayLengthNormalised, decayLengthXYNormalised,
+    cpa, impactParameterXY);
+}
+
+template <typename T, typename U>
+bool isTaggedJetSV(T const jet, U const& /*prongs*/, float const& prongChi2PCAMin, float const& prongChi2PCAMax, float const& prongsigmaLxyMax, float const& prongIPxyMin, float const& prongIPxyMax, float prongDispersionMax, float const& doXYZ = false, float const& tagPointForSV = 15.)
+{
+  auto bjetCand = jetFromProngMaxDecayLength<U>(jet, prongChi2PCAMin, prongChi2PCAMax, prongsigmaLxyMax, prongIPxyMin, prongIPxyMax, doXYZ);
+  if (!prongAcceptance(bjetCand, prongChi2PCAMin, prongChi2PCAMax, prongsigmaLxyMax, prongIPxyMin, prongIPxyMax, prongDispersionMax, doXYZ))
+    return false;
+  if (!doXYZ) {
+    auto maxSxy = bjetCand.decayLengthXY() / bjetCand.errorDecayLengthXY();
+    if (maxSxy < tagPointForSV)
+      return false;
+  } else {
+    auto maxSxyz = bjetCand.decayLength() / bjetCand.errorDecayLength();
+    if (maxSxyz < tagPointForSV)
+      return false;
+  }
+  return true;
 }
 
 }; // namespace jettaggingutilities

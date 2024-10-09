@@ -23,6 +23,8 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct UpcVetoAnalysis {
+  bool fIsCreated = false;
+
   // amplitude axis
   int fNbAmp = 101;
   double fMinAmp = 0.;
@@ -152,7 +154,8 @@ struct UpcVetoAnalysis {
     int nZdcs = zdcs.size();
 
     const o2::aod::BCs::iterator& fbc = bcs.begin();
-    if (fbc.runNumber() != fRun) {
+    if (fbc.runNumber() != fRun && !fIsCreated) {
+      fIsCreated = true;
       getBcInfo(fbc);
 
       for (auto i = 0; i < o2::constants::lhc::LHCMaxBunches; ++i) {
