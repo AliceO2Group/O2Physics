@@ -122,7 +122,6 @@ struct HfCorrelatorHfeHadrons {
 
     int electronTrackId = 0;
 
-
     for (const auto& eTrack : electron) {
       ptElectron = eTrack.ptTrack();
       phiElectron = eTrack.phiTrack();
@@ -146,10 +145,9 @@ struct HfCorrelatorHfeHadrons {
         hadronTrackId = hTrack.globalIndex();
         if (hadronTrackId == electronTrackId)
 
+          if (hTrack.globalIndex() == eTrack.globalIndex())
 
-        if (hTrack.globalIndex() == eTrack.globalIndex())
-
-           continue;
+            continue;
         // Apply Hadron cut
         if (!selAssoHadron(hTrack))
           continue;
