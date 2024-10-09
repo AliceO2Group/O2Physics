@@ -56,8 +56,29 @@ struct strangederivedqa {
     auto h3 = histos.add<TH1>("hEventsPerDF", "hEventsPerDF", kTH1D, {axisNCollisions});
   }
 
-  // Real data processing - no MC subscription
-  void process(aod::StraCollisions const& collisions, soa::Join<aod::V0CollRefs, aod::V0Cores> const& fullV0s)
+  // Real data processing
+  void processOriginal(aod::Collisions const& collisions, soa::Join<aod::V0Indices, aod::V0Cores> const& fullV0s)
+  {
+    histos.fill(HIST("hDFCounter"), 0.0f);
+    histos.fill(HIST("hEventCounter"), 0.0, collisions.size());
+    histos.fill(HIST("hEventsPerDF"), collisions.size());
+    bool ordered = true;
+    int previousIndex = -100;
+    for (auto const& v0 : fullV0s) {
+      if(v0.collisionId() < previousIndex){ 
+        ordered = false;
+      }
+      previousIndex = v0.collisionId(); 
+    }
+    if(ordered){ 
+      histos.fill(HIST("hDFCounter"), 1.0f);
+    }else{ 
+      histos.fill(HIST("hDFCounter"), 2.0f);
+    }
+  }
+
+  // Real data processing
+  void processDerived(aod::StraCollisions const& collisions, soa::Join<aod::V0CollRefs, aod::V0Cores> const& fullV0s)
   {
     histos.fill(HIST("hDFCounter"), 0.0f);
     histos.fill(HIST("hEventCounter"), 0.0, collisions.size());
@@ -76,6 +97,9 @@ struct strangederivedqa {
       histos.fill(HIST("hDFCounter"), 2.0f);
     }
   }
+
+  PROCESS_SWITCH(strangederivedqa, processOriginal, "Process original data", false);
+  PROCESS_SWITCH(strangederivedqa, processDerived, "Process derived data", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
