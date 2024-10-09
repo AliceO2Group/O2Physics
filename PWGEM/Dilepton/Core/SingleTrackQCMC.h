@@ -980,7 +980,7 @@ struct SingleTrackQCMC {
       fRegistry.fill(HIST("Event/norm/hCollisionCounter"), o2::aod::pwgem::dilepton::utils::eventhistogram::nbin_ev); // accepted
     } // end of collision loop
   }
-  PROCESS_SWITCH(SingleTrackQCMC, processNorm, "process normalization info", true);
+  PROCESS_SWITCH(SingleTrackQCMC, processNorm, "process normalization info", false);
 
   void processDummy(MyCollisions const&) {}
   PROCESS_SWITCH(SingleTrackQCMC, processDummy, "Dummy function", false);
