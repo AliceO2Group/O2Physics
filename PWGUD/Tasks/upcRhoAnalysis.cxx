@@ -60,7 +60,7 @@ struct upcRhoAnalysis {
   ConfigurableAxis etaAxis{"etaAxis", {180, -0.9, 0.9}, "#eta"};
   ConfigurableAxis yAxis{"yAxis", {180, -0.9, 0.9}, "y"};
   ConfigurableAxis phiAxis{"phiAxis", {180, 0.0, o2::constants::math::TwoPI}, "#phi"};
-  ConfigurableAxis phiAsymmAxis{"phiAsymmAxis", {182, -1.0 * o2::constants::math::PI, o2::constants::math::PI}, "#phi"};
+  ConfigurableAxis phiAsymmAxis{"phiAsymmAxis", {182, -o2::constants::math::PI, o2::constants::math::PI}, "#phi"};
   ConfigurableAxis cosTwoPhiAxis{"cosTwoPhiAxis", {100, -1.0, 1.0}, "cos(2#phi)"};
   ConfigurableAxis momentumFromPhiAxis{"momentumFromPhiAxis", {400, -0.1, 0.1}, "p (GeV/#it{c})"};
 
@@ -82,13 +82,21 @@ struct upcRhoAnalysis {
     registry.add("QC/collisions/hPosZVsZnTimeAdd", ";(ZNA time + ZNC time)/2 (ns);z (cm);counts", kTH2D, {{300, -1.5, 1.5}, {400, -20.0, 20.0}});
     registry.add("QC/collisions/hPosZVsZnTimeSub", ";(ZNA time - ZNC time)/2 (ns);z (cm);counts", kTH2D, {{300, -1.5, 1.5}, {400, -20.0, 20.0}});
     // all tracks
-    registry.add("QC/allTracks/hTpcNSigmaPi", ";TPC n#sigma_{#pi};counts", kTH1D, {{400, -10.0, 30.0}});
-    registry.add("QC/allTracks/hTofNSigmaPi", ";TOF n#sigma_{#pi};counts", kTH1D, {{400, -20.0, 20.0}});
-    registry.add("QC/allTracks/hDcaXYZ", ";DCA_{z} (cm);DCA_{xy} (cm);counts", kTH2D, {{1000, -5.0, 5.0}, {1000, -5.0, 5.0}});
+    registry.add("QC/tracks/raw/hTpcNSigmaPi", ";TPC n#sigma_{#pi};counts", kTH1D, {{400, -10.0, 30.0}});
+    registry.add("QC/tracks/raw/hTofNSigmaPi", ";TOF n#sigma_{#pi};counts", kTH1D, {{400, -20.0, 20.0}});
+    registry.add("QC/tracks/raw/hTpcNSigmaEl", ";TPC n#sigma_{e};counts", kTH1D, {{400, -10.0, 30.0}});
+    registry.add("QC/tracks/raw/hDcaXYZ", ";DCA_{z} (cm);DCA_{xy} (cm);counts", kTH2D, {{1000, -5.0, 5.0}, {1000, -5.0, 5.0}});
+    registry.add("QC/tracks/raw/hItsNCls", ";ITS N_{cls};counts", kTH1D, {{200, 0.0, 200.0}});
+    registry.add("QC/tracks/raw/hItsChi2NCl", ";ITS #chi^{2}/N_{cls};counts", kTH1D, {{1000, 0.0, 100.0}});
+    registry.add("QC/tracks/raw/hTpcChi2NCl", ";TPC #chi^{2}/N_{cls};counts", kTH1D, {{1000, 0.0, 100.0}});
+    registry.add("QC/tracks/raw/hTpcNClsFindable", ";TPC N_{cls} findable;counts", kTH1D, {{200, 0.0, 200.0}});
+    registry.add("QC/tracks/raw/hTpcNClsCrossedRows", ";TPC crossed rows;counts", kTH1D, {{200, 0.0, 200.0}});
     // tracks passing selections
-    registry.add("QC/cutTracks/hTpcNsigmaPi2D", ";TPC n#sigma(#pi_{1});TPC n#sigma(#pi_{2});counts", kTH2D, {{400, -10.0, 30.0}, {400, -10.0, 30.0}});
-    registry.add("QC/cutTracks/hTpcSignalVsPt", ";p_{T} (GeV/#it{c});TPC signal;counts", kTH2D, {ptAxis, {500, 0.0, 500.0}});
-    registry.add("QC/cutTracks/hRemainingTracks", ";remaining tracks;counts", kTH1D, {{21, -0.5, 20.5}});
+    registry.add("QC/tracks/cut/hTpcNSigmaPi2D", ";TPC n#sigma(#pi_{1});TPC n#sigma(#pi_{2});counts", kTH2D, {{400, -10.0, 30.0}, {400, -10.0, 30.0}});
+    registry.add("QC/tracks/cut/hTpcNSigmaEl2D", ";TPC n#sigma(e_{1});TPC n#sigma(e_{2});counts", kTH2D, {{400, -10.0, 30.0}, {400, -10.0, 30.0}});
+    registry.add("QC/tracks/cut/hTpcSignalVsPt", ";p_{T} (GeV/#it{c});TPC signal;counts", kTH2D, {ptAxis, {500, 0.0, 500.0}});
+    registry.add("QC/tracks/cut/hRemainingTracks", ";remaining tracks;counts", kTH1D, {{21, -0.5, 20.5}});
+    registry.add("QC/tracks/cut/hDcaXYZ", ";DCA_{z} (cm);DCA_{xy} (cm);counts", kTH2D, {{1000, -5.0, 5.0}, {1000, -5.0, 5.0}});
 
     // RECO HISTOS //
     // PIONS
@@ -374,11 +382,11 @@ struct upcRhoAnalysis {
   template <typename T>
   bool trackPassesCuts(const T& track) // track cuts (PID done separately)
   {
-    if (requireTof && !track.hasTOF())
-      return false;
-    if (!track.isPVContributor()) // does this actually do anything?
+    if (!track.isPVContributor())
       return false;
     if (!track.hasITS() || !track.hasTPC())
+      return false;
+    if (requireTof && !track.hasTOF())
       return false;
     if (std::abs(track.dcaZ()) > tracksDcaMaxCut || std::abs(track.dcaXY()) > (0.0182 + 0.0350 / std::pow(track.pt(), 1.01))) // Run 2 dynamic DCA cut
       return false;
@@ -498,21 +506,29 @@ struct upcRhoAnalysis {
 
     int trackCounter = 0;
     for (const auto& track : tracks) {
-      registry.fill(HIST("QC/allTracks/hTpcNSigmaPi"), track.tpcNSigmaPi());
-      registry.fill(HIST("QC/allTracks/hTofNSigmaPi"), track.tofNSigmaPi());
-      registry.fill(HIST("QC/allTracks/hDcaXYZ"), track.dcaZ(), track.dcaXY());
+      registry.fill(HIST("QC/tracks/raw/hTpcNSigmaPi"), track.tpcNSigmaPi());
+      registry.fill(HIST("QC/tracks/raw/hTofNSigmaPi"), track.tofNSigmaPi());
+      registry.fill(HIST("QC/tracks/raw/hTpcNSigmaEl"), track.tpcNSigmaEl());
+      registry.fill(HIST("QC/tracks/raw/hDcaXYZ"), track.dcaZ(), track.dcaXY());
+      registry.fill(HIST("QC/tracks/raw/hItsNCls"), track.itsNCls());
+      registry.fill(HIST("QC/tracks/raw/hItsChi2NCl"), track.itsChi2NCl());
+      registry.fill(HIST("QC/tracks/raw/hTpcChi2NCl"), track.tpcChi2NCl());
+      registry.fill(HIST("QC/tracks/raw/hTpcNClsFindable"), track.tpcNClsFindable());
+      registry.fill(HIST("QC/tracks/raw/hTpcNClsCrossedRows"), track.tpcNClsCrossedRows());
 
       if (!trackPassesCuts(track))
         continue;
       trackCounter++;
       cutTracks.push_back(track);
       cutTracks4Vecs.push_back(ROOT::Math::PxPyPzMVector(track.px(), track.py(), track.pz(), o2::constants::physics::MassPionCharged)); // apriori assume pion mass
-      registry.fill(HIST("QC/cutTracks/hTpcSignalVsPt"), track.pt(), track.tpcSignal());
+      registry.fill(HIST("QC/tracks/cut/hTpcSignalVsPt"), track.pt(), track.tpcSignal());
     }
-    registry.fill(HIST("QC/cutTracks/hRemainingTracks"), trackCounter);
+    registry.fill(HIST("QC/tracks/cut/hRemainingTracks"), trackCounter);
 
-    if (cutTracks.size() == 2)
-      registry.fill(HIST("QC/cutTracks/hTpcNsigmaPi2D"), cutTracks[0].tpcNSigmaPi(), cutTracks[1].tpcNSigmaPi());
+    if (cutTracks.size() == 2) {
+      registry.fill(HIST("QC/tracks/cut/hTpcNSigmaPi2D"), cutTracks[0].tpcNSigmaPi(), cutTracks[1].tpcNSigmaPi());
+      registry.fill(HIST("QC/tracks/cut/hTpcNSigmaEl2D"), cutTracks[0].tpcNSigmaEl(), cutTracks[1].tpcNSigmaEl());
+    }
 
     if (!tracksPassPiPID(cutTracks))
       return;
