@@ -402,7 +402,7 @@ struct derivedlambdakzeroanalysis {
 
     histos.add("hGapSide", "Gap side; Entries", kTH1F, {{5, -0.5, 4.5}});
     histos.add("hSelGapSide", "Selected gap side; Entries", kTH1F, {axisSelGap});
-    histos.add("hEventCentralityVsSelGapSide", "Centrality (%); Selected gap side", kTH2F, {{100, 0.0f, +100.0f}, axisSelGap});
+    histos.add("hEventCentralityVsSelGapSide", ";Centrality (%); Selected gap side", kTH2F, {{100, 0.0f, +100.0f}, axisSelGap});
 
     // for QA and test purposes
     auto hRawCentrality = histos.add<TH1>("hRawCentrality", "hRawCentrality", kTH1F, {axisRawCentrality});
