@@ -144,7 +144,7 @@ struct HfCorrelatorHfeHadrons {
 
         hadronTrackId = hTrack.globalIndex();
         if (hadronTrackId == electronTrackId)
-            continue;
+          continue;
         // Apply Hadron cut
         if (!selAssoHadron(hTrack))
           continue;
