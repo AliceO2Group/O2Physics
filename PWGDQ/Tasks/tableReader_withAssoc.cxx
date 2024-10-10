@@ -1375,7 +1375,7 @@ struct AnalysisSameEventPairing {
           auto t2 = a2.template reducedmuon_as<TTracks>();
           if (t1.matchMCHTrackId() == t2.matchMCHTrackId())
             continue;
-          if (t1.matchMFTTrackId() == t2.matchMFTTrackId() && t1.matchMFTTrackId() >=0)
+          if (t1.matchMFTTrackId() == t2.matchMFTTrackId() && t1.matchMFTTrackId() >= 0)
             continue;
           sign1 = t1.sign();
           sign2 = t2.sign();
