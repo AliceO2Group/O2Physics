@@ -47,6 +47,8 @@ struct strangederivedqa {
   ConfigurableAxis axisNCollisions{"axisNCollisions", {50000, -0.5f, 49999.5f}, "collisions"};
   ConfigurableAxis axisNV0s{"axisNV0s", {50000, -0.5f, 49999.5f}, "V0s"};
 
+  Configurable<bool> verbose{"verbose", false, "do more printouts"};
+
   void init(InitContext const&)
   {
     auto h = histos.add<TH1>("hDFCounter", "hDFCounter", kTH1D, {{6, -0.5f, 5.5f}});
@@ -70,7 +72,7 @@ struct strangederivedqa {
   }
 
   // Real data processing
-  void processOriginal(aod::Collisions const& collisions, soa::Join<aod::V0Indices, aod::V0Cores> const& fullV0s)
+  void processOriginal(aod::Collisions const& collisions, aod::Origins const& origins, soa::Join<aod::V0Indices, aod::V0Cores> const& fullV0s)
   {
     histos.fill(HIST("hDFCounter"), 0.0f);
     histos.fill(HIST("hEventCounter"), 0.0f, 0.0f, collisions.size());
@@ -88,10 +90,20 @@ struct strangederivedqa {
       histos.fill(HIST("hEventCounter"), 0.0f, 1.0f, collisions.size());
       histos.fill(HIST("hEventsPerDF"), collisions.size(), 1.0f);
       histos.fill(HIST("hV0sPerDF"), fullV0s.size(), 1.0f);
+
+      if(verbose){
+        auto origin = origins.begin(); 
+        LOGF(info, "Sorted DF ID: %lld collisions: %i V0s: %i", origin.dataframeID(), collisions.size(), fullV0s.size()); 
+      }
     }else{ 
       histos.fill(HIST("hEventCounter"), 0.0f, 2.0f, collisions.size());
       histos.fill(HIST("hEventsPerDF"), collisions.size(), 2.0f);
       histos.fill(HIST("hV0sPerDF"), fullV0s.size(), 2.0f);
+
+      if(verbose){
+        auto origin = origins.begin(); 
+        LOGF(info, "Unsorted DF ID: %lld collisions: %i V0s: %i", origin.dataframeID(), collisions.size(), fullV0s.size()); 
+      }
     }
   }
 
@@ -114,14 +126,19 @@ struct strangederivedqa {
       histos.fill(HIST("hEventCounter"), 0.0f, 1.0f, collisions.size());
       histos.fill(HIST("hEventsPerDF"), collisions.size(), 1.0f);
       histos.fill(HIST("hV0sPerDF"), fullV0s.size(), 1.0f);
+
+      if(verbose){
+        auto origin = origins.begin(); 
+        LOGF(info, "Sorted DF ID: %lld collisions: %i V0s: %i", origin.dataframeID(), collisions.size(), fullV0s.size()); 
+      }
     }else{ 
       histos.fill(HIST("hEventCounter"), 0.0f, 2.0f, collisions.size());
       histos.fill(HIST("hEventsPerDF"), collisions.size(), 2.0f);
       histos.fill(HIST("hV0sPerDF"), fullV0s.size(), 2.0f);
 
-      for (auto const& origin : origins) {
-        //uint64_t DF_ID = origin.dataframeID();
-        cout << "Unsorted DF ID = " << origin.dataframeID() << endl;
+      if(verbose){
+        auto origin = origins.begin(); 
+        LOGF(info, "Unsorted DF ID: %lld collisions: %i V0s: %i", origin.dataframeID(), collisions.size(), fullV0s.size());
       }
     }
   }
