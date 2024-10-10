@@ -476,7 +476,7 @@ struct HfDataCreatorCharmHadPiReduced {
       // B+ → D0(bar) π+ → (K+ π-) π+
       auto indexRec = RecoDecay::getMatchedMCRec(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2]}, Pdg::kBPlus, std::array{+kPiPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
       if (indexRec > -1) {
-        // Printf("Checking D0bar → K+ π-");
+        // D0(bar) → K+ π-;
         indexRec = RecoDecay::getMatchedMCRec(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1]}, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign, 1);
         if (indexRec > -1) {
           flag = sign * BIT(hf_cand_bplus::DecayType::BplusToD0Pi);
@@ -492,8 +492,6 @@ struct HfDataCreatorCharmHadPiReduced {
           checkWrongCollision(particleMother, collision, indexCollisionMaxNumContrib, flagWrongCollision);
         }
       }
-      rowHfD0PiMcRecReduced(indexHfCandCharm, selectedTracksPion[vecDaughtersB.back().globalIndex()], flag, flagWrongCollision, debug, motherPt);
-
       // additional checks for correlated backgrounds
       if (checkDecayTypeMc) {
         // Partly reconstructed decays, i.e. the 3 prongs have a common b-hadron ancestor
@@ -526,6 +524,7 @@ struct HfDataCreatorCharmHadPiReduced {
         }
         rowHfD0PiMcCheckReduced(pdgCodeBeautyMother, pdgCodeProng0, pdgCodeProng1, pdgCodeProng2);
       }
+      rowHfD0PiMcRecReduced(indexHfCandCharm, selectedTracksPion[vecDaughtersB.back().globalIndex()], flag, flagWrongCollision, debug, motherPt);
     }
   }
 
