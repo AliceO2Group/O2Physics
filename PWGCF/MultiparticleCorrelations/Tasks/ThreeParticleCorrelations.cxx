@@ -42,7 +42,7 @@ struct ThreePartCorr {
   Filter TrackPt = aod::track::pt > 0.2f && aod::track::pt < 3.0f;
   Filter TrackEta = nabs(aod::track::eta) < 0.8f;
 
-  // Track filters
+  // Particle filters
   Filter ParticlePt = aod::mcparticle::pt > 0.2f && aod::mcparticle::pt < 3.0f;
   Filter ParticleEta = nabs(aod::mcparticle::eta) < 0.8f;
 
@@ -75,7 +75,6 @@ struct ThreePartCorr {
   // Particle masses
   Double_t massLambda = 1.115683;
   Double_t DGaussSigma = 0.0021;
-  Int_t Counter = 0;
 
   // Correlation variables
   Int_t T_Sign;
