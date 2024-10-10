@@ -1225,8 +1225,17 @@ struct strangeness_in_jets {
         registryQC.fill(HIST("survivedK0"), 15.5);
       }
     }
+
+    for (auto& v0 : fullV0s) {
+      const auto& ptrack = v0.posTrack_as<StrHadronDaughterTracks>();
+      const auto& ntrack = v0.negTrack_as<StrHadronDaughterTracks>();
+      if (!passedK0ShortSelection(v0, ptrack, ntrack))
+        continue;
+      registryQC.fill(HIST("survivedK0"), 16.5);
+    }
   }
   PROCESS_SWITCH(strangeness_in_jets, processK0s, "Process K0s", false);
+
 
   Preslice<aod::V0Datas> perCollisionV0 = o2::aod::v0data::collisionId;
   Preslice<aod::CascDataExt> perCollisionCasc = o2::aod::cascade::collisionId;
@@ -1333,7 +1342,7 @@ struct strangeness_in_jets {
             for (auto& particleMotherOfBach : bachParticle.mothers_as<aod::McParticles>()) {
               if (particleMotherOfNeg != particleMotherOfPos)
                 continue;
-              if (TMath::Abs(particleMotherOfNeg.pdgCode()) != 3122)
+              if (TMath::Abs(particleMotherOfNeg.pdgCode()) != 3122)// BUG!!!!
                 continue;
               if (!particleMotherOfBach.isPhysicalPrimary())
                 continue;
