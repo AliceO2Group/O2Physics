@@ -14,12 +14,17 @@
 
 #include <vector>
 #include <TMath.h>
+#include <TList.h>
 #include <TPDGCode.h>
 #include <TRandom.h>
 #include <TVector2.h>
 #include <TVector3.h>
 #include <TLorentzVector.h>
 #include <TDatabasePDG.h>
+#include "TGrid.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CCDB/CcdbApi.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -40,6 +45,8 @@
 
 using namespace std;
 using namespace o2;
+using namespace o2::soa;
+using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
@@ -48,7 +55,7 @@ using std::array;
 using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels>;
 using SimCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
 
-using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe>;
+using FullNucleiTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe>;
 
 using MCTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe, aod::McTrackLabels>;
 
@@ -87,6 +94,8 @@ struct nuclei_in_jets {
   Configurable<bool> requireNoOverlap{"requireNoOverlap", false, "require no overlap between jets and UE cones"};
 
   // Track Parameters
+  Configurable<double> par0{"par0", 0.004, "par 0"};
+  Configurable<double> par1{"par1", 0.013, "par 1"};
   Configurable<int> min_ITS_nClusters{"min_ITS_nClusters", 5, "minimum number of ITS clusters"};
   Configurable<int> min_TPC_nClusters{"min_TPC_nClusters", 80, "minimum number of TPC clusters"};
   Configurable<int> min_TPC_nCrossedRows{"min_TPC_nCrossedRows", 80, "minimum number of TPC crossed pad rows"};
@@ -103,9 +112,34 @@ struct nuclei_in_jets {
   Configurable<double> max_nsigmaTOF{"max_nsigmaTOF", +3.5, "Maximum nsigma TOF"};
   Configurable<bool> require_PV_contributor{"require_PV_contributor", true, "require that the track is a PV contributor"};
   Configurable<bool> setDCAselectionPtDep{"setDCAselectionPtDep", true, "require pt dependent selection"};
+  Configurable<bool> applyReweighting{"applyReweighting", true, "apply reweighting"};
+
+  Configurable<std::string> url_to_ccdb{"url_to_ccdb", "http://alice-ccdb.cern.ch", "url of the personal ccdb"};
+  Configurable<std::string> path_to_file{"path_to_file", "", "path to file with reweighting"};
+  Configurable<std::string> histo_name_weight_antip_jet{"histo_name_weight_antip_jet", "", "reweighting histogram: antip in jet"};
+  Configurable<std::string> histo_name_weight_antip_ue{"histo_name_weight_antip_ue", "", "reweighting histogram: antip in ue"};
+
+  TH2F* twod_weights_antip_jet;
+  TH2F* twod_weights_antip_ue;
+
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::ccdb::CcdbApi ccdbApi;
 
   void init(InitContext const&)
   {
+    ccdb->setURL(url_to_ccdb.value);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+    ccdb->setFatalWhenNull(false);
+
+    if (applyReweighting) {
+      GetReweightingHistograms(ccdb, TString(path_to_file), TString(histo_name_weight_antip_jet), TString(histo_name_weight_antip_ue));
+    } else {
+      twod_weights_antip_jet = nullptr;
+      twod_weights_antip_ue = nullptr;
+    }
+
     // QC Histograms
     registryQC.add("deltaEtadeltaPhi_jet", "deltaEtadeltaPhi_jet", HistType::kTH2F, {{200, -0.5, 0.5, "#Delta#eta"}, {200, 0, 0.5 * TMath::Pi(), "#Delta#phi"}});
     registryQC.add("deltaEtadeltaPhi_ue", "deltaEtadeltaPhi_ue", HistType::kTH2F, {{200, -0.5, 0.5, "#Delta#eta"}, {200, 0, 0.5 * TMath::Pi(), "#Delta#phi"}});
@@ -211,9 +245,9 @@ struct nuclei_in_jets {
 
     // pt-dependent selection
     if (setDCAselectionPtDep) {
-      if (TMath::Abs(track.dcaXY()) > (0.004f + 0.013f / track.pt()))
+      if (TMath::Abs(track.dcaXY()) > (par0 + par1 / track.pt()))
         return false;
-      if (TMath::Abs(track.dcaZ()) > (0.004f + 0.013f / track.pt()))
+      if (TMath::Abs(track.dcaZ()) > (par0 + par1 / track.pt()))
         return false;
     }
 
@@ -369,8 +403,29 @@ struct nuclei_in_jets {
     return false;
   }
 
+  void GetReweightingHistograms(o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdbObj, TString filepath, TString histname_antip_jet, TString histname_antip_ue)
+  {
+    TList* l = ccdbObj->get<TList>(filepath.Data());
+    if (!l) {
+      LOGP(error, "Could not open the file {}", Form("%s", filepath.Data()));
+      return;
+    }
+    twod_weights_antip_jet = static_cast<TH2F*>(l->FindObject(Form("%s_antiproton", histname_antip_jet.Data())));
+    if (!twod_weights_antip_jet) {
+      LOGP(error, "Could not open histogram {}", Form("%s_antiproton", histname_antip_jet.Data()));
+      return;
+    }
+    twod_weights_antip_ue = static_cast<TH2F*>(l->FindObject(Form("%s_antiproton", histname_antip_ue.Data())));
+    if (!twod_weights_antip_ue) {
+      LOGP(error, "Could not open histogram {}", Form("%s_antiproton", histname_antip_ue.Data()));
+      return;
+    }
+    LOGP(info, "Opened histogram {}", Form("%s_antiproton", histname_antip_jet.Data()));
+    LOGP(info, "Opened histogram {}", Form("%s_antiproton", histname_antip_ue.Data()));
+  }
+
   // Process Data
-  void processData(SelectedCollisions::iterator const& collision, FullTracks const& tracks)
+  void processData(SelectedCollisions::iterator const& collision, FullNucleiTracks const& tracks)
   {
     // Event Counter: before event selection
     registryData.fill(HIST("number_of_events_data"), 0.5);
@@ -383,7 +438,7 @@ struct nuclei_in_jets {
     registryData.fill(HIST("number_of_events_data"), 1.5);
 
     // Cut on z-vertex
-    if (abs(collision.posZ()) > zVtx)
+    if (TMath::Abs(collision.posZ()) > zVtx)
       return;
 
     // Event Counter: after z-vertex cut
@@ -454,7 +509,7 @@ struct nuclei_in_jets {
     int n_jets_selected(0);
     for (int i = 0; i < static_cast<int>(jet.size()); i++) {
 
-      if ((abs(jet[i].Eta()) + Rjet) > max_eta)
+      if ((TMath::Abs(jet[i].Eta()) + Rjet) > max_eta)
         continue;
 
       // Perpendicular cones
@@ -664,9 +719,28 @@ struct nuclei_in_jets {
         if (particle.eta() < min_eta || particle.eta() > max_eta)
           continue;
 
+        double w_antip_jet(1.0);
+        double w_antip_ue(1.0);
+        if (applyReweighting) {
+          int ix = twod_weights_antip_jet->GetXaxis()->FindBin(particle.pt());
+          int iy = twod_weights_antip_jet->GetYaxis()->FindBin(particle.eta());
+          w_antip_jet = twod_weights_antip_jet->GetBinContent(ix, iy);
+          w_antip_ue = twod_weights_antip_ue->GetBinContent(ix, iy);
+
+          // protections
+          if (ix == 0 || ix > twod_weights_antip_jet->GetNbinsX()) {
+            w_antip_jet = 1.0;
+            w_antip_ue = 1.0;
+          }
+          if (iy == 0 || iy > twod_weights_antip_jet->GetNbinsY()) {
+            w_antip_jet = 1.0;
+            w_antip_ue = 1.0;
+          }
+        }
+
         if (particle.pdgCode() == -2212) {
-          registryMC.fill(HIST("antiproton_jet_gen"), particle.pt());
-          registryMC.fill(HIST("antiproton_ue_gen"), particle.pt());
+          registryMC.fill(HIST("antiproton_jet_gen"), particle.pt(), w_antip_jet);
+          registryMC.fill(HIST("antiproton_ue_gen"), particle.pt(), w_antip_ue);
         }
         if (particle.pdgCode() == -1000010020) {
           registryMC.fill(HIST("antideuteron_jet_gen"), particle.pt());
@@ -688,7 +762,7 @@ struct nuclei_in_jets {
       if (!collision.sel8())
         continue;
 
-      if (abs(collision.posZ()) > 10)
+      if (TMath::Abs(collision.posZ()) > 10)
         continue;
 
       // Event Counter (after event sel)
@@ -745,15 +819,34 @@ struct nuclei_in_jets {
         if (!particle.isPhysicalPrimary())
           continue;
 
+        double w_antip_jet(1.0);
+        double w_antip_ue(1.0);
+        if (applyReweighting) {
+          int ix = twod_weights_antip_jet->GetXaxis()->FindBin(particle.pt());
+          int iy = twod_weights_antip_jet->GetYaxis()->FindBin(particle.eta());
+          w_antip_jet = twod_weights_antip_jet->GetBinContent(ix, iy);
+          w_antip_ue = twod_weights_antip_ue->GetBinContent(ix, iy);
+
+          // protection
+          if (ix == 0 || ix > twod_weights_antip_jet->GetNbinsX()) {
+            w_antip_jet = 1.0;
+            w_antip_ue = 1.0;
+          }
+          if (iy == 0 || iy > twod_weights_antip_jet->GetNbinsY()) {
+            w_antip_jet = 1.0;
+            w_antip_ue = 1.0;
+          }
+        }
+
         // Antiproton
         if (particle.pdgCode() == -2212) {
           if (pt < 1.0 && nsigmaTPCPr > min_nsigmaTPC && nsigmaTPCPr < max_nsigmaTPC) {
-            registryMC.fill(HIST("antiproton_jet_rec_tpc"), pt);
-            registryMC.fill(HIST("antiproton_ue_rec_tpc"), pt);
+            registryMC.fill(HIST("antiproton_jet_rec_tpc"), pt, w_antip_jet);
+            registryMC.fill(HIST("antiproton_ue_rec_tpc"), pt, w_antip_ue);
           }
           if (pt >= 0.5 && nsigmaTPCPr > min_nsigmaTPC && nsigmaTPCPr < max_nsigmaTPC && track.hasTOF() && nsigmaTOFPr > min_nsigmaTOF && nsigmaTOFPr < max_nsigmaTOF) {
-            registryMC.fill(HIST("antiproton_jet_rec_tof"), pt);
-            registryMC.fill(HIST("antiproton_ue_rec_tof"), pt);
+            registryMC.fill(HIST("antiproton_jet_rec_tof"), pt, w_antip_jet);
+            registryMC.fill(HIST("antiproton_ue_rec_tof"), pt, w_antip_ue);
           }
         }
 
@@ -792,7 +885,7 @@ struct nuclei_in_jets {
         continue;
       registryMC.fill(HIST("number_of_events_mc"), 4.5);
 
-      if (abs(collision.posZ()) > zVtx)
+      if (TMath::Abs(collision.posZ()) > zVtx)
         continue;
       registryMC.fill(HIST("number_of_events_mc"), 5.5);
 
@@ -859,7 +952,7 @@ struct nuclei_in_jets {
       int n_jets_selected(0);
       for (int i = 0; i < static_cast<int>(jet.size()); i++) {
 
-        if ((abs(jet[i].Eta()) + Rjet) > max_eta)
+        if ((TMath::Abs(jet[i].Eta()) + Rjet) > max_eta)
           continue;
 
         // Perpendicular cones
@@ -973,7 +1066,7 @@ struct nuclei_in_jets {
       registryMC.fill(HIST("number_of_events_mc"), 7.5);
 
       // Selection on z_{vertex}
-      if (abs(mccollision.posZ()) > 10)
+      if (TMath::Abs(mccollision.posZ()) > 10)
         continue;
       registryMC.fill(HIST("number_of_events_mc"), 8.5);
 
@@ -993,12 +1086,12 @@ struct nuclei_in_jets {
         double dy = particle.vy() - mccollision.posY();
         double dz = particle.vz() - mccollision.posZ();
         double dcaxy = sqrt(dx * dx + dy * dy);
-        double dcaz = abs(dz);
+        double dcaz = TMath::Abs(dz);
 
         if (setDCAselectionPtDep) {
-          if (dcaxy > (0.004f + 0.013f / particle.pt()))
+          if (dcaxy > (par0 + par1 / particle.pt()))
             continue;
-          if (dcaz > (0.004f + 0.013f / particle.pt()))
+          if (dcaz > (par0 + par1 / particle.pt()))
             continue;
         }
         if (!setDCAselectionPtDep) {
@@ -1008,13 +1101,13 @@ struct nuclei_in_jets {
             continue;
         }
 
-        if (abs(particle.eta()) > 0.8)
+        if (TMath::Abs(particle.eta()) > 0.8)
           continue;
         if (particle.pt() < 0.15)
           continue;
 
         // PDG Selection
-        int pdg = abs(particle.pdgCode());
+        int pdg = TMath::Abs(particle.pdgCode());
         if ((pdg != 11) && (pdg != 211) && (pdg != 321) && (pdg != 2212))
           continue;
 
@@ -1071,7 +1164,7 @@ struct nuclei_in_jets {
       int n_jets_selected(0);
       for (int i = 0; i < static_cast<int>(jet.size()); i++) {
 
-        if ((abs(jet[i].Eta()) + Rjet) > max_eta)
+        if ((TMath::Abs(jet[i].Eta()) + Rjet) > max_eta)
           continue;
 
         // Perpendicular cones
@@ -1094,12 +1187,12 @@ struct nuclei_in_jets {
           double dy = particle.vy() - mccollision.posY();
           double dz = particle.vz() - mccollision.posZ();
           double dcaxy = sqrt(dx * dx + dy * dy);
-          double dcaz = abs(dz);
+          double dcaz = TMath::Abs(dz);
 
           if (setDCAselectionPtDep) {
-            if (dcaxy > (0.004f + 0.013f / particle.pt()))
+            if (dcaxy > (par0 + par1 / particle.pt()))
               continue;
-            if (dcaz > (0.004f + 0.013f / particle.pt()))
+            if (dcaz > (par0 + par1 / particle.pt()))
               continue;
           }
           if (!setDCAselectionPtDep) {
@@ -1109,13 +1202,13 @@ struct nuclei_in_jets {
               continue;
           }
 
-          if (abs(particle.eta()) > 0.8)
+          if (TMath::Abs(particle.eta()) > 0.8)
             continue;
           if (particle.pt() < 0.15)
             continue;
 
           // PDG Selection
-          int pdg = abs(particle.pdgCode());
+          int pdg = TMath::Abs(particle.pdgCode());
           if ((pdg != 11) && (pdg != 211) && (pdg != 321) && (pdg != 2212))
             continue;
 

@@ -446,7 +446,7 @@ struct hadronnucleicorrelation {
                   hEtaPhi_PrAntiPr_SE[k]->Fill(deltaEta, deltaPhi, it2->pt());
                   hCorrEtaPhi_PrAntiPr_SE[k]->Fill(deltaEta, deltaPhi, it2->pt(), 1. / (pcorr * antipcorr));
 
-                  if (doQA && abs(deltaEta) < threta && abs(deltaPhi) < thrphi) {
+                  if (doQA && std::abs(deltaEta) < threta && std::abs(deltaPhi) < thrphi) {
                     QA.fill(HIST("QA/hnSigmaTPCVsPt_Pr_Debug"), it1->pt(), it1->tpcNSigmaPr());
                     QA.fill(HIST("QA/hnSigmaTPCVsPt_Pr_Debug"), -1.f * it2->pt(), it2->tpcNSigmaPr());
                     QA.fill(HIST("QA/hnSigmaTOFVsPt_Pr_Debug"), it1->pt(), it1->tofNSigmaPr());
@@ -496,7 +496,7 @@ struct hadronnucleicorrelation {
                   hEtaPhi_AntiDeAntiPr_SE[k]->Fill(deltaEta, deltaPhi, it2->pt());
                   hCorrEtaPhi_AntiDeAntiPr_SE[k]->Fill(deltaEta, deltaPhi, it2->pt(), 1. / (antipcorr * antidcorr));
 
-                  if (doQA && abs(deltaEta) < threta && abs(deltaPhi) < thrphi) {
+                  if (doQA && std::abs(deltaEta) < threta && std::abs(deltaPhi) < thrphi) {
                     QA.fill(HIST("QA/hnSigmaTPCVsPt_De_Debug"), -1.f * it1->pt(), it1->tpcNSigmaDe());
                     QA.fill(HIST("QA/hnSigmaTPCVsPt_APrDe_Debug"), -1.f * it2->pt(), it2->tpcNSigmaPr());
                     QA.fill(HIST("QA/hnSigmaTOFVsPt_De_Debug"), -1.f * it1->pt(), it1->tofNSigmaDe());
@@ -566,9 +566,9 @@ struct hadronnucleicorrelation {
   void processData(FilteredCollisions const& collisions, FilteredTracks const& tracks)
   {
     for (auto track : tracks) {
-      if (abs(track.template singleCollSel_as<FilteredCollisions>().posZ()) > cutzvertex)
+      if (std::abs(track.template singleCollSel_as<FilteredCollisions>().posZ()) > cutzvertex)
         continue;
-      if (abs(track.dcaXY()) > max_dcaxy || abs(track.dcaZ()) > max_dcaz) { // For now no filtering on the DCAxy or DCAz (casting not supported)
+      if (std::abs(track.dcaXY()) > max_dcaxy || std::abs(track.dcaZ()) > max_dcaz) { // For now no filtering on the DCAxy or DCAz (casting not supported)
         continue;
       }
       if (track.tpcFractionSharedCls() > max_tpcSharedCls || track.itsNCls() < min_itsNCls)
@@ -831,13 +831,13 @@ struct hadronnucleicorrelation {
   void processMC(FilteredCollisions const& collisions, FilteredTracksMC const& tracks)
   {
     for (auto track : tracks) {
-      if (abs(track.template singleCollSel_as<FilteredCollisions>().posZ()) > cutzvertex)
+      if (std::abs(track.template singleCollSel_as<FilteredCollisions>().posZ()) > cutzvertex)
         continue;
 
-      if (abs(track.dcaXY()) > max_dcaxy || abs(track.dcaZ()) > max_dcaz) { // For now no filtering on the DCAxy or DCAz (casting not supported)
+      if (std::abs(track.dcaXY()) > max_dcaxy || std::abs(track.dcaZ()) > max_dcaz) { // For now no filtering on the DCAxy or DCAz (casting not supported)
         continue;
       }
-      if (abs(track.pdgCode()) != pdgProton && abs(track.pdgCode()) != pdgDeuteron)
+      if (std::abs(track.pdgCode()) != pdgProton && std::abs(track.pdgCode()) != pdgDeuteron)
         continue;
 
       if (doQA) {

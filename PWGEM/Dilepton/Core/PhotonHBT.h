@@ -96,7 +96,7 @@ struct PhotonHBT {
 
   Configurable<bool> cfgDo3D{"cfgDo3D", false, "enable 3D analysis"};
   Configurable<int> cfgEP2Estimator_for_Mix{"cfgEP2Estimator_for_Mix", 3, "FT0M:0, FT0A:1, FT0C:2, BTot:3, BPos:4, BNeg:5"};
-  Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2, NTPV:3"};
+  Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
   Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 999, "max. centrality"};
   // Configurable<float> cfgSpherocityMin{"cfgSpherocityMin", -999.f, "min. spherocity"};
@@ -643,7 +643,7 @@ struct PhotonHBT {
     for (auto& collision : collisions) {
       initCCDB<isTriggerAnalysis>(collision);
       int ndiphoton = 0;
-      const float centralities[4] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C(), collision.centNTPV()};
+      const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
@@ -1228,7 +1228,7 @@ struct PhotonHBT {
 
     for (auto& collision : collisions) {
       initCCDB<isTriggerAnalysis>(collision);
-      const float centralities[4] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C(), collision.centNTPV()};
+      const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }

@@ -201,6 +201,21 @@ struct HfCandidateSelectorLc {
       return false;
     }
 
+    // candidate decay length XY
+    if (candidate.decayLengthXY() <= cuts->get(pTBin, "decLengthXY")) {
+      return false;
+    }
+
+    // candidate normalized decay length XY
+    if (candidate.decayLengthXYNormalised() < cuts->get(pTBin, "normDecLXY")) {
+      return false;
+    }
+
+    // candidate impact parameter XY
+    if (std::abs(candidate.impactParameterXY()) > cuts->get(pTBin, "impParXY")) {
+      return false;
+    }
+
     if (!isSelectedCandidateProngDca(candidate)) {
       return false;
     }
@@ -432,11 +447,11 @@ struct HfCandidateSelectorLc {
         isSelectedMlLcToPiKP = false;
 
         if (pidLcToPKPi == 1 && pidBayesLcToPKPi == 1 && topolLcToPKPi) {
-          std::vector<float> inputFeaturesLcToPKPi = hfMlResponse.getInputFeatures(candidate, trackPos1, trackNeg, trackPos2);
+          std::vector<float> inputFeaturesLcToPKPi = hfMlResponse.getInputFeatures(candidate, trackPos1, trackNeg, trackPos2, true);
           isSelectedMlLcToPKPi = hfMlResponse.isSelectedMl(inputFeaturesLcToPKPi, candidate.pt(), outputMlLcToPKPi);
         }
         if (pidLcToPiKP == 1 && pidBayesLcToPiKP == 1 && topolLcToPiKP) {
-          std::vector<float> inputFeaturesLcToPiKP = hfMlResponse.getInputFeatures(candidate, trackPos1, trackNeg, trackPos2);
+          std::vector<float> inputFeaturesLcToPiKP = hfMlResponse.getInputFeatures(candidate, trackPos1, trackNeg, trackPos2, false);
           isSelectedMlLcToPiKP = hfMlResponse.isSelectedMl(inputFeaturesLcToPiKP, candidate.pt(), outputMlLcToPiKP);
         }
 

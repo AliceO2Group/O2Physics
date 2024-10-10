@@ -131,6 +131,14 @@ class DielectronCut : public TNamed
     if (dca_ee_3d < mMinPairDCA3D || mMaxPairDCA3D < dca_ee_3d) { // in sigma for pair
       return false;
     }
+
+    float deta = v1.Eta() - v2.Eta();
+    float dphi = v1.Phi() - v2.Phi();
+    o2::math_utils::bringToPMPi(dphi);
+    if (mApplydEtadPhi && std::pow(deta / mMinDeltaEta, 2) + std::pow(dphi / mMinDeltaPhi, 2) < 1.f) {
+      return false;
+    }
+
     return true;
   }
 
@@ -366,6 +374,7 @@ class DielectronCut : public TNamed
   void SetMaxPhivPairMeeDep(std::function<float(float)> meeDepCut);
   void SetPhivPairRange(float min, float max);
   void SelectPhotonConversion(bool flag);
+  void SetMindEtadPhi(bool flag, float min_deta, float min_dphi);
 
   void SetTrackPtRange(float minPt = 0.f, float maxPt = 1e10f);
   void SetTrackEtaRange(float minEta = -1e10f, float maxEta = 1e10f);
@@ -423,6 +432,9 @@ class DielectronCut : public TNamed
   float mMinPhivPair{0.f}, mMaxPhivPair{+3.2};
   std::function<float(float)> mMaxPhivPairMeeDep{}; // max phiv as a function of mee
   bool mSelectPC{false};                            // flag to select photon conversion used in mMaxPhivPairMeeDep
+  bool mApplydEtadPhi{false};                       // flag to apply deta, dphi cut between 2 tracks
+  float mMinDeltaEta{0.f};
+  float mMinDeltaPhi{0.f};
 
   // kinematic cuts
   float mMinTrackPt{0.f}, mMaxTrackPt{1e10f};        // range in pT

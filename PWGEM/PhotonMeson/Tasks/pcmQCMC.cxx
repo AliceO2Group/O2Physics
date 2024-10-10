@@ -49,7 +49,7 @@ using MyMCV0Leg = MyMCV0Legs::iterator;
 
 struct PCMQCMC {
 
-  Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2, NTPV:3"};
+  Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
   Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
 
@@ -410,7 +410,7 @@ struct PCMQCMC {
   void processQCMC(FilteredMyCollisions const& collisions, MyV0Photons const& v0photons, MyMCV0Legs const&, aod::EMMCParticles const& mcparticles, aod::EMMCEvents const&)
   {
     for (auto& collision : collisions) {
-      const float centralities[4] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C(), collision.centNTPV()};
+      const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
@@ -500,7 +500,7 @@ struct PCMQCMC {
     // all MC tracks which belong to the MC event corresponding to the current reconstructed event
 
     for (auto& collision : collisions) {
-      const float centralities[4] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C(), collision.centNTPV()};
+      const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
