@@ -75,6 +75,7 @@ struct ThreePartCorr {
   // Particle masses
   Double_t massLambda = 1.115683;
   Double_t DGaussSigma = 0.0021;
+  Int_t Counter = 0;
 
   // Correlation variables
   Int_t T_Sign;
@@ -272,47 +273,60 @@ struct ThreePartCorr {
   void processMCGen(MyFilteredMCGenCollision const&, MyFilteredMCParticles const& particles)
   {
 
+    // Start of the Monte-Carlo generated QA
     for (const auto& particle : particles) {
-      
-      if (particle.pdgCode() == 211) { // Pos pions
-	MCRegistry.fill(HIST("hGenPionP"), particle.pt());
-      } else if (particle.pdgCode() == -211) { // Neg pions
-	MCRegistry.fill(HIST("hGenPionN"), particle.pt());
-      } else if (particle.pdgCode() == 310) { // Pos kaons
-	MCRegistry.fill(HIST("hGenKaonP"), particle.pt());
-      } else if (particle.pdgCode() == -310) { // Neg kaons
-	MCRegistry.fill(HIST("hGenKaonN"), particle.pt());
-      } else if (particle.pdgCode() == 2212) { // Pos protons
-	MCRegistry.fill(HIST("hGenProtonP"), particle.pt());
-      } else if (particle.pdgCode() == -2212) { // Neg protons
-	MCRegistry.fill(HIST("hGenProtonN"), particle.pt());
+      if (particle.isPhysicalPrimary()) {
+	
+	if (particle.pdgCode() == 211) { // Pos pions
+	  MCRegistry.fill(HIST("hGenPionP"), particle.pt());
+	} else if (particle.pdgCode() == -211) { // Neg pions
+	  MCRegistry.fill(HIST("hGenPionN"), particle.pt());
+	} else if (particle.pdgCode() == 310) { // Pos kaons
+	  MCRegistry.fill(HIST("hGenKaonP"), particle.pt());
+	} else if (particle.pdgCode() == -310) { // Neg kaons
+	  MCRegistry.fill(HIST("hGenKaonN"), particle.pt());
+	} else if (particle.pdgCode() == 2212) { // Pos protons
+	  MCRegistry.fill(HIST("hGenProtonP"), particle.pt());
+	} else if (particle.pdgCode() == -2212) { // Neg protons
+	  MCRegistry.fill(HIST("hGenProtonN"), particle.pt());
+	}
       }
-    }   
+    }
+    // End of the Monte-Carlo generated QA
   }
 
-  void processMCRec(MyFilteredMCRecCollision const&, MyFilteredMCTracks const& tracks, aod::McCollisions const&, aod::McParticles const&)
+  void processMCRec(MyFilteredMCRecCollision const& collision, MyFilteredMCTracks const& tracks, aod::McCollisions const&, aod::McParticles const&)
   {
 
+    if (!collision.has_mcCollision()) {
+      return;
+    }
+
+    // Start of the Monte-Carlo reconstructed QA
     for (const auto& track : tracks) {
       if (!track.has_mcParticle()) {
 	continue;
       }
 
       auto particle = track.mcParticle();
-      if (particle.pdgCode() == 211) { // Pos pions
-	MCRegistry.fill(HIST("hRecPionP"), particle.pt());
-      } else if (particle.pdgCode() == -211) { // Neg pions
-	MCRegistry.fill(HIST("hRecPionN"), particle.pt());
-      } else if (particle.pdgCode() == 310) { // Pos kaons
-	MCRegistry.fill(HIST("hRecKaonP"), particle.pt());
-      } else if (particle.pdgCode() == -310) { // Neg kaons
-	MCRegistry.fill(HIST("hRecKaonN"), particle.pt());
-      } else if (particle.pdgCode() == 2212) { // Pos protons
-	MCRegistry.fill(HIST("hRecProtonP"), particle.pt());
-      } else if (particle.pdgCode() == -2212) { // Neg protons
-	MCRegistry.fill(HIST("hRecProtonN"), particle.pt());
+      if (particle.isPhysicalPrimary()) {
+	
+	if (particle.pdgCode() == 211) { // Pos pions
+	  MCRegistry.fill(HIST("hRecPionP"), particle.pt());
+	} else if (particle.pdgCode() == -211) { // Neg pions
+	  MCRegistry.fill(HIST("hRecPionN"), particle.pt());
+	} else if (particle.pdgCode() == 310) { // Pos kaons
+	  MCRegistry.fill(HIST("hRecKaonP"), particle.pt());
+	} else if (particle.pdgCode() == -310) { // Neg kaons
+	  MCRegistry.fill(HIST("hRecKaonN"), particle.pt());
+	} else if (particle.pdgCode() == 2212) { // Pos protons
+	  MCRegistry.fill(HIST("hRecProtonP"), particle.pt());
+	} else if (particle.pdgCode() == -2212) { // Neg protons
+	  MCRegistry.fill(HIST("hRecProtonN"), particle.pt());
+	}
       }
     }
+    // End of the Monte-Carlo reconstructed QA
   }   
 
   PROCESS_SWITCH(ThreePartCorr, processSame, "Process same-event correlations", true);
