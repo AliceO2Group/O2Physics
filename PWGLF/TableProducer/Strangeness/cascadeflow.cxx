@@ -37,8 +37,9 @@ using std::array;
 using DauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
 using CollEventPlane = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraFT0CQVs, aod::StraRawCents, aod::StraFT0CQVsEv, aod::StraTPCQVs>::iterator;
 using CollEventPlaneCentralFW = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraFT0CQVs, aod::StraRawCents, aod::StraTPCQVs>::iterator;
+using MCCollisionsStra = soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>;
 using CascCandidates = soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs>;
-using CascMCCandidates = soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs, aod::CascMCMothers, aod::CascCoreMCLabels>;
+using CascMCCandidates = soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs, aod::CascCoreMCLabels>;
 
 namespace cascadev2
 {
@@ -773,6 +774,7 @@ struct cascadeFlow {
         continue;
 
       auto cascMC = casc.cascMCCore_as<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>();
+
       int pdgCode{cascMC.pdgCode()};
       if (!(std::abs(pdgCode) == 3312 && std::abs(cascMC.pdgCodeV0()) == 3122 && std::abs(cascMC.pdgCodeBachelor()) == 211)     // Xi
           && !(std::abs(pdgCode) == 3334 && std::abs(cascMC.pdgCodeV0()) == 3122 && std::abs(cascMC.pdgCodeBachelor()) == 321)) // Omega
@@ -852,63 +854,69 @@ struct cascadeFlow {
         fillAnalysedTable(coll, casc, v2CSP, v2CEP, PsiT0C, BDTresponse[0], BDTresponse[1], pdgCode);
     }
   }
-  void processMCGen(soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>::iterator const& mcCollision, soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraCollLabels> const& collisions, soa::Join<aod::CascMCCores, aod::CascMCCollRefs> const& CascMCCores)
+
+  void processMCGen(MCCollisionsStra const& mcCollisions, soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraCollLabels> const& collisions, soa::Join<aod::CascMCCores, aod::CascMCCollRefs> const& CascMCCores)
   {
-    // Generated with accepted z vertex
-    if (TMath::Abs(mcCollision.posZ()) > cutzvertex) {
-      return;
-    }
 
-    // Check if there is at least one of the reconstructed collisions associated to this MC collision
-    auto groupedCollisions = collisions.sliceBy(perMcCollision, mcCollision.globalIndex());
-    int biggestNContribs = -1;
-    int bestCollisionIndex = -1;
-    float centrality = 100.5f;
-    int nCollisions = 0;
-    for (auto const& collision : groupedCollisions) {
-
-      if (!AcceptEvent(collision)) {
-        continue;
+    for (auto const& mcCollision : mcCollisions) {
+      // Generated with accepted z vertex
+      if (TMath::Abs(mcCollision.posZ()) > cutzvertex) {
+        return;
       }
-      if (biggestNContribs < collision.multPVTotalContributors()) {
-        biggestNContribs = collision.multPVTotalContributors();
-        bestCollisionIndex = collision.globalIndex();
-        centrality = collision.centFT0C();
+
+      // Check if there is at least one of the reconstructed collisions associated to this MC collision
+
+      auto groupedCollisions = collisions.sliceBy(perMcCollision, mcCollision.globalIndex());
+
+      int biggestNContribs = -1;
+      int bestCollisionIndex = -1;
+      float centrality = 100.5f;
+      int nCollisions = 0;
+      for (auto const& collision : groupedCollisions) {
+
+        if (!AcceptEvent(collision)) {
+          continue;
+        }
+        if (biggestNContribs < collision.multPVTotalContributors()) {
+          biggestNContribs = collision.multPVTotalContributors();
+          bestCollisionIndex = collision.globalIndex();
+          centrality = collision.centFT0C();
+        }
+        nCollisions++;
       }
-      nCollisions++;
-    }
-    if (nCollisions < 1) {
-      return;
-    }
-    for (auto const& cascMC : CascMCCores) {
-      if (!cascMC.has_straMCCollision())
-        continue;
+      if (nCollisions < 1) {
+        return;
+      }
+      for (auto const& cascMC : CascMCCores) {
+        if (!cascMC.has_straMCCollision())
+          continue;
 
-      if (!cascMC.isPhysicalPrimary())
-        continue;
+        if (!cascMC.isPhysicalPrimary())
+          continue;
 
-      float ptmc = RecoDecay::sqrtSumOfSquares(cascMC.pxMC(), cascMC.pyMC());
+        float ptmc = RecoDecay::sqrtSumOfSquares(cascMC.pxMC(), cascMC.pyMC());
 
-      float theta = std::atan(ptmc / cascMC.pzMC()); //-pi/2 < theta < pi/2
+        float theta = std::atan(ptmc / cascMC.pzMC()); //-pi/2 < theta < pi/2
 
-      float theta1 = 0;
+        float theta1 = 0;
 
-      // if pz is positive (i.e. positive rapidity): 0 < theta < pi/2
-      if (theta > 0)
-        theta1 = theta; // 0 < theta1/2 < pi/4 --> 0 < tan (theta1/2) < 1 --> positive eta
-      // if pz is negative (i.e. negative rapidity): -pi/2 < theta < 0 --> we need 0 < theta1/2 < pi/2 for the ln to be defined
-      else
-        theta1 = TMath::Pi() + theta; // pi/2 < theta1 < pi --> pi/4 < theta1/2 <  pi/2 --> 1 < tan (theta1/2) --> negative eta
+        // if pz is positive (i.e. positive rapidity): 0 < theta < pi/2
+        if (theta > 0)
+          theta1 = theta; // 0 < theta1/2 < pi/4 --> 0 < tan (theta1/2) < 1 --> positive eta
+        // if pz is negative (i.e. negative rapidity): -pi/2 < theta < 0 --> we need 0 < theta1/2 < pi/2 for the ln to be defined
+        else
+          theta1 = TMath::Pi() + theta; // pi/2 < theta1 < pi --> pi/4 < theta1/2 <  pi/2 --> 1 < tan (theta1/2) --> negative eta
 
-      float cascMCeta = -log(std::tan(theta1 / 2));
-      if (TMath::Abs(cascMCeta) > etaCascMCGen)
-        continue;
-      histosMCGen.fill(HIST("hGenEta"), cascMCeta);
+        float cascMCeta = -log(std::tan(theta1 / 2));
+        if (TMath::Abs(cascMCeta) > etaCascMCGen)
+          continue;
+        histosMCGen.fill(HIST("hGenEta"), cascMCeta);
 
-      if (TMath::Abs(cascMC.pdgCode()) == 3312) {
-        histosMCGen.fill(HIST("h2dGenXi"), centrality, ptmc);
-      } else if (TMath::Abs(cascMC.pdgCode() == 3334)) {
-        histosMCGen.fill(HIST("h2dGenOmega"), centrality, ptmc);
+        if (TMath::Abs(cascMC.pdgCode()) == 3312) {
+          histosMCGen.fill(HIST("h2DGenXi"), centrality, ptmc);
+        } else if (TMath::Abs(cascMC.pdgCode() == 3334)) {
+          histosMCGen.fill(HIST("h2DGenOmega"), centrality, ptmc);
+        }
       }
     }
   }
