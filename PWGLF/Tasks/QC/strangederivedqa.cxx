@@ -108,7 +108,7 @@ struct strangederivedqa {
   }
 
   // Real data processing
-  void processDerived(aod::StraCollisions const& collisions, aod::Origins const& origins, soa::Join<aod::V0CollRefs, aod::V0Cores> const& fullV0s)
+  void processDerived(aod::StraCollisions const& collisions, aod::StraOrigins const& origins, soa::Join<aod::V0CollRefs, aod::V0Cores> const& fullV0s)
   {
     histos.fill(HIST("hDFCounter"), 0.0f);
     histos.fill(HIST("hEventCounter"), 0.0f, 0.0f, collisions.size());
@@ -129,7 +129,7 @@ struct strangederivedqa {
 
       if(verbose){
         auto origin = origins.begin(); 
-        LOGF(info, "Sorted DF ID: %lld collisions: %i V0s: %i", origin.dataframeID(), collisions.size(), fullV0s.size()); 
+        LOGF(info, "Sorted DF ID: %lld collisions: %i V0s: %i Origins size: %i", origin.dataframeID(), collisions.size(), fullV0s.size(), origins.size()); 
       }
     }else{ 
       histos.fill(HIST("hEventCounter"), 0.0f, 2.0f, collisions.size());
@@ -138,7 +138,11 @@ struct strangederivedqa {
 
       if(verbose){
         auto origin = origins.begin(); 
-        LOGF(info, "Unsorted DF ID: %lld collisions: %i V0s: %i", origin.dataframeID(), collisions.size(), fullV0s.size());
+        LOGF(info, "Unsorted DF ID: %lld collisions: %i V0s: %i Origins size: %i", origin.dataframeID(), collisions.size(), fullV0s.size(), origins.size()); 
+        uint64_t directoryName = origin.dataframeID();
+        for(auto const& orig : origins){ 
+          LOGF(info, "Unsorted DF ID: %lld separate origin: %lld", directoryName, orig.dataframeID()); 
+        }
       }
     }
   }

@@ -169,15 +169,17 @@ struct strangederivedbuilder {
   Configurable<bool> roundNSigmaVariables{"roundNSigmaVariables", false, "round NSigma variables"};
   Configurable<float> precisionNSigmas{"precisionNSigmas", 0.1f, "precision to keep NSigmas"};
 
-  Configurable<bool> fillRawFT0A{"fillRawFT0A", false, "Fill raw FT0A information for debug"};
-  Configurable<bool> fillRawFT0C{"fillRawFT0C", true, "Fill raw FT0C information for debug"};
-  Configurable<bool> fillRawFV0A{"fillRawFV0A", false, "Fill raw FV0A information for debug"};
-  Configurable<bool> fillRawFDDA{"fillRawFDDA", false, "Fill raw FDDA information for debug"};
-  Configurable<bool> fillRawFDDC{"fillRawFDDC", false, "Fill raw FDDC information for debug"};
-  Configurable<bool> fillRawZDC{"fillRawZDC", false, "Fill raw ZDC information for debug"};
-  Configurable<bool> fillRawNTracksEta1{"fillRawNTracksEta1", true, "Fill raw NTracks |eta|<1 information for debug"};
-  Configurable<bool> fillRawNTracksForCorrelation{"fillRawNTracksForCorrelation", true, "Fill raw NTracks for correlation cuts"};
-  Configurable<bool> fillTOFInformation{"fillTOFInformation", true, "Fill Daughter Track TOF information"};
+  struct : ConfigurableGroup {
+    Configurable<bool> fillRawFT0A{"fillRawFT0A", false, "Fill raw FT0A information for debug"};
+    Configurable<bool> fillRawFT0C{"fillRawFT0C", true, "Fill raw FT0C information for debug"};
+    Configurable<bool> fillRawFV0A{"fillRawFV0A", false, "Fill raw FV0A information for debug"};
+    Configurable<bool> fillRawFDDA{"fillRawFDDA", false, "Fill raw FDDA information for debug"};
+    Configurable<bool> fillRawFDDC{"fillRawFDDC", false, "Fill raw FDDC information for debug"};
+    Configurable<bool> fillRawZDC{"fillRawZDC", false, "Fill raw ZDC information for debug"};
+    Configurable<bool> fillRawNTracksEta1{"fillRawNTracksEta1", true, "Fill raw NTracks |eta|<1 information for debug"};
+    Configurable<bool> fillRawNTracksForCorrelation{"fillRawNTracksForCorrelation", true, "Fill raw NTracks for correlation cuts"};
+    Configurable<bool> fillTOFInformation{"fillTOFInformation", true, "Fill Daughter Track TOF information"};
+  } fillTruncationOptions;
 
   Configurable<bool> qaCentrality{"qaCentrality", false, "qa centrality flag: check base raw values"};
   struct : ConfigurableGroup {
@@ -352,23 +354,23 @@ struct strangederivedbuilder {
         strangeCents(collision.centFT0M(), collision.centFT0A(),
                      centrality, collision.centFV0A());
         strangeEvSels(collision.sel8(), collision.selection_raw(),
-                      collision.multFT0A() * static_cast<float>(fillRawFT0A),
-                      collision.multFT0C() * static_cast<float>(fillRawFT0C),
-                      collision.multFV0A() * static_cast<float>(fillRawFV0A),
-                      collision.multFDDA() * static_cast<float>(fillRawFDDA),
-                      collision.multFDDC() * static_cast<float>(fillRawFDDC),
-                      collision.multNTracksPVeta1() * static_cast<int>(fillRawNTracksEta1),
-                      collision.multPVTotalContributors() * static_cast<int>(fillRawNTracksForCorrelation),
-                      collision.multNTracksGlobal() * static_cast<int>(fillRawNTracksForCorrelation),
-                      collision.multNTracksITSTPC() * static_cast<int>(fillRawNTracksForCorrelation),
-                      collision.multAllTracksTPCOnly() * static_cast<int>(fillRawNTracksForCorrelation),
-                      collision.multAllTracksITSTPC() * static_cast<int>(fillRawNTracksForCorrelation),
-                      collision.multZNA() * static_cast<float>(fillRawZDC),
-                      collision.multZNC() * static_cast<float>(fillRawZDC),
-                      collision.multZEM1() * static_cast<float>(fillRawZDC),
-                      collision.multZEM2() * static_cast<float>(fillRawZDC),
-                      collision.multZPA() * static_cast<float>(fillRawZDC),
-                      collision.multZPC() * static_cast<float>(fillRawZDC),
+                      collision.multFT0A() * static_cast<float>(fillTruncationOptions.fillRawFT0A),
+                      collision.multFT0C() * static_cast<float>(fillTruncationOptions.fillRawFT0C),
+                      collision.multFV0A() * static_cast<float>(fillTruncationOptions.fillRawFV0A),
+                      collision.multFDDA() * static_cast<float>(fillTruncationOptions.fillRawFDDA),
+                      collision.multFDDC() * static_cast<float>(fillTruncationOptions.fillRawFDDC),
+                      collision.multNTracksPVeta1() * static_cast<int>(fillTruncationOptions.fillRawNTracksEta1),
+                      collision.multPVTotalContributors() * static_cast<int>(fillTruncationOptions.fillRawNTracksForCorrelation),
+                      collision.multNTracksGlobal() * static_cast<int>(fillTruncationOptions.fillRawNTracksForCorrelation),
+                      collision.multNTracksITSTPC() * static_cast<int>(fillTruncationOptions.fillRawNTracksForCorrelation),
+                      collision.multAllTracksTPCOnly() * static_cast<int>(fillTruncationOptions.fillRawNTracksForCorrelation),
+                      collision.multAllTracksITSTPC() * static_cast<int>(fillTruncationOptions.fillRawNTracksForCorrelation),
+                      collision.multZNA() * static_cast<float>(fillTruncationOptions.fillRawZDC),
+                      collision.multZNC() * static_cast<float>(fillTruncationOptions.fillRawZDC),
+                      collision.multZEM1() * static_cast<float>(fillTruncationOptions.fillRawZDC),
+                      collision.multZEM2() * static_cast<float>(fillTruncationOptions.fillRawZDC),
+                      collision.multZPA() * static_cast<float>(fillTruncationOptions.fillRawZDC),
+                      collision.multZPC() * static_cast<float>(fillTruncationOptions.fillRawZDC),
                       collision.trackOccupancyInTimeRange(),
                       // UPC info
                       gapSide,
