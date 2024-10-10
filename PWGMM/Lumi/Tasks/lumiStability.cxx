@@ -272,10 +272,24 @@ struct lumiStabilityTask {
       // create orbit-axis histograms on the fly with binning based on info from GRP if GRP is available
       // otherwise default minOrbit and nOrbits will be used
       const AxisSpec axisOrbits{static_cast<int>(nOrbits / nOrbitsPerTF), 0., static_cast<double>(nOrbits), ""};
-      histos.add("hOrbitFDDVertexCoinc", "FDD Orbits; Orbit; Entries", kTH1F, {axisOrbits});
-      histos.add("hOrbitFDDVertex", "FDD Orbits; Orbit; Entries", kTH1F, {axisOrbits});
-      histos.add("hOrbitFT0vertex", "FT0 Orbits; Orbit; Entries", kTH1F, {axisOrbits});
-      histos.add("hOrbitFV0Central", "FV0 Orbits; Orbit; Entries", kTH1F, {axisOrbits});
+      LOGP(info, "Creando histogramas para runNumber={}", runNumber);
+      std::set<std::string> histosCreated;
+      if (histosCreated.find("hOrbitFDDVertexCoinc") == histosCreated.end()){
+        histos.add("hOrbitFDDVertexCoinc", "FDD Orbits; Orbit; Entries", kTH1F, {axisOrbits});
+        histosCreated.insert("hOrbitFDDVertexCoinc");
+      }
+      if (histosCreated.find("hOrbitFDDVertex") == histosCreated.end()){
+        histos.add("hOrbitFDDVertex", "FDD Orbits; Orbit; Entries", kTH1F, {axisOrbits});
+        histosCreated.insert("hOrbitFDDVertex");
+      }
+      if (histosCreated.find("hOrbitFT0vertex") == histosCreated.end()){
+        histos.add("hOrbitFT0vertex", "FT0 Orbits; Orbit; Entries", kTH1F, {axisOrbits});
+        histosCreated.insert("hOrbitFT0vertex");
+      }
+      if (histosCreated.find("hOrbitFV0Central") == histosCreated.end()){
+        histos.add("hOrbitFV0Central", "FV0 Orbits; Orbit; Entries", kTH1F, {axisOrbits});
+        histosCreated.insert("hOrbitFV0Central");
+      }
     }
 
     for (auto const& fdd : fdds) {
