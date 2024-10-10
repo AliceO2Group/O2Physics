@@ -315,7 +315,7 @@ struct HfTaskCharmHadronsFemtoDream {
     Partition<CollisionType> PartitionMaskedCol2 = (aod::femtodreamcollision::bitmaskTrackTwo & BitMask) == BitMask && aod::femtodreamcollision::downsample == true;
     PartitionMaskedCol2.bindTable(cols);
 
-    processType = 1 << 1; // for mixed event
+    processType = 2; // for mixed event
 
     for (auto const& [collision1, collision2] : combinations(soa::CombinationsBlockUpperIndexPolicy(policy, mixingDepth.value, -1, *PartitionMaskedCol1.mFiltered, *PartitionMaskedCol2.mFiltered))) {
       // make sure that tracks in the same events are not mixed
