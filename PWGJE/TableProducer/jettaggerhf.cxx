@@ -197,15 +197,15 @@ struct JetTaggerHFTask {
         break;
       case 4: // TODO
         vecParamsData = (std::vector<float>)paramsResoFuncData;
-        vecParamsCharmJetMC = {281446.003, -0.063, 0.894, 11.598, 0.943, 8.025, 0.130, 6.227, 0.027};
-        vecParamsBeautyJetMC = {74839.065, -0.081, 0.875, 10.314, 0.939, 7.326, 0.101, 6.309, 0.024};
-        vecParamsLfJetMC = {1531580.038, -0.062, -0.896, 13.267, 1.034, 5.866, 0.004, 7.836, 0.090};
-        LOG(info) << "defined parameters of resolution function: PYTHIA8, JJ, LHC23d4";
+        vecParamsCharmJetMC = {743719.121, -0.960, -0.240, 13.765, 1.314, 10.761, 0.293, 8.538, 0.052};
+        vecParamsBeautyJetMC = {88888.418, 0.256, 1.003, 10.185, 0.740, 8.216, 0.147, 7.228, 0.040};
+        vecParamsLfJetMC = {414860.372, -1.000, 0.285, 14.561, 1.464, 11.693, 0.339, 9.183, 0.052};
+        LOG(info) << "defined parameters of resolution function: PYTHIA8, JJ, weighted, LHC24g4";
         break;
       case 5: // TODO
         vecParamsData = (std::vector<float>)paramsResoFuncData;
-        vecParamsIncJetMC = {1900387.527, -0.059, 0.895, 13.461, 1.004, 8.860, 0.098, 6.931, 0.011};
-        LOG(info) << "defined parameters of resolution function: PYTHIA8, JJ, LHC23d4 & use inclusive distribution";
+        vecParamsIncJetMC = {2211391.862, 0.360, 1.028, 13.019, 0.650, 11.151, 0.215, 9.462, 0.044};
+        LOG(info) << "defined parameters of resolution function: PYTHIA8, JJ, weighted, LHC24g4 & use inclusive distribution";
         useResoFuncFromIncJet = true;
         break;
       default:
