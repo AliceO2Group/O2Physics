@@ -1089,7 +1089,6 @@ struct JetTaggerHFQA {
       if (!jetderiveddatautilities::selectTrack(jtrack, trackSelection)) {
         continue;
       }
-
       float varImpXY, varImpXYSig, varImpZ, varImpZSig, varImpXYZ, varImpXYZSig;
       varImpXY = jtrack.dcaXY() * jettaggingutilities::cmTomum;
       varImpXYSig = jtrack.dcaXY() / jtrack.sigmadcaXY();
