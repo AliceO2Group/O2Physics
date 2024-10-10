@@ -133,7 +133,6 @@ struct strangederivedbuilder {
   // Debug
   Produces<aod::StraOrigins> straOrigin;
 
-
   // histogram registry for bookkeeping
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -873,7 +872,7 @@ struct strangederivedbuilder {
 
   void processDataframeIDs(aod::Origins const& origins)
   {
-    auto origin = origins.begin(); 
+    auto origin = origins.begin();
     straOrigin(origin.dataframeID());
   }
 

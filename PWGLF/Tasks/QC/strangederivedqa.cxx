@@ -81,28 +81,28 @@ struct strangederivedqa {
     bool ordered = true;
     int previousIndex = -100;
     for (auto const& v0 : fullV0s) {
-      if(v0.collisionId() < previousIndex){ 
+      if (v0.collisionId() < previousIndex) {
         ordered = false;
       }
-      previousIndex = v0.collisionId(); 
+      previousIndex = v0.collisionId();
     }
-    if(ordered){ 
+    if (ordered) {
       histos.fill(HIST("hEventCounter"), 0.0f, 1.0f, collisions.size());
       histos.fill(HIST("hEventsPerDF"), collisions.size(), 1.0f);
       histos.fill(HIST("hV0sPerDF"), fullV0s.size(), 1.0f);
 
-      if(verbose){
-        auto origin = origins.begin(); 
-        LOGF(info, "Sorted DF ID: %lld collisions: %i V0s: %i", origin.dataframeID(), collisions.size(), fullV0s.size()); 
+      if (verbose) {
+        auto origin = origins.begin();
+        LOGF(info, "Sorted DF ID: %lld collisions: %i V0s: %i", origin.dataframeID(), collisions.size(), fullV0s.size());
       }
-    }else{ 
+    } else {
       histos.fill(HIST("hEventCounter"), 0.0f, 2.0f, collisions.size());
       histos.fill(HIST("hEventsPerDF"), collisions.size(), 2.0f);
       histos.fill(HIST("hV0sPerDF"), fullV0s.size(), 2.0f);
 
-      if(verbose){
-        auto origin = origins.begin(); 
-        LOGF(info, "Unsorted DF ID: %lld collisions: %i V0s: %i", origin.dataframeID(), collisions.size(), fullV0s.size()); 
+      if (verbose) {
+        auto origin = origins.begin();
+        LOGF(info, "Unsorted DF ID: %lld collisions: %i V0s: %i", origin.dataframeID(), collisions.size(), fullV0s.size());
       }
     }
   }
@@ -117,31 +117,31 @@ struct strangederivedqa {
     bool ordered = true;
     int previousIndex = -100;
     for (auto const& v0 : fullV0s) {
-      if(v0.straCollisionId() < previousIndex){ 
+      if (v0.straCollisionId() < previousIndex) {
         ordered = false;
       }
-      previousIndex = v0.straCollisionId(); 
+      previousIndex = v0.straCollisionId();
     }
-    if(ordered){ 
+    if (ordered) {
       histos.fill(HIST("hEventCounter"), 0.0f, 1.0f, collisions.size());
       histos.fill(HIST("hEventsPerDF"), collisions.size(), 1.0f);
       histos.fill(HIST("hV0sPerDF"), fullV0s.size(), 1.0f);
 
-      if(verbose){
-        auto origin = origins.begin(); 
-        LOGF(info, "Sorted DF ID: %lld collisions: %i V0s: %i Origins size: %i", origin.dataframeID(), collisions.size(), fullV0s.size(), origins.size()); 
+      if (verbose) {
+        auto origin = origins.begin();
+        LOGF(info, "Sorted DF ID: %lld collisions: %i V0s: %i Origins size: %i", origin.dataframeID(), collisions.size(), fullV0s.size(), origins.size());
       }
-    }else{ 
+    } else {
       histos.fill(HIST("hEventCounter"), 0.0f, 2.0f, collisions.size());
       histos.fill(HIST("hEventsPerDF"), collisions.size(), 2.0f);
       histos.fill(HIST("hV0sPerDF"), fullV0s.size(), 2.0f);
 
-      if(verbose){
-        auto origin = origins.begin(); 
-        LOGF(info, "Unsorted DF ID: %lld collisions: %i V0s: %i Origins size: %i", origin.dataframeID(), collisions.size(), fullV0s.size(), origins.size()); 
+      if (verbose) {
+        auto origin = origins.begin();
+        LOGF(info, "Unsorted DF ID: %lld collisions: %i V0s: %i Origins size: %i", origin.dataframeID(), collisions.size(), fullV0s.size(), origins.size());
         uint64_t directoryName = origin.dataframeID();
-        for(auto const& orig : origins){ 
-          LOGF(info, "Unsorted DF ID: %lld separate origin: %lld", directoryName, orig.dataframeID()); 
+        for (auto const& orig : origins) {
+          LOGF(info, "Unsorted DF ID: %lld separate origin: %lld", directoryName, orig.dataframeID());
         }
       }
     }
