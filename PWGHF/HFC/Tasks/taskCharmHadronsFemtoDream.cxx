@@ -308,16 +308,14 @@ struct HfTaskCharmHadronsFemtoDream {
   void doMixedEvent(CollisionType const& cols, PartType const& parts, PartitionType1& part1, PartitionType2& part2, BinningType policy)
   {
 
-    // Mixed events that contain at least one particle of interest
+    // Mixed events that contain the pair of interest
 
-    Partition<CollisionType> PartitionMaskedCol1 = (aod::femtodreamcollision::bitmaskTrackOne & BitMask) == BitMask && aod::femtodreamcollision::downsample == true;
-    PartitionMaskedCol1.bindTable(cols);
-    Partition<CollisionType> PartitionMaskedCol2 = (aod::femtodreamcollision::bitmaskTrackTwo & BitMask) == BitMask && aod::femtodreamcollision::downsample == true;
-    PartitionMaskedCol2.bindTable(cols);
+    Partition<CollisionType> PartitionMaskedCol = ncheckbit(aod::femtodreamcollision::bitmaskTrackOne, BitMask) && ncheckbit(aod::femtodreamcollision::bitmaskTrackTwo, BitMask) && aod::femtodreamcollision::downsample == true;
+    PartitionMaskedCol.bindTable(cols);
 
     processType = 2; // for mixed event
 
-    for (auto const& [collision1, collision2] : combinations(soa::CombinationsBlockUpperIndexPolicy(policy, mixingDepth.value, -1, *PartitionMaskedCol1.mFiltered, *PartitionMaskedCol2.mFiltered))) {
+    for (auto const& [collision1, collision2] : selfCombinations(policy, mixingDepth.value, -1, *PartitionMaskedCol.mFiltered, *PartitionMaskedCol.mFiltered)) {
       // make sure that tracks in the same events are not mixed
       if (collision1.globalIndex() == collision2.globalIndex()) {
         continue;
