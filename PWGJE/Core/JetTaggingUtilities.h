@@ -387,11 +387,13 @@ bool trackAcceptanceWithDca(T const& track, float trackDcaXYMax, float trackDcaZ
  * retrun acceptance of prong due to cut for high quality secondary vertex
  */
 template <typename T>
-bool prongAcceptance(T const& prong, float prongChi2PCAMin, float prongChi2PCAMax, float prongsigmaLxyMax, float prongIPxyMin, float prongIPxyMax, bool doXYZ)
+bool prongAcceptance(T const& prong, float prongChi2PCAMin, float prongChi2PCAMax, float prongsigmaLxyMax, float prongIPxyMin, float prongIPxyMax, float prongDispersionMax, bool doXYZ)
 {
   if (prong.chi2PCA() < prongChi2PCAMin)
     return false;
   if (prong.chi2PCA() > prongChi2PCAMax)
+    return false;
+  if (prong.dispersion() > prongDispersionMax)
     return false;
   if (!doXYZ) {
     if (prong.errorDecayLengthXY() > prongsigmaLxyMax)

@@ -202,6 +202,9 @@ struct HfCorrelatorDMesonPairs {
     registry.add("hInputCheckD0OrD0barMcGen", "Check on input D0 | D0bar meson candidates/event MC Gen", {HistType::kTH1F, {axisInputD0}});
 
     registry.add("hMass", "D Meson pair candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{120, 1.5848, 2.1848}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hMassMcRecPrompt", "D Meson pair candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{120, 1.5848, 2.1848}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hMassMcRecNonPrompt", "D Meson pair candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{120, 1.5848, 2.1848}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hMassMcRecReflections", "D Meson pair candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{120, 1.5848, 2.1848}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
   /// Sets bits to select candidate type for D0
@@ -329,7 +332,6 @@ struct HfCorrelatorDMesonPairs {
       registry.fill(HIST("hPhi"), candidate.phi());
       registry.fill(HIST("hY"), candidate.y(MassD0));
       registry.fill(HIST("hPtCandAfterCut"), candidate.pt());
-      registry.fill(HIST("hMass"), hfHelper.invMassD0ToPiK(candidate), candidate.pt());
 
       bool isDCand1 = isD(candidateType1);
       bool isDbarCand1 = isDbar(candidateType1);
@@ -463,6 +465,13 @@ struct HfCorrelatorDMesonPairs {
       bool isDCand1 = isD(candidateType1);
       bool isDbarCand1 = isDbar(candidateType1);
 
+      if (isDCand1) {
+        registry.fill(HIST("hMass"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt());
+      }
+      if (isDbarCand1) {
+        registry.fill(HIST("hMass"), hfHelper.invMassD0barToKPi(candidate1), candidate1.pt());
+      }
+
       for (auto candidate2 = candidate1 + 1; candidate2 != selectedD0CandidatesGrouped.end(); ++candidate2) {
         if (abs(hfHelper.yD0(candidate2)) > yCandMax) {
           continue;
@@ -543,6 +552,31 @@ struct HfCorrelatorDMesonPairs {
         registry.fill(HIST("hStatusSinglePart"), 5);
       } else if (isTrueDbarCand1) {
         registry.fill(HIST("hStatusSinglePart"), 6);
+      }
+
+      if (isDCand1) {
+        if (isTrueDCand1) {
+          registry.fill(HIST("hMass"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt());
+          if (originRec1 == 1) {
+            registry.fill(HIST("hMassMcRecPrompt"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt());
+          } else if (originRec1 == 2) {
+            registry.fill(HIST("hMassMcRecNonPrompt"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt());
+          }
+        } else if (isTrueDbarCand1) {
+          registry.fill(HIST("hMassMcRecReflections"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt());
+        }
+      }
+      if (isDbarCand1) {
+        if (isTrueDbarCand1) {
+          registry.fill(HIST("hMass"), hfHelper.invMassD0barToKPi(candidate1), candidate1.pt());
+          if (originRec1 == 1) {
+            registry.fill(HIST("hMassMcRecPrompt"), hfHelper.invMassD0barToKPi(candidate1), candidate1.pt());
+          } else if (originRec1 == 2) {
+            registry.fill(HIST("hMassMcRecNonPrompt"), hfHelper.invMassD0barToKPi(candidate1), candidate1.pt());
+          }
+        } else if (isTrueDCand1) {
+          registry.fill(HIST("hMassMcRecReflections"), hfHelper.invMassD0barToKPi(candidate1), candidate1.pt());
+        }
       }
 
       for (auto candidate2 = candidate1 + 1; candidate2 != selectedD0CandidatesGroupedMc.end(); ++candidate2) {

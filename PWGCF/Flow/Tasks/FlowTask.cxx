@@ -47,14 +47,20 @@ using namespace o2::framework::expressions;
 
 struct FlowTask {
 
+  O2_DEFINE_CONFIGURABLE(cfgFilterFlag, int, 0, "0 for IsGlobalTrack, 1 for IsGlobalTrackSDD, 2 for IsGlobalTrackWoTPCCluster, 3 for IsGlobalTrackWoPtEta, 4 for IsGlobalTrackWoDCA, 5 for IsGlobalTrackWoDCATPCCluster")
   O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 10.0f, "Accepted z-vertex range")
   O2_DEFINE_CONFIGURABLE(cfgCutPtPOIMin, float, 0.2f, "Minimal pT for poi tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutPtPOIMax, float, 10.0f, "Maximal pT for poi tracks")
-  O2_DEFINE_CONFIGURABLE(cfgCutPtMin, float, 0.2f, "Minimal pT for ref tracks")
-  O2_DEFINE_CONFIGURABLE(cfgCutPtMax, float, 3.0f, "Maximal pT for ref tracks")
+  O2_DEFINE_CONFIGURABLE(cfgCutPtRefMin, float, 0.2f, "Minimal pT for ref tracks")
+  O2_DEFINE_CONFIGURABLE(cfgCutPtRefMax, float, 3.0f, "Maximal pT for ref tracks")
+  O2_DEFINE_CONFIGURABLE(cfgCutPtMin, float, 0.2f, "Minimal pT for all tracks")
+  O2_DEFINE_CONFIGURABLE(cfgCutPtMax, float, 10.0f, "Maximal pT for all tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutEta, float, 0.8f, "Eta range for tracks")
-  O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5, "Chi2 per TPC clusters")
+  O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5f, "max chi2 per TPC clusters")
+  O2_DEFINE_CONFIGURABLE(cfgCutChi2prITScls, float, 36.0f, "max chi2 per cluster ITS")
   O2_DEFINE_CONFIGURABLE(cfgCutTPCclu, float, 70.0f, "minimum TPC clusters")
+  O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2.0f, "max DCA to vertex z")
+  O2_DEFINE_CONFIGURABLE(cfgCutDCAxy, float, 3.675e-4f, "max DCA to vertex xy, default 0.0105 * 0.035 * pT^-1.1")
   O2_DEFINE_CONFIGURABLE(cfgUseAdditionalEventCut, bool, false, "Use additional event cut on mult correlations")
   O2_DEFINE_CONFIGURABLE(cfgUseAdditionalTrackCut, bool, false, "Use additional track cut on phi")
   O2_DEFINE_CONFIGURABLE(cfgGetInteractionRate, bool, false, "Get interaction rate from CCDB")
@@ -87,7 +93,7 @@ struct FlowTask {
   ConfigurableAxis axisDCAxy{"axisDCAxy", {200, -1, 1}, "DCA_{xy} (cm)"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
+  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (aod::track::itsChi2NCl < cfgCutChi2prITScls);
 
   // Corrections
   TH1D* mEfficiency = nullptr;
@@ -231,14 +237,17 @@ struct FlowTask {
     oba->Add(new TNamed("Ch06Gap22", "Ch06Gap22"));
     oba->Add(new TNamed("Ch08Gap22", "Ch08Gap22"));
     oba->Add(new TNamed("Ch10Gap22", "Ch10Gap22"));
+    oba->Add(new TNamed("Ch12Gap22", "Ch12Gap22"));
     oba->Add(new TNamed("Ch04Gap32", "Ch04Gap32"));
     oba->Add(new TNamed("Ch06Gap32", "Ch06Gap32"));
     oba->Add(new TNamed("Ch08Gap32", "Ch08Gap32"));
     oba->Add(new TNamed("Ch10Gap32", "Ch10Gap32"));
+    oba->Add(new TNamed("Ch12Gap32", "Ch12Gap32"));
     oba->Add(new TNamed("Ch04Gap42", "Ch04Gap42"));
     oba->Add(new TNamed("Ch06Gap42", "Ch06Gap42"));
     oba->Add(new TNamed("Ch08Gap42", "Ch08Gap42"));
     oba->Add(new TNamed("Ch10Gap42", "Ch10Gap42"));
+    oba->Add(new TNamed("Ch12Gap42", "Ch12Gap42"));
     oba->Add(new TNamed("ChFull422", "ChFull422"));
     oba->Add(new TNamed("Ch04GapA422", "Ch04GapA422"));
     oba->Add(new TNamed("Ch04GapB422", "Ch04GapB422"));
@@ -295,14 +304,17 @@ struct FlowTask {
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN06 {2} refP06 {-2}", "Ch06Gap22", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {2} refP08 {-2}", "Ch08Gap22", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN10 {2} refP10 {-2}", "Ch10Gap22", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN12 {2} refP12 {-2}", "Ch12Gap22", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN04 {3} refP04 {-3}", "Ch04Gap32", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN06 {3} refP06 {-3}", "Ch06Gap32", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {3} refP08 {-3}", "Ch08Gap32", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN10 {3} refP10 {-3}", "Ch10Gap32", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN12 {3} refP12 {-3}", "Ch12Gap32", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN04 {4} refP04 {-4}", "Ch04Gap42", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN06 {4} refP06 {-4}", "Ch06Gap42", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN08 {4} refP08 {-4}", "Ch08Gap42", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN10 {4} refP10 {-4}", "Ch10Gap42", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN12 {4} refP12 {-4}", "Ch12Gap42", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN {2} refP {-2}", "ChGap22", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiN refN | olN {2} refP {-2}", "ChGap22", kTRUE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {4 -2 -2}", "ChFull422", kFALSE));
@@ -545,7 +557,24 @@ struct FlowTask {
   }
 
   template <typename TTrack>
-  bool trackSelected(TTrack track, const int field)
+  bool trackSelected(TTrack track)
+  {
+    if (cfgFilterFlag == 0)
+      return track.isGlobalTrack();
+    else if (cfgFilterFlag == 1)
+      return (track.isGlobalTrackSDD() == (uint8_t) true);
+    else if (cfgFilterFlag == 2)
+      return (track.isGlobalTrackWoTPCCluster() && track.tpcNClsFound() >= cfgCutTPCclu);
+    else if (cfgFilterFlag == 3)
+      return (track.isGlobalTrackWoPtEta() && (abs(track.eta()) < cfgCutEta) && (track.pt() > cfgCutPtMin) && (track.pt() < cfgCutPtMax));
+    else if (cfgFilterFlag == 4)
+      return (track.isGlobalTrackWoDCA() && track.dcaZ() <= cfgCutDCAz && track.dcaXY() <= cfgCutDCAxy * pow(track.pt(), -1.1));
+    else if (cfgFilterFlag == 5)
+      return (track.isGlobalTrackWoDCATPCCluster() && track.dcaZ() <= cfgCutDCAz && track.dcaXY() <= cfgCutDCAxy * pow(track.pt(), -1.1) && track.tpcNClsFound() >= cfgCutTPCclu);
+  }
+
+  template <typename TTrack>
+  bool AdditionaltrackSelected(TTrack track, const int field)
   {
     double phimodn = track.phi();
     if (field < 0) // for negative polarity field
@@ -646,16 +675,16 @@ struct FlowTask {
       independent = static_cast<float>(tracks.size());
 
     for (auto& track : tracks) {
-      if (track.tpcNClsFound() < cfgCutTPCclu)
+      if (!trackSelected(track))
         continue;
-      if (cfgUseAdditionalTrackCut && !trackSelected(track, Magnetfield))
+      if (cfgUseAdditionalTrackCut && !AdditionaltrackSelected(track, Magnetfield))
         continue;
       if (cfgOutputNUAWeights)
         fWeights->Fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
       if (!setCurrentParticleWeights(weff, wacc, track.phi(), track.eta(), track.pt(), vtxz))
         continue;
       bool WithinPtPOI = (cfgCutPtPOIMin < track.pt()) && (track.pt() < cfgCutPtPOIMax); // within POI pT range
-      bool WithinPtRef = (cfgCutPtMin < track.pt()) && (track.pt() < cfgCutPtMax);       // within RF pT range
+      bool WithinPtRef = (cfgCutPtRefMin < track.pt()) && (track.pt() < cfgCutPtRefMax); // within RF pT range
       bool WithinEtaGap08 = (track.eta() >= -0.4) && (track.eta() <= 0.4);
       registry.fill(HIST("hPt"), track.pt());
       if (WithinPtRef) {

@@ -57,6 +57,7 @@ DECLARE_SOA_COLUMN(Cpa, cpa, float);                                         //!
 DECLARE_SOA_COLUMN(CpaXY, cpaXY, float);                                     //! Cosine pointing angle of candidate in transverse plane
 DECLARE_SOA_COLUMN(MaxNormalisedDeltaIP, maxNormalisedDeltaIP, float);       //! Maximum normalized difference between measured and expected impact parameter of candidate prongs
 DECLARE_SOA_COLUMN(MlScoreSig, mlScoreSig, float);                           //! ML score for signal class
+DECLARE_SOA_COLUMN(FlagWrongCollision, flagWrongCollision, int8_t);          //! Flag for association with wrong collision
 } // namespace hf_cand_bplus_lite
 
 DECLARE_SOA_TABLE(HfRedCandBpLites, "AOD", "HFREDCANDBPLITE", //! Table with some B+ properties
@@ -88,10 +89,12 @@ DECLARE_SOA_TABLE(HfRedCandBpLites, "AOD", "HFREDCANDBPLITE", //! Table with som
                   hf_cand_bplus_lite::Y,
                   hf_cand_2prong::FlagMcMatchRec,
                   hf_cand_2prong::OriginMcRec,
+                  hf_cand_bplus_lite::FlagWrongCollision,
                   hf_cand_bplus_lite::PtGen);
 
 DECLARE_SOA_TABLE(HfRedBpMcCheck, "AOD", "HFREDBPMCCHECK", //! Table with MC decay type check
                   hf_cand_3prong::FlagMcMatchRec,
+                  hf_cand_bplus_lite::FlagWrongCollision,
                   hf_cand_bplus_lite::MProng0,
                   hf_cand_bplus_lite::PtProng0,
                   hf_cand_bplus_lite::M,
@@ -186,10 +189,10 @@ struct HfTaskBplusReduced {
         registry.add("hRapidity", bPlusCandTitle + "candidate #it{y};" + stringPt, {HistType::kTH2F, {axisRapidity, axisPtB}});
         registry.add("hd0d0", bPlusCandTitle + "candidate product of DCAxy to prim. vertex (cm^{2});" + stringPt, {HistType::kTH2F, {axisImpParProd, axisPtB}});
         registry.add("hInvMassD0", bPlusCandTitle + "prong0, D0 inv. mass (GeV/#it{c}^{2});" + stringPt, {HistType::kTH2F, {axisMassD0, axisPtD0}});
-        registry.add("hDecLengthD", bPlusCandTitle + "#it{p}_{T}(D^{0}) (GeV/#it{c});D^{0} candidate decay length (cm);entries", {HistType::kTH2F, {axisPtD0, axisDecLength}});
-        registry.add("hDecLengthXyD", bPlusCandTitle + "#it{p}_{T}(D^{0}) (GeV/#it{c});decay length XY (cm);entries", {HistType::kTH2F, {axisPtD0, axisDecLength}});
-        registry.add("hCpaD", bPlusCandTitle + "#it{p}_{T}(D^{0}) (GeV/#it{c});D^{0} candidate cos(#vartheta_{P});entries", {HistType::kTH2F, {axisPtD0, axisCpa}});
-        registry.add("hCpaXyD", bPlusCandTitle + "#it{p}_{T}(D^{0}) (GeV/#it{c});D^{0} candidate cos(#vartheta_{P}^{XY});entries", {HistType::kTH2F, {axisPtD0, axisCpa}});
+        registry.add("hDecLengthD0", bPlusCandTitle + "#it{p}_{T}(D^{0}) (GeV/#it{c});D^{0} candidate decay length (cm);entries", {HistType::kTH2F, {axisPtD0, axisDecLength}});
+        registry.add("hDecLengthXyD0", bPlusCandTitle + "#it{p}_{T}(D^{0}) (GeV/#it{c});decay length XY (cm);entries", {HistType::kTH2F, {axisPtD0, axisDecLength}});
+        registry.add("hCpaD0", bPlusCandTitle + "#it{p}_{T}(D^{0}) (GeV/#it{c});D^{0} candidate cos(#vartheta_{P});entries", {HistType::kTH2F, {axisPtD0, axisCpa}});
+        registry.add("hCpaXyD0", bPlusCandTitle + "#it{p}_{T}(D^{0}) (GeV/#it{c});D^{0} candidate cos(#vartheta_{P}^{XY});entries", {HistType::kTH2F, {axisPtD0, axisCpa}});
 
         // ML scores of D0 daughter
         if (doprocessDataWithDmesMl) {
@@ -340,12 +343,13 @@ struct HfTaskBplusReduced {
   /// \param candidatesD is the table with D0 candidates
   template <bool doMc, bool withDecayTypeCheck, bool withDmesMl, bool withBplusMl, typename Cand>
   void fillCand(Cand const& candidate,
-                aod::HfRed2Prongs const& /*candidatesD*/)
+                aod::HfRed2Prongs const& /*candidatesD*/,
+                TracksPion const&)
   {
     auto ptCandBplus = candidate.pt();
     auto invMassBplus = hfHelper.invMassBplusToD0Pi(candidate);
     auto candD0 = candidate.template prong0_as<aod::HfRed2Prongs>();
-    auto candPi = candidate.template prong1_as<aod::HfRedTracks>();
+    auto candPi = candidate.template prong1_as<TracksPion>();
     auto ptD0 = candidate.ptProng0();
     auto invMassD0 = (candPi.signed1Pt() < 0) ? candD0.invMassD0() : candD0.invMassD0Bar();
     std::array<float, 3> posPv{candidate.posX(), candidate.posY(), candidate.posZ()};
@@ -357,9 +361,11 @@ struct HfTaskBplusReduced {
     auto decLenXyD0 = RecoDecay::distanceXY(posPv, posSvD);
 
     int8_t flagMcMatchRec = 0;
+    int8_t flagWrongCollision = 0;
     bool isSignal = false;
     if constexpr (doMc) {
       flagMcMatchRec = candidate.flagMcMatchRec();
+      flagWrongCollision = candidate.flagWrongCollision();
       isSignal = TESTBIT(std::abs(flagMcMatchRec), hf_cand_bplus::DecayTypeMc::BplusToD0PiToKPiPi);
     }
 
@@ -537,6 +543,7 @@ struct HfTaskBplusReduced {
           hfHelper.yBplus(candidate),
           flagMcMatchRec,
           isSignal,
+          flagWrongCollision,
           ptMother);
       }
       if constexpr (withDecayTypeCheck) {
@@ -546,6 +553,7 @@ struct HfTaskBplusReduced {
         }
         hfRedBpMcCheck(
           flagMcMatchRec,
+          flagWrongCollision,
           invMassD0,
           ptD0,
           invMassBplus,
@@ -600,39 +608,39 @@ struct HfTaskBplusReduced {
   // Process functions
   void processData(soa::Filtered<soa::Join<aod::HfRedCandBplus, aod::HfSelBplusToD0Pi>> const& candidates,
                    aod::HfRed2Prongs const& candidatesD,
-                   TracksPion const&)
+                   TracksPion const& pionTracks)
   {
     for (const auto& candidate : candidates) {
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
-      fillCand<false, false, false, false>(candidate, candidatesD);
+      fillCand<false, false, false, false>(candidate, candidatesD, pionTracks);
     } // candidate loop
   }   // processData
   PROCESS_SWITCH(HfTaskBplusReduced, processData, "Process data without ML scores for D0 daughter", true);
 
   void processDataWithDmesMl(soa::Filtered<soa::Join<aod::HfRedCandBplus, aod::HfRedBplusD0Mls, aod::HfSelBplusToD0Pi>> const& candidates,
                              aod::HfRed2Prongs const& candidatesD,
-                             TracksPion const&)
+                             TracksPion const& pionTracks)
   {
     for (const auto& candidate : candidates) {
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
-      fillCand<false, false, true, false>(candidate, candidatesD);
+      fillCand<false, false, true, false>(candidate, candidatesD, pionTracks);
     } // candidate loop
   }   // processDataWithDmesMl
   PROCESS_SWITCH(HfTaskBplusReduced, processDataWithDmesMl, "Process data with ML scores for D0 daughter", false);
 
   void processDataWithBplusMl(soa::Filtered<soa::Join<aod::HfRedCandBplus, aod::HfMlBplusToD0Pi, aod::HfSelBplusToD0Pi>> const& candidates,
                               aod::HfRed2Prongs const& candidatesD,
-                              TracksPion const&)
+                              TracksPion const& pionTracks)
   {
     for (const auto& candidate : candidates) {
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
-      fillCand<false, false, false, true>(candidate, candidatesD);
+      fillCand<false, false, false, true>(candidate, candidatesD, pionTracks);
     } // candidate loop
   }   // processDataWithBplusMl
   PROCESS_SWITCH(HfTaskBplusReduced, processDataWithBplusMl, "Process data with(out) ML scores for B+ (D0 daughter)", false);
@@ -640,14 +648,14 @@ struct HfTaskBplusReduced {
   void processMc(soa::Join<aod::HfRedCandBplus, aod::HfSelBplusToD0Pi, aod::HfMcRecRedBps> const& candidates,
                  aod::HfMcGenRedBps const& mcParticles,
                  aod::HfRed2Prongs const& candidatesD,
-                 TracksPion const&)
+                 TracksPion const& pionTracks)
   {
     // MC rec
     for (const auto& candidate : candidates) {
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
-      fillCand<true, false, false, false>(candidate, candidatesD);
+      fillCand<true, false, false, false>(candidate, candidatesD, pionTracks);
     } // rec
 
     // MC gen. level
@@ -660,14 +668,14 @@ struct HfTaskBplusReduced {
   void processMcWithDecayTypeCheck(soa::Filtered<soa::Join<aod::HfRedCandBplus, aod::HfSelBplusToD0Pi, aod::HfMcRecRedBps, aod::HfMcCheckBps>> const& candidates,
                                    aod::HfMcGenRedBps const& mcParticles,
                                    aod::HfRed2Prongs const& candidatesD,
-                                   TracksPion const&)
+                                   TracksPion const& pionTracks)
   {
     // MC rec
     for (const auto& candidate : candidates) {
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
-      fillCand<true, true, false, false>(candidate, candidatesD);
+      fillCand<true, true, false, false>(candidate, candidatesD, pionTracks);
     } // rec
 
     // MC gen. level
@@ -680,14 +688,14 @@ struct HfTaskBplusReduced {
   void processMcWithDmesMl(soa::Join<aod::HfRedCandBplus, aod::HfRedBplusD0Mls, aod::HfSelBplusToD0Pi, aod::HfMcRecRedBps> const& candidates,
                            aod::HfMcGenRedBps const& mcParticles,
                            aod::HfRed2Prongs const& candidatesD,
-                           TracksPion const&)
+                           TracksPion const& pionTracks)
   {
     // MC rec
     for (const auto& candidate : candidates) {
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
-      fillCand<true, false, true, false>(candidate, candidatesD);
+      fillCand<true, false, true, false>(candidate, candidatesD, pionTracks);
     } // rec
 
     // MC gen. level
@@ -700,14 +708,14 @@ struct HfTaskBplusReduced {
   void processMcWithBplusMl(soa::Filtered<soa::Join<aod::HfRedCandBplus, aod::HfMlBplusToD0Pi, aod::HfSelBplusToD0Pi, aod::HfMcRecRedBps>> const& candidates,
                             aod::HfMcGenRedBps const& mcParticles,
                             aod::HfRed2Prongs const& candidatesD,
-                            TracksPion const&)
+                            TracksPion const& pionTracks)
   {
     // MC rec
     for (const auto& candidate : candidates) {
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
-      fillCand<true, false, false, true>(candidate, candidatesD);
+      fillCand<true, false, false, true>(candidate, candidatesD, pionTracks);
     } // rec
 
     // MC gen. level
@@ -720,14 +728,14 @@ struct HfTaskBplusReduced {
   void processMcWithBplusMlAndDecayTypeCheck(soa::Filtered<soa::Join<aod::HfRedCandBplus, aod::HfMlBplusToD0Pi, aod::HfSelBplusToD0Pi, aod::HfMcRecRedBps, aod::HfMcCheckBps>> const& candidates,
                                              aod::HfMcGenRedBps const& mcParticles,
                                              aod::HfRed2Prongs const& candidatesD,
-                                             TracksPion const&)
+                                             TracksPion const& pionTracks)
   {
     // MC rec
     for (const auto& candidate : candidates) {
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
-      fillCand<true, true, false, true>(candidate, candidatesD);
+      fillCand<true, true, false, true>(candidate, candidatesD, pionTracks);
     } // rec
 
     // MC gen. level

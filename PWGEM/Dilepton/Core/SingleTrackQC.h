@@ -72,7 +72,7 @@ struct SingleTrackQC {
   // Configurables
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
 
-  Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2, NTPV:3"};
+  Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
   Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
   Configurable<std::string> cfg_swt_name{"cfg_swt_name", "fHighTrackMult", "desired software trigger name"}; // 1 trigger name per 1 task. fHighTrackMult, fHighFt0Mult
@@ -208,6 +208,7 @@ struct SingleTrackQC {
       fRegistry.add("Track/positive/hChi2TPC", "chi2/number of TPC clusters", kTH1F, {{100, 0, 10}}, false);
       fRegistry.add("Track/positive/hTPCNcr2Nf", "TPC Ncr/Nfindable", kTH1F, {{200, 0, 2}}, false);
       fRegistry.add("Track/positive/hTPCNcls2Nf", "TPC Ncls/Nfindable", kTH1F, {{200, 0, 2}}, false);
+      fRegistry.add("Track/positive/hTPCNclsShared", "TPC Ncls shared/Ncls;p_{T} (GeV/c);N_{cls}^{shared}/N_{cls} in TPC", kTH2F, {{1000, 0, 10}, {100, 0, 1}}, false);
       fRegistry.add("Track/positive/hNclsITS", "number of ITS clusters", kTH1F, {{8, -0.5, 7.5}}, false);
       fRegistry.add("Track/positive/hChi2ITS", "chi2/number of ITS clusters", kTH1F, {{100, 0, 10}}, false);
       fRegistry.add("Track/positive/hITSClusterMap", "ITS cluster map", kTH1F, {{128, -0.5, 127.5}}, false);
@@ -264,6 +265,7 @@ struct SingleTrackQC {
     addhistograms();
     mRunNumber = 0;
 
+    fRegistry.addClone("Event/before/hCollisionCounter", "Event/norm/hCollisionCounter");
     if (doprocessQC_TriggeredData) {
       fRegistry.add("Event/hNInspectedTVX", "N inspected TVX;run number;N_{TVX}", kTProfile, {{80000, 520000.5, 600000.5}}, true);
     }
@@ -398,6 +400,7 @@ struct SingleTrackQC {
       fRegistry.fill(HIST("Track/positive/hNcrTPC"), track.tpcNClsCrossedRows());
       fRegistry.fill(HIST("Track/positive/hTPCNcr2Nf"), track.tpcCrossedRowsOverFindableCls());
       fRegistry.fill(HIST("Track/positive/hTPCNcls2Nf"), track.tpcFoundOverFindableCls());
+      fRegistry.fill(HIST("Track/positive/hTPCNclsShared"), track.pt(), track.tpcFractionSharedCls());
       fRegistry.fill(HIST("Track/positive/hChi2TPC"), track.tpcChi2NCl());
       fRegistry.fill(HIST("Track/positive/hChi2ITS"), track.itsChi2NCl());
       fRegistry.fill(HIST("Track/positive/hITSClusterMap"), track.itsClusterMap());
@@ -427,6 +430,7 @@ struct SingleTrackQC {
       fRegistry.fill(HIST("Track/negative/hNcrTPC"), track.tpcNClsCrossedRows());
       fRegistry.fill(HIST("Track/negative/hTPCNcr2Nf"), track.tpcCrossedRowsOverFindableCls());
       fRegistry.fill(HIST("Track/negative/hTPCNcls2Nf"), track.tpcFoundOverFindableCls());
+      fRegistry.fill(HIST("Track/negative/hTPCNclsShared"), track.pt(), track.tpcFractionSharedCls());
       fRegistry.fill(HIST("Track/negative/hChi2TPC"), track.tpcChi2NCl());
       fRegistry.fill(HIST("Track/negative/hChi2ITS"), track.itsChi2NCl());
       fRegistry.fill(HIST("Track/negative/hITSClusterMap"), track.itsClusterMap());
@@ -493,7 +497,7 @@ struct SingleTrackQC {
   {
     for (auto& collision : collisions) {
       initCCDB<isTriggerAnalysis>(collision);
-      float centralities[4] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C(), collision.centNTPV()};
+      float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
@@ -545,7 +549,7 @@ struct SingleTrackQC {
     passed_trackIds.reserve(tracks.size());
     for (auto& collision : collisions) {
       initCCDB<isTriggerAnalysis>(collision);
-      float centralities[4] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C(), collision.centNTPV()};
+      float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
@@ -669,6 +673,51 @@ struct SingleTrackQC {
     map_weight.clear();
   }
   PROCESS_SWITCH(SingleTrackQC, processQC_TriggeredData, "run single track QC on triggered data", false);
+
+  void processNorm(aod::EMEventNormInfos const& collisions)
+  {
+    for (auto& collision : collisions) {
+      fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 1.0);
+      if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 2.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 3.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 4.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 5.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 6.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 7.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 8.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 9.0);
+      }
+      if (collision.sel8()) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 10.0);
+      }
+      if (abs(collision.posZ()) < 10.0) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 11.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 12.0);
+      }
+      if (!fEMEventCut.IsSelected(collision)) {
+        continue;
+      }
+      fRegistry.fill(HIST("Event/norm/hCollisionCounter"), o2::aod::pwgem::dilepton::utils::eventhistogram::nbin_ev); // accepted
+    } // end of collision loop
+  }
+  PROCESS_SWITCH(SingleTrackQC, processNorm, "process normalization info", false);
 
   void processDummy(MyCollisions const&) {}
   PROCESS_SWITCH(SingleTrackQC, processDummy, "Dummy function", false);
