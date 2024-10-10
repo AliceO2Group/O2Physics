@@ -38,6 +38,7 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace std;
 using std::array;
 
 struct strangederivedqa {
@@ -95,7 +96,7 @@ struct strangederivedqa {
   }
 
   // Real data processing
-  void processDerived(aod::StraCollisions const& collisions, soa::Join<aod::V0CollRefs, aod::V0Cores> const& fullV0s)
+  void processDerived(aod::StraCollisions const& collisions, aod::Origins const& origins, soa::Join<aod::V0CollRefs, aod::V0Cores> const& fullV0s)
   {
     histos.fill(HIST("hDFCounter"), 0.0f);
     histos.fill(HIST("hEventCounter"), 0.0f, 0.0f, collisions.size());
@@ -117,6 +118,11 @@ struct strangederivedqa {
       histos.fill(HIST("hEventCounter"), 0.0f, 2.0f, collisions.size());
       histos.fill(HIST("hEventsPerDF"), collisions.size(), 2.0f);
       histos.fill(HIST("hV0sPerDF"), fullV0s.size(), 2.0f);
+
+      for (auto const& origin : origins) {
+        //uint64_t DF_ID = origin.dataframeID();
+        cout << "Unsorted DF ID = " << origin.dataframeID() << endl;
+      }
     }
   }
 
