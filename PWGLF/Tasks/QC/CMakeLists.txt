@@ -44,6 +44,12 @@ o2physics_add_dpl_workflow(its-tpc-matching-qa
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(strangeness-tracking-qc
+    SOURCES strangenessTrackingQC.cxx
+    PUBLIC_LINK_LIBRARIES O2::Framework O2::ReconstructionDataFormats O2Physics::AnalysisCore O2::DetectorsBase
+    COMPONENT_NAME Analysis)
+
+
 o2physics_add_dpl_workflow(mc-signal-loss
     SOURCES mcSignalLoss.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
