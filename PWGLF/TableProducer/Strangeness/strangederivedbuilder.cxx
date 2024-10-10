@@ -129,6 +129,11 @@ struct strangederivedbuilder {
   Produces<aod::V0FoundTags> v0FoundTags;
   Produces<aod::CascFoundTags> cascFoundTags;
 
+  //__________________________________________________
+  // Debug
+  Produces<aod::StraOrigins> straOrigin;
+
+
   // histogram registry for bookkeeping
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -863,6 +868,15 @@ struct strangederivedbuilder {
       cascFoundTags(hasBeenFound);
     }
   }
+
+  void processDataframeIDs(aod::Origins const& origins)
+  {
+    auto origin = origins.begin(); 
+    straOrigin(origin.dataframeID());
+  }
+
+  // debug processing
+  PROCESS_SWITCH(strangederivedbuilder, processDataframeIDs, "Produce data frame ID tags", false);
 
   // collision processing
   PROCESS_SWITCH(strangederivedbuilder, processCollisions, "Produce collisions", true);
