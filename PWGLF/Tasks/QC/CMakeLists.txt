@@ -113,3 +113,8 @@ o2physics_add_dpl_workflow(mc-particle-predictions
     SOURCES mcParticlePrediction.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(strange-derived-qa
+    SOURCES strangederivedqa.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
