@@ -76,6 +76,15 @@ std::shared_ptr<TH1> hIsMatterGen;
 std::shared_ptr<TH1> hIsMatterGenTwoBody;
 std::shared_ptr<TH2> hDCAxy3H;
 
+float alphaAP(std::array<float, 3> const& momB, std::array<float, 3> const& momC)
+{
+  std::array<float, 3> momA = {momB[0] + momC[0], momB[1] + momC[1], momB[2] + momC[2]};
+  float momTot = std::sqrt(momA[0] * momA[0] + momA[1] * momA[1] + momA[2] * momA[2]);
+  float lQlPos = (momB[0] * momA[0] + momB[1] * momA[1] + momB[2] * momA[2]) / momTot;
+  float lQlNeg = (momC[0] * momA[0] + momC[1] * momA[1] + momC[2] * momA[2]) / momTot;
+  return (lQlPos - lQlNeg) / (lQlPos + lQlNeg);
+}
+
 } // namespace
 
 struct lnnCandidate {
@@ -142,7 +151,6 @@ struct lnnRecoTask {
   Configurable<float> nSigmaCutMaxTPC{"nSigmaCutMaxTPC", 5, "triton dEdx cut (n sigma)"};
   Configurable<float> nTPCClusMin3H{"nTPCClusMin3H", 80, "triton NTPC clusters cut"};
   Configurable<float> ptMinTOF{"ptMinTOF", 0.8, "minimum pt for TOF cut"};
-  Configurable<float> ptMaxTOF{"ptMaxTOF", 3.5, "minimum pt for TOF cut"};
   Configurable<float> TrTOFMass2Cut{"TrTOFMass2Cut", 5.5, "minimum Triton mass square to TOF"};
   Configurable<bool> mcSignalOnly{"mcSignalOnly", true, "If true, save only signal in MC"};
 
@@ -339,16 +347,34 @@ struct lnnRecoTask {
       hdEdxTot->Fill(-negRigidity, negTrack.tpcSignal());
 
       // ITS only tracks do not have TPC information. TPCnSigma: only lower cut to allow for triton reconstruction
-
       bool is3H = posTrack.hasTPC() && nSigmaTPCpos > nSigmaCutMinTPC && nSigmaTPCpos < nSigmaCutMaxTPC;
       bool isAnti3H = negTrack.hasTPC() && nSigmaTPCneg > nSigmaCutMinTPC && nSigmaTPCneg < nSigmaCutMaxTPC;
 
-      if (!is3H && !isAnti3H)
+      if (!is3H && !isAnti3H) // discard if both tracks are not 3H candidates
         continue;
 
-      // Describing lnn as matter candidate
+      auto posTrackCov = getTrackParCov(posTrack);
+      auto negTrackCov = getTrackParCov(negTrack);
+
+      int nCandTrack = 0;
+      try {
+        nCandTrack = fitter.process(posTrackCov, negTrackCov);
+      } catch (...) {
+        LOG(error) << "Exception caught in DCA fitter process call!";
+        continue;
+      }
+      if (nCandTrack == 0) {
+        continue;
+      }
+
+      // if alphaAP is > 0 the candidate is 3H, if < 0 it is anti-3H
+      std::array<float, 3> momPos = std::array{static_cast<float>(-999.), static_cast<float>(-999.), static_cast<float>(-999.)};
+      std::array<float, 3> momNeg = std::array{static_cast<float>(-999.), static_cast<float>(-999.), static_cast<float>(-999.)};
+      posTrack.getPxPyPzGlo(momPos);
+      negTrack.getPxPyPzGlo(momNeg);
+      float alphaAP = alphaAP(momPos, momNeg);
       lnnCandidate lnnCand;
-      lnnCand.isMatter = is3H && isAnti3H ? std::abs(nSigmaTPCpos) < std::abs(nSigmaTPCneg) : is3H;
+      lnnCand.isMatter = alphaAP > 0;
       auto& h3track = lnnCand.isMatter ? posTrack : negTrack;
       auto& h3Rigidity = lnnCand.isMatter ? posRigidity : negRigidity;
 
@@ -374,21 +400,17 @@ struct lnnRecoTask {
 
       auto h3TrackCov = getTrackParCov(posTrack);
       auto negTrackCov = getTrackParCov(negTrack);
-
       int chargeFactor = -1 + 2 * lnnCand.isMatter;
-      hdEdx3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, h3track.tpcSignal());
-      hNsigma3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, lnnCand.nSigma3H);
-      hDCAxy3H->Fill(h3track.pt(), h3track.dcaXY());
-      if (is3H) {
-        hdEdx3HPosTrack->Fill(lnnCand.mom3HTPC, h3track.tpcSignal());
-      }
-      if (h3track.hasTOF()) {
-        float beta = h3track.beta();
+
+      float beta = -1.f;
+      if (h3track.pt() >= ptMinTOF) {
+        if (!h3track.hasTOF()) {
+          continue;
+        }
+        beta = h3track.beta();
         lnnCand.mass2TrTOF = h3track.mass() * h3track.mass();
-        if (h3track.pt() >= ptMinTOF && h3track.pt() <= ptMaxTOF && lnnCand.mass2TrTOF >= TrTOFMass2Cut) {
-          h3HSignalPtTOF->Fill(chargeFactor * h3track.pt(), beta);
-          hNsigma3HSelTOF->Fill(chargeFactor * h3track.pt(), h3track.tofNSigmaTr());
-          h3HMassPtTOF->Fill(chargeFactor * h3track.pt(), lnnCand.mass2TrTOF);
+        if (lnnCand.mass2TrTOF < TrTOFMass2Cut) {
+          continue;
         }
       }
 
@@ -472,6 +494,16 @@ struct lnnRecoTask {
       lnnCand.negTrackID = negTrack.globalIndex();
 
       lnnCandidates.push_back(lnnCand);
+
+      // Fill QA histograms
+      hdEdx3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, h3track.tpcSignal());
+      hNsigma3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, lnnCand.nSigma3H);
+      hDCAxy3H->Fill(h3track.pt(), h3track.dcaXY());
+      if (h3track.hasTOF()) {
+        h3HSignalPtTOF->Fill(chargeFactor * h3track.pt(), beta);
+        hNsigma3HSelTOF->Fill(chargeFactor * h3track.pt(), h3track.tofNSigmaTr());
+        h3HMassPtTOF->Fill(chargeFactor * h3track.pt(), lnnCand.mass2TrTOF);
+      }
     }
   }
 
