@@ -71,7 +71,7 @@ struct ThreePartCorr {
 
   // Process configurables
   Configurable<bool> FilterSwitch{"FilterSwitch", false, "Switch for the FakeV0Filter function"};
-  
+
   // Particle masses
   Double_t massLambda = 1.115683;
   Double_t DGaussSigma = 0.0021;
@@ -101,7 +101,7 @@ struct ThreePartCorr {
     QARegistry.add("hTrackPhi", "hTrackPhi", {HistType::kTH1D, {{100, (-1. / 2) * M_PI, (5. / 2) * M_PI}}});
     QARegistry.add("hEventCentrality", "hEventCentrality", {HistType::kTH1D, {{CentralityAxis}}});
     QARegistry.add("hEventZvtx", "hEventZvtx", {HistType::kTH1D, {{ZvtxAxis}}});
-    
+
     QARegistry.add("hdEdx", "hdEdx", {HistType::kTH2D, {{56, 0.2, 3.0}, {180, 20, 200}}});
     QARegistry.add("hdEdxPion", "hdEdxPion", {HistType::kTH2D, {{56, 0.2, 3.0}, {180, 20, 200}}});
     QARegistry.add("hdEdxKaon", "hdEdxKaon", {HistType::kTH2D, {{56, 0.2, 3.0}, {180, 20, 200}}});
@@ -275,20 +275,20 @@ struct ThreePartCorr {
     // Start of the Monte-Carlo generated QA
     for (const auto& particle : particles) {
       if (particle.isPhysicalPrimary()) {
-	
-	if (particle.pdgCode() == 211) { // Pos pions
-	  MCRegistry.fill(HIST("hGenPionP"), particle.pt());
-	} else if (particle.pdgCode() == -211) { // Neg pions
-	  MCRegistry.fill(HIST("hGenPionN"), particle.pt());
-	} else if (particle.pdgCode() == 310) { // Pos kaons
-	  MCRegistry.fill(HIST("hGenKaonP"), particle.pt());
-	} else if (particle.pdgCode() == -310) { // Neg kaons
-	  MCRegistry.fill(HIST("hGenKaonN"), particle.pt());
-	} else if (particle.pdgCode() == 2212) { // Pos protons
-	  MCRegistry.fill(HIST("hGenProtonP"), particle.pt());
-	} else if (particle.pdgCode() == -2212) { // Neg protons
-	  MCRegistry.fill(HIST("hGenProtonN"), particle.pt());
-	}
+
+        if (particle.pdgCode() == 211) { // Pos pions
+          MCRegistry.fill(HIST("hGenPionP"), particle.pt());
+        } else if (particle.pdgCode() == -211) { // Neg pions
+          MCRegistry.fill(HIST("hGenPionN"), particle.pt());
+        } else if (particle.pdgCode() == 310) { // Pos kaons
+          MCRegistry.fill(HIST("hGenKaonP"), particle.pt());
+        } else if (particle.pdgCode() == -310) { // Neg kaons
+          MCRegistry.fill(HIST("hGenKaonN"), particle.pt());
+        } else if (particle.pdgCode() == 2212) { // Pos protons
+          MCRegistry.fill(HIST("hGenProtonP"), particle.pt());
+        } else if (particle.pdgCode() == -2212) { // Neg protons
+          MCRegistry.fill(HIST("hGenProtonN"), particle.pt());
+        }
       }
     }
     // End of the Monte-Carlo generated QA
@@ -304,29 +304,29 @@ struct ThreePartCorr {
     // Start of the Monte-Carlo reconstructed QA
     for (const auto& track : tracks) {
       if (!track.has_mcParticle()) {
-	continue;
+        continue;
       }
 
       auto particle = track.mcParticle();
       if (particle.isPhysicalPrimary()) {
-	
-	if (particle.pdgCode() == 211) { // Pos pions
-	  MCRegistry.fill(HIST("hRecPionP"), particle.pt());
-	} else if (particle.pdgCode() == -211) { // Neg pions
-	  MCRegistry.fill(HIST("hRecPionN"), particle.pt());
-	} else if (particle.pdgCode() == 310) { // Pos kaons
-	  MCRegistry.fill(HIST("hRecKaonP"), particle.pt());
-	} else if (particle.pdgCode() == -310) { // Neg kaons
-	  MCRegistry.fill(HIST("hRecKaonN"), particle.pt());
-	} else if (particle.pdgCode() == 2212) { // Pos protons
-	  MCRegistry.fill(HIST("hRecProtonP"), particle.pt());
-	} else if (particle.pdgCode() == -2212) { // Neg protons
-	  MCRegistry.fill(HIST("hRecProtonN"), particle.pt());
-	}
+
+        if (particle.pdgCode() == 211) { // Pos pions
+          MCRegistry.fill(HIST("hRecPionP"), particle.pt());
+        } else if (particle.pdgCode() == -211) { // Neg pions
+          MCRegistry.fill(HIST("hRecPionN"), particle.pt());
+        } else if (particle.pdgCode() == 310) { // Pos kaons
+          MCRegistry.fill(HIST("hRecKaonP"), particle.pt());
+        } else if (particle.pdgCode() == -310) { // Neg kaons
+          MCRegistry.fill(HIST("hRecKaonN"), particle.pt());
+        } else if (particle.pdgCode() == 2212) { // Pos protons
+          MCRegistry.fill(HIST("hRecProtonP"), particle.pt());
+        } else if (particle.pdgCode() == -2212) { // Neg protons
+          MCRegistry.fill(HIST("hRecProtonN"), particle.pt());
+        }
       }
     }
     // End of the Monte-Carlo reconstructed QA
-  }   
+  }
 
   PROCESS_SWITCH(ThreePartCorr, processSame, "Process same-event correlations", true);
   PROCESS_SWITCH(ThreePartCorr, processMixed, "Process mixed-event correlations", true);
@@ -365,7 +365,7 @@ struct ThreePartCorr {
       NSigmaTOF[1] = Track.tofNSigmaKa();
       NSigmaTOF[2] = Track.tofNSigmaPr();
     }
-    
+
     NSigma[0] = TMath::Sqrt(pow(NSigmaTPC[0], 2) + pow(NSigmaTOF[0], 2));
     NSigma[1] = TMath::Sqrt(pow(NSigmaTPC[1], 2) + pow(NSigmaTOF[1], 2));
     NSigma[2] = TMath::Sqrt(pow(NSigmaTPC[2], 2) + pow(NSigmaTOF[2], 2));
@@ -380,7 +380,7 @@ struct ThreePartCorr {
       ID[0] = 2.0;
       ID[1] = NSigma[2];
     }
-	
+
     return ID;
   }
 
@@ -435,30 +435,30 @@ struct ThreePartCorr {
   {
 
     if (FilterSwitch) {
-      
+
       TLorentzVector Daughter, Associate;
       if (TrackPID(Track)[0] == 1.0) { // Kaons
-	return kTRUE;
+        return kTRUE;
       } else if (V0Sign(V0) == 1 && TrackPID(Track)[0] == 0.0 && Track.sign() == -1) { // Lambda - Pi_min
-	const auto& dTrack = V0.template posTrack_as<MyFilteredTracks>();
-	Daughter.SetPtEtaPhiM(dTrack.pt(), dTrack.eta(), dTrack.phi(), o2::constants::physics::MassProton);
-	Associate.SetPtEtaPhiM(Track.pt(), Track.eta(), Track.phi(), o2::constants::physics::MassPionCharged);
+        const auto& dTrack = V0.template posTrack_as<MyFilteredTracks>();
+        Daughter.SetPtEtaPhiM(dTrack.pt(), dTrack.eta(), dTrack.phi(), o2::constants::physics::MassProton);
+        Associate.SetPtEtaPhiM(Track.pt(), Track.eta(), Track.phi(), o2::constants::physics::MassPionCharged);
       } else if (V0Sign(V0) == -1 && TrackPID(Track)[0] == 0.0 && Track.sign() == 1) { // Antilambda - Pi_plus
-	const auto& dTrack = V0.template negTrack_as<MyFilteredTracks>();
-	Daughter.SetPtEtaPhiM(dTrack.pt(), dTrack.eta(), dTrack.phi(), o2::constants::physics::MassProton);
-	Associate.SetPtEtaPhiM(Track.pt(), Track.eta(), Track.phi(), o2::constants::physics::MassPionCharged);
+        const auto& dTrack = V0.template negTrack_as<MyFilteredTracks>();
+        Daughter.SetPtEtaPhiM(dTrack.pt(), dTrack.eta(), dTrack.phi(), o2::constants::physics::MassProton);
+        Associate.SetPtEtaPhiM(Track.pt(), Track.eta(), Track.phi(), o2::constants::physics::MassPionCharged);
       } else if (V0Sign(V0) == 1 && TrackPID(Track)[0] == 2.0 && Track.sign() == 1) { // Lambda - Proton
-	const auto& dTrack = V0.template negTrack_as<MyFilteredTracks>();
-	Daughter.SetPtEtaPhiM(dTrack.pt(), dTrack.eta(), dTrack.phi(), o2::constants::physics::MassPionCharged);
-	Associate.SetPtEtaPhiM(Track.pt(), Track.eta(), Track.phi(), o2::constants::physics::MassProton);
+        const auto& dTrack = V0.template negTrack_as<MyFilteredTracks>();
+        Daughter.SetPtEtaPhiM(dTrack.pt(), dTrack.eta(), dTrack.phi(), o2::constants::physics::MassPionCharged);
+        Associate.SetPtEtaPhiM(Track.pt(), Track.eta(), Track.phi(), o2::constants::physics::MassProton);
       } else if (V0Sign(V0) == -1 && TrackPID(Track)[0] == 2.0 && Track.sign() == -1) { // Antilambda - Antiproton
-	const auto& dTrack = V0.template posTrack_as<MyFilteredTracks>();
-	Daughter.SetPtEtaPhiM(dTrack.pt(), dTrack.eta(), dTrack.phi(), o2::constants::physics::MassPionCharged);
-	Associate.SetPtEtaPhiM(Track.pt(), Track.eta(), Track.phi(), o2::constants::physics::MassProton);
+        const auto& dTrack = V0.template posTrack_as<MyFilteredTracks>();
+        Daughter.SetPtEtaPhiM(dTrack.pt(), dTrack.eta(), dTrack.phi(), o2::constants::physics::MassPionCharged);
+        Associate.SetPtEtaPhiM(Track.pt(), Track.eta(), Track.phi(), o2::constants::physics::MassProton);
       }
-      
+
       if ((Daughter + Associate).M() >= massLambda - 4 * DGaussSigma && (Daughter + Associate).M() <= massLambda + 4 * DGaussSigma) {
-	return kFALSE;
+        return kFALSE;
       }
     }
 
