@@ -231,6 +231,9 @@ class HfMlResponseDsToKKPi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_DS(impactParameterXY0),
       FILL_MAP_DS(impactParameterXY1),
       FILL_MAP_DS(impactParameterXY2),
+      FILL_MAP_DS(impactParameterZ0),
+      FILL_MAP_DS(impactParameterZ1),
+      FILL_MAP_DS(impactParameterZ2),
       // TPC PID variables
       FILL_MAP_DS(nSigTpcPi0),
       FILL_MAP_DS(nSigTpcPi1),
