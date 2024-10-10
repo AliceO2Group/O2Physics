@@ -16,6 +16,7 @@
 ///
 /// \author Alexandre Bigot <alexandre.bigot@cern.ch>, IPHC Strasbourg
 /// \author Antonio Palasciano <antonio.palasciano@cern.ch>, Università degli Studi di Bari & INFN, Bari
+/// \author Fabio Catalano <fabio.catalano@cern.ch>, CERN
 
 #ifndef PWGHF_D2H_DATAMODEL_REDUCEDDATAMODEL_H_
 #define PWGHF_D2H_DATAMODEL_REDUCEDDATAMODEL_H_
@@ -259,13 +260,33 @@ DECLARE_SOA_COLUMN(Prong0MlScoreNonprompt, prong0MlScoreNonprompt, float); //! N
 DECLARE_SOA_TABLE(HfRedBplusProngs, "AOD", "HFREDBPPRONG",
                   hf_cand_bplus_reduced::Prong0Id, hf_cand_bplus_reduced::Prong1Id);
 
-DECLARE_SOA_TABLE(HfRedBplusD0Mls, "AOD", "HFREDBPLUSD0ML", //! Table with ML scores for the D+ daughter
+DECLARE_SOA_TABLE(HfRedBplusD0Mls, "AOD", "HFREDBPLUSD0ML", //! Table with ML scores for the D0 daughter
                   hf_cand_bplus_reduced::Prong0MlScoreBkg,
                   hf_cand_bplus_reduced::Prong0MlScorePrompt,
                   hf_cand_bplus_reduced::Prong0MlScoreNonprompt,
                   o2::soa::Marker<1>);
 
 using HfRedCandBplus = soa::Join<HfCandBplusExt, HfRedBplusProngs>;
+
+namespace hf_cand_bs_reduced
+{
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfRed3Prongs, "_0");    //! Prong0 index
+DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, HfRedTrackBases, "_1"); //! Prong1 index
+DECLARE_SOA_COLUMN(Prong0MlScoreBkg, prong0MlScoreBkg, float);             //! Bkg ML score of the D daughter
+DECLARE_SOA_COLUMN(Prong0MlScorePrompt, prong0MlScorePrompt, float);       //! Prompt ML score of the D daughter
+DECLARE_SOA_COLUMN(Prong0MlScoreNonprompt, prong0MlScoreNonprompt, float); //! Nonprompt ML score of the D daughter
+} // namespace hf_cand_bs_reduced
+
+DECLARE_SOA_TABLE(HfRedBsProngs, "AOD", "HFREDBSPRONG", //! Table with Bs daughter indices
+                  hf_cand_bs_reduced::Prong0Id, hf_cand_bs_reduced::Prong1Id);
+
+DECLARE_SOA_TABLE(HfRedBsDsMls, "AOD", "HFREDBSDSML", //! Table with ML scores for the Ds daughter
+                  hf_cand_bs_reduced::Prong0MlScoreBkg,
+                  hf_cand_bs_reduced::Prong0MlScorePrompt,
+                  hf_cand_bs_reduced::Prong0MlScoreNonprompt,
+                  o2::soa::Marker<1>);
+
+using HfRedCandBs = soa::Join<HfCandBsExt, HfRedBsProngs>;
 
 namespace hf_b0_mc
 {
@@ -427,6 +448,89 @@ DECLARE_SOA_TABLE(HfCandBpConfigs, "AOD", "HFCANDBPCONFIG", //! Table with confi
                   hf_cand_bplus_config::MySelectionFlagD0,
                   hf_cand_bplus_config::MySelectionFlagD0bar,
                   hf_cand_bplus_config::MyInvMassWindowD0Pi);
+
+namespace hf_bs_mc
+{
+// MC Rec
+DECLARE_SOA_COLUMN(PtMother, ptMother, float); //! Transverse momentum of the mother in GeV/c
+// MC Gen
+DECLARE_SOA_COLUMN(PtTrack, ptTrack, float);     //! Transverse momentum of the track in GeV/c
+DECLARE_SOA_COLUMN(YTrack, yTrack, float);       //! Rapidity of the track
+DECLARE_SOA_COLUMN(EtaTrack, etaTrack, float);   //! Pseudorapidity of the track
+DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);   //! Transverse momentum of the track's prong0 in GeV/c
+DECLARE_SOA_COLUMN(YProng0, yProng0, float);     //! Rapidity of the track's prong0
+DECLARE_SOA_COLUMN(EtaProng0, etaProng0, float); //! Pseudorapidity of the track's prong0
+DECLARE_SOA_COLUMN(PtProng1, ptProng1, float);   //! Transverse momentum of the track's prong1 in GeV/c
+DECLARE_SOA_COLUMN(YProng1, yProng1, float);     //! Rapidity of the track's prong1
+DECLARE_SOA_COLUMN(EtaProng1, etaProng1, float); //! Pseudorapidity of the track's prong1
+
+DECLARE_SOA_COLUMN(PdgCodeBeautyMother, pdgCodeBeautyMother, int); //! Pdg code of beauty mother
+DECLARE_SOA_COLUMN(PdgCodeCharmMother, pdgCodeCharmMother, int);   //! Pdg code of charm mother
+DECLARE_SOA_COLUMN(PdgCodeProng0, pdgCodeProng0, int);             //! Pdg code of prong0
+DECLARE_SOA_COLUMN(PdgCodeProng1, pdgCodeProng1, int);             //! Pdg code of prong1
+DECLARE_SOA_COLUMN(PdgCodeProng2, pdgCodeProng2, int);             //! Pdg code of prong2
+DECLARE_SOA_COLUMN(PdgCodeProng3, pdgCodeProng3, int);             //! Pdg code of prong3
+} // namespace hf_bs_mc
+
+// table with results of reconstruction level MC matching
+DECLARE_SOA_TABLE(HfMcRecRedDsPis, "AOD", "HFMCRECREDDSPI", //! Table with reconstructed MC information on DsPi(<-Bs) pairs for reduced workflow
+                  hf_cand_bs_reduced::Prong0Id,
+                  hf_cand_bs_reduced::Prong1Id,
+                  hf_cand_bs::FlagMcMatchRec,
+                  hf_cand_bs::FlagWrongCollision,
+                  hf_cand_bs::DebugMcRec,
+                  hf_bs_mc::PtMother);
+
+// try with extended table ?
+// DECLARE_SOA_EXTENDED_TABLE_USER(ExTable, Tracks, "EXTABLE",
+DECLARE_SOA_TABLE(HfMcCheckDsPis, "AOD", "HFMCCHECKDSPI", //! Table with reconstructed MC information on DsPi(<-Bs) pairs for MC checks in reduced workflow
+                  hf_bs_mc::PdgCodeBeautyMother,
+                  hf_bs_mc::PdgCodeCharmMother,
+                  hf_bs_mc::PdgCodeProng0,
+                  hf_bs_mc::PdgCodeProng1,
+                  hf_bs_mc::PdgCodeProng2,
+                  hf_bs_mc::PdgCodeProng3,
+                  o2::soa::Marker<1>);
+
+// Table with same size as HFCANDBS
+DECLARE_SOA_TABLE(HfMcRecRedBss, "AOD", "HFMCRECREDBS", //! Reconstruction-level MC information on Bs candidates for reduced workflow
+                  hf_cand_bs::FlagMcMatchRec,
+                  hf_cand_bs::FlagWrongCollision,
+                  hf_cand_bs::DebugMcRec,
+                  hf_bs_mc::PtMother);
+
+DECLARE_SOA_TABLE(HfMcCheckBss, "AOD", "HFMCCHECKBS", //! Table with reconstructed MC information on Bs candidates for MC checks in reduced workflow
+                  hf_bs_mc::PdgCodeBeautyMother,
+                  hf_bs_mc::PdgCodeCharmMother,
+                  hf_bs_mc::PdgCodeProng0,
+                  hf_bs_mc::PdgCodeProng1,
+                  hf_bs_mc::PdgCodeProng2,
+                  hf_bs_mc::PdgCodeProng3,
+                  o2::soa::Marker<2>);
+
+DECLARE_SOA_TABLE(HfMcGenRedBss, "AOD", "HFMCGENREDBS", //! Generation-level MC information on Bs candidates for reduced workflow
+                  hf_cand_bs::FlagMcMatchGen,
+                  hf_bs_mc::PtTrack,
+                  hf_bs_mc::YTrack,
+                  hf_bs_mc::EtaTrack,
+                  hf_bs_mc::PtProng0,
+                  hf_bs_mc::YProng0,
+                  hf_bs_mc::EtaProng0,
+                  hf_bs_mc::PtProng1,
+                  hf_bs_mc::YProng1,
+                  hf_bs_mc::EtaProng1);
+
+// store all configurables values used in the first part of the workflow
+// so we can use them in the Bs part
+namespace hf_cand_bs_config
+{
+DECLARE_SOA_COLUMN(MySelectionFlagD, mySelectionFlagD, int8_t);    //! Flag to filter selected Ds mesons
+DECLARE_SOA_COLUMN(MyInvMassWindowDPi, myInvMassWindowDPi, float); //! Half-width of the Bs invariant-mass window in GeV/c2
+} // namespace hf_cand_bs_config
+
+DECLARE_SOA_TABLE(HfCandBsConfigs, "AOD", "HFCANDBSCONFIG", //! Table with configurables information for reduced workflow
+                  hf_cand_bs_config::MySelectionFlagD,
+                  hf_cand_bs_config::MyInvMassWindowDPi);
 
 // Charm resonances analysis
 namespace hf_reso_3_prong
