@@ -136,6 +136,8 @@ std::vector<selectedFrames> getSelectedFrames(std::unique_ptr<TFile>& file, int 
   return frames[0];
 }
 
+// Check how many other triggers are in a compatible BC window with the current one
+// Ideally, most of triggers are singles (num = 1), which means none of others is in the same window
 void checkNearbyBCs(std::vector<selectedFrames>& frames, ULong64_t bcDiffTolerance)
 {
   std::sort(frames.begin(), frames.end(), [](const selectedFrames& a, const selectedFrames& b) {
@@ -166,9 +168,9 @@ void checkNearbyBCs(std::vector<selectedFrames>& frames, ULong64_t bcDiffToleran
   }
 }
 
+// Get RunNumber
 std::string getRunNumber(std::string fileName)
 {
-  // Get RunNumber
   std::string runNumber = "";
   std::regex re("/5[0-9]*");
   std::smatch match;
@@ -200,7 +202,7 @@ void checkBCForSelectedTrg(std::vector<selectedFrames>& originalFrames, std::vec
   hBCSkimmed.GetXaxis()->SetBinLabel(3, "Same EvSel BC");
   hBCSkimmed.GetXaxis()->SetBinLabel(4, "Same Both BC");
 
-  TH1D hPairedNumCounter("hPairedNumCounter", (runNumber + " " + triggerLabel + ";;Number of compatible trigger in skimmed data").data(), 10, -0.5, 9.5);
+  TH1D hPairedNumCounter("hPairedNumCounter", (runNumber + " " + triggerLabel + ";;Number of matched triggers in skimmed data").data(), 10, -0.5, 9.5);
 
   checkNearbyBCs(originalFrames, bcDiffTolerance);
   checkNearbyBCs(skimmedFrames, bcDiffTolerance);
@@ -286,7 +288,7 @@ void checkBCForSelectedTrg(std::vector<selectedFrames>& originalFrames, std::vec
   }
   //-------------------------------------------------------------------------------------
 
-  TFile fout(outputFileName, "Update");
+  TFile fout(outputFileName, "UPDATE");
   fout.cd();
   TDirectory* dir1 = fout.GetDirectory(runNumber.data());
   if (!dir1) {
@@ -311,10 +313,8 @@ void checkBCForSelectedTrg(std::vector<selectedFrames>& originalFrames, std::vec
 // Detailed checks for specific trigger
 void checkBCForSelectedTrg(std::string AnaFileName = "AnalysisResults.root", std::string originalFileName = "bcRanges_fullrun.root", std::string skimmedFileName = "bcRanges_fullrun_skimmed.root", int triggerID = 1, bool useAlien = true)
 {
-  //---------------------------------For specific trigger----------------------------------
 
   string runNumber = getRunNumber(originalFileName);
-
   if (useAlien) {
     TGrid::Connect("alien://");
     AnaFileName = "alien://" + AnaFileName;
@@ -352,7 +352,6 @@ void checkBCrangesSkimming(std::string AnaFileName = "AnalysisResults.root", std
 {
 
   string runNumber = getRunNumber(originalFileName);
-
   if (useAlien) {
     TGrid::Connect("alien://");
     AnaFileName = "alien://" + AnaFileName;
@@ -370,7 +369,7 @@ void checkBCrangesSkimming(std::string AnaFileName = "AnalysisResults.root", std
     if (label != "Total number of events" && label != "Filtered events") {
       labels.push_back(label);
       binNum.push_back(i);
-      std::cout << i - 2 << ": " << label << std::endl;
+      // std::cout << i - 2 << ": " << label << std::endl;
     }
   }
   AnaFile->Close();
@@ -481,7 +480,7 @@ void checkBCrangesSkimming(std::string AnaFileName = "AnalysisResults.root", std
 
     // if (static_cast<double>(ncloseskimmed) / noriginal > 0.95 || noriginal == 0)
     if (noriginal == 0) {
-      continue;
+      // continue;
     }
     sel_labels.push_back(labels[trgID]);
     numOriginal.push_back(noriginal);
@@ -510,23 +509,23 @@ void checkBCrangesSkimming(std::string AnaFileName = "AnalysisResults.root", std
   skimmedFile->Close();
 
   TH1D hOriginalTotal("hOriginalTotal", (runNumber + " Original;;Number of events").data(), sel_labels.size(), 0, sel_labels.size());
-  TH1D hOriginalSingles("hOriginalSingles", (runNumber + " Original;;Number of Singles").data(), sel_labels.size(), 0, sel_labels.size());
-  TH1D hOriginalDoubles("hOriginalDoubles", (runNumber + " Original;;Number of Doubles").data(), sel_labels.size(), 0, sel_labels.size());
-  TH1D hOriginalMultiples("hOriginalMultiples", (runNumber + " Original;;Number of Multiples").data(), sel_labels.size(), 0, sel_labels.size());
+  TH1D hOriginalSingles("hOriginalSingles", (runNumber + " Original;;Number of singles").data(), sel_labels.size(), 0, sel_labels.size());
+  TH1D hOriginalDoubles("hOriginalDoubles", (runNumber + " Original;;Number of doubles").data(), sel_labels.size(), 0, sel_labels.size());
+  TH1D hOriginalMultiples("hOriginalMultiples", (runNumber + " Original;;Number of multiples").data(), sel_labels.size(), 0, sel_labels.size());
 
   TH1D hSkimmedTotal("hSkimmedTotal", (runNumber + " Skimmed;;Number of events").data(), sel_labels.size(), 0, sel_labels.size());
-  TH1D hSkimmedSingles("hSkimmedSingles", (runNumber + " Skimmed;;Number of Singles").data(), sel_labels.size(), 0, sel_labels.size());
-  TH1D hSkimmedDoubles("hSkimmedDoubles", (runNumber + " Skimmed;;Number of Doubles").data(), sel_labels.size(), 0, sel_labels.size());
-  TH1D hSkimmedMultiples("hSkimmedMultiples", (runNumber + " Skimmed;;Number of Multiples").data(), sel_labels.size(), 0, sel_labels.size());
+  TH1D hSkimmedSingles("hSkimmedSingles", (runNumber + " Skimmed;;Number of singles").data(), sel_labels.size(), 0, sel_labels.size());
+  TH1D hSkimmedDoubles("hSkimmedDoubles", (runNumber + " Skimmed;;Number of doubles").data(), sel_labels.size(), 0, sel_labels.size());
+  TH1D hSkimmedMultiples("hSkimmedMultiples", (runNumber + " Skimmed;;Number of multiples").data(), sel_labels.size(), 0, sel_labels.size());
 
-  TH1D hTriggerPairsRatio("hTriggerPairsRatio", (runNumber + " Skimmed Efficiency;; Skimmed with compatible BC range / Original").data(), sel_labels.size(), 0, sel_labels.size()); // the ratio of triggers in skimmed dataset whose BC is compatible with original triggers to the number of original triggers, might be duplicate since we check it based on every trigger in unskimmed data
-  TH1D hTriggerSinglePairsRatio("hTriggerSinglePairsRatio", (runNumber + " Skimmed Efficiency;; One-to-One pairs / Original").data(), sel_labels.size(), 0, sel_labels.size());     // the ratio of 1-1 paired triggers to the number of original triggers
-  TH1D hPairedBCAO2DRatio("hPairedBCAO2DRatio", (runNumber + " One-to-One Pairs;; Pairs with same BC_{AO2D} / Total").data(), sel_labels.size(), 0, sel_labels.size());             // In 1-1 pairs, the ratio of pairs who have same BCAO2D
-  TH1D hPairedBCEvSelRatio("hPairedBCEvSelRatio", (runNumber + " One-to-One Pairs;; Pairs with same BC_{EvSel} / Total").data(), sel_labels.size(), 0, sel_labels.size());          // In 1-1 pairs, the ratio of pairs who have same BCEvSel
-  TH1D hDiffBCAO2D("hDiffBCAO2D", (runNumber + " One-to-One Pairs;;#DeltaBC_{AO2D}").data(), sel_labels.size(), 0, sel_labels.size());                                              // difference in BCAO2D of 1-1 pairs
-  TH1D hDiffBCEvSel("hDiffBCEvSel", (runNumber + " One-to-One Pairs;;#DeltaBC_{EvSel}").data(), sel_labels.size(), 0, sel_labels.size());                                           // difference in BCEvSel of 1-1 pairs
-  TH1D hDiffBC("hDiffBC", (runNumber + " One-to-One Pairs;;#DeltaBC").data(), sel_labels.size(), 0, sel_labels.size());                                                             // difference between the BC tuple, expected to be 0 if bcDiffTolerance = 0
-  TH1D hNumPairsInSkimmed("hNumPairsInSkimmed", (runNumber + " Compatible trigger in skimmed data;;Number of pairs").data(), sel_labels.size(), 0, sel_labels.size());              // number of triggers in skimmed data which are compatible in the BC ranges of singles in original selection
+  TH1D hTriggerPairsRatio("hTriggerPairsRatio", (runNumber + " Skimmed Efficiency;; Matched skimmed triggers / Original singles").data(), sel_labels.size(), 0, sel_labels.size());     // the ratio of triggers in skimmed dataset whose BC is compatible with original triggers to the number of original triggers, might be duplicate since we check it based on every trigger in unskimmed data
+  TH1D hTriggerSinglePairsRatio("hTriggerSinglePairsRatio", (runNumber + " Skimmed Efficiency;; One-to-one pairs / Original singles").data(), sel_labels.size(), 0, sel_labels.size()); // the ratio of 1-1 paired triggers to the number of original triggers
+  TH1D hPairsSameBCAO2DRatio("hPairsSameBCAO2DRatio", (runNumber + " One-to-one pairs;; Pairs with same BC_{AO2D} / Total").data(), sel_labels.size(), 0, sel_labels.size());           // In 1-1 pairs, the ratio of pairs who have same BCAO2D
+  TH1D hPairsSameBCEvSelRatio("hPairsSameBCEvSelRatio", (runNumber + " One-to-one pairs;; Pairs with same BC_{EvSel} / Total").data(), sel_labels.size(), 0, sel_labels.size());        // In 1-1 pairs, the ratio of pairs who have same BCEvSel
+  TH1D hDiffBCAO2D("hDiffBCAO2D", (runNumber + " One-to-one pairs;;#DeltaBC_{AO2D}").data(), sel_labels.size(), 0, sel_labels.size());                                                  // difference in BCAO2D of 1-1 pairs
+  TH1D hDiffBCEvSel("hDiffBCEvSel", (runNumber + " One-to-one pairs;;#DeltaBC_{EvSel}").data(), sel_labels.size(), 0, sel_labels.size());                                               // difference in BCEvSel of 1-1 pairs
+  TH1D hDiffBC("hDiffBC", (runNumber + " One-to-one pairs;;#DeltaBC").data(), sel_labels.size(), 0, sel_labels.size());                                                                 // difference between the BC tuple, expected to be 0 if bcDiffTolerance = 0
+  TH1D hNumPairsInSkimmed("hNumPairsInSkimmed", (runNumber + " number of matched triggers in skimmed data;;Matched trigger count").data(), sel_labels.size(), 0, sel_labels.size());    // number of triggers in skimmed data which are compatible in the BC ranges of singles in original selection
 
   for (int i = 0; i < sel_labels.size(); i++) {
     // Original data
@@ -562,16 +561,16 @@ void checkBCrangesSkimming(std::string AnaFileName = "AnalysisResults.root", std
     // Pairs QA
     hTriggerPairsRatio.GetXaxis()->SetBinLabel(i + 1, sel_labels[i].c_str());
     hTriggerSinglePairsRatio.GetXaxis()->SetBinLabel(i + 1, sel_labels[i].c_str());
-    hPairedBCAO2DRatio.GetXaxis()->SetBinLabel(i + 1, sel_labels[i].c_str());
-    hPairedBCEvSelRatio.GetXaxis()->SetBinLabel(i + 1, sel_labels[i].c_str());
+    hPairsSameBCAO2DRatio.GetXaxis()->SetBinLabel(i + 1, sel_labels[i].c_str());
+    hPairsSameBCEvSelRatio.GetXaxis()->SetBinLabel(i + 1, sel_labels[i].c_str());
     hDiffBCAO2D.GetXaxis()->SetBinLabel(i + 1, sel_labels[i].c_str());
     hDiffBCEvSel.GetXaxis()->SetBinLabel(i + 1, sel_labels[i].c_str());
     hDiffBC.GetXaxis()->SetBinLabel(i + 1, sel_labels[i].c_str());
     hNumPairsInSkimmed.GetXaxis()->SetBinLabel(i + 1, sel_labels[i].c_str());
 
     if (numpair[i] > 0) {
-      hPairedBCAO2DRatio.SetBinContent(i + 1, static_cast<double>(numpairedBCAO2D[i]) / numpair[i]);
-      hPairedBCEvSelRatio.SetBinContent(i + 1, static_cast<double>(numpairedBCEvSel[i]) / numpair[i]);
+      hPairsSameBCAO2DRatio.SetBinContent(i + 1, static_cast<double>(numpairedBCAO2D[i]) / numpair[i]);
+      hPairsSameBCEvSelRatio.SetBinContent(i + 1, static_cast<double>(numpairedBCEvSel[i]) / numpair[i]);
     }
     hTriggerPairsRatio.SetBinContent(i + 1, numCloseSkimmed[i]);
     hTriggerPairsRatio.SetBinError(i + 1, std::sqrt(numCloseSkimmed[i]));
@@ -594,8 +593,6 @@ void checkBCrangesSkimming(std::string AnaFileName = "AnalysisResults.root", std
   hTriggerEff = (TH1D*)hSkimmedTotal.Clone("hTriggerEff");
   hTriggerEff->SetTitle((runNumber + " skimmed efficiency;; Skimmed / Original").data());
   hTriggerEff->Divide(&hOriginalTotal);
-  // hTriggerPairsRatio.Divide(&hOriginalTotal);
-  // hTriggerSinglePairsRatio.Divide(&hOriginalTotal);
   hTriggerPairsRatio.Divide(&hOriginalSingles);
   hTriggerSinglePairsRatio.Divide(&hOriginalSingles);
   hOriginalSinglesRatio = (TH1D*)hOriginalSingles.Clone("hOriginalSinglesRatio");
@@ -618,7 +615,7 @@ void checkBCrangesSkimming(std::string AnaFileName = "AnalysisResults.root", std
   hSkimmedMultiplesRatio->SetTitle((runNumber + " Skimmed;;Multiples / Total").data());
   hSkimmedMultiplesRatio->Divide(&hSkimmedTotal);
 
-  TFile fout(outputFileName, "RECREATE");
+  TFile fout(outputFileName, "UPDATE");
   fout.cd();
   TDirectory* dir = fout.mkdir(runNumber.data());
   dir->cd();
@@ -647,7 +644,14 @@ void checkBCrangesSkimming(std::string AnaFileName = "AnalysisResults.root", std
   hSkimmedSinglesRatio->Write();
   hSkimmedDoublesRatio->Write();
   hSkimmedMultiplesRatio->Write();
-  hPairedBCAO2DRatio.Write();
-  hPairedBCEvSelRatio.Write();
+  hPairsSameBCAO2DRatio.Write();
+  hPairsSameBCEvSelRatio.Write();
   fout.Close();
+
+  // Do checks for trigger
+  for (int trgID = 0; trgID < labels.size(); trgID++) {
+    if (trgID == 77 || trgID == 78 || trgID == 79) {
+      // checkBCForSelectedTrg(originalAllFrames[trgID], skimmedAllFrames[trgID], runNumber, labels[trgID]);
+    }
+  }
 }
