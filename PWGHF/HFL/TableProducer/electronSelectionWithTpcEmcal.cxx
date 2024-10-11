@@ -287,7 +287,6 @@ struct HfElectronSelectionWithTpcEmcal {
       float deltaPhiMatch = -999.;
       float deltaEtaMatch = -999.;
       float eop = -999;
-      int elecrtonMatchId = -999;
       bool isEMcal = false;
 
       float trackRapidity = track.rapidity(MassElectron);
@@ -310,7 +309,6 @@ struct HfElectronSelectionWithTpcEmcal {
         m20MatchEmcCluster = emcCluster.m20();
         timeEmcCluster = emcCluster.time();
         cellEmcCluster = emcCluster.nCells();
-        elecrtonMatchId = matchTrack.globalIndex();
 
         deltaPhiMatch = matchTrack.trackPhiEmcal() - phiMatchEmcCluster;
         deltaEtaMatch = matchTrack.trackEtaEmcal() - etaMatchEmcCluster;
@@ -370,7 +368,7 @@ struct HfElectronSelectionWithTpcEmcal {
 
         isEMcal = true;
 
-        electronSel(matchTrack.collisionId(), elecrtonMatchId, etaMatchTrack, phiMatchTrack, ptMatchTrack, pMatchTrack, trackRapidity, matchTrack.dcaXY(), matchTrack.dcaZ(), matchTrack.tpcNSigmaEl(), matchTrack.tofNSigmaEl(),
+        electronSel(matchTrack.collisionId(), electronId, etaMatchTrack, phiMatchTrack, ptMatchTrack, pMatchTrack, trackRapidity, matchTrack.dcaXY(), matchTrack.dcaZ(), matchTrack.tpcNSigmaEl(), matchTrack.tofNSigmaEl(),
                     eMatchEmcCluster, etaMatchEmcCluster, phiMatchEmcCluster, m02MatchEmcCluster, m20MatchEmcCluster, cellEmcCluster, timeEmcCluster, deltaEtaMatch, deltaPhiMatch, isEMcal);
       }
 
