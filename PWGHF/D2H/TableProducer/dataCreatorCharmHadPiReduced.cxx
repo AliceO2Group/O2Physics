@@ -920,8 +920,7 @@ struct HfDataCreatorCharmHadPiReduced {
                        trackParCovCharmHad.getX(), trackParCovCharmHad.getAlpha(),
                        trackParCovCharmHad.getY(), trackParCovCharmHad.getZ(), trackParCovCharmHad.getSnp(),
                        trackParCovCharmHad.getTgl(), trackParCovCharmHad.getQ2Pt(),
-                       candC.xSecondaryVertex(), candC.ySecondaryVertex(), candC.zSecondaryVertex(), invMassC0);
-          // TODO: add invMassC1 to the table to support Bs -> Ds Pi
+                       candC.xSecondaryVertex(), candC.ySecondaryVertex(), candC.zSecondaryVertex(), invMassC0, invMassC1);
           hfCand3ProngCov(trackParCovCharmHad.getSigmaY2(), trackParCovCharmHad.getSigmaZY(), trackParCovCharmHad.getSigmaZ2(),
                           trackParCovCharmHad.getSigmaSnpY(), trackParCovCharmHad.getSigmaSnpZ(),
                           trackParCovCharmHad.getSigmaSnp2(), trackParCovCharmHad.getSigmaTglY(), trackParCovCharmHad.getSigmaTglZ(),
@@ -930,10 +929,16 @@ struct HfDataCreatorCharmHadPiReduced {
                           trackParCovCharmHad.getSigma1PtTgl(), trackParCovCharmHad.getSigma1Pt2());
           if constexpr (withMl) {
             if constexpr (decChannel == DecayChannel::B0ToDminusPi) {
-              hfCand3ProngMl(candC.mlProbDplusToPiKPi()[0], candC.mlProbDplusToPiKPi()[1], candC.mlProbDplusToPiKPi()[2]);
+              hfCand3ProngMl(candC.mlProbDplusToPiKPi()[0], candC.mlProbDplusToPiKPi()[1], candC.mlProbDplusToPiKPi()[2], -1., -1., -1.);
             } else {
-              hfCand3ProngMl(candC.mlProbDsToKKPi()[0], candC.mlProbDsToKKPi()[1], candC.mlProbDsToKKPi()[2]);
-              // TODO: add DsToPiKK case to support Bs -> Ds Pi
+              std::array<float, 6> mlScores = {-1.f, -1.f, -1.f, -1.f, -1.f, -1.f};
+              if (candC.mlProbDsToKKPi().size() == 3) {
+                std::copy(candC.mlProbDsToKKPi().begin(), candC.mlProbDsToKKPi().end(), mlScores.begin());
+              }
+              if (candC.mlProbDsToPiKK().size() == 3) {
+                std::copy(candC.mlProbDsToPiKK().begin(), candC.mlProbDsToPiKK().end(), mlScores.begin() + 3);
+              }
+              hfCand3ProngMl(mlScores[0], mlScores[1], mlScores[2], mlScores[3], mlScores[4], mlScores[5]);
             }
           }
         } else if constexpr (decChannel == DecayChannel::BplusToD0barPi) { // D0(bar) → K± π∓
@@ -950,15 +955,14 @@ struct HfDataCreatorCharmHadPiReduced {
                           trackParCovCharmHad.getSigma1PtY(), trackParCovCharmHad.getSigma1PtZ(), trackParCovCharmHad.getSigma1PtSnp(),
                           trackParCovCharmHad.getSigma1PtTgl(), trackParCovCharmHad.getSigma1Pt2());
           if constexpr (withMl) {
-            std::array<float, 6> bdtScores = {-1.f, -1.f, -1.f, -1.f, -1.f, -1.f};
+            std::array<float, 6> mlScores = {-1.f, -1.f, -1.f, -1.f, -1.f, -1.f};
             if (candC.mlProbD0().size() == 3) {
-              std::copy(candC.mlProbD0().begin(), candC.mlProbD0().end(), bdtScores.begin());
+              std::copy(candC.mlProbD0().begin(), candC.mlProbD0().end(), mlScores.begin());
             }
             if (candC.mlProbD0bar().size() == 3) {
-              std::copy(candC.mlProbD0bar().begin(), candC.mlProbD0bar().end(), bdtScores.begin() + 3);
+              std::copy(candC.mlProbD0bar().begin(), candC.mlProbD0bar().end(), mlScores.begin() + 3);
             }
-
-            hfCand2ProngMl(bdtScores[0], bdtScores[1], bdtScores[2], bdtScores[3], bdtScores[4], bdtScores[5]);
+            hfCand2ProngMl(mlScores[0], mlScores[1], mlScores[2], mlScores[3], mlScores[4], mlScores[5]);
           }
         }
         fillHfReducedCollision = true;

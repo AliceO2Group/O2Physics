@@ -790,7 +790,7 @@ struct HfDataCreatorCharmResoReduced {
                 pVecProng2[0], pVecProng2[1], pVecProng2[2],
                 dtype);
         if constexpr (withMl) {
-          hfCandDMl(bdtScores[0], bdtScores[1], bdtScores[2]);
+          hfCandDMl(bdtScores[0], bdtScores[1], bdtScores[2], -1., -1., -1.);
         }
         fillHfReducedCollision = true;
         if constexpr (DecayChannel == DecayChannel::DstarV0 || DecayChannel == DecayChannel::DstarTrack) {

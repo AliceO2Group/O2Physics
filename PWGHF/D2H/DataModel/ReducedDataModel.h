@@ -165,9 +165,8 @@ using HfRedTracks = HfRedTracksExt;
 
 namespace hf_charm_cand_reduced
 {
-DECLARE_SOA_COLUMN(InvMass, invMass, float);                                     //! Invariant mass of 2prong candidate in GeV/c2
-DECLARE_SOA_COLUMN(InvMassD0, invMassD0, float);                                 //! Invariant mass of 2prong candidate in GeV/c2
-DECLARE_SOA_COLUMN(InvMassD0Bar, invMassD0Bar, float);                           //! Invariant mass of 2prong candidate in GeV/c2
+DECLARE_SOA_COLUMN(InvMassHypo0, invMassHypo0, float);                           //! Invariant mass of candidate in GeV/c2 (mass hypothesis 0)
+DECLARE_SOA_COLUMN(InvMassHypo1, invMassHypo1, float);                           //! Invariant mass of candidate in GeV/c2 (mass hypothesis 1)
 DECLARE_SOA_COLUMN(MlScoreBkgMassHypo0, mlScoreBkgMassHypo0, float);             //! ML score for background class (mass hypothesis 0)
 DECLARE_SOA_COLUMN(MlScorePromptMassHypo0, mlScorePromptMassHypo0, float);       //! ML score for prompt class (mass hypothesis 0)
 DECLARE_SOA_COLUMN(MlScoreNonpromptMassHypo0, mlScoreNonpromptMassHypo0, float); //! ML score for non-prompt class (mass hypothesis 0)
@@ -184,7 +183,7 @@ DECLARE_SOA_TABLE(HfRed2Prongs, "AOD", "HFRED2PRONG", //! Table with 2prong cand
                   hf_track_index_reduced::HfRedCollisionId,
                   HFTRACKPAR_COLUMNS,
                   hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ZSecondaryVertex,
-                  hf_charm_cand_reduced::InvMassD0, hf_charm_cand_reduced::InvMassD0Bar,
+                  hf_charm_cand_reduced::InvMassHypo0, hf_charm_cand_reduced::InvMassHypo1,
                   aod::track::Px<aod::track::Signed1Pt, aod::track::Snp, aod::track::Alpha>,
                   aod::track::Py<aod::track::Signed1Pt, aod::track::Snp, aod::track::Alpha>,
                   aod::track::Pz<aod::track::Signed1Pt, track::Tgl>,
@@ -211,7 +210,7 @@ DECLARE_SOA_TABLE(HfRed3Prongs, "AOD", "HFRED3PRONG", //! Table with 3prong cand
                   hf_track_index_reduced::HfRedCollisionId,
                   HFTRACKPAR_COLUMNS,
                   hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ZSecondaryVertex,
-                  hf_charm_cand_reduced::InvMass,
+                  hf_charm_cand_reduced::InvMassHypo0, hf_charm_cand_reduced::InvMassHypo1,
                   aod::track::Px<aod::track::Signed1Pt, aod::track::Snp, aod::track::Alpha>,
                   aod::track::Py<aod::track::Signed1Pt, aod::track::Snp, aod::track::Alpha>,
                   aod::track::Pz<aod::track::Signed1Pt, track::Tgl>,
@@ -225,7 +224,11 @@ DECLARE_SOA_TABLE(HfRed3ProngsCov, "AOD", "HFRED3PRONGSCOV", //! Table with 3pro
 DECLARE_SOA_TABLE(HfRed3ProngsMl, "AOD", "HFRED3PRONGML", //! Table with 3prong candidate ML scores
                   hf_charm_cand_reduced::MlScoreBkgMassHypo0,
                   hf_charm_cand_reduced::MlScorePromptMassHypo0,
-                  hf_charm_cand_reduced::MlScoreNonpromptMassHypo0);
+                  hf_charm_cand_reduced::MlScoreNonpromptMassHypo0,
+                  hf_charm_cand_reduced::MlScoreBkgMassHypo1,
+                  hf_charm_cand_reduced::MlScorePromptMassHypo1,
+                  hf_charm_cand_reduced::MlScoreNonpromptMassHypo1,
+                  o2::soa::Marker<1>);
 
 // Beauty candidates prongs
 namespace hf_cand_b0_reduced
