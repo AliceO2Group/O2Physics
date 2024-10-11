@@ -43,7 +43,7 @@ namespace
 };
 
 struct miniCasc {
-  bool isOmega;
+  bool fillOmega;
   float pt;
   float eta;
   float phi;
@@ -84,6 +84,10 @@ struct strangenessTrackingQC {
   HistogramRegistry registry{
     "registry",
     {
+      {"omegaMassFull", "; Mass (GeV/#it{c}^{2}); Counts", {HistType::kTH1F, {{125, 1.650, 1.700}}}},
+      {"xiMassFull", "; Mass (GeV/#it{c}^{2}); Counts", {HistType::kTH1F, {{125, 1.296, 1.346}}}},
+      {"omegaMassTracked", "; Mass (GeV/#it{c}^{2}); Counts", {HistType::kTH1F, {{125, 1.650, 1.700}}}},
+      {"xiMassTracked", "; Mass (GeV/#it{c}^{2}); Counts", {HistType::kTH1F, {{125, 1.296, 1.346}}}},
       {"omegaHistFull", "; #it{p}_{T} (GeV/#it{c}); Radius (cm); Mass", {HistType::kTH3F, {{ptBins, decayRadBins, omegaMassBins}}}},
       {"xiHistFull", "; #it{p}_{T} (GeV/#it{c}); Radius (cm); Mass", {HistType::kTH3F, {{ptBins, decayRadBins, xiMassBins}}}},
       {"xiHistTracked", "; #it{p}_{T} (GeV/#it{c}); Radius (cm); Mass", {HistType::kTH3F, {{ptBins, decayRadBins, xiMassBins}}}},
@@ -98,6 +102,27 @@ struct strangenessTrackingQC {
     return std::hypot(dcaInfo[0], dcaInfo[1]);
   }
 
+  template <typename T>
+  bool qualityTrackSelection(const T& track)
+  {
+    if (std::abs(track.eta()) > 0.9) {
+      return false;
+    }
+    if (track.tpcNClsFound() < cfgCutNclusTPC) {
+      return false;
+    }
+    return true;
+  }
+
+  float computeMassMother(const float massA, const float massB, const std::array<float, 3>& momA, const std::array<float, 3>& momB, const std::array<float, 3>& momMother) const
+  {
+    float eA = std::hypot(massA, std::hypot(momA[0], momA[1], momA[2]));
+    float eB = std::hypot(massB, std::hypot(momB[0], momB[1], momB[2]));
+    float lmomMotherl = std::hypot(momMother[0], momMother[1], momMother[2]);
+    float eMother = eA + eB;
+    return std::sqrt(eMother * eMother - lmomMotherl * lmomMotherl);
+  }
+
   template <class TCasc>
   bool buildCascade(TCasc const& casc, CollisionCandidates::iterator const& collision, aod::V0s const&, TrackCandidates const&, miniCasc& miniCasc)
   {
@@ -105,8 +130,14 @@ struct strangenessTrackingQC {
     const auto& bachelor = casc.template bachelor_as<TrackCandidates>();
     const auto& ptrack = v0.template posTrack_as<TrackCandidates>();
     const auto& ntrack = v0.template negTrack_as<TrackCandidates>();
+    if (!qualityTrackSelection(ptrack) || !qualityTrackSelection(ntrack) || !qualityTrackSelection(bachelor)) {
+      return false;
+    }
     const auto& protonTrack = bachelor.sign() > 0 ? ntrack : ptrack;
     const auto& pionTrack = bachelor.sign() > 0 ? ptrack : ntrack;
+    if (std::abs(protonTrack.tpcNSigmaPr()) > 3 || std::abs(pionTrack.tpcNSigmaPi()) > 3) {
+      return false;
+    }
     const auto primaryVertex = getPrimaryVertex(collision);
     std::array<float, 3> pvPos = {primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()};
 
@@ -149,18 +180,12 @@ struct strangenessTrackingQC {
     }
 
     miniCasc.pt = std::hypot(cascMom[0], cascMom[1]);
+    miniCasc.massOmega = computeMassMother(constants::physics::MassLambda0, constants::physics::MassKaonCharged, v0Mom, bachelorMom, cascMom);
+    miniCasc.massXi = computeMassMother(constants::physics::MassLambda0, constants::physics::MassPionCharged, v0Mom, bachelorMom, cascMom);
 
-    // look if the cascade is in the Xi mass window
-    std::array<double, 2> masses;
-    float eV0 = std::sqrt(RecoDecay::p2(v0Mom) + o2::constants::physics::MassLambda0 * o2::constants::physics::MassLambda0);
-    float eKBach = std::sqrt(RecoDecay::p2(bachelorMom) + o2::constants::physics::MassKPlus * o2::constants::physics::MassKPlus);
-    float ePiBach = std::sqrt(RecoDecay::p2(bachelorMom) + o2::constants::physics::MassPiPlus * o2::constants::physics::MassPiPlus);
-    miniCasc.massOmega = std::sqrt((eV0 + eKBach) * (eV0 + eKBach) - RecoDecay::p2(cascMom));
-    miniCasc.massXi = std::sqrt((eV0 + ePiBach) * (eV0 + ePiBach) - RecoDecay::p2(cascMom));
-
-    miniCasc.isOmega = false;
-    if (TMath::Abs(miniCasc.massXi - constants::physics::MassXiMinus) > 0.005) {
-      miniCasc.isOmega = true;
+    miniCasc.fillOmega = false;
+    if (TMath::Abs(miniCasc.massXi - constants::physics::MassXiMinus) > 0.01 && std::abs(bachelor.tpcNSigmaKa()) < 3) {
+      miniCasc.fillOmega = true;
     }
 
     miniCasc.dcaXYCasc = dcaToPV(pvPos, trackParCovCasc);
@@ -199,8 +224,6 @@ struct strangenessTrackingQC {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
-    // lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>("GLO/Param/MatLUT"));
-
     m_fitter.setPropagateToPCA(true);
     m_fitter.setMaxR(200.);
     m_fitter.setMinParamChange(1e-3);
@@ -216,10 +239,15 @@ struct strangenessTrackingQC {
 
   void process(CollisionCandidates const& collisions, aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const& cascades, aod::V0s const& v0s, TrackCandidates const& tracks, aod::BCsWithTimestamps const&)
   {
+
     for (const auto& trackedCascade : trackedCascades) {
       miniCasc miniCasc;
       const auto& casc = trackedCascade.cascade();
       auto collision = trackedCascade.collision_as<CollisionCandidates>();
+      if (!collision.sel8() || std::abs(collision.posZ()) > 10) {
+        continue;
+      }
+      initCCDB(collision.bc_as<aod::BCsWithTimestamps>());
       if (buildCascade(casc, collision, v0s, tracks, miniCasc)) {
 
         // compute the dca of the tracked cascade
@@ -230,23 +258,29 @@ struct strangenessTrackingQC {
         auto pvPosArr = std::array<float, 3>{pvPos.getX(), pvPos.getY(), pvPos.getZ()};
         miniCasc.dcaXYTracked = dcaToPV(pvPosArr, trackCovTrk);
         // fill the histograms
-        if (miniCasc.isOmega) {
+        if (miniCasc.fillOmega) {
+          registry.fill(HIST("omegaMassTracked"), miniCasc.massOmega);
           registry.fill(HIST("omegaHistTracked"), miniCasc.pt, miniCasc.radius, miniCasc.massOmega);
-        } else {
-          registry.fill(HIST("xiHistTracked"), miniCasc.pt, miniCasc.radius, miniCasc.massXi);
         }
+        registry.fill(HIST("xiMassTracked"), miniCasc.massXi);
+        registry.fill(HIST("xiHistTracked"), miniCasc.pt, miniCasc.radius, miniCasc.massXi);
       }
     }
 
     for (auto& cascade : cascades) {
       miniCasc miniCasc;
       auto collision = cascade.collision_as<CollisionCandidates>();
+      if (!collision.sel8() || std::abs(collision.posZ()) > 10) {
+        continue;
+      }
+      initCCDB(collision.bc_as<aod::BCsWithTimestamps>());
       if (buildCascade(cascade, collision, v0s, tracks, miniCasc)) {
-        if (miniCasc.isOmega) {
+        if (miniCasc.fillOmega) {
+          registry.fill(HIST("omegaMassFull"), miniCasc.massOmega);
           registry.fill(HIST("omegaHistFull"), miniCasc.pt, miniCasc.radius, miniCasc.massOmega);
-        } else {
-          registry.fill(HIST("xiHistFull"), miniCasc.pt, miniCasc.radius, miniCasc.massXi);
         }
+        registry.fill(HIST("xiMassFull"), miniCasc.massXi);
+        registry.fill(HIST("xiHistFull"), miniCasc.pt, miniCasc.radius, miniCasc.massXi);
       }
     }
   }
