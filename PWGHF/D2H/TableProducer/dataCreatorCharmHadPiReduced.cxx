@@ -180,7 +180,7 @@ struct HfDataCreatorCharmHadPiReduced {
   HistogramRegistry registry{"registry"};
 
   std::array<int, 2> arrPDGResonantDsPhiPi = {kPhi, kPiPlus}; // Ds± → Phi π±
-  std::array<int, 2> arrPDGResonantDKstarK = {313, kKPlus};   // Ds± → K*(892)0bar K± and D± → K*(892)0bar K±
+  std::array<int, 2> arrPDGResonantDKstarK = {kK0Star892, kKPlus};   // Ds± → K*(892)0bar K± and D± → K*(892)0bar K±
 
   void init(InitContext const&)
   {
