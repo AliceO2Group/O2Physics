@@ -12,6 +12,8 @@ This repository contains the codes to analyse V0 and cascade particles in proton
 * `strangeness_step2.cxx` Apply PID selections on V0 daughter tracks
 * `strangeness_step3.cxx` Check the MC information of the V0s and verify with the PID information of daughter tracks
 
+The introduction and hands-on sessions can be found here: https://indico.cern.ch/event/1326201/
+
 ## PbPb
 This repository contains the code to analyse cascade particles in Pb-Pb collisions.
 The tutorial revolves around two aspects:
@@ -23,3 +25,5 @@ ii) the analysis of the derived data in the directory Analysis, containing:
 * `strangeness_pbpb_step2.cxx` Apply TPC PID selections on cascade daughter tracks
 * `strangeness_pbpb_step3.cxx` Apply TOF PID selections on cascade daughter tracks (if available)
 * `strangeness_pbpb_step4.cxx` Check the MC information of the cascade
+
+The introduction and hands-on sessions can be found here: https://indico.cern.ch/event/1425820/
