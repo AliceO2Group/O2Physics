@@ -25,8 +25,8 @@ namespace o2::aod
 // definition of columns and tables forElectron Selection
 namespace hf_sel_electron
 {
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);                //! collisioniD of the electron track
-DECLARE_SOA_COLUMN(GTrackId, gTrackId, int);                   //! pseudorapidity of the electron track
+DECLARE_SOA_INDEX_COLUMN(Collision, collision);                //! collisionId of the electron track
+DECLARE_SOA_COLUMN(GTrackId, gTrackId, int);                   //! trackId of the electron track
 DECLARE_SOA_COLUMN(EtaTrack, etaTrack, float);                 //! pseudorapidity of the electron track
 DECLARE_SOA_COLUMN(PhiTrack, phiTrack, float);                 //! azimuth of the electron track
 DECLARE_SOA_COLUMN(PtTrack, ptTrack, float);                   //! transverse momentum of the electron track
