@@ -60,7 +60,7 @@ struct HfCandidateSelectorDplusToPiKPi {
   Configurable<std::vector<double>> binsPtTrack{"binsPtTrack", std::vector<double>{hf_cuts_single_track::vecBinsPtTrack}, "track pT bin limits for DCA pT-dependent cut"};
   // QA switch
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
-  // Correlated bakcground from Ds and D+
+  // Correlated background from Ds and D+
   Configurable<bool> storeDsDplusBkg{"storeDsBkg", false, "Flag to store correlated background from misidentified product of Ds and D+ decay"};
   // ML inference
   Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
