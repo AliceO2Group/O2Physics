@@ -61,7 +61,7 @@ struct HfCandidateSelectorDplusToPiKPi {
   // QA switch
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
   // Correlated background from Ds and D+
-  Configurable<bool> storeDsDplusBkg{"storeDsBkg", false, "Flag to store correlated background from misidentified product of Ds and D+ decay"};
+  Configurable<bool> storeDsDplusBkg{"storeDsDplusBkg", false, "Flag to store correlated background from misidentified product of Ds and D+ decay"};
   // ML inference
   Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
   Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{hf_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
