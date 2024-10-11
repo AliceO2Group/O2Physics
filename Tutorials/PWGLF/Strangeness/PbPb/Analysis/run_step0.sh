@@ -16,7 +16,7 @@ if [ $rc -eq 0 ]; then
     echo "No problems!"
     mkdir -p "${DIR_THIS}/results/step${STEP}"
     mv AnalysisResults.root "${DIR_THIS}/results/step${STEP}/AnalysisResults.root"
-    mv dpl-config.json " "${DIR_THIS}/results/step${STEP}/step${STEP}.json""
+    mv dpl-config.json "${DIR_THIS}/results/step${STEP}/step${STEP}.json"
 else
     echo "Error: Exit code ${rc}"
     echo "Check the log file ${LOGFILE}"
