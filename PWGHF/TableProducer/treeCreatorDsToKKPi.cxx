@@ -296,7 +296,7 @@ struct HfTreeCreatorDsToKKPi {
     int8_t flagMc = 0;
     int8_t originMc = 0;
     int8_t channelMc = 0;
-    int8_t isSwapped = 1 - massHypo; // 0 if PiKK, 1 if KKPi
+    int8_t isSwapped = 1 - massHypo; // 1 if PiKK, 0 if KKPi
     float yCand = 0;
     float eCand = 0;
     float ctCand = 0;
