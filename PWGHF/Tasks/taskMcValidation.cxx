@@ -111,13 +111,15 @@ struct HfTaskMcValidationGen {
   AxisSpec axisResiduals{100, -0.01, 0.01};
   AxisSpec axisPt{100, 0., 50.};
   AxisSpec axisY{100, -5., 5.};
+  AxisSpec axisCent{100, 0., 100.};
   AxisSpec axisMesonSpecies{nMesonChannels, -0.5, static_cast<float>(nMesonChannels) - 0.5};
   AxisSpec axisBaryonSpecies{nChannels - nMesonChannels, -0.5, static_cast<float>(nChannels - nMesonChannels) - 0.5};
   AxisSpec axisDecLen{100, 0., 10000.};
 
   HistogramRegistry registry{
     "registry",
-    {{"hMomentumCheck", "Mom. Conservation (1 = true, 0 = false) (#it{#epsilon} = 1 MeV/#it{c}); Mom. Conservation result; entries", {HistType::kTH1F, {{2, -0.5, +1.5}}}},
+    {{"hNevGen", "Generated events counter; Gen. events; entries", {HistType::kTH1F, {{1, -0.5, +0.5}}}},
+     {"hMomentumCheck", "Mom. Conservation (1 = true, 0 = false) (#it{#epsilon} = 1 MeV/#it{c}); Mom. Conservation result; entries", {HistType::kTH1F, {{2, -0.5, +1.5}}}},
      {"hPtDiffMotherDaughterGen", "Pt Difference Mother-Daughters; #Delta#it{p}_{T}^{gen} (GeV/#it{c}); entries", {HistType::kTH1F, {axisResiduals}}},
      {"hPxDiffMotherDaughterGen", "Px Difference Mother-Daughters; #Delta#it{p}_{x}^{gen} (GeV/#it{c}); entries", {HistType::kTH1F, {axisResiduals}}},
      {"hPyDiffMotherDaughterGen", "Py Difference Mother-Daughters; #Delta#it{p}_{y}^{gen} (GeV/#it{c}); entries", {HistType::kTH1F, {axisResiduals}}},
@@ -130,15 +132,19 @@ struct HfTaskMcValidationGen {
      {"Quarks/hPtVsYCharmQuark", "Y vs. Pt - charm quarks ; #it{p}_{T}^{gen} (GeV/#it{c}); #it{y}^{gen}", {HistType::kTH2F, {axisPt, axisY}}},
      {"Quarks/hPtVsYBeautyQuark", "Y vs. Pt - beauty quarks ; #it{p}_{T}^{gen} (GeV/#it{c}); #it{y}^{gen}", {HistType::kTH2F, {axisPt, axisY}}},
      {"PromptCharmMesons/hPromptMesonsPtDistr", "Pt distribution vs prompt charm meson in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c})", {HistType::kTH2F, {axisMesonSpecies, axisPt}}},
+     {"PromptCharmMesons/hPromptMesonsPtCentDistr", "Pt vs Cent vs distribution vs prompt charm meson in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c}); Centrality (%);", {HistType::kTH3F, {axisMesonSpecies, axisPt, axisCent}}},
      {"PromptCharmMesons/hPromptMesonsYDistr", "Y distribution vs prompt charm meson; ; #it{y}^{gen}", {HistType::kTH2F, {axisMesonSpecies, axisY}}},
      {"PromptCharmMesons/hPromptMesonsDecLenDistr", "Decay length distribution vs prompt charm meson; ; decay length (#mum)", {HistType::kTH2F, {axisMesonSpecies, axisDecLen}}},
      {"NonPromptCharmMesons/hNonPromptMesonsPtDistr", "Pt distribution vs non-prompt charm meson in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c})", {HistType::kTH2F, {axisMesonSpecies, axisPt}}},
+     {"NonPromptCharmMesons/hNonPromptMesonsPtCentDistr", "Pt vs Cent vs distribution vs non-prompt charm meson in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c}); Centrality (%);", {HistType::kTH3F, {axisMesonSpecies, axisPt, axisCent}}},
      {"NonPromptCharmMesons/hNonPromptMesonsYDistr", "Y distribution vs non-prompt charm meson; ; #it{y}^{gen}", {HistType::kTH2F, {axisMesonSpecies, axisY}}},
      {"NonPromptCharmMesons/hNonPromptMesonsDecLenDistr", "Decay length distribution vs non-prompt charm meson; ; decay length (#mum)", {HistType::kTH2F, {axisMesonSpecies, axisDecLen}}},
      {"PromptCharmBaryons/hPromptBaryonsPtDistr", "Pt distribution vs prompt charm baryon in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c})", {HistType::kTH2F, {axisBaryonSpecies, axisPt}}},
+     {"PromptCharmBaryons/hPromptBaryonsPtCentDistr", "Pt vs Cent vs distribution vs prompt charm baryons in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c}); Centrality (%);", {HistType::kTH3F, {axisBaryonSpecies, axisPt, axisCent}}},
      {"PromptCharmBaryons/hPromptBaryonsYDistr", "Y distribution vs prompt charm baryon; ; #it{y}^{gen}", {HistType::kTH2F, {axisBaryonSpecies, axisY}}},
      {"PromptCharmBaryons/hPromptBaryonsDecLenDistr", "Decay length distribution vs prompt charm baryon; ; decay length (#mum)", {HistType::kTH2F, {axisBaryonSpecies, axisDecLen}}},
      {"NonPromptCharmBaryons/hNonPromptBaryonsPtDistr", "Pt distribution vs non-prompt charm baryon in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c})", {HistType::kTH2F, {axisBaryonSpecies, axisPt}}},
+     {"NonPromptCharmBaryons/hNonPromptBaryonsPtCentDistr", "Pt vs Cent vs distribution vs prompt charm baryons in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c}); Centrality (%);", {HistType::kTH3F, {axisBaryonSpecies, axisPt, axisCent}}},
      {"NonPromptCharmBaryons/hNonPromptBaryonsYDistr", "Y distribution vs non-prompt charm baryon; ; #it{y}^{gen}", {HistType::kTH2F, {axisBaryonSpecies, axisY}}},
      {"NonPromptCharmBaryons/hNonPromptBaryonsDecLenDistr", "Decay length distribution vs non-prompt charm baryon; ; decay length (#mum)", {HistType::kTH2F, {axisBaryonSpecies, axisDecLen}}}}};
 
@@ -164,17 +170,21 @@ struct HfTaskMcValidationGen {
 
     for (auto iBin = 1; iBin <= nMesonChannels; ++iBin) {
       registry.get<TH2>(HIST("PromptCharmMesons/hPromptMesonsPtDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
+      registry.get<TH3>(HIST("PromptCharmMesons/hPromptMesonsPtCentDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
       registry.get<TH2>(HIST("PromptCharmMesons/hPromptMesonsYDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
       registry.get<TH2>(HIST("PromptCharmMesons/hPromptMesonsDecLenDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
       registry.get<TH2>(HIST("NonPromptCharmMesons/hNonPromptMesonsPtDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
+      registry.get<TH3>(HIST("NonPromptCharmMesons/hNonPromptMesonsPtCentDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
       registry.get<TH2>(HIST("NonPromptCharmMesons/hNonPromptMesonsYDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
       registry.get<TH2>(HIST("NonPromptCharmMesons/hNonPromptMesonsDecLenDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
     }
     for (auto iBin = 1; iBin <= nChannels - nMesonChannels; ++iBin) {
       registry.get<TH2>(HIST("PromptCharmBaryons/hPromptBaryonsPtDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nMesonChannels - 1].data());
+      registry.get<TH3>(HIST("PromptCharmBaryons/hPromptBaryonsPtCentDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nMesonChannels - 1].data());
       registry.get<TH2>(HIST("PromptCharmBaryons/hPromptBaryonsYDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nMesonChannels - 1].data());
       registry.get<TH2>(HIST("PromptCharmBaryons/hPromptBaryonsDecLenDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nMesonChannels - 1].data());
       registry.get<TH2>(HIST("NonPromptCharmBaryons/hNonPromptBaryonsPtDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nMesonChannels - 1].data());
+      registry.get<TH3>(HIST("NonPromptCharmBaryons/hNonPromptBaryonsPtCentDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nMesonChannels - 1].data());
       registry.get<TH2>(HIST("NonPromptCharmBaryons/hNonPromptBaryonsYDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nMesonChannels - 1].data());
       registry.get<TH2>(HIST("NonPromptCharmBaryons/hNonPromptBaryonsDecLenDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nMesonChannels - 1].data());
     }
@@ -197,6 +207,7 @@ struct HfTaskMcValidationGen {
     if (eventGeneratorType >= 0 && mcCollision.getSubGeneratorId() != eventGeneratorType) {
       return;
     }
+    registry.fill(HIST("hNevGen"), 1);
 
     // Slice the collisions table to get the collision info for the current MC collision
     float centrality{-1.f};
@@ -379,12 +390,14 @@ struct HfTaskMcValidationGen {
           if (origin == RecoDecay::OriginType::Prompt) {
             if (std::abs(particle.y()) < 0.5) {
               registry.fill(HIST("PromptCharmMesons/hPromptMesonsPtDistr"), iD, particle.pt());
+              registry.fill(HIST("PromptCharmMesons/hPromptMesonsPtCentDistr"), iD, particle.pt(), centrality);
             }
             registry.fill(HIST("PromptCharmMesons/hPromptMesonsYDistr"), iD, particle.y());
             registry.fill(HIST("PromptCharmMesons/hPromptMesonsDecLenDistr"), iD, decayLength * 10000);
           } else if (origin == RecoDecay::OriginType::NonPrompt) {
             if (std::abs(particle.y()) < 0.5) {
               registry.fill(HIST("NonPromptCharmMesons/hNonPromptMesonsPtDistr"), iD, particle.pt());
+              registry.fill(HIST("NonPromptCharmMesons/hNonPromptMesonsPtCentDistr"), iD, particle.pt(), centrality);
             }
             registry.fill(HIST("NonPromptCharmMesons/hNonPromptMesonsYDistr"), iD, particle.y());
             registry.fill(HIST("NonPromptCharmMesons/hNonPromptMesonsDecLenDistr"), iD, decayLength * 10000);
@@ -393,12 +406,14 @@ struct HfTaskMcValidationGen {
           if (origin == RecoDecay::OriginType::Prompt) {
             if (std::abs(particle.y()) < 0.5) {
               registry.fill(HIST("PromptCharmBaryons/hPromptBaryonsPtDistr"), iD - nMesonChannels, particle.pt());
+              registry.fill(HIST("PromptCharmBaryons/hPromptBaryonsPtCentDistr"), iD - nMesonChannels, particle.pt(), centrality);
             }
             registry.fill(HIST("PromptCharmBaryons/hPromptBaryonsYDistr"), iD - nMesonChannels, particle.y());
             registry.fill(HIST("PromptCharmBaryons/hPromptBaryonsDecLenDistr"), iD - nMesonChannels, decayLength * 10000);
           } else if (origin == RecoDecay::OriginType::NonPrompt) {
             if (std::abs(particle.y()) < 0.5) {
               registry.fill(HIST("NonPromptCharmBaryons/hNonPromptBaryonsPtDistr"), iD - nMesonChannels, particle.pt());
+              registry.fill(HIST("NonPromptCharmBaryons/hNonPromptBaryonsPtCentDistr"), iD - nMesonChannels, particle.pt(), centrality);
             }
             registry.fill(HIST("NonPromptCharmBaryons/hNonPromptBaryonsYDistr"), iD - nMesonChannels, particle.y());
             registry.fill(HIST("NonPromptCharmBaryons/hNonPromptBaryonsDecLenDistr"), iD - nMesonChannels, decayLength * 10000);
@@ -497,14 +512,15 @@ struct HfTaskMcValidationRec {
   Configurable<int> eventGeneratorType{"eventGeneratorType", -1, "If positive, enable event selection using subGeneratorId information. The value indicates which events to keep (0 = MB, 4 = charm triggered, 5 = beauty triggered)"};
 
   std::array<std::shared_ptr<TH1>, nChannels> histDeltaPt, histDeltaPx, histDeltaPy, histDeltaPz, histDeltaSecondaryVertexX, histDeltaSecondaryVertexY, histDeltaSecondaryVertexZ, histDeltaDecayLength;
+  std::array<std::array<std::shared_ptr<TH2>, 2>, nChannels> histPtCentReco;
   std::array<std::array<std::array<std::shared_ptr<TH1>, 5>, 2>, nChannels> histPtDau, histEtaDau, histImpactParameterDau;
-  std::array<std::array<std::shared_ptr<TH1>, 2>, nChannels> histPtReco;
   std::array<std::shared_ptr<THnSparse>, 4> histOriginTracks;
   std::shared_ptr<TH2> histAmbiguousTracks, histTracks;
   std::shared_ptr<TH1> histContributors;
 
   using HfCand2ProngWithMCRec = soa::Join<aod::HfCand2Prong, aod::HfCand2ProngMcRec>;
   using HfCand3ProngWithMCRec = soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec>;
+  using CandMcGen = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
   using CollisionsWithMCLabels = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
   using CollisionsWithMCLabelsAndCentFT0C = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, CentFT0Cs>;
   using CollisionsWithMCLabelsAndCentFT0M = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, CentFT0Ms>;
@@ -512,6 +528,9 @@ struct HfTaskMcValidationRec {
 
   Partition<TracksWithSel> tracksFilteredGlobalTrackWoDCA = requireGlobalTrackWoDCAInFilter();
   Partition<TracksWithSel> tracksInAcc = requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks);
+
+  Preslice<HfCand2ProngWithMCRec> cand2ProngPerCollision = aod::hf_cand::collisionId;
+  Preslice<HfCand3ProngWithMCRec> cand3ProngPerCollision = aod::hf_cand::collisionId;
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   HfEventSelection hfEvSel; // event selection and monitoring
@@ -521,6 +540,7 @@ struct HfTaskMcValidationRec {
   AxisSpec axisEta{40, -1., 1.};
   AxisSpec axisPt{50, 0., 10.};
   AxisSpec axisPtD{100, 0., 50.};
+  AxisSpec axisCent{100, 0., 100.};
   AxisSpec axisDeltaVtx{200, -1, 1.};
   AxisSpec axisDecision{2, -0.5, 1.5};
   AxisSpec axisITShits{8, -0.5, 7.5};
@@ -531,6 +551,7 @@ struct HfTaskMcValidationRec {
   HistogramRegistry registry{
     "registry",
     {{"histNtracks", "Number of global tracks w/o DCA requirement;#it{N}_{tracks};entries", {HistType::kTH1F, {axisMult}}},
+     {"hNevReco", "Reconstructed events counter; Reco. events; entries", {HistType::kTH1F, {{1, -0.5, +0.5}}}},
      {"histXvtxReco", "Position of reco PV in #it{X};#it{X}^{reco} (cm);entries", {HistType::kTH1F, {axisDeltaVtx}}},
      {"histYvtxReco", "Position of reco PV in #it{Y};#it{Y}^{reco} (cm);entries", {HistType::kTH1F, {axisDeltaVtx}}},
      {"histZvtxReco", "Position of reco PV in #it{Z};#it{Z}^{reco} (cm);entries", {HistType::kTH1F, {{200, -20, 20.}}}},
@@ -563,8 +584,9 @@ struct HfTaskMcValidationRec {
   /// \param mother is mother particle
   /// \param whichHad int indicating charm-hadron and decay channel, see enum DecayChannels
   /// \param whichOrigin int indicating origin: prompt or non-prompt
+  /// \param centrality is collision centrality
   template <typename T, typename U>
-  void fillHisto(const T& candidate, const U& mother, int whichHad, int whichOrigin)
+  void fillHisto(const T& candidate, const U& mother, int whichHad, int whichOrigin, float centrality)
   {
     histDeltaPt[whichHad]->Fill(candidate.pt() - mother.pt());
     histDeltaPx[whichHad]->Fill(candidate.px() - mother.px());
@@ -586,7 +608,7 @@ struct HfTaskMcValidationRec {
     std::array<double, 3> momDau1 = {candidate.pxProng1(),
                                      candidate.pyProng1(),
                                      candidate.pzProng1()};
-    histPtReco[whichHad][whichOrigin]->Fill(candidate.pt());
+    histPtCentReco[whichHad][whichOrigin]->Fill(candidate.pt(), centrality);
     histPtDau[whichHad][whichOrigin][0]->Fill(RecoDecay::pt(momDau0));
     histEtaDau[whichHad][whichOrigin][0]->Fill(RecoDecay::eta(momDau0));
     histImpactParameterDau[whichHad][whichOrigin][0]->Fill(candidate.impactParameter0());
@@ -638,7 +660,7 @@ struct HfTaskMcValidationRec {
         histDeltaSecondaryVertexZ[iHad] = registryMesons.add<TH1>(Form("%s/histDeltaSecondaryVertexZ", particleNames[iHad].data()), Form("Sec. Vertex difference reco - MC (MC matched) - %s; #Delta z (cm); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaVtx});
         histDeltaDecayLength[iHad] = registryMesons.add<TH1>(Form("%s/histDeltaDecayLength", particleNames[iHad].data()), Form("Decay length difference reco - MC (%s); #Delta L (cm); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaVtx});
         for (auto iOrigin = 0; iOrigin < 2; ++iOrigin) {
-          histPtReco[iHad][iOrigin] = registryMesons.add<TH1>(Form("%s/histPtReco%s", particleNames[iHad].data(), originNames[iOrigin].data()), Form("Pt reco %s %s; #it{p}_{T}^{reco} (GeV/#it{c}); entries", originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {axisPtD});
+          histPtCentReco[iHad][iOrigin] = registryMesons.add<TH2>(Form("%s/histPtCentReco%s", particleNames[iHad].data(), originNames[iOrigin].data()), Form("Pt Cent reco %s %s; #it{p}_{T}^{reco} (GeV/#it{c}); Centrality (%); entries", originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH2F, {axisPtD, axisCent});
           for (unsigned int iDau = 0; iDau < nDaughters[iHad]; ++iDau) {
             histPtDau[iHad][iOrigin][iDau] = registryMesons.add<TH1>(Form("%s/histPtDau%d%s", particleNames[iHad].data(), iDau, originNames[iOrigin].data()), Form("Daughter %d Pt reco - %s %s; #it{p}_{T}^{dau, reco} (GeV/#it{c}); entries", iDau, originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {axisPt});
             histEtaDau[iHad][iOrigin][iDau] = registryMesons.add<TH1>(Form("%s/histEtaDau%d%s", particleNames[iHad].data(), iDau, originNames[iOrigin].data()), Form("Daughter %d Eta reco - %s %s; #it{#eta}^{dau, reco}; entries", iDau, originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {{100, -1., 1.}});
@@ -655,7 +677,7 @@ struct HfTaskMcValidationRec {
         histDeltaSecondaryVertexZ[iHad] = registryBaryons.add<TH1>(Form("%s/histDeltaSecondaryVertexZ", particleNames[iHad].data()), Form("Sec. Vertex difference reco - MC (MC matched) - %s; #Delta z (cm); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaVtx});
         histDeltaDecayLength[iHad] = registryBaryons.add<TH1>(Form("%s/histDeltaDecayLength", particleNames[iHad].data()), Form("Decay length difference reco - MC (%s); #Delta L (cm); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaVtx});
         for (auto iOrigin = 0; iOrigin < 2; ++iOrigin) {
-          histPtReco[iHad][iOrigin] = registryBaryons.add<TH1>(Form("%s/histPtReco%s", particleNames[iHad].data(), originNames[iOrigin].data()), Form("Pt reco %s %s; #it{p}_{T}^{reco} (GeV/#it{c}); entries", originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {axisPtD});
+          histPtCentReco[iHad][iOrigin] = registryBaryons.add<TH2>(Form("%s/histPtCentReco%s", particleNames[iHad].data(), originNames[iOrigin].data()), Form("Pt Cent reco %s %s; #it{p}_{T}^{reco} (GeV/#it{c}); Centrality (%); entries", originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH2F, {axisPtD, axisCent});
           for (unsigned int iDau = 0; iDau < nDaughters[iHad]; ++iDau) {
             histPtDau[iHad][iOrigin][iDau] = registryBaryons.add<TH1>(Form("%s/histPtDau%d%s", particleNames[iHad].data(), iDau, originNames[iOrigin].data()), Form("Daughter %d Pt reco - %s %s; #it{p}_{T}^{dau, reco} (GeV/#it{c}); entries", iDau, originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {axisPt});
             histEtaDau[iHad][iOrigin][iDau] = registryBaryons.add<TH1>(Form("%s/histEtaDau%d%s", particleNames[iHad].data(), iDau, originNames[iOrigin].data()), Form("Daughter %d Eta reco - %s %s; #it{#eta}^{dau, reco}; entries", iDau, originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {{100, -1., 1.}});
@@ -696,6 +718,7 @@ struct HfTaskMcValidationRec {
       return;
     }
 
+    registry.fill(HIST("hNevReco"), 1);
     registry.fill(HIST("histXvtxReco"), collision.posX());
     registry.fill(HIST("histYvtxReco"), collision.posY());
     registry.fill(HIST("histZvtxReco"), collision.posZ());
@@ -899,116 +922,145 @@ struct HfTaskMcValidationRec {
   }
   PROCESS_SWITCH(HfTaskMcValidationRec, processCollAssocWithCentFTOM, "Process collision-association information with centrality selection with FT0M, requires extra table from TrackToCollisionAssociation task (fillTableOfCollIdsPerTrack=true)", false);
 
+  template <CentralityEstimator centEstimator, typename Coll>
   void processEff(HfCand2ProngWithMCRec const& cand2Prongs,
                   HfCand3ProngWithMCRec const& cand3Prongs,
                   aod::TracksWMc const&,
                   aod::McParticles const& mcParticles,
                   aod::McCollisions const&,
-                  CollisionsWithMCLabels const& /*collisions*/)
+                  aod::BCsWithTimestamps const&,
+                  Coll const& collisions,
+                  Preslice<HfCand2ProngWithMCRec> cand2ProngsPerCollision,
+                  Preslice<HfCand3ProngWithMCRec> cand3ProngsPerCollision)
   {
-    // loop over 2-prong candidates
-    for (const auto& cand2Prong : cand2Prongs) {
+    // loop over collisions
+    for (const auto& collision : collisions) {
+      // apply event selection
+      float centrality{-1.f};
+      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, centEstimator, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry); // only needed to update centrality, no bitmask selection applied
+      if (!collision.has_mcCollision()) {
+        return;
+      }
+      auto mcCollision = collision.template mcCollision_as<aod::McCollisions>();
+      if (eventGeneratorType >= 0 && mcCollision.getSubGeneratorId() != eventGeneratorType) {
+        return;
+      }
 
-      if (cand2Prong.collision_as<CollisionsWithMCLabels>().has_mcCollision()) {
-        auto mcCollision = cand2Prong.collision_as<CollisionsWithMCLabels>().mcCollision_as<aod::McCollisions>();
-        if (eventGeneratorType >= 0 && mcCollision.getSubGeneratorId() != eventGeneratorType) {
+      // group 2- and 3-prongs for collision
+      auto thisCollId = collision.globalIndex();
+      auto grouped2ProngCandidates = cand2Prongs.sliceBy(cand2ProngsPerCollision, thisCollId);
+      auto grouped3ProngCandidates = cand3Prongs.sliceBy(cand3ProngsPerCollision, thisCollId);
+
+      // loop over 2-prong candidates
+      for (const auto& cand2Prong : grouped2ProngCandidates) {
+
+        // determine which kind of candidate it is
+        bool isD0Sel = TESTBIT(cand2Prong.hfflag(), o2::aod::hf_cand_2prong::DecayType::D0ToPiK);
+        if (!isD0Sel) {
           continue;
         }
-      }
-
-      // determine which kind of candidate it is
-      bool isD0Sel = TESTBIT(cand2Prong.hfflag(), o2::aod::hf_cand_2prong::DecayType::D0ToPiK);
-      if (!isD0Sel) {
-        continue;
-      }
-      int whichHad = -1;
-      if (isD0Sel && TESTBIT(std::abs(cand2Prong.flagMcMatchRec()), hf_cand_2prong::DecayType::D0ToPiK)) {
-        whichHad = DzeroToKPi;
-      }
-      int whichOrigin;
-      if (cand2Prong.originMcRec() == RecoDecay::OriginType::Prompt) {
-        whichOrigin = 0;
-      } else {
-        whichOrigin = 1;
-      }
-
-      if (whichHad >= 0) {
-        int indexParticle = -1;
-        if (cand2Prong.prong0_as<aod::TracksWMc>().has_mcParticle()) {
-          indexParticle = RecoDecay::getMother(mcParticles, cand2Prong.prong0_as<aod::TracksWMc>().mcParticle(), PDGArrayParticle[whichHad], true);
+        int whichHad = -1;
+        if (isD0Sel && TESTBIT(std::abs(cand2Prong.flagMcMatchRec()), hf_cand_2prong::DecayType::D0ToPiK)) {
+          whichHad = DzeroToKPi;
         }
-        if (indexParticle < 0) {
+        int whichOrigin;
+        if (cand2Prong.originMcRec() == RecoDecay::OriginType::Prompt) {
+          whichOrigin = 0;
+        } else {
+          whichOrigin = 1;
+        }
+
+        if (whichHad >= 0) {
+          int indexParticle = -1;
+          indexParticle = RecoDecay::getMother(mcParticles, cand2Prong.template prong0_as<aod::TracksWMc>().template mcParticle_as<aod::McParticles>(), PDGArrayParticle[whichHad], true);
+          if (indexParticle < 0) {
+            continue;
+          }
+          auto mother = mcParticles.rawIteratorAt(indexParticle);
+          fillHisto(cand2Prong, mother, whichHad, whichOrigin, centrality);
+        }
+      } // end loop on 2-prong candidates
+
+      // loop over 3-prong candidates
+      for (const auto& cand3Prong : grouped3ProngCandidates) {
+
+        // determine which kind of candidate it is
+        // FIXME: add D* and decays with cascades
+        bool isDPlusSel = TESTBIT(cand3Prong.hfflag(), hf_cand_3prong::DecayType::DplusToPiKPi);
+        bool isDsSel = TESTBIT(cand3Prong.hfflag(), hf_cand_3prong::DecayType::DsToKKPi);
+        bool isLcSel = TESTBIT(cand3Prong.hfflag(), hf_cand_3prong::DecayType::LcToPKPi);
+        bool isXicSel = TESTBIT(cand3Prong.hfflag(), hf_cand_3prong::DecayType::XicToPKPi);
+        if (!isDPlusSel && !isDsSel && !isLcSel && !isXicSel) {
           continue;
         }
-        auto mother = mcParticles.rawIteratorAt(indexParticle);
-        fillHisto(cand2Prong, mother, whichHad, whichOrigin);
-      }
-    } // end loop on 2-prong candidates
+        int whichHad = -1;
+        if (isDPlusSel && TESTBIT(std::abs(cand3Prong.flagMcMatchRec()), hf_cand_3prong::DecayType::DplusToPiKPi)) {
+          whichHad = DplusToPiKPi;
+        } else if (isDsSel && TESTBIT(std::abs(cand3Prong.flagMcMatchRec()), hf_cand_3prong::DecayType::DsToKKPi)) {
+          if (cand3Prong.flagMcDecayChanRec() == hf_cand_3prong::DecayChannelDToKKPi::DsToPhiPi) {
+            whichHad = DsToPhiPiToKKPi;
+          }
+          if (cand3Prong.flagMcDecayChanRec() == hf_cand_3prong::DecayChannelDToKKPi::DsToK0starK) {
+            whichHad = DsToK0starKToKKPi;
+          }
+          if (cand3Prong.flagMcDecayChanRec() == hf_cand_3prong::DecayChannelDToKKPi::DplusToPhiPi) {
+            whichHad = DplusToPhiPiToKKPi;
+          }
+        } else if (isLcSel && TESTBIT(std::abs(cand3Prong.flagMcMatchRec()), hf_cand_3prong::DecayType::LcToPKPi)) {
+          whichHad = LcToPKPi;
+        } else if (isXicSel && TESTBIT(std::abs(cand3Prong.flagMcMatchRec()), hf_cand_3prong::DecayType::XicToPKPi)) {
+          whichHad = XiCplusToPKPi;
+        }
+        int whichOrigin;
+        if (cand3Prong.originMcRec() == RecoDecay::OriginType::Prompt) {
+          whichOrigin = 0;
+        } else {
+          whichOrigin = 1;
+        }
 
-    // loop over 3-prong candidates
-    for (const auto& cand3Prong : cand3Prongs) {
-
-      if (cand3Prong.collision_as<CollisionsWithMCLabels>().has_mcCollision()) {
-        auto mcCollision = cand3Prong.collision_as<CollisionsWithMCLabels>().mcCollision_as<aod::McCollisions>();
-        if (eventGeneratorType >= 0 && mcCollision.getSubGeneratorId() != eventGeneratorType) {
-          continue;
+        if (whichHad >= 0) {
+          int indexParticle = -1;
+          if (cand3Prong.template prong0_as<aod::TracksWMc>().has_mcParticle()) {
+            indexParticle = RecoDecay::getMother(mcParticles, cand3Prong.template prong0_as<aod::TracksWMc>().template mcParticle_as<aod::McParticles>(), PDGArrayParticle[whichHad], true);
+          }
+          if (indexParticle < 0) {
+            continue;
+          }
+          auto mother = mcParticles.rawIteratorAt(indexParticle);
+          fillHisto(cand3Prong, mother, whichHad, whichOrigin, centrality);
+          std::array<double, 3> momDau2 = {cand3Prong.pxProng2(),
+                                           cand3Prong.pyProng2(),
+                                           cand3Prong.pzProng2()};
+          histPtDau[whichHad][whichOrigin][2]->Fill(RecoDecay::pt(momDau2));
+          histEtaDau[whichHad][whichOrigin][2]->Fill(RecoDecay::eta(momDau2));
+          histImpactParameterDau[whichHad][whichOrigin][2]->Fill(cand3Prong.impactParameter2());
         }
-      }
-
-      // determine which kind of candidate it is
-      // FIXME: add D* and decays with cascades
-      bool isDPlusSel = TESTBIT(cand3Prong.hfflag(), hf_cand_3prong::DecayType::DplusToPiKPi);
-      bool isDsSel = TESTBIT(cand3Prong.hfflag(), hf_cand_3prong::DecayType::DsToKKPi);
-      bool isLcSel = TESTBIT(cand3Prong.hfflag(), hf_cand_3prong::DecayType::LcToPKPi);
-      bool isXicSel = TESTBIT(cand3Prong.hfflag(), hf_cand_3prong::DecayType::XicToPKPi);
-      if (!isDPlusSel && !isDsSel && !isLcSel && !isXicSel) {
-        continue;
-      }
-      int whichHad = -1;
-      if (isDPlusSel && TESTBIT(std::abs(cand3Prong.flagMcMatchRec()), hf_cand_3prong::DecayType::DplusToPiKPi)) {
-        whichHad = DplusToPiKPi;
-      } else if (isDsSel && TESTBIT(std::abs(cand3Prong.flagMcMatchRec()), hf_cand_3prong::DecayType::DsToKKPi)) {
-        if (cand3Prong.flagMcDecayChanRec() == hf_cand_3prong::DecayChannelDToKKPi::DsToPhiPi) {
-          whichHad = DsToPhiPiToKKPi;
-        }
-        if (cand3Prong.flagMcDecayChanRec() == hf_cand_3prong::DecayChannelDToKKPi::DsToK0starK) {
-          whichHad = DsToK0starKToKKPi;
-        }
-        if (cand3Prong.flagMcDecayChanRec() == hf_cand_3prong::DecayChannelDToKKPi::DplusToPhiPi) {
-          whichHad = DplusToPhiPiToKKPi;
-        }
-      } else if (isLcSel && TESTBIT(std::abs(cand3Prong.flagMcMatchRec()), hf_cand_3prong::DecayType::LcToPKPi)) {
-        whichHad = LcToPKPi;
-      } else if (isXicSel && TESTBIT(std::abs(cand3Prong.flagMcMatchRec()), hf_cand_3prong::DecayType::XicToPKPi)) {
-        whichHad = XiCplusToPKPi;
-      }
-      int whichOrigin;
-      if (cand3Prong.originMcRec() == RecoDecay::OriginType::Prompt) {
-        whichOrigin = 0;
-      } else {
-        whichOrigin = 1;
-      }
-
-      if (whichHad >= 0) {
-        int indexParticle = -1;
-        if (cand3Prong.prong0_as<aod::TracksWMc>().has_mcParticle()) {
-          indexParticle = RecoDecay::getMother(mcParticles, cand3Prong.prong0_as<aod::TracksWMc>().mcParticle(), PDGArrayParticle[whichHad], true);
-        }
-        if (indexParticle < 0) {
-          continue;
-        }
-        auto mother = mcParticles.rawIteratorAt(indexParticle);
-        fillHisto(cand3Prong, mother, whichHad, whichOrigin);
-        std::array<double, 3> momDau2 = {cand3Prong.pxProng2(),
-                                         cand3Prong.pyProng2(),
-                                         cand3Prong.pzProng2()};
-        histPtDau[whichHad][whichOrigin][2]->Fill(RecoDecay::pt(momDau2));
-        histEtaDau[whichHad][whichOrigin][2]->Fill(RecoDecay::eta(momDau2));
-        histImpactParameterDau[whichHad][whichOrigin][2]->Fill(cand3Prong.impactParameter2());
-      }
-    } // end loop on 3-prong candidates
+      } // end loop on 3-prong candidates
+    } // end loop on collisions
   }
-  PROCESS_SWITCH(HfTaskMcValidationRec, processEff, "Compute charm-hadron efficiencies (not all of them are implemented), requires HF candidate creators", false);
+  void processEffNoCent(HfCand2ProngWithMCRec const& cand2Prongs,
+                        HfCand3ProngWithMCRec const& cand3Prongs,
+                        aod::TracksWMc const& mcTracks,
+                        aod::McParticles const& mcParticles,
+                        aod::McCollisions const& mcCollisions,
+                        aod::BCsWithTimestamps const& bcs,
+                        CollisionsWithMCLabels const& collsWithLabels)
+  {
+    processEff<CentralityEstimator::None, CollisionsWithMCLabels>(cand2Prongs, cand3Prongs, mcTracks, mcParticles, mcCollisions, bcs, collsWithLabels, cand2ProngPerCollision, cand3ProngPerCollision);
+  }
+  PROCESS_SWITCH(HfTaskMcValidationRec, processEffNoCent, "Compute charm-hadron efficiencies (not all of them are implemented), requires HF candidate creators w/o information on centrality", false);
+
+  void processEffCentFT0C(HfCand2ProngWithMCRec const& cand2Prongs,
+                          HfCand3ProngWithMCRec const& cand3Prongs,
+                          aod::TracksWMc const& mcTracks,
+                          aod::McParticles const& mcParticles,
+                          aod::McCollisions const& mcCollisions,
+                          aod::BCsWithTimestamps const& bcs,
+                          CollisionsWithMCLabelsAndCentFT0C const& collsWithLabels)
+  {
+    processEff<CentralityEstimator::FT0C, CollisionsWithMCLabelsAndCentFT0C>(cand2Prongs, cand3Prongs, mcTracks, mcParticles, mcCollisions, bcs, collsWithLabels, cand2ProngPerCollision, cand3ProngPerCollision);
+  }
+  PROCESS_SWITCH(HfTaskMcValidationRec, processEffCentFT0C, "Compute charm-hadron efficiencies (not all of them are implemented), requires HF candidate creators with information on centrality from FT0C", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

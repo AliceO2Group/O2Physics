@@ -677,8 +677,6 @@ struct AnalysisMuonSelection {
       auto track = assoc.template reducedmuon_as<TMuons>();
       filterMap = 0;
       VarManager::FillTrack<TMuonFillMap>(track);
-      // compute quantities which depend on the associated collision
-      VarManager::FillPropagateMuon<TMuonFillMap>(track, event);
       if (fConfigQA) {
         fHistMan->FillHistClass("TrackMuon_BeforeCuts", VarManager::fgValues);
       }
@@ -1377,7 +1375,7 @@ struct AnalysisSameEventPairing {
           auto t2 = a2.template reducedmuon_as<TTracks>();
           if (t1.matchMCHTrackId() == t2.matchMCHTrackId())
             continue;
-          if (t1.matchMFTTrackId() == t2.matchMFTTrackId())
+          if (t1.matchMFTTrackId() == t2.matchMFTTrackId() && t1.matchMFTTrackId() >= 0)
             continue;
           sign1 = t1.sign();
           sign2 = t2.sign();

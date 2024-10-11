@@ -44,8 +44,8 @@ using std::array;
 
 using SelCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
 using SimCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::McCollisionLabels>;
-using FullTracks = soa::Join<aod::Tracks, aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
-using MCTracks = soa::Join<FullTracks, aod::McTrackLabels>;
+using StrHadronDaughterTracks = soa::Join<aod::Tracks, aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
+using MCTracks = soa::Join<StrHadronDaughterTracks, aod::McTrackLabels>;
 
 struct strangeness_in_jets {
 
@@ -111,7 +111,7 @@ struct strangeness_in_jets {
   void init(InitContext const&)
   {
     // Event Counters
-    registryData.add("number_of_events_data", "number of events in data", HistType::kTH1F, {{10, 0, 10, "Event Cuts"}});
+    registryData.add("number_of_events_data", "number of events in data", HistType::kTH1F, {{20, 0, 20, "Event Cuts"}});
     registryMC.add("number_of_events_mc", "number of events in mc", HistType::kTH1F, {{10, 0, 10, "Event Cuts"}});
 
     // QC Histograms
@@ -128,6 +128,7 @@ struct strangeness_in_jets {
     registryQC.add("dcaxy_vs_pt", "dcaxy_vs_pt", HistType::kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});
     registryQC.add("dcaz_vs_pt", "dcaz_vs_pt", HistType::kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {2000, -0.05, 0.05, "DCA_{z} (cm)"}});
     registryQC.add("jet_ue_overlaps", "jet_ue_overlaps", HistType::kTH2F, {{20, 0.0, 20.0, "#it{n}_{jet}"}, {200, 0.0, 200.0, "#it{n}_{overlaps}"}});
+    registryQC.add("survivedK0", "survivedK0", HistType::kTH1F, {{20, 0, 20, "step"}});
 
     // Multiplicity Binning
     std::vector<double> multBinning = {0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
@@ -312,9 +313,9 @@ struct strangeness_in_jets {
       return false;
     if (v0.dcaV0daughters() > dcaV0DaughtersMax)
       return false;
-    if (v0.dcapostopv() < dcapostoPVmin)
+    if (TMath::Abs(v0.dcapostopv()) < dcapostoPVmin)
       return false;
-    if (v0.dcanegtopv() < dcanegtoPVmin)
+    if (TMath::Abs(v0.dcanegtopv()) < dcanegtoPVmin)
       return false;
 
     // PID Selections (TPC)
@@ -363,9 +364,9 @@ struct strangeness_in_jets {
       return false;
     if (v0.dcaV0daughters() > dcaV0DaughtersMax)
       return false;
-    if (v0.dcapostopv() < dcapostoPVmin)
+    if (TMath::Abs(v0.dcapostopv()) < dcapostoPVmin)
       return false;
-    if (v0.dcanegtopv() < dcanegtoPVmin)
+    if (TMath::Abs(v0.dcanegtopv()) < dcanegtoPVmin)
       return false;
 
     // PID Selections (TPC)
@@ -414,9 +415,9 @@ struct strangeness_in_jets {
       return false;
     if (v0.dcaV0daughters() > dcaV0DaughtersMax)
       return false;
-    if (v0.dcapostopv() < dcapostoPVmin)
+    if (TMath::Abs(v0.dcapostopv()) < dcapostoPVmin)
       return false;
-    if (v0.dcanegtopv() < dcanegtoPVmin)
+    if (TMath::Abs(v0.dcanegtopv()) < dcanegtoPVmin)
       return false;
 
     // PID Selections (TPC)
@@ -660,10 +661,9 @@ struct strangeness_in_jets {
   template <typename pionTrack>
   bool isHighPurityPion(const pionTrack& track)
   {
-    if (track.p() < 0.6 && std::abs(track.tpcNSigmaPi()) < 3.0)
+    if (track.p() < 0.6 && TMath::Abs(track.tpcNSigmaPi()) < 3.0)
       return true;
-    if (track.p() > 0.6 && std::abs(track.tpcNSigmaPi()) < 3.0 &&
-        std::abs(track.tofNSigmaPi()) < 3.0)
+    if (track.p() > 0.6 && TMath::Abs(track.tpcNSigmaPi()) < 3.0 && TMath::Abs(track.tofNSigmaPi()) < 3.0)
       return true;
     return false;
   }
@@ -765,7 +765,7 @@ struct strangeness_in_jets {
     return false;
   }
 
-  void processData(SelCollisions::iterator const& collision, aod::V0Datas const& fullV0s, aod::CascDataExt const& Cascades, FullTracks const& tracks)
+  void processData(SelCollisions::iterator const& collision, aod::V0Datas const& fullV0s, aod::CascDataExt const& Cascades, StrHadronDaughterTracks const& tracks)
   {
 
     // Event Counter: before event selection
@@ -779,7 +779,7 @@ struct strangeness_in_jets {
     registryData.fill(HIST("number_of_events_data"), 1.5);
 
     // Cut on z-vertex
-    if (std::abs(collision.posZ()) > zVtx)
+    if (TMath::Abs(collision.posZ()) > zVtx)
       return;
 
     // Event Counter: after z-vertex cut
@@ -847,7 +847,7 @@ struct strangeness_in_jets {
     int n_jets_selected(0);
     for (int i = 0; i < static_cast<int>(jet.size()); i++) {
 
-      if ((std::abs(jet[i].Eta()) + Rjet) > etaMax)
+      if ((TMath::Abs(jet[i].Eta()) + Rjet) > etaMax)
         continue;
 
       // Perpendicular cones
@@ -954,8 +954,8 @@ struct strangeness_in_jets {
       if (particle_of_interest == option::vzeros) {
         for (auto& v0 : fullV0s) {
 
-          const auto& pos = v0.posTrack_as<FullTracks>();
-          const auto& neg = v0.negTrack_as<FullTracks>();
+          const auto& pos = v0.posTrack_as<StrHadronDaughterTracks>();
+          const auto& neg = v0.negTrack_as<StrHadronDaughterTracks>();
           TVector3 v0dir(v0.px(), v0.py(), v0.pz());
 
           float deltaEta_jet = v0dir.Eta() - jet[i].Eta();
@@ -1002,9 +1002,9 @@ struct strangeness_in_jets {
       if (particle_of_interest == option::cascades) {
         for (auto& casc : Cascades) {
 
-          auto bach = casc.bachelor_as<FullTracks>();
-          auto pos = casc.posTrack_as<FullTracks>();
-          auto neg = casc.negTrack_as<FullTracks>();
+          auto bach = casc.bachelor_as<StrHadronDaughterTracks>();
+          auto pos = casc.posTrack_as<StrHadronDaughterTracks>();
+          auto neg = casc.negTrack_as<StrHadronDaughterTracks>();
 
           TVector3 cascade_dir(casc.px(), casc.py(), casc.pz());
           float deltaEta_jet = cascade_dir.Eta() - jet[i].Eta();
@@ -1139,6 +1139,103 @@ struct strangeness_in_jets {
   }
   PROCESS_SWITCH(strangeness_in_jets, processData, "Process data", true);
 
+  void processK0s(SelCollisions::iterator const& collision, aod::V0Datas const& fullV0s, StrHadronDaughterTracks const&)
+  {
+    registryData.fill(HIST("number_of_events_data"), 10.5);
+    if (!collision.sel8())
+      return;
+    registryData.fill(HIST("number_of_events_data"), 11.5);
+    if (TMath::Abs(collision.posZ()) > zVtx)
+      return;
+    registryData.fill(HIST("number_of_events_data"), 12.5);
+
+    for (auto& v0 : fullV0s) {
+      const auto& ptrack = v0.posTrack_as<StrHadronDaughterTracks>();
+      const auto& ntrack = v0.negTrack_as<StrHadronDaughterTracks>();
+
+      registryQC.fill(HIST("survivedK0"), 0.5);
+
+      // Single-Track Selections
+      if (!passedSingleTrackSelection(ptrack))
+        continue;
+      registryQC.fill(HIST("survivedK0"), 1.5);
+
+      if (!passedSingleTrackSelection(ntrack))
+        continue;
+      registryQC.fill(HIST("survivedK0"), 2.5);
+
+      // Momentum K0s Daughters
+      TVector3 pion_pos(v0.pxpos(), v0.pypos(), v0.pzpos());
+      TVector3 pion_neg(v0.pxneg(), v0.pyneg(), v0.pzneg());
+
+      if (pion_pos.Pt() < ptMin_K0_pion)
+        continue;
+      registryQC.fill(HIST("survivedK0"), 3.5);
+
+      if (pion_pos.Pt() > ptMax_K0_pion)
+        continue;
+      registryQC.fill(HIST("survivedK0"), 4.5);
+
+      if (pion_neg.Pt() < ptMin_K0_pion)
+        continue;
+      registryQC.fill(HIST("survivedK0"), 5.5);
+
+      if (pion_neg.Pt() > ptMax_K0_pion)
+        continue;
+      registryQC.fill(HIST("survivedK0"), 6.5);
+
+      // V0 Selections
+      if (v0.v0cosPA() < v0cospaMin)
+        continue;
+      registryQC.fill(HIST("survivedK0"), 7.5);
+
+      if (v0.v0radius() < minimumV0Radius || v0.v0radius() > maximumV0Radius)
+        continue;
+      registryQC.fill(HIST("survivedK0"), 8.5);
+
+      if (v0.dcaV0daughters() > dcaV0DaughtersMax)
+        continue;
+      registryQC.fill(HIST("survivedK0"), 9.5);
+
+      if (TMath::Abs(v0.dcapostopv()) < dcapostoPVmin)
+        continue;
+      registryQC.fill(HIST("survivedK0"), 10.5);
+
+      if (TMath::Abs(v0.dcanegtopv()) < dcanegtoPVmin)
+        continue;
+      registryQC.fill(HIST("survivedK0"), 11.5);
+
+      // PID Selections (TPC)
+      if (ptrack.tpcNSigmaPi() < nsigmaTPCmin || ptrack.tpcNSigmaPi() > nsigmaTPCmax)
+        continue;
+      registryQC.fill(HIST("survivedK0"), 12.5);
+
+      if (ntrack.tpcNSigmaPi() < nsigmaTPCmin || ntrack.tpcNSigmaPi() > nsigmaTPCmax)
+        continue;
+      registryQC.fill(HIST("survivedK0"), 13.5);
+
+      // PID Selections (TOF)
+      if (requireTOF) {
+        if (ptrack.tofNSigmaPi() < nsigmaTOFmin || ptrack.tofNSigmaPi() > nsigmaTOFmax)
+          continue;
+        registryQC.fill(HIST("survivedK0"), 14.5);
+
+        if (ntrack.tofNSigmaPi() < nsigmaTOFmin || ntrack.tofNSigmaPi() > nsigmaTOFmax)
+          continue;
+        registryQC.fill(HIST("survivedK0"), 15.5);
+      }
+    }
+
+    for (auto& v0 : fullV0s) {
+      const auto& ptrack = v0.posTrack_as<StrHadronDaughterTracks>();
+      const auto& ntrack = v0.negTrack_as<StrHadronDaughterTracks>();
+      if (!passedK0ShortSelection(v0, ptrack, ntrack))
+        continue;
+      registryQC.fill(HIST("survivedK0"), 16.5);
+    }
+  }
+  PROCESS_SWITCH(strangeness_in_jets, processK0s, "Process K0s", false);
+
   Preslice<aod::V0Datas> perCollisionV0 = o2::aod::v0data::collisionId;
   Preslice<aod::CascDataExt> perCollisionCasc = o2::aod::cascade::collisionId;
   Preslice<aod::McParticles> perMCCollision = o2::aod::mcparticle::mcCollisionId;
@@ -1152,7 +1249,7 @@ struct strangeness_in_jets {
         continue;
 
       registryMC.fill(HIST("number_of_events_mc"), 1.5);
-      if (std::abs(collision.posZ()) > 10.0)
+      if (TMath::Abs(collision.posZ()) > 10.0)
         continue;
 
       registryMC.fill(HIST("number_of_events_mc"), 2.5);
@@ -1244,7 +1341,7 @@ struct strangeness_in_jets {
             for (auto& particleMotherOfBach : bachParticle.mothers_as<aod::McParticles>()) {
               if (particleMotherOfNeg != particleMotherOfPos)
                 continue;
-              if (abs(particleMotherOfNeg.pdgCode()) != 3122)
+              if (TMath::Abs(particleMotherOfNeg.pdgCode()) != 3122)
                 continue;
               if (!particleMotherOfBach.isPhysicalPrimary())
                 continue;
@@ -1284,7 +1381,7 @@ struct strangeness_in_jets {
           continue;
 
         const auto particle = track.mcParticle();
-        if (abs(particle.pdgCode()) != 211)
+        if (TMath::Abs(particle.pdgCode()) != 211)
           continue;
 
         if (particle.isPhysicalPrimary()) {
@@ -1387,7 +1484,7 @@ struct strangeness_in_jets {
       registryMC.fill(HIST("number_of_events_mc"), 3.5);
 
       // Selection on z_{vertex}
-      if (std::abs(mccollision.posZ()) > 10)
+      if (TMath::Abs(mccollision.posZ()) > 10)
         continue;
       registryMC.fill(HIST("number_of_events_mc"), 4.5);
 
@@ -1399,7 +1496,7 @@ struct strangeness_in_jets {
 
       for (auto& particle : mcParticles_per_coll) {
 
-        int pdg = abs(particle.pdgCode());
+        int pdg = TMath::Abs(particle.pdgCode());
 
         if (particle.isPhysicalPrimary() && pdg == 211) {
           registryMC.fill(HIST("Pion_eta_pt_pythia"), particle.pt(), particle.eta());
@@ -1422,14 +1519,14 @@ struct strangeness_in_jets {
         double dy = particle.vy() - mccollision.posY();
         double dz = particle.vz() - mccollision.posZ();
         double dcaxy = sqrt(dx * dx + dy * dy);
-        double dcaz = std::abs(dz);
+        double dcaz = TMath::Abs(dz);
+        if (particle.pt() < 0.15)
+          continue;
         if (dcaxy > (par0 + par1 / particle.pt()))
           continue;
         if (dcaz > (par0 + par1 / particle.pt()))
           continue;
-        if (std::abs(particle.eta()) > 0.8)
-          continue;
-        if (particle.pt() < 0.15)
+        if (TMath::Abs(particle.eta()) > 0.8)
           continue;
 
         // PDG Selection
@@ -1489,7 +1586,7 @@ struct strangeness_in_jets {
       int n_jets_selected(0);
       for (int i = 0; i < static_cast<int>(jet.size()); i++) {
 
-        if ((std::abs(jet[i].Eta()) + Rjet) > etaMax)
+        if ((TMath::Abs(jet[i].Eta()) + Rjet) > etaMax)
           continue;
 
         // Perpendicular cones
@@ -1512,19 +1609,18 @@ struct strangeness_in_jets {
           double dy = particle.vy() - mccollision.posY();
           double dz = particle.vz() - mccollision.posZ();
           double dcaxy = sqrt(dx * dx + dy * dy);
-          double dcaz = std::abs(dz);
-
+          double dcaz = TMath::Abs(dz);
+          if (particle.pt() < 0.15)
+            continue;
           if (dcaxy > (par0 + par1 / particle.pt()))
             continue;
           if (dcaz > (par0 + par1 / particle.pt()))
             continue;
-          if (std::abs(particle.eta()) > 0.8)
-            continue;
-          if (particle.pt() < 0.15)
+          if (TMath::Abs(particle.eta()) > 0.8)
             continue;
 
           // PDG Selection
-          int pdg = abs(particle.pdgCode());
+          int pdg = TMath::Abs(particle.pdgCode());
           if ((pdg != 11) && (pdg != 211) && (pdg != 321) && (pdg != 2212))
             continue;
 
@@ -1585,7 +1681,7 @@ struct strangeness_in_jets {
           double deltaPhi_ue2 = GetDeltaPhi(particle_dir.Phi(), ue2[i].Phi());
           double deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
 
-          int pdg = abs(particle.pdgCode());
+          int pdg = TMath::Abs(particle.pdgCode());
 
           if (pdg == 211) {
             if (deltaR_jet < Rjet) {

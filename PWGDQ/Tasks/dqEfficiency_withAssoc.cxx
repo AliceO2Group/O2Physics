@@ -743,8 +743,6 @@ struct AnalysisMuonSelection {
 
       auto track = assoc.template reducedmuon_as<TMuons>();
       VarManager::FillTrack<TMuonFillMap>(track);
-      // compute quantities which depend on the associated collision
-      VarManager::FillPropagateMuon<TMuonFillMap>(track, event);
 
       bool isCorrectAssoc = false;
       if (track.has_reducedMCTrack()) {

@@ -101,7 +101,7 @@ struct Dilepton {
   Configurable<int> cfgAnalysisType{"cfgAnalysisType", static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kQC), "kQC:0, kUPC:1, kFlowV2:2, kFlowV3:3, kPolarization:4, kVM:5, kHFll:6"};
   Configurable<int> cfgEP2Estimator_for_Mix{"cfgEP2Estimator_for_Mix", 3, "FT0M:0, FT0A:1, FT0C:2, BTot:3, BPos:4, BNeg:5"};
   Configurable<int> cfgQvecEstimator{"cfgQvecEstimator", 0, "FT0M:0, FT0A:1, FT0C:2, BTot:3, BPos:4, BNeg:5"};
-  Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2, NTPV:3"};
+  Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
   Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
   Configurable<bool> cfgDoMix{"cfgDoMix", true, "flag for event mixing"};
@@ -170,8 +170,8 @@ struct Dilepton {
     Configurable<int> cfg_min_ncrossedrows{"cfg_min_ncrossedrows", 100, "min ncrossed rows"};
     Configurable<float> cfg_max_chi2tpc{"cfg_max_chi2tpc", 4.0, "max chi2/NclsTPC"};
     Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 5.0, "max chi2/NclsITS"};
-    Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 1.0, "max dca XY for single track in cm"};
-    Configurable<float> cfg_max_dcaz{"cfg_max_dcaz", 1.0, "max dca Z for single track in cm"};
+    Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 0.2, "max dca XY for single track in cm"};
+    Configurable<float> cfg_max_dcaz{"cfg_max_dcaz", 0.2, "max dca Z for single track in cm"};
     Configurable<bool> cfg_require_itsib_any{"cfg_require_itsib_any", false, "flag to require ITS ib any hits"};
     Configurable<bool> cfg_require_itsib_1st{"cfg_require_itsib_1st", true, "flag to require ITS ib 1st hit"};
 
@@ -369,6 +369,7 @@ struct Dilepton {
       // fwdfitter.setTGeoMat(false);
     }
 
+    fRegistry.addClone("Event/before/hCollisionCounter", "Event/norm/hCollisionCounter");
     fRegistry.add("Pair/mix/hDiffBC", "diff. global BC in mixed event;|BC_{current} - BC_{mixed}|", kTH1D, {{1001, -0.5, 1000.5}}, true);
     if (doprocessTriggerAnalysis) {
       fRegistry.add("Event/hNInspectedTVX", "N inspected TVX;run number;N_{TVX}", kTProfile, {{80000, 520000.5, 600000.5}}, true);
@@ -1052,7 +1053,7 @@ struct Dilepton {
   {
     for (auto& collision : collisions) {
       initCCDB<isTriggerAnalysis>(collision);
-      const float centralities[4] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C(), collision.centNTPV()};
+      const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       float centrality = centralities[cfgCentEstimator];
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
@@ -1409,7 +1410,7 @@ struct Dilepton {
 
     for (auto& collision : collisions) {
       initCCDB<isTriggerAnalysis>(collision);
-      const float centralities[4] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C(), collision.centNTPV()};
+      const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
@@ -1542,6 +1543,51 @@ struct Dilepton {
     map_weight.clear();
   }
   PROCESS_SWITCH(Dilepton, processTriggerAnalysis, "run dilepton analysis on triggered data", false);
+
+  void processNorm(aod::EMEventNormInfos const& collisions)
+  {
+    for (auto& collision : collisions) {
+      fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 1.0);
+      if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 2.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 3.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 4.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 5.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 6.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 7.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 8.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 9.0);
+      }
+      if (collision.sel8()) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 10.0);
+      }
+      if (abs(collision.posZ()) < 10.0) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 11.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 12.0);
+      }
+      if (!fEMEventCut.IsSelected(collision)) {
+        continue;
+      }
+      fRegistry.fill(HIST("Event/norm/hCollisionCounter"), o2::aod::pwgem::dilepton::utils::eventhistogram::nbin_ev); // accepted
+    } // end of collision loop
+  }
+  PROCESS_SWITCH(Dilepton, processNorm, "process normalization info", false);
 
   void processDummy(MyCollisions const&) {}
   PROCESS_SWITCH(Dilepton, processDummy, "Dummy function", false);
