@@ -307,7 +307,6 @@ struct HfTaskCharmHadronsFemtoDream {
   {
 
     // Mixed events that contain the pair of interest
-    
     processType = 2; // for mixed event
 
     for (auto const& [collision1, collision2] : combinations(soa::CombinationsBlockFullSameIndexPolicy(policy, mixingDepth.value, -1, cols, cols))){
