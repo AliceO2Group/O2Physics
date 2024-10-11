@@ -5091,7 +5091,7 @@ void FillParticleHistograms(T const& track, eBeforeAfter ba, Int_t weight = 1)
       // Remark: For this one, in Run 3 workflow I need helper task o2-analysis-track-propagation, while in Run 2 and 1 I need o2-analysis-trackextension .
       !ph.fParticleHistograms[edcaXY][eRec][ba] ? true : ph.fParticleHistograms[edcaXY][eRec][ba]->Fill(track.dcaXY(), weight); // 3 2
       !ph.fParticleHistograms[edcaZ][eRec][ba] ? true : ph.fParticleHistograms[edcaZ][eRec][ba]->Fill(track.dcaZ(), weight);    // 3 2
-    }                                                                                                                           // if(ph.fFillParticleHistograms) {
+    }
 
     // 2D:
     if (ph.fFillParticleHistograms2D) {
@@ -5153,7 +5153,7 @@ void FillParticleHistograms(T const& track, eBeforeAfter ba, Int_t weight = 1)
       !ph.fParticleHistograms2D[ePhiPt][eSim][ba] ? true : ph.fParticleHistograms2D[ePhiPt][eSim][ba]->Fill(track.phi(), track.pt(), weight);
       !ph.fParticleHistograms2D[ePhiEta][eSim][ba] ? true : ph.fParticleHistograms2D[ePhiEta][eSim][ba]->Fill(track.phi(), track.eta(), weight);
     } // if(ph.fFillParticleHistograms2D) {
-  }   // if constexpr (rs == eSim || rs == eSim_Run2 || rs == eSim_Run1) {
+  } // if constexpr (rs == eSim || rs == eSim_Run2 || rs == eSim_Run1) {
 
   // -----------------------------------------------------------------------------
 
