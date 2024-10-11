@@ -154,7 +154,6 @@ struct HfTaskCharmHadronsFemtoDream {
   using FilteredFDParticles = soa::Filtered<soa::Join<aod::FDParticles, aod::FDParticlesIndex>>;
   using FilteredFDParticle = FilteredFDParticles::iterator;
 
-  femtodreamcollision::BitMaskType BitMask = 0;
 
   /// Histogramming for particle 1
   FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kTrack, 1> trackHistoPartOne;
@@ -309,13 +308,10 @@ struct HfTaskCharmHadronsFemtoDream {
   {
 
     // Mixed events that contain the pair of interest
-
-    Partition<CollisionType> PartitionMaskedCol = ncheckbit(aod::femtodreamcollision::bitmaskTrackOne, BitMask) && ncheckbit(aod::femtodreamcollision::bitmaskTrackTwo, BitMask) && aod::femtodreamcollision::downsample == true;
-    PartitionMaskedCol.bindTable(cols);
-
+    
     processType = 2; // for mixed event
 
-    for (auto const& [collision1, collision2] : selfCombinations(policy, mixingDepth.value, -1, *PartitionMaskedCol.mFiltered, *PartitionMaskedCol.mFiltered)) {
+    for (auto const& [collision1, collision2] : combinations(soa::CombinationsBlockFullSameIndexPolicy(policy, mixingDepth.value, -1, cols, cols))){
       // make sure that tracks in the same events are not mixed
       if (collision1.globalIndex() == collision2.globalIndex()) {
         continue;
