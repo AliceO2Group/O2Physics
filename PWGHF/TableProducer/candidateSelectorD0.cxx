@@ -330,51 +330,31 @@ struct HfCandidateSelectorD0 {
 
         if (usePidTpcOnly) {
           /// kaon TPC PID positive daughter
-          selectorKaon.setCustomNSigmaTpcKa(candidate.nSigTpcKa0());
-          pidTrackPosKaon = selectorKaon.statusTpc(trackPos);
+          pidTrackPosKaon = selectorKaon.statusTpc(trackPos, candidate.nSigTpcKa0());
           /// pion TPC PID positive daughter
-          selectorPion.setCustomNSigmaTpcPi(candidate.nSigTpcPi0());
-          pidTrackPosPion = selectorPion.statusTpc(trackPos);
+          pidTrackPosPion = selectorPion.statusTpc(trackPos, candidate.nSigTpcPi0());
           /// kaon TPC PID negative daughter
-          selectorKaon.setCustomNSigmaTpcKa(candidate.nSigTpcKa1());
-          pidTrackNegKaon = selectorKaon.statusTpc(trackNeg);
+          pidTrackNegKaon = selectorKaon.statusTpc(trackNeg, candidate.nSigTpcKa1());
           /// pion TPC PID negative daughter
-          selectorPion.setCustomNSigmaTpcPi(candidate.nSigTpcPi1());
-          pidTrackNegPion = selectorPion.statusTpc(trackNeg);
+          pidTrackNegPion = selectorPion.statusTpc(trackNeg, candidate.nSigTpcPi1());
         } else if (usePidTpcAndTof) {
           /// kaon TPC, TOF PID positive daughter
-          selectorKaon.setCustomNSigmaTpcKa(candidate.nSigTpcKa0());
-          selectorKaon.setCustomNSigmaTofKa(candidate.nSigTofKa0());
-          pidTrackPosKaon = selectorKaon.statusTpcAndTof(trackPos);
+          pidTrackPosKaon = selectorKaon.statusTpcAndTof(trackPos, candidate.nSigTpcKa0(), candidate.nSigTofKa0());
           /// pion TPC, TOF PID positive daughter
-          selectorPion.setCustomNSigmaTpcPi(candidate.nSigTpcPi0());
-          selectorPion.setCustomNSigmaTofPi(candidate.nSigTofPi0());
-          pidTrackPosPion = selectorPion.statusTpcAndTof(trackPos);
+          pidTrackPosPion = selectorPion.statusTpcAndTof(trackPos, candidate.nSigTpcPi0(), candidate.nSigTofPi0());
           /// kaon TPC, TOF PID negative daughter
-          selectorKaon.setCustomNSigmaTpcKa(candidate.nSigTpcKa1());
-          selectorKaon.setCustomNSigmaTofKa(candidate.nSigTofKa1());
-          pidTrackNegKaon = selectorKaon.statusTpcAndTof(trackNeg);
+          pidTrackNegKaon = selectorKaon.statusTpcAndTof(trackNeg, candidate.nSigTpcKa1(), candidate.nSigTofKa1());
           /// pion TPC, TOF PID negative daughter
-          selectorPion.setCustomNSigmaTpcPi(candidate.nSigTpcPi1());
-          selectorPion.setCustomNSigmaTofPi(candidate.nSigTofPi1());
-          pidTrackNegPion = selectorPion.statusTpcAndTof(trackNeg);
+          pidTrackNegPion = selectorPion.statusTpcAndTof(trackNeg, candidate.nSigTpcPi1(), candidate.nSigTofPi1());
         } else {
           /// kaon TPC, TOF PID positive daughter
-          selectorKaon.setCustomNSigmaTpcKa(candidate.nSigTpcKa0());
-          selectorKaon.setCustomNSigmaTofKa(candidate.nSigTofKa0());
-          pidTrackPosKaon = selectorKaon.statusTpcOrTof(trackPos);
+          pidTrackPosKaon = selectorKaon.statusTpcOrTof(trackPos, candidate.nSigTpcKa0(), candidate.nSigTofKa0());
           /// pion TPC, TOF PID positive daughter
-          selectorPion.setCustomNSigmaTpcPi(candidate.nSigTpcPi0());
-          selectorPion.setCustomNSigmaTofPi(candidate.nSigTofPi0());
-          pidTrackPosPion = selectorPion.statusTpcOrTof(trackPos);
+          pidTrackPosPion = selectorPion.statusTpcOrTof(trackPos, candidate.nSigTpcPi0(), candidate.nSigTofPi0());
           /// kaon TPC, TOF PID negative daughter
-          selectorKaon.setCustomNSigmaTpcKa(candidate.nSigTpcKa1());
-          selectorKaon.setCustomNSigmaTofKa(candidate.nSigTofKa1());
-          pidTrackNegKaon = selectorKaon.statusTpcOrTof(trackNeg);
+          pidTrackNegKaon = selectorKaon.statusTpcOrTof(trackNeg, candidate.nSigTpcKa1(), candidate.nSigTofKa1());
           /// pion TPC, TOF PID negative daughter
-          selectorPion.setCustomNSigmaTpcPi(candidate.nSigTpcPi1());
-          selectorPion.setCustomNSigmaTofPi(candidate.nSigTofPi1());
-          pidTrackNegPion = selectorPion.statusTpcOrTof(trackNeg);
+          pidTrackNegPion = selectorPion.statusTpcOrTof(trackNeg, candidate.nSigTpcPi1(), candidate.nSigTofPi1());
         }
 
         // int pidBayesTrackPos1Pion = selectorPion.statusBayes(trackPos);

@@ -83,37 +83,6 @@ class TrackSelectorPidBase
     mNSigmaTpcMax = nsMax;
   }
 
-  /// Set the custom value of TPC nσ vs. pion hypothesis to be used for selections
-  void setCustomNSigmaTpcPi(float nSigma)
-  {
-    mUseCustomNSigmaTpcPi = true;
-    mCustomNSigmaTpcPi = nSigma;
-  }
-  /// Set the custom value of TPC nσ vs. kaon hypothesis to be used for selections
-  void setCustomNSigmaTpcKa(float nSigma)
-  {
-    mUseCustomNSigmaTpcKa = true;
-    mCustomNSigmaTpcKa = nSigma;
-  }
-  /// Set the custom value of TPC nσ vs. proton hypothesis to be used for selections
-  void setCustomNSigmaTpcPr(float nSigma)
-  {
-    mUseCustomNSigmaTpcPr = true;
-    mCustomNSigmaTpcPr = nSigma;
-  }
-  /// Set the custom value of TPC nσ vs. muon hypothesis to be used for selections
-  void setCustomNSigmaTpcMu(float nSigma)
-  {
-    mUseCustomNSigmaTpcMu = true;
-    mCustomNSigmaTpcMu = nSigma;
-  }
-  /// Set the custom value of TPC nσ vs. electron hypothesis to be used for selections
-  void setCustomNSigmaTpcEl(float nSigma)
-  {
-    mUseCustomNSigmaTpcEl = true;
-    mCustomNSigmaTpcEl = nSigma;
-  }
-
   /// Set TPC nσ range in which a track should be conditionally accepted if combined with TOF. Set to 0 to disable.
   void setRangeNSigmaTpcCondTof(float nsMin, float nsMax)
   {
@@ -134,9 +103,10 @@ class TrackSelectorPidBase
   /// Checks if track is compatible with given particle species hypothesis within given TPC nσ range.
   /// \param track  track
   /// \param conditionalTof  variable to store the result of selection with looser cuts for conditional accepting of track if combined with TOF
+  /// \param tpcNSigmaCustom  custom TPC nσ value to be used for the selection, in case the desired value cannot be taken from the track table
   /// \return true if track satisfies TPC PID hypothesis for given TPC nσ range
   template <typename T>
-  bool isSelectedByTpc(const T& track, bool& conditionalTof)
+  bool isSelectedByTpc(const T& track, bool& conditionalTof, float tpcNSigmaCustom = -999.f)
   {
     // Accept if selection is disabled via large values.
     if (mNSigmaTpcMin < -999. && mNSigmaTpcMax > 999.) {
@@ -146,17 +116,22 @@ class TrackSelectorPidBase
     // Get nσ for a given particle hypothesis.
     double nSigma = 100.;
     if constexpr (pdg == kElectron) {
-      nSigma = mUseCustomNSigmaTpcEl ? mCustomNSigmaTpcEl : track.tpcNSigmaEl();
+      nSigma = track.tpcNSigmaEl();
     } else if constexpr (pdg == kMuonMinus) {
-      nSigma = mUseCustomNSigmaTpcMu ? mCustomNSigmaTpcMu : track.tpcNSigmaMu();
+      nSigma = track.tpcNSigmaMu();
     } else if constexpr (pdg == kPiPlus) {
-      nSigma = mUseCustomNSigmaTpcPi ? mCustomNSigmaTpcPi : track.tpcNSigmaPi();
+      nSigma = track.tpcNSigmaPi();
     } else if constexpr (pdg == kKPlus) {
-      nSigma = mUseCustomNSigmaTpcKa ? mCustomNSigmaTpcKa : track.tpcNSigmaKa();
+      nSigma = track.tpcNSigmaKa();
     } else if constexpr (pdg == kProton) {
-      nSigma = mUseCustomNSigmaTpcPr ? mCustomNSigmaTpcPr : track.tpcNSigmaPr();
+      nSigma = track.tpcNSigmaPr();
     } else {
       errorPdg();
+    }
+
+    /// use custom TPC nσ, if a valid value is provided
+    if (tpcNSigmaCustom > -999.f) {
+      nSigma = tpcNSigmaCustom;
     }
 
     if (mNSigmaTpcMinCondTof < -999. && mNSigmaTpcMaxCondTof > 999.) {
@@ -171,13 +146,13 @@ class TrackSelectorPidBase
   /// \param track  track
   /// \return TPC selection status (see TrackSelectorPID::Status)
   template <typename T>
-  TrackSelectorPID::Status statusTpc(const T& track)
+  TrackSelectorPID::Status statusTpc(const T& track, float tpcNSigmaCustom = -999.f)
   {
     if (!isValidForTpc(track)) {
       return TrackSelectorPID::NotApplicable;
     }
     bool condTof = false;
-    if (isSelectedByTpc(track, condTof)) {
+    if (isSelectedByTpc(track, condTof, tpcNSigmaCustom)) {
       return TrackSelectorPID::Accepted;
     } else if (condTof) {
       return TrackSelectorPID::Conditional; // potential to be accepted if combined with TOF
@@ -202,37 +177,6 @@ class TrackSelectorPidBase
     mNSigmaTofMax = nsMax;
   }
 
-  /// Set the custom value of TOF nσ vs. pion hypothesis to be used for selections
-  void setCustomNSigmaTofPi(float nSigma)
-  {
-    mUseCustomNSigmaTofPi = true;
-    mCustomNSigmaTofPi = nSigma;
-  }
-  /// Set the custom value of TOF nσ vs. kaon hypothesis to be used for selections
-  void setCustomNSigmaTofKa(float nSigma)
-  {
-    mUseCustomNSigmaTofKa = true;
-    mCustomNSigmaTofKa = nSigma;
-  }
-  /// Set the custom value of TOF nσ vs. proton hypothesis to be used for selections
-  void setCustomNSigmaTofPr(float nSigma)
-  {
-    mUseCustomNSigmaTofPr = true;
-    mCustomNSigmaTofPr = nSigma;
-  }
-  /// Set the custom value of TOF nσ vs. muon hypothesis to be used for selections
-  void setCustomNSigmaTofMu(float nSigma)
-  {
-    mUseCustomNSigmaTofMu = true;
-    mCustomNSigmaTofMu = nSigma;
-  }
-  /// Set the custom value of TOF nσ vs. electron hypothesis to be used for selections
-  void setCustomNSigmaTofEl(float nSigma)
-  {
-    mUseCustomNSigmaTofEl = true;
-    mCustomNSigmaTofEl = nSigma;
-  }
-
   /// Set TOF nσ range in which a track should be conditionally accepted if combined with TPC. Set to 0 to disable.
   void setRangeNSigmaTofCondTpc(float nsMin, float nsMax)
   {
@@ -253,9 +197,10 @@ class TrackSelectorPidBase
   /// Checks if track is compatible with given particle species hypothesis within given TOF nσ range.
   /// \param track  track
   /// \param conditionalTpc  variable to store the result of selection with looser cuts for conditional accepting of track if combined with TPC
+  /// \param tofNSigmaCustom  custom TOF nσ value to be used for the selection, in case the desired value cannot be taken from the track table
   /// \return true if track satisfies TOF PID hypothesis for given TOF nσ range
   template <typename T>
-  bool isSelectedByTof(const T& track, bool& conditionalTpc)
+  bool isSelectedByTof(const T& track, bool& conditionalTpc, float tofNSigmaCustom = -999.f)
   {
     // Accept if selection is disabled via large values.
     if (mNSigmaTofMin < -999. && mNSigmaTofMax > 999.) {
@@ -265,17 +210,22 @@ class TrackSelectorPidBase
     // Get nσ for a given particle hypothesis.
     double nSigma = 100.;
     if constexpr (pdg == kElectron) {
-      nSigma = mUseCustomNSigmaTofEl ? mCustomNSigmaTofEl : track.tofNSigmaEl();
+      nSigma = track.tofNSigmaEl();
     } else if constexpr (pdg == kMuonMinus) {
-      nSigma = mUseCustomNSigmaTofMu ? mCustomNSigmaTofMu : track.tofNSigmaMu();
+      nSigma = track.tofNSigmaMu();
     } else if constexpr (pdg == kPiPlus) {
-      nSigma = mUseCustomNSigmaTofPi ? mCustomNSigmaTofPi : track.tofNSigmaPi();
+      nSigma = track.tofNSigmaPi();
     } else if constexpr (pdg == kKPlus) {
-      nSigma = mUseCustomNSigmaTofKa ? mCustomNSigmaTofKa : track.tofNSigmaKa();
+      nSigma = track.tofNSigmaKa();
     } else if constexpr (pdg == kProton) {
-      nSigma = mUseCustomNSigmaTofPr ? mCustomNSigmaTofPr : track.tofNSigmaPr();
+      nSigma = track.tofNSigmaPr();
     } else {
       errorPdg();
+    }
+
+    /// use custom TOF nσ, if a valid value is provided
+    if (tofNSigmaCustom > -999.f) {
+      nSigma = tofNSigmaCustom;
     }
 
     if (mNSigmaTofMinCondTpc < -999. && mNSigmaTofMaxCondTpc > 999.) {
@@ -290,13 +240,13 @@ class TrackSelectorPidBase
   /// \param track  track
   /// \return TOF selection status (see TrackSelectorPID::Status)
   template <typename T>
-  TrackSelectorPID::Status statusTof(const T& track)
+  TrackSelectorPID::Status statusTof(const T& track, float tofNSigmaCustom = -999.f)
   {
     if (!isValidForTof(track)) {
       return TrackSelectorPID::NotApplicable;
     }
     bool condTpc = false;
-    if (isSelectedByTof(track, condTpc)) {
+    if (isSelectedByTof(track, condTpc, tofNSigmaCustom)) {
       return TrackSelectorPID::Accepted;
     } else if (condTpc) {
       return TrackSelectorPID::Conditional; // potential to be accepted if combined with TPC
@@ -453,10 +403,10 @@ class TrackSelectorPidBase
   /// \param track  track
   /// \return status of combined PID (TPC or TOF) (see TrackSelectorPID::Status)
   template <typename T>
-  TrackSelectorPID::Status statusTpcOrTof(const T& track)
+  TrackSelectorPID::Status statusTpcOrTof(const T& track, float tpcNSigmaCustom = -999.f, float tofNSigmaCustom = -999.f)
   {
-    int pidTpc = statusTpc(track);
-    int pidTof = statusTof(track);
+    int pidTpc = statusTpc(track, tpcNSigmaCustom);
+    int pidTof = statusTof(track, tofNSigmaCustom);
 
     if (pidTpc == TrackSelectorPID::Accepted || pidTof == TrackSelectorPID::Accepted) {
       return TrackSelectorPID::Accepted;
@@ -474,15 +424,15 @@ class TrackSelectorPidBase
   /// \param track  track
   /// \return status of combined PID (TPC and TOF) (see TrackSelectorPID::Status)
   template <typename T>
-  TrackSelectorPID::Status statusTpcAndTof(const T& track)
+  TrackSelectorPID::Status statusTpcAndTof(const T& track, float tpcNSigmaCustom = -999.f, float tofNSigmaCustom = -999.f)
   {
     int pidTpc = TrackSelectorPID::NotApplicable;
     if (track.hasTPC()) {
-      pidTpc = statusTpc(track);
+      pidTpc = statusTpc(track, tpcNSigmaCustom);
     }
     int pidTof = TrackSelectorPID::NotApplicable;
     if (track.hasTOF()) {
-      pidTof = statusTof(track);
+      pidTof = statusTof(track, tofNSigmaCustom);
     }
 
     if (pidTpc == TrackSelectorPID::Accepted && pidTof == TrackSelectorPID::Accepted) {
@@ -516,8 +466,8 @@ class TrackSelectorPidBase
     bool isSelRich = false;
     bool hasRich = track.richId() > -1;
     bool hasTof = isValidForTof(track);
-    auto nSigmaTofEl = mUseCustomNSigmaTofEl ? mCustomNSigmaTofEl : track.tofNSigmaEl();
-    auto nSigmaTofPi = mUseCustomNSigmaTofPi ? mCustomNSigmaTofPi : track.tofNSigmaPi();
+    auto nSigmaTofEl = track.tofNSigmaEl();
+    auto nSigmaTofPi = track.tofNSigmaPi();
     auto nSigmaRichEl = hasRich ? track.rich().richNsigmaEl() : -1000.;
     auto nSigmaRichPi = hasRich ? track.rich().richNsigmaPi() : -1000.;
     auto p = track.p();
@@ -668,40 +618,20 @@ class TrackSelectorPidBase
 
  private:
   // TPC
-  float mPtTpcMin = 0.;                ///< minimum pT for TPC PID [GeV/c]
-  float mPtTpcMax = 100.;              ///< maximum pT for TPC PID [GeV/c]
-  float mNSigmaTpcMin = -3.;           ///< minimum number of TPC σ
-  float mNSigmaTpcMax = 3.;            ///< maximum number of TPC σ
-  float mNSigmaTpcMinCondTof = 0.;     ///< minimum number of TPC σ if combined with TOF
-  float mNSigmaTpcMaxCondTof = 0.;     ///< maximum number of TPC σ if combined with TOF
-  bool mUseCustomNSigmaTpcPi = false;  ///< enable the usage of a custom value of TPC nσ vs. pion hypothesis
-  bool mUseCustomNSigmaTpcKa = false;  ///< enable the usage of a custom value of TPC nσ vs. kaon hypothesis
-  bool mUseCustomNSigmaTpcPr = false;  ///< enable the usage of a custom value of TPC nσ vs. proton hypothesis
-  bool mUseCustomNSigmaTpcMu = false;  ///< enable the usage of a custom value of TPC nσ vs. muon hypothesis
-  bool mUseCustomNSigmaTpcEl = false;  ///< enable the usage of a custom value of TPC nσ vs. electron hypothesis
-  float mCustomNSigmaTpcPi = -99999.f; ///< custom value of TPC nσ vs. pion hypothesis to be used for selections
-  float mCustomNSigmaTpcKa = -99999.f; ///< custom value of TPC nσ vs. kaon hypothesis to be used for selections
-  float mCustomNSigmaTpcPr = -99999.f; ///< custom value of TPC nσ vs. proton hypothesis to be used for selections
-  float mCustomNSigmaTpcMu = -99999.f; ///< custom value of TPC nσ vs. muon hypothesis to be used for selections
-  float mCustomNSigmaTpcEl = -99999.f; ///< custom value of TPC nσ vs. electron hypothesis to be used for selections
+  float mPtTpcMin = 0.;            ///< minimum pT for TPC PID [GeV/c]
+  float mPtTpcMax = 100.;          ///< maximum pT for TPC PID [GeV/c]
+  float mNSigmaTpcMin = -3.;       ///< minimum number of TPC σ
+  float mNSigmaTpcMax = 3.;        ///< maximum number of TPC σ
+  float mNSigmaTpcMinCondTof = 0.; ///< minimum number of TPC σ if combined with TOF
+  float mNSigmaTpcMaxCondTof = 0.; ///< maximum number of TPC σ if combined with TOF
 
   // TOF
-  float mPtTofMin = 0.;                ///< minimum pT for TOF PID [GeV/c]
-  float mPtTofMax = 100.;              ///< maximum pT for TOF PID [GeV/c]
-  float mNSigmaTofMin = -3.;           ///< minimum number of TOF σ
-  float mNSigmaTofMax = 3.;            ///< maximum number of TOF σ
-  float mNSigmaTofMinCondTpc = 0.;     ///< minimum number of TOF σ if combined with TPC
-  float mNSigmaTofMaxCondTpc = 0.;     ///< maximum number of TOF σ if combined with TPC
-  bool mUseCustomNSigmaTofPi = false;  ///< enable the usage of a custom value of TOF nσ vs. pion hypothesis
-  bool mUseCustomNSigmaTofKa = false;  ///< enable the usage of a custom value of TOF nσ vs. kaon hypothesis
-  bool mUseCustomNSigmaTofPr = false;  ///< enable the usage of a custom value of TOF nσ vs. proton hypothesis
-  bool mUseCustomNSigmaTofMu = false;  ///< enable the usage of a custom value of TOF nσ vs. muon hypothesis
-  bool mUseCustomNSigmaTofEl = false;  ///< enable the usage of a custom value of TOF nσ vs. electron hypothesis
-  float mCustomNSigmaTofPi = -99999.f; ///< custom value of TOF nσ vs. pion hypothesis to be used for selections
-  float mCustomNSigmaTofKa = -99999.f; ///< custom value of TOF nσ vs. kaon hypothesis to be used for selections
-  float mCustomNSigmaTofPr = -99999.f; ///< custom value of TOF nσ vs. proton hypothesis to be used for selections
-  float mCustomNSigmaTofMu = -99999.f; ///< custom value of TOF nσ vs. muon hypothesis to be used for selections
-  float mCustomNSigmaTofEl = -99999.f; ///< custom value of TOF nσ vs. electron hypothesis to be used for selections
+  float mPtTofMin = 0.;            ///< minimum pT for TOF PID [GeV/c]
+  float mPtTofMax = 100.;          ///< maximum pT for TOF PID [GeV/c]
+  float mNSigmaTofMin = -3.;       ///< minimum number of TOF σ
+  float mNSigmaTofMax = 3.;        ///< maximum number of TOF σ
+  float mNSigmaTofMinCondTpc = 0.; ///< minimum number of TOF σ if combined with TPC
+  float mNSigmaTofMaxCondTpc = 0.; ///< maximum number of TOF σ if combined with TPC
 
   // RICH
   float mPtRichMin = 0.;            ///< minimum pT for RICH PID [GeV/c]
