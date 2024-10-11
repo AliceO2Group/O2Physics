@@ -21,6 +21,11 @@ o2physics_add_dpl_workflow(candidate-creator-bplus-reduced
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(candidate-creator-bs-reduced
+                    SOURCES candidateCreatorBsReduced.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(candidate-creator-charm-reso-reduced
                     SOURCES candidateCreatorCharmResoReduced.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
