@@ -309,7 +309,7 @@ struct HfTaskCharmHadronsFemtoDream {
     // Mixed events that contain the pair of interest
     processType = 2; // for mixed event
 
-    for (auto const& [collision1, collision2] : combinations(soa::CombinationsBlockFullSameIndexPolicy(policy, mixingDepth.value, -1, cols, cols))){
+    for (auto const& [collision1, collision2] : combinations(soa::CombinationsBlockFullSameIndexPolicy(policy, mixingDepth.value, -1, cols, cols))) {
       // make sure that tracks in the same events are not mixed
       if (collision1.globalIndex() == collision2.globalIndex()) {
         continue;
