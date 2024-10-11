@@ -367,14 +367,17 @@ struct lnnRecoTask {
         continue;
       }
 
+      auto& posPropTrack = fitter.getTrack(0);
+      auto& negPropTrack = fitter.getTrack(1);
+
       // if alphaAP is > 0 the candidate is 3H, if < 0 it is anti-3H
       std::array<float, 3> momPos = std::array{static_cast<float>(-999.), static_cast<float>(-999.), static_cast<float>(-999.)};
       std::array<float, 3> momNeg = std::array{static_cast<float>(-999.), static_cast<float>(-999.), static_cast<float>(-999.)};
-      posTrack.getPxPyPzGlo(momPos);
-      negTrack.getPxPyPzGlo(momNeg);
-      float alphaAP = alphaAP(momPos, momNeg);
+      posPropTrack.getPxPyPzGlo(momPos);
+      negPropTrack.getPxPyPzGlo(momNeg);
+      float alpha = alphaAP(momPos, momNeg);
       lnnCandidate lnnCand;
-      lnnCand.isMatter = alphaAP > 0;
+      lnnCand.isMatter = alpha > 0;
       auto& h3track = lnnCand.isMatter ? posTrack : negTrack;
       auto& h3Rigidity = lnnCand.isMatter ? posRigidity : negRigidity;
 
@@ -399,7 +402,7 @@ struct lnnRecoTask {
       lnnCand.flags |= lnnCand.isMatter ? static_cast<uint8_t>(negTrack.pidForTracking() & 0xF) : static_cast<uint8_t>(posTrack.pidForTracking() & 0xF);
 
       auto h3TrackCov = getTrackParCov(posTrack);
-      auto negTrackCov = getTrackParCov(negTrack);
+      auto piTrackCov = getTrackParCov(negTrack);
       int chargeFactor = -1 + 2 * lnnCand.isMatter;
 
       float beta = -1.f;
@@ -416,7 +419,7 @@ struct lnnRecoTask {
 
       int nCand = 0;
       try {
-        nCand = fitter.process(h3TrackCov, negTrackCov);
+        nCand = fitter.process(h3TrackCov, piTrackCov);
       } catch (...) {
         LOG(error) << "Exception caught in DCA fitter process call!";
         continue;
