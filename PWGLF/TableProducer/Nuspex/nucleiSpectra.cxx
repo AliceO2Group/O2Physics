@@ -490,7 +490,7 @@ struct nucleiSpectra {
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
     if (cfgSkimmedProcessing) {
-      zorro.isSelected(collision.bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
+      zorro.isSelected(bc.globalBC()); /// Just let Zorro do the accounting
     }
     gRandom->SetSeed(bc.timestamp());
 
