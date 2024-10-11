@@ -352,29 +352,11 @@ struct lnnRecoTask {
 
       if (!is3H && !isAnti3H) // discard if both tracks are not 3H candidates
         continue;
-
-      auto posTrackCov = getTrackParCov(posTrack);
-      auto negTrackCov = getTrackParCov(negTrack);
-
-      int nCandTrack = 0;
-      try {
-        nCandTrack = fitter.process(posTrackCov, negTrackCov);
-      } catch (...) {
-        LOG(error) << "Exception caught in DCA fitter process call!";
-        continue;
-      }
-      if (nCandTrack == 0) {
-        continue;
-      }
-
-      auto& posPropTrack = fitter.getTrack(0);
-      auto& negPropTrack = fitter.getTrack(1);
+      
 
       // if alphaAP is > 0 the candidate is 3H, if < 0 it is anti-3H
-      std::array<float, 3> momPos = std::array{static_cast<float>(-999.), static_cast<float>(-999.), static_cast<float>(-999.)};
-      std::array<float, 3> momNeg = std::array{static_cast<float>(-999.), static_cast<float>(-999.), static_cast<float>(-999.)};
-      posPropTrack.getPxPyPzGlo(momPos);
-      negPropTrack.getPxPyPzGlo(momNeg);
+      std::array<float, 3> momPos = std::array{posTrack.px(), posTrack.py(), posTrack.pz()};
+      std::array<float, 3> momNeg = std::array{negTrack.px(), negTrack.py(), negTrack.pz()};
       float alpha = alphaAP(momPos, momNeg);
       lnnCandidate lnnCand;
       lnnCand.isMatter = alpha > 0;
@@ -401,8 +383,8 @@ struct lnnRecoTask {
       lnnCand.flags |= lnnCand.isMatter ? static_cast<uint8_t>((posTrack.pidForTracking() & 0xF) << 4) : static_cast<uint8_t>((negTrack.pidForTracking() & 0xF) << 4);
       lnnCand.flags |= lnnCand.isMatter ? static_cast<uint8_t>(negTrack.pidForTracking() & 0xF) : static_cast<uint8_t>(posTrack.pidForTracking() & 0xF);
 
-      auto h3TrackCov = getTrackParCov(posTrack);
-      auto piTrackCov = getTrackParCov(negTrack);
+      auto posTrackCov = getTrackParCov(posTrack);
+      auto negTrackCov = getTrackParCov(negTrack);
       int chargeFactor = -1 + 2 * lnnCand.isMatter;
 
       float beta = -1.f;
@@ -419,7 +401,7 @@ struct lnnRecoTask {
 
       int nCand = 0;
       try {
-        nCand = fitter.process(h3TrackCov, piTrackCov);
+        nCand = fitter.process(posTrackCov, negTrackCov);
       } catch (...) {
         LOG(error) << "Exception caught in DCA fitter process call!";
         continue;
@@ -484,12 +466,11 @@ struct lnnRecoTask {
 
       // if survived all selections, propagate decay daughters to PV
       gpu::gpustd::array<float, 2> dcaInfo;
+      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, h3PropTrack, 2.f, fitter.getMatCorrType(), &dcaInfo);
+      lnnCand.h3DCAXY = dcaInfo[0];
 
-      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, h3TrackCov, 2.f, fitter.getMatCorrType(), &dcaInfo);
-      lnnCand.isMatter ? lnnCand.h3DCAXY = dcaInfo[0] : lnnCand.piDCAXY = dcaInfo[0];
-
-      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, negTrackCov, 2.f, fitter.getMatCorrType(), &dcaInfo);
-      lnnCand.isMatter ? lnnCand.piDCAXY = dcaInfo[0] : lnnCand.h3DCAXY = dcaInfo[0];
+      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, piPropTrack, 2.f, fitter.getMatCorrType(), &dcaInfo);
+      lnnCand.piDCAXY = dcaInfo[0];
 
       // finally, push back the candidate
       lnnCand.isReco = true;
