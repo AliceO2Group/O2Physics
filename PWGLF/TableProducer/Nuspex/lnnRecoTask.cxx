@@ -352,7 +352,6 @@ struct lnnRecoTask {
 
       if (!is3H && !isAnti3H) // discard if both tracks are not 3H candidates
         continue;
-      
 
       // if alphaAP is > 0 the candidate is 3H, if < 0 it is anti-3H
       std::array<float, 3> momPos = std::array{posTrack.px(), posTrack.py(), posTrack.pz()};
