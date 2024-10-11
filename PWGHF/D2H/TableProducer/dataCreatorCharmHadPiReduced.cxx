@@ -179,8 +179,8 @@ struct HfDataCreatorCharmHadPiReduced {
   std::shared_ptr<TH1> hCandidatesD0, hCandidatesDPlus, hCandidatesDs;
   HistogramRegistry registry{"registry"};
 
-  std::array<int, 2> arrPDGResonantDsPhiPi = {kPhi, kPiPlus}; // Ds± → Phi π±
-  std::array<int, 2> arrPDGResonantDKstarK = {kK0Star892, kKPlus};   // Ds± → K*(892)0bar K± and D± → K*(892)0bar K±
+  std::array<int, 2> arrPDGResonantDsPhiPi = {kPhi, kPiPlus};      // Ds± → Phi π±
+  std::array<int, 2> arrPDGResonantDKstarK = {kK0Star892, kKPlus}; // Ds± → K*(892)0bar K± and D± → K*(892)0bar K±
 
   void init(InitContext const&)
   {
@@ -246,34 +246,27 @@ struct HfDataCreatorCharmHadPiReduced {
       registry.get<TH1>(HIST("hEvents"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
     }
 
-    std::string charmHadInvMassTitle = "";
-    std::string charmHadTitle0 = "";
-    std::string charmHadTitle1 = "";
-    std::string histMassTitle0 = "";
-    std::string histMassTitle1 = "";
+    std::string charmHadTitle = "";
+    std::string histMassTitle = "";
     if (doprocessDplusPiData || doprocessDplusPiDataWithMl || doprocessDplusPiMc || doprocessDplusPiMcWithMl) {
-      charmHadTitle0 = "D^{#plus}";
-      histMassTitle0 = "Dplus";
-      charmHadInvMassTitle = "#it{M}(K#pi#pi)";
+      charmHadTitle = "D^{#plus}";
+      histMassTitle = "Dplus";
+      registry.add("hMassDplus", "D^{#plus} candidates; #it{M}(K#pi#pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}});
     } else if (doprocessDsPiData || doprocessDsPiDataWithMl || doprocessDsPiMc || doprocessDsPiMcWithMl) {
-      charmHadTitle0 = "D_{s}^{#plus}";
-      histMassTitle0 = "Ds";
-      charmHadInvMassTitle = "#it{M}(KK#pi)";
+      charmHadTitle = "D_{s}^{#plus}";
+      histMassTitle = "Ds";
+      registry.add("hMassDsToKKPi", "D_{s}^{#plus} to KKpi candidates; #it{M}(KK#pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}});
+      registry.add("hMassDsToPiKK", "D_{s}^{#plus} to piKK candidates; #it{M}(KK#pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}});
     } else if (doprocessD0PiData || doprocessD0PiDataWithMl || doprocessD0PiMc || doprocessD0PiMcWithMl) {
-      charmHadTitle0 = "D^{0}";
-      charmHadTitle1 = "#overline{D}^{0}";
-      histMassTitle0 = "D0";
-      histMassTitle1 = "D0bar";
-      charmHadInvMassTitle = "#it{M}(K#pi)";
+      charmHadTitle = "D^{0}";
+      histMassTitle = "D0";
+      registry.add("hMassD0", "D^{0} candidates; #it{M}(K#pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}});
+      registry.add("hMassD0bar", "#overline{D}^{0} candidates; #it{M}(K#pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0., 5.}}});
     }
 
-    registry.add(Form("hMass%s", histMassTitle0.data()), Form("%s candidates; %s (GeV/#it{c}^{2});entries", charmHadTitle0.data(), charmHadInvMassTitle.data()), {HistType::kTH1F, {{500, 0., 5.}}});
-    if (doprocessD0PiData || doprocessD0PiDataWithMl || doprocessD0PiMc || doprocessD0PiMcWithMl) {
-      registry.add(Form("hMass%s", histMassTitle1.data()), Form("%s candidates; %s (GeV/#it{c}^{2});entries", charmHadTitle1.data(), charmHadInvMassTitle.data()), {HistType::kTH1F, {{500, 0., 5.}}});
-    }
-    registry.add(Form("hPt%s", histMassTitle0.data()), Form("%s candidates candidates;%s candidate #it{p}_{T} (GeV/#it{c});entries", charmHadTitle0.data(), charmHadTitle0.data()), {HistType::kTH1F, {{100, 0., 10.}}});
+    registry.add(Form("hPt%s", histMassTitle.data()), Form("%s candidates candidates;%s candidate #it{p}_{T} (GeV/#it{c});entries", charmHadTitle.data(), charmHadTitle.data()), {HistType::kTH1F, {{100, 0., 10.}}});
     registry.add("hPtPion", "#pi^{#plus} candidates;#pi^{#plus} candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}});
-    registry.add(Form("hCpa%s", histMassTitle0.data()), Form("%s candidates;%s cosine of pointing angle;entries", charmHadTitle0.data(), charmHadTitle0.data()), {HistType::kTH1F, {{110, -1.1, 1.1}}});
+    registry.add(Form("hCpa%s", histMassTitle.data()), Form("%s candidates;%s cosine of pointing angle;entries", charmHadTitle.data(), charmHadTitle.data()), {HistType::kTH1F, {{110, -1.1, 1.1}}});
 
     /// candidate monitoring
     hCandidatesD0 = registry.add<TH1>("hCandidatesD0", "D0 candidate counter", {HistType::kTH1D, {axisCands}});
@@ -725,11 +718,11 @@ struct HfDataCreatorCharmHadPiReduced {
         indexHfCandCharm = hfCand3Prong.lastIndex() + 1;
         if (candC.isSelDsToKKPi() >= selectionFlagDs) {
           invMassC0 = hfHelper.invMassDsToKKPi(candC);
-          registry.fill(HIST("hMassDs"), invMassC0);
+          registry.fill(HIST("hMassDsToKKPi"), invMassC0);
         }
         if (candC.isSelDsToPiKK() >= selectionFlagDs) {
           invMassC1 = hfHelper.invMassDsToPiKK(candC);
-          registry.fill(HIST("hMassDs"), invMassC1);
+          registry.fill(HIST("hMassDsToPiKK"), invMassC1);
         }
         registry.fill(HIST("hPtDs"), candC.pt());
         registry.fill(HIST("hCpaDs"), candC.cpa());
