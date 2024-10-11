@@ -98,22 +98,14 @@ struct strangeness_pbpb_tutorial {
                               nabs(aod::cascdata::dcabachtopv) > cascadesetting_dcabachtopv &&
                               aod::cascdata::dcacascdaughters < cascadesetting_dcacascdau);
 
-  // Defining the type of the daughter tracks
-  using dauTracks = aod::DauTrackExtras;
-
   void process(soa::Filtered<soa::Join<aod::StraCollisions, aod::StraEvSels>>::iterator const& collision,
-               soa::Filtered<soa::Join<aod::CascCores, aod::CascExtras>> const& Cascades,
-               dauTracks const&)
+               soa::Filtered<soa::Join<aod::CascCores, aod::CascExtras>> const& Cascades)
   {
     // Fill the event counter
     rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
 
     // Cascades
     for (const auto& casc : Cascades) {
-      const auto& bachDaughterTrackCasc = casc.bachTrackExtra_as<dauTracks>();
-      const auto& posDaughterTrackCasc = casc.posTrackExtra_as<dauTracks>();
-      const auto& negDaughterTrackCasc = casc.negTrackExtra_as<dauTracks>();
-
       rXi.fill(HIST("hMassXi"), casc.mXi());
       rOmega.fill(HIST("hMassOmega"), casc.mOmega());
 

@@ -134,7 +134,7 @@ struct strangeness_pbpb_tutorial {
                               aod::cascdata::dcacascdaughters < cascadesetting_dcacascdau);
 
   // Defining the type of the daughter tracks
-  using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs, aod::DauTrackTOFPIDs, aod::DauTrackMCIds>;
+  using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs, aod::DauTrackMCIds>;
 
   void processRecMC(soa::Filtered<soa::Join<aod::StraCollisions, aod::StraEvSels>>::iterator const& collision,
                     soa::Filtered<soa::Join<aod::CascCores, aod::CascExtras, aod::CascTOFNSigmas, aod::CascCoreMCLabels>> const& Cascades,
@@ -185,62 +185,66 @@ struct strangeness_pbpb_tutorial {
       }
 
       // TOF PID check
-      bool bachXiPassTOFSelection = true;
-      bool posXiPassTOFSelection = true;
-      bool negXiPassTOFSelection = true;
-      bool bachOmegaPassTOFSelection = true;
-      bool posOmegaPassTOFSelection = true;
-      bool negOmegaPassTOFSelection = true;
-      bool atLeastOneTOF = bachDaughterTrackCasc.hasTOF() || posDaughterTrackCasc.hasTOF() || negDaughterTrackCasc.hasTOF();
+      bool xiPassTOFSelection = true;
+      bool omegaPassTOFSelection = true;
       if (casc.sign() < 0) {
         if (posDaughterTrackCasc.hasTOF()) {
           if (TMath::Abs(casc.tofNSigmaXiLaPr()) > NSigmaTOFProton) {
-            posXiPassTOFSelection = false;
+            xiPassTOFSelection &= false;
           }
           if (TMath::Abs(casc.tofNSigmaOmLaPr()) > NSigmaTOFProton) {
-            posOmegaPassTOFSelection = false;
+            omegaPassTOFSelection &= false;
           }
         }
         if (negDaughterTrackCasc.hasTOF()) {
           if (TMath::Abs(casc.tofNSigmaXiLaPi()) > NSigmaTOFPion) {
-            negXiPassTOFSelection = false;
+            xiPassTOFSelection &= false;
           }
           if (TMath::Abs(casc.tofNSigmaOmLaPi()) > NSigmaTOFPion) {
-            negOmegaPassTOFSelection = false;
+            omegaPassTOFSelection &= false;
           }
         }
       } else {
         if (posDaughterTrackCasc.hasTOF()) {
           if (TMath::Abs(casc.tofNSigmaXiLaPi()) > NSigmaTOFPion) {
-            posXiPassTOFSelection = false;
+            xiPassTOFSelection &= false;
           }
           if (TMath::Abs(casc.tofNSigmaOmLaPi()) > NSigmaTOFPion) {
-            posOmegaPassTOFSelection = false;
+            omegaPassTOFSelection &= false;
           }
         }
         if (negDaughterTrackCasc.hasTOF()) {
           if (TMath::Abs(casc.tofNSigmaXiLaPr()) > NSigmaTOFProton) {
-            negXiPassTOFSelection = false;
+            xiPassTOFSelection &= false;
           }
           if (TMath::Abs(casc.tofNSigmaOmLaPr()) > NSigmaTOFProton) {
-            negOmegaPassTOFSelection = false;
+            omegaPassTOFSelection &= false;
           }
         }
       }
 
       if (bachDaughterTrackCasc.hasTOF()) {
         if (TMath::Abs(casc.tofNSigmaXiPi()) > NSigmaTOFPion) {
-          bachXiPassTOFSelection = false;
+          xiPassTOFSelection &= false;
         }
         if (TMath::Abs(casc.tofNSigmaOmKa()) > NSigmaTOFKaon) {
-          bachOmegaPassTOFSelection = false;
+          omegaPassTOFSelection &= false;
+        }
+      }
+
+      if (bachDaughterTrackCasc.hasTOF()) {
+        if (TMath::Abs(casc.tofNSigmaXiPi()) > NSigmaTOFPion) {
+          xiPassTOFSelection &= false;
+        }
+        if (TMath::Abs(casc.tofNSigmaOmKa()) > NSigmaTOFKaon) {
+          omegaPassTOFSelection &= false;
         }
       }
 
       // Fill histograms! (if possible)
       if (TMath::Abs(bachDaughterTrackCasc.tpcNSigmaPi()) < NSigmaTPCPion) { // Xi case
         rXi.fill(HIST("hMassXiSelected"), casc.mXi());
-        if (atLeastOneTOF && bachXiPassTOFSelection && posXiPassTOFSelection && negXiPassTOFSelection) {
+        if (xiPassTOFSelection) {
           rXi.fill(HIST("hMassXiSelectedWithTOF"), casc.mXi());
         }
 
@@ -250,7 +254,7 @@ struct strangeness_pbpb_tutorial {
       if (TMath::Abs(bachDaughterTrackCasc.tpcNSigmaKa()) < NSigmaTPCKaon) {                // Omega case
         if (TMath::Abs(casc.mXi() - pdgDB->Mass(3312)) > cascadesetting_competingmassrej) { // competing mass rejection, only in case of Omega
           rOmega.fill(HIST("hMassOmegaSelected"), casc.mOmega());
-          if (atLeastOneTOF && bachOmegaPassTOFSelection && posOmegaPassTOFSelection && negOmegaPassTOFSelection) {
+          if (omegaPassTOFSelection) {
             rOmega.fill(HIST("hMassOmegaSelectedWithTOF"), casc.mOmega());
           }
 
@@ -270,7 +274,7 @@ struct strangeness_pbpb_tutorial {
         if (TMath::Abs(bachDaughterTrackCasc.tpcNSigmaPi()) < NSigmaTPCPion) { // Xi case
           rXi.fill(HIST("hMassXiTrueRec"), casc.mXi());
           rXi.fill(HIST("hPtXiTrueRec"), casc.pt());
-          if (atLeastOneTOF && bachOmegaPassTOFSelection && posOmegaPassTOFSelection && negOmegaPassTOFSelection) {
+          if (xiPassTOFSelection) {
             rXi.fill(HIST("hMassXiTrueRecWithTOF"), casc.mXi());
             rXi.fill(HIST("hPtXiTrueRecWithTOF"), casc.pt());
           }
@@ -281,7 +285,7 @@ struct strangeness_pbpb_tutorial {
           if (TMath::Abs(casc.mXi() - pdgDB->Mass(3312)) > cascadesetting_competingmassrej) { // competing mass rejection, only in case of Omega
             rOmega.fill(HIST("hMassOmegaTrueRec"), casc.mOmega());
             rOmega.fill(HIST("hPtOmegaTrueRec"), casc.pt());
-            if (atLeastOneTOF && bachOmegaPassTOFSelection && posOmegaPassTOFSelection && negOmegaPassTOFSelection) {
+            if (omegaPassTOFSelection) {
               rOmega.fill(HIST("hMassOmegaTrueRecWithTOF"), casc.mOmega());
               rOmega.fill(HIST("hPtOmegaTrueRecWithTOF"), casc.pt());
             }
