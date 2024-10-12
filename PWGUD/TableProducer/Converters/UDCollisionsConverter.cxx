@@ -38,15 +38,15 @@ struct UDCollisionsConverter {
     for (const auto& collision : collisions) {
 
       udCollisions_001(collision.index(),
-                           collision.globalBC(),
-                           collision.runNumber(),
-                           collision.posX(),
-                           collision.posY(),
-                           collision.posZ(),
-                           0.0f, // dummy UPC reco flag, not available in version 000
-                           collision.numContrib(),
-                           collision.netCharge(),
-                           collision.rgtrwTOF());
+                       collision.globalBC(),
+                       collision.runNumber(),
+                       collision.posX(),
+                       collision.posY(),
+                       collision.posZ(),
+                       0.0f, // dummy UPC reco flag, not available in version 000
+                       collision.numContrib(),
+                       collision.netCharge(),
+                       collision.rgtrwTOF());
     }
   }
 };

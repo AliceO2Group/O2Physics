@@ -161,18 +161,18 @@ DECLARE_SOA_TABLE(UDCollisions_000, "AOD", "UDCOLLISION",
                   collision::NumContrib,
                   udcollision::NetCharge,
                   udcollision::RgtrwTOF);
-//Version with UPC Reco Flag
+// Version with UPC Reco Flag
 DECLARE_SOA_TABLE_VERSIONED(UDCollisions_001, "AOD", "UDCOLLISION", 1,
-                  o2::soa::Index<>,
-                  udcollision::GlobalBC,
-                  udcollision::RunNumber,
-                  collision::PosX,
-                  collision::PosY,
-                  collision::PosZ,
-		  collision::Flags,
-                  collision::NumContrib,
-                  udcollision::NetCharge,
-                  udcollision::RgtrwTOF);
+                            o2::soa::Index<>,
+                            udcollision::GlobalBC,
+                            udcollision::RunNumber,
+                            collision::PosX,
+                            collision::PosY,
+                            collision::PosZ,
+                            collision::Flags,
+                            collision::NumContrib,
+                            udcollision::NetCharge,
+                            udcollision::RgtrwTOF);
 
 DECLARE_SOA_TABLE(SGCollisions, "AOD", "SGCOLLISION",
                   udcollision::GapSide);
