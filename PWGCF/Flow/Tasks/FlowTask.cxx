@@ -264,7 +264,7 @@ struct FlowTask {
     std::vector<std::string> UserDefineGFWCorr = cfgUserDefineGFWCorr;
     std::vector<std::string> UserDefineGFWName = cfgUserDefineGFWName;
     if (!UserDefineGFWCorr.empty() && !UserDefineGFWName.empty()) {
-      for (int i = 0; i < UserDefineGFWName.size(); i++) {
+      for (auto i = 0; i < UserDefineGFWName.size(); i++) {
         oba->Add(new TNamed(UserDefineGFWName.at(i).c_str(), UserDefineGFWName.at(i).c_str()));
       }
     }
@@ -333,7 +333,7 @@ struct FlowTask {
     if (!UserDefineGFWCorr.empty() && !UserDefineGFWName.empty()) {
       LOGF(info, "User adding GFW CorrelatorConfig:");
       // attentaion: here we follow the index of cfgUserDefineGFWCorr
-      for (int i = 0; i < UserDefineGFWCorr.size(); i++) {
+      for (auto i = 0; i < UserDefineGFWCorr.size(); i++) {
         if (i >= UserDefineGFWName.size()) {
           LOGF(fatal, "The names you provided are more than configurations. UserDefineGFWName.size(): %d > UserDefineGFWCorr.size(): %d", UserDefineGFWName.size(), UserDefineGFWCorr.size());
           break;
@@ -559,18 +559,22 @@ struct FlowTask {
   template <typename TTrack>
   bool trackSelected(TTrack track)
   {
-    if (cfgFilterFlag == 0)
-      return track.isGlobalTrack();
-    else if (cfgFilterFlag == 1)
-      return (track.isGlobalTrackSDD() == (uint8_t) true);
-    else if (cfgFilterFlag == 2)
-      return (track.isGlobalTrackWoTPCCluster() && track.tpcNClsFound() >= cfgCutTPCclu);
-    else if (cfgFilterFlag == 3)
-      return (track.isGlobalTrackWoPtEta() && (abs(track.eta()) < cfgCutEta) && (track.pt() > cfgCutPtMin) && (track.pt() < cfgCutPtMax));
-    else if (cfgFilterFlag == 4)
-      return (track.isGlobalTrackWoDCA() && track.dcaZ() <= cfgCutDCAz && track.dcaXY() <= cfgCutDCAxy * pow(track.pt(), -1.1));
-    else if (cfgFilterFlag == 5)
-      return (track.isGlobalTrackWoDCATPCCluster() && track.dcaZ() <= cfgCutDCAz && track.dcaXY() <= cfgCutDCAxy * pow(track.pt(), -1.1) && track.tpcNClsFound() >= cfgCutTPCclu);
+    switch (cfgFilterFlag) {
+      case 0:
+        return track.isGlobalTrack();
+      case 1:
+        return (track.isGlobalTrackSDD() == (uint8_t) true);
+      case 2:
+        return (track.isGlobalTrackWoTPCCluster() && track.tpcNClsFound() >= cfgCutTPCclu);
+      case 3:
+        return (track.isGlobalTrackWoPtEta() && (abs(track.eta()) < cfgCutEta) && (track.pt() > cfgCutPtMin) && (track.pt() < cfgCutPtMax));
+      case 4:
+        return (track.isGlobalTrackWoDCA() && abs(track.dcaZ()) <= cfgCutDCAz && abs(track.dcaXY()) <= cfgCutDCAxy * pow(track.pt(), -1.1));
+      case 5:
+        return (track.isGlobalTrackWoDCATPCCluster() && abs(track.dcaZ()) <= cfgCutDCAz && abs(track.dcaXY()) <= cfgCutDCAxy * pow(track.pt(), -1.1) && track.tpcNClsFound() >= cfgCutTPCclu);
+      default:
+        return false;
+    }
   }
 
   template <typename TTrack>
