@@ -214,9 +214,10 @@ struct SGCandProducer {
       udhelpers::getFITinfo(fitInfo, newbc, bcs, ft0s, fv0as, fdds);
       // update SG candidates tables
       outputCollisions(bc.globalBC(), bc.runNumber(),
-                       collision.posX(), collision.posY(), collision.posZ(),
+                       collision.posX(), collision.posY(), collision.posZ(), collision.flags(),
                        collision.numContrib(), udhelpers::netCharge<true>(tracks),
                        1.); // rtrwTOF); //omit the calculation to speed up the things while skimming
+
       outputSGCollisions(issgevent);
       outputCollisionsSels(fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.timeFT0A, fitInfo.timeFT0C,
                            fitInfo.triggerMaskFT0,

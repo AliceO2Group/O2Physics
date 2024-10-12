@@ -917,7 +917,7 @@ struct UpcCandProducer {
       RgtrwTOF = RgtrwTOF / static_cast<float>(numContrib);
       // store used tracks
       fillBarrelTracks(barrelTracks, barrelTrackIDs, candID, globalBC, closestBcITSTPC, mcBarrelTrackLabels, ambBarrelTrBCs);
-      eventCandidates(globalBC, runNumber, dummyX, dummyY, dummyZ, numContrib, netCharge, RgtrwTOF);
+      eventCandidates(globalBC, runNumber, dummyX, dummyY, dummyZ, bcs.iteratorAt(0).flags(), numContrib, netCharge, RgtrwTOF);
       eventCandidatesSels(fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.timeFT0A, fitInfo.timeFT0C, fitInfo.triggerMaskFT0,
                           fitInfo.ampFDDA, fitInfo.ampFDDC, fitInfo.timeFDDA, fitInfo.timeFDDC, fitInfo.triggerMaskFDD,
                           fitInfo.ampFV0A, fitInfo.timeFV0A, fitInfo.triggerMaskFV0A,
@@ -982,7 +982,7 @@ struct UpcCandProducer {
       RgtrwTOF = RgtrwTOF / static_cast<float>(numContrib);
       // store used tracks
       fillBarrelTracks(barrelTracks, barrelTrackIDs, candID, globalBC, closestBcITSTPC, mcBarrelTrackLabels, ambBarrelTrBCs);
-      eventCandidates(globalBC, runNumber, dummyX, dummyY, dummyZ, numContrib, netCharge, RgtrwTOF);
+      eventCandidates(globalBC, runNumber, dummyX, dummyY, dummyZ, bcs.iteratorAt(0).flags(), numContrib, netCharge, RgtrwTOF);
       eventCandidatesSels(fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.timeFT0A, fitInfo.timeFT0C, fitInfo.triggerMaskFT0,
                           fitInfo.ampFDDA, fitInfo.ampFDDC, fitInfo.timeFDDA, fitInfo.timeFDDC, fitInfo.triggerMaskFDD,
                           fitInfo.ampFV0A, fitInfo.timeFV0A, fitInfo.triggerMaskFV0A,
@@ -1159,7 +1159,7 @@ struct UpcCandProducer {
       // store used tracks
       fillFwdTracks(fwdTracks, fwdTrackIDs, candID, bc, bc, mcFwdTrackLabels);
       fillBarrelTracks(barrelTracks, barrelTrackIDs, candID, bc, bc, mcBarrelTrackLabels, ambBarrelTrBCs);
-      eventCandidates(bc, runNumber, dummyX, dummyY, dummyZ, numContrib, netCharge, RgtrwTOF);
+      eventCandidates(bc, runNumber, dummyX, dummyY, dummyZ, bcs.iteratorAt(0).flags(), numContrib, netCharge, RgtrwTOF);
       eventCandidatesSels(fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.timeFT0A, fitInfo.timeFT0C, fitInfo.triggerMaskFT0,
                           fitInfo.ampFDDA, fitInfo.ampFDDC, fitInfo.timeFDDA, fitInfo.timeFDDC, fitInfo.triggerMaskFDD,
                           fitInfo.ampFV0A, fitInfo.timeFV0A, fitInfo.triggerMaskFV0A,
@@ -1379,7 +1379,7 @@ struct UpcCandProducer {
       }
       // store used tracks
       fillFwdTracks(fwdTracks, trkCandIDs, candID, globalBC, closestBcMCH, mcFwdTrackLabels);
-      eventCandidates(globalBC, runNumber, dummyX, dummyY, dummyZ, numContrib, netCharge, RgtrwTOF);
+      eventCandidates(globalBC, runNumber, dummyX, dummyY, dummyZ, bcs.iteratorAt(0).flags(), numContrib, netCharge, RgtrwTOF);
       eventCandidatesSels(fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.timeFT0A, fitInfo.timeFT0C, fitInfo.triggerMaskFT0,
                           fitInfo.ampFDDA, fitInfo.ampFDDC, fitInfo.timeFDDA, fitInfo.timeFDDC, fitInfo.triggerMaskFDD,
                           fitInfo.ampFV0A, fitInfo.timeFV0A, fitInfo.triggerMaskFV0A,
@@ -1574,7 +1574,7 @@ struct UpcCandProducer {
       }
       // store used tracks
       fillFwdTracks(fwdTracks, trkCandIDs, candID, globalBC, closestBcMCH, mcFwdTrackLabels);
-      eventCandidates(globalBC, runNumber, dummyX, dummyY, dummyZ, numContrib, netCharge, RgtrwTOF);
+      eventCandidates(globalBC, runNumber, dummyX, dummyY, dummyZ, bcs.iteratorAt(0).flags(), numContrib, netCharge, RgtrwTOF);
       eventCandidatesSels(fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.timeFT0A, fitInfo.timeFT0C, fitInfo.triggerMaskFT0,
                           fitInfo.ampFDDA, fitInfo.ampFDDC, fitInfo.timeFDDA, fitInfo.timeFDDC, fitInfo.triggerMaskFDD,
                           fitInfo.ampFV0A, fitInfo.timeFV0A, fitInfo.triggerMaskFV0A,
