@@ -69,35 +69,42 @@ struct EventByEventQuantities {
 } ebye;                      // "ebye" is a common label for objects in this struct
 
 // *) QA:
-//    Remark: I keep new histograms in this group, until I need them permanently in the analysis. Then, they are moved to EventHistograms or ParticleHistograms (yes, even if they are 2D).
+//    Remark 1: I keep new histograms in this group, until I need them permanently in the analysis. Then, they are moved to EventHistograms or ParticleHistograms (yes, even if they are 2D).
+//    Remark 2: All 2D histograms book as TH2F, due to "stmem error" in terminate (see .cxx for further details)
 struct QualityAssurance {
-  TList* fQAList = NULL;                                                          //!<! base list to hold all QA output object
-  TProfile* fQAHistogramsPro = NULL;                                              //!<! keeps flags relevant for the QA histograms
-  Bool_t fCheckUnderflowAndOverflow = kFALSE;                                     // check and bail out if in event and particle histograms there are entries which went to underflow or overflow bins
-  TH2D* fQAEventHistograms2D[eQAEventHistograms2D_N][2][2] = {{{NULL}}};          //! [ type - see enum eQAEventHistograms2D ][reco,sim][before, after particle cuts]
-  Bool_t fFillQAEventHistograms2D = kTRUE;                                        // if kFALSE, all 2D event histograms are not filled. if kTRUE, the ones for which fBookQAEventHistograms2D[...] is kTRUE, are filled
-  Bool_t fBookQAEventHistograms2D[eQAEventHistograms2D_N] = {kTRUE};              // book or not this 2D histogram, see configurable cfBookQAEventHistograms2D
-  Double_t fEventHistogramsBins2D[eQAEventHistograms2D_N][2][3] = {{{0.}}};       // [type - see enum][x,y][nBins,min,max]
-  TString fEventHistogramsName2D[eQAEventHistograms2D_N] = {""};                  // name of fQAEventHistograms2D, determined programatically from other 1D names, to ease bookkeeping
-  TH2D* fQAParticleHistograms2D[eQAParticleHistograms2D_N][2][2] = {{{NULL}}};    //! [ type - see enum eQAParticleHistograms2D ][reco,sim][before, after particle cuts]
+  TList* fQAList = NULL;                                                    //!<! base list to hold all QA output object
+  TProfile* fQAHistogramsPro = NULL;                                        //!<! keeps flags relevant for the QA histograms
+  Bool_t fCheckUnderflowAndOverflow = kFALSE;                               // check and bail out if in event and particle histograms there are entries which went to underflow or overflow bins
+  TH2F* fQAEventHistograms2D[eQAEventHistograms2D_N][2][2] = {{{NULL}}};    //! [ type - see enum eQAEventHistograms2D ][reco,sim][before, after particle cuts]
+  Bool_t fFillQAEventHistograms2D = kTRUE;                                  // if kFALSE, all 2D event histograms are not filled. if kTRUE, the ones for which fBookQAEventHistograms2D[...] is kTRUE, are filled
+  Bool_t fBookQAEventHistograms2D[eQAEventHistograms2D_N] = {kTRUE};        // book or not this 2D histogram, see configurable cfBookQAEventHistograms2D
+  Double_t fEventHistogramsBins2D[eQAEventHistograms2D_N][2][3] = {{{0.}}}; // [type - see enum][x,y][nBins,min,max]
+  TString fEventHistogramsName2D[eQAEventHistograms2D_N] = {""};            // name of fQAEventHistograms2D, determined programatically from other 1D names, to ease bookkeeping
+  // Int_t fQAEventHistograms2DRebin[eQAEventHistograms2D_N][2] = {{1}};             // to reduce memory consumption, use this number to merge bins together (i.e. "rebinning") [type - see enum][x,y]
+  TH2F* fQAParticleHistograms2D[eQAParticleHistograms2D_N][2][2] = {{{NULL}}};    //! [ type - see enum eQAParticleHistograms2D ][reco,sim][before, after particle cuts]
   Bool_t fFillQAParticleHistograms2D = kTRUE;                                     // if kFALSE, all 2D particle histograms are not filled. if kTRUE, the ones for which fBookQAParticleHistograms2D[...] is kTRUE, are filled
   Bool_t fBookQAParticleHistograms2D[eQAParticleHistograms2D_N] = {kTRUE};        // book or not this 2D histogram, see configurable cfBookQAParticleHistograms2D
   Double_t fParticleHistogramsBins2D[eQAParticleHistograms2D_N][2][3] = {{{0.}}}; // [type - see enum][x,y][nBins,min,max]
   TString fParticleHistogramsName2D[eQAParticleHistograms2D_N] = {""};            // name of fQAParticleHistograms2D, determined programatically from other 1D names, to ease bookkeeping
-  Double_t fCentrality[eCentralityEstimators_N] = {0.};                           // used mostly in QA correlation plots
-  TString fCentralityEstimatorName[eCentralityEstimators_N] = {""};               //
-} qa;                                                                             // "qa" is a common label for objects in this struct
+  // Int_t fQAParticleHistograms2DRebin[eQAParticleHistograms2D_N][2] = {{1}};       // to reduce memory consumption, use this number to merge bins together (i.e. "rebinning") [type - see enum][x,y]
+  Double_t fCentrality[eCentralityEstimators_N] = {0.};             // used mostly in QA correlation plots
+  TString fCentralityEstimatorName[eCentralityEstimators_N] = {""}; //
+} qa;                                                               // "qa" is a common label for objects in this struct
 
 // *) Event histograms:
 struct EventHistograms {
-  TList* fEventHistogramsList = NULL;                            //!<! list to hold all control event histograms
-  TProfile* fEventHistogramsPro = NULL;                          //!<! keeps flags relevant for the control event histograms
+  TList* fEventHistogramsList = NULL;   //!<! list to hold all control event histograms
+  TProfile* fEventHistogramsPro = NULL; //!<! keeps flags relevant for the control event histograms
+  // 1D:
   TH1D* fEventHistograms[eEventHistograms_N][2][2] = {{{NULL}}}; //! [ type - see enum eEventHistograms ][reco,sim][before, after event cuts]
   Bool_t fFillEventHistograms = kTRUE;                           // if kFALSE, all event histograms are not filled. if kTRUE, the ones for which fBookEventHistograms[...] is kTRUE, are filled
   Bool_t fBookEventHistograms[eEventHistograms_N] = {kTRUE};     // book or not this histogram, see SetBookEventHistograms
   Double_t fEventHistogramsBins[eEventHistograms_N][3] = {{0.}}; // [nBins,min,max]
   TString fEventHistogramsName[eEventHistograms_N] = {""};       // name of event histogram, used both for 1D and 2D histograms
-} eh;                                                            // "eh" labels an instance of group of histograms "EventHistograms"
+  // 2D:
+  // ...
+  // Remark: All 2D event histograms are still in the QA group. Move here only the ones I will use regularly in the analysis
+} eh; // "eh" labels an instance of group of histograms "EventHistograms"
 
 // *) Event cuts:
 struct EventCuts {
@@ -120,15 +127,19 @@ struct EventCuts {
 
 // *) Particle histograms:
 struct ParticleHistograms {
-  TList* fParticleHistogramsList = NULL;                                        //!<! list to hold all control particle histograms
-  TProfile* fParticleHistogramsPro = NULL;                                      //!<! keeps flags relevant for the control particle histograms
-  TH1D* fParticleHistograms[eParticleHistograms_N][2][2] = {{{NULL}}};          //! [ type - see enum eParticleHistograms ][reco,sim][before, after particle cuts]
-  Bool_t fFillParticleHistograms = kTRUE;                                       // if kFALSE, all 1D particle histograms are not filled. if kTRUE, the ones for which fBookParticleHistograms[...] is kTRUE, are filled
-  Bool_t fBookParticleHistograms[eParticleHistograms_N] = {kTRUE};              // book or not the particular particle histogram, see configurable cfBookParticleHistograms
-  Double_t fParticleHistogramsBins[eParticleHistograms_N][3] = {{0.}};          // [nBins,min,max]
-  TString fParticleHistogramsName[eParticleHistograms_N] = {""};                // name of particle histogram, used both for 1D and 2D histograms
+  TList* fParticleHistogramsList = NULL;   //!<! list to hold all control particle histograms
+  TProfile* fParticleHistogramsPro = NULL; //!<! keeps flags relevant for the control particle histograms
+  // 1D:
+  TH1D* fParticleHistograms[eParticleHistograms_N][2][2] = {{{NULL}}}; //! [ type - see enum eParticleHistograms ][reco,sim][before, after particle cuts]
+  Bool_t fFillParticleHistograms = kTRUE;                              // if kFALSE, all 1D particle histograms are not filled.
+                                                                       // if kTRUE, the ones for which fBookParticleHistograms[...] is kTRUE, are filled
+  Bool_t fBookParticleHistograms[eParticleHistograms_N] = {kTRUE};     // book or not the particular particle histogram, see configurable cfBookParticleHistograms
+  Double_t fParticleHistogramsBins[eParticleHistograms_N][3] = {{0.}}; // [nBins,min,max]
+  TString fParticleHistogramsName[eParticleHistograms_N] = {""};       // name of particle histogram, used both for 1D and 2D histograms
+  // 2D:
   TH2D* fParticleHistograms2D[eParticleHistograms2D_N][2][2] = {{{NULL}}};      //! [ type - see enum eParticleHistograms2D ][reco,sim][before, after particle cuts]
-  Bool_t fFillParticleHistograms2D = kTRUE;                                     // if kFALSE, all 2D particle histograms are not filled. if kTRUE, the ones for which fBookParticleHistograms2D[...] is kTRUE, are filled
+  Bool_t fFillParticleHistograms2D = kTRUE;                                     // if kFALSE, all 2D particle histograms are not filled.
+                                                                                // if kTRUE, the ones for which fBookParticleHistograms2D[...] is kTRUE, are filled
   Bool_t fBookParticleHistograms2D[eParticleHistograms2D_N] = {kTRUE};          // book or not this 2D histogram, see configurable cfBookParticleHistograms2D
   Double_t fParticleHistogramsBins2D[eParticleHistograms2D_N][2][3] = {{{0.}}}; // [type - see enum][x,y][nBins,min,max]
   TString fParticleHistogramsName2D[eParticleHistograms2D_N] = {""};            // name of particle histogram 2D, determined programatically from two 1D
