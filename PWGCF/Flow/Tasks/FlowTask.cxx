@@ -528,7 +528,7 @@ struct FlowTask {
     auto multNTracksPV = collision.multNTracksPV();
     auto occupancy = collision.trackOccupancyInTimeRange();
 
-    if (abs(vtxz) > cfgCutVertex)
+    if (fabs(vtxz) > cfgCutVertex)
       return 0;
     if (multNTracksPV < fMultPVCutLow->Eval(centrality))
       return 0;
@@ -542,7 +542,7 @@ struct FlowTask {
       return 0;
 
     // V0A T0A 5 sigma cut
-    if (abs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > 5 * fT0AV0ASigma->Eval(collision.multFT0A()))
+    if (fabs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > 5 * fT0AV0ASigma->Eval(collision.multFT0A()))
       return 0;
 
     return 1;
@@ -573,11 +573,11 @@ struct FlowTask {
       case 2:
         return (track.isGlobalTrackWoTPCCluster() && track.tpcNClsFound() >= cfgCutTPCclu);
       case 3:
-        return (track.isGlobalTrackWoPtEta() && (abs(track.eta()) < cfgCutEta) && (track.pt() > cfgCutPtMin) && (track.pt() < cfgCutPtMax));
+        return (track.isGlobalTrackWoPtEta() && (fabs(track.eta()) < cfgCutEta) && (track.pt() > cfgCutPtMin) && (track.pt() < cfgCutPtMax));
       case 4:
-        return (track.isGlobalTrackWoDCA() && abs(track.dcaZ()) <= cfgCutDCAz && abs(track.dcaXY()) <= cfgCutDCAxy * pow(track.pt(), -1.1));
+        return (track.isGlobalTrackWoDCA() && fabs(track.dcaZ()) <= cfgCutDCAz && fabs(track.dcaXY()) <= cfgCutDCAxy * pow(track.pt(), -1.1));
       case 5:
-        return (track.isGlobalTrackWoDCATPCCluster() && abs(track.dcaZ()) <= cfgCutDCAz && abs(track.dcaXY()) <= cfgCutDCAxy * pow(track.pt(), -1.1) && track.tpcNClsFound() >= cfgCutTPCclu);
+        return (track.isGlobalTrackWoDCATPCCluster() && fabs(track.dcaZ()) <= cfgCutDCAz && fabs(track.dcaXY()) <= cfgCutDCAxy * pow(track.pt(), -1.1) && track.tpcNClsFound() >= cfgCutTPCclu);
       default:
         return false;
     }
