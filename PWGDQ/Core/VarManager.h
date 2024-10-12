@@ -334,6 +334,7 @@ class VarManager : public TObject
     kIsSingleGapA, // Rapidity gap on side A
     kIsSingleGapC, // Rapidity gap on side C
     kIsSingleGap,  // Rapidity gap on either side
+    kIsITSUPCMode, // UPC mode used for event
     kTwoEvPosZ1,   // vtx-z for collision 1 in two events correlations
     kTwoEvPosZ2,   // vtx-z for collision 2 in two events correlations
     kTwoEvPosR1,   // vtx-R for collision 1 in two events correlations
@@ -718,7 +719,8 @@ class VarManager : public TObject
   enum EventFilters {
     kDoubleGap = 0,
     kSingleGapA,
-    kSingleGapC
+    kSingleGapC,
+    kITSUPCMode
   };
 
   enum MuonExtrapolation {
@@ -1465,6 +1467,9 @@ void VarManager::FillEvent(T const& event, float* values)
       values[kIsSingleGapC] = (event.tag_bit(56 + kSingleGapC) > 0);
       values[kIsSingleGap] = values[kIsSingleGapA] || values[kIsSingleGapC];
     }
+    if (fgUsedVars[kIsITSUPCMode]) {
+      values[kIsITSUPCMode] = (event.tag_bit(56 + kITSUPCMode) > 0);
+    }
     values[kCollisionTime] = event.collisionTime();
     values[kCollisionTimeRes] = event.collisionTimeRes();
   }
@@ -1667,6 +1672,7 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kIsSingleGapA] = (event.eventFilter() & (uint64_t(1) << kSingleGapA)) > 0;
     values[kIsSingleGapC] = (event.eventFilter() & (uint64_t(1) << kSingleGapC)) > 0;
     values[kIsSingleGap] = values[kIsSingleGapA] || values[kIsSingleGapC];
+    values[kIsITSUPCMode] = (event.eventFilter() & (uint64_t(1) << kITSUPCMode)) > 0;
   }
 
   if constexpr ((fillMap & ReducedZdc) > 0) {
