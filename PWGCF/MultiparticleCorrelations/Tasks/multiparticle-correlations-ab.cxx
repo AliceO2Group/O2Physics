@@ -189,7 +189,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   // -------------------------------------------
 
   // C) Process only simulated data:
-  void processSim(CollisionSim const& collision, aod::BCs const&, TracksSim const& tracks)
+  void processSim(CollisionSim const& /*collision*/, aod::BCs const&, TracksSim const& /*tracks*/)
   {
     // Steer<eSim>(collision, tracks); // TBI 20240517 not ready yet, but I do not really need this one urgently, since RecSim is working, and I need that one for efficiencies...
   }
@@ -216,7 +216,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   // -------------------------------------------
 
   // F) Process only converted simulated Run 2 data:
-  void processSim_Run2(CollisionSim const& collision) // TBI 20240517 extend this subscription eventually
+  void processSim_Run2(CollisionSim const& /*collision*/) // TBI 20240517 extend this subscription eventually
   {
     // Steer<eSim_Run2>(collision, tracks); // TBI 20240517 not ready yet, but I do not really need this one urgently, since RecSim_Run2 is working, and I need that one for efficiencies...
   }
@@ -234,7 +234,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   // -------------------------------------------
 
   // H) Process both converted reconstructed and corresponding MC truth simulated Run 1 data;
-  void processRecSim_Run1(CollisionRecSim_Run1 const& collision, aod::BCs const&, TracksRecSim const& tracks, aod::McParticles const&, aod::McCollisions const&)
+  void processRecSim_Run1(CollisionRecSim_Run1 const& /*collision*/, aod::BCs const&, TracksRecSim const& /*tracks*/, aod::McParticles const&, aod::McCollisions const&)
   {
     // Steer<eRecAndSim_Run1>(collision, tracks); // TBI 20240517 not ready yet, but for benchmarking in any case I need only "Rec"
   }
