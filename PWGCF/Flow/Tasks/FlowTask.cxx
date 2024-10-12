@@ -218,7 +218,6 @@ struct FlowTask {
         BootstrapArray[i][kPtVarParB_InGap08] = registry.add<TProfile>(Form("BootstrapContainer_%d/PtVariance_partB_WithinGap08", i), "", {HistType::kTProfile, {axisIndependent}});
       }
     }
-    
 
     o2::framework::AxisSpec axis = axisPt;
     int nPtBins = axis.binEdges.size() - 1;
