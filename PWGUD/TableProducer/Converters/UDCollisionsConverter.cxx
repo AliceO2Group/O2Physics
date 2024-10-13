@@ -37,8 +37,7 @@ struct UDCollisionsConverter {
 
     for (const auto& collision : collisions) {
 
-      udCollisions_001(collision.index(),
-                       collision.globalBC(),
+      udCollisions_001(collision.globalBC(),
                        collision.runNumber(),
                        collision.posX(),
                        collision.posY(),
