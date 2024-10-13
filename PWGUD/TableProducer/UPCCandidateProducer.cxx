@@ -89,7 +89,7 @@ struct UpcCandProducer {
   // QA histograms
   HistogramRegistry histRegistry{"HistRegistry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  using BCsWithBcSels = o2::soa::Join<o2::aod::BCs, o2::aod::BcSels>;
+  using BCsWithBcSels = o2::soa::Join<o2::aod::BCs, o2::aod::BcSels, o2::aod::BCFlags>;
 
   using ForwardTracks = o2::soa::Join<o2::aod::UDFwdTracksProp, o2::aod::UDFwdTracksCovProp>;
 
@@ -722,7 +722,7 @@ struct UpcCandProducer {
 
   void createCandidatesCentral(BarrelTracks const& barrelTracks,
                                o2::aod::AmbiguousTracks const& ambBarrelTracks,
-                               o2::aod::BCs const& bcs,
+                               o2::soa::Join<o2::aod::BCs, o2::aod::BCFlags> const& bcs,
                                o2::aod::Collisions const& collisions,
                                o2::aod::FT0s const& ft0s,
                                o2::aod::FDDs const& /*fdds*/,
@@ -1210,7 +1210,7 @@ struct UpcCandProducer {
   void createCandidatesFwd(ForwardTracks const& fwdTracks,
                            o2::aod::FwdTrkCls const& fwdTrkClusters,
                            o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
-                           o2::aod::BCs const& bcs,
+                           o2::soa::Join<o2::aod::BCs, o2::aod::BCFlags> const& bcs,
                            o2::aod::Collisions const& collisions,
                            o2::aod::FT0s const& ft0s,
                            o2::aod::FDDs const& /*fdds*/,
@@ -1409,7 +1409,7 @@ struct UpcCandProducer {
   void createCandidatesFwdGlobal(ForwardTracks const& fwdTracks,
                                  o2::aod::FwdTrkCls const& /*fwdTrkClusters*/,
                                  o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
-                                 o2::aod::BCs const& bcs,
+                                 o2::soa::Join<o2::aod::BCs, o2::aod::BCFlags> const& bcs,
                                  o2::aod::Collisions const& collisions,
                                  o2::aod::FT0s const& ft0s,
                                  o2::aod::FDDs const& /*fdds*/,
