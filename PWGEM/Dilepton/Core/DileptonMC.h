@@ -988,13 +988,22 @@ struct DileptonMC {
     // loop over mc stack and fill histograms for pure MC truth signals
     // all MC tracks which belong to the MC event corresponding to the current reconstructed event
 
+    std::vector<int> used_mccollisionIds; // used mc collisionIds
+    used_mccollisionIds.reserve(collisions.size());
+
     for (auto& collision : collisions) {
+      auto mccollision = collision.template emmcevent_as<TMCCollisions>();
+      if (std::find(used_mccollisionIds.begin(), used_mccollisionIds.end(), mccollision.globalIndex()) != used_mccollisionIds.end()) {
+        // LOGF(info, "same mc collision is repeated. continue;");
+        continue;
+      }
+      used_mccollisionIds.emplace_back(mccollision.globalIndex());
+
       float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
 
-      auto mccollision = collision.template emmcevent_as<TMCCollisions>();
       if (cfgEventGeneratorType >= 0 && mccollision.getSubGeneratorId() != cfgEventGeneratorType) {
         continue;
       }
@@ -1485,6 +1494,8 @@ struct DileptonMC {
         }
       } // end of true LS++ pair loop
     } // end of collision loop
+    used_mccollisionIds.clear();
+    used_mccollisionIds.shrink_to_fit();
   }
 
   template <typename TCollision, typename TTrack1, typename TTrack2, typename TCut>
