@@ -14,6 +14,7 @@
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
+#include "ReconstructionDataFormats/Vertex.h"
 #include "PWGUD/DataModel/UDTables.h"
 #include "PWGUD/Core/UPCHelpers.h"
 #include "PWGUD/Core/DGSelector.h"
@@ -271,8 +272,7 @@ struct DGCandProducer {
       auto rtrwTOF = udhelpers::rPVtrwTOF<true>(tracks, collision.numContrib());
       int upc_flag = 0;
       ushort flags = collision.flags();
-      const ushort UPCModeMask = 0x1 << 1;
-      if (flags & UPCModeMask)
+      if (flags & Vertex::UPCMode)
         upc_flag = 1;
       outputCollisions(bc.globalBC(), bc.runNumber(),
                        collision.posX(), collision.posY(), collision.posZ(), upc_flag,
