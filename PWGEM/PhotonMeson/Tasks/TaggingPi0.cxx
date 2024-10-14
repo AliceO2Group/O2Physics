@@ -313,10 +313,10 @@ struct TaggingPi0 {
           custom_cut->SetM02Range(EMC_minM02, EMC_maxM02);
           custom_cut->SetTimeRange(EMC_minTime, EMC_maxTime);
 
-          custom_cut->SetTrackMatchingEta([&a, &b, &c](float pT) {
+          custom_cut->SetTrackMatchingEta([a, b, c](float pT) {
             return a + pow(pT + b, c);
           });
-          custom_cut->SetTrackMatchingPhi([&d, &e, &f](float pT) {
+          custom_cut->SetTrackMatchingPhi([d, e, f](float pT) {
             return d + pow(pT + e, f);
           });
 

@@ -87,6 +87,10 @@ struct lambdapolarization {
   Configurable<float> cfgCentSel{"cfgCentSel", 80., "Centrality selection"};
   Configurable<int> cfgCentEst{"cfgCentEst", 1, "Centrality estimator, 1: FT0C, 2: FT0M"};
 
+  Configurable<bool> cfgPVSel{"cfgPVSel", false, "Additional PV selection flag for syst"};
+  Configurable<float> cfgPV{"cfgPV", 8.0, "Additional PV selection range for syst"};
+  Configurable<bool> cfgAddEvtSelPileup{"cfgAddEvtSelPileup", false, "flag for additional pileup selection"};
+
   Configurable<float> cfgv0radiusMin{"cfgv0radiusMin", 1.2, "minimum decay radius"};
   Configurable<float> cfgDCAPosToPVMin{"cfgDCAPosToPVMin", 0.05, "minimum DCA to PV for positive track"};
   Configurable<float> cfgDCANegToPVMin{"cfgDCANegToPVMin", 0.2, "minimum DCA to PV for negative track"};
@@ -272,6 +276,12 @@ struct lambdapolarization {
       return 0;
     }
     if (!collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
+      return 0;
+    }
+    if (cfgPVSel && std::abs(collision.posZ()) > cfgPV) {
+      return 0;
+    }
+    if (cfgAddEvtSelPileup && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       return 0;
     }
 

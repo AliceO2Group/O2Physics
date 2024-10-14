@@ -107,6 +107,9 @@ TH2F* fhdEdxIPTPCB = nullptr;
 TH2F* fhdEdxA[kIdBfNoOfSpecies + 1] = {nullptr};
 TH2F* fhdEdxIPTPCA[kIdBfNoOfSpecies + 1] = {nullptr};
 
+TH1F* fhMassB = nullptr;
+TH1F* fhMassA[kIdBfNoOfSpecies + 1] = {nullptr};
+
 TH2S* fhDoublePID = nullptr;
 
 TH1F* fhDCAxyB = nullptr;
