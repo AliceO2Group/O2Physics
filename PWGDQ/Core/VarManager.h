@@ -3833,6 +3833,8 @@ void VarManager::FillQVectorFromGFW(C const& /*collision*/, A const& compA11, A 
   values[kM1111REF] = S41A - 6. * S12A * S21A + 8. * S13A * S11A + 3. * S22A - 6. * S14A;
   values[kCORR2REF] = (norm(compA21) - S12A) / values[kM11REF];
   values[kCORR4REF] = (pow(norm(compA21), 2) + norm(compA42) - 2. * (compA42 * conj(compA21) * conj(compA21)).real() + 8. * (compA23 * conj(compA21)).real() - 4. * S12A * norm(compA21) - 6. * S14A - 2. * S22A) / values[kM1111REF];
+  values[kCORR2REF] = std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF]) ? 0 : values[kCORR2REF];
+  values[kCORR4REF] = std::isnan(values[kCORR4REF]) || std::isinf(values[kCORR4REF]) ? 0 : values[kCORR4REF];
 
   // TODO: provide different computations for R
   // Compute the R factor using the 2 sub-events technique for second and third harmonic
