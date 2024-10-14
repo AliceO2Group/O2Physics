@@ -416,7 +416,8 @@ struct DGBCCandProducer {
           rtrwTOF = udhelpers::rPVtrwTOF<true>(colTracks, col.numContrib());
           nCharge = udhelpers::netCharge<true>(colTracks);
           int flag = 0;
-          if (col.flags()==2) flag = 1;
+          if (col.flags() == 2)
+            flag = 1;
           updateUDTables(false, col.globalIndex(), bc.globalBC(), bc.runNumber(), col.posX(), col.posY(), col.posZ(), flag,
                          col.numContrib(), nCharge, rtrwTOF, colTracks, fitInfo);
         }
@@ -614,7 +615,8 @@ struct DGBCCandProducer {
             auto nCharge = udhelpers::netCharge<true>(colTracks);
             udhelpers::getFITinfo(fitInfo, bc, bcs, ft0s, fv0as, fdds);
             int flag = 0;
-            if (col.flags()==2) flag = 1;
+            if (col.flags() == 2)
+              flag = 1;
             updateUDTables(false, col.globalIndex(), bcnum, bc.runNumber(), col.posX(), col.posY(), col.posZ(), flag,
                            col.numContrib(), nCharge, rtrwTOF, colTracks, fitInfo);
             // fill UDZdcs
@@ -685,7 +687,8 @@ struct DGBCCandProducer {
 
             int64_t colID = withCollision ? col.globalIndex() : -1;
             int flag = 0;
-            if (col.flags()==2) flag = 1;
+            if (col.flags() == 2)
+              flag = 1;
             updateUDTables(false, colID, bcnum, tibc.runNumber(), vpos[0], vpos[1], vpos[2], flag,
                            tracksArray.size(), nCharge, rtrwTOF, tracksArray, fitInfo);
             // fill UDZdcs
