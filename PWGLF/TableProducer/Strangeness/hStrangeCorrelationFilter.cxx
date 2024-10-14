@@ -217,7 +217,8 @@ struct hstrangecorrelationfilter {
       triggerTrack(
         track.collisionId(),
         false, // if you decide to check real data for primaries, you'll have a hard time
-        track.globalIndex());
+        track.globalIndex(),
+        0);
     }
   }
 
@@ -239,14 +240,17 @@ struct hstrangecorrelationfilter {
       if (!isValidTrigger(track))
         continue;
       bool physicalPrimary = false;
+      float origPt = -1;
       if (track.has_mcParticle()) {
         auto mcParticle = track.mcParticle();
         physicalPrimary = mcParticle.isPhysicalPrimary();
+        origPt = mcParticle.pt();
       }
       triggerTrack(
         track.collisionId(),
         physicalPrimary,
-        track.globalIndex());
+        track.globalIndex(),
+        origPt);
     }
   }
 

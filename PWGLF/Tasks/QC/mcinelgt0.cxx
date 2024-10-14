@@ -48,7 +48,7 @@ struct mcInelGt0 {
         if (!track.isPVContributor()) {
           continue;
         }
-        if (abs(track.eta()) > 1) {
+        if (std::abs(track.eta()) > 1) {
           LOG(info) << "Track with eta > 1: " << track.eta()
                     << (track.hasTPC()
                           ? "hasTPC"
