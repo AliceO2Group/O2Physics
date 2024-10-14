@@ -270,7 +270,7 @@ struct DGCandProducer {
       // update DG candidates tables
       auto rtrwTOF = udhelpers::rPVtrwTOF<true>(tracks, collision.numContrib());
       int flag = 0;
-      if (col.flags()) flag = 1;
+      if (collision.flags()) flag = 1;
       outputCollisions(bc.globalBC(), bc.runNumber(),
                        collision.posX(), collision.posY(), collision.posZ(), flag,
                        collision.numContrib(), udhelpers::netCharge<true>(tracks),
