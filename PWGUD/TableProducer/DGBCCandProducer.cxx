@@ -384,7 +384,7 @@ struct DGBCCandProducer {
 
     // check if DG event
     // distinguish between cases with and without associated BC
-    // 1. candidate has associated BC and associated collision    -> vertex position: col.[posX(), posY(), posZ()]
+    // 1. candidate has associated BC and associated collision    ->  position: col.[posX(), posY(), posZ()]
     // 2. candidate has associated BC but no associated collision ->                  [-2., 2., -2.]
     // 3. candidate has no associated BC                          ->                  [-3., 3., -3.]
     int isDG = -1;
@@ -418,7 +418,7 @@ struct DGBCCandProducer {
           nCharge = udhelpers::netCharge<true>(colTracks);
           int upc_flag = 0;
           ushort flags = col.flags();
-          if (flags & o2::aod::dataformats::Vertex::Flags::UPCMode)
+          if (flags & dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode)
             upc_flag = 1;
           updateUDTables(false, col.globalIndex(), bc.globalBC(), bc.runNumber(), col.posX(), col.posY(), col.posZ(), upc_flag,
                          col.numContrib(), nCharge, rtrwTOF, colTracks, fitInfo);
@@ -618,7 +618,7 @@ struct DGBCCandProducer {
             udhelpers::getFITinfo(fitInfo, bc, bcs, ft0s, fv0as, fdds);
             int upc_flag = 0;
             ushort flags = col.flags();
-            if (flags & o2::aod::dataformats::Vertex::Flags::UPCMode)
+            if (flags & dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode)
               upc_flag = 1;
             updateUDTables(false, col.globalIndex(), bcnum, bc.runNumber(), col.posX(), col.posY(), col.posZ(), upc_flag,
                            col.numContrib(), nCharge, rtrwTOF, colTracks, fitInfo);
@@ -691,7 +691,7 @@ struct DGBCCandProducer {
             int64_t colID = withCollision ? col.globalIndex() : -1;
             int upc_flag = 0;
             ushort flags = col.flags();
-            if (flags & o2::aod::dataformats::Vertex::Flags::UPCMode)
+            if (flags & dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode)
               upc_flag = 1;
             updateUDTables(false, colID, bcnum, tibc.runNumber(), vpos[0], vpos[1], vpos[2], upc_flag,
                            tracksArray.size(), nCharge, rtrwTOF, tracksArray, fitInfo);
