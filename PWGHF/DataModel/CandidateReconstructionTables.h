@@ -34,6 +34,7 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/Utils/utilsPid.h"
 
 namespace o2::aod
 {
@@ -60,33 +61,6 @@ using TracksPidTinyMu = soa::Join<aod::pidTPCMu, aod::pidTOFMu>;
 using TracksPidTinyPi = soa::Join<aod::pidTPCPi, aod::pidTOFPi>;
 using TracksPidTinyKa = soa::Join<aod::pidTPCKa, aod::pidTOFKa>;
 using TracksPidTinyPr = soa::Join<aod::pidTPCPr, aod::pidTOFPr>;
-
-namespace pid_tpc_tof_utils
-{
-
-/// Function to combine TPC and TOF NSigma
-/// \param tpcNSigma is the (binned) NSigma separation in TPC (if tiny = true)
-/// \param tofNSigma is the (binned) NSigma separation in TOF (if tiny = true)
-/// \return combined NSigma of TPC and TOF
-template <typename T1>
-T1 combineNSigma(T1 tpcNSigma, T1 tofNSigma)
-{
-  static constexpr float defaultNSigmaTolerance = .1f;
-  static constexpr float defaultNSigma = -999.f + defaultNSigmaTolerance; // -999.f is the default value set in TPCPIDResponse.h and PIDTOF.h
-
-  if ((tpcNSigma > defaultNSigma) && (tofNSigma > defaultNSigma)) { // TPC and TOF
-    return std::sqrt(.5f * (tpcNSigma * tpcNSigma + tofNSigma * tofNSigma));
-  }
-  if (tpcNSigma > defaultNSigma) { // only TPC
-    return std::abs(tpcNSigma);
-  }
-  if (tofNSigma > defaultNSigma) { // only TOF
-    return std::abs(tofNSigma);
-  }
-  return tofNSigma; // no TPC nor TOF
-}
-
-} // namespace pid_tpc_tof_utils
 
 // namespace pid_tpc_tof_utils
 // {
@@ -837,12 +811,12 @@ namespace hf_cand_bplus
 {
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfCand2Prong, "_0"); // D0 index
 // MC matching result:
-DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); // reconstruction level
+DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t);         // reconstruction level
 DECLARE_SOA_COLUMN(FlagWrongCollision, flagWrongCollision, int8_t); // reconstruction level
-DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t); // generator level
-DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);       // particle origin, reconstruction level
-DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);       // particle origin, generator level
-DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);         // debug flag for mis-association reconstruction level
+DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t);         // generator level
+DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);               // particle origin, reconstruction level
+DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);               // particle origin, generator level
+DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);                 // debug flag for mis-association reconstruction level
 
 enum DecayType { BplusToD0Pi = 0 };
 
