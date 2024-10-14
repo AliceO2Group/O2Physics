@@ -272,7 +272,7 @@ struct DGCandProducer {
       auto rtrwTOF = udhelpers::rPVtrwTOF<true>(tracks, collision.numContrib());
       int upc_flag = 0;
       ushort flags = collision.flags();
-      if (flags & o2::aod::Vertex::UPCMode)
+      if (flags & o2::aod::dataformats::Vertex::Flags::)
         upc_flag = 1;
       outputCollisions(bc.globalBC(), bc.runNumber(),
                        collision.posX(), collision.posY(), collision.posZ(), upc_flag,
