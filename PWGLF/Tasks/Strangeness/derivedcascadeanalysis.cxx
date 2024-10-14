@@ -233,7 +233,6 @@ struct derivedCascadeAnalysis {
       histos.addClone("InvMassAfterSelCent1/", "InvMassAfterSelCent10/");
     }
 
-
     if (doBefSelCheck)
       histos.addClone("InvMassAfterSel/", "InvMassBefSel/");
 
