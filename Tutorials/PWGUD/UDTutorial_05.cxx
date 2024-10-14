@@ -21,7 +21,7 @@
 #include "PWGUD/Core/SGSelector.h"
 #include "PWGUD/Core/SGTrackSelector.h"
 
-//using namespace std;
+// using namespace std;
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
@@ -31,9 +31,8 @@ using namespace o2::framework::expressions;
 /// \author Anisa Khatun
 /// \date 10.10.2024
 
-
 // Struct to define the analysis task
-struct UDTutorial05{
+struct UDTutorial05 {
   // SGSelector object to manage track and collision selections
   SGSelector sgSelector;
 
@@ -45,7 +44,6 @@ struct UDTutorial05{
   Configurable<float> ZDC_cut{"ZDC", 10., "ZDC threshold"};
   Configurable<float> gap_Side{"gap", 2, "gap selection"};
 
-  
   // Track Selections
   Configurable<float> PV_cut{"PV_cut", 1.0, "Use Only PV tracks"};
   Configurable<float> dcaZ_cut{"dcaZ_cut", 2.0, "dcaZ cut"};
@@ -74,7 +72,7 @@ struct UDTutorial05{
     registry.add("GapSide", "Gap Side; Entries", kTH1F, {{4, -1.5, 2.5}});
     registry.add("TrueGapSide", "Gap Side; Entries", kTH1F, {{4, -1.5, 2.5}});
 
-      //Fill counter to see effect of each selection criteria
+    // Fill counter to see effect of each selection criteria
     auto hSelectionCounter = registry.add<TH1>("hSelectionCounter", "hSelectionCounter;;NEvents", HistType::kTH1I, {{20, 0., 20.}});
 
     TString SelectionCuts[16] = {"NoSelection", "gapside", "goodtracks", "truegap", "2collcontrib", "2goodtrk", "TPCPID", "Rap_cut", "unlikesign", "mass_cut", "coherent", "incoherent", "likesign", "mass_cut", "coherent", "incoherent"};
@@ -86,7 +84,7 @@ struct UDTutorial05{
     registry.add("hTracks", "N_{tracks}", kTH1F, {{100, -0.5, 99.5}});
     registry.add("hTracksPions", "N_{tracks}", kTH1F, {{100, -0.5, 99.5}});
     registry.add("TwoPion/h2TracksPions", "N_{tracks}", kTH1F, {{100, -0.5, 99.5}});
-    
+
     registry.add("hdEdx", "p vs dE/dx Signal", kTH2F, {{100, 0.0, 3.0}, {100, 0.0, 200.0}});
     registry.add("hdEdxPion", "p_{#pi} vs dE/dx Signal", kTH2F, {{100, 0.0, 3.0}, {100, 0.0, 200.0}});
 
@@ -98,7 +96,7 @@ struct UDTutorial05{
     registry.add("TwoPion/hNsigElvsPt2", "Pt vs NSigmaEl (t2);#it{p_{t}}, GeV/c;n#sigma_{#e}", kTH2F, {{100, 0., 2.5}, {100, -15., 15}});
     registry.add("TwoPion/hNsigMuvsPt1", "Pt vs NSigmaMu (t1);#it{p_{t}}, GeV/c;n#sigma_{#pi}", kTH2F, {{100, 0., 2.5}, {100, -15., 15}});
     registry.add("TwoPion/hNsigMuvsPt2", "Pt vs NSigmaMu (t2);#it{p_{t}}, GeV/c;n#sigma_{#pi}", kTH2F, {{100, 0., 2.5}, {100, -15., 15}});
-    
+
     registry.add("TwoPion/hPtsingle_track1", "Pt t1;#it{p_{t}}, GeV/c;", kTH1F, {{600, 0., 3.}});
     registry.add("TwoPion/hPtsingle_track2", "Pt t2;#it{p_{t}}, GeV/c;", kTH1F, {{600, 0., 3.}});
     registry.add("TwoPion/hEta_t1", "Eta of t1;#it{#eta};", kTH1F, {{100, -5., 5.}});
@@ -114,81 +112,77 @@ struct UDTutorial05{
     registry.add("TwoPion/Coherent/hMassLikeCoherent", "m_{#pi#pi} [GeV/#it{c}^{2}]", kTH1F, {{20000, 0., 20.}});
     registry.add("TwoPion/Incoherent/hMassUnlikeInCoherent", "m_{#pi#pi} [GeV/#it{c}^{2}]", kTH1F, {{20000, 0., 20.}});
     registry.add("TwoPion/Incoherent/hMassLikeInCoherent", "m_{#pi#pi} [GeV/#it{c}^{2}]", kTH1F, {{20000, 0., 20.}});
-    
+
     registry.add("TwoPion/hPt", "Pt;#it{p_{t}}, GeV/c;", kTH1D, {{1000, 0., 10.}});
     registry.add("TwoPion/hPtLike", "Pt;#it{p_{t}}, GeV/c;", kTH1D, {{1000, 0., 10.}});
     registry.add("TwoPion/hEta", "Eta;#it{#eta};", kTH1F, {{500, -10., 10.}});
     registry.add("TwoPion/hRap", "Rapidity;#it{y};", kTH1F, {{500, -10., 10.}});
     registry.add("TwoPion/hPhiSystem", "Phi;#it{#Phi};", kTH1F, {{250, 0. * TMath::Pi(), 2. * TMath::Pi()}});
     registry.add("TwoPion/hMPt", "Inv.M vs Pt;M, GeV/c^{2};#it{P_{t}}, GeV/c;", kTH2F, {{100, 0., 10.}, {100, 0., 10.}});
-   
-    
   }
 
   using udtracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksPID>;
   using udtracksfull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
-  
+
   using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced>;
-   
-//__________________________________________________________________________
+
+  //__________________________________________________________________________
   // Main process
   void process(UDCollisionsFull::iterator const& collision, udtracksfull const& tracks)
   {
-    //No selection criteria
+    // No selection criteria
     registry.fill(HIST("hSelectionCounter"), 0);
-      
-    
-    //Accessing gap sides
+
+    // Accessing gap sides
     int gapSide = collision.gapSide();
     if (gapSide < 0 || gapSide > 2)
       return;
 
     registry.fill(HIST("hSelectionCounter"), 1);
-    
-    //Accessing FIT information for further exclusivity and/or inclusivity
+
+    // Accessing FIT information for further exclusivity and/or inclusivity
     float FIT_cut[5] = {FV0_cut, FT0A_cut, FT0C_cut, FDDA_cut, FDDC_cut};
     int truegapSide = sgSelector.trueGap(collision, FIT_cut[0], FIT_cut[1], FIT_cut[2], ZDC_cut);
-      
-    //Intiating track parameters to select good tracks, values to be optimized in the configurables, parameters will be taken from SGtrackselector.h task included in the header
+
+    // Intiating track parameters to select good tracks, values to be optimized in the configurables, parameters will be taken from SGtrackselector.h task included in the header
     std::vector<float> parameters = {PV_cut, dcaZ_cut, dcaXY_cut, tpcChi2_cut, tpcNClsFindable_cut, itsChi2_cut, eta_cut, pt_cut};
-    
 
     registry.fill(HIST("GapSide"), gapSide);
     registry.fill(HIST("TrueGapSide"), truegapSide);
-      
-    //Gap side to be selected in the configuables
+
+    // Gap side to be selected in the configuables
     gapSide = truegapSide;
 
     if (gapSide == gap_Side) {
 
       registry.fill(HIST("hSelectionCounter"), 2);
-     
-    //____________________________________________________________________________________
-        
+
+      //____________________________________________________________________________________
+
       // Create LorentzVector to store all tracks, Pion tracks and TPC Pion PID
       std::vector<TLorentzVector> allTracks;
       std::vector<TLorentzVector> onlyPionTracks;
       std::vector<float> onlyPionSigma;
       std::vector<decltype(tracks.begin())> rawPionTracks;
       TLorentzVector p;
-      
+
       registry.fill(HIST("hTracks"), tracks.size());
-        
+
       for (auto t : tracks) {
         // Apply good track selection criteria
         if (!trackselector(t, parameters))
           continue;
-          
+
         double dEdx = t.tpcSignal();
 
         registry.fill(HIST("hdEdx"), t.tpcInnerParam() / t.sign(), dEdx);
-          
-        //Creating Lorenz vector to store raw tracks and piontracks
+
+        // Creating Lorenz vector to store raw tracks and piontracks
         TLorentzVector a;
         a.SetXYZM(t.px(), t.py(), t.pz(), o2::constants::physics::MassPionCharged);
         allTracks.push_back(a);
-          
-        //Apply TPC pion sigma
+
+        // Apply TPC pion sigma
         auto nSigmaPi = t.tpcNSigmaPi();
         if (fabs(nSigmaPi) < PID_cut) {
           onlyPionTracks.push_back(a);
@@ -197,44 +191,44 @@ struct UDTutorial05{
           registry.fill(HIST("hdEdxPion"), t.tpcInnerParam() / t.sign(), dEdx);
         }
       }
-        
+
       registry.fill(HIST("hTracksPions"), onlyPionTracks.size());
       //_____________________________________
       // Adding all onlypiontracks
       for (auto pion : onlyPionTracks) {
         p += pion;
       }
-     
+
       //_____________________________________
       // Selecting collisions with Two PV contributors
       if (collision.numContrib() == 2) {
-        
-          registry.fill(HIST("hSelectionCounter"), 3);
-          
-          // Selecting only Two good tracks
+
+        registry.fill(HIST("hSelectionCounter"), 3);
+
+        // Selecting only Two good tracks
         if ((rawPionTracks.size() == 2) && (onlyPionTracks.size() == 2)) {
-         
+
           registry.fill(HIST("hSelectionCounter"), 4);
-            
+
           registry.fill(HIST("TwoPion/h2TracksPions"), onlyPionTracks.size());
-            
+
           registry.fill(HIST("TwoPion/hNsigPivsPt1"), onlyPionTracks[0].Pt(), rawPionTracks[0].tpcNSigmaPi());
           registry.fill(HIST("TwoPion/hNsigPivsPt2"), onlyPionTracks[1].Pt(), rawPionTracks[1].tpcNSigmaPi());
           registry.fill(HIST("TwoPion/hTPCsig"), rawPionTracks[0].tpcSignal(), rawPionTracks[1].tpcSignal());
           registry.fill(HIST("TwoPion/hNsigPi1vsPi2"), rawPionTracks[0].tpcNSigmaPi(), rawPionTracks[1].tpcNSigmaPi());
 
-         //Make sure two good tracks are with TPC pion sigma limit
+          // Make sure two good tracks are with TPC pion sigma limit
           if ((onlyPionSigma[0] * onlyPionSigma[0] + onlyPionSigma[1] * onlyPionSigma[1]) > (PID_cut * PID_cut)) {
             return;
           }
-            
+
           registry.fill(HIST("hSelectionCounter"), 5);
-            
-          //Rapidity of midrapidity acceptance
+
+          // Rapidity of midrapidity acceptance
           if ((p.Rapidity() < -Rap_cut) || (p.Rapidity() > Rap_cut)) {
             return;
           }
-            
+
           registry.fill(HIST("hSelectionCounter"), 6);
 
           // Two oppsotite sign tracks
@@ -243,7 +237,7 @@ struct UDTutorial05{
             registry.fill(HIST("hSelectionCounter"), 7);
             registry.fill(HIST("TwoPion/hMassUnlike"), p.M());
 
-            //Flexible mass limits, can be selected in the configurable
+            // Flexible mass limits, can be selected in the configurable
             if ((p.M() > Mass_Min) && (p.M() < Mass_Max)) {
 
               registry.fill(HIST("hSelectionCounter"), 8);
@@ -254,7 +248,7 @@ struct UDTutorial05{
               registry.fill(HIST("TwoPion/hPhiSystem"), p.Phi());
               registry.fill(HIST("TwoPion/hMPt"), p.M(), p.Pt());
 
-              //flexible pt limit for selecting coherent Rho(0)
+              // flexible pt limit for selecting coherent Rho(0)
               if (p.Pt() < Pt_coherent) {
 
                 registry.fill(HIST("hSelectionCounter"), 9);
@@ -274,10 +268,10 @@ struct UDTutorial05{
                 registry.fill(HIST("TwoPion/hP1"), onlyPionTracks[0].P(), rawPionTracks[0].tpcSignal());
                 registry.fill(HIST("TwoPion/hP2"), onlyPionTracks[1].P(), rawPionTracks[1].tpcSignal());
                 registry.fill(HIST("TwoPion/hTPCsig1"), rawPionTracks[0].tpcSignal(), rawPionTracks[1].tpcSignal());
-                  
+
                 registry.fill(HIST("TwoPion/Coherent/hMassUnlikeCoherent"), p.M());
               }
-                //Incoherent Rho(0) selection
+              // Incoherent Rho(0) selection
               if (p.Pt() > Pt_coherent) {
                 registry.fill(HIST("hSelectionCounter"), 10);
                 registry.fill(HIST("TwoPion/Incoherent/hMassUnlikeInCoherent"), p.M());
@@ -287,29 +281,27 @@ struct UDTutorial05{
 
           // Same charge particles
           if (rawPionTracks[0].sign() == rawPionTracks[1].sign()) {
-              
+
             registry.fill(HIST("hSelectionCounter"), 11);
             registry.fill(HIST("TwoPion/hMassLike"), p.M());
-              
-            //Mass limit
+
+            // Mass limit
             if ((p.M() > Mass_Min) && (p.M() < Mass_Max)) {
-                
+
               registry.fill(HIST("hSelectionCounter"), 12);
               registry.fill(HIST("TwoPion/hPtLike"), p.Pt());
-                
-              //Coherent Rho(0) selection
+
+              // Coherent Rho(0) selection
               if (p.Pt() < Pt_coherent) {
-                  
+
                 registry.fill(HIST("hSelectionCounter"), 13);
                 registry.fill(HIST("TwoPion/Coherent/hMassLikeCoherent"), p.M());
-                  
               }
-                //Incoherent Rho(0) selection
+              // Incoherent Rho(0) selection
               if (p.Pt() > Pt_coherent) {
-                  
+
                 registry.fill(HIST("hSelectionCounter"), 14);
                 registry.fill(HIST("TwoPion/Incoherent/hMassLikeInCoherent"), p.M());
-                  
               }
             }
           }

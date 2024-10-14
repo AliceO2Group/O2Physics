@@ -60,8 +60,7 @@ DECLARE_SOA_TABLE(TREE, "AOD", "Tree",
                   tree::PTS,
                   tree::ETAS,
                   tree::PHIS,
-                  tree::SIGNS
-);
+                  tree::SIGNS);
 
 } // namespace o2::aod
 
@@ -76,7 +75,6 @@ struct UDTutorial07 {
   Configurable<float> FDDC_cut{"FDDC", 10000., "FDDC threshold"};
   Configurable<float> ZDC_cut{"ZDC", 10., "ZDC threshold"};
   Configurable<float> gap_Side{"gap", 2, "gap selection"};
-
 
   // Track Selections
   Configurable<float> PV_cut{"PV_cut", 1.0, "Use Only PV tracks"};
@@ -105,10 +103,10 @@ struct UDTutorial07 {
 
     registry.add("GapSide", "Gap Side; Entries", kTH1F, {{4, -1.5, 2.5}});
     registry.add("TrueGapSide", "Gap Side; Entries", kTH1F, {{4, -1.5, 2.5}});
-      
-    //Fill counter to see effect of each selection criteria
+
+    // Fill counter to see effect of each selection criteria
     auto hSelectionCounter = registry.add<TH1>("hSelectionCounter", "hSelectionCounter;;NEvents", HistType::kTH1I, {{10, 0., 10.}});
-    TString SelectionCuts[7] = {"NoSelection", "gapside", "goodtracks", "truegap",  "2collcontrib", "2goodtrk"};
+    TString SelectionCuts[7] = {"NoSelection", "gapside", "goodtracks", "truegap", "2collcontrib", "2goodtrk"};
     for (int i = 0; i < 7; i++) {
       hSelectionCounter->GetXaxis()->SetBinLabel(i + 1, SelectionCuts[i].Data());
     }
@@ -116,7 +114,6 @@ struct UDTutorial07 {
     // Fill histograms to cross-check the selected numbers
     registry.add("hTracks", "N_{tracks}", kTH1F, {{100, -0.5, 99.5}});
     registry.add("hTracksPions", "N_{tracks}", kTH1F, {{100, -0.5, 99.5}});
-    
   }
 
   using udtracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksPID>;
@@ -128,30 +125,29 @@ struct UDTutorial07 {
   {
     registry.fill(HIST("hSelectionCounter"), 0);
 
-    //Accessing gap sides
+    // Accessing gap sides
     int gapSide = collision.gapSide();
     if (gapSide < 0 || gapSide > 2)
       return;
 
     registry.fill(HIST("hSelectionCounter"), 1);
-      
-    //Accessing FIT information for further exclusivity and/or inclusivity
+
+    // Accessing FIT information for further exclusivity and/or inclusivity
     float FIT_cut[5] = {FV0_cut, FT0A_cut, FT0C_cut, FDDA_cut, FDDC_cut};
     int truegapSide = sgSelector.trueGap(collision, FIT_cut[0], FIT_cut[1], FIT_cut[2], ZDC_cut);
-      
-      
-    //Intiating track parameters to select good tracks, values to be optimized in the configurables, parameters will be taken from SGtrackselector.h task included in the header
+
+    // Intiating track parameters to select good tracks, values to be optimized in the configurables, parameters will be taken from SGtrackselector.h task included in the header
     std::vector<float> parameters = {PV_cut, dcaZ_cut, dcaXY_cut, tpcChi2_cut, tpcNClsFindable_cut, itsChi2_cut, eta_cut, pt_cut};
 
     registry.fill(HIST("GapSide"), gapSide);
     registry.fill(HIST("TrueGapSide"), truegapSide);
-      
-    //Gap side to be selected in the configuables
+
+    // Gap side to be selected in the configuables
     gapSide = truegapSide;
 
     registry.fill(HIST("hSelectionCounter"), 2);
     //_____________________________________
-      // Create LorentzVector to store track information
+    // Create LorentzVector to store track information
     std::vector<TLorentzVector> allTracks;
     std::vector<TLorentzVector> onlyPionTracks;
     std::vector<float> onlyPionSigma;
@@ -167,19 +163,19 @@ struct UDTutorial07 {
     if (gapSide == gap_Side) {
 
       registry.fill(HIST("hSelectionCounter"), 3);
-     
+
       for (auto t : tracks) {
 
-          // Apply good track selection criteria
+        // Apply good track selection criteria
         if (!trackselector(t, parameters))
           continue;
-          
-          //Creating Lorenz vector to store raw tracks and piontracks
+
+        // Creating Lorenz vector to store raw tracks and piontracks
         TLorentzVector a;
         a.SetXYZM(t.px(), t.py(), t.pz(), o2::constants::physics::MassPionCharged);
         allTracks.push_back(a);
-          
-          //Apply TPC pion sigma
+
+        // Apply TPC pion sigma
         auto nSigmaPi = t.tpcNSigmaPi();
         if (fabs(nSigmaPi) < PID_cut) {
           onlyPionTracks.push_back(a);
@@ -190,17 +186,17 @@ struct UDTutorial07 {
       registry.fill(HIST("hTracksPions"), onlyPionTracks.size());
 
       //_____________________________________
-        // Selecting collisions with Two PV contributors
+      // Selecting collisions with Two PV contributors
       if (collision.numContrib() == 2) {
 
         registry.fill(HIST("hSelectionCounter"), 4);
-          
-          // Selecting only Two good tracks
-        if ((rawPionTracks.size() == 2) && (allTracks.size() == 2)) {
-            
-            registry.fill(HIST("hSelectionCounter"), 4);
 
-            // Creating rhos
+        // Selecting only Two good tracks
+        if ((rawPionTracks.size() == 2) && (allTracks.size() == 2)) {
+
+          registry.fill(HIST("hSelectionCounter"), 4);
+
+          // Creating rhos
           for (auto pion : onlyPionTracks) {
             p += pion;
           }
@@ -219,7 +215,7 @@ struct UDTutorial07 {
           for (auto rawPion : rawPionTracks) {
             sign += rawPion.sign();
           }
-           //Filling tree, make to be consistent with the declared tables
+          // Filling tree, make to be consistent with the declared tables
           tree(p.Pt(), p.Y(), p.Phi(), p.M(), sign, collision.numContrib(), pitpcpid, trackpt, tracketa, trackphi, tracksign);
         }
       }
