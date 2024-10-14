@@ -22,6 +22,7 @@
 #include "PWGUD/Core/UPCCutparHolder.h"
 #include "PWGUD/Core/UPCHelpers.h"
 #include "PWGUD/DataModel/UDTables.h"
+#include "DataFormatsITSMFT/ROFRecord.h"
 
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -46,7 +47,7 @@ struct UpcCandProducer {
   Produces<o2::aod::UDTracksDCA> udTracksDCA;
   Produces<o2::aod::UDTracksPID> udTracksPID;
   Produces<o2::aod::UDMcTrackLabels> udTrackLabels;
-  Produces<o2::aod::UDTracksFlags> udTracksFlags;
+  Produces<o2::aod::UDTrackss> udTrackss;
 
   Produces<o2::aod::UDCollisions> eventCandidates;
   Produces<o2::aod::UDCollisionsSels> eventCandidatesSels;
@@ -916,8 +917,10 @@ struct UpcCandProducer {
       }
       RgtrwTOF = RgtrwTOF / static_cast<float>(numContrib);
       // store used tracks
+      int upc_flag = 0;
+      if (bcs.iteratorAt(0).flags() == o2::itsmft::ROFRecord::VtxUPCMode) upc_flag = 1;
       fillBarrelTracks(barrelTracks, barrelTrackIDs, candID, globalBC, closestBcITSTPC, mcBarrelTrackLabels, ambBarrelTrBCs);
-      eventCandidates(globalBC, runNumber, dummyX, dummyY, dummyZ, bcs.iteratorAt(0).flags(), numContrib, netCharge, RgtrwTOF);
+      eventCandidates(globalBC, runNumber, dummyX, dummyY, dummyZ, upc_flag, numContrib, netCharge, RgtrwTOF);
       eventCandidatesSels(fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.timeFT0A, fitInfo.timeFT0C, fitInfo.triggerMaskFT0,
                           fitInfo.ampFDDA, fitInfo.ampFDDC, fitInfo.timeFDDA, fitInfo.timeFDDC, fitInfo.triggerMaskFDD,
                           fitInfo.ampFV0A, fitInfo.timeFV0A, fitInfo.triggerMaskFV0A,
@@ -981,8 +984,10 @@ struct UpcCandProducer {
       }
       RgtrwTOF = RgtrwTOF / static_cast<float>(numContrib);
       // store used tracks
+      int upc_flag = 0;
+      if (bcs.iteratorAt(0).flags() == o2::itsmft::ROFRecord::VtxUPCMode) upc_flag = 1;
       fillBarrelTracks(barrelTracks, barrelTrackIDs, candID, globalBC, closestBcITSTPC, mcBarrelTrackLabels, ambBarrelTrBCs);
-      eventCandidates(globalBC, runNumber, dummyX, dummyY, dummyZ, bcs.iteratorAt(0).flags(), numContrib, netCharge, RgtrwTOF);
+      eventCandidates(globalBC, runNumber, dummyX, dummyY, dummyZ, upc_flag, numContrib, netCharge, RgtrwTOF);
       eventCandidatesSels(fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.timeFT0A, fitInfo.timeFT0C, fitInfo.triggerMaskFT0,
                           fitInfo.ampFDDA, fitInfo.ampFDDC, fitInfo.timeFDDA, fitInfo.timeFDDC, fitInfo.triggerMaskFDD,
                           fitInfo.ampFV0A, fitInfo.timeFV0A, fitInfo.triggerMaskFV0A,
@@ -1157,9 +1162,11 @@ struct UpcCandProducer {
       }
       RgtrwTOF = RgtrwTOF / static_cast<float>(numContrib);
       // store used tracks
+      int upc_flag = 0;
+      if (bcs.iteratorAt(0).flags() == o2::itsmft::ROFRecord::VtxUPCMode) upc_flag = 1;
       fillFwdTracks(fwdTracks, fwdTrackIDs, candID, bc, bc, mcFwdTrackLabels);
       fillBarrelTracks(barrelTracks, barrelTrackIDs, candID, bc, bc, mcBarrelTrackLabels, ambBarrelTrBCs);
-      eventCandidates(bc, runNumber, dummyX, dummyY, dummyZ, bcs.iteratorAt(0).flags(), numContrib, netCharge, RgtrwTOF);
+      eventCandidates(bc, runNumber, dummyX, dummyY, dummyZ, upc_flag, numContrib, netCharge, RgtrwTOF);
       eventCandidatesSels(fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.timeFT0A, fitInfo.timeFT0C, fitInfo.triggerMaskFT0,
                           fitInfo.ampFDDA, fitInfo.ampFDDC, fitInfo.timeFDDA, fitInfo.timeFDDC, fitInfo.triggerMaskFDD,
                           fitInfo.ampFV0A, fitInfo.timeFV0A, fitInfo.triggerMaskFV0A,
@@ -1378,8 +1385,10 @@ struct UpcCandProducer {
         selTrackIds.push_back(id);
       }
       // store used tracks
+      int upc_flag = 0;
+      if (bcs.iteratorAt(0).flags() == o2::itsmft::ROFRecord::VtxUPCMode) upc_flag = 1;
       fillFwdTracks(fwdTracks, trkCandIDs, candID, globalBC, closestBcMCH, mcFwdTrackLabels);
-      eventCandidates(globalBC, runNumber, dummyX, dummyY, dummyZ, bcs.iteratorAt(0).flags(), numContrib, netCharge, RgtrwTOF);
+      eventCandidates(globalBC, runNumber, dummyX, dummyY, dummyZ, upc_flag, numContrib, netCharge, RgtrwTOF);
       eventCandidatesSels(fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.timeFT0A, fitInfo.timeFT0C, fitInfo.triggerMaskFT0,
                           fitInfo.ampFDDA, fitInfo.ampFDDC, fitInfo.timeFDDA, fitInfo.timeFDDC, fitInfo.triggerMaskFDD,
                           fitInfo.ampFV0A, fitInfo.timeFV0A, fitInfo.triggerMaskFV0A,
@@ -1573,8 +1582,10 @@ struct UpcCandProducer {
         selTrackIdsGlobal.push_back(id);
       }
       // store used tracks
+      int upc_flag = 0;
+      if (bcs.iteratorAt(0).flags() == o2::itsmft::ROFRecord::VtxUPCMode) upc_flag = 1;
       fillFwdTracks(fwdTracks, trkCandIDs, candID, globalBC, closestBcMCH, mcFwdTrackLabels);
-      eventCandidates(globalBC, runNumber, dummyX, dummyY, dummyZ, bcs.iteratorAt(0).flags(), numContrib, netCharge, RgtrwTOF);
+      eventCandidates(globalBC, runNumber, dummyX, dummyY, dummyZ, upc_flag, numContrib, netCharge, RgtrwTOF);
       eventCandidatesSels(fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.timeFT0A, fitInfo.timeFT0C, fitInfo.triggerMaskFT0,
                           fitInfo.ampFDDA, fitInfo.ampFDDC, fitInfo.timeFDDA, fitInfo.timeFDDC, fitInfo.triggerMaskFDD,
                           fitInfo.ampFV0A, fitInfo.timeFV0A, fitInfo.triggerMaskFV0A,
