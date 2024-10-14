@@ -524,7 +524,7 @@ struct HfTaskDs {
 
           unsigned maxNumContrib = 0;
           const auto& recoCollsPerMcColl = recoCollisions.sliceBy(std::get<PresliceUnsorted<Coll>>(colPerMcCollisionMap.at(centDetector)), particle.mcCollision().globalIndex());
-          for (const auto& recCol : recoCollisions) {
+          for (const auto& recCol : recoCollsPerMcColl) {
             maxNumContrib = recCol.numContrib() > maxNumContrib ? recCol.numContrib() : maxNumContrib;
           }
 

@@ -526,7 +526,7 @@ struct ebyeMaker {
     } else if (doprocessRun2 || doprocessMiniRun2 || doprocessMcRun2 || doprocessMiniMcRun2) {
       histos.add<TH2>("QA/V0MvsCL0", ";Centrality CL0 (%);Centrality V0M (%)", HistType::kTH2F, {centAxis, centAxis});
       histos.add<TH2>("QA/trackletsVsV0M", ";Centrality CL0 (%);Centrality V0M (%)", HistType::kTH2F, {centAxis, multAxis});
-      histos.add<TH2>("QA/nTrklCorrelation", ";Tracklets |#eta| > 0.7; Tracklets |#eta| < 0.6", HistType::kTH2D, {{201, -0.5, 200.5}, {201, -0.5, 200.5}});
+      histos.add<TH2>("QA/nTrklCorrelation", ";Tracklets |#eta| < 0.6; Tracklets |#eta| > 0.7", HistType::kTH2D, {{201, -0.5, 200.5}, {201, -0.5, 200.5}});
       histos.add<TH1>("QA/TrklEta", ";Tracklets #eta; Entries", HistType::kTH1D, {{100, -3., 3.}});
     }
 
@@ -1094,7 +1094,7 @@ struct ebyeMaker {
       fillRecoEvent(collision, tracks, V0Table_thisCollision, cV0M);
 
       uint8_t trigger = collision.alias_bit(kINT7) ? 0x1 : 0x0;
-      miniCollTable(std::abs(collision.posZ()), trigger, nTrackletsColl, cV0M);
+      miniCollTable(static_cast<int8_t>(collision.posZ() * 10), trigger, nTrackletsColl, cV0M);
 
       for (auto& candidateTrack : candidateTracks[0]) { // protons
         auto tk = tracks.rawIteratorAt(candidateTrack.globalIndex);
@@ -1106,7 +1106,7 @@ struct ebyeMaker {
         miniTrkTable(
           miniCollTable.lastIndex(),
           candidateTrack.pt,
-          std::abs(candidateTrack.eta) * 10.,
+          static_cast<int8_t>(candidateTrack.eta * 100),
           selMask,
           candidateTrack.outerPID);
       }
@@ -1273,7 +1273,7 @@ struct ebyeMaker {
       fillMcEvent(collision, tracks, V0Table_thisCollision, cV0M, mcParticles, mcLab);
       fillMcGen(mcParticles, mcLab, collision.mcCollisionId());
 
-      miniCollTable(std::abs(collision.posZ()), 0x0, nTrackletsColl, cV0M);
+      miniCollTable(static_cast<int8_t>(collision.posZ() * 10), 0x0, nTrackletsColl, cV0M);
 
       for (auto& candidateTrack : candidateTracks[0]) { // protons
         int selMask = -1;
@@ -1288,11 +1288,11 @@ struct ebyeMaker {
         mcMiniTrkTable(
           miniCollTable.lastIndex(),
           candidateTrack.pt,
-          std::abs(candidateTrack.eta) * 10.,
+          static_cast<int8_t>(candidateTrack.eta * 100),
           selMask,
           candidateTrack.outerPID,
           candidateTrack.pdgcode > 0 ? candidateTrack.genpt : -candidateTrack.genpt,
-          candidateTrack.geneta,
+          static_cast<int8_t>(candidateTrack.geneta * 100),
           candidateTrack.isreco);
       }
     }

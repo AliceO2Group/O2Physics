@@ -137,10 +137,10 @@ struct ParticleCounter {
       }
       // is neutral
       if (requireNeutral) {
-        if (abs(p->Charge()) > 1e-3)
+        if (std::abs(p->Charge()) > 1e-3)
           continue;
       } else {
-        if (abs(p->Charge()) <= 1e-3)
+        if (std::abs(p->Charge()) <= 1e-3)
           continue;
       }
       // in acceptance
@@ -163,6 +163,8 @@ struct ParticleCounter {
   float countZNC(const aod::McParticles& mcParticles) { return countEnergyInAcceptance(mcParticles, -100.f, -8.8f, true); }
 
   float countITSIB(const aod::McParticles& mcParticles) { return countMultInAcceptance(mcParticles, -2.f, 2.f); }
+  float countEta05(const aod::McParticles& mcParticles) { return countMultInAcceptance(mcParticles, -0.5f, 0.5f); }
+  float countEta08(const aod::McParticles& mcParticles) { return countMultInAcceptance(mcParticles, -0.8f, 0.8f); }
 };
 
 } // namespace pwglf

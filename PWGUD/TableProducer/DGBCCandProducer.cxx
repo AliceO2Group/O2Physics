@@ -380,7 +380,6 @@ struct DGBCCandProducer {
     // fill FITInfo
     auto bcnum = tibc.bcnum();
     upchelpers::FITInfo fitInfo{};
-    udhelpers::getFITinfo(fitInfo, bcnum, bcs, ft0s, fv0as, fdds);
 
     // check if DG event
     // distinguish between cases with and without associated BC
@@ -395,6 +394,7 @@ struct DGBCCandProducer {
 
       // get associated bc
       auto bc = tibc.bc_as<BCs>();
+      udhelpers::getFITinfo(fitInfo, bc, bcs, ft0s, fv0as, fdds);
 
       // is there an associated collision?
       Partition<CCs> colSlize = aod::evsel::foundBCId == bc.globalIndex();
@@ -611,7 +611,7 @@ struct DGBCCandProducer {
 
             auto rtrwTOF = udhelpers::rPVtrwTOF<true>(colTracks, col.numContrib());
             auto nCharge = udhelpers::netCharge<true>(colTracks);
-            udhelpers::getFITinfo(fitInfo, bcnum, bcs, ft0s, fv0as, fdds);
+            udhelpers::getFITinfo(fitInfo, bc, bcs, ft0s, fv0as, fdds);
             updateUDTables(false, col.globalIndex(), bcnum, bc.runNumber(), col.posX(), col.posY(), col.posZ(),
                            col.numContrib(), nCharge, rtrwTOF, colTracks, fitInfo);
             // fill UDZdcs
@@ -661,7 +661,7 @@ struct DGBCCandProducer {
 
             auto rtrwTOF = udhelpers::rPVtrwTOF<false>(tracksArray, tracksArray.size());
             auto nCharge = udhelpers::netCharge<false>(tracksArray);
-            udhelpers::getFITinfo(fitInfo, bcnum, bcs, ft0s, fv0as, fdds);
+            udhelpers::getFITinfo(fitInfo, bc, bcs, ft0s, fv0as, fdds);
 
             // distinguish different cases
             if (bc.globalBC() == bcnum) {
