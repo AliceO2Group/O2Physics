@@ -447,24 +447,30 @@ struct derivedCascadeAnalysis {
     if (doTimeRangeNarrowCut && !coll.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
       return false;
     }
-    histos.fill(HIST("hEventSelection"), 14.5 /* No other collision within +/- 4 microseconds */);
+    if (fillHists)
+      histos.fill(HIST("hEventSelection"), 14.5 /* No other collision within +/- 4 microseconds */);
 
     int occupancy = coll.trackOccupancyInTimeRange();
     if (minOccupancy > 0 && occupancy < minOccupancy) {
       return false;
     }
-    histos.fill(HIST("hEventSelection"), 15.5 /* Below min occupancy */);
+    if (fillHists)
+      histos.fill(HIST("hEventSelection"), 15.5 /* Below min occupancy */);
     if (maxOccupancy > 0 && occupancy > maxOccupancy) {
       return false;
     }
-    histos.fill(HIST("hEventSelection"), 16.5 /* Above max occupancy */);
+    if (fillHists)
+      histos.fill(HIST("hEventSelection"), 16.5 /* Above max occupancy */);
 
-    histos.fill(HIST("hOccupancyVsCentrality"), occupancy, coll.centFT0C());
-    histos.fill(HIST("hEventCentrality"), coll.centFT0C());
-    histos.fill(HIST("hEventVertexZ"), coll.posZ());
-    histos.fill(HIST("hEventNchCorrelationAfCuts"), coll.multNTracksPVeta1(), coll.multNTracksGlobal());
-    histos.fill(HIST("hEventPVcontributorsVsCentrality"), coll.centFT0C(), coll.multNTracksPVeta1());
-    histos.fill(HIST("hEventGlobalTracksVsCentrality"), coll.centFT0C(), coll.multNTracksGlobal());
+    if (fillHists) {
+      histos.fill(HIST("hOccupancyVsCentrality"), occupancy, coll.centFT0C());
+      histos.fill(HIST("hEventCentrality"), coll.centFT0C());
+      histos.fill(HIST("hEventVertexZ"), coll.posZ());
+      histos.fill(HIST("hEventNchCorrelationAfCuts"), coll.multNTracksPVeta1(), coll.multNTracksGlobal());
+      histos.fill(HIST("hEventPVcontributorsVsCentrality"), coll.centFT0C(), coll.multNTracksPVeta1());
+      histos.fill(HIST("hEventGlobalTracksVsCentrality"), coll.centFT0C(), coll.multNTracksGlobal());
+    }
+
     return true;
   }
 
