@@ -918,6 +918,7 @@ struct UpcCandProducer {
       RgtrwTOF = RgtrwTOF / static_cast<float>(numContrib);
       // store used tracks
       int upc_flag = 0;
+      // TODO: introduce better check on association of collision and reconstruction mode
       if (bcs.iteratorAt(0).flags() == o2::itsmft::ROFRecord::VtxUPCMode)
         upc_flag = 1;
       fillBarrelTracks(barrelTracks, barrelTrackIDs, candID, globalBC, closestBcITSTPC, mcBarrelTrackLabels, ambBarrelTrBCs);
@@ -986,6 +987,7 @@ struct UpcCandProducer {
       RgtrwTOF = RgtrwTOF / static_cast<float>(numContrib);
       // store used tracks
       int upc_flag = 0;
+      // TODO: introduce better check on association of collision and reconstruction mode
       if (bcs.iteratorAt(0).flags() == o2::itsmft::ROFRecord::VtxUPCMode)
         upc_flag = 1;
       fillBarrelTracks(barrelTracks, barrelTrackIDs, candID, globalBC, closestBcITSTPC, mcBarrelTrackLabels, ambBarrelTrBCs);
@@ -1165,6 +1167,7 @@ struct UpcCandProducer {
       RgtrwTOF = RgtrwTOF / static_cast<float>(numContrib);
       // store used tracks
       int upc_flag = 0;
+      // TODO: introduce better check on association of collision and reconstruction mode
       if (bcs.iteratorAt(0).flags() == o2::itsmft::ROFRecord::VtxUPCMode)
         upc_flag = 1;
       fillFwdTracks(fwdTracks, fwdTrackIDs, candID, bc, bc, mcFwdTrackLabels);
@@ -1389,6 +1392,7 @@ struct UpcCandProducer {
       }
       // store used tracks
       int upc_flag = 0;
+      // TODO: introduce better check on association of collision and reconstruction mode
       if (bcs.iteratorAt(0).flags() == o2::itsmft::ROFRecord::VtxUPCMode)
         upc_flag = 1;
       fillFwdTracks(fwdTracks, trkCandIDs, candID, globalBC, closestBcMCH, mcFwdTrackLabels);
@@ -1587,6 +1591,7 @@ struct UpcCandProducer {
       }
       // store used tracks
       int upc_flag = 0;
+      // TODO: introduce better check on association of collision and reconstruction mode
       if (bcs.iteratorAt(0).flags() == o2::itsmft::ROFRecord::VtxUPCMode)
         upc_flag = 1;
       fillFwdTracks(fwdTracks, trkCandIDs, candID, globalBC, closestBcMCH, mcFwdTrackLabels);
