@@ -85,7 +85,7 @@ struct HfCandidateCreatorBsReduced {
     df2.setWeightedFinalPCA(useWeightedFinalPCA);
 
     // histograms
-    registry.add("hMassBsToDsPi", "2-prong candidates;inv. mass (B^{s} #rightarrow D_{s}^{#minus}#pi^{#plus} #rightarrow #K^{#minus}K^{#plus}#pi^{#minus}#pi^{#plus}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 3., 8.}}});
+    registry.add("hMassBsToDsPi", "2-prong candidates;inv. mass (B^{0}_{s} #rightarrow D_{s}^{#minus}#pi^{#plus} #rightarrow #K^{#minus}K^{#plus}#pi^{#minus}#pi^{#plus}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 3., 8.}}});
     registry.add("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 1.e-4}}});
     registry.add("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 0.2}}});
     registry.add("hEvents", "Events;;entries", HistType::kTH1F, {{1, 0.5, 1.5}});

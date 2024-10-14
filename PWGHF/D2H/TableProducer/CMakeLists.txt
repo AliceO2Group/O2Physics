@@ -43,6 +43,11 @@ o2physics_add_dpl_workflow(candidate-selector-bplus-to-d0-pi-reduced
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(candidate-selector-bs-to-ds-pi-reduced
+                    SOURCES candidateSelectorBsToDsPiReduced.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
+                    COMPONENT_NAME Analysis)
+
 # Data creators
 
 o2physics_add_dpl_workflow(data-creator-charm-had-pi-reduced
