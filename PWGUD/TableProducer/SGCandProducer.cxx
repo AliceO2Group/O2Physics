@@ -214,7 +214,7 @@ struct SGCandProducer {
       udhelpers::getFITinfo(fitInfo, newbc, bcs, ft0s, fv0as, fdds);
       // update SG candidates tables
       int flag = 0;
-      if (collision.flags()) flag = 1;
+      if (collision.flags()==2) flag = 1;
       outputCollisions(bc.globalBC(), bc.runNumber(),
                        collision.posX(), collision.posY(), collision.posZ(), flag,
                        collision.numContrib(), udhelpers::netCharge<true>(tracks),
