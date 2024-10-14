@@ -272,7 +272,8 @@ struct DGCandProducer {
       int upc_flag = 0;
       ushort flags = collision.flags();
       const ushort UPCModeMask = 0x1 << 1;
-      if (flags & UPCModeMask) upc_flag = 1;
+      if (flags & UPCModeMask)
+        upc_flag = 1;
       outputCollisions(bc.globalBC(), bc.runNumber(),
                        collision.posX(), collision.posY(), collision.posZ(), upc_flag,
                        collision.numContrib(), udhelpers::netCharge<true>(tracks),

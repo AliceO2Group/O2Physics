@@ -418,7 +418,8 @@ struct DGBCCandProducer {
           int upc_flag = 0;
           ushort flags = col.flags();
           const ushort UPCModeMask = 0x1 << 1;
-          if (flags & UPCModeMask) upc_flag = 1;
+          if (flags & UPCModeMask)
+            upc_flag = 1;
           updateUDTables(false, col.globalIndex(), bc.globalBC(), bc.runNumber(), col.posX(), col.posY(), col.posZ(), upc_flag,
                          col.numContrib(), nCharge, rtrwTOF, colTracks, fitInfo);
         }
@@ -618,7 +619,8 @@ struct DGBCCandProducer {
             int upc_flag = 0;
             ushort flags = col.flags();
             const ushort UPCModeMask = 0x1 << 1;
-            if (flags & UPCModeMask) upc_flag = 1;
+            if (flags & UPCModeMask)
+              upc_flag = 1;
             updateUDTables(false, col.globalIndex(), bcnum, bc.runNumber(), col.posX(), col.posY(), col.posZ(), upc_flag,
                            col.numContrib(), nCharge, rtrwTOF, colTracks, fitInfo);
             // fill UDZdcs
@@ -691,7 +693,8 @@ struct DGBCCandProducer {
             int upc_flag = 0;
             ushort flags = col.flags();
             const ushort UPCModeMask = 0x1 << 1;
-            if (flags & UPCModeMask) upc_flag = 1;
+            if (flags & UPCModeMask)
+              upc_flag = 1;
             updateUDTables(false, colID, bcnum, tibc.runNumber(), vpos[0], vpos[1], vpos[2], upc_flag,
                            tracksArray.size(), nCharge, rtrwTOF, tracksArray, fitInfo);
             // fill UDZdcs
