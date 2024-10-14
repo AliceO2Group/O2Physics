@@ -415,10 +415,11 @@ struct DGBCCandProducer {
           registry.get<TH1>(HIST("table/candCase"))->Fill(1, 1.);
           rtrwTOF = udhelpers::rPVtrwTOF<true>(colTracks, col.numContrib());
           nCharge = udhelpers::netCharge<true>(colTracks);
-          int flag = 0;
-          if (col.flags() == 2)
-            flag = 1;
-          updateUDTables(false, col.globalIndex(), bc.globalBC(), bc.runNumber(), col.posX(), col.posY(), col.posZ(), flag,
+          int upc_flag = 0;
+          ushort flags = col.flags();
+          const ushort UPCModeMask = 0x1 << 1;
+          if (flags & UPCModeMask) upc_flag = 1;
+          updateUDTables(false, col.globalIndex(), bc.globalBC(), bc.runNumber(), col.posX(), col.posY(), col.posZ(), upc_flag,
                          col.numContrib(), nCharge, rtrwTOF, colTracks, fitInfo);
         }
       } else {
@@ -614,10 +615,11 @@ struct DGBCCandProducer {
             auto rtrwTOF = udhelpers::rPVtrwTOF<true>(colTracks, col.numContrib());
             auto nCharge = udhelpers::netCharge<true>(colTracks);
             udhelpers::getFITinfo(fitInfo, bc, bcs, ft0s, fv0as, fdds);
-            int flag = 0;
-            if (col.flags() == 2)
-              flag = 1;
-            updateUDTables(false, col.globalIndex(), bcnum, bc.runNumber(), col.posX(), col.posY(), col.posZ(), flag,
+            int upc_flag = 0;
+            ushort flags = col.flags();
+            const ushort UPCModeMask = 0x1 << 1;
+            if (flags & UPCModeMask) upc_flag = 1;
+            updateUDTables(false, col.globalIndex(), bcnum, bc.runNumber(), col.posX(), col.posY(), col.posZ(), upc_flag,
                            col.numContrib(), nCharge, rtrwTOF, colTracks, fitInfo);
             // fill UDZdcs
             if (bc.has_zdc()) {
@@ -686,10 +688,11 @@ struct DGBCCandProducer {
             }
 
             int64_t colID = withCollision ? col.globalIndex() : -1;
-            int flag = 0;
-            if (col.flags() == 2)
-              flag = 1;
-            updateUDTables(false, colID, bcnum, tibc.runNumber(), vpos[0], vpos[1], vpos[2], flag,
+            int upc_flag = 0;
+            ushort flags = col.flags();
+            const ushort UPCModeMask = 0x1 << 1;
+            if (flags & UPCModeMask) upc_flag = 1;
+            updateUDTables(false, colID, bcnum, tibc.runNumber(), vpos[0], vpos[1], vpos[2], upc_flag,
                            tracksArray.size(), nCharge, rtrwTOF, tracksArray, fitInfo);
             // fill UDZdcs
             if (bc.globalBC() == bcnum) {
