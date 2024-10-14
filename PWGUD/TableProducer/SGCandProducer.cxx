@@ -216,7 +216,7 @@ struct SGCandProducer {
       // update SG candidates tables
       int upc_flag = 0;
       ushort flags = collision.flags();
-      if (flags & o2::aod::dataformats::Vertex::Flags::UPCMode)
+      if (flags & dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode)
         upc_flag = 1;
       outputCollisions(bc.globalBC(), bc.runNumber(),
                        collision.posX(), collision.posY(), collision.posZ(), upc_flag,
