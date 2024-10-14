@@ -791,7 +791,7 @@ struct cascadeFlow {
       {
         pdgCode = 0;
       }
-      
+
       /// Add some minimal cuts for single track variables (min number of TPC clusters)
       auto negExtra = casc.negTrackExtra_as<DauTracks>();
       auto posExtra = casc.posTrackExtra_as<DauTracks>();
@@ -860,8 +860,9 @@ struct cascadeFlow {
         BDTresponse[0] = bdtScore[0][1];
         BDTresponse[1] = bdtScore[1][1];
       }
-      if (isStoreTrueCascOnly){
-	if (pdgCode==0) continue;
+      if (isStoreTrueCascOnly) {
+        if (pdgCode == 0)
+          continue;
       }
       if (isSelectedCasc[0] || isSelectedCasc[1])
         fillAnalysedTable(coll, casc, v2CSP, v2CEP, PsiT0C, BDTresponse[0], BDTresponse[1], pdgCode);
