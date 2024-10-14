@@ -71,8 +71,6 @@ struct HfCandidateSelectorBsToDsPiReduced {
   Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"ModelHandler_onnx_BsToDsPi.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
-  // variable that will store the value of selectionFlagDs (defined in dataCreatorCharmHadPiReduced.cxx)
-  int mySelectionFlagDs = -1;
 
   o2::analysis::HfMlResponseBsToDsPi<float> hfMlResponse;
   std::vector<float> outputMl = {};
@@ -143,10 +141,6 @@ struct HfCandidateSelectorBsToDsPiReduced {
                     TracksPion const&,
                     HfCandBsConfigs const& configs)
   {
-    for (const auto& config : configs) {
-      mySelectionFlagDs = config.mySelectionFlagD();
-    }
-
     for (const auto& hfCandBs : hfCandsBs) {
       int statusBsToDsPi = 0;
       outputMl.clear();
