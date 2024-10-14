@@ -213,11 +213,12 @@ struct SGCandProducer {
       upchelpers::FITInfo fitInfo{};
       udhelpers::getFITinfo(fitInfo, newbc, bcs, ft0s, fv0as, fdds);
       // update SG candidates tables
-      int flag = 0;
-      if (collision.flags() == 2)
-        flag = 1;
+      int upc_flag = 0;
+      ushort flags = collision.flags();
+      const ushort UPCModeMask = 0x1 << 1;
+      if (flags & UPCModeMask) upc_flag = 1;
       outputCollisions(bc.globalBC(), bc.runNumber(),
-                       collision.posX(), collision.posY(), collision.posZ(), flag,
+                       collision.posX(), collision.posY(), collision.posZ(), upc_flag,
                        collision.numContrib(), udhelpers::netCharge<true>(tracks),
                        1.); // rtrwTOF); //omit the calculation to speed up the things while skimming
 
