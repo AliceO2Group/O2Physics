@@ -660,8 +660,7 @@ struct k1analysis {
             }
           } // MC
         } // No MIX
-        else
-        { // Mixed event handling
+        else { // Mixed event handling
           unsigned int typeK1 = bTrack.sign() > 0 ? binType::kK1P_Mix : binType::kK1N_Mix;
           unsigned int typeNormal = cfgModeK892orRho ? (trk1.sign() < 0 ? binAnti::kNormal : binAnti::kAnti) : binAnti::kNormal;
           histos.fill(HIST("hInvmass_K1"), typeNormal, typeK1, multiplicity, lResonanceK1.Pt(), lResonanceK1.M());
