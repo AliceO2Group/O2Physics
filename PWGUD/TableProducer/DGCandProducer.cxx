@@ -269,8 +269,10 @@ struct DGCandProducer {
 
       // update DG candidates tables
       auto rtrwTOF = udhelpers::rPVtrwTOF<true>(tracks, collision.numContrib());
+      int flag = 0;
+      if (col.flags()) flag = 1;
       outputCollisions(bc.globalBC(), bc.runNumber(),
-                       collision.posX(), collision.posY(), collision.posZ(), collision.flags(),
+                       collision.posX(), collision.posY(), collision.posZ(), flag,
                        collision.numContrib(), udhelpers::netCharge<true>(tracks),
                        rtrwTOF);
       outputCollisionsSels(fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.timeFT0A, fitInfo.timeFT0C,
