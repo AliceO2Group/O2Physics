@@ -504,23 +504,43 @@ DECLARE_SOA_COLUMN(NSigTofPr0, nSigTofPr0, float);                         //! T
 DECLARE_SOA_COLUMN(NSigTofPr1, nSigTofPr1, float);                         //! TOF nSigma for proton hypothesis - prong 1
 DECLARE_SOA_COLUMN(NSigTofPr2, nSigTofPr2, float);                         //! TOF nSigma for proton hypothesis - prong 2
 DECLARE_SOA_DYNAMIC_COLUMN(TpcTofNSigmaPi0, tpcTofNSigmaPi0,               //! Combined NSigma separation with the TPC & TOF detectors for pion - prong 0
-                           [](float tpcNSigmaPi0, float tofNSigmaPi0) -> float { return pid_tpc_tof_utils::combineNSigma(tpcNSigmaPi0, tofNSigmaPi0); });
+                           [](float tpcNSigmaPi0, float tofNSigmaPi0) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaPi0, tofNSigmaPi0); });
 DECLARE_SOA_DYNAMIC_COLUMN(TpcTofNSigmaPi1, tpcTofNSigmaPi1, //! Combined NSigma separation with the TPC & TOF detectors for pion - prong 1
-                           [](float tpcNSigmaPi1, float tofNSigmaPi1) -> float { return pid_tpc_tof_utils::combineNSigma(tpcNSigmaPi1, tofNSigmaPi1); });
+                           [](float tpcNSigmaPi1, float tofNSigmaPi1) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaPi1, tofNSigmaPi1); });
 DECLARE_SOA_DYNAMIC_COLUMN(TpcTofNSigmaPi2, tpcTofNSigmaPi2, //! Combined NSigma separation with the TPC & TOF detectors for pion - prong 2
-                           [](float tpcNSigmaPi2, float tofNSigmaPi2) -> float { return pid_tpc_tof_utils::combineNSigma(tpcNSigmaPi2, tofNSigmaPi2); });
+                           [](float tpcNSigmaPi2, float tofNSigmaPi2) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaPi2, tofNSigmaPi2); });
 DECLARE_SOA_DYNAMIC_COLUMN(TpcTofNSigmaKa0, tpcTofNSigmaKa0, //! Combined NSigma separation with the TPC & TOF detectors for kaon - prong 0
-                           [](float tpcNSigmaKa0, float tofNSigmaKa0) -> float { return pid_tpc_tof_utils::combineNSigma(tpcNSigmaKa0, tofNSigmaKa0); });
+                           [](float tpcNSigmaKa0, float tofNSigmaKa0) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaKa0, tofNSigmaKa0); });
 DECLARE_SOA_DYNAMIC_COLUMN(TpcTofNSigmaKa1, tpcTofNSigmaKa1, //! Combined NSigma separation with the TPC & TOF detectors for kaon - prong 1
-                           [](float tpcNSigmaKa1, float tofNSigmaKa1) -> float { return pid_tpc_tof_utils::combineNSigma(tpcNSigmaKa1, tofNSigmaKa1); });
+                           [](float tpcNSigmaKa1, float tofNSigmaKa1) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaKa1, tofNSigmaKa1); });
 DECLARE_SOA_DYNAMIC_COLUMN(TpcTofNSigmaKa2, tpcTofNSigmaKa2, //! Combined NSigma separation with the TPC & TOF detectors for kaon - prong 2
-                           [](float tpcNSigmaKa2, float tofNSigmaKa2) -> float { return pid_tpc_tof_utils::combineNSigma(tpcNSigmaKa2, tofNSigmaKa2); });
+                           [](float tpcNSigmaKa2, float tofNSigmaKa2) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaKa2, tofNSigmaKa2); });
 DECLARE_SOA_DYNAMIC_COLUMN(TpcTofNSigmaPr0, tpcTofNSigmaPr0, //! Combined NSigma separation with the TPC & TOF detectors for proton - prong 0
-                           [](float tpcNSigmaPr0, float tofNSigmaPr0) -> float { return pid_tpc_tof_utils::combineNSigma(tpcNSigmaPr0, tofNSigmaPr0); });
+                           [](float tpcNSigmaPr0, float tofNSigmaPr0) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaPr0, tofNSigmaPr0); });
 DECLARE_SOA_DYNAMIC_COLUMN(TpcTofNSigmaPr1, tpcTofNSigmaPr1, //! Combined NSigma separation with the TPC & TOF detectors for proton - prong 1
-                           [](float tpcNSigmaPr1, float tofNSigmaPr1) -> float { return pid_tpc_tof_utils::combineNSigma(tpcNSigmaPr1, tofNSigmaPr1); });
+                           [](float tpcNSigmaPr1, float tofNSigmaPr1) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaPr1, tofNSigmaPr1); });
 DECLARE_SOA_DYNAMIC_COLUMN(TpcTofNSigmaPr2, tpcTofNSigmaPr2, //! Combined NSigma separation with the TPC & TOF detectors for proton - prong 2
-                           [](float tpcNSigmaPr2, float tofNSigmaPr2) -> float { return pid_tpc_tof_utils::combineNSigma(tpcNSigmaPr2, tofNSigmaPr2); });
+                           [](float tpcNSigmaPr2, float tofNSigmaPr2) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaPr2, tofNSigmaPr2); });
+// tiny (binned) option
+DECLARE_SOA_DYNAMIC_COLUMN(TpcTofNSigmaTinyPi0, tpcTofNSigmaTinyPi0, //! Combined NSigma separation with the TPC & TOF detectors for pion - prong 0
+                           [](float tpcNSigmaPi0, float tofNSigmaPi0) -> float { return pid_tpc_tof_utils::combineNSigma<true /*tiny*/>(tpcNSigmaPi0, tofNSigmaPi0); });
+DECLARE_SOA_DYNAMIC_COLUMN(TpcTofNSigmaTinyPi1, tpcTofNSigmaTinyPi1, //! Combined NSigma separation with the TPC & TOF detectors for pion - prong 1
+                           [](float tpcNSigmaPi1, float tofNSigmaPi1) -> float { return pid_tpc_tof_utils::combineNSigma<true /*tiny*/>(tpcNSigmaPi1, tofNSigmaPi1); });
+DECLARE_SOA_DYNAMIC_COLUMN(TpcTofNSigmaTinyPi2, tpcTofNSigmaTinyPi2, //! Combined NSigma separation with the TPC & TOF detectors for pion - prong 2
+                           [](float tpcNSigmaPi2, float tofNSigmaPi2) -> float { return pid_tpc_tof_utils::combineNSigma<true /*tiny*/>(tpcNSigmaPi2, tofNSigmaPi2); });
+DECLARE_SOA_DYNAMIC_COLUMN(TpcTofNSigmaTinyKa0, tpcTofNSigmaTinyKa0, //! Combined NSigma separation with the TPC & TOF detectors for kaon - prong 0
+                           [](float tpcNSigmaKa0, float tofNSigmaKa0) -> float { return pid_tpc_tof_utils::combineNSigma<true /*tiny*/>(tpcNSigmaKa0, tofNSigmaKa0); });
+DECLARE_SOA_DYNAMIC_COLUMN(TpcTofNSigmaTinyKa1, tpcTofNSigmaTinyKa1, //! Combined NSigma separation with the TPC & TOF detectors for kaon - prong 1
+                           [](float tpcNSigmaKa1, float tofNSigmaKa1) -> float { return pid_tpc_tof_utils::combineNSigma<true /*tiny*/>(tpcNSigmaKa1, tofNSigmaKa1); });
+DECLARE_SOA_DYNAMIC_COLUMN(TpcTofNSigmaTinyKa2, tpcTofNSigmaTinyKa2, //! Combined NSigma separation with the TPC & TOF detectors for kaon - prong 2
+                           [](float tpcNSigmaKa2, float tofNSigmaKa2) -> float { return pid_tpc_tof_utils::combineNSigma<true /*tiny*/>(tpcNSigmaKa2, tofNSigmaKa2); });
+DECLARE_SOA_DYNAMIC_COLUMN(TpcTofNSigmaTinyPr0, tpcTofNSigmaTinyPr0, //! Combined NSigma separation with the TPC & TOF detectors for proton - prong 0
+                           [](float tpcNSigmaPr0, float tofNSigmaPr0) -> float { return pid_tpc_tof_utils::combineNSigma<true /*tiny*/>(tpcNSigmaPr0, tofNSigmaPr0); });
+DECLARE_SOA_DYNAMIC_COLUMN(TpcTofNSigmaTinyPr1, tpcTofNSigmaTinyPr1, //! Combined NSigma separation with the TPC & TOF detectors for proton - prong 1
+                           [](float tpcNSigmaPr1, float tofNSigmaPr1) -> float { return pid_tpc_tof_utils::combineNSigma<true /*tiny*/>(tpcNSigmaPr1, tofNSigmaPr1); });
+DECLARE_SOA_DYNAMIC_COLUMN(TpcTofNSigmaTinyPr2, tpcTofNSigmaTinyPr2, //! Combined NSigma separation with the TPC & TOF detectors for proton - prong 2
+                           [](float tpcNSigmaPr2, float tofNSigmaPr2) -> float { return pid_tpc_tof_utils::combineNSigma<true /*tiny*/>(tpcNSigmaPr2, tofNSigmaPr2); });
+
 // candidate properties
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //!
                            [](float px, float py) -> float { return RecoDecay::pt(px, py); });

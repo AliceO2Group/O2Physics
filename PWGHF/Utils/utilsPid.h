@@ -24,14 +24,20 @@ namespace pid_tpc_tof_utils
 {
 
 /// Function to combine TPC and TOF NSigma
+/// \param tiny switch between full and tiny (binned) PID tables
 /// \param tpcNSigma is the (binned) NSigma separation in TPC (if tiny = true)
 /// \param tofNSigma is the (binned) NSigma separation in TOF (if tiny = true)
 /// \return combined NSigma of TPC and TOF
-template <typename T1>
+template <bool tiny, typename T1>
 T1 combineNSigma(T1 tpcNSigma, T1 tofNSigma)
 {
   static constexpr float defaultNSigmaTolerance = .1f;
   static constexpr float defaultNSigma = -999.f + defaultNSigmaTolerance; // -999.f is the default value set in TPCPIDResponse.h and PIDTOF.h
+
+  if constexpr (tiny) {
+    tpcNSigma *= aod::pidtpc_tiny::binning::bin_width;
+    tofNSigma *= aod::pidtof_tiny::binning::bin_width;
+  }
 
   if ((tpcNSigma > defaultNSigma) && (tofNSigma > defaultNSigma)) { // TPC and TOF
     return std::sqrt(.5f * (tpcNSigma * tpcNSigma + tofNSigma * tofNSigma));
