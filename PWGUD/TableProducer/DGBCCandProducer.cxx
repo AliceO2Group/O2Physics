@@ -415,8 +415,9 @@ struct DGBCCandProducer {
           registry.get<TH1>(HIST("table/candCase"))->Fill(1, 1.);
           rtrwTOF = udhelpers::rPVtrwTOF<true>(colTracks, col.numContrib());
           nCharge = udhelpers::netCharge<true>(colTracks);
-
-          updateUDTables(false, col.globalIndex(), bc.globalBC(), bc.runNumber(), col.posX(), col.posY(), col.posZ(), col.flags(),
+          int flag = 0;
+          if (col.flags()) flag = 1;
+          updateUDTables(false, col.globalIndex(), bc.globalBC(), bc.runNumber(), col.posX(), col.posY(), col.posZ(), flag,
                          col.numContrib(), nCharge, rtrwTOF, colTracks, fitInfo);
         }
       } else {
@@ -612,7 +613,9 @@ struct DGBCCandProducer {
             auto rtrwTOF = udhelpers::rPVtrwTOF<true>(colTracks, col.numContrib());
             auto nCharge = udhelpers::netCharge<true>(colTracks);
             udhelpers::getFITinfo(fitInfo, bc, bcs, ft0s, fv0as, fdds);
-            updateUDTables(false, col.globalIndex(), bcnum, bc.runNumber(), col.posX(), col.posY(), col.posZ(), col.flags(),
+            int flag = 0;
+            if (col.flags()) flag = 1;
+            updateUDTables(false, col.globalIndex(), bcnum, bc.runNumber(), col.posX(), col.posY(), col.posZ(), flag,
                            col.numContrib(), nCharge, rtrwTOF, colTracks, fitInfo);
             // fill UDZdcs
             if (bc.has_zdc()) {
@@ -681,7 +684,9 @@ struct DGBCCandProducer {
             }
 
             int64_t colID = withCollision ? col.globalIndex() : -1;
-            updateUDTables(false, colID, bcnum, tibc.runNumber(), vpos[0], vpos[1], vpos[2], col.flags(),
+            int flag = 0;
+            if (col.flags()) flag = 1;
+            updateUDTables(false, colID, bcnum, tibc.runNumber(), vpos[0], vpos[1], vpos[2], flag,
                            tracksArray.size(), nCharge, rtrwTOF, tracksArray, fitInfo);
             // fill UDZdcs
             if (bc.globalBC() == bcnum) {
