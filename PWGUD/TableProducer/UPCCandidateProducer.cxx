@@ -47,7 +47,7 @@ struct UpcCandProducer {
   Produces<o2::aod::UDTracksDCA> udTracksDCA;
   Produces<o2::aod::UDTracksPID> udTracksPID;
   Produces<o2::aod::UDMcTrackLabels> udTrackLabels;
-  Produces<o2::aod::UDTrackss> udTrackss;
+  Produces<o2::aod::UDTracksFlags> udTracksFlags;
 
   Produces<o2::aod::UDCollisions> eventCandidates;
   Produces<o2::aod::UDCollisionsSels> eventCandidatesSels;
