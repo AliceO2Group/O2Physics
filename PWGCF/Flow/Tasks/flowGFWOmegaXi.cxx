@@ -144,7 +144,6 @@ struct FlowGFWOmegaXi {
   using DaughterTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCKa>;
 
   // Set the pt, mult and phi Axis;
-  //o2::framework::AxisSpec axis = axisPt;
   int nPtBins = axisPt.binEdges.size() - 1;
   double* PtBins = &(axisPt.binEdges)[0];
   TAxis* fPtAxis = new TAxis(nPtBins, PtBins);
