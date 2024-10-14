@@ -40,6 +40,7 @@
 #include <TRandom3.h>
 #include <TF1.h>
 #include <TF2.h>
+#include <TPDGCode.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -270,34 +271,34 @@ struct FlowGFWOmegaXi {
   }
 
   template <char... chars>
-  void FillProfilepT(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const int& ptbin, const int& partical, const float& cent)
+  void FillProfilepT(const GFW::CorrConfig& corrconf, const ConstStr<chars...>& tarName, const int& ptbin, const int& PDGCode, const float& cent)
   {
     int nMassBins = 0;
     int nptbins = nPtBins;
     TAxis* fMass = nullptr;
     TAxis* fpt = nullptr;
-    if (partical == 3312) {
+    if (PDGCode == kXiMinus) {
       nMassBins = nXiMassBins;
       nptbins = nXiPtBins;
       fpt = fXiPtAxis;
       fMass = fXiMass;
-    } else if (partical == 3334) {
+    } else if (PDGCode == kOmegaMinus) {
       nMassBins = nOmegaMassBins;
       nptbins = nXiPtBins;
       fpt = fXiPtAxis;
       fMass = fOmegaMass;
-    } else if (partical == 310) {
+    } else if (PDGCode == kK0Short) {
       nMassBins = nK0sMassBins;
       nptbins = nV0PtBins;
       fpt = fV0PtAxis;
       fMass = fK0sMass;
-    } else if (partical == 3122) {
+    } else if (PDGCode == kLambda0) {
       nMassBins = nLambdaMassBins;
       nptbins = nV0PtBins;
       fpt = fV0PtAxis;
       fMass = fLambdaMass;
     } else {
-      LOGF(error, "Error, please put in correct PDG particalID of K0s, Lambda, Xi or Omega");
+      LOGF(error, "Error, please put in correct PDGCode of K0s, Lambda, Xi or Omega");
       return;
     }
     for (int massbin = 1; massbin <= nMassBins; massbin++) {
@@ -446,13 +447,13 @@ struct FlowGFWOmegaXi {
       auto v0posdau = v0.posTrack_as<DaughterTracks>();
       auto v0negdau = v0.negTrack_as<DaughterTracks>();
       // check tpc
-      int partical = 0;
+      int PDGCode = 0;
       if (v0.qtarm() / TMath::Abs(v0.alpha()) > cfgv0_ArmPodocut && TMath::Abs(v0posdau.tpcNSigmaPi()) < cfgNSigmaCascPion && TMath::Abs(v0negdau.tpcNSigmaPi()) < cfgNSigmaCascPion) {
         registry.fill(HIST("InvMassK0s_all"), v0.pt(), v0.mK0Short(), v0.eta(), cent);
-        partical = 310;
+        PDGCode = kK0Short;
       } else if (v0.qtarm() / TMath::Abs(v0.alpha()) < cfgv0_ArmPodocut && TMath::Abs(v0posdau.tpcNSigmaPr()) < cfgNSigmaCascProton && TMath::Abs(v0negdau.tpcNSigmaPi()) < cfgNSigmaCascPion) {
         registry.fill(HIST("InvMassLambda_all"), v0.pt(), v0.mLambda(), v0.eta(), cent);
-        partical = 3122;
+        PDGCode = kLambda0;
       }
       // track quality check
       if (v0posdau.tpcNClsFound() < cfgtpcclusters)
@@ -470,13 +471,13 @@ struct FlowGFWOmegaXi {
         continue;
       if (v0.dcaV0daughters() > cfgv0_dcav0dau)
         continue;
-      if (partical == 310) {
+      if (PDGCode == kK0Short) {
         if (TMath::Abs(v0.mK0Short() - 0.49761) < cfgv0_mk0swindow) {
           registry.fill(HIST("InvMassK0s"), v0.pt(), v0.mK0Short(), v0.eta(), cent);
           registry.fill(HIST("hEtaPhiVtxzPOIK0s"), v0.eta(), v0.phi(), vtxz);
           fGFW->Fill(v0.eta(), fV0PtAxis->FindBin(v0.pt()) - 1 + ((fK0sMass->FindBin(v0.mK0Short()) - 1) * nV0PtBins), v0.phi(), wacc * weff, 8);
         }
-      } else if (partical == 3122) {
+      } else if (PDGCode == kLambda0) {
         if (TMath::Abs(v0.mLambda() - 1.115683) < cfgv0_mlambdawindow) {
           registry.fill(HIST("InvMassLambda"), v0.pt(), v0.mLambda(), v0.eta(), cent);
           registry.fill(HIST("hEtaPhiVtxzPOILambda"), v0.eta(), v0.phi(), vtxz);
@@ -493,13 +494,13 @@ struct FlowGFWOmegaXi {
       if (cfgcheckDauTPC && (!posdau.hasTPC() || !negdau.hasTPC() || !bachelor.hasTPC())) {
         continue;
       }
-      int partical = 0;
+      int PDGCode = 0;
       if (casc.sign() < 0 && TMath::Abs(casc.yOmega()) < cfgCasc_rapidity && TMath::Abs(bachelor.tpcNSigmaKa()) < cfgNSigmaCascKaon && TMath::Abs(posdau.tpcNSigmaPr()) < cfgNSigmaCascProton && TMath::Abs(negdau.tpcNSigmaPi()) < cfgNSigmaCascPion) {
         registry.fill(HIST("InvMassOmegaMinus_all"), casc.pt(), casc.mOmega(), casc.eta(), cent);
-        partical = 3334;
+        PDGCode = kOmegaMinus;
       } else if (casc.sign() < 0 && TMath::Abs(casc.yXi()) < cfgCasc_rapidity && TMath::Abs(bachelor.tpcNSigmaPi()) < cfgNSigmaCascPion && TMath::Abs(posdau.tpcNSigmaPr()) < cfgNSigmaCascProton && TMath::Abs(negdau.tpcNSigmaPi()) < cfgNSigmaCascPion) {
         registry.fill(HIST("InvMassXiMinus_all"), casc.pt(), casc.mXi(), casc.eta(), cent);
-        partical = 3312;
+        PDGCode = kXiMinus;
       } else {
         continue;
       }
@@ -533,14 +534,14 @@ struct FlowGFWOmegaXi {
         continue;
       if (negdau.itsNCls() < cfgitsclusters)
         continue;
-      if (partical == 3334) {
+      if (PDGCode == kOmegaMinus) {
         registry.fill(HIST("hEtaPhiVtxzPOIOmega"), casc.eta(), casc.phi(), vtxz);
         registry.fill(HIST("InvMassOmegaMinus"), casc.pt(), casc.mOmega(), casc.eta(), cent);
         if ((casc.pt() < cfgCutPtPOIMax) && (casc.pt() > cfgCutPtPOIMin) && (casc.mOmega() > 1.63) && (casc.mOmega() < 1.71)) {
           fGFW->Fill(casc.eta(), fXiPtAxis->FindBin(casc.pt()) - 1 + ((fOmegaMass->FindBin(casc.mOmega()) - 1) * nXiPtBins), casc.phi(), wacc * weff, 4);
         }
       }
-      if (partical == 3312) {
+      if (PDGCode == kXiMinus) {
         registry.fill(HIST("hEtaPhiVtxzPOIXi"), casc.eta(), casc.phi(), vtxz);
         registry.fill(HIST("InvMassXiMinus"), casc.pt(), casc.mXi(), casc.eta(), cent);
         if ((casc.pt() < cfgCutPtPOIMax) && (casc.pt() > cfgCutPtPOIMin) && (casc.mXi() > 1.30) && (casc.mXi() < 1.37)) {
@@ -553,12 +554,12 @@ struct FlowGFWOmegaXi {
     FillProfile(corrconfigs.at(1), HIST("c24"), cent);
     for (int i = 1; i <= nV0PtBins; i++) // loop for all ptBins
     {
-      FillProfilepT(corrconfigs.at(4), HIST("K0sc22dpt"), i, 310, cent);
-      FillProfilepT(corrconfigs.at(5), HIST("Lambdac22dpt"), i, 3122, cent);
+      FillProfilepT(corrconfigs.at(4), HIST("K0sc22dpt"), i, kK0Short, cent);
+      FillProfilepT(corrconfigs.at(5), HIST("Lambdac22dpt"), i, kLambda0, cent);
     }
     for (int i = 1; i <= nXiPtBins; i++) {
-      FillProfilepT(corrconfigs.at(2), HIST("Xic22dpt"), i, 3312, cent);
-      FillProfilepT(corrconfigs.at(3), HIST("Omegac22dpt"), i, 3334, cent);
+      FillProfilepT(corrconfigs.at(2), HIST("Xic22dpt"), i, kXiMinus, cent);
+      FillProfilepT(corrconfigs.at(3), HIST("Omegac22dpt"), i, kOmegaMinus, cent);
     }
   }
 };
