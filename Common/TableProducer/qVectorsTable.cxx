@@ -307,7 +307,7 @@ struct qVectorsTable {
   /// \param runNumber is the collision run number
   /// \return CCDB correction
   template <typename CorrectionType>
-  CorrectionType* getForTsOrRun(std::string const& fullPath, long timestamp, int runNumber)
+  CorrectionType* getForTsOrRun(std::string const& fullPath, int64_t timestamp, int runNumber)
   {
     if (useCorrectionForRun) {
       return ccdb->getForRun<CorrectionType>(fullPath, runNumber);
