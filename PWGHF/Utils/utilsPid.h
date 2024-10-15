@@ -105,4 +105,4 @@ void fillProngPid(TRK const& track, ROW& rowPid)
 
 } // namespace o2::aod
 
-#endif  // PWGHF_UTILS_UTILSPID_H_
+#endif // PWGHF_UTILS_UTILSPID_H_
