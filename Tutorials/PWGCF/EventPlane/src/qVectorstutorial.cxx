@@ -39,7 +39,6 @@
 
 // o2 includes.
 
-
 using namespace o2;
 using namespace o2::framework;
 
@@ -136,9 +135,7 @@ struct qVectorstutorial {
     if (nmode == 2) {
       histosQA.fill(HIST("histQvecV2"), collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], collision.centFT0C());
       histosQA.fill(HIST("histEvtPlV2"), helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode), collision.centFT0C());
-      histosQA.fill(HIST("histQvecRes_SigRefAV2"), helperEP.GetResolution(
-        helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode),
-        helperEP.GetEventPlane(collision.qvecTPCposReVec()[0], collision.qvecTPCposImVec()[0], nmode), nmode), collision.centFT0C());
+      histosQA.fill(HIST("histQvecRes_SigRefAV2"), helperEP.GetResolution(helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode), helperEP.GetEventPlane(collision.qvecTPCposReVec()[0], collision.qvecTPCposImVec()[0], nmode), nmode), collision.centFT0C());
     }
   }
 
@@ -154,7 +151,7 @@ struct qVectorstutorial {
       }
       if (nmode == 2) {
         histosQA.fill(HIST("histCosDetV2"), collision.centFT0C(), trk.pt(),
-          std::cos(static_cast<float>(nmode) * (trk.phi() - helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode))));
+                      std::cos(static_cast<float>(nmode) * (trk.phi() - helperEP.GetEventPlane(collision.qvecFT0CReVec()[0], collision.qvecFT0CImVec()[0], nmode))));
       }
     }
   }
