@@ -128,6 +128,7 @@ struct cascadeFlow {
   ConfigurableAxis axisQVsNorm{"axisQVsNorm", {200, -1.f, 1.f}, "axisQVsNorm"};
 
   // Event selection criteria
+  Configurable<bool> isStoreTrueCascOnly{"isStoreTrueCascOnly", 1, ""};
   Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
   Configurable<bool> sel8{"sel8", 1, "Apply sel8 event selection"};
   Configurable<bool> isNoSameBunchPileupCut{"isNoSameBunchPileupCut", 1, "Same found-by-T0 bunch crossing rejection"};
@@ -858,6 +859,10 @@ struct cascadeFlow {
       if (isApplyML) {
         BDTresponse[0] = bdtScore[0][1];
         BDTresponse[1] = bdtScore[1][1];
+      }
+      if (isStoreTrueCascOnly) {
+        if (pdgCode == 0)
+          continue;
       }
       if (isSelectedCasc[0] || isSelectedCasc[1])
         fillAnalysedTable(coll, casc, v2CSP, v2CEP, PsiT0C, BDTresponse[0], BDTresponse[1], pdgCode);

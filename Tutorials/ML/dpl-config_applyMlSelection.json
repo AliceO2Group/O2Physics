@@ -41,124 +41,37 @@
         },
         "loadModelsFromCCDB": "false",
         "ccdbUrl": "http://alice-ccdb.cern.ch",
-        "modelPathsCCDB": "Users/f/fcatalan/O2AT3/MlInference",
+        "modelPathsCCDB": {
+            "values": [
+                "Users\/c\/ciacco\/O2AT4\/MlInference"
+            ]
+        },
         "timestampCCDB": "-1"
     },
-
     "internal-dpl-aod-reader": {
+        "aod-file-private": "AO2D_MC_Ds.root",
         "time-limit": "0",
         "orbit-offset-enumeration": "0",
         "orbit-multiplier-enumeration": "0",
         "start-value-enumeration": "0",
         "end-value-enumeration": "-1",
         "step-value-enumeration": "1",
-        "aod-file": "AO2D.root"
-    },
-    "hf-track-index-skim-creator-cascades": {
-        "maxDZIni": "4",
-        "tpcRefitV0Daugh": "1",
-        "ccdbPathGrpMag": "GLO/Config/GRPMagField",
-        "processCascades": "0",
-        "propagateToPCA": "1",
-        "cutInvMassCascLc": "1",
-        "ccdbPathGrp": "GLO/GRP/GRP",
-        "processNoCascades": "1",
-        "ccdbUrl": "http://alice-ccdb.cern.ch",
-        "doCutQuality": "1",
-        "nCrossedRowsMinBach": "50",
-        "etaMaxV0Daugh": "1.1",
-        "dcaXYNegToPvMin": "0.1",
-        "maxR": "200",
-        "nCrossedRowsMinV0Daugh": "50",
-        "useAbsDCA": "1",
-        "minRelChi2Change": "0.9",
-        "cpaV0Min": "0.995",
-        "useWeightedFinalPCA": "1",
-        "cutInvMassV0": "0.05",
-        "dcaXYPosToPvMin": "0.1",
-        "minParamChange": "0.001",
-        "etaMinV0Daugh": "-99999",
-        "fillHistograms": "1",
-        "isRun2": "0",
-        "ptCascCandMin": "-1",
-        "ccdbPathLut": "GLO/Param/MatLUT",
-        "tpcRefitBach": "1",
-        "ptMinV0Daugh": "0.05"
-    },
-    "track-to-collision-association": {
-        "timeMargin": "500",
-        "bcWindowForOneSigma": "60",
-        "usePVAssociation": "1",
-        "processStandardAssoc": "0",
-        "processAssocWithTime": "1",
-        "nSigmaForTimeCompat": "4",
-        "includeUnassigned": "1",
-        "fillTableOfCollIdsPerTrack": "0",
-        "setTrackSelections": "1"
-    },
-    "hf-track-index-skim-creator-lf-cascades": {
-        "maxDZIni": "4",
-        "dcaBachToPv": "0.05",
-        "dcaV0ToPv": "0.05",
-        "ccdbPathGrpMag": "GLO/Config/GRPMagField",
-        "v0Radius": "0.9",
-        "tpcNsigmaBachelor": "4",
-        "dcaV0Dau": "2",
-        "processNoLfCascades": "1",
-        "propagateToPCA": "1",
-        "ccdbPathGrp": "GLO/GRP/GRP",
-        "do3Prong": "0",
-        "v0MassWindow": "0.008",
-        "ccdbUrl": "http://alice-ccdb.cern.ch",
-        "rejDiffCollTrack": "1",
-        "doCutQuality": "1",
-        "tpcNsigmaPion": "4",
-        "cascRadius": "0.5",
-        "tpcNsigmaProton": "4",
-        "maxR": "200",
-        "useAbsDCA": "1",
-        "minRelChi2Change": "0.9",
-        "dcaPosToPv": "0.05",
-        "cascCosPA": "0.95",
-        "dcaNegToPv": "0.05",
-        "useWeightedFinalPCA": "1",
-        "dcaCascDau": "1",
-        "processLfCascades": "0",
-        "minParamChange": "0.001",
-        "v0CosPA": "0.95",
-        "fillHistograms": "1",
-        "isRun2": "0",
-        "ccdbPathLut": "GLO/Param/MatLUT"
+        "aod-parent-access-level": "1"
     },
     "hf-track-index-skim-creator": {
-        "maxDZIni": "4",
-        "cutsDplusToPiKPi": {
+        "thresholdMlScoreDsToPiKK": {
             "values": [
                 [
-                    1.75,
-                    2.05,
-                    0.7,
-                    0.02
-                ],
-                [
-                    1.75,
-                    2.05,
+                    0.1,
                     0.5,
-                    0.02
+                    0.5
                 ]
             ]
         },
-        "ccdbPathGrpMag": "GLO/Config/GRPMagField",
-        "axisNumTracks": {
-            "values": [
-                250,
-                -0.5,
-                249.5
-            ]
-        },
+        "applyProtonPidForXicToPKPi": "1",
         "binsPtDsToKKPi": {
             "values": [
-                1,
+                0,
                 5,
                 1000
             ]
@@ -167,23 +80,23 @@
         "binsPtJpsiToEE": {
             "values": [
                 0,
-                0,
-                0
+                5,
+                1000
             ]
         },
         "cutsLcToPKPi": {
             "values": [
                 [
-                    1.75,
-                    2.05,
+                    2.1,
+                    2.55,
                     0.7,
-                    0.02
+                    0
                 ],
                 [
-                    1.75,
-                    2.05,
-                    0.5,
-                    0.02
+                    2,
+                    2.6,
+                    0.85,
+                    0.01
                 ]
             ]
         },
@@ -191,11 +104,11 @@
         "binsPtLcToPKPi": {
             "values": [
                 0,
-                0,
-                0
+                5,
+                1000
             ]
         },
-        "process2And3ProngsWithPvRefit": "0",
+        "minTwoTrackDecayLengthFor3Prongs": "0",
         "axisPvRefitDeltaY": {
             "values": [
                 1000,
@@ -207,16 +120,16 @@
         "cutsJpsiToEE": {
             "values": [
                 [
-                    1.65,
-                    2.15,
-                    0.5,
-                    100
+                    0,
+                    0,
+                    2,
+                    0
                 ],
                 [
-                    1.65,
-                    2.15,
-                    0.5,
-                    100
+                    0,
+                    0,
+                    2,
+                    0
                 ]
             ]
         },
@@ -227,25 +140,27 @@
                 0.5
             ]
         },
-        "cutsD0ToPiK": {
+        "ccdbUrl": "http://alice-ccdb.cern.ch",
+        "onnxFileNames": {
             "values": [
                 [
-                    1.65,
-                    2.15,
-                    0.5,
-                    100
+                    "ModelHandler_onnx_D0ToKPi.onnx"
                 ],
                 [
-                    1.65,
-                    2.15,
-                    0.5,
-                    100
+                    "ModelHandler_onnx_DplusToPiKPi.onnx"
+                ],
+                [
+                    "ModelHandler_onnx_LcToPKPi.onnx"
+                ],
+                [
+                    "ModelHandler_onnx_DsToKKPi.onnx"
+                ],
+                [
+                    ""
                 ]
             ]
         },
-        "ccdbUrl": "http://alice-ccdb.cern.ch",
-        "debugPvRefit": "0",
-        "maxR": "200",
+        "maxTwoTrackChi2PcaFor3Prongs": "1e+10",
         "axisPvRefitDeltaX": {
             "values": [
                 1000,
@@ -259,314 +174,243 @@
         "cutsJpsiToMuMu": {
             "values": [
                 [
-                    1.65,
-                    2.15,
-                    0.5,
-                    100
+                    0,
+                    0,
+                    2,
+                    0
                 ],
                 [
-                    1.65,
-                    2.15,
-                    0.5,
-                    100
+                    0,
+                    0,
+                    2,
+                    0
                 ]
             ]
         },
-        "debug": "0",
         "binsPtXicToPKPi": {
             "values": [
                 0,
-                0,
-                0
+                5,
+                1000
             ]
         },
-        "cutsDsToKKPi": {
-            "values": [
-                [
-                    1.78,
-                    2.18,
-                    0.95,
-                    0.01
-                ],
-                [
-                    1.78,
-                    2.18,
-                    0.98,
-                    0.02
-                ]
-            ]
-        },
-        "doDstar": "0",
+        "doDstar": "1",
         "binsPtDstarToD0Pi": {
             "values": [
                 0,
-                0,
-                0
+                5,
+                1000
             ]
         },
         "binsPtDplusToPiKPi": {
             "values": [
                 0,
-                0,
-                0
+                5,
+                1000
             ]
         },
         "useWeightedFinalPCA": "0",
-        "axisNumCands": {
-            "values": [
-                200,
-                -0.5,
-                199.5
-            ]
-        },
         "cutsDstarToD0Pi": {
             "values": [
                 [
                     0.17,
-                    0.05
+                    0.12
                 ],
                 [
                     0.17,
-                    0.08
+                    0.4
                 ]
             ]
         },
         "binsPtJpsiToMuMu": {
             "values": [
                 0,
-                0,
-                0
-            ]
-        },
-        "binsPtD0ToPiK": {
-            "values": [
-                0,
-                0,
-                0
-            ]
-        },
-        "cutsXicToPKPi": {
-            "values": [
-                [
-                    1.75,
-                    2.05,
-                    0.7,
-                    0.02
-                ],
-                [
-                    1.75,
-                    2.05,
-                    0.5,
-                    0.02
-                ]
-            ]
-        },
-        "minParamChange": "0.001",
-        "processNo2And3Prongs": "0",
-        "ptTolerance": "0.1",
-        "fillHistograms": "1",
-        "isRun2": "0",
-        "ccdbPathLut": "GLO/Param/MatLUT"
-    },
-    "ft0-corrected-table": {},
-    "hf-candidate-creator-3prong-expressions": {
-        "processMc": "1"
-    },
-    "hf-track-index-skim-creator-tag-sel-collisions": {
-        "zVertexMin": "-10",
-        "xVertexMax": "1",
-        "useSel8Trigger": "1",
-        "axisNumContributors": {
-            "values": [
-                200,
-                -0.5,
-                199.5
-            ]
-        },
-        "triggerClassName": "kINT7",
-        "processTrigSel": "1",
-        "yVertexMax": "1",
-        "fillHistograms": "1",
-        "zVertexMax": "10",
-        "xVertexMin": "-1",
-        "chi2Max": "0",
-        "processNoTrigSel": "0",
-        "nContribMin": "0",
-        "yVertexMin": "-1"
-    },
-    "hf-track-index-skim-creator-tag-sel-tracks": {
-        "etaMaxTrack2Prong": "0.8",
-        "useIsGlobalTrackForSoftPion": "0",
-        "ccdbPathGrpMag": "GLO/Config/GRPMagField",
-        "useIsGlobalTrackWoDCAForSoftPion": "0",
-        "ptMaxSoftPionForDstar": "2",
-        "ptMinSoftPionForDstar": "0.05",
-        "cutsTrack3Prong": {
-            "values": [
-                [
-                    0,
-                    10
-                ],
-                [
-                    0,
-                    10
-                ],
-                [
-                    0,
-                    10
-                ],
-                [
-                    0,
-                    10
-                ],
-                [
-                    0,
-                    10
-                ],
-                [
-                    0,
-                    10
-                ]
-            ]
-        },
-        "binsPtTrack": {
-            "values": [
-                0,
-                0.5,
-                1,
-                1.5,
-                2,
-                3,
+                5,
                 1000
             ]
         },
-        "ccdbPathGrp": "GLO/GRP/GRP",
-        "doPvRefit": "0",
-        "useIsGlobalTrackWoDCA": "1",
-        "axisPvRefitDeltaY": {
+        "loadMlModelsFromCCDB": "1",
+        "minParamChange": "0.001",
+        "ptTolerance": "0.1",
+        "ccdbPathLut": "GLO/Param/MatLUT",
+        "applyMlForHfFilters": "0",
+        "maxDZIni": "4",
+        "cutsDplusToPiKPi": {
             "values": [
-                1000,
-                -0.5,
-                0.5
+                [
+                    1.7,
+                    2.05,
+                    0.85,
+                    0.01
+                ],
+                [
+                    1.6,
+                    2.5,
+                    0.9,
+                    0.02
+                ]
             ]
         },
-        "axisPvRefitDeltaZ": {
+        "ccdbPathGrpMag": "GLO/Config/GRPMagField",
+        "thresholdMlScoreLcToPiKP": {
             "values": [
-                1000,
-                -0.5,
-                0.5
+                [
+                    0.1,
+                    0.5,
+                    0.5
+                ]
             ]
         },
-        "ptMinTrack3Prong": "0.3",
-        "etaMinTrack3Prong": "-99999",
-        "useIsQualityTrackITSForSoftPion": "1",
-        "ccdbUrl": "http://alice-ccdb.cern.ch",
-        "doCutQuality": "1",
+        "process2And3ProngsWithPvRefit": "0",
+        "cutsD0ToPiK": {
+            "values": [
+                [
+                    1.65,
+                    2.1,
+                    0.8,
+                    0.01
+                ],
+                [
+                    1.6,
+                    5,
+                    0.85,
+                    0.01
+                ]
+            ]
+        },
         "debugPvRefit": "0",
-        "ptMinTrackBach": "0.3",
-        "useIsGlobalTrack": "0",
-        "axisPvRefitDeltaX": {
-            "values": [
-                1000,
-                -0.5,
-                0.5
-            ]
-        },
-        "etaMaxTrackBach": "0.8",
-        "cutsTrack2Prong": {
+        "maxR": "200",
+        "debug": "0",
+        "cutsDsToKKPi": {
             "values": [
                 [
-                    0,
-                    10
+                    1.7,
+                    2.15,
+                    0.8,
+                    0.01,
+                    0.02
                 ],
                 [
-                    0,
-                    10
-                ],
-                [
-                    0,
-                    10
-                ],
-                [
-                    0,
-                    10
-                ],
-                [
-                    0,
-                    10
-                ],
-                [
-                    0,
-                    10
+                    1.7,
+                    2.25,
+                    0.85,
+                    0.01,
+                    0.02
                 ]
             ]
         },
-        "ptMinTrack2Prong": "0.3",
-        "etaMinTrackBach": "-99999",
-        "cutsTrackDstar": {
+        "applyProtonPidForLcToPKPi": "1",
+        "applyKaonPidIn3Prongs": "0",
+        "binsPtD0ToPiK": {
+            "values": [
+                0,
+                5,
+                1000
+            ]
+        },
+        "mlModelPathCCDB": "EventFiltering/PWGHF/BDTSmeared",
+        "cutsXicToPKPi": {
             "values": [
                 [
-                    0,
-                    0
+                    2.1,
+                    2.65,
+                    0.8,
+                    0.01
                 ],
                 [
-                    0,
-                    0
-                ],
-                [
-                    0,
-                    0
-                ],
-                [
-                    0,
-                    0
-                ],
-                [
-                    0,
-                    0
-                ],
-                [
-                    0,
-                    0
+                    2,
+                    2.7,
+                    0.85,
+                    0.01
                 ]
             ]
         },
-        "etaMaxSoftPionForDstar": "0.8",
-        "etaMinTrack2Prong": "-99999",
-        "tpcNClsFoundMin": "70",
-        "etaMaxTrack3Prong": "0.8",
+        "processNo2And3Prongs": "0",
         "fillHistograms": "1",
         "isRun2": "0",
-        "cutsTrackBach": {
+        "thresholdMlScoreXicToPiKP": {
             "values": [
                 [
-                    10,
-                    10
-                ],
-                [
-                    10,
-                    10
-                ],
-                [
-                    10,
-                    10
-                ],
-                [
-                    10,
-                    10
-                ],
-                [
-                    10,
-                    10
-                ],
-                [
-                    10,
-                    10
+                    0.1,
+                    0.5,
+                    0.5
                 ]
             ]
         },
-        "etaMinSoftPionForDstar": "-99999",
-        "ccdbPathLut": "GLO/Param/MatLUT"
+        "timestampCcdbForHfFilters": "1657032422771",
+        "thresholdMlScoreDplusToPiKPi": {
+            "values": [
+                [
+                    0.1,
+                    0.5,
+                    0.5
+                ]
+            ]
+        },
+        "thresholdMlScoreD0ToKPi": {
+            "values": [
+                [
+                    0.1,
+                    0.5,
+                    0.5
+                ]
+            ]
+        }
+    },
+    "timestamp-task": {
+        "fatalOnInvalidTimestamp": "false",
+        "verbose": "false",
+        "rct-path": "RCT\/Info\/RunInformation",
+        "orbit-reset-path": "CTP\/Calib\/OrbitReset",
+        "ccdb-url": "http:\/\/alice-ccdb.cern.ch",
+        "isRun2MC": "-1"
+    },
+    "track-propagation": {
+        "ccdb-url": "http:\/\/alice-ccdb.cern.ch",
+        "lutPath": "GLO\/Param\/MatLUT",
+        "geoPath": "GLO\/Config\/GeometryAligned",
+        "grpmagPath": "GLO\/Config\/GRPMagField",
+        "mVtxPath": "GLO\/Calib\/MeanVertex",
+        "minPropagationDistance": "5",
+        "trackTunerParams": "debugInfo=0|updateTrackDCAs=1|updateTrackCovMat=1|updateCurvature=0|updateCurvatureIU=1|updatePulls=1|isInputFileFromCCDB=1|pathInputFile=Users\/m\/mfaggin\/test\/inputsTrackTuner\/pp2023\/smoothHighPtMC|nameInputFile=trackTuner_DataLHC23fPass1_McLHC23k4b_run535085.root|pathFileQoverPt=Users\/h\/hsharma\/qOverPtGraphs|nameFileQoverPt=D0sigma_Data_removal_itstps_MC_LHC22b1b.root|usePvRefitCorrections=0|qOverPtMC=1|qOverPtData=1.5",
+        "processStandard": "false",
+        "processStandardWithPID": "false",
+        "processCovarianceMc": "false",
+        "processCovariance": "true",
+        "processCovarianceWithPID": "false"
+    },
+    "bc-selection-task": {
+        "triggerBcShift": "999",
+        "processRun2": "false",
+        "processRun3": "true"
+    },
+    "event-selection-task": {
+        "syst": "pp",
+        "muonSelection": "0",
+        "maxDiffZvtxFT0vsPV": "1",
+        "isMC": "1",
+        "processRun2": "false",
+        "processRun3": "true"
+    },
+    "hf-candidate-creator-3prong": {
+        "propagateToPCA": "true",
+        "useAbsDCA": "false",
+        "useWeightedFinalPCA": "false",
+        "maxR": "200",
+        "maxDZIni": "4",
+        "minParamChange": "0.001",
+        "minRelChi2Change": "0.9",
+        "fillHistograms": "true",
+        "isRun2": "false",
+        "ccdbUrl": "http:\/\/alice-ccdb.cern.ch",
+        "ccdbPathLut": "GLO\/Param\/MatLUT",
+        "ccdbPathGrp": "GLO\/GRP\/GRP",
+        "ccdbPathGrpMag": "GLO\/Config\/GRPMagField",
+        "createDplus": "true",
+        "createDs": "true",
+        "createLc": "false",
+        "createXic": "false",
+        "processNoPvRefit": "true"
     },
     "track-selection": {
         "ptMax": "1e+10",
@@ -579,52 +423,5 @@
         "dcaSetup": "0",
         "ptMin": "0.1",
         "produceFBextendedTable": "-1"
-    },
-    "bc-selection-task": {
-        "triggerBcShift": "999",
-        "processRun3": "1",
-        "processRun2": "0"
-    },
-    "event-selection-task": {
-        "syst": "pp",
-        "isMC": "1",
-        "processRun3": "1",
-        "processRun2": "0",
-        "muonSelection": "0",
-        "customDeltaBC": "-1"
-    },
-    "hf-candidate-creator-3prong": {
-        "maxDZIni": "4",
-        "minRelChi2Change": "0.9",
-        "processNoPvRefit": "1",
-        "ccdbPathGrpMag": "GLO/Config/GRPMagField",
-        "useWeightedFinalPCA": "0",
-        "propagateToPCA": "1",
-        "minParamChange": "0.001",
-        "ccdbPathGrp": "GLO/GRP/GRP",
-        "processPvRefit": "0",
-        "fillHistograms": "1",
-        "ccdbUrl": "http://alice-ccdb.cern.ch",
-        "isRun2": "0",
-        "ccdbPathLut": "GLO/Param/MatLUT",
-        "maxR": "200",
-        "useAbsDCA": "0"
-    },
-    "track-propagation": {
-        "lutPath": "GLO/Param/MatLUT",
-        "mVtxPath": "GLO/Calib/MeanVertex",
-        "geoPath": "GLO/Config/GeometryAligned",
-        "grpmagPath": "GLO/Config/GRPMagField",
-        "ccdb-url": "http://alice-ccdb.cern.ch",
-        "minPropagationDistance": "5",
-        "processStandard": "0",
-        "processCovariance": "1"
-    },
-    "timestamp-task": {
-        "rct-path": "RCT/Info/RunInformation",
-        "orbit-reset-path": "CTP/Calib/OrbitReset",
-        "ccdb-url": "http://alice-ccdb.cern.ch",
-        "verbose": "0",
-        "isRun2MC": "0"
     }
 }
