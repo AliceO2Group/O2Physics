@@ -363,7 +363,7 @@ struct ebyeMaker {
 
   float dcaSigma(float const& pt)
   {
-    return 0.0105 + 0.0350 / std::pow(pt, 1.1);
+    return 0.0105 + 0.0350 / std::pow(std::abs(pt), 1.1);
   }
 
   template <class Bc>
