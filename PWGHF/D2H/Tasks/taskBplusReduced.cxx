@@ -143,11 +143,11 @@ struct HfTaskBplusReduced {
 
   void init(InitContext&)
   {
-    std::array<bool, 2> processFuncData{doprocessData, doprocessDataWithDmesMl};
+    std::array<bool, 3> processFuncData{doprocessData, doprocessDataWithDmesMl, doprocessDataWithBplusMl};
     if ((std::accumulate(processFuncData.begin(), processFuncData.end(), 0)) > 1) {
       LOGP(fatal, "Only one process function for data can be enabled at a time.");
     }
-    std::array<bool, 2> processFuncMc{doprocessMc, doprocessMcWithDmesMl};
+    std::array<bool, 5> processFuncMc{doprocessMc, doprocessMcWithDecayTypeCheck, doprocessMcWithDmesMl, doprocessMcWithBplusMl, doprocessMcWithBplusMlAndDecayTypeCheck};
     if ((std::accumulate(processFuncMc.begin(), processFuncMc.end(), 0)) > 1) {
       LOGP(fatal, "Only one process function for MC can be enabled at a time.");
     }
