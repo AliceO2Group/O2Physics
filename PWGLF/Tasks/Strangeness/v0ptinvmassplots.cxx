@@ -24,6 +24,7 @@ This analysis includes two processes, one for Real Data and one for MC Data swit
 #include "Common/DataModel/EventSelection.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/DataModel/PIDResponse.h"
+#include <iostream>
 
 // namespace to be used for pt plots and bins
 namespace pthistos
@@ -87,6 +88,7 @@ struct v0ptinvmassplots {
     AxisSpec LambdaMassAxis = {nBins, 1.085f, 1.145f, "#it{M} p^{+}#pi^{-} [GeV/#it{c}^{2}]"};
     AxisSpec AntiLambdaMassAxis = {nBins, 1.085f, 1.145f, "#it{M} p^{-}#pi^{+} [GeV/#it{c}^{2}]"};
     AxisSpec ptAxis = {nBins, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec GenptAxis = {20, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
 
     rPtAnalysis.add("hV0PtAll", "hV0PtAll", {HistType::kTH1F, {{nBins, 0.0f, 10.0f}}});
 
@@ -107,6 +109,9 @@ struct v0ptinvmassplots {
       rPtAnalysis.add("hMassK0ShortAll", "hMassK0ShortAll", {HistType::kTH1F, {K0ShortMassAxis}});
       rPtAnalysis.add("hK0ShortPtSpectrumBeforeCuts", "hK0ShortPtSpectrumBeforeCuts", {HistType::kTH1F, {ptAxis}});
       rPtAnalysis.add("hMassK0ShortAllAfterCuts", "hMassK0ShortAllAfterCuts", {HistType::kTH1F, {K0ShortMassAxis}});
+      rPtAnalysis.add("hK0ShGeneratedPtSpectrum", "hK0ShGeneratedPtSpectrum", {HistType::kTH1F, {GenptAxis}});
+      rPtAnalysis.add("hLambdaGeneratedPtSpectrum", "hLambdaGeneratedPtSpectrum", {HistType::kTH1F, {GenptAxis}});
+      rPtAnalysis.add("hAntilambdaGeneratedPtSpectrum", "hAntilambdaGeneratedPtSpectrum", {HistType::kTH1F, {GenptAxis}});
       for (int i = 0; i < 20; i++) {
         pthistos::KaonPt[i] = rKaonshMassPlots_per_PtBin.add<TH1>(fmt::format("hPt_from_{0}_to_{1}", pthistos::kaonptbins[i], pthistos::kaonptbins[i + 1]).data(), fmt::format("hPt from {0} to {1}", pthistos::kaonptbins[i], pthistos::kaonptbins[i + 1]).data(), {HistType::kTH1D, {{K0ShortMassAxis}}});
       }
@@ -156,11 +161,30 @@ struct v0ptinvmassplots {
   // Defining the type of the daughter tracks
   using DaughterTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::McTrackLabels>;
 
+  // This is the Process for the MC Generated Data
+  void GenMCprocess(const soa::SmallGroups<soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels>>& collisions,
+                    aod::McParticles const& mcParticles)
+  {
+    for (const auto& mcParticle : mcParticles) {
+      if (mcParticle.pdgCode() == 310) // kzero matched
+      {
+        rPtAnalysis.fill(HIST("hK0ShGeneratedPtSpectrum"), mcParticle.pt());
+      }
+      if (mcParticle.pdgCode() == 3122) // lambda matched
+      {
+        rPtAnalysis.fill(HIST("hLambdaGeneratedPtSpectrum"), mcParticle.pt());
+      }
+      if (mcParticle.pdgCode() == -3122) // antilambda matched
+      {
+        rPtAnalysis.fill(HIST("hAntilambdaGeneratedPtSpectrum"), mcParticle.pt());
+      }
+    }
+  }
   // This is the Process for the MC reconstructed Data
-  void RecMCprocess(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const&,
-                    soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s,
-                    DaughterTracks const&, // no need to define a variable for tracks, if we don't access them directly
-                    aod::McParticles const&)
+  void MCprocess(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const&,
+                 soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s,
+                 DaughterTracks const&, // no need to define a variable for tracks, if we don't access them directly
+                 aod::McParticles const&)
   {
     for (const auto& v0 : V0s) {
       rPtAnalysis.fill(HIST("hV0PtAll"), v0.pt());
@@ -320,7 +344,8 @@ struct v0ptinvmassplots {
       }
     }
   }
-  PROCESS_SWITCH(v0ptinvmassplots, RecMCprocess, "Process Run 3 MC:Reconstructed", false);
+  PROCESS_SWITCH(v0ptinvmassplots, GenMCprocess, "Process Run 3 MC Generated", false);
+  PROCESS_SWITCH(v0ptinvmassplots, MCprocess, "Process Run 3 MC", false);
   PROCESS_SWITCH(v0ptinvmassplots, Dataprocess, "Process Run 3 Data,", true);
 };
 
