@@ -66,7 +66,7 @@ float getTpcTofNSigmaPi1(const T1& prong1)
   if (hasTpc && hasTof) {
     float tpcNSigma = prong1.tpcNSigmaPi();
     float tofNSigma = prong1.tofNSigmaPi();
-    return sqrt(.5f * tpcNSigma * tpcNSigma + .5f * tofNSigma * tofNSigma);
+    return std::sqrt(.5f * tpcNSigma * tpcNSigma + .5f * tofNSigma * tofNSigma);
   }
   if (hasTpc) {
     return abs(prong1.tpcNSigmaPi());
