@@ -332,7 +332,7 @@ struct hyperKinkRecoTask {
     bool isGoodTPCCand = false;
     if (candidate.itsNClsInnerBarrel() == 0 && candidate.itsNCls() < 4 &&
         candidate.tpcNClsCrossedRows() >= 70 && candidate.tpcChi2NCl() < 4.f &&
-        candidate.tpcNClsCrossedRows() > 0.8 * candidate.tpcNClsFindable() && candidate.tpcNClsFound() > 80 && abs(nSigmaTrit) < nSigmaTPCCutTrit) {
+        candidate.tpcNClsCrossedRows() > 0.8 * candidate.tpcNClsFindable() && candidate.tpcNClsFound() > 80 && std::abs(nSigmaTrit) < nSigmaTPCCutTrit) {
       isGoodTPCCand = true;
     }
 
@@ -340,7 +340,7 @@ struct hyperKinkRecoTask {
       return false;
     }
 
-    if (candidate.hasTOF() && abs(nSigmaTOFTrit) > nSigmaTOFCutTrit) {
+    if (candidate.hasTOF() && std::abs(nSigmaTOFTrit) > nSigmaTOFCutTrit) {
       return false;
     }
 
@@ -394,7 +394,7 @@ struct hyperKinkRecoTask {
       gpu::gpustd::array<float, 2> dcaInfoHyp;
       o2::base::Propagator::Instance()->propagateToDCABxByBz({primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, trackParCovHyperPV, 2.f, static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value), &dcaInfoHyp);
 
-      if (abs(dcaInfoHyp[0]) > maxDCAHypToPV) {
+      if (std::abs(dcaInfoHyp[0]) > maxDCAHypToPV) {
         continue;
       }
 
@@ -412,7 +412,7 @@ struct hyperKinkRecoTask {
       // propagate to PV
       gpu::gpustd::array<float, 2> dcaInfoTrit;
       o2::base::Propagator::Instance()->propagateToDCABxByBz({primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, trackParCovTrit, 2.f, static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value), &dcaInfoTrit);
-      if (abs(dcaInfoTrit[0]) < minDCATritToPV) {
+      if (std::abs(dcaInfoTrit[0]) < minDCATritToPV) {
         continue;
       }
 
@@ -492,13 +492,13 @@ struct hyperKinkRecoTask {
         auto mcTrackHyper = mcLabHyper.mcParticle_as<aod::McParticles>();
         auto mcTrackTrit = mcLabTrit.mcParticle_as<aod::McParticles>();
 
-        if (abs(mcTrackHyper.pdgCode()) != hyperPdg || abs(mcTrackTrit.pdgCode()) != tritDauPdg) {
+        if (std::abs(mcTrackHyper.pdgCode()) != hyperPdg || std::abs(mcTrackTrit.pdgCode()) != tritDauPdg) {
           continue;
         }
         auto tritIdx = mcTrackTrit.globalIndex();
         kinkCand.isSignal = false;
         for (auto& dauMCTracks : mcTrackHyper.daughters_as<aod::McParticles>()) {
-          if (abs(dauMCTracks.pdgCode()) == tritDauPdg) {
+          if (std::abs(dauMCTracks.pdgCode()) == tritDauPdg) {
             if (dauMCTracks.globalIndex() == tritIdx) {
               kinkCand.isSignal = true;
               break;

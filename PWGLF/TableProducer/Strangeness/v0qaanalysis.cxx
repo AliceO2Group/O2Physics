@@ -294,7 +294,7 @@ struct LfV0qaanalysis {
         }
         auto v0mcparticle = v0.mcParticle();
 
-        if (abs(v0mcparticle.y()) > 0.5f) {
+        if (std::abs(v0mcparticle.y()) > 0.5f) {
           continue;
         }
 
@@ -372,7 +372,7 @@ struct LfV0qaanalysis {
           continue;
         }
 
-        if (abs(mcParticle.y()) > 0.5f) {
+        if (std::abs(mcParticle.y()) > 0.5f) {
           continue;
         }
 
@@ -432,7 +432,7 @@ struct LfV0qaanalysis {
       if (!mcParticle.isPhysicalPrimary()) {
         continue;
       }
-      if (abs(mcParticle.y()) > 0.5f) {
+      if (std::abs(mcParticle.y()) > 0.5f) {
         continue;
       }
 
@@ -491,7 +491,7 @@ struct LfV0qaanalysis {
           continue;
         }
 
-        if (abs(mcParticle.y()) > 0.5f) {
+        if (std::abs(mcParticle.y()) > 0.5f) {
           continue;
         }
 
@@ -543,7 +543,7 @@ struct LfV0qaanalysis {
         continue;
       }
 
-      if (abs(mcParticle.y()) > 0.5f) {
+      if (std::abs(mcParticle.y()) > 0.5f) {
         continue;
       }
 

@@ -18,8 +18,6 @@
 
 ClassImp(V0PhotonCut);
 
-const char* V0PhotonCut::mCutNames[static_cast<int>(V0PhotonCut::V0PhotonCuts::kNCuts)] = {"Mee", "V0PtRange", "V0EtaRange", "AP", " PsiPair", "PhivPair", "Rxy", "CosPA", "PCA", "RZLine", "OnWwireIB", "OnWwireOB", "TrackPtRange", "TrackEtaRange", "TPCNCls", "TPCCrossedRows", "TPCCrossedRowsOverNCls", "TPCChi2NDF", "TPCNsigmaEl", "TPCNsigmaPi", "DCAxy", "DCAz", "ITSNCls", "ITSChi2NDF", "IsWithinBeamPipe", "RequireITSTPC", "RequireITSonly", "RequireTPConly", "RequireTPCTRD", "RequireTPCTOF", "RequireTPCTRDTOF"};
-
 const std::pair<int8_t, std::set<uint8_t>> V0PhotonCut::its_ib_Requirement = {0, {0, 1, 2}};           // no hit on 3 ITS ib layers.
 const std::pair<int8_t, std::set<uint8_t>> V0PhotonCut::its_ob_Requirement = {4, {3, 4, 5, 6}};        // all hits on 4 ITS ob layers.
 const std::pair<int8_t, std::set<uint8_t>> V0PhotonCut::its_ob_Requirement_ITSTPC = {2, {3, 4, 5, 6}}; // at least 2 hits on 4 ITS ob layers.
@@ -140,6 +138,11 @@ void V0PhotonCut::SetMinNCrossedRowsOverFindableClustersTPC(float minNCrossedRow
   mMinNCrossedRowsOverFindableClustersTPC = minNCrossedRowsOverFindableClustersTPC;
   LOG(info) << "V0 Photon Cut, set min N crossed rows over findable clusters TPC: " << mMinNCrossedRowsOverFindableClustersTPC;
 }
+void V0PhotonCut::SetMaxFracSharedClustersTPC(float max)
+{
+  mMaxFracSharedClustersTPC = max;
+  LOG(info) << "V0 Photon Cut, set max fraction of shared clusters in  TPC: " << mMaxFracSharedClustersTPC;
+}
 void V0PhotonCut::SetChi2PerClusterTPC(float min, float max)
 {
   mMinChi2PerClusterTPC = min;
@@ -228,39 +231,4 @@ void V0PhotonCut::SetDisableITSonly(bool flag)
 {
   mDisableITSonly = flag;
   LOG(info) << "V0 Photon Cut, disable ITS only track: " << mDisableITSonly;
-}
-
-void V0PhotonCut::print() const
-{
-  LOG(info) << "V0 Photon Cut:";
-  for (int i = 0; i < static_cast<int>(V0PhotonCuts::kNCuts); i++) {
-    switch (static_cast<V0PhotonCuts>(i)) {
-      case V0PhotonCuts::kTrackPtRange:
-        LOG(info) << mCutNames[i] << " in [" << mMinTrackPt << ", " << mMaxTrackPt << "]";
-        break;
-      case V0PhotonCuts::kTrackEtaRange:
-        LOG(info) << mCutNames[i] << " in [" << mMinTrackEta << ", " << mMaxTrackEta << "]";
-        break;
-      case V0PhotonCuts::kTPCNCls:
-        LOG(info) << mCutNames[i] << " > " << mMinNClustersTPC;
-        break;
-      case V0PhotonCuts::kTPCCrossedRows:
-        LOG(info) << mCutNames[i] << " > " << mMinNCrossedRowsTPC;
-        break;
-      case V0PhotonCuts::kTPCCrossedRowsOverNCls:
-        LOG(info) << mCutNames[i] << " > " << mMinNCrossedRowsOverFindableClustersTPC;
-        break;
-      case V0PhotonCuts::kTPCChi2NDF:
-        LOG(info) << mCutNames[i] << " < " << mMaxChi2PerClusterTPC;
-        break;
-      case V0PhotonCuts::kDCAxy:
-        LOG(info) << mCutNames[i] << " < " << mMaxDcaXY;
-        break;
-      case V0PhotonCuts::kDCAz:
-        LOG(info) << mCutNames[i] << " < " << mMaxDcaZ;
-        break;
-      default:
-        LOG(fatal) << "Cut unknown!";
-    }
-  }
 }

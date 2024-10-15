@@ -286,7 +286,7 @@ struct QADataCollectingEngine {
     }
   }
 
-  template <efficiencyandqatask::KindOfProcess kind, typename TrackObject>
+  template <efficiencyandqatask::KindOfProcess kind, typename CollisionsObject, typename TrackObject>
   void processTrack(float zvtx, TrackObject const& track)
   {
     using namespace efficiencyandqatask;
@@ -320,7 +320,7 @@ struct QADataCollectingEngine {
       fhTPC_CrossedRows_vs_PtB->Fill(track.pt(), track.tpcNClsCrossedRows());
       fhTPC_CrossedRowsOverFindableCls_vs_PtB->Fill(track.pt(), track.tpcCrossedRowsOverFindableCls());
       fhTPC_Chi2NCls_vs_PtB->Fill(track.pt(), track.tpcChi2NCl());
-      if (InTheAcceptance(track)) {
+      if (InTheAcceptance<CollisionsObject>(track)) {
         /* efficiency histograms */
         fillhisto(fhPt_vs_EtaItsAcc, hasits);
         fillhisto(fhPt_vs_EtaTpcAcc, hastpc);
@@ -800,8 +800,8 @@ struct DptDptEfficiencyAndQc {
     }
   }
 
-  template <bool dopid, efficiencyandqatask::KindOfProcess kind, typename FilterdCollision, typename PassedTracks>
-  void processTracks(FilterdCollision const& collision, PassedTracks const& tracks)
+  template <typename FilteredCollisions, bool dopid, efficiencyandqatask::KindOfProcess kind, typename PassedTracks>
+  void processTracks(FilteredCollisions::iterator const& collision, PassedTracks const& tracks)
   {
     using namespace efficiencyandqatask;
 
@@ -814,7 +814,7 @@ struct DptDptEfficiencyAndQc {
             mom = track.tpcInnerParam();
           }
         }
-        qaDataCE[ixDCE]->processTrack<kind>(collision.posZ(), track);
+        qaDataCE[ixDCE]->processTrack<kind, FilteredCollisions>(collision.posZ(), track);
         if constexpr (dopid) {
           pidDataCE[ixDCE]->processTrack<kind>(track, mom);
         }
@@ -838,7 +838,7 @@ struct DptDptEfficiencyAndQc {
   {
     using namespace efficiencyandqatask;
 
-    processTracks<true, kReco>(collision, tracks);
+    processTracks<soa::Filtered<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>, true, kReco>(collision, tracks);
   }
   PROCESS_SWITCH(DptDptEfficiencyAndQc, processReconstructedNotStored, "Process reconstructed efficiency and QA for not stored derived data", false);
 
@@ -848,7 +848,7 @@ struct DptDptEfficiencyAndQc {
   {
     using namespace efficiencyandqatask;
 
-    processTracks<true, kReco>(collision, tracks);
+    processTracks<soa::Filtered<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>, true, kReco>(collision, tracks);
   }
   PROCESS_SWITCH(DptDptEfficiencyAndQc, processDetectorLevelNotStored, "Process MC detector level efficiency and QA for not stored derived data", false);
 
@@ -857,7 +857,7 @@ struct DptDptEfficiencyAndQc {
   {
     using namespace efficiencyandqatask;
 
-    processTracks<false, kGen>(collision, particles);
+    processTracks<soa::Filtered<soa::Join<aod::McCollisions, aod::DptDptCFGenCollisionsInfo>>, false, kGen>(collision, particles);
   }
   PROCESS_SWITCH(DptDptEfficiencyAndQc, processGeneratorLevelNotStored, "Process MC generator level efficiency and QA for not stored derived data", true);
 
@@ -866,7 +866,7 @@ struct DptDptEfficiencyAndQc {
   {
     using namespace efficiencyandqatask;
 
-    processTracks<false, kReco>(collision, tracks);
+    processTracks<soa::Filtered<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>, false, kReco>(collision, tracks);
   }
   PROCESS_SWITCH(DptDptEfficiencyAndQc, processReconstructedNotStoredNoPID, "Process reconstructed efficiency and QA for not stored derived data", false);
 
@@ -876,7 +876,7 @@ struct DptDptEfficiencyAndQc {
   {
     using namespace efficiencyandqatask;
 
-    processTracks<false, kReco>(collision, tracks);
+    processTracks<soa::Filtered<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>, false, kReco>(collision, tracks);
   }
   PROCESS_SWITCH(DptDptEfficiencyAndQc, processDetectorLevelNotStoredNoPID, "Process MC detector level efficiency and QA for not stored derived data", true);
 };

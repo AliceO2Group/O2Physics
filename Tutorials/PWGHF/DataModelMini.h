@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file task-mini.cxx
+/// \file DataModelMini.h
 /// \brief Mini version of the HF analysis chain
 ///
 /// \author Vít Kučera <vit.kucera@cern.ch>, Inha University
@@ -28,7 +28,7 @@ DECLARE_SOA_COLUMN(IsSelProng, isSelProng, bool); //! prong selection flag
 } // namespace hf_seltrack
 
 // Track selection table
-DECLARE_SOA_TABLE(HfSelTrack, "AOD", "HFSELTRACK", //! track selection table
+DECLARE_SOA_TABLE(HfTSelTrack, "AOD", "HFTSELTRACK", //! track selection table
                   hf_seltrack::IsSelProng);
 
 namespace hf_track_index
@@ -39,7 +39,7 @@ DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, Tracks, "_1"); //! prong 1
 } // namespace hf_track_index
 
 // Track index skim table
-DECLARE_SOA_TABLE(HfTrackIndexProng2, "AOD", "HFTRACKIDXP2", //! table with prongs indices
+DECLARE_SOA_TABLE(HfT2Prongs, "AOD", "HFT2PRONG", //! table with prongs indices
                   hf_track_index::Prong0Id,
                   hf_track_index::Prong1Id);
 
@@ -79,12 +79,12 @@ DECLARE_SOA_EXPRESSION_COLUMN(Pz, pz, //! pz of candidate
                               float, 1.f * pzProng0 + 1.f * pzProng1);
 DECLARE_SOA_DYNAMIC_COLUMN(M, m, //! invariant mass of candidate
                            [](float px0, float py0, float pz0, float px1, float py1, float pz1, const std::array<double, 2>& m) -> float { return RecoDecay::m(std::array{std::array{px0, py0, pz0}, std::array{px1, py1, pz1}}, m); });
-DECLARE_SOA_DYNAMIC_COLUMN(CPA, cpa, //! cosine of pointing angle of candidate
+DECLARE_SOA_DYNAMIC_COLUMN(Cpa, cpa, //! cosine of pointing angle of candidate
                            [](float xVtxP, float yVtxP, float zVtxP, float xVtxS, float yVtxS, float zVtxS, float px, float py, float pz) -> float { return RecoDecay::cpa(std::array{xVtxP, yVtxP, zVtxP}, std::array{xVtxS, yVtxS, zVtxS}, std::array{px, py, pz}); });
 } // namespace hf_cand_prong2
 
 // Candidate table
-DECLARE_SOA_TABLE(HfCandProng2Base, "AOD", "HFCANDP2BASE", //! 2-prong candidate table
+DECLARE_SOA_TABLE(HfTCand2ProngBase, "AOD", "HFTCAND2PBASE", //! 2-prong candidate table
                   hf_cand_prong2::CollisionId,
                   collision::PosX, collision::PosY, collision::PosZ,
                   hf_cand_prong2::XSecondaryVertex, hf_cand_prong2::YSecondaryVertex, hf_cand_prong2::ZSecondaryVertex,
@@ -98,14 +98,14 @@ DECLARE_SOA_TABLE(HfCandProng2Base, "AOD", "HFCANDP2BASE", //! 2-prong candidate
                   /* dynamic columns */
                   hf_cand_prong2::M<hf_cand_prong2::PxProng0, hf_cand_prong2::PyProng0, hf_cand_prong2::PzProng0, hf_cand_prong2::PxProng1, hf_cand_prong2::PyProng1, hf_cand_prong2::PzProng1>,
                   /* dynamic columns that use candidate momentum components */
-                  hf_cand_prong2::CPA<collision::PosX, collision::PosY, collision::PosZ, hf_cand_prong2::XSecondaryVertex, hf_cand_prong2::YSecondaryVertex, hf_cand_prong2::ZSecondaryVertex, hf_cand_prong2::Px, hf_cand_prong2::Py, hf_cand_prong2::Pz>,
+                  hf_cand_prong2::Cpa<collision::PosX, collision::PosY, collision::PosZ, hf_cand_prong2::XSecondaryVertex, hf_cand_prong2::YSecondaryVertex, hf_cand_prong2::ZSecondaryVertex, hf_cand_prong2::Px, hf_cand_prong2::Py, hf_cand_prong2::Pz>,
                   hf_cand_prong2::Pt<hf_cand_prong2::Px, hf_cand_prong2::Py>);
 
 // Extended table with expression columns that can be used as arguments of dynamic columns
-DECLARE_SOA_EXTENDED_TABLE_USER(HfCandProng2Ext, HfCandProng2Base, "HFCANDP2EXT", //! extension table for the 2-prong candidate table
+DECLARE_SOA_EXTENDED_TABLE_USER(HfTCand2ProngExt, HfTCand2ProngBase, "HFTCAND2PEXT", //! extension table for the 2-prong candidate table
                                 hf_cand_prong2::Px, hf_cand_prong2::Py, hf_cand_prong2::Pz);
 
-using HfCandProng2 = HfCandProng2Ext;
+using HfTCand2Prong = HfTCand2ProngExt;
 
 namespace hf_selcandidate_d0
 {
@@ -115,7 +115,7 @@ DECLARE_SOA_COLUMN(IsSelD0bar, isSelD0bar, int); //! selection flag for D0 bar
 } // namespace hf_selcandidate_d0
 
 // Candidate selection table
-DECLARE_SOA_TABLE(HfSelCandidateD0, "AOD", "HFSELCANDD0", //! table with D0 selection flags
+DECLARE_SOA_TABLE(HfTSelD0, "AOD", "HFTSELD0", //! table with D0 selection flags
                   hf_selcandidate_d0::IsSelD0,
                   hf_selcandidate_d0::IsSelD0bar);
 } // namespace o2::aod

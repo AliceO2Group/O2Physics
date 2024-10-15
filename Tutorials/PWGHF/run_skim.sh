@@ -28,7 +28,7 @@ DIR_THIS="$(dirname "$(realpath "$0")")"
 JSON="$DIR_THIS/dpl-config_skim.json"
 
 # command line options of O2 workflows
-OPTIONS="-b --configuration json://$JSON --aod-memory-rate-limit 2000000000 --shm-segment-size 16000000000 --resources-monitoring 2 --min-failure-level error --aod-writer-keep AOD/HFTRACKIDXP2/0"
+OPTIONS="-b --configuration json://$JSON --aod-memory-rate-limit 2000000000 --shm-segment-size 16000000000 --resources-monitoring 2 --aod-writer-keep AOD/HFT2PRONG/0"
 
 # execute the mini task workflow and its dependencies
 # shellcheck disable=SC2086 # Ignore unquoted options.
@@ -37,8 +37,7 @@ o2-analysis-timestamp $OPTIONS | \
 o2-analysis-trackselection $OPTIONS | \
 o2-analysis-track-propagation $OPTIONS | \
 o2-analysis-bc-converter $OPTIONS | \
-o2-analysis-tracks-extra-converter $OPTIONS | \
-o2-analysis-zdc-converter $OPTIONS  \
+o2-analysis-tracks-extra-converter $OPTIONS \
 > "$LOGFILE" 2>&1
 
 # report status

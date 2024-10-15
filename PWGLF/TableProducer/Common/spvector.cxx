@@ -95,6 +95,7 @@ struct spvector {
   Configurable<float> cfgCutDCAz{"cfgCutDCAz", 2.0f, "DCAz range for tracks"};
 
   Configurable<int> QxyNbins{"QxyNbins", 100, "Number of bins in QxQy histograms"};
+  Configurable<int> PhiNbins{"PhiNbins", 100, "Number of bins in phi histogram"};
   Configurable<float> lbinQxy{"lbinQxy", -5.0, "lower bin value in QxQy histograms"};
   Configurable<float> hbinQxy{"hbinQxy", 5.0, "higher bin value in QxQy histograms"};
   // Configurable<int> ZDCgainNbins{"ZDCgainNbins", 500, "Number of bins in Gaineq histograms"};
@@ -186,7 +187,7 @@ struct spvector {
     // AxisSpec amplitudeZDC = {ZDCgainNbins, lbinZDCgain, hbinZDCgain, "ZDC amplitude"};
     AxisSpec channelZDCAxis = {8, 0.0, 8.0, "ZDC tower"};
     AxisSpec qxZDCAxis = {QxyNbins, lbinQxy, hbinQxy, "Qx"};
-    AxisSpec phiAxis = {50, -6.28, 6.28, "phi"};
+    AxisSpec phiAxis = {PhiNbins, -6.28, 6.28, "phi"};
     AxisSpec vzAxis = {VzNbins, lbinVz, hbinVz, "vz"};
     AxisSpec vxAxis = {VxNbins, lbinVx, hbinVx, "vx"};
     AxisSpec vyAxis = {VyNbins, lbinVy, hbinVy, "vy"};

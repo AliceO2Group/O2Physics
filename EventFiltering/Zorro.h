@@ -17,6 +17,7 @@
 #include <bitset>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "TH1D.h"
@@ -59,10 +60,14 @@ class Zorro
   ZorroSummary* getZorroSummary() { return &mZorroSummary; }
 
  private:
+  void setupHelpers(int64_t timestamp);
+
   ZorroSummary mZorroSummary{"ZorroSummary", "ZorroSummary"};
 
   std::string mBaseCCDBPath = "Users/m/mpuccio/EventFiltering/OTS/";
   int mRunNumber = 0;
+  std::pair<int64_t, int64_t> mRunDuration;
+  int64_t mOrbitResetTimestamp = 0;
   TH1* mAnalysedTriggers;           /// Accounting for all triggers in the current run
   TH1* mAnalysedTriggersOfInterest; /// Accounting for triggers of interest in the current run
 

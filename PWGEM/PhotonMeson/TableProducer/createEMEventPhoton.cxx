@@ -36,11 +36,11 @@ using MyBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
 using MyQvectors = soa::Join<aod::QvectorFT0CVecs, aod::QvectorFT0AVecs, aod::QvectorFT0MVecs, aod::QvectorBPosVecs, aod::QvectorBNegVecs, aod::QvectorBTotVecs>;
 
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
-using MyCollisions_Cent = soa::Join<MyCollisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentNTPVs>; // centrality table has dependency on multiplicity table.
+using MyCollisions_Cent = soa::Join<MyCollisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>; // centrality table has dependency on multiplicity table.
 using MyCollisions_Cent_Qvec = soa::Join<MyCollisions_Cent, MyQvectors>;
 
 using MyCollisionsMC = soa::Join<MyCollisions, aod::McCollisionLabels>;
-using MyCollisionsMC_Cent = soa::Join<MyCollisionsMC, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentNTPVs>; // centrality table has dependency on multiplicity table.
+using MyCollisionsMC_Cent = soa::Join<MyCollisionsMC, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>; // centrality table has dependency on multiplicity table.
 using MyCollisionsMC_Cent_Qvec = soa::Join<MyCollisionsMC_Cent, MyQvectors>;
 
 struct CreateEMEvent {
@@ -158,7 +158,7 @@ struct CreateEMEvent {
 
       eventcov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
 
-      event_mult(collision.multFT0A(), collision.multFT0C(), collision.multTPC(), collision.multNTracksPV(), collision.multNTracksPVeta1(), collision.multNTracksPVetaHalf());
+      event_mult(collision.multFT0A(), collision.multFT0C(), collision.multNTracksPV(), collision.multNTracksPVeta1(), collision.multNTracksPVetaHalf());
 
       if constexpr (eventype != EMEventType::kEvent_JJ) {
         event_weights(1.f);
@@ -168,15 +168,15 @@ struct CreateEMEvent {
       float q3xft0m = 999.f, q3yft0m = 999.f, q3xft0a = 999.f, q3yft0a = 999.f, q3xft0c = 999.f, q3yft0c = 999.f, q3xbpos = 999.f, q3ybpos = 999.f, q3xbneg = 999.f, q3ybneg = 999.f, q3xbtot = 999.f, q3ybtot = 999.f;
 
       if constexpr (eventype == EMEventType::kEvent) {
-        event_cent(105.f, 105.f, 105.f, 105.f);
+        event_cent(105.f, 105.f, 105.f);
         event_qvec(q2xft0m, q2yft0m, q2xft0a, q2yft0a, q2xft0c, q2yft0c, q2xbpos, q2ybpos, q2xbneg, q2ybneg, q2xbtot, q2ybtot,
                    q3xft0m, q3yft0m, q3xft0a, q3yft0a, q3xft0c, q3yft0c, q3xbpos, q3ybpos, q3xbneg, q3ybneg, q3xbtot, q3ybtot);
       } else if constexpr (eventype == EMEventType::kEvent_Cent) {
-        event_cent(collision.centFT0M(), collision.centFT0A(), collision.centFT0C(), collision.centNTPV());
+        event_cent(collision.centFT0M(), collision.centFT0A(), collision.centFT0C());
         event_qvec(q2xft0m, q2yft0m, q2xft0a, q2yft0a, q2xft0c, q2yft0c, q2xbpos, q2ybpos, q2xbneg, q2ybneg, q2xbtot, q2ybtot,
                    q3xft0m, q3yft0m, q3xft0a, q3yft0a, q3xft0c, q3yft0c, q3xbpos, q3ybpos, q3xbneg, q3ybneg, q3xbtot, q3ybtot);
       } else if constexpr (eventype == EMEventType::kEvent_Cent_Qvec) {
-        event_cent(collision.centFT0M(), collision.centFT0A(), collision.centFT0C(), collision.centNTPV());
+        event_cent(collision.centFT0M(), collision.centFT0A(), collision.centFT0C());
 
         if (collision.qvecFT0CReVec().size() >= 2) { // harmonics 2,3
           q2xft0m = collision.qvecFT0MReVec()[0], q2xft0a = collision.qvecFT0AReVec()[0], q2xft0c = collision.qvecFT0CReVec()[0], q2xbpos = collision.qvecBPosReVec()[0], q2xbneg = collision.qvecBNegReVec()[0], q2xbtot = collision.qvecBTotReVec()[0];
@@ -190,7 +190,7 @@ struct CreateEMEvent {
         event_qvec(q2xft0m, q2yft0m, q2xft0a, q2yft0a, q2xft0c, q2yft0c, q2xbpos, q2ybpos, q2xbneg, q2ybneg, q2xbtot, q2ybtot,
                    q3xft0m, q3yft0m, q3xft0a, q3yft0a, q3xft0c, q3yft0c, q3xbpos, q3ybpos, q3xbneg, q3ybneg, q3xbtot, q3ybtot);
       } else {
-        event_cent(105.f, 105.f, 105.f, 105.f);
+        event_cent(105.f, 105.f, 105.f);
         event_qvec(q2xft0m, q2yft0m, q2xft0a, q2yft0a, q2xft0c, q2yft0c, q2xbpos, q2ybpos, q2xbneg, q2ybneg, q2xbtot, q2ybtot,
                    q3xft0m, q3yft0m, q3xft0a, q3yft0a, q3xft0c, q3yft0c, q3xbpos, q3ybpos, q3xbneg, q3ybneg, q3xbtot, q3ybtot);
       }
@@ -198,7 +198,7 @@ struct CreateEMEvent {
     map_ncolls_per_bc.clear();
   } // end of skimEvent
 
-  void fillEventWeights(MyCollisionsMC const& collisions, aod::McCollisions const&, MyBCs const& bcs)
+  void fillEventWeights(MyCollisionsMC const& collisions, aod::McCollisions const&, MyBCs const&)
   {
     for (auto& collision : collisions) {
       if (!collision.has_mcCollision()) {

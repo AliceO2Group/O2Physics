@@ -700,7 +700,7 @@ struct tofSpectra {
   template <bool fillFullInfo, PID::ID id, typename T, typename C>
   void fillParticleHistos(const T& track, const C& collision)
   {
-    if (abs(track.rapidity(PID::getMass(id))) > trkselOptions.cfgCutY) {
+    if (std::abs(track.rapidity(PID::getMass(id))) > trkselOptions.cfgCutY) {
       return;
     }
     if constexpr (id == PID::Kaon) {
@@ -1025,7 +1025,7 @@ struct tofSpectra {
         histos.fill(HIST("evsel"), 12.f);
       }
     }
-    if (abs(collision.posZ()) > evselOptions.cfgCutVertex) {
+    if (std::abs(collision.posZ()) > evselOptions.cfgCutVertex) {
       return false;
     }
     if constexpr (fillHistograms) {
@@ -1075,7 +1075,7 @@ struct tofSpectra {
           return false;
         }
       }
-      return (abs(track.dcaXY()) <= (maxDcaXYFactor.value * (0.0105f + 0.0350f / pow(track.pt(), 1.1f))));
+      return (std::abs(track.dcaXY()) <= (maxDcaXYFactor.value * (0.0105f + 0.0350f / pow(track.pt(), 1.1f))));
     }
     return track.isGlobalTrack();
   }
@@ -1843,7 +1843,7 @@ struct tofSpectra {
 
     const float multiplicity = getMultiplicityMC(mcCollision);
     if (mcParticle.isPhysicalPrimary()) {
-      if (abs(mcCollision.posZ()) < evselOptions.cfgCutVertex) {
+      if (std::abs(mcCollision.posZ()) < evselOptions.cfgCutVertex) {
         histos.fill(HIST(hpt_den_prm_mcgoodev[i]), mcParticle.pt(), multiplicity);
       } else {
         histos.fill(HIST(hpt_den_prm_mcbadev[i]), mcParticle.pt(), multiplicity);
@@ -1962,7 +1962,7 @@ struct tofSpectra {
 
     // Loop on generated collisions
     for (const auto& mcCollision : mcCollisions) {
-      if (abs(mcCollision.posZ()) > evselOptions.cfgCutVertex) {
+      if (std::abs(mcCollision.posZ()) > evselOptions.cfgCutVertex) {
         continue;
       }
       histos.fill(HIST("MC/Multiplicity"), getMultiplicityMC(mcCollision));

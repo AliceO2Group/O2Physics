@@ -54,7 +54,7 @@ struct DGCandProducer {
     {}};
 
   // data inputs
-  using CCs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
+  using CCs = soa::Join<aod::Collisions, aod::EvSels>;
   using CC = CCs::iterator;
   using BCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
   using BC = BCs::iterator;
@@ -237,7 +237,7 @@ struct DGCandProducer {
   void process(CC const& collision, BCs const& bcs, TCs& tracks, FWs& fwdtracks,
                aod::Zdcs& /*zdcs*/, aod::FV0As& fv0as, aod::FT0s& ft0s, aod::FDDs& fdds)
   {
-    LOGF(debug, "<DGCandProducer>  collision %d, McCollison %d", collision.globalIndex(), collision.mcCollisionId());
+    LOGF(debug, "<DGCandProducer>  collision %d", collision.globalIndex());
     registry.get<TH1>(HIST("reco/Stat"))->Fill(0., 1.);
 
     // nominal BC

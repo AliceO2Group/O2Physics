@@ -102,18 +102,14 @@ std::vector<int> Zorro::initCCDB(o2::ccdb::BasicCCDBManager* ccdb, int runNumber
   mBCtolerance = bcRange;
   std::map<std::string, std::string> metadata;
   metadata["runNumber"] = std::to_string(runNumber);
-  mScalers = mCCDB->getSpecific<TH1D>(mBaseCCDBPath + "FilterCounters", timestamp, metadata);
-  mSelections = mCCDB->getSpecific<TH1D>(mBaseCCDBPath + "SelectionCounters", timestamp, metadata);
-  mInspectedTVX = mCCDB->getSpecific<TH1D>(mBaseCCDBPath + "InspectedTVX", timestamp, metadata);
-  mZorroHelpers = mCCDB->getSpecific<std::vector<ZorroHelper>>(mBaseCCDBPath + "ZorroHelpers", timestamp, metadata);
-  std::sort(mZorroHelpers->begin(), mZorroHelpers->end(), [](const auto& a, const auto& b) { return std::min(a.bcAOD, a.bcEvSel) < std::min(b.bcAOD, b.bcEvSel); });
-  mBCranges.clear();
-  mAccountedBCranges.clear();
-  for (auto helper : *mZorroHelpers) {
-    mBCranges.emplace_back(InteractionRecord::long2IR(std::min(helper.bcAOD, helper.bcEvSel)), InteractionRecord::long2IR(std::max(helper.bcAOD, helper.bcEvSel)));
-  }
-  mAccountedBCranges.resize(mBCranges.size(), false);
-
+  mRunDuration = mCCDB->getRunDuration(runNumber, true);
+  int64_t runTs = (mRunDuration.first / 2 + mRunDuration.second / 2);
+  auto ctp = ccdb->getForTimeStamp<std::vector<Long64_t>>("CTP/Calib/OrbitReset", runTs);
+  mOrbitResetTimestamp = (*ctp)[0];
+  mScalers = mCCDB->getSpecific<TH1D>(mBaseCCDBPath + "FilterCounters", runTs, metadata);
+  mSelections = mCCDB->getSpecific<TH1D>(mBaseCCDBPath + "SelectionCounters", runTs, metadata);
+  mInspectedTVX = mCCDB->getSpecific<TH1D>(mBaseCCDBPath + "InspectedTVX", runTs, metadata);
+  setupHelpers(timestamp);
   mLastBCglobalId = 0;
   mLastSelectedIdx = 0;
   mTOIs.clear();
@@ -148,6 +144,10 @@ std::vector<int> Zorro::initCCDB(o2::ccdb::BasicCCDBManager* ccdb, int runNumber
 std::bitset<128> Zorro::fetch(uint64_t bcGlobalId, uint64_t tolerance)
 {
   mLastResult.reset();
+  if (bcGlobalId < mBCranges.front().getMin().toLong() - tolerance || bcGlobalId > mBCranges.back().getMax().toLong() + tolerance) {
+    setupHelpers(mOrbitResetTimestamp + int64_t(bcGlobalId * o2::constants::lhc::LHCBunchSpacingNS * 1e-3) / 1000);
+  }
+
   o2::dataformats::IRFrame bcFrame{InteractionRecord::long2IR(bcGlobalId) - tolerance, InteractionRecord::long2IR(bcGlobalId) + tolerance};
   if (bcGlobalId < mLastBCglobalId) { /// Handle the possible discontinuity in the BC processed by the analyses
     mLastSelectedIdx = 0;
@@ -220,4 +220,19 @@ bool Zorro::isNotSelectedByAny(uint64_t bcGlobalId, uint64_t tolerance)
 {
   fetch(bcGlobalId, tolerance);
   return mLastResult.none();
+}
+
+void Zorro::setupHelpers(int64_t timestamp)
+{
+  if (mCCDB->isCachedObjectValid(mBaseCCDBPath + "ZorroHelpers", timestamp)) {
+    return;
+  }
+  mZorroHelpers = mCCDB->getSpecific<std::vector<ZorroHelper>>(mBaseCCDBPath + "ZorroHelpers", timestamp, {{"runNumber", std::to_string(mRunNumber)}});
+  std::sort(mZorroHelpers->begin(), mZorroHelpers->end(), [](const auto& a, const auto& b) { return std::min(a.bcAOD, a.bcEvSel) < std::min(b.bcAOD, b.bcEvSel); });
+  mBCranges.clear();
+  mAccountedBCranges.clear();
+  for (auto helper : *mZorroHelpers) {
+    mBCranges.emplace_back(InteractionRecord::long2IR(std::min(helper.bcAOD, helper.bcEvSel)), InteractionRecord::long2IR(std::max(helper.bcAOD, helper.bcEvSel)));
+  }
+  mAccountedBCranges.resize(mBCranges.size(), false);
 }

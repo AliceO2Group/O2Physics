@@ -348,7 +348,7 @@ struct tofSpectraRun2 {
   template <bool fillFullInfo, PID::ID id, typename T, typename C>
   void fillParticleHistos(const T& track, const C& /*collision*/)
   {
-    if (abs(track.rapidity(PID::getMass(id))) > cfgCutY) {
+    if (std::abs(track.rapidity(PID::getMass(id))) > cfgCutY) {
       return;
     }
     const auto& nsigmaTOF = o2::aod::pidutils::tofNSigma<id>(track);
@@ -468,7 +468,7 @@ struct tofSpectraRun2 {
     if constexpr (fillHistograms) {
       histos.fill(HIST("evsel"), 2);
     }
-    if (abs(collision.posZ()) > cfgCutVertex) {
+    if (std::abs(collision.posZ()) > cfgCutVertex) {
       return false;
     }
     if constexpr (fillHistograms) {
@@ -496,7 +496,7 @@ struct tofSpectraRun2 {
     if constexpr (fillHistograms) {
       histos.fill(HIST("tracksel"), 1);
     }
-    if (abs(track.eta()) > cfgCutEta) {
+    if (std::abs(track.eta()) > cfgCutEta) {
       return false;
     }
     if constexpr (fillHistograms) {

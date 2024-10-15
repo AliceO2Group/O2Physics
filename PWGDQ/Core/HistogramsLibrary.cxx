@@ -301,6 +301,8 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "IsDoubleGap", "Is double gap", false, 2, -0.5, 1.5, VarManager::kIsDoubleGap);
       hm->AddHistogram(histClass, "IsSingleGapA", "Is single gap on side A", false, 2, -0.5, 1.5, VarManager::kIsSingleGapA);
       hm->AddHistogram(histClass, "IsSingleGapC", "Is single gap on side C", false, 2, -0.5, 1.5, VarManager::kIsSingleGapC);
+      hm->AddHistogram(histClass, "IsITSUPCMode", "UPC settings used", false, 2, -0.5, 1.5, VarManager::kIsITSUPCMode);
+      hm->AddHistogram(histClass, "IsITSUPCMode_IsSingleGap", "UPC settings used vs Is single gap", false, 2, -0.5, 1.5, VarManager::kIsITSUPCMode, 2, -0.5, 1.5, VarManager::kIsSingleGap);
     }
     if (subGroupStr.Contains("zdc")) {
       hm->AddHistogram(histClass, "energyCommonZNA_energyCommonZNC", "Common ZNA energy vs common ZNC energy", false, 1050, -10.0, 200.0, VarManager::kEnergyCommonZNA, 1050, -10.0, 200.0, VarManager::kEnergyCommonZNC);

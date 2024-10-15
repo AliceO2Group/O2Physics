@@ -128,8 +128,8 @@ struct HfTaskBs {
     if (checkDecayTypeMc) {
       constexpr uint8_t kNBinsDecayTypeMc = hf_cand_bs::DecayTypeMc::NDecayTypeMc + 1;
       TString labels[kNBinsDecayTypeMc];
-      labels[hf_cand_bs::DecayTypeMc::BsToDsPiToKKPiPi] = "B^{0}_{s} #rightarrow (D^{#mp}_{s} #rightarrow K^{#minus} K^{#plus} #pi^{#mp}) #pi^{#pm}";
-      labels[hf_cand_bs::DecayTypeMc::B0ToDsPiToKKPiPi] = "B^{0} #rightarrow (D^{#pm}_{s} #rightarrow K^{#minus} K^{#plus} #pi^{#pm}) #pi^{#mp}";
+      labels[hf_cand_bs::DecayTypeMc::BsToDsPiToPhiPiPiToKKPiPi] = "B^{0}_{s} #rightarrow (D^{#mp}_{s} #rightarrow K^{#minus} K^{#plus} #pi^{#mp}) #pi^{#pm}";
+      labels[hf_cand_bs::DecayTypeMc::B0ToDsPiToPhiPiPiToKKPiPi] = "B^{0} #rightarrow (D^{#pm}_{s} #rightarrow K^{#minus} K^{#plus} #pi^{#pm}) #pi^{#mp}";
       labels[hf_cand_bs::DecayTypeMc::PartlyRecoDecay] = "Partly reconstructed decay channel";
       labels[hf_cand_bs::DecayTypeMc::NDecayTypeMc] = "Other decays";
       static const AxisSpec axisDecayType = {kNBinsDecayTypeMc, 0.5, kNBinsDecayTypeMc + 0.5, ""};
@@ -155,9 +155,6 @@ struct HfTaskBs {
                TracksWithSel const&)
   {
     for (const auto& candidate : candidates) {
-      if (!TESTBIT(candidate.hfflag(), hf_cand_bs::DecayType::BsToDsPi)) {
-        continue;
-      }
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yBs(candidate)) > yCandRecoMax) {
         continue;
       }
@@ -194,9 +191,6 @@ struct HfTaskBs {
   {
     // MC rec
     for (const auto& candidate : candidates) {
-      if (!TESTBIT(candidate.hfflag(), hf_cand_bs::DecayType::BsToDsPi)) {
-        continue;
-      }
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yBs(candidate)) > yCandRecoMax) {
         continue;
       }
@@ -206,7 +200,7 @@ struct HfTaskBs {
       auto invMassCandBs = hfHelper.invMassBsToDsPi(candidate);
       int flagMcMatchRecBs = std::abs(candidate.flagMcMatchRec());
 
-      if (TESTBIT(flagMcMatchRecBs, hf_cand_bs::DecayTypeMc::BsToDsPiToKKPiPi)) {
+      if (TESTBIT(flagMcMatchRecBs, hf_cand_bs::DecayTypeMc::BsToDsPiToPhiPiPiToKKPiPi)) {
         auto indexMother = RecoDecay::getMother(mcParticles, candidate.prong1_as<aod::TracksWMc>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandBsMcGen>>(), o2::constants::physics::Pdg::kBS, true);
         auto particleMother = mcParticles.rawIteratorAt(indexMother);
 
@@ -230,7 +224,7 @@ struct HfTaskBs {
         registry.fill(HIST("hChi2PCARecSig"), candidate.chi2PCA(), ptCandBs);
 
         if (checkDecayTypeMc) {
-          registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_bs::DecayTypeMc::BsToDsPiToKKPiPi, invMassCandBs, ptCandBs);
+          registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_bs::DecayTypeMc::BsToDsPiToPhiPiPiToKKPiPi, invMassCandBs, ptCandBs);
         }
       } else {
         registry.fill(HIST("hPtRecBg"), ptCandBs);
@@ -252,8 +246,8 @@ struct HfTaskBs {
         registry.fill(HIST("hChi2PCARecBg"), candidate.chi2PCA(), ptCandBs);
 
         if (checkDecayTypeMc) {
-          if (TESTBIT(flagMcMatchRecBs, hf_cand_bs::DecayTypeMc::B0ToDsPiToKKPiPi)) { // B0(bar) → Ds± π∓ → (K- K+ π±) π∓
-            registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_bs::DecayTypeMc::B0ToDsPiToKKPiPi, invMassCandBs, ptCandBs);
+          if (TESTBIT(flagMcMatchRecBs, hf_cand_bs::DecayTypeMc::B0ToDsPiToPhiPiPiToKKPiPi)) { // B0(bar) → Ds± π∓ → (K- K+ π±) π∓
+            registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_bs::DecayTypeMc::B0ToDsPiToPhiPiPiToKKPiPi, invMassCandBs, ptCandBs);
           } else if (TESTBIT(flagMcMatchRecBs, hf_cand_bs::DecayTypeMc::PartlyRecoDecay)) { // Partly reconstructed decay channel
             registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_bs::DecayTypeMc::PartlyRecoDecay, invMassCandBs, ptCandBs);
           } else {
@@ -265,7 +259,7 @@ struct HfTaskBs {
 
     // MC gen. level
     for (const auto& particle : mcParticles) {
-      if (TESTBIT(std::abs(particle.flagMcMatchGen()), hf_cand_bs::DecayTypeMc::BsToDsPiToKKPiPi)) {
+      if (TESTBIT(std::abs(particle.flagMcMatchGen()), hf_cand_bs::DecayTypeMc::BsToDsPiToPhiPiPiToKKPiPi)) {
 
         auto ptParticle = particle.pt();
         auto yParticle = RecoDecay::y(particle.pVector(), o2::constants::physics::MassBS);

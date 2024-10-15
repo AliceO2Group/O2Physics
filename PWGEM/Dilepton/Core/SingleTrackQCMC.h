@@ -114,12 +114,16 @@ struct SingleTrackQCMC {
     Configurable<int> cfg_min_ncluster_tpc{"cfg_min_ncluster_tpc", 0, "min ncluster tpc"};
     Configurable<int> cfg_min_ncluster_its{"cfg_min_ncluster_its", 5, "min ncluster its"};
     Configurable<int> cfg_min_ncrossedrows{"cfg_min_ncrossedrows", 100, "min ncrossed rows"};
+    Configurable<float> cfg_max_frac_shared_clusters_tpc{"cfg_max_frac_shared_clusters_tpc", 999.f, "max fraction of shared clusters in TPC"};
     Configurable<float> cfg_max_chi2tpc{"cfg_max_chi2tpc", 4.0, "max chi2/NclsTPC"};
     Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 5.0, "max chi2/NclsITS"};
-    Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 1.0, "max dca XY for single track in cm"};
-    Configurable<float> cfg_max_dcaz{"cfg_max_dcaz", 1.0, "max dca Z for single track in cm"};
+    Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 0.2, "max dca XY for single track in cm"};
+    Configurable<float> cfg_max_dcaz{"cfg_max_dcaz", 0.2, "max dca Z for single track in cm"};
     Configurable<bool> cfg_require_itsib_any{"cfg_require_itsib_any", false, "flag to require ITS ib any hits"};
     Configurable<bool> cfg_require_itsib_1st{"cfg_require_itsib_1st", true, "flag to require ITS ib 1st hit"};
+    Configurable<float> cfg_min_its_cluster_size{"cfg_min_its_cluster_size", 0.f, "min ITS cluster size"};
+    Configurable<float> cfg_max_its_cluster_size{"cfg_max_its_cluster_size", 16.f, "max ITS cluster size"};
+    Configurable<float> cfg_max_p_its_cluster_size{"cfg_max_p_its_cluster_size", 0.0, "max p to apply ITS cluster size cut"};
 
     Configurable<int> cfg_pid_scheme{"cfg_pid_scheme", static_cast<int>(DielectronCut::PIDSchemes::kTPChadrejORTOFreq), "pid scheme [kTOFreq : 0, kTPChadrej : 1, kTPChadrejORTOFreq : 2, kTPConly : 3]"};
     Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -2.0, "min. TPC n sigma for electron inclusion"};
@@ -225,6 +229,7 @@ struct SingleTrackQCMC {
         fRegistry.add("Track/lf/positive/hChi2TPC", "chi2/number of TPC clusters", kTH1F, {{100, 0, 10}}, false);
         fRegistry.add("Track/lf/positive/hTPCNcr2Nf", "TPC Ncr/Nfindable", kTH1F, {{200, 0, 2}}, false);
         fRegistry.add("Track/lf/positive/hTPCNcls2Nf", "TPC Ncls/Nfindable", kTH1F, {{200, 0, 2}}, false);
+        fRegistry.add("Track/lf/positive/hTPCNclsShared", "TPC Ncls shared/Ncls;p_{T} (GeV/c);N_{cls}^{shared}/N_{cls} in TPC", kTH2F, {{1000, 0, 10}, {100, 0, 1}}, false);
         fRegistry.add("Track/lf/positive/hNclsITS", "number of ITS clusters", kTH1F, {{8, -0.5, 7.5}}, false);
         fRegistry.add("Track/lf/positive/hChi2ITS", "chi2/number of ITS clusters", kTH1F, {{100, 0, 10}}, false);
         fRegistry.add("Track/lf/positive/hITSClusterMap", "ITS cluster map", kTH1F, {{128, -0.5, 127.5}}, false);
@@ -245,7 +250,7 @@ struct SingleTrackQCMC {
       if (cfgFillQA) {
         fRegistry.add("Track/PID/positive/hTPCdEdx", "TPC dE/dx;p_{in} (GeV/c);TPC dE/dx (a.u.)", kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
         fRegistry.add("Track/PID/positive/hTOFbeta", "TOF #beta;p_{pv} (GeV/c);#beta", kTH2F, {{1000, 0, 10}, {240, 0, 1.2}}, false);
-        fRegistry.add("Track/PID/positive/hMeanClusterSizeITS", "mean cluster size ITS;p_{pv} (GeV/c);<cluster size> on ITS #times cos(#lambda)", kTH2F, {{1000, 0.f, 10.f}, {160, 0, 16}}, false);
+        fRegistry.add("Track/PID/positive/hMeanClusterSizeITS", "mean cluster size ITS;p_{pv} (GeV/c);<cluster size> on ITS #times cos(#lambda)", kTH2F, {{1000, 0.f, 10.f}, {150, 0, 15}}, false);
         fRegistry.add("Track/PID/positive/hTPCNsigmaEl", "TPC n sigma el;p_{in} (GeV/c);n #sigma_{e}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
         fRegistry.add("Track/PID/positive/hTPCNsigmaMu", "TPC n sigma mu;p_{in} (GeV/c);n #sigma_{#mu}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
         fRegistry.add("Track/PID/positive/hTPCNsigmaPi", "TPC n sigma pi;p_{in} (GeV/c);n #sigma_{#pi}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
@@ -329,6 +334,7 @@ struct SingleTrackQCMC {
       pdg_lepton = 13;
       DefineDimuonCut();
     }
+    fRegistry.addClone("Event/before/hCollisionCounter", "Event/norm/hCollisionCounter");
   }
 
   void DefineEMEventCut()
@@ -358,10 +364,11 @@ struct SingleTrackQCMC {
     fDielectronCut.SetMinNClustersTPC(dielectroncuts.cfg_min_ncluster_tpc);
     fDielectronCut.SetMinNCrossedRowsTPC(dielectroncuts.cfg_min_ncrossedrows);
     fDielectronCut.SetMinNCrossedRowsOverFindableClustersTPC(0.8);
+    fDielectronCut.SetMaxFracSharedClustersTPC(dielectroncuts.cfg_max_frac_shared_clusters_tpc);
     fDielectronCut.SetChi2PerClusterTPC(0.0, dielectroncuts.cfg_max_chi2tpc);
     fDielectronCut.SetChi2PerClusterITS(0.0, dielectroncuts.cfg_max_chi2its);
     fDielectronCut.SetNClustersITS(dielectroncuts.cfg_min_ncluster_its, 7);
-    fDielectronCut.SetMeanClusterSizeITS(0, 16);
+    fDielectronCut.SetMeanClusterSizeITS(dielectroncuts.cfg_min_its_cluster_size, dielectroncuts.cfg_max_its_cluster_size, dielectroncuts.cfg_max_p_its_cluster_size);
     fDielectronCut.SetTrackMaxDcaXY(dielectroncuts.cfg_max_dcaxy);
     fDielectronCut.SetTrackMaxDcaZ(dielectroncuts.cfg_max_dcaz);
     fDielectronCut.RequireITSibAny(dielectroncuts.cfg_require_itsib_any);
@@ -484,6 +491,7 @@ struct SingleTrackQCMC {
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hNcrTPC"), track.tpcNClsCrossedRows());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hTPCNcr2Nf"), track.tpcCrossedRowsOverFindableCls());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hTPCNcls2Nf"), track.tpcFoundOverFindableCls());
+        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hTPCNclsShared"), track.pt(), track.tpcFractionSharedCls());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hChi2TPC"), track.tpcChi2NCl());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hChi2ITS"), track.itsChi2NCl());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hITSClusterMap"), track.itsClusterMap());
@@ -518,6 +526,7 @@ struct SingleTrackQCMC {
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hNcrTPC"), track.tpcNClsCrossedRows());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hTPCNcr2Nf"), track.tpcCrossedRowsOverFindableCls());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hTPCNcls2Nf"), track.tpcFoundOverFindableCls());
+        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hTPCNclsShared"), track.pt(), track.tpcFractionSharedCls());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hChi2TPC"), track.tpcChi2NCl());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hChi2ITS"), track.itsChi2NCl());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hITSClusterMap"), track.itsClusterMap());
@@ -693,13 +702,22 @@ struct SingleTrackQCMC {
     // loop over mc stack and fill histograms for pure MC truth signals
     // all MC tracks which belong to the MC event corresponding to the current reconstructed event
 
+    std::vector<int> used_mccollisionIds; // used mc collisionIds
+    used_mccollisionIds.reserve(collisions.size());
+
     for (auto& collision : collisions) {
-      float centralities[4] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C(), collision.centNTPV()};
+      auto mccollision = collision.template emmcevent_as<TMCCollisions>();
+      if (std::find(used_mccollisionIds.begin(), used_mccollisionIds.end(), mccollision.globalIndex()) != used_mccollisionIds.end()) {
+        // LOGF(info, "same mc collision is repeated. continue;");
+        continue;
+      }
+      used_mccollisionIds.emplace_back(mccollision.globalIndex());
+
+      float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
 
-      auto mccollision = collision.template emmcevent_as<TMCCollisions>();
       // LOGF(info, "mccollision.getGeneratorId() = %d", mccollision.getGeneratorId());
       // LOGF(info, "mccollision.getSubGeneratorId() = %d", mccollision.getSubGeneratorId());
       // LOGF(info, "mccollision.getSourceId() = %d", mccollision.getSourceId());
@@ -783,6 +801,8 @@ struct SingleTrackQCMC {
       }
 
     } // end of collision loop
+    used_mccollisionIds.clear();
+    used_mccollisionIds.shrink_to_fit();
   }
 
   std::unordered_map<int, float> map_weight; // map of track global index -> weight
@@ -792,7 +812,7 @@ struct SingleTrackQCMC {
     std::vector<int> passed_trackIds;
     passed_trackIds.reserve(tracks.size());
     for (auto& collision : collisions) {
-      float centralities[4] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C(), collision.centNTPV()};
+      float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
       }
@@ -932,6 +952,51 @@ struct SingleTrackQCMC {
     map_weight.clear();
   }
   PROCESS_SWITCH(SingleTrackQCMC, processQCMC_Smeared, "run single track QC MC with smearing", false);
+
+  void processNorm(aod::EMEventNormInfos const& collisions)
+  {
+    for (auto& collision : collisions) {
+      fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 1.0);
+      if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 2.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 3.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 4.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 5.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 6.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 7.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 8.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 9.0);
+      }
+      if (collision.sel8()) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 10.0);
+      }
+      if (abs(collision.posZ()) < 10.0) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 11.0);
+      }
+      if (collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+        fRegistry.fill(HIST("Event/norm/hCollisionCounter"), 12.0);
+      }
+      if (!fEMEventCut.IsSelected(collision)) {
+        continue;
+      }
+      fRegistry.fill(HIST("Event/norm/hCollisionCounter"), o2::aod::pwgem::dilepton::utils::eventhistogram::nbin_ev); // accepted
+    } // end of collision loop
+  }
+  PROCESS_SWITCH(SingleTrackQCMC, processNorm, "process normalization info", false);
 
   void processDummy(MyCollisions const&) {}
   PROCESS_SWITCH(SingleTrackQCMC, processDummy, "Dummy function", false);

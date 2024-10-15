@@ -38,7 +38,7 @@ struct : ConfigurableGroup {
   Configurable<bool> cfFillQAEventHistograms2D{"cfFillQAEventHistograms2D", false, "if false, all QA 2D event histograms are not filled. if true, only the ones for which fBookQAEventHistograms2D[...] is true, are filled"};
   Configurable<vector<string>> cfBookQAEventHistograms2D{"cfBookQAEventHistograms2D", {"MultTPC_vs_NContributors-1", "Vertex_z_vs_MultTPC-1", "Vertex_z_vs_NContributors-1", "CentFT0M_vs_CentNTPV-1", "CentRun2V0M_vs_CentRun2SPDTracklets-1", "CentRun2V0M_vs_NContributors-1"}, "book (1) or do not book (0) this QA 2D event histogram"};
   Configurable<bool> cfFillQAParticleHistograms2D{"cfFillQAParticleHistograms2D", false, "if false, all QA 2D particle histograms are not filled. if true, only the ones for which fBookQAParticleHistograms2D[...] is true, are filled"};
-  Configurable<vector<string>> cfBookQAParticleHistograms2D{"cfBookQAParticleHistograms2D", {"dcaXY_vs_Pt-1"}, "book (1) or do not book (0) this QA 2D particle histogram"};
+  Configurable<vector<string>> cfBookQAParticleHistograms2D{"cfBookQAParticleHistograms2D", {"Pt_vs_dcaXY-1"}, "book (1) or do not book (0) this QA 2D particle histogram"};
 } cf_qa;
 
 // *) Event histograms:

@@ -26,4 +26,6 @@
 
 #pragma link C++ class OrbitRange + ;
 
+#pragma link C++ class FFitWeights + ;
+
 #endif // COMMON_CORE_ANALYSISCORELINKDEF_H_

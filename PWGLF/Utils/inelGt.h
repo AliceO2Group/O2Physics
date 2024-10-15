@@ -137,10 +137,10 @@ struct ParticleCounter {
       }
       // is neutral
       if (requireNeutral) {
-        if (abs(p->Charge()) > 1e-3)
+        if (std::abs(p->Charge()) > 1e-3)
           continue;
       } else {
-        if (abs(p->Charge()) <= 1e-3)
+        if (std::abs(p->Charge()) <= 1e-3)
           continue;
       }
       // in acceptance

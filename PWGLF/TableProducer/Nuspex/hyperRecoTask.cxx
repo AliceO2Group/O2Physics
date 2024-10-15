@@ -490,7 +490,7 @@ struct hyperRecoTask {
     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, piTrackCov, 2.f, fitter.getMatCorrType(), &dcaInfo);
     hypCand.piDCAXY = dcaInfo[0];
 
-    if (abs(hypCand.piDCAXY) < dcaToPvPion || abs(hypCand.he3DCAXY) < dcaToPvHe) {
+    if (std::abs(hypCand.piDCAXY) < dcaToPvPion || std::abs(hypCand.he3DCAXY) < dcaToPvHe) {
       return;
     }
 
@@ -597,7 +597,7 @@ struct hyperRecoTask {
             for (auto& piMother : mcTrackPi.mothers_as<aod::McParticles>()) {
               if (heMother.globalIndex() != piMother.globalIndex())
                 continue;
-              if (abs(mcTrackHe.pdgCode()) != heDauPdg || abs(mcTrackPi.pdgCode()) != 211)
+              if (std::abs(mcTrackHe.pdgCode()) != heDauPdg || std::abs(mcTrackPi.pdgCode()) != 211)
                 continue;
               if (std::abs(heMother.pdgCode()) != hyperPdg)
                 continue;

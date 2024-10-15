@@ -403,25 +403,25 @@ struct FlowGFWPbPb {
     auto occupancy = collision.trackOccupancyInTimeRange();
 
     if (centrality >= 70. || centrality < 0)
-      return 0;
+      return false;
     if (abs(vtxz) > cfgCutVertex)
-      return 0;
+      return false;
     if (multNTracksPV < fMultPVCutLow->Eval(centrality))
-      return 0;
+      return false;
     if (multNTracksPV > fMultPVCutHigh->Eval(centrality))
-      return 0;
+      return false;
     if (multTrk < fMultCutLow->Eval(centrality))
-      return 0;
+      return false;
     if (multTrk > fMultCutHigh->Eval(centrality))
-      return 0;
+      return false;
     if (occupancy < cfgCutOccupancyLow || occupancy > cfgCutOccupancyHigh)
-      return 0;
+      return false;
 
     // V0A T0A 5 sigma cut
     if (abs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > 5 * fT0AV0ASigma->Eval(collision.multFT0A()))
-      return 0;
+      return false;
 
-    return 1;
+    return true;
   }
 
   int getMagneticField(uint64_t timestamp)
@@ -462,8 +462,11 @@ struct FlowGFWPbPb {
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) &&
                        ncheckbit(aod::track::trackCutFlag, trackSelectionITS) &&
-                       ifnode(ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC), ncheckbit(aod::track::trackCutFlag, trackSelectionTPC), true) &&
-                       ifnode(dcaZ.node() > 0.f, nabs(aod::track::dcaZ) <= dcaZ && ncheckbit(aod::track::trackCutFlag, trackSelectionDCAXYonly), ncheckbit(aod::track::trackCutFlag, trackSelectionDCA));
+                       ifnode(ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC),
+                              ncheckbit(aod::track::trackCutFlag, trackSelectionTPC), true) &&
+                       ifnode(dcaZ.node() > 0.f, nabs(aod::track::dcaZ) <= dcaZ && ncheckbit(aod::track::trackCutFlag, trackSelectionDCAXYonly),
+                              ncheckbit(aod::track::trackCutFlag, trackSelectionDCA)) &&
+                       (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax);
 
   using Colls = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra, aod::CentFT0Cs>>; // collisions filter
   using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksDCA, aod::TracksExtra>>;    // tracks filter
@@ -532,13 +535,6 @@ struct FlowGFWPbPb {
     int itsonly_nch{0};
 
     for (auto& track : tracks) {
-
-      if (std::abs(track.eta()) >= cfgCutEta) {
-        continue;
-      }
-      if (cfgCutPtMin > track.pt() && track.pt() > cfgCutPtMax) {
-        continue;
-      }
 
       if (cfgUseAdditionalTrackCut && !trackSelected(track, Magnetfield))
         continue;

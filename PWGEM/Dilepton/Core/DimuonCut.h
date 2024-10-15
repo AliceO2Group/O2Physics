@@ -24,6 +24,7 @@
 #include "TNamed.h"
 #include "Math/Vector4D.h"
 
+#include "MathUtils/Utils.h"
 #include "Framework/Logger.h"
 #include "Framework/DataTypes.h"
 #include "CommonConstants/PhysicsConstants.h"
@@ -104,6 +105,14 @@ class DimuonCut : public TNamed
     if (pair_dca_xy < mMinPairDCAxy || mMaxPairDCAxy < pair_dca_xy) { // in sigma for pair
       return false;
     }
+
+    float deta = v1.Eta() - v2.Eta();
+    float dphi = v1.Phi() - v2.Phi();
+    o2::math_utils::bringToPMPi(dphi);
+    if (mApplydEtadPhi && std::pow(deta / mMinDeltaEta, 2) + std::pow(dphi / mMinDeltaPhi, 2) < 1.f) {
+      return false;
+    }
+
     return true;
   }
 
@@ -200,6 +209,7 @@ class DimuonCut : public TNamed
   void SetPairPtRange(float minPt = 0.f, float maxPt = 1e10f);
   void SetPairYRange(float minY = -1e10f, float maxY = 1e10f);
   void SetPairDCAxyRange(float min = 0.f, float max = 1e10f); // DCAxy in cm
+  void SetMindEtadPhi(bool flag, float min_deta, float min_dphi);
 
   void SetTrackType(int track_type); // 0: MFT-MCH-MID (global muon), 3: MCH-MID (standalone muon)
   void SetTrackPtRange(float minPt = 0.f, float maxPt = 1e10f);
@@ -220,6 +230,9 @@ class DimuonCut : public TNamed
   float mMinPairPt{0.f}, mMaxPairPt{1e10f};       // range in pT
   float mMinPairY{-1e10f}, mMaxPairY{1e10f};      // range in rapidity
   float mMinPairDCAxy{0.f}, mMaxPairDCAxy{1e10f}; // range in 3D DCA in sigma
+  bool mApplydEtadPhi{false};                     // flag to apply deta, dphi cut between 2 tracks
+  float mMinDeltaEta{0.f};
+  float mMinDeltaPhi{0.f};
 
   // kinematic cuts
   float mMinTrackPt{0.f}, mMaxTrackPt{1e10f};        // range in pT

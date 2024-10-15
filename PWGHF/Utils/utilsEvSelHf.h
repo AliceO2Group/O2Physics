@@ -24,8 +24,10 @@
 #include "Framework/Configurable.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/HistogramSpec.h"
+#include "Framework/OutputObjHeader.h"
 
 #include "EventFiltering/Zorro.h"
+#include "EventFiltering/ZorroSummary.h"
 #include "PWGHF/Core/CentralityEstimation.h"
 
 namespace o2::hf_evsel
@@ -93,6 +95,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> zPvPosMax{"zPvPosMax", 10.f, "Maximum PV posZ (cm)"};
   o2::framework::Configurable<std::string> softwareTrigger{"softwareTrigger", "", "Label of software trigger. Multiple triggers can be selected dividing them by a comma. Set None if you want bcs that are not selected by any trigger"};
   o2::framework::Configurable<uint64_t> bcMarginForSoftwareTrigger{"bcMarginForSoftwareTrigger", 100, "Number of BCs of margin for software triggers"};
+  o2::framework::Configurable<std::string> ccdbPathSoftwareTrigger{"ccdbPathSoftwareTrigger", "Users/m/mpuccio/EventFiltering/OTS/", "ccdb path for ZORRO objects"};
 
   // histogram names
   static constexpr char nameHistCollisions[] = "hCollisions";
@@ -107,6 +110,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
 
   // util to retrieve trigger mask in case of software triggers
   Zorro zorro;
+  o2::framework::OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
   int currentRun{-1};
 
   /// \brief Adds collision monitoring histograms in the histogram registry.
@@ -121,6 +125,11 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
     hPosYAfterEvSel = registry.add<TH1>(nameHistPosYAfterEvSel, "selected events;#it{y}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{200, -0.5, 0.5}}});
     hNumPvContributorsAfterSel = registry.add<TH1>(nameHistNumPvContributorsAfterSel, "selected events;#it{y}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{500, -0.5, 499.5}}});
     setEventRejectionLabels(hCollisions, softwareTrigger);
+
+    // we initialise the summary object
+    if (softwareTrigger.value != "") {
+      zorroSummary.setObject(zorro.getZorroSummary());
+    }
   }
 
   /// \brief Applies event selection.
@@ -209,8 +218,9 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
 
       int runNumber = bc.runNumber();
       if (runNumber != currentRun) { // We might need to update Zorro from CCDB if the run number changes
-        zorro.initCCDB(ccdb.service, runNumber, bc.timestamp(), softwareTrigger.value);
+        zorro.setCCDBpath(ccdbPathSoftwareTrigger);
         zorro.setBCtolerance(bcMarginForSoftwareTrigger);
+        zorro.initCCDB(ccdb.service, runNumber, bc.timestamp(), softwareTrigger.value);
         currentRun = runNumber;
       }
       zorro.populateHistRegistry(registry, runNumber);

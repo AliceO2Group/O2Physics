@@ -150,13 +150,18 @@ struct lithium4analysis {
 
   // Selections
   Configurable<float> setting_cutVertex{"setting_cutVertex", 10.0f, "Accepted z-vertex range"};
-  Configurable<float> setting_cutPT{"setting_cutPT", 0.2, "PT cut on daughter track"};
-  Configurable<float> setting_cutMaxPrPT{"setting_cutMaxPrPT", 1.8, "Max PT cut on proton"};
-  Configurable<float> setting_cutEta{"setting_cutEta", 0.8, "Eta cut on daughter track"};
+  Configurable<float> setting_cutPT{"setting_cutPT", 0.2f, "PT cut on daughter track"};
+  Configurable<float> setting_cutMaxPrPT{"setting_cutMaxPrPT", 1.8f, "Max PT cut on proton"};
+  Configurable<float> setting_cutEta{"setting_cutEta", 0.9f, "Eta cut on daughter track"};
   Configurable<float> setting_cutDCAxy{"setting_cutDCAxy", 2.0f, "DCAxy range for tracks"};
   Configurable<float> setting_cutDCAz{"setting_cutDCAz", 2.0f, "DCAz range for tracks"};
-  Configurable<float> setting_nsigmaCutTPC{"setting_nsigmaCutTPC", 3.0, "Value of the TPC Nsigma cut"};
-  Configurable<float> setting_nsigmaCutTOF{"setting_nsigmaCutTOF", 3.0, "Value of the TOF Nsigma cut"};
+  Configurable<float> setting_cutChi2tpcLow{"setting_cutChi2tpcLow", 0.5f, "Low cut on TPC chi2"};
+  Configurable<float> setting_cutInvMass{"setting_cutInvMass", 0.0f, "Invariant mass upper limit"};
+  Configurable<float> setting_cutPtMinLi{"setting_cutPtMinLi", 0.0f, "Minimum PT cut on Li4"};
+  Configurable<float> setting_cutClSizeItsHe3{"setting_cutClSizeItsHe3", 4.0f, "Minimum ITS cluster size for He3"};
+  Configurable<float> setting_cutNsigmaTPC{"setting_cutNsigmaTPC", 3.0f, "Value of the TPC Nsigma cut"};
+  Configurable<float> setting_cutPtMinTOFPr{"setting_cutPtMinTOFPr", 0.5f, "Minimum pT to apply the TOF cut on protons"};
+  Configurable<float> setting_cutNsigmaTOF{"setting_cutNsigmaTOF", 3.0f, "Value of the TOF Nsigma cut"};
   Configurable<int> setting_noMixedEvents{"setting_noMixedEvents", 5, "Number of mixed events per event"};
   Configurable<bool> setting_enableBkgUS{"setting_enableBkgUS", false, "Enable US background"};
   Configurable<bool> setting_isMC{"setting_isMC", false, "Run MC"};
@@ -212,6 +217,9 @@ struct lithium4analysis {
   Zorro m_zorro;
   OutputObj<ZorroSummary> m_zorroSummary{"zorroSummary"};
 
+  // check for mixed event to same event distribution compatibility
+  std::vector<int> m_trackIdx2;
+
   HistogramRegistry m_qaRegistry{
     "QA",
     {
@@ -226,6 +234,7 @@ struct lithium4analysis {
       {"hHe3Pt", "#it{p}_{T} distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{200, -6.0f, 6.0f}}}},
       {"hProtonPt", "Pt distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{200, -3.0f, 3.0f}}}},
       {"h2dEdxHe3candidates", "dEdx distribution; Signed #it{p} (GeV/#it{c}); dE/dx (a.u.)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {100, 0.0f, 2000.0f}}}},
+      {"h2ClSizeCosLamHe3", "; n#sigma_{TPC} ; #LT ITS Cluster Size #GT #LT cos#lambda #GT (^{3}He)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {120, 0.0f, 15.0f}}}},
       {"h2NsigmaHe3TPC", "NsigmaHe3 TPC distribution; Signed #it{p}/#it{z} (GeV/#it{c}); n#sigma_{TPC}({}^{3}He)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
       {"h2NsigmaProtonTPC", "NsigmaProton TPC distribution; Signed #it{p}/#it{z} (GeV/#it{c}); n#sigma_{TPC}(p)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
       {"h2NsigmaProtonTPC_preselection", "NsigmaHe3 TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}({}^{3}He)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
@@ -353,12 +362,15 @@ struct lithium4analysis {
   template <typename Ttrack>
   bool selectTrack(const Ttrack& candidate)
   {
-
+    if (std::abs(candidate.eta()) > setting_cutEta) {
+      return false;
+    }
     if (candidate.itsNCls() < 5 ||
-        candidate.tpcNClsFound() < 90 || // candidate.tpcNClsFound() < 70 ||
+        candidate.tpcNClsFound() < 90 ||
         candidate.tpcNClsCrossedRows() < 70 ||
         candidate.tpcNClsCrossedRows() < 0.8 * candidate.tpcNClsFindable() ||
         candidate.tpcChi2NCl() > 4.f ||
+        candidate.tpcChi2NCl() < setting_cutChi2tpcLow ||
         candidate.itsChi2NCl() > 36.f) {
       return false;
     }
@@ -370,13 +382,13 @@ struct lithium4analysis {
   bool selectionPIDProton(const Ttrack& candidate)
   {
     m_qaRegistry.fill(HIST("h2NsigmaProtonTPC_preselection"), candidate.tpcInnerParam(), candidate.tpcNSigmaPr());
-    if (candidate.hasTOF()) {
-      if (std::abs(candidate.tofNSigmaPr()) < setting_nsigmaCutTOF && std::abs(candidate.tpcNSigmaPr()) < setting_nsigmaCutTPC) {
+    if (candidate.hasTOF() && candidate.pt() < setting_cutPtMinTOFPr) {
+      if (std::abs(candidate.tofNSigmaPr()) < setting_cutNsigmaTOF && std::abs(candidate.tpcNSigmaPr()) < setting_cutNsigmaTPC) {
         m_qaRegistry.fill(HIST("h2NsigmaProtonTPC"), candidate.tpcInnerParam(), candidate.tpcNSigmaPr());
         m_qaRegistry.fill(HIST("h2NsigmaProtonTOF"), candidate.p(), candidate.tofNSigmaPr());
         return true;
       }
-    } else if (std::abs(candidate.tpcNSigmaPr()) < setting_nsigmaCutTPC) {
+    } else if (std::abs(candidate.tpcNSigmaPr()) < setting_cutNsigmaTPC) {
       m_qaRegistry.fill(HIST("h2NsigmaProtonTPC"), candidate.tpcInnerParam(), candidate.tpcNSigmaPr());
       return true;
     }
@@ -397,16 +409,32 @@ struct lithium4analysis {
   template <typename Ttrack>
   bool selectionPIDHe3(const Ttrack& candidate)
   {
+    float cosl = 1. / std::cosh(candidate.eta());
+    float meanClsizeIts = 0.f;
+    int nHitsIts = 0;
+    for (int ilayer = 0; ilayer < 7; ilayer++) {
+      float clsizeLayer = (candidate.itsClusterSizes() >> ilayer * 4) & 0b1111;
+      if (clsizeLayer > 0) {
+        nHitsIts++;
+        meanClsizeIts += clsizeLayer;
+      }
+    }
+    float clsizeCoslIts = meanClsizeIts / nHitsIts * cosl;
+    if (clsizeCoslIts < setting_cutClSizeItsHe3) {
+      return false;
+    }
+
     bool heliumPID = candidate.pidForTracking() == o2::track::PID::Helium3 || candidate.pidForTracking() == o2::track::PID::Alpha;
     float correctedTPCinnerParam = (heliumPID && setting_compensatePIDinTracking) ? candidate.tpcInnerParam() / 2.f : candidate.tpcInnerParam();
     m_qaRegistry.fill(HIST("h2dEdxHe3candidates"), correctedTPCinnerParam * 2.f, candidate.tpcSignal());
 
     auto nSigmaHe3 = computeNSigmaHe3(candidate);
-    if (std::abs(nSigmaHe3) < setting_nsigmaCutTPC) {
-      m_qaRegistry.fill(HIST("h2NsigmaHe3TPC"), candidate.sign() * correctedTPCinnerParam, nSigmaHe3);
-      return true;
+    if (std::abs(nSigmaHe3) > setting_cutNsigmaTPC) {
+      return false;
     }
-    return false;
+    m_qaRegistry.fill(HIST("h2NsigmaHe3TPC"), candidate.sign() * correctedTPCinnerParam, nSigmaHe3);
+    m_qaRegistry.fill(HIST("h2ClSizeCosLamHe3"), nSigmaHe3, clsizeCoslIts);
+    return true;
   }
 
   // ==================================================================================================================
@@ -455,7 +483,15 @@ struct lithium4analysis {
     for (int i = 0; i < 3; i++)
       li4cand.momHe3[i] = li4cand.momHe3[i] * 2;
     li4cand.momPr = std::array{trackPr.px(), trackPr.py(), trackPr.pz()};
+
     float invMass = RecoDecay::m(std::array{li4cand.momHe3, li4cand.momPr}, std::array{o2::constants::physics::MassHelium3, o2::constants::physics::MassProton});
+    if (setting_cutInvMass > 0 && invMass > setting_cutInvMass) {
+      return false;
+    }
+    float ptLi = std::hypot(li4cand.momHe3[0] + li4cand.momPr[0], li4cand.momHe3[1] + li4cand.momPr[1]);
+    if (ptLi < setting_cutPtMinLi) {
+      return false;
+    }
 
     li4cand.sign = trackHe3.sign();
 
@@ -528,6 +564,7 @@ struct lithium4analysis {
   template <typename Ttrack>
   void pairTracksSameEvent(const Ttrack& tracks)
   {
+
     for (auto track0 : tracks) {
 
       m_qaRegistry.fill(HIST("hTrackSel"), Selections::kNoCuts);
@@ -571,6 +608,7 @@ struct lithium4analysis {
 
   void pairTracksEventMixing()
   {
+
     for (auto& [c1, tracks1, c2, tracks2] : m_pair) {
       if (!c1.sel8() || !c2.sel8()) {
         continue;
