@@ -642,6 +642,8 @@ struct IdentifiedBfFilterTracks {
   Configurable<float> minRejectSigma{"minrejectsigma", -1.0, "Minimum required sigma for PID double match rejection"};
   Configurable<float> maxRejectSigma{"maxrejectsigma", 1.0, "Maximum required sigma for PID double match rejection"};
 
+  Configurable<float> tofCut{"TOFCutoff", 0.8, "Momentum under which we don't use TOF PID data"};
+
   OutputObj<TList> fOutput{"IdentifiedBfFilterTracksInfo", OutputObjHandlingPolicy::AnalysisObject};
   bool checkAmbiguousTracks = false;
 
@@ -1221,13 +1223,11 @@ void fillNSigmaHistos(TrackObject const& track)
   float actualTPCNSigmaKa = track.tpcNSigmaKa();
   float actualTPCNSigmaPr = track.tpcNSigmaPr();
 
-  if (track.tpcInnerParam() > 0.3) {
-    if (loadfromccdb) {
-      actualTPCNSigmaEl = actualTPCNSigmaEl - fhNSigmaCorrection[kIdBfElectron]->GetBinContent(fhNSigmaCorrection[kIdBfElectron]->FindBin(track.tpcInnerParam()));
-      actualTPCNSigmaPi = actualTPCNSigmaPi - fhNSigmaCorrection[kIdBfPion]->GetBinContent(fhNSigmaCorrection[kIdBfPion]->FindBin(track.tpcInnerParam()));
-      actualTPCNSigmaKa = actualTPCNSigmaKa - fhNSigmaCorrection[kIdBfKaon]->GetBinContent(fhNSigmaCorrection[kIdBfKaon]->FindBin(track.tpcInnerParam()));
-      actualTPCNSigmaPr = actualTPCNSigmaPr - fhNSigmaCorrection[kIdBfProton]->GetBinContent(fhNSigmaCorrection[kIdBfProton]->FindBin(track.tpcInnerParam()));
-    }
+  if (loadfromccdb) {
+    actualTPCNSigmaEl = actualTPCNSigmaEl - fhNSigmaCorrection[kIdBfElectron]->GetBinContent(fhNSigmaCorrection[kIdBfElectron]->FindBin(track.tpcInnerParam()));
+    actualTPCNSigmaPi = actualTPCNSigmaPi - fhNSigmaCorrection[kIdBfPion]->GetBinContent(fhNSigmaCorrection[kIdBfPion]->FindBin(track.tpcInnerParam()));
+    actualTPCNSigmaKa = actualTPCNSigmaKa - fhNSigmaCorrection[kIdBfKaon]->GetBinContent(fhNSigmaCorrection[kIdBfKaon]->FindBin(track.tpcInnerParam()));
+    actualTPCNSigmaPr = actualTPCNSigmaPr - fhNSigmaCorrection[kIdBfProton]->GetBinContent(fhNSigmaCorrection[kIdBfProton]->FindBin(track.tpcInnerParam()));
   }
 
   fhNSigmaTPC[kIdBfElectron]->Fill(actualTPCNSigmaEl, track.tpcInnerParam());
@@ -1260,16 +1260,14 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::IdentifyTrack(TrackObject c
 
   float nsigmas[kIdBfNoOfSpecies];
 
-  if (track.tpcInnerParam() > 0.3) {
-    if (loadfromccdb) {
-      actualTPCNSigmaEl = actualTPCNSigmaEl - fhNSigmaCorrection[kIdBfElectron]->GetBinContent(fhNSigmaCorrection[kIdBfElectron]->FindBin(track.tpcInnerParam()));
-      actualTPCNSigmaPi = actualTPCNSigmaPi - fhNSigmaCorrection[kIdBfPion]->GetBinContent(fhNSigmaCorrection[kIdBfPion]->FindBin(track.tpcInnerParam()));
-      actualTPCNSigmaKa = actualTPCNSigmaKa - fhNSigmaCorrection[kIdBfKaon]->GetBinContent(fhNSigmaCorrection[kIdBfKaon]->FindBin(track.tpcInnerParam()));
-      actualTPCNSigmaPr = actualTPCNSigmaPr - fhNSigmaCorrection[kIdBfProton]->GetBinContent(fhNSigmaCorrection[kIdBfProton]->FindBin(track.tpcInnerParam()));
-    }
+  if (loadfromccdb) {
+    actualTPCNSigmaEl = actualTPCNSigmaEl - fhNSigmaCorrection[kIdBfElectron]->GetBinContent(fhNSigmaCorrection[kIdBfElectron]->FindBin(track.tpcInnerParam()));
+    actualTPCNSigmaPi = actualTPCNSigmaPi - fhNSigmaCorrection[kIdBfPion]->GetBinContent(fhNSigmaCorrection[kIdBfPion]->FindBin(track.tpcInnerParam()));
+    actualTPCNSigmaKa = actualTPCNSigmaKa - fhNSigmaCorrection[kIdBfKaon]->GetBinContent(fhNSigmaCorrection[kIdBfKaon]->FindBin(track.tpcInnerParam()));
+    actualTPCNSigmaPr = actualTPCNSigmaPr - fhNSigmaCorrection[kIdBfProton]->GetBinContent(fhNSigmaCorrection[kIdBfProton]->FindBin(track.tpcInnerParam()));
   }
 
-  if (track.tpcInnerParam() < 0.8 && !reqTOF && !onlyTOF) {
+  if (track.tpcInnerParam() < tofCut && !reqTOF && !onlyTOF) {
 
     nsigmas[kIdBfElectron] = actualTPCNSigmaEl;
     nsigmas[kIdBfPion] = actualTPCNSigmaPi;
