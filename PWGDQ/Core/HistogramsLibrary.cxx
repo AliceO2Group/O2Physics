@@ -982,6 +982,27 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "U2Q2_CentFT0C_ev1", "mass vs. centrality vs. U2Q2_event1", false, 125, 0.0, 5.0, VarManager::kMass, 9, 0.0, 90.0, VarManager::kCentFT0C, 100, -10.0, 10.0, VarManager::kU2Q2Ev1);
         hm->AddHistogram(histClass, "U2Q2_CentFT0C_ev2", "mass vs. centrality vs. U2Q2_event2", false, 125, 0.0, 5.0, VarManager::kMass, 9, 0.0, 90.0, VarManager::kCentFT0C, 100, -10.0, 10.0, VarManager::kU2Q2Ev2);
       }
+      if (subGroupStr.Contains("metest")) {
+        int var1[5] = {VarManager::kMass, VarManager::kPt, VarManager::kCentFT0C, VarManager::kU2Q2Ev1, VarManager::kCos2DeltaPhiMu1};
+        int var2[5] = {VarManager::kMass, VarManager::kPt, VarManager::kCentFT0C, VarManager::kU2Q2Ev2, VarManager::kCos2DeltaPhiMu2};
+        int bins[5] = {250, 60, 18, 100, 100};
+        double minBins[5] = {0.0, 0.0, 0.0, -10., -1.0};
+        double maxBins[5] = {5.0, 30.0, 90.0, 10., 1.0};
+        hm->AddHistogram(histClass, "Mass_Pt_CentFT0C_U2Q2ev1_cos2DeltaPhiMu1", "", 5, var1, bins, minBins, maxBins, 0, -1, kTRUE);
+        hm->AddHistogram(histClass, "Mass_Pt_CentFT0C_U2Q2ev2_cos2DeltaPhiMu2", "", 5, var2, bins, minBins, maxBins, 0, -1, kTRUE);
+        hm->AddHistogram(histClass, "R2SPAB1_CentFT0C", "mass vs centrality vs. R2SPAB_event1", false, 250, 0.0, 5.0, VarManager::kMass, 18, 0.0, 90.0, VarManager::kCentFT0C, 100, -10.0, 10.0, VarManager::kTwoR2SP_AB1);
+        hm->AddHistogram(histClass, "R2SPAB2_CentFT0C", "mass vs centrality vs. R2SPAB_event2", false, 250, 0.0, 5.0, VarManager::kMass, 18, 0.0, 90.0, VarManager::kCentFT0C, 100, -10.0, 10.0, VarManager::kTwoR2SP_AB2);
+        hm->AddHistogram(histClass, "R2SPAC1_CentFT0C", "mass vs centrality vs. R2SPAC_event1", false, 250, 0.0, 5.0, VarManager::kMass, 18, 0.0, 90.0, VarManager::kCentFT0C, 100, -10.0, 10.0, VarManager::kTwoR2SP_AC1);
+        hm->AddHistogram(histClass, "R2SPAC2_CentFT0C", "mass vs centrality vs. R2SPAC_event2", false, 250, 0.0, 5.0, VarManager::kMass, 18, 0.0, 90.0, VarManager::kCentFT0C, 100, -10.0, 10.0, VarManager::kTwoR2SP_AC2);
+        hm->AddHistogram(histClass, "R2SPBC1_CentFT0C", "mass vs centrality vs. R2SPBC_event1", false, 250, 0.0, 5.0, VarManager::kMass, 18, 0.0, 90.0, VarManager::kCentFT0C, 100, -10.0, 10.0, VarManager::kTwoR2SP_BC1);
+        hm->AddHistogram(histClass, "R2SPBC2_CentFT0C", "mass vs centrality vs. R2SPBC_event2", false, 250, 0.0, 5.0, VarManager::kMass, 18, 0.0, 90.0, VarManager::kCentFT0C, 100, -10.0, 10.0, VarManager::kTwoR2SP_BC2);
+        hm->AddHistogram(histClass, "R2EPAB1_CentFT0C", "mass vs centrality vs. R2EPAB_event1", false, 250, 0.0, 5.0, VarManager::kMass, 18, 0.0, 90.0, VarManager::kCentFT0C, 100, -10.0, 10.0, VarManager::kTwoR2EP_AB1);
+        hm->AddHistogram(histClass, "R2EPAB2_CentFT0C", "mass vs centrality vs. R2EPAB_event2", false, 250, 0.0, 5.0, VarManager::kMass, 18, 0.0, 90.0, VarManager::kCentFT0C, 100, -10.0, 10.0, VarManager::kTwoR2EP_AB2);
+        hm->AddHistogram(histClass, "R2EPAC1_CentFT0C", "mass vs centrality vs. R2EPAC_event1", false, 250, 0.0, 5.0, VarManager::kMass, 18, 0.0, 90.0, VarManager::kCentFT0C, 100, -10.0, 10.0, VarManager::kTwoR2EP_AC1);
+        hm->AddHistogram(histClass, "R2EPAC2_CentFT0C", "mass vs centrality vs. R2EPAC_event2", false, 250, 0.0, 5.0, VarManager::kMass, 18, 0.0, 90.0, VarManager::kCentFT0C, 100, -10.0, 10.0, VarManager::kTwoR2EP_AC2);
+        hm->AddHistogram(histClass, "R2EPBC1_CentFT0C", "mass vs centrality vs. R2EPBC_event1", false, 250, 0.0, 5.0, VarManager::kMass, 18, 0.0, 90.0, VarManager::kCentFT0C, 100, -10.0, 10.0, VarManager::kTwoR2EP_BC1);
+        hm->AddHistogram(histClass, "R2EPBC2_CentFT0C", "mass vs centrality vs. R2EPBC_event2", false, 250, 0.0, 5.0, VarManager::kMass, 18, 0.0, 90.0, VarManager::kCentFT0C, 100, -10.0, 10.0, VarManager::kTwoR2EP_BC2);
+      }
       if (subGroupStr.Contains("dimuon-polarization-he")) {
         int varspTHE[4] = {VarManager::kMass, VarManager::kPt, VarManager::kCosThetaHE, VarManager::kPhiHE};
         int varsFT0CCentHE[4] = {VarManager::kMass, VarManager::kCentFT0C, VarManager::kCosThetaHE, VarManager::kPhiHE};
