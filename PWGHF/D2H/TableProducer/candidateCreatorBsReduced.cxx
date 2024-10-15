@@ -317,7 +317,7 @@ struct HfCandidateCreatorBsReducedExpressions {
   }
   PROCESS_SWITCH(HfCandidateCreatorBsReducedExpressions, processMc, "Process MC", false);
 
-  void processMcWithDecayTypeCheck(soa::Join<HfMcRecRedDsPis, HfMcCheckDpPis> const& rowsDPiMcRec, HfRedBsProngs const& candsB)
+  void processMcWithDecayTypeCheck(soa::Join<HfMcRecRedDsPis, HfMcCheckDsPis> const& rowsDPiMcRec, HfRedBsProngs const& candsB)
   {
     fillBsMcRec<true>(rowsDPiMcRec, candsB);
   }
