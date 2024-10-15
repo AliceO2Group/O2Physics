@@ -252,15 +252,15 @@ struct CentralityTable {
       LOGF(debug, "timestamp=%llu", bc.timestamp());
       TList* callst = nullptr;
       if (ccdbConfig.reconstructionPass.value == "") {
-        callst = ccdb->getForTimeStamp<TList>(ccdbConfig.ccdbPath, bc.timestamp());
+        callst = ccdb->getForRun<TList>(ccdbConfig.ccdbPath, bc.runNumber());
       } else if (ccdbConfig.reconstructionPass.value == "metadata") {
         std::map<std::string, std::string> metadata;
         metadata["RecoPassName"] = metadataInfo.get("RecoPassName");
-        callst = ccdb->getSpecific<TList>(ccdbConfig.ccdbPath, bc.timestamp(), metadata);
+        callst = ccdb->getSpecificForRun<TList>(ccdbConfig.ccdbPath, bc.runNumber(), metadata);
       } else {
         std::map<std::string, std::string> metadata;
         metadata["RecoPassName"] = ccdbConfig.reconstructionPass.value;
-        callst = ccdb->getSpecific<TList>(ccdbConfig.ccdbPath, bc.timestamp(), metadata);
+        callst = ccdb->getSpecificForRun<TList>(ccdbConfig.ccdbPath, bc.runNumber(), metadata);
       }
 
       Run2V0MInfo.mCalibrationStored = false;
@@ -485,15 +485,15 @@ struct CentralityTable {
           }
         } else {
           if (ccdbConfig.reconstructionPass.value == "") {
-            callst = ccdb->getForTimeStamp<TList>(ccdbConfig.ccdbPath, bc.timestamp());
+            callst = ccdb->getForRun<TList>(ccdbConfig.ccdbPath, bc.runNumber());
           } else if (ccdbConfig.reconstructionPass.value == "metadata") {
             std::map<std::string, std::string> metadata;
             metadata["RecoPassName"] = metadataInfo.get("RecoPassName");
-            callst = ccdb->getSpecific<TList>(ccdbConfig.ccdbPath, bc.timestamp(), metadata);
+            callst = ccdb->getSpecificForRun<TList>(ccdbConfig.ccdbPath, bc.runNumber(), metadata);
           } else {
             std::map<std::string, std::string> metadata;
             metadata["RecoPassName"] = ccdbConfig.reconstructionPass.value;
-            callst = ccdb->getSpecific<TList>(ccdbConfig.ccdbPath, bc.timestamp(), metadata);
+            callst = ccdb->getSpecificForRun<TList>(ccdbConfig.ccdbPath, bc.runNumber(), metadata);
           }
         }
 
