@@ -27,7 +27,7 @@ using namespace o2::framework;
 struct ConverterReduced3ProngsMl {
   Produces<aod::HfRed3ProngsMl_001> ml3Prongs;
 
-  void process(aod::HfRed3ProngsMl_000 const& mlScoreTable)
+  void process(aod::HfRed3ProngsMl_000::iterator const& mlScoreTable)
   {
     ml3Prongs(mlScoreTable.mlScoreBkgMassHypo0(), mlScoreTable.mlScorePromptMassHypo0(), mlScoreTable.mlScoreNonpromptMassHypo0(), -1.f, -1.f, -1.f);
   }
