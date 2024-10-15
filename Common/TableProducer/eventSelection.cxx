@@ -24,6 +24,7 @@
 #include "DataFormatsParameters/GRPECSObject.h"
 #include "ITSMFTBase/DPLAlpideParam.h"
 #include "MetadataHelper.h"
+#include "DataFormatsParameters/AggregatedRunInfo.h"
 
 #include "TH1D.h"
 
@@ -260,24 +261,12 @@ struct BcSelectionTask {
         mITSROFrameEndBorderMargin = confITSROFrameEndBorderMargin < 0 ? par->fITSROFrameEndBorderMargin : confITSROFrameEndBorderMargin;
         mTimeFrameStartBorderMargin = confTimeFrameStartBorderMargin < 0 ? par->fTimeFrameStartBorderMargin : confTimeFrameStartBorderMargin;
         mTimeFrameEndBorderMargin = confTimeFrameEndBorderMargin < 0 ? par->fTimeFrameEndBorderMargin : confTimeFrameEndBorderMargin;
-        // access orbit-reset timestamp
-        auto ctpx = ccdb->getForTimeStamp<std::vector<Long64_t>>("CTP/Calib/OrbitReset", ts);
-        int64_t tsOrbitReset = (*ctpx)[0]; // us
-        // access TF duration, start-of-run and end-of-run timestamps from ECS GRP
-        std::map<std::string, std::string> metadata;
-        metadata["runNumber"] = Form("%d", run);
-        auto grpecs = ccdb->getSpecific<o2::parameters::GRPECSObject>("GLO/Config/GRPECS", ts, metadata);
-        uint32_t nOrbitsPerTF = grpecs->getNHBFPerTF(); // assuming 1 orbit = 1 HBF;  nOrbitsPerTF=128 in 2022, 32 in 2023
-        int64_t tsSOR = grpecs->getTimeStart();         // ms
-        // calculate SOR orbit
-        int64_t orbitSOR = (tsSOR * 1000 - tsOrbitReset) / o2::constants::lhc::LHCOrbitMUS;
-        // adjust to the nearest TF edge
-        orbitSOR = orbitSOR / nOrbitsPerTF * nOrbitsPerTF + par->fTimeFrameOrbitShift;
-        // first bc of the first orbit (should coincide with TF start)
-        bcSOR = orbitSOR * o2::constants::lhc::LHCMaxBunches;
+
+        auto runInfo = o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), run);
+        // first bc of the first orbit
+        bcSOR = runInfo.orbitSOR * o2::constants::lhc::LHCMaxBunches;
         // duration of TF in bcs
-        nBCsPerTF = nOrbitsPerTF * o2::constants::lhc::LHCMaxBunches;
-        LOGP(info, "tsOrbitReset={} us, SOR = {} ms, orbitSOR = {}, nBCsPerTF = {}", tsOrbitReset, tsSOR, orbitSOR, nBCsPerTF);
+        nBCsPerTF = runInfo.orbitsPerTF * o2::constants::lhc::LHCMaxBunches;
       }
     }
 
@@ -631,28 +620,15 @@ struct EventSelectionTask {
     // extract bc pattern from CCDB for data or anchored MC only
     if (run != lastRun && run >= 500000) {
       lastRun = run;
+      auto runInfo = o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), run);
+      // first bc of the first orbit
+      bcSOR = runInfo.orbitSOR * o2::constants::lhc::LHCMaxBunches;
+      // duration of TF in bcs
+      nBCsPerTF = runInfo.orbitsPerTF * o2::constants::lhc::LHCMaxBunches;
+      // colliding bc pattern
       int64_t ts = bcs.iteratorAt(0).timestamp();
       auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", ts);
       bcPatternB = grplhcif->getBunchFilling().getBCPattern();
-
-      EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", ts);
-      // access orbit-reset timestamp
-      auto ctpx = ccdb->getForTimeStamp<std::vector<Long64_t>>("CTP/Calib/OrbitReset", ts);
-      int64_t tsOrbitReset = (*ctpx)[0]; // us
-      // access TF duration, start-of-run timestamp from ECS GRP
-      std::map<std::string, std::string> metadata;
-      metadata["runNumber"] = Form("%d", run);
-      auto grpecs = ccdb->getSpecific<o2::parameters::GRPECSObject>("GLO/Config/GRPECS", ts, metadata);
-      uint32_t nOrbitsPerTF = grpecs->getNHBFPerTF(); // assuming 1 orbit = 1 HBF;  nOrbitsPerTF=128 in 2022, 32 in 2023
-      int64_t tsSOR = grpecs->getTimeStart();         // ms
-      // calculate SOR orbit
-      int64_t orbitSOR = (tsSOR * 1000 - tsOrbitReset) / o2::constants::lhc::LHCOrbitMUS;
-      // adjust to the nearest TF edge
-      orbitSOR = orbitSOR / nOrbitsPerTF * nOrbitsPerTF + par->fTimeFrameOrbitShift;
-      // first bc of the first orbit (should coincide with TF start)
-      bcSOR = orbitSOR * o2::constants::lhc::LHCMaxBunches;
-      // duration of TF in bcs
-      nBCsPerTF = nOrbitsPerTF * o2::constants::lhc::LHCMaxBunches;
     }
 
     // create maps from globalBC to bc index for TVX-fired bcs
@@ -806,7 +782,7 @@ struct EventSelectionTask {
     // second loop to match remaining low-pt TPCnoTOFnoTRD collisions
     for (auto& col : cols) {
       int32_t colIndex = col.globalIndex();
-      if (vIsVertexTPC[colIndex] > 0 && vIsVertexHighPtTPC[colIndex] == 0) {
+      if (vIsVertexTPC[colIndex] > 0 && vIsVertexTOF[colIndex] == 0 && vIsVertexHighPtTPC[colIndex] == 0) {
         float weightedTime = vWeightedTimesTPCnoTOFnoTRD[colIndex];
         float weightedSigma = vWeightedSigmaTPCnoTOFnoTRD[colIndex];
         auto bc = col.bc_as<BCsWithBcSelsRun3>();

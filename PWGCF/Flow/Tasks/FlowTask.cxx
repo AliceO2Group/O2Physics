@@ -243,16 +243,22 @@ struct FlowTask {
     oba->Add(new TNamed("Ch06Gap22", "Ch06Gap22"));
     oba->Add(new TNamed("Ch08Gap22", "Ch08Gap22"));
     oba->Add(new TNamed("Ch10Gap22", "Ch10Gap22"));
+    for (Int_t i = 0; i < fPtAxis->GetNbins(); i++)
+      oba->Add(new TNamed(Form("Ch10Gap22_pt_%i", i + 1), "Ch10Gap22_pTDiff"));
     oba->Add(new TNamed("Ch12Gap22", "Ch12Gap22"));
     oba->Add(new TNamed("Ch04Gap32", "Ch04Gap32"));
     oba->Add(new TNamed("Ch06Gap32", "Ch06Gap32"));
     oba->Add(new TNamed("Ch08Gap32", "Ch08Gap32"));
     oba->Add(new TNamed("Ch10Gap32", "Ch10Gap32"));
+    for (Int_t i = 0; i < fPtAxis->GetNbins(); i++)
+      oba->Add(new TNamed(Form("Ch10Gap32_pt_%i", i + 1), "Ch10Gap32_pTDiff"));
     oba->Add(new TNamed("Ch12Gap32", "Ch12Gap32"));
     oba->Add(new TNamed("Ch04Gap42", "Ch04Gap42"));
     oba->Add(new TNamed("Ch06Gap42", "Ch06Gap42"));
     oba->Add(new TNamed("Ch08Gap42", "Ch08Gap42"));
     oba->Add(new TNamed("Ch10Gap42", "Ch10Gap42"));
+    for (Int_t i = 0; i < fPtAxis->GetNbins(); i++)
+      oba->Add(new TNamed(Form("Ch10Gap42_pt_%i", i + 1), "Ch10Gap42_pTDiff"));
     oba->Add(new TNamed("Ch12Gap42", "Ch12Gap42"));
     oba->Add(new TNamed("ChFull422", "ChFull422"));
     oba->Add(new TNamed("Ch04GapA422", "Ch04GapA422"));
@@ -299,7 +305,9 @@ struct FlowTask {
     fGFW->AddRegion("refP", 0.4, 0.8, 1, 1);
     fGFW->AddRegion("refM", -0.4, 0.4, 1, 1);
     fGFW->AddRegion("poiN", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 2);
+    fGFW->AddRegion("poiN10", -0.8, -0.5, 1 + fPtAxis->GetNbins(), 2);
     fGFW->AddRegion("olN", -0.8, -0.4, 1, 4);
+    fGFW->AddRegion("olN10", -0.8, -0.5, 1, 4);
 
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 -2}", "ChFull22", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {3 -3}", "ChFull32", kFALSE));
@@ -323,6 +331,9 @@ struct FlowTask {
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN12 {4} refP12 {-4}", "Ch12Gap42", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN {2} refP {-2}", "ChGap22", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiN refN | olN {2} refP {-2}", "ChGap22", kTRUE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiN10 refN10 | olN10 {2} refP10 {-2}", "Ch10Gap22", kTRUE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiN10 refN10 | olN10 {3} refP10 {-3}", "Ch10Gap32", kTRUE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiN10 refN10 | olN10 {4} refP10 {-4}", "Ch10Gap42", kTRUE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {4 -2 -2}", "ChFull422", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN04 {-2 -2} refP04 {4}", "Ch04GapA422", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN04 {4} refP04 {-2 -2}", "Ch04GapB422", kFALSE));
