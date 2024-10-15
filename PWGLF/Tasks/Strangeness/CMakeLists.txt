@@ -94,6 +94,11 @@ o2physics_add_dpl_workflow(lambdapolarization
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(lambdapolsp
+    SOURCES lambdapolsp.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(strangeness-in-jets
     SOURCES strangeness_in_jets.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -106,5 +111,10 @@ o2physics_add_dpl_workflow(v0topologicalcuts
 
 o2physics_add_dpl_workflow(v0ptinvmassplots
     SOURCES v0ptinvmassplots.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(strange-yield-pbpb
+    SOURCES strange-yield-pbpb.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)

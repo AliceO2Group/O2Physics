@@ -765,6 +765,18 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("posTrackKaonRej")) {
+    cut->AddCut(GetAnalysisCut("posTrack"));
+    cut->AddCut(GetAnalysisCut("kaonRejNsigma"));
+    return cut;
+  }
+
+  if (!nameStr.compare("negTrackKaonRej")) {
+    cut->AddCut(GetAnalysisCut("negTrack"));
+    cut->AddCut(GetAnalysisCut("kaonRejNsigma"));
+    return cut;
+  }
+
   if (!nameStr.compare("pTLow04")) {
     cut->AddCut(GetAnalysisCut("pTLow04"));
     return cut;
@@ -3453,6 +3465,26 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cutAorC;
   }
 
+  if (!nameStr.compare("eventUPCMode")) {
+    cut->AddCut(VarManager::kIsITSUPCMode, 0.5, 1.5);
+    return cut;
+  }
+
+  if (!nameStr.compare("eventSingleGapACZDC_UPCMode")) {
+    AnalysisCompositeCut* cutA = new AnalysisCompositeCut("singleGapAZDC", "singleGapAZDC", kTRUE);
+    cutA->AddCut(GetAnalysisCut("eventSingleGapAZDC"));
+    cutA->AddCut(GetAnalysisCut("eventUPCMode"));
+
+    AnalysisCompositeCut* cutC = new AnalysisCompositeCut("singleGapCZDC", "singleGapCZDC", kTRUE);
+    cutC->AddCut(GetAnalysisCut("eventSingleGapCZDC"));
+    cutC->AddCut(GetAnalysisCut("eventUPCMode"));
+
+    AnalysisCompositeCut* cutAorC = new AnalysisCompositeCut("singleGapACZDC", "singleGapACZDC", kFALSE);
+    cutAorC->AddCut(cutA);
+    cutAorC->AddCut(cutC);
+    return cutAorC;
+  }
+
   // Event cuts based on centrality
   if (!nameStr.compare("eventStandardNoINT7Cent090")) {
     cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
@@ -4784,6 +4816,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (!nameStr.compare("kaonPIDnsigma")) {
     cut->AddCut(VarManager::kTPCnSigmaKa, -3.0, 3.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("kaonRejNsigma")) {
+    cut->AddCut(VarManager::kTPCnSigmaKa, -3.0, 3.0, true);
     return cut;
   }
 

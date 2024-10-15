@@ -55,6 +55,7 @@
 #include "Framework/ASoAHelpers.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "PWGLF/DataModel/SPCalibrationTables.h"
+// #include "SPCalibrationTableswrite.h"
 
 // o2 includes.
 #include "CCDB/CcdbApi.h"
@@ -84,7 +85,8 @@ struct spvector {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
-  Configurable<float> cfgCutCentrality{"cfgCutCentrality", 80.0f, "Centrality cut"};
+  Configurable<float> cfgCutCentralityMax{"cfgCutCentralityMax", 80.0f, "Centrality cut Max"};
+  Configurable<float> cfgCutCentralityMin{"cfgCutCentralityMin", 0.0f, "Centrality cut Min"};
   Configurable<float> cfgCutPT{"cfgCutPT", 0.15, "PT cut on daughter track"};
   Configurable<float> cfgCutPTMax{"cfgCutPTMax", 3.0, "Max PT cut on daughter track"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8, "Eta cut on daughter track"};
@@ -93,6 +95,7 @@ struct spvector {
   Configurable<float> cfgCutDCAz{"cfgCutDCAz", 2.0f, "DCAz range for tracks"};
 
   Configurable<int> QxyNbins{"QxyNbins", 100, "Number of bins in QxQy histograms"};
+  Configurable<int> PhiNbins{"PhiNbins", 100, "Number of bins in phi histogram"};
   Configurable<float> lbinQxy{"lbinQxy", -5.0, "lower bin value in QxQy histograms"};
   Configurable<float> hbinQxy{"hbinQxy", 5.0, "higher bin value in QxQy histograms"};
   // Configurable<int> ZDCgainNbins{"ZDCgainNbins", 500, "Number of bins in Gaineq histograms"};
@@ -104,29 +107,48 @@ struct spvector {
   Configurable<int> VyNbins{"VyNbins", 25, "Number of bins in Vy histograms"};
   Configurable<float> lbinVy{"lbinVy", -0.02, "lower bin value in Vy histograms"};
   Configurable<float> hbinVy{"hbinVy", 0.02, "higher bin value in Vy histograms"};
+  Configurable<int> VzNbins{"VzNbins", 20, "Number of bins in Vz histograms"};
+  Configurable<float> lbinVz{"lbinVz", -10.0, "lower bin value in Vz histograms"};
+  Configurable<float> hbinVz{"hbinVz", 10.0, "higher bin value in Vz histograms"};
   Configurable<int> CentNbins{"CentNbins", 16, "Number of bins in cent histograms"};
   Configurable<float> lbinCent{"lbinCent", 0.0, "lower bin value in cent histograms"};
   Configurable<float> hbinCent{"hbinCent", 80.0, "higher bin value in cent histograms"};
+  Configurable<int> VxfineNbins{"VxfineNbins", 25, "Number of bins in Vx fine histograms"};
+  Configurable<float> lfinebinVx{"lfinebinVx", -0.05, "lower bin value in Vx fine histograms"};
+  Configurable<float> hfinebinVx{"hfinebinVx", 0.0, "higher bin value in Vx fine histograms"};
+  Configurable<int> VyfineNbins{"VyfineNbins", 25, "Number of bins in Vy fine histograms"};
+  Configurable<float> lfinebinVy{"lfinebinVy", -0.02, "lower bin value in Vy fine histograms"};
+  Configurable<float> hfinebinVy{"hfinebinVy", 0.02, "higher bin value in Vy fine histograms"};
+  Configurable<int> VzfineNbins{"VzfineNbins", 20, "Number of bins in Vz fine histograms"};
+  Configurable<float> lfinebinVz{"lfinebinVz", -10.0, "lower bin value in Vz fine histograms"};
+  Configurable<float> hfinebinVz{"hfinebinVz", 10.0, "higher bin value in Vz fine histograms"};
+  Configurable<int> CentfineNbins{"CentfineNbins", 16, "Number of bins in cent fine histograms"};
+  Configurable<float> lfinebinCent{"lfinebinCent", 0.0, "lower bin value in cent fine histograms"};
+  Configurable<float> hfinebinCent{"hfinebinCent", 80.0, "higher bin value in cent fine histograms"};
   Configurable<bool> QA{"QA", false, "QA histograms"};
+  Configurable<bool> ispolarization{"ispolarization", false, "Flag to check polarization"};
+  Configurable<bool> finecorrection{"finecorrection", false, "Flag to check fine correction"};
+  Configurable<bool> rejbadevent{"rejbadevent", true, "Flag to check bad events"};
+  Configurable<bool> rejbadeventcent{"rejbadeventcent", true, "Flag to check bad events for cent"};
+  Configurable<bool> rejbadeventvx{"rejbadeventvx", true, "Flag to check bad events for vx"};
+  Configurable<bool> rejbadeventvy{"rejbadeventvy", true, "Flag to check bad events for vy"};
+  Configurable<bool> rejbadeventvz{"rejbadeventvz", true, "Flag to check bad events for vz"};
   Configurable<bool> usesparse{"usesparse", false, "flag to use sparse histogram"};
-  Configurable<bool> tablewrite{"tablewrite", false, "Boolean for writing table"};
+  Configurable<bool> usenormqn{"usenormqn", true, "flag to use normalized qs"};
+  Configurable<bool> refsys{"refsys", true, "flag to use own reference system"};
   Configurable<bool> useGainCallib{"useGainCallib", false, "use gain calibration"};
-  // Configurable<bool> useRecentere{"useRecentere", false, "use Recentering"};
-  Configurable<bool> useRecentereSp{"useRecentereSp", false, "use Recentering with Sparse"};
-  // Configurable<bool> useRecentereVxy{"useRecentereVxy", false, "use Recentering for Vxy"};
+  Configurable<bool> useRecentereSp{"useRecentereSp", false, "use Recentering with Sparse or THn"};
+  Configurable<bool> useRecenterefineSp{"useRecenterefineSp", false, "use fine Recentering with Sparse or THn"};
+  Configurable<bool> useRecenteresqSp{"useRecenteresqSp", false, "use Recenteringsq with Sparse or THn"};
   Configurable<bool> recwitherror{"recwitherror", false, "use Recentering with error"};
-  // Configurable<bool> useShift{"useShift", false, "use Shift"};
+  Configurable<bool> recfinewitherror{"recfinewitherror", false, "use Recentering fine with error"};
   Configurable<std::string> ConfGainPath{"ConfGainPath", "Users/p/prottay/My/Object/NewPbPbpass4_10092024/gaincallib", "Path to gain calibration"};
-  // Configurable<std::string> ConfRecentere{"ConfRecentere", "Users/p/prottay/My/Object/NewPbPbpass4_23082024/recenter", "Path for recentere"};
-  Configurable<std::string> ConfRecentereSp{"ConfRecentereSp", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse Path for recentere"};
-  /*
-  Configurable<std::string> ConfRecentereVxyQxA{"ConfRecentereVxyQxA", "Users/p/prottay/My/Object/NewPbPbpass4_23082024/recenter", "Path for recentereVxyQxA"};
-  Configurable<std::string> ConfRecentereVxyQyA{"ConfRecentereVxyQyA", "Users/p/prottay/My/Object/NewPbPbpass4_23082024/recenter", "Path for recentereVxyQyA"};
-  Configurable<std::string> ConfRecentereVxyQxC{"ConfRecentereVxyQxC", "Users/p/prottay/My/Object/NewPbPbpass4_23082024/recenter", "Path for recentereVxyQxC"};
-  Configurable<std::string> ConfRecentereVxyQyC{"ConfRecentereVxyQyC", "Users/p/prottay/My/Object/NewPbPbpass4_23082024/recenter", "Path for recentereVxyQyC"};
-  Configurable<std::string> ConfShift{"ConfShift", "Users/p/prottay/My/Object/Finaltest2/recenereall", "Path for Shift"};
-  */
-  // ConfigurableAxis configAxisCentrality{"configAxisCentrality", {16, 0.0, 80}, "centrality bining"};
+  Configurable<std::string> ConfRecentereSp{"ConfRecentereSp", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for recentere"};
+  Configurable<std::string> ConfRecenterecentSp{"ConfRecenterecentSp", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for cent recentere"};
+  Configurable<std::string> ConfRecenterevxSp{"ConfRecenterevxSp", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for vx recentere"};
+  Configurable<std::string> ConfRecenterevySp{"ConfRecenterevySp", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for vy recentere"};
+  Configurable<std::string> ConfRecenterevzSp{"ConfRecenterevzSp", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for vz recentere"};
+  Configurable<std::string> ConfRecenteresqSp{"ConfRecenteresqSp", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for recenteresq"};
 
   // Event selection cuts - Alex
   TF1* fMultPVCutLow = nullptr;
@@ -165,41 +187,66 @@ struct spvector {
     // AxisSpec amplitudeZDC = {ZDCgainNbins, lbinZDCgain, hbinZDCgain, "ZDC amplitude"};
     AxisSpec channelZDCAxis = {8, 0.0, 8.0, "ZDC tower"};
     AxisSpec qxZDCAxis = {QxyNbins, lbinQxy, hbinQxy, "Qx"};
-    AxisSpec phiAxis = {50, -6.28, 6.28, "phi"};
-    AxisSpec vzAxis = {20, -10, 10, "vz"};
+    AxisSpec phiAxis = {PhiNbins, -6.28, 6.28, "phi"};
+    AxisSpec vzAxis = {VzNbins, lbinVz, hbinVz, "vz"};
     AxisSpec vxAxis = {VxNbins, lbinVx, hbinVx, "vx"};
     AxisSpec vyAxis = {VyNbins, lbinVy, hbinVy, "vy"};
     AxisSpec centAxis = {CentNbins, lbinCent, hbinCent, "V0M (%)"};
+    AxisSpec vzfineAxis = {VzfineNbins, lfinebinVz, hfinebinVz, "vzfine"};
+    AxisSpec vxfineAxis = {VxfineNbins, lfinebinVx, hfinebinVx, "vxfine"};
+    AxisSpec vyfineAxis = {VyfineNbins, lfinebinVy, hfinebinVy, "vyfine"};
+    AxisSpec centfineAxis = {CentfineNbins, lfinebinCent, hfinebinCent, "V0M (%) fine"};
 
-    histos.add("hCentrality", "hCentrality", kTH1F, {{centAxis}});
-    histos.add("hpQxZDCAC", "hpQxZDCAC", kTProfile, {centAxis});
-    histos.add("hpQyZDCAC", "hpQyZDCAC", kTProfile, {centAxis});
-    histos.add("hpQxZDCAQyZDCC", "hpQxZDCAQyZDCC", kTProfile, {centAxis});
-    histos.add("hpQxZDCCQyZDCA", "hpQxZDCCQyZDCA", kTProfile, {centAxis});
-    if (usesparse == 1) {
-      histos.add("hsQxZDCA", "hsQxZDCA", kTHnSparseF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
-      histos.add("hsQyZDCA", "hsQyZDCA", kTHnSparseF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
-      histos.add("hsQxZDCC", "hsQxZDCC", kTHnSparseF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
-      histos.add("hsQyZDCC", "hsQyZDCC", kTHnSparseF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
-    } else {
-      histos.add("hnQxZDCA", "hnQxZDCA", kTHnF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
-      histos.add("hnQyZDCA", "hnQyZDCA", kTHnF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
-      histos.add("hnQxZDCC", "hnQxZDCC", kTHnF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
-      histos.add("hnQyZDCC", "hnQyZDCC", kTHnF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
+    histos.add("hCentrality", "hCentrality", kTH1F, {{centfineAxis}});
+    histos.add("hpQxZDCAC", "hpQxZDCAC", kTProfile, {centfineAxis});
+    histos.add("hpQyZDCAC", "hpQyZDCAC", kTProfile, {centfineAxis});
+    histos.add("hpQxZDCAQyZDCC", "hpQxZDCAQyZDCC", kTProfile, {centfineAxis});
+    histos.add("hpQxZDCCQyZDCA", "hpQxZDCCQyZDCA", kTProfile, {centfineAxis});
+
+    if (!ispolarization) {
+      if (usesparse == 1) {
+        histos.add("hsQxZDCA", "hsQxZDCA", kTHnSparseF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
+        histos.add("hsQyZDCA", "hsQyZDCA", kTHnSparseF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
+        histos.add("hsQxZDCC", "hsQxZDCC", kTHnSparseF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
+        histos.add("hsQyZDCC", "hsQyZDCC", kTHnSparseF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
+      } else {
+        histos.add("hnQxZDCA", "hnQxZDCA", kTHnF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
+        histos.add("hnQyZDCA", "hnQyZDCA", kTHnF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
+        histos.add("hnQxZDCC", "hnQxZDCC", kTHnF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
+        histos.add("hnQyZDCC", "hnQyZDCC", kTHnF, {{centAxis}, {vxAxis}, {vyAxis}, {vzAxis}, {qxZDCAxis}});
+
+        if (finecorrection) {
+          histos.add("hcentQxZDCA", "hcentQxZDCA", kTH2F, {{centfineAxis}, {qxZDCAxis}});
+          histos.add("hcentQyZDCA", "hcentQyZDCA", kTH2F, {{centfineAxis}, {qxZDCAxis}});
+          histos.add("hcentQxZDCC", "hcentQxZDCC", kTH2F, {{centfineAxis}, {qxZDCAxis}});
+          histos.add("hcentQyZDCC", "hcentQyZDCC", kTH2F, {{centfineAxis}, {qxZDCAxis}});
+
+          histos.add("hvxQxZDCA", "hvxQxZDCA", kTH2F, {{vxfineAxis}, {qxZDCAxis}});
+          histos.add("hvxQyZDCA", "hvxQyZDCA", kTH2F, {{vxfineAxis}, {qxZDCAxis}});
+          histos.add("hvxQxZDCC", "hvxQxZDCC", kTH2F, {{vxfineAxis}, {qxZDCAxis}});
+          histos.add("hvxQyZDCC", "hvxQyZDCC", kTH2F, {{vxfineAxis}, {qxZDCAxis}});
+
+          histos.add("hvyQxZDCA", "hvyQxZDCA", kTH2F, {{vyfineAxis}, {qxZDCAxis}});
+          histos.add("hvyQyZDCA", "hvyQyZDCA", kTH2F, {{vyfineAxis}, {qxZDCAxis}});
+          histos.add("hvyQxZDCC", "hvyQxZDCC", kTH2F, {{vyfineAxis}, {qxZDCAxis}});
+          histos.add("hvyQyZDCC", "hvyQyZDCC", kTH2F, {{vyfineAxis}, {qxZDCAxis}});
+
+          histos.add("hvzQxZDCA", "hvzQxZDCA", kTH2F, {{vzfineAxis}, {qxZDCAxis}});
+          histos.add("hvzQyZDCA", "hvzQyZDCA", kTH2F, {{vzfineAxis}, {qxZDCAxis}});
+          histos.add("hvzQxZDCC", "hvzQxZDCC", kTH2F, {{vzfineAxis}, {qxZDCAxis}});
+          histos.add("hvzQyZDCC", "hvzQyZDCC", kTH2F, {{vzfineAxis}, {qxZDCAxis}});
+        }
+      }
     }
 
-    /*histos.add("hpQxVZDCC", "hpQxVZDCC", kTProfile3D, {centAxis, vxAxis, vyAxis});
-    histos.add("hpQyVZDCC", "hpQyVZDCC", kTProfile3D, {centAxis, vxAxis, vyAxis});
-    histos.add("hpQxVZDCA", "hpQxVZDCA", kTProfile3D, {centAxis, vxAxis, vyAxis});
-    histos.add("hpQyVZDCA", "hpQyVZDCA", kTProfile3D, {centAxis, vxAxis, vyAxis});*/
-    histos.add("PsiZDCC", "PsiZDCC", kTH2F, {centAxis, phiAxis});
-    histos.add("PsiZDCA", "PsiZDCA", kTH2F, {centAxis, phiAxis});
-    histos.add("ZDCAmp", "ZDCAmp", kTProfile2D, {channelZDCAxis, vzAxis});
+    histos.add("PsiZDCC", "PsiZDCC", kTH2F, {centfineAxis, phiAxis});
+    histos.add("PsiZDCA", "PsiZDCA", kTH2F, {centfineAxis, phiAxis});
+    histos.add("ZDCAmp", "ZDCAmp", kTProfile2D, {channelZDCAxis, vzfineAxis});
 
     if (QA) {
-      histos.add("Vz", "Vz", kTH1F, {vzAxis});
-      histos.add("hpCosPsiAPsiC", "hpCosPsiAPsiC", kTProfile, {centAxis});
-      histos.add("hpSinPsiAPsiC", "hpSinPsiAPsiC", kTProfile, {centAxis});
+      histos.add("Vz", "Vz", kTH1F, {vzfineAxis});
+      histos.add("hpCosPsiAPsiC", "hpCosPsiAPsiC", kTProfile, {centfineAxis});
+      histos.add("hpSinPsiAPsiC", "hpSinPsiAPsiC", kTProfile, {centfineAxis});
     }
     // histos.add("hZDCAmp", "hZDCAmp", kTH3F, {channelZDCAxis, vzAxis, amplitudeZDC});
 
@@ -225,17 +272,15 @@ struct spvector {
   int currentRunNumber = -999;
   int lastRunNumber = -999;
   TH2D* gainprofile;
-  // TH3D* hrecentere;
-  // THnSparseF* hrecentereSp;
   THnF* hrecentereSp;
+  TH2F* hrecenterecentSp;
+  TH2F* hrecenterevxSp;
+  TH2F* hrecenterevySp;
+  TH2F* hrecenterevzSp;
+  THnF* hrecenteresqSp;
 
-  /*
-  TH3D* hrecentereVxyQxA;
-  TH3D* hrecentereVxyQyA;
-  TH3D* hrecentereVxyQxC;
-  TH3D* hrecentereVxyQyC;
-  */
-
+  // Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
+  // Filter centralityFilter = (nabs(aod::cent::centFT0C) < cfgCutCentralityMax && nabs(aod::cent::centFT0C) > cfgCutCentralityMin);
   // Filter acceptanceFilter = (nabs(aod::track::eta) < cfgCutEta && nabs(aod::track::pt) > cfgCutPT);
   // Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
 
@@ -244,26 +289,20 @@ struct spvector {
 
   Preslice<aod::Zdcs> zdcPerCollision = aod::collision::bcId;
 
-  // void process(MyCollisions::iterator const& collision, aod::FT0s const& /*ft0s*/, BCsRun3 const& bcs, aod::Zdcs const&, MyTracks const&)
-  void process(MyCollisions::iterator const& collision, aod::FT0s const& /*ft0s*/, BCsRun3 const& bcs, aod::Zdcs const&)
+  void process(MyCollisions::iterator const& collision, aod::FT0s const& /*ft0s*/, aod::FV0As const& /*fv0s*/, BCsRun3 const& bcs, aod::Zdcs const&)
   {
 
     auto centrality = collision.centFT0C();
+    bool triggerevent = false;
 
     if (bcs.size() != 0) {
       gRandom->SetSeed(bcs.iteratorAt(0).globalBC());
-    }
-
-    auto bc = collision.foundBC_as<BCsRun3>();
-    if (!bc.has_zdc()) {
-      return;
     }
 
     currentRunNumber = collision.foundBC_as<BCsRun3>().runNumber();
     auto vz = collision.posZ();
     auto vx = collision.posX();
     auto vy = collision.posY();
-    bool triggerevent = false;
 
     float psiZDCC = -99;
     float psiZDCA = -99;
@@ -274,27 +313,35 @@ struct spvector {
     auto sumA = 0.0;
     auto sumC = 0.0;
 
+    auto bc = collision.foundBC_as<BCsRun3>();
+    if (!bc.has_zdc()) {
+      triggerevent = false;
+      spcalibrationtable(triggerevent, currentRunNumber, centrality, vx, vy, vz, qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
+      return;
+    }
+
     auto zdc = bc.zdc();
     auto zncEnergy = zdc.energySectorZNC();
     auto znaEnergy = zdc.energySectorZNA();
 
-    if (znaEnergy[0] < 0.0 || znaEnergy[1] < 0.0 || znaEnergy[2] < 0.0 || znaEnergy[3] < 0.0)
+    if (znaEnergy[0] < 0.0 || znaEnergy[1] < 0.0 || znaEnergy[2] < 0.0 || znaEnergy[3] < 0.0) {
+      triggerevent = false;
+      spcalibrationtable(triggerevent, currentRunNumber, centrality, vx, vy, vz, qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
       return;
-    if (zncEnergy[0] < 0.0 || zncEnergy[1] < 0.0 || zncEnergy[2] < 0.0 || zncEnergy[3] < 0.0)
+    }
+    if (zncEnergy[0] < 0.0 || zncEnergy[1] < 0.0 || zncEnergy[2] < 0.0 || zncEnergy[3] < 0.0) {
+      triggerevent = false;
+      spcalibrationtable(triggerevent, currentRunNumber, centrality, vx, vy, vz, qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
       return;
+    }
 
-    if (collision.sel8() && centrality < cfgCutCentrality && TMath::Abs(vz) < cfgCutVertex && collision.has_foundFT0() && eventSelected(collision, centrality) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+    if (collision.sel8() && centrality > cfgCutCentralityMin && centrality < cfgCutCentralityMax && TMath::Abs(vz) < cfgCutVertex && collision.has_foundFT0() && eventSelected(collision, centrality) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
       triggerevent = true;
       if (useGainCallib && (currentRunNumber != lastRunNumber)) {
         gainprofile = ccdb->getForTimeStamp<TH2D>(ConfGainPath.value, bc.timestamp());
       }
 
-      histos.fill(HIST("hCentrality"), centrality);
-      if (QA) {
-        histos.fill(HIST("Vz"), vz);
-      }
-
-      initCCDB(bc);
+      // initCCDB(bc);
 
       auto gainequal = 1.0;
       constexpr float x[4] = {-1.75, 1.75, -1.75, 1.75};
@@ -309,6 +356,8 @@ struct spvector {
         if (iChA < 4) {
 
           if (znaEnergy[iChA] <= 0.0) {
+            triggerevent = false;
+            spcalibrationtable(triggerevent, currentRunNumber, centrality, vx, vy, vz, qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
             return;
           } else {
             float ampl = gainequal * znaEnergy[iChA];
@@ -319,12 +368,17 @@ struct spvector {
             // histos.fill(HIST("hZDCAmp"), chanelid + 0.5, vz, ampl);
           }
         } else {
-
           if (zncEnergy[iChA - 4] <= 0.0) {
+            triggerevent = false;
+            spcalibrationtable(triggerevent, currentRunNumber, centrality, vx, vy, vz, qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
             return;
           } else {
             float ampl = gainequal * zncEnergy[iChA - 4];
-            qxZDCC = qxZDCC + ampl * x[iChA - 4];
+            if (refsys) {
+              qxZDCC = qxZDCC - ampl * x[iChA - 4];
+            } else {
+              qxZDCC = qxZDCC + ampl * x[iChA - 4];
+            }
             qyZDCC = qyZDCC + ampl * y[iChA - 4];
             sumC = sumC + ampl;
             histos.fill(HIST("ZDCAmp"), chanelid + 0.5, vz, ampl);
@@ -333,25 +387,47 @@ struct spvector {
         }
       }
 
-      if (sumA > 0) {
-        qxZDCA = qxZDCA / sumA;
-        qyZDCA = qyZDCA / sumA;
+      if (usenormqn) {
+        if (sumA > 0) {
+          qxZDCA = qxZDCA / sumA;
+          qyZDCA = qyZDCA / sumA;
+        }
+        if (sumC > 0) {
+          qxZDCC = qxZDCC / sumC;
+          qyZDCC = qyZDCC / sumC;
+        }
+      } else {
+        qxZDCA = qxZDCA;
+        qxZDCC = qxZDCC;
+        qyZDCA = qyZDCA;
+        qyZDCC = qyZDCC;
       }
-      if (sumC > 0) {
-        qxZDCC = qxZDCC / sumC;
-        qyZDCC = qyZDCC / sumC;
-      }
-
       if (sumA <= 1e-4 || sumC <= 1e-4) {
         qxZDCA = 0.0;
         qxZDCC = 0.0;
         qyZDCA = 0.0;
         qyZDCC = 0.0;
+        triggerevent = false;
+        spcalibrationtable(triggerevent, currentRunNumber, centrality, vx, vy, vz, qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
         return;
+      }
+
+      histos.fill(HIST("hCentrality"), centrality);
+      if (QA) {
+        histos.fill(HIST("Vz"), vz);
       }
 
       if (useRecentereSp && (currentRunNumber != lastRunNumber)) {
         hrecentereSp = ccdb->getForTimeStamp<THnF>(ConfRecentereSp.value, bc.timestamp());
+      }
+      if (useRecenterefineSp && (currentRunNumber != lastRunNumber)) {
+        hrecenterecentSp = ccdb->getForTimeStamp<TH2F>(ConfRecenterecentSp.value, bc.timestamp());
+        hrecenterevxSp = ccdb->getForTimeStamp<TH2F>(ConfRecenterevxSp.value, bc.timestamp());
+        hrecenterevySp = ccdb->getForTimeStamp<TH2F>(ConfRecenterevySp.value, bc.timestamp());
+        hrecenterevzSp = ccdb->getForTimeStamp<TH2F>(ConfRecenterevzSp.value, bc.timestamp());
+      }
+      if (useRecenteresqSp && (currentRunNumber != lastRunNumber)) {
+        hrecenteresqSp = ccdb->getForTimeStamp<THnF>(ConfRecenteresqSp.value, bc.timestamp());
       }
 
       if (useRecentereSp && hrecentereSp) {
@@ -375,72 +451,222 @@ struct spvector {
         // Get the global bin for meanxA
         int globalBinMeanxA = hrecentereSp->GetBin(binCoords);
         float meanxA = hrecentereSp->GetBinContent(globalBinMeanxA);
+        float meanxAerror = hrecentereSp->GetBinError(globalBinMeanxA);
 
         // Repeat for other channels (meanyA, meanxC, meanyC)
         binCoords[4] = channelAxis->FindBin(1.5); // Channel for meanyA
         int globalBinMeanyA = hrecentereSp->GetBin(binCoords);
         float meanyA = hrecentereSp->GetBinContent(globalBinMeanyA);
+        float meanyAerror = hrecentereSp->GetBinError(globalBinMeanyA);
 
         binCoords[4] = channelAxis->FindBin(2.5); // Channel for meanxC
         int globalBinMeanxC = hrecentereSp->GetBin(binCoords);
         float meanxC = hrecentereSp->GetBinContent(globalBinMeanxC);
+        float meanxCerror = hrecentereSp->GetBinError(globalBinMeanxC);
 
         binCoords[4] = channelAxis->FindBin(3.5); // Channel for meanyC
         int globalBinMeanyC = hrecentereSp->GetBin(binCoords);
         float meanyC = hrecentereSp->GetBinContent(globalBinMeanyC);
+        float meanyCerror = hrecentereSp->GetBinError(globalBinMeanyC);
 
-        // LOG(info) << "*******value is**********" <<binCoords[0]<<" "<<binCoords[1]<<" "<<binCoords[2]<<" "<<binCoords[3]<<" "<<meanxA<<" "<<meanyA<<" "<<meanxC<<" "<<meanyC;
+        if (rejbadevent) {
+          if ((TMath::Abs(meanxA) > 90000.0 || TMath::Abs(meanxC) > 90000.0 || TMath::Abs(meanyA) > 90000.0 || TMath::Abs(meanyC) > 90000.0) && (TMath::Abs(meanxAerror) > 9000.0 || TMath::Abs(meanxCerror) > 9000.0 || TMath::Abs(meanyAerror) > 9000.0 || TMath::Abs(meanyCerror) > 9000.0)) {
+            triggerevent = false;
+            spcalibrationtable(triggerevent, lastRunNumber, centrality, vx, vy, vz, qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
+            return;
+          }
+        }
 
         qxZDCA = qxZDCA - meanxA;
         qyZDCA = qyZDCA - meanyA;
         qxZDCC = qxZDCC - meanxC;
         qyZDCC = qyZDCC - meanyC;
+
+        if (recwitherror) {
+          if (meanxAerror != 0.0) {
+            qxZDCA = qxZDCA / meanxAerror;
+          }
+          if (meanyAerror != 0.0) {
+            qyZDCA = qyZDCA / meanyAerror;
+          }
+          if (meanxCerror != 0.0) {
+            qxZDCC = qxZDCC / meanxCerror;
+          }
+          if (meanyCerror != 0.0) {
+            qyZDCC = qyZDCC / meanyCerror;
+          }
+        }
+
+        if (useRecenteresqSp && hrecenteresqSp) {
+
+          binCoords[4] = channelAxis->FindBin(0.5); // Channel for meanyA
+          int globalBinMeansqxA = hrecenteresqSp->GetBin(binCoords);
+          float meansqxA = hrecenteresqSp->GetBinContent(globalBinMeansqxA);
+
+          // Repeat for other channels (meanyA, meanxC, meanyC)
+          binCoords[4] = channelAxis->FindBin(1.5); // Channel for meanyA
+          int globalBinMeansqyA = hrecenteresqSp->GetBin(binCoords);
+          float meansqyA = hrecenteresqSp->GetBinContent(globalBinMeansqyA);
+
+          binCoords[4] = channelAxis->FindBin(2.5); // Channel for meanxC
+          int globalBinMeansqxC = hrecenteresqSp->GetBin(binCoords);
+          float meansqxC = hrecenteresqSp->GetBinContent(globalBinMeansqxC);
+
+          binCoords[4] = channelAxis->FindBin(3.5); // Channel for meanyC
+          int globalBinMeansqyC = hrecenteresqSp->GetBin(binCoords);
+          float meansqyC = hrecenteresqSp->GetBinContent(globalBinMeansqyC);
+
+          if (meansqxA != 0.0) {
+            qxZDCA = qxZDCA / meansqxA;
+          }
+          if (meansqyA != 0.0) {
+            qyZDCA = qyZDCA / meansqyA;
+          }
+          if (meansqxC != 0.0) {
+            qxZDCC = qxZDCC / meansqxC;
+          }
+          if (meansqyC != 0.0) {
+            qyZDCC = qyZDCC / meansqyC;
+          }
+        } else {
+          qxZDCA = qxZDCA;
+          qyZDCA = qyZDCA;
+          qxZDCC = qxZDCC;
+          qyZDCC = qyZDCC;
+        }
       }
 
-      /*
-  if (useRecentere && (currentRunNumber != lastRunNumber)) {
-        hrecentere = ccdb->getForTimeStamp<TH3D>(ConfRecentere.value, bc.timestamp());
-  }
+      if (useRecenterefineSp && hrecenterecentSp) {
 
-  if (useRecentere && hrecentere) {
-        if (recwitherror) {
-  qxZDCA = (qxZDCA - hrecentere->GetBinContent(hrecentere->FindBin(centrality, vz, 0.5))) / hrecentere->GetBinError(hrecentere->FindBin(centrality, vz, 0.5));
-  qyZDCA = (qyZDCA - hrecentere->GetBinContent(hrecentere->FindBin(centrality, vz, 1.5))) / hrecentere->GetBinError(hrecentere->FindBin(centrality, vz, 1.5));
-  qxZDCC = (qxZDCC - hrecentere->GetBinContent(hrecentere->FindBin(centrality, vz, 2.5))) / hrecentere->GetBinError(hrecentere->FindBin(centrality, vz, 2.5));
-  qyZDCC = (qyZDCC - hrecentere->GetBinContent(hrecentere->FindBin(centrality, vz, 3.5))) / hrecentere->GetBinError(hrecentere->FindBin(centrality, vz, 3.5));
-        } else {
+        float meanxAcent = hrecenterecentSp->GetBinContent(hrecenterecentSp->FindBin(centrality, 0.5));
+        float meanyAcent = hrecenterecentSp->GetBinContent(hrecenterecentSp->FindBin(centrality, 1.5));
+        float meanxCcent = hrecenterecentSp->GetBinContent(hrecenterecentSp->FindBin(centrality, 2.5));
+        float meanyCcent = hrecenterecentSp->GetBinContent(hrecenterecentSp->FindBin(centrality, 3.5));
 
-  qxZDCA = (qxZDCA - hrecentere->GetBinContent(hrecentere->FindBin(centrality, vz, 0.5)));
-  qyZDCA = (qyZDCA - hrecentere->GetBinContent(hrecentere->FindBin(centrality, vz, 1.5)));
-  qxZDCC = (qxZDCC - hrecentere->GetBinContent(hrecentere->FindBin(centrality, vz, 2.5)));
-  qyZDCC = (qyZDCC - hrecentere->GetBinContent(hrecentere->FindBin(centrality, vz, 3.5)));
+        float meanxAcenterror = hrecenterecentSp->GetBinError(hrecenterecentSp->FindBin(centrality, 0.5));
+        float meanyAcenterror = hrecenterecentSp->GetBinError(hrecenterecentSp->FindBin(centrality, 1.5));
+        float meanxCcenterror = hrecenterecentSp->GetBinError(hrecenterecentSp->FindBin(centrality, 2.5));
+        float meanyCcenterror = hrecenterecentSp->GetBinError(hrecenterecentSp->FindBin(centrality, 3.5));
+
+        if (rejbadeventcent) {
+          if ((TMath::Abs(meanxAcent) > 90000.0 || TMath::Abs(meanxCcent) > 90000.0 || TMath::Abs(meanyAcent) > 90000.0 || TMath::Abs(meanyCcent) > 90000.0) && (TMath::Abs(meanxAcenterror) > 9000.0 || TMath::Abs(meanxCcenterror) > 9000.0 || TMath::Abs(meanyAcenterror) > 9000.0 || TMath::Abs(meanyCcenterror) > 9000.0)) {
+            triggerevent = false;
+            spcalibrationtable(triggerevent, lastRunNumber, centrality, vx, vy, vz, qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
+            return;
+          }
         }
-  }
 
+        qxZDCA = qxZDCA - hrecenterecentSp->GetBinContent(hrecenterecentSp->FindBin(centrality, 0.5));
+        qyZDCA = qyZDCA - hrecenterecentSp->GetBinContent(hrecenterecentSp->FindBin(centrality, 1.5));
+        qxZDCC = qxZDCC - hrecenterecentSp->GetBinContent(hrecenterecentSp->FindBin(centrality, 2.5));
+        qyZDCC = qyZDCC - hrecenterecentSp->GetBinContent(hrecenterecentSp->FindBin(centrality, 3.5));
 
-  if (useRecentereVxy && (currentRunNumber != lastRunNumber)) {
-  hrecentereVxyQxA = ccdb->getForTimeStamp<TH3D>(ConfRecentereVxyQxA.value, bc.timestamp());
-  hrecentereVxyQyA = ccdb->getForTimeStamp<TH3D>(ConfRecentereVxyQyA.value, bc.timestamp());
-  hrecentereVxyQxC = ccdb->getForTimeStamp<TH3D>(ConfRecentereVxyQxC.value, bc.timestamp());
-  hrecentereVxyQyC = ccdb->getForTimeStamp<TH3D>(ConfRecentereVxyQyC.value, bc.timestamp());
-  }
+        if (recfinewitherror) {
+          qxZDCA = qxZDCA / meanxAcenterror;
+          qyZDCA = qyZDCA / meanyAcenterror;
+          qxZDCC = qxZDCC / meanxCcenterror;
+          qyZDCC = qyZDCC / meanyCcenterror;
+        }
+      }
 
-  if (useRecentereVxy && hrecentereVxyQxA && hrecentereVxyQyA && hrecentereVxyQxC && hrecentereVxyQyC) {
-  if (recwitherror) {
-  qxZDCA = (qxZDCA - hrecentereVxyQxA->GetBinContent(hrecentereVxyQxA->FindBin(centrality, vx, vy))) / hrecentereVxyQxA->GetBinError(hrecentereVxyQxA->FindBin(centrality, vx, vy));
-  qyZDCA = (qyZDCA - hrecentereVxyQyA->GetBinContent(hrecentereVxyQyA->FindBin(centrality, vx, vy))) / hrecentereVxyQyA->GetBinError(hrecentereVxyQyA->FindBin(centrality, vx, vy));
-  qxZDCC = (qxZDCC - hrecentereVxyQxC->GetBinContent(hrecentereVxyQxC->FindBin(centrality, vx, vy))) / hrecentereVxyQxC->GetBinError(hrecentereVxyQxC->FindBin(centrality, vx, vy));
-  qyZDCC = (qyZDCC - hrecentereVxyQyC->GetBinContent(hrecentereVxyQyC->FindBin(centrality, vx, vy))) / hrecentereVxyQyC->GetBinError(hrecentereVxyQyC->FindBin(centrality, vx, vy));
-  } else {
+      if (useRecenterefineSp && hrecenterevxSp) {
 
-  qxZDCA = (qxZDCA - hrecentereVxyQxA->GetBinContent(hrecentereVxyQxA->FindBin(centrality, vx, vy)));
-  qyZDCA = (qyZDCA - hrecentereVxyQyA->GetBinContent(hrecentereVxyQyA->FindBin(centrality, vx, vy)));
-  qxZDCC = (qxZDCC - hrecentereVxyQxC->GetBinContent(hrecentereVxyQxC->FindBin(centrality, vx, vy)));
-  qyZDCC = (qyZDCC - hrecentereVxyQyC->GetBinContent(hrecentereVxyQyC->FindBin(centrality, vx, vy)));
-  }
-  }
+        float meanxAvx = hrecenterevxSp->GetBinContent(hrecenterevxSp->FindBin(vx, 0.5));
+        float meanyAvx = hrecenterevxSp->GetBinContent(hrecenterevxSp->FindBin(vx, 1.5));
+        float meanxCvx = hrecenterevxSp->GetBinContent(hrecenterevxSp->FindBin(vx, 2.5));
+        float meanyCvx = hrecenterevxSp->GetBinContent(hrecenterevxSp->FindBin(vx, 3.5));
 
-      */
+        float meanxAvxerror = hrecenterevxSp->GetBinError(hrecenterevxSp->FindBin(vx, 0.5));
+        float meanyAvxerror = hrecenterevxSp->GetBinError(hrecenterevxSp->FindBin(vx, 1.5));
+        float meanxCvxerror = hrecenterevxSp->GetBinError(hrecenterevxSp->FindBin(vx, 2.5));
+        float meanyCvxerror = hrecenterevxSp->GetBinError(hrecenterevxSp->FindBin(vx, 3.5));
+
+        if (rejbadeventvx) {
+          if ((TMath::Abs(meanxAvx) > 90000.0 || TMath::Abs(meanxCvx) > 90000.0 || TMath::Abs(meanyAvx) > 90000.0 || TMath::Abs(meanyCvx) > 90000.0) && (TMath::Abs(meanxAvxerror) > 9000.0 || TMath::Abs(meanxCvxerror) > 9000.0 || TMath::Abs(meanyAvxerror) > 9000.0 || TMath::Abs(meanyCvxerror) > 9000.0)) {
+            triggerevent = false;
+            spcalibrationtable(triggerevent, lastRunNumber, centrality, vx, vy, vz, qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
+            return;
+          }
+        }
+
+        qxZDCA = qxZDCA - hrecenterevxSp->GetBinContent(hrecenterevxSp->FindBin(vx, 0.5));
+        qyZDCA = qyZDCA - hrecenterevxSp->GetBinContent(hrecenterevxSp->FindBin(vx, 1.5));
+        qxZDCC = qxZDCC - hrecenterevxSp->GetBinContent(hrecenterevxSp->FindBin(vx, 2.5));
+        qyZDCC = qyZDCC - hrecenterevxSp->GetBinContent(hrecenterevxSp->FindBin(vx, 3.5));
+
+        if (recfinewitherror) {
+          qxZDCA = qxZDCA / meanxAvxerror;
+          qyZDCA = qyZDCA / meanyAvxerror;
+          qxZDCC = qxZDCC / meanxCvxerror;
+          qyZDCC = qyZDCC / meanyCvxerror;
+        }
+      }
+
+      if (useRecenterefineSp && hrecenterevySp) {
+
+        float meanxAvy = hrecenterevySp->GetBinContent(hrecenterevySp->FindBin(vy, 0.5));
+        float meanyAvy = hrecenterevySp->GetBinContent(hrecenterevySp->FindBin(vy, 1.5));
+        float meanxCvy = hrecenterevySp->GetBinContent(hrecenterevySp->FindBin(vy, 2.5));
+        float meanyCvy = hrecenterevySp->GetBinContent(hrecenterevySp->FindBin(vy, 3.5));
+
+        float meanxAvyerror = hrecenterevySp->GetBinError(hrecenterevySp->FindBin(vy, 0.5));
+        float meanyAvyerror = hrecenterevySp->GetBinError(hrecenterevySp->FindBin(vy, 1.5));
+        float meanxCvyerror = hrecenterevySp->GetBinError(hrecenterevySp->FindBin(vy, 2.5));
+        float meanyCvyerror = hrecenterevySp->GetBinError(hrecenterevySp->FindBin(vy, 3.5));
+
+        if (rejbadeventvy) {
+          if ((TMath::Abs(meanxAvy) > 90000.0 || TMath::Abs(meanxCvy) > 90000.0 || TMath::Abs(meanyAvy) > 90000.0 || TMath::Abs(meanyCvy) > 90000.0) && (TMath::Abs(meanxAvyerror) > 9000.0 || TMath::Abs(meanxCvyerror) > 9000.0 || TMath::Abs(meanyAvyerror) > 9000.0 || TMath::Abs(meanyCvyerror) > 9000.0)) {
+            triggerevent = false;
+            spcalibrationtable(triggerevent, lastRunNumber, centrality, vx, vy, vz, qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
+            return;
+          }
+        }
+
+        qxZDCA = qxZDCA - hrecenterevySp->GetBinContent(hrecenterevySp->FindBin(vy, 0.5));
+        qyZDCA = qyZDCA - hrecenterevySp->GetBinContent(hrecenterevySp->FindBin(vy, 1.5));
+        qxZDCC = qxZDCC - hrecenterevySp->GetBinContent(hrecenterevySp->FindBin(vy, 2.5));
+        qyZDCC = qyZDCC - hrecenterevySp->GetBinContent(hrecenterevySp->FindBin(vy, 3.5));
+
+        if (recfinewitherror) {
+          qxZDCA = qxZDCA / meanxAvyerror;
+          qyZDCA = qyZDCA / meanyAvyerror;
+          qxZDCC = qxZDCC / meanxCvyerror;
+          qyZDCC = qyZDCC / meanyCvyerror;
+        }
+      }
+
+      if (useRecenterefineSp && hrecenterevzSp) {
+
+        float meanxAvz = hrecenterevzSp->GetBinContent(hrecenterevzSp->FindBin(vz, 0.5));
+        float meanyAvz = hrecenterevzSp->GetBinContent(hrecenterevzSp->FindBin(vz, 1.5));
+        float meanxCvz = hrecenterevzSp->GetBinContent(hrecenterevzSp->FindBin(vz, 2.5));
+        float meanyCvz = hrecenterevzSp->GetBinContent(hrecenterevzSp->FindBin(vz, 3.5));
+
+        float meanxAvzerror = hrecenterevzSp->GetBinError(hrecenterevzSp->FindBin(vz, 0.5));
+        float meanyAvzerror = hrecenterevzSp->GetBinError(hrecenterevzSp->FindBin(vz, 1.5));
+        float meanxCvzerror = hrecenterevzSp->GetBinError(hrecenterevzSp->FindBin(vz, 2.5));
+        float meanyCvzerror = hrecenterevzSp->GetBinError(hrecenterevzSp->FindBin(vz, 3.5));
+
+        if (rejbadeventvz) {
+          if ((TMath::Abs(meanxAvz) > 90000.0 || TMath::Abs(meanxCvz) > 90000.0 || TMath::Abs(meanyAvz) > 90000.0 || TMath::Abs(meanyCvz) > 90000.0) && (TMath::Abs(meanxAvzerror) > 9000.0 || TMath::Abs(meanxCvzerror) > 9000.0 || TMath::Abs(meanyAvzerror) > 9000.0 || TMath::Abs(meanyCvzerror) > 9000.0)) {
+            triggerevent = false;
+            spcalibrationtable(triggerevent, lastRunNumber, centrality, vx, vy, vz, qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
+            return;
+          }
+        }
+
+        qxZDCA = qxZDCA - hrecenterevzSp->GetBinContent(hrecenterevzSp->FindBin(vz, 0.5));
+        qyZDCA = qyZDCA - hrecenterevzSp->GetBinContent(hrecenterevzSp->FindBin(vz, 1.5));
+        qxZDCC = qxZDCC - hrecenterevzSp->GetBinContent(hrecenterevzSp->FindBin(vz, 2.5));
+        qyZDCC = qyZDCC - hrecenterevzSp->GetBinContent(hrecenterevzSp->FindBin(vz, 3.5));
+
+        if (recfinewitherror) {
+          qxZDCA = qxZDCA / meanxAvzerror;
+          qyZDCA = qyZDCA / meanyAvzerror;
+          qxZDCC = qxZDCC / meanxCvzerror;
+          qyZDCC = qyZDCC / meanyCvzerror;
+        }
+      }
 
       psiZDCC = 1.0 * TMath::ATan2(qyZDCC, qxZDCC);
       psiZDCA = 1.0 * TMath::ATan2(qyZDCA, qxZDCA);
@@ -450,22 +676,42 @@ struct spvector {
       histos.fill(HIST("hpQxZDCAQyZDCC"), centrality, (qxZDCA * qyZDCC));
       histos.fill(HIST("hpQxZDCCQyZDCA"), centrality, (qxZDCC * qyZDCA));
 
-      if (usesparse) {
-        histos.fill(HIST("hsQxZDCA"), centrality, vx, vy, vz, qxZDCA);
-        histos.fill(HIST("hsQyZDCA"), centrality, vx, vy, vz, qyZDCA);
-        histos.fill(HIST("hsQxZDCC"), centrality, vx, vy, vz, qxZDCC);
-        histos.fill(HIST("hsQyZDCC"), centrality, vx, vy, vz, qyZDCC);
-      } else {
-        histos.fill(HIST("hnQxZDCA"), centrality, vx, vy, vz, qxZDCA);
-        histos.fill(HIST("hnQyZDCA"), centrality, vx, vy, vz, qyZDCA);
-        histos.fill(HIST("hnQxZDCC"), centrality, vx, vy, vz, qxZDCC);
-        histos.fill(HIST("hnQyZDCC"), centrality, vx, vy, vz, qyZDCC);
+      if (!ispolarization) {
+        if (usesparse) {
+          histos.fill(HIST("hsQxZDCA"), centrality, vx, vy, vz, qxZDCA);
+          histos.fill(HIST("hsQyZDCA"), centrality, vx, vy, vz, qyZDCA);
+          histos.fill(HIST("hsQxZDCC"), centrality, vx, vy, vz, qxZDCC);
+          histos.fill(HIST("hsQyZDCC"), centrality, vx, vy, vz, qyZDCC);
+        } else {
+          histos.fill(HIST("hnQxZDCA"), centrality, vx, vy, vz, qxZDCA);
+          histos.fill(HIST("hnQyZDCA"), centrality, vx, vy, vz, qyZDCA);
+          histos.fill(HIST("hnQxZDCC"), centrality, vx, vy, vz, qxZDCC);
+          histos.fill(HIST("hnQyZDCC"), centrality, vx, vy, vz, qyZDCC);
+
+          if (finecorrection) {
+            histos.fill(HIST("hcentQxZDCA"), centrality, qxZDCA);
+            histos.fill(HIST("hcentQyZDCA"), centrality, qyZDCA);
+            histos.fill(HIST("hcentQxZDCC"), centrality, qxZDCC);
+            histos.fill(HIST("hcentQyZDCC"), centrality, qyZDCC);
+
+            histos.fill(HIST("hvxQxZDCA"), vx, qxZDCA);
+            histos.fill(HIST("hvxQyZDCA"), vx, qyZDCA);
+            histos.fill(HIST("hvxQxZDCC"), vx, qxZDCC);
+            histos.fill(HIST("hvxQyZDCC"), vx, qyZDCC);
+
+            histos.fill(HIST("hvyQxZDCA"), vy, qxZDCA);
+            histos.fill(HIST("hvyQyZDCA"), vy, qyZDCA);
+            histos.fill(HIST("hvyQxZDCC"), vy, qxZDCC);
+            histos.fill(HIST("hvyQyZDCC"), vy, qyZDCC);
+
+            histos.fill(HIST("hvzQxZDCA"), vz, qxZDCA);
+            histos.fill(HIST("hvzQyZDCA"), vz, qyZDCA);
+            histos.fill(HIST("hvzQxZDCC"), vz, qxZDCC);
+            histos.fill(HIST("hvzQyZDCC"), vz, qyZDCC);
+          }
+        }
       }
-      /*
-      histos.fill(HIST("hpQxVZDCC"), centrality, vx, vy, qxZDCC);
-      histos.fill(HIST("hpQyVZDCC"), centrality, vx, vy, qyZDCC);
-      histos.fill(HIST("hpQxVZDCA"), centrality, vx, vy, qxZDCA);
-      histos.fill(HIST("hpQyVZDCA"), centrality, vx, vy, qyZDCA);*/
+
       if (QA) {
         histos.fill(HIST("hpCosPsiAPsiC"), centrality, (TMath::Cos(psiZDCA - psiZDCC)));
         histos.fill(HIST("hpSinPsiAPsiC"), centrality, (TMath::Sin(psiZDCA - psiZDCC)));
@@ -476,9 +722,7 @@ struct spvector {
       lastRunNumber = currentRunNumber;
     }
 
-    if (tablewrite) {
-      spcalibrationtable(triggerevent, lastRunNumber, centrality, vz, znaEnergy[0], znaEnergy[1], znaEnergy[2], znaEnergy[3], zncEnergy[0], zncEnergy[1], zncEnergy[2], zncEnergy[3], qxZDCA, qyZDCA, qxZDCC, qyZDCC, psiZDCC, psiZDCA);
-    }
+    spcalibrationtable(triggerevent, lastRunNumber, centrality, vx, vy, vz, qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
   }
 };
 

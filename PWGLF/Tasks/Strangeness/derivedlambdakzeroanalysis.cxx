@@ -78,6 +78,7 @@ struct derivedlambdakzeroanalysis {
   Configurable<bool> analyseAntiLambda{"analyseAntiLambda", true, "process AntiLambda-like candidates"};
   Configurable<bool> calculateFeeddownMatrix{"calculateFeeddownMatrix", true, "fill feeddown matrix if MC"};
 
+  Configurable<bool> requireSel8{"requireSel8", true, "require sel8 event selection"};
   Configurable<bool> rejectITSROFBorder{"rejectITSROFBorder", true, "reject events at ITS ROF border"};
   Configurable<bool> rejectTFBorder{"rejectTFBorder", true, "reject events at TF border"};
   Configurable<bool> requireIsVertexITSTPC{"requireIsVertexITSTPC", false, "require events with at least one ITS-TPC track"};
@@ -220,11 +221,11 @@ struct derivedlambdakzeroanalysis {
   // UPC selections
   SGSelector sgSelector;
   struct : ConfigurableGroup {
-    Configurable<float> FV0cut{"FV0cut", 100., "FV0A threshold"};
-    Configurable<float> FT0Acut{"FT0Acut", 200., "FT0A threshold"};
-    Configurable<float> FT0Ccut{"FT0Ccut", 100., "FT0C threshold"};
-    Configurable<float> ZDCcut{"ZDCcut", 10., "ZDC threshold"};
-    // Configurable<float> gapSel{"gapSel", 2, "Gap selection"};
+    Configurable<float> FV0cut{"upcCuts.FV0cut", 100., "FV0A threshold"};
+    Configurable<float> FT0Acut{"upcCuts.FT0Acut", 200., "FT0A threshold"};
+    Configurable<float> FT0Ccut{"upcCuts.FT0Ccut", 100., "FT0C threshold"};
+    Configurable<float> ZDCcut{"upcCuts.ZDCcut", 10., "ZDC threshold"};
+    // Configurable<float> gapSel{"upcCuts.gapSel", 2, "Gap selection"};
   } upcCuts;
 
   // AP plot axes
@@ -401,6 +402,7 @@ struct derivedlambdakzeroanalysis {
 
     histos.add("hGapSide", "Gap side; Entries", kTH1F, {{5, -0.5, 4.5}});
     histos.add("hSelGapSide", "Selected gap side; Entries", kTH1F, {axisSelGap});
+    histos.add("hEventCentralityVsSelGapSide", "Centrality (%); Selected gap side", kTH2F, {{100, 0.0f, +100.0f}, axisSelGap});
 
     // for QA and test purposes
     auto hRawCentrality = histos.add<TH1>("hRawCentrality", "hRawCentrality", kTH1F, {axisRawCentrality});
@@ -1059,11 +1061,11 @@ struct derivedlambdakzeroanalysis {
       histos.fill(HIST("h3dMassK0Short"), centrality, pt, v0.mK0Short());
       if (gapSide == 0)
         histos.fill(HIST("h3dMassK0ShortSGA"), centrality, pt, v0.mK0Short());
-      if (gapSide == 1)
+      else if (gapSide == 1)
         histos.fill(HIST("h3dMassK0ShortSGC"), centrality, pt, v0.mK0Short());
-      if (gapSide == 2)
+      else if (gapSide == 2)
         histos.fill(HIST("h3dMassK0ShortDG"), centrality, pt, v0.mK0Short());
-      if (gapSide > 2)
+      else
         histos.fill(HIST("h3dMassK0ShortHadronic"), centrality, pt, v0.mK0Short());
       histos.fill(HIST("hMassK0Short"), v0.mK0Short());
       if (doPlainTopoQA) {
@@ -1112,11 +1114,11 @@ struct derivedlambdakzeroanalysis {
       histos.fill(HIST("h3dMassLambda"), centrality, pt, v0.mLambda());
       if (gapSide == 0)
         histos.fill(HIST("h3dMassLambdaSGA"), centrality, pt, v0.mLambda());
-      if (gapSide == 1)
+      else if (gapSide == 1)
         histos.fill(HIST("h3dMassLambdaSGC"), centrality, pt, v0.mLambda());
-      if (gapSide == 2)
+      else if (gapSide == 2)
         histos.fill(HIST("h3dMassLambdaDG"), centrality, pt, v0.mLambda());
-      if (gapSide > 2)
+      else
         histos.fill(HIST("h3dMassLambdaHadronic"), centrality, pt, v0.mLambda());
       if (doPlainTopoQA) {
         histos.fill(HIST("Lambda/hPosDCAToPV"), v0.dcapostopv());
@@ -1164,11 +1166,11 @@ struct derivedlambdakzeroanalysis {
       histos.fill(HIST("h3dMassAntiLambda"), centrality, pt, v0.mAntiLambda());
       if (gapSide == 0)
         histos.fill(HIST("h3dMassAntiLambdaSGA"), centrality, pt, v0.mAntiLambda());
-      if (gapSide == 1)
+      else if (gapSide == 1)
         histos.fill(HIST("h3dMassAntiLambdaSGC"), centrality, pt, v0.mAntiLambda());
-      if (gapSide == 2)
+      else if (gapSide == 2)
         histos.fill(HIST("h3dMassAntiLambdaDG"), centrality, pt, v0.mAntiLambda());
-      if (gapSide > 2)
+      else
         histos.fill(HIST("h3dMassAntiLambdaHadronic"), centrality, pt, v0.mAntiLambda());
       if (doPlainTopoQA) {
         histos.fill(HIST("AntiLambda/hPosDCAToPV"), v0.dcapostopv());
@@ -1315,7 +1317,7 @@ struct derivedlambdakzeroanalysis {
     }
 
     histos.fill(HIST("hEventSelection"), 0. /* all collisions */);
-    if (!collision.sel8()) {
+    if (requireSel8 && !collision.sel8()) {
       return;
     }
     histos.fill(HIST("hEventSelection"), 1 /* sel8 collisions */);
@@ -1395,6 +1397,7 @@ struct derivedlambdakzeroanalysis {
     selGapSide = sgSelector.trueGap(collision, upcCuts.FV0cut, upcCuts.FT0Acut, upcCuts.FT0Ccut, upcCuts.ZDCcut);
     histos.fill(HIST("hGapSide"), gapSide);
     histos.fill(HIST("hSelGapSide"), selGapSide);
+    histos.fill(HIST("hEventCentralityVsSelGapSide"), centrality, selGapSide <= 2 ? selGapSide : -1);
 
     histos.fill(HIST("hEventCentrality"), centrality);
 
@@ -1430,7 +1433,7 @@ struct derivedlambdakzeroanalysis {
   void processMonteCarlo(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraCollLabels>::iterator const& collision, v0MCCandidates const& fullV0s, dauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& /*mccollisions*/, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&)
   {
     histos.fill(HIST("hEventSelection"), 0. /* all collisions */);
-    if (!collision.sel8()) {
+    if (requireSel8 && !collision.sel8()) {
       return;
     }
     histos.fill(HIST("hEventSelection"), 1 /* sel8 collisions */);
@@ -1510,6 +1513,7 @@ struct derivedlambdakzeroanalysis {
     selGapSide = sgSelector.trueGap(collision, upcCuts.FV0cut, upcCuts.FT0Acut, upcCuts.FT0Ccut, upcCuts.ZDCcut);
     histos.fill(HIST("hGapSide"), gapSide);
     histos.fill(HIST("hSelGapSide"), selGapSide);
+    histos.fill(HIST("hEventCentralityVsSelGapSide"), centrality, selGapSide <= 2 ? selGapSide : -1);
 
     histos.fill(HIST("hEventCentrality"), centrality);
 
@@ -1673,7 +1677,7 @@ struct derivedlambdakzeroanalysis {
       float centrality = 100.5f;
       int nCollisions = 0;
       for (auto const& collision : groupedCollisions) {
-        if (!collision.sel8()) {
+        if (requireSel8 && !collision.sel8()) {
           continue;
         }
         if (std::abs(collision.posZ()) > 10.f) {

@@ -293,13 +293,14 @@ struct nucleiSpectra {
   // CCDB options
   Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrLUT), "Type of material correction"};
   Configurable<std::string> cfgCCDBurl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> cfgZorroCCDBpath{"cfgZorroCCDBpath", "/Users/m/mpuccio/EventFiltering/OTS/", "path to the zorro ccdb objects"};
   int mRunNumber = 0;
   float mBz = 0.f;
 
   Filter trackFilter = nabs(aod::track::eta) < cfgCutEta && aod::track::tpcInnerParam > cfgCutTpcMom;
 
   using TrackCandidates = soa::Filtered<soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime>>;
-
+  using TrackCandidatesMC = soa::Filtered<soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::McTrackLabels>>;
   // Collisions with chentrality
   using CollWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>::iterator;
 
@@ -374,6 +375,7 @@ struct nucleiSpectra {
   void init(o2::framework::InitContext&)
   {
     zorroSummary.setObject(zorro.getZorroSummary());
+    zorro.setBaseCCDBPath(cfgZorroCCDBpath.value);
     ccdb->setURL(cfgCCDBurl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -489,6 +491,9 @@ struct nucleiSpectra {
     o2::pid::tof::Beta<typename Ttrks ::iterator> responseBeta;
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
+    if (cfgSkimmedProcessing) {
+      zorro.isSelected(bc.globalBC()); /// Just let Zorro do the accounting
+    }
     gRandom->SetSeed(bc.timestamp());
 
     spectra.fill(HIST("hRecVtxZData"), collision.posZ());
@@ -704,9 +709,6 @@ struct nucleiSpectra {
     if (!eventSelection(collision)) {
       return;
     }
-    if (cfgSkimmedProcessing) {
-      zorro.isSelected(collision.bc_as<aod::BCsWithTimestamps>().globalBC()); /// Just let Zorro do the accounting
-    }
 
     fillDataInfo(collision, tracks);
     for (auto& c : nuclei::candidates) {
@@ -783,7 +785,7 @@ struct nucleiSpectra {
   PROCESS_SWITCH(nucleiSpectra, processDataFlowAlternative, "Data analysis with flow - alternative framework", false);
 
   Preslice<TrackCandidates> tracksPerCollisions = aod::track::collisionId;
-  void processMC(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions, aod::McCollisions const& mcCollisions, soa::Join<TrackCandidates, aod::McTrackLabels> const& tracks, aod::McParticles const& particlesMC, aod::BCsWithTimestamps const&)
+  void processMC(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions, aod::McCollisions const& mcCollisions, TrackCandidatesMC const& tracks, aod::McParticles const& particlesMC, aod::BCsWithTimestamps const&)
   {
     nuclei::candidates.clear();
     for (auto& c : mcCollisions) {

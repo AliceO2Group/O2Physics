@@ -37,8 +37,8 @@
 /PWGEM/Dilepton @alibuild @mikesas @rbailhac @dsekihat @ivorobye @feisenhu
 /PWGEM/PhotonMeson @alibuild @mikesas @rbailhac @m-c-danisch @novitzky @mhemmer-cern @dsekihat
 /PWGHF @alibuild @vkucera @fcolamar @fgrosa @fcatalan92 @mfaggin @mmazzilli @deepathoms @NicoleBastid @hahassan7 @jpxrk @apalasciano
-/PWGLF @alibuild @ercolessi @fmazzasc @chiarapinto @BongHwi @smaff92 @mbombara @ChiaraDeMartin95 @njacazio @skundu692
-/PWGMM @alibuild @aalkin
+/PWGLF @alibuild @ercolessi @fmazzasc @chiarapinto @maciacco @BongHwi @smaff92 @ChiaraDeMartin95 @njacazio @skundu692
+/PWGMM @alibuild @aalkin @njacazio @skundu692
 /PWGMM/Lumi @alibuild @aalkin
 /PWGMM/Mult @alibuild @aalkin @aortizve @ddobrigk
 /PWGMM/UE @alibuild @aalkin @aortizve
