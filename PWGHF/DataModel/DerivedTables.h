@@ -313,6 +313,9 @@ DECLARE_SOA_TABLE(HfD0Pars, "AOD", "HFD0PAR", //! Table with candidate propertie
                   hf_cand_par::NSigTpcTofKaExpKa,
                   hf_cand_par::MaxNormalisedDeltaIP,
                   hf_cand_par::ImpactParameterProduct,
+                  hf_cand_sel::CandidateSelFlag,
+                  hf_cand_mc::FlagMcMatchRec,
+                  hf_cand_mc::OriginMcRec,
                   soa::Marker<MarkerD0>);
 
 DECLARE_SOA_TABLE(HfD0ParEs, "AOD", "HFD0PARE", //! Table with additional candidate properties used for selection
