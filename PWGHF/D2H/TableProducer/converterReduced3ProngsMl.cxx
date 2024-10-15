@@ -24,7 +24,7 @@ using namespace o2;
 using namespace o2::framework;
 
 // Swaps covariance matrix elements if the data is known to be bogus (collision_000 is bogus)
-struct ConverterReduced3ProngsMl {
+struct HfConverterReduced3ProngsMl {
   Produces<aod::HfRed3ProngsMl_001> ml3Prongs;
 
   void process(aod::HfRed3ProngsMl_000::iterator const& mlScoreTable)
