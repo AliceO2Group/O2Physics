@@ -1225,6 +1225,14 @@ struct strangeness_in_jets {
         registryQC.fill(HIST("survivedK0"), 15.5);
       }
     }
+
+    for (auto& v0 : fullV0s) {
+      const auto& ptrack = v0.posTrack_as<StrHadronDaughterTracks>();
+      const auto& ntrack = v0.negTrack_as<StrHadronDaughterTracks>();
+      if (!passedK0ShortSelection(v0, ptrack, ntrack))
+        continue;
+      registryQC.fill(HIST("survivedK0"), 16.5);
+    }
   }
   PROCESS_SWITCH(strangeness_in_jets, processK0s, "Process K0s", false);
 

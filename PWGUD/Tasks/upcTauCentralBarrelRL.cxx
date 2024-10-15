@@ -19,6 +19,7 @@
 // O2 headers
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
+#include "Framework/HistogramRegistry.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 
@@ -97,6 +98,30 @@ struct UpcTauCentralBarrelRL {
   Configurable<bool> doFourTrackPsi2S{"doFourTrackPsi2S", true, {"Define histos for Psi2S into four charged tracks (pi/mu) and allow to fill them"}};
   Configurable<bool> doSixTracks{"doSixTracks", false, {"Define histos for six tracks and allow to fill them"}};
 
+  ConfigurableAxis axisNtracks{"axisNtracks", {30, -0.5, 29.5}, "Number of tracks in collision"};
+  ConfigurableAxis axisZvtx{"axisZvtx", {40, -20., 20.}, "Z-vertex position (cm)"};
+  ConfigurableAxis axisInvMass{"axisInvMass", {400, 1., 5.}, "Invariant mass (GeV/c^{2})"};
+  ConfigurableAxis axisInvMassWide{"axisInvMassWide", {1000, 0., 10.}, "Invariant mass (GeV/c^{2}), wider range"};
+  ConfigurableAxis axisMom{"axisMom", {400, 0., 2.}, "Momentum (GeV/c)"};
+  ConfigurableAxis axisMomWide{"axisMomWide", {1000, 0., 10.}, "Momentum (GeV/c), wider range"};
+  ConfigurableAxis axisMomSigned{"axisMomSigned", {800, -2., 2.}, "Signed momentum (GeV/c)"};
+  ConfigurableAxis axisPt{"axisPt", {400, 0., 2.}, "Transversal momentum (GeV/c)"};
+  ConfigurableAxis axisPhi{"axisPhi", {64, -2 * o2::constants::math::PI, 2 * o2::constants::math::PI}, "Azimuthal angle (a.y.)"};
+  ConfigurableAxis axisModPhi{"axisModPhi", {400, 0., .4}, "Track fmod(#phi,#pi/9)"};
+  ConfigurableAxis axisEta{"axisEta", {50, -1.2, 1.2}, "Pseudorapidity (a.u.)"};
+  ConfigurableAxis axisRap{"axisRap", {50, -1.2, 1.2}, "Rapidity (a.u.)"};
+  ConfigurableAxis axisAcoplanarity{"axisAcoplanarity", {32, 0.0, o2::constants::math::PI}, "Acoplanarity (rad)"};
+  ConfigurableAxis axisTPCdEdx{"axisTPCdEdx", {2000, 0., 200.}, "TPC dE/dx (a.u.)"};
+  ConfigurableAxis axisTOFsignal{"axisTOFsignal", {2500, -10000., 40000.}, "TOF signal (a.u.)"};
+  ConfigurableAxis axisNsigma{"axisNsigma", {200, -10., 10.}, "n sigma"};
+  ConfigurableAxis axisDCA{"axisDCA", {100, -0.5, 0.5}, "DCA (cm)"};
+  ConfigurableAxis axisAvgITSclsSizes{"axisAvgITSclsSizes", {500, 0., 10.}, "ITS average cluster size"};
+  ConfigurableAxis axisITSnCls{"axisITSnCls", {8, -0.5, 7.5}, "ITS n clusters"};
+  ConfigurableAxis axisITSchi2{"axisITSchi2", {100, 0, 50}, "UTS chi2"};
+  ConfigurableAxis axisTPCnCls{"axisTPCnCls", {165, -0.5, 164.5}, "TPC n clusters"};
+  ConfigurableAxis axisTPCxRwsFrac{"axisTPCxRwsFrac", {200, 0.0, 2.0}, "TPC fraction of crossed raws"};
+  ConfigurableAxis axisTPCchi2{"axisTPCchi2", {100, 0, 10}, "TPC chi2"};
+
   using FullUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags>;
   using FullUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels>::iterator;
   using FullSGUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::SGCollisions, aod::UDZdcsReduced>::iterator;
@@ -113,30 +138,6 @@ struct UpcTauCentralBarrelRL {
       printLargeMessage("INIT METHOD");
     countCollisions = 0;
     isFirstReconstructedCollisions = true;
-
-    const AxisSpec axisNtracks{30, -0.5, 29.5};
-    const AxisSpec axisZvtx{40, -20., 20.};
-    const AxisSpec axisInvMass{400, 1., 5.};
-    const AxisSpec axisInvMassWide{1000, 0., 10.};
-    const AxisSpec axisMom{400, 0., 2.};
-    const AxisSpec axisMomSigned{800, -2., 2.};
-    const AxisSpec axisMomWide{1000, 0., 10.};
-    const AxisSpec axisPt{400, 0., 2.};
-    const AxisSpec axisPhi{64, -2 * o2::constants::math::PI, 2 * o2::constants::math::PI};
-    const AxisSpec axisModPhi{400, 0., .4};
-    const AxisSpec axisEta{50, -1.2, 1.2};
-    const AxisSpec axisRap{50, -1.2, 1.2};
-    const AxisSpec axisAcoplanarity{32, 0.0, o2::constants::math::PI};
-    const AxisSpec axisDCA{100, -0.5, 0.5};
-    const AxisSpec axisAvgITSclsSizes{500, 0., 10.};
-    const AxisSpec axisTPCdEdx{2000, 0., 200.};
-    const AxisSpec axisTOFsignal{2500, -10000., 40000.};
-    const AxisSpec axisNsigma{200, -10., 10.};
-    const AxisSpec axisITSnCls{8, -0.5, 7.5};
-    const AxisSpec axisITSchi2{100, 0, 50};
-    const AxisSpec axisTPCnCls{165, -0.5, 164.5};
-    const AxisSpec axisTPCxRwsFrac{200, 0.0, 2.0};
-    const AxisSpec axisTPCchi2{100, 0, 10};
 
     histos.add("Events/hCountCollisions", ";;Number of  analysed collision (-)", HistType::kTH1D, {{1, 0.5, 1.5}});
     histos.add("Events/UDtableGapSide", ";GapSide value from UD table (-);Number of events (-)", HistType::kTH1D, {{4, -1.5, 2.5}});
