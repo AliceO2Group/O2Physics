@@ -259,7 +259,10 @@ struct HfDerivedDataCreatorD0ToKPi {
         tofNSigmaKaExpKa,
         tpcTofNSigmaKaExpKa,
         candidate.maxNormalisedDeltaIP(),
-        candidate.impactParameterProduct());
+        candidate.impactParameterProduct(),
+        1 << candFlag,
+        flagMc,
+        origin);
     }
     if (fillCandidateParE) {
       rowCandidateParE(
