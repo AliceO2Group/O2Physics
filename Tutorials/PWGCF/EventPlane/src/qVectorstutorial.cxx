@@ -59,10 +59,10 @@ struct qVectorstutorial {
   Configurable<float> cfgMaxDCArToPVcut{"cfgMaxDCArToPVcut", 0.1, "Maximum transverse DCA"};
   Configurable<float> cfgMaxDCAzToPVcut{"cfgMaxDCAzToPVcut", 1.0, "Maximum longitudinal DCA"};
 
-  ConfigurableAxis cfgaxisQvecF{"cfgaxisQvecF", {300, -1, 1}, ""}; 
+  ConfigurableAxis cfgaxisQvecF{"cfgaxisQvecF", {300, -1, 1}, ""};
   ConfigurableAxis cfgaxisQvec{"cfgaxisQvec", {100, -3, 3}, ""};
   ConfigurableAxis cfgaxisCent{"cfgaxisCent", {100, 0, 100}, ""};
-        
+
   ConfigurableAxis cfgaxiscos{"cfgaxiscos", {102, -1.02, 1.02}, ""};
   ConfigurableAxis cfgaxispt{"cfgaxispt", {100, 0, 10}, ""};
   ConfigurableAxis cfgaxisCentMerged{"cfgaxisCentMerged", {20, 0, 100}, ""};
@@ -103,7 +103,7 @@ struct qVectorstutorial {
     }
 
     return 1;
-  } 
+  }
 
   template <typename TrackType>
   bool SelTrack(const TrackType track)
