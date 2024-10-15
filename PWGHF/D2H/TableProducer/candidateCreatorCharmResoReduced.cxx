@@ -321,7 +321,6 @@ struct HfCandidateCreatorCharmResoReduced {
         }
         // Filling Output table
         if constexpr (channel == DecayChannel::DstarTrack){
-//        if(channel==DecayChannel::DstarTrack){
             rowCandidateResoTrack(pVecD[0], pVecD[1], pVecD[2],
                          candV0Tr.px(), candV0Tr.py(), candV0Tr.pz(),
                          invMassReso,

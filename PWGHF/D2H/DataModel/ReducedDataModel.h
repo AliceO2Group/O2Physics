@@ -751,8 +751,6 @@ DECLARE_SOA_TABLE(HfMcGenRedResos, "AOD", "HFMCGENREDRESO", //! Generation-level
                   o2::soa::Marker<1>);
 
 DECLARE_SOA_TABLE(HfCandChaResTr, "AOD", "HFCANDCHARESTR", //! Table with Resonance candidate information for resonances plus tracks reduced workflow
-                  // Indices
-                  hf_track_index_reduced::HfRedCollisionId,
                   // Static
                   hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0,
                   hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1,
