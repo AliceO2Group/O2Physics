@@ -39,4 +39,3 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<ConverterReduced3ProngsMl>(cfgc),
   };
 }
- 
