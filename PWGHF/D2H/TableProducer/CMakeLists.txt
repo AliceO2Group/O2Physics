@@ -50,3 +50,8 @@ o2physics_add_dpl_workflow(data-creator-charm-reso-reduced
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
                     COMPONENT_NAME Analysis)
 
+# Converters
+o2physics_add_dpl_workflow(converter-reduced-3-prongs-ml
+                    SOURCES converterReduced3ProngsMl.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
