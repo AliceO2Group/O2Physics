@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file CandidateReconstructionTables.h
-/// \brief Definitions of tables produced by candidate reconstruction workflows
+/// \file utilsPid.h
+/// \brief PID utilities for HF analyses
 ///
 /// \author Mattia Faggin <mattia.faggin@cern.ch>, CERN
 
@@ -23,9 +23,9 @@ namespace o2::aod
 namespace pid_tpc_tof_utils
 {
 
-enum hf_prong_species : int { Pion = 0,
-                              Kaon,
-                              Proton };
+enum HfProngSpecies : int { Pion = 0,
+                            Kaon,
+                            Proton };
 
 /// Function to combine TPC and TOF NSigma
 /// \param tiny switch between full and tiny (binned) PID tables
@@ -60,7 +60,7 @@ T1 combineNSigma(T1 tpcNSigma, T1 tofNSigma)
 /// @tparam ROW datatype of the prong PID table to fill
 /// @tparam specPid particle species
 /// @param track prong track
-/// @param rowPid prong PID table to fill
+/// @param rowPid cursor of the prong PID table to fill
 template <int specPid, typename TRK, typename ROW>
 void fillProngPid(TRK const& track, ROW& rowPid)
 {
@@ -69,7 +69,7 @@ void fillProngPid(TRK const& track, ROW& rowPid)
   // TODO: add here the code for a possible PID post-calibrations in MC
   float nSigTpc = -999.f;
   float nSigTof = -999.f;
-  if constexpr (specPid == hf_prong_species::Pion) {
+  if constexpr (specPid == HfProngSpecies::Pion) {
     // pion PID
     if (track.hasTPC()) {
       nSigTpc = track.tpcNSigmaPi();
@@ -77,7 +77,7 @@ void fillProngPid(TRK const& track, ROW& rowPid)
     if (track.hasTOF()) {
       nSigTof = track.tofNSigmaPi();
     }
-  } else if constexpr (specPid == hf_prong_species::Kaon) {
+  } else if constexpr (specPid == HfProngSpecies::Kaon) {
     // kaon PID
     if (track.hasTPC()) {
       nSigTpc = track.tpcNSigmaKa();
@@ -85,7 +85,7 @@ void fillProngPid(TRK const& track, ROW& rowPid)
     if (track.hasTOF()) {
       nSigTof = track.tofNSigmaKa();
     }
-  } else if constexpr (specPid == hf_prong_species::Proton) {
+  } else if constexpr (specPid == HfProngSpecies::Proton) {
     // proton PID
     if (track.hasTPC()) {
       nSigTpc = track.tpcNSigmaPr();
