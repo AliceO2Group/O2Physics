@@ -36,6 +36,6 @@ struct ConverterReduced3ProngsMl {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<ConverterReduced3ProngsMl>(cfgc),
+    adaptAnalysisTask<HfConverterReduced3ProngsMl>(cfgc),
   };
 }
