@@ -43,6 +43,7 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
+#include "PWGHF/Utils/utilsPid.h"
 #include "PWGHF/Utils/utilsTrkCandHf.h"
 
 using namespace o2;
@@ -53,11 +54,15 @@ using namespace o2::aod::hf_cand_2prong;
 using namespace o2::hf_centrality;
 using namespace o2::constants::physics;
 using namespace o2::framework;
+using namespace o2::aod::pid_tpc_tof_utils;
 
 /// Reconstruction of heavy-flavour 2-prong decay candidates
 struct HfCandidateCreator2Prong {
   Produces<aod::HfCand2ProngBase> rowCandidateBase;
-  Produces<aod::HfCand2ProngPidTable> rowCandidatePid;
+  Produces<aod::HfProng0PidPi> rowProng0PidPi;
+  Produces<aod::HfProng0PidKa> rowProng0PidKa;
+  Produces<aod::HfProng1PidPi> rowProng1PidPi;
+  Produces<aod::HfProng1PidKa> rowProng1PidKa;
   Produces<aod::HfCand2ProngKF> rowCandidateKF;
 
   // vertexing
@@ -284,33 +289,6 @@ struct HfCandidateCreator2Prong {
         nProngsContributorsPV += 1;
       }
 
-      // get PID information for the daughter tracks
-      // TODO: add here the code for a possible PID post-calibrations in MC
-      float nSigTpcPi0 = -999.f;
-      float nSigTpcPi1 = -999.f;
-      float nSigTpcKa0 = -999.f;
-      float nSigTpcKa1 = -999.f;
-      float nSigTofPi0 = -999.f;
-      float nSigTofPi1 = -999.f;
-      float nSigTofKa0 = -999.f;
-      float nSigTofKa1 = -999.f;
-      if (track0.hasTPC()) {
-        nSigTpcPi0 = track0.tpcNSigmaPi();
-        nSigTpcKa0 = track0.tpcNSigmaKa();
-      }
-      if (track0.hasTOF()) {
-        nSigTofPi0 = track0.tofNSigmaPi();
-        nSigTofKa0 = track0.tofNSigmaKa();
-      }
-      if (track1.hasTPC()) {
-        nSigTpcPi1 = track1.tpcNSigmaPi();
-        nSigTpcKa1 = track1.tpcNSigmaKa();
-      }
-      if (track1.hasTOF()) {
-        nSigTofPi1 = track1.tofNSigmaPi();
-        nSigTofKa1 = track1.tofNSigmaKa();
-      }
-
       // fill candidate table rows
       rowCandidateBase(indexCollision,
                        primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
@@ -325,9 +303,12 @@ struct HfCandidateCreator2Prong {
                        std::sqrt(impactParameter0.getSigmaZ2()), std::sqrt(impactParameter1.getSigmaZ2()),
                        rowTrackIndexProng2.prong0Id(), rowTrackIndexProng2.prong1Id(), nProngsContributorsPV,
                        rowTrackIndexProng2.hfflag());
+
       // fill candidate prong PID rows
-      rowCandidatePid(nSigTpcPi0, nSigTpcKa0, nSigTofPi0, nSigTofKa0,
-                      nSigTpcPi1, nSigTpcKa1, nSigTofPi1, nSigTofKa1);
+      fillProngPid<hf_prong_species::Pion>(track0, rowProng0PidPi);
+      fillProngPid<hf_prong_species::Kaon>(track0, rowProng0PidKa);
+      fillProngPid<hf_prong_species::Pion>(track1, rowProng1PidPi);
+      fillProngPid<hf_prong_species::Kaon>(track1, rowProng1PidKa);
 
       // fill histograms
       if (fillHistograms) {
@@ -459,33 +440,6 @@ struct HfCandidateCreator2Prong {
         nProngsContributorsPV += 1;
       }
 
-      // get PID information for the daughter tracks
-      // TODO: add here the code for a possible PID post-calibrations in MC
-      float nSigTpcPi0 = -999.f;
-      float nSigTpcPi1 = -999.f;
-      float nSigTpcKa0 = -999.f;
-      float nSigTpcKa1 = -999.f;
-      float nSigTofPi0 = -999.f;
-      float nSigTofPi1 = -999.f;
-      float nSigTofKa0 = -999.f;
-      float nSigTofKa1 = -999.f;
-      if (track0.hasTPC()) {
-        nSigTpcPi0 = track0.tpcNSigmaPi();
-        nSigTpcKa0 = track0.tpcNSigmaKa();
-      }
-      if (track0.hasTOF()) {
-        nSigTofPi0 = track0.tofNSigmaPi();
-        nSigTofKa0 = track0.tofNSigmaKa();
-      }
-      if (track1.hasTPC()) {
-        nSigTpcPi1 = track1.tpcNSigmaPi();
-        nSigTpcKa1 = track1.tpcNSigmaKa();
-      }
-      if (track1.hasTOF()) {
-        nSigTofPi1 = track1.tofNSigmaPi();
-        nSigTofKa1 = track1.tofNSigmaKa();
-      }
-
       // fill candidate table rows
       rowCandidateBase(indexCollision,
                        KFPV.GetX(), KFPV.GetY(), KFPV.GetZ(),
@@ -500,9 +454,13 @@ struct HfCandidateCreator2Prong {
                        0.f, 0.f,
                        rowTrackIndexProng2.prong0Id(), rowTrackIndexProng2.prong1Id(), nProngsContributorsPV,
                        rowTrackIndexProng2.hfflag());
+
       // fill candidate prong PID rows
-      rowCandidatePid(nSigTpcPi0, nSigTpcKa0, nSigTofPi0, nSigTofKa0,
-                      nSigTpcPi1, nSigTpcKa1, nSigTofPi1, nSigTofKa1);
+      fillProngPid<hf_prong_species::Pion>(track0, rowProng0PidPi);
+      fillProngPid<hf_prong_species::Kaon>(track0, rowProng0PidKa);
+      fillProngPid<hf_prong_species::Pion>(track1, rowProng1PidPi);
+      fillProngPid<hf_prong_species::Kaon>(track1, rowProng1PidKa);
+
       // fill KF info
       rowCandidateKF(topolChi2PerNdfD0,
                      massD0, massD0bar);

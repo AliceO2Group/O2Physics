@@ -444,13 +444,13 @@ struct HfCandidateSelectorD0 {
     }
   }
 
-  void processWithDCAFitterN(aod::HfCand2ProngPidPiKa const& candidates, TracksSel const& tracks)
+  void processWithDCAFitterN(aod::HfCand2ProngWPid const& candidates, TracksSel const& tracks)
   {
     processSel<aod::hf_cand::VertexerType::DCAFitter>(candidates, tracks);
   }
   PROCESS_SWITCH(HfCandidateSelectorD0, processWithDCAFitterN, "process candidates selection with DCAFitterN", true);
 
-  void processWithKFParticle(soa::Join<aod::HfCand2ProngPidPiKa, aod::HfCand2ProngKF> const& candidates, TracksSel const& tracks)
+  void processWithKFParticle(soa::Join<aod::HfCand2ProngWPid, aod::HfCand2ProngKF> const& candidates, TracksSel const& tracks)
   {
     processSel<aod::hf_cand::VertexerType::KfParticle>(candidates, tracks);
   }

@@ -691,24 +691,36 @@ DECLARE_SOA_TABLE(HfCand2ProngBase, "AOD", "HFCAND2PBASE", //!
 DECLARE_SOA_EXTENDED_TABLE_USER(HfCand2ProngExt, HfCand2ProngBase, "HFCAND2PEXT", //!
                                 hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz);
 
-// table with 2-prong candidate daughter PID information
-DECLARE_SOA_TABLE(HfCand2ProngPidTable, "AOD", "HFCAND2PPID", //!
-                  hf_cand::NSigTpcPi0, hf_cand::NSigTpcKa0,
-                  hf_cand::NSigTpcPi1, hf_cand::NSigTpcKa1,
-                  hf_cand::NSigTofPi0, hf_cand::NSigTofKa0,
-                  hf_cand::NSigTofPi1, hf_cand::NSigTofKa1,
-                  hf_cand::TpcTofNSigmaPi0<hf_cand::NSigTpcPi0, hf_cand::NSigTofPi0>,
-                  hf_cand::TpcTofNSigmaPi1<hf_cand::NSigTpcPi1, hf_cand::NSigTofPi1>,
-                  hf_cand::TpcTofNSigmaPi2<hf_cand::NSigTpcPi2, hf_cand::NSigTofPi2>,
-                  hf_cand::TpcTofNSigmaKa0<hf_cand::NSigTpcKa0, hf_cand::NSigTofKa0>,
-                  hf_cand::TpcTofNSigmaKa1<hf_cand::NSigTpcKa1, hf_cand::NSigTofKa1>,
-                  hf_cand::TpcTofNSigmaKa2<hf_cand::NSigTpcKa2, hf_cand::NSigTofKa2>,
-                  hf_cand::TpcTofNSigmaPr0<hf_cand::NSigTpcPr0, hf_cand::NSigTofPr0>,
-                  hf_cand::TpcTofNSigmaPr1<hf_cand::NSigTpcPr1, hf_cand::NSigTofPr1>,
+DECLARE_SOA_TABLE(HfProng0PidPi, "AOD", "HFP0PIDPI", //!
+                  hf_cand::NSigTpcPi0, hf_cand::NSigTofPi0,
+                  hf_cand::TpcTofNSigmaPi0<hf_cand::NSigTpcPi0, hf_cand::NSigTofPi0>);
+DECLARE_SOA_TABLE(HfProng1PidPi, "AOD", "HFP1PIDPI", //!
+                  hf_cand::NSigTpcPi1, hf_cand::NSigTofPi1,
+                  hf_cand::TpcTofNSigmaPi1<hf_cand::NSigTpcPi1, hf_cand::NSigTofPi1>);
+DECLARE_SOA_TABLE(HfProng2PidPi, "AOD", "HFP2PIDPI", //!
+                  hf_cand::NSigTpcPi2, hf_cand::NSigTofPi2,
+                  hf_cand::TpcTofNSigmaPi2<hf_cand::NSigTpcPi2, hf_cand::NSigTofPi2>);
+DECLARE_SOA_TABLE(HfProng0PidKa, "AOD", "HFP0PIDKA", //!
+                  hf_cand::NSigTpcKa0, hf_cand::NSigTofKa0,
+                  hf_cand::TpcTofNSigmaKa0<hf_cand::NSigTpcKa0, hf_cand::NSigTofKa0>);
+DECLARE_SOA_TABLE(HfProng1PidKa, "AOD", "HFP1PIDKA", //!
+                  hf_cand::NSigTpcKa1, hf_cand::NSigTofKa1,
+                  hf_cand::TpcTofNSigmaKa1<hf_cand::NSigTpcKa1, hf_cand::NSigTofKa1>);
+DECLARE_SOA_TABLE(HfProng2PidKa, "AOD", "HFP2PIDKA", //!
+                  hf_cand::NSigTpcKa2, hf_cand::NSigTofKa2,
+                  hf_cand::TpcTofNSigmaKa2<hf_cand::NSigTpcKa2, hf_cand::NSigTofKa2>);
+DECLARE_SOA_TABLE(HfProng0PidPr, "AOD", "HFP0PIDPR", //!
+                  hf_cand::NSigTpcPr0, hf_cand::NSigTofPr0,
+                  hf_cand::TpcTofNSigmaPr0<hf_cand::NSigTpcPr0, hf_cand::NSigTofPr0>);
+DECLARE_SOA_TABLE(HfProng1PidPr, "AOD", "HFP1PIDPR", //!
+                  hf_cand::NSigTpcPr1, hf_cand::NSigTofPr1,
+                  hf_cand::TpcTofNSigmaPr1<hf_cand::NSigTpcPr1, hf_cand::NSigTofPr1>);
+DECLARE_SOA_TABLE(HfProng2PidPr, "AOD", "HFP2PIDPR", //!
+                  hf_cand::NSigTpcPr2, hf_cand::NSigTofPr2,
                   hf_cand::TpcTofNSigmaPr2<hf_cand::NSigTpcPr2, hf_cand::NSigTofPr2>);
 
 using HfCand2Prong = HfCand2ProngExt;
-using HfCand2ProngPidPiKa = soa::Join<HfCand2Prong, HfCand2ProngPidTable>;
+using HfCand2ProngWPid = soa::Join<HfCand2Prong, HfProng0PidPi, HfProng0PidKa, HfProng1PidPi, HfProng1PidKa>;
 
 DECLARE_SOA_TABLE(HfCand2ProngKF, "AOD", "HFCAND2PKF",
                   hf_cand::KfTopolChi2OverNdf,

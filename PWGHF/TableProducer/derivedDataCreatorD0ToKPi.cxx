@@ -80,14 +80,14 @@ struct HfDerivedDataCreatorD0ToKPi {
   using CollisionsWCentMult = soa::Join<aod::Collisions, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::PVMultZeqs>;
   using CollisionsWMcCentMult = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::PVMultZeqs>;
   // using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
-  using SelectedCandidates = soa::Filtered<soa::Join<aod::HfCand2ProngPidPiKa, aod::HfSelD0>>;
-  using SelectedCandidatesKf = soa::Filtered<soa::Join<aod::HfCand2ProngPidPiKa, aod::HfCand2ProngKF, aod::HfSelD0>>;
-  using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCand2ProngPidPiKa, aod::HfCand2ProngMcRec, aod::HfSelD0>>;
-  using SelectedCandidatesMcKf = soa::Filtered<soa::Join<aod::HfCand2ProngPidPiKa, aod::HfCand2ProngKF, aod::HfCand2ProngMcRec, aod::HfSelD0>>;
-  using SelectedCandidatesMl = soa::Filtered<soa::Join<aod::HfCand2ProngPidPiKa, aod::HfSelD0, aod::HfMlD0>>;
-  using SelectedCandidatesKfMl = soa::Filtered<soa::Join<aod::HfCand2ProngPidPiKa, aod::HfCand2ProngKF, aod::HfSelD0, aod::HfMlD0>>;
-  using SelectedCandidatesMcMl = soa::Filtered<soa::Join<aod::HfCand2ProngPidPiKa, aod::HfCand2ProngMcRec, aod::HfSelD0, aod::HfMlD0>>;
-  using SelectedCandidatesMcKfMl = soa::Filtered<soa::Join<aod::HfCand2ProngPidPiKa, aod::HfCand2ProngKF, aod::HfCand2ProngMcRec, aod::HfSelD0, aod::HfMlD0>>;
+  using SelectedCandidates = soa::Filtered<soa::Join<aod::HfCand2ProngWPid, aod::HfSelD0>>;
+  using SelectedCandidatesKf = soa::Filtered<soa::Join<aod::HfCand2ProngWPid, aod::HfCand2ProngKF, aod::HfSelD0>>;
+  using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCand2ProngWPid, aod::HfCand2ProngMcRec, aod::HfSelD0>>;
+  using SelectedCandidatesMcKf = soa::Filtered<soa::Join<aod::HfCand2ProngWPid, aod::HfCand2ProngKF, aod::HfCand2ProngMcRec, aod::HfSelD0>>;
+  using SelectedCandidatesMl = soa::Filtered<soa::Join<aod::HfCand2ProngWPid, aod::HfSelD0, aod::HfMlD0>>;
+  using SelectedCandidatesKfMl = soa::Filtered<soa::Join<aod::HfCand2ProngWPid, aod::HfCand2ProngKF, aod::HfSelD0, aod::HfMlD0>>;
+  using SelectedCandidatesMcMl = soa::Filtered<soa::Join<aod::HfCand2ProngWPid, aod::HfCand2ProngMcRec, aod::HfSelD0, aod::HfMlD0>>;
+  using SelectedCandidatesMcKfMl = soa::Filtered<soa::Join<aod::HfCand2ProngWPid, aod::HfCand2ProngKF, aod::HfCand2ProngMcRec, aod::HfSelD0, aod::HfMlD0>>;
   using MatchedGenCandidatesMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>;
   using TypeMcCollisions = aod::McCollisions;
 

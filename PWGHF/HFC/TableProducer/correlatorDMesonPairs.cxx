@@ -53,7 +53,7 @@ using McParticlesPlus2Prong = soa::Join<aod::McParticles, aod::HfCand2ProngMcGen
 
 struct HfCorrelatorDMesonPairs {
   SliceCache cache;
-  Preslice<aod::HfCand2ProngPidPiKa> perCol2Prong = aod::hf_cand::collisionId;
+  Preslice<aod::HfCand2ProngWPid> perCol2Prong = aod::hf_cand::collisionId;
 
   Produces<aod::D0Pair> entryD0Pair;
   Produces<aod::D0PairMcInfo> entryD0PairMcInfo;
@@ -74,8 +74,8 @@ struct HfCorrelatorDMesonPairs {
 
   // using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
 
-  Partition<soa::Join<aod::HfCand2ProngPidPiKa, aod::HfSelD0>> selectedD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
-  Partition<soa::Join<aod::HfCand2ProngPidPiKa, aod::HfSelD0, aod::HfCand2ProngMcRec>> selectedD0CandidatesMc = aod::hf_sel_candidate_d0::isRecoHfFlag >= selectionFlagHf;
+  Partition<soa::Join<aod::HfCand2ProngWPid, aod::HfSelD0>> selectedD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
+  Partition<soa::Join<aod::HfCand2ProngWPid, aod::HfSelD0, aod::HfCand2ProngMcRec>> selectedD0CandidatesMc = aod::hf_sel_candidate_d0::isRecoHfFlag >= selectionFlagHf;
 
   HistogramConfigSpec hTH1Pt{HistType::kTH1F, {{180, 0., 36.}}};
   HistogramConfigSpec hTH1Y{HistType::kTH1F, {{100, -5., 5.}}};
@@ -432,7 +432,7 @@ struct HfCorrelatorDMesonPairs {
 
   /// D0(bar)-D0(bar) correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
   void processData(aod::Collision const& collision,
-                   soa::Join<aod::HfCand2ProngPidPiKa, aod::HfSelD0> const& candidates, aod::Tracks const&)
+                   soa::Join<aod::HfCand2ProngWPid, aod::HfSelD0> const& candidates, aod::Tracks const&)
   {
     for (const auto& candidate : candidates) {
       AnalysePid(candidate);
@@ -502,7 +502,7 @@ struct HfCorrelatorDMesonPairs {
 
   PROCESS_SWITCH(HfCorrelatorDMesonPairs, processData, "Process data mode", true);
 
-  void processMcRec(aod::Collision const& collision, soa::Join<aod::HfCand2ProngPidPiKa, aod::HfSelD0, aod::HfCand2ProngMcRec> const& candidates, aod::Tracks const&)
+  void processMcRec(aod::Collision const& collision, soa::Join<aod::HfCand2ProngWPid, aod::HfSelD0, aod::HfCand2ProngMcRec> const& candidates, aod::Tracks const&)
   {
     for (const auto& candidate : candidates) {
       AnalysePid(candidate);

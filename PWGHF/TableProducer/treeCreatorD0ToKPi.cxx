@@ -218,8 +218,8 @@ struct HfTreeCreatorD0ToKPi {
   HfHelper hfHelper;
 
   // using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
-  using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCand2ProngPidPiKa, aod::HfCand2ProngMcRec, aod::HfSelD0>>;
-  using SelectedCandidatesMcKf = soa::Filtered<soa::Join<aod::HfCand2ProngPidPiKa, aod::HfCand2ProngKF, aod::HfCand2ProngMcRec, aod::HfSelD0>>;
+  using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCand2ProngWPid, aod::HfCand2ProngMcRec, aod::HfSelD0>>;
+  using SelectedCandidatesMcKf = soa::Filtered<soa::Join<aod::HfCand2ProngWPid, aod::HfCand2ProngKF, aod::HfCand2ProngMcRec, aod::HfSelD0>>;
   using MatchedGenCandidatesMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand2ProngMcGen>>;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_d0::isSelD0 >= 1 || aod::hf_sel_candidate_d0::isSelD0bar >= 1;
@@ -405,7 +405,7 @@ struct HfTreeCreatorD0ToKPi {
   }
 
   void processDataWithDCAFitterN(aod::Collisions const& collisions,
-                                 soa::Filtered<soa::Join<aod::HfCand2ProngPidPiKa, aod::HfSelD0>> const& candidates,
+                                 soa::Filtered<soa::Join<aod::HfCand2ProngWPid, aod::HfSelD0>> const& candidates,
                                  aod::Tracks const& tracks,
                                  aod::BCs const& bcs)
   {
@@ -414,7 +414,7 @@ struct HfTreeCreatorD0ToKPi {
   PROCESS_SWITCH(HfTreeCreatorD0ToKPi, processDataWithDCAFitterN, "Process data with DCAFitterN", true);
 
   void processDataWithKFParticle(aod::Collisions const& collisions,
-                                 soa::Filtered<soa::Join<aod::HfCand2ProngPidPiKa, aod::HfCand2ProngKF, aod::HfSelD0>> const& candidates,
+                                 soa::Filtered<soa::Join<aod::HfCand2ProngWPid, aod::HfCand2ProngKF, aod::HfSelD0>> const& candidates,
                                  aod::Tracks const& tracks,
                                  aod::BCs const& bcs)
   {
