@@ -14,8 +14,8 @@
 ///
 /// \author Mattia Faggin <mattia.faggin@cern.ch>, CERN
 
-#ifndef PWGHF_UTILS_PID_H_
-#define PWGHF_UTILS_PID_H_
+#ifndef PWGHF_UTILS_UTILSPID_H_
+#define PWGHF_UTILS_UTILSPID_H_
 
 namespace o2::aod
 {
