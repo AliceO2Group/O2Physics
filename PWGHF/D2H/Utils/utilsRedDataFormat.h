@@ -72,7 +72,7 @@ float getTpcTofNSigmaPi1(const T1& prong1)
     return std::abs(prong1.tpcNSigmaPi());
   }
   if (hasTof) {
-    return abs(prong1.tofNSigmaPi());
+    return std::abs(prong1.tofNSigmaPi());
   }
   return defaultNSigma;
 }
