@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file ConverterReduced3ProngsMl.cxx
+/// \file converterReduced3ProngsMl.cxx
 /// \brief Task for conversion of HfRed3ProngsMl to version 001
 ///
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
