@@ -48,10 +48,18 @@ enum DecayChannel : uint8_t {
   LambdaDminus,
   DstarTrack
 };
+
 enum V0Type : uint8_t {
   K0s = 0,
   Lambda,
   AntiLambda
+};
+
+enum DecayTypeMc : uint8_t {
+  Ds1ToDStarK0ToD0PiK0s = 0,
+  Ds2StarToDplusK0sToPiKaPiPiPi,
+  Ds1ToDStarK0ToDPlusPi0K0s,
+  Ds1ToDStarK0ToDPlusGammaK0s
 };
 
 const int nBinsPt = 7;
@@ -83,6 +91,7 @@ struct HfCandidateCreatorCharmResoReduced {
   Configurable<LabeledArray<double>> cutsD{"cutsDdaughter", {hf_cuts_d_daughter::cuts[0], hf_cuts_d_daughter::nBinsPt, hf_cuts_d_daughter::nCutVars, hf_cuts_d_daughter::labelsPt, hf_cuts_d_daughter::labelsCutVar}, "D daughter selections"};
   Configurable<std::vector<double>> binsPtD{"binsPtD", std::vector<double>{hf_cuts_d_daughter::vecBinsPt}, "pT bin limits for D daughter cuts"};
   Configurable<LabeledArray<double>> cutsV0{"cutsV0daughter", {hf_cuts_v0_daughter::cuts[0], hf_cuts_v0_daughter::nBinsPt, hf_cuts_v0_daughter::nCutVars, hf_cuts_v0_daughter::labelsPt, hf_cuts_v0_daughter::labelsCutVar}, "V0 daughter selections"};
+  
   Configurable<std::vector<double>> binsPtV0{"binsPtV0", std::vector<double>{hf_cuts_v0_daughter::vecBinsPt}, "pT bin limits for V0 daughter cuts"};
 
   using reducedDWithMl = soa::Join<aod::HfRed3PrNoTrks, aod::HfRed3ProngsMl>;
@@ -114,7 +123,7 @@ struct HfCandidateCreatorCharmResoReduced {
     }
     // histograms
     const AxisSpec axisPt{(std::vector<double>)vecBinsPt, "#it{p}_{T} (GeV/#it{c})"};
-    registry.add("hMassDs1", "Ds1 candidates;m_{Ds1} (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{100, 2.4, 2.7}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hMassDs1", "Ds1 candidates;m_{Ds1} (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{200, 2.5, 2.7}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hMassDs2Star", "Ds^{*}2 candidates; m_Ds^{*}2 (GeV/#it{c}^{2}) ;entries", {HistType::kTH2F, {{100, 2.4, 2.7}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hMassXcRes", "XcRes candidates; m_XcRes (GeV/#it{c}^{2}) ;entries", {HistType::kTH2F, {{100, 2.9, 3.3}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hMassLambdaDminus", "LambdaDminus candidates; m_LambdaDminus (GeV/#it{c}^{2}) ;entries", {HistType::kTH2F, {{100, 2.9, 3.3}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -474,9 +483,63 @@ struct HfCandidateCreatorCharmResoReduced {
   }
   PROCESS_SWITCH(HfCandidateCreatorCharmResoReduced, processDstarTrackWithMl, "Process DStar candidates with Ml info", false);
 
-}; // struct
+}; // struct HfCandidateCreatorCharmResoReduced
 
+struct HfCandidateCreatorCharmResoReducedExpressions{
+
+  Produces<aod::HfMcRecRedResos> rowResoMcRec;
+
+  HistogramRegistry registry{"registry"};
+
+  void init(InitContext const&)
+  {
+    const AxisSpec axisPt{(std::vector<double>)vecBinsPt, "#it{p}_{T} (GeV/#it{c})"};
+    registry.add("hMassMcMatched", "Reso MC candidates Matched with generate particle;m (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{200, 2.5, 2.7}, {axisPt}}});
+    registry.add("hMassMcMatchedIncomplete", "Reso MC candidates Matched with generate particle w. Invcomplete decay;m (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{400, 2.3, 2.7}, {axisPt}}});
+    registry.add("hMassMcUnmatched", "Reso MC candidates NOT Matched with generate particle;m (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{200, 2.5, 2.7}, {axisPt}}});
+    registry.add("hMassMcNoEntry", "Reso MC candidates w.o. entry in MC Reco table;m (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{200, 2.5, 2.7}, {axisPt}}});
+  }
+  
+  /// Fill candidate information at MC reconstruction level
+  /// \param rowsDV0McRec MC reco information on DPi pairs
+  /// \param candsReso prong global indices of B0 candidates
+  template <typename McRec>
+  void fillResoMcRec(McRec const& rowsDV0McRec, aod::HfCandCharmReso const& candsReso)
+  {
+    for (const auto& candReso : candsReso) {
+      bool filledMcInfo{false};
+      for (const auto& rowDV0McRec : rowsDV0McRec) {
+        if ((rowDV0McRec.prong0Id() != candReso.prong0Id()) || (rowDV0McRec.prong1Id() != candReso.prong1Id())) {
+          continue;
+        }
+        rowResoMcRec(rowDV0McRec.flagMcMatchRec(),  rowDV0McRec.debugMcRec(), rowDV0McRec.origin(), rowDV0McRec.ptMother());
+        filledMcInfo = true;
+        if (TESTBIT(rowDV0McRec.flagMcMatchRec(), DecayTypeMc::Ds1ToDStarK0ToD0PiK0s) || TESTBIT(rowDV0McRec.flagMcMatchRec(), DecayTypeMc::Ds2StarToDplusK0sToPiKaPiPiPi) ){
+          registry.fill(HIST("hMassMcMatched"), candReso.invMass(), candReso.pt());
+        } else if (TESTBIT(rowDV0McRec.flagMcMatchRec(), DecayTypeMc::Ds1ToDStarK0ToDPlusGammaK0s) || TESTBIT(rowDV0McRec.flagMcMatchRec(), DecayTypeMc::Ds1ToDStarK0ToDPlusPi0K0s)) {
+          registry.fill(HIST("hMassMcMatchedIncomplete"), candReso.invMass(), candReso.pt());
+        } else {
+          registry.fill(HIST("hMassMcUnmatched"), candReso.invMass(), candReso.pt());
+        }
+
+        break;
+      }
+      if (!filledMcInfo) { // protection to get same size tables in case something went wrong: we created a candidate that was not preselected in the D-Pi creator
+        rowResoMcRec(0, -1, -1, -1.f);
+        registry.fill(HIST("hMassMcNoEntry"), candReso.invMass(), candReso.pt());
+      }
+    }
+  }
+
+  void processMc(aod::HfMcRecRedDV0s const& rowsDV0McRec, aod::HfCandCharmReso const& candsReso)
+  {
+    fillResoMcRec(rowsDV0McRec, candsReso);
+  }
+  PROCESS_SWITCH(HfCandidateCreatorCharmResoReducedExpressions, processMc, "Process MC", false);
+
+};
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<HfCandidateCreatorCharmResoReduced>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfCandidateCreatorCharmResoReduced>(cfgc),
+                      adaptAnalysisTask<HfCandidateCreatorCharmResoReducedExpressions>(cfgc)};
 }
