@@ -269,7 +269,7 @@ struct HfTaskBplusReduced {
           registry.add("hDecLengthXyD0RecBg", bPlusCandUnmatch + "prong0 D^{0} decay length XY (cm);" + stringPtD + entries, {HistType::kTH2F, {{100, 0., 0.5}, {120, 0., 60.}}});
         }
         // MC checks
-        if (doprocessMcWithDecayTypeCheck  || doprocessMcWithDmesMlAndDecayTypeCheck || doprocessMcWithBplusMlAndDecayTypeCheck) {
+        if (doprocessMcWithDecayTypeCheck || doprocessMcWithDmesMlAndDecayTypeCheck || doprocessMcWithBplusMlAndDecayTypeCheck) {
           constexpr uint8_t kNBinsDecayTypeMc = hf_cand_bplus::DecayTypeMc::NDecayTypeMc;
           TString labels[kNBinsDecayTypeMc];
           labels[hf_cand_bplus::DecayTypeMc::BplusToD0PiToKPiPi] = "B^{+} #rightarrow (#overline{D^{0}} #rightarrow K^{#plus} #pi^{#minus}) #pi^{#plus}";
