@@ -122,6 +122,7 @@ struct tofSpectra {
   Configurable<float> minNCrossedRowsTPC{"minNCrossedRowsTPC", 70.f, "Additional cut on the minimum number of crossed rows in the TPC"};
   Configurable<float> minNCrossedRowsOverFindableClustersTPC{"minNCrossedRowsOverFindableClustersTPC", 0.8f, "Additional cut on the minimum value of the ratio between crossed rows and findable clusters in the TPC"};
   Configurable<float> maxChi2PerClusterTPC{"maxChi2PerClusterTPC", 4.f, "Additional cut on the maximum value of the chi2 per cluster in the TPC"};
+  Configurable<float> minChi2PerClusterTPC{"minChi2PerClusterTPC", 0.5f, "Additional cut on the minimum value of the chi2 per cluster in the TPC"};
   Configurable<float> maxChi2PerClusterITS{"maxChi2PerClusterITS", 36.f, "Additional cut on the maximum value of the chi2 per cluster in the ITS"};
   Configurable<float> maxDcaXYFactor{"maxDcaXYFactor", 1.f, "Additional cut on the maximum value of the DCA xy (multiplicative factor)"};
   Configurable<float> maxDcaZ{"maxDcaZ", 2.f, "Additional cut on the maximum value of the DCA z"};
@@ -203,6 +204,7 @@ struct tofSpectra {
       LOG(info) << "\trequireTPC=" << requireTPC.value;
       LOG(info) << "\trequireGoldenChi2=" << requireGoldenChi2.value;
       LOG(info) << "\tmaxChi2PerClusterTPC=" << maxChi2PerClusterTPC.value;
+      LOG(info) << "\tminChi2PerClusterTPC=" << minChi2PerClusterTPC.value;
       LOG(info) << "\tminNCrossedRowsTPC=" << minNCrossedRowsTPC.value;
       LOG(info) << "\tminTPCNClsFound=" << minTPCNClsFound.value;
       LOG(info) << "\tmaxChi2PerClusterITS=" << maxChi2PerClusterITS.value;
@@ -1163,6 +1165,9 @@ struct tofSpectra {
         histos.fill(HIST("tracksel"), 4);
       }
       if (enableTrackCutHistograms) {
+        if (track.tpcChi2NCl() < minChi2PerClusterTPC || track.tpcChi2NCl() > maxChi2PerClusterTPC) {
+          return false;
+        }
         histos.fill(HIST("track/selected/ITS/itsNCls"), track.itsNCls(), track.sign());
         histos.fill(HIST("track/selected/ITS/itsChi2NCl"), track.itsChi2NCl(), track.sign());
 
