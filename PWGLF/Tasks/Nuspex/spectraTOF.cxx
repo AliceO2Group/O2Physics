@@ -1155,6 +1155,10 @@ struct tofSpectra {
       }
     }
 
+    if (track.tpcChi2NCl() < minChi2PerClusterTPC || track.tpcChi2NCl() > maxChi2PerClusterTPC) {
+      return false;
+    }
+    
     if (!passesCutWoDCA(track)) {
       return false;
     }
@@ -1165,9 +1169,6 @@ struct tofSpectra {
         histos.fill(HIST("tracksel"), 4);
       }
       if (enableTrackCutHistograms) {
-        if (track.tpcChi2NCl() < minChi2PerClusterTPC || track.tpcChi2NCl() > maxChi2PerClusterTPC) {
-          return false;
-        }
         histos.fill(HIST("track/selected/ITS/itsNCls"), track.itsNCls(), track.sign());
         histos.fill(HIST("track/selected/ITS/itsChi2NCl"), track.itsChi2NCl(), track.sign());
 
