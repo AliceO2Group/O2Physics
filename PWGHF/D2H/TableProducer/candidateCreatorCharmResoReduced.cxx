@@ -328,7 +328,7 @@ struct HfCandidateCreatorCharmResoReduced {
         }else{
         rowCandidateReso(collision.globalIndex(),
                          candD.globalIndex(),
-                         candV0.globalIndex(),
+                         candV0Tr.globalIndex(),
                          pVecD[0], pVecD[1], pVecD[2],
                          pVecV0Tr[0], pVecV0Tr[1], pVecV0Tr[2],
                          invMassReso,
