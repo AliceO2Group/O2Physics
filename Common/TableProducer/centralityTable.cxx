@@ -249,6 +249,7 @@ struct CentralityTable {
     /* check the previous run number */
     auto bc = collision.bc_as<BCsWithTimestampsAndRun2Infos>();
     if (bc.runNumber() != mRunNumber) {
+      mRunNumber = bc.runNumber(); // mark that this run has been attempted already regardless of outcome
       LOGF(debug, "timestamp=%llu", bc.timestamp());
       TList* callst = nullptr;
       if (ccdbConfig.reconstructionPass.value == "") {
@@ -256,10 +257,12 @@ struct CentralityTable {
       } else if (ccdbConfig.reconstructionPass.value == "metadata") {
         std::map<std::string, std::string> metadata;
         metadata["RecoPassName"] = metadataInfo.get("RecoPassName");
+        LOGF(info, "Loading CCDB for reconstruction pass (from metadata): %s", metadataInfo.get("RecoPassName"));
         callst = ccdb->getSpecificForRun<TList>(ccdbConfig.ccdbPath, bc.runNumber(), metadata);
       } else {
         std::map<std::string, std::string> metadata;
         metadata["RecoPassName"] = ccdbConfig.reconstructionPass.value;
+        LOGF(info, "Loading CCDB for reconstruction pass (from provided argument): %s", ccdbConfig.reconstructionPass.value);
         callst = ccdb->getSpecificForRun<TList>(ccdbConfig.ccdbPath, bc.runNumber(), metadata);
       }
 
@@ -350,15 +353,11 @@ struct CentralityTable {
             LOGF(fatal, "Calibration information from CL1 multiplicity for run %d corrupted", bc.runNumber());
           }
         }
-        if (Run2V0MInfo.mCalibrationStored || Run2V0AInfo.mCalibrationStored || Run2SPDTksInfo.mCalibrationStored || Run2SPDClsInfo.mCalibrationStored || Run2CL0Info.mCalibrationStored || Run2CL1Info.mCalibrationStored) {
-          mRunNumber = bc.runNumber();
-        }
       } else {
         if (!ccdbConfig.doNotCrashOnNull) { // default behaviour: crash
           LOGF(fatal, "Centrality calibration is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
         } else { // only if asked: continue filling with non-valid values (105)
           LOGF(info, "Centrality calibration is not available in CCDB for run=%d at timestamp=%llu, will fill tables with dummy values", bc.runNumber(), bc.timestamp());
-          mRunNumber = bc.runNumber();
         }
       }
     }
@@ -473,6 +472,7 @@ struct CentralityTable {
       /* check the previous run number */
       auto bc = collision.template bc_as<BCsWithTimestamps>();
       if (bc.runNumber() != mRunNumber) {
+        mRunNumber = bc.runNumber(); // mark that this run has been attempted already regardless of outcome
         LOGF(info, "timestamp=%llu, run number=%d", bc.timestamp(), bc.runNumber());
         TList* callst = nullptr;
         // Check if the ccdb path is a root file
@@ -489,10 +489,12 @@ struct CentralityTable {
           } else if (ccdbConfig.reconstructionPass.value == "metadata") {
             std::map<std::string, std::string> metadata;
             metadata["RecoPassName"] = metadataInfo.get("RecoPassName");
+            LOGF(info, "Loading CCDB for reconstruction pass (from metadata): %s", metadataInfo.get("RecoPassName"));
             callst = ccdb->getSpecificForRun<TList>(ccdbConfig.ccdbPath, bc.runNumber(), metadata);
           } else {
             std::map<std::string, std::string> metadata;
             metadata["RecoPassName"] = ccdbConfig.reconstructionPass.value;
+            LOGF(info, "Loading CCDB for reconstruction pass (from provided argument): %s", ccdbConfig.reconstructionPass.value);
             callst = ccdb->getSpecificForRun<TList>(ccdbConfig.ccdbPath, bc.runNumber(), metadata);
           }
         }
@@ -555,13 +557,11 @@ struct CentralityTable {
                 break;
             }
           }
-          mRunNumber = bc.runNumber();
         } else {
           if (!ccdbConfig.doNotCrashOnNull) { // default behaviour: crash
             LOGF(fatal, "Centrality calibration is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
           } else { // only if asked: continue filling with non-valid values (105)
             LOGF(info, "Centrality calibration is not available in CCDB for run=%d at timestamp=%llu, will fill tables with dummy values", bc.runNumber(), bc.timestamp());
-            mRunNumber = bc.runNumber();
           }
         }
       }

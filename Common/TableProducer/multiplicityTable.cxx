@@ -383,10 +383,12 @@ struct MultiplicityTable {
           } else if (ccdbConfig.reconstructionPass.value == "metadata") {
             std::map<std::string, std::string> metadata;
             metadata["RecoPassName"] = metadataInfo.get("RecoPassName");
+            LOGF(info, "Loading CCDB for reconstruction pass (from metadata): %s", metadataInfo.get("RecoPassName"));
             lCalibObjects = ccdb->getSpecificForRun<TList>(ccdbConfig.ccdbPath, mRunNumber, metadata);
           } else {
             std::map<std::string, std::string> metadata;
             metadata["RecoPassName"] = ccdbConfig.reconstructionPass.value;
+            LOGF(info, "Loading CCDB for reconstruction pass (from provided argument): %s", ccdbConfig.reconstructionPass.value);
             lCalibObjects = ccdb->getSpecificForRun<TList>(ccdbConfig.ccdbPath, mRunNumber, metadata);
           }
 
