@@ -227,11 +227,6 @@ struct HfTaskCharmHadronsFemtoDream {
   template <bool isMc, typename PartitionType, typename CandType, typename TableTracks, typename Collision>
   void doSameEvent(PartitionType& sliceTrk1, CandType& sliceCharmHad, TableTracks const& parts, Collision const& col)
   {
-
-    if ((col.bitmaskTrackOne() & BitMask) != BitMask || (col.bitmaskTrackTwo() & BitMask) != BitMask) {
-      return;
-    }
-
     fillCollision(col);
 
     processType = 1; // for same event
@@ -420,6 +415,9 @@ struct HfTaskCharmHadronsFemtoDream {
                         FilteredFDParticles const& parts,
                         FilteredCharmCands const&)
   {
+    if ((col.bitmaskTrackOne() & BitMask) != BitMask || (col.bitmaskTrackTwo() & BitMask) != BitMask) {
+      return;
+    }
     eventHisto.fillQA(col);
     auto sliceTrk1 = partitionTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     auto sliceCharmHad = partitionCharmHadron->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
@@ -456,6 +454,9 @@ struct HfTaskCharmHadronsFemtoDream {
                           o2::aod::FDMCParticles const&,
                           FilteredCharmMcCands const&)
   {
+    if ((col.bitmaskTrackOne() & BitMask) != BitMask || (col.bitmaskTrackTwo() & BitMask) != BitMask) {
+      return;
+    }
     auto sliceMcTrk1 = partitionMcTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     auto sliceMcCharmHad = partitionMcCharmHadron->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
 
