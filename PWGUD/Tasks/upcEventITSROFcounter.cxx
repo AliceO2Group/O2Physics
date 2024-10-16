@@ -140,7 +140,6 @@ struct UpcEventITSROFcounter {
     }
   }
 
-
   void processCounterPerRun(FullSGUDCollision const& coll)
   {
 
@@ -150,12 +149,12 @@ struct UpcEventITSROFcounter {
       gapSide = trueGapSide;
     }
 
-    if (coll.flags() == 0){
-      if (gapSide == 2){
+    if (coll.flags() == 0) {
+      if (gapSide == 2) {
         histos.get<TH1>(HIST("Runs/hStdModeCollDG"))->Fill(coll.runNumber());
-      } else if (gapSide == 1){
+      } else if (gapSide == 1) {
         histos.get<TH1>(HIST("Runs/hStdModeCollSG1"))->Fill(coll.runNumber());
-      } else if (gapSide == 0){
+      } else if (gapSide == 0) {
         histos.get<TH1>(HIST("Runs/hStdModeCollSG0"))->Fill(coll.runNumber());
       } else {
         histos.get<TH1>(HIST("Runs/hStdModeCollNG"))->Fill(coll.runNumber());
@@ -171,7 +170,6 @@ struct UpcEventITSROFcounter {
         histos.get<TH1>(HIST("Runs/hUpcModeCollNG"))->Fill(coll.runNumber());
       }
     }
-
   }
 
   PROCESS_SWITCH(UpcEventITSROFcounter, processCounterPerITSROF, "Counts number of collisions per ITSROF", false);
