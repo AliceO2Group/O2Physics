@@ -173,22 +173,22 @@ struct HfElectronSelectionWithTpcEmcal {
      {"hEmcClusterAfterMatchEnergyCells", "EMCal Cluster Info After match Energy vs nCells; Energy (GeV);ncell;", hEmcClusterEnergyCellSpec},
      {"hEmcClusterAfterMatchEnergyTime", "EMCal Cluster Info After match Energy vs time; Energy (GeV); sec;", hEmcClusterEnergyTimeSpec},
 
-     {"hafterMatchSigmavsEoP", "PID Info after  match EoP vs Sigma ; E/P;#it{p}_{T} (GeV#it{/c});n#sigma; m02; m20;", hAfterMatchEoPSigamSpec},
-     {"hafterMatchEoPvsp", "PID Info after match  EoP vs P; E/P;#it{p} (GeV#it{/c});", {HistType::kTH2F, {{eopAxisBins, eopAxisMin, eopAxisMax}, {pAxisBins, pAxisMin, pAxisMax}}}},
-     {"hafterMatchSigmavsP", "PID Info after match Sigma vs Momentum ; n#sigma; #it{p} (GeV#it{/c}; ", {HistType::kTH2F, {{nSigmaAxisBins, nSigmaAxisMin, nSigmaAxisMax}, {pAxisBins, pAxisMin, pAxisMax}}}},
-     {"hafterMatchEtaPhi", "PID Info after match Eta vs Phi ; #eta; #varphi; ", {HistType::kTH2F, {{etaAxisBins, trackEtaAxisMin, trackEtaAxisMax}, {phiAxisBins, trackPhiAxisMin, trackPhiAxisMax}}}},
-     {"hafterMatchEnergylossvsP", "PID Info after match Energy loss info vs P ; dE/dx;#it{p} (GeV#it{/c});; ", {HistType::kTH2F, {{dEdxAxisBins, dEdxAxisMin, dEdxAxisMax}, {pAxisBins, pAxisMin, pAxisMax}}}},
-     {"hafterMatchEnergylossvspT", "PID Info after match Energy loss info vs Pt ;dE/dx;#it{p}_{T} (GeV#it{/c}); ", {HistType::kTH2F, {{dEdxAxisBins, dEdxAxisMin, dEdxAxisMax}, {pAxisBins, pAxisMin, pAxisMax}}}},
+     {"hAfterMatchSigmavsEoP", "PID Info after  match EoP vs Sigma ; E/P;#it{p}_{T} (GeV#it{/c});n#sigma; m02; m20;", hAfterMatchEoPSigamSpec},
+     {"hAfterMatchEoPvsp", "PID Info after match  EoP vs P; E/P;#it{p} (GeV#it{/c});", {HistType::kTH2F, {{eopAxisBins, eopAxisMin, eopAxisMax}, {pAxisBins, pAxisMin, pAxisMax}}}},
+     {"hAfterMatchSigmavsP", "PID Info after match Sigma vs Momentum ; n#sigma; #it{p} (GeV#it{/c}; ", {HistType::kTH2F, {{nSigmaAxisBins, nSigmaAxisMin, nSigmaAxisMax}, {pAxisBins, pAxisMin, pAxisMax}}}},
+     {"hAfterMatchEtaPhi", "PID Info after match Eta vs Phi ; #eta; #varphi; ", {HistType::kTH2F, {{etaAxisBins, trackEtaAxisMin, trackEtaAxisMax}, {phiAxisBins, trackPhiAxisMin, trackPhiAxisMax}}}},
+     {"hAfterMatchEnergylossvsP", "PID Info after match Energy loss info vs P ; dE/dx;#it{p} (GeV#it{/c});; ", {HistType::kTH2F, {{dEdxAxisBins, dEdxAxisMin, dEdxAxisMax}, {pAxisBins, pAxisMin, pAxisMax}}}},
+     {"hAfterMatchEnergylossvspT", "PID Info after match Energy loss info vs Pt ;dE/dx;#it{p}_{T} (GeV#it{/c}); ", {HistType::kTH2F, {{dEdxAxisBins, dEdxAxisMin, dEdxAxisMax}, {pAxisBins, pAxisMin, pAxisMax}}}},
 
-     {"hafterPIDEtaPhi", "PID Info after PID Cuts Eta vs Phi ; #eta; #varphi; ", {HistType::kTH2F, {{etaAxisBins, trackEtaAxisMin, trackEtaAxisMax}, {phiAxisBins, trackPhiAxisMin, trackPhiAxisMax}}}},
-     {"hEPRatioafterPID", "E/P Ratio after PID Cuts apply only trackwodca filter", {HistType::kTH2F, {{pAxisBins, pAxisMin, pAxisMax}, {300, 0, 30}}}},
-     {"hPIDafterPIDcuts", "PID Info after PID cuts; E/P;#it{p}_{T} (GeV#it{/c});n#sigma;m02; m20;", hAfterMatchEoPSigamSpec},
+     {"hAfterPIDEtaPhi", "PID Info after PID Cuts Eta vs Phi ; #eta; #varphi; ", {HistType::kTH2F, {{etaAxisBins, trackEtaAxisMin, trackEtaAxisMax}, {phiAxisBins, trackPhiAxisMin, trackPhiAxisMax}}}},
+     {"hEPRatioAfterPID", "E/P Ratio after PID Cuts apply only trackwodca filter", {HistType::kTH2F, {{pAxisBins, pAxisMin, pAxisMax}, {300, 0, 30}}}},
+     {"hPIDAfterPIDCuts", "PID Info after PID cuts; E/P;#it{p}_{T} (GeV#it{/c});n#sigma;m02; m20;", hAfterMatchEoPSigamSpec},
      {"hEmcClsTrkEtaPhiDiffTimeEnergy", "EmcClsTrkEtaPhiDiffTimeEnergy;#Delta#eta;#Delta#varphi;Sec;", hDeltaPhiDeltaEtaEmcClusterTrackSpecEnergy}}};
 
   void init(o2::framework::InitContext&)
   {
-    registry.get<THnSparse>(HIST("hafterMatchSigmavsEoP"))->Sumw2();
-    registry.get<THnSparse>(HIST("hPIDafterPIDcuts"))->Sumw2();
+    registry.get<THnSparse>(HIST("hAfterMatchSigmavsEoP"))->Sumw2();
+    registry.get<THnSparse>(HIST("hPIDAfterPIDCuts"))->Sumw2();
   }
   // Track Selection Cut
   template <typename T>
@@ -245,7 +245,6 @@ struct HfElectronSelectionWithTpcEmcal {
     float tpcNsigmaTrack = -999;
     int electronId = -999;
     for (const auto& track : tracks) {
-      // std:: cout << "collision iD" <<  track.collisionId() << "global INdex" <<  collision.globalIndex() << std::endl;
       phiTrack = track.phi();
       etaTrack = track.eta();
       pTrack = track.p();
@@ -341,12 +340,12 @@ struct HfElectronSelectionWithTpcEmcal {
 
         eop = eMatchEmcCluster / pMatchTrack;
 
-        registry.fill(HIST("hafterMatchSigmavsEoP"), eop, ptMatchTrack, tpcNsigmaMatchTrack, m02MatchEmcCluster, m20MatchEmcCluster);
-        registry.fill(HIST("hafterMatchEoPvsp"), eop, pMatchTrack);
-        registry.fill(HIST("hafterMatchSigmavsP"), tpcNsigmaMatchTrack, pMatchTrack);
-        registry.fill(HIST("hafterMatchEtaPhi"), etaMatchTrack, phiMatchTrack);
-        registry.fill(HIST("hafterMatchEnergylossvsP"), matchTrack.tpcSignal(), pMatchTrack);
-        registry.fill(HIST("hafterMatchEnergylossvspT"), matchTrack.tpcSignal(), ptMatchTrack);
+        registry.fill(HIST("hAfterMatchSigmavsEoP"), eop, ptMatchTrack, tpcNsigmaMatchTrack, m02MatchEmcCluster, m20MatchEmcCluster);
+        registry.fill(HIST("hAfterMatchEoPvsp"), eop, pMatchTrack);
+        registry.fill(HIST("hAfterMatchSigmavsP"), tpcNsigmaMatchTrack, pMatchTrack);
+        registry.fill(HIST("hAfterMatchEtaPhi"), etaMatchTrack, phiMatchTrack);
+        registry.fill(HIST("hAfterMatchEnergylossvsP"), matchTrack.tpcSignal(), pMatchTrack);
+        registry.fill(HIST("hAfterMatchEnergylossvspT"), matchTrack.tpcSignal(), ptMatchTrack);
 
         // Apply Electron Identification cuts
         if constexpr (!isMc) {
@@ -359,9 +358,9 @@ struct HfElectronSelectionWithTpcEmcal {
           }
         }
 
-        registry.fill(HIST("hPIDafterPIDcuts"), eop, ptMatchTrack, tpcNsigmaMatchTrack, m02MatchEmcCluster, m20MatchEmcCluster);
-        registry.fill(HIST("hEPRatioafterPID"), pMatchTrack, eMatchEmcCluster);
-        registry.fill(HIST("hafterPIDEtaPhi"), etaMatchTrack, phiMatchTrack);
+        registry.fill(HIST("hPIDAfterPIDCuts"), eop, ptMatchTrack, tpcNsigmaMatchTrack, m02MatchEmcCluster, m20MatchEmcCluster);
+        registry.fill(HIST("hEPRatioAfterPID"), pMatchTrack, eMatchEmcCluster);
+        registry.fill(HIST("hAfterPIDEtaPhi"), etaMatchTrack, phiMatchTrack);
         if (eop < eopElectronMin || eop > eopElectronMax) {
           continue;
         }
