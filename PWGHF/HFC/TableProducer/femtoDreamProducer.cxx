@@ -388,7 +388,6 @@ struct HfFemtoDreamProducer {
                            float BDTScorePrompt,
                            float BDTScoreFD) {
         if (FunctionSelection >= 1){
-    
                 rowCandCharmHad(
                     outputCollision.lastIndex(),
                     trackPos1.sign() + trackNeg.sign() + trackPos2.sign(),
@@ -414,8 +413,7 @@ struct HfFemtoDreamProducer {
                   rowCandMcCharmHad(
                     candidate.flagMcMatchRec(),
                     candidate.originMcRec());
-                }
-           
+                }           
       } };
 
       fillTable(0, candidate.isSelLcToPKPi(), outputMlPKPi.at(0), outputMlPKPi.at(1), outputMlPKPi.at(2));
