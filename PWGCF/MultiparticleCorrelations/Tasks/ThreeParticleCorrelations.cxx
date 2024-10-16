@@ -15,6 +15,7 @@
 #include "Common/DataModel/PIDResponse.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
+#include "TPDGCode.h"
 #include "TLorentzVector.h"
 
 using namespace o2;
@@ -278,17 +279,17 @@ struct ThreePartCorr {
     for (const auto& particle : particles) {
       if (particle.isPhysicalPrimary()) {
 
-        if (particle.pdgCode() == 211) { // Pos pions
+        if (particle.pdgCode() == kPiPlus) { // Pos pions
           MCRegistry.fill(HIST("hGenPionP"), particle.pt());
-        } else if (particle.pdgCode() == -211) { // Neg pions
+        } else if (particle.pdgCode() == kPiMinus) { // Neg pions
           MCRegistry.fill(HIST("hGenPionN"), particle.pt());
-        } else if (particle.pdgCode() == 321) { // Pos kaons
+        } else if (particle.pdgCode() == kKPlus) { // Pos kaons
           MCRegistry.fill(HIST("hGenKaonP"), particle.pt());
-        } else if (particle.pdgCode() == -321) { // Neg kaons
+        } else if (particle.pdgCode() == kKMinus) { // Neg kaons
           MCRegistry.fill(HIST("hGenKaonN"), particle.pt());
-        } else if (particle.pdgCode() == 2212) { // Pos protons
+        } else if (particle.pdgCode() == kProton) { // Pos protons
           MCRegistry.fill(HIST("hGenProtonP"), particle.pt());
-        } else if (particle.pdgCode() == -2212) { // Neg protons
+        } else if (particle.pdgCode() == kProtonBar) { // Neg protons
           MCRegistry.fill(HIST("hGenProtonN"), particle.pt());
         }
       }
@@ -312,17 +313,17 @@ struct ThreePartCorr {
       auto particle = track.mcParticle();
       if (particle.isPhysicalPrimary()) {
 
-        if (particle.pdgCode() == 211) { // Pos pions
+        if (particle.pdgCode() == kPiPlus) { // Pos pions
           MCRegistry.fill(HIST("hRecPionP"), track.pt());
-        } else if (particle.pdgCode() == -211) { // Neg pions
+        } else if (particle.pdgCode() == kPiMinus) { // Neg pions
           MCRegistry.fill(HIST("hRecPionN"), track.pt());
-        } else if (particle.pdgCode() == 321) { // Pos kaons
+        } else if (particle.pdgCode() == kKPlus) { // Pos kaons
           MCRegistry.fill(HIST("hRecKaonP"), track.pt());
-        } else if (particle.pdgCode() == -321) { // Neg kaons
+        } else if (particle.pdgCode() == kKMinus) { // Neg kaons
           MCRegistry.fill(HIST("hRecKaonN"), track.pt());
-        } else if (particle.pdgCode() == 2212) { // Pos protons
+        } else if (particle.pdgCode() == kProton) { // Pos protons
           MCRegistry.fill(HIST("hRecProtonP"), track.pt());
-        } else if (particle.pdgCode() == -2212) { // Neg protons
+        } else if (particle.pdgCode() == kProtonBar) { // Neg protons
           MCRegistry.fill(HIST("hRecProtonN"), track.pt());
         }
       }
