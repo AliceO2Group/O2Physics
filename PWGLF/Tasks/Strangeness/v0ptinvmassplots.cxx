@@ -24,7 +24,6 @@ This analysis includes two processes, one for Real Data and one for MC Data swit
 #include "Common/DataModel/EventSelection.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "Common/DataModel/PIDResponse.h"
-#include <iostream>
 
 // namespace to be used for pt plots and bins
 namespace pthistos
@@ -181,10 +180,10 @@ struct v0ptinvmassplots {
     }
   }
   // This is the Process for the MC reconstructed Data
-  void MCprocess(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const&,
-                 soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s,
-                 DaughterTracks const&, // no need to define a variable for tracks, if we don't access them directly
-                 aod::McParticles const&)
+  void RecMCprocess(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const&,
+                    soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s,
+                    DaughterTracks const&, // no need to define a variable for tracks, if we don't access them directly
+                    aod::McParticles const&)
   {
     for (const auto& v0 : V0s) {
       rPtAnalysis.fill(HIST("hV0PtAll"), v0.pt());
@@ -345,7 +344,7 @@ struct v0ptinvmassplots {
     }
   }
   PROCESS_SWITCH(v0ptinvmassplots, GenMCprocess, "Process Run 3 MC Generated", false);
-  PROCESS_SWITCH(v0ptinvmassplots, MCprocess, "Process Run 3 MC", false);
+  PROCESS_SWITCH(v0ptinvmassplots, RecMCprocess, "Process Run 3 MC", false);
   PROCESS_SWITCH(v0ptinvmassplots, Dataprocess, "Process Run 3 Data,", true);
 };
 
