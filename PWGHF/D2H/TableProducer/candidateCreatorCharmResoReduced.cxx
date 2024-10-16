@@ -256,87 +256,86 @@ struct HfCandidateCreatorCharmResoReduced {
       for (const auto& candV0Tr : candsV0Tr) {
         if (rejectDV0PairsWithCommonDaughter) {
           const std::array<int, 3> dDaughtersIDs = {candD.prong0Id(), candD.prong1Id(), candD.prong2Id()};
-          if constexpr (channel == DecayChannel::DstarTrack){
-            if(std::find(dDaughtersIDs.begin(), dDaughtersIDs.end(),candV0Tr.globalIndex()) != dDaughtersIDs.end()) {
-               continue;
+          if constexpr (channel == DecayChannel::DstarTrack) {
+            if (std::find(dDaughtersIDs.begin(), dDaughtersIDs.end(), candV0Tr.globalIndex()) != dDaughtersIDs.end()) {
+              continue;
             }
-           }else{
-           if(std::find(dDaughtersIDs.begin(), dDaughtersIDs.end(), candV0Tr.prong0Id()) != dDaughtersIDs.end() || std::find(dDaughtersIDs.begin(), dDaughtersIDs.end(), candV0Tr.prong1Id()) != dDaughtersIDs.end()) 
-            {
-            continue;
+          } else {
+            if (std::find(dDaughtersIDs.begin(), dDaughtersIDs.end(), candV0Tr.prong0Id()) != dDaughtersIDs.end() || std::find(dDaughtersIDs.begin(), dDaughtersIDs.end(), candV0Tr.prong1Id()) != dDaughtersIDs.end()) {
+              continue;
             }
           }
         }
-        if constexpr (channel != DecayChannel::DstarTrack){
-        if (!isV0Selected<channel>(candV0Tr, candD)) {
-          continue;
-        }
-        if (activateQA && !alreadyCounted) {
-          registry.fill(HIST("hSelections"), 1 + Selections::V0Sel);
-          alreadyCounted = true;
-        }
+        if constexpr (channel != DecayChannel::DstarTrack) {
+          if (!isV0Selected<channel>(candV0Tr, candD)) {
+            continue;
+          }
+          if (activateQA && !alreadyCounted) {
+            registry.fill(HIST("hSelections"), 1 + Selections::V0Sel);
+            alreadyCounted = true;
+          }
         }
 
         float invMassReso{0.};
         float invMassV0{0.};
         std::array<float, 3> pVecV0Tr = {candV0Tr.px(), candV0Tr.py(), candV0Tr.pz()};
         float ptReso = RecoDecay::pt(RecoDecay::sumOfVec(pVecV0Tr, pVecD));
-        
-        if constexpr (channel==DecayChannel::DstarTrack){
-            invMassReso= RecoDecay::m(std::array{pVecD, pVecV0Tr},std::array{massDstar, massProton});
-            registry.fill(HIST("hMassDstarTrack"), invMassReso, ptReso);
-        }else{
-        switch (channel) {
-          case DecayChannel::Ds1ToDstarK0s:
-            invMassV0 = candV0Tr.invMassK0s();
-            invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{massDstar, massK0});
-            registry.fill(HIST("hMassDs1"), invMassReso, ptReso);
-            break;
-          case DecayChannel::Ds2StarToDplusK0s:
-            invMassV0 = candV0Tr.invMassK0s();
-            invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{massDplus, massK0});
-            registry.fill(HIST("hMassDs2Star"), invMassReso, ptReso);
-            break;
-          case DecayChannel::XcToDplusLambda:
-            if (candD.dType() > 0) {
-              invMassV0 = candV0Tr.invMassLambda();
-            } else {
-              invMassV0 = candV0Tr.invMassAntiLambda();
-            }
-            invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{massDplus, massLambda});
-            registry.fill(HIST("hMassXcRes"), invMassReso, ptReso);
-            break;
-          case DecayChannel::LambdaDminus:
-            if (candD.dType() < 0) {
-              invMassV0 = candV0Tr.invMassLambda();
-            } else {
-              invMassV0 = candV0Tr.invMassAntiLambda();
-            }
-            invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{massDplus, massLambda});
-            registry.fill(HIST("hMassLambdaDminus"), invMassReso, ptReso);
-            break;
-          default:
-            break;
-        }
+
+        if constexpr (channel == DecayChannel::DstarTrack) {
+          invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{massDstar, massProton});
+          registry.fill(HIST("hMassDstarTrack"), invMassReso, ptReso);
+        } else {
+          switch (channel) {
+            case DecayChannel::Ds1ToDstarK0s:
+              invMassV0 = candV0Tr.invMassK0s();
+              invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{massDstar, massK0});
+              registry.fill(HIST("hMassDs1"), invMassReso, ptReso);
+              break;
+            case DecayChannel::Ds2StarToDplusK0s:
+              invMassV0 = candV0Tr.invMassK0s();
+              invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{massDplus, massK0});
+              registry.fill(HIST("hMassDs2Star"), invMassReso, ptReso);
+              break;
+            case DecayChannel::XcToDplusLambda:
+              if (candD.dType() > 0) {
+                invMassV0 = candV0Tr.invMassLambda();
+              } else {
+                invMassV0 = candV0Tr.invMassAntiLambda();
+              }
+              invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{massDplus, massLambda});
+              registry.fill(HIST("hMassXcRes"), invMassReso, ptReso);
+              break;
+            case DecayChannel::LambdaDminus:
+              if (candD.dType() < 0) {
+                invMassV0 = candV0Tr.invMassLambda();
+              } else {
+                invMassV0 = candV0Tr.invMassAntiLambda();
+              }
+              invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{massDplus, massLambda});
+              registry.fill(HIST("hMassLambdaDminus"), invMassReso, ptReso);
+              break;
+            default:
+              break;
+          }
         }
         // Filling Output table
-        if constexpr (channel == DecayChannel::DstarTrack){
-            rowCandidateResoTrack(pVecD[0], pVecD[1], pVecD[2],
-                         candV0Tr.px(), candV0Tr.py(), candV0Tr.pz(),
-                         invMassReso,
-                         invMassD);
-        }else{
-        rowCandidateReso(collision.globalIndex(),
-                         candD.globalIndex(),
-                         candV0Tr.globalIndex(),
-                         pVecD[0], pVecD[1], pVecD[2],
-                         pVecV0Tr[0], pVecV0Tr[1], pVecV0Tr[2],
-                         invMassReso,
-                         invMassD,
-                         invMassV0,
-                         candV0Tr.cpa(),
-                         candV0Tr.dca(),
-                         candV0Tr.v0Radius());
+        if constexpr (channel == DecayChannel::DstarTrack) {
+          rowCandidateResoTrack(pVecD[0], pVecD[1], pVecD[2],
+                                candV0Tr.px(), candV0Tr.py(), candV0Tr.pz(),
+                                invMassReso,
+                                invMassD);
+        } else {
+          rowCandidateReso(collision.globalIndex(),
+                           candD.globalIndex(),
+                           candV0Tr.globalIndex(),
+                           pVecD[0], pVecD[1], pVecD[2],
+                           pVecV0Tr[0], pVecV0Tr[1], pVecV0Tr[2],
+                           invMassReso,
+                           invMassD,
+                           invMassV0,
+                           candV0Tr.cpa(),
+                           candV0Tr.dca(),
+                           candV0Tr.v0Radius());
         }
         if constexpr (fillMl) {
           mlScores(candD.mlScoreBkgMassHypo0(), candD.mlScorePromptMassHypo0(), candD.mlScoreNonpromptMassHypo0());
@@ -449,7 +448,7 @@ struct HfCandidateCreatorCharmResoReduced {
   }
   PROCESS_SWITCH(HfCandidateCreatorCharmResoReduced, processLambdaDminusWithMl, "Process LambdaDminus candidates with Ml info", false);
   void processDstarTrack(aod::HfRedCollisions const& collisions,
-                         aod::HfRed3PrNoTrks  const& candsD,
+                         aod::HfRed3PrNoTrks const& candsD,
                          soa::Join<aod::HfRedTrackBases, aod::HfRedTracksCov> const& candidatesTrack)
   {
     for (const auto& collision : collisions) {
@@ -462,9 +461,9 @@ struct HfCandidateCreatorCharmResoReduced {
   PROCESS_SWITCH(HfCandidateCreatorCharmResoReduced, processDstarTrack, "Process DStar candidates without Ml info", false);
 
   void processDstarTrackWithMl(aod::HfRedCollisions const& collisions,
-                                    soa::Join<aod::HfRed3PrNoTrks, aod::HfRed3ProngsMl> const& candsD,
-                                    soa::Join<aod::HfRedTrackBases, aod::HfRedTracksCov> const&     candidatesTrack)
-//                                    aod::HfRedTracks const&)
+                               soa::Join<aod::HfRed3PrNoTrks, aod::HfRed3ProngsMl> const& candsD,
+                               soa::Join<aod::HfRedTrackBases, aod::HfRedTracksCov> const& candidatesTrack)
+  //                                    aod::HfRedTracks const&)
   {
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
@@ -474,8 +473,6 @@ struct HfCandidateCreatorCharmResoReduced {
     }
   }
   PROCESS_SWITCH(HfCandidateCreatorCharmResoReduced, processDstarTrackWithMl, "Process DStar candidates with Ml info", false);
-
-
 
 }; // struct
 
