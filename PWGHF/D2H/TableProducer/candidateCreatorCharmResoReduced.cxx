@@ -91,7 +91,7 @@ struct HfCandidateCreatorCharmResoReduced {
   Configurable<LabeledArray<double>> cutsD{"cutsDdaughter", {hf_cuts_d_daughter::cuts[0], hf_cuts_d_daughter::nBinsPt, hf_cuts_d_daughter::nCutVars, hf_cuts_d_daughter::labelsPt, hf_cuts_d_daughter::labelsCutVar}, "D daughter selections"};
   Configurable<std::vector<double>> binsPtD{"binsPtD", std::vector<double>{hf_cuts_d_daughter::vecBinsPt}, "pT bin limits for D daughter cuts"};
   Configurable<LabeledArray<double>> cutsV0{"cutsV0daughter", {hf_cuts_v0_daughter::cuts[0], hf_cuts_v0_daughter::nBinsPt, hf_cuts_v0_daughter::nCutVars, hf_cuts_v0_daughter::labelsPt, hf_cuts_v0_daughter::labelsCutVar}, "V0 daughter selections"};
-  
+
   Configurable<std::vector<double>> binsPtV0{"binsPtV0", std::vector<double>{hf_cuts_v0_daughter::vecBinsPt}, "pT bin limits for V0 daughter cuts"};
 
   using reducedDWithMl = soa::Join<aod::HfRed3PrNoTrks, aod::HfRed3ProngsMl>;
@@ -485,7 +485,7 @@ struct HfCandidateCreatorCharmResoReduced {
 
 }; // struct HfCandidateCreatorCharmResoReduced
 
-struct HfCandidateCreatorCharmResoReducedExpressions{
+struct HfCandidateCreatorCharmResoReducedExpressions {
 
   Produces<aod::HfMcRecRedResos> rowResoMcRec;
 
@@ -499,7 +499,7 @@ struct HfCandidateCreatorCharmResoReducedExpressions{
     registry.add("hMassMcUnmatched", "Reso MC candidates NOT Matched with generate particle;m (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{200, 2.5, 2.7}, {axisPt}}});
     registry.add("hMassMcNoEntry", "Reso MC candidates w.o. entry in MC Reco table;m (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{200, 2.5, 2.7}, {axisPt}}});
   }
-  
+
   /// Fill candidate information at MC reconstruction level
   /// \param rowsDV0McRec MC reco information on DPi pairs
   /// \param candsReso prong global indices of B0 candidates
@@ -512,9 +512,9 @@ struct HfCandidateCreatorCharmResoReducedExpressions{
         if ((rowDV0McRec.prong0Id() != candReso.prong0Id()) || (rowDV0McRec.prong1Id() != candReso.prong1Id())) {
           continue;
         }
-        rowResoMcRec(rowDV0McRec.flagMcMatchRec(),  rowDV0McRec.debugMcRec(), rowDV0McRec.origin(), rowDV0McRec.ptMother());
+        rowResoMcRec(rowDV0McRec.flagMcMatchRec(), rowDV0McRec.debugMcRec(), rowDV0McRec.origin(), rowDV0McRec.ptMother());
         filledMcInfo = true;
-        if (TESTBIT(rowDV0McRec.flagMcMatchRec(), DecayTypeMc::Ds1ToDStarK0ToD0PiK0s) || TESTBIT(rowDV0McRec.flagMcMatchRec(), DecayTypeMc::Ds2StarToDplusK0sToPiKaPiPiPi) ){
+        if (TESTBIT(rowDV0McRec.flagMcMatchRec(), DecayTypeMc::Ds1ToDStarK0ToD0PiK0s) || TESTBIT(rowDV0McRec.flagMcMatchRec(), DecayTypeMc::Ds2StarToDplusK0sToPiKaPiPiPi)) {
           registry.fill(HIST("hMassMcMatched"), candReso.invMass(), candReso.pt());
         } else if (TESTBIT(rowDV0McRec.flagMcMatchRec(), DecayTypeMc::Ds1ToDStarK0ToDPlusGammaK0s) || TESTBIT(rowDV0McRec.flagMcMatchRec(), DecayTypeMc::Ds1ToDStarK0ToDPlusPi0K0s)) {
           registry.fill(HIST("hMassMcMatchedIncomplete"), candReso.invMass(), candReso.pt());
@@ -536,7 +536,6 @@ struct HfCandidateCreatorCharmResoReducedExpressions{
     fillResoMcRec(rowsDV0McRec, candsReso);
   }
   PROCESS_SWITCH(HfCandidateCreatorCharmResoReducedExpressions, processMc, "Process MC", false);
-
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
