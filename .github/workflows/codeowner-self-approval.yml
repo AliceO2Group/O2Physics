@@ -25,7 +25,7 @@ jobs:
 
     steps:
       - name: Install dependencies
-        run: pip install codeowners PyGithub
+        run: pip install --break-system-packages codeowners PyGithub
 
       # Approve the PR, if the author is only editing files owned by themselves.
       - name: Auto-approve PR if permitted
