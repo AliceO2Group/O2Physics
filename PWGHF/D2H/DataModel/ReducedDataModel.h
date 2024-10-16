@@ -221,14 +221,21 @@ DECLARE_SOA_TABLE(HfRed3ProngsCov, "AOD", "HFRED3PRONGSCOV", //! Table with 3pro
                   HFTRACKPARCOV_COLUMNS,
                   o2::soa::Marker<2>);
 
-DECLARE_SOA_TABLE(HfRed3ProngsMl, "AOD", "HFRED3PRONGML", //! Table with 3prong candidate ML scores
+DECLARE_SOA_TABLE(HfRed3ProngsMl_000, "AOD", "HFRED3PRONGML", //! Table with 3prong candidate ML scores
                   hf_charm_cand_reduced::MlScoreBkgMassHypo0,
                   hf_charm_cand_reduced::MlScorePromptMassHypo0,
-                  hf_charm_cand_reduced::MlScoreNonpromptMassHypo0,
-                  hf_charm_cand_reduced::MlScoreBkgMassHypo1,
-                  hf_charm_cand_reduced::MlScorePromptMassHypo1,
-                  hf_charm_cand_reduced::MlScoreNonpromptMassHypo1,
-                  o2::soa::Marker<1>);
+                  hf_charm_cand_reduced::MlScoreNonpromptMassHypo0);
+
+DECLARE_SOA_TABLE_VERSIONED(HfRed3ProngsMl_001, "AOD", "HFRED3PRONGML", 1, //! Table with 3prong candidate ML scores (format for 2 mass hypotheses needed for Ds and Lc)
+                            hf_charm_cand_reduced::MlScoreBkgMassHypo0,
+                            hf_charm_cand_reduced::MlScorePromptMassHypo0,
+                            hf_charm_cand_reduced::MlScoreNonpromptMassHypo0,
+                            hf_charm_cand_reduced::MlScoreBkgMassHypo1,
+                            hf_charm_cand_reduced::MlScorePromptMassHypo1,
+                            hf_charm_cand_reduced::MlScoreNonpromptMassHypo1,
+                            o2::soa::Marker<1>);
+
+using HfRed3ProngsMl = HfRed3ProngsMl_001;
 
 // Beauty candidates prongs
 namespace hf_cand_b0_reduced
