@@ -229,7 +229,7 @@ struct HfTaskCharmHadronsFemtoDream {
   {
 
     if ((col.bitmaskTrackOne() & BitMask) != BitMask || (col.bitmaskTrackTwo() & BitMask) != BitMask) {
-      continue;
+      return;
     }
 
     fillCollision(col);
