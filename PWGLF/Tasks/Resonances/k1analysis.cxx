@@ -147,15 +147,9 @@ struct k1analysis {
     AxisSpec mcLabelAxis = {5, -0.5, 4.5, "MC Label"};
 
     // DCA QA
-    histos.add("QA/trkAllDCAxy", "DCAxy distribution of all track candidates", HistType::kTH1F, {dcaxyAxis});
-    histos.add("QA/trkAllDCAz", "DCAz distribution of all track candidates", HistType::kTH1F, {dcaxyAxis});
-    histos.add("QA/trkAllEta", "Eta distribution of all track candidates", HistType::kTH1F, {AxisSpec{20, -1, 1, "Eta distribution of all track candidates"}});
-    histos.add("QA/trkAllpT", "pT distribution of all track candidates", HistType::kTH1F, {ptAxis});
-
     // Primary pion
     histos.add("QA/trkppionDCAxy", "DCAxy distribution of primary pion candidates", HistType::kTH1F, {dcaxyAxis});
     histos.add("QA/trkppionDCAz", "DCAz distribution of primary pion candidates", HistType::kTH1F, {dcaxyAxis});
-    histos.add("QA/trkppionEta", "Eta distribution of primary pion candidates", HistType::kTH1F, {AxisSpec{20, -1, 1, "Eta distribution of primary pion candidates"}});
     histos.add("QA/trkppionpT", "pT distribution of primary pion candidates", HistType::kTH1F, {ptAxis});
     histos.add("QA/trkppionTPCPID", "TPC PID of primary pion candidates", HistType::kTH2F, {ptAxis, pidQAAxis});
     histos.add("QA/trkppionTOFPID", "TOF PID of primary pion candidates", HistType::kTH2F, {ptAxis, pidQAAxis});
@@ -163,7 +157,6 @@ struct k1analysis {
 
     histos.add("QAcut/trkppionDCAxy", "DCAxy distribution of primary pion candidates", HistType::kTH1F, {dcaxyAxis});
     histos.add("QAcut/trkppionDCAz", "DCAz distribution of primary pion candidates", HistType::kTH1F, {dcaxyAxis});
-    histos.add("QAcut/trkppionEta", "Eta distribution of primary pion candidates", HistType::kTH1F, {AxisSpec{20, -1, 1, "Eta distribution of primary pion candidates"}});
     histos.add("QAcut/trkppionpT", "pT distribution of primary pion candidates", HistType::kTH1F, {ptAxis});
     histos.add("QAcut/trkppionTPCPID", "TPC PID of primary pion candidates", HistType::kTH2F, {ptAxis, pidQAAxis});
     histos.add("QAcut/trkppionTOFPID", "TOF PID of primary pion candidates", HistType::kTH2F, {ptAxis, pidQAAxis});
@@ -172,7 +165,6 @@ struct k1analysis {
     // Secondary pion
     histos.add("QA/trkspionDCAxy", "DCAxy distribution of secondary pion candidates", HistType::kTH1F, {dcaxyAxis});
     histos.add("QA/trkspionDCAz", "DCAz distribution of secondary pion candidates", HistType::kTH1F, {dcaxyAxis});
-    histos.add("QA/trkspionEta", "Eta distribution of secondary pion candidates", HistType::kTH1F, {AxisSpec{20, -1, 1, "Eta distribution of secondary pion candidates"}});
     histos.add("QA/trkspionpT", "pT distribution of secondary pion candidates", HistType::kTH1F, {ptAxis});
     histos.add("QA/trkspionTPCPID", "TPC PID of secondary pion candidates", HistType::kTH2F, {ptAxis, pidQAAxis});
     histos.add("QA/trkspionTOFPID", "TOF PID of secondary pion candidates", HistType::kTH2F, {ptAxis, pidQAAxis});
@@ -180,7 +172,6 @@ struct k1analysis {
 
     histos.add("QAcut/trkspionDCAxy", "DCAxy distribution of secondary pion candidates", HistType::kTH1F, {dcaxyAxis});
     histos.add("QAcut/trkspionDCAz", "DCAz distribution of secondary pion candidates", HistType::kTH1F, {dcaxyAxis});
-    histos.add("QAcut/trkspionEta", "Eta distribution of secondary pion candidates", HistType::kTH1F, {AxisSpec{20, -1, 1, "Eta distribution of secondary pion candidates"}});
     histos.add("QAcut/trkspionpT", "pT distribution of secondary pion candidates", HistType::kTH1F, {ptAxis});
     histos.add("QAcut/trkspionTPCPID", "TPC PID of secondary pion candidates", HistType::kTH2F, {ptAxis, pidQAAxis});
     histos.add("QAcut/trkspionTOFPID", "TOF PID of secondary pion candidates", HistType::kTH2F, {ptAxis, pidQAAxis});
@@ -189,7 +180,6 @@ struct k1analysis {
     // Kaon
     histos.add("QA/trkkaonDCAxy", "DCAxy distribution of kaon candidates", HistType::kTH1F, {dcaxyAxis});
     histos.add("QA/trkkaonDCAz", "DCAz distribution of kaon candidates", HistType::kTH1F, {dcaxyAxis});
-    histos.add("QA/trkkaonEta", "Eta distribution of kaon candidates", HistType::kTH1F, {AxisSpec{20, -1, 1, "Eta distribution of kaon candidates"}});
     histos.add("QA/trkkaonpT", "pT distribution of kaon candidates", HistType::kTH1F, {ptAxis});
     histos.add("QA/trkkaonTPCPID", "TPC PID of kaon candidates", HistType::kTH2F, {ptAxis, pidQAAxis});
     histos.add("QA/trkkaonTOFPID", "TOF PID of kaon candidates", HistType::kTH2F, {ptAxis, pidQAAxis});
@@ -197,7 +187,6 @@ struct k1analysis {
 
     histos.add("QAcut/trkkaonDCAxy", "DCAxy distribution of kaon candidates", HistType::kTH1F, {dcaxyAxis});
     histos.add("QAcut/trkkaonDCAz", "DCAz distribution of kaon candidates", HistType::kTH1F, {dcaxyAxis});
-    histos.add("QAcut/trkkaonEta", "Eta distribution of kaon candidates", HistType::kTH1F, {AxisSpec{20, -1, 1, "Eta distribution of kaon candidates"}});
     histos.add("QAcut/trkkaonpT", "pT distribution of kaon candidates", HistType::kTH1F, {ptAxis});
     histos.add("QAcut/trkkaonTPCPID", "TPC PID of kaon candidates", HistType::kTH2F, {ptAxis, pidQAAxis});
     histos.add("QAcut/trkkaonTOFPID", "TOF PID of kaon candidates", HistType::kTH2F, {ptAxis, pidQAAxis});
@@ -231,7 +220,6 @@ struct k1analysis {
 
       histos.add("QAMC/trkppionDCAxy", "DCAxy distribution of primary pion candidates", HistType::kTH1F, {dcaxyAxis});
       histos.add("QAMC/trkppionDCAz", "DCAz distribution of primary pion candidates", HistType::kTH1F, {dcaxyAxis});
-      histos.add("QAMC/trkppionEta", "Eta distribution of primary pion candidates", HistType::kTH1F, {AxisSpec{20, -1, 1, "Eta distribution of primary pion candidates"}});
       histos.add("QAMC/trkppionpT", "pT distribution of primary pion candidates", HistType::kTH1F, {ptAxis});
       histos.add("QAMC/trkppionTPCPID", "TPC PID of primary pion candidates", HistType::kTH2F, {ptAxis, pidQAAxis});
       histos.add("QAMC/trkppionTOFPID", "TOF PID of primary pion candidates", HistType::kTH2F, {ptAxis, pidQAAxis});
@@ -239,7 +227,6 @@ struct k1analysis {
 
       histos.add("QAMC/trkspionDCAxy", "DCAxy distribution of secondary pion candidates", HistType::kTH1F, {dcaxyAxis});
       histos.add("QAMC/trkspionDCAz", "DCAz distribution of secondary pion candidates", HistType::kTH1F, {dcaxyAxis});
-      histos.add("QAMC/trkspionEta", "Eta distribution of secondary pion candidates", HistType::kTH1F, {AxisSpec{20, -1, 1, "Eta distribution of secondary pion candidates"}});
       histos.add("QAMC/trkspionpT", "pT distribution of secondary pion candidates", HistType::kTH1F, {ptAxis});
       histos.add("QAMC/trkspionTPCPID", "TPC PID of secondary pion candidates", HistType::kTH2F, {ptAxis, pidQAAxis});
       histos.add("QAMC/trkspionTOFPID", "TOF PID of secondary pion candidates", HistType::kTH2F, {ptAxis, pidQAAxis});
@@ -247,7 +234,6 @@ struct k1analysis {
 
       histos.add("QAMC/trkkaonDCAxy", "DCAxy distribution of kaon candidates", HistType::kTH1F, {dcaxyAxis});
       histos.add("QAMC/trkkaonDCAz", "DCAz distribution of kaon candidates", HistType::kTH1F, {dcaxyAxis});
-      histos.add("QAMC/trkkaonEta", "Eta distribution of kaon candidates", HistType::kTH1F, {AxisSpec{20, -1, 1, "Eta distribution of kaon candidates"}});
       histos.add("QAMC/trkkaonpT", "pT distribution of kaon candidates", HistType::kTH1F, {ptAxis});
       histos.add("QAMC/trkkaonTPCPID", "TPC PID of kaon candidates", HistType::kTH2F, {ptAxis, pidQAAxis});
       histos.add("QAMC/trkkaonTOFPID", "TOF PID of kaon candidates", HistType::kTH2F, {ptAxis, pidQAAxis});
@@ -611,7 +597,6 @@ struct k1analysis {
             if (isTrueK1(trk1, trk2, bTrack)) {
               typeK1 = bTrack.sign() > 0 ? binType::kK1P_Rec : binType::kK1N_Rec;
               histos.fill(HIST("hInvmass_K1"), typeNormal, typeK1, multiplicity, lResonanceK1.Pt(), lResonanceK1.M());
-              histos.fill(HIST("hTrueK1pt"), lResonanceK1.Pt());
               histos.fill(HIST("k1invmass_MC"), lResonanceK1.M());
               histos.fill(HIST("QAMC/K1OA"), lK1Angle);
               histos.fill(HIST("QAMC/K1PairAssym"), lPairAsym);
