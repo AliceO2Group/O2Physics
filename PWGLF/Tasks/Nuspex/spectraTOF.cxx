@@ -1158,7 +1158,7 @@ struct tofSpectra {
     if (track.tpcChi2NCl() < minChi2PerClusterTPC || track.tpcChi2NCl() > maxChi2PerClusterTPC) {
       return false;
     }
-    
+
     if (!passesCutWoDCA(track)) {
       return false;
     }
