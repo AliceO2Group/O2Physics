@@ -116,7 +116,6 @@ struct HfCandidateSelectorBsToDsPi {
         hfMlResponse.setModelPathsLocal(onnxFileNames);
       }
       hfMlResponse.init();
-      outputMl.assign(((std::vector<int>)cutDirMl).size(), -1.f); // dummy value for ML output
     }
 
     int selectionFlagDs = -1;
@@ -147,6 +146,7 @@ struct HfCandidateSelectorBsToDsPi {
   {
     for (const auto& hfCandBs : hfCandsBs) {
       int statusBsToDsPi = 0;
+      outputMl.clear();
       auto ptCandBs = hfCandBs.pt();
 
       SETBIT(statusBsToDsPi, SelectionStep::RecoSkims); // RecoSkims = 0 --> statusBsToDsPi = 1
