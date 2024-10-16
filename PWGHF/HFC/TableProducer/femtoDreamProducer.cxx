@@ -412,8 +412,7 @@ struct HfFemtoDreamProducer {
                 if constexpr (isMc) {
                   rowCandMcCharmHad(
                     candidate.flagMcMatchRec(),
-                    candidate.originMcRec());
-                }           
+                    candidate.originMcRec());}
       } };
 
       fillTable(0, candidate.isSelLcToPKPi(), outputMlPKPi.at(0), outputMlPKPi.at(1), outputMlPKPi.at(2));
