@@ -694,6 +694,7 @@ struct correlateStrangeness {
     histos.add("hTriggerPtResolution", ";p_{T}^{reconstructed} (GeV/c); p_{T}^{generated} (GeV/c)", kTH2F, {axisPtQA, axisPtQA});
     histos.add("hTriggerPrimaryEtaVsPt", "hTriggerPrimaryEtaVsPt", kTH3F, {axisPtQA, axisEta, axisMult});
     histos.add("hTrackEtaVsPtVsPhi", "hTrackEtaVsPtVsPhi", kTH3F, {axisPtQA, axisEta, axisPhi});
+    bool hStrange = false;
     for (int i = 0; i < 8; i++) {
       histos.add(fmt::format("h{}EtaVsPtVsPhi", particlenames[i]).c_str(), "", kTH3F, {axisPtQA, axisEta, axisPhi});
       histos.add(fmt::format("h{}EtaVsPtVsPhiBg", particlenames[i]).c_str(), "", kTH3F, {axisPtQA, axisEta, axisPhi});
@@ -701,11 +702,13 @@ struct correlateStrangeness {
         histos.add(fmt::format("h3d{}Spectrum", particlenames[i]).c_str(), fmt::format("h3d{}Spectrum", particlenames[i]).c_str(), kTH3F, {axisPtQA, axisMult, axisMassNSigma});
         histos.add(fmt::format("h3d{}SpectrumY", particlenames[i]).c_str(), fmt::format("h3d{}SpectrumY", particlenames[i]).c_str(), kTH3F, {axisPtQA, axisMult, axisMassNSigma});
         histos.add(fmt::format("sameEvent/Signal/{}", particlenames[i]).c_str(), "", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
-        if (i < 7) {
-          histos.addClone("sameEvent/Signal/", "sameEvent/LeftBg/");
-          histos.addClone("sameEvent/Signal/", "sameEvent/RightBg/");
-        }
+        if (i < 7)
+          hStrange = true;
       }
+    }
+    if (hStrange) {
+      histos.addClone("sameEvent/Signal/", "sameEvent/LeftBg/");
+      histos.addClone("sameEvent/Signal/", "sameEvent/RightBg/");
     }
 
     LOGF(info, "Init THnFs done");

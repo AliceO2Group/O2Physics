@@ -23,6 +23,8 @@
 #include "DataFormatsParameters/GRPObject.h"
 #include "DCAFitter/DCAFitterN.h"
 #include "DetectorsBase/Propagator.h"
+#include "EventFiltering/Zorro.h"
+#include "EventFiltering/ZorroSummary.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoA.h"
@@ -192,6 +194,9 @@ struct HfTreeCreatorOmegacSt {
   Produces<aod::HfStChBars> outputTable;
   Produces<aod::HfStChBarGens> outputTableGen;
 
+  Zorro zorro;
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
+
   Configurable<int> materialCorrectionType{"materialCorrectionType", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrLUT), "Type of material correction"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpMagPath{"grpMagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
@@ -199,6 +204,7 @@ struct HfTreeCreatorOmegacSt {
   Configurable<std::string> matLutPath{"matLutPath", "GLO/Param/MatLUT", "Path of the material LUT"};
   Configurable<bool> propToDCA{"propToDCA", true, "create tracks version propagated to PCA"};
   Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
+  Configurable<bool> skimmedProcessing{"skimmedProcessing", false, "Put true if you are processing apass*_skimmed datasets"};
   Configurable<double> maxR{"maxR", 200., "reject PCA's above this radius"};
   Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
@@ -366,6 +372,13 @@ struct HfTreeCreatorOmegacSt {
     for (const auto& collision : collisions) {
       const auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       if (runNumber != bc.runNumber()) {
+        if (skimmedProcessing) {
+          if (runNumber == 0) {
+            zorroSummary.setObject(zorro.getZorroSummary());
+          }
+          zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), "fTrackedOmega");
+          zorro.populateHistRegistry(registry, bc.runNumber());
+        }
         runNumber = bc.runNumber();
         auto timestamp = bc.timestamp();
 
@@ -379,6 +392,9 @@ struct HfTreeCreatorOmegacSt {
           LOG(fatal) << "Got nullptr from CCDB for path " << grpMagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << timestamp;
         }
         df2.setBz(bz);
+      }
+      if (skimmedProcessing) {
+        zorro.isSelected(collision.bc().globalBC());
       }
 
       const auto primaryVertex = getPrimaryVertex(collision);

@@ -70,14 +70,14 @@ struct femtoUniversePairTaskTrackPhi {
 
   // Efficiency
   struct : o2::framework::ConfigurableGroup {
-    Configurable<std::string> ConfLocalEfficiencyProton{"ConfLocalEfficiencyProton", "", "Local path to proton efficiency TH2F file"};
-    Configurable<std::string> ConfLocalEfficiencyPhi{"ConfLocalEfficiencyPhi", "", "Local path to Phi efficiency TH2F file"};
-    Configurable<long> ConfEffProtonTimestamp{"ConfEffProtonTimestamp", 0, "(long int) Timestamp for hadron"};
-    Configurable<long> ConfEffPhiTimestamp{"ConfEffPhiTimestamp", 0, "(long int) Timestamp for phi"};
+    Configurable<std::string> ConfEfficiencyTrackPath{"ConfEfficiencyTrackPath", "", "Local path to proton efficiency TH2F file"};
+    Configurable<std::string> ConfEfficiencyPhiPath{"ConfEfficiencyPhiPath", "", "Local path to Phi efficiency TH2F file"};
+    Configurable<long> ConfEfficiencyTrackTimestamp{"ConfEfficiencyTrackTimestamp", 0, "(long int) Timestamp for hadron"};
+    Configurable<long> ConfEfficiencyPhiTimestamp{"ConfEfficiencyPhiTimestamp", 0, "(long int) Timestamp for phi"};
   } ConfEff;
 
   struct : o2::framework::ConfigurableGroup {
-    Configurable<bool> ConfIsCPR{"ConfIsCPR", true, "Close Pair Rejection"};
+    Configurable<bool> ConfCPRIsEnabled{"ConfCPRIsEnabled", true, "Close Pair Rejection"};
     Configurable<bool> ConfCPRPlotPerRadii{"ConfCPRPlotPerRadii", false, "Plot CPR per radii"};
     Configurable<float> ConfCPRdeltaPhiCutMax{"ConfCPRdeltaPhiCutMax", 0.0, "Delta Phi max cut for Close Pair Rejection"};
     Configurable<float> ConfCPRdeltaPhiCutMin{"ConfCPRdeltaPhiCutMin", 0.0, "Delta Phi min cut for Close Pair Rejection"};
@@ -90,42 +90,44 @@ struct femtoUniversePairTaskTrackPhi {
 
   /// Table for both particles
   struct : o2::framework::ConfigurableGroup {
-    Configurable<float> ConfNsigmaCombinedProton{"ConfNsigmaCombinedProton", 3.0, "TPC and TOF Proton Sigma (combined) for momentum > 0.5"};
-    Configurable<float> ConfNsigmaTPCProton{"ConfNsigmaTPCProton", 3.0, "TPC Proton Sigma for momentum < 0.5"};
-    Configurable<float> ConfNsigmaRejectKaon{"ConfNsigmaRejectKaon", 3.0, "Reject if particle could be a Kaon combined nsigma value."};
-    Configurable<float> ConfNsigmaRejectPion{"ConfNsigmaRejectPion", 3.0, "Reject if particle could be a Pion combined nsigma value."};
-    Configurable<float> ConfNsigmaRejectProton{"ConfNsigmaRejectProton", 3.0, "Reject if particle could be a Proton combined nsigma value."};
-    Configurable<float> ConfNsigmaCombinedPion{"ConfNsigmaCombinedPion", 3.0, "TPC and TOF Pion Sigma (combined) for momentum > 0.5"};
-    Configurable<float> ConfNsigmaTPCPion{"ConfNsigmaTPCPion", 3.0, "TPC Pion Sigma for momentum < 0.5"};
+    Configurable<float> ConfPIDProtonNsigmaCombined{"ConfPIDProtonNsigmaCombined", 3.0, "TPC and TOF Proton Sigma (combined) for momentum > 0.5"};
+    Configurable<float> ConfPIDProtonNsigmaTPC{"ConfPIDProtonNsigmaTPC", 3.0, "TPC Proton Sigma for momentum < 0.5"};
+    Configurable<float> ConfPIDKaonNsigmaReject{"ConfPIDKaonNsigmaReject", 3.0, "Reject if particle could be a Kaon combined nsigma value."};
+    Configurable<float> ConfPIDPionNsigmaReject{"ConfPIDPionNsigmaReject", 3.0, "Reject if particle could be a Pion combined nsigma value."};
+    Configurable<float> ConfPIDProtonNsigmaReject{"ConfPIDProtonNsigmaReject", 3.0, "Reject if particle could be a Proton combined nsigma value."};
+    Configurable<float> ConfPIDPionNsigmaCombined{"ConfPIDPionNsigmaCombined", 3.0, "TPC and TOF Pion Sigma (combined) for momentum > 0.5"};
+    Configurable<float> ConfPIDPionNsigmaTPC{"ConfPIDPionNsigmaTPC", 3.0, "TPC Pion Sigma for momentum < 0.5"};
 
     Configurable<LabeledArray<float>> ConfCutTable{"ConfCutTable", {cutsTable[0], nPart, nCuts, partNames, cutNames}, "Particle selections"};
     Configurable<int> ConfNspecies{"ConfNspecies", 2, "Number of particle spieces with PID info"};
-    Configurable<bool> ConfIsMC{"ConfIsMC", false, "Enable additional Histogramms in the case of a MonteCarlo Run"};
+    Configurable<bool> ConfIsMC{"ConfIsMC", false, "Enable additional Histograms in the case of a MonteCarlo Run"};
     Configurable<std::vector<float>> ConfTrkPIDnSigmaMax{"ConfTrkPIDnSigmaMax", std::vector<float>{4.f, 3.f, 2.f}, "This configurable needs to be the same as the one used in the producer task"};
     Configurable<bool> ConfUse3D{"ConfUse3D", false, "Enable three dimensional histogramms (to be used only for analysis with high statistics): k* vs mT vs multiplicity"};
-    Configurable<int> ConfPhiBins{"ConfPhiBins", 29, "Number of phi bins in deta dphi"};
-    Configurable<int> ConfEtaBins{"ConfEtaBins", 29, "Number of eta bins in deta dphi"};
+    Configurable<int> ConfBinsPhi{"ConfBinsPhi", 29, "Number of phi bins in deta dphi"};
+    Configurable<int> ConfBinsEta{"ConfBinsEta", 29, "Number of eta bins in deta dphi"};
   } ConfBothTracks;
 
   /// Particle 1 --- IDENTIFIED TRACK
   struct : o2::framework::ConfigurableGroup {
-    Configurable<bool> ConfIsSame{"ConfIsSame", false, "Pairs of the same particle"};
-    Configurable<int> ConfPDGCodeTrack{"ConfPDGCodeTrack", 2212, "Particle 2 - PDG code"};
-    Configurable<int> ConfPIDTrack{"ConfPIDTrack", 2, "Particle 2 - Read from cutCulator"}; // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>
+    Configurable<bool> ConfTrackIsSame{"ConfTrackIsSame", false, "Pairs of the same particle"};
+    Configurable<int> ConfTrackPDGCode{"ConfTrackPDGCode", 2212, "Particle 2 - PDG code"};
+    Configurable<int> ConfTrackPID{"ConfTrackPID", 2, "Particle 2 - Read from cutCulator"}; // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>
     Configurable<int> ConfTrackSign{"ConfTrackSign", 1, "Track sign"};
-    Configurable<bool> ConfIsTrackIdentified{"ConfIsTrackIdentified", true, "Enable PID for the track"};
-    Configurable<bool> ConfIsTrackRejected{"ConfIsTrackRejected", true, "Enable PID rejection for the track other species than the identified one."};
+    Configurable<bool> ConfTrackIsIdentified{"ConfTrackIsIdentified", true, "Enable PID for the track"};
+    Configurable<bool> ConfTrackIsRejected{"ConfTrackIsRejected", true, "Enable PID rejection for the track other species than the identified one."};
+    Configurable<float> ConfTrackPtLowLimit{"ConfTrackPtLowLimit", 0.5, "Lower limit of the Phi pT."};
+    Configurable<float> ConfTrackPtHighLimit{"ConfTrackPtHighLimit", 2.5, "Higher limit of the Phi pT."};
   } ConfTrack;
 
   /// Particle 2 --- PHI
   struct : o2::framework::ConfigurableGroup {
-    Configurable<int> ConfPDGCodePhi{"ConfPDGCodePhi", 333, "Phi meson - PDG code"};
-    Configurable<int> ConfPIDPhi{"ConfPIDPhi", 2, "Phi meson - Read from cutCulator"}; // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>int>>
+    Configurable<int> ConfPhiPDGCode{"ConfPhiPDGCode", 333, "Phi meson - PDG code"};
+    Configurable<int> ConfPhiPID{"ConfPhiPID", 2, "Phi meson - Read from cutCulator"}; // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>int>>
   } ConfPhi;
 
   /// Partitions for particle 1
-  Partition<FemtoFullParticles> partsTrack = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == ConfTrack.ConfTrackSign);
-  Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> partsTrackMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack));
+  Partition<FemtoFullParticles> partsTrack = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == ConfTrack.ConfTrackSign.value) && (aod::femtouniverseparticle::pt > ConfTrack.ConfTrackPtLowLimit.value) && (aod::femtouniverseparticle::pt < ConfTrack.ConfTrackPtHighLimit.value);
+  Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> partsTrackMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == ConfTrack.ConfTrackSign.value) && (aod::femtouniverseparticle::pt > ConfTrack.ConfTrackPtLowLimit.value) && (aod::femtouniverseparticle::pt < ConfTrack.ConfTrackPtHighLimit.value);
 
   /// Partitions for particle 2
   Partition<FemtoFullParticles> partsPhi = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kPhi));
@@ -153,21 +155,21 @@ struct femtoUniversePairTaskTrackPhi {
   std::vector<float> kNsigma;
 
   /// particle part
-  ConfigurableAxis ConfTempFitVarBins{"ConfDTempFitVarBins", {300, -0.15, 0.15}, "binning of the TempFitVar in the pT vs. TempFitVar plot"};
-  ConfigurableAxis ConfTempFitVarInvMassBins{"ConfDTempFitVarInvMassBins", {6000, 0.9, 4.0}, "binning of the TempFitVar in the pT vs. TempFitVar plot"};
-  ConfigurableAxis ConfTempFitVarpTBins{"ConfTempFitVarpTBins", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot"};
+  ConfigurableAxis ConfBinsTempFitVar{"ConfDTempFitVarBins", {300, -0.15, 0.15}, "binning of the TempFitVar in the pT vs. TempFitVar plot"};
+  ConfigurableAxis ConfBinsTempFitVarInvMass{"ConfDTempFitVarInvMassBins", {6000, 0.9, 4.0}, "binning of the TempFitVar in the pT vs. TempFitVar plot"};
+  ConfigurableAxis ConfBinsTempFitVarpT{"ConfBinsTempFitVarpT", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot"};
 
   /// Correlation part
-  ConfigurableAxis ConfMultBins{"ConfMultBins", {VARIABLE_WIDTH, 0.0f, 4.0f, 8.0f, 12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 32.0f, 36.0f, 40.0f, 44.0f, 48.0f, 52.0f, 56.0f, 60.0f, 64.0f, 68.0f, 72.0f, 76.0f, 80.0f, 84.0f, 88.0f, 92.0f, 96.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"}; // \todo to be obtained from the hash task
-  ConfigurableAxis ConfVtxBins{"ConfVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
-  ConfigurableAxis ConfmTBins3D{"ConfmTBins3D", {VARIABLE_WIDTH, 1.02f, 1.14f, 1.20f, 1.26f, 1.38f, 1.56f, 1.86f, 4.50f}, "mT Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<ConfBothTracks.ConfUse3D>> to true in order to use)"};
-  ConfigurableAxis ConfmultBins3D{"ConfmultBins3D", {VARIABLE_WIDTH, 0.0f, 20.0f, 30.0f, 40.0f, 99999.0f}, "multiplicity Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<ConfBothTracks.ConfUse3D>> to true in order to use)"};
+  ConfigurableAxis ConfBinsMult{"ConfBinsMult", {VARIABLE_WIDTH, 0.0f, 4.0f, 8.0f, 12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 32.0f, 36.0f, 40.0f, 44.0f, 48.0f, 52.0f, 56.0f, 60.0f, 64.0f, 68.0f, 72.0f, 76.0f, 80.0f, 84.0f, 88.0f, 92.0f, 96.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity"}; // \todo to be obtained from the hash task
+  ConfigurableAxis ConfBinsVtx{"ConfBinsVtx", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
+  ConfigurableAxis ConfBins3DmT{"ConfBins3DmT", {VARIABLE_WIDTH, 1.02f, 1.14f, 1.20f, 1.26f, 1.38f, 1.56f, 1.86f, 4.50f}, "mT Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<ConfBothTracks.ConfUse3D>> to true in order to use)"};
+  ConfigurableAxis ConfBins3Dmult{"ConfBins3Dmult", {VARIABLE_WIDTH, 0.0f, 20.0f, 30.0f, 40.0f, 99999.0f}, "multiplicity Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<ConfBothTracks.ConfUse3D>> to true in order to use)"};
 
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{ConfVtxBins, ConfMultBins}, true};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{ConfBinsVtx, ConfBinsMult}, true};
 
-  ConfigurableAxis ConfkstarBins{"ConfkstarBins", {1500, 0., 6.}, "binning kstar"};
-  ConfigurableAxis ConfkTBins{"ConfkTBins", {150, 0., 9.}, "binning kT"};
-  ConfigurableAxis ConfmTBins{"ConfmTBins", {225, 0., 7.5}, "binning mT"};
+  ConfigurableAxis ConfBinskstar{"ConfBinskstar", {1500, 0., 6.}, "binning kstar"};
+  ConfigurableAxis ConfBinskT{"ConfBinskT", {150, 0., 9.}, "binning kT"};
+  ConfigurableAxis ConfBinsmT{"ConfBinsmT", {225, 0., 7.5}, "binning mT"};
 
   FemtoUniverseAngularContainer<femtoUniverseAngularContainer::EventType::same, femtoUniverseAngularContainer::Observable::kstar> sameEventAngularCont;
   FemtoUniverseAngularContainer<femtoUniverseAngularContainer::EventType::mixed, femtoUniverseAngularContainer::Observable::kstar> mixedEventAngularCont;
@@ -191,13 +193,13 @@ struct femtoUniversePairTaskTrackPhi {
   bool IsProtonNSigma(float mom, float nsigmaTPCPr, float nsigmaTOFPr) // previous version from: https://github.com/alisw/AliPhysics/blob/master/PWGCF/FEMTOSCOPY/AliFemtoUser/AliFemtoMJTrackCut.cxx
   {
     if (mom < 0.5) {
-      if (TMath::Abs(nsigmaTPCPr) < ConfBothTracks.ConfNsigmaTPCProton) {
+      if (TMath::Abs(nsigmaTPCPr) < ConfBothTracks.ConfPIDProtonNsigmaTPC.value) {
         return true;
       } else {
         return false;
       }
     } else if (mom > 0.4) {
-      if (TMath::Hypot(nsigmaTOFPr, nsigmaTPCPr) < ConfBothTracks.ConfNsigmaCombinedProton) {
+      if (TMath::Hypot(nsigmaTOFPr, nsigmaTPCPr) < ConfBothTracks.ConfPIDProtonNsigmaCombined.value) {
         return true;
       } else {
         return false;
@@ -212,9 +214,9 @@ struct femtoUniversePairTaskTrackPhi {
       return true;
     }
     if (mom > 0.5) {
-      if (TMath::Hypot(nsigmaTOFPi, nsigmaTPCPi) < ConfBothTracks.ConfNsigmaRejectPion) {
+      if (TMath::Hypot(nsigmaTOFPi, nsigmaTPCPi) < ConfBothTracks.ConfPIDPionNsigmaReject.value) {
         return true;
-      } else if (TMath::Hypot(nsigmaTOFK, nsigmaTPCK) < ConfBothTracks.ConfNsigmaRejectKaon) {
+      } else if (TMath::Hypot(nsigmaTOFK, nsigmaTPCK) < ConfBothTracks.ConfPIDKaonNsigmaReject.value) {
         return true;
       } else {
         return false;
@@ -266,16 +268,16 @@ struct femtoUniversePairTaskTrackPhi {
   bool IsKaonRejected(float mom, float nsigmaTPCPr, float nsigmaTOFPr, float nsigmaTPCPi, float nsigmaTOFPi)
   {
     if (mom < 0.5) {
-      if (TMath::Abs(nsigmaTPCPi) < ConfBothTracks.ConfNsigmaRejectPion) {
+      if (TMath::Abs(nsigmaTPCPi) < ConfBothTracks.ConfPIDPionNsigmaReject.value) {
         return true;
-      } else if (TMath::Abs(nsigmaTPCPr) < ConfBothTracks.ConfNsigmaRejectProton) {
+      } else if (TMath::Abs(nsigmaTPCPr) < ConfBothTracks.ConfPIDProtonNsigmaReject.value) {
         return true;
       }
     }
     if (mom > 0.5) {
-      if (TMath::Hypot(nsigmaTOFPi, nsigmaTPCPi) < ConfBothTracks.ConfNsigmaRejectPion) {
+      if (TMath::Hypot(nsigmaTOFPi, nsigmaTPCPi) < ConfBothTracks.ConfPIDPionNsigmaReject.value) {
         return true;
-      } else if (TMath::Hypot(nsigmaTOFPr, nsigmaTPCPr) < ConfBothTracks.ConfNsigmaRejectProton) {
+      } else if (TMath::Hypot(nsigmaTOFPr, nsigmaTPCPr) < ConfBothTracks.ConfPIDProtonNsigmaReject.value) {
         return true;
       } else {
         return false;
@@ -289,13 +291,13 @@ struct femtoUniversePairTaskTrackPhi {
   {
     if (true) {
       if (mom < 0.5) {
-        if (TMath::Abs(nsigmaTPCPi) < ConfBothTracks.ConfNsigmaTPCPion) {
+        if (TMath::Abs(nsigmaTPCPi) < ConfBothTracks.ConfPIDPionNsigmaTPC.value) {
           return true;
         } else {
           return false;
         }
       } else if (mom > 0.5) {
-        if (TMath::Hypot(nsigmaTOFPi, nsigmaTPCPi) < ConfBothTracks.ConfNsigmaCombinedPion) {
+        if (TMath::Hypot(nsigmaTOFPi, nsigmaTPCPi) < ConfBothTracks.ConfPIDPionNsigmaCombined.value) {
           return true;
         } else {
           return false;
@@ -308,16 +310,16 @@ struct femtoUniversePairTaskTrackPhi {
   bool IsPionRejected(float mom, float nsigmaTPCPr, float nsigmaTOFPr, float nsigmaTPCK, float nsigmaTOFK)
   {
     if (mom < 0.5) {
-      if (TMath::Abs(nsigmaTPCK) < ConfBothTracks.ConfNsigmaRejectKaon) {
+      if (TMath::Abs(nsigmaTPCK) < ConfBothTracks.ConfPIDKaonNsigmaReject.value) {
         return true;
-      } else if (TMath::Abs(nsigmaTPCPr) < ConfBothTracks.ConfNsigmaRejectProton) {
+      } else if (TMath::Abs(nsigmaTPCPr) < ConfBothTracks.ConfPIDProtonNsigmaReject.value) {
         return true;
       }
     }
     if (mom > 0.5) {
-      if (TMath::Hypot(nsigmaTOFK, nsigmaTPCK) < ConfBothTracks.ConfNsigmaRejectKaon) {
+      if (TMath::Hypot(nsigmaTOFK, nsigmaTPCK) < ConfBothTracks.ConfPIDKaonNsigmaReject.value) {
         return true;
-      } else if (TMath::Hypot(nsigmaTOFPr, nsigmaTPCPr) < ConfBothTracks.ConfNsigmaRejectProton) {
+      } else if (TMath::Hypot(nsigmaTOFPr, nsigmaTPCPr) < ConfBothTracks.ConfPIDProtonNsigmaReject.value) {
         return true;
       } else {
         return false;
@@ -329,7 +331,7 @@ struct femtoUniversePairTaskTrackPhi {
 
   bool IsParticleNSigmaAccepted(float mom, float nsigmaTPCPr, float nsigmaTOFPr, float nsigmaTPCPi, float nsigmaTOFPi, float nsigmaTPCK, float nsigmaTOFK)
   {
-    switch (ConfTrack.ConfPDGCodeTrack) {
+    switch (ConfTrack.ConfTrackPDGCode) {
       case 2212:  // Proton
       case -2212: // anty Proton
         return IsProtonNSigma(mom, nsigmaTPCPr, nsigmaTOFPr);
@@ -349,7 +351,7 @@ struct femtoUniversePairTaskTrackPhi {
 
   bool IsParticleNSigmaRejected(float mom, float nsigmaTPCPr, float nsigmaTOFPr, float nsigmaTPCPi, float nsigmaTOFPi, float nsigmaTPCK, float nsigmaTOFK)
   {
-    switch (ConfTrack.ConfPDGCodeTrack) {
+    switch (ConfTrack.ConfTrackPDGCode) {
       case 2212:  // Proton
       case -2212: // anty Proton
         return IsProtonRejected(mom, nsigmaTPCPi, nsigmaTOFPi, nsigmaTPCK, nsigmaTOFK);
@@ -412,22 +414,22 @@ struct femtoUniversePairTaskTrackPhi {
     registryMCreco.add("MCrecoPpos", "MC reco proton;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
     registryMCreco.add("MCrecoPneg", "MC reco antiproton;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
 
-    trackHistoPartPhi.init(&qaRegistry, ConfTempFitVarpTBins, ConfTempFitVarInvMassBins, ConfBothTracks.ConfIsMC, ConfPhi.ConfPDGCodePhi);
-    if (!ConfTrack.ConfIsSame) {
-      trackHistoPartTrack.init(&qaRegistry, ConfTempFitVarpTBins, ConfTempFitVarBins, ConfBothTracks.ConfIsMC, ConfTrack.ConfPDGCodeTrack);
+    trackHistoPartPhi.init(&qaRegistry, ConfBinsTempFitVarpT, ConfBinsTempFitVarInvMass, ConfBothTracks.ConfIsMC, ConfPhi.ConfPhiPDGCode);
+    if (!ConfTrack.ConfTrackIsSame) {
+      trackHistoPartTrack.init(&qaRegistry, ConfBinsTempFitVarpT, ConfBinsTempFitVar, ConfBothTracks.ConfIsMC, ConfTrack.ConfTrackPDGCode);
     }
 
     MixQaRegistry.add("MixingQA/hSECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
     MixQaRegistry.add("MixingQA/hMECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
 
-    sameEventAngularCont.init(&resultRegistry, ConfkstarBins, ConfMultBins, ConfkTBins, ConfmTBins, ConfmultBins3D, ConfmTBins3D, ConfBothTracks.ConfEtaBins, ConfBothTracks.ConfPhiBins, ConfBothTracks.ConfIsMC, ConfBothTracks.ConfUse3D);
-    mixedEventAngularCont.init(&resultRegistry, ConfkstarBins, ConfMultBins, ConfkTBins, ConfmTBins, ConfmultBins3D, ConfmTBins3D, ConfBothTracks.ConfEtaBins, ConfBothTracks.ConfPhiBins, ConfBothTracks.ConfIsMC, ConfBothTracks.ConfUse3D);
+    sameEventAngularCont.init(&resultRegistry, ConfBinskstar, ConfBinsMult, ConfBinskT, ConfBinsmT, ConfBins3Dmult, ConfBins3DmT, ConfBothTracks.ConfBinsEta, ConfBothTracks.ConfBinsPhi, ConfBothTracks.ConfIsMC, ConfBothTracks.ConfUse3D);
+    mixedEventAngularCont.init(&resultRegistry, ConfBinskstar, ConfBinsMult, ConfBinskT, ConfBinsmT, ConfBins3Dmult, ConfBins3DmT, ConfBothTracks.ConfBinsEta, ConfBothTracks.ConfBinsPhi, ConfBothTracks.ConfIsMC, ConfBothTracks.ConfUse3D);
 
-    sameEventAngularCont.setPDGCodes(ConfPhi.ConfPDGCodePhi, ConfTrack.ConfPDGCodeTrack);
-    mixedEventAngularCont.setPDGCodes(ConfPhi.ConfPDGCodePhi, ConfTrack.ConfPDGCodeTrack);
+    sameEventAngularCont.setPDGCodes(ConfPhi.ConfPhiPDGCode, ConfTrack.ConfTrackPDGCode);
+    mixedEventAngularCont.setPDGCodes(ConfPhi.ConfPhiPDGCode, ConfTrack.ConfTrackPDGCode);
 
     pairCleaner.init(&qaRegistry);
-    if (ConfCPR.ConfIsCPR.value) {
+    if (ConfCPR.ConfCPRIsEnabled.value) {
       pairCloseRejection.init(&resultRegistry, &qaRegistry, ConfCPR.ConfCPRdeltaPhiCutMin.value, ConfCPR.ConfCPRdeltaPhiCutMax.value, ConfCPR.ConfCPRdeltaEtaCutMin.value, ConfCPR.ConfCPRdeltaEtaCutMax.value, ConfCPR.ConfCPRChosenRadii.value, ConfCPR.ConfCPRPlotPerRadii.value, ConfCPR.ConfCPRInvMassCutMin.value, ConfCPR.ConfCPRInvMassCutMax.value);
     }
 
@@ -439,21 +441,21 @@ struct femtoUniversePairTaskTrackPhi {
     long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now);
 
-    if (!ConfEff.ConfLocalEfficiencyProton.value.empty()) {
-      protoneff = ccdb->getForTimeStamp<TH2F>(ConfEff.ConfLocalEfficiencyProton.value.c_str(), ConfEff.ConfEffProtonTimestamp.value);
+    if (!ConfEff.ConfEfficiencyTrackPath.value.empty()) {
+      protoneff = ccdb->getForTimeStamp<TH2F>(ConfEff.ConfEfficiencyTrackPath.value.c_str(), ConfEff.ConfEfficiencyTrackTimestamp.value);
       if (!protoneff || protoneff->IsZombie()) {
-        LOGF(fatal, "Could not load efficiency protoneff histogram from %s", ConfEff.ConfLocalEfficiencyProton.value.c_str());
+        LOGF(fatal, "Could not load efficiency protoneff histogram from %s", ConfEff.ConfEfficiencyTrackPath.value.c_str());
       }
     }
-    if (!ConfEff.ConfLocalEfficiencyPhi.value.empty()) {
-      phieff = ccdb->getForTimeStamp<TH2F>(ConfEff.ConfLocalEfficiencyPhi.value.c_str(), ConfEff.ConfEffPhiTimestamp.value);
+    if (!ConfEff.ConfEfficiencyPhiPath.value.empty()) {
+      phieff = ccdb->getForTimeStamp<TH2F>(ConfEff.ConfEfficiencyPhiPath.value.c_str(), ConfEff.ConfEfficiencyPhiTimestamp.value);
       if (!phieff || phieff->IsZombie()) {
-        LOGF(fatal, "Could not load efficiency phieff histogram from %s", ConfEff.ConfLocalEfficiencyPhi.value.c_str());
+        LOGF(fatal, "Could not load efficiency phieff histogram from %s", ConfEff.ConfEfficiencyPhiPath.value.c_str());
       }
     }
 
-    vPIDPhiCandidate = ConfPhi.ConfPIDPhi.value;
-    vPIDTrack = ConfTrack.ConfPIDTrack.value;
+    vPIDPhiCandidate = ConfPhi.ConfPhiPID.value;
+    vPIDTrack = ConfTrack.ConfTrackPID.value;
     kNsigma = ConfBothTracks.ConfTrkPIDnSigmaMax.value;
   }
 
@@ -509,7 +511,7 @@ struct femtoUniversePairTaskTrackPhi {
       }
     }
     float tpcNSigmaPr, tofNSigmaPr, tpcNSigmaPi, tofNSigmaPi, tpcNSigmaKa, tofNSigmaKa;
-    if (!ConfTrack.ConfIsSame) {
+    if (!ConfTrack.ConfTrackIsSame) {
       for (auto& track : groupPartsTrack) {
         tpcNSigmaPi = trackCuts.getNsigmaTPC(track, o2::track::PID::Pion);
         tofNSigmaPi = trackCuts.getNsigmaTOF(track, o2::track::PID::Pion);
@@ -518,13 +520,13 @@ struct femtoUniversePairTaskTrackPhi {
         tpcNSigmaPr = trackCuts.getNsigmaTPC(track, o2::track::PID::Proton);
         tofNSigmaPr = trackCuts.getNsigmaTOF(track, o2::track::PID::Proton);
 
-        if (ConfTrack.ConfIsTrackIdentified) {
+        if (ConfTrack.ConfTrackIsIdentified) {
           if (!IsParticleNSigmaAccepted(track.p(), tpcNSigmaPr, tofNSigmaPr, tpcNSigmaPi, tofNSigmaPi, tpcNSigmaKa, tofNSigmaKa)) {
             continue;
           }
         }
 
-        if (ConfTrack.ConfIsTrackRejected) {
+        if (ConfTrack.ConfTrackIsRejected) {
           if (IsParticleNSigmaRejected(track.p(), tpcNSigmaPr, tofNSigmaPr, tpcNSigmaPi, tofNSigmaPi, tpcNSigmaKa, tofNSigmaKa)) {
             continue;
           }
@@ -542,20 +544,20 @@ struct femtoUniversePairTaskTrackPhi {
     }
     /// Now build the combinations
     for (auto& [track, phicandidate] : combinations(CombinationsFullIndexPolicy(groupPartsTrack, groupPartsPhi))) {
-      if (ConfTrack.ConfIsTrackIdentified) {
+      if (ConfTrack.ConfTrackIsIdentified) {
         if (!IsParticleNSigmaAccepted(track.p(), trackCuts.getNsigmaTPC(track, o2::track::PID::Proton), trackCuts.getNsigmaTOF(track, o2::track::PID::Proton), trackCuts.getNsigmaTPC(track, o2::track::PID::Pion), trackCuts.getNsigmaTOF(track, o2::track::PID::Pion), trackCuts.getNsigmaTPC(track, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(track, o2::track::PID::Kaon))) {
           continue;
         }
       }
 
-      if (ConfTrack.ConfIsTrackRejected) {
+      if (ConfTrack.ConfTrackIsRejected) {
         if (IsParticleNSigmaRejected(track.p(), trackCuts.getNsigmaTPC(track, o2::track::PID::Proton), trackCuts.getNsigmaTOF(track, o2::track::PID::Proton), trackCuts.getNsigmaTPC(track, o2::track::PID::Pion), trackCuts.getNsigmaTOF(track, o2::track::PID::Pion), trackCuts.getNsigmaTPC(track, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(track, o2::track::PID::Kaon))) {
           continue;
         }
       }
 
       // // Close Pair Rejection
-      if (ConfCPR.ConfIsCPR.value) {
+      if (ConfCPR.ConfCPRIsEnabled.value) {
         if (pairCloseRejection.isClosePair(track, phicandidate, parts, magFieldTesla, femtoUniverseContainer::EventType::same)) {
           continue;
         }
@@ -655,19 +657,19 @@ struct femtoUniversePairTaskTrackPhi {
   {
 
     for (auto& [track, phicandidate] : combinations(CombinationsFullIndexPolicy(groupPartsTrack, groupPartsPhi))) {
-      if (ConfTrack.ConfIsTrackIdentified) {
+      if (ConfTrack.ConfTrackIsIdentified) {
         if (!IsParticleNSigmaAccepted(track.p(), trackCuts.getNsigmaTPC(track, o2::track::PID::Proton), trackCuts.getNsigmaTOF(track, o2::track::PID::Proton), trackCuts.getNsigmaTPC(track, o2::track::PID::Pion), trackCuts.getNsigmaTOF(track, o2::track::PID::Pion), trackCuts.getNsigmaTPC(track, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(track, o2::track::PID::Kaon))) {
           continue;
         }
       }
 
-      if (ConfTrack.ConfIsTrackRejected) {
+      if (ConfTrack.ConfTrackIsRejected) {
         if (IsParticleNSigmaRejected(track.p(), trackCuts.getNsigmaTPC(track, o2::track::PID::Proton), trackCuts.getNsigmaTOF(track, o2::track::PID::Proton), trackCuts.getNsigmaTPC(track, o2::track::PID::Pion), trackCuts.getNsigmaTOF(track, o2::track::PID::Pion), trackCuts.getNsigmaTPC(track, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(track, o2::track::PID::Kaon))) {
           continue;
         }
       }
 
-      if (ConfCPR.ConfIsCPR.value) {
+      if (ConfCPR.ConfCPRIsEnabled.value) {
         if (pairCloseRejection.isClosePair(track, phicandidate, parts, magFieldTesla, femtoUniverseContainer::EventType::mixed)) {
           continue;
         }

@@ -27,6 +27,15 @@
 namespace o2::aod
 {
 
+// for DF name follow-up and debug
+namespace straorigin
+{
+DECLARE_SOA_COLUMN(DataframeID, dataframeID, uint64_t); //! Data frame ID (what is usually found in directory name in the AO2D.root, i.e.
+} // namespace straorigin
+
+DECLARE_SOA_TABLE(StraOrigins, "AOD", "STRAORIGIN", //! Table which contains the IDs of all dataframes merged into this dataframe
+                  o2::soa::Index<>, straorigin::DataframeID);
+
 namespace stracollision
 {
 DECLARE_SOA_DYNAMIC_COLUMN(IsUPC, isUPC, //! check whether this is a UPC or hadronic collision

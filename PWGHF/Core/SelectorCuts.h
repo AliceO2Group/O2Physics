@@ -903,25 +903,50 @@ static const std::vector<std::string> labelsCutVar = {"m", "CPA", "Chi2PCA", "d0
 
 namespace hf_cuts_bs_to_ds_pi
 {
-static constexpr int nBinsPt = 2;
+static constexpr int nBinsPt = 10;
 static constexpr int nCutVars = 10;
 // default values for the pT bin edges (can be used to configure histogram axis)
 // offset by 1 from the bin numbers in cuts array
 constexpr double binsPt[nBinsPt + 1] = {
   0,
   1.0,
-  2.0};
+  2.0,
+  3.0,
+  4.0,
+  5.0,
+  8.0,
+  10.0,
+  12.0,
+  16.0,
+  24.0};
 
 auto vecBinsPt = std::vector<double>{binsPt, binsPt + nBinsPt + 1};
 
 // default values for the cuts
 // DeltaM CPA chi2PCA d0Ds d0Pi pTDs pTPi BsDecayLength BsDecayLengthXY IPProd
 constexpr double cuts[nBinsPt][nCutVars] = {{1., 0.8, 1., 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0.},  /* 0 < pt < 1 */
-                                            {1., 0.8, 1., 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0.}}; /* 1 < pt < 2 */
+                                            {1., 0.8, 1., 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0.},  /* 1 < pt < 2 */
+                                            {1., 0.8, 1., 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0.},  /* 2 < pt < 3 */
+                                            {1., 0.8, 1., 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0.},  /* 3 < pt < 4 */
+                                            {1., 0.8, 1., 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0.},  /* 4 < pt < 5 */
+                                            {1., 0.8, 1., 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0.},  /* 5 < pt < 6 */
+                                            {1., 0.8, 1., 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0.},  /* 8 < pt < 10 */
+                                            {1., 0.8, 1., 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0.},  /* 10 < pt < 12 */
+                                            {1., 0.8, 1., 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0.},  /* 12 < pt < 16 */
+                                            {1., 0.8, 1., 0.01, 0.01, 1.0, 0.15, 0.05, 0.05, 0.}}; /* 16 < pt < 24 */
+
 // row labels
 static const std::vector<std::string> labelsPt = {
   "pT bin 0",
-  "pT bin 1"};
+  "pT bin 1",
+  "pT bin 2",
+  "pT bin 3",
+  "pT bin 4",
+  "pT bin 5",
+  "pT bin 6",
+  "pT bin 7",
+  "pT bin 8",
+  "pT bin 9"};
 
 // column labels
 static const std::vector<std::string> labelsCutVar = {"m", "CPA", "Chi2PCA", "d0 Ds", "d0 Pi", "pT Ds", "pT Pi", "Bs decLen", "Bs decLenXY", "Imp. Par. Product"};

@@ -50,18 +50,16 @@ struct CFTutorialTask4 {
   Configurable<bool> ConfIsSame{"ConfIsSame", false, "Pairs of the same particle"};
 
   Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 2212, "Particle 1 - PDG code"};
-  Configurable<uint32_t> ConfCutPartOne{"ConfCutPartOne", 3191978, "Particle 1 - Selection bit from cutCulator"};
-  Configurable<int> ConfPIDPartOne{"ConfPIDPartOne", 0, "Particle 1 - Index in ConfTrkPIDspecies of producer task"};
-  Configurable<int> ConfPIDValuePartOne{"ConfPIDValuePartOne", 3, "Particle 1 - Read from cutCulator"};
+  Configurable<uint32_t> ConfCutPartOne{"ConfCutPartOne", 3191978, "Particle 1 - Selection bit"};
+  Configurable<uint32_t> ConfPIDTPCPartOne{"ConfPIDTPCPartOne", 2, "Particle 1 - TPC PID Selection bit"};
+  Configurable<uint32_t> ConfPIDTPCTOFPartOne{"ConfPIDTPCTOFPartOne", 4, "Particle 1 - TPCTOF PID Selection bit"};
+  Configurable<float> ConfPIDThresholdPartOne{"ConfPIDThresholdPartOne", 0.75, "Particle 1 - Momentum threshold for TPC to TPCTOF PID"};
 
   Configurable<int> ConfPDGCodePartTwo{"ConfPDGCodePartTwo", 2212, "Particle 2 - PDG code"};
   Configurable<uint32_t> ConfCutPartTwo{"ConfCutPartTwo", 3191978, "Particle 2 - Selection bit"};
-  Configurable<int> ConfPIDPartTwo{"ConfPIDPartTwo", 0, "Particle 2 - Index in ConfTrkPIDspecies of producer task"};
-  Configurable<int> ConfPIDValuePartTwo{"ConfPIDValuePartTwo", 3, "Particle 1 - Read from cutCulator"};
-
-  Configurable<float> ConfPIDThreshold{"ConfPIDThreshold", 0.75, "Momentum threshold for TPC to TPCTOF PID"};
-  Configurable<int> ConfNspecies{"ConfNspecies", 2, "Number of particle spieces with PID info"};
-  Configurable<std::vector<float>> ConfTrkPIDnSigmaMax{"ConfTrkPIDnSigmaMax", std::vector<float>{3.f, 3.5f, 2.5f}, "This configurable needs to be the same as the one used in the producer task"};
+  Configurable<uint32_t> ConfPIDTPCPartTwo{"ConfPIDTPCPartTwo", 0, "Particle 2 - TPC PID Selection bit"};
+  Configurable<uint32_t> ConfPIDTPCTOFPartTwo{"ConfPIDTPCTOFPartTwo", 0, "Particle 2 - TPCTOF PID Selection bit"};
+  Configurable<float> ConfPIDThresholdPartTwo{"ConfPIDThresholdPartTwo", 0.75, "Particle 2 - Momentum threshold for TPC to TPCTOF PID"};
 
   /// Partitions for particle 1 and particle 2
   Partition<FilteredFDParts> PartsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && ((aod::femtodreamparticle::cut & ConfCutPartOne) == ConfCutPartOne);
@@ -105,38 +103,18 @@ struct CFTutorialTask4 {
 
     /// QA for particle 1
     for (auto& part : GroupPartsOne) {
-      /// check PID of particle 1 using function from FemtoUtils using PID bit
-      if (isFullPIDSelected(part.pidcut(),
-                            part.p(),
-                            ConfPIDThreshold.value,
-                            ConfPIDPartOne.value,
-                            ConfNspecies.value,
-                            ConfTrkPIDnSigmaMax.value,
-                            ConfPIDValuePartOne.value,
-                            ConfPIDValuePartOne.value)) {
-        HistRegistry.fill(HIST("Particle1/hPt"), part.pt());
-        HistRegistry.fill(HIST("Particle1/hEta"), part.eta());
-        HistRegistry.fill(HIST("Particle1/hPhi"), part.phi());
-      }
+      HistRegistry.fill(HIST("Particle1/hPt"), part.pt());
+      HistRegistry.fill(HIST("Particle1/hEta"), part.eta());
+      HistRegistry.fill(HIST("Particle1/hPhi"), part.phi());
     }
 
     /// QA for particle 2
     /// skip QA if particle 1 & 2 are the same
     if (ConfIsSame.value == false) {
       for (auto& part : GroupPartsTwo) {
-        /// check PID of particle 1 using function from FemtoUtils using PID bit
-        if (isFullPIDSelected(part.pidcut(),
-                              part.p(),
-                              ConfPIDThreshold.value,
-                              ConfPIDPartTwo.value,
-                              ConfNspecies.value,
-                              ConfTrkPIDnSigmaMax.value,
-                              ConfPIDValuePartTwo.value,
-                              ConfPIDValuePartTwo.value)) {
-          HistRegistry.fill(HIST("Particle2/hPt"), part.pt());
-          HistRegistry.fill(HIST("Particle2/hEta"), part.eta());
-          HistRegistry.fill(HIST("Particle2/hPhi"), part.phi());
-        }
+        HistRegistry.fill(HIST("Particle2/hPt"), part.pt());
+        HistRegistry.fill(HIST("Particle2/hEta"), part.eta());
+        HistRegistry.fill(HIST("Particle2/hPhi"), part.phi());
       }
     }
 

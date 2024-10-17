@@ -12,6 +12,7 @@
 #include <cmath>
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
+#include "ReconstructionDataFormats/Vertex.h"
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/EventSelection.h"
 #include "CommonConstants/LHCConstants.h"
@@ -213,10 +214,15 @@ struct SGCandProducer {
       upchelpers::FITInfo fitInfo{};
       udhelpers::getFITinfo(fitInfo, newbc, bcs, ft0s, fv0as, fdds);
       // update SG candidates tables
+      int upc_flag = 0;
+      ushort flags = collision.flags();
+      if (flags & dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode)
+        upc_flag = 1;
       outputCollisions(bc.globalBC(), bc.runNumber(),
-                       collision.posX(), collision.posY(), collision.posZ(),
+                       collision.posX(), collision.posY(), collision.posZ(), upc_flag,
                        collision.numContrib(), udhelpers::netCharge<true>(tracks),
                        1.); // rtrwTOF); //omit the calculation to speed up the things while skimming
+
       outputSGCollisions(issgevent);
       outputCollisionsSels(fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.timeFT0A, fitInfo.timeFT0C,
                            fitInfo.triggerMaskFT0,

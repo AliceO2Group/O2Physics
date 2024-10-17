@@ -71,7 +71,7 @@ void doSingle(T& p, std::vector<std::shared_ptr<TH1>> hEta, std::vector<std::sha
   float cut_pt[3] = {0., 0., ptMin};
   float cut_eta[3] = {9999., 99999., etaMax};
   for (int i = 0; i < 3; i++) {
-    if (pt[i] > cut_pt[i] && abs(eta[i]) < cut_eta[i]) {
+    if (pt[i] > cut_pt[i] && fabs(eta[i]) < cut_eta[i]) {
       hEta[i]->Fill(eta[i], weight[i]);
       hPt[i]->Fill(pt[i], weight[i]);
       hPtEta[i]->Fill(pt[i], eta[i], weight[i]);
@@ -101,7 +101,7 @@ void doPair(T& p1, T& p2, std::vector<std::shared_ptr<TH1>> hMee, std::vector<st
   float cut_eta[3] = {9999., 99999., etaMax};
 
   for (int i = 0; i < 3; i++) {
-    if (pt1[i] > cut_pt[i] && pt2[i] > cut_pt[i] && abs(eta1[i]) < cut_eta[i] && abs(eta2[i]) < cut_eta[i]) {
+    if (pt1[i] > cut_pt[i] && pt2[i] > cut_pt[i] && fabs(eta1[i]) < cut_eta[i] && fabs(eta2[i]) < cut_eta[i]) {
       hMee[i]->Fill(mass[i], weight[i]);
       hMeePtee[i]->Fill(mass[i], pt[i], weight[i]);
     }

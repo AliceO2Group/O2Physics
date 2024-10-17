@@ -152,8 +152,6 @@ struct skimmerGammaCalo {
       return;
     }
     for (const auto& emccluster : emcclusters) {
-      historeg.fill(HIST("hCaloClusterEIn"), emccluster.energy());
-      historeg.fill(HIST("hCaloClusterFilter"), 0);
 
       // Energy cut
       if (emccluster.energy() < minE) {

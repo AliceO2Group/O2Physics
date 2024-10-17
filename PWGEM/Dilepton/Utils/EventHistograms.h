@@ -283,45 +283,46 @@ void fillEventInfo(HistogramRegistry* fRegistry, TCollision const& collision, co
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ3FT0CQ3BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q3ft0c, q3bneg));
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ3FT0CQ3BTot_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q3ft0c, q3btot));
     fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ3FT0AQ3FT0C_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q3ft0a, q3ft0c));
-  } else if constexpr (nmod == 4) { // Q4
-    std::array<float, 2> q4ft0m = {collision.q4xft0m(), collision.q4yft0m()};
-    std::array<float, 2> q4ft0a = {collision.q4xft0a(), collision.q4yft0a()};
-    std::array<float, 2> q4ft0c = {collision.q4xft0c(), collision.q4yft0c()};
-    std::array<float, 2> q4bpos = {collision.q4xbpos(), collision.q4ybpos()};
-    std::array<float, 2> q4bneg = {collision.q4xbneg(), collision.q4ybneg()};
-    std::array<float, 2> q4btot = {collision.q4xbtot(), collision.q4ybtot()};
-
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ4xFT0M_CentFT0C"), collision.centFT0C(), collision.q4xft0m());
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ4yFT0M_CentFT0C"), collision.centFT0C(), collision.q4yft0m());
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ4xFT0A_CentFT0C"), collision.centFT0C(), collision.q4xft0a());
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ4yFT0A_CentFT0C"), collision.centFT0C(), collision.q4yft0a());
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ4xFT0C_CentFT0C"), collision.centFT0C(), collision.q4xft0c());
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ4yFT0C_CentFT0C"), collision.centFT0C(), collision.q4yft0c());
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ4xBPos_CentFT0C"), collision.centFT0C(), collision.q4xbpos());
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ4yBPos_CentFT0C"), collision.centFT0C(), collision.q4ybpos());
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ4xBNeg_CentFT0C"), collision.centFT0C(), collision.q4xbneg());
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ4yBNeg_CentFT0C"), collision.centFT0C(), collision.q4ybneg());
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ4xBTot_CentFT0C"), collision.centFT0C(), collision.q4xbtot());
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ4yBTot_CentFT0C"), collision.centFT0C(), collision.q4ybtot());
-
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hEP4FT0M_CentFT0C"), collision.centFT0C(), collision.ep4ft0m());
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hEP4FT0A_CentFT0C"), collision.centFT0C(), collision.ep4ft0a());
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hEP4FT0C_CentFT0C"), collision.centFT0C(), collision.ep4ft0c());
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hEP4BPos_CentFT0C"), collision.centFT0C(), collision.ep4bpos());
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hEP4BNeg_CentFT0C"), collision.centFT0C(), collision.ep4bneg());
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hEP4BTot_CentFT0C"), collision.centFT0C(), collision.ep4btot());
-
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ4FT0MQ4BPos_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q4ft0m, q4bpos));
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ4FT0MQ4BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q4ft0m, q4bneg));
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ4BPosQ4BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q4bpos, q4bneg));
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ4FT0AQ4BPos_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q4ft0a, q4bpos));
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ4FT0AQ4BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q4ft0a, q4bneg));
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ4FT0AQ4BTot_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q4ft0a, q4btot));
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ4FT0CQ4BPos_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q4ft0c, q4bpos));
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ4FT0CQ4BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q4ft0c, q4bneg));
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ4FT0CQ4BTot_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q4ft0c, q4btot));
-    fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ4FT0AQ4FT0C_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q4ft0a, q4ft0c));
   }
+  // else if constexpr (nmod == 4) { // Q4
+  //   std::array<float, 2> q4ft0m = {collision.q4xft0m(), collision.q4yft0m()};
+  //   std::array<float, 2> q4ft0a = {collision.q4xft0a(), collision.q4yft0a()};
+  //   std::array<float, 2> q4ft0c = {collision.q4xft0c(), collision.q4yft0c()};
+  //   std::array<float, 2> q4bpos = {collision.q4xbpos(), collision.q4ybpos()};
+  //   std::array<float, 2> q4bneg = {collision.q4xbneg(), collision.q4ybneg()};
+  //   std::array<float, 2> q4btot = {collision.q4xbtot(), collision.q4ybtot()};
+
+  //   fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ4xFT0M_CentFT0C"), collision.centFT0C(), collision.q4xft0m());
+  //   fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ4yFT0M_CentFT0C"), collision.centFT0C(), collision.q4yft0m());
+  //   fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ4xFT0A_CentFT0C"), collision.centFT0C(), collision.q4xft0a());
+  //   fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ4yFT0A_CentFT0C"), collision.centFT0C(), collision.q4yft0a());
+  //   fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ4xFT0C_CentFT0C"), collision.centFT0C(), collision.q4xft0c());
+  //   fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ4yFT0C_CentFT0C"), collision.centFT0C(), collision.q4yft0c());
+  //   fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ4xBPos_CentFT0C"), collision.centFT0C(), collision.q4xbpos());
+  //   fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ4yBPos_CentFT0C"), collision.centFT0C(), collision.q4ybpos());
+  //   fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ4xBNeg_CentFT0C"), collision.centFT0C(), collision.q4xbneg());
+  //   fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ4yBNeg_CentFT0C"), collision.centFT0C(), collision.q4ybneg());
+  //   fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ4xBTot_CentFT0C"), collision.centFT0C(), collision.q4xbtot());
+  //   fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hQ4yBTot_CentFT0C"), collision.centFT0C(), collision.q4ybtot());
+
+  //   fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hEP4FT0M_CentFT0C"), collision.centFT0C(), collision.ep4ft0m());
+  //   fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hEP4FT0A_CentFT0C"), collision.centFT0C(), collision.ep4ft0a());
+  //   fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hEP4FT0C_CentFT0C"), collision.centFT0C(), collision.ep4ft0c());
+  //   fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hEP4BPos_CentFT0C"), collision.centFT0C(), collision.ep4bpos());
+  //   fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hEP4BNeg_CentFT0C"), collision.centFT0C(), collision.ep4bneg());
+  //   fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hEP4BTot_CentFT0C"), collision.centFT0C(), collision.ep4btot());
+
+  //   fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ4FT0MQ4BPos_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q4ft0m, q4bpos));
+  //   fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ4FT0MQ4BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q4ft0m, q4bneg));
+  //   fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ4BPosQ4BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q4bpos, q4bneg));
+  //   fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ4FT0AQ4BPos_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q4ft0a, q4bpos));
+  //   fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ4FT0AQ4BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q4ft0a, q4bneg));
+  //   fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ4FT0AQ4BTot_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q4ft0a, q4btot));
+  //   fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ4FT0CQ4BPos_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q4ft0c, q4bpos));
+  //   fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ4FT0CQ4BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q4ft0c, q4bneg));
+  //   fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ4FT0CQ4BTot_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q4ft0c, q4btot));
+  //   fRegistry->fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hPrfQ4FT0AQ4FT0C_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(q4ft0a, q4ft0c));
+  // }
 }
 
 } // namespace o2::aod::pwgem::dilepton::utils::eventhistogram

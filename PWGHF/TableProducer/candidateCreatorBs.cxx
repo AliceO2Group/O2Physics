@@ -42,6 +42,7 @@ using namespace o2::hf_trkcandsel;
 /// Reconstruction of Bs candidates
 struct HfCandidateCreatorBs {
   Produces<aod::HfCandBsBase> rowCandidateBase; // table defined in CandidateReconstructionTables.h
+  Produces<aod::HfCandBsProngs> rowCandidateProngs; // table defined in CandidateReconstructionTables.h
 
   // vertexing
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
@@ -320,8 +321,6 @@ struct HfCandidateCreatorBs {
           auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
           auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
 
-          int hfFlag = BIT(hf_cand_bs::DecayType::BsToDsPi);
-
           // fill output histograms for Bs candidates
           hMassDsToKKPi->Fill(hfHelper.invMassDsToKKPi(candDs), candDs.pt());
           hCovSVXX->Fill(covMatrixPCA[0]);
@@ -340,9 +339,9 @@ struct HfCandidateCreatorBs {
                            pVecDs[0], pVecDs[1], pVecDs[2],
                            pVecPion[0], pVecPion[1], pVecPion[2],
                            dcaDs.getY(), dcaPion.getY(),
-                           std::sqrt(dcaDs.getSigmaY2()), std::sqrt(dcaPion.getSigmaY2()),
-                           candDs.globalIndex(), trackPion.globalIndex(),
-                           hfFlag);
+                           std::sqrt(dcaDs.getSigmaY2()), std::sqrt(dcaPion.getSigmaY2()));
+
+          rowCandidateProngs(candDs.globalIndex(), trackPion.globalIndex());
         } // pi loop
       }   // Ds loop
     }     // collision loop
@@ -357,13 +356,11 @@ struct HfCandidateCreatorBsExpressions {
 
   void init(InitContext const&) {}
 
-  void processMc(aod::HfCand3Prong const& ds,
-                 aod::TracksWMc const& tracks,
-                 aod::McParticles const& mcParticles)
+  void processMc(aod::HfCand3Prong const&,
+                 aod::TracksWMc const&,
+                 aod::McParticles const& mcParticles,
+                 aod::HfCandBsProngs const& candsBs)
   {
-    rowCandidateBs->bindExternalIndices(&tracks);
-    rowCandidateBs->bindExternalIndices(&ds);
-
     int indexRec = -1;
     int8_t sign = 0;
     int8_t flag = 0;
@@ -372,8 +369,7 @@ struct HfCandidateCreatorBsExpressions {
     std::array<int, 2> arrPDGResonantDsPhiPi = {Pdg::kPhi, kPiPlus}; // Ds± → Phi π±
 
     // Match reconstructed candidates.
-    // Spawned table can be used directly
-    for (const auto& candidate : *rowCandidateBs) {
+    for (const auto& candidate : candsBs) {
       flag = 0;
       arrDaughDsIndex.clear();
       auto candDs = candidate.prong0();
@@ -398,7 +394,7 @@ struct HfCandidateCreatorBsExpressions {
               arrPDGDaughDs[iProng] = std::abs(daughI.pdgCode());
             }
             if ((arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[0] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[1]) || (arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[1] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[0])) {
-              flag = sign * BIT(hf_cand_bs::DecayTypeMc::BsToDsPiToKKPiPi);
+              flag = sign * BIT(hf_cand_bs::DecayTypeMc::BsToDsPiToPhiPiPiToKKPiPi);
             }
           }
         }
@@ -418,7 +414,7 @@ struct HfCandidateCreatorBsExpressions {
                 arrPDGDaughDs[iProng] = std::abs(daughI.pdgCode());
               }
               if ((arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[0] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[1]) || (arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[1] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[0])) {
-                flag = sign * BIT(hf_cand_bs::DecayTypeMc::B0ToDsPiToKKPiPi);
+                flag = sign * BIT(hf_cand_bs::DecayTypeMc::B0ToDsPiToPhiPiPiToKKPiPi);
               }
             }
           }
@@ -471,7 +467,7 @@ struct HfCandidateCreatorBsExpressions {
               arrPDGDaughDs[jProng] = std::abs(daughJ.pdgCode());
             }
             if ((arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[0] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[1]) || (arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[1] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[0])) {
-              flag = sign * BIT(hf_cand_bs::DecayTypeMc::BsToDsPiToKKPiPi);
+              flag = sign * BIT(hf_cand_bs::DecayTypeMc::BsToDsPiToPhiPiPiToKKPiPi);
             }
           }
         }
@@ -490,7 +486,7 @@ struct HfCandidateCreatorBsExpressions {
                 arrPDGDaughDs[jProng] = std::abs(daughJ.pdgCode());
               }
               if ((arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[0] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[1]) || (arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[1] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[0])) {
-                flag = sign * BIT(hf_cand_bs::DecayTypeMc::B0ToDsPiToKKPiPi);
+                flag = sign * BIT(hf_cand_bs::DecayTypeMc::B0ToDsPiToPhiPiPiToKKPiPi);
               }
             }
           }
@@ -499,7 +495,7 @@ struct HfCandidateCreatorBsExpressions {
 
       rowMcMatchGen(flag);
     } // gen
-  }   // processMc
+  } // processMc
   PROCESS_SWITCH(HfCandidateCreatorBsExpressions, processMc, "Process MC", false);
 }; // struct
 

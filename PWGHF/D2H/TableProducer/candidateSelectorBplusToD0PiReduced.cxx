@@ -114,6 +114,7 @@ struct HfCandidateSelectorBplusToD0PiReduced {
       labels[1 + SelectionStep::RecoSkims] = "Skims selection";
       labels[1 + SelectionStep::RecoTopol] = "Skims & Topological selections";
       labels[1 + SelectionStep::RecoPID] = "Skims & Topological & PID selections";
+      labels[1 + aod::SelectionStep::RecoMl] = "ML selection";
       static const AxisSpec axisSelections = {kNBinsSelections, 0.5, kNBinsSelections + 0.5, ""};
       registry.add("hSelections", "Selections;;#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisSelections, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
       for (int iBin = 0; iBin < kNBinsSelections; ++iBin) {

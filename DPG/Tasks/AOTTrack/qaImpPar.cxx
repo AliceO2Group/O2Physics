@@ -112,6 +112,7 @@ struct QaImpactPar {
   Configurable<bool> keepAllTracksPVrefit{"keepAllTracksPVrefit", false, "Keep all tracks for PV refit (for debug)"};
   Configurable<bool> use_customITSHitMap{"use_customITSHitMap", false, "Use custom ITS hitmap selection"};
   Configurable<int> customITShitmap{"customITShitmap", 0, "Custom ITS hitmap (consider the binary representation)"};
+  Configurable<int> customITShitmap_exclude{"customITShitmap_exclude", 0, "Custom ITS hitmap of layers to be excluded (consider the binary representation)"};
   Configurable<int> n_customMinITShits{"n_customMinITShits", 0, "Minimum number of layers crossed by a track among those in \"customITShitmap\""};
   Configurable<bool> custom_forceITSTPCmatching{"custom_forceITSTPCmatching", false, "Consider or not only ITS-TPC macthed tracks when using custom ITS hitmap"};
 
@@ -135,9 +136,9 @@ struct QaImpactPar {
 
   /// Histogram registry (from o2::framework)
   HistogramRegistry histograms{"HistogramsImpParQA"};
-  bool isPIDPionApplied = ((nSigmaTPCPionMin > -10.001 && nSigmaTPCPionMax < 10.001) || (nSigmaTOFPionMin > -10.001 && nSigmaTOFPionMax < 10.001));
-  bool isPIDKaonApplied = ((nSigmaTPCKaonMin > -10.001 && nSigmaTPCKaonMax < 10.001) || (nSigmaTOFKaonMin > -10.001 && nSigmaTOFKaonMax < 10.001));
-  bool isPIDProtonApplied = ((nSigmaTPCProtonMin > -10.001 && nSigmaTPCProtonMax < 10.001) || (nSigmaTOFProtonMin > -10.001 && nSigmaTOFProtonMax < 10.001));
+  bool isPIDPionApplied;
+  bool isPIDKaonApplied;
+  bool isPIDProtonApplied;
 
   // Needed for PV refitting
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -239,7 +240,7 @@ struct QaImpactPar {
     // }
     mRunNumber = -1;
 
-    /// Custom cut selection objects
+    /// Custom cut selection objects - ITS layers that must be present
     std::set<uint8_t> set_customITShitmap; // = {};
     if (use_customITSHitMap) {
       for (int index_ITSlayer = 0; index_ITSlayer < 7; index_ITSlayer++) {
@@ -257,6 +258,24 @@ struct QaImpactPar {
       LOG(info) << "############";
 
       selector_ITShitmap.SetRequireHitsInITSLayers(n_customMinITShits, set_customITShitmap);
+    }
+    /// Custom cut selection objects - ITS layers that must be absent
+    std::set<uint8_t> set_customITShitmap_exclude; // = {};
+    if (use_customITSHitMap) {
+      for (int index_ITSlayer = 0; index_ITSlayer < 7; index_ITSlayer++) {
+        if ((customITShitmap_exclude & (1 << index_ITSlayer)) > 0) {
+          set_customITShitmap_exclude.insert(static_cast<uint8_t>(index_ITSlayer));
+        }
+      }
+      LOG(info) << "### customITShitmap_exclude: " << customITShitmap_exclude;
+      LOG(info) << "### set_customITShitmap_exclude.size(): " << set_customITShitmap_exclude.size();
+      LOG(info) << "### ITS layers to be excluded: ";
+      for (std::set<uint8_t>::iterator it = set_customITShitmap_exclude.begin(); it != set_customITShitmap_exclude.end(); it++) {
+        LOG(info) << "Layer " << static_cast<int>(*it) << " ";
+      }
+      LOG(info) << "############";
+
+      selector_ITShitmap.SetRequireNoHitsInITSLayers(set_customITShitmap_exclude);
     }
 
     // tracks
@@ -303,14 +322,17 @@ struct QaImpactPar {
       histograms.add("Reco/h4ImpParPulls", "", kTHnSparseD, {trackPtAxis, trackImpParRPhiPullsAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
       histograms.add("Reco/h4ImpParZPulls", "", kTHnSparseD, {trackPtAxis, trackImpParZPullsAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
     }
+    isPIDPionApplied = ((nSigmaTPCPionMin > -10.001 && nSigmaTPCPionMax < 10.001) || (nSigmaTOFPionMin > -10.001 && nSigmaTOFPionMax < 10.001));
     if (isPIDPionApplied) {
       histograms.add("Reco/h4ImpPar_Pion", "", kTHnSparseD, {trackPtAxis, trackImpParRPhiAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
       histograms.add("Reco/h4ImpParZ_Pion", "", kTHnSparseD, {trackPtAxis, trackImpParZAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
     }
+    isPIDKaonApplied = ((nSigmaTPCKaonMin > -10.001 && nSigmaTPCKaonMax < 10.001) || (nSigmaTOFKaonMin > -10.001 && nSigmaTOFKaonMax < 10.001));
     if (isPIDKaonApplied) {
       histograms.add("Reco/h4ImpPar_Kaon", "", kTHnSparseD, {trackPtAxis, trackImpParRPhiAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
       histograms.add("Reco/h4ImpParZ_Kaon", "", kTHnSparseD, {trackPtAxis, trackImpParZAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
     }
+    isPIDProtonApplied = ((nSigmaTPCProtonMin > -10.001 && nSigmaTPCProtonMax < 10.001) || (nSigmaTOFProtonMin > -10.001 && nSigmaTOFProtonMax < 10.001));
     if (isPIDProtonApplied) {
       histograms.add("Reco/h4ImpPar_Proton", "", kTHnSparseD, {trackPtAxis, trackImpParRPhiAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
       histograms.add("Reco/h4ImpParZ_Proton", "", kTHnSparseD, {trackPtAxis, trackImpParZAxis, trackEtaAxis, trackPhiAxis, trackPDGAxis, trackChargeAxis, axisVertexNumContrib, trackIsPvContrib});
