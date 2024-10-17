@@ -217,7 +217,7 @@ struct HfTaskCharmHadronsFemtoDream {
   }
 
   template <typename CollisionType>
-  void fillCollision(CollisionType col)
+  void fillCollision(CollisionType const& col)
   {
     MixQaRegistry.fill(HIST("MixingQA/hSECollisionBins"), colBinningMult.getBin({col.posZ(), col.multNtr()}));
     MixQaRegistry.fill(HIST("MixingQA/hSECollisionPool"), col.posZ(), col.multNtr());
