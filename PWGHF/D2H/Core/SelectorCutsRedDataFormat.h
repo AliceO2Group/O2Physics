@@ -22,9 +22,11 @@
 #include <string> // std::string
 #include <vector> // std::vector
 
+namespace o2::analysis
+{
 namespace hf_cuts_d_daughter
 {
-const int nBinsPt = 7;
+static constexpr int nBinsPt = 7;
 static constexpr int nCutVars = 6;
 constexpr double binsPt[nBinsPt + 1] = {
   1.,
@@ -45,7 +47,14 @@ constexpr double cuts[nBinsPt][nCutVars] = {{1.84, 1.89, 1.77, 1.81, 1.92, 1.96}
                                             {1.84, 1.89, 1.77, 1.81, 1.92, 1.96},  /* 12   < pt < 24 */
                                             {1.84, 1.89, 1.77, 1.81, 1.92, 1.96}}; /* 24   < pt < 1000 */
 // row labels
-static const std::vector<std::string> labelsPt{};
+static const std::vector<std::string> labelsPt{
+  "pT bin 0",
+  "pT bin 1",
+  "pT bin 2",
+  "pT bin 3",
+  "pT bin 4",
+  "pT bin 5",
+  "pT bin 6"};
 // column labels
 static const std::vector<std::string> labelsCutVar = {"invMassSignalLow", "invMassSignalHigh", "invMassLeftSBLow", "invMassLeftSBHigh", "invMassRightSBLow", "invMassRightSBHigh"};
 } // namespace hf_cuts_d_daughter
@@ -53,7 +62,7 @@ static const std::vector<std::string> labelsCutVar = {"invMassSignalLow", "invMa
 // namespace with v0 selections for reduced charmed-resonances analysis
 namespace hf_cuts_v0_daughter
 {
-const int nBinsPt = 7;
+static constexpr int nBinsPt = 7;
 static constexpr int nCutVars = 5;
 constexpr double binsPt[nBinsPt + 1] = {
   0.,
@@ -78,4 +87,5 @@ static const std::vector<std::string> labelsPt{};
 // column labels
 static const std::vector<std::string> labelsCutVar = {"invMassLow", "invMassHigh", "cpaMin", "dcaMax", "radiusMin"};
 } // namespace hf_cuts_v0_daughter
+} // namespace o2::analysis
 #endif // PWGHF_D2H_CORE_SELECTORCUTSREDDATAFORMAT_H_
