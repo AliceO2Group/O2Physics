@@ -38,8 +38,6 @@ using namespace o2::framework::expressions;
 
 #include "Framework/runDataProcessing.h"
 
-
-
 struct JetSpectraEseTask {
   ConfigurableAxis binJetPt{"binJetPt", {200, 0., 200.}, ""};
   ConfigurableAxis bindPhi{"bindPhi", {100, -TMath::Pi() - 1, TMath::Pi() + 1}, ""};
@@ -60,7 +58,7 @@ struct JetSpectraEseTask {
   AxisSpec eseAxis = {binESE, "#it{q}_{2}"};
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
-  
+
   int eventSelection = -1;
   int trackSelection = -1;
 
@@ -125,12 +123,12 @@ struct JetSpectraEseTask {
     registry.fill(HIST("h_collisions"), counter++);
     float vPsi2 = FFitWeights::EventPlane(originalCollision, 2);
     auto qPerc = originalCollision.qPERCFT0C();
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) 
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelection))
       return;
-    
+
     registry.fill(HIST("h_collisions"), counter++);
-    
-    if (!isAcceptedLeadTrack(tracks)) 
+
+    if (!isAcceptedLeadTrack(tracks))
       return;
 
     registry.fill(HIST("h_collisions"), counter++);
@@ -171,13 +169,13 @@ struct JetSpectraEseTask {
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection))
       return;
-    
+
     float counter{0.5f};
     registry.fill(HIST("h_mc_collisions"), counter++);
     for (const auto& mcdjet : mcdjets) {
       if (!mcdjet.has_matchedJetGeo())
         continue;
-      
+
       registry.fill(HIST("h_detector_jet_pt"), mcdjet.pt());
       registry.fill(HIST("h_detector_jet_eta"), mcdjet.eta());
       registry.fill(HIST("h_detector_jet_phi"), mcdjet.phi());
