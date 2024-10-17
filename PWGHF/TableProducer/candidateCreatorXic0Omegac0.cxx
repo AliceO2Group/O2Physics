@@ -693,7 +693,7 @@ struct HfCandidateCreatorXic0Omegac0 {
         KFParticle kfV0 = kfV0MassConstrained;
       }
       kfV0.TransportToDecayVertex();
-	  
+
       //__________________________________________
       //*>~<* step 2 : reconstruct cascade(Omega) with KF
       const KFParticle* omegaDaugthers[2] = {&kfBachKaon, &kfV0};
@@ -724,15 +724,15 @@ struct HfCandidateCreatorXic0Omegac0 {
         KFParticle kfOmega = kfOmegaMassConstrained;
       }
       registry.fill(HIST("hInvMassOmegaMinus"), massCasc);
-	  kfOmega.TransportToDecayVertex();
-	  
+      kfOmega.TransportToDecayVertex();
+
       //__________________________________________
       //*>~<* step 3 : reconstruc Omegac0 with KF
       // Create KF charm bach Pion from track
       KFPTrack kfTrackBachPion = createKFPTrackFromTrack(trackCharmBachelor);
       KFParticle kfBachPion(kfTrackBachPion, kPiPlus);
       const KFParticle* omegaC0Daugthers[2] = {&kfBachPion, &kfOmega};
-	
+
       // construct OmegaC0
       KFParticle kfOmegaC0;
       kfOmegaC0.SetConstructMethod(kfConstructMethod);
@@ -751,7 +751,7 @@ struct HfCandidateCreatorXic0Omegac0 {
         continue;
       hFitterStatus->Fill(0);
       hCandidateCounter->Fill(2);
-	  kfOmegaC0.TransportToDecayVertex();
+      kfOmegaC0.TransportToDecayVertex();
       // PV
       KFPVertex kfVertex = createKFPVertexFromCollision(collision);
       KFParticle kfPV(kfVertex);
