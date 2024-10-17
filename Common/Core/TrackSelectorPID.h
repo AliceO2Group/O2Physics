@@ -103,9 +103,10 @@ class TrackSelectorPidBase
   /// Checks if track is compatible with given particle species hypothesis within given TPC nσ range.
   /// \param track  track
   /// \param conditionalTof  variable to store the result of selection with looser cuts for conditional accepting of track if combined with TOF
+  /// \param tpcNSigmaCustom  custom TPC nσ value to be used for the selection, in case the desired value cannot be taken from the track table
   /// \return true if track satisfies TPC PID hypothesis for given TPC nσ range
   template <typename T>
-  bool isSelectedByTpc(const T& track, bool& conditionalTof)
+  bool isSelectedByTpc(const T& track, bool& conditionalTof, float tpcNSigmaCustom = -999.f)
   {
     // Accept if selection is disabled via large values.
     if (mNSigmaTpcMin < -999. && mNSigmaTpcMax > 999.) {
@@ -128,6 +129,11 @@ class TrackSelectorPidBase
       errorPdg();
     }
 
+    /// use custom TPC nσ, if a valid value is provided
+    if (tpcNSigmaCustom > -999.f) {
+      nSigma = tpcNSigmaCustom;
+    }
+
     if (mNSigmaTpcMinCondTof < -999. && mNSigmaTpcMaxCondTof > 999.) {
       conditionalTof = true;
     } else {
@@ -140,13 +146,13 @@ class TrackSelectorPidBase
   /// \param track  track
   /// \return TPC selection status (see TrackSelectorPID::Status)
   template <typename T>
-  TrackSelectorPID::Status statusTpc(const T& track)
+  TrackSelectorPID::Status statusTpc(const T& track, float tpcNSigmaCustom = -999.f)
   {
     if (!isValidForTpc(track)) {
       return TrackSelectorPID::NotApplicable;
     }
     bool condTof = false;
-    if (isSelectedByTpc(track, condTof)) {
+    if (isSelectedByTpc(track, condTof, tpcNSigmaCustom)) {
       return TrackSelectorPID::Accepted;
     } else if (condTof) {
       return TrackSelectorPID::Conditional; // potential to be accepted if combined with TOF
@@ -191,9 +197,10 @@ class TrackSelectorPidBase
   /// Checks if track is compatible with given particle species hypothesis within given TOF nσ range.
   /// \param track  track
   /// \param conditionalTpc  variable to store the result of selection with looser cuts for conditional accepting of track if combined with TPC
+  /// \param tofNSigmaCustom  custom TOF nσ value to be used for the selection, in case the desired value cannot be taken from the track table
   /// \return true if track satisfies TOF PID hypothesis for given TOF nσ range
   template <typename T>
-  bool isSelectedByTof(const T& track, bool& conditionalTpc)
+  bool isSelectedByTof(const T& track, bool& conditionalTpc, float tofNSigmaCustom = -999.f)
   {
     // Accept if selection is disabled via large values.
     if (mNSigmaTofMin < -999. && mNSigmaTofMax > 999.) {
@@ -216,6 +223,11 @@ class TrackSelectorPidBase
       errorPdg();
     }
 
+    /// use custom TOF nσ, if a valid value is provided
+    if (tofNSigmaCustom > -999.f) {
+      nSigma = tofNSigmaCustom;
+    }
+
     if (mNSigmaTofMinCondTpc < -999. && mNSigmaTofMaxCondTpc > 999.) {
       conditionalTpc = true;
     } else {
@@ -228,13 +240,13 @@ class TrackSelectorPidBase
   /// \param track  track
   /// \return TOF selection status (see TrackSelectorPID::Status)
   template <typename T>
-  TrackSelectorPID::Status statusTof(const T& track)
+  TrackSelectorPID::Status statusTof(const T& track, float tofNSigmaCustom = -999.f)
   {
     if (!isValidForTof(track)) {
       return TrackSelectorPID::NotApplicable;
     }
     bool condTpc = false;
-    if (isSelectedByTof(track, condTpc)) {
+    if (isSelectedByTof(track, condTpc, tofNSigmaCustom)) {
       return TrackSelectorPID::Accepted;
     } else if (condTpc) {
       return TrackSelectorPID::Conditional; // potential to be accepted if combined with TPC
@@ -391,10 +403,10 @@ class TrackSelectorPidBase
   /// \param track  track
   /// \return status of combined PID (TPC or TOF) (see TrackSelectorPID::Status)
   template <typename T>
-  TrackSelectorPID::Status statusTpcOrTof(const T& track)
+  TrackSelectorPID::Status statusTpcOrTof(const T& track, float tpcNSigmaCustom = -999.f, float tofNSigmaCustom = -999.f)
   {
-    int pidTpc = statusTpc(track);
-    int pidTof = statusTof(track);
+    int pidTpc = statusTpc(track, tpcNSigmaCustom);
+    int pidTof = statusTof(track, tofNSigmaCustom);
 
     if (pidTpc == TrackSelectorPID::Accepted || pidTof == TrackSelectorPID::Accepted) {
       return TrackSelectorPID::Accepted;
@@ -412,15 +424,15 @@ class TrackSelectorPidBase
   /// \param track  track
   /// \return status of combined PID (TPC and TOF) (see TrackSelectorPID::Status)
   template <typename T>
-  TrackSelectorPID::Status statusTpcAndTof(const T& track)
+  TrackSelectorPID::Status statusTpcAndTof(const T& track, float tpcNSigmaCustom = -999.f, float tofNSigmaCustom = -999.f)
   {
     int pidTpc = TrackSelectorPID::NotApplicable;
     if (track.hasTPC()) {
-      pidTpc = statusTpc(track);
+      pidTpc = statusTpc(track, tpcNSigmaCustom);
     }
     int pidTof = TrackSelectorPID::NotApplicable;
     if (track.hasTOF()) {
-      pidTof = statusTof(track);
+      pidTof = statusTof(track, tofNSigmaCustom);
     }
 
     if (pidTpc == TrackSelectorPID::Accepted && pidTof == TrackSelectorPID::Accepted) {
