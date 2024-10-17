@@ -864,10 +864,10 @@ struct femtoUniverseProducerTask {
     if (!colCuts.isSelectedRun3(col)) {
       if (ConfIsTrigger) {
         if (ConfDoSpher) {
-            outputCollision(vtxZ, cent, multNtr, colCuts.computeSphericity(col, tracks), mMagField);
-          } else {
-            outputCollision(vtxZ, cent, multNtr, 2, mMagField);
-          }
+          outputCollision(vtxZ, cent, multNtr, colCuts.computeSphericity(col, tracks), mMagField);
+        } else {
+          outputCollision(vtxZ, cent, multNtr, 2, mMagField);
+        }
       } //////
       return;
     }
