@@ -445,14 +445,19 @@ int getGeoSign(T const& jet, U const& jtrack)
  * in a vector in descending order.
  */
 template <typename T, typename U, typename Vec = std::vector<float>>
-void orderForIPJetTracks(T const& jet, U const& /*jtracks*/, float const& trackDcaXYMax, float const& trackDcaZMax, Vec& vecSignImpSig)
+void orderForIPJetTracks(T const& jet, U const& /*jtracks*/, float const& trackDcaXYMax, float const& trackDcaZMax, Vec& vecSignImpSig, bool useIPxyz)
 {
   for (auto& jtrack : jet.template tracks_as<U>()) {
     if (!trackAcceptanceWithDca(jtrack, trackDcaXYMax, trackDcaZMax))
       continue;
     auto geoSign = getGeoSign(jet, jtrack);
-    auto varSignImpXYSig = geoSign * std::abs(jtrack.dcaXY()) / jtrack.sigmadcaXY();
-    vecSignImpSig.push_back(varSignImpXYSig);
+    float varSignImpSig;
+    if (!useIPxyz) {
+      varSignImpSig = geoSign * std::abs(jtrack.dcaXY()) / jtrack.sigmadcaXY();
+    } else {
+      varSignImpSig = geoSign * std::abs(jtrack.dcaXYZ()) / jtrack.sigmadcaXYZ();
+    }
+    vecSignImpSig.push_back(varSignImpSig);
   }
   std::sort(vecSignImpSig.begin(), vecSignImpSig.end(), std::greater<float>());
 }
@@ -461,13 +466,13 @@ void orderForIPJetTracks(T const& jet, U const& /*jtracks*/, float const& trackD
  * Checks if a jet is greater than the given tagging working point based on the signed impact parameter significances
  */
 template <typename T, typename U>
-bool isGreaterThanTaggingPoint(T const& jet, U const& jtracks, float const& trackDcaXYMax, float const& trackDcaZMax, float const& taggingPoint = 1.0, int const& cnt = 1)
+bool isGreaterThanTaggingPoint(T const& jet, U const& jtracks, float const& trackDcaXYMax, float const& trackDcaZMax, float const& taggingPoint = 1.0, int const& cnt = 1, bool useIPxyz = false)
 {
   if (cnt == 0) {
     return true; // untagged
   }
   std::vector<float> vecSignImpSig;
-  orderForIPJetTracks(jet, jtracks, trackDcaXYMax, trackDcaZMax, vecSignImpSig);
+  orderForIPJetTracks(jet, jtracks, trackDcaXYMax, trackDcaZMax, vecSignImpSig, useIPxyz);
   if (vecSignImpSig.size() > static_cast<std::vector<float>::size_type>(cnt) - 1) {
     for (int i = 0; i < cnt; i++) {
       if (vecSignImpSig[i] < taggingPoint) { // tagger point set
@@ -543,9 +548,9 @@ float getTrackProbability(T const& fResoFuncjet, U const& track, const float& mi
  *         geometric sign.
  */
 template <typename T, typename U, typename V>
-float getJetProbability(T const& fResoFuncjet, U const& jet, V const& jtracks, float const& trackDcaXYMax, float const& trackDcaZMax, const int& cnt, const float& tagPoint = 1.0, const float& minSignImpXYSig = -10)
+float getJetProbability(T const& fResoFuncjet, U const& jet, V const& jtracks, float const& trackDcaXYMax, float const& trackDcaZMax, const int& cnt, const float& tagPoint = 1.0, const float& minSignImpXYSig = -10, bool useIPxy = true)
 {
-  if (!(isGreaterThanTaggingPoint(jet, jtracks, trackDcaXYMax, trackDcaZMax, tagPoint, cnt)))
+  if (!(isGreaterThanTaggingPoint(jet, jtracks, trackDcaXYMax, trackDcaZMax, tagPoint, cnt, useIPxy)))
     return -1;
 
   std::vector<float> jetTracksPt;
@@ -579,14 +584,22 @@ float getJetProbability(T const& fResoFuncjet, U const& jet, V const& jtracks, f
 
 // For secaondy vertex method utilites
 template <typename ProngType, typename JetType>
-typename ProngType::iterator jetFromProngMaxDecayLength(const JetType& jet, float const& prongChi2PCAMin, float const& prongChi2PCAMax, float const& prongsigmaLxyMax, float const& prongIPxyMin, float const& prongIPxyMax, const bool& doXYZ = false)
+typename ProngType::iterator jetFromProngMaxDecayLength(const JetType& jet, float const& prongChi2PCAMin, float const& prongChi2PCAMax, float const& prongsigmaLxyMax, float const& prongIPxyMin, float const& prongIPxyMax, const bool& doXYZ = false, bool* checkSv = nullptr)
 {
+  if (checkSv)
+    *checkSv = false;
   float maxSxy = -1.0f;
   typename ProngType::iterator bjetCand;
   for (const auto& prong : jet.template secondaryVertices_as<ProngType>()) {
     if (!prongAcceptance(prong, prongChi2PCAMin, prongChi2PCAMax, prongsigmaLxyMax, prongIPxyMin, prongIPxyMax, doXYZ))
       continue;
-    auto Sxy = prong.decayLengthXY() / prong.errorDecayLengthXY();
+    *checkSv = true;
+    float Sxy = -1.0f;
+    if (!doXYZ) {
+      Sxy = prong.decayLengthXY() / prong.errorDecayLengthXY();
+    } else {
+      Sxy = prong.decayLength() / prong.errorDecayLength();
+    }
     if (maxSxy < Sxy) {
       bjetCand = prong;
     }
@@ -595,10 +608,11 @@ typename ProngType::iterator jetFromProngMaxDecayLength(const JetType& jet, floa
 }
 
 template <typename T, typename U>
-bool isTaggedJetSV(T const jet, U const& /*prongs*/, float const& prongChi2PCAMin, float const& prongChi2PCAMax, float const& prongsigmaLxyMax, float const& prongIPxyMin, float const& prongIPxyMax, float prongDispersionMax, float const& doXYZ = false, float const& tagPointForSV = 15.)
+bool isTaggedJetSV(T const jet, U const& /*prongs*/, float const& prongChi2PCAMin, float const& prongChi2PCAMax, float const& prongsigmaLxyMax, float const& prongIPxyMin, float const& prongIPxyMax, float svDispersionMax, float const& doXYZ = false, float const& tagPointForSV = 15.)
 {
-  auto bjetCand = jetFromProngMaxDecayLength<U>(jet, prongChi2PCAMin, prongChi2PCAMax, prongsigmaLxyMax, prongIPxyMin, prongIPxyMax, doXYZ);
-  if (!svAcceptance(bjetCand, prongDispersionMax))
+  bool checkSv = false;
+  auto bjetCand = jetFromProngMaxDecayLength<U>(jet, prongChi2PCAMin, prongChi2PCAMax, prongsigmaLxyMax, prongIPxyMin, prongIPxyMax, doXYZ, &checkSv);
+  if (!(checkSv && svAcceptance(bjetCand, svDispersionMax)))
     return false;
   if (!doXYZ) {
     auto maxSxy = bjetCand.decayLengthXY() / bjetCand.errorDecayLengthXY();
