@@ -482,6 +482,10 @@ struct EventSelectionTask {
   // helper function to find closest TVX signal in time and in zVtx
   int64_t findBestGlobalBC(int64_t meanBC, int64_t sigmaBC, int32_t nContrib, float zVtxCol, std::map<int64_t, float>& mapGlobalBcVtxZ)
   {
+    // protection against
+    if (sigmaBC < 1)
+      sigmaBC = 1;
+
     int64_t minBC = meanBC - 3 * sigmaBC;
     int64_t maxBC = meanBC + 3 * sigmaBC;
     // TODO: use ITS ROF bounds to reduce the search range?
@@ -495,7 +499,7 @@ struct EventSelectionTask {
     float bestChi2 = 1e+10;
     int64_t bestGlobalBC = 0;
     for (std::map<int64_t, float>::iterator it = itMin; it != itMax; ++it) {
-      float chi2 = pow((it->second - zVtxCol) / zVtxSigma, 2) + pow((it->first - meanBC) / sigmaBC, 2.);
+      float chi2 = pow((it->second - zVtxCol) / zVtxSigma, 2) + pow(static_cast<float>(it->first - meanBC) / sigmaBC, 2.);
       if (chi2 < bestChi2) {
         bestChi2 = chi2;
         bestGlobalBC = it->first;
@@ -788,7 +792,8 @@ struct EventSelectionTask {
         auto bc = col.bc_as<BCsWithBcSelsRun3>();
         int64_t globalBC = bc.globalBC();
         int64_t meanBC = globalBC + TMath::Nint(weightedTime / bcNS);
-        int64_t bestGlobalBC = findBestGlobalBC(meanBC, weightedSigma / bcNS, vNcontributors[colIndex], col.posZ(), mapGlobalBcVtxZ);
+        int64_t sigmaBC = TMath::CeilNint(weightedSigma / bcNS);
+        int64_t bestGlobalBC = findBestGlobalBC(meanBC, sigmaBC, vNcontributors[colIndex], col.posZ(), mapGlobalBcVtxZ);
         vFoundGlobalBC[colIndex] = bestGlobalBC > 0 ? bestGlobalBC : globalBC;
         vFoundBCindex[colIndex] = bestGlobalBC > 0 ? mapGlobalBcWithTVX[bestGlobalBC] : bc.globalIndex();
       }
