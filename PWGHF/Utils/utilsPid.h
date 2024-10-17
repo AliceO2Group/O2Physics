@@ -61,7 +61,7 @@ T1 combineNSigma(T1 tpcNSigma, T1 tofNSigma)
 /// @tparam specPid particle species
 /// @param track prong track
 /// @param rowPid cursor of the prong PID table to fill
-template <int specPid, typename TRK, typename ROW>
+template <HfProngSpecies specPid, typename TRK, typename ROW>
 void fillProngPid(TRK const& track, ROW& rowPid)
 {
 
@@ -93,12 +93,12 @@ void fillProngPid(TRK const& track, ROW& rowPid)
     if (track.hasTOF()) {
       nSigTof = track.tofNSigmaPr();
     }
+  } else {
+    LOG(fatal) << "Unsupported PID. Supported species in HF framework: HfProngSpecies::Pion, HfProngSpecies::Kaon, HfProngSpecies::Proton";
   }
 
   // fill candidate prong PID rows
   rowPid(nSigTpc, nSigTof);
-
-  return;
 }
 
 } // namespace pid_tpc_tof_utils
