@@ -434,7 +434,7 @@ struct HfFemtoDreamProducer {
       bitCand |= 1 << 0;
     }
 
-    Masks(static_cast<aod::femtodreamcollision::BitMaskType>(bitTrack),
+    rowMasks(static_cast<aod::femtodreamcollision::BitMaskType>(bitTrack),
           static_cast<aod::femtodreamcollision::BitMaskType>(bitCand),
           0);
   }
