@@ -59,6 +59,12 @@ struct FlowTask {
   O2_DEFINE_CONFIGURABLE(cfgCutTPCclu, float, 70.0f, "minimum TPC clusters")
   O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2.0f, "max DCA to vertex z")
   O2_DEFINE_CONFIGURABLE(cfgUseAdditionalEventCut, bool, false, "Use additional event cut on mult correlations")
+  O2_DEFINE_CONFIGURABLE(cfgTriggerkTVXinTRD, bool, true, "TRD triggered")
+  O2_DEFINE_CONFIGURABLE(cfgEvSelkNoSameBunchPileup, bool, true, "rejects collisions which are associated with the same found-by-T0 bunch crossing")
+  O2_DEFINE_CONFIGURABLE(cfgEvSelkIsGoodZvtxFT0vsPV, bool, true, "removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference, use this cut at low multiplicities with caution")
+  O2_DEFINE_CONFIGURABLE(cfgEvSelkNoCollInTimeRangeStandard, bool, true, "no collisions in specified time range")
+  O2_DEFINE_CONFIGURABLE(cfgEvSelMultCorrelation, bool, true, "Multiplicity correlation cut")
+  O2_DEFINE_CONFIGURABLE(cfgEvSelV0AT0ACut, bool, true, "V0A T0A 5 sigma cut")
   O2_DEFINE_CONFIGURABLE(cfgUseAdditionalTrackCut, bool, false, "Use additional track cut on phi")
   O2_DEFINE_CONFIGURABLE(cfgGetInteractionRate, bool, false, "Get interaction rate from CCDB")
   O2_DEFINE_CONFIGURABLE(cfgUseInteractionRateCut, bool, false, "Use events with low interaction rate")
@@ -69,6 +75,7 @@ struct FlowTask {
   O2_DEFINE_CONFIGURABLE(cfgEfficiency, std::string, "", "CCDB path to efficiency object")
   O2_DEFINE_CONFIGURABLE(cfgAcceptance, std::string, "", "CCDB path to acceptance object")
   O2_DEFINE_CONFIGURABLE(cfgMagnetField, std::string, "GLO/Config/GRPMagField", "CCDB path to Magnet field object")
+  O2_DEFINE_CONFIGURABLE(cfgEvSelOccupancy, bool, true, "Occupancy cut")
   O2_DEFINE_CONFIGURABLE(cfgCutOccupancyHigh, int, 500, "High cut on TPC occupancy")
   O2_DEFINE_CONFIGURABLE(cfgCutOccupancyLow, int, 0, "Low cut on TPC occupancy")
   O2_DEFINE_CONFIGURABLE(cfgUseSmallMemory, bool, false, "Use small memory mode")
@@ -498,31 +505,21 @@ struct FlowTask {
   template <typename TCollision>
   bool eventSelected(TCollision collision, const int multTrk, const float centrality)
   {
-    if (collision.alias_bit(kTVXinTRD)) {
+    if (cfgTriggerkTVXinTRD && collision.alias_bit(kTVXinTRD)) {
       // TRD triggered
       return 0;
     }
-    if (!collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-      // reject collisions close to Time Frame borders
-      // https://its.cern.ch/jira/browse/O2-4623
-      return 0;
-    }
-    if (!collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
-      // reject events affected by the ITS ROF border
-      // https://its.cern.ch/jira/browse/O2-4309
-      return 0;
-    }
-    if (!collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+    if (cfgEvSelkNoSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       // rejects collisions which are associated with the same "found-by-T0" bunch crossing
       // https://indico.cern.ch/event/1396220/#1-event-selection-with-its-rof
       return 0;
     }
-    if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+    if (cfgEvSelkIsGoodZvtxFT0vsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       // removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference
       // use this cut at low multiplicities with caution
       return 0;
     }
-    if (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+    if (cfgEvSelkNoCollInTimeRangeStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       // no collisions in specified time range
       return 0;
     }
@@ -535,22 +532,22 @@ struct FlowTask {
     }
     auto multNTracksPV = collision.multNTracksPV();
     auto occupancy = collision.trackOccupancyInTimeRange();
+    if (cfgEvSelOccupancy && (occupancy < cfgCutOccupancyLow || occupancy > cfgCutOccupancyHigh))
+      return 0;
 
-    if (fabs(vtxz) > cfgCutVertex)
-      return 0;
-    if (multNTracksPV < fMultPVCutLow->Eval(centrality))
-      return 0;
-    if (multNTracksPV > fMultPVCutHigh->Eval(centrality))
-      return 0;
-    if (multTrk < fMultCutLow->Eval(centrality))
-      return 0;
-    if (multTrk > fMultCutHigh->Eval(centrality))
-      return 0;
-    if (occupancy < cfgCutOccupancyLow || occupancy > cfgCutOccupancyHigh)
-      return 0;
+    if (cfgEvSelMultCorrelation) {
+      if (multNTracksPV < fMultPVCutLow->Eval(centrality))
+        return 0;
+      if (multNTracksPV > fMultPVCutHigh->Eval(centrality))
+        return 0;
+      if (multTrk < fMultCutLow->Eval(centrality))
+        return 0;
+      if (multTrk > fMultCutHigh->Eval(centrality))
+        return 0;
+    }
 
     // V0A T0A 5 sigma cut
-    if (fabs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > 5 * fT0AV0ASigma->Eval(collision.multFT0A()))
+    if (cfgEvSelV0AT0ACut && (fabs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > 5 * fT0AV0ASigma->Eval(collision.multFT0A())))
       return 0;
 
     return 1;
