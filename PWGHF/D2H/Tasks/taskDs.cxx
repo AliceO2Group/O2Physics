@@ -78,7 +78,6 @@ struct HfTaskDs {
 
   HfHelper hfHelper;
 
-  using CentralityEstimator = o2::hf_centrality::CentralityEstimator;
   using TH1_ptr = std::shared_ptr<TH1>;
   using TH2_ptr = std::shared_ptr<TH2>;
   using THnSparse_ptr = std::shared_ptr<THnSparse>;
@@ -127,12 +126,6 @@ struct HfTaskDs {
   std::unordered_map<std::string, histTypes> mcDplusNonPromptHistograms = {};
   std::unordered_map<std::string, histTypes> mcDplusBkgHistograms = {};
   std::unordered_map<std::string, histTypes> mcBkgHistograms = {};
-
-  std::map<CentralityEstimator, std::variant<PresliceUnsorted<CollisionsMc>, PresliceUnsorted<CollisionsMcWithFT0C>, PresliceUnsorted<CollisionsMcWithFT0M>, PresliceUnsorted<CollisionsMcWithNTracksPV>>> colPerMcCollisionMap{
-    {CentralityEstimator::None, colPerMcCollision},
-    {CentralityEstimator::FT0C, colPerMcCollisionWithFT0C},
-    {CentralityEstimator::FT0M, colPerMcCollisionWithFT0M},
-    {CentralityEstimator::NTracksPV, colPerMcCollisionWithNTracksPV}};
 
   std::array<std::unordered_map<std::string, histTypes>, DataType::kDataTypes> histosPtr = {dataHistograms, mcDsPromptHistograms, mcDsNonPromptHistograms, mcDplusPromptHistograms, mcDplusNonPromptHistograms, mcDplusBkgHistograms, mcBkgHistograms};
 
@@ -511,7 +504,7 @@ struct HfTaskDs {
     // TODO: add histograms for reflections
   }
 
-  template <CentralityEstimator centDetector, typename Coll>
+  template <typename Coll>
   void fillMcGenHistos(CandDsMcGen const& mcParticles,
                        Coll const& recoCollisions)
   {
@@ -523,9 +516,26 @@ struct HfTaskDs {
           double y{0.f};
 
           unsigned maxNumContrib = 0;
-          const auto& recoCollsPerMcColl = recoCollisions.sliceBy(std::get<PresliceUnsorted<Coll>>(colPerMcCollisionMap.at(centDetector)), particle.mcCollision().globalIndex());
-          for (const auto& recCol : recoCollsPerMcColl) {
-            maxNumContrib = recCol.numContrib() > maxNumContrib ? recCol.numContrib() : maxNumContrib;
+          if constexpr (recoCollisions. template contains<aod::CentFT0Cs>()) {
+            const auto& recoCollsPerMcColl = recoCollisions.sliceBy(colPerMcCollisionWithFT0C, particle.mcCollision().globalIndex());
+            for (const auto& recCol : recoCollsPerMcColl) {
+              maxNumContrib = recCol.numContrib() > maxNumContrib ? recCol.numContrib() : maxNumContrib;
+            }
+          } else if constexpr (recoCollisions. template contains<aod::CentFT0Ms>()) {
+            const auto& recoCollsPerMcColl = recoCollisions.sliceBy(colPerMcCollisionWithFT0M, particle.mcCollision().globalIndex());
+            for (const auto& recCol : recoCollsPerMcColl) {
+              maxNumContrib = recCol.numContrib() > maxNumContrib ? recCol.numContrib() : maxNumContrib;
+            }
+          } else if constexpr (recoCollisions. template contains<aod::CentNTPVs>()) {
+            const auto& recoCollsPerMcColl = recoCollisions.sliceBy(colPerMcCollisionWithNTracksPV, particle.mcCollision().globalIndex());
+            for (const auto& recCol : recoCollsPerMcColl) {
+              maxNumContrib = recCol.numContrib() > maxNumContrib ? recCol.numContrib() : maxNumContrib;
+            }
+          } else { // No centrality estimator
+            const auto& recoCollsPerMcColl = recoCollisions.sliceBy(colPerMcCollision, particle.mcCollision().globalIndex());
+            for (const auto& recCol : recoCollsPerMcColl) {
+              maxNumContrib = recCol.numContrib() > maxNumContrib ? recCol.numContrib() : maxNumContrib;
+            }
           }
 
           if (particle.flagMcDecayChanGen() == decayChannel) {
@@ -615,7 +625,7 @@ struct HfTaskDs {
     }
   }
 
-  template <CentralityEstimator centDetector, typename Coll, typename CandsDs, typename CandDsMcGen>
+  template <typename Coll, typename CandsDs, typename CandDsMcGen>
   void runMcAnalysisPerCollision(const Coll& collisions,
                                  const CandsDs& candsDs,
                                  const CandDsMcGen& mcParticles,
@@ -673,7 +683,7 @@ struct HfTaskDs {
       }
       fillNPvContribHisto(collision, nCandsPerType, nCandsInSignalRegionDsPerType, nCandsInSignalRegionDplusPerType);
     }
-    fillMcGenHistos<centDetector>(mcParticles, collisions);
+    fillMcGenHistos(mcParticles, collisions);
   }
 
   void processDataWithCentFT0C(CollisionsWithFT0C const& collisions,
@@ -746,7 +756,7 @@ struct HfTaskDs {
                              aod::McCollisions const&,
                              aod::TracksWMc const&)
   {
-    runMcAnalysisPerCollision<CentralityEstimator::FT0C, CollisionsMcWithFT0C>(collisions, candsDs, mcParticles, candDsMcRecoPerCollision);
+    runMcAnalysisPerCollision<CollisionsMcWithFT0C>(collisions, candsDs, mcParticles, candDsMcRecoPerCollision);
   }
   PROCESS_SWITCH(HfTaskDs, processMcWithCentFT0C, "Process MC w/o ML information on Ds, with information on centrality from FT0C", false);
 
@@ -756,7 +766,7 @@ struct HfTaskDs {
                              aod::McCollisions const&,
                              aod::TracksWMc const&)
   {
-    runMcAnalysisPerCollision<CentralityEstimator::FT0M, CollisionsMcWithFT0M>(collisions, candsDs, mcParticles, candDsMcRecoPerCollision);
+    runMcAnalysisPerCollision<CollisionsMcWithFT0M>(collisions, candsDs, mcParticles, candDsMcRecoPerCollision);
   }
   PROCESS_SWITCH(HfTaskDs, processMcWithCentFT0M, "Process MC w/o ML information on Ds, with information on centrality from FT0M", false);
 
@@ -766,7 +776,7 @@ struct HfTaskDs {
                                   aod::McCollisions const&,
                                   aod::TracksWMc const&)
   {
-    runMcAnalysisPerCollision<CentralityEstimator::NTracksPV, CollisionsMcWithNTracksPV>(collisions, candsDs, mcParticles, candDsMcRecoPerCollision);
+    runMcAnalysisPerCollision<CollisionsMcWithNTracksPV>(collisions, candsDs, mcParticles, candDsMcRecoPerCollision);
   }
   PROCESS_SWITCH(HfTaskDs, processMcWithCentNTracksPV, "Process MC w/o ML information on Ds, with information on centrality from NTracksPV", false);
 
@@ -776,7 +786,7 @@ struct HfTaskDs {
                  aod::McCollisions const&,
                  aod::TracksWMc const&)
   {
-    runMcAnalysisPerCollision<CentralityEstimator::None, CollisionsMc>(collisions, candsDs, mcParticles, candDsMcRecoPerCollision);
+    runMcAnalysisPerCollision<CollisionsMc>(collisions, candsDs, mcParticles, candDsMcRecoPerCollision);
   }
   PROCESS_SWITCH(HfTaskDs, processMc, "Process MC w/o ML information on Ds, w/o information on centrality", false);
 
@@ -786,7 +796,7 @@ struct HfTaskDs {
                                   aod::McCollisions const&,
                                   aod::TracksWMc const&)
   {
-    runMcAnalysisPerCollision<CentralityEstimator::FT0C, CollisionsMcWithFT0C>(collisions, candsDs, mcParticles, candDsMcRecoWithMlPerCollision);
+    runMcAnalysisPerCollision<CollisionsMcWithFT0C>(collisions, candsDs, mcParticles, candDsMcRecoWithMlPerCollision);
   }
   PROCESS_SWITCH(HfTaskDs, processMcWithMlAndCentFT0C, "Process MC with ML information on Ds, with information on centrality from FT0C", false);
 
@@ -796,7 +806,7 @@ struct HfTaskDs {
                                   aod::McCollisions const&,
                                   aod::TracksWMc const&)
   {
-    runMcAnalysisPerCollision<CentralityEstimator::FT0M, CollisionsMcWithFT0M>(collisions, candsDs, mcParticles, candDsMcRecoWithMlPerCollision);
+    runMcAnalysisPerCollision<CollisionsMcWithFT0M>(collisions, candsDs, mcParticles, candDsMcRecoWithMlPerCollision);
   }
   PROCESS_SWITCH(HfTaskDs, processMcWithMlAndCentFT0M, "Process MC with ML information on Ds, with information on centrality from FT0M", false);
 
@@ -806,7 +816,7 @@ struct HfTaskDs {
                                        aod::McCollisions const&,
                                        aod::TracksWMc const&)
   {
-    runMcAnalysisPerCollision<CentralityEstimator::NTracksPV, CollisionsMcWithNTracksPV>(collisions, candsDs, mcParticles, candDsMcRecoWithMlPerCollision);
+    runMcAnalysisPerCollision<CollisionsMcWithNTracksPV>(collisions, candsDs, mcParticles, candDsMcRecoWithMlPerCollision);
   }
   PROCESS_SWITCH(HfTaskDs, processMcWithMlAndCentNTracksPV, "Process MC with ML information on Ds, with information on centrality from NTracksPV", false);
 
@@ -816,7 +826,7 @@ struct HfTaskDs {
                        aod::McCollisions const&,
                        aod::TracksWMc const&)
   {
-    runMcAnalysisPerCollision<CentralityEstimator::None, CollisionsMc>(collisions, candsDs, mcParticles, candDsMcRecoWithMlPerCollision);
+    runMcAnalysisPerCollision<CollisionsMc>(collisions, candsDs, mcParticles, candDsMcRecoWithMlPerCollision);
   }
   PROCESS_SWITCH(HfTaskDs, processMcWithMl, "Process MC with ML information on Ds, w/o information on centrality", false);
 };
