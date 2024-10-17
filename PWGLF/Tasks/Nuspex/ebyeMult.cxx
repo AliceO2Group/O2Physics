@@ -435,7 +435,7 @@ struct ebyeMult {
       }
     }
     histos.fill(HIST("GenRecTracks"), nTrackletsColl, candidateEvent.nTrkRec, nParticles);
-    histos.fill(HIST("GenRecTracklets"),nTrackletsColl,  candidateEvent.nTklRec, nParticles);
+    histos.fill(HIST("GenRecTracklets"), nTrackletsColl, candidateEvent.nTklRec, nParticles);
   }
 
   void processRun2(soa::Join<aod::Collisions, aod::EvSels> const& collisions, TracksFull const& tracks /* , aod::FV0As const& fv0as, aod::FV0Cs const& fv0cs */, BCsWithRun2Info const&)
