@@ -59,6 +59,11 @@ struct CandidateTrack {
   int64_t globalIndex = -999;
 };
 
+struct CandidateEvent {
+  int nTrkRec = -1;
+  int nTklRec = -1;
+};
+
 struct tagRun2V0MCalibration {
   bool mCalibrationStored = false;
   TH1* mhVtxAmpCorrV0A = nullptr;
@@ -83,6 +88,7 @@ enum PartTypes {
 struct ebyeMult {
   std::vector<CandidateTrack> candidateTracks;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
+  CandidateEvent candidateEvent;
 
   int mRunNumber;
   float d_bz;
@@ -274,14 +280,24 @@ struct ebyeMult {
     // rec tracks
     histos.add<TH3>("RecTracks", ";Tracklets |#eta| > 0.7;#it{p}_{T} (GeV/#it{c});DCA_{#it{xy}} (cm)", HistType::kTH3D, {{201, -0.5, 200.5}, {100, -5., 5.}, {200, -1., 1.}});
 
-    // rec & gen particles (per species)
-    histos.add<TH3>("RecPart", ";Tracklets |#eta| > 0.7;#it{p}_{T} (GeV/#it{c});Species", HistType::kTH3D, {{201, -0.5, 200.5}, {100, -5., 5.}, {10, 0, 10}});
-    histos.add<TH3>("GenPart", ";Tracklets |#eta| > 0.7;#it{p}_{T} (GeV/#it{c});Species", HistType::kTH3D, {{201, -0.5, 200.5}, {100, -5., 5.}, {10, 0, 10}});
+    // rec  tracks and tracklets distribution
+    histos.add<TH2>("TracksDistr", ";Tracklets |#eta| > 0.7;#it{N}_{trk}", HistType::kTH2D, {{201, -0.5, 200.5}, {201, -0.5, 200.5}});
+    histos.add<TH2>("TrackletsDistr", ";Tracklets |#eta| > 0.7;#it{N}_{tkl}", HistType::kTH2D, {{201, -0.5, 200.5}, {201, -0.5, 200.5}});
 
-    // dca_xy templates
-    histos.add<TH3>("PrimTracks", ";Tracklets |#eta| > 0.7;#it{p}_{T} (GeV/#it{c});DCA_{#it{xy}} (cm)", HistType::kTH3D, {{201, -0.5, 200.5}, {100, -5., 5.}, {200, -1., 1.}});
-    histos.add<TH3>("SecWDTracks", ";Tracklets |#eta| > 0.7;#it{p}_{T} (GeV/#it{c});DCA_{#it{xy}} (cm)", HistType::kTH3D, {{201, -0.5, 200.5}, {100, -5., 5.}, {200, -1., 1.}});
-    histos.add<TH3>("SecTracks", ";Tracklets |#eta| > 0.7;#it{p}_{T} (GeV/#it{c});DCA_{#it{xy}} (cm)", HistType::kTH3D, {{201, -0.5, 200.5}, {100, -5., 5.}, {200, -1., 1.}});
+    if (doprocessMcRun2) {
+      // rec & gen particles (per species)
+      histos.add<TH3>("RecPart", ";Tracklets |#eta| > 0.7;#it{p}_{T} (GeV/#it{c});Species", HistType::kTH3D, {{201, -0.5, 200.5}, {100, -5., 5.}, {10, 0, 10}});
+      histos.add<TH3>("GenPart", ";Tracklets |#eta| > 0.7;#it{p}_{T} (GeV/#it{c});Species", HistType::kTH3D, {{201, -0.5, 200.5}, {100, -5., 5.}, {10, 0, 10}});
+
+      // dca_xy templates
+      histos.add<TH3>("PrimTracks", ";Tracklets |#eta| > 0.7;#it{p}_{T} (GeV/#it{c});DCA_{#it{xy}} (cm)", HistType::kTH3D, {{201, -0.5, 200.5}, {100, -5., 5.}, {200, -1., 1.}});
+      histos.add<TH3>("SecWDTracks", ";Tracklets |#eta| > 0.7;#it{p}_{T} (GeV/#it{c});DCA_{#it{xy}} (cm)", HistType::kTH3D, {{201, -0.5, 200.5}, {100, -5., 5.}, {200, -1., 1.}});
+      histos.add<TH3>("SecTracks", ";Tracklets |#eta| > 0.7;#it{p}_{T} (GeV/#it{c});DCA_{#it{xy}} (cm)", HistType::kTH3D, {{201, -0.5, 200.5}, {100, -5., 5.}, {200, -1., 1.}});
+
+      // response
+      histos.add<TH3>("GenRecTracks", ";Tracklets |#eta| > 0.7#it;#it{N}_{trk};#it{N}_{gen}", HistType::kTH3D, {{201, -0.5, 200.5}, {201, -0.5, 200.5}, {201, -0.5, 200.5}});
+      histos.add<TH3>("GenRecTracklets", ";Tracklets |#eta| > 0.7;#it{N}_{tkl};#it{N}_{gen}", HistType::kTH3D, {{201, -0.5, 200.5}, {201, -0.5, 200.5}, {201, -0.5, 200.5}});
+    }
   }
 
   template <class C, class T>
@@ -292,6 +308,7 @@ struct ebyeMult {
 
     gpu::gpustd::array<float, 2> dcaInfo;
     int nTracklets[2]{0, 0};
+    int nTracks{0};
     for (const auto& track : tracks) {
 
       if (track.trackType() == 255 && std::abs(track.eta()) < 1.2) { // tracklet
@@ -325,10 +342,18 @@ struct ebyeMult {
       candTrack.dcazpv = dcaInfo[1];
       candTrack.globalIndex = track.globalIndex();
       candidateTracks.push_back(candTrack);
+
+      if (std::abs(dcaInfo[0]) < cfgDcaSels->get("dcaxy")) { // dcaxy
+        ++nTracks;
+      }
     }
 
     histos.fill(HIST("QA/nTrklCorrelation"), nTracklets[0], nTracklets[1]);
     nTrackletsColl = nTracklets[1];
+
+    candidateEvent.nTklRec = nTracklets[0];
+    histos.fill(HIST("TracksDistr"), nTracklets[1], nTracks);
+    histos.fill(HIST("TrackletsDistr"), nTracklets[1], nTracklets[0]);
   }
 
   template <class C, class T>
@@ -336,6 +361,7 @@ struct ebyeMult {
   {
     fillRecoEvent<C, T>(collision, tracks /* , centrality */);
 
+    int nTracks{0};
     for (auto& candidateTrack : candidateTracks) {
       candidateTrack.isreco = true;
 
@@ -362,6 +388,9 @@ struct ebyeMult {
         int partType = getPartType(mcTrack.pdgCode());
         if (mcTrack.isPhysicalPrimary()) { // primary
           histos.fill(HIST("RecPart"), nTrackletsColl, candidateTrack.pt, partType);
+          if (partType < PartTypes::kOther) {
+            ++nTracks;
+          }
         }
         auto genPt = std::hypot(mcTrack.px(), mcTrack.py());
         candidateTrack.pdgcode = mcTrack.pdgCode();
@@ -370,10 +399,12 @@ struct ebyeMult {
         candidateTrack.mcIndex = mcTrack.globalIndex();
       }
     }
+    candidateEvent.nTrkRec = nTracks;
   }
 
   void fillMcGen(aod::McParticles const& mcParticles, aod::McTrackLabels const& /*mcLab*/, uint64_t const& collisionId)
   {
+    int nParticles = 0;
     auto mcParticles_thisCollision = mcParticles.sliceBy(perCollisionMcParts, collisionId);
     for (auto& mcPart : mcParticles_thisCollision) {
       auto genEta = mcPart.eta();
@@ -391,6 +422,9 @@ struct ebyeMult {
       candTrack.pdgcode = mcPart.pdgCode();
 
       int partType = getPartType(mcPart.pdgCode());
+      if (partType < PartTypes::kOther) {
+        ++nParticles;
+      }
       histos.fill(HIST("GenPart"), nTrackletsColl, mcPart.pdgCode() > 0 ? genPt : -genPt, partType);
 
       auto it = find_if(candidateTracks.begin(), candidateTracks.end(), [&](CandidateTrack trk) { return trk.mcIndex == mcPart.globalIndex(); });
@@ -400,6 +434,8 @@ struct ebyeMult {
         candidateTracks.emplace_back(candTrack);
       }
     }
+    histos.fill(HIST("GenRecTracks"), nTrackletsColl, candidateEvent.nTrkRec, nParticles);
+    histos.fill(HIST("GenRecTracklets"), nTrackletsColl, candidateEvent.nTklRec, nParticles);
   }
 
   void processRun2(soa::Join<aod::Collisions, aod::EvSels> const& collisions, TracksFull const& tracks /* , aod::FV0As const& fv0as, aod::FV0Cs const& fv0cs */, BCsWithRun2Info const&)
