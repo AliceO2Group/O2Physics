@@ -871,8 +871,8 @@ struct femtoUniverseProducerTask {
       } //////
       return;
     }
-    
-    // colCuts.fillQA(col); //for now, TODO: create a configurable so in the FemroUniverseCollisionSelection.h there is an option to plot QA just for the posZ      
+
+    // colCuts.fillQA(col); //for now, TODO: create a configurable so in the FemroUniverseCollisionSelection.h there is an option to plot QA just for the posZ
     if (occupancy > ConfTPCOccupancyMin && occupancy <= ConfTPCOccupancyMax) {
       if (ConfDoSpher) {
         outputCollision(vtxZ, cent, multNtr, colCuts.computeSphericity(col, tracks), mMagField);
