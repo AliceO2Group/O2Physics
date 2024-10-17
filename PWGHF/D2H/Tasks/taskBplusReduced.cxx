@@ -185,10 +185,10 @@ struct HfTaskBplusReduced {
         registry.add("hRapidity", bPlusCandTitle + "candidate #it{y};" + stringPt, {HistType::kTH2F, {axisRapidity, axisPtB}});
         registry.add("hd0d0", bPlusCandTitle + "candidate product of DCAxy to prim. vertex (cm^{2});" + stringPt, {HistType::kTH2F, {axisImpParProd, axisPtB}});
         registry.add("hInvMassD0", bPlusCandTitle + "prong0, D0 inv. mass (GeV/#it{c}^{2});" + stringPt, {HistType::kTH2F, {axisMassD0, axisPtD0}});
-        registry.add("hDecLengthD0", bPlusCandTitle + "#it{p}_{T}(D^{0}) (GeV/#it{c});D^{0} candidate decay length (cm);entries", {HistType::kTH2F, {axisDecLength, axisPtD0}});
-        registry.add("hDecLengthXyD0", bPlusCandTitle + "#it{p}_{T}(D^{0}) (GeV/#it{c});decay length XY (cm);entries", {HistType::kTH2F, {axisDecLength, axisPtD0}});
-        registry.add("hCpaD0", bPlusCandTitle + "#it{p}_{T}(D^{0}) (GeV/#it{c});D^{0} candidate cos(#vartheta_{P});entries", {HistType::kTH2F, {axisCpaD, axisPtD0}});
-        registry.add("hCpaXyD0", bPlusCandTitle + "#it{p}_{T}(D^{0}) (GeV/#it{c});D^{0} candidate cos(#vartheta_{P}^{XY});entries", {HistType::kTH2F, {axisCpaD, axisPtD0}});
+        registry.add("hDecLengthD0", bPlusCandTitle + "D^{0} candidate decay length (cm);#it{p}_{T}(D^{0}) (GeV/#it{c});entries", {HistType::kTH2F, {axisDecLength, axisPtD0}});
+        registry.add("hDecLengthXyD0", bPlusCandTitle + "decay length XY (cm);#it{p}_{T}(D^{0}) (GeV/#it{c});entries", {HistType::kTH2F, {axisDecLength, axisPtD0}});
+        registry.add("hCpaD0", bPlusCandTitle + "D^{0} candidate cos(#vartheta_{P});#it{p}_{T}(D^{0}) (GeV/#it{c});entries", {HistType::kTH2F, {axisCpaD, axisPtD0}});
+        registry.add("hCpaXyD0", bPlusCandTitle + "D^{0} candidate cos(#vartheta_{P}^{XY});#it{p}_{T}(D^{0}) (GeV/#it{c});entries", {HistType::kTH2F, {axisCpaD, axisPtD0}});
 
         // ML scores of D0 daughter
         if (doprocessDataWithDmesMl) {
