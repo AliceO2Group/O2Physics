@@ -21,21 +21,21 @@ namespace o2::aod::pwgem::photonmeson::utils::clusterhistogram
 {
 void addClusterHistograms(HistogramRegistry* fRegistry, bool do2DQA)
 {
-  fRegistry->add("Cluster/before/hE", "E_{cluster};#it{E}_{cluster} (GeV);#it{N}_{cluster}", kTH1F, {{500, 0, 50}}, true);
-  fRegistry->add("Cluster/before/hPt", "Transverse momenta of clusters;#it{p}_{T} (GeV/c);#it{N}_{cluster}", kTH1F, {{1000, 0.0f, 20}}, true);
-  fRegistry->add("Cluster/before/hNgamma", "Number of #gamma candidates per collision;#it{N}_{#gamma} per collision;#it{N}_{collisions}", kTH1F, {{101, -0.5f, 100.5f}}, true);
-  fRegistry->add("Cluster/before/hEtaPhi", "#eta vs #varphi;#eta;#varphi (rad.)", kTH2F, {{200, -1.0f, 1.0f}, {180, 0, 2 * M_PI}}, true);
-  fRegistry->add("Cluster/before/hTrackEtaPhi", "d#eta vs. d#varphi of matched tracks;d#eta;d#varphi (rad.)", kTH2F, {{100, -0.5, 0.5}, {100, -0.5, 0.5}}, true);
+  fRegistry->add("Cluster/before/hE", "E_{cluster};#it{E}_{cluster} (GeV);#it{N}_{cluster}", kTH1F, {{500, 0.0f, 50}}, true);
+  fRegistry->add("Cluster/before/hPt", "Transverse momenta of clusters;#it{p}_{T} (GeV/c);#it{N}_{cluster}", kTH1F, {{500, 0.0f, 50}}, true);
+  fRegistry->add("Cluster/before/hNgamma", "Number of #gamma candidates per collision;#it{N}_{#gamma} per collision;#it{N}_{collisions}", kTH1F, {{51, -0.5f, 50.5f}}, true);
+  fRegistry->add("Cluster/before/hEtaPhi", "#eta vs #varphi;#eta;#varphi (rad.)", kTH2F, {{280, -0.7f, 0.7f}, {180, 0, 2 * M_PI}}, true);
+  fRegistry->add("Cluster/before/hTrackEtaPhi", "d#eta vs. d#varphi of matched tracks;d#eta;d#varphi (rad.)", kTH2F, {{200, -0.2f, 0.2f}, {200, -0.2f, 0.2f}}, true);
 
   if (do2DQA) { // Check if 2D QA histograms were selected in em-qc task
-    fRegistry->add("Cluster/before/hNCell", "#it{N}_{cells};N_{cells} (GeV);#it{E}_{cluster} (GeV)", kTH2F, {{51, -0.5, 50.5}, {200, 0, 20}}, true);
-    fRegistry->add("Cluster/before/hM02", "Long ellipse axis;#it{M}_{02} (cm);#it{E}_{cluster} (GeV)", kTH2F, {{500, 0, 5}, {200, 0, 20}}, true);
-    fRegistry->add("Cluster/before/hTime", "Cluster time;#it{t}_{cls} (ns);#it{E}_{cluster} (GeV)", kTH2F, {{100, -250, 250}, {200, 0, 20}}, true);
+    fRegistry->add("Cluster/before/hNCell", "#it{N}_{cells};N_{cells} (GeV);#it{E}_{cluster} (GeV)", kTH2F, {{26, -0.5, 25.5}, {200, 0, 20}}, true);
+    fRegistry->add("Cluster/before/hM02", "Long ellipse axis;#it{M}_{02} (cm);#it{E}_{cluster} (GeV)", kTH2F, {{200, 0, 2}, {200, 0, 20}}, true);
+    fRegistry->add("Cluster/before/hTime", "Cluster time;#it{t}_{cls} (ns);#it{E}_{cluster} (GeV)", kTH2F, {{300, -150, 150}, {200, 0, 20}}, true);
     fRegistry->add("Cluster/before/hCellTime", "Cell time;#it{t}_{cell} (ns);#it{E}_{cluster} (GeV)", kTH2F, {{100, -250, 250}, {200, 0, 20}}, true);
   } else {
-    fRegistry->add("Cluster/before/hNCell", "#it{N}_{cells};N_{cells} (GeV);#it{N}_{cluster}", kTH1F, {{51, -0.5, 50.5}}, true);
-    fRegistry->add("Cluster/before/hM02", "Long ellipse axis;#it{M}_{02} (cm);#it{N}_{cluster}", kTH1F, {{500, 0, 5}}, true);
-    fRegistry->add("Cluster/before/hTime", "Cluster time;#it{t}_{cls} (ns);#it{N}_{cluster}", kTH1F, {{500, -250, 250}}, true);
+    fRegistry->add("Cluster/before/hNCell", "#it{N}_{cells};N_{cells} (GeV);#it{N}_{cluster}", kTH1F, {{26, -0.5, 25.5}}, true);
+    fRegistry->add("Cluster/before/hM02", "Long ellipse axis;#it{M}_{02} (cm);#it{N}_{cluster}", kTH1F, {{400, 0, 2}}, true);
+    fRegistry->add("Cluster/before/hTime", "Cluster time;#it{t}_{cls} (ns);#it{N}_{cluster}", kTH1F, {{600, -150, 150}}, true);
     fRegistry->add("Cluster/before/hCellTime", "Cluster time;#it{t}_{cell} (ns);#it{N}_{cluster}", kTH1F, {{500, -250, 250}}, true);
   }
 
