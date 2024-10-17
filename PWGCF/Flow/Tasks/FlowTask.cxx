@@ -47,7 +47,6 @@ using namespace o2::framework::expressions;
 
 struct FlowTask {
 
-  O2_DEFINE_CONFIGURABLE(cfgFilterFlag, int, 0, "0 for IsGlobalTrack, 1 for IsGlobalTrackSDD, 2 for IsGlobalTrackWoTPCCluster, 3 for IsGlobalTrackWoPtEta, 4 for IsGlobalTrackWoDCA, 5 for IsGlobalTrackWoDCATPCCluster")
   O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 10.0f, "Accepted z-vertex range")
   O2_DEFINE_CONFIGURABLE(cfgCutPtPOIMin, float, 0.2f, "Minimal pT for poi tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutPtPOIMax, float, 10.0f, "Maximal pT for poi tracks")
@@ -57,10 +56,8 @@ struct FlowTask {
   O2_DEFINE_CONFIGURABLE(cfgCutPtMax, float, 10.0f, "Maximal pT for all tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutEta, float, 0.8f, "Eta range for tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5f, "max chi2 per TPC clusters")
-  O2_DEFINE_CONFIGURABLE(cfgCutChi2prITScls, float, 36.0f, "max chi2 per cluster ITS")
   O2_DEFINE_CONFIGURABLE(cfgCutTPCclu, float, 70.0f, "minimum TPC clusters")
   O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2.0f, "max DCA to vertex z")
-  O2_DEFINE_CONFIGURABLE(cfgCutDCAxy, float, 3.675e-4f, "max DCA to vertex xy, default 0.0105 * 0.035 * pT^-1.1")
   O2_DEFINE_CONFIGURABLE(cfgUseAdditionalEventCut, bool, false, "Use additional event cut on mult correlations")
   O2_DEFINE_CONFIGURABLE(cfgUseAdditionalTrackCut, bool, false, "Use additional track cut on phi")
   O2_DEFINE_CONFIGURABLE(cfgGetInteractionRate, bool, false, "Get interaction rate from CCDB")
@@ -94,7 +91,7 @@ struct FlowTask {
   ConfigurableAxis axisDCAxy{"axisDCAxy", {200, -1, 1}, "DCA_{xy} (cm)"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (aod::track::itsChi2NCl < cfgCutChi2prITScls);
+  Filter trackFilter = ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
 
   // Corrections
   TH1D* mEfficiency = nullptr;
@@ -576,22 +573,7 @@ struct FlowTask {
   template <typename TTrack>
   bool trackSelected(TTrack track)
   {
-    switch (cfgFilterFlag) {
-      case 0:
-        return track.isGlobalTrack();
-      case 1:
-        return (track.isGlobalTrackSDD() == (uint8_t) true);
-      case 2:
-        return (track.isGlobalTrackWoTPCCluster() && track.tpcNClsFound() >= cfgCutTPCclu);
-      case 3:
-        return (track.isGlobalTrackWoPtEta() && (fabs(track.eta()) < cfgCutEta) && (track.pt() > cfgCutPtMin) && (track.pt() < cfgCutPtMax));
-      case 4:
-        return (track.isGlobalTrackWoDCA() && fabs(track.dcaZ()) <= cfgCutDCAz && fabs(track.dcaXY()) <= cfgCutDCAxy * pow(track.pt(), -1.1));
-      case 5:
-        return (track.isGlobalTrackWoDCATPCCluster() && fabs(track.dcaZ()) <= cfgCutDCAz && fabs(track.dcaXY()) <= cfgCutDCAxy * pow(track.pt(), -1.1) && track.tpcNClsFound() >= cfgCutTPCclu);
-      default:
-        return false;
-    }
+    return (track.tpcNClsFound() >= cfgCutTPCclu);
   }
 
   template <typename TTrack>
