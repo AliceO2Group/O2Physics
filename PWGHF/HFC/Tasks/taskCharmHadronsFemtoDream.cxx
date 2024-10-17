@@ -163,7 +163,7 @@ struct HfTaskCharmHadronsFemtoDream {
   FemtoDreamEventHisto eventHisto;
   /// Histogram output
   HistogramRegistry registry{"CorrelationsAndQA", {}, OutputObjHandlingPolicy::AnalysisObject};
-  HistogramRegistry MixQaRegistry{"MixQaRegistry", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry registryMixQa{"registryMixQa"};
   /// Partition for particle 1
 
   Partition<FilteredFDParticles> partitionTrk1 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack));
