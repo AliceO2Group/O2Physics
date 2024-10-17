@@ -293,6 +293,7 @@ struct nucleiSpectra {
   // CCDB options
   Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrLUT), "Type of material correction"};
   Configurable<std::string> cfgCCDBurl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> cfgZorroCCDBpath{"cfgZorroCCDBpath", "/Users/m/mpuccio/EventFiltering/OTS/", "path to the zorro ccdb objects"};
   int mRunNumber = 0;
   float mBz = 0.f;
 
@@ -374,6 +375,7 @@ struct nucleiSpectra {
   void init(o2::framework::InitContext&)
   {
     zorroSummary.setObject(zorro.getZorroSummary());
+    zorro.setBaseCCDBPath(cfgZorroCCDBpath.value);
     ccdb->setURL(cfgCCDBurl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();

@@ -80,12 +80,14 @@ struct lambdapolsp {
   Configurable<float> cfgCutCentralityMin{"cfgCutCentralityMin", 30.0f, "Accepted minimum Centrality"};
   // proton track cut
   Configurable<float> confRapidity{"confRapidity", 0.8, "cut on Rapidity"};
-  Configurable<float> cfgCutPT{"cfgCutPT", 0.3, "PT cut on daughter track"};
+  Configurable<float> cfgCutPT{"cfgCutPT", 0.15, "PT cut on daughter track"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8, "Eta cut on daughter track"};
   Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 0.1f, "DCAxy range for tracks"};
-  Configurable<float> cfgCutDCAz{"cfgCutDCAz", 1.0f, "DCAz range for tracks"};
+  Configurable<float> cfgCutDCAz{"cfgCutDCAz", 0.1f, "DCAz range for tracks"};
   Configurable<int> cfgITScluster{"cfgITScluster", 5, "Number of ITS cluster"};
   Configurable<int> cfgTPCcluster{"cfgTPCcluster", 70, "Number of TPC cluster"};
+  Configurable<bool> isPVContributor{"isPVContributor", true, "is PV contributor"};
+  Configurable<bool> checkwithpub{"checkwithpub", true, "checking results with published"};
   // Configs for V0
   Configurable<float> ConfV0PtMin{"ConfV0PtMin", 0.f, "Minimum transverse momentum of V0"};
   Configurable<float> ConfV0Rap{"ConfV0Rap", 0.8f, "Rapidity range of V0"};
@@ -131,6 +133,23 @@ struct lambdapolsp {
     AxisSpec thnAxisPol{PolNbins, lbinPol, hbinPol, "Sin(#phi - #psi)"};
     AxisSpec thnAxisCosThetaStar{SANbins, lbinSA, hbinSA, "SA"};
     AxisSpec centAxis = {CentNbins, lbinCent, hbinCent, "V0M (%)"};
+    AxisSpec etaAxis = {8, -0.8, 0.8, "Eta"};
+
+    if (checkwithpub) {
+      histos.add("hpuxQxpvscent", "hpuxQxpvscent", kTProfile, {centAxis});
+      histos.add("hpuyQypvscent", "hpuyQypvscent", kTProfile, {centAxis});
+      histos.add("hpuxQxtvscent", "hpuxQxtvscent", kTProfile, {centAxis});
+      histos.add("hpuyQytvscent", "hpuyQytvscent", kTProfile, {centAxis});
+      histos.add("hpQxtQxpvscent", "hpQxtQxpvscent", kTProfile, {centAxis});
+      histos.add("hpQytQypvscent", "hpQytQypvscent", kTProfile, {centAxis});
+
+      histos.add("hpposuxyQxytvseta", "hpposuxyQxytvseta", kTProfile, {etaAxis});
+      histos.add("hpposuxyQxypvseta", "hpposuxyQxypvseta", kTProfile, {etaAxis});
+      histos.add("hpposQxytpvseta", "hpposQxytpvseta", kTProfile, {etaAxis});
+      histos.add("hpneguxyQxytvseta", "hpneguxyQxytvseta", kTProfile, {etaAxis});
+      histos.add("hpneguxyQxypvseta", "hpneguxyQxypvseta", kTProfile, {etaAxis});
+      histos.add("hpnegQxytpvseta", "hpnegQxytpvseta", kTProfile, {etaAxis});
+    }
 
     histos.add("hCentrality", "Centrality distribution", kTH1F, {{centAxis}});
     histos.add("hVtxZ", "Vertex distribution in Z;Z (cm)", kTH1F, {{20, -10.0, 10.0}});
@@ -151,6 +170,15 @@ struct lambdapolsp {
       histos.add("hSparseAntiLambdaPolA_corr", "hSparseAntiLambdaPolA_corr", HistType::kTHnSparseF, {thnAxisInvMass, thnAxispT, thnAxisCosThetaStar, thnAxisPol, thnAxisPol, thnAxisPol, centAxis}, true);
       histos.add("hSparseAntiLambdaPolC_corr", "hSparseAntiLambdaPolC_corr", HistType::kTHnSparseF, {thnAxisInvMass, thnAxispT, thnAxisCosThetaStar, thnAxisPol, thnAxisPol, thnAxisPol, centAxis}, true);
     }
+  }
+
+  template <typename T>
+  bool selectionTrack(const T& candidate)
+  {
+    if (!isPVContributor || !candidate.isGlobalTrackWoDCA() || !(candidate.itsNCls() > cfgITScluster) || !(candidate.tpcNClsFound() > cfgTPCcluster)) {
+      return false;
+    }
+    return true;
   }
 
   template <typename Collision, typename V0>
@@ -262,14 +290,16 @@ struct lambdapolsp {
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter centralityFilter = (nabs(aod::cent::centFT0C) < cfgCutCentralityMax && nabs(aod::cent::centFT0C) > cfgCutCentralityMin);
-  // Filter acceptanceFilter = (nabs(aod::track::eta) < cfgCutEta && nabs(aod::track::pt) > cfgCutPT);
-  // Filter dcaCutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
+  Filter acceptanceFilter = (nabs(aod::track::eta) < cfgCutEta && nabs(aod::track::pt) > cfgCutPT);
+  Filter dcaCutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
 
   using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::SPCalibrationTables, aod::Mults>>;
-  using AllTrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr>;
+  // using AllTrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr>;
+  using AllTrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr>>;
   using ResoV0s = aod::V0Datas;
 
-  void processData(EventCandidates::iterator const& collision, AllTrackCandidates const&, ResoV0s const& V0s, aod::BCs const&)
+  // void processData(EventCandidates::iterator const& collision, AllTrackCandidates const&, ResoV0s const& V0s, aod::BCs const&)
+  void processData(EventCandidates::iterator const& collision, AllTrackCandidates const& tracks, ResoV0s const& V0s, aod::BCs const&)
   {
 
     if (!collision.sel8()) {
@@ -303,6 +333,61 @@ struct lambdapolsp {
     histos.fill(HIST("hpCosPsiC"), centrality, (TMath::Cos(psiZDCC)));
     histos.fill(HIST("hpSinPsiA"), centrality, (TMath::Sin(psiZDCA)));
     histos.fill(HIST("hpSinPsiC"), centrality, (TMath::Sin(psiZDCC)));
+
+    ///////////checking v1 and v2////////////////////////////////
+
+    if (checkwithpub) {
+      auto qxZDCA = collision.qxZDCA();
+      auto qxZDCC = collision.qxZDCC();
+      auto qyZDCA = collision.qyZDCA();
+      auto qyZDCC = collision.qyZDCC();
+
+      for (auto track : tracks) {
+        if (!selectionTrack(track)) {
+          continue;
+        }
+
+        float sign = track.sign();
+        if (sign == 0.0) // removing neutral particles
+          continue;
+
+        auto ux = GetPhiInRange(TMath::Cos(track.phi()));
+        auto uy = GetPhiInRange(TMath::Sin(track.phi()));
+
+        auto uxQxp = ux * qxZDCA;
+        auto uyQyp = uy * qyZDCA;
+        auto uxyQxyp = uxQxp + uyQyp;
+        auto uxQxt = ux * qxZDCC;
+        auto uyQyt = uy * qyZDCC;
+        auto uxyQxyt = uxQxt + uyQyt;
+
+        auto QxtQxp = qxZDCA * qxZDCC;
+        auto QytQyp = qyZDCA * qyZDCC;
+        auto Qxytp = QxtQxp + QytQyp;
+        histos.fill(HIST("hpuxQxpvscent"), centrality, uxQxp);
+        histos.fill(HIST("hpuyQypvscent"), centrality, uyQyp);
+        histos.fill(HIST("hpuxQxtvscent"), centrality, uxQxt);
+        histos.fill(HIST("hpuyQytvscent"), centrality, uyQyt);
+        histos.fill(HIST("hpQxtQxpvscent"), centrality, QxtQxp);
+        histos.fill(HIST("hpQytQypvscent"), centrality, QytQyp);
+
+        if (centrality > 5.0 && centrality < 40.0) {
+          if (track.pt() > 0.2) {
+            if (sign > 0.0) {
+              histos.fill(HIST("hpposuxyQxytvseta"), track.eta(), uxyQxyt);
+              histos.fill(HIST("hpposuxyQxypvseta"), track.eta(), uxyQxyp);
+              histos.fill(HIST("hpposQxytpvseta"), track.eta(), Qxytp);
+            } else if (sign < 0.0) {
+              histos.fill(HIST("hpneguxyQxytvseta"), track.eta(), uxyQxyt);
+              histos.fill(HIST("hpneguxyQxypvseta"), track.eta(), uxyQxyp);
+              histos.fill(HIST("hpnegQxytpvseta"), track.eta(), Qxytp);
+            }
+          }
+        }
+      }
+    }
+
+    //////////////////////////////////////////////////////////////////////////
 
     for (auto v0 : V0s) {
 

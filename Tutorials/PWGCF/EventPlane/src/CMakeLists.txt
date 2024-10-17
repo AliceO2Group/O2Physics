@@ -9,14 +9,7 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-o2physics_add_dpl_workflow(fwd-tracks-extra-converter
-                           SOURCES UDFwdTracksExtraConverter.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                           COMPONENT_NAME Analysis)
-
-
-o2physics_add_dpl_workflow(collisions-converter
-                           SOURCES UDCollisionsConverter.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                           COMPONENT_NAME Analysis)
-
+o2physics_add_dpl_workflow(qvectors-tutorial
+                    SOURCES qVectorstutorial.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
