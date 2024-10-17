@@ -299,7 +299,7 @@ struct HfFemtoDreamProducer {
       outputPartsIndex(track.globalIndex());
       // now the table is filled
 
-      outputParts(outputCollision.lastIndex() + 1,
+      outputParts(outputCollision.lastIndex(),
                   track.pt(),
                   track.eta(),
                   track.phi(),
