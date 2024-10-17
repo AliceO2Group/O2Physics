@@ -206,9 +206,9 @@ struct HfTaskCharmHadronsFemtoDream {
                               smearingByOrigin, binInvMass);
 
     mixedEventCont.setPDGCodes(pdgCodeTrack1, charmHadPDGCode);
-    MixQaRegistry.add("MixingQA/hSECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
-    MixQaRegistry.add("MixingQA/hSECollisionPool", ";bin;Entries", kTH2F, {{100, -10, 10}, {2000, 0, 200}});
-    MixQaRegistry.add("MixingQA/hMECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
+    registryMixQa.add("MixingQA/hSECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
+    registryMixQa.add("MixingQA/hSECollisionPool", ";bin;Entries", kTH2F, {{100, -10, 10}, {2000, 0, 200}});
+    registryMixQa.add("MixingQA/hMECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
     pairCleaner.init(&registry);
     if (useCPR.value) {
       pairCloseRejectionSE.init(&registry, &registry, cprDeltaPhiMax.value, cprDeltaEtaMax.value, cprPlotPerRadii.value, 1);
@@ -219,8 +219,8 @@ struct HfTaskCharmHadronsFemtoDream {
   template <typename CollisionType>
   void fillCollision(CollisionType const& col)
   {
-    MixQaRegistry.fill(HIST("MixingQA/hSECollisionBins"), colBinningMult.getBin({col.posZ(), col.multNtr()}));
-    MixQaRegistry.fill(HIST("MixingQA/hSECollisionPool"), col.posZ(), col.multNtr());
+    registryMixQa.fill(HIST("MixingQA/hSECollisionBins"), colBinningMult.getBin({col.posZ(), col.multNtr()}));
+    registryMixQa.fill(HIST("MixingQA/hSECollisionPool"), col.posZ(), col.multNtr());
   }
 
   /// This function processes the same event and takes care of all the histogramming
@@ -341,7 +341,7 @@ struct HfTaskCharmHadronsFemtoDream {
 
       const int multiplicityCol = collision1.multNtr();
 
-      MixQaRegistry.fill(HIST("MixingQA/hMECollisionBins"), colBinningMult.getBin({collision1.posZ(), multiplicityCol}));
+      registryMixQa.fill(HIST("MixingQA/hMECollisionBins"), colBinningMult.getBin({collision1.posZ(), multiplicityCol}));
 
       auto sliceTrk1 = part1->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision1.globalIndex(), cache);
       auto sliceCharmHad = part2->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision2.globalIndex(), cache);
