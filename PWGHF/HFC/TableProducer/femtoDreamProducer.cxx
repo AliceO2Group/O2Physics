@@ -46,7 +46,7 @@ using namespace o2::analysis::femtoDream;
 struct HfFemtoDreamProducer {
 
   Produces<aod::FDCollisions> outputCollision;
-  Produces<aod::FDColMasks> Masks;
+  Produces<aod::FDColMasks> rowMasks;
   Produces<aod::FDHfCand> rowCandCharmHad;
   Produces<aod::FDHfCandMC> rowCandMcCharmHad;
   Produces<aod::FDHfCandMCGen> rowCandCharmHadGen;
