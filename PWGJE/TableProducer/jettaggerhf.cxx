@@ -49,7 +49,7 @@ struct JetTaggerHFTask {
   Configurable<float> prongIPxyMax{"prongIpxyMax", 1, "minimum impact parmeter of prongs on xy plane [cm]"};
   Configurable<float> prongChi2PCAMin{"prongChi2PCAMin", 4, "minimum Chi2 PCA of decay length of prongs"};
   Configurable<float> prongChi2PCAMax{"prongChi2PCAMax", 100, "maximum Chi2 PCA of decay length of prongs"};
-  Configurable<float> prongDispersionMax{"prongDispersionMax", 1, "maximum dispersion of sv"};
+  Configurable<float> svDispersionMax{"svDispersionMax", 1, "maximum dispersion of sv"};
 
   // jet flavour definition
   Configurable<float> maxDeltaR{"maxDeltaR", 0.25, "maximum distance of jet axis from flavour initiating parton"};
@@ -67,12 +67,12 @@ struct JetTaggerHFTask {
   Configurable<std::vector<float>> paramsResoFuncBeautyJetMC{"paramsResoFuncBeautyJetMC", std::vector<float>{74901.583, -0.082, 0.874, 10.332, 0.941, 7.352, 0.097, 6.220, 0.022}, "parameters of gaus(0)+expo(3)+expo(5)+expo(7)))"};
   Configurable<std::vector<float>> paramsResoFuncLfJetMC{"paramsResoFuncLfJetMC", std::vector<float>{1539435.343, -0.061, 0.896, 13.272, 1.034, 5.884, 0.004, 7.843, 0.090}, "parameters of gaus(0)+expo(3)+expo(5)+expo(7)))"};
   Configurable<float> minSignImpXYSig{"minsIPs", -40.0, "minimum of signed impact parameter significance"};
-  Configurable<float> tagPointForIP{"tagPointForIP", 2.5, "tagging working point for IP"};
   Configurable<int> minIPCount{"minIPCount", 2, "Select at least N signed impact parameter significance in jets"}; // default 2
+  Configurable<float> tagPointForIP{"tagPointForIP", 2.5, "tagging working point for IP"};
+  Configurable<float> tagPointForIPxyz{"tagPointForIPxyz", 2.5, "tagging working point for IP xyz"};
   // configuration about SV method
-  Configurable<bool> doSV{"doSV", false, "fill table for secondary vertex algorithm"};
-  Configurable<bool> useXYZForTagging{"useXYZForTagging", false, "Enable tagging decision using full XYZ DCA for secondary vertex algorithm"};
-  Configurable<float> tagPointForSV{"tagPointForSV", 15, "tagging working point for SV"};
+  Configurable<float> tagPointForSV{"tagPointForSV", 40, "tagging working point for SV"};
+  Configurable<float> tagPointForSVxyz{"tagPointForSVxyz", 40, "tagging working point for SV xyz"};
 
   // axis spec
   ConfigurableAxis binTrackProbability{"binTrackProbability", {100, 0.f, 1.f}, ""};
@@ -197,15 +197,15 @@ struct JetTaggerHFTask {
         break;
       case 4: // TODO
         vecParamsData = (std::vector<float>)paramsResoFuncData;
-        vecParamsCharmJetMC = {281446.003, -0.063, 0.894, 11.598, 0.943, 8.025, 0.130, 6.227, 0.027};
-        vecParamsBeautyJetMC = {74839.065, -0.081, 0.875, 10.314, 0.939, 7.326, 0.101, 6.309, 0.024};
-        vecParamsLfJetMC = {1531580.038, -0.062, -0.896, 13.267, 1.034, 5.866, 0.004, 7.836, 0.090};
-        LOG(info) << "defined parameters of resolution function: PYTHIA8, JJ, LHC23d4";
+        vecParamsCharmJetMC = {743719.121, -0.960, -0.240, 13.765, 1.314, 10.761, 0.293, 8.538, 0.052};
+        vecParamsBeautyJetMC = {88888.418, 0.256, 1.003, 10.185, 0.740, 8.216, 0.147, 7.228, 0.040};
+        vecParamsLfJetMC = {414860.372, -1.000, 0.285, 14.561, 1.464, 11.693, 0.339, 9.183, 0.052};
+        LOG(info) << "defined parameters of resolution function: PYTHIA8, JJ, weighted, LHC24g4";
         break;
       case 5: // TODO
         vecParamsData = (std::vector<float>)paramsResoFuncData;
-        vecParamsIncJetMC = {1900387.527, -0.059, 0.895, 13.461, 1.004, 8.860, 0.098, 6.931, 0.011};
-        LOG(info) << "defined parameters of resolution function: PYTHIA8, JJ, LHC23d4 & use inclusive distribution";
+        vecParamsIncJetMC = {2211391.862, 0.360, 1.028, 13.019, 0.650, 11.151, 0.215, 9.462, 0.044};
+        LOG(info) << "defined parameters of resolution function: PYTHIA8, JJ, weighted, LHC24g4 & use inclusive distribution";
         useResoFuncFromIncJet = true;
         break;
       default:
@@ -242,17 +242,22 @@ struct JetTaggerHFTask {
   void processData(JetCollision const& /*collision*/, JetTableData const& jets, JetTagTracksData const& jtracks)
   {
     for (auto& jet : jets) {
-      bool flagtaggedjetIP = 0;
-      bool flagtaggedjetSV = 0;
+      bool flagtaggedjetIP = false;
+      bool flagtaggedjetIPxyz = false;
+      bool flagtaggedjetSV = false;
+      bool flagtaggedjetSVxyz = false;
       if (useJetProb) {
         calculateJetProbability(0, jet, jtracks, jetProb, false);
         if (trackProbQA) {
           evaluateTrackProbQA(0, jet, jtracks, false);
         }
       }
-      if (jettaggingutilities::isGreaterThanTaggingPoint(jet, jtracks, trackDcaXYMax, trackDcaZMax, tagPointForIP, minIPCount))
+      if (jettaggingutilities::isGreaterThanTaggingPoint(jet, jtracks, trackDcaXYMax, trackDcaZMax, tagPointForIP, minIPCount, false))
         flagtaggedjetIP = true;
-      taggingTableData(0, jetProb, flagtaggedjetIP, flagtaggedjetSV);
+      if (jettaggingutilities::isGreaterThanTaggingPoint(jet, jtracks, trackDcaXYMax, trackDcaZMax, tagPointForIP, minIPCount, true))
+        flagtaggedjetIPxyz = true;
+
+      taggingTableData(0, jetProb, flagtaggedjetIP, flagtaggedjetIPxyz, flagtaggedjetSV, flagtaggedjetSVxyz);
     }
   }
   PROCESS_SWITCH(JetTaggerHFTask, processData, "Fill tagging decision for data jets", false);
@@ -260,22 +265,23 @@ struct JetTaggerHFTask {
   void processDataWithSV(JetCollision const& /*collision*/, soa::Join<JetTableData, aod::DataSecondaryVertex3ProngIndices> const& jets, JetTagTracksData const& jtracks, aod::DataSecondaryVertex3Prongs const& prongs)
   {
     for (auto& jet : jets) {
-      bool flagtaggedjetIP = 0;
-      bool flagtaggedjetSV = 0;
+      bool flagtaggedjetIP = false;
+      bool flagtaggedjetIPxyz = false;
+      bool flagtaggedjetSV = false;
+      bool flagtaggedjetSVxyz = false;
       if (useJetProb) {
         calculateJetProbability(0, jet, jtracks, jetProb, false);
         if (trackProbQA) {
           evaluateTrackProbQA(0, jet, jtracks, false);
         }
       }
-      if (jettaggingutilities::isGreaterThanTaggingPoint(jet, jtracks, trackDcaXYMax, trackDcaZMax, tagPointForIP, minIPCount))
+      if (jettaggingutilities::isGreaterThanTaggingPoint(jet, jtracks, trackDcaXYMax, trackDcaZMax, tagPointForIP, minIPCount, false))
         flagtaggedjetIP = true;
-      if (!useXYZForTagging) {
-        flagtaggedjetSV = jettaggingutilities::isTaggedJetSV(jet, prongs, prongChi2PCAMin, prongChi2PCAMax, prongsigmaLxyMax, prongDispersionMax, useXYZForTagging, tagPointForSV);
-      } else {
-        flagtaggedjetSV = jettaggingutilities::isTaggedJetSV(jet, prongs, prongChi2PCAMin, prongChi2PCAMax, prongsigmaLxyzMax, prongDispersionMax, useXYZForTagging, tagPointForSV);
-      }
-      taggingTableData(0, jetProb, flagtaggedjetIP, flagtaggedjetSV);
+      if (jettaggingutilities::isGreaterThanTaggingPoint(jet, jtracks, trackDcaXYMax, trackDcaZMax, tagPointForIP, minIPCount, true))
+        flagtaggedjetIPxyz = true;
+      flagtaggedjetSV = jettaggingutilities::isTaggedJetSV(jet, prongs, prongChi2PCAMin, prongChi2PCAMax, prongsigmaLxyMax, svDispersionMax, false, tagPointForSV);
+      flagtaggedjetSVxyz = jettaggingutilities::isTaggedJetSV(jet, prongs, prongChi2PCAMin, prongChi2PCAMax, prongsigmaLxyzMax, svDispersionMax, true, tagPointForSV);
+      taggingTableData(0, jetProb, flagtaggedjetIP, flagtaggedjetIPxyz, flagtaggedjetSV, flagtaggedjetSVxyz);
     }
   }
   PROCESS_SWITCH(JetTaggerHFTask, processDataWithSV, "Fill tagging decision for data jets", false);
@@ -283,8 +289,10 @@ struct JetTaggerHFTask {
   void processMCD(JetCollision const& /*collision*/, JetTableMCD const& mcdjets, JetTagTracksMCD const& jtracks, JetParticles const& particles)
   {
     for (auto& mcdjet : mcdjets) {
-      bool flagtaggedjetIP = 0;
-      bool flagtaggedjetSV = 0;
+      bool flagtaggedjetIP = false;
+      bool flagtaggedjetIPxyz = false;
+      bool flagtaggedjetSV = false;
+      bool flagtaggedjetSVxyz = false;
       typename JetTagTracksMCD::iterator hftrack;
       int origin = 0;
       if (removeGluonShower)
@@ -297,9 +305,11 @@ struct JetTaggerHFTask {
           evaluateTrackProbQA(origin, mcdjet, jtracks);
         }
       }
-      if (jettaggingutilities::isGreaterThanTaggingPoint(mcdjet, jtracks, trackDcaXYMax, trackDcaZMax, tagPointForIP, minIPCount))
+      if (jettaggingutilities::isGreaterThanTaggingPoint(mcdjet, jtracks, trackDcaXYMax, trackDcaZMax, tagPointForIP, minIPCount, false))
         flagtaggedjetIP = true;
-      taggingTableMCD(origin, jetProb, flagtaggedjetIP, flagtaggedjetSV);
+      if (jettaggingutilities::isGreaterThanTaggingPoint(mcdjet, jtracks, trackDcaXYMax, trackDcaZMax, tagPointForIP, minIPCount, true))
+        flagtaggedjetIPxyz = true;
+      taggingTableMCD(origin, jetProb, flagtaggedjetIP, flagtaggedjetIPxyz, flagtaggedjetSV, flagtaggedjetSVxyz);
     }
   }
   PROCESS_SWITCH(JetTaggerHFTask, processMCD, "Fill tagging decision for mcd jets", false);
@@ -307,8 +317,10 @@ struct JetTaggerHFTask {
   void processMCDWithSV(JetCollision const& /*collision*/, soa::Join<JetTableMCD, aod::MCDSecondaryVertex3ProngIndices> const& mcdjets, JetTagTracksMCD const& jtracks, aod::MCDSecondaryVertex3Prongs const& prongs, JetParticles const& particles)
   {
     for (auto& mcdjet : mcdjets) {
-      bool flagtaggedjetIP = 0;
-      bool flagtaggedjetSV = 0;
+      bool flagtaggedjetIP = false;
+      bool flagtaggedjetIPxyz = false;
+      bool flagtaggedjetSV = false;
+      bool flagtaggedjetSVxyz = false;
       typename JetTagTracksMCD::iterator hftrack;
       int origin = 0;
       if (removeGluonShower)
@@ -321,14 +333,13 @@ struct JetTaggerHFTask {
           evaluateTrackProbQA(origin, mcdjet, jtracks);
         }
       }
-      if (jettaggingutilities::isGreaterThanTaggingPoint(mcdjet, jtracks, trackDcaXYMax, trackDcaZMax, tagPointForIP, minIPCount))
+      if (jettaggingutilities::isGreaterThanTaggingPoint(mcdjet, jtracks, trackDcaXYMax, trackDcaZMax, tagPointForIP, minIPCount, false))
         flagtaggedjetIP = true;
-      if (!useXYZForTagging) {
-        flagtaggedjetSV = jettaggingutilities::isTaggedJetSV(mcdjet, prongs, prongChi2PCAMin, prongChi2PCAMax, prongsigmaLxyzMax, prongIPxyMin, prongIPxyMax, prongDispersionMax, useXYZForTagging, tagPointForSV);
-      } else {
-        flagtaggedjetSV = jettaggingutilities::isTaggedJetSV(mcdjet, prongs, prongChi2PCAMin, prongChi2PCAMax, prongsigmaLxyzMax, prongIPxyMin, prongIPxyMax, prongDispersionMax, useXYZForTagging, tagPointForSV);
-      }
-      taggingTableMCD(origin, jetProb, flagtaggedjetIP, flagtaggedjetSV);
+      if (jettaggingutilities::isGreaterThanTaggingPoint(mcdjet, jtracks, trackDcaXYMax, trackDcaZMax, tagPointForIP, minIPCount, true))
+        flagtaggedjetIPxyz = true;
+      flagtaggedjetSV = jettaggingutilities::isTaggedJetSV(mcdjet, prongs, prongChi2PCAMin, prongChi2PCAMax, prongsigmaLxyMax, prongIPxyMin, prongIPxyMax, svDispersionMax, false, tagPointForSV);
+      flagtaggedjetSVxyz = jettaggingutilities::isTaggedJetSV(mcdjet, prongs, prongChi2PCAMin, prongChi2PCAMax, prongsigmaLxyzMax, prongIPxyMin, prongIPxyMax, svDispersionMax, true, tagPointForSV);
+      taggingTableMCD(origin, jetProb, flagtaggedjetIP, flagtaggedjetIPxyz, flagtaggedjetSV, flagtaggedjetSVxyz);
     }
   }
   PROCESS_SWITCH(JetTaggerHFTask, processMCDWithSV, "Fill tagging decision for mcd jets with sv", false);
@@ -336,8 +347,10 @@ struct JetTaggerHFTask {
   void processMCP(JetMcCollision const& /*collision*/, JetTableMCP const& mcpjets, JetParticles const& particles)
   {
     for (auto& mcpjet : mcpjets) {
-      bool flagtaggedjetIP = 0;
-      bool flagtaggedjetSV = 0;
+      bool flagtaggedjetIP = false;
+      bool flagtaggedjetIPxyz = false;
+      bool flagtaggedjetSV = false;
+      bool flagtaggedjetSVxyz = false;
       typename JetParticles::iterator hfparticle;
       int origin = 0;
       // TODO
@@ -355,7 +368,7 @@ struct JetTaggerHFTask {
       jetProb.clear();
       jetProb.reserve(maxOrder);
       jetProb.push_back(-1);
-      taggingTableMCP(origin, jetProb, flagtaggedjetIP, flagtaggedjetSV);
+      taggingTableMCP(origin, jetProb, flagtaggedjetIP, flagtaggedjetIPxyz, flagtaggedjetSV, flagtaggedjetSVxyz);
     }
   }
   PROCESS_SWITCH(JetTaggerHFTask, processMCP, "Fill tagging decision for mcp jets with sv", false);

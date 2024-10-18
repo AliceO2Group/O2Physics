@@ -22,6 +22,7 @@
 #include "PWGUD/Core/UPCCutparHolder.h"
 #include "PWGUD/Core/UPCHelpers.h"
 #include "PWGUD/DataModel/UDTables.h"
+#include "DataFormatsITSMFT/ROFRecord.h"
 
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -89,7 +90,7 @@ struct UpcCandProducer {
   // QA histograms
   HistogramRegistry histRegistry{"HistRegistry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  using BCsWithBcSels = o2::soa::Join<o2::aod::BCs, o2::aod::BcSels>;
+  using BCsWithBcSels = o2::soa::Join<o2::aod::BCs, o2::aod::BcSels, o2::aod::BCFlags>;
 
   using ForwardTracks = o2::soa::Join<o2::aod::UDFwdTracksProp, o2::aod::UDFwdTracksCovProp>;
 
@@ -722,7 +723,7 @@ struct UpcCandProducer {
 
   void createCandidatesCentral(BarrelTracks const& barrelTracks,
                                o2::aod::AmbiguousTracks const& ambBarrelTracks,
-                               o2::aod::BCs const& bcs,
+                               BCsWithBcSels const& bcs,
                                o2::aod::Collisions const& collisions,
                                o2::aod::FT0s const& ft0s,
                                o2::aod::FDDs const& /*fdds*/,
@@ -916,8 +917,12 @@ struct UpcCandProducer {
       }
       RgtrwTOF = RgtrwTOF / static_cast<float>(numContrib);
       // store used tracks
+      int upc_flag = 0;
+      // TODO: introduce better check on association of collision and reconstruction mode
+      if (bcs.iteratorAt(0).flags() == o2::itsmft::ROFRecord::VtxUPCMode)
+        upc_flag = 1;
       fillBarrelTracks(barrelTracks, barrelTrackIDs, candID, globalBC, closestBcITSTPC, mcBarrelTrackLabels, ambBarrelTrBCs);
-      eventCandidates(globalBC, runNumber, dummyX, dummyY, dummyZ, numContrib, netCharge, RgtrwTOF);
+      eventCandidates(globalBC, runNumber, dummyX, dummyY, dummyZ, upc_flag, numContrib, netCharge, RgtrwTOF);
       eventCandidatesSels(fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.timeFT0A, fitInfo.timeFT0C, fitInfo.triggerMaskFT0,
                           fitInfo.ampFDDA, fitInfo.ampFDDC, fitInfo.timeFDDA, fitInfo.timeFDDC, fitInfo.triggerMaskFDD,
                           fitInfo.ampFV0A, fitInfo.timeFV0A, fitInfo.triggerMaskFV0A,
@@ -981,8 +986,12 @@ struct UpcCandProducer {
       }
       RgtrwTOF = RgtrwTOF / static_cast<float>(numContrib);
       // store used tracks
+      int upc_flag = 0;
+      // TODO: introduce better check on association of collision and reconstruction mode
+      if (bcs.iteratorAt(0).flags() == o2::itsmft::ROFRecord::VtxUPCMode)
+        upc_flag = 1;
       fillBarrelTracks(barrelTracks, barrelTrackIDs, candID, globalBC, closestBcITSTPC, mcBarrelTrackLabels, ambBarrelTrBCs);
-      eventCandidates(globalBC, runNumber, dummyX, dummyY, dummyZ, numContrib, netCharge, RgtrwTOF);
+      eventCandidates(globalBC, runNumber, dummyX, dummyY, dummyZ, upc_flag, numContrib, netCharge, RgtrwTOF);
       eventCandidatesSels(fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.timeFT0A, fitInfo.timeFT0C, fitInfo.triggerMaskFT0,
                           fitInfo.ampFDDA, fitInfo.ampFDDC, fitInfo.timeFDDA, fitInfo.timeFDDC, fitInfo.triggerMaskFDD,
                           fitInfo.ampFV0A, fitInfo.timeFV0A, fitInfo.triggerMaskFV0A,
@@ -1157,9 +1166,13 @@ struct UpcCandProducer {
       }
       RgtrwTOF = RgtrwTOF / static_cast<float>(numContrib);
       // store used tracks
+      int upc_flag = 0;
+      // TODO: introduce better check on association of collision and reconstruction mode
+      if (bcs.iteratorAt(0).flags() == o2::itsmft::ROFRecord::VtxUPCMode)
+        upc_flag = 1;
       fillFwdTracks(fwdTracks, fwdTrackIDs, candID, bc, bc, mcFwdTrackLabels);
       fillBarrelTracks(barrelTracks, barrelTrackIDs, candID, bc, bc, mcBarrelTrackLabels, ambBarrelTrBCs);
-      eventCandidates(bc, runNumber, dummyX, dummyY, dummyZ, numContrib, netCharge, RgtrwTOF);
+      eventCandidates(bc, runNumber, dummyX, dummyY, dummyZ, upc_flag, numContrib, netCharge, RgtrwTOF);
       eventCandidatesSels(fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.timeFT0A, fitInfo.timeFT0C, fitInfo.triggerMaskFT0,
                           fitInfo.ampFDDA, fitInfo.ampFDDC, fitInfo.timeFDDA, fitInfo.timeFDDC, fitInfo.triggerMaskFDD,
                           fitInfo.ampFV0A, fitInfo.timeFV0A, fitInfo.triggerMaskFV0A,
@@ -1210,7 +1223,7 @@ struct UpcCandProducer {
   void createCandidatesFwd(ForwardTracks const& fwdTracks,
                            o2::aod::FwdTrkCls const& fwdTrkClusters,
                            o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
-                           o2::aod::BCs const& bcs,
+                           BCsWithBcSels const& bcs,
                            o2::aod::Collisions const& collisions,
                            o2::aod::FT0s const& ft0s,
                            o2::aod::FDDs const& /*fdds*/,
@@ -1378,8 +1391,12 @@ struct UpcCandProducer {
         selTrackIds.push_back(id);
       }
       // store used tracks
+      int upc_flag = 0;
+      // TODO: introduce better check on association of collision and reconstruction mode
+      if (bcs.iteratorAt(0).flags() == o2::itsmft::ROFRecord::VtxUPCMode)
+        upc_flag = 1;
       fillFwdTracks(fwdTracks, trkCandIDs, candID, globalBC, closestBcMCH, mcFwdTrackLabels);
-      eventCandidates(globalBC, runNumber, dummyX, dummyY, dummyZ, numContrib, netCharge, RgtrwTOF);
+      eventCandidates(globalBC, runNumber, dummyX, dummyY, dummyZ, upc_flag, numContrib, netCharge, RgtrwTOF);
       eventCandidatesSels(fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.timeFT0A, fitInfo.timeFT0C, fitInfo.triggerMaskFT0,
                           fitInfo.ampFDDA, fitInfo.ampFDDC, fitInfo.timeFDDA, fitInfo.timeFDDC, fitInfo.triggerMaskFDD,
                           fitInfo.ampFV0A, fitInfo.timeFV0A, fitInfo.triggerMaskFV0A,
@@ -1409,7 +1426,7 @@ struct UpcCandProducer {
   void createCandidatesFwdGlobal(ForwardTracks const& fwdTracks,
                                  o2::aod::FwdTrkCls const& /*fwdTrkClusters*/,
                                  o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
-                                 o2::aod::BCs const& bcs,
+                                 BCsWithBcSels const& bcs,
                                  o2::aod::Collisions const& collisions,
                                  o2::aod::FT0s const& ft0s,
                                  o2::aod::FDDs const& /*fdds*/,
@@ -1573,8 +1590,12 @@ struct UpcCandProducer {
         selTrackIdsGlobal.push_back(id);
       }
       // store used tracks
+      int upc_flag = 0;
+      // TODO: introduce better check on association of collision and reconstruction mode
+      if (bcs.iteratorAt(0).flags() == o2::itsmft::ROFRecord::VtxUPCMode)
+        upc_flag = 1;
       fillFwdTracks(fwdTracks, trkCandIDs, candID, globalBC, closestBcMCH, mcFwdTrackLabels);
-      eventCandidates(globalBC, runNumber, dummyX, dummyY, dummyZ, numContrib, netCharge, RgtrwTOF);
+      eventCandidates(globalBC, runNumber, dummyX, dummyY, dummyZ, upc_flag, numContrib, netCharge, RgtrwTOF);
       eventCandidatesSels(fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.timeFT0A, fitInfo.timeFT0C, fitInfo.triggerMaskFT0,
                           fitInfo.ampFDDA, fitInfo.ampFDDC, fitInfo.timeFDDA, fitInfo.timeFDDC, fitInfo.triggerMaskFDD,
                           fitInfo.ampFV0A, fitInfo.timeFV0A, fitInfo.triggerMaskFV0A,
@@ -1628,7 +1649,7 @@ struct UpcCandProducer {
   // create candidates for central region
   void processCentral(BarrelTracks const& barrelTracks,
                       o2::aod::AmbiguousTracks const& ambBarrelTracks,
-                      o2::aod::BCs const& bcs,
+                      BCsWithBcSels const& bcs,
                       o2::aod::Collisions const& collisions,
                       o2::aod::FT0s const& ft0s,
                       o2::aod::FDDs const& fdds,
@@ -1674,7 +1695,7 @@ struct UpcCandProducer {
   // create candidates for central region
   void processCentralMC(BarrelTracks const& barrelTracks,
                         o2::aod::AmbiguousTracks const& ambBarrelTracks,
-                        o2::aod::BCs const& bcs,
+                        BCsWithBcSels const& bcs,
                         o2::aod::Collisions const& collisions,
                         o2::aod::FT0s const& ft0s,
                         o2::aod::FDDs const& fdds,
@@ -1697,7 +1718,7 @@ struct UpcCandProducer {
   void processForward(ForwardTracks const& fwdTracks,
                       o2::aod::FwdTrkCls const& fwdTrkClusters,
                       o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
-                      o2::aod::BCs const& bcs,
+                      BCsWithBcSels const& bcs,
                       o2::aod::Collisions const& collisions,
                       o2::aod::FT0s const& ft0s,
                       o2::aod::FDDs const& fdds,
@@ -1714,7 +1735,7 @@ struct UpcCandProducer {
   void processForwardMC(ForwardTracks const& fwdTracks,
                         o2::aod::FwdTrkCls const& fwdTrkClusters,
                         o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
-                        o2::aod::BCs const& bcs,
+                        BCsWithBcSels const& bcs,
                         o2::aod::Collisions const& collisions,
                         o2::aod::FT0s const& ft0s,
                         o2::aod::FDDs const& fdds,
@@ -1737,7 +1758,7 @@ struct UpcCandProducer {
   void processForwardGlobal(ForwardTracks const& fwdTracks,
                             o2::aod::FwdTrkCls const& fwdTrkClusters,
                             o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
-                            o2::aod::BCs const& bcs,
+                            BCsWithBcSels const& bcs,
                             o2::aod::Collisions const& collisions,
                             o2::aod::FT0s const& ft0s,
                             o2::aod::FDDs const& fdds,

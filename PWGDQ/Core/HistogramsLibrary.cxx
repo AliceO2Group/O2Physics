@@ -301,6 +301,8 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "IsDoubleGap", "Is double gap", false, 2, -0.5, 1.5, VarManager::kIsDoubleGap);
       hm->AddHistogram(histClass, "IsSingleGapA", "Is single gap on side A", false, 2, -0.5, 1.5, VarManager::kIsSingleGapA);
       hm->AddHistogram(histClass, "IsSingleGapC", "Is single gap on side C", false, 2, -0.5, 1.5, VarManager::kIsSingleGapC);
+      hm->AddHistogram(histClass, "IsITSUPCMode", "UPC settings used", false, 2, -0.5, 1.5, VarManager::kIsITSUPCMode);
+      hm->AddHistogram(histClass, "IsITSUPCMode_IsSingleGap", "UPC settings used vs Is single gap", false, 2, -0.5, 1.5, VarManager::kIsITSUPCMode, 2, -0.5, 1.5, VarManager::kIsSingleGap);
     }
     if (subGroupStr.Contains("zdc")) {
       hm->AddHistogram(histClass, "energyCommonZNA_energyCommonZNC", "Common ZNA energy vs common ZNC energy", false, 1050, -10.0, 200.0, VarManager::kEnergyCommonZNA, 1050, -10.0, 200.0, VarManager::kEnergyCommonZNC);
@@ -1006,9 +1008,9 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       }
       if (subGroupStr.Contains("dimuon-rap")) {
         int vars[4] = {VarManager::kMass, VarManager::kPt, VarManager::kCentFT0C, VarManager::kRap};
-        int binspT[4] = {150, 200, 10, 8};
-        double xminpT[4] = {2., 0., 0, 2.0};
-        double xmaxpT[4] = {5., 20., 100, 4.5};
+        int binspT[4] = {150, 200, 10, 6};
+        double xminpT[4] = {2., 0., 0, 2.5};
+        double xmaxpT[4] = {5., 20., 100, 4.0};
         hm->AddHistogram(histClass, "Mass_Pt_Cent_Rap", "", 4, vars, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
       }
       if (subGroupStr.Contains("dimuon-polarization-he-pbpb")) {
@@ -1018,7 +1020,13 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         double xmaxpT[5] = {5., 3., 100, 1., 3.14};
         hm->AddHistogram(histClass, "Mass_Pt_Cent_cosThetaHE", "", 5, varsHEpbpb, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
       }
-
+      if (subGroupStr.Contains("dimuon-polarization-lowmass-he-pbpb")) {
+        int varsHEpbpb[5] = {VarManager::kMass, VarManager::kPt, VarManager::kCentFT0C, VarManager::kCosThetaHE, VarManager::kPhiHE};
+        int binspT[5] = {200, 30, 10, 10, 10};
+        double xminpT[5] = {0.2, 0., 0, -1., -3.14};
+        double xmaxpT[5] = {1.2, 3., 100, 1., 3.14};
+        hm->AddHistogram(histClass, "Mass_Pt_Cent_cosThetaHE_lowmass", "", 5, varsHEpbpb, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
+      }
       if (subGroupStr.Contains("dimuon-polarization-cs-pbpb")) {
         int varsCSpbpb[5] = {VarManager::kMass, VarManager::kPt, VarManager::kCentFT0C, VarManager::kCosThetaCS, VarManager::kPhiCS};
         int binspT[5] = {150, 30, 10, 10, 10};
@@ -1026,18 +1034,25 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         double xmaxpT[5] = {5., 3., 100, 1., 3.14};
         hm->AddHistogram(histClass, "Mass_Pt_Cent_cosThetaCS", "", 5, varsCSpbpb, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
       }
+      if (subGroupStr.Contains("dimuon-polarization-lowmass-cs-pbpb")) {
+        int varsCSpbpb[5] = {VarManager::kMass, VarManager::kPt, VarManager::kCentFT0C, VarManager::kCosThetaCS, VarManager::kPhiCS};
+        int binspT[5] = {200, 30, 10, 10, 10};
+        double xminpT[5] = {0.2, 0., 0, -1., -3.14};
+        double xmaxpT[5] = {1.2, 3., 100, 1., 3.14};
+        hm->AddHistogram(histClass, "Mass_Pt_Cent_cosThetaCS_lowmass", "", 5, varsCSpbpb, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
+      }
       if (subGroupStr.Contains("dimuon-rap-polarization-he-pbpb")) {
         int varsHEpbpb[5] = {VarManager::kMass, VarManager::kPt, VarManager::kCentFT0C, VarManager::kCosThetaHE, VarManager::kRap};
-        int binspT[5] = {150, 30, 10, 10, 8};
-        double xminpT[5] = {2., 0., 0, -1., 2.0};
-        double xmaxpT[5] = {5., 3., 100, 1., 4.5};
+        int binspT[5] = {150, 30, 10, 10, 6};
+        double xminpT[5] = {2., 0., 0, -1., 2.5};
+        double xmaxpT[5] = {5., 3., 100, 1., 4.0};
         hm->AddHistogram(histClass, "Mass_Pt_Cent_cosThetaHE_Rap", "", 5, varsHEpbpb, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
       }
       if (subGroupStr.Contains("dimuon-rap-polarization-cs-pbpb")) {
         int varsCSpbpb[5] = {VarManager::kMass, VarManager::kPt, VarManager::kCentFT0C, VarManager::kCosThetaCS, VarManager::kRap};
-        int binspT[5] = {150, 30, 10, 10, 8};
-        double xminpT[5] = {2., 0., 0, -1., 2.0};
-        double xmaxpT[5] = {5., 3., 100, 1., 4.5};
+        int binspT[5] = {150, 30, 10, 10, 6};
+        double xminpT[5] = {2., 0., 0, -1., 2.5};
+        double xmaxpT[5] = {5., 3., 100, 1., 4.0};
         hm->AddHistogram(histClass, "Mass_Pt_Cent_cosThetaCS_Rap", "", 5, varsCSpbpb, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
       }
       if (subGroupStr.Contains("multiplicity-fvoa")) {

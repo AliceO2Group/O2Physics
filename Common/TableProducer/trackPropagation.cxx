@@ -123,9 +123,6 @@ struct TrackPropagation {
       trackTunerObj.getDcaGraphs();
       trackTunedTracks->SetTitle(outputStringParams.c_str());
       trackTunedTracks->GetXaxis()->SetBinLabel(1, "all tracks");
-      trackTunedTracks->GetXaxis()->SetBinLabel(2, "tracks tuned (no negative detXY)");
-      trackTunedTracks->GetXaxis()->SetBinLabel(3, "untouched tracks due to negative detXY");
-      trackTunedTracks->GetXaxis()->SetBinLabel(4, "original detXY<0");
     }
   }
 

@@ -56,6 +56,7 @@ class DielectronCut : public TNamed
     kTPCNCls,
     kTPCCrossedRows,
     kTPCCrossedRowsOverNCls,
+    kTPCFracSharedClusters,
     kTPCChi2NDF,
     kTPCNsigmaEl,
     kTPCNsigmaMu,
@@ -131,6 +132,14 @@ class DielectronCut : public TNamed
     if (dca_ee_3d < mMinPairDCA3D || mMaxPairDCA3D < dca_ee_3d) { // in sigma for pair
       return false;
     }
+
+    float deta = v1.Eta() - v2.Eta();
+    float dphi = v1.Phi() - v2.Phi();
+    o2::math_utils::bringToPMPi(dphi);
+    if (mApplydEtadPhi && std::pow(deta / mMinDeltaEta, 2) + std::pow(dphi / mMinDeltaPhi, 2) < 1.f) {
+      return false;
+    }
+
     return true;
   }
 
@@ -193,6 +202,9 @@ class DielectronCut : public TNamed
       return false;
     }
     if (!IsSelectedTrack(track, DielectronCuts::kTPCCrossedRowsOverNCls)) {
+      return false;
+    }
+    if (!IsSelectedTrack(track, DielectronCuts::kTPCFracSharedClusters)) {
       return false;
     }
     if (!IsSelectedTrack(track, DielectronCuts::kTPCChi2NDF)) {
@@ -329,6 +341,9 @@ class DielectronCut : public TNamed
       case DielectronCuts::kTPCCrossedRowsOverNCls:
         return track.tpcCrossedRowsOverFindableCls() >= mMinNCrossedRowsOverFindableClustersTPC;
 
+      case DielectronCuts::kTPCFracSharedClusters:
+        return track.tpcFractionSharedCls() <= mMaxFracSharedClustersTPC;
+
       case DielectronCuts::kTPCChi2NDF:
         return mMinChi2PerClusterTPC < track.tpcChi2NCl() && track.tpcChi2NCl() < mMaxChi2PerClusterTPC;
 
@@ -366,6 +381,7 @@ class DielectronCut : public TNamed
   void SetMaxPhivPairMeeDep(std::function<float(float)> meeDepCut);
   void SetPhivPairRange(float min, float max);
   void SelectPhotonConversion(bool flag);
+  void SetMindEtadPhi(bool flag, float min_deta, float min_dphi);
 
   void SetTrackPtRange(float minPt = 0.f, float maxPt = 1e10f);
   void SetTrackEtaRange(float minEta = -1e10f, float maxEta = 1e10f);
@@ -373,6 +389,7 @@ class DielectronCut : public TNamed
   void SetMinNClustersTPC(int minNClustersTPC);
   void SetMinNCrossedRowsTPC(int minNCrossedRowsTPC);
   void SetMinNCrossedRowsOverFindableClustersTPC(float minNCrossedRowsOverFindableClustersTPC);
+  void SetMaxFracSharedClustersTPC(float max);
   void SetChi2PerClusterTPC(float min, float max);
   void SetNClustersITS(int min, int max);
   void SetChi2PerClusterITS(float min, float max);
@@ -423,6 +440,9 @@ class DielectronCut : public TNamed
   float mMinPhivPair{0.f}, mMaxPhivPair{+3.2};
   std::function<float(float)> mMaxPhivPairMeeDep{}; // max phiv as a function of mee
   bool mSelectPC{false};                            // flag to select photon conversion used in mMaxPhivPairMeeDep
+  bool mApplydEtadPhi{false};                       // flag to apply deta, dphi cut between 2 tracks
+  float mMinDeltaEta{0.f};
+  float mMinDeltaPhi{0.f};
 
   // kinematic cuts
   float mMinTrackPt{0.f}, mMaxTrackPt{1e10f};        // range in pT
@@ -434,6 +454,7 @@ class DielectronCut : public TNamed
   int mMinNCrossedRowsTPC{0};                                        // min number of crossed rows in TPC
   float mMinChi2PerClusterTPC{-1e10f}, mMaxChi2PerClusterTPC{1e10f}; // max tpc fit chi2 per TPC cluster
   float mMinNCrossedRowsOverFindableClustersTPC{0.f};                // min ratio crossed rows / findable clusters
+  float mMaxFracSharedClustersTPC{999.f};                            // max ratio shared clusters / clusters in TPC
   int mMinNClustersITS{0}, mMaxNClustersITS{7};                      // range in number of ITS clusters
   float mMinChi2PerClusterITS{-1e10f}, mMaxChi2PerClusterITS{1e10f}; // max its fit chi2 per ITS cluster
   float mMaxPinMuonTPConly{0.2f};                                    // max pin cut for muon ID with TPConly
