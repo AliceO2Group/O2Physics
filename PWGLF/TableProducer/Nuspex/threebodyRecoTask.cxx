@@ -95,6 +95,7 @@ struct threebodyRecoTask {
   Configurable<float> TofPidNsigmaMax{"TofPidNsigmaMax", 5, "TofPidNsigmaMax"};
   Configurable<float> TpcPidNsigmaCut{"TpcPidNsigmaCut", 5, "TpcPidNsigmaCut"};
   Configurable<bool> event_sel8_selection{"event_sel8_selection", true, "event selection count post sel8 cut"};
+  Configurable<bool> mc_event_selection{"mc_event_selection", true, "mc event selection count post kIsTriggerTVX and kNoTimeFrameBorder"};
   Configurable<bool> event_posZ_selection{"event_posZ_selection", true, "event selection count post poZ cut"};
   Configurable<float> lifetimecut{"lifetimecut", 40., "lifetimecut"}; // ct
   Configurable<float> minProtonPt{"minProtonPt", 0.3, "minProtonPt"};
@@ -513,14 +514,14 @@ struct threebodyRecoTask {
   // process mc analysis
   void processMC(soa::Join<aod::Collisions, o2::aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs> const& collisions, aod::Vtx3BodyDatas const& vtx3bodydatas, aod::McParticles const& particlesMC, MCLabeledTracksIU const& /*tracks*/, aod::McCollisions const& mcCollisions)
   {
-    Candidates3body.clear();
     filledMothers.clear();
     GetGeneratedH3LInfo(particlesMC);
     isGoodCollision.resize(mcCollisions.size(), false);
 
     for (const auto& collision : collisions) {
+      Candidates3body.clear();
       registry.fill(HIST("hEventCounter"), 0.5);
-      if (event_sel8_selection && !collision.sel8()) {
+      if (mc_event_selection && (!collision.selection_bit(aod::evsel::kIsTriggerTVX) || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))) {
         continue;
       }
       registry.fill(HIST("hEventCounter"), 1.5);
