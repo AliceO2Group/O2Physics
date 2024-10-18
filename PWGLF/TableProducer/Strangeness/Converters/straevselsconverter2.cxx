@@ -50,8 +50,8 @@ struct straevselsconverter2 {
                      values.totalFV0AmplitudeA(),
                      values.totalFDDAmplitudeA(),
                      values.totalFDDAmplitudeC(),
-                     values.energyCommonZNA(),   
-                     values.energyCommonZNC(),   
+                     values.energyCommonZNA(),
+                     values.energyCommonZNC(),
                      o2::its::Vertex::FlagsMask /*dummy flag value*/);
     }
   }
