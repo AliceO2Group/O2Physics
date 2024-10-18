@@ -99,7 +99,7 @@ struct JetTutorialTask {
 
   Preslice<soa::Filtered<aod::ChargedMCParticleLevelJets>> perMcCollisionJets = aod::jet::mcCollisionId;
 
-  void processCollisions(JetCollision const& collision, JetTracks const& tracks)
+  void processCollisions(aod::JetCollision const& collision, aod::JetTracks const& tracks)
   {
 
     registry.fill(HIST("h_collisions"), 0.5);
@@ -118,7 +118,7 @@ struct JetTutorialTask {
   }
   PROCESS_SWITCH(JetTutorialTask, processCollisions, "process JE collisions", false);
 
-  void processCollisionsWithExternalTracks(soa::Filtered<JetCollisions>::iterator const& collision, soa::Join<JetTracks, aod::JTrackPIs> const& tracks, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection> const&)
+  void processCollisionsWithExternalTracks(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<aod::JetTracks, aod::JTrackPIs> const& tracks, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection> const&)
   {
 
     registry.fill(HIST("h_collisions"), 0.5);
@@ -139,7 +139,7 @@ struct JetTutorialTask {
   }
   PROCESS_SWITCH(JetTutorialTask, processCollisionsWithExternalTracks, "process JE collisions with access to the original track table", false);
 
-  void processDataCharged(soa::Filtered<JetCollisions>::iterator const& collision, soa::Filtered<aod::ChargedJets> const& jets)
+  void processDataCharged(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Filtered<aod::ChargedJets> const& jets)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
@@ -152,7 +152,7 @@ struct JetTutorialTask {
   }
   PROCESS_SWITCH(JetTutorialTask, processDataCharged, "charged jets in data", false);
 
-  void processMCDetectorLevelCharged(soa::Filtered<JetCollisions>::iterator const& collision, soa::Filtered<aod::ChargedMCDetectorLevelJets> const& jets)
+  void processMCDetectorLevelCharged(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Filtered<aod::ChargedMCDetectorLevelJets> const& jets)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
@@ -165,7 +165,7 @@ struct JetTutorialTask {
   }
   PROCESS_SWITCH(JetTutorialTask, processMCDetectorLevelCharged, "charged jets in detector level MC", false);
 
-  void processMCDetectorLevelWeightedCharged(soa::Filtered<JetCollisionsMCD>::iterator const& collision, JetMcCollisions const&, soa::Filtered<aod::ChargedMCDetectorLevelJets> const& jets)
+  void processMCDetectorLevelWeightedCharged(soa::Filtered<aod::JetCollisionsMCD>::iterator const& collision, aod::JetMcCollisions const&, soa::Filtered<aod::ChargedMCDetectorLevelJets> const& jets)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
@@ -178,7 +178,7 @@ struct JetTutorialTask {
   }
   PROCESS_SWITCH(JetTutorialTask, processMCDetectorLevelWeightedCharged, "charged jets in weighted detector level MC", false);
 
-  void processMCParticleLevelCharged(soa::Filtered<JetMcCollisions>::iterator const& mcCollision, soa::Filtered<aod::ChargedMCParticleLevelJets> const& jets)
+  void processMCParticleLevelCharged(soa::Filtered<aod::JetMcCollisions>::iterator const& mcCollision, soa::Filtered<aod::ChargedMCParticleLevelJets> const& jets)
   {
     for (auto& jet : jets) {
       registry.fill(HIST("h_part_jet_pt"), jet.pt(), mcCollision.weight());
@@ -188,7 +188,7 @@ struct JetTutorialTask {
   }
   PROCESS_SWITCH(JetTutorialTask, processMCParticleLevelCharged, "charged jets in particle level MC", false);
 
-  void processMCCharged(soa::Filtered<JetCollisionsMCD>::iterator const& collision, JetMcCollisions const&, soa::Filtered<aod::ChargedMCDetectorLevelJets> const& mcdjets, soa::Filtered<aod::ChargedMCParticleLevelJets> const& mcpjets)
+  void processMCCharged(soa::Filtered<aod::JetCollisionsMCD>::iterator const& collision, aod::JetMcCollisions const&, soa::Filtered<aod::ChargedMCDetectorLevelJets> const& mcdjets, soa::Filtered<aod::ChargedMCParticleLevelJets> const& mcpjets)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
@@ -208,11 +208,11 @@ struct JetTutorialTask {
   PROCESS_SWITCH(JetTutorialTask, processMCCharged, "charged jets in detector and particle level MC", false);
 
   using JetMCPTable = soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>>;
-  void processMCMatchedCharged(soa::Filtered<JetCollisionsMCD>::iterator const& collision,
+  void processMCMatchedCharged(soa::Filtered<aod::JetCollisionsMCD>::iterator const& collision,
                                soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>> const& mcdjets,
                                JetMCPTable const&,
-                               JetTracks const&,
-                               JetParticles const&)
+                               aod::JetTracks const&,
+                               aod::JetParticles const&)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
@@ -227,7 +227,7 @@ struct JetTutorialTask {
   }
   PROCESS_SWITCH(JetTutorialTask, processMCMatchedCharged, "matched detector and particle level charged jets", false);
 
-  void processDataSubstructureCharged(soa::Filtered<JetCollisions>::iterator const& collision, soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>> const& jets, JetTracks const&)
+  void processDataSubstructureCharged(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>> const& jets, aod::JetTracks const&)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
@@ -238,7 +238,7 @@ struct JetTutorialTask {
       registry.fill(HIST("h_jet_phi"), jet.phi());
       registry.fill(HIST("h_jet_ntracks"), jet.tracksIds().size());
       double angularity = 0.0;
-      for (auto& jetConstituent : jet.tracks_as<JetTracks>()) {
+      for (auto& jetConstituent : jet.tracks_as<aod::JetTracks>()) {
         angularity += std::pow(jetConstituent.pt(), kappa) * std::pow(jetutilities::deltaR(jet, jetConstituent), alpha);
       }
       angularity /= (jet.pt() * (jet.r() / 100.f));
@@ -247,7 +247,7 @@ struct JetTutorialTask {
   }
   PROCESS_SWITCH(JetTutorialTask, processDataSubstructureCharged, "charged jet substructure", false);
 
-  void processDataFull(soa::Filtered<JetCollisions>::iterator const&, soa::Filtered<aod::FullJets> const& jets)
+  void processDataFull(soa::Filtered<aod::JetCollisions>::iterator const&, soa::Filtered<aod::FullJets> const& jets)
   {
     for (auto& jet : jets) {
       registry.fill(HIST("h_jet_pt"), jet.pt());
@@ -257,7 +257,7 @@ struct JetTutorialTask {
   }
   PROCESS_SWITCH(JetTutorialTask, processDataFull, "full jets in data", false);
 
-  void processDataSubstructureFull(soa::Filtered<JetCollisions>::iterator const&, soa::Filtered<soa::Join<aod::FullJets, aod::FullJetConstituents>> const& jets, JetTracks const&, JetClusters const&)
+  void processDataSubstructureFull(soa::Filtered<aod::JetCollisions>::iterator const&, soa::Filtered<soa::Join<aod::FullJets, aod::FullJetConstituents>> const& jets, aod::JetTracks const&, aod::JetClusters const&)
   {
     for (auto& jet : jets) {
       registry.fill(HIST("h_full_jet_pt"), jet.pt());
@@ -266,11 +266,11 @@ struct JetTutorialTask {
       registry.fill(HIST("h_full_jet_ntracks"), jet.tracksIds().size());
       registry.fill(HIST("h_full_jet_nclusters"), jet.clustersIds().size());
       double angularity = 0.0;
-      for (auto& jetConstituent : jet.tracks_as<JetTracks>()) {
+      for (auto& jetConstituent : jet.tracks_as<aod::JetTracks>()) {
         angularity += std::pow(jetConstituent.pt(), kappa) * std::pow(jetutilities::deltaR(jet, jetConstituent), alpha);
       }
 
-      for (auto& jetCluster : jet.tracks_as<JetClusters>()) {
+      for (auto& jetCluster : jet.tracks_as<aod::JetClusters>()) {
         angularity += std::pow(jetCluster.energy(), kappa) * std::pow(jetutilities::deltaR(jet, jetCluster), alpha);
       }
 
@@ -279,11 +279,11 @@ struct JetTutorialTask {
   }
   PROCESS_SWITCH(JetTutorialTask, processDataSubstructureFull, "full jet substructure", false);
 
-  void processMCParticleLevelSubstructureFull(soa::Filtered<JetMcCollisions>::iterator const& mcCollision, soa::Filtered<soa::Join<aod::FullMCParticleLevelJets, aod::FullMCParticleLevelJetConstituents>> const& jets, JetParticles const&)
+  void processMCParticleLevelSubstructureFull(soa::Filtered<aod::JetMcCollisions>::iterator const& mcCollision, soa::Filtered<soa::Join<aod::FullMCParticleLevelJets, aod::FullMCParticleLevelJetConstituents>> const& jets, aod::JetParticles const&)
   {
     for (auto& jet : jets) {
       double angularity = 0.0;
-      for (auto& jetConstituent : jet.tracks_as<JetParticles>()) {
+      for (auto& jetConstituent : jet.tracks_as<aod::JetParticles>()) {
         angularity += std::pow(jetConstituent.pt(), kappa) * std::pow(jetutilities::deltaR(jet, jetConstituent), alpha);
       }
       angularity /= (jet.pt() * (jet.r() / 100.f));
@@ -292,7 +292,7 @@ struct JetTutorialTask {
   }
   PROCESS_SWITCH(JetTutorialTask, processMCParticleLevelSubstructureFull, "full particle level jet substructure", false);
 
-  void processRecoilDataCharged(soa::Filtered<JetCollisions>::iterator const& collision, soa::Filtered<aod::ChargedJets> const& jets, JetTracks const& tracks)
+  void processRecoilDataCharged(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Filtered<aod::ChargedJets> const& jets, aod::JetTracks const& tracks)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
@@ -323,7 +323,7 @@ struct JetTutorialTask {
   }
   PROCESS_SWITCH(JetTutorialTask, processRecoilDataCharged, "hadron-recoil charged jets", false);
 
-  void processDataRhoAreaSubtractedCharged(soa::Filtered<soa::Join<JetCollisions, aod::BkgChargedRhos>>::iterator const& collision, soa::Filtered<aod::ChargedJets> const& jets)
+  void processDataRhoAreaSubtractedCharged(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator const& collision, soa::Filtered<aod::ChargedJets> const& jets)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
@@ -337,7 +337,7 @@ struct JetTutorialTask {
   }
   PROCESS_SWITCH(JetTutorialTask, processDataRhoAreaSubtractedCharged, "charged rho-area  subtracted jets", false);
 
-  void processDataConstituentSubtractedCharged(soa::Filtered<JetCollisions>::iterator const& collision, soa::Filtered<aod::ChargedEventWiseSubtractedJets> const& jets)
+  void processDataConstituentSubtractedCharged(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Filtered<aod::ChargedEventWiseSubtractedJets> const& jets)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
@@ -350,7 +350,7 @@ struct JetTutorialTask {
   }
   PROCESS_SWITCH(JetTutorialTask, processDataConstituentSubtractedCharged, "charged constituent subtracted jets", false);
 
-  void processDataConstituentSubtractedSubstructureCharged(soa::Filtered<JetCollisions>::iterator const& collision, soa::Filtered<soa::Join<aod::ChargedEventWiseSubtractedJets, aod::ChargedEventWiseSubtractedJetConstituents>> const& jets, JetTracksSub const&)
+  void processDataConstituentSubtractedSubstructureCharged(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Filtered<soa::Join<aod::ChargedEventWiseSubtractedJets, aod::ChargedEventWiseSubtractedJetConstituents>> const& jets, aod::JetTracksSub const&)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
@@ -361,7 +361,7 @@ struct JetTutorialTask {
       registry.fill(HIST("h_jet_phi"), jet.phi());
       registry.fill(HIST("h_jet_ntracks"), jet.tracksIds().size());
       double angularity = 0.0;
-      for (auto& jetConstituent : jet.tracks_as<JetTracksSub>()) {
+      for (auto& jetConstituent : jet.tracks_as<aod::JetTracksSub>()) {
         angularity += std::pow(jetConstituent.pt(), kappa) * std::pow(jetutilities::deltaR(jet, jetConstituent), alpha);
       }
       angularity /= (jet.pt() * (jet.r() / 100.f));
@@ -370,7 +370,7 @@ struct JetTutorialTask {
   }
   PROCESS_SWITCH(JetTutorialTask, processDataConstituentSubtractedSubstructureCharged, "charged constituent subtracted jet substructure", false);
 
-  void processDataTriggered(soa::Filtered<JetCollisions>::iterator const& collision, soa::Filtered<aod::ChargedJets> const& jets)
+  void processDataTriggered(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Filtered<aod::ChargedJets> const& jets)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection) || !jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
       return;

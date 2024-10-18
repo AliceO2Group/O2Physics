@@ -53,12 +53,12 @@ struct JetMatchingDuplicates {
   {
   }
 
-  void processDummy(JetCollisions const&)
+  void processDummy(aod::JetCollisions const&)
   {
   }
   PROCESS_SWITCH(JetMatchingDuplicates, processDummy, "Dummy process", true);
 
-  void processJets(JetCollisions const& collisions,
+  void processJets(aod::JetCollisions const& collisions,
                    JetsBase const& jetsBase, JetsTag const& jetsTag,
                    Tracks const& tracks, Candidates const& candidates)
   {

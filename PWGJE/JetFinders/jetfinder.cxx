@@ -144,34 +144,34 @@ struct JetFinderTask {
   Filter partCuts = (aod::jmcparticle::pt >= trackPtMin && aod::jmcparticle::pt < trackPtMax && aod::jmcparticle::eta >= trackEtaMin && aod::jmcparticle::eta <= trackEtaMax && aod::jmcparticle::phi >= trackPhiMin && aod::jmcparticle::phi <= trackPhiMax);
   Filter clusterFilter = (aod::jcluster::definition == static_cast<int>(clusterDefinition) && aod::jcluster::eta >= clusterEtaMin && aod::jcluster::eta <= clusterEtaMax && aod::jcluster::phi >= clusterPhiMin && aod::jcluster::phi <= clusterPhiMax && aod::jcluster::energy >= clusterEnergyMin && aod::jcluster::time > clusterTimeMin && aod::jcluster::time < clusterTimeMax && (clusterRejectExotics && aod::jcluster::isExotic != true));
 
-  void processChargedJets(soa::Filtered<JetCollisions>::iterator const& collision,
-                          soa::Filtered<JetTracks> const& tracks)
+  void processChargedJets(soa::Filtered<aod::JetCollisions>::iterator const& collision,
+                          soa::Filtered<aod::JetTracks> const& tracks)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection) || !jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
       return;
     }
     inputParticles.clear();
-    jetfindingutilities::analyseTracks<soa::Filtered<JetTracks>, soa::Filtered<JetTracks>::iterator>(inputParticles, tracks, trackSelection, trackingEfficiency);
+    jetfindingutilities::analyseTracks<soa::Filtered<aod::JetTracks>, soa::Filtered<aod::JetTracks>::iterator>(inputParticles, tracks, trackSelection, trackingEfficiency);
     jetfindingutilities::findJets(jetFinder, inputParticles, jetPtMin, jetPtMax, jetRadius, jetAreaFractionMin, collision, jetsTable, constituentsTable, fillTHnSparse ? registry.get<THn>(HIST("hJet")) : std::shared_ptr<THn>(nullptr), fillTHnSparse);
   }
 
   PROCESS_SWITCH(JetFinderTask, processChargedJets, "Data and reco level jet finding for charged jets", false);
 
-  void processChargedEvtWiseSubJets(soa::Filtered<JetCollisions>::iterator const& collision,
-                                    soa::Filtered<JetTracksSub> const& tracks)
+  void processChargedEvtWiseSubJets(soa::Filtered<aod::JetCollisions>::iterator const& collision,
+                                    soa::Filtered<aod::JetTracksSub> const& tracks)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection) || !jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
       return;
     }
     inputParticles.clear();
-    jetfindingutilities::analyseTracks<soa::Filtered<JetTracksSub>, soa::Filtered<JetTracksSub>::iterator>(inputParticles, tracks, trackSelection, trackingEfficiency);
+    jetfindingutilities::analyseTracks<soa::Filtered<aod::JetTracksSub>, soa::Filtered<aod::JetTracksSub>::iterator>(inputParticles, tracks, trackSelection, trackingEfficiency);
     jetfindingutilities::findJets(jetFinder, inputParticles, jetEWSPtMin, jetEWSPtMax, jetRadius, jetAreaFractionMin, collision, jetsEvtWiseSubTable, constituentsEvtWiseSubTable, fillTHnSparse ? registry.get<THn>(HIST("hJetEWS")) : std::shared_ptr<THn>(nullptr), fillTHnSparse);
   }
 
   PROCESS_SWITCH(JetFinderTask, processChargedEvtWiseSubJets, "Data and reco level jet finding for charged jets with event-wise constituent subtraction", false);
 
-  void processNeutralJets(soa::Filtered<JetCollisions>::iterator const& collision,
-                          soa::Filtered<JetClusters> const& clusters)
+  void processNeutralJets(soa::Filtered<aod::JetCollisions>::iterator const& collision,
+                          soa::Filtered<aod::JetClusters> const& clusters)
   {
     if ((doEMCALEventSelection && !jetderiveddatautilities::eventEMCAL(collision)) || !jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
       return;
@@ -182,43 +182,43 @@ struct JetFinderTask {
   }
   PROCESS_SWITCH(JetFinderTask, processNeutralJets, "Data and reco level jet finding for neutral jets", false);
 
-  void processFullJets(soa::Filtered<JetCollisions>::iterator const& collision,
-                       soa::Filtered<JetTracks> const& tracks,
-                       soa::Filtered<JetClusters> const& clusters)
+  void processFullJets(soa::Filtered<aod::JetCollisions>::iterator const& collision,
+                       soa::Filtered<aod::JetTracks> const& tracks,
+                       soa::Filtered<aod::JetClusters> const& clusters)
   {
     if ((doEMCALEventSelection && !jetderiveddatautilities::eventEMCAL(collision)) || !jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
       return;
     }
     inputParticles.clear();
-    jetfindingutilities::analyseTracks<soa::Filtered<JetTracks>, soa::Filtered<JetTracks>::iterator>(inputParticles, tracks, trackSelection, trackingEfficiency);
+    jetfindingutilities::analyseTracks<soa::Filtered<aod::JetTracks>, soa::Filtered<aod::JetTracks>::iterator>(inputParticles, tracks, trackSelection, trackingEfficiency);
     jetfindingutilities::analyseClusters(inputParticles, &clusters);
     jetfindingutilities::findJets(jetFinder, inputParticles, jetPtMin, jetPtMax, jetRadius, jetAreaFractionMin, collision, jetsTable, constituentsTable, fillTHnSparse ? registry.get<THn>(HIST("hJet")) : std::shared_ptr<THn>(nullptr), fillTHnSparse);
   }
   PROCESS_SWITCH(JetFinderTask, processFullJets, "Data and reco level jet finding for full and neutral jets", false);
 
-  void processParticleLevelChargedJets(JetMcCollision const& collision, soa::Filtered<JetParticles> const& particles)
+  void processParticleLevelChargedJets(aod::JetMcCollision const& collision, soa::Filtered<aod::JetParticles> const& particles)
   {
     // TODO: MC event selection?
     inputParticles.clear();
-    jetfindingutilities::analyseParticles<soa::Filtered<JetParticles>, soa::Filtered<JetParticles>::iterator>(inputParticles, particleSelection, 1, particles, pdgDatabase);
+    jetfindingutilities::analyseParticles<soa::Filtered<aod::JetParticles>, soa::Filtered<aod::JetParticles>::iterator>(inputParticles, particleSelection, 1, particles, pdgDatabase);
     jetfindingutilities::findJets(jetFinder, inputParticles, jetPtMin, jetPtMax, jetRadius, jetAreaFractionMin, collision, jetsTable, constituentsTable, fillTHnSparse ? registry.get<THn>(HIST("hJetMCP")) : std::shared_ptr<THn>(nullptr), fillTHnSparse);
   }
   PROCESS_SWITCH(JetFinderTask, processParticleLevelChargedJets, "Particle level charged jet finding", false);
 
-  void processParticleLevelNeutralJets(JetMcCollision const& collision, soa::Filtered<JetParticles> const& particles)
+  void processParticleLevelNeutralJets(aod::JetMcCollision const& collision, soa::Filtered<aod::JetParticles> const& particles)
   {
     // TODO: MC event selection?
     inputParticles.clear();
-    jetfindingutilities::analyseParticles<soa::Filtered<JetParticles>, soa::Filtered<JetParticles>::iterator>(inputParticles, particleSelection, 2, particles, pdgDatabase);
+    jetfindingutilities::analyseParticles<soa::Filtered<aod::JetParticles>, soa::Filtered<aod::JetParticles>::iterator>(inputParticles, particleSelection, 2, particles, pdgDatabase);
     jetfindingutilities::findJets(jetFinder, inputParticles, jetPtMin, jetPtMax, jetRadius, jetAreaFractionMin, collision, jetsTable, constituentsTable, fillTHnSparse ? registry.get<THn>(HIST("hJetMCP")) : std::shared_ptr<THn>(nullptr), fillTHnSparse);
   }
   PROCESS_SWITCH(JetFinderTask, processParticleLevelNeutralJets, "Particle level neutral jet finding", false);
 
-  void processParticleLevelFullJets(JetMcCollision const& collision, soa::Filtered<JetParticles> const& particles)
+  void processParticleLevelFullJets(aod::JetMcCollision const& collision, soa::Filtered<aod::JetParticles> const& particles)
   {
     // TODO: MC event selection?
     inputParticles.clear();
-    jetfindingutilities::analyseParticles<soa::Filtered<JetParticles>, soa::Filtered<JetParticles>::iterator>(inputParticles, particleSelection, 0, particles, pdgDatabase);
+    jetfindingutilities::analyseParticles<soa::Filtered<aod::JetParticles>, soa::Filtered<aod::JetParticles>::iterator>(inputParticles, particleSelection, 0, particles, pdgDatabase);
     jetfindingutilities::findJets(jetFinder, inputParticles, jetPtMin, jetPtMax, jetRadius, jetAreaFractionMin, collision, jetsTable, constituentsTable, fillTHnSparse ? registry.get<THn>(HIST("hJetMCP")) : std::shared_ptr<THn>(nullptr), fillTHnSparse);
   }
 

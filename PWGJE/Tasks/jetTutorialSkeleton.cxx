@@ -105,43 +105,43 @@ struct JetTutorialSkeletonTask {
   PROCESS_SWITCH(JetTutorialSkeletonTask, processDummy, "dummy process", false);
 
   /*
-    void processCollisions(JetCollision const& collision, JetTracks const& tracks)
+    void processCollisions(aod::JetCollision const& collision, aod::JetTracks const& tracks)
     {
 
     }
     PROCESS_SWITCH(JetTutorialSkeletonTask, processCollisions, "process JE collisions", false);
 
-    void processCollisionsWithExternalTracks(soa::Filtered<JetCollisions>::iterator const& collision, soa::Join<JetTracks, aod::JTrackPIs> const& tracks, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection> const&)
+    void processCollisionsWithExternalTracks(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<aod::JetTracks, aod::JTrackPIs> const& tracks, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection> const&)
     {
 
     }
     PROCESS_SWITCH(JetTutorialSkeletonTask, processCollisionsWithExternalTracks, "process JE collisions with access to the original track table", false);
 
-    void processDataCharged(soa::Filtered<JetCollisions>::iterator const& collision, soa::Filtered<aod::ChargedJets> const& jets)
+    void processDataCharged(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Filtered<aod::ChargedJets> const& jets)
     {
 
     }
     PROCESS_SWITCH(JetTutorialSkeletonTask, processDataCharged, "charged jets in data", false);
 
-    void processMCDetectorLevelCharged(soa::Filtered<JetCollisions>::iterator const& collision, soa::Filtered<aod::ChargedMCDetectorLevelJets> const& jets)
+    void processMCDetectorLevelCharged(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Filtered<aod::ChargedMCDetectorLevelJets> const& jets)
     {
 
     }
     PROCESS_SWITCH(JetTutorialSkeletonTask, processMCDetectorLevelCharged, "charged jets in detector level MC", false);
 
-    void processMCDetectorLevelWeightedCharged(soa::Filtered<JetCollisionsMCD>::iterator const& collision, JetMcCollisions const& ,soa::Filtered<aod::ChargedMCDetectorLevelJets> const& jets)
+    void processMCDetectorLevelWeightedCharged(soa::Filtered<aod::JetCollisionsMCD>::iterator const& collision, aod::JetMcCollisions const& ,soa::Filtered<aod::ChargedMCDetectorLevelJets> const& jets)
     {
 
     }
     PROCESS_SWITCH(JetTutorialSkeletonTask, processMCDetectorLevelWeightedCharged, "charged jets in weighted detector level MC", false);
 
-    void processMCParticleLevelCharged(soa::Filtered<JetMcCollisions>::iterator const& mcCollision, soa::Filtered<aod::ChargedMCParticleLevelJets> const& jets)
+    void processMCParticleLevelCharged(soa::Filtered<aod::JetMcCollisions>::iterator const& mcCollision, soa::Filtered<aod::ChargedMCParticleLevelJets> const& jets)
     {
 
     }
     PROCESS_SWITCH(JetTutorialSkeletonTask, processMCParticleLevelCharged, "charged jets in particle level MC", false);
 
-    void processMCCharged(soa::Filtered<JetCollisionsMCD>::iterator const& collision, JetMcCollisions const& , soa::Filtered<aod::ChargedMCDetectorLevelJets> const& mcdjets, soa::Filtered<aod::ChargedMCParticleLevelJets> const& mcpjets)
+    void processMCCharged(soa::Filtered<aod::JetCollisionsMCD>::iterator const& collision, aod::JetMcCollisions const& , soa::Filtered<aod::ChargedMCDetectorLevelJets> const& mcdjets, soa::Filtered<aod::ChargedMCParticleLevelJets> const& mcpjets)
     {
 
     }
@@ -149,68 +149,68 @@ struct JetTutorialSkeletonTask {
 
 
     using JetMCPTable = soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>>;
-    void processMCMatchedCharged(soa::Filtered<JetCollisionsMCD>::iterator const& collision,
+    void processMCMatchedCharged(soa::Filtered<aod::JetCollisionsMCD>::iterator const& collision,
                                  soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>> const& mcdjets,
                                  JetMCPTable const&,
-                                 JetTracks const&,
-                                 JetParticles const&)
+                                 aod::JetTracks const&,
+                                 aod::JetParticles const&)
     {
 
     }
     PROCESS_SWITCH(JetTutorialSkeletonTask, processMCMatchedCharged, "matched detector and particle level charged jets", false);
 
-    void processDataSubstructureCharged(soa::Filtered<JetCollisions>::iterator const& collision, soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>>const& jets, JetTracks const&)
+    void processDataSubstructureCharged(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>>const& jets, aod::JetTracks const&)
     {
 
     }
     PROCESS_SWITCH(JetTutorialSkeletonTask, processDataSubstructureCharged, "charged jet substructure", false);
 
-  void processDataFull(soa::Filtered<JetCollisions>::iterator const& , soa::Filtered<aod::FullJets> const& jets)
+  void processDataFull(soa::Filtered<aod::JetCollisions>::iterator const& , soa::Filtered<aod::FullJets> const& jets)
     {
 
     }
     PROCESS_SWITCH(JetTutorialSkeletonTask, processDataFull, "full jets in data", false);
 
-  void processDataSubstructureFull(soa::Filtered<JetCollisions>::iterator const& , soa::Filtered<soa::Join<aod::FullJets, aod::FullJetConstituents>> const& jets, JetTracks const&, JetClusters const&)
+  void processDataSubstructureFull(soa::Filtered<aod::JetCollisions>::iterator const& , soa::Filtered<soa::Join<aod::FullJets, aod::FullJetConstituents>> const& jets, aod::JetTracks const&, aod::JetClusters const&)
     {
 
     }
     PROCESS_SWITCH(JetTutorialSkeletonTask, processDataSubstructureFull, "full jet substructure", false);
 
 
-    void processMCParticleLevelSubstructureFull(soa::Filtered<JetMcCollisions>::iterator const& mcCollision, soa::Filtered<soa::Join<aod::FullMCParticleLevelJets, aod::FullMCParticleLevelJetConstituents>> const& jets, JetParticles const&)
+    void processMCParticleLevelSubstructureFull(soa::Filtered<aod::JetMcCollisions>::iterator const& mcCollision, soa::Filtered<soa::Join<aod::FullMCParticleLevelJets, aod::FullMCParticleLevelJetConstituents>> const& jets, aod::JetParticles const&)
     {
 
     }
     PROCESS_SWITCH(JetTutorialSkeletonTask, processMCParticleLevelSubstructureFull, "full particle level jet substructure", false);
 
 
-    void processRecoilDataCharged(soa::Filtered<JetCollisions>::iterator const& collision, soa::Filtered<aod::ChargedJets> const& jets, JetTracks const& tracks)
+    void processRecoilDataCharged(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Filtered<aod::ChargedJets> const& jets, aod::JetTracks const& tracks)
     {
 
     }
     PROCESS_SWITCH(JetTutorialSkeletonTask, processRecoilDataCharged, "hadron-recoil charged jets", false);
 
-    void processDataRhoAreaSubtractedCharged(soa::Filtered<soa::Join<JetCollisions, aod::BkgChargedRhos>>::iterator const& collision, soa::Filtered<aod::ChargedJets> const& jets)
+    void processDataRhoAreaSubtractedCharged(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator const& collision, soa::Filtered<aod::ChargedJets> const& jets)
     {
 
     }
     PROCESS_SWITCH(JetTutorialSkeletonTask, processDataRhoAreaSubtractedCharged, "charged rho-area  subtracted jets", false);
 
-    void processDataConstituentSubtractedCharged(soa::Filtered<JetCollisions>::iterator const& collision, soa::Filtered<aod::ChargedEventWiseSubtractedJets> const& jets)
+    void processDataConstituentSubtractedCharged(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Filtered<aod::ChargedEventWiseSubtractedJets> const& jets)
     {
 
     }
     PROCESS_SWITCH(JetTutorialSkeletonTask, processDataConstituentSubtractedCharged, "charged constituent subtracted jets", false);
 
 
-    void processDataConstituentSubtractedSubstructureCharged(soa::Filtered<JetCollisions>::iterator const& collision, soa::Filtered<soa::Join<aod::ChargedEventWiseSubtractedJets, aod::ChargedEventWiseSubtractedJetConstituents>>const& jets, JetTracksSub const&)
+    void processDataConstituentSubtractedSubstructureCharged(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Filtered<soa::Join<aod::ChargedEventWiseSubtractedJets, aod::ChargedEventWiseSubtractedJetConstituents>>const& jets, aod::JetTracksSub const&)
     {
 
     }
     PROCESS_SWITCH(JetTutorialSkeletonTask, processDataConstituentSubtractedSubstructureCharged, "charged constituent subtracted jet substructure", false);
 
-    void processDataTriggered(soa::Filtered<JetCollisions>::iterator const& collision, soa::Filtered<aod::ChargedJets> const& jets)
+    void processDataTriggered(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Filtered<aod::ChargedJets> const& jets)
     {
 
     }

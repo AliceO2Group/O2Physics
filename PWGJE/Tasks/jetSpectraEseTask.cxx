@@ -80,13 +80,13 @@ struct JetSpectraEseTask {
 
   Filter jetCuts = aod::jet::pt > jetPtMin&& aod::jet::r == nround(jetR.node() * 100.0f) && nabs(aod::jet::eta) < 0.9f - jetR;
 
-  using JColPI = soa::Join<JetCollisions, aod::JCollisionPIs, aod::BkgChargedRhos>::iterator;
+  using JColPI = soa::Join<aod::JetCollisions, aod::JCollisionPIs, aod::BkgChargedRhos>::iterator;
   using ColESE = soa::Join<aod::Collisions, aod::CentFT0Cs, aod::QVecFT0Cs, aod::QPercentileFT0Cs, aod::FEseCols>;
   using JJets = soa::Filtered<aod::ChargedJets>;
   void processESEDataCharged(JColPI const& collision,
                              ColESE const&,
                              JJets const& jets,
-                             JetTracks const& tracks)
+                             aod::JetTracks const& tracks)
   {
     auto originalCollision = collision.collision_as<soa::Join<aod::Collisions, aod::CentFT0Cs, aod::QVecFT0Cs, aod::QPercentileFT0Cs, aod::FEseCols>>();
     registry.fill(HIST("h_collisions"), 0.5);
