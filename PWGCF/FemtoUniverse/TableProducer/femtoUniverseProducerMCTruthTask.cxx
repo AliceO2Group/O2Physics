@@ -170,6 +170,8 @@ struct femtoUniverseProducerMCTruthTask {
         for (uint32_t pdg : tmpPDGCodes) {
           if (pdgCode == 333) {
             pass = true;
+          } else if (pdgCode == 421) {
+            pass = true;
           } else if (static_cast<int>(pdg) == static_cast<int>(pdgCode)) {
             if (particle.isPhysicalPrimary())
               pass = true;
