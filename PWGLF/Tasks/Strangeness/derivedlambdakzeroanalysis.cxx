@@ -414,6 +414,7 @@ struct derivedlambdakzeroanalysis {
 
     // histograms versus mass
     if (analyseK0Short) {
+      histos.add("h2dNbrOfK0ShortVsCentrality", "h2dNbrOfK0ShortVsCentrality", kTH2F, {axisCentrality, {10, -0.5f, 9.5f}});
       histos.add("h3dMassK0Short", "h3dMassK0Short", kTH3F, {axisCentrality, axisPt, axisK0Mass});
       // Non-UPC info
       histos.add("h3dMassK0ShortHadronic", "h3dMassK0ShortHadronic", kTH3F, {axisCentrality, axisPt, axisK0Mass});
@@ -459,6 +460,7 @@ struct derivedlambdakzeroanalysis {
       }
     }
     if (analyseLambda) {
+      histos.add("h2dNbrOfLambdaVsCentrality", "h2dNbrOfLambdaVsCentrality", kTH2F, {axisCentrality, {10, -0.5f, 9.5f}});
       histos.add("h3dMassLambda", "h3dMassLambda", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
       // Non-UPC info
       histos.add("h3dMassLambdaHadronic", "h3dMassLambdaHadronic", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
@@ -504,6 +506,7 @@ struct derivedlambdakzeroanalysis {
       }
     }
     if (analyseAntiLambda) {
+      histos.add("h2dNbrOfAntiLambdaVsCentrality", "h2dNbrOfAntiLambdaVsCentrality", kTH2F, {axisCentrality, {10, -0.5f, 9.5f}});
       histos.add("h3dMassAntiLambda", "h3dMassAntiLambda", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
       // Non-UPC info
       histos.add("h3dMassAntiLambdaHadronic", "h3dMassAntiLambdaHadronic", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
@@ -974,7 +977,7 @@ struct derivedlambdakzeroanalysis {
   }
 
   template <typename TV0>
-  void analyseCandidate(TV0 v0, float pt, float centrality, uint64_t selMap, uint8_t gapSide)
+  void analyseCandidate(TV0 v0, float pt, float centrality, uint64_t selMap, uint8_t gapSide, int& nK0Shorts, int& nLambdas, int& nAntiLambdas)
   // precalculate this information so that a check is one mask operation, not many
   {
     bool passK0ShortSelections = false;
@@ -1109,6 +1112,7 @@ struct derivedlambdakzeroanalysis {
         histos.fill(HIST("K0Short/h3dPosTOFdeltaTvsTrackPt"), centrality, v0.positivept(), v0.posTOFDeltaTK0Pi());
         histos.fill(HIST("K0Short/h3dNegTOFdeltaTvsTrackPt"), centrality, v0.negativept(), v0.negTOFDeltaTK0Pi());
       }
+      nK0Shorts++;
     }
     if (passLambdaSelections && analyseLambda) {
       histos.fill(HIST("h3dMassLambda"), centrality, pt, v0.mLambda());
@@ -1161,6 +1165,7 @@ struct derivedlambdakzeroanalysis {
         histos.fill(HIST("Lambda/h3dPosTOFdeltaTvsTrackPt"), centrality, v0.positivept(), v0.posTOFDeltaTLaPr());
         histos.fill(HIST("Lambda/h3dNegTOFdeltaTvsTrackPt"), centrality, v0.negativept(), v0.negTOFDeltaTLaPi());
       }
+      nLambdas++;
     }
     if (passAntiLambdaSelections && analyseAntiLambda) {
       histos.fill(HIST("h3dMassAntiLambda"), centrality, pt, v0.mAntiLambda());
@@ -1213,6 +1218,7 @@ struct derivedlambdakzeroanalysis {
         histos.fill(HIST("AntiLambda/h3dPosTOFdeltaTvsTrackPt"), centrality, v0.positivept(), v0.posTOFDeltaTLaPi());
         histos.fill(HIST("AntiLambda/h3dNegTOFdeltaTvsTrackPt"), centrality, v0.negativept(), v0.negTOFDeltaTLaPr());
       }
+      nAntiLambdas++;
     }
 
     // __________________________________________
@@ -1408,6 +1414,9 @@ struct derivedlambdakzeroanalysis {
 
     // __________________________________________
     // perform main analysis
+    int nK0Shorts = 0;
+    int nLambdas = 0;
+    int nAntiLambdas = 0;
     for (auto& v0 : fullV0s) {
       if (std::abs(v0.negativeeta()) > v0Selections.daughterEtaCut || std::abs(v0.positiveeta()) > v0Selections.daughterEtaCut)
         continue; // remove acceptance that's badly reproduced by MC / superfluous in future
@@ -1424,8 +1433,19 @@ struct derivedlambdakzeroanalysis {
       selMap = selMap | (uint64_t(1) << selConsiderK0Short) | (uint64_t(1) << selConsiderLambda) | (uint64_t(1) << selConsiderAntiLambda);
       selMap = selMap | (uint64_t(1) << selPhysPrimK0Short) | (uint64_t(1) << selPhysPrimLambda) | (uint64_t(1) << selPhysPrimAntiLambda);
 
-      analyseCandidate(v0, v0.pt(), centrality, selMap, selGapSide);
+      analyseCandidate(v0, v0.pt(), centrality, selMap, selGapSide, nK0Shorts, nLambdas, nAntiLambdas);
     } // end v0 loop
+
+    // fill the histograms with the number of reconstructed K0s/Lambda/antiLambda per collision
+    if (analyseK0Short) {
+      histos.fill(HIST("h2dNbrOfK0ShortVsCentrality"), centrality, nK0Shorts);
+    }
+    if (analyseLambda) {
+      histos.fill(HIST("h2dNbrOfLambdaVsCentrality"), centrality, nLambdas);
+    }
+    if (analyseAntiLambda) {
+      histos.fill(HIST("h2dNbrOfAntiLambdaVsCentrality"), centrality, nAntiLambdas);
+    }
   }
 
   // ______________________________________________________
@@ -1524,6 +1544,9 @@ struct derivedlambdakzeroanalysis {
 
     // __________________________________________
     // perform main analysis
+    int nK0Shorts = 0;
+    int nLambdas = 0;
+    int nAntiLambdas = 0;
     for (auto& v0 : fullV0s) {
       if (std::abs(v0.negativeeta()) > v0Selections.daughterEtaCut || std::abs(v0.positiveeta()) > v0Selections.daughterEtaCut)
         continue; // remove acceptance that's badly reproduced by MC / superfluous in future
@@ -1556,7 +1579,7 @@ struct derivedlambdakzeroanalysis {
         selMap = selMap | (uint64_t(1) << selPhysPrimK0Short) | (uint64_t(1) << selPhysPrimLambda) | (uint64_t(1) << selPhysPrimAntiLambda);
       }
 
-      analyseCandidate(v0, ptmc, centrality, selMap, selGapSide);
+      analyseCandidate(v0, ptmc, centrality, selMap, selGapSide, nK0Shorts, nLambdas, nAntiLambdas);
 
       if (doCollisionAssociationQA) {
         // check collision association explicitly
@@ -1571,6 +1594,17 @@ struct derivedlambdakzeroanalysis {
       }
 
     } // end v0 loop
+
+    // fill the histograms with the number of reconstructed K0s/Lambda/antiLambda per collision
+    if (analyseK0Short) {
+      histos.fill(HIST("h2dNbrOfK0ShortVsCentrality"), centrality, nK0Shorts);
+    }
+    if (analyseLambda) {
+      histos.fill(HIST("h2dNbrOfLambdaVsCentrality"), centrality, nLambdas);
+    }
+    if (analyseAntiLambda) {
+      histos.fill(HIST("h2dNbrOfAntiLambdaVsCentrality"), centrality, nAntiLambdas);
+    }
   }
 
   // ______________________________________________________
