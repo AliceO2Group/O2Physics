@@ -49,7 +49,7 @@ struct upcRhoAnalysis {
 
   Configurable<double> systemMassMinCut{"systemMassMinCut", 0.5, "min M cut for reco system"};
   Configurable<double> systemMassMaxCut{"systemMassMaxCut", 1.2, "max M cut for reco system"};
-  Configurable<double> systemPtCut{"systemPtMaxCut", 0.3, "max pT cut for reco system"};
+  Configurable<double> systemPtCut{"systemPtMaxCut", 0.1, "max pT cut for reco system"};
   Configurable<double> systemYCut{"systemYCut", 0.9, "rapiditiy cut for reco system"};
 
   ConfigurableAxis mAxis{"mAxis", {1000, 0.0, 10.0}, "m (GeV/#it{c}^{2})"};
@@ -62,7 +62,7 @@ struct upcRhoAnalysis {
   ConfigurableAxis phiAxis{"phiAxis", {180, 0.0, o2::constants::math::TwoPI}, "#phi"};
   ConfigurableAxis phiAsymmAxis{"phiAsymmAxis", {182, -o2::constants::math::PI, o2::constants::math::PI}, "#phi"};
   ConfigurableAxis momentumFromPhiAxis{"momentumFromPhiAxis", {400, -0.1, 0.1}, "p (GeV/#it{c})"};
-  ConfigurableAxis ptQuantileAxis{"ptQuantileAxis", {0, 0.0248477, 0.036544, 0.0472409, 0.0592292, 0.0775798, 0.121997, 0.170282, 0.216849, 0.259255, 0.3}, "p_{T} (GeV/#it{c})"};
+  ConfigurableAxis ptQuantileAxis{"ptQuantileAxis", {0, 0.0181689, 0.0263408, 0.0330488, 0.0390369, 0.045058, 0.0512604, 0.0582598, 0.066986, 0.0788085, 0.1}, "p_{T} (GeV/#it{c})"};
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -97,7 +97,11 @@ struct upcRhoAnalysis {
     registry.add("QC/tracks/cut/hTpcSignalVsPt", ";p_{T} (GeV/#it{c});TPC signal;counts", kTH2D, {ptAxis, {500, 0.0, 500.0}});
     registry.add("QC/tracks/cut/hRemainingTracks", ";remaining tracks;counts", kTH1D, {{21, -0.5, 20.5}});
     registry.add("QC/tracks/cut/hDcaXYZ", ";DCA_{z} (cm);DCA_{xy} (cm);counts", kTH2D, {{1000, -5.0, 5.0}, {1000, -5.0, 5.0}});
-
+    // selection counter
+    std::vector<std::string> selectionCounterLabels = {"all tracks", "PV contributor", "ITS + TPC hit", "TOF requirement", "DCA cut", "#eta cut", "2D TPC n#sigma_{#pi} cut"};
+    auto hSelectionCounter = registry.add<TH1>("QC/tracks/hSelectionCounter", ";;counts", kTH1D, {{static_cast<int>(selectionCounterLabels.size()), -0.5, static_cast<double>(selectionCounterLabels.size()) - 0.5}});
+    for (int i = 0; i < static_cast<int>(selectionCounterLabels.size()); ++i)
+      hSelectionCounter->GetXaxis()->SetBinLabel(i + 1, selectionCounterLabels[i].c_str());
     // RECO HISTOS //
     // PIONS
     // no selection
@@ -356,14 +360,19 @@ struct upcRhoAnalysis {
   {
     if (!track.isPVContributor())
       return false;
+    registry.fill(HIST("QC/tracks/hSelectionCounter"), 1);
     if (!track.hasITS() || !track.hasTPC())
       return false;
+    registry.fill(HIST("QC/tracks/hSelectionCounter"), 2);
     if (requireTof && !track.hasTOF())
       return false;
+    registry.fill(HIST("QC/tracks/hSelectionCounter"), 3);
     if (std::abs(track.dcaZ()) > tracksDcaMaxCut || std::abs(track.dcaXY()) > (0.0182 + 0.0350 / std::pow(track.pt(), 1.01))) // Run 2 dynamic DCA cut
       return false;
+    registry.fill(HIST("QC/tracks/hSelectionCounter"), 4);
     if (std::abs(eta(track.px(), track.py(), track.pz())) > PcEtaCut)
       return false;
+    registry.fill(HIST("QC/tracks/hSelectionCounter"), 5);
     return true;
   }
 
@@ -487,6 +496,7 @@ struct upcRhoAnalysis {
       registry.fill(HIST("QC/tracks/raw/hTpcChi2NCl"), track.tpcChi2NCl());
       registry.fill(HIST("QC/tracks/raw/hTpcNClsFindable"), track.tpcNClsFindable());
       registry.fill(HIST("QC/tracks/raw/hTpcNClsCrossedRows"), track.tpcNClsCrossedRows());
+      registry.fill(HIST("QC/tracks/hSelectionCounter"), 0);
 
       if (!trackPassesCuts(track))
         continue;
@@ -505,6 +515,7 @@ struct upcRhoAnalysis {
 
     if (!tracksPassPiPID(cutTracks))
       return;
+    registry.fill(HIST("QC/tracks/hSelectionCounter"), 6, 2); // weighted by 2 for track pair
     // reonstruct system and calculate total charge, save commonly used values into variables
     ROOT::Math::PxPyPzMVector system = reconstructSystem(cutTracks4Vecs);
     int totalCharge = tracksTotalCharge(cutTracks);
