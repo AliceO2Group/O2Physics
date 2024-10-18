@@ -516,17 +516,17 @@ struct HfTaskDs {
           double y{0.f};
 
           unsigned maxNumContrib = 0;
-          if constexpr (recoCollisions.template contains<aod::CentFT0Cs>()) {
+          if constexpr (Coll::template contains<aod::CentFT0Cs>()) {
             const auto& recoCollsPerMcColl = recoCollisions.sliceBy(colPerMcCollisionWithFT0C, particle.mcCollision().globalIndex());
             for (const auto& recCol : recoCollsPerMcColl) {
               maxNumContrib = recCol.numContrib() > maxNumContrib ? recCol.numContrib() : maxNumContrib;
             }
-          } else if constexpr (recoCollisions.template contains<aod::CentFT0Ms>()) {
+          } else if constexpr (Coll::template contains<aod::CentFT0Ms>()) {
             const auto& recoCollsPerMcColl = recoCollisions.sliceBy(colPerMcCollisionWithFT0M, particle.mcCollision().globalIndex());
             for (const auto& recCol : recoCollsPerMcColl) {
               maxNumContrib = recCol.numContrib() > maxNumContrib ? recCol.numContrib() : maxNumContrib;
             }
-          } else if constexpr (recoCollisions.template contains<aod::CentNTPVs>()) {
+          } else if constexpr (Coll::template contains<aod::CentNTPVs>()) {
             const auto& recoCollsPerMcColl = recoCollisions.sliceBy(colPerMcCollisionWithNTracksPV, particle.mcCollision().globalIndex());
             for (const auto& recCol : recoCollsPerMcColl) {
               maxNumContrib = recCol.numContrib() > maxNumContrib ? recCol.numContrib() : maxNumContrib;
