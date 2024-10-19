@@ -2302,7 +2302,7 @@ void BookWeightsHistograms()
   pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(2, "w_{p_{t}}");
   pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(3, "w_{#eta}");
   pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(4, "(w_{#varphi})_{| p_{T}}"); // TBI 20241019 not sure if this is the final notation, keep in sync with void SetDiffWeightsHist(...)
-  pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(5, "(w_{#varphi})_{| #eta}"); // TBI 20241019 not sure if this is the final notation, keep in sync with void SetDiffWeightsHist(...)
+  pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(5, "(w_{#varphi})_{| #eta}");  // TBI 20241019 not sure if this is the final notation, keep in sync with void SetDiffWeightsHist(...)
 
   for (Int_t w = 0; w < eWeights_N; w++) // use weights [phi,pt,eta]
   {
