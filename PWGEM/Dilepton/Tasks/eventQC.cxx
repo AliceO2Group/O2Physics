@@ -93,6 +93,15 @@ struct eventQC {
     Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 5.0, "max chi2/NclsITS"};
     Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 0.2, "max dca XY for single track in cm"};
     Configurable<float> cfg_max_dcaz{"cfg_max_dcaz", 0.2, "max dca Z for single track in cm"};
+    Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -1e+10, "min n sigma e in TPC"};
+    Configurable<float> cfg_max_TPCNsigmaEl{"cfg_max_TPCNsigmaEl", +1e+10, "max n sigma e in TPC"};
+    Configurable<float> cfg_min_TPCNsigmaPi{"cfg_min_TPCNsigmaPi", 0.0, "min n sigma pi in TPC for exclusion"};
+    Configurable<float> cfg_max_TPCNsigmaPi{"cfg_max_TPCNsigmaPi", 0.0, "max n sigma pi in TPC for exclusion"};
+    Configurable<float> cfg_min_TOFNsigmaEl{"cfg_min_TOFNsigmaEl", -1e+10, "min n sigma e in TOF"};
+    Configurable<float> cfg_max_TOFNsigmaEl{"cfg_max_TOFNsigmaEl", +1e+10, "max n sigma e in TOF"};
+    Configurable<float> cfg_max_mean_its_cluster_size{"cfg_max_mean_its_cluster_size", 16.f, "max. <ITS cluster size> x cos(lambda)"};
+    Configurable<float> cfg_max_p_for_its_cluster_size{"cfg_max_p_for_its_cluster_size", 0.0, "ITS cluster size cut is applied below this p"};
+    Configurable<bool> cfg_requireTOF{"cfg_requireTOF", false, "require TOF hit"};
   } trackcuts;
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -503,6 +512,40 @@ struct eventQC {
     return true;
   }
 
+  template <typename TTrack>
+  bool isElectron(TTrack const& track)
+  {
+    if (track.tpcNSigmaEl() < trackcuts.cfg_min_TPCNsigmaEl || trackcuts.cfg_max_TPCNsigmaEl < track.tpcNSigmaEl()) {
+      return false;
+    }
+
+    if (trackcuts.cfg_min_TPCNsigmaPi < track.tpcNSigmaPi() && track.tpcNSigmaPi() < trackcuts.cfg_max_TPCNsigmaPi) {
+      return false;
+    }
+
+    if (trackcuts.cfg_requireTOF && !track.hasTOF()) {
+      return false;
+    }
+
+    if (track.hasTOF() && (track.tofNSigmaEl() < trackcuts.cfg_min_TOFNsigmaEl || trackcuts.cfg_max_TOFNsigmaEl < track.tofNSigmaEl())) {
+      return false;
+    }
+
+    uint32_t itsClusterSizes = track.itsClusterSizes();
+    int total_cluster_size = 0, nl = 0;
+    for (unsigned int layer = 0; layer < 7; layer++) {
+      int cluster_size_per_layer = (itsClusterSizes >> (layer * 4)) & 0xf;
+      if (cluster_size_per_layer > 0) {
+        nl++;
+      }
+      total_cluster_size += cluster_size_per_layer;
+    }
+    if (static_cast<float>(total_cluster_size) / static_cast<float>(nl) * std::cos(std::atan(track.tgl())) > trackcuts.cfg_max_mean_its_cluster_size && track.p() < trackcuts.cfg_max_p_for_its_cluster_size) {
+      return false;
+    }
+    return true;
+  }
+
   template <typename TCollision>
   bool isSelectedEvent(TCollision const& collision)
   {
@@ -586,8 +629,9 @@ struct eventQC {
         if (!isSelectedTrack(track)) {
           continue;
         }
-        fillTrackInfo(track);
-
+        if (isElectron(track)) {
+          fillTrackInfo(track);
+        }
         if (fabs(track.eta()) < 0.8) {
           nGlobalTracks++;
           if (track.isPVContributor()) {
