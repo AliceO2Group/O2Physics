@@ -60,6 +60,7 @@ using TrackMCTrueTable = aod::McParticles;
 using CollisionMCRecTable = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::CentFT0Cs, aod::EvSels, aod::Mults>>;
 using TrackMCRecTable = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection>;
 using FilTrackMCRecTable = soa::Filtered<TrackMCRecTable>;
+using v0trackcandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr>;
 
 enum {
   kTrackTypebegin = 0,
@@ -120,15 +121,15 @@ struct HeavyIonMultiplicity {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   Service<o2::framework::O2DatabasePDG> pdg;
   Preslice<TrackMCRecTable> perCollision = aod::track::collisionId;
-  Preslice<aod::V0Datas> percolv0 = o2::aod::v0data::collisionId;
 
   Configurable<float> etaRange{"eta-range", 1.0f, "Eta range to consider"};
   Configurable<float> VtxRange{"vertex-range", 10.0f, "Vertex Z range to consider"};
   Configurable<float> dcaZ{"dcaZ", 0.2f, "Custom DCA Z cut (ignored if negative)"};
-  Configurable<float> v0radiusCut{"v0radiusCut", 2, "RadiusCut"};
-  Configurable<float> dcapostopvCut{"dcapostopvCut", 1, "dcapostopvCut"};
-  Configurable<float> dcanegtopvCut{"dcanegtopvCut", 1, "dcanegtopvCut"};
-  Configurable<float> v0cospaCut{"v0cospaCut", 0.97, "v0cospaCut"};
+  Configurable<float> v0radiusCut{"v0radiusCut", 1.2f, "RadiusCut"};
+  Configurable<float> dcapostopvCut{"dcapostopvCut", 0.05f, "dcapostopvCut"};
+  Configurable<float> dcanegtopvCut{"dcanegtopvCut", 0.05f, "dcanegtopvCut"};
+  Configurable<float> v0cospaCut{"v0cospaCut", 0.995f, "v0cospaCut"};
+  Configurable<float> dcav0daughtercut{"dcav0daughtercut", 1.0f, "dcav0daughtercut"};
   ConfigurableAxis multHistBin{"MultDistBinning", {501, -0.5, 500.5}, ""};
   ConfigurableAxis PVHistBin{"PVDistBinning", {501, -0.5, 500.5}, ""};
   ConfigurableAxis FV0AmultHistBin{"FV0AMultDistBinning", {501, -0.5, 500.5}, ""};
@@ -224,6 +225,7 @@ struct HeavyIonMultiplicity {
     }
 
     if (doprocessStrangeYield) {
+      histos.add("hzvtxcent", "hzvtxcent", kTH2D, {axisVtxZ, CentAxis}, false);
       histos.add("K0sCentEtaMass", "K0sCentEtaMass", kTH3D, {CentAxis, axisEta, AxisMassK0s}, false);
       histos.add("LambdaCentEtaMass", "LambdaCentEtaMass", kTH3D, {CentAxis, axisEta, AxisMassLambda}, false);
       histos.add("AntiLambdaCentEtaMass", "AntiLambdaCentEtaMass", kTH3D, {CentAxis, axisEta, AxisMassLambda}, false);
@@ -573,7 +575,7 @@ struct HeavyIonMultiplicity {
   }
   PROCESS_SWITCH(HeavyIonMultiplicity, processMCfillspecies, "Fill particle species in MC", false);
 
-  void processStrangeYield(CollisionDataTable::iterator const& collision, aod::V0Datas const& v0data, soa::Join<aod::Tracks, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFPr> const&)
+  void processStrangeYield(CollisionDataTable::iterator const& collision, v0trackcandidates const&, aod::V0Datas const& v0data)
   {
     if (!IsEventSelected(collision)) {
       return;
@@ -581,11 +583,11 @@ struct HeavyIonMultiplicity {
     if (std::abs(collision.posZ()) >= VtxRange) {
       return;
     }
-    auto v0tracks = v0data.sliceBy(percolv0, collision.globalIndex());
-    for (auto& v0track : v0tracks) {
-      auto v0pTrack = v0track.template posTrack_as<soa::Join<aod::Tracks, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFPr>>();
-      auto v0nTrack = v0track.template negTrack_as<soa::Join<aod::Tracks, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFPr>>();
-      if (v0track.v0radius() > v0radiusCut || v0track.dcapostopv() > dcapostopvCut || v0track.dcanegtopv() > dcanegtopvCut || v0track.v0cosPA() < v0cospaCut) {
+    histos.fill(HIST("hzvtxcent"), collision.posZ(), collision.centFT0C());
+    for (auto& v0track : v0data) {
+      auto v0pTrack = v0track.template posTrack_as<v0trackcandidates>();
+      auto v0nTrack = v0track.template negTrack_as<v0trackcandidates>();
+      if (std::abs(v0track.dcapostopv()) < dcapostopvCut || std::abs(v0track.dcanegtopv()) < dcanegtopvCut || v0track.v0radius() < v0radiusCut || v0track.v0cosPA() < v0cospaCut || std::abs(v0track.dcaV0daughters()) > dcav0daughtercut) {
         continue;
       }
       if (std::abs(v0pTrack.eta()) > 0.9 || std::abs(v0nTrack.eta()) > 0.9) {
