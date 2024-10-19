@@ -545,7 +545,7 @@ struct EventSelectionTask {
     evsel.reserve(collisions.size());
   }
 
-  void processRun2(aod::Collision const& col, BCsWithBcSelsRun2 const&, aod::Tracks const&, aod::FV0Cs const&)
+  void processRun2(aod::Collision const& col, BCsWithBcSelsRun2 const&, FullTracksIU const&, aod::FV0Cs const&)
   {
     auto bc = col.bc_as<BCsWithBcSelsRun2>();
     EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", bc.timestamp());
