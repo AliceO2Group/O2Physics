@@ -5216,7 +5216,7 @@ void FillParticleHistograms(T const& track, eBeforeAfter ba, Int_t weight = 1)
       !ph.fParticleHistograms2D[ePhiPt][eSim][ba] ? true : ph.fParticleHistograms2D[ePhiPt][eSim][ba]->Fill(track.phi(), track.pt(), weight);
       !ph.fParticleHistograms2D[ePhiEta][eSim][ba] ? true : ph.fParticleHistograms2D[ePhiEta][eSim][ba]->Fill(track.phi(), track.eta(), weight);
     } // if(ph.fFillParticleHistograms2D) {
-  }   // if constexpr (rs == eSim || rs == eSim_Run2 || rs == eSim_Run1) {
+  } // if constexpr (rs == eSim || rs == eSim_Run2 || rs == eSim_Run1) {
 
   // -----------------------------------------------------------------------------
 
