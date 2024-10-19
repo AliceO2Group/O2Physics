@@ -44,14 +44,14 @@ struct straevselsconverter2 {
                      values.multZPA(),
                      values.multZPC(),
                      values.trackOccupancyInTimeRange(),
-                     -1 /*dummy gap side value*/,
-                     -999. /*dummy FT0-A value*/,
-                     -999. /*dummy FT0-C value*/,
-                     -999. /*dummy FV0-A value*/,
-                     -999. /*dummy FDD-A value*/,
-                     -999. /*dummy FDD-C value*/,
-                     -999. /*dummy ZN-A value*/,
-                     -999. /*dummy ZN-C value*/,
+                     values.gapSide(),
+                     values.totalFT0AmplitudeA(),
+                     values.totalFT0AmplitudeC(),
+                     values.totalFV0AmplitudeA(),
+                     values.totalFDDAmplitudeA(),
+                     values.totalFDDAmplitudeC(),
+                     values.energyCommonZNA(),
+                     values.energyCommonZNC(),
                      o2::its::Vertex::FlagsMask /*dummy flag value*/);
     }
   }
