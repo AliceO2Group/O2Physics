@@ -496,7 +496,7 @@ struct Dilepton {
 
     if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kQC)) {
       fRegistry.add("Pair/same/uls/hs", "dilepton", kTHnSparseD, {axis_mass, axis_pt, axis_dca}, true);
-      fRegistry.add("Pair/same/uls/hDeltaEtaDeltaPhi", "distance between 2 tracks in #eta-#varphi plane;#Delta#varphi (rad.);#Delta#eta", kTH2D, {{80, -0.2, +0.2}, {80, -0.2, 0.2}}, true);
+      fRegistry.add("Pair/same/uls/hDeltaEtaDeltaPhi", "distance between 2 tracks in #eta-#varphi plane;#Delta#varphi (rad.);#Delta#eta", kTH2D, {{200, -0.5, +0.5}, {200, -0.5, 0.5}}, true);
       if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
         fRegistry.add("Pair/same/uls/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", kTH2D, {{90, 0, M_PI}, {100, 0.0f, 0.1f}}, true); // phiv is only for dielectron
       }
