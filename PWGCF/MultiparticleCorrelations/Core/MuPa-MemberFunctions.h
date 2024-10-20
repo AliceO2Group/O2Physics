@@ -846,77 +846,140 @@ void DefaultBinning()
   res.fResultsProFixedLengthBins[AFO_INTEGRATED][0] = 1;
   res.fResultsProFixedLengthBins[AFO_INTEGRATED][1] = 0.;
   res.fResultsProFixedLengthBins[AFO_INTEGRATED][2] = 1.;
-
   // *) Fixed-length binning vs. multiplicity:
-  auto lFixedLength_mult_bins = (vector<float>)cf_res.cfFixedLength_mult_bins; // this is now the local version of that float array from configurable.
-  if (lFixedLength_mult_bins.size() != 3) {
-    LOGF(fatal, "in function \033[1;31m%s at line %d => The array cfFixedLength_mult_bins must have 3 entries: {nBins, min, max} \n \033[0m", __FUNCTION__, __LINE__);
-  }
-  res.fResultsProFixedLengthBins[AFO_MULTIPLICITY][0] = lFixedLength_mult_bins[0];
-  res.fResultsProFixedLengthBins[AFO_MULTIPLICITY][1] = lFixedLength_mult_bins[1];
-  res.fResultsProFixedLengthBins[AFO_MULTIPLICITY][2] = lFixedLength_mult_bins[2];
-
+  this->InitializeFixedLengthBins(AFO_MULTIPLICITY);
   // *) Fixed-length binning vs. centrality:
-  auto lFixedLength_cent_bins = (vector<float>)cf_res.cfFixedLength_cent_bins; // this is now the local version of that float array from configurable.
-  if (lFixedLength_cent_bins.size() != 3) {
-    LOGF(fatal, "in function \033[1;31m%s at line %d => The array cfFixedLength_cent_bins must have 3 entries: {nBins, min, max} \n \033[0m", __FUNCTION__, __LINE__);
-  }
-  res.fResultsProFixedLengthBins[AFO_CENTRALITY][0] = lFixedLength_cent_bins[0];
-  res.fResultsProFixedLengthBins[AFO_CENTRALITY][1] = lFixedLength_cent_bins[1];
-  res.fResultsProFixedLengthBins[AFO_CENTRALITY][2] = lFixedLength_cent_bins[2];
-
+  this->InitializeFixedLengthBins(AFO_CENTRALITY);
   // *) Fixed-length binning vs. pt:
-  auto lFixedLength_pt_bins = (vector<float>)cf_res.cfFixedLength_pt_bins; // this is now the local version of that float array from configurable.
-  if (lFixedLength_pt_bins.size() != 3) {
-    LOGF(fatal, "in function \033[1;31m%s at line %d => The array cfFixedLength_pt_bins must have 3 entries: {nBins, min, max} \n \033[0m", __FUNCTION__, __LINE__);
-  }
-  res.fResultsProFixedLengthBins[AFO_PT][0] = lFixedLength_pt_bins[0];
-  res.fResultsProFixedLengthBins[AFO_PT][1] = lFixedLength_pt_bins[1];
-  res.fResultsProFixedLengthBins[AFO_PT][2] = lFixedLength_pt_bins[2];
-
+  this->InitializeFixedLengthBins(AFO_PT);
   // *) Fixed-length binning vs. eta:
-  auto lFixedLength_eta_bins = (vector<float>)cf_res.cfFixedLength_eta_bins; // this is now the local version of that float array from configurable.
-  if (lFixedLength_eta_bins.size() != 3) {
-    LOGF(fatal, "in function \033[1;31m%s at line %d => The array cfFixedLength_eta_bins must have 3 entries: {nBins, min, max} \n \033[0m", __FUNCTION__, __LINE__);
-  }
-  res.fResultsProFixedLengthBins[AFO_ETA][0] = lFixedLength_eta_bins[0];
-  res.fResultsProFixedLengthBins[AFO_ETA][1] = lFixedLength_eta_bins[1];
-  res.fResultsProFixedLengthBins[AFO_ETA][2] = lFixedLength_eta_bins[2];
+  this->InitializeFixedLengthBins(AFO_ETA);
 
   // e) Variable-length binning set via MuPa-Configurables.h:
   // *) Variable-length binning vs. multiplicity:
   if (cf_res.cfUseVariableLength_mult_bins) {
-    res.fUseResultsProVariableLengthBins[AFO_MULTIPLICITY] = kTRUE;
-    res.fResultsProVariableLengthBinsString[AFO_MULTIPLICITY] = cf_res.cfVariableLength_mult_bins;
-    this->CastStringIntoArray(AFO_MULTIPLICITY);
+    this->InitializeVariableLengthBins(AFO_MULTIPLICITY);
   }
   // *) Variable-length binning vs. centrality:
   if (cf_res.cfUseVariableLength_cent_bins) {
-    res.fUseResultsProVariableLengthBins[AFO_CENTRALITY] = kTRUE;
-    res.fResultsProVariableLengthBinsString[AFO_CENTRALITY] = cf_res.cfVariableLength_cent_bins;
-    this->CastStringIntoArray(AFO_CENTRALITY);
+    this->InitializeVariableLengthBins(AFO_CENTRALITY);
   }
   // *) Variable-length binning vs. pt:
   if (cf_res.cfUseVariableLength_pt_bins) {
-    res.fUseResultsProVariableLengthBins[AFO_PT] = kTRUE;
-    res.fResultsProVariableLengthBinsString[AFO_PT] = cf_res.cfVariableLength_pt_bins;
-    this->CastStringIntoArray(AFO_PT);
+    this->InitializeVariableLengthBins(AFO_PT);
   }
   // *) Variable-length binning vs. eta:
   if (cf_res.cfUseVariableLength_eta_bins) {
-    res.fUseResultsProVariableLengthBins[AFO_ETA] = kTRUE;
-    res.fResultsProVariableLengthBinsString[AFO_ETA] = cf_res.cfVariableLength_eta_bins;
-    this->CastStringIntoArray(AFO_ETA);
+    this->InitializeVariableLengthBins(AFO_ETA);
   }
 
 } // void DefaultBinning()
 
 //============================================================
 
+void InitializeFixedLengthBins(eAsFunctionOf AFO)
+{
+  // This is a helper function to suppress code bloat in DefaultBinning().
+  // In merely initalize res.fResultsProFixedLengthBins[...] from corresponding configurables + a few other minor thingies.
+
+  if (tc.fVerbose) {
+    LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
+  }
+
+  // Common local vector for all fixed-length bins:
+  vector<float> lFixedLength_bins;
+
+  switch (AFO) {
+    case AFO_MULTIPLICITY:
+      lFixedLength_bins = (vector<float>)cf_res.cfFixedLength_mult_bins;
+      break;
+    case AFO_CENTRALITY:
+      lFixedLength_bins = (vector<float>)cf_res.cfFixedLength_cent_bins;
+      break;
+    case AFO_PT:
+      lFixedLength_bins = (vector<float>)cf_res.cfFixedLength_pt_bins;
+      break;
+    case AFO_ETA:
+      lFixedLength_bins = (vector<float>)cf_res.cfFixedLength_eta_bins;
+      break;
+    // ...
+    default:
+      LOGF(fatal, "\033[1;31m%s at line %d : This enum AFO = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, static_cast<int>(AFO));
+      break;
+  } // switch(AFO)
+
+  // From this point onward, the code is the same for any AFO variable:
+  if (lFixedLength_bins.size() != 3) {
+    LOGF(fatal, "in function \033[1;31m%s at line %d => The array cfFixedLength_bins must have have 3 entries: {nBins, min, max} \n \033[0m", __FUNCTION__, __LINE__);
+  }
+  res.fResultsProFixedLengthBins[AFO][0] = lFixedLength_bins[0];
+  res.fResultsProFixedLengthBins[AFO][1] = lFixedLength_bins[1];
+  res.fResultsProFixedLengthBins[AFO][2] = lFixedLength_bins[2];
+
+  if (tc.fVerbose) {
+    LOGF(info, "\033[1;32m %s : fixed-length %s bins \033[0m", __FUNCTION__, res.fResultsProXaxisTitle[AFO].Data());
+    LOGF(info, "\033[1;32m [0] : %f \033[0m", res.fResultsProFixedLengthBins[AFO][0]);
+    LOGF(info, "\033[1;32m [1] : %f \033[0m", res.fResultsProFixedLengthBins[AFO][1]);
+    LOGF(info, "\033[1;32m [2] : %f \033[0m", res.fResultsProFixedLengthBins[AFO][2]);
+  }
+
+} // void InitializeFixedLengthBins(eAsFunctionOf AFO)
+
+//============================================================
+
+void InitializeVariableLengthBins(eAsFunctionOf AFO)
+{
+  // This is a helper function to suppress code bloat in DefaultBinning().
+  // In merely initalize res.fResultsProVariableLengthBins[...] from corresponding configurables + a few other minor thingies.
+
+  if (tc.fVerbose) {
+    LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
+  }
+
+  // Common local vector for all variable-length bins:
+  vector<float> lVariableLength_bins;
+
+  switch (AFO) {
+    case AFO_MULTIPLICITY:
+      lVariableLength_bins = (vector<float>)cf_res.cfVariableLength_mult_bins;
+      break;
+    case AFO_CENTRALITY:
+      lVariableLength_bins = (vector<float>)cf_res.cfVariableLength_cent_bins;
+      break;
+    case AFO_PT:
+      lVariableLength_bins = (vector<float>)cf_res.cfVariableLength_pt_bins;
+      break;
+    case AFO_ETA:
+      lVariableLength_bins = (vector<float>)cf_res.cfVariableLength_eta_bins;
+      break;
+    // ...
+    default:
+      LOGF(fatal, "\033[1;31m%s at line %d : This enum AFO = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, static_cast<int>(AFO));
+      break;
+  } // switch(AFO)
+
+  // From this point onward, the code is the same for any AFO variable:
+  res.fUseResultsProVariableLengthBins[AFO] = kTRUE;
+  if (lVariableLength_bins.size() < 2) {
+    LOGF(fatal, "in function \033[1;31m%s at line %d => The array cfVariableLength_bins must have at least 2 entries \n \033[0m", __FUNCTION__, __LINE__);
+  }
+  res.fResultsProVariableLengthBins[AFO] = new TArrayF(lVariableLength_bins.size(), lVariableLength_bins.data());
+  if (tc.fVerbose) {
+    LOGF(info, "\033[1;32m %s : variable-length %s bins \033[0m", __FUNCTION__, res.fResultsProXaxisTitle[AFO].Data());
+    for (Int_t i = 0; i < res.fResultsProVariableLengthBins[AFO]->GetSize(); i++) {
+      LOGF(info, "\033[1;32m [%d] : %f \033[0m", i, res.fResultsProVariableLengthBins[AFO]->GetAt(i));
+    }
+  }
+
+} // void InitializeVariableLengthBins(eAsFunctionOf AFO)
+
+//============================================================
+
 void CastStringIntoArray(Int_t AFO)
 {
   // Temporary function, to be removed eventually. Here temporarily I am casting e.g. a string "1.0,2.0,5.0" into corresponding TArrayD.
-  // TBI 20240114 This function is used until I figure out how to pass array directly via configurable.
+
+  // TBI 20241019 This function is not needed any longer, remove eventually.
 
   if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
@@ -931,7 +994,7 @@ void CastStringIntoArray(Int_t AFO)
     LOGF(fatal, "in function \033[1;31m%s at line %d \n fResultsProVariableLengthBinsString[AFO] = %s\033[0m", __FUNCTION__, __LINE__, res.fResultsProVariableLengthBinsString[AFO].Data());
   }
   Int_t nEntries = oa->GetEntries();
-  res.fResultsProVariableLengthBins[AFO] = new TArrayD(nEntries);
+  res.fResultsProVariableLengthBins[AFO] = new TArrayF(nEntries);
   for (Int_t i = 0; i < nEntries; i++) {
     // cout<< TString(oa->At(i)->GetName()).Atof() <<endl;
     res.fResultsProVariableLengthBins[AFO]->AddAt(TString(oa->At(i)->GetName()).Atof(), i);
@@ -1992,24 +2055,24 @@ void BookParticleHistograms()
       {
 
         // optional variable-length binning for y-axis (for supported observables):
-        if (ph.fParticleHistogramsName2D[t].EqualTo("PhiPt") && res.fUseResultsProVariableLengthBins[AFO_PT]) {
+        if (ph.fParticleHistogramsName2D[t].EqualTo("Phi_vs_Pt") && res.fUseResultsProVariableLengthBins[AFO_PT]) {
 
           // Remark: placeholder __RUN_NUMBER__ is handled in DetermineAndPropagateRunNumber(T const& collision)
 
           // *) variable-length binning for phi vs pt, but only in pt axis:
           ph.fParticleHistograms2D[t][rs][ba] = new TH2D(Form("fParticleHistograms2D[%s][%s][%s]", ph.fParticleHistogramsName2D[t].Data(), srs[rs].Data(), sba[ba].Data()),
                                                          Form("%s, %s, %s", "__RUN_NUMBER__", srs_long[rs].Data(), sba_long[ba].Data()),
-                                                         static_cast<int>(ph.fParticleHistogramsBins2D[t][eX][0]), ph.fParticleHistogramsBins2D[t][eX][1], ph.fParticleHistogramsBins2D[t][eX][2], // TBI 20240418 this is not safe, eX doesn't have to be phi axis in general, but it's ok for the time being => re-thing and fix later
-                                                         res.fResultsPro[AFO_PT]->GetXaxis()->GetXbins()->GetSize() - 1, res.fResultsPro[AFO_PT]->GetXaxis()->GetXbins()->GetArray());             // yes, x-axis of "results vs pt" hist is y-axis here for 2D.
-        } else if (ph.fParticleHistogramsName2D[t].EqualTo("PhiEta") && res.fUseResultsProVariableLengthBins[AFO_ETA]) {
+                                                         static_cast<int>(ph.fParticleHistogramsBins2D[t][eX][0]), ph.fParticleHistogramsBins2D[t][eX][1], ph.fParticleHistogramsBins2D[t][eX][2],
+                                                         res.fResultsPro[AFO_PT]->GetXaxis()->GetXbins()->GetSize() - 1, res.fResultsPro[AFO_PT]->GetXaxis()->GetXbins()->GetArray()); // yes, x-axis of "results vs pt" hist is y-axis here for 2D.
+        } else if (ph.fParticleHistogramsName2D[t].EqualTo("Phi_vs_Eta") && res.fUseResultsProVariableLengthBins[AFO_ETA]) {
 
           // *) variable-length binning for phi vs eta, but only in eta axis:
           ph.fParticleHistograms2D[t][rs][ba] = new TH2D(Form("fParticleHistograms2D[%s][%s][%s]", ph.fParticleHistogramsName2D[t].Data(), srs[rs].Data(), sba[ba].Data()),
                                                          Form("%s, %s, %s", "__RUN_NUMBER__", srs_long[rs].Data(), sba_long[ba].Data()),
-                                                         static_cast<int>(ph.fParticleHistogramsBins2D[t][eX][0]), ph.fParticleHistogramsBins2D[t][eX][1], ph.fParticleHistogramsBins2D[t][eX][2], // TBI 20240418 this is not safe, eX doesn't have to be phi axis in general, but it's ok for the time being => re-thing and fix later
-                                                         res.fResultsPro[AFO_ETA]->GetXaxis()->GetXbins()->GetSize() - 1, res.fResultsPro[AFO_ETA]->GetXaxis()->GetXbins()->GetArray());           // yes, x-axis of "results vs pt" hist is y-axis here for 2D
+                                                         static_cast<int>(ph.fParticleHistogramsBins2D[t][eX][0]), ph.fParticleHistogramsBins2D[t][eX][1], ph.fParticleHistogramsBins2D[t][eX][2],
+                                                         res.fResultsPro[AFO_ETA]->GetXaxis()->GetXbins()->GetSize() - 1, res.fResultsPro[AFO_ETA]->GetXaxis()->GetXbins()->GetArray()); // yes, x-axis of "results vs pt" hist is y-axis here for 2D
         } else {
-          // default fixed-langth binnging:
+          // default fixed-length binning:
           ph.fParticleHistograms2D[t][rs][ba] = new TH2D(Form("fParticleHistograms2D[%s][%s][%s]", ph.fParticleHistogramsName2D[t].Data(), srs[rs].Data(), sba[ba].Data()),
                                                          Form("%s, %s, %s", "__RUN_NUMBER__", srs_long[rs].Data(), sba_long[ba].Data()),
                                                          static_cast<int>(ph.fParticleHistogramsBins2D[t][eX][0]), ph.fParticleHistogramsBins2D[t][eX][1], ph.fParticleHistogramsBins2D[t][eX][2],
@@ -2238,8 +2301,8 @@ void BookWeightsHistograms()
   pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(1, "w_{#varphi}");
   pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(2, "w_{p_{t}}");
   pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(3, "w_{#eta}");
-  pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(4, "w_{#varphi}(p_{t})");
-  pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(5, "w_{#varphi}(#eta)");
+  pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(4, "(w_{#varphi})_{| p_{T}}"); // TBI 20241019 not sure if this is the final notation, keep in sync with void SetDiffWeightsHist(...)
+  pw.fWeightsFlagsPro->GetXaxis()->SetBinLabel(5, "(w_{#varphi})_{| #eta}");  // TBI 20241019 not sure if this is the final notation, keep in sync with void SetDiffWeightsHist(...)
 
   for (Int_t w = 0; w < eWeights_N; w++) // use weights [phi,pt,eta]
   {
@@ -6581,8 +6644,8 @@ void SetDiffWeightsHist(TH1D* const hist, eDiffWeights whichDiffWeight, Int_t bi
 
   // Cosmetics: TBI 20240216 do I really want to overwrite initial cosmetics, perhaps this shall go better into MakeWeights.C ?
   //                         Or I could move all this to GetHistogramWithWeights, where in any case I am setting e.g. histogram title, etc.
-  TString sVariable[eWeights_N] = {"#varphi", "p_{t}", "#eta"}; // [phi,pt,eta]
-  TString sWeights[eWeights_N] = {"w_{#varphi}", "w_{p_{t}}", "w_{#eta}"};
+  TString sVariable[eDiffWeights_N] = {"#varphi", "#varphi"}; // yes, for the time being, x-axis is always phi
+  TString sWeights[eDiffWeights_N] = {"(w_{#varphi})_{| p_{T}}", "(w_{#varphi})_{| #eta}"};
   pw.fDiffWeightsHist[whichDiffWeight][bin]->SetStats(kFALSE);
   pw.fDiffWeightsHist[whichDiffWeight][bin]->GetXaxis()->SetTitle(sVariable[whichDiffWeight].Data());
   pw.fDiffWeightsHist[whichDiffWeight][bin]->GetYaxis()->SetTitle(sWeights[whichDiffWeight].Data());
@@ -6694,7 +6757,12 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* runNumber, const
 
     listWithRuns = reinterpret_cast<TList*>(GetObjectFromList(baseList, runNumber));
     if (!listWithRuns) {
-      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+      TString runNumberWithLeadingZeroes = "000";
+      runNumberWithLeadingZeroes += runNumber; // another try, with "000" prepended to run number
+      listWithRuns = reinterpret_cast<TList*>(GetObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
+      if (!listWithRuns) {
+        LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+      }
     }
 
   } else if (bFileIsInCCDB) {
@@ -6726,10 +6794,14 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* runNumber, const
       LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
 
-    listWithRuns =
-      reinterpret_cast<TList*>(GetObjectFromList(baseList, runNumber));
+    listWithRuns = reinterpret_cast<TList*>(GetObjectFromList(baseList, runNumber));
     if (!listWithRuns) {
-      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+      TString runNumberWithLeadingZeroes = "000";
+      runNumberWithLeadingZeroes += runNumber; // another try, with "000" prepended to run number
+      listWithRuns = reinterpret_cast<TList*>(GetObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
+      if (!listWithRuns) {
+        LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+      }
     }
 
   } else {
@@ -6760,10 +6832,14 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* runNumber, const
       LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
 
-    listWithRuns =
-      reinterpret_cast<TList*>(GetObjectFromList(baseList, runNumber));
+    listWithRuns = reinterpret_cast<TList*>(GetObjectFromList(baseList, runNumber));
     if (!listWithRuns) {
-      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+      TString runNumberWithLeadingZeroes = "000";
+      runNumberWithLeadingZeroes += runNumber; // another try, with "000" prepended to run number
+      listWithRuns = reinterpret_cast<TList*>(GetObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
+      if (!listWithRuns) {
+        LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+      }
     }
 
   } // else {
@@ -6806,7 +6882,7 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* runNumber, const
       hist = reinterpret_cast<TH1D*>(GetObjectFromList(listWithRuns, Form("%s[%d]", variable, bin))); // yes, for some simple tests I can have only histogram named e.g. 'phipt[0]'
     }
     if (!hist) {
-      LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
+      LOGF(info, "\033[1;31m Form(\"%%s[%%d]\", variable, bin) = %s\033[0m", Form("%s[%d]", variable, bin));
       listWithRuns->ls();
       LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
@@ -7437,10 +7513,43 @@ void GetParticleWeights()
     TH1D* phiptWeights = NULL;
     Int_t nPtBins = res.fResultsPro[AFO_PT]->GetXaxis()->GetNbins();
     for (Int_t b = 0; b < nPtBins; b++) {
+
+      // *) check if particles in this pt bin survive particle cuts in pt. If not, skip this bin, because for that pt bin weights are simply not available:
+      if (!(res.fResultsPro[AFO_PT]->GetBinLowEdge(b + 2) > pc.fdParticleCuts[ePt][eMin])) {
+        // this branch protects against the case when I am e.g. in pt bin [0.0,0.2], and pt cut is 0.2 < pt < 5.0
+        LOGF(info, "\033[1;32m%s at line %d : you are requesting phi(pt) weight for pt bin = %d from (%f,%f), which is outside (below) pt phase space = (%f,%f). Skipping this bin. \033[0m", __FUNCTION__, __LINE__, b, res.fResultsPro[AFO_PT]->GetBinLowEdge(b + 1), res.fResultsPro[AFO_PT]->GetBinLowEdge(b + 2), pc.fdParticleCuts[ePt][eMin], pc.fdParticleCuts[ePt][eMax]);
+        continue;
+      }
+      if (!(res.fResultsPro[AFO_PT]->GetBinLowEdge(b + 1) < pc.fdParticleCuts[ePt][eMax])) {
+        // this branch protects against the case when I am e.g. in pt bin [5.0,10.0], and pt cut is 0.2 < pt < 5.0
+        LOGF(info, "\033[1;32m%s at line %d : you are requesting phi(pt) weight for pt bin = %d from (%f,%f), which is outside (above) pt phase space = (%f,%f). Skipping this bin. \033[0m", __FUNCTION__, __LINE__, b, res.fResultsPro[AFO_PT]->GetBinLowEdge(b + 1), res.fResultsPro[AFO_PT]->GetBinLowEdge(b + 2), pc.fdParticleCuts[ePt][eMin], pc.fdParticleCuts[ePt][eMax]);
+        continue;
+      }
+
+      // *) okay, for this pt bin is within pt phase-space window, defined by pt cut:
       phiptWeights = GetHistogramWithWeights(pw.fFileWithWeights.Data(), tc.fRunNumber.Data(), "phipt", b);
       if (!phiptWeights) {
         LOGF(fatal, "\033[1;31m%s at line %d : phiptWeights is NULL. Check the external file %s with particle weights\033[0m", __FUNCTION__, __LINE__, pw.fFileWithWeights.Data());
       }
+
+      // *) insanity check for differential weights => check if boundaries of current bin b are the same as bin boundaries for which these weights were calculated.
+      //    This way I ensure that weights correspond to same kinematic cuts and binning as in current analysis.
+      //      Current example format: <somePath>/weightsO2.root, 0.20 < p_{T} < 0.30
+      //      Algorithm: IFS is " ", and I take (N-1)th and (N-5)th entry:
+      TObjArray* oa = TString(phiptWeights->GetTitle()).Tokenize(" ");
+      if (!oa) {
+        LOGF(fatal, "in function \033[1;31m%s at line %d \n phiptWeights->GetTitle() = %s\033[0m", __FUNCTION__, __LINE__, phiptWeights->GetTitle());
+      }
+      Int_t nEntries = oa->GetEntries();
+      if (!(TMath::Abs(TString(oa->At(nEntries - 1)->GetName()).Atof() - res.fResultsPro[AFO_PT]->GetBinLowEdge(b + 2)) < 1.e-6)) {
+        LOGF(fatal, "in function \033[1;31m%s at line %d : mismatch in upper bin boundaries \n from title = %f , local = %f\033[0m", __FUNCTION__, __LINE__, TString(oa->At(nEntries - 1)->GetName()).Atof(), res.fResultsPro[AFO_PT]->GetBinLowEdge(b + 2));
+      }
+      if (!(TMath::Abs(TString(oa->At(nEntries - 5)->GetName()).Atof() - res.fResultsPro[AFO_PT]->GetBinLowEdge(b + 1)) < 1.e-6)) {
+        LOGF(fatal, "in function \033[1;31m%s at line %d : mismatch in lower bin boundaries \n from title = %f , local = %f\033[0m", __FUNCTION__, __LINE__, TString(oa->At(nEntries - 5)->GetName()).Atof(), res.fResultsPro[AFO_PT]->GetBinLowEdge(b + 1));
+      }
+      delete oa; // yes, otherwise it's a memory leak
+
+      // *) okay, just use this histogram with weights:
       SetDiffWeightsHist(phiptWeights, wPHIPT, b);
     }
   } // if (pw.fUseDiffWeights[wPHIPT]) {
@@ -7450,10 +7559,43 @@ void GetParticleWeights()
     TH1D* phietaWeights = NULL;
     Int_t nEtaBins = res.fResultsPro[AFO_ETA]->GetXaxis()->GetNbins();
     for (Int_t b = 0; b < nEtaBins; b++) {
+
+      // *) check if particles in this eta bin survive particle cuts in eta. If not, skip this bin, because for that eta bin weights are simply not available:
+      if (!(res.fResultsPro[AFO_ETA]->GetBinLowEdge(b + 2) > pc.fdParticleCuts[eEta][eMin])) {
+        // this branch protects against the case when I am e.g. in eta bin [-1.0,-0.8], and eta cut is -0.8 < eta < 0.8
+        LOGF(info, "\033[1;32m%s at line %d : you are requesting phi(eta) weight for eta bin = %d from (%f,%f), which is outside (below) eta phase space = (%f,%f). Skipping this bin. \033[0m", __FUNCTION__, __LINE__, b, res.fResultsPro[AFO_ETA]->GetBinLowEdge(b + 1), res.fResultsPro[AFO_ETA]->GetBinLowEdge(b + 2), pc.fdParticleCuts[eEta][eMin], pc.fdParticleCuts[eEta][eMax]);
+        continue;
+      }
+      if (!(res.fResultsPro[AFO_ETA]->GetBinLowEdge(b + 1) < pc.fdParticleCuts[eEta][eMax])) {
+        // this branch protects against the case when I am e.g. in eta bin [0.8,1.0], and eta cut is 0.8 < eta < 1.0
+        LOGF(info, "\033[1;32m%s at line %d : you are requesting phi(eta) weight for eta bin = %d from (%f,%f), which is outside (above) eta phase space = (%f,%f). Skipping this bin. \033[0m", __FUNCTION__, __LINE__, b, res.fResultsPro[AFO_ETA]->GetBinLowEdge(b + 1), res.fResultsPro[AFO_ETA]->GetBinLowEdge(b + 2), pc.fdParticleCuts[eEta][eMin], pc.fdParticleCuts[eEta][eMax]);
+        continue;
+      }
+
+      // *) okay, for this eta bin is within eta phase-space window, defined by eta cut:
       phietaWeights = GetHistogramWithWeights(pw.fFileWithWeights.Data(), tc.fRunNumber.Data(), "phieta", b);
       if (!phietaWeights) {
         LOGF(fatal, "\033[1;31m%s at line %d : phietaWeights is NULL. Check the external file %s with particle weights\033[0m", __FUNCTION__, __LINE__, pw.fFileWithWeights.Data());
       }
+
+      // *) insanity check for differential weights => check if boundaries of current bin b are the same as bin boundaries for which these weights were calculated.
+      //    This way I ensure that weights correspond to same kinematic cuts and binning as in current analysis.
+      //      Current example format: <somePath>/weightsO2.root, -0.8 < #eta < -0.4
+      //      Algorithm: IFS is " ", and I take (N-1)th and (N-5)th entry:
+      TObjArray* oa = TString(phietaWeights->GetTitle()).Tokenize(" ");
+      if (!oa) {
+        LOGF(fatal, "in function \033[1;31m%s at line %d \n phietaWeights->GetTitle() = %s\033[0m", __FUNCTION__, __LINE__, phietaWeights->GetTitle());
+      }
+      Int_t nEntries = oa->GetEntries();
+      if (!(TMath::Abs(TString(oa->At(nEntries - 1)->GetName()).Atof() - res.fResultsPro[AFO_ETA]->GetBinLowEdge(b + 2)) < 1.e-6)) {
+        LOGF(fatal, "in function \033[1;31m%s at line %d : mismatch in upper bin boundaries \n from title = %f , local = %f\033[0m", __FUNCTION__, __LINE__, TString(oa->At(nEntries - 1)->GetName()).Atof(), res.fResultsPro[AFO_ETA]->GetBinLowEdge(b + 2));
+      }
+      if (!(TMath::Abs(TString(oa->At(nEntries - 5)->GetName()).Atof() - res.fResultsPro[AFO_ETA]->GetBinLowEdge(b + 1)) < 1.e-6)) {
+        LOGF(fatal, "in function \033[1;31m%s at line %d : mismatch in lower bin boundaries \n from title = %f , local = %f\033[0m", __FUNCTION__, __LINE__, TString(oa->At(nEntries - 5)->GetName()).Atof(), res.fResultsPro[AFO_ETA]->GetBinLowEdge(b + 1));
+      }
+      delete oa; // yes, otherwise it's a memory leak
+
+      // *) okay, just use this histogram with weights:
       SetDiffWeightsHist(phietaWeights, wPHIETA, b);
     } // for(Int_t b=0; b<nEtaBins; b++) {
   }   // if (pw.fUseDiffWeights[wPHIETA]) {

@@ -24,6 +24,7 @@
 #include "DataFormatsParameters/GRPECSObject.h"
 #include "ITSMFTBase/DPLAlpideParam.h"
 #include "MetadataHelper.h"
+#include "DataFormatsParameters/AggregatedRunInfo.h"
 
 #include "TH1D.h"
 
@@ -37,6 +38,7 @@ using BCsWithRun2InfosTimestampsAndMatches = soa::Join<aod::BCs, aod::Run2BCInfo
 using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
 using BCsWithBcSelsRun2 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run2BCInfos, aod::Run2MatchedToBCSparse>;
 using BCsWithBcSelsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
+using FullTracks = soa::Join<aod::Tracks, aod::TracksExtra>;
 using FullTracksIU = soa::Join<aod::TracksIU, aod::TracksExtra>;
 const double bcNS = o2::constants::lhc::LHCBunchSpacingNS;
 
@@ -260,24 +262,12 @@ struct BcSelectionTask {
         mITSROFrameEndBorderMargin = confITSROFrameEndBorderMargin < 0 ? par->fITSROFrameEndBorderMargin : confITSROFrameEndBorderMargin;
         mTimeFrameStartBorderMargin = confTimeFrameStartBorderMargin < 0 ? par->fTimeFrameStartBorderMargin : confTimeFrameStartBorderMargin;
         mTimeFrameEndBorderMargin = confTimeFrameEndBorderMargin < 0 ? par->fTimeFrameEndBorderMargin : confTimeFrameEndBorderMargin;
-        // access orbit-reset timestamp
-        auto ctpx = ccdb->getForTimeStamp<std::vector<Long64_t>>("CTP/Calib/OrbitReset", ts);
-        int64_t tsOrbitReset = (*ctpx)[0]; // us
-        // access TF duration, start-of-run and end-of-run timestamps from ECS GRP
-        std::map<std::string, std::string> metadata;
-        metadata["runNumber"] = Form("%d", run);
-        auto grpecs = ccdb->getSpecific<o2::parameters::GRPECSObject>("GLO/Config/GRPECS", ts, metadata);
-        uint32_t nOrbitsPerTF = grpecs->getNHBFPerTF(); // assuming 1 orbit = 1 HBF;  nOrbitsPerTF=128 in 2022, 32 in 2023
-        int64_t tsSOR = grpecs->getTimeStart();         // ms
-        // calculate SOR orbit
-        int64_t orbitSOR = (tsSOR * 1000 - tsOrbitReset) / o2::constants::lhc::LHCOrbitMUS;
-        // adjust to the nearest TF edge
-        orbitSOR = orbitSOR / nOrbitsPerTF * nOrbitsPerTF + par->fTimeFrameOrbitShift;
-        // first bc of the first orbit (should coincide with TF start)
-        bcSOR = orbitSOR * o2::constants::lhc::LHCMaxBunches;
+
+        auto runInfo = o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), run);
+        // first bc of the first orbit
+        bcSOR = runInfo.orbitSOR * o2::constants::lhc::LHCMaxBunches;
         // duration of TF in bcs
-        nBCsPerTF = nOrbitsPerTF * o2::constants::lhc::LHCMaxBunches;
-        LOGP(info, "tsOrbitReset={} us, SOR = {} ms, orbitSOR = {}, nBCsPerTF = {}", tsOrbitReset, tsSOR, orbitSOR, nBCsPerTF);
+        nBCsPerTF = runInfo.orbitsPerTF * o2::constants::lhc::LHCMaxBunches;
       }
     }
 
@@ -457,7 +447,10 @@ struct EventSelectionTask {
   Configurable<bool> confUseWeightsForOccupancyVariable{"UseWeightsForOccupancyEstimator", 1, "Use or not the delta-time weights for the occupancy estimator"};
   Configurable<int> confSigmaBCforHighPtTracks{"confSigmaBCforHighPtTracks", 4, "Custom sigma (in bcs) for collisions with high-pt tracks"};
 
-  Partition<aod::Tracks> tracklets = (aod::track::trackType == static_cast<uint8_t>(o2::aod::track::TrackTypeEnum::Run2Tracklet));
+  Partition<FullTracks> tracklets = (aod::track::trackType == static_cast<uint8_t>(o2::aod::track::TrackTypeEnum::Run2Tracklet));
+
+  Preslice<FullTracks> perCollision = aod::track::collisionId;
+  Preslice<FullTracksIU> perCollisionIU = aod::track::collisionId;
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -493,6 +486,10 @@ struct EventSelectionTask {
   // helper function to find closest TVX signal in time and in zVtx
   int64_t findBestGlobalBC(int64_t meanBC, int64_t sigmaBC, int32_t nContrib, float zVtxCol, std::map<int64_t, float>& mapGlobalBcVtxZ)
   {
+    // protection against
+    if (sigmaBC < 1)
+      sigmaBC = 1;
+
     int64_t minBC = meanBC - 3 * sigmaBC;
     int64_t maxBC = meanBC + 3 * sigmaBC;
     // TODO: use ITS ROF bounds to reduce the search range?
@@ -506,7 +503,7 @@ struct EventSelectionTask {
     float bestChi2 = 1e+10;
     int64_t bestGlobalBC = 0;
     for (std::map<int64_t, float>::iterator it = itMin; it != itMax; ++it) {
-      float chi2 = pow((it->second - zVtxCol) / zVtxSigma, 2) + pow((it->first - meanBC) / sigmaBC, 2.);
+      float chi2 = pow((it->second - zVtxCol) / zVtxSigma, 2) + pow(static_cast<float>(it->first - meanBC) / sigmaBC, 2.);
       if (chi2 < bestChi2) {
         bestChi2 = chi2;
         bestGlobalBC = it->first;
@@ -552,7 +549,7 @@ struct EventSelectionTask {
     evsel.reserve(collisions.size());
   }
 
-  void processRun2(aod::Collision const& col, BCsWithBcSelsRun2 const&, FullTracksIU const&, aod::FV0Cs const&)
+  void processRun2(aod::Collision const& col, BCsWithBcSelsRun2 const&, FullTracks const&, aod::FV0Cs const&)
   {
     auto bc = col.bc_as<BCsWithBcSelsRun2>();
     EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", bc.timestamp());
@@ -631,28 +628,15 @@ struct EventSelectionTask {
     // extract bc pattern from CCDB for data or anchored MC only
     if (run != lastRun && run >= 500000) {
       lastRun = run;
+      auto runInfo = o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), run);
+      // first bc of the first orbit
+      bcSOR = runInfo.orbitSOR * o2::constants::lhc::LHCMaxBunches;
+      // duration of TF in bcs
+      nBCsPerTF = runInfo.orbitsPerTF * o2::constants::lhc::LHCMaxBunches;
+      // colliding bc pattern
       int64_t ts = bcs.iteratorAt(0).timestamp();
       auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", ts);
       bcPatternB = grplhcif->getBunchFilling().getBCPattern();
-
-      EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", ts);
-      // access orbit-reset timestamp
-      auto ctpx = ccdb->getForTimeStamp<std::vector<Long64_t>>("CTP/Calib/OrbitReset", ts);
-      int64_t tsOrbitReset = (*ctpx)[0]; // us
-      // access TF duration, start-of-run timestamp from ECS GRP
-      std::map<std::string, std::string> metadata;
-      metadata["runNumber"] = Form("%d", run);
-      auto grpecs = ccdb->getSpecific<o2::parameters::GRPECSObject>("GLO/Config/GRPECS", ts, metadata);
-      uint32_t nOrbitsPerTF = grpecs->getNHBFPerTF(); // assuming 1 orbit = 1 HBF;  nOrbitsPerTF=128 in 2022, 32 in 2023
-      int64_t tsSOR = grpecs->getTimeStart();         // ms
-      // calculate SOR orbit
-      int64_t orbitSOR = (tsSOR * 1000 - tsOrbitReset) / o2::constants::lhc::LHCOrbitMUS;
-      // adjust to the nearest TF edge
-      orbitSOR = orbitSOR / nOrbitsPerTF * nOrbitsPerTF + par->fTimeFrameOrbitShift;
-      // first bc of the first orbit (should coincide with TF start)
-      bcSOR = orbitSOR * o2::constants::lhc::LHCMaxBunches;
-      // duration of TF in bcs
-      nBCsPerTF = nOrbitsPerTF * o2::constants::lhc::LHCMaxBunches;
     }
 
     // create maps from globalBC to bc index for TVX-fired bcs
@@ -806,13 +790,14 @@ struct EventSelectionTask {
     // second loop to match remaining low-pt TPCnoTOFnoTRD collisions
     for (auto& col : cols) {
       int32_t colIndex = col.globalIndex();
-      if (vIsVertexTPC[colIndex] > 0 && vIsVertexHighPtTPC[colIndex] == 0) {
+      if (vIsVertexTPC[colIndex] > 0 && vIsVertexTOF[colIndex] == 0 && vIsVertexHighPtTPC[colIndex] == 0) {
         float weightedTime = vWeightedTimesTPCnoTOFnoTRD[colIndex];
         float weightedSigma = vWeightedSigmaTPCnoTOFnoTRD[colIndex];
         auto bc = col.bc_as<BCsWithBcSelsRun3>();
         int64_t globalBC = bc.globalBC();
         int64_t meanBC = globalBC + TMath::Nint(weightedTime / bcNS);
-        int64_t bestGlobalBC = findBestGlobalBC(meanBC, weightedSigma / bcNS, vNcontributors[colIndex], col.posZ(), mapGlobalBcVtxZ);
+        int64_t sigmaBC = TMath::CeilNint(weightedSigma / bcNS);
+        int64_t bestGlobalBC = findBestGlobalBC(meanBC, sigmaBC, vNcontributors[colIndex], col.posZ(), mapGlobalBcVtxZ);
         vFoundGlobalBC[colIndex] = bestGlobalBC > 0 ? bestGlobalBC : globalBC;
         vFoundBCindex[colIndex] = bestGlobalBC > 0 ? mapGlobalBcWithTVX[bestGlobalBC] : bc.globalIndex();
       }

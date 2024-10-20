@@ -15,6 +15,7 @@
 #include "Common/DataModel/PIDResponse.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
+#include "TPDGCode.h"
 #include "TLorentzVector.h"
 
 using namespace o2;
@@ -29,10 +30,11 @@ struct ThreePartCorr {
   HistogramRegistry MCRegistry{"MCRegistry", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry QARegistry{"QARegistry", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
 
-  // Collision filters
+  // Collision & Event filters
   Filter CollCent = aod::cent::centFT0C > 0.0f && aod::cent::centFT0C < 90.0f;
   Filter CollZvtx = nabs(aod::collision::posZ) < 7.0f;
   Filter MCCollZvtx = nabs(aod::mccollision::posZ) < 7.0f;
+  Filter EvSelect = aod::evsel::sel8 == true;
 
   // V0 filters
   Filter V0Pt = aod::v0data::pt > 0.6f && aod::v0data::pt < 12.0f;
@@ -41,24 +43,25 @@ struct ThreePartCorr {
   // Track filters
   Filter TrackPt = aod::track::pt > 0.2f && aod::track::pt < 3.0f;
   Filter TrackEta = nabs(aod::track::eta) < 0.8f;
+  Filter GlobalTracks = requireGlobalTrackInFilter();
 
   // Particle filters
   Filter ParticlePt = aod::mcparticle::pt > 0.2f && aod::mcparticle::pt < 3.0f;
   Filter ParticleEta = nabs(aod::mcparticle::eta) < 0.8f;
 
   // Table aliases - Data
-  using MyFilteredCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::CentFT0Cs>>;
+  using MyFilteredCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::CentFT0Cs, aod::EvSels>>;
   using MyFilteredCollision = MyFilteredCollisions::iterator;
   using MyFilteredV0s = soa::Filtered<aod::V0Datas>;
-  using MyFilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra,
+  using MyFilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection,
                                                    aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr,
                                                    aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFbeta>>;
 
   // Table aliases - MC
   using MyFilteredMCGenCollision = soa::Filtered<aod::McCollisions>::iterator;
   using MyFilteredMCParticles = soa::Filtered<aod::McParticles>;
-  using MyFilteredMCRecCollision = soa::Filtered<soa::Join<aod::Collisions, aod::McCollisionLabels>>::iterator;
-  using MyFilteredMCTracks = soa::Filtered<soa::Join<aod::Tracks, aod::McTrackLabels>>;
+  using MyFilteredMCRecCollision = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>>::iterator;
+  using MyFilteredMCTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::McTrackLabels>>;
 
   // Mixed-events binning policy
   SliceCache cache;
@@ -70,10 +73,10 @@ struct ThreePartCorr {
   Pair<MyFilteredCollisions, MyFilteredV0s, MyFilteredTracks, BinningType> pair{CollBinning, 5, -1, &cache};
 
   // Process configurables
-  Configurable<bool> FilterSwitch{"FilterSwitch", false, "Switch for the FakeV0Filter function"};
+  Configurable<bool> ConfFilterSwitch{"ConfFilterSwitch", false, "Switch for the FakeV0Filter function"};
 
   // Particle masses
-  Double_t massLambda = 1.115683;
+  Double_t massLambda = o2::constants::physics::MassLambda0;
   Double_t DGaussSigma = 0.0021;
 
   // Correlation variables
@@ -117,18 +120,18 @@ struct ThreePartCorr {
     QARegistry.add("hInvMassLambda", "hInvMassLambda", {HistType::kTH3D, {{LambdaInvMassAxis}, {V0PtAxis}, {CentralityAxis}}});
     QARegistry.add("hInvMassAntiLambda", "hInvMassAntiLambda", {HistType::kTH3D, {{LambdaInvMassAxis}, {V0PtAxis}, {CentralityAxis}}});
 
-    MCRegistry.add("hGenPionP", "hGenMomPionP", {HistType::kTH1D, {TrackPtAxis}});
-    MCRegistry.add("hGenPionN", "hGenMomPionN", {HistType::kTH1D, {TrackPtAxis}});
-    MCRegistry.add("hGenKaonP", "hGenMomKaonP", {HistType::kTH1D, {TrackPtAxis}});
-    MCRegistry.add("hGenKaonN", "hGenMomKaonN", {HistType::kTH1D, {TrackPtAxis}});
-    MCRegistry.add("hGenProtonP", "hGenMomProtonP", {HistType::kTH1D, {TrackPtAxis}});
-    MCRegistry.add("hGenProtonN", "hGenMomProtonN", {HistType::kTH1D, {TrackPtAxis}});
-    MCRegistry.add("hRecPionP", "hRecMomPionP", {HistType::kTH1D, {TrackPtAxis}});
-    MCRegistry.add("hRecPionN", "hRecMomPionN", {HistType::kTH1D, {TrackPtAxis}});
-    MCRegistry.add("hRecKaonP", "hRecMomKaonP", {HistType::kTH1D, {TrackPtAxis}});
-    MCRegistry.add("hRecKaonN", "hRecMomKaonN", {HistType::kTH1D, {TrackPtAxis}});
-    MCRegistry.add("hRecProtonP", "hRecMomProtonP", {HistType::kTH1D, {TrackPtAxis}});
-    MCRegistry.add("hRecProtonN", "hRecMomProtonN", {HistType::kTH1D, {TrackPtAxis}});
+    MCRegistry.add("hGenPionP", "hGenPionP", {HistType::kTH1D, {TrackPtAxis}});
+    MCRegistry.add("hGenPionN", "hGenPionN", {HistType::kTH1D, {TrackPtAxis}});
+    MCRegistry.add("hGenKaonP", "hGenKaonP", {HistType::kTH1D, {TrackPtAxis}});
+    MCRegistry.add("hGenKaonN", "hGenKaonN", {HistType::kTH1D, {TrackPtAxis}});
+    MCRegistry.add("hGenProtonP", "hGenProtonP", {HistType::kTH1D, {TrackPtAxis}});
+    MCRegistry.add("hGenProtonN", "hGenProtonN", {HistType::kTH1D, {TrackPtAxis}});
+    MCRegistry.add("hRecPionP", "hRecPionP", {HistType::kTH1D, {TrackPtAxis}});
+    MCRegistry.add("hRecPionN", "hRecPionN", {HistType::kTH1D, {TrackPtAxis}});
+    MCRegistry.add("hRecKaonP", "hRecKaonP", {HistType::kTH1D, {TrackPtAxis}});
+    MCRegistry.add("hRecKaonN", "hRecKaonN", {HistType::kTH1D, {TrackPtAxis}});
+    MCRegistry.add("hRecProtonP", "hRecProtonP", {HistType::kTH1D, {TrackPtAxis}});
+    MCRegistry.add("hRecProtonN", "hRecProtonN", {HistType::kTH1D, {TrackPtAxis}});
 
     SECorrRegistry.add("hSameLambdaPion_SGNL", "Same-event #Lambda - #pi correlator (SGNL region)", {HistType::kTHnSparseD, {{PhiAxis}, {EtaAxis}, {CentralityAxis}, {ZvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
     SECorrRegistry.add("hSameLambdaPion_SB", "Same-event #Lambda - #pi correlator (SB region)", {HistType::kTHnSparseD, {{PhiAxis}, {EtaAxis}, {CentralityAxis}, {ZvtxAxis}, {2, -2, 2}, {2, -2, 2}}});
@@ -276,17 +279,17 @@ struct ThreePartCorr {
     for (const auto& particle : particles) {
       if (particle.isPhysicalPrimary()) {
 
-        if (particle.pdgCode() == 211) { // Pos pions
+        if (particle.pdgCode() == kPiPlus) { // Pos pions
           MCRegistry.fill(HIST("hGenPionP"), particle.pt());
-        } else if (particle.pdgCode() == -211) { // Neg pions
+        } else if (particle.pdgCode() == kPiMinus) { // Neg pions
           MCRegistry.fill(HIST("hGenPionN"), particle.pt());
-        } else if (particle.pdgCode() == 310) { // Pos kaons
+        } else if (particle.pdgCode() == kKPlus) { // Pos kaons
           MCRegistry.fill(HIST("hGenKaonP"), particle.pt());
-        } else if (particle.pdgCode() == -310) { // Neg kaons
+        } else if (particle.pdgCode() == kKMinus) { // Neg kaons
           MCRegistry.fill(HIST("hGenKaonN"), particle.pt());
-        } else if (particle.pdgCode() == 2212) { // Pos protons
+        } else if (particle.pdgCode() == kProton) { // Pos protons
           MCRegistry.fill(HIST("hGenProtonP"), particle.pt());
-        } else if (particle.pdgCode() == -2212) { // Neg protons
+        } else if (particle.pdgCode() == kProtonBar) { // Neg protons
           MCRegistry.fill(HIST("hGenProtonN"), particle.pt());
         }
       }
@@ -310,18 +313,18 @@ struct ThreePartCorr {
       auto particle = track.mcParticle();
       if (particle.isPhysicalPrimary()) {
 
-        if (particle.pdgCode() == 211) { // Pos pions
-          MCRegistry.fill(HIST("hRecPionP"), particle.pt());
-        } else if (particle.pdgCode() == -211) { // Neg pions
-          MCRegistry.fill(HIST("hRecPionN"), particle.pt());
-        } else if (particle.pdgCode() == 310) { // Pos kaons
-          MCRegistry.fill(HIST("hRecKaonP"), particle.pt());
-        } else if (particle.pdgCode() == -310) { // Neg kaons
-          MCRegistry.fill(HIST("hRecKaonN"), particle.pt());
-        } else if (particle.pdgCode() == 2212) { // Pos protons
-          MCRegistry.fill(HIST("hRecProtonP"), particle.pt());
-        } else if (particle.pdgCode() == -2212) { // Neg protons
-          MCRegistry.fill(HIST("hRecProtonN"), particle.pt());
+        if (particle.pdgCode() == kPiPlus) { // Pos pions
+          MCRegistry.fill(HIST("hRecPionP"), track.pt());
+        } else if (particle.pdgCode() == kPiMinus) { // Neg pions
+          MCRegistry.fill(HIST("hRecPionN"), track.pt());
+        } else if (particle.pdgCode() == kKPlus) { // Pos kaons
+          MCRegistry.fill(HIST("hRecKaonP"), track.pt());
+        } else if (particle.pdgCode() == kKMinus) { // Neg kaons
+          MCRegistry.fill(HIST("hRecKaonN"), track.pt());
+        } else if (particle.pdgCode() == kProton) { // Pos protons
+          MCRegistry.fill(HIST("hRecProtonP"), track.pt());
+        } else if (particle.pdgCode() == kProtonBar) { // Neg protons
+          MCRegistry.fill(HIST("hRecProtonN"), track.pt());
         }
       }
     }
@@ -434,7 +437,7 @@ struct ThreePartCorr {
   Bool_t FakeV0Filter(const V0Cand& V0, const TrackCand& Track)
   {
 
-    if (FilterSwitch) {
+    if (ConfFilterSwitch) {
 
       TLorentzVector Daughter, Associate;
       if (TrackPID(Track)[0] == 1.0) { // Kaons

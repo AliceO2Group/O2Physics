@@ -221,14 +221,21 @@ DECLARE_SOA_TABLE(HfRed3ProngsCov, "AOD", "HFRED3PRONGSCOV", //! Table with 3pro
                   HFTRACKPARCOV_COLUMNS,
                   o2::soa::Marker<2>);
 
-DECLARE_SOA_TABLE(HfRed3ProngsMl, "AOD", "HFRED3PRONGML", //! Table with 3prong candidate ML scores
+DECLARE_SOA_TABLE(HfRed3ProngsMl_000, "AOD", "HFRED3PRONGML", //! Table with 3prong candidate ML scores
                   hf_charm_cand_reduced::MlScoreBkgMassHypo0,
                   hf_charm_cand_reduced::MlScorePromptMassHypo0,
-                  hf_charm_cand_reduced::MlScoreNonpromptMassHypo0,
-                  hf_charm_cand_reduced::MlScoreBkgMassHypo1,
-                  hf_charm_cand_reduced::MlScorePromptMassHypo1,
-                  hf_charm_cand_reduced::MlScoreNonpromptMassHypo1,
-                  o2::soa::Marker<1>);
+                  hf_charm_cand_reduced::MlScoreNonpromptMassHypo0);
+
+DECLARE_SOA_TABLE_VERSIONED(HfRed3ProngsMl_001, "AOD", "HFRED3PRONGML", 1, //! Table with 3prong candidate ML scores (format for 2 mass hypotheses needed for Ds and Lc)
+                            hf_charm_cand_reduced::MlScoreBkgMassHypo0,
+                            hf_charm_cand_reduced::MlScorePromptMassHypo0,
+                            hf_charm_cand_reduced::MlScoreNonpromptMassHypo0,
+                            hf_charm_cand_reduced::MlScoreBkgMassHypo1,
+                            hf_charm_cand_reduced::MlScorePromptMassHypo1,
+                            hf_charm_cand_reduced::MlScoreNonpromptMassHypo1,
+                            o2::soa::Marker<1>);
+
+using HfRed3ProngsMl = HfRed3ProngsMl_001;
 
 // Beauty candidates prongs
 namespace hf_cand_b0_reduced
@@ -680,7 +687,8 @@ DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfRed3PrNoTrks, "_0"); //! Pr
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, HfRedVzeros, "_1");    //! Prong1 index (V0 daughter)
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t);               // flag for decay channel classification reconstruction level
 DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t);               // flag for decay channel classification generator level
-DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);                       // debug flag for mis-association reconstruction level
+DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);                       // debug flag for mis-association at reconstruction level
+DECLARE_SOA_COLUMN(Origin, origin, int8_t);                               // Flag for origin of MC particle 1=promt, 2=FD
 
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //!
                            [](float pxProng0, float pxProng1, float pyProng0, float pyProng1) -> float { return RecoDecay::pt((1.f * pxProng0 + 1.f * pxProng1), (1.f * pyProng0 + 1.f * pyProng1)); });
@@ -734,11 +742,13 @@ DECLARE_SOA_TABLE(HfMcRecRedDV0s, "AOD", "HFMCRECREDDV0", //! Table with reconst
                   hf_reso_cand_reduced::Prong1Id,
                   hf_reso_cand_reduced::FlagMcMatchRec,
                   hf_reso_cand_reduced::DebugMcRec,
+                  hf_reso_cand_reduced::Origin,
                   hf_b0_mc::PtMother,
                   o2::soa::Marker<1>);
 
-DECLARE_SOA_TABLE(HfMcGenRedResos, "AOD", "HFMCGENREDRESO", //! Generation-level MC information on B0 candidates for reduced workflow
+DECLARE_SOA_TABLE(HfMcGenRedResos, "AOD", "HFMCGENREDRESO", //! Generation-level MC information on Ds-Resonances candidates for reduced workflow
                   hf_cand_b0::FlagMcMatchGen,
+                  hf_reso_cand_reduced::Origin,
                   hf_b0_mc::PtTrack,
                   hf_b0_mc::YTrack,
                   hf_b0_mc::EtaTrack,
@@ -748,6 +758,23 @@ DECLARE_SOA_TABLE(HfMcGenRedResos, "AOD", "HFMCGENREDRESO", //! Generation-level
                   hf_b0_mc::PtProng1,
                   hf_b0_mc::YProng1,
                   hf_b0_mc::EtaProng1,
+                  o2::soa::Marker<1>);
+
+DECLARE_SOA_TABLE(HfCandChaResTr, "AOD", "HFCANDCHARESTR", //! Table with Resonance candidate information for resonances plus tracks reduced workflow
+                                                           // Static
+                  hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0,
+                  hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1,
+                  hf_reso_cand_reduced::InvMass,
+                  hf_reso_cand_reduced::InvMassProng0,
+                  // Dynamic
+                  hf_reso_cand_reduced::PtProng0<hf_cand::PxProng0, hf_cand::PyProng0>);
+
+// Table with same size as HfCandCharmReso
+DECLARE_SOA_TABLE(HfMcRecRedResos, "AOD", "HFMCRECREDRESO", //! Reconstruction-level MC information on Ds-Resonances candidates for reduced workflow
+                  hf_reso_cand_reduced::FlagMcMatchRec,
+                  hf_reso_cand_reduced::DebugMcRec,
+                  hf_reso_cand_reduced::Origin,
+                  hf_b0_mc::PtMother,
                   o2::soa::Marker<1>);
 } // namespace aod
 

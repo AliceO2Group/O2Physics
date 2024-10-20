@@ -59,11 +59,10 @@ struct strangenessTrackingQC {
   using TrackCandidates = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCEl, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr>;
   using CollisionCandidates = soa::Join<aod::Collisions, aod::EvSels>;
 
-  Configurable<int> setting_materialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrNONE), "Type of material correction"};
+  Configurable<int> setting_materialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrLUT), "Type of material correction"};
 
   Configurable<float> cascsetting_dcaCascDaughters{"casc_setting_dcaV0daughters", 0.1f, "DCA between the V0 daughters"};
   Configurable<float> cascsetting_cosPA{"casc_setting_cosPA", 0.995f, "Cosine of the pointing angle of the V0"};
-  Configurable<float> cascsetting_massWindowOmega{"casc_setting_massWindowOmega", 0.01f, "Mass window for the Omega"};
   Configurable<float> cascsetting_massWindowXi{"casc_setting_massWindowXi", 0.01f, "Mass window for the Xi"};
 
   Configurable<std::string> cfgGRPmagPath{"cfgGRPmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
@@ -72,6 +71,7 @@ struct strangenessTrackingQC {
   Configurable<float> cfgCutNclusTPC{"cfgCutNclusTPC", 70, "Minimum number of TPC clusters"};
 
   ConfigurableAxis ptBins{"ptBins", {200, -10.f, 10.f}, "Binning for #it{p}_{T} (GeV/#it{c})"};
+  ConfigurableAxis dcaBins{"dcaBins", {1e3, -0.1, 0.1}, "Binning for DCA (cm)"};
   ConfigurableAxis decayRadBins{"decayRadBins", {100, 0.f, 40.f}, "Binning for decay radius (cm)"};
   ConfigurableAxis omegaMassBins{"omegaMassBins", {125, 1.650, 1.700}, "Invariant mass (GeV/#it{c}^{2})"};
   ConfigurableAxis xiMassBins{"xiMassBins", {125, 1.296, 1.346}, "Invariant mass (GeV/#it{c}^{2})"};
@@ -84,22 +84,29 @@ struct strangenessTrackingQC {
   HistogramRegistry registry{
     "registry",
     {
-      {"omegaMassFull", "; Mass (GeV/#it{c}^{2}); Counts", {HistType::kTH1F, {{125, 1.650, 1.700}}}},
-      {"xiMassFull", "; Mass (GeV/#it{c}^{2}); Counts", {HistType::kTH1F, {{125, 1.296, 1.346}}}},
+      {"omegaMass", "; Mass (GeV/#it{c}^{2}); Counts", {HistType::kTH1F, {{125, 1.650, 1.700}}}},
+      {"xiMass", "; Mass (GeV/#it{c}^{2}); Counts", {HistType::kTH1F, {{125, 1.296, 1.346}}}},
       {"omegaMassTracked", "; Mass (GeV/#it{c}^{2}); Counts", {HistType::kTH1F, {{125, 1.650, 1.700}}}},
       {"xiMassTracked", "; Mass (GeV/#it{c}^{2}); Counts", {HistType::kTH1F, {{125, 1.296, 1.346}}}},
-      {"omegaHistFull", "; #it{p}_{T} (GeV/#it{c}); Radius (cm); Mass", {HistType::kTH3F, {{ptBins, decayRadBins, omegaMassBins}}}},
-      {"xiHistFull", "; #it{p}_{T} (GeV/#it{c}); Radius (cm); Mass", {HistType::kTH3F, {{ptBins, decayRadBins, xiMassBins}}}},
+
+      {"omegaHist", "; #it{p}_{T} (GeV/#it{c}); Radius (cm); Mass", {HistType::kTH3F, {{ptBins, decayRadBins, omegaMassBins}}}},
+      {"xiHist", "; #it{p}_{T} (GeV/#it{c}); Radius (cm); Mass", {HistType::kTH3F, {{ptBins, decayRadBins, xiMassBins}}}},
       {"xiHistTracked", "; #it{p}_{T} (GeV/#it{c}); Radius (cm); Mass", {HistType::kTH3F, {{ptBins, decayRadBins, xiMassBins}}}},
       {"omegaHistTracked", "; #it{p}_{T} (GeV/#it{c}); Radius (cm); Mass", {HistType::kTH3F, {{ptBins, decayRadBins, omegaMassBins}}}},
+
+      {"xiDCAvsPt", "; #it{p}_{T} (GeV/#it{c}); DCA (cm)", {HistType::kTH2F, {{ptBins, dcaBins}}}},
+      {"omegaDCAvsPt", "; #it{p}_{T} (GeV/#it{c}); DCA (cm)", {HistType::kTH2F, {{ptBins, dcaBins}}}},
+      {"xiDCAvsPtTracked", "; #it{p}_{T} (GeV/#it{c}); DCA (cm)", {HistType::kTH2F, {{ptBins, dcaBins}}}},
+      {"omegaDCAvsPtTracked", "; #it{p}_{T} (GeV/#it{c}); DCA (cm)", {HistType::kTH2F, {{ptBins, dcaBins}}}},
     }};
 
   template <typename T>
-  float dcaToPV(const std::array<float, 3>& PV, T& trackParCov)
+  float dcaToPV(o2::dataformats::VertexBase& PV, T& trackParCov)
   {
-    gpu::gpustd::array<float, 2> dcaInfo;
-    o2::base::Propagator::Instance()->propagateToDCABxByBz({PV[0], PV[1], PV[2]}, trackParCov, 2.f, m_fitter.getMatCorrType(), &dcaInfo);
-    return std::hypot(dcaInfo[0], dcaInfo[1]);
+    auto matCorr = static_cast<o2::base::Propagator::MatCorrType>(setting_materialCorrection.value);
+    o2::dataformats::DCA impactParameterTrk;
+    o2::base::Propagator::Instance()->propagateToDCA(PV, trackParCov, bz, 2.f, matCorr, &impactParameterTrk);
+    return impactParameterTrk.getY();
   }
 
   template <typename T>
@@ -114,13 +121,13 @@ struct strangenessTrackingQC {
     return true;
   }
 
-  float computeMassMother(const float massA, const float massB, const std::array<float, 3>& momA, const std::array<float, 3>& momB, const std::array<float, 3>& momMother) const
+  float computeMassMother(const float massA, const float massB, const std::array<float, 3>& momA, const std::array<float, 3>& momB) const
   {
     float eA = std::hypot(massA, std::hypot(momA[0], momA[1], momA[2]));
     float eB = std::hypot(massB, std::hypot(momB[0], momB[1], momB[2]));
-    float lmomMotherl = std::hypot(momMother[0], momMother[1], momMother[2]);
+    float momTot = std::hypot(momA[0] + momB[0], momA[1] + momB[1], momA[2] + momB[2]);
     float eMother = eA + eB;
-    return std::sqrt(eMother * eMother - lmomMotherl * lmomMotherl);
+    return std::sqrt(eMother * eMother - momTot * momTot);
   }
 
   template <class TCasc>
@@ -138,7 +145,7 @@ struct strangenessTrackingQC {
     if (std::abs(protonTrack.tpcNSigmaPr()) > 3 || std::abs(pionTrack.tpcNSigmaPi()) > 3) {
       return false;
     }
-    const auto primaryVertex = getPrimaryVertex(collision);
+    auto primaryVertex = getPrimaryVertex(collision);
     std::array<float, 3> pvPos = {primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()};
 
     float cascCpa = -1;
@@ -171,24 +178,24 @@ struct strangenessTrackingQC {
       return false;
     }
 
-    if (cascCpa < cascsetting_cosPA || cascCpa == -1) {
+    if (cascCpa < cascsetting_cosPA) {
       return false;
     }
 
-    if (cascDauDCA > cascsetting_dcaCascDaughters || cascDauDCA == -1) {
+    if (cascDauDCA > cascsetting_dcaCascDaughters) {
       return false;
     }
 
-    miniCasc.pt = std::hypot(cascMom[0], cascMom[1]);
-    miniCasc.massOmega = computeMassMother(constants::physics::MassLambda0, constants::physics::MassKaonCharged, v0Mom, bachelorMom, cascMom);
-    miniCasc.massXi = computeMassMother(constants::physics::MassLambda0, constants::physics::MassPionCharged, v0Mom, bachelorMom, cascMom);
-
+    int chargeFactor = bachelor.sign() > 0 ? 1 : -1;
+    miniCasc.pt = chargeFactor * std::hypot(cascMom[0], cascMom[1]);
+    miniCasc.massOmega = computeMassMother(constants::physics::MassLambda0, constants::physics::MassKaonCharged, v0Mom, bachelorMom);
+    miniCasc.massXi = computeMassMother(constants::physics::MassLambda0, constants::physics::MassPionCharged, v0Mom, bachelorMom);
     miniCasc.fillOmega = false;
-    if (TMath::Abs(miniCasc.massXi - constants::physics::MassXiMinus) > 0.01 && std::abs(bachelor.tpcNSigmaKa()) < 3) {
+    if (TMath::Abs(miniCasc.massXi - constants::physics::MassXiMinus) > cascsetting_massWindowXi && std::abs(bachelor.tpcNSigmaKa()) < 3) {
       miniCasc.fillOmega = true;
     }
 
-    miniCasc.dcaXYCasc = dcaToPV(pvPos, trackParCovCasc);
+    miniCasc.dcaXYCasc = dcaToPV(primaryVertex, trackParCovCasc);
     auto svPos = m_fitter.getPCACandidate();
     miniCasc.radius = std::hypot(svPos[0], svPos[1]);
 
@@ -220,6 +227,12 @@ struct strangenessTrackingQC {
     mRunNumber = 0;
     bz = 0;
 
+    if (static_cast<o2::base::Propagator::MatCorrType>(setting_materialCorrection.value) == o2::base::Propagator::MatCorrType::USEMatCorrLUT) {
+      auto* lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>("GLO/Param/MatLUT"));
+      LOG(info) << "Setting material correction LUT";
+      o2::base::Propagator::Instance(true)->setMatLUT(lut);
+    }
+
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -233,11 +246,11 @@ struct strangenessTrackingQC {
     m_fitter.setMaxChi2(1e9);
     m_fitter.setUseAbsDCA(true);
     m_fitter.setWeightedFinalPCA(false);
-    int mat{static_cast<int>(setting_materialCorrection)};
-    m_fitter.setMatCorrType(static_cast<o2::base::Propagator::MatCorrType>(mat));
+    // int mat{static_cast<int>(setting_materialCorrection)};
+    // m_fitter.setMatCorrType(static_cast<o2::base::Propagator::MatCorrType>(mat));
   }
 
-  void process(CollisionCandidates const& collisions, aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const& cascades, aod::V0s const& v0s, TrackCandidates const& tracks, aod::BCsWithTimestamps const&)
+  void process(CollisionCandidates const&, aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const& cascades, aod::V0s const& v0s, TrackCandidates const& tracks, aod::BCsWithTimestamps const&)
   {
 
     for (const auto& trackedCascade : trackedCascades) {
@@ -248,21 +261,23 @@ struct strangenessTrackingQC {
         continue;
       }
       initCCDB(collision.bc_as<aod::BCsWithTimestamps>());
+      m_fitter.setBz(bz);
       if (buildCascade(casc, collision, v0s, tracks, miniCasc)) {
 
         // compute the dca of the tracked cascade
         const auto& track = trackedCascade.track_as<TrackCandidates>();
         auto trackCovTrk = getTrackParCov(track);
 
-        auto pvPos = getPrimaryVertex(collision);
-        auto pvPosArr = std::array<float, 3>{pvPos.getX(), pvPos.getY(), pvPos.getZ()};
-        miniCasc.dcaXYTracked = dcaToPV(pvPosArr, trackCovTrk);
+        auto primaryVertex = getPrimaryVertex(collision);
+        miniCasc.dcaXYTracked = dcaToPV(primaryVertex, trackCovTrk);
         // fill the histograms
         if (miniCasc.fillOmega) {
           registry.fill(HIST("omegaMassTracked"), miniCasc.massOmega);
+          registry.fill(HIST("omegaDCAvsPtTracked"), miniCasc.pt, miniCasc.dcaXYTracked);
           registry.fill(HIST("omegaHistTracked"), miniCasc.pt, miniCasc.radius, miniCasc.massOmega);
         }
         registry.fill(HIST("xiMassTracked"), miniCasc.massXi);
+        registry.fill(HIST("xiDCAvsPtTracked"), miniCasc.pt, miniCasc.dcaXYTracked);
         registry.fill(HIST("xiHistTracked"), miniCasc.pt, miniCasc.radius, miniCasc.massXi);
       }
     }
@@ -274,13 +289,16 @@ struct strangenessTrackingQC {
         continue;
       }
       initCCDB(collision.bc_as<aod::BCsWithTimestamps>());
+      m_fitter.setBz(bz);
       if (buildCascade(cascade, collision, v0s, tracks, miniCasc)) {
         if (miniCasc.fillOmega) {
-          registry.fill(HIST("omegaMassFull"), miniCasc.massOmega);
-          registry.fill(HIST("omegaHistFull"), miniCasc.pt, miniCasc.radius, miniCasc.massOmega);
+          registry.fill(HIST("omegaMass"), miniCasc.massOmega);
+          registry.fill(HIST("omegaDCAvsPt"), miniCasc.pt, miniCasc.dcaXYCasc);
+          registry.fill(HIST("omegaHist"), miniCasc.pt, miniCasc.radius, miniCasc.massOmega);
         }
-        registry.fill(HIST("xiMassFull"), miniCasc.massXi);
-        registry.fill(HIST("xiHistFull"), miniCasc.pt, miniCasc.radius, miniCasc.massXi);
+        registry.fill(HIST("xiMass"), miniCasc.massXi);
+        registry.fill(HIST("xiDCAvsPt"), miniCasc.pt, miniCasc.dcaXYCasc);
+        registry.fill(HIST("xiHist"), miniCasc.pt, miniCasc.radius, miniCasc.massXi);
       }
     }
   }
