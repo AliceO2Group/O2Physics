@@ -47,6 +47,7 @@ struct JetSpectraEseTask {
   Configurable<float> jetR{"jetR", 0.2, "jet resolution parameter"};
   Configurable<float> vertexZCut{"vertexZCut", 10.0, "vertex z cut"};
   Configurable<std::vector<float>> CentRange{"CentRange", {30, 50}, "centrality region of interest"};
+  Configurable<double> leadingJetPtCut{"fLeadingJetPtCut", 5.0, "leading jet pT cut"};
 
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
@@ -173,15 +174,11 @@ struct JetSpectraEseTask {
     float counter{0.5f};
     registry.fill(HIST("h_mc_collisions"), counter++);
     for (const auto& mcdjet : mcdjets) {
-      if (!mcdjet.has_matchedJetGeo())
-        continue;
 
       registry.fill(HIST("h_detector_jet_pt"), mcdjet.pt());
       registry.fill(HIST("h_detector_jet_eta"), mcdjet.eta());
       registry.fill(HIST("h_detector_jet_phi"), mcdjet.phi());
       for (auto& mcpjet : mcdjet.template matchedJetGeo_as<JetMCPTable>()) {
-        if (!mcpjet.has_matchedJetGeo())
-          continue;
 
         registry.fill(HIST("h_part_jet_pt_match"), mcpjet.pt());
         registry.fill(HIST("h_part_jet_eta_match"), mcpjet.eta());
@@ -201,9 +198,9 @@ struct JetSpectraEseTask {
   template <typename T>
   bool isAcceptedLeadTrack(T const& tracks)
   {
-    float leadingTrackpT{0.0};
+    double leadingTrackpT{0.0};
     for (const auto& track : tracks) {
-      if (track.pt() > 5.0) {
+      if (track.pt() > leadingJetPtCut) {
         if (track.pt() > leadingTrackpT) {
           leadingTrackpT = track.pt();
         }
