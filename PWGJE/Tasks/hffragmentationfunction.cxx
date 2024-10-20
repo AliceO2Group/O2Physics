@@ -222,7 +222,7 @@ struct HfFragmentationFunctionTask {
                      d0Candidate.pt(), d0Candidate.eta(), d0Candidate.phi(), d0Candidate.m(), d0Candidate.y());
 
         break; // get out of candidates' loop after first HF particle is found in jet
-      }        // end of D0 candidates loop
+      } // end of D0 candidates loop
 
     } // end of jets loop
 
