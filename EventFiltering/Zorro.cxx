@@ -145,7 +145,7 @@ std::bitset<128> Zorro::fetch(uint64_t bcGlobalId, uint64_t tolerance)
 {
   mLastResult.reset();
   if (bcGlobalId < mBCranges.front().getMin().toLong() - tolerance || bcGlobalId > mBCranges.back().getMax().toLong() + tolerance) {
-    setupHelpers(mOrbitResetTimestamp + int64_t(bcGlobalId * o2::constants::lhc::LHCBunchSpacingNS * 1e-3) / 1000);
+    setupHelpers((mOrbitResetTimestamp + int64_t(bcGlobalId * o2::constants::lhc::LHCBunchSpacingNS * 1e-3)) / 1000);
   }
 
   o2::dataformats::IRFrame bcFrame{InteractionRecord::long2IR(bcGlobalId) - tolerance, InteractionRecord::long2IR(bcGlobalId) + tolerance};
