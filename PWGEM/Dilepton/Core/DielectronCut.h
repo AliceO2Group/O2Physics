@@ -85,9 +85,7 @@ class DielectronCut : public TNamed
     kTPChadrejORTOFreq = 2,
     kTPConly = 3,
     kTOFif = 4,
-    kITSTOFreq = 5,
-    kTPChadrejORITSTOFreq = 6,
-    kPIDML = 7
+    kPIDML = 5
   };
 
   template <typename T = int, typename TPair>
@@ -178,9 +176,9 @@ class DielectronCut : public TNamed
     if (!IsSelectedTrack(track, DielectronCuts::kITSChi2NDF)) {
       return false;
     }
-    // if (!IsSelectedTrack(track, DielectronCuts::kITSClusterSize)) {
-    //   return false;
-    // }
+    if (!IsSelectedTrack(track, DielectronCuts::kITSClusterSize)) {
+      return false;
+    }
 
     if (mRequireITSibAny) {
       auto hits_ib = std::count_if(its_ib_any_Requirement.second.begin(), its_ib_any_Requirement.second.end(), [&](auto&& requiredLayer) { return track.itsClusterMap() & (1 << requiredLayer); });
@@ -273,12 +271,6 @@ class DielectronCut : public TNamed
       case static_cast<int>(PIDSchemes::kTOFif):
         return PassTOFif(track);
 
-      case static_cast<int>(PIDSchemes::kITSTOFreq):
-        return PassTOFreq(track) && PassITSreq(track);
-
-      case static_cast<int>(PIDSchemes::kTPChadrejORITSTOFreq):
-        return PassTPChadrej(track) || (PassTOFreq(track) && PassITSreq(track));
-
       case static_cast<int>(PIDSchemes::kPIDML):
         return true; // don't use kPIDML here.
 
@@ -328,15 +320,6 @@ class DielectronCut : public TNamed
   }
 
   template <typename T>
-  bool PassITSreq(T const& track) const
-  {
-    bool is_el_included_TPC = mMinTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
-    bool is_pi_excluded_TPC = track.tpcInnerParam() < mMaxPinForPionRejectionTPC ? (track.tpcNSigmaPi() < mMinTPCNsigmaPi || mMaxTPCNsigmaPi < track.tpcNSigmaPi()) : true;
-    bool is_el_included_ITS = (track.p() < mMinP_ITSClusterSize || mMaxP_ITSClusterSize < track.p()) ? true : (mMinMeanClusterSizeITS < track.meanClusterSizeITS() * std::cos(std::atan(track.tgl()))) && (track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())) < (mMaxMeanClusterSizeITSPDep ? mMaxMeanClusterSizeITSPDep(track.p()) : mMaxMeanClusterSizeITS));
-    return is_el_included_TPC && is_pi_excluded_TPC && is_el_included_ITS;
-  }
-
-  template <typename T>
   bool IsSelectedTrack(T const& track, const DielectronCuts& cut) const
   {
     switch (cut) {
@@ -379,13 +362,8 @@ class DielectronCut : public TNamed
       case DielectronCuts::kITSChi2NDF:
         return mMinChi2PerClusterITS < track.itsChi2NCl() && track.itsChi2NCl() < mMaxChi2PerClusterITS;
 
-        // case DielectronCuts::kITSClusterSize: {
-        //   if (track.p() < mMinP_ITSClusterSize || mMaxP_ITSClusterSize < track.p()) {
-        //     return true;
-        //   } else {
-        //     return (mMinMeanClusterSizeITS < track.meanClusterSizeITS() * std::cos(std::atan(track.tgl()))) && (track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())) < (mMaxMeanClusterSizeITSPDep ? mMaxMeanClusterSizeITSPDep(track.p()) : mMaxMeanClusterSizeITS));
-        //   }
-        // }
+      case DielectronCuts::kITSClusterSize:
+        return ((mMinP_ITSClusterSize < track.p() && track.p() < mMaxP_ITSClusterSize) ? (mMinMeanClusterSizeITS < track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())) && track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())) < mMaxMeanClusterSizeITS) : true);
 
       case DielectronCuts::kPrefilter:
         return track.pfb() <= 0;
@@ -416,7 +394,6 @@ class DielectronCut : public TNamed
   void SetNClustersITS(int min, int max);
   void SetChi2PerClusterITS(float min, float max);
   void SetMeanClusterSizeITS(float min, float max, float minP = 0.f, float maxP = 0.f);
-  void SetMeanClusterSizeITSPDep(std::function<float(float)> pDepCut, float minP = 0.f, float maxP = 0.f);
 
   void SetPIDScheme(int scheme);
   void SetMinPinTOF(float min);
@@ -493,9 +470,7 @@ class DielectronCut : public TNamed
   bool mApplyPhiV{true};
   bool mApplyPF{false};
   float mMinMeanClusterSizeITS{-1e10f}, mMaxMeanClusterSizeITS{1e10f}; // max <its cluster size> x cos(Lmabda)
-  float mMinP_ITSClusterSize{0.0};
-  float mMaxP_ITSClusterSize{0.0};
-  std::function<float(float)> mMaxMeanClusterSizeITSPDep{}; // max dca in xy plane as function of pT
+  float mMinP_ITSClusterSize{0.0}, mMaxP_ITSClusterSize{0.0};
 
   // pid cuts
   int mPIDScheme{-1};
