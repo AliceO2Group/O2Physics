@@ -351,8 +351,8 @@ struct lambdapolsp {
         if (sign == 0.0) // removing neutral particles
           continue;
 
-        auto ux = GetPhiInRange(TMath::Cos(track.phi()));
-        auto uy = GetPhiInRange(TMath::Sin(track.phi()));
+        auto ux = TMath::Cos(GetPhiInRange(track.phi()));
+        auto uy = TMath::Sin(GetPhiInRange(track.phi()));
 
         auto uxQxp = ux * qxZDCA;
         auto uyQyp = uy * qyZDCA;
