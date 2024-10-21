@@ -9,11 +9,3 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-# Common
-add_subdirectory(QC)
-
-# PAGs
-add_subdirectory(GlobalEventProperties)
-add_subdirectory(Nuspex)
-add_subdirectory(Resonances)
-add_subdirectory(Strangeness)
