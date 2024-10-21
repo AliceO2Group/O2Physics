@@ -698,6 +698,9 @@ struct HfCorrelatorDsHadrons {
     
     // tracks information
     for (const auto& track : tracks) {
+      if (!track.isGlobalTrackWoDCA()) {
+        continue;
+      }
       assocTrackReduced(collReduced.lastIndex(), track.phi(), track.eta(), track.pt());
     }
   }
