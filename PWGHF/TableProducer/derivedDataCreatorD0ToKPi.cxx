@@ -369,6 +369,12 @@ struct HfDerivedDataCreatorD0ToKPi {
       }
       int8_t flagMcRec = 0, origin = 0;
       for (const auto& candidate : candidatesThisColl) {
+        if (downSampleBkgFactor < 1.) {
+          float pseudoRndm = candidate.ptProng0() * 1000. - (int64_t)(candidate.ptProng0() * 1000);
+          if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
+            continue;
+          }
+        }
         if constexpr (isMc) {
           flagMcRec = candidate.flagMcMatchRec();
           origin = candidate.originMcRec();
