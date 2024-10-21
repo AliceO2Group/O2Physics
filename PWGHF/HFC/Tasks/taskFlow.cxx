@@ -449,7 +449,7 @@ struct HfTaskFlow {
   bool isCollisionSelected(TCollision const& collision, bool fillHistograms = false)
   {
     if (fillHistograms)
-        registry.fill(HIST("Data/hEventCounter"), 1);
+      registry.fill(HIST("Data/hEventCounter"), 1);
 
     if (processMc == false) {
       if (!collision.sel8()) {
@@ -858,7 +858,7 @@ struct HfTaskFlow {
       }
 
       //  fill single-track distributions
-      if (!fillingHFcontainer) { // if not HF-h case 
+      if (!fillingHFcontainer) { // if not HF-h case
         target->getTriggerHist()->Fill(step, pt1, multiplicity, posZ, triggerWeight);
       } else {
         target->getTriggerHist()->Fill(step, pt1, multiplicity, posZ, invmass, triggerWeight);
@@ -875,9 +875,9 @@ struct HfTaskFlow {
         }
 
         //  in case of HF-h correlations, remove candidate daughters from the pool of associated hadrons
-        //  with which the candidate is being correlated (will not have to do it for TPC-MFT case) 
+        //  with which the candidate is being correlated (will not have to do it for TPC-MFT case)
         if constexpr (!std::is_same_v<aod::MFTTracks, TTracksAssoc>) { // if NOT TPC-MFT case -> TPC-TPC case
-          if constexpr (std::is_same_v<HfCandidatesSel, TTracksTrig>) { 
+          if constexpr (std::is_same_v<HfCandidatesSel, TTracksTrig>) {
             if ((track1.prong0Id() == track2.globalIndex()) || (track1.prong1Id() == track2.globalIndex())) {
               continue;
             }
@@ -944,8 +944,8 @@ struct HfTaskFlow {
       auto binningValues = binningWithTracksSize.getBinningValues(collision1, collisions);
       int bin = binningWithTracksSize.getBin(binningValues);
 
-      //const auto multiplicityTracks1 = getPartsSize(collision1);
-      //const auto multiplicityTracks2 = getPartsSize(collision2);
+      // const auto multiplicityTracks1 = getPartsSize(collision1);
+      // const auto multiplicityTracks2 = getPartsSize(collision2);
       const auto multiplicityTracks1 = tracks1.size(); // get multiplicity of charged hadrons, which is used for slicing in mixing
       const auto multiplicityTracks2 = tracks2.size(); // get multiplicity of charged hadrons, which is used for slicing in mixing
       const auto vz = collision1.posZ();
@@ -968,16 +968,16 @@ struct HfTaskFlow {
             registry.fill(HIST("Data/TpcMft/HfHadron/MixedEvent/hEventCountMixing"), bin);
             fillTpcMftHfChMixedEventQa(multiplicityTracks1, vz, tracks1); // Candidates
             fillTpcMftHfChMixedEventQa(multiplicityTracks2, vz, tracks2); // MFT tracks
-          } else {                                                      // IF h-h case -> TPC-MFT h-h case
+          } else {                                                        // IF h-h case -> TPC-MFT h-h case
             registry.fill(HIST("Data/TpcMft/HadronHadron/MixedEvent/hEventCountMixing"), bin);
-            fillTpcMftChChMixedEventQa(multiplicityTracks1, vz, tracks1);              // TPC tracks
-            fillTpcMftChChMixedEventQa(multiplicityTracks2, vz, tracks2);              // MFT tracks
+            fillTpcMftChChMixedEventQa(multiplicityTracks1, vz, tracks1); // TPC tracks
+            fillTpcMftChChMixedEventQa(multiplicityTracks2, vz, tracks2); // MFT tracks
           }
-        } else {                                                      // IF TPC-TPC case
+        } else {                                                        // IF TPC-TPC case
           if constexpr (std::is_same_v<HfCandidatesSel, TTracksTrig>) { // IF HF-h case -> TPC-TPC HF-h
             registry.fill(HIST("Data/TpcTpc/HfHadron/MixedEvent/hEventCountHFMixing"), bin);
             fillTpcTpcHfChMixedEventQa(multiplicityTracks2, vz, tracks1);
-          } else {                                                      // IF h-h case -> TPC-TPC h-h case
+          } else { // IF h-h case -> TPC-TPC h-h case
             registry.fill(HIST("Data/TpcTpc/HadronHadron/MixedEvent/hEventCountMixing"), bin);
             fillTpcTpcChChMixedEventQa(multiplicityTracks2, vz, tracks1);
           }
@@ -1080,7 +1080,8 @@ struct HfTaskFlow {
     auto fillEventSelectionPlots = true;
 
     // When doing reference flow, two cases are used (HF-h, h-h) and thus eventSelectionPlots was filled twice
-    if (doReferenceFlow) fillEventSelectionPlots = false;
+    if (doReferenceFlow)
+      fillEventSelectionPlots = false;
 
     if (!(isCollisionSelected(collision, fillEventSelectionPlots))) {
       return;
@@ -1127,7 +1128,8 @@ struct HfTaskFlow {
     auto fillEventSelectionPlots = true;
 
     // When doing reference flow, two cases are used (HF-h, h-h) and thus eventSelectionPlots was filled twice
-    if (doReferenceFlow) fillEventSelectionPlots = false;
+    if (doReferenceFlow)
+      fillEventSelectionPlots = false;
 
     if (!(isCollisionSelected(collision, fillEventSelectionPlots))) {
       return;
