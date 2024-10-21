@@ -13,8 +13,8 @@
 /// \brief Tables for producing derived data for correlation analysis
 /// \author Samuele Cattaruzzi <samuele.cattaruzzi@cern.ch>
 
-#ifndef PWGHF_HFC_DATAMODEL_DERIVEDDATACORRELATIONS_H_
-#define PWGHF_HFC_DATAMODEL_DERIVEDDATACORRELATIONS_H_
+#ifndef PWGHF_HFC_DATAMODEL_DERIVEDDATACORRELATIONTABLES_H_
+#define PWGHF_HFC_DATAMODEL_DERIVEDDATACORRELATIONTABLES_H_
 
 #include "Framework/AnalysisDataModel.h"
 
