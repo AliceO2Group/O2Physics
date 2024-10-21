@@ -1028,7 +1028,7 @@ struct decay3bodyBuilder {
           cpaXYFromKF(KFHtPV, kfpv),
           KFHtPV.GetDecayLength(), KFHtPV.GetDecayLengthXY(),   // decay length defined after topological constraint
           KFHtPV.GetDecayLength() / KFHtPV.GetErrDecayLength(), // ldl
-          chi2geoNDF, chi2topoNDF, 
+          chi2geoNDF, chi2topoNDF,
           KFHtPV.GetLifeTime(),
           // V0
           massV0, chi2massV0,
