@@ -880,7 +880,7 @@ void DefaultBinning()
 void InitializeFixedLengthBins(eAsFunctionOf AFO)
 {
   // This is a helper function to suppress code bloat in DefaultBinning().
-  // In merely initalize res.fResultsProFixedLengthBins[...] from corresponding configurables + a few other minor thingies.
+  // It merely initalizes res.fResultsProFixedLengthBins[...] from corresponding configurables + a few other minor thingies.
 
   if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
@@ -891,16 +891,17 @@ void InitializeFixedLengthBins(eAsFunctionOf AFO)
 
   switch (AFO) {
     case AFO_MULTIPLICITY:
-      lFixedLength_bins = (vector<float>)cf_res.cfFixedLength_mult_bins;
+      // lFixedLength_bins = (vector<float>)cf_res.cfFixedLength_mult_bins; // this works as well, but it requires casting
+      lFixedLength_bins = cf_res.cfFixedLength_mult_bins.value;
       break;
     case AFO_CENTRALITY:
-      lFixedLength_bins = (vector<float>)cf_res.cfFixedLength_cent_bins;
+      lFixedLength_bins = cf_res.cfFixedLength_cent_bins.value;
       break;
     case AFO_PT:
-      lFixedLength_bins = (vector<float>)cf_res.cfFixedLength_pt_bins;
+      lFixedLength_bins = cf_res.cfFixedLength_pt_bins.value;
       break;
     case AFO_ETA:
-      lFixedLength_bins = (vector<float>)cf_res.cfFixedLength_eta_bins;
+      lFixedLength_bins = cf_res.cfFixedLength_eta_bins.value;
       break;
     // ...
     default:
@@ -930,7 +931,7 @@ void InitializeFixedLengthBins(eAsFunctionOf AFO)
 void InitializeVariableLengthBins(eAsFunctionOf AFO)
 {
   // This is a helper function to suppress code bloat in DefaultBinning().
-  // In merely initalize res.fResultsProVariableLengthBins[...] from corresponding configurables + a few other minor thingies.
+  // It merely initalizes res.fResultsProVariableLengthBins[...] from corresponding configurables + a few other minor thingies.
 
   if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
@@ -941,16 +942,17 @@ void InitializeVariableLengthBins(eAsFunctionOf AFO)
 
   switch (AFO) {
     case AFO_MULTIPLICITY:
-      lVariableLength_bins = (vector<float>)cf_res.cfVariableLength_mult_bins;
+      // lVariableLength_bins = (vector<float>)cf_res.cfVariableLength_mult_bins; // this works as well, but it requires casting
+      lVariableLength_bins = cf_res.cfVariableLength_mult_bins.value;
       break;
     case AFO_CENTRALITY:
-      lVariableLength_bins = (vector<float>)cf_res.cfVariableLength_cent_bins;
+      lVariableLength_bins = cf_res.cfVariableLength_cent_bins.value;
       break;
     case AFO_PT:
-      lVariableLength_bins = (vector<float>)cf_res.cfVariableLength_pt_bins;
+      lVariableLength_bins = cf_res.cfVariableLength_pt_bins.value;
       break;
     case AFO_ETA:
-      lVariableLength_bins = (vector<float>)cf_res.cfVariableLength_eta_bins;
+      lVariableLength_bins = cf_res.cfVariableLength_eta_bins.value;
       break;
     // ...
     default:
@@ -2417,8 +2419,7 @@ void BookNestedLoopsHistograms()
         nl.fNestedLoopsPro[k][n][v]->SetTitle(Form("#LT#LTcos[%s(%s)]#GT#GT", 1 == n + 1 ? "" : Form("%d", n + 1), oVariable[k].Data()));
         nl.fNestedLoopsPro[k][n][v]->SetStats(kFALSE);
         nl.fNestedLoopsPro[k][n][v]->Sumw2();
-        nl.fNestedLoopsPro[k][n][v]->GetXaxis()->SetTitle(
-          res.fResultsProXaxisTitle[v].Data());
+        nl.fNestedLoopsPro[k][n][v]->GetXaxis()->SetTitle(res.fResultsProXaxisTitle[v].Data());
 
         /*
         if(fUseFixedNumberOfRandomlySelectedTracks && 1==v) // just a warning
@@ -5216,7 +5217,7 @@ void FillParticleHistograms(T const& track, eBeforeAfter ba, Int_t weight = 1)
       !ph.fParticleHistograms2D[ePhiPt][eSim][ba] ? true : ph.fParticleHistograms2D[ePhiPt][eSim][ba]->Fill(track.phi(), track.pt(), weight);
       !ph.fParticleHistograms2D[ePhiEta][eSim][ba] ? true : ph.fParticleHistograms2D[ePhiEta][eSim][ba]->Fill(track.phi(), track.eta(), weight);
     } // if(ph.fFillParticleHistograms2D) {
-  } // if constexpr (rs == eSim || rs == eSim_Run2 || rs == eSim_Run1) {
+  }   // if constexpr (rs == eSim || rs == eSim_Run2 || rs == eSim_Run1) {
 
   // -----------------------------------------------------------------------------
 
@@ -6651,7 +6652,8 @@ void SetDiffWeightsHist(TH1D* const hist, eDiffWeights whichDiffWeight, Int_t bi
   pw.fDiffWeightsHist[whichDiffWeight][bin]->GetYaxis()->SetTitle(sWeights[whichDiffWeight].Data());
   pw.fDiffWeightsHist[whichDiffWeight][bin]->SetFillColor(eFillColor);
   pw.fDiffWeightsHist[whichDiffWeight][bin]->SetLineColor(eColor);
-  pw.fWeightsList->Add(pw.fDiffWeightsHist[whichDiffWeight][bin]);
+  pw.fWeightsList->Add(pw.fDiffWeightsHist[whichDiffWeight][bin]); // This is working at the moment, because I am fetching all weights in Preprocess(), which is called after init()
+                                                                   // But if eventually it will be possible to fetch run number programatically in init(), I will have to re-think this line.
 
   // Flag:
   if (!pw.fUseDiffWeights[whichDiffWeight]) // yes, set it only once to kTRUE, for all bins
@@ -6689,6 +6691,9 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* runNumber, const
   // TBI 20240504: Here I can keep const char* variable , i.e. no need to switch to enums, because this function is called only once, at init.
   //               Nevertheless, I could switch to enums and make it more general, i.e. I could introduce additional data members and configurables,
   //               for the names of histograms with weights. Like I did it in void GetHistogramWithCustomNUA(const char* filePath, eNUAPDF variable)
+
+  // TBI 20241021 Strictly speaking, I do not need to pass here first 2 arguments, "filePath" and "runNumber", because they are initialized at call from data members.
+  //              But since this function is called only once, it's not an important performance loss. But re-think the design here eventually.
 
   // a) Return value;
   // b) Basic protection for arguments;
@@ -6865,7 +6870,7 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* runNumber, const
       LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
     hist->SetDirectory(0);
-    hist->SetTitle(Form("%s, %s", filePath, runNumber));
+    hist->SetTitle(Form("%s, %s", filePath, runNumber)); // I have to do it here, because only here I have "filePath" av
 
   } else {
     // Differential weights:
@@ -6886,16 +6891,56 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* runNumber, const
       listWithRuns->ls();
       LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
-    hist->SetDirectory(0);
 
+    // *) insanity check for differential weights => check if boundaries of current bin are the same as bin boundaries for which these weights were calculated.
+    //    This way I ensure that weights correspond to same kinematic cuts and binning as in current analysis.
+    //      Current example format which was set in MakeWeights.C: someString(s), min < kinematic-variable-name < max
+    //      Algorithm: IFS is " " and I take (N-1)th and (N-5)th entry:
+    TObjArray* oa = TString(hist->GetTitle()).Tokenize(" ");
+    if (!oa) {
+      LOGF(fatal, "in function \033[1;31m%s at line %d \n hist->GetTitle() = %s\033[0m", __FUNCTION__, __LINE__, hist->GetTitle());
+    }
+    Int_t nEntries = oa->GetEntries();
+
+    // I need to figure out corresponding variable from results histograms and its formatting:
+    eAsFunctionOf AFO = eAsFunctionOf_N;
+    const char* lVariableName = "";
     if (TString(variable).EqualTo("phipt")) {
-      hist->SetTitle(Form("%s, %.2f < p_{T} < %.2f", filePath, res.fResultsProVariableLengthBins[AFO_PT]->At(bin), res.fResultsProVariableLengthBins[AFO_PT]->At(bin + 1)));
+      AFO = AFO_PT;
+      lVariableName = FancyFormatting("Pt");
+    } else if (TString(variable).EqualTo("phieta")) {
+      AFO = AFO_ETA;
+      lVariableName = FancyFormatting("Eta");
+    } else {
+      LOGF(fatal, "\033[1;31m%s at line %d : name = %s is not supported yet. \033[0m", __FUNCTION__, __LINE__, static_cast<string>(variable));
     }
-    if (TString(variable).EqualTo("phieta")) {
-      hist->SetTitle(Form("%s, %.2f < #eta < %.2f", filePath, res.fResultsProVariableLengthBins[AFO_ETA]->At(bin), res.fResultsProVariableLengthBins[AFO_ETA]->At(bin + 1)));
+
+    // Get min and max value for bin, stored locally:
+    Float_t min = res.fResultsPro[AFO]->GetBinLowEdge(bin + 1);
+    Float_t max = res.fResultsPro[AFO]->GetBinLowEdge(bin + 2);
+    if (min > max) {
+      LOGF(fatal, "\033[1;33m min = %f, max = %f, res.fResultsPro[AFO]->GetName() = %s\033[0m", min, max, res.fResultsPro[AFO]->GetName());
     }
+
+    // Compare with min and max value store in external weights.root file using MakeWeights.C:
+    if (!(TMath::Abs(TString(oa->At(nEntries - 1)->GetName()).Atof() - max) < 1.e-6)) {
+      LOGF(info, "\033[1;33m hist->GetTitle() = %s, res.fResultsPro[AFO]->GetName() = %s\033[0m", hist->GetTitle(), res.fResultsPro[AFO]->GetName());
+      LOGF(fatal, "in function \033[1;31m%s at line %d : mismatch in upper bin boundaries \n from title = %f , local = %f\033[0m", __FUNCTION__, __LINE__, TString(oa->At(nEntries - 1)->GetName()).Atof(), max);
+    }
+    if (!(TMath::Abs(TString(oa->At(nEntries - 5)->GetName()).Atof() - min) < 1.e-6)) {
+      LOGF(info, "\033[1;33m hist->GetTitle() = %s, res.fResultsPro[AFO]->GetName() = %s\033[0m", hist->GetTitle(), res.fResultsPro[AFO]->GetName());
+      LOGF(fatal, "in function \033[1;31m%s at line %d : mismatch in lower bin boundaries \n from title = %f , local = %f\033[0m", __FUNCTION__, __LINE__, TString(oa->At(nEntries - 5)->GetName()).Atof(), min);
+    }
+    delete oa; // yes, otherwise it's a memory leak
+
+    // *) final settings and cosmetics:
+    hist->SetDirectory(0);
+    hist->SetTitle(Form("%s, %.2f < %s < %.2f", filePath, min, lVariableName, max));
 
   } // else
+
+  // TBI 20241021 if I need to split hist title across two lines, use this technique:
+  // hist->SetTitle(Form("#splitline{#scale[0.6]{%s}}{#scale[0.4]{%s}}",hist->GetTitle(),filePath));
 
   return hist;
 
@@ -7517,12 +7562,12 @@ void GetParticleWeights()
       // *) check if particles in this pt bin survive particle cuts in pt. If not, skip this bin, because for that pt bin weights are simply not available:
       if (!(res.fResultsPro[AFO_PT]->GetBinLowEdge(b + 2) > pc.fdParticleCuts[ePt][eMin])) {
         // this branch protects against the case when I am e.g. in pt bin [0.0,0.2], and pt cut is 0.2 < pt < 5.0
-        LOGF(info, "\033[1;32m%s at line %d : you are requesting phi(pt) weight for pt bin = %d from (%f,%f), which is outside (below) pt phase space = (%f,%f). Skipping this bin. \033[0m", __FUNCTION__, __LINE__, b, res.fResultsPro[AFO_PT]->GetBinLowEdge(b + 1), res.fResultsPro[AFO_PT]->GetBinLowEdge(b + 2), pc.fdParticleCuts[ePt][eMin], pc.fdParticleCuts[ePt][eMax]);
+        LOGF(info, "\033[1;33m%s at line %d : you are requesting phi(pt) weight for pt bin = %d from (%f,%f), which is outside (below) pt phase space = (%f,%f). Skipping this bin. \033[0m", __FUNCTION__, __LINE__, b, res.fResultsPro[AFO_PT]->GetBinLowEdge(b + 1), res.fResultsPro[AFO_PT]->GetBinLowEdge(b + 2), pc.fdParticleCuts[ePt][eMin], pc.fdParticleCuts[ePt][eMax]);
         continue;
       }
       if (!(res.fResultsPro[AFO_PT]->GetBinLowEdge(b + 1) < pc.fdParticleCuts[ePt][eMax])) {
         // this branch protects against the case when I am e.g. in pt bin [5.0,10.0], and pt cut is 0.2 < pt < 5.0
-        LOGF(info, "\033[1;32m%s at line %d : you are requesting phi(pt) weight for pt bin = %d from (%f,%f), which is outside (above) pt phase space = (%f,%f). Skipping this bin. \033[0m", __FUNCTION__, __LINE__, b, res.fResultsPro[AFO_PT]->GetBinLowEdge(b + 1), res.fResultsPro[AFO_PT]->GetBinLowEdge(b + 2), pc.fdParticleCuts[ePt][eMin], pc.fdParticleCuts[ePt][eMax]);
+        LOGF(info, "\033[1;33m%s at line %d : you are requesting phi(pt) weight for pt bin = %d from (%f,%f), which is outside (above) pt phase space = (%f,%f). Skipping this bin. \033[0m", __FUNCTION__, __LINE__, b, res.fResultsPro[AFO_PT]->GetBinLowEdge(b + 1), res.fResultsPro[AFO_PT]->GetBinLowEdge(b + 2), pc.fdParticleCuts[ePt][eMin], pc.fdParticleCuts[ePt][eMax]);
         continue;
       }
 
@@ -7531,23 +7576,6 @@ void GetParticleWeights()
       if (!phiptWeights) {
         LOGF(fatal, "\033[1;31m%s at line %d : phiptWeights is NULL. Check the external file %s with particle weights\033[0m", __FUNCTION__, __LINE__, pw.fFileWithWeights.Data());
       }
-
-      // *) insanity check for differential weights => check if boundaries of current bin b are the same as bin boundaries for which these weights were calculated.
-      //    This way I ensure that weights correspond to same kinematic cuts and binning as in current analysis.
-      //      Current example format: <somePath>/weightsO2.root, 0.20 < p_{T} < 0.30
-      //      Algorithm: IFS is " ", and I take (N-1)th and (N-5)th entry:
-      TObjArray* oa = TString(phiptWeights->GetTitle()).Tokenize(" ");
-      if (!oa) {
-        LOGF(fatal, "in function \033[1;31m%s at line %d \n phiptWeights->GetTitle() = %s\033[0m", __FUNCTION__, __LINE__, phiptWeights->GetTitle());
-      }
-      Int_t nEntries = oa->GetEntries();
-      if (!(TMath::Abs(TString(oa->At(nEntries - 1)->GetName()).Atof() - res.fResultsPro[AFO_PT]->GetBinLowEdge(b + 2)) < 1.e-6)) {
-        LOGF(fatal, "in function \033[1;31m%s at line %d : mismatch in upper bin boundaries \n from title = %f , local = %f\033[0m", __FUNCTION__, __LINE__, TString(oa->At(nEntries - 1)->GetName()).Atof(), res.fResultsPro[AFO_PT]->GetBinLowEdge(b + 2));
-      }
-      if (!(TMath::Abs(TString(oa->At(nEntries - 5)->GetName()).Atof() - res.fResultsPro[AFO_PT]->GetBinLowEdge(b + 1)) < 1.e-6)) {
-        LOGF(fatal, "in function \033[1;31m%s at line %d : mismatch in lower bin boundaries \n from title = %f , local = %f\033[0m", __FUNCTION__, __LINE__, TString(oa->At(nEntries - 5)->GetName()).Atof(), res.fResultsPro[AFO_PT]->GetBinLowEdge(b + 1));
-      }
-      delete oa; // yes, otherwise it's a memory leak
 
       // *) okay, just use this histogram with weights:
       SetDiffWeightsHist(phiptWeights, wPHIPT, b);
@@ -7563,12 +7591,12 @@ void GetParticleWeights()
       // *) check if particles in this eta bin survive particle cuts in eta. If not, skip this bin, because for that eta bin weights are simply not available:
       if (!(res.fResultsPro[AFO_ETA]->GetBinLowEdge(b + 2) > pc.fdParticleCuts[eEta][eMin])) {
         // this branch protects against the case when I am e.g. in eta bin [-1.0,-0.8], and eta cut is -0.8 < eta < 0.8
-        LOGF(info, "\033[1;32m%s at line %d : you are requesting phi(eta) weight for eta bin = %d from (%f,%f), which is outside (below) eta phase space = (%f,%f). Skipping this bin. \033[0m", __FUNCTION__, __LINE__, b, res.fResultsPro[AFO_ETA]->GetBinLowEdge(b + 1), res.fResultsPro[AFO_ETA]->GetBinLowEdge(b + 2), pc.fdParticleCuts[eEta][eMin], pc.fdParticleCuts[eEta][eMax]);
+        LOGF(info, "\033[1;33m%s at line %d : you are requesting phi(eta) weight for eta bin = %d from (%f,%f), which is outside (below) eta phase space = (%f,%f). Skipping this bin. \033[0m", __FUNCTION__, __LINE__, b, res.fResultsPro[AFO_ETA]->GetBinLowEdge(b + 1), res.fResultsPro[AFO_ETA]->GetBinLowEdge(b + 2), pc.fdParticleCuts[eEta][eMin], pc.fdParticleCuts[eEta][eMax]);
         continue;
       }
       if (!(res.fResultsPro[AFO_ETA]->GetBinLowEdge(b + 1) < pc.fdParticleCuts[eEta][eMax])) {
         // this branch protects against the case when I am e.g. in eta bin [0.8,1.0], and eta cut is 0.8 < eta < 1.0
-        LOGF(info, "\033[1;32m%s at line %d : you are requesting phi(eta) weight for eta bin = %d from (%f,%f), which is outside (above) eta phase space = (%f,%f). Skipping this bin. \033[0m", __FUNCTION__, __LINE__, b, res.fResultsPro[AFO_ETA]->GetBinLowEdge(b + 1), res.fResultsPro[AFO_ETA]->GetBinLowEdge(b + 2), pc.fdParticleCuts[eEta][eMin], pc.fdParticleCuts[eEta][eMax]);
+        LOGF(info, "\033[1;33m%s at line %d : you are requesting phi(eta) weight for eta bin = %d from (%f,%f), which is outside (above) eta phase space = (%f,%f). Skipping this bin. \033[0m", __FUNCTION__, __LINE__, b, res.fResultsPro[AFO_ETA]->GetBinLowEdge(b + 1), res.fResultsPro[AFO_ETA]->GetBinLowEdge(b + 2), pc.fdParticleCuts[eEta][eMin], pc.fdParticleCuts[eEta][eMax]);
         continue;
       }
 
@@ -7577,23 +7605,6 @@ void GetParticleWeights()
       if (!phietaWeights) {
         LOGF(fatal, "\033[1;31m%s at line %d : phietaWeights is NULL. Check the external file %s with particle weights\033[0m", __FUNCTION__, __LINE__, pw.fFileWithWeights.Data());
       }
-
-      // *) insanity check for differential weights => check if boundaries of current bin b are the same as bin boundaries for which these weights were calculated.
-      //    This way I ensure that weights correspond to same kinematic cuts and binning as in current analysis.
-      //      Current example format: <somePath>/weightsO2.root, -0.8 < #eta < -0.4
-      //      Algorithm: IFS is " ", and I take (N-1)th and (N-5)th entry:
-      TObjArray* oa = TString(phietaWeights->GetTitle()).Tokenize(" ");
-      if (!oa) {
-        LOGF(fatal, "in function \033[1;31m%s at line %d \n phietaWeights->GetTitle() = %s\033[0m", __FUNCTION__, __LINE__, phietaWeights->GetTitle());
-      }
-      Int_t nEntries = oa->GetEntries();
-      if (!(TMath::Abs(TString(oa->At(nEntries - 1)->GetName()).Atof() - res.fResultsPro[AFO_ETA]->GetBinLowEdge(b + 2)) < 1.e-6)) {
-        LOGF(fatal, "in function \033[1;31m%s at line %d : mismatch in upper bin boundaries \n from title = %f , local = %f\033[0m", __FUNCTION__, __LINE__, TString(oa->At(nEntries - 1)->GetName()).Atof(), res.fResultsPro[AFO_ETA]->GetBinLowEdge(b + 2));
-      }
-      if (!(TMath::Abs(TString(oa->At(nEntries - 5)->GetName()).Atof() - res.fResultsPro[AFO_ETA]->GetBinLowEdge(b + 1)) < 1.e-6)) {
-        LOGF(fatal, "in function \033[1;31m%s at line %d : mismatch in lower bin boundaries \n from title = %f , local = %f\033[0m", __FUNCTION__, __LINE__, TString(oa->At(nEntries - 5)->GetName()).Atof(), res.fResultsPro[AFO_ETA]->GetBinLowEdge(b + 1));
-      }
-      delete oa; // yes, otherwise it's a memory leak
 
       // *) okay, just use this histogram with weights:
       SetDiffWeightsHist(phietaWeights, wPHIETA, b);
@@ -8769,6 +8780,7 @@ void Steer(T1 const& collision, T2 const& tracks)
   if (tc.fDryRun) {
     EventCounter(eFill);
     EventCounter(ePrint);
+    Preprocess(collision); // yes, so that e.g. I can only test if the weights were correctly fetched from external file and initialized locally into data members
     return;
   }
 
