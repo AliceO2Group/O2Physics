@@ -91,7 +91,7 @@ struct sigmaanalysis {
   Configurable<float> LambdaMaxRap{"LambdaMaxRap", 0.5, "Max lambda rapidity"};
 
   //// Photon standard criteria:
-  //Configurable<float> PhotonMaxDauPseudoRap{"PhotonMaxDauPseudoRap", 0.9, "Max pseudorapidity of daughter tracks"};
+  // Configurable<float> PhotonMaxDauPseudoRap{"PhotonMaxDauPseudoRap", 0.9, "Max pseudorapidity of daughter tracks"};
   Configurable<float> PhotonDauMinPt{"PhotonDauMinPt", 0.05, "Min daughter pT (GeV/c)"};
   Configurable<float> PhotonMinDCADauToPv{"PhotonMinDCADauToPv", 0.05, "Min DCA daughter To PV (cm)"};
   Configurable<float> PhotonMaxDCAV0Dau{"PhotonMaxDCAV0Dau", 2.5, "Max DCA V0 Daughters (cm)"};
@@ -111,7 +111,7 @@ struct sigmaanalysis {
   // TODO: Include PsiPair selection
 
   Configurable<float> SigmaMaxRap{"SigmaMaxRap", 0.5, "Max sigma0 rapidity"};
-  
+
   // Axis
   // base properties
   ConfigurableAxis axisCentrality{"axisCentrality", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f}, "Centrality"};
@@ -177,14 +177,14 @@ struct sigmaanalysis {
     histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(22, "Lambda Y Cut");
 
     // For Signal Extraction
-    
-    // Sigma0 
+
+    // Sigma0
     histos.add("Sigma0/h3dMassSigma0", "h3dMassSigma0", kTH3F, {axisCentrality, axisPt, axisSigmaMass});
     histos.add("Sigma0/hMassSigma0", "hMassSigma0", kTH1F, {axisSigmaMass});
     histos.add("Sigma0/hPtSigma0", "hPtSigma0", kTH1F, {axisPt});
     histos.add("Sigma0/hRapiditySigma0", "hRapiditySigma0", kTH1F, {axisRapidity});
 
-    // AntiSigma0 
+    // AntiSigma0
     histos.add("AntiSigma0/h3dMassAntiSigma0", "h3dMassAntiSigma0", kTH3F, {axisCentrality, axisPt, axisSigmaMass});
     histos.add("AntiSigma0/hMassAntiSigma0", "hMassAntiSigma0", kTH1F, {axisSigmaMass});
     histos.add("AntiSigma0/hPtAntiSigma0", "hPtAntiSigma0", kTH1F, {axisPt});
@@ -276,7 +276,7 @@ struct sigmaanalysis {
 
       // Lambda selection
       if ((TMath::Abs(cand.lambdaMass() - 1.115683) > LambdaWindow) && (TMath::Abs(cand.antilambdaMass() - 1.115683) > LambdaWindow))
-          return false;
+        return false;
       histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 14.);
       if ((TMath::Abs(cand.lambdaDCAPosPV()) < LambdaMinDCAPosToPv) || (TMath::Abs(cand.lambdaDCANegPV()) < LambdaMinDCANegToPv))
         return false;
@@ -334,16 +334,15 @@ struct sigmaanalysis {
         histos.fill(HIST("MC/h2dArmenterosSelected"), sigma.photonAlpha(), sigma.photonQt());
         histos.fill(HIST("MC/h2dArmenterosSelected"), sigma.lambdaAlpha(), sigma.lambdaQt());
 
-        if (sigma.isSigma()){
+        if (sigma.isSigma()) {
           histos.fill(HIST("MC/hMassSigma0"), sigma.sigmaMass());
           histos.fill(HIST("MC/hPtSigma0"), sigma.sigmapT());
           histos.fill(HIST("MC/h3dMassSigma0"), coll.centFT0C(), sigma.sigmapT(), sigma.sigmaMass());
-        }
-        else{
+        } else {
           histos.fill(HIST("MC/hMassAntiSigma0"), sigma.sigmaMass());
           histos.fill(HIST("MC/hPtAntiSigma0"), sigma.sigmapT());
           histos.fill(HIST("MC/h3dMassAntiSigma0"), coll.centFT0C(), sigma.sigmapT(), sigma.sigmaMass());
-        }      
+        }
       }
     }
   }
@@ -366,13 +365,12 @@ struct sigmaanalysis {
       histos.fill(HIST("GeneralQA/h2dArmenterosSelected"), sigma.photonAlpha(), sigma.photonQt());
       histos.fill(HIST("GeneralQA/h2dArmenterosSelected"), sigma.lambdaAlpha(), sigma.lambdaQt());
 
-      if (sigma.lambdaAlpha()>0){
+      if (sigma.lambdaAlpha() > 0) {
         histos.fill(HIST("Sigma0/hMassSigma0"), sigma.sigmaMass());
         histos.fill(HIST("Sigma0/hPtSigma0"), sigma.sigmapT());
         histos.fill(HIST("Sigma0/hRapiditySigma0"), sigma.sigmaRapidity());
         histos.fill(HIST("Sigma0/h3dMassSigma0"), coll.centFT0C(), sigma.sigmapT(), sigma.sigmaMass());
-      }
-      else{
+      } else {
         histos.fill(HIST("AntiSigma0/hMassAntiSigma0"), sigma.sigmaMass());
         histos.fill(HIST("AntiSigma0/hPtAntiSigma0"), sigma.sigmapT());
         histos.fill(HIST("AntiSigma0/hRapidityAntiSigma0"), sigma.sigmaRapidity());
@@ -390,3 +388,4 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<sigmaanalysis>(cfgc)};
 }
+ 
