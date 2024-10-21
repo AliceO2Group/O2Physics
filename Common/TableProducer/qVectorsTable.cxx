@@ -82,6 +82,7 @@ struct qVectorsTable {
   Configurable<std::vector<int>> cfgnMods{"cfgnMods", {2, 3}, "Modulation of interest"};
   Configurable<float> cfgMaxCentrality{"cfgMaxCentrality", 100.f, "max. centrality for Q vector calibration"};
 
+  Configurable<bool> useCorrectionForRun{"useCorrectionForRun", true, "Get Qvector corrections based on run number instead of timestamp"};
   Configurable<std::string> cfgGainEqPath{"cfgGainEqPath", "Users/j/junlee/Qvector/GainEq", "CCDB path for gain equalization constants"};
   Configurable<std::string> cfgQvecCalibPath{"cfgQvecCalibPath", "Analysis/EventPlane/QVecCorrections", "CCDB pasth for Q-vecteor calibration constants"};
 
@@ -219,9 +220,10 @@ struct qVectorsTable {
     std::string fullPath;
 
     auto timestamp = bc.timestamp();
+    auto runnumber = bc.runNumber();
 
-    auto offsetFT0 = ccdb->getForTimeStamp<std::vector<o2::detectors::AlignParam>>("FT0/Calib/Align", timestamp);
-    auto offsetFV0 = ccdb->getForTimeStamp<std::vector<o2::detectors::AlignParam>>("FV0/Calib/Align", timestamp);
+    auto offsetFT0 = getForTsOrRun<std::vector<o2::detectors::AlignParam>>("FT0/Calib/Align", timestamp, runnumber);
+    auto offsetFV0 = getForTsOrRun<std::vector<o2::detectors::AlignParam>>("FV0/Calib/Align", timestamp, runnumber);
 
     if (offsetFT0 != nullptr) {
       helperEP.SetOffsetFT0A((*offsetFT0)[0].getX(), (*offsetFT0)[0].getY());
@@ -243,17 +245,17 @@ struct qVectorsTable {
       fullPath = cfgQvecCalibPath;
       fullPath += "/v";
       fullPath += std::to_string(ind);
-      auto objqvec = ccdb->getForTimeStamp<TH3F>(fullPath, timestamp);
+      auto objqvec = getForTsOrRun<TH3F>(fullPath, timestamp, runnumber);
       if (!objqvec) {
         fullPath = cfgQvecCalibPath;
         fullPath += "/v2";
-        objqvec = ccdb->getForTimeStamp<TH3F>(fullPath, timestamp);
+        objqvec = getForTsOrRun<TH3F>(fullPath, timestamp, runnumber);
       }
       objQvec.push_back(objqvec);
     }
     fullPath = cfgGainEqPath;
     fullPath += "/FT0";
-    auto objft0Gain = ccdb->getForTimeStamp<std::vector<float>>(fullPath, timestamp);
+    auto objft0Gain = getForTsOrRun<std::vector<float>>(fullPath, timestamp, runnumber);
     if (!objft0Gain || cfgCorrLevel == 0) {
       for (auto i{0u}; i < 208; i++) {
         FT0RelGainConst.push_back(1.);
@@ -264,7 +266,7 @@ struct qVectorsTable {
 
     fullPath = cfgGainEqPath;
     fullPath += "/FV0";
-    auto objfv0Gain = ccdb->getForTimeStamp<std::vector<float>>(fullPath, timestamp);
+    auto objfv0Gain = getForTsOrRun<std::vector<float>>(fullPath, timestamp, runnumber);
     if (!objfv0Gain || cfgCorrLevel == 0) {
       for (auto i{0u}; i < 48; i++) {
         FV0RelGainConst.push_back(1.);
@@ -297,6 +299,21 @@ struct qVectorsTable {
       return false;
 
     return true;
+  }
+
+  /// Function to get corrections from CCDB eithr using the timestamp or the runnumber
+  /// \param fullPath is the path to correction in CCDB
+  /// \param timestamp is the collision timestamp
+  /// \param runNumber is the collision run number
+  /// \return CCDB correction
+  template <typename CorrectionType>
+  CorrectionType* getForTsOrRun(std::string const& fullPath, int64_t timestamp, int runNumber)
+  {
+    if (useCorrectionForRun) {
+      return ccdb->getForRun<CorrectionType>(fullPath, runNumber);
+    } else {
+      return ccdb->getForTimeStamp<CorrectionType>(fullPath, timestamp);
+    }
   }
 
   template <typename Nmode, typename CollType, typename TrackType>
