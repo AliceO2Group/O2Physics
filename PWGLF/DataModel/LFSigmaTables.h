@@ -209,5 +209,3 @@ DECLARE_SOA_TABLE(SigmaMCCores, "AOD", "SIGMA0MCCORES",
 } // namespace o2::aod
 
 #endif // PWGLF_DATAMODEL_LFSIGMATABLES_H_
-
-
