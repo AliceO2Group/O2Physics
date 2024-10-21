@@ -204,7 +204,7 @@ DECLARE_SOA_COLUMN(IsAntiSigma, isAntiSigma, bool);
 } // namespace sigmaMCCore
 
 DECLARE_SOA_TABLE(SigmaMCCores, "AOD", "SIGMA0MCCORES",
-                  sigmaMCCore::IsSigma, 
+                  sigmaMCCore::IsSigma,
                   sigmaMCCore::IsAntiSigma);
 } // namespace o2::aod
 
