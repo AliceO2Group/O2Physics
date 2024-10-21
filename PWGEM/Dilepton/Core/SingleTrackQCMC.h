@@ -86,6 +86,7 @@ struct SingleTrackQCMC {
   Configurable<bool> cfgUseDCAxy{"cfgUseDCAxy", false, "flag to use DCAxy, instead of DCA3D"};
 
   ConfigurableAxis ConfPtlBins{"ConfPtlBins", {VARIABLE_WIDTH, 0.00, 0.05, 0.10, 0.15, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.50, 3.00, 3.50, 4.00, 4.50, 5.00, 6.00, 7.00, 8.00, 9.00, 10.00}, "pTl bins for output histograms"};
+  ConfigurableAxis ConfDCABins{"ConfDCABins", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0}, "DCA bins for output histograms"};
 
   EMEventCut fEMEventCut;
   struct : ConfigurableGroup {
@@ -205,7 +206,7 @@ struct SingleTrackQCMC {
       if (cfgUseDCAxy) {
         dca_axis_title = "DCA_{e}^{XY} (#sigma)";
       }
-      const AxisSpec axis_dca{{0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0}, dca_axis_title};
+      const AxisSpec axis_dca{ConfDCABins, dca_axis_title};
 
       // generated info
       fRegistry.add("Generated/lf/hs", "gen. single electron", kTHnSparseD, {axis_pt, axis_eta, axis_phi, axis_charge_gen}, true);
@@ -268,7 +269,7 @@ struct SingleTrackQCMC {
       const AxisSpec axis_pt{ConfPtlBins, "p_{T,#mu} (GeV/c)"};
       const AxisSpec axis_eta{25, -4.5, -2.0, "#eta_{#mu}"};
       const AxisSpec axis_phi{36, 0.0, 2 * M_PI, "#varphi_{#mu} (rad.)"};
-      const AxisSpec axis_dca{{0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0}, "DCA_{#mu}^{XY} (#sigma)"};
+      const AxisSpec axis_dca{ConfDCABins, "DCA_{#mu}^{XY} (#sigma)"};
       const AxisSpec axis_charge_gen{3, -1.5, +1.5, "true charge"};
 
       // generated info
