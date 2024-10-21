@@ -64,12 +64,12 @@ struct midEfficiency {
 
   // eta
   Configurable<int> nBinsEta{"nBinsEta", 500, "N bins for eta histo"};
-  Configurable<float> minEta{"minEta", -5., "minimum of eta axis"}; // 
+  Configurable<float> minEta{"minEta", -5., "minimum of eta axis"}; //
   Configurable<float> maxEta{"maxEta", 5., "maximum of eta axis"};
 
   // phi
   Configurable<int> nBinsPhi{"nBinsPhi", 500, "N bins for phi histo"};
-  Configurable<float> minPhi{"minPhi", -2. * TMath::Pi(), "minimum of phi axis"}; // 
+  Configurable<float> minPhi{"minPhi", -2. * TMath::Pi(), "minimum of phi axis"}; //
   Configurable<float> maxPhi{"maxPhi", 2 * TMath::Pi(), "maximum of phi axis"};
 
   // MID track placeholder for processing
@@ -87,9 +87,9 @@ struct midEfficiency {
 
     // Axes definition
     const AxisSpec axisLocalBoards{936, 0.5, 936.5, "Local board"}; // These are not defined as configurable since they are fixed
-    const AxisSpec axisRPCs{72, -0.5, 71.5, "RPC"}; // These are not defined as configurable since they are fixed
-    const AxisSpec axisPlanes{4, -0.5, 3.5, "Plane"}; // These are not defined as configurable since they are fixed
-    const AxisSpec axisTrackType{5, -0.5, 4.5, "Muon track type"}; // These are not defined as configurable since they are fixed
+    const AxisSpec axisRPCs{72, -0.5, 71.5, "RPC"};                 // These are not defined as configurable since they are fixed
+    const AxisSpec axisPlanes{4, -0.5, 3.5, "Plane"};               // These are not defined as configurable since they are fixed
+    const AxisSpec axisTrackType{5, -0.5, 4.5, "Muon track type"};  // These are not defined as configurable since they are fixed
 
     const AxisSpec axisCent{nBinsCentrality, minCentrality, maxCentrality, "Centrality"};
     const AxisSpec axisPt{nBinsPt, minPt, maxPt, "track p_{t} [GeV/c]"};
@@ -113,50 +113,49 @@ struct midEfficiency {
     histos.add("nFiredNBPperPlane", "nFiredNBPperPlane", kTH1F, {axisPlanes});
     histos.add("nFiredBothperPlane", "nFiredBothperPlane", kTH1F, {axisPlanes});
     histos.add("nTotperPlane", "nTotperPlane", kTH1F, {axisPlanes});
-    //Centrality test
-    histos.add("hCentr","hCentr",kTH1F,{axisCent});
+    // Centrality test
+    histos.add("hCentr", "hCentr", kTH1F, {axisCent});
 
     // Track type
     histos.add("hTrackType", "hTrackType", kTH1F, {axisTrackType});
-    
-    //If this is true -> PbPb data, add THnSparse with centrality
+
+    // If this is true -> PbPb data, add THnSparse with centrality
     if (isPbPb) {
       // Local boards
-      histos.add("hSparseCentFiredBPperBoard","THn for centrality studies",HistType::kTHnSparseF,{axisLocalBoards,axisCent,axisPt,axisEta,axisPhi});
-      histos.add("hSparseCentFiredNBPperBoard","THn for centrality studies",HistType::kTHnSparseF,{axisLocalBoards,axisCent,axisPt,axisEta,axisPhi});
-      histos.add("hSparseCentFiredBothperBoard","THn for centrality studies",HistType::kTHnSparseF,{axisLocalBoards,axisCent,axisPt,axisEta,axisPhi});
-      histos.add("hSparseCentFiredTotperBoard","THn for centrality studies",HistType::kTHnSparseF,{axisLocalBoards,axisCent,axisPt,axisEta,axisPhi});
+      histos.add("hSparseCentFiredBPperBoard", "THn for centrality studies", HistType::kTHnSparseF, {axisLocalBoards, axisCent, axisPt, axisEta, axisPhi});
+      histos.add("hSparseCentFiredNBPperBoard", "THn for centrality studies", HistType::kTHnSparseF, {axisLocalBoards, axisCent, axisPt, axisEta, axisPhi});
+      histos.add("hSparseCentFiredBothperBoard", "THn for centrality studies", HistType::kTHnSparseF, {axisLocalBoards, axisCent, axisPt, axisEta, axisPhi});
+      histos.add("hSparseCentFiredTotperBoard", "THn for centrality studies", HistType::kTHnSparseF, {axisLocalBoards, axisCent, axisPt, axisEta, axisPhi});
 
       // RPCs
-      histos.add("hSparseCentFiredBPperRPC","THn for centrality studies",HistType::kTHnSparseF,{axisRPCs,axisCent,axisPt,axisEta,axisPhi});
-      histos.add("hSparseCentFiredNBPperRPC","THn for centrality studies",HistType::kTHnSparseF,{axisRPCs,axisCent,axisPt,axisEta,axisPhi});
-      histos.add("hSparseCentFiredBothperRPC","THn for centrality studies",HistType::kTHnSparseF,{axisRPCs,axisCent,axisPt,axisEta,axisPhi});
-      histos.add("hSparseCentFiredTotperRPC","THn for centrality studies",HistType::kTHnSparseF,{axisRPCs,axisCent,axisPt,axisEta,axisPhi});
+      histos.add("hSparseCentFiredBPperRPC", "THn for centrality studies", HistType::kTHnSparseF, {axisRPCs, axisCent, axisPt, axisEta, axisPhi});
+      histos.add("hSparseCentFiredNBPperRPC", "THn for centrality studies", HistType::kTHnSparseF, {axisRPCs, axisCent, axisPt, axisEta, axisPhi});
+      histos.add("hSparseCentFiredBothperRPC", "THn for centrality studies", HistType::kTHnSparseF, {axisRPCs, axisCent, axisPt, axisEta, axisPhi});
+      histos.add("hSparseCentFiredTotperRPC", "THn for centrality studies", HistType::kTHnSparseF, {axisRPCs, axisCent, axisPt, axisEta, axisPhi});
 
       // Planes
-      histos.add("hSparseCentFiredBPperPlane","THn for centrality studies",HistType::kTHnSparseF,{axisPlanes,axisCent,axisPt,axisEta,axisPhi});
-      histos.add("hSparseCentFiredNBPperPlane","THn for centrality studies",HistType::kTHnSparseF,{axisPlanes,axisCent,axisPt,axisEta,axisPhi});
-      histos.add("hSparseCentFiredBothperPlane","THn for centrality studies",HistType::kTHnSparseF,{axisPlanes,axisCent,axisPt,axisEta,axisPhi});
-      histos.add("hSparseCentFiredTotperPlane","THn for centrality studies",HistType::kTHnSparseF,{axisPlanes,axisCent,axisPt,axisEta,axisPhi});
-    }
-    else { //THnSparse without centrality in pp
+      histos.add("hSparseCentFiredBPperPlane", "THn for centrality studies", HistType::kTHnSparseF, {axisPlanes, axisCent, axisPt, axisEta, axisPhi});
+      histos.add("hSparseCentFiredNBPperPlane", "THn for centrality studies", HistType::kTHnSparseF, {axisPlanes, axisCent, axisPt, axisEta, axisPhi});
+      histos.add("hSparseCentFiredBothperPlane", "THn for centrality studies", HistType::kTHnSparseF, {axisPlanes, axisCent, axisPt, axisEta, axisPhi});
+      histos.add("hSparseCentFiredTotperPlane", "THn for centrality studies", HistType::kTHnSparseF, {axisPlanes, axisCent, axisPt, axisEta, axisPhi});
+    } else { // THnSparse without centrality in pp
       // Local boards
-      histos.add("hSparseCentFiredBPperBoard","THn for centrality studies",HistType::kTHnSparseF,{axisLocalBoards,axisPt,axisEta,axisPhi});
-      histos.add("hSparseCentFiredNBPperBoard","THn for centrality studies",HistType::kTHnSparseF,{axisLocalBoards,axisPt,axisEta,axisPhi});
-      histos.add("hSparseCentFiredBothperBoard","THn for centrality studies",HistType::kTHnSparseF,{axisLocalBoards,axisPt,axisEta,axisPhi});
-      histos.add("hSparseCentFiredTotperBoard","THn for centrality studies",HistType::kTHnSparseF,{axisLocalBoards,axisPt,axisEta,axisPhi});
+      histos.add("hSparseCentFiredBPperBoard", "THn for centrality studies", HistType::kTHnSparseF, {axisLocalBoards, axisPt, axisEta, axisPhi});
+      histos.add("hSparseCentFiredNBPperBoard", "THn for centrality studies", HistType::kTHnSparseF, {axisLocalBoards, axisPt, axisEta, axisPhi});
+      histos.add("hSparseCentFiredBothperBoard", "THn for centrality studies", HistType::kTHnSparseF, {axisLocalBoards, axisPt, axisEta, axisPhi});
+      histos.add("hSparseCentFiredTotperBoard", "THn for centrality studies", HistType::kTHnSparseF, {axisLocalBoards, axisPt, axisEta, axisPhi});
 
       // RPCs
-      histos.add("hSparseCentFiredBPperRPC","THn for centrality studies",HistType::kTHnSparseF,{axisRPCs,axisPt,axisEta,axisPhi});
-      histos.add("hSparseCentFiredNBPperRPC","THn for centrality studies",HistType::kTHnSparseF,{axisRPCs,axisPt,axisEta,axisPhi});
-      histos.add("hSparseCentFiredBothperRPC","THn for centrality studies",HistType::kTHnSparseF,{axisRPCs,axisPt,axisEta,axisPhi});
-      histos.add("hSparseCentFiredTotperRPC","THn for centrality studies",HistType::kTHnSparseF,{axisRPCs,axisPt,axisEta,axisPhi});
+      histos.add("hSparseCentFiredBPperRPC", "THn for centrality studies", HistType::kTHnSparseF, {axisRPCs, axisPt, axisEta, axisPhi});
+      histos.add("hSparseCentFiredNBPperRPC", "THn for centrality studies", HistType::kTHnSparseF, {axisRPCs, axisPt, axisEta, axisPhi});
+      histos.add("hSparseCentFiredBothperRPC", "THn for centrality studies", HistType::kTHnSparseF, {axisRPCs, axisPt, axisEta, axisPhi});
+      histos.add("hSparseCentFiredTotperRPC", "THn for centrality studies", HistType::kTHnSparseF, {axisRPCs, axisPt, axisEta, axisPhi});
 
       // Planes
-      histos.add("hSparseCentFiredBPperPlane","THn for centrality studies",HistType::kTHnSparseF,{axisPlanes,axisPt,axisEta,axisPhi});
-      histos.add("hSparseCentFiredNBPperPlane","THn for centrality studies",HistType::kTHnSparseF,{axisPlanes,axisPt,axisEta,axisPhi});
-      histos.add("hSparseCentFiredBothperPlane","THn for centrality studies",HistType::kTHnSparseF,{axisPlanes,axisPt,axisEta,axisPhi});
-      histos.add("hSparseCentFiredTotperPlane","THn for centrality studies",HistType::kTHnSparseF,{axisPlanes,axisPt,axisEta,axisPhi});
+      histos.add("hSparseCentFiredBPperPlane", "THn for centrality studies", HistType::kTHnSparseF, {axisPlanes, axisPt, axisEta, axisPhi});
+      histos.add("hSparseCentFiredNBPperPlane", "THn for centrality studies", HistType::kTHnSparseF, {axisPlanes, axisPt, axisEta, axisPhi});
+      histos.add("hSparseCentFiredBothperPlane", "THn for centrality studies", HistType::kTHnSparseF, {axisPlanes, axisPt, axisEta, axisPhi});
+      histos.add("hSparseCentFiredTotperPlane", "THn for centrality studies", HistType::kTHnSparseF, {axisPlanes, axisPt, axisEta, axisPhi});
     }
   } // end of init
 
@@ -166,10 +165,10 @@ struct midEfficiency {
     LOGF(debug, "Calling process function");
 
     float cent = event.centFT0C();
-    
+
     if (isPbPb)
       histos.fill(HIST("hCentr"), cent); // Fill centrality histo
-    
+
     // Loop over all forward tracks
     for (auto& track : muons) {
 
@@ -195,17 +194,17 @@ struct midEfficiency {
       // Loop on the four planes and fill histograms accordingly
       for (int ich = 0; ich < 4; ++ich) {
 
-        //Check if BP/NBP has been fired by the track
+        // Check if BP/NBP has been fired by the track
         bool isFiredBP = trk.isFiredChamber(ich, 0);
         bool isFiredNBP = trk.isFiredChamber(ich, 1);
-        
+
         // Plane
         histos.fill(HIST("nTotperPlane"), ich); // All counts - plane
         if (isPbPb)
-          histos.fill(HIST("hSparseCentFiredTotperPlane"), ich, cent, pt, eta, phi);  
+          histos.fill(HIST("hSparseCentFiredTotperPlane"), ich, cent, pt, eta, phi);
         else
-          histos.fill(HIST("hSparseCentFiredTotperPlane"), ich, pt, eta, phi); 
-        
+          histos.fill(HIST("hSparseCentFiredTotperPlane"), ich, pt, eta, phi);
+
         if (isFiredBP) {
           histos.fill(HIST("nFiredBPperPlane"), ich); // BP - Plane
           if (isPbPb)
@@ -227,7 +226,7 @@ struct midEfficiency {
           else
             histos.fill(HIST("hSparseCentFiredBothperPlane"), ich, pt, eta, phi);
         }
-          
+
         if (effFlag < 2) {
           continue;
         }
@@ -239,9 +238,9 @@ struct midEfficiency {
         histos.fill(HIST("nTotperRPC"), deId); // All counts - RPC
         if (isPbPb)
           histos.fill(HIST("hSparseCentFiredTotperRPC"), deId, cent, pt, eta, phi);
-        else 
+        else
           histos.fill(HIST("hSparseCentFiredTotperRPC"), deId, pt, eta, phi);
-        
+
         if (isFiredBP) {
           histos.fill(HIST("nFiredBPperRPC"), deId); // BP - RPC
           if (isPbPb)
@@ -263,51 +262,51 @@ struct midEfficiency {
           else
             histos.fill(HIST("hSparseCentFiredNBPperRPC"), deId, pt, eta, phi);
         }
-          
+
         if (effFlag < 3) {
           continue;
         }
 
         // Get fired column and line -> needed for LB calculation
-        auto firedColumn = trk.getFiredColumnId(); 
-        auto firedLine = trk.getFiredLineId();     
-        //Get LB ID
+        auto firedColumn = trk.getFiredColumnId();
+        auto firedLine = trk.getFiredLineId();
+        // Get LB ID
         auto LB = ich * o2::mid::detparams::NLocalBoards + mapping.getBoardId(firedLine, firedColumn, deId);
 
         // LB
-        histos.fill(HIST("nTotperBoard"), LB); // All counts - LB 
+        histos.fill(HIST("nTotperBoard"), LB); // All counts - LB
         if (isPbPb)
           histos.fill(HIST("hSparseCentFiredTotperBoard"), LB, cent, pt, eta, phi);
-        else 
+        else
           histos.fill(HIST("hSparseCentFiredTotperBoard"), LB, pt, eta, phi);
-        
+
         if (isFiredBP) {
           histos.fill(HIST("nFiredBPperBoard"), LB); // BP - LB
           if (isPbPb)
             histos.fill(HIST("hSparseCentFiredBPperBoard"), LB, cent, pt, eta, phi);
-          else 
+          else
             histos.fill(HIST("hSparseCentFiredBPperBoard"), LB, pt, eta, phi);
         }
         if (isFiredNBP) {
           histos.fill(HIST("nFiredNBPperBoard"), LB); // NBP - LB
           if (isPbPb)
             histos.fill(HIST("hSparseCentFiredNBPperBoard"), LB, cent, pt, eta, phi);
-          else 
+          else
             histos.fill(HIST("hSparseCentFiredNBPperBoard"), LB, pt, eta, phi);
         }
         if (isFiredBP && isFiredNBP) {
           histos.fill(HIST("nFiredBothperBoard"), LB); // Both Planes - LB
           if (isPbPb)
             histos.fill(HIST("hSparseCentFiredBothperBoard"), LB, cent, pt, eta, phi);
-          else 
+          else
             histos.fill(HIST("hSparseCentFiredBothperBoard"), LB, pt, eta, phi);
-        }   
+        }
       }
     }
 
   } // end of runMidEffCounters
 
-  //void processMidEffCounter(aod::ReducedEvents::iterator const& event, soa::Filtered<MyMuonTracks> const& muons)
+  // void processMidEffCounter(aod::ReducedEvents::iterator const& event, soa::Filtered<MyMuonTracks> const& muons)
   void processMidEffCounter(MyEvents::iterator const& event, soa::Filtered<MyMuonTracks> const& muons)
   {
     runMidEffCounters(event, muons); // call efficiency calculator function
