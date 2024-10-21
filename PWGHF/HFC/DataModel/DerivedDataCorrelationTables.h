@@ -87,4 +87,4 @@ DECLARE_SOA_TABLE(AssocTrackReduced, "AOD", "TRACKREDUCED", //! Table with assoc
                   aod::hf_assoc_track_reduced::PtAssocTrack)
 } // namespace o2::aod
 
-#endif  // PWGHF_HFC_DATAMODEL_DERIVEDDATACORRELATIONTABLES_H_
+#endif // PWGHF_HFC_DATAMODEL_DERIVEDDATACORRELATIONTABLES_H_
