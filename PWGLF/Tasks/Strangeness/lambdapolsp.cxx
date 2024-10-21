@@ -74,6 +74,7 @@ struct lambdapolsp {
   Configurable<bool> additionalEvSel2{"additionalEvSel2", false, "additionalEvSel2"};
   Configurable<bool> additionalEvSel3{"additionalEvSel3", false, "additionalEvSel3"};
   Configurable<bool> correction{"correction", false, "fill histograms including corrections"};
+  Configurable<bool> mycut{"mycut", false, "select tracks based on my cuts"};
   // events
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutCentralityMax{"cfgCutCentralityMax", 50.0f, "Accepted maximum Centrality"};
@@ -143,6 +144,16 @@ struct lambdapolsp {
       histos.add("hpQxtQxpvscent", "hpQxtQxpvscent", kTProfile, {centAxis});
       histos.add("hpQytQypvscent", "hpQytQypvscent", kTProfile, {centAxis});
 
+      histos.add("hpuxQxpvseta", "hpuxQxpvseta", kTProfile, {etaAxis});
+      histos.add("hpuyQypvseta", "hpuyQypvseta", kTProfile, {etaAxis});
+      histos.add("hpuxQxtvseta", "hpuxQxtvseta", kTProfile, {etaAxis});
+      histos.add("hpuyQytvseta", "hpuyQytvseta", kTProfile, {etaAxis});
+      histos.add("hpQxtQxpvseta", "hpQxtQxpvseta", kTProfile, {etaAxis});
+      histos.add("hpQytQypvseta", "hpQytQypvseta", kTProfile, {etaAxis});
+
+      histos.add("hpv1Avscent", "hpv1Avscent", kTProfile, {centAxis});
+      histos.add("hpv1Cvscent", "hpv1Cvscent", kTProfile, {centAxis});
+
       histos.add("hpposuxyQxytvseta", "hpposuxyQxytvseta", kTProfile, {etaAxis});
       histos.add("hpposuxyQxypvseta", "hpposuxyQxypvseta", kTProfile, {etaAxis});
       histos.add("hpposQxytpvseta", "hpposQxytpvseta", kTProfile, {etaAxis});
@@ -175,8 +186,14 @@ struct lambdapolsp {
   template <typename T>
   bool selectionTrack(const T& candidate)
   {
-    if (!isPVContributor || !candidate.isGlobalTrackWoDCA() || !(candidate.itsNCls() > cfgITScluster) || !(candidate.tpcNClsFound() > cfgTPCcluster)) {
-      return false;
+    if (mycut) {
+      if (!candidate.isGlobalTrack() || !candidate.isPVContributor() || !(candidate.itsNCls() > cfgITScluster) || !(candidate.tpcNClsFound() > cfgTPCcluster) || !(candidate.itsNClsInnerBarrel() >= 1)) {
+        return false;
+      }
+    } else {
+      if (!(candidate.isGlobalTrack() && candidate.isPVContributor() && candidate.itsNCls() > cfgITScluster && candidate.tpcNClsFound() > cfgTPCcluster && candidate.itsNClsInnerBarrel() >= 1)) {
+        return false;
+      }
     }
     return true;
   }
@@ -327,12 +344,12 @@ struct lambdapolsp {
 
     histos.fill(HIST("hCentrality"), centrality);
     histos.fill(HIST("hVtxZ"), collision.posZ());
-    histos.fill(HIST("hpRes"), centrality, (TMath::Cos(psiZDCA - psiZDCC)));
-    histos.fill(HIST("hpResSin"), centrality, (TMath::Sin(psiZDCA - psiZDCC)));
-    histos.fill(HIST("hpCosPsiA"), centrality, (TMath::Cos(psiZDCA)));
-    histos.fill(HIST("hpCosPsiC"), centrality, (TMath::Cos(psiZDCC)));
-    histos.fill(HIST("hpSinPsiA"), centrality, (TMath::Sin(psiZDCA)));
-    histos.fill(HIST("hpSinPsiC"), centrality, (TMath::Sin(psiZDCC)));
+    histos.fill(HIST("hpRes"), centrality, (TMath::Cos(GetPhiInRange(psiZDCA - psiZDCC))));
+    histos.fill(HIST("hpResSin"), centrality, (TMath::Sin(GetPhiInRange(psiZDCA - psiZDCC))));
+    histos.fill(HIST("hpCosPsiA"), centrality, (TMath::Cos(GetPhiInRange(psiZDCA))));
+    histos.fill(HIST("hpCosPsiC"), centrality, (TMath::Cos(GetPhiInRange(psiZDCC))));
+    histos.fill(HIST("hpSinPsiA"), centrality, (TMath::Sin(GetPhiInRange(psiZDCA))));
+    histos.fill(HIST("hpSinPsiC"), centrality, (TMath::Sin(GetPhiInRange(psiZDCC))));
 
     ///////////checking v1 and v2////////////////////////////////
 
@@ -354,6 +371,11 @@ struct lambdapolsp {
         auto ux = TMath::Cos(GetPhiInRange(track.phi()));
         auto uy = TMath::Sin(GetPhiInRange(track.phi()));
 
+        auto v1ZDCA = TMath::Cos(GetPhiInRange(track.phi() - psiZDCA));
+        auto v1ZDCC = TMath::Cos(GetPhiInRange(track.phi() - psiZDCC));
+
+        // LOG(info) << "Daughters PDG:\t" << ux << " "<< uxcheck<<" "<<uy<<" "<<uycheck;
+
         auto uxQxp = ux * qxZDCA;
         auto uyQyp = uy * qyZDCA;
         auto uxyQxyp = uxQxp + uyQyp;
@@ -370,6 +392,18 @@ struct lambdapolsp {
         histos.fill(HIST("hpuyQytvscent"), centrality, uyQyt);
         histos.fill(HIST("hpQxtQxpvscent"), centrality, QxtQxp);
         histos.fill(HIST("hpQytQypvscent"), centrality, QytQyp);
+
+        if (centrality > 30.0 && centrality < 40.0) {
+          histos.fill(HIST("hpuxQxpvseta"), track.eta(), uxQxp);
+          histos.fill(HIST("hpuyQypvseta"), track.eta(), uyQyp);
+          histos.fill(HIST("hpuxQxtvseta"), track.eta(), uxQxt);
+          histos.fill(HIST("hpuyQytvseta"), track.eta(), uyQyt);
+          histos.fill(HIST("hpQxtQxpvseta"), track.eta(), QxtQxp);
+          histos.fill(HIST("hpQytQypvseta"), track.eta(), QytQyp);
+        }
+
+        histos.fill(HIST("hpv1Avscent"), centrality, v1ZDCA);
+        histos.fill(HIST("hpv1Cvscent"), centrality, v1ZDCC);
 
         if (centrality > 5.0 && centrality < 40.0) {
           if (track.pt() > 0.2) {
