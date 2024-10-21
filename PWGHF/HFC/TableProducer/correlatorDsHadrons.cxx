@@ -690,7 +690,6 @@ struct HfCorrelatorDsHadrons {
   {
     collReduced(collision.multFV0M(), collision.posZ());
     
-    int counterDs = 0;
     // Ds fill histograms and Ds candidates information stored
     for (const auto& candidate : candidates) {          
       // candidate selected
