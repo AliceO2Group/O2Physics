@@ -80,7 +80,7 @@ float alphaAP(std::array<float, 3> const& momB, std::array<float, 3> const& momC
 {
   std::array<float, 3> momA = {momB[0] + momC[0], momB[1] + momC[1], momB[2] + momC[2]};
   float momTot = std::sqrt(momA[0] * momA[0] + momA[1] * momA[1] + momA[2] * momA[2]);
-  float lQlPos = (momB[0] * momA[0] + momB[1] * momA[1] + momB[2] * momA[2]) / momTot; 
+  float lQlPos = (momB[0] * momA[0] + momB[1] * momA[1] + momB[2] * momA[2]) / momTot;
   float lQlNeg = (momC[0] * momA[0] + momC[1] * momA[1] + momC[2] * momA[2]) / momTot;
   return (lQlPos - lQlNeg) / (lQlPos + lQlNeg);
 }
@@ -354,7 +354,6 @@ struct lnnRecoTask {
 
       if (!is3H && !isAnti3H) // discard if both tracks are not 3H candidates
         continue;
-      
 
       // if alphaAP is > 0 the candidate is 3H, if < 0 it is anti-3H
       std::array<float, 3> momPos = std::array{posTrack.px(), posTrack.py(), posTrack.pz()};
@@ -362,18 +361,18 @@ struct lnnRecoTask {
       float alpha = alphaAP(momPos, momNeg);
       lnnCandidate lnnCand;
       lnnCand.isMatter = alpha > 0;
-      auto& h3track = lnnCand.isMatter? posTrack : negTrack;
+      auto& h3track = lnnCand.isMatter ? posTrack : negTrack;
       auto& h3Rigidity = lnnCand.isMatter ? posRigidity : negRigidity;
 
       if (h3Rigidity < TPCRigidityMin3H ||
           h3track.tpcNClsFound() < nTPCClusMin3H ||
           h3track.tpcChi2NCl() < Chi2nClusTPCMin ||
-          h3track.tpcChi2NCl() > Chi2nClusTPCMax || 
+          h3track.tpcChi2NCl() > Chi2nClusTPCMax ||
           h3track.itsChi2NCl() > Chi2nClusITS) {
         continue;
       }
-     
-      lnnCand.tpcChi3H = lnnCand.isMatter ? h3track.tpcChi2NCl() :  negTrack.tpcChi2NCl();
+
+      lnnCand.tpcChi3H = lnnCand.isMatter ? h3track.tpcChi2NCl() : negTrack.tpcChi2NCl();
       lnnCand.nSigma3H = lnnCand.isMatter ? nSigmaTPCpos : nSigmaTPCneg;
       lnnCand.nTPCClusters3H = lnnCand.isMatter ? h3track.tpcNClsFound() : negTrack.tpcNClsFound();
       lnnCand.tpcSignal3H = lnnCand.isMatter ? h3track.tpcSignal() : negTrack.tpcSignal();
@@ -506,7 +505,7 @@ struct lnnRecoTask {
       if (mcLabPos.has_mcParticle() && mcLabNeg.has_mcParticle()) {
         auto mcTrackPos = mcLabPos.mcParticle_as<aod::McParticles>();
         auto mcTrackNeg = mcLabNeg.mcParticle_as<aod::McParticles>();
-        
+
         if (mcTrackPos.has_mothers() && mcTrackNeg.has_mothers()) {
           for (auto& negMother : mcTrackNeg.mothers_as<aod::McParticles>()) {
             for (auto& posMother : mcTrackPos.mothers_as<aod::McParticles>()) {
@@ -575,7 +574,7 @@ struct lnnRecoTask {
                         lnnCand.dcaV0dau, lnnCand.h3DCAXY, lnnCand.piDCAXY,
                         lnnCand.nSigma3H, lnnCand.nTPCClusters3H, lnnCand.nTPCClustersPi,
                         lnnCand.mom3HTPC, lnnCand.momPiTPC, lnnCand.tpcSignal3H, lnnCand.tpcSignalPi,
-                        lnnCand.mass2TrTOF, lnnCand.tpcChi3H, 
+                        lnnCand.mass2TrTOF, lnnCand.tpcChi3H,
                         lnnCand.clusterSizeITS3H, lnnCand.clusterSizeITSPi, lnnCand.flags);
       }
     }
@@ -632,7 +631,7 @@ struct lnnRecoTask {
                       lnnCand.dcaV0dau, lnnCand.h3DCAXY, lnnCand.piDCAXY,
                       lnnCand.nSigma3H, lnnCand.nTPCClusters3H, lnnCand.nTPCClustersPi,
                       lnnCand.mom3HTPC, lnnCand.momPiTPC, lnnCand.tpcSignal3H, lnnCand.tpcSignalPi,
-                      lnnCand.mass2TrTOF, lnnCand.tpcChi3H, 
+                      lnnCand.mass2TrTOF, lnnCand.tpcChi3H,
                       lnnCand.clusterSizeITS3H, lnnCand.clusterSizeITSPi, lnnCand.flags,
                       chargeFactor * lnnCand.genPt(), lnnCand.genPhi(), lnnCand.genEta(), lnnCand.genPt3H(),
                       lnnCand.gDecVtx[0], lnnCand.gDecVtx[1], lnnCand.gDecVtx[2], lnnCand.isReco, lnnCand.isSignal, lnnCand.survEvSelection);
