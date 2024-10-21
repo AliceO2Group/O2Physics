@@ -683,19 +683,19 @@ struct HfCorrelatorDsHadrons {
     }   // end loop generated collision
   }
   PROCESS_SWITCH(HfCorrelatorDsHadrons, processMcGen, "Process MC Gen mode", false);
-  
+
   void processDerivedDataDs(SelCollisionsWithDs::iterator const& collision,
                             CandDsData const& candidates,
                             MyTracksData const& tracks)
   {
     collReduced(collision.multFV0M(), collision.posZ());
-    
+
     // Ds fill histograms and Ds candidates information stored
-    for (const auto& candidate : candidates) {          
+    for (const auto& candidate : candidates) {
       // candidate selected
       candReduced(collReduced.lastIndex(), candidate.phi(), candidate.eta(), candidate.pt());
     }
-    
+
     // tracks information
     for (const auto& track : tracks) {
       if (!track.isGlobalTrackWoDCA()) {
