@@ -1,7 +1,8 @@
 ---
 name: "Pull Request Labeler"
-on:
-  - pull_request_target
+'on':
+  pull_request_target:
+    types: [opened, synchronize, reopened, edited]
 permissions: read-all
 
 jobs:
@@ -10,7 +11,68 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+    outputs:
+      labels: ${{ steps.labeler.outputs.all-labels }}
     steps:
-      - uses: actions/labeler@v5
+      - name: Label the PR
+        id: labeler
+        uses: actions/labeler@v5
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
+          sync-labels: true
+  title-prefix-checker:
+    runs-on: ubuntu-latest
+    needs: labeler
+    steps:
+      - name: Check the PR title prefix
+        env:
+          title: ${{ github.event.pull_request.title }}
+          labels: ${{ needs.labeler.outputs.labels }}
+        shell: python
+        run: |
+          import os
+          import re
+          import sys
+          title = os.environ['title']
+          labels = os.environ['labels']
+          prefixes = {
+              "infrastructure": "Infrastructure",
+              "common": "Common",
+              "alice3": "ALICE3",
+              "pwgcf": "PWGCF",
+              "pwgdq": "PWGDQ",
+              "pwgem": "PWGEM",
+              "pwghf": "PWGHF",
+              "pwgje": "PWGJE",
+              "pwglf": "PWGLF",
+              "pwgud": "PWGUD",
+              "dpg": "DPG",
+              "trigger": "Trigger",
+              "tutorial": "Tutorial",
+          }
+          print(f'::notice::PR title: "{title}"')
+          print(f'::notice::PR labels: "{labels}"')
+          prefixes_relevant = [prefixes[label] for label in prefixes if label in labels.split(",")]
+          if not prefixes_relevant:
+              print("::notice::No relevant labels to check")
+              sys.exit(0)
+          print("::notice::Relevant title labels:", ",".join(prefixes_relevant))
+          passed = True
+          if not (match := re.match(r"\[?([\w, /]+)[\]:] ", title)):
+              print("::error::No valid prefix found in the PR title.")
+              passed = False
+          if passed:
+              prefix_title = match.group(1)
+              print(f'::notice::PR title prefix: "{prefix_title}"')
+              for prefix in prefixes.values():
+                  if prefix in prefixes_relevant and prefix not in prefix_title:
+                      print(f'::error::Label "{prefix}" not found in the prefix of the PR title.')
+                      passed = False
+                  if prefix not in prefixes_relevant and prefix in prefix_title:
+                      print(f'::error::Label "{prefix}" found in the prefix of the PR title.')
+                      passed = False
+          if not passed:
+              print("::error::Problems were found in the PR title prefix.")
+              print('::notice::Use the form "labels: title" or "[labels] title".')
+              sys.exit(1)
+          print("::notice::The PR title prefix is fine.")
