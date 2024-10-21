@@ -52,7 +52,7 @@ namespace jetdqutilities
 template <typename T>
 constexpr bool isDielectronCandidate()
 {
-  return std::is_same_v<std::decay_t<T>, CandidatesDielectronData::iterator> || std::is_same_v<std::decay_t<T>, CandidatesDielectronData::filtered_iterator> || std::is_same_v<std::decay_t<T>, CandidatesDielectronMCD::iterator> || std::is_same_v<std::decay_t<T>, CandidatesDielectronMCD::filtered_iterator>;
+  return std::is_same_v<std::decay_t<T>, o2::aod::CandidatesDielectronData::iterator> || std::is_same_v<std::decay_t<T>, o2::aod::CandidatesDielectronData::filtered_iterator> || std::is_same_v<std::decay_t<T>, o2::aod::CandidatesDielectronMCD::iterator> || std::is_same_v<std::decay_t<T>, o2::aod::CandidatesDielectronMCD::filtered_iterator>;
 }
 
 /**
@@ -61,7 +61,7 @@ constexpr bool isDielectronCandidate()
 template <typename T>
 constexpr bool isDielectronMcCandidate()
 {
-  return std::is_same_v<std::decay_t<T>, CandidatesDielectronMCP::iterator> || std::is_same_v<std::decay_t<T>, CandidatesDielectronMCP::filtered_iterator>;
+  return std::is_same_v<std::decay_t<T>, o2::aod::CandidatesDielectronMCP::iterator> || std::is_same_v<std::decay_t<T>, o2::aod::CandidatesDielectronMCP::filtered_iterator>;
 }
 
 /**

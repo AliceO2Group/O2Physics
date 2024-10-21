@@ -15,7 +15,7 @@
 
 #include "PWGJE/JetFinders/jetfinderv0.cxx"
 
-using JetFinderV0MCDetectorLevelCharged = JetFinderV0Task<CandidatesV0Data, CandidatesV0MCD, CandidatesV0MCP, aod::V0ChargedMCDetectorLevelJets, aod::V0ChargedMCDetectorLevelJetConstituents>;
+using JetFinderV0MCDetectorLevelCharged = JetFinderV0Task<aod::CandidatesV0Data, aod::CandidatesV0MCD, aod::CandidatesV0MCP, aod::V0ChargedMCDetectorLevelJets, aod::V0ChargedMCDetectorLevelJetConstituents>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

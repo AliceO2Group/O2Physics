@@ -89,7 +89,7 @@ struct V0JetSpectra {
     }
   }
 
-  void processData(soa::Filtered<JetCollisions>::iterator const& jcoll, aod::ChargedJets const& chjets, aod::V0ChargedJets const& v0jets)
+  void processData(soa::Filtered<aod::JetCollisions>::iterator const& jcoll, aod::ChargedJets const& chjets, aod::V0ChargedJets const& v0jets)
   {
     if (!jetderiveddatautilities::selectCollision(jcoll, eventSelection)) {
       return;
@@ -100,7 +100,7 @@ struct V0JetSpectra {
   }
   PROCESS_SWITCH(V0JetSpectra, processData, "Jet spectra for V0 jets or Ch jets if no V0s in data", false);
 
-  void processMCD(soa::Filtered<JetCollisionsMCD>::iterator const& jcoll, JetMcCollisions const&, MCDJets const& chjets, MCDV0Jets const& v0jets)
+  void processMCD(soa::Filtered<aod::JetCollisionsMCD>::iterator const& jcoll, aod::JetMcCollisions const&, MCDJets const& chjets, MCDV0Jets const& v0jets)
   {
     if (!jcoll.has_mcCollision()) {
       return;
@@ -115,7 +115,7 @@ struct V0JetSpectra {
   }
   PROCESS_SWITCH(V0JetSpectra, processMCD, "Jet spectra for V0 jets or Ch jets if no V0s", false);
 
-  void processMCP(JetMcCollision const& jcoll, MCPJets const& chjets, MCPV0Jets const& v0jets)
+  void processMCP(aod::JetMcCollision const& jcoll, MCPJets const& chjets, MCPV0Jets const& v0jets)
   {
     double weight = jcoll.weight();
     if (v0jets.size() == 0) {
@@ -124,7 +124,7 @@ struct V0JetSpectra {
   }
   PROCESS_SWITCH(V0JetSpectra, processMCP, "Jet spectra for V0 jets or Ch jets if no V0s", false);
 
-  void processMcMatched(soa::Filtered<JetCollisionsMCD>::iterator const& jcoll, JetMcCollisions const&, MatchedMCDJets const& chjetsMCD, MatchedMCPJets const& chjetsMCP, MatchedMCDV0Jets const& v0jetsMCD, MatchedMCPV0Jets const& v0jetsMCP)
+  void processMcMatched(soa::Filtered<aod::JetCollisionsMCD>::iterator const& jcoll, aod::JetMcCollisions const&, MatchedMCDJets const& chjetsMCD, MatchedMCPJets const& chjetsMCP, MatchedMCDV0Jets const& v0jetsMCD, MatchedMCPV0Jets const& v0jetsMCP)
   {
     if (!jetderiveddatautilities::selectCollision(jcoll, eventSelection)) {
       return;

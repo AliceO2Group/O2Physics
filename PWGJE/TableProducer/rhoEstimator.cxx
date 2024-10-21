@@ -71,16 +71,16 @@ struct RhoEstimatorTask {
 
   Filter trackCuts = (aod::jtrack::pt >= trackPtMin && aod::jtrack::pt < trackPtMax && aod::jtrack::eta > trackEtaMin && aod::jtrack::eta < trackEtaMax && aod::jtrack::phi >= trackPhiMin && aod::jtrack::phi <= trackPhiMax);
 
-  void processChargedCollisions(JetCollision const& collision, soa::Filtered<JetTracks> const& tracks)
+  void processChargedCollisions(aod::JetCollision const& collision, soa::Filtered<aod::JetTracks> const& tracks)
   {
     inputParticles.clear();
-    jetfindingutilities::analyseTracks<soa::Filtered<JetTracks>, soa::Filtered<JetTracks>::iterator>(inputParticles, tracks, trackSelection, trackingEfficiency);
+    jetfindingutilities::analyseTracks<soa::Filtered<aod::JetTracks>, soa::Filtered<aod::JetTracks>::iterator>(inputParticles, tracks, trackSelection, trackingEfficiency);
     auto [rho, rhoM] = bkgSub.estimateRhoAreaMedian(inputParticles, doSparse);
     rhoChargedTable(rho, rhoM);
   }
   PROCESS_SWITCH(RhoEstimatorTask, processChargedCollisions, "Fill rho tables for collisions using charged tracks", true);
 
-  void processD0Collisions(JetCollision const&, soa::Filtered<JetTracks> const& tracks, CandidatesD0Data const& candidates)
+  void processD0Collisions(aod::JetCollision const&, soa::Filtered<aod::JetTracks> const& tracks, aod::CandidatesD0Data const& candidates)
   {
     inputParticles.clear();
     for (auto& candidate : candidates) {
@@ -93,7 +93,7 @@ struct RhoEstimatorTask {
   }
   PROCESS_SWITCH(RhoEstimatorTask, processD0Collisions, "Fill rho tables for collisions with D0 candidates", false);
 
-  void processLcCollisions(JetCollision const&, soa::Filtered<JetTracks> const& tracks, CandidatesLcData const& candidates)
+  void processLcCollisions(aod::JetCollision const&, soa::Filtered<aod::JetTracks> const& tracks, aod::CandidatesLcData const& candidates)
   {
     inputParticles.clear();
     for (auto& candidate : candidates) {
@@ -106,7 +106,7 @@ struct RhoEstimatorTask {
   }
   PROCESS_SWITCH(RhoEstimatorTask, processLcCollisions, "Fill rho tables for collisions with Lc candidates", false);
 
-  void processBplusCollisions(JetCollision const&, soa::Filtered<JetTracks> const& tracks, CandidatesBplusData const& candidates)
+  void processBplusCollisions(aod::JetCollision const&, soa::Filtered<aod::JetTracks> const& tracks, aod::CandidatesBplusData const& candidates)
   {
     inputParticles.clear();
     for (auto& candidate : candidates) {
@@ -119,7 +119,7 @@ struct RhoEstimatorTask {
   }
   PROCESS_SWITCH(RhoEstimatorTask, processBplusCollisions, "Fill rho tables for collisions with Bplus candidates", false);
 
-  void processDielectronCollisions(JetCollision const&, soa::Filtered<JetTracks> const& tracks, CandidatesDielectronData const& candidates)
+  void processDielectronCollisions(aod::JetCollision const&, soa::Filtered<aod::JetTracks> const& tracks, aod::CandidatesDielectronData const& candidates)
   {
     inputParticles.clear();
     for (auto& candidate : candidates) {

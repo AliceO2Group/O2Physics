@@ -44,7 +44,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using filteredColl = soa::Filtered<soa::Join<JetCollisions, aod::JChTrigSels, aod::EvSels>>::iterator;
+using filteredColl = soa::Filtered<soa::Join<aod::JetCollisions, aod::JChTrigSels, aod::EvSels>>::iterator;
 using filteredJTracks = soa::Filtered<soa::Join<aod::JTracks, aod::JTrackPIs, aod::JTrackExtras>>;
 using filteredJets = soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>>;
 using joinedTracks = soa::Join<aod::Tracks, aod::TracksExtra>;

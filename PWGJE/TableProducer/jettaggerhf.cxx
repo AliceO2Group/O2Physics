@@ -78,8 +78,8 @@ struct JetTaggerHFTask {
   ConfigurableAxis binTrackProbability{"binTrackProbability", {100, 0.f, 1.f}, ""};
   ConfigurableAxis binJetFlavour{"binJetFlavour", {6, -0.5, 5.5}, ""};
 
-  using JetTagTracksData = soa::Join<JetTracks, aod::JTrackExtras, aod::JTrackPIs>;
-  using JetTagTracksMCD = soa::Join<JetTracksMCD, aod::JTrackExtras, aod::JTrackPIs>;
+  using JetTagTracksData = soa::Join<aod::JetTracks, aod::JTrackExtras, aod::JTrackPIs>;
+  using JetTagTracksMCD = soa::Join<aod::JetTracksMCD, aod::JTrackExtras, aod::JTrackPIs>;
 
   std::vector<float> vecParamsData;
   std::vector<float> vecParamsIncJetMC;
@@ -234,12 +234,12 @@ struct JetTaggerHFTask {
     }
   }
 
-  void processDummy(JetCollisions const&)
+  void processDummy(aod::JetCollisions const&)
   {
   }
   PROCESS_SWITCH(JetTaggerHFTask, processDummy, "Dummy process", true);
 
-  void processData(JetCollision const& /*collision*/, JetTableData const& jets, JetTagTracksData const& jtracks)
+  void processData(aod::JetCollision const& /*collision*/, JetTableData const& jets, JetTagTracksData const& jtracks)
   {
     for (auto& jet : jets) {
       bool flagtaggedjetIP = false;
@@ -262,7 +262,7 @@ struct JetTaggerHFTask {
   }
   PROCESS_SWITCH(JetTaggerHFTask, processData, "Fill tagging decision for data jets", false);
 
-  void processDataWithSV(JetCollision const& /*collision*/, soa::Join<JetTableData, aod::DataSecondaryVertex3ProngIndices> const& jets, JetTagTracksData const& jtracks, aod::DataSecondaryVertex3Prongs const& prongs)
+  void processDataWithSV(aod::JetCollision const& /*collision*/, soa::Join<JetTableData, aod::DataSecondaryVertex3ProngIndices> const& jets, JetTagTracksData const& jtracks, aod::DataSecondaryVertex3Prongs const& prongs)
   {
     for (auto& jet : jets) {
       bool flagtaggedjetIP = false;
@@ -286,7 +286,7 @@ struct JetTaggerHFTask {
   }
   PROCESS_SWITCH(JetTaggerHFTask, processDataWithSV, "Fill tagging decision for data jets", false);
 
-  void processMCD(JetCollision const& /*collision*/, JetTableMCD const& mcdjets, JetTagTracksMCD const& jtracks, JetParticles const& particles)
+  void processMCD(aod::JetCollision const& /*collision*/, JetTableMCD const& mcdjets, JetTagTracksMCD const& jtracks, aod::JetParticles const& particles)
   {
     for (auto& mcdjet : mcdjets) {
       bool flagtaggedjetIP = false;
@@ -314,7 +314,7 @@ struct JetTaggerHFTask {
   }
   PROCESS_SWITCH(JetTaggerHFTask, processMCD, "Fill tagging decision for mcd jets", false);
 
-  void processMCDWithSV(JetCollision const& /*collision*/, soa::Join<JetTableMCD, aod::MCDSecondaryVertex3ProngIndices> const& mcdjets, JetTagTracksMCD const& jtracks, aod::MCDSecondaryVertex3Prongs const& prongs, JetParticles const& particles)
+  void processMCDWithSV(aod::JetCollision const& /*collision*/, soa::Join<JetTableMCD, aod::MCDSecondaryVertex3ProngIndices> const& mcdjets, JetTagTracksMCD const& jtracks, aod::MCDSecondaryVertex3Prongs const& prongs, aod::JetParticles const& particles)
   {
     for (auto& mcdjet : mcdjets) {
       bool flagtaggedjetIP = false;
@@ -344,14 +344,14 @@ struct JetTaggerHFTask {
   }
   PROCESS_SWITCH(JetTaggerHFTask, processMCDWithSV, "Fill tagging decision for mcd jets with sv", false);
 
-  void processMCP(JetMcCollision const& /*collision*/, JetTableMCP const& mcpjets, JetParticles const& particles)
+  void processMCP(aod::JetMcCollision const& /*collision*/, JetTableMCP const& mcpjets, aod::JetParticles const& particles)
   {
     for (auto& mcpjet : mcpjets) {
       bool flagtaggedjetIP = false;
       bool flagtaggedjetIPxyz = false;
       bool flagtaggedjetSV = false;
       bool flagtaggedjetSVxyz = false;
-      typename JetParticles::iterator hfparticle;
+      typename aod::JetParticles::iterator hfparticle;
       int origin = 0;
       // TODO
       if (removeGluonShower) {
@@ -373,7 +373,7 @@ struct JetTaggerHFTask {
   }
   PROCESS_SWITCH(JetTaggerHFTask, processMCP, "Fill tagging decision for mcp jets with sv", false);
 
-  void processTraining(JetCollision const& /*collision*/, JetTableMCD const& /*mcdjets*/, JetTagTracksMCD const& /*tracks*/)
+  void processTraining(aod::JetCollision const& /*collision*/, JetTableMCD const& /*mcdjets*/, JetTagTracksMCD const& /*tracks*/)
   {
     // To create table for ML
   }

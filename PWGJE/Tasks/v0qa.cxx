@@ -176,7 +176,7 @@ struct V0QA {
   template <typename T, typename U, typename V>
   bool V0sAreMatched(T const& v0, U const& particle, V const& /*tracks*/)
   {
-    // This is necessary, because the V0Labels table points to aod::McParticles, not to CandidatesV0MCP
+    // This is necessary, because the V0Labels table points to aod::McParticles, not to aod::CandidatesV0MCP
     auto negId = v0.template negTrack_as<V>().mcParticleId();
     auto posId = v0.template posTrack_as<V>().mcParticleId();
     auto daughters = particle.daughtersIds();
@@ -231,7 +231,7 @@ struct V0QA {
     return true;
   }
 
-  void processDummy(CandidatesV0MCD const&) {}
+  void processDummy(aod::CandidatesV0MCD const&) {}
   PROCESS_SWITCH(V0QA, processDummy, "Dummy process function turned on by default", true);
 
   void processFlags(soa::Join<aod::V0Datas, aod::V0SignalFlags>::iterator const& v0)
@@ -263,7 +263,7 @@ struct V0QA {
   }
   PROCESS_SWITCH(V0QA, processFlags, "V0 flags", false);
 
-  void processMcD(soa::Filtered<JetCollisionsMCD>::iterator const& jcoll, JetMcCollisions const&, soa::Join<CandidatesV0MCD, aod::McV0Labels> const& v0s, aod::McParticles const&)
+  void processMcD(soa::Filtered<aod::JetCollisionsMCD>::iterator const& jcoll, aod::JetMcCollisions const&, soa::Join<aod::CandidatesV0MCD, aod::McV0Labels> const& v0s, aod::McParticles const&)
   {
     registry.fill(HIST("inclusive/hEvents"), 0.5);
     if (!isCollisionReconstructed(jcoll, eventSelection)) {
@@ -300,7 +300,7 @@ struct V0QA {
   }
   PROCESS_SWITCH(V0QA, processMcD, "Reconstructed true V0s", false);
 
-  void processMcP(JetMcCollision const& mccoll, CandidatesV0MCP const& pv0s, soa::SmallGroups<JetCollisionsMCD> const& collisions)
+  void processMcP(aod::JetMcCollision const& mccoll, aod::CandidatesV0MCP const& pv0s, soa::SmallGroups<aod::JetCollisionsMCD> const& collisions)
   {
     registry.fill(HIST("inclusive/hMcEvents"), 0.5);
     bool isReconstructed = false;
@@ -330,7 +330,7 @@ struct V0QA {
       if (TMath::Abs(pv0.y() > yPartMax))
         continue;
 
-      // Can calculate this from CandidatesV0MCD (contains decay vertex)
+      // Can calculate this from aod::CandidatesV0MCD (contains decay vertex)
       double R_Decay = 1.0;
 
       if (pv0.pdgCode() == 310) {
@@ -346,7 +346,7 @@ struct V0QA {
   }
   PROCESS_SWITCH(V0QA, processMcP, "Particle level V0s", false);
 
-  void processMcDJets(soa::Filtered<JetCollisionsMCD>::iterator const& jcoll, JetMcCollisions const&, MCDV0JetsWithConstituents const& mcdjets, soa::Join<CandidatesV0MCD, aod::McV0Labels> const&, aod::McParticles const&)
+  void processMcDJets(soa::Filtered<aod::JetCollisionsMCD>::iterator const& jcoll, aod::JetMcCollisions const&, MCDV0JetsWithConstituents const& mcdjets, soa::Join<aod::CandidatesV0MCD, aod::McV0Labels> const&, aod::McParticles const&)
   {
     registry.fill(HIST("jets/hJetEvents"), 0.5);
     if (!isCollisionReconstructed(jcoll, eventSelection)) {
@@ -357,7 +357,7 @@ struct V0QA {
 
     for (const auto& mcdjet : mcdjets) {
       // if (!jetfindingutilities::isInEtaAcceptance(jet, -99., -99., v0EtaMin, v0EtaMax))
-      for (const auto& v0 : mcdjet.template candidates_as<soa::Join<CandidatesV0MCD, aod::McV0Labels>>()) {
+      for (const auto& v0 : mcdjet.template candidates_as<soa::Join<aod::CandidatesV0MCD, aod::McV0Labels>>()) {
         if (!v0.has_mcParticle()) {
           continue;
         }
@@ -386,7 +386,7 @@ struct V0QA {
   }
   PROCESS_SWITCH(V0QA, processMcDJets, "Reconstructed true V0s in jets", false);
 
-  void processMcDMatchedJets(soa::Filtered<JetCollisionsMCD>::iterator const& jcoll, JetMcCollisions const&, MatchedMCDV0JetsWithConstituents const& mcdjets, MatchedMCPV0JetsWithConstituents const&, soa::Join<CandidatesV0MCD, aod::McV0Labels> const&, CandidatesV0MCP const&, JetTracksMCD const& jTracks, aod::McParticles const&)
+  void processMcDMatchedJets(soa::Filtered<aod::JetCollisionsMCD>::iterator const& jcoll, aod::JetMcCollisions const&, MatchedMCDV0JetsWithConstituents const& mcdjets, MatchedMCPV0JetsWithConstituents const&, soa::Join<aod::CandidatesV0MCD, aod::McV0Labels> const&, aod::CandidatesV0MCP const&, aod::JetTracksMCD const& jTracks, aod::McParticles const&)
   {
     registry.fill(HIST("jets/hMatchedJetEvents"), 0.5);
     if (!isCollisionReconstructed(jcoll, eventSelection)) {
@@ -398,11 +398,11 @@ struct V0QA {
     for (const auto& mcdjet : mcdjets) {
       // if (!jetfindingutilities::isInEtaAcceptance(mcdjet, -99., -99., v0EtaMin, v0EtaMax))
       for (const auto& mcpjet : mcdjet.template matchedJetGeo_as<MatchedMCPV0JetsWithConstituents>()) {
-        for (const auto& v0 : mcdjet.template candidates_as<soa::Join<CandidatesV0MCD, aod::McV0Labels>>()) {
+        for (const auto& v0 : mcdjet.template candidates_as<soa::Join<aod::CandidatesV0MCD, aod::McV0Labels>>()) {
           if (!v0.has_mcParticle())
             continue;
 
-          for (const auto& pv0 : mcpjet.template candidates_as<CandidatesV0MCP>()) {
+          for (const auto& pv0 : mcpjet.template candidates_as<aod::CandidatesV0MCP>()) {
             if (!V0sAreMatched(v0, pv0, jTracks))
               continue;
             int pdg = pv0.pdgCode();
@@ -432,7 +432,7 @@ struct V0QA {
   }
   PROCESS_SWITCH(V0QA, processMcDMatchedJets, "Reconstructed true V0s in jets", false);
 
-  void processMcPJets(JetMcCollision const& mccoll, soa::SmallGroups<JetCollisionsMCD> const& collisions, MCPV0JetsWithConstituents const& jets, CandidatesV0MCP const&)
+  void processMcPJets(aod::JetMcCollision const& mccoll, soa::SmallGroups<aod::JetCollisionsMCD> const& collisions, MCPV0JetsWithConstituents const& jets, aod::CandidatesV0MCP const&)
   {
     registry.fill(HIST("jets/hMcJetEvents"), 0.5);
     bool isReconstructed = false;
@@ -456,7 +456,7 @@ struct V0QA {
 
     for (auto& jet : jets) {
       // if (!jetfindingutilities::isInEtaAcceptance(jet, -99., -99., v0EtaMin, v0EtaMax))
-      for (const auto& pv0 : jet.template candidates_as<CandidatesV0MCP>()) {
+      for (const auto& pv0 : jet.template candidates_as<aod::CandidatesV0MCP>()) {
         if (!pv0.has_daughters())
           continue;
         if (!pv0.isPhysicalPrimary())
@@ -478,13 +478,13 @@ struct V0QA {
   }
   PROCESS_SWITCH(V0QA, processMcPJets, "Particle level V0s in jets", false);
 
-  void processCollisionAssociation(soa::Filtered<JetCollisionsMCD>::iterator const& jcoll, soa::Join<CandidatesV0MCD, aod::McV0Labels> const& v0s, soa::Join<JetMcCollisions, aod::JMcCollisionPIs> const&, aod::McCollisions const&, aod::McParticles const&)
+  void processCollisionAssociation(soa::Filtered<aod::JetCollisionsMCD>::iterator const& jcoll, soa::Join<aod::CandidatesV0MCD, aod::McV0Labels> const& v0s, soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs> const&, aod::McCollisions const&, aod::McParticles const&)
   {
     // Based on PWGLF/Tasks/Strangeness/derivedlambdakzeroanalysis.cxx
     if (!jcoll.has_mcCollision()) {
       return;
     }
-    auto mcColl = jcoll.template mcCollision_as<soa::Join<JetMcCollisions, aod::JMcCollisionPIs>>();
+    auto mcColl = jcoll.template mcCollision_as<soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs>>();
     double weight = mcColl.weight();
 
     for (const auto& v0 : v0s) {
@@ -546,13 +546,13 @@ struct V0QA {
   }
   PROCESS_SWITCH(V0QA, processCollisionAssociation, "V0 collision association", false);
 
-  void processFeeddown(soa::Filtered<JetCollisionsMCD>::iterator const& jcoll, soa::Join<CandidatesV0MCD, aod::McV0Labels> const& v0s, CandidatesV0MCP const&, soa::Join<JetMcCollisions, aod::JMcCollisionPIs> const&, aod::McCollisions const&, aod::McParticles const&)
+  void processFeeddown(soa::Filtered<aod::JetCollisionsMCD>::iterator const& jcoll, soa::Join<aod::CandidatesV0MCD, aod::McV0Labels> const& v0s, aod::CandidatesV0MCP const&, soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs> const&, aod::McCollisions const&, aod::McParticles const&)
   {
     // Based on PWGLF/Tasks/Strangeness/derivedlambdakzeroanalysis.cxx
     if (!jcoll.has_mcCollision()) {
       return;
     }
-    auto mcColl = jcoll.template mcCollision_as<soa::Join<JetMcCollisions, aod::JMcCollisionPIs>>();
+    auto mcColl = jcoll.template mcCollision_as<soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs>>();
     double weight = mcColl.weight();
 
     for (const auto& v0 : v0s) {
@@ -582,17 +582,17 @@ struct V0QA {
   }
   PROCESS_SWITCH(V0QA, processFeeddown, "Inclusive feeddown", false);
 
-  void processFeeddownJets(soa::Filtered<JetCollisionsMCD>::iterator const& jcoll, MCDV0JetsWithConstituents const& mcdjets, soa::Join<CandidatesV0MCD, aod::McV0Labels> const&, CandidatesV0MCP const&, soa::Join<JetMcCollisions, aod::JMcCollisionPIs> const&, aod::McCollisions const&, aod::McParticles const&)
+  void processFeeddownJets(soa::Filtered<aod::JetCollisionsMCD>::iterator const& jcoll, MCDV0JetsWithConstituents const& mcdjets, soa::Join<aod::CandidatesV0MCD, aod::McV0Labels> const&, aod::CandidatesV0MCP const&, soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs> const&, aod::McCollisions const&, aod::McParticles const&)
   {
     // Based on PWGLF/Tasks/Strangeness/derivedlambdakzeroanalysis.cxx
     if (!jcoll.has_mcCollision()) {
       return;
     }
-    auto mcColl = jcoll.template mcCollision_as<soa::Join<JetMcCollisions, aod::JMcCollisionPIs>>();
+    auto mcColl = jcoll.template mcCollision_as<soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs>>();
     double weight = mcColl.weight();
 
     for (const auto& mcdjet : mcdjets) {
-      for (const auto& v0 : mcdjet.template candidates_as<soa::Join<CandidatesV0MCD, aod::McV0Labels>>()) {
+      for (const auto& v0 : mcdjet.template candidates_as<soa::Join<aod::CandidatesV0MCD, aod::McV0Labels>>()) {
         if (!v0.has_mcParticle()) {
           continue;
         }
@@ -620,24 +620,24 @@ struct V0QA {
   }
   PROCESS_SWITCH(V0QA, processFeeddownJets, "Jets feeddown", false);
 
-  void processFeeddownMatchedJets(soa::Filtered<JetCollisionsMCD>::iterator const& jcoll, MatchedMCDV0JetsWithConstituents const& mcdjets, JetTracksMCD const& jTracks, MatchedMCPV0JetsWithConstituents const&, soa::Join<CandidatesV0MCD, aod::McV0Labels> const&, CandidatesV0MCP const&, soa::Join<JetMcCollisions, aod::JMcCollisionPIs> const&, aod::McCollisions const&, aod::McParticles const&)
+  void processFeeddownMatchedJets(soa::Filtered<aod::JetCollisionsMCD>::iterator const& jcoll, MatchedMCDV0JetsWithConstituents const& mcdjets, aod::JetTracksMCD const& jTracks, MatchedMCPV0JetsWithConstituents const&, soa::Join<aod::CandidatesV0MCD, aod::McV0Labels> const&, aod::CandidatesV0MCP const&, soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs> const&, aod::McCollisions const&, aod::McParticles const&)
   {
     // Based on PWGLF/Tasks/Strangeness/derivedlambdakzeroanalysis.cxx
     if (!jcoll.has_mcCollision()) {
       return;
     }
-    auto mcColl = jcoll.template mcCollision_as<soa::Join<JetMcCollisions, aod::JMcCollisionPIs>>();
+    auto mcColl = jcoll.template mcCollision_as<soa::Join<aod::JetMcCollisions, aod::JMcCollisionPIs>>();
     double weight = mcColl.weight();
 
     for (const auto& mcdjet : mcdjets) {
       for (const auto& mcpjet : mcdjet.template matchedJetGeo_as<MatchedMCPV0JetsWithConstituents>()) {
-        for (const auto& v0 : mcdjet.template candidates_as<soa::Join<CandidatesV0MCD, aod::McV0Labels>>()) {
+        for (const auto& v0 : mcdjet.template candidates_as<soa::Join<aod::CandidatesV0MCD, aod::McV0Labels>>()) {
           if (!v0.has_mcParticle())
             continue;
           if (!v0.has_mcMotherParticle())
             continue;
 
-          for (const auto& pv0 : mcpjet.template candidates_as<CandidatesV0MCP>()) {
+          for (const auto& pv0 : mcpjet.template candidates_as<aod::CandidatesV0MCP>()) {
             if (!V0sAreMatched(v0, pv0, jTracks))
               continue;
 
