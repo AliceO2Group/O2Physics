@@ -689,16 +689,17 @@ struct HfCorrelatorDsHadrons {
                             MyTracksData const& tracks)
   {
     collReduced(collision.multFV0M(), collision.posZ());
+    
+    int counterDs = 0;
     // Ds fill histograms and Ds candidates information stored
-    for (const auto& candidate : candidates) {
-          
-      // candidate selected with rectangular selections
+    for (const auto& candidate : candidates) {          
+      // candidate selected
       candReduced(collReduced.lastIndex(), candidate.phi(), candidate.eta(), candidate.pt());
-
-      // tracks information
-      for (const auto& track : tracks) {
-        assocTrackReduced(collReduced.lastIndex(), track.phi(), track.eta(), track.pt());
-      }
+    }
+    
+    // tracks information
+    for (const auto& track : tracks) {
+      assocTrackReduced(collReduced.lastIndex(), track.phi(), track.eta(), track.pt());
     }
   }
   PROCESS_SWITCH(HfCorrelatorDsHadrons, processDerivedDataDs, "Process derived data Ds", false);
