@@ -565,8 +565,6 @@ struct MultiplicityTable {
               }
             }
 
-            int bcNumber = bc.globalBC() % 3564;
-
             tableExtra(collision.numContrib(), collision.chi2(), collision.collisionTimeRes(),
                        mRunNumber, collision.posZ(), collision.sel8(),
                        nHasITS, nHasTPC, nHasTOF, nHasTRD, nITSonly, nTPConly, nITSTPC,

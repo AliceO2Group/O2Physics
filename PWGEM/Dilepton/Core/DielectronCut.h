@@ -73,7 +73,7 @@ class DielectronCut : public TNamed
     kDCAz,
     kITSNCls,
     kITSChi2NDF,
-    kITSCluserSize,
+    kITSClusterSize,
     kPrefilter,
     kNCuts
   };
@@ -176,7 +176,7 @@ class DielectronCut : public TNamed
     if (!IsSelectedTrack(track, DielectronCuts::kITSChi2NDF)) {
       return false;
     }
-    if (!IsSelectedTrack(track, DielectronCuts::kITSCluserSize)) {
+    if (!IsSelectedTrack(track, DielectronCuts::kITSClusterSize)) {
       return false;
     }
 
@@ -362,8 +362,8 @@ class DielectronCut : public TNamed
       case DielectronCuts::kITSChi2NDF:
         return mMinChi2PerClusterITS < track.itsChi2NCl() && track.itsChi2NCl() < mMaxChi2PerClusterITS;
 
-      case DielectronCuts::kITSCluserSize:
-        return track.p() < mMaxP_ITSClusterSize ? mMinMeanClusterSizeITS < track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())) && track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())) < mMaxMeanClusterSizeITS : true;
+      case DielectronCuts::kITSClusterSize:
+        return ((mMinP_ITSClusterSize < track.p() && track.p() < mMaxP_ITSClusterSize) ? (mMinMeanClusterSizeITS < track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())) && track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())) < mMaxMeanClusterSizeITS) : true);
 
       case DielectronCuts::kPrefilter:
         return track.pfb() <= 0;
@@ -393,7 +393,7 @@ class DielectronCut : public TNamed
   void SetChi2PerClusterTPC(float min, float max);
   void SetNClustersITS(int min, int max);
   void SetChi2PerClusterITS(float min, float max);
-  void SetMeanClusterSizeITS(float min, float max, float maxP = 0.f);
+  void SetMeanClusterSizeITS(float min, float max, float minP = 0.f, float maxP = 0.f);
 
   void SetPIDScheme(int scheme);
   void SetMinPinTOF(float min);
@@ -470,7 +470,7 @@ class DielectronCut : public TNamed
   bool mApplyPhiV{true};
   bool mApplyPF{false};
   float mMinMeanClusterSizeITS{-1e10f}, mMaxMeanClusterSizeITS{1e10f}; // max <its cluster size> x cos(Lmabda)
-  float mMaxP_ITSClusterSize{0.0};
+  float mMinP_ITSClusterSize{0.0}, mMaxP_ITSClusterSize{0.0};
 
   // pid cuts
   int mPIDScheme{-1};

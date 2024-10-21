@@ -126,7 +126,7 @@ void uploadOTSobjects(std::string inputList, std::string passName, bool useAlien
           endIndex++;
         }
         std::cout << ">>> Chunk " << helperIndex << " - " << helperIndex + chunk.size() << " : " << startTS << " - " << endTS << " \t" << (endTS - startTS) * 1.e-3 << std::endl;
-        api.storeAsTFileAny(&zorroHelpers, baseCCDBpath + "ZorroHelpers", metadata, startTS, endTS);
+        api.storeAsTFileAny(&chunk, baseCCDBpath + "ZorroHelpers", metadata, startTS, endTS);
         startTS = endTS + 1;
         helperIndex += chunk.size();
       }
