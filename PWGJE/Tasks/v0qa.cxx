@@ -75,6 +75,18 @@ struct V0QA {
   ConfigurableAxis binInvMassK0S{"binInvMassK0S", {200, 0.4f, 0.6f}, ""};
   ConfigurableAxis binInvMassLambda{"binInvMassLambda", {200, 1.07f, 1.17f}, ""};
   ConfigurableAxis binV0Radius{"R", {100., 0.0f, 50.0f}, ""};
+  ConfigurableAxis binV0CosPA{"cosPA", {50., 0.95f, 1.0f}, ""};
+
+  ConfigurableAxis binsDcaXY{"binsDcaXY", {100, -0.5f, 0.5f}, ""};
+  ConfigurableAxis binsDcaZ{"binsDcaZ", {100, -5.f, 5.f}, ""};
+  ConfigurableAxis binPtDiff{"ptV0", {200., -49.5f, 50.5f}, ""};
+  ConfigurableAxis binITSNCl{"ITSNCl", {8, -0.5, 7.5}, ""};
+  ConfigurableAxis binITSChi2NCl{"ITSChi2NCl", {100, 0, 40}, ""};
+
+  ConfigurableAxis binTPCNCl{"TPCNCl", {165, -0.5, 164.5}, ""};
+  ConfigurableAxis binTPCChi2NCl{"TPCChi2NCl", 100, 0, 10, ""};
+  ConfigurableAxis binTPCNClSharedFraction{"sharedFraction", {100, 0., 1.}, ""};
+  ConfigurableAxis binTPCCrossedRowsOverFindableCl{"crossedOverFindable", {120, 0.0, 1.2}, ""};
 
   int eventSelection = -1;
 
@@ -87,9 +99,24 @@ struct V0QA {
     const AxisSpec axisEta{binEta, "Eta"};
     const AxisSpec axisPhi{binPhi, "Phi"};
     const AxisSpec axisV0Radius{binV0Radius, "V0 Radius (cm)"};
+    const AxisSpec axisV0CosPA{binV0CosPA, "V0 CosPA"};
     const AxisSpec axisK0SM{binInvMassK0S, "M(#pi^{+} #pi^{-}) (GeV/c^{2})"};
     const AxisSpec axisLambdaM{binInvMassLambda, "M(p #pi^{-}) (GeV/c^{2})"};
     const AxisSpec axisAntiLambdaM{binInvMassLambda, "M(#bar{p} #pi^{+}) (GeV/c^{2})"};
+
+    const AxisSpec axisPtDiff{binPtDiff, "Pt difference (GeV/c)"};
+    const AxisSpec axisDcaXY{binsDcaXY, "DCA_{xy} (cm)"};
+    const AxisSpec axisDcaZ{binsDcaZ, "DCA_{z} (cm)"};
+    const AxisSpec axisITSNCl{binITSNCl, "# clusters ITS"};
+    const AxisSpec axisITSChi2NCl{binITSChi2NCl, "Chi2 / cluster ITS"};
+
+    const AxisSpec axisNClFindable{binTPCNCl, "# findable clusters TPC"};
+    const AxisSpec axisNClFound{binTPCNCl, "# found clusters TPC"};
+    const AxisSpec axisNClShared{binTPCNCl, "# shared clusters TPC"};
+    const AxisSpec axisNClCrossedRows{binTPCNCl, "# crossed rows TPC"};
+    const AxisSpec axisTPCChi2NCl{binTPCChi2NCl, "Chi2 / cluster TPC"};
+    const AxisSpec axisSharedFraction{binTPCNClSharedFraction, "Fraction shared clusters TPC"};
+    const AxisSpec axisCrossedRowsOverFindable{binTPCCrossedRowsOverFindableCl, "Crossed rows / findable clusters TPC"};
 
     if (doprocessFlags) {
       registry.add("inclusive/V0Flags", "V0Flags", HistType::kTH2D, {{4, -0.5, 3.5}, {4, -0.5, 3.5}});
@@ -160,6 +187,174 @@ struct V0QA {
       registry.add("feeddown/JetsPtXiMinusPtLambdaPt", "Jets Pt, #Xi^{-} Pt, #Lambda Pt", HistType::kTHnSparseD, {axisJetPt, axisJetPt, axisV0Pt, axisV0Pt});
       registry.add("feeddown/JetsPtXiPlusPtAntiLambdaPt", "Jets Pt, #Xi^{+} Pt, #bar{#Lambda} Pt", HistType::kTHnSparseD, {axisJetPt, axisJetPt, axisV0Pt, axisV0Pt});
     }
+    if (doprocessV0TrackQa) {
+      registry.add("tracks/Pos", "pos", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisEta, axisPhi});
+      registry.add("tracks/Neg", "neg", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisEta, axisPhi});
+      registry.add("tracks/Pt", "pt", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisPtDiff});
+      registry.add("tracks/PtMass", "pt mass", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisK0SM, axisLambdaM, axisAntiLambdaM});
+      registry.add("tracks/PtDiffMass", "ptdiff mass", HistType::kTHnSparseD, {axisV0Pt, axisPtDiff, axisK0SM, axisLambdaM, axisAntiLambdaM});
+
+      registry.add("tracks/DCAxy", "dcaxy", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisDcaXY, axisDcaXY, axisPtDiff});
+      registry.add("tracks/DCAxyMassK0S", "dcaxy mass K0S", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisDcaXY, axisDcaXY, axisK0SM});
+      registry.add("tracks/DCAxyMassLambda0", "dcaxy mass Lambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisDcaXY, axisDcaXY, axisLambdaM});
+      registry.add("tracks/DCAxyMassAntiLambda0", "dcaxy mass AntiLambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisDcaXY, axisDcaXY, axisAntiLambdaM});
+
+      registry.add("tracks/DCAz", "dcaz", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisDcaZ, axisDcaZ, axisPtDiff});
+      registry.add("tracks/DCAzMassK0S", "dcaz mass K0S", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisDcaZ, axisDcaZ, axisK0SM});
+      registry.add("tracks/DCAzMassLambda0", "dcaz mass Lambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisDcaZ, axisDcaZ, axisLambdaM});
+      registry.add("tracks/DCAzMassAntiLambda0", "dcaz mass AntiLambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisDcaZ, axisDcaZ, axisAntiLambdaM});
+
+      registry.add("tracks/V0Radius", "v0 radius", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisV0Radius, axisPtDiff});
+      registry.add("tracks/V0RadiusMassK0S", "v0 radius mass K0S", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisV0Radius, axisK0SM});
+      registry.add("tracks/V0RadiusMassLambda0", "v0 radius mass Lambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisV0Radius, axisLambdaM});
+      registry.add("tracks/V0RadiusMassAntiLambda0", "v0 radius mass AntiLambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisV0Radius, axisAntiLambdaM});
+
+      registry.add("tracks/V0CosPa", "v0 cos pa", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisV0CosPA, axisPtDiff});
+      registry.add("tracks/V0CosPaMassK0S", "v0 cos pa mass K0S", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisV0CosPA, axisK0SM});
+      registry.add("tracks/V0CosPaMassLambda0", "v0 cos pa mass Lambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisV0CosPA, axisLambdaM});
+      registry.add("tracks/V0CosPaMassAntiLambda0", "v0 cos pa mass AntiLambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisV0CosPA, axisAntiLambdaM});
+
+      // TRD
+      registry.add("tracks/TRDPt", "trd pt", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisPtDiff});
+      registry.add("tracks/TRDPtMass", "trd pt mass", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisK0SM, axisLambdaM, axisAntiLambdaM});
+      registry.add("tracks/NoTRDPt", "no trd pt", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisPtDiff});
+      registry.add("tracks/NoTRDPtMass", "no trd pt mass", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisK0SM, axisLambdaM, axisAntiLambdaM});
+
+      // ITS: positive track
+      registry.add("tracks/ITS/posLayer1", "pos layer 1", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisPtDiff});
+      registry.add("tracks/ITS/posLayer1MassK0S", "pos layer 1 mass K0S", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisK0SM});
+      registry.add("tracks/ITS/posLayer1MassLambda0", "pos layer 1 mass Lambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisLambdaM});
+      registry.add("tracks/ITS/posLayer1MassAntiLambda0", "pos layer 1 mass AntiLambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisAntiLambdaM});
+
+      registry.add("tracks/ITS/posLayer2", "pos layer 2", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisPtDiff});
+      registry.add("tracks/ITS/posLayer2MassK0S", "pos layer 2 mass K0S", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisK0SM});
+      registry.add("tracks/ITS/posLayer2MassLambda0", "pos layer 2 mass Lambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisLambdaM});
+      registry.add("tracks/ITS/posLayer2MassAntiLambda0", "pos layer 2 mass AntiLambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisAntiLambdaM});
+
+      registry.add("tracks/ITS/posLayer3", "pos layer 3", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisPtDiff});
+      registry.add("tracks/ITS/posLayer3MassK0S", "pos layer 3 mass K0S", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisK0SM});
+      registry.add("tracks/ITS/posLayer3MassLambda0", "pos layer 3 mass Lambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisLambdaM});
+      registry.add("tracks/ITS/posLayer3MassAntiLambda0", "pos layer 3 mass AntiLambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisAntiLambdaM});
+
+      registry.add("tracks/ITS/posLayer4", "pos layer 4", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisPtDiff});
+      registry.add("tracks/ITS/posLayer4MassK0S", "pos layer 4 mass K0S", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisK0SM});
+      registry.add("tracks/ITS/posLayer4MassLambda0", "pos layer 4 mass Lambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisLambdaM});
+      registry.add("tracks/ITS/posLayer4MassAntiLambda0", "pos layer 4 mass AntiLambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisAntiLambdaM});
+
+      registry.add("tracks/ITS/posLayer5", "pos layer 5", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisPtDiff});
+      registry.add("tracks/ITS/posLayer5MassK0S", "pos layer 5 mass K0S", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisK0SM});
+      registry.add("tracks/ITS/posLayer5MassLambda0", "pos layer 5 mass Lambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisLambdaM});
+      registry.add("tracks/ITS/posLayer5MassAntiLambda0", "pos layer 5 mass AntiLambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisAntiLambdaM});
+
+      registry.add("tracks/ITS/posLayer6", "pos layer 6", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisPtDiff});
+      registry.add("tracks/ITS/posLayer6MassK0S", "pos layer 6 mass K0S", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisK0SM});
+      registry.add("tracks/ITS/posLayer6MassLambda0", "pos layer 6 mass Lambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisLambdaM});
+      registry.add("tracks/ITS/posLayer6MassAntiLambda0", "pos layer 6 mass AntiLambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisAntiLambdaM});
+
+      registry.add("tracks/ITS/posLayer7", "pos layer 7", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisPtDiff});
+      registry.add("tracks/ITS/posLayer7MassK0S", "pos layer 7 mass K0S", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisK0SM});
+      registry.add("tracks/ITS/posLayer7MassLambda0", "pos layer 7 mass Lambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisLambdaM});
+      registry.add("tracks/ITS/posLayer7MassAntiLambda0", "pos layer 7 mass AntiLambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisAntiLambdaM});
+
+      registry.add("tracks/ITS/posLayer56", "pos layer 56", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisPtDiff});
+      registry.add("tracks/ITS/posLayer56MassK0S", "pos layer 56 mass K0S", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisK0SM});
+      registry.add("tracks/ITS/posLayer56MassLambda0", "pos layer 56 mass Lambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisLambdaM});
+      registry.add("tracks/ITS/posLayer56MassAntiLambda0", "pos layer 56 mass AntiLambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisAntiLambdaM});
+
+      registry.add("tracks/ITS/posLayer67", "pos layer 67", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisPtDiff});
+      registry.add("tracks/ITS/posLayer67MassK0S", "pos layer 67 mass K0S", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisK0SM});
+      registry.add("tracks/ITS/posLayer67MassLambda0", "pos layer 67 mass Lambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisLambdaM});
+      registry.add("tracks/ITS/posLayer67MassAntiLambda0", "pos layer 67 mass AntiLambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisAntiLambdaM});
+
+      registry.add("tracks/ITS/posLayer57", "pos layer 57", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisPtDiff});
+      registry.add("tracks/ITS/posLayer57MassK0S", "pos layer 57 mass K0S", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisK0SM});
+      registry.add("tracks/ITS/posLayer57MassLambda0", "pos layer 57 mass Lambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisLambdaM});
+      registry.add("tracks/ITS/posLayer57MassAntiLambda0", "pos layer 57 mass AntiLambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisAntiLambdaM});
+
+      registry.add("tracks/ITS/posLayer567", "pos layer 567", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisPtDiff});
+      registry.add("tracks/ITS/posLayer567MassK0S", "pos layer 567 mass K0S", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisK0SM});
+      registry.add("tracks/ITS/posLayer567MassLambda0", "pos layer 567 mass Lambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisLambdaM});
+      registry.add("tracks/ITS/posLayer567MassAntiLambda0", "pos layer 567 mass AntiLambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisAntiLambdaM});
+
+      registry.add("tracks/ITS/posNCl", "pos ncl", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisNCl});
+      registry.add("tracks/ITS/posChi2NCl", "pos chi2ncl", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisChi2NCl});
+
+      // ITS: Negative track
+      registry.add("tracks/ITS/negLayer1", "neg layer 1", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisPtDiff});
+      registry.add("tracks/ITS/negLayer1MassK0S", "neg layer 1 mass K0S", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisK0SM});
+      registry.add("tracks/ITS/negLayer1MassLambda0", "neg layer 1 mass Lambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisLambdaM});
+      registry.add("tracks/ITS/negLayer1MassAntiLambda0", "neg layer 1 mass AntiLambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisAntiLambdaM});
+
+      registry.add("tracks/ITS/negLayer2", "neg layer 2", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisPtDiff});
+      registry.add("tracks/ITS/negLayer2MassK0S", "neg layer 2 mass K0S", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisK0SM});
+      registry.add("tracks/ITS/negLayer2MassLambda0", "neg layer 2 mass Lambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisLambdaM});
+      registry.add("tracks/ITS/negLayer2MassAntiLambda0", "neg layer 2 mass AntiLambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisAntiLambdaM});
+
+      registry.add("tracks/ITS/negLayer3", "neg layer 3", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisPtDiff});
+      registry.add("tracks/ITS/negLayer3MassK0S", "neg layer 3 mass K0S", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisK0SM});
+      registry.add("tracks/ITS/negLayer3MassLambda0", "neg layer 3 mass Lambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisLambdaM});
+      registry.add("tracks/ITS/negLayer3MassAntiLambda0", "neg layer 3 mass AntiLambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisAntiLambdaM});
+
+      registry.add("tracks/ITS/negLayer4", "neg layer 4", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisPtDiff});
+      registry.add("tracks/ITS/negLayer4MassK0S", "neg layer 4 mass K0S", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisK0SM});
+      registry.add("tracks/ITS/negLayer4MassLambda0", "neg layer 4 mass Lambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisLambdaM});
+      registry.add("tracks/ITS/negLayer4MassAntiLambda0", "neg layer 4 mass AntiLambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisAntiLambdaM});
+
+      registry.add("tracks/ITS/negLayer5", "neg layer 5", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisPtDiff});
+      registry.add("tracks/ITS/negLayer5MassK0S", "neg layer 5 mass K0S", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisK0SM});
+      registry.add("tracks/ITS/negLayer5MassLambda0", "neg layer 5 mass Lambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisLambdaM});
+      registry.add("tracks/ITS/negLayer5MassAntiLambda0", "neg layer 5 mass AntiLambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisAntiLambdaM});
+
+      registry.add("tracks/ITS/negLayer6", "neg layer 6", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisPtDiff});
+      registry.add("tracks/ITS/negLayer6MassK0S", "neg layer 6 mass K0S", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisK0SM});
+      registry.add("tracks/ITS/negLayer6MassLambda0", "neg layer 6 mass Lambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisLambdaM});
+      registry.add("tracks/ITS/negLayer6MassAntiLambda0", "neg layer 6 mass AntiLambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisAntiLambdaM});
+
+      registry.add("tracks/ITS/negLayer7", "neg layer 7", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisPtDiff});
+      registry.add("tracks/ITS/negLayer7MassK0S", "neg layer 7 mass K0S", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisK0SM});
+      registry.add("tracks/ITS/negLayer7MassLambda0", "neg layer 7 mass Lambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisLambdaM});
+      registry.add("tracks/ITS/negLayer7MassAntiLambda0", "neg layer 7 mass AntiLambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisAntiLambdaM});
+
+      registry.add("tracks/ITS/negLayer56", "neg layer 56", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisPtDiff});
+      registry.add("tracks/ITS/negLayer56MassK0S", "neg layer 56 mass K0S", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisK0SM});
+      registry.add("tracks/ITS/negLayer56MassLambda0", "neg layer 56 mass Lambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisLambdaM});
+      registry.add("tracks/ITS/negLayer56MassAntiLambda0", "neg layer 56 mass AntiLambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisAntiLambdaM});
+
+      registry.add("tracks/ITS/negLayer67", "neg layer 67", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisPtDiff});
+      registry.add("tracks/ITS/negLayer67MassK0S", "neg layer 67 mass K0S", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisK0SM});
+      registry.add("tracks/ITS/negLayer67MassLambda0", "neg layer 67 mass Lambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisLambdaM});
+      registry.add("tracks/ITS/negLayer67MassAntiLambda0", "neg layer 67 mass AntiLambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisAntiLambdaM});
+
+      registry.add("tracks/ITS/negLayer57", "neg layer 57", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisPtDiff});
+      registry.add("tracks/ITS/negLayer57MassK0S", "neg layer 57 mass K0S", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisK0SM});
+      registry.add("tracks/ITS/negLayer57MassLambda0", "neg layer 57 mass Lambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisLambdaM});
+      registry.add("tracks/ITS/negLayer57MassAntiLambda0", "neg layer 57 mass AntiLambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisAntiLambdaM});
+
+      registry.add("tracks/ITS/negLayer567", "neg layer 567", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisPtDiff});
+      registry.add("tracks/ITS/negLayer567MassK0S", "neg layer 567 mass K0S", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisK0SM});
+      registry.add("tracks/ITS/negLayer567MassLambda0", "neg layer 567 mass Lambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisLambdaM});
+      registry.add("tracks/ITS/negLayer567MassAntiLambda0", "neg layer 567 mass AntiLambda0", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisAntiLambdaM});
+
+      registry.add("tracks/ITS/negNCl", "neg ncl", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisNCl});
+      registry.add("tracks/ITS/negChi2NCl", "neg chi2ncl", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisChi2NCl});
+
+      // TPC information
+      registry.add("tracks/TPC/posNClFindable", "pos ncl findable", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisNClFindable});
+      registry.add("tracks/TPC/posNClsFound", "pos ncl found", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisNClFound});
+      registry.add("tracks/TPC/posNClsShared", "pos ncl shared", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisNClShared});
+      registry.add("tracks/TPC/posNClsCrossedRows", "pos ncl crossed rows", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisNClCrossedRows});
+      registry.add("tracks/TPC/posNClsCrossedRowsOverFindableCls", "pos ncl crossed rows over findable cls", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisCrossedRowsOverFindable});
+      registry.add("tracks/TPC/posFractionSharedCls", "pos fraction shared cls", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisSharedFraction});
+      registry.add("tracks/TPC/posChi2NCl", "pos chi2ncl", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisChi2NCl});
+
+      registry.add("tracks/TPC/negNClFindable", "neg ncl findable", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisNClFindable});
+      registry.add("tracks/TPC/negNClsFound", "neg ncl found", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisNClFound});
+      registry.add("tracks/TPC/negNClsShared", "neg ncl shared", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisNClShared});
+      registry.add("tracks/TPC/negNClsCrossedRows", "neg ncl crossed rows", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisNClCrossedRows});
+      registry.add("tracks/TPC/negNClsCrossedRowsOverFindableCls", "neg ncl crossed rows over findable cls", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisCrossedRowsOverFindable});
+      registry.add("tracks/TPC/negFractionSharedCls", "neg fraction shared cls", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisSharedFraction});
+      registry.add("tracks/TPC/negChi2NCl", "neg chi2ncl", HistType::kTHnSparseD, {axisV0Pt, axisV0Pt, axisV0Pt, axisChi2NCl});
+    } // doprocessV0TrackQa
   } // init
 
   template <typename T, typename U>
@@ -229,6 +424,219 @@ struct V0QA {
         return false;
     }
     return true;
+  }
+
+  template <typename T>
+  bool hasITSHit(T const& track, int layer)
+  {
+    int ibit = layer - 1;
+    return (track.itsClusterMap() & (1 << ibit));
+  }
+
+  template<typename T, typename U>
+  void fillTrackQa(U const& v0)
+  {
+    auto posTrack = v0.posTrack.track_as<DaughterTracks>();
+    auto negTrack = v0.negTrack.track_as<DaughterTracks>();
+
+    double mK = v0.mK0Short();
+    double mL = v0.mLambda();
+    double mAL = v0.mAntiLambda();
+
+    double vPt = v0.pt();
+    double pPt = posTrack.pt();
+    double nPt = negTrack.pt();
+    double dPt = posTrack.pt() - negTrack.pt();
+
+    registry.fill(HIST("tracks/Pos"), vPt, pPt, posTrack.eta(), posTrack.phi());
+    registry.fill(HIST("tracks/Neg"), vPt, nPt, negTrack.eta(), negTrack.phi());
+    registry.fill(HIST("tracks/Pts"), vPt, pPt, nPt, dPt);
+    registry.fill(HIST("tracks/PtMasses"), vPt, pPt, nPt, mK, mL, mAL);
+    registry.fill(HIST("tracks/PtDiffMasses"), vPt, dPt, mK, mL, mAL);
+
+    registry.fill(HIST("tracks/DCAxy"), vPt, pPt, nPt, posTrack.dcaXY(), negTrack.dcaXY(), dPt);
+    registry.fill(HIST("tracks/DCAxyMassK0S"), vPt, pPt, nPt, posTrack.dcaXY(), negTrack.dcaXY(), mK);
+    registry.fill(HIST("tracks/DCAxyMassLambda0"), vPt, pPt, nPt, posTrack.dcaXY(), negTrack.dcaXY(), mL);
+    registry.fill(HIST("tracks/DCAxyMassAntiLambda0"), vPt, pPt, nPt, posTrack.dcaXY(), negTrack.dcaXY(), mAL);
+
+    registry.fill(HIST("tracks/DCAz"), vPt, pPt, nPt, posTrack.dcaZ(), negTrack.dcaZ(), dPt);
+    registry.fill(HIST("tracks/DCAzMassK0S"), vPt, pPt, nPt, posTrack.dcaZ(), negTrack.dcaZ(), mK);
+    registry.fill(HIST("tracks/DCAzMassLambda0"), vPt, pPt, nPt, posTrack.dcaZ(), negTrack.dcaZ(), mL);
+    registry.fill(HIST("tracks/DCAzMassAntiLambda0"), vPt, pPt, nPt, posTrack.dcaZ(), negTrack.dcaZ(), mAL);
+
+    registry.fill(HIST("tracks/V0Radius"), vPt, pPt, nPt, v0.v0radius(), dPt);
+    registry.fill(HIST("tracks/V0RadiusMassK0S"), vPt, pPt, nPt, v0.v0radius(), mK);
+    registry.fill(HIST("tracks/V0RadiusMassLambda0"), vPt, pPt, nPt, v0.v0radius(), mL);
+    registry.fill(HIST("tracks/V0RadiusMassAntiLambda0"), vPt, pPt, nPt, v0.v0radius(), mAL);
+
+    registry.fill(HIST("tracks/V0CosPa"), vPt, pPt, nPt, v0.v0cosPA(), dPt);
+    registry.fill(HIST("tracks/V0CosPaMassK0S"), vPt, pPt, nPt, v0.v0cosPA(), mK);
+    registry.fill(HIST("tracks/V0CosPaMassLambda0"), vPt, pPt, nPt, v0.v0cosPA(), mL);
+    registry.fill(HIST("tracks/V0CosPaMassAntiLambda0"), vPt, pPt, nPt, v0.v0cosPA(), mAL);
+
+    if (track.hasTRD()) {
+      registry.fill(HIST("tracks/TRDPt"), vPt, pPt, nPt, dPt);
+      registry.fill(HIST("tracks/TRDPtMass"), vPt, pPt, nPt, mK, mL, mAL);
+    } else {
+      registry.fill(HIST("tracks/NoTRDPt"), vPt, pPt, nPt, dPt);
+      registry.fill(HIST("tracks/NoTRDPtMass"), vPt, pPt, nPt, mK, mL, mAL);
+    }
+
+    // ITS information
+    if (hasITSHit(posTrack, 1)) {
+      registry.fill(HIST("tracks/ITS/posLayer1"), vPt, pPt, nPt, dPt);
+      registry.fill(HIST("tracks/ITS/posLayer1MassK0S"), vPt, pPt, nPt, mK);
+      registry.fill(HIST("tracks/ITS/posLayer1MassLambda0"), vPt, pPt, nPt, mL);
+      registry.fill(HIST("tracks/ITS/posLayer1MassAntiLambda0"), vPt, pPt, nPt, mAL);
+    }
+    if (hasITSHit(posTrack, 2)) {
+      registry.fill(HIST("tracks/ITS/posLayer2"), vPt, pPt, nPt, dPt);
+      registry.fill(HIST("tracks/ITS/posLayer2MassK0S"), vPt, pPt, nPt, mK);
+      registry.fill(HIST("tracks/ITS/posLayer2MassLambda0"), vPt, pPt, nPt, mL);
+      registry.fill(HIST("tracks/ITS/posLayer2MassAntiLambda0"), vPt, pPt, nPt, mAL);
+    }
+    if (hasITSHit(posTrack, 3)) {
+      registry.fill(HIST("tracks/ITS/posLayer3"), vPt, pPt, nPt, dPt);
+      registry.fill(HIST("tracks/ITS/posLayer3MassK0S"), vPt, pPt, nPt, mK);
+      registry.fill(HIST("tracks/ITS/posLayer3MassLambda0"), vPt, pPt, nPt, mL);
+      registry.fill(HIST("tracks/ITS/posLayer3MassAntiLambda0"), vPt, pPt, nPt, mAL);
+    }
+    if (hasITSHit(posTrack, 4)) {
+      registry.fill(HIST("tracks/ITS/posLayer4"), vPt, pPt, nPt, dPt);
+      registry.fill(HIST("tracks/ITS/posLayer4MassK0S"), vPt, pPt, nPt, mK);
+      registry.fill(HIST("tracks/ITS/posLayer4MassLambda0"), vPt, pPt, nPt, mL);
+      registry.fill(HIST("tracks/ITS/posLayer4MassAntiLambda0"), vPt, pPt, nPt, mAL);
+    }
+    if (hasITSHit(posTrack, 5)) {
+      registry.fill(HIST("tracks/ITS/posLayer5"), vPt, pPt, nPt, dPt);
+      registry.fill(HIST("tracks/ITS/posLayer5MassK0S"), vPt, pPt, nPt, mK);
+      registry.fill(HIST("tracks/ITS/posLayer5MassLambda0"), vPt, pPt, nPt, mL);
+      registry.fill(HIST("tracks/ITS/posLayer5MassAntiLambda0"), vPt, pPt, nPt, mAL);
+    }
+    if (hasITSHit(posTrack, 6)) {
+      registry.fill(HIST("tracks/ITS/posLayer6"), vPt, pPt, nPt, dPt);
+      registry.fill(HIST("tracks/ITS/posLayer6MassK0S"), vPt, pPt, nPt, mK);
+      registry.fill(HIST("tracks/ITS/posLayer6MassLambda0"), vPt, pPt, nPt, mL);
+      registry.fill(HIST("tracks/ITS/posLayer6MassAntiLambda0"), vPt, pPt, nPt, mAL);
+    }
+    if (hasITSHit(posTrack, 7)) {
+      registry.fill(HIST("tracks/ITS/posLayer7"), vPt, pPt, nPt, dPt);
+      registry.fill(HIST("tracks/ITS/posLayer7MassK0S"), vPt, pPt, nPt, mK);
+      registry.fill(HIST("tracks/ITS/posLayer7MassLambda0"), vPt, pPt, nPt, mL);
+      registry.fill(HIST("tracks/ITS/posLayer7MassAntiLambda0"), vPt, pPt, nPt, mAL);
+    }
+    if (hasITSHit(posTrack, 5) && hasITSHit(posTrack, 6)) {
+      registry.fill(HIST("tracks/ITS/posLayer56"), vPt, pPt, nPt, dPt);
+      registry.fill(HIST("tracks/ITS/posLayer56MassK0S"), vPt, pPt, nPt, mK);
+      registry.fill(HIST("tracks/ITS/posLayer56MassLambda0"), vPt, pPt, nPt, mL);
+      registry.fill(HIST("tracks/ITS/posLayer56MassAntiLambda0"), vPt, pPt, nPt, mAL);
+    }
+    if (hasITSHit(posTrack, 6) && hasITSHit(posTrack, 7)) {
+      registry.fill(HIST("tracks/ITS/posLayer67"), vPt, pPt, nPt, dPt);
+      registry.fill(HIST("tracks/ITS/posLayer67MassK0S"), vPt, pPt, nPt, mK);
+      registry.fill(HIST("tracks/ITS/posLayer67MassLambda0"), vPt, pPt, nPt, mL);
+      registry.fill(HIST("tracks/ITS/posLayer67MassAntiLambda0"), vPt, pPt, nPt, mAL);
+    }
+    if (hasITSHit(posTrack, 5) && hasITSHit(posTrack, 7)) {
+      registry.fill(HIST("tracks/ITS/posLayer57"), vPt, pPt, nPt, dPt);
+      registry.fill(HIST("tracks/ITS/posLayer57MassK0S"), vPt, pPt, nPt, mK);
+      registry.fill(HIST("tracks/ITS/posLayer57MassLambda0"), vPt, pPt, nPt, mL);
+      registry.fill(HIST("tracks/ITS/posLayer57MassAntiLambda0"), vPt, pPt, nPt, mAL);
+    }
+    if (hasITSHit(posTrack, 5) && hasITSHit(posTrack, 6) && hasITSHit(posTrack, 7)) {
+      registry.fill(HIST("tracks/ITS/posLayer567"), vPt, pPt, nPt, dPt);
+      registry.fill(HIST("tracks/ITS/posLayer567MassK0S"), vPt, pPt, nPt, mK);
+      registry.fill(HIST("tracks/ITS/posLayer567MassLambda0"), vPt, pPt, nPt, mL);
+      registry.fill(HIST("tracks/ITS/posLayer567MassAntiLambda0"), vPt, pPt, nPt, mAL);
+    }
+    registry.fill(HIST("tracks/ITS/posNCl"), vPt, pPt, nPt, posTrack.itsNCls());
+    registry.fill(HIST("tracks/ITS/posChi2NCl"), vPt, pPt, nPt, posTrack.itsChi2NCl());
+
+    if (hasITSHit(negTrack, 1)) {
+      registry.fill(HIST("tracks/ITS/negLayer1"), vPt, pPt, nPt, dPt);
+      registry.fill(HIST("tracks/ITS/negLayer1MassK0S"), vPt, pPt, nPt, mK);
+      registry.fill(HIST("tracks/ITS/negLayer1MassLambda0"), vPt, pPt, nPt, mL);
+      registry.fill(HIST("tracks/ITS/negLayer1MassAntiLambda0"), vPt, pPt, nPt, mAL);
+    }
+    if (hasITSHit(negTrack, 2)) {
+      registry.fill(HIST("tracks/ITS/negLayer2"), vPt, pPt, nPt, dPt);
+      registry.fill(HIST("tracks/ITS/negLayer2MassK0S"), vPt, pPt, nPt, mK);
+      registry.fill(HIST("tracks/ITS/negLayer2MassLambda0"), vPt, pPt, nPt, mL);
+      registry.fill(HIST("tracks/ITS/negLayer2MassAntiLambda0"), vPt, pPt, nPt, mAL);
+    }
+    if (hasITSHit(negTrack, 3)) {
+      registry.fill(HIST("tracks/ITS/negLayer3"), vPt, pPt, nPt, dPt);
+      registry.fill(HIST("tracks/ITS/negLayer3MassK0S"), vPt, pPt, nPt, mK);
+      registry.fill(HIST("tracks/ITS/negLayer3MassLambda0"), vPt, pPt, nPt, mL);
+      registry.fill(HIST("tracks/ITS/negLayer3MassAntiLambda0"), vPt, pPt, nPt, mAL);
+    }
+    if (hasITSHit(negTrack, 4)) {
+      registry.fill(HIST("tracks/ITS/negLayer4"), vPt, pPt, nPt, dPt);
+      registry.fill(HIST("tracks/ITS/negLayer4MassK0S"), vPt, pPt, nPt, mK);
+      registry.fill(HIST("tracks/ITS/negLayer4MassLambda0"), vPt, pPt, nPt, mL);
+      registry.fill(HIST("tracks/ITS/negLayer4MassAntiLambda0"), vPt, pPt, nPt, mAL);
+    }
+    if (hasITSHit(negTrack, 5)) {
+      registry.fill(HIST("tracks/ITS/negLayer5"), vPt, pPt, nPt, dPt);
+      registry.fill(HIST("tracks/ITS/negLayer5MassK0S"), vPt, pPt, nPt, mK);
+      registry.fill(HIST("tracks/ITS/negLayer5MassLambda0"), vPt, pPt, nPt, mL);
+      registry.fill(HIST("tracks/ITS/negLayer5MassAntiLambda0"), vPt, pPt, nPt, mAL);
+    }
+    if (hasITSHit(negTrack, 6)) {
+      registry.fill(HIST("tracks/ITS/negLayer6"), vPt, pPt, nPt, dPt);
+      registry.fill(HIST("tracks/ITS/negLayer6MassK0S"), vPt, pPt, nPt, mK);
+      registry.fill(HIST("tracks/ITS/negLayer6MassLambda0"), vPt, pPt, nPt, mL);
+      registry.fill(HIST("tracks/ITS/negLayer6MassAntiLambda0"), vPt, pPt, nPt, mAL);
+    }
+    if (hasITSHit(negTrack, 7)) {
+      registry.fill(HIST("tracks/ITS/negLayer7"), vPt, pPt, nPt, dPt);
+      registry.fill(HIST("tracks/ITS/negLayer7MassK0S"), vPt, pPt, nPt, mK);
+      registry.fill(HIST("tracks/ITS/negLayer7MassLambda0"), vPt, pPt, nPt, mL);
+      registry.fill(HIST("tracks/ITS/negLayer7MassAntiLambda0"), vPt, pPt, nPt, mAL);
+    }
+    if (hasITSHit(negTrack, 5) && hasITSHit(negTrack, 6)) {
+      registry.fill(HIST("tracks/ITS/negLayer56"), vPt, pPt, nPt, dPt);
+      registry.fill(HIST("tracks/ITS/negLayer56MassK0S"), vPt, pPt, nPt, mK);
+      registry.fill(HIST("tracks/ITS/negLayer56MassLambda0"), vPt, pPt, nPt, mL);
+      registry.fill(HIST("tracks/ITS/negLayer56MassAntiLambda0"), vPt, pPt, nPt, mAL);
+    }
+    if (hasITSHit(negTrack, 6) && hasITSHit(negTrack, 7)) {
+      registry.fill(HIST("tracks/ITS/negLayer67"), vPt, pPt, nPt, dPt);
+      registry.fill(HIST("tracks/ITS/negLayer67MassK0S"), vPt, pPt, nPt, mK);
+      registry.fill(HIST("tracks/ITS/negLayer67MassLambda0"), vPt, pPt, nPt, mL);
+      registry.fill(HIST("tracks/ITS/negLayer67MassAntiLambda0"), vPt, pPt, nPt, mAL);
+    }
+    if (hasITSHit(negTrack, 5) && hasITSHit(negTrack, 7)) {
+      registry.fill(HIST("tracks/ITS/negLayer57"), vPt, pPt, nPt, dPt);
+      registry.fill(HIST("tracks/ITS/negLayer57MassK0S"), vPt, pPt, nPt, mK);
+      registry.fill(HIST("tracks/ITS/negLayer57MassLambda0"), vPt, pPt, nPt, mL);
+      registry.fill(HIST("tracks/ITS/negLayer57MassAntiLambda0"), vPt, pPt, nPt, mAL);
+    }
+    if (hasITSHit(negTrack, 5) && hasITSHit(negTrack, 6) && hasITSHit(negTrack, 7)) {
+      registry.fill(HIST("tracks/ITS/negLayer567"), vPt, pPt, nPt, dPt);
+      registry.fill(HIST("tracks/ITS/negLayer567MassK0S"), vPt, pPt, nPt, mK);
+      registry.fill(HIST("tracks/ITS/negLayer567MassLambda0"), vPt, pPt, nPt, mL);
+      registry.fill(HIST("tracks/ITS/negLayer567MassAntiLambda0"), vPt, pPt, nPt, mAL);
+    }
+    registry.fill(HIST("tracks/ITS/negNCl"), vPt, pPt, nPt, negTrack.itsNcls());
+    registry.fill(HIST("tracks/ITS/negChi2NCl"), vPt, pPt, nPt, negTrack.itsChi2Ncls());
+
+    // TPC information
+    registry.fill(HIST("tracks/TPC/posNClFindable"), vPt, pPt, nPt, posTrack.tpcNClsFindable());
+    registry.fill(HIST("tracks/TPC/posNClsFound"), vPt, pPt, nPt, posTrack.tpcNClsFound());
+    registry.fill(HIST("tracks/TPC/posChi2NCl"), vPt, pPt, nPt, posTrack.tpcChi2NCl());
+    registry.fill(HIST("tracks/TPC/posNClsShared"), vPt, pPt, nPt, posTrack.tpcNClsShared());
+    registry.fill(HIST("tracks/TPC/posFractionSharedCls"), vPt, pPt, nPt, posTrack.tpcFractionSharedCls());
+    registry.fill(HIST("tracks/TPC/posNClsCrossedRows"), vPt, pPt, nPt, posTrack.tpcNClsCrossedRows());
+    registry.fill(HIST("tracks/TPC/posNClsCrossedRowsOverFindableCls"), vPt, pPt, nPt, posTrack.tpcNClsCrossedRowsOverFindableCls());
+
+    registry.fill(HIST("tracks/TPC/negNClFindable"), vPt, pPt, nPt, negTrack.tpcNClsFindable());
+    registry.fill(HIST("tracks/TPC/negNClsFound"), vPt, pPt, nPt, negTrack.tpcNClsFound());
+    registry.fill(HIST("tracks/TPC/negChi2NCl"), vPt, pPt, nPt, negTrack.tpcChi2NCl());
+    registry.fill(HIST("tracks/TPC/negNClsShared"), vPt, pPt, nPt, negTrack.tpcNClsShared());
+    registry.fill(HIST("tracks/TPC/negFractionSharedCls"), vPt, pPt, nPt, negTrack.tpcFractionSharedCls());
+    registry.fill(HIST("tracks/TPC/negNClsCrossedRows"), vPt, pPt, nPt, negTrack.tpcNClsCrossedRows());
+    registry.fill(HIST("tracks/TPC/negNClsCrossedRowsOverFindableCls"), vPt, pPt, nPt, negTrack.tpcNClsCrossedRowsOverFindableCls());
   }
 
   void processDummy(CandidatesV0MCD const&) {}
@@ -661,6 +1069,22 @@ struct V0QA {
     }
   }
   PROCESS_SWITCH(V0QA, processFeeddownMatchedJets, "Jets feeddown", false);
+
+  // TODO: update to use V0 signal flags.
+  using DaughterTracks = soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::TracksCov>;
+  void processV0TrackQA(JetCollisions const& jcoll, soa::Join<CandidatesV0Data, aod::V0SignalFlags> const& v0s, soa::Join<JetTracks, JTrackPIs> const&, DaughterTracks const&)
+  {
+    // if(!jetderiveddatautilities::selectCollision(jcoll, eventSelection)) {
+    //   return;
+    // }
+    for (const auto& v0 : v0s) {
+      // if (v0.isRejectedCandidate()) {
+      //   continue;
+      // }
+      fillTrackQa<DaughterTracks>(v0);
+    }
+  }
+  PROCESS_SWITCH(V0QA, processV0TrackQA, "V0 track QA", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
