@@ -92,6 +92,10 @@ struct threebodyKFTask {
     // for gen information of non reco candidates
     registry.add<TH1>("hTrueHypertritonMCMassPrPi_nonReco", "inv. mass gen. of non-reco. V0 pair (H3L)", HistType::kTH1F, {{100, 0.0f, 6.0f, "#it{m}(p,#pi^{-}) (GeV/#it{c}^{2})"}});
     registry.add<TH1>("hTrueAntiHypertritonMCMassPrPi_nonReco", "inv. mass gen. of non-reco. V0 pair (Anti-H3L)", HistType::kTH1F, {{100, 0.0f, 6.0f, "#it{m}(#bar{p},#pi^{+}) (GeV/#it{c}^{2})"}});
+    registry.add<TH1>("hTrueHypertritonMCPtProton_nonReco", "Proton #it{p}_{T} gen. of non-reco. H3L", HistType::kTH1F, {{100, 0.0f, 6.0f, "#it{p}_{T}(p) (GeV/#it{c})"}});
+    registry.add<TH1>("hTrueHypertritonMCPtPion_nonReco", "Pion #it{p}_{T} gen. of non-reco. H3L", HistType::kTH1F, {{100, 0.0f, 6.0f, "#it{p}_{T}(#pi) (GeV/#it{c})"}});
+    registry.add<TH1>("hTrueAntiHypertritonMCPtProton_nonReco", "Proton #it{p}_{T} gen. of non-reco. Anti-H3L", HistType::kTH1F, {{100, 0.0f, 6.0f, "#it{p}_{T}(p) (GeV/#it{c})"}});
+    registry.add<TH1>("hTrueAntiHypertritonMCPtPion_nonReco", "Pion #it{p}_{T} gen. of non-reco. Anti- H3L", HistType::kTH1F, {{100, 0.0f, 6.0f, "#it{p}_{T}(#pi) (GeV/#it{c})"}});
   }
 
   template <typename TCand>
@@ -240,7 +244,7 @@ struct threebodyKFTask {
           vtx3bodydata.vtxcospakftopo(), vtx3bodydata.vtxcosxypakftopo(),
           vtx3bodydata.decaylkf(), vtx3bodydata.decaylxykf(), vtx3bodydata.decayldeltal(),
           vtx3bodydata.chi2geondf(), vtx3bodydata.chi2topondf(),
-          vtx3bodydata.ctaukf(), vtx3bodydata.ctaukftopo(),
+          vtx3bodydata.ctaukftopo(),
           vtx3bodydata.massv0(), vtx3bodydata.chi2massv0(),
           vtx3bodydata.pxtrack0(), vtx3bodydata.pytrack0(), vtx3bodydata.pztrack0(),                            // proton
           vtx3bodydata.pxtrack1(), vtx3bodydata.pytrack1(), vtx3bodydata.pztrack1(),                            // pion
@@ -253,6 +257,7 @@ struct threebodyKFTask {
           vtx3bodydata.dcaxytrackpostopv(), vtx3bodydata.dcaxytracknegtopv(), vtx3bodydata.dcaxytrackbachtopv(),
           vtx3bodydata.dcatrackpostopv(), vtx3bodydata.dcatracknegtopv(), vtx3bodydata.dcatrackbachtopv(),
           vtx3bodydata.track0sign(), vtx3bodydata.track1sign(), vtx3bodydata.track2sign(), // proton, pion, deuteron
+          vtx3bodydata.tpcnsigmaproton(), vtx3bodydata.tpcnsigmapion(), vtx3bodydata.tpcnsigmadeuteron(),
           // MC info (-1 if not matched to MC particle)
           genP,
           genPt,
@@ -321,9 +326,11 @@ struct threebodyKFTask {
             piMinusMom[1] = mcparticleDaughter.py();
             piMinusMom[2] = mcparticleDaughter.pz();
           }
-          genMCmassPrPi = RecoDecay::m(array{array{protonMom[0], protonMom[1], protonMom[2]}, array{piMinusMom[0], piMinusMom[1], piMinusMom[2]}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged});
-          registry.fill(HIST("hTrueHypertritonMCMassPrPi_nonReco"), genMCmassPrPi);
         }
+        genMCmassPrPi = RecoDecay::m(array{array{protonMom[0], protonMom[1], protonMom[2]}, array{piMinusMom[0], piMinusMom[1], piMinusMom[2]}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged});
+        registry.fill(HIST("hTrueHypertritonMCMassPrPi_nonReco"), genMCmassPrPi);
+        registry.fill(HIST("hTrueHypertritonMCPtProton_nonReco"), RecoDecay::sqrtSumOfSquares(protonMom[0], protonMom[1]));
+        registry.fill(HIST("hTrueHypertritonMCPtPion_nonReco"), RecoDecay::sqrtSumOfSquares(piMinusMom[0], piMinusMom[1]));
       } else if (haveAntiProton && havePion && haveAntiBachelor && mcparticle.pdgCode() < 0) {
         isTrueGenAntiH3L = true;
         // get anti-proton and pion daughter
@@ -339,9 +346,11 @@ struct threebodyKFTask {
             piPlusMom[1] = mcparticleDaughter.py();
             piPlusMom[2] = mcparticleDaughter.pz();
           }
-          genMCmassPrPi = RecoDecay::m(array{array{antiProtonMom[0], antiProtonMom[1], antiProtonMom[2]}, array{piPlusMom[0], piPlusMom[1], piPlusMom[2]}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged});
-          registry.fill(HIST("hTrueAntiHypertritonMCMassPrPi_nonReco"), genMCmassPrPi);
         }
+        genMCmassPrPi = RecoDecay::m(array{array{antiProtonMom[0], antiProtonMom[1], antiProtonMom[2]}, array{piPlusMom[0], piPlusMom[1], piPlusMom[2]}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged});
+        registry.fill(HIST("hTrueAntiHypertritonMCMassPrPi_nonReco"), genMCmassPrPi);
+        registry.fill(HIST("hTrueAntiHypertritonMCPtProton_nonReco"), RecoDecay::sqrtSumOfSquares(antiProtonMom[0], antiProtonMom[1]));
+        registry.fill(HIST("hTrueAntiHypertritonMCPtPion_nonReco"), RecoDecay::sqrtSumOfSquares(piPlusMom[0], piPlusMom[1]));
       } else {
         continue; // stop if particle is no true H3L or Anti-H3L
       }
@@ -366,7 +375,7 @@ struct threebodyKFTask {
         -1, -1,
         -1, -1, -1,
         -1, -1,
-        -1, -1,
+        -1,
         -1, -1,
         -1, -1, -1,
         -1, -1, -1,
@@ -376,6 +385,7 @@ struct threebodyKFTask {
         -1, -1, -1,
         -1, -1, -1,
         -1,
+        -1, -1, -1,
         -1, -1, -1,
         -1, -1, -1,
         -1, -1, -1,
