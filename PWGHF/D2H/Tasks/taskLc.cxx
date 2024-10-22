@@ -24,6 +24,7 @@
 #include "Framework/runDataProcessing.h"
 
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -54,8 +55,14 @@ struct HfTaskLc {
   HfHelper hfHelper;
   Filter filterSelectCandidates = aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLc || aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLc;
 
+  
+  using Collisions = soa::Join<aod::Collisions, aod::EvSels>::iterator;
+  using CollisionsMc = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>::iterator;
   using CollisionsWithFT0C = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>::iterator;
   using CollisionsMcWithFT0C = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs>::iterator;
+  using CollisionsWithFT0M = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>::iterator;
+  using CollisionsMcWithFT0M = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Ms>::iterator;
+
 
   using LcCandidates = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>;
   using LcCandidatesMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfMlLcToPKPi>>;
@@ -285,6 +292,15 @@ struct HfTaskLc {
     }
   }
 
+  /// Evaluate centrality/multiplicity percentile (centrality estimator is automatically selected based on the used table)
+  /// \param candidate is candidate
+  /// \return centrality/multiplicity percentile of the collision
+  template <typename Coll>
+  float evaluateCentralityColl(const Coll& collision)
+  {
+    return o2::hf_centrality::getCentralityColl<Coll>(collision);
+  }
+
   template <bool fillMl, typename CollType, typename CandType>
   void processData(CollType const& collision,
                    CandType const& candidates,
@@ -365,7 +381,7 @@ struct HfTaskLc {
       registry.fill(HIST("Data/hDecLenErr"), candidate.errorDecayLength(), pt);
 
       if (enableTHn) {
-        float cent = collision.centFT0C();
+        float cent = evaluateCentralityColl(collision);
         double massLc(-1);
         double outputBkg(-1), outputPrompt(-1), outputFD(-1);
         if (candidate.isSelLcToPKPi() >= selectionFlagLc) {
@@ -406,7 +422,7 @@ struct HfTaskLc {
     }
   }
 
-  void processDataStd(CollisionsWithFT0C const& collision,
+  void processDataStd(Collisions const& collision,
                       LcCandidates const& selectedLcCandidates,
                       aod::TracksWDca const& tracks)
   {
@@ -414,13 +430,48 @@ struct HfTaskLc {
   }
   PROCESS_SWITCH(HfTaskLc, processDataStd, "Process Data with the standard method", true);
 
-  void processDataWithMl(CollisionsWithFT0C const& collision,
+  void processDataWithMl(Collisions const& collision,
                          LcCandidatesMl const& selectedLcCandidatesMl,
                          aod::TracksWDca const& tracks)
   {
     processData<true>(collision, selectedLcCandidatesMl, tracks);
   }
   PROCESS_SWITCH(HfTaskLc, processDataWithMl, "Process Data with the ML method", false);
+
+
+  void processDataStdWithFT0C(CollisionsWithFT0C const& collision,
+                      LcCandidates const& selectedLcCandidates,
+                      aod::TracksWDca const& tracks)
+  {
+    processData<false>(collision, selectedLcCandidates, tracks);
+  }
+  PROCESS_SWITCH(HfTaskLc, processDataStdWithFT0C, "Process Data with the standard method", true);
+
+  void processDataWithMlWithFT0C(CollisionsWithFT0C const& collision,
+                         LcCandidatesMl const& selectedLcCandidatesMl,
+                         aod::TracksWDca const& tracks)
+  {
+    processData<true>(collision, selectedLcCandidatesMl, tracks);
+  }
+  PROCESS_SWITCH(HfTaskLc, processDataWithMlWithFT0C, "Process Data with the ML method", false);
+
+  void processDataStdWithFT0M(CollisionsWithFT0M const& collision,
+                      LcCandidates const& selectedLcCandidates,
+                      aod::TracksWDca const& tracks)
+  {
+    processData<false>(collision, selectedLcCandidates, tracks);
+  }
+  PROCESS_SWITCH(HfTaskLc, processDataStdWithFT0M, "Process Data with the standard method", true);
+
+  void processDataWithMlWithFT0M(CollisionsWithFT0M const& collision,
+                         LcCandidatesMl const& selectedLcCandidatesMl,
+                         aod::TracksWDca const& tracks)
+  {
+    processData<true>(collision, selectedLcCandidatesMl, tracks);
+  }
+  PROCESS_SWITCH(HfTaskLc, processDataWithMlWithFT0M, "Process Data with the ML method", false);
+
+
 
   /// Fills MC histograms.
   template <bool fillMl, typename CollType, typename CandType>
@@ -579,7 +630,7 @@ struct HfTaskLc {
           registry.fill(HIST("MC/reconstructed/nonprompt/hDecLenErrSigNonPrompt"), candidate.errorDecayLength(), pt);
         }
         if (enableTHn) {
-          float cent = collision.centFT0C();
+          float cent = evaluateCentralityColl(collision);
           double massLc(-1);
           double outputBkg(-1), outputPrompt(-1), outputFD(-1);
           if ((candidate.isSelLcToPKPi() >= selectionFlagLc) && pdgCodeProng0 == kProton) {
@@ -658,7 +709,7 @@ struct HfTaskLc {
     }
   }
 
-  void processMcStd(CollisionsMcWithFT0C const& collision,
+  void processMcStd(CollisionsMc const& collision,
                     LcCandidatesMc const& selectedLcCandidatesMc,
                     soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
                     aod::TracksWMc const& tracksWithMc)
@@ -667,7 +718,7 @@ struct HfTaskLc {
   }
   PROCESS_SWITCH(HfTaskLc, processMcStd, "Process MC with the standard method", false);
 
-  void processMcWithMl(CollisionsMcWithFT0C const& collision,
+  void processMcWithMl(CollisionsMc const& collision,
                        LcCandidatesMlMc const& selectedLcCandidatesMlMc,
                        soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
                        aod::TracksWMc const& tracksWithMc)
@@ -675,6 +726,44 @@ struct HfTaskLc {
     processMc<true>(collision, selectedLcCandidatesMlMc, mcParticles, tracksWithMc);
   }
   PROCESS_SWITCH(HfTaskLc, processMcWithMl, "Process Mc with the ML method", false);
+
+
+  void processMcStdWithT0C(CollisionsMcWithFT0C const& collision,
+                    LcCandidatesMc const& selectedLcCandidatesMc,
+                    soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
+                    aod::TracksWMc const& tracksWithMc)
+  {
+    processMc<false>(collision, selectedLcCandidatesMc, mcParticles, tracksWithMc);
+  }
+  PROCESS_SWITCH(HfTaskLc, processMcStdWithT0C, "Process MC with the standard method", false);
+
+  void processMcWithMlWithT0C(CollisionsMcWithFT0C const& collision,
+                       LcCandidatesMlMc const& selectedLcCandidatesMlMc,
+                       soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
+                       aod::TracksWMc const& tracksWithMc)
+  {
+    processMc<true>(collision, selectedLcCandidatesMlMc, mcParticles, tracksWithMc);
+  }
+  PROCESS_SWITCH(HfTaskLc, processMcWithMlWithT0C, "Process Mc with the ML method", false);
+
+
+  void processMcStdWithT0M(CollisionsMcWithFT0M const& collision,
+                    LcCandidatesMc const& selectedLcCandidatesMc,
+                    soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
+                    aod::TracksWMc const& tracksWithMc)
+  {
+    processMc<false>(collision, selectedLcCandidatesMc, mcParticles, tracksWithMc);
+  }
+  PROCESS_SWITCH(HfTaskLc, processMcStdWithT0M, "Process MC with the standard method", false);
+
+  void processMcWithMlWithT0M(CollisionsMcWithFT0M const& collision,
+                       LcCandidatesMlMc const& selectedLcCandidatesMlMc,
+                       soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
+                       aod::TracksWMc const& tracksWithMc)
+  {
+    processMc<true>(collision, selectedLcCandidatesMlMc, mcParticles, tracksWithMc);
+  }
+  PROCESS_SWITCH(HfTaskLc, processMcWithMlWithT0M, "Process Mc with the ML method", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
