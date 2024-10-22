@@ -607,7 +607,7 @@ struct nucleiSpectra {
         }
         ROOT::Math::LorentzVector<ROOT::Math::PtEtaPhiM4D<float>> fvector{mTrackParCov.getPt() * nuclei::charges[iS], mTrackParCov.getEta(), mTrackParCov.getPhi(), nuclei::masses[iS]};
         float y{fvector.Rapidity() + cfgCMrapidity};
-        for (int iPID{0}; iPID < 2; ++iPID) {  /// 0 TPC, 1 TOF
+        for (int iPID{0}; iPID < 2; ++iPID) { /// 0 TPC, 1 TOF
           if (selectedTPC[iS]) {
             if (iPID && !track.hasTOF()) {
               continue;
