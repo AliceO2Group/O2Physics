@@ -722,41 +722,41 @@ struct HfTaskLc {
   }
   PROCESS_SWITCH(HfTaskLc, processMcWithMl, "Process Mc with the ML method", false);
 
-  void processMcStdWithT0C(CollisionsMcWithFT0C const& collision,
+  void processMcStdWithFT0C(CollisionsMcWithFT0C const& collision,
                            LcCandidatesMc const& selectedLcCandidatesMc,
                            soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
                            aod::TracksWMc const& tracksWithMc)
   {
     processMc<false>(collision, selectedLcCandidatesMc, mcParticles, tracksWithMc);
   }
-  PROCESS_SWITCH(HfTaskLc, processMcStdWithT0C, "Process MC with the standard method", false);
+  PROCESS_SWITCH(HfTaskLc, processMcStdWithFT0C, "Process MC with the standard method", false);
 
-  void processMcWithMlWithT0C(CollisionsMcWithFT0C const& collision,
+  void processMcWithMlWithFT0C(CollisionsMcWithFT0C const& collision,
                               LcCandidatesMlMc const& selectedLcCandidatesMlMc,
                               soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
                               aod::TracksWMc const& tracksWithMc)
   {
     processMc<true>(collision, selectedLcCandidatesMlMc, mcParticles, tracksWithMc);
   }
-  PROCESS_SWITCH(HfTaskLc, processMcWithMlWithT0C, "Process Mc with the ML method", false);
+  PROCESS_SWITCH(HfTaskLc, processMcWithMlWithFT0C, "Process Mc with the ML method", false);
 
-  void processMcStdWithT0M(CollisionsMcWithFT0M const& collision,
+  void processMcStdWithFT0M(CollisionsMcWithFT0M const& collision,
                            LcCandidatesMc const& selectedLcCandidatesMc,
                            soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
                            aod::TracksWMc const& tracksWithMc)
   {
     processMc<false>(collision, selectedLcCandidatesMc, mcParticles, tracksWithMc);
   }
-  PROCESS_SWITCH(HfTaskLc, processMcStdWithT0M, "Process MC with the standard method", false);
+  PROCESS_SWITCH(HfTaskLc, processMcStdWithFT0M, "Process MC with the standard method", false);
 
-  void processMcWithMlWithT0M(CollisionsMcWithFT0M const& collision,
+  void processMcWithMlWithFT0M(CollisionsMcWithFT0M const& collision,
                               LcCandidatesMlMc const& selectedLcCandidatesMlMc,
                               soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
                               aod::TracksWMc const& tracksWithMc)
   {
     processMc<true>(collision, selectedLcCandidatesMlMc, mcParticles, tracksWithMc);
   }
-  PROCESS_SWITCH(HfTaskLc, processMcWithMlWithT0M, "Process Mc with the ML method", false);
+  PROCESS_SWITCH(HfTaskLc, processMcWithMlWithFT0M, "Process Mc with the ML method", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
