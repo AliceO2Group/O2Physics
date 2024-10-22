@@ -564,7 +564,7 @@ struct Dilepton {
       fRegistry.addClone("Pair/same/uls/", "Pair/same/lsmm/");
       fRegistry.addClone("Pair/same/", "Pair/mix/");
     } else if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kHFll)) {
-      const AxisSpec axis_dphi_ee{36, M_PI/2., 3./.2*M_PI, "#Delta#varphi = #varphi_{l1} - #varphi_{l2} (rad.)"};     // for kHFll
+      const AxisSpec axis_dphi_ee{36, M_PI / 2., 3. / .2 * M_PI, "#Delta#varphi = #varphi_{l1} - #varphi_{l2} (rad.)"}; // for kHFll
       const AxisSpec axis_deta_ee{40, -2., 2., "#Delta#eta = #eta_{l1} - #eta_{l2}"};
       fRegistry.add("Pair/same/uls/hs", "dilepton", kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_dphi_ee, axis_deta_ee}, true);
       fRegistry.addClone("Pair/same/uls/", "Pair/same/lspp/");
@@ -927,7 +927,7 @@ struct Dilepton {
       }
     } else if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kHFll)) {
       float dphi = v1.Phi() - v2.Phi();
-      dphi = RecoDecay::constrainAngle(dphi,-o2::constants::math::PIHalf);
+      dphi = RecoDecay::constrainAngle(dphi, -o2::constants::math::PIHalf);
       float deta = v1.Eta() - v2.Eta();
 
       if (t1.sign() * t2.sign() < 0) { // ULS
