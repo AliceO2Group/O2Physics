@@ -10,11 +10,13 @@
 // or submit itself to any jurisdiction.
 
 /// \file utilsRedDataFormat.h
-/// \brief Event selection utilities for reduced data format analyses
+/// \brief Utilities for reduced data format analyses
 /// \author Luca Aglietta <luca.aglietta@cern.ch>, UniTO Turin
 
 #ifndef PWGHF_D2H_UTILS_UTILSREDDATAFORMAT_H_
 #define PWGHF_D2H_UTILS_UTILSREDDATAFORMAT_H_
+
+#include "Framework/HistogramRegistry.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "PWGHF/Core/CentralityEstimation.h"
@@ -27,10 +29,10 @@ namespace o2::hf_evsel
 /// \tparam centEstimator centrality estimator
 /// \param collision collision to test against the selection criteria
 template <bool useEvSel, o2::hf_centrality::CentralityEstimator centEstimator, typename BCs, typename Coll>
-void checkEvSel(Coll const& collision, o2::hf_evsel::HfEventSelection& hfEvSel, int& zvtxColl, int& sel8Coll, int& zvtxAndSel8Coll, int& zvtxAndSel8CollAndSoftTrig, int& allSelColl, o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb)
+void checkEvSel(Coll const& collision, o2::hf_evsel::HfEventSelection& hfEvSel, int& zvtxColl, int& sel8Coll, int& zvtxAndSel8Coll, int& zvtxAndSel8CollAndSoftTrig, int& allSelColl, o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb, o2::framework::HistogramRegistry& registry)
 {
   float centrality{-1.f};
-  const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<useEvSel, o2::hf_centrality::CentralityEstimator::None, BCs>(collision, centrality, ccdb);
+  const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<useEvSel, o2::hf_centrality::CentralityEstimator::None, BCs>(collision, centrality, ccdb, registry);
   if (!TESTBIT(rejectionMask, o2::hf_evsel::EventRejection::Trigger)) {
     sel8Coll++;
   }
@@ -48,5 +50,32 @@ void checkEvSel(Coll const& collision, o2::hf_evsel::HfEventSelection& hfEvSel, 
   }
 }
 } // namespace o2::hf_evsel
+
+namespace o2::pid_tpc_tof_utils
+{
+/// Helper function to retrive PID information of bachelor pion from b-hadron decay
+/// \param prong1 pion track from reduced data format, soa::Join<HfRedTracks, HfRedTracksPid>
+template <typename T1>
+float getTpcTofNSigmaPi1(const T1& prong1)
+{
+  float defaultNSigma = -999.f; // -999.f is the default value set in TPCPIDResponse.h and PIDTOF.h
+
+  bool hasTpc = prong1.hasTPC();
+  bool hasTof = prong1.hasTOF();
+
+  if (hasTpc && hasTof) {
+    float tpcNSigma = prong1.tpcNSigmaPi();
+    float tofNSigma = prong1.tofNSigmaPi();
+    return std::sqrt(.5f * tpcNSigma * tpcNSigma + .5f * tofNSigma * tofNSigma);
+  }
+  if (hasTpc) {
+    return std::abs(prong1.tpcNSigmaPi());
+  }
+  if (hasTof) {
+    return std::abs(prong1.tofNSigmaPi());
+  }
+  return defaultNSigma;
+}
+} // namespace o2::pid_tpc_tof_utils
 
 #endif // PWGHF_D2H_UTILS_UTILSREDDATAFORMAT_H_

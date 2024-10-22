@@ -45,19 +45,12 @@ DECLARE_SOA_TABLE(StoredJDielectronMcCollisions, "AOD1", "JDIELMCCOLL",
 namespace jdielectronindices
 {
 DECLARE_SOA_INDEX_COLUMN(JCollision, collision);
-DECLARE_SOA_INDEX_COLUMN(JDielectronMcCollision, dielectronmccollision);
+DECLARE_SOA_INDEX_COLUMN_CUSTOM(JDielectronMcCollision, dielectronmccollision, "JDIELMCCOLLS");
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, JTracks, "_0");
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, JTracks, "_1");
 DECLARE_SOA_INDEX_COLUMN(JMcCollision, mcCollision);
 DECLARE_SOA_INDEX_COLUMN(JMcParticle, mcParticle);
 } // namespace jdielectronindices
-
-namespace dielectroncollisioncounter
-{
-DECLARE_SOA_COLUMN(ReadCounts, readCounts, std::vector<int>);
-DECLARE_SOA_COLUMN(ReadSelectedCounts, readSelectedCounts, std::vector<int>);
-DECLARE_SOA_COLUMN(WrittenCounts, writtenCounts, std::vector<int>);
-} // namespace dielectroncollisioncounter
 
 DECLARE_SOA_TABLE(JDielectronCollisionIds, "AOD", "JDIELCOLLID",
                   jdielectronindices::JCollisionId);
@@ -83,11 +76,6 @@ DECLARE_SOA_TABLE(StoredJDielectronIds, "AOD1", "JDIELID",
                   jdielectronindices::Prong0Id,
                   jdielectronindices::Prong1Id,
                   o2::soa::Marker<1>);
-
-DECLARE_SOA_TABLE(DielectronCollisionCounts, "AOD", "DIELCOLLCOUNT",
-                  dielectroncollisioncounter::ReadCounts,
-                  dielectroncollisioncounter::ReadSelectedCounts,
-                  dielectroncollisioncounter::WrittenCounts);
 
 namespace jdielectronmc
 {

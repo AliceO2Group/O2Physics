@@ -53,7 +53,7 @@ using McParticlesPlus2Prong = soa::Join<aod::McParticles, aod::HfCand2ProngMcGen
 
 struct HfCorrelatorDMesonPairs {
   SliceCache cache;
-  Preslice<aod::HfCand2Prong> perCol2Prong = aod::hf_cand::collisionId;
+  Preslice<aod::HfCand2ProngWPid> perCol2Prong = aod::hf_cand::collisionId;
 
   Produces<aod::D0Pair> entryD0Pair;
   Produces<aod::D0PairMcInfo> entryD0PairMcInfo;
@@ -62,6 +62,7 @@ struct HfCorrelatorDMesonPairs {
 
   Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
   Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
+  Configurable<int> selectionFlagHf{"selectionFlagHf", 1, "Selection Flag for HF flagged candidates"};
   Configurable<float> yCandMax{"yCandMax", 0.8, "maxmum |y| of D0 candidates"};
   Configurable<float> ptCandMin{"ptCandMin", -1., "minimum pT of D0 candidates"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{o2::analysis::hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits for candidate mass plots"};
@@ -71,10 +72,10 @@ struct HfCorrelatorDMesonPairs {
 
   HfHelper hfHelper;
 
-  using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
+  // using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
 
-  Partition<soa::Join<aod::HfCand2Prong, aod::HfSelD0>> selectedD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
-  Partition<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec>> selectedD0CandidatesMc = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
+  Partition<soa::Join<aod::HfCand2ProngWPid, aod::HfSelD0>> selectedD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
+  Partition<soa::Join<aod::HfCand2ProngWPid, aod::HfSelD0, aod::HfCand2ProngMcRec>> selectedD0CandidatesMc = aod::hf_sel_candidate_d0::isRecoHfFlag >= selectionFlagHf;
 
   HistogramConfigSpec hTH1Pt{HistType::kTH1F, {{180, 0., 36.}}};
   HistogramConfigSpec hTH1Y{HistType::kTH1F, {{100, -5., 5.}}};
@@ -201,6 +202,9 @@ struct HfCorrelatorDMesonPairs {
     registry.add("hInputCheckD0OrD0barMcGen", "Check on input D0 | D0bar meson candidates/event MC Gen", {HistType::kTH1F, {axisInputD0}});
 
     registry.add("hMass", "D Meson pair candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{120, 1.5848, 2.1848}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hMassMcRecPrompt", "D Meson pair candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{120, 1.5848, 2.1848}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hMassMcRecNonPrompt", "D Meson pair candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{120, 1.5848, 2.1848}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hMassMcRecReflections", "D Meson pair candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{120, 1.5848, 2.1848}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
   /// Sets bits to select candidate type for D0
@@ -281,23 +285,21 @@ struct HfCorrelatorDMesonPairs {
   template <typename T>
   void AnalysePid(const T& candidate)
   {
-    auto prong0 = candidate.template prong0_as<TracksWPid>();
-    auto prong1 = candidate.template prong1_as<TracksWPid>();
     if (candidate.isSelD0() >= selectionFlagD0) {
-      registry.fill(HIST("PID/hTofNSigmaPi"), candidate.ptProng0(), prong0.tofNSigmaPi());
-      registry.fill(HIST("PID/hTofNSigmaKa"), candidate.ptProng1(), prong1.tofNSigmaKa());
-      registry.fill(HIST("PID/hTpcNSigmaPi"), candidate.ptProng0(), prong0.tpcNSigmaPi());
-      registry.fill(HIST("PID/hTpcNSigmaKa"), candidate.ptProng1(), prong1.tpcNSigmaKa());
-      registry.fill(HIST("PID/hTpcTofNSigmaPi"), candidate.ptProng0(), prong0.tpcTofNSigmaPi());
-      registry.fill(HIST("PID/hTpcTofNSigmaKa"), candidate.ptProng1(), prong1.tpcTofNSigmaKa());
+      registry.fill(HIST("PID/hTofNSigmaPi"), candidate.ptProng0(), candidate.nSigTofPi0());
+      registry.fill(HIST("PID/hTofNSigmaKa"), candidate.ptProng1(), candidate.nSigTofKa1());
+      registry.fill(HIST("PID/hTpcNSigmaPi"), candidate.ptProng0(), candidate.nSigTpcPi0());
+      registry.fill(HIST("PID/hTpcNSigmaKa"), candidate.ptProng1(), candidate.nSigTpcKa1());
+      registry.fill(HIST("PID/hTpcTofNSigmaPi"), candidate.ptProng0(), candidate.tpcTofNSigmaPi0());
+      registry.fill(HIST("PID/hTpcTofNSigmaKa"), candidate.ptProng1(), candidate.tpcTofNSigmaKa1());
     }
     if (candidate.isSelD0bar() >= selectionFlagD0bar) {
-      registry.fill(HIST("PID/hTofNSigmaPi"), candidate.ptProng1(), prong1.tofNSigmaPi());
-      registry.fill(HIST("PID/hTofNSigmaKa"), candidate.ptProng0(), prong0.tofNSigmaKa());
-      registry.fill(HIST("PID/hTpcNSigmaPi"), candidate.ptProng1(), prong1.tpcNSigmaPi());
-      registry.fill(HIST("PID/hTpcNSigmaKa"), candidate.ptProng0(), prong0.tpcNSigmaKa());
-      registry.fill(HIST("PID/hTpcTofNSigmaPi"), candidate.ptProng1(), prong1.tpcTofNSigmaPi());
-      registry.fill(HIST("PID/hTpcTofNSigmaKa"), candidate.ptProng0(), prong0.tpcTofNSigmaKa());
+      registry.fill(HIST("PID/hTofNSigmaPi"), candidate.ptProng1(), candidate.nSigTofPi1());
+      registry.fill(HIST("PID/hTofNSigmaKa"), candidate.ptProng0(), candidate.nSigTofKa0());
+      registry.fill(HIST("PID/hTpcNSigmaPi"), candidate.ptProng1(), candidate.nSigTpcPi1());
+      registry.fill(HIST("PID/hTpcNSigmaKa"), candidate.ptProng0(), candidate.nSigTpcKa0());
+      registry.fill(HIST("PID/hTpcTofNSigmaPi"), candidate.ptProng1(), candidate.tpcTofNSigmaPi1());
+      registry.fill(HIST("PID/hTpcTofNSigmaKa"), candidate.ptProng0(), candidate.tpcTofNSigmaKa0());
     }
   }
 
@@ -328,7 +330,6 @@ struct HfCorrelatorDMesonPairs {
       registry.fill(HIST("hPhi"), candidate.phi());
       registry.fill(HIST("hY"), candidate.y(MassD0));
       registry.fill(HIST("hPtCandAfterCut"), candidate.pt());
-      registry.fill(HIST("hMass"), hfHelper.invMassD0ToPiK(candidate), candidate.pt());
 
       bool isDCand1 = isD(candidateType1);
       bool isDbarCand1 = isDbar(candidateType1);
@@ -370,11 +371,9 @@ struct HfCorrelatorDMesonPairs {
   }
 
   /// Fill selection status histogram
-  /// \param candidate1 is the first candidate of the pair
-  /// \param candidate2 is the second candidate of the pair
-  template <typename T>
-  void fillEntry(const T& candidate1, const T& candidate2, const bool& isDCand1, const bool& isDbarCand1,
-                 const bool& isDCand2, const bool& isDbarCand2, const uint8_t& candidateType1, const uint8_t& candidateType2)
+  void fillEntry(const bool& isDCand1, const bool& isDbarCand1, const bool& isDCand2, const bool& isDbarCand2,
+                 const uint8_t& candidateType1, const uint8_t& candidateType2, float yCand1, float yCand2,
+                 double ptCand1, double ptCand2, float massDCand1, float massDbarCand1, float massDCand2, float massDbarCand2)
   {
 
     /// Fill information on the D candidates
@@ -399,12 +398,6 @@ struct HfCorrelatorDMesonPairs {
     /// Collect information on the D pairs
     uint8_t pairType(0);
     registry.fill(HIST("hSelectionStatus"), 1);
-    float yCand1 = hfHelper.yD0(candidate1);
-    float yCand2 = hfHelper.yD0(candidate2);
-    float massDCand1 = hfHelper.invMassD0ToPiK(candidate1);
-    float massDbarCand1 = hfHelper.invMassD0barToKPi(candidate1);
-    float massDCand2 = hfHelper.invMassD0ToPiK(candidate2);
-    float massDbarCand2 = hfHelper.invMassD0barToKPi(candidate2);
     if (isDCand1 && isDCand2) {
       SETBIT(pairType, DD);
       registry.fill(HIST("hSelectionStatus"), 14);
@@ -434,12 +427,12 @@ struct HfCorrelatorDMesonPairs {
       }
     }
 
-    entryD0Pair(candidate1.pt(), candidate2.pt(), yCand1, yCand2, massDCand1, massDbarCand1, massDCand2, massDbarCand2, pairType, candidateType1, candidateType2);
+    entryD0Pair(ptCand1, ptCand2, yCand1, yCand2, massDCand1, massDbarCand1, massDCand2, massDbarCand2, pairType, candidateType1, candidateType2);
   }
 
   /// D0(bar)-D0(bar) correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
   void processData(aod::Collision const& collision,
-                   soa::Join<aod::HfCand2Prong, aod::HfSelD0> const& candidates, TracksWPid const&)
+                   soa::Join<aod::HfCand2ProngWPid, aod::HfSelD0> const& candidates, aod::Tracks const&)
   {
     for (const auto& candidate : candidates) {
       AnalysePid(candidate);
@@ -457,8 +450,8 @@ struct HfCorrelatorDMesonPairs {
       if (ptCandMin >= 0. && candidate1.pt() < ptCandMin) {
         continue;
       }
-      auto prong0Cand1 = candidate1.template prong0_as<TracksWPid>();
-      auto prong1Cand1 = candidate1.template prong1_as<TracksWPid>();
+      auto prong0Cand1 = candidate1.template prong0_as<aod::Tracks>();
+      auto prong1Cand1 = candidate1.template prong1_as<aod::Tracks>();
 
       bool isSignalD0Cand1 = std::abs(hfHelper.invMassD0ToPiK(candidate1) - MassD0) < massCut;
       bool isSignalD0barCand1 = std::abs(hfHelper.invMassD0barToKPi(candidate1) - MassD0Bar) < massCut;
@@ -470,6 +463,13 @@ struct HfCorrelatorDMesonPairs {
       bool isDCand1 = isD(candidateType1);
       bool isDbarCand1 = isDbar(candidateType1);
 
+      if (isDCand1) {
+        registry.fill(HIST("hMass"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt());
+      }
+      if (isDbarCand1) {
+        registry.fill(HIST("hMass"), hfHelper.invMassD0barToKPi(candidate1), candidate1.pt());
+      }
+
       for (auto candidate2 = candidate1 + 1; candidate2 != selectedD0CandidatesGrouped.end(); ++candidate2) {
         if (abs(hfHelper.yD0(candidate2)) > yCandMax) {
           continue;
@@ -477,8 +477,8 @@ struct HfCorrelatorDMesonPairs {
         if (ptCandMin >= 0. && candidate2.pt() < ptCandMin) {
           continue;
         }
-        auto prong0Cand2 = candidate2.template prong0_as<TracksWPid>();
-        auto prong1Cand2 = candidate2.template prong1_as<TracksWPid>();
+        auto prong0Cand2 = candidate2.template prong0_as<aod::Tracks>();
+        auto prong1Cand2 = candidate2.template prong1_as<aod::Tracks>();
         if (daughterTracksCutFlag && ((prong0Cand1 == prong0Cand2) || (prong1Cand1 == prong1Cand2) || (prong0Cand1 == prong1Cand2) || (prong1Cand1 == prong0Cand2))) {
           continue;
         }
@@ -493,14 +493,16 @@ struct HfCorrelatorDMesonPairs {
         bool isDCand2 = isD(candidateType2);
         bool isDbarCand2 = isDbar(candidateType2);
 
-        fillEntry(candidate1, candidate2, isDCand1, isDbarCand1, isDCand2, isDbarCand2, candidateType1, candidateType2);
+        fillEntry(isDCand1, isDbarCand1, isDCand2, isDbarCand2, candidateType1, candidateType2, hfHelper.yD0(candidate1), hfHelper.yD0(candidate2),
+                  candidate1.pt(), candidate2.pt(), hfHelper.invMassD0ToPiK(candidate1), hfHelper.invMassD0barToKPi(candidate1),
+                  hfHelper.invMassD0ToPiK(candidate2), hfHelper.invMassD0barToKPi(candidate2));
       } // end inner loop (Cand2)
-    }   // end outer loop (Cand1)
+    } // end outer loop (Cand1)
   }
 
   PROCESS_SWITCH(HfCorrelatorDMesonPairs, processData, "Process data mode", true);
 
-  void processMcRec(aod::Collision const& collision, soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfCand2ProngMcRec> const& candidates, TracksWPid const&)
+  void processMcRec(aod::Collision const& collision, soa::Join<aod::HfCand2ProngWPid, aod::HfSelD0, aod::HfCand2ProngMcRec> const& candidates, aod::Tracks const&)
   {
     for (const auto& candidate : candidates) {
       AnalysePid(candidate);
@@ -512,18 +514,25 @@ struct HfCorrelatorDMesonPairs {
       return;
     }
     for (const auto& candidate1 : selectedD0CandidatesGroupedMc) {
+      auto ptCandidate1 = candidate1.pt();
+      auto yCandidate1 = hfHelper.yD0(candidate1);
+      float massD0Cand1 = hfHelper.invMassD0ToPiK(candidate1);
+      float massD0barCand1 = hfHelper.invMassD0barToKPi(candidate1);
+      auto prong0Cand1 = candidate1.template prong0_as<aod::Tracks>();
+      auto prong1Cand1 = candidate1.template prong1_as<aod::Tracks>();
+
       if (abs(hfHelper.yD0(candidate1)) > yCandMax) {
         continue;
       }
       if (ptCandMin >= 0. && candidate1.pt() < ptCandMin) {
         continue;
       }
-      auto prong0Cand1 = candidate1.template prong0_as<TracksWPid>();
-      auto prong1Cand1 = candidate1.template prong1_as<TracksWPid>();
-
-      bool isSignalD0Cand1 = std::abs(hfHelper.invMassD0ToPiK(candidate1) - MassD0) < massCut;
-      bool isSignalD0barCand1 = std::abs(hfHelper.invMassD0barToKPi(candidate1) - MassD0Bar) < massCut;
+      bool isSignalD0Cand1 = std::abs(massD0Cand1 - MassD0) < massCut;
+      bool isSignalD0barCand1 = std::abs(massD0barCand1 - MassD0Bar) < massCut;
       if (selectSignalRegionOnly && !(isSignalD0Cand1 || isSignalD0barCand1)) {
+        continue;
+      }
+      if (!(candidate1.isSelD0() >= selectionFlagD0 || candidate1.isSelD0bar() >= selectionFlagD0bar)) {
         continue;
       }
 
@@ -543,22 +552,54 @@ struct HfCorrelatorDMesonPairs {
         registry.fill(HIST("hStatusSinglePart"), 6);
       }
 
+      if (isDCand1) {
+        if (isTrueDCand1) {
+          registry.fill(HIST("hMass"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt());
+          if (originRec1 == 1) {
+            registry.fill(HIST("hMassMcRecPrompt"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt());
+          } else if (originRec1 == 2) {
+            registry.fill(HIST("hMassMcRecNonPrompt"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt());
+          }
+        } else if (isTrueDbarCand1) {
+          registry.fill(HIST("hMassMcRecReflections"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt());
+        }
+      }
+      if (isDbarCand1) {
+        if (isTrueDbarCand1) {
+          registry.fill(HIST("hMass"), hfHelper.invMassD0barToKPi(candidate1), candidate1.pt());
+          if (originRec1 == 1) {
+            registry.fill(HIST("hMassMcRecPrompt"), hfHelper.invMassD0barToKPi(candidate1), candidate1.pt());
+          } else if (originRec1 == 2) {
+            registry.fill(HIST("hMassMcRecNonPrompt"), hfHelper.invMassD0barToKPi(candidate1), candidate1.pt());
+          }
+        } else if (isTrueDCand1) {
+          registry.fill(HIST("hMassMcRecReflections"), hfHelper.invMassD0barToKPi(candidate1), candidate1.pt());
+        }
+      }
+
       for (auto candidate2 = candidate1 + 1; candidate2 != selectedD0CandidatesGroupedMc.end(); ++candidate2) {
+        auto ptCandidate2 = candidate2.pt();
+        auto yCandidate2 = hfHelper.yD0(candidate2);
+        float massD0Cand2 = hfHelper.invMassD0ToPiK(candidate2);
+        float massD0barCand2 = hfHelper.invMassD0barToKPi(candidate2);
+        auto prong0Cand2 = candidate2.template prong0_as<aod::Tracks>();
+        auto prong1Cand2 = candidate2.template prong1_as<aod::Tracks>();
+
         if (abs(hfHelper.yD0(candidate2)) > yCandMax) {
           continue;
         }
         if (ptCandMin >= 0. && candidate2.pt() < ptCandMin) {
           continue;
         }
-        auto prong0Cand2 = candidate2.template prong0_as<TracksWPid>();
-        auto prong1Cand2 = candidate2.template prong1_as<TracksWPid>();
-        if (daughterTracksCutFlag && ((prong0Cand1 == prong0Cand2) || (prong1Cand1 == prong1Cand2) || (prong0Cand1 == prong1Cand2) || (prong1Cand1 == prong0Cand2))) {
+        bool isSignalD0Cand2 = std::abs(massD0Cand2 - MassD0) < massCut;
+        bool isSignalD0barCand2 = std::abs(massD0barCand2 - MassD0Bar) < massCut;
+        if (selectSignalRegionOnly && !(isSignalD0Cand2 || isSignalD0barCand2)) {
           continue;
         }
-
-        bool isSignalD0Cand2 = std::abs(hfHelper.invMassD0ToPiK(candidate2) - MassD0) < massCut;
-        bool isSignalD0barCand2 = std::abs(hfHelper.invMassD0barToKPi(candidate2) - MassD0Bar) < massCut;
-        if (selectSignalRegionOnly && !(isSignalD0Cand2 || isSignalD0barCand2)) {
+        if (!(candidate2.isSelD0() >= selectionFlagD0 || candidate2.isSelD0bar() >= selectionFlagD0bar)) {
+          continue;
+        }
+        if (daughterTracksCutFlag && ((prong0Cand1 == prong0Cand2) || (prong1Cand1 == prong1Cand2) || (prong0Cand1 == prong1Cand2) || (prong1Cand1 == prong0Cand2))) {
           continue;
         }
         auto candidateType2 = assignCandidateTypeD0<true>(candidate2); // Candidate type attribution
@@ -609,10 +650,11 @@ struct HfCorrelatorDMesonPairs {
         } else if (isTrueDbarCand1 && isTrueDCand2) {
           registry.fill(HIST("hSelectionStatus"), 25);
         }
-        fillEntry(candidate1, candidate2, isDCand1, isDbarCand1, isDCand2, isDbarCand2, candidateType1, candidateType2);
+        fillEntry(isDCand1, isDbarCand1, isDCand2, isDbarCand2, candidateType1, candidateType2, yCandidate1, yCandidate2,
+                  ptCandidate1, ptCandidate2, massD0Cand1, massD0barCand1, massD0Cand2, massD0barCand2);
         entryD0PairMcInfo(originRec1, originRec2, matchedRec1, matchedRec2);
       } // end inner loop (Cand2)
-    }   // end outer loop (Cand1)
+    } // end outer loop (Cand1)
   }
 
   PROCESS_SWITCH(HfCorrelatorDMesonPairs, processMcRec, "Process Mc reco mode", false);
@@ -784,7 +826,7 @@ struct HfCorrelatorDMesonPairs {
         entryD0PairMcGenInfo(originGen1, originGen2, matchedGen1, matchedGen2);
 
       } // end inner loop
-    }   // end outer loop
+    } // end outer loop
   }
 
   PROCESS_SWITCH(HfCorrelatorDMesonPairs, processMcGen, "Process D0 Mc Gen mode", false);

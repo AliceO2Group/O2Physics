@@ -24,8 +24,11 @@
 #include "Framework/Configurable.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/HistogramSpec.h"
+#include "Framework/OutputObjHeader.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "EventFiltering/Zorro.h"
+#include "EventFiltering/ZorroSummary.h"
 #include "PWGHF/Core/CentralityEstimation.h"
 
 namespace o2::hf_evsel
@@ -33,6 +36,7 @@ namespace o2::hf_evsel
 // event rejection types
 enum EventRejection {
   None = 0,
+  SoftwareTrigger,
   Centrality,
   Trigger,
   TvxTrigger,
@@ -44,7 +48,6 @@ enum EventRejection {
   NContrib,
   Chi2,
   PositionZ,
-  SoftwareTrigger,
   NEventRejection
 };
 
@@ -52,11 +55,13 @@ o2::framework::AxisSpec axisEvents = {EventRejection::NEventRejection, -0.5f, +E
 
 /// \brief Function to put labels on monitoring histogram
 /// \param hRejection monitoring histogram
+/// \param softwareTriggerLabel bin label for software trigger rejection
 template <typename Histo>
 void setEventRejectionLabels(Histo& hRejection, std::string softwareTriggerLabel = "")
 {
   // Puts labels on the collision monitoring histogram.
   hRejection->GetXaxis()->SetBinLabel(EventRejection::None + 1, "All");
+  hRejection->GetXaxis()->SetBinLabel(EventRejection::SoftwareTrigger + 1, softwareTriggerLabel.data());
   hRejection->GetXaxis()->SetBinLabel(EventRejection::Centrality + 1, "Centrality");
   hRejection->GetXaxis()->SetBinLabel(EventRejection::Trigger + 1, "Trigger");
   hRejection->GetXaxis()->SetBinLabel(EventRejection::TvxTrigger + 1, "TVX Trigger");
@@ -68,7 +73,6 @@ void setEventRejectionLabels(Histo& hRejection, std::string softwareTriggerLabel
   hRejection->GetXaxis()->SetBinLabel(EventRejection::NContrib + 1, "# of PV contributors");
   hRejection->GetXaxis()->SetBinLabel(EventRejection::Chi2 + 1, "PV #it{#chi}^{2}");
   hRejection->GetXaxis()->SetBinLabel(EventRejection::PositionZ + 1, "PV #it{z}");
-  hRejection->GetXaxis()->SetBinLabel(EventRejection::SoftwareTrigger + 1, softwareTriggerLabel.data());
 }
 
 struct HfEventSelection : o2::framework::ConfigurableGroup {
@@ -90,20 +94,24 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> chi2PvMax{"chi2PvMax", -1.f, "Maximum PV chi2"};
   o2::framework::Configurable<float> zPvPosMin{"zPvPosMin", -10.f, "Minimum PV posZ (cm)"};
   o2::framework::Configurable<float> zPvPosMax{"zPvPosMax", 10.f, "Maximum PV posZ (cm)"};
-  o2::framework::Configurable<std::string> softwareTrigger{"softwareTrigger", "", "Label of software trigger. Multiple triggers can be selected dividing them by a comma"};
+  o2::framework::Configurable<std::string> softwareTrigger{"softwareTrigger", "", "Label of software trigger. Multiple triggers can be selected dividing them by a comma. Set None if you want bcs that are not selected by any trigger"};
+  o2::framework::Configurable<uint64_t> bcMarginForSoftwareTrigger{"bcMarginForSoftwareTrigger", 100, "Number of BCs of margin for software triggers"};
+  o2::framework::Configurable<std::string> ccdbPathSoftwareTrigger{"ccdbPathSoftwareTrigger", "Users/m/mpuccio/EventFiltering/OTS/", "ccdb path for ZORRO objects"};
 
   // histogram names
   static constexpr char nameHistCollisions[] = "hCollisions";
+  static constexpr char nameHistSelCollisionsCent[] = "hSelCollisionsCent";
   static constexpr char nameHistPosZBeforeEvSel[] = "hPosZBeforeEvSel";
   static constexpr char nameHistPosZAfterEvSel[] = "hPosZAfterEvSel";
   static constexpr char nameHistPosXAfterEvSel[] = "hPosXAfterEvSel";
   static constexpr char nameHistPosYAfterEvSel[] = "hPosYAfterEvSel";
   static constexpr char nameHistNumPvContributorsAfterSel[] = "hNumPvContributorsAfterSel";
 
-  std::shared_ptr<TH1> hCollisions, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel;
+  std::shared_ptr<TH1> hCollisions, hSelCollisionsCent, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel;
 
   // util to retrieve trigger mask in case of software triggers
   Zorro zorro;
+  o2::framework::OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
   int currentRun{-1};
 
   /// \brief Adds collision monitoring histograms in the histogram registry.
@@ -111,12 +119,18 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   void addHistograms(o2::framework::HistogramRegistry& registry)
   {
     hCollisions = registry.add<TH1>(nameHistCollisions, "HF event counter;;# of accepted collisions", {o2::framework::HistType::kTH1D, {axisEvents}});
+    hSelCollisionsCent = registry.add<TH1>(nameHistSelCollisionsCent, "HF event counter;T0M;# of accepted collisions", {o2::framework::HistType::kTH1D, {{100, 0., 100.}}});
     hPosZBeforeEvSel = registry.add<TH1>(nameHistPosZBeforeEvSel, "all events;#it{z}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{400, -20., 20.}}});
     hPosZAfterEvSel = registry.add<TH1>(nameHistPosZAfterEvSel, "selected events;#it{z}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{400, -20., 20.}}});
     hPosXAfterEvSel = registry.add<TH1>(nameHistPosXAfterEvSel, "selected events;#it{x}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{200, -0.5, 0.5}}});
     hPosYAfterEvSel = registry.add<TH1>(nameHistPosYAfterEvSel, "selected events;#it{y}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{200, -0.5, 0.5}}});
     hNumPvContributorsAfterSel = registry.add<TH1>(nameHistNumPvContributorsAfterSel, "selected events;#it{y}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{500, -0.5, 499.5}}});
-    setEventRejectionLabels(hCollisions);
+    setEventRejectionLabels(hCollisions, softwareTrigger);
+
+    // we initialise the summary object
+    if (softwareTrigger.value != "") {
+      zorroSummary.setObject(zorro.getZorroSummary());
+    }
   }
 
   /// \brief Applies event selection.
@@ -125,9 +139,10 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   /// \param collision collision to test against the selection criteria
   /// \param centrality collision centrality variable to be set in this function
   /// \param ccdb ccdb service needed to retrieve the needed info for zorro
+  /// \param registry reference to the histogram registry needed for zorro
   /// \return bitmask with the event selection criteria not satisfied by the collision
   template <bool useEvSel, o2::hf_centrality::CentralityEstimator centEstimator, typename BCs, typename Coll>
-  uint16_t getHfCollisionRejectionMask(const Coll& collision, float& centrality, o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb)
+  uint16_t getHfCollisionRejectionMask(const Coll& collision, float& centrality, o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb, o2::framework::HistogramRegistry& registry)
   {
     uint16_t rejectionMask{0}; // 16 bits, in case new ev. selections will be added
 
@@ -204,12 +219,21 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
 
       int runNumber = bc.runNumber();
       if (runNumber != currentRun) { // We might need to update Zorro from CCDB if the run number changes
+        zorro.setCCDBpath(ccdbPathSoftwareTrigger);
+        zorro.setBCtolerance(bcMarginForSoftwareTrigger);
         zorro.initCCDB(ccdb.service, runNumber, bc.timestamp(), softwareTrigger.value);
         currentRun = runNumber;
       }
+      zorro.populateHistRegistry(registry, runNumber);
 
-      if (!zorro.isSelected(bc.globalBC())) { /// Just let Zorro do the accounting
-        SETBIT(rejectionMask, EventRejection::SoftwareTrigger);
+      if (softwareTrigger.value != "None") {
+        if (!zorro.isSelected(bc.globalBC(), bcMarginForSoftwareTrigger)) { /// Just let Zorro do the accounting
+          SETBIT(rejectionMask, EventRejection::SoftwareTrigger);
+        }
+      } else {
+        if (!zorro.isNotSelectedByAny(bc.globalBC(), bcMarginForSoftwareTrigger)) { /// Just let Zorro do the accounting of not selected BCs
+          SETBIT(rejectionMask, EventRejection::SoftwareTrigger);
+        }
       }
     }
 
@@ -220,7 +244,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   /// \param collision analysed collision
   /// \param rejectionMask bitmask storing the info about which ev. selections are not satisfied by the collision
   template <typename Coll>
-  void fillHistograms(Coll const& collision, const uint16_t rejectionMask)
+  void fillHistograms(Coll const& collision, const uint16_t rejectionMask, float& centrality)
   {
     hCollisions->Fill(EventRejection::None);
     const float posZ = collision.posZ();
@@ -237,6 +261,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
     hPosYAfterEvSel->Fill(collision.posY());
     hPosZAfterEvSel->Fill(posZ);
     hNumPvContributorsAfterSel->Fill(collision.numContrib());
+    hSelCollisionsCent->Fill(centrality);
   }
 };
 
@@ -248,6 +273,8 @@ struct HfEventSelectionMc {
   bool useItsRofBorderCut{false};   // Apply the ITS RO frame border cut
   float zPvPosMin{-1000.f};         // Minimum PV posZ (cm)
   float zPvPosMax{1000.f};          // Maximum PV posZ (cm)
+  float centralityMin{0.f};         // Minimum centrality
+  float centralityMax{100.f};       // Maximum centrality
 
   // histogram names
   static constexpr char nameHistParticles[] = "hParticles";
@@ -277,20 +304,53 @@ struct HfEventSelectionMc {
         zPvPosMin = option.defaultValue.get<float>();
       } else if (option.name.compare("hfEvSel.zPvPosMax") == 0) {
         zPvPosMax = option.defaultValue.get<float>();
+      } else if (option.name.compare("hfEvSel.centralityMin") == 0) {
+        centralityMin = option.defaultValue.get<float>();
+      } else if (option.name.compare("hfEvSel.centralityMax") == 0) {
+        centralityMax = option.defaultValue.get<float>();
       }
     }
   }
 
   /// \brief Function to apply event selections to generated MC collisions
   /// \param mcCollision MC collision to test against the selection criteria
+  /// \param collSlice collection of reconstructed collisions
+  /// \param centrality centrality variable to be set in this function
   /// \return a bitmask with the event selections not satisfied by the analysed collision
-  template <typename TBc, typename TMcColl>
-  uint16_t getHfMcCollisionRejectionMask(TMcColl const& mcCollision)
+  template <typename TBc, o2::hf_centrality::CentralityEstimator centEstimator, typename CCs, typename TMcColl>
+  uint16_t getHfMcCollisionRejectionMask(TMcColl const& mcCollision, CCs const& collSlice, float& centrality)
   {
     uint16_t rejectionMask{0};
     float zPv = mcCollision.posZ();
     auto bc = mcCollision.template bc_as<TBc>();
 
+    if constexpr (centEstimator != o2::hf_centrality::CentralityEstimator::None) {
+      float multiplicity{0.f};
+      for (const auto& collision : collSlice) {
+        float collCent{0.f};
+        float collMult{0.f};
+        if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0A) {
+          collCent = collision.centFT0A();
+        } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0C) {
+          collCent = collision.centFT0C();
+        } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0M) {
+          collCent = collision.centFT0M();
+        } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FV0A) {
+          collCent = collision.centFV0A();
+        } else {
+          LOGP(fatal, "Unsupported centrality estimator!");
+        }
+        collMult = collision.numContrib();
+        if (collMult > multiplicity) {
+          centrality = collCent;
+          multiplicity = collMult;
+        }
+      }
+      /// centrality selection
+      if (centrality < centralityMin || centrality > centralityMax) {
+        SETBIT(rejectionMask, EventRejection::Centrality);
+      }
+    }
     /// Sel8 trigger selection
     if (useSel8Trigger && (!bc.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !bc.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
       SETBIT(rejectionMask, EventRejection::Trigger);

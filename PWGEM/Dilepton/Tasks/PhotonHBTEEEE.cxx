@@ -32,7 +32,6 @@
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
 
-#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/Dilepton/Core/PhotonHBT.h"
 
 using namespace o2;
@@ -41,5 +40,5 @@ using namespace o2::aod;
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<PhotonHBT<PairType::kEEEE, MyPrimaryElectrons>>(cfgc, TaskName{"photon-hbt-eeee"})};
+    adaptAnalysisTask<PhotonHBT<o2::aod::pwgem::dilepton::core::photonhbt::ggHBTPairType::kEEEE, FilteredMyTracks>>(cfgc, TaskName{"photon-hbt-eeee"})};
 }

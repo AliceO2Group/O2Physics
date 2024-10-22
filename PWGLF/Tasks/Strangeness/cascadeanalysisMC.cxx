@@ -78,16 +78,23 @@ struct cascadeGenerated {
 
   Configurable<float> maxPt{"maxPt", 20.0, "max generated pT"};
   Configurable<int> nPtBins{"nPtBins", 200, "number of pT bins"};
+  Configurable<float> rapidityCut{"rapidityCut", 0.5, "max (absolute) rapidity of generated cascade"};
+  Configurable<int> nRapidityBins{"nRapidityBins", 200, "number of pT bins"};
 
   void init(InitContext const&)
   {
-    AxisSpec ptAxis = {nPtBins, 0.0f, maxPt, "it{p}_{T} (GeV/c)"};
+    AxisSpec ptAxis = {nPtBins, 0.0f, maxPt, "#it{p}_{T} (GeV/c)"};
+    AxisSpec rapidityAxis = {nRapidityBins, -rapidityCut, rapidityCut, "y"};
 
     registry.add("hEventCounter", "hEventCounter", {HistType::kTH1F, {{10, 0.0f, 10.0f}}});
     registry.add("hPtXiMinus", "hPtXiMinus", {HistType::kTH1F, {ptAxis}});
     registry.add("hPtXiPlus", "hPtXiPlus", {HistType::kTH1F, {ptAxis}});
     registry.add("hPtOmegaMinus", "hPtOmegaMinus", {HistType::kTH1F, {ptAxis}});
     registry.add("hPtOmegaPlus", "hPtOmegaPlus", {HistType::kTH1F, {ptAxis}});
+    registry.add("h2DXiMinus", "h2DXiMinus", {HistType::kTH2F, {ptAxis, rapidityAxis}});
+    registry.add("h2DXiPlus", "h2DXiPlus", {HistType::kTH2F, {ptAxis, rapidityAxis}});
+    registry.add("h2DOmegaMinus", "h2DOmegaMinus", {HistType::kTH2F, {ptAxis, rapidityAxis}});
+    registry.add("h2DOmegaPlus", "h2DOmegaPlus", {HistType::kTH2F, {ptAxis, rapidityAxis}});
   }
 
   void process(aod::McCollision const& /*collision*/, aod::McParticles const& mcparts)
@@ -99,16 +106,24 @@ struct cascadeGenerated {
     // Count all generated MC particles
     // WARNING: event-level losses have to be understood too
     for (auto& particle : mcparts) {
-      if (TMath::Abs(particle.y()) > 0.5)
+      if (TMath::Abs(particle.y()) > rapidityCut)
         continue;
-      if (particle.pdgCode() == 3312)
+      if (particle.pdgCode() == 3312) {
         registry.fill(HIST("hPtXiMinus"), particle.pt());
-      if (particle.pdgCode() == -3312)
+        registry.fill(HIST("h2DXiMinus"), particle.pt(), particle.y());
+      }
+      if (particle.pdgCode() == -3312) {
         registry.fill(HIST("hPtXiPlus"), particle.pt());
-      if (particle.pdgCode() == 3334)
+        registry.fill(HIST("h2DXiPlus"), particle.pt(), particle.y());
+      }
+      if (particle.pdgCode() == 3334) {
         registry.fill(HIST("hPtOmegaMinus"), particle.pt());
-      if (particle.pdgCode() == -3334)
+        registry.fill(HIST("h2DOmegaMinus"), particle.pt(), particle.y());
+      }
+      if (particle.pdgCode() == -3334) {
         registry.fill(HIST("hPtOmegaPlus"), particle.pt());
+        registry.fill(HIST("h2DOmegaPlus"), particle.pt(), particle.y());
+      }
     }
   }
 };
@@ -184,9 +199,13 @@ struct cascadeAnalysisMC {
     {},
   };
 
+  Configurable<float> rapidityCut{"rapidityCut", 0.5, "max (absolute) rapidity of cascade candidate"};
+  Configurable<int> nRapidityBins{"nRapidityBins", 200, "number of pT bins"};
+
   void init(InitContext const&)
   {
-    AxisSpec ptAxis = {200, 0.0f, 10.0f, "it{p}_{T} (GeV/c)"};
+    AxisSpec ptAxis = {200, 0.0f, 10.0f, "#it{p}_{T} (GeV/c)"};
+    AxisSpec rapidityAxis = {nRapidityBins, -rapidityCut, rapidityCut, "y"};
     AxisSpec massAxisXi = {200, 1.222f, 1.422f, "Inv. Mass (GeV/c^{2})"};
     AxisSpec massAxisOmega = {200, 1.572f, 1.772f, "Inv. Mass (GeV/c^{2})"};
 
@@ -195,6 +214,10 @@ struct cascadeAnalysisMC {
     registry.add("h2dMassXiPlus", "h2dMassXiPlus", {HistType::kTH2F, {ptAxis, massAxisXi}});
     registry.add("h2dMassOmegaMinus", "h2dMassOmegaMinus", {HistType::kTH2F, {ptAxis, massAxisOmega}});
     registry.add("h2dMassOmegaPlus", "h2dMassOmegaPlus", {HistType::kTH2F, {ptAxis, massAxisOmega}});
+    registry.add("hPtYMassXiMinus", "hPtYMassXiMinus", {HistType::kTH3F, {ptAxis, rapidityAxis, massAxisXi}});
+    registry.add("hPtYMassXiPlus", "hPtYMassXiPlus", {HistType::kTH3F, {ptAxis, rapidityAxis, massAxisXi}});
+    registry.add("hPtYMassOmegaMinus", "hPtYMassOmegaMinus", {HistType::kTH3F, {ptAxis, rapidityAxis, massAxisOmega}});
+    registry.add("hPtYMassOmegaPlus", "hPtYMassOmegaPlus", {HistType::kTH3F, {ptAxis, rapidityAxis, massAxisOmega}});
   }
 
   // Selection criteria
@@ -347,14 +370,16 @@ struct cascadeAnalysisMC {
         TMath::Abs(casc.mLambda() - 1.115683) < cascadesetting_v0masswindow) {
       registry.fill(HIST("hCandidateCounter"), 3.5); // pass cascade selections
       if (casc.sign() < 0) {                         // FIXME: could be done better...
-        if (TMath::Abs(casc.yXi()) < 0.5 && lCompatiblePID_Xi && ((!assocMC) || (lPDG == 3312))) {
+        if (TMath::Abs(casc.yXi()) < rapidityCut && lCompatiblePID_Xi && ((!assocMC) || (lPDG == 3312))) {
+          registry.fill(HIST("hPtYMassXiMinus"), casc.pt(), casc.yXi(), casc.mXi());
           if (!doCentralityStudy) {
             registry.fill(HIST("h2dMassXiMinus"), casc.pt(), casc.mXi());
           } else {
             registry.fill(HIST("h3dMassXiMinus"), lPercentile, casc.pt(), casc.mXi());
           }
         }
-        if (TMath::Abs(casc.yOmega()) < 0.5 && lCompatiblePID_Om && ((!assocMC) || (lPDG == 3334))) {
+        if (TMath::Abs(casc.yOmega()) < rapidityCut && lCompatiblePID_Om && ((!assocMC) || (lPDG == 3334))) {
+          registry.fill(HIST("hPtYMassOmegaMinus"), casc.pt(), casc.yOmega(), casc.mOmega());
           if (!doCentralityStudy) {
             registry.fill(HIST("h2dMassOmegaMinus"), casc.pt(), casc.mOmega());
           } else {
@@ -362,14 +387,16 @@ struct cascadeAnalysisMC {
           }
         }
       } else {
-        if (TMath::Abs(casc.yXi()) < 0.5 && lCompatiblePID_Xi && ((!assocMC) || (lPDG == -3312))) {
+        if (TMath::Abs(casc.yXi()) < rapidityCut && lCompatiblePID_Xi && ((!assocMC) || (lPDG == -3312))) {
+          registry.fill(HIST("hPtYMassXiPlus"), casc.pt(), casc.yXi(), casc.mXi());
           if (!doCentralityStudy) {
             registry.fill(HIST("h2dMassXiPlus"), casc.pt(), casc.mXi());
           } else {
             registry.fill(HIST("h3dMassXiPlus"), lPercentile, casc.pt(), casc.mXi());
           }
         }
-        if (TMath::Abs(casc.yOmega()) < 0.5 && lCompatiblePID_Om && ((!assocMC) || (lPDG == -3334))) {
+        if (TMath::Abs(casc.yOmega()) < rapidityCut && lCompatiblePID_Om && ((!assocMC) || (lPDG == -3334))) {
+          registry.fill(HIST("hPtYMassOmegaPlus"), casc.pt(), casc.yOmega(), casc.mOmega());
           if (!doCentralityStudy) {
             registry.fill(HIST("h2dMassOmegaPlus"), casc.pt(), casc.mOmega());
           } else {

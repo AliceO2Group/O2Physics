@@ -213,6 +213,8 @@ struct centralEventFilterTask {
   HistogramRegistry scalers{"scalers", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   Produces<aod::CefpDecisions> tags;
 
+  Configurable<bool> cfgDisableDownscalings{"cfgDisableDownscalings", false, "Disable downscalings"};
+
   FILTER_CONFIGURABLE(F1ProtonFilters);
   FILTER_CONFIGURABLE(NucleiFilters);
   FILTER_CONFIGURABLE(DiffractionFilters);
@@ -260,6 +262,9 @@ struct centralEventFilterTask {
         LOG(info) << "- Channel " << col.first << ": " << filterOpt.get(col.first.data(), 0u);
         col.second = filterOpt.get(col.first.data(), 0u);
       }
+    }
+    if (cfgDisableDownscalings.value) {
+      LOG(info) << "Downscalings are disabled for all channels.";
     }
   }
 
@@ -327,7 +332,7 @@ struct centralEventFilterTask {
         uint64_t decisionBin{(bin - 2) / 64};
         uint64_t triggerBit{BIT((bin - 2) % 64)};
         auto column{tablePtr->GetColumnByName(colName.first)};
-        double downscaling{colName.second};
+        double downscaling{cfgDisableDownscalings.value ? 1. : colName.second};
         if (column) {
           int entry = 0;
           for (int64_t iC{0}; iC < column->num_chunks(); ++iC) {
@@ -358,7 +363,7 @@ struct centralEventFilterTask {
           if (!(outTrigger[iE][iD] & BIT(iB))) {
             continue;
           }
-          for (int jD{0}; jD < outTrigger[0].size(); ++jD) {
+          for (uint64_t jD{0}; jD < outTrigger[0].size(); ++jD) {
             for (int iC{iB}; iC < 64; ++iC) {
               if (outTrigger[iE][iD] & BIT(iC)) {
                 mCovariance->Fill(iD * 64 + iB, jD * 64 + iC);

@@ -24,6 +24,14 @@ namespace o2::aod
 {
 namespace NPCascadeTable
 {
+DECLARE_SOA_COLUMN(MatchingChi2, matchingChi2, float);
+DECLARE_SOA_COLUMN(ITSClusSize, itsClusSize, float);
+DECLARE_SOA_COLUMN(IsGoodMatch, isGoodMatch, bool);
+DECLARE_SOA_COLUMN(IsGoodCascade, isGoodCascade, bool);
+DECLARE_SOA_COLUMN(PdgCodeMom, pdgCodeMom, int);
+DECLARE_SOA_COLUMN(IsFromBeauty, isFromBeauty, bool);
+DECLARE_SOA_COLUMN(IsFromCharm, isFromCharm, bool);
+
 DECLARE_SOA_COLUMN(PvX, pvX, float);
 DECLARE_SOA_COLUMN(PvY, pvY, float);
 DECLARE_SOA_COLUMN(PvZ, pvZ, float);
@@ -91,9 +99,15 @@ DECLARE_SOA_COLUMN(gPt, genPt, float);
 DECLARE_SOA_COLUMN(gEta, genEta, float);
 DECLARE_SOA_COLUMN(gPhi, genPhi, float);
 DECLARE_SOA_COLUMN(PDGcode, pdgCode, int);
+DECLARE_SOA_COLUMN(DCAxMC, dcaXmc, float);
+DECLARE_SOA_COLUMN(DCAyMC, dcaYmc, float);
+DECLARE_SOA_COLUMN(DCAzMC, dcaZmc, float);
+DECLARE_SOA_COLUMN(MCcollisionMatch, mcCollisionMatch, bool);
 
 } // namespace NPCascadeTable
 DECLARE_SOA_TABLE(NPCascTable, "AOD", "NPCASCTABLE",
+                  NPCascadeTable::MatchingChi2,
+                  NPCascadeTable::ITSClusSize,
                   NPCascadeTable::PvX,
                   NPCascadeTable::PvY,
                   NPCascadeTable::PvZ,
@@ -146,6 +160,13 @@ DECLARE_SOA_TABLE(NPCascTable, "AOD", "NPCASCTABLE",
                   NPCascadeTable::BachPionTOFNSigma)
 
 DECLARE_SOA_TABLE(NPCascTableMC, "AOD", "NPCASCTABLEMC",
+                  NPCascadeTable::MatchingChi2,
+                  NPCascadeTable::ITSClusSize,
+                  NPCascadeTable::IsGoodMatch,
+                  NPCascadeTable::IsGoodCascade,
+                  NPCascadeTable::PdgCodeMom,
+                  NPCascadeTable::IsFromBeauty,
+                  NPCascadeTable::IsFromCharm,
                   NPCascadeTable::PvX,
                   NPCascadeTable::PvY,
                   NPCascadeTable::PvZ,
@@ -199,7 +220,11 @@ DECLARE_SOA_TABLE(NPCascTableMC, "AOD", "NPCASCTABLEMC",
                   NPCascadeTable::gPt,
                   NPCascadeTable::gEta,
                   NPCascadeTable::gPhi,
-                  NPCascadeTable::PDGcode)
+                  NPCascadeTable::PDGcode,
+                  NPCascadeTable::DCAxMC,
+                  NPCascadeTable::DCAyMC,
+                  NPCascadeTable::DCAzMC,
+                  NPCascadeTable::MCcollisionMatch)
 
 } // namespace o2::aod
 

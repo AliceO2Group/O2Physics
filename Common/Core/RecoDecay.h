@@ -662,6 +662,7 @@ struct RecoDecay {
 
   /// Checks whether the reconstructed decay candidate is the expected decay.
   /// \param checkProcess  switch to accept only decay daughters by checking the production process of MC particles
+  /// \param acceptIncompleteReco  switch to accept candidates with only part of the daughters reconstructed
   /// \param particlesMC  table with MC particles
   /// \param arrDaughters  array of candidate daughters
   /// \param PDGMother  expected mother PDG code
@@ -670,7 +671,7 @@ struct RecoDecay {
   /// \param sign  antiparticle indicator of the found mother w.r.t. PDGMother; 1 if particle, -1 if antiparticle, 0 if mother not found
   /// \param depthMax  maximum decay tree level to check; Daughters up to this level will be considered. If -1, all levels are considered.
   /// \return index of the mother particle if the mother and daughters are correct, -1 otherwise
-  template <bool acceptFlavourOscillation = false, bool checkProcess = false, std::size_t N, typename T, typename U>
+  template <bool acceptFlavourOscillation = false, bool checkProcess = false, bool acceptIncompleteReco = false, std::size_t N, typename T, typename U>
   static int getMatchedMCRec(const T& particlesMC,
                              const std::array<U, N>& arrDaughters,
                              int PDGMother,
@@ -726,7 +727,7 @@ struct RecoDecay {
           return -1;
         }
         // Check that the number of direct daughters is not larger than the number of expected final daughters.
-        if constexpr (!checkProcess) {
+        if constexpr (!acceptIncompleteReco && !checkProcess) {
           if (particleMother.daughtersIds().back() - particleMother.daughtersIds().front() + 1 > static_cast<int>(N)) {
             // Printf("MC Rec: Rejected: too many direct daughters: %d (expected %ld final)", particleMother.daughtersIds().back() - particleMother.daughtersIds().front() + 1, N);
             return -1;
@@ -740,7 +741,7 @@ struct RecoDecay {
         // }
         // printf("\n");
         //  Check whether the number of actual final daughters is equal to the number of expected final daughters (i.e. the number of provided prongs).
-        if (arrAllDaughtersIndex.size() != N) {
+        if (!acceptIncompleteReco && arrAllDaughtersIndex.size() != N) {
           // Printf("MC Rec: Rejected: incorrect number of final daughters: %ld (expected %ld)", arrAllDaughtersIndex.size(), N);
           return -1;
         }
@@ -935,6 +936,16 @@ struct RecoDecay {
       for (auto& iPart : arrayIds[-stage]) { // check all the particles that were the mothers at the previous stage
         auto particleMother = particlesMC.rawIteratorAt(iPart - particlesMC.offset());
         if (particleMother.has_mothers()) {
+
+          // we exit immediately if searchUpToQuark is false and the first mother is a parton (an hadron should never be the mother of a parton)
+          if (!searchUpToQuark) {
+            auto mother = particlesMC.rawIteratorAt(particleMother.mothersIds().front() - particlesMC.offset());
+            auto PDGParticleIMother = std::abs(mother.pdgCode()); // PDG code of the mother
+            if (PDGParticleIMother < 9 || (PDGParticleIMother > 20 && PDGParticleIMother < 38)) {
+              return OriginType::Prompt;
+            }
+          }
+
           for (auto iMother = particleMother.mothersIds().front(); iMother <= particleMother.mothersIds().back(); ++iMother) { // loop over the mother particles of the analysed particle
             if (std::find(arrayIdsStage.begin(), arrayIdsStage.end(), iMother) != arrayIdsStage.end()) {                       // if a mother is still present in the vector, do not check it again
               continue;

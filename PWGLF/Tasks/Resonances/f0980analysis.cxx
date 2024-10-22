@@ -33,8 +33,6 @@ using namespace o2::constants::physics;
 
 struct f0980analysis {
   SliceCache cache;
-  Preslice<aod::ResoTracks> perRCol = aod::resodaughter::resoCollisionId;
-  Preslice<aod::Tracks> perCollision = aod::track::collisionId;
   HistogramRegistry histos{
     "histos",
     {},
@@ -52,6 +50,7 @@ struct f0980analysis {
   Configurable<float> cfgMaxTOF{"cfgMaxTOF", 3.0, "Maximum TOF PID with TPC"};
   Configurable<float> cfgMinRap{"cfgMinRap", -0.5, "Minimum rapidity for pair"};
   Configurable<float> cfgMaxRap{"cfgMaxRap", 0.5, "Maximum rapidity for pair"};
+  Configurable<bool> cfgFindRT{"cfgFindRT", false, "boolean for RT analysis"};
 
   // Track selection
   Configurable<bool> cfgPrimaryTrack{
@@ -92,16 +91,14 @@ struct f0980analysis {
   Configurable<double> nsigmaCutCombinedPion{"nsigmaCutCombinedPion", -999, "Combined nSigma cut for Pion"};
   Configurable<int> SelectType{"SelectType", 0, "PID selection type"};
 
+  // Axis
+  ConfigurableAxis massAxis{"massAxis", {400, 0.2, 2.2}, "Invariant mass axis"};
+  ConfigurableAxis ptAxis{"ptAxis", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 10.0, 13.0, 20.0}, "Transverse momentum Binning"};
+  ConfigurableAxis centAxis{"centAxis", {VARIABLE_WIDTH, 0.0, 1.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0, 75.0, 80.0, 95.0, 100.0, 105.0, 110.0}, "Centrality  Binning"};
   void init(o2::framework::InitContext&)
   {
-    std::vector<double> ptBinning = {0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8,
-                                     1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5,
-                                     5.0, 6.0, 7.0, 8.0, 10.0, 13.0, 20.0};
     std::vector<double> lptBinning = {0, 5.0, 13.0, 20.0, 50.0, 1000.0};
 
-    AxisSpec centAxis = {22, 0, 110};
-    AxisSpec ptAxis = {ptBinning};
-    AxisSpec massAxis = {400, 0.2, 2.2};
     AxisSpec RTAxis = {3, 0, 3};
     AxisSpec LptAxis = {lptBinning}; // Minimum leading hadron pT selection
 
@@ -112,13 +109,14 @@ struct f0980analysis {
     AxisSpec EPqaAxis = {200, -constants::math::PI, constants::math::PI};
     AxisSpec EPresAxis = {200, -2, 2};
 
-    histos.add("hInvMass_f0980_US", "unlike invariant mass",
-               {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, RTAxis, LptAxis}});
-    histos.add("hInvMass_f0980_LSpp", "++ invariant mass",
-               {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, RTAxis, LptAxis}});
-    histos.add("hInvMass_f0980_LSmm", "-- invariant mass",
-               {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, RTAxis, LptAxis}});
-
+    if (cfgFindRT) {
+      histos.add("hInvMass_f0980_US", "unlike invariant mass",
+                 {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, RTAxis, LptAxis}});
+      histos.add("hInvMass_f0980_LSpp", "++ invariant mass",
+                 {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, RTAxis, LptAxis}});
+      histos.add("hInvMass_f0980_LSmm", "-- invariant mass",
+                 {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, RTAxis, LptAxis}});
+    }
     histos.add("hInvMass_f0980_US_EPA", "unlike invariant mass",
                {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, EPAxis}});
     histos.add("hInvMass_f0980_LSpp_EPA", "++ invariant mass",
@@ -230,12 +228,15 @@ struct f0980analysis {
     double LHpt = 0.;
     double LHphi = 0.;
     double relPhi = 0.;
-    for (auto& trk : dTracks) {
-      if (trk.pt() > LHpt) {
-        LHpt = trk.pt();
-        LHphi = trk.phi();
+    if (cfgFindRT) {
+      for (auto& trk : dTracks) {
+        if (trk.pt() > LHpt) {
+          LHpt = trk.pt();
+          LHphi = trk.phi();
+        }
       }
     }
+
     histos.fill(HIST("QA/EPhist"), collision.cent(), collision.evtPl());
     histos.fill(HIST("QA/hEPResAB"), collision.cent(), collision.evtPlResAB());
     histos.fill(HIST("QA/hEPResAC"), collision.cent(), collision.evtPlResBC());
@@ -244,7 +245,7 @@ struct f0980analysis {
 
     TLorentzVector Pion1, Pion2, Reco;
     for (auto& [trk1, trk2] :
-         combinations(CombinationsUpperIndexPolicy(dTracks, dTracks))) {
+         combinations(CombinationsStrictlyUpperIndexPolicy(dTracks, dTracks))) {
       if (trk1.index() == trk2.index()) {
         if (!SelTrack(trk1))
           continue;
@@ -272,8 +273,10 @@ struct f0980analysis {
       }
 
       if (trk1.sign() * trk2.sign() < 0) {
-        histos.fill(HIST("hInvMass_f0980_US"), Reco.M(), Reco.Pt(),
-                    collision.cent(), RTIndex(Reco.Phi(), LHphi), LHpt);
+        if (cfgFindRT) {
+          histos.fill(HIST("hInvMass_f0980_US"), Reco.M(), Reco.Pt(),
+                      collision.cent(), RTIndex(Reco.Phi(), LHphi), LHpt);
+        }
         histos.fill(HIST("hInvMass_f0980_US_EPA"), Reco.M(), Reco.Pt(),
                     collision.cent(), relPhi);
         if constexpr (IsMC) {
@@ -287,13 +290,17 @@ struct f0980analysis {
                       collision.cent());
         }
       } else if (trk1.sign() > 0 && trk2.sign() > 0) {
-        histos.fill(HIST("hInvMass_f0980_LSpp"), Reco.M(), Reco.Pt(),
-                    collision.cent(), RTIndex(Reco.Phi(), LHphi), LHpt);
+        if (cfgFindRT) {
+          histos.fill(HIST("hInvMass_f0980_LSpp"), Reco.M(), Reco.Pt(),
+                      collision.cent(), RTIndex(Reco.Phi(), LHphi), LHpt);
+        }
         histos.fill(HIST("hInvMass_f0980_LSpp_EPA"), Reco.M(), Reco.Pt(),
                     collision.cent(), relPhi);
       } else if (trk1.sign() < 0 && trk2.sign() < 0) {
-        histos.fill(HIST("hInvMass_f0980_LSmm"), Reco.M(), Reco.Pt(),
-                    collision.cent(), RTIndex(Reco.Phi(), LHphi), LHpt);
+        if (cfgFindRT) {
+          histos.fill(HIST("hInvMass_f0980_LSmm"), Reco.M(), Reco.Pt(),
+                      collision.cent(), RTIndex(Reco.Phi(), LHphi), LHpt);
+        }
         histos.fill(HIST("hInvMass_f0980_LSmm_EPA"), Reco.M(), Reco.Pt(),
                     collision.cent(), relPhi);
       }
