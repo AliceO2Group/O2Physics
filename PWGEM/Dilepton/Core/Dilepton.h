@@ -927,12 +927,7 @@ struct Dilepton {
       }
     } else if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kHFll)) {
       float dphi = v1.Phi() - v2.Phi();
-      if (dphi < -TMath::Pi() / 2.) {
-        dphi += 2. * TMath::Pi();
-      }
-      if (dphi > 3 * TMath::Pi() / 2.) {
-        dphi -= 2. * TMath::Pi();
-      }
+      dphi = RecoDecay::constrainAngle(dphi,-o2::constants::math::PIHalf);
       float deta = v1.Eta() - v2.Eta();
 
       if (t1.sign() * t2.sign() < 0) { // ULS
