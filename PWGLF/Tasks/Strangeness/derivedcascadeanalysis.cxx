@@ -937,7 +937,7 @@ struct derivedCascadeAnalysis {
       bool isCorrectLambdaDecay = false;
       if (cascMC.isPhysicalPrimary() && ((isXi && std::abs(cascMC.pdgCode()) == 3312) || (!isXi && std::abs(cascMC.pdgCode()) == 3334)))
         isTrueMCCascade = true;
-      if (isTrueMCCascade && ((isPositive && casc.pdgCodePositive() == 211 && casc.pdgCodeNegative() == -2212) || (isNegative && casc.pdgCodePositive() == 2212 && casc.pdgCodeNegative() == -211)))
+      if (isTrueMCCascade && ((isPositive && cascMC.pdgCodePositive() == 211 && cascMC.pdgCodeNegative() == -2212) || (isNegative && cascMC.pdgCodePositive() == 2212 && cascMC.pdgCodeNegative() == -211)))
         isCorrectLambdaDecay = true;
       if (isTrueMCCascade && isCorrectLambdaDecay && ((isXi && std::abs(cascMC.pdgCodeBachelor()) == 211) || (!isXi && std::abs(cascMC.pdgCodeBachelor()) == 321)))
         isTrueMCCascadeDecay = true;
