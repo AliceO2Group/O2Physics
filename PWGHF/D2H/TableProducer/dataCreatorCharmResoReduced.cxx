@@ -523,17 +523,17 @@ struct HfDataCreatorCharmResoReduced {
         auto indexRecK0 = RecoDecay::getMatchedMCRec<false, true>(particlesMc, std::array{vecDaughtersReso[3], vecDaughtersReso[4]}, kK0, std::array{+kPiPlus, -kPiPlus}, true, &signV0, 2);
         if (indexRecDstar > -1 && indexRecD0 > -1 && indexRecK0 > -1) {
           flag = sign * BIT(DecayTypeMc::Ds1ToDStarK0ToD0PiK0s);
-        } 
-      } else if (RecoDecay::getMatchedMCRec<false, true, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2], vecDaughtersReso[3], vecDaughtersReso[4]}, Pdg::kDS1, std::array{+kPiPlus, -kKPlus, +kPiPlus, +kPiPlus, -kPiPlus}, true, &sign, 3) > -1){ // Verify partly reconstructed decay Ds1 -> D* K0s -> D+  π0 K0s
-          auto indexRecDstar = RecoDecay::getMatchedMCRec<false, false, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2]}, Pdg::kDStar, std::array{-kKPlus, +kPiPlus, +kPiPlus}, true, &signDStar, 2);
-          auto indexRecK0 = RecoDecay::getMatchedMCRec<false, true>(particlesMc, std::array{vecDaughtersReso[3], vecDaughtersReso[4]}, kK0, std::array{+kPiPlus, -kPiPlus}, true, &signV0, 2);
-          if (indexRecDstar > -1 && indexRecK0 > -1) {
-            if (RecoDecay::getMatchedMCRec(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2]}, Pdg::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &signDPlus, 2) > -1) {
-              flag = sign * BIT(DecayTypeMc::Ds1ToDStarK0ToDPlusPi0K0s);
-            } else if (RecoDecay::getMatchedMCRec<false, false, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1]}, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &signD0, 2) > -1) {
-              flag = sign * BIT(DecayTypeMc::Ds1ToDStarK0ToD0PiK0sPart);
-            }
+        }
+      } else if (RecoDecay::getMatchedMCRec<false, true, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2], vecDaughtersReso[3], vecDaughtersReso[4]}, Pdg::kDS1, std::array{+kPiPlus, -kKPlus, +kPiPlus, +kPiPlus, -kPiPlus}, true, &sign, 3) > -1) { // Verify partly reconstructed decay Ds1 -> D* K0s -> D+  π0 K0s
+        auto indexRecDstar = RecoDecay::getMatchedMCRec<false, false, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2]}, Pdg::kDStar, std::array{-kKPlus, +kPiPlus, +kPiPlus}, true, &signDStar, 2);
+        auto indexRecK0 = RecoDecay::getMatchedMCRec<false, true>(particlesMc, std::array{vecDaughtersReso[3], vecDaughtersReso[4]}, kK0, std::array{+kPiPlus, -kPiPlus}, true, &signV0, 2);
+        if (indexRecDstar > -1 && indexRecK0 > -1) {
+          if (RecoDecay::getMatchedMCRec(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2]}, Pdg::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &signDPlus, 2) > -1) {
+            flag = sign * BIT(DecayTypeMc::Ds1ToDStarK0ToDPlusPi0K0s);
+          } else if (RecoDecay::getMatchedMCRec<false, false, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1]}, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &signD0, 2) > -1) {
+            flag = sign * BIT(DecayTypeMc::Ds1ToDStarK0ToD0PiK0sPart);
           }
+        }
       }
       if (flag != 0) {
         auto particleReso = particlesMc.iteratorAt(indexRecReso);
@@ -548,7 +548,7 @@ struct HfDataCreatorCharmResoReduced {
         auto indexRecK0 = RecoDecay::getMatchedMCRec<false, true>(particlesMc, std::array{vecDaughtersReso[3], vecDaughtersReso[4]}, kK0, std::array{+kPiPlus, -kPiPlus}, true, &signV0, 2);
         if (indexRecDplus > -1 && indexRecK0 > -1) {
           flag = sign * BIT(DecayTypeMc::Ds2StarToDplusK0s);
-        } 
+        }
         auto indexMother = RecoDecay::getMother(particlesMc, vecDaughtersReso.back().template mcParticle_as<PParticles>(), Pdg::kDS2Star, true);
         if (indexMother >= 0) {
           auto particleMother = particlesMc.rawIteratorAt(indexMother);
@@ -570,25 +570,25 @@ struct HfDataCreatorCharmResoReduced {
       if (flag != 0) {
         auto particleReso = particlesMc.iteratorAt(indexRecReso);
         origin = RecoDecay::getCharmHadronOrigin(particlesMc, particleReso, false, &idxBhadMothers);
-      } 
+      }
     }
     if (flag != 0) {
       registry.fill(HIST("hMCRecCounter"), flag);
       registry.fill(HIST("hMCRecOrigin"), origin);
     } else {
-        if (RecoDecay::getMatchedMCRec<false, true>(particlesMc, std::array{vecDaughtersReso[3], vecDaughtersReso[4]}, kK0, std::array{+kPiPlus, -kPiPlus}, true, &signV0, 2) > -1){
-          SETBIT(debug, PartialMatchMc::K0Matched);
-        }
-        if (RecoDecay::getMatchedMCRec(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1]}, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &signD0, 1) > -1){
-          SETBIT(debug, PartialMatchMc::D0Matched);
-        }
-        if (RecoDecay::getMatchedMCRec<false, false, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2]}, Pdg::kDStar, std::array{-kKPlus, +kPiPlus, +kPiPlus}, true, &signDStar, 2) > -1){
-          SETBIT(debug, PartialMatchMc::DStarMatched);
-        }
-        if (RecoDecay::getMatchedMCRec(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2]}, Pdg::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &signDPlus, 2) > -1){
-          SETBIT(debug, PartialMatchMc::DPlusMatched);
-        }
-        registry.fill(HIST("hMCRecDebug"), debug);
+      if (RecoDecay::getMatchedMCRec<false, true>(particlesMc, std::array{vecDaughtersReso[3], vecDaughtersReso[4]}, kK0, std::array{+kPiPlus, -kPiPlus}, true, &signV0, 2) > -1) {
+        SETBIT(debug, PartialMatchMc::K0Matched);
+      }
+      if (RecoDecay::getMatchedMCRec(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1]}, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &signD0, 1) > -1) {
+        SETBIT(debug, PartialMatchMc::D0Matched);
+      }
+      if (RecoDecay::getMatchedMCRec<false, false, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2]}, Pdg::kDStar, std::array{-kKPlus, +kPiPlus, +kPiPlus}, true, &signDStar, 2) > -1) {
+        SETBIT(debug, PartialMatchMc::DStarMatched);
+      }
+      if (RecoDecay::getMatchedMCRec(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2]}, Pdg::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &signDPlus, 2) > -1) {
+        SETBIT(debug, PartialMatchMc::DPlusMatched);
+      }
+      registry.fill(HIST("hMCRecDebug"), debug);
     }
     rowHfDV0McRecReduced(indexHfCandCharm, indexCandV0, flag, debug, origin, motherPt);
   }
