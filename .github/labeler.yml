@@ -43,6 +43,10 @@ pwgud:
   - changed-files:
       - any-glob-to-any-file: ['PWGUD/**', '*/PWGUD/**']
 
+trigger:
+  - changed-files:
+      - any-glob-to-any-file: ['EventFiltering/**']
+
 tutorial:
   - changed-files:
       - any-glob-to-any-file: ['Tutorials/**']
