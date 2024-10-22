@@ -786,8 +786,10 @@ DECLARE_SOA_TABLE(HfRed3PrNoTrks, "AOD", "HFRED3PRNOTRK", //! Table with 3 prong
                   hf_track_vars_reduced::EtaProng1<hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
                   hf_track_vars_reduced::EtaProng2<hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2>,
                   hf_reso_3_prong::InvMassDplus<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1, hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2>,
-                  hf_reso_3_prong::InvMassDstar<hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2, hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
-                  hf_reso_3_prong::InvMassAntiDstar<hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2, hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
+                  hf_cand_dstar::InvMassDstar<hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2, hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
+                  hf_cand_dstar::InvMassAntiDstar<hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2, hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
+                  hf_cand_dstar::InvMassD0<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
+                  hf_cand_dstar::InvMassD0Bar<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
                   hf_reso_3_prong::Pt<hf_cand::PxProng0, hf_cand::PxProng1, hf_cand::PxProng2, hf_cand::PyProng0, hf_cand::PyProng1, hf_cand::PyProng2>);
 
 namespace hf_reso_cand_reduced
@@ -795,6 +797,8 @@ namespace hf_reso_cand_reduced
 DECLARE_SOA_COLUMN(InvMass, invMass, float);                               //! Invariant mass in GeV/c2
 DECLARE_SOA_COLUMN(InvMassProng0, invMassProng0, float);                   //! Invariant Mass of D daughter in GeV/c
 DECLARE_SOA_COLUMN(InvMassProng1, invMassProng1, float);                   //! Invariant Mass of V0 daughter in GeV/c
+DECLARE_SOA_COLUMN(InvMassD0, invMassD0, float);                            //! Invariant Mass of potential D0 daughter
+
 DECLARE_SOA_COLUMN(MlScoreBkgProng0, mlScoreBkgProng0, float);             //! Bkg ML score of the D daughter
 DECLARE_SOA_COLUMN(MlScorePromptProng0, mlScorePromptProng0, float);       //! Prompt ML score of the D daughter
 DECLARE_SOA_COLUMN(MlScoreNonpromptProng0, mlScoreNonpromptProng0, float); //! Nonprompt ML score of the D daughter
@@ -823,10 +827,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(CosThetaStarXiC3055, cosThetaStarXiC3055, //! costhet
 
 DECLARE_SOA_TABLE(HfCandCharmReso, "AOD", "HFCANDCHARMRESO", //! Table with Resonance candidate information for resonances reduced workflow
                   o2::soa::Index<>,
-                  // Indices
                   hf_track_index_reduced::HfRedCollisionId,
-                  hf_reso_cand_reduced::Prong0Id,
-                  hf_reso_cand_reduced::Prong1Id,
                   // Static
                   hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0,
                   hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1,
@@ -836,6 +837,7 @@ DECLARE_SOA_TABLE(HfCandCharmReso, "AOD", "HFCANDCHARMRESO", //! Table with Reso
                   hf_reso_v0::Cpa,
                   hf_reso_v0::Dca,
                   hf_reso_v0::Radius,
+                  hf_reso_cand_reduced::InvMassD0,
                   // Dynamic
                   hf_reso_cand_reduced::Pt<hf_cand::PxProng0, hf_cand::PxProng1, hf_cand::PyProng0, hf_cand::PyProng1>,
                   hf_reso_cand_reduced::PtProng0<hf_cand::PxProng0, hf_cand::PyProng0>,
@@ -845,6 +847,10 @@ DECLARE_SOA_TABLE(HfCandCharmReso, "AOD", "HFCANDCHARMRESO", //! Table with Reso
                   hf_reso_cand_reduced::CosThetaStarDs1<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1, hf_reso_cand_reduced::InvMass>,
                   hf_reso_cand_reduced::CosThetaStarDs2Star<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1, hf_reso_cand_reduced::InvMass>,
                   hf_reso_cand_reduced::CosThetaStarXiC3055<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1, hf_reso_cand_reduced::InvMass>);
+
+DECLARE_SOA_TABLE(HfResoIndices, "AOD", "HFRESOINDICES", //! Table with Indices of resonance daughters for MC matching
+                  hf_reso_cand_reduced::Prong0Id,
+                  hf_reso_cand_reduced::Prong1Id);
 
 DECLARE_SOA_TABLE(HfCharmResoMLs, "AOD", "HFCHARMRESOML", //! Table with ML scores for the D daughter
                   hf_reso_cand_reduced::MlScoreBkgProng0,
