@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "TH1D.h"
+#include "TH2D.h"
 #include "CommonDataFormat/IRFrame.h"
 #include "Framework/HistogramRegistry.h"
 #include "ZorroHelper.h"
@@ -44,6 +45,11 @@ class Zorro
   bool isNotSelectedByAny(uint64_t bcGlobalId, uint64_t tolerance = 100);
 
   void populateHistRegistry(o2::framework::HistogramRegistry& histRegistry, int runNumber, std::string folderName = "Zorro");
+  TH2* mZorroHisto = nullptr;
+  TH2* mToiHisto = nullptr;
+  void populateHist(int runNumber);
+  void setZorroHisto(TH2* histo) { mZorroHisto = histo; }
+  void setToiHisto(TH2* histo) { mToiHisto = histo; }
 
   TH1D* getScalers() const { return mScalers; }
   TH1D* getSelections() const { return mSelections; }
