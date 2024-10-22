@@ -210,7 +210,7 @@ struct HfTaskMcValidationGen {
     registry.fill(HIST("hNevGen"), 1);
 
     // Slice the collisions table to get the collision info for the current MC collision
-    float centrality{110.f};
+    float centrality{105.f};
     uint16_t rejectionMask{0};
     if constexpr (centEstimator == CentralityEstimator::FT0C) {
       rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, recoCollisions, centrality);
@@ -936,7 +936,7 @@ struct HfTaskMcValidationRec {
     // loop over collisions
     for (const auto& collision : collisions) {
       // apply event selection
-      float centrality{-1.f};
+      float centrality{105.f};
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, centEstimator, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry); // only needed to update centrality, no bitmask selection applied
       if (!collision.has_mcCollision()) {
         return;
