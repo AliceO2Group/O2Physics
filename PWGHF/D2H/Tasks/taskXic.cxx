@@ -95,8 +95,7 @@ struct HfTaskXic {
       {"MC/reconstructed/signal/hPtRecSig", "3-prong candidates (matched);#it{p}_{T}^{rec.} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
       {"MC/reconstructed/prompt/hPtRecSigPrompt", "3-prong candidates (matched, prompt);#it{p}_{T}^{rec.} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
       {"MC/reconstructed/nonprompt/hPtRecSigNonPrompt", "3-prong candidates (matched, non-prompt);#it{p}_{T}^{rec.} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
-      {"MC/reconstructed/background/hPtRecBg", "3-prong candidates (unmatched);#it{p}_{T}^{rec.} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}}}
-    }};
+      {"MC/reconstructed/background/hPtRecBg", "3-prong candidates (unmatched);#it{p}_{T}^{rec.} (GeV/#it{c});entries", {HistType::kTH1F, {{100, 0., 10.}}}}}};
 
   void init(InitContext&)
   {
@@ -199,7 +198,6 @@ struct HfTaskXic {
     registry.add("MC/generated/prompt/hYVsPtGenSigPrompt", "3-prong candidates (matched, prompt);candidate #it{y};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("MC/generated/nonprompt/hYVsPtGenSigNonPrompt", "3-prong candidates (matched, non-prompt);candidate #it{y};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
 
-
     // background
     registry.add("MC/reconstructed/background/hMassBg", "Invariant mass (unmatched);m (p K #pi) (GeV/#it{c}^{2});;entries", {HistType::kTH2F, {{500, 1.6, 3.1}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("MC/reconstructed/background/hDecLengthRecBg", "3-prong candidates;decay length (cm);;entries", {HistType::kTH2F, {{200, 0., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -239,7 +237,7 @@ struct HfTaskXic {
       if (doprocessDataWithMl || doprocessMcWithMl) { // with ML
         registry.add("hnXicVarsWithBdt", "THn for Xic candidates with BDT scores", HistType::kTHnSparseF, {thnAxisMass, thnAxisPt, thnAxisBdtScoreXicBkg, thnAxisBdtScoreXicPrompt, thnAxisBdtScoreXicNonPrompt, thnAxisMcOrigin, thnAxisPtMC, thnAxisYMC, thnAxisMCAllProngAccepted});
       } else {
-        registry.add("hnXicVars", "THn for Xic candidates", HistType::kTHnSparseF, {thnAxisMass, thnAxisPt, thnAxisChi2PCA, thnAxisDecLength, thnAxisDecLengthXY, thnAxisCPA, thnAxisMcOrigin,  thnAxisPtMC, thnAxisYMC, thnAxisMCAllProngAccepted});
+        registry.add("hnXicVars", "THn for Xic candidates", HistType::kTHnSparseF, {thnAxisMass, thnAxisPt, thnAxisChi2PCA, thnAxisDecLength, thnAxisDecLengthXY, thnAxisCPA, thnAxisMcOrigin, thnAxisPtMC, thnAxisYMC, thnAxisMCAllProngAccepted});
       }
     }
   } // end init
@@ -379,7 +377,7 @@ struct HfTaskXic {
             /// Fill the ML outputScores and variables of candidate
             registry.get<THnSparse>(HIST("hnXicVarsWithBdt"))->Fill(massXic, ptCandidate, outputBkg, outputPrompt, outputFD, 0, 0.0, 0.0, false);
           } else {
-            registry.get<THnSparse>(HIST("hnXicVars"))->Fill(massXic, ptCandidate, candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa(), 0, 0.0, 0.0, false );
+            registry.get<THnSparse>(HIST("hnXicVars"))->Fill(massXic, ptCandidate, candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa(), 0, 0.0, 0.0, false);
           }
         }
       } // thn for Xic
@@ -441,7 +439,6 @@ struct HfTaskXic {
         if (massXicToPKPi != 0.) {
           registry.fill(HIST("MC/reconstructed/signal/hMassVsPtRecSig"), massXicToPKPi, ptCandidate);
           registry.fill(HIST("MC/reconstructed/signal/hMassRecSig"), massXicToPKPi);
-
         }
         if (massXicToPiKP != 0.) {
           registry.fill(HIST("MC/reconstructed/signal/hMassVsPtRecSig"), massXicToPiKP, ptCandidate);
@@ -478,21 +475,18 @@ struct HfTaskXic {
           }
           registry.fill(HIST("MC/reconstructed/prompt/hEtaVsPtRecSigPrompt"), candidate.eta(), ptCandidate);
           registry.fill(HIST("MC/reconstructed/prompt/hPtRecSigPrompt"), ptCandidate);
-        }
-          else {
-            if ((candidate.isSelXicToPKPi() >= selectionFlagXic) && pdgCodeProng0 == kProton) {
-              registry.fill(HIST("MC/reconstructed/nonprompt/hMassRecSigNonPrompt"), massXicToPKPi);
-              registry.fill(HIST("MC/reconstructed/nonprompt/hMassVsPtRecSigNonPrompt"), massXicToPKPi, ptCandidate);
-            }
-            if ((candidate.isSelXicToPiKP() >= selectionFlagXic) && pdgCodeProng0 == kPiPlus) {
-              registry.fill(HIST("MC/reconstructed/nonprompt/hMassRecSigNonPrompt"), massXicToPiKP);
-              registry.fill(HIST("MC/reconstructed/nonprompt/hMassVsPtRecSigNonPrompt"), massXicToPiKP, ptCandidate);
-            }
+        } else {
+          if ((candidate.isSelXicToPKPi() >= selectionFlagXic) && pdgCodeProng0 == kProton) {
+            registry.fill(HIST("MC/reconstructed/nonprompt/hMassRecSigNonPrompt"), massXicToPKPi);
+            registry.fill(HIST("MC/reconstructed/nonprompt/hMassVsPtRecSigNonPrompt"), massXicToPKPi, ptCandidate);
+          }
+          if ((candidate.isSelXicToPiKP() >= selectionFlagXic) && pdgCodeProng0 == kPiPlus) {
+            registry.fill(HIST("MC/reconstructed/nonprompt/hMassRecSigNonPrompt"), massXicToPiKP);
+            registry.fill(HIST("MC/reconstructed/nonprompt/hMassVsPtRecSigNonPrompt"), massXicToPiKP, ptCandidate);
+          }
           registry.fill(HIST("MC/reconstructed/nonprompt/hEtaVsPtRecSigNonPrompt"), candidate.eta(), ptCandidate);
           registry.fill(HIST("MC/reconstructed/nonprompt/hPtRecSigNonPrompt"), ptCandidate);
-
-
-      }
+        }
 
         if (enableTHn) {
           double massXic(-1);
@@ -514,7 +508,7 @@ struct HfTaskXic {
                 outputFD = candidate.mlProbXicToPKPi()[2];     /// non-prompt score
               }
               /// Fill the ML outputScores and variables of candidate (todo: add multiplicity)
-              registry.get<THnSparse>(HIST("hnXicVarsWithBdt"))->Fill(massXic, ptCandidate, outputBkg, outputPrompt, outputFD, candidate.originMcRec(),mcParticleProng0.pt(),yProng0, allProngsInAcceptance);
+              registry.get<THnSparse>(HIST("hnXicVarsWithBdt"))->Fill(massXic, ptCandidate, outputBkg, outputPrompt, outputFD, candidate.originMcRec(), mcParticleProng0.pt(), yProng0, allProngsInAcceptance);
             } else {
               registry.get<THnSparse>(HIST("hnXicVars"))->Fill(massXic, ptCandidate, candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa(), candidate.originMcRec(), mcParticleProng0.pt(), yProng0, allProngsInAcceptance);
             }
@@ -536,7 +530,7 @@ struct HfTaskXic {
               }
               /// Fill the ML outputScores and variables of candidate (todo: add multiplicity)
               // add here the pT_Mother, y_Mother, level (reco, Gen, Gen + Acc)
-              registry.get<THnSparse>(HIST("hnXicVarsWithBdt"))->Fill(massXic, ptCandidate, outputBkg, outputPrompt, outputFD, candidate.originMcRec(),mcParticleProng0.pt(),yProng0, allProngsInAcceptance);
+              registry.get<THnSparse>(HIST("hnXicVarsWithBdt"))->Fill(massXic, ptCandidate, outputBkg, outputPrompt, outputFD, candidate.originMcRec(), mcParticleProng0.pt(), yProng0, allProngsInAcceptance);
             } else {
               registry.get<THnSparse>(HIST("hnXicVars"))->Fill(massXic, ptCandidate, candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa(), candidate.originMcRec(), mcParticleProng0.pt(), yProng0, allProngsInAcceptance);
             }
