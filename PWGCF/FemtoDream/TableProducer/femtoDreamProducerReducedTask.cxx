@@ -51,9 +51,9 @@ using FemtoFullCollision_noCent_MC = soa::Join<aod::Collisions, aod::EvSels, aod
 
 using FemtoFullTracks = soa::Join<aod::FullTracks, aod::TracksDCA,
                                   aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa,
-                                  aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullTr,aod::pidTPCFullHe,
+                                  aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe,
                                   aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa,
-                                  aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullTr,aod::pidTOFFullHe>;
+                                  aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe>;
 } // namespace o2::aod
 
 struct femtoDreamProducerReducedTask {
