@@ -95,7 +95,7 @@ struct ft0CorrectedTable {
       table(t0A, t0C);
     }
   }
-  PROCESS_SWITCH(ft0CorrectedTable, processData, "Process data (default)", true);
+  PROCESS_SWITCH(ft0CorrectedTable, processStandard, "Process standard table (default)", true);
 
   void processWithBypassFT0timeInMC(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions,
                                     BCsWithMatchings const&,
