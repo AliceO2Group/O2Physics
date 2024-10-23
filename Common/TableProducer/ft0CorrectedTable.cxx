@@ -59,8 +59,8 @@ struct ft0CorrectedTable {
   }
   void process(aod::BCs const&) {};
   void processStandard(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
-                   BCsWithMatchings const&,
-                   aod::FT0s const&)
+                       BCsWithMatchings const&,
+                       aod::FT0s const&)
   {
     table.reserve(collisions.size());
     float t0A = 1e10f;
