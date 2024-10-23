@@ -114,6 +114,7 @@ struct decay3bodyBuilder {
                    kKfVtxCosPA,
                    kKfVtxCosPAXY,
                    kKfVtxChi2geo,
+                   kKfVtxTopoConstr,
                    kKfVtxChi2topo,
                    kKfNVtxSteps };
 
@@ -122,7 +123,7 @@ struct decay3bodyBuilder {
     {{"hEventCounter", "hEventCounter", {HistType::kTH1F, {{1, 0.0f, 1.0f}}}},
      {"hEventCounterKFParticle", "hEventCounterKFParticle", {HistType::kTH1F, {{4, 0.0f, 4.0f}}}},
      {"hVtx3BodyCounter", "hVtx3BodyCounter", {HistType::kTH1F, {{6, 0.0f, 6.0f}}}},
-     {"hVtx3BodyCounterKFParticle", "hVtx3BodyCounterKFParticle", {HistType::kTH1F, {{21, 0.0f, 21.0f}}}},
+     {"hVtx3BodyCounterKFParticle", "hVtx3BodyCounterKFParticle", {HistType::kTH1F, {{22, 0.0f, 22.0f}}}},
      {"hBachelorTOFNSigmaDe", "", {HistType::kTH2F, {{40, -10.0f, 10.0f, "p/z (GeV/c)"}, {40, -10.0f, 10.0f, "TOF n#sigma"}}}},
      {"QA/Tracks/hTrackPosTPCNcls", "hTrackPosTPCNcls", {HistType::kTH1F, {{152, 0, 152, "# TPC clusters"}}}},
      {"QA/Tracks/hTrackNegTPCNcls", "hTrackNegTPCNcls", {HistType::kTH1F, {{152, 0, 152, "# TPC clusters"}}}},
@@ -332,7 +333,8 @@ struct decay3bodyBuilder {
     registry.get<TH1>(HIST("hVtx3BodyCounterKFParticle"))->GetXaxis()->SetBinLabel(18, "CosPA");
     registry.get<TH1>(HIST("hVtx3BodyCounterKFParticle"))->GetXaxis()->SetBinLabel(19, "CosPAxy");
     registry.get<TH1>(HIST("hVtx3BodyCounterKFParticle"))->GetXaxis()->SetBinLabel(20, "Chi2geo");
-    registry.get<TH1>(HIST("hVtx3BodyCounterKFParticle"))->GetXaxis()->SetBinLabel(21, "Chi2topo");
+    registry.get<TH1>(HIST("hVtx3BodyCounterKFParticle"))->GetXaxis()->SetBinLabel(21, "TopoConstr");
+    registry.get<TH1>(HIST("hVtx3BodyCounterKFParticle"))->GetXaxis()->SetBinLabel(22, "Chi2topo");
     registry.get<TH1>(HIST("hVtx3BodyCounterKFParticle"))->LabelsOption("v");
 
     // Material correction in the DCA fitter
@@ -710,7 +712,7 @@ struct decay3bodyBuilder {
       registry.fill(HIST("hVtx3BodyCounterKFParticle"), kKfVtxCharge);
 
       // track eta
-      if (trackPos.eta() > kfparticleConfigurations.maxEta || trackNeg.eta() > kfparticleConfigurations.maxEta || trackBach.eta() > kfparticleConfigurations.maxEta) {
+      if (abs(trackPos.eta()) > kfparticleConfigurations.maxEta || abs(trackNeg.eta()) > kfparticleConfigurations.maxEta || abs(trackBach.eta()) > kfparticleConfigurations.maxEta) {
         continue;
       }
       registry.fill(HIST("hVtx3BodyCounterKFParticle"), kKfVtxEta);
@@ -738,10 +740,21 @@ struct decay3bodyBuilder {
       registry.fill(HIST("hVtx3BodyCounterKFParticle"), kKfVtxTPCRows);
 
       // TPC PID
-      if (isMatter && !selectTPCPID(trackPos, trackNeg, trackBach)) { // hypertriton (proton, pi-, deuteron)
-        continue;
-      } else if (!isMatter && !selectTPCPID(trackNeg, trackPos, trackBach)) { // anti-hypertriton (anti-proton, pi+, deuteron)
-        continue;
+      float tpcNsigmaProton;
+      float tpcNsigmaPion;
+      float tpcNsigmaDeuteron = trackBach.tpcNSigmaDe();
+      if (isMatter) { // hypertriton (proton, pi-, deuteron)
+        tpcNsigmaProton = trackPos.tpcNSigmaPr();
+        tpcNsigmaPion = trackNeg.tpcNSigmaPi();
+        if (!selectTPCPID(trackPos, trackNeg, trackBach)) {
+          continue;
+        }
+      } else if (!isMatter) { // anti-hypertriton (anti-proton, pi+, deuteron)
+        tpcNsigmaProton = trackNeg.tpcNSigmaPr();
+        tpcNsigmaPion = trackPos.tpcNSigmaPi();
+        if (!selectTPCPID(trackNeg, trackPos, trackBach)) {
+          continue;
+        }
       }
       registry.fill(HIST("hVtx3BodyCounterKFParticle"), kKfVtxTPCPID);
       LOG(debug) << "Basic track selections done.";
@@ -932,9 +945,16 @@ struct decay3bodyBuilder {
       // -------- STEP 6: topological constraint --------
       /// Set vertex constraint and topological selection
       KFParticle KFHtPV = KFHt;
-      KFHtPV.SetProductionVertex(kfpv);
-      KFHtPV.TransportToDecayVertex();
+      try {
+        KFHtPV.SetProductionVertex(kfpv);
+      } catch (std::runtime_error& e) {
+        LOG(error) << "Exception caught KFParticle process call: Topological constraint failed";
+        continue;
+      }
+      registry.fill(HIST("hVtx3BodyCounterKFParticle"), kKfVtxTopoConstr); // to check if topo constraint fails
+      // get topological chi2
       float chi2topoNDF = KFHtPV.GetChi2() / KFHtPV.GetNDF();
+      KFHtPV.TransportToDecayVertex();
       if (kfparticleConfigurations.applyTopoSel && chi2topoNDF >= kfparticleConfigurations.maxChi2topo) {
         continue;
       }
@@ -959,7 +979,7 @@ struct decay3bodyBuilder {
         KFHtPV.GetDecayLength(), KFHtPV.GetDecayLengthXY(),   // decay length defined after topological constraint
         KFHtPV.GetDecayLength() / KFHtPV.GetErrDecayLength(), // ldl
         chi2geoNDF, chi2topoNDF,
-        KFHt.GetLifeTime(), KFHtPV.GetLifeTime(),
+        KFHtPV.GetLifeTime(),
         // V0
         massV0, chi2massV0,
         // daughter momenta
@@ -987,7 +1007,11 @@ struct decay3bodyBuilder {
         // daughter signs
         kfpProton.GetQ(),
         kfpPion.GetQ(),
-        trackBach.sign());
+        trackBach.sign(),
+        // daughter PID
+        tpcNsigmaProton,
+        tpcNsigmaPion,
+        tpcNsigmaDeuteron);
 
       if (kfparticleConfigurations.fillCandidateLiteTable) {
         kfvtx3bodydatalite(
@@ -1005,7 +1029,7 @@ struct decay3bodyBuilder {
           KFHtPV.GetDecayLength(), KFHtPV.GetDecayLengthXY(),   // decay length defined after topological constraint
           KFHtPV.GetDecayLength() / KFHtPV.GetErrDecayLength(), // ldl
           chi2geoNDF, chi2topoNDF,
-          KFHt.GetLifeTime(), KFHtPV.GetLifeTime(),
+          KFHtPV.GetLifeTime(),
           // V0
           massV0, chi2massV0,
           // daughter momenta
@@ -1033,7 +1057,11 @@ struct decay3bodyBuilder {
           // daughter signs
           kfpProton.GetQ(),
           kfpPion.GetQ(),
-          trackBach.sign());
+          trackBach.sign(),
+          // daughter PID
+          tpcNsigmaProton,
+          tpcNsigmaPion,
+          tpcNsigmaDeuteron);
       }
       LOG(debug) << "Table filled.";
 

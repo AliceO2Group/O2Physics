@@ -142,7 +142,7 @@ struct ParticleHistograms {
                                                                                 // if kTRUE, the ones for which fBookParticleHistograms2D[...] is kTRUE, are filled
   Bool_t fBookParticleHistograms2D[eParticleHistograms2D_N] = {kTRUE};          // book or not this 2D histogram, see configurable cfBookParticleHistograms2D
   Double_t fParticleHistogramsBins2D[eParticleHistograms2D_N][2][3] = {{{0.}}}; // [type - see enum][x,y][nBins,min,max]
-  TString fParticleHistogramsName2D[eParticleHistograms2D_N] = {""};            // name of particle histogram 2D, determined programatically from two 1D
+  TString fParticleHistogramsName2D[eParticleHistograms2D_N] = {""};            // name of particle histogram 2D, determined programatically from two 1D, in the format "%s_vs_%s"
 } ph;                                                                           // "ph" labels an instance of group of histograms "ParticleHistograms"
 
 // *) Particle cuts:
@@ -258,7 +258,7 @@ struct Results {                                   // This is in addition also s
 
   // Remark: These settings apply to following categories fCorrelationsPro, fNestedLoopsPro, fTest0Pro, and fResultsHist
   Float_t fResultsProFixedLengthBins[eAsFunctionOf_N][3] = {{0.}};                                                // [nBins,min,max]
-  TArrayD* fResultsProVariableLengthBins[eAsFunctionOf_N] = {NULL};                                               // here for each variable in eAsFunctionOf I specify array holding bin boundaries
+  TArrayF* fResultsProVariableLengthBins[eAsFunctionOf_N] = {NULL};                                               // here for each variable in eAsFunctionOf I specify array holding bin boundaries
   Bool_t fUseResultsProVariableLengthBins[eAsFunctionOf_N] = {kFALSE};                                            // use or not variable-length bins
   TString fResultsProVariableLengthBinsString[eAsFunctionOf_N] = {""};                                            // TBI 20240113 temporary I do it this way
   TString fResultsProXaxisTitle[eAsFunctionOf_N] = {"integrated", "multiplicity", "centrality", "p_{T}", "#eta"}; // keep ordering in sync with enum eAsFunctionOf

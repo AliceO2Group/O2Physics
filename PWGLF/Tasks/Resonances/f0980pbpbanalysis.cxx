@@ -62,9 +62,6 @@ using namespace o2::soa;
 using namespace o2::constants::physics;
 
 struct f0980pbpbanalysis {
-  using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults, aod::Qvectors>;
-  using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi>;
-
   HistogramRegistry histos{
     "histos",
     {},
@@ -76,6 +73,7 @@ struct f0980pbpbanalysis {
   Configurable<std::string> cfgURL{"cfgURL", "http://alice-ccdb.cern.ch", "Address of the CCDB to browse"};
   Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "Latest acceptable timestamp of creation for the object"};
 
+  Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0, "PV selection"};
   Configurable<bool> cfgQvecSel{"cfgQvecSel", true, "Reject events when no QVector"};
   Configurable<bool> cfgOccupancySel{"cfgOccupancySe", false, "Occupancy selection"};
   Configurable<int> cfgMaxOccupancy{"cfgMaxOccupancy", 999999, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
@@ -132,6 +130,13 @@ struct f0980pbpbanalysis {
   double relPhi;
 
   double massPi = o2::constants::physics::MassPionCharged;
+
+  Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
+  Filter acceptanceFilter = (nabs(aod::track::eta) < cfgMaxEta && nabs(aod::track::pt) > cfgMinPt);
+  Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgMaxDCArToPVcut) && (nabs(aod::track::dcaZ) < cfgMaxDCAzToPVcut);
+
+  using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults, aod::Qvectors>>;
+  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi>>;
 
   template <typename T>
   int GetDetId(const T& name)

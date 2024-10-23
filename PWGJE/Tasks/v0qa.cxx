@@ -32,6 +32,7 @@
 #include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/Core/JetUtilities.h"
 #include "PWGJE/Core/JetFindingUtilities.h"
+#include "PWGLF/DataModel/V0SelectorTables.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -90,6 +91,9 @@ struct V0QA {
     const AxisSpec axisLambdaM{binInvMassLambda, "M(p #pi^{-}) (GeV/c^{2})"};
     const AxisSpec axisAntiLambdaM{binInvMassLambda, "M(#bar{p} #pi^{+}) (GeV/c^{2})"};
 
+    if (doprocessFlags) {
+      registry.add("inclusive/V0Flags", "V0Flags", HistType::kTH2D, {{4, -0.5, 3.5}, {4, -0.5, 3.5}});
+    }
     if (doprocessMcD) {
       registry.add("inclusive/hEvents", "Events", {HistType::kTH1D, {{2, 0.0f, 2.0f}}});
       registry.add("inclusive/K0SPtEtaMass", "K0S Pt, Eta, Mass", HistType::kTH3D, {axisV0Pt, axisEta, axisK0SM});
@@ -229,6 +233,35 @@ struct V0QA {
 
   void processDummy(CandidatesV0MCD const&) {}
   PROCESS_SWITCH(V0QA, processDummy, "Dummy process function turned on by default", true);
+
+  void processFlags(soa::Join<aod::V0Datas, aod::V0SignalFlags>::iterator const& v0)
+  {
+    int isK0S = static_cast<int>(v0.isK0SCandidate());
+    int isLambda = static_cast<int>((v0.isLambdaCandidate()));
+    int isAntiLambda = static_cast<int>(v0.isAntiLambdaCandidate());
+    int isRejected = static_cast<int>(v0.isRejectedCandidate());
+
+    registry.fill(HIST("inclusive/V0Flags"), 0, 0, isK0S);
+    registry.fill(HIST("inclusive/V0Flags"), 1, 1, isLambda);
+    registry.fill(HIST("inclusive/V0Flags"), 2, 2, isAntiLambda);
+    registry.fill(HIST("inclusive/V0Flags"), 3, 3, isRejected);
+
+    registry.fill(HIST("inclusive/V0Flags"), 0, 1, isK0S * isLambda);
+    registry.fill(HIST("inclusive/V0Flags"), 1, 0, isK0S * isLambda);
+    registry.fill(HIST("inclusive/V0Flags"), 0, 2, isK0S * isAntiLambda);
+    registry.fill(HIST("inclusive/V0Flags"), 2, 0, isK0S * isAntiLambda);
+    registry.fill(HIST("inclusive/V0Flags"), 0, 3, isK0S * isRejected);
+    registry.fill(HIST("inclusive/V0Flags"), 3, 0, isK0S * isRejected);
+
+    registry.fill(HIST("inclusive/V0Flags"), 1, 2, isLambda * isAntiLambda);
+    registry.fill(HIST("inclusive/V0Flags"), 2, 1, isLambda * isAntiLambda);
+    registry.fill(HIST("inclusive/V0Flags"), 1, 3, isLambda * isRejected);
+    registry.fill(HIST("inclusive/V0Flags"), 3, 1, isLambda * isRejected);
+
+    registry.fill(HIST("inclusive/V0Flags"), 2, 3, isAntiLambda * isRejected);
+    registry.fill(HIST("inclusive/V0Flags"), 3, 2, isAntiLambda * isRejected);
+  }
+  PROCESS_SWITCH(V0QA, processFlags, "V0 flags", false);
 
   void processMcD(soa::Filtered<JetCollisionsMCD>::iterator const& jcoll, JetMcCollisions const&, soa::Join<CandidatesV0MCD, aod::McV0Labels> const& v0s, aod::McParticles const&)
   {
