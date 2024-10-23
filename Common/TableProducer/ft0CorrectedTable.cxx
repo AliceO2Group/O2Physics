@@ -57,7 +57,7 @@ struct ft0CorrectedTable {
       histos.add("MC/deltat0AC", "t0AC", kTH1D, {{1000, -50, 50, "t0AC (ps)"}});
     }
   }
-
+  void process(aod::BCs const&) {};
   void processData(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                    BCsWithMatchings const&,
                    aod::FT0s const&)
@@ -97,10 +97,10 @@ struct ft0CorrectedTable {
   }
   PROCESS_SWITCH(ft0CorrectedTable, processData, "Process data (default)", true);
 
-  void processMC(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions,
-                 BCsWithMatchings const&,
-                 aod::FT0s const&,
-                 aod::McCollisions const&)
+  void processWithBypassFT0timeInMC(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions,
+                                    BCsWithMatchings const&,
+                                    aod::FT0s const&,
+                                    aod::McCollisions const&)
   {
     table.reserve(collisions.size());
     float t0A = 1e10f;
@@ -162,6 +162,7 @@ struct ft0CorrectedTable {
       table(t0A, t0C);
     }
   }
-  PROCESS_SWITCH(ft0CorrectedTable, processMC, "Process MC with bypass of the AO2D information", false);
+  PROCESS_SWITCH(ft0CorrectedTable, processWithBypassFT0timeInMC, "Process MC with bypass of the AO2D information. Use with care!", false);
 };
+
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<ft0CorrectedTable>(cfgc)}; }
