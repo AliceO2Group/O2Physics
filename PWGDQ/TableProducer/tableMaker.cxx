@@ -1285,7 +1285,7 @@ struct TableMaker {
     }
     fStatsList->Add(histMuons);
 
-    if (fConfigRunZorro) {
+    if (useZorro.fConfigRunZorro) {
       TH2D* histZorroInfo = new TH2D("ZorroInfo", "Zorro information", 1, -0.5, 0.5, 1, -0.5, 0.5);
       zorro.setZorroHisto(histZorroInfo);
       fStatsList->Add(histZorroInfo);
