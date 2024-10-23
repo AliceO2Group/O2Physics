@@ -20,6 +20,7 @@
 #include "CommonConstants/LHCConstants.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "DataFormatsFT0/Digit.h"
+#include "CollisionTypeHelper.h"
 #include "TRandom3.h"
 
 using namespace o2;
@@ -31,6 +32,11 @@ struct ft0CorrectedTable {
   Configurable<float> resoFT0A{"resoFT0A", 20.f, "FT0A resolution"};
   Configurable<float> resoFT0C{"resoFT0C", 20.f, "FT0C resolution"};
   Configurable<bool> addHistograms{"addHistograms", false, "Add QA histograms"};
+  Configurable<int> cfgCollisionSystem{"collisionSystem", -2, "Collision system: -2 (use cfg values), -1 (autoset), 0 (pp), 1 (PbPb), 2 (XeXe), 3 (pPb)"};
+  Configurable<std::string> cfgUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> cfgPathGrpLhcIf{"ccdb-path-grplhcif", "GLO/Config/GRPLHCIF", "Path on the CCDB for the GRPLHCIF object"};
+  Configurable<int64_t> cfgTimestamp{"ccdb-timestamp", -1, "timestamp of the object"};
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   // Producer
   Produces<o2::aod::FT0sCorrected> table;
@@ -44,6 +50,13 @@ struct ft0CorrectedTable {
     if (doprocessStandard && doprocessWithBypassFT0timeInMC) {
       LOG(fatal) << "Both process data and process MC are enabled. Pick one of the two";
     }
+    ccdb->setURL(cfgUrl);
+    ccdb->setTimestamp(cfgTimestamp);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    // Not later than now objects
+    ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+
     if (!addHistograms) {
       return;
     }
@@ -98,10 +111,27 @@ struct ft0CorrectedTable {
   PROCESS_SWITCH(ft0CorrectedTable, processStandard, "Process standard table (default)", true);
 
   void processWithBypassFT0timeInMC(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions,
-                                    BCsWithMatchings const&,
+                                    soa::Join<BCsWithMatchings, aod::Timestamps> const& bcs,
                                     aod::FT0s const&,
                                     aod::McCollisions const&)
   {
+    if (cfgCollisionSystem.value == -1) {
+      o2::parameters::GRPLHCIFData* grpo = ccdb->template getForTimeStamp<o2::parameters::GRPLHCIFData>(cfgPathGrpLhcIf,
+                                                                                                        bcs[0].timestamp());
+      cfgCollisionSystem.value = CollisionSystemType::getCollisionTypeFromGrp(grpo);
+      switch (cfgCollisionSystem.value) {
+        case CollisionEvSel::kCollSyspp:
+          resoFT0A.value = 24.f;
+          resoFT0C.value = 24.f;
+          break;
+        case CollisionEvSel::kCollSysPbPb:
+          resoFT0A.value = 5.65f;
+          resoFT0C.value = 5.65f;
+          break;
+        default:
+          break;
+      }
+    }
     table.reserve(collisions.size());
     float t0A = 1e10f;
     float t0C = 1e10f;
