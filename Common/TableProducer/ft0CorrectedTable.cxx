@@ -57,7 +57,7 @@ struct ft0CorrectedTable {
       histos.add("MC/deltat0AC", "t0AC", kTH1D, {{1000, -50, 50, "t0AC (ps)"}});
     }
   }
-  void process(aod::BCs const&) {};
+  void process(aod::BCs const&) {}
   void processStandard(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                        BCsWithMatchings const&,
                        aod::FT0s const&)
