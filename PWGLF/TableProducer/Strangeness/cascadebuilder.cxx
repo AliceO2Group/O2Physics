@@ -53,6 +53,7 @@
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/LFStrangenessMLTables.h"
 #include "PWGLF/DataModel/LFParticleIdentification.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -125,6 +126,10 @@ struct cascadeBuilder {
   Produces<aod::CascCovs> casccovs;       // if requested by someone
   Produces<aod::KFCascCovs> kfcasccovs;   // if requested by someone
 
+  // produces calls for machine-learning selections
+  Produces<aod::CascXiMLScores> xiMLSelections;    // Xi scores
+  Produces<aod::CascOmMLScores> omegaMLSelections; // Omega scores
+
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -194,6 +199,8 @@ struct cascadeBuilder {
   Configurable<bool> kfDoDCAFitterPreMinimV0{"kfDoDCAFitterPreMinimV0", true, "KF: do DCAFitter pre-optimization before KF fit to include material corrections for V0"};
   Configurable<bool> kfDoDCAFitterPreMinimCasc{"kfDoDCAFitterPreMinimCasc", true, "KF: do DCAFitter pre-optimization before KF fit to include material corrections for Xi"};
 
+  // for using cascade momentum at prim. vtx
+  Configurable<bool> useCascadeMomentumAtPrimVtx{"useCascadeMomentumAtPrimVtx", false, "if enabled, store cascade momentum at prim. vtx instead of decay point (= default)"};
   // for topo var QA
   struct : ConfigurableGroup {
     ConfigurableAxis axisTopoVarPointingAngle{"axisConfigurations.axisTopoVarPointingAngle", {50, 0.0, 1.0}, "pointing angle"};
@@ -1118,6 +1125,14 @@ struct cascadeBuilder {
     cascadecandidate.v0dcapostopv = v0.dcapostopv();
     cascadecandidate.v0dcanegtopv = v0.dcanegtopv();
 
+    if (useCascadeMomentumAtPrimVtx) {
+      lCascadeTrack.getPxPyPzGlo(cascadecandidate.cascademom);
+    } else {
+      cascadecandidate.cascademom[0] = cascadecandidate.bachP[0] + cascadecandidate.v0mompos[0] + cascadecandidate.v0momneg[0];
+      cascadecandidate.cascademom[1] = cascadecandidate.bachP[1] + cascadecandidate.v0mompos[1] + cascadecandidate.v0momneg[1];
+      cascadecandidate.cascademom[2] = cascadecandidate.bachP[2] + cascadecandidate.v0mompos[2] + cascadecandidate.v0momneg[2];
+    }
+
     if (d_doTrackQA) {
       if (posTrack.itsNCls() < 10)
         statisticsRegistry.posITSclu[posTrack.itsNCls()]++;
@@ -1555,9 +1570,7 @@ struct cascadeBuilder {
              cascadecandidate.v0mompos[0], cascadecandidate.v0mompos[1], cascadecandidate.v0mompos[2],
              cascadecandidate.v0momneg[0], cascadecandidate.v0momneg[1], cascadecandidate.v0momneg[2],
              cascadecandidate.bachP[0], cascadecandidate.bachP[1], cascadecandidate.bachP[2],
-             cascadecandidate.bachP[0] + cascadecandidate.v0mompos[0] + cascadecandidate.v0momneg[0], // <--- redundant but ok
-             cascadecandidate.bachP[1] + cascadecandidate.v0mompos[1] + cascadecandidate.v0momneg[1], // <--- redundant but ok
-             cascadecandidate.bachP[2] + cascadecandidate.v0mompos[2] + cascadecandidate.v0momneg[2], // <--- redundant but ok
+             cascadecandidate.cascademom[0], cascadecandidate.cascademom[1], cascadecandidate.cascademom[2],
              cascadecandidate.v0dcadau, cascadecandidate.dcacascdau,
              cascadecandidate.v0dcapostopv, cascadecandidate.v0dcanegtopv,
              cascadecandidate.bachDCAxy, cascadecandidate.cascDCAxy, cascadecandidate.cascDCAz); // <--- no corresponding stratrack information available
@@ -1565,6 +1578,13 @@ struct cascadeBuilder {
       cascTrackXs(cascadecandidate.positiveX, cascadecandidate.negativeX, cascadecandidate.bachelorX);
     }
     cascbb(cascadecandidate.bachBaryonCosPA, cascadecandidate.bachBaryonDCAxyToPV);
+    if (cascadecandidate.charge < 0) {
+      xiMLSelections(cascadecandidate.mlXiMinusScore);
+      omegaMLSelections(cascadecandidate.mlOmegaMinusScore);
+    } else {
+      xiMLSelections(cascadecandidate.mlXiPlusScore);
+      omegaMLSelections(cascadecandidate.mlOmegaPlusScore);
+    }
 
     // populate cascade covariance matrices if required by any other task
     if (createCascCovMats) {
@@ -1735,6 +1755,13 @@ struct cascadeBuilder {
         cascTrackXs(cascadecandidate.positiveX, cascadecandidate.negativeX, cascadecandidate.bachelorX);
       }
       cascbb(cascadecandidate.bachBaryonCosPA, cascadecandidate.bachBaryonDCAxyToPV);
+      if (cascadecandidate.charge < 0) {
+        xiMLSelections(cascadecandidate.mlXiMinusScore);
+        omegaMLSelections(cascadecandidate.mlOmegaMinusScore);
+      } else {
+        xiMLSelections(cascadecandidate.mlXiPlusScore);
+        omegaMLSelections(cascadecandidate.mlOmegaPlusScore);
+      }
 
       // populate cascade covariance matrices if required by any other task
       if (createCascCovMats) {

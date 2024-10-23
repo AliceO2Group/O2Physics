@@ -73,10 +73,24 @@ enum DType : uint8_t {
   Dstar
 };
 
+enum DecayTypeMc : uint8_t {
+  Ds1ToDStarK0ToD0PiK0s = 0,
+  Ds2StarToDplusK0s,
+  Ds1ToDStarK0ToDPlusPi0K0s,
+  Ds1ToDStarK0ToD0PiK0sPart
+};
+
+enum PartialMatchMc : uint8_t {
+  K0Matched = 0,
+  D0Matched,
+  DStarMatched,
+  DPlusMatched
+};
+
 /// Creation of D-V0 pairs
 struct HfDataCreatorCharmResoReduced {
 
-  // Produces AOD tables to store track information
+  // Produces AOD tables to store collision information
   Produces<aod::HfRedCollisions> hfReducedCollision; // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
   Produces<aod::HfOrigColCounts> hfCollisionCounter; // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
   // tracks, V0 and D candidates reduced tables
@@ -85,6 +99,9 @@ struct HfDataCreatorCharmResoReduced {
   Produces<aod::HfRed3PrNoTrks> hfCandD; // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
   // ML optional Tables
   Produces<aod::HfRed3ProngsMl> hfCandDMl; // Defined in PWGHF/D2H/DataModel/ReducedDataModel.h
+  // MC Tables
+  Produces<aod::HfMcRecRedDV0s> rowHfDV0McRecReduced;
+  Produces<aod::HfMcGenRedResos> rowHfResoMcGenReduced;
 
   // CCDB configuration
   o2::ccdb::CcdbApi ccdbApi;
@@ -92,6 +109,7 @@ struct HfDataCreatorCharmResoReduced {
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
   Configurable<bool> propagateV0toPV{"propagateV0toPV", false, "Enable or disable V0 propagation to V0"};
+  o2::framework::Configurable<bool> rejectBackground{"rejectBackground", true, "Reject particles from background events"};
 
   int runNumber{0}; // needed to detect if the run changed and trigger update of calibrations etc.
   // selection D
@@ -104,15 +122,20 @@ struct HfDataCreatorCharmResoReduced {
   // selection V0
   struct : ConfigurableGroup {
     std::string prefix = "v0s";
-    Configurable<float> minK0sLambdaCosinePa{"minK0sLambdaCosinePa", 0.97, "minimum cosp for K0S and Lambda"};
-    Configurable<float> minK0sLambdaRadius{"minK0sLambdaRadius", 0.5, "minimum radius for K0S and Lambda"};
-    Configurable<float> deltaMassK0s{"deltaMassK0s", 0.03, "delta mass cut for K0S"};
-    Configurable<float> deltaMassLambda{"deltaMassLambda", 0.015, "delta mass cut for Lambda"};
-    Configurable<float> minV0dauEta{"minV0dauEta", 1., "minimum eta for V0 daughters"};
-    Configurable<float> maxV0DCA{"maxV0DCA", 0.1, "maximum DCA for K0S and Lambda"};
-    Configurable<float> minV0dauDCA{"minV0dauDCA", 0.05, "minimum DCA for V0 daughters"};
-    Configurable<float> maxV0dauDCA{"maxV0dauDCA", 1., "maximum DCA for V0 daughters"};
-    Configurable<float> maxNsigmaPrForLambda{"maxNsigmaPrForLambda", 4., "maximum proton NSigma in TPC and TOF for Lambdas"};
+    Configurable<float> deltaMassK0s{"deltaMassK0s", 0.02, "delta mass cut for K0S"};
+    Configurable<float> deltaMassLambda{"deltaMassLambda", 0.01, "delta mass cut for Lambda"};
+    Configurable<float> etaMax{"etaMax", 0.8f, "maximum eta"};
+    Configurable<float> etaMaxDau{"etaMaxDau", 5.f, "maximum eta V0 daughters"};
+    Configurable<float> trackNclusItsCut{"trackNclusItsCut", 0, "Minimum number of ITS clusters for V0 daughter"};
+    Configurable<int> trackNCrossedRowsTpc{"trackNCrossedRowsTpc", 50, "Minimum TPC crossed rows"};
+    Configurable<float> trackNsharedClusTpc{"trackNsharedClusTpc", 1000, "Maximum number of shared TPC clusters for V0 daughter"};
+    Configurable<float> dcaDau{"dcaDau", 1.f, "DCA V0 daughters"};
+    Configurable<float> dcaMaxDauToPv{"dcaMaxDauToPv", 0.1f, "Maximum daughter's DCA to PV"};
+    Configurable<float> dcaPv{"dcaPv", 1.f, "DCA V0 to PV"};
+    Configurable<double> cosPa{"cosPa", 0.99f, "V0 CosPA"};
+    Configurable<float> radiusMin{"radiusMin", 0.9f, "Minimum v0 radius accepted"};
+    Configurable<float> nSigmaTpc{"nSigmaTpc", 4.f, "Nsigmatpc"};
+    Configurable<float> nSigmaTofPr{"nSigmaTofPr", 4.f, "N sigma TOF for protons only"};
   } cfgV0Cuts;
 
   // selection single tracks
@@ -134,14 +157,37 @@ struct HfDataCreatorCharmResoReduced {
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   HfHelper hfHelper;
   o2::hf_evsel::HfEventSelection hfEvSel;
+  o2::vertexing::DCAFitterN<2> fitter;
+  double bz{0.};
+  Service<o2::framework::O2DatabasePDG> pdg;
 
-  bool isHfCandResoConfigFilled = false;
+  // bool isHfCandResoConfigFilled = false;
+
+  // Helper struct to pass V0 informations
+  struct {
+    std::array<float, 3> pos;
+    std::array<float, 3> mom;
+    std::array<float, 3> momPos;
+    std::array<float, 3> momNeg;
+    float pT;
+    float cosPA;
+    float dcaV0ToPv;
+    float dcaDau;
+    float alpha;
+    float eta;
+    float radius;
+    float mK0Short;
+    float mLambda;
+    uint8_t v0Type;
+  } candidateV0;
 
   using CandsDplusFiltered = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;
   using CandsDplusFilteredWithMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
   using CandDstarFiltered = soa::Filtered<soa::Join<aod::HfD0FromDstar, aod::HfCandDstars, aod::HfSelDstarToD0Pi>>;
   using CandDstarFilteredWithMl = soa::Filtered<soa::Join<aod::HfD0FromDstar, aod::HfCandDstars, aod::HfSelDstarToD0Pi, aod::HfMlDstarToD0Pi>>;
   using TracksWithPID = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr>;
+  using TracksIUWithPID = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCPi, aod::pidTOFFullPi, aod::pidTPCPr, aod::pidTOFFullPr>;
+  using TracksIUWithPIDAndMC = soa::Join<TracksIUWithPID, aod::McTrackLabels>;
 
   Filter filterSelectDplus = (aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= cfgDmesCuts.selectionFlagDplus);
   Filter filterSelectedCandDstar = (aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == cfgDmesCuts.selectionFlagDstarToD0Pi);
@@ -150,7 +196,7 @@ struct HfDataCreatorCharmResoReduced {
   Preslice<CandsDplusFilteredWithMl> candsDplusPerCollisionWithMl = aod::hf_cand::collisionId;
   Preslice<CandDstarFiltered> candsDstarPerCollision = aod::hf_cand::collisionId;
   Preslice<CandDstarFilteredWithMl> candsDstarPerCollisionWithMl = aod::hf_cand::collisionId;
-  Preslice<aod::V0Datas> candsV0PerCollision = aod::v0data::collisionId;
+  Preslice<aod::V0s> candsV0PerCollision = aod::v0::collisionId;
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
 
   HistogramRegistry registry{"registry"};
@@ -190,8 +236,16 @@ struct HfDataCreatorCharmResoReduced {
     registry.add("hMassDsStar2", "Ds^{*}2 candidates; Ds^{*}2 - m_{D^{#plus}} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{400, 0.49, 0.89}}});
     registry.add("hMassXcRes", "XcRes candidates; XcRes - m_{D^{#plus}} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{300, 1.1, 1.4}}});
     registry.add("hMassDstarProton", "D^{*}-proton candidates;m_{D^{*}p} - m_{D^{*}} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0.9, 1.4}}});
-    registry.add("hV0Type", "V0 selection flag", {HistType::kTH1F, {{8, -0.5, 7.5}}});
     registry.add("hDType", "D selection flag", {HistType::kTH1F, {{5, -2.5, 2.5}}});
+
+    registry.add("hMCRecCounter", "Number of Reconstructed MC Matched candidates per channel", {HistType::kTH1F, {{17, -8.5, 8.5}}});
+    registry.add("hMCRecDebug", "Debug of MC Reco", {HistType::kTH1F, {{16, -0.5, 15.5}}});
+    registry.add("hMCRecOrigin", "Origin of Matched particles", {HistType::kTH1F, {{3, -0.5, 2.5}}});
+
+    registry.add("hMCGenCounter", "Number of Generated particles; Decay Channel Flag; pT [GeV/c]", {HistType::kTH2F, {{17, -8.5, 8.5}, {100, 0, 50}}});
+    registry.add("hMCSignCounter", "Sign of Generated particles", {HistType::kTH1F, {{3, -1.5, 1.5}}});
+    registry.add("hMCGenOrigin", "Origin of Generated particles", {HistType::kTH1F, {{3, -0.5, 2.5}}});
+    registry.add("hMCOriginCounterWrongDecay", "Origin of Generated particles in Wrong decay", {HistType::kTH1F, {{3, -0.5, 2.5}}});
 
     // Configure CCDB access
     ccdb->setURL(url.value);
@@ -201,59 +255,185 @@ struct HfDataCreatorCharmResoReduced {
     ccdbApi.init(url);
     runNumber = 0;
     lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>("GLO/Param/MatLUT"));
+
+    // Configure DCA fitter
+    fitter.setPropagateToPCA(true);
+    fitter.setMaxR(200.);
+    fitter.setMinParamChange(1e-3);
+    fitter.setMinRelChi2Change(0.9);
+    fitter.setMaxDZIni(1e9);
+    fitter.setMaxDXYIni(4);
+    fitter.setMaxChi2(1e9);
+    fitter.setUseAbsDCA(true);
+    fitter.setWeightedFinalPCA(false);
   }
 
+  /// Basic track quality selections for V0 daughters
+  /// \param Tr is a track
+  /// \param dDaughtersIds are the IDs of the D meson daughter tracks
+  template <typename Tr>
+  bool selectV0Daughter(Tr const& track, const std::array<int, 3>& dDaughtersIds)
+  {
+    // acceptance selection
+    if (std::abs(track.eta()) > cfgV0Cuts.etaMaxDau) {
+      return false;
+    }
+    // Tpc Refit
+    if (!(track.hasTPC())) {
+      return false;
+    }
+    // track quality selection
+    if (track.itsNCls() < cfgV0Cuts.trackNclusItsCut ||
+        track.tpcNClsFound() < cfgV0Cuts.trackNCrossedRowsTpc ||
+        track.tpcNClsCrossedRows() < cfgV0Cuts.trackNCrossedRowsTpc ||
+        track.tpcNClsCrossedRows() < 0.8 * track.tpcNClsFindable() ||
+        track.tpcNClsShared() > cfgV0Cuts.trackNsharedClusTpc) {
+      return false;
+    }
+    // rejection of tracks that share a daughter with the D meson
+    if (rejectPairsWithCommonDaughter && std::find(dDaughtersIds.begin(), dDaughtersIds.end(), track.globalIndex()) != dDaughtersIds.end()) {
+      return false;
+    }
+    return true;
+  }
+
+  // Utility to find which v0 daughter carries the largest fraction of the mother longitudinal momentum
+  float alphaAP(std::array<float, 3> const& momA, std::array<float, 3> const& momB, std::array<float, 3> const& momC)
+  {
+    float momTot = std::sqrt(std::pow(momA[0], 2.) + std::pow(momA[1], 2.) + std::pow(momA[2], 2.));
+    float lQlPos = (momB[0] * momA[0] + momB[1] * momA[1] + momB[2] * momA[2]) / momTot;
+    float lQlNeg = (momC[0] * momA[0] + momC[1] * momA[1] + momC[2] * momA[2]) / momTot;
+    return (lQlPos - lQlNeg) / (lQlPos + lQlNeg);
+  }
+  // Utility to find DCA of V0 to Primary vertex
+  float calculateDCAStraightToPV(float X, float Y, float Z, float Px, float Py, float Pz, float pvX, float pvY, float pvZ)
+  {
+    return std::sqrt((std::pow((pvY - Y) * Pz - (pvZ - Z) * Py, 2) + std::pow((pvX - X) * Pz - (pvZ - Z) * Px, 2) + std::pow((pvX - X) * Py - (pvY - Y) * Px, 2)) / (Px * Px + Py * Py + Pz * Pz));
+  }
   /// Basic selection of V0 candidates
-  /// \param v0 is the v0 candidate
   /// \param collision is the current collision
   /// \param dauTracks are the v0 daughter tracks
   /// \param dDaughtersIds are the IDs of the D meson daughter tracks
   /// \return a bitmap with mass hypotesis if passes all cuts
-  template <typename V0, typename Coll, typename Tr>
-  uint8_t getSelectionMapV0(const V0& v0, const Coll& /*collision*/, const std::array<Tr, 2>& dauTracks, const std::array<int, 3>& dDaughtersIds)
+  template <typename Coll, typename Tr>
+  bool buildAndSelectV0(const Coll& collision, const std::array<int, 3>& dDaughtersIds, const std::array<Tr, 2>& dauTracks)
   {
-    uint8_t selMap{BIT(K0s) | BIT(Lambda) | BIT(AntiLambda)};
-    // reject VOs that share daughters with D
-    if (rejectPairsWithCommonDaughter && (std::find(dDaughtersIds.begin(), dDaughtersIds.end(), v0.posTrackId()) != dDaughtersIds.end() || std::find(dDaughtersIds.begin(), dDaughtersIds.end(), v0.negTrackId()) != dDaughtersIds.end())) {
-      return 0;
+    auto trackPos = dauTracks[0];
+    auto trackNeg = dauTracks[1];
+
+    // single-tracks selection
+    if (!selectV0Daughter(trackPos, dDaughtersIds) || !selectV0Daughter(trackNeg, dDaughtersIds))
+      return false;
+    // daughters DCA to V0's collision primary vertex
+    gpu::gpustd::array<float, 2> dcaInfo;
+    auto trackPosPar = getTrackPar(trackPos);
+    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackPosPar, 2.f, fitter.getMatCorrType(), &dcaInfo);
+    auto trackPosDcaXY = dcaInfo[0];
+    auto trackNegPar = getTrackPar(trackNeg);
+    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackNegPar, 2.f, fitter.getMatCorrType(), &dcaInfo);
+    auto trackNegDcaXY = dcaInfo[0];
+    if (fabs(trackPosDcaXY) < cfgV0Cuts.dcaMaxDauToPv || fabs(trackNegDcaXY) < cfgV0Cuts.dcaMaxDauToPv) {
+      return false;
     }
-    // eta of daughters
-    if (std::fabs(v0.negativeeta()) > cfgV0Cuts.minV0dauEta || std::fabs(v0.positiveeta()) > cfgV0Cuts.minV0dauEta) { // cut all V0 daughters with |eta| > 1.
-      return 0;
+    // vertex reconstruction
+    auto trackPosCov = getTrackParCov(trackPos);
+    auto trackNegCov = getTrackParCov(trackNeg);
+    int nCand = 0;
+    try {
+      nCand = fitter.process(trackPosCov, trackNegCov);
+    } catch (...) {
+      LOG(error) << "Exception caught in DCA fitter process call!";
+      return false;
     }
-    // minimum v0radius
-    if (v0.v0radius() < cfgV0Cuts.minK0sLambdaRadius) {
-      return 0;
+    if (nCand == 0) {
+      return false;
     }
-    // cosine of pointing angle
-    auto v0CosinePa = v0.v0cosPA();
-    if (v0CosinePa < cfgV0Cuts.minK0sLambdaCosinePa) {
-      return 0;
+    // compute candidate momentum from tracks propagated to decay vertex
+    auto& trackPosProp = fitter.getTrack(0);
+    auto& trackNegProp = fitter.getTrack(1);
+    trackPosProp.getPxPyPzGlo(candidateV0.momPos);
+    trackNegProp.getPxPyPzGlo(candidateV0.momNeg);
+    for (int i = 0; i < 3; ++i) {
+      candidateV0.mom[i] = candidateV0.momPos[i] + candidateV0.momNeg[i];
     }
-    // DCA V0 and V0 daughters to select for primary V0s
-    if (v0.dcav0topv() > cfgV0Cuts.maxV0DCA || v0.dcaV0daughters() > cfgV0Cuts.maxV0dauDCA || std::fabs(v0.dcapostopv()) < cfgV0Cuts.minV0dauDCA || std::fabs(v0.dcanegtopv()) < cfgV0Cuts.minV0dauDCA) {
-      return 0;
+    candidateV0.pT = std::hypot(candidateV0.mom[0], candidateV0.mom[1]);
+    // topological selections:
+    // v0 eta
+    candidateV0.eta = RecoDecay::eta(candidateV0.mom);
+    if (std::abs(candidateV0.eta) > cfgV0Cuts.etaMax) {
+      return false;
     }
+    // daughters DCA
+    candidateV0.dcaDau = std::sqrt(fitter.getChi2AtPCACandidate());
+    if (candidateV0.dcaDau > cfgV0Cuts.dcaDau) {
+      return false;
+    }
+    // v0 radius
+    const auto& vtx = fitter.getPCACandidate();
+    candidateV0.radius = std::hypot(vtx[0], vtx[1]);
+    if (candidateV0.radius < cfgV0Cuts.radiusMin) {
+      return false;
+    }
+    for (int i = 0; i < 3; i++) {
+      candidateV0.pos[i] = vtx[i];
+    }
+    // v0 DCA to primary vertex
+    candidateV0.dcaV0ToPv = calculateDCAStraightToPV(
+      vtx[0], vtx[1], vtx[2],
+      candidateV0.momPos[0] + candidateV0.momNeg[0],
+      candidateV0.momPos[1] + candidateV0.momNeg[1],
+      candidateV0.momPos[2] + candidateV0.momNeg[2],
+      collision.posX(), collision.posY(), collision.posZ());
+    if (std::abs(candidateV0.dcaV0ToPv) > cfgV0Cuts.dcaPv) {
+      return false;
+    }
+    // v0 cosine of pointing angle
+    std::array<float, 3> primVtx = {collision.posX(), collision.posY(), collision.posZ()};
+    candidateV0.cosPA = RecoDecay::cpa(primVtx, vtx, candidateV0.mom);
+    if (candidateV0.cosPA < cfgV0Cuts.cosPa) {
+      return false;
+    }
+
+    // distinguish between K0s, and Lambda hypotesys
+    candidateV0.v0Type = {BIT(K0s) | BIT(Lambda) | BIT(AntiLambda)};
+    // for lambda hypotesys define if its lambda or anti-lambda
+    candidateV0.alpha = alphaAP(candidateV0.mom, candidateV0.momPos, candidateV0.momNeg);
+    bool matter = candidateV0.alpha > 0;
+    CLRBIT(candidateV0.v0Type, matter ? AntiLambda : Lambda);
+    auto massPos = matter ? o2::constants::physics::MassProton : o2::constants::physics::MassPionCharged;
+    auto massNeg = matter ? o2::constants::physics::MassPionCharged : o2::constants::physics::MassProton;
     // mass hypotesis
-    if (std::fabs(v0.mK0Short() - MassK0) > cfgV0Cuts.deltaMassK0s) {
-      CLRBIT(selMap, K0s);
+    candidateV0.mLambda = RecoDecay::m(std::array{candidateV0.momPos, candidateV0.momNeg}, std::array{massPos, massNeg});
+    candidateV0.mK0Short = RecoDecay::m(std::array{candidateV0.momPos, candidateV0.momNeg}, std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassPionCharged});
+    if (std::fabs(candidateV0.mK0Short - MassK0) > cfgV0Cuts.deltaMassK0s) {
+      CLRBIT(candidateV0.v0Type, K0s);
     }
-    if (std::fabs(v0.mLambda() - MassLambda0) > cfgV0Cuts.deltaMassLambda) {
-      CLRBIT(selMap, Lambda);
+    if (std::fabs(candidateV0.mLambda - MassLambda0) > cfgV0Cuts.deltaMassLambda) {
+      CLRBIT(candidateV0.v0Type, Lambda);
+      CLRBIT(candidateV0.v0Type, AntiLambda);
     }
-    if (std::fabs(v0.mAntiLambda() - MassLambda0) > cfgV0Cuts.deltaMassLambda) {
-      CLRBIT(selMap, AntiLambda);
+    // PID
+    if (TESTBIT(candidateV0.v0Type, K0s)) {
+      if ((trackPos.hasTPC() && std::fabs(trackPos.tpcNSigmaPi()) > cfgV0Cuts.nSigmaTpc) ||
+          (trackNeg.hasTPC() && std::fabs(trackNeg.tpcNSigmaPi()) > cfgV0Cuts.nSigmaTpc))
+        CLRBIT(candidateV0.v0Type, K0s);
     }
-    // PID (Lambda/AntiLambda only)
-    float nSigmaPrTpc[2] = {dauTracks[0].tpcNSigmaPr(), dauTracks[1].tpcNSigmaPr()};
-    float nSigmaPrTof[2] = {dauTracks[0].tofNSigmaPr(), dauTracks[1].tofNSigmaPr()};
-    if (TESTBIT(selMap, Lambda) && ((dauTracks[0].hasTPC() && std::fabs(nSigmaPrTpc[0]) > cfgV0Cuts.maxNsigmaPrForLambda) || (dauTracks[0].hasTOF() && std::fabs(nSigmaPrTof[0]) > cfgV0Cuts.maxNsigmaPrForLambda))) {
-      CLRBIT(selMap, Lambda);
+    if (TESTBIT(candidateV0.v0Type, Lambda)) {
+      if ((trackPos.hasTPC() && std::fabs(trackPos.tpcNSigmaPr()) > cfgV0Cuts.nSigmaTpc) ||
+          (trackPos.hasTOF() && std::fabs(trackPos.tofNSigmaPr()) > cfgV0Cuts.nSigmaTofPr) ||
+          (trackNeg.hasTPC() && std::fabs(trackNeg.tpcNSigmaPi()) > cfgV0Cuts.nSigmaTpc))
+        CLRBIT(candidateV0.v0Type, Lambda);
     }
-    if (TESTBIT(selMap, AntiLambda) && ((dauTracks[1].hasTPC() && std::fabs(nSigmaPrTpc[1]) > cfgV0Cuts.maxNsigmaPrForLambda) || (dauTracks[1].hasTOF() && std::fabs(nSigmaPrTof[1]) > cfgV0Cuts.maxNsigmaPrForLambda))) {
-      CLRBIT(selMap, AntiLambda);
+    if (TESTBIT(candidateV0.v0Type, AntiLambda)) {
+      if ((trackPos.hasTPC() && std::fabs(trackPos.tpcNSigmaPi()) > cfgV0Cuts.nSigmaTpc) ||
+          (trackNeg.hasTPC() && std::fabs(trackNeg.tpcNSigmaPr()) > cfgV0Cuts.nSigmaTpc) ||
+          (trackNeg.hasTOF() && std::fabs(trackNeg.tofNSigmaPr()) > cfgV0Cuts.nSigmaTofPr))
+        CLRBIT(candidateV0.v0Type, AntiLambda);
     }
-    return selMap;
+    if (candidateV0.v0Type == 0) {
+      return false;
+    }
+    return true;
   }
 
   /// Basic selection of tracks
@@ -309,11 +489,116 @@ struct HfDataCreatorCharmResoReduced {
     return true;
   }
 
-  template <bool withMl, uint8_t DecayChannel, typename Coll, typename CCands, typename BBach>
+  /// Function for filling MC reco information in the tables
+  /// \param particlesMc is the table with MC particles
+  /// \param vecDaughtersReso is the vector with all daughter tracks (bachelor pion in last position)
+  /// \param indexHfCandCharm is the index of the charm-hadron bachelor in the reduced table
+  /// \param indexCandV0 is the index of the v0 bachelor in the reduced table
+  template <uint8_t decChannel, typename PParticles, typename TTrack>
+  void fillMcRecoInfo(const PParticles& particlesMc,
+                      const std::vector<TTrack>& vecDaughtersReso,
+                      int& indexHfCandCharm,
+                      int& indexCandV0)
+  {
+
+    // we check the MC matching to be stored
+    int8_t sign{0};
+    int8_t signDStar{0};
+    int8_t signDPlus{0};
+    int8_t signD0{0};
+    int8_t signV0{0};
+    int8_t flag{0};
+    int8_t debug{0};
+    int8_t origin{0};
+    std::vector<int> idxBhadMothers{};
+    float motherPt{-1.f};
+
+    if constexpr (decChannel == DecayChannel::DstarV0) {
+      // Ds1 → D* K0 → (D0 π+) K0s → ((K-π+) π+)(π+π-)
+      auto indexRecReso = RecoDecay::getMatchedMCRec<false, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2], vecDaughtersReso[3], vecDaughtersReso[4]}, Pdg::kDS1, std::array{+kPiPlus, -kKPlus, +kPiPlus, +kPiPlus, -kPiPlus}, true, &sign, 3);
+      if (indexRecReso > -1) {
+        // D* → π- K+ π-
+        auto indexRecDstar = RecoDecay::getMatchedMCRec(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2]}, Pdg::kDStar, std::array{-kKPlus, +kPiPlus, +kPiPlus}, true, &signDStar, 2);
+        auto indexRecD0 = RecoDecay::getMatchedMCRec(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1]}, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &signD0, 1);
+        auto indexRecK0 = RecoDecay::getMatchedMCRec<false, true>(particlesMc, std::array{vecDaughtersReso[3], vecDaughtersReso[4]}, kK0, std::array{+kPiPlus, -kPiPlus}, true, &signV0, 2);
+        if (indexRecDstar > -1 && indexRecD0 > -1 && indexRecK0 > -1) {
+          flag = sign * BIT(DecayTypeMc::Ds1ToDStarK0ToD0PiK0s);
+        }
+      } else if (RecoDecay::getMatchedMCRec<false, true, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2], vecDaughtersReso[3], vecDaughtersReso[4]}, Pdg::kDS1, std::array{+kPiPlus, -kKPlus, +kPiPlus, +kPiPlus, -kPiPlus}, true, &sign, 3) > -1) { // Verify partly reconstructed decay Ds1 -> D* K0s -> D+  π0 K0s
+        auto indexRecDstar = RecoDecay::getMatchedMCRec<false, false, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2]}, Pdg::kDStar, std::array{-kKPlus, +kPiPlus, +kPiPlus}, true, &signDStar, 2);
+        auto indexRecK0 = RecoDecay::getMatchedMCRec<false, true>(particlesMc, std::array{vecDaughtersReso[3], vecDaughtersReso[4]}, kK0, std::array{+kPiPlus, -kPiPlus}, true, &signV0, 2);
+        if (indexRecDstar > -1 && indexRecK0 > -1) {
+          if (RecoDecay::getMatchedMCRec(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2]}, Pdg::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &signDPlus, 2) > -1) {
+            flag = sign * BIT(DecayTypeMc::Ds1ToDStarK0ToDPlusPi0K0s);
+          } else if (RecoDecay::getMatchedMCRec<false, false, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1]}, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &signD0, 2) > -1) {
+            flag = sign * BIT(DecayTypeMc::Ds1ToDStarK0ToD0PiK0sPart);
+          }
+        }
+      }
+      if (flag != 0) {
+        auto particleReso = particlesMc.iteratorAt(indexRecReso);
+        origin = RecoDecay::getCharmHadronOrigin(particlesMc, particleReso, false, &idxBhadMothers);
+      }
+    } else if constexpr (decChannel == DecayChannel::DplusV0) {
+      // Ds2Star → D+ K0 → (π+K-π+) K0s → (π+K-π+)(π+π-)
+      auto indexRecReso = RecoDecay::getMatchedMCRec<false, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2], vecDaughtersReso[3], vecDaughtersReso[4]}, Pdg::kDS2Star, std::array{+kPiPlus, -kKPlus, +kPiPlus, +kPiPlus, -kPiPlus}, true, &sign, 3);
+      if (indexRecReso > -1) {
+        // D+ → π+ K- π+
+        auto indexRecDplus = RecoDecay::getMatchedMCRec(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2]}, Pdg::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &signDPlus, 2);
+        auto indexRecK0 = RecoDecay::getMatchedMCRec<false, true>(particlesMc, std::array{vecDaughtersReso[3], vecDaughtersReso[4]}, kK0, std::array{+kPiPlus, -kPiPlus}, true, &signV0, 2);
+        if (indexRecDplus > -1 && indexRecK0 > -1) {
+          flag = sign * BIT(DecayTypeMc::Ds2StarToDplusK0s);
+        }
+        auto indexMother = RecoDecay::getMother(particlesMc, vecDaughtersReso.back().template mcParticle_as<PParticles>(), Pdg::kDS2Star, true);
+        if (indexMother >= 0) {
+          auto particleMother = particlesMc.rawIteratorAt(indexMother);
+          motherPt = particleMother.pt();
+        }
+      } else { // Verify partly reconstructed decay Ds1 -> D* K0s -> D+  π0 K0s
+        indexRecReso = RecoDecay::getMatchedMCRec<false, true, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2], vecDaughtersReso[3], vecDaughtersReso[4]}, Pdg::kDS1, std::array{+kPiPlus, -kKPlus, +kPiPlus, +kPiPlus, -kPiPlus}, true, &sign, 3);
+        if (indexRecReso > -1) {
+          auto indexRecDstar = RecoDecay::getMatchedMCRec<false, false, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2]}, Pdg::kDStar, std::array{-kKPlus, +kPiPlus, +kPiPlus}, true, &signDStar, 2);
+          auto indexRecK0 = RecoDecay::getMatchedMCRec<false, true>(particlesMc, std::array{vecDaughtersReso[3], vecDaughtersReso[4]}, kK0, std::array{+kPiPlus, -kPiPlus}, true, &signV0, 2);
+          if (indexRecDstar > -1 && indexRecK0 > -1) {
+            auto indexRecDplus = RecoDecay::getMatchedMCRec(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2]}, Pdg::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
+            if (indexRecDplus > -1) {
+              flag = sign * BIT(DecayTypeMc::Ds1ToDStarK0ToDPlusPi0K0s);
+            }
+          }
+        }
+      }
+      if (flag != 0) {
+        auto particleReso = particlesMc.iteratorAt(indexRecReso);
+        origin = RecoDecay::getCharmHadronOrigin(particlesMc, particleReso, false, &idxBhadMothers);
+      }
+    }
+    if (flag != 0) {
+      registry.fill(HIST("hMCRecCounter"), flag);
+      registry.fill(HIST("hMCRecOrigin"), origin);
+    } else {
+      if (RecoDecay::getMatchedMCRec<false, true>(particlesMc, std::array{vecDaughtersReso[3], vecDaughtersReso[4]}, kK0, std::array{+kPiPlus, -kPiPlus}, true, &signV0, 2) > -1) {
+        SETBIT(debug, PartialMatchMc::K0Matched);
+      }
+      if (RecoDecay::getMatchedMCRec(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1]}, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &signD0, 1) > -1) {
+        SETBIT(debug, PartialMatchMc::D0Matched);
+      }
+      if (RecoDecay::getMatchedMCRec<false, false, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2]}, Pdg::kDStar, std::array{-kKPlus, +kPiPlus, +kPiPlus}, true, &signDStar, 2) > -1) {
+        SETBIT(debug, PartialMatchMc::DStarMatched);
+      }
+      if (RecoDecay::getMatchedMCRec(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2]}, Pdg::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &signDPlus, 2) > -1) {
+        SETBIT(debug, PartialMatchMc::DPlusMatched);
+      }
+      registry.fill(HIST("hMCRecDebug"), debug);
+    }
+    rowHfDV0McRecReduced(indexHfCandCharm, indexCandV0, flag, debug, origin, motherPt);
+  }
+
+  template <bool withMl, bool doMc, uint8_t DecayChannel, typename Coll, typename CCands, typename Tr, typename PParticles, typename BBach>
   void runDataCreation(Coll const& collision,
                        CCands const& candsD,
                        BBach const& bachelors,
-                       TracksWithPID const&,
+                       Tr const&,
+                       PParticles const& particlesMc,
                        aod::BCsWithTimestamps const&)
   {
     // helpers for ReducedTables filling
@@ -324,7 +609,13 @@ struct HfDataCreatorCharmResoReduced {
     std::map<int64_t, int64_t> selectedTracks;
     bool fillHfReducedCollision = false;
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
-    initCCDB(bc, runNumber, ccdb, ccdbPathGrpMag, lut, false);
+    if (runNumber != bc.runNumber()) {
+      LOG(info) << ">>>>>>>>>>>> Current run number: " << runNumber;
+      initCCDB(bc, runNumber, ccdb, ccdbPathGrpMag, lut, false);
+      bz = o2::base::Propagator::Instance()->getNominalBz();
+      LOG(info) << ">>>>>>>>>>>> Magnetic field: " << bz;
+    }
+    fitter.setBz(bz);
     // loop on D candidates
     for (const auto& candD : candsD) {
       // initialize variables depending on decay channel
@@ -334,9 +625,9 @@ struct HfDataCreatorCharmResoReduced {
       std::array<float, 3> pVecProng2;
       std::array<float, 3> secondaryVertexD;
       std::array<int, 3> prongIdsD;
-      uint8_t v0type;
       int8_t dtype;
       std::array<float, 3> bdtScores;
+      std::vector<typename Tr::iterator> charmHadDauTracks{};
       if constexpr (DecayChannel == DecayChannel::DstarV0 || DecayChannel == DecayChannel::DstarTrack) {
         if (candD.signSoftPi() > 0) {
           invMassD = candD.invMassDstar();
@@ -353,14 +644,16 @@ struct HfDataCreatorCharmResoReduced {
         prongIdsD[1] = candD.prong1Id();
         prongIdsD[2] = candD.prongPiId();
         pVecProng2 = candD.pVecSoftPi();
-
+        charmHadDauTracks.push_back(candD.template prong0_as<Tr>());
+        charmHadDauTracks.push_back(candD.template prong1_as<Tr>());
+        charmHadDauTracks.push_back(candD.template prongPi_as<Tr>());
         dtype = candD.signSoftPi() * DType::Dstar;
         if constexpr (withMl) {
           std::copy(candD.mlProbDstarToD0Pi().begin(), candD.mlProbDstarToD0Pi().end(), bdtScores.begin());
         }
         registry.fill(HIST("hMassVsPtDstarAll"), candD.pt(), invMassD - invMassDdau);
       } else if constexpr (DecayChannel == DecayChannel::DplusV0) {
-        auto prong0 = candD.template prong0_as<TracksWithPID>();
+        auto prong0 = candD.template prong0_as<Tr>();
         invMassD = hfHelper.invMassDplusToPiKPi(candD);
         pVecD = candD.pVector();
         secondaryVertexD[0] = candD.xSecondaryVertex();
@@ -371,71 +664,66 @@ struct HfDataCreatorCharmResoReduced {
         prongIdsD[2] = candD.prong2Id();
         pVecProng2 = candD.pVectorProng2();
         dtype = static_cast<int8_t>(prong0.sign() * DType::Dplus);
+        charmHadDauTracks.push_back(candD.template prong0_as<Tr>());
+        charmHadDauTracks.push_back(candD.template prong1_as<Tr>());
+        charmHadDauTracks.push_back(candD.template prong2_as<Tr>());
         if constexpr (withMl) {
-          std::copy(candD.mlProbDplusToPiKPi().begin(), candD.mlProbDplusToPiKPi().end(), bdtScores.begin());
+          registry.fill(HIST("hMassVsPtDplusAll"), candD.pt(), invMassD);
         }
-        registry.fill(HIST("hMassVsPtDplusAll"), candD.pt(), invMassD);
       } // else if
 
       if constexpr (DecayChannel == DecayChannel::DplusV0 || DecayChannel == DecayChannel::DstarV0) {
         // Loop on V0 candidates
         for (const auto& v0 : bachelors) {
-          auto posTrack = v0.template posTrack_as<TracksWithPID>();
-          auto negTrack = v0.template negTrack_as<TracksWithPID>();
+          auto trackPos = v0.template posTrack_as<Tr>();
+          auto trackNeg = v0.template negTrack_as<Tr>();
           // Apply selsection
-          v0type = getSelectionMapV0(v0, collision, std::array{posTrack, negTrack}, prongIdsD);
-          if (v0type == 0) {
+          if (!buildAndSelectV0(collision, prongIdsD, std::array{trackPos, trackNeg})) {
             continue;
           }
           // propagate V0 to primary vertex (if enabled)
-          std::array<float, 3> pVecV0 = {v0.px(), v0.py(), v0.pz()};
           if (propagateV0toPV) {
-            std::array<float, 3> pVecV0Orig = {v0.px(), v0.py(), v0.pz()};
-            std::array<float, 3> posVecV0 = {v0.x(), v0.y(), v0.z()};
+            std::array<float, 3> pVecV0Orig = {candidateV0.mom[0], candidateV0.mom[1], candidateV0.mom[2]};
             gpu::gpustd::array<float, 2> dcaInfo;
-            auto trackParK0 = o2::track::TrackPar(posVecV0, pVecV0Orig, 0, true);
+            auto trackParK0 = o2::track::TrackPar(candidateV0.pos, pVecV0Orig, 0, true);
             trackParK0.setPID(o2::track::PID::K0);
             trackParK0.setAbsCharge(0);
             o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParK0, 2.f, matCorr, &dcaInfo);
-            getPxPyPz(trackParK0, pVecV0);
+            getPxPyPz(trackParK0, candidateV0.mom);
           }
-          float ptV0 = RecoDecay::pt(pVecV0); // fill histos
           float invMassKPiPiV0{0.f};
-          if (TESTBIT(v0type, K0s)) {
+          if (TESTBIT(candidateV0.v0Type, K0s)) {
             if constexpr (DecayChannel == DecayChannel::DplusV0) {
-              invMassKPiPiV0 = RecoDecay::m(std::array{candD.pVectorProng0(), candD.pVectorProng1(), candD.pVectorProng2(), pVecV0}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassK0});
+              invMassKPiPiV0 = RecoDecay::m(std::array{candD.pVectorProng0(), candD.pVectorProng1(), candD.pVectorProng2(), candidateV0.mom}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassK0});
             } else if (DecayChannel == DecayChannel::DstarV0) {
               if (candD.signSoftPi() > 0) {
-                invMassKPiPiV0 = RecoDecay::m(std::array{candD.pVectorProng0(), candD.pVectorProng1(), candD.pVecSoftPi(), pVecV0}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassK0});
+                invMassKPiPiV0 = RecoDecay::m(std::array{candD.pVectorProng0(), candD.pVectorProng1(), candD.pVecSoftPi(), candidateV0.mom}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassK0});
               } else {
-                invMassKPiPiV0 = RecoDecay::m(std::array{candD.pVectorProng1(), candD.pVectorProng0(), candD.pVecSoftPi(), pVecV0}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassK0});
+                invMassKPiPiV0 = RecoDecay::m(std::array{candD.pVectorProng1(), candD.pVectorProng0(), candD.pVecSoftPi(), candidateV0.mom}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassK0});
               }
             }
 
-            registry.fill(HIST("hMassVsPtK0s"), ptV0, v0.mK0Short());
+            registry.fill(HIST("hMassVsPtK0s"), candidateV0.pT, candidateV0.mK0Short);
             if constexpr (DecayChannel == DecayChannel::DstarV0) {
               registry.fill(HIST("hMassDs1"), invMassKPiPiV0 - invMassD);
             } else if constexpr (DecayChannel == DecayChannel::DplusV0) {
               registry.fill(HIST("hMassDsStar2"), invMassKPiPiV0 - invMassD);
             }
           }
-          bool isLambda = TESTBIT(v0type, Lambda);
-          bool isAntiLambda = TESTBIT(v0type, AntiLambda);
+          bool isLambda = TESTBIT(candidateV0.v0Type, Lambda);
+          bool isAntiLambda = TESTBIT(candidateV0.v0Type, AntiLambda);
           if (isLambda || isAntiLambda) {
             if constexpr (DecayChannel == DecayChannel::DplusV0) {
-              invMassKPiPiV0 = RecoDecay::m(std::array{candD.pVectorProng0(), candD.pVectorProng1(), candD.pVectorProng2(), pVecV0}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassLambda0});
+              invMassKPiPiV0 = RecoDecay::m(std::array{candD.pVectorProng0(), candD.pVectorProng1(), candD.pVectorProng2(), candidateV0.mom}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassLambda0});
             } else if (DecayChannel == DecayChannel::DstarV0) {
               if (candD.signSoftPi() > 0) {
-                invMassKPiPiV0 = RecoDecay::m(std::array{candD.pVectorProng0(), candD.pVectorProng1(), candD.pVecSoftPi(), pVecV0}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassLambda0});
+                invMassKPiPiV0 = RecoDecay::m(std::array{candD.pVectorProng0(), candD.pVectorProng1(), candD.pVecSoftPi(), candidateV0.mom}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassLambda0});
               } else {
-                invMassKPiPiV0 = RecoDecay::m(std::array{candD.pVectorProng1(), candD.pVectorProng0(), candD.pVecSoftPi(), pVecV0}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassLambda0});
+                invMassKPiPiV0 = RecoDecay::m(std::array{candD.pVectorProng1(), candD.pVectorProng0(), candD.pVecSoftPi(), candidateV0.mom}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassLambda0});
               }
             }
-            if (isLambda) {
-              registry.fill(HIST("hMassVsPtLambda"), ptV0, v0.mLambda());
-            }
-            if (isAntiLambda) {
-              registry.fill(HIST("hMassVsPtLambda"), ptV0, v0.mAntiLambda());
+            if (isLambda || isAntiLambda) {
+              registry.fill(HIST("hMassVsPtLambda"), candidateV0.pT, candidateV0.mLambda);
             }
             if constexpr (DecayChannel == DecayChannel::DplusV0) {
               registry.fill(HIST("hMassXcRes"), invMassKPiPiV0 - invMassD);
@@ -444,21 +732,33 @@ struct HfDataCreatorCharmResoReduced {
           // fill V0 table
           // if information on V0 already stored, go to next V0
           if (!selectedV0s.count(v0.globalIndex())) {
-            hfCandV0(v0.posTrackId(), v0.negTrackId(),
+            hfCandV0(trackPos.globalIndex(), trackNeg.globalIndex(),
                      indexHfReducedCollision,
-                     v0.x(), v0.y(), v0.z(),
-                     v0.pxpos(), v0.pypos(), v0.pzpos(),
-                     v0.pxneg(), v0.pyneg(), v0.pzneg(),
-                     v0.v0cosPA(),
-                     v0.dcav0topv(),
-                     v0type);
+                     candidateV0.pos[0], candidateV0.pos[1], candidateV0.pos[2],
+                     candidateV0.momPos[0], candidateV0.momPos[1], candidateV0.momPos[2],
+                     candidateV0.momNeg[0], candidateV0.momNeg[1], candidateV0.momNeg[2],
+                     candidateV0.cosPA,
+                     candidateV0.dcaV0ToPv,
+                     candidateV0.v0Type);
             selectedV0s[v0.globalIndex()] = hfCandV0.lastIndex();
           }
           fillHfCandD = true;
+          // Optional filling of MC Rec table
+          if constexpr (doMc) {
+            std::vector<typename Tr::iterator> charmResoDauTracks{};
+            for (const auto& track : charmHadDauTracks) {
+              charmResoDauTracks.push_back(track);
+            }
+            charmResoDauTracks.push_back(trackPos);
+            charmResoDauTracks.push_back(trackNeg);
+            int indexHfCandCharm = hfCandD.lastIndex() + 1;
+            int indexHfCandV0 = hfCandV0.lastIndex();
+            fillMcRecoInfo<DecayChannel>(particlesMc, charmResoDauTracks, indexHfCandCharm, indexHfCandV0);
+          }
         } // V0 loop
       } else if constexpr (DecayChannel == DecayChannel::DstarTrack) {
         for (const auto& trackIndex : bachelors) {
-          auto track = trackIndex.template track_as<TracksWithPID>();
+          auto track = trackIndex.template track_as<Tr>();
           if (!isTrackSelected(track, prongIdsD)) {
             continue;
           }
@@ -501,7 +801,7 @@ struct HfDataCreatorCharmResoReduced {
                 pVecProng2[0], pVecProng2[1], pVecProng2[2],
                 dtype);
         if constexpr (withMl) {
-          hfCandDMl(bdtScores[0], bdtScores[1], bdtScores[2]);
+          hfCandDMl(bdtScores[0], bdtScores[1], bdtScores[2], -1., -1., -1.);
         }
         fillHfReducedCollision = true;
         if constexpr (DecayChannel == DecayChannel::DstarV0 || DecayChannel == DecayChannel::DstarTrack) {
@@ -518,14 +818,149 @@ struct HfDataCreatorCharmResoReduced {
       return;
     }
     registry.fill(HIST("hEvents"), 1 + Event::DV0Selected);
+    float centrality = -1.f;
+    uint16_t hfRejMap = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
     // fill collision table if it contains a DPi pair a minima
-    hfReducedCollision(collision.posX(), collision.posY(), collision.posZ());
+    hfReducedCollision(collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), hfRejMap, bz);
   } // run data creation
+
+  template <uint8_t decayChannel>
+  void runMcGen(aod::McParticles const& particlesMc)
+  {
+    // Match generated particles.
+    for (const auto& particle : particlesMc) {
+      int8_t sign{0};
+      int8_t flag{0};
+      int8_t signDStar{0};
+      int8_t signDPlus{0};
+      int8_t signV0{0};
+      int8_t origin = 0;
+      std::vector<int> idxBhadMothers{};
+
+      if constexpr (decayChannel == DecayChannel::DstarV0) {
+        // Ds1 → D* K0
+        if (RecoDecay::isMatchedMCGen<false, true>(particlesMc, particle, Pdg::kDS1, std::array{static_cast<int>(Pdg::kDStar), +kK0}, true, &sign, 1)) {
+          registry.fill(HIST("hMCSignCounter"), sign);
+          origin = RecoDecay::getCharmHadronOrigin(particlesMc, particle, false, &idxBhadMothers);
+          registry.fill(HIST("hMCGenOrigin"), origin);
+          auto candV0MC = particlesMc.rawIteratorAt(particle.daughtersIds().back());
+          // K0 -> K0s -> π+π-
+          if (RecoDecay::isMatchedMCGen<false, true>(particlesMc, candV0MC, kK0, std::array{+kPiPlus, -kPiPlus}, true, &signV0, 2)) {
+            auto candDStarMC = particlesMc.rawIteratorAt(particle.daughtersIds().front());
+            // D* -> D0 π+ -> K-π+π+
+            if (RecoDecay::isMatchedMCGen(particlesMc, candDStarMC, Pdg::kDStar, std::array{static_cast<int>(Pdg::kD0), +static_cast<int>(kPiPlus)}, true, &signDStar, 1)) {
+              auto candD0MC = particlesMc.rawIteratorAt(candDStarMC.daughtersIds().front());
+              if (RecoDecay::isMatchedMCGen(particlesMc, candDStarMC, Pdg::kDStar, std::array{-kKPlus, +kPiPlus, +kPiPlus}, true, &signDStar, 2)) {
+                flag = signDStar * BIT(DecayTypeMc::Ds1ToDStarK0ToD0PiK0s);
+              } else if (RecoDecay::isMatchedMCGen(particlesMc, candD0MC, Pdg::kD0, std::array{-kKPlus, +kPiPlus, +kPiPlus, +kPi0}, true, &signDStar, 2) ||
+                         RecoDecay::isMatchedMCGen(particlesMc, candD0MC, Pdg::kD0, std::array{-kKPlus, +kPiPlus, +kPiPlus, -kPi0}, true, &signDStar, 2)) {
+                flag = signDStar * BIT(DecayTypeMc::Ds1ToDStarK0ToD0PiK0sPart);
+              }
+            } else if (RecoDecay::isMatchedMCGen(particlesMc, candDStarMC, Pdg::kDStar, std::array{static_cast<int>(Pdg::kDPlus), static_cast<int>(kGamma)}, true, &signDStar, 1) ||
+                       RecoDecay::isMatchedMCGen(particlesMc, candDStarMC, Pdg::kDStar, std::array{static_cast<int>(Pdg::kDPlus), -static_cast<int>(kGamma)}, true, &signDStar, 1) ||
+                       RecoDecay::isMatchedMCGen(particlesMc, candDStarMC, Pdg::kDStar, std::array{static_cast<int>(Pdg::kDPlus), static_cast<int>(kPi0)}, true, &signDStar, 1) ||
+                       RecoDecay::isMatchedMCGen(particlesMc, candDStarMC, Pdg::kDStar, std::array{static_cast<int>(Pdg::kDPlus), -static_cast<int>(kPi0)}, true, &signDStar, 1)) {
+              auto candDPlusMC = particlesMc.rawIteratorAt(candDStarMC.daughtersIds().front());
+              if (RecoDecay::isMatchedMCGen(particlesMc, candDPlusMC, Pdg::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &signDPlus, 2))
+                flag = sign * BIT(DecayTypeMc::Ds1ToDStarK0ToDPlusPi0K0s);
+            }
+          }
+        } else {
+          if (std::abs(particle.pdgCode()) == Pdg::kDS1) {
+            origin = RecoDecay::getCharmHadronOrigin(particlesMc, particle, false, &idxBhadMothers);
+            registry.fill(HIST("hMCOriginCounterWrongDecay"), origin);
+          }
+        }
+        // save information for task
+        if (!TESTBIT(std::abs(flag), DecayTypeMc::Ds1ToDStarK0ToD0PiK0s) && !TESTBIT(std::abs(flag), DecayTypeMc::Ds1ToDStarK0ToD0PiK0sPart) && !TESTBIT(std::abs(flag), DecayTypeMc::Ds1ToDStarK0ToDPlusPi0K0s)) {
+          continue;
+        }
+
+        auto ptParticle = particle.pt();
+        auto yParticle = RecoDecay::y(particle.pVector(), MassDS1);
+        auto etaParticle = particle.eta();
+
+        std::array<float, 2> ptProngs;
+        std::array<float, 2> yProngs;
+        std::array<float, 2> etaProngs;
+        int counter = 0;
+        for (const auto& daught : particle.daughters_as<aod::McParticles>()) {
+          ptProngs[counter] = daught.pt();
+          etaProngs[counter] = daught.eta();
+          yProngs[counter] = RecoDecay::y(daught.pVector(), pdg->Mass(daught.pdgCode()));
+          counter++;
+        }
+        registry.fill(HIST("hMCGenCounter"), flag, ptParticle);
+        rowHfResoMcGenReduced(flag, origin, ptParticle, yParticle, etaParticle,
+                              ptProngs[0], yProngs[0], etaProngs[0],
+                              ptProngs[1], yProngs[1], etaProngs[1]);
+      } else if constexpr (decayChannel == DecayChannel::DplusV0) { // Ds2Star → D+ K0
+        if (RecoDecay::isMatchedMCGen<false, true>(particlesMc, particle, Pdg::kDS2Star, std::array{static_cast<int>(Pdg::kDPlus), +kK0}, true, &sign, 1)) {
+          registry.fill(HIST("hMCSignCounter"), sign);
+          origin = RecoDecay::getCharmHadronOrigin(particlesMc, particle, false, &idxBhadMothers);
+          registry.fill(HIST("hMCGenOrigin"), origin);
+          auto candV0MC = particlesMc.rawIteratorAt(particle.daughtersIds().back());
+          auto candDPlusMC = particlesMc.rawIteratorAt(particle.daughtersIds().front());
+          // K0 -> K0s -> π+π-
+          if (RecoDecay::isMatchedMCGen<false, true>(particlesMc, candV0MC, kK0, std::array{+kPiPlus, -kPiPlus}, true, &signV0, 2)) {
+            // D* -> D0 π+ -> K-π+π+
+            if (RecoDecay::isMatchedMCGen(particlesMc, candDPlusMC, Pdg::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &signDPlus, 2)) {
+              flag = sign * BIT(DecayTypeMc::Ds2StarToDplusK0s);
+            }
+          }
+        } else if (RecoDecay::isMatchedMCGen<false, true>(particlesMc, particle, Pdg::kDS1, std::array{static_cast<int>(Pdg::kDStar), +kK0}, true, &sign, 1)) {
+          auto candV0MC = particlesMc.rawIteratorAt(particle.daughtersIds().back());
+          // K0 -> K0s -> π+π-
+          if (RecoDecay::isMatchedMCGen<false, true>(particlesMc, candV0MC, kK0, std::array{+kPiPlus, -kPiPlus}, true, &signV0, 2)) {
+            auto candDStarMC = particlesMc.rawIteratorAt(particle.daughtersIds().front());
+            // D* -> D+ π0/γ ->π+K-π+ π0/γ
+            if (RecoDecay::isMatchedMCGen(particlesMc, candDStarMC, Pdg::kDStar, std::array{static_cast<int>(Pdg::kDPlus), static_cast<int>(kGamma)}, true, &signDStar, 1) ||
+                RecoDecay::isMatchedMCGen(particlesMc, candDStarMC, Pdg::kDStar, std::array{static_cast<int>(Pdg::kDPlus), -static_cast<int>(kGamma)}, true, &signDStar, 1) ||
+                RecoDecay::isMatchedMCGen(particlesMc, candDStarMC, Pdg::kDStar, std::array{static_cast<int>(Pdg::kDPlus), static_cast<int>(kPi0)}, true, &signDStar, 1) ||
+                RecoDecay::isMatchedMCGen(particlesMc, candDStarMC, Pdg::kDStar, std::array{static_cast<int>(Pdg::kDPlus), -static_cast<int>(kPi0)}, true, &signDStar, 1)) {
+              auto candDPlusMC = particlesMc.rawIteratorAt(candDStarMC.daughtersIds().front());
+              if (RecoDecay::isMatchedMCGen(particlesMc, candDPlusMC, Pdg::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &signDPlus, 2))
+                flag = sign * BIT(DecayTypeMc::Ds1ToDStarK0ToDPlusPi0K0s);
+            }
+          }
+        } else {
+          if (std::abs(particle.pdgCode()) == Pdg::kDS2Star) {
+            origin = RecoDecay::getCharmHadronOrigin(particlesMc, particle, false, &idxBhadMothers);
+            // LOGF(info, "Found DS2Star that decays into %d, %d", particlesMc.rawIteratorAt(particle.daughtersIds().front()).pdgCode(),particlesMc.rawIteratorAt(particle.daughtersIds().back()).pdgCode());
+            registry.fill(HIST("hMCOriginCounterWrongDecay"), origin);
+          }
+        }
+        // save information for task
+        if (!TESTBIT(std::abs(flag), DecayTypeMc::Ds2StarToDplusK0s) && !TESTBIT(std::abs(flag), DecayTypeMc::Ds1ToDStarK0ToDPlusPi0K0s)) {
+          continue;
+        }
+
+        auto ptParticle = particle.pt();
+        auto yParticle = RecoDecay::y(particle.pVector(), MassDS2Star);
+        auto etaParticle = particle.eta();
+
+        std::array<float, 2> ptProngs;
+        std::array<float, 2> yProngs;
+        std::array<float, 2> etaProngs;
+        int counter = 0;
+        for (const auto& daught : particle.daughters_as<aod::McParticles>()) {
+          ptProngs[counter] = daught.pt();
+          etaProngs[counter] = daught.eta();
+          yProngs[counter] = RecoDecay::y(daught.pVector(), pdg->Mass(daught.pdgCode()));
+          counter++;
+        }
+        registry.fill(HIST("hMCGenCounter"), flag, ptParticle);
+        rowHfResoMcGenReduced(flag, origin, ptParticle, yParticle, etaParticle,
+                              ptProngs[0], yProngs[0], etaProngs[0],
+                              ptProngs[1], yProngs[1], etaProngs[1]);
+      } // Dplus V0
+    } // for loop
+  } // gen
 
   void processDplusV0(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                       CandsDplusFiltered const& candsDplus,
-                      aod::V0Datas const& V0s,
-                      TracksWithPID const& tracks,
+                      aod::V0s const& V0s,
+                      TracksIUWithPID const& tracks,
                       aod::BCsWithTimestamps const& bcs)
   {
     int zvtxColl{0};
@@ -538,17 +973,42 @@ struct HfDataCreatorCharmResoReduced {
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsDplus.sliceBy(candsDplusPerCollision, thisCollId);
       auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
-      runDataCreation<false, DecayChannel::DplusV0>(collision, candsDThisColl, V0sThisColl, tracks, bcs);
+      runDataCreation<false, false, DecayChannel::DplusV0>(collision, candsDThisColl, V0sThisColl, tracks, tracks, bcs);
     }
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
   }
   PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDplusV0, "Process Dplus candidates paired with V0s without MC info and without ML info", true);
 
+  void processDplusV0MC(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+                        CandsDplusFiltered const& candsDplus,
+                        aod::V0s const& V0s,
+                        TracksIUWithPIDAndMC const& tracks,
+                        aod::McParticles const& particlesMc,
+                        aod::BCsWithTimestamps const& bcs)
+  {
+    int zvtxColl{0};
+    int sel8Coll{0};
+    int zvtxAndSel8Coll{0};
+    int zvtxAndSel8CollAndSoftTrig{0};
+    int allSelColl{0};
+    for (const auto& collision : collisions) {
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
+      auto thisCollId = collision.globalIndex();
+      auto candsDThisColl = candsDplus.sliceBy(candsDplusPerCollision, thisCollId);
+      auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
+      runDataCreation<false, true, DecayChannel::DplusV0>(collision, candsDThisColl, V0sThisColl, tracks, particlesMc, bcs);
+    }
+    runMcGen<DecayChannel::DplusV0>(particlesMc);
+    // handle normalization by the right number of collisions
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
+  }
+  PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDplusV0MC, "Process DPlus candidates paired with V0s with MC matching and without ML info", false);
+
   void processDplusV0WithMl(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                             CandsDplusFilteredWithMl const& candsDplus,
-                            aod::V0Datas const& V0s,
-                            TracksWithPID const& tracks,
+                            aod::V0s const& V0s,
+                            TracksIUWithPID const& tracks,
                             aod::BCsWithTimestamps const& bcs)
   {
     int zvtxColl{0};
@@ -561,17 +1021,42 @@ struct HfDataCreatorCharmResoReduced {
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsDplus.sliceBy(candsDplusPerCollisionWithMl, thisCollId);
       auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
-      runDataCreation<true, DecayChannel::DplusV0>(collision, candsDThisColl, V0sThisColl, tracks, bcs);
+      runDataCreation<true, false, DecayChannel::DplusV0>(collision, candsDThisColl, V0sThisColl, tracks, tracks, bcs);
     }
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
   }
   PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDplusV0WithMl, "Process Dplus candidates paired with V0s with ML info", false);
 
+  void processDplusV0MCWithMl(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+                              CandsDplusFilteredWithMl const& candsDplus,
+                              aod::V0s const& V0s,
+                              TracksIUWithPIDAndMC const& tracks,
+                              aod::McParticles const& particlesMc,
+                              aod::BCsWithTimestamps const& bcs)
+  {
+    int zvtxColl{0};
+    int sel8Coll{0};
+    int zvtxAndSel8Coll{0};
+    int zvtxAndSel8CollAndSoftTrig{0};
+    int allSelColl{0};
+    for (const auto& collision : collisions) {
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
+      auto thisCollId = collision.globalIndex();
+      auto candsDThisColl = candsDplus.sliceBy(candsDplusPerCollision, thisCollId);
+      auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
+      runDataCreation<true, true, DecayChannel::DplusV0>(collision, candsDThisColl, V0sThisColl, tracks, particlesMc, bcs);
+    }
+    runMcGen<DecayChannel::DplusV0>(particlesMc);
+    // handle normalization by the right number of collisions
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
+  }
+  PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDplusV0MCWithMl, "Process DPlus candidates paired with V0s with MC matching and with ML info", false);
+
   void processDstarV0(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                       CandDstarFiltered const& candsDstar,
-                      aod::V0Datas const& V0s,
-                      TracksWithPID const& tracks,
+                      aod::V0s const& V0s,
+                      TracksIUWithPID const& tracks,
                       aod::BCsWithTimestamps const& bcs)
   {
     int zvtxColl{0};
@@ -584,17 +1069,42 @@ struct HfDataCreatorCharmResoReduced {
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsDstar.sliceBy(candsDstarPerCollision, thisCollId);
       auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
-      runDataCreation<false, DecayChannel::DstarV0>(collision, candsDThisColl, V0sThisColl, tracks, bcs);
+      runDataCreation<false, false, DecayChannel::DstarV0>(collision, candsDThisColl, V0sThisColl, tracks, tracks, bcs);
     }
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
   }
   PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDstarV0, "Process DStar candidates paired with V0s without MC info and without ML info", false);
 
+  void processDstarV0MC(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+                        CandDstarFiltered const& candsDstar,
+                        aod::V0s const& V0s,
+                        TracksIUWithPIDAndMC const& tracks,
+                        aod::McParticles const& particlesMc,
+                        aod::BCsWithTimestamps const& bcs)
+  {
+    int zvtxColl{0};
+    int sel8Coll{0};
+    int zvtxAndSel8Coll{0};
+    int zvtxAndSel8CollAndSoftTrig{0};
+    int allSelColl{0};
+    for (const auto& collision : collisions) {
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
+      auto thisCollId = collision.globalIndex();
+      auto candsDThisColl = candsDstar.sliceBy(candsDstarPerCollision, thisCollId);
+      auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
+      runDataCreation<false, true, DecayChannel::DstarV0>(collision, candsDThisColl, V0sThisColl, tracks, particlesMc, bcs);
+    }
+    runMcGen<DecayChannel::DstarV0>(particlesMc);
+    // handle normalization by the right number of collisions
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
+  }
+  PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDstarV0MC, "Process DStar candidates paired with V0s with MC matching and without ML info", false);
+
   void processDstarV0WithMl(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                             CandDstarFilteredWithMl const& candsDstar,
-                            aod::V0Datas const& V0s,
-                            TracksWithPID const& tracks,
+                            aod::V0s const& V0s,
+                            TracksIUWithPID const& tracks,
                             aod::BCsWithTimestamps const& bcs)
   {
     int zvtxColl{0};
@@ -608,12 +1118,37 @@ struct HfDataCreatorCharmResoReduced {
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsDstar.sliceBy(candsDstarPerCollisionWithMl, thisCollId);
       auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
-      runDataCreation<true, DecayChannel::DstarV0>(collision, candsDThisColl, V0sThisColl, tracks, bcs);
+      runDataCreation<true, false, DecayChannel::DstarV0>(collision, candsDThisColl, V0sThisColl, tracks, tracks, bcs);
     }
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
   }
   PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDstarV0WithMl, "Process DStar candidates paired with V0s with ML info", false);
+
+  void processDstarV0MCWithMl(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+                              CandDstarFilteredWithMl const& candsDstar,
+                              aod::V0s const& V0s,
+                              TracksIUWithPIDAndMC const& tracks,
+                              aod::McParticles const& particlesMc,
+                              aod::BCsWithTimestamps const& bcs)
+  {
+    int zvtxColl{0};
+    int sel8Coll{0};
+    int zvtxAndSel8Coll{0};
+    int zvtxAndSel8CollAndSoftTrig{0};
+    int allSelColl{0};
+    for (const auto& collision : collisions) {
+      o2::hf_evsel::checkEvSel<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, hfEvSel, zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl, ccdb, registry);
+      auto thisCollId = collision.globalIndex();
+      auto candsDThisColl = candsDstar.sliceBy(candsDstarPerCollision, thisCollId);
+      auto V0sThisColl = V0s.sliceBy(candsV0PerCollision, thisCollId);
+      runDataCreation<true, true, DecayChannel::DstarV0>(collision, candsDThisColl, V0sThisColl, tracks, particlesMc, bcs);
+    }
+    runMcGen<DecayChannel::DstarV0>(particlesMc);
+    // handle normalization by the right number of collisions
+    hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
+  }
+  PROCESS_SWITCH(HfDataCreatorCharmResoReduced, processDstarV0MCWithMl, "Process MC DStar candidates paired with V0s with ML info", false);
 
   void processDstarTrack(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                          CandDstarFiltered const& candsDstar,
@@ -631,7 +1166,7 @@ struct HfDataCreatorCharmResoReduced {
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsDstar.sliceBy(candsDstarPerCollision, thisCollId);
       auto trackIdsThisColl = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-      runDataCreation<false, DecayChannel::DstarTrack>(collision, candsDThisColl, trackIdsThisColl, tracks, bcs);
+      runDataCreation<false, false, DecayChannel::DstarTrack>(collision, candsDThisColl, trackIdsThisColl, tracks, tracks, bcs);
     }
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);
@@ -655,7 +1190,7 @@ struct HfDataCreatorCharmResoReduced {
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsDstar.sliceBy(candsDstarPerCollisionWithMl, thisCollId);
       auto trackIdsThisColl = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
-      runDataCreation<true, DecayChannel::DstarTrack>(collision, candsDThisColl, trackIdsThisColl, tracks, bcs);
+      runDataCreation<true, false, DecayChannel::DstarTrack>(collision, candsDThisColl, trackIdsThisColl, tracks, tracks, bcs);
     }
     // handle normalization by the right number of collisions
     hfCollisionCounter(collisions.tableSize(), zvtxColl, sel8Coll, zvtxAndSel8Coll, zvtxAndSel8CollAndSoftTrig, allSelColl);

@@ -203,7 +203,7 @@ struct centralityStudy {
     genericProcessCollision(collision);
   }
 
-  void processBCs(aod::MultsBC::iterator const& multbc)
+  void processBCs(aod::MultBCs::iterator const& multbc)
   {
     // process BCs, calculate FT0C distribution
     // conditionals suggested by FIT team (Jacek O. et al)

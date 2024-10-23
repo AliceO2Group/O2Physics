@@ -56,6 +56,12 @@ o2physics_add_dpl_workflow(hstrangecorrelationfilter
     PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(double-casc-tree-creator
+    SOURCES doubleCascTreeCreator.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::EventFilteringUtils
+    COMPONENT_NAME Analysis)
+
+
 o2physics_add_dpl_workflow(lambdakzerobuilder
     SOURCES lambdakzerobuilder.cxx
     PUBLIC_LINK_LIBRARIES O2::DCAFitter O2Physics::AnalysisCore O2Physics::MLCore
@@ -99,6 +105,11 @@ o2physics_add_dpl_workflow(st-coll-ids
 o2physics_add_dpl_workflow(strangederivedbuilder
     SOURCES strangederivedbuilder.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(v0-selector
+    SOURCES v0selector.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(v0qaanalysis

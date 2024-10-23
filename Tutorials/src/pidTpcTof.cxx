@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 ///
-/// \file   pid.cxx
+/// \file   pidTpcTof.cxx
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
 /// \brief  Task to test the PID features and utilities
 ///
@@ -30,7 +30,7 @@ using namespace o2::framework::expressions;
 using namespace o2::track;
 
 /// Task to produce the response table
-struct pid {
+struct pidTpcTof {
   void init(o2::framework::InitContext&)
   {
   }
@@ -75,5 +75,5 @@ struct pid {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<pid>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<pidTpcTof>(cfgc)};
 }

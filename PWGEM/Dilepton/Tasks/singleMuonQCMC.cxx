@@ -23,5 +23,5 @@
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<SingleTrackQCMC<o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon, FilteredMyMCMuons>>(cfgc, TaskName{"single-muon-qc-mc"})};
+    adaptAnalysisTask<SingleTrackQCMC<o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon, FilteredMyMCMuons, MySmearedMuons>>(cfgc, TaskName{"single-muon-qc-mc"})};
 }

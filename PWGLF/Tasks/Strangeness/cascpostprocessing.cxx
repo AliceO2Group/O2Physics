@@ -213,8 +213,8 @@ struct cascpostprocessing {
     registry.add("hCascMinusEtaBach", "hCascMinusEtaBach", {HistType::kTH1F, {{100, -1.0f, 1.0f}}});
 
     // Info for eff x acc from MC
-    registry.add("hPtCascPlusTrueRec", "hPtCascPlusTrueRec", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
-    registry.add("hPtCascMinusTrueRec", "hPtCascMinusTrueRec", {HistType::kTH3F, {ptAxis, rapidityAxis, nChargedFT0MGenAxis}});
+    registry.add("hPtCascPlusTrueRec", "hPtCascPlusTrueRec", {HistType::kTH3F, {ptAxis, rapidityAxis, centFT0MAxis}});
+    registry.add("hPtCascMinusTrueRec", "hPtCascMinusTrueRec", {HistType::kTH3F, {ptAxis, rapidityAxis, centFT0MAxis}});
 
     registry.add("hCascMinusMassvsPtTrueRec", "hCascMinusMassvsPtTrueRec", {HistType::kTH2F, {ptAxis, massAxis}});
     registry.add("hCascPlusMassvsPtTrueRec", "hCascPlusMassvsPtTrueRec", {HistType::kTH2F, {ptAxis, massAxis}});

@@ -17,11 +17,14 @@
 #include <bitset>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "TH1D.h"
 #include "CommonDataFormat/IRFrame.h"
 #include "Framework/HistogramRegistry.h"
+#include "ZorroHelper.h"
+#include "ZorroSummary.h"
 
 namespace o2
 {
@@ -31,11 +34,6 @@ class BasicCCDBManager;
 };
 }; // namespace o2
 
-struct ZorroHelper {
-  ULong64_t bcAOD, bcEvSel, trigMask[2], selMask[2];
-  ClassDefNV(ZorroHelper, 1);
-};
-
 class Zorro
 {
  public:
@@ -43,22 +41,33 @@ class Zorro
   std::vector<int> initCCDB(o2::ccdb::BasicCCDBManager* ccdb, int runNumber, uint64_t timestamp, std::string tois, int bcTolerance = 500);
   std::bitset<128> fetch(uint64_t bcGlobalId, uint64_t tolerance = 100);
   bool isSelected(uint64_t bcGlobalId, uint64_t tolerance = 100);
+  bool isNotSelectedByAny(uint64_t bcGlobalId, uint64_t tolerance = 100);
 
-  void populateHistRegistry(o2::framework::HistogramRegistry& histRegistry, int runNumber, std::string prefix = "");
+  void populateHistRegistry(o2::framework::HistogramRegistry& histRegistry, int runNumber, std::string folderName = "Zorro");
 
   TH1D* getScalers() const { return mScalers; }
   TH1D* getSelections() const { return mSelections; }
   TH1D* getInspectedTVX() const { return mInspectedTVX; }
   std::bitset<128> getLastResult() const { return mLastResult; }
   std::vector<int> getTOIcounters() const { return mTOIcounts; }
+  std::vector<bool> getTriggerOfInterestResults(uint64_t bcGlobalId, uint64_t tolerance = 100);
+  std::vector<bool> getTriggerOfInterestResults() const;
 
   void setCCDBpath(std::string path) { mBaseCCDBPath = path; }
   void setBaseCCDBPath(std::string path) { mBaseCCDBPath = path; }
   void setBCtolerance(int tolerance) { mBCtolerance = tolerance; }
 
+  ZorroSummary* getZorroSummary() { return &mZorroSummary; }
+
  private:
-  std::string mBaseCCDBPath = "Users/m/mpuccio/EventFiltering/OTS/";
+  void setupHelpers(int64_t timestamp);
+
+  ZorroSummary mZorroSummary{"ZorroSummary", "ZorroSummary"};
+
+  std::string mBaseCCDBPath = "Users/m/mpuccio/EventFiltering/OTS/Chunked/";
   int mRunNumber = 0;
+  std::pair<int64_t, int64_t> mRunDuration;
+  int64_t mOrbitResetTimestamp = 0;
   TH1* mAnalysedTriggers;           /// Accounting for all triggers in the current run
   TH1* mAnalysedTriggersOfInterest; /// Accounting for triggers of interest in the current run
 

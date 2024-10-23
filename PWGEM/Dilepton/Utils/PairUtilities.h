@@ -37,10 +37,9 @@ enum class DileptonAnalysisType : int {
   kUPC = 1,
   kFlowV2 = 2,
   kFlowV3 = 3,
-  kFlowV4 = 4,
-  kPolarization = 5,
-  kVM = 6,
-  kHFll = 7,
+  kPolarization = 4,
+  kVM = 5,
+  kHFll = 6,
 };
 
 using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;

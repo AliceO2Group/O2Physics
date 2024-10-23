@@ -142,16 +142,16 @@ struct FwdTrackPropagation {
         float sigPhi = TMath::Sqrt(cov(2, 2));
         float sigTgl = TMath::Sqrt(cov(3, 3));
         float sig1Pt = TMath::Sqrt(cov(4, 4));
-        auto rhoXY = static_cast<Char_t>(128. * cov(0, 1) / (sigX * sigY));
-        auto rhoPhiX = static_cast<Char_t>(128. * cov(0, 2) / (sigPhi * sigX));
-        auto rhoPhiY = static_cast<Char_t>(128. * cov(1, 2) / (sigPhi * sigY));
-        auto rhoTglX = static_cast<Char_t>(128. * cov(0, 3) / (sigTgl * sigX));
-        auto rhoTglY = static_cast<Char_t>(128. * cov(1, 3) / (sigTgl * sigY));
-        auto rhoTglPhi = static_cast<Char_t>(128. * cov(2, 3) / (sigTgl * sigPhi));
-        auto rho1PtX = static_cast<Char_t>(128. * cov(0, 4) / (sig1Pt * sigX));
-        auto rho1PtY = static_cast<Char_t>(128. * cov(1, 4) / (sig1Pt * sigY));
-        auto rho1PtPhi = static_cast<Char_t>(128. * cov(2, 4) / (sig1Pt * sigPhi));
-        auto rho1PtTgl = static_cast<Char_t>(128. * cov(3, 4) / (sig1Pt * sigTgl));
+        auto rhoXY = static_cast<int8_t>(128. * cov(0, 1) / (sigX * sigY));
+        auto rhoPhiX = static_cast<int8_t>(128. * cov(0, 2) / (sigPhi * sigX));
+        auto rhoPhiY = static_cast<int8_t>(128. * cov(1, 2) / (sigPhi * sigY));
+        auto rhoTglX = static_cast<int8_t>(128. * cov(0, 3) / (sigTgl * sigX));
+        auto rhoTglY = static_cast<int8_t>(128. * cov(1, 3) / (sigTgl * sigY));
+        auto rhoTglPhi = static_cast<int8_t>(128. * cov(2, 3) / (sigTgl * sigPhi));
+        auto rho1PtX = static_cast<int8_t>(128. * cov(0, 4) / (sig1Pt * sigX));
+        auto rho1PtY = static_cast<int8_t>(128. * cov(1, 4) / (sig1Pt * sigY));
+        auto rho1PtPhi = static_cast<int8_t>(128. * cov(2, 4) / (sig1Pt * sigPhi));
+        auto rho1PtTgl = static_cast<int8_t>(128. * cov(3, 4) / (sig1Pt * sigTgl));
         propFwdTracksCov(sigX, sigY, sigTgl, sigPhi, sig1Pt,
                          rhoXY, rhoPhiX, rhoPhiY, rhoTglX,
                          rhoTglY, rhoTglPhi, rho1PtX, rho1PtY,

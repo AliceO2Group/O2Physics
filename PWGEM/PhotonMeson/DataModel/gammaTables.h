@@ -13,14 +13,7 @@
 #include <TMath.h>
 
 #include "Common/Core/RecoDecay.h"
-// #include "Framework/AnalysisDataModel.h"
-// #include "Common/DataModel/PIDResponse.h"
-// #include "Common/DataModel/EventSelection.h"
-// #include "Common/DataModel/TrackSelectionTables.h"
-// #include "Common/DataModel/CaloClusters.h"
-// #include "Common/DataModel/Multiplicity.h"
-// #include "Common/DataModel/Centrality.h"
-// #include "Common/DataModel/Qvectors.h"
+#include "Common/DataModel/CaloClusters.h"
 
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 
@@ -177,7 +170,7 @@ DECLARE_SOA_TABLE(V0Legs, "AOD", "V0LEG", //!
                   o2::soa::Index<>, v0leg::CollisionId, v0leg::TrackId, v0leg::Sign,
                   v0leg::Px, v0leg::Py, v0leg::Pz,
                   track::DcaXY, track::DcaZ,
-                  track::TPCNClsFindable, track::TPCNClsFindableMinusFound, track::TPCNClsFindableMinusCrossedRows,
+                  track::TPCNClsFindable, track::TPCNClsFindableMinusFound, track::TPCNClsFindableMinusCrossedRows, track::TPCNClsShared,
                   track::TPCChi2NCl, track::TPCInnerParam,
                   track::TPCSignal, pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaPi,
                   track::ITSClusterSizes, track::ITSChi2NCl, track::DetectorMap,
@@ -192,6 +185,7 @@ DECLARE_SOA_TABLE(V0Legs, "AOD", "V0LEG", //!
                   track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
                   track::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
                   track::TPCFoundOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                  track::TPCFractionSharedCls<track::TPCNClsShared, track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
                   track::v001::ITSClusterMap<track::ITSClusterSizes>, track::v001::ITSNCls<track::ITSClusterSizes>, track::v001::ITSNClsInnerBarrel<track::ITSClusterSizes>,
                   track::HasITS<track::DetectorMap>, track::HasTPC<track::DetectorMap>,
                   track::HasTRD<track::DetectorMap>, track::HasTOF<track::DetectorMap>,
@@ -202,10 +196,24 @@ DECLARE_SOA_TABLE(V0Legs, "AOD", "V0LEG", //!
 // iterators
 using V0Leg = V0Legs::iterator;
 
+namespace emevent
+{
+DECLARE_SOA_COLUMN(NgPCM, ngpcm, int);
+DECLARE_SOA_COLUMN(Weight, weight, float); //! Weight of the event (e.g. for JJ MCs). Set to 1 for data and non-weighted MCs.
+} // namespace emevent
+
+DECLARE_SOA_TABLE(EMEventsNgPCM, "AOD", "EMEVENTNGPCM", emevent::NgPCM); // joinable to EMEvents or aod::Collisions
+using EMEventNgPCM = EMEventsNgPCM::iterator;
+
+DECLARE_SOA_TABLE(EMEventsWeight, "AOD", "EMEVENTWEIGHT", //! table contanint the weight for eache event (for JJ MCs), joinable to EMEvents
+                  emevent::Weight);
+using EMEventWeight = EMEventsWeight::iterator;
+
 namespace v0photonkf
 {
 DECLARE_SOA_INDEX_COLUMN(EMEvent, emevent);                             //!
 DECLARE_SOA_COLUMN(CollisionId, collisionId, int);                      //!
+DECLARE_SOA_COLUMN(V0Id, v0Id, int);                                    //!
 DECLARE_SOA_INDEX_COLUMN_FULL(PosTrack, posTrack, int, V0Legs, "_Pos"); //!
 DECLARE_SOA_INDEX_COLUMN_FULL(NegTrack, negTrack, int, V0Legs, "_Neg"); //!
 DECLARE_SOA_COLUMN(Vx, vx, float);                                      //! secondary vertex x
@@ -222,6 +230,12 @@ DECLARE_SOA_COLUMN(PCA, pca, float);                                    //!
 DECLARE_SOA_COLUMN(Alpha, alpha, float);                                //!
 DECLARE_SOA_COLUMN(QtArm, qtarm, float);                                //!
 DECLARE_SOA_COLUMN(ChiSquareNDF, chiSquareNDF, float);                  // Chi2 / NDF of the reconstructed V0
+DECLARE_SOA_COLUMN(SigmaPx2, sigmaPx2, float);                          //! error^2 of px in covariant matrix
+DECLARE_SOA_COLUMN(SigmaPy2, sigmaPy2, float);                          //! error^2 of py in covariant matrix
+DECLARE_SOA_COLUMN(SigmaPz2, sigmaPz2, float);                          //! error^2 of pz in covariant matrix
+DECLARE_SOA_COLUMN(SigmaPxPy, sigmaPxPy, float);                        //! error of px x py in covariant matrix
+DECLARE_SOA_COLUMN(SigmaPyPz, sigmaPyPz, float);                        //! error of py x pz in covariant matrix
+DECLARE_SOA_COLUMN(SigmaPzPx, sigmaPzPx, float);                        //! error of pz x px in covariant matrix
 
 DECLARE_SOA_DYNAMIC_COLUMN(E, e, [](float px, float py, float pz, float m = 0) -> float { return RecoDecay::sqrtSumOfSquares(px, py, pz, m); }); //! energy of v0 photn, mass to be given as argument when getter is called!
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float px, float py) -> float { return RecoDecay::sqrtSumOfSquares(px, py); });
@@ -231,7 +245,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float px, float py, float pz) -> float { ret
 DECLARE_SOA_DYNAMIC_COLUMN(V0Radius, v0radius, [](float vx, float vy) -> float { return RecoDecay::sqrtSumOfSquares(vx, vy); });
 } // namespace v0photonkf
 DECLARE_SOA_TABLE(V0PhotonsKF, "AOD", "V0PHOTONKF", //!
-                  o2::soa::Index<>, v0photonkf::CollisionId, v0photonkf::PosTrackId, v0photonkf::NegTrackId,
+                  o2::soa::Index<>, v0photonkf::CollisionId, v0photonkf::V0Id, v0photonkf::PosTrackId, v0photonkf::NegTrackId,
                   v0photonkf::Vx, v0photonkf::Vy, v0photonkf::Vz,
                   v0photonkf::Px, v0photonkf::Py, v0photonkf::Pz,
                   v0photonkf::MGamma,
@@ -253,6 +267,11 @@ using V0PhotonKF = V0PhotonsKF::iterator;
 DECLARE_SOA_TABLE(V0KFEMEventIds, "AOD", "V0KFEMEVENTID", v0photonkf::EMEventId); // To be joined with V0PhotonsKF table at analysis level.
 // iterators
 using V0KFEMEventId = V0KFEMEventIds::iterator;
+
+DECLARE_SOA_TABLE(V0PhotonsKFCov, "AOD", "V0PHOTONKFCOV", //! To be joined with V0PhotonsKF table at analysis level.
+                  v0photonkf::SigmaPx2, v0photonkf::SigmaPy2, v0photonkf::SigmaPz2, v0photonkf::SigmaPxPy, v0photonkf::SigmaPyPz, v0photonkf::SigmaPzPx);
+// iterators
+using V0PhotonKFCov = V0PhotonsKFCov::iterator;
 
 DECLARE_SOA_TABLE(EMPrimaryElectronsFromDalitz, "AOD", "EMPRIMARYELDA", //!
                   o2::soa::Index<>, emprimaryelectron::CollisionId,

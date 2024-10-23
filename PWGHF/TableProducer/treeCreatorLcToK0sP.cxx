@@ -27,6 +27,8 @@
 
 using namespace o2;
 using namespace o2::framework;
+using namespace o2::framework::expressions;
+using std::array;
 
 namespace o2::aod
 {
@@ -213,10 +215,17 @@ struct HfTreeCreatorLcToK0sP {
   Configurable<bool> fillCandidateLiteTable{"fillCandidateLiteTable", false, "Switch to fill lite table with candidate properties"};
   Configurable<double> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of candidates to store in the tree"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 24., "Maximum pt for the application of the downsampling factor"};
+  Configurable<bool> fillOnlySignal{"fillOnlySignal", false, "Flag to fill derived tables with signal for ML trainings"};
+  Configurable<bool> fillOnlyBackground{"fillOnlyBackground", false, "Flag to fill derived tables with background for ML trainings"};
 
   HfHelper hfHelper;
 
+  Filter filterSelectCandidates = aod::hf_sel_candidate_lc_to_k0s_p::isSelLcToK0sP >= 1;
   using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPr>;
+  using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCandCascade, aod::HfCandCascadeMcRec, aod::HfSelLcToK0sP>>;
+
+  Partition<SelectedCandidatesMc> recSig = nabs(aod::hf_cand_casc::flagMcMatchRec) != int8_t(0);
+  Partition<SelectedCandidatesMc> recBkg = nabs(aod::hf_cand_casc::flagMcMatchRec) == int8_t(0);
 
   void init(InitContext const&)
   {
@@ -349,7 +358,7 @@ struct HfTreeCreatorLcToK0sP {
 
   void processMc(aod::Collisions const& collisions,
                  aod::McCollisions const&,
-                 soa::Join<aod::HfCandCascade, aod::HfCandCascadeMcRec, aod::HfSelLcToK0sP> const& candidates,
+                 SelectedCandidatesMc const& candidates,
                  soa::Join<aod::McParticles, aod::HfCandCascadeMcGen> const& particles,
                  TracksWPid const&)
   {
@@ -360,21 +369,41 @@ struct HfTreeCreatorLcToK0sP {
       fillEvent(collision);
     }
 
-    // Filling candidate properties
-    if (fillCandidateLiteTable) {
-      rowCandidateLite.reserve(candidates.size());
-    } else {
-      rowCandidateFull.reserve(candidates.size());
-    }
-    for (const auto& candidate : candidates) {
-      auto bach = candidate.prong0_as<TracksWPid>(); // bachelor
-      if (downSampleBkgFactor < 1.) {
-        double pseudoRndm = bach.pt() * 1000. - (int16_t)(bach.pt() * 1000);
-        if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
-          continue;
-        }
+    if (fillOnlySignal) {
+      if (fillCandidateLiteTable) {
+        rowCandidateLite.reserve(recSig.size());
+      } else {
+        rowCandidateFull.reserve(recSig.size());
       }
-      if (candidate.isSelLcToK0sP() >= 1) {
+      for (const auto& candidate : recSig) {
+        auto bach = candidate.prong0_as<TracksWPid>(); // bachelor
+        fillCandidate(candidate, bach, candidate.flagMcMatchRec(), candidate.originMcRec());
+      }
+    } else if (fillOnlyBackground) {
+      if (fillCandidateLiteTable) {
+        rowCandidateLite.reserve(recBkg.size());
+      } else {
+        rowCandidateFull.reserve(recBkg.size());
+      }
+      for (const auto& candidate : recBkg) {
+        if (downSampleBkgFactor < 1.) {
+          float pseudoRndm = candidate.ptProng0() * 1000. - (int64_t)(candidate.ptProng0() * 1000);
+          if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
+            continue;
+          }
+        }
+        auto bach = candidate.prong0_as<TracksWPid>(); // bachelor
+        fillCandidate(candidate, bach, candidate.flagMcMatchRec(), candidate.originMcRec());
+      }
+    } else {
+      // Filling candidate properties
+      if (fillCandidateLiteTable) {
+        rowCandidateLite.reserve(candidates.size());
+      } else {
+        rowCandidateFull.reserve(candidates.size());
+      }
+      for (const auto& candidate : candidates) {
+        auto bach = candidate.prong0_as<TracksWPid>(); // bachelor
         fillCandidate(candidate, bach, candidate.flagMcMatchRec(), candidate.originMcRec());
       }
     }

@@ -17,6 +17,8 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 
+#include "Common/Core/TableHelper.h"
+
 // includes for the R recalculation
 #include "DetectorsBase/GeometryManager.h"
 #include "DataFormatsParameters/GRPObject.h"
@@ -46,10 +48,12 @@ struct skimmerGammaCalo {
   Configurable<float> maxM02{"maxM02", 1.0, "Maximum M02 for M02 cut"};
   Configurable<float> minE{"minE", 0.5, "Minimum energy for energy cut"};
   Configurable<bool> hasPropagatedTracks{"hasPropagatedTracks", false, "temporary flag, only set to true when running over data which has the tracks propagated to EMCal/PHOS!"};
+  Configurable<bool> applyEveSel_at_skimming{"applyEveSel_at_skimming", false, "flag to apply minimal event selection at the skimming level"};
+  Configurable<bool> inherit_from_emevent_photon{"inherit_from_emevent_photon", false, "flag to inherit task options from emevent-photon"};
 
   HistogramRegistry historeg{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
-  void init(o2::framework::InitContext&)
+  void init(o2::framework::InitContext& initContext)
   {
     historeg.add("hCaloClusterEIn", "hCaloClusterEIn", gHistoSpec_clusterE);
     historeg.add("hCaloClusterEOut", "hCaloClusterEOut", gHistoSpec_clusterE);
@@ -61,13 +65,20 @@ struct skimmerGammaCalo {
     hCaloClusterFilter->GetXaxis()->SetBinLabel(4, "M02 cut");
     hCaloClusterFilter->GetXaxis()->SetBinLabel(5, "out");
 
-    LOG(info) << "| Timing cut: " << minTime << " < t < " << maxTime << std::endl;
-    LOG(info) << "| M02 cut: " << minM02 << " < M02 < " << maxM02 << std::endl;
-    LOG(info) << "| E cut: E > " << minE << std::endl;
+    if (inherit_from_emevent_photon) {
+      getTaskOptionValue(initContext, "create-emevent-photon", "applyEveSel_at_skimming", applyEveSel_at_skimming.value, true); // for EM users.
+    }
+
+    LOG(info) << "| Timing cut: " << minTime << " < t < " << maxTime;
+    LOG(info) << "| M02 cut: " << minM02 << " < M02 < " << maxM02;
+    LOG(info) << "| E cut: E > " << minE;
   }
 
-  void processRec(aod::Collision const&, aod::EMCALClusters const& emcclusters, aod::EMCALClusterCells const& emcclustercells, aod::EMCALMatchedTracks const& emcmatchedtracks, aod::FullTracks const&)
+  void processRec(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, aod::EMCALClusters const& emcclusters, aod::EMCALClusterCells const& emcclustercells, aod::EMCALMatchedTracks const& emcmatchedtracks, aod::FullTracks const&)
   {
+    if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
+      return;
+    }
     for (const auto& emccluster : emcclusters) {
       historeg.fill(HIST("hCaloClusterEIn"), emccluster.energy());
       historeg.fill(HIST("hCaloClusterFilter"), 0);
@@ -135,11 +146,12 @@ struct skimmerGammaCalo {
                         emccluster.nCells(), emccluster.time(), emccluster.isExotic(), vEta, vPhi, vP, vPt);
     }
   }
-  void processMC(aod::Collision const&, soa::Join<aod::EMCALClusters, aod::EMCALMCClusters> const& emcclusters, aod::McParticles const&)
+  void processMC(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Join<aod::EMCALClusters, aod::EMCALMCClusters> const& emcclusters, aod::McParticles const&)
   {
+    if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
+      return;
+    }
     for (const auto& emccluster : emcclusters) {
-      historeg.fill(HIST("hCaloClusterEIn"), emccluster.energy());
-      historeg.fill(HIST("hCaloClusterFilter"), 0);
 
       // Energy cut
       if (emccluster.energy() < minE) {

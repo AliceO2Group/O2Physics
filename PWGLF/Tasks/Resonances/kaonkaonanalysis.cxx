@@ -70,6 +70,7 @@ struct kaonkaonAnalysisRun3 {
   Configurable<bool> timFrameEvsel{"timFrameEvsel", true, "TPC Time frame boundary cut"};
   Configurable<bool> additionalEvsel{"additionalEvsel", false, "Additional event selcection"};
   Configurable<bool> otherQAplots{"otherQAplots", true, "Other QA plots"};
+  Configurable<bool> QAPID{"QAPID", true, "QA PID plots"};
   Configurable<bool> QAevents{"QAevents", true, "QA events"};
   Configurable<bool> cfgMultFT0M{"cfgMultFT0M", true, "true for pp (FT0M estimator) and false for PbPb (FT0C estimator)"};
 
@@ -81,6 +82,7 @@ struct kaonkaonAnalysisRun3 {
   TF1* fMultMultPVCut = nullptr;
 
   // track
+  Configurable<int> rotational_cut{"rotational_cut", 10, "Cut value (Rotation angle pi - pi/cut and pi + pi/cut)"};
   Configurable<float> cfgCutPT{"cfgCutPT", 0.2, "PT cut on daughter track"};
   Configurable<float> cfgCutEta{"cfgCutEta", 0.8, "Eta cut on daughter track"};
   Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 2.0f, "DCAxy range for tracks"};
@@ -109,6 +111,7 @@ struct kaonkaonAnalysisRun3 {
   Configurable<int> c_nof_rotations{"c_nof_rotations", 3, "Number of random rotations in the rotational background"};
   ConfigurableAxis axisdEdx{"axisdEdx", {20000, 0.0f, 200.0f}, "dE/dx (a.u.)"};
   ConfigurableAxis axisPtfordEbydx{"axisPtfordEbydx", {2000, 0, 20}, "pT (GeV/c)"};
+  ConfigurableAxis axisMultdist{"axisMultdist", {3500, 0, 70000}, "Multiplicity distribution"};
 
   // different frames
   Configurable<bool> activateTHnSparseCosThStarHelicity{"activateTHnSparseCosThStarHelicity", true, "Activate the THnSparse with cosThStar w.r.t. helicity axis"};
@@ -120,6 +123,7 @@ struct kaonkaonAnalysisRun3 {
   // MC
   Configurable<bool> isMC{"isMC", false, "Run MC"};
   Configurable<bool> avoidsplitrackMC{"avoidsplitrackMC", false, "avoid split track in MC"};
+  TRandom* rn = new TRandom();
 
   void init(o2::framework::InitContext&)
   {
@@ -154,20 +158,24 @@ struct kaonkaonAnalysisRun3 {
       histos.add("hmutiplicity", "Multiplicity percentile distribution", kTH1F, {axisMult});
       histos.add("hVtxZ", "Vertex distribution in Z;Z (cm)", kTH1F, {{400, -20.0, 20.0}});
       histos.add("hNcontributor", "Number of primary vertex contributor", kTH1F, {{2000, 0.0f, 10000.0f}});
-      histos.add("multdist_FT0M", "FT0M Multiplicity distribution", kTH1F, {{2000, 0, 20000}});
-      histos.add("multdist_FT0A", "FT0A Multiplicity distribution", kTH1F, {{2000, 0, 20000}});
-      histos.add("multdist_FT0C", "FT0C Multiplicity distribution", kTH1F, {{2000, 0, 20000}});
+      histos.add("multdist_FT0M", "FT0M Multiplicity distribution", kTH1F, {axisMultdist});
+      histos.add("multdist_FT0A", "FT0A Multiplicity distribution", kTH1F, {axisMultdist});
+      histos.add("multdist_FT0C", "FT0C Multiplicity distribution", kTH1F, {axisMultdist});
     }
 
-    histos.add("hEta", "Eta distribution", kTH1F, {{200, -1.0f, 1.0f}});
-    histos.add("hDcaxy", "Dcaxy distribution", kTH1F, {{200, -1.0f, 1.0f}});
-    histos.add("hDcaz", "Dcaz distribution", kTH1F, {{200, -1.0f, 1.0f}});
-    histos.add("hNsigmaKaonTPC_before", "NsigmaKaon TPC distribution", kTH2F, {{axisPt}, {200, -10.0f, 10.0f}});
-    histos.add("hNsigmaKaonTOF_before", "NsigmaKaon TOF distribution", kTH2F, {{axisPt}, {200, -10.0f, 10.0f}});
-    // histos.add("hNsigmaKaonTPC_after", "NsigmaKaon TPC distribution", kTH2F, {{axisPt}, {200, -10.0f, 10.0f}});
-    // histos.add("hNsigmaKaonTOF_after", "NsigmaKaon TOF distribution", kTH2F, {{axisPt}, {200, -10.0f, 10.0f}});
-    histos.add("hNsigmaKaonTOF_TPC_before", "NsigmaKaon TOF-TPC distribution", kTH2F, {{200, -10.0f, 10.0f}, {200, -10.0f, 10.0f}});
-    // histos.add("hNsigmaKaonTOF_TPC_after", "NsigmaKaon TOF-TPC distribution", kTH2F, {{200, -10.0f, 10.0f}, {200, -10.0f, 10.0f}});
+    if (QAPID) {
+      histos.add("hEta", "Eta distribution", kTH1F, {{200, -1.0f, 1.0f}});
+      histos.add("hDcaxy", "Dcaxy distribution", kTH1F, {{200, -1.0f, 1.0f}});
+      histos.add("hDcaz", "Dcaz distribution", kTH1F, {{200, -1.0f, 1.0f}});
+      histos.add("hNsigmaKaonTPC_before", "NsigmaKaon TPC distribution", kTH2F, {{axisPt}, {200, -10.0f, 10.0f}});
+      histos.add("hNsigmaKaonTOF_before", "NsigmaKaon TOF distribution", kTH2F, {{axisPt}, {200, -10.0f, 10.0f}});
+      // histos.add("hNsigmaKaonTPC_after", "NsigmaKaon TPC distribution", kTH2F, {{axisPt}, {200, -10.0f, 10.0f}});
+      // histos.add("hNsigmaKaonTOF_after", "NsigmaKaon TOF distribution", kTH2F, {{axisPt}, {200, -10.0f, 10.0f}});
+      histos.add("hNsigmaKaonTOF_TPC_before", "NsigmaKaon TOF-TPC distribution", kTH2F, {{200, -10.0f, 10.0f}, {200, -10.0f, 10.0f}});
+      // histos.add("hNsigmaKaonTOF_TPC_after", "NsigmaKaon TOF-TPC distribution", kTH2F, {{200, -10.0f, 10.0f}, {200, -10.0f, 10.0f}});
+      histos.add("dE_by_dx_TPC", "dE/dx signal in the TPC as a function of pT", kTH2F, {axisPtfordEbydx, axisdEdx});
+    }
+
     if (otherQAplots) {
       histos.add("hpTvsRapidity", "pT vs Rapidity", kTH2F, {{100, 0.0f, 10.0f}, {300, -1.5f, 1.5f}});
       histos.add("hFTOCvsTPCNoCut", "Mult correlation FT0C vs. TPC without any cut", kTH2F, {{80, 0.0f, 80.0f}, {100, -0.5f, 5999.5f}});
@@ -179,7 +187,6 @@ struct kaonkaonAnalysisRun3 {
       histos.add("Chi2perclusterTPC", "Chi2 / cluster for the TPC track segment", kTH1F, {{50, 0.0f, 50.0f}});
       histos.add("Chi2perclusterTRD", "Chi2 / cluster for the TRD track segment", kTH1F, {{50, 0.0f, 50.0f}});
       histos.add("Chi2perclusterTOF", "Chi2 / cluster for the TOF track segment", kTH1F, {{50, 0.0f, 50.0f}});
-      histos.add("dE_by_dx_TPC", "dE/dx signal in the TPC as a function of pT", kTH2F, {axisPtfordEbydx, axisdEdx});
     }
     if (!isMC) {
       histos.add("h3PhiInvMassUnlikeSign", "KK Unlike Sign", kTHnSparseF, {axisMult, axisPt, axisMass, thnAxisPOL}, true);
@@ -306,7 +313,6 @@ struct kaonkaonAnalysisRun3 {
   template <typename T1, typename T2, typename T3>
   void FillinvMass(const T1& candidate1, const T2& candidate2, const T3& framecalculation, float multiplicity, bool unlike, bool mix, bool likesign, bool rotation, float massd1, float massd2)
   {
-    TRandom* rn = new TRandom();
     int track1Sign = candidate1.sign();
     int track2Sign = candidate2.sign();
     TLorentzVector vec1, vec2, vec3, vec4, vec5;
@@ -326,8 +332,10 @@ struct kaonkaonAnalysisRun3 {
       histos.fill(HIST("Chi2perclusterTRD"), candidate2.trdChi2());
       histos.fill(HIST("Chi2perclusterTOF"), candidate1.tofChi2());
       histos.fill(HIST("Chi2perclusterTOF"), candidate2.tofChi2());
-      histos.fill(HIST("dE_by_dx_TPC"), candidate1.pt(), candidate1.tpcSignal());
-      histos.fill(HIST("dE_by_dx_TPC"), candidate2.pt(), candidate2.tpcSignal());
+    }
+    if (QAPID) {
+      histos.fill(HIST("dE_by_dx_TPC"), candidate1.p(), candidate1.tpcSignal());
+      histos.fill(HIST("dE_by_dx_TPC"), candidate2.p(), candidate2.tpcSignal());
     }
 
     // polarization calculations
@@ -354,7 +362,7 @@ struct kaonkaonAnalysisRun3 {
 
       if (rotation) {
         for (int i = 0; i < c_nof_rotations; i++) {
-          float theta2 = rn->Uniform(0, TMath::Pi());
+          float theta2 = rn->Uniform(TMath::Pi() - TMath::Pi() / rotational_cut, TMath::Pi() + TMath::Pi() / rotational_cut);
           vec4.SetPtEtaPhiM(candidate1.pt(), candidate1.eta(), candidate1.phi() + theta2, massd1); // for rotated background
           vec5 = vec4 + vec2;
           histos.fill(HIST("h3PhiInvMassRotation"), multiplicity, vec5.Pt(), vec5.M(), framecalculation);
@@ -404,12 +412,14 @@ struct kaonkaonAnalysisRun3 {
       if (!selectionTrack(track1)) {
         continue;
       }
-      histos.fill(HIST("hEta"), track1.eta());
-      histos.fill(HIST("hDcaxy"), track1.dcaXY());
-      histos.fill(HIST("hDcaz"), track1.dcaZ());
-      histos.fill(HIST("hNsigmaKaonTPC_before"), track1.pt(), track1.tpcNSigmaKa());
-      histos.fill(HIST("hNsigmaKaonTOF_before"), track1.pt(), track1.tofNSigmaKa());
-      histos.fill(HIST("hNsigmaKaonTOF_TPC_before"), track1.tofNSigmaKa(), track1.tpcNSigmaKa());
+      if (QAPID) {
+        histos.fill(HIST("hEta"), track1.eta());
+        histos.fill(HIST("hDcaxy"), track1.dcaXY());
+        histos.fill(HIST("hDcaz"), track1.dcaZ());
+        histos.fill(HIST("hNsigmaKaonTPC_before"), track1.pt(), track1.tpcNSigmaKa());
+        histos.fill(HIST("hNsigmaKaonTOF_before"), track1.pt(), track1.tofNSigmaKa());
+        histos.fill(HIST("hNsigmaKaonTOF_TPC_before"), track1.tofNSigmaKa(), track1.tpcNSigmaKa());
+      }
       auto track1ID = track1.index();
       for (auto track2 : tracks) {
         if (!selectionTrack(track2)) {
@@ -427,8 +437,6 @@ struct kaonkaonAnalysisRun3 {
         daughter1 = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa); // Kplus
         daughter2 = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massKa); // Kminus
 
-        auto phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
-        auto thetaRandom = gRandom->Uniform(0.f, constants::math::PI);
         ROOT::Math::PxPyPzMVector fourVecDau = ROOT::Math::PxPyPzMVector(daughter1.Px(), daughter1.Py(), daughter1.Pz(), massKa); // Kaon
         TLorentzVector lv1, lv2, lv3;
         lv1.SetPtEtaPhiM(track1.pt(), track1.eta(), track1.phi(), massKa);
@@ -475,6 +483,8 @@ struct kaonkaonAnalysisRun3 {
             FillinvMass(track1, track2, cosThetaStarBeam, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
           }
         } else if (activateTHnSparseCosThStarRandom) {
+          auto phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
+          auto thetaRandom = gRandom->Uniform(0.f, constants::math::PI);
           ROOT::Math::XYZVector randomVec = ROOT::Math::XYZVector(std::sin(thetaRandom) * std::cos(phiRandom), std::sin(thetaRandom) * std::sin(phiRandom), std::cos(thetaRandom));
           auto cosThetaStarRandom = randomVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
 
@@ -540,8 +550,6 @@ struct kaonkaonAnalysisRun3 {
           daughter1 = ROOT::Math::PxPyPzMVector(t1.px(), t1.py(), t1.pz(), massKa); // Kplus
           daughter2 = ROOT::Math::PxPyPzMVector(t2.px(), t2.py(), t2.pz(), massKa); // Kminus
 
-          auto phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
-          auto thetaRandom = gRandom->Uniform(0.f, constants::math::PI);
           ROOT::Math::PxPyPzMVector fourVecDau = ROOT::Math::PxPyPzMVector(daughter1.Px(), daughter1.Py(), daughter1.Pz(), massKa); // Kaon
           TLorentzVector lv1, lv2, lv3;
           lv1.SetPtEtaPhiM(t1.pt(), t1.eta(), t1.phi(), massKa);
@@ -584,6 +592,8 @@ struct kaonkaonAnalysisRun3 {
               FillinvMass(t1, t2, cosThetaStarBeam, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
             }
           } else if (activateTHnSparseCosThStarRandom) {
+            auto phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
+            auto thetaRandom = gRandom->Uniform(0.f, constants::math::PI);
             ROOT::Math::XYZVector randomVec = ROOT::Math::XYZVector(std::sin(thetaRandom) * std::cos(phiRandom), std::sin(thetaRandom) * std::sin(phiRandom), std::cos(thetaRandom));
             auto cosThetaStarRandom = randomVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
 
@@ -637,8 +647,6 @@ struct kaonkaonAnalysisRun3 {
           daughter1 = ROOT::Math::PxPyPzMVector(t1.px(), t1.py(), t1.pz(), massKa); // Kplus
           daughter2 = ROOT::Math::PxPyPzMVector(t2.px(), t2.py(), t2.pz(), massKa); // Kminus
 
-          auto phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
-          auto thetaRandom = gRandom->Uniform(0.f, constants::math::PI);
           ROOT::Math::PxPyPzMVector fourVecDau = ROOT::Math::PxPyPzMVector(daughter1.Px(), daughter1.Py(), daughter1.Pz(), massKa); // Kaon
           TLorentzVector lv1, lv2, lv3;
           lv1.SetPtEtaPhiM(t1.pt(), t1.eta(), t1.phi(), massKa);
@@ -681,6 +689,8 @@ struct kaonkaonAnalysisRun3 {
               FillinvMass(t1, t2, cosThetaStarBeam, multiplicity, unlike, mix, likesign, rotation, massKa, massKa);
             }
           } else if (activateTHnSparseCosThStarRandom) {
+            auto phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
+            auto thetaRandom = gRandom->Uniform(0.f, constants::math::PI);
             ROOT::Math::XYZVector randomVec = ROOT::Math::XYZVector(std::sin(thetaRandom) * std::cos(phiRandom), std::sin(thetaRandom) * std::sin(phiRandom), std::cos(thetaRandom));
             auto cosThetaStarRandom = randomVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
 
