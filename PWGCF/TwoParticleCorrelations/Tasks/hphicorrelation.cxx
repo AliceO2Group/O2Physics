@@ -2818,7 +2818,7 @@ struct hphicorrelation {
         } // posTrack2
         // 03-End  -PhiPhi Correlation
       } // negTrack
-    }   // posTrack
+    } // posTrack
     // phi-phi correlation is over
   }
 
@@ -2909,7 +2909,7 @@ struct hphicorrelation {
         PhiPosDauKaonList_c2.push_back(posTrack.globalIndex());
         PhiNegDauKaonList_c2.push_back(negTrack.globalIndex());
       } // negTrack
-    }   // posTrack
+    } // posTrack
 
     std::vector<int64_t> PhiDauKaonList_c2;
     FillNewListFromOldList(PhiDauKaonList_c2, PhiPosDauKaonList_c2);
