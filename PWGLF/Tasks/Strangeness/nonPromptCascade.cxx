@@ -392,8 +392,7 @@ struct NonPromptCascadeTask {
       return {fromCharm, fromBeauty};
     };
 
-    for (const auto& trackedCascade : trackedCascades)
-    {
+    for (const auto& trackedCascade : trackedCascades) {
       auto collision = trackedCascade.collision_as<CollisionCandidatesRun3MC>();
 
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
