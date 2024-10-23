@@ -1076,9 +1076,7 @@ struct RofOccupancyQaTask {
           }
 
           // vZ bins to tune vZthresh cut
-          if (vNoCollInTimeRangeNarrow[colIndex]) //&& vAmpFT0CperColl[colIndex] < 1000)
-                                                  // if (vNoCollInTimeRangeNarrow[colIndex] && vNoHighMultCollInTimeRange[colIndex] && vNoCollInSameRofStandard[colIndex])
-          {
+          if (vNoCollInTimeRangeNarrow[colIndex]) {
 
             for (int i = 0; i < 200; i++) {
               if (fabs(col.posZ()) < 8 && !vArrNoCollInSameRofWithCloseVz[colIndex][i]) {
