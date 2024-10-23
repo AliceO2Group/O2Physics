@@ -41,7 +41,7 @@ struct ft0CorrectedTable {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   void init(o2::framework::InitContext&)
   {
-    if (doprocessData && doprocessMC) {
+    if (doprocessStandard && doprocessWithBypassFT0timeInMC) {
       LOG(fatal) << "Both process data and process MC are enabled. Pick one of the two";
     }
     if (!addHistograms) {
@@ -58,7 +58,7 @@ struct ft0CorrectedTable {
     }
   }
   void process(aod::BCs const&) {};
-  void processData(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+  void processStandard(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                    BCsWithMatchings const&,
                    aod::FT0s const&)
   {
