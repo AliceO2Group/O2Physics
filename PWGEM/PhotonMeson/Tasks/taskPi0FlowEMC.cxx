@@ -48,7 +48,7 @@ enum QvecEstimator { FT0M = 0,
                      TPCNeg,
                      TPCTot };
 
-  enum CentralityEstimator { None = 0,
+enum CentralityEstimator { None = 0,
                            CFT0A = 1,
                            CFT0C,
                            CFT0M,
