@@ -46,7 +46,7 @@ using namespace o2::analysis::femtoDream;
 
 namespace o2::aod
 {
-//using 用于定义新的类型别名
+// using 用于定义新的类型别名
 using FemtoFullCollision = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms>::iterator;
 using FemtoFullCollision_noCent = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator;
 using FemtoFullCollisionMC = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::McCollisionLabels>::iterator;
@@ -67,7 +67,7 @@ static const std::vector<std::string> triggerNames{"fPPP", "fPPL", "fPLL", "fLLL
 static const float triggerSwitches[1][nTriggers]{
   {0, 0, 0, 0, 0, 0}};
 } // namespace softwareTriggers
-//template <typename T> 允许函数接受任意类型的参数，只要这个类型 T 支持某些操作
+// template <typename T> 允许函数接受任意类型的参数，只要这个类型 T 支持某些操作
 template <typename T>
 int getRowDaughters(int daughID, T const& vecID)
 {
@@ -79,14 +79,14 @@ int getRowDaughters(int daughID, T const& vecID)
     }
   }
   return rowInPrimaryTrackTableDaugh;
-}//getRowDaughters 函数用于查找目标 ID（daughID）在某个容器（vecID）中的位置。它返回该 ID 的索引，或者如果未找到，返回 -1。
+} // getRowDaughters 函数用于查找目标 ID（daughID）在某个容器（vecID）中的位置。它返回该 ID 的索引，或者如果未找到，返回 -1。
 
 struct femtoDreamProducerTask {
 
   Zorro zorro;
 
-  Produces<aod::FDCollisions> outputCollision;//当前模块将生成类型为 aod::XXX 的数据，并将其输出给后续的处理模块或框架中的其他部分
-  //outputCollision 是一个对象或变量名，被声明为 Produces<aod::FDCollisions> 类型的变量
+  Produces<aod::FDCollisions> outputCollision; // 当前模块将生成类型为 aod::XXX 的数据，并将其输出给后续的处理模块或框架中的其他部分
+  // outputCollision 是一个对象或变量名，被声明为 Produces<aod::FDCollisions> 类型的变量
   Produces<aod::FDMCCollisions> outputMCCollision;
   Produces<aod::FDMCCollLabels> outputCollsMCLabels;
   Produces<aod::FDParticles> outputParts;
@@ -97,7 +97,7 @@ struct femtoDreamProducerTask {
   Produces<aod::FDExtMCLabels> outputPartsExtMCLabels;
 
   Configurable<bool> ConfIsDebug{"ConfIsDebug", true, "Enable Debug tables"};
-  Configurable<bool> ConfIsRun3{"ConfIsRun3", true, "Running on Run3 or pilot"};//改了
+  Configurable<bool> ConfIsRun3{"ConfIsRun3", true, "Running on Run3 or pilot"}; // 改了
   Configurable<bool> ConfIsForceGRP{"ConfIsForceGRP", false, "Set true if the magnetic field configuration is not available in the usual CCDB directory (e.g. for Run 2 converted data or unanchorad Monte Carlo)"};
 
   /// Event cuts
@@ -138,7 +138,7 @@ struct femtoDreamProducerTask {
   Configurable<float> ConfTrkPIDnSigmaOffsetTPC{"ConfTrkPIDnSigmaOffsetTPC", 0., "Offset for TPC nSigma because of bad calibration"};
   Configurable<float> ConfTrkPIDnSigmaOffsetTOF{"ConfTrkPIDnSigmaOffsetTOF", 0., "Offset for TOF nSigma because of bad calibration"};
   Configurable<std::vector<int>> ConfTrkPIDspecies{"ConfTrkPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Kaon, o2::track::PID::Proton, o2::track::PID::Deuteron}, "Trk sel: Particles species for PID"};
-//Pion，Kaon..是初始值
+  // Pion，Kaon..是初始值
   FemtoDreamV0Selection v0Cuts;
   Configurable<std::vector<float>> ConfV0Sign{FemtoDreamV0Selection::getSelectionName(femtoDreamV0Selection::kV0Sign, "ConfV0"), std::vector<float>{-1, 1}, FemtoDreamV0Selection::getSelectionHelper(femtoDreamV0Selection::kV0Sign, "V0 selection: ")};
   Configurable<std::vector<float>> ConfV0PtMin{FemtoDreamV0Selection::getSelectionName(femtoDreamV0Selection::kV0pTMin, "ConfV0"), std::vector<float>{0.3f, 0.4f, 0.5f}, FemtoDreamV0Selection::getSelectionHelper(femtoDreamV0Selection::kV0pTMin, "V0 selection: ")};
@@ -232,7 +232,7 @@ struct femtoDreamProducerTask {
 
     colCuts.setCuts(ConfEvtZvtx.value, ConfEvtTriggerCheck.value, ConfEvtTriggerSel.value, ConfEvtOfflineCheck.value, ConfEvtAddOfflineCheck.value, ConfIsRun3.value);
     colCuts.init(&qaRegistry);
-//trackCuts是FemtoDreamTrackSelection类型的类
+    // trackCuts是FemtoDreamTrackSelection类型的类
     trackCuts.setSelection(ConfTrkCharge, femtoDreamTrackSelection::kSign, femtoDreamSelection::kEqual);
     trackCuts.setSelection(ConfTrkPtmin, femtoDreamTrackSelection::kpTMin, femtoDreamSelection::kLowerLimit);
     trackCuts.setSelection(ConfTrkPtmax, femtoDreamTrackSelection::kpTMax, femtoDreamSelection::kUpperLimit);
@@ -371,7 +371,7 @@ struct femtoDreamProducerTask {
                        particle.tofNSigmaPr(),
                        particle.tofNSigmaDe(),
                        particle.tofNSigmaHe(),
-                       /*-999., -999., */-999., -999., -999., -999.);
+                       /*-999., -999., */ -999., -999., -999., -999.);
     } else {
       outputDebugParts(-999., -999., -999., -999., -999., -999., -999., -999.,
                        -999., -999., -999., -999., -999., -999., -999., -999.,
@@ -454,12 +454,12 @@ struct femtoDreamProducerTask {
       outputCollsMCLabels(-1);
     }
   }
-  template <bool isMC, bool useCentrality, typename V0Type, typename TrackType, typename CollisionType>//isMC：表示是否处理的是蒙特卡洛（MC）数据
-  //主要的函数
+  template <bool isMC, bool useCentrality, typename V0Type, typename TrackType, typename CollisionType> // isMC：表示是否处理的是蒙特卡洛（MC）数据
+  // 主要的函数
   void fillCollisionsAndTracksAndV0(CollisionType const& col, TrackType const& tracks, V0Type const& fullV0s)
   { //
     // If triggering is enabled, select only events which were triggered wit our triggers
-    if (ConfEnableTriggerSelection) {//第一次cut
+    if (ConfEnableTriggerSelection) {                                                                 // 第一次cut
       bool zorroSelected = zorro.isSelected(col.template bc_as<aod::BCsWithTimestamps>().globalBC()); /// check if event was selected by triggers of interest
       if (!zorroSelected) {
         return;
@@ -467,10 +467,10 @@ struct femtoDreamProducerTask {
     }
 
     const auto vtxZ = col.posZ();
-    const auto spher = colCuts.computeSphericity(col, tracks);//获取碰撞顶点位置 vtxZ 和碰撞的球形度 spher
+    const auto spher = colCuts.computeSphericity(col, tracks); // 获取碰撞顶点位置 vtxZ 和碰撞的球形度 spher
     float mult = 0;
     int multNtr = 0;
-    if (ConfIsRun3) {//一般都是run3
+    if (ConfIsRun3) { // 一般都是run3
       if constexpr (useCentrality) {
         mult = col.centFT0M();
       } else {
@@ -482,14 +482,14 @@ struct femtoDreamProducerTask {
       multNtr = col.multTracklets();
     }
 
-    colCuts.fillQA(col, mult);//fill QA一般是把table里面一些值拿出来填一遍，以检测粒子的数据质量
+    colCuts.fillQA(col, mult); // fill QA一般是把table里面一些值拿出来填一遍，以检测粒子的数据质量
 
     // check whether the basic event selection criteria are fulfilled
     // that included checking if there is at least on usable track or V0
-    if (!colCuts.isSelectedCollision(col)) {//第二次cut
+    if (!colCuts.isSelectedCollision(col)) { // 第二次cut
       return;
     }
-    if (ConfIsActivateV0.value) {//检查碰撞是否包含有效的轨迹或 V0
+    if (ConfIsActivateV0.value) { // 检查碰撞是否包含有效的轨迹或 V0
       if (colCuts.isEmptyCollision(col, tracks, trackCuts) && colCuts.isEmptyCollision(col, fullV0s, v0Cuts, tracks)) {
         return;
       }
@@ -499,7 +499,7 @@ struct femtoDreamProducerTask {
       }
     }
 
-    outputCollision(vtxZ, mult, multNtr, spher, mMagField);//当前模块将生成类型为 aod::XXX 的数据
+    outputCollision(vtxZ, mult, multNtr, spher, mMagField); // 当前模块将生成类型为 aod::XXX 的数据
     if constexpr (isMC) {
       fillMCCollision(col);
     }
@@ -508,7 +508,7 @@ struct femtoDreamProducerTask {
     std::vector<int> tmpIDtrack;        // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
     std::vector<typename TrackType::iterator> Daughter1, Daughter2;
 
-    for (auto& track : tracks) {//首先使用 trackCuts.isSelectedMinimal 检查轨迹是否符合基本选择标准
+    for (auto& track : tracks) { // 首先使用 trackCuts.isSelectedMinimal 检查轨迹是否符合基本选择标准
       /// if the most open selection criteria are not fulfilled there is no
       /// point looking further at the track
       if (!trackCuts.isSelectedMinimal(track)) {
@@ -516,7 +516,7 @@ struct femtoDreamProducerTask {
       }
       trackCuts.fillQA<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::TrackType::kNoChild>(track);
       // the bit-wise container of the systematic variations is obtained
-      //计算并返回与轨迹关联的一组选择标准
+      // 计算并返回与轨迹关联的一组选择标准
       auto cutContainer = trackCuts.getCutContainer<aod::femtodreamparticle::cutContainerType>(track, track.pt(), track.eta(), sqrtf(powf(track.dcaXY(), 2.f) + powf(track.dcaZ(), 2.f)));
 
       // now the table is filled
@@ -527,8 +527,8 @@ struct femtoDreamProducerTask {
                   aod::femtodreamparticle::ParticleType::kTrack,
                   cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kCuts),
                   cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kPID),
-                  track.dcaXY(), childIDs, 0, 0);//这里的 kCuts kPID是一个常量，表示在容器中的特定位置，通常指向用于判断轨迹是否通过选择标准的结果
-      tmpIDtrack.push_back(track.globalIndex());//tmpIDtrack 是一个存储轨迹全局索引的临时向量。push_back 方法将该索引添加到 tmpIDtrack 向量中，便于后续跟踪和引用该轨迹
+                  track.dcaXY(), childIDs, 0, 0); // 这里的 kCuts kPID是一个常量，表示在容器中的特定位置，通常指向用于判断轨迹是否通过选择标准的结果
+      tmpIDtrack.push_back(track.globalIndex());  // tmpIDtrack 是一个存储轨迹全局索引的临时向量。push_back 方法将该索引添加到 tmpIDtrack 向量中，便于后续跟踪和引用该轨迹
       if (ConfIsDebug.value) {
         fillDebugParticle<true>(track);
       }
@@ -537,7 +537,7 @@ struct femtoDreamProducerTask {
         fillMCParticle(col, track, o2::aod::femtodreamparticle::ParticleType::kTrack);
       }
 
-      if (ConfIsActivateReso.value) {//啥是reso selection
+      if (ConfIsActivateReso.value) { // 啥是reso selection
         // Already strict cuts for Daughter of reso selection
         // TO DO: change TTV0 task to apply there the strict selection and have here only loose selection
 
@@ -564,7 +564,7 @@ struct femtoDreamProducerTask {
       }
     }
 
-    if (ConfIsActivateV0.value) {//处理V0
+    if (ConfIsActivateV0.value) { // 处理V0
       for (auto& v0 : fullV0s) {
         auto postrack = v0.template posTrack_as<TrackType>();
         auto negtrack = v0.template negTrack_as<TrackType>();
