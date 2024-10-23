@@ -410,7 +410,6 @@ struct lithium4analysis {
   {
     bool heliumPID = candidate.pidForTracking() == o2::track::PID::Helium3 || candidate.pidForTracking() == o2::track::PID::Alpha;
     float correctedTPCinnerParam = (heliumPID && setting_compensatePIDinTracking) ? candidate.tpcInnerParam() / 2.f : candidate.tpcInnerParam();
-    m_qaRegistry.fill(HIST("h2dEdxHe3candidates"), correctedTPCinnerParam * 2.f, candidate.tpcSignal());
 
     if (correctedTPCinnerParam < setting_cutRigidityMinHe3) {
       return false;
@@ -436,6 +435,7 @@ struct lithium4analysis {
       return false;
     }
 
+    m_qaRegistry.fill(HIST("h2dEdxHe3candidates"), candidate.sign() * correctedTPCinnerParam, candidate.tpcSignal());
     m_qaRegistry.fill(HIST("h2NsigmaHe3TPC"), candidate.sign() * correctedTPCinnerParam, nSigmaHe3);
     m_qaRegistry.fill(HIST("h2ClSizeCosLamHe3"), nSigmaHe3, clsizeCoslIts);
     return true;
