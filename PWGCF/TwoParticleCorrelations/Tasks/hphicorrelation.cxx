@@ -943,6 +943,50 @@ struct hphicorrelation {
     SE_recoPhi.add("SE_hPhi_nCommonKaonInDifferentPhi_PeakLS", "SE_hPhi_nCommonKaonInDifferentPhi_PeakLS", kTH1F, {{12 * 2, -1.5, 10.5}});
     // PhiMesons
 
+    // Like Sign Invariant Mass Line
+    // phi_pT in [0.0-inf]
+    SE_recoAnalysis.add("SE_hAnalysis_hPhi_LS_KK_AllPhi_Phi_p", "SE_hAnalysis_hPhi_LS_KK_AllPhi_Phi_p", kTH1F, {Axis_p});
+    SE_recoAnalysis.add("SE_hAnalysis_hPhi_LS_KK_AllPhi_Phi_pT", "SE_hAnalysis_hPhi_LS_KK_AllPhi_Phi_pT;p_{T}", kTH1F, {Axis_pt});
+    SE_recoAnalysis.add("SE_hAnalysis_hPhi_LS_KK_AllPhi_Phi_eta", "SE_hAnalysis_hPhi_LS_KK_AllPhi_Phi_eta;#eta", kTH1F, {Axis_eta});
+    SE_recoAnalysis.add("SE_hAnalysis_hPhi_LS_KK_AllPhi_Phi_phi", "SE_hAnalysis_hPhi_LS_KK_AllPhi_Phi_phi", kTH1F, {Axis_phi});
+    SE_recoAnalysis.add("SE_hAnalysis_hPhi_LS_KK_AllPhi_Phi_rapidity", "SE_hAnalysis_hPhi_LS_KK_AllPhi_Phi_rapidity", kTH1F, {Axis_rapidity});
+    SE_recoAnalysis.add("SE_hAnalysis_hPhi_LS_KK_AllPhi_Phi_paircharge", "SE_hAnalysis_hPhi_LS_KK_AllPhi_Phi_paircharge", kTH1F, {Axis_paircharge});
+    SE_recoAnalysis.add("SE_hAnalysis_hPhi_LS_KK_AllPhi_Phi_InvMass", "SE_hAnalysis_hPhi_LS_KK_AllPhi_Phi_InvMass;Mass(K^{+} K^{-})", kTH1F, {Axis_PhiMass});
+    // Phi_pT in [0.0-2.0](Bulk)
+    SE_recoAnalysis.add("SE_hAnalysis_hPhi_LS_KK_0To2Phi_Phi_p", "SE_hAnalysis_hPhi_LS_KK_0To2Phi_Phi_p", kTH1F, {Axis_p});
+    SE_recoAnalysis.add("SE_hAnalysis_hPhi_LS_KK_0To2Phi_Phi_pT", "SE_hAnalysis_hPhi_LS_KK_0To2Phi_Phi_pT;p_{T}", kTH1F, {Axis_pt});
+    SE_recoAnalysis.add("SE_hAnalysis_hPhi_LS_KK_0To2Phi_Phi_eta", "SE_hAnalysis_hPhi_LS_KK_0To2Phi_Phi_eta;#eta", kTH1F, {Axis_eta});
+    SE_recoAnalysis.add("SE_hAnalysis_hPhi_LS_KK_0To2Phi_Phi_phi", "SE_hAnalysis_hPhi_LS_KK_0To2Phi_Phi_phi", kTH1F, {Axis_phi});
+    SE_recoAnalysis.add("SE_hAnalysis_hPhi_LS_KK_0To2Phi_Phi_rapidity", "SE_hAnalysis_hPhi_LS_KK_0To2Phi_Phi_rapidity", kTH1F, {Axis_rapidity});
+    SE_recoAnalysis.add("SE_hAnalysis_hPhi_LS_KK_0To2Phi_Phi_paircharge", "SE_hAnalysis_hPhi_LS_KK_0To2Phi_Phi_paircharge", kTH1F, {Axis_paircharge});
+    SE_recoAnalysis.add("SE_hAnalysis_hPhi_LS_KK_0To2Phi_Phi_InvMass", "SE_hAnalysis_hPhi_LS_KK_0To2Phi_Phi_InvMass(Bulk);Mass(K^{+} K^{-})", kTH1F, {Axis_PhiMass});
+    // Phi_pT in [2.0-4.0](Required)
+    SE_recoAnalysis.add("SE_hAnalysis_hPhi_LS_KK_2To4Phi_Phi_p", "SE_hAnalysis_hPhi_LS_KK_2To4Phi_Phi_p", kTH1F, {Axis_p});
+    SE_recoAnalysis.add("SE_hAnalysis_hPhi_LS_KK_2To4Phi_Phi_pT", "SE_hAnalysis_hPhi_LS_KK_2To4Phi_Phi_pT;p_{T}", kTH1F, {Axis_pt});
+    SE_recoAnalysis.add("SE_hAnalysis_hPhi_LS_KK_2To4Phi_Phi_eta", "SE_hAnalysis_hPhi_LS_KK_2To4Phi_Phi_eta;#eta", kTH1F, {Axis_eta});
+    SE_recoAnalysis.add("SE_hAnalysis_hPhi_LS_KK_2To4Phi_Phi_phi", "SE_hAnalysis_hPhi_LS_KK_2To4Phi_Phi_phi", kTH1F, {Axis_phi});
+    SE_recoAnalysis.add("SE_hAnalysis_hPhi_LS_KK_2To4Phi_Phi_rapidity", "SE_hAnalysis_hPhi_LS_KK_2To4Phi_Phi_rapidity", kTH1F, {Axis_rapidity});
+    SE_recoAnalysis.add("SE_hAnalysis_hPhi_LS_KK_2To4Phi_Phi_paircharge", "SE_hAnalysis_hPhi_LS_KK_2To4Phi_Phi_paircharge", kTH1F, {Axis_paircharge});
+    SE_recoAnalysis.add("SE_hAnalysis_hPhi_LS_KK_2To4Phi_Phi_InvMass", "SE_hAnalysis_hPhi_LS_KK_2To4Phi_Phi_InvMass(Required);Mass(K^{+} K^{-})", kTH1F, {Axis_PhiMass});
+    // Phi_pT in [4.0-8.0](Hard)
+    SE_recoAnalysis.add("SE_hAnalysis_hPhi_LS_KK_4To8Phi_Phi_p", "SE_hAnalysis_hPhi_LS_KK_4To8Phi_Phi_p", kTH1F, {Axis_p});
+    SE_recoAnalysis.add("SE_hAnalysis_hPhi_LS_KK_4To8Phi_Phi_pT", "SE_hAnalysis_hPhi_LS_KK_4To8Phi_Phi_pT;p_{T}", kTH1F, {Axis_pt});
+    SE_recoAnalysis.add("SE_hAnalysis_hPhi_LS_KK_4To8Phi_Phi_eta", "SE_hAnalysis_hPhi_LS_KK_4To8Phi_Phi_eta;#eta", kTH1F, {Axis_eta});
+    SE_recoAnalysis.add("SE_hAnalysis_hPhi_LS_KK_4To8Phi_Phi_phi", "SE_hAnalysis_hPhi_LS_KK_4To8Phi_Phi_phi", kTH1F, {Axis_phi});
+    SE_recoAnalysis.add("SE_hAnalysis_hPhi_LS_KK_4To8Phi_Phi_rapidity", "SE_hAnalysis_hPhi_LS_KK_4To8Phi_Phi_rapidity", kTH1F, {Axis_rapidity});
+    SE_recoAnalysis.add("SE_hAnalysis_hPhi_LS_KK_4To8Phi_Phi_paircharge", "SE_hAnalysis_hPhi_LS_KK_4To8Phi_Phi_paircharge", kTH1F, {Axis_paircharge});
+    SE_recoAnalysis.add("SE_hAnalysis_hPhi_LS_KK_4To8Phi_Phi_InvMass", "SE_hAnalysis_hPhi_LS_KK_4To8Phi_Phi_InvMass(Hard);Mass(K^{+} K^{-})", kTH1F, {Axis_PhiMass});
+    // Phi_pT in [8.0-inf](Very Hard)
+    SE_recoAnalysis.add("SE_hAnalysis_hPhi_LS_KK_8ToInfPhi_Phi_p", "SE_hAnalysis_hPhi_LS_KK_8ToInfPhi_Phi_p", kTH1F, {Axis_p});
+    SE_recoAnalysis.add("SE_hAnalysis_hPhi_LS_KK_8ToInfPhi_Phi_pT", "SE_hAnalysis_hPhi_LS_KK_8ToInfPhi_Phi_pT;p_{T}", kTH1F, {Axis_pt});
+    SE_recoAnalysis.add("SE_hAnalysis_hPhi_LS_KK_8ToInfPhi_Phi_eta", "SE_hAnalysis_hPhi_LS_KK_8ToInfPhi_Phi_eta;#eta", kTH1F, {Axis_eta});
+    SE_recoAnalysis.add("SE_hAnalysis_hPhi_LS_KK_8ToInfPhi_Phi_phi", "SE_hAnalysis_hPhi_LS_KK_8ToInfPhi_Phi_phi", kTH1F, {Axis_phi});
+    SE_recoAnalysis.add("SE_hAnalysis_hPhi_LS_KK_8ToInfPhi_Phi_rapidity", "SE_hAnalysis_hPhi_LS_KK_8ToInfPhi_Phi_rapidity", kTH1F, {Axis_rapidity});
+    SE_recoAnalysis.add("SE_hAnalysis_hPhi_LS_KK_8ToInfPhi_Phi_paircharge", "SE_hAnalysis_hPhi_LS_KK_8ToInfPhi_Phi_paircharge", kTH1F, {Axis_paircharge});
+    SE_recoAnalysis.add("SE_hAnalysis_hPhi_LS_KK_8ToInfPhi_Phi_InvMass", "SE_hAnalysis_hPhi_LS_KK_8ToInfPhi_Phi_InvMass(VeryHard);Mass(K^{+} K^{-})", kTH1F, {Axis_PhiMass});
+    //
+    //
+
     // LeadingPhi-Phi Correlations
     //
     SE_recoPhi.add("SE_hPhiPhi_Full_LeadPhi_01_Mass", "SE_hPhiPhi_Full_LeadPhi_01_Mass", kTH1F, {Axis_PhiMass});
@@ -1581,7 +1625,7 @@ struct hphicorrelation {
         if (ParticleList[jj] == ParticleList[ii]) {
           if (jj < ii) {
             break;
-          }               // break if it was already counted
+          } // break if it was already counted
           nCommonCount++; // To Calculate no of times the entry was repeated
         }
       }
@@ -1959,8 +2003,7 @@ struct hphicorrelation {
     SE_recoAnalysis.fill(HIST("SE_hAnalysis_hPhi_LS_KK_AllPhi_Phi_rapidity"), mother.Rapidity());
     SE_recoAnalysis.fill(HIST("SE_hAnalysis_hPhi_LS_KK_AllPhi_Phi_paircharge"), paircharge);
     SE_recoAnalysis.fill(HIST("SE_hAnalysis_hPhi_LS_KK_AllPhi_Phi_InvMass"), mother.M());
-    // SE_recoAnalysis.fill(HIST("SE_hAnalysis_hPhi_LS_KK_AllPhi_dPhi_dEta"     ),ComputeDeltaPhi(mother.Phi(), triggerTrack.phi()), mother.Eta()-triggerTrack.eta());
-    // SE_recoAnalysis.fill(HIST("SE_hAnalysis_hPhi_LS_KK_AllPhi_Analysis"      ),collision.centFT0C(), collision.posZ(), ComputeDeltaPhi(mother.Phi(), triggerTrack.phi()), mother.Eta()-triggerTrack.eta());
+
     if (pT < 2.0) { // Phi_pT in [0.0-2.0](Bulk)
       SE_recoAnalysis.fill(HIST("SE_hAnalysis_hPhi_LS_KK_0To2Phi_Phi_p"), mother.P());
       SE_recoAnalysis.fill(HIST("SE_hAnalysis_hPhi_LS_KK_0To2Phi_Phi_pT"), mother.Pt());
@@ -1969,8 +2012,6 @@ struct hphicorrelation {
       SE_recoAnalysis.fill(HIST("SE_hAnalysis_hPhi_LS_KK_0To2Phi_Phi_rapidity"), mother.Rapidity());
       SE_recoAnalysis.fill(HIST("SE_hAnalysis_hPhi_LS_KK_0To2Phi_Phi_paircharge"), paircharge);
       SE_recoAnalysis.fill(HIST("SE_hAnalysis_hPhi_LS_KK_0To2Phi_Phi_InvMass"), mother.M());
-      // SE_recoAnalysis.fill(HIST("SE_hAnalysis_hPhi_LS_KK_0To2Phi_dPhi_dEta"     ),ComputeDeltaPhi(mother.Phi(), triggerTrack.phi()), mother.Eta()-triggerTrack.eta());
-      // SE_recoAnalysis.fill(HIST("SE_hAnalysis_hPhi_LS_KK_0To2Phi_Analysis"      ),collision.centFT0C(), collision.posZ(), ComputeDeltaPhi(mother.Phi(), triggerTrack.phi()), mother.Eta()-triggerTrack.eta());
     }
     if (2.0 <= pT && pT < 4.0) { // Phi_pT in [2.0-4.0](Required)
       SE_recoAnalysis.fill(HIST("SE_hAnalysis_hPhi_LS_KK_2To4Phi_Phi_p"), mother.P());
@@ -1980,8 +2021,6 @@ struct hphicorrelation {
       SE_recoAnalysis.fill(HIST("SE_hAnalysis_hPhi_LS_KK_2To4Phi_Phi_rapidity"), mother.Rapidity());
       SE_recoAnalysis.fill(HIST("SE_hAnalysis_hPhi_LS_KK_2To4Phi_Phi_paircharge"), paircharge);
       SE_recoAnalysis.fill(HIST("SE_hAnalysis_hPhi_LS_KK_2To4Phi_Phi_InvMass"), mother.M());
-      // SE_recoAnalysis.fill(HIST("SE_hAnalysis_hPhi_LS_KK_2To4Phi_dPhi_dEta"     ),ComputeDeltaPhi(mother.Phi(), triggerTrack.phi()), mother.Eta()-triggerTrack.eta());
-      // SE_recoAnalysis.fill(HIST("SE_hAnalysis_hPhi_LS_KK_2To4Phi_Analysis"      ),collision.centFT0C(), collision.posZ(), ComputeDeltaPhi(mother.Phi(), triggerTrack.phi()), mother.Eta()-triggerTrack.eta());
     }
     if (4.0 <= pT && pT < 8.0) { // Phi_pT in [4.0-8.0](Hard)
       SE_recoAnalysis.fill(HIST("SE_hAnalysis_hPhi_LS_KK_4To8Phi_Phi_p"), mother.P());
@@ -1991,8 +2030,6 @@ struct hphicorrelation {
       SE_recoAnalysis.fill(HIST("SE_hAnalysis_hPhi_LS_KK_4To8Phi_Phi_rapidity"), mother.Rapidity());
       SE_recoAnalysis.fill(HIST("SE_hAnalysis_hPhi_LS_KK_4To8Phi_Phi_paircharge"), paircharge);
       SE_recoAnalysis.fill(HIST("SE_hAnalysis_hPhi_LS_KK_4To8Phi_Phi_InvMass"), mother.M());
-      // SE_recoAnalysis.fill(HIST("SE_hAnalysis_hPhi_LS_KK_4To8Phi_dPhi_dEta"     ),ComputeDeltaPhi(mother.Phi(), triggerTrack.phi()), mother.Eta()-triggerTrack.eta());
-      // SE_recoAnalysis.fill(HIST("SE_hAnalysis_hPhi_LS_KK_4To8Phi_Analysis"      ),collision.centFT0C(), collision.posZ(), ComputeDeltaPhi(mother.Phi(), triggerTrack.phi()), mother.Eta()-triggerTrack.eta());
     }
     if (8.0 <= pT) { // Phi_pT in [8.0-inf](Very Hard)
       SE_recoAnalysis.fill(HIST("SE_hAnalysis_hPhi_LS_KK_8ToInfPhi_Phi_p"), mother.P());
@@ -2002,8 +2039,6 @@ struct hphicorrelation {
       SE_recoAnalysis.fill(HIST("SE_hAnalysis_hPhi_LS_KK_8ToInfPhi_Phi_rapidity"), mother.Rapidity());
       SE_recoAnalysis.fill(HIST("SE_hAnalysis_hPhi_LS_KK_8ToInfPhi_Phi_paircharge"), paircharge);
       SE_recoAnalysis.fill(HIST("SE_hAnalysis_hPhi_LS_KK_8ToInfPhi_Phi_InvMass"), mother.M());
-      // SE_recoAnalysis.fill(HIST("SE_hAnalysis_hPhi_LS_KK_8ToInfPhi_dPhi_dEta"     ),ComputeDeltaPhi(mother.Phi(), triggerTrack.phi()), mother.Eta()-triggerTrack.eta());
-      // SE_recoAnalysis.fill(HIST("SE_hAnalysis_hPhi_LS_KK_8ToInfPhi_Analysis"      ),collision.centFT0C(), collision.posZ(), ComputeDeltaPhi(mother.Phi(), triggerTrack.phi()), mother.Eta()-triggerTrack.eta());
     }
     //
     // }//Unlike Sign Peak Region
@@ -2571,7 +2606,7 @@ struct hphicorrelation {
           // both tracks are Kaon now;
           ME_FillRHCorrelationUS(caseNo, c1, triggerTrack, posTrack, negTrack);
         } // Second Track
-      }   // first Track
+      } // first Track
       // //01-End  -obtaining h-Phi correlation
     } // tigger Loop
     // 01-h-phi All Three Region Unlike Sign correlation
@@ -2780,7 +2815,7 @@ struct hphicorrelation {
             // nPhiPhi++;
             ME_FillPhiPhiCorrelation(caseNo, c1, posTrack, negTrack, posTrack2, negTrack2);
           } // negTrack2
-        }   // posTrack2
+        } // posTrack2
         // 03-End  -PhiPhi Correlation
       } // negTrack
     }   // posTrack
@@ -2906,7 +2941,7 @@ struct hphicorrelation {
         } // reject phi daughters
         ME_Fill_hh_2To4AssoHadron(c1, triggerTrack, assocTrack);
       } // High pT associated track
-    }   // tigger Loop
+    } // tigger Loop
     // 05-h-h correlation
   }
 
@@ -3263,7 +3298,7 @@ struct hphicorrelation {
             // both tracks are Kaon now;
             SE_FillRHCorrelationUS(collision, triggerTrack, posTrack, negTrack, nCR_Phi, nCR_Phi_0_2, nCR_Phi_2_4, nCR_Phi_4_8, nCR_Phi_8_i);
           } // Second Track
-        }   // first Track
+        } // first Track
         // 01-End  -obtaining h-Phi correlation
       } // trigger Loop-End
       // 01-h-phi All Three Region Unlike Sign correlation
@@ -3406,7 +3441,7 @@ struct hphicorrelation {
               nPhiPhi++;
               SE_FillPhiPhiCorrelation(collision, posTrack, negTrack, posTrack2, negTrack2, nLeadPhi, nAssoPhi_0_2, nAssoPhi_2_4);
             } // negTrack2
-          }   // posTrack2
+          } // posTrack2
           // 03-End  -PhiPhi Correlation
         } // negTrack
         fillSelectedTrack = 1;
@@ -3698,7 +3733,7 @@ struct hphicorrelation {
           mixingCounts++;
         }
       } // Mixing Case Loop
-    }   // CollisionLoop-End
+    } // CollisionLoop-End
 
     // Store Dataframe information
     for (int iBin = 1; iBin <= 40; iBin++) {
