@@ -47,10 +47,10 @@ DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Minv, minv, float);
 DECLARE_SOA_COLUMN(Sign, sign, float);
-} // namespace bcNtr
+} // namespace rho
 DECLARE_SOA_TABLE(Rho, "AOD", "RHO",
                   rho::Run, rho::Flag, rho::GS, rho::ZNA, rho::ZNC, rho::Pt, rho::Eta, rho::Minv, rho::Sign);
-}
+} // namespace o2::aod
 struct SGTwoPiAnalyzer {
   Produces<aod::Rho> rhoByRun;
   SGSelector sgSelector;
@@ -147,7 +147,7 @@ struct SGTwoPiAnalyzer {
       }
       // Apply pion hypothesis and create pairs
       // Opposite sign pairs
-	rhoByRun(collision.runNumber(), collision.flags(), gapSide, collision.energyCommonZNA(), collision.energyCommonZNC(), v01.Pt(), v01.Eta(), v01.M(), sign);
+      rhoByRun(collision.runNumber(), collision.flags(), gapSide, collision.energyCommonZNA(), collision.energyCommonZNC(), v01.Pt(), v01.Eta(), v01.M(), sign);
       if (sign == 0) {
         registry.fill(HIST("os_2Pi_pT"), v01.Pt());
         registry.fill(HIST("os_2Pi_eTa"), v01.Eta());
