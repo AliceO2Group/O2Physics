@@ -88,7 +88,9 @@ struct FlowGFWOmegaXi {
   O2_DEFINE_CONFIGURABLE(cfgNSigmaCascKaon, float, 3, "NSigmaCascKaon")
   O2_DEFINE_CONFIGURABLE(cfgAcceptancePath, std::vector<std::string>, std::vector<std::string>{"PathtoRef"}, "CCDB path to acceptance object")
   O2_DEFINE_CONFIGURABLE(cfgEfficiencyPath, std::vector<std::string>, std::vector<std::string>{"PathtoRef"}, "CCDB path to efficiency object")
-
+  O2_DEFINE_CONFIGURABLE(nolaterthan, int64_t, std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object")
+  O2_DEFINE_CONFIGURABLE(url, std::string, "http://ccdb-test.cern.ch", "url of the ccdb repository")
+  
   ConfigurableAxis cfgaxisVertex{"axisVertex", {20, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis cfgaxisPhi{"axisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
   ConfigurableAxis cfgaxisEta{"axisEta", {40, -1., 1.}, "eta axis for histograms"};
@@ -112,8 +114,8 @@ struct FlowGFWOmegaXi {
 
   // Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
-  Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
-  Configurable<std::string> url{"ccdb-url", "http://ccdb-test.cern.ch", "url of the ccdb repository"};
+  O2_DEFINE_CONFIGURABLE(nolaterthan, int64_t, std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object")
+  O2_DEFINE_CONFIGURABLE(url, std::string, "http://ccdb-test.cern.ch", "url of the ccdb repository")
 
   // Define output
   HistogramRegistry registry{"registry"};
