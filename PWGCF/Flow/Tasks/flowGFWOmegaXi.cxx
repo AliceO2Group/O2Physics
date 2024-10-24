@@ -92,6 +92,7 @@ struct FlowGFWOmegaXi {
   ConfigurableAxis cfgaxisVertex{"axisVertex", {20, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis cfgaxisPhi{"axisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
   ConfigurableAxis cfgaxisEta{"axisEta", {40, -1., 1.}, "eta axis for histograms"};
+  ConfigurableAxis cfgaxisPt{"axisPtREF", {VARIABLE_WIDTH, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.20, 2.40, 2.60, 2.80, 3.00, 3.50, 4.00, 4.50, 5.00, 5.50, 6.00, 10.0}, "pt (GeV)"};
   ConfigurableAxis cfgaxisPtXi{"axisPtXi", {VARIABLE_WIDTH, 0.9, 1.1, 1.3, 1.5, 1.7, 1.9, 2.1, 2.3, 2.5, 2.7, 2.9, 3.9, 4.9, 5.9, 9.9}, "pt (GeV)"};
   ConfigurableAxis cfgaxisPtOmega{"axisPtOmega", {VARIABLE_WIDTH, 0.9, 1.1, 1.3, 1.5, 1.7, 1.9, 2.1, 2.3, 2.5, 2.7, 2.9, 3.9, 4.9, 5.9, 9.9}, "pt (GeV)"};
   ConfigurableAxis cfgaxisPtV0{"axisPtV0", {VARIABLE_WIDTH, 0.9, 1.1, 1.3, 1.5, 1.7, 1.9, 2.1, 2.3, 2.5, 2.7, 2.9, 3.9, 4.9, 5.9, 9.9}, "pt (GeV)"};
@@ -100,7 +101,6 @@ struct FlowGFWOmegaXi {
   ConfigurableAxis cfgaxisK0sMassforflow{"axismassK0sFlow", {40, 0.4f, 0.6f}, "Inv. Mass (GeV)"};
   ConfigurableAxis cfgaxisLambdaMassforflow{"axismassLambdaFlow", {32, 1.08f, 1.16f}, "Inv. Mass (GeV)"};
 
-  AxisSpec axisPt{{0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.20, 2.40, 2.60, 2.80, 3.00, 3.50, 4.00, 4.50, 5.00, 5.50, 6.00, 10.0}, "pt(GeV)"};
   AxisSpec axisMultiplicity{{0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}, "Centrality (%)"};
   AxisSpec axisOmegaminusMass = {80, 1.63f, 1.71f, "Inv. Mass (GeV)"};
   AxisSpec axisXiminusMass = {70, 1.3f, 1.37f, "Inv. Mass (GeV)"};
@@ -141,6 +141,7 @@ struct FlowGFWOmegaXi {
   using DaughterTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCKa>;
 
   // Set the pt, mult and phi Axis;
+  o2::framework::AxisSpec axisPt = cfgaxisPt;
   int nPtBins = axisPt.binEdges.size() - 1;
   TAxis* fPtAxis = new TAxis(nPtBins, &(axisPt.binEdges)[0]);
 
