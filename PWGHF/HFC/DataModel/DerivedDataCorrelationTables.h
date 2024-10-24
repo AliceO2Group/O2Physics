@@ -24,7 +24,7 @@ namespace hf_collisions_reduced
 {
 DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float);                   //! Event multiplicity
 DECLARE_SOA_COLUMN(PosZ, posZ, float);                                   //! Primary vertex z position
-DECLARE_SOA_COLUMN(OriginalCollisionCount, originalCollisionCount, int); //! Size of collision table processed
+
 } // namespace hf_collisions_reduced
 DECLARE_SOA_TABLE(HfRedCollisions, "AOD", "COLLREDUCED", //! Table with collision info
                   soa::Index<>,
