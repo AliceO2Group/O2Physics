@@ -440,14 +440,14 @@ struct ZDCqvectors {
 
     if (hist->InheritsFrom("TProfile2D")) {
       if (counter < 1)
-        LOGF(info, "correction is TProfile2D %s for q[%i][%i]", objName, iteration,step);
+        LOGF(info, "correction is TProfile2D %s for q[%i][%i]", objName, iteration, step);
       TProfile2D* h = reinterpret_cast<TProfile2D*>(hist);
       int binrunnumber = h->GetXaxis()->FindBin(TString::Format("%i", runnumber));
       int bincentrality = h->GetYaxis()->FindBin(centrality);
       calibConstant = h->GetBinContent(binrunnumber, bincentrality);
     } else if (hist->InheritsFrom("TProfile")) {
       if (counter < 1)
-        LOGF(info, "correction is TProfile %s for q[%i][%i]", objName, iteration,step);
+        LOGF(info, "correction is TProfile %s for q[%i][%i]", objName, iteration, step);
       TProfile* h = reinterpret_cast<TProfile*>(hist);
       int binrunnumber = h->GetXaxis()->FindBin(TString::Format("%i", runnumber));
       calibConstant = h->GetBinContent(binrunnumber);
@@ -456,9 +456,9 @@ struct ZDCqvectors {
         LOGF(info, "correction is THnSparse %s for q[%i][%i]", objName, iteration, step);
       std::vector<double> sparsePars;
       if (counter < 1)
-        LOGF(info, "correction is THnSparse %s for q[%i][%i]", objName, iteration,step);
+        LOGF(info, "correction is THnSparse %s for q[%i][%i]", objName, iteration, step);
       THnSparseD* h = reinterpret_cast<THnSparseD*>(hist);
-      if (step==0 && iteration>0) {
+      if (step == 0 && iteration > 0) {
         sparsePars.push_back(h->GetAxis(0)->FindBin(runnumber));
         sparsePars.push_back(h->GetAxis(1)->FindBin(centrality));
         sparsePars.push_back(h->GetAxis(2)->FindBin(v[0]));
