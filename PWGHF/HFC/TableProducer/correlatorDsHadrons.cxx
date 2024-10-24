@@ -693,7 +693,11 @@ struct HfCorrelatorDsHadrons {
     // Ds fill histograms and Ds candidates information stored
     for (const auto& candidate : candidates) {
       // candidate selected
-      candReduced(collReduced.lastIndex(), candidate.phi(), candidate.eta(), candidate.pt());
+      if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
+        candReduced(collReduced.lastIndex(), candidate.phi(), candidate.eta(), candidate.pt(), hfHelper.invMassDsToKKPi(candidate));
+      } else if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
+        candReduced(collReduced.lastIndex(), candidate.phi(), candidate.eta(), candidate.pt(), hfHelper.invMassDsToPiKK(candidate));
+      }
     }
 
     // tracks information

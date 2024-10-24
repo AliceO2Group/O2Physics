@@ -39,38 +39,18 @@ using HfRedCollision = HfRedCollisions::iterator;
 namespace hf_candidate_reduced
 {
 DECLARE_SOA_INDEX_COLUMN(HfRedCollision, hfRedCollision);                  //! ReducedCollision index
-DECLARE_SOA_COLUMN(Prong0Id, prong0Id, int);                               //! Original track index
-DECLARE_SOA_COLUMN(Prong1Id, prong1Id, int);                               //! Original track index
-DECLARE_SOA_COLUMN(Prong2Id, prong2Id, int);                               //! Original track index
 DECLARE_SOA_COLUMN(PhiCand, phiCand, float);                               //! Phi of the candidate
 DECLARE_SOA_COLUMN(EtaCand, etaCand, float);                               //! Eta of the candidate
 DECLARE_SOA_COLUMN(PtCand, ptCand, float);                                 //! Pt of the candidate
-DECLARE_SOA_COLUMN(CosPa, cosPa, float);                                   //! Cosine of the pointing angle
-DECLARE_SOA_COLUMN(CosPaXY, cosPaXY, float);                               //! Cosine of the pointing angle XY
-DECLARE_SOA_COLUMN(DecayLength, decayLength, float);                       //! Decay length
-DECLARE_SOA_COLUMN(NormDecayLengthXY, normDecayLengthXY, float);           //! Normalised decay length XY
-DECLARE_SOA_COLUMN(ImpactParameterXY, impactParameterXY, float);           //! Impact parameter XY
-DECLARE_SOA_COLUMN(DeltaMassPhiDsToKKPi, deltaMassPhiDsToKKPi, float);     //! Delta mass Phi for the Ds -> KKPi  hypothesis
-DECLARE_SOA_COLUMN(DeltaMassPhiDsToPiKK, deltaMassPhiDsToPiKK, float);     //! Delta mass Phi for the Ds -> PiKK  hypothesis
-DECLARE_SOA_COLUMN(Cos3PiKDsToKKPi, cos3PiKDsToKKPi, float);               //! Cos3 between the pion and the kaon for the Ds -> KKPi  hypothesis
-DECLARE_SOA_COLUMN(Cos3PiKDsToPiKK, cos3PiKDsToPiKK, float);               //! Cos3 between the pion and the kaon for the Ds -> PiKK  hypothesis
-DECLARE_SOA_COLUMN(SelFlagDsToKKPi, selFlagDsToKKPi, int);                 //! Selection flag Ds -> KKPi
-DECLARE_SOA_COLUMN(SelFlagDsToPiKK, selFlagDsToPiKK, int);                 //! Selection flag Ds -> PiKK
-DECLARE_SOA_COLUMN(BdtScoreClass0DsToKKPi, bdtScoreClass0DsToKKPi, float); //! Bdt score for the Ds -> KKPi  hypothesis
-DECLARE_SOA_COLUMN(BdtScoreClass1DsToKKPi, bdtScoreClass1DsToKKPi, float); //! Bdt score for the Ds -> KKPi  hypothesis
-DECLARE_SOA_COLUMN(BdtScoreClass2DsToKKPi, bdtScoreClass2DsToKKPi, float); //! Bdt score for the Ds -> KKPi  hypothesis
-DECLARE_SOA_COLUMN(BdtScoreClass0DsToPiKK, bdtScoreClass0DsToPiKK, float); //! Bdt score for the Ds -> PiKK  hypothesis
-DECLARE_SOA_COLUMN(BdtScoreClass1DsToPiKK, bdtScoreClass1DsToPiKK, float); //! Bdt score for the Ds -> PiKK  hypothesis
-DECLARE_SOA_COLUMN(BdtScoreClass2DsToPiKK, bdtScoreClass2DsToPiKK, float); //! Bdt score for the Ds -> PiKK  hypothesis
-DECLARE_SOA_COLUMN(InvMassDsToKKPi, invMassDsToKKPi, float);               //! Invariant mass of candidate for the Ds -> KKPi  hypothesis
-DECLARE_SOA_COLUMN(InvMassDsToPiKK, invMassDsToPiKK, float);               //! Invariant mass of candidate for the Ds -> PiKK  hypothesis
+DECLARE_SOA_COLUMN(InvMassDs, invMassDs, float);                     //! Invariant mass of Ds candidate
 } // namespace hf_candidate_reduced
 DECLARE_SOA_TABLE(DsCandReduced, "AOD", "DSCANDREDUCED", //! Table with Ds candidate info (rectangular selection)
                   soa::Index<>,
                   aod::hf_candidate_reduced::HfRedCollisionId,
                   aod::hf_candidate_reduced::PhiCand,
                   aod::hf_candidate_reduced::EtaCand,
-                  aod::hf_candidate_reduced::PtCand);
+                  aod::hf_candidate_reduced::PtCand,
+                  aod::hf_candidate_reduced::InvMassDs);
 
 namespace hf_assoc_track_reduced
 {
