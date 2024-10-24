@@ -642,7 +642,7 @@ struct lambdaCorrTableProducer {
           histos.fill(HIST("QA_Checks/h2d_lambda_from_cascade"), v0mcpart.pdgCode(), v0mcpart.pt());
         }
       }
-      
+
       histos.fill(HIST("QA_Checks/h1d_tracks_info"), 5.5);
       histos.fill(HIST("QA_Checks/h2d_tracks_pid_after_sel"), v0mcpart.pdgCode(), v0mcpart.pt());
     }
