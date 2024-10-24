@@ -780,8 +780,7 @@ struct femtoUniverseProducerTask {
       } else {
         outputCollision(vtxZ, mult, multNtr, 2, mMagField);
       }
-    }
-    else {
+    } else {
       if (ConfDoSpher && (!ConfEvNoSameBunchPileup || col.selection_bit(aod::evsel::kNoSameBunchPileup)) && (!ConfEvIsGoodZvtxFT0vsPV || col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) && (!ConfEvIsVertexITSTPC || col.selection_bit(aod::evsel::kIsVertexITSTPC))) {
         outputCollision(vtxZ, mult, multNtr, colCuts.computeSphericity(col, tracks), mMagField);
       } else {
