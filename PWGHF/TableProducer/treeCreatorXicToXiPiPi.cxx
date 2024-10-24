@@ -802,10 +802,10 @@ struct HfTreeCreatorXicToXiPiPi {
       svPulls = {-9999.9};
 
       auto arrayDaughters = std::array{candidate.pi0_as<aod::TracksWMc>(),       // pi <- Xic
-                                        candidate.pi1_as<aod::TracksWMc>(),       // pi <- Xic
-                                        candidate.bachelor_as<aod::TracksWMc>(),  // pi <- cascade
-                                        candidate.posTrack_as<aod::TracksWMc>(),  // p <- lambda
-                                        candidate.negTrack_as<aod::TracksWMc>()}; // pi <- lambda
+                                       candidate.pi1_as<aod::TracksWMc>(),       // pi <- Xic
+                                       candidate.bachelor_as<aod::TracksWMc>(),  // pi <- cascade
+                                       candidate.posTrack_as<aod::TracksWMc>(),  // p <- lambda
+                                       candidate.negTrack_as<aod::TracksWMc>()}; // pi <- lambda
 
       // get Xic and daughters as MC particle
       indexRecXic = RecoDecay::getMatchedMCRec(particles, arrayDaughters, Pdg::kXiCPlus, std::array{+kPiPlus, +kPiPlus, +kPiMinus, +kProton, +kPiMinus}, true, &sign, 4);
