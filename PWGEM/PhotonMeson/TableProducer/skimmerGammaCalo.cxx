@@ -47,7 +47,6 @@ struct skimmerGammaCalo {
   Configurable<float> minM02{"minM02", 0.0, "Minimum M02 for M02 cut"};
   Configurable<float> maxM02{"maxM02", 1.0, "Maximum M02 for M02 cut"};
   Configurable<float> minE{"minE", 0.5, "Minimum energy for energy cut"};
-  Configurable<bool> hasPropagatedTracks{"hasPropagatedTracks", false, "temporary flag, only set to true when running over data which has the tracks propagated to EMCal/PHOS!"};
   Configurable<bool> applyEveSel_at_skimming{"applyEveSel_at_skimming", false, "flag to apply minimal event selection at the skimming level"};
   Configurable<bool> inherit_from_emevent_photon{"inherit_from_emevent_photon", false, "flag to inherit task options from emevent-photon"};
 
@@ -118,25 +117,14 @@ struct skimmerGammaCalo {
       vP.reserve(groupedMTs.size());
       vPt.reserve(groupedMTs.size());
       for (const auto& emcmatchedtrack : groupedMTs) {
-        if (hasPropagatedTracks) { // only temporarily while not every data has the tracks propagated to EMCal/PHOS
-          historeg.fill(HIST("hMTEtaPhi"), emccluster.eta() - emcmatchedtrack.track_as<aod::FullTracks>().trackEtaEmcal(), emccluster.phi() - emcmatchedtrack.track_as<aod::FullTracks>().trackPhiEmcal());
-          vTrackIds.emplace_back(emcmatchedtrack.trackId());
-          vEta.emplace_back(emcmatchedtrack.track_as<aod::FullTracks>().trackEtaEmcal());
-          vPhi.emplace_back(emcmatchedtrack.track_as<aod::FullTracks>().trackPhiEmcal());
-          vP.emplace_back(emcmatchedtrack.track_as<aod::FullTracks>().p());
-          vPt.emplace_back(emcmatchedtrack.track_as<aod::FullTracks>().pt());
-          tableTrackEMCReco(emcmatchedtrack.emcalclusterId(), emcmatchedtrack.track_as<aod::FullTracks>().trackEtaEmcal(), emcmatchedtrack.track_as<aod::FullTracks>().trackPhiEmcal(),
-                            emcmatchedtrack.track_as<aod::FullTracks>().p(), emcmatchedtrack.track_as<aod::FullTracks>().pt());
-        } else {
-          historeg.fill(HIST("hMTEtaPhi"), emccluster.eta() - emcmatchedtrack.track_as<aod::FullTracks>().eta(), emccluster.phi() - emcmatchedtrack.track_as<aod::FullTracks>().phi());
-          vTrackIds.emplace_back(emcmatchedtrack.trackId());
-          vEta.emplace_back(emcmatchedtrack.track_as<aod::FullTracks>().eta());
-          vPhi.emplace_back(emcmatchedtrack.track_as<aod::FullTracks>().phi());
-          vP.emplace_back(emcmatchedtrack.track_as<aod::FullTracks>().p());
-          vPt.emplace_back(emcmatchedtrack.track_as<aod::FullTracks>().pt());
-          tableTrackEMCReco(emcmatchedtrack.emcalclusterId(), emcmatchedtrack.track_as<aod::FullTracks>().eta(), emcmatchedtrack.track_as<aod::FullTracks>().phi(),
-                            emcmatchedtrack.track_as<aod::FullTracks>().p(), emcmatchedtrack.track_as<aod::FullTracks>().pt());
-        }
+        historeg.fill(HIST("hMTEtaPhi"), emccluster.eta() - emcmatchedtrack.track_as<aod::FullTracks>().trackEtaEmcal(), emccluster.phi() - emcmatchedtrack.track_as<aod::FullTracks>().trackPhiEmcal());
+        vTrackIds.emplace_back(emcmatchedtrack.trackId());
+        vEta.emplace_back(emcmatchedtrack.track_as<aod::FullTracks>().trackEtaEmcal());
+        vPhi.emplace_back(emcmatchedtrack.track_as<aod::FullTracks>().trackPhiEmcal());
+        vP.emplace_back(emcmatchedtrack.track_as<aod::FullTracks>().p());
+        vPt.emplace_back(emcmatchedtrack.track_as<aod::FullTracks>().pt());
+        tableTrackEMCReco(emcmatchedtrack.emcalclusterId(), emcmatchedtrack.track_as<aod::FullTracks>().trackEtaEmcal(), emcmatchedtrack.track_as<aod::FullTracks>().trackPhiEmcal(),
+                          emcmatchedtrack.track_as<aod::FullTracks>().p(), emcmatchedtrack.track_as<aod::FullTracks>().pt());
       }
 
       historeg.fill(HIST("hCaloClusterEOut"), emccluster.energy());
