@@ -92,6 +92,68 @@ void Zorro::populateHistRegistry(o2::framework::HistogramRegistry& histRegistry,
   mRunNumberHistos.push_back(runNumber);
 }
 
+void Zorro::populateHist(int runNumber)
+{
+  // x-axis is run number, y-axis is same as ZorroSummary
+  int runId{-1};
+  for (size_t i{0}; i < mRunNumberHistos.size(); ++i) {
+    if (mRunNumberHistos[i] == runNumber) {
+      runId = i;
+      break;
+    }
+  }
+  if (runId > -1) {
+    return;
+  }
+  // if the summary histogram is not set, create a new one
+  if (!mZorroHisto) {
+    LOGF(info, "Summary histogram not set, creating a new one");
+    mZorroHisto = new TH2D("Zorro", "Zorro", 1, -0.5, 0.5, 1 + mTOIs.size() * 2, -0.5, mTOIs.size() * 2 - 0.5);
+    mZorroHisto->SetBit(TH1::kIsAverage);
+  }
+  if (!mToiHisto) {
+    LOGF(info, "TOI histogram not set, creating a new one");
+    mToiHisto = new TH2D("TOI", "TOI", 1, -0.5, 0.5, mTOIs.size(), -0.5, mTOIs.size() - 0.5);
+  }
+  // if it is the first run, initialize the histogram
+  if (mRunNumberHistos.size() == 0) {
+    mZorroHisto->SetBins(1, -0.5, 0.5, 1 + mTOIs.size() * 2, -0.5, mTOIs.size() * 2 - 0.5);
+    mZorroHisto->SetBit(TH1::kIsAverage);
+    mZorroHisto->GetXaxis()->SetBinLabel(1, Form("%d", runNumber));
+    mZorroHisto->GetYaxis()->SetBinLabel(1, "inspected TVX");
+    for (size_t i{0}; i < mTOIs.size(); ++i) {
+      mZorroHisto->GetYaxis()->SetBinLabel(i + 2, Form("%s selections", mTOIs[i].data()));
+      mZorroHisto->GetYaxis()->SetBinLabel(i + 2 + mTOIs.size(), Form("%s scalers", mTOIs[i].data()));
+    }
+    // TOI histogram
+    mToiHisto->SetBins(1, -0.5, 0.5, mTOIs.size(), -0.5, mTOIs.size() - 0.5);
+    mToiHisto->GetXaxis()->SetBinLabel(1, Form("%d", runNumber));
+    for (size_t i{0}; i < mTOIs.size(); ++i) {
+      mToiHisto->GetYaxis()->SetBinLabel(i + 1, mTOIs[i].data());
+    }
+  }
+  if (mInspectedTVX) {
+    mZorroHisto->Fill(Form("%d", runNumber), "inspected TVX", mInspectedTVX->GetBinContent(1));
+    mZorroHisto->SetBinError(mRunNumberHistos.size() + 1, 1, mInspectedTVX->GetBinError(1));
+  }
+  if (mSelections) {
+    for (size_t i{0}; i < mTOIs.size(); ++i) {
+      int bin = findBin(mSelections, mTOIs[i]);
+      mZorroHisto->Fill(Form("%d", runNumber), Form("%s selections", mTOIs[i].data()), mSelections->GetBinContent(bin));
+      mZorroHisto->SetBinError(mRunNumberHistos.size() + 1, i + 2, mSelections->GetBinError(bin));
+    }
+  }
+  if (mScalers) {
+    for (size_t i{0}; i < mTOIs.size(); ++i) {
+      int bin = findBin(mScalers, mTOIs[i]);
+      mZorroHisto->Fill(Form("%d", runNumber), Form("%s scalers", mTOIs[i].data()), mScalers->GetBinContent(bin));
+      mZorroHisto->SetBinError(mRunNumberHistos.size() + 1, i + 2 + mTOIs.size(), mScalers->GetBinError(bin));
+    }
+  }
+
+  mRunNumberHistos.push_back(runNumber);
+}
+
 std::vector<int> Zorro::initCCDB(o2::ccdb::BasicCCDBManager* ccdb, int runNumber, uint64_t timestamp, std::string tois, int bcRange)
 {
   if (mRunNumber == runNumber) {
@@ -190,6 +252,9 @@ bool Zorro::isSelected(uint64_t bcGlobalId, uint64_t tolerance)
       if (mAnalysedTriggersOfInterest && lastSelectedIdx != mLastSelectedIdx) {
         mAnalysedTriggersOfInterest->Fill(i);
         mZorroSummary.increaseTOIcounter(mRunNumber, i);
+      }
+      if (mToiHisto && lastSelectedIdx != mLastSelectedIdx) {
+        mToiHisto->Fill(Form("%d", mRunNumber), Form("%s", mTOIs[i].data()), 1);
       }
       retVal = true;
     }
