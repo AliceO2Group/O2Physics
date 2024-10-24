@@ -26,7 +26,6 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include <TLorentzVector.h>
-#include <typeinfo>
 
 using namespace o2;
 using namespace o2::framework;
@@ -290,7 +289,7 @@ struct hphicorrelation {
     LOG(info) << "DEBUG :: SIZE MultBins :: " << CfgMultBins.size() - 2;
     int BinCount = (CfgVtxBins.size() - 2) * (CfgMultBins.size() - 2);
 
-    AxisSpec Axis_MixingBin = {(int(BinCount * 1.2) - (-1)) * 4 + 2, -1.25, int(BinCount * 1.2) + 0.25, "Mixing Bin"};
+    AxisSpec Axis_MixingBin = {(static_cast<int>(BinCount * 1.2) - (-1)) * 4 + 2, -1.25, static_cast<int>(BinCount * 1.2) + 0.25, "Mixing Bin"};
     AxisSpec Axis_EventCount = {101, -1, 100, "EventCount"};
 
     // Histograms
@@ -908,6 +907,9 @@ struct hphicorrelation {
     ME_recoAnalysis.add("ME_hAnalysis_hPhi_US_RSB_8ToInfPhi_Phi_InvMass", "ME_hAnalysis_hPhi_US_RSB_8ToInfPhi_Phi_InvMass(VeryHard);Mass(K^{+} K^{-})", kTH1F, {Axis_PhiMass});
     ME_recoAnalysis.add("ME_hAnalysis_hPhi_US_RSB_8ToInfPhi_dPhi_dEta", "ME_hAnalysis_hPhi_US_RSB_8ToInfPhi_dPhi_dEta(VeryHard);#Delta#phi;#Delta#eta", kTH2F, {Axis_dPhi, Axis_dEta});
     ME_recoAnalysis.add("ME_hAnalysis_hPhi_US_RSB_8ToInfPhi_Analysis", "ME_hAnalysis_hPhi_US_RSB_8ToInfPhi_Analysis(VeryHard)", kTHnSparseF, {Axis_CentBins, Axis_vtxZbins, Axis_dPhi, Axis_dEta});
+    //
+    //
+    //
     //
 
     // PhiMesons
@@ -1573,7 +1575,7 @@ struct hphicorrelation {
 
   void InsertionSortVector(std::vector<int64_t>& UnsortedVector)
   {
-    for (long unsigned int i = 1; i < UnsortedVector.size(); i++) {
+    for (uint i = 1; i < UnsortedVector.size(); i++) {
       int currentElement = UnsortedVector[i]; // Element to be Inserted at correct position
       int j;                                  //(j+1) is the correct position of current element
       for (j = i - 1; j >= 0 && (UnsortedVector[j] > currentElement); j--) {
@@ -1616,9 +1618,9 @@ struct hphicorrelation {
   template <typename T>
   void FindRepeatEntries(std::vector<int64_t> ParticleList, T hist)
   {
-    for (long unsigned int ii = 0; ii < ParticleList.size(); ii++) {
+    for (uint ii = 0; ii < ParticleList.size(); ii++) {
       int nCommonCount = 0; // checking the repeat number of track
-      for (long unsigned int jj = 0; jj < ParticleList.size(); jj++) {
+      for (uint jj = 0; jj < ParticleList.size(); jj++) {
         if (ParticleList[jj] == ParticleList[ii]) {
           if (jj < ii) {
             break;
@@ -1632,9 +1634,9 @@ struct hphicorrelation {
 
   void FillNewListFromOldList(std::vector<int64_t>& NewList, std::vector<int64_t> OldList)
   {
-    for (long unsigned int ii = 0; ii < OldList.size(); ii++) {
+    for (uint ii = 0; ii < OldList.size(); ii++) {
       bool RepeatEntry = false;
-      for (long unsigned int jj = 0; jj < NewList.size(); jj++) {
+      for (uint jj = 0; jj < NewList.size(); jj++) {
         if (OldList[ii] == NewList[jj]) {
           RepeatEntry = true;
         }
@@ -2815,7 +2817,7 @@ struct hphicorrelation {
         } // posTrack2
         // 03-End  -PhiPhi Correlation
       } // negTrack
-    } // posTrack
+    }   // posTrack
     // phi-phi correlation is over
   }
 
@@ -2906,7 +2908,7 @@ struct hphicorrelation {
         PhiPosDauKaonList_c2.push_back(posTrack.globalIndex());
         PhiNegDauKaonList_c2.push_back(negTrack.globalIndex());
       } // negTrack
-    } // posTrack
+    }   // posTrack
 
     std::vector<int64_t> PhiDauKaonList_c2;
     FillNewListFromOldList(PhiDauKaonList_c2, PhiPosDauKaonList_c2);
@@ -3085,26 +3087,26 @@ struct hphicorrelation {
       }
     }
 
-    if (int(PerColl_triggerTracks[caseNo][collBin][mixingSlotPosition].size()) != int(PerColl_triggerTrack_c1.size())) {
+    if (static_cast<int>(PerColl_triggerTracks[caseNo][collBin][mixingSlotPosition].size()) != static_cast<int>(PerColl_triggerTrack_c1.size())) {
       LOG(info) << "DEBUG :: ERROR :: ERROR :: ERROR :: ERROR in triggerStoring";
     }
-    if (int(PerColl_posTracks[caseNo][collBin][mixingSlotPosition].size()) != int(PerColl_posTracks_c1.size())) {
+    if (static_cast<int>(PerColl_posTracks[caseNo][collBin][mixingSlotPosition].size()) != static_cast<int>(PerColl_posTracks_c1.size())) {
       LOG(info) << "DEBUG :: ERROR :: ERROR :: ERROR :: ERROR in posTracksStoring";
     }
-    if (int(PerColl_negTracks[caseNo][collBin][mixingSlotPosition].size()) != int(PerColl_negTracks_c1.size())) {
+    if (static_cast<int>(PerColl_negTracks[caseNo][collBin][mixingSlotPosition].size()) != static_cast<int>(PerColl_negTracks_c1.size())) {
       LOG(info) << "DEBUG :: ERROR :: ERROR :: ERROR :: ERROR in negTracksStoring";
     }
-    if (int(PerColl_associatedTracks_0To2[caseNo][collBin][mixingSlotPosition].size()) != int(PerColl_associatedTracks_0To2_c1.size())) {
+    if (static_cast<int>(PerColl_associatedTracks_0To2[caseNo][collBin][mixingSlotPosition].size()) != static_cast<int>(PerColl_associatedTracks_0To2_c1.size())) {
       LOG(info) << "DEBUG :: ERROR :: ERROR :: ERROR :: ERROR in associatedTracks_0To2Storing";
     }
-    if (int(PerColl_associatedTracks_2To4[caseNo][collBin][mixingSlotPosition].size()) != int(PerColl_associatedTracks_2To4_c1.size())) {
+    if (static_cast<int>(PerColl_associatedTracks_2To4[caseNo][collBin][mixingSlotPosition].size()) != static_cast<int>(PerColl_associatedTracks_2To4_c1.size())) {
       LOG(info) << "DEBUG :: ERROR :: ERROR :: ERROR :: ERROR in associatedTracks_2To4Storing";
     }
     // Storing Data for Mixing - End
 
     // Implement Collision Mixing - Begin
     if (myStoredMixingCollisions[caseNo][collBin].size() <= nMixEvt) {
-      for (int i = 0; i < int(myStoredMixingCollisions[caseNo][collBin].size()) - 1; i++) {
+      for (int i = 0; i < static_cast<int>(myStoredMixingCollisions[caseNo][collBin].size()) - 1; i++) {
         MIX_Collisions_Structure(caseNo, collBin, i, mixingSlotPosition);
       }
     } else {
