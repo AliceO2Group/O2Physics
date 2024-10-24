@@ -688,7 +688,7 @@ struct HfCorrelatorDsHadrons {
                             CandDsData const& candidates,
                             MyTracksData const& tracks)
   {
-    collReduced(collision.multFV0M(), collision.posZ());
+    collReduced(collision.multFT0M(), collision.posZ());
 
     // Ds fill histograms and Ds candidates information stored
     for (const auto& candidate : candidates) {
