@@ -131,6 +131,7 @@ struct femtoUniverseProducerTask {
   Configurable<float> ConfCentFT0Max{"ConfCentFT0Max", 200.f, "Max CentFT0 value for centrality selection"};
   Configurable<bool> ConfEvIsGoodZvtxFT0vsPV{"ConfEvIsGoodZvtxFT0vsPV", true, "Require kIsGoodZvtxFT0vsPV selection on Events."};
   Configurable<bool> ConfEvNoSameBunchPileup{"ConfEvNoSameBunchPileup", true, "Require kNoSameBunchPileup selection on Events."};
+  Configurable<bool> ConfIsUsePileUp{"ConfIsUsePileUp", true, "Required for choosing whether to run the pile-up cuts"};
   Configurable<bool> ConfEvIsVertexITSTPC{"ConfEvIsVertexITSTPC", true, "Require kIsVertexITSTPC selection on Events"};
   Configurable<int> ConfTPCOccupancyMin{"ConfTPCOccupancyMin", 0, "Minimum value for TPC Occupancy selection"};
   Configurable<int> ConfTPCOccupancyMax{"ConfTPCOccupancyMax", 500, "Maximum value for TPC Occupancy selection"};
@@ -769,23 +770,25 @@ struct femtoUniverseProducerTask {
     // in case of skimming run - don't store such collisions
     // in case of trigger run - store such collisions but don't store any
     // particle candidates for such collisions
-    if (!colCuts.isSelected(col)) {
-      if (ConfIsTrigger) {
-        if (ConfDoSpher && (!ConfEvNoSameBunchPileup || col.selection_bit(aod::evsel::kNoSameBunchPileup)) && (!ConfEvIsGoodZvtxFT0vsPV || col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) && (!ConfEvIsVertexITSTPC || col.selection_bit(aod::evsel::kIsVertexITSTPC))) {
-          outputCollision(vtxZ, mult, multNtr, colCuts.computeSphericity(col, tracks), mMagField);
-        } else {
-          outputCollision(vtxZ, mult, multNtr, 2, mMagField);
-        }
-      }
+    if (!colCuts.isSelected(col)) {      
       return;
     }
-
-    colCuts.fillQA(col);
-    if (ConfDoSpher) {
-      outputCollision(vtxZ, mult, multNtr, colCuts.computeSphericity(col, tracks), mMagField);
-    } else {
-      outputCollision(vtxZ, mult, multNtr, 2, mMagField);
+        
+    if (!ConfIsUsePileUp) {
+      if (ConfDoSpher) {
+        outputCollision(vtxZ, mult, multNtr, colCuts.computeSphericity(col, tracks), mMagField);
+      } else {
+        outputCollision(vtxZ, mult, multNtr, 2, mMagField);
+      }
     }
+    else {
+      if (ConfDoSpher && (!ConfEvNoSameBunchPileup || col.selection_bit(aod::evsel::kNoSameBunchPileup)) && (!ConfEvIsGoodZvtxFT0vsPV || col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) && (!ConfEvIsVertexITSTPC || col.selection_bit(aod::evsel::kIsVertexITSTPC))) {
+        outputCollision(vtxZ, mult, multNtr, colCuts.computeSphericity(col, tracks), mMagField);
+      } else {
+        outputCollision(vtxZ, mult, multNtr, 2, mMagField);
+      }
+    }
+    colCuts.fillQA(col);
   }
 
   template <typename CollisionType, typename TrackType>
@@ -825,14 +828,6 @@ struct femtoUniverseProducerTask {
     // in case of trigger run - store such collisions but don't store any
     // particle candidates for such collisions
     if (!colCuts.isSelected(col)) {
-      if (ConfIsTrigger) {
-        if (ConfDoSpher) {
-          outputCollision(vtxZ, cent, multNtr, colCuts.computeSphericity(col, tracks), mMagField);
-        } else {
-          outputCollision(vtxZ, cent, multNtr, 2, mMagField);
-        }
-      }
-
       return;
     }
 
@@ -862,13 +857,6 @@ struct femtoUniverseProducerTask {
     // in case of trigger run - store such collisions but don't store any
     // particle candidates for such collisions
     if (!colCuts.isSelectedRun3(col)) {
-      if (ConfIsTrigger) {
-        if (ConfDoSpher) {
-          outputCollision(vtxZ, cent, multNtr, colCuts.computeSphericity(col, tracks), mMagField);
-        } else {
-          outputCollision(vtxZ, cent, multNtr, 2, mMagField);
-        }
-      } //////
       return;
     }
 
