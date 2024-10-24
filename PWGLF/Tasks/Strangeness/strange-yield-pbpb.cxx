@@ -377,7 +377,7 @@ struct strangeYieldPbPb {
   template <int partID>
   void addHistograms(HistogramRegistry& histos)
   {
-    histos.add(Form("%s/h4dMass", particlenames[partID].data()), "h4dMass", kTHnF, {axisFT0C, axisPt, axisInvMass.at(partID), axisSelGap});
+    histos.add(Form("%s/h5dMass", particlenames[partID].data()), "h5dMass", kTHnF, {axisFT0C, axisPt, axisInvMass.at(partID), axisSelGap, {100, -0.5f, 99.5f}});
     histos.add(Form("%s/h2dMass", particlenames[partID].data()), "h2dMass", kTH2F, {axisInvMass.at(partID), axisSelGap});
     if (doPlainTopoQA) {
       addTopoHistograms<partID>(histos);
@@ -464,7 +464,7 @@ struct strangeYieldPbPb {
     }
 
     histos.fill(HIST(particlenames[partID]) + HIST("/h2dMass"), invMass, gap);
-    histos.fill(HIST(particlenames[partID]) + HIST("/h4dMass"), centrality, pT, invMass, gap);
+    histos.fill(HIST(particlenames[partID]) + HIST("/h5dMass"), centrality, pT, invMass, gap, coll.multNTracksGlobal());
     if (doKienmaticQA) {
       histos.fill(HIST(particlenames[partID]) + HIST("/h2dPosEtaPt"), pT, cand.positiveeta(), gap);
       histos.fill(HIST(particlenames[partID]) + HIST("/h2dNegEtaPt"), pT, cand.negativeeta(), gap);
@@ -614,7 +614,7 @@ struct strangeYieldPbPb {
       }
     }
     histos.fill(HIST(particlenames[partID]) + HIST("/h2dMass"), invMass, gap);
-    histos.fill(HIST(particlenames[partID]) + HIST("/h4dMass"), centrality, pT, invMass, gap);
+    histos.fill(HIST(particlenames[partID]) + HIST("/h5dMass"), centrality, pT, invMass, gap, coll.multNTracksGlobal());
     if (doKienmaticQA) {
       histos.fill(HIST(particlenames[partID]) + HIST("/h2dPosEtaPt"), pT, cand.positiveeta(), gap);
       histos.fill(HIST(particlenames[partID]) + HIST("/h2dNegEtaPt"), pT, cand.negativeeta(), gap);
@@ -942,6 +942,22 @@ struct strangeYieldPbPb {
   }
 
   template <typename TCollision>
+  void fillHistogramsQA(TCollision const& collision)
+  {
+    // QA histograms
+    float centrality = collision.centFT0C();
+    histos.fill(HIST("eventQA/hEventCentrality"), centrality);
+    histos.fill(HIST("eventQA/hCentralityVsNch"), centrality, collision.multNTracksPVeta1());
+    histos.fill(HIST("eventQA/hEventOccupancy"), collision.trackOccupancyInTimeRange());
+    histos.fill(HIST("eventQA/hCentralityVsOccupancy"), centrality, collision.trackOccupancyInTimeRange());
+    histos.fill(HIST("eventQA/hEventNchCorrelationAfCuts"), collision.multNTracksPVeta1(), collision.multNTracksGlobal());
+    histos.fill(HIST("eventQA/hEventGlobalTracksVsCentrality"), centrality, collision.multNTracksGlobal());
+    histos.fill(HIST("eventQA/hPosX"), collision.posX());
+    histos.fill(HIST("eventQA/hPosY"), collision.posY());
+    histos.fill(HIST("eventQA/hPosZ"), collision.posZ());
+  }
+
+  template <typename TCollision>
   bool acceptEvent(TCollision const& collision)
   {
     histos.fill(HIST("hEventSelection"), 0. /* all collisions */);
@@ -1016,18 +1032,6 @@ struct strangeYieldPbPb {
     } else if (collision.isUPC()) {
       histos.fill(HIST("hEventSelection"), 14 /* is UPC compatible */);
     }
-
-    // QA histograms
-    float centrality = collision.centFT0C();
-    histos.fill(HIST("eventQA/hEventCentrality"), centrality);
-    histos.fill(HIST("eventQA/hCentralityVsNch"), centrality, collision.multNTracksPVeta1());
-    histos.fill(HIST("eventQA/hEventOccupancy"), collision.trackOccupancyInTimeRange());
-    histos.fill(HIST("eventQA/hCentralityVsOccupancy"), centrality, collision.trackOccupancyInTimeRange());
-    histos.fill(HIST("eventQA/hEventNchCorrelationAfCuts"), collision.multNTracksPVeta1(), collision.multNTracksGlobal());
-    histos.fill(HIST("eventQA/hEventGlobalTracksVsCentrality"), centrality, collision.multNTracksGlobal());
-    histos.fill(HIST("eventQA/hPosX"), collision.posX());
-    histos.fill(HIST("eventQA/hPosY"), collision.posY());
-    histos.fill(HIST("eventQA/hPosZ"), collision.posZ());
 
     return true;
   }
@@ -1126,7 +1130,7 @@ struct strangeYieldPbPb {
       bitMap.set(selCascRadius);
     if (casc.cascradius() < casccuts.cascradiusMax)
       bitMap.set(selCascRadiusMax);
-    if (doBachelorBaryonCut && casc.bachBaryonCosPA() < casccuts.bachbaryoncospa && fabs(casc.bachBaryonDCAxyToPV()) > casccuts.bachbaryondcaxytopv)
+    if (doBachelorBaryonCut && (casc.bachBaryonCosPA() < casccuts.bachbaryoncospa) && (fabs(casc.bachBaryonDCAxyToPV()) > casccuts.bachbaryondcaxytopv))
       bitMap.set(selBachBaryon);
     if (fabs(casc.dcabachtopv()) > casccuts.dcabachtopv)
       bitMap.set(selBachToPV);
@@ -1497,11 +1501,13 @@ struct strangeYieldPbPb {
     } // event is accepted
 
     int selGapSide = collision.isUPC() ? getGapSide(collision) : -1;
-    if (studyUPConly && selGapSide < -0.5)
+    if (studyUPConly && (selGapSide < -0.5))
       return;
 
+    fillHistogramsQA(collision);
+
     for (auto& v0 : fullV0s) {
-      if (v0.v0Type() != v0cuts.v0TypeSelection && v0cuts.v0TypeSelection > 0)
+      if ((v0.v0Type() != v0cuts.v0TypeSelection) && (v0cuts.v0TypeSelection > 0))
         continue; // skip V0s that are not standard
 
       std::bitset<selNum> selMap = computeBitmapV0(v0, collision);
@@ -1521,8 +1527,10 @@ struct strangeYieldPbPb {
     } // event is accepted
 
     int selGapSide = collision.isUPC() ? getGapSide(collision) : -1;
-    if (studyUPConly && selGapSide < -0.5)
+    if (studyUPConly && (selGapSide < -0.5))
       return;
+
+    fillHistogramsQA(collision);
 
     for (auto& casc : fullCascades) {
       std::bitset<selNum> selMap = computeBitmapCascade(casc, collision);

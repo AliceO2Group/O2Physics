@@ -529,7 +529,7 @@ struct HfCandidateCreator3ProngExpressions {
     std::array<int, 2> arrPDGDaugh;
     std::array<int, 2> arrPDGResonant1 = {kProton, 313};      // Λc± → p± K*
     std::array<int, 2> arrPDGResonant2 = {2224, kKPlus};      // Λc± → Δ(1232)±± K∓
-    std::array<int, 2> arrPDGResonant3 = {3124, kPiPlus};     // Λc± → Λ(1520) π±
+    std::array<int, 2> arrPDGResonant3 = {102134, kPiPlus};   // Λc± → Λ(1520) π±
     std::array<int, 2> arrPDGResonantDPhiPi = {333, kPiPlus}; // Ds± → Phi π± and D± → Phi π±
     std::array<int, 2> arrPDGResonantDKstarK = {313, kKPlus}; // Ds± → K*(892)0bar K± and D± → K*(892)0bar K±
 

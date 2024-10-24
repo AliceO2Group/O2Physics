@@ -95,6 +95,7 @@ struct spvector {
   Configurable<float> cfgCutDCAz{"cfgCutDCAz", 2.0f, "DCAz range for tracks"};
 
   Configurable<int> QxyNbins{"QxyNbins", 100, "Number of bins in QxQy histograms"};
+  Configurable<int> PhiNbins{"PhiNbins", 100, "Number of bins in phi histogram"};
   Configurable<float> lbinQxy{"lbinQxy", -5.0, "lower bin value in QxQy histograms"};
   Configurable<float> hbinQxy{"hbinQxy", 5.0, "higher bin value in QxQy histograms"};
   // Configurable<int> ZDCgainNbins{"ZDCgainNbins", 500, "Number of bins in Gaineq histograms"};
@@ -127,6 +128,11 @@ struct spvector {
   Configurable<bool> QA{"QA", false, "QA histograms"};
   Configurable<bool> ispolarization{"ispolarization", false, "Flag to check polarization"};
   Configurable<bool> finecorrection{"finecorrection", false, "Flag to check fine correction"};
+  Configurable<bool> rejbadevent{"rejbadevent", true, "Flag to check bad events"};
+  Configurable<bool> rejbadeventcent{"rejbadeventcent", true, "Flag to check bad events for cent"};
+  Configurable<bool> rejbadeventvx{"rejbadeventvx", true, "Flag to check bad events for vx"};
+  Configurable<bool> rejbadeventvy{"rejbadeventvy", true, "Flag to check bad events for vy"};
+  Configurable<bool> rejbadeventvz{"rejbadeventvz", true, "Flag to check bad events for vz"};
   Configurable<bool> usesparse{"usesparse", false, "flag to use sparse histogram"};
   Configurable<bool> usenormqn{"usenormqn", true, "flag to use normalized qs"};
   Configurable<bool> refsys{"refsys", true, "flag to use own reference system"};
@@ -135,6 +141,7 @@ struct spvector {
   Configurable<bool> useRecenterefineSp{"useRecenterefineSp", false, "use fine Recentering with Sparse or THn"};
   Configurable<bool> useRecenteresqSp{"useRecenteresqSp", false, "use Recenteringsq with Sparse or THn"};
   Configurable<bool> recwitherror{"recwitherror", false, "use Recentering with error"};
+  Configurable<bool> recfinewitherror{"recfinewitherror", false, "use Recentering fine with error"};
   Configurable<std::string> ConfGainPath{"ConfGainPath", "Users/p/prottay/My/Object/NewPbPbpass4_10092024/gaincallib", "Path to gain calibration"};
   Configurable<std::string> ConfRecentereSp{"ConfRecentereSp", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for recentere"};
   Configurable<std::string> ConfRecenterecentSp{"ConfRecenterecentSp", "Users/p/prottay/My/Object/Testingwithsparse/NewPbPbpass4_17092024/recenter", "Sparse or THn Path for cent recentere"};
@@ -180,7 +187,7 @@ struct spvector {
     // AxisSpec amplitudeZDC = {ZDCgainNbins, lbinZDCgain, hbinZDCgain, "ZDC amplitude"};
     AxisSpec channelZDCAxis = {8, 0.0, 8.0, "ZDC tower"};
     AxisSpec qxZDCAxis = {QxyNbins, lbinQxy, hbinQxy, "Qx"};
-    AxisSpec phiAxis = {50, -6.28, 6.28, "phi"};
+    AxisSpec phiAxis = {PhiNbins, -6.28, 6.28, "phi"};
     AxisSpec vzAxis = {VzNbins, lbinVz, hbinVz, "vz"};
     AxisSpec vxAxis = {VxNbins, lbinVx, hbinVx, "vx"};
     AxisSpec vyAxis = {VyNbins, lbinVy, hbinVy, "vy"};
@@ -309,7 +316,7 @@ struct spvector {
     auto bc = collision.foundBC_as<BCsRun3>();
     if (!bc.has_zdc()) {
       triggerevent = false;
-      spcalibrationtable(triggerevent, currentRunNumber, centrality, qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
+      spcalibrationtable(triggerevent, currentRunNumber, centrality, vx, vy, vz, qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
       return;
     }
 
@@ -319,12 +326,12 @@ struct spvector {
 
     if (znaEnergy[0] < 0.0 || znaEnergy[1] < 0.0 || znaEnergy[2] < 0.0 || znaEnergy[3] < 0.0) {
       triggerevent = false;
-      spcalibrationtable(triggerevent, currentRunNumber, centrality, qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
+      spcalibrationtable(triggerevent, currentRunNumber, centrality, vx, vy, vz, qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
       return;
     }
     if (zncEnergy[0] < 0.0 || zncEnergy[1] < 0.0 || zncEnergy[2] < 0.0 || zncEnergy[3] < 0.0) {
       triggerevent = false;
-      spcalibrationtable(triggerevent, currentRunNumber, centrality, qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
+      spcalibrationtable(triggerevent, currentRunNumber, centrality, vx, vy, vz, qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
       return;
     }
 
@@ -350,7 +357,7 @@ struct spvector {
 
           if (znaEnergy[iChA] <= 0.0) {
             triggerevent = false;
-            spcalibrationtable(triggerevent, currentRunNumber, centrality, qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
+            spcalibrationtable(triggerevent, currentRunNumber, centrality, vx, vy, vz, qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
             return;
           } else {
             float ampl = gainequal * znaEnergy[iChA];
@@ -363,7 +370,7 @@ struct spvector {
         } else {
           if (zncEnergy[iChA - 4] <= 0.0) {
             triggerevent = false;
-            spcalibrationtable(triggerevent, currentRunNumber, centrality, qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
+            spcalibrationtable(triggerevent, currentRunNumber, centrality, vx, vy, vz, qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
             return;
           } else {
             float ampl = gainequal * zncEnergy[iChA - 4];
@@ -401,7 +408,7 @@ struct spvector {
         qyZDCA = 0.0;
         qyZDCC = 0.0;
         triggerevent = false;
-        spcalibrationtable(triggerevent, currentRunNumber, centrality, qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
+        spcalibrationtable(triggerevent, currentRunNumber, centrality, vx, vy, vz, qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
         return;
       }
 
@@ -461,6 +468,14 @@ struct spvector {
         int globalBinMeanyC = hrecentereSp->GetBin(binCoords);
         float meanyC = hrecentereSp->GetBinContent(globalBinMeanyC);
         float meanyCerror = hrecentereSp->GetBinError(globalBinMeanyC);
+
+        if (rejbadevent) {
+          if ((TMath::Abs(meanxA) > 90000.0 || TMath::Abs(meanxC) > 90000.0 || TMath::Abs(meanyA) > 90000.0 || TMath::Abs(meanyC) > 90000.0) && (TMath::Abs(meanxAerror) > 9000.0 || TMath::Abs(meanxCerror) > 9000.0 || TMath::Abs(meanyAerror) > 9000.0 || TMath::Abs(meanyCerror) > 9000.0)) {
+            triggerevent = false;
+            spcalibrationtable(triggerevent, lastRunNumber, centrality, vx, vy, vz, qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
+            return;
+          }
+        }
 
         qxZDCA = qxZDCA - meanxA;
         qyZDCA = qyZDCA - meanyA;
@@ -522,31 +537,135 @@ struct spvector {
       }
 
       if (useRecenterefineSp && hrecenterecentSp) {
+
+        float meanxAcent = hrecenterecentSp->GetBinContent(hrecenterecentSp->FindBin(centrality, 0.5));
+        float meanyAcent = hrecenterecentSp->GetBinContent(hrecenterecentSp->FindBin(centrality, 1.5));
+        float meanxCcent = hrecenterecentSp->GetBinContent(hrecenterecentSp->FindBin(centrality, 2.5));
+        float meanyCcent = hrecenterecentSp->GetBinContent(hrecenterecentSp->FindBin(centrality, 3.5));
+
+        float meanxAcenterror = hrecenterecentSp->GetBinError(hrecenterecentSp->FindBin(centrality, 0.5));
+        float meanyAcenterror = hrecenterecentSp->GetBinError(hrecenterecentSp->FindBin(centrality, 1.5));
+        float meanxCcenterror = hrecenterecentSp->GetBinError(hrecenterecentSp->FindBin(centrality, 2.5));
+        float meanyCcenterror = hrecenterecentSp->GetBinError(hrecenterecentSp->FindBin(centrality, 3.5));
+
+        if (rejbadeventcent) {
+          if ((TMath::Abs(meanxAcent) > 90000.0 || TMath::Abs(meanxCcent) > 90000.0 || TMath::Abs(meanyAcent) > 90000.0 || TMath::Abs(meanyCcent) > 90000.0) && (TMath::Abs(meanxAcenterror) > 9000.0 || TMath::Abs(meanxCcenterror) > 9000.0 || TMath::Abs(meanyAcenterror) > 9000.0 || TMath::Abs(meanyCcenterror) > 9000.0)) {
+            triggerevent = false;
+            spcalibrationtable(triggerevent, lastRunNumber, centrality, vx, vy, vz, qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
+            return;
+          }
+        }
+
         qxZDCA = qxZDCA - hrecenterecentSp->GetBinContent(hrecenterecentSp->FindBin(centrality, 0.5));
         qyZDCA = qyZDCA - hrecenterecentSp->GetBinContent(hrecenterecentSp->FindBin(centrality, 1.5));
         qxZDCC = qxZDCC - hrecenterecentSp->GetBinContent(hrecenterecentSp->FindBin(centrality, 2.5));
         qyZDCC = qyZDCC - hrecenterecentSp->GetBinContent(hrecenterecentSp->FindBin(centrality, 3.5));
+
+        if (recfinewitherror) {
+          qxZDCA = qxZDCA / meanxAcenterror;
+          qyZDCA = qyZDCA / meanyAcenterror;
+          qxZDCC = qxZDCC / meanxCcenterror;
+          qyZDCC = qyZDCC / meanyCcenterror;
+        }
       }
 
       if (useRecenterefineSp && hrecenterevxSp) {
+
+        float meanxAvx = hrecenterevxSp->GetBinContent(hrecenterevxSp->FindBin(vx, 0.5));
+        float meanyAvx = hrecenterevxSp->GetBinContent(hrecenterevxSp->FindBin(vx, 1.5));
+        float meanxCvx = hrecenterevxSp->GetBinContent(hrecenterevxSp->FindBin(vx, 2.5));
+        float meanyCvx = hrecenterevxSp->GetBinContent(hrecenterevxSp->FindBin(vx, 3.5));
+
+        float meanxAvxerror = hrecenterevxSp->GetBinError(hrecenterevxSp->FindBin(vx, 0.5));
+        float meanyAvxerror = hrecenterevxSp->GetBinError(hrecenterevxSp->FindBin(vx, 1.5));
+        float meanxCvxerror = hrecenterevxSp->GetBinError(hrecenterevxSp->FindBin(vx, 2.5));
+        float meanyCvxerror = hrecenterevxSp->GetBinError(hrecenterevxSp->FindBin(vx, 3.5));
+
+        if (rejbadeventvx) {
+          if ((TMath::Abs(meanxAvx) > 90000.0 || TMath::Abs(meanxCvx) > 90000.0 || TMath::Abs(meanyAvx) > 90000.0 || TMath::Abs(meanyCvx) > 90000.0) && (TMath::Abs(meanxAvxerror) > 9000.0 || TMath::Abs(meanxCvxerror) > 9000.0 || TMath::Abs(meanyAvxerror) > 9000.0 || TMath::Abs(meanyCvxerror) > 9000.0)) {
+            triggerevent = false;
+            spcalibrationtable(triggerevent, lastRunNumber, centrality, vx, vy, vz, qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
+            return;
+          }
+        }
+
         qxZDCA = qxZDCA - hrecenterevxSp->GetBinContent(hrecenterevxSp->FindBin(vx, 0.5));
         qyZDCA = qyZDCA - hrecenterevxSp->GetBinContent(hrecenterevxSp->FindBin(vx, 1.5));
         qxZDCC = qxZDCC - hrecenterevxSp->GetBinContent(hrecenterevxSp->FindBin(vx, 2.5));
         qyZDCC = qyZDCC - hrecenterevxSp->GetBinContent(hrecenterevxSp->FindBin(vx, 3.5));
+
+        if (recfinewitherror) {
+          qxZDCA = qxZDCA / meanxAvxerror;
+          qyZDCA = qyZDCA / meanyAvxerror;
+          qxZDCC = qxZDCC / meanxCvxerror;
+          qyZDCC = qyZDCC / meanyCvxerror;
+        }
       }
 
       if (useRecenterefineSp && hrecenterevySp) {
+
+        float meanxAvy = hrecenterevySp->GetBinContent(hrecenterevySp->FindBin(vy, 0.5));
+        float meanyAvy = hrecenterevySp->GetBinContent(hrecenterevySp->FindBin(vy, 1.5));
+        float meanxCvy = hrecenterevySp->GetBinContent(hrecenterevySp->FindBin(vy, 2.5));
+        float meanyCvy = hrecenterevySp->GetBinContent(hrecenterevySp->FindBin(vy, 3.5));
+
+        float meanxAvyerror = hrecenterevySp->GetBinError(hrecenterevySp->FindBin(vy, 0.5));
+        float meanyAvyerror = hrecenterevySp->GetBinError(hrecenterevySp->FindBin(vy, 1.5));
+        float meanxCvyerror = hrecenterevySp->GetBinError(hrecenterevySp->FindBin(vy, 2.5));
+        float meanyCvyerror = hrecenterevySp->GetBinError(hrecenterevySp->FindBin(vy, 3.5));
+
+        if (rejbadeventvy) {
+          if ((TMath::Abs(meanxAvy) > 90000.0 || TMath::Abs(meanxCvy) > 90000.0 || TMath::Abs(meanyAvy) > 90000.0 || TMath::Abs(meanyCvy) > 90000.0) && (TMath::Abs(meanxAvyerror) > 9000.0 || TMath::Abs(meanxCvyerror) > 9000.0 || TMath::Abs(meanyAvyerror) > 9000.0 || TMath::Abs(meanyCvyerror) > 9000.0)) {
+            triggerevent = false;
+            spcalibrationtable(triggerevent, lastRunNumber, centrality, vx, vy, vz, qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
+            return;
+          }
+        }
+
         qxZDCA = qxZDCA - hrecenterevySp->GetBinContent(hrecenterevySp->FindBin(vy, 0.5));
         qyZDCA = qyZDCA - hrecenterevySp->GetBinContent(hrecenterevySp->FindBin(vy, 1.5));
         qxZDCC = qxZDCC - hrecenterevySp->GetBinContent(hrecenterevySp->FindBin(vy, 2.5));
         qyZDCC = qyZDCC - hrecenterevySp->GetBinContent(hrecenterevySp->FindBin(vy, 3.5));
+
+        if (recfinewitherror) {
+          qxZDCA = qxZDCA / meanxAvyerror;
+          qyZDCA = qyZDCA / meanyAvyerror;
+          qxZDCC = qxZDCC / meanxCvyerror;
+          qyZDCC = qyZDCC / meanyCvyerror;
+        }
       }
 
       if (useRecenterefineSp && hrecenterevzSp) {
+
+        float meanxAvz = hrecenterevzSp->GetBinContent(hrecenterevzSp->FindBin(vz, 0.5));
+        float meanyAvz = hrecenterevzSp->GetBinContent(hrecenterevzSp->FindBin(vz, 1.5));
+        float meanxCvz = hrecenterevzSp->GetBinContent(hrecenterevzSp->FindBin(vz, 2.5));
+        float meanyCvz = hrecenterevzSp->GetBinContent(hrecenterevzSp->FindBin(vz, 3.5));
+
+        float meanxAvzerror = hrecenterevzSp->GetBinError(hrecenterevzSp->FindBin(vz, 0.5));
+        float meanyAvzerror = hrecenterevzSp->GetBinError(hrecenterevzSp->FindBin(vz, 1.5));
+        float meanxCvzerror = hrecenterevzSp->GetBinError(hrecenterevzSp->FindBin(vz, 2.5));
+        float meanyCvzerror = hrecenterevzSp->GetBinError(hrecenterevzSp->FindBin(vz, 3.5));
+
+        if (rejbadeventvz) {
+          if ((TMath::Abs(meanxAvz) > 90000.0 || TMath::Abs(meanxCvz) > 90000.0 || TMath::Abs(meanyAvz) > 90000.0 || TMath::Abs(meanyCvz) > 90000.0) && (TMath::Abs(meanxAvzerror) > 9000.0 || TMath::Abs(meanxCvzerror) > 9000.0 || TMath::Abs(meanyAvzerror) > 9000.0 || TMath::Abs(meanyCvzerror) > 9000.0)) {
+            triggerevent = false;
+            spcalibrationtable(triggerevent, lastRunNumber, centrality, vx, vy, vz, qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
+            return;
+          }
+        }
+
         qxZDCA = qxZDCA - hrecenterevzSp->GetBinContent(hrecenterevzSp->FindBin(vz, 0.5));
         qyZDCA = qyZDCA - hrecenterevzSp->GetBinContent(hrecenterevzSp->FindBin(vz, 1.5));
         qxZDCC = qxZDCC - hrecenterevzSp->GetBinContent(hrecenterevzSp->FindBin(vz, 2.5));
         qyZDCC = qyZDCC - hrecenterevzSp->GetBinContent(hrecenterevzSp->FindBin(vz, 3.5));
+
+        if (recfinewitherror) {
+          qxZDCA = qxZDCA / meanxAvzerror;
+          qyZDCA = qyZDCA / meanyAvzerror;
+          qxZDCC = qxZDCC / meanxCvzerror;
+          qyZDCC = qyZDCC / meanyCvzerror;
+        }
       }
 
       psiZDCC = 1.0 * TMath::ATan2(qyZDCC, qxZDCC);
@@ -603,7 +722,7 @@ struct spvector {
       lastRunNumber = currentRunNumber;
     }
 
-    spcalibrationtable(triggerevent, lastRunNumber, centrality, qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
+    spcalibrationtable(triggerevent, lastRunNumber, centrality, vx, vy, vz, qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
   }
 };
 

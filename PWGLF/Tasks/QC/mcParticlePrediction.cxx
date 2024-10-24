@@ -43,24 +43,27 @@ bool enabledParticlesArray[PIDExtended::NIDsTot];
 
 // Estimators
 struct Estimators {
-  static constexpr int FT0A = 0;
-  static constexpr int FT0C = 1;
-  static constexpr int FT0AC = 2;
-  static constexpr int FV0A = 3;
-  static constexpr int FDDA = 4;
-  static constexpr int FDDC = 5;
-  static constexpr int FDDAC = 6;
-  static constexpr int ZNA = 7;
-  static constexpr int ZNC = 8;
-  static constexpr int ZEM1 = 9;
-  static constexpr int ZEM2 = 10;
-  static constexpr int ZPA = 11;
-  static constexpr int ZPC = 12;
-  static constexpr int ITS = 13;
-  static constexpr int V0A = 14;  // (Run2)
-  static constexpr int V0C = 15;  // (Run2)
-  static constexpr int V0AC = 16; // (Run2)
-  static constexpr int nEstimators = 17;
+  typedef int estID;
+  static constexpr estID FT0A = 0;
+  static constexpr estID FT0C = 1;
+  static constexpr estID FT0AC = 2;
+  static constexpr estID FV0A = 3;
+  static constexpr estID FDDA = 4;
+  static constexpr estID FDDC = 5;
+  static constexpr estID FDDAC = 6;
+  static constexpr estID ZNA = 7;
+  static constexpr estID ZNC = 8;
+  static constexpr estID ZEM1 = 9;
+  static constexpr estID ZEM2 = 10;
+  static constexpr estID ZPA = 11;
+  static constexpr estID ZPC = 12;
+  static constexpr estID ITSIB = 13;
+  static constexpr estID ETA05 = 14;
+  static constexpr estID ETA08 = 15;
+  static constexpr estID V0A = 16;  // (Run2)
+  static constexpr estID V0C = 17;  // (Run2)
+  static constexpr estID V0AC = 18; // (Run2 V0M)
+  static constexpr estID nEstimators = 19;
 
   static constexpr const char* estimatorNames[nEstimators] = {"FT0A",
                                                               "FT0C",
@@ -75,13 +78,18 @@ struct Estimators {
                                                               "ZEM2",
                                                               "ZPA",
                                                               "ZPC",
-                                                              "ITS",
+                                                              "ITSIB",
+                                                              "ETA05",
+                                                              "ETA08",
                                                               "V0A",
                                                               "V0C",
                                                               "V0AC"};
   static std::vector<std::string> arrayNames()
   {
-    std::vector<std::string> names;
+    static std::vector<std::string> names;
+    if (!names.empty()) {
+      return names;
+    }
     for (int i = 0; i < nEstimators; i++) {
       names.push_back(estimatorNames[i]);
     }
@@ -102,14 +110,18 @@ static const int defaultEstimators[Estimators::nEstimators][nParameters]{{0},  /
                                                                          {0},  // ZEM2
                                                                          {0},  // ZPA
                                                                          {0},  // ZPC
-                                                                         {0},  // ITS
+                                                                         {0},  // ITSIB
+                                                                         {0},  // ETA05
+                                                                         {0},  // ETA08
                                                                          {0},  // V0A (Run2)
                                                                          {0},  // V0C (Run2)
-                                                                         {0}}; // V0AC (Run2)
+                                                                         {0}}; // V0AC (Run2 V0M)
 
 // Histograms
 std::array<std::shared_ptr<TH1>, Estimators::nEstimators> hestimators;
 std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsVsITS;
+std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsVsETA05;
+std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsVsETA08;
 std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvGenVsReco;
 std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvGenVsReco_BCMC;
 std::array<std::shared_ptr<TH2>, Estimators::nEstimators> hestimatorsRecoEvGenVsRecoITS;
@@ -144,7 +156,7 @@ struct mcParticlePrediction {
                                                     "Estimators enabled"};
   Configurable<bool> selectInelGt0{"selectInelGt0", true, "Select only inelastic events"};
   Configurable<bool> selectPrimaries{"selectPrimaries", true, "Select only primary particles"};
-
+  Configurable<bool> requireCoincidenceEstimators{"requireCoincidenceEstimators", false, "Asks for a coincidence when two estimators are used"};
   Configurable<bool> discardkIsGoodZvtxFT0vsPV{"discardkIsGoodZvtxFT0vsPV", false, "Select only collisions with matching BC and MC BC"};
   Configurable<bool> discardMismatchedBCs{"discardMismatchedBCs", false, "Select only collisions with matching BC and MC BC"};
   Configurable<bool> discardMismatchedFoundBCs{"discardMismatchedFoundBCs", false, "Select only collisions with matching found BC and MC BC"};
@@ -154,6 +166,9 @@ struct mcParticlePrediction {
   Configurable<bool> requirekIsVertexITSTPC{"requirekIsVertexITSTPC", false, "Require kIsVertexITSTPC: at least one ITS-TPC track (reject vertices built from ITS-only tracks)"};
   Configurable<bool> requirekIsVertexTOFmatched{"requirekIsVertexTOFmatched", false, "Require kIsVertexTOFmatched: at least one of vertex contributors is matched to TOF"};
   Configurable<bool> requirekIsVertexTRDmatched{"requirekIsVertexTRDmatched", false, "Require kIsVertexTRDmatched: at least one of vertex contributors is matched to TRD"};
+  Configurable<bool> enableVsITSHistograms{"enableVsITSHistograms", true, "Enables the correlation between ITS and other estimators"};
+  Configurable<bool> enableVsEta05Histograms{"enableVsEta05Histograms", true, "Enables the correlation between ETA05 and other estimators"};
+  Configurable<bool> enableVsEta08Histograms{"enableVsEta08Histograms", true, "Enables the correlation between ETA08 and other estimators"};
 
   Service<o2::framework::O2DatabasePDG> pdgDB;
   o2::pwglf::ParticleCounter<o2::framework::O2DatabasePDG> mCounter;
@@ -169,7 +184,7 @@ struct mcParticlePrediction {
     const AxisSpec axisPt{binsPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec axisMultiplicity{binsMultiplicity, "Multiplicity (undefined)"};
     const AxisSpec axisMultiplicityReco{binsMultiplicityReco, "Multiplicity Reco. (undefined)"};
-    const AxisSpec axisMultiplicityRecoITS{100, 0, 100, "Multiplicity Reco. ITS"};
+    const AxisSpec axisMultiplicityRecoITS{100, 0, 100, "Multiplicity Reco. ITSIB"};
     const AxisSpec axisMultiplicityGenV0s{100, 0, 100, "K0s gen"};
     const AxisSpec axisMultiplicityRecoV0s{20, 0, 20, "K0s reco"};
     const AxisSpec axisBCID{o2::constants::lhc::LHCMaxBunches, -0.5, -0.5 + o2::constants::lhc::LHCMaxBunches, "BC ID in orbit"};
@@ -247,14 +262,32 @@ struct mcParticlePrediction {
       hestimators[i] = histos.add<TH1>(Form("multiplicity/%s", name), name, kTH1D, {axisMultiplicity});
       hestimators[i]->GetXaxis()->SetTitle(Form("Multiplicity %s", name));
 
-      hestimatorsVsITS[i] = histos.add<TH2>(Form("multiplicity/vsITS/%s", name), name, kTH2D, {axisMultiplicity, axisMultiplicity});
-      hestimatorsVsITS[i]->GetXaxis()->SetTitle(Form("Multiplicity %s", name));
-      hestimatorsVsITS[i]->GetYaxis()->SetTitle(Form("Multiplicity %s", Estimators::estimatorNames[Estimators::ITS]));
+      auto make2DH = [&](const std::string& h, const char* ytitle) {
+        auto hist = histos.add<TH2>(Form("%s%s", h.c_str(), name),
+                                    name,
+                                    kTH2D,
+                                    {axisMultiplicity, axisMultiplicity});
+        hist->GetXaxis()->SetTitle(Form("Multiplicity %s", name));
+        hist->GetXaxis()->SetTitle(Form("Multiplicity %s", ytitle));
+        return hist;
+      };
+      if (enableVsITSHistograms) {
+        hestimatorsVsITS[i] = make2DH("multiplicity/vsITS/", Estimators::estimatorNames[Estimators::ITSIB]);
+      }
+      if (enableVsEta05Histograms) {
+        hestimatorsVsETA05[i] = make2DH("multiplicity/vsETA05/", Estimators::estimatorNames[Estimators::ETA05]);
+      }
+      if (enableVsEta08Histograms) {
+        hestimatorsVsETA08[i] = make2DH("multiplicity/vsETA08/", Estimators::estimatorNames[Estimators::ETA08]);
+      }
 
       hvertexPosZ[i] = histos.add<TH2>(Form("multiplicity/posZ/%s", name), name, kTH2D, {{200, -20, 20, "pos Z"}, axisMultiplicity});
       hvertexPosZ[i]->GetYaxis()->SetTitle(Form("Multiplicity %s", name));
 
-      // Reco events
+      if (!doprocessReco) { // Reco events
+        continue;
+      }
+
       hestimatorsRecoEvGenVsReco[i] = histosRecoEvs.add<TH2>(Form("multiplicity/Reco/GenVsReco/%s", name), name, kTH2D, {axisMultiplicity, axisMultiplicityReco});
       hestimatorsRecoEvGenVsReco[i]->GetXaxis()->SetTitle(Form("Multiplicity %s", name));
       hestimatorsRecoEvGenVsReco[i]->GetYaxis()->SetTitle(Form("Multiplicity Reco. %s", name));
@@ -268,7 +301,7 @@ struct mcParticlePrediction {
 
       hestimatorsRecoEvRecoVsITS[i] = histosRecoEvs.add<TH2>(Form("multiplicity/Reco/RecoVsITS/%s", name), name, kTH2D, {axisMultiplicityReco, axisMultiplicity});
       hestimatorsRecoEvRecoVsITS[i]->GetXaxis()->SetTitle(Form("Multiplicity Reco. %s", name));
-      hestimatorsRecoEvRecoVsITS[i]->GetYaxis()->SetTitle(Form("Multiplicity %s", Estimators::estimatorNames[Estimators::ITS]));
+      hestimatorsRecoEvRecoVsITS[i]->GetYaxis()->SetTitle(Form("Multiplicity %s", Estimators::estimatorNames[Estimators::ITSIB]));
 
       hestimatorsRecoEvRecoVsRecoITS[i] = histosRecoEvs.add<TH2>(Form("multiplicity/Reco/RecoVsRecoITS/%s", name), name, kTH2D, {axisMultiplicityReco, axisMultiplicityRecoITS});
       hestimatorsRecoEvRecoVsRecoITS[i]->GetXaxis()->SetTitle(Form("Multiplicity Reco. %s", name));
@@ -283,8 +316,7 @@ struct mcParticlePrediction {
       hestimatorsRecoEvRecoVsBCId[i] = histosRecoEvs.add<TH2>(Form("multiplicity/Reco/RecoVsBCId/%s", name), name, kTH2D, {axisBCID, axisMultiplicityReco});
       hestimatorsRecoEvRecoVsBCId[i]->GetYaxis()->SetTitle(Form("Multiplicity Reco. %s", name));
 
-      hestimatorsRecoEvVsBCId[i] = histosRecoEvs.add<TH2>(Form("multiplicity/Reco/VsBCId/%s", name), name, kTH2D,
-                                                          {axisBCID, axisMultiplicity});
+      hestimatorsRecoEvVsBCId[i] = histosRecoEvs.add<TH2>(Form("multiplicity/Reco/VsBCId/%s", name), name, kTH2D, {axisBCID, axisMultiplicity});
       hestimatorsRecoEvVsBCId[i]->GetYaxis()->SetTitle(Form("Multiplicity %s", name));
     }
 
@@ -313,20 +345,9 @@ struct mcParticlePrediction {
     histosYield.print();
   }
 
-  void process(aod::McCollision const& mcCollision,
-               aod::McParticles const& mcParticles)
+  std::array<float, Estimators::nEstimators> genMult(const auto& mcParticles)
   {
-    histos.fill(HIST("collisions/generated"), 0);
-    if (selectInelGt0.value && !o2::pwglf::isINELgt0mc(mcParticles, pdgDB)) {
-      return;
-    }
-
-    histos.fill(HIST("collisions/generated"), 1);
-    if (abs(mcCollision.posZ()) > 10.f) {
-      return;
-    }
-    histos.fill(HIST("collisions/generated"), 2);
-    float nMult[Estimators::nEstimators];
+    std::array<float, Estimators::nEstimators> nMult;
     if (enabledEstimatorsArray[Estimators::FT0A] || enabledEstimatorsArray[Estimators::FT0AC]) {
       nMult[Estimators::FT0A] = mCounter.countFT0A(mcParticles);
     }
@@ -335,6 +356,9 @@ struct mcParticlePrediction {
     }
     if (enabledEstimatorsArray[Estimators::FT0AC]) {
       nMult[Estimators::FT0AC] = nMult[Estimators::FT0A] + nMult[Estimators::FT0C];
+      if (requireCoincidenceEstimators && (nMult[Estimators::FT0A] <= 0.f || nMult[Estimators::FT0C] <= 0.f)) {
+        nMult[Estimators::FT0AC] = 0;
+      }
     }
     if (enabledEstimatorsArray[Estimators::FV0A]) {
       nMult[Estimators::FV0A] = mCounter.countFV0A(mcParticles);
@@ -347,6 +371,9 @@ struct mcParticlePrediction {
     }
     if (enabledEstimatorsArray[Estimators::FDDAC]) {
       nMult[Estimators::FDDAC] = nMult[Estimators::FDDA] + nMult[Estimators::FDDC];
+      if (requireCoincidenceEstimators && (nMult[Estimators::FDDA] <= 0.f || nMult[Estimators::FDDC] <= 0.f)) {
+        nMult[Estimators::FDDAC] = 0;
+      }
     }
     if (enabledEstimatorsArray[Estimators::ZNA]) {
       nMult[Estimators::ZNA] = mCounter.countZNA(mcParticles);
@@ -354,8 +381,14 @@ struct mcParticlePrediction {
     if (enabledEstimatorsArray[Estimators::ZNC]) {
       nMult[Estimators::ZNC] = mCounter.countZNC(mcParticles);
     }
-    if (enabledEstimatorsArray[Estimators::ITS]) {
-      nMult[Estimators::ITS] = mCounter.countITSIB(mcParticles);
+    if (enabledEstimatorsArray[Estimators::ITSIB] || enableVsITSHistograms) {
+      nMult[Estimators::ITSIB] = mCounter.countITSIB(mcParticles);
+    }
+    if (enabledEstimatorsArray[Estimators::ETA05] || enableVsEta05Histograms) {
+      nMult[Estimators::ETA05] = mCounter.countEta05(mcParticles);
+    }
+    if (enabledEstimatorsArray[Estimators::ETA08] || enableVsEta08Histograms) {
+      nMult[Estimators::ETA08] = mCounter.countEta08(mcParticles);
     }
     if (enabledEstimatorsArray[Estimators::V0A] || enabledEstimatorsArray[Estimators::V0AC]) {
       nMult[Estimators::V0A] = mCounter.countV0A(mcParticles);
@@ -365,7 +398,28 @@ struct mcParticlePrediction {
     }
     if (enabledEstimatorsArray[Estimators::V0AC]) {
       nMult[Estimators::V0AC] = nMult[Estimators::V0A] + nMult[Estimators::V0C];
+      if (requireCoincidenceEstimators && (nMult[Estimators::V0A] <= 0 || nMult[Estimators::V0C] <= 0)) {
+        nMult[Estimators::V0AC] = 0;
+      }
     }
+    return nMult;
+  }
+
+  void process(aod::McCollision const& mcCollision,
+               aod::McParticles const& mcParticles)
+  {
+    histos.fill(HIST("collisions/generated"), 0);
+    if (selectInelGt0.value && !o2::pwglf::isINELgt0mc(mcParticles, pdgDB)) {
+      return;
+    }
+
+    histos.fill(HIST("collisions/generated"), 1);
+    if (std::abs(mcCollision.posZ()) > 10.f) {
+      return;
+    }
+    histos.fill(HIST("collisions/generated"), 2);
+
+    const std::array<float, Estimators::nEstimators>& nMult = genMult(mcParticles);
 
     for (int i = 0; i < Estimators::nEstimators; i++) {
       if (!enabledEstimatorsArray[i]) {
@@ -373,7 +427,15 @@ struct mcParticlePrediction {
       }
 
       hestimators[i]->Fill(nMult[i]);
-      hestimatorsVsITS[i]->Fill(nMult[i], nMult[Estimators::ITS]);
+      if (enableVsITSHistograms) {
+        hestimatorsVsITS[i]->Fill(nMult[i], nMult[Estimators::ITSIB]);
+      }
+      if (enableVsEta05Histograms) {
+        hestimatorsVsETA05[i]->Fill(nMult[i], nMult[Estimators::ETA05]);
+      }
+      if (enableVsEta08Histograms) {
+        hestimatorsVsETA08[i]->Fill(nMult[i], nMult[Estimators::ETA08]);
+      }
       hvertexPosZ[i]->Fill(mcCollision.posZ(), nMult[i]);
     }
 
@@ -393,14 +455,14 @@ struct mcParticlePrediction {
 
       TParticlePDG* p = pdgDB->GetParticle(particle.pdgCode());
       if (p) {
-        if (abs(p->Charge()) > 1e-3) {
+        if (std::abs(p->Charge()) > 1e-3) {
           histos.fill(HIST("particles/eta/charged"), particle.eta());
         } else {
           histos.fill(HIST("particles/eta/neutral"), particle.eta());
         }
       }
 
-      if (abs(particle.y()) > 0.5) {
+      if (std::abs(particle.y()) > 0.5) {
         continue;
       }
 
@@ -474,7 +536,7 @@ struct mcParticlePrediction {
     }
     histos.fill(HIST("collisions/reconstructed"), 8);
 
-    if (abs(collision.posZ()) > posZCut.value) {
+    if (std::abs(collision.posZ()) > posZCut.value) {
       return;
     }
     histos.fill(HIST("collisions/reconstructed"), 9);
@@ -549,46 +611,7 @@ struct mcParticlePrediction {
     histos.fill(HIST("particles/FromCollVsFromCollBad"), particlesFromColl, particlesFromCollWrongBC);
     histos.fill(HIST("particles/FromCollBadOverFromCollVsVsFromMCColl"), 1.f * particlesFromCollWrongBC / particlesFromColl, particlesInCollision.size());
 
-    float nMult[Estimators::nEstimators];
-    if (enabledEstimatorsArray[Estimators::FT0A] || enabledEstimatorsArray[Estimators::FT0AC]) {
-      nMult[Estimators::FT0A] = mCounter.countFT0A(mcParticles);
-    }
-    if (enabledEstimatorsArray[Estimators::FT0C] || enabledEstimatorsArray[Estimators::FT0AC]) {
-      nMult[Estimators::FT0C] = mCounter.countFT0C(mcParticles);
-    }
-    if (enabledEstimatorsArray[Estimators::FT0AC]) {
-      nMult[Estimators::FT0AC] = nMult[Estimators::FT0A] + nMult[Estimators::FT0C];
-    }
-    if (enabledEstimatorsArray[Estimators::FV0A]) {
-      nMult[Estimators::FV0A] = mCounter.countFV0A(mcParticles);
-    }
-    if (enabledEstimatorsArray[Estimators::FDDA]) {
-      nMult[Estimators::FDDA] = mCounter.countFDDA(mcParticles);
-    }
-    if (enabledEstimatorsArray[Estimators::FDDC]) {
-      nMult[Estimators::FDDC] = mCounter.countFDDC(mcParticles);
-    }
-    if (enabledEstimatorsArray[Estimators::FDDAC]) {
-      nMult[Estimators::FDDAC] = nMult[Estimators::FDDA] + nMult[Estimators::FDDC];
-    }
-    if (enabledEstimatorsArray[Estimators::ZNA]) {
-      nMult[Estimators::ZNA] = mCounter.countZNA(mcParticles);
-    }
-    if (enabledEstimatorsArray[Estimators::ZNC]) {
-      nMult[Estimators::ZNC] = mCounter.countZNC(mcParticles);
-    }
-    if (enabledEstimatorsArray[Estimators::ITS]) {
-      nMult[Estimators::ITS] = mCounter.countITSIB(mcParticles);
-    }
-    if (enabledEstimatorsArray[Estimators::V0A] || enabledEstimatorsArray[Estimators::V0AC]) {
-      nMult[Estimators::V0A] = mCounter.countV0A(mcParticles);
-    }
-    if (enabledEstimatorsArray[Estimators::V0C] || enabledEstimatorsArray[Estimators::V0AC]) {
-      nMult[Estimators::V0C] = mCounter.countV0C(mcParticles);
-    }
-    if (enabledEstimatorsArray[Estimators::V0AC]) {
-      nMult[Estimators::V0AC] = nMult[Estimators::V0A] + nMult[Estimators::V0C];
-    }
+    const std::array<float, Estimators::nEstimators>& nMult = genMult(mcParticles);
 
     float nMultReco[Estimators::nEstimators];
     nMultReco[Estimators::FT0A] = collision.multFT0A();
@@ -600,7 +623,7 @@ struct mcParticlePrediction {
     nMultReco[Estimators::FDDAC] = collision.multFDDM();
     nMultReco[Estimators::ZNA] = collision.multZNA();
     nMultReco[Estimators::ZNC] = collision.multZNC();
-    nMultReco[Estimators::ITS] = collision.multNTracksPV();
+    nMultReco[Estimators::ITSIB] = collision.multNTracksPV();
 
     float nMultRecoMCBC[Estimators::nEstimators] = {0};
     if (mcBC.has_ft0()) {
@@ -623,10 +646,10 @@ struct mcParticlePrediction {
       }
       hestimatorsRecoEvGenVsReco[i]->Fill(nMult[i], nMultReco[i]);
       hestimatorsRecoEvGenVsReco_BCMC[i]->Fill(nMult[i], nMultRecoMCBC[i]);
-      hestimatorsRecoEvGenVsRecoITS[i]->Fill(nMult[i], nMultReco[Estimators::ITS]);
-      hestimatorsRecoEvRecoVsITS[i]->Fill(nMultReco[i], nMult[Estimators::ITS]);
-      hestimatorsRecoEvRecoVsRecoITS[i]->Fill(nMultReco[i], nMultReco[Estimators::ITS]);
-      hestimatorsRecoEvRecoVsRecoITS_BCMC[i]->Fill(nMultRecoMCBC[i], nMultReco[Estimators::ITS]);
+      hestimatorsRecoEvGenVsRecoITS[i]->Fill(nMult[i], nMultReco[Estimators::ITSIB]);
+      hestimatorsRecoEvRecoVsITS[i]->Fill(nMultReco[i], nMult[Estimators::ITSIB]);
+      hestimatorsRecoEvRecoVsRecoITS[i]->Fill(nMultReco[i], nMultReco[Estimators::ITSIB]);
+      hestimatorsRecoEvRecoVsRecoITS_BCMC[i]->Fill(nMultRecoMCBC[i], nMultReco[Estimators::ITSIB]);
       hestimatorsRecoEvRecoVsFT0A[i]->Fill(nMultReco[i], nMult[Estimators::FT0A]);
       hestimatorsRecoEvRecoVsBCId[i]->Fill(foundBCid, nMult[i]);
       hestimatorsRecoEvVsBCId[i]->Fill(foundBCid, nMultReco[i]);

@@ -38,6 +38,11 @@ struct SGCandProducer {
   Configurable<bool> noSameBunchPileUp{"noSameBunchPileUp", true, "reject SameBunchPileUp"};
   Configurable<bool> IsGoodVertex{"IsGoodVertex", false, "Select FT0 PV vertex matching"};
   Configurable<bool> ITSTPCVertex{"ITSTPCVertex", true, "reject ITS-only vertex"}; // if one wants to look at Single Gap pp events
+
+  // Configurables to decide which tables are filled
+  Configurable<bool> fillTrackTables{"fillTrackTables", true, "Fill track tables"};
+  Configurable<bool> fillFwdTrackTables{"fillFwdTrackTables", true, "Fill forward track tables"};
+
   //  SG selector
   SGSelector sgSelector;
 
@@ -47,7 +52,7 @@ struct SGCandProducer {
   Produces<aod::UDCollisionsSels> outputCollisionsSels;
   Produces<aod::UDCollsLabels> outputCollsLabels;
   Produces<aod::UDZdcs> outputZdcs;
-  Produces<o2::aod::UDZdcsReduced> udZdcsReduced;
+  Produces<aod::UDZdcsReduced> udZdcsReduced;
   Produces<aod::UDTracks> outputTracks;
   Produces<aod::UDTracksCov> outputTracksCov;
   Produces<aod::UDTracksDCA> outputTracksDCA;
@@ -229,22 +234,26 @@ struct SGCandProducer {
         udZdcsReduced(outputCollisions.lastIndex(), -999, -999, -999, -999);
       }
       // update SGTracks tables
-      for (auto& track : tracks) {
-        if (track.pt() > sameCuts.minPt() && track.eta() > sameCuts.minEta() && track.eta() < sameCuts.maxEta()) {
-          if (track.isPVContributor()) {
-            updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
-          } else if (saveAllTracks) {
-            if (track.itsClusterSizes() && track.itsChi2NCl() > 0 && ((track.tpcNClsFindable() == 0 && savenonPVCITSOnlyTracks) || track.tpcNClsFindable() > 50))
+      if (fillTrackTables) {
+        for (auto& track : tracks) {
+          if (track.pt() > sameCuts.minPt() && track.eta() > sameCuts.minEta() && track.eta() < sameCuts.maxEta()) {
+            if (track.isPVContributor()) {
               updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
-            // if (track.isPVContributor())  updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
+            } else if (saveAllTracks) {
+              if (track.itsClusterSizes() && track.itsChi2NCl() > 0 && ((track.tpcNClsFindable() == 0 && savenonPVCITSOnlyTracks) || track.tpcNClsFindable() > 50))
+                updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
+              // if (track.isPVContributor())  updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
+            }
           }
         }
       }
       // update SGFwdTracks tables
-      if (sameCuts.withFwdTracks()) {
-        for (auto& fwdtrack : fwdtracks) {
-          if (!sgSelector.FwdTrkSelector(fwdtrack))
-            updateUDFwdTrackTables(fwdtrack, bc.globalBC());
+      if (fillFwdTrackTables) {
+        if (sameCuts.withFwdTracks()) {
+          for (auto& fwdtrack : fwdtracks) {
+            if (!sgSelector.FwdTrkSelector(fwdtrack))
+              updateUDFwdTrackTables(fwdtrack, bc.globalBC());
+          }
         }
       }
     }
