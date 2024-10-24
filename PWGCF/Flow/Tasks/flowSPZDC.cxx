@@ -70,12 +70,12 @@ namespace o2::analysis::qvectortask
 int counter = 0;
 
 // step0 -> Energy calib
-std::shared_ptr<TProfile2D> ZN_Energy[10] = {{nullptr}}; 
-std::shared_ptr<TH2> hQx_vs_Qy[6] = {{nullptr}};      
+std::shared_ptr<TProfile2D> ZN_Energy[10] = {{nullptr}};
+std::shared_ptr<TH2> hQx_vs_Qy[6] = {{nullptr}};
 
-// <XX> <XY> <YX> and <YY> 
-std::shared_ptr<TProfile> COORD_correlations[6][4] = {{nullptr}}; 
-std::vector<TProfile2D*> hZN_mean(10, nullptr);                   // Get from calibration file
+// <XX> <XY> <YX> and <YY>
+std::shared_ptr<TProfile> COORD_correlations[6][4] = {{nullptr}};
+std::vector<TProfile2D*> hZN_mean(10, nullptr); // Get from calibration file
 
 // step1: 4D large bins
 std::vector<THnSparseD*> mean_10perCent_v(4, nullptr); // hQXA, hQYA, hQXC, hQYC
@@ -139,10 +139,10 @@ struct ZDCqvectors {
   O2_DEFINE_CONFIGURABLE(cfgMagField, float, 99999, "Configurable magnetic field; default CCDB will be queried")
   O2_DEFINE_CONFIGURABLE(cfgEnergyCal, std::string, "", "ccdb path for energy calibration histos")
   O2_DEFINE_CONFIGURABLE(cfgMeanv, std::string, "", "ccdb path for mean v histos")
-  Configurable<std::vector<std::string>> cfgRec1{"cfgRec1", {"", "", "", "",""}, "ccdb paths for recentering calibration histos iteration 1"};
-  Configurable<std::vector<std::string>> cfgRec2{"cfgRec2", {"", "", "", "",""}, "ccdb paths for recentering calibration histos iteration 2"};
-  Configurable<std::vector<std::string>> cfgRec3{"cfgRec3", {"", "", "", "",""}, "ccdb paths for recentering calibration histos iteration 3"};
-  Configurable<std::vector<std::string>> cfgRec4{"cfgRec4", {"", "", "", "",""}, "ccdb paths for recentering calibration histos iteration 4"};
+  Configurable<std::vector<std::string>> cfgRec1{"cfgRec1", {"", "", "", "", ""}, "ccdb paths for recentering calibration histos iteration 1"};
+  Configurable<std::vector<std::string>> cfgRec2{"cfgRec2", {"", "", "", "", ""}, "ccdb paths for recentering calibration histos iteration 2"};
+  Configurable<std::vector<std::string>> cfgRec3{"cfgRec3", {"", "", "", "", ""}, "ccdb paths for recentering calibration histos iteration 3"};
+  Configurable<std::vector<std::string>> cfgRec4{"cfgRec4", {"", "", "", "", ""}, "ccdb paths for recentering calibration histos iteration 4"};
 
   //  Define output
   HistogramRegistry registry{"Registry"};
@@ -171,7 +171,7 @@ struct ZDCqvectors {
 
     std::vector<const char*> sides = {"A", "C"};
     std::vector<const char*> coords = {"x", "y", "z"};
-    std::vector<const char*> COORDS = {"X", "Y"}; 
+    std::vector<const char*> COORDS = {"X", "Y"};
 
     // Tower mean energies vs. centrality used for tower gain equalisation
     for (int tower = 0; tower < 10; tower++) {
@@ -205,7 +205,8 @@ struct ZDCqvectors {
           if (step == 1 || step == 5) {
             TString name = TString::Format("hQ%s%s_mean_Cent_V_run", coord, side);
             registry.add(Form("step%i/%s", step, name.Data()), Form("hQ%s%s_mean_Cent_V_run", coord, side), {HistType::kTHnSparseD, {axisRun, axisCent10, axisVx_big, axisVy_big, axisVz_big, axisQ}});
-            if(step==1) names[step - 1].push_back(name);
+            if (step == 1)
+              names[step - 1].push_back(name);
           }
           if (step == 2) {
             TString name = TString::Format("hQ%s%s_mean_1percent_run", coord, side);
@@ -231,27 +232,25 @@ struct ZDCqvectors {
       } // end of sides
     } // end of sum over steps
 
-    
-
     // recentered q-vectors (to check what steps are finished in the end)
     registry.add("hStep", "hStep", {HistType::kTH1D, {{10, 0., 10.}}});
     registry.add("hIteration", "hIteration", {HistType::kTH1D, {{10, 0., 10.}}});
 
-    // histos with mean v(x/y) per run. 
+    // histos with mean v(x/y) per run.
     registry.add<TProfile>("vmean/hvertex_vx", "hvertex_vx", kTProfile, {{1, 0., 1.}}, "s");
     registry.add<TProfile>("vmean/hvertex_vy", "hvertex_vy", kTProfile, {{1, 0., 1.}}, "s");
   }
 
   inline void fillRegistry(int iteration, int step)
   {
-  if (step == 0 && iteration == 1) {
-    registry.fill(HIST("hIteration"), iteration, 1);
+    if (step == 0 && iteration == 1) {
+      registry.fill(HIST("hIteration"), iteration, 1);
 
-    registry.fill(HIST("step1/hQXA_mean_Cent_V_run"), runnumber, centrality, v[0], v[1], v[2], q[0][step][0]);
-    registry.fill(HIST("step1/hQYA_mean_Cent_V_run"), runnumber, centrality, v[0], v[1], v[2], q[0][step][1]);
-    registry.fill(HIST("step1/hQXC_mean_Cent_V_run"), runnumber, centrality, v[0], v[1], v[2], q[0][step][2]);
-    registry.fill(HIST("step1/hQYC_mean_Cent_V_run"), runnumber, centrality, v[0], v[1], v[2], q[0][step][3]);
-    registry.fill(HIST("hStep"), step, 1);  
+      registry.fill(HIST("step1/hQXA_mean_Cent_V_run"), runnumber, centrality, v[0], v[1], v[2], q[0][step][0]);
+      registry.fill(HIST("step1/hQYA_mean_Cent_V_run"), runnumber, centrality, v[0], v[1], v[2], q[0][step][1]);
+      registry.fill(HIST("step1/hQXC_mean_Cent_V_run"), runnumber, centrality, v[0], v[1], v[2], q[0][step][2]);
+      registry.fill(HIST("step1/hQYC_mean_Cent_V_run"), runnumber, centrality, v[0], v[1], v[2], q[0][step][3]);
+      registry.fill(HIST("hStep"), step, 1);
     }
 
     if (step == 1) {
@@ -286,7 +285,7 @@ struct ZDCqvectors {
       registry.fill(HIST("hStep"), step, 1);
     }
 
-    if (step==5){ 
+    if (step == 5) {
       registry.fill(HIST("step5/hQXA_mean_Cent_V_run"), runnumber, centrality, v[0], v[1], v[2], q[iteration][step][0]);
       registry.fill(HIST("step5/hQYA_mean_Cent_V_run"), runnumber, centrality, v[0], v[1], v[2], q[iteration][step][1]);
       registry.fill(HIST("step5/hQXC_mean_Cent_V_run"), runnumber, centrality, v[0], v[1], v[2], q[iteration][step][2]);
@@ -295,42 +294,43 @@ struct ZDCqvectors {
     }
   }
 
-  inline void fillCommonRegistry(int iteration){
-    //loop for filling multiple histograms with different naming patterns
-      // Always fill the uncentered "raw" Q-vector histos! 
+  inline void fillCommonRegistry(int iteration)
+  {
+    // loop for filling multiple histograms with different naming patterns
+    //  Always fill the uncentered "raw" Q-vector histos!
 
-      registry.fill(HIST("step0/hZNA_Qx_vs_Qy"), q[0][0][0], q[0][0][1]);
-      registry.fill(HIST("step0/hZNC_Qx_vs_Qy"), q[0][0][2], q[0][0][3]);
+    registry.fill(HIST("step0/hZNA_Qx_vs_Qy"), q[0][0][0], q[0][0][1]);
+    registry.fill(HIST("step0/hZNC_Qx_vs_Qy"), q[0][0][2], q[0][0][3]);
 
-      registry.fill(HIST("step0/QA/hQXA_QXC_vs_cent"), centrality, q[0][0][0] * q[0][0][2]);
-      registry.fill(HIST("step0/QA/hQYA_QYC_vs_cent"), centrality, q[0][0][1] * q[0][0][3]);
-      registry.fill(HIST("step0/QA/hQYA_QXC_vs_cent"), centrality, q[0][0][1] * q[0][0][2]);
-      registry.fill(HIST("step0/QA/hQXA_QYC_vs_cent"), centrality, q[0][0][0] * q[0][0][3]);
+    registry.fill(HIST("step0/QA/hQXA_QXC_vs_cent"), centrality, q[0][0][0] * q[0][0][2]);
+    registry.fill(HIST("step0/QA/hQYA_QYC_vs_cent"), centrality, q[0][0][1] * q[0][0][3]);
+    registry.fill(HIST("step0/QA/hQYA_QXC_vs_cent"), centrality, q[0][0][1] * q[0][0][2]);
+    registry.fill(HIST("step0/QA/hQXA_QYC_vs_cent"), centrality, q[0][0][0] * q[0][0][3]);
 
-      registry.fill(HIST("step0/QA/hQXA_vs_cent"), centrality, q[0][0][0]);
-      registry.fill(HIST("step0/QA/hQYA_vs_cent"), centrality, q[0][0][1]);
-      registry.fill(HIST("step0/QA/hQXC_vs_cent"), centrality, q[0][0][2]);
-      registry.fill(HIST("step0/QA/hQYC_vs_cent"), centrality, q[0][0][3]);
+    registry.fill(HIST("step0/QA/hQXA_vs_cent"), centrality, q[0][0][0]);
+    registry.fill(HIST("step0/QA/hQYA_vs_cent"), centrality, q[0][0][1]);
+    registry.fill(HIST("step0/QA/hQXC_vs_cent"), centrality, q[0][0][2]);
+    registry.fill(HIST("step0/QA/hQYC_vs_cent"), centrality, q[0][0][3]);
 
-      registry.fill(HIST("step0/QA/hQXA_vs_vx"), v[0], q[0][0][0]);
-      registry.fill(HIST("step0/QA/hQYA_vs_vx"), v[0], q[0][0][1]);
-      registry.fill(HIST("step0/QA/hQXC_vs_vx"), v[0], q[0][0][2]);
-      registry.fill(HIST("step0/QA/hQYC_vs_vx"), v[0], q[0][0][3]);
+    registry.fill(HIST("step0/QA/hQXA_vs_vx"), v[0], q[0][0][0]);
+    registry.fill(HIST("step0/QA/hQYA_vs_vx"), v[0], q[0][0][1]);
+    registry.fill(HIST("step0/QA/hQXC_vs_vx"), v[0], q[0][0][2]);
+    registry.fill(HIST("step0/QA/hQYC_vs_vx"), v[0], q[0][0][3]);
 
-      registry.fill(HIST("step0/QA/hQXA_vs_vy"), v[1], q[0][0][0]);
-      registry.fill(HIST("step0/QA/hQYA_vs_vy"), v[1], q[0][0][1]);
-      registry.fill(HIST("step0/QA/hQXC_vs_vy"), v[1], q[0][0][2]);
-      registry.fill(HIST("step0/QA/hQYC_vs_vy"), v[1], q[0][0][3]);
+    registry.fill(HIST("step0/QA/hQXA_vs_vy"), v[1], q[0][0][0]);
+    registry.fill(HIST("step0/QA/hQYA_vs_vy"), v[1], q[0][0][1]);
+    registry.fill(HIST("step0/QA/hQXC_vs_vy"), v[1], q[0][0][2]);
+    registry.fill(HIST("step0/QA/hQYC_vs_vy"), v[1], q[0][0][3]);
 
-      registry.fill(HIST("step0/QA/hQXA_vs_vz"), v[2], q[0][0][0]);
-      registry.fill(HIST("step0/QA/hQYA_vs_vz"), v[2], q[0][0][1]);
-      registry.fill(HIST("step0/QA/hQXC_vs_vz"), v[2], q[0][0][2]);
-      registry.fill(HIST("step0/QA/hQYC_vs_vz"), v[2], q[0][0][3]);
-  
-    static constexpr std::string_view subdir[] = {"step1/", "step2/", "step3/", "step4/","step5/"};
+    registry.fill(HIST("step0/QA/hQXA_vs_vz"), v[2], q[0][0][0]);
+    registry.fill(HIST("step0/QA/hQYA_vs_vz"), v[2], q[0][0][1]);
+    registry.fill(HIST("step0/QA/hQXC_vs_vz"), v[2], q[0][0][2]);
+    registry.fill(HIST("step0/QA/hQYC_vs_vz"), v[2], q[0][0][3]);
+
+    static constexpr std::string_view subdir[] = {"step1/", "step2/", "step3/", "step4/", "step5/"};
     static_for<0, 4>([&](auto ind) {
-      constexpr int index = ind.value; 
-      int index_rt = index + 1; 
+      constexpr int index = ind.value;
+      int index_rt = index + 1;
 
       registry.fill(HIST(subdir[index]) + HIST("hZNA_Qx_vs_Qy"), q[iteration][index_rt][0], q[iteration][index_rt][1]);
       registry.fill(HIST(subdir[index]) + HIST("hZNC_Qx_vs_Qy"), q[iteration][index_rt][2], q[iteration][index_rt][3]);
@@ -361,7 +361,6 @@ struct ZDCqvectors {
       registry.fill(HIST(subdir[index]) + HIST("QA/hQYC_vs_vz"), v[2], q[iteration][index_rt][3]);
     });
   }
-
 
   void loadCalibrations(int iteration, int step, uint64_t timestamp, std::string ccdb_dir, std::vector<TString> names)
   {
@@ -423,7 +422,7 @@ struct ZDCqvectors {
         return;
       }
       if (counter < 1)
-        LOGF(info, "<--------OK----------> Calibrations loaded for iteration %i and step %i", iteration, step+1);
+        LOGF(info, "<--------OK----------> Calibrations loaded for iteration %i and step %i", iteration, step + 1);
       cal.calibfilesLoaded[iteration][step] = true;
       cal.atIteration = iteration;
       cal.atStep = step;
@@ -431,7 +430,7 @@ struct ZDCqvectors {
     } // end of ccdb_dir.empty()
     else {
       if (counter < 1)
-        LOGF(info, "<--------X-----------> Calibrations not loaded for iteration %i and step %i cfg = empty!", iteration, step+1);
+        LOGF(info, "<--------X-----------> Calibrations not loaded for iteration %i and step %i cfg = empty!", iteration, step + 1);
     }
   }
 
@@ -448,25 +447,25 @@ struct ZDCqvectors {
 
     if (hist->InheritsFrom("TProfile2D")) {
       if (counter < 1)
-        LOGF(info, "correction is TProfile2D %s for q[%i][%i]", objName, iteration,step);
+        LOGF(info, "correction is TProfile2D %s for q[%i][%i]", objName, iteration, step);
       TProfile2D* h = (TProfile2D*)hist;
       int binrunnumber = h->GetXaxis()->FindBin(TString::Format("%i", runnumber));
       int bincentrality = h->GetYaxis()->FindBin(centrality);
       calibConstant = h->GetBinContent(binrunnumber, bincentrality);
     } else if (hist->InheritsFrom("TProfile")) {
       if (counter < 1)
-        LOGF(info, "correction is TProfile %s for q[%i][%i]", objName, iteration,step);
+        LOGF(info, "correction is TProfile %s for q[%i][%i]", objName, iteration, step);
       TProfile* h = (TProfile*)hist;
       int binrunnumber = h->GetXaxis()->FindBin(TString::Format("%i", runnumber));
       calibConstant = h->GetBinContent(binrunnumber);
     } else if (hist->InheritsFrom("THnSparse")) {
       if (counter < 1)
-        LOGF(info, "correction is THnSparse %s for q[%i][%i]", objName, iteration,step);
+        LOGF(info, "correction is THnSparse %s for q[%i][%i]", objName, iteration, step);
       std::vector<double> sparsePars;
       if (counter < 1)
-        LOGF(info, "correction is THnSparse %s for q[%i][%i]", objName, iteration,step);
+        LOGF(info, "correction is THnSparse %s for q[%i][%i]", objName, iteration, step);
       THnSparseD* h = (THnSparseD*)hist;
-      if (step==0 && iteration>0) {
+      if (step == 0 && iteration > 0) {
         sparsePars.push_back(h->GetAxis(0)->FindBin(runnumber));
         sparsePars.push_back(h->GetAxis(1)->FindBin(centrality));
         sparsePars.push_back(h->GetAxis(2)->FindBin(v[0]));
@@ -478,9 +477,9 @@ struct ZDCqvectors {
       }
       calibConstant = h->Projection(sparsePars.size())->GetMean();
 
-      if(h->Projection(sparsePars.size())->GetEntries() < 2) {
-        LOGF(debug, "1 entry in sparse bin! Not used... (increase binsize)"); 
-        calibConstant = 0; 
+      if (h->Projection(sparsePars.size())->GetEntries() < 2) {
+        LOGF(debug, "1 entry in sparse bin! Not used... (increase binsize)");
+        calibConstant = 0;
       }
     }
     return calibConstant;
@@ -488,9 +487,9 @@ struct ZDCqvectors {
 
   void fillAllRegistries(int iteration, int step)
   {
-      for (int s = 0; s <= step; s++)
-        fillRegistry(iteration, s);
-      fillCommonRegistry(iteration);
+    for (int s = 0; s <= step; s++)
+      fillRegistry(iteration, s);
+    fillCommonRegistry(iteration);
   }
 
   void process(myCollisions::iterator const& collision,
@@ -527,7 +526,7 @@ struct ZDCqvectors {
 
       // load the calibration histos for iteration 0 step 0 (Energy Calibration)
       loadCalibrations(0, 0, foundBC.timestamp(), cfgEnergyCal, names_Ecal);
-            if (!cal.calibfilesLoaded[0][0]) {
+      if (!cal.calibfilesLoaded[0][0]) {
         if (counter < 1) {
           LOGF(info, " --> No Energy calibration files found.. -> Only Energy calibration will be done. ");
         }
@@ -627,7 +626,8 @@ struct ZDCqvectors {
         }
 
         if (cal.calibfilesLoaded[0][1]) {
-          if(counter<1) LOGF(info, "=====================> Setting v to vmean!"); 
+          if (counter < 1)
+            LOGF(info, "=====================> Setting v to vmean!");
           v[0] = v[0] - getCorrection<TProfile>(0, 1, vnames[0].Data());
           v[1] = v[1] - getCorrection<TProfile>(0, 1, vnames[1].Data());
         }
@@ -657,42 +657,42 @@ struct ZDCqvectors {
           return;
         } else {
           for (int iteration = 1; iteration <= cal.atIteration; iteration++) {
-            for (int step = 0; step < cal.atStep+1; step++) {
+            for (int step = 0; step < cal.atStep + 1; step++) {
               if (cal.calibfilesLoaded[iteration][step]) {
                 for (int i = 0; i < 4; i++) {
                   if (step == 0) {
-                    if (iteration == 1){
-                      q[iteration][step+1][i] = q[0][0][i] - getCorrection<THnSparse>(iteration, step, names[step][i].Data());
+                    if (iteration == 1) {
+                      q[iteration][step + 1][i] = q[0][0][i] - getCorrection<THnSparse>(iteration, step, names[step][i].Data());
                     } else {
-                      q[iteration][step+1][i] = q[iteration - 1][5][i] - getCorrection<THnSparse>(iteration, step, names[step][i].Data());
+                      q[iteration][step + 1][i] = q[iteration - 1][5][i] - getCorrection<THnSparse>(iteration, step, names[step][i].Data());
                     }
                   } else {
-                    q[iteration][step+1][i] = q[iteration][step][i] - getCorrection<TProfile2D>(iteration, step, names[step][i].Data());
+                    q[iteration][step + 1][i] = q[iteration][step][i] - getCorrection<TProfile2D>(iteration, step, names[step][i].Data());
                   }
                 }
               } else {
                 if (counter < 1)
                   LOGF(warning, "Something went wrong in calibration loop! File not loaded but bool set to tue");
               } // end of (cal.calibLoaded)
-            }// end of step
+            } // end of step
           } // end of iteration
 
-            if (counter < 1)
-              LOGF(warning, "Calibation files missing!!! Output created with q-vectors at iteration %i and step %i!!!!", cal.atIteration, cal.atStep+1);
-            fillAllRegistries(cal.atIteration, cal.atStep+1);
-            SPtableZDC(runnumber, centrality, v[0], v[1], v[2], q[cal.atIteration][cal.atStep][0], q[cal.atIteration][cal.atStep][1], q[cal.atIteration][cal.atStep][2], q[cal.atIteration][cal.atStep][3], cal.atIteration, cal.atStep);
-            counter++;
-            return;
-          }
-        } // end of cal.calibfilesLoaded[0]
+          if (counter < 1)
+            LOGF(warning, "Calibation files missing!!! Output created with q-vectors at iteration %i and step %i!!!!", cal.atIteration, cal.atStep + 1);
+          fillAllRegistries(cal.atIteration, cal.atStep + 1);
+          SPtableZDC(runnumber, centrality, v[0], v[1], v[2], q[cal.atIteration][cal.atStep][0], q[cal.atIteration][cal.atStep][1], q[cal.atIteration][cal.atStep][2], q[cal.atIteration][cal.atStep][3], cal.atIteration, cal.atStep);
+          counter++;
+          return;
+        }
+      } // end of cal.calibfilesLoaded[0]
 
-      } // end collision found ZDC
-      counter++;
-    } // end of process
+    } // end collision found ZDC
+    counter++;
+  } // end of process
 };
 
-  WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-  {
-    return WorkflowSpec{
-      adaptAnalysisTask<ZDCqvectors>(cfgc)};
-  }
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
+  return WorkflowSpec{
+    adaptAnalysisTask<ZDCqvectors>(cfgc)};
+}

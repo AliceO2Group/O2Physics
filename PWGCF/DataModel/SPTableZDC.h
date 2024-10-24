@@ -11,7 +11,6 @@
 
 /// \file SPTableZDC.h
 
-
 #ifndef PWGCF_DATAMODEL_SPTABLEZDC_H_
 #define PWGCF_DATAMODEL_SPTABLEZDC_H_
 
@@ -35,11 +34,11 @@ DECLARE_SOA_COLUMN(QXA, qxA, float);
 DECLARE_SOA_COLUMN(QXC, qxC, float);
 DECLARE_SOA_COLUMN(QYA, qyA, float);
 DECLARE_SOA_COLUMN(QYC, qyC, float);
-// keep track of where we are in steps and iterations. 
+// keep track of where we are in steps and iterations.
 DECLARE_SOA_COLUMN(Iteration, iteration, int);
 DECLARE_SOA_COLUMN(Step, step, int);
 
-} // namespace sptable
+} // namespace sptablezdc
 
 DECLARE_SOA_TABLE(SPTableZDC, "AOD", "SPCALCOLS",
                   sptablezdc::Runnumber,
@@ -52,7 +51,6 @@ DECLARE_SOA_TABLE(SPTableZDC, "AOD", "SPCALCOLS",
                   sptablezdc::QYA,
                   sptablezdc::QYC,
                   sptablezdc::Iteration,
-                  sptablezdc::Step
-                  );
+                  sptablezdc::Step);
 } // namespace o2::aod
 #endif // PWGCF_DATAMODEL_SPTABLE_H_
