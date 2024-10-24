@@ -674,7 +674,7 @@ struct nucleiEbye {
   void processData(aod::CollEbyeTable const& collision, aod::NucleiEbyeTables const& tracks, aod::LambdaEbyeTables const& v0s)
   {
     if (std::abs(collision.zvtx()) > zVtxMax)
-      continue;
+      return;
     histos.fill(HIST("QA/zVtx"), collision.zvtx());
     fillRecoEvent(collision, tracks, v0s, collision.centrality());
   }
