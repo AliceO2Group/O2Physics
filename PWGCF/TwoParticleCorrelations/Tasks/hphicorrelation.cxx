@@ -1592,7 +1592,7 @@ struct hphicorrelation {
       }
 
       if (Key > List[mid]) {
-        low = mid + 1; //If Key is greater, ignore left  half, update the low
+        low = mid + 1; // If Key is greater, ignore left  half, update the low
       } else {
         high = mid - 1;
       } // If Key is smaller, ignore right half, update the high
