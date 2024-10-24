@@ -22,8 +22,8 @@ namespace o2::aod
 {
 namespace hf_collisions_reduced
 {
-DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float);                   //! Event multiplicity
-DECLARE_SOA_COLUMN(PosZ, posZ, float);                                   //! Primary vertex z position
+DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float); //! Event multiplicity
+DECLARE_SOA_COLUMN(PosZ, posZ, float);                 //! Primary vertex z position
 
 } // namespace hf_collisions_reduced
 DECLARE_SOA_TABLE(HfRedCollisions, "AOD", "COLLREDUCED", //! Table with collision info
@@ -38,11 +38,11 @@ using HfRedCollision = HfRedCollisions::iterator;
 
 namespace hf_candidate_reduced
 {
-DECLARE_SOA_INDEX_COLUMN(HfRedCollision, hfRedCollision);                  //! ReducedCollision index
-DECLARE_SOA_COLUMN(PhiCand, phiCand, float);                               //! Phi of the candidate
-DECLARE_SOA_COLUMN(EtaCand, etaCand, float);                               //! Eta of the candidate
-DECLARE_SOA_COLUMN(PtCand, ptCand, float);                                 //! Pt of the candidate
-DECLARE_SOA_COLUMN(InvMassDs, invMassDs, float);                     //! Invariant mass of Ds candidate
+DECLARE_SOA_INDEX_COLUMN(HfRedCollision, hfRedCollision); //! ReducedCollision index
+DECLARE_SOA_COLUMN(PhiCand, phiCand, float);              //! Phi of the candidate
+DECLARE_SOA_COLUMN(EtaCand, etaCand, float);              //! Eta of the candidate
+DECLARE_SOA_COLUMN(PtCand, ptCand, float);                //! Pt of the candidate
+DECLARE_SOA_COLUMN(InvMassDs, invMassDs, float);          //! Invariant mass of Ds candidate
 } // namespace hf_candidate_reduced
 DECLARE_SOA_TABLE(DsCandReduced, "AOD", "DSCANDREDUCED", //! Table with Ds candidate info (rectangular selection)
                   soa::Index<>,
