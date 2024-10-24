@@ -40,7 +40,7 @@ DECLARE_SOA_COLUMN(Step, step, int);
 
 } // namespace sptablezdc
 
-DECLARE_SOA_TABLE(SPTableZDC, "AOD", "SPCALCOLS",
+DECLARE_SOA_TABLE(SPTableZDC, "AOD", "SPZDC",
                   sptablezdc::Runnumber,
                   sptablezdc::Cent,
                   sptablezdc::Vx,
@@ -53,4 +53,4 @@ DECLARE_SOA_TABLE(SPTableZDC, "AOD", "SPCALCOLS",
                   sptablezdc::Iteration,
                   sptablezdc::Step);
 } // namespace o2::aod
-#endif // PWGCF_DATAMODEL_SPTABLE_H_
+#endif // PWGCF_DATAMODEL_SPTABLEZDC_H_

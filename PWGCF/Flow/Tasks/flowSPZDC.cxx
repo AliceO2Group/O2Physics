@@ -11,12 +11,13 @@
 
 // In this task the energy calibration and recentring of Q-vectors constructed in the ZDCs will be done
 
+#include <CCDB/BasicCCDBManager.h>
 #include <cmath>
 #include <algorithm>
 #include <numeric>
 #include <vector>
-#include <stdlib.h>
 #include <typeinfo>
+#include <stdlib.h>
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
@@ -34,12 +35,10 @@
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/StaticFor.h"
 
-#include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "ReconstructionDataFormats/GlobalTrackID.h"
 #include "ReconstructionDataFormats/Track.h"
-
 #include "PWGCF/DataModel/SPTableZDC.h"
 
 #include "TH1F.h"
@@ -389,9 +388,7 @@ struct ZDCqvectors {
             }
             if (counter < 1)
               LOGF(info, "Loaded TProfile: %s", names[i].Data());
-          }
-          // Try to cast to TProfile2D
-          else if (TProfile2D* profile2D = dynamic_cast<TProfile2D*>(obj)) {
+          } else if (TProfile2D* profile2D = dynamic_cast<TProfile2D*>(obj)) {
             if (profile2D->GetEntries() < 1) {
               if (counter < 1)
                 LOGF(info, "%s (TProfile2D) is empty! Produce calibration file at given step", names[i].Data());
@@ -400,9 +397,7 @@ struct ZDCqvectors {
             }
             if (counter < 1)
               LOGF(info, "Loaded TProfile2D: %s", names[i].Data());
-          }
-          // Try to cast to THnSparse
-          else if (THnSparse* sparse = dynamic_cast<THnSparse*>(obj)) {
+          } else if (THnSparse* sparse = dynamic_cast<THnSparse*>(obj)) {
             if (sparse->GetEntries() < 1) {
               if (counter < 1)
                 LOGF(info, "%s (THnSparse) is empty! Produce calibration file at given step", names[i].Data());
@@ -413,8 +408,7 @@ struct ZDCqvectors {
               LOGF(info, "Loaded THnSparse: %s", names[i].Data());
           }
         } // end of for loop
-      } // end of if (cal.calib[iteration][step])
-      else {
+      } else {
         // when (cal.calib[iteration][step])=false!
         if (counter < 1)
           LOGF(warning, "Could not load TList with calibration histos from %s", ccdb_dir.c_str());
@@ -427,8 +421,7 @@ struct ZDCqvectors {
       cal.atIteration = iteration;
       cal.atStep = step;
       return;
-    } // end of ccdb_dir.empty()
-    else {
+    } else {
       if (counter < 1)
         LOGF(info, "<--------X-----------> Calibrations not loaded for iteration %i and step %i cfg = empty!", iteration, step + 1);
     }
@@ -440,22 +433,22 @@ struct ZDCqvectors {
     T* hist = nullptr;
     double calibConstant;
 
-    hist = (T*)cal.calibList[iteration][step]->FindObject(Form("%s", objName));
+    hist = reinterpret_cast<T*>(cal.calibList[iteration][step]->FindObject(Form("%s", objName)));
     if (!hist) {
       LOGF(fatal, "%s not available.. Abort..", objName);
     }
 
     if (hist->InheritsFrom("TProfile2D")) {
       if (counter < 1)
-        LOGF(info, "correction is TProfile2D %s for q[%i][%i]", objName, iteration, step);
-      TProfile2D* h = (TProfile2D*)hist;
+        LOGF(info, "correction is TProfile2D %s for q[%i][%i]", objName, iteration,step);
+      TProfile2D* h = reinterpret_cast<TProfile2D*>(hist);
       int binrunnumber = h->GetXaxis()->FindBin(TString::Format("%i", runnumber));
       int bincentrality = h->GetYaxis()->FindBin(centrality);
       calibConstant = h->GetBinContent(binrunnumber, bincentrality);
     } else if (hist->InheritsFrom("TProfile")) {
       if (counter < 1)
-        LOGF(info, "correction is TProfile %s for q[%i][%i]", objName, iteration, step);
-      TProfile* h = (TProfile*)hist;
+        LOGF(info, "correction is TProfile %s for q[%i][%i]", objName, iteration,step);
+      TProfile* h = reinterpret_cast<TProfile*>(hist);
       int binrunnumber = h->GetXaxis()->FindBin(TString::Format("%i", runnumber));
       calibConstant = h->GetBinContent(binrunnumber);
     } else if (hist->InheritsFrom("THnSparse")) {
@@ -463,9 +456,9 @@ struct ZDCqvectors {
         LOGF(info, "correction is THnSparse %s for q[%i][%i]", objName, iteration, step);
       std::vector<double> sparsePars;
       if (counter < 1)
-        LOGF(info, "correction is THnSparse %s for q[%i][%i]", objName, iteration, step);
-      THnSparseD* h = (THnSparseD*)hist;
-      if (step == 0 && iteration > 0) {
+        LOGF(info, "correction is THnSparse %s for q[%i][%i]", objName, iteration,step);
+      THnSparseD* h = reinterpret_cast<THnSparseD*>(hist);
+      if (step==0 && iteration>0) {
         sparsePars.push_back(h->GetAxis(0)->FindBin(runnumber));
         sparsePars.push_back(h->GetAxis(1)->FindBin(centrality));
         sparsePars.push_back(h->GetAxis(2)->FindBin(v[0]));
