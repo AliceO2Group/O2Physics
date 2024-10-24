@@ -415,13 +415,13 @@ struct tofSpectra {
     histos.add("Data/pos/pt/tpc", "pos TPC", kTH1D, {ptAxis});
     histos.add("Data/neg/pt/tpc", "neg TPC", kTH1D, {ptAxis});
 
-    if(includeCentralityToTracks){
-    histos.add("Data/cent/pos/pt/its_tpc_tof", "pos ITS-TPC-TOF", kTH2D, {ptAxis, multAxis});
-    histos.add("Data/cent/neg/pt/its_tpc_tof", "neg ITS-TPC-TOF", kTH2D, {ptAxis, multAxis});
-    histos.add("Data/cent/pos/pt/its_tpc", "pos ITS-TPC", kTH2D, {ptAxis, multAxis});
-    histos.add("Data/cent/neg/pt/its_tpc", "neg ITS-TPC", kTH2D, {ptAxis, multAxis});
-    histos.add("Data/cent/pos/pt/its_tof", "pos ITS-TOF", kTH2D, {ptAxis, multAxis});
-    histos.add("Data/cent/neg/pt/its_tof", "neg ITS-TOF", kTH2D, {ptAxis, multAxis});
+    if (includeCentralityToTracks) {
+      histos.add("Data/cent/pos/pt/its_tpc_tof", "pos ITS-TPC-TOF", kTH2D, {ptAxis, multAxis});
+      histos.add("Data/cent/neg/pt/its_tpc_tof", "neg ITS-TPC-TOF", kTH2D, {ptAxis, multAxis});
+      histos.add("Data/cent/pos/pt/its_tpc", "pos ITS-TPC", kTH2D, {ptAxis, multAxis});
+      histos.add("Data/cent/neg/pt/its_tpc", "neg ITS-TPC", kTH2D, {ptAxis, multAxis});
+      histos.add("Data/cent/pos/pt/its_tof", "pos ITS-TOF", kTH2D, {ptAxis, multAxis});
+      histos.add("Data/cent/neg/pt/its_tof", "neg ITS-TOF", kTH2D, {ptAxis, multAxis});
     }
 
     if (doprocessOccupancy) {
@@ -1210,14 +1210,14 @@ struct tofSpectra {
       if (track.hasITS() && track.hasTPC() && track.hasTOF()) {
         if (track.sign() > 0) {
           histos.fill(HIST("Data/pos/pt/its_tpc_tof"), track.pt());
-          if(includeCentralityToTracks){
-        histos.fill(HIST("Data/cent/pos/pt/its_tpc_tof"), track.pt(), collision.centFT0C());
-        }
+          if (includeCentralityToTracks) {
+            histos.fill(HIST("Data/cent/pos/pt/its_tpc_tof"), track.pt(), collision.centFT0C());
+          }
         } else {
           histos.fill(HIST("Data/neg/pt/its_tpc_tof"), track.pt());
-          if(includeCentralityToTracks){
-        histos.fill(HIST("Data/cent/neg/pt/its_tpc_tof"), track.pt(), collision.centFT0C());
-         }
+          if (includeCentralityToTracks) {
+            histos.fill(HIST("Data/cent/neg/pt/its_tpc_tof"), track.pt(), collision.centFT0C());
+          }
         }
       }
       if (track.hasITS() && track.hasTRD() && track.hasTOF()) {
@@ -1237,14 +1237,14 @@ struct tofSpectra {
       if (track.hasITS() && track.hasTPC()) {
         if (track.sign() > 0) {
           histos.fill(HIST("Data/pos/pt/its_tpc"), track.pt());
-          if(includeCentralityToTracks){
-        histos.fill(HIST("Data/cent/pos/pt/its_tpc"), track.pt(), collision.centFT0C());
-        }
+          if (includeCentralityToTracks) {
+            histos.fill(HIST("Data/cent/pos/pt/its_tpc"), track.pt(), collision.centFT0C());
+          }
         } else {
           histos.fill(HIST("Data/neg/pt/its_tpc"), track.pt());
-          if(includeCentralityToTracks){
-        histos.fill(HIST("Data/cent/neg/pt/its_tpc"), track.pt(), collision.centFT0C());
-        }
+          if (includeCentralityToTracks) {
+            histos.fill(HIST("Data/cent/neg/pt/its_tpc"), track.pt(), collision.centFT0C());
+          }
         }
       }
       if (track.hasTRD() && track.hasTOF()) {
@@ -1264,14 +1264,14 @@ struct tofSpectra {
       if (track.hasITS() && track.hasTOF()) {
         if (track.sign() > 0) {
           histos.fill(HIST("Data/pos/pt/its_tof"), track.pt());
-          if(includeCentralityToTracks){
-        histos.fill(HIST("Data/cent/pos/pt/its_tof"), track.pt(), collision.centFT0C());
-        }
+          if (includeCentralityToTracks) {
+            histos.fill(HIST("Data/cent/pos/pt/its_tof"), track.pt(), collision.centFT0C());
+          }
         } else {
           histos.fill(HIST("Data/neg/pt/its_tof"), track.pt());
-          if(includeCentralityToTracks){
-        histos.fill(HIST("Data/cent/neg/pt/its_tof"), track.pt(), collision.centFT0C());
-        }
+          if (includeCentralityToTracks) {
+            histos.fill(HIST("Data/cent/neg/pt/its_tof"), track.pt(), collision.centFT0C());
+          }
         }
       }
       if (track.hasTPC() && track.hasTRD()) {
@@ -1424,7 +1424,7 @@ struct tofSpectra {
       return;                                                                                  \
     }                                                                                          \
     for (const auto& track : tracks) {                                                         \
-      if (!isTrackSelected<false>(track, collision)) {                                                    \
+      if (!isTrackSelected<false>(track, collision)) {                                         \
         continue;                                                                              \
       }                                                                                        \
       fillParticleHistos<isFull, PID::particleId>(track, collision);                           \
