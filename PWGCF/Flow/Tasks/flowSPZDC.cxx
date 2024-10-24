@@ -11,7 +11,6 @@
 
 // In this task the energy calibration and recentring of Q-vectors constructed in the ZDCs will be done
 
-
 #include <stdlib.h>
 #include <cmath>
 #include <algorithm>
@@ -372,7 +371,7 @@ struct ZDCqvectors {
 
       if (cal.calibList[iteration][step]) {
         for (int i = 0; i < names.size(); i++) {
-          TObject* obj = (TObject*)cal.calibList[iteration][step]->FindObject(Form("%s", names[i].Data()));
+          TObject* obj = reinterpret_cast<TObject*>(cal.calibList[iteration][step]->FindObject(Form("%s", names[i].Data())));
           if (!obj) {
             if (counter < 1) {
               LOGF(error, "Object %s not found!!", names[i].Data());
