@@ -855,7 +855,7 @@ struct HfTreeCreatorXicToXiPiPi {
     } // loop over reconstructed signal
   }
   PROCESS_SWITCH(HfTreeCreatorXicToXiPiPi, processResiduals, "Process Residuals and pulls for both DCAFitter and KFParticle reconstruction", false);
-  };
+};
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
