@@ -88,7 +88,7 @@ struct FlowGFWOmegaXi {
   O2_DEFINE_CONFIGURABLE(cfgNSigmaCascKaon, float, 3, "NSigmaCascKaon")
   O2_DEFINE_CONFIGURABLE(cfgAcceptancePath, std::vector<std::string>, std::vector<std::string>{"PathtoRef"}, "CCDB path to acceptance object")
   O2_DEFINE_CONFIGURABLE(cfgEfficiencyPath, std::vector<std::string>, std::vector<std::string>{"PathtoRef"}, "CCDB path to efficiency object")
-  
+
   ConfigurableAxis cfgaxisVertex{"axisVertex", {20, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis cfgaxisPhi{"axisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
   ConfigurableAxis cfgaxisEta{"axisEta", {40, -1., 1.}, "eta axis for histograms"};
