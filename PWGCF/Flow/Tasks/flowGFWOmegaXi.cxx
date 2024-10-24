@@ -81,6 +81,13 @@ struct FlowGFWOmegaXi {
   // track quality and type selections
   O2_DEFINE_CONFIGURABLE(cfgtpcclusters, int, 70, "minimum number of TPC clusters requirement")
   O2_DEFINE_CONFIGURABLE(cfgitsclusters, int, 1, "minimum number of ITS clusters requirement")
+  O2_DEFINE_CONFIGURABLE(cfgcheckDauTPC, bool, false, "check if daughter tracks have TPC match")
+  O2_DEFINE_CONFIGURABLE(cfgCasc_rapidity, float, 0.5, "rapidity")
+  O2_DEFINE_CONFIGURABLE(cfgNSigmaCascPion, float, 3, "NSigmaCascPion")
+  O2_DEFINE_CONFIGURABLE(cfgNSigmaCascProton, float, 3, "NSigmaCascProton")
+  O2_DEFINE_CONFIGURABLE(cfgNSigmaCascKaon, float, 3, "NSigmaCascKaon")
+  O2_DEFINE_CONFIGURABLE(cfgAcceptancePath, std::vector<std::string>, std::vector<std::string>{"PathtoRef"}, "CCDB path to acceptance object")
+  O2_DEFINE_CONFIGURABLE(cfgEfficiencyPath, std::vector<std::string>, std::vector<std::string>{"PathtoRef"}, "CCDB path to efficiency object")
 
   ConfigurableAxis cfgaxisVertex{"axisVertex", {20, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis cfgaxisPhi{"axisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
@@ -100,21 +107,13 @@ struct FlowGFWOmegaXi {
   AxisSpec axisK0sMassforflow = {cfgK0sMassbins, 0.4f, 0.6f, "Inv. Mass (GeV)"};
   AxisSpec axisLambdaMassforflow = {cfgLambdaMassbins, 1.08f, 1.16f, "Inv. Mass (GeV)"};
 
-  Configurable<bool> cfgcheckDauTPC{"checkDauTPC", false, "check if daughter tracks have TPC match"};
-  Configurable<float> cfgCasc_rapidity{"Casc_rapidity", 0.5, "rapidity"};
-  Configurable<float> cfgNSigmaCascPion{"NSigmaCascPion", 3, "NSigmaCascPion"};
-  Configurable<float> cfgNSigmaCascProton{"NSigmaCascProton", 3, "NSigmaCascProton"};
-  Configurable<float> cfgNSigmaCascKaon{"NSigmaCascKaon", 3, "NSigmaCascKaon"};
-  Configurable<std::vector<std::string>> cfgAcceptancePath{"cfgAcceptance", std::vector<std::string>{"PathtoRef"}, "CCDB path to acceptance object"};
-  Configurable<std::vector<std::string>> cfgEfficiencyPath{"cfgEfficiency", std::vector<std::string>{"PathtoRef"}, "CCDB path to efficiency object"};
-
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtPOIMin) && (aod::track::pt < cfgCutPtPOIMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
 
   // Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
   Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
-  Configurable<std::string> url{"ccdb-url", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
+  Configurable<std::string> url{"ccdb-url", "http://ccdb-test.cern.ch", "url of the ccdb repository"};
 
   // Define output
   HistogramRegistry registry{"registry"};
