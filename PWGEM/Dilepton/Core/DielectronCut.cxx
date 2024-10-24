@@ -133,13 +133,6 @@ void DielectronCut::SetMeanClusterSizeITS(float min, float max, float minP, floa
   mMaxP_ITSClusterSize = maxP;
   LOG(info) << "Dielectron Cut, set mean cluster size ITS range: " << mMinMeanClusterSizeITS << " - " << mMaxMeanClusterSizeITS;
 }
-void DielectronCut::SetMeanClusterSizeITSPDep(std::function<float(float)> pDepCut, float minP, float maxP)
-{
-  mMaxMeanClusterSizeITSPDep = pDepCut;
-  mMinP_ITSClusterSize = minP;
-  mMaxP_ITSClusterSize = maxP;
-  LOG(info) << "Dielectron Cut, set mean cluster size ITS p dep: " << mMaxMeanClusterSizeITSPDep(0.5);
-}
 void DielectronCut::SetTrackDca3DRange(float min, float max)
 {
   mMinDca3D = min;

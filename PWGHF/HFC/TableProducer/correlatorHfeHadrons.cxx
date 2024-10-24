@@ -124,18 +124,19 @@ struct HfCorrelatorHfeHadrons {
       ptElectron = eTrack.ptTrack();
       phiElectron = eTrack.phiTrack();
       etaElectron = eTrack.etaTrack();
+
       double deltaPhi = -999;
       double deltaEta = -999;
       double ptHadron = -999;
       double etaHadron = -999;
       double phiHadron = -999;
+
       if (!eTrack.isEmcal())
         continue;
 
       registry.fill(HIST("hptElectron"), ptElectron);
       for (const auto& hTrack : tracks) {
-
-        if (hTrack.globalIndex() == eTrack.globalIndex())
+        if (hTrack.globalIndex() == eTrack.trackId())
           continue;
         // Apply Hadron cut
         if (!selAssoHadron(hTrack))
