@@ -95,6 +95,10 @@ struct FlowGFWOmegaXi {
   ConfigurableAxis cfgaxisPtXi{"axisPtXi", {VARIABLE_WIDTH, 0.9, 1.1, 1.3, 1.5, 1.7, 1.9, 2.1, 2.3, 2.5, 2.7, 2.9, 3.9, 4.9, 5.9, 9.9}, "pt (GeV)"};
   ConfigurableAxis cfgaxisPtOmega{"axisPtOmega", {VARIABLE_WIDTH, 0.9, 1.1, 1.3, 1.5, 1.7, 1.9, 2.1, 2.3, 2.5, 2.7, 2.9, 3.9, 4.9, 5.9, 9.9}, "pt (GeV)"};
   ConfigurableAxis cfgaxisPtV0{"axisPtV0", {VARIABLE_WIDTH, 0.9, 1.1, 1.3, 1.5, 1.7, 1.9, 2.1, 2.3, 2.5, 2.7, 2.9, 3.9, 4.9, 5.9, 9.9}, "pt (GeV)"};
+  ConfigurableAxis cfgaxisOmegaminusMassforflow{"axismassOmegaFlow", {16, 1.63f, 1.71f}, "Inv. Mass (GeV)"};
+  ConfigurableAxis cfgaxisXiminusMassforflow{"axismassXiFlow", {14, 1.3f, 1.37f}, "Inv. Mass (GeV)"};
+  ConfigurableAxis cfgaxisK0sMassforflow{"axismassK0sFlow", {40, 0.4f, 0.6f}, "Inv. Mass (GeV)"};
+  ConfigurableAxis cfgaxisLambdaMassforflow{"axismassLambdaFlow", {32, 1.08f, 1.16f}, "Inv. Mass (GeV)"};
 
   AxisSpec axisPt{{0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.20, 2.40, 2.60, 2.80, 3.00, 3.50, 4.00, 4.50, 5.00, 5.50, 6.00, 10.0}, "pt(GeV)"};
   AxisSpec axisMultiplicity{{0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}, "Centrality (%)"};
@@ -102,10 +106,6 @@ struct FlowGFWOmegaXi {
   AxisSpec axisXiminusMass = {70, 1.3f, 1.37f, "Inv. Mass (GeV)"};
   AxisSpec axisK0sMass = {400, 0.4f, 0.6f, "Inv. Mass (GeV)"};
   AxisSpec axisLambdaMass = {160, 1.08f, 1.16f, "Inv. Mass (GeV)"};
-  AxisSpec axisOmegaminusMassforflow = {cfgOmegaMassbins, 1.63f, 1.71f, "Inv. Mass (GeV)"};
-  AxisSpec axisXiminusMassforflow = {cfgXiMassbins, 1.3f, 1.37f, "Inv. Mass (GeV)"};
-  AxisSpec axisK0sMassforflow = {cfgK0sMassbins, 0.4f, 0.6f, "Inv. Mass (GeV)"};
-  AxisSpec axisLambdaMassforflow = {cfgLambdaMassbins, 1.08f, 1.16f, "Inv. Mass (GeV)"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtPOIMin) && (aod::track::pt < cfgCutPtPOIMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
@@ -199,14 +199,14 @@ struct FlowGFWOmegaXi {
     registry.add("c22", ";Centrality  (%) ; C_{2}{2}", {HistType::kTProfile2D, {axisPt, axisMultiplicity}});
     registry.add("c24", ";Centrality  (%) ; C_{2}{4}", {HistType::kTProfile2D, {axisPt, axisMultiplicity}});
     // pt-diff cumulant of flow
-    registry.add("Xic22dpt", ";pt ; C_{2}{2} ", {HistType::kTProfile3D, {cfgaxisPtXi, axisXiminusMassforflow, axisMultiplicity}});
-    registry.add("Omegac22dpt", ";pt ; C_{2}{2} ", {HistType::kTProfile3D, {cfgaxisPtXi, axisOmegaminusMassforflow, axisMultiplicity}});
-    registry.add("K0sc22dpt", ";pt ; C_{2}{2} ", {HistType::kTProfile3D, {cfgaxisPtV0, axisK0sMassforflow, axisMultiplicity}});
-    registry.add("Lambdac22dpt", ";pt ; C_{2}{2} ", {HistType::kTProfile3D, {cfgaxisPtV0, axisLambdaMassforflow, axisMultiplicity}});
-    registry.add("Xic24dpt", ";pt ; C_{2}{4} ", {HistType::kTProfile3D, {cfgaxisPtXi, axisXiminusMassforflow, axisMultiplicity}});
-    registry.add("Omegac24dpt", ";pt ; C_{2}{4} ", {HistType::kTProfile3D, {cfgaxisPtXi, axisOmegaminusMassforflow, axisMultiplicity}});
-    registry.add("K0sc24dpt", ";pt ; C_{2}{4} ", {HistType::kTProfile3D, {cfgaxisPtV0, axisK0sMassforflow, axisMultiplicity}});
-    registry.add("Lambdac24dpt", ";pt ; C_{2}{4} ", {HistType::kTProfile3D, {cfgaxisPtV0, axisLambdaMassforflow, axisMultiplicity}});
+    registry.add("Xic22dpt", ";pt ; C_{2}{2} ", {HistType::kTProfile3D, {cfgaxisPtXi, cfgaxisXiminusMassforflow, axisMultiplicity}});
+    registry.add("Omegac22dpt", ";pt ; C_{2}{2} ", {HistType::kTProfile3D, {cfgaxisPtXi, cfgaxisOmegaminusMassforflow, axisMultiplicity}});
+    registry.add("K0sc22dpt", ";pt ; C_{2}{2} ", {HistType::kTProfile3D, {cfgaxisPtV0, cfgaxisK0sMassforflow, axisMultiplicity}});
+    registry.add("Lambdac22dpt", ";pt ; C_{2}{2} ", {HistType::kTProfile3D, {cfgaxisPtV0, cfgaxisLambdaMassforflow, axisMultiplicity}});
+    registry.add("Xic24dpt", ";pt ; C_{2}{4} ", {HistType::kTProfile3D, {cfgaxisPtXi, cfgaxisXiminusMassforflow, axisMultiplicity}});
+    registry.add("Omegac24dpt", ";pt ; C_{2}{4} ", {HistType::kTProfile3D, {cfgaxisPtXi, cfgaxisOmegaminusMassforflow, axisMultiplicity}});
+    registry.add("K0sc24dpt", ";pt ; C_{2}{4} ", {HistType::kTProfile3D, {cfgaxisPtV0, cfgaxisK0sMassforflow, axisMultiplicity}});
+    registry.add("Lambdac24dpt", ";pt ; C_{2}{4} ", {HistType::kTProfile3D, {cfgaxisPtV0, cfgaxisLambdaMassforflow, axisMultiplicity}});
     // InvMass(GeV) of casc and v0
     registry.add("InvMassXiMinus_all", "", {HistType::kTHnSparseF, {cfgaxisPtXi, axisXiminusMass, cfgaxisEta, axisMultiplicity}});
     registry.add("InvMassOmegaMinus_all", "", {HistType::kTHnSparseF, {cfgaxisPtXi, axisOmegaminusMass, cfgaxisEta, axisMultiplicity}});
