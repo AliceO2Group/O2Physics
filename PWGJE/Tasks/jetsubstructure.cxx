@@ -197,37 +197,37 @@ struct JetSubstructureTask {
     outputTable(energyMotherVec, ptLeadingVec, ptSubLeadingVec, thetaVec, nSub[0], nSub[1], nSub[2], pairPtVec, pairEnergyVec, pairThetaVec, angularity);
   }
 
-  void processDummy(JetTracks const&)
+  void processDummy(aod::JetTracks const&)
   {
   }
   PROCESS_SWITCH(JetSubstructureTask, processDummy, "Dummy process function turned on by default", true);
 
   void processChargedJetsData(soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>::iterator const& jet,
-                              JetTracks const& tracks)
+                              aod::JetTracks const& tracks)
   {
     analyseCharged<false>(jet, tracks, jetSubstructureDataTable);
   }
   PROCESS_SWITCH(JetSubstructureTask, processChargedJetsData, "charged jet substructure", false);
 
   void processChargedJetsEventWiseSubData(soa::Join<aod::ChargedEventWiseSubtractedJets, aod::ChargedEventWiseSubtractedJetConstituents>::iterator const& jet,
-                                          JetTracksSub const& tracks)
+                                          aod::JetTracksSub const& tracks)
   {
     analyseCharged<true>(jet, tracks, jetSubstructureDataSubTable);
   }
   PROCESS_SWITCH(JetSubstructureTask, processChargedJetsEventWiseSubData, "eventwise-constituent subtracted charged jet substructure", false);
 
   void processChargedJetsMCD(typename soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>::iterator const& jet,
-                             JetTracks const& tracks)
+                             aod::JetTracks const& tracks)
   {
     analyseCharged<false>(jet, tracks, jetSubstructureMCDTable);
   }
   PROCESS_SWITCH(JetSubstructureTask, processChargedJetsMCD, "charged jet substructure", false);
 
   void processChargedJetsMCP(typename soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>::iterator const& jet,
-                             JetParticles const& particles)
+                             aod::JetParticles const& particles)
   {
     jetConstituents.clear();
-    for (auto& jetConstituent : jet.template tracks_as<JetParticles>()) {
+    for (auto& jetConstituent : jet.template tracks_as<aod::JetParticles>()) {
       fastjetutilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex(), static_cast<int>(JetConstituentStatus::track), pdg->Mass(jetConstituent.pdgCode()));
     }
     nSub = jetsubstructureutilities::getNSubjettiness(jet, particles, particles, particles, 2, fastjet::contrib::CA_Axes(), true, zCut, beta);

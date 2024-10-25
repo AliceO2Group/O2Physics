@@ -273,14 +273,14 @@ struct JetPlanarFlowTask {
     }
   }
 
-  void processDummy(JetTracks const&)
+  void processDummy(aod::JetTracks const&)
   {
   }
   PROCESS_SWITCH(JetPlanarFlowTask, processDummy, "Dummy process function turned on by default", true);
 
-  void processChargedJetsData(soa::Filtered<JetCollisions>::iterator const& collision,
+  void processChargedJetsData(soa::Filtered<aod::JetCollisions>::iterator const& collision,
                               soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets,
-                              JetTracks const& tracks)
+                              aod::JetTracks const& tracks)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
@@ -296,9 +296,9 @@ struct JetPlanarFlowTask {
   }
   PROCESS_SWITCH(JetPlanarFlowTask, processChargedJetsData, "charged jet analysis", false);
 
-  void processChargedRhoAreaSubtractedJetsData(soa::Filtered<soa::Join<JetCollisions, aod::BkgChargedRhos>>::iterator const& collision,
+  void processChargedRhoAreaSubtractedJetsData(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator const& collision,
                                                soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets,
-                                               JetTracks const& tracks)
+                                               aod::JetTracks const& tracks)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
@@ -314,9 +314,9 @@ struct JetPlanarFlowTask {
   }
   PROCESS_SWITCH(JetPlanarFlowTask, processChargedRhoAreaSubtractedJetsData, "charged rho-area subtracted jet analysis", false);
 
-  void processChargedJetsEventWiseSubData(soa::Filtered<JetCollisions>::iterator const& collision,
+  void processChargedJetsEventWiseSubData(soa::Filtered<aod::JetCollisions>::iterator const& collision,
                                           soa::Join<aod::ChargedEventWiseSubtractedJets, aod::ChargedEventWiseSubtractedJetConstituents> const& jets,
-                                          JetTracksSub const& tracks)
+                                          aod::JetTracksSub const& tracks)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
@@ -332,9 +332,9 @@ struct JetPlanarFlowTask {
   }
   PROCESS_SWITCH(JetPlanarFlowTask, processChargedJetsEventWiseSubData, "charged event-wise subtracted jet analysis", false);
 
-  void processChargedJetsMCD(soa::Filtered<JetCollisions>::iterator const& collision,
+  void processChargedJetsMCD(soa::Filtered<aod::JetCollisions>::iterator const& collision,
                              soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents> const& jets,
-                             JetTracks const& tracks)
+                             aod::JetTracks const& tracks)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
@@ -350,9 +350,9 @@ struct JetPlanarFlowTask {
   }
   PROCESS_SWITCH(JetPlanarFlowTask, processChargedJetsMCD, "charged detector level jet analysis", false);
 
-  void processChargedJetsMCP(JetMcCollisions const& collision,
+  void processChargedJetsMCP(aod::JetMcCollisions const& collision,
                              soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents> const& jets,
-                             JetParticles const& particles)
+                             aod::JetParticles const& particles)
   {
     for (auto const& jet : jets) {
 

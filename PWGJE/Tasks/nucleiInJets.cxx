@@ -929,7 +929,7 @@ struct nucleiInJets {
   }   // process mc
 
   void processMCRec(o2::aod::JCollision const& collisionJet, soa::Join<aod::JTracks, aod::JTrackPIs, aod::JMcTrackLbs> const& tracks,
-                    soa::Filtered<aod::ChargedMCDetectorLevelJets> const& mcdjets, TrackCandidatesMC const&, JetParticles const&)
+                    soa::Filtered<aod::ChargedMCDetectorLevelJets> const& mcdjets, TrackCandidatesMC const&, aod::JetParticles const&)
   {
     jetHist.fill(HIST("mcdJet/eventStat"), 0.5);
     // JEhistos.fill(HIST("nEvents_MCRec"), 0.5);
@@ -971,7 +971,7 @@ struct nucleiInJets {
         continue;
       if (!track.has_mcParticle())
         continue;
-      auto mcTrack = track.mcParticle_as<JetParticles>();
+      auto mcTrack = track.mcParticle_as<aod::JetParticles>();
       if (fabs(mcTrack.eta()) > cfgtrkMaxEta)
         continue;
       if (!mcTrack.isPhysicalPrimary())
@@ -1058,7 +1058,7 @@ struct nucleiInJets {
         continue;
       if (!track.has_mcParticle())
         continue;
-      auto mcTrack = track.mcParticle_as<JetParticles>();
+      auto mcTrack = track.mcParticle_as<aod::JetParticles>();
       // add pid later
 
       bool jetFlag = false;
