@@ -128,12 +128,12 @@ void FFitWeights::qSelectionSpline(std::vector<int> nhv, std::vector<std::string
       TSpline3* spline = nullptr;
       for (int iSP{0}; iSP < 90; iSP++) {
         tmp = th2->ProjectionY(Form("q%i_%i_%i", nh, iSP, iSP + 1), iSP + 1, iSP + 1);
-        double xq[nResolution];
-        double yq[nResolution];
+        std::vector<double> xq(nResolution);
+        std::vector<double> yq(nResolution);
         for (int i{0}; i < nResolution; i++)
-          xq[i] = double(i + 1) / nResolution;
-        tmp->GetQuantiles(nResolution, yq, xq);
-        tmpgr = new TGraph(nResolution, yq, xq);
+          xq[i] = static_cast<double>(i + 1) / static_cast<double>(nResolution);
+        tmp->GetQuantiles(nResolution, yq.data(), xq.data());
+        tmpgr = new TGraph(nResolution, yq.data(), xq.data());
         spline = new TSpline3(Form("sp_q%i%s_%i", nh, pf.c_str(), iSP), tmpgr);
         spline->SetName(Form("sp_q%i%s_%i", nh, pf.c_str(), iSP));
         fW_data->Add(spline);
