@@ -352,9 +352,9 @@ struct k892pmanalysis {
         }
 
         // apply the competing V0 rejection cut (excluding Lambda0 candidates, massLambdaPDG = 1115.683 MeV/c2)
-        if (abs(v0.mLambda() - massLambda0) < cV0MassWindow)
+        if (std::abs(v0.mLambda() - massLambda0) < cV0MassWindow)
           continue;
-        if (abs(v0.mAntiLambda() - massAntiLambda0) < cV0MassWindow)
+        if (std::abs(v0.mAntiLambda() - massAntiLambda0) < cV0MassWindow)
           continue;
 
         if (!IsMix && !IsV0QAFilled) {
