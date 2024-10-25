@@ -112,8 +112,8 @@ struct FlowGFWOmegaXi {
 
   // Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
-  O2_DEFINE_CONFIGURABLE(nolaterthan, int64_t, std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object")
-  O2_DEFINE_CONFIGURABLE(url, std::string, "http://ccdb-test.cern.ch", "url of the ccdb repository")
+  O2_DEFINE_CONFIGURABLE(cfgnolaterthan, int64_t, std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object")
+  O2_DEFINE_CONFIGURABLE(cfgurl, std::string, "http://alice-ccdb.cern.ch", "url of the ccdb repository")
 
   // Define output
   HistogramRegistry registry{"registry"};
@@ -140,39 +140,35 @@ struct FlowGFWOmegaXi {
   using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults>>;  // collisions filter
   using DaughterTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCKa>;
 
-  // Set the pt, mult and phi Axis;
-  o2::framework::AxisSpec axisPt = cfgaxisPt;
-  int nPtBins = axisPt.binEdges.size() - 1;
-  TAxis* fPtAxis = new TAxis(nPtBins, &(axisPt.binEdges)[0]);
+  // Define the pt, mult and phi Axis;
+  int nPtBins = 0;
+  TAxis* fPtAxis = nullptr;
 
-  o2::framework::AxisSpec axisXiPt = cfgaxisPtXi;
-  int nXiPtBins = axisXiPt.binEdges.size() - 1;
-  TAxis* fXiPtAxis = new TAxis(nXiPtBins, &(axisXiPt.binEdges)[0]);
+  int nXiPtBins = 0;
+  TAxis* fXiPtAxis = nullptr;
 
-  o2::framework::AxisSpec axisV0Pt = cfgaxisPtV0;
-  int nV0PtBins = axisV0Pt.binEdges.size() - 1;
-  TAxis* fV0PtAxis = new TAxis(nV0PtBins, &(axisV0Pt.binEdges)[0]);
+  int nV0PtBins = 0;
+  TAxis* fV0PtAxis = nullptr;
 
-  o2::framework::AxisSpec axisMult = axisMultiplicity;
-  int nMultBins = axisMult.binEdges.size() - 1;
-  TAxis* fMultAxis = new TAxis(nMultBins, &(axisMult.binEdges)[0]);
+  int nMultBins = 0;
+  TAxis* fMultAxis = nullptr;
 
   int nPhiBins = 60;
   TAxis* fPhiAxis = new TAxis(nPhiBins, 0, constants::math::TwoPI);
 
-  TAxis* fOmegaMass = new TAxis(cfgOmegaMassbins, 1.63, 1.71);
+  TAxis* fOmegaMass = nullptr;
 
-  TAxis* fXiMass = new TAxis(cfgXiMassbins, 1.3, 1.37);
+  TAxis* fXiMass = nullptr;
 
-  TAxis* fK0sMass = new TAxis(cfgK0sMassbins, 0.4, 0.6);
+  TAxis* fK0sMass = nullptr;
 
-  TAxis* fLambdaMass = new TAxis(cfgLambdaMassbins, 1.08, 1.16);
+  TAxis* fLambdaMass = nullptr;
 
   void init(InitContext const&) // Initialization
   {
-    ccdb->setURL(url.value);
+    ccdb->setURL(cfgurl.value);
     ccdb->setCaching(true);
-    ccdb->setCreatedNotAfter(nolaterthan.value);
+    ccdb->setCreatedNotAfter(cfgnolaterthan.value);
 
     // Add some output objects to the histogram registry
     registry.add("hPhi", "", {HistType::kTH1D, {cfgaxisPhi}});
@@ -180,7 +176,7 @@ struct FlowGFWOmegaXi {
     registry.add("hVtxZ", "", {HistType::kTH1D, {cfgaxisVertex}});
     registry.add("hMult", "", {HistType::kTH1D, {{3000, 0.5, 3000.5}}});
     registry.add("hCent", "", {HistType::kTH1D, {{90, 0, 90}}});
-    registry.add("hPt", "", {HistType::kTH1D, {axisPt}});
+    registry.add("hPt", "", {HistType::kTH1D, {cfgaxisPt}});
     registry.add("hEtaPhiVtxzREF", "", {HistType::kTH3D, {cfgaxisEta, cfgaxisPhi, {20, -10, 10}}});
     registry.add("hEtaPhiVtxzPOIXi", "", {HistType::kTH3D, {cfgaxisEta, cfgaxisPhi, {20, -10, 10}}});
     registry.add("hEtaPhiVtxzPOIOmega", "", {HistType::kTH3D, {cfgaxisEta, cfgaxisPhi, {20, -10, 10}}});
@@ -197,8 +193,8 @@ struct FlowGFWOmegaXi {
     registry.get<TH2>(HIST("hEventCount"))->GetYaxis()->SetBinLabel(4, "Omega");
 
     // cumulant of flow
-    registry.add("c22", ";Centrality  (%) ; C_{2}{2}", {HistType::kTProfile2D, {axisPt, axisMultiplicity}});
-    registry.add("c24", ";Centrality  (%) ; C_{2}{4}", {HistType::kTProfile2D, {axisPt, axisMultiplicity}});
+    registry.add("c22", ";Centrality  (%) ; C_{2}{2}", {HistType::kTProfile2D, {cfgaxisPt, axisMultiplicity}});
+    registry.add("c24", ";Centrality  (%) ; C_{2}{4}", {HistType::kTProfile2D, {cfgaxisPt, axisMultiplicity}});
     // pt-diff cumulant of flow
     registry.add("Xic22dpt", ";pt ; C_{2}{2} ", {HistType::kTProfile3D, {cfgaxisPtXi, cfgaxisXiminusMassforflow, axisMultiplicity}});
     registry.add("Omegac22dpt", ";pt ; C_{2}{2} ", {HistType::kTProfile3D, {cfgaxisPtXi, cfgaxisOmegaminusMassforflow, axisMultiplicity}});
@@ -217,6 +213,31 @@ struct FlowGFWOmegaXi {
     registry.add("InvMassLambda_all", "", {HistType::kTHnSparseF, {cfgaxisPtV0, axisLambdaMass, cfgaxisEta, axisMultiplicity}});
     registry.add("InvMassK0s", "", {HistType::kTHnSparseF, {cfgaxisPtV0, axisK0sMass, cfgaxisEta, axisMultiplicity}});
     registry.add("InvMassLambda", "", {HistType::kTHnSparseF, {cfgaxisPtV0, axisLambdaMass, cfgaxisEta, axisMultiplicity}});
+
+    // Set the pt, mult and phi Axis;
+    o2::framework::AxisSpec axisPt = cfgaxisPt;
+    nPtBins = axisPt.binEdges.size() - 1;
+    fPtAxis = new TAxis(nPtBins, &(axisPt.binEdges)[0]);
+
+    o2::framework::AxisSpec axisXiPt = cfgaxisPtXi;
+    nXiPtBins = axisXiPt.binEdges.size() - 1;
+    fXiPtAxis = new TAxis(nXiPtBins, &(axisXiPt.binEdges)[0]);
+
+    o2::framework::AxisSpec axisV0Pt = cfgaxisPtV0;
+    nV0PtBins = axisV0Pt.binEdges.size() - 1;
+    fV0PtAxis = new TAxis(nV0PtBins, &(axisV0Pt.binEdges)[0]);
+
+    o2::framework::AxisSpec axisMult = axisMultiplicity;
+    nMultBins = axisMult.binEdges.size() - 1;
+    fMultAxis = new TAxis(nMultBins, &(axisMult.binEdges)[0]);
+
+    fOmegaMass = new TAxis(cfgOmegaMassbins, 1.63, 1.71);
+
+    fXiMass = new TAxis(cfgXiMassbins, 1.3, 1.37);
+
+    fK0sMass = new TAxis(cfgK0sMassbins, 0.4, 0.6);
+
+    fLambdaMass = new TAxis(cfgLambdaMassbins, 1.08, 1.16);
 
     fGFW->AddRegion("reffull", -0.8, 0.8, 1, 1); // ("name", etamin, etamax, ptbinnum, bitmask)eta region -0.8 to 0.8
     // with (-0.5, 0.5) eta gap
