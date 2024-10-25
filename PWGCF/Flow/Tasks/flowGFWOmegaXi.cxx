@@ -140,7 +140,7 @@ struct FlowGFWOmegaXi {
   using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults>>;  // collisions filter
   using DaughterTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCKa>;
 
-  // Define the pt, mult and phi Axis;
+  // Declare the pt, mult and phi Axis;
   int nPtBins = 0;
   TAxis* fPtAxis = nullptr;
 
