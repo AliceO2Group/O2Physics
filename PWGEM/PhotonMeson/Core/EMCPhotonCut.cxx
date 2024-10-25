@@ -61,6 +61,11 @@ void EMCPhotonCut::SetUseExoticCut(bool flag)
   mUseExoticCut = flag;
   LOG(info) << "EMCal Photon Cut, set usage of exotic cluster cut to: " << mUseExoticCut;
 }
+void EMCPhotonCut::SetUseTM(bool flag)
+{
+  mUseTM = flag;
+  LOG(info) << "EM Photon Cluster Cut, using TM cut is set to : " << mUseTM;
+}
 
 void EMCPhotonCut::print() const
 {
