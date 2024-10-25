@@ -456,6 +456,7 @@ struct femtoUniversePairTaskTrackV0Extended {
 
   PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processSameEventV0, "Enable processing same event for V0 - V0", false);
 
+  /// This function processes MC same events for Track - V0
   void processMCSameEvent(FilteredFDCollision& col, FemtoFullParticles& parts)
   {
     const auto& magFieldTesla = col.magField();
@@ -508,6 +509,47 @@ struct femtoUniversePairTaskTrackV0Extended {
   }
 
   PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processMCSameEvent, "Enable processing same event for MC truth track - V0", false);
+
+  /// This function processes MC same events for V0 - V0
+  void processMCSameEventV0(FilteredFDCollision& col, FemtoFullParticles& parts)
+  {
+    auto groupPartsTwo = partsTwoMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    const int multCol = ConfUseCent ? col.multV0M() : col.multNtr();
+
+    eventHisto.fillQA(col);
+
+    /// Histogramming same event
+    for (auto& part : groupPartsTwo) {
+      int pdgCode = static_cast<int>(part.pidcut());
+      if ((ConfV0Type1 == 0 && pdgCode != 3122) || (ConfV0Type1 == 1 && pdgCode != -3122))
+        continue;
+      trackHistoPartTwo.fillQA<false, true>(part);
+    }
+
+    auto pairProcessFunc = [&](auto& p1, auto& p2) -> void {
+      int pdgCode1 = static_cast<int>(p1.pidcut());
+      if ((ConfV0Type1 == 0 && pdgCode1 != 3122) || (ConfV0Type1 == 1 && pdgCode1 != -3122))
+        return;
+      int pdgCode2 = static_cast<int>(p2.pidcut());
+      if ((ConfV0Type2 == 0 && pdgCode2 != 3122) || (ConfV0Type2 == 1 && pdgCode2 != -3122))
+        return;
+      sameEventCont.setPair<false>(p1, p2, multCol, ConfUse3D);
+    };
+    /// Now build the combinations
+    if (ConfV0Type1 == ConfV0Type2) {
+      /// Now build the combinations for identical V0s
+      for (auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsTwo, groupPartsTwo))) {
+        pairProcessFunc(p1, p2);
+      }
+    } else {
+      /// Now build the combinations for not identical identical V0s
+      for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsTwo, groupPartsTwo))) {
+        pairProcessFunc(p1, p2);
+      }
+    }
+  }
+
+  PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processMCSameEventV0, "Enable processing same event for MC truth V0 - V0", false);
 
   /// This function processes the mixed event for track - V0
   template <typename PartType, typename PartitionType, typename MCParticles = std::nullptr_t>
@@ -630,6 +672,7 @@ struct femtoUniversePairTaskTrackV0Extended {
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processMixedEventV0, "Enable processing mixed events for V0 - V0", false);
 
+  /// This function processes MC mixed events for Track - V0
   void processMCMixedEvent(FilteredFDCollisions& cols, FemtoFullParticles& parts)
   {
     ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{ConfVtxBins, ConfMultBins}, true};
@@ -665,6 +708,31 @@ struct femtoUniversePairTaskTrackV0Extended {
 
   PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processMCMixedEvent, "Enable processing mixed events for MC truth track - V0", false);
 
+  /// This function processes MC mixed events for V0 - V0
+  void processMCMixedEventV0(FilteredFDCollisions& cols, FemtoFullParticles& parts)
+  {
+    ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{ConfVtxBins, ConfMultBins}, true};
+
+    for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
+
+      const int multCol = ConfUseCent ? collision1.multV0M() : collision1.multNtr();
+
+      auto groupPartsOne = partsTwoMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
+      auto groupPartsTwo = partsTwoMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
+
+      for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
+        int pdgCode1 = static_cast<int>(p1.pidcut());
+        if ((ConfV0Type1 == 0 && pdgCode1 != 3122) || (ConfV0Type1 == 1 && pdgCode1 != -3122))
+          continue;
+        int pdgCode2 = static_cast<int>(p2.pidcut());
+        if ((ConfV0Type2 == 0 && pdgCode2 != 3122) || (ConfV0Type2 == 1 && pdgCode2 != -3122))
+          continue;
+        mixedEventCont.setPair<false>(p1, p2, multCol, ConfUse3D);
+      }
+    }
+  }
+
+  PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processMCMixedEventV0, "Enable processing mixed events for MC truth V0 - V0", false);
   ///--------------------------------------------MC-------------------------------------------------///
 
   /// This function fills MC truth particles from derived MC table
