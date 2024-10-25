@@ -210,6 +210,7 @@ struct SingleTrackQC {
       fRegistry.add("Track/positive/hDCAxyzSigma", "DCA xy vs. z;DCA_{xy} (#sigma);DCA_{z} (#sigma)", kTH2F, {{200, -10.0f, 10.0f}, {200, -10.0f, 10.0f}}, false);
       fRegistry.add("Track/positive/hDCAxyRes_Pt", "DCA_{xy} resolution vs. pT;p_{T} (GeV/c);DCA_{xy} resolution (#mum)", kTH2F, {{200, 0, 10}, {200, 0., 400}}, false);
       fRegistry.add("Track/positive/hDCAzRes_Pt", "DCA_{z} resolution vs. pT;p_{T} (GeV/c);DCA_{z} resolution (#mum)", kTH2F, {{200, 0, 10}, {200, 0., 400}}, false);
+      fRegistry.add("Track/positive/hDCA3DRes_Pt", "DCA_{3D} resolution vs. pT;p_{T} (GeV/c);DCA_{3D} resolution (#mum)", kTH2F, {{200, 0, 10}, {200, 0., 400}}, false);
       fRegistry.add("Track/positive/hNclsTPC", "number of TPC clusters", kTH1F, {{161, -0.5, 160.5}}, false);
       fRegistry.add("Track/positive/hNcrTPC", "number of TPC crossed rows", kTH1F, {{161, -0.5, 160.5}}, false);
       fRegistry.add("Track/positive/hChi2TPC", "chi2/number of TPC clusters", kTH1F, {{100, 0, 10}}, false);
@@ -247,6 +248,7 @@ struct SingleTrackQC {
       fRegistry.add("Track/positive/hDCAxySigma", "DCA x vs. y;DCA_{x} (#sigma);DCA_{y} (#sigma)", kTH2F, {{200, -10.0f, 10.0f}, {200, -10.0f, 10.0f}}, false);
       fRegistry.add("Track/positive/hDCAxRes_Pt", "DCA_{x} resolution vs. pT;p_{T} (GeV/c);DCA_{x} resolution (#mum)", kTH2F, {{200, 0, 10}, {200, 0., 400}}, false);
       fRegistry.add("Track/positive/hDCAyRes_Pt", "DCA_{y} resolution vs. pT;p_{T} (GeV/c);DCA_{y} resolution (#mum)", kTH2F, {{200, 0, 10}, {200, 0., 400}}, false);
+      fRegistry.add("Track/positive/hDCAxyRes_Pt", "DCA_{xy} resolution vs. pT;p_{T} (GeV/c);DCA_{xy} resolution (#mum)", kTH2F, {{200, 0, 10}, {200, 0., 400}}, false);
       fRegistry.add("Track/positive/hNclsMCH", "number of MCH clusters", kTH1F, {{21, -0.5, 20.5}}, false);
       fRegistry.add("Track/positive/hNclsMFT", "number of MFT clusters", kTH1F, {{11, -0.5, 10.5}}, false);
       fRegistry.add("Track/positive/hPDCA", "pDCA;p_{T} at PV (GeV/c);p #times DCA (GeV/c #upoint cm)", kTH2F, {{100, 0, 10}, {100, 0.0f, 1000}}, false);
@@ -403,6 +405,7 @@ struct SingleTrackQC {
       fRegistry.fill(HIST("Track/positive/hDCAxyzSigma"), track.dcaXY() / sqrt(track.cYY()), track.dcaZ() / sqrt(track.cZZ()));
       fRegistry.fill(HIST("Track/positive/hDCAxyRes_Pt"), track.pt(), sqrt(track.cYY()) * 1e+4); // convert cm to um
       fRegistry.fill(HIST("Track/positive/hDCAzRes_Pt"), track.pt(), sqrt(track.cZZ()) * 1e+4);  // convert cm to um
+      fRegistry.fill(HIST("Track/positive/hDCA3DRes_Pt"), track.pt(), sigmaDCA3D(track) * 1e+4); // convert cm to um
       fRegistry.fill(HIST("Track/positive/hNclsITS"), track.itsNCls());
       fRegistry.fill(HIST("Track/positive/hNclsTPC"), track.tpcNClsFound());
       fRegistry.fill(HIST("Track/positive/hNcrTPC"), track.tpcNClsCrossedRows());
@@ -433,6 +436,7 @@ struct SingleTrackQC {
       fRegistry.fill(HIST("Track/negative/hDCAxyzSigma"), track.dcaXY() / sqrt(track.cYY()), track.dcaZ() / sqrt(track.cZZ()));
       fRegistry.fill(HIST("Track/negative/hDCAxyRes_Pt"), track.pt(), sqrt(track.cYY()) * 1e+4); // convert cm to um
       fRegistry.fill(HIST("Track/negative/hDCAzRes_Pt"), track.pt(), sqrt(track.cZZ()) * 1e+4);  // convert cm to um
+      fRegistry.fill(HIST("Track/negative/hDCA3DRes_Pt"), track.pt(), sigmaDCA3D(track) * 1e+4); // convert cm to um
       fRegistry.fill(HIST("Track/negative/hNclsITS"), track.itsNCls());
       fRegistry.fill(HIST("Track/negative/hNclsTPC"), track.tpcNClsFound());
       fRegistry.fill(HIST("Track/negative/hNcrTPC"), track.tpcNClsCrossedRows());
@@ -475,6 +479,7 @@ struct SingleTrackQC {
       fRegistry.fill(HIST("Track/positive/hDCAxySigma"), track.fwdDcaX() / std::sqrt(track.cXX()), track.fwdDcaY() / std::sqrt(track.cYY()));
       fRegistry.fill(HIST("Track/positive/hDCAxRes_Pt"), track.pt(), std::sqrt(track.cXX()) * 1e+4);
       fRegistry.fill(HIST("Track/positive/hDCAyRes_Pt"), track.pt(), std::sqrt(track.cYY()) * 1e+4);
+      fRegistry.fill(HIST("Track/positive/hDCAxyRes_Pt"), track.pt(), sigmaDCAXY(track) * 1e+4);
       fRegistry.fill(HIST("Track/positive/hNclsMCH"), track.nClusters());
       fRegistry.fill(HIST("Track/positive/hNclsMFT"), track.nClustersMFT());
       fRegistry.fill(HIST("Track/positive/hPDCA"), track.pt(), track.pDca());
@@ -490,6 +495,7 @@ struct SingleTrackQC {
       fRegistry.fill(HIST("Track/negative/hDCAxySigma"), track.fwdDcaX() / std::sqrt(track.cXX()), track.fwdDcaY() / std::sqrt(track.cYY()));
       fRegistry.fill(HIST("Track/negative/hDCAxRes_Pt"), track.pt(), std::sqrt(track.cXX()) * 1e+4);
       fRegistry.fill(HIST("Track/negative/hDCAyRes_Pt"), track.pt(), std::sqrt(track.cYY()) * 1e+4);
+      fRegistry.fill(HIST("Track/negative/hDCAxyRes_Pt"), track.pt(), sigmaDCAXY(track) * 1e+4);
       fRegistry.fill(HIST("Track/negative/hNclsMCH"), track.nClusters());
       fRegistry.fill(HIST("Track/negative/hNclsMFT"), track.nClustersMFT());
       fRegistry.fill(HIST("Track/negative/hPDCA"), track.pt(), track.pDca());

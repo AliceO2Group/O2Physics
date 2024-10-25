@@ -57,6 +57,32 @@ float fwdDcaXYinSigma(T const& track)
 }
 //_______________________________________________________________________
 template <typename T>
+float sigmaDCA3D(T const& track)
+{
+  return 1. / dca3DinSigma(track) * std::sqrt(pow(track.dcaXY(), 2) + pow(track.dcaZ(), 2));
+
+  // float cYY = track.cYY();
+  // float cZZ = track.cZZ();
+  // float cZY = track.cZY();
+  // float dcaXY = track.dcaXY();                                                                                                                                // in cm
+  // float dcaZ = track.dcaZ();                                                                                                                                  // in cm
+  // return 1.f / std::sqrt(dcaXY * dcaXY + dcaZ * dcaZ) * std::sqrt(pow(dcaXY * std::sqrt(cYY), 2) + pow(dcaZ * std::sqrt(cZZ), 2) + 2.f * dcaXY * dcaZ * cZY); // DCA 3D resolution at midrapidity
+}
+//_______________________________________________________________________
+template <typename T>
+float sigmaDCAXY(T const& track)
+{
+  return 1. / fwdDcaXYinSigma(track) * std::sqrt(pow(track.fwdDcaX(), 2) + pow(track.fwdDcaY(), 2));
+
+  // float cXX = track.cXX();
+  // float cYY = track.cYY();
+  // float cXY = track.cXY();
+  // float dcaX = track.fwdDcaX();                                                                                                                           // in cm
+  // float dcaY = track.fwdDcaY();                                                                                                                           // in cm
+  // return 1.f / std::sqrt(dcaX * dcaX + dcaY * dcaY) * std::sqrt(pow(dcaX * std::sqrt(cXX), 2) + pow(dcaY * std::sqrt(cYY), 2) + 2.f * dcaX * dcaY * cXY); // DCA XY resolution at forward rapidity
+}
+//_______________________________________________________________________
+template <typename T>
 float sigmaPt(T const& track)
 {
   return std::sqrt(track.c1Pt21Pt2()) / std::pow(track.signed1Pt(), 2); // pT resolution
