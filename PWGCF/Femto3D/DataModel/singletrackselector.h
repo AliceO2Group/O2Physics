@@ -302,6 +302,10 @@ DECLARE_SOA_COLUMN(TPCInnerParam, tpcInnerParam, float); // Momentum at inner wa
 DECLARE_SOA_COLUMN(TPCSignal, tpcSignal, float);         // dE/dx TPC
 DECLARE_SOA_COLUMN(Beta, beta, float);                   // TOF beta
 
+DECLARE_SOA_COLUMN(StoredTPCNSigmaEl, storedTpcNSigmaEl, binning::nsigma::binned_t);
+DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaEl, tpcNSigmaEl,
+                           [](binning::nsigma_v1::binned_t nsigma_binned) -> float { return singletrackselector::unPackSymmetric<binning::nsigma_v1>(nsigma_binned); });
+
 DECLARE_SOA_DYNAMIC_COLUMN(Rapidity, rapidity, //! Track rapidity, computed under the mass assumption given as input
                            [](float p, float eta, float mass) -> float {
                              const auto pz = p * std::tanh(eta);
@@ -478,6 +482,10 @@ DECLARE_SOA_TABLE(SingleTrkExtras, "AOD", "SINGLETRKEXTRA",
                   singletrackselector::TPCInnerParam,
                   singletrackselector::TPCSignal,
                   singletrackselector::Beta);
+
+DECLARE_SOA_TABLE(SinglePIDEls, "AOD", "SINGLEPIDEL",
+                  singletrackselector::StoredTPCNSigmaEl,
+                  singletrackselector::TPCNSigmaEl<singletrackselector::StoredTPCNSigmaEl>);
 
 namespace singletrackselector
 {
