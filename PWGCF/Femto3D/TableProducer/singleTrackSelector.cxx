@@ -97,7 +97,7 @@ struct singleTrackSelector {
   Produces<o2::aod::SingleCollExtras> tableRowCollExtra;
   Produces<o2::aod::SingleTrackSels> tableRow;
   Produces<o2::aod::SingleTrkExtras> tableRowExtra;
-  Produces<o2::aod::SinglePIDExtras> tableRowPIDExtra;
+  Produces<o2::aod::SinglePIDEls> tableRowPIDEl;
   Produces<o2::aod::SingleTrkMCs> tableRowMC;
 
   Filter eventFilter = (applyEvSel.node() == 0) ||
@@ -247,7 +247,7 @@ struct singleTrackSelector {
                         track.tpcSignal(),
                         track.beta());
 
-          tableRowPIDExtra(singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tpcNSigmaEl()));
+          tableRowPIDEl(singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tpcNSigmaEl()));
 
           if constexpr (isMC) {
             int origin = -1;

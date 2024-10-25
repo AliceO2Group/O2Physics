@@ -483,7 +483,7 @@ DECLARE_SOA_TABLE(SingleTrkExtras, "AOD", "SINGLETRKEXTRA",
                   singletrackselector::TPCSignal,
                   singletrackselector::Beta);
 
-DECLARE_SOA_TABLE(SinglePIDExtras, "AOD", "SINGLEPIDEXTRA",
+DECLARE_SOA_TABLE(SinglePIDEls, "AOD", "SINGLEPIDEL",
                   singletrackselector::StoredTPCNSigmaEl,
                   singletrackselector::TPCNSigmaEl<singletrackselector::StoredTPCNSigmaEl>);
 
