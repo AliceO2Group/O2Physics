@@ -13,6 +13,8 @@
 /// dependencies: emcal-correction-task
 /// \author marvin.hemmer@cern.ch
 
+#include <algorithm>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -47,6 +49,8 @@ struct skimmerGammaCalo {
   Configurable<float> minM02{"minM02", 0.0, "Minimum M02 for M02 cut"};
   Configurable<float> maxM02{"maxM02", 1.0, "Maximum M02 for M02 cut"};
   Configurable<float> minE{"minE", 0.5, "Minimum energy for energy cut"};
+  Configurable<float> maxdEta{"maxdEta", 0.1, "Set a maximum difference in eta for tracks and cluster to still count as matched"};
+  Configurable<float> maxdPhi{"maxdPhi", 0.1, "Set a maximum difference in phi for tracks and cluster to still count as matched"};
   Configurable<bool> applyEveSel_at_skimming{"applyEveSel_at_skimming", false, "flag to apply minimal event selection at the skimming level"};
   Configurable<bool> inherit_from_emevent_photon{"inherit_from_emevent_photon", false, "flag to inherit task options from emevent-photon"};
 
@@ -117,6 +121,9 @@ struct skimmerGammaCalo {
       vP.reserve(groupedMTs.size());
       vPt.reserve(groupedMTs.size());
       for (const auto& emcmatchedtrack : groupedMTs) {
+        if (std::abs(emccluster.eta() - emcmatchedtrack.track_as<aod::FullTracks>().trackEtaEmcal()) >= maxdEta || std::abs(emccluster.phi() - emcmatchedtrack.track_as<aod::FullTracks>().trackPhiEmcal()) >= maxdPhi) {
+          continue;
+        }
         historeg.fill(HIST("hMTEtaPhi"), emccluster.eta() - emcmatchedtrack.track_as<aod::FullTracks>().trackEtaEmcal(), emccluster.phi() - emcmatchedtrack.track_as<aod::FullTracks>().trackPhiEmcal());
         vTrackIds.emplace_back(emcmatchedtrack.trackId());
         vEta.emplace_back(emcmatchedtrack.track_as<aod::FullTracks>().trackEtaEmcal());

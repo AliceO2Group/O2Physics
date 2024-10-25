@@ -199,6 +199,7 @@ DECLARE_JET_DUPLICATE_TABLES_LEVELS(Charged, JTrackSub, HfD0Bases, HfD0PBases, "
 using JetCollisions = JCollisions;
 using JetCollision = JetCollisions::iterator;
 using JetCollisionsMCD = o2::soa::Join<JetCollisions, JMcCollisionLbs>;
+using JetCollisionMCD = o2::soa::Join<JetCollisions, JMcCollisionLbs>::iterator;
 using JetTracks = JTracks;
 using JetTracksMCD = o2::soa::Join<JetTracks, JMcTrackLbs>;
 using JetTracksSub = JTrackSubs;
