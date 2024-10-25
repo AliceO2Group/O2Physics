@@ -22,6 +22,7 @@
 #include <string>
 #include "PWGCF/DataModel/FemtoDerived.h"
 #include "Framework/HistogramRegistry.h"
+#include "CommonConstants/PhysicsConstants.h"
 
 using namespace o2::framework;
 
@@ -372,15 +373,15 @@ class FemtoDreamParticleHisto
             pidTPC = part.tpcNSigmaPr();
             pidTOF = part.tofNSigmaPr();
             break;
-          case 1000010020: // Deuteron
+          case constants::physics::kDeuteron:
             pidTPC = part.tpcNSigmaDe();
             pidTOF = part.tofNSigmaDe();
             break;
-          case 1000010030: // Triton
+          case constants::physics::kTriton:
             pidTPC = part.tpcNSigmaTr();
             pidTOF = part.tofNSigmaTr();
             break;
-          case 1000020030: // Helium3
+          case constants::physics::kHelium3:
             pidTPC = part.tpcNSigmaHe();
             pidTOF = part.tofNSigmaHe();
             break;
