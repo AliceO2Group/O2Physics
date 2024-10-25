@@ -113,25 +113,11 @@ class DielectronCut : public TNamed
     ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
     ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
 
-    double Ptot1 = TMath::Sqrt(v1.Px() * v1.Px() + v1.Py() * v1.Py() + v1.Pz() * v1.Pz());
-    double Ptot2 = TMath::Sqrt(v2.Px() * v2.Px() + v2.Py() * v2.Py() + v2.Pz() * v2.Pz());
-
     float dca_t1_3d = dca3DinSigma(t1);
     float dca_t2_3d = dca3DinSigma(t2);
     float dca_ee_3d = std::sqrt((dca_t1_3d * dca_t1_3d + dca_t2_3d * dca_t2_3d) / 2.);
     float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), bz);
-    float opAng = 0;
-
-    double scalar_product = v1.Px() * v2.Px() + v1.Py() * v2.Py() + v1.Pz() * v2.Pz();
-    double Ptot12 = Ptot1 * Ptot2;
-    if (Ptot12 > 0) {
-      double arg = scalar_product / Ptot12;
-      if (arg > 1.)
-        arg = 1.;
-      if (arg < -1)
-        arg = -1;
-      opAng = TMath::ACos(arg);
-    }
+    float opAng = o2::aod::pwgem::dilepton::utils::pairutil::getOpeningAngle(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz());
 
     if (v12.M() < mMinMee || mMaxMee < v12.M()) {
       return false;
@@ -469,8 +455,8 @@ class DielectronCut : public TNamed
   std::function<float(float)> mMaxPhivPairMeeDep{}; // max phiv as a function of mee
   bool mSelectPC{false};                            // flag to select photon conversion used in mMaxPhivPairMeeDep
   bool mApplydEtadPhi{false};                       // flag to apply deta, dphi cut between 2 tracks
-  float mMinDeltaEta{0.f}, mMaxDeltaEta{1e10f};
-  float mMinDeltaPhi{0.f}, mMaxDeltaPhi{1e10f};
+  float mMinDeltaEta{-1e10f}, mMaxDeltaEta{1e10f};
+  float mMinDeltaPhi{-1e10f}, mMaxDeltaPhi{1e10f};
   float mMinOpAng{0.f}, mMaxOpAng{1e10f};
 
   // kinematic cuts

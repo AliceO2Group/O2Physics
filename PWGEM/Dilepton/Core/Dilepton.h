@@ -809,9 +809,6 @@ struct Dilepton {
     ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), leptonM2);
     ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
 
-    double Ptot1 = TMath::Sqrt(v1.Px() * v1.Px() + v1.Py() * v1.Py() + v1.Pz() * v1.Pz());
-    double Ptot2 = TMath::Sqrt(v2.Px() * v2.Px() + v2.Py() * v2.Py() + v2.Pz() * v2.Pz());
-
     float dca_t1 = 999.f, dca_t2 = 999.f, pair_dca = 999.f;
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
       dca_t1 = dca3DinSigma(t1);
@@ -833,17 +830,7 @@ struct Dilepton {
       float deta = v1.Eta() - v2.Eta();
       float dphi = v1.Phi() - v2.Phi();
       o2::math_utils::bringToPMPi(dphi);
-      float opAng = 0;
-      double scalar_product = v1.Px() * v2.Px() + v1.Py() * v2.Py() + v1.Pz() * v2.Pz();
-      double Ptot12 = Ptot1 * Ptot2;
-      if (Ptot12 > 0) {
-        double arg = scalar_product / Ptot12;
-        if (arg > 1.)
-          arg = 1.;
-        if (arg < -1)
-          arg = -1;
-        opAng = TMath::ACos(arg);
-      }
+      float opAng = o2::aod::pwgem::dilepton::utils::pairutil::getOpeningAngle(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz());
 
       if (t1.sign() * t2.sign() < 0) { // ULS
         fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), pair_dca, weight);
