@@ -391,7 +391,7 @@ struct spvector {
             qxZDCA = qxZDCA + ampl * x[iChA];
             qyZDCA = qyZDCA + ampl * y[iChA];
             sumA = sumA + ampl;
-            histos.fill(HIST("ZDCAmp"), chanelid + 0.5, vz, centrality, ampl);
+            histos.fill(HIST("ZDCAmp"), chanelid + 0.5, vz, ampl);
             // histos.fill(HIST("hZDCAmp"), chanelid + 0.5, vz, centrality, ampl);
           }
         } else {
@@ -407,7 +407,7 @@ struct spvector {
             qxZDCC = qxZDCC - ampl * x[iChA - 4];
             qyZDCC = qyZDCC + ampl * y[iChA - 4];
             sumC = sumC + ampl;
-            histos.fill(HIST("ZDCAmp"), chanelid + 0.5, vz, centrality, ampl);
+            histos.fill(HIST("ZDCAmp"), chanelid + 0.5, vz, ampl);
             // histos.fill(HIST("hZDCAmp"), chanelid + 0.5, vz, centrality, ampl);
           }
         }
