@@ -72,22 +72,22 @@ void FFitWeights::Fill(float centrality, float qn, int nh, const char* pf)
   th2->Fill(centrality, qn);
 };
 
-// Long64_t FFitWeights::Merge(TCollection* collist)
-// {
-//   Long64_t nmerged = 0;
-//   if (!fW_data) {
-//     fW_data = new TObjArray();
-//     fW_data->SetName("FFitWeights_Data");
-//     fW_data->SetOwner(kTRUE);
-//   }
-//   FFitWeights* l_w = 0;
-//   TIter all_w(collist);
-//   while ((l_w = (reinterpret_cast<FFitWeights*>(all_w())))) {
-//     AddArray(fW_data, l_w->GetDataArray());
-//     nmerged++;
-//   }
-//   return nmerged;
-// };
+Long64_t FFitWeights::Merge(TCollection* collist)
+{
+  Long64_t nmerged = 0;
+  if (!fW_data) {
+    fW_data = new TObjArray();
+    fW_data->SetName("FFitWeights_Data");
+    fW_data->SetOwner(kTRUE);
+  }
+  FFitWeights* l_w = 0;
+  TIter all_w(collist);
+  while ((l_w = (reinterpret_cast<FFitWeights*>(all_w())))) {
+    AddArray(fW_data, l_w->GetDataArray());
+    nmerged++;
+  }
+  return nmerged;
+};
 void FFitWeights::AddArray(TObjArray* targ, TObjArray* sour)
 {
   if (!sour) {
@@ -158,7 +158,6 @@ float FFitWeights::EvalSplines(float centr, const float& dqn, const int nh, cons
   TSpline3* spline = nullptr;
   spline = reinterpret_cast<TSpline3*>(tar->FindObject(Form("sp_q%i%s_%i", nh, pf, isp)));
   if (!spline) {
-    printf("Spline not found!\n");
     return -1;
   }
 

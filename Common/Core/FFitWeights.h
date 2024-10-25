@@ -52,7 +52,7 @@ class FFitWeights : public TNamed
   }
   TAxis* GetqVecAx() { return qAxis; }
 
-  // Long64_t Merge(TCollection* collist);
+  Long64_t Merge(TCollection* collist);
   void qSelectionSpline(std::vector<int> nhv, std::vector<std::string> stv);
   float EvalSplines(float centr, const float& dqn, const int nh, const char* pf = "");
   void SetResolution(int res) { nResolution = res; }
@@ -65,7 +65,7 @@ class FFitWeights : public TNamed
   TAxis* qAxis; //!
   int nResolution;
 
-  std::vector<std::pair<int, std::string>> qnTYPE; 
+  std::vector<std::pair<int, std::string>> qnTYPE;
 
   const char* GetQName(const int nh, const char* pf = "")
   {
