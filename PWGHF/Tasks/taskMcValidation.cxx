@@ -111,7 +111,7 @@ struct HfTaskMcValidationGen {
   AxisSpec axisResiduals{100, -0.01, 0.01};
   AxisSpec axisPt{100, 0., 50.};
   AxisSpec axisY{100, -5., 5.};
-  AxisSpec axisCent{100, 0., 100.};
+  AxisSpec axisCent{110, 0., 110.};
   AxisSpec axisMesonSpecies{nMesonChannels, -0.5, static_cast<float>(nMesonChannels) - 0.5};
   AxisSpec axisBaryonSpecies{nChannels - nMesonChannels, -0.5, static_cast<float>(nChannels - nMesonChannels) - 0.5};
   AxisSpec axisDecLen{100, 0., 10000.};
@@ -132,19 +132,19 @@ struct HfTaskMcValidationGen {
      {"Quarks/hPtVsYCharmQuark", "Y vs. Pt - charm quarks ; #it{p}_{T}^{gen} (GeV/#it{c}); #it{y}^{gen}", {HistType::kTH2F, {axisPt, axisY}}},
      {"Quarks/hPtVsYBeautyQuark", "Y vs. Pt - beauty quarks ; #it{p}_{T}^{gen} (GeV/#it{c}); #it{y}^{gen}", {HistType::kTH2F, {axisPt, axisY}}},
      {"PromptCharmMesons/hPromptMesonsPtDistr", "Pt distribution vs prompt charm meson in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c})", {HistType::kTH2F, {axisMesonSpecies, axisPt}}},
-     {"PromptCharmMesons/hPromptMesonsPtCentDistr", "Pt vs Cent vs distribution vs prompt charm meson in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c}); Centrality (%);", {HistType::kTH3F, {axisMesonSpecies, axisPt, axisCent}}},
+     {"PromptCharmMesons/hPromptMesonsPtCentDistr", "Pt vs Cent vs distribution vs prompt charm meson in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c}); Centrality (%)", {HistType::kTH3F, {axisMesonSpecies, axisPt, axisCent}}},
      {"PromptCharmMesons/hPromptMesonsYDistr", "Y distribution vs prompt charm meson; ; #it{y}^{gen}", {HistType::kTH2F, {axisMesonSpecies, axisY}}},
      {"PromptCharmMesons/hPromptMesonsDecLenDistr", "Decay length distribution vs prompt charm meson; ; decay length (#mum)", {HistType::kTH2F, {axisMesonSpecies, axisDecLen}}},
      {"NonPromptCharmMesons/hNonPromptMesonsPtDistr", "Pt distribution vs non-prompt charm meson in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c})", {HistType::kTH2F, {axisMesonSpecies, axisPt}}},
-     {"NonPromptCharmMesons/hNonPromptMesonsPtCentDistr", "Pt vs Cent vs distribution vs non-prompt charm meson in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c}); Centrality (%);", {HistType::kTH3F, {axisMesonSpecies, axisPt, axisCent}}},
+     {"NonPromptCharmMesons/hNonPromptMesonsPtCentDistr", "Pt vs Cent vs distribution vs non-prompt charm meson in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c}); Centrality (%)", {HistType::kTH3F, {axisMesonSpecies, axisPt, axisCent}}},
      {"NonPromptCharmMesons/hNonPromptMesonsYDistr", "Y distribution vs non-prompt charm meson; ; #it{y}^{gen}", {HistType::kTH2F, {axisMesonSpecies, axisY}}},
      {"NonPromptCharmMesons/hNonPromptMesonsDecLenDistr", "Decay length distribution vs non-prompt charm meson; ; decay length (#mum)", {HistType::kTH2F, {axisMesonSpecies, axisDecLen}}},
      {"PromptCharmBaryons/hPromptBaryonsPtDistr", "Pt distribution vs prompt charm baryon in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c})", {HistType::kTH2F, {axisBaryonSpecies, axisPt}}},
-     {"PromptCharmBaryons/hPromptBaryonsPtCentDistr", "Pt vs Cent vs distribution vs prompt charm baryons in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c}); Centrality (%);", {HistType::kTH3F, {axisBaryonSpecies, axisPt, axisCent}}},
+     {"PromptCharmBaryons/hPromptBaryonsPtCentDistr", "Pt vs Cent vs distribution vs prompt charm baryons in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c}); Centrality (%)", {HistType::kTH3F, {axisBaryonSpecies, axisPt, axisCent}}},
      {"PromptCharmBaryons/hPromptBaryonsYDistr", "Y distribution vs prompt charm baryon; ; #it{y}^{gen}", {HistType::kTH2F, {axisBaryonSpecies, axisY}}},
      {"PromptCharmBaryons/hPromptBaryonsDecLenDistr", "Decay length distribution vs prompt charm baryon; ; decay length (#mum)", {HistType::kTH2F, {axisBaryonSpecies, axisDecLen}}},
      {"NonPromptCharmBaryons/hNonPromptBaryonsPtDistr", "Pt distribution vs non-prompt charm baryon in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c})", {HistType::kTH2F, {axisBaryonSpecies, axisPt}}},
-     {"NonPromptCharmBaryons/hNonPromptBaryonsPtCentDistr", "Pt vs Cent vs distribution vs prompt charm baryons in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c}); Centrality (%);", {HistType::kTH3F, {axisBaryonSpecies, axisPt, axisCent}}},
+     {"NonPromptCharmBaryons/hNonPromptBaryonsPtCentDistr", "Pt vs Cent vs distribution vs prompt charm baryons in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c}); Centrality (%)", {HistType::kTH3F, {axisBaryonSpecies, axisPt, axisCent}}},
      {"NonPromptCharmBaryons/hNonPromptBaryonsYDistr", "Y distribution vs non-prompt charm baryon; ; #it{y}^{gen}", {HistType::kTH2F, {axisBaryonSpecies, axisY}}},
      {"NonPromptCharmBaryons/hNonPromptBaryonsDecLenDistr", "Decay length distribution vs non-prompt charm baryon; ; decay length (#mum)", {HistType::kTH2F, {axisBaryonSpecies, axisDecLen}}}}};
 
@@ -210,7 +210,7 @@ struct HfTaskMcValidationGen {
     registry.fill(HIST("hNevGen"), 1);
 
     // Slice the collisions table to get the collision info for the current MC collision
-    float centrality{-1.f};
+    float centrality{105.f};
     uint16_t rejectionMask{0};
     if constexpr (centEstimator == CentralityEstimator::FT0C) {
       rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, recoCollisions, centrality);
@@ -540,7 +540,7 @@ struct HfTaskMcValidationRec {
   AxisSpec axisEta{40, -1., 1.};
   AxisSpec axisPt{50, 0., 10.};
   AxisSpec axisPtD{100, 0., 50.};
-  AxisSpec axisCent{100, 0., 100.};
+  AxisSpec axisCent{110, 0., 110.};
   AxisSpec axisDeltaVtx{200, -1, 1.};
   AxisSpec axisDecision{2, -0.5, 1.5};
   AxisSpec axisITShits{8, -0.5, 7.5};
@@ -936,7 +936,7 @@ struct HfTaskMcValidationRec {
     // loop over collisions
     for (const auto& collision : collisions) {
       // apply event selection
-      float centrality{-1.f};
+      float centrality{105.f};
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, centEstimator, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry); // only needed to update centrality, no bitmask selection applied
       if (!collision.has_mcCollision()) {
         return;

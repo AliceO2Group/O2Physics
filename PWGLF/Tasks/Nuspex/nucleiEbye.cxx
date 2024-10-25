@@ -673,6 +673,8 @@ struct nucleiEbye {
 
   void processData(aod::CollEbyeTable const& collision, aod::NucleiEbyeTables const& tracks, aod::LambdaEbyeTables const& v0s)
   {
+    if (std::abs(collision.zvtx()) > zVtxMax)
+      return;
     histos.fill(HIST("QA/zVtx"), collision.zvtx());
     fillRecoEvent(collision, tracks, v0s, collision.centrality());
   }
@@ -681,6 +683,8 @@ struct nucleiEbye {
   void processMc(aod::CollEbyeTables const& collisions, aod::McNucleiEbyeTables const& tracksTot, aod::McLambdaEbyeTables const& v0sTot)
   {
     for (auto& collision : collisions) {
+      if (std::abs(collision.zvtx()) > zVtxMax)
+        continue;
       auto tracks = tracksTot.sliceBy(perCollTrack, collision.globalIndex());
       auto v0s = v0sTot.sliceBy(perCollV0s, collision.globalIndex());
       histos.fill(HIST("QA/zVtx"), collision.zvtx());
