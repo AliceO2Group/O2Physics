@@ -122,6 +122,7 @@ struct AngularCorrelationsInJets {
   Configurable<float> fAntinucleiTOFnsigYield{"antinucleiTOFnsigmaHighPtYield", 4.0, "[antinuclei] min TOF nsigma with high pT for yield"};
   Configurable<float> fAntinucleiTOFnsigCF{"antinucleiTOFnsigmaHighPtCF", 4.0, "[antinuclei] max TOF nsigma for CF"};
   Configurable<bool> fDeuteronAnalysis{"deuteronAnalysis", true, "true [false]: analyse (anti)deuterons [(anti)helium-3]"};
+  Configurable<bool> fUseTOFMass{"useTOFmass", true, "use TOF mass instead of pion mass if available"};
 
   Configurable<int> fBufferSize{"trackBufferSize", 2000, "Number of mixed-event tracks being stored"};
 
@@ -759,13 +760,13 @@ struct AngularCorrelationsInJets {
       return jetCounter;
     fastjet::PseudoJet subtractedJetPerp(0., 0., 0., 0.);
     subtractedJetPerp = bkgSub.doRhoAreaSub(jet, rhoPerp, rhoMPerp);
-    registryData.fill(HIST("hPtTotalSubJetPerp"), subtractedJetPerp.pt());
     fastjet::PseudoJet subtractedJetArea(0., 0., 0., 0.);
     subtractedJetArea = bkgSub.doRhoAreaSub(jet, rho, rhoM);
-    registryData.fill(HIST("hPtTotalSubJetArea"), subtractedJetArea.pt());
 
     if (subtractedJetPerp.pt() < fMinJetPt) // cut on jet w/o bkg
       return jetCounter;
+    registryData.fill(HIST("hPtTotalSubJetPerp"), subtractedJetPerp.pt());
+    registryData.fill(HIST("hPtTotalSubJetArea"), subtractedJetArea.pt());
     registryQA.fill(HIST("hRhoEstimateArea"), jet.pt(), rho);
     registryQA.fill(HIST("hRhoMEstimateArea"), jet.pt(), rhoM);
     registryQA.fill(HIST("hRhoEstimatePerp"), jet.pt(), rhoPerp);
@@ -798,8 +799,6 @@ struct AngularCorrelationsInJets {
         DeltaPhi = DeltaPhi - 2*TMath::Pi();
       double DeltaEta = constituent.eta() - jet.eta();
       double Delta = TMath::Sqrt(DeltaPhi * DeltaPhi + DeltaEta * DeltaEta);
-      std::cout << "DeltaPhi: " << DeltaPhi << ", DeltaEta: " << DeltaEta << std::endl;
-      std::cout << "Delta: " << Delta << ", maxRadius: " << maxRadius << std::endl;
       registryQA.fill(HIST("hJetConeRadius"), Delta);
       if (Delta > maxRadius)
         maxRadius = Delta;
@@ -1060,15 +1059,18 @@ struct AngularCorrelationsInJets {
         continue;
 
       double mass;
-      if (track.hasTOF()) {
-        mass = track.mass(); // check reliability, maybe use only pion mass
-        registryQA.fill(HIST("hTOFmass"), track.pt(), track.mass());
-        registryData.fill(HIST("hTrackProtocol"), 1);
+      if (fUseTOFMass) {
+        if (track.hasTOF()) {
+          mass = track.mass(); // check reliability, maybe use only pion mass
+          registryQA.fill(HIST("hTOFmass"), track.pt(), track.mass());
+          registryData.fill(HIST("hTrackProtocol"), 1);
+        } else {
+          mass = 0.139; // pion mass as default, ~80% are pions
+          registryData.fill(HIST("hTrackProtocol"), 2);
+        }
       } else {
-        mass = 0.139; // pion mass as default, ~80% are pions
-        registryData.fill(HIST("hTrackProtocol"), 2);
+        mass = 0.139;
       }
-      // double mass = 0.139;
 
       // if (track.pt() > fMinLeadingPt) {
       //   leadingID = track.globalIndex();
@@ -1129,7 +1131,7 @@ struct AngularCorrelationsInJets {
     }
     registryData.fill(HIST("hNumJetsInEvent"), jetCounter);
 
-    TVector3 hardestJetAxis(jets.at(0).px(), jets.at(0).py(), jets.at(0).pz());
+    TVector3 hardestJetAxis(jets.at(0).px(), jets.at(0).py(), jets.at(0).pz()); // for full event, use hardest jet as orientation
     doCorrelations(particlesForCF, fBufferFull, fTempBufferFull, -1, hardestJetAxis);
     setTrackBuffer(fTempBufferFull, fBufferFull);
   }
