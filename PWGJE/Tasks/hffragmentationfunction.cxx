@@ -188,6 +188,11 @@ struct HfFragmentationFunctionTask {
 
   // Histogram registry: an object to hold your histograms
   HistogramRegistry registry{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  
+  Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
+  Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
+
+  int eventSelection = -1;
 
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
@@ -340,6 +345,34 @@ struct HfFragmentationFunctionTask {
             selectedAs = -1;
           }
 
+          if (mcdjet.has_matchedJetCand()) {
+            registry.fill(HIST("h_jet_counter"), 1.5);
+          }
+          
+          // reflection information for storage: +1 = D0, -1 = D0bar, 0 = neither
+          int matchedFrom = 0;
+          int selectedAs = -1;
+          
+          int decayChannel = 1 << aod::hf_cand_2prong::DecayType::D0ToPiK;
+          
+          if (mcdd0cand.flagMcMatchRec() == decayChannel) { // matched to D0 on truth level
+            matchedFrom = 1;
+            if (!mcdd0cand.candidateSelFlag()) { //CandidateSelFlag == 0 -> selected as D0, CandidateSelFlag == 1 -> selected as D0bar
+              selectedAs = 1;
+            }
+            
+          } else if (mcdd0cand.flagMcMatchRec() == -decayChannel) { // matched to D0bar on truth level
+            matchedFrom = -1;
+            if (!mcdd0cand.candidateSelFlag()) {
+              selectedAs = 1;
+            }
+          } else { // matched to another kind of particle on truth level
+            matchedFrom = 0;
+            if (!mcdd0cand.candidateSelFlag()) {
+              selectedAs = 1;
+            }
+          }
+
           // store data in MC detector level table
           mcddistJetTable(jetutilities::deltaR(mcdjet, mcdd0cand),
                           mcdjet.pt(), mcdjet.eta(), mcdjet.phi(), mcdjet.tracks_as<aod::JetTracks>().size(),                                                         // detector level jet
@@ -452,6 +485,7 @@ struct HfFragmentationFunctionTask {
     }
   }
   PROCESS_SWITCH(HfFragmentationFunctionTask, processMcChargedMatched, "matched MC HF and jets", false);
+
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
