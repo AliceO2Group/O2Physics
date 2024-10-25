@@ -1175,12 +1175,14 @@ struct UpcTauCentralBarrelRL {
       auto acoplanarity = calculateAcoplanarity(daug[0].Phi(), daug[1].Phi());
       auto sign = trkDaug1.sign() * trkDaug2.sign();
       bool passAvgITSclsSizesCut = passITSAvgClsSizesLowMomCut(trkDaug1, cutAvgITSclusterSize, cutPtAvgITSclusterSize) && passITSAvgClsSizesLowMomCut(trkDaug2, cutAvgITSclusterSize, cutPtAvgITSclusterSize);
-      if (applyTauEventSelection){
-        if (sign > 0) return;
-        if (acoplanarity > 4 * o2::constants::math::PI / 5) return; // max opening angle 144 degrees (I hope, check)
-//        if (daug[0].Pt() < 0.2 || daug[1].Pt() < 0.2) return;
-//        if (motherOfPions.M() > 0.55 || motherOfPions.M() < 1.05) return;
-//        if (!trkDaug1.hasTOF() || !trkDaug2.hasTOF()) return;
+      if (applyTauEventSelection) {
+        if (sign > 0)
+          return;
+        if (acoplanarity > 4 * o2::constants::math::PI / 5)
+          return; // max opening angle 144 degrees (I hope, check)
+                  //        if (daug[0].Pt() < 0.2 || daug[1].Pt() < 0.2) return;
+                  //        if (motherOfPions.M() > 0.55 || motherOfPions.M() < 1.05) return;
+                  //        if (!trkDaug1.hasTOF() || !trkDaug2.hasTOF()) return;
       }
 
       histos.get<TH1>(HIST("EventTwoTracks/hInvariantMass"))->Fill(mother.M());
