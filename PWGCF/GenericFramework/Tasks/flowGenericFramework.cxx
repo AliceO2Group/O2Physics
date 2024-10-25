@@ -15,6 +15,7 @@
 #include <algorithm>
 #include <numeric>
 #include <vector>
+#include <complex>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -84,6 +85,7 @@ struct GenericFramework {
   O2_DEFINE_CONFIGURABLE(cfgUseAdditionalEventCut, bool, false, "Use additional event cut on mult correlations")
   O2_DEFINE_CONFIGURABLE(cfgUseAdditionalTrackCut, bool, false, "Use additional track cut on phi")
   O2_DEFINE_CONFIGURABLE(cfgUseCentralMoments, bool, true, "Use central moments in vn-pt calculations")
+  O2_DEFINE_CONFIGURABLE(cfgUseGapMethod, bool, false, "Use gap method in vn-pt calculations")
   O2_DEFINE_CONFIGURABLE(cfgEfficiency, std::string, "", "CCDB path to efficiency object")
   O2_DEFINE_CONFIGURABLE(cfgAcceptance, std::string, "", "CCDB path to acceptance object")
   O2_DEFINE_CONFIGURABLE(cfgDCAxy, float, 0.2, "Cut on DCA in the transverse direction (cm)");
@@ -92,6 +94,7 @@ struct GenericFramework {
   O2_DEFINE_CONFIGURABLE(cfgPtmin, float, 0.2, "minimum pt (GeV/c)");
   O2_DEFINE_CONFIGURABLE(cfgPtmax, float, 10, "maximum pt (GeV/c)");
   O2_DEFINE_CONFIGURABLE(cfgEta, float, 0.8, "eta cut");
+  O2_DEFINE_CONFIGURABLE(cfgEtaPtPt, float, 0.4, "eta cut for pt-pt correlations");
   O2_DEFINE_CONFIGURABLE(cfgVtxZ, float, 10, "vertex cut (cm)");
   O2_DEFINE_CONFIGURABLE(cfgMagField, float, 99999, "Configurable magnetic field; default CCDB will be queried");
 
@@ -241,6 +244,7 @@ struct GenericFramework {
     }
     delete oba;
     fFCpt->SetUseCentralMoments(cfgUseCentralMoments);
+    fFCpt->SetUseGapMethod(cfgUseGapMethod);
     fFCpt->Initialise(multAxis, cfgMpar, configs, cfgNbootstrap);
     // Event selection - Alex
     if (cfgUseAdditionalEventCut) {
@@ -421,6 +425,8 @@ struct GenericFramework {
     fFCpt->CalculateCorrelations();
     fFCpt->FillPtProfiles(centmult, rndm);
     fFCpt->FillCMProfiles(centmult, rndm);
+    if (!cfgUseGapMethod)
+      fFCpt->FillVnPtStdProfiles(centmult, rndm);
     for (uint l_ind = 0; l_ind < corrconfigs.size(); ++l_ind) {
       auto dnx = fGFW->Calculate(corrconfigs.at(l_ind), 0, kTRUE).real();
       if (dnx == 0)
@@ -429,7 +435,8 @@ struct GenericFramework {
         auto val = fGFW->Calculate(corrconfigs.at(l_ind), 0, kFALSE).real() / dnx;
         if (TMath::Abs(val) < 1) {
           (dt == kGen) ? fFC_gen->FillProfile(corrconfigs.at(l_ind).Head.c_str(), centmult, val, dnx, rndm) : fFC->FillProfile(corrconfigs.at(l_ind).Head.c_str(), centmult, val, dnx, rndm);
-          fFCpt->FillVnPtProfiles(centmult, val, dnx, rndm, configs.GetpTCorrMasks()[l_ind]);
+          if (cfgUseGapMethod)
+            fFCpt->FillVnPtProfiles(centmult, val, dnx, rndm, configs.GetpTCorrMasks()[l_ind]);
         }
         continue;
       }
@@ -455,6 +462,7 @@ struct GenericFramework {
     float vtxz = collision.posZ();
     fGFW->Clear();
     fFCpt->ClearVector();
+    fFCpt->ClearArray();
     float l_Random = fRndm->Rndm();
     for (auto& track : tracks) {
       ProcessTrack(track, centrality, vtxz, field);
@@ -520,7 +528,14 @@ struct GenericFramework {
   template <typename TrackObject>
   inline void FillGFW(TrackObject track, float weff, float wacc)
   {
-    fFCpt->Fill(weff, track.pt());
+    if (fabs(track.eta()) < cfgEtaPtPt)
+      fFCpt->Fill(weff, track.pt());
+    std::complex<double> q2p = {weff * wacc * cos(2 * track.phi()), weff * wacc * sin(2 * track.phi())};
+    std::complex<double> q2n = {weff * wacc * cos(-2 * track.phi()), weff * wacc * sin(-2 * track.phi())};
+    if (!cfgUseGapMethod) {
+      fFCpt->FillArray(q2p, q2n, weff * track.pt(), weff);
+      fFCpt->FillArray(weff * wacc, weff * wacc, weff, weff);
+    }
     bool WithinPtPOI = (ptpoilow < track.pt()) && (track.pt() < ptpoiup); // within POI pT range
     bool WithinPtRef = (ptreflow < track.pt()) && (track.pt() < ptrefup); // within RF pT range
     if (WithinPtRef)
