@@ -75,7 +75,6 @@ struct EmcalCorrectionTask {
   Configurable<int> selectedCellType{"selectedCellType", 1, "EMCAL Cell type"};
   Configurable<std::string> clusterDefinitions{"clusterDefinition", "kV3Default", "cluster definition to be selected, e.g. V3Default. Multiple definitions can be specified separated by comma"};
   Configurable<float> maxMatchingDistance{"maxMatchingDistance", 0.4f, "Max matching distance track-cluster"};
-  Configurable<bool> hasPropagatedTracks{"hasPropagatedTracks", false, "temporary flag, only set to true when running over data which has the tracks propagated to EMCal/PHOS!"};
   Configurable<std::string> nonlinearityFunction{"nonlinearityFunction", "DATA_TestbeamFinal", "Nonlinearity correction at cluster level"};
   Configurable<bool> disableNonLin{"disableNonLin", false, "Disable NonLin correction if set to true"};
   Configurable<bool> hasShaperCorrection{"hasShaperCorrection", true, "Apply correction for shaper saturation"};
@@ -179,26 +178,27 @@ struct EmcalCorrectionTask {
       etaAxis{160, -0.8, 0.8, "#eta"},
       phiAxis{72, 0, 2 * 3.14159, "phi"};
     mHistManager.add("hCellE", "hCellE", o2HistType::kTH1F, {energyAxis});
-    mHistManager.add("hCellTowerID", "hCellTowerID", o2HistType::kTH1I, {{20000, 0, 20000}});
+    mHistManager.add("hCellTowerID", "hCellTowerID", o2HistType::kTH1D, {{20000, 0, 20000}});
     mHistManager.add("hCellEtaPhi", "hCellEtaPhi", o2HistType::kTH2F, {etaAxis, phiAxis});
     // NOTE: Reversed column and row because it's more natural for presentation.
-    mHistManager.add("hCellRowCol", "hCellRowCol;Column;Row", o2HistType::kTH2I, {{97, 0, 97}, {600, 0, 600}});
+    mHistManager.add("hCellRowCol", "hCellRowCol;Column;Row", o2HistType::kTH2D, {{97, 0, 97}, {600, 0, 600}});
     mHistManager.add("hClusterE", "hClusterE", o2HistType::kTH1F, {energyAxis});
     mHistManager.add("hClusterEtaPhi", "hClusterEtaPhi", o2HistType::kTH2F, {etaAxis, phiAxis});
     mHistManager.add("hGlobalTrackEtaPhi", "hGlobalTrackEtaPhi", o2HistType::kTH2F, {etaAxis, phiAxis});
-    mHistManager.add("hGlobalTrackMult", "hGlobalTrackMult", o2HistType::kTH1I, {{200, -0.5, 199.5, "N_{trk}"}});
-    mHistManager.add("hCollisionType", "hCollisionType;;#it{count}", o2HistType::kTH1I, {{3, -0.5, 2.5}});
+    mHistManager.add("hGlobalTrackMult", "hGlobalTrackMult", o2HistType::kTH1D, {{200, -0.5, 199.5, "N_{trk}"}});
+    mHistManager.add("hCollisionType", "hCollisionType;;#it{count}", o2HistType::kTH1D, {{3, -0.5, 2.5}});
     auto hCollisionType = mHistManager.get<TH1>(HIST("hCollisionType"));
     hCollisionType->GetXaxis()->SetBinLabel(1, "no collision");
     hCollisionType->GetXaxis()->SetBinLabel(2, "normal collision");
     hCollisionType->GetXaxis()->SetBinLabel(3, "mult. collisions");
-    mHistManager.add("hClusterType", "hClusterType;;#it{count}", o2HistType::kTH1I, {{3, -0.5, 2.5}});
+    mHistManager.add("hClusterType", "hClusterType;;#it{count}", o2HistType::kTH1D, {{3, -0.5, 2.5}});
     auto hClusterType = mHistManager.get<TH1>(HIST("hClusterType"));
     hClusterType->GetXaxis()->SetBinLabel(1, "no collision");
     hClusterType->GetXaxis()->SetBinLabel(2, "normal collision");
     hClusterType->GetXaxis()->SetBinLabel(3, "mult. collisions");
-    mHistManager.add("hCollPerBC", "hCollPerBC;#it{N}_{coll.};#it{count}", o2HistType::kTH1I, {{100, -0.5, 99.5}});
+    mHistManager.add("hCollPerBC", "hCollPerBC;#it{N}_{coll.};#it{count}", o2HistType::kTH1D, {{100, -0.5, 99.5}});
     mHistManager.add("hBC", "hBC;;#it{count}", o2HistType::kTH1D, {{8, -0.5, 7.5}});
+    mHistManager.add("hCollisionTimeReso", "hCollisionTimeReso;#Delta t_{coll};#it{count}", o2HistType::kTH1D, {{2000, 0, 2000}});
     auto hBC = mHistManager.get<TH1>(HIST("hBC"));
     hBC->GetXaxis()->SetBinLabel(1, "with EMCal cells");
     hBC->GetXaxis()->SetBinLabel(2, "with EMCal cells but no collision");
@@ -284,6 +284,7 @@ struct EmcalCorrectionTask {
           // dummy loop to get the first collision
           for (const auto& col : collisionsInFoundBC) {
             if (col.foundBCId() == bc.globalIndex()) {
+              mHistManager.fill(HIST("hCollisionTimeReso"), col.collisionTimeRes());
               mHistManager.fill(HIST("hCollPerBC"), 1);
               mHistManager.fill(HIST("hCollisionType"), 1);
               math_utils::Point3D<float> vertex_pos = {col.posX(), col.posY(), col.posZ()};
@@ -719,18 +720,10 @@ struct EmcalCorrectionTask {
         continue;
       }
       NTrack++;
-      if (hasPropagatedTracks) { // only temporarily while not every data
-                                 // has the tracks propagated to EMCal/PHOS
-        trackPhi.emplace_back(TVector2::Phi_0_2pi(track.trackPhiEmcal()));
-        trackEta.emplace_back(track.trackEtaEmcal());
-        mHistManager.fill(HIST("hGlobalTrackEtaPhi"), track.trackEtaEmcal(),
-                          TVector2::Phi_0_2pi(track.trackPhiEmcal()));
-      } else {
-        trackPhi.emplace_back(TVector2::Phi_0_2pi(track.phi()));
-        trackEta.emplace_back(track.eta());
-        mHistManager.fill(HIST("hGlobalTrackEtaPhi"), track.eta(),
-                          TVector2::Phi_0_2pi(track.phi()));
-      }
+      trackPhi.emplace_back(TVector2::Phi_0_2pi(track.trackPhiEmcal()));
+      trackEta.emplace_back(track.trackEtaEmcal());
+      mHistManager.fill(HIST("hGlobalTrackEtaPhi"), track.trackEtaEmcal(),
+                        TVector2::Phi_0_2pi(track.trackPhiEmcal()));
       trackGlobalIndex.emplace_back(track.globalIndex());
     }
     mHistManager.fill(HIST("hGlobalTrackMult"), NTrack);
