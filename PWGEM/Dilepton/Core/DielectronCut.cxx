@@ -45,6 +45,24 @@ void DielectronCut::SetMeeRange(float min, float max)
   mMaxMee = max;
   LOG(info) << "Dielectron Cut, set mee range: " << mMinMee << " - " << mMaxMee;
 }
+void DielectronCut::SetPairDeltaEta(float minDeltaEta, float maxDeltaEta)
+{
+  mMinDeltaEta = minDeltaEta;
+  mMaxDeltaEta = maxDeltaEta;
+  LOG(info) << "Dielectron Cut, set pair delta eta range: " << mMinDeltaEta << " - " << mMaxDeltaEta;
+}
+void DielectronCut::SetPairDeltaPhi(float minDeltaPhi, float maxDeltaPhi)
+{
+  mMinDeltaPhi = minDeltaPhi;
+  mMaxDeltaPhi = maxDeltaPhi;
+  LOG(info) << "Dielectron Cut, set pair delta phi range: " << mMinDeltaEta << " - " << mMaxDeltaEta;
+}
+void DielectronCut::SetPairOpAng(float minOpAng, float maxOpAng)
+{
+  mMinOpAng = minOpAng;
+  mMaxOpAng = maxOpAng;
+  LOG(info) << "Dielectron Cut, set pair opening angle range: " << mMinDeltaEta << " - " << mMaxDeltaEta;
+}
 void DielectronCut::SetMaxPhivPairMeeDep(std::function<float(float)> meeDepCut)
 {
   mMaxPhivPairMeeDep = meeDepCut;
