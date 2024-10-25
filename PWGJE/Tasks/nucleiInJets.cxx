@@ -564,8 +564,7 @@ struct nucleiInJets {
       double RPerpCone2 = TMath::Sqrt((delEta * delEta) + (delPhiPerpCone2 * delPhiPerpCone2));
       if (RPerpCone1 < cfgjetR || RPerpCone2 < cfgjetR)
         jetFlagPerpCone = true;
-    } // only leading jet
-    else {
+    } else {
       for (auto const& jet : jets) {
         double delPhi = TVector2::Phi_mpi_pi(jet.phi() - trk.phi());
         double delEta = jet.eta() - trk.eta();
