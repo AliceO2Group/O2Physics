@@ -34,6 +34,11 @@ o2physics_add_dpl_workflow(straevselsconverter2
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::ITStracking
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(straevselsconverter3
+                    SOURCES straevselsconverter3.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::ITStracking
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(straevselsconverter2rawcents
                     SOURCES straevselsconverter2rawcents.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -41,6 +46,11 @@ o2physics_add_dpl_workflow(straevselsconverter2rawcents
 
 o2physics_add_dpl_workflow(straevselsconverter2rawcents2
                     SOURCES straevselsconverter2rawcents2.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(straevselsconverter2rawcents3
+                    SOURCES straevselsconverter2rawcents3.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
