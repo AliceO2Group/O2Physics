@@ -44,7 +44,7 @@ using namespace o2::framework::expressions;
 struct TrackEfficiencyJets {
   Service<o2::framework::O2DatabasePDG> pdg;
 
-  using JetParticlesWithOriginal = soa::Join<JetParticles, aod::JMcParticlePIs>;
+  using JetParticlesWithOriginal = soa::Join<aod::JetParticles, aod::JMcParticlePIs>;
 
   HistogramRegistry registry;
 
@@ -217,16 +217,16 @@ struct TrackEfficiencyJets {
     }
   }
 
-  Preslice<JetTracksMCD> tracksPerJCollision = o2::aod::jtrack::collisionId;
+  Preslice<aod::JetTracksMCD> tracksPerJCollision = o2::aod::jtrack::collisionId;
 
   // filters for processTracks QA functions only:
   Filter trackCuts = (aod::jtrack::pt >= trackQAPtMin && aod::jtrack::pt < trackQAPtMax && aod::jtrack::eta > trackQAEtaMin && aod::jtrack::eta < trackQAEtaMax);
   Filter particleCuts = (aod::jmcparticle::pt >= trackQAPtMin && aod::jmcparticle::pt < trackQAPtMax && aod::jmcparticle::eta > trackQAEtaMin && aod::jmcparticle::eta < trackQAEtaMax);
   Filter eventCuts = (nabs(aod::jcollision::posZ) < vertexZCut && aod::jcollision::centrality >= centralityMin && aod::jcollision::centrality < centralityMax);
 
-  void processEFficiencyPurity(JetMcCollision const& mcCollision,
-                               soa::SmallGroups<JetCollisionsMCD> const& collisions, // smallgroups gives only the collisions associated to the current mccollision, thanks to the mccollisionlabel pre-integrated in jetcollisionsmcd
-                               soa::Join<JetTracksMCD, aod::JTrackExtras> const& jetTracks,
+  void processEFficiencyPurity(aod::JetMcCollision const& mcCollision,
+                               soa::SmallGroups<aod::JetCollisionsMCD> const& collisions, // smallgroups gives only the collisions associated to the current mccollision, thanks to the mccollisionlabel pre-integrated in jetcollisionsmcd
+                               soa::Join<aod::JetTracksMCD, aod::JTrackExtras> const& jetTracks,
                                JetParticlesWithOriginal const& jMcParticles)
   {
     // missing:
@@ -384,8 +384,8 @@ struct TrackEfficiencyJets {
   }
   PROCESS_SWITCH(TrackEfficiencyJets, processEFficiencyPurity, "Histograms for efficiency and purity quantities", true);
 
-  void processTracks(soa::Filtered<JetCollisions>::iterator const& collision,
-                     soa::Filtered<soa::Join<JetTracks, aod::JTrackExtras>> const& tracks)
+  void processTracks(soa::Filtered<aod::JetCollisions>::iterator const& collision,
+                     soa::Filtered<soa::Join<aod::JetTracks, aod::JTrackExtras>> const& tracks)
   {
     registry.fill(HIST("h_collisions"), 0.5);
     registry.fill(HIST("h2_centrality_collisions"), collision.centrality(), 0.5);
@@ -403,9 +403,9 @@ struct TrackEfficiencyJets {
   }
   PROCESS_SWITCH(TrackEfficiencyJets, processTracks, "QA for charged tracks", false);
 
-  void processTracksWeighted(soa::Join<JetCollisions, aod::JMcCollisionLbs>::iterator const& collision,
-                             JetMcCollisions const&,
-                             soa::Filtered<soa::Join<JetTracks, aod::JTrackExtras>> const& tracks)
+  void processTracksWeighted(soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>::iterator const& collision,
+                             aod::JetMcCollisions const&,
+                             soa::Filtered<soa::Join<aod::JetTracks, aod::JTrackExtras>> const& tracks)
   {
     float eventWeight = collision.mcCollision().weight();
     registry.fill(HIST("h_collisions"), 0.5);
@@ -424,9 +424,9 @@ struct TrackEfficiencyJets {
   }
   PROCESS_SWITCH(TrackEfficiencyJets, processTracksWeighted, "QA for charged tracks weighted", false);
 
-  void processParticles(JetMcCollision const& mcCollision,
-                        soa::SmallGroups<JetCollisionsMCD> const& collisions,
-                        soa::Filtered<JetParticles> const& mcparticles)
+  void processParticles(aod::JetMcCollision const& mcCollision,
+                        soa::SmallGroups<aod::JetCollisionsMCD> const& collisions,
+                        soa::Filtered<aod::JetParticles> const& mcparticles)
   {
     registry.fill(HIST("h_mccollisions"), 0.5);
     registry.fill(HIST("h2_centrality_mccollisions"), collisions.begin().centrality(), 0.5);
@@ -473,9 +473,9 @@ struct TrackEfficiencyJets {
   }
   PROCESS_SWITCH(TrackEfficiencyJets, processParticles, "QA for charged particles", false);
 
-  void processParticlesWeighted(JetMcCollision const& mcCollision,
-                                soa::SmallGroups<JetCollisionsMCD> const& collisions,
-                                soa::Filtered<JetParticles> const& mcparticles)
+  void processParticlesWeighted(aod::JetMcCollision const& mcCollision,
+                                soa::SmallGroups<aod::JetCollisionsMCD> const& collisions,
+                                soa::Filtered<aod::JetParticles> const& mcparticles)
   {
     float eventWeight = mcCollision.weight();
     registry.fill(HIST("h_mccollisions"), 0.5);
