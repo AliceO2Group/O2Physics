@@ -467,10 +467,11 @@ struct UpcCandProducer {
     return hasNoFT0;
   }
 
+  template <typename TBCs>
   void processFITInfo(upchelpers::FITInfo& fitInfo,
                       uint64_t midbc,
                       std::vector<std::pair<uint64_t, int64_t>>& v,
-                      BCsWithBcSels const& bcs,
+                      TBCs const& bcs,
                       o2::aod::FT0s const& /*ft0s*/,
                       o2::aod::FDDs const& /*fdds*/,
                       o2::aod::FV0As const& /*fv0as*/)
@@ -721,9 +722,10 @@ struct UpcCandProducer {
     return 0; // found exactly tracksToFind tracks in [midbc - range, midbc + range]
   }
 
+  template <typename TBCs>
   void createCandidatesCentral(BarrelTracks const& barrelTracks,
                                o2::aod::AmbiguousTracks const& ambBarrelTracks,
-                               BCsWithBcSels const& bcs,
+                               TBCs const& bcs,
                                o2::aod::Collisions const& collisions,
                                o2::aod::FT0s const& ft0s,
                                o2::aod::FDDs const& /*fdds*/,
@@ -738,7 +740,7 @@ struct UpcCandProducer {
     // trackID -> index in amb. track table
     std::unordered_map<int64_t, uint64_t> ambBarrelTrBCs;
     if (upcCuts.getAmbigSwitch() != 1)
-      collectAmbTrackBCs<0, o2::aod::BCs>(ambBarrelTrBCs, ambBarrelTracks);
+      collectAmbTrackBCs<0, BCsWithBcSels>(ambBarrelTrBCs, ambBarrelTracks);
 
     collectBarrelTracks(bcsMatchedTrIdsTOF,
                         0,
@@ -759,7 +761,7 @@ struct UpcCandProducer {
     std::map<uint64_t, int32_t> mapGlobalBcWithTVX{};
     std::map<uint64_t, int32_t> mapGlobalBcWithTSC{};
     for (const auto& ft0 : ft0s) {
-      uint64_t globalBC = ft0.bc_as<o2::aod::BCs>().globalBC();
+      uint64_t globalBC = ft0.bc_as<TBCs>().globalBC();
       int32_t globalIndex = ft0.globalIndex();
       if (!(std::abs(ft0.timeA()) > 2.f && std::abs(ft0.timeC()) > 2.f))
         mapGlobalBcWithTOR[globalBC] = globalIndex;
@@ -780,7 +782,7 @@ struct UpcCandProducer {
     for (const auto& fv0a : fv0as) {
       if (std::abs(fv0a.time()) > 15.f)
         continue;
-      uint64_t globalBC = fv0a.bc_as<o2::aod::BCs>().globalBC();
+      uint64_t globalBC = fv0a.bc_as<TBCs>().globalBC();
       mapGlobalBcWithV0A[globalBC] = fv0a.globalIndex();
     }
 
@@ -792,7 +794,7 @@ struct UpcCandProducer {
         histRegistry.get<TH1>(HIST("hCountersTrg"))->Fill("ZNA", 1);
       if (!(std::abs(zdc.timeZNC()) > 2.f))
         histRegistry.get<TH1>(HIST("hCountersTrg"))->Fill("ZNC", 1);
-      auto globalBC = zdc.bc_as<o2::aod::BCs>().globalBC();
+      auto globalBC = zdc.bc_as<TBCs>().globalBC();
       mapGlobalBcWithZdc[globalBC] = zdc.globalIndex();
     }
 
@@ -1011,12 +1013,13 @@ struct UpcCandProducer {
     bcsMatchedTrIdsTOF.clear();
   }
 
+  template <typename TBCs>
   void createCandidatesSemiFwd(BarrelTracks const& barrelTracks,
                                o2::aod::AmbiguousTracks const& ambBarrelTracks,
                                ForwardTracks const& fwdTracks,
                                o2::aod::FwdTrkCls const& /*fwdTrkClusters*/,
                                o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
-                               BCsWithBcSels const& bcs,
+                               TBCs const& bcs,
                                o2::aod::Collisions const& collisions,
                                o2::aod::FT0s const& ft0s,
                                o2::aod::FDDs const& fdds,
@@ -1220,10 +1223,11 @@ struct UpcCandProducer {
     }
   }
 
+  template <typename TBCs>
   void createCandidatesFwd(ForwardTracks const& fwdTracks,
                            o2::aod::FwdTrkCls const& fwdTrkClusters,
                            o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
-                           BCsWithBcSels const& bcs,
+                           TBCs const& bcs,
                            o2::aod::Collisions const& collisions,
                            o2::aod::FT0s const& ft0s,
                            o2::aod::FDDs const& /*fdds*/,
@@ -1237,7 +1241,7 @@ struct UpcCandProducer {
 
     // trackID -> index in amb. track table
     std::unordered_map<int64_t, uint64_t> ambFwdTrBCs;
-    collectAmbTrackBCs<1, o2::aod::BCs>(ambFwdTrBCs, ambFwdTracks);
+    collectAmbTrackBCs<1, BCsWithBcSels>(ambFwdTrBCs, ambFwdTracks);
 
     collectForwardTracks(bcsMatchedTrIdsMID,
                          o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack,
@@ -1264,7 +1268,7 @@ struct UpcCandProducer {
       }
       if (std::abs(ft0.timeA()) > 2.f)
         continue;
-      uint64_t globalBC = ft0.bc_as<o2::aod::BCs>().globalBC();
+      uint64_t globalBC = ft0.bc_as<TBCs>().globalBC();
       mapGlobalBcWithT0A[globalBC] = ft0.globalIndex();
     }
 
@@ -1274,7 +1278,7 @@ struct UpcCandProducer {
         continue;
       if (std::abs(fv0a.time()) > 15.f)
         continue;
-      uint64_t globalBC = fv0a.bc_as<o2::aod::BCs>().globalBC();
+      uint64_t globalBC = fv0a.bc_as<TBCs>().globalBC();
       mapGlobalBcWithV0A[globalBC] = fv0a.globalIndex();
     }
 
@@ -1286,7 +1290,7 @@ struct UpcCandProducer {
         histRegistry.get<TH1>(HIST("hCountersTrg"))->Fill("ZNA", 1);
       if (!(std::abs(zdc.timeZNC()) > 2.f))
         histRegistry.get<TH1>(HIST("hCountersTrg"))->Fill("ZNC", 1);
-      auto globalBC = zdc.bc_as<o2::aod::BCs>().globalBC();
+      auto globalBC = zdc.bc_as<TBCs>().globalBC();
       mapGlobalBcWithZdc[globalBC] = zdc.globalIndex();
     }
 
@@ -1423,10 +1427,11 @@ struct UpcCandProducer {
     mapGlobalBcWithV0A.clear();
   }
 
+  template <typename TBCs>
   void createCandidatesFwdGlobal(ForwardTracks const& fwdTracks,
                                  o2::aod::FwdTrkCls const& /*fwdTrkClusters*/,
                                  o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
-                                 BCsWithBcSels const& bcs,
+                                 TBCs const& bcs,
                                  o2::aod::Collisions const& collisions,
                                  o2::aod::FT0s const& ft0s,
                                  o2::aod::FDDs const& /*fdds*/,
@@ -1441,7 +1446,7 @@ struct UpcCandProducer {
 
     // trackID -> index in amb. track table
     std::unordered_map<int64_t, uint64_t> ambFwdTrBCs;
-    collectAmbTrackBCs<1, o2::aod::BCs>(ambFwdTrBCs, ambFwdTracks);
+    collectAmbTrackBCs<1, BCsWithBcSels>(ambFwdTrBCs, ambFwdTracks);
 
     collectForwardTracks(bcsMatchedTrIdsMID,
                          o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack,
@@ -1476,7 +1481,7 @@ struct UpcCandProducer {
       }
       if (std::abs(ft0.timeA()) > 2.f)
         continue;
-      uint64_t globalBC = ft0.bc_as<o2::aod::BCs>().globalBC();
+      uint64_t globalBC = ft0.bc_as<TBCs>().globalBC();
       mapGlobalBcWithT0A[globalBC] = ft0.globalIndex();
     }
 
@@ -1486,7 +1491,7 @@ struct UpcCandProducer {
         continue;
       if (std::abs(fv0a.time()) > 15.f)
         continue;
-      uint64_t globalBC = fv0a.bc_as<o2::aod::BCs>().globalBC();
+      uint64_t globalBC = fv0a.bc_as<TBCs>().globalBC();
       mapGlobalBcWithV0A[globalBC] = fv0a.globalIndex();
     }
 
@@ -1498,7 +1503,7 @@ struct UpcCandProducer {
         histRegistry.get<TH1>(HIST("hCountersTrg"))->Fill("ZNA", 1);
       if (!(std::abs(zdc.timeZNC()) > 2.f))
         histRegistry.get<TH1>(HIST("hCountersTrg"))->Fill("ZNC", 1);
-      auto globalBC = zdc.bc_as<o2::aod::BCs>().globalBC();
+      auto globalBC = zdc.bc_as<TBCs>().globalBC();
       mapGlobalBcWithZdc[globalBC] = zdc.globalIndex();
     }
 
