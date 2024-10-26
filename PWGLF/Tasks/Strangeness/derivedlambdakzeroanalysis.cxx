@@ -87,9 +87,14 @@ struct derivedlambdakzeroanalysis {
   Configurable<bool> requireIsVertexTOFmatched{"requireIsVertexTOFmatched", false, "require events with at least one of vertex contributors matched to TOF"};
   Configurable<bool> requireIsVertexTRDmatched{"requireIsVertexTRDmatched", false, "require events with at least one of vertex contributors matched to TRD"};
   Configurable<bool> rejectSameBunchPileup{"rejectSameBunchPileup", true, "reject collisions in case of pileup with another collision in the same foundBC"};
-  Configurable<bool> requireNoCollInTimeRangeStd{"requireNoCollInTimeRangeStd", true, "reject collisions corrupted by the cannibalism, with other collisions within +/- 10 microseconds"};
-  Configurable<bool> requireNoCollInTimeRangeNarrow{"requireNoCollInTimeRangeNarrow", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 10 microseconds"};
+  Configurable<bool> requireNoCollInTimeRangeStd{"requireNoCollInTimeRangeStd", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 2 microseconds or mult above a certain threshold in -4 - -2 microseconds"};
+  Configurable<bool> requireNoCollInTimeRangeStrict{"requireNoCollInTimeRangeStrict", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 10 microseconds"};
+  Configurable<bool> requireNoCollInTimeRangeNarrow{"requireNoCollInTimeRangeNarrow", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 2 microseconds"};
+  Configurable<bool> requireNoCollInTimeRangeVzDep{"requireNoCollInTimeRangeVzDep", false, "reject collisions corrupted by the cannibalism, with other collisions with pvZ of drifting TPC tracks from past/future collisions within 2.5 cm the current pvZ"};
+  Configurable<bool> requireNoCollInROFStd{"requireNoCollInROFStd", false, "reject collisions corrupted by the cannibalism, with other collisions within the same ITS ROF with mult. above a certain threshold"};
+  Configurable<bool> requireNoCollInROFStrict{"requireNoCollInROFStrict", false, "reject collisions corrupted by the cannibalism, with other collisions within the same ITS ROF"};
 
+  Configurable<bool> useFT0CbasedOccupancy{"useFT0CbasedOccupancy", false, "Use sum of FT0-C amplitudes for estimating occupancy? (if not, use track-based definition)"};
   // fast check on occupancy
   Configurable<float> minOccupancy{"minOccupancy", -1, "minimum occupancy from neighbouring collisions"};
   Configurable<float> maxOccupancy{"maxOccupancy", -1, "maximum occupancy from neighbouring collisions"};
@@ -393,9 +398,13 @@ struct derivedlambdakzeroanalysis {
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(9, "kIsVertexTRDmatched");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(10, "kNoSameBunchPileup");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(11, "kNoCollInTimeRangeStd");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(12, "kNoCollInTimeRangeNarrow");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(13, "Below min occup.");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(14, "Above max occup.");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(12, "kNoCollInTimeRangeStrict");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(13, "kNoCollInTimeRangeNarrow");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(14, "kNoCollInTimeRangeVzDep");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(15, "kNoCollInRofStd");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(16, "kNoCollInRofStrict");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(17, "Below min occup.");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(18, "Above max occup.");
 
     histos.add("hEventCentrality", "hEventCentrality", kTH1F, {{100, 0.0f, +100.0f}});
     histos.add("hCentralityVsNch", "hCentralityVsNch", kTH2F, {axisCentrality, axisNch});
@@ -1386,21 +1395,42 @@ struct derivedlambdakzeroanalysis {
     if (requireNoCollInTimeRangeStd && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       return;
     }
-    histos.fill(HIST("hEventSelection"), 10 /* No other collision within +/- 10 microseconds */);
+    histos.fill(HIST("hEventSelection"), 10 /* No other collision within +/- 2 microseconds or mult above a certain threshold in -4 - -2 microseconds*/);
+
+    if (requireNoCollInTimeRangeStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict)) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 11 /* No other collision within +/- 10 microseconds */);
 
     if (requireNoCollInTimeRangeNarrow && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
       return;
     }
-    histos.fill(HIST("hEventSelection"), 11 /* No other collision within +/- 4 microseconds */);
+    histos.fill(HIST("hEventSelection"), 12 /* No other collision within +/- 2 microseconds */);
 
-    if (minOccupancy > 0 && collision.trackOccupancyInTimeRange() < minOccupancy) {
+    if (requireNoCollInTimeRangeVzDep && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeVzDependent)) {
       return;
     }
-    histos.fill(HIST("hEventSelection"), 12 /* Below min occupancy */);
-    if (maxOccupancy > 0 && collision.trackOccupancyInTimeRange() > maxOccupancy) {
+    histos.fill(HIST("hEventSelection"), 13 /* No other collision with pvZ of drifting TPC tracks from past/future collisions within 2.5 cm the current pvZ */);
+
+    if (requireNoCollInROFStd && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
       return;
     }
-    histos.fill(HIST("hEventSelection"), 13 /* Above max occupancy */);
+    histos.fill(HIST("hEventSelection"), 14 /* No other collision within the same ITS ROF with mult. above a certain threshold */);
+
+    if (requireNoCollInROFStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStrict)) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 15 /* No other collision within the same ITS ROF */);
+
+    float collisionOccupancy = useFT0CbasedOccupancy ? collision.ft0cOccupancyInTimeRange() : collision.trackOccupancyInTimeRange();
+    if (minOccupancy > 0 && collisionOccupancy < minOccupancy) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 16 /* Below min occupancy */);
+    if (maxOccupancy > 0 && collisionOccupancy > maxOccupancy) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 17 /* Above max occupancy */);
 
     float centrality = collision.centFT0C();
     if (qaCentrality) {
@@ -1424,8 +1454,8 @@ struct derivedlambdakzeroanalysis {
 
     histos.fill(HIST("hCentralityVsNch"), centrality, collision.multNTracksPVeta1());
 
-    histos.fill(HIST("hEventOccupancy"), collision.trackOccupancyInTimeRange());
-    histos.fill(HIST("hCentralityVsOccupancy"), centrality, collision.trackOccupancyInTimeRange());
+    histos.fill(HIST("hEventOccupancy"), collisionOccupancy);
+    histos.fill(HIST("hCentralityVsOccupancy"), centrality, collisionOccupancy);
 
     // __________________________________________
     // perform main analysis
@@ -1516,21 +1546,42 @@ struct derivedlambdakzeroanalysis {
     if (requireNoCollInTimeRangeStd && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       return;
     }
-    histos.fill(HIST("hEventSelection"), 10 /* No other collision within +/- 10 microseconds */);
+    histos.fill(HIST("hEventSelection"), 10 /* No other collision within +/- 2 microseconds or mult above a certain threshold in -4 - -2 microseconds*/);
+
+    if (requireNoCollInTimeRangeStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict)) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 11 /* No other collision within +/- 10 microseconds */);
 
     if (requireNoCollInTimeRangeNarrow && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
       return;
     }
-    histos.fill(HIST("hEventSelection"), 11 /* No other collision within +/- 4 microseconds */);
+    histos.fill(HIST("hEventSelection"), 12 /* No other collision within +/- 2 microseconds */);
 
-    if (minOccupancy > 0 && collision.trackOccupancyInTimeRange() < minOccupancy) {
+    if (requireNoCollInTimeRangeVzDep && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeVzDependent)) {
       return;
     }
-    histos.fill(HIST("hEventSelection"), 12 /* Below min occupancy */);
-    if (maxOccupancy > 0 && collision.trackOccupancyInTimeRange() > maxOccupancy) {
+    histos.fill(HIST("hEventSelection"), 13 /* No other collision with pvZ of drifting TPC tracks from past/future collisions within 2.5 cm the current pvZ */);
+
+    if (requireNoCollInROFStd && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
       return;
     }
-    histos.fill(HIST("hEventSelection"), 13 /* Above max occupancy */);
+    histos.fill(HIST("hEventSelection"), 14 /* No other collision within the same ITS ROF with mult. above a certain threshold */);
+
+    if (requireNoCollInROFStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStrict)) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 15 /* No other collision within the same ITS ROF */);
+
+    float collisionOccupancy = useFT0CbasedOccupancy ? collision.ft0cOccupancyInTimeRange() : collision.trackOccupancyInTimeRange();
+    if (minOccupancy > 0 && collisionOccupancy < minOccupancy) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 16 /* Below min occupancy */);
+    if (maxOccupancy > 0 && collisionOccupancy > maxOccupancy) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 17 /* Above max occupancy */);
 
     float centrality = collision.centFT0C();
     if (qaCentrality) {
@@ -1554,8 +1605,8 @@ struct derivedlambdakzeroanalysis {
 
     histos.fill(HIST("hCentralityVsNch"), centrality, collision.multNTracksPVeta1());
 
-    histos.fill(HIST("hEventOccupancy"), collision.trackOccupancyInTimeRange());
-    histos.fill(HIST("hCentralityVsOccupancy"), centrality, collision.trackOccupancyInTimeRange());
+    histos.fill(HIST("hEventOccupancy"), collisionOccupancy);
+    histos.fill(HIST("hCentralityVsOccupancy"), centrality, collisionOccupancy);
 
     // __________________________________________
     // perform main analysis
@@ -1756,14 +1807,27 @@ struct derivedlambdakzeroanalysis {
         if (requireNoCollInTimeRangeStd && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
           continue;
         }
+        if (requireNoCollInTimeRangeStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict)) {
+          continue;
+        }
         if (requireNoCollInTimeRangeNarrow && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
           continue;
         }
-
-        if (minOccupancy > 0 && collision.trackOccupancyInTimeRange() < minOccupancy) {
+        if (requireNoCollInTimeRangeVzDep && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeVzDependent)) {
           continue;
         }
-        if (maxOccupancy > 0 && collision.trackOccupancyInTimeRange() > maxOccupancy) {
+        if (requireNoCollInROFStd && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+          continue;
+        }
+        if (requireNoCollInROFStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStrict)) {
+          continue;
+        }
+
+        float collisionOccupancy = useFT0CbasedOccupancy ? collision.ft0cOccupancyInTimeRange() : collision.trackOccupancyInTimeRange();
+        if (minOccupancy > 0 && collisionOccupancy < minOccupancy) {
+          continue;
+        }
+        if (maxOccupancy > 0 && collisionOccupancy > maxOccupancy) {
           continue;
         }
 
