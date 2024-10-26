@@ -62,7 +62,7 @@ struct HfTaskDstarToD0Pi {
   ConfigurableAxis binningNormDecayLength{"binningNormDecayLength", {1000, 0.0, 40.0}, "Bins of Normalised Decay Length"};
   ConfigurableAxis binningCentrality{"binningCentrality", {VARIABLE_WIDTH, 0.0, 1.0, 10.0, 30.0, 50.0, 70.0, 100.0}, "centrality binning"};
   ConfigurableAxis binningDeltaInvMass{"binningDeltaInvMass", {100, 0.13, 0.16}, "Bins of Delta InvMass of Dstar"};
-  ConfigurableAxis binningBDTScore{"binningBDTScore",{100,0.0f,1.0f},"Bins for BDT Score"};
+  ConfigurableAxis binningBDTScore{"binningBDTScore", {100, 0.0f, 1.0f}, "Bins for BDT Score"};
 
   HistogramRegistry registry{
     "registry",
@@ -122,7 +122,7 @@ struct HfTaskDstarToD0Pi {
     registry.add("QA/hPtVsYRecoTopolDstarRecSig", "MC Matched RecoTopol D* Candidates at Reconstruction Level; #it{p}_{T} of D* at Reconstruction Level (GeV/#it{c}); #it{y}", {HistType::kTH2F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
     registry.add("QA/hPtVsYRecoPidDstarRecSig", "MC Matched RecoPid D* Candidates at Reconstruction Level; #it{p}_{T} of  D* at Reconstruction Level (GeV/#it{c}); #it{y}", {HistType::kTH2F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
     registry.add("QA/hPtFullRecoDstarRecSig", "MC Matched FullReco D* Candidates at Reconstruction Level; #it{p}_{T} of  D* at Reconstruction Level (GeV/#it{c})", {HistType::kTH1F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("Efficiency/hPtVsCentFullRecoDstarRecSig", "MC Matched  FullReco D* Candidates at Reconstruction Level; #it{p}_{T} of  D* at Reconstruction Level (GeV/#it{c}); Centrality (%)",{HistType::kTH2F,{{vecPtBins,"#it{p}_{T} (GeV/#it{c})"},{axisCentrality}}}, true);
+    registry.add("Efficiency/hPtVsCentFullRecoDstarRecSig", "MC Matched  FullReco D* Candidates at Reconstruction Level; #it{p}_{T} of  D* at Reconstruction Level (GeV/#it{c}); Centrality (%)", {HistType::kTH2F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisCentrality}}}, true);
     // Only Prompt RecSig
     registry.add("QA/hPtVsYSkimPromptDstarRecSig", "MC Matched Skimed Prompt D* Candidates at Reconstruction Level; #it{p}_{T} of  D* at Reconstruction Level (GeV/#it{c}; #it{y})", {HistType::kTH2F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
     registry.add("QA/hPtVsYRecoTopolPromptDstarRecSig", "MC Matched RecoTopol Prompt D* Candidates at Reconstruction Level; #it{p}_{T} of  D* at Reconstruction Level (GeV/#it{c}); #it{y}", {HistType::kTH2F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
@@ -157,11 +157,12 @@ struct HfTaskDstarToD0Pi {
     registry.add("Efficiency/hNumPvContributorsCandInMass", "PV Contributors; PV Contributor; FT0M Centrality", {HistType::kTH2F, {{100, 0, 300}, {axisCentrality}}}, true);
 
     // BDT Score
-    registry.add("QA/hDeltaInvMassVsPtVsCentVsBDTScore", "#Delta #it{M}_{inv} Vs Pt Vs Cent Vs BDTScore", {HistType::kTHnSparseL, {{axisDeltaInvMass},{vecPtBins, "#it{p}_{T} (GeV/#it{c})"},{axisCentrality},{axisBDTScorePrompt},{axisBDTScoreNonPrompt},{axisBDTScoreBackground}}});
+    registry.add("QA/hDeltaInvMassVsPtVsCentVsBDTScore", "#Delta #it{M}_{inv} Vs Pt Vs Cent Vs BDTScore", {HistType::kTHnSparseL, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisCentrality}, {axisBDTScorePrompt}, {axisBDTScoreNonPrompt}, {axisBDTScoreBackground}}});
   }
 
   template <bool applyMl, typename T1, typename T2>
-  void runTaskDstar(CollisionsWCent const& cols, T1 selectedCands, T2 preslice){
+  void runTaskDstar(CollisionsWCent const& cols, T1 selectedCands, T2 preslice)
+  {
     for (const auto& col : cols) {
       auto nPVContributors = col.numContrib();
       auto centrality = col.centFT0M();
@@ -218,10 +219,9 @@ struct HfTaskDstarToD0Pi {
             nCandsSignalRegion++;
           }
 
-          if constexpr (applyMl)
-          {
+          if constexpr (applyMl) {
             auto mlBdtScore = candDstar.mlProbDstarToD0Pi();
-            registry.fill(HIST("QA/hDeltaInvMassVsPtVsCentVsBDTScore"),deltaMDstar,candDstar.pt(), centrality,mlBdtScore[0],mlBdtScore[1],mlBdtScore[2]);
+            registry.fill(HIST("QA/hDeltaInvMassVsPtVsCentVsBDTScore"), deltaMDstar, candDstar.pt(), centrality, mlBdtScore[0], mlBdtScore[1], mlBdtScore[2]);
           }
 
           registry.fill(HIST("Yield/hDeltaInvMassDstar3D"), deltaMDstar, candDstar.pt(), centrality);
@@ -256,15 +256,15 @@ struct HfTaskDstarToD0Pi {
 
   // process function without susing ML
   void processWoML(CollisionsWCent const& cols, soa::Filtered<CandDstarWSelFlag> const& selectedCands)
-  { 
-    runTaskDstar<false,soa::Filtered<CandDstarWSelFlag>, Preslice<soa::Filtered<CandDstarWSelFlag>>>(cols,selectedCands,preslicSelectedCandDstarPerCol);
+  {
+    runTaskDstar<false, soa::Filtered<CandDstarWSelFlag>, Preslice<soa::Filtered<CandDstarWSelFlag>>>(cols, selectedCands, preslicSelectedCandDstarPerCol);
   }
   PROCESS_SWITCH(HfTaskDstarToD0Pi, processWoML, "Process without ML", true);
 
   // process function with susing ML, Here we store BDT score as well
   void processWML(CollisionsWCent const& cols, soa::Filtered<CandDstarWSelFlagWMl> const& selectedCands)
   {
-    runTaskDstar<true,soa::Filtered<CandDstarWSelFlagWMl>,Preslice<soa::Filtered<CandDstarWSelFlagWMl>>>(cols,selectedCands,preslicSelectedCandDstarPerColWMl);
+    runTaskDstar<true, soa::Filtered<CandDstarWSelFlagWMl>, Preslice<soa::Filtered<CandDstarWSelFlagWMl>>>(cols, selectedCands, preslicSelectedCandDstarPerColWMl);
   }
   PROCESS_SWITCH(HfTaskDstarToD0Pi, processWML, "Process with ML", false);
 
@@ -290,7 +290,7 @@ struct HfTaskDstarToD0Pi {
         auto particleMother = rowsMcPartilces.rawIteratorAt(indexMother);  // What is difference between rawIterator() or iteratorAt() methods?
         registry.fill(HIST("QA/hPtSkimDstarGenSig"), particleMother.pt()); // generator level pt
         registry.fill(HIST("Efficiency/hPtVsCentSkimDstarGenSig"), particleMother.pt(), centrality);
-        registry.fill(HIST("Efficiency/hPtVsCentFullRecoDstarRecSig"),ptDstarRecSig,centrality);
+        registry.fill(HIST("Efficiency/hPtVsCentFullRecoDstarRecSig"), ptDstarRecSig, centrality);
 
         // auto recCollision = candDstarMcRec.collision_as<CollisionsWCentMcLabel>();
         // float centFT0M = recCollision.centFT0M();
