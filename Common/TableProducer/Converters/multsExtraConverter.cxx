@@ -22,10 +22,10 @@ struct MultsExtraConverter {
   void process(aod::MultsExtra_000 const& multsExtra_000)
   {
     for (const auto& r : multsExtra_000) {
-      multsExtra_001(r.multPVTotalContributors(), r.multPVChi2(),               
+      multsExtra_001(r.multPVTotalContributors(), r.multPVChi2(),
                      r.multCollisionTimeRes(), r.multRunNumber(), r.multPVz(), r.multSel8(),
-                     r.multNTracksHasITS(), r.multNTracksHasTPC(), r.multNTracksHasTOF(), 
-                     r.multNTracksHasTRD(), r.multNTracksITSOnly(), 
+                     r.multNTracksHasITS(), r.multNTracksHasTPC(), r.multNTracksHasTOF(),
+                     r.multNTracksHasTRD(), r.multNTracksITSOnly(),
                      r.multNTracksTPCOnly(), r.multNTracksITSTPC(),
                      r.multAllTracksTPCOnly(), r.multAllTracksITSTPC(),
                      r.trackOccupancyInTimeRange(),
@@ -38,6 +38,5 @@ struct MultsExtraConverter {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<MultsExtraConverter>(cfgc)
-  };
+    adaptAnalysisTask<MultsExtraConverter>(cfgc)};
 }

@@ -118,14 +118,14 @@ DECLARE_SOA_TABLE(MultsExtra_000, "AOD", "MULTEXTRA", //!
                   evsel::NumTracksInTimeRange,
                   collision::Flags);
 
-DECLARE_SOA_TABLE_VERSIONED(MultsExtra_001, "AOD", "MULTEXTRA", 1,     //! debug information
-                  mult::MultPVTotalContributors, mult::MultPVChi2, mult::MultCollisionTimeRes, mult::MultRunNumber, mult::MultPVz, mult::MultSel8,
-                  mult::MultNTracksHasITS, mult::MultNTracksHasTPC, mult::MultNTracksHasTOF, mult::MultNTracksHasTRD,
-                  mult::MultNTracksITSOnly, mult::MultNTracksTPCOnly, mult::MultNTracksITSTPC,
-                  mult::MultAllTracksTPCOnly, mult::MultAllTracksITSTPC,
-                  evsel::NumTracksInTimeRange,
-                  evsel::SumAmpFT0CInTimeRange,
-                  collision::Flags);
+DECLARE_SOA_TABLE_VERSIONED(MultsExtra_001, "AOD", "MULTEXTRA", 1, //! debug information
+                            mult::MultPVTotalContributors, mult::MultPVChi2, mult::MultCollisionTimeRes, mult::MultRunNumber, mult::MultPVz, mult::MultSel8,
+                            mult::MultNTracksHasITS, mult::MultNTracksHasTPC, mult::MultNTracksHasTOF, mult::MultNTracksHasTRD,
+                            mult::MultNTracksITSOnly, mult::MultNTracksTPCOnly, mult::MultNTracksITSTPC,
+                            mult::MultAllTracksTPCOnly, mult::MultAllTracksITSTPC,
+                            evsel::NumTracksInTimeRange,
+                            evsel::SumAmpFT0CInTimeRange,
+                            collision::Flags);
 
 using MultsExtra = MultsExtra_001;
 
