@@ -295,6 +295,11 @@ struct JetDerivedDataWriter {
           isTriggerObject = true;
         }
       } else {
+        if constexpr (std::is_same_v<std::decay_t<T>, aod::JTracks>) {
+          if (config.performTrackSelection && !(selectionObject.trackSel() & ~(1 << jetderiveddatautilities::JTrackSel::trackSign))) {
+            continue;
+          }
+        }
         if (selectionObject.pt() >= selectionObjectPtMin) {
           isTriggerObject = true;
         }
