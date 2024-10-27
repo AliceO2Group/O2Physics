@@ -1145,9 +1145,9 @@ struct AngularCorrelationsInJets {
       initCCDB(bc);
 
       registryData.fill(HIST("hEventProtocol"), 0);
-      registryData.fill(HIST("hNumberOfEvents"), 0);
       if (!collision.alias_bit(kINT7))
         continue;
+      registryData.fill(HIST("hNumberOfEvents"), 0);
       registryData.fill(HIST("hEventProtocol"), 1);
 
       auto slicedTracks = tracks.sliceBy(perCollisionFullTracksRun2, collision.globalIndex());
