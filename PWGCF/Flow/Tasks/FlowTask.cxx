@@ -394,8 +394,7 @@ struct FlowTask {
 
     if (cfgTrkSelRun3ITSMatch) {
       myTrackSel = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSall7Layers, TrackSelection::GlobalTrackRun3DCAxyCut::Default);
-    }
-    else {
+    } else {
       myTrackSel = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny, TrackSelection::GlobalTrackRun3DCAxyCut::Default);
     }
     myTrackSel.SetMinNClustersTPC(cfgCutTPCclu);
@@ -585,8 +584,7 @@ struct FlowTask {
   {
     if (cfgTrkSelSwitch) {
       return myTrackSel.IsSelected(track);
-    } 
-    else {
+    } else {
       return (track.tpcNClsFound() >= cfgCutTPCclu);
     }
   }
