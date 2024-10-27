@@ -13,8 +13,6 @@
 /// \brief R2 correlation of Lambda baryons.
 /// \author Yash Patley <yash.patley@cern.ch>
 
-#include <TLorentzVector.h>
-
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -25,6 +23,7 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "Common/Core/RecoDecay.h"
+#include "TPDGCode.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -101,11 +100,6 @@ using LambdaMCGenTrack = LambdaMCGenTracks::iterator;
 
 } // namespace o2::aod
 
-enum PidType {
-  kPion = 0,
-  kProton
-};
-
 enum ParticleType {
   kLambda = 0,
   kAntiLambda
@@ -172,10 +166,12 @@ struct lambdaCorrTableProducer {
   Configurable<bool> cfg_do_eta_analysis{"cfg_do_eta_analysis", false, "Eta Analysis"};
 
   // V0s MC
-  Configurable<bool> cfg_primary_lambda{"cfg_primary_lambda", true, "Primary Lambda"};
-  Configurable<bool> cfg_secondary_lambda{"cfg_secondary_lambda", false, "Secondary Lambda"};
-  Configurable<bool> cfg_has_mc_flag{"cfg_has_mc_flag", false, "Has Mc Tag"};
-  Configurable<bool> cfg_pid_flag{"cfg_pid_flag", true, "PID Flag"};
+  Configurable<bool> cfg_has_mc_flag{"cfg_has_mc_flag", true, "Has Mc Tag"};
+  Configurable<bool> cfg_rec_primary_lambda{"cfg_rec_primary_lambda", false, "Primary Lambda"};
+  Configurable<bool> cfg_rec_secondary_lambda{"cfg_rec_secondary_lambda", false, "Secondary Lambda"};
+  Configurable<bool> cfg_rec_pid_flag{"cfg_rec_pid_flag", false, "PID Flag"};
+  Configurable<bool> cfg_gen_primary_lambda{"cfg_gen_primary_lambda", true, "Primary Lambda"};
+  Configurable<bool> cfg_gen_secondary_lambda{"cfg_gen_secondary_lambda", false, "Secondary Lambda"};
 
   // Histogram Registry.
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -492,9 +488,8 @@ struct lambdaCorrTableProducer {
     }
 
     // ctau
-    TLorentzVector p;
-    p.SetXYZM(v0.px(), v0.py(), v0.pz(), mass);
-    float gamma = p.E() / mass;
+    float e = RecoDecay::e(v0.px(), v0.py(), v0.pz(), mass);
+    float gamma = e / mass;
     float ctau = v0.distovertotmom(col.posX(), col.posY(), col.posZ()) * MassLambda0;
     float gctau = ctau * gamma;
 
@@ -594,15 +589,15 @@ struct lambdaCorrTableProducer {
     histos.fill(HIST("QA_Checks/h2d_after_masswincut_pt_vs_alpha"), v0track.alpha(), v0track.qtarm());
     histos.fill(HIST("QA_Checks/h1d_tracks_info"), 4.5);
 
-    // apply MC Reco cuts
+    // MC Reco Analysis
     if constexpr (reco) {
       auto v0mcpart = v0track.mcParticle();
 
       histos.fill(HIST("QA_Checks/h2d_tracks_pid_before_mccuts"), v0mcpart.pdgCode(), v0mcpart.pt());
 
-      if (cfg_primary_lambda && !v0mcpart.isPhysicalPrimary()) {
+      if (cfg_rec_primary_lambda && !v0mcpart.isPhysicalPrimary()) {
         return;
-      } else if (cfg_secondary_lambda && v0mcpart.isPhysicalPrimary()) {
+      } else if (cfg_rec_secondary_lambda && v0mcpart.isPhysicalPrimary()) {
         return;
       }
 
@@ -614,10 +609,11 @@ struct lambdaCorrTableProducer {
       auto mcpart_daughters = v0mcpart.template daughters_as<aod::McParticles>();
       auto mcpart_mothers = v0mcpart.template mothers_as<aod::McParticles>();
 
-      if (cfg_pid_flag) {
-        if (v0part == kLambda && v0mcpart.pdgCode() != 3122) {
+      if (cfg_rec_pid_flag) {
+
+        if (v0part == kLambda && v0mcpart.pdgCode() != kLambda0) {
           return;
-        } else if (v0part == kAntiLambda && v0mcpart.pdgCode() != -3122) {
+        } else if (v0part == kAntiLambda && v0mcpart.pdgCode() != kLambda0Bar) {
           return;
         }
 
@@ -625,7 +621,7 @@ struct lambdaCorrTableProducer {
         getPDGsIDs(mcpart_mothers, motherPDGs, motherIDs);
 
         // Decay to Proton-Pion
-        if (abs(daughterPDGs[0]) == 2212 && abs(daughterPDGs[1]) == 211) {
+        if (abs(daughterPDGs[0]) == kProton && abs(daughterPDGs[1]) == kPiPlus) {
           decay_channel_flag = true;
         }
 
@@ -634,11 +630,11 @@ struct lambdaCorrTableProducer {
         }
 
         // check the secondary lambdas coming from Sigma, Cascades and Omegas
-        if (abs(motherPDGs[0]) == 3212 || abs(motherPDGs[1]) == 3212) {
+        if (abs(motherPDGs[0]) == kSigma0 || abs(motherPDGs[1]) == kSigma0Bar) {
           histos.fill(HIST("QA_Checks/h2d_lambda_from_sigma"), v0mcpart.pdgCode(), v0mcpart.pt());
         }
 
-        if (abs(motherPDGs[0]) == 3312 || abs(motherPDGs[1]) == 3312) {
+        if (abs(motherPDGs[0]) == kXiMinus || abs(motherPDGs[1]) == kXiMinus) {
           histos.fill(HIST("QA_Checks/h2d_lambda_from_cascade"), v0mcpart.pdgCode(), v0mcpart.pt());
         }
       }
@@ -775,20 +771,19 @@ struct lambdaCorrTableProducer {
     histos.fill(HIST("McGen/h1d_collisions_info"), 2.5);
     histos.fill(HIST("McGen/h1d_collision_posZ"), mcCollision.posZ());
     lambdaMCGenCollisionTable(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ());
-
-    TLorentzVector p;
+    float mass = 0.;
 
     for (auto const& mcpart : mcParticles) {
 
       // check for Lambda first
-      if (abs(mcpart.pdgCode()) != 3122) {
+      if (abs(mcpart.pdgCode()) != kLambda0) {
         continue;
       }
 
       // check for Primary Lambdas/AntiLambdas
-      if (cfg_primary_lambda && !mcpart.isPhysicalPrimary()) {
+      if (cfg_gen_primary_lambda && !mcpart.isPhysicalPrimary()) {
         continue;
-      } else if (cfg_secondary_lambda && mcpart.isPhysicalPrimary()) {
+      } else if (cfg_gen_secondary_lambda && mcpart.isPhysicalPrimary()) {
         continue;
       }
 
@@ -808,8 +803,6 @@ struct lambdaCorrTableProducer {
         continue;
       }
 
-      p.SetPxPyPzE(mcpart.px(), mcpart.py(), mcpart.pz(), mcpart.e());
-
       // Get Daughters and Mothers
       bool decay_channel_flag = false;
       std::vector<int> daughterPDGs{}, daughterIDs{}, motherPDGs{}, motherIDs{};
@@ -819,7 +812,7 @@ struct lambdaCorrTableProducer {
       getPDGsIDs(mcpart_mothers, motherPDGs, motherIDs);
 
       // Decay to Proton-Pion
-      if (abs(daughterPDGs[0]) == 2212 && abs(daughterPDGs[1]) == 211) {
+      if (abs(daughterPDGs[0]) == kProton && abs(daughterPDGs[1]) == kPiPlus) {
         decay_channel_flag = true;
       }
 
@@ -827,11 +820,13 @@ struct lambdaCorrTableProducer {
         continue;
       }
 
+      mass = RecoDecay::m(mcpart.p(), mcpart.e());
+
       // Fill histograms
-      if (mcpart.pdgCode() == 3122) {
+      if (mcpart.pdgCode() == kLambda0) {
         histos.fill(HIST("McGen/h1d_lambda_daughter_PDG"), daughterPDGs[0]);
         histos.fill(HIST("McGen/h1d_lambda_daughter_PDG"), daughterPDGs[1]);
-        histos.fill(HIST("McGen/h1d_mass_lambda"), p.M());
+        histos.fill(HIST("McGen/h1d_mass_lambda"), mass);
         histos.fill(HIST("McGen/h1d_pt_lambda"), mcpart.pt());
         histos.fill(HIST("McGen/h1d_eta_lambda"), mcpart.eta());
         histos.fill(HIST("McGen/h1d_y_lambda"), mcpart.y());
@@ -839,11 +834,11 @@ struct lambdaCorrTableProducer {
         histos.fill(HIST("McGen/h2d_pteta_lambda"), mcpart.eta(), mcpart.pt());
         histos.fill(HIST("McGen/h2d_ptrap_lambda"), mcpart.y(), mcpart.pt());
         histos.fill(HIST("McGen/h2d_ptphi_lambda"), mcpart.phi(), mcpart.pt());
-        lambdaMCGenTrackTable(lambdaMCGenCollisionTable.lastIndex(), mcpart.px(), mcpart.py(), mcpart.pz(), mcpart.pt(), rap, mcpart.phi(), p.M(), daughterIDs[0], daughterIDs[1], (int8_t)kLambda);
-      } else if (mcpart.pdgCode() == -3122) {
+        lambdaMCGenTrackTable(lambdaMCGenCollisionTable.lastIndex(), mcpart.px(), mcpart.py(), mcpart.pz(), mcpart.pt(), rap, mcpart.phi(), mass, daughterIDs[0], daughterIDs[1], (int8_t)kLambda);
+      } else if (mcpart.pdgCode() == kLambda0Bar) {
         histos.fill(HIST("McGen/h1d_antilambda_daughter_PDG"), daughterPDGs[0]);
         histos.fill(HIST("McGen/h1d_antilambda_daughter_PDG"), daughterPDGs[1]);
-        histos.fill(HIST("McGen/h1d_mass_antilambda"), p.M());
+        histos.fill(HIST("McGen/h1d_mass_antilambda"), mass);
         histos.fill(HIST("McGen/h1d_pt_antilambda"), mcpart.pt());
         histos.fill(HIST("McGen/h1d_eta_antilambda"), mcpart.eta());
         histos.fill(HIST("McGen/h1d_y_antilambda"), mcpart.y());
@@ -851,7 +846,7 @@ struct lambdaCorrTableProducer {
         histos.fill(HIST("McGen/h2d_pteta_antilambda"), mcpart.eta(), mcpart.pt());
         histos.fill(HIST("McGen/h2d_ptrap_antilambda"), mcpart.y(), mcpart.pt());
         histos.fill(HIST("McGen/h2d_ptphi_antilambda"), mcpart.phi(), mcpart.pt());
-        lambdaMCGenTrackTable(lambdaMCGenCollisionTable.lastIndex(), mcpart.px(), mcpart.py(), mcpart.pz(), mcpart.pt(), rap, mcpart.phi(), p.M(), daughterIDs[1], daughterIDs[0], (int8_t)kAntiLambda);
+        lambdaMCGenTrackTable(lambdaMCGenCollisionTable.lastIndex(), mcpart.px(), mcpart.py(), mcpart.pz(), mcpart.pt(), rap, mcpart.phi(), mass, daughterIDs[1], daughterIDs[0], (int8_t)kAntiLambda);
       }
     }
   }
@@ -890,6 +885,7 @@ struct lambdaCorrelationAnalysis {
   float kmaxphi = 0.;
   float rapbinwidth = 0.;
   float phibinwidth = 0.;
+  float q = 0., e = 0., qinv = 0.;
 
   std::vector<float> v_pt_bins = static_cast<std::vector<float>>(cfg_pt_bins);
   std::vector<float> v_lambda_eff = static_cast<std::vector<float>>(cfg_lambda_eff);
@@ -1063,11 +1059,9 @@ struct lambdaCorrelationAnalysis {
     }
 
     // qinv histos
-    TLorentzVector q1, q2, q;
-    q1.SetXYZM(p1.px(), p1.py(), p1.pz(), MassLambda0);
-    q2.SetXYZM(p2.px(), p2.py(), p2.pz(), MassLambda0);
-    q = q1 - q2;
-    double qinv = TMath::Sqrt(q.M() * q.M());
+    q = RecoDecay::p((p1.px() - p2.px()), (p1.py() - p2.py()), (p1.pz() - p2.pz()));
+    e = RecoDecay::e(p1.px(), p1.py(), p1.pz(), MassLambda0) - RecoDecay::e(p2.px(), p2.py(), p2.pz(), MassLambda0);
+    qinv = std::sqrt(-RecoDecay::m2(q, e));
     histos.fill(HIST(sub_dir_recgen[rec_gen]) + HIST("h1d_n2_qinv_") + HIST(sub_dir_hist[part_pair]), qinv, eff_1 * eff_2);
   }
 
@@ -1082,43 +1076,41 @@ struct lambdaCorrelationAnalysis {
     float eff = 1.;
 
     for (auto const& track : tracks) {
-      ++ntrk3;
-      if constexpr (rec_gen == kRec) {
-        if (!removeLambdaSharingDau(track, tracks)) {
-          ++ntrk1;
-          continue;
-        }
-
-        get_corr_factor<part>(eff, track.pt());
+      ++ntrk1;
+      if (!removeLambdaSharingDau(track, tracks)) {
+        ++ntrk2;
+        continue;
       }
-      ++ntrk2;
+      get_corr_factor<part>(eff, track.pt());
+      ++ntrk3;
       histos.fill(HIST(sub_dir_recgen[rec_gen]) + HIST("h1d_n1_pt_") + HIST(sub_dir_hist[part]), track.pt(), eff);
       histos.fill(HIST(sub_dir_recgen[rec_gen]) + HIST("h1d_n1_rap_") + HIST(sub_dir_hist[part]), track.rap(), eff);
       histos.fill(HIST(sub_dir_recgen[rec_gen]) + HIST("h1d_n1_phi_") + HIST(sub_dir_hist[part]), track.phi(), eff);
       histos.fill(HIST(sub_dir_recgen[rec_gen]) + HIST("h2d_n1_") + HIST(sub_dir_hist[part]), track.rap(), track.phi(), eff);
     }
 
+    // fill multiplicity histograms
     if (ntrk1 != 0) {
       if (part == kLambda) {
-        histos.fill(HIST("Event/") + HIST(sub_dir_recgen[rec_gen]) + HIST("h1d_lambda_sdau"), ntrk1);
+        histos.fill(HIST("Event/") + HIST(sub_dir_recgen[rec_gen]) + HIST("h1d_lambda_totmult"), ntrk1);
       } else {
-        histos.fill(HIST("Event/") + HIST(sub_dir_recgen[rec_gen]) + HIST("h1d_antilambda_sdau"), ntrk1);
+        histos.fill(HIST("Event/") + HIST(sub_dir_recgen[rec_gen]) + HIST("h1d_antilambda_totmult"), ntrk1);
       }
     }
 
     if (ntrk2 != 0) {
       if (part == kLambda) {
-        histos.fill(HIST("Event/") + HIST(sub_dir_recgen[rec_gen]) + HIST("h1d_lambda_multiplicity"), ntrk2);
+        histos.fill(HIST("Event/") + HIST(sub_dir_recgen[rec_gen]) + HIST("h1d_lambda_sdau"), ntrk2);
       } else {
-        histos.fill(HIST("Event/") + HIST(sub_dir_recgen[rec_gen]) + HIST("h1d_antilambda_multiplicity"), ntrk2);
+        histos.fill(HIST("Event/") + HIST(sub_dir_recgen[rec_gen]) + HIST("h1d_antilambda_sdau"), ntrk2);
       }
     }
 
     if (ntrk3 != 0) {
       if (part == kLambda) {
-        histos.fill(HIST("Event/") + HIST(sub_dir_recgen[rec_gen]) + HIST("h1d_lambda_totmult"), ntrk3);
+        histos.fill(HIST("Event/") + HIST(sub_dir_recgen[rec_gen]) + HIST("h1d_lambda_multiplicity"), ntrk3);
       } else {
-        histos.fill(HIST("Event/") + HIST(sub_dir_recgen[rec_gen]) + HIST("h1d_antilambda_totmult"), ntrk3);
+        histos.fill(HIST("Event/") + HIST(sub_dir_recgen[rec_gen]) + HIST("h1d_antilambda_multiplicity"), ntrk3);
       }
     }
   }
@@ -1127,19 +1119,17 @@ struct lambdaCorrelationAnalysis {
   void analyzePairs(T const& trks_1, T const& trks_2)
   {
     for (auto const& trk_1 : trks_1) {
-      if constexpr (rec_gen == kRec) {
-        if (!removeLambdaSharingDau(trk_1, trks_1)) {
-          continue;
-        }
+      if (!removeLambdaSharingDau(trk_1, trks_1)) {
+        continue;
       }
       for (auto const& trk_2 : trks_2) {
+        // check for same index for Lambda-Lambda / AntiLambda-AntiLambda
         if (samelambda && ((trk_1.index() == trk_2.index()))) {
           continue;
         }
-        if constexpr (rec_gen == kRec) {
-          if (!removeLambdaSharingDau(trk_2, trks_2)) {
-            continue;
-          }
+        // check if Lambda shares a daughter and select the one closest to PDG Mass
+        if (!removeLambdaSharingDau(trk_2, trks_2)) {
+          continue;
         }
         fillPairHistos<partpair, rec_gen>(trk_1, trk_2);
       }
