@@ -118,3 +118,8 @@ o2physics_add_dpl_workflow(strange-yield-pbpb
     SOURCES strange-yield-pbpb.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(lambdak0sflattenicity
+    SOURCES lambdak0sflattenicity.cxx
+    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
