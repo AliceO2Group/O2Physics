@@ -1275,8 +1275,8 @@ struct AnalysisSameEventPairing {
       if constexpr ((TPairType == pairTypeEE) && (TTrackFillMap & VarManager::ObjTypes::ReducedTrackBarrelPID) > 0) {
         if (fConfigFlatTables.value) {
           dielectronAllList(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), dileptonFilterMap, dileptonMcDecision,
-                            t1.pt(), t1.eta(), t1.phi(), t1.tpcNClsCrossedRows(), t1.tpcNClsFound(), t1.tpcChi2NCl(), t1.dcaXY(), t1.dcaZ(), t1.tpcSignal(), t1.tpcNSigmaEl(), t1.tpcNSigmaPi(), t1.tpcNSigmaPr(), t1.beta(), t1.tofNSigmaEl(), t1.tofNSigmaPi(), t1.tofNSigmaPr(),
-                            t2.pt(), t2.eta(), t2.phi(), t2.tpcNClsCrossedRows(), t2.tpcNClsFound(), t2.tpcChi2NCl(), t2.dcaXY(), t2.dcaZ(), t2.tpcSignal(), t2.tpcNSigmaEl(), t2.tpcNSigmaPi(), t2.tpcNSigmaPr(), t2.beta(), t2.tofNSigmaEl(), t2.tofNSigmaPi(), t2.tofNSigmaPr(),
+                            t1.pt(), t1.eta(), t1.phi(), t1.itsClusterMap(), t1.itsChi2NCl(), t1.tpcNClsCrossedRows(), t1.tpcNClsFound(), t1.tpcChi2NCl(), t1.dcaXY(), t1.dcaZ(), t1.tpcSignal(), t1.tpcNSigmaEl(), t1.tpcNSigmaPi(), t1.tpcNSigmaPr(), t1.beta(), t1.tofNSigmaEl(), t1.tofNSigmaPi(), t1.tofNSigmaPr(),
+                            t2.pt(), t2.eta(), t2.phi(), t2.itsClusterMap(), t2.itsChi2NCl(), t2.tpcNClsCrossedRows(), t2.tpcNClsFound(), t2.tpcChi2NCl(), t2.dcaXY(), t2.dcaZ(), t2.tpcSignal(), t2.tpcNSigmaEl(), t2.tpcNSigmaPi(), t2.tpcNSigmaPr(), t2.beta(), t2.tofNSigmaEl(), t2.tofNSigmaPi(), t2.tofNSigmaPr(),
                             VarManager::fgValues[VarManager::kKFTrack0DCAxyz], VarManager::fgValues[VarManager::kKFTrack1DCAxyz], VarManager::fgValues[VarManager::kKFDCAxyzBetweenProngs], VarManager::fgValues[VarManager::kKFTrack0DCAxy], VarManager::fgValues[VarManager::kKFTrack1DCAxy], VarManager::fgValues[VarManager::kKFDCAxyBetweenProngs],
                             VarManager::fgValues[VarManager::kKFTrack0DeviationFromPV], VarManager::fgValues[VarManager::kKFTrack1DeviationFromPV], VarManager::fgValues[VarManager::kKFTrack0DeviationxyFromPV], VarManager::fgValues[VarManager::kKFTrack1DeviationxyFromPV],
                             VarManager::fgValues[VarManager::kKFMass], VarManager::fgValues[VarManager::kKFChi2OverNDFGeo], VarManager::fgValues[VarManager::kVertexingLxyz], VarManager::fgValues[VarManager::kVertexingLxyzOverErr], VarManager::fgValues[VarManager::kVertexingLxy], VarManager::fgValues[VarManager::kVertexingLxyOverErr], VarManager::fgValues[VarManager::kVertexingTauxy], VarManager::fgValues[VarManager::kVertexingTauxyErr], VarManager::fgValues[VarManager::kKFCosPA], VarManager::fgValues[VarManager::kKFJpsiDCAxyz], VarManager::fgValues[VarManager::kKFJpsiDCAxy],
@@ -1578,64 +1578,6 @@ struct AnalysisSameEventPairing {
   PROCESS_SWITCH(AnalysisSameEventPairing, processDecayToPiPiSkimmed, "Run pion-pion pairing, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processAllSkimmed, "Run all types of pairing, with skimmed tracks/muons", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processDummy, "Dummy function, enabled only if none of the others are enabled", false);
-};
-
-struct AnalysisFwdTrackPid {
-  Produces<aod::FwdPidsAll> fwdPidAllList;
-
-  Filter filterEventSelected = aod::dqanalysisflags::isEventSelected == 1;
-
-  Configurable<float> fConfigMaxDCA{"cfgMaxDCA", 0.5f, "Manually set maximum DCA of the track"};
-
-  void init(o2::framework::InitContext& context)
-  {
-    if (context.mOptions.get<bool>("processDummy")) {
-      return;
-    }
-  }
-
-  // Template function to pair mft tracks and muon tracks
-  template <bool TMatchedOnly, uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvent, typename Muons, typename MftTracks>
-  void runFwdTrackPid(TEvent const& event, Muons const& muons, MftTracks const& mftTracks)
-  {
-    fwdPidAllList.reserve(1);
-    for (const auto& muon : muons) {
-      if (muon.has_matchMFTTrack() && muon.trackType() == 0 && TMath::Abs(muon.fwdDcaX()) < fConfigMaxDCA && TMath::Abs(muon.fwdDcaY()) < fConfigMaxDCA) {
-        auto mftTrack = muon.template matchMFTTrack_as<MyMftTracks>();
-        fwdPidAllList(muon.trackType(), event.posX(), event.posY(), event.posZ(), event.numContrib(), muon.pt(), muon.eta(), muon.phi(), muon.sign(), mftTrack.mftClusterSizesAndTrackFlags(), muon.fwdDcaX(), muon.fwdDcaY(), muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT());
-      }
-    }
-    if constexpr (TMatchedOnly == false) {
-      for (const auto& mftTrack : mftTracks) {
-        if (TMath::Abs(mftTrack.fwdDcaX()) < fConfigMaxDCA && TMath::Abs(mftTrack.fwdDcaY()) < fConfigMaxDCA) {
-          fwdPidAllList(4, event.posX(), event.posY(), event.posZ(), event.numContrib(), mftTrack.pt(), mftTrack.eta(), mftTrack.phi(), mftTrack.sign(), mftTrack.mftClusterSizesAndTrackFlags(), mftTrack.fwdDcaX(), mftTrack.fwdDcaY(), -999, -999);
-        }
-      }
-    }
-  }
-
-  void processFwdPidMatchedSkimmed(soa::Filtered<MyEventsSelected>::iterator const& event, MyMuonTracks const& muons, MyMftTracks const& mftTracks)
-  {
-    if (muons.size() > 0 && mftTracks.size() > 0) {
-      runFwdTrackPid<false, gkEventFillMap, gkMuonFillMap>(event, muons, mftTracks);
-    }
-  }
-
-  void processFwdPidMatchedOnlySkimmed(soa::Filtered<MyEventsSelected>::iterator const& event, MyMuonTracks const& muons, MyMftTracks const& mftTracks)
-  {
-    if (muons.size() > 0) {
-      runFwdTrackPid<true, gkEventFillMap, gkMuonFillMap>(event, muons, mftTracks);
-    }
-  }
-
-  void processDummy(MyEvents&)
-  {
-    // do nothing
-  }
-
-  PROCESS_SWITCH(AnalysisFwdTrackPid, processFwdPidMatchedSkimmed, "Run MFT - muon track pairing filling tree with MFT and global tracks", false);
-  PROCESS_SWITCH(AnalysisFwdTrackPid, processFwdPidMatchedOnlySkimmed, "Run MFT - muon track pairing filling tree with global tracks only", false);
-  PROCESS_SWITCH(AnalysisFwdTrackPid, processDummy, "Dummy function", false);
 };
 
 struct AnalysisDileptonHadron {
@@ -2057,7 +1999,6 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     adaptAnalysisTask<AnalysisPrefilterSelection>(cfgc),
     adaptAnalysisTask<AnalysisEventMixing>(cfgc),
     adaptAnalysisTask<AnalysisSameEventPairing>(cfgc),
-    adaptAnalysisTask<AnalysisFwdTrackPid>(cfgc),
     adaptAnalysisTask<AnalysisDileptonHadron>(cfgc),
     adaptAnalysisTask<AnalysisDileptonTrackTrack>(cfgc)};
 }

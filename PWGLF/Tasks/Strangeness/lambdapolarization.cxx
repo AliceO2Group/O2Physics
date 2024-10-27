@@ -90,6 +90,8 @@ struct lambdapolarization {
   Configurable<bool> cfgPVSel{"cfgPVSel", false, "Additional PV selection flag for syst"};
   Configurable<float> cfgPV{"cfgPV", 8.0, "Additional PV selection range for syst"};
   Configurable<bool> cfgAddEvtSelPileup{"cfgAddEvtSelPileup", false, "flag for additional pileup selection"};
+  Configurable<int> cfgMaxOccupancy{"cfgMaxOccupancy", 999999, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
+  Configurable<int> cfgMinOccupancy{"cfgMinOccupancy", 0, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
 
   Configurable<float> cfgv0radiusMin{"cfgv0radiusMin", 1.2, "minimum decay radius"};
   Configurable<float> cfgDCAPosToPVMin{"cfgDCAPosToPVMin", 0.05, "minimum DCA to PV for positive track"};
@@ -164,6 +166,8 @@ struct lambdapolarization {
       return 4;
     } else if (name.value == "TPCneg") {
       return 5;
+    } else if (name.value == "TPCall") {
+      return 6;
     } else {
       return 0;
     }
@@ -189,6 +193,11 @@ struct lambdapolarization {
 
       histos.add(Form("psi%d/h_lambda_cossin", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
       histos.add(Form("psi%d/h_alambda_cossin", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
+
+      histos.add(Form("psi%d/h_lambda_vncos", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
+      histos.add(Form("psi%d/h_lambda_vnsin", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
+      histos.add(Form("psi%d/h_alambda_vncos", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
+      histos.add(Form("psi%d/h_alambda_vnsin", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
     }
 
     if (cfgQAv0) {
@@ -282,6 +291,9 @@ struct lambdapolarization {
       return 0;
     }
     if (cfgAddEvtSelPileup && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+      return 0;
+    }
+    if (collision.trackOccupancyInTimeRange() > cfgMaxOccupancy || collision.trackOccupancyInTimeRange() < cfgMinOccupancy) {
       return 0;
     }
 
@@ -542,33 +554,45 @@ struct lambdapolarization {
           histos.fill(HIST("psi2/h_lambda_cos"), v0.mLambda(), v0.pt(), angle, centrality, relphi);
           histos.fill(HIST("psi2/h_lambda_cos2"), v0.mLambda(), v0.pt(), angle * angle, centrality, relphi);
           histos.fill(HIST("psi2/h_lambda_cossin"), v0.mLambda(), v0.pt(), angle * TMath::Sin(relphi), centrality);
+          histos.fill(HIST("psi2/h_lambda_vncos"), v0.mLambda(), v0.pt(), TMath::Cos(relphi), centrality);
+          histos.fill(HIST("psi2/h_lambda_vnsin"), v0.mLambda(), v0.pt(), TMath::Sin(relphi), centrality);
         }
         if (aLambdaTag) {
           histos.fill(HIST("psi2/h_alambda_cos"), v0.mAntiLambda(), v0.pt(), angle, centrality, relphi);
           histos.fill(HIST("psi2/h_alambda_cos2"), v0.mAntiLambda(), v0.pt(), angle * angle, centrality, relphi);
           histos.fill(HIST("psi2/h_alambda_cossin"), v0.mAntiLambda(), v0.pt(), angle * TMath::Sin(relphi), centrality);
+          histos.fill(HIST("psi2/h_alambda_vncos"), v0.mLambda(), v0.pt(), TMath::Cos(relphi), centrality);
+          histos.fill(HIST("psi2/h_alambda_vnsin"), v0.mLambda(), v0.pt(), TMath::Sin(relphi), centrality);
         }
       } else if (nmode == 3) {
         if (LambdaTag) {
           histos.fill(HIST("psi3/h_lambda_cos"), v0.mLambda(), v0.pt(), angle, centrality, relphi);
           histos.fill(HIST("psi3/h_lambda_cos2"), v0.mLambda(), v0.pt(), angle * angle, centrality, relphi);
           histos.fill(HIST("psi3/h_lambda_cossin"), v0.mLambda(), v0.pt(), angle * TMath::Sin(relphi), centrality);
+          histos.fill(HIST("psi3/h_lambda_vncos"), v0.mLambda(), v0.pt(), TMath::Cos(relphi), centrality);
+          histos.fill(HIST("psi3/h_lambda_vnsin"), v0.mLambda(), v0.pt(), TMath::Sin(relphi), centrality);
         }
         if (aLambdaTag) {
           histos.fill(HIST("psi3/h_alambda_cos"), v0.mAntiLambda(), v0.pt(), angle, centrality, relphi);
           histos.fill(HIST("psi3/h_alambda_cos2"), v0.mAntiLambda(), v0.pt(), angle * angle, centrality, relphi);
           histos.fill(HIST("psi3/h_alambda_cossin"), v0.mAntiLambda(), v0.pt(), angle * TMath::Sin(relphi), centrality);
+          histos.fill(HIST("psi3/h_alambda_vncos"), v0.mLambda(), v0.pt(), TMath::Cos(relphi), centrality);
+          histos.fill(HIST("psi3/h_alambda_vnsin"), v0.mLambda(), v0.pt(), TMath::Sin(relphi), centrality);
         }
       } else if (nmode == 4) {
         if (LambdaTag) {
           histos.fill(HIST("psi4/h_lambda_cos"), v0.mLambda(), v0.pt(), angle, centrality, relphi);
           histos.fill(HIST("psi4/h_lambda_cos2"), v0.mLambda(), v0.pt(), angle * angle, centrality, relphi);
           histos.fill(HIST("psi4/h_lambda_cossin"), v0.mLambda(), v0.pt(), angle * TMath::Sin(relphi), centrality);
+          histos.fill(HIST("psi4/h_lambda_vncos"), v0.mLambda(), v0.pt(), TMath::Cos(relphi), centrality);
+          histos.fill(HIST("psi4/h_lambda_vnsin"), v0.mLambda(), v0.pt(), TMath::Sin(relphi), centrality);
         }
         if (aLambdaTag) {
           histos.fill(HIST("psi4/h_alambda_cos"), v0.mAntiLambda(), v0.pt(), angle, centrality, relphi);
           histos.fill(HIST("psi4/h_alambda_cos2"), v0.mAntiLambda(), v0.pt(), angle * angle, centrality, relphi);
           histos.fill(HIST("psi4/h_alambda_cossin"), v0.mAntiLambda(), v0.pt(), angle * TMath::Sin(relphi), centrality);
+          histos.fill(HIST("psi4/h_alambda_vncos"), v0.mLambda(), v0.pt(), TMath::Cos(relphi), centrality);
+          histos.fill(HIST("psi4/h_alambda_vnsin"), v0.mLambda(), v0.pt(), TMath::Sin(relphi), centrality);
         }
       } ////////// FIXME: not possible to get histograms using nmode
     }

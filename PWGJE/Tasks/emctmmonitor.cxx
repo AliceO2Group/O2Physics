@@ -349,7 +349,6 @@ struct TrackMatchingMonitor {
         mHistManager.fill(HIST("clusterTM_EoverP_E"), eOverP, cluster.energy(), t);
         mHistManager.fill(HIST("clusterTM_dEtadPhi"), dEta, dPhi, t);
         mHistManager.fill(HIST("clusterEMatched"), cluster.energy(), t);
-        mHistManager.fill(HIST("clusterTM_dEtaPt"), dEta, pT, t);
         mHistManager.fill(HIST("clusterTM_EvsP"), cluster.energy(), abs_p, t);
         mHistManager.fill(HIST("clusterTM_EoverP_Pt"), eOverP, match.track_as<tracksPID>().pt(), t);
         mHistManager.fill(HIST("clusterTM_NSigma"), NSigmaEl, match.track_as<tracksPID>().pt(), t);

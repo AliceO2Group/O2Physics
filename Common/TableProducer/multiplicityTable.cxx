@@ -379,15 +379,17 @@ struct MultiplicityTable {
         if (bc.runNumber() != mRunNumber) {
           mRunNumber = bc.runNumber(); // mark this run as at least tried
           if (ccdbConfig.reconstructionPass.value == "") {
-            lCalibObjects = ccdb->getForTimeStamp<TList>(ccdbConfig.ccdbPath, bc.timestamp());
+            lCalibObjects = ccdb->getForRun<TList>(ccdbConfig.ccdbPath, mRunNumber);
           } else if (ccdbConfig.reconstructionPass.value == "metadata") {
             std::map<std::string, std::string> metadata;
             metadata["RecoPassName"] = metadataInfo.get("RecoPassName");
-            lCalibObjects = ccdb->getSpecific<TList>(ccdbConfig.ccdbPath, bc.timestamp(), metadata);
+            LOGF(info, "Loading CCDB for reconstruction pass (from metadata): %s", metadataInfo.get("RecoPassName"));
+            lCalibObjects = ccdb->getSpecificForRun<TList>(ccdbConfig.ccdbPath, mRunNumber, metadata);
           } else {
             std::map<std::string, std::string> metadata;
             metadata["RecoPassName"] = ccdbConfig.reconstructionPass.value;
-            lCalibObjects = ccdb->getSpecific<TList>(ccdbConfig.ccdbPath, bc.timestamp(), metadata);
+            LOGF(info, "Loading CCDB for reconstruction pass (from provided argument): %s", ccdbConfig.reconstructionPass.value);
+            lCalibObjects = ccdb->getSpecificForRun<TList>(ccdbConfig.ccdbPath, mRunNumber, metadata);
           }
 
           if (lCalibObjects) {
@@ -563,12 +565,13 @@ struct MultiplicityTable {
               }
             }
 
-            int bcNumber = bc.globalBC() % 3564;
-
             tableExtra(collision.numContrib(), collision.chi2(), collision.collisionTimeRes(),
                        mRunNumber, collision.posZ(), collision.sel8(),
                        nHasITS, nHasTPC, nHasTOF, nHasTRD, nITSonly, nTPConly, nITSTPC,
-                       nAllTracksTPCOnly, nAllTracksITSTPC, collision.trackOccupancyInTimeRange(), collision.flags());
+                       nAllTracksTPCOnly, nAllTracksITSTPC,
+                       collision.trackOccupancyInTimeRange(),
+                       collision.ft0cOccupancyInTimeRange(),
+                       collision.flags());
           } break;
           case kMultSelections: // Multiplicity selections
           {

@@ -44,7 +44,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using filteredColl = soa::Filtered<soa::Join<JetCollisions, aod::JChTrigSels, aod::EvSels>>::iterator;
+using filteredColl = soa::Filtered<soa::Join<aod::JetCollisions, aod::JChTrigSels, aod::EvSels>>::iterator;
 using filteredJTracks = soa::Filtered<soa::Join<aod::JTracks, aod::JTrackPIs, aod::JTrackExtras>>;
 using filteredJets = soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>>;
 using joinedTracks = soa::Join<aod::Tracks, aod::TracksExtra>;
@@ -126,6 +126,8 @@ struct ChJetTriggerQATask {
     spectra.add("DCAxy_track_Phi_pT", "track DCAxy vs phi & pT of tracks w. nITSClusters #geq 4", kTH3F, {dcaXY_Binning, {60, 0., TMath::TwoPi()}, {100, 0., 100.}});
     spectra.add("DCAz_track_Phi_pT", "track DCAz vs phi & pT of tracks w. nITSClusters #geq 4", kTH3F, {dcaZ_Binning, {60, 0., TMath::TwoPi()}, {100, 0., 100.}});
     spectra.add("nITSClusters_TrackPt", "Number of ITS hits vs phi & pT of tracks", kTH3F, {{7, 1., 8.}, {60, 0., TMath::TwoPi()}, {100, 0., 100.}});
+    spectra.add("ptphiQualityTracks", "pT vs phi of quality tracks", {HistType::kTH2F, {{100, 0., 100.}, {60, 0, TMath::TwoPi()}}});
+    spectra.add("ptphiAllTracks", "pT vs phi of all tracks", {HistType::kTH2F, {{100, 0., +100.}, {60, 0, TMath::TwoPi()}}});
 
     // Supplementary plots
     if (bAddSupplementHistosToOutput) {
@@ -198,11 +200,15 @@ struct ChJetTriggerQATask {
           spectra.fill(HIST("globalP_tpcglobalPDiff_withoutcuts_phirestrict"), track.p(), track.p() - originalTrack.tpcInnerParam());
         }
 
+        spectra.fill(HIST("ptphiAllTracks"), track.pt(), track.phi());
+
         if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
           continue;
         }
 
-        bool bDcaCondition = (abs(track.dcaZ()) < dcaZ_cut) && (abs(track.dcaXY()) < dcaXY_multFact * DcaXYPtCut(track.pt()));
+        spectra.fill(HIST("ptphiQualityTracks"), track.pt(), track.phi());
+
+        bool bDcaCondition = (fabs(track.dcaZ()) < dcaZ_cut) && (fabs(track.dcaXY()) < dcaXY_multFact * DcaXYPtCut(track.pt()));
         if (originalTrack.itsNCls() >= 4 && bDcaCondition) { // correspond to number of track hits in ITS layers
           spectra.fill(HIST("DCAxy_track_Phi_pT"), track.dcaXY(), track.phi(), track.pt());
           spectra.fill(HIST("DCAz_track_Phi_pT"), track.dcaZ(), track.phi(), track.pt());

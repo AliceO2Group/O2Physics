@@ -34,6 +34,7 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/Utils/utilsPid.h"
 
 namespace o2::aod
 {
@@ -482,7 +483,64 @@ DECLARE_SOA_COLUMN(ImpactParameterZ2, impactParameterZ2, float);                
 DECLARE_SOA_COLUMN(ErrorImpactParameterZ2, errorImpactParameterZ2, float);           //!
 DECLARE_SOA_DYNAMIC_COLUMN(ImpactParameterZNormalised2, impactParameterZNormalised2, //!
                            [](float dca, float err) -> float { return dca / err; });
+/// prong PID nsigma
 DECLARE_SOA_COLUMN(NProngsContributorsPV, nProngsContributorsPV, uint8_t); //! number of prongs contributing to the primary-vertex reconstruction
+DECLARE_SOA_COLUMN(NSigTpcPi0, nSigTpcPi0, float);                         //! TPC nSigma for pion hypothesis - prong 0
+DECLARE_SOA_COLUMN(NSigTpcPi1, nSigTpcPi1, float);                         //! TPC nSigma for pion hypothesis - prong 1
+DECLARE_SOA_COLUMN(NSigTpcPi2, nSigTpcPi2, float);                         //! TPC nSigma for pion hypothesis - prong 2
+DECLARE_SOA_COLUMN(NSigTpcKa0, nSigTpcKa0, float);                         //! TPC nSigma for kaon hypothesis - prong 0
+DECLARE_SOA_COLUMN(NSigTpcKa1, nSigTpcKa1, float);                         //! TPC nSigma for kaon hypothesis - prong 1
+DECLARE_SOA_COLUMN(NSigTpcKa2, nSigTpcKa2, float);                         //! TPC nSigma for kaon hypothesis - prong 2
+DECLARE_SOA_COLUMN(NSigTpcPr0, nSigTpcPr0, float);                         //! TPC nSigma for proton hypothesis - prong 0
+DECLARE_SOA_COLUMN(NSigTpcPr1, nSigTpcPr1, float);                         //! TPC nSigma for proton hypothesis - prong 1
+DECLARE_SOA_COLUMN(NSigTpcPr2, nSigTpcPr2, float);                         //! TPC nSigma for proton hypothesis - prong 2
+DECLARE_SOA_COLUMN(NSigTofPi0, nSigTofPi0, float);                         //! TOF nSigma for pion hypothesis - prong 0
+DECLARE_SOA_COLUMN(NSigTofPi1, nSigTofPi1, float);                         //! TOF nSigma for pion hypothesis - prong 1
+DECLARE_SOA_COLUMN(NSigTofPi2, nSigTofPi2, float);                         //! TOF nSigma for pion hypothesis - prong 2
+DECLARE_SOA_COLUMN(NSigTofKa0, nSigTofKa0, float);                         //! TOF nSigma for kaon hypothesis - prong 0
+DECLARE_SOA_COLUMN(NSigTofKa1, nSigTofKa1, float);                         //! TOF nSigma for kaon hypothesis - prong 1
+DECLARE_SOA_COLUMN(NSigTofKa2, nSigTofKa2, float);                         //! TOF nSigma for kaon hypothesis - prong 2
+DECLARE_SOA_COLUMN(NSigTofPr0, nSigTofPr0, float);                         //! TOF nSigma for proton hypothesis - prong 0
+DECLARE_SOA_COLUMN(NSigTofPr1, nSigTofPr1, float);                         //! TOF nSigma for proton hypothesis - prong 1
+DECLARE_SOA_COLUMN(NSigTofPr2, nSigTofPr2, float);                         //! TOF nSigma for proton hypothesis - prong 2
+DECLARE_SOA_DYNAMIC_COLUMN(TpcTofNSigmaPi0, tpcTofNSigmaPi0,               //! Combined NSigma separation with the TPC & TOF detectors for pion - prong 0
+                           [](float tpcNSigmaPi0, float tofNSigmaPi0) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaPi0, tofNSigmaPi0); });
+DECLARE_SOA_DYNAMIC_COLUMN(TpcTofNSigmaPi1, tpcTofNSigmaPi1, //! Combined NSigma separation with the TPC & TOF detectors for pion - prong 1
+                           [](float tpcNSigmaPi1, float tofNSigmaPi1) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaPi1, tofNSigmaPi1); });
+DECLARE_SOA_DYNAMIC_COLUMN(TpcTofNSigmaPi2, tpcTofNSigmaPi2, //! Combined NSigma separation with the TPC & TOF detectors for pion - prong 2
+                           [](float tpcNSigmaPi2, float tofNSigmaPi2) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaPi2, tofNSigmaPi2); });
+DECLARE_SOA_DYNAMIC_COLUMN(TpcTofNSigmaKa0, tpcTofNSigmaKa0, //! Combined NSigma separation with the TPC & TOF detectors for kaon - prong 0
+                           [](float tpcNSigmaKa0, float tofNSigmaKa0) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaKa0, tofNSigmaKa0); });
+DECLARE_SOA_DYNAMIC_COLUMN(TpcTofNSigmaKa1, tpcTofNSigmaKa1, //! Combined NSigma separation with the TPC & TOF detectors for kaon - prong 1
+                           [](float tpcNSigmaKa1, float tofNSigmaKa1) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaKa1, tofNSigmaKa1); });
+DECLARE_SOA_DYNAMIC_COLUMN(TpcTofNSigmaKa2, tpcTofNSigmaKa2, //! Combined NSigma separation with the TPC & TOF detectors for kaon - prong 2
+                           [](float tpcNSigmaKa2, float tofNSigmaKa2) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaKa2, tofNSigmaKa2); });
+DECLARE_SOA_DYNAMIC_COLUMN(TpcTofNSigmaPr0, tpcTofNSigmaPr0, //! Combined NSigma separation with the TPC & TOF detectors for proton - prong 0
+                           [](float tpcNSigmaPr0, float tofNSigmaPr0) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaPr0, tofNSigmaPr0); });
+DECLARE_SOA_DYNAMIC_COLUMN(TpcTofNSigmaPr1, tpcTofNSigmaPr1, //! Combined NSigma separation with the TPC & TOF detectors for proton - prong 1
+                           [](float tpcNSigmaPr1, float tofNSigmaPr1) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaPr1, tofNSigmaPr1); });
+DECLARE_SOA_DYNAMIC_COLUMN(TpcTofNSigmaPr2, tpcTofNSigmaPr2, //! Combined NSigma separation with the TPC & TOF detectors for proton - prong 2
+                           [](float tpcNSigmaPr2, float tofNSigmaPr2) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaPr2, tofNSigmaPr2); });
+// tiny (binned) option
+DECLARE_SOA_DYNAMIC_COLUMN(TpcTofNSigmaTinyPi0, tpcTofNSigmaTinyPi0, //! Combined NSigma separation with the TPC & TOF detectors for pion - prong 0
+                           [](float tpcNSigmaPi0, float tofNSigmaPi0) -> float { return pid_tpc_tof_utils::combineNSigma<true /*tiny*/>(tpcNSigmaPi0, tofNSigmaPi0); });
+DECLARE_SOA_DYNAMIC_COLUMN(TpcTofNSigmaTinyPi1, tpcTofNSigmaTinyPi1, //! Combined NSigma separation with the TPC & TOF detectors for pion - prong 1
+                           [](float tpcNSigmaPi1, float tofNSigmaPi1) -> float { return pid_tpc_tof_utils::combineNSigma<true /*tiny*/>(tpcNSigmaPi1, tofNSigmaPi1); });
+DECLARE_SOA_DYNAMIC_COLUMN(TpcTofNSigmaTinyPi2, tpcTofNSigmaTinyPi2, //! Combined NSigma separation with the TPC & TOF detectors for pion - prong 2
+                           [](float tpcNSigmaPi2, float tofNSigmaPi2) -> float { return pid_tpc_tof_utils::combineNSigma<true /*tiny*/>(tpcNSigmaPi2, tofNSigmaPi2); });
+DECLARE_SOA_DYNAMIC_COLUMN(TpcTofNSigmaTinyKa0, tpcTofNSigmaTinyKa0, //! Combined NSigma separation with the TPC & TOF detectors for kaon - prong 0
+                           [](float tpcNSigmaKa0, float tofNSigmaKa0) -> float { return pid_tpc_tof_utils::combineNSigma<true /*tiny*/>(tpcNSigmaKa0, tofNSigmaKa0); });
+DECLARE_SOA_DYNAMIC_COLUMN(TpcTofNSigmaTinyKa1, tpcTofNSigmaTinyKa1, //! Combined NSigma separation with the TPC & TOF detectors for kaon - prong 1
+                           [](float tpcNSigmaKa1, float tofNSigmaKa1) -> float { return pid_tpc_tof_utils::combineNSigma<true /*tiny*/>(tpcNSigmaKa1, tofNSigmaKa1); });
+DECLARE_SOA_DYNAMIC_COLUMN(TpcTofNSigmaTinyKa2, tpcTofNSigmaTinyKa2, //! Combined NSigma separation with the TPC & TOF detectors for kaon - prong 2
+                           [](float tpcNSigmaKa2, float tofNSigmaKa2) -> float { return pid_tpc_tof_utils::combineNSigma<true /*tiny*/>(tpcNSigmaKa2, tofNSigmaKa2); });
+DECLARE_SOA_DYNAMIC_COLUMN(TpcTofNSigmaTinyPr0, tpcTofNSigmaTinyPr0, //! Combined NSigma separation with the TPC & TOF detectors for proton - prong 0
+                           [](float tpcNSigmaPr0, float tofNSigmaPr0) -> float { return pid_tpc_tof_utils::combineNSigma<true /*tiny*/>(tpcNSigmaPr0, tofNSigmaPr0); });
+DECLARE_SOA_DYNAMIC_COLUMN(TpcTofNSigmaTinyPr1, tpcTofNSigmaTinyPr1, //! Combined NSigma separation with the TPC & TOF detectors for proton - prong 1
+                           [](float tpcNSigmaPr1, float tofNSigmaPr1) -> float { return pid_tpc_tof_utils::combineNSigma<true /*tiny*/>(tpcNSigmaPr1, tofNSigmaPr1); });
+DECLARE_SOA_DYNAMIC_COLUMN(TpcTofNSigmaTinyPr2, tpcTofNSigmaTinyPr2, //! Combined NSigma separation with the TPC & TOF detectors for proton - prong 2
+                           [](float tpcNSigmaPr2, float tofNSigmaPr2) -> float { return pid_tpc_tof_utils::combineNSigma<true /*tiny*/>(tpcNSigmaPr2, tofNSigmaPr2); });
+
 // candidate properties
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //!
                            [](float px, float py) -> float { return RecoDecay::pt(px, py); });
@@ -633,7 +691,36 @@ DECLARE_SOA_TABLE(HfCand2ProngBase, "AOD", "HFCAND2PBASE", //!
 DECLARE_SOA_EXTENDED_TABLE_USER(HfCand2ProngExt, HfCand2ProngBase, "HFCAND2PEXT", //!
                                 hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz);
 
+DECLARE_SOA_TABLE(HfProng0PidPi, "AOD", "HFP0PIDPI", //!
+                  hf_cand::NSigTpcPi0, hf_cand::NSigTofPi0,
+                  hf_cand::TpcTofNSigmaPi0<hf_cand::NSigTpcPi0, hf_cand::NSigTofPi0>);
+DECLARE_SOA_TABLE(HfProng1PidPi, "AOD", "HFP1PIDPI", //!
+                  hf_cand::NSigTpcPi1, hf_cand::NSigTofPi1,
+                  hf_cand::TpcTofNSigmaPi1<hf_cand::NSigTpcPi1, hf_cand::NSigTofPi1>);
+DECLARE_SOA_TABLE(HfProng2PidPi, "AOD", "HFP2PIDPI", //!
+                  hf_cand::NSigTpcPi2, hf_cand::NSigTofPi2,
+                  hf_cand::TpcTofNSigmaPi2<hf_cand::NSigTpcPi2, hf_cand::NSigTofPi2>);
+DECLARE_SOA_TABLE(HfProng0PidKa, "AOD", "HFP0PIDKA", //!
+                  hf_cand::NSigTpcKa0, hf_cand::NSigTofKa0,
+                  hf_cand::TpcTofNSigmaKa0<hf_cand::NSigTpcKa0, hf_cand::NSigTofKa0>);
+DECLARE_SOA_TABLE(HfProng1PidKa, "AOD", "HFP1PIDKA", //!
+                  hf_cand::NSigTpcKa1, hf_cand::NSigTofKa1,
+                  hf_cand::TpcTofNSigmaKa1<hf_cand::NSigTpcKa1, hf_cand::NSigTofKa1>);
+DECLARE_SOA_TABLE(HfProng2PidKa, "AOD", "HFP2PIDKA", //!
+                  hf_cand::NSigTpcKa2, hf_cand::NSigTofKa2,
+                  hf_cand::TpcTofNSigmaKa2<hf_cand::NSigTpcKa2, hf_cand::NSigTofKa2>);
+DECLARE_SOA_TABLE(HfProng0PidPr, "AOD", "HFP0PIDPR", //!
+                  hf_cand::NSigTpcPr0, hf_cand::NSigTofPr0,
+                  hf_cand::TpcTofNSigmaPr0<hf_cand::NSigTpcPr0, hf_cand::NSigTofPr0>);
+DECLARE_SOA_TABLE(HfProng1PidPr, "AOD", "HFP1PIDPR", //!
+                  hf_cand::NSigTpcPr1, hf_cand::NSigTofPr1,
+                  hf_cand::TpcTofNSigmaPr1<hf_cand::NSigTpcPr1, hf_cand::NSigTofPr1>);
+DECLARE_SOA_TABLE(HfProng2PidPr, "AOD", "HFP2PIDPR", //!
+                  hf_cand::NSigTpcPr2, hf_cand::NSigTofPr2,
+                  hf_cand::TpcTofNSigmaPr2<hf_cand::NSigTpcPr2, hf_cand::NSigTofPr2>);
+
 using HfCand2Prong = HfCand2ProngExt;
+using HfCand2ProngWPid = soa::Join<HfCand2Prong, HfProng0PidPi, HfProng0PidKa, HfProng1PidPi, HfProng1PidKa>;
 
 DECLARE_SOA_TABLE(HfCand2ProngKF, "AOD", "HFCAND2PKF",
                   hf_cand::KfTopolChi2OverNdf,
@@ -756,12 +843,12 @@ namespace hf_cand_bplus
 {
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfCand2Prong, "_0"); // D0 index
 // MC matching result:
-DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); // reconstruction level
+DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t);         // reconstruction level
 DECLARE_SOA_COLUMN(FlagWrongCollision, flagWrongCollision, int8_t); // reconstruction level
-DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t); // generator level
-DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);       // particle origin, reconstruction level
-DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);       // particle origin, generator level
-DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);         // debug flag for mis-association reconstruction level
+DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t);         // generator level
+DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);               // particle origin, reconstruction level
+DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);               // particle origin, generator level
+DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);                 // debug flag for mis-association reconstruction level
 
 enum DecayType { BplusToD0Pi = 0 };
 
@@ -1735,16 +1822,23 @@ namespace hf_cand_bs
 {
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfCand3Prong, "_0"); // Ds index
 // MC matching result:
-DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); // reconstruction level
-DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t); // generator level
+DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t);         // reconstruction level
+DECLARE_SOA_COLUMN(FlagWrongCollision, flagWrongCollision, int8_t); // reconstruction level
+DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t);         // generator level
+DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);               // particle origin, reconstruction level
+DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);               // particle origin, generator level
+DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);                 // debug flag for mis-association reconstruction level
 
 // mapping of decay types
 enum DecayType { BsToDsPi };
 
-enum DecayTypeMc : uint8_t { BsToDsPiToKKPiPi = 0, // Bs(bar) → Ds∓ π± → (Phi π∓) π± → (K- K+ π∓) π±
-                             B0ToDsPiToKKPiPi,     // B0(bar) → Ds± π∓ → (Phi π±) π∓ → (K- K+ π±) π∓
-                             PartlyRecoDecay,      // 4 final state particles have another common b-hadron ancestor
-                             NDecayTypeMc };       // counter of differentiated MC decay types
+enum DecayTypeMc : uint8_t { BsToDsPiToPhiPiPiToKKPiPi = 0, // Bs(bar) → Ds∓ π± → (Phi π∓) π± → (K- K+ π∓) π±
+                             BsToDsPiToK0starKPiToKKPiPi,   // Bs(bar) → Ds∓ π± → (K0* K∓) π± → (K- K+ π∓) π±
+                             B0ToDsPiToPhiPiPiToKKPiPi,     // B0(bar) → Ds± π∓ → (Phi π±) π∓ → (K- K+ π±) π∓
+                             B0ToDsPiToK0starKPiToKKPiPi,   // B0(bar) → Ds± π∓ → (K0* K±) π∓ → (K- K+ π±) π∓
+                             PartlyRecoDecay,               // 4 final state particles have another common b-hadron ancestor
+                             OtherDecay,
+                             NDecayTypeMc }; // counter of differentiated MC decay types
 
 } // namespace hf_cand_bs
 
@@ -1757,8 +1851,6 @@ DECLARE_SOA_TABLE(HfCandBsBase, "AOD", "HFCANDBSBASE",
                   hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1,
                   hf_cand::ImpactParameter0, hf_cand::ImpactParameter1,
                   hf_cand::ErrorImpactParameter0, hf_cand::ErrorImpactParameter1,
-                  hf_cand_bs::Prong0Id, hf_track_index::Prong1Id,
-                  hf_track_index::HFflag,
                   /* dynamic columns */
                   hf_cand_2prong::M<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
                   hf_cand_2prong::M2<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
@@ -1780,13 +1872,17 @@ DECLARE_SOA_TABLE(HfCandBsBase, "AOD", "HFCANDBSBASE",
                   hf_cand::Phi<hf_cand_2prong::Px, hf_cand_2prong::Py>,
                   hf_cand::Y<hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz>,
                   hf_cand::E<hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz>,
-                  hf_cand::E2<hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz>);
+                  hf_cand::E2<hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz>,
+                  o2::soa::Marker<1>);
 
 // extended table with expression columns that can be used as arguments of dynamic columns
 DECLARE_SOA_EXTENDED_TABLE_USER(HfCandBsExt, HfCandBsBase, "HFCANDBSEXT",
                                 hf_cand_2prong::Px, hf_cand_2prong::Py, hf_cand_2prong::Pz);
 
-using HfCandBs = HfCandBsExt;
+DECLARE_SOA_TABLE(HfCandBsProngs, "AOD", "HFCANDBSPRONGS",
+                  hf_cand_bs::Prong0Id, hf_track_index::Prong1Id);
+
+using HfCandBs = soa::Join<HfCandBsExt, HfCandBsProngs>;
 
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfCandBsMcRec, "AOD", "HFCANDBSMCREC",

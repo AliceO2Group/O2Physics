@@ -15,7 +15,7 @@
 
 #include "PWGJE/JetFinders/jetfinderhf.cxx"
 
-using JetFinderDielectronMCParticleLevelCharged = JetFinderHFTask<CandidatesDielectronData, CandidatesDielectronMCD, CandidatesDielectronMCP, JetTracksSubDielectron, aod::DielectronChargedMCParticleLevelJets, aod::DielectronChargedMCParticleLevelJetConstituents, aod::DielectronChargedMCParticleLevelEventWiseSubtractedJets, aod::DielectronChargedMCParticleLevelEventWiseSubtractedJetConstituents>;
+using JetFinderDielectronMCParticleLevelCharged = JetFinderHFTask<aod::CandidatesDielectronData, aod::CandidatesDielectronMCD, aod::CandidatesDielectronMCP, aod::JetTracksSubDielectron, aod::DielectronChargedMCParticleLevelJets, aod::DielectronChargedMCParticleLevelJetConstituents, aod::DielectronChargedMCParticleLevelEventWiseSubtractedJets, aod::DielectronChargedMCParticleLevelEventWiseSubtractedJetConstituents>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

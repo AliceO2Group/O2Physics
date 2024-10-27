@@ -38,10 +38,6 @@ using namespace o2::framework::expressions;
 using namespace o2::aod::evsel;
 
 constexpr double kVeryNegative = -1.e12;
-constexpr int ndet = 2;
-constexpr int npar = 6;
-static double mSum[ndet][npar][npar];
-static double mAdd[npar][npar];
 
 using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 using ColEvSels = soa::Join<aod::Collisions, aod::EvSels>;

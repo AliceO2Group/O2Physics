@@ -32,21 +32,21 @@ struct JetEventWeightMCDTask {
   Produces<MCDetectorLevelWeightsTable> mcDetectorLevelWeightsTable;
   Produces<MCDetectorLevelEventWiseSubtractedWeightsTable> mcDetectorLevelEventWiseSubtractedWeightsTable;
 
-  void processDummy(JetCollisions const&)
+  void processDummy(aod::JetCollisions const&)
   {
   }
   PROCESS_SWITCH(JetEventWeightMCDTask, processDummy, "Dummy process", true);
 
-  void processMCDetectorLevelEventWeight(MCDetectorLevelJetTable const& jet, soa::Join<JetCollisions, aod::JMcCollisionLbs> const&, JetMcCollisions const&)
+  void processMCDetectorLevelEventWeight(MCDetectorLevelJetTable const& jet, soa::Join<aod::JetCollisions, aod::JMcCollisionLbs> const&, aod::JetMcCollisions const&)
   {
-    auto collision = jet.template collision_as<soa::Join<JetCollisions, aod::JMcCollisionLbs>>();
+    auto collision = jet.template collision_as<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>>();
     mcDetectorLevelWeightsTable(jet.globalIndex(), collision.mcCollision().weight());
   }
   PROCESS_SWITCH(JetEventWeightMCDTask, processMCDetectorLevelEventWeight, "Fill event weight tables for detector level MC jets", false);
 
-  void processMCDetectorLevelEventWiseSubtractedEventWeight(MCDetectorLevelEventWiseSubtractedJetTable const& jet, soa::Join<JetCollisions, aod::JMcCollisionLbs> const&, JetMcCollisions const&)
+  void processMCDetectorLevelEventWiseSubtractedEventWeight(MCDetectorLevelEventWiseSubtractedJetTable const& jet, soa::Join<aod::JetCollisions, aod::JMcCollisionLbs> const&, aod::JetMcCollisions const&)
   {
-    auto collision = jet.template collision_as<soa::Join<JetCollisions, aod::JMcCollisionLbs>>();
+    auto collision = jet.template collision_as<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>>();
     mcDetectorLevelEventWiseSubtractedWeightsTable(jet.globalIndex(), collision.mcCollision().weight());
   }
   PROCESS_SWITCH(JetEventWeightMCDTask, processMCDetectorLevelEventWiseSubtractedEventWeight, "Fill event weight tables for detector level MC jets", false);

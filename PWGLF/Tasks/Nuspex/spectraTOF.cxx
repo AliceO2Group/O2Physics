@@ -122,6 +122,7 @@ struct tofSpectra {
   Configurable<float> minNCrossedRowsTPC{"minNCrossedRowsTPC", 70.f, "Additional cut on the minimum number of crossed rows in the TPC"};
   Configurable<float> minNCrossedRowsOverFindableClustersTPC{"minNCrossedRowsOverFindableClustersTPC", 0.8f, "Additional cut on the minimum value of the ratio between crossed rows and findable clusters in the TPC"};
   Configurable<float> maxChi2PerClusterTPC{"maxChi2PerClusterTPC", 4.f, "Additional cut on the maximum value of the chi2 per cluster in the TPC"};
+  Configurable<float> minChi2PerClusterTPC{"minChi2PerClusterTPC", 0.5f, "Additional cut on the minimum value of the chi2 per cluster in the TPC"};
   Configurable<float> maxChi2PerClusterITS{"maxChi2PerClusterITS", 36.f, "Additional cut on the maximum value of the chi2 per cluster in the ITS"};
   Configurable<float> maxDcaXYFactor{"maxDcaXYFactor", 1.f, "Additional cut on the maximum value of the DCA xy (multiplicative factor)"};
   Configurable<float> maxDcaZ{"maxDcaZ", 2.f, "Additional cut on the maximum value of the DCA z"};
@@ -130,6 +131,7 @@ struct tofSpectra {
   Configurable<bool> enableTPCTOFvsEtaHistograms{"enableTPCTOFvsEtaHistograms", false, "choose if produce TPC tof vs Eta"};
   Configurable<bool> includeCentralityMC{"includeCentralityMC", true, "choose if include Centrality to MC"};
   Configurable<bool> enableTPCTOFVsMult{"enableTPCTOFVsMult", false, "Produce TPC-TOF plots vs multiplicity"};
+  Configurable<bool> includeCentralityToTracks{"includeCentralityToTracks", false, "choose if include Centrality to tracks"};
 
   // Histograms
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -203,6 +205,7 @@ struct tofSpectra {
       LOG(info) << "\trequireTPC=" << requireTPC.value;
       LOG(info) << "\trequireGoldenChi2=" << requireGoldenChi2.value;
       LOG(info) << "\tmaxChi2PerClusterTPC=" << maxChi2PerClusterTPC.value;
+      LOG(info) << "\tminChi2PerClusterTPC=" << minChi2PerClusterTPC.value;
       LOG(info) << "\tminNCrossedRowsTPC=" << minNCrossedRowsTPC.value;
       LOG(info) << "\tminTPCNClsFound=" << minTPCNClsFound.value;
       LOG(info) << "\tmaxChi2PerClusterITS=" << maxChi2PerClusterITS.value;
@@ -411,6 +414,16 @@ struct tofSpectra {
     histos.add("Data/neg/pt/its", "neg ITS", kTH1D, {ptAxis});
     histos.add("Data/pos/pt/tpc", "pos TPC", kTH1D, {ptAxis});
     histos.add("Data/neg/pt/tpc", "neg TPC", kTH1D, {ptAxis});
+
+    if (includeCentralityToTracks) {
+      histos.add("Data/cent/pos/pt/its_tpc_tof", "pos ITS-TPC-TOF", kTH2D, {ptAxis, multAxis});
+      histos.add("Data/cent/neg/pt/its_tpc_tof", "neg ITS-TPC-TOF", kTH2D, {ptAxis, multAxis});
+      histos.add("Data/cent/pos/pt/its_tpc", "pos ITS-TPC", kTH2D, {ptAxis, multAxis});
+      histos.add("Data/cent/neg/pt/its_tpc", "neg ITS-TPC", kTH2D, {ptAxis, multAxis});
+      histos.add("Data/cent/pos/pt/its_tof", "pos ITS-TOF", kTH2D, {ptAxis, multAxis});
+      histos.add("Data/cent/neg/pt/its_tof", "neg ITS-TOF", kTH2D, {ptAxis, multAxis});
+    }
+
     if (doprocessOccupancy) {
       const AxisSpec nsigmaTPCAxisOccupancy{binsOptions.binsnsigmaTPC, "nsigmaTPC"};
       histos.add("nsigmatpc/test_occupancy/Mult_vs_Occupancy", "occuppancy vs Multiplicity", kTHnSparseD, {multAxis, occupancyAxis});
@@ -1100,8 +1113,8 @@ struct tofSpectra {
     return track.isGlobalTrackWoDCA();
   }
 
-  template <bool fillHistograms = false, typename TrackType>
-  bool isTrackSelected(TrackType const& track)
+  template <bool fillHistograms = false, typename TrackType, typename CollisionType>
+  bool isTrackSelected(TrackType const& track, CollisionType const& collision)
   {
     if constexpr (fillHistograms) {
       histos.fill(HIST("tracksel"), 1);
@@ -1153,6 +1166,10 @@ struct tofSpectra {
       }
     }
 
+    if (track.tpcChi2NCl() < minChi2PerClusterTPC || track.tpcChi2NCl() > maxChi2PerClusterTPC) {
+      return false;
+    }
+
     if (!passesCutWoDCA(track)) {
       return false;
     }
@@ -1193,8 +1210,14 @@ struct tofSpectra {
       if (track.hasITS() && track.hasTPC() && track.hasTOF()) {
         if (track.sign() > 0) {
           histos.fill(HIST("Data/pos/pt/its_tpc_tof"), track.pt());
+          if (includeCentralityToTracks) {
+            histos.fill(HIST("Data/cent/pos/pt/its_tpc_tof"), track.pt(), collision.centFT0C());
+          }
         } else {
           histos.fill(HIST("Data/neg/pt/its_tpc_tof"), track.pt());
+          if (includeCentralityToTracks) {
+            histos.fill(HIST("Data/cent/neg/pt/its_tpc_tof"), track.pt(), collision.centFT0C());
+          }
         }
       }
       if (track.hasITS() && track.hasTRD() && track.hasTOF()) {
@@ -1214,8 +1237,14 @@ struct tofSpectra {
       if (track.hasITS() && track.hasTPC()) {
         if (track.sign() > 0) {
           histos.fill(HIST("Data/pos/pt/its_tpc"), track.pt());
+          if (includeCentralityToTracks) {
+            histos.fill(HIST("Data/cent/pos/pt/its_tpc"), track.pt(), collision.centFT0C());
+          }
         } else {
           histos.fill(HIST("Data/neg/pt/its_tpc"), track.pt());
+          if (includeCentralityToTracks) {
+            histos.fill(HIST("Data/cent/neg/pt/its_tpc"), track.pt(), collision.centFT0C());
+          }
         }
       }
       if (track.hasTRD() && track.hasTOF()) {
@@ -1235,8 +1264,14 @@ struct tofSpectra {
       if (track.hasITS() && track.hasTOF()) {
         if (track.sign() > 0) {
           histos.fill(HIST("Data/pos/pt/its_tof"), track.pt());
+          if (includeCentralityToTracks) {
+            histos.fill(HIST("Data/cent/pos/pt/its_tof"), track.pt(), collision.centFT0C());
+          }
         } else {
           histos.fill(HIST("Data/neg/pt/its_tof"), track.pt());
+          if (includeCentralityToTracks) {
+            histos.fill(HIST("Data/cent/neg/pt/its_tof"), track.pt(), collision.centFT0C());
+          }
         }
       }
       if (track.hasTPC() && track.hasTRD()) {
@@ -1315,7 +1350,7 @@ struct tofSpectra {
     const float multiplicity = collision.centFT0C();
     histos.fill(HIST("nsigmatpc/test_occupancy/Mult_vs_Occupancy"), multiplicity, occupancy);
     for (const auto& track : tracks) {
-      if (!isTrackSelected<true>(track)) {
+      if (!isTrackSelected<true>(track, collision)) {
         continue;
       }
       const auto& nsigmaTPCPi = o2::aod::pidutils::tpcNSigma<2>(track);
@@ -1350,7 +1385,7 @@ struct tofSpectra {
     }
     hMultiplicityvsPercentile->Fill(getMultiplicity(collision), collision.multNTracksPV());
     for (const auto& track : tracks) {
-      if (!isTrackSelected<true>(track)) {
+      if (!isTrackSelected<true>(track, collision)) {
         continue;
       }
     }
@@ -1368,7 +1403,7 @@ struct tofSpectra {
       }
       const auto& tracksInCollision = tracks.sliceByCached(aod::spectra::collisionId, collision.globalIndex(), cacheTrk);
       for (const auto& track : tracksInCollision) {
-        if (!isTrackSelected<true>(track)) {
+        if (!isTrackSelected<true>(track, collision)) {
           continue;
         }
         fillParticleHistos<false, PID::Pion>(track, collision);
@@ -1389,7 +1424,7 @@ struct tofSpectra {
       return;                                                                                  \
     }                                                                                          \
     for (const auto& track : tracks) {                                                         \
-      if (!isTrackSelected<false>(track)) {                                                    \
+      if (!isTrackSelected<false>(track, collision)) {                                         \
         continue;                                                                              \
       }                                                                                        \
       fillParticleHistos<isFull, PID::particleId>(track, collision);                           \
