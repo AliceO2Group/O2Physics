@@ -182,7 +182,6 @@ struct HfTaskCorrelationLcHadrons {
 
   void processData(LcHadronPairFull const& pairEntries)
   {
-    std::cout << "  ";
     for (const auto& pairEntry : pairEntries) {
       // define variables for widely used quantities
       double deltaPhi = pairEntry.deltaPhi();
