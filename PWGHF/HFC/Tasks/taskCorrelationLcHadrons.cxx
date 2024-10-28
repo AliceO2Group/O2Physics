@@ -104,7 +104,7 @@ struct HfTaskCorrelationLcHadrons {
   using LcHadronPairFull = soa::Join<aod::LcHadronPair, aod::LcHadronRecoInfo>;
 
   enum Region {
-    Default = 0, // 默认值
+    Default = 0,
     Toward,
     Away,
     Transverse
