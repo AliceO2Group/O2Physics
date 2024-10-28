@@ -203,7 +203,10 @@ struct HfFemtoDreamProducer {
                      particle.tofNSigmaPi(),
                      particle.tofNSigmaKa(),
                      particle.tofNSigmaPr(),
-                     -999., -999., -999., -999., -999., -999., -999., -999., -999., -999.);
+                     -999., -999., -999., -999.,
+                     -999., -999., -999., -999.,
+                     -999., -999., -999., -999.,
+                     -999., -999.);
   }
 
   template <typename CollisionType, typename ParticleType>
