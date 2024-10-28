@@ -636,47 +636,47 @@ DECLARE_SOA_TABLE(V0TrackXs, "AOD", "V0TRACKX", //! track X positions at minima 
                   v0data::PosX, v0data::NegX, o2::soa::Marker<1>);
 
 DECLARE_SOA_TABLE_STAGED(V0CoresBase, "V0CORE", //! core information about decay, viable with AO2Ds or derived
-                       o2::soa::Index<>,
-                       v0data::X, v0data::Y, v0data::Z,
-                       v0data::PxPos, v0data::PyPos, v0data::PzPos,
-                       v0data::PxNeg, v0data::PyNeg, v0data::PzNeg,
-                       v0data::DCAV0Daughters, v0data::DCAPosToPV, v0data::DCANegToPV,
-                       v0data::V0CosPA, v0data::DCAV0ToPV, v0data::V0Type,
+                         o2::soa::Index<>,
+                         v0data::X, v0data::Y, v0data::Z,
+                         v0data::PxPos, v0data::PyPos, v0data::PzPos,
+                         v0data::PxNeg, v0data::PyNeg, v0data::PzNeg,
+                         v0data::DCAV0Daughters, v0data::DCAPosToPV, v0data::DCANegToPV,
+                         v0data::V0CosPA, v0data::DCAV0ToPV, v0data::V0Type,
 
-                       // Dynamic columns
-                       v0data::PtHypertriton<v0data::PxPos, v0data::PyPos, v0data::PxNeg, v0data::PyNeg>,
-                       v0data::PtAntiHypertriton<v0data::PxPos, v0data::PyPos, v0data::PxNeg, v0data::PyNeg>,
-                       v0data::V0Radius<v0data::X, v0data::Y>,
-                       v0data::DistOverTotMom<v0data::X, v0data::Y, v0data::Z, v0data::Px, v0data::Py, v0data::Pz>,
-                       v0data::Alpha<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::QtArm<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::PsiPair<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::PFracPos<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::PFracNeg<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>, // 24
+                         // Dynamic columns
+                         v0data::PtHypertriton<v0data::PxPos, v0data::PyPos, v0data::PxNeg, v0data::PyNeg>,
+                         v0data::PtAntiHypertriton<v0data::PxPos, v0data::PyPos, v0data::PxNeg, v0data::PyNeg>,
+                         v0data::V0Radius<v0data::X, v0data::Y>,
+                         v0data::DistOverTotMom<v0data::X, v0data::Y, v0data::Z, v0data::Px, v0data::Py, v0data::Pz>,
+                         v0data::Alpha<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::QtArm<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::PsiPair<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::PFracPos<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::PFracNeg<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>, // 24
 
-                       // Invariant masses
-                       v0data::MLambda<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::MAntiLambda<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::MK0Short<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::MGamma<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::MHypertriton<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::MAntiHypertriton<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::M<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         // Invariant masses
+                         v0data::MLambda<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::MAntiLambda<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::MK0Short<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::MGamma<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::MHypertriton<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::MAntiHypertriton<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::M<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
 
-                       // Longitudinal
-                       v0data::YK0Short<v0data::Px, v0data::Py, v0data::Pz>,
-                       v0data::YLambda<v0data::Px, v0data::Py, v0data::Pz>,
-                       v0data::YHypertriton<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::YAntiHypertriton<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::Rapidity<v0data::Px, v0data::Py, v0data::Pz>,
-                       v0data::NegativePt<v0data::PxNeg, v0data::PyNeg>,
-                       v0data::PositivePt<v0data::PxPos, v0data::PyPos>,
-                       v0data::NegativeEta<v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::NegativePhi<v0data::PxNeg, v0data::PyNeg>,
-                       v0data::PositiveEta<v0data::PxPos, v0data::PyPos, v0data::PzPos>,
-                       v0data::PositivePhi<v0data::PxPos, v0data::PyPos>,
-                       v0data::IsStandardV0<v0data::V0Type>,
-                       v0data::IsPhotonTPConly<v0data::V0Type>);
+                         // Longitudinal
+                         v0data::YK0Short<v0data::Px, v0data::Py, v0data::Pz>,
+                         v0data::YLambda<v0data::Px, v0data::Py, v0data::Pz>,
+                         v0data::YHypertriton<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::YAntiHypertriton<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::Rapidity<v0data::Px, v0data::Py, v0data::Pz>,
+                         v0data::NegativePt<v0data::PxNeg, v0data::PyNeg>,
+                         v0data::PositivePt<v0data::PxPos, v0data::PyPos>,
+                         v0data::NegativeEta<v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::NegativePhi<v0data::PxNeg, v0data::PyNeg>,
+                         v0data::PositiveEta<v0data::PxPos, v0data::PyPos, v0data::PzPos>,
+                         v0data::PositivePhi<v0data::PxPos, v0data::PyPos>,
+                         v0data::IsStandardV0<v0data::V0Type>,
+                         v0data::IsPhotonTPConly<v0data::V0Type>);
 
 // extended table with expression columns that can be used as arguments of dynamic columns
 DECLARE_SOA_EXTENDED_TABLE_USER(V0Cores, V0CoresBase, "V0COREEXT",                                                    //!
@@ -823,7 +823,7 @@ DECLARE_SOA_TABLE(GeLambda, "AOD", "GeLambda", v0data::GeneratedLambda);
 DECLARE_SOA_TABLE(GeAntiLambda, "AOD", "GeAntiLambda", v0data::GeneratedAntiLambda);
 
 DECLARE_SOA_TABLE_STAGED(V0MCMothers, "V0MCMOTHER", //! optional table for MC mothers
-                  o2::soa::Index<>, v0data::MotherMCPartId);
+                         o2::soa::Index<>, v0data::MotherMCPartId);
 
 using V0MCCores = V0MCCores_002;
 using StoredV0MCCores = StoredV0MCCores_002;
