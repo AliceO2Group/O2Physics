@@ -177,11 +177,11 @@ struct FlowGFWOmegaXi {
     registry.add("hMult", "", {HistType::kTH1D, {{3000, 0.5, 3000.5}}});
     registry.add("hCent", "", {HistType::kTH1D, {{90, 0, 90}}});
     registry.add("hPt", "", {HistType::kTH1D, {cfgaxisPt}});
-    registry.add("hEtaPhiVtxzREF", "", {HistType::kTH3D, {cfgaxisEta, cfgaxisPhi, {20, -10, 10}}});
-    registry.add("hEtaPhiVtxzPOIXi", "", {HistType::kTH3D, {cfgaxisEta, cfgaxisPhi, {20, -10, 10}}});
-    registry.add("hEtaPhiVtxzPOIOmega", "", {HistType::kTH3D, {cfgaxisEta, cfgaxisPhi, {20, -10, 10}}});
-    registry.add("hEtaPhiVtxzPOIK0s", "", {HistType::kTH3D, {cfgaxisEta, cfgaxisPhi, {20, -10, 10}}});
-    registry.add("hEtaPhiVtxzPOILambda", "", {HistType::kTH3D, {cfgaxisEta, cfgaxisPhi, {20, -10, 10}}});
+    registry.add("hEtaPhiVtxzREF", "", {HistType::kTH3D, {cfgaxisPhi, cfgaxisEta, {20, -10, 10}}});
+    registry.add("hEtaPhiVtxzPOIXi", "", {HistType::kTH3D, {cfgaxisPhi, cfgaxisEta, {20, -10, 10}}});
+    registry.add("hEtaPhiVtxzPOIOmega", "", {HistType::kTH3D, {cfgaxisPhi, cfgaxisEta, {20, -10, 10}}});
+    registry.add("hEtaPhiVtxzPOIK0s", "", {HistType::kTH3D, {cfgaxisPhi, cfgaxisEta, {20, -10, 10}}});
+    registry.add("hEtaPhiVtxzPOILambda", "", {HistType::kTH3D, {cfgaxisPhi, cfgaxisEta, {20, -10, 10}}});
     registry.add("hEventCount", "", {HistType::kTH2D, {{4, 0, 4}, {4, 0, 4}}});
     registry.get<TH2>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(1, "Filtered event");
     registry.get<TH2>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(2, "after sel8");
@@ -241,27 +241,27 @@ struct FlowGFWOmegaXi {
 
     fGFW->AddRegion("reffull", -0.8, 0.8, 1, 1); // ("name", etamin, etamax, ptbinnum, bitmask)eta region -0.8 to 0.8
     // with (-0.5, 0.5) eta gap
-    fGFW->AddRegion("refN10", -0.8, -0.5, 1, 1);
-    fGFW->AddRegion("refP10", 0.5, 0.8, 1, 1);
-    fGFW->AddRegion("refN10dpt", -0.8, -0.5, nPtBins, 1);
-    fGFW->AddRegion("refP10dpt", 0.5, 0.8, nPtBins, 1);
+    fGFW->AddRegion("refN10", -0.8, -0.4, 1, 1);
+    fGFW->AddRegion("refP10", 0.4, 0.8, 1, 1);
+    fGFW->AddRegion("refN10dpt", -0.8, -0.4, nPtBins, 1);
+    fGFW->AddRegion("refP10dpt", 0.4, 0.8, nPtBins, 1);
     fGFW->AddRegion("reffulldpt", -0.8, 0.8, nPtBins, 1);
     fGFW->AddRegion("refoldpt", -0.8, 0.8, nPtBins, 1);
     int nXiptMassBins = nXiPtBins * cfgXiMassbins;
-    fGFW->AddRegion("poiXiP", 0.5, 0.8, nXiptMassBins, 2);
-    fGFW->AddRegion("poiXiN", -0.8, -0.5, nXiptMassBins, 2);
+    fGFW->AddRegion("poiXiP", 0.4, 0.8, nXiptMassBins, 2);
+    fGFW->AddRegion("poiXiN", -0.8, -0.4, nXiptMassBins, 2);
     fGFW->AddRegion("poiXifull", -0.8, 0.8, nXiptMassBins, 2);
     int nOmegaptMassBins = nXiPtBins * cfgOmegaMassbins;
-    fGFW->AddRegion("poiOmegaP", 0.5, 0.8, nOmegaptMassBins, 4);
-    fGFW->AddRegion("poiOmegaN", -0.8, -0.5, nOmegaptMassBins, 4);
+    fGFW->AddRegion("poiOmegaP", 0.4, 0.8, nOmegaptMassBins, 4);
+    fGFW->AddRegion("poiOmegaN", -0.8, -0.4, nOmegaptMassBins, 4);
     fGFW->AddRegion("poiOmegafull", -0.8, 0.8, nOmegaptMassBins, 4);
     int nK0sptMassBins = nV0PtBins * cfgK0sMassbins;
-    fGFW->AddRegion("poiK0sP", 0.5, 0.8, nK0sptMassBins, 8);
-    fGFW->AddRegion("poiK0sN", -0.8, -0.5, nK0sptMassBins, 8);
+    fGFW->AddRegion("poiK0sP", 0.4, 0.8, nK0sptMassBins, 8);
+    fGFW->AddRegion("poiK0sN", -0.8, -0.4, nK0sptMassBins, 8);
     fGFW->AddRegion("poiK0sfull", -0.8, 0.8, nK0sptMassBins, 8);
     int nLambdaptMassBins = nV0PtBins * cfgLambdaMassbins;
-    fGFW->AddRegion("poiLambdaP", 0.5, 0.8, nLambdaptMassBins, 16);
-    fGFW->AddRegion("poiLambdaN", -0.8, -0.5, nLambdaptMassBins, 16);
+    fGFW->AddRegion("poiLambdaP", 0.4, 0.8, nLambdaptMassBins, 16);
+    fGFW->AddRegion("poiLambdaN", -0.8, -0.4, nLambdaptMassBins, 16);
     fGFW->AddRegion("poiLambdafull", -0.8, 0.8, nLambdaptMassBins, 16);
     // pushback
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP10dpt {2} refN10dpt {-2}", "Ref10Gap22", kTRUE));
@@ -362,17 +362,17 @@ struct FlowGFWOmegaXi {
     if (cfgAcceptance.size() == 5 && cfgEfficiency.size() == 5) {
       for (int i = 0; i <= 4; i++) {
         mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance[i], timestamp));
-        if (mAcceptance.size() == 4)
-          LOGF(info, "Loaded acceptance weights of REF particle from %s (%p)", cfgAcceptance[i], (void*)mAcceptance[i]);
-        else
-          LOGF(warning, "Could not load acceptance weights of REF particle from %s (%p)", cfgAcceptance[i], (void*)mAcceptance[i]);
-
         mEfficiency.push_back(ccdb->getForTimeStamp<TH1D>(cfgEfficiency[i], timestamp));
-        if (mEfficiency.size() == 4)
-          LOGF(fatal, "Could not load efficiency of REF particle histogram for trigger particles from %s", cfgEfficiency[i]);
-
-        LOGF(info, "Loaded efficiency of REF particle histogram from %s (%p)", cfgEfficiency[i], (void*)mEfficiency[i]);
       }
+      if (mAcceptance.size() == 5)
+        LOGF(info, "Loaded acceptance weights");
+      else
+        LOGF(warning, "Could not load acceptance weights");
+
+      if (mEfficiency.size() == 5)
+        LOGF(fatal, "Could not load efficiency histogram");
+
+      LOGF(info, "Loaded efficiency histogram");
     }
     correctionsLoaded = true;
   }
@@ -381,14 +381,14 @@ struct FlowGFWOmegaXi {
   bool setCurrentParticleWeights(float& weight_nue, float& weight_nua, TrackObject track, float vtxz, int ispecies)
   {
     float eff = 1.;
-    if (mEfficiency.size() == 4)
+    if (mEfficiency.size() == 5)
       eff = mEfficiency[ispecies]->GetBinContent(mEfficiency[ispecies]->FindBin(track.pt()));
     else
       eff = 1.0;
     if (eff == 0)
       return false;
     weight_nue = 1. / eff;
-    if (mAcceptance.size() == 4)
+    if (mAcceptance.size() == 5)
       weight_nua = mAcceptance[ispecies]->GetNUA(track.phi(), track.eta(), vtxz);
     else
       weight_nua = 1;
