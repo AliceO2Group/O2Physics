@@ -98,7 +98,7 @@ struct Dilepton {
   Configurable<std::string> spresoPath{"spresoPath", "Users/d/dsekihat/PWGEM/dilepton/Qvector/resolution/LHC23zzh/pass3/test", "Path to SP resolution file"};
   Configurable<std::string> spresoHistName{"spresoHistName", "h1_R2_FT0M_BPos_BNeg", "histogram name of SP resolution file"};
 
-  Configurable<int> cfgAnalysisType{"cfgAnalysisType", static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kQC), "kQC:0, kUPC:1, kFlowV2:2, kFlowV3:3, kPolarization:4, kVM:5, kHFll:6"};
+  Configurable<int> cfgAnalysisType{"cfgAnalysisType", static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kQC), "kQC:0, kUPC:1, kFlowV2:2, kFlowV3:3, kPolarization:4, kVM:5, kHFll:6, kDCA:7"};
   Configurable<int> cfgEP2Estimator_for_Mix{"cfgEP2Estimator_for_Mix", 3, "FT0M:0, FT0A:1, FT0C:2, BTot:3, BPos:4, BNeg:5"};
   Configurable<int> cfgQvecEstimator{"cfgQvecEstimator", 0, "FT0M:0, FT0A:1, FT0C:2, BTot:3, BPos:4, BNeg:5"};
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
@@ -115,7 +115,7 @@ struct Dilepton {
   Configurable<int> cfgNtracksPV08Min{"cfgNtracksPV08Min", -1, "min. multNTracksPV"};
   Configurable<int> cfgNtracksPV08Max{"cfgNtracksPV08Max", static_cast<int>(1e+9), "max. multNTracksPV"};
   Configurable<bool> cfgApplyWeightTTCA{"cfgApplyWeightTTCA", false, "flag to apply weighting by 1/N"};
-  Configurable<bool> cfgUseDCAxy{"cfgUseDCAxy", false, "flag to use DCAxy, instead of DCA3D"};
+  Configurable<std::string> cfgDCAcase{"cfgDCAcase", "3D", "use string to choose which DCA component is used (default:3D, xy, z)"};
 
   ConfigurableAxis ConfMllBins{"ConfMllBins", {VARIABLE_WIDTH, 0.00, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.20, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.30, 0.31, 0.32, 0.33, 0.34, 0.35, 0.36, 0.37, 0.38, 0.39, 0.40, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49, 0.50, 0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.60, 0.61, 0.62, 0.63, 0.64, 0.65, 0.66, 0.67, 0.68, 0.69, 0.70, 0.71, 0.72, 0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 0.80, 0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.90, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.00, 1.01, 1.02, 1.03, 1.04, 1.05, 1.06, 1.07, 1.08, 1.09, 1.10, 1.11, 1.12, 1.13, 1.14, 1.15, 1.16, 1.17, 1.18, 1.19, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.10, 2.20, 2.30, 2.40, 2.50, 2.60, 2.70, 2.75, 2.80, 2.85, 2.90, 2.95, 3.00, 3.05, 3.10, 3.15, 3.20, 3.25, 3.30, 3.35, 3.40, 3.45, 3.50, 3.55, 3.60, 3.65, 3.70, 3.75, 3.80, 3.85, 3.90, 3.95, 4.00}, "mll bins for output histograms"};
   ConfigurableAxis ConfPtllBins{"ConfPtllBins", {VARIABLE_WIDTH, 0.00, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.50, 3.00, 3.50, 4.00, 4.50, 5.00, 6.00, 7.00, 8.00, 9.00, 10.00}, "pTll bins for output histograms"};
@@ -480,12 +480,21 @@ struct Dilepton {
     std::string mass_axis_title = "m_{ll} (GeV/c^{2})";
     std::string pair_pt_axis_title = "p_{T,ll} (GeV/c)";
     std::string pair_dca_axis_title = "DCA_{ll} (#sigma)";
+    std::string pair_dca3D_axis_title = "DCA_{ll}^{3D} (#sigma)";
+    std::string pair_dcaXY_axis_title = "DCA_{ll}^{XY} (#sigma)";
+    std::string pair_dcaZ_axis_title = "DCA_{ll}^{Z} (#sigma)";
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
       mass_axis_title = "m_{ee} (GeV/c^{2})";
       pair_pt_axis_title = "p_{T,ee} (GeV/c)";
-      pair_dca_axis_title = "DCA_{ee}^{3D} (#sigma)";
-      if (cfgUseDCAxy) {
-        pair_dca_axis_title = "DCA_{ee}^{XY} (#sigma)";
+      pair_dca3D_axis_title = "DCA_{ee}^{3D} (#sigma)";
+      pair_dcaXY_axis_title = "DCA_{ee}^{XY} (#sigma)";
+      pair_dcaZ_axis_title = "DCA_{ee}^{Z} (#sigma)";
+
+      pair_dca_axis_title = pair_dca3D_axis_title;
+      if (cfgDCAcase.value.find("xy") != std::string::npos) {
+        pair_dca_axis_title = pair_dcaXY_axis_title;
+      } else if (cfgDCAcase.value.find("z") != std::string::npos) {
+        pair_dca_axis_title = pair_dcaZ_axis_title;
       }
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
       mass_axis_title = "m_{#mu#mu} (GeV/c^{2})";
@@ -497,6 +506,9 @@ struct Dilepton {
     const AxisSpec axis_mass{ConfMllBins, mass_axis_title};
     const AxisSpec axis_pt{ConfPtllBins, pair_pt_axis_title};
     const AxisSpec axis_dca{ConfDCAllBins, pair_dca_axis_title};
+    const AxisSpec axis_dca3D{ConfDCAllBins, pair_dca3D_axis_title};
+    const AxisSpec axis_dcaXY{ConfDCAllBins, pair_dcaXY_axis_title};
+    const AxisSpec axis_dcaZ{ConfDCAllBins, pair_dcaZ_axis_title};
 
     if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kQC)) {
       fRegistry.add("Pair/same/uls/hs", "dilepton", kTHnSparseD, {axis_mass, axis_pt, axis_dca}, true);
@@ -570,6 +582,14 @@ struct Dilepton {
       const AxisSpec axis_dphi_ee{36, -M_PI / 2., 3. / 2. * M_PI, "#Delta#varphi = #varphi_{l1} - #varphi_{l2} (rad.)"}; // for kHFll
       const AxisSpec axis_deta_ee{40, -2., 2., "#Delta#eta = #eta_{l1} - #eta_{l2}"};
       fRegistry.add("Pair/same/uls/hs", "dilepton", kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_dphi_ee, axis_deta_ee}, true);
+      fRegistry.addClone("Pair/same/uls/", "Pair/same/lspp/");
+      fRegistry.addClone("Pair/same/uls/", "Pair/same/lsmm/");
+      fRegistry.addClone("Pair/same/", "Pair/mix/");
+    } else if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kDCA)) {
+      fRegistry.add("Pair/same/uls/hs", "dilepton", kTHnSparseD, {axis_mass, axis_pt, axis_dca3D, axis_dcaXY, axis_dcaZ}, true);
+      if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
+        fRegistry.add("Pair/same/uls/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", kTH2D, {{90, 0, M_PI}, {100, 0.0f, 0.1f}}, true); // phiv is only for dielectron
+      }
       fRegistry.addClone("Pair/same/uls/", "Pair/same/lspp/");
       fRegistry.addClone("Pair/same/uls/", "Pair/same/lsmm/");
       fRegistry.addClone("Pair/same/", "Pair/mix/");
@@ -805,15 +825,26 @@ struct Dilepton {
     ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), leptonM2);
     ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
 
+    float dca3D_t1 = 999.f, dca3D_t2 = 999.f, pair_dca3D = 999.f;
+    float dcaxy_t1 = 999.f, dcaxy_t2 = 999.f, pair_dcaxy = 999.f;
+    float dcaz_t1 = 999.f, dcaz_t2 = 999.f, pair_dcaz = 999.f;
     float dca_t1 = 999.f, dca_t2 = 999.f, pair_dca = 999.f;
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
-      dca_t1 = dca3DinSigma(t1);
-      dca_t2 = dca3DinSigma(t2);
-      pair_dca = std::sqrt((dca_t1 * dca_t1 + dca_t2 * dca_t2) / 2.);
-      if (cfgUseDCAxy) {
-        dca_t1 = t1.dcaXY() / std::sqrt(t1.cYY());
-        dca_t2 = t2.dcaXY() / std::sqrt(t2.cYY());
-        pair_dca = std::sqrt((dca_t1 * dca_t1 + dca_t2 * dca_t2) / 2.);
+      dca3D_t1 = dca3DinSigma(t1);
+      dca3D_t2 = dca3DinSigma(t2);
+      pair_dca3D = std::sqrt((dca3D_t1 * dca3D_t1 + dca3D_t2 * dca3D_t2) / 2.);
+      pair_dca = pair_dca3D;
+      if (cfgDCAcase.value.find("xy") != std::string::npos) {
+        dcaxy_t1 = t1.dcaXY() / std::sqrt(t1.cYY());
+        dcaxy_t2 = t2.dcaXY() / std::sqrt(t2.cYY());
+        pair_dcaxy = std::sqrt((dcaxy_t1 * dcaxy_t1 + dcaxy_t2 * dcaxy_t2) / 2.);
+        pair_dca = pair_dcaxy;
+      }
+      if (cfgDCAcase.value.find("z") != std::string::npos) {
+        dcaz_t1 = t1.dcaZ() / std::sqrt(t1.cZZ());
+        dcaz_t2 = t2.dcaZ() / std::sqrt(t2.cZZ());
+        pair_dcaz = std::sqrt((dcaz_t1 * dcaz_t1 + dcaz_t2 * dcaz_t2) / 2.);
+        pair_dca = pair_dcaz;
       }
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
       dca_t1 = fwdDcaXYinSigma(t1);
@@ -946,7 +977,26 @@ struct Dilepton {
       } else if (t1.sign() < 0 && t2.sign() < 0) { // LS--
         fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hs"), v12.M(), v12.Pt(), pair_dca, dphi, deta, weight);
       }
-
+    } else if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kDCA)) {
+      float deta = v1.Eta() - v2.Eta();
+      float dphi = v1.Phi() - v2.Phi();
+      o2::math_utils::bringToPMPi(dphi);
+      if (t1.sign() * t2.sign() < 0) { // ULS
+        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), pair_dca3D, pair_dcaxy, pair_dcaz, weight);
+        if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hMvsPhiV"), phiv, v12.M(), weight);
+        }
+      } else if (t1.sign() > 0 && t2.sign() > 0) { // LS++
+        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hs"), v12.M(), v12.Pt(), pair_dca3D, pair_dcaxy, pair_dcaz, weight);
+        if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hMvsPhiV"), phiv, v12.M(), weight);
+        }
+      } else if (t1.sign() < 0 && t2.sign() < 0) { // LS--
+        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hs"), v12.M(), v12.Pt(), pair_dca3D, pair_dcaxy, pair_dcaz, weight);
+        if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
+          fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hMvsPhiV"), phiv, v12.M(), weight);
+        }
+      }
     } else {                           // same as kQC to avoid seg. fault
       if (t1.sign() * t2.sign() < 0) { // ULS
         fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), pair_dca, weight);

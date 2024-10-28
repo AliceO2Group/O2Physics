@@ -40,6 +40,7 @@ enum class DileptonAnalysisType : int {
   kPolarization = 4,
   kVM = 5,
   kHFll = 6,
+  kDCA = 7,
 };
 
 using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;
