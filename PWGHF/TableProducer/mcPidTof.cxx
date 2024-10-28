@@ -694,7 +694,7 @@ struct mcPidTof {
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  // Running variables      
+  // Running variables
   std::vector<int> mEnabledParticles;     // Vector of enabled PID hypotheses to loop on when making tables
   std::vector<int> mEnabledParticlesFull; // Vector of enabled PID hypotheses to loop on when making full tables
   void init(o2::framework::InitContext& initContext)
