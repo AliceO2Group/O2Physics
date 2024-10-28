@@ -452,7 +452,7 @@ struct TableMaker {
         tag |= (static_cast<uint64_t>(true) << 56); // the same bit is used for this zorro selections from ccdb
       }
       if (useZorro.fConfigRunZorroSel && (!zorroSel || !fEventCut->IsSelected(VarManager::fgValues))) {
-        continue;
+        return;
       }
     } else {
       if (!fEventCut->IsSelected(VarManager::fgValues)) {
@@ -915,7 +915,7 @@ struct TableMaker {
         tag |= (static_cast<uint64_t>(true) << 56); // the same bit is used for this zorro selections from ccdb
       }
       if (useZorro.fConfigRunZorroSel && (!zorroSel || !fEventCut->IsSelected(VarManager::fgValues))) {
-        continue;
+        return;
       }
     } else {
       if (!fEventCut->IsSelected(VarManager::fgValues)) {
