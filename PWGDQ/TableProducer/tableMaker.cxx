@@ -446,12 +446,13 @@ struct TableMaker {
     if (useZorro.fConfigRunZorro) {
       zorro.setBaseCCDBPath(useCCDBConfigurations.fConfigCcdbPathZorro.value);
       zorro.initCCDB(fCCDB.service, fCurrentRun, bc.timestamp(), useZorro.fConfigZorroTrigMask.value);
-      zorro.populateHist(fCurrentRun);
-      if (zorro.isSelected(bc.globalBC())) {
+      zorro.populateExternalHists(fCurrentRun, reinterpret_cast<TH2D*>(fStatsList->At(3)), reinterpret_cast<TH2D*>(fStatsList->At(4)));
+      bool zorroSel = zorro.isSelected(bc.globalBC(), 100UL, reinterpret_cast<TH2D*>(fStatsList->At(4)));
+      if (zorroSel) {
         tag |= (static_cast<uint64_t>(true) << 56); // the same bit is used for this zorro selections from ccdb
       }
-      if (useZorro.fConfigRunZorroSel && (!zorro.isSelected(bc.globalBC()) || !fEventCut->IsSelected(VarManager::fgValues))) {
-        return;
+      if (useZorro.fConfigRunZorroSel && (!zorroSel || !fEventCut->IsSelected(VarManager::fgValues))) {
+        continue;
       }
     } else {
       if (!fEventCut->IsSelected(VarManager::fgValues)) {
@@ -908,9 +909,13 @@ struct TableMaker {
     if (useZorro.fConfigRunZorro) {
       zorro.setBaseCCDBPath(useCCDBConfigurations.fConfigCcdbPathZorro.value);
       zorro.initCCDB(fCCDB.service, fCurrentRun, bc.timestamp(), useZorro.fConfigZorroTrigMask.value);
-      zorro.populateHist(fCurrentRun);
-      if (zorro.isSelected(bc.globalBC())) {
+      zorro.populateExternalHists(fCurrentRun, reinterpret_cast<TH2D*>(fStatsList->At(3)), reinterpret_cast<TH2D*>(fStatsList->At(4)));
+      bool zorroSel = zorro.isSelected(bc.globalBC(), 100UL, reinterpret_cast<TH2D*>(fStatsList->At(4)));
+      if (zorroSel) {
         tag |= (static_cast<uint64_t>(true) << 56); // the same bit is used for this zorro selections from ccdb
+      }
+      if (useZorro.fConfigRunZorroSel && (!zorroSel || !fEventCut->IsSelected(VarManager::fgValues))) {
+        continue;
       }
     } else {
       if (!fEventCut->IsSelected(VarManager::fgValues)) {
@@ -1287,10 +1292,8 @@ struct TableMaker {
 
     if (useZorro.fConfigRunZorro) {
       TH2D* histZorroInfo = new TH2D("ZorroInfo", "Zorro information", 1, -0.5, 0.5, 1, -0.5, 0.5);
-      zorro.setZorroHisto(histZorroInfo);
       fStatsList->Add(histZorroInfo);
       TH2D* histZorroSel = new TH2D("ZorroSel", "trigger of interested", 1, -0.5, 0.5, 1, -0.5, 0.5);
-      zorro.setToiHisto(histZorroSel);
       fStatsList->Add(histZorroSel);
     }
   }
