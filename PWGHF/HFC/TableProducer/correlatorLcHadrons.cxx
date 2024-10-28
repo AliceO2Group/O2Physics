@@ -271,8 +271,7 @@ struct HfCorrelatorLcHadrons {
         leadingParticle = track;
       }
     }
-    int leadingIndex = leadingParticle.globalIndex();
-    return leadingIndex;
+    return leadingParticle.globalIndex();
   }
 
   // ======= Find Leading Particle for McGen ============
