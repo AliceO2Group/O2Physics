@@ -63,7 +63,7 @@ FlowPtContainer::FlowPtContainer(const char* name, const char* title) : TNamed(n
                                                                         corrNum(),
                                                                         corrDen(),
                                                                         cmVal(),
-                                                                        cmDen() {};
+                                                                        cmDen() {}
 void FlowPtContainer::Initialise(const o2::framework::AxisSpec axis, const int& m, const GFWCorrConfigs& configs, const int& nsub)
 {
   if (!mpar)
