@@ -716,9 +716,6 @@ struct mcPidTof {
         mEnabledParticlesFull.push_back(supportedSpecies[iSpecie]);
       }
     }
-    mEnabledParticlesFull.push_back(idxPi);
-    mEnabledParticlesFull.push_back(idxKa);
-    mEnabledParticlesFull.push_back(idxPr);
     if (mEnabledParticlesFull.size() == 0 && mEnabledParticles.size() == 0) {
       LOG(info) << "No PID tables are required, disabling process function";
       doprocessFillTables.value = false;
