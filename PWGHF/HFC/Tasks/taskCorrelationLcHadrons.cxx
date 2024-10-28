@@ -226,7 +226,7 @@ struct HfTaskCorrelationLcHadrons {
           default:
             break;
         }
-      };
+      }
 
       // check if correlation entry belongs to signal region, sidebands or is outside both, and fill correlation plots
       if (massLc > signalRegionInner->at(ptBinLc) && massLc < signalRegionOuter->at(ptBinLc)) {
