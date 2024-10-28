@@ -108,18 +108,11 @@ DECLARE_SOA_COLUMN(M11REF, m11ref, float);     //!  Weighted multiplicity of <<2
 DECLARE_SOA_COLUMN(M1111REF, m1111ref, float); //!  Weighted multiplicity of <<4>> for reference flow
 } // namespace reducedevent
 
-DECLARE_SOA_TABLE(ReducedEvents, "AOD", "REDUCEDEVENT", //!   Main event information table
+DECLARE_SOA_TABLE_STAGED(ReducedEvents, "REDUCEDEVENT", //!   Main event information table
                   o2::soa::Index<>,
                   reducedevent::Tag, bc::RunNumber,
                   collision::PosX, collision::PosY, collision::PosZ, collision::NumContrib,
                   collision::CollisionTime, collision::CollisionTimeRes);
-
-DECLARE_SOA_TABLE(StoredReducedEvents, "AOD1", "REDUCEDEVENT", //!   Main event information table
-                  o2::soa::Index<>,
-                  reducedevent::Tag, bc::RunNumber,
-                  collision::PosX, collision::PosY, collision::PosZ, collision::NumContrib,
-                  collision::CollisionTime, collision::CollisionTimeRes,
-                  o2::soa::Marker<1>);
 
 DECLARE_SOA_TABLE(ReducedEventsExtended, "AOD", "REEXTENDED", //!  Extended event information
                   bc::GlobalBC, evsel::Alias, evsel::Selection, timestamp::Timestamp, cent::CentRun2V0M,
@@ -697,7 +690,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Y, y, //!
                            [](float pt, float eta, float m) -> float { return std::log((std::sqrt(m * m + pt * pt * std::cosh(eta) * std::cosh(eta)) + pt * std::sinh(eta)) / std::sqrt(m * m + pt * pt)); });
 } // namespace reducedpair
 
-DECLARE_SOA_TABLE(Dielectrons, "AOD", "RTDIELECTRON", //!
+DECLARE_SOA_TABLE_STAGED(Dielectrons, "RTDIELECTRON", //!
                   o2::soa::Index<>, reducedpair::ReducedEventId,
                   reducedpair::Mass, reducedpair::Pt, reducedpair::Eta, reducedpair::Phi, reducedpair::Sign,
                   reducedpair::FilterMap, reducedpair::McDecision,
@@ -707,18 +700,6 @@ DECLARE_SOA_TABLE(Dielectrons, "AOD", "RTDIELECTRON", //!
                   reducedpair::Py<reducedpair::Pt, reducedpair::Phi>,
                   reducedpair::Pz<reducedpair::Pt, reducedpair::Eta>,
                   reducedpair::P<reducedpair::Pt, reducedpair::Eta>);
-
-DECLARE_SOA_TABLE(StoredDielectrons, "AOD1", "RTDIELECTRON", //!
-                  o2::soa::Index<>, reducedpair::ReducedEventId,
-                  reducedpair::Mass, reducedpair::Pt, reducedpair::Eta, reducedpair::Phi, reducedpair::Sign,
-                  reducedpair::FilterMap, reducedpair::McDecision,
-                  reducedpair::Rap<reducedpair::Pt, reducedpair::Eta, reducedpair::Mass>,
-                  reducedpair::Y<reducedpair::Pt, reducedpair::Eta, reducedpair::Mass>,
-                  reducedpair::Px<reducedpair::Pt, reducedpair::Phi>,
-                  reducedpair::Py<reducedpair::Pt, reducedpair::Phi>,
-                  reducedpair::Pz<reducedpair::Pt, reducedpair::Eta>,
-                  reducedpair::P<reducedpair::Pt, reducedpair::Eta>,
-                  o2::soa::Marker<1>);
 
 DECLARE_SOA_TABLE(Dimuons, "AOD", "RTDIMUON", //!
                   o2::soa::Index<>, reducedpair::ReducedEventId,

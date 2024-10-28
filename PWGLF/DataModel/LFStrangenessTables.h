@@ -629,16 +629,13 @@ DECLARE_SOA_TABLE(V0Indices, "AOD", "V0INDEX", //! index table when using AO2Ds
 DECLARE_SOA_TABLE(V0CollRefs, "AOD", "V0COLLREF", //! optional table to refer back to a collision
                   o2::soa::Index<>, v0data::StraCollisionId);
 
-DECLARE_SOA_TABLE(V0Extras, "AOD", "V0EXTRA", //! optional table to refer to custom track extras
-                  o2::soa::Index<>, v0data::PosTrackExtraId, v0data::NegTrackExtraId);
-
-DECLARE_SOA_TABLE(StoredV0Extras, "AOD1", "V0EXTRA", //! optional table to refer to custom track extras
-                  o2::soa::Index<>, v0data::PosTrackExtraId, v0data::NegTrackExtraId, soa::Marker<1>);
+DECLARE_SOA_TABLE_STAGED(V0Extras, "V0EXTRA", //! optional table to refer to custom track extras
+                         o2::soa::Index<>, v0data::PosTrackExtraId, v0data::NegTrackExtraId);
 
 DECLARE_SOA_TABLE(V0TrackXs, "AOD", "V0TRACKX", //! track X positions at minima when using AO2Ds
                   v0data::PosX, v0data::NegX, o2::soa::Marker<1>);
 
-DECLARE_SOA_TABLE_FULL(V0CoresBase, "V0Cores", "AOD", "V0CORE", //! core information about decay, viable with AO2Ds or derived
+DECLARE_SOA_TABLE_STAGED(V0CoresBase, "V0CORE", //! core information about decay, viable with AO2Ds or derived
                        o2::soa::Index<>,
                        v0data::X, v0data::Y, v0data::Z,
                        v0data::PxPos, v0data::PyPos, v0data::PzPos,
@@ -679,56 +676,11 @@ DECLARE_SOA_TABLE_FULL(V0CoresBase, "V0Cores", "AOD", "V0CORE", //! core informa
                        v0data::PositiveEta<v0data::PxPos, v0data::PyPos, v0data::PzPos>,
                        v0data::PositivePhi<v0data::PxPos, v0data::PyPos>,
                        v0data::IsStandardV0<v0data::V0Type>,
-                       v0data::IsPhotonTPConly<v0data::V0Type>,
-                       o2::soa::Marker<1>);
+                       v0data::IsPhotonTPConly<v0data::V0Type>);
 
 // extended table with expression columns that can be used as arguments of dynamic columns
 DECLARE_SOA_EXTENDED_TABLE_USER(V0Cores, V0CoresBase, "V0COREEXT",                                                    //!
                                 v0data::Px, v0data::Py, v0data::Pz, v0data::Pt, v0data::P, v0data::Phi, v0data::Eta); // the table name has here to be the one with EXT which is not nice and under study
-
-DECLARE_SOA_TABLE_FULL(StoredV0CoresBase, "V0Cores", "AOD1", "V0CORE", //! core information about decay, viable with AO2Ds or derived
-                       o2::soa::Index<>,
-                       v0data::X, v0data::Y, v0data::Z,
-                       v0data::PxPos, v0data::PyPos, v0data::PzPos,
-                       v0data::PxNeg, v0data::PyNeg, v0data::PzNeg,
-                       v0data::DCAV0Daughters, v0data::DCAPosToPV, v0data::DCANegToPV,
-                       v0data::V0CosPA, v0data::DCAV0ToPV, v0data::V0Type,
-
-                       // Dynamic columns
-                       v0data::PtHypertriton<v0data::PxPos, v0data::PyPos, v0data::PxNeg, v0data::PyNeg>,
-                       v0data::PtAntiHypertriton<v0data::PxPos, v0data::PyPos, v0data::PxNeg, v0data::PyNeg>,
-                       v0data::V0Radius<v0data::X, v0data::Y>,
-                       v0data::DistOverTotMom<v0data::X, v0data::Y, v0data::Z, v0data::Px, v0data::Py, v0data::Pz>,
-                       v0data::Alpha<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::QtArm<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::PsiPair<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::PFracPos<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::PFracNeg<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>, // 24
-
-                       // Invariant masses
-                       v0data::MLambda<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::MAntiLambda<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::MK0Short<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::MGamma<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::MHypertriton<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::MAntiHypertriton<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::M<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-
-                       // Longitudinal
-                       v0data::YK0Short<v0data::Px, v0data::Py, v0data::Pz>,
-                       v0data::YLambda<v0data::Px, v0data::Py, v0data::Pz>,
-                       v0data::YHypertriton<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::YAntiHypertriton<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::Rapidity<v0data::Px, v0data::Py, v0data::Pz>,
-                       v0data::NegativePt<v0data::PxNeg, v0data::PyNeg>,
-                       v0data::PositivePt<v0data::PxPos, v0data::PyPos>,
-                       v0data::NegativeEta<v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::NegativePhi<v0data::PxNeg, v0data::PyNeg>,
-                       v0data::PositiveEta<v0data::PxPos, v0data::PyPos, v0data::PzPos>,
-                       v0data::PositivePhi<v0data::PxPos, v0data::PyPos>,
-                       v0data::IsStandardV0<v0data::V0Type>,
-                       v0data::IsPhotonTPConly<v0data::V0Type>,
-                       o2::soa::Marker<3>);
 
 // extended table with expression columns that can be used as arguments of dynamic columns
 DECLARE_SOA_EXTENDED_TABLE_USER(StoredV0Cores, StoredV0CoresBase, "V0COREEXT",                                                            //!
@@ -870,11 +822,8 @@ DECLARE_SOA_TABLE(GeK0Short, "AOD", "GeK0Short", v0data::GeneratedK0Short);
 DECLARE_SOA_TABLE(GeLambda, "AOD", "GeLambda", v0data::GeneratedLambda);
 DECLARE_SOA_TABLE(GeAntiLambda, "AOD", "GeAntiLambda", v0data::GeneratedAntiLambda);
 
-DECLARE_SOA_TABLE(V0MCMothers, "AOD", "V0MCMOTHER", //! optional table for MC mothers
+DECLARE_SOA_TABLE_STAGED(V0MCMothers, "V0MCMOTHER", //! optional table for MC mothers
                   o2::soa::Index<>, v0data::MotherMCPartId);
-
-DECLARE_SOA_TABLE(StoredV0MCMothers, "AOD1", "V0MCMOTHER", //! optional table for MC mothers
-                  o2::soa::Index<>, v0data::MotherMCPartId, o2::soa::Marker<1>);
 
 using V0MCCores = V0MCCores_002;
 using StoredV0MCCores = StoredV0MCCores_002;
