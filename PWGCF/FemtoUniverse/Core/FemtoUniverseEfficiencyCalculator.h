@@ -11,31 +11,54 @@
 namespace o2::analysis::femto_universe
 {
 
-template <typename T, typename FieldType, auto FieldPtr>
-concept HasField = requires(T t) {
-  requires std::is_same_v<decltype(FieldPtr), FieldType T::*>;
-  { t.*FieldPtr } -> std::convertible_to<FieldType>;
-};
-
 template <uint8_t T>
 concept IsOneOrTwo = T == 1 || T == 2;
 
-template <typename T>
-concept IsConfGroup = std::is_base_of_v<o2::framework::ConfigurableGroup, T>;
-
-using HistGenPart = FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kMCTruthTrack, 1>;
+using MCTruthHist = FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kMCTruthTrack, 1>;
 
 template <typename Task>
 struct EfficiencyCalculator {
   Task& task;
+  std::array<MCTruthHist, 2> mcTruthHist;
 
-  std::array<HistGenPart, 2> histGenPart;
+  EfficiencyCalculator(Task& task) : task(task)
+  {
+    // assume the name of registry in specified task
+    const auto& registry{task.efficiencyRegistry};
 
-  EfficiencyCalculator(Task& task);
+    registry.add(
+      "MCTruth/hPt",
+      " ;#it{p}_{T} (GeV/c); Entries",
+      {HistType::kTH1F, {{100, 0, 4}}} //
+    );
+
+    for (uint8_t idx{1}; idx <= 2; idx++) {
+      mcTruthHist[idx].init(
+        registry,
+        task.ConfTempFitVarpTBins,
+        task.ConfTempFitVarPDGBins,
+        0,
+        task.ConfPDGCodePartOne,
+        false //
+      );
+
+      registry.add(
+        HIST("part") + std::to_string(idx),
+        "Efficiency origin/generated ; p_{T} (GeV/c); Efficiency",
+        {HistType::kTH1F, {{100, 0, 4}}} //
+      );
+    }
+  }
 
   template <uint8_t Index>
     requires IsOneOrTwo<Index>
-  auto doMCGen(auto particle) -> void;
+  auto doMCGen(auto particle) -> void
+  {
+    if (!task.ConfNoPDGPartOne && (static_cast<int>(particle.pidcut()) != task.ConfPDGCodePartOne)) {
+      return;
+    }
+    histGenPart[Index].fillQA<false, false>(particle);
+  }
 };
 
 } // namespace o2::analysis::femto_universe
