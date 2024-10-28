@@ -69,7 +69,7 @@ struct centralityStudy {
   ConfigurableAxis axisPVChi2{"axisPVChi2", {300, 0, 30}, "FT0C percentile"};
   ConfigurableAxis axisDeltaTime{"axisDeltaTime", {300, 0, 300}, "#Delta time"};
 
-  // For profile Z 
+  // For profile Z
   ConfigurableAxis axisPVz{"axisPVz", {400, -20.0f, +20.0f}, "PVz (cm)"};
 
   void init(InitContext&)
@@ -198,7 +198,7 @@ struct centralityStudy {
     histos.fill(HIST("hNPVContributors"), collision.multPVTotalContributors());
     histos.fill(HIST("hFT0C_Collisions"), collision.multFT0C());
     histos.fill(HIST("hFT0CvsPVz_Collisions_All"), collision.multPVz(), collision.multFT0C());
-    if(collision.multFT0C()>minFT0CforVertexZ){
+    if (collision.multFT0C() > minFT0CforVertexZ) {
       histos.fill(HIST("hFT0CvsPVz_Collisions"), collision.multPVz(), collision.multFT0C());
     }
     if (do2DPlots) {
@@ -249,9 +249,9 @@ struct centralityStudy {
 
     // if we got here, we also finally fill the FT0C histogram, please
     histos.fill(HIST("hFT0C_BCs"), multbc.multBCFT0C());
-    if(multbc.multBCFT0PosZValid()){
+    if (multbc.multBCFT0PosZValid()) {
       histos.fill(HIST("hFT0CvsPVz_BCs_All"), multbc.multBCFT0PosZ(), multbc.multBCFT0C());
-      if(multbc.multBCFT0C()>minFT0CforVertexZ){
+      if (multbc.multBCFT0C() > minFT0CforVertexZ) {
         histos.fill(HIST("hFT0CvsPVz_BCs"), multbc.multBCFT0PosZ(), multbc.multBCFT0C());
       }
     }
