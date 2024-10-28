@@ -30,8 +30,7 @@ DECLARE_SOA_TABLE_STAGED(JDielectronMcCollisions, "JDIELMCCOLL",
                   o2::soa::Index<>,
                   jmccollision::PosX,
                   jmccollision::PosY,
-                  jmccollision::PosZ,
-                  o2::soa::Marker<3>);
+                  jmccollision::PosZ);
 
 namespace jdielectronindices
 {
