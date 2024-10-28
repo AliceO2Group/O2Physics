@@ -45,6 +45,12 @@ void DielectronCut::SetMeeRange(float min, float max)
   mMaxMee = max;
   LOG(info) << "Dielectron Cut, set mee range: " << mMinMee << " - " << mMaxMee;
 }
+void DielectronCut::SetPairOpAng(float minOpAng, float maxOpAng)
+{
+  mMinOpAng = minOpAng;
+  mMaxOpAng = maxOpAng;
+  LOG(info) << "Dielectron Cut, set pair opening angle range: " << mMinOpAng << " - " << mMaxOpAng;
+}
 void DielectronCut::SetMaxPhivPairMeeDep(std::function<float(float)> meeDepCut)
 {
   mMaxPhivPairMeeDep = meeDepCut;
