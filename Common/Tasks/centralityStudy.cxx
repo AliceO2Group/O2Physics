@@ -184,6 +184,16 @@ struct centralityStudy {
       histos.fill(HIST("hCollisionSelection"), 10 /* has suspicious neighbour */);
     }
 
+    if (rejectITSinROFpileupStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+      return;
+    }
+    histos.fill(HIST("hCollisionSelection"), 11 /* Not at same bunch pile-up */);
+
+    if (rejectITSinROFpileupStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStrict)) {
+      return;
+    }
+    histos.fill(HIST("hCollisionSelection"), 12 /* Not at same bunch pile-up */);
+
     // if we got here, we also finally fill the FT0C histogram, please
     histos.fill(HIST("hNPVContributors"), collision.multPVTotalContributors());
     histos.fill(HIST("hFT0C_Collisions"), collision.multFT0C());
