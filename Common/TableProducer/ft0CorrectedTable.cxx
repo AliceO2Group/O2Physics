@@ -121,11 +121,11 @@ struct ft0CorrectedTable {
                                                                                                         bcs[0].timestamp());
       cfgCollisionSystem.value = CollisionSystemType::getCollisionTypeFromGrp(grpo);
       switch (cfgCollisionSystem.value) {
-        case CollisionEvSel::kCollSyspp:
+        case CollisionSystemType::kCollSyspp:
           resoFT0A.value = 24.f;
           resoFT0C.value = 24.f;
           break;
-        case CollisionEvSel::kCollSysPbPb:
+        case CollisionSystemType::kCollSysPbPb:
           resoFT0A.value = 5.65f;
           resoFT0C.value = 5.65f;
           break;
