@@ -27,10 +27,10 @@ namespace o2::aod
 {
 
 DECLARE_SOA_TABLE_STAGED(JDielectronMcCollisions, "JDIELMCCOLL",
-                  o2::soa::Index<>,
-                  jmccollision::PosX,
-                  jmccollision::PosY,
-                  jmccollision::PosZ);
+                         o2::soa::Index<>,
+                         jmccollision::PosX,
+                         jmccollision::PosY,
+                         jmccollision::PosZ);
 
 namespace jdielectronindices
 {
@@ -43,15 +43,15 @@ DECLARE_SOA_INDEX_COLUMN(JMcParticle, mcParticle);
 } // namespace jdielectronindices
 
 DECLARE_SOA_TABLE_STAGED(JDielectronCollisionIds, "JDIELCOLLID",
-                  jdielectronindices::JCollisionId);
+                         jdielectronindices::JCollisionId);
 
 DECLARE_SOA_TABLE_STAGED(JDielectronMcCollisionIds, "JDIELMCCOLLID",
-                  jdielectronindices::JMcCollisionId);
+                         jdielectronindices::JMcCollisionId);
 
 DECLARE_SOA_TABLE_STAGED(JDielectronIds, "JDIELID",
-                  jdielectronindices::JCollisionId,
-                  jdielectronindices::Prong0Id,
-                  jdielectronindices::Prong1Id);
+                         jdielectronindices::JCollisionId,
+                         jdielectronindices::Prong0Id,
+                         jdielectronindices::Prong1Id);
 
 namespace jdielectronmc
 {
@@ -80,33 +80,33 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p,
 } // namespace jdielectronmc
 
 DECLARE_SOA_TABLE_STAGED(JDielectronMcs, "JDIELMC",
-                  o2::soa::Index<>,
-                  jdielectronindices::JDielectronMcCollisionId,
-                  jdielectronmc::Pt,
-                  jdielectronmc::Eta,
-                  jdielectronmc::Phi,
-                  jdielectronmc::Y,
-                  jdielectronmc::E,
-                  jdielectronmc::M,
-                  jdielectronmc::PdgCode,
-                  jdielectronmc::GenStatusCode,
-                  jdielectronmc::HepMCStatusCode,
-                  jdielectronmc::IsPhysicalPrimary,
-                  jdielectronmc::DecayFlag,
-                  jdielectronmc::Origin,
-                  jdielectronmc::Px<jdielectronmc::Pt, jdielectronmc::Phi>,
-                  jdielectronmc::Py<jdielectronmc::Pt, jdielectronmc::Phi>,
-                  jdielectronmc::Pz<jdielectronmc::Pt, jdielectronmc::Eta>,
-                  jdielectronmc::P<jdielectronmc::Pt, jdielectronmc::Eta>);
+                         o2::soa::Index<>,
+                         jdielectronindices::JDielectronMcCollisionId,
+                         jdielectronmc::Pt,
+                         jdielectronmc::Eta,
+                         jdielectronmc::Phi,
+                         jdielectronmc::Y,
+                         jdielectronmc::E,
+                         jdielectronmc::M,
+                         jdielectronmc::PdgCode,
+                         jdielectronmc::GenStatusCode,
+                         jdielectronmc::HepMCStatusCode,
+                         jdielectronmc::IsPhysicalPrimary,
+                         jdielectronmc::DecayFlag,
+                         jdielectronmc::Origin,
+                         jdielectronmc::Px<jdielectronmc::Pt, jdielectronmc::Phi>,
+                         jdielectronmc::Py<jdielectronmc::Pt, jdielectronmc::Phi>,
+                         jdielectronmc::Pz<jdielectronmc::Pt, jdielectronmc::Eta>,
+                         jdielectronmc::P<jdielectronmc::Pt, jdielectronmc::Eta>);
 
 using JDielectronMc = JDielectronMcs::iterator;
 using StoredJDielectronMc = StoredJDielectronMcs::iterator;
 
 DECLARE_SOA_TABLE_STAGED(JDielectronMcIds, "JDIELMCID",
-                  jdielectronindices::JMcCollisionId,
-                  jdielectronindices::JMcParticleId,
-                  jdielectronmc::MothersIds,
-                  jdielectronmc::DaughtersIdSlice);
+                         jdielectronindices::JMcCollisionId,
+                         jdielectronindices::JMcParticleId,
+                         jdielectronmc::MothersIds,
+                         jdielectronmc::DaughtersIdSlice);
 
 namespace jdummydq
 {

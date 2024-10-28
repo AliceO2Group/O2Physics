@@ -36,19 +36,19 @@ DECLARE_SOA_INDEX_COLUMN(JMcParticle, mcParticle);
 } // namespace jd0indices
 
 DECLARE_SOA_TABLE_STAGED(JD0CollisionIds, "JD0COLLID",
-                  jd0indices::JCollisionId);
+                         jd0indices::JCollisionId);
 
 DECLARE_SOA_TABLE_STAGED(JD0McCollisionIds, "JD0MCCOLLID",
-                  jd0indices::JMcCollisionId);
+                         jd0indices::JMcCollisionId);
 
 DECLARE_SOA_TABLE_STAGED(JD0Ids, "JD0ID",
-                  jd0indices::JCollisionId,
-                  jd0indices::Prong0Id,
-                  jd0indices::Prong1Id);
+                         jd0indices::JCollisionId,
+                         jd0indices::Prong0Id,
+                         jd0indices::Prong1Id);
 
 DECLARE_SOA_TABLE_STAGED(JD0PIds, "JD0PID",
-                  jd0indices::JMcCollisionId,
-                  jd0indices::JMcParticleId);
+                         jd0indices::JMcCollisionId,
+                         jd0indices::JMcParticleId);
 
 namespace jlcindices
 {
@@ -61,20 +61,20 @@ DECLARE_SOA_INDEX_COLUMN(JMcParticle, mcParticle);
 } // namespace jlcindices
 
 DECLARE_SOA_TABLE_STAGED(JLcCollisionIds, "JLCCOLLID",
-                  jlcindices::JCollisionId);
+                         jlcindices::JCollisionId);
 
 DECLARE_SOA_TABLE_STAGED(JLcMcCollisionIds, "JLCMCCOLLID",
-                  jlcindices::JMcCollisionId);
+                         jlcindices::JMcCollisionId);
 
 DECLARE_SOA_TABLE_STAGED(JLcIds, "JLCID",
-                  jlcindices::JCollisionId,
-                  jlcindices::Prong0Id,
-                  jlcindices::Prong1Id,
-                  jlcindices::Prong2Id);
+                         jlcindices::JCollisionId,
+                         jlcindices::Prong0Id,
+                         jlcindices::Prong1Id,
+                         jlcindices::Prong2Id);
 
 DECLARE_SOA_TABLE_STAGED(JLcPIds, "JLCPID",
-                  jlcindices::JMcCollisionId,
-                  jlcindices::JMcParticleId);
+                         jlcindices::JMcCollisionId,
+                         jlcindices::JMcParticleId);
 
 } // namespace o2::aod
 

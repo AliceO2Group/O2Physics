@@ -38,11 +38,11 @@ DECLARE_SOA_DYNAMIC_COLUMN(IsRejectedCandidate, isRejectedCandidate, //! Flag to
 } // namespace v0flags
 
 DECLARE_SOA_TABLE_STAGED(V0SignalFlags, "V0SIGNALFLAGS",
-                  v0flags::SignalFlag,
-                  v0flags::IsK0SCandidate<v0flags::SignalFlag>,
-                  v0flags::IsLambdaCandidate<v0flags::SignalFlag>,
-                  v0flags::IsAntiLambdaCandidate<v0flags::SignalFlag>,
-                  v0flags::IsRejectedCandidate<v0flags::SignalFlag>);
+                         v0flags::SignalFlag,
+                         v0flags::IsK0SCandidate<v0flags::SignalFlag>,
+                         v0flags::IsLambdaCandidate<v0flags::SignalFlag>,
+                         v0flags::IsAntiLambdaCandidate<v0flags::SignalFlag>,
+                         v0flags::IsRejectedCandidate<v0flags::SignalFlag>);
 
 } // namespace o2::aod
 

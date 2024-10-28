@@ -26,7 +26,7 @@ namespace o2::aod
 
 // Reduced BCs as a root index
 DECLARE_SOA_TABLE_STAGED(RBCs, "RBC",
-                  BCcols);
+                         BCcols);
 
 namespace rcol
 {
@@ -60,10 +60,10 @@ DECLARE_SOA_COLUMN(MapEtaPhi, mapetaphi, std::vector<int>);
 
 // Reduced Collisions
 DECLARE_SOA_TABLE_STAGED(RCollisions, "RCOLLISION",
-                  Ccols)
+                         Ccols)
 
 DECLARE_SOA_TABLE_STAGED(RCents, "RCENTS",
-                  CCcols)
+                         CCcols)
 
 // Reduced tracks (is this needed?)
 namespace rtrack
@@ -82,7 +82,7 @@ DECLARE_SOA_COLUMN(Weight, weight, float);
               track::DcaZ
 
 DECLARE_SOA_TABLE_STAGED(RTracks, "RTRACK",
-                  Tcols)
+                         Tcols)
 
 #define TFcols o2::soa::Index<>,     \
                rtrack::RCollisionId, \
@@ -95,7 +95,7 @@ DECLARE_SOA_TABLE_STAGED(RTracks, "RTRACK",
                fwdtrack::FwdDcaY
 
 DECLARE_SOA_TABLE_STAGED(RFTracks, "RFTRACK",
-                  TFcols)
+                         TFcols)
 
 // Reduced MC collisions
 namespace rmccol
@@ -115,7 +115,7 @@ DECLARE_SOA_COLUMN(Weight, weight, float);
                 mult::MultMCNParticlesEta10
 
 DECLARE_SOA_TABLE_STAGED(RMCCollisions, "RMCCOLLISION",
-                  MCCcols)
+                         MCCcols)
 
 // Extra MC tables
 namespace rhepmc
@@ -138,7 +138,7 @@ DECLARE_SOA_INDEX_COLUMN(RMCCollision, rmccollison);
                 hepmcpdfinfo::Pdf2
 
 DECLARE_SOA_TABLE_STAGED(RHepMCinfos, "RHEPMCINFO",
-                  HMCcols);
+                         HMCcols);
 
 #define HMCHIcols rhepmc::RMCCollisionId,         \
                   hepmcheavyion::NcollHard,       \
@@ -151,7 +151,7 @@ DECLARE_SOA_TABLE_STAGED(RHepMCinfos, "RHEPMCINFO",
                   hepmcheavyion::Centrality
 
 DECLARE_SOA_TABLE_STAGED(RHepMCHIs, "RHEPMCHI",
-                  HMCHIcols);
+                         HMCHIcols);
 
 namespace rparticle
 {
@@ -173,7 +173,7 @@ DECLARE_SOA_INDEX_COLUMN(RMCCollision, rmccollision);
                  mcparticle::Weight
 
 DECLARE_SOA_TABLE_STAGED(RMCParticles, "RMCPARTICLE",
-                  RMCPcols)
+                         RMCPcols)
 
 // label tables
 namespace rlabels
@@ -182,10 +182,10 @@ DECLARE_SOA_INDEX_COLUMN(RMCCollision, rmccollision);
 DECLARE_SOA_INDEX_COLUMN(RMCParticle, rmcparticle);
 } // namespace rlabels
 DECLARE_SOA_TABLE_STAGED(RMCTrackLabels, "RMCTRKLABEL",
-                  rlabels::RMCParticleId)
+                         rlabels::RMCParticleId)
 
 DECLARE_SOA_TABLE_STAGED(RMCColLabels, "RMCCOLLABEL",
-                  rlabels::RMCCollisionId)
+                         rlabels::RMCCollisionId)
 
 namespace features
 {
