@@ -46,7 +46,12 @@ struct centralityStudy {
   Configurable<bool> requireIsVertexTOFmatched{"requireIsVertexTOFmatched", true, "require events with at least one of vertex contributors matched to TOF"};
   Configurable<bool> requireIsVertexTRDmatched{"requireIsVertexTRDmatched", true, "require events with at least one of vertex contributors matched to TRD"};
   Configurable<bool> rejectSameBunchPileup{"rejectSameBunchPileup", true, "reject collisions in case of pileup with another collision in the same foundBC"};
+
+  Configurable<bool> rejectITSinROFpileupStandard{"rejectITSinROFpileupStandard", false, "reject collisions in case of in-ROF ITS pileup (standard)"};
+  Configurable<bool> rejectITSinROFpileupStrict{"rejectITSinROFpileupStrict", false, "reject collisions in case of in-ROF ITS pileup (strict)"};
+
   Configurable<float> minTimeDelta{"minTimeDelta", -1.0f, "reject collision if another collision is this close or less in time"};
+  Configurable<float> minFT0CforVertexZ{"minFT0CforVertexZ", 250, "minimum FT0C for vertex-Z profile calculation"};
 
   // Configurable Axes
   ConfigurableAxis axisMultFT0C{"axisMultFT0C", {2000, 0, 100000}, "FT0C amplitude"};
@@ -64,6 +69,9 @@ struct centralityStudy {
   ConfigurableAxis axisPVChi2{"axisPVChi2", {300, 0, 30}, "FT0C percentile"};
   ConfigurableAxis axisDeltaTime{"axisDeltaTime", {300, 0, 300}, "#Delta time"};
 
+  // For profile Z 
+  ConfigurableAxis axisPVz{"axisPVz", {400, -20.0f, +20.0f}, "PVz (cm)"};
+
   void init(InitContext&)
   {
     if (doprocessCollisions || doprocessCollisionsWithCentrality) {
@@ -80,14 +88,22 @@ struct centralityStudy {
       histos.get<TH1>(HIST("hCollisionSelection"))->GetXaxis()->SetBinLabel(9, "kIsVertexTRDmatched");
       histos.get<TH1>(HIST("hCollisionSelection"))->GetXaxis()->SetBinLabel(10, "kNoSameBunchPileup");
       histos.get<TH1>(HIST("hCollisionSelection"))->GetXaxis()->SetBinLabel(11, "Neighbour rejection");
+      histos.get<TH1>(HIST("hCollisionSelection"))->GetXaxis()->SetBinLabel(12, "no ITS in-ROF pileup (standard)");
+      histos.get<TH1>(HIST("hCollisionSelection"))->GetXaxis()->SetBinLabel(13, "no ITS in-ROF pileup (strict)");
 
       histos.add("hFT0C_Collisions", "hFT0C_Collisions", kTH1D, {axisMultUltraFineFT0C});
       histos.add("hNPVContributors", "hNPVContributors", kTH1D, {axisMultUltraFinePVContributors});
+
+      histos.add("hFT0CvsPVz_Collisions_All", "hFT0CvsPVz_Collisions_All", kTProfile, {axisPVz});
+      histos.add("hFT0CvsPVz_Collisions", "hFT0CvsPVz_Collisions", kTProfile, {axisPVz});
     }
 
     if (doprocessBCs) {
-      histos.add("hBCSelection", "hBCSelection", kTH1D, {{10, -0.5, 9.5f}});
+      histos.add("hBCSelection", "hBCSelection", kTH1D, {{20, -0.5, 19.5f}});
       histos.add("hFT0C_BCs", "hFT0C_BCs", kTH1D, {axisMultUltraFineFT0C});
+
+      histos.add("hFT0CvsPVz_BCs_All", "hFT0CvsPVz_BCs_All", kTProfile, {axisPVz});
+      histos.add("hFT0CvsPVz_BCs", "hFT0CvsPVz_BCs", kTProfile, {axisPVz});
     }
 
     if (do2DPlots) {
@@ -171,7 +187,10 @@ struct centralityStudy {
     // if we got here, we also finally fill the FT0C histogram, please
     histos.fill(HIST("hNPVContributors"), collision.multPVTotalContributors());
     histos.fill(HIST("hFT0C_Collisions"), collision.multFT0C());
-
+    histos.fill(HIST("hFT0CvsPVz_Collisions_All"), collision.multPVz(), collision.multFT0C());
+    if(collision.multFT0C()>minFT0CforVertexZ){
+      histos.fill(HIST("hFT0CvsPVz_Collisions"), collision.multPVz(), collision.multFT0C());
+    }
     if (do2DPlots) {
       histos.fill(HIST("hFT0CvsNContribs"), collision.multNTracksPV(), collision.multFT0C());
       histos.fill(HIST("hMatchedVsITSOnly"), collision.multNTracksITSOnly(), collision.multNTracksITSTPC());
@@ -220,6 +239,12 @@ struct centralityStudy {
 
     // if we got here, we also finally fill the FT0C histogram, please
     histos.fill(HIST("hFT0C_BCs"), multbc.multBCFT0C());
+    if(multbc.multBCFT0PosZValid()){
+      histos.fill(HIST("hFT0CvsPVz_BCs_All"), multbc.multBCFT0PosZ(), multbc.multBCFT0C());
+      if(multbc.multBCFT0C()>minFT0CforVertexZ){
+        histos.fill(HIST("hFT0CvsPVz_BCs"), multbc.multBCFT0PosZ(), multbc.multBCFT0C());
+      }
+    }
   }
 
   PROCESS_SWITCH(centralityStudy, processCollisions, "per-collision analysis", false);
