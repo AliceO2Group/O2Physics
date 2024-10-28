@@ -64,7 +64,7 @@ struct ft0CorrectedTable {
     histos.add("t0C", "t0C", kTH1D, {{1000, -1, 1, "t0C (ns)"}});
     histos.add("t0AC", "t0AC", kTH1D, {{1000, -1000, 1000, "t0AC (ns)"}});
     histos.add("deltat0AC", "deltat0AC", kTH1D, {{1000, -10, 10, "#Deltat0AC (ns)"}});
-    if (doprocessMC) {
+    if (doprocessWithBypassFT0timeInMC) {
       histos.add("MC/deltat0A", "t0A", kTH1D, {{1000, -50, 50, "t0A (ps)"}});
       histos.add("MC/deltat0C", "t0C", kTH1D, {{1000, -50, 50, "t0C (ps)"}});
       histos.add("MC/deltat0AC", "t0AC", kTH1D, {{1000, -50, 50, "t0AC (ps)"}});
