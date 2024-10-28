@@ -63,7 +63,7 @@ DECLARE_SOA_TABLE_STAGED(HfD0CollBases, "HFD0COLLBASE", //! Table with basic col
                   hf_coll_base::MultZeqNTracksPV,
                   // hf_coll_base::IsEventReject,
                   // bc::RunNumber);
-                  o2::soa::Marker<MarkerD0>);
+                  soa::Marker<MarkerD0>);
 
 using HfD0CollBase = HfD0CollBases::iterator;
 using StoredHfD0CollBase = StoredHfD0CollBases::iterator;
