@@ -179,8 +179,12 @@ struct AnalysisEventSelection {
   std::map<uint64_t, std::vector<int64_t>> fBCCollMap; // key: global BC, value: vector of reduced event global indices
   int fCurrentRun;
 
-  void init(o2::framework::InitContext&)
+  void init(o2::framework::InitContext& context)
   {
+    if (context.mOptions.get<bool>("processDummy")) {
+      return;
+    }
+
     fEventCut = new AnalysisCompositeCut(true);
     TString eventCutStr = fConfigEventCuts.value;
     fEventCut->AddCut(dqcuts::GetAnalysisCut(eventCutStr.Data()));
@@ -371,10 +375,13 @@ struct AnalysisTrackSelection {
   std::map<int64_t, std::vector<int64_t>> fNAssocsInBunch;    // key: track global index, value: vector of global index for events associated in-bunch (events that have in-bunch pileup or splitting)
   std::map<int64_t, std::vector<int64_t>> fNAssocsOutOfBunch; // key: track global index, value: vector of global index for events associated out-of-bunch (events that have no in-bunch pileup)
 
-  void init(o2::framework::InitContext&)
+  void init(o2::framework::InitContext& context)
   {
-    fCurrentRun = 0;
+    if (context.mOptions.get<bool>("processDummy")) {
+      return;
+    }
 
+    fCurrentRun = 0;
     TString cutNamesStr = fConfigCuts.value;
     if (!cutNamesStr.IsNull()) {
       std::unique_ptr<TObjArray> objArray(cutNamesStr.Tokenize(","));
@@ -592,8 +599,12 @@ struct AnalysisMuonSelection {
   std::map<int64_t, std::vector<int64_t>> fNAssocsInBunch;    // key: muon global index, value: vector of global index for events associated in-bunch (events that have in-bunch pileup or splitting)
   std::map<int64_t, std::vector<int64_t>> fNAssocsOutOfBunch; // key: muon global index, value: vector of global index for events associated out-of-bunch (events that have no in-bunch pileup)
 
-  void init(o2::framework::InitContext&)
+  void init(o2::framework::InitContext& context)
   {
+    if (context.mOptions.get<bool>("processDummy")) {
+      return;
+    }
+
     fCurrentRun = 0;
     TString cutNamesStr = fConfigCuts.value;
     if (!cutNamesStr.IsNull()) {
@@ -666,8 +677,6 @@ struct AnalysisMuonSelection {
       auto track = assoc.template reducedmuon_as<TMuons>();
       filterMap = 0;
       VarManager::FillTrack<TMuonFillMap>(track);
-      // compute quantities which depend on the associated collision
-      VarManager::FillPropagateMuon<TMuonFillMap>(track, event);
       if (fConfigQA) {
         fHistMan->FillHistClass("TrackMuon_BeforeCuts", VarManager::fgValues);
       }
@@ -775,12 +784,12 @@ struct AnalysisPrefilterSelection {
 
   Preslice<aod::ReducedTracksAssoc> trackAssocsPerCollision = aod::reducedtrack_association::reducedeventId;
 
-  void init(o2::framework::InitContext& initContext)
+  void init(o2::framework::InitContext& context)
   {
-    if (initContext.mOptions.get<bool>("processDummy")) {
-      LOG(info) << "Dummy function enabled. Skipping the rest of init()" << endl;
+    if (context.mOptions.get<bool>("processDummy")) {
       return;
     }
+
     // get the list of track cuts to be prefiltered
     TString trackCutsStr = fConfigTrackCuts.value;
     TObjArray* objArrayTrackCuts = nullptr;
@@ -796,7 +805,7 @@ struct AnalysisPrefilterSelection {
     fPrefilterMask = 0;
     fPrefilterCutBit = -1;
     string trackCuts;
-    getTaskOptionValue<string>(initContext, "analysis-track-selection", "cfgTrackCuts", trackCuts, false);
+    getTaskOptionValue<string>(context, "analysis-track-selection", "cfgTrackCuts", trackCuts, false);
     TString allTrackCutsStr = trackCuts;
     TString prefilterTrackCutStr = fConfigPrefilterTrackCut.value;
     if (!trackCutsStr.IsNull()) {
@@ -986,19 +995,14 @@ struct AnalysisSameEventPairing {
 
   void init(o2::framework::InitContext& context)
   {
+    if (context.mOptions.get<bool>("processDummy")) {
+      return;
+    }
+
     fEnableBarrelHistos = context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmed") || context.mOptions.get<bool>("processBarrelOnlyWithCollSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmedNoCov");
     fEnableBarrelMixingHistos = context.mOptions.get<bool>("processMixingAllSkimmed") || context.mOptions.get<bool>("processMixingBarrelSkimmed");
     fEnableMuonHistos = context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processMuonOnlySkimmed");
     fEnableMuonMixingHistos = context.mOptions.get<bool>("processMixingAllSkimmed");
-    bool isDummy = context.mOptions.get<bool>("processDummy");
-    if (isDummy) {
-      if (fEnableBarrelHistos || fEnableBarrelMixingHistos || fEnableMuonHistos || fEnableMuonMixingHistos) {
-        LOG(warning) << "The dummy process function is enabled while you have enabled normal process function. Check your configuration file!" << endl;
-      } else {
-        LOG(info) << "Dummy function enabled. Skipping the rest of init()" << endl;
-        return;
-      }
-    }
 
     // Keep track of all the histogram class names to avoid composing strings in the pairing loop
     TString histNames = "";
@@ -1349,8 +1353,8 @@ struct AnalysisSameEventPairing {
             if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrackBarrelPID) > 0) {
               if (fConfigFlatTables.value) {
                 dielectronAllList(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), twoTrackFilter, dileptonMcDecision,
-                                  t1.pt(), t1.eta(), t1.phi(), t1.tpcNClsCrossedRows(), t1.tpcNClsFound(), t1.tpcChi2NCl(), t1.dcaXY(), t1.dcaZ(), t1.tpcSignal(), t1.tpcNSigmaEl(), t1.tpcNSigmaPi(), t1.tpcNSigmaPr(), t1.beta(), t1.tofNSigmaEl(), t1.tofNSigmaPi(), t1.tofNSigmaPr(),
-                                  t2.pt(), t2.eta(), t2.phi(), t2.tpcNClsCrossedRows(), t2.tpcNClsFound(), t2.tpcChi2NCl(), t2.dcaXY(), t2.dcaZ(), t2.tpcSignal(), t2.tpcNSigmaEl(), t2.tpcNSigmaPi(), t2.tpcNSigmaPr(), t2.beta(), t2.tofNSigmaEl(), t2.tofNSigmaPi(), t2.tofNSigmaPr(),
+                                  t1.pt(), t1.eta(), t1.phi(), t1.itsClusterMap(), t1.itsChi2NCl(), t1.tpcNClsCrossedRows(), t1.tpcNClsFound(), t1.tpcChi2NCl(), t1.dcaXY(), t1.dcaZ(), t1.tpcSignal(), t1.tpcNSigmaEl(), t1.tpcNSigmaPi(), t1.tpcNSigmaPr(), t1.beta(), t1.tofNSigmaEl(), t1.tofNSigmaPi(), t1.tofNSigmaPr(),
+                                  t2.pt(), t2.eta(), t2.phi(), t2.itsClusterMap(), t2.itsChi2NCl(), t2.tpcNClsCrossedRows(), t2.tpcNClsFound(), t2.tpcChi2NCl(), t2.dcaXY(), t2.dcaZ(), t2.tpcSignal(), t2.tpcNSigmaEl(), t2.tpcNSigmaPi(), t2.tpcNSigmaPr(), t2.beta(), t2.tofNSigmaEl(), t2.tofNSigmaPi(), t2.tofNSigmaPr(),
                                   VarManager::fgValues[VarManager::kKFTrack0DCAxyz], VarManager::fgValues[VarManager::kKFTrack1DCAxyz], VarManager::fgValues[VarManager::kKFDCAxyzBetweenProngs], VarManager::fgValues[VarManager::kKFTrack0DCAxy], VarManager::fgValues[VarManager::kKFTrack1DCAxy], VarManager::fgValues[VarManager::kKFDCAxyBetweenProngs],
                                   VarManager::fgValues[VarManager::kKFTrack0DeviationFromPV], VarManager::fgValues[VarManager::kKFTrack1DeviationFromPV], VarManager::fgValues[VarManager::kKFTrack0DeviationxyFromPV], VarManager::fgValues[VarManager::kKFTrack1DeviationxyFromPV],
                                   VarManager::fgValues[VarManager::kKFMass], VarManager::fgValues[VarManager::kKFChi2OverNDFGeo], VarManager::fgValues[VarManager::kVertexingLxyz], VarManager::fgValues[VarManager::kVertexingLxyzOverErr], VarManager::fgValues[VarManager::kVertexingLxy], VarManager::fgValues[VarManager::kVertexingLxyOverErr], VarManager::fgValues[VarManager::kVertexingTauxy], VarManager::fgValues[VarManager::kVertexingTauxyErr], VarManager::fgValues[VarManager::kKFCosPA], VarManager::fgValues[VarManager::kKFJpsiDCAxyz], VarManager::fgValues[VarManager::kKFJpsiDCAxy],
@@ -1369,9 +1373,9 @@ struct AnalysisSameEventPairing {
 
           auto t1 = a1.template reducedmuon_as<TTracks>();
           auto t2 = a2.template reducedmuon_as<TTracks>();
-          if (t1.matchMCHTrackId() == t2.matchMCHTrackId())
+          if (t1.matchMCHTrackId() == t2.matchMCHTrackId() && t1.matchMCHTrackId() >= 0)
             continue;
-          if (t1.matchMFTTrackId() == t2.matchMFTTrackId())
+          if (t1.matchMFTTrackId() == t2.matchMFTTrackId() && t1.matchMFTTrackId() >= 0)
             continue;
           sign1 = t1.sign();
           sign2 = t2.sign();
@@ -1729,9 +1733,7 @@ struct AnalysisAsymmetricPairing {
 
   void init(o2::framework::InitContext& context)
   {
-    bool isDummy = context.mOptions.get<bool>("processDummy");
-    if (isDummy) {
-      LOG(info) << "Dummy function enabled. Skipping the rest of init()" << endl;
+    if (context.mOptions.get<bool>("processDummy")) {
       return;
     }
 
@@ -2200,7 +2202,7 @@ struct AnalysisAsymmetricPairing {
 
       std::set<std::tuple<int64_t, int64_t, int64_t>> globIdxTriplets;
       // Based on triplet type, make suitable combinations of the partitions
-      if (tripletType == VarManager::kTripleCandidateToPKPi) {
+      if (tripletType == VarManager::kTripleCandidateToPKPi || tripletType == VarManager::kTripleCandidateToKKPi) {
         for (auto& [a1, a2, a3] : combinations(soa::CombinationsFullIndexPolicy(groupedLegAAssocs, groupedLegBAssocs, groupedLegCAssocs))) {
           readTriplet<TThreeProngFitter, TEventFillMap, TTrackFillMap>(a1, a2, a3, tracks, event, tripletType, histNames);
         }
@@ -2320,6 +2322,13 @@ struct AnalysisAsymmetricPairing {
     runThreeProng<true, gkEventFillMapWithCovZdc, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks, VarManager::kTripleCandidateToKPiPi);
   }
 
+  void processKaonKaonPionSkimmed(MyEventsVtxCovZdcSelected const& events,
+                                  soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts> const& barrelAssocs,
+                                  MyBarrelTracksWithCovWithAmbiguities const& barrelTracks)
+  {
+    runThreeProng<true, gkEventFillMapWithCovZdc, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks, VarManager::kTripleCandidateToKKPi);
+  }
+
   void processProtonKaonPionSkimmed(MyEventsVtxCovZdcSelected const& events,
                                     soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts> const& barrelAssocs,
                                     MyBarrelTracksWithCovWithAmbiguities const& barrelTracks)
@@ -2334,6 +2343,7 @@ struct AnalysisAsymmetricPairing {
 
   PROCESS_SWITCH(AnalysisAsymmetricPairing, processKaonPionSkimmed, "Run kaon pion pairing, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisAsymmetricPairing, processKaonPionPionSkimmed, "Run kaon pion pion triplets, with skimmed tracks", false);
+  PROCESS_SWITCH(AnalysisAsymmetricPairing, processKaonKaonPionSkimmed, "Run kaon kaon pion triplets, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisAsymmetricPairing, processProtonKaonPionSkimmed, "Run proton kaon pion triplets, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisAsymmetricPairing, processDummy, "Dummy function, enabled only if none of the others are enabled", true);
 };
@@ -2388,21 +2398,16 @@ struct AnalysisDileptonTrack {
 
   void init(o2::framework::InitContext& context)
   {
+    if (context.mOptions.get<bool>("processDummy")) {
+      return;
+    }
+
     bool isBarrel = context.mOptions.get<bool>("processBarrelSkimmed");
     bool isBarrelME = context.mOptions.get<bool>("processBarrelMixedEvent");
     bool isBarrelAsymmetric = context.mOptions.get<bool>("processDstarToD0Pi");
     bool isMuon = context.mOptions.get<bool>("processMuonSkimmed");
     bool isMuonME = context.mOptions.get<bool>("processMuonMixedEvent");
     bool isAnyProcessEnabled = isBarrel || isBarrelME || isMuon || isMuonME;
-    bool isDummy = context.mOptions.get<bool>("processDummy");
-    if (isDummy) {
-      if (isAnyProcessEnabled) {
-        LOG(warning) << "Dummy function is enabled even if there are normal process functions running! Fix your config!" << endl;
-      } else {
-        LOG(info) << "Dummy function is enabled. Skipping the rest of the init function" << endl;
-        return;
-      }
-    }
 
     fCurrentRun = 0;
     fValuesDilepton = new float[VarManager::kNVars];

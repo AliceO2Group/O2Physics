@@ -39,6 +39,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
 #include "ReconstructionDataFormats/Track.h"
+#include "CommonConstants/MathConstants.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "Common/Core/trackUtilities.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
@@ -78,6 +79,7 @@ struct derivedlambdakzeroanalysis {
   Configurable<bool> analyseAntiLambda{"analyseAntiLambda", true, "process AntiLambda-like candidates"};
   Configurable<bool> calculateFeeddownMatrix{"calculateFeeddownMatrix", true, "fill feeddown matrix if MC"};
 
+  Configurable<bool> requireSel8{"requireSel8", true, "require sel8 event selection"};
   Configurable<bool> rejectITSROFBorder{"rejectITSROFBorder", true, "reject events at ITS ROF border"};
   Configurable<bool> rejectTFBorder{"rejectTFBorder", true, "reject events at TF border"};
   Configurable<bool> requireIsVertexITSTPC{"requireIsVertexITSTPC", false, "require events with at least one ITS-TPC track"};
@@ -85,9 +87,14 @@ struct derivedlambdakzeroanalysis {
   Configurable<bool> requireIsVertexTOFmatched{"requireIsVertexTOFmatched", false, "require events with at least one of vertex contributors matched to TOF"};
   Configurable<bool> requireIsVertexTRDmatched{"requireIsVertexTRDmatched", false, "require events with at least one of vertex contributors matched to TRD"};
   Configurable<bool> rejectSameBunchPileup{"rejectSameBunchPileup", true, "reject collisions in case of pileup with another collision in the same foundBC"};
-  Configurable<bool> requireNoCollInTimeRangeStd{"requireNoCollInTimeRangeStd", true, "reject collisions corrupted by the cannibalism, with other collisions within +/- 10 microseconds"};
-  Configurable<bool> requireNoCollInTimeRangeNarrow{"requireNoCollInTimeRangeNarrow", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 10 microseconds"};
+  Configurable<bool> requireNoCollInTimeRangeStd{"requireNoCollInTimeRangeStd", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 2 microseconds or mult above a certain threshold in -4 - -2 microseconds"};
+  Configurable<bool> requireNoCollInTimeRangeStrict{"requireNoCollInTimeRangeStrict", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 10 microseconds"};
+  Configurable<bool> requireNoCollInTimeRangeNarrow{"requireNoCollInTimeRangeNarrow", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 2 microseconds"};
+  Configurable<bool> requireNoCollInTimeRangeVzDep{"requireNoCollInTimeRangeVzDep", false, "reject collisions corrupted by the cannibalism, with other collisions with pvZ of drifting TPC tracks from past/future collisions within 2.5 cm the current pvZ"};
+  Configurable<bool> requireNoCollInROFStd{"requireNoCollInROFStd", false, "reject collisions corrupted by the cannibalism, with other collisions within the same ITS ROF with mult. above a certain threshold"};
+  Configurable<bool> requireNoCollInROFStrict{"requireNoCollInROFStrict", false, "reject collisions corrupted by the cannibalism, with other collisions within the same ITS ROF"};
 
+  Configurable<bool> useFT0CbasedOccupancy{"useFT0CbasedOccupancy", false, "Use sum of FT0-C amplitudes for estimating occupancy? (if not, use track-based definition)"};
   // fast check on occupancy
   Configurable<float> minOccupancy{"minOccupancy", -1, "minimum occupancy from neighbouring collisions"};
   Configurable<float> maxOccupancy{"maxOccupancy", -1, "maximum occupancy from neighbouring collisions"};
@@ -213,6 +220,8 @@ struct derivedlambdakzeroanalysis {
   ConfigurableAxis axisNsigmaTPC{"axisNsigmaTPC", {200, -10.0f, 10.0f}, "N sigma TPC"};
   ConfigurableAxis axisTPCsignal{"axisTPCsignal", {200, 0.0f, 200.0f}, "TPC signal"};
   ConfigurableAxis axisTOFdeltaT{"axisTOFdeltaT", {200, -5000.0f, 5000.0f}, "TOF Delta T (ps)"};
+  ConfigurableAxis axisPhi{"axisPhi", {18, 0.0f, constants::math::TwoPI}, "Azimuth angle (rad)"};
+  ConfigurableAxis axisEta{"axisEta", {10, -1.0f, 1.0f}, "#eta"};
 
   // UPC axes
   ConfigurableAxis axisSelGap{"axisSelGap", {4, -1.5, 2.5}, "Gap side"};
@@ -220,11 +229,11 @@ struct derivedlambdakzeroanalysis {
   // UPC selections
   SGSelector sgSelector;
   struct : ConfigurableGroup {
-    Configurable<float> FV0cut{"FV0cut", 100., "FV0A threshold"};
-    Configurable<float> FT0Acut{"FT0Acut", 200., "FT0A threshold"};
-    Configurable<float> FT0Ccut{"FT0Ccut", 100., "FT0C threshold"};
-    Configurable<float> ZDCcut{"ZDCcut", 10., "ZDC threshold"};
-    // Configurable<float> gapSel{"gapSel", 2, "Gap selection"};
+    Configurable<float> FV0cut{"upcCuts.FV0cut", 100., "FV0A threshold"};
+    Configurable<float> FT0Acut{"upcCuts.FT0Acut", 200., "FT0A threshold"};
+    Configurable<float> FT0Ccut{"upcCuts.FT0Ccut", 100., "FT0C threshold"};
+    Configurable<float> ZDCcut{"upcCuts.ZDCcut", 10., "ZDC threshold"};
+    // Configurable<float> gapSel{"upcCuts.gapSel", 2, "Gap selection"};
   } upcCuts;
 
   // AP plot axes
@@ -389,9 +398,13 @@ struct derivedlambdakzeroanalysis {
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(9, "kIsVertexTRDmatched");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(10, "kNoSameBunchPileup");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(11, "kNoCollInTimeRangeStd");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(12, "kNoCollInTimeRangeNarrow");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(13, "Below min occup.");
-    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(14, "Above max occup.");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(12, "kNoCollInTimeRangeStrict");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(13, "kNoCollInTimeRangeNarrow");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(14, "kNoCollInTimeRangeVzDep");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(15, "kNoCollInRofStd");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(16, "kNoCollInRofStrict");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(17, "Below min occup.");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(18, "Above max occup.");
 
     histos.add("hEventCentrality", "hEventCentrality", kTH1F, {{100, 0.0f, +100.0f}});
     histos.add("hCentralityVsNch", "hCentralityVsNch", kTH2F, {axisCentrality, axisNch});
@@ -401,6 +414,7 @@ struct derivedlambdakzeroanalysis {
 
     histos.add("hGapSide", "Gap side; Entries", kTH1F, {{5, -0.5, 4.5}});
     histos.add("hSelGapSide", "Selected gap side; Entries", kTH1F, {axisSelGap});
+    histos.add("hEventCentralityVsSelGapSide", ";Centrality (%); Selected gap side", kTH2F, {{100, 0.0f, +100.0f}, axisSelGap});
 
     // for QA and test purposes
     auto hRawCentrality = histos.add<TH1>("hRawCentrality", "hRawCentrality", kTH1F, {axisRawCentrality});
@@ -412,6 +426,7 @@ struct derivedlambdakzeroanalysis {
 
     // histograms versus mass
     if (analyseK0Short) {
+      histos.add("h2dNbrOfK0ShortVsCentrality", "h2dNbrOfK0ShortVsCentrality", kTH2F, {axisCentrality, {10, -0.5f, 9.5f}});
       histos.add("h3dMassK0Short", "h3dMassK0Short", kTH3F, {axisCentrality, axisPt, axisK0Mass});
       // Non-UPC info
       histos.add("h3dMassK0ShortHadronic", "h3dMassK0ShortHadronic", kTH3F, {axisCentrality, axisPt, axisK0Mass});
@@ -457,6 +472,7 @@ struct derivedlambdakzeroanalysis {
       }
     }
     if (analyseLambda) {
+      histos.add("h2dNbrOfLambdaVsCentrality", "h2dNbrOfLambdaVsCentrality", kTH2F, {axisCentrality, {10, -0.5f, 9.5f}});
       histos.add("h3dMassLambda", "h3dMassLambda", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
       // Non-UPC info
       histos.add("h3dMassLambdaHadronic", "h3dMassLambdaHadronic", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
@@ -502,6 +518,7 @@ struct derivedlambdakzeroanalysis {
       }
     }
     if (analyseAntiLambda) {
+      histos.add("h2dNbrOfAntiLambdaVsCentrality", "h2dNbrOfAntiLambdaVsCentrality", kTH2F, {axisCentrality, {10, -0.5f, 9.5f}});
       histos.add("h3dMassAntiLambda", "h3dMassAntiLambda", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
       // Non-UPC info
       histos.add("h3dMassAntiLambdaHadronic", "h3dMassAntiLambdaHadronic", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
@@ -564,6 +581,7 @@ struct derivedlambdakzeroanalysis {
         histos.add("K0Short/h4dDCADaughters", "h4dDCADaughters", kTHnF, {axisCentrality, axisPtCoarse, axisK0Mass, axisDCAdau});
         histos.add("K0Short/h4dPointingAngle", "h4dPointingAngle", kTHnF, {axisCentrality, axisPtCoarse, axisK0Mass, axisPointingAngle});
         histos.add("K0Short/h4dV0Radius", "h4dV0Radius", kTHnF, {axisCentrality, axisPtCoarse, axisK0Mass, axisV0Radius});
+        histos.add("K0Short/h4dV0PhiVsEta", "h4dV0PhiVsEta", kTHnF, {axisPtCoarse, axisK0Mass, axisPhi, axisEta});
       }
       if (analyseLambda) {
         histos.add("Lambda/h4dPosDCAToPV", "h4dPosDCAToPV", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisDCAtoPV});
@@ -571,6 +589,7 @@ struct derivedlambdakzeroanalysis {
         histos.add("Lambda/h4dDCADaughters", "h4dDCADaughters", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisDCAdau});
         histos.add("Lambda/h4dPointingAngle", "h4dPointingAngle", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisPointingAngle});
         histos.add("Lambda/h4dV0Radius", "h4dV0Radius", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisV0Radius});
+        histos.add("Lambda/h4dV0PhiVsEta", "h4dV0PhiVsEta", kTHnF, {axisPtCoarse, axisK0Mass, axisPhi, axisEta});
       }
       if (analyseAntiLambda) {
         histos.add("AntiLambda/h4dPosDCAToPV", "h4dPosDCAToPV", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisDCAtoPV});
@@ -578,6 +597,7 @@ struct derivedlambdakzeroanalysis {
         histos.add("AntiLambda/h4dDCADaughters", "h4dDCADaughters", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisDCAdau});
         histos.add("AntiLambda/h4dPointingAngle", "h4dPointingAngle", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisPointingAngle});
         histos.add("AntiLambda/h4dV0Radius", "h4dV0Radius", kTHnF, {axisCentrality, axisPtCoarse, axisLambdaMass, axisV0Radius});
+        histos.add("AntiLambda/h4dV0PhiVsEta", "h4dV0PhiVsEta", kTHnF, {axisPtCoarse, axisK0Mass, axisPhi, axisEta});
       }
     }
 
@@ -972,7 +992,7 @@ struct derivedlambdakzeroanalysis {
   }
 
   template <typename TV0>
-  void analyseCandidate(TV0 v0, float pt, float centrality, uint64_t selMap, uint8_t gapSide)
+  void analyseCandidate(TV0 v0, float pt, float centrality, uint64_t selMap, uint8_t gapSide, int& nK0Shorts, int& nLambdas, int& nAntiLambdas)
   // precalculate this information so that a check is one mask operation, not many
   {
     bool passK0ShortSelections = false;
@@ -1059,11 +1079,11 @@ struct derivedlambdakzeroanalysis {
       histos.fill(HIST("h3dMassK0Short"), centrality, pt, v0.mK0Short());
       if (gapSide == 0)
         histos.fill(HIST("h3dMassK0ShortSGA"), centrality, pt, v0.mK0Short());
-      if (gapSide == 1)
+      else if (gapSide == 1)
         histos.fill(HIST("h3dMassK0ShortSGC"), centrality, pt, v0.mK0Short());
-      if (gapSide == 2)
+      else if (gapSide == 2)
         histos.fill(HIST("h3dMassK0ShortDG"), centrality, pt, v0.mK0Short());
-      if (gapSide > 2)
+      else
         histos.fill(HIST("h3dMassK0ShortHadronic"), centrality, pt, v0.mK0Short());
       histos.fill(HIST("hMassK0Short"), v0.mK0Short());
       if (doPlainTopoQA) {
@@ -1107,16 +1127,17 @@ struct derivedlambdakzeroanalysis {
         histos.fill(HIST("K0Short/h3dPosTOFdeltaTvsTrackPt"), centrality, v0.positivept(), v0.posTOFDeltaTK0Pi());
         histos.fill(HIST("K0Short/h3dNegTOFdeltaTvsTrackPt"), centrality, v0.negativept(), v0.negTOFDeltaTK0Pi());
       }
+      nK0Shorts++;
     }
     if (passLambdaSelections && analyseLambda) {
       histos.fill(HIST("h3dMassLambda"), centrality, pt, v0.mLambda());
       if (gapSide == 0)
         histos.fill(HIST("h3dMassLambdaSGA"), centrality, pt, v0.mLambda());
-      if (gapSide == 1)
+      else if (gapSide == 1)
         histos.fill(HIST("h3dMassLambdaSGC"), centrality, pt, v0.mLambda());
-      if (gapSide == 2)
+      else if (gapSide == 2)
         histos.fill(HIST("h3dMassLambdaDG"), centrality, pt, v0.mLambda());
-      if (gapSide > 2)
+      else
         histos.fill(HIST("h3dMassLambdaHadronic"), centrality, pt, v0.mLambda());
       if (doPlainTopoQA) {
         histos.fill(HIST("Lambda/hPosDCAToPV"), v0.dcapostopv());
@@ -1159,16 +1180,17 @@ struct derivedlambdakzeroanalysis {
         histos.fill(HIST("Lambda/h3dPosTOFdeltaTvsTrackPt"), centrality, v0.positivept(), v0.posTOFDeltaTLaPr());
         histos.fill(HIST("Lambda/h3dNegTOFdeltaTvsTrackPt"), centrality, v0.negativept(), v0.negTOFDeltaTLaPi());
       }
+      nLambdas++;
     }
     if (passAntiLambdaSelections && analyseAntiLambda) {
       histos.fill(HIST("h3dMassAntiLambda"), centrality, pt, v0.mAntiLambda());
       if (gapSide == 0)
         histos.fill(HIST("h3dMassAntiLambdaSGA"), centrality, pt, v0.mAntiLambda());
-      if (gapSide == 1)
+      else if (gapSide == 1)
         histos.fill(HIST("h3dMassAntiLambdaSGC"), centrality, pt, v0.mAntiLambda());
-      if (gapSide == 2)
+      else if (gapSide == 2)
         histos.fill(HIST("h3dMassAntiLambdaDG"), centrality, pt, v0.mAntiLambda());
-      if (gapSide > 2)
+      else
         histos.fill(HIST("h3dMassAntiLambdaHadronic"), centrality, pt, v0.mAntiLambda());
       if (doPlainTopoQA) {
         histos.fill(HIST("AntiLambda/hPosDCAToPV"), v0.dcapostopv());
@@ -1211,6 +1233,7 @@ struct derivedlambdakzeroanalysis {
         histos.fill(HIST("AntiLambda/h3dPosTOFdeltaTvsTrackPt"), centrality, v0.positivept(), v0.posTOFDeltaTLaPi());
         histos.fill(HIST("AntiLambda/h3dNegTOFdeltaTvsTrackPt"), centrality, v0.negativept(), v0.negTOFDeltaTLaPr());
       }
+      nAntiLambdas++;
     }
 
     // __________________________________________
@@ -1227,6 +1250,9 @@ struct derivedlambdakzeroanalysis {
           histos.fill(HIST("K0Short/h4dPointingAngle"), centrality, pt, v0.mK0Short(), TMath::ACos(v0.v0cosPA()));
         if (verifyMask(selMap, maskTopoNoDCAV0Dau | maskK0ShortSpecific))
           histos.fill(HIST("K0Short/h4dDCADaughters"), centrality, pt, v0.mK0Short(), v0.dcaV0daughters());
+
+        if (passK0ShortSelections)
+          histos.fill(HIST("K0Short/h4dV0PhiVsEta"), pt, v0.mK0Short(), v0.phi(), v0.eta());
       }
 
       if (analyseLambda) {
@@ -1240,6 +1266,9 @@ struct derivedlambdakzeroanalysis {
           histos.fill(HIST("Lambda/h4dPointingAngle"), centrality, pt, v0.mLambda(), TMath::ACos(v0.v0cosPA()));
         if (verifyMask(selMap, maskTopoNoDCAV0Dau | maskLambdaSpecific))
           histos.fill(HIST("Lambda/h4dDCADaughters"), centrality, pt, v0.mLambda(), v0.dcaV0daughters());
+
+        if (passLambdaSelections)
+          histos.fill(HIST("Lambda/h4dV0PhiVsEta"), pt, v0.mLambda(), v0.phi(), v0.eta());
       }
       if (analyseAntiLambda) {
         if (verifyMask(selMap, maskTopoNoV0Radius | maskAntiLambdaSpecific))
@@ -1252,6 +1281,9 @@ struct derivedlambdakzeroanalysis {
           histos.fill(HIST("AntiLambda/h4dPointingAngle"), centrality, pt, v0.mAntiLambda(), TMath::ACos(v0.v0cosPA()));
         if (verifyMask(selMap, maskTopoNoDCAV0Dau | maskAntiLambdaSpecific))
           histos.fill(HIST("AntiLambda/h4dDCADaughters"), centrality, pt, v0.mAntiLambda(), v0.dcaV0daughters());
+
+        if (passAntiLambdaSelections)
+          histos.fill(HIST("AntiLambda/h4dV0PhiVsEta"), pt, v0.mAntiLambda(), v0.phi(), v0.eta());
       }
     } // end systematics / qa
   }
@@ -1315,7 +1347,7 @@ struct derivedlambdakzeroanalysis {
     }
 
     histos.fill(HIST("hEventSelection"), 0. /* all collisions */);
-    if (!collision.sel8()) {
+    if (requireSel8 && !collision.sel8()) {
       return;
     }
     histos.fill(HIST("hEventSelection"), 1 /* sel8 collisions */);
@@ -1363,21 +1395,42 @@ struct derivedlambdakzeroanalysis {
     if (requireNoCollInTimeRangeStd && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       return;
     }
-    histos.fill(HIST("hEventSelection"), 10 /* No other collision within +/- 10 microseconds */);
+    histos.fill(HIST("hEventSelection"), 10 /* No other collision within +/- 2 microseconds or mult above a certain threshold in -4 - -2 microseconds*/);
+
+    if (requireNoCollInTimeRangeStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict)) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 11 /* No other collision within +/- 10 microseconds */);
 
     if (requireNoCollInTimeRangeNarrow && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
       return;
     }
-    histos.fill(HIST("hEventSelection"), 11 /* No other collision within +/- 4 microseconds */);
+    histos.fill(HIST("hEventSelection"), 12 /* No other collision within +/- 2 microseconds */);
 
-    if (minOccupancy > 0 && collision.trackOccupancyInTimeRange() < minOccupancy) {
+    if (requireNoCollInTimeRangeVzDep && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeVzDependent)) {
       return;
     }
-    histos.fill(HIST("hEventSelection"), 12 /* Below min occupancy */);
-    if (maxOccupancy > 0 && collision.trackOccupancyInTimeRange() > maxOccupancy) {
+    histos.fill(HIST("hEventSelection"), 13 /* No other collision with pvZ of drifting TPC tracks from past/future collisions within 2.5 cm the current pvZ */);
+
+    if (requireNoCollInROFStd && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
       return;
     }
-    histos.fill(HIST("hEventSelection"), 13 /* Above max occupancy */);
+    histos.fill(HIST("hEventSelection"), 14 /* No other collision within the same ITS ROF with mult. above a certain threshold */);
+
+    if (requireNoCollInROFStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStrict)) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 15 /* No other collision within the same ITS ROF */);
+
+    float collisionOccupancy = useFT0CbasedOccupancy ? collision.ft0cOccupancyInTimeRange() : collision.trackOccupancyInTimeRange();
+    if (minOccupancy > 0 && collisionOccupancy < minOccupancy) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 16 /* Below min occupancy */);
+    if (maxOccupancy > 0 && collisionOccupancy > maxOccupancy) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 17 /* Above max occupancy */);
 
     float centrality = collision.centFT0C();
     if (qaCentrality) {
@@ -1395,16 +1448,20 @@ struct derivedlambdakzeroanalysis {
     selGapSide = sgSelector.trueGap(collision, upcCuts.FV0cut, upcCuts.FT0Acut, upcCuts.FT0Ccut, upcCuts.ZDCcut);
     histos.fill(HIST("hGapSide"), gapSide);
     histos.fill(HIST("hSelGapSide"), selGapSide);
+    histos.fill(HIST("hEventCentralityVsSelGapSide"), centrality, selGapSide <= 2 ? selGapSide : -1);
 
     histos.fill(HIST("hEventCentrality"), centrality);
 
     histos.fill(HIST("hCentralityVsNch"), centrality, collision.multNTracksPVeta1());
 
-    histos.fill(HIST("hEventOccupancy"), collision.trackOccupancyInTimeRange());
-    histos.fill(HIST("hCentralityVsOccupancy"), centrality, collision.trackOccupancyInTimeRange());
+    histos.fill(HIST("hEventOccupancy"), collisionOccupancy);
+    histos.fill(HIST("hCentralityVsOccupancy"), centrality, collisionOccupancy);
 
     // __________________________________________
     // perform main analysis
+    int nK0Shorts = 0;
+    int nLambdas = 0;
+    int nAntiLambdas = 0;
     for (auto& v0 : fullV0s) {
       if (std::abs(v0.negativeeta()) > v0Selections.daughterEtaCut || std::abs(v0.positiveeta()) > v0Selections.daughterEtaCut)
         continue; // remove acceptance that's badly reproduced by MC / superfluous in future
@@ -1421,8 +1478,19 @@ struct derivedlambdakzeroanalysis {
       selMap = selMap | (uint64_t(1) << selConsiderK0Short) | (uint64_t(1) << selConsiderLambda) | (uint64_t(1) << selConsiderAntiLambda);
       selMap = selMap | (uint64_t(1) << selPhysPrimK0Short) | (uint64_t(1) << selPhysPrimLambda) | (uint64_t(1) << selPhysPrimAntiLambda);
 
-      analyseCandidate(v0, v0.pt(), centrality, selMap, selGapSide);
+      analyseCandidate(v0, v0.pt(), centrality, selMap, selGapSide, nK0Shorts, nLambdas, nAntiLambdas);
     } // end v0 loop
+
+    // fill the histograms with the number of reconstructed K0s/Lambda/antiLambda per collision
+    if (analyseK0Short) {
+      histos.fill(HIST("h2dNbrOfK0ShortVsCentrality"), centrality, nK0Shorts);
+    }
+    if (analyseLambda) {
+      histos.fill(HIST("h2dNbrOfLambdaVsCentrality"), centrality, nLambdas);
+    }
+    if (analyseAntiLambda) {
+      histos.fill(HIST("h2dNbrOfAntiLambdaVsCentrality"), centrality, nAntiLambdas);
+    }
   }
 
   // ______________________________________________________
@@ -1430,7 +1498,7 @@ struct derivedlambdakzeroanalysis {
   void processMonteCarlo(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraCollLabels>::iterator const& collision, v0MCCandidates const& fullV0s, dauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& /*mccollisions*/, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&)
   {
     histos.fill(HIST("hEventSelection"), 0. /* all collisions */);
-    if (!collision.sel8()) {
+    if (requireSel8 && !collision.sel8()) {
       return;
     }
     histos.fill(HIST("hEventSelection"), 1 /* sel8 collisions */);
@@ -1478,21 +1546,42 @@ struct derivedlambdakzeroanalysis {
     if (requireNoCollInTimeRangeStd && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       return;
     }
-    histos.fill(HIST("hEventSelection"), 10 /* No other collision within +/- 10 microseconds */);
+    histos.fill(HIST("hEventSelection"), 10 /* No other collision within +/- 2 microseconds or mult above a certain threshold in -4 - -2 microseconds*/);
+
+    if (requireNoCollInTimeRangeStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict)) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 11 /* No other collision within +/- 10 microseconds */);
 
     if (requireNoCollInTimeRangeNarrow && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
       return;
     }
-    histos.fill(HIST("hEventSelection"), 11 /* No other collision within +/- 4 microseconds */);
+    histos.fill(HIST("hEventSelection"), 12 /* No other collision within +/- 2 microseconds */);
 
-    if (minOccupancy > 0 && collision.trackOccupancyInTimeRange() < minOccupancy) {
+    if (requireNoCollInTimeRangeVzDep && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeVzDependent)) {
       return;
     }
-    histos.fill(HIST("hEventSelection"), 12 /* Below min occupancy */);
-    if (maxOccupancy > 0 && collision.trackOccupancyInTimeRange() > maxOccupancy) {
+    histos.fill(HIST("hEventSelection"), 13 /* No other collision with pvZ of drifting TPC tracks from past/future collisions within 2.5 cm the current pvZ */);
+
+    if (requireNoCollInROFStd && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
       return;
     }
-    histos.fill(HIST("hEventSelection"), 13 /* Above max occupancy */);
+    histos.fill(HIST("hEventSelection"), 14 /* No other collision within the same ITS ROF with mult. above a certain threshold */);
+
+    if (requireNoCollInROFStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStrict)) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 15 /* No other collision within the same ITS ROF */);
+
+    float collisionOccupancy = useFT0CbasedOccupancy ? collision.ft0cOccupancyInTimeRange() : collision.trackOccupancyInTimeRange();
+    if (minOccupancy > 0 && collisionOccupancy < minOccupancy) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 16 /* Below min occupancy */);
+    if (maxOccupancy > 0 && collisionOccupancy > maxOccupancy) {
+      return;
+    }
+    histos.fill(HIST("hEventSelection"), 17 /* Above max occupancy */);
 
     float centrality = collision.centFT0C();
     if (qaCentrality) {
@@ -1510,16 +1599,20 @@ struct derivedlambdakzeroanalysis {
     selGapSide = sgSelector.trueGap(collision, upcCuts.FV0cut, upcCuts.FT0Acut, upcCuts.FT0Ccut, upcCuts.ZDCcut);
     histos.fill(HIST("hGapSide"), gapSide);
     histos.fill(HIST("hSelGapSide"), selGapSide);
+    histos.fill(HIST("hEventCentralityVsSelGapSide"), centrality, selGapSide <= 2 ? selGapSide : -1);
 
     histos.fill(HIST("hEventCentrality"), centrality);
 
     histos.fill(HIST("hCentralityVsNch"), centrality, collision.multNTracksPVeta1());
 
-    histos.fill(HIST("hEventOccupancy"), collision.trackOccupancyInTimeRange());
-    histos.fill(HIST("hCentralityVsOccupancy"), centrality, collision.trackOccupancyInTimeRange());
+    histos.fill(HIST("hEventOccupancy"), collisionOccupancy);
+    histos.fill(HIST("hCentralityVsOccupancy"), centrality, collisionOccupancy);
 
     // __________________________________________
     // perform main analysis
+    int nK0Shorts = 0;
+    int nLambdas = 0;
+    int nAntiLambdas = 0;
     for (auto& v0 : fullV0s) {
       if (std::abs(v0.negativeeta()) > v0Selections.daughterEtaCut || std::abs(v0.positiveeta()) > v0Selections.daughterEtaCut)
         continue; // remove acceptance that's badly reproduced by MC / superfluous in future
@@ -1552,7 +1645,7 @@ struct derivedlambdakzeroanalysis {
         selMap = selMap | (uint64_t(1) << selPhysPrimK0Short) | (uint64_t(1) << selPhysPrimLambda) | (uint64_t(1) << selPhysPrimAntiLambda);
       }
 
-      analyseCandidate(v0, ptmc, centrality, selMap, selGapSide);
+      analyseCandidate(v0, ptmc, centrality, selMap, selGapSide, nK0Shorts, nLambdas, nAntiLambdas);
 
       if (doCollisionAssociationQA) {
         // check collision association explicitly
@@ -1567,6 +1660,17 @@ struct derivedlambdakzeroanalysis {
       }
 
     } // end v0 loop
+
+    // fill the histograms with the number of reconstructed K0s/Lambda/antiLambda per collision
+    if (analyseK0Short) {
+      histos.fill(HIST("h2dNbrOfK0ShortVsCentrality"), centrality, nK0Shorts);
+    }
+    if (analyseLambda) {
+      histos.fill(HIST("h2dNbrOfLambdaVsCentrality"), centrality, nLambdas);
+    }
+    if (analyseAntiLambda) {
+      histos.fill(HIST("h2dNbrOfAntiLambdaVsCentrality"), centrality, nAntiLambdas);
+    }
   }
 
   // ______________________________________________________
@@ -1673,7 +1777,7 @@ struct derivedlambdakzeroanalysis {
       float centrality = 100.5f;
       int nCollisions = 0;
       for (auto const& collision : groupedCollisions) {
-        if (!collision.sel8()) {
+        if (requireSel8 && !collision.sel8()) {
           continue;
         }
         if (std::abs(collision.posZ()) > 10.f) {
@@ -1703,14 +1807,27 @@ struct derivedlambdakzeroanalysis {
         if (requireNoCollInTimeRangeStd && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
           continue;
         }
+        if (requireNoCollInTimeRangeStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict)) {
+          continue;
+        }
         if (requireNoCollInTimeRangeNarrow && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
           continue;
         }
-
-        if (minOccupancy > 0 && collision.trackOccupancyInTimeRange() < minOccupancy) {
+        if (requireNoCollInTimeRangeVzDep && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeVzDependent)) {
           continue;
         }
-        if (maxOccupancy > 0 && collision.trackOccupancyInTimeRange() > maxOccupancy) {
+        if (requireNoCollInROFStd && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+          continue;
+        }
+        if (requireNoCollInROFStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStrict)) {
+          continue;
+        }
+
+        float collisionOccupancy = useFT0CbasedOccupancy ? collision.ft0cOccupancyInTimeRange() : collision.trackOccupancyInTimeRange();
+        if (minOccupancy > 0 && collisionOccupancy < minOccupancy) {
+          continue;
+        }
+        if (maxOccupancy > 0 && collisionOccupancy > maxOccupancy) {
           continue;
         }
 

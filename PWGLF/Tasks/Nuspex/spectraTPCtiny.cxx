@@ -58,7 +58,7 @@ struct tpcSpectraTiny {
   template <std::size_t i, typename T>
   void fillParticleHistos(const T& track, const float& nsigma)
   {
-    if (abs(nsigma) > cfgNSigmaCut) {
+    if (std::abs(nsigma) > cfgNSigmaCut) {
       return;
     }
     histos.fill(HIST(hp[i]), track.p());
@@ -78,7 +78,7 @@ struct tpcSpectraTiny {
                TrackCandidates const& tracks)
   {
     histos.fill(HIST("evsel"), 1);
-    if (abs(collision.posZ()) > cfgCutVertex) {
+    if (std::abs(collision.posZ()) > cfgCutVertex) {
       return;
     }
     histos.fill(HIST("evsel"), 2);
@@ -86,7 +86,7 @@ struct tpcSpectraTiny {
 
     for (const auto& track : tracks) {
       histos.fill(HIST("tracksel"), 1);
-      if (abs(track.eta()) > cfgCutEta) {
+      if (std::abs(track.eta()) > cfgCutEta) {
         continue;
       }
       histos.fill(HIST("tracksel"), 2);

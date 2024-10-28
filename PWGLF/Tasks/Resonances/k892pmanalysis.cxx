@@ -352,9 +352,9 @@ struct k892pmanalysis {
         }
 
         // apply the competing V0 rejection cut (excluding Lambda0 candidates, massLambdaPDG = 1115.683 MeV/c2)
-        if (abs(v0.mLambda() - massLambda0) < cV0MassWindow)
+        if (std::abs(v0.mLambda() - massLambda0) < cV0MassWindow)
           continue;
-        if (abs(v0.mAntiLambda() - massAntiLambda0) < cV0MassWindow)
+        if (std::abs(v0.mAntiLambda() - massAntiLambda0) < cV0MassWindow)
           continue;
 
         if (!IsMix && !IsV0QAFilled) {
@@ -382,7 +382,7 @@ struct k892pmanalysis {
         }
 
         // Checking whether the mid-rapidity condition is met
-        if (abs(lResonance.Rapidity()) > 0.5) {
+        if (std::abs(lResonance.Rapidity()) > 0.5) {
           continue;
         }
 
@@ -401,7 +401,7 @@ struct k892pmanalysis {
           histos.fill(HIST("k892pmMassPtMult3d"), lResonance.M(), lResonance.Pt(), multiplicity);
           if constexpr (IsMC) {
             // LOG(info) << "track PDG:\t" << trk.pdgCode() << "\tV0 PDG:\t" << v0.pdgCode();
-            if (abs(trk.pdgCode()) != 211 || abs(v0.pdgCode()) != 310) // Skip to next iteration if daughters are not charged pion + K0s/AntiK0s
+            if (std::abs(trk.pdgCode()) != 211 || std::abs(v0.pdgCode()) != 310) // Skip to next iteration if daughters are not charged pion + K0s/AntiK0s
               continue;
             if (trk.motherPDG() != v0.motherPDG())
               continue;
@@ -444,17 +444,17 @@ struct k892pmanalysis {
   void processMCTrue(aod::ResoMCParents& resoParents)
   {
     for (auto& part : resoParents) {  // loop over all pre-filtered MC particles
-      if (abs(part.pdgCode()) != 323) // K*892(pm)
+      if (std::abs(part.pdgCode()) != 323) // K*892(pm)
         continue;
-      if (abs(part.y()) > 0.5) // rapidity cut
+      if (std::abs(part.y()) > 0.5) // rapidity cut
         continue;
       bool pass1 = false;
       bool pass2 = false;
       /*// Sanity check: looking for K*0 resonances for sanity check
-      if (abs(part.pdgCode()) == 323) {
+      if (std::abs(part.pdgCode()) == 323) {
         LOG(info) << "Found charged K*: " << part.pdgCode() << ". Daughters' PDG are " << part.daughterPDG1() << " and " << part.daughterPDG2();
       }
-      if (abs(part.pdgCode()) == 313) {
+      if (std::abs(part.pdgCode()) == 313) {
         LOG(info) << "Found non-charged K*: " << part.pdgCode() << ". Daughters' PDG are " << part.daughterPDG1() << " and " << part.daughterPDG2();
       }*/
 
@@ -466,11 +466,11 @@ struct k892pmanalysis {
         pass2 = true;
         histos.fill(HIST("hK892pmCounter"), 1.5);
       }
-      /*if (abs(part.daughterPDG1()) == 211)
+      /*if (std::abs(part.daughterPDG1()) == 211)
         histos.fill(HIST("hDaughterCounter"), 0.5);
-      if (abs(part.daughterPDG2()) == 310)
+      if (std::abs(part.daughterPDG2()) == 310)
         histos.fill(HIST("hDaughterCounter"), 1.5);
-      if (abs(part.daughterPDG1()) == 211 && abs(part.daughterPDG2()) == 310)
+      if (std::abs(part.daughterPDG1()) == 211 && std::abs(part.daughterPDG2()) == 310)
         histos.fill(HIST("hDaughterCounter"), 2.5);*/
       // if (!pass1 || !pass2) // Go on only if we have both decay products, else skip to next iteration
       if (!pass1 && !pass2) // Go on only if we have both decay products, else skip to next iteration

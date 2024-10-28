@@ -124,3 +124,8 @@ o2physics_add_dpl_workflow(zdc-task-intercalib
                     SOURCES zdc-task-intercalib.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(ese-table-producer
+                    SOURCES eseTableProducer.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)

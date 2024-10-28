@@ -54,12 +54,30 @@ namespace jetfindingutilities
 {
 
 /**
+ * returns true if the object is from the JDummys table
+ */
+template <typename T>
+constexpr bool isDummy()
+{
+  return std::is_same_v<std::decay_t<T>, o2::aod::JDummys::iterator> || std::is_same_v<std::decay_t<T>, o2::aod::JDummys::filtered_iterator>;
+}
+
+/**
+ * returns true if the table is a JDummys table
+ */
+template <typename T>
+constexpr bool isDummyTable()
+{
+  return isDummy<typename T::iterator>() || isDummy<typename T::filtered_iterator>();
+}
+
+/**
  * returns true if the cluster is from an EMCAL table
  */
 template <typename T>
 constexpr bool isEMCALCluster()
 {
-  return std::is_same_v<std::decay_t<T>, JetClusters::iterator> || std::is_same_v<std::decay_t<T>, JetClusters::filtered_iterator> || std::is_same_v<std::decay_t<T>, JetClustersMCD::iterator> || std::is_same_v<std::decay_t<T>, JetClustersMCD::filtered_iterator>;
+  return std::is_same_v<std::decay_t<T>, o2::aod::JetClusters::iterator> || std::is_same_v<std::decay_t<T>, o2::aod::JetClusters::filtered_iterator> || std::is_same_v<std::decay_t<T>, o2::aod::JetClustersMCD::iterator> || std::is_same_v<std::decay_t<T>, o2::aod::JetClustersMCD::filtered_iterator>;
 }
 
 /**

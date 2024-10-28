@@ -57,6 +57,7 @@ struct eventQC {
   Configurable<bool> cfgFillPID{"cfgFillPID", false, "fill PID histograms"};
   Configurable<std::vector<int>> cfgnMods{"cfgnMods", {2, 3}, "Modulation of interest. Please keep increasing order"};
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
+  Configurable<int> cfgQvecEstimator{"cfgQvecEstimator", 0, "FT0M:0, FT0A:1, FT0C:2, BTot:3, BPos:4, BNeg:5"};
   Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
   ConfigurableAxis ConfPtBins{"ConfPtBins", {VARIABLE_WIDTH, 0.00, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.50, 3.00, 3.50, 4.00, 4.50, 5.00, 6.00, 7.00, 8.00, 9.00, 10.00}, "pT bins for output histograms"};
@@ -72,6 +73,8 @@ struct eventQC {
     Configurable<bool> cfgRequireNoITSROFB{"cfgRequireNoITSROFB", true, "require no ITS readout frame border in event cut"};
     Configurable<bool> cfgRequireNoSameBunchPileup{"cfgRequireNoSameBunchPileup", false, "require no same bunch pileup in event cut"};
     Configurable<bool> cfgRequireGoodZvtxFT0vsPV{"cfgRequireGoodZvtxFT0vsPV", false, "require good Zvtx between FT0 vs. PV in event cut"};
+    Configurable<bool> cfgRequirekNoCollInRofStrict{"cfgRequirekNoCollInRofStrict", false, "require no other collisions in this Readout Frame"};
+    Configurable<bool> cfgRequirekNoCollInRofStandard{"cfgRequirekNoCollInRofStandard", false, "require no other collisions in this Readout Frame with per-collision multiplicity above threshold"};
     Configurable<int> cfgOccupancyMin{"cfgOccupancyMin", -1, "min. occupancy"};
     Configurable<int> cfgOccupancyMax{"cfgOccupancyMax", 1000000000, "max. occupancy"};
     Configurable<bool> cfgRequireNoCollInTimeRangeStandard{"cfgRequireNoCollInTimeRangeStandard", false, "require no collision in time range standard"};
@@ -84,14 +87,26 @@ struct eventQC {
     Configurable<float> cfg_min_eta_track{"cfg_min_eta_track", -0.9, "min eta for single track"};
     Configurable<float> cfg_max_eta_track{"cfg_max_eta_track", +0.9, "max eta for single track"};
     Configurable<float> cfg_min_cr2findable_ratio_tpc{"cfg_min_cr2findable_ratio_tpc", 0.8, "min. TPC Ncr/Nf ratio"};
+    Configurable<float> cfg_max_frac_shared_clusters_tpc{"cfg_max_frac_shared_clusters_tpc", 999.f, "max fraction of shared clusters in TPC"};
     Configurable<int> cfg_min_ncrossedrows_tpc{"cfg_min_ncrossedrows_tpc", 80, "min ncrossed rows"};
     Configurable<int> cfg_min_ncluster_tpc{"cfg_min_ncluster_tpc", 0, "min ncluster tpc"};
     Configurable<int> cfg_min_ncluster_its{"cfg_min_ncluster_its", 5, "min ncluster its"};
     Configurable<int> cfg_min_ncluster_itsib{"cfg_min_ncluster_itsib", 1, "min ncluster its"};
     Configurable<float> cfg_max_chi2tpc{"cfg_max_chi2tpc", 4.0, "max chi2/NclsTPC"};
     Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 5.0, "max chi2/NclsITS"};
-    Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 1.0, "max dca XY for single track in cm"};
-    Configurable<float> cfg_max_dcaz{"cfg_max_dcaz", 1.0, "max dca Z for single track in cm"};
+    Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 0.2, "max dca XY for single track in cm"};
+    Configurable<float> cfg_max_dcaz{"cfg_max_dcaz", 0.2, "max dca Z for single track in cm"};
+    Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -1e+10, "min n sigma e in TPC"};
+    Configurable<float> cfg_max_TPCNsigmaEl{"cfg_max_TPCNsigmaEl", +1e+10, "max n sigma e in TPC"};
+    Configurable<float> cfg_min_TPCNsigmaPi{"cfg_min_TPCNsigmaPi", 0.0, "min n sigma pi in TPC for exclusion"};
+    Configurable<float> cfg_max_TPCNsigmaPi{"cfg_max_TPCNsigmaPi", 0.0, "max n sigma pi in TPC for exclusion"};
+    Configurable<float> cfg_min_TOFNsigmaEl{"cfg_min_TOFNsigmaEl", -1e+10, "min n sigma e in TOF"};
+    Configurable<float> cfg_max_TOFNsigmaEl{"cfg_max_TOFNsigmaEl", +1e+10, "max n sigma e in TOF"};
+    Configurable<float> cfg_min_p_its_cluster_size{"cfg_min_p_its_cluster_size", 0.0, "min p to apply ITS cluster size cut"};
+    Configurable<float> cfg_max_p_its_cluster_size{"cfg_max_p_its_cluster_size", 0.0, "max p to apply ITS cluster size cut"};
+    Configurable<float> cfg_slope_its_cluster_size{"cfg_slope_its_cluster_size", 0.4f, "slope for max ITS cluster size vs. p"};
+    Configurable<float> cfg_intercept_its_cluster_size{"cfg_intercept_its_cluster_size", 1.94f, "intercept for max ITS cluster size vs. p"};
+    Configurable<bool> cfg_requireTOF{"cfg_requireTOF", false, "require TOF hit"};
   } trackcuts;
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -167,13 +182,6 @@ struct eventQC {
       fRegistry.add(Form("Event/after/Qvector/hQ%dxBTot_CentFT0C", nmod), Form("hQ%dxBTot_CentFT0C;centrality FT0C (%%);Q_{%d,x}^{BTot}", nmod, nmod), kTH2F, {{100, 0, 100}, {200, -10, +10}}, false);
       fRegistry.add(Form("Event/after/Qvector/hQ%dyBTot_CentFT0C", nmod), Form("hQ%dyBTot_CentFT0C;centrality FT0C (%%);Q_{%d,y}^{BTot}", nmod, nmod), kTH2F, {{100, 0, 100}, {200, -10, +10}}, false);
 
-      fRegistry.add(Form("Event/after/Qvector/hEP%dFT0M_CentFT0C", nmod), Form("event plane FT0M;centrality FT0C (%%);#Psi_{%d}^{FT0M} (rad.)", nmod), kTH2F, {{100, 0, 100}, {36, -M_PI_2, +M_PI_2}}, false);
-      fRegistry.add(Form("Event/after/Qvector/hEP%dFT0A_CentFT0C", nmod), Form("event plane FT0A;centrality FT0C (%%);#Psi_{%d}^{FT0A} (rad.)", nmod), kTH2F, {{100, 0, 100}, {36, -M_PI_2, +M_PI_2}}, false);
-      fRegistry.add(Form("Event/after/Qvector/hEP%dFT0C_CentFT0C", nmod), Form("event plane FT0C;centrality FT0C (%%);#Psi_{%d}^{FT0C} (rad.)", nmod), kTH2F, {{100, 0, 100}, {36, -M_PI_2, +M_PI_2}}, false);
-      fRegistry.add(Form("Event/after/Qvector/hEP%dBPos_CentFT0C", nmod), Form("event plane BPos;centrality FT0C (%%);#Psi_{%d}^{BPos} (rad.)", nmod), kTH2F, {{100, 0, 100}, {36, -M_PI_2, +M_PI_2}}, false);
-      fRegistry.add(Form("Event/after/Qvector/hEP%dBNeg_CentFT0C", nmod), Form("event plane BNeg;centrality FT0C (%%);#Psi_{%d}^{BNeg} (rad.)", nmod), kTH2F, {{100, 0, 100}, {36, -M_PI_2, +M_PI_2}}, false);
-      fRegistry.add(Form("Event/after/Qvector/hEP%dBTot_CentFT0C", nmod), Form("event plane BTot;centrality FT0C (%%);#Psi_{%d}^{BTot} (rad.)", nmod), kTH2F, {{100, 0, 100}, {36, -M_PI_2, +M_PI_2}}, false);
-
       fRegistry.add(Form("Event/after/Qvector/hPrfQ%dFT0MQ%dBPos_CentFT0C", nmod, nmod), Form("Q_{%d}^{FT0M} #upoint Q_{%d}^{BPos};centrality FT0C (%%);Q_{%d}^{FT0M} #upoint Q_{%d}^{BPos}", nmod, nmod, nmod, nmod), kTProfile, {{100, 0, 100}}, false);
       fRegistry.add(Form("Event/after/Qvector/hPrfQ%dFT0MQ%dBNeg_CentFT0C", nmod, nmod), Form("Q_{%d}^{FT0M} #upoint Q_{%d}^{BNeg};centrality FT0C (%%);Q_{%d}^{FT0M} #upoint Q_{%d}^{BNeg}", nmod, nmod, nmod, nmod), kTProfile, {{100, 0, 100}}, false);
       fRegistry.add(Form("Event/after/Qvector/hPrfQ%dBPosQ%dBNeg_CentFT0C", nmod, nmod), Form("Q_{%d}^{BPos} #upoint Q_{%d}^{BNeg};centrality FT0C (%%);Q_{%d}^{BPos} #upoint Q_{%d}^{BNeg}", nmod, nmod, nmod, nmod), kTProfile, {{100, 0, 100}}, false);
@@ -184,6 +192,24 @@ struct eventQC {
       fRegistry.add(Form("Event/after/Qvector/hPrfQ%dFT0AQ%dBNeg_CentFT0C", nmod, nmod), Form("Q_{%d}^{FT0A} #upoint Q_{%d}^{BNeg};centrality FT0C (%%);Q_{%d}^{FT0A} #upoint Q_{%d}^{BNeg}", nmod, nmod, nmod, nmod), kTProfile, {{100, 0, 100}}, false);
       fRegistry.add(Form("Event/after/Qvector/hPrfQ%dFT0AQ%dBTot_CentFT0C", nmod, nmod), Form("Q_{%d}^{FT0A} #upoint Q_{%d}^{BTot};centrality FT0C (%%);Q_{%d}^{FT0A} #upoint Q_{%d}^{BTot}", nmod, nmod, nmod, nmod), kTProfile, {{100, 0, 100}}, false);
       fRegistry.add(Form("Event/after/Qvector/hPrfQ%dFT0AQ%dFT0C_CentFT0C", nmod, nmod), Form("Q_{%d}^{FT0A} #upoint Q_{%d}^{FT0C};centrality FT0C (%%);Q_{%d}^{FT0A} #upoint Q_{%d}^{FT0C}", nmod, nmod, nmod, nmod), kTProfile, {{100, 0, 100}}, false);
+
+      fRegistry.add(Form("Event/after/Qvector/hEP%dFT0M_CentFT0C", nmod), Form("event plane FT0M;centrality FT0C (%%);#Psi_{%d}^{FT0M} (rad.)", nmod), kTH2F, {{100, 0, 100}, {36, -M_PI_2, +M_PI_2}}, false);
+      fRegistry.add(Form("Event/after/Qvector/hEP%dFT0A_CentFT0C", nmod), Form("event plane FT0A;centrality FT0C (%%);#Psi_{%d}^{FT0A} (rad.)", nmod), kTH2F, {{100, 0, 100}, {36, -M_PI_2, +M_PI_2}}, false);
+      fRegistry.add(Form("Event/after/Qvector/hEP%dFT0C_CentFT0C", nmod), Form("event plane FT0C;centrality FT0C (%%);#Psi_{%d}^{FT0C} (rad.)", nmod), kTH2F, {{100, 0, 100}, {36, -M_PI_2, +M_PI_2}}, false);
+      fRegistry.add(Form("Event/after/Qvector/hEP%dBPos_CentFT0C", nmod), Form("event plane BPos;centrality FT0C (%%);#Psi_{%d}^{BPos} (rad.)", nmod), kTH2F, {{100, 0, 100}, {36, -M_PI_2, +M_PI_2}}, false);
+      fRegistry.add(Form("Event/after/Qvector/hEP%dBNeg_CentFT0C", nmod), Form("event plane BNeg;centrality FT0C (%%);#Psi_{%d}^{BNeg} (rad.)", nmod), kTH2F, {{100, 0, 100}, {36, -M_PI_2, +M_PI_2}}, false);
+      fRegistry.add(Form("Event/after/Qvector/hEP%dBTot_CentFT0C", nmod), Form("event plane BTot;centrality FT0C (%%);#Psi_{%d}^{BTot} (rad.)", nmod), kTH2F, {{100, 0, 100}, {36, -M_PI_2, +M_PI_2}}, false);
+
+      fRegistry.add(Form("Event/after/Qvector/hPrfCosDiffEP%dFT0MEP%dBPos_CentFT0C", nmod, nmod), Form("cos(%d(#Psi_{%d}^{FT0M} - #Psi_{%d}^{BPos}));centrality FT0C (%%);cos(%d(#Psi_{%d}^{FT0M} - #Psi_{%d}^{BPos}))", nmod, nmod, nmod, nmod, nmod, nmod), kTProfile, {{100, 0, 100}}, false);
+      fRegistry.add(Form("Event/after/Qvector/hPrfCosDiffEP%dFT0MEP%dBNeg_CentFT0C", nmod, nmod), Form("cos(%d(#Psi_{%d}^{FT0M} - #Psi_{%d}^{BNeg}));centrality FT0C (%%);cos(%d(#Psi_{%d}^{FT0M} - #Psi_{%d}^{BNeg}))", nmod, nmod, nmod, nmod, nmod, nmod), kTProfile, {{100, 0, 100}}, false);
+      fRegistry.add(Form("Event/after/Qvector/hPrfCosDiffEP%dBPosEP%dBNeg_CentFT0C", nmod, nmod), Form("cos(%d(#Psi_{%d}^{BPos} - #Psi_{%d}^{BNeg}));centrality FT0C (%%);cos(%d(#Psi_{%d}^{BPos} - #Psi_{%d}^{BNeg}))", nmod, nmod, nmod, nmod, nmod, nmod), kTProfile, {{100, 0, 100}}, false);
+      fRegistry.add(Form("Event/after/Qvector/hPrfCosDiffEP%dFT0CEP%dBPos_CentFT0C", nmod, nmod), Form("cos(%d(#Psi_{%d}^{FT0C} - #Psi_{%d}^{BPos}));centrality FT0C (%%);cos(%d(#Psi_{%d}^{FT0C} - #Psi_{%d}^{BPos}))", nmod, nmod, nmod, nmod, nmod, nmod), kTProfile, {{100, 0, 100}}, false);
+      fRegistry.add(Form("Event/after/Qvector/hPrfCosDiffEP%dFT0CEP%dBNeg_CentFT0C", nmod, nmod), Form("cos(%d(#Psi_{%d}^{FT0C} - #Psi_{%d}^{BNeg}));centrality FT0C (%%);cos(%d(#Psi_{%d}^{FT0C} - #Psi_{%d}^{BNeg}))", nmod, nmod, nmod, nmod, nmod, nmod), kTProfile, {{100, 0, 100}}, false);
+      fRegistry.add(Form("Event/after/Qvector/hPrfCosDiffEP%dFT0CEP%dBTot_CentFT0C", nmod, nmod), Form("cos(%d(#Psi_{%d}^{FT0C} - #Psi_{%d}^{BTot}));centrality FT0C (%%);cos(%d(#Psi_{%d}^{FT0C} - #Psi_{%d}^{BTot}))", nmod, nmod, nmod, nmod, nmod, nmod), kTProfile, {{100, 0, 100}}, false);
+      fRegistry.add(Form("Event/after/Qvector/hPrfCosDiffEP%dFT0AEP%dBPos_CentFT0C", nmod, nmod), Form("cos(%d(#Psi_{%d}^{FT0A} - #Psi_{%d}^{BPos}));centrality FT0C (%%);cos(%d(#Psi_{%d}^{FT0A} - #Psi_{%d}^{BPos}))", nmod, nmod, nmod, nmod, nmod, nmod), kTProfile, {{100, 0, 100}}, false);
+      fRegistry.add(Form("Event/after/Qvector/hPrfCosDiffEP%dFT0AEP%dBNeg_CentFT0C", nmod, nmod), Form("cos(%d(#Psi_{%d}^{FT0A} - #Psi_{%d}^{BNeg}));centrality FT0C (%%);cos(%d(#Psi_{%d}^{FT0A} - #Psi_{%d}^{BNeg}))", nmod, nmod, nmod, nmod, nmod, nmod), kTProfile, {{100, 0, 100}}, false);
+      fRegistry.add(Form("Event/after/Qvector/hPrfCosDiffEP%dFT0AEP%dBTot_CentFT0C", nmod, nmod), Form("cos(%d(#Psi_{%d}^{FT0A} - #Psi_{%d}^{BTot}));centrality FT0C (%%);cos(%d(#Psi_{%d}^{FT0A} - #Psi_{%d}^{BTot}))", nmod, nmod, nmod, nmod, nmod, nmod), kTProfile, {{100, 0, 100}}, false);
+      fRegistry.add(Form("Event/after/Qvector/hPrfCosDiffEP%dFT0AEP%dFT0C_CentFT0C", nmod, nmod), Form("cos(%d(#Psi_{%d}^{FT0A} - #Psi_{%d}^{FT0C}));centrality FT0C (%%);cos(%d(#Psi_{%d}^{FT0A} - #Psi_{%d}^{FT0C}))", nmod, nmod, nmod, nmod, nmod, nmod), kTProfile, {{100, 0, 100}}, false);
     }
 
     std::vector<double> tmp_ptbins;
@@ -199,6 +225,14 @@ struct eventQC {
     const AxisSpec axis_eta{cfgNbinsEta, -1.0, +1.0, "#eta"};
     const AxisSpec axis_phi{cfgNbinsPhi, 0.0, 2 * M_PI, "#varphi (rad.)"};
     const AxisSpec axis_sign{3, -1.5, +1.5, "sign"};
+    const AxisSpec axis_cent{20, 0, 100, "centrality FT0C (%)"};
+
+    for (int i = 0; i < static_cast<int>(cfgnMods->size()); i++) {
+      int nmod = cfgnMods->at(i);
+      const AxisSpec axis_sp{100, -5, +5, Form("#vec{u_{%d}} #upoint #vec{Q_{%d}}", nmod, nmod)};
+      const AxisSpec axis_cos{200, -1, +1, Form("cos(%d(#varphi - #Psi_{%d}))", nmod, nmod)};
+      fRegistry.add(Form("Track/hV%d", nmod), Form("charged particle v_{%d}", nmod), kTHnSparseD, {axis_cent, axis_pt, axis_sp, axis_cos}, false);
+    }
     fRegistry.add("Track/hs", "rec. single electron", kTHnSparseD, {axis_pt, axis_eta, axis_phi, axis_sign}, false);
     fRegistry.add("Track/hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", kTH1F, {{400, -20, 20}}, false);
     fRegistry.add("Track/hRelSigma1Pt", "relative p_{T} resolution;p_{T} (GeV/c);#sigma_{1/p_{T}} #times p_{T}", kTH2F, {axis_pt_tmp, {100, 0, 0.1}}, false);
@@ -217,14 +251,14 @@ struct eventQC {
     fRegistry.add("Track/hITSClusterMap", "ITS cluster map", kTH1F, {{128, -0.5, 127.5}}, false);
 
     if (cfgFillPID) {
-      fRegistry.add("Track/hTPCdEdx", "TPC dE/dx;p_{in} (GeV/c);TPC dE/dx (a.u.)", kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
+      fRegistry.add("Track/hTPCdEdx", "TPC dE/dx;p_{pv} (GeV/c);TPC dE/dx (a.u.)", kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
       fRegistry.add("Track/hTOFbeta", "TOF #beta;p_{pv} (GeV/c);#beta", kTH2F, {{1000, 0, 10}, {240, 0, 1.2}}, false);
-      fRegistry.add("Track/hMeanClusterSizeITS", "mean cluster size ITS;p_{pv} (GeV/c);<cluster size> on ITS #times cos(#lambda);", kTH2F, {{1000, 0.f, 10.f}, {160, 0, 16}}, false);
-      fRegistry.add("Track/hTPCNsigmaEl", "TPC n sigma el;p_{in} (GeV/c);n #sigma_{e}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
-      fRegistry.add("Track/hTPCNsigmaMu", "TPC n sigma mu;p_{in} (GeV/c);n #sigma_{#mu}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
-      fRegistry.add("Track/hTPCNsigmaPi", "TPC n sigma pi;p_{in} (GeV/c);n #sigma_{#pi}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
-      fRegistry.add("Track/hTPCNsigmaKa", "TPC n sigma ka;p_{in} (GeV/c);n #sigma_{K}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
-      fRegistry.add("Track/hTPCNsigmaPr", "TPC n sigma pr;p_{in} (GeV/c);n #sigma_{p}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+      fRegistry.add("Track/hMeanClusterSizeITS", "mean cluster size ITS;p_{pv} (GeV/c);<cluster size> on ITS #times cos(#lambda);", kTH2F, {{1000, 0.f, 10.f}, {150, 0, 15}}, false);
+      fRegistry.add("Track/hTPCNsigmaEl", "TPC n sigma el;p_{pv} (GeV/c);n #sigma_{e}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+      fRegistry.add("Track/hTPCNsigmaMu", "TPC n sigma mu;p_{pv} (GeV/c);n #sigma_{#mu}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+      fRegistry.add("Track/hTPCNsigmaPi", "TPC n sigma pi;p_{pv} (GeV/c);n #sigma_{#pi}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+      fRegistry.add("Track/hTPCNsigmaKa", "TPC n sigma ka;p_{pv} (GeV/c);n #sigma_{K}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+      fRegistry.add("Track/hTPCNsigmaPr", "TPC n sigma pr;p_{pv} (GeV/c);n #sigma_{p}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
       fRegistry.add("Track/hTOFNsigmaEl", "TOF n sigma el;p_{pv} (GeV/c);n #sigma_{e}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
       fRegistry.add("Track/hTOFNsigmaMu", "TOF n sigma mu;p_{pv} (GeV/c);n #sigma_{#mu}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
       fRegistry.add("Track/hTOFNsigmaPi", "TOF n sigma pi;p_{pv} (GeV/c);n #sigma_{#pi}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
@@ -258,14 +292,14 @@ struct eventQC {
       for (int il = 0; il < 7; il++) {
         nsize += track.itsClsSizeInLayer(il);
       }
-      fRegistry.fill(HIST("Track/hTPCdEdx"), track.tpcInnerParam(), track.tpcSignal());
+      fRegistry.fill(HIST("Track/hTPCdEdx"), track.p(), track.tpcSignal());
       fRegistry.fill(HIST("Track/hTOFbeta"), track.p(), track.beta());
       fRegistry.fill(HIST("Track/hMeanClusterSizeITS"), track.p(), static_cast<float>(nsize) / static_cast<float>(track.itsNCls()) * std::cos(std::atan(track.tgl())));
-      fRegistry.fill(HIST("Track/hTPCNsigmaEl"), track.tpcInnerParam(), track.tpcNSigmaEl());
-      fRegistry.fill(HIST("Track/hTPCNsigmaMu"), track.tpcInnerParam(), track.tpcNSigmaMu());
-      fRegistry.fill(HIST("Track/hTPCNsigmaPi"), track.tpcInnerParam(), track.tpcNSigmaPi());
-      fRegistry.fill(HIST("Track/hTPCNsigmaKa"), track.tpcInnerParam(), track.tpcNSigmaKa());
-      fRegistry.fill(HIST("Track/hTPCNsigmaPr"), track.tpcInnerParam(), track.tpcNSigmaPr());
+      fRegistry.fill(HIST("Track/hTPCNsigmaEl"), track.p(), track.tpcNSigmaEl());
+      fRegistry.fill(HIST("Track/hTPCNsigmaMu"), track.p(), track.tpcNSigmaMu());
+      fRegistry.fill(HIST("Track/hTPCNsigmaPi"), track.p(), track.tpcNSigmaPi());
+      fRegistry.fill(HIST("Track/hTPCNsigmaKa"), track.p(), track.tpcNSigmaKa());
+      fRegistry.fill(HIST("Track/hTPCNsigmaPr"), track.p(), track.tpcNSigmaPr());
       fRegistry.fill(HIST("Track/hTOFNsigmaEl"), track.p(), track.tofNSigmaEl());
       fRegistry.fill(HIST("Track/hTOFNsigmaMu"), track.p(), track.tofNSigmaMu());
       fRegistry.fill(HIST("Track/hTOFNsigmaPi"), track.p(), track.tofNSigmaPi());
@@ -372,13 +406,6 @@ struct eventQC {
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hQ2xBTot_CentFT0C"), collision.centFT0C(), qxbtot);
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hQ2yBTot_CentFT0C"), collision.centFT0C(), qybtot);
 
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hEP2FT0M_CentFT0C"), collision.centFT0C(), getEP(qxft0m, qyft0m, nmod));
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hEP2FT0A_CentFT0C"), collision.centFT0C(), getEP(qxft0a, qyft0a, nmod));
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hEP2FT0C_CentFT0C"), collision.centFT0C(), getEP(qxft0c, qyft0c, nmod));
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hEP2BPos_CentFT0C"), collision.centFT0C(), getEP(qxbpos, qybpos, nmod));
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hEP2BNeg_CentFT0C"), collision.centFT0C(), getEP(qxbneg, qybneg, nmod));
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hEP2BTot_CentFT0C"), collision.centFT0C(), getEP(qxbtot, qybtot, nmod));
-
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ2FT0MQ2BPos_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qft0m, qbpos));
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ2FT0MQ2BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qft0m, qbneg));
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ2BPosQ2BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qbpos, qbneg));
@@ -389,6 +416,24 @@ struct eventQC {
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ2FT0CQ2BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qft0c, qbneg));
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ2FT0CQ2BTot_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qft0c, qbtot));
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ2FT0AQ2FT0C_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qft0a, qft0c));
+
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hEP2FT0M_CentFT0C"), collision.centFT0C(), getEP(qxft0m, qyft0m, nmod));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hEP2FT0A_CentFT0C"), collision.centFT0C(), getEP(qxft0a, qyft0a, nmod));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hEP2FT0C_CentFT0C"), collision.centFT0C(), getEP(qxft0c, qyft0c, nmod));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hEP2BPos_CentFT0C"), collision.centFT0C(), getEP(qxbpos, qybpos, nmod));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hEP2BNeg_CentFT0C"), collision.centFT0C(), getEP(qxbneg, qybneg, nmod));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hEP2BTot_CentFT0C"), collision.centFT0C(), getEP(qxbtot, qybtot, nmod));
+
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP2FT0MEP2BPos_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxft0m, qyft0m, nmod) - getEP(qxbpos, qybpos, nmod))));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP2FT0MEP2BNeg_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxft0m, qyft0m, nmod) - getEP(qxbneg, qybneg, nmod))));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP2BPosEP2BNeg_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxbpos, qybpos, nmod) - getEP(qxbneg, qybneg, nmod))));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP2FT0AEP2BPos_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxft0a, qyft0a, nmod) - getEP(qxbpos, qybpos, nmod))));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP2FT0AEP2BNeg_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxft0a, qyft0a, nmod) - getEP(qxbneg, qybneg, nmod))));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP2FT0AEP2BTot_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxft0a, qyft0a, nmod) - getEP(qxbtot, qybtot, nmod))));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP2FT0CEP2BPos_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxft0c, qyft0c, nmod) - getEP(qxbpos, qybpos, nmod))));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP2FT0CEP2BNeg_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxft0c, qyft0c, nmod) - getEP(qxbneg, qybneg, nmod))));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP2FT0CEP2BTot_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxft0c, qyft0c, nmod) - getEP(qxbtot, qybtot, nmod))));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP2FT0AEP2FT0C_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxft0a, qyft0a, nmod) - getEP(qxft0c, qyft0c, nmod))));
     } else if constexpr (nmod == 3) {
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hQ3xFT0M_CentFT0C"), collision.centFT0C(), qxft0m);
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hQ3yFT0M_CentFT0C"), collision.centFT0C(), qyft0m);
@@ -403,13 +448,6 @@ struct eventQC {
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hQ3xBTot_CentFT0C"), collision.centFT0C(), qxbtot);
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hQ3yBTot_CentFT0C"), collision.centFT0C(), qybtot);
 
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hEP3FT0M_CentFT0C"), collision.centFT0C(), getEP(qxft0m, qyft0m, nmod));
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hEP3FT0A_CentFT0C"), collision.centFT0C(), getEP(qxft0a, qyft0a, nmod));
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hEP3FT0C_CentFT0C"), collision.centFT0C(), getEP(qxft0c, qyft0c, nmod));
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hEP3BPos_CentFT0C"), collision.centFT0C(), getEP(qxbpos, qybpos, nmod));
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hEP3BNeg_CentFT0C"), collision.centFT0C(), getEP(qxbneg, qybneg, nmod));
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hEP3BTot_CentFT0C"), collision.centFT0C(), getEP(qxbtot, qybtot, nmod));
-
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ3FT0MQ3BPos_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qft0m, qbpos));
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ3FT0MQ3BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qft0m, qbneg));
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ3BPosQ3BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qbpos, qbneg));
@@ -420,37 +458,53 @@ struct eventQC {
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ3FT0CQ3BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qft0c, qbneg));
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ3FT0CQ3BTot_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qft0c, qbtot));
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ3FT0AQ3FT0C_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qft0a, qft0c));
-    } else if constexpr (nmod == 4) {
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hQ4xFT0M_CentFT0C"), collision.centFT0C(), qxft0m);
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hQ4yFT0M_CentFT0C"), collision.centFT0C(), qyft0m);
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hQ4xFT0A_CentFT0C"), collision.centFT0C(), qxft0a);
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hQ4yFT0A_CentFT0C"), collision.centFT0C(), qyft0a);
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hQ4xFT0C_CentFT0C"), collision.centFT0C(), qxft0c);
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hQ4yFT0C_CentFT0C"), collision.centFT0C(), qyft0c);
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hQ4xBPos_CentFT0C"), collision.centFT0C(), qxbpos);
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hQ4yBPos_CentFT0C"), collision.centFT0C(), qybpos);
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hQ4xBNeg_CentFT0C"), collision.centFT0C(), qxbneg);
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hQ4yBNeg_CentFT0C"), collision.centFT0C(), qybneg);
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hQ4xBTot_CentFT0C"), collision.centFT0C(), qxbtot);
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hQ4yBTot_CentFT0C"), collision.centFT0C(), qybtot);
 
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hEP4FT0M_CentFT0C"), collision.centFT0C(), getEP(qxft0m, qyft0m, nmod));
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hEP4FT0A_CentFT0C"), collision.centFT0C(), getEP(qxft0a, qyft0a, nmod));
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hEP4FT0C_CentFT0C"), collision.centFT0C(), getEP(qxft0c, qyft0c, nmod));
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hEP4BPos_CentFT0C"), collision.centFT0C(), getEP(qxbpos, qybpos, nmod));
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hEP4BNeg_CentFT0C"), collision.centFT0C(), getEP(qxbneg, qybneg, nmod));
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hEP4BTot_CentFT0C"), collision.centFT0C(), getEP(qxbtot, qybtot, nmod));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hEP3FT0M_CentFT0C"), collision.centFT0C(), getEP(qxft0m, qyft0m, nmod));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hEP3FT0A_CentFT0C"), collision.centFT0C(), getEP(qxft0a, qyft0a, nmod));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hEP3FT0C_CentFT0C"), collision.centFT0C(), getEP(qxft0c, qyft0c, nmod));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hEP3BPos_CentFT0C"), collision.centFT0C(), getEP(qxbpos, qybpos, nmod));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hEP3BNeg_CentFT0C"), collision.centFT0C(), getEP(qxbneg, qybneg, nmod));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hEP3BTot_CentFT0C"), collision.centFT0C(), getEP(qxbtot, qybtot, nmod));
 
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ4FT0MQ4BPos_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qft0m, qbpos));
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ4FT0MQ4BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qft0m, qbneg));
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ4BPosQ4BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qbpos, qbneg));
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ4FT0AQ4BPos_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qft0a, qbpos));
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ4FT0AQ4BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qft0a, qbneg));
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ4FT0AQ4BTot_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qft0a, qbtot));
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ4FT0CQ4BPos_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qft0c, qbpos));
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ4FT0CQ4BNeg_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qft0c, qbneg));
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ4FT0CQ4BTot_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qft0c, qbtot));
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfQ4FT0AQ4FT0C_CentFT0C"), collision.centFT0C(), RecoDecay::dotProd(qft0a, qft0c));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP3FT0MEP3BPos_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxft0m, qyft0m, nmod) - getEP(qxbpos, qybpos, nmod))));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP3FT0MEP3BNeg_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxft0m, qyft0m, nmod) - getEP(qxbneg, qybneg, nmod))));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP3BPosEP3BNeg_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxbpos, qybpos, nmod) - getEP(qxbneg, qybneg, nmod))));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP3FT0AEP3BPos_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxft0a, qyft0a, nmod) - getEP(qxbpos, qybpos, nmod))));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP3FT0AEP3BNeg_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxft0a, qyft0a, nmod) - getEP(qxbneg, qybneg, nmod))));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP3FT0AEP3BTot_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxft0a, qyft0a, nmod) - getEP(qxbtot, qybtot, nmod))));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP3FT0CEP3BPos_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxft0c, qyft0c, nmod) - getEP(qxbpos, qybpos, nmod))));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP3FT0CEP3BNeg_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxft0c, qyft0c, nmod) - getEP(qxbneg, qybneg, nmod))));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP3FT0CEP3BTot_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxft0c, qyft0c, nmod) - getEP(qxbtot, qybtot, nmod))));
+      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("Qvector/hPrfCosDiffEP3FT0AEP3FT0C_CentFT0C"), collision.centFT0C(), std::cos(nmod * (getEP(qxft0a, qyft0a, nmod) - getEP(qxft0c, qyft0c, nmod))));
+    }
+  }
+
+  template <int nmod, typename TCollision, typename TTrack>
+  void fillVn(TCollision const& collision, TTrack const& track)
+  {
+    int idx = std::distance(cfgnMods->begin(), std::find(cfgnMods->begin(), cfgnMods->end(), nmod));
+    float qxft0m = collision.qvecFT0MReVec()[idx], qxft0a = collision.qvecFT0AReVec()[idx], qxft0c = collision.qvecFT0CReVec()[idx], qxbpos = collision.qvecBPosReVec()[idx], qxbneg = collision.qvecBNegReVec()[idx], qxbtot = collision.qvecBTotReVec()[idx];
+    float qyft0m = collision.qvecFT0MImVec()[idx], qyft0a = collision.qvecFT0AImVec()[idx], qyft0c = collision.qvecFT0CImVec()[idx], qybpos = collision.qvecBPosImVec()[idx], qybneg = collision.qvecBNegImVec()[idx], qybtot = collision.qvecBTotImVec()[idx];
+    std::array<float, 2> qft0m = {qxft0m, qyft0m};
+    std::array<float, 2> qft0a = {qxft0a, qyft0a};
+    std::array<float, 2> qft0c = {qxft0c, qyft0c};
+    std::array<float, 2> qbpos = {qxbpos, qybpos};
+    std::array<float, 2> qbneg = {qxbneg, qybneg};
+    std::array<float, 2> qbtot = {qxbtot, qybtot};
+    std::vector<std::array<float, 2>> qvectors = {qft0m, qft0a, qft0c, qbpos, qbneg, qbtot};
+
+    if (!isGoodQvector(qvectors)) {
+      return;
+    }
+
+    const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+
+    float sp = RecoDecay::dotProd(std::array<float, 2>{static_cast<float>(std::cos(nmod * track.phi())), static_cast<float>(std::sin(nmod * track.phi()))}, qvectors[cfgQvecEstimator]);
+    float cos = std::cos(nmod * (track.phi() - getEP(qvectors[cfgQvecEstimator][0], qvectors[cfgQvecEstimator][1], nmod)));
+    if constexpr (nmod == 2) {
+      fRegistry.fill(HIST("Track/hV2"), centralities[cfgCentEstimator], track.pt(), sp, cos);
+    } else if constexpr (nmod == 3) {
+      fRegistry.fill(HIST("Track/hV3"), centralities[cfgCentEstimator], track.pt(), sp, cos);
     }
   }
 
@@ -495,6 +549,49 @@ struct eventQC {
       return false;
     }
 
+    if (track.tpcFractionSharedCls() > trackcuts.cfg_max_frac_shared_clusters_tpc) {
+      return false;
+    }
+
+    return true;
+  }
+
+  template <typename TTrack>
+  bool isElectron(TTrack const& track)
+  {
+    if (track.tpcNSigmaEl() < trackcuts.cfg_min_TPCNsigmaEl || trackcuts.cfg_max_TPCNsigmaEl < track.tpcNSigmaEl()) {
+      return false;
+    }
+
+    if (trackcuts.cfg_min_TPCNsigmaPi < track.tpcNSigmaPi() && track.tpcNSigmaPi() < trackcuts.cfg_max_TPCNsigmaPi) {
+      return false;
+    }
+
+    if (trackcuts.cfg_requireTOF && !track.hasTOF()) {
+      return false;
+    }
+
+    if (track.hasTOF() && (track.tofNSigmaEl() < trackcuts.cfg_min_TOFNsigmaEl || trackcuts.cfg_max_TOFNsigmaEl < track.tofNSigmaEl())) {
+      return false;
+    }
+
+    uint32_t itsClusterSizes = track.itsClusterSizes();
+    int total_cluster_size = 0, nl = 0;
+    for (unsigned int layer = 0; layer < 7; layer++) {
+      int cluster_size_per_layer = (itsClusterSizes >> (layer * 4)) & 0xf;
+      if (cluster_size_per_layer > 0) {
+        nl++;
+      }
+      total_cluster_size += cluster_size_per_layer;
+    }
+
+    float clsize = static_cast<float>(total_cluster_size) / static_cast<float>(nl) * std::cos(std::atan(track.tgl()));
+    float upper_edge = trackcuts.cfg_slope_its_cluster_size * track.p() + trackcuts.cfg_intercept_its_cluster_size;
+
+    if ((trackcuts.cfg_min_p_its_cluster_size < track.p() && track.p() < trackcuts.cfg_max_p_its_cluster_size) && clsize > upper_edge) {
+      return false;
+    }
+
     return true;
   }
 
@@ -533,6 +630,14 @@ struct eventQC {
       return false;
     }
 
+    if (eventcuts.cfgRequirekNoCollInRofStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+      return false;
+    }
+
+    if (eventcuts.cfgRequirekNoCollInRofStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStrict)) {
+      return false;
+    }
+
     if (!(eventcuts.cfgOccupancyMin <= collision.trackOccupancyInTimeRange() && collision.trackOccupancyInTimeRange() < eventcuts.cfgOccupancyMax)) {
       return false;
     }
@@ -566,6 +671,8 @@ struct eventQC {
         if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
           continue;
         }
+        if constexpr (std::is_same_v<std::decay_t<TCollisions>, FilteredMyCollisions_Cent_Qvec>) {
+        }
       }
       fillEventInfo<0>(collision);
       if (!isSelectedEvent(collision)) {
@@ -581,10 +688,22 @@ struct eventQC {
         if (!isSelectedTrack(track)) {
           continue;
         }
-        fillTrackInfo(track);
-
+        if (isElectron(track)) {
+          fillTrackInfo(track);
+        }
         if (fabs(track.eta()) < 0.8) {
           nGlobalTracks++;
+
+          if constexpr (std::is_same_v<std::decay_t<TCollisions>, FilteredMyCollisions_Cent_Qvec>) {
+            for (int i = 0; i < static_cast<int>(cfgnMods->size()); i++) {
+              if (cfgnMods->at(i) == 2) {
+                fillVn<2>(collision, track);
+              } else if (cfgnMods->at(i) == 3) {
+                fillVn<3>(collision, track);
+              }
+            }
+          }
+
           if (track.isPVContributor()) {
             nGlobalTracksPV++;
           }

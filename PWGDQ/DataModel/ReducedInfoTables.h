@@ -574,6 +574,8 @@ DECLARE_SOA_COLUMN(FwdDcaY1, fwdDcaY1, float); //! Y component of forward DCA
 DECLARE_SOA_COLUMN(FwdDcaX2, fwdDcaX2, float); //! X component of forward DCA
 DECLARE_SOA_COLUMN(FwdDcaY2, fwdDcaY2, float); //! Y component of forward DCA
 DECLARE_SOA_COLUMN(ITSNCls1, itsNCls1, int);   //! Number of ITS clusters
+DECLARE_SOA_COLUMN(ITSClusterMap1, itsClusterMap1, uint8_t); //! ITS clusters map
+DECLARE_SOA_COLUMN(ITSChi2NCl1, itsChi2NCl1, float);         //! ITS chi2/Ncls
 DECLARE_SOA_COLUMN(TPCNClsFound1, tpcNClsFound1, float); //! Number of TPC clusters found
 DECLARE_SOA_COLUMN(TPCNClsCR1, tpcNClsCR1, float);       //! Number of TPC crossed rows
 DECLARE_SOA_COLUMN(TPCChi2NCl1, tpcChi2NCl1, float);     //! TPC chi2/Ncls
@@ -588,6 +590,8 @@ DECLARE_SOA_COLUMN(TOFNSigmaEl1, tofNSigmaEl1, float);   //! TOF nSigma electron
 DECLARE_SOA_COLUMN(TOFNSigmaPi1, tofNSigmaPi1, float);   //! TOF nSigma pion
 DECLARE_SOA_COLUMN(TOFNSigmaPr1, tofNSigmaPr1, float);   //! TOF nSigma proton
 DECLARE_SOA_COLUMN(ITSNCls2, itsNCls2, int);             //! Number of ITS clusters
+DECLARE_SOA_COLUMN(ITSClusterMap2, itsClusterMap2, uint8_t); //! ITS clusters map
+DECLARE_SOA_COLUMN(ITSChi2NCl2, itsChi2NCl2, float);         //! ITS chi2/Ncls
 DECLARE_SOA_COLUMN(TPCNClsFound2, tpcNClsFound2, float); //! Number of TPC clusters found
 DECLARE_SOA_COLUMN(TPCNClsCR2, tpcNClsCR2, float);       //! Number of TPC crossed rows
 DECLARE_SOA_COLUMN(TPCChi2NCl2, tpcChi2NCl2, float);     //! TPC chi2/Ncls
@@ -765,8 +769,8 @@ DECLARE_SOA_TABLE(DielectronsAll, "AOD", "RTDIELECTRONALL", //!
                   reducedpair::Pt, reducedpair::Eta, reducedpair::Phi, reducedpair::Sign,
                   reducedpair::FilterMap,
                   reducedpair::McDecision,
-                  dilepton_track_index::Pt1, dilepton_track_index::Eta1, dilepton_track_index::Phi1, dilepton_track_index::TPCNClsCR1, dilepton_track_index::TPCNClsFound1, dilepton_track_index::TPCChi2NCl1, dilepton_track_index::DcaXY1, dilepton_track_index::DcaZ1, dilepton_track_index::TPCSignal1, dilepton_track_index::TPCNSigmaEl1, dilepton_track_index::TPCNSigmaPi1, dilepton_track_index::TPCNSigmaPr1, dilepton_track_index::TOFBeta1, dilepton_track_index::TOFNSigmaEl1, dilepton_track_index::TOFNSigmaPi1, dilepton_track_index::TOFNSigmaPr1,
-                  dilepton_track_index::Pt2, dilepton_track_index::Eta2, dilepton_track_index::Phi2, dilepton_track_index::TPCNClsCR2, dilepton_track_index::TPCNClsFound2, dilepton_track_index::TPCChi2NCl2, dilepton_track_index::DcaXY2, dilepton_track_index::DcaZ2, dilepton_track_index::TPCSignal2, dilepton_track_index::TPCNSigmaEl2, dilepton_track_index::TPCNSigmaPi2, dilepton_track_index::TPCNSigmaPr2, dilepton_track_index::TOFBeta2, dilepton_track_index::TOFNSigmaEl2, dilepton_track_index::TOFNSigmaPi2, dilepton_track_index::TOFNSigmaPr2,
+                  dilepton_track_index::Pt1, dilepton_track_index::Eta1, dilepton_track_index::Phi1, dilepton_track_index::ITSClusterMap1, dilepton_track_index::ITSChi2NCl1, dilepton_track_index::TPCNClsCR1, dilepton_track_index::TPCNClsFound1, dilepton_track_index::TPCChi2NCl1, dilepton_track_index::DcaXY1, dilepton_track_index::DcaZ1, dilepton_track_index::TPCSignal1, dilepton_track_index::TPCNSigmaEl1, dilepton_track_index::TPCNSigmaPi1, dilepton_track_index::TPCNSigmaPr1, dilepton_track_index::TOFBeta1, dilepton_track_index::TOFNSigmaEl1, dilepton_track_index::TOFNSigmaPi1, dilepton_track_index::TOFNSigmaPr1,
+                  dilepton_track_index::Pt2, dilepton_track_index::Eta2, dilepton_track_index::Phi2, dilepton_track_index::ITSClusterMap2, dilepton_track_index::ITSChi2NCl2, dilepton_track_index::TPCNClsCR2, dilepton_track_index::TPCNClsFound2, dilepton_track_index::TPCChi2NCl2, dilepton_track_index::DcaXY2, dilepton_track_index::DcaZ2, dilepton_track_index::TPCSignal2, dilepton_track_index::TPCNSigmaEl2, dilepton_track_index::TPCNSigmaPi2, dilepton_track_index::TPCNSigmaPr2, dilepton_track_index::TOFBeta2, dilepton_track_index::TOFNSigmaEl2, dilepton_track_index::TOFNSigmaPi2, dilepton_track_index::TOFNSigmaPr2,
                   dilepton_track_index::DCAxyzTrk0KF, dilepton_track_index::DCAxyzTrk1KF, reducedpair::DCAxyzBetweenTrksKF, dilepton_track_index::DCAxyTrk0KF, dilepton_track_index::DCAxyTrk1KF, reducedpair::DCAxyBetweenTrksKF,
                   dilepton_track_index::DeviationTrk0KF, dilepton_track_index::DeviationTrk1KF, dilepton_track_index::DeviationxyTrk0KF, dilepton_track_index::DeviationxyTrk1KF,
                   reducedpair::MassKFGeo, reducedpair::Chi2OverNDFKFGeo, reducedpair::DecayLengthKFGeo, reducedpair::DecayLengthOverErrKFGeo, reducedpair::DecayLengthXYKFGeo, reducedpair::DecayLengthXYOverErrKFGeo, reducedpair::PseudoproperDecayTimeKFGeo, reducedpair::PseudoproperDecayTimeErrKFGeo, reducedpair::CosPAKFGeo, reducedpair::PairDCAxyz, reducedpair::PairDCAxy,

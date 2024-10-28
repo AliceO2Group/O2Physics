@@ -45,7 +45,9 @@ struct NPCascCandidate {
   float itsClusSize;
   bool isGoodMatch;
   bool isGoodCascade;
-  int pdgCodePrimary;
+  int pdgCodeMom;
+  bool isFromBeauty;
+  bool isFromCharm;
   float pvX;
   float pvY;
   float pvZ;
@@ -143,6 +145,7 @@ struct NonPromptCascadeTask {
 
   Produces<o2::aod::NPCascTable> NPCTable;
   Produces<o2::aod::NPCascTableMC> NPCTableMC;
+  Produces<o2::aod::NPCascTableGen> NPCTableGen;
 
   using TracksExtData = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::pidTPCFullKa, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTOFFullKa, aod::pidTOFFullPi, aod::pidTOFFullPr>;
   using TracksExtMC = soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::McTrackLabels, aod::pidTPCFullKa, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTOFFullKa, aod::pidTOFFullPi, aod::pidTOFFullPr>;
@@ -369,6 +372,26 @@ struct NonPromptCascadeTask {
 
     candidates.clear();
     std::vector<int> mcParticleId;
+
+    auto isFromHF = [&](auto particle) -> std::tuple<bool, bool> {
+      bool fromBeauty = false;
+      bool fromCharm = false;
+      if (particle.has_mothers()) {
+        auto mom = particle.template mothers_as<aod::McParticles>()[0];
+        int pdgCodeMom = mom.pdgCode();
+        fromBeauty = std::abs(pdgCodeMom) / 5000 == 1 || std::abs(pdgCodeMom) / 500 == 1 || std::abs(pdgCodeMom) == 5;
+        fromCharm = std::abs(pdgCodeMom) / 4000 == 1 || std::abs(pdgCodeMom) / 400 == 1 || std::abs(pdgCodeMom) == 4;
+        while (mom.has_mothers()) {
+          const auto grandma = mom.template mothers_as<aod::McParticles>()[0];
+          int pdgCodeGrandma = std::abs(grandma.pdgCode());
+          fromBeauty = fromBeauty || (pdgCodeGrandma / 5000 == 1 || pdgCodeGrandma / 500 == 1 || pdgCodeGrandma == 5);
+          fromCharm = fromCharm || (pdgCodeGrandma / 4000 == 1 || pdgCodeGrandma / 400 == 1 || pdgCodeGrandma == 4);
+          mom = grandma;
+        }
+      }
+      return {fromCharm, fromBeauty};
+    };
+
     for (const auto& trackedCascade : trackedCascades) {
       auto collision = trackedCascade.collision_as<CollisionCandidatesRun3MC>();
 
@@ -563,15 +586,14 @@ struct NonPromptCascadeTask {
 
       bool isGoodMatch = ((motherParticleID == ITStrack.mcParticleId())) ? true : false;
 
-      int pdgCodePrimary = 0;
+      int pdgCodeMom = 0;
+      std::tuple<bool, bool> fromHF{false, false};
       if (isGoodCascade && isGoodMatch) {
-        if (track.mcParticle().has_mothers()) {
-          const auto primary = track.mcParticle().mothers_as<aod::McParticles>()[0];
-          pdgCodePrimary = primary.pdgCode();
-        }
+        fromHF = isFromHF(track.mcParticle());
+        pdgCodeMom = track.mcParticle().has_mothers() ? track.mcParticle().mothers_as<aod::McParticles>()[0].pdgCode() : 0;
       }
 
-      candidates.emplace_back(NPCascCandidate{track.globalIndex(), ITStrack.globalIndex(), trackedCascade.collisionId(), trackedCascade.matchingChi2(), trackedCascade.itsClsSize(), isGoodMatch, isGoodCascade, pdgCodePrimary,
+      candidates.emplace_back(NPCascCandidate{track.globalIndex(), ITStrack.globalIndex(), trackedCascade.collisionId(), trackedCascade.matchingChi2(), trackedCascade.itsClsSize(), isGoodMatch, isGoodCascade, pdgCodeMom, std::get<0>(fromHF), std::get<1>(fromHF),
                                               primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
                                               track.pt(), track.eta(), track.phi(),
                                               protonTrack.pt(), protonTrack.eta(), pionTrack.pt(), pionTrack.eta(), bachelor.pt(), bachelor.eta(),
@@ -600,7 +622,7 @@ struct NonPromptCascadeTask {
       auto mcCollision = particle.mcCollision_as<aod::McCollisions>();
       auto label = collisions.iteratorAt(c.collisionID);
 
-      NPCTableMC(c.matchingChi2, c.itsClusSize, c.isGoodMatch, c.isGoodCascade, c.pdgCodePrimary,
+      NPCTableMC(c.matchingChi2, c.itsClusSize, c.isGoodMatch, c.isGoodCascade, c.pdgCodeMom, c.isFromBeauty, c.isFromCharm,
                  c.pvX, c.pvY, c.pvZ,
                  c.cascPt, c.cascEta, c.cascPhi,
                  c.protonPt, c.protonEta, c.pionPt, c.pionEta, c.bachPt, c.bachEta,
@@ -613,6 +635,18 @@ struct NonPromptCascadeTask {
                  c.protonHasTOF, c.pionHasTOF, c.bachKaonHasTOF, c.bachPionHasTOF,
                  c.protonTOFNSigma, c.pionTOFNSigma, c.bachKaonTOFNSigma, c.bachPionTOFNSigma,
                  particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), mcCollision.posX() - particle.vx(), mcCollision.posY() - particle.vy(), mcCollision.posZ() - particle.vz(), mcCollision.globalIndex() == label.mcCollisionId());
+    }
+
+    for (auto& p : mcParticles) {
+      auto absCode = std::abs(p.pdgCode());
+      if (absCode != 3312 && absCode != 3334) {
+        continue;
+      }
+      auto fromHF = isFromHF(p);
+      int pdgCodeMom = p.has_mothers() ? p.mothers_as<aod::McParticles>()[0].pdgCode() : 0;
+      auto mcCollision = p.mcCollision_as<aod::McCollisions>();
+
+      NPCTableGen(p.pt(), p.eta(), p.phi(), p.pdgCode(), pdgCodeMom, mcCollision.posX() - p.vx(), mcCollision.posY() - p.vy(), mcCollision.posZ() - p.vz(), std::get<0>(fromHF), std::get<1>(fromHF));
     }
   }
   PROCESS_SWITCH(NonPromptCascadeTask, processTrackedCascadesMC, "process cascades from strangeness tracking: MC analysis", true);
@@ -808,7 +842,7 @@ struct NonPromptCascadeTask {
       daughtersDCA dDCA;
       fillDauDCA(trackedCascade, bachelor, protonTrack, pionTrack, primaryVertex, isOmega, dDCA);
 
-      candidates.emplace_back(NPCascCandidate{track.globalIndex(), ITStrack.globalIndex(), trackedCascade.collisionId(), trackedCascade.matchingChi2(), trackedCascade.itsClsSize(), 0, 0, -1,
+      candidates.emplace_back(NPCascCandidate{track.globalIndex(), ITStrack.globalIndex(), trackedCascade.collisionId(), trackedCascade.matchingChi2(), trackedCascade.itsClsSize(), 0, 0, 0, 0, 0,
                                               primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
                                               track.pt(), track.eta(), track.phi(),
                                               protonTrack.pt(), protonTrack.eta(), pionTrack.pt(), pionTrack.eta(), bachelor.pt(), bachelor.eta(),

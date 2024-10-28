@@ -31,15 +31,19 @@ namespace spcalibrationtable
 DECLARE_SOA_COLUMN(TriggerEvent, triggerevent, bool);
 DECLARE_SOA_COLUMN(TriggerEventRunNo, triggereventrunno, int);
 DECLARE_SOA_COLUMN(Cent, cent, float);
+DECLARE_SOA_COLUMN(Vx, vx, float);
+DECLARE_SOA_COLUMN(Vy, vy, float);
 DECLARE_SOA_COLUMN(Vz, vz, float);
-DECLARE_SOA_COLUMN(ZNAEN1, znaen1, float);
-DECLARE_SOA_COLUMN(ZNAEN2, znaen2, float);
-DECLARE_SOA_COLUMN(ZNAEN3, znaen3, float);
-DECLARE_SOA_COLUMN(ZNAEN4, znaen4, float);
-DECLARE_SOA_COLUMN(ZNCEN1, zncen1, float);
-DECLARE_SOA_COLUMN(ZNCEN2, zncen2, float);
-DECLARE_SOA_COLUMN(ZNCEN3, zncen3, float);
-DECLARE_SOA_COLUMN(ZNCEN4, zncen4, float);
+DECLARE_SOA_COLUMN(ZNAC, znaC, float);
+DECLARE_SOA_COLUMN(ZNCC, zncC, float);
+DECLARE_SOA_COLUMN(ZNAE0, znaE0, float);
+DECLARE_SOA_COLUMN(ZNAE1, znaE1, float);
+DECLARE_SOA_COLUMN(ZNAE2, znaE2, float);
+DECLARE_SOA_COLUMN(ZNAE3, znaE3, float);
+DECLARE_SOA_COLUMN(ZNCE0, zncE0, float);
+DECLARE_SOA_COLUMN(ZNCE1, zncE1, float);
+DECLARE_SOA_COLUMN(ZNCE2, zncE2, float);
+DECLARE_SOA_COLUMN(ZNCE3, zncE3, float);
 DECLARE_SOA_COLUMN(QXZDCA, qxZDCA, float);
 DECLARE_SOA_COLUMN(QXZDCC, qxZDCC, float);
 DECLARE_SOA_COLUMN(QYZDCA, qyZDCA, float);
@@ -51,15 +55,19 @@ DECLARE_SOA_TABLE(SPCalibrationTables, "AOD", "SPCALCOLS",
                   spcalibrationtable::TriggerEvent,
                   spcalibrationtable::TriggerEventRunNo,
                   spcalibrationtable::Cent,
+                  spcalibrationtable::Vx,
+                  spcalibrationtable::Vy,
                   spcalibrationtable::Vz,
-                  spcalibrationtable::ZNAEN1,
-                  spcalibrationtable::ZNAEN2,
-                  spcalibrationtable::ZNAEN3,
-                  spcalibrationtable::ZNAEN4,
-                  spcalibrationtable::ZNCEN1,
-                  spcalibrationtable::ZNCEN2,
-                  spcalibrationtable::ZNCEN3,
-                  spcalibrationtable::ZNCEN4,
+                  spcalibrationtable::ZNAC,
+                  spcalibrationtable::ZNCC,
+                  spcalibrationtable::ZNAE0,
+                  spcalibrationtable::ZNAE1,
+                  spcalibrationtable::ZNAE2,
+                  spcalibrationtable::ZNAE3,
+                  spcalibrationtable::ZNCE0,
+                  spcalibrationtable::ZNCE1,
+                  spcalibrationtable::ZNCE2,
+                  spcalibrationtable::ZNCE3,
                   spcalibrationtable::QXZDCA,
                   spcalibrationtable::QXZDCC,
                   spcalibrationtable::QYZDCA,
