@@ -362,6 +362,9 @@ struct lnnRecoTask {
       float alpha = alphaAP(momPos, momNeg);
       lnnCandidate lnnCand;
       lnnCand.isMatter = alpha > 0;
+      if ((lnnCand.isMatter && !is3H) || (!lnnCand.isMatter && !isAnti3H)) {
+        continue;
+      }
       auto& h3track = lnnCand.isMatter? posTrack : negTrack;
       auto& h3Rigidity = lnnCand.isMatter ? posRigidity : negRigidity;
 
