@@ -505,7 +505,7 @@ struct HfCorrelatorLcHadrons {
   {
     int counterLcHadron = 0;
     registry.fill(HIST("hMcEvtCount"), 0);
-
+   
     auto getTracksSize = [&mcParticles](aod::McCollision const& /*collision*/) {
       int nTracks = 0;
       for (const auto& track : mcParticles) {
@@ -539,6 +539,10 @@ struct HfCorrelatorLcHadrons {
 
         for (const auto& particleAssoc : mcParticles) {
           bool flagMotherFound = false;
+          /*const auto mothers = particleAssoc.daughters_as<aod::McParticles>();
+          if (mothers.empty()) {
+              std::cout << "No mother particles found." << std::endl;
+          }*/
           for (const auto& m : particleAssoc.mothers_as<aod::McParticles>()) {
             if (m.globalIndex() == particle.globalIndex()) {
               flagMotherFound = true;
