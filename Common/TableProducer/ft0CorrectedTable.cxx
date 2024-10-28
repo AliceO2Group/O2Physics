@@ -20,6 +20,7 @@
 #include "CommonConstants/LHCConstants.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "DataFormatsFT0/Digit.h"
+#include "CCDB/BasicCCDBManager.h"
 #include "CollisionTypeHelper.h"
 #include "TRandom3.h"
 
