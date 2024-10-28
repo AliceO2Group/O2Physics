@@ -118,7 +118,7 @@ struct ft0CorrectedTable {
   {
     if (cfgCollisionSystem.value == -1) {
       o2::parameters::GRPLHCIFData* grpo = ccdb->template getForTimeStamp<o2::parameters::GRPLHCIFData>(cfgPathGrpLhcIf,
-                                                                                                        bcs[0].timestamp());
+                                                                                                        bcs.iteratorAt(0).timestamp());
       cfgCollisionSystem.value = CollisionSystemType::getCollisionTypeFromGrp(grpo);
       switch (cfgCollisionSystem.value) {
         case CollisionSystemType::kCollSyspp:
