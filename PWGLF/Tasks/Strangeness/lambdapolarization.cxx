@@ -552,7 +552,7 @@ struct lambdapolarization {
         relphi = TVector2::Phi_0_2pi(static_cast<float>(nmode) * (LambdaVec.Phi() - psidefFT0C - deltapsiFT0C));
       }
 
-      if (cfgPhiDepStudy && cfgPhiDepSig * TMath::Sin(relphi) > gRandom->Uniform(0,1)) {
+      if (cfgPhiDepStudy && cfgPhiDepSig * std::abs(TMath::Sin(relphi)) > gRandom->Uniform(0,1)) {
         continue;
       }
 
