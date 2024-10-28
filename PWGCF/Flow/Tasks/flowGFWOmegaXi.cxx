@@ -483,7 +483,7 @@ struct FlowGFWOmegaXi {
         continue;
       registry.fill(HIST("hPhi"), track.phi());
       registry.fill(HIST("hEta"), track.eta());
-      registry.fill(HIST("hEtaPhiVtxzREF"), track.eta(), track.phi(), vtxz);
+      registry.fill(HIST("hEtaPhiVtxzREF"), track.phi(), track.eta(), vtxz);
       registry.fill(HIST("hPt"), track.pt());
       int ptbin = fPtAxis->FindBin(track.pt()) - 1;
       if ((track.pt() > cfgCutPtMin) && (track.pt() < cfgCutPtMax)) {
@@ -529,14 +529,14 @@ struct FlowGFWOmegaXi {
         if (TMath::Abs(v0.mK0Short() - 0.49761) < cfgv0_mk0swindow) {
           CandNum[0] = CandNum[0] + 1;
           registry.fill(HIST("InvMassK0s"), v0.pt(), v0.mK0Short(), v0.eta(), cent);
-          registry.fill(HIST("hEtaPhiVtxzPOIK0s"), v0.eta(), v0.phi(), vtxz);
+          registry.fill(HIST("hEtaPhiVtxzPOIK0s"), v0.phi(), v0.eta(), vtxz);
           fGFW->Fill(v0.eta(), fV0PtAxis->FindBin(v0.pt()) - 1 + ((fK0sMass->FindBin(v0.mK0Short()) - 1) * nV0PtBins), v0.phi(), wacc * weff, 8);
         }
       } else if (PDGCode == kLambda0) {
         if (TMath::Abs(v0.mLambda() - 1.115683) < cfgv0_mlambdawindow) {
           CandNum[1] = CandNum[1] + 1;
           registry.fill(HIST("InvMassLambda"), v0.pt(), v0.mLambda(), v0.eta(), cent);
-          registry.fill(HIST("hEtaPhiVtxzPOILambda"), v0.eta(), v0.phi(), vtxz);
+          registry.fill(HIST("hEtaPhiVtxzPOILambda"), v0.phi(), v0.eta(), vtxz);
           fGFW->Fill(v0.eta(), fV0PtAxis->FindBin(v0.pt()) - 1 + ((fLambdaMass->FindBin(v0.mLambda()) - 1) * nV0PtBins), v0.phi(), wacc * weff, 16);
         }
       }
@@ -598,7 +598,7 @@ struct FlowGFWOmegaXi {
         continue;
       if (PDGCode == kOmegaMinus) {
         CandNum[3] = CandNum[3] + 1;
-        registry.fill(HIST("hEtaPhiVtxzPOIOmega"), casc.eta(), casc.phi(), vtxz);
+        registry.fill(HIST("hEtaPhiVtxzPOIOmega"), casc.phi(), casc.eta(), vtxz);
         registry.fill(HIST("InvMassOmegaMinus"), casc.pt(), casc.mOmega(), casc.eta(), cent);
         if ((casc.pt() < cfgCutPtPOIMax) && (casc.pt() > cfgCutPtPOIMin) && (casc.mOmega() > 1.63) && (casc.mOmega() < 1.71)) {
           fGFW->Fill(casc.eta(), fXiPtAxis->FindBin(casc.pt()) - 1 + ((fOmegaMass->FindBin(casc.mOmega()) - 1) * nXiPtBins), casc.phi(), wacc * weff, 4);
@@ -606,7 +606,7 @@ struct FlowGFWOmegaXi {
       }
       if (PDGCode == kXiMinus) {
         CandNum[2] = CandNum[2] + 1;
-        registry.fill(HIST("hEtaPhiVtxzPOIXi"), casc.eta(), casc.phi(), vtxz);
+        registry.fill(HIST("hEtaPhiVtxzPOIXi"), casc.phi(), casc.eta(), vtxz);
         registry.fill(HIST("InvMassXiMinus"), casc.pt(), casc.mXi(), casc.eta(), cent);
         if ((casc.pt() < cfgCutPtPOIMax) && (casc.pt() > cfgCutPtPOIMin) && (casc.mXi() > 1.30) && (casc.mXi() < 1.37)) {
           fGFW->Fill(casc.eta(), fXiPtAxis->FindBin(casc.pt()) - 1 + ((fXiMass->FindBin(casc.mXi()) - 1) * nXiPtBins), casc.phi(), wacc * weff, 2);
