@@ -293,8 +293,7 @@ struct HfCorrelatorLcHadrons {
         leadingParticle = mcParticle;
       }
     }
-    int leadingIndex = leadingParticle.globalIndex();
-    return leadingIndex;
+    return leadingParticle.globalIndex();
   }
 
   /// Lc-h correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via Mc truth)
