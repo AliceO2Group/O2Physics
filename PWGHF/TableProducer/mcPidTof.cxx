@@ -689,7 +689,6 @@ struct mcPidTof {
     std::string prefix = "mcRecalib";
     Configurable<bool> enable{"enable", false, "enable MC recalibration for Pi/Ka/Pr"};
     Configurable<std::string> ccdbPath{"ccdbPath", "Users/f/fgrosa/RecalibmcPidTof/", "path for MC recalibration objects in CCDB"};
-    Configurable<std::string> passName{"passName", "apass6", "reco pass of MC anchoring"};
   } mcRecalib;
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
