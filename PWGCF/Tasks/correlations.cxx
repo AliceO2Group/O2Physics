@@ -85,6 +85,7 @@ struct CorrelationTask {
 
   O2_DEFINE_CONFIGURABLE(cfgDecayParticleMask, int, 0, "Selection bitmask for the decay particles: 0 = no selection")
   O2_DEFINE_CONFIGURABLE(cfgMassAxis, int, 0, "Use invariant mass axis (0 = OFF, 1 = ON)")
+  O2_DEFINE_CONFIGURABLE(cfgMcTriggerPDGs, std::vector<int>, {}, "MC PDG codes to use exclusively as trigger particles and exclude from associated particles. Empty = no selection.")
 
   ConfigurableAxis axisVertex{"axisVertex", {7, -7, 7}, "vertex axis for histograms"};
   ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -PIHalf, PIHalf * 3}, "delta phi axis for histograms"};
@@ -149,7 +150,7 @@ struct CorrelationTask {
       registry.add("etaphiTrigger", "multiplicity/centrality vs eta vs phi (triggers)", {HistType::kTH3F, {{100, 0, 100, "multiplicity/centrality"}, {100, -2, 2, "#eta"}, {200, 0, 2 * M_PI, "#varphi"}}});
       registry.add("invMass", "2-prong invariant mass (GeV/c^2)", {HistType::kTH3F, {axisInvMassHistogram, axisPtTrigger, axisMultiplicity}});
     }
-    registry.add("multiplicity", "multiplicity vs track count", {HistType::kTH1F, {{1000, 0, 100, "/multiplicity/centrality"}}});
+    registry.add("multiplicity", "event multiplicity", {HistType::kTH1F, {{1000, 0, 100, "/multiplicity/centrality"}}});
 
     const int maxMixBin = AxisSpec(axisMultiplicity).getNbins() * AxisSpec(axisVertex).getNbins();
     registry.add("eventcount_same", "bin", {HistType::kTH1F, {{maxMixBin + 2, -2.5, -0.5 + maxMixBin, "bin"}}});
@@ -231,6 +232,8 @@ struct CorrelationTask {
 
   template <class T>
   using hasInvMass = decltype(std::declval<T&>().invMass());
+  template <class T>
+  using hasPDGCode = decltype(std::declval<T&>().pdgCode());
 
   template <typename TCollision, typename TTracks1, typename TTracks2>
   void fillQA(const TCollision& collision, float multiplicity, const TTracks1& tracks1, const TTracks2& tracks2)
@@ -242,6 +245,10 @@ struct CorrelationTask {
             continue;
         }
         registry.fill(HIST("invMass"), track1.invMass(), track1.pt(), multiplicity);
+      }
+      if constexpr (std::experimental::is_detected<hasPDGCode, typename TTracks1::iterator>::value) {
+        if (!cfgMcTriggerPDGs->empty() && std::find(cfgMcTriggerPDGs->begin(), cfgMcTriggerPDGs->end(), track1->pdgCode()) == cfgMcTriggerPDGs->end())
+          continue;
       }
       registry.fill(HIST("yieldsTrigger"), multiplicity, track1.pt(), track1.eta());
       registry.fill(HIST("etaphiTrigger"), multiplicity, track1.eta(), track1.phi());
@@ -314,6 +321,11 @@ struct CorrelationTask {
           continue;
       }
 
+      if constexpr (std::experimental::is_detected<hasPDGCode, typename TTracks1::iterator>::value) {
+        if (!cfgMcTriggerPDGs->empty() && std::find(cfgMcTriggerPDGs->begin(), cfgMcTriggerPDGs->end(), track1.pdgCode()) == cfgMcTriggerPDGs->end())
+          continue;
+      }
+
       if constexpr (std::experimental::is_detected<hasSign, typename TTracks1::iterator>::value) {
         if (cfgTriggerCharge != 0 && cfgTriggerCharge * track1.sign() < 0) {
           continue;
@@ -343,6 +355,11 @@ struct CorrelationTask {
             continue;
           }
         }
+        if constexpr (std::experimental::is_detected<hasPDGCode, typename TTracks2::iterator>::value) {
+          if (!cfgMcTriggerPDGs->empty() && std::find(cfgMcTriggerPDGs->begin(), cfgMcTriggerPDGs->end(), track2.pdgCode()) != cfgMcTriggerPDGs->end())
+            continue;
+        }
+
         if constexpr (std::experimental::is_detected<hasProng0Id, typename TTracks1::iterator>::value) {
           if (track2.globalIndex() == track1.cfTrackProng0Id()) // do not correlate daughter tracks of the same event
             continue;
@@ -724,8 +741,11 @@ struct CorrelationTask {
       case 2212: // proton
       case -2212:
         return 2;
-      default:
+      case 421: // D0
+      case -421:
         return 3;
+      default:
+        return 4;
     }
   }
 
