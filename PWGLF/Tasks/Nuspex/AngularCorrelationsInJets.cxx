@@ -908,8 +908,7 @@ struct AngularCorrelationsInJets {
         registryData.fill(HIST("hTPCsignalNuclei"), jetParticle.pt() * jetParticle.sign(), jetParticle.tpcNSigmaDe());
         if (jetParticle.hasTOF())
           registryData.fill(HIST("hTOFsignalNuclei"), jetParticle.pt() * jetParticle.sign(), jetParticle.tofNSigmaDe());
-      } else 
-      {
+      } else {
         registryData.fill(HIST("hTPCsignalNuclei"), jetParticle.pt() * jetParticle.sign(), jetParticle.tpcNSigmaHe());
         if (jetParticle.hasTOF())
           registryData.fill(HIST("hTOFsignalNuclei"), jetParticle.pt() * jetParticle.sign(), jetParticle.tofNSigmaHe());
