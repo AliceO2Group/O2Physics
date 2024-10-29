@@ -18,9 +18,12 @@
 #include <TString.h>
 #include <cmath>
 
-enum Region { Toward,
-              Away,
-              Transverse };
+enum Region {
+  Default = 0,
+  Toward,
+  Away,
+  Transverse
+};
 
 Region getRegion(double deltaPhi)
 {
