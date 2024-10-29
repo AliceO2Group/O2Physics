@@ -203,6 +203,10 @@ struct AngularCorrelationsInJets {
     // nSigma
     registryData.add("hTPCsignal", "TPC signal", HistType::kTH2F, {{1000, 0, 100, "#it{p} [GeV/#it{c}]"}, {5000, 0, 5000, "d#it{E}/d#it{X} (a.u.)"}});
     registryData.add("hTOFsignal", "TOF signal", HistType::kTH2F, {{1000, 0, 100, "#it{p} [GeV/#it{c}]"}, {550, 0, 1.1, "#beta (TOF)"}});
+    registryData.add("hTPCsignalProton", "TPC n#sigma for (anti)proton without cuts", HistType::kTH2F, {axisSpecs.nsigmapTAxis, axisSpecs.nsigmaAxis});
+    registryData.add("hTOFsignalProton", "TOF n#sigma for (anti)proton without cuts", HistType::kTH2F, {axisSpecs.nsigmapTAxis, axisSpecs.nsigmaAxis});
+    registryData.add("hTPCsignalNuclei", "TPC n#sigma for (anti)nuclei without cuts", HistType::kTH2F, {axisSpecs.nsigmapTAxis, axisSpecs.nsigmaAxis});
+    registryData.add("hTOFsignalNuclei", "TOF n#sigma for (anti)nuclei without cuts", HistType::kTH2F, {axisSpecs.nsigmapTAxis, axisSpecs.nsigmaAxis});
     registryData.add("hTPCnsigmaProton", "TPC n#sigma for (anti)proton", HistType::kTH2F, {axisSpecs.nsigmapTAxis, axisSpecs.nsigmaAxis});
     registryData.add("hTOFnsigmaProton", "TOF n#sigma for (anti)proton", HistType::kTH2F, {axisSpecs.nsigmapTAxis, axisSpecs.nsigmaAxis});
     registryData.add("hTPCnsigmaNuclei", "TPC n#sigma for (anti)nuclei", HistType::kTH2F, {axisSpecs.nsigmapTAxis, axisSpecs.nsigmaAxis});
@@ -895,9 +899,21 @@ struct AngularCorrelationsInJets {
       registryData.fill(HIST("hDCAxyFullJet"), jetParticle.pt() * jetParticle.sign(), jetParticle.dcaXY());
       registryData.fill(HIST("hDCAzFullJet"), jetParticle.pt() * jetParticle.sign(), jetParticle.dcaZ());
       registryData.fill(HIST("hTPCsignal"), jetParticle.pt() * jetParticle.sign(), jetParticle.tpcSignal());
-      if (jetParticle.hasTOF())
+      if (jetParticle.hasTOF()) {
         registryData.fill(HIST("hTOFsignal"), jetParticle.pt() * jetParticle.sign(), jetParticle.beta());
-
+        registryData.fill(HIST("hTOFsignalProton"), jetParticle.pt() * jetParticle.sign(), jetParticle.tofNSigmaPr());
+      }
+      registryData.fill(HIST("hTPCsignalProton"), jetParticle.pt() * jetParticle.sign(), jetParticle.tpcNSigmaPr());
+      if (fDeuteronAnalysis) {
+        registryData.fill(HIST("hTPCsignalNuclei"), jetParticle.pt() * jetParticle.sign(), jetParticle.tpcNSigmaDe());
+        if (jetParticle.hasTOF())
+          registryData.fill(HIST("hTOFsignalNuclei"), jetParticle.pt() * jetParticle.sign(), jetParticle.tofNSigmaDe());
+      } else 
+      {
+        registryData.fill(HIST("hTPCsignalNuclei"), jetParticle.pt() * jetParticle.sign(), jetParticle.tpcNSigmaHe());
+        if (jetParticle.hasTOF())
+          registryData.fill(HIST("hTOFsignalNuclei"), jetParticle.pt() * jetParticle.sign(), jetParticle.tofNSigmaHe());
+      }
       double ptDiff = pseudoParticle.pt() - jetParticle.pt();
       registryQA.fill(HIST("hPtDiff"), ptDiff);
 
