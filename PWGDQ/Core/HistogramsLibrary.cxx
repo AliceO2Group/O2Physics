@@ -233,6 +233,8 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "Psi2C_CentFT0C", "", false, 18, 0.0, 90.0, VarManager::kCentFT0C, 100, -2.0, 2.0, VarManager::kPsi2C);
       hm->AddHistogram(histClass, "centrFT0C_Corr2REF_ev", "", true, 18, 0.0, 90.0, VarManager::kCentFT0C, 500, -1.0, 1.0, VarManager::kCORR2REF, VarManager::kM11REF);
       hm->AddHistogram(histClass, "centrFT0C_Corr4REF_ev", "", true, 18, 0.0, 90.0, VarManager::kCentFT0C, 500, -1.0, 1.0, VarManager::kCORR4REF, VarManager::kM1111REF);
+      hm->AddHistogram(histClass,"Corr2REFerrors","",4,(int[]){VarManager::kCentFT0C,VarManager::kCORR2REFw,VarManager::kCORR2REFsquaredw,VarManager::kM11REF},(int[]){18, 500, 500, 500},(double[]){0.0, -40000.0, -10, 0.0},(double[]){90.0, 40000.0, 1000.0,  7000000.0},nullptr,-1, true, true);
+      hm->AddHistogram(histClass,"Corr4REFerrors","",4,(int[]){VarManager::kCentFT0C,VarManager::kCORR4REFw,VarManager::kCORR4REFsquaredw,VarManager::kM1111REF},(int[]){18, 500, 500, 500},(double[]){0.0, -40000.0, -10, 0.0},(double[]){90.0, 40000.0, 1000.0,  7000000.0},nullptr,-1, true, true);
       if (subGroupStr.Contains("cross")) {
         hm->AddHistogram(histClass, "Q1ZNACXX_CentFT0C", "", false, 90, 0.0, 90.0, VarManager::kCentFT0C, 4000, -2, 2, VarManager::kQ1ZNACXX);
         hm->AddHistogram(histClass, "Q1ZNACYY_CentFT0C", "", false, 90, 0.0, 90.0, VarManager::kCentFT0C, 4000, -2, 2, VarManager::kQ1ZNACYY);
