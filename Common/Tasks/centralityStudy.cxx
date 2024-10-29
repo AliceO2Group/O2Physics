@@ -49,6 +49,7 @@ struct centralityStudy {
 
   Configurable<bool> rejectITSinROFpileupStandard{"rejectITSinROFpileupStandard", false, "reject collisions in case of in-ROF ITS pileup (standard)"};
   Configurable<bool> rejectITSinROFpileupStrict{"rejectITSinROFpileupStrict", false, "reject collisions in case of in-ROF ITS pileup (strict)"};
+  Configurable<bool> rejectCollInTimeRangeNarrow{"rejectCollInTimeRangeNarrow", false, "reject if extra colls in time range (narrow)"};
 
   Configurable<bool> selectUPCcollisions{"selectUPCcollisions", false, "select collisions tagged with UPC flag"};
 
@@ -208,6 +209,12 @@ struct centralityStudy {
     }
     histos.fill(HIST("hCollisionSelection"), 13 /* is UPC event */);
 
+    if (rejectCollInTimeRangeNarrow && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
+      return;
+    }
+    histos.fill(HIST("hCollisionSelection"), 14 /* Not ITS ROF pileup (strict) */);
+
+
     // if we got here, we also finally fill the FT0C histogram, please
     histos.fill(HIST("hNPVContributors"), collision.multPVTotalContributors());
     histos.fill(HIST("hFT0C_Collisions"), collision.multFT0C());
@@ -260,10 +267,10 @@ struct centralityStudy {
     if (selectFV0OrA && !multbc.multBCFV0OrA())
       return;
     histos.fill(HIST("hBCSelection"), 3); // FV0OrA
-    if (vertexZwithT0 < 100.0f) {
+    if(vertexZwithT0<100.0f){ 
       if (!multbc.multBCFT0PosZValid())
         return;
-      if (TMath::Abs(multbc.multBCFT0PosZ()) > vertexZwithT0)
+      if (TMath::Abs(multbc.multBCFT0PosZ())>vertexZwithT0)
         return;
     }
     histos.fill(HIST("hBCSelection"), 4); // FV0OrA
