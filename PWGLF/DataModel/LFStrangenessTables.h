@@ -1044,11 +1044,11 @@ DECLARE_SOA_COLUMN(BachX, bachX, float); //! bachelor track X at min
 // REGULAR COLUMNS FOR CASCCOVS
 // Saved from finding: covariance matrix of parent track (on request)
 DECLARE_SOA_DYNAMIC_COLUMN(PositionCovMat, positionCovMat, //! for transparent handling
-                           [](const float covMat[21]) -> std::vector<float> { 
+                           [](const float covMat[21]) -> std::vector<float> {
                             std::vector<float> posCovMat { covMat[0], covMat[1], covMat[2], covMat[3], covMat[4], covMat[5] };
                             return posCovMat; });
 DECLARE_SOA_DYNAMIC_COLUMN(MomentumCovMat, momentumCovMat, //! for transparent handling
-                           [](const float covMat[21]) -> std::vector<float> { 
+                           [](const float covMat[21]) -> std::vector<float> {
                             std::vector<float> momCovMat { covMat[9], covMat[13], covMat[14], covMat[18], covMat[19], covMat[20] };
                             return momCovMat; });
 DECLARE_SOA_COLUMN(KFTrackCovMat, kfTrackCovMat, float[21]);                 //! covariance matrix elements for KF method (Cascade)
