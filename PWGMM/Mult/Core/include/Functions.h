@@ -15,76 +15,64 @@
 namespace pwgmm::mult
 {
 template <typename MCC>
-concept has_hepmc_xs = requires (MCC::iterator const& mcc)
-{
+concept has_hepmc_xs = requires(MCC::iterator const& mcc) {
   mcc.xsectGen();
 };
 
 template <typename MCC>
-concept has_hepmc_pid = requires (MCC::iterator const& mcc)
-{
+concept has_hepmc_pid = requires(MCC::iterator const& mcc) {
   mcc.processId();
 };
 
 template <typename MCC>
-concept has_hepmc_pdf = requires (MCC::iterator const& mcc)
-{
+concept has_hepmc_pdf = requires(MCC::iterator const& mcc) {
   mcc.pdfId1();
   mcc.pdfId2();
 };
 
 template <typename MCC>
-concept has_hepmc_hi = requires (MCC::iterator const& mcc)
-{
+concept has_hepmc_hi = requires(MCC::iterator const& mcc) {
   mcc.ncollHard();
   mcc.ncoll();
 };
 
 template <typename C>
-concept has_FT0C = requires (C::iterator const& c)
-{
+concept has_FT0C = requires(C::iterator const& c) {
   c.centFT0C();
 };
 
 template <typename IC>
-concept iterator_with_FT0C = requires (IC const& c)
-{
+concept iterator_with_FT0C = requires(IC const& c) {
   c.centFT0C();
 };
 
 template <typename IC>
-concept iterator_with_FT0M = requires (IC const& c)
-{
+concept iterator_with_FT0M = requires(IC const& c) {
   c.centFT0M();
 };
 
 template <typename C>
-concept has_FT0M = requires (C::iterator const& c)
-{
+concept has_FT0M = requires(C::iterator const& c) {
   c.centFT0M();
 };
 
 template <typename C>
-concept has_genFT0C = requires (C::iterator const& c)
-{
+concept has_genFT0C = requires(C::iterator const& c) {
   c.gencentFT0C();
 };
 
 template <typename C>
-concept has_genFT0M = requires (C::iterator const& c)
-{
+concept has_genFT0M = requires(C::iterator const& c) {
   c.gencentFT0M();
 };
 
 template <typename C>
-concept iterator_with_genFT0C = requires (C const& c)
-{
+concept iterator_with_genFT0C = requires(C const& c) {
   c.gencentFT0C();
 };
 
 template <typename C>
-concept iterator_with_genFT0M = requires (C const& c)
-{
+concept iterator_with_genFT0M = requires(C const& c) {
   c.gencentFT0M();
 };
 
@@ -95,19 +83,17 @@ template <typename C>
 concept has_gen_cent = has_genFT0C<C> && has_genFT0M<C>;
 
 template <typename MCC>
-concept has_Centrality = requires (MCC::iterator const& mcc)
-{
+concept has_Centrality = requires(MCC::iterator const& mcc) {
   mcc.centrality();
 };
 
 template <typename MCC>
-concept iterator_with_Centrality = requires (MCC const& mcc)
-{
+concept iterator_with_Centrality = requires(MCC const& mcc) {
   mcc.centrality();
 };
 
 template <typename C>
-  requires (!(iterator_with_FT0C<C> || iterator_with_FT0M<C>))
+  requires(!(iterator_with_FT0C<C> || iterator_with_FT0M<C>))
 static float getRecoCent(C const&)
 {
   return -1;
@@ -126,14 +112,14 @@ static float getRecoCent(C const& collision)
 }
 
 template <typename MCC>
-  requires (!iterator_with_genFT0C<MCC>)
+  requires(!iterator_with_genFT0C<MCC>)
 static float getGenCentFT0C(MCC const&)
 {
   return -1;
 }
 
 template <typename MCC>
-  requires (!iterator_with_genFT0M<MCC>)
+  requires(!iterator_with_genFT0M<MCC>)
 static float getGenCentFT0M(MCC const&)
 {
   return -1;
@@ -152,7 +138,7 @@ static float getGenCentFT0M(MCC const& mccollision)
 }
 
 template <typename MCC>
-  requires (!iterator_with_Centrality<MCC>)
+  requires(!iterator_with_Centrality<MCC>)
 static float getSimCent(MCC const&)
 {
   return -1;

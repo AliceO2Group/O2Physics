@@ -52,7 +52,7 @@ struct MultiplicityCounter {
   Configurable<float> dcaZ{"dcaZ", 0.2f, "Custom DCA Z cut (ignored if negative)"};
   ConfigurableAxis multBinning{"multBinning", {301, -0.5, 300.5}, "Multiplicity axis binning"};
   ConfigurableAxis centBinning{"centBinning", {VARIABLE_WIDTH, 0, 10, 20, 30, 40, 50, 60, 70, 80, 100}, "Centrality axis binning"};
-  ConfigurableAxis occuBinning{"occuBinning", {VARIABLE_WIDTH, 0, 500, 1000, 2000, 5000, 10000}, "Occupancy axis binning"}; //Pb-Pb default
+  ConfigurableAxis occuBinning{"occuBinning", {VARIABLE_WIDTH, 0, 500, 1000, 2000, 5000, 10000}, "Occupancy axis binning"}; // Pb-Pb default
 
   Configurable<bool> fillResponse{"fillResponse", true, "Fill response matrix"};
   Configurable<bool> useProcId{"use-process-id", true, "Use process ID from generator"};
@@ -856,7 +856,7 @@ struct MultiplicityCounter {
     float o = collision.trackOccupancyInTimeRange();
     auto mcCollision = collision.mcCollision();
     float c_gen = getSimCent(mcCollision);
-    if (c_gen < 0 && c_rec >=0) {
+    if (c_gen < 0 && c_rec >= 0) {
       c_gen = c_rec;
     }
 
@@ -1057,7 +1057,7 @@ struct MultiplicityCounter {
     float o = collision.trackOccupancyInTimeRange();
     auto mcCollision = collision.mcCollision();
     float c_gen = getSimCent(mcCollision);
-    if (c_gen < 0 && c_rec >=0) {
+    if (c_gen < 0 && c_rec >= 0) {
       c_gen = c_rec;
     }
 
@@ -1210,7 +1210,7 @@ struct MultiplicityCounter {
     float o = collision.trackOccupancyInTimeRange();
     auto mcCollision = collision.mcCollision();
     float c_gen = getSimCent(mcCollision);
-    if (c_gen < 0 && c_rec >=0) {
+    if (c_gen < 0 && c_rec >= 0) {
       c_gen = c_rec;
     }
 
