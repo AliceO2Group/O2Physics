@@ -971,11 +971,11 @@ DECLARE_SOA_COLUMN(NumSigmaTofKaProng0, numSigmaTofKaProng0, float);            
 DECLARE_SOA_COLUMN(NumSigmaTofKaProng1, numSigmaTofKaProng1, float);                   //!
 DECLARE_SOA_DYNAMIC_COLUMN(NumSigmaTpcTofPiProng0, numSigmaTpcTofPiProng0,             //!
                            [](float tpcNSigmaPi0, float tofNSigmaPi0) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaPi0, tofNSigmaPi0); });
-DECLARE_SOA_DYNAMIC_COLUMN(NumSigmaTpcTofPiProng1, numSigmaTpcTofPiProng1,       //!
+DECLARE_SOA_DYNAMIC_COLUMN(NumSigmaTpcTofPiProng1, numSigmaTpcTofPiProng1, //!
                            [](float tpcNSigmaPi1, float tofNSigmaPi1) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaPi1, tofNSigmaPi1); });
-DECLARE_SOA_DYNAMIC_COLUMN(NumSigmaTpcTofKaProng0, numSigmaTpcTofKaProng0,       //!
+DECLARE_SOA_DYNAMIC_COLUMN(NumSigmaTpcTofKaProng0, numSigmaTpcTofKaProng0, //!
                            [](float tpcNSigmaKa0, float tofNSigmaKa0) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaKa0, tofNSigmaKa0); });
-DECLARE_SOA_DYNAMIC_COLUMN(NumSigmaTpcTofKaProng1, numSigmaTpcTofKaProng1,       //!
+DECLARE_SOA_DYNAMIC_COLUMN(NumSigmaTpcTofKaProng1, numSigmaTpcTofKaProng1, //!
                            [](float tpcNSigmaKa1, float tofNSigmaKa1) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaKa1, tofNSigmaKa1); });
 } // namespace jpsidmescorr
 
