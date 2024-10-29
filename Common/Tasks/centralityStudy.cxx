@@ -198,7 +198,7 @@ struct centralityStudy {
     }
     histos.fill(HIST("hCollisionSelection"), 12 /* Not ITS ROF pileup (strict) */);
 
-    if (selectUPCcollisions && collision.flags()<1) { // if zero then NOT upc, otherwise UPC
+    if (selectUPCcollisions && collision.flags() < 1) { // if zero then NOT upc, otherwise UPC
       return;
     }
     histos.fill(HIST("hCollisionSelection"), 13 /* is UPC event */);
@@ -265,12 +265,11 @@ struct centralityStudy {
       }
     }
 
-    if(multbc.has_ft0Mult()){
-      auto multco = multbc.ft0Mult_as<soa::Join<aod::Mults, aod::MultsExtra, aod::MultSelections, aod::CentFT0Cs, aod::MultsGlobal>>(); 
+    if (multbc.has_ft0Mult()) {
+      auto multco = multbc.ft0Mult_as<soa::Join<aod::Mults, aod::MultsExtra, aod::MultSelections, aod::CentFT0Cs, aod::MultsGlobal>>();
       if (multbc.multBCFT0PosZValid()) {
         histos.fill(HIST("hVertexZ_BCvsCO"), multco.multPVz(), multbc.multBCFT0PosZ());
       }
-
     }
   }
 
