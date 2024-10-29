@@ -31,7 +31,7 @@ Region getRegion(T deltaPhi)
 {
   if (std::abs(deltaPhi) < o2::constants::math::PI / 3.) {
     return Toward;
-  } else if (deltaPhi > 2. * o2::constants::math::PI / 3. && deltaPhi < 4. * o2::constants::math::PI / 3.) {
+  } else if (deltaPhi > 2. * o2::constants::math::PIThird && deltaPhi < 4. * o2::constants::math::PIThird) {
     return Away;
   } else {
     return Transverse;
