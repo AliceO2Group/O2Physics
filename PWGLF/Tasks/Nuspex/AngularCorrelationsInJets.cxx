@@ -169,7 +169,7 @@ struct AngularCorrelationsInJets {
     registryData.add("hEventProtocol", "Event protocol", HistType::kTH1I, {{20, 0, 20}});
     registryData.add("hTrackProtocol", "Track protocol", HistType::kTH1I, {{20, 0, 20}});
     registryData.add("hNumPartInJet", "Number of particles in a jet", HistType::kTH1I, {{200, 0, 200}});
-    registryData.add("hNumJetsInEvent", "Number of jets selected", HistType::kTH1I, {{10,0,10}});
+    registryData.add("hNumJetsInEvent", "Number of jets selected", HistType::kTH1I, {{10, 0, 10}});
 
     // (Pseudo)Rapidity
     registryData.add("hJetRapidity", "Jet rapidity;#it{y}", HistType::kTH1F, {{200, -1, 1}});
@@ -221,14 +221,14 @@ struct AngularCorrelationsInJets {
     registryData.add("hDCAzJetAntinuclei", "DCA_{z} of high purity antinuclei", HistType::kTH2F, {axisSpecs.ptAxisPos, axisSpecs.dcazAxis});
 
     // Angular Distributions
-    registryQA.add("hPhiFullEvent", "#varphi in full event", HistType::kTH1F, {{1000,-6.3,6.3}});
-    registryQA.add("hPhiPtFullEvent", "#varphi vs. p_{T} in full event", HistType::kTH2F, {axisSpecs.ptAxisPos, {1000,-6.3,6.3}});
-    registryQA.add("hPhiJet", "#varphi in jet", HistType::kTH1F, {{1000,-6.3,6.3}});
-    registryQA.add("hPhiPtJet", "#varphi vs. p_{T} in jet", HistType::kTH2F, {axisSpecs.ptAxisPos, {1000,-6.3,6.3}});
-    registryQA.add("hEtaFullEvent", "#eta in full event", HistType::kTH1F, {{1000,-1,1}});
-    registryQA.add("hEtaPtFullEvent", "#eta vs. p_{T} in full event", HistType::kTH2F, {axisSpecs.ptAxisPos, {1000,-1,1}});
-    registryQA.add("hEtaJet", "#eta in jet", HistType::kTH1F, {{1000,-1,1}});
-    registryQA.add("hEtaPtJet", "#eta vs. p_{T} in jet", HistType::kTH2F, {axisSpecs.ptAxisPos, {1000,-1,1}});
+    registryQA.add("hPhiFullEvent", "#varphi in full event", HistType::kTH1F, {{1000, -6.3, 6.3}});
+    registryQA.add("hPhiPtFullEvent", "#varphi vs. p_{T} in full event", HistType::kTH2F, {axisSpecs.ptAxisPos, {1000, -6.3, 6.3}});
+    registryQA.add("hPhiJet", "#varphi in jet", HistType::kTH1F, {{1000, -6.3, 6.3}});
+    registryQA.add("hPhiPtJet", "#varphi vs. p_{T} in jet", HistType::kTH2F, {axisSpecs.ptAxisPos, {1000, -6.3, 6.3}});
+    registryQA.add("hEtaFullEvent", "#eta in full event", HistType::kTH1F, {{1000, -1, 1}});
+    registryQA.add("hEtaPtFullEvent", "#eta vs. p_{T} in full event", HistType::kTH2F, {axisSpecs.ptAxisPos, {1000, -1, 1}});
+    registryQA.add("hEtaJet", "#eta in jet", HistType::kTH1F, {{1000, -1, 1}});
+    registryQA.add("hEtaPtJet", "#eta vs. p_{T} in jet", HistType::kTH2F, {axisSpecs.ptAxisPos, {1000, -1, 1}});
 
     registryData.add("hDeltaPhiSEFull", "#Delta#varphi of particles in single event", HistType::kTH1D, {axisSpecs.angDistPhiAxis});
     registryData.add("hDeltaPhiSEJet", "#Delta#varphi of jet particles in single event", HistType::kTH1D, {axisSpecs.angDistPhiAxis});
@@ -258,12 +258,12 @@ struct AngularCorrelationsInJets {
     // QA
     registryQA.add("hPtDiff", "p_{T} difference PseudoJet/original track;#it{p}_{T} [GeV/#it{c}]", HistType::kTH1D, {{100, -5, 5}});
     registryQA.add("hJetConeRadius", "Jet Radius;#it{R}", HistType::kTH1F, {{100, 0, 1}});
-    registryQA.add("hMaxRadiusVsPt", "Max Cone Radius vs p_{T}", HistType::kTH2F, {{axisSpecs.ptAxisPos}, {100,0,1}});
-    registryQA.add("hRhoEstimatePerp", "Background #rho (perp)", HistType::kTH2F, {{axisSpecs.ptAxisPos}, {200,0,20}});
-    registryQA.add("hRhoMEstimatePerp", "Background #rho_{m} (perp)", HistType::kTH2F, {{axisSpecs.ptAxisPos}, {200,0,20}});
-    registryQA.add("hRhoEstimateArea", "Background #rho (area)", HistType::kTH2F, {{axisSpecs.ptAxisPos}, {200,0,20}});
-    registryQA.add("hRhoMEstimateArea", "Background #rho_{m} (area)", HistType::kTH2F, {{axisSpecs.ptAxisPos}, {200,0,20}});
-    registryQA.add("hJetBkgDeltaPt", "#Delta p_{T} Clustered Cone - Pure Jet", HistType::kTH1F, {{200,0,10}});
+    registryQA.add("hMaxRadiusVsPt", "Max Cone Radius vs p_{T}", HistType::kTH2F, {{axisSpecs.ptAxisPos}, {100, 0, 1}});
+    registryQA.add("hRhoEstimatePerp", "Background #rho (perp)", HistType::kTH2F, {{axisSpecs.ptAxisPos}, {200, 0, 20}});
+    registryQA.add("hRhoMEstimatePerp", "Background #rho_{m} (perp)", HistType::kTH2F, {{axisSpecs.ptAxisPos}, {200, 0, 20}});
+    registryQA.add("hRhoEstimateArea", "Background #rho (area)", HistType::kTH2F, {{axisSpecs.ptAxisPos}, {200, 0, 20}});
+    registryQA.add("hRhoMEstimateArea", "Background #rho_{m} (area)", HistType::kTH2F, {{axisSpecs.ptAxisPos}, {200, 0, 20}});
+    registryQA.add("hJetBkgDeltaPt", "#Delta p_{T} Clustered Cone - Pure Jet", HistType::kTH1F, {{200, 0, 10}});
 
     registryQA.add("hTOFmass", "TOF mass", HistType::kTH2F, {axisSpecs.ptAxisPos, {1000, 0, 5, "#it{m} [GeV/#it{c}^{2}]"}});
     registryQA.get<TH2>(HIST("hTOFmass"))->Sumw2();
@@ -800,7 +800,7 @@ struct AngularCorrelationsInJets {
         continue;
       double DeltaPhi = TVector2::Phi_0_2pi(constituent.phi() - jet.phi());
       if (DeltaPhi > TMath::Pi())
-        DeltaPhi = DeltaPhi - 2*TMath::Pi();
+        DeltaPhi = DeltaPhi - 2 * TMath::Pi();
       double DeltaEta = constituent.eta() - jet.eta();
       double Delta = TMath::Sqrt(DeltaPhi * DeltaPhi + DeltaEta * DeltaEta);
       registryQA.fill(HIST("hJetConeRadius"), Delta);
@@ -810,7 +810,7 @@ struct AngularCorrelationsInJets {
     registryQA.fill(HIST("hMaxRadiusVsPt"), jet.pt(), maxRadius); // no entries - weird!
 
     // QA for comparison with nuclei_in_jets
-    TVector3 pJet(0.,0.,0.);
+    TVector3 pJet(0., 0., 0.);
     pJet.SetXYZ(jet.px(), jet.py(), jet.pz());
     TVector3 UEAxis1(0.0, 0.0, 0.0);
     TVector3 UEAxis2(0.0, 0.0, 0.0);
@@ -1048,7 +1048,7 @@ struct AngularCorrelationsInJets {
     }
     return jetCounter;
   }
-  
+
   template <typename U>
   void fillHistograms(U const& tracks)
   {
@@ -1059,8 +1059,8 @@ struct AngularCorrelationsInJets {
     std::vector<typename U::iterator> jetAll;
     std::vector<std::pair<double, double>> fTempBufferFull;
     fTempBufferFull.clear();
-    std::vector<fastjet::PseudoJet> jetInput; // input for jet finder
-    std::map<int, typename U::iterator> particles; // all selected particles in event
+    std::vector<fastjet::PseudoJet> jetInput;         // input for jet finder
+    std::map<int, typename U::iterator> particles;    // all selected particles in event
     std::vector<typename U::iterator> particlesForCF; // particles for full event angular correlations
     jetInput.clear();
     particles.clear();
@@ -1107,7 +1107,6 @@ struct AngularCorrelationsInJets {
       registryQA.fill(HIST("hPhiPtFullEvent"), track.pt(), track.phi());
       registryQA.fill(HIST("hEtaFullEvent"), track.eta());
       registryQA.fill(HIST("hEtaPtFullEvent"), track.pt(), track.eta());
-      
 
       fastjet::PseudoJet inputPseudoJet(track.px(), track.py(), track.pz(), track.energy(mass));
       inputPseudoJet.set_user_index(index);
@@ -1117,7 +1116,7 @@ struct AngularCorrelationsInJets {
 
       index++;
     } // for (const auto& track : tracks)
-    
+
     if (jetInput.size() < 2)
       return;
     registryData.fill(HIST("hEventProtocol"), 2);
