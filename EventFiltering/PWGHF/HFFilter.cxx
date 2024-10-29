@@ -428,7 +428,7 @@ struct HfFilter { // Main struct for HF triggers
 
           if (!keepEvent[kBeauty3P] && isBeautyTagged) {
             auto isTrackSelected = helper.isSelectedTrackForSoftPionOrBeauty(track, trackParThird, dcaThird, kBeauty3P);
-            if (TESTBIT(isTrackSelected, kForBeauty) && ((TESTBIT(selD0, 0) && track.sign() < 0) || (TESTBIT(selD0, 1) && track.sign() > 0))) { // D0 pi- and D0bar pi+ 
+            if (TESTBIT(isTrackSelected, kForBeauty) && ((TESTBIT(selD0, 0) && track.sign() < 0) || (TESTBIT(selD0, 1) && track.sign() > 0))) { // D0 pi- and D0bar pi+
               auto massCand = RecoDecay::m(std::array{pVec2Prong, pVecThird}, std::array{massD0, massPi});
               auto pVecBeauty3Prong = RecoDecay::pVec(pVec2Prong, pVecThird);
               auto ptCand = RecoDecay::pt(pVecBeauty3Prong);
@@ -443,7 +443,7 @@ struct HfFilter { // Main struct for HF triggers
                 }
               }
             }
-            if (!keepEvent[kBeauty3P] && TESTBIT(isTrackSelected, kSoftPionForBeauty) && ((TESTBIT(selD0, 0) && track.sign() > 0) || (TESTBIT(selD0, 1) && track.sign() < 0))) { // D0 pi+ and D0bar pi- 
+            if (!keepEvent[kBeauty3P] && TESTBIT(isTrackSelected, kSoftPionForBeauty) && ((TESTBIT(selD0, 0) && track.sign() > 0) || (TESTBIT(selD0, 1) && track.sign() < 0))) { // D0 pi+ and D0bar pi-
               auto pVecBeauty3Prong = RecoDecay::pVec(pVec2Prong, pVecThird);
               auto ptCand = RecoDecay::pt(pVecBeauty3Prong);
               std::array<float, 2> massDausD0{massPi, massKa};
