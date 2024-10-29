@@ -4263,14 +4263,14 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
     values[kCORR4POIMp] = std::isnan(values[kCORR4POI]) || std::isinf(values[kCORR4POI]) ? 0 : values[kCORR4POI] * values[kMultDimuons];
     values[kCORR2REF] = std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF]) ? 0 : values[kCORR2REF];
     values[kCORR4REF] = std::isnan(values[kCORR4REF]) || std::isinf(values[kCORR4REF]) ? 0 : values[kCORR4REF];
-    values[kCORR2POIw] = values[kCORR2POI]*values[kM01POI];
-    values[kCORR2POIsquaredw] = values[kCORR2POI]*values[kCORR2POI]*values[kM01POI];
-    values[kCORR4POIw] = values[kCORR4POI]*values[kM0111POI];
-    values[kCORR4POIsquaredw] = values[kCORR4POI]*values[kCORR4POI]*values[kM0111POI];
-    values[kCORR2POIMpw] = values[kCORR2POIMp]*values[kM01POIoverMp];
-    values[kCORR2POIsquaredMpw] = values[kCORR2POIMp]*values[kCORR2POIMp]*values[kM01POIoverMp];
-    values[kCORR4POIMpw] = values[kCORR4POIMp]*values[kM0111POIoverMp];
-    values[kCORR4POIsquaredMpw] = values[kCORR4POIMp]* values[kCORR4POIMp]*values[kM0111POIoverMp];
+    values[kCORR2POIw] = values[kCORR2POI] * values[kM01POI];
+    values[kCORR2POIsquaredw] = values[kCORR2POI] * values[kCORR2POI] * values[kM01POI];
+    values[kCORR4POIw] = values[kCORR4POI] * values[kM0111POI];
+    values[kCORR4POIsquaredw] = values[kCORR4POI] * values[kCORR4POI] * values[kM0111POI];
+    values[kCORR2POIMpw] = values[kCORR2POIMp] * values[kM01POIoverMp];
+    values[kCORR2POIsquaredMpw] = values[kCORR2POIMp] * values[kCORR2POIMp] * values[kM01POIoverMp];
+    values[kCORR4POIMpw] = values[kCORR4POIMp] * values[kM0111POIoverMp];
+    values[kCORR4POIsquaredMpw] = values[kCORR4POIMp] * values[kCORR4POIMp] * values[kM0111POIoverMp];
   }
 }
 
