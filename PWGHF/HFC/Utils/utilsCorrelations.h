@@ -15,8 +15,8 @@
 #ifndef PWGHF_HFC_UTILS_UTILSCORRELATIONS_H_
 #define PWGHF_HFC_UTILS_UTILSCORRELATIONS_H_
 
-#include <TString.h>
 #include <cmath>
+#include <TString.h>
 
 enum Region {
   Default = 0,
