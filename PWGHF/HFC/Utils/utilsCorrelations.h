@@ -56,8 +56,8 @@ int findLeadingParticle(TTracks const& tracks)
 }
 
 // ======= Find Leading Particle for McGen ============
-template <typename TMcParticles>
-int findLeadingParticleMcGen(TMcParticles const& mcParticles, const float etaTrackMax, const float ptTrackMin)
+template <typename TMcParticles, typename T1, typename T2>
+int findLeadingParticleMcGen(TMcParticles const& mcParticles, T1 etaTrackMax, T2 ptTrackMin)
 {
   auto leadingParticle = mcParticles.begin();
   for (auto const& mcParticle : mcParticles) {
