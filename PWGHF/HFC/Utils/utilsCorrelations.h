@@ -12,8 +12,8 @@
 /// \file utilsCorrelations.h
 /// \brief Utilities for HFC analyses
 
-#ifndef UTILS_CORRELATIONS_H
-#define UTILS_CORRELATIONS_H
+#ifndef PWGHF_HFC_UTILS_UTILSCORRELATIONS_H_
+#define PWGHF_HFC_UTILS_UTILSCORRELATIONS_H_
 
 #include <TString.h>
 #include <cmath>
@@ -36,4 +36,4 @@ Region getRegion(double deltaPhi)
   }
 }
 
-#endif // UTILS_CORRELATIONS_H
+#endif // PWGHF_HFC_UTILS_UTILSCORRELATIONS_H_
