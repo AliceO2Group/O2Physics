@@ -260,10 +260,10 @@ struct centralityStudy {
     if (selectFV0OrA && !multbc.multBCFV0OrA())
       return;
     histos.fill(HIST("hBCSelection"), 3); // FV0OrA
-    if(vertexZwithT0<100.0f){ 
+    if (vertexZwithT0 < 100.0f) {
       if (!multbc.multBCFT0PosZValid())
         return;
-      if (TMath::Abs(multbc.multBCFT0PosZ())>vertexZwithT0)
+      if (TMath::Abs(multbc.multBCFT0PosZ()) > vertexZwithT0)
         return;
     }
     histos.fill(HIST("hBCSelection"), 4); // FV0OrA
