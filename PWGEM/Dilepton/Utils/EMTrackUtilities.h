@@ -40,6 +40,18 @@ float dca3DinSigma(T const& track)
 }
 //_______________________________________________________________________
 template <typename T>
+float dcaXYinSigma(T const& track)
+{
+  return track.dcaXY() / std::sqrt(track.cYY());
+}
+//_______________________________________________________________________
+template <typename T>
+float dcaZinSigma(T const& track)
+{
+  return track.dcaZ() / std::sqrt(track.cZZ());
+}
+//_______________________________________________________________________
+template <typename T>
 float fwdDcaXYinSigma(T const& track)
 {
   float cXX = track.cXX();
