@@ -984,7 +984,7 @@ struct lambdakzeroBuilder {
       desiredMassK0Short = true;    // safety fallback
       desiredMassLambda = true;     // safety fallback
       desiredMassAntiLambda = true; // safety fallback
-      desiredMassGamma = true; // safety fallback
+      desiredMassGamma = true;      // safety fallback
     } else {
       desiredMassK0Short = TMath::Abs(v0candidate.k0ShortMass - o2::constants::physics::MassKaonNeutral) < massWindownumberOfSigmas * getMassSigmaK0Short(lPt) + massWindowSafetyMargin;
       desiredMassLambda = TMath::Abs(v0candidate.lambdaMass - o2::constants::physics::MassLambda) < massWindownumberOfSigmas * getMassSigmaLambda(lPt) + massWindowSafetyMargin;
