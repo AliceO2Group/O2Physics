@@ -55,6 +55,7 @@ struct centralityStudy {
   Configurable<bool> selectCollidingBCs{"selectCollidingBCs", true, "BC analysis: select colliding BCs"};
   Configurable<bool> selectTVX{"selectTVX", true, "BC analysis: select TVX"};
   Configurable<bool> selectFV0OrA{"selectFV0OrA", true, "BC analysis: select FV0OrA"};
+  Configurable<float> vertexZwithT0{"vertexZwithT0", 1000.0f, "require a certain vertex-Z in BC analysis"};
 
   Configurable<float> minTimeDelta{"minTimeDelta", -1.0f, "reject collision if another collision is this close or less in time"};
   Configurable<float> minFT0CforVertexZ{"minFT0CforVertexZ", 250, "minimum FT0C for vertex-Z profile calculation"};
@@ -259,6 +260,13 @@ struct centralityStudy {
     if (selectFV0OrA && !multbc.multBCFV0OrA())
       return;
     histos.fill(HIST("hBCSelection"), 3); // FV0OrA
+    if(vertexZwithT0<100.0f){ 
+      if (!multbc.multBCFT0PosZValid())
+        return;
+      if (TMath::Abs(multbc.multBCFT0PosZ())>vertexZwithT0)
+        return;
+    }
+    histos.fill(HIST("hBCSelection"), 4); // FV0OrA
 
     // if we got here, we also finally fill the FT0C histogram, please
     histos.fill(HIST("hFT0C_BCs"), multbc.multBCFT0C());
