@@ -30,12 +30,14 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/HFC/DataModel/CorrelationTables.h"
+#include "PWGHF/HFC/Utils/utilsCorrelations.h"
 
 using namespace o2;
 using namespace o2::analysis;
 using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::analysis::hf_correlations;
 
 ///
 /// Returns deltaPhi values in range [-pi/2., 3.*pi/2.], typically used for correlation studies
@@ -256,44 +258,6 @@ struct HfCorrelatorLcHadrons {
     registry.add("hMassLcMcRecBkg", "Lc background candidates - Mc reco;inv. mass (p k #pi) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hCountLctriggersMcGen", "Lc trigger particles - Mc gen;;N of trigger Lc", {HistType::kTH2F, {{1, -0.5, 0.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     corrBinning = {{binsZVtx, binsMultiplicity}, true};
-  }
-
-  // Find Leading Particle
-  template <typename TTracks>
-  int findLeadingParticle(TTracks const& tracks)
-  {
-    auto leadingParticle = tracks.begin();
-    for (auto const& track : tracks) {
-      if (std::abs(track.dcaXY()) >= 1. || std::abs(track.dcaZ()) >= 1.) {
-        continue;
-      }
-      if (track.pt() > leadingParticle.pt()) {
-        leadingParticle = track;
-      }
-    }
-    return leadingParticle.globalIndex();
-  }
-
-  // ======= Find Leading Particle for McGen ============
-  template <typename TMcParticles>
-  int findLeadingParticleMcGen(TMcParticles const& mcParticles)
-  {
-    auto leadingParticle = mcParticles.begin();
-    for (auto const& mcParticle : mcParticles) {
-      if (std::abs(mcParticle.eta()) > etaTrackMax) {
-        continue;
-      }
-      if (mcParticle.pt() < ptTrackMin) {
-        continue;
-      }
-      if ((std::abs(mcParticle.pdgCode()) != kElectron) && (std::abs(mcParticle.pdgCode()) != kMuonMinus) && (std::abs(mcParticle.pdgCode()) != kPiPlus) && (std::abs(mcParticle.pdgCode()) != kKPlus) && (std::abs(mcParticle.pdgCode()) != kProton)) {
-        continue;
-      }
-      if (mcParticle.pt() > leadingParticle.pt()) {
-        leadingParticle = mcParticle;
-      }
-    }
-    return leadingParticle.globalIndex();
   }
 
   /// Lc-h correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via Mc truth)
@@ -586,7 +550,7 @@ struct HfCorrelatorLcHadrons {
 
     // find leading particle
     if (correlateLcWithLeadingParticle) {
-      leadingIndex = findLeadingParticleMcGen(mcParticles);
+      leadingIndex = findLeadingParticleMcGen(mcParticles, etaTrackMax, ptTrackMin);
     }
 
     auto getTracksSize = [&mcParticles](aod::McCollision const& /*collision*/) {
