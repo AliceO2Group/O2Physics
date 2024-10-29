@@ -1410,6 +1410,7 @@ void VarManager::FillEvent(T const& event, float* values)
   }
 
   if constexpr ((fillMap & CollisionMultExtra) > 0 || (fillMap & ReducedEventMultExtra) > 0) {
+    LOGP(info,"Entering line of multiplicity");
     values[kMultNTracksHasITS] = event.multNTracksHasITS();
     values[kMultNTracksHasTPC] = event.multNTracksHasTPC();
     values[kMultNTracksHasTOF] = event.multNTracksHasTOF();

@@ -43,3 +43,8 @@ o2physics_add_dpl_workflow(factorial-moments
                     SOURCES FactorialMomentsTask.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(ft0c-multiplicity
+                    SOURCES FT0Cmultiplicity.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
+                    COMPONENT_NAME Analysis)

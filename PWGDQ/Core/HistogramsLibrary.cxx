@@ -957,6 +957,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     } else if (subGroupStr.Contains("dimuon")) {
       hm->AddHistogram(histClass, "Mass_Pt", "", false, 750, 0.0, 15.0, VarManager::kMass, 120, 0.0, 30.0, VarManager::kPt);
       hm->AddHistogram(histClass, "Mass_Rapidity", "", false, 750, 0.0, 15.0, VarManager::kMass, 150, 2.5, 4.0, VarManager::kRap);
+      hm->AddHistogram(histClass, "Mass_NTPC", "", false, 750, 0.0, 15.0, VarManager::kMass, 100, 0.0, 100.0, VarManager::kMultNTracksHasTPC);
       if (subGroupStr.Contains("dimuon-multi-diff")) {
         int varsKine[3] = {VarManager::kMass, VarManager::kPt, VarManager::kRap};
         int binsKine[3] = {250, 120, 60};
