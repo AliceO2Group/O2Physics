@@ -112,7 +112,8 @@ struct HfCandidateCreatorXic0Omegac0 {
   int runNumber{-1};
   double magneticField{0.};
 
-  using MyCascTable = soa::Join<aod::CascDatas, aod::CascCovs>; // to use strangeness tracking, use aod::TraCascDatas instead of aod::CascDatas
+  using MyCascTable = soa::Join<aod::CascDatas, aod::CascCovs>; 
+  using MyTraCascTable = soa::Join<aod::TraCascDatas, aod::CascCovs>; // to use strangeness tracking
   using CascadesLinked = soa::Join<Cascades, CascDataLink>;
   using MyV0Table = soa::Join<aod::V0Datas, aod::V0Covs>;
   using MyLFTracksWCov = soa::Join<TracksIU, TracksCovIU>;
@@ -172,12 +173,12 @@ struct HfCandidateCreatorXic0Omegac0 {
   } kfOmegac0Candidate;
   void init(InitContext const&)
   {
-    std::array<bool, 10> allProcesses = {doprocessNoCentToXiPi, doprocessCentFT0CToXiPi, doprocessCentFT0MToXiPi, doprocessNoCentToOmegaPi, doprocessOmegacToOmegaPiWithKFParticle, doprocessCentFT0CToOmegaPi, doprocessCentFT0MToOmegaPi, doprocessNoCentToOmegaK, doprocessCentFT0CToOmegaK, doprocessCentFT0MToOmegaK};
+    std::array<bool, 11> allProcesses = {doprocessNoCentToXiPi, doprocessNoCentToXiPiTraCasc, doprocessCentFT0CToXiPi, doprocessCentFT0MToXiPi, doprocessNoCentToOmegaPi, doprocessOmegacToOmegaPiWithKFParticle, doprocessCentFT0CToOmegaPi, doprocessCentFT0MToOmegaPi, doprocessNoCentToOmegaK, doprocessCentFT0CToOmegaK, doprocessCentFT0MToOmegaK};
     if (std::accumulate(allProcesses.begin(), allProcesses.end(), 0) == 0) {
       LOGP(fatal, "No process function enabled, please select one for at least one channel.");
     }
 
-    std::array<bool, 3> processesToXiPi = {doprocessNoCentToXiPi, doprocessCentFT0CToXiPi, doprocessCentFT0MToXiPi};
+    std::array<bool, 4> processesToXiPi = {doprocessNoCentToXiPi, doprocessNoCentToXiPiTraCasc, doprocessCentFT0CToXiPi, doprocessCentFT0MToXiPi};
     if (std::accumulate(processesToXiPi.begin(), processesToXiPi.end(), 0) > 1) {
       LOGP(fatal, "One and only one ToXiPi process function must be enabled at a time.");
     }
@@ -196,7 +197,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       LOGP(fatal, "At most one process function for collision monitoring can be enabled at a time.");
     }
     if (nProcessesCollisions == 1) {
-      if ((doprocessNoCentToXiPi && !doprocessCollisions) || (doprocessNoCentToOmegaPi && !doprocessCollisions) || (doprocessNoCentToOmegaK && !doprocessCollisions) || (doprocessOmegacToOmegaPiWithKFParticle && !doprocessCollisions)) {
+      if ((doprocessNoCentToXiPi && !doprocessCollisions) || (doprocessNoCentToXiPiTraCasc && !doprocessCollisions) || (doprocessNoCentToOmegaPi && !doprocessCollisions) || (doprocessNoCentToOmegaK && !doprocessCollisions) || (doprocessOmegacToOmegaPiWithKFParticle && !doprocessCollisions)) {
         LOGP(fatal, "Process function for collision monitoring not correctly enabled. Did you enable \"processCollisions\"?");
       }
       if ((doprocessCentFT0CToXiPi && !doprocessCollisionsCentFT0C) || (doprocessCentFT0CToOmegaPi && !doprocessCollisionsCentFT0C) || (doprocessCentFT0CToOmegaK && !doprocessCollisionsCentFT0C)) {
@@ -253,12 +254,12 @@ struct HfCandidateCreatorXic0Omegac0 {
     runNumber = 0;
   }
 
-  template <o2::hf_centrality::CentralityEstimator centEstimator, int decayChannel, typename Coll, typename Hist>
+  template <o2::hf_centrality::CentralityEstimator centEstimator, int decayChannel, typename Coll, typename Hist, typename TCascTable>
   void runXic0Omegac0Creator(Coll const&,
                              aod::BCsWithTimestamps const& /*bcWithTimeStamps*/,
                              MyLFTracksWCov const& lfTracks,
                              TracksWCovDca const& tracks,
-                             MyCascTable const&, CascadesLinked const&,
+                             TCascTable const&, CascadesLinked const&,
                              aod::HfCascLf2Prongs const& candidates,
                              Hist& hInvMassCharmBaryon,
                              Hist& hFitterStatus,
@@ -318,7 +319,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       if (!cascAodElement.has_cascData()) {
         continue;
       }
-      auto casc = cascAodElement.cascData_as<MyCascTable>();
+      auto casc = cascAodElement.template cascData_as<TCascTable>();
       hCascadesCounter->Fill(1);
       auto trackCascDauChargedId = casc.bachelorId();                           // pion <- xi track
       auto trackV0Dau0Id = casc.posTrackId();                                   // V0 positive daughter track
@@ -1025,6 +1026,18 @@ struct HfCandidateCreatorXic0Omegac0 {
     runXic0Omegac0Creator<CentralityEstimator::None, hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi>(collisions, bcWithTimeStamps, lfTracks, tracks, cascades, cascadeLinks, candidates, hInvMassCharmBaryonToXiPi, hFitterStatusToXiPi, hCandidateCounterToXiPi, hCascadesCounterToXiPi);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processNoCentToXiPi, "Run candidate creator w/o centrality selections for xi pi decay channel", true);
+
+  void processNoCentToXiPiTraCasc(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+                                  aod::BCsWithTimestamps const& bcWithTimeStamps,
+                                  TracksWCovDca const& tracks,
+                                  MyLFTracksWCov const& lfTracks,
+                                  MyTraCascTable const& traCascades,
+                                  CascadesLinked const& cascadeLinks,
+                                  aod::HfCascLf2Prongs const& candidates)
+  {
+    runXic0Omegac0Creator<CentralityEstimator::None, hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi>(collisions, bcWithTimeStamps, lfTracks, tracks, traCascades, cascadeLinks, candidates, hInvMassCharmBaryonToXiPi, hFitterStatusToXiPi, hCandidateCounterToXiPi, hCascadesCounterToXiPi);
+  }
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processNoCentToXiPiTraCasc, "Run candidate creator w/o centrality selections for xi pi decay channel with tracked cascades", false);
 
   void processNoCentToOmegaPi(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                               aod::BCsWithTimestamps const& bcWithTimeStamps,
