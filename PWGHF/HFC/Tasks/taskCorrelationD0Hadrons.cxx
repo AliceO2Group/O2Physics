@@ -24,6 +24,7 @@
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
 #include "PWGHF/HFC/DataModel/CorrelationTables.h"
+#include "PWGHF/HFC/Utils/utilsCorrelations.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -93,13 +94,6 @@ struct HfTaskCorrelationD0Hadrons {
   Configurable<bool> isTowardTransverseAway{"isTowardTransverseAway", false, "Divide into three regions: toward, transverse, and away"};
   Configurable<double> leadingParticlePtMin{"leadingParticlePtMin", 0., "Min for leading particle pt"};
   Configurable<int> applyEfficiency{"efficiencyFlagD", 1, "Flag for applying efficiency weights"};
-
-  enum Region {
-    Default = 0, // 默认值
-    Toward,
-    Away,
-    Transverse
-  };
 
   HistogramRegistry registry{
     "registry",
@@ -234,16 +228,6 @@ struct HfTaskCorrelationD0Hadrons {
     registry.get<THnSparse>(HIST("hCorrel2DVsPtGen"))->Sumw2();
   }
 
-  Region getRegion(double deltaPhi)
-  {
-    if (std::abs(deltaPhi) < o2::constants::math::PI / 3.) {
-      return Toward;
-    } else if (deltaPhi > 2. * o2::constants::math::PI / 3. && deltaPhi < 4. * o2::constants::math::PI / 3.) {
-      return Away;
-    } else {
-      return Transverse;
-    }
-  }
   /// D-h correlation pair filling task, from pair tables - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
   /// Works on both USL and LS analyses pair tables
   void processData(aod::DHadronPairFull const& pairEntries)
