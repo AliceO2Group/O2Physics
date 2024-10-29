@@ -1304,7 +1304,7 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "Pt_Track", "", false, 120, 0.0, 30.0, VarManager::kPt);
       hm->AddHistogram(histClass, "Mass", "", false, 750, 0.0, 30.0, VarManager::kPairMass);
       hm->AddHistogram(histClass, "Pt", "", false, 750, 0.0, 30.0, VarManager::kPairPt);
-      hm->AddHistogram(histClass, "Mass_Pt", "", false, 40, 0.0, 20.0, VarManager::kPairMass, 40, 0.0, 20.0, VarManager::kPairPt);
+      hm->AddHistogram(histClass, "Mass_Pt", "", false, 100, 0.0, 20.0, VarManager::kPairMass, 40, 0.0, 20.0, VarManager::kPairPt);
       hm->AddHistogram(histClass, "Pt_Dilepton__Pt", "", false, 40, 0.0, 20.0, VarManager::kPairPtDau, 40, 0.0, 20.0, VarManager::kPairPt);
       hm->AddHistogram(histClass, "Pt_Track__Pt", "", false, 40, 0.0, 20.0, VarManager::kPt, 40, 0.0, 20.0, VarManager::kPairPt);
     }
@@ -1327,6 +1327,34 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "TauzProj", "", false, 4000, -0.5, 0.5, VarManager::kVertexingTauzProjected);
       hm->AddHistogram(histClass, "TauxyProj", "", false, 4000, -0.5, 0.5, VarManager::kVertexingTauxyProjected);
       hm->AddHistogram(histClass, "CosPointingAngle", "", false, 100, 0.0, 1.0, VarManager::kCosPointingAngle);
+    }
+    if (subGroupStr.Contains("multidimentional-vertexing-histograms")) {
+      hm->AddHistogram(histClass, "Mass_Tauxy", "", false, 75, 4.0, 7.0, VarManager::kPairMass, 40, -0.0, 0.02, VarManager::kVertexingTauxy);
+      hm->AddHistogram(histClass, "Mass_cosPointing", "", false, 75, 4.0, 7.0, VarManager::kPairMass, 40, 0.0, 1.0, VarManager::kCosPointingAngle);
+
+      const int kNvarsTripletCuts = 4;
+      const int kInvMassNbins = 100;
+      double InvMassBinLims[kInvMassNbins + 1]; 
+      for (int i = 0; i <= kInvMassNbins; ++i)
+        InvMassBinLims[i] = 4.0 + 0.02 * i;
+
+      const int kPtNbins = 6; 
+      double PtBinLims[kPtNbins + 1] = {0., 2., 4., 6., 8., 10., 20.}; 
+
+      const int kCosPointingAngleNbins = 5; 
+      double CosPointingAngleBinLims[kCosPointingAngleNbins + 1] = {0., 0.86, 0.90, 0.94, 0.98, 1.0}; 
+
+      const int kTauNBins = 6;
+      double TauBinLims[kTauNBins + 1] = {0., 0.005, 0.01, 0.015, 0.02, 0.025, 0.3}; 
+
+      TArrayD nCutsBinLimits[kNvarsTripletCuts];
+      nCutsBinLimits[0] = TArrayD(kInvMassNbins + 1, InvMassBinLims);
+      nCutsBinLimits[1] = TArrayD(kPtNbins + 1, PtBinLims);
+      nCutsBinLimits[2] = TArrayD(kCosPointingAngleNbins + 1, CosPointingAngleBinLims);
+      nCutsBinLimits[3] = TArrayD(kTauNBins  + 1, TauBinLims);
+
+      int varsTripletCuts[kNvarsTripletCuts] = {VarManager::kPairMass, VarManager::kPairPt, VarManager::kCosPointingAngle, VarManager::kVertexingTauxyProjected};
+      hm->AddHistogram(histClass, "multidimentional-vertexing", "Invariant mass vs. pT vs. cosine of pointing angle vs. tau", kNvarsTripletCuts, varsTripletCuts, nCutsBinLimits);
     }
     if (subGroupStr.Contains("correlation")) {
       hm->AddHistogram(histClass, "DeltaEta_DeltaPhi", "", false, 20, -2.0, 2.0, VarManager::kDeltaEta, 50, -8.0, 8.0, VarManager::kDeltaPhi);
