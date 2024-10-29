@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file utilsCorrelations.h
-/// \brief Xu Wang <waxu@cern.ch>
+/// \author Xu Wang <waxu@cern.ch>
 
 #ifndef PWGHF_HFC_UTILS_UTILSCORRELATIONS_H_
 #define PWGHF_HFC_UTILS_UTILSCORRELATIONS_H_
