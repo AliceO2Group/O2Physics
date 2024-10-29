@@ -276,7 +276,7 @@ struct HfTaskCorrelationLcHadrons {
           default:
             break;
         }
-      };
+      }
 
       // fill correlation plots for signal/bagkground correlations
       if (pairEntry.signalStatus()) {
