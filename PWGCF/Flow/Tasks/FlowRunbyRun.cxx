@@ -56,8 +56,7 @@ struct FlowRunbyRun {
   O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5, "Chi2 per TPC clusters")
   O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2.0f, "max DCA to vertex z")
   O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, false, "Use Nch for flow observables")
-  Configurable<std::vector<int>> cfgRunNumbers{"cfgRunNumbers", std::vector<int>{544095,544098,544116,544121,544122,544123,544124}, "Preconfigured run numbers"};
-  
+  Configurable<std::vector<int>> cfgRunNumbers{"cfgRunNumbers", std::vector<int>{544095, 544098, 544116, 544121, 544122, 544123, 544124}, "Preconfigured run numbers"};
 
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis axisPhi{"axisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
@@ -66,9 +65,7 @@ struct FlowRunbyRun {
   ConfigurableAxis axisIndependent{"axisIndependent", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}, "X axis for histograms"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) 
-  && (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) 
-  && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
+  Filter trackFilter = ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
 
   // Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
@@ -81,8 +78,8 @@ struct FlowRunbyRun {
   // define global variables
   GFW* fGFW = new GFW();
   std::vector<GFW::CorrConfig> corrconfigs;
-  std::vector<int> RunNumbers; // vector of run numbers
-  std::map<int, std::vector<std::shared_ptr<TH1>>> TH1sList; // map of histograms for all runs
+  std::vector<int> RunNumbers;                                        // vector of run numbers
+  std::map<int, std::vector<std::shared_ptr<TH1>>> TH1sList;          // map of histograms for all runs
   std::map<int, std::vector<std::shared_ptr<TProfile>>> ProfilesList; // map of profiles for all runs
   enum OutputTH1Names {
     // here are TProfiles for vn-pt correlations that are not implemented in GFW
@@ -108,7 +105,7 @@ struct FlowRunbyRun {
     ccdb->setCaching(true);
     ccdb->setCreatedNotAfter(nolaterthan.value);
 
-    //Add output histograms to the registry
+    // Add output histograms to the registry
     std::vector<int> temp = cfgRunNumbers;
     RunNumbers = temp;
     for (auto& runNumber : RunNumbers) {
@@ -124,28 +121,30 @@ struct FlowRunbyRun {
     fGFW->CreateRegions();
   }
 
-  template<char... chars>
+  template <char... chars>
   void FillProfile(const GFW::CorrConfig& corrconf, std::shared_ptr<TProfile> profile, const double& cent)
   {
     double dnx, val;
-    dnx = fGFW->Calculate(corrconf,0,kTRUE).real();
-    if(dnx==0) return;
-    if(!corrconf.pTDif) {
-      val = fGFW->Calculate(corrconf,0,kFALSE).real()/dnx;
-      if(TMath::Abs(val)<1)
-        profile->Fill(cent,val,dnx);
+    dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
+    if (dnx == 0)
+      return;
+    if (!corrconf.pTDif) {
+      val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
+      if (TMath::Abs(val) < 1)
+        profile->Fill(cent, val, dnx);
       return;
     };
     return;
   }
 
-  void CreateOutputObjectsForRun(int runNumber){
+  void CreateOutputObjectsForRun(int runNumber)
+  {
     std::vector<std::shared_ptr<TH1>> histos(kCount_TH1Names);
     histos[hPhi] = registry.add<TH1>(Form("%d/hPhi", runNumber), "", {HistType::kTH1D, {axisPhi}});
     histos[hEta] = registry.add<TH1>(Form("%d/hEta", runNumber), "", {HistType::kTH1D, {axisEta}});
     histos[hVtxZ] = registry.add<TH1>(Form("%d/hVtxZ", runNumber), "", {HistType::kTH1D, {axisVertex}});
-    histos[hMult] = registry.add<TH1>(Form("%d/hMult", runNumber), "", {HistType::kTH1D, {{3000,0.5,3000.5}}});
-    histos[hCent] = registry.add<TH1>(Form("%d/hCent", runNumber), "", {HistType::kTH1D, {{90,0,90}}});
+    histos[hMult] = registry.add<TH1>(Form("%d/hMult", runNumber), "", {HistType::kTH1D, {{3000, 0.5, 3000.5}}});
+    histos[hCent] = registry.add<TH1>(Form("%d/hCent", runNumber), "", {HistType::kTH1D, {{90, 0, 90}}});
     TH1sList.insert(std::make_pair(runNumber, histos));
 
     std::vector<std::shared_ptr<TProfile>> profiles(kCount_TProfileNames);
@@ -163,12 +162,12 @@ struct FlowRunbyRun {
     // detect run number
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     int runNumber = bc.runNumber();
-    if (std::find(RunNumbers.begin(), RunNumbers.end(), runNumber) == RunNumbers.end()){
+    if (std::find(RunNumbers.begin(), RunNumbers.end(), runNumber) == RunNumbers.end()) {
       // if run number is not in the preconfigured list, create new output histograms for this run
       CreateOutputObjectsForRun(runNumber);
       RunNumbers.push_back(runNumber);
     }
-    
+
     if (TH1sList.find(runNumber) == TH1sList.end()) {
       LOGF(fatal, "RunNumber %d not found in TH1sList", runNumber);
       return;
@@ -191,7 +190,7 @@ struct FlowRunbyRun {
       }
     }
 
-    //Filling TProfile
+    // Filling TProfile
     for (uint i = 0; i < kCount_TProfileNames; ++i) {
       FillProfile(corrconfigs[i], ProfilesList[runNumber][i], cent);
     }
