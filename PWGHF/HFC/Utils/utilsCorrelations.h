@@ -16,6 +16,7 @@
 #define PWGHF_HFC_UTILS_UTILSCORRELATIONS_H_
 
 #include <cmath>
+#include <TPDGCode.h>
 
 namespace o2::analysis::hf_correlations
 {
@@ -39,12 +40,12 @@ Region getRegion(T deltaPhi)
 }
 
 // Find Leading Particle
-template <typename TTracks>
-int findLeadingParticle(TTracks const& tracks)
+template <typename TTracks, typename T1, typename T2>
+int findLeadingParticle(TTracks const& tracks, T1 const dcaXYTrackMax, T2 const dcaZTrackMax)
 {
   auto leadingParticle = tracks.begin();
   for (auto const& track : tracks) {
-    if (std::abs(track.dcaXY()) >= 1. || std::abs(track.dcaZ()) >= 1.) {
+    if (std::abs(track.dcaXY()) >= dcaXYTrackMax.value || std::abs(track.dcaZ()) >= dcaZTrackMax.value) {
       continue;
     }
     if (track.pt() > leadingParticle.pt()) {
@@ -57,14 +58,14 @@ int findLeadingParticle(TTracks const& tracks)
 
 // ======= Find Leading Particle for McGen ============
 template <typename TMcParticles, typename T1, typename T2>
-int findLeadingParticleMcGen(TMcParticles const& mcParticles, T1 etaTrackMax, T2 ptTrackMin)
+int findLeadingParticleMcGen(TMcParticles const& mcParticles, T1 const etaTrackMax, T2 const ptTrackMin)
 {
   auto leadingParticle = mcParticles.begin();
   for (auto const& mcParticle : mcParticles) {
-    if (std::abs(mcParticle.eta()) > etaTrackMax) {
+    if (std::abs(mcParticle.eta()) > etaTrackMax.value) {
       continue;
     }
-    if (mcParticle.pt() < ptTrackMin) {
+    if (mcParticle.pt() < ptTrackMin.value) {
       continue;
     }
     if ((std::abs(mcParticle.pdgCode()) != kElectron) && (std::abs(mcParticle.pdgCode()) != kMuonMinus) && (std::abs(mcParticle.pdgCode()) != kPiPlus) && (std::abs(mcParticle.pdgCode()) != kKPlus) && (std::abs(mcParticle.pdgCode()) != kProton)) {
