@@ -1517,6 +1517,8 @@ using CascadesLinked = soa::Join<Cascades, CascDataLink>;
 using CascadeLinked = CascadesLinked::iterator;
 using KFCascadesLinked = soa::Join<Cascades, KFCascDataLink>;
 using KFCascadeLinked = KFCascadesLinked::iterator;
+using TraCascadesLinked = soa::Join<Cascades, TraCascDataLink>;
+using TraCascadeLinked = TraCascadesLinked::iterator;
 
 namespace cascdata
 {
