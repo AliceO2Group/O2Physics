@@ -124,7 +124,7 @@ struct cascadeBuilder {
   Produces<aod::CascTrackXs> cascTrackXs; // if desired for replaying of position information
   Produces<aod::CascBBs> cascbb;          // if enabled
   Produces<aod::CascCovs> casccovs;       // if requested by someone
-  Produces<aod::TraCascCovs> tracasccovs;       // if requested by someone
+  Produces<aod::TraCascCovs> tracasccovs; // if requested by someone
   Produces<aod::KFCascCovs> kfcasccovs;   // if requested by someone
 
   // produces calls for machine-learning selections
@@ -1611,7 +1611,7 @@ struct cascadeBuilder {
         covCascade[i] = 0.0f;
       }
       for (int i = 0; i < 6; i++) {
-        covCascade[i] = positionCovariance[i]; 
+        covCascade[i] = positionCovariance[i];
         covCascade[MomInd[i]] = covTv0[MomInd[i]] + covTbachelor[MomInd[i]];
       }
       casccovs(covCascade);
@@ -1792,7 +1792,7 @@ struct cascadeBuilder {
           covCascade[i] = 0.0f;
         }
         for (int i = 0; i < 6; i++) {
-          covCascade[i] = positionCovariance[i]; 
+          covCascade[i] = positionCovariance[i];
           covCascade[MomInd[i]] = covTv0[MomInd[i]] + covTbachelor[MomInd[i]];
         }
         casccovs(covCascade);
@@ -1920,18 +1920,18 @@ struct cascadeBuilder {
                         cascadecandidate.bachDCAxy, cascadecandidate.cascDCAxy, cascadecandidate.cascDCAz,          // <--- stratrack (cascDCAxy/z)
                         trackedCascade.matchingChi2(), trackedCascade.topologyChi2(), trackedCascade.itsClsSize()); // <--- stratrack fit info
 
-         if(createCascCovMats){
+        if (createCascCovMats) {
           // create tracked cascade covariance in exactly the same way as non-tracked
           // ensures getter consistency and full compatibility in template functions
           // (easy switching between tracked and non-tracked)
           std::array<float, 21> traCovMat = {0.};
           cascadeTrackPar.getCovXYZPxPyPzGlo(traCovMat);
           float traCovMatArray[21];
-          for(int ii=0; ii<21; ii++){
+          for (int ii = 0; ii < 21; ii++) {
             traCovMatArray[ii] = traCovMat[ii];
           }
           tracasccovs(traCovMatArray);
-         }
+        }
       }
     }
     // En masse filling at end of process call

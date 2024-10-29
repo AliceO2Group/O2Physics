@@ -1057,7 +1057,7 @@ DECLARE_SOA_COLUMN(KFTrackCovMatV0DauPos, kfTrackCovMatV0DauPos, float[21]); //!
 DECLARE_SOA_COLUMN(KFTrackCovMatV0DauNeg, kfTrackCovMatV0DauNeg, float[21]); //! covariance matrix elements for KF method (V0 neg daughter)
 
 // for CascCovs / TraCascCovs, meant to provide consistent interface everywhere
-DECLARE_SOA_COLUMN(CovMat, covMat, float[21]); //! covariance matrix elements 
+DECLARE_SOA_COLUMN(CovMat, covMat, float[21]); //! covariance matrix elements
 
 //______________________________________________________
 // REGULAR COLUMNS FOR CASCBBS
@@ -1429,19 +1429,19 @@ DECLARE_SOA_TABLE(CascBBs, "AOD", "CASCBB", //! bachelor-baryon correlation vari
                   cascdata::BachBaryonCosPA, cascdata::BachBaryonDCAxyToPV)
 
 DECLARE_SOA_TABLE(CascCovs, "AOD", "CASCCOVS", //!
-                  cascdata::CovMat, 
-                  cascdata::PositionCovMat<cascdata::CovMat>, 
-                  cascdata::MomentumCovMat<cascdata::CovMat>, 
+                  cascdata::CovMat,
+                  cascdata::PositionCovMat<cascdata::CovMat>,
+                  cascdata::MomentumCovMat<cascdata::CovMat>,
                   o2::soa::Marker<1>);
 
 DECLARE_SOA_TABLE(KFCascCovs, "AOD", "KFCASCCOVS", //!
-                       cascdata::KFTrackCovMat, cascdata::KFTrackCovMatV0, cascdata::KFTrackCovMatV0DauPos, cascdata::KFTrackCovMatV0DauNeg);
+                  cascdata::KFTrackCovMat, cascdata::KFTrackCovMatV0, cascdata::KFTrackCovMatV0DauPos, cascdata::KFTrackCovMatV0DauNeg);
 
 DECLARE_SOA_TABLE(TraCascCovs, "AOD", "TRACASCCOVS", //!
-                       cascdata::CovMat, 
-                       cascdata::PositionCovMat<cascdata::CovMat>, 
-                       cascdata::MomentumCovMat<cascdata::CovMat>, 
-                       o2::soa::Marker<2>);
+                  cascdata::CovMat,
+                  cascdata::PositionCovMat<cascdata::CovMat>,
+                  cascdata::MomentumCovMat<cascdata::CovMat>,
+                  o2::soa::Marker<2>);
 
 // extended table with expression columns that can be used as arguments of dynamic columns
 DECLARE_SOA_EXTENDED_TABLE_USER(CascCores, StoredCascCores, "CascDATAEXT", //!
