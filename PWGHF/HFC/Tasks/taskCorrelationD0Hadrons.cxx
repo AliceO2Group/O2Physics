@@ -30,6 +30,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod::hf_correlation_d0_hadron;
+using namespace o2::analysis::hf_correlations;
 
 namespace o2::aod
 {
@@ -268,35 +269,19 @@ struct HfTaskCorrelationD0Hadrons {
           continue;
         }
         Region region = getRegion(deltaPhi);
-        if (signalStatus == ParticleTypeData::D0Only || signalStatus == ParticleTypeData::D0D0barBoth) {
-          switch (region) {
-            case Toward:
-              registry.fill(HIST("hToward"), massD, ptD, isAutoCorrelated, efficiencyWeight);
-              break;
-            case Away:
-              registry.fill(HIST("hAway"), massD, ptD, isAutoCorrelated, efficiencyWeight);
-              break;
-            case Transverse:
-              registry.fill(HIST("hTransverse"), massD, ptD, isAutoCorrelated, efficiencyWeight);
-              break;
-            default:
-              break;
-          }
-        }
-        if (signalStatus == ParticleTypeData::D0barOnly || signalStatus == ParticleTypeData::D0D0barBoth) {
-          switch (region) {
-            case Toward:
-              registry.fill(HIST("hToward"), massD, ptD, isAutoCorrelated, efficiencyWeight);
-              break;
-            case Away:
-              registry.fill(HIST("hAway"), massD, ptD, isAutoCorrelated, efficiencyWeight);
-              break;
-            case Transverse:
-              registry.fill(HIST("hTransverse"), massD, ptD, isAutoCorrelated, efficiencyWeight);
-              break;
-            default:
-              break;
-          }
+
+        switch (region) {
+          case Toward:
+            registry.fill(HIST("hToward"), massD, ptD, isAutoCorrelated, efficiencyWeight);
+            break;
+          case Away:
+            registry.fill(HIST("hAway"), massD, ptD, isAutoCorrelated, efficiencyWeight);
+            break;
+          case Transverse:
+            registry.fill(HIST("hTransverse"), massD, ptD, isAutoCorrelated, efficiencyWeight);
+            break;
+          default:
+            break;
         }
       }
       // check if correlation entry belongs to signal region, sidebands or is outside both, and fill correlation plots
