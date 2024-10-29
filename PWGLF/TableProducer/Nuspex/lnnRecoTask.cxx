@@ -75,6 +75,7 @@ std::shared_ptr<TH1> hDecayChannel;
 std::shared_ptr<TH1> hIsMatterGen;
 std::shared_ptr<TH1> hIsMatterGenTwoBody;
 std::shared_ptr<TH2> hDCAxy3H;
+std::shared_ptr<TH1> hLnnCandLoss;
 
 float alphaAP(std::array<float, 3> const& momB, std::array<float, 3> const& momC)
 {
@@ -251,9 +252,21 @@ struct lnnRecoTask {
     h3HSignalPtTOF = qaRegistry.add<TH2>("h3HSignalPtTOF", "; #it{p}_{T}({}^{3}H) (GeV/#it{c}); #beta (TOF)", HistType::kTH2F, {PtTrAxis, BetaAxis});
     hDCAxy3H = qaRegistry.add<TH2>("hDCAxy3H", "; #it{p}_{T}({}^{3}H) (GeV/#it{c}); #it{DCA}_{xy} 3H", HistType::kTH2F, {PtPosTrAxis, DCAxyAxis});
     hEvents = qaRegistry.add<TH1>("hEvents", ";Events; ", HistType::kTH1D, {{2, -0.5, 1.5}});
+    hLnnCandLoss = qaRegistry.add<TH1>("hLnnCandLoss", ";CandLoss; ", HistType::kTH1D, {{7, -0.5, 6.5}});
 
     hEvents->GetXaxis()->SetBinLabel(1, "All");
     hEvents->GetXaxis()->SetBinLabel(2, "sel8");
+
+    hLnnCandLoss->GetYaxis()->SetTitle("#it{N}_{candidates}");
+    hLnnCandLoss->GetXaxis()->SetTitle("Reject");
+    hLnnCandLoss->GetXaxis()->SetBinLabel(1, "Total LnnCandidates");
+    hLnnCandLoss->GetXaxis()->SetBinLabel(2, "not 3H");
+    hLnnCandLoss->GetXaxis()->SetBinLabel(3, "not anti3H");
+    hLnnCandLoss->GetXaxis()->SetBinLabel(4, "#it{p}_{Tmin}");
+    hLnnCandLoss->GetXaxis()->SetBinLabel(5, "!isLnnMass");
+    hLnnCandLoss->GetXaxis()->SetBinLabel(6, "DCA #it{V}_{0} daughter");
+    hLnnCandLoss->GetXaxis()->SetBinLabel(7, "cosPA");
+
     if (doprocessMC) {
       hDecayChannel = qaRegistry.add<TH1>("hDecayChannel", ";Decay channel; ", HistType::kTH1D, {{2, -0.5, 1.5}});
       hDecayChannel->GetXaxis()->SetBinLabel(1, "2-body");
@@ -362,9 +375,17 @@ struct lnnRecoTask {
       float alpha = alphaAP(momPos, momNeg);
       lnnCandidate lnnCand;
       lnnCand.isMatter = alpha > 0;
+      hLnnCandLoss->Fill(0.);
       if ((lnnCand.isMatter && !is3H) || (!lnnCand.isMatter && !isAnti3H)) {
+        if (lnnCand.isMatter && !is3H) {
+          hLnnCandLoss->Fill(1.);
+        }
+        if (!lnnCand.isMatter && !isAnti3H){
+          hLnnCandLoss->Fill(2.);
+        }
         continue;
       }
+
       auto& h3track = lnnCand.isMatter? posTrack : negTrack;
       auto& h3Rigidity = lnnCand.isMatter ? posRigidity : negRigidity;
 
@@ -440,6 +461,7 @@ struct lnnRecoTask {
 
       float lnnPt = std::hypot(lnnMom[0], lnnMom[1]);
       if (lnnPt < ptMin) {
+        hLnnCandLoss->Fill(4.);
         continue;
       }
 
@@ -451,12 +473,14 @@ struct lnnRecoTask {
         isLNNMass = true;
       }
       if (!isLNNMass) {
+        hLnnCandLoss->Fill(5.);
         continue;
       }
 
       // V0, primary vertex and poiting angle
       lnnCand.dcaV0dau = std::sqrt(fitter.getChi2AtPCACandidate());
       if (lnnCand.dcaV0dau > dcav0dau) {
+        hLnnCandLoss->Fill(6.);
         continue;
       }
 
@@ -464,6 +488,7 @@ struct lnnRecoTask {
 
       double cosPA = RecoDecay::cpa(primVtx, lnnCand.decVtx, lnnMom);
       if (cosPA < v0cospa) {
+        hLnnCandLoss->Fill(7.);
         continue;
       }
 
