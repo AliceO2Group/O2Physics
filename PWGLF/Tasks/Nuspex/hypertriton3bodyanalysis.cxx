@@ -236,9 +236,9 @@ struct hypertriton3bodyAnalysis {
                  kCandRapidity,
                  kCandct,
                  kCandDcaDau,
-                 kCandTOFPID,
-                 kCandTPCPID,
                  kCandTPCNcls,
+                 kCandTPCPID,
+                 kCandTOFPID,
                  kCandDauPt,
                  kCandDcaToPV,
                  kCandInvMass,
@@ -329,23 +329,37 @@ struct hypertriton3bodyAnalysis {
       return;
     }
     FillCandCounter(kCandCosPA, isTrueCand);
-    if (TMath::Abs(trackProton.eta()) > etacut || TMath::Abs(trackPion.eta()) > etacut || TMath::Abs(trackDeuteron.eta()) > etacut) {
+
+    if (std::abs(trackProton.eta()) > etacut || std::abs(trackPion.eta()) > etacut || std::abs(trackDeuteron.eta()) > etacut) {
       return;
     }
     FillCandCounter(kCandDauEta, isTrueCand);
-    if (TMath::Abs(candData.yHypertriton()) > rapiditycut) {
+
+    if (std::abs(candData.yHypertriton()) > rapiditycut) {
       return;
     }
     FillCandCounter(kCandRapidity, isTrueCand);
+
     double ct = candData.distovertotmom(dCollision.posX(), dCollision.posY(), dCollision.posZ()) * o2::constants::physics::MassHyperTriton;
     if (ct > lifetimecut) {
       return;
     }
     FillCandCounter(kCandct, isTrueCand);
+
     if (candData.dcaVtxdaughters() > dcavtxdau) {
       return;
     }
     FillCandCounter(kCandDcaDau, isTrueCand);
+
+    if (trackProton.tpcNClsFound() < mintpcNClsproton || trackPion.tpcNClsFound() < mintpcNClspion || trackDeuteron.tpcNClsFound() < mintpcNClsdeuteron) {
+      return;
+    }
+    FillCandCounter(kCandTPCNcls, isTrueCand);
+
+    if (TMath::Abs(trackProton.tpcNSigmaPr()) > TpcPidNsigmaCut || TMath::Abs(trackPion.tpcNSigmaPi()) > TpcPidNsigmaCut || TMath::Abs(trackDeuteron.tpcNSigmaDe()) > TpcPidNsigmaCut) {
+      return;
+    }
+    FillCandCounter(kCandTPCPID, isTrueCand);
 
     // registry.fill(HIST("hDeuteronDefaultTOFVsPBeforeTOFCut"), trackDeuteron.sign() * trackDeuteron.p(), trackDeuteron.tofNSigmaDe());
     registry.fill(HIST("hDeuteronTOFVsPBeforeTOFCut"), trackDeuteron.sign() * trackDeuteron.p(), candData.tofNSigmaBachDe());
@@ -363,16 +377,6 @@ struct hypertriton3bodyAnalysis {
       // registry.fill(HIST("hDeuteronDefaultTOFVsPAfterTOFCutSig"), trackDeuteron.sign() * trackDeuteron.p(), trackDeuteron.tofNSigmaDe());
       registry.fill(HIST("hDeuteronTOFVsPAfterTOFCutSig"), trackDeuteron.sign() * trackDeuteron.p(), candData.tofNSigmaBachDe());
     }
-
-    if (TMath::Abs(trackProton.tpcNSigmaPr()) > TpcPidNsigmaCut || TMath::Abs(trackPion.tpcNSigmaPi()) > TpcPidNsigmaCut || TMath::Abs(trackDeuteron.tpcNSigmaDe()) > TpcPidNsigmaCut) {
-      return;
-    }
-    FillCandCounter(kCandTPCPID, isTrueCand);
-
-    if (trackProton.tpcNClsFound() < mintpcNClsproton || trackPion.tpcNClsFound() < mintpcNClspion || trackDeuteron.tpcNClsFound() < mintpcNClsdeuteron) {
-      return;
-    }
-    FillCandCounter(kCandTPCNcls, isTrueCand);
 
     if (trackProton.pt() < minProtonPt || trackProton.pt() > maxProtonPt || trackPion.pt() < minPionPt || trackPion.pt() > maxPionPt || trackDeuteron.pt() < minDeuteronPt || trackDeuteron.pt() > maxDeuteronPt) {
       return;

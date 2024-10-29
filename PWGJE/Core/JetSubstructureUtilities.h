@@ -59,7 +59,7 @@ fastjet::ClusterSequenceArea jetToPseudoJet(T const& jet, U const& /*tracks*/, V
   for (auto& jetConstituent : jet.template tracks_as<U>()) {
     fastjetutilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex());
   }
-  if constexpr (std::is_same_v<std::decay_t<typename V::iterator>, JetClusters::iterator> || std::is_same_v<std::decay_t<typename V::iterator>, JetClusters::filtered_iterator>) {
+  if constexpr (std::is_same_v<std::decay_t<typename V::iterator>, o2::aod::JetClusters::iterator> || std::is_same_v<std::decay_t<typename V::iterator>, o2::aod::JetClusters::filtered_iterator>) {
     for (auto& jetClusterConstituent : jet.template clusters_as<V>()) {
       fastjetutilities::fillClusters(jetClusterConstituent, jetConstituents, jetClusterConstituent.globalIndex());
     }

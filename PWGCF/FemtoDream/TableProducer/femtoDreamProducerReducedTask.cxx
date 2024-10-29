@@ -50,10 +50,10 @@ using FemtoFullCollisionMC = soa::Join<aod::Collisions, aod::EvSels, aod::Mults,
 using FemtoFullCollision_noCent_MC = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>::iterator;
 
 using FemtoFullTracks = soa::Join<aod::FullTracks, aod::TracksDCA,
-                                  aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
-                                  aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
-                                  aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
-                                  aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe>;
+                                  aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa,
+                                  aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe,
+                                  aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa,
+                                  aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe>;
 } // namespace o2::aod
 
 struct femtoDreamProducerReducedTask {
@@ -298,11 +298,15 @@ struct femtoDreamProducerReducedTask {
                          track.tpcNSigmaKa(),
                          track.tpcNSigmaPr(),
                          track.tpcNSigmaDe(),
+                         track.tpcNSigmaTr(),
+                         track.tpcNSigmaHe(),
                          track.tofNSigmaEl(),
                          track.tofNSigmaPi(),
                          track.tofNSigmaKa(),
                          track.tofNSigmaPr(),
                          track.tofNSigmaDe(),
+                         track.tofNSigmaTr(),
+                         track.tofNSigmaHe(),
                          -999., -999., -999., -999., -999., -999.);
       }
     }

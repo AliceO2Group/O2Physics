@@ -81,6 +81,7 @@ struct HfCorrelatorDMesonPairs {
   HistogramConfigSpec hTH1Y{HistType::kTH1F, {{100, -5., 5.}}};
   HistogramConfigSpec hTH1Phi{HistType::kTH1F, {{32, 0., o2::constants::math::TwoPI}}};
   HistogramConfigSpec hTH2Pid{HistType::kTH2F, {{500, 0., 10.}, {400, -20., 20.}}};
+  HistogramConfigSpec hTH2PtVsY{HistType::kTH2F, {{360, 0., 36.}, {20, -1., 1.}}};
 
   HistogramRegistry registry{
     "registry",
@@ -96,6 +97,9 @@ struct HfCorrelatorDMesonPairs {
      {"hPtCandAfterCutMcGen", "D meson candidates after pT cut;candidate #it{p}_{T} (GeV/#it{c});entries", hTH1Pt},
      {"hEtaMcGen", "D meson candidates MC Gen;candidate #it{#eta};entries", hTH1Y},
      {"hPhiMcGen", "D meson candidates MC Gen;candidate #it{#varphi};entries", hTH1Phi},
+     {"hPtVsYMcGen", "D meson candidates MC Gen;candidate #it{p}_{T} (GeV/#it{c});#it{y}", hTH2PtVsY},
+     // MC Rec plots
+     {"hPtVsYMcRec", "D meson candidates MC Rec;candidate #it{p}_{T} (GeV/#it{c});#it{y}", hTH2PtVsY},
      // PID plots ----- Not definitively here
      {"PID/hTofNSigmaPi", "(TOFsignal-time#pi)/tofSigPid;p[GeV/c];(TOFsignal-time#pi)/tofSigPid", hTH2Pid},
      {"PID/hTofNSigmaKa", "(TOFsignal-timeK)/tofSigPid;p[GeV/c];(TOFsignal-timeK)/tofSigPid", hTH2Pid},
@@ -555,6 +559,7 @@ struct HfCorrelatorDMesonPairs {
       if (isDCand1) {
         if (isTrueDCand1) {
           registry.fill(HIST("hMass"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt());
+          registry.fill(HIST("hPtVsYMcRec"), candidate1.pt(), hfHelper.yD0(candidate1));
           if (originRec1 == 1) {
             registry.fill(HIST("hMassMcRecPrompt"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt());
           } else if (originRec1 == 2) {
@@ -567,6 +572,7 @@ struct HfCorrelatorDMesonPairs {
       if (isDbarCand1) {
         if (isTrueDbarCand1) {
           registry.fill(HIST("hMass"), hfHelper.invMassD0barToKPi(candidate1), candidate1.pt());
+          registry.fill(HIST("hPtVsYMcRec"), candidate1.pt(), hfHelper.yD0(candidate1));
           if (originRec1 == 1) {
             registry.fill(HIST("hMassMcRecPrompt"), hfHelper.invMassD0barToKPi(candidate1), candidate1.pt());
           } else if (originRec1 == 2) {
@@ -743,6 +749,8 @@ struct HfCorrelatorDMesonPairs {
       } else if (isDParticle1 && isDbarParticle1) {
         registry.fill(HIST("hStatusSinglePartMcGen"), 4);
       }
+
+      registry.fill(HIST("hPtVsYMcGen"), particle1.pt(), particle1.y());
 
       for (auto particle2 = particle1 + 1; particle2 != mcParticles.end(); ++particle2) {
         // check if the particle is D0 or D0bar

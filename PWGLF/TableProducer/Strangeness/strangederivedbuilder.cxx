@@ -371,6 +371,7 @@ struct strangederivedbuilder {
                       collision.multZPA() * static_cast<float>(fillTruncationOptions.fillRawZDC),
                       collision.multZPC() * static_cast<float>(fillTruncationOptions.fillRawZDC),
                       collision.trackOccupancyInTimeRange(),
+                      collision.ft0cOccupancyInTimeRange(),
                       // UPC info
                       gapSide,
                       totalFT0AmplitudeA, totalFT0AmplitudeC, totalFV0AmplitudeA,

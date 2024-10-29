@@ -57,6 +57,7 @@ struct HfTaskFlowCharmHadrons {
   Configurable<int> qvecDetector{"qvecDetector", 3, "Detector for Q vector estimation (FV0A: 0, FT0M: 1, FT0A: 2, FT0C: 3, TPC Pos: 4, TPC Neg: 5, TPC Tot: 6)"};
   Configurable<int> centEstimator{"centEstimator", 2, "Centrality estimation (FT0A: 1, FT0C: 2, FT0M: 3, FV0A: 4)"};
   Configurable<int> selectionFlag{"selectionFlag", 1, "Selection Flag for hadron (e.g. 1 for skimming, 3 for topo. and kine., 7 for PID)"};
+  Configurable<bool> storeEP{"storeEP", false, "Flag to store EP-related axis"};
   Configurable<bool> storeMl{"storeMl", false, "Flag to store ML scores"};
   Configurable<bool> saveEpResoHisto{"saveEpResoHisto", false, "Flag to save event plane resolution histogram"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -118,11 +119,15 @@ struct HfTaskFlowCharmHadrons {
     const AxisSpec thnAxisMlOne{thnConfigAxisMlOne, "Bkg score"};
     const AxisSpec thnAxisMlTwo{thnConfigAxisMlTwo, "FD score"};
 
-    if (storeMl) {
-      registry.add("hSparseFlowCharm", "THn for SP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCent, thnAxisCosNPhi, thnAxisCosDeltaPhi, thnAxisScalarProd, thnAxisMlOne, thnAxisMlTwo});
-    } else {
-      registry.add("hSparseFlowCharm", "THn for SP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCent, thnAxisCosNPhi, thnAxisCosDeltaPhi, thnAxisScalarProd});
+    std::vector<AxisSpec> axes = {thnAxisInvMass, thnAxisPt, thnAxisCent, thnAxisScalarProd};
+    if (storeEP) {
+      axes.insert(axes.end(), {thnAxisCosNPhi, thnAxisCosDeltaPhi});
     }
+    if (storeMl) {
+      axes.insert(axes.end(), {thnAxisMlOne, thnAxisMlTwo});
+    }
+    registry.add("hSparseFlowCharm", "THn for SP", HistType::kTHnSparseF, axes);
+
     registry.add("spReso/hSpResoFT0cFT0a", "hSpResoFT0cFT0a; centrality; Q_{FT0c} #bullet Q_{FT0a}", {HistType::kTH2F, {thnAxisCent, thnAxisScalarProd}});
     registry.add("spReso/hSpResoFT0cFV0a", "hSpResoFT0cFV0a; centrality; Q_{FT0c} #bullet Q_{FV0a}", {HistType::kTH2F, {thnAxisCent, thnAxisScalarProd}});
     registry.add("spReso/hSpResoFT0cTPCpos", "hSpResoFT0cTPCpos; centrality; Q_{FT0c} #bullet Q_{TPCpos}", {HistType::kTH2F, {thnAxisCent, thnAxisScalarProd}});
@@ -236,9 +241,17 @@ struct HfTaskFlowCharmHadrons {
                std::vector<float>& outputMl)
   {
     if (storeMl) {
-      registry.fill(HIST("hSparseFlowCharm"), mass, pt, cent, cosNPhi, cosDeltaPhi, sp, outputMl[0], outputMl[1]);
+      if (storeEP) {
+        registry.fill(HIST("hSparseFlowCharm"), mass, pt, cent, sp, cosNPhi, cosDeltaPhi, outputMl[0], outputMl[1]);
+      } else {
+        registry.fill(HIST("hSparseFlowCharm"), mass, pt, cent, sp, outputMl[0], outputMl[1]);
+      }
     } else {
-      registry.fill(HIST("hSparseFlowCharm"), mass, pt, cent, cosNPhi, cosDeltaPhi, sp);
+      if (storeEP) {
+        registry.fill(HIST("hSparseFlowCharm"), mass, pt, cent, sp, cosNPhi, cosDeltaPhi);
+      } else {
+        registry.fill(HIST("hSparseFlowCharm"), mass, pt, cent, sp);
+      }
     }
   }
 
