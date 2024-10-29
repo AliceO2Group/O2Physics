@@ -1340,7 +1340,6 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
 
       const int kPtNbins = 6;
       double PtBinLims[kPtNbins + 1] = {0., 2., 4., 6., 8., 10., 20.};
-      
       const int kCosPointingAngleNbins = 5;
       double CosPointingAngleBinLims[kCosPointingAngleNbins + 1] = {0., 0.86, 0.90, 0.94, 0.98, 1.0};
 
