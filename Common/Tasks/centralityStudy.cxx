@@ -52,6 +52,10 @@ struct centralityStudy {
 
   Configurable<bool> selectUPCcollisions{"selectUPCcollisions", false, "select collisions tagged with UPC flag"};
 
+  Configurable<bool> selectCollidingBCs{"selectCollidingBCs", true, "BC analysis: select colliding BCs"};
+  Configurable<bool> selectTVX{"selectTVX", true, "BC analysis: select TVX"};
+  Configurable<bool> selectFV0OrA{"selectFV0OrA", true, "BC analysis: select FV0OrA"};
+
   Configurable<float> minTimeDelta{"minTimeDelta", -1.0f, "reject collision if another collision is this close or less in time"};
   Configurable<float> minFT0CforVertexZ{"minFT0CforVertexZ", 250, "minimum FT0C for vertex-Z profile calculation"};
 
@@ -246,13 +250,13 @@ struct centralityStudy {
     // process BCs, calculate FT0C distribution
     // conditionals suggested by FIT team (Jacek O. et al)
     histos.fill(HIST("hBCSelection"), 0); // all BCs
-    if (!multbc.multBCColliding())
+    if (selectCollidingBCs && !multbc.multBCColliding())
       return;
     histos.fill(HIST("hBCSelection"), 1); // colliding
-    if (!multbc.multBCTVX())
+    if (selectTVX && !multbc.multBCTVX())
       return;
     histos.fill(HIST("hBCSelection"), 2); // TVX
-    if (!multbc.multBCFV0OrA())
+    if (selectFV0OrA && !multbc.multBCFV0OrA())
       return;
     histos.fill(HIST("hBCSelection"), 3); // FV0OrA
 
