@@ -171,6 +171,7 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
   Configurable<bool> cfgProcessMultBins{"cfgProcessMultBins", true, "Process kstar histograms in multiplicity bins (in multiplicity bins)"};
   Configurable<bool> cfgProcessKtBins{"cfgProcessKtBins", true, "Process kstar histograms in kT bins (if cfgProcessMultBins is set false, this will not be processed regardless this Configurable state)"};
   Configurable<bool> cfgProcessKtMt3DCF{"cfgProcessKtMt3DCF", false, "Process 3D histograms in kT and Mult bins"};
+  
 
   FemtoUniverse3DContainer<femtoUniverse3DContainer::EventType::same, femtoUniverse3DContainer::Observable::kstar> sameEventCont;
   FemtoUniverse3DContainer<femtoUniverse3DContainer::EventType::mixed, femtoUniverse3DContainer::Observable::kstar> mixedEventCont;
