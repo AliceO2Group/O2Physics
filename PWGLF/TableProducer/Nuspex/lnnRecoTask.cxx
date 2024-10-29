@@ -81,7 +81,7 @@ float alphaAP(std::array<float, 3> const& momB, std::array<float, 3> const& momC
 {
   std::array<float, 3> momA = {momB[0] + momC[0], momB[1] + momC[1], momB[2] + momC[2]};
   float momTot = std::sqrt(momA[0] * momA[0] + momA[1] * momA[1] + momA[2] * momA[2]);
-  float lQlPos = (momB[0] * momA[0] + momB[1] * momA[1] + momB[2] * momA[2]) / momTot; 
+  float lQlPos = (momB[0] * momA[0] + momB[1] * momA[1] + momB[2] * momA[2]) / momTot;
   float lQlNeg = (momC[0] * momA[0] + momC[1] * momA[1] + momC[2] * momA[2]) / momTot;
   return (lQlPos - lQlNeg) / (lQlPos + lQlNeg);
 }
@@ -367,7 +367,6 @@ struct lnnRecoTask {
 
       if (!is3H && !isAnti3H) // discard if both tracks are not 3H candidates
         continue;
-      
 
       // if alphaAP is > 0 the candidate is 3H, if < 0 it is anti-3H
       std::array<float, 3> momPos = std::array{posTrack.px(), posTrack.py(), posTrack.pz()};
@@ -380,24 +379,24 @@ struct lnnRecoTask {
         if (lnnCand.isMatter && !is3H) {
           hLnnCandLoss->Fill(1.);
         }
-        if (!lnnCand.isMatter && !isAnti3H){
+        if (!lnnCand.isMatter && !isAnti3H) {
           hLnnCandLoss->Fill(2.);
         }
         continue;
       }
 
-      auto& h3track = lnnCand.isMatter? posTrack : negTrack;
+      auto& h3track = lnnCand.isMatter ? posTrack : negTrack;
       auto& h3Rigidity = lnnCand.isMatter ? posRigidity : negRigidity;
 
       if (h3Rigidity < TPCRigidityMin3H ||
           h3track.tpcNClsFound() < nTPCClusMin3H ||
           h3track.tpcChi2NCl() < Chi2nClusTPCMin ||
-          h3track.tpcChi2NCl() > Chi2nClusTPCMax || 
+          h3track.tpcChi2NCl() > Chi2nClusTPCMax ||
           h3track.itsChi2NCl() > Chi2nClusITS) {
         continue;
       }
-     
-      lnnCand.tpcChi3H = lnnCand.isMatter ? h3track.tpcChi2NCl() :  negTrack.tpcChi2NCl();
+
+      lnnCand.tpcChi3H = lnnCand.isMatter ? h3track.tpcChi2NCl() : negTrack.tpcChi2NCl();
       lnnCand.nSigma3H = lnnCand.isMatter ? nSigmaTPCpos : nSigmaTPCneg;
       lnnCand.nTPCClusters3H = lnnCand.isMatter ? h3track.tpcNClsFound() : negTrack.tpcNClsFound();
       lnnCand.tpcSignal3H = lnnCand.isMatter ? h3track.tpcSignal() : negTrack.tpcSignal();
