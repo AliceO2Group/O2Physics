@@ -257,8 +257,8 @@ struct lnnRecoTask {
     hDCAxy3H = qaRegistry.add<TH2>("hDCAxy3H", "; #it{p}_{T}({}^{3}H) (GeV/#it{c}); #it{DCA}_{xy} 3H", HistType::kTH2F, {PtPosTrAxis, DCAxyAxis});
     hEvents = qaRegistry.add<TH1>("hEvents", ";Events; ", HistType::kTH1D, {{2, -0.5, 1.5}});
     hLnnCandLoss = qaRegistry.add<TH1>("hLnnCandLoss", ";CandLoss; ", HistType::kTH1D, {{7, -0.5, 6.5}});
-    hNSigma3HTPC_preselection = qaRegistry.add<TH2>("hNSigma3HTPC_preselection", "#it{p}/z (GeV/#it{c}); n#sigma_{TPC}(^{3}H)", HistType::kTH2F, {rigidityAxis, nSigma3HAxis})
-                                  hNSigma3HTOF_preselection = qaRegistry.add<TH2>("hNSigma3HTOF_preselection", "; Signed p({}^{3}H) (GeV/#it{c^2}); n#sigma_{TOF} ({}^{3}H)", HistType::kTH2F, {PTrAxis, nSigma3HAxis});
+    hNSigma3HTPC_preselection =  qaRegistry.add<TH2>("hNSigma3HTPC_preselection", "#it{p}/z (GeV/#it{c}); n#sigma_{TPC}(^{3}H)",  HistType::kTH2F, {rigidityAxis, nSigma3HAxis});
+    hNSigma3HTOF_preselection = qaRegistry.add<TH2>("hNSigma3HTOF_preselection", "; Signed p({}^{3}H) (GeV/#it{c^2}); n#sigma_{TOF} ({}^{3}H)", HistType::kTH2F, {PTrAxis, nSigma3HAxis});
 
     hEvents->GetXaxis()->SetBinLabel(1, "All");
     hEvents->GetXaxis()->SetBinLabel(2, "sel8");
@@ -419,7 +419,6 @@ struct lnnRecoTask {
       auto posTrackCov = getTrackParCov(posTrack);
       auto negTrackCov = getTrackParCov(negTrack);
       int chargeFactor = -1 + 2 * lnnCand.isMatter;
-
       float beta = -1.f;
       if (h3track.pt() >= ptMinTOF) {
         hNSigma3HTPC_preselection->Fill(h3track.tpcInnerParam(), lnnCand.nSigma3H);
@@ -523,8 +522,8 @@ struct lnnRecoTask {
 
       // Fill QA histograms
       hdEdx3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, h3track.tpcSignal());
-      hDCAxy3H->Fill(h3track.pt(), h3track.dcaXY());
       hNsigma3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, lnnCand.nSigma3H);
+      hDCAxy3H->Fill(h3track.pt(), h3track.dcaXY());
       if (h3track.hasTOF()) {
         h3HSignalPtTOF->Fill(chargeFactor * h3track.pt(), beta);
         hNsigma3HSelTOF->Fill(chargeFactor * h3track.p(), h3track.tofNSigmaTr());
