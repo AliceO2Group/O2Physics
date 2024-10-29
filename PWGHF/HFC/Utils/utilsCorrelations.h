@@ -12,8 +12,8 @@
 /// \file utilsCorrelations.h
 /// \brief Xu Wang <waxu@cern.ch>
 
-#ifndef UTILS_CORRELATIONS_H
-#define UTILS_CORRELATIONS_H
+#ifndef PWGHF_HFC_UTILS_UTILSCORRELATIONS_H_
+#define PWGHF_HFC_UTILS_UTILSCORRELATIONS_H_
 
 #include <cmath>
 
@@ -77,4 +77,4 @@ int findLeadingParticleMcGen(TMcParticles const& mcParticles, const float etaTra
   return leadingParticle.globalIndex();
 }
 } // namespace o2::analysis::hf_correlations
-#endif // UTILS_CORRELATIONS_H
+#endif // PWGHF_HFC_UTILS_UTILSCORRELATIONS_H_
