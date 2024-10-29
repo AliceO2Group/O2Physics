@@ -1334,24 +1334,24 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
 
       const int kNvarsTripletCuts = 4;
       const int kInvMassNbins = 100;
-      double InvMassBinLims[kInvMassNbins + 1]; 
+      double InvMassBinLims[kInvMassNbins + 1];
       for (int i = 0; i <= kInvMassNbins; ++i)
         InvMassBinLims[i] = 4.0 + 0.02 * i;
 
-      const int kPtNbins = 6; 
-      double PtBinLims[kPtNbins + 1] = {0., 2., 4., 6., 8., 10., 20.}; 
-
-      const int kCosPointingAngleNbins = 5; 
-      double CosPointingAngleBinLims[kCosPointingAngleNbins + 1] = {0., 0.86, 0.90, 0.94, 0.98, 1.0}; 
+      const int kPtNbins = 6;
+      double PtBinLims[kPtNbins + 1] = {0., 2., 4., 6., 8., 10., 20.};
+      
+      const int kCosPointingAngleNbins = 5;
+      double CosPointingAngleBinLims[kCosPointingAngleNbins + 1] = {0., 0.86, 0.90, 0.94, 0.98, 1.0};
 
       const int kTauNBins = 6;
-      double TauBinLims[kTauNBins + 1] = {0., 0.005, 0.01, 0.015, 0.02, 0.025, 0.3}; 
+      double TauBinLims[kTauNBins + 1] = {0., 0.005, 0.01, 0.015, 0.02, 0.025, 0.3};
 
       TArrayD nCutsBinLimits[kNvarsTripletCuts];
       nCutsBinLimits[0] = TArrayD(kInvMassNbins + 1, InvMassBinLims);
       nCutsBinLimits[1] = TArrayD(kPtNbins + 1, PtBinLims);
       nCutsBinLimits[2] = TArrayD(kCosPointingAngleNbins + 1, CosPointingAngleBinLims);
-      nCutsBinLimits[3] = TArrayD(kTauNBins  + 1, TauBinLims);
+      nCutsBinLimits[3] = TArrayD(kTauNBins + 1, TauBinLims);
 
       int varsTripletCuts[kNvarsTripletCuts] = {VarManager::kPairMass, VarManager::kPairPt, VarManager::kCosPointingAngle, VarManager::kVertexingTauxyProjected};
       hm->AddHistogram(histClass, "multidimentional-vertexing", "Invariant mass vs. pT vs. cosine of pointing angle vs. tau", kNvarsTripletCuts, varsTripletCuts, nCutsBinLimits);
