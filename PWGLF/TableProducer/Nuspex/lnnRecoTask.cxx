@@ -76,8 +76,8 @@ std::shared_ptr<TH1> hIsMatterGen;
 std::shared_ptr<TH1> hIsMatterGenTwoBody;
 std::shared_ptr<TH2> hDCAxy3H;
 std::shared_ptr<TH1> hLnnCandLoss;
-std::shared_ptr<TH1> hNSigma3HTPC_preselection;
-std::shared_ptr<TH1> hNSigma3HTOF_preselection;
+std::shared_ptr<TH2> hNSigma3HTPC_preselection;
+std::shared_ptr<TH2> hNSigma3HTOF_preselection;
 
 float alphaAP(std::array<float, 3> const& momB, std::array<float, 3> const& momC)
 {
@@ -258,7 +258,7 @@ struct lnnRecoTask {
     hEvents = qaRegistry.add<TH1>("hEvents", ";Events; ", HistType::kTH1D, {{2, -0.5, 1.5}});
     hLnnCandLoss = qaRegistry.add<TH1>("hLnnCandLoss", ";CandLoss; ", HistType::kTH1D, {{7, -0.5, 6.5}});
     hNSigma3HTPC_preselection =  qaRegistry.add<TH2>("hNSigma3HTPC_preselection", "#it{p}/z (GeV/#it{c}); n#sigma_{TPC}(^{3}H)",  HistType::kTH2F, {rigidityAxis, nSigma3HAxis})
-    hNSigma3HTOF_preselection = qaRegistry.add<TH2>("hNsigma3HSelTOF", "; Signed p_{T} ({}^{3}H) (GeV/#it{c^2}); n#sigma_{TOF} ({}^{3}H)", HistType::kTH2F, {PTrAxis, nSigma3HAxis});
+    hNSigma3HTOF_preselection = qaRegistry.add<TH2>("hNSigma3HTOF_preselection", "; Signed p({}^{3}H) (GeV/#it{c^2}); n#sigma_{TOF} ({}^{3}H)", HistType::kTH2F, {PTrAxis, nSigma3HAxis});
 
     hEvents->GetXaxis()->SetBinLabel(1, "All");
     hEvents->GetXaxis()->SetBinLabel(2, "sel8");
@@ -420,7 +420,6 @@ struct lnnRecoTask {
       auto negTrackCov = getTrackParCov(negTrack);
       int chargeFactor = -1 + 2 * lnnCand.isMatter;
   
-
       float beta = -1.f;
       if (h3track.pt() >= ptMinTOF) {
         hNSigma3HTPC_preselection->Fill(h3track.tpcInnerParam(), lnnCand.nSigma3H);
@@ -753,4 +752,5 @@ WorkflowSpec
   defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<lnnRecoTask>(cfgc)};}
+    adaptAnalysisTask<lnnRecoTask>(cfgc)};
+}
