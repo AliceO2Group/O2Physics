@@ -621,7 +621,7 @@ struct lambdapolarization {
     }
     histos.fill(HIST("QA/CentDist"), centrality, 1.0);
     histos.fill(HIST("QA/PVzDist"), collision.posZ(), 1.0);
- 
+
     if (cfgShiftCorr) {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       currentRunNumber = bc.runNumber();
