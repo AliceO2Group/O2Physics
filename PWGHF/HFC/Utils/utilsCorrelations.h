@@ -10,14 +10,15 @@
 // or submit itself to any jurisdiction.
 
 /// \file utilsCorrelations.h
-/// \brief Utilities for HFC analyses
+/// \brief Xu Wang <waxu@cern.ch>
 
-#ifndef PWGHF_HFC_UTILS_UTILSCORRELATIONS_H_
-#define PWGHF_HFC_UTILS_UTILSCORRELATIONS_H_
+#ifndef UTILS_CORRELATIONS_H
+#define UTILS_CORRELATIONS_H
 
 #include <cmath>
-#include <TString.h>
 
+namespace o2::analysis::hf_correlations
+{
 enum Region {
   Default = 0,
   Toward,
@@ -25,7 +26,8 @@ enum Region {
   Transverse
 };
 
-Region getRegion(double deltaPhi)
+template <typename T>
+Region getRegion(T deltaPhi)
 {
   if (std::abs(deltaPhi) < o2::constants::math::PI / 3.) {
     return Toward;
@@ -36,4 +38,43 @@ Region getRegion(double deltaPhi)
   }
 }
 
-#endif // PWGHF_HFC_UTILS_UTILSCORRELATIONS_H_
+// Find Leading Particle
+template <typename TTracks>
+int findLeadingParticle(TTracks const& tracks)
+{
+  auto leadingParticle = tracks.begin();
+  for (auto const& track : tracks) {
+    if (std::abs(track.dcaXY()) >= 1. || std::abs(track.dcaZ()) >= 1.) {
+      continue;
+    }
+    if (track.pt() > leadingParticle.pt()) {
+      leadingParticle = track;
+    }
+  }
+  int leadingIndex = leadingParticle.globalIndex();
+  return leadingIndex;
+}
+
+// ======= Find Leading Particle for McGen ============
+template <typename TMcParticles>
+int findLeadingParticleMcGen(TMcParticles const& mcParticles, const float etaTrackMax, const float ptTrackMin)
+{
+  auto leadingParticle = mcParticles.begin();
+  for (auto const& mcParticle : mcParticles) {
+    if (std::abs(mcParticle.eta()) > etaTrackMax) {
+      continue;
+    }
+    if (mcParticle.pt() < ptTrackMin) {
+      continue;
+    }
+    if ((std::abs(mcParticle.pdgCode()) != kElectron) && (std::abs(mcParticle.pdgCode()) != kMuonMinus) && (std::abs(mcParticle.pdgCode()) != kPiPlus) && (std::abs(mcParticle.pdgCode()) != kKPlus) && (std::abs(mcParticle.pdgCode()) != kProton)) {
+      continue;
+    }
+    if (mcParticle.pt() > leadingParticle.pt()) {
+      leadingParticle = mcParticle;
+    }
+  }
+  return leadingParticle.globalIndex();
+}
+} // namespace o2::analysis::hf_correlations
+#endif // UTILS_CORRELATIONS_H
