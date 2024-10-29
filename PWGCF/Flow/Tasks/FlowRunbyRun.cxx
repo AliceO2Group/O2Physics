@@ -133,7 +133,7 @@ struct FlowRunbyRun {
       if (TMath::Abs(val) < 1)
         profile->Fill(cent, val, dnx);
       return;
-    };
+    }
     return;
   }
 
