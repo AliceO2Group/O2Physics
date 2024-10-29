@@ -29,7 +29,7 @@ enum Region {
 template <typename T>
 Region getRegion(T deltaPhi)
 {
-  if (std::abs(deltaPhi) < o2::constants::math::PI / 3.) {
+  if (std::abs(deltaPhi) < o2::constants::math::PIThird) {
     return Toward;
   } else if (deltaPhi > 2. * o2::constants::math::PIThird && deltaPhi < 4. * o2::constants::math::PIThird) {
     return Away;
