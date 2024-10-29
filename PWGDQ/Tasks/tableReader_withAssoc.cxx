@@ -165,6 +165,7 @@ struct AnalysisEventSelection {
   Configurable<std::string> fConfigAddEventHistogram{"cfgAddEventHistogram", "", "Comma separated list of histograms"};
   Configurable<int> fConfigITSROFrameStartBorderMargin{"ITSROFrameStartBorderMargin", -1, "Number of bcs at the start of ITS RO Frame border. Take from CCDB if -1"};
   Configurable<int> fConfigITSROFrameEndBorderMargin{"ITSROFrameEndBorderMargin", -1, "Number of bcs at the end of ITS RO Frame border. Take from CCDB if -1"};
+  Configurable<bool> fConfigRunZorro{"cfgRunZorro", false, "Enable event selection with zorro [WARNING: under debug, do not enable!]"};
   Configurable<string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
 
@@ -248,8 +249,15 @@ struct AnalysisEventSelection {
       bool decision = false;
       fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues); // automatically fill all the histograms in the class Event
       if (fEventCut->IsSelected(VarManager::fgValues)) {
-        fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
-        decision = true;
+        if (fConfigRunZorro) {
+          if (event.tag_bit(56)) { // This is the bit used for the software trigger event selections [TO BE DONE: find a more clear way to use it]
+            fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
+            decision = true;
+          }
+        } else {
+          fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
+          decision = true;
+        }
       }
       fSelMap[event.globalIndex()] = decision;
       if (fBCCollMap.find(event.globalBC()) == fBCCollMap.end()) {
@@ -1075,8 +1083,8 @@ struct AnalysisSameEventPairing {
                 histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
                 fTrackHistNames[fNCutsBarrel + icut * fNPairCuts + iPairCut] = names;
               } // end loop (pair cuts)
-            }   // end if (pair cuts)
-          }     // end if enableBarrelHistos
+            } // end if (pair cuts)
+          } // end if enableBarrelHistos
         }
       }
     }
@@ -1126,7 +1134,7 @@ struct AnalysisSameEventPairing {
                 histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
                 fMuonHistNames[fNCutsMuon + icut * fNCutsMuon + iPairCut] = names;
               } // end loop (pair cuts)
-            }   // end if (pair cuts)
+            } // end if (pair cuts)
           }
         }
       }
@@ -1514,8 +1522,8 @@ struct AnalysisSameEventPairing {
             } // end loop (pair cuts)
           }
         } // end loop (cuts)
-      }   // end loop over pairs of track associations
-    }     // end loop over events
+      } // end loop over pairs of track associations
+    } // end loop over events
   }
 
   template <int TPairType, uint32_t TEventFillMap, typename TAssoc1, typename TAssoc2, typename TTracks1, typename TTracks2>
@@ -1578,8 +1586,8 @@ struct AnalysisSameEventPairing {
             }
           }
         } // end for (cuts)
-      }   // end for (track2)
-    }     // end for (track1)
+      } // end for (track2)
+    } // end for (track1)
   }
 
   // barrel-barrel and muon-muon event mixing
@@ -1871,7 +1879,7 @@ struct AnalysisAsymmetricPairing {
               fTrackHistNames[(fNLegCuts * (fNCommonTrackCuts + 1) + fNLegCuts * fNPairCuts) + icut * (fNPairCuts * fNCommonTrackCuts + 1) + iCommonCut * (1 + fNPairCuts) + iPairCut] = names;
             } // end loop (common cuts)
           } // end loop (pair cuts)
-        }   // end if (pair cuts)
+        } // end if (pair cuts)
       } else {
         names = {};
         std::vector<TString> pairHistPrefixes = {"PairsBarrelSEPM"};
@@ -1922,7 +1930,7 @@ struct AnalysisAsymmetricPairing {
               fTrackHistNames[(fNLegCuts * (fNCommonTrackCuts + 1) + fNLegCuts * fNPairCuts) + icut * (fNPairCuts * fNCommonTrackCuts + 1) + iCommonCut * (1 + fNPairCuts) + iPairCut] = names;
             } // end loop (common cuts)
           } // end loop (pair cuts)
-        }   // end if (pair cuts)
+        } // end if (pair cuts)
       }
     }
     // Make sure the leg cuts are covered by the configured filter masks
@@ -2162,8 +2170,8 @@ struct AnalysisAsymmetricPairing {
         if constexpr (trackHasCov && TTwoProngFitter) {
           ditrackExtraList(t1.globalIndex(), t2.globalIndex(), VarManager::fgValues[VarManager::kVertexingTauzProjected], VarManager::fgValues[VarManager::kVertexingLzProjected], VarManager::fgValues[VarManager::kVertexingLxyProjected]);
         }
-      }   // end inner assoc loop (leg A)
-    }     // end event loop
+      } // end inner assoc loop (leg A)
+    } // end event loop
   }
 
   // Template function to run same event triplets (e.g. D+->K-pi+pi+)
@@ -2772,8 +2780,8 @@ struct AnalysisDileptonTrack {
             }
           }
         } // end for (dileptons)
-      }   // end for (assocs)
-    }     // end event loop
+      } // end for (assocs)
+    } // end event loop
   }
 
   void processMuonMixedEvent(soa::Filtered<MyEventsHashSelected>& events,
@@ -2811,8 +2819,8 @@ struct AnalysisDileptonTrack {
             }
           }
         } // end for (dileptons)
-      }   // end for (assocs)
-    }     // end event loop
+      } // end for (assocs)
+    } // end event loop
   }
 
   void processDummy(MyEvents&)

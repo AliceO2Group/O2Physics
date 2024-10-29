@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "TH1D.h"
+#include "TH2D.h"
 #include "CommonDataFormat/IRFrame.h"
 #include "Framework/HistogramRegistry.h"
 #include "ZorroHelper.h"
@@ -40,10 +41,11 @@ class Zorro
   Zorro() = default;
   std::vector<int> initCCDB(o2::ccdb::BasicCCDBManager* ccdb, int runNumber, uint64_t timestamp, std::string tois, int bcTolerance = 500);
   std::bitset<128> fetch(uint64_t bcGlobalId, uint64_t tolerance = 100);
-  bool isSelected(uint64_t bcGlobalId, uint64_t tolerance = 100);
+  bool isSelected(uint64_t bcGlobalId, uint64_t tolerance = 100, TH2* toiHisto = nullptr);
   bool isNotSelectedByAny(uint64_t bcGlobalId, uint64_t tolerance = 100);
 
   void populateHistRegistry(o2::framework::HistogramRegistry& histRegistry, int runNumber, std::string folderName = "Zorro");
+  void populateExternalHists(int runNumber, TH2* zorroHisto = nullptr, TH2* toiHisto = nullptr);
 
   TH1D* getScalers() const { return mScalers; }
   TH1D* getSelections() const { return mSelections; }
