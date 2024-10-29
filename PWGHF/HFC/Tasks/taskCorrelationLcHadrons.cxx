@@ -22,6 +22,7 @@
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
 #include "PWGHF/HFC/DataModel/CorrelationTables.h"
+#include "PWGHF/HFC/Utils/utilsCorrelations.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -103,13 +104,6 @@ struct HfTaskCorrelationLcHadrons {
 
   using LcHadronPairFull = soa::Join<aod::LcHadronPair, aod::LcHadronRecoInfo>;
 
-  enum Region {
-    Default = 0,
-    Toward,
-    Away,
-    Transverse
-  };
-
   HistogramRegistry registry{
     "registry",
     {{"hDeltaEtaPtIntSignalRegion", stringLcHadron + stringSignal + stringDeltaEta + "entries", {HistType::kTH1F, {axisDeltaEta}}},
@@ -167,17 +161,6 @@ struct HfTaskCorrelationLcHadrons {
     registry.get<THnSparse>(HIST("hCorrel2DVsPtBkgMcRec"))->Sumw2();
     registry.get<THnSparse>(HIST("hCorrel2DVsPtMcGen"))->GetAxis(2)->Set(nBinsPtAxis, valuesPtAxis);
     registry.get<THnSparse>(HIST("hCorrel2DVsPtMcGen"))->Sumw2();
-  }
-
-  Region getRegion(double deltaPhi)
-  {
-    if (std::abs(deltaPhi) < o2::constants::math::PI / 3.) {
-      return Toward;
-    } else if (deltaPhi > 2. * o2::constants::math::PI / 3. && deltaPhi < 4. * o2::constants::math::PI / 3.) {
-      return Away;
-    } else {
-      return Transverse;
-    }
   }
 
   void processData(LcHadronPairFull const& pairEntries)
@@ -293,7 +276,7 @@ struct HfTaskCorrelationLcHadrons {
           default:
             break;
         }
-      }
+      };
 
       // fill correlation plots for signal/bagkground correlations
       if (pairEntry.signalStatus()) {
