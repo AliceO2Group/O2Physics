@@ -138,7 +138,7 @@ DECLARE_SOA_COLUMN(HasTOF, hasTOF, bool);                      //! Flag to check
 DECLARE_SOA_COLUMN(NumItsCls, numItsCls, int);                 //! Number of clusters in ITS
 DECLARE_SOA_COLUMN(NumTpcCrossedRows, numTpcCrossedRows, int); //! Number of TPC crossed rows
 // dynamic columns
-DECLARE_SOA_DYNAMIC_COLUMN(TPCTOFNSigmaPi, tpcTofNSigmaPi,     //! Combination of NsigmaTPC and NsigmaTOF
+DECLARE_SOA_DYNAMIC_COLUMN(TPCTOFNSigmaPi, tpcTofNSigmaPi, //! Combination of NsigmaTPC and NsigmaTOF
                            [](float tpcNSigmaPi, float tofNSigmaPi) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaPi, tofNSigmaPi); });
 } // namespace hf_track_index_reduced
 
@@ -201,17 +201,17 @@ DECLARE_SOA_COLUMN(TOFNSigmaKaProng0, tofNSigmaKaProng0, float);                
 DECLARE_SOA_COLUMN(TOFNSigmaKaProng1, tofNSigmaKaProng1, float);                 //! NsigmaTOFKa for prong1
 DECLARE_SOA_COLUMN(TOFNSigmaKaProng2, tofNSigmaKaProng2, float);                 //! NsigmaTOFKa for prong2
 
-DECLARE_SOA_DYNAMIC_COLUMN(TPCTOFNSigmaPiProng0, tpcTofNSigmaPiProng0,     //! Combination of NsigmaTPC and NsigmaTOF
+DECLARE_SOA_DYNAMIC_COLUMN(TPCTOFNSigmaPiProng0, tpcTofNSigmaPiProng0, //! Combination of NsigmaTPC and NsigmaTOF
                            [](float tpcNSigmaPi, float tofNSigmaPi) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaPi, tofNSigmaPi); });
-DECLARE_SOA_DYNAMIC_COLUMN(TPCTOFNSigmaPiProng1, tpcTofNSigmaPiProng1,     //! Combination of NsigmaTPC and NsigmaTOF
+DECLARE_SOA_DYNAMIC_COLUMN(TPCTOFNSigmaPiProng1, tpcTofNSigmaPiProng1, //! Combination of NsigmaTPC and NsigmaTOF
                            [](float tpcNSigmaPi, float tofNSigmaPi) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaPi, tofNSigmaPi); });
-DECLARE_SOA_DYNAMIC_COLUMN(TPCTOFNSigmaPiProng2, tpcTofNSigmaPiProng2,     //! Combination of NsigmaTPC and NsigmaTOF
+DECLARE_SOA_DYNAMIC_COLUMN(TPCTOFNSigmaPiProng2, tpcTofNSigmaPiProng2, //! Combination of NsigmaTPC and NsigmaTOF
                            [](float tpcNSigmaPi, float tofNSigmaPi) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaPi, tofNSigmaPi); });
-DECLARE_SOA_DYNAMIC_COLUMN(TPCTOFNSigmaKaProng0, tpcTofNSigmaKaProng0,     //! Combination of NsigmaTPC and NsigmaTOF
+DECLARE_SOA_DYNAMIC_COLUMN(TPCTOFNSigmaKaProng0, tpcTofNSigmaKaProng0, //! Combination of NsigmaTPC and NsigmaTOF
                            [](float tpcNSigmaKa, float tofNSigmaKa) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaKa, tofNSigmaKa); });
-DECLARE_SOA_DYNAMIC_COLUMN(TPCTOFNSigmaKaProng1, tpcTofNSigmaKaProng1,     //! Combination of NsigmaTPC and NsigmaTOF
+DECLARE_SOA_DYNAMIC_COLUMN(TPCTOFNSigmaKaProng1, tpcTofNSigmaKaProng1, //! Combination of NsigmaTPC and NsigmaTOF
                            [](float tpcNSigmaKa, float tofNSigmaKa) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaKa, tofNSigmaKa); });
-DECLARE_SOA_DYNAMIC_COLUMN(TPCTOFNSigmaKaProng2, tpcTofNSigmaKaProng2,     //! Combination of NsigmaTPC and NsigmaTOF
+DECLARE_SOA_DYNAMIC_COLUMN(TPCTOFNSigmaKaProng2, tpcTofNSigmaKaProng2, //! Combination of NsigmaTPC and NsigmaTOF
                            [](float tpcNSigmaKa, float tofNSigmaKa) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaKa, tofNSigmaKa); });
 
 } // namespace hf_charm_cand_reduced
@@ -699,17 +699,17 @@ DECLARE_SOA_COLUMN(HasTof, hasTof, bool);                      //! flag for pres
 DECLARE_SOA_COLUMN(NumItsCls, numItsCls, int);                 //! Number of clusters in ITS
 DECLARE_SOA_COLUMN(NumTpcCrossedRows, numTpcCrossedRows, int); //! Number of TPC crossed rows
 // dynamic columns
-DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt,                   //! transverse momentum
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //! transverse momentum
                            [](float px, float py) -> float { return RecoDecay::pt(px, py); });
 DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, //! azimuthal angle
                            [](float px, float py) -> float { return RecoDecay::phi(px, py); });
 DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, //! pseudorapidity
                            [](float px, float py, float pz) -> float { return RecoDecay::eta(std::array<float, 3>{px, py, pz}); });
-DECLARE_SOA_DYNAMIC_COLUMN(NSigmaTpcTofPi, nSigmaTpcTofPi,     //! Combination of NsigmaTPC and NsigmaTOF
+DECLARE_SOA_DYNAMIC_COLUMN(NSigmaTpcTofPi, nSigmaTpcTofPi, //! Combination of NsigmaTPC and NsigmaTOF
                            [](float tpcNSigmaPi, float tofNSigmaPi) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaPi, tofNSigmaPi); });
-DECLARE_SOA_DYNAMIC_COLUMN(NSigmaTpcTofKa, nSigmaTpcTofKa,     //! Combination of NsigmaTPC and NsigmaTOF
+DECLARE_SOA_DYNAMIC_COLUMN(NSigmaTpcTofKa, nSigmaTpcTofKa, //! Combination of NsigmaTPC and NsigmaTOF
                            [](float tpcNSigmaKa, float tofNSigmaKa) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaKa, tofNSigmaKa); });
-DECLARE_SOA_DYNAMIC_COLUMN(NSigmaTpcTofPr, nSigmaTpcTofPr,     //! Combination of NsigmaTPC and NsigmaTOF
+DECLARE_SOA_DYNAMIC_COLUMN(NSigmaTpcTofPr, nSigmaTpcTofPr, //! Combination of NsigmaTPC and NsigmaTOF
                            [](float tpcNSigmaPr, float tofNSigmaPr) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaPr, tofNSigmaPr); });
 
 } // namespace hf_reso_track
