@@ -76,7 +76,8 @@ std::shared_ptr<TH1> hIsMatterGen;
 std::shared_ptr<TH1> hIsMatterGenTwoBody;
 std::shared_ptr<TH2> hDCAxy3H;
 std::shared_ptr<TH1> hLnnCandLoss;
-std::shared_ptr<TH1> h3HLoss;
+std::shared_ptr<TH1> hNSigma3HTPC_preselection;
+std::shared_ptr<TH1> hNSigma3HTOF_preselection;
 
 float alphaAP(std::array<float, 3> const& momB, std::array<float, 3> const& momC)
 {
@@ -153,6 +154,8 @@ struct lnnRecoTask {
   Configurable<float> TPCRigidityMin3H{"TPCRigidityMin3H", 0.2, "Minimum rigidity of the triton candidate"};
   Configurable<float> nSigmaCutMinTPC{"nSigmaCutMinTPC", -5, "triton dEdx cut (n sigma)"};
   Configurable<float> nSigmaCutMaxTPC{"nSigmaCutMaxTPC", 5, "triton dEdx cut (n sigma)"};
+  Configurable<float> nSigmaCutMinTOF{"nSigmaCutMinTOF", -3, "triton TOF cut (n sigma)"};
+  Configurable<float> nSigmaCutMaxTOF{"nSigmaCutMaxTOF", 4, "triton TOF cut (n sigma)"};
   Configurable<float> nTPCClusMin3H{"nTPCClusMin3H", 80, "triton NTPC clusters cut"};
   Configurable<float> ptMinTOF{"ptMinTOF", 0.8, "minimum pt for TOF cut"};
   Configurable<float> TrTOFMass2Cut{"TrTOFMass2Cut", 5.5, "minimum Triton mass square to TOF"};
@@ -190,7 +193,7 @@ struct lnnRecoTask {
   ConfigurableAxis centBins{"centBins", {100, 0.f, 100.f}, "Binning for centrality"};
   ConfigurableAxis TritMomBins{"TritMomBins", {100, 0.f, 5.f}, "Binning for Triton TPC momentum"};
   ConfigurableAxis MassTOFBins{"MassTOFBins", {400, 2.0f, 12.f}, "Binning for Triton Mass TOF"};
-  ConfigurableAxis PtTritonBins{"PtTritonBins", {200, -5.f, 5.f}, "Binning for Triton pt positive values"};
+  ConfigurableAxis PTritonBins{"PTritonBins", {200, -5.f, 5.f}, "Binning for Triton p positive values"};
   ConfigurableAxis PtPosTritonBins{"PtPosTritonBins", {200, 0.f, 5.f}, "Binning for Triton pt positive values"};
   ConfigurableAxis BetaBins{"BetaBins", {550, 0.f, 1.1f}, "Binning for Beta"};
   ConfigurableAxis DCAxyBins{"DCAxyBins", {550, -5.f, 5.f}, "Binning for DCAxy"};
@@ -238,7 +241,7 @@ struct lnnRecoTask {
     const AxisSpec zVtxAxis{zVtxBins, "z_{vtx} (cm)"};
     const AxisSpec centAxis{centBins, "Centrality"};
     const AxisSpec TritMomAxis{TritMomBins, "#it{p}^{TPC}({}^{3}H)"};
-    const AxisSpec PtTrAxis{PtTritonBins, "#it{p_T}({}^{3}H)"};
+    const AxisSpec PTrAxis{PtTritonBins, "#it{p}({}^{3}H)"};
     const AxisSpec PtPosTrAxis{PtPosTritonBins, "#it{p_T}({}^{3}H)"};
     const AxisSpec MassTOFAxis{MassTOFBins, "{m}^{2}/{z}^{2}"};
     const AxisSpec BetaAxis{BetaBins, "#beta (TOF)"};
@@ -254,7 +257,8 @@ struct lnnRecoTask {
     hDCAxy3H = qaRegistry.add<TH2>("hDCAxy3H", "; #it{p}_{T}({}^{3}H) (GeV/#it{c}); #it{DCA}_{xy} 3H", HistType::kTH2F, {PtPosTrAxis, DCAxyAxis});
     hEvents = qaRegistry.add<TH1>("hEvents", ";Events; ", HistType::kTH1D, {{2, -0.5, 1.5}});
     hLnnCandLoss = qaRegistry.add<TH1>("hLnnCandLoss", ";CandLoss; ", HistType::kTH1D, {{7, -0.5, 6.5}});
-    h3HLoss = qaRegistry.add<TH1>("h3HLoss", ";3HLoss; ", HistType::kTH1D, {{5, -0.5, 4.5}});
+    hNSigma3HTPC_preselection =  qaRegistry.add<TH2>("hNSigma3HTPC_preselection", "#it{p}/z (GeV/#it{c}); n#sigma_{TPC}(^{3}H)",  HistType::kTH2F, {rigidityAxis, nSigma3HAxis})
+    hNSigma3HTOF_preselection = qaRegistry.add<TH2>("hNsigma3HSelTOF", "; Signed p_{T} ({}^{3}H) (GeV/#it{c^2}); n#sigma_{TOF} ({}^{3}H)", HistType::kTH2F, {PTrAxis, nSigma3HAxis});
 
     hEvents->GetXaxis()->SetBinLabel(1, "All");
     hEvents->GetXaxis()->SetBinLabel(2, "sel8");
@@ -268,14 +272,6 @@ struct lnnRecoTask {
     hLnnCandLoss->GetXaxis()->SetBinLabel(5, "!isLnnMass");
     hLnnCandLoss->GetXaxis()->SetBinLabel(6, "DCA #it{V}_{0} daughter");
     hLnnCandLoss->GetXaxis()->SetBinLabel(7, "cosPA");
-
-    h3HLoss->GetYaxis()->SetTitle("Counts");
-    h3HLoss->GetXaxis()->SetTitle("Cuts");
-    h3HLoss->GetXaxis()->SetBinLabel(1, "Initial 3HTracks");
-    h3HLoss->GetXaxis()->SetBinLabel(2, "Track selection");
-    h3HLoss->GetXaxis()->SetBinLabel(3, "#it{p}_{T} Min TOF");
-    h3HLoss->GetXaxis()->SetBinLabel(4, "!hasTOF");
-    h3HLoss->GetXaxis()->SetBinLabel(5, "Mass2 Triton");
 
     if (doprocessMC) {
       hDecayChannel = qaRegistry.add<TH1>("hDecayChannel", ";Decay channel; ", HistType::kTH1D, {{2, -0.5, 1.5}});
@@ -397,14 +393,12 @@ struct lnnRecoTask {
 
       auto& h3track = lnnCand.isMatter ? posTrack : negTrack;
       auto& h3Rigidity = lnnCand.isMatter ? posRigidity : negRigidity;
-      h3HLoss->Fill(0.);
 
       if (h3Rigidity < TPCRigidityMin3H ||
           h3track.tpcNClsFound() < nTPCClusMin3H ||
           h3track.tpcChi2NCl() < Chi2nClusTPCMin ||
           h3track.tpcChi2NCl() > Chi2nClusTPCMax ||
           h3track.itsChi2NCl() > Chi2nClusITS) {
-        h3HLoss->Fill(1.);
         continue;
       }
 
@@ -425,18 +419,21 @@ struct lnnRecoTask {
       auto posTrackCov = getTrackParCov(posTrack);
       auto negTrackCov = getTrackParCov(negTrack);
       int chargeFactor = -1 + 2 * lnnCand.isMatter;
+  
 
       float beta = -1.f;
       if (h3track.pt() >= ptMinTOF) {
-        h3HLoss->Fill(2.);
+        hNSigma3HTPC_preselection->Fill(h3track.tpcInnerParam(), lnnCand.nSigma3H);
         if (!h3track.hasTOF()) {
-          h3HLoss->Fill(3.);
+          continue;
+        }
+        hNSigma3HTOF_preselection->Fill(h3track.p(), h3track.tofNSigmaTr());
+        if (h3track.tofNSigmaTr() > nSigmaCutMinTOF && h3track.tofNSigmaTr() < nSigmaCutMaxTOF) {
           continue;
         }
         beta = h3track.beta();
         lnnCand.mass2TrTOF = h3track.mass() * h3track.mass();
         if (lnnCand.mass2TrTOF < TrTOFMass2Cut) {
-          h3HLoss->Fill(4.);
           continue;
         }
       }
@@ -527,11 +524,11 @@ struct lnnRecoTask {
 
       // Fill QA histograms
       hdEdx3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, h3track.tpcSignal());
-      hNsigma3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, lnnCand.nSigma3H);
       hDCAxy3H->Fill(h3track.pt(), h3track.dcaXY());
+      hNsigma3HSel->Fill(chargeFactor * lnnCand.mom3HTPC, lnnCand.nSigma3H);
       if (h3track.hasTOF()) {
         h3HSignalPtTOF->Fill(chargeFactor * h3track.pt(), beta);
-        hNsigma3HSelTOF->Fill(chargeFactor * h3track.pt(), h3track.tofNSigmaTr());
+        hNsigma3HSelTOF->Fill(chargeFactor * h3track.p(), h3track.tofNSigmaTr());
         h3HMassPtTOF->Fill(chargeFactor * h3track.pt(), lnnCand.mass2TrTOF);
       }
     }
@@ -756,5 +753,4 @@ WorkflowSpec
   defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<lnnRecoTask>(cfgc)};
-}
+    adaptAnalysisTask<lnnRecoTask>(cfgc)};}
