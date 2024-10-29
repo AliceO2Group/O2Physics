@@ -445,6 +445,7 @@ class VarManager : public TObject
     kTPCncls,
     kITSClusterMap,
     kTPCnclsCR,
+    kTPCnCRoverFindCls,
     kTPCchi2,
     kTPCsignal,
     kTPCsignalRandomized,
@@ -2045,6 +2046,9 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kHasTPC] = track.hasTPC();
 
     if constexpr ((fillMap & TrackExtra) > 0) {
+      if (fgUsedVars[kTPCnCRoverFindCls]) {
+        values[kTPCnCRoverFindCls] = track.tpcCrossedRowsOverFindableCls();
+      }
       if (fgUsedVars[kITSncls]) {
         values[kITSncls] = track.itsNCls(); // dynamic column
       }
