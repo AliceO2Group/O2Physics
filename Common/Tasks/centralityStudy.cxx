@@ -50,6 +50,8 @@ struct centralityStudy {
   Configurable<bool> rejectITSinROFpileupStandard{"rejectITSinROFpileupStandard", false, "reject collisions in case of in-ROF ITS pileup (standard)"};
   Configurable<bool> rejectITSinROFpileupStrict{"rejectITSinROFpileupStrict", false, "reject collisions in case of in-ROF ITS pileup (strict)"};
 
+  Configurable<bool> selectUPCcollisions{"selectUPCcollisions", false, "select collisions tagged with UPC flag"};
+
   Configurable<float> minTimeDelta{"minTimeDelta", -1.0f, "reject collision if another collision is this close or less in time"};
   Configurable<float> minFT0CforVertexZ{"minFT0CforVertexZ", 250, "minimum FT0C for vertex-Z profile calculation"};
 
@@ -104,6 +106,8 @@ struct centralityStudy {
 
       histos.add("hFT0CvsPVz_BCs_All", "hFT0CvsPVz_BCs_All", kTProfile, {axisPVz});
       histos.add("hFT0CvsPVz_BCs", "hFT0CvsPVz_BCs", kTProfile, {axisPVz});
+
+      histos.add("hVertexZ_BCvsCO", "hVertexZ_BCvsCO", kTH2D, {axisPVz, axisPVz});
     }
 
     if (do2DPlots) {
@@ -187,12 +191,17 @@ struct centralityStudy {
     if (rejectITSinROFpileupStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
       return;
     }
-    histos.fill(HIST("hCollisionSelection"), 11 /* Not at same bunch pile-up */);
+    histos.fill(HIST("hCollisionSelection"), 11 /* Not ITS ROF pileup (standard) */);
 
     if (rejectITSinROFpileupStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStrict)) {
       return;
     }
-    histos.fill(HIST("hCollisionSelection"), 12 /* Not at same bunch pile-up */);
+    histos.fill(HIST("hCollisionSelection"), 12 /* Not ITS ROF pileup (strict) */);
+
+    if (selectUPCcollisions && collision.flags()<1) { // if zero then NOT upc, otherwise UPC
+      return;
+    }
+    histos.fill(HIST("hCollisionSelection"), 13 /* is UPC event */);
 
     // if we got here, we also finally fill the FT0C histogram, please
     histos.fill(HIST("hNPVContributors"), collision.multPVTotalContributors());
@@ -232,7 +241,7 @@ struct centralityStudy {
     genericProcessCollision(collision);
   }
 
-  void processBCs(aod::MultBCs::iterator const& multbc)
+  void processBCs(soa::Join<aod::BC2Mults, aod::MultBCs>::iterator const& multbc, soa::Join<aod::Mults, aod::MultsExtra, aod::MultSelections, aod::CentFT0Cs, aod::MultsGlobal> const&)
   {
     // process BCs, calculate FT0C distribution
     // conditionals suggested by FIT team (Jacek O. et al)
@@ -254,6 +263,14 @@ struct centralityStudy {
       if (multbc.multBCFT0C() > minFT0CforVertexZ) {
         histos.fill(HIST("hFT0CvsPVz_BCs"), multbc.multBCFT0PosZ(), multbc.multBCFT0C());
       }
+    }
+
+    if(multbc.has_ft0Mult()){
+      auto multco = multbc.ft0Mult_as<soa::Join<aod::Mults, aod::MultsExtra, aod::MultSelections, aod::CentFT0Cs, aod::MultsGlobal>>(); 
+      if (multbc.multBCFT0PosZValid()) {
+        histos.fill(HIST("hVertexZ_BCvsCO"), multco.multPVz(), multbc.multBCFT0PosZ());
+      }
+
     }
   }
 
