@@ -672,14 +672,36 @@ struct HfDataCreatorCharmResoReduced {
         }
       } // else if
 
+      // Get single track variables
+      int nItsClsDauMin = 8, nTpcCrossRowsDauMin = 200;
+      for (const auto& charmHadTrack : charmHadDauTracks) {
+        if (charmHadTrack.itsNCls() < nItsClsDauMin) {
+          nItsClsDauMin = charmHadTrack.itsNCls();
+        }
+        if (charmHadTrack.tpcNClsCrossedRows() < nTpcCrossRowsDauMin) {
+          nTpcCrossRowsDauMin = charmHadTrack.tpcNClsCrossedRows();
+        }
+      }
+
       if constexpr (DecayChannel == DecayChannel::DplusV0 || DecayChannel == DecayChannel::DstarV0) {
         // Loop on V0 candidates
         for (const auto& v0 : bachelors) {
           auto trackPos = v0.template posTrack_as<Tr>();
           auto trackNeg = v0.template negTrack_as<Tr>();
           // Apply selsection
-          if (!buildAndSelectV0(collision, prongIdsD, std::array{trackPos, trackNeg})) {
+          auto v0DauTracks = std::array{trackPos, trackNeg};
+          if (!buildAndSelectV0(collision, prongIdsD, v0DauTracks)) {
             continue;
+          }
+          // Get single track variables
+          int nItsClsDauV0Min = 8, nTpcCrossRowsDauV0Min = 200;
+          for (const auto& v0Track : v0DauTracks) {
+            if (v0Track.itsNCls() < nItsClsDauV0Min) {
+              nItsClsDauV0Min = v0Track.itsNCls();
+            }
+            if (v0Track.tpcNClsCrossedRows() < nTpcCrossRowsDauV0Min) {
+              nTpcCrossRowsDauV0Min = v0Track.tpcNClsCrossedRows();
+            }
           }
           // propagate V0 to primary vertex (if enabled)
           if (propagateV0toPV) {
@@ -739,6 +761,7 @@ struct HfDataCreatorCharmResoReduced {
                      candidateV0.momNeg[0], candidateV0.momNeg[1], candidateV0.momNeg[2],
                      candidateV0.cosPA,
                      candidateV0.dcaV0ToPv,
+                     nItsClsDauV0Min, nTpcCrossRowsDauV0Min,
                      candidateV0.v0Type);
             selectedV0s[v0.globalIndex()] = hfCandV0.lastIndex();
           }
@@ -785,7 +808,7 @@ struct HfDataCreatorCharmResoReduced {
                            track.px(), track.py(), track.pz(), track.sign(),
                            track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
                            track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
-                           track.hasTOF());
+                           track.hasTOF(), track.itsNCls(), track.tpcNClsCrossedRows());
             selectedTracks[track.globalIndex()] = hfTrackNoParam.lastIndex();
           }
           fillHfCandD = true;
@@ -799,7 +822,7 @@ struct HfDataCreatorCharmResoReduced {
                 candD.pxProng0(), candD.pyProng0(), candD.pzProng0(),
                 candD.pxProng1(), candD.pyProng1(), candD.pzProng1(),
                 pVecProng2[0], pVecProng2[1], pVecProng2[2],
-                dtype);
+                nItsClsDauMin, nTpcCrossRowsDauMin, dtype);
         if constexpr (withMl) {
           hfCandDMl(bdtScores[0], bdtScores[1], bdtScores[2], -1., -1., -1.);
         }

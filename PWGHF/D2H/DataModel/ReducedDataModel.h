@@ -17,6 +17,8 @@
 /// \author Alexandre Bigot <alexandre.bigot@cern.ch>, IPHC Strasbourg
 /// \author Antonio Palasciano <antonio.palasciano@cern.ch>, Università degli Studi di Bari & INFN, Bari
 /// \author Fabio Catalano <fabio.catalano@cern.ch>, CERN
+/// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
+/// \author Luca Aglietta <luca.aglietta@cern.ch>, Università degli Studi di Torino (UniTO)
 
 #ifndef PWGHF_D2H_DATAMODEL_REDUCEDDATAMODEL_H_
 #define PWGHF_D2H_DATAMODEL_REDUCEDDATAMODEL_H_
@@ -30,6 +32,7 @@
 #include "Common/DataModel/PIDResponse.h"
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/Utils/utilsPid.h"
 
 namespace o2
 {
@@ -125,13 +128,18 @@ DECLARE_SOA_COLUMN(C1Pt21Pt2, c1Pt21Pt2, float); //! Covariance matrix
 
 namespace hf_track_index_reduced
 {
-DECLARE_SOA_INDEX_COLUMN(HfRedCollision, hfRedCollision); //! ReducedCollision index
-DECLARE_SOA_COLUMN(TrackId, trackId, int);                //! Original track index
-DECLARE_SOA_COLUMN(Prong0Id, prong0Id, int);              //! Original track index
-DECLARE_SOA_COLUMN(Prong1Id, prong1Id, int);              //! Original track index
-DECLARE_SOA_COLUMN(Prong2Id, prong2Id, int);              //! Original track index
-DECLARE_SOA_COLUMN(HasTPC, hasTPC, bool);                 //! Flag to check if track has a TPC match
-DECLARE_SOA_COLUMN(HasTOF, hasTOF, bool);                 //! Flag to check if track has a TOF match
+DECLARE_SOA_INDEX_COLUMN(HfRedCollision, hfRedCollision);      //! ReducedCollision index
+DECLARE_SOA_COLUMN(TrackId, trackId, int);                     //! Original track index
+DECLARE_SOA_COLUMN(Prong0Id, prong0Id, int);                   //! Original track index
+DECLARE_SOA_COLUMN(Prong1Id, prong1Id, int);                   //! Original track index
+DECLARE_SOA_COLUMN(Prong2Id, prong2Id, int);                   //! Original track index
+DECLARE_SOA_COLUMN(HasTPC, hasTPC, bool);                      //! Flag to check if track has a TPC match
+DECLARE_SOA_COLUMN(HasTOF, hasTOF, bool);                      //! Flag to check if track has a TOF match
+DECLARE_SOA_COLUMN(NumItsCls, numItsCls, int);                 //! Number of clusters in ITS
+DECLARE_SOA_COLUMN(NumTpcCrossedRows, numTpcCrossedRows, int); //! Number of TPC crossed rows
+// dynamic columns
+DECLARE_SOA_DYNAMIC_COLUMN(TPCTOFNSigmaPi, tpcTofNSigmaPi,     //! Combination of NsigmaTPC and NsigmaTOF
+                           [](float tpcNSigmaPi, float tofNSigmaPi) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaPi, tofNSigmaPi); });
 } // namespace hf_track_index_reduced
 
 // CAREFUL: need to follow convention [Name = Description + 's'] in DECLARE_SOA_TABLE(Name, "AOD", Description)
@@ -141,6 +149,8 @@ DECLARE_SOA_TABLE(HfRedTrackBases, "AOD", "HFREDTRACKBASE", //! Table with track
                   hf_track_index_reduced::TrackId,
                   hf_track_index_reduced::HfRedCollisionId,
                   HFTRACKPAR_COLUMNS,
+                  hf_track_index_reduced::NumItsCls,
+                  hf_track_index_reduced::NumTpcCrossedRows,
                   aod::track::Px<aod::track::Signed1Pt, aod::track::Snp, aod::track::Alpha>,
                   aod::track::Py<aod::track::Signed1Pt, aod::track::Snp, aod::track::Alpha>,
                   aod::track::Pz<aod::track::Signed1Pt, track::Tgl>,
@@ -156,7 +166,8 @@ DECLARE_SOA_TABLE(HfRedTracksPid, "AOD", "HFREDTRACKPID", //! Table with PID tra
                   hf_track_index_reduced::HasTPC,
                   hf_track_index_reduced::HasTOF,
                   pidtpc::TPCNSigmaPi,
-                  pidtof::TOFNSigmaPi);
+                  pidtof::TOFNSigmaPi,
+                  hf_track_index_reduced::TPCTOFNSigmaPi<pidtpc::TPCNSigmaPi, pidtof::TOFNSigmaPi>);
 
 DECLARE_SOA_EXTENDED_TABLE_USER(HfRedTracksExt, HfRedTrackBases, "HFREDTRACKEXT", //! Track parameters at collision vertex
                                 aod::track::Pt);
@@ -173,6 +184,36 @@ DECLARE_SOA_COLUMN(MlScoreNonpromptMassHypo0, mlScoreNonpromptMassHypo0, float);
 DECLARE_SOA_COLUMN(MlScoreBkgMassHypo1, mlScoreBkgMassHypo1, float);             //! ML score for background class (mass hypothesis 1)
 DECLARE_SOA_COLUMN(MlScorePromptMassHypo1, mlScorePromptMassHypo1, float);       //! ML score for prompt class (mass hypothesis 1)
 DECLARE_SOA_COLUMN(MlScoreNonpromptMassHypo1, mlScoreNonpromptMassHypo1, float); //! ML score for non-prompt class (mass hypothesis 1)
+DECLARE_SOA_COLUMN(MinNumItsClsProng, minNumItsClsProng, int);                   //! minimum value of number of ITS clusters for the decay daughter tracks
+DECLARE_SOA_COLUMN(MinNumTpcCrossedRowsProng, minNumTpcCrossedRowsProng, int);   //! minimum value of number of TPC crossed rows for the decay daughter tracks
+DECLARE_SOA_COLUMN(MinAbsEtaProng, minAbsEtaProng, float);                       //! minimum value of absolute pseudorapidity for the decay daughter tracks
+DECLARE_SOA_COLUMN(MinPtProng, minPtProng, float);                               //! minimum value of transverse momentum for the decay daughter tracks
+DECLARE_SOA_COLUMN(TPCNSigmaPiProng0, tpcNSigmaPiProng0, float);                 //! NsigmaTPCPi for prong0
+DECLARE_SOA_COLUMN(TPCNSigmaPiProng1, tpcNSigmaPiProng1, float);                 //! NsigmaTPCPi for prong1
+DECLARE_SOA_COLUMN(TPCNSigmaPiProng2, tpcNSigmaPiProng2, float);                 //! NsigmaTPCPi for prong2
+DECLARE_SOA_COLUMN(TPCNSigmaKaProng0, tpcNSigmaKaProng0, float);                 //! NsigmaTPCKa for prong0
+DECLARE_SOA_COLUMN(TPCNSigmaKaProng1, tpcNSigmaKaProng1, float);                 //! NsigmaTPCKa for prong1
+DECLARE_SOA_COLUMN(TPCNSigmaKaProng2, tpcNSigmaKaProng2, float);                 //! NsigmaTPCKa for prong2
+DECLARE_SOA_COLUMN(TOFNSigmaPiProng0, tofNSigmaPiProng0, float);                 //! NsigmaTOFPi for prong0
+DECLARE_SOA_COLUMN(TOFNSigmaPiProng1, tofNSigmaPiProng1, float);                 //! NsigmaTOFPi for prong1
+DECLARE_SOA_COLUMN(TOFNSigmaPiProng2, tofNSigmaPiProng2, float);                 //! NsigmaTOFPi for prong2
+DECLARE_SOA_COLUMN(TOFNSigmaKaProng0, tofNSigmaKaProng0, float);                 //! NsigmaTOFKa for prong0
+DECLARE_SOA_COLUMN(TOFNSigmaKaProng1, tofNSigmaKaProng1, float);                 //! NsigmaTOFKa for prong1
+DECLARE_SOA_COLUMN(TOFNSigmaKaProng2, tofNSigmaKaProng2, float);                 //! NsigmaTOFKa for prong2
+
+DECLARE_SOA_DYNAMIC_COLUMN(TPCTOFNSigmaPiProng0, tpcTofNSigmaPiProng0,     //! Combination of NsigmaTPC and NsigmaTOF
+                           [](float tpcNSigmaPi, float tofNSigmaPi) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaPi, tofNSigmaPi); });
+DECLARE_SOA_DYNAMIC_COLUMN(TPCTOFNSigmaPiProng1, tpcTofNSigmaPiProng1,     //! Combination of NsigmaTPC and NsigmaTOF
+                           [](float tpcNSigmaPi, float tofNSigmaPi) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaPi, tofNSigmaPi); });
+DECLARE_SOA_DYNAMIC_COLUMN(TPCTOFNSigmaPiProng2, tpcTofNSigmaPiProng2,     //! Combination of NsigmaTPC and NsigmaTOF
+                           [](float tpcNSigmaPi, float tofNSigmaPi) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaPi, tofNSigmaPi); });
+DECLARE_SOA_DYNAMIC_COLUMN(TPCTOFNSigmaKaProng0, tpcTofNSigmaKaProng0,     //! Combination of NsigmaTPC and NsigmaTOF
+                           [](float tpcNSigmaKa, float tofNSigmaKa) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaKa, tofNSigmaKa); });
+DECLARE_SOA_DYNAMIC_COLUMN(TPCTOFNSigmaKaProng1, tpcTofNSigmaKaProng1,     //! Combination of NsigmaTPC and NsigmaTOF
+                           [](float tpcNSigmaKa, float tofNSigmaKa) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaKa, tofNSigmaKa); });
+DECLARE_SOA_DYNAMIC_COLUMN(TPCTOFNSigmaKaProng2, tpcTofNSigmaKaProng2,     //! Combination of NsigmaTPC and NsigmaTOF
+                           [](float tpcNSigmaKa, float tofNSigmaKa) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaKa, tofNSigmaKa); });
+
 } // namespace hf_charm_cand_reduced
 
 // CAREFUL: need to follow convention [Name = Description + 's'] in DECLARE_SOA_TABLE(Name, "AOD", Description)
@@ -184,6 +225,8 @@ DECLARE_SOA_TABLE(HfRed2Prongs, "AOD", "HFRED2PRONG", //! Table with 2prong cand
                   HFTRACKPAR_COLUMNS,
                   hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ZSecondaryVertex,
                   hf_charm_cand_reduced::InvMassHypo0, hf_charm_cand_reduced::InvMassHypo1,
+                  hf_charm_cand_reduced::MinPtProng, hf_charm_cand_reduced::MinAbsEtaProng,
+                  hf_charm_cand_reduced::MinNumItsClsProng, hf_charm_cand_reduced::MinNumTpcCrossedRowsProng,
                   aod::track::Px<aod::track::Signed1Pt, aod::track::Snp, aod::track::Alpha>,
                   aod::track::Py<aod::track::Signed1Pt, aod::track::Snp, aod::track::Alpha>,
                   aod::track::Pz<aod::track::Signed1Pt, track::Tgl>,
@@ -211,6 +254,8 @@ DECLARE_SOA_TABLE(HfRed3Prongs, "AOD", "HFRED3PRONG", //! Table with 3prong cand
                   HFTRACKPAR_COLUMNS,
                   hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ZSecondaryVertex,
                   hf_charm_cand_reduced::InvMassHypo0, hf_charm_cand_reduced::InvMassHypo1,
+                  hf_charm_cand_reduced::MinPtProng, hf_charm_cand_reduced::MinAbsEtaProng,
+                  hf_charm_cand_reduced::MinNumItsClsProng, hf_charm_cand_reduced::MinNumTpcCrossedRowsProng,
                   aod::track::Px<aod::track::Signed1Pt, aod::track::Snp, aod::track::Alpha>,
                   aod::track::Py<aod::track::Signed1Pt, aod::track::Snp, aod::track::Alpha>,
                   aod::track::Pz<aod::track::Signed1Pt, track::Tgl>,
@@ -236,6 +281,30 @@ DECLARE_SOA_TABLE_VERSIONED(HfRed3ProngsMl_001, "AOD", "HFRED3PRONGML", 1, //! T
                             o2::soa::Marker<1>);
 
 using HfRed3ProngsMl = HfRed3ProngsMl_001;
+
+DECLARE_SOA_TABLE(HfRedPidDau0s, "AOD", "HFREDPIDDAU0", //!
+                  hf_charm_cand_reduced::TPCNSigmaPiProng0,
+                  hf_charm_cand_reduced::TOFNSigmaPiProng0,
+                  hf_charm_cand_reduced::TPCNSigmaKaProng0,
+                  hf_charm_cand_reduced::TOFNSigmaKaProng0,
+                  hf_charm_cand_reduced::TPCTOFNSigmaPiProng0<hf_charm_cand_reduced::TPCNSigmaPiProng0, hf_charm_cand_reduced::TOFNSigmaPiProng0>,
+                  hf_charm_cand_reduced::TPCTOFNSigmaKaProng0<hf_charm_cand_reduced::TPCNSigmaKaProng0, hf_charm_cand_reduced::TOFNSigmaKaProng0>);
+
+DECLARE_SOA_TABLE(HfRedPidDau1s, "AOD", "HFREDPIDDAU1", //!
+                  hf_charm_cand_reduced::TPCNSigmaPiProng1,
+                  hf_charm_cand_reduced::TOFNSigmaPiProng1,
+                  hf_charm_cand_reduced::TPCNSigmaKaProng1,
+                  hf_charm_cand_reduced::TOFNSigmaKaProng1,
+                  hf_charm_cand_reduced::TPCTOFNSigmaPiProng0<hf_charm_cand_reduced::TPCNSigmaPiProng1, hf_charm_cand_reduced::TOFNSigmaPiProng1>,
+                  hf_charm_cand_reduced::TPCTOFNSigmaKaProng0<hf_charm_cand_reduced::TPCNSigmaKaProng1, hf_charm_cand_reduced::TOFNSigmaKaProng1>);
+
+DECLARE_SOA_TABLE(HfRedPidDau2s, "AOD", "HFREDPIDDAU2", //!
+                  hf_charm_cand_reduced::TPCNSigmaPiProng2,
+                  hf_charm_cand_reduced::TOFNSigmaPiProng2,
+                  hf_charm_cand_reduced::TPCNSigmaKaProng2,
+                  hf_charm_cand_reduced::TOFNSigmaKaProng2,
+                  hf_charm_cand_reduced::TPCTOFNSigmaPiProng2<hf_charm_cand_reduced::TPCNSigmaPiProng2, hf_charm_cand_reduced::TOFNSigmaPiProng2>,
+                  hf_charm_cand_reduced::TPCTOFNSigmaKaProng2<hf_charm_cand_reduced::TPCNSigmaKaProng2, hf_charm_cand_reduced::TOFNSigmaKaProng2>);
 
 // Beauty candidates prongs
 namespace hf_cand_b0_reduced
@@ -545,7 +614,9 @@ DECLARE_SOA_TABLE(HfCandBsConfigs, "AOD", "HFCANDBSCONFIG", //! Table with confi
 // Charm resonances analysis
 namespace hf_reso_3_prong
 {
-DECLARE_SOA_COLUMN(DType, dType, int8_t); //! Integer with selected D candidate type: 1 = Dplus, -1 = Dminus, 2 = DstarPlus, -2 = DstarMinus
+DECLARE_SOA_COLUMN(DType, dType, int8_t);                                      //! Integer with selected D candidate type: 1 = Dplus, -1 = Dminus, 2 = DstarPlus, -2 = DstarMinus
+DECLARE_SOA_COLUMN(MinNumItsClsProng, minNumItsClsProng, int);                 //! minimum value of number of ITS clusters for the decay daughter tracks
+DECLARE_SOA_COLUMN(MinNumTpcCrossedRowsProng, minNumTpcCrossedRowsProng, int); //! minimum value of number of TPC crossed rows for the decay daughter tracks
 
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, //!
                            [](float pxProng0, float pxProng1, float pxProng2) -> float { return 1.f * pxProng0 + 1.f * pxProng1 + 1.f * pxProng2; });
@@ -555,6 +626,18 @@ DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, //!
                            [](float pzProng0, float pzProng1, float pzProng2) -> float { return 1.f * pzProng0 + 1.f * pzProng1 + 1.f * pzProng2; });
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //!
                            [](float pxProng0, float pxProng1, float pxProng2, float pyProng0, float pyProng1, float pyProng2) -> float { return RecoDecay::pt((1.f * pxProng0 + 1.f * pxProng1 + 1.f * pxProng2), (1.f * pyProng0 + 1.f * pyProng1 + 1.f * pyProng2)); });
+DECLARE_SOA_DYNAMIC_COLUMN(PtProng0, ptProng0, //!
+                           [](float pxProng0, float pyProng0) -> float { return RecoDecay::pt(pxProng0, pyProng0); });
+DECLARE_SOA_DYNAMIC_COLUMN(PtProng1, ptProng1, //!
+                           [](float pxProng1, float pyProng1) -> float { return RecoDecay::pt(pxProng1, pyProng1); });
+DECLARE_SOA_DYNAMIC_COLUMN(PtProng2, ptProng2, //!
+                           [](float pxProng2, float pyProng2) -> float { return RecoDecay::pt(pxProng2, pyProng2); });
+DECLARE_SOA_DYNAMIC_COLUMN(EtaProng0, etaProng0, //!
+                           [](float pxProng0, float pyProng0, float pzProng0) -> float { return RecoDecay::eta(std::array<float, 3>{pxProng0, pyProng0, pzProng0}); });
+DECLARE_SOA_DYNAMIC_COLUMN(EtaProng1, etaProng1, //!
+                           [](float pxProng1, float pyProng1, float pzProng1) -> float { return RecoDecay::eta(std::array<float, 3>{pxProng1, pyProng1, pzProng1}); });
+DECLARE_SOA_DYNAMIC_COLUMN(EtaProng2, etaProng2, //!
+                           [](float pxProng2, float pyProng2, float pzProng2) -> float { return RecoDecay::eta(std::array<float, 3>{pxProng2, pyProng2, pzProng2}); });
 DECLARE_SOA_DYNAMIC_COLUMN(InvMassDplus, invMassDplus,
                            [](float px0, float py0, float pz0, float px1, float py1, float pz1, float px2, float py2, float pz2) -> float { return RecoDecay::m(std::array{std::array{px0, py0, pz0}, std::array{px1, py1, pz1}, std::array{px2, py2, pz2}}, std::array{constants::physics::MassPiPlus, constants::physics::MassKPlus, constants::physics::MassPiPlus}); });
 DECLARE_SOA_DYNAMIC_COLUMN(InvMassDstar, invMassDstar,
@@ -567,10 +650,13 @@ DECLARE_SOA_DYNAMIC_COLUMN(InvMassAntiDstar, invMassAntiDstar,
 
 namespace hf_reso_v0
 {
-DECLARE_SOA_COLUMN(Cpa, cpa, float);         //! Cosine of Pointing Angle of V0 candidate
-DECLARE_SOA_COLUMN(Dca, dca, float);         //! DCA of V0 candidate
-DECLARE_SOA_COLUMN(Radius, radius, float);   //! Radius of V0 candidate
-DECLARE_SOA_COLUMN(V0Type, v0Type, uint8_t); //! Bitmap with mass hypothesis of the V0
+DECLARE_SOA_COLUMN(Cpa, cpa, float);                                           //! Cosine of Pointing Angle of V0 candidate
+DECLARE_SOA_COLUMN(Dca, dca, float);                                           //! DCA of V0 candidate
+DECLARE_SOA_COLUMN(Radius, radius, float);                                     //! Radius of V0 candidate
+DECLARE_SOA_COLUMN(V0Type, v0Type, uint8_t);                                   //! Bitmap with mass hypothesis of the V0
+DECLARE_SOA_COLUMN(MinNumItsClsProng, minNumItsClsProng, int);                 //! minimum value of number of ITS clusters for the decay daughter tracks
+DECLARE_SOA_COLUMN(MinNumTpcCrossedRowsProng, minNumTpcCrossedRowsProng, int); //! minimum value of number of TPC crossed rows for the decay daughter tracks
+
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px,           //!
                            [](float pxProng0, float pxProng1) -> float { return 1.f * pxProng0 + 1.f * pxProng1; });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, //!
@@ -579,6 +665,14 @@ DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, //!
                            [](float pzProng0, float pzProng1) -> float { return 1.f * pzProng0 + 1.f * pzProng1; });
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //!
                            [](float pxProng0, float pxProng1, float pyProng0, float pyProng1) -> float { return RecoDecay::pt((1.f * pxProng0 + 1.f * pxProng1), (1.f * pyProng0 + 1.f * pyProng1)); });
+DECLARE_SOA_DYNAMIC_COLUMN(PtProng0, ptProng0, //!
+                           [](float pxProng0, float pyProng0) -> float { return RecoDecay::pt(pxProng0, pyProng0); });
+DECLARE_SOA_DYNAMIC_COLUMN(PtProng1, ptProng1, //!
+                           [](float pxProng1, float pyProng1) -> float { return RecoDecay::pt(pxProng1, pyProng1); });
+DECLARE_SOA_DYNAMIC_COLUMN(EtaProng0, etaProng0, //!
+                           [](float pxProng0, float pyProng0, float pzProng0) -> float { return RecoDecay::eta(std::array<float, 3>{pxProng0, pyProng0, pzProng0}); });
+DECLARE_SOA_DYNAMIC_COLUMN(EtaProng1, etaProng1, //!
+                           [](float pxProng1, float pyProng1, float pzProng1) -> float { return RecoDecay::eta(std::array<float, 3>{pxProng1, pyProng1, pzProng1}); });
 DECLARE_SOA_DYNAMIC_COLUMN(V0Radius, v0Radius, //! V0 decay radius (2D, centered at zero)
                            [](float x, float y) -> float { return RecoDecay::sqrtSumOfSquares(x, y); });
 DECLARE_SOA_DYNAMIC_COLUMN(InvMassLambda, invMassLambda, //! mass under lambda hypothesis
@@ -591,23 +685,32 @@ DECLARE_SOA_DYNAMIC_COLUMN(InvMassK0s, invMassK0s, //! mass under K0short hypoth
 
 namespace hf_reso_track
 {
-DECLARE_SOA_COLUMN(Px, px, float);                   //! x-component of momentum
-DECLARE_SOA_COLUMN(Py, py, float);                   //! y-component of momentum
-DECLARE_SOA_COLUMN(Pz, pz, float);                   //! z-component of momentum
-DECLARE_SOA_COLUMN(Sign, sign, uint8_t);             //! charge sign
-DECLARE_SOA_COLUMN(NSigmaTpcPi, nSigmaTpcPi, float); //! TPC Nsigma for pion hypothesis
-DECLARE_SOA_COLUMN(NSigmaTpcKa, nSigmaTpcKa, float); //! TPC Nsigma for kaon hypothesis
-DECLARE_SOA_COLUMN(NSigmaTpcPr, nSigmaTpcPr, float); //! TPC Nsigma for proton hypothesis
-DECLARE_SOA_COLUMN(NSigmaTofPi, nSigmaTofPi, float); //! TOF Nsigma for pion hypothesis
-DECLARE_SOA_COLUMN(NSigmaTofKa, nSigmaTofKa, float); //! TOF Nsigma for kaon hypothesis
-DECLARE_SOA_COLUMN(NSigmaTofPr, nSigmaTofPr, float); //! TOF Nsigma for proton hypothesis
-DECLARE_SOA_COLUMN(HasTof, hasTof, bool);            //! flag for presence of TOF
-DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt,                   //!
+DECLARE_SOA_COLUMN(Px, px, float);                             //! x-component of momentum
+DECLARE_SOA_COLUMN(Py, py, float);                             //! y-component of momentum
+DECLARE_SOA_COLUMN(Pz, pz, float);                             //! z-component of momentum
+DECLARE_SOA_COLUMN(Sign, sign, uint8_t);                       //! charge sign
+DECLARE_SOA_COLUMN(NSigmaTpcPi, nSigmaTpcPi, float);           //! TPC Nsigma for pion hypothesis
+DECLARE_SOA_COLUMN(NSigmaTpcKa, nSigmaTpcKa, float);           //! TPC Nsigma for kaon hypothesis
+DECLARE_SOA_COLUMN(NSigmaTpcPr, nSigmaTpcPr, float);           //! TPC Nsigma for proton hypothesis
+DECLARE_SOA_COLUMN(NSigmaTofPi, nSigmaTofPi, float);           //! TOF Nsigma for pion hypothesis
+DECLARE_SOA_COLUMN(NSigmaTofKa, nSigmaTofKa, float);           //! TOF Nsigma for kaon hypothesis
+DECLARE_SOA_COLUMN(NSigmaTofPr, nSigmaTofPr, float);           //! TOF Nsigma for proton hypothesis
+DECLARE_SOA_COLUMN(HasTof, hasTof, bool);                      //! flag for presence of TOF
+DECLARE_SOA_COLUMN(NumItsCls, numItsCls, int);                 //! Number of clusters in ITS
+DECLARE_SOA_COLUMN(NumTpcCrossedRows, numTpcCrossedRows, int); //! Number of TPC crossed rows
+// dynamic columns
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt,                   //! transverse momentum
                            [](float px, float py) -> float { return RecoDecay::pt(px, py); });
-DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, //!
+DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, //! azimuthal angle
                            [](float px, float py) -> float { return RecoDecay::phi(px, py); });
-DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, //!
+DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, //! pseudorapidity
                            [](float px, float py, float pz) -> float { return RecoDecay::eta(std::array<float, 3>{px, py, pz}); });
+DECLARE_SOA_DYNAMIC_COLUMN(NSigmaTpcTofPi, nSigmaTpcTofPi,     //! Combination of NsigmaTPC and NsigmaTOF
+                           [](float tpcNSigmaPi, float tofNSigmaPi) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaPi, tofNSigmaPi); });
+DECLARE_SOA_DYNAMIC_COLUMN(NSigmaTpcTofKa, nSigmaTpcTofKa,     //! Combination of NsigmaTPC and NsigmaTOF
+                           [](float tpcNSigmaKa, float tofNSigmaKa) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaKa, tofNSigmaKa); });
+DECLARE_SOA_DYNAMIC_COLUMN(NSigmaTpcTofPr, nSigmaTpcTofPr,     //! Combination of NsigmaTPC and NsigmaTOF
+                           [](float tpcNSigmaPr, float tofNSigmaPr) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaPr, tofNSigmaPr); });
 
 } // namespace hf_reso_track
 
@@ -622,11 +725,17 @@ DECLARE_SOA_TABLE(HfRedVzeros, "AOD", "HFREDVZERO", //! Table with V0 candidate 
                   hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1,
                   hf_reso_v0::Cpa,
                   hf_reso_v0::Dca,
+                  hf_reso_v0::MinNumItsClsProng,
+                  hf_reso_v0::MinNumTpcCrossedRowsProng,
                   hf_reso_v0::V0Type,
                   // Dynamic
                   hf_reso_v0::Px<hf_cand::PxProng0, hf_cand::PxProng1>,
                   hf_reso_v0::Py<hf_cand::PyProng0, hf_cand::PyProng1>,
                   hf_reso_v0::Pz<hf_cand::PzProng0, hf_cand::PzProng1>,
+                  hf_reso_v0::PtProng0<hf_cand::PxProng0, hf_cand::PyProng0>,
+                  hf_reso_v0::PtProng1<hf_cand::PxProng1, hf_cand::PyProng1>,
+                  hf_reso_v0::EtaProng0<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0>,
+                  hf_reso_v0::EtaProng1<hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
                   hf_reso_v0::InvMassK0s<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
                   hf_reso_v0::InvMassLambda<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
                   hf_reso_v0::InvMassAntiLambda<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
@@ -649,10 +758,15 @@ DECLARE_SOA_TABLE(HfRedTrkNoParams, "AOD", "HFREDTRKNOPARAM", //! Table with tra
                   hf_reso_track::NSigmaTofKa,
                   hf_reso_track::NSigmaTofPr,
                   hf_reso_track::HasTof,
+                  hf_reso_track::NumItsCls,
+                  hf_reso_track::NumTpcCrossedRows,
                   // Dynamic
                   hf_reso_track::Pt<hf_reso_track::Px, hf_reso_track::Py>,
                   hf_reso_track::Eta<hf_reso_track::Px, hf_reso_track::Py, hf_reso_track::Pz>,
-                  hf_reso_track::Phi<hf_reso_track::Px, hf_reso_track::Py>);
+                  hf_reso_track::Phi<hf_reso_track::Px, hf_reso_track::Py>,
+                  hf_reso_track::NSigmaTpcTofPi<hf_reso_track::NSigmaTpcPi, hf_reso_track::NSigmaTofPi>,
+                  hf_reso_track::NSigmaTpcTofKa<hf_reso_track::NSigmaTpcKa, hf_reso_track::NSigmaTofKa>,
+                  hf_reso_track::NSigmaTpcTofPr<hf_reso_track::NSigmaTpcPr, hf_reso_track::NSigmaTofPr>);
 
 DECLARE_SOA_TABLE(HfRed3PrNoTrks, "AOD", "HFRED3PRNOTRK", //! Table with 3 prong candidate information for resonances reduced workflow
                   o2::soa::Index<>,
@@ -664,11 +778,18 @@ DECLARE_SOA_TABLE(HfRed3PrNoTrks, "AOD", "HFRED3PRNOTRK", //! Table with 3 prong
                   hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0,
                   hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1,
                   hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2,
+                  hf_reso_3_prong::MinNumItsClsProng, hf_reso_3_prong::MinNumTpcCrossedRowsProng,
                   hf_reso_3_prong::DType,
                   // Dynamic
                   hf_reso_3_prong::Px<hf_cand::PxProng0, hf_cand::PxProng1, hf_cand::PxProng2>,
                   hf_reso_3_prong::Py<hf_cand::PyProng0, hf_cand::PyProng1, hf_cand::PyProng2>,
                   hf_reso_3_prong::Pz<hf_cand::PzProng0, hf_cand::PzProng1, hf_cand::PzProng2>,
+                  hf_reso_3_prong::PtProng0<hf_cand::PxProng0, hf_cand::PyProng0>,
+                  hf_reso_3_prong::PtProng1<hf_cand::PxProng1, hf_cand::PyProng1>,
+                  hf_reso_3_prong::PtProng2<hf_cand::PxProng2, hf_cand::PyProng2>,
+                  hf_reso_3_prong::EtaProng0<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0>,
+                  hf_reso_3_prong::EtaProng1<hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
+                  hf_reso_3_prong::EtaProng2<hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2>,
                   hf_reso_3_prong::InvMassDplus<hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1, hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2>,
                   hf_reso_3_prong::InvMassDstar<hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2, hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
                   hf_reso_3_prong::InvMassAntiDstar<hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2, hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0, hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1>,
