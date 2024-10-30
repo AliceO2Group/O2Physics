@@ -109,26 +109,32 @@ inline float getMass(int pdgCode)
   float mass = 0;
   // add new particles if necessary here
   switch (std::abs(pdgCode)) {
-    case kPiPlus: // charged pions, changed magic number as per their pdg name
+    case kPiPlus:
       mass = o2::constants::physics::MassPiPlus;
       break;
-    case kKPlus: // charged kaon
+    case kKPlus:
       mass = o2::constants::physics::MassKPlus;
       break;
-    case kProton: // proton
+    case kProton:
       mass = o2::constants::physics::MassProton;
       break;
-    case kLambda0: // Lambda
+    case kLambda0:
       mass = o2::constants::physics::MassLambda;
       break;
-    case o2::constants::physics::Pdg::kPhi: // Phi Meson
+    case o2::constants::physics::Pdg::kPhi:
       mass = o2::constants::physics::MassPhi;
       break;
-    case o2::constants::physics::Pdg::kLambdaCPlus: // Charm Lambda
+    case o2::constants::physics::Pdg::kLambdaCPlus:
       mass = o2::constants::physics::MassLambdaCPlus;
       break;
-    case o2::constants::physics::Pdg::kDeuteron: // Deuteron
+    case o2::constants::physics::Pdg::kDeuteron:
       mass = o2::constants::physics::MassDeuteron;
+      break;
+    case o2::constants::physics::Pdg::kTriton:
+      mass = o2::constants::physics::MassTriton;
+      break;
+    case o2::constants::physics::Pdg::kHelium3:
+      mass = o2::constants::physics::MassHelium3;
       break;
     default:
       LOG(fatal) << "PDG code is not suppored";
