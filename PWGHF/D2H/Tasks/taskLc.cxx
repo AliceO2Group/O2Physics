@@ -665,7 +665,7 @@ struct HfTaskLc {
   }
 
   template <bool fillMl, typename CollType, typename CandType>
-  void runDataAnalysisPerCollision(CollType const& collisions,
+  void runAnalysisPerCollisionData(CollType const& collisions,
                                    CandType const& candidates,
                                    aod::TracksWDca const& tracks)
   {
