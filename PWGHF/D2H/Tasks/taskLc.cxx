@@ -686,51 +686,51 @@ struct HfTaskLc {
     }
   }
 
-  void processDataStd(Collisions const& collision,
+  void processDataStd(Collisions const& collisions,
                       LcCandidates const& selectedLcCandidates,
                       aod::TracksWDca const& tracks)
   {
-    runDataAnalysisPerCollision<false>(collision, selectedLcCandidates, tracks);
+    runDataAnalysisPerCollision<false>(collisions, selectedLcCandidates, tracks);
   }
   PROCESS_SWITCH(HfTaskLc, processDataStd, "Process Data with the standard method", true);
 
-  void processDataWithMl(Collisions const& collision,
+  void processDataWithMl(Collisions const& collisions,
                          LcCandidatesMl const& selectedLcCandidatesMl,
                          aod::TracksWDca const& tracks)
   {
-    runDataAnalysisPerCollision<true>(collision, selectedLcCandidatesMl, tracks);
+    runDataAnalysisPerCollision<true>(collisions, selectedLcCandidatesMl, tracks);
   }
   PROCESS_SWITCH(HfTaskLc, processDataWithMl, "Process Data with the ML method", false);
 
-  void processDataStdWithFT0C(CollisionsWithFT0C const& collision,
+  void processDataStdWithFT0C(CollisionsWithFT0C const& collisions,
                               LcCandidates const& selectedLcCandidates,
                               aod::TracksWDca const& tracks)
   {
-    runDataAnalysisPerCollision<false>(collision, selectedLcCandidates, tracks);
+    runDataAnalysisPerCollision<false>(collisions, selectedLcCandidates, tracks);
   }
   PROCESS_SWITCH(HfTaskLc, processDataStdWithFT0C, "Process Data with the standard method", false);
 
-  void processDataWithMlWithFT0C(CollisionsWithFT0C const& collision,
+  void processDataWithMlWithFT0C(CollisionsWithFT0C const& collisions,
                                  LcCandidatesMl const& selectedLcCandidatesMl,
                                  aod::TracksWDca const& tracks)
   {
-    runDataAnalysisPerCollision<true>(collision, selectedLcCandidatesMl, tracks);
+    runDataAnalysisPerCollision<true>(collisions, selectedLcCandidatesMl, tracks);
   }
   PROCESS_SWITCH(HfTaskLc, processDataWithMlWithFT0C, "Process Data with the ML method", false);
 
-  void processDataStdWithFT0M(CollisionsWithFT0M const& collision,
+  void processDataStdWithFT0M(CollisionsWithFT0M const& collisions,
                               LcCandidates const& selectedLcCandidates,
                               aod::TracksWDca const& tracks)
   {
-    runDataAnalysisPerCollision<false>(collision, selectedLcCandidates, tracks);
+    runDataAnalysisPerCollision<false>(collisions, selectedLcCandidates, tracks);
   }
   PROCESS_SWITCH(HfTaskLc, processDataStdWithFT0M, "Process Data with the standard method", false);
 
-  void processDataWithMlWithFT0M(CollisionsWithFT0M const& collision,
+  void processDataWithMlWithFT0M(CollisionsWithFT0M const& collisions,
                                  LcCandidatesMl const& selectedLcCandidatesMl,
                                  aod::TracksWDca const& tracks)
   {
-    runDataAnalysisPerCollision<true>(collision, selectedLcCandidatesMl, tracks);
+    runDataAnalysisPerCollision<true>(collisions, selectedLcCandidatesMl, tracks);
   }
   PROCESS_SWITCH(HfTaskLc, processDataWithMlWithFT0M, "Process Data with the ML method", false);
 
@@ -754,7 +754,7 @@ struct HfTaskLc {
                     aod::McCollisions const&,
                     aod::TracksWMc const&)
   {
-    runMcAnalysisPerCollision<false>(collision, selectedLcCandidatesMc, mcParticles);
+    runMcAnalysisPerCollision<false>(collisions, selectedLcCandidatesMc, mcParticles);
   }
   PROCESS_SWITCH(HfTaskLc, processMcStd, "Process MC with the standard method", false);
 
@@ -764,7 +764,7 @@ struct HfTaskLc {
                        aod::McCollisions const&,
                        aod::TracksWMc const&)
   {
-    runMcAnalysisPerCollision<true>(collision, selectedLcCandidatesMlMc, mcParticles);
+    runMcAnalysisPerCollision<true>(collisions, selectedLcCandidatesMlMc, mcParticles);
   }
   PROCESS_SWITCH(HfTaskLc, processMcWithMl, "Process Mc with the ML method", false);
 
@@ -774,17 +774,17 @@ struct HfTaskLc {
                             aod::McCollisions const&,
                             aod::TracksWMc const&)
   {
-    runMcAnalysisPerCollision<false>(collision, selectedLcCandidatesMc, mcParticles);
+    runMcAnalysisPerCollision<false>(collisions, selectedLcCandidatesMc, mcParticles);
   }
   PROCESS_SWITCH(HfTaskLc, processMcStdWithFT0C, "Process MC with the standard method", false);
 
-  void processMcWithMlWithFT0C(CollisionsMcWithFT0C const& collision,
+  void processMcWithMlWithFT0C(CollisionsMcWithFT0C const& collisions,
                                LcCandidatesMlMc const& selectedLcCandidatesMlMc,
                                McParticles3ProngMatched const& mcParticles,
                                aod::McCollisions const&,
                                aod::TracksWMc const&)
   {
-    runMcAnalysisPerCollision<true>(collision, selectedLcCandidatesMlMc, mcParticles);
+    runMcAnalysisPerCollision<true>(collisions, selectedLcCandidatesMlMc, mcParticles);
   }
   PROCESS_SWITCH(HfTaskLc, processMcWithMlWithFT0C, "Process Mc with the ML method", false);
 
@@ -794,7 +794,7 @@ struct HfTaskLc {
                             aod::McCollisions const&,
                             aod::TracksWMc const&)
   {
-    runMcAnalysisPerCollision<false>(collision, selectedLcCandidatesMc, mcParticles);
+    runMcAnalysisPerCollision<false>(collisions, selectedLcCandidatesMc, mcParticles);
   }
   PROCESS_SWITCH(HfTaskLc, processMcStdWithFT0M, "Process MC with the standard method", false);
 
@@ -804,7 +804,7 @@ struct HfTaskLc {
                                aod::McCollisions const&,
                                aod::TracksWMc const&)
   {
-    runMcAnalysisPerCollision<true>(collision, selectedLcCandidatesMlMc, mcParticles);
+    runMcAnalysisPerCollision<true>(collisions, selectedLcCandidatesMlMc, mcParticles);
   }
   PROCESS_SWITCH(HfTaskLc, processMcWithMlWithFT0M, "Process Mc with the ML method", false);
 };
