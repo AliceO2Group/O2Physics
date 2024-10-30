@@ -180,6 +180,7 @@ struct lambdapolarization {
   {
     AxisSpec cosAxis = {110, -1.05, 1.05};
     AxisSpec centQaAxis = {80, 0.0, 80.0};
+    AxisSpec PVzQaAxis = {300, -15.0, 15.0};
     AxisSpec epAxis = {6, 0.0, 2.0 * constants::math::PI};
     AxisSpec epQaAxis = {100, -1.0 * constants::math::PI, constants::math::PI};
 
@@ -205,6 +206,7 @@ struct lambdapolarization {
 
     if (cfgQAv0) {
       histos.add("QA/CentDist", "", {HistType::kTH1F, {centQaAxis}});
+      histos.add("QA/PVzDist", "", {HistType::kTH1F, {PVzQaAxis}});
 
       histos.add("QA/nsigma_tpc_pt_ppr", "", {HistType::kTH2F, {ptAxis, pidAxis}});
       histos.add("QA/nsigma_tpc_pt_ppi", "", {HistType::kTH2F, {ptAxis, pidAxis}});
@@ -618,6 +620,8 @@ struct lambdapolarization {
       return;
     }
     histos.fill(HIST("QA/CentDist"), centrality, 1.0);
+    histos.fill(HIST("QA/PVzDist"), collision.posZ(), 1.0);
+
     if (cfgShiftCorr) {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       currentRunNumber = bc.runNumber();
