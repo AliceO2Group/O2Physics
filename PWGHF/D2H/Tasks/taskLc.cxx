@@ -53,7 +53,6 @@ struct HfTaskLc {
   ConfigurableAxis thnConfigAxisCanType{"thnConfigAxisCanType", {5, 0., 5.}, ""};
 
   HfHelper hfHelper;
-  Filter filterSelectCandidates = aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLc || aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLc;
 
   using Collisions = soa::Join<aod::Collisions, aod::EvSels>;
   using CollisionsMc = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
@@ -68,7 +67,7 @@ struct HfTaskLc {
   using LcCandidatesMc = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>>;
   using LcCandidatesMlMc = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfMlLcToPKPi, aod::HfCand3ProngMcRec>>;
   using McParticles3ProngMatched = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
-
+  Filter filterSelectCandidates = aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLc || aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLc;
   Preslice<aod::McParticles> perMCCollision = aod::mcparticle::mcCollisionId;
   Preslice<aod::HfCand3Prong> candLcPerCollision = aod::hf_cand::collisionId;
   SliceCache cache;
@@ -471,9 +470,7 @@ struct HfTaskLc {
             massLc = hfHelper.invMassLcToPKPi(candidate);
 
             if constexpr (fillMl) {
-
               if (candidate.mlProbLcToPKPi().size() == 3) {
-
                 outputBkg = candidate.mlProbLcToPKPi()[0];    /// bkg score
                 outputPrompt = candidate.mlProbLcToPKPi()[1]; /// prompt score
                 outputFD = candidate.mlProbLcToPKPi()[2];     /// non-prompt score
@@ -488,9 +485,7 @@ struct HfTaskLc {
             massLc = hfHelper.invMassLcToPiKP(candidate);
 
             if constexpr (fillMl) {
-
               if (candidate.mlProbLcToPiKP().size() == 3) {
-
                 outputBkg = candidate.mlProbLcToPiKP()[0];    /// bkg score
                 outputPrompt = candidate.mlProbLcToPiKP()[1]; /// prompt score
                 outputFD = candidate.mlProbLcToPiKP()[2];     /// non-prompt score
@@ -639,9 +634,7 @@ struct HfTaskLc {
           massLc = hfHelper.invMassLcToPKPi(candidate);
 
           if constexpr (fillMl) {
-
             if (candidate.mlProbLcToPKPi().size() == 3) {
-
               outputBkg = candidate.mlProbLcToPKPi()[0];    /// bkg score
               outputPrompt = candidate.mlProbLcToPKPi()[1]; /// prompt score
               outputFD = candidate.mlProbLcToPKPi()[2];     /// non-prompt score
@@ -656,9 +649,7 @@ struct HfTaskLc {
           massLc = hfHelper.invMassLcToPiKP(candidate);
 
           if constexpr (fillMl) {
-
             if (candidate.mlProbLcToPiKP().size() == 3) {
-
               outputBkg = candidate.mlProbLcToPiKP()[0];    /// bkg score
               outputPrompt = candidate.mlProbLcToPiKP()[1]; /// prompt score
               outputFD = candidate.mlProbLcToPiKP()[2];     /// non-prompt score
@@ -753,7 +744,7 @@ struct HfTaskLc {
                     aod::McCollisions const&,
                     aod::TracksWMc const&)
   {
-    runMcAnalysisPerCollision<false>(collisions, selectedLcCandidatesMc, mcParticles);
+    runAnalysisPerCollisionMc<false>(collisions, selectedLcCandidatesMc, mcParticles);
   }
   PROCESS_SWITCH(HfTaskLc, processMcStd, "Process MC with the standard method", false);
 
@@ -763,7 +754,7 @@ struct HfTaskLc {
                        aod::McCollisions const&,
                        aod::TracksWMc const&)
   {
-    runMcAnalysisPerCollision<true>(collisions, selectedLcCandidatesMlMc, mcParticles);
+    runAnalysisPerCollisionMc<true>(collisions, selectedLcCandidatesMlMc, mcParticles);
   }
   PROCESS_SWITCH(HfTaskLc, processMcWithMl, "Process Mc with the ML method", false);
 
@@ -773,7 +764,7 @@ struct HfTaskLc {
                             aod::McCollisions const&,
                             aod::TracksWMc const&)
   {
-    runMcAnalysisPerCollision<false>(collisions, selectedLcCandidatesMc, mcParticles);
+    runAnalysisPerCollisionMc<false>(collisions, selectedLcCandidatesMc, mcParticles);
   }
   PROCESS_SWITCH(HfTaskLc, processMcStdWithFT0C, "Process MC with the standard method", false);
 
@@ -783,7 +774,7 @@ struct HfTaskLc {
                                aod::McCollisions const&,
                                aod::TracksWMc const&)
   {
-    runMcAnalysisPerCollision<true>(collisions, selectedLcCandidatesMlMc, mcParticles);
+    runAnalysisPerCollisionMc<true>(collisions, selectedLcCandidatesMlMc, mcParticles);
   }
   PROCESS_SWITCH(HfTaskLc, processMcWithMlWithFT0C, "Process Mc with the ML method", false);
 
@@ -793,7 +784,7 @@ struct HfTaskLc {
                             aod::McCollisions const&,
                             aod::TracksWMc const&)
   {
-    runMcAnalysisPerCollision<false>(collisions, selectedLcCandidatesMc, mcParticles);
+    runAnalysisPerCollisionMc<false>(collisions, selectedLcCandidatesMc, mcParticles);
   }
   PROCESS_SWITCH(HfTaskLc, processMcStdWithFT0M, "Process MC with the standard method", false);
 
@@ -803,7 +794,7 @@ struct HfTaskLc {
                                aod::McCollisions const&,
                                aod::TracksWMc const&)
   {
-    runMcAnalysisPerCollision<true>(collisions, selectedLcCandidatesMlMc, mcParticles);
+    runAnalysisPerCollisionMc<true>(collisions, selectedLcCandidatesMlMc, mcParticles);
   }
   PROCESS_SWITCH(HfTaskLc, processMcWithMlWithFT0M, "Process Mc with the ML method", false);
 };
