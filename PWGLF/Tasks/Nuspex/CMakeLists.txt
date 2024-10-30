@@ -147,6 +147,6 @@ o2physics_add_dpl_workflow(ebye-mult
 if(FastJet_FOUND)
 o2physics_add_dpl_workflow(angular-correlations-in-jets
     SOURCES AngularCorrelationsInJets.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore FastJet::FastJet FastJet::Contrib
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib
     COMPONENT_NAME Analysis)
 endif()

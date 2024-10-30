@@ -24,6 +24,7 @@
 
 #include "Common/DataModel/EventSelection.h"
 #include "Common/Core/TrackSelection.h"
+#include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -58,6 +59,9 @@ struct FlowTask {
   O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5f, "max chi2 per TPC clusters")
   O2_DEFINE_CONFIGURABLE(cfgCutTPCclu, float, 70.0f, "minimum TPC clusters")
   O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2.0f, "max DCA to vertex z")
+  O2_DEFINE_CONFIGURABLE(cfgTrkSelSwitch, bool, false, "switch for self-defined track selection")
+  O2_DEFINE_CONFIGURABLE(cfgTrkSelRun3ITSMatch, bool, false, "GlobalTrackRun3ITSMatching::Run3ITSall7Layers selection")
+  O2_DEFINE_CONFIGURABLE(cfgRejectionTPCsectorOverlap, bool, true, "rejection for TPC sector overlap")
   O2_DEFINE_CONFIGURABLE(cfgUseAdditionalEventCut, bool, false, "Use additional event cut on mult correlations")
   O2_DEFINE_CONFIGURABLE(cfgTriggerkTVXinTRD, bool, true, "TRD triggered")
   O2_DEFINE_CONFIGURABLE(cfgEvSelkNoSameBunchPileup, bool, true, "rejects collisions which are associated with the same found-by-T0 bunch crossing")
@@ -65,7 +69,6 @@ struct FlowTask {
   O2_DEFINE_CONFIGURABLE(cfgEvSelkNoCollInTimeRangeStandard, bool, true, "no collisions in specified time range")
   O2_DEFINE_CONFIGURABLE(cfgEvSelMultCorrelation, bool, true, "Multiplicity correlation cut")
   O2_DEFINE_CONFIGURABLE(cfgEvSelV0AT0ACut, bool, true, "V0A T0A 5 sigma cut")
-  O2_DEFINE_CONFIGURABLE(cfgUseAdditionalTrackCut, bool, false, "Use additional track cut on phi")
   O2_DEFINE_CONFIGURABLE(cfgGetInteractionRate, bool, false, "Get interaction rate from CCDB")
   O2_DEFINE_CONFIGURABLE(cfgUseInteractionRateCut, bool, false, "Use events with low interaction rate")
   O2_DEFINE_CONFIGURABLE(cfgCutIR, float, 50.0, "maximum interaction rate (kHz)")
@@ -141,9 +144,11 @@ struct FlowTask {
   using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults>>;
   using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
 
-  // Additional Event selection cuts - Copy from flowGenericFramework.cxx
+  // Track selection
+  TrackSelection myTrackSel;
   TF1* fPhiCutLow = nullptr;
   TF1* fPhiCutHigh = nullptr;
+  // Additional Event selection cuts - Copy from flowGenericFramework.cxx
   TF1* fMultPVCutLow = nullptr;
   TF1* fMultPVCutHigh = nullptr;
   TF1* fMultCutLow = nullptr;
@@ -280,7 +285,7 @@ struct FlowTask {
     std::vector<std::string> UserDefineGFWCorr = cfgUserDefineGFWCorr;
     std::vector<std::string> UserDefineGFWName = cfgUserDefineGFWName;
     if (!UserDefineGFWCorr.empty() && !UserDefineGFWName.empty()) {
-      for (auto i = 0; i < UserDefineGFWName.size(); i++) {
+      for (uint i = 0; i < UserDefineGFWName.size(); i++) {
         oba->Add(new TNamed(UserDefineGFWName.at(i).c_str(), UserDefineGFWName.at(i).c_str()));
       }
     }
@@ -354,7 +359,7 @@ struct FlowTask {
     if (!UserDefineGFWCorr.empty() && !UserDefineGFWName.empty()) {
       LOGF(info, "User adding GFW CorrelatorConfig:");
       // attentaion: here we follow the index of cfgUserDefineGFWCorr
-      for (auto i = 0; i < UserDefineGFWCorr.size(); i++) {
+      for (uint i = 0; i < UserDefineGFWCorr.size(); i++) {
         if (i >= UserDefineGFWName.size()) {
           LOGF(fatal, "The names you provided are more than configurations. UserDefineGFWName.size(): %d > UserDefineGFWCorr.size(): %d", UserDefineGFWName.size(), UserDefineGFWCorr.size());
           break;
@@ -382,10 +387,17 @@ struct FlowTask {
       fT0AV0ASigma->SetParameters(463.4144, 6.796509e-02, -9.097136e-07, 7.971088e-12, -2.600581e-17);
     }
 
-    if (cfgUseAdditionalTrackCut) {
+    if (cfgRejectionTPCsectorOverlap) {
       fPhiCutLow = new TF1("fPhiCutLow", "0.06/x+pi/18.0-0.06", 0, 100);
       fPhiCutHigh = new TF1("fPhiCutHigh", "0.1/x+pi/18.0+0.06", 0, 100);
     }
+
+    if (cfgTrkSelRun3ITSMatch) {
+      myTrackSel = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSall7Layers, TrackSelection::GlobalTrackRun3DCAxyCut::Default);
+    } else {
+      myTrackSel = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny, TrackSelection::GlobalTrackRun3DCAxyCut::Default);
+    }
+    myTrackSel.SetMinNClustersTPC(cfgCutTPCclu);
   }
 
   template <char... chars>
@@ -570,11 +582,15 @@ struct FlowTask {
   template <typename TTrack>
   bool trackSelected(TTrack track)
   {
-    return (track.tpcNClsFound() >= cfgCutTPCclu);
+    if (cfgTrkSelSwitch) {
+      return myTrackSel.IsSelected(track);
+    } else {
+      return (track.tpcNClsFound() >= cfgCutTPCclu);
+    }
   }
 
   template <typename TTrack>
-  bool AdditionaltrackSelected(TTrack track, const int field)
+  bool RejectionTPCoverlap(TTrack track, const int field)
   {
     double phimodn = track.phi();
     if (field < 0) // for negative polarity field
@@ -670,7 +686,7 @@ struct FlowTask {
     double sum_ptSquare_wSquare_WithinGap08 = 0., sum_pt_wSquare_WithinGap08 = 0.;
     int Magnetfield = 0;
     double NTracksCorrected = 0;
-    if (cfgUseAdditionalTrackCut) {
+    if (cfgRejectionTPCsectorOverlap) {
       // magnet field dependence cut
       Magnetfield = getMagneticField(bc.timestamp());
     }
@@ -681,7 +697,7 @@ struct FlowTask {
     for (auto& track : tracks) {
       if (!trackSelected(track))
         continue;
-      if (cfgUseAdditionalTrackCut && !AdditionaltrackSelected(track, Magnetfield))
+      if (cfgRejectionTPCsectorOverlap && !RejectionTPCoverlap(track, Magnetfield))
         continue;
       if (cfgOutputNUAWeights)
         fWeights->Fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
