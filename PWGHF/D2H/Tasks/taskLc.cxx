@@ -308,7 +308,7 @@ struct HfTaskLc {
   /// \param collision is collision
   /// \param candidates is candidates
   template <bool fillMl, typename CollType, typename CandLcMcRec, typename CandLcMcGen>
-  void fillMcRecHistosAndSparse(CollType collision, CandLcMcRec const& candidates, CandLcMcGen const& mcParticles)
+  void fillMcRecHistosAndSparse(CollType const& collision, CandLcMcRec const& candidates, CandLcMcGen const& mcParticles)
   {
 
     auto thisCollId = collision.globalIndex();
