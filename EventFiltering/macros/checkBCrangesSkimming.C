@@ -254,7 +254,7 @@ void checkBCForSelectedTrg(std::vector<selectedFrames>& originalFrames, std::vec
         shouldUpdate = false;
         bool found = frame.selMask[0] & skimmedFrame.selMask[0] || frame.selMask[1] & skimmedFrame.selMask[1];
         if (found) {
-          // Additional check to avoid match of skimmed singles and original mutiplies
+          // Additional check to avoid match of skimmed singles and original multiplies
           if (i != 0 && isClose(originalFrames[i - 1], skimmedFrame, bcDiffTolerance)) {
             continue;
           }
@@ -462,7 +462,7 @@ void checkBCrangesSkimming(std::string AnaFileName = "AnalysisResults.root", std
           shouldUpdate = false;
           bool found = frame.selMask[0] & skimmedFrame.selMask[0] || frame.selMask[1] & skimmedFrame.selMask[1];
           if (found) {
-            // Additional check to avoid match of skimmed singles and original mutiplies
+            // Additional check to avoid match of skimmed singles and original multiplies
             if (i != 0 && isClose(originalFrames[i - 1], skimmedFrame, bcDiffTolerance)) {
               continue;
             }
