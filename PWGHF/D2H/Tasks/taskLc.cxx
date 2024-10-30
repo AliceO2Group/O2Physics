@@ -40,7 +40,7 @@ struct HfTaskLc {
   Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_to_p_k_pi::vecBinsPt}, "pT bin limits"};
   // ThnSparse for ML outputScores and Vars
-  Configurable<bool> enableTHn{"enableTHn", false, "enable THn for Lc"};
+  Configurable<bool> fillTHn{"fillTHn", false, "enable THn for Lc"};
   ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {72, 0, 36}, ""};
   ConfigurableAxis thnConfigAxisMass{"thnConfigAxisMass", {300, 1.98, 2.58}, ""};
   ConfigurableAxis thnConfigAxisPtProng{"thnConfigAxisPtProng", {100, 0, 20}, ""};
@@ -271,7 +271,7 @@ struct HfTaskLc {
     registry.add("MC/reconstructed/prompt/hDecLenErrSigPrompt", "3-prong candidates (matched, prompt);decay length error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("MC/reconstructed/nonprompt/hDecLenErrSigNonPrompt", "3-prong candidates (matched, non-prompt);decay length error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
 
-    if (enableTHn) {
+    if (fillTHn) {
       const AxisSpec thnAxisMass{thnConfigAxisMass, "inv. mass (p K #pi) (GeV/#it{c}^{2})"};
       const AxisSpec thnAxisPt{thnConfigAxisPt, "#it{p}_{T}(#Lambda_{c}^{+}) (GeV/#it{c})"};
       const AxisSpec thnAxisPtProng0{thnConfigAxisPtProng, "#it{p}_{T}(prong0) (GeV/#it{c})"};
@@ -462,7 +462,7 @@ struct HfTaskLc {
           registry.fill(HIST("MC/reconstructed/nonprompt/hImpParErrProng2SigNonPrompt"), candidate.errorImpactParameter2(), pt);
           registry.fill(HIST("MC/reconstructed/nonprompt/hDecLenErrSigNonPrompt"), candidate.errorDecayLength(), pt);
         }
-        if (enableTHn) {
+        if (fillTHn) {
           float cent = evaluateCentralityColl(collision);
           double massLc(-1);
           double outputBkg(-1), outputPrompt(-1), outputFD(-1);
@@ -681,7 +681,7 @@ struct HfTaskLc {
                       LcCandidates const& selectedLcCandidates,
                       aod::TracksWDca const& tracks)
   {
-    runDataAnalysisPerCollision<false>(collisions, selectedLcCandidates, tracks);
+    runAnalysisPerCollisionData<false>(collisions, selectedLcCandidates, tracks);
   }
   PROCESS_SWITCH(HfTaskLc, processDataStd, "Process Data with the standard method", true);
 
@@ -689,7 +689,7 @@ struct HfTaskLc {
                          LcCandidatesMl const& selectedLcCandidatesMl,
                          aod::TracksWDca const& tracks)
   {
-    runDataAnalysisPerCollision<true>(collisions, selectedLcCandidatesMl, tracks);
+    runAnalysisPerCollisionData<true>(collisions, selectedLcCandidatesMl, tracks);
   }
   PROCESS_SWITCH(HfTaskLc, processDataWithMl, "Process real data with the ML method and without centrality", false);
 
@@ -697,7 +697,7 @@ struct HfTaskLc {
                               LcCandidates const& selectedLcCandidates,
                               aod::TracksWDca const& tracks)
   {
-    runDataAnalysisPerCollision<false>(collisions, selectedLcCandidates, tracks);
+    runAnalysisPerCollisionData<false>(collisions, selectedLcCandidates, tracks);
   }
   PROCESS_SWITCH(HfTaskLc, processDataStdWithFT0C, "Process Data with the standard method", false);
 
@@ -705,7 +705,7 @@ struct HfTaskLc {
                                  LcCandidatesMl const& selectedLcCandidatesMl,
                                  aod::TracksWDca const& tracks)
   {
-    runDataAnalysisPerCollision<true>(collisions, selectedLcCandidatesMl, tracks);
+    runAnalysisPerCollisionData<true>(collisions, selectedLcCandidatesMl, tracks);
   }
   PROCESS_SWITCH(HfTaskLc, processDataWithMlWithFT0C, "Process real data with the ML method and with FT0C centrality", false);
 
@@ -713,7 +713,7 @@ struct HfTaskLc {
                               LcCandidates const& selectedLcCandidates,
                               aod::TracksWDca const& tracks)
   {
-    runDataAnalysisPerCollision<false>(collisions, selectedLcCandidates, tracks);
+    runAnalysisPerCollisionData<false>(collisions, selectedLcCandidates, tracks);
   }
   PROCESS_SWITCH(HfTaskLc, processDataStdWithFT0M, "Process real data with the standard method and with FT0M centrality", false);
 
@@ -721,7 +721,7 @@ struct HfTaskLc {
                                  LcCandidatesMl const& selectedLcCandidatesMl,
                                  aod::TracksWDca const& tracks)
   {
-    runDataAnalysisPerCollision<true>(collisions, selectedLcCandidatesMl, tracks);
+    runAnalysisPerCollisionData<true>(collisions, selectedLcCandidatesMl, tracks);
   }
   PROCESS_SWITCH(HfTaskLc, processDataWithMlWithFT0M, "Process real data with the ML method and with FT0M centrality", false);
 
@@ -735,8 +735,8 @@ struct HfTaskLc {
       // MC Rec.
       fillMcRecHistosAndSparse<fillMl>(collision, candidates, mcParticles);
       // MC gen.
-      auto mcParticlesPerColl = mcParticles.sliceBy(perMCCollision, collision.globalIndex());
-      fillMcGenHistos(mcParticlesPerColl);
+      auto mcParticlesPerColl = mcParticles.sliceBy(perMcCollision, collision.globalIndex());
+      fillHistosMcGen(mcParticlesPerColl);
     }
   }
   void processMcStd(CollisionsMc const& collisions,
@@ -757,7 +757,7 @@ struct HfTaskLc {
   {
     runAnalysisPerCollisionMc<true>(collisions, selectedLcCandidatesMlMc, mcParticles);
   }
-  PROCESS_SWITCH(HfTaskLc, processMcWithMl, "Process Mc with the ML method", false);
+  PROCESS_SWITCH(HfTaskLc, processMcWithMl, "Process Mc with the ML method and without centrality", false);
 
   void processMcStdWithFT0C(CollisionsMcWithFT0C const& collisions,
                             LcCandidatesMc const& selectedLcCandidatesMc,
@@ -767,7 +767,7 @@ struct HfTaskLc {
   {
     runAnalysisPerCollisionMc<false>(collisions, selectedLcCandidatesMc, mcParticles);
   }
-  PROCESS_SWITCH(HfTaskLc, processMcStdWithFT0C, "Process MC with the standard method", false);
+  PROCESS_SWITCH(HfTaskLc, processMcStdWithFT0C, "Process MC with the standard method with FT0C centrality", false);
 
   void processMcWithMlWithFT0C(CollisionsMcWithFT0C const& collisions,
                                LcCandidatesMlMc const& selectedLcCandidatesMlMc,
@@ -777,7 +777,7 @@ struct HfTaskLc {
   {
     runAnalysisPerCollisionMc<true>(collisions, selectedLcCandidatesMlMc, mcParticles);
   }
-  PROCESS_SWITCH(HfTaskLc, processMcWithMlWithFT0C, "Process Mc with the ML method", false);
+  PROCESS_SWITCH(HfTaskLc, processMcWithMlWithFT0C, "Process Mc with the ML method with FT0C centrality", false);
 
   void processMcStdWithFT0M(CollisionsMcWithFT0M const& collisions,
                             LcCandidatesMc const& selectedLcCandidatesMc,
@@ -787,7 +787,7 @@ struct HfTaskLc {
   {
     runAnalysisPerCollisionMc<false>(collisions, selectedLcCandidatesMc, mcParticles);
   }
-  PROCESS_SWITCH(HfTaskLc, processMcStdWithFT0M, "Process MC with the standard method", false);
+  PROCESS_SWITCH(HfTaskLc, processMcStdWithFT0M, "Process MC with the standard method with FT0M centrality", false);
 
   void processMcWithMlWithFT0M(CollisionsMcWithFT0M const& collisions,
                                LcCandidatesMlMc const& selectedLcCandidatesMlMc,
@@ -797,7 +797,7 @@ struct HfTaskLc {
   {
     runAnalysisPerCollisionMc<true>(collisions, selectedLcCandidatesMlMc, mcParticles);
   }
-  PROCESS_SWITCH(HfTaskLc, processMcWithMlWithFT0M, "Process Mc with the ML method", false);
+  PROCESS_SWITCH(HfTaskLc, processMcWithMlWithFT0M, "Process Mc with the ML method with FT0M centrality", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
