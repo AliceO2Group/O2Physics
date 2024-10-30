@@ -328,7 +328,7 @@ struct HfFragmentationFunctionTask {
 
           if (mcdd0cand.flagMcMatchRec() == decayChannel) { // matched to D0 on truth level
             matchedFrom = 1;
-            if (!mcdd0cand.candidateSelFlag()) { //CandidateSelFlag == 0 -> selected as D0, CandidateSelFlag == 1 -> selected as D0bar
+            if (!mcdd0cand.candidateSelFlag()) { // CandidateSelFlag == 0 -> selected as D0, CandidateSelFlag == 1 -> selected as D0bar
               selectedAs = 1;
             }
           } else if (mcdd0cand.flagMcMatchRec() == -decayChannel) { // matched to D0bar on truth level
@@ -348,7 +348,7 @@ struct HfFragmentationFunctionTask {
                           mcdjet.pt(), mcdjet.eta(), mcdjet.phi(), mcdjet.tracks_as<JetTracks>().size(),                                                              // detector level jet
                           mcdd0cand.pt(), mcdd0cand.eta(), mcdd0cand.phi(), mcdd0cand.m(), mcdd0cand.y(), (mcdd0cand.originMcRec() == RecoDecay::OriginType::Prompt), // detector level D0 candidate
                           mcdjet.has_matchedJetCand(), mcdd0cand.mlScores()[0], mcdd0cand.mlScores()[1], mcdd0cand.mlScores()[2],                                     // ML scores for bkg, prompt and non-prompt
-                          matchedFrom,selectedAs);                                                                                                                    // check whether detector level candidate is a reflection
+                          matchedFrom, selectedAs);                                                                                                                   // check whether detector level candidate is a reflection
         }
       }
 
@@ -365,7 +365,6 @@ struct HfFragmentationFunctionTask {
           registry.fill(HIST("h_jet_counter"), 1.0);
         }
 
-
         // store data in MC detector level table (calculate angular distance in eta-phi plane on the fly)
         mcpdistJetTable(RecoDecay::sqrtSumOfSquares(mcpjet.eta() - mcpd0cand.eta(), deltaPhi(mcpjet.phi(), mcpd0cand.phi())),
                         mcpjet.pt(), mcpjet.eta(), mcpjet.phi(), mcpjet.tracks_as<JetParticles>().size(),                                            // particle level jet
@@ -377,13 +376,13 @@ struct HfFragmentationFunctionTask {
   PROCESS_SWITCH(HfFragmentationFunctionTask, processMcEfficiency, "non-matched and matched MC HF and jets", false);
 
   void processMcChargedMatched(JetMcCollisions const& mccollisions,
-                                JetCollisionsMCD const& collisions,
-                                JetMCDTable const& mcdjets,
-                                JetMCPTable const& mcpjets,
-                                CandidatesD0MCD const&,
-                                CandidatesD0MCP const&,
-                                JetTracks const&,
-                                JetParticles const&)
+                               JetCollisionsMCD const& collisions,
+                               JetMCDTable const& mcdjets,
+                               JetMCPTable const& mcpjets,
+                               CandidatesD0MCD const&,
+                               CandidatesD0MCP const&,
+                               JetTracks const&,
+                               JetParticles const&)
   {
     for (const auto& mccollision : mccollisions) {
 
@@ -425,7 +424,7 @@ struct HfFragmentationFunctionTask {
 
           if (mcdd0cand.flagMcMatchRec() == decayChannel) { // matched to D0 on truth level
             matchedFrom = 1;
-            if (!mcdd0cand.candidateSelFlag()) { //CandidateSelFlag == 0 -> selected as D0, CandidateSelFlag == 1 -> selected as D0bar
+            if (!mcdd0cand.candidateSelFlag()) { // CandidateSelFlag == 0 -> selected as D0, CandidateSelFlag == 1 -> selected as D0bar
               selectedAs = 1;
             }
           } else if (mcdd0cand.flagMcMatchRec() == -decayChannel) { // matched to D0bar on truth level
@@ -449,10 +448,10 @@ struct HfFragmentationFunctionTask {
             auto mcpd0cand = mcpjet.candidates_first_as<CandidatesD0MCP>();
 
             // store matched particle and detector level data in one single table (calculate angular distance in eta-phi plane on the fly)
-            matchJetTable(RecoDecay::sqrtSumOfSquares(mcpjet.eta() - mcpd0cand.eta(), deltaPhi(mcpjet.phi(), mcpd0cand.phi())), mcpjet.pt(), mcpjet.eta(), mcpjet.phi(), mcpjet.tracks_as<JetParticles>().size(),  // particle level jet
-                          mcpd0cand.pt(), mcpd0cand.eta(), mcpd0cand.phi(), mcpd0cand.y(), (mcpd0cand.originMcGen() == RecoDecay::OriginType::Prompt),                                                             // particle level D0
-                          RecoDecay::sqrtSumOfSquares(mcdjet.eta() - mcdd0cand.eta(), deltaPhi(mcdjet.phi(), mcdd0cand.phi())), mcdjet.pt(), mcdjet.eta(), mcdjet.phi(), mcdjet.tracks_as<JetTracks>().size(),     // detector level jet
-                          mcdd0cand.pt(), mcdd0cand.eta(), mcdd0cand.phi(), mcdd0cand.m(), mcdd0cand.y(), (mcdd0cand.originMcRec() == RecoDecay::OriginType::Prompt),                                              // detector level D0
+            matchJetTable(RecoDecay::sqrtSumOfSquares(mcpjet.eta() - mcpd0cand.eta(), deltaPhi(mcpjet.phi(), mcpd0cand.phi())), mcpjet.pt(), mcpjet.eta(), mcpjet.phi(), mcpjet.tracks_as<JetParticles>().size(), // particle level jet
+                          mcpd0cand.pt(), mcpd0cand.eta(), mcpd0cand.phi(), mcpd0cand.y(), (mcpd0cand.originMcGen() == RecoDecay::OriginType::Prompt),                                                            // particle level D0
+                          RecoDecay::sqrtSumOfSquares(mcdjet.eta() - mcdd0cand.eta(), deltaPhi(mcdjet.phi(), mcdd0cand.phi())), mcdjet.pt(), mcdjet.eta(), mcdjet.phi(), mcdjet.tracks_as<JetTracks>().size(),    // detector level jet
+                          mcdd0cand.pt(), mcdd0cand.eta(), mcdd0cand.phi(), mcdd0cand.m(), mcdd0cand.y(), (mcdd0cand.originMcRec() == RecoDecay::OriginType::Prompt),                                             // detector level D0
                           mcdd0cand.mlScores()[0], mcdd0cand.mlScores()[1], mcdd0cand.mlScores()[2],
                           matchedFrom, selectedAs);
           }
