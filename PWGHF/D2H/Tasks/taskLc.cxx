@@ -769,7 +769,7 @@ struct HfTaskLc {
   }
   PROCESS_SWITCH(HfTaskLc, processMcStd, "Process MC with the standard method", false);
 
-  void processMcWithMl(CollisionsMc const& collision,
+  void processMcWithMl(CollisionsMc const& collisions,
                        LcCandidatesMlMc const& selectedLcCandidatesMlMc,
                        McParticles3ProngMatched const& mcParticles,
                        aod::McCollisions const&,
