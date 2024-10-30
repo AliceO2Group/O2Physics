@@ -137,6 +137,7 @@ DECLARE_SOA_COLUMN(HasTPC, hasTPC, bool);                      //! Flag to check
 DECLARE_SOA_COLUMN(HasTOF, hasTOF, bool);                      //! Flag to check if track has a TOF match
 DECLARE_SOA_COLUMN(NumItsCls, numItsCls, int);                 //! Number of clusters in ITS
 DECLARE_SOA_COLUMN(NumTpcCrossedRows, numTpcCrossedRows, int); //! Number of TPC crossed rows
+DECLARE_SOA_COLUMN(Chi2Tpc, chi2Tpc, float);                   //! TPC chi2
 // dynamic columns
 DECLARE_SOA_DYNAMIC_COLUMN(TPCTOFNSigmaPi, tpcTofNSigmaPi, //! Combination of NsigmaTPC and NsigmaTOF
                            [](float tpcNSigmaPi, float tofNSigmaPi) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaPi, tofNSigmaPi); });
@@ -151,6 +152,7 @@ DECLARE_SOA_TABLE(HfRedTrackBases, "AOD", "HFREDTRACKBASE", //! Table with track
                   HFTRACKPAR_COLUMNS,
                   hf_track_index_reduced::NumItsCls,
                   hf_track_index_reduced::NumTpcCrossedRows,
+                  hf_track_index_reduced::Chi2Tpc,
                   aod::track::Px<aod::track::Signed1Pt, aod::track::Snp, aod::track::Alpha>,
                   aod::track::Py<aod::track::Signed1Pt, aod::track::Snp, aod::track::Alpha>,
                   aod::track::Pz<aod::track::Signed1Pt, track::Tgl>,
@@ -188,6 +190,7 @@ DECLARE_SOA_COLUMN(MinNumItsClsProng, minNumItsClsProng, int);                  
 DECLARE_SOA_COLUMN(MinNumTpcCrossedRowsProng, minNumTpcCrossedRowsProng, int);   //! minimum value of number of TPC crossed rows for the decay daughter tracks
 DECLARE_SOA_COLUMN(MinAbsEtaProng, minAbsEtaProng, float);                       //! minimum value of absolute pseudorapidity for the decay daughter tracks
 DECLARE_SOA_COLUMN(MinPtProng, minPtProng, float);                               //! minimum value of transverse momentum for the decay daughter tracks
+DECLARE_SOA_COLUMN(MaxChi2Tpc, maxChi2Tpc, float);                               //! maximum value of TPC chi2 for the decay daughter tracks
 DECLARE_SOA_COLUMN(TPCNSigmaPiProng0, tpcNSigmaPiProng0, float);                 //! NsigmaTPCPi for prong0
 DECLARE_SOA_COLUMN(TPCNSigmaPiProng1, tpcNSigmaPiProng1, float);                 //! NsigmaTPCPi for prong1
 DECLARE_SOA_COLUMN(TPCNSigmaPiProng2, tpcNSigmaPiProng2, float);                 //! NsigmaTPCPi for prong2
@@ -200,6 +203,12 @@ DECLARE_SOA_COLUMN(TOFNSigmaPiProng2, tofNSigmaPiProng2, float);                
 DECLARE_SOA_COLUMN(TOFNSigmaKaProng0, tofNSigmaKaProng0, float);                 //! NsigmaTOFKa for prong0
 DECLARE_SOA_COLUMN(TOFNSigmaKaProng1, tofNSigmaKaProng1, float);                 //! NsigmaTOFKa for prong1
 DECLARE_SOA_COLUMN(TOFNSigmaKaProng2, tofNSigmaKaProng2, float);                 //! NsigmaTOFKa for prong2
+DECLARE_SOA_COLUMN(HasTPCProng0, hasTPCProng0, bool);                            //! Flag to check if prong0 has a TPC match
+DECLARE_SOA_COLUMN(HasTOFProng0, hasTOFProng0, bool);                            //! Flag to check if prong0 has a TOF match
+DECLARE_SOA_COLUMN(HasTPCProng1, hasTPCProng1, bool);                            //! Flag to check if prong1 has a TPC match
+DECLARE_SOA_COLUMN(HasTOFProng1, hasTOFProng1, bool);                            //! Flag to check if prong1 has a TOF match
+DECLARE_SOA_COLUMN(HasTPCProng2, hasTPCProng2, bool);                            //! Flag to check if prong2 has a TPC match
+DECLARE_SOA_COLUMN(HasTOFProng2, hasTOFProng2, bool);                            //! Flag to check if prong2 has a TOF match
 
 DECLARE_SOA_DYNAMIC_COLUMN(TPCTOFNSigmaPiProng0, tpcTofNSigmaPiProng0, //! Combination of NsigmaTPC and NsigmaTOF
                            [](float tpcNSigmaPi, float tofNSigmaPi) -> float { return pid_tpc_tof_utils::combineNSigma<false /*tiny*/>(tpcNSigmaPi, tofNSigmaPi); });
@@ -226,7 +235,7 @@ DECLARE_SOA_TABLE(HfRed2Prongs, "AOD", "HFRED2PRONG", //! Table with 2prong cand
                   hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ZSecondaryVertex,
                   hf_charm_cand_reduced::InvMassHypo0, hf_charm_cand_reduced::InvMassHypo1,
                   hf_charm_cand_reduced::MinPtProng, hf_charm_cand_reduced::MinAbsEtaProng,
-                  hf_charm_cand_reduced::MinNumItsClsProng, hf_charm_cand_reduced::MinNumTpcCrossedRowsProng,
+                  hf_charm_cand_reduced::MinNumItsClsProng, hf_charm_cand_reduced::MinNumTpcCrossedRowsProng, hf_charm_cand_reduced::MaxChi2Tpc,
                   aod::track::Px<aod::track::Signed1Pt, aod::track::Snp, aod::track::Alpha>,
                   aod::track::Py<aod::track::Signed1Pt, aod::track::Snp, aod::track::Alpha>,
                   aod::track::Pz<aod::track::Signed1Pt, track::Tgl>,
@@ -255,7 +264,7 @@ DECLARE_SOA_TABLE(HfRed3Prongs, "AOD", "HFRED3PRONG", //! Table with 3prong cand
                   hf_cand::XSecondaryVertex, hf_cand::YSecondaryVertex, hf_cand::ZSecondaryVertex,
                   hf_charm_cand_reduced::InvMassHypo0, hf_charm_cand_reduced::InvMassHypo1,
                   hf_charm_cand_reduced::MinPtProng, hf_charm_cand_reduced::MinAbsEtaProng,
-                  hf_charm_cand_reduced::MinNumItsClsProng, hf_charm_cand_reduced::MinNumTpcCrossedRowsProng,
+                  hf_charm_cand_reduced::MinNumItsClsProng, hf_charm_cand_reduced::MinNumTpcCrossedRowsProng, hf_charm_cand_reduced::MaxChi2Tpc,
                   aod::track::Px<aod::track::Signed1Pt, aod::track::Snp, aod::track::Alpha>,
                   aod::track::Py<aod::track::Signed1Pt, aod::track::Snp, aod::track::Alpha>,
                   aod::track::Pz<aod::track::Signed1Pt, track::Tgl>,
@@ -287,6 +296,8 @@ DECLARE_SOA_TABLE(HfRedPidDau0s, "AOD", "HFREDPIDDAU0", //!
                   hf_charm_cand_reduced::TOFNSigmaPiProng0,
                   hf_charm_cand_reduced::TPCNSigmaKaProng0,
                   hf_charm_cand_reduced::TOFNSigmaKaProng0,
+                  hf_charm_cand_reduced::HasTOFProng0,
+                  hf_charm_cand_reduced::HasTPCProng0,
                   hf_charm_cand_reduced::TPCTOFNSigmaPiProng0<hf_charm_cand_reduced::TPCNSigmaPiProng0, hf_charm_cand_reduced::TOFNSigmaPiProng0>,
                   hf_charm_cand_reduced::TPCTOFNSigmaKaProng0<hf_charm_cand_reduced::TPCNSigmaKaProng0, hf_charm_cand_reduced::TOFNSigmaKaProng0>);
 
@@ -295,6 +306,8 @@ DECLARE_SOA_TABLE(HfRedPidDau1s, "AOD", "HFREDPIDDAU1", //!
                   hf_charm_cand_reduced::TOFNSigmaPiProng1,
                   hf_charm_cand_reduced::TPCNSigmaKaProng1,
                   hf_charm_cand_reduced::TOFNSigmaKaProng1,
+                  hf_charm_cand_reduced::HasTOFProng1,
+                  hf_charm_cand_reduced::HasTPCProng1,
                   hf_charm_cand_reduced::TPCTOFNSigmaPiProng0<hf_charm_cand_reduced::TPCNSigmaPiProng1, hf_charm_cand_reduced::TOFNSigmaPiProng1>,
                   hf_charm_cand_reduced::TPCTOFNSigmaKaProng0<hf_charm_cand_reduced::TPCNSigmaKaProng1, hf_charm_cand_reduced::TOFNSigmaKaProng1>);
 
@@ -303,6 +316,8 @@ DECLARE_SOA_TABLE(HfRedPidDau2s, "AOD", "HFREDPIDDAU2", //!
                   hf_charm_cand_reduced::TOFNSigmaPiProng2,
                   hf_charm_cand_reduced::TPCNSigmaKaProng2,
                   hf_charm_cand_reduced::TOFNSigmaKaProng2,
+                  hf_charm_cand_reduced::HasTOFProng2,
+                  hf_charm_cand_reduced::HasTPCProng2,
                   hf_charm_cand_reduced::TPCTOFNSigmaPiProng2<hf_charm_cand_reduced::TPCNSigmaPiProng2, hf_charm_cand_reduced::TOFNSigmaPiProng2>,
                   hf_charm_cand_reduced::TPCTOFNSigmaKaProng2<hf_charm_cand_reduced::TPCNSigmaKaProng2, hf_charm_cand_reduced::TOFNSigmaKaProng2>);
 
@@ -617,6 +632,7 @@ namespace hf_reso_3_prong
 DECLARE_SOA_COLUMN(DType, dType, int8_t);                                      //! Integer with selected D candidate type: 1 = Dplus, -1 = Dminus, 2 = DstarPlus, -2 = DstarMinus
 DECLARE_SOA_COLUMN(MinNumItsClsProng, minNumItsClsProng, int);                 //! minimum value of number of ITS clusters for the decay daughter tracks
 DECLARE_SOA_COLUMN(MinNumTpcCrossedRowsProng, minNumTpcCrossedRowsProng, int); //! minimum value of number of TPC crossed rows for the decay daughter tracks
+DECLARE_SOA_COLUMN(MaxChi2Tpc, maxChi2Tpc, float);                             //! maximum value of TPC chi2 for the decay daughter tracks
 
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px, //!
                            [](float pxProng0, float pxProng1, float pxProng2) -> float { return 1.f * pxProng0 + 1.f * pxProng1 + 1.f * pxProng2; });
@@ -656,6 +672,7 @@ DECLARE_SOA_COLUMN(Radius, radius, float);                                     /
 DECLARE_SOA_COLUMN(V0Type, v0Type, uint8_t);                                   //! Bitmap with mass hypothesis of the V0
 DECLARE_SOA_COLUMN(MinNumItsClsProng, minNumItsClsProng, int);                 //! minimum value of number of ITS clusters for the decay daughter tracks
 DECLARE_SOA_COLUMN(MinNumTpcCrossedRowsProng, minNumTpcCrossedRowsProng, int); //! minimum value of number of TPC crossed rows for the decay daughter tracks
+DECLARE_SOA_COLUMN(MaxChi2Tpc, maxChi2Tpc, float);                             //! maximum value of TPC chi2 for the decay daughter tracks
 
 DECLARE_SOA_DYNAMIC_COLUMN(Px, px,           //!
                            [](float pxProng0, float pxProng1) -> float { return 1.f * pxProng0 + 1.f * pxProng1; });
@@ -698,6 +715,7 @@ DECLARE_SOA_COLUMN(NSigmaTofPr, nSigmaTofPr, float);           //! TOF Nsigma fo
 DECLARE_SOA_COLUMN(HasTof, hasTof, bool);                      //! flag for presence of TOF
 DECLARE_SOA_COLUMN(NumItsCls, numItsCls, int);                 //! Number of clusters in ITS
 DECLARE_SOA_COLUMN(NumTpcCrossedRows, numTpcCrossedRows, int); //! Number of TPC crossed rows
+DECLARE_SOA_COLUMN(Chi2Tpc, chi2Tpc, float);                   //! TPC chi2
 // dynamic columns
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //! transverse momentum
                            [](float px, float py) -> float { return RecoDecay::pt(px, py); });
@@ -727,6 +745,7 @@ DECLARE_SOA_TABLE(HfRedVzeros, "AOD", "HFREDVZERO", //! Table with V0 candidate 
                   hf_reso_v0::Dca,
                   hf_reso_v0::MinNumItsClsProng,
                   hf_reso_v0::MinNumTpcCrossedRowsProng,
+                  hf_reso_v0::MaxChi2Tpc,
                   hf_reso_v0::V0Type,
                   // Dynamic
                   hf_reso_v0::Px<hf_cand::PxProng0, hf_cand::PxProng1>,
@@ -760,6 +779,7 @@ DECLARE_SOA_TABLE(HfRedTrkNoParams, "AOD", "HFREDTRKNOPARAM", //! Table with tra
                   hf_reso_track::HasTof,
                   hf_reso_track::NumItsCls,
                   hf_reso_track::NumTpcCrossedRows,
+                  hf_reso_track::Chi2Tpc,
                   // Dynamic
                   hf_reso_track::Pt<hf_reso_track::Px, hf_reso_track::Py>,
                   hf_reso_track::Eta<hf_reso_track::Px, hf_reso_track::Py, hf_reso_track::Pz>,
@@ -778,7 +798,7 @@ DECLARE_SOA_TABLE(HfRed3PrNoTrks, "AOD", "HFRED3PRNOTRK", //! Table with 3 prong
                   hf_cand::PxProng0, hf_cand::PyProng0, hf_cand::PzProng0,
                   hf_cand::PxProng1, hf_cand::PyProng1, hf_cand::PzProng1,
                   hf_cand::PxProng2, hf_cand::PyProng2, hf_cand::PzProng2,
-                  hf_reso_3_prong::MinNumItsClsProng, hf_reso_3_prong::MinNumTpcCrossedRowsProng,
+                  hf_reso_3_prong::MinNumItsClsProng, hf_reso_3_prong::MinNumTpcCrossedRowsProng, hf_reso_3_prong::MaxChi2Tpc,
                   hf_reso_3_prong::DType,
                   // Dynamic
                   hf_reso_3_prong::Px<hf_cand::PxProng0, hf_cand::PxProng1, hf_cand::PxProng2>,

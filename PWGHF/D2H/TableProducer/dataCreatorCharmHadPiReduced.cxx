@@ -845,7 +845,7 @@ struct HfDataCreatorCharmHadPiReduced {
         trackParCovCharmHad.setAbsCharge(0); // to be sure
       }
 
-      float ptDauMin = 1.e6, etaDauMin = 999.f;
+      float ptDauMin = 1.e6, etaDauMin = 999.f, chi2TpcDauMax = -1.f;
       int nItsClsDauMin = 8, nTpcCrossRowsDauMin = 200;
       for (const auto& charmHadTrack : charmHadDauTracks) {
         if (charmHadTrack.pt() < ptDauMin) {
@@ -859,6 +859,9 @@ struct HfDataCreatorCharmHadPiReduced {
         }
         if (charmHadTrack.tpcNClsCrossedRows() < nTpcCrossRowsDauMin) {
           nTpcCrossRowsDauMin = charmHadTrack.tpcNClsCrossedRows();
+        }
+        if (charmHadTrack.tpcChi2NCl() > chi2TpcDauMax) {
+          chi2TpcDauMax = charmHadTrack.tpcChi2NCl();
         }
       }
 
@@ -904,7 +907,7 @@ struct HfDataCreatorCharmHadPiReduced {
                       trackParCovPion.getX(), trackParCovPion.getAlpha(),
                       trackParCovPion.getY(), trackParCovPion.getZ(), trackParCovPion.getSnp(),
                       trackParCovPion.getTgl(), trackParCovPion.getQ2Pt(),
-                      trackPion.itsNCls(), trackPion.tpcNClsCrossedRows());
+                      trackPion.itsNCls(), trackPion.tpcNClsCrossedRows(), trackPion.tpcChi2NCl());
           hfTrackCovPion(trackParCovPion.getSigmaY2(), trackParCovPion.getSigmaZY(), trackParCovPion.getSigmaZ2(),
                          trackParCovPion.getSigmaSnpY(), trackParCovPion.getSigmaSnpZ(),
                          trackParCovPion.getSigmaSnp2(), trackParCovPion.getSigmaTglY(), trackParCovPion.getSigmaTglZ(),
@@ -937,16 +940,16 @@ struct HfDataCreatorCharmHadPiReduced {
                        trackParCovCharmHad.getY(), trackParCovCharmHad.getZ(), trackParCovCharmHad.getSnp(),
                        trackParCovCharmHad.getTgl(), trackParCovCharmHad.getQ2Pt(),
                        candC.xSecondaryVertex(), candC.ySecondaryVertex(), candC.zSecondaryVertex(), invMassC0, invMassC1,
-                       ptDauMin, etaDauMin, nItsClsDauMin, nTpcCrossRowsDauMin);
+                       ptDauMin, etaDauMin, nItsClsDauMin, nTpcCrossRowsDauMin, chi2TpcDauMax);
           hfCand3ProngCov(trackParCovCharmHad.getSigmaY2(), trackParCovCharmHad.getSigmaZY(), trackParCovCharmHad.getSigmaZ2(),
                           trackParCovCharmHad.getSigmaSnpY(), trackParCovCharmHad.getSigmaSnpZ(),
                           trackParCovCharmHad.getSigmaSnp2(), trackParCovCharmHad.getSigmaTglY(), trackParCovCharmHad.getSigmaTglZ(),
                           trackParCovCharmHad.getSigmaTglSnp(), trackParCovCharmHad.getSigmaTgl2(),
                           trackParCovCharmHad.getSigma1PtY(), trackParCovCharmHad.getSigma1PtZ(), trackParCovCharmHad.getSigma1PtSnp(),
                           trackParCovCharmHad.getSigma1PtTgl(), trackParCovCharmHad.getSigma1Pt2());
-          hfCandPidProng0(charmHadDauTracks[0].tpcNSigmaPi(), charmHadDauTracks[0].tofNSigmaPi(), charmHadDauTracks[0].tpcNSigmaKa(), charmHadDauTracks[0].tofNSigmaKa());
-          hfCandPidProng1(charmHadDauTracks[1].tpcNSigmaPi(), charmHadDauTracks[1].tofNSigmaPi(), charmHadDauTracks[1].tpcNSigmaKa(), charmHadDauTracks[1].tofNSigmaKa());
-          hfCandPidProng2(charmHadDauTracks[2].tpcNSigmaPi(), charmHadDauTracks[2].tofNSigmaPi(), charmHadDauTracks[2].tpcNSigmaKa(), charmHadDauTracks[2].tofNSigmaKa());
+          hfCandPidProng0(charmHadDauTracks[0].tpcNSigmaPi(), charmHadDauTracks[0].tofNSigmaPi(), charmHadDauTracks[0].tpcNSigmaKa(), charmHadDauTracks[0].tofNSigmaKa(), charmHadDauTracks[0].hasTOF(), charmHadDauTracks[0].hasTPC());
+          hfCandPidProng1(charmHadDauTracks[1].tpcNSigmaPi(), charmHadDauTracks[1].tofNSigmaPi(), charmHadDauTracks[1].tpcNSigmaKa(), charmHadDauTracks[1].tofNSigmaKa(), charmHadDauTracks[1].hasTOF(), charmHadDauTracks[1].hasTPC());
+          hfCandPidProng2(charmHadDauTracks[2].tpcNSigmaPi(), charmHadDauTracks[2].tofNSigmaPi(), charmHadDauTracks[2].tpcNSigmaKa(), charmHadDauTracks[2].tofNSigmaKa(), charmHadDauTracks[2].hasTOF(), charmHadDauTracks[2].hasTPC());
           if constexpr (withMl) {
             if constexpr (decChannel == DecayChannel::B0ToDminusPi) {
               hfCand3ProngMl(candC.mlProbDplusToPiKPi()[0], candC.mlProbDplusToPiKPi()[1], candC.mlProbDplusToPiKPi()[2], -1., -1., -1.);
@@ -968,15 +971,15 @@ struct HfDataCreatorCharmHadPiReduced {
                        trackParCovCharmHad.getY(), trackParCovCharmHad.getZ(), trackParCovCharmHad.getSnp(),
                        trackParCovCharmHad.getTgl(), trackParCovCharmHad.getQ2Pt(),
                        candC.xSecondaryVertex(), candC.ySecondaryVertex(), candC.zSecondaryVertex(), invMassC0, invMassC1,
-                       ptDauMin, etaDauMin, nItsClsDauMin, nTpcCrossRowsDauMin);
+                       ptDauMin, etaDauMin, nItsClsDauMin, nTpcCrossRowsDauMin, chi2TpcDauMax);
           hfCand2ProngCov(trackParCovCharmHad.getSigmaY2(), trackParCovCharmHad.getSigmaZY(), trackParCovCharmHad.getSigmaZ2(),
                           trackParCovCharmHad.getSigmaSnpY(), trackParCovCharmHad.getSigmaSnpZ(),
                           trackParCovCharmHad.getSigmaSnp2(), trackParCovCharmHad.getSigmaTglY(), trackParCovCharmHad.getSigmaTglZ(),
                           trackParCovCharmHad.getSigmaTglSnp(), trackParCovCharmHad.getSigmaTgl2(),
                           trackParCovCharmHad.getSigma1PtY(), trackParCovCharmHad.getSigma1PtZ(), trackParCovCharmHad.getSigma1PtSnp(),
                           trackParCovCharmHad.getSigma1PtTgl(), trackParCovCharmHad.getSigma1Pt2());
-          hfCandPidProng0(candC.nSigTpcPi0(), candC.nSigTofPi0(), candC.nSigTpcKa0(), candC.nSigTofKa0());
-          hfCandPidProng1(candC.nSigTpcPi1(), candC.nSigTofPi1(), candC.nSigTpcKa1(), candC.nSigTofKa1());
+          hfCandPidProng0(candC.nSigTpcPi0(), candC.nSigTofPi0(), candC.nSigTpcKa0(), candC.nSigTofKa0(), charmHadDauTracks[0].hasTOF(), charmHadDauTracks[0].hasTPC());
+          hfCandPidProng1(candC.nSigTpcPi1(), candC.nSigTofPi1(), candC.nSigTpcKa1(), candC.nSigTofKa1(), charmHadDauTracks[1].hasTOF(), charmHadDauTracks[1].hasTPC());
           if constexpr (withMl) {
             std::array<float, 6> mlScores = {-1.f, -1.f, -1.f, -1.f, -1.f, -1.f};
             if (candC.mlProbD0().size() == 3) {
