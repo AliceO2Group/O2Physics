@@ -500,10 +500,11 @@ struct HfTaskLc {
       }
     }
   }
+
   /// Fill MC histograms at genernated level
   /// \param mcParticles are particles in MC
   template <typename CandLcMcGen>
-  void fillMcGenHistos(CandLcMcGen const& mcParticles)
+  void fillHistosMcGen(CandLcMcGen const& mcParticles)
   {
     // MC gen.
     for (const auto& particle : mcParticles) {
@@ -626,7 +627,7 @@ struct HfTaskLc {
       registry.fill(HIST("Data/hImpParErrProng2"), candidate.errorImpactParameter2(), pt);
       registry.fill(HIST("Data/hDecLenErr"), candidate.errorDecayLength(), pt);
 
-      if (enableTHn) {
+      if (fillTHn) {
         float cent = evaluateCentralityColl(collision);
         double massLc(-1);
         double outputBkg(-1), outputPrompt(-1), outputFD(-1);
@@ -734,8 +735,8 @@ struct HfTaskLc {
       // MC Rec.
       fillMcRecHistosAndSparse<fillMl>(collision, candidates, mcParticles);
       // MC gen.
-      auto mcParticles_per_coll = mcParticles.sliceBy(perMCCollision, collision.globalIndex());
-      fillMcGenHistos(mcParticles_per_coll);
+      auto mcParticlesPerColl = mcParticles.sliceBy(perMCCollision, collision.globalIndex());
+      fillMcGenHistos(mcParticlesPerColl);
     }
   }
   void processMcStd(CollisionsMc const& collisions,
