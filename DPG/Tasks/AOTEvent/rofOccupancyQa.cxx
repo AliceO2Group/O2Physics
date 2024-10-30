@@ -1239,13 +1239,13 @@ struct RofOccupancyQaTask {
                     // the sum of v1 and v2:
                     if (vAmpFT0CperColl[colIndex] > 4000 && vAmpFT0CperColl[colIndex - 1] > 4000)
                       histos.fill(HIST("afterNarrowDeltaTimeCut/hSum_2coll_withFT0above4000_thisROFprevROF"), vTracksITS567perColl[colIndex] + vTracksITS567perColl[colIndex - 1]);
-                  } else if (vROFidThisColl[colIndex] == vROFidThisColl[colIndex - 1] + 2) // ROF vs ROF-2
-                  {
+                  } else if (vROFidThisColl[colIndex] == vROFidThisColl[colIndex - 1] + 2) {
+                    // ROF vs ROF-2
                     histos.fill(HIST("afterNarrowDeltaTimeCut/hThisEvITSTr_vs_occupancyInPrevPrevROF_1collPerROF"), vTracksITS567perColl[colIndex - 1], vTracksITS567perColl[colIndex]);
                     if (vAmpFT0CperColl[colIndex] > 4000 && vAmpFT0CperColl[colIndex - 1] > 4000)
                       histos.fill(HIST("afterNarrowDeltaTimeCut/hSum_2coll_withFT0above4000_thisROFprevPrevROF"), vTracksITS567perColl[colIndex] + vTracksITS567perColl[colIndex - 1]);
-                  } else // ROF is earlier than previous
-                  {
+                  } else {
+                    // ROF is earlier than previous
                     // the sum of v1 and v2:
                     if (vAmpFT0CperColl[colIndex] > 4000 && vAmpFT0CperColl[colIndex - 1] > 4000)
                       histos.fill(HIST("afterNarrowDeltaTimeCut/hSum_2coll_withFT0above4000_thisROFearlierThanPrevPrevROF"), vTracksITS567perColl[colIndex] + vTracksITS567perColl[colIndex - 1]);
