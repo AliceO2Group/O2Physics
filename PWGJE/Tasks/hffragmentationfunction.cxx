@@ -351,7 +351,7 @@ struct HfFragmentationFunctionTask {
 
           if (mcdd0cand.flagMcMatchRec() == decayChannel) { // matched to D0 on truth level
             matchedFrom = 1;
-            if (!mcdd0cand.candidateSelFlag()) { //CandidateSelFlag == 0 -> selected as D0, CandidateSelFlag == 1 -> selected as D0bar
+            if (!mcdd0cand.candidateSelFlag()) { // CandidateSelFlag == 0 -> selected as D0, CandidateSelFlag == 1 -> selected as D0bar
               selectedAs = 1;
             }
           } else if (mcdd0cand.flagMcMatchRec() == -decayChannel) { // matched to D0bar on truth level
@@ -391,7 +391,6 @@ struct HfFragmentationFunctionTask {
         if (mcpjet.has_matchedJetCand()) {
           registry.fill(HIST("h_jet_counter"), 1.0);
         }
-
 
         // store data in MC detector level table (calculate angular distance in eta-phi plane on the fly)
         mcpdistJetTable(jetutilities::deltaR(mcpjet, mcpd0cand),
