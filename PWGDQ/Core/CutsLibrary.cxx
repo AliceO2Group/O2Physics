@@ -419,14 +419,14 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("tof_electron_sigma_2"));
     return cut;
   }
-  
+
   if (!nameStr.compare("emu_electronCuts_tightTPC")) {
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug4"));
     cut->AddCut(GetAnalysisCut("electronPIDnsigmaSkewed_2"));
     return cut;
   }
-  
+
   if (!nameStr.compare("emu_electronCuts_tof_tightTPC")) {
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug4"));
