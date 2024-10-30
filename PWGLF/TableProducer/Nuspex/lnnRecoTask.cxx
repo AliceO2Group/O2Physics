@@ -154,8 +154,7 @@ struct lnnRecoTask {
   Configurable<float> TPCRigidityMin3H{"TPCRigidityMin3H", 0.2, "Minimum rigidity of the triton candidate"};
   Configurable<float> nSigmaCutMinTPC{"nSigmaCutMinTPC", -5, "triton dEdx cut (n sigma)"};
   Configurable<float> nSigmaCutMaxTPC{"nSigmaCutMaxTPC", 5, "triton dEdx cut (n sigma)"};
-  Configurable<float> nSigmaCutMinTOF{"nSigmaCutMinTOF", -3, "triton TOF cut (n sigma)"};
-  Configurable<float> nSigmaCutMaxTOF{"nSigmaCutMaxTOF", 4, "triton TOF cut (n sigma)"};
+  Configurable<float> nSigmaCutTOF{"nSigmaCutMinTOF", 3, "triton TOF cut (n sigma)"};
   Configurable<float> nTPCClusMin3H{"nTPCClusMin3H", 80, "triton NTPC clusters cut"};
   Configurable<float> ptMinTOF{"ptMinTOF", 0.8, "minimum pt for TOF cut"};
   Configurable<float> TrTOFMass2Cut{"TrTOFMass2Cut", 5.5, "minimum Triton mass square to TOF"};
@@ -424,7 +423,7 @@ struct lnnRecoTask {
           continue;
         }
         hNSigma3HTOF_preselection->Fill(h3track.p(), h3track.tofNSigmaTr());
-        if (h3track.tofNSigmaTr() > nSigmaCutMinTOF && h3track.tofNSigmaTr() < nSigmaCutMaxTOF) {
+        if (std::abs(h3track.tofNSigmaTr()) > nSigmaCutTOF) {
           continue;
         }
         beta = h3track.beta();
