@@ -538,7 +538,7 @@ struct HfDataCreatorCharmResoReduced {
           }
         }
       } else if (RecoDecay::getMatchedMCRec<false, true, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2], vecDaughtersReso[3], vecDaughtersReso[4]}, Pdg::kDS1, std::array{+kPiPlus, -kKPlus, +kPiPlus, +kMuonPlus, -kPiPlus}, true, &sign, 4) > -1 ||
-                RecoDecay::getMatchedMCRec<false, true, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2], vecDaughtersReso[3], vecDaughtersReso[4]}, Pdg::kDS1, std::array{+kPiPlus, -kKPlus, +kPiPlus, +kPiPlus, -kMuonPlus}, true, &sign, 4) > -1) { // Verify if one of the pions decayed in a muon
+                 RecoDecay::getMatchedMCRec<false, true, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2], vecDaughtersReso[3], vecDaughtersReso[4]}, Pdg::kDS1, std::array{+kPiPlus, -kKPlus, +kPiPlus, +kPiPlus, -kMuonPlus}, true, &sign, 4) > -1) { // Verify if one of the pions decayed in a muon
         flag = sign * BIT(DecayTypeMc::Ds1ToDStarK0ToD0PiK0sOneMu);
       }
       if (flag != 0) {
@@ -600,7 +600,7 @@ struct HfDataCreatorCharmResoReduced {
       }
       if (RecoDecay::getMatchedMCRec<false, false, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2]}, Pdg::kDStar, std::array{-kKPlus, +kPiPlus, +kMuonPlus}, true, &signDStar, 3) > -1) {
         SETBIT(debug, PartialMatchMc::DStarMuMatched);
-      }     
+      }
       registry.fill(HIST("hMCRecDebug"), debug);
     }
     rowHfDV0McRecReduced(indexHfCandCharm, indexCandV0, flag, debug, origin, motherPt);
