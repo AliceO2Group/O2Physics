@@ -759,7 +759,7 @@ struct HfTaskLc {
       fillMcGenHistos(mcParticles_per_coll);
     }
   }
-  void processMcStd(CollisionsMc const& collision,
+  void processMcStd(CollisionsMc const& collisions,
                     LcCandidatesMc const& selectedLcCandidatesMc,
                     McParticles3ProngMatched const& mcParticles,
                     aod::McCollisions const&,
