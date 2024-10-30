@@ -595,6 +595,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kVertexingTauxyProjected] = "ns";
   fgVariableNames[kVertexingTauxyzProjected] = "Pair pseudo-proper Tauxyz";
   fgVariableUnits[kVertexingTauxyzProjected] = "ns";
+  fgVariableNames[kCosPointingAngle] = "cos(#theta_{pointing})";
+  fgVariableUnits[kCosPointingAngle] = "";
   fgVariableNames[kVertexingPz] = "Pz Pair";
   fgVariableUnits[kVertexingPz] = "GeV/c";
   fgVariableNames[kVertexingSV] = "Secondary Vertexing z";
