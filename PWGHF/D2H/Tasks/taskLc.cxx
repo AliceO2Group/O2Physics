@@ -575,12 +575,12 @@ struct HfTaskLc {
 
       if (candidate.isSelLcToPKPi() >= selectionFlagLc) {
         registry.fill(HIST("Data/hMass"), hfHelper.invMassLcToPKPi(candidate));
-        registry.fill(HIST("Data/hMassVsPtVsMult"), hfHelper.invMassLcToPKPi(candidate), pt, nTracks);
+        registry.fill(HIST("Data/hMassVsPtVsMult"), hfHelper.invMassLcToPKPi(candidate), pt, numPvContributors);
         registry.fill(HIST("Data/hMassVsPt"), hfHelper.invMassLcToPKPi(candidate), pt);
       }
       if (candidate.isSelLcToPiKP() >= selectionFlagLc) {
         registry.fill(HIST("Data/hMass"), hfHelper.invMassLcToPiKP(candidate));
-        registry.fill(HIST("Data/hMassVsPtVsMult"), hfHelper.invMassLcToPiKP(candidate), pt, nTracks);
+        registry.fill(HIST("Data/hMassVsPtVsMult"), hfHelper.invMassLcToPiKP(candidate), pt, numPvContributors);
         registry.fill(HIST("Data/hMassVsPt"), hfHelper.invMassLcToPiKP(candidate), pt);
       }
       registry.fill(HIST("Data/hPt"), pt);
