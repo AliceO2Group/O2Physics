@@ -136,6 +136,7 @@ struct spvector {
   Configurable<bool> usesparse{"usesparse", false, "flag to use sparse histogram"};
   Configurable<bool> usenormqn{"usenormqn", true, "flag to use normalized qs"};
   Configurable<bool> refsys{"refsys", true, "flag to use own reference system"};
+  Configurable<bool> gainwithvz{"gainwithvz", true, "flag to use gain callib with vz or cent"};
   Configurable<bool> followpub{"followpub", true, "flag to use alphaZDC"};
   Configurable<bool> useGainCallib{"useGainCallib", false, "use gain calibration"};
   Configurable<bool> useRecentereSp{"useRecentereSp", false, "use Recentering with Sparse or THn"};
@@ -243,8 +244,15 @@ struct spvector {
     histos.add("PsiZDCC", "PsiZDCC", kTH2F, {centfineAxis, phiAxis});
     histos.add("PsiZDCA", "PsiZDCA", kTH2F, {centfineAxis, phiAxis});
     // histos.add("ZDCAmp", "ZDCAmp", kTProfile3D, {channelZDCAxis, vzfineAxis, centfineAxis});
-    histos.add("ZDCAmp", "ZDCAmp", kTProfile2D, {channelZDCAxis, vzfineAxis});
-    histos.add("ZDCAmpCommon", "ZDCAmpCommon", kTProfile2D, {{2, 0.0, 2.0}, vzfineAxis});
+    if (gainwithvz) {
+      histos.add("ZDCAmp", "ZDCAmp", kTProfile2D, {channelZDCAxis, vzfineAxis});
+      histos.add("ZDCAmpCommon", "ZDCAmpCommon", kTProfile2D, {{2, 0.0, 2.0}, vzfineAxis});
+    } else {
+      histos.add("ZDCAmp", "ZDCAmp", kTProfile2D, {channelZDCAxis, centfineAxis});
+      histos.add("ZDCAmpCommon", "ZDCAmpCommon", kTProfile2D, {{2, 0.0, 2.0}, centfineAxis});
+    }
+    // histos.add("ZDCAmpCommon", "ZDCAmpCommon", kTProfile2D, {{2, 0.0, 2.0}, vzfineAxis});
+
     // histos.add("ZDCAmpCommon", "ZDCAmpCommon", kTProfile3D, {{2,0.0,2.0}, vzfineAxis, centfineAxis});
 
     if (QA) {
@@ -338,12 +346,12 @@ struct spvector {
       return;
     }
 
-    if (znaEnergy[0] < 0.0 || znaEnergy[1] < 0.0 || znaEnergy[2] < 0.0 || znaEnergy[3] < 0.0) {
+    if (znaEnergy[0] <= 0.0 || znaEnergy[1] <= 0.0 || znaEnergy[2] <= 0.0 || znaEnergy[3] <= 0.0) {
       triggerevent = false;
       spcalibrationtable(triggerevent, currentRunNumber, centrality, vx, vy, vz, znaEnergycommon, zncEnergycommon, znaEnergy[0], znaEnergy[1], znaEnergy[2], znaEnergy[3], zncEnergy[0], zncEnergy[1], zncEnergy[2], zncEnergy[3], qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
       return;
     }
-    if (zncEnergy[0] < 0.0 || zncEnergy[1] < 0.0 || zncEnergy[2] < 0.0 || zncEnergy[3] < 0.0) {
+    if (zncEnergy[0] <= 0.0 || zncEnergy[1] <= 0.0 || zncEnergy[2] <= 0.0 || zncEnergy[3] <= 0.0) {
       triggerevent = false;
       spcalibrationtable(triggerevent, currentRunNumber, centrality, vx, vy, vz, znaEnergycommon, zncEnergycommon, znaEnergy[0], znaEnergy[1], znaEnergy[2], znaEnergy[3], zncEnergy[0], zncEnergy[1], zncEnergy[2], zncEnergy[3], qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
       return;
@@ -365,8 +373,13 @@ struct spvector {
 
       // histos.fill(HIST("ZDCAmpCommon"), 0.5, vz, centrality, znaEnergycommon);
       // histos.fill(HIST("ZDCAmpCommon"), 1.5, vz, centrality, zncEnergycommon);
-      histos.fill(HIST("ZDCAmpCommon"), 0.5, vz, znaEnergycommon);
-      histos.fill(HIST("ZDCAmpCommon"), 1.5, vz, zncEnergycommon);
+      if (gainwithvz) {
+        histos.fill(HIST("ZDCAmpCommon"), 0.5, vz, znaEnergycommon);
+        histos.fill(HIST("ZDCAmpCommon"), 1.5, vz, zncEnergycommon);
+      } else {
+        histos.fill(HIST("ZDCAmpCommon"), 0.5, centrality, znaEnergycommon);
+        histos.fill(HIST("ZDCAmpCommon"), 1.5, centrality, zncEnergycommon);
+      }
 
       // LOG(info) << "**********energy values************" << znaEnergycommon<<" "<<znaEnergy[0]<<" "<<znaEnergy[1]<<" "<<znaEnergy[2]<<" "<<znaEnergy[3]<<" "<<znaEnergy[0]+znaEnergy[1]+znaEnergy[2]+znaEnergy[3];
 
@@ -374,7 +387,11 @@ struct spvector {
         auto chanelid = iChA;
         if (useGainCallib && gainprofile) {
           // gainequal = gainprofile->GetBinContent(gainprofile->FindBin(vz, centrality, chanelid + 0.5));
-          gainequal = gainprofile->GetBinContent(gainprofile->FindBin(vz, chanelid + 0.5));
+          if (gainwithvz) {
+            gainequal = gainprofile->GetBinContent(gainprofile->FindBin(vz, chanelid + 0.5));
+          } else {
+            gainequal = gainprofile->GetBinContent(gainprofile->FindBin(centrality, chanelid + 0.5));
+          }
         }
 
         if (iChA < 4) {
@@ -391,7 +408,11 @@ struct spvector {
             qxZDCA = qxZDCA + ampl * x[iChA];
             qyZDCA = qyZDCA + ampl * y[iChA];
             sumA = sumA + ampl;
-            histos.fill(HIST("ZDCAmp"), chanelid + 0.5, vz, ampl);
+            if (gainwithvz) {
+              histos.fill(HIST("ZDCAmp"), chanelid + 0.5, vz, ampl);
+            } else {
+              histos.fill(HIST("ZDCAmp"), chanelid + 0.5, centrality, ampl);
+            }
             // histos.fill(HIST("hZDCAmp"), chanelid + 0.5, vz, centrality, ampl);
           }
         } else {
@@ -407,7 +428,11 @@ struct spvector {
             qxZDCC = qxZDCC - ampl * x[iChA - 4];
             qyZDCC = qyZDCC + ampl * y[iChA - 4];
             sumC = sumC + ampl;
-            histos.fill(HIST("ZDCAmp"), chanelid + 0.5, vz, ampl);
+            if (gainwithvz) {
+              histos.fill(HIST("ZDCAmp"), chanelid + 0.5, vz, ampl);
+            } else {
+              histos.fill(HIST("ZDCAmp"), chanelid + 0.5, centrality, ampl);
+            }
             // histos.fill(HIST("hZDCAmp"), chanelid + 0.5, vz, centrality, ampl);
           }
         }
