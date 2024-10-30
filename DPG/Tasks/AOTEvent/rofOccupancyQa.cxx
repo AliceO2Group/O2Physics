@@ -159,7 +159,7 @@ struct RofOccupancyQaTask {
     histos.add("hEtaVsVz", "", kTH2D, {{250, -25, 25}, {250, -2.5, 2.5}});
     histos.add("hNPVcontribVsVz", "", kTH2D, {{250, -25, 25}, {500, 0., 8000}});
 
-    //
+    // general QA histos
     histos.add("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyByTracks", "", kTH2D, {{250, 0., 25000 * k}, {250, 0., 8000}});
     histos.add("vZ_TF_ROF_border_cuts/hThisEvITSTPCTr_vs_occupancyByTracks", "", kTH2D, {{250, 0., 25000 * k}, {250, 0., 8000}});
     histos.add("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyByFT0C", "", kTH2D, {{250, 0., 2.5e5 * k}, {250, 0., 8000}});
