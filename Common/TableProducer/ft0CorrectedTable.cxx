@@ -49,7 +49,10 @@ struct ft0CorrectedTable {
   void init(o2::framework::InitContext&)
   {
     if (doprocessStandard && doprocessWithBypassFT0timeInMC) {
-      LOG(fatal) << "Both process data and process MC are enabled. Pick one of the two";
+      LOG(fatal) << "Both processStandard and processWithBypassFT0timeInMC are enabled. Pick one of the two";
+    }
+    if (!doprocessStandard && !doprocessWithBypassFT0timeInMC) {
+      LOG(fatal) << "No process is enabled. Pick one";
     }
     ccdb->setURL(cfgUrl);
     ccdb->setTimestamp(cfgTimestamp);
@@ -71,7 +74,7 @@ struct ft0CorrectedTable {
       histos.add("MC/deltat0AC", "t0AC", kTH1D, {{1000, -50, 50, "t0AC (ps)"}});
     }
   }
-  void process(aod::BCs const&) {}
+
   void processStandard(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
                        BCsWithMatchings const&,
                        aod::FT0s const&)
