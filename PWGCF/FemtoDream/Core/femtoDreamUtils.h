@@ -72,10 +72,10 @@ inline int checkDaughterType(o2::aod::femtodreamparticle::ParticleType partType,
   int partOrigin = 0;
   if (partType == o2::aod::femtodreamparticle::ParticleType::kTrack) {
     switch (abs(motherPDG)) {
-      case 3122:
+      case kLambda0:
         partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterLambda;
         break;
-      case 3222:
+      case kSigmaPlus:
         partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterSigmaplus;
         break;
       default:
@@ -87,10 +87,10 @@ inline int checkDaughterType(o2::aod::femtodreamparticle::ParticleType partType,
 
   } else if (partType == o2::aod::femtodreamparticle::ParticleType::kV0Child) {
     switch (abs(motherPDG)) {
-      case 3122:
+      case kLambda0:
         partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterLambda;
         break;
-      case 3222:
+      case kSigmaPlus:
         partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterSigmaplus;
         break;
       default:
