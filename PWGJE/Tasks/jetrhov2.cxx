@@ -572,15 +572,15 @@ struct Jetrhov2Task {
             histosQA.fill(HIST("histEvtPlFinalV2"), helperEP.GetEventPlane(collision.qvecRe()[DetInd + 3], collision.qvecIm()[DetInd + 3], nmode), collision.cent());
           }
         } else if (nmode == 3) {
-            histosQA.fill(HIST("histQvecUncorV3"), collision.qvecRe()[DetInd], collision.qvecIm()[DetInd], collision.cent());
-            histosQA.fill(HIST("histQvecRectrV3"), collision.qvecRe()[DetInd + 1], collision.qvecIm()[DetInd + 1], collision.cent());
-            histosQA.fill(HIST("histQvecTwistV3"), collision.qvecRe()[DetInd + 2], collision.qvecIm()[DetInd + 2], collision.cent());
-            histosQA.fill(HIST("histQvecFinalV3"), collision.qvecRe()[DetInd + 3], collision.qvecIm()[DetInd + 3], collision.cent());
+          histosQA.fill(HIST("histQvecUncorV3"), collision.qvecRe()[DetInd], collision.qvecIm()[DetInd], collision.cent());
+          histosQA.fill(HIST("histQvecRectrV3"), collision.qvecRe()[DetInd + 1], collision.qvecIm()[DetInd + 1], collision.cent());
+          histosQA.fill(HIST("histQvecTwistV3"), collision.qvecRe()[DetInd + 2], collision.qvecIm()[DetInd + 2], collision.cent());
+          histosQA.fill(HIST("histQvecFinalV3"), collision.qvecRe()[DetInd + 3], collision.qvecIm()[DetInd + 3], collision.cent());
 
-            histosQA.fill(HIST("histEvtPlUncorV3"), helperEP.GetEventPlane(collision.qvecRe()[DetInd], collision.qvecIm()[DetInd], nmode), collision.cent());
-            histosQA.fill(HIST("histEvtPlRectrV3"), helperEP.GetEventPlane(collision.qvecRe()[DetInd + 1], collision.qvecIm()[DetInd + 1], nmode), collision.cent());
-            histosQA.fill(HIST("histEvtPlTwistV3"), helperEP.GetEventPlane(collision.qvecRe()[DetInd + 2], collision.qvecIm()[DetInd + 2], nmode), collision.cent());
-            histosQA.fill(HIST("histEvtPlFinalV3"), helperEP.GetEventPlane(collision.qvecRe()[DetInd + 3], collision.qvecIm()[DetInd + 3], nmode), collision.cent());
+          histosQA.fill(HIST("histEvtPlUncorV3"), helperEP.GetEventPlane(collision.qvecRe()[DetInd], collision.qvecIm()[DetInd], nmode), collision.cent());
+          histosQA.fill(HIST("histEvtPlRectrV3"), helperEP.GetEventPlane(collision.qvecRe()[DetInd + 1], collision.qvecIm()[DetInd + 1], nmode), collision.cent());
+          histosQA.fill(HIST("histEvtPlTwistV3"), helperEP.GetEventPlane(collision.qvecRe()[DetInd + 2], collision.qvecIm()[DetInd + 2], nmode), collision.cent());
+          histosQA.fill(HIST("histEvtPlFinalV3"), helperEP.GetEventPlane(collision.qvecRe()[DetInd + 3], collision.qvecIm()[DetInd + 3], nmode), collision.cent());
         }
         //< Psi_EP,2, JetPtCorr = Jet_pT-<rho>*A in-plane and out-of-plane >//
         auto collJets = jets.sliceBy(JetsPerJCollision, collision.globalIndex()); // select the jet in collisions
@@ -604,13 +604,13 @@ struct Jetrhov2Task {
             jetPtCorr = jet.pt() - collision.rho() * jet.area();
             registry.fill(HIST("h_jet_pt_in_plane_test"), jet.pt() - (collision.rho() * jet.area()), 1.0);
 
-            if ((phiMinusPsi2 < TMath::Pi()/4) || (phiMinusPsi2 >= 7*TMath::Pi()/4) || (phiMinusPsi2 >= 3*TMath::Pi()/4 && phiMinusPsi2 < 5*TMath::Pi()/4)) {
+            if ((phiMinusPsi2 < TMath::Pi() / 4) || (phiMinusPsi2 >= 7*TMath::Pi() / 4) || (phiMinusPsi2 >= 3*TMath::Pi() / 4 && phiMinusPsi2 < 5*TMath::Pi() / 4)) {
               registry.fill(HIST("h_jet_pt_in_plane_v2"), jet.pt() - (collision.rho() * jet.area()), 1.0);
-              registry.fill(HIST("h2_centrality_jet_pt_in_plane_v2"),  collision.centrality(), jet.pt() - (collision.rho() * jet.area()), 1.0);
+              registry.fill(HIST("h2_centrality_jet_pt_in_plane_v2"), collision.centrality(), jet.pt() - (collision.rho() * jet.area()), 1.0);
               registry.fill(HIST("h_collisions_qv_check"), 3.5);
             } else {
               registry.fill(HIST("h_jet_pt_out_of_plane_v2"), jet.pt() - (collision.rho() * jet.area()), 1.0);
-              registry.fill(HIST("h2_centrality_jet_pt_out_of_plane_v2"),  collision.centrality(), jet.pt() - (collision.rho() * jet.area()), 1.0);
+              registry.fill(HIST("h2_centrality_jet_pt_out_of_plane_v2"), collision.centrality(), jet.pt() - (collision.rho() * jet.area()), 1.0);
               registry.fill(HIST("h_collisions_qv_check"), 4.5);
             }
           }
@@ -630,7 +630,7 @@ struct Jetrhov2Task {
             jetPtCorr = jet.pt() - collision.rho() * jet.area();
             registry.fill(HIST("h_jet_pt_in_plane_test"), jet.pt() - (collision.rho() * jet.area()), 1.0);
 
-            if ((phiMinusPsi3 < TMath::Pi()/4) || (phiMinusPsi3 >= 7*TMath::Pi()/4) || (phiMinusPsi3 >= 3*TMath::Pi()/4 && phiMinusPsi3 < 5*TMath::Pi()/4)) {
+            if ((phiMinusPsi3 < TMath::Pi() / 4) || (phiMinusPsi3 >= 7*TMath::Pi() / 4) || (phiMinusPsi3 >= 3*TMath::Pi() / 4 && phiMinusPsi3 < 5*TMath::Pi() / 4)) {
               registry.fill(HIST("h_jet_pt_in_plane_v3"), jet.pt() - (collision.rho() * jet.area()), 1.0);
               registry.fill(HIST("h2_centrality_jet_pt_in_plane_v3"), collision.centrality(), jet.pt() - (collision.rho() * jet.area()), 1.0);
             } else {
@@ -783,5 +783,3 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<Jetrhov2Task>(cfgc, TaskName{"jet-rho-v2"})};
 }
-
-
