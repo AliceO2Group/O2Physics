@@ -1029,6 +1029,30 @@ DECLARE_SOA_TABLE(ReducedMuonsDca, "AOD", "RTMUONDCA",
                   muondca::Pz);
 
 using ReducedMuonDca = ReducedMuonsDca::iterator;
+
+//______________________________________________________
+namespace generatedquarkonia
+{
+//______________________________________________________
+// Binned content for generated particles: derived data
+DECLARE_SOA_COLUMN(GeneratedEtaC1S, generatedEtaC1S, std::vector<uint32_t>); //! Eta(1S) binned generated data
+DECLARE_SOA_COLUMN(GeneratedJPsi, generatedJPsi, std::vector<uint32_t>); //! J/Psi binned generated data
+DECLARE_SOA_COLUMN(GeneratedChiC0, generatedChiC0, std::vector<uint32_t>); //! ChiC0(1P) binned generated data
+DECLARE_SOA_COLUMN(GeneratedChiC1, generatedChiC1, std::vector<uint32_t>); //! ChiC1(1P) binned generated data
+DECLARE_SOA_COLUMN(GeneratedHC, generatedHC, std::vector<uint32_t>); //! hC binned generated data
+DECLARE_SOA_COLUMN(GeneratedChiC2, generatedChiC2, std::vector<uint32_t>); //! ChiC2(1P) binned generated data
+DECLARE_SOA_COLUMN(GeneratedEtaC2S, generatedEtaC2S, std::vector<uint32_t>); //! EtaC(2S) binned generated data
+DECLARE_SOA_COLUMN(GeneratedPsi2S, generatedPsi2S, std::vector<uint32_t>); //! Psi(2S) binned generated data
+} // namespace generatedquarkonia
+
+DECLARE_SOA_TABLE(GeEtaC1S, "AOD", "GEETAC1S", generatedquarkonia::GeneratedEtaC1S);
+DECLARE_SOA_TABLE(GeJPsi, "AOD", "GEJPSI", generatedquarkonia::GeneratedJPsi);
+DECLARE_SOA_TABLE(GeChiC0, "AOD", "GECHIC0", generatedquarkonia::GeneratedChiC0);
+DECLARE_SOA_TABLE(GeChiC1, "AOD", "GECHIC1", generatedquarkonia::GeneratedChiC1);
+DECLARE_SOA_TABLE(GeHC, "AOD", "GEHC", generatedquarkonia::GeneratedHC);
+DECLARE_SOA_TABLE(GeChiC2, "AOD", "GECHIC2", generatedquarkonia::GeneratedChiC2);
+DECLARE_SOA_TABLE(GeEtaC2S, "AOD", "GEETAC2S", generatedquarkonia::GeneratedEtaC2S);
+DECLARE_SOA_TABLE(GePsi2S, "AOD", "GEPSI2S", generatedquarkonia::GeneratedPsi2S);
 } // namespace o2::aod
 
 #endif // PWGDQ_DATAMODEL_REDUCEDINFOTABLES_H_
