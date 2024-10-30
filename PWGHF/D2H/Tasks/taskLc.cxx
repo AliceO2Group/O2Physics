@@ -100,7 +100,7 @@ struct HfTaskLc {
      {"MC/reconstructed/signal/hPtRecProng2Sig", "3-prong candidates (matched);prong 2 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
      {"MC/reconstructed/prompt/hPtRecProng2SigPrompt", "3-prong candidates (matched, prompt);prong 2 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
      {"MC/reconstructed/nonprompt/hPtRecProng2SigNonPrompt", "3-prong candidates (matched, non-prompt);prong 2 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
-     {"Data/hMultiplicity", "multiplicity;multiplicity;entries", {HistType::kTH1F, {{10000, 0., 10000.}}}},
+     {"Data/hNPvContrib", "number of prim. vertex contributor;number of prim. vertex contributor;entries", {HistType::kTH1F, {{10000, 0., 10000.}}}},
      /// DCAxy to prim. vertex prongs
      {"Data/hd0Prong0", "3-prong candidates;prong 0 DCAxy to prim. vertex (cm);entries", {HistType::kTH1F, {{600, -0.4, 0.4}}}},
      {"MC/reconstructed/signal/hd0RecProng0Sig", "3-prong candidates (matched);prong 0 DCAxy to prim. vertex (cm);entries", {HistType::kTH1F, {{600, -0.4, 0.4}}}},
@@ -553,19 +553,8 @@ struct HfTaskLc {
     auto thisCollId = collision.globalIndex();
     auto groupedLcCandidates = candidates.sliceBy(candLcPerCollision, thisCollId);
 
-    int nTracks = 0;
-    if (collision.numContrib() > 1) {
-      for (const auto& track : tracks) {
-        if (std::abs(track.eta()) > 4.0) {
-          continue;
-        }
-        if (std::abs(track.dcaXY()) > 0.0025 || std::abs(track.dcaZ()) > 0.0025) {
-          continue;
-        }
-        nTracks++;
-      }
-    }
-    registry.fill(HIST("Data/hMultiplicity"), nTracks);
+    int numPvContributors = collision.numContrib();
+    registry.fill(HIST("Data/hNPvContrib"), numPvContributors);
 
     for (const auto& candidate : groupedLcCandidates) {
       if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
