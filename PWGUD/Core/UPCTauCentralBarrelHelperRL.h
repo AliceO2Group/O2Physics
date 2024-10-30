@@ -106,18 +106,18 @@ int testPIDhypothesis(T trackPIDinfo, float maxNsigmaTPC = 5.0, float maxNsigmaT
 }
 
 template <typename T>
-int trackPDG(T trackPIDinfo)
+int trackPDG(T trackPIDinfo, float maxNsigmaTPC = 5.0, float maxNsigmaTOF = 5.0, bool useTOF = true, bool useTOFsigmaAfterTPC = true, float nSigmaShift = 0., bool isMC = false)
 // using testPIDhypothesis, reads enumMyParticle and return pdg value
 {
-  if (testPIDhypothesis(trackPIDinfo) == P_ELECTRON) {
+  if (testPIDhypothesis(trackPIDinfo,maxNsigmaTPC,maxNsigmaTOF,useTOF,useTOFsigmaAfterTPC,nSigmaShift,isMC) == P_ELECTRON) {
     return 11;
-  } else if (testPIDhypothesis(trackPIDinfo) == P_MUON) {
+  } else if (testPIDhypothesis(trackPIDinfo,maxNsigmaTPC,maxNsigmaTOF,useTOF,useTOFsigmaAfterTPC,nSigmaShift,isMC) == P_MUON) {
     return 13;
-  } else if (testPIDhypothesis(trackPIDinfo) == P_PION) {
+  } else if (testPIDhypothesis(trackPIDinfo,maxNsigmaTPC,maxNsigmaTOF,useTOF,useTOFsigmaAfterTPC,nSigmaShift,isMC) == P_PION) {
     return 211;
-  } else if (testPIDhypothesis(trackPIDinfo) == P_KAON) {
+  } else if (testPIDhypothesis(trackPIDinfo,maxNsigmaTPC,maxNsigmaTOF,useTOF,useTOFsigmaAfterTPC,nSigmaShift,isMC) == P_KAON) {
     return 321;
-  } else if (testPIDhypothesis(trackPIDinfo) == P_PROTON) {
+  } else if (testPIDhypothesis(trackPIDinfo,maxNsigmaTPC,maxNsigmaTOF,useTOF,useTOFsigmaAfterTPC,nSigmaShift,isMC) == P_PROTON) {
     return 2212;
   } else {
     printDebugMessage("Something is wrong with track PDG selector");

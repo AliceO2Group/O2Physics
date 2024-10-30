@@ -62,13 +62,13 @@ struct UpcTauCentralBarrelRL {
   Configurable<float> cutMyGapSideFT0A{"FT0A", 200., "FT0A threshold for SG selector"};
   Configurable<float> cutMyGapSideFT0C{"FT0C", 100., "FT0C threshold for SG selector"};
   Configurable<float> cutMyGapSideZDC{"ZDC", 10., "ZDC threshold for SG selector"};
-  Configurable<bool> usePIDwithTOF{"usePIDwithTOF", false, {"Determine whether also TOF should be used in testPIDhypothesis"}};
-  Configurable<bool> usePIDwithTOFsigmaAfterTPC{"usePIDwithTOFsigmaAfterTPC", true, {"Determine whether cut on TOF n sigma should be used after TPC-based decision in testPIDhypothesis"}};
+  Configurable<bool> usePIDwTOF{"usePIDwTOF", false, {"Determine whether also TOF should be used in testPIDhypothesis"}};
+  Configurable<bool> useScutTOFinTPC{"useScutTOFinTPC", true, {"Determine whether cut on TOF n sigma should be used after TPC-based decision in testPIDhypothesis"}};
+  Configurable<float> cutMySiTPC{"cutMySiTPC", 35.f, {"n sigma TPC cut on all particles in absolut values for testPIDhypothesis"}};
+  Configurable<float> cutMySiTOF{"cutMySiTOF", 35.f, {"n sigma TOF cut on all particles in absolut values for testPIDhypothesis"}};
   Configurable<float> cutMyTPCnSigmaEl{"cutMyTPCnSigmaEl", 3.f, {"n sigma cut on el in absolut values"}};
   Configurable<float> cutMyTPCnSigmaMu{"cutMyTPCnSigmaMu", 3.f, {"n sigma cut on mu in absolut values"}};
   Configurable<float> cutMyTPCnSigmaPi{"cutMyTPCnSigmaPi", 3.f, {"n sigma cut on pi in absolut values"}};
-  Configurable<float> cutMyNsigmaTPCPIDselector{"cutMyNsigmaTPCPIDselector", 35.f, {"n sigma TPC cut on all particles in absolut values for testPIDhypothesis"}};
-  Configurable<float> cutMyNsigmaTOFPIDselector{"cutMyNsigmaTOFPIDselector", 35.f, {"n sigma TOF cut on all particles in absolut values for testPIDhypothesis"}};
   Configurable<float> cutAvgITSclusterSize{"cutAvgITSclusterSize", 2.05f, {"specific study"}};
   Configurable<float> cutPtAvgITSclusterSize{"cutPtAvgITSclusterSize", 0.7f, {"specific study"}};
   Configurable<bool> cutMyGlobalTracksOnly{"cutMyGlobalTracksOnly", false, {"Applies cut on here defined global tracks"}};
@@ -330,7 +330,7 @@ struct UpcTauCentralBarrelRL {
       histos.add("EventTwoTracks/TwoElectrons/hLeadingRapidity", ";Leading #it{y} (-);Number of events (-)", HistType::kTH1D, {axisRap});
       histos.add("EventTwoTracks/TwoElectrons/hLeadingPvsOtherP", ";Leading #it{p} (GeV/c); Other #it{p} (GeV/c)", HistType::kTH2D, {axisMom, axisMom});
       histos.add("EventTwoTracks/TwoElectrons/hLeadingPwideVsOtherPwide", ";Leading #it{p} (GeV/c); Other #it{p} (GeV/c)", HistType::kTH2D, {axisMomWide, axisMomWide});
-      histos.add("EventTwoTracks/TwoElectrons/hLeadingPtVsOtherPt", ";Leading #it{p_{T} (GeV/c); Other #it{p_{T} (GeV/c)", HistType::kTH2D, {axisPt, axisPt});
+      histos.add("EventTwoTracks/TwoElectrons/hLeadingPtVsOtherPt", ";Leading #it{p_{T}} (GeV/c); Other #it{p_{T}} (GeV/c)", HistType::kTH2D, {axisPt, axisPt});
       histos.add("EventTwoTracks/TwoElectrons/hLeadingPhiVsOtherPhi", ";Leading #phi (rad); Other #phi (rad)", HistType::kTH2D, {axisPhi, axisPhi});
       histos.add("EventTwoTracks/TwoElectrons/hLeadingRapVsOtherRap", ";Leading #it{y} (-); Other #it{y} (-)", HistType::kTH2D, {axisRap, axisRap});
       histos.add("EventTwoTracks/TwoElectrons/PID/hTPCsignalVsP", ";Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", HistType::kTH2D, {axisMom, axisTPCdEdx});
@@ -440,6 +440,8 @@ struct UpcTauCentralBarrelRL {
       histos.add("EventTwoTracks/ElectronMuPi/hNeventsPtCuts", ";Selection (-);Number of events (-)", HistType::kTH1D, {{20, -0.5, 19.5}});
       histos.add("EventTwoTracks/ElectronMuPi/hInvariantMass", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMass});
       histos.add("EventTwoTracks/ElectronMuPi/hInvariantMassWide", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
+      histos.add("EventTwoTracks/ElectronMuPi/PionsSelection/hInvariantMass", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMass});
+      histos.add("EventTwoTracks/ElectronMuPi/PionsSelection/hInvariantMassWide", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
       histos.add("EventTwoTracks/ElectronMuPi/hAcoplanarity", ";#Delta#phi (rad);Number of events (-)", HistType::kTH1D, {axisAcoplanarity});
       histos.add("EventTwoTracks/ElectronMuPi/hMotherP", ";Mother #it{p} (GeV/c);Number of events (-)", HistType::kTH1D, {axisMom});
       histos.add("EventTwoTracks/ElectronMuPi/hMotherPwide", ";Mother #it{p} (GeV/c);Number of events (-)", HistType::kTH1D, {axisMomWide});
@@ -456,7 +458,7 @@ struct UpcTauCentralBarrelRL {
       histos.add("EventTwoTracks/ElectronMuPi/hDaughtersRapidity", ";Daughter 1 #it{y} (-);Daughter 2 #it{y} (-)", HistType::kTH2D, {axisRap, axisRap});
       histos.add("EventTwoTracks/ElectronMuPi/hElectronPvsOtherP", ";Electron #it{p} (GeV/c); #mu/#pi #it{p} (GeV/c)", HistType::kTH2D, {axisMom, axisMom});
       histos.add("EventTwoTracks/ElectronMuPi/hElectronPwideVsOtherPwide", ";Electron #it{p} (GeV/c); #mu/#pi #it{p} (GeV/c)", HistType::kTH2D, {axisMomWide, axisMomWide});
-      histos.add("EventTwoTracks/ElectronMuPi/hElectronPtVsOtherPt", ";Electron #it{p_{T} (GeV/c); #mu/#pi #it{p_{T} (GeV/c)", HistType::kTH2D, {axisPt, axisPt});
+      histos.add("EventTwoTracks/ElectronMuPi/hElectronPtVsOtherPt", ";Electron #it{p_{T}} (GeV/c); #mu/#pi #it{p_{T}} (GeV/c)", HistType::kTH2D, {axisPt, axisPt});
       histos.add("EventTwoTracks/ElectronMuPi/hElectronPhiVsOtherPhi", ";Electron #phi (rad); #mu/#pi #phi (rad)", HistType::kTH2D, {axisPhi, axisPhi});
       histos.add("EventTwoTracks/ElectronMuPi/hElectronRapVsOtherRap", ";Electron #it{y} (-); #mu/#pi #it{y} (-)", HistType::kTH2D, {axisRap, axisRap});
       histos.add("EventTwoTracks/ElectronMuPi/PID/hTPCsignalVsP", ";Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", HistType::kTH2D, {axisMom, axisTPCdEdx});
@@ -469,10 +471,12 @@ struct UpcTauCentralBarrelRL {
       histos.add("EventTwoTracks/ElectronMuPi/PID/hTPCnSigmaVsEP", ";Electron #it{p} (GeV/c);n#sigma_{TPC} (arb. units)", HistType::kTH2D, {axisMom, axisNsigma});
       histos.add("EventTwoTracks/ElectronMuPi/PID/hTPCnSigmaVsMP", ";Muon #it{p} (GeV/c);n#sigma_{TPC} (arb. units)", HistType::kTH2D, {axisMom, axisNsigma});
       histos.add("EventTwoTracks/ElectronMuPi/PID/hTPCnSigmaVsPP", ";Pion #it{p} (GeV/c);n#sigma_{TPC} (arb. units)", HistType::kTH2D, {axisMom, axisNsigma});
+      histos.add("EventTwoTracks/ElectronMuPi/PID/hTPCnSigmaEvsnSigmaP", ";electron n#sigma^{e}_{TPC} (arb. units);electron n#sigma^{#pi}_{TPC} (arb. units)", HistType::kTH2D, {axisNsigma, axisNsigma});
       histos.add("EventTwoTracks/ElectronMuPi/PID/hTOFnSigmaVsP", ";Track #it{p} (GeV/c);n#sigma_{TOF} (arb. units)", HistType::kTH2D, {axisMom, axisNsigma});
       histos.add("EventTwoTracks/ElectronMuPi/PID/hTOFnSigmaVsEP", ";Electron #it{p} (GeV/c);n#sigma_{TOF} (arb. units)", HistType::kTH2D, {axisMom, axisNsigma});
       histos.add("EventTwoTracks/ElectronMuPi/PID/hTOFnSigmaVsMP", ";Muon #it{p} (GeV/c);n#sigma_{TOF} (arb. units)", HistType::kTH2D, {axisMom, axisNsigma});
       histos.add("EventTwoTracks/ElectronMuPi/PID/hTOFnSigmaVsPP", ";Pion #it{p} (GeV/c);n#sigma_{TOF} (arb. units)", HistType::kTH2D, {axisMom, axisNsigma});
+      histos.add("EventTwoTracks/ElectronMuPi/PID/hTOCnSigmaEvsnSigmaP", ";electron n#sigma^{e}_{TOF} (arb. units);electron n#sigma^{#pi}_{TOF} (arb. units)", HistType::kTH2D, {axisNsigma, axisNsigma});
 
       histos.add("EventTwoTracks/ElectronOther/hNeventsPtCuts", ";Selection (-);Number of events (-)", HistType::kTH1D, {{20, -0.5, 19.5}});
       histos.add("EventTwoTracks/ElectronOther/hInvariantMass", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMass});
@@ -493,7 +497,7 @@ struct UpcTauCentralBarrelRL {
       histos.add("EventTwoTracks/ElectronOther/hDaughtersRapidity", ";Daughter 1 #it{y} (-);Daughter 2 #it{y} (-)", HistType::kTH2D, {axisRap, axisRap});
       histos.add("EventTwoTracks/ElectronOther/hElectronPvsOtherP", ";Electron #it{p} (GeV/c); Other #it{p} (GeV/c)", HistType::kTH2D, {axisMom, axisMom});
       histos.add("EventTwoTracks/ElectronOther/hElectronPwideVsOtherPwide", ";Electron #it{p} (GeV/c); Other #it{p} (GeV/c)", HistType::kTH2D, {axisMomWide, axisMomWide});
-      histos.add("EventTwoTracks/ElectronOther/hElectronPtVsOtherPt", ";Electron #it{p_{T} (GeV/c); Other #it{p_{T} (GeV/c)", HistType::kTH2D, {axisPt, axisPt});
+      histos.add("EventTwoTracks/ElectronOther/hElectronPtVsOtherPt", ";Electron #it{p_{T}} (GeV/c); Other #it{p_{T}} (GeV/c)", HistType::kTH2D, {axisPt, axisPt});
       histos.add("EventTwoTracks/ElectronOther/hElectronPhiVsOtherPhi", ";Electron #phi (rad); Other #phi (rad)", HistType::kTH2D, {axisPhi, axisPhi});
       histos.add("EventTwoTracks/ElectronOther/hElectronRapVsOtherRap", ";Electron #it{y} (-); Other #it{y} (-)", HistType::kTH2D, {axisRap, axisRap});
       histos.add("EventTwoTracks/ElectronOther/PID/hTPCsignalVsP", ";Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", HistType::kTH2D, {axisMom, axisTPCdEdx});
@@ -878,14 +882,14 @@ struct UpcTauCentralBarrelRL {
       return false;
     // kPrimaryTracks
     // GoldenChi2 cut is only for Run 2
-    if (abs(track.dcaZ()) > cutMyGTdcaZmax)
+    if (std::abs(track.dcaZ()) > cutMyGTdcaZmax)
       return false;
     if (cutMyGTdcaXYusePt) {
-      float maxDCA = 0.0105f + 0.0350f / pow(track.pt(), 1.1f); // ? not sure yet if will be used
-      if (abs(track.dcaXY()) > maxDCA)
+      float maxDCA = 0.0182f + 0.0350f / std::pow(track.pt(), 1.01f);
+      if (std::abs(track.dcaXY()) > maxDCA)
         return false;
     } else {
-      if (abs(track.dcaXY()) > cutMyGTdcaXYmax)
+      if (std::abs(track.dcaXY()) > cutMyGTdcaXYmax)
         return false;
     }
     // kQualityTrack
@@ -1000,10 +1004,10 @@ struct UpcTauCentralBarrelRL {
   int whatPsi2Schannel(T const& trkDaug1, T const& trkDaug2, T const& trkDaug3, T const& trkDaug4, std::vector<int>& vecPIDidx)
   {
     TLorentzVector jpsi, daug[4];
-    daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(trackPDG(trkDaug1)), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
-    daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(trackPDG(trkDaug2)), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
-    daug[2].SetPxPyPzE(trkDaug3.px(), trkDaug3.py(), trkDaug3.pz(), energy(pdg->Mass(trackPDG(trkDaug3)), trkDaug3.px(), trkDaug3.py(), trkDaug3.pz()));
-    daug[3].SetPxPyPzE(trkDaug4.px(), trkDaug4.py(), trkDaug4.pz(), energy(pdg->Mass(trackPDG(trkDaug4)), trkDaug4.px(), trkDaug4.py(), trkDaug4.pz()));
+    daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
+    daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(trackPDG(trkDaug2, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
+    daug[2].SetPxPyPzE(trkDaug3.px(), trkDaug3.py(), trkDaug3.pz(), energy(pdg->Mass(trackPDG(trkDaug3, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)), trkDaug3.px(), trkDaug3.py(), trkDaug3.pz()));
+    daug[3].SetPxPyPzE(trkDaug4.px(), trkDaug4.py(), trkDaug4.pz(), energy(pdg->Mass(trackPDG(trkDaug4, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)), trkDaug4.px(), trkDaug4.py(), trkDaug4.pz()));
     // Find index of the two largest values
     std::vector<std::pair<double, double>> vecPts;
     for (int i = 0; i < 4; i++) {
@@ -1130,7 +1134,7 @@ struct UpcTauCentralBarrelRL {
         countTPCxRws70++;
       if (track.tpcNClsCrossedRows() > 100)
         countTPCxRws100++;
-      int hypothesisID = testPIDhypothesis(track, cutMyNsigmaTPCPIDselector, cutMyNsigmaTOFPIDselector, usePIDwithTOF, usePIDwithTOFsigmaAfterTPC);
+      int hypothesisID = testPIDhypothesis(track, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC);
       vecPIDidx.push_back(hypothesisID);
       if (hypothesisID == P_ELECTRON || hypothesisID == P_MUON || hypothesisID == P_PION) {
         countPVGTselected++;
@@ -1163,8 +1167,8 @@ struct UpcTauCentralBarrelRL {
       TLorentzVector mother, daug[2], motherOfPions, pion[2], motherOfMuons, muon[2];
       const auto& trkDaug1 = reconstructedBarrelTracks.iteratorAt(vecPVidx[0]);
       const auto& trkDaug2 = reconstructedBarrelTracks.iteratorAt(vecPVidx[1]);
-      daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(trackPDG(trkDaug1)), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
-      daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(trackPDG(trkDaug2)), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
+      daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
+      daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(trackPDG(trkDaug2, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
       mother = daug[0] + daug[1];
       pion[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(211), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
       pion[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(211), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
@@ -1379,9 +1383,11 @@ struct UpcTauCentralBarrelRL {
         }
       }
       if ((countPVGTelectrons == 1 && countPVGTmuons == 1) || (countPVGTelectrons == 1 && countPVGTpions == 1)) {
-        double electronPt = (enumMyParticle(trackPDG(trkDaug1)) == P_ELECTRON) ? daug[0].Pt() : daug[1].Pt();
+        double electronPt = (enumMyParticle(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON) ? daug[0].Pt() : daug[1].Pt();
         histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/hInvariantMass"))->Fill(mother.M());
         histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/hInvariantMassWide"))->Fill(mother.M());
+        histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/PionsSelection/hInvariantMass"))->Fill(motherOfPions.M());
+        histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/PionsSelection/hInvariantMassWide"))->Fill(motherOfPions.M());
         histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/hAcoplanarity"))->Fill(acoplanarity);
         histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/hMotherP"))->Fill(mother.P());
         histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/hMotherPwide"))->Fill(mother.P());
@@ -1396,11 +1402,11 @@ struct UpcTauCentralBarrelRL {
         histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hDaughtersPt"))->Fill(daug[0].Pt(), daug[1].Pt());
         histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hDaughtersPhi"))->Fill(daug[0].Phi(), daug[1].Phi());
         histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hDaughtersRapidity"))->Fill(daug[0].Rapidity(), daug[1].Rapidity());
-        histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hElectronPvsOtherP"))->Fill((enumMyParticle(trackPDG(trkDaug1)) == P_ELECTRON) ? daug[0].P() : daug[1].P(), (enumMyParticle(trackPDG(trkDaug1)) == P_ELECTRON) ? daug[1].P() : daug[0].P());
-        histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hElectronPwideVsOtherPwide"))->Fill((enumMyParticle(trackPDG(trkDaug1)) == P_ELECTRON) ? daug[0].P() : daug[1].P(), (enumMyParticle(trackPDG(trkDaug1)) == P_ELECTRON) ? daug[1].P() : daug[0].P());
-        histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hElectronPtVsOtherPt"))->Fill((enumMyParticle(trackPDG(trkDaug1)) == P_ELECTRON) ? daug[0].Pt() : daug[1].Pt(), (enumMyParticle(trackPDG(trkDaug1)) == P_ELECTRON) ? daug[1].Pt() : daug[0].Pt());
-        histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hElectronPhiVsOtherPhi"))->Fill((enumMyParticle(trackPDG(trkDaug1)) == P_ELECTRON) ? daug[0].Phi() : daug[1].Phi(), (enumMyParticle(trackPDG(trkDaug1)) == P_ELECTRON) ? daug[1].Phi() : daug[0].Phi());
-        histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hElectronRapVsOtherRap"))->Fill((enumMyParticle(trackPDG(trkDaug1)) == P_ELECTRON) ? daug[0].Rapidity() : daug[1].Rapidity(), (enumMyParticle(trackPDG(trkDaug1)) == P_ELECTRON) ? daug[1].Rapidity() : daug[0].Rapidity());
+        histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hElectronPvsOtherP"))->Fill((enumMyParticle(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON) ? daug[0].P() : daug[1].P(), (enumMyParticle(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON) ? daug[1].P() : daug[0].P());
+        histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hElectronPwideVsOtherPwide"))->Fill((enumMyParticle(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON) ? daug[0].P() : daug[1].P(), (enumMyParticle(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON) ? daug[1].P() : daug[0].P());
+        histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hElectronPtVsOtherPt"))->Fill((enumMyParticle(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON) ? daug[0].Pt() : daug[1].Pt(), (enumMyParticle(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON) ? daug[1].Pt() : daug[0].Pt());
+        histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hElectronPhiVsOtherPhi"))->Fill((enumMyParticle(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON) ? daug[0].Phi() : daug[1].Phi(), (enumMyParticle(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON) ? daug[1].Phi() : daug[0].Phi());
+        histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/hElectronRapVsOtherRap"))->Fill((enumMyParticle(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON) ? daug[0].Rapidity() : daug[1].Rapidity(), (enumMyParticle(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON) ? daug[1].Rapidity() : daug[0].Rapidity());
         histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/hNeventsPtCuts"))->Fill(0);
         if (mother.Pt() < 9.)
           histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/hNeventsPtCuts"))->Fill(1);
@@ -1428,7 +1434,7 @@ struct UpcTauCentralBarrelRL {
           histos.get<TH1>(HIST("EventTwoTracks/ElectronMuPi/hNeventsPtCuts"))->Fill(12);
       }
       if ((countPVGTelectrons == 2) || (countPVGTelectrons == 1 && countPVGTmuons == 1) || (countPVGTelectrons == 1 && countPVGTpions == 1)) {
-        double electronPt = (enumMyParticle(trackPDG(trkDaug1)) == P_ELECTRON) ? daug[0].Pt() : daug[1].Pt();
+        double electronPt = (enumMyParticle(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON) ? daug[0].Pt() : daug[1].Pt();
         if (countPVGTelectrons == 2)
           electronPt = (daug[0].Pt() > daug[1].Pt()) ? daug[0].Pt() : daug[1].Pt();
         histos.get<TH1>(HIST("EventTwoTracks/ElectronOther/hInvariantMass"))->Fill(mother.M());
@@ -1454,11 +1460,11 @@ struct UpcTauCentralBarrelRL {
           histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/hElectronPhiVsOtherPhi"))->Fill(((daug[0].P() > daug[1].P()) ? daug[0].Phi() : daug[1].Phi()), ((daug[0].P() > daug[1].P()) ? daug[1].Phi() : daug[0].Phi()));
           histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/hElectronRapVsOtherRap"))->Fill(((daug[0].P() > daug[1].P()) ? daug[0].Rapidity() : daug[1].Rapidity()), ((daug[0].P() > daug[1].P()) ? daug[1].Rapidity() : daug[0].Rapidity()));
         } else {
-          histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/hElectronPvsOtherP"))->Fill((enumMyParticle(trackPDG(trkDaug1)) == P_ELECTRON) ? daug[0].P() : daug[1].P(), (enumMyParticle(trackPDG(trkDaug1)) == P_ELECTRON) ? daug[1].P() : daug[0].P());
-          histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/hElectronPwideVsOtherPwide"))->Fill((enumMyParticle(trackPDG(trkDaug1)) == P_ELECTRON) ? daug[0].P() : daug[1].P(), (enumMyParticle(trackPDG(trkDaug1)) == P_ELECTRON) ? daug[1].P() : daug[0].P());
-          histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/hElectronPtVsOtherPt"))->Fill((enumMyParticle(trackPDG(trkDaug1)) == P_ELECTRON) ? daug[0].Pt() : daug[1].Pt(), (enumMyParticle(trackPDG(trkDaug1)) == P_ELECTRON) ? daug[1].Pt() : daug[0].Pt());
-          histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/hElectronPhiVsOtherPhi"))->Fill((enumMyParticle(trackPDG(trkDaug1)) == P_ELECTRON) ? daug[0].Phi() : daug[1].Phi(), (enumMyParticle(trackPDG(trkDaug1)) == P_ELECTRON) ? daug[1].Phi() : daug[0].Phi());
-          histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/hElectronRapVsOtherRap"))->Fill((enumMyParticle(trackPDG(trkDaug1)) == P_ELECTRON) ? daug[0].Rapidity() : daug[1].Rapidity(), (enumMyParticle(trackPDG(trkDaug1)) == P_ELECTRON) ? daug[1].Rapidity() : daug[0].Rapidity());
+          histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/hElectronPvsOtherP"))->Fill((enumMyParticle(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON) ? daug[0].P() : daug[1].P(), (enumMyParticle(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON) ? daug[1].P() : daug[0].P());
+          histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/hElectronPwideVsOtherPwide"))->Fill((enumMyParticle(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON) ? daug[0].P() : daug[1].P(), (enumMyParticle(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON) ? daug[1].P() : daug[0].P());
+          histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/hElectronPtVsOtherPt"))->Fill((enumMyParticle(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON) ? daug[0].Pt() : daug[1].Pt(), (enumMyParticle(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON) ? daug[1].Pt() : daug[0].Pt());
+          histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/hElectronPhiVsOtherPhi"))->Fill((enumMyParticle(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON) ? daug[0].Phi() : daug[1].Phi(), (enumMyParticle(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON) ? daug[1].Phi() : daug[0].Phi());
+          histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/hElectronRapVsOtherRap"))->Fill((enumMyParticle(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON) ? daug[0].Rapidity() : daug[1].Rapidity(), (enumMyParticle(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON) ? daug[1].Rapidity() : daug[0].Rapidity());
         }
         histos.get<TH1>(HIST("EventTwoTracks/ElectronOther/hNeventsPtCuts"))->Fill(0);
         if (mother.Pt() < 9.)
@@ -1897,10 +1903,10 @@ struct UpcTauCentralBarrelRL {
       const auto& trkDaug2 = reconstructedBarrelTracks.iteratorAt(vecPVidx[1]);
       const auto& trkDaug3 = reconstructedBarrelTracks.iteratorAt(vecPVidx[2]);
       const auto& trkDaug4 = reconstructedBarrelTracks.iteratorAt(vecPVidx[3]);
-      daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(trackPDG(trkDaug1)), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
-      daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(trackPDG(trkDaug2)), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
-      daug[2].SetPxPyPzE(trkDaug3.px(), trkDaug3.py(), trkDaug3.pz(), energy(pdg->Mass(trackPDG(trkDaug3)), trkDaug3.px(), trkDaug3.py(), trkDaug3.pz()));
-      daug[3].SetPxPyPzE(trkDaug4.px(), trkDaug4.py(), trkDaug4.pz(), energy(pdg->Mass(trackPDG(trkDaug4)), trkDaug4.px(), trkDaug4.py(), trkDaug4.pz()));
+      daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
+      daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(trackPDG(trkDaug2, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
+      daug[2].SetPxPyPzE(trkDaug3.px(), trkDaug3.py(), trkDaug3.pz(), energy(pdg->Mass(trackPDG(trkDaug3, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)), trkDaug3.px(), trkDaug3.py(), trkDaug3.pz()));
+      daug[3].SetPxPyPzE(trkDaug4.px(), trkDaug4.py(), trkDaug4.pz(), energy(pdg->Mass(trackPDG(trkDaug4, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)), trkDaug4.px(), trkDaug4.py(), trkDaug4.pz()));
       mother = daug[0] + daug[1] + daug[2] + daug[3];
 
       histos.get<TH1>(HIST("EventFourTracks/hInvariantMass"))->Fill(mother.M());
@@ -1992,12 +1998,12 @@ struct UpcTauCentralBarrelRL {
       const auto& trkDaug4 = reconstructedBarrelTracks.iteratorAt(vecPVidx[3]);
       const auto& trkDaug5 = reconstructedBarrelTracks.iteratorAt(vecPVidx[4]);
       const auto& trkDaug6 = reconstructedBarrelTracks.iteratorAt(vecPVidx[5]);
-      daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(trackPDG(trkDaug1)), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
-      daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(trackPDG(trkDaug2)), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
-      daug[2].SetPxPyPzE(trkDaug3.px(), trkDaug3.py(), trkDaug3.pz(), energy(pdg->Mass(trackPDG(trkDaug3)), trkDaug3.px(), trkDaug3.py(), trkDaug3.pz()));
-      daug[3].SetPxPyPzE(trkDaug4.px(), trkDaug4.py(), trkDaug4.pz(), energy(pdg->Mass(trackPDG(trkDaug4)), trkDaug4.px(), trkDaug4.py(), trkDaug4.pz()));
-      daug[4].SetPxPyPzE(trkDaug5.px(), trkDaug5.py(), trkDaug5.pz(), energy(pdg->Mass(trackPDG(trkDaug5)), trkDaug5.px(), trkDaug5.py(), trkDaug5.pz()));
-      daug[5].SetPxPyPzE(trkDaug6.px(), trkDaug6.py(), trkDaug6.pz(), energy(pdg->Mass(trackPDG(trkDaug6)), trkDaug6.px(), trkDaug6.py(), trkDaug6.pz()));
+      daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
+      daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(trackPDG(trkDaug2, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
+      daug[2].SetPxPyPzE(trkDaug3.px(), trkDaug3.py(), trkDaug3.pz(), energy(pdg->Mass(trackPDG(trkDaug3, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)), trkDaug3.px(), trkDaug3.py(), trkDaug3.pz()));
+      daug[3].SetPxPyPzE(trkDaug4.px(), trkDaug4.py(), trkDaug4.pz(), energy(pdg->Mass(trackPDG(trkDaug4, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)), trkDaug4.px(), trkDaug4.py(), trkDaug4.pz()));
+      daug[4].SetPxPyPzE(trkDaug5.px(), trkDaug5.py(), trkDaug5.pz(), energy(pdg->Mass(trackPDG(trkDaug5, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)), trkDaug5.px(), trkDaug5.py(), trkDaug5.pz()));
+      daug[5].SetPxPyPzE(trkDaug6.px(), trkDaug6.py(), trkDaug6.pz(), energy(pdg->Mass(trackPDG(trkDaug6, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)), trkDaug6.px(), trkDaug6.py(), trkDaug6.pz()));
       mother = daug[0] + daug[1] + daug[2] + daug[3] + daug[4] + daug[5];
 
       histos.get<TH1>(HIST("EventSixTracks/hInvariantMass"))->Fill(mother.M());
@@ -2117,7 +2123,7 @@ struct UpcTauCentralBarrelRL {
           printMediumMessage("Track has no charge");
         }
       }
-      int hypothesisID = testPIDhypothesis(track, cutMyNsigmaTPCPIDselector, cutMyNsigmaTOFPIDselector, usePIDwithTOF, usePIDwithTOFsigmaAfterTPC);
+      int hypothesisID = testPIDhypothesis(track, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC);
       if (hypothesisID == P_ELECTRON || hypothesisID == P_MUON || hypothesisID == P_PION) {
         countPVGTselected++;
         vecPVidx.push_back(track.index());
@@ -2201,8 +2207,8 @@ struct UpcTauCentralBarrelRL {
       TLorentzVector daug[2], pion[2], muon[2];
       const auto& trkDaug1 = reconstructedBarrelTracks.iteratorAt(vecPVidx[0]);
       const auto& trkDaug2 = reconstructedBarrelTracks.iteratorAt(vecPVidx[1]);
-      daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(trackPDG(trkDaug1)), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
-      daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(trackPDG(trkDaug2)), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
+      daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
+      daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(trackPDG(trkDaug2, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
       pion[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(211), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
       pion[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(211), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
       muon[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(13), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
@@ -2364,22 +2370,25 @@ struct UpcTauCentralBarrelRL {
           }
         }
         if ((countPVGTelectrons == 1 && countPVGTmuons == 1) || (countPVGTelectrons == 1 && countPVGTpions == 1)) {
-          double electronPt = (enumMyParticle(trackPDG(trkDaug1)) == P_ELECTRON) ? daug[0].Pt() : daug[1].Pt();
-          double electronPID = (enumMyParticle(trackPDG(trkDaug1)) == P_ELECTRON) ? trkDaug1.tpcSignal() : trkDaug2.tpcSignal();
-          double electronNsigma = (enumMyParticle(trackPDG(trkDaug1)) == P_ELECTRON) ? trkDaug1.tpcNSigmaEl() : trkDaug2.tpcNSigmaEl();
-          double otherPt = (enumMyParticle(trackPDG(trkDaug2)) == P_ELECTRON) ? daug[0].Pt() : daug[1].Pt();
-          double otherPID = (enumMyParticle(trackPDG(trkDaug2)) == P_ELECTRON) ? trkDaug1.tpcSignal() : trkDaug2.tpcSignal();
-          double otherNsigmaMu = (enumMyParticle(trackPDG(trkDaug2)) == P_ELECTRON) ? trkDaug1.tpcNSigmaMu() : trkDaug2.tpcNSigmaMu();
-          double otherNsigmaPi = (enumMyParticle(trackPDG(trkDaug2)) == P_ELECTRON) ? trkDaug1.tpcNSigmaPi() : trkDaug2.tpcNSigmaPi();
+          double electronPt = (enumMyParticle(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON) ? daug[0].Pt() : daug[1].Pt();
+          double electronPID = (enumMyParticle(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON) ? trkDaug1.tpcSignal() : trkDaug2.tpcSignal();
+          double electronNsigma = (enumMyParticle(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON) ? trkDaug1.tpcNSigmaEl() : trkDaug2.tpcNSigmaEl();
+          double electronPiNsigma = (enumMyParticle(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON) ? trkDaug1.tpcNSigmaPi() : trkDaug2.tpcNSigmaPi();
+          double otherPt = (enumMyParticle(trackPDG(trkDaug2, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON) ? daug[0].Pt() : daug[1].Pt();
+          double otherPID = (enumMyParticle(trackPDG(trkDaug2, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON) ? trkDaug1.tpcSignal() : trkDaug2.tpcSignal();
+          double otherNsigmaMu = (enumMyParticle(trackPDG(trkDaug2, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON) ? trkDaug1.tpcNSigmaMu() : trkDaug2.tpcNSigmaMu();
+          double otherNsigmaPi = (enumMyParticle(trackPDG(trkDaug2, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON) ? trkDaug1.tpcNSigmaPi() : trkDaug2.tpcNSigmaPi();
           histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/PID/hTPCsignalVsEP"))->Fill(electronPt, electronPID);
           histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/PID/hTPCsignalVsOP"))->Fill(otherPt, otherPID);
           histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/PID/hTPCnSigmaVsEP"))->Fill(electronPt, electronNsigma);
           histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/PID/hTPCnSigmaVsMP"))->Fill(otherPt, otherNsigmaMu);
           histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/PID/hTPCnSigmaVsPP"))->Fill(otherPt, otherNsigmaPi);
+          histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/PID/hTPCnSigmaEvsnSigmaP"))->Fill(electronNsigma, electronPiNsigma);
           if (trkDaug1.hasTOF()) {
-            if (enumMyParticle(trackPDG(trkDaug1)) == P_ELECTRON) {
+            if (enumMyParticle(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON) {
               histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/PID/hTOFsignalVsEP"))->Fill(electronPt, trkDaug1.tofSignal());
               histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/PID/hTOFnSigmaVsEP"))->Fill(electronPt, trkDaug1.tofNSigmaEl());
+              histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/PID/hTOCnSigmaEvsnSigmaP"))->Fill(trkDaug1.tofNSigmaEl(), trkDaug1.tofNSigmaPi());
             } else {
               histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/PID/hTOFsignalVsOP"))->Fill(otherPt, trkDaug1.tofSignal());
               histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/PID/hTOFnSigmaVsMP"))->Fill(otherPt, trkDaug1.tofNSigmaMu());
@@ -2387,9 +2396,10 @@ struct UpcTauCentralBarrelRL {
             }
           }
           if (trkDaug2.hasTOF()) {
-            if (enumMyParticle(trackPDG(trkDaug2)) == P_ELECTRON) {
+            if (enumMyParticle(trackPDG(trkDaug2, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON) {
               histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/PID/hTOFsignalVsEP"))->Fill(electronPt, trkDaug2.tofSignal());
               histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/PID/hTOFnSigmaVsEP"))->Fill(electronPt, trkDaug2.tofNSigmaEl());
+              histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/PID/hTOCnSigmaEvsnSigmaP"))->Fill(trkDaug2.tofNSigmaEl(), trkDaug2.tofNSigmaPi());
             } else {
               histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/PID/hTOFsignalVsOP"))->Fill(otherPt, trkDaug2.tofSignal());
               histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/PID/hTOFnSigmaVsMP"))->Fill(otherPt, trkDaug2.tofNSigmaMu());
@@ -2398,13 +2408,13 @@ struct UpcTauCentralBarrelRL {
           }
         }
         if ((countPVGTelectrons == 2) || (countPVGTelectrons == 1 && countPVGTmuons == 1) || (countPVGTelectrons == 1 && countPVGTpions == 1)) {
-          double electronPt = (enumMyParticle(trackPDG(trkDaug1)) == P_ELECTRON) ? daug[0].Pt() : daug[1].Pt();
-          double electronPID = (enumMyParticle(trackPDG(trkDaug1)) == P_ELECTRON) ? trkDaug1.tpcSignal() : trkDaug2.tpcSignal();
-          double electronNsigma = (enumMyParticle(trackPDG(trkDaug1)) == P_ELECTRON) ? trkDaug1.tpcNSigmaEl() : trkDaug2.tpcNSigmaEl();
-          double otherPt = (enumMyParticle(trackPDG(trkDaug2)) == P_ELECTRON) ? daug[0].Pt() : daug[1].Pt();
-          double otherPID = (enumMyParticle(trackPDG(trkDaug2)) == P_ELECTRON) ? trkDaug1.tpcSignal() : trkDaug2.tpcSignal();
-          double otherNsigmaMu = (enumMyParticle(trackPDG(trkDaug2)) == P_ELECTRON) ? trkDaug1.tpcNSigmaMu() : trkDaug2.tpcNSigmaMu();
-          double otherNsigmaPi = (enumMyParticle(trackPDG(trkDaug2)) == P_ELECTRON) ? trkDaug1.tpcNSigmaPi() : trkDaug2.tpcNSigmaPi();
+          double electronPt = (enumMyParticle(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON) ? daug[0].Pt() : daug[1].Pt();
+          double electronPID = (enumMyParticle(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON) ? trkDaug1.tpcSignal() : trkDaug2.tpcSignal();
+          double electronNsigma = (enumMyParticle(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON) ? trkDaug1.tpcNSigmaEl() : trkDaug2.tpcNSigmaEl();
+          double otherPt = (enumMyParticle(trackPDG(trkDaug2, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON) ? daug[0].Pt() : daug[1].Pt();
+          double otherPID = (enumMyParticle(trackPDG(trkDaug2, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON) ? trkDaug1.tpcSignal() : trkDaug2.tpcSignal();
+          double otherNsigmaMu = (enumMyParticle(trackPDG(trkDaug2, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON) ? trkDaug1.tpcNSigmaMu() : trkDaug2.tpcNSigmaMu();
+          double otherNsigmaPi = (enumMyParticle(trackPDG(trkDaug2, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON) ? trkDaug1.tpcNSigmaPi() : trkDaug2.tpcNSigmaPi();
           if (countPVGTelectrons == 2) {
             electronPt = (daug[0].Pt() > daug[1].Pt()) ? daug[0].Pt() : daug[1].Pt();
             electronPID = (daug[0].Pt() > daug[1].Pt()) ? trkDaug1.tpcSignal() : trkDaug2.tpcSignal();
@@ -2420,7 +2430,7 @@ struct UpcTauCentralBarrelRL {
           histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/PID/hTPCnSigmaVsMP"))->Fill(otherPt, otherNsigmaMu);
           histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/PID/hTPCnSigmaVsPP"))->Fill(otherPt, otherNsigmaPi);
           if (trkDaug1.hasTOF()) {
-            if (enumMyParticle(trackPDG(trkDaug1)) == P_ELECTRON) {
+            if (enumMyParticle(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON) {
               histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/PID/hTOFsignalVsEP"))->Fill(electronPt, trkDaug1.tofSignal());
               histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/PID/hTOFnSigmaVsEP"))->Fill(electronPt, trkDaug1.tofNSigmaEl());
             } else {
@@ -2430,7 +2440,7 @@ struct UpcTauCentralBarrelRL {
             }
           }
           if (trkDaug2.hasTOF()) {
-            if (enumMyParticle(trackPDG(trkDaug2)) == P_ELECTRON) {
+            if (enumMyParticle(trackPDG(trkDaug2, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON) {
               histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/PID/hTOFsignalVsEP"))->Fill(electronPt, trkDaug2.tofSignal());
               histos.get<TH2>(HIST("EventTwoTracks/ElectronOther/PID/hTOFnSigmaVsEP"))->Fill(electronPt, trkDaug2.tofNSigmaEl());
             } else {
@@ -2448,10 +2458,10 @@ struct UpcTauCentralBarrelRL {
       const auto& trkDaug2 = reconstructedBarrelTracks.iteratorAt(vecPVidx[1]);
       const auto& trkDaug3 = reconstructedBarrelTracks.iteratorAt(vecPVidx[2]);
       const auto& trkDaug4 = reconstructedBarrelTracks.iteratorAt(vecPVidx[3]);
-      daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(trackPDG(trkDaug1)), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
-      daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(trackPDG(trkDaug2)), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
-      daug[2].SetPxPyPzE(trkDaug3.px(), trkDaug3.py(), trkDaug3.pz(), energy(pdg->Mass(trackPDG(trkDaug3)), trkDaug3.px(), trkDaug3.py(), trkDaug3.pz()));
-      daug[3].SetPxPyPzE(trkDaug4.px(), trkDaug4.py(), trkDaug4.pz(), energy(pdg->Mass(trackPDG(trkDaug4)), trkDaug4.px(), trkDaug4.py(), trkDaug4.pz()));
+      daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
+      daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(trackPDG(trkDaug2, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
+      daug[2].SetPxPyPzE(trkDaug3.px(), trkDaug3.py(), trkDaug3.pz(), energy(pdg->Mass(trackPDG(trkDaug3, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)), trkDaug3.px(), trkDaug3.py(), trkDaug3.pz()));
+      daug[3].SetPxPyPzE(trkDaug4.px(), trkDaug4.py(), trkDaug4.pz(), energy(pdg->Mass(trackPDG(trkDaug4, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)), trkDaug4.px(), trkDaug4.py(), trkDaug4.pz()));
 
       if (trkDaug1.hasTPC()) {
         histos.get<TH2>(HIST("EventFourTracks/PID/hTPCsignalVsP"))->Fill(daug[0].P(), trkDaug1.tpcSignal());
@@ -2497,12 +2507,12 @@ struct UpcTauCentralBarrelRL {
       const auto& trkDaug4 = reconstructedBarrelTracks.iteratorAt(vecPVidx[3]);
       const auto& trkDaug5 = reconstructedBarrelTracks.iteratorAt(vecPVidx[4]);
       const auto& trkDaug6 = reconstructedBarrelTracks.iteratorAt(vecPVidx[5]);
-      daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(trackPDG(trkDaug1)), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
-      daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(trackPDG(trkDaug2)), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
-      daug[2].SetPxPyPzE(trkDaug3.px(), trkDaug3.py(), trkDaug3.pz(), energy(pdg->Mass(trackPDG(trkDaug3)), trkDaug3.px(), trkDaug3.py(), trkDaug3.pz()));
-      daug[3].SetPxPyPzE(trkDaug4.px(), trkDaug4.py(), trkDaug4.pz(), energy(pdg->Mass(trackPDG(trkDaug4)), trkDaug4.px(), trkDaug4.py(), trkDaug4.pz()));
-      daug[4].SetPxPyPzE(trkDaug5.px(), trkDaug5.py(), trkDaug5.pz(), energy(pdg->Mass(trackPDG(trkDaug5)), trkDaug5.px(), trkDaug5.py(), trkDaug5.pz()));
-      daug[5].SetPxPyPzE(trkDaug6.px(), trkDaug6.py(), trkDaug6.pz(), energy(pdg->Mass(trackPDG(trkDaug6)), trkDaug6.px(), trkDaug6.py(), trkDaug6.pz()));
+      daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
+      daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(trackPDG(trkDaug2, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
+      daug[2].SetPxPyPzE(trkDaug3.px(), trkDaug3.py(), trkDaug3.pz(), energy(pdg->Mass(trackPDG(trkDaug3, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)), trkDaug3.px(), trkDaug3.py(), trkDaug3.pz()));
+      daug[3].SetPxPyPzE(trkDaug4.px(), trkDaug4.py(), trkDaug4.pz(), energy(pdg->Mass(trackPDG(trkDaug4, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)), trkDaug4.px(), trkDaug4.py(), trkDaug4.pz()));
+      daug[4].SetPxPyPzE(trkDaug5.px(), trkDaug5.py(), trkDaug5.pz(), energy(pdg->Mass(trackPDG(trkDaug5, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)), trkDaug5.px(), trkDaug5.py(), trkDaug5.pz()));
+      daug[5].SetPxPyPzE(trkDaug6.px(), trkDaug6.py(), trkDaug6.pz(), energy(pdg->Mass(trackPDG(trkDaug6, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)), trkDaug6.px(), trkDaug6.py(), trkDaug6.pz()));
 
       if (trkDaug1.hasTPC()) {
         histos.get<TH2>(HIST("EventSixTracks/PID/hTPCsignalVsP"))->Fill(daug[0].P(), trkDaug1.tpcSignal());
