@@ -735,7 +735,7 @@ struct HfTaskLc {
 
   /// Fills MC histograms.
   template <bool fillMl, typename CollType, typename CandType, typename CandLcMcGen>
-  void runMcAnalysisPerCollision(CollType const& collisions,
+  void runAnalysisPerCollisionMc(CollType const& collisions,
                                  CandType const& candidates,
                                  CandLcMcGen const& mcParticles)
   {
