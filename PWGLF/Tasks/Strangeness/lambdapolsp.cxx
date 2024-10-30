@@ -156,6 +156,16 @@ struct lambdapolsp {
       histos.add("hpQxtQxpvscent", "hpQxtQxpvscent", kTProfile, {centAxis});
       histos.add("hpQytQypvscent", "hpQytQypvscent", kTProfile, {centAxis});
       histos.add("hpQxytpvscent", "hpQxytpvscent", kTProfile, {centAxis});
+
+      hpuxQxpvscentpteta->Sumw2();
+      hpuyQypvscentpteta->Sumw2();
+      hpuxQxtvscentpteta->Sumw2();
+      hpuyQytvscentpteta->Sumw2();
+      hpuxyQxypvscentpteta->Sumw2();
+      hpuxyQxytvscentpteta->Sumw2();
+      hpQxtQxpvscent->Sumw2();
+      hpQytQypvscent->Sumw2();
+      hpQxytpvscent->Sumw2();
     }
 
     histos.add("hCentrality", "Centrality distribution", kTH1F, {{centAxis}});
