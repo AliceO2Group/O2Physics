@@ -108,10 +108,10 @@ struct JetSpectraEseTask {
   Filter colFilter = nabs(aod::jcollision::posZ) < vertexZCut;
   Filter mcCollisionFilter = nabs(aod::jmccollision::posZ) < vertexZCut;
 
-  void processESEDataCharged(soa::Join<JetCollisions, aod::JCollisionPIs, aod::BkgChargedRhos>::iterator const& collision,
+  void processESEDataCharged(soa::Join<aod::JetCollisions, aod::JCollisionPIs, aod::BkgChargedRhos>::iterator const& collision,
                              soa::Join<aod::Collisions, aod::CentFT0Cs, aod::QvectorFT0CVecs, aod::QPercentileFT0Cs, aod::FEseCols> const&,
                              soa::Filtered<aod::ChargedJets> const& jets,
-                             JetTracks const& tracks)
+                             aod::JetTracks const& tracks)
   {
     float counter{0.5f};
     registry.fill(HIST("h_collisions"), counter++);
@@ -162,11 +162,11 @@ struct JetSpectraEseTask {
   PROCESS_SWITCH(JetSpectraEseTask, processMCParticleLevel, "jets on particle level MC", false);
 
   using JetMCPTable = soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>>;
-  void processMCChargedMatched(soa::Filtered<JetCollisionsMCD>::iterator const& collision,
+  void processMCChargedMatched(soa::Filtered<aod::JetCollisionsMCD>::iterator const& collision,
                                soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>> const& mcdjets,
                                JetMCPTable const&,
-                               JetTracks const&,
-                               JetParticles const&)
+                               aod::JetTracks const&,
+                               aod::JetParticles const&)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection))
       return;

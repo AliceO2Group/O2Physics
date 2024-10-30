@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file jetderiveddatawriter.cxx
-/// \brief Task to skim jet framework tables (JetCollisions, JetTracks, JetClusters, ...)
+/// \brief Task to skim jet framework tables (aod::JetCollisions, aod::JetTracks, aod::JetClusters, ...)
 /// while adjusting indices accordingly
 ///
 /// \author Jochen Klein <jochen.klein@cern.ch>
@@ -141,15 +141,15 @@ struct JetDerivedDataWriter {
   PresliceUnsorted<soa::Join<aod::JMcParticles, aod::JMcParticlePIs>> ParticlesPerMcCollision = aod::jmcparticle::mcCollisionId;
   Preslice<soa::Join<aod::JTracks, aod::JTrackExtras, aod::JTrackPIs, aod::JMcTrackLbs>> TracksPerCollision = aod::jtrack::collisionId;
   Preslice<soa::Join<aod::JClusters, aod::JClusterPIs, aod::JClusterTracks>> ClustersPerCollision = aod::jcluster::collisionId;
-  Preslice<soa::Join<McCollisionsD0, aod::HfD0McRCollIds>> D0McCollisionsPerMcCollision = aod::jd0indices::mcCollisionId;
-  Preslice<soa::Join<McCollisionsLc, aod::Hf3PMcRCollIds>> LcMcCollisionsPerMcCollision = aod::jlcindices::mcCollisionId;
-  Preslice<McCollisionsDielectron> DielectronMcCollisionsPerMcCollision = aod::jdielectronindices::mcCollisionId;
-  Preslice<CollisionsD0> D0CollisionsPerCollision = aod::jd0indices::collisionId;
-  Preslice<CollisionsLc> LcCollisionsPerCollision = aod::jlcindices::collisionId;
-  Preslice<CollisionsDielectron> DielectronCollisionsPerCollision = aod::jdielectronindices::collisionId;
-  Preslice<CandidatesD0MCD> D0sPerCollision = aod::jd0indices::collisionId;
-  Preslice<CandidatesLcMCD> LcsPerCollision = aod::jlcindices::collisionId;
-  Preslice<CandidatesDielectronMCD> DielectronsPerCollision = aod::jdielectronindices::collisionId;
+  Preslice<soa::Join<aod::McCollisionsD0, aod::HfD0McRCollIds>> D0McCollisionsPerMcCollision = aod::jd0indices::mcCollisionId;
+  Preslice<soa::Join<aod::McCollisionsLc, aod::Hf3PMcRCollIds>> LcMcCollisionsPerMcCollision = aod::jlcindices::mcCollisionId;
+  Preslice<aod::McCollisionsDielectron> DielectronMcCollisionsPerMcCollision = aod::jdielectronindices::mcCollisionId;
+  Preslice<aod::CollisionsD0> D0CollisionsPerCollision = aod::jd0indices::collisionId;
+  Preslice<aod::CollisionsLc> LcCollisionsPerCollision = aod::jlcindices::collisionId;
+  Preslice<aod::CollisionsDielectron> DielectronCollisionsPerCollision = aod::jdielectronindices::collisionId;
+  Preslice<aod::CandidatesD0MCD> D0sPerCollision = aod::jd0indices::collisionId;
+  Preslice<aod::CandidatesLcMCD> LcsPerCollision = aod::jlcindices::collisionId;
+  Preslice<aod::CandidatesDielectronMCD> DielectronsPerCollision = aod::jdielectronindices::collisionId;
 
   std::vector<bool> collisionFlag;
   std::vector<bool> McCollisionFlag;
@@ -295,6 +295,11 @@ struct JetDerivedDataWriter {
           isTriggerObject = true;
         }
       } else {
+        if constexpr (std::is_same_v<std::decay_t<T>, aod::JTracks>) {
+          if (config.performTrackSelection && !(selectionObject.trackSel() & ~(1 << jetderiveddatautilities::JTrackSel::trackSign))) {
+            continue;
+          }
+        }
         if (selectionObject.pt() >= selectionObjectPtMin) {
           isTriggerObject = true;
         }
@@ -356,7 +361,7 @@ struct JetDerivedDataWriter {
   }
   PROCESS_SWITCH(JetDerivedDataWriter, processStoreDummyTable, "write out dummy output table", true);
 
-  void processStoreData(soa::Join<aod::JCollisions, aod::JCollisionPIs, aod::JCollisionBCs, aod::JEMCCollisionLbs>::iterator const& collision, soa::Join<aod::JBCs, aod::JBCPIs> const&, soa::Join<aod::JTracks, aod::JTrackExtras, aod::JTrackPIs> const& tracks, soa::Join<aod::JClusters, aod::JClusterPIs, aod::JClusterTracks> const& clusters, CollisionsD0 const& D0Collisions, CandidatesD0Data const& D0s, CollisionsLc const& LcCollisions, CandidatesLcData const& Lcs, CollisionsDielectron const& DielectronCollisions, CandidatesDielectronData const& Dielectrons)
+  void processStoreData(soa::Join<aod::JCollisions, aod::JCollisionPIs, aod::JCollisionBCs, aod::JEMCCollisionLbs>::iterator const& collision, soa::Join<aod::JBCs, aod::JBCPIs> const&, soa::Join<aod::JTracks, aod::JTrackExtras, aod::JTrackPIs> const& tracks, soa::Join<aod::JClusters, aod::JClusterPIs, aod::JClusterTracks> const& clusters, aod::CollisionsD0 const& D0Collisions, aod::CandidatesD0Data const& D0s, aod::CollisionsLc const& LcCollisions, aod::CandidatesLcData const& Lcs, aod::CollisionsDielectron const& DielectronCollisions, aod::CandidatesDielectronData const& Dielectrons)
   {
     std::map<int32_t, int32_t> bcMapping;
     std::map<int32_t, int32_t> trackMapping;
@@ -497,7 +502,7 @@ struct JetDerivedDataWriter {
   // to run after all jet selections
   PROCESS_SWITCH(JetDerivedDataWriter, processStoreData, "write out data output tables", false);
 
-  void processStoreMC(soa::Join<aod::JMcCollisions, aod::JMcCollisionPIs> const& mcCollisions, soa::Join<aod::JCollisions, aod::JCollisionPIs, aod::JCollisionBCs, aod::JMcCollisionLbs, aod::JEMCCollisionLbs> const& collisions, soa::Join<aod::JBCs, aod::JBCPIs> const&, soa::Join<aod::JTracks, aod::JTrackExtras, aod::JTrackPIs, aod::JMcTrackLbs> const& tracks, soa::Join<aod::JClusters, aod::JClusterPIs, aod::JClusterTracks, aod::JMcClusterLbs> const& clusters, soa::Join<aod::JMcParticles, aod::JMcParticlePIs> const& particles, CollisionsD0 const& D0Collisions, CandidatesD0MCD const& D0s, soa::Join<McCollisionsD0, aod::HfD0McRCollIds> const& D0McCollisions, CandidatesD0MCP const& D0Particles, CollisionsLc const& LcCollisions, CandidatesLcMCD const& Lcs, soa::Join<McCollisionsLc, aod::Hf3PMcRCollIds> const& LcMcCollisions, CandidatesLcMCP const& LcParticles, CollisionsDielectron const& DielectronCollisions, CandidatesDielectronMCD const& Dielectrons, McCollisionsDielectron const& DielectronMcCollisions, CandidatesDielectronMCP const& DielectronParticles)
+  void processStoreMC(soa::Join<aod::JMcCollisions, aod::JMcCollisionPIs> const& mcCollisions, soa::Join<aod::JCollisions, aod::JCollisionPIs, aod::JCollisionBCs, aod::JMcCollisionLbs, aod::JEMCCollisionLbs> const& collisions, soa::Join<aod::JBCs, aod::JBCPIs> const&, soa::Join<aod::JTracks, aod::JTrackExtras, aod::JTrackPIs, aod::JMcTrackLbs> const& tracks, soa::Join<aod::JClusters, aod::JClusterPIs, aod::JClusterTracks, aod::JMcClusterLbs> const& clusters, soa::Join<aod::JMcParticles, aod::JMcParticlePIs> const& particles, aod::CollisionsD0 const& D0Collisions, aod::CandidatesD0MCD const& D0s, soa::Join<aod::McCollisionsD0, aod::HfD0McRCollIds> const& D0McCollisions, aod::CandidatesD0MCP const& D0Particles, aod::CollisionsLc const& LcCollisions, aod::CandidatesLcMCD const& Lcs, soa::Join<aod::McCollisionsLc, aod::Hf3PMcRCollIds> const& LcMcCollisions, aod::CandidatesLcMCP const& LcParticles, aod::CollisionsDielectron const& DielectronCollisions, aod::CandidatesDielectronMCD const& Dielectrons, aod::McCollisionsDielectron const& DielectronMcCollisions, aod::CandidatesDielectronMCP const& DielectronParticles)
   {
     std::map<int32_t, int32_t> bcMapping;
     std::map<int32_t, int32_t> paticleMapping;
@@ -826,7 +831,7 @@ struct JetDerivedDataWriter {
           const auto d0McCollisionsPerMcCollision = D0McCollisions.sliceBy(D0McCollisionsPerMcCollision, mcCollision.globalIndex());
           for (const auto& d0McCollisionPerMcCollision : d0McCollisionsPerMcCollision) { // should just be one
             std::vector<int32_t> d0CollisionIDs;
-            for (auto const& d0CollisionPerMcCollision : d0McCollisionPerMcCollision.template hfCollBases_as<CollisionsD0>()) {
+            for (auto const& d0CollisionPerMcCollision : d0McCollisionPerMcCollision.template hfCollBases_as<aod::CollisionsD0>()) {
               auto d0CollisionIndex = D0CollisionMapping.find(d0CollisionPerMcCollision.globalIndex());
               if (d0CollisionIndex != D0CollisionMapping.end()) {
                 d0CollisionIDs.push_back(d0CollisionIndex->second);
@@ -840,7 +845,7 @@ struct JetDerivedDataWriter {
           const auto lcMcCollisionsPerMcCollision = LcMcCollisions.sliceBy(LcMcCollisionsPerMcCollision, mcCollision.globalIndex());
           for (const auto& lcMcCollisionPerMcCollision : lcMcCollisionsPerMcCollision) { // should just be one
             std::vector<int32_t> lcCollisionIDs;
-            for (auto const& lcCollisionPerMcCollision : lcMcCollisionPerMcCollision.template hfCollBases_as<CollisionsLc>()) {
+            for (auto const& lcCollisionPerMcCollision : lcMcCollisionPerMcCollision.template hfCollBases_as<aod::CollisionsLc>()) {
               auto lcCollisionIndex = LcCollisionMapping.find(lcCollisionPerMcCollision.globalIndex());
               if (lcCollisionIndex != LcCollisionMapping.end()) {
                 lcCollisionIDs.push_back(lcCollisionIndex->second);
@@ -856,7 +861,7 @@ struct JetDerivedDataWriter {
   // to run after all jet selections
   PROCESS_SWITCH(JetDerivedDataWriter, processStoreMC, "write out data output tables for mc", false);
 
-  void processStoreMCP(soa::Join<aod::JMcCollisions, aod::JMcCollisionPIs> const& mcCollisions, soa::Join<aod::JMcParticles, aod::JMcParticlePIs> const& particles, McCollisionsD0 const& D0McCollisions, CandidatesD0MCP const& D0Particles, McCollisionsLc const& LcMcCollisions, CandidatesLcMCP const& LcParticles, McCollisionsDielectron const& DielectronMcCollisions, CandidatesDielectronMCP const& DielectronParticles)
+  void processStoreMCP(soa::Join<aod::JMcCollisions, aod::JMcCollisionPIs> const& mcCollisions, soa::Join<aod::JMcParticles, aod::JMcParticlePIs> const& particles, aod::McCollisionsD0 const& D0McCollisions, aod::CandidatesD0MCP const& D0Particles, aod::McCollisionsLc const& LcMcCollisions, aod::CandidatesLcMCP const& LcParticles, aod::McCollisionsDielectron const& DielectronMcCollisions, aod::CandidatesDielectronMCP const& DielectronParticles)
   {
 
     int particleTableIndex = 0;
