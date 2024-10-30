@@ -613,32 +613,32 @@ void checkBCrangesSkimming(std::string AnaFileName = "AnalysisResults.root", std
   TH1D *hOriginalSinglesRatio, *hOriginalDoublesRatio, *hOriginalMultiplesRatio;
   TH1D *hSkimmedSinglesRatio, *hSkimmedDoublesRatio, *hSkimmedMultiplesRatio;
 
-  hTriggerEff = (TH1D*)hSkimmedTotal.Clone("hTriggerEff");
+  hTriggerEff = reinterpret_cast<TH1D*>(hSkimmedTotal.Clone("hTriggerEff"));
   hTriggerEff->SetTitle((runNumber + " skimmed efficiency;; Skimmed / Original").data());
   hTriggerEff->Divide(&hOriginalTotal);
   hTriggerMatchesRatio.Divide(&hOriginalSingles);
   hTriggerSingleMatchesRatio.Divide(&hOriginalSingles);
-  hOriginalSinglesRatio = (TH1D*)hOriginalSingles.Clone("hOriginalSinglesRatio");
+  hOriginalSinglesRatio = reinterpret_cast<TH1D*>(hOriginalSingles.Clone("hOriginalSinglesRatio"));
   hOriginalSinglesRatio->SetTitle((runNumber + " Original;;Singles / Total").data());
   hOriginalSinglesRatio->Divide(&hOriginalTotal);
-  hOriginalDoublesRatio = (TH1D*)hOriginalDoubles.Clone("hOriginalDoublesRatio");
+  hOriginalDoublesRatio = reinterpret_cast<TH1D*>(hOriginalDoubles.Clone("hOriginalDoublesRatio"));
   hOriginalDoublesRatio->SetTitle((runNumber + " Original;;Doubles / Total").data());
   hOriginalDoublesRatio->Divide(&hOriginalTotal);
-  hOriginalMultiplesRatio = (TH1D*)hOriginalMultiples.Clone("hOriginalMultiplesRatio");
+  hOriginalMultiplesRatio = reinterpret_cast<TH1D*>(hOriginalMultiples.Clone("hOriginalMultiplesRatio"));
   hOriginalMultiplesRatio->SetTitle((runNumber + " Original;;Multiples / Total").data());
   hOriginalMultiplesRatio->Divide(&hOriginalTotal);
 
-  hSkimmedSinglesRatio = (TH1D*)hSkimmedSingles.Clone("hSkimmedSinglesRatio");
+  hSkimmedSinglesRatio = reinterpret_cast<TH1D*>(hSkimmedSingles.Clone("hSkimmedSinglesRatio"));
   hSkimmedSinglesRatio->SetTitle((runNumber + " Skimmed;;Singles / Total").data());
   hSkimmedSinglesRatio->Divide(&hSkimmedTotal);
-  hSkimmedDoublesRatio = (TH1D*)hSkimmedDoubles.Clone("hSkimmedDoublesRatio");
+  hSkimmedDoublesRatio = reinterpret_cast<TH1D*>(hSkimmedDoubles.Clone("hSkimmedDoublesRatio"));
   hSkimmedDoublesRatio->SetTitle((runNumber + " Skimmed;;Doubles / Total").data());
   hSkimmedDoublesRatio->Divide(&hSkimmedTotal);
-  hSkimmedMultiplesRatio = (TH1D*)hSkimmedMultiples.Clone("hSkimmedMultiplesRatio");
+  hSkimmedMultiplesRatio = reinterpret_cast<TH1D*>(hSkimmedMultiples.Clone("hSkimmedMultiplesRatio"));
   hSkimmedMultiplesRatio->SetTitle((runNumber + " Skimmed;;Multiples / Total").data());
   hSkimmedMultiplesRatio->Divide(&hSkimmedTotal);
 
-  TFile fout(outputFileName, "RECREATE");
+  TFile fout(outputFileName, "UPDATE");
   fout.cd();
   TDirectory* dir = fout.mkdir(runNumber.data());
   dir->cd();
