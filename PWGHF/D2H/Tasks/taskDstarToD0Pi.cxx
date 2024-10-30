@@ -62,7 +62,8 @@ struct HfTaskDstarToD0Pi {
   ConfigurableAxis binningNormDecayLength{"binningNormDecayLength", {1000, 0.0, 40.0}, "Bins of Normalised Decay Length"};
   ConfigurableAxis binningCentrality{"binningCentrality", {VARIABLE_WIDTH, 0.0, 1.0, 10.0, 30.0, 50.0, 70.0, 100.0}, "centrality binning"};
   ConfigurableAxis binningDeltaInvMass{"binningDeltaInvMass", {100, 0.13, 0.16}, "Bins of Delta InvMass of Dstar"};
-  ConfigurableAxis binningBDTScore{"binningBDTScore", {100, 0.0f, 1.0f}, "Bins for BDT Score"};
+  ConfigurableAxis binningBkgBDTScore{"binningBkgBDTScore", {100, 0.0f, 1.0f}, "Bins for background BDT Score"};
+  ConfigurableAxis binningSigBDTScore{"binningSigBDTScore", {100, 0.0f, 1.0f}, "Bins for Signal (Prompts + Non Prompt) BDT Score"};
 
   HistogramRegistry registry{
     "registry",
@@ -84,9 +85,9 @@ struct HfTaskDstarToD0Pi {
     AxisSpec axisNormDecayLength = {binningNormDecayLength, "normalised decay length (cm)"};
     AxisSpec axisCentrality = {binningCentrality, "centrality (%)"};
     AxisSpec axisDeltaInvMass = {binningDeltaInvMass, "#Delta #it{M}_{inv} D*"};
-    AxisSpec axisBDTScorePrompt = {binningBDTScore, "BDT Score for Prompt Cand"};
-    AxisSpec axisBDTScoreNonPrompt = {binningBDTScore, "BDT Score for Non-Prompt Cand"};
-    AxisSpec axisBDTScoreBackground = {binningBDTScore, "BDT Score for Background Cand"};
+    AxisSpec axisBDTScorePrompt = {binningSigBDTScore, "BDT Score for Prompt Cand"};
+    AxisSpec axisBDTScoreNonPrompt = {binningSigBDTScore, "BDT Score for Non-Prompt Cand"};
+    AxisSpec axisBDTScoreBackground = {binningBkgBDTScore, "BDT Score for Background Cand"};
 
     registry.add("Yield/hDeltaInvMassDstar3D", "#Delta #it{M}_{inv} D* Candidate; inv. mass ((#pi #pi k) - (#pi k)) (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c}); FT0M centrality", {HistType::kTH3F, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisCentrality}}}, true);
     registry.add("Yield/hDeltaInvMassDstar2D", "#Delta #it{M}_{inv} D* Candidate; inv. mass ((#pi #pi k) - (#pi k)) (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}}, true);
@@ -157,7 +158,7 @@ struct HfTaskDstarToD0Pi {
     registry.add("Efficiency/hNumPvContributorsCandInMass", "PV Contributors; PV Contributor; FT0M Centrality", {HistType::kTH2F, {{100, 0, 300}, {axisCentrality}}}, true);
 
     // BDT Score
-    registry.add("QA/hDeltaInvMassVsPtVsCentVsBDTScore", "#Delta #it{M}_{inv} Vs Pt Vs Cent Vs BDTScore", {HistType::kTHnSparseL, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisCentrality}, {axisBDTScorePrompt}, {axisBDTScoreNonPrompt}, {axisBDTScoreBackground}}});
+    registry.add("Yield/hDeltaInvMassVsPtVsCentVsBDTScore", "#Delta #it{M}_{inv} Vs Pt Vs Cent Vs BDTScore", {HistType::kTHnSparseL, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisCentrality}, {axisBDTScorePrompt}, {axisBDTScoreNonPrompt}, {axisBDTScoreBackground}}});
   }
 
   template <bool applyMl, typename T1, typename T2>
@@ -221,7 +222,7 @@ struct HfTaskDstarToD0Pi {
 
           if constexpr (applyMl) {
             auto mlBdtScore = candDstar.mlProbDstarToD0Pi();
-            registry.fill(HIST("QA/hDeltaInvMassVsPtVsCentVsBDTScore"), deltaMDstar, candDstar.pt(), centrality, mlBdtScore[0], mlBdtScore[1], mlBdtScore[2]);
+            registry.fill(HIST("Yield/hDeltaInvMassVsPtVsCentVsBDTScore"), deltaMDstar, candDstar.pt(), centrality, mlBdtScore[0], mlBdtScore[1], mlBdtScore[2]);
           }
 
           registry.fill(HIST("Yield/hDeltaInvMassDstar3D"), deltaMDstar, candDstar.pt(), centrality);
