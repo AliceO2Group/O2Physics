@@ -69,7 +69,7 @@ struct HfTaskLc {
   using LcCandidatesMlMc = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfMlLcToPKPi, aod::HfCand3ProngMcRec>>;
   using McParticles3ProngMatched = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
 
-  PresliceUnsorted<aod::McParticles> perMCCollision = aod::mcparticle::mcCollisionId;
+  Preslice<aod::McParticles> perMCCollision = aod::mcparticle::mcCollisionId;
   Preslice<aod::HfCand3Prong> candLcPerCollision = aod::hf_cand::collisionId;
   SliceCache cache;
 
@@ -303,14 +303,6 @@ struct HfTaskLc {
   {
     return o2::hf_centrality::getCentralityColl<Coll>(collision);
   }
-  /// Evaluate centrality/multiplicity percentile
-  /// \param candidate is candidate
-  /// \return centrality/multiplicity percentile of the collision associated to the candidate
-  template <typename Coll, typename T1>
-  float evaluateCentralityCand(const T1& candidate)
-  {
-    return evaluateCentralityColl(candidate.template collision_as<Coll>());
-  }
 
   /// Fill MC histograms at reconstruction level
   /// \param collision is collision
@@ -471,7 +463,6 @@ struct HfTaskLc {
           registry.fill(HIST("MC/reconstructed/nonprompt/hImpParErrProng2SigNonPrompt"), candidate.errorImpactParameter2(), pt);
           registry.fill(HIST("MC/reconstructed/nonprompt/hDecLenErrSigNonPrompt"), candidate.errorDecayLength(), pt);
         }
-
         if (enableTHn) {
           float cent = evaluateCentralityColl(collision);
           double massLc(-1);
@@ -520,14 +511,12 @@ struct HfTaskLc {
   void fillMcGenHistos(CandLcMcGen const& mcParticles)
   {
     // MC gen.
-
     for (const auto& particle : mcParticles) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::LcToPKPi) {
         auto yGen = RecoDecay::y(particle.pVector(), o2::constants::physics::MassLambdaCPlus);
         if (yCandGenMax >= 0. && std::abs(yGen) > yCandGenMax) {
           continue;
         }
-
         auto ptGen = particle.pt();
         registry.fill(HIST("MC/generated/signal/hPtGen"), ptGen);
         registry.fill(HIST("MC/generated/signal/hEtaGen"), particle.eta());
