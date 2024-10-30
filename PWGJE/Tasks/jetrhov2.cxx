@@ -604,7 +604,7 @@ struct Jetrhov2Task {
             jetPtCorr = jet.pt() - collision.rho() * jet.area();
             registry.fill(HIST("h_jet_pt_in_plane_test"), jet.pt() - (collision.rho() * jet.area()), 1.0);
 
-            if ((phiMinusPsi2 < TMath::Pi() / 4) || (phiMinusPsi2 >= 7*TMath::Pi() / 4) || (phiMinusPsi2 >= 3*TMath::Pi() / 4 && phiMinusPsi2 < 5*TMath::Pi() / 4)) {
+            if ((phiMinusPsi2 < TMath::Pi() / 4) || (phiMinusPsi2 >= 7 * TMath::Pi() / 4) || (phiMinusPsi2 >= 3 * TMath::Pi() / 4 && phiMinusPsi2 < 5 * TMath::Pi() / 4)) {
               registry.fill(HIST("h_jet_pt_in_plane_v2"), jet.pt() - (collision.rho() * jet.area()), 1.0);
               registry.fill(HIST("h2_centrality_jet_pt_in_plane_v2"), collision.centrality(), jet.pt() - (collision.rho() * jet.area()), 1.0);
               registry.fill(HIST("h_collisions_qv_check"), 3.5);
@@ -630,7 +630,7 @@ struct Jetrhov2Task {
             jetPtCorr = jet.pt() - collision.rho() * jet.area();
             registry.fill(HIST("h_jet_pt_in_plane_test"), jet.pt() - (collision.rho() * jet.area()), 1.0);
 
-            if ((phiMinusPsi3 < TMath::Pi() / 4) || (phiMinusPsi3 >= 7*TMath::Pi() / 4) || (phiMinusPsi3 >= 3*TMath::Pi() / 4 && phiMinusPsi3 < 5*TMath::Pi() / 4)) {
+            if ((phiMinusPsi3 < TMath::Pi() / 4) || (phiMinusPsi3 >= 7 * TMath::Pi() / 4) || (phiMinusPsi3 >= 3 * TMath::Pi() / 4 && phiMinusPsi3 < 5 * TMath::Pi() / 4)) {
               registry.fill(HIST("h_jet_pt_in_plane_v3"), jet.pt() - (collision.rho() * jet.area()), 1.0);
               registry.fill(HIST("h2_centrality_jet_pt_in_plane_v3"), collision.centrality(), jet.pt() - (collision.rho() * jet.area()), 1.0);
             } else {
