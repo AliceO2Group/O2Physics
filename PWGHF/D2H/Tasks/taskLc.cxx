@@ -715,7 +715,7 @@ struct HfTaskLc {
   {
     runDataAnalysisPerCollision<true>(collisions, selectedLcCandidatesMl, tracks);
   }
-  PROCESS_SWITCH(HfTaskLc, processDataWithMlWithFT0C, "Process Data with the ML method", false);
+  PROCESS_SWITCH(HfTaskLc, processDataWithMlWithFT0C, "Process real data with the ML method and with FT0C centrality", false);
 
   void processDataStdWithFT0M(CollisionsWithFT0M const& collisions,
                               LcCandidates const& selectedLcCandidates,
