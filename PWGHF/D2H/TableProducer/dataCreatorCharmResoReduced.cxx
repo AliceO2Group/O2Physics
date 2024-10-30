@@ -816,7 +816,7 @@ struct HfDataCreatorCharmResoReduced {
                            track.px(), track.py(), track.pz(), track.sign(),
                            track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
                            track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
-                           track.hasTOF(), track.itsNCls(), track.tpcNClsCrossedRows(), track.tpcChi2NCl());
+                           track.hasTOF(), track.hasTPC(), track.itsNCls(), track.tpcNClsCrossedRows(), track.tpcChi2NCl());
             selectedTracks[track.globalIndex()] = hfTrackNoParam.lastIndex();
           }
           fillHfCandD = true;
