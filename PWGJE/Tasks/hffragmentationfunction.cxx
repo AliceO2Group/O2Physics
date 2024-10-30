@@ -184,7 +184,7 @@ struct HfFragmentationFunctionTask {
 
   // Histogram registry: an object to hold your histograms
   HistogramRegistry registry{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-  
+
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
 
@@ -320,19 +320,17 @@ struct HfFragmentationFunctionTask {
           if (mcdjet.has_matchedJetCand()) {
             registry.fill(HIST("h_jet_counter"), 1.5);
           }
-          
+
           // reflection information for storage: +1 = D0, -1 = D0bar, 0 = neither
           int matchedFrom = 0;
           int selectedAs = -1;
-          
           int decayChannel = 1 << aod::hf_cand_2prong::DecayType::D0ToPiK;
-          
+
           if (mcdd0cand.flagMcMatchRec() == decayChannel) { // matched to D0 on truth level
             matchedFrom = 1;
             if (!mcdd0cand.candidateSelFlag()) { //CandidateSelFlag == 0 -> selected as D0, CandidateSelFlag == 1 -> selected as D0bar
               selectedAs = 1;
             }
-            
           } else if (mcdd0cand.flagMcMatchRec() == -decayChannel) { // matched to D0bar on truth level
             matchedFrom = -1;
             if (!mcdd0cand.candidateSelFlag()) {
@@ -366,7 +364,7 @@ struct HfFragmentationFunctionTask {
         if (mcpjet.has_matchedJetCand()) {
           registry.fill(HIST("h_jet_counter"), 1.0);
         }
-        
+
 
         // store data in MC detector level table (calculate angular distance in eta-phi plane on the fly)
         mcpdistJetTable(RecoDecay::sqrtSumOfSquares(mcpjet.eta() - mcpd0cand.eta(), deltaPhi(mcpjet.phi(), mcpd0cand.phi())),
@@ -388,7 +386,7 @@ struct HfFragmentationFunctionTask {
                                 JetParticles const&)
   {
     for (const auto& mccollision : mccollisions) {
-      
+
       registry.fill(HIST("h_collision_counter"), 0.0);
 
       // skip collisions outside of |z| < vertexZCut
@@ -400,7 +398,7 @@ struct HfFragmentationFunctionTask {
       // reconstructed collisions associated to same mccollision
       const auto collisionsPerMCCollision = collisions.sliceBy(CollisionsPerMCCollision, mccollision.globalIndex());
       for (const auto& collision : collisionsPerMCCollision) {
-        
+
         registry.fill(HIST("h_collision_counter"), 2.0);
         if (!jetderiveddatautilities::selectCollision(collision, eventSelection) || !(abs(collision.posZ()) < vertexZCut)) {
           continue;
@@ -423,15 +421,13 @@ struct HfFragmentationFunctionTask {
           // reflection information for storage: +1 = D0, -1 = D0bar, 0 = neither
           int matchedFrom = 0;
           int selectedAs = -1;
-          
           int decayChannel = 1 << aod::hf_cand_2prong::DecayType::D0ToPiK;
-          
+
           if (mcdd0cand.flagMcMatchRec() == decayChannel) { // matched to D0 on truth level
             matchedFrom = 1;
             if (!mcdd0cand.candidateSelFlag()) { //CandidateSelFlag == 0 -> selected as D0, CandidateSelFlag == 1 -> selected as D0bar
               selectedAs = 1;
             }
-            
           } else if (mcdd0cand.flagMcMatchRec() == -decayChannel) { // matched to D0bar on truth level
             matchedFrom = -1;
             if (!mcdd0cand.candidateSelFlag()) {
@@ -443,7 +439,6 @@ struct HfFragmentationFunctionTask {
               selectedAs = 1;
             }
           }
-          
 
           // loop through detector level matched to current particle level
           for (auto& mcpjet : mcdjet.matchedJetCand_as<JetMCPTable>()) {
@@ -460,15 +455,12 @@ struct HfFragmentationFunctionTask {
                           mcdd0cand.pt(), mcdd0cand.eta(), mcdd0cand.phi(), mcdd0cand.m(), mcdd0cand.y(), (mcdd0cand.originMcRec() == RecoDecay::OriginType::Prompt),                                              // detector level D0
                           mcdd0cand.mlScores()[0], mcdd0cand.mlScores()[1], mcdd0cand.mlScores()[2],
                           matchedFrom, selectedAs);
-
           }
-
         }
       }
     }
   }
   PROCESS_SWITCH(HfFragmentationFunctionTask, processMcChargedMatched, "matched MC HF and jets", false);
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
