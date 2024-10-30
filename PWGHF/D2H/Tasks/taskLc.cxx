@@ -547,7 +547,7 @@ struct HfTaskLc {
   /// \param collision is collision
   /// \param candidates is candidates
   template <bool fillMl, typename CollType, typename CandType, typename TrackType>
-  void fillDataHistosAndSparse(CollType collision, CandType const& candidates, TrackType const& tracks)
+  void fillDataHistosAndSparse(CollType const& collision, CandType const& candidates, TrackType const& tracks)
   {
     auto thisCollId = collision.globalIndex();
     auto groupedLcCandidates = candidates.sliceBy(candLcPerCollision, thisCollId);
