@@ -799,7 +799,7 @@ struct HfTaskLc {
   }
   PROCESS_SWITCH(HfTaskLc, processMcWithMlWithFT0C, "Process Mc with the ML method", false);
 
-  void processMcStdWithFT0M(CollisionsMcWithFT0M const& collision,
+  void processMcStdWithFT0M(CollisionsMcWithFT0M const& collisions,
                             LcCandidatesMc const& selectedLcCandidatesMc,
                             McParticles3ProngMatched const& mcParticles,
                             aod::McCollisions const&,
