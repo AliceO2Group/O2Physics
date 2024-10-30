@@ -731,8 +731,6 @@ inline float getCharge(ParticleObject& particle)
   return charge;
 }
 
-
-
 } // namespace identifiedbffilter
 } // namespace analysis
 } // namespace o2

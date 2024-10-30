@@ -1444,13 +1444,11 @@ inline int8_t IdentifiedBfFilterTracks::AcceptParticle(ParticleObject& particle,
 
     if (ptlow < particle.pt() && particle.pt() < ptup && etalow < particle.eta() && particle.eta() < etaup) {
       MatchRecoGenSpecies sp = IdentifyParticle(particle);
-      if(charge == 1){
+      if (charge == 1) {
         return speciesChargeValue1[sp];
 
-      }
-      else if(charge == -1){
+      } else if (charge == -1) {
         return speciesChargeValue1[sp] + 1;
-
       }
     }
   } else {
