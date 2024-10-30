@@ -731,7 +731,7 @@ struct HfTaskLc {
   {
     runDataAnalysisPerCollision<true>(collisions, selectedLcCandidatesMl, tracks);
   }
-  PROCESS_SWITCH(HfTaskLc, processDataWithMlWithFT0M, "Process Data with the ML method", false);
+  PROCESS_SWITCH(HfTaskLc, processDataWithMlWithFT0M, "Process real data with the ML method and with FT0M centrality", false);
 
   /// Fills MC histograms.
   template <bool fillMl, typename CollType, typename CandType, typename CandLcMcGen>
