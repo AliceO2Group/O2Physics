@@ -47,7 +47,7 @@ int findLeadingParticle(TTracks const& tracks, T1 const dcaXYTrackMax, T2 const 
 {
   auto leadingParticle = tracks.begin();
   for (auto const& track : tracks) {
-    if (std::abs(track.dcaXY()) >= dcaXYTrackMax.value || std::abs(track.dcaZ()) >= dcaZTrackMax.value) {
+    if (std::abs(track.dcaXY()) >= dcaXYTrackMax || std::abs(track.dcaZ()) >= dcaZTrackMax) {
       continue;
     }
     if (track.pt() > leadingParticle.pt()) {
@@ -64,10 +64,10 @@ int findLeadingParticleMcGen(TMcParticles const& mcParticles, T1 const etaTrackM
 {
   auto leadingParticle = mcParticles.begin();
   for (auto const& mcParticle : mcParticles) {
-    if (std::abs(mcParticle.eta()) > etaTrackMax.value) {
+    if (std::abs(mcParticle.eta()) > etaTrackMax) {
       continue;
     }
-    if (mcParticle.pt() < ptTrackMin.value) {
+    if (mcParticle.pt() < ptTrackMin) {
       continue;
     }
     if ((std::abs(mcParticle.pdgCode()) != kElectron) && (std::abs(mcParticle.pdgCode()) != kMuonMinus) && (std::abs(mcParticle.pdgCode()) != kPiPlus) && (std::abs(mcParticle.pdgCode()) != kKPlus) && (std::abs(mcParticle.pdgCode()) != kProton)) {
