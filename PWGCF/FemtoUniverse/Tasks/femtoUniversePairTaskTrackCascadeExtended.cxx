@@ -37,7 +37,7 @@ using namespace o2::aod::pidutils;
 struct femtoUniversePairTaskTrackCascadeExtended {
 
   SliceCache cache;
-  using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
+  using FemtoFullParticles = soa::Join<aod::FDCascParticles, aod::FDExtParticles>;
   Preslice<FemtoFullParticles> perCol = aod::femtouniverseparticle::fdCollisionId;
 
   Configurable<float> ConfZVertexCut{"ConfZVertexCut", 10.f, "Event sel: Maximum z-Vertex (cm)"};
@@ -80,17 +80,27 @@ struct femtoUniversePairTaskTrackCascadeExtended {
     AxisSpec ptAxis = {100, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec etaAxis = {100, -2.0f, 2.0f, "#it{#eta}"};
     AxisSpec phiAxis = {100, 0.0f, 6.0f, "#it{#phi}"};
+    AxisSpec DCADaughAxis = {1000, 0.0f, 2.0f, "DCA (cm)"};
+    AxisSpec CPAAxis = {1000, 0.95f, 1.0f, "#it{cos #theta_{p}}"};
+    AxisSpec tranRadAxis = {1000, 0.0f, 100.0f, "#it{r}_{xy} (cm)"};
+    AxisSpec DCAToPVAxis = {1000, -10.0f, 10.0f, "DCA to PV (cm)"};
 
     // Histograms
-    rXiQA.add("hMassXiMinus", "hMassXiMinus", {HistType::kTH1F, {XiMassAxis}});
-    rXiQA.add("hMassXiPlus", "hMassXiPlus", {HistType::kTH1F, {XiMassAxis}});
-    rXiQA.add("hMassXiMinusSelected", "hMassXiSelected", {HistType::kTH1F, {XiMassAxis}});
-    rXiQA.add("hMassXiPlusSelected", "hMassXiSelected", {HistType::kTH1F, {XiMassAxis}});
+    rXiQA.add("hMassXi", "hMassXi", {HistType::kTH1F, {XiMassAxis}});
+    rXiQA.add("hMassXiSelected", "hMassXiSelected", {HistType::kTH1F, {XiMassAxis}});
     rXiQA.add("hPtXi", "hPtXi", {HistType::kTH1F, {{ptAxis}}});
     rXiQA.add("hEtaXi", "hEtaXi", {HistType::kTH1F, {{etaAxis}}});
     rXiQA.add("hPhiXi", "hPhiXi", {HistType::kTH1F, {{phiAxis}}});
-    rXiQA.add("hCascCosPA", "hCascCosPA", {HistType::kTH1F, {{100, 0.9f, 1.f}}});
-    // rXiQA.add("hCascDCAV0Daughters", "hCascDCAV0Daughters", {HistType::kTH1F, {{55, 0.0f, 2.2f}}});
+    rXiQA.add("hDCAV0Daughters", "hDCAV0Daughters", {HistType::kTH1F, {DCADaughAxis}});
+    rXiQA.add("hV0CosPA", "hV0CosPA", {HistType::kTH1F, {CPAAxis}});
+    rXiQA.add("hV0TranRad", "hV0TranRad", {HistType::kTH1F, {tranRadAxis}});
+    rXiQA.add("hDCACascDaughters", "hDCACascDaughters", {HistType::kTH1F, {DCADaughAxis}});
+    rXiQA.add("hCascCosPA", "hCascCosPA", {HistType::kTH1F, {CPAAxis}});
+    rXiQA.add("hCascTranRad", "hCascTranRad", {HistType::kTH1F, {tranRadAxis}});
+    rXiQA.add("hDcaPostoPV", "hDcaPostoPV", {HistType::kTH1F, {DCAToPVAxis}});
+    rXiQA.add("hDcaNegtoPV", "hDcaNegtoPV", {HistType::kTH1F, {DCAToPVAxis}});
+    rXiQA.add("hDcaBachtoPV", "hDcaBachtoPV", {HistType::kTH1F, {DCAToPVAxis}});
+    rXiQA.add("hDcaV0toPV", "hDcaV0toPV", {HistType::kTH1F, {DCAToPVAxis}});
 
     posChildHistos.init(&qaRegistry, ConfChildTempFitVarpTBins, ConfChildTempFitVarBins, false, 0, true);
     negChildHistos.init(&qaRegistry, ConfChildTempFitVarpTBins, ConfChildTempFitVarBins, false, 0, true);
@@ -103,8 +113,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
     // const int multCol = col.multNtr();
 
     for (auto& casc : groupCascs) {
-      rXiQA.fill(HIST("hMassXiMinus"), casc.mLambda());
-      rXiQA.fill(HIST("hMassXiPlus"), casc.mAntiLambda());
+      rXiQA.fill(HIST("hMassXi"), casc.mLambda());
 
       // if (!invMCascade(casc.mLambda(), casc.mAntiLambda()))
       //   continue;
@@ -141,10 +150,17 @@ struct femtoUniversePairTaskTrackCascadeExtended {
       rXiQA.fill(HIST("hPtXi"), casc.pt());
       rXiQA.fill(HIST("hEtaXi"), casc.eta());
       rXiQA.fill(HIST("hPhiXi"), casc.phi());
-      rXiQA.fill(HIST("hMassXiMinusSelected"), casc.mLambda());
-      rXiQA.fill(HIST("hMassXiPlusSelected"), casc.mAntiLambda());
-      rXiQA.fill(HIST("hCascCosPA"), casc.tempFitVar());
-      // rXiQA.fill(HIST("hCascDCAV0Daughters"), casc.dcaV0daughters()); // nie ma miejsca na to w FemtoDerived
+      rXiQA.fill(HIST("hMassXiSelected"), casc.mLambda());
+      rXiQA.fill(HIST("hDCAV0Daughters"), casc.dcaV0daughters());
+      rXiQA.fill(HIST("hV0CosPA"), casc.cpav0());
+      rXiQA.fill(HIST("hV0TranRad"), casc.v0radius());
+      rXiQA.fill(HIST("hCascCosPA"), casc.cpaCasc());
+      rXiQA.fill(HIST("hDCACascDaughters"), casc.dcacascdaughters());
+      rXiQA.fill(HIST("hCascTranRad"), casc.cascradius());
+      rXiQA.fill(HIST("hDcaPostoPV"), casc.dcapostopv());
+      rXiQA.fill(HIST("hDcaNegtoPV"), casc.dcanegtopv());
+      rXiQA.fill(HIST("hDcaBachtoPV"), casc.dcabachtopv());
+      rXiQA.fill(HIST("hDcaV0toPV"), casc.dcav0topv());
 
       posChildHistos.fillQA<false, true>(posChild);
       negChildHistos.fillQA<false, true>(negChild);

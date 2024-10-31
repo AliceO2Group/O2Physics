@@ -122,6 +122,7 @@ struct AngularCorrelationsInJets {
   Configurable<float> fAntinucleiTOFnsigYield{"antinucleiTOFnsigmaHighPtYield", 4.0, "[antinuclei] min TOF nsigma with high pT for yield"};
   Configurable<float> fAntinucleiTOFnsigCF{"antinucleiTOFnsigmaHighPtCF", 4.0, "[antinuclei] max TOF nsigma for CF"};
   Configurable<bool> fDeuteronAnalysis{"deuteronAnalysis", true, "true [false]: analyse (anti)deuterons [(anti)helium-3]"};
+  Configurable<bool> fUseTOFMass{"useTOFmass", true, "use TOF mass instead of pion mass if available"};
 
   Configurable<int> fBufferSize{"trackBufferSize", 2000, "Number of mixed-event tracks being stored"};
 
@@ -182,7 +183,6 @@ struct AngularCorrelationsInJets {
     registryData.add("hPtJetNuclei", "p_{T} of nuclei", HistType::kTH1D, {axisSpecs.ptAxisPos});
     registryData.add("hPtJetAntinuclei", "p_{T} of antinuclei", HistType::kTH1D, {axisSpecs.ptAxisPos});
     registryData.add("hPtTotalJet", "p_{T} of entire jet;#it{p}_{T} [GeV/#it{c}]", HistType::kTH1F, {{2000, 0, 500}});
-    registryData.add("hPtDiff", "p_{T} difference PseudoJet/original track;#it{p}_{T} [GeV/#it{c}]", HistType::kTH1D, {{100, -5, 5}});
     registryQA.add("hPtJetProton_15", "Proton p_{T} for jet p_{T} < 15 GeV", HistType::kTH1D, {axisSpecs.ptAxisPos});
     registryQA.add("hPtJetProton_20", "Proton p_{T} for jet p_{T} < 20 GeV", HistType::kTH1D, {axisSpecs.ptAxisPos});
     registryQA.add("hPtJetProton_30", "Proton p_{T} for jet p_{T} < 30 GeV", HistType::kTH1D, {axisSpecs.ptAxisPos});
@@ -203,6 +203,10 @@ struct AngularCorrelationsInJets {
     // nSigma
     registryData.add("hTPCsignal", "TPC signal", HistType::kTH2F, {{1000, 0, 100, "#it{p} [GeV/#it{c}]"}, {5000, 0, 5000, "d#it{E}/d#it{X} (a.u.)"}});
     registryData.add("hTOFsignal", "TOF signal", HistType::kTH2F, {{1000, 0, 100, "#it{p} [GeV/#it{c}]"}, {550, 0, 1.1, "#beta (TOF)"}});
+    registryData.add("hTPCsignalProton", "TPC n#sigma for (anti)proton without cuts", HistType::kTH2F, {axisSpecs.nsigmapTAxis, axisSpecs.nsigmaAxis});
+    registryData.add("hTOFsignalProton", "TOF n#sigma for (anti)proton without cuts", HistType::kTH2F, {axisSpecs.nsigmapTAxis, axisSpecs.nsigmaAxis});
+    registryData.add("hTPCsignalNuclei", "TPC n#sigma for (anti)nuclei without cuts", HistType::kTH2F, {axisSpecs.nsigmapTAxis, axisSpecs.nsigmaAxis});
+    registryData.add("hTOFsignalNuclei", "TOF n#sigma for (anti)nuclei without cuts", HistType::kTH2F, {axisSpecs.nsigmapTAxis, axisSpecs.nsigmaAxis});
     registryData.add("hTPCnsigmaProton", "TPC n#sigma for (anti)proton", HistType::kTH2F, {axisSpecs.nsigmapTAxis, axisSpecs.nsigmaAxis});
     registryData.add("hTOFnsigmaProton", "TOF n#sigma for (anti)proton", HistType::kTH2F, {axisSpecs.nsigmapTAxis, axisSpecs.nsigmaAxis});
     registryData.add("hTPCnsigmaNuclei", "TPC n#sigma for (anti)nuclei", HistType::kTH2F, {axisSpecs.nsigmapTAxis, axisSpecs.nsigmaAxis});
@@ -252,6 +256,7 @@ struct AngularCorrelationsInJets {
     registryData.add("hDeltaPhiEtaMEAntinuclei", "#Delta#varphi vs #Delta#eta of antinuclei in mixed events", HistType::kTH2D, {axisSpecs.angDistPhiAxis, axisSpecs.angDistEtaAxis});
 
     // QA
+    registryQA.add("hPtDiff", "p_{T} difference PseudoJet/original track;#it{p}_{T} [GeV/#it{c}]", HistType::kTH1D, {{100, -5, 5}});
     registryQA.add("hJetConeRadius", "Jet Radius;#it{R}", HistType::kTH1F, {{100, 0, 1}});
     registryQA.add("hMaxRadiusVsPt", "Max Cone Radius vs p_{T}", HistType::kTH2F, {{axisSpecs.ptAxisPos}, {100, 0, 1}});
     registryQA.add("hRhoEstimatePerp", "Background #rho (perp)", HistType::kTH2F, {{axisSpecs.ptAxisPos}, {200, 0, 20}});
@@ -759,13 +764,13 @@ struct AngularCorrelationsInJets {
       return jetCounter;
     fastjet::PseudoJet subtractedJetPerp(0., 0., 0., 0.);
     subtractedJetPerp = bkgSub.doRhoAreaSub(jet, rhoPerp, rhoMPerp);
-    registryData.fill(HIST("hPtTotalSubJetPerp"), subtractedJetPerp.pt());
     fastjet::PseudoJet subtractedJetArea(0., 0., 0., 0.);
     subtractedJetArea = bkgSub.doRhoAreaSub(jet, rho, rhoM);
-    registryData.fill(HIST("hPtTotalSubJetArea"), subtractedJetArea.pt());
 
     if (subtractedJetPerp.pt() < fMinJetPt) // cut on jet w/o bkg
       return jetCounter;
+    registryData.fill(HIST("hPtTotalSubJetPerp"), subtractedJetPerp.pt());
+    registryData.fill(HIST("hPtTotalSubJetArea"), subtractedJetArea.pt());
     registryQA.fill(HIST("hRhoEstimateArea"), jet.pt(), rho);
     registryQA.fill(HIST("hRhoMEstimateArea"), jet.pt(), rhoM);
     registryQA.fill(HIST("hRhoEstimatePerp"), jet.pt(), rhoPerp);
@@ -794,6 +799,8 @@ struct AngularCorrelationsInJets {
       if (std::isnan(constituent.phi()) || std::isnan(jet.phi())) // geometric jet cone
         continue;
       double DeltaPhi = TVector2::Phi_0_2pi(constituent.phi() - jet.phi());
+      if (DeltaPhi > TMath::Pi())
+        DeltaPhi = DeltaPhi - 2 * TMath::Pi();
       double DeltaEta = constituent.eta() - jet.eta();
       double Delta = TMath::Sqrt(DeltaPhi * DeltaPhi + DeltaEta * DeltaEta);
       registryQA.fill(HIST("hJetConeRadius"), Delta);
@@ -892,11 +899,22 @@ struct AngularCorrelationsInJets {
       registryData.fill(HIST("hDCAxyFullJet"), jetParticle.pt() * jetParticle.sign(), jetParticle.dcaXY());
       registryData.fill(HIST("hDCAzFullJet"), jetParticle.pt() * jetParticle.sign(), jetParticle.dcaZ());
       registryData.fill(HIST("hTPCsignal"), jetParticle.pt() * jetParticle.sign(), jetParticle.tpcSignal());
-      if (jetParticle.hasTOF())
+      if (jetParticle.hasTOF()) {
         registryData.fill(HIST("hTOFsignal"), jetParticle.pt() * jetParticle.sign(), jetParticle.beta());
-
+        registryData.fill(HIST("hTOFsignalProton"), jetParticle.pt() * jetParticle.sign(), jetParticle.tofNSigmaPr());
+      }
+      registryData.fill(HIST("hTPCsignalProton"), jetParticle.pt() * jetParticle.sign(), jetParticle.tpcNSigmaPr());
+      if (fDeuteronAnalysis) {
+        registryData.fill(HIST("hTPCsignalNuclei"), jetParticle.pt() * jetParticle.sign(), jetParticle.tpcNSigmaDe());
+        if (jetParticle.hasTOF())
+          registryData.fill(HIST("hTOFsignalNuclei"), jetParticle.pt() * jetParticle.sign(), jetParticle.tofNSigmaDe());
+      } else {
+        registryData.fill(HIST("hTPCsignalNuclei"), jetParticle.pt() * jetParticle.sign(), jetParticle.tpcNSigmaHe());
+        if (jetParticle.hasTOF())
+          registryData.fill(HIST("hTOFsignalNuclei"), jetParticle.pt() * jetParticle.sign(), jetParticle.tofNSigmaHe());
+      }
       double ptDiff = pseudoParticle.pt() - jetParticle.pt();
-      registryData.fill(HIST("hPtDiff"), ptDiff);
+      registryQA.fill(HIST("hPtDiff"), ptDiff);
 
       if (jetParticle.pt() < fMinJetParticlePt)
         continue;
@@ -1056,15 +1074,18 @@ struct AngularCorrelationsInJets {
         continue;
 
       double mass;
-      if (track.hasTOF()) {
-        mass = track.mass(); // check reliability, maybe use only pion mass
-        registryQA.fill(HIST("hTOFmass"), track.pt(), track.mass());
-        registryData.fill(HIST("hTrackProtocol"), 1);
+      if (fUseTOFMass) {
+        if (track.hasTOF()) {
+          mass = track.mass(); // check reliability, maybe use only pion mass
+          registryQA.fill(HIST("hTOFmass"), track.pt(), track.mass());
+          registryData.fill(HIST("hTrackProtocol"), 1);
+        } else {
+          mass = 0.139; // pion mass as default, ~80% are pions
+          registryData.fill(HIST("hTrackProtocol"), 2);
+        }
       } else {
-        mass = 0.139; // pion mass as default, ~80% are pions
-        registryData.fill(HIST("hTrackProtocol"), 2);
+        mass = 0.139;
       }
-      // double mass = 0.139;
 
       // if (track.pt() > fMinLeadingPt) {
       //   leadingID = track.globalIndex();
@@ -1124,7 +1145,7 @@ struct AngularCorrelationsInJets {
     }
     registryData.fill(HIST("hNumJetsInEvent"), jetCounter);
 
-    TVector3 hardestJetAxis(jets.at(0).px(), jets.at(0).py(), jets.at(0).pz());
+    TVector3 hardestJetAxis(jets.at(0).px(), jets.at(0).py(), jets.at(0).pz()); // for full event, use hardest jet as orientation
     doCorrelations(particlesForCF, fBufferFull, fTempBufferFull, -1, hardestJetAxis);
     setTrackBuffer(fTempBufferFull, fBufferFull);
   }
@@ -1138,9 +1159,9 @@ struct AngularCorrelationsInJets {
       initCCDB(bc);
 
       registryData.fill(HIST("hEventProtocol"), 0);
-      registryData.fill(HIST("hNumberOfEvents"), 0);
       if (!collision.alias_bit(kINT7))
         continue;
+      registryData.fill(HIST("hNumberOfEvents"), 0);
       registryData.fill(HIST("hEventProtocol"), 1);
 
       auto slicedTracks = tracks.sliceBy(perCollisionFullTracksRun2, collision.globalIndex());
