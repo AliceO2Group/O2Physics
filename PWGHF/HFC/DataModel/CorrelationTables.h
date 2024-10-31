@@ -38,7 +38,7 @@ DECLARE_SOA_COLUMN(SignalStatus, signalStatus, int);
 } // namespace hf_correlation_d_dbar
 
 DECLARE_SOA_TABLE(DDbarPair, "AOD", "DDBARPAIR",
-                aod::hf_correlation_d_dbar::DeltaPhi,
+                  aod::hf_correlation_d_dbar::DeltaPhi,
                   aod::hf_correlation_d_dbar::DeltaEta,
                   aod::hf_correlation_d_dbar::PtD,
                   aod::hf_correlation_d_dbar::PtDbar);
