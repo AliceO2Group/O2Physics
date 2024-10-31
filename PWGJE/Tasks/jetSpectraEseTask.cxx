@@ -14,6 +14,8 @@
 ///
 /// \author Joachim C. K. B. Hansen, Lund University
 
+#include <string>
+
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
