@@ -10,7 +10,13 @@
 # or submit itself to any jurisdiction.
 
 
-o2physics_add_dpl_workflow(flow-zdc-qvectors
-                    SOURCES ZDCQvectors.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::GFWCore
-                    COMPONENT_NAME Analysis)
+o2physics_add_dpl_workflow(event-converter1
+                  SOURCES eventConverter1.cxx
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                  COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(electron-converter1
+                  SOURCES electronConverter1.cxx
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                  COMPONENT_NAME Analysis)
+

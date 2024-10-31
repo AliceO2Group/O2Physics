@@ -523,7 +523,7 @@ struct decay3bodyBuilder {
       auto t1 = vtx3body.template track1_as<TTrackClass>();
       auto t2 = vtx3body.template track2_as<TTrackClass>();
 
-      if (t0.tpcNClsFound() < mintpcNCls && t1.tpcNClsFound() < mintpcNCls && t2.tpcNClsFound() < mintpcNCls) {
+      if (t0.tpcNClsFound() < mintpcNCls || t1.tpcNClsFound() < mintpcNCls || t2.tpcNClsFound() < mintpcNCls) {
         continue;
       }
       registry.fill(HIST("hVtx3BodyCounter"), kVtxTPCNcls);

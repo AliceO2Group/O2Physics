@@ -154,7 +154,7 @@ struct CreateEMEvent {
       // uint64_t tag = collision.selection_raw();
       event(collision.globalIndex(), bc.runNumber(), bc.globalBC(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(),
             collision.posX(), collision.posY(), collision.posZ(),
-            collision.numContrib(), collision.trackOccupancyInTimeRange());
+            collision.numContrib(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
 
       eventcov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
 

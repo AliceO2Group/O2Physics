@@ -435,6 +435,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kTPCncls] = "";
   fgVariableNames[kTPCnclsCR] = "TPC #cls crossed rows";
   fgVariableUnits[kTPCnclsCR] = "";
+  fgVariableNames[kTPCnCRoverFindCls] = "TPC crossed rows over findable cls";
+  fgVariableUnits[kTPCnCRoverFindCls] = "";
   fgVariableNames[kTPCchi2] = "TPC chi2";
   fgVariableUnits[kTPCchi2] = "";
   fgVariableNames[kTPCsignal] = "TPC dE/dx";
@@ -593,6 +595,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kVertexingTauxyProjected] = "ns";
   fgVariableNames[kVertexingTauxyzProjected] = "Pair pseudo-proper Tauxyz";
   fgVariableUnits[kVertexingTauxyzProjected] = "ns";
+  fgVariableNames[kCosPointingAngle] = "cos(#theta_{pointing})";
+  fgVariableUnits[kCosPointingAngle] = "";
   fgVariableNames[kVertexingPz] = "Pz Pair";
   fgVariableUnits[kVertexingPz] = "GeV/c";
   fgVariableNames[kVertexingSV] = "Secondary Vertexing z";
