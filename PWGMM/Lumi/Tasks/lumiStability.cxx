@@ -338,8 +338,6 @@ struct LumiStabilityTask {
       // histos.add("hOrbitFV0Central", "", kTH1F, {axisOrbits});
     }
 
-
-
     for (auto const& fdd : fdds) {
       auto bc = fdd.bc_as<BCsWithTimestamps>();
       if (bc.timestamp() == 0) {
