@@ -18,6 +18,8 @@
 #define HomogeneousField
 #endif
 
+#include <iterator>
+
 /// includes KFParticle
 #include "KFParticle.h"
 #include "KFParticleBase.h"
@@ -113,8 +115,9 @@ struct HfCandidateCreatorXic0Omegac0 {
   double magneticField{0.};
 
   using MyCascTable = soa::Join<aod::CascDatas, aod::CascCovs>; 
-  using MyTraCascTable = soa::Join<aod::TraCascDatas, aod::CascCovs>; // to use strangeness tracking
+  using MyTraCascTable = soa::Join<aod::TraCascDatas, aod::TraCascCovs>; // to use strangeness tracking
   using CascadesLinked = soa::Join<Cascades, CascDataLink>;
+  using TraCascadesLinked = soa::Join<Cascades, TraCascDataLink>;
   using MyV0Table = soa::Join<aod::V0Datas, aod::V0Covs>;
   using MyLFTracksWCov = soa::Join<TracksIU, TracksCovIU>;
 
@@ -254,12 +257,12 @@ struct HfCandidateCreatorXic0Omegac0 {
     runNumber = 0;
   }
 
-  template <o2::hf_centrality::CentralityEstimator centEstimator, int decayChannel, typename Coll, typename Hist, typename TCascTable>
+  template <o2::hf_centrality::CentralityEstimator centEstimator, int decayChannel, typename Coll, typename Hist, typename TCascTable, typename TCascLinkTable>
   void runXic0Omegac0Creator(Coll const&,
                              aod::BCsWithTimestamps const& /*bcWithTimeStamps*/,
                              MyLFTracksWCov const& lfTracks,
                              TracksWCovDca const& tracks,
-                             TCascTable const&, CascadesLinked const&,
+                             TCascTable const&, TCascLinkTable const&,
                              aod::HfCascLf2Prongs const& candidates,
                              Hist& hInvMassCharmBaryon,
                              Hist& hFitterStatus,
@@ -313,13 +316,34 @@ struct HfCandidateCreatorXic0Omegac0 {
       auto trackCharmBachelorId = cand.prong0Id();
       auto trackCharmBachelor = tracks.rawIteratorAt(trackCharmBachelorId);
 
-      auto cascAodElement = cand.cascade_as<aod::CascadesLinked>();
+      auto cascAodElement = cand.template cascade_as<TCascLinkTable>();
       hCascadesCounter->Fill(0);
       int v0index = cascAodElement.v0Id();
-      if (!cascAodElement.has_cascData()) {
+
+      // check if the cascade from AO2D has data
+      bool hasData = false;
+      if constexpr (requires { cascAodElement.cascDataId(); }){ // check if it's the CascDataLink
+        if (cascAodElement.has_cascData()){
+          hasData = true;
+        }
+      }
+      if constexpr (requires { cascAodElement.traCascDataId(); }){ // check if it's the TraCascDataLink
+        if (cascAodElement.has_traCascData()){
+          hasData = true;
+        }
+      }
+      if(!hasData){
         continue;
       }
-      auto casc = cascAodElement.template cascData_as<TCascTable>();
+
+      typename TCascTable::iterator casc; 
+      if constexpr (requires { cascAodElement.cascDataId(); }) { // check if it's the CascDataLink
+        casc = cascAodElement.template cascData_as<TCascTable>();
+      }
+      if constexpr (requires { cascAodElement.traCascDataId(); }) { // check if it's the TraCascDataLink
+        casc = cascAodElement.template traCascData_as<TCascTable>();
+      }
+
       hCascadesCounter->Fill(1);
       auto trackCascDauChargedId = casc.bachelorId();                           // pion <- xi track
       auto trackV0Dau0Id = casc.posTrackId();                                   // V0 positive daughter track
@@ -1032,10 +1056,10 @@ struct HfCandidateCreatorXic0Omegac0 {
                                   TracksWCovDca const& tracks,
                                   MyLFTracksWCov const& lfTracks,
                                   MyTraCascTable const& traCascades,
-                                  CascadesLinked const& cascadeLinks,
+                                  TraCascadesLinked const& traCascadeLinks,
                                   aod::HfCascLf2Prongs const& candidates)
   {
-    runXic0Omegac0Creator<CentralityEstimator::None, hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi>(collisions, bcWithTimeStamps, lfTracks, tracks, traCascades, cascadeLinks, candidates, hInvMassCharmBaryonToXiPi, hFitterStatusToXiPi, hCandidateCounterToXiPi, hCascadesCounterToXiPi);
+    runXic0Omegac0Creator<CentralityEstimator::None, hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi>(collisions, bcWithTimeStamps, lfTracks, tracks, traCascades, traCascadeLinks, candidates, hInvMassCharmBaryonToXiPi, hFitterStatusToXiPi, hCandidateCounterToXiPi, hCascadesCounterToXiPi);
   }
   PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0, processNoCentToXiPiTraCasc, "Run candidate creator w/o centrality selections for xi pi decay channel with tracked cascades", false);
 
