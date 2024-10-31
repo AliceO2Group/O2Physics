@@ -100,7 +100,7 @@ struct HfTaskLc {
      {"MC/reconstructed/signal/hPtRecProng2Sig", "3-prong candidates (matched);prong 2 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
      {"MC/reconstructed/prompt/hPtRecProng2SigPrompt", "3-prong candidates (matched, prompt);prong 2 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
      {"MC/reconstructed/nonprompt/hPtRecProng2SigNonPrompt", "3-prong candidates (matched, non-prompt);prong 2 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
-     {"Data/hNPvContrib", "number of prim. vertex contributor;number of prim. vertex contributor;entries", {HistType::kTH1F, {{10000, 0., 10000.}}}},
+     {"Data/hMultiplicity", "multiplicity;multiplicity;entries", {HistType::kTH1F, {{10000, 0., 10000.}}}},
      /// DCAxy to prim. vertex prongs
      {"Data/hd0Prong0", "3-prong candidates;prong 0 DCAxy to prim. vertex (cm);entries", {HistType::kTH1F, {{600, -0.4, 0.4}}}},
      {"MC/reconstructed/signal/hd0RecProng0Sig", "3-prong candidates (matched);prong 0 DCAxy to prim. vertex (cm);entries", {HistType::kTH1F, {{600, -0.4, 0.4}}}},
@@ -547,14 +547,25 @@ struct HfTaskLc {
   /// Fill MC histograms at reconstruction level
   /// \param collision is collision
   /// \param candidates is candidates
-  template <bool fillMl, typename CollType, typename CandType>
-  void fillHistosData(CollType const& collision, CandType const& candidates)
+  template <bool fillMl, typename CollType, typename CandType, typename TrackType>
+  void fillHistosData(CollType const& collision, CandType const& candidates, TrackType const& tracks)
   {
     auto thisCollId = collision.globalIndex();
     auto groupedLcCandidates = candidates.sliceBy(candLcPerCollision, thisCollId);
 
-    int numPvContributors = collision.numContrib();
-    registry.fill(HIST("Data/hNPvContrib"), numPvContributors);
+    int nTracks = 0;
+    if (collision.numContrib() > 1) {
+      for (const auto& track : tracks) {
+        if (std::abs(track.eta()) > 4.0) {
+          continue;
+        }
+        if (std::abs(track.dcaXY()) > 0.0025 || std::abs(track.dcaZ()) > 0.0025) {
+          continue;
+        }
+        nTracks++;
+      }
+    }
+    registry.fill(HIST("Data/hMultiplicity"), nTracks);
 
     for (const auto& candidate : groupedLcCandidates) {
       if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
@@ -575,12 +586,12 @@ struct HfTaskLc {
 
       if (candidate.isSelLcToPKPi() >= selectionFlagLc) {
         registry.fill(HIST("Data/hMass"), hfHelper.invMassLcToPKPi(candidate));
-        registry.fill(HIST("Data/hMassVsPtVsMult"), hfHelper.invMassLcToPKPi(candidate), pt, numPvContributors);
+        registry.fill(HIST("Data/hMassVsPtVsMult"), hfHelper.invMassLcToPKPi(candidate), pt, nTracks);
         registry.fill(HIST("Data/hMassVsPt"), hfHelper.invMassLcToPKPi(candidate), pt);
       }
       if (candidate.isSelLcToPiKP() >= selectionFlagLc) {
         registry.fill(HIST("Data/hMass"), hfHelper.invMassLcToPiKP(candidate));
-        registry.fill(HIST("Data/hMassVsPtVsMult"), hfHelper.invMassLcToPiKP(candidate), pt, numPvContributors);
+        registry.fill(HIST("Data/hMassVsPtVsMult"), hfHelper.invMassLcToPiKP(candidate), pt, nTracks);
         registry.fill(HIST("Data/hMassVsPt"), hfHelper.invMassLcToPiKP(candidate), pt);
       }
       registry.fill(HIST("Data/hPt"), pt);
@@ -656,12 +667,13 @@ struct HfTaskLc {
   /// Fills Data histograms.
   template <bool fillMl, typename CollType, typename CandType>
   void runAnalysisPerCollisionData(CollType const& collisions,
-                                   CandType const& candidates)
+                                   CandType const& candidates,
+                                   aod::TracksWDca const& tracks)
   {
 
     for (const auto& collision : collisions) {
 
-      fillHistosData<fillMl>(collision, candidates);
+      fillHistosData<fillMl>(collision, candidates, tracks);
     }
   }
 
@@ -681,44 +693,50 @@ struct HfTaskLc {
   }
 
   void processDataStd(Collisions const& collisions,
-                      LcCandidates const& selectedLcCandidates)
+                      LcCandidates const& selectedLcCandidates,
+                      aod::TracksWDca const& tracks)
   {
-    runAnalysisPerCollisionData<false>(collisions, selectedLcCandidates);
+    runAnalysisPerCollisionData<false>(collisions, selectedLcCandidates, tracks);
   }
   PROCESS_SWITCH(HfTaskLc, processDataStd, "Process Data with the standard method", true);
 
   void processDataWithMl(Collisions const& collisions,
-                         LcCandidatesMl const& selectedLcCandidatesMl)
+                         LcCandidatesMl const& selectedLcCandidatesMl,
+                         aod::TracksWDca const& tracks)
   {
-    runAnalysisPerCollisionData<true>(collisions, selectedLcCandidatesMl);
+    runAnalysisPerCollisionData<true>(collisions, selectedLcCandidatesMl, tracks);
   }
   PROCESS_SWITCH(HfTaskLc, processDataWithMl, "Process real data with the ML method and without centrality", false);
 
   void processDataStdWithFT0C(CollisionsWithFT0C const& collisions,
-                              LcCandidates const& selectedLcCandidates)
+                              LcCandidates const& selectedLcCandidates,
+                              aod::TracksWDca const& tracks)
   {
-    runAnalysisPerCollisionData<false>(collisions, selectedLcCandidates);
+    runAnalysisPerCollisionData<false>(collisions, selectedLcCandidates, tracks);
   }
   PROCESS_SWITCH(HfTaskLc, processDataStdWithFT0C, "Process real data with the standard method and with FT0C centrality", false);
 
   void processDataWithMlWithFT0C(CollisionsWithFT0C const& collisions,
-                                 LcCandidatesMl const& selectedLcCandidatesMl)
+                                 LcCandidatesMl const& selectedLcCandidatesMl,
+                                 aod::TracksWDca const& tracks)
   {
-    runAnalysisPerCollisionData<true>(collisions, selectedLcCandidatesMl);
+    runAnalysisPerCollisionData<true>(collisions, selectedLcCandidatesMl, tracks);
   }
   PROCESS_SWITCH(HfTaskLc, processDataWithMlWithFT0C, "Process real data with the ML method and with FT0C centrality", false);
 
   void processDataStdWithFT0M(CollisionsWithFT0M const& collisions,
-                              LcCandidates const& selectedLcCandidates)
+                              LcCandidates const& selectedLcCandidates,
+                              aod::TracksWDca const& tracks)
   {
-    runAnalysisPerCollisionData<false>(collisions, selectedLcCandidates);
+    runAnalysisPerCollisionData<false>(collisions, selectedLcCandidates, tracks);
   }
   PROCESS_SWITCH(HfTaskLc, processDataStdWithFT0M, "Process real data with the standard method and with FT0M centrality", false);
 
   void processDataWithMlWithFT0M(CollisionsWithFT0M const& collisions,
-                                 LcCandidatesMl const& selectedLcCandidatesMl)
+                                 LcCandidatesMl const& selectedLcCandidatesMl,
+                                 aod::TracksWDca const& tracks)
   {
-    runAnalysisPerCollisionData<true>(collisions, selectedLcCandidatesMl);
+    runAnalysisPerCollisionData<true>(collisions, selectedLcCandidatesMl, tracks);
   }
   PROCESS_SWITCH(HfTaskLc, processDataWithMlWithFT0M, "Process real data with the ML method and with FT0M centrality", false);
 
