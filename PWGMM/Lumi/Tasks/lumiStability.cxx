@@ -211,6 +211,7 @@ struct lumiStabilityTask {
     int executionCounter = 0;
     uint32_t nOrbitsPerTF = 128; // 128 in 2022, 32 in 2023
     int runNumber = bcs.iteratorAt(0).runNumber();
+    // std::string histName = "hOrbitFDDVertexCoinc_" + std::to_string(runNumber);
     if (runNumber != lastRunNumber && executionCounter < 1) {
       lastRunNumber = runNumber; // do it only once
       executionCounter++;
@@ -273,11 +274,12 @@ struct lumiStabilityTask {
 
       // create orbit-axis histograms on the fly with binning based on info from GRP if GRP is available
       // otherwise default minOrbit and nOrbits will be used
-      const AxisSpec axisOrbits{static_cast<int>(nOrbits / nOrbitsPerTF), 0., static_cast<double>(nOrbits), ""};
-      histos.add("hOrbitFDDVertexCoinc", "FDD Orbits; Orbit; Entries", kTH1F, {axisOrbits});
-      histos.add("hOrbitFDDVertex", "FDD Orbits; Orbit; Entries", kTH1F, {axisOrbits});
-      histos.add("hOrbitFT0vertex", "FT0 Orbits; Orbit; Entries", kTH1F, {axisOrbits});
-      histos.add("hOrbitFV0Central", "FV0 Orbits; Orbit; Entries", kTH1F, {axisOrbits});
+      /*const AxisSpec axisOrbits{static_cast<int>(nOrbits / nOrbitsPerTF), 0., static_cast<double>(nOrbits), ""};
+      std::cout << "<<<<<<<<<<<<<<<<<<<<<<<<<   Creating histograms >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << std::endl;
+      histos.add("hOrbitFDDVertexCoinc", "", kTH1F, {axisOrbits});
+      histos.add("hOrbitFDDVertex", "", kTH1F, {axisOrbits});
+      histos.add("hOrbitFT0vertex", "", kTH1F, {axisOrbits});
+      histos.add("hOrbitFV0Central", "", kTH1F, {axisOrbits});*/
     }
 
     for (auto const& fdd : fdds) {
@@ -315,7 +317,7 @@ struct lumiStabilityTask {
       if (vertex) {
         histos.fill(HIST("FDD/bcVertexTrigger"), localBC);
         histos.fill(HIST("FDD/hCounts"), 1);
-        histos.fill(HIST("hOrbitFDDVertex"), orbit - minOrbit);
+        // histos.fill(HIST("hOrbitFDDVertex"), orbit - minOrbit);
 
         int deltaIndex = 0; // backward move counts
         int deltaBC = 0;    // current difference wrt globalBC
@@ -390,7 +392,7 @@ struct lumiStabilityTask {
         if (isCoinA && isCoinC) {
           histos.fill(HIST("FDD/bcVertexTriggerCoincidence"), localBC);
           histos.fill(HIST("FDD/hCounts"), 3);
-          histos.fill(HIST("hOrbitFDDVertexCoinc"), orbit - minOrbit);
+          // histos.fill(HIST("hOrbitFDDVertexCoinc"), orbit - minOrbit);
 
           if (bcPatternA[localBC]) {
             histos.fill(HIST("FDD/timeACbcA"), fdd.timeA(), fdd.timeC());
@@ -538,7 +540,7 @@ struct lumiStabilityTask {
       histos.fill(HIST("FT0/hCounts"), 0);
       if (vertex) {
         histos.fill(HIST("FT0/bcVertexTrigger"), localBC);
-        histos.fill(HIST("hOrbitFT0vertex"), orbit - minOrbit);
+        // histos.fill(HIST("hOrbitFT0vertex"), orbit - minOrbit);
 
         if (bcPatternA[localBC]) {
           histos.fill(HIST("FT0/timeACbcA"), ft0.timeA(), ft0.timeC());
@@ -670,7 +672,7 @@ struct lumiStabilityTask {
       }
 
       if (aCen) {
-        histos.fill(HIST("hOrbitFV0Central"), orbit - minOrbit);
+        // histos.fill(HIST("hOrbitFV0Central"), orbit - minOrbit);
         histos.fill(HIST("FV0/bcCenTrigger"), localBC);
 
         if (bcPatternA[localBC]) {
