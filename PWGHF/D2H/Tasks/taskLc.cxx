@@ -740,7 +740,6 @@ struct HfTaskLc {
   }
   PROCESS_SWITCH(HfTaskLc, processDataWithMlWithFT0M, "Process real data with the ML method and with FT0M centrality", false);
 
-
   void processMcStd(CollisionsMc const& collisions,
                     LcCandidatesMc const& selectedLcCandidatesMc,
                     McParticles3ProngMatched const& mcParticles,
