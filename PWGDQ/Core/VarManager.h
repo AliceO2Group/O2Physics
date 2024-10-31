@@ -622,15 +622,27 @@ class VarManager : public TObject
     kM1111REF,
     kM0111POI,
     kCORR2REF,
+    kCORR2REFw,
+    kCORR2REFsquaredw,
     kCORR2POI,
+    kCORR2POIw,
+    kCORR2POIsquaredw,
+    kCORR2POIsquaredMpw,
     kCORR4REF,
+    kCORR4REFw,
+    kCORR4REFsquaredw,
     kCORR4POI,
+    kCORR4POIw,
+    kCORR4POIsquaredw,
+    kCORR4POIsquaredMpw,
     kM11REFoverMp,
     kM01POIoverMp,
     kM1111REFoverMp,
     kM0111POIoverMp,
     kCORR2POIMp,
     kCORR4POIMp,
+    kCORR2POIMpw,
+    kCORR4POIMpw,
     kPsi2A,
     kPsi2APOS,
     kPsi2ANEG,
@@ -1595,8 +1607,12 @@ void VarManager::FillEvent(T const& event, float* values)
     if constexpr ((fillMap & ReducedEventRefFlow) > 0) {
       values[kM1111REF] = event.m1111ref();
       values[kM11REF] = event.m11ref();
-      values[kCORR4REF] = event.corr4ref();
       values[kCORR2REF] = event.corr2ref();
+      values[kCORR2REFw] = event.corr2ref();
+      values[kCORR2REFsquaredw] = event.corr2ref();
+      values[kCORR4REF] = event.corr4ref();
+      values[kCORR4REFw] = event.corr4ref();
+      values[kCORR4REFsquaredw] = event.corr4ref();
       values[kMultA] = event.multa();
     }
   }
@@ -3926,6 +3942,10 @@ void VarManager::FillQVectorFromGFW(C const& /*collision*/, A const& compA11, A 
   values[kCORR4REF] = (pow(norm(compA21), 2) + norm(compA42) - 2. * (compA42 * conj(compA21) * conj(compA21)).real() + 8. * (compA23 * conj(compA21)).real() - 4. * S12A * norm(compA21) - 6. * S14A - 2. * S22A) / values[kM1111REF];
   values[kCORR2REF] = std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF]) ? 0 : values[kCORR2REF];
   values[kCORR4REF] = std::isnan(values[kCORR4REF]) || std::isinf(values[kCORR4REF]) ? 0 : values[kCORR4REF];
+  values[kCORR2REFw] = values[kCORR2REF] * values[kM11REF];
+  values[kCORR2REFsquaredw] = values[kCORR2REF] * values[kCORR2REF] * values[kM11REF];
+  values[kCORR4REFw] = values[kCORR4REF] * values[kM1111REF];
+  values[kCORR4REFsquaredw] = values[kCORR4REF] * values[kCORR4REF] * values[kM1111REF];
 
   // TODO: provide different computations for R
   // Compute the R factor using the 2 sub-events technique for second and third harmonic
