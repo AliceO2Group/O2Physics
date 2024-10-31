@@ -84,7 +84,6 @@ struct lumiStabilityTask {
     const AxisSpec axisCountsTime{2, -0.5, 1.5};
     const AxisSpec axisOrbits{static_cast<int>(nOrbits / nOrbitsPerTF), 0., static_cast<double>(nOrbits), ""};
 
-
     histos.add("hBcA", "BC pattern A; BC ; It is present", kTH1F, {axisTriggger});
     histos.add("hBcC", "BC pattern C; BC ; It is present", kTH1F, {axisTriggger});
     histos.add("hBcB", "BC pattern B; BC ; It is present", kTH1F, {axisTriggger});
@@ -294,8 +293,6 @@ struct lumiStabilityTask {
       histos.add("hOrbitFT0vertex", "", kTH1F, {axisOrbits});
       histos.add("hOrbitFV0Central", "", kTH1F, {axisOrbits});*/
     }
-
-
 
     for (auto const& fdd : fdds) {
       auto bc = fdd.bc_as<BCsWithTimestamps>();
