@@ -295,7 +295,7 @@ struct LumiStabilityTask {
           }
         }
 
-        EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", ts);
+        /*EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", ts);
         // access orbit-reset timestamp
         auto ctpx = ccdb->getForTimeStamp<std::vector<int64_t>>("CTP/Calib/OrbitReset", ts);
         int64_t tsOrbitReset = (*ctpx)[0]; // us
@@ -326,6 +326,7 @@ struct LumiStabilityTask {
         hTsValues->GetXaxis()->SetBinLabel(2, "tsEOR");
         hTsValues->SetBinContent(1, tsSOR / 1000); // seconds
         hTsValues->SetBinContent(2, tsEOR / 1000); // seconds
+        std::cout << "<<<<<<<<<<<<<<<<<<<<<<<<< Orbits per second: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << nOrbits << std::endl;*/
       }
 
       // create orbit-axis histograms on the fly with binning based on info from GRP if GRP is available
@@ -336,6 +337,8 @@ struct LumiStabilityTask {
       // histos.add("hOrbitFT0vertex", "", kTH1F, {axisOrbits});
       // histos.add("hOrbitFV0Central", "", kTH1F, {axisOrbits});
     }
+
+
 
     for (auto const& fdd : fdds) {
       auto bc = fdd.bc_as<BCsWithTimestamps>();
@@ -372,7 +375,7 @@ struct LumiStabilityTask {
       if (vertex) {
         histos.fill(HIST("FDD/bcVertexTrigger"), localBC);
         histos.fill(HIST("FDD/hCounts"), 1);
-        // histos.fill(HIST("hOrbitFDDVertex"), orbit - minOrbit);
+        histos.fill(HIST("hOrbitFDDVertex"), orbit - minOrbit);
 
         if (bcPatternB[localBC]) {
           histos.fill(HIST("FDD/hTimeForRate"), (bc.timestamp() - tsSOR) * 1.e-3); // Converting ms into seconds
@@ -663,7 +666,7 @@ struct LumiStabilityTask {
       histos.fill(HIST("FT0/hCounts"), 0);
       if (vertex) {
         histos.fill(HIST("FT0/bcVertexTrigger"), localBC);
-        // histos.fill(HIST("hOrbitFT0vertex"), orbit - minOrbit);
+        histos.fill(HIST("hOrbitFT0vertex"), orbit - minOrbit);
 
         if (bcPatternA[localBC]) {
           histos.fill(HIST("FT0/timeACbcA"), ft0.timeA(), ft0.timeC());
@@ -819,7 +822,7 @@ struct LumiStabilityTask {
       }
 
       if (aCen) {
-        // histos.fill(HIST("hOrbitFV0Central"), orbit - minOrbit);
+        histos.fill(HIST("hOrbitFV0Central"), orbit - minOrbit);
         histos.fill(HIST("FV0/bcCenTrigger"), localBC);
 
         if (bcPatternA[localBC]) {
