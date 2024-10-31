@@ -17,8 +17,8 @@
 #define PWGHF_HFC_UTILS_UTILSCORRELATIONS_H_
 
 #include "CommonConstants/PhysicsConstants.h"
-#include <cmath>
 #include <TPDGCode.h>
+#include <cmath>
 
 namespace o2::analysis::hf_correlations
 {
@@ -30,7 +30,7 @@ enum Region {
 };
 
 template <typename T>
-Region getRegion(T deltaPhi)
+Region getRegion(T const deltaPhi)
 {
   if (std::abs(deltaPhi) < o2::constants::math::PIThird) {
     return Toward;
@@ -41,7 +41,7 @@ Region getRegion(T deltaPhi)
   }
 }
 
-// Find Leading Particle
+// ========= Find Leading Particle ==============
 template <typename TTracks, typename T1, typename T2>
 int findLeadingParticle(TTracks const& tracks, T1 const dcaXYTrackMax, T2 const dcaZTrackMax)
 {
