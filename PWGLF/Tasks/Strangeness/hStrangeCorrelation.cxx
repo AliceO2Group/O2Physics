@@ -33,6 +33,8 @@
 #include "Common/DataModel/Centrality.h"
 #include "Framework/StaticFor.h"
 #include "CCDB/BasicCCDBManager.h"
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::constants::math;
