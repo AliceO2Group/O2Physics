@@ -114,7 +114,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   int runNumber{-1};
   double magneticField{0.};
 
-  using MyCascTable = soa::Join<aod::CascDatas, aod::CascCovs>; 
+  using MyCascTable = soa::Join<aod::CascDatas, aod::CascCovs>;
   using MyTraCascTable = soa::Join<aod::TraCascDatas, aod::TraCascCovs>; // to use strangeness tracking
   using CascadesLinked = soa::Join<Cascades, CascDataLink>;
   using TraCascadesLinked = soa::Join<Cascades, TraCascDataLink>;
@@ -322,21 +322,21 @@ struct HfCandidateCreatorXic0Omegac0 {
 
       // check if the cascade from AO2D has data
       bool hasData = false;
-      if constexpr (requires { cascAodElement.cascDataId(); }){ // check if it's the CascDataLink
-        if (cascAodElement.has_cascData()){
+      if constexpr (requires { cascAodElement.cascDataId(); }) { // check if it's the CascDataLink
+        if (cascAodElement.has_cascData()) {
           hasData = true;
         }
       }
-      if constexpr (requires { cascAodElement.traCascDataId(); }){ // check if it's the TraCascDataLink
-        if (cascAodElement.has_traCascData()){
+      if constexpr (requires { cascAodElement.traCascDataId(); }) { // check if it's the TraCascDataLink
+        if (cascAodElement.has_traCascData()) {
           hasData = true;
         }
       }
-      if(!hasData){
+      if (!hasData) {
         continue;
       }
 
-      typename TCascTable::iterator casc; 
+      typename TCascTable::iterator casc;
       if constexpr (requires { cascAodElement.cascDataId(); }) { // check if it's the CascDataLink
         casc = cascAodElement.template cascData_as<TCascTable>();
       }
