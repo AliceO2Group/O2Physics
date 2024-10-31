@@ -226,6 +226,18 @@ DECLARE_SOA_TABLE(NPCascTableMC, "AOD", "NPCASCTABLEMC",
                   NPCascadeTable::DCAzMC,
                   NPCascadeTable::MCcollisionMatch)
 
+DECLARE_SOA_TABLE(NPCascTableGen, "AOD", "NPCASCTABLEGen",
+                  NPCascadeTable::gPt,
+                  NPCascadeTable::gEta,
+                  NPCascadeTable::gPhi,
+                  NPCascadeTable::PDGcode,
+                  NPCascadeTable::PdgCodeMom,
+                  NPCascadeTable::DCAxMC,
+                  NPCascadeTable::DCAyMC,
+                  NPCascadeTable::DCAzMC,
+                  NPCascadeTable::IsFromBeauty,
+                  NPCascadeTable::IsFromCharm)
+
 } // namespace o2::aod
 
 #endif // PWGLF_DATAMODEL_LFNONPROMPTCASCADETABLES_H_

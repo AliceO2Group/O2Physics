@@ -76,7 +76,7 @@ DECLARE_SOA_TABLE(EMPrimaryTracks, "AOD", "EMPTRACK", //!
                   track::TPCChi2NCl, track::TPCInnerParam,
                   track::TPCSignal, pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaMu, pidtpc::TPCNSigmaPi, pidtpc::TPCNSigmaKa, pidtpc::TPCNSigmaPr,
                   pidtofbeta::Beta, pidtof::TOFNSigmaEl, pidtof::TOFNSigmaMu, pidtof::TOFNSigmaPi, pidtof::TOFNSigmaKa, pidtof::TOFNSigmaPr,
-                  track::ITSClusterSizes, track::ITSChi2NCl, track::DetectorMap, emprimarytrack::PIDLabel, emprimarytrack::TrackType,
+                  track::ITSClusterSizes, track::ITSChi2NCl, track::TOFChi2, track::DetectorMap, emprimarytrack::PIDLabel, emprimarytrack::TrackType,
 
                   // dynamic column
                   emprimarytrack::P<track::Pt, track::Eta>,

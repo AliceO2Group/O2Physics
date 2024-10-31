@@ -24,6 +24,7 @@
 #include "Framework/runDataProcessing.h"
 
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -43,7 +44,7 @@ struct HfTaskLc {
   ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {72, 0, 36}, ""};
   ConfigurableAxis thnConfigAxisMass{"thnConfigAxisMass", {300, 1.98, 2.58}, ""};
   ConfigurableAxis thnConfigAxisPtProng{"thnConfigAxisPtProng", {100, 0, 20}, ""};
-  ConfigurableAxis thnConfigAxisMultiplicity{"thnConfigAxisMultiplicity", {100, 0, 1000}, ""};
+  ConfigurableAxis thnConfigAxisCentrality{"thnConfigAxisCentrality", {100, 0, 100}, ""};
   ConfigurableAxis thnConfigAxisChi2PCA{"thnConfigAxisChi2PCA", {100, 0, 20}, ""};
   ConfigurableAxis thnConfigAxisDecLength{"thnConfigAxisDecLength", {10, 0, 0.05}, ""};
   ConfigurableAxis thnConfigAxisCPA{"thnConfigAxisCPA", {20, 0.8, 1}, ""};
@@ -53,6 +54,13 @@ struct HfTaskLc {
 
   HfHelper hfHelper;
   Filter filterSelectCandidates = aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLc || aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLc;
+
+  using Collisions = soa::Join<aod::Collisions, aod::EvSels>::iterator;
+  using CollisionsMc = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>::iterator;
+  using CollisionsWithFT0C = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>::iterator;
+  using CollisionsMcWithFT0C = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs>::iterator;
+  using CollisionsWithFT0M = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>::iterator;
+  using CollisionsMcWithFT0M = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Ms>::iterator;
 
   using LcCandidates = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>;
   using LcCandidatesMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfMlLcToPKPi>>;
@@ -154,7 +162,7 @@ struct HfTaskLc {
 
   void init(InitContext&)
   {
-    std::array<bool, 4> doprocess{doprocessDataStd, doprocessDataWithMl, doprocessMcStd, doprocessMcWithMl};
+    std::array<bool, 12> doprocess{doprocessDataStd, doprocessDataStdWithFT0C, doprocessDataStdWithFT0M, doprocessDataWithMl, doprocessDataWithMlWithFT0C, doprocessDataWithMlWithFT0M, doprocessMcStd, doprocessMcStdWithFT0C, doprocessMcStdWithFT0M, doprocessMcWithMl, doprocessMcWithMlWithFT0C, doprocessMcWithMlWithFT0M};
     if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) != 1) {
       LOGP(fatal, "no or more than one process function enabled! Please check your configuration!");
     }
@@ -265,7 +273,7 @@ struct HfTaskLc {
       const AxisSpec thnAxisPtProng0{thnConfigAxisPtProng, "#it{p}_{T}(prong0) (GeV/#it{c})"};
       const AxisSpec thnAxisPtProng1{thnConfigAxisPtProng, "#it{p}_{T}(prong1) (GeV/#it{c})"};
       const AxisSpec thnAxisPtProng2{thnConfigAxisPtProng, "#it{p}_{T}(prong2) (GeV/#it{c})"};
-      const AxisSpec thnAxisMultiplicity{thnConfigAxisMultiplicity, "multiplicity"};
+      const AxisSpec thnAxisCentrality{thnConfigAxisCentrality, "centrality (FT0C)"};
       const AxisSpec thnAxisChi2PCA{thnConfigAxisChi2PCA, "Chi2PCA to sec. vertex (cm)"};
       const AxisSpec thnAxisDecLength{thnConfigAxisDecLength, "decay length (cm)"};
       const AxisSpec thnAxisCPA{thnConfigAxisCPA, "cosine of pointing angle"};
@@ -274,16 +282,25 @@ struct HfTaskLc {
       const AxisSpec thnAxisBdtScoreLcNonPrompt{thnConfigAxisBdtScoreSignal, "BDT non-prompt score (Lc)"};
       const AxisSpec thnAxisCanType{thnConfigAxisCanType, "candidates type"};
 
-      if (doprocessDataWithMl || doprocessMcWithMl) {
-        registry.add("hnLcVarsWithBdt", "THn for Lambdac candidates with BDT scores", HistType::kTHnSparseF, {thnAxisMass, thnAxisPt, thnAxisMultiplicity, thnAxisBdtScoreLcBkg, thnAxisBdtScoreLcPrompt, thnAxisBdtScoreLcNonPrompt, thnAxisCanType});
+      if (doprocessDataWithMl || doprocessDataWithMlWithFT0C || doprocessDataWithMlWithFT0M || doprocessMcWithMl || doprocessMcWithMlWithFT0C || doprocessMcWithMlWithFT0M) {
+        registry.add("hnLcVarsWithBdt", "THn for Lambdac candidates with BDT scores", HistType::kTHnSparseF, {thnAxisMass, thnAxisPt, thnAxisCentrality, thnAxisBdtScoreLcBkg, thnAxisBdtScoreLcPrompt, thnAxisBdtScoreLcNonPrompt, thnAxisCanType});
       } else {
-        registry.add("hnLcVars", "THn for Lambdac candidates", HistType::kTHnSparseF, {thnAxisMass, thnAxisPt, thnAxisMultiplicity, thnAxisPtProng0, thnAxisPtProng1, thnAxisPtProng2, thnAxisChi2PCA, thnAxisDecLength, thnAxisCPA, thnAxisCanType});
+        registry.add("hnLcVars", "THn for Lambdac candidates", HistType::kTHnSparseF, {thnAxisMass, thnAxisPt, thnAxisCentrality, thnAxisPtProng0, thnAxisPtProng1, thnAxisPtProng2, thnAxisChi2PCA, thnAxisDecLength, thnAxisCPA, thnAxisCanType});
       }
     }
   }
 
-  template <bool fillMl, typename CandType>
-  void processData(aod::Collision const& collision,
+  /// Evaluate centrality/multiplicity percentile (centrality estimator is automatically selected based on the used table)
+  /// \param candidate is candidate
+  /// \return centrality/multiplicity percentile of the collision
+  template <typename Coll>
+  float evaluateCentralityColl(const Coll& collision)
+  {
+    return o2::hf_centrality::getCentralityColl<Coll>(collision);
+  }
+
+  template <bool fillMl, typename CollType, typename CandType>
+  void processData(CollType const& collision,
                    CandType const& candidates,
                    aod::TracksWDca const& tracks)
   {
@@ -362,6 +379,7 @@ struct HfTaskLc {
       registry.fill(HIST("Data/hDecLenErr"), candidate.errorDecayLength(), pt);
 
       if (enableTHn) {
+        float cent = evaluateCentralityColl(collision);
         double massLc(-1);
         double outputBkg(-1), outputPrompt(-1), outputFD(-1);
         if (candidate.isSelLcToPKPi() >= selectionFlagLc) {
@@ -376,9 +394,9 @@ struct HfTaskLc {
               outputFD = candidate.mlProbLcToPKPi()[2];     /// non-prompt score
             }
             /// Fill the ML outputScores and variables of candidate
-            registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(massLc, pt, nTracks, outputBkg, outputPrompt, outputFD, 0);
+            registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(massLc, pt, cent, outputBkg, outputPrompt, outputFD, 0);
           } else {
-            registry.get<THnSparse>(HIST("hnLcVars"))->Fill(massLc, pt, nTracks, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, 0);
+            registry.get<THnSparse>(HIST("hnLcVars"))->Fill(massLc, pt, cent, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, 0);
           }
         }
         if (candidate.isSelLcToPiKP() >= selectionFlagLc) {
@@ -393,16 +411,16 @@ struct HfTaskLc {
               outputFD = candidate.mlProbLcToPiKP()[2];     /// non-prompt score
             }
             /// Fill the ML outputScores and variables of candidate
-            registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(massLc, pt, nTracks, outputBkg, outputPrompt, outputFD, 0);
+            registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(massLc, pt, cent, outputBkg, outputPrompt, outputFD, 0);
           } else {
-            registry.get<THnSparse>(HIST("hnLcVars"))->Fill(massLc, pt, nTracks, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, 0);
+            registry.get<THnSparse>(HIST("hnLcVars"))->Fill(massLc, pt, cent, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, 0);
           }
         }
       }
     }
   }
 
-  void processDataStd(aod::Collision const& collision,
+  void processDataStd(Collisions const& collision,
                       LcCandidates const& selectedLcCandidates,
                       aod::TracksWDca const& tracks)
   {
@@ -410,7 +428,7 @@ struct HfTaskLc {
   }
   PROCESS_SWITCH(HfTaskLc, processDataStd, "Process Data with the standard method", true);
 
-  void processDataWithMl(aod::Collision const& collision,
+  void processDataWithMl(Collisions const& collision,
                          LcCandidatesMl const& selectedLcCandidatesMl,
                          aod::TracksWDca const& tracks)
   {
@@ -418,9 +436,42 @@ struct HfTaskLc {
   }
   PROCESS_SWITCH(HfTaskLc, processDataWithMl, "Process Data with the ML method", false);
 
+  void processDataStdWithFT0C(CollisionsWithFT0C const& collision,
+                              LcCandidates const& selectedLcCandidates,
+                              aod::TracksWDca const& tracks)
+  {
+    processData<false>(collision, selectedLcCandidates, tracks);
+  }
+  PROCESS_SWITCH(HfTaskLc, processDataStdWithFT0C, "Process Data with the standard method", true);
+
+  void processDataWithMlWithFT0C(CollisionsWithFT0C const& collision,
+                                 LcCandidatesMl const& selectedLcCandidatesMl,
+                                 aod::TracksWDca const& tracks)
+  {
+    processData<true>(collision, selectedLcCandidatesMl, tracks);
+  }
+  PROCESS_SWITCH(HfTaskLc, processDataWithMlWithFT0C, "Process Data with the ML method", false);
+
+  void processDataStdWithFT0M(CollisionsWithFT0M const& collision,
+                              LcCandidates const& selectedLcCandidates,
+                              aod::TracksWDca const& tracks)
+  {
+    processData<false>(collision, selectedLcCandidates, tracks);
+  }
+  PROCESS_SWITCH(HfTaskLc, processDataStdWithFT0M, "Process Data with the standard method", true);
+
+  void processDataWithMlWithFT0M(CollisionsWithFT0M const& collision,
+                                 LcCandidatesMl const& selectedLcCandidatesMl,
+                                 aod::TracksWDca const& tracks)
+  {
+    processData<true>(collision, selectedLcCandidatesMl, tracks);
+  }
+  PROCESS_SWITCH(HfTaskLc, processDataWithMlWithFT0M, "Process Data with the ML method", false);
+
   /// Fills MC histograms.
-  template <bool fillMl, typename CandType>
-  void processMc(CandType const& candidates,
+  template <bool fillMl, typename CollType, typename CandType>
+  void processMc(CollType const& collision,
+                 CandType const& candidates,
                  soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
                  aod::TracksWMc const&)
   {
@@ -574,6 +625,7 @@ struct HfTaskLc {
           registry.fill(HIST("MC/reconstructed/nonprompt/hDecLenErrSigNonPrompt"), candidate.errorDecayLength(), pt);
         }
         if (enableTHn) {
+          float cent = evaluateCentralityColl(collision);
           double massLc(-1);
           double outputBkg(-1), outputPrompt(-1), outputFD(-1);
           if ((candidate.isSelLcToPKPi() >= selectionFlagLc) && pdgCodeProng0 == kProton) {
@@ -587,10 +639,10 @@ struct HfTaskLc {
                 outputPrompt = candidate.mlProbLcToPKPi()[1]; /// prompt score
                 outputFD = candidate.mlProbLcToPKPi()[2];     /// non-prompt score
               }
-              /// Fill the ML outputScores and variables of candidate (todo: add multiplicity)
-              registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(massLc, pt, 0, outputBkg, outputPrompt, outputFD, originType);
+              /// Fill the ML outputScores and variables of candidate
+              registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(massLc, pt, cent, outputBkg, outputPrompt, outputFD, originType);
             } else {
-              registry.get<THnSparse>(HIST("hnLcVars"))->Fill(massLc, pt, 0, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, originType);
+              registry.get<THnSparse>(HIST("hnLcVars"))->Fill(massLc, pt, cent, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, originType);
             }
           }
           if ((candidate.isSelLcToPiKP() >= selectionFlagLc) && pdgCodeProng0 == kPiPlus) {
@@ -605,9 +657,9 @@ struct HfTaskLc {
                 outputFD = candidate.mlProbLcToPiKP()[2];     /// non-prompt score
               }
               /// Fill the ML outputScores and variables of candidate (todo: add multiplicity)
-              registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(massLc, pt, 0, outputBkg, outputPrompt, outputFD, originType);
+              registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(massLc, pt, cent, outputBkg, outputPrompt, outputFD, originType);
             } else {
-              registry.get<THnSparse>(HIST("hnLcVars"))->Fill(massLc, pt, 0, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, originType);
+              registry.get<THnSparse>(HIST("hnLcVars"))->Fill(massLc, pt, cent, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, originType);
             }
           }
         }
@@ -652,21 +704,59 @@ struct HfTaskLc {
     }
   }
 
-  void processMcStd(LcCandidatesMc const& selectedLcCandidatesMc,
+  void processMcStd(CollisionsMc const& collision,
+                    LcCandidatesMc const& selectedLcCandidatesMc,
                     soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
                     aod::TracksWMc const& tracksWithMc)
   {
-    processMc<false>(selectedLcCandidatesMc, mcParticles, tracksWithMc);
+    processMc<false>(collision, selectedLcCandidatesMc, mcParticles, tracksWithMc);
   }
   PROCESS_SWITCH(HfTaskLc, processMcStd, "Process MC with the standard method", false);
 
-  void processMcWithMl(LcCandidatesMlMc const& selectedLcCandidatesMlMc,
+  void processMcWithMl(CollisionsMc const& collision,
+                       LcCandidatesMlMc const& selectedLcCandidatesMlMc,
                        soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
                        aod::TracksWMc const& tracksWithMc)
   {
-    processMc<true>(selectedLcCandidatesMlMc, mcParticles, tracksWithMc);
+    processMc<true>(collision, selectedLcCandidatesMlMc, mcParticles, tracksWithMc);
   }
   PROCESS_SWITCH(HfTaskLc, processMcWithMl, "Process Mc with the ML method", false);
+
+  void processMcStdWithFT0C(CollisionsMcWithFT0C const& collision,
+                            LcCandidatesMc const& selectedLcCandidatesMc,
+                            soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
+                            aod::TracksWMc const& tracksWithMc)
+  {
+    processMc<false>(collision, selectedLcCandidatesMc, mcParticles, tracksWithMc);
+  }
+  PROCESS_SWITCH(HfTaskLc, processMcStdWithFT0C, "Process MC with the standard method", false);
+
+  void processMcWithMlWithFT0C(CollisionsMcWithFT0C const& collision,
+                               LcCandidatesMlMc const& selectedLcCandidatesMlMc,
+                               soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
+                               aod::TracksWMc const& tracksWithMc)
+  {
+    processMc<true>(collision, selectedLcCandidatesMlMc, mcParticles, tracksWithMc);
+  }
+  PROCESS_SWITCH(HfTaskLc, processMcWithMlWithFT0C, "Process Mc with the ML method", false);
+
+  void processMcStdWithFT0M(CollisionsMcWithFT0M const& collision,
+                            LcCandidatesMc const& selectedLcCandidatesMc,
+                            soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
+                            aod::TracksWMc const& tracksWithMc)
+  {
+    processMc<false>(collision, selectedLcCandidatesMc, mcParticles, tracksWithMc);
+  }
+  PROCESS_SWITCH(HfTaskLc, processMcStdWithFT0M, "Process MC with the standard method", false);
+
+  void processMcWithMlWithFT0M(CollisionsMcWithFT0M const& collision,
+                               LcCandidatesMlMc const& selectedLcCandidatesMlMc,
+                               soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
+                               aod::TracksWMc const& tracksWithMc)
+  {
+    processMc<true>(collision, selectedLcCandidatesMlMc, mcParticles, tracksWithMc);
+  }
+  PROCESS_SWITCH(HfTaskLc, processMcWithMlWithFT0M, "Process Mc with the ML method", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

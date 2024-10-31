@@ -47,68 +47,9 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-
-// Some definitions
-namespace o2::aod
-{
-
-namespace dqanalysisflags
-{
-// TODO: the barrel amd muon selection columns are bit maps so unsigned types should be used, however, for now this is not supported in Filter expressions
-// TODO: For now in the tasks we just statically convert from unsigned int to int, which should be fine as long as we do
-//      not use a large number of bits (>=30)
-// Bcandidate columns for ML analysis of B->Jpsi+K
-DECLARE_SOA_COLUMN(MixingHash, mixingHash, int);
-DECLARE_SOA_COLUMN(IsEventSelected, isEventSelected, int);
-DECLARE_SOA_COLUMN(IsBarrelSelected, isBarrelSelected, int);
-DECLARE_SOA_COLUMN(IsMuonSelected, isMuonSelected, int);
-DECLARE_SOA_COLUMN(IsBarrelSelectedPrefilter, isBarrelSelectedPrefilter, int);
-DECLARE_SOA_COLUMN(IsPrefilterVetoed, isPrefilterVetoed, int);
-DECLARE_SOA_COLUMN(massBcandidate, MBcandidate, float);
-DECLARE_SOA_COLUMN(pTBcandidate, PtBcandidate, float);
-DECLARE_SOA_COLUMN(LxyBcandidate, lxyBcandidate, float);
-DECLARE_SOA_COLUMN(LxyzBcandidate, lxyzBcandidate, float);
-DECLARE_SOA_COLUMN(LzBcandidate, lzBcandidate, float);
-DECLARE_SOA_COLUMN(TauxyBcandidate, tauxyBcandidate, float);
-DECLARE_SOA_COLUMN(TauzBcandidate, tauzBcandidate, float);
-DECLARE_SOA_COLUMN(CosPBcandidate, cosPBcandidate, float);
-DECLARE_SOA_COLUMN(Chi2Bcandidate, chi2Bcandidate, float);
-
-// Xcandidate columns
-DECLARE_SOA_COLUMN(massXcandidate, MXcandidate, float);
-DECLARE_SOA_COLUMN(pTXcandidate, PtXcandidate, float);
-DECLARE_SOA_COLUMN(rapidityXcandidate, YXcandidate, float);
-DECLARE_SOA_COLUMN(etaXcandidate, EtaXcandidate, float);
-DECLARE_SOA_COLUMN(massJpsicandidate, MJpsicandidate, float);
-DECLARE_SOA_COLUMN(massDipioncandidate, MDipioncandidate, float);
-DECLARE_SOA_COLUMN(pTJpsicandidate, PtJpsicandidate, float);
-DECLARE_SOA_COLUMN(pTDipioncandidate, PtDipioncandidate, float);
-DECLARE_SOA_COLUMN(massDiff, Q, float);
-DECLARE_SOA_COLUMN(angDistPion1, DeltaR1, float);
-DECLARE_SOA_COLUMN(angDistPion2, DeltaR2, float);
-DECLARE_SOA_COLUMN(cosDileptonDipion, CosDileptonDipion, float);
-DECLARE_SOA_COLUMN(dcaxyPion1, DcaXYPion1, float);
-DECLARE_SOA_COLUMN(dcazPion1, DcaZPion1, float);
-DECLARE_SOA_COLUMN(dcaxyPion2, DcaXYPion2, float);
-DECLARE_SOA_COLUMN(dcazPion2, DcaZPion2, float);
-DECLARE_SOA_COLUMN(pTPion1, PtPion1, float);
-DECLARE_SOA_COLUMN(pTPion2, PtPion2, float);
-DECLARE_SOA_COLUMN(dileptonSign, DileptonSign, int);
-DECLARE_SOA_COLUMN(ditrackSign, DitrackSign, int);
-
-} // namespace dqanalysisflags
-
-DECLARE_SOA_TABLE(EventCuts, "AOD", "DQANAEVCUTS", dqanalysisflags::IsEventSelected);
-DECLARE_SOA_TABLE(MixingHashes, "AOD", "DQANAMIXHASH", dqanalysisflags::MixingHash);
-DECLARE_SOA_TABLE(BarrelTrackCuts, "AOD", "DQANATRKCUTS", dqanalysisflags::IsBarrelSelected, dqanalysisflags::IsBarrelSelectedPrefilter);
-DECLARE_SOA_TABLE(MuonTrackCuts, "AOD", "DQANAMUONCUTS", dqanalysisflags::IsMuonSelected);
-DECLARE_SOA_TABLE(Prefilter, "AOD", "DQPREFILTER", dqanalysisflags::IsPrefilterVetoed);
-DECLARE_SOA_TABLE(BmesonCandidates, "AOD", "DQBMESONS", dqanalysisflags::massBcandidate, dqanalysisflags::pTBcandidate, dqanalysisflags::LxyBcandidate, dqanalysisflags::LxyzBcandidate, dqanalysisflags::LzBcandidate, dqanalysisflags::TauxyBcandidate, dqanalysisflags::TauzBcandidate, dqanalysisflags::CosPBcandidate, dqanalysisflags::Chi2Bcandidate);
-DECLARE_SOA_TABLE(XCandidates, "AOD", "DQX3872", dqanalysisflags::massXcandidate, dqanalysisflags::pTXcandidate, dqanalysisflags::rapidityXcandidate, dqanalysisflags::etaXcandidate, dqanalysisflags::massJpsicandidate, dqanalysisflags::massDipioncandidate, dqanalysisflags::pTJpsicandidate, dqanalysisflags::pTDipioncandidate, dqanalysisflags::massDiff, dqanalysisflags::angDistPion1, dqanalysisflags::angDistPion2, dqanalysisflags::cosDileptonDipion, dqanalysisflags::dcaxyPion1, dqanalysisflags::dcazPion1, dqanalysisflags::dcaxyPion2, dqanalysisflags::dcazPion2, dqanalysisflags::pTPion1, dqanalysisflags::pTPion2, dqanalysisflags::dileptonSign, dqanalysisflags::ditrackSign);
-} // namespace o2::aod
+using namespace o2::aod;
 
 using MyEvents = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended>;
-using MyEventsSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts>;
 
 using MyMuonTracks = soa::Join<aod::ReducedMuons, aod::ReducedMuonsExtra>;
 using MyMftTracks = soa::Join<aod::ReducedMFTs, aod::ReducedMFTsExtra>;

@@ -235,9 +235,11 @@ struct lithium4analysis {
       {"h2dEdxHe3candidates", "dEdx distribution; #it{p} (GeV/#it{c}); dE/dx (a.u.)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {100, 0.0f, 2000.0f}}}},
       {"h2ClSizeCosLamHe3", "; n#sigma_{TPC} ; #LT ITS Cluster Size #GT #LT cos#lambda #GT (^{3}He)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {120, 0.0f, 15.0f}}}},
       {"h2NsigmaHe3TPC", "NsigmaHe3 TPC distribution; #it{p}/z (GeV/#it{c}); n#sigma_{TPC}(^{3}He)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
+      {"h2NsigmaHe3TPC_preselection", "NsigmaHe3 TPC distribution; #it{p}/z (GeV/#it{c}); n#sigma_{TPC}(^{3}He)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {200, -10.0f, 10.0f}}}},
       {"h2NsigmaProtonTPC", "NsigmaProton TPC distribution; #it{p}/z (GeV/#it{c}); n#sigma_{TPC}(p)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
-      {"h2NsigmaProtonTPC_preselection", "NsigmaHe3 TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(^{3}He)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
-      {"h2NsigmaProtonTOF", "NsigmaProton TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(p)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
+      {"h2NsigmaProtonTPC_preselection", "NsigmaHe3 TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(^{3}He)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {200, -10.0f, 10.0f}}}},
+      {"h2NsigmaProtonTOF", "NsigmaProton TOF distribution; #it{p} (GeV/#it{c}); n#sigma_{TOF}(p)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
+      {"h2NsigmaProtonTOF_preselection", "NsigmaProton TOF distribution; #it{p} (GeV/#it{c}); n#sigma_{TOF}(p)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {200, -10.0f, 10.0f}}}},
     },
     OutputObjHandlingPolicy::AnalysisObject,
     false,
@@ -382,11 +384,16 @@ struct lithium4analysis {
   {
     m_qaRegistry.fill(HIST("h2NsigmaProtonTPC_preselection"), candidate.tpcInnerParam(), candidate.tpcNSigmaPr());
     if (candidate.hasTOF() && candidate.pt() < setting_cutPtMinTOFPr) {
-      if (std::abs(candidate.tofNSigmaPr()) < setting_cutNsigmaTOF && std::abs(candidate.tpcNSigmaPr()) < setting_cutNsigmaTPC) {
-        m_qaRegistry.fill(HIST("h2NsigmaProtonTPC"), candidate.tpcInnerParam(), candidate.tpcNSigmaPr());
-        m_qaRegistry.fill(HIST("h2NsigmaProtonTOF"), candidate.p(), candidate.tofNSigmaPr());
-        return true;
+      if (std::abs(candidate.tpcNSigmaPr() > setting_cutNsigmaTPC)) {
+        return false;
       }
+      m_qaRegistry.fill(HIST("h2NsigmaProtonTOF_preselection"), candidate.p(), candidate.tofNSigmaPr());
+      if (std::abs(candidate.tofNSigmaPr()) > setting_cutNsigmaTOF) {
+        return false;
+      }
+      m_qaRegistry.fill(HIST("h2NsigmaProtonTPC"), candidate.tpcInnerParam(), candidate.tpcNSigmaPr());
+      m_qaRegistry.fill(HIST("h2NsigmaProtonTOF"), candidate.p(), candidate.tofNSigmaPr());
+      return true;
     } else if (std::abs(candidate.tpcNSigmaPr()) < setting_cutNsigmaTPC) {
       m_qaRegistry.fill(HIST("h2NsigmaProtonTPC"), candidate.tpcInnerParam(), candidate.tpcNSigmaPr());
       return true;
@@ -410,7 +417,6 @@ struct lithium4analysis {
   {
     bool heliumPID = candidate.pidForTracking() == o2::track::PID::Helium3 || candidate.pidForTracking() == o2::track::PID::Alpha;
     float correctedTPCinnerParam = (heliumPID && setting_compensatePIDinTracking) ? candidate.tpcInnerParam() / 2.f : candidate.tpcInnerParam();
-    m_qaRegistry.fill(HIST("h2dEdxHe3candidates"), correctedTPCinnerParam * 2.f, candidate.tpcSignal());
 
     if (correctedTPCinnerParam < setting_cutRigidityMinHe3) {
       return false;
@@ -432,10 +438,12 @@ struct lithium4analysis {
     }
 
     auto nSigmaHe3 = computeNSigmaHe3(candidate);
+    m_qaRegistry.fill(HIST("h2NsigmaHe3TPC_preselection"), candidate.sign() * correctedTPCinnerParam, nSigmaHe3);
     if (std::abs(nSigmaHe3) > setting_cutNsigmaTPC) {
       return false;
     }
 
+    m_qaRegistry.fill(HIST("h2dEdxHe3candidates"), candidate.sign() * correctedTPCinnerParam, candidate.tpcSignal());
     m_qaRegistry.fill(HIST("h2NsigmaHe3TPC"), candidate.sign() * correctedTPCinnerParam, nSigmaHe3);
     m_qaRegistry.fill(HIST("h2ClSizeCosLamHe3"), nSigmaHe3, clsizeCoslIts);
     return true;
@@ -610,28 +618,15 @@ struct lithium4analysis {
     }
   }
 
-  void pairTracksEventMixing()
+  template <typename T>
+  void pairTracksEventMixing(T& he3Cands, T& protonCands)
   {
-
-    for (auto& [c1, tracks1, c2, tracks2] : m_pair) {
-      if (!c1.sel8() || !c2.sel8()) {
+    for (auto& he3Cand : he3Cands) {
+      if (!selectTrack(he3Cand) || !selectionPIDHe3(he3Cand)) {
         continue;
       }
-      m_qaRegistry.fill(HIST("hNcontributor"), c1.numContrib());
-      m_qaRegistry.fill(HIST("hVtxZ"), c1.posZ());
-
-      for (auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
-
-        if (!selectTrack(t1) || !selectTrack(t2)) {
-          continue;
-        }
-
-        TrackCandidates::iterator he3Cand, protonCand;
-        if (selectionPIDHe3(t1) && selectionPIDProton(t2)) {
-          he3Cand = t1, protonCand = t2;
-        } else if (selectionPIDHe3(t2) && selectionPIDProton(t1)) {
-          he3Cand = t2, protonCand = t1;
-        } else {
+      for (auto& protonCand : protonCands) {
+        if (!selectTrack(protonCand) || !selectionPIDProton(protonCand)) {
           continue;
         }
 
@@ -774,9 +769,20 @@ struct lithium4analysis {
 
   void processMixedEvent(const CollisionsFull& collisions, const TrackCandidates& tracks)
   {
-    LOG(info) << "Processing mixed event";
+    LOG(debug) << "Processing mixed event";
     m_trackPairs.clear();
-    pairTracksEventMixing();
+
+    for (auto& [c1, tracks1, c2, tracks2] : m_pair) {
+      if (!c1.sel8() || !c2.sel8()) {
+        continue;
+      }
+
+      m_qaRegistry.fill(HIST("hNcontributor"), c1.numContrib());
+      m_qaRegistry.fill(HIST("hVtxZ"), c1.posZ());
+
+      pairTracksEventMixing(tracks1, tracks2);
+      pairTracksEventMixing(tracks2, tracks1);
+    }
 
     for (auto& trackPair : m_trackPairs) {
 

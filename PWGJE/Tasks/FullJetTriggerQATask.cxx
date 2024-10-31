@@ -38,7 +38,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct JetTriggerQA {
-  using selectedClusters = o2::soa::Filtered<JetClusters>;
+  using selectedClusters = o2::soa::Filtered<aod::JetClusters>;
   using fullJetInfos = soa::Join<aod::FullJets, aod::FullJetConstituents>;
   using neutralJetInfos = soa::Join<aod::NeutralJets, aod::NeutralJetConstituents>;
   using collisionWithTrigger = soa::Join<aod::JCollisions, aod::JFullTrigSels>::iterator;
@@ -544,7 +544,7 @@ struct JetTriggerQA {
   }
 
   template <typename JetCollection>
-  std::pair<std::vector<typename JetCollection::iterator>, std::vector<typename JetCollection::iterator>> fillJetQA(const JetCollection& jets, JetTracks const& /*tracks*/, selectedClusters const& /*clusters*/, std::bitset<EMCALHardwareTrigger::TRG_NTriggers> /*hwtrg*/, const std::bitset<TriggerType_t::kNTriggers>& triggerstatus)
+  std::pair<std::vector<typename JetCollection::iterator>, std::vector<typename JetCollection::iterator>> fillJetQA(const JetCollection& jets, aod::JetTracks const& /*tracks*/, selectedClusters const& /*clusters*/, std::bitset<EMCALHardwareTrigger::TRG_NTriggers> /*hwtrg*/, const std::bitset<TriggerType_t::kNTriggers>& triggerstatus)
   {
     auto isTrigger = [&triggerstatus](TriggerType_t triggertype) -> bool {
       return triggerstatus.test(triggertype);
@@ -568,7 +568,7 @@ struct JetTriggerQA {
       // This gives us access to all jet substructure information
       // auto tracksInJet = jetTrackConstituents.sliceBy(perJetTrackConstituents, jet.globalIndex());
       // for (const auto& trackList : tracksInJet) {
-      for (auto& track : jet.template tracks_as<JetTracks>()) {
+      for (auto& track : jet.template tracks_as<aod::JetTracks>()) {
         auto trackPt = track.pt();
         auto chargeFrag = track.px() * jet.px() + track.py() * jet.py() + track.pz() * jet.pz();
         chargeFrag /= (jet.p() * jet.p());
@@ -647,12 +647,12 @@ struct JetTriggerQA {
     return std::make_pair(vecMaxJet, vecMaxJetNoFiducial);
   }
 
-  using JetCollisionsTable = soa::Join<JetCollisions, aod::JFullTrigSels>;
+  using JetCollisionsTable = soa::Join<aod::JetCollisions, aod::JFullTrigSels>;
 
   template <typename JetCollection>
   void runQA(collisionWithTrigger const& collision,
              JetCollection const& jets,
-             JetTracks const& tracks,
+             aod::JetTracks const& tracks,
              selectedClusters const& clusters)
   {
     std::bitset<TriggerType_t::kNTriggers> triggerstatus;
@@ -826,7 +826,7 @@ struct JetTriggerQA {
 
   void processFullJets(collisionWithTrigger const& collision,
                        fullJetInfos const& jets,
-                       JetTracks const& tracks,
+                       aod::JetTracks const& tracks,
                        selectedClusters const& clusters)
   {
     runQA(collision, jets, tracks, clusters);
@@ -835,7 +835,7 @@ struct JetTriggerQA {
 
   void processNeutralJets(collisionWithTrigger const& collision,
                           neutralJetInfos const& jets,
-                          JetTracks const& tracks,
+                          aod::JetTracks const& tracks,
                           selectedClusters const& clusters)
   {
     runQA(collision, jets, tracks, clusters);

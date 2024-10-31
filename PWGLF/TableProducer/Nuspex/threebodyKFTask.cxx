@@ -198,9 +198,7 @@ struct threebodyKFTask {
             if ((MCvtx3body.pdgCode() == motherPdgCode && lMCTrack0.pdgCode() == 2212 && lMCTrack1.pdgCode() == -211 && lMCTrack2.pdgCode() == bachelorPdgCode) ||
                 (MCvtx3body.pdgCode() == -motherPdgCode && lMCTrack0.pdgCode() == 211 && lMCTrack1.pdgCode() == -2212 && lMCTrack2.pdgCode() == -bachelorPdgCode)) {
               vtx3bodyPDGcode = MCvtx3body.pdgCode();
-              genDecVtx[0] = lMCTrack0.vx();
-              genDecVtx[0] = lMCTrack0.vy();
-              genDecVtx[0] = lMCTrack0.vz();
+              genDecVtx = {lMCTrack0.vx(), lMCTrack0.vy(), lMCTrack0.vz()};
               MClifetime = RecoDecay::sqrtSumOfSquares(lMCTrack2.vx() - MCvtx3body.vx(), lMCTrack2.vy() - MCvtx3body.vy(), lMCTrack2.vz() - MCvtx3body.vz()) * o2::constants::physics::MassHyperTriton / MCvtx3body.p();
               genPhi = MCvtx3body.phi();
               genEta = MCvtx3body.eta();
@@ -318,16 +316,12 @@ struct threebodyKFTask {
         std::array<float, 3> piMinusMom{0.f};
         for (auto& mcparticleDaughter : mcparticle.template daughters_as<aod::McParticles>()) {
           if (mcparticleDaughter.pdgCode() == 2212) {
-            protonMom[0] = mcparticleDaughter.px();
-            protonMom[1] = mcparticleDaughter.py();
-            protonMom[2] = mcparticleDaughter.pz();
+            protonMom = {mcparticleDaughter.px(), mcparticleDaughter.py(), mcparticleDaughter.pz()};
           } else if (mcparticleDaughter.pdgCode() == -211) {
-            piMinusMom[0] = mcparticleDaughter.px();
-            piMinusMom[1] = mcparticleDaughter.py();
-            piMinusMom[2] = mcparticleDaughter.pz();
+            piMinusMom = {mcparticleDaughter.px(), mcparticleDaughter.py(), mcparticleDaughter.pz()};
           }
         }
-        genMCmassPrPi = RecoDecay::m(array{array{protonMom[0], protonMom[1], protonMom[2]}, array{piMinusMom[0], piMinusMom[1], piMinusMom[2]}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged});
+        genMCmassPrPi = RecoDecay::m(array{protonMom, piMinusMom}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged});
         registry.fill(HIST("hTrueHypertritonMCMassPrPi_nonReco"), genMCmassPrPi);
         registry.fill(HIST("hTrueHypertritonMCPtProton_nonReco"), RecoDecay::sqrtSumOfSquares(protonMom[0], protonMom[1]));
         registry.fill(HIST("hTrueHypertritonMCPtPion_nonReco"), RecoDecay::sqrtSumOfSquares(piMinusMom[0], piMinusMom[1]));
@@ -338,16 +332,12 @@ struct threebodyKFTask {
         std::array<float, 3> piPlusMom{0.f};
         for (auto& mcparticleDaughter : mcparticle.template daughters_as<aod::McParticles>()) {
           if (mcparticleDaughter.pdgCode() == -2212) {
-            antiProtonMom[0] = mcparticleDaughter.px();
-            antiProtonMom[1] = mcparticleDaughter.py();
-            antiProtonMom[2] = mcparticleDaughter.pz();
+            antiProtonMom = {mcparticleDaughter.px(), mcparticleDaughter.py(), mcparticleDaughter.pz()};
           } else if (mcparticleDaughter.pdgCode() == 211) {
-            piPlusMom[0] = mcparticleDaughter.px();
-            piPlusMom[1] = mcparticleDaughter.py();
-            piPlusMom[2] = mcparticleDaughter.pz();
+            piPlusMom = {mcparticleDaughter.px(), mcparticleDaughter.py(), mcparticleDaughter.pz()};
           }
         }
-        genMCmassPrPi = RecoDecay::m(array{array{antiProtonMom[0], antiProtonMom[1], antiProtonMom[2]}, array{piPlusMom[0], piPlusMom[1], piPlusMom[2]}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged});
+        genMCmassPrPi = RecoDecay::m(array{antiProtonMom, piPlusMom}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged});
         registry.fill(HIST("hTrueAntiHypertritonMCMassPrPi_nonReco"), genMCmassPrPi);
         registry.fill(HIST("hTrueAntiHypertritonMCPtProton_nonReco"), RecoDecay::sqrtSumOfSquares(antiProtonMom[0], antiProtonMom[1]));
         registry.fill(HIST("hTrueAntiHypertritonMCPtPion_nonReco"), RecoDecay::sqrtSumOfSquares(piPlusMom[0], piPlusMom[1]));

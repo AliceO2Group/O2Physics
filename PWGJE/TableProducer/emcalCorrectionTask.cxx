@@ -198,7 +198,7 @@ struct EmcalCorrectionTask {
     hClusterType->GetXaxis()->SetBinLabel(2, "normal collision");
     hClusterType->GetXaxis()->SetBinLabel(3, "mult. collisions");
     mHistManager.add("hCollPerBC", "hCollPerBC;#it{N}_{coll.};#it{count}", o2HistType::kTH1I, {{100, -0.5, 99.5}});
-    mHistManager.add("hBC", "hBC;;#it{count}", o2HistType::kTH1I, {{8, -0.5, 7.5}});
+    mHistManager.add("hBC", "hBC;;#it{count}", o2HistType::kTH1D, {{8, -0.5, 7.5}});
     auto hBC = mHistManager.get<TH1>(HIST("hBC"));
     hBC->GetXaxis()->SetBinLabel(1, "with EMCal cells");
     hBC->GetXaxis()->SetBinLabel(2, "with EMCal cells but no collision");
