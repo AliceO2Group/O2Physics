@@ -279,7 +279,7 @@ struct HfCorrelatorD0Hadrons {
     }
     // find leading particle
     if (correlateD0WithLeadingParticle) {
-      leadingIndex = findLeadingParticle(tracks, dcaXYTrackMax, dcaZTrackMax);
+      leadingIndex = findLeadingParticle(tracks, dcaXYTrackMax.value, dcaZTrackMax.value);
     }
 
     int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multFT0M()));
@@ -423,7 +423,7 @@ struct HfCorrelatorD0Hadrons {
     }
     // find leading particle
     if (correlateD0WithLeadingParticle) {
-      leadingIndex = findLeadingParticle(tracks, dcaXYTrackMax, dcaZTrackMax);
+      leadingIndex = findLeadingParticle(tracks, dcaXYTrackMax.value, dcaZTrackMax.value);
     }
     int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multFT0M()));
     int nTracks = 0;
@@ -593,7 +593,7 @@ struct HfCorrelatorD0Hadrons {
     // MC gen level
     // find leading particle
     if (correlateD0WithLeadingParticle) {
-      leadingIndex = findLeadingParticleMcGen(mcParticles, etaTrackMax, ptTrackMin);
+      leadingIndex = findLeadingParticleMcGen(mcParticles, etaTrackMax.value, ptTrackMin.value);
     }
     for (const auto& particle1 : mcParticles) {
       // check if the particle is D0 or D0bar (for general plot filling and selection, so both cases are fine) - NOTE: decay channel is not probed!
