@@ -19,6 +19,9 @@
 #endif
 
 #include <iterator>
+#include <memory>
+#include <string>
+#include <vector>
 
 /// includes KFParticle
 #include "KFParticle.h"
