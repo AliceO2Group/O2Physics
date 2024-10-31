@@ -270,6 +270,7 @@ struct LumiStabilityTask {
       nOrbitsPerTF = 32; // 128 in 2022, 32 in 2023
     }
     int runNumber = bcs.iteratorAt(0).runNumber();
+    // std::string histName = "hOrbitFDDVertexCoinc_" + std::to_string(runNumber);
     if (runNumber != lastRunNumber && executionCounter < 1) {
       tsSOR = 0;
       tsEOR = 1;
@@ -456,7 +457,7 @@ struct LumiStabilityTask {
       if (vertex) {
         histos.fill(HIST("FDD/bcVertexTrigger"), localBC);
         histos.fill(HIST("FDD/hCounts"), 1);
-        histos.fill(HIST("hOrbitFDDVertex"), orbit - minOrbit);
+        // histos.fill(HIST("hOrbitFDDVertex"), orbit - minOrbit);
 
         if (bcPatternB[localBC]) {
           histos.fill(HIST("FDD/hTimeForRate"), (bc.timestamp() - tsSOR) * 1.e-3); // Converting ms into seconds
@@ -748,7 +749,7 @@ struct LumiStabilityTask {
       histos.fill(HIST("FT0/hCounts"), 0);
       if (vertex) {
         histos.fill(HIST("FT0/bcVertexTrigger"), localBC);
-        histos.fill(HIST("hOrbitFT0vertex"), orbit - minOrbit);
+        // histos.fill(HIST("hOrbitFT0vertex"), orbit - minOrbit);
 
         if (bcPatternA[localBC]) {
           histos.fill(HIST("FT0/timeACbcA"), ft0.timeA(), ft0.timeC());
@@ -904,7 +905,7 @@ struct LumiStabilityTask {
       }
 
       if (aCen) {
-        histos.fill(HIST("hOrbitFV0Central"), orbit - minOrbit);
+        // histos.fill(HIST("hOrbitFV0Central"), orbit - minOrbit);
         histos.fill(HIST("FV0/bcCenTrigger"), localBC);
 
         if (bcPatternA[localBC]) {
