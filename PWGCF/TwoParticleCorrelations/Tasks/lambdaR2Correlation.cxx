@@ -65,6 +65,8 @@ DECLARE_SOA_COLUMN(Mass, mass, float);
 DECLARE_SOA_COLUMN(PosTrackId, postrackid, int64_t);
 DECLARE_SOA_COLUMN(NegTrackId, negtrackid, int64_t);
 DECLARE_SOA_COLUMN(V0Type, v0type, int8_t);
+DECLARE_SOA_COLUMN(Cospa, cospa, float);
+DECLARE_SOA_COLUMN(DcaDau, dcadau, float);
 } // namespace lambdatrack
 DECLARE_SOA_TABLE(LambdaTracks, "AOD", "LAMBDATRACKS", o2::soa::Index<>,
                   lambdatrack::LambdaCollisionId,
@@ -77,7 +79,9 @@ DECLARE_SOA_TABLE(LambdaTracks, "AOD", "LAMBDATRACKS", o2::soa::Index<>,
                   lambdatrack::Mass,
                   lambdatrack::PosTrackId,
                   lambdatrack::NegTrackId,
-                  lambdatrack::V0Type);
+                  lambdatrack::V0Type,
+                  lambdatrack::Cospa,
+                  lambdatrack::DcaDau);
 using LambdaTrack = LambdaTracks::iterator;
 
 namespace lambdamcgentrack
@@ -95,7 +99,9 @@ DECLARE_SOA_TABLE(LambdaMCGenTracks, "AOD", "LMCGENTRACKS", o2::soa::Index<>,
                   lambdatrack::Mass,
                   lambdatrack::PosTrackId,
                   lambdatrack::NegTrackId,
-                  lambdatrack::V0Type);
+                  lambdatrack::V0Type,
+                  lambdatrack::Cospa,
+                  lambdatrack::DcaDau);
 using LambdaMCGenTrack = LambdaMCGenTracks::iterator;
 
 } // namespace o2::aod
@@ -124,7 +130,8 @@ struct lambdaCorrTableProducer {
   Produces<aod::LambdaMCGenTracks> lambdaMCGenTrackTable;
 
   // Collisions
-  Configurable<float> cfg_z_vtx{"cfg_z_vtx", 10.0, "z vertex cut"};
+  Configurable<float> cfg_min_z_vtx{"cfg_min_z_vtx", -10.0, "z vertex cut"};
+  Configurable<float> cfg_max_z_vtx{"cfg_max_z_vtx", 10.0, "z vertex cut"};
   Configurable<bool> cfg_sel8_sel{"cfg_sel8_sel", true, "Sel8 (T0A + T0C) Selection"};
   Configurable<bool> cfg_trigger_tvx_sel{"cfg_trigger_tvx_sel", false, "Trigger Time and Vertex Selection"};
   Configurable<bool> cfg_tf_border{"cfg_tf_border", false, "Timeframe Border Selection"};
@@ -298,7 +305,7 @@ struct lambdaCorrTableProducer {
   bool selCol(C const& col)
   {
 
-    if (fabs(col.posZ()) > cfg_z_vtx) {
+    if (col.posZ() < cfg_min_z_vtx || col.posZ() > cfg_max_z_vtx) {
       return false;
     }
 
@@ -650,7 +657,7 @@ struct lambdaCorrTableProducer {
     }
 
     // Fill Lambda/AntiLambda Table
-    lambdaTrackTable(lambdaCollisionTable.lastIndex(), v0track.px(), v0track.py(), v0track.pz(), v0track.pt(), rap, v0track.phi(), mass, postrack.index(), negtrack.index(), (int8_t)v0part);
+    lambdaTrackTable(lambdaCollisionTable.lastIndex(), v0track.px(), v0track.py(), v0track.pz(), v0track.pt(), rap, v0track.phi(), mass, postrack.index(), negtrack.index(), (int8_t)v0part, v0track.v0cosPA(), v0track.dcaV0daughters());
   }
 
   using Collisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
@@ -764,7 +771,7 @@ struct lambdaCorrTableProducer {
     histos.fill(HIST("McGen/h1d_collisions_info"), 1.5);
 
     // apply collision cuts
-    if (fabs(mcCollision.posZ()) > cfg_z_vtx) {
+    if (mcCollision.posZ() < cfg_min_z_vtx || mcCollision.posZ() > cfg_max_z_vtx) {
       return;
     }
 
@@ -834,7 +841,7 @@ struct lambdaCorrTableProducer {
         histos.fill(HIST("McGen/h2d_pteta_lambda"), mcpart.eta(), mcpart.pt());
         histos.fill(HIST("McGen/h2d_ptrap_lambda"), mcpart.y(), mcpart.pt());
         histos.fill(HIST("McGen/h2d_ptphi_lambda"), mcpart.phi(), mcpart.pt());
-        lambdaMCGenTrackTable(lambdaMCGenCollisionTable.lastIndex(), mcpart.px(), mcpart.py(), mcpart.pz(), mcpart.pt(), rap, mcpart.phi(), mass, daughterIDs[0], daughterIDs[1], (int8_t)kLambda);
+        lambdaMCGenTrackTable(lambdaMCGenCollisionTable.lastIndex(), mcpart.px(), mcpart.py(), mcpart.pz(), mcpart.pt(), rap, mcpart.phi(), mass, daughterIDs[0], daughterIDs[1], (int8_t)kLambda, -999., -999.);
       } else if (mcpart.pdgCode() == kLambda0Bar) {
         histos.fill(HIST("McGen/h1d_antilambda_daughter_PDG"), daughterPDGs[0]);
         histos.fill(HIST("McGen/h1d_antilambda_daughter_PDG"), daughterPDGs[1]);
@@ -846,7 +853,7 @@ struct lambdaCorrTableProducer {
         histos.fill(HIST("McGen/h2d_pteta_antilambda"), mcpart.eta(), mcpart.pt());
         histos.fill(HIST("McGen/h2d_ptrap_antilambda"), mcpart.y(), mcpart.pt());
         histos.fill(HIST("McGen/h2d_ptphi_antilambda"), mcpart.phi(), mcpart.pt());
-        lambdaMCGenTrackTable(lambdaMCGenCollisionTable.lastIndex(), mcpart.px(), mcpart.py(), mcpart.pz(), mcpart.pt(), rap, mcpart.phi(), mass, daughterIDs[1], daughterIDs[0], (int8_t)kAntiLambda);
+        lambdaMCGenTrackTable(lambdaMCGenCollisionTable.lastIndex(), mcpart.px(), mcpart.py(), mcpart.pz(), mcpart.pt(), rap, mcpart.phi(), mass, daughterIDs[1], daughterIDs[0], (int8_t)kAntiLambda, -999., -999.);
       }
     }
   }
@@ -918,6 +925,9 @@ struct lambdaCorrelationAnalysis {
     const AxisSpec axisRapPhi(knrapphibins, kminrapphi, kmaxrapphi, "rap #phi");
     const AxisSpec axisQinv(100, 0, 10, "q_{inv} (GeV/#it{c})");
 
+    const AxisSpec axisCPA(100, 0.99, 1.0, "cos(#theta_{PA})");
+    const AxisSpec axisDcaDau(75, 0., 1.5, "Daug DCA (#sigma)");
+
     // Create Histograms.
     // Event
     histos.add("Event/Reco/h1d_collision_posz", "V_{Z} Distribution", kTH1F, {axisPosZ});
@@ -928,6 +938,13 @@ struct lambdaCorrelationAnalysis {
     histos.add("Event/Reco/h1d_antilambda_sdau", "#bar{#Lambda} - Multiplicity", kTH1I, {axisMult});
     histos.add("Event/Reco/h1d_lambda_totmult", "#Lambda - Multiplicity", kTH1I, {axisMult});
     histos.add("Event/Reco/h1d_antilambda_totmult", "#bar{#Lambda} - Multiplicity", kTH1I, {axisMult});
+
+    // InvMass, DcaDau and CosPA
+    histos.add("Reco/QA_Lambda/h1d_V0_mass", "M_{p#pi}", kTH1F, {axisMass});
+    histos.add("Reco/QA_Lambda/h1d_V0_cpa", "cos(#theta_{PA})", kTH1F, {axisCPA});
+    histos.add("Reco/QA_Lambda/h1d_V0_dcadau", "DCA_{p#pi} at V0 Decay Vertex", kTH1F, {axisDcaDau});
+
+    histos.addClone("Reco/QA_Lambda/", "Reco/QA_AntiLambda/");
 
     // single and two particle densities
     // 1D Histograms
@@ -970,7 +987,7 @@ struct lambdaCorrelationAnalysis {
     }
   }
 
-  template <typename T, typename V>
+  template <bool fillHist, ParticleType part, RecGenType rec_gen, typename T, typename V>
   bool removeLambdaSharingDau(T const& v, V const& vs)
   {
     // check whether to remove lambda or not
@@ -978,10 +995,18 @@ struct lambdaCorrelationAnalysis {
       return true;
     }
 
+    static constexpr std::string_view sub_dir_recgen[] = {"Reco/", "McGen/"};
+    static constexpr std::string_view sub_dir[] = {"QA_Lambda/", "QA_AntiLambda/"};
+
     bool ret_flag = true;
 
     for (auto const& x : vs) {
       if ((v.index() != x.index()) && (v.postrackid() == x.postrackid() || v.negtrackid() == x.negtrackid())) {
+        if (fillHist) {
+          histos.fill(HIST(sub_dir_recgen[rec_gen]) + HIST(sub_dir[part]) + HIST("h1d_V0_mass"), x.mass());
+          histos.fill(HIST(sub_dir_recgen[rec_gen]) + HIST(sub_dir[part]) + HIST("h1d_V0_cpa"), x.cospa());
+          histos.fill(HIST(sub_dir_recgen[rec_gen]) + HIST(sub_dir[part]) + HIST("h1d_V0_dcadau"), x.dcadau());
+        }
         if (std::abs(v.mass() - MassLambda0) > std::abs(x.mass() - MassLambda0)) {
           ret_flag = false;
           break;
@@ -1077,7 +1102,7 @@ struct lambdaCorrelationAnalysis {
 
     for (auto const& track : tracks) {
       ++ntrk1;
-      if (!removeLambdaSharingDau(track, tracks)) {
+      if (!removeLambdaSharingDau<true, part, rec_gen>(track, tracks)) {
         ++ntrk2;
         continue;
       }
@@ -1119,7 +1144,7 @@ struct lambdaCorrelationAnalysis {
   void analyzePairs(T const& trks_1, T const& trks_2)
   {
     for (auto const& trk_1 : trks_1) {
-      if (!removeLambdaSharingDau(trk_1, trks_1)) {
+      if (!removeLambdaSharingDau<false, kLambda, rec_gen>(trk_1, trks_1)) {
         continue;
       }
       for (auto const& trk_2 : trks_2) {
@@ -1128,7 +1153,7 @@ struct lambdaCorrelationAnalysis {
           continue;
         }
         // check if Lambda shares a daughter and select the one closest to PDG Mass
-        if (!removeLambdaSharingDau(trk_2, trks_2)) {
+        if (!removeLambdaSharingDau<false, kLambda, rec_gen>(trk_2, trks_2)) {
           continue;
         }
         fillPairHistos<partpair, rec_gen>(trk_1, trk_2);
