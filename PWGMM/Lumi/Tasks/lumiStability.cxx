@@ -19,6 +19,11 @@
 #include <string>
 #include <vector>
 
+#include <utility>
+#include <map>
+#include <string>
+#include <vector>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -34,11 +39,6 @@
 #include "CommonDataFormat/BunchFilling.h"
 #include "DataFormatsParameters/GRPLHCIFData.h"
 #include "DataFormatsParameters/GRPECSObject.h"
-
-#include <utility>
-#include <map>
-#include <string>
-#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
