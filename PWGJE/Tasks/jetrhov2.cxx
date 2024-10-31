@@ -242,7 +242,7 @@ struct Jetrhov2Task {
     registry.add("h2_centrality_track_pt_phi", "track #varphi and p_{T}; #p_{track}; #varphi_{track}", {HistType::kTH2F, {{200, 0., 200.}, {160, -1.0, 7.}}});
     registry.add("h2_centrality_track_energy", "centrality vs track energy; centrality; Energy GeV", {HistType::kTH2F, {{1200, -10.0, 110.0}, {100, 0.0, 100.0}}});
     registry.add("h3_track_eta_phi_pt", "#eta_{track}; #varphi_{tracks}; #p_{T}", {HistType::kTH3F, {{100, -1.0, 1.0}, {160, -1.0, 7.}, {200, 0., 200.}}});
-      registry.add("h_recoil_jet_pt", "jet pT;#it{p}_{T,jet} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}});
+    registry.add("h_recoil_jet_pt", "jet pT;#it{p}_{T,jet} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}});
     registry.add("h_recoil_jet_eta", "jet #eta;#eta_{jet};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}});
     registry.add("h_recoil_jet_phi", "jet #phi;#phi_{jet};entries", {HistType::kTH1F, {{80, -1.0, 7.}}});
     registry.add("h_recoil_jet_dphi", "hadron-jet #Delta#phi;#Delta#phi_{jet,trigger hadron};entries", {HistType::kTH1F, {{40, -2.0, 2.0}}});
