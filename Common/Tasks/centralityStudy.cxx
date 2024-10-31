@@ -49,6 +49,14 @@ struct centralityStudy {
 
   Configurable<bool> rejectITSinROFpileupStandard{"rejectITSinROFpileupStandard", false, "reject collisions in case of in-ROF ITS pileup (standard)"};
   Configurable<bool> rejectITSinROFpileupStrict{"rejectITSinROFpileupStrict", false, "reject collisions in case of in-ROF ITS pileup (strict)"};
+  Configurable<bool> rejectCollInTimeRangeNarrow{"rejectCollInTimeRangeNarrow", false, "reject if extra colls in time range (narrow)"};
+
+  Configurable<bool> selectUPCcollisions{"selectUPCcollisions", false, "select collisions tagged with UPC flag"};
+
+  Configurable<bool> selectCollidingBCs{"selectCollidingBCs", true, "BC analysis: select colliding BCs"};
+  Configurable<bool> selectTVX{"selectTVX", true, "BC analysis: select TVX"};
+  Configurable<bool> selectFV0OrA{"selectFV0OrA", true, "BC analysis: select FV0OrA"};
+  Configurable<float> vertexZwithT0{"vertexZwithT0", 1000.0f, "require a certain vertex-Z in BC analysis"};
 
   Configurable<float> minTimeDelta{"minTimeDelta", -1.0f, "reject collision if another collision is this close or less in time"};
   Configurable<float> minFT0CforVertexZ{"minFT0CforVertexZ", 250, "minimum FT0C for vertex-Z profile calculation"};
@@ -104,6 +112,8 @@ struct centralityStudy {
 
       histos.add("hFT0CvsPVz_BCs_All", "hFT0CvsPVz_BCs_All", kTProfile, {axisPVz});
       histos.add("hFT0CvsPVz_BCs", "hFT0CvsPVz_BCs", kTProfile, {axisPVz});
+
+      histos.add("hVertexZ_BCvsCO", "hVertexZ_BCvsCO", kTH2D, {axisPVz, axisPVz});
     }
 
     if (do2DPlots) {
@@ -187,12 +197,22 @@ struct centralityStudy {
     if (rejectITSinROFpileupStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
       return;
     }
-    histos.fill(HIST("hCollisionSelection"), 11 /* Not at same bunch pile-up */);
+    histos.fill(HIST("hCollisionSelection"), 11 /* Not ITS ROF pileup (standard) */);
 
     if (rejectITSinROFpileupStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStrict)) {
       return;
     }
-    histos.fill(HIST("hCollisionSelection"), 12 /* Not at same bunch pile-up */);
+    histos.fill(HIST("hCollisionSelection"), 12 /* Not ITS ROF pileup (strict) */);
+
+    if (selectUPCcollisions && collision.flags() < 1) { // if zero then NOT upc, otherwise UPC
+      return;
+    }
+    histos.fill(HIST("hCollisionSelection"), 13 /* is UPC event */);
+
+    if (rejectCollInTimeRangeNarrow && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
+      return;
+    }
+    histos.fill(HIST("hCollisionSelection"), 14 /* Not ITS ROF pileup (strict) */);
 
     // if we got here, we also finally fill the FT0C histogram, please
     histos.fill(HIST("hNPVContributors"), collision.multPVTotalContributors());
@@ -232,20 +252,27 @@ struct centralityStudy {
     genericProcessCollision(collision);
   }
 
-  void processBCs(aod::MultBCs::iterator const& multbc)
+  void processBCs(soa::Join<aod::BC2Mults, aod::MultBCs>::iterator const& multbc, soa::Join<aod::Mults, aod::MultsExtra, aod::MultSelections, aod::CentFT0Cs, aod::MultsGlobal> const&)
   {
     // process BCs, calculate FT0C distribution
     // conditionals suggested by FIT team (Jacek O. et al)
     histos.fill(HIST("hBCSelection"), 0); // all BCs
-    if (!multbc.multBCColliding())
+    if (selectCollidingBCs && !multbc.multBCColliding())
       return;
     histos.fill(HIST("hBCSelection"), 1); // colliding
-    if (!multbc.multBCTVX())
+    if (selectTVX && !multbc.multBCTVX())
       return;
     histos.fill(HIST("hBCSelection"), 2); // TVX
-    if (!multbc.multBCFV0OrA())
+    if (selectFV0OrA && !multbc.multBCFV0OrA())
       return;
     histos.fill(HIST("hBCSelection"), 3); // FV0OrA
+    if (vertexZwithT0 < 100.0f) {
+      if (!multbc.multBCFT0PosZValid())
+        return;
+      if (TMath::Abs(multbc.multBCFT0PosZ()) > vertexZwithT0)
+        return;
+    }
+    histos.fill(HIST("hBCSelection"), 4); // FV0OrA
 
     // if we got here, we also finally fill the FT0C histogram, please
     histos.fill(HIST("hFT0C_BCs"), multbc.multBCFT0C());
@@ -253,6 +280,13 @@ struct centralityStudy {
       histos.fill(HIST("hFT0CvsPVz_BCs_All"), multbc.multBCFT0PosZ(), multbc.multBCFT0C());
       if (multbc.multBCFT0C() > minFT0CforVertexZ) {
         histos.fill(HIST("hFT0CvsPVz_BCs"), multbc.multBCFT0PosZ(), multbc.multBCFT0C());
+      }
+    }
+
+    if (multbc.has_ft0Mult()) {
+      auto multco = multbc.ft0Mult_as<soa::Join<aod::Mults, aod::MultsExtra, aod::MultSelections, aod::CentFT0Cs, aod::MultsGlobal>>();
+      if (multbc.multBCFT0PosZValid()) {
+        histos.fill(HIST("hVertexZ_BCvsCO"), multco.multPVz(), multbc.multBCFT0PosZ());
       }
     }
   }
