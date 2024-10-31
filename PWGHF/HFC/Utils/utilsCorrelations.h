@@ -13,7 +13,7 @@
 /// \brief Utilities for HFC analyses
 /// \author Xu Wang <waxu@cern.ch>
 
-#  ifndef PWGHF_HFC_UTILS_UTILSCORRELATIONS_H_
+#ifndef PWGHF_HFC_UTILS_UTILSCORRELATIONS_H_
 #define PWGHF_HFC_UTILS_UTILSCORRELATIONS_H_
 
 #include <cmath>
