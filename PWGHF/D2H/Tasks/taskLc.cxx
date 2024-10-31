@@ -307,7 +307,7 @@ struct HfTaskLc {
   /// \param collision is collision
   /// \param candidates is candidates
   template <bool fillMl, typename CollType, typename CandLcMcRec, typename CandLcMcGen>
-  void fillMcRecHistosAndSparse(CollType const& collision, CandLcMcRec const& candidates, CandLcMcGen const& mcParticles)
+  void fillHistosMcRec(CollType const& collision, CandLcMcRec const& candidates, CandLcMcGen const& mcParticles)
   {
 
     auto thisCollId = collision.globalIndex();
@@ -548,7 +548,7 @@ struct HfTaskLc {
   /// \param collision is collision
   /// \param candidates is candidates
   template <bool fillMl, typename CollType, typename CandType>
-  void fillDataHistosAndSparse(CollType const& collision, CandType const& candidates)
+  void fillHistosData(CollType const& collision, CandType const& candidates)
   {
     auto thisCollId = collision.globalIndex();
     auto groupedLcCandidates = candidates.sliceBy(candLcPerCollision, thisCollId);
@@ -653,7 +653,7 @@ struct HfTaskLc {
       }
     }
   }
-
+  /// Fills Data histograms.
   template <bool fillMl, typename CollType, typename CandType>
   void runAnalysisPerCollisionData(CollType const& collisions,
                                    CandType const& candidates)
@@ -661,7 +661,22 @@ struct HfTaskLc {
 
     for (const auto& collision : collisions) {
 
-      fillDataHistosAndSparse<fillMl>(collision, candidates);
+      fillHistosData<fillMl>(collision, candidates);
+    }
+  }
+
+  /// Fills Mc histograms.
+  template <bool fillMl, typename CollType, typename CandType, typename CandLcMcGen>
+  void runAnalysisPerCollisionMc(CollType const& collisions,
+                                 CandType const& candidates,
+                                 CandLcMcGen const& mcParticles)
+  {
+    for (const auto& collision : collisions) {
+      // MC Rec.
+      fillHistosMcRec<fillMl>(collision, candidates, mcParticles);
+      // MC gen.
+      auto mcParticlesPerColl = mcParticles.sliceBy(perMcCollision, collision.globalIndex());
+      fillHistosMcGen(mcParticlesPerColl);
     }
   }
 
@@ -707,20 +722,7 @@ struct HfTaskLc {
   }
   PROCESS_SWITCH(HfTaskLc, processDataWithMlWithFT0M, "Process real data with the ML method and with FT0M centrality", false);
 
-  /// Fills MC histograms.
-  template <bool fillMl, typename CollType, typename CandType, typename CandLcMcGen>
-  void runAnalysisPerCollisionMc(CollType const& collisions,
-                                 CandType const& candidates,
-                                 CandLcMcGen const& mcParticles)
-  {
-    for (const auto& collision : collisions) {
-      // MC Rec.
-      fillMcRecHistosAndSparse<fillMl>(collision, candidates, mcParticles);
-      // MC gen.
-      auto mcParticlesPerColl = mcParticles.sliceBy(perMcCollision, collision.globalIndex());
-      fillHistosMcGen(mcParticlesPerColl);
-    }
-  }
+
   void processMcStd(CollisionsMc const& collisions,
                     LcCandidatesMc const& selectedLcCandidatesMc,
                     McParticles3ProngMatched const& mcParticles,
