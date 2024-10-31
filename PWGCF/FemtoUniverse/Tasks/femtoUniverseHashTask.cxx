@@ -32,7 +32,7 @@ struct femtoUniversePairHashTask {
 
   std::vector<float> CastCfgVtxBins, CastCfgMultBins;
 
-  Produces<aod::Hashes> hashes;
+  Produces<aod::MixingHashes> hashes;
 
   void init(InitContext&)
   {
