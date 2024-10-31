@@ -306,6 +306,7 @@ struct HfTaskLc {
   /// Fill MC histograms at reconstruction level
   /// \param collision is collision
   /// \param candidates is candidates
+  /// \param mcParticles is mcParticles                                    
   template <bool fillMl, typename CollType, typename CandLcMcRec, typename CandLcMcGen>
   void fillHistosMcRec(CollType const& collision, CandLcMcRec const& candidates, CandLcMcGen const& mcParticles)
   {
@@ -547,6 +548,7 @@ struct HfTaskLc {
   /// Fill MC histograms at reconstruction level
   /// \param collision is collision
   /// \param candidates is candidates
+  /// \param tracks is tracks        
   template <bool fillMl, typename CollType, typename CandType, typename TrackType>
   void fillHistosData(CollType const& collision, CandType const& candidates, TrackType const& tracks)
   {
