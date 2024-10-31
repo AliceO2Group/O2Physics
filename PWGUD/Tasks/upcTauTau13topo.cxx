@@ -1109,7 +1109,7 @@ struct TauTau13topo {
 
     // calculate trk time and resolution total
     // 1. find best resolution
-    short iTmpBest = -1;
+    int iTmpBest = -1;
     for (int i = 0; i < 4; i++) {
       if (trkTimeRes[i] < trkTimeResTot) {
         trkTimeResTot = trkTimeRes[i];
