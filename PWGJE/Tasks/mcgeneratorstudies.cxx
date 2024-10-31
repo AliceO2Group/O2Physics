@@ -114,7 +114,7 @@ struct MCGeneratorStudies {
     mHistManager.fill(HIST("NCollisionsMCCollisions"), collisions.size(), mcCollisions.size());
     mHistManager.fill(HIST("hBCCounter"), 1);
 
-    if (bc.selection_bit(aod::evsel::kIsTriggerTVX)) {
+    if (bc.selection_bit(aod::evsel::kIsTriggerTVX)) { // Count BCs with TVX trigger with and without a collision, as well as the generated particles within
 
       mHistManager.fill(HIST("NTVXCollisionsMCCollisions"), collisions.size(), mcCollisions.size());
 
