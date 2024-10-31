@@ -54,8 +54,7 @@ int findLeadingParticle(TTracks const& tracks, T1 const dcaXYTrackMax, T2 const 
       leadingParticle = track;
     }
   }
-  int leadingIndex = leadingParticle.globalIndex();
-  return leadingIndex;
+  return leadingParticle.globalIndex();
 }
 
 // ======= Find Leading Particle for McGen ============
