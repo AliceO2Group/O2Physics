@@ -18,8 +18,9 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/runDataProcessing.h"
 
-#include "Math/Vector4D.h" // similiar to TLorentzVector (which is now legacy apparently)
+#include "Math/Vector4D.h"
 #include "random"
+#include "TLorentzVector.h"
 
 #include "Common/DataModel/PIDResponse.h"
 
@@ -33,7 +34,36 @@ using namespace o2::framework::expressions;
 using FullUDSgCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced, aod::SGCollisions>::iterator;
 using FullUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags>;
 
+namespace o2::aod {
+  namespace dipi {
+    // general
+    DECLARE_SOA_COLUMN(RunNumber, runNumber, int32_t);
+    DECLARE_SOA_COLUMN(NClass, nClass, int);
+    DECLARE_SOA_COLUMN(TotCharge, charge, int);
+    DECLARE_SOA_COLUMN(Pt, pT, double);
+    // system
+    DECLARE_SOA_COLUMN(M, m, double);
+    DECLARE_SOA_COLUMN(Rap, y, double);
+    DECLARE_SOA_COLUMN(PhiRandom, phiRandom, double);
+    DECLARE_SOA_COLUMN(PhiCharge, phiCharge, double);
+    // tracks
+    DECLARE_SOA_COLUMN(UdCollisionId, udCollisionId, int32_t);
+    DECLARE_SOA_COLUMN(Eta, eta, double);
+    DECLARE_SOA_COLUMN(Phi, phi, double);
+    DECLARE_SOA_COLUMN(Sign, sign, int);
+    DECLARE_SOA_COLUMN(DcaZ, dcaZ, double);
+    DECLARE_SOA_COLUMN(DcaXY, dcaXY, double);
+    DECLARE_SOA_COLUMN(NSigmaPi, nSigmaPi, double);
+    DECLARE_SOA_COLUMN(NSigmaEl, nSigmaEl, double);
+  }
+  DECLARE_SOA_TABLE(SystemTree, "AOD", "SYSTEMTREE", dipi::RunNumber, dipi::NClass, dipi::TotCharge, dipi::M, dipi::Pt, dipi::Rap, dipi::PhiRandom, dipi::PhiCharge);
+  DECLARE_SOA_TABLE(TrackTree, "AOD", "TRACKTREE", dipi::RunNumber, dipi::NClass, dipi::UdCollisionId, dipi::Pt, dipi::Eta, dipi::Sign, dipi::DcaZ, dipi::DcaXY, dipi::NSigmaPi, dipi::NSigmaEl);
+}
+
 struct upcRhoAnalysis {
+  Produces<o2::aod::SystemTree> systemTree;
+  Produces<o2::aod::TrackTree> trackTree;
+
   double PcEtaCut = 0.9; // physics coordination recommendation
 
   Configurable<bool> specifyGapSide{"specifyGapSide", true, "specify gap side for SG/DG produced data"};
@@ -46,17 +76,22 @@ struct upcRhoAnalysis {
 
   Configurable<double> tracksTpcNSigmaPiCut{"tracksTpcNSigmaPiCut", 3.0, "TPC nSigma pion cut"};
   Configurable<double> tracksDcaMaxCut{"tracksDcaMaxCut", 1.0, "max DCA cut on tracks"};
+  Configurable<int> tracksMinItsNClsCut{"tracksMinItsNClsCut", 1, "min ITS clusters cut"};
+  Configurable<double> tracksMaxItsChi2NClCut{"tracksMaxItsChi2NClCut", 36.0, "max ITS chi2/Ncls cut"};
+  Configurable<int> tracksMinTpcNClsCut{"tracksMinTpcNClsCut", 1, "min TPC clusters cut"};
+  Configurable<int> tracksMinTpcNClsCrossedRowsCut{"tracksMinTpcNClsCrossedRowsCut", 70, "min TPC crossed rows cut"};
+  Configurable<double> tracksMaxTpcChi2NClCut{"tracksMaxTpcChi2NClCut", 4.0, "max TPC chi2/Ncls cut"};
 
-  Configurable<double> systemMassMinCut{"systemMassMinCut", 0.5, "min M cut for reco system"};
+  Configurable<double> systemMassMinCut{"systemMassMinCut", 0.4, "min M cut for reco system"};
   Configurable<double> systemMassMaxCut{"systemMassMaxCut", 1.2, "max M cut for reco system"};
   Configurable<double> systemPtCut{"systemPtMaxCut", 0.1, "max pT cut for reco system"};
   Configurable<double> systemYCut{"systemYCut", 0.9, "rapiditiy cut for reco system"};
 
   ConfigurableAxis mAxis{"mAxis", {1000, 0.0, 10.0}, "m (GeV/#it{c}^{2})"};
-  ConfigurableAxis mCutAxis{"mCutAxis", {70, 0.5, 1.2}, "m (GeV/#it{c}^{2})"};
+  ConfigurableAxis mCutAxis{"mCutAxis", {160, 0.4, 1.2}, "m (GeV/#it{c}^{2})"};
   ConfigurableAxis ptAxis{"ptAxis", {1000, 0.0, 10.0}, "p_{T} (GeV/#it{c})"};
-  ConfigurableAxis ptCutAxis{"ptCutAxis", {300, 0.0, 0.3}, "p_{T} (GeV/#it{c})"};
-  ConfigurableAxis pt2Axis{"pt2Axis", {300, 0.0, 0.09}, "p_{T}^{2} (GeV^{2}/#it{c}^{2})"};
+  ConfigurableAxis ptCutAxis{"ptCutAxis", {100, 0.0, 0.1}, "p_{T} (GeV/#it{c})"};
+  ConfigurableAxis pt2Axis{"pt2Axis", {100, 0.0, 0.01}, "p_{T}^{2} (GeV^{2}/#it{c}^{2})"};
   ConfigurableAxis etaAxis{"etaAxis", {180, -0.9, 0.9}, "#eta"};
   ConfigurableAxis yAxis{"yAxis", {180, -0.9, 0.9}, "y"};
   ConfigurableAxis phiAxis{"phiAxis", {180, 0.0, o2::constants::math::TwoPI}, "#phi"};
@@ -81,6 +116,7 @@ struct upcRhoAnalysis {
     registry.add("QC/collisions/hZncTimeVsPosZ", ";z (cm);ZNC time (ns);counts", kTH2D, {{400, -20.0, 20.0}, {300, -1.5, 1.5}});
     registry.add("QC/collisions/hPosZVsZnTimeAdd", ";(ZNA time + ZNC time)/2 (ns);z (cm);counts", kTH2D, {{300, -1.5, 1.5}, {400, -20.0, 20.0}});
     registry.add("QC/collisions/hPosZVsZnTimeSub", ";(ZNA time - ZNC time)/2 (ns);z (cm);counts", kTH2D, {{300, -1.5, 1.5}, {400, -20.0, 20.0}});
+    registry.add("QC/collisions/hSelectedCollisionVertices", ";x (cm);y (cm);counts", kTH2D, {{4000, -0.2, 0.2}, {4000, -0.2, 0.2}});
     // all tracks
     registry.add("QC/tracks/raw/hTpcNSigmaPi", ";TPC n#sigma_{#pi};counts", kTH1D, {{400, -10.0, 30.0}});
     registry.add("QC/tracks/raw/hTofNSigmaPi", ";TOF n#sigma_{#pi};counts", kTH1D, {{400, -20.0, 20.0}});
@@ -89,12 +125,45 @@ struct upcRhoAnalysis {
     registry.add("QC/tracks/raw/hItsNCls", ";ITS N_{cls};counts", kTH1D, {{11, -0.5, 10.5}});
     registry.add("QC/tracks/raw/hItsChi2NCl", ";ITS #chi^{2}/N_{cls};counts", kTH1D, {{1000, 0.0, 100.0}});
     registry.add("QC/tracks/raw/hTpcChi2NCl", ";TPC #chi^{2}/N_{cls};counts", kTH1D, {{1000, 0.0, 100.0}});
-    registry.add("QC/tracks/raw/hTpcNClsFindable", ";TPC N_{cls} findable;counts", kTH1D, {{200, 0.0, 200.0}});
+    registry.add("QC/tracks/raw/hTpcNCls", ";TPC N_{cls} findable;counts", kTH1D, {{200, 0.0, 200.0}});
     registry.add("QC/tracks/raw/hTpcNClsCrossedRows", ";TPC crossed rows;counts", kTH1D, {{200, 0.0, 200.0}});
+    // track quality selections vs system mass
+    registry.add("QC/tracks/2D/mass/leading/hItsNClsVsM", ";m (GeV/#it{c}^{2});ITS N_{cls} of leading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0},{11, -0.5, 10.5}});
+    registry.add("QC/tracks/2D/mass/leading/hItsChi2NClVsM", ";m (GeV/#it{c}^{2});ITS #chi^{2}/N_{cls} of leading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0},{1000, 0.0, 100.0}});
+    registry.add("QC/tracks/2D/mass/leading/hTpcChi2NClVsM", ";m (GeV/#it{c}^{2});TPC #chi^{2}/N_{cls} of leading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0},{1000, 0.0, 100.0}});
+    registry.add("QC/tracks/2D/mass/leading/hTpcNClsVsM", ";m (GeV/#it{c}^{2});TPC N_{cls} of leading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0},{200, 0.0, 200.0}});
+    registry.add("QC/tracks/2D/mass/leading/hTpcNClsCrossedRowsVsM", ";m (GeV/#it{c}^{2});TPC crossed rows of leading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0},{200, 0.0, 200.0}});
+    registry.add("QC/tracks/2D/mass/subleading/hItsNClsVsM", ";m (GeV/#it{c}^{2});ITS N_{cls} of subleading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0},{11, -0.5, 10.5}});
+    registry.add("QC/tracks/2D/mass/subleading/hItsChi2NClVsM", ";m (GeV/#it{c}^{2});ITS #chi^{2}/N_{cls} of subleading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0},{1000, 0.0, 100.0}});
+    registry.add("QC/tracks/2D/mass/subleading/hTpcChi2NClVsM", ";m (GeV/#it{c}^{2});TPC #chi^{2}/N_{cls} of subleading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0},{1000, 0.0, 100.0}});
+    registry.add("QC/tracks/2D/mass/subleading/hTpcNClsVsM", ";m (GeV/#it{c}^{2});TPC N_{cls} of subleading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0},{200, 0.0, 200.0}});
+    registry.add("QC/tracks/2D/mass/subleading/hTpcNClsCrossedRowsVsM", ";m (GeV/#it{c}^{2});TPC crossed rows of subleading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0},{200, 0.0, 200.0}});
+    // track quality selections vs system rapidity
+    registry.add("QC/tracks/2D/rapidity/leading/hItsNClsVsY", ";y;ITS N_{cls} of leading-#it{p} track;counts", kTH2D, {{180, -0.9, 0.9},{11, -0.5, 10.5}});
+    registry.add("QC/tracks/2D/rapidity/leading/hItsChi2NClVsY", ";y;ITS #chi^{2}/N_{cls} of leading-#it{p} track;counts", kTH2D, {{180, -0.9, 0.9},{1000, 0.0, 100.0}});
+    registry.add("QC/tracks/2D/rapidity/leading/hTpcChi2NClVsY", ";y;TPC #chi^{2}/N_{cls} of leading-#it{p} track;counts", kTH2D, {{180, -0.9, 0.9},{1000, 0.0, 100.0}});
+    registry.add("QC/tracks/2D/rapidity/leading/hTpcNClsVsY", ";y;TPC N_{cls} of leading-#it{p} track;counts", kTH2D, {{180, -0.9, 0.9},{200, 0.0, 200.0}});
+    registry.add("QC/tracks/2D/rapidity/leading/hTpcNClsCrossedRowsVsY", ";y;TPC crossed rows of leading-#it{p} track;counts", kTH2D, {{180, -0.9, 0.9},{200, 0.0, 200.0}});
+    registry.add("QC/tracks/2D/rapidity/subleading/hItsNClsVsY", ";y;ITS N_{cls} of subleading-#it{p} track;counts", kTH2D, {{180, -0.9, 0.9},{11, -0.5, 10.5}});
+    registry.add("QC/tracks/2D/rapidity/subleading/hItsChi2NClVsY", ";y;ITS #chi^{2}/N_{cls} of subleading-#it{p} track;counts", kTH2D, {{180, -0.9, 0.9},{1000, 0.0, 100.0}});
+    registry.add("QC/tracks/2D/rapidity/subleading/hTpcChi2NClVsY", ";y;TPC #chi^{2}/N_{cls} of subleading-#it{p} track;counts", kTH2D, {{180, -0.9, 0.9},{1000, 0.0, 100.0}});
+    registry.add("QC/tracks/2D/rapidity/subleading/hTpcNClsVsY", ";y;TPC N_{cls} of subleading-#it{p} track;counts", kTH2D, {{180, -0.9, 0.9},{200, 0.0, 200.0}});
+    registry.add("QC/tracks/2D/rapidity/subleading/hTpcNClsCrossedRowsVsY", ";y;TPC crossed rows of subleading-#it{p} track;counts", kTH2D, {{180, -0.9, 0.9},{200, 0.0, 200.0}});
+    // track quality selections vs system pT
+    registry.add("QC/tracks/2D/pT/leading/hItsNClsVsPt", ";p_{T} (GeV/#it{c});ITS N_{cls} of leading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0},{11, -0.5, 10.5}});
+    registry.add("QC/tracks/2D/pT/leading/hItsChi2NClVsPt", ";p_{T} (GeV/#it{c});ITS #chi^{2}/N_{cls} of leading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0},{1000, 0.0, 100.0}});
+    registry.add("QC/tracks/2D/pT/leading/hTpcChi2NClVsPt", ";p_{T} (GeV/#it{c});TPC #chi^{2}/N_{cls} of leading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0},{1000, 0.0, 100.0}});
+    registry.add("QC/tracks/2D/pT/leading/hTpcNClsVsPt", ";p_{T} (GeV/#it{c});TPC N_{cls} of leading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0},{200, 0.0, 200.0}});
+    registry.add("QC/tracks/2D/pT/leading/hTpcNClsCrossedRowsVsPt", ";p_{T} (GeV/#it{c});TPC crossed rows of leading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0},{200, 0.0, 200.0}});
+    registry.add("QC/tracks/2D/pT/subleading/hItsNClsVsPt", ";p_{T} (GeV/#it{c});ITS N_{cls} of subleading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0},{11, -0.5, 10.5}});
+    registry.add("QC/tracks/2D/pT/subleading/hItsChi2NClVsPt", ";p_{T} (GeV/#it{c});ITS #chi^{2}/N_{cls} of subleading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0},{1000, 0.0, 100.0}});
+    registry.add("QC/tracks/2D/pT/subleading/hTpcChi2NClVsPt", ";p_{T} (GeV/#it{c});TPC #chi^{2}/N_{cls} of subleading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0},{1000, 0.0, 100.0}});
+    registry.add("QC/tracks/2D/pT/subleading/hTpcNClsVsPt", ";p_{T} (GeV/#it{c});TPC N_{cls} of subleading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0},{200, 0.0, 200.0}});
+    registry.add("QC/tracks/2D/pT/subleading/hTpcNClsCrossedRowsVsPt", ";p_{T} (GeV/#it{c});TPC crossed rows of subleading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0},{200, 0.0, 200.0}});
     // tracks passing selections
-    registry.add("QC/tracks/cut/hTpcNSigmaPi2D", ";TPC n#sigma(#pi_{1});TPC n#sigma(#pi_{2});counts", kTH2D, {{400, -10.0, 30.0}, {400, -10.0, 30.0}});
-    registry.add("QC/tracks/cut/hTpcNSigmaEl2D", ";TPC n#sigma(e_{1});TPC n#sigma(e_{2});counts", kTH2D, {{400, -10.0, 30.0}, {400, -10.0, 30.0}});
-    registry.add("QC/tracks/cut/hTpcSignalVsPt", ";p_{T} (GeV/#it{c});TPC signal;counts", kTH2D, {ptAxis, {500, 0.0, 500.0}});
+    registry.add("QC/tracks/cut/hTpcNSigmaPi2D", ";TPC n#sigma(#pi_{leading});TPC n#sigma(#pi_{subleading});counts", kTH2D, {{400, -10.0, 30.0}, {400, -10.0, 30.0}});
+    registry.add("QC/tracks/cut/hTpcNSigmaEl2D", ";TPC n#sigma(e_{leading});TPC n#sigma(e_{subleading});counts", kTH2D, {{400, -10.0, 30.0}, {400, -10.0, 30.0}});
+    registry.add("QC/tracks/cut/hTpcSignalVsP", ";p (GeV/#it{c});TPC signal;counts", kTH2D, {ptAxis, {500, 0.0, 500.0}});
     registry.add("QC/tracks/cut/hRemainingTracks", ";remaining tracks;counts", kTH1D, {{21, -0.5, 20.5}});
     registry.add("QC/tracks/cut/hDcaXYZ", ";DCA_{z} (cm);DCA_{xy} (cm);counts", kTH2D, {{1000, -5.0, 5.0}, {1000, -5.0, 5.0}});
     // selection counter
@@ -105,19 +174,19 @@ struct upcRhoAnalysis {
     // RECO HISTOS //
     // PIONS
     // no selection
-    registry.add("pions/no-selection/unlike-sign/hPt", ";p_{T}(#pi_{1}) (GeV/#it{c});p_{T}(#pi_{2}) (GeV/#it{c});counts", kTH2D, {ptAxis, ptAxis});
-    registry.add("pions/no-selection/unlike-sign/hEta", ";#eta(#pi_{1});#eta(#pi_{2});counts", kTH2D, {etaAxis, etaAxis});
-    registry.add("pions/no-selection/unlike-sign/hPhi", ";#phi(#pi_{1});#phi(#pi_{2});counts", kTH2D, {phiAxis, phiAxis});
-    registry.add("pions/no-selection/like-sign/hPt", ";p_{T}(#pi_{1}) (GeV/#it{c});p_{T}(#pi_{2}) (GeV/#it{c});counts", kTH2D, {ptAxis, ptAxis});
-    registry.add("pions/no-selection/like-sign/hEta", ";#eta(#pi_{1});#eta(#pi_{2});counts", kTH2D, {etaAxis, etaAxis});
-    registry.add("pions/no-selection/like-sign/hPhi", ";#phi(#pi_{1});#phi(#pi_{2});counts", kTH2D, {phiAxis, phiAxis});
+    registry.add("pions/no-selection/unlike-sign/hPt", ";p_{T}(#pi_{leading}) (GeV/#it{c});p_{T}(#pi_{subleading}) (GeV/#it{c});counts", kTH2D, {ptAxis, ptAxis});
+    registry.add("pions/no-selection/unlike-sign/hEta", ";#eta(#pi_{leading});#eta(#pi_{subleading});counts", kTH2D, {etaAxis, etaAxis});
+    registry.add("pions/no-selection/unlike-sign/hPhi", ";#phi(#pi_{leading});#phi(#pi_{subleading});counts", kTH2D, {phiAxis, phiAxis});
+    registry.add("pions/no-selection/like-sign/hPt", ";p_{T}(#pi_{leading}) (GeV/#it{c});p_{T}(#pi_{subleading}) (GeV/#it{c});counts", kTH2D, {ptAxis, ptAxis});
+    registry.add("pions/no-selection/like-sign/hEta", ";#eta(#pi_{leading});#eta(#pi_{subleading});counts", kTH2D, {etaAxis, etaAxis});
+    registry.add("pions/no-selection/like-sign/hPhi", ";#phi(#pi_{leading});#phi(#pi_{subleading});counts", kTH2D, {phiAxis, phiAxis});
     // selected
-    registry.add("pions/selected/unlike-sign/hPt", ";p_{T}(#pi_{1}) (GeV/#it{c});p_{T}(#pi_{2}) (GeV/#it{c});counts", kTH2D, {ptAxis, ptAxis});
-    registry.add("pions/selected/unlike-sign/hEta", ";#eta(#pi_{1});#eta(#pi_{2});counts", kTH2D, {etaAxis, etaAxis});
-    registry.add("pions/selected/unlike-sign/hPhi", ";#phi(#pi_{1});#phi(#pi_{2});counts", kTH2D, {phiAxis, phiAxis});
-    registry.add("pions/selected/like-sign/hPt", ";p_{T}(#pi_{1}) (GeV/#it{c});p_{T}(#pi_{2}) (GeV/#it{c});counts", kTH2D, {ptAxis, ptAxis});
-    registry.add("pions/selected/like-sign/hEta", ";#eta(#pi_{1});#eta(#pi_{2});counts", kTH2D, {etaAxis, etaAxis});
-    registry.add("pions/selected/like-sign/hPhi", ";#phi(#pi_{1});#phi(#pi_{2});counts", kTH2D, {phiAxis, phiAxis});
+    registry.add("pions/selected/unlike-sign/hPt", ";p_{T}(#pi_{leading}) (GeV/#it{c});p_{T}(#pi_{subleading}) (GeV/#it{c});counts", kTH2D, {ptAxis, ptAxis});
+    registry.add("pions/selected/unlike-sign/hEta", ";#eta(#pi_{leading});#eta(#pi_{subleading});counts", kTH2D, {etaAxis, etaAxis});
+    registry.add("pions/selected/unlike-sign/hPhi", ";#phi(#pi_{leading});#phi(#pi_{subleading});counts", kTH2D, {phiAxis, phiAxis});
+    registry.add("pions/selected/like-sign/hPt", ";p_{T}(#pi_{leading}) (GeV/#it{c});p_{T}(#pi_{subleading}) (GeV/#it{c});counts", kTH2D, {ptAxis, ptAxis});
+    registry.add("pions/selected/like-sign/hEta", ";#eta(#pi_{leading});#eta(#pi_{subleading});counts", kTH2D, {etaAxis, etaAxis});
+    registry.add("pions/selected/like-sign/hPhi", ";#phi(#pi_{leading});#phi(#pi_{subleading});counts", kTH2D, {phiAxis, phiAxis});
 
     // RAW RHOS
     registry.add("system/2pi/raw/unlike-sign/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
@@ -367,7 +436,7 @@ struct upcRhoAnalysis {
     if (requireTof && !track.hasTOF())
       return false;
     registry.fill(HIST("QC/tracks/hSelectionCounter"), 3);
-    if (std::abs(track.dcaZ()) > tracksDcaMaxCut || std::abs(track.dcaXY()) > (0.0182 + 0.0350 / std::pow(track.pt(), 1.01))) // Run 2 dynamic DCA cut
+    if (std::abs(track.dcaZ()) > tracksDcaMaxCut || std::abs(track.dcaXY()) > (0.0105 + 0.0350 / std::pow(track.pt(), 1.01)))
       return false;
     registry.fill(HIST("QC/tracks/hSelectionCounter"), 4);
     if (std::abs(eta(track.px(), track.py(), track.pz())) > PcEtaCut)
@@ -472,21 +541,31 @@ struct upcRhoAnalysis {
 
     // event tagging
     bool XnXn = false, OnOn = false, XnOn = false, OnXn = false; // note: On == 0n...
-    if (collision.energyCommonZNA() < ZNcommonEnergyCut && collision.energyCommonZNC() < ZNcommonEnergyCut)
+    int nClass = -1;
+    if (collision.energyCommonZNA() < ZNcommonEnergyCut && collision.energyCommonZNC() < ZNcommonEnergyCut) {
       OnOn = true;
+      nClass = 0;
+    }
     if (collision.energyCommonZNA() > ZNcommonEnergyCut && std::abs(collision.timeZNA()) < ZNtimeCut &&
-        collision.energyCommonZNC() > ZNcommonEnergyCut && std::abs(collision.timeZNC()) < ZNtimeCut)
+        collision.energyCommonZNC() > ZNcommonEnergyCut && std::abs(collision.timeZNC()) < ZNtimeCut) {
       XnXn = true;
-    if (collision.energyCommonZNA() > ZNcommonEnergyCut && std::abs(collision.timeZNA()) < ZNtimeCut && collision.energyCommonZNC() < ZNcommonEnergyCut)
+      nClass = 3;
+    }
+    if (collision.energyCommonZNA() > ZNcommonEnergyCut && std::abs(collision.timeZNA()) < ZNtimeCut && collision.energyCommonZNC() < ZNcommonEnergyCut) {
       XnOn = true;
-    if (collision.energyCommonZNA() < ZNcommonEnergyCut && collision.energyCommonZNC() > ZNcommonEnergyCut && std::abs(collision.timeZNC()) < ZNtimeCut)
+      nClass = 1;
+    }
+    if (collision.energyCommonZNA() < ZNcommonEnergyCut && collision.energyCommonZNC() > ZNcommonEnergyCut && std::abs(collision.timeZNC()) < ZNtimeCut) {
       OnXn = true;
+      nClass = 2;
+    }
     // vectors for storing selected tracks and their 4-vectors
     std::vector<decltype(tracks.begin())> cutTracks;
     std::vector<ROOT::Math::PxPyPzMVector> cutTracks4Vecs;
 
     int trackCounter = 0;
     for (const auto& track : tracks) {
+      // double p = momentum(track.px(), track.py(), track.pz());
       registry.fill(HIST("QC/tracks/raw/hTpcNSigmaPi"), track.tpcNSigmaPi());
       registry.fill(HIST("QC/tracks/raw/hTofNSigmaPi"), track.tofNSigmaPi());
       registry.fill(HIST("QC/tracks/raw/hTpcNSigmaEl"), track.tpcNSigmaEl());
@@ -494,7 +573,7 @@ struct upcRhoAnalysis {
       registry.fill(HIST("QC/tracks/raw/hItsNCls"), track.itsNCls());
       registry.fill(HIST("QC/tracks/raw/hItsChi2NCl"), track.itsChi2NCl());
       registry.fill(HIST("QC/tracks/raw/hTpcChi2NCl"), track.tpcChi2NCl());
-      registry.fill(HIST("QC/tracks/raw/hTpcNClsFindable"), track.tpcNClsFindable());
+      registry.fill(HIST("QC/tracks/raw/hTpcNCls"), track.tpcNClsFindable() - track.tpcNClsFindableMinusFound());
       registry.fill(HIST("QC/tracks/raw/hTpcNClsCrossedRows"), track.tpcNClsCrossedRows());
       registry.fill(HIST("QC/tracks/hSelectionCounter"), 0);
 
@@ -503,7 +582,7 @@ struct upcRhoAnalysis {
       trackCounter++;
       cutTracks.push_back(track);
       cutTracks4Vecs.push_back(ROOT::Math::PxPyPzMVector(track.px(), track.py(), track.pz(), o2::constants::physics::MassPionCharged)); // apriori assume pion mass
-      registry.fill(HIST("QC/tracks/cut/hTpcSignalVsPt"), track.pt(), track.tpcSignal());
+      registry.fill(HIST("QC/tracks/cut/hTpcSignalVsP"), momentum(track.px(), track.py(), track.pz()), track.tpcSignal());
       registry.fill(HIST("QC/tracks/cut/hDcaXYZ"), track.dcaZ(), track.dcaXY());
     }
     registry.fill(HIST("QC/tracks/cut/hRemainingTracks"), trackCounter);
@@ -511,11 +590,14 @@ struct upcRhoAnalysis {
     if (cutTracks.size() == 2) {
       registry.fill(HIST("QC/tracks/cut/hTpcNSigmaPi2D"), cutTracks[0].tpcNSigmaPi(), cutTracks[1].tpcNSigmaPi());
       registry.fill(HIST("QC/tracks/cut/hTpcNSigmaEl2D"), cutTracks[0].tpcNSigmaEl(), cutTracks[1].tpcNSigmaEl());
+      for (int i = 0; i <= 1; i++)
+        trackTree(collision.runNumber(), nClass, cutTracks[i].udCollisionId(), cutTracks[i].pt(), eta(cutTracks[i].px(), cutTracks[i].py(), cutTracks[i].pz()), cutTracks[i].sign(), cutTracks[i].dcaZ(), cutTracks[i].dcaXY(), cutTracks[i].tpcNSigmaPi(), cutTracks[i].tpcNSigmaEl());
     }
 
     if (!tracksPassPiPID(cutTracks))
       return;
     registry.fill(HIST("QC/tracks/hSelectionCounter"), 6, 2); // weighted by 2 for track pair
+
     // reonstruct system and calculate total charge, save commonly used values into variables
     ROOT::Math::PxPyPzMVector system = reconstructSystem(cutTracks4Vecs);
     int totalCharge = tracksTotalCharge(cutTracks);
@@ -528,22 +610,68 @@ struct upcRhoAnalysis {
     if (nTracks == 2) {
       double phiRandom = getPhiRandom(cutTracks4Vecs);
       double phiCharge = getPhiCharge(cutTracks, cutTracks4Vecs);
+
+      auto leadingMomentumTrack = momentum(cutTracks[0].px(), cutTracks[0].py(), cutTracks[0].pz()) > momentum(cutTracks[1].px(), cutTracks[1].py(), cutTracks[1].pz()) ? cutTracks[0] : cutTracks[1];
+      auto subleadingMomentumTrack = leadingMomentumTrack == cutTracks[0] ? cutTracks[1] : cutTracks[0];
+      double leadingPt = leadingMomentumTrack.pt();
+      double subleadingPt = subleadingMomentumTrack.pt();
+      double leadingEta = eta(leadingMomentumTrack.px(), leadingMomentumTrack.py(), leadingMomentumTrack.pz());
+      double subleadingEta = eta(subleadingMomentumTrack.px(), subleadingMomentumTrack.py(), subleadingMomentumTrack.pz());
+      double leadingPhi = phi(leadingMomentumTrack.px(), leadingMomentumTrack.py());
+      double subleadingPhi = phi(subleadingMomentumTrack.px(), subleadingMomentumTrack.py());
+      // fill 2D track QC histograms
+      // mass
+      registry.fill(HIST("QC/tracks/2D/mass/leading/hItsNClsVsM"), mass, leadingMomentumTrack.itsNCls());
+      registry.fill(HIST("QC/tracks/2D/mass/leading/hItsChi2NClVsM"), mass, leadingMomentumTrack.itsChi2NCl());
+      registry.fill(HIST("QC/tracks/2D/mass/leading/hTpcChi2NClVsM"), mass, leadingMomentumTrack.tpcChi2NCl());
+      registry.fill(HIST("QC/tracks/2D/mass/leading/hTpcNClsVsM"), mass, leadingMomentumTrack.tpcNClsFindable() - leadingMomentumTrack.tpcNClsFindableMinusFound());
+      registry.fill(HIST("QC/tracks/2D/mass/leading/hTpcNClsCrossedRowsVsM"), mass, leadingMomentumTrack.tpcNClsCrossedRows());
+      registry.fill(HIST("QC/tracks/2D/mass/subleading/hItsNClsVsM"), mass, subleadingMomentumTrack.itsNCls());
+      registry.fill(HIST("QC/tracks/2D/mass/subleading/hItsChi2NClVsM"), mass, subleadingMomentumTrack.itsChi2NCl());
+      registry.fill(HIST("QC/tracks/2D/mass/subleading/hTpcChi2NClVsM"), mass, subleadingMomentumTrack.tpcChi2NCl());
+      registry.fill(HIST("QC/tracks/2D/mass/subleading/hTpcNClsVsM"), mass, subleadingMomentumTrack.tpcNClsFindable() - subleadingMomentumTrack.tpcNClsFindableMinusFound());
+      registry.fill(HIST("QC/tracks/2D/mass/subleading/hTpcNClsCrossedRowsVsM"), mass, subleadingMomentumTrack.tpcNClsCrossedRows());
+      // rapidity
+      registry.fill(HIST("QC/tracks/2D/rapidity/leading/hItsNClsVsY"), rapidity, leadingMomentumTrack.itsNCls());
+      registry.fill(HIST("QC/tracks/2D/rapidity/leading/hItsChi2NClVsY"), rapidity, leadingMomentumTrack.itsChi2NCl());
+      registry.fill(HIST("QC/tracks/2D/rapidity/leading/hTpcChi2NClVsY"), rapidity, leadingMomentumTrack.tpcChi2NCl());
+      registry.fill(HIST("QC/tracks/2D/rapidity/leading/hTpcNClsVsY"), rapidity, leadingMomentumTrack.tpcNClsFindable() - leadingMomentumTrack.tpcNClsFindableMinusFound());
+      registry.fill(HIST("QC/tracks/2D/rapidity/leading/hTpcNClsCrossedRowsVsY"), rapidity, leadingMomentumTrack.tpcNClsCrossedRows());
+      registry.fill(HIST("QC/tracks/2D/rapidity/subleading/hItsNClsVsY"), rapidity, subleadingMomentumTrack.itsNCls());
+      registry.fill(HIST("QC/tracks/2D/rapidity/subleading/hItsChi2NClVsY"), rapidity, subleadingMomentumTrack.itsChi2NCl());
+      registry.fill(HIST("QC/tracks/2D/rapidity/subleading/hTpcChi2NClVsY"), rapidity, subleadingMomentumTrack.tpcChi2NCl());
+      registry.fill(HIST("QC/tracks/2D/rapidity/subleading/hTpcNClsVsY"), rapidity, subleadingMomentumTrack.tpcNClsFindable() - subleadingMomentumTrack.tpcNClsFindableMinusFound());
+      registry.fill(HIST("QC/tracks/2D/rapidity/subleading/hTpcNClsCrossedRowsVsY"), rapidity, subleadingMomentumTrack.tpcNClsCrossedRows());
+      // pT
+      registry.fill(HIST("QC/tracks/2D/pT/leading/hItsNClsVsPt"), leadingPt, leadingMomentumTrack.itsNCls());
+      registry.fill(HIST("QC/tracks/2D/pT/leading/hItsChi2NClVsPt"), leadingPt, leadingMomentumTrack.itsChi2NCl());
+      registry.fill(HIST("QC/tracks/2D/pT/leading/hTpcChi2NClVsPt"), leadingPt, leadingMomentumTrack.tpcChi2NCl());
+      registry.fill(HIST("QC/tracks/2D/pT/leading/hTpcNClsVsPt"), leadingPt, leadingMomentumTrack.tpcNClsFindable() - leadingMomentumTrack.tpcNClsFindableMinusFound());
+      registry.fill(HIST("QC/tracks/2D/pT/leading/hTpcNClsCrossedRowsVsPt"), leadingPt, leadingMomentumTrack.tpcNClsCrossedRows());
+      registry.fill(HIST("QC/tracks/2D/pT/subleading/hItsNClsVsPt"), subleadingPt, subleadingMomentumTrack.itsNCls());
+      registry.fill(HIST("QC/tracks/2D/pT/subleading/hItsChi2NClVsPt"), subleadingPt, subleadingMomentumTrack.itsChi2NCl());
+      registry.fill(HIST("QC/tracks/2D/pT/subleading/hTpcChi2NClVsPt"), subleadingPt, subleadingMomentumTrack.tpcChi2NCl());
+      registry.fill(HIST("QC/tracks/2D/pT/subleading/hTpcNClsVsPt"), subleadingPt, subleadingMomentumTrack.tpcNClsFindable() - subleadingMomentumTrack.tpcNClsFindableMinusFound());
+      registry.fill(HIST("QC/tracks/2D/pT/subleading/hTpcNClsCrossedRowsVsPt"), subleadingPt, subleadingMomentumTrack.tpcNClsCrossedRows());
+      // fill tree
+      systemTree(collision.runNumber(), nClass, totalCharge, mass, pT, rapidity, phiRandom, phiCharge);
       // fill raw histograms according to the total charge
       switch (totalCharge) {
         case 0:
-          registry.fill(HIST("pions/no-selection/unlike-sign/hPt"), cutTracks4Vecs[0].Pt(), cutTracks4Vecs[1].Pt());
-          registry.fill(HIST("pions/no-selection/unlike-sign/hEta"), cutTracks4Vecs[0].Eta(), cutTracks4Vecs[1].Eta());
-          registry.fill(HIST("pions/no-selection/unlike-sign/hPhi"), cutTracks4Vecs[0].Phi() + o2::constants::math::PI, cutTracks4Vecs[1].Phi() + o2::constants::math::PI);
+          registry.fill(HIST("pions/no-selection/unlike-sign/hPt"), leadingPt, subleadingPt);
+          registry.fill(HIST("pions/no-selection/unlike-sign/hEta"), leadingEta, subleadingEta);
+          registry.fill(HIST("pions/no-selection/unlike-sign/hPhi"), leadingPhi, subleadingPhi);
           registry.fill(HIST("system/2pi/raw/unlike-sign/hM"), mass);
           registry.fill(HIST("system/2pi/raw/unlike-sign/hPt"), pT);
           registry.fill(HIST("system/2pi/raw/unlike-sign/hPtVsM"), mass, pT);
           registry.fill(HIST("system/2pi/raw/unlike-sign/hY"), rapidity);
+          registry.fill(HIST("QC/collisions/hSelectedCollisionVertices"), collision.posX(), collision.posY());
           break;
 
         case 2:
-          registry.fill(HIST("pions/no-selection/like-sign/hPt"), cutTracks4Vecs[0].Pt(), cutTracks4Vecs[1].Pt());
-          registry.fill(HIST("pions/no-selection/like-sign/hEta"), cutTracks4Vecs[0].Eta(), cutTracks4Vecs[1].Eta());
-          registry.fill(HIST("pions/no-selection/like-sign/hPhi"), cutTracks4Vecs[0].Phi() + o2::constants::math::PI, cutTracks4Vecs[1].Phi() + o2::constants::math::PI);
+          registry.fill(HIST("pions/no-selection/like-sign/hPt"), leadingPt, subleadingPt);
+          registry.fill(HIST("pions/no-selection/like-sign/hEta"), leadingEta, subleadingEta);
+          registry.fill(HIST("pions/no-selection/like-sign/hPhi"), leadingPhi, subleadingPhi);
           registry.fill(HIST("system/2pi/raw/like-sign/positive/hM"), mass);
           registry.fill(HIST("system/2pi/raw/like-sign/positive/hPt"), pT);
           registry.fill(HIST("system/2pi/raw/like-sign/positive/hPtVsM"), mass, pT);
@@ -551,9 +679,9 @@ struct upcRhoAnalysis {
           break;
 
         case -2:
-          registry.fill(HIST("pions/no-selection/like-sign/hPt"), cutTracks4Vecs[0].Pt(), cutTracks4Vecs[1].Pt());
-          registry.fill(HIST("pions/no-selection/like-sign/hEta"), cutTracks4Vecs[0].Eta(), cutTracks4Vecs[1].Eta());
-          registry.fill(HIST("pions/no-selection/like-sign/hPhi"), cutTracks4Vecs[0].Phi() + o2::constants::math::PI, cutTracks4Vecs[1].Phi() + o2::constants::math::PI);
+          registry.fill(HIST("pions/no-selection/like-sign/hPt"), leadingPt, subleadingPt);
+          registry.fill(HIST("pions/no-selection/like-sign/hEta"), leadingEta, subleadingEta);
+          registry.fill(HIST("pions/no-selection/like-sign/hPhi"), leadingPhi, subleadingPhi);
           registry.fill(HIST("system/2pi/raw/like-sign/negative/hM"), mass);
           registry.fill(HIST("system/2pi/raw/like-sign/negative/hPt"), pT);
           registry.fill(HIST("system/2pi/raw/like-sign/negative/hPtVsM"), mass, pT);
@@ -571,9 +699,9 @@ struct upcRhoAnalysis {
       // fill histograms for system passing cuts
       switch (totalCharge) {
         case 0:
-          registry.fill(HIST("pions/selected/unlike-sign/hPt"), cutTracks4Vecs[0].Pt(), cutTracks4Vecs[1].Pt());
-          registry.fill(HIST("pions/selected/unlike-sign/hEta"), cutTracks4Vecs[0].Eta(), cutTracks4Vecs[1].Eta());
-          registry.fill(HIST("pions/selected/unlike-sign/hPhi"), cutTracks4Vecs[0].Phi() + o2::constants::math::PI, cutTracks4Vecs[1].Phi() + o2::constants::math::PI);
+          registry.fill(HIST("pions/selected/unlike-sign/hPt"), leadingPt, subleadingPt);
+          registry.fill(HIST("pions/selected/unlike-sign/hEta"), leadingEta, subleadingEta);
+          registry.fill(HIST("pions/selected/unlike-sign/hPhi"), leadingPhi, subleadingPhi);
           registry.fill(HIST("system/2pi/cut/no-selection/unlike-sign/hM"), mass);
           registry.fill(HIST("system/2pi/cut/no-selection/unlike-sign/hPt"), pT);
           registry.fill(HIST("system/2pi/cut/no-selection/unlike-sign/hPt2"), pTsquare);
@@ -642,9 +770,9 @@ struct upcRhoAnalysis {
           break;
 
         case 2:
-          registry.fill(HIST("pions/selected/like-sign/hPt"), cutTracks4Vecs[0].Pt(), cutTracks4Vecs[1].Pt());
-          registry.fill(HIST("pions/selected/like-sign/hEta"), cutTracks4Vecs[0].Eta(), cutTracks4Vecs[1].Eta());
-          registry.fill(HIST("pions/selected/like-sign/hPhi"), cutTracks4Vecs[0].Phi() + o2::constants::math::PI, cutTracks4Vecs[1].Phi() + o2::constants::math::PI);
+          registry.fill(HIST("pions/selected/like-sign/hPt"), leadingPt, subleadingPt);
+          registry.fill(HIST("pions/selected/like-sign/hEta"), leadingEta, subleadingEta);
+          registry.fill(HIST("pions/selected/like-sign/hPhi"), leadingPhi, subleadingPhi);
           registry.fill(HIST("system/2pi/cut/no-selection/like-sign/positive/hM"), mass);
           registry.fill(HIST("system/2pi/cut/no-selection/like-sign/positive/hPt"), pT);
           registry.fill(HIST("system/2pi/cut/no-selection/like-sign/positive/hPt2"), pTsquare);
@@ -713,9 +841,9 @@ struct upcRhoAnalysis {
           break;
 
         case -2:
-          registry.fill(HIST("pions/selected/like-sign/hPt"), cutTracks4Vecs[0].Pt(), cutTracks4Vecs[1].Pt());
-          registry.fill(HIST("pions/selected/like-sign/hEta"), cutTracks4Vecs[0].Eta(), cutTracks4Vecs[1].Eta());
-          registry.fill(HIST("pions/selected/like-sign/hPhi"), cutTracks4Vecs[0].Phi() + o2::constants::math::PI, cutTracks4Vecs[1].Phi() + o2::constants::math::PI);
+          registry.fill(HIST("pions/selected/like-sign/hPt"), leadingPt, subleadingPt);
+          registry.fill(HIST("pions/selected/like-sign/hEta"), leadingEta, subleadingEta);
+          registry.fill(HIST("pions/selected/like-sign/hPhi"), leadingPhi, subleadingPhi);
           registry.fill(HIST("system/2pi/cut/no-selection/like-sign/negative/hM"), mass);
           registry.fill(HIST("system/2pi/cut/no-selection/like-sign/negative/hPt"), pT);
           registry.fill(HIST("system/2pi/cut/no-selection/like-sign/negative/hPt2"), pTsquare);
