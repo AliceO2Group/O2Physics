@@ -991,27 +991,27 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       }
       if (subGroupStr.Contains("dimuon-polarization-he")) {
         int varspTHE[4] = {VarManager::kMass, VarManager::kPt, VarManager::kCosThetaHE, VarManager::kPhiHE};
-        int varsFT0CCentHE[4] = {VarManager::kMass, VarManager::kCentFT0C, VarManager::kCosThetaHE, VarManager::kPhiHE};
+        int varsrapHE[4] = {VarManager::kMass, VarManager::kRap, VarManager::kCosThetaHE, VarManager::kPhiHE};
         int binspT[4] = {100, 20, 20, 20};
-        int binsCent[4] = {100, 20, 20, 20};
+        int binsy[4] = {100, 10, 20, 20};
         double xminpT[4] = {1., 0., -1., -3.14};
         double xmaxpT[4] = {5., 20., 1., +3.14};
-        double xminCent[4] = {1., 0., -1., -3.14};
-        double xmaxCent[4] = {5., 100., 1., +3.14};
+        double xminy[4] = {1., 2.5, -1., -3.14};
+        double xmaxy[4] = {5., 4.0, 1., +3.14};
         hm->AddHistogram(histClass, "Mass_Pt_cosThetaHE_phiHE", "", 4, varspTHE, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
-        hm->AddHistogram(histClass, "Mass_CentFT0C_cosThetaHE_phiHE", "", 4, varsFT0CCentHE, binsCent, xminCent, xmaxCent, 0, -1, kFALSE);
+        hm->AddHistogram(histClass, "Mass_y_cosThetaHE_phiHE", "", 4, varsrapHE, binsy, xminy, xmaxy, 0, -1, kFALSE);
       }
       if (subGroupStr.Contains("dimuon-polarization-cs")) {
         int varspTCS[4] = {VarManager::kMass, VarManager::kPt, VarManager::kCosThetaCS, VarManager::kPhiCS};
-        int varsFT0CCentCS[4] = {VarManager::kMass, VarManager::kCentFT0C, VarManager::kCosThetaCS, VarManager::kPhiCS};
+        int varsrapCS[4] = {VarManager::kMass, VarManager::kRap, VarManager::kCosThetaCS, VarManager::kPhiCS};
         int binspT[4] = {100, 20, 20, 20};
-        int binsCent[4] = {100, 20, 20, 20};
+        int binsy[4] = {100, 10, 20, 20};
         double xminpT[4] = {1., 0., -1., -3.14};
         double xmaxpT[4] = {5., 20., 1., +3.14};
-        double xminCent[4] = {1., 0., -1., -3.14};
-        double xmaxCent[4] = {5., 100., 1., +3.14};
+        double xminy[4] = {1., 2.5, -1., -3.14};
+        double xmaxy[4] = {5., 4.0, 1., +3.14};
         hm->AddHistogram(histClass, "Mass_Pt_cosThetaCS_phiCS", "", 4, varspTCS, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
-        hm->AddHistogram(histClass, "Mass_CentFT0C_cosThetaCS_phiCS", "", 4, varsFT0CCentCS, binsCent, xminCent, xmaxCent, 0, -1, kFALSE);
+        hm->AddHistogram(histClass, "Mass_y_cosThetaCS_phiCS", "", 4, varsrapCS, binsy, xminy, xmaxy, 0, -1, kFALSE);
       }
       if (subGroupStr.Contains("dimuon-rap")) {
         int vars[4] = {VarManager::kMass, VarManager::kPt, VarManager::kCentFT0C, VarManager::kRap};
