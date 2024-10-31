@@ -31,6 +31,7 @@
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/HFC/DataModel/CorrelationTables.h"
 #include "PWGHF/HFC/Utils/utilsCorrelations.h"
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis;
