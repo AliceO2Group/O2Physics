@@ -37,6 +37,11 @@
 #include <utility>
 #include <vector>
 
+#include <utility>
+#include <map>
+#include <string>
+#include <vector>
+
 using namespace o2;
 using namespace o2::framework;
 
