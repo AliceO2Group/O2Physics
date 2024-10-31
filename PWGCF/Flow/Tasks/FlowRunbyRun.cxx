@@ -106,8 +106,7 @@ struct FlowRunbyRun {
     ccdb->setCreatedNotAfter(nolaterthan.value);
 
     // Add output histograms to the registry
-    std::vector<int> temp = cfgRunNumbers;
-    RunNumbers = temp;
+    RunNumbers = cfgRunNumbers;
     for (auto& runNumber : RunNumbers) {
       CreateOutputObjectsForRun(runNumber);
     }
