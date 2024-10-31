@@ -11,6 +11,8 @@
 #ifndef PWGLF_DATAMODEL_V0SELECTORTABLES_H_
 #define PWGLF_DATAMODEL_V0SELECTORTABLES_H_
 
+#include <cstdint>
+#include <Framework/ASoA.h>
 namespace o2::aod
 {
 
@@ -35,20 +37,12 @@ DECLARE_SOA_DYNAMIC_COLUMN(IsRejectedCandidate, isRejectedCandidate, //! Flag to
                            [](uint8_t flag) -> bool { return flag & o2::aod::v0flags::FREJECTED; });
 } // namespace v0flags
 
-DECLARE_SOA_TABLE(V0SignalFlags, "AOD", "V0SIGNALFLAGS",
-                  v0flags::SignalFlag,
-                  v0flags::IsK0SCandidate<v0flags::SignalFlag>,
-                  v0flags::IsLambdaCandidate<v0flags::SignalFlag>,
-                  v0flags::IsAntiLambdaCandidate<v0flags::SignalFlag>,
-                  v0flags::IsRejectedCandidate<v0flags::SignalFlag>);
-
-DECLARE_SOA_TABLE(StoredV0SignalFlags, "AOD1", "V0SIGNALFLAGS",
-                  v0flags::SignalFlag,
-                  v0flags::IsK0SCandidate<v0flags::SignalFlag>,
-                  v0flags::IsLambdaCandidate<v0flags::SignalFlag>,
-                  v0flags::IsAntiLambdaCandidate<v0flags::SignalFlag>,
-                  v0flags::IsRejectedCandidate<v0flags::SignalFlag>,
-                  o2::soa::Marker<1>);
+DECLARE_SOA_TABLE_STAGED(V0SignalFlags, "V0SIGNALFLAGS",
+                         v0flags::SignalFlag,
+                         v0flags::IsK0SCandidate<v0flags::SignalFlag>,
+                         v0flags::IsLambdaCandidate<v0flags::SignalFlag>,
+                         v0flags::IsAntiLambdaCandidate<v0flags::SignalFlag>,
+                         v0flags::IsRejectedCandidate<v0flags::SignalFlag>);
 
 } // namespace o2::aod
 
