@@ -66,6 +66,7 @@ DECLARE_SOA_COLUMN(IsINELgt0, isINELgt0, bool);               //! INEL>0
 DECLARE_SOA_COLUMN(IsTriggerTVX, isTriggerTVX, bool);         //! TriggerTVX
 DECLARE_SOA_COLUMN(IsInSel8, isInSel8, bool);                 //! InSel8
 DECLARE_SOA_COLUMN(IsInAfterAllCuts, isInAfterAllCuts, bool); //! InAfterAllCuts
+DECLARE_SOA_COLUMN(ImpactParameter, impactParameter, float);  //! ImpactParameter
 
 } // namespace resocollision
 DECLARE_SOA_TABLE(ResoCollisions, "AOD", "RESOCOLLISION",
@@ -81,7 +82,8 @@ DECLARE_SOA_TABLE(ResoCollisions, "AOD", "RESOCOLLISION",
                   resocollision::EvtPlResAC,
                   resocollision::EvtPlResBC,
                   resocollision::BMagField,
-                  timestamp::Timestamp);
+                  timestamp::Timestamp,
+                  evsel::NumTracksInTimeRange);
 using ResoCollision = ResoCollisions::iterator;
 
 DECLARE_SOA_TABLE(ResoMCCollisions, "AOD", "RESOMCCOL",
@@ -89,7 +91,8 @@ DECLARE_SOA_TABLE(ResoMCCollisions, "AOD", "RESOMCCOL",
                   resocollision::IsINELgt0,
                   resocollision::IsTriggerTVX,
                   resocollision::IsInSel8,
-                  resocollision::IsInAfterAllCuts);
+                  resocollision::IsInAfterAllCuts,
+                  resocollision::ImpactParameter);
 using ResoMCCollision = ResoMCCollisions::iterator;
 
 // Resonance Daughters

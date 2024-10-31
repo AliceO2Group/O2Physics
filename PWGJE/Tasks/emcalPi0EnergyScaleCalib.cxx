@@ -201,7 +201,7 @@ struct Pi0EnergyScaleCalibTask {
   Configurable<float> mMinEnergyCut{"MinEnergyCut", 0.7, "apply min cluster energy cut"};
   Configurable<int> mMinNCellsCut{"MinNCellsCut", 1, "apply min cluster number of cell cut"};
   Configurable<float> mMinOpenAngleCut{"OpeningAngleCut", 0.0202, "apply min opening angle cut"};
-  Configurable<std::string> mClusterDefinition{"clusterDefinition", "kV3Default", "cluster definition to be selected, e.g. V3Default"};
+  Configurable<int> mClusterDefinition{"clusterDefinition", 10, "cluster definition to be selected, e.g. 10 = kV3Default"};
   Configurable<bool> mRequireBothPhotonsFromAcceptance{"RequireBothPhotonsFromAcceptance", 0, "Require both photons to be from the same acceptance category"};
   Configurable<int> mAcceptanceRestrictionType{"AcceptanceRestrictionType", 0, "0: No restriction, 1: Ignore behind TRD, 2: Only Behind TRD, 3: Only EMCal, 4: OnlyDCal, 5: Remove clusters on edges"};
 
@@ -213,8 +213,7 @@ struct Pi0EnergyScaleCalibTask {
   // define cluster filter. It selects only those clusters which are of the type
   // specified in the string mClusterDefinition,e.g. kV3Default, which is V3 clusterizer with default
   // clusterization parameters
-  o2::aod::EMCALClusterDefinition clusDef = o2::aod::emcalcluster::getClusterDefinitionFromString(mClusterDefinition.value);
-  Filter clusterDefinitionSelection = o2::aod::emcalcluster::definition == static_cast<int>(clusDef);
+  Filter clusterDefinitionSelection = o2::aod::emcalcluster::definition == mClusterDefinition;
 
   // define container for photons
   std::vector<Photon> mPhotons;

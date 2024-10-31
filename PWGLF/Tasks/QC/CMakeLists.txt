@@ -44,6 +44,12 @@ o2physics_add_dpl_workflow(its-tpc-matching-qa
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(strangeness-tracking-qc
+    SOURCES strangenessTrackingQC.cxx
+    PUBLIC_LINK_LIBRARIES O2::Framework O2::ReconstructionDataFormats O2Physics::AnalysisCore O2::DetectorsBase
+    COMPONENT_NAME Analysis)
+
+
 o2physics_add_dpl_workflow(mc-signal-loss
     SOURCES mcSignalLoss.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -96,10 +102,25 @@ o2physics_add_dpl_workflow(kfstrangenessstudy
 
 o2physics_add_dpl_workflow(findable-study
     SOURCES findableStudy.cxx
-    PUBLIC_LINK_LIBRARIES O2::DetectorsBase O2Physics::AnalysisCore
+    PUBLIC_LINK_LIBRARIES O2::DetectorsBase O2Physics::AnalysisCore O2Physics::v0SelectionGroup
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(mcinelgt0
     SOURCES mcinelgt0.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(tracked-cascade-properties
+    SOURCES tracked_cascade_properties.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(mc-particle-predictions
+    SOURCES mcParticlePrediction.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(strange-derived-qa
+    SOURCES strangederivedqa.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)

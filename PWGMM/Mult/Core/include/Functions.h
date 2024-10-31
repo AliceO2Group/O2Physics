@@ -11,31 +11,143 @@
 
 #ifndef PWGMM_MULT_CORE_INCLUDE_FUNCTIONS_H_
 #define PWGMM_MULT_CORE_INCLUDE_FUNCTIONS_H_
-#include "Common/DataModel/Centrality.h"
 
 namespace pwgmm::mult
 {
-using namespace o2;
+template <typename MCC>
+concept has_hepmc_xs = requires(MCC::iterator const& mcc) {
+  mcc.xsectGen();
+};
 
-// helper function to determine if collision/mccollison type contains centrality
-template <typename T>
-static constexpr bool hasSimCent()
+template <typename MCC>
+concept has_hepmc_pid = requires(MCC::iterator const& mcc) {
+  mcc.processId();
+};
+
+template <typename MCC>
+concept has_hepmc_pdf = requires(MCC::iterator const& mcc) {
+  mcc.pdfId1();
+  mcc.pdfId2();
+};
+
+template <typename MCC>
+concept has_hepmc_hi = requires(MCC::iterator const& mcc) {
+  mcc.ncollHard();
+  mcc.ncoll();
+};
+
+template <typename C>
+concept has_FT0C = requires(C::iterator const& c) {
+  c.centFT0C();
+};
+
+template <typename IC>
+concept iterator_with_FT0C = requires(IC const& c) {
+  c.centFT0C();
+};
+
+template <typename IC>
+concept iterator_with_FT0M = requires(IC const& c) {
+  c.centFT0M();
+};
+
+template <typename C>
+concept has_FT0M = requires(C::iterator const& c) {
+  c.centFT0M();
+};
+
+template <typename C>
+concept has_genFT0C = requires(C::iterator const& c) {
+  c.gencentFT0C();
+};
+
+template <typename C>
+concept has_genFT0M = requires(C::iterator const& c) {
+  c.gencentFT0M();
+};
+
+template <typename C>
+concept iterator_with_genFT0C = requires(C const& c) {
+  c.gencentFT0C();
+};
+
+template <typename C>
+concept iterator_with_genFT0M = requires(C const& c) {
+  c.gencentFT0M();
+};
+
+template <typename C>
+concept has_reco_cent = has_FT0C<C> || has_FT0M<C>;
+
+template <typename C>
+concept has_gen_cent = has_genFT0C<C> && has_genFT0M<C>;
+
+template <typename MCC>
+concept has_Centrality = requires(MCC::iterator const& mcc) {
+  mcc.centrality();
+};
+
+template <typename MCC>
+concept iterator_with_Centrality = requires(MCC const& mcc) {
+  mcc.centrality();
+};
+
+template <typename C>
+  requires(!(iterator_with_FT0C<C> || iterator_with_FT0M<C>))
+static float getRecoCent(C const&)
 {
-  if constexpr (!soa::is_soa_join_v<T>) {
-    return false;
-  } else {
-    return T::template contains<aod::HepMCHeavyIons>();
-  }
+  return -1;
 }
 
-template <typename T>
-static constexpr bool hasRecoCent()
+template <iterator_with_FT0C C>
+static float getRecoCent(C const& collision)
 {
-  if constexpr (!soa::is_soa_join_v<T>) {
-    return false;
-  } else {
-    return T::template contains<aod::CentFT0Cs>() || T::template contains<aod::CentFT0Ms>();
-  }
+  return collision.centFT0C();
+}
+
+template <iterator_with_FT0M C>
+static float getRecoCent(C const& collision)
+{
+  return collision.centFT0M();
+}
+
+template <typename MCC>
+  requires(!iterator_with_genFT0C<MCC>)
+static float getGenCentFT0C(MCC const&)
+{
+  return -1;
+}
+
+template <typename MCC>
+  requires(!iterator_with_genFT0M<MCC>)
+static float getGenCentFT0M(MCC const&)
+{
+  return -1;
+}
+
+template <iterator_with_genFT0C MCC>
+static float getGenCentFT0C(MCC const& mccollision)
+{
+  return mccollision.gencentFT0C();
+}
+
+template <iterator_with_genFT0M MCC>
+static float getGenCentFT0M(MCC const& mccollision)
+{
+  return mccollision.gencentFT0M();
+}
+
+template <typename MCC>
+  requires(!iterator_with_Centrality<MCC>)
+static float getSimCent(MCC const&)
+{
+  return -1;
+}
+
+template <iterator_with_Centrality MCC>
+static float getSimCent(MCC const& mccollision)
+{
+  return mccollision.centrality();
 }
 } // namespace pwgmm::mult
 

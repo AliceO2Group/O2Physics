@@ -68,7 +68,7 @@ struct strangenessFilter {
   HistogramRegistry QAHistosTriggerParticles{"QAHistosTriggerParticles", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry QAHistosStrangenessTracking{"QAHistosStrangenessTracking", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry EventsvsMultiplicity{"EventsvsMultiplicity", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  OutputObj<TH1D> hProcessedEvents{TH1D("hProcessedEvents", "Strangeness - event filtered;; Number of events", 14, -1., 13.)};
+  OutputObj<TH1D> hProcessedEvents{TH1D("hProcessedEvents", "Strangeness - event filtered;; Number of events", 16, -1., 15.)};
   OutputObj<TH1F> hCandidate{TH1F("hCandidate", "; Candidate pass selection; Number of events", 30, 0., 30.)};
   OutputObj<TH1F> hEvtvshMinPt{TH1F("hEvtvshMinPt", " Number of h-Omega events with pT_h higher than thrd; min p_{T, trigg} (GeV/c); Number of events", 11, 0., 11.)};
   OutputObj<TH1F> hhXiPairsvsPt{TH1F("hhXiPairsvsPt", "pt distributions of Xi in events with a trigger particle; #it{p}_{T} (GeV/c); Number of Xi", 100, 0., 10.)};
@@ -195,6 +195,8 @@ struct strangenessFilter {
     hProcessedEvents->GetXaxis()->SetBinLabel(12, aod::filtering::TrackedXi::columnLabel());
     hProcessedEvents->GetXaxis()->SetBinLabel(13, aod::filtering::TrackedOmega::columnLabel());
     hProcessedEvents->GetXaxis()->SetBinLabel(14, aod::filtering::OmegaHighMult::columnLabel());
+    hProcessedEvents->GetXaxis()->SetBinLabel(15, aod::filtering::DoubleOmega::columnLabel());
+    hProcessedEvents->GetXaxis()->SetBinLabel(16, aod::filtering::OmegaXi::columnLabel());
 
     hCandidate->GetXaxis()->SetBinLabel(1, "All");
     hCandidate->GetXaxis()->SetBinLabel(2, "Has_V0");
@@ -403,270 +405,17 @@ struct strangenessFilter {
 
   void fillTriggerTable(bool keepEvent[])
   {
-    strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6], keepEvent[7], keepEvent[8], keepEvent[9]);
+    strgtable(keepEvent[0], keepEvent[1], keepEvent[2], keepEvent[3], keepEvent[4], keepEvent[5], keepEvent[6], keepEvent[7], keepEvent[8], keepEvent[9], keepEvent[10], keepEvent[11]);
   }
 
-  void processRun2(CollisionCandidates const& collision, TrackCandidates const& tracks, Cascades const& fullCasc, DaughterTracks& /*dtracks*/)
-  {
-    // Is event good? [0] = Omega, [1] = high-pT hadron + Xi, [2] = 2Xi, [3] = 3Xi, [4] = 4Xi, [5] single-Xi, [6] Omega with high radius
-    // [7] tracked Xi, [8] tracked Omega, [9] tracked V0, [10] tracked 3Body
-    bool keepEvent[9]{}; // explicitly zero-initialised
-
-    if (kint7 && !collision.alias_bit(kINT7)) {
-      fillTriggerTable(keepEvent);
-      return;
-    }
-    if (sel7 && !collision.sel7()) {
-      fillTriggerTable(keepEvent);
-      return;
-    }
-    if (sel8 && !collision.sel8()) {
-      fillTriggerTable(keepEvent);
-      return;
-    }
-    if (TMath::Abs(collision.posZ()) > cutzvertex) {
-      fillTriggerTable(keepEvent);
-      return;
-    }
-
-    if (doextraQA) {
-      EventsvsMultiplicity.fill(HIST("AllEventsvsMultiplicity"), collision.centRun2V0M());
-      QAHistos.fill(HIST("hCentrality"), collision.centRun2V0M());
-    }
-    hProcessedEvents->Fill(0.5);
-
-    // constants
-    const float ctauxi = 4.91;     // from PDG
-    const float ctauomega = 2.461; // from PDG
-
-    // variables
-    float xipos = -1.;
-    float xiproperlifetime = -1.;
-    float omegaproperlifetime = -1.;
-    float xiptotmom = -1.;
-    int xicounter = 0;
-    int xicounterYN = 0;
-    int omegacounter = 0;
-    int omegalargeRcounter = 0;
-    int triggcounterForEstimates = 0;
-    // int triggcounter = 0;
-
-    for (auto& casc : fullCasc) { // loop over cascades
-      triggcounterForEstimates = 0;
-      auto bachelor = casc.bachelor_as<DaughterTracks>();
-      auto posdau = casc.posTrack_as<DaughterTracks>();
-      auto negdau = casc.negTrack_as<DaughterTracks>();
-
-      bool isXi = false;
-      bool isXiYN = false;
-      bool isOmega = false;
-      bool isOmegalargeR = false;
-
-      // Position
-      xipos = std::hypot(casc.x() - collision.posX(), casc.y() - collision.posY(), casc.z() - collision.posZ());
-      // Total momentum
-      xiptotmom = std::hypot(casc.px(), casc.py(), casc.pz());
-      // Proper lifetime
-      xiproperlifetime = o2::constants::physics::MassXiMinus * xipos / (xiptotmom + 1e-13);
-      omegaproperlifetime = o2::constants::physics::MassOmegaMinus * xipos / (xiptotmom + 1e-13);
-
-      if (casc.sign() == 1) {
-        if (TMath::Abs(casc.dcapostopv()) < dcamesontopv) {
-          continue;
-        }
-        if (TMath::Abs(casc.dcanegtopv()) < dcabaryontopv) {
-          continue;
-        }
-        if (TMath::Abs(posdau.tpcNSigmaPi()) > nsigmatpcpi) {
-          continue;
-        }
-        if (TMath::Abs(negdau.tpcNSigmaPr()) > nsigmatpcpr) {
-          continue;
-        }
-      } else {
-        if (TMath::Abs(casc.dcanegtopv()) < dcamesontopv) {
-          continue;
-        }
-        if (TMath::Abs(casc.dcapostopv()) < dcabaryontopv) {
-          continue;
-        }
-        if (TMath::Abs(posdau.tpcNSigmaPr()) > nsigmatpcpr) {
-          continue;
-        }
-        if (TMath::Abs(negdau.tpcNSigmaPi()) > nsigmatpcpi) {
-          continue;
-        }
-      }
-      // these selection differ for Xi and Omegas:
-      if (TMath::Abs(posdau.eta()) > etadau) {
-        continue;
-      }
-      if (TMath::Abs(negdau.eta()) > etadau) {
-        continue;
-      }
-      if (TMath::Abs(bachelor.eta()) > etadau) {
-        continue;
-      }
-      if (TMath::Abs(casc.dcabachtopv()) < dcabachtopv) {
-        continue;
-      }
-      if (casc.v0radius() < v0radius) {
-        continue;
-      }
-      if (casc.cascradius() < cascradius) {
-        continue;
-      }
-      if (casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) < v0cospa) {
-        continue;
-      }
-      if (casc.dcaV0daughters() > dcav0dau) {
-        continue;
-      }
-      if (casc.dcacascdaughters() > dcacascdau) {
-        continue;
-      }
-      if (TMath::Abs(casc.mLambda() - constants::physics::MassLambda) > masslambdalimit) {
-        continue;
-      }
-      if (TMath::Abs(casc.eta()) > eta) {
-        continue;
-      }
-
-      isXi = (TMath::Abs(bachelor.tpcNSigmaPi()) < nsigmatpcpi) &&
-             (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > casccospaxi) &&
-             (casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) > dcav0topv) &&
-             (TMath::Abs(casc.mXi() - o2::constants::physics::MassXiMinus) < ximasswindow) &&
-             (TMath::Abs(casc.mOmega() - o2::constants::physics::MassOmegaMinus) > omegarej) &&
-             (xiproperlifetime < properlifetimefactor * ctauxi) &&
-             (TMath::Abs(casc.yXi()) < rapidity); // add PID on bachelor
-      isXiYN = (TMath::Abs(bachelor.tpcNSigmaPi()) < nsigmatpcpi) &&
-               (casc.cascradius() > lowerradiusXiYN) &&
-               (TMath::Abs(casc.mXi() - o2::constants::physics::MassXiMinus) < ximasswindow) &&
-               (TMath::Abs(casc.mOmega() - o2::constants::physics::MassOmegaMinus) > omegarej) &&
-               (xiproperlifetime < properlifetimefactor * ctauxi) &&
-               (TMath::Abs(casc.yXi()) < rapidity); // add PID on bachelor
-      isOmega = (TMath::Abs(bachelor.tpcNSigmaKa()) < nsigmatpcka) &&
-                (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > casccospaomega) &&
-                (casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) > dcav0topv) &&
-                (casc.cascradius() < upperradiusOmega) &&
-                (TMath::Abs(casc.mOmega() - o2::constants::physics::MassOmegaMinus) < omegamasswindow) &&
-                (TMath::Abs(casc.mXi() - o2::constants::physics::MassXiMinus) > xirej) &&
-                (omegaproperlifetime < properlifetimefactor * ctauomega) &&
-                (TMath::Abs(casc.yOmega()) < rapidity); // add PID on bachelor
-      isOmegalargeR = (TMath::Abs(bachelor.tpcNSigmaKa()) < nsigmatpcka) &&
-                      (casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > casccospaomega) &&
-                      (casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) > dcav0topv) &&
-                      (casc.cascradius() > lowerradiusOmega) &&
-                      (TMath::Abs(casc.mOmega() - o2::constants::physics::MassOmegaMinus) < omegamasswindow) &&
-                      (TMath::Abs(casc.mXi() - o2::constants::physics::MassXiMinus) > xirej) &&
-                      (omegaproperlifetime < properlifetimefactor * ctauomega) &&
-                      (TMath::Abs(casc.yOmega()) < rapidity); // add PID on bachelor
-
-      if (isXi) {
-        // Count number of Xi candidates
-        xicounter++;
-
-        // Plot for estimates
-        if (tracks.size() > 0)
-          triggcounterForEstimates = 1;
-        if (triggcounterForEstimates && (TMath::Abs(casc.mXi() - o2::constants::physics::MassXiMinus) < 0.01))
-          hhXiPairsvsPt->Fill(casc.pt()); // Fill the histogram with all the Xis produced in events with a trigger particle
-        // End plot for estimates
-      }
-      if (isXiYN) {
-        // Xis for YN interactions
-        xicounterYN++;
-      }
-      if (isOmega) {
-        // Count number of Omega candidates
-        omegacounter++;
-      }
-      if (isOmegalargeR) {
-        // Count number of Omega candidates with high radius
-        omegalargeRcounter++;
-      }
-    } // end loop over cascades
-
-    // Omega trigger definition
-    if (omegacounter > 0) {
-      keepEvent[0] = true;
-    }
-
-    // High-pT hadron + Xi trigger definition
-    if (xicounter > 0) {
-      for (auto track : tracks) { // start loop over tracks
-        if (isTrackFilter && !mTrackSelector.IsSelected(track)) {
-          continue;
-        }
-        // triggcounter++;
-        keepEvent[1] = true;
-      } // end loop over tracks
-    }
-
-    // 2Xi trigger definition
-    if (xicounter > 1) {
-      keepEvent[2] = true;
-    }
-
-    // 3Xi trigger definition
-    if (xicounter > 2) {
-      keepEvent[3] = true;
-    }
-
-    // 4Xi trigger definition
-    if (xicounter > 3) {
-      keepEvent[4] = true;
-    }
-
-    // Single-Xi (YN) trigger definition
-    if (xicounterYN > 0) {
-      keepEvent[5] = true;
-    }
-
-    // Omega with high radius trigger definition
-    if (omegalargeRcounter > 0) {
-      keepEvent[6] = true;
-    }
-
-    // Fill centrality dependent histos
-    if (keepEvent[0]) {
-      hProcessedEvents->Fill(2.5);
-    }
-    if (keepEvent[1]) {
-      hProcessedEvents->Fill(3.5);
-    }
-    if (keepEvent[2]) {
-      hProcessedEvents->Fill(4.5);
-    }
-    if (keepEvent[3]) {
-      hProcessedEvents->Fill(5.5);
-    }
-    if (keepEvent[4]) {
-      hProcessedEvents->Fill(6.5);
-    }
-    if (keepEvent[5]) {
-      hProcessedEvents->Fill(7.5);
-    }
-    if (keepEvent[6]) {
-      hProcessedEvents->Fill(8.5);
-    }
-
-    // Filling the table
-    fillTriggerTable(keepEvent);
-  }
-  //
-  PROCESS_SWITCH(strangenessFilter, processRun2, "Process data Run2", true);
-
-  //////////////////////////////////////////////////////
-  ////////// Strangeness Filter - Run 3 MC /////////////
-  //////////////////////////////////////////////////////
-
-  void processRun3(CollisionCandidatesRun3 const& collision, TrackCandidates const& tracks, Cascades const& fullCasc, DaughterTracks& /*dtracks*/,
-                   aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const& /*cascades*/, aod::AssignedTrackedV0s const& /*trackedV0s*/, aod::AssignedTracked3Bodys const& /*tracked3Bodys*/, aod::V0s const&, aod::BCsWithTimestamps const&)
+  void process(CollisionCandidatesRun3 const& collision, TrackCandidates const& tracks, Cascades const& fullCasc, DaughterTracks& /*dtracks*/,
+               aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const& /*cascades*/, aod::AssignedTrackedV0s const& /*trackedV0s*/, aod::AssignedTracked3Bodys const& /*tracked3Bodys*/, aod::V0s const&, aod::BCsWithTimestamps const&)
   {
     // Is event good? [0] = Omega, [1] = high-pT hadron + Omega, [2] = 2Xi, [3] = 3Xi, [4] = 4Xi, [5] single-Xi, [6] Omega with high radius
     // [7] tracked Xi, [8] tracked Omega, [9] Omega + high mult event
-    bool keepEvent[10]{}; // explicitly zero-initialised
+    bool keepEvent[12]{}; // explicitly zero-initialised
+    std::vector<std::array<int, 2>> v0sFromOmegaID;
+    std::vector<std::array<int, 2>> v0sFromXiID;
 
     if (sel8 && !collision.sel8()) {
       fillTriggerTable(keepEvent);
@@ -910,6 +659,7 @@ struct strangenessFilter {
 
         // Count number of Xi candidates
         xicounter++;
+        v0sFromXiID.push_back({casc.posTrackId(), casc.negTrackId()});
 
         // Plot for estimates
         for (auto track : tracks) { // start loop over tracks
@@ -968,6 +718,7 @@ struct strangenessFilter {
 
         // Count number of Omega candidates
         omegacounter++;
+        v0sFromOmegaID.push_back({casc.posTrackId(), casc.negTrackId()});
       }
       if (isOmegalargeR) {
         omegalargeRcounter++;
@@ -1044,19 +795,43 @@ struct strangenessFilter {
         hEvtvshMinPt->Fill(i + 0.5);
     }
 
-    // 2Xi trigger definition
-    if (xicounter > 1) {
-      keepEvent[2] = true;
+    // Double/triple/quad Xi trigger definition
+    if (v0sFromXiID.size() > 0) {
+      std::set<std::array<int, 2>> uniqueXis = {v0sFromXiID.begin(), v0sFromXiID.end()};
+      if (uniqueXis.size() > 1) {
+        keepEvent[2] = true;
+      }
+      if (uniqueXis.size() > 2) {
+        keepEvent[3] = true;
+      }
+      if (uniqueXis.size() > 3) {
+        keepEvent[4] = true;
+      }
     }
 
-    // 3Xi trigger definition
-    if (xicounter > 2) {
-      keepEvent[3] = true;
+    // Double Omega trigger definition
+    if (v0sFromOmegaID.size() > 0) {
+      std::set<std::array<int, 2>> uniqueOmegas = {v0sFromOmegaID.begin(), v0sFromOmegaID.end()};
+      if (uniqueOmegas.size() > 1) {
+        keepEvent[10] = true;
+      }
     }
 
-    // 4Xi trigger definition
-    if (xicounter > 3) {
-      keepEvent[4] = true;
+    // Omega + Xi trigger definition
+    if (v0sFromOmegaID.size() > 0 && v0sFromXiID.size() > 0) {
+      std::set<std::array<int, 2>> uniqueOmegas = {v0sFromOmegaID.begin(), v0sFromOmegaID.end()};
+      std::set<std::array<int, 2>> uniqueXis = {v0sFromXiID.begin(), v0sFromXiID.end()};
+      if (uniqueOmegas.size() > 1 || uniqueXis.size() > 1) {
+        keepEvent[11] = true;
+      } else {
+        // keep only if there is at least one non-overlapping v0
+        for (auto v0Omega : uniqueOmegas) {
+          if (uniqueXis.find(v0Omega) == uniqueXis.end()) {
+            keepEvent[11] = true;
+            break;
+          }
+        }
+      }
     }
 
     // Single-Xi (YN) trigger definition
@@ -1292,12 +1067,16 @@ struct strangenessFilter {
     if (keepEvent[9]) {
       hProcessedEvents->Fill(12.5);
     }
+    if (keepEvent[10]) {
+      hProcessedEvents->Fill(13.5);
+    }
+    if (keepEvent[11]) {
+      hProcessedEvents->Fill(14.5);
+    }
 
     // Filling the table
     fillTriggerTable(keepEvent);
   }
-  //
-  PROCESS_SWITCH(strangenessFilter, processRun3, "Process Run3", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

@@ -21,6 +21,11 @@ o2physics_add_dpl_workflow(pid-tof
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::TOFWorkflowUtils
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(pid-tof-merge
+                    SOURCES pidTOFMerge.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::TOFWorkflowUtils
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(pid-tof-beta
                     SOURCES pidTOFbeta.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::TOFWorkflowUtils
@@ -40,11 +45,6 @@ o2physics_add_dpl_workflow(pid-tpc-base
 
 o2physics_add_dpl_workflow(pid-tpc
                     SOURCES pidTPC.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(pid-tpc-full
-                    SOURCES pidTPCFull.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 

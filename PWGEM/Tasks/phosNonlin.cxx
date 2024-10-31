@@ -266,7 +266,7 @@ struct phosNonlin {
       const Double_t c = mC + mdCi * (i - mNp / 2) + mdCj * (j - mNp / 2);
       const Double_t d = mD + mdDk * (k - mNp / 2) + mdDl * (l - mNp / 2);
       const Double_t e = mE + mdEk * (k - mNp / 2) + mdEl * (l - mNp / 2);
-      return a + b / en + c / en / en + d / TMath::Sqrt(en) + e / en / TMath::Sqrt(en);
+      return a + b / TMath::Sqrt(en) + c / en + d / (en * TMath::Sqrt(en)) + e / (en * en);
     }
     return 0.;
   }

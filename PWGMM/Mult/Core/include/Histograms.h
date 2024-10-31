@@ -12,6 +12,7 @@
 #ifndef PWGMM_MULT_CORE_INCLUDE_HISTOGRAMS_H_
 #define PWGMM_MULT_CORE_INCLUDE_HISTOGRAMS_H_
 #include "TPDGCode.h"
+#include <array>
 #include <string_view>
 
 namespace pwgmm::mult
@@ -44,6 +45,9 @@ static constexpr std::string_view Response = "Events/Response";                 
 static constexpr std::string_view SplitMult = "Events/SplitMult";                 // split reconstructed events vs generated multiplicity
 static constexpr std::string_view EventChi2 = "Events/Control/Chi2";              // collisions chi2 distribution
 static constexpr std::string_view EventTimeRes = "Events/Control/TimeResolution"; // collisions time resolution distribution
+
+static constexpr std::string_view NpvcZvtx = "Events/NpvcZvtx";       // N PV contributors vs vtx Z for selected collisions
+static constexpr std::string_view NpvcZvxtGen = "Events/NpvcZvtxGen"; // -- simulated collisions
 
 static constexpr std::string_view MCVertex = "MCEvents/Vertex";                     // MC vertex position
 static constexpr std::string_view RecoVertex = "Events/Vertex";                     // Reco vertex position

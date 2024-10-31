@@ -118,15 +118,6 @@ struct HfCandidateSelectorB0ToDPi {
       int statusB0ToDPi = 0;
       auto ptCandB0 = hfCandB0.pt();
 
-      // check if flagged as B0 → D π
-      if (!TESTBIT(hfCandB0.hfflag(), hf_cand_b0::DecayType::B0ToDPi)) {
-        hfSelB0ToDPiCandidate(statusB0ToDPi);
-        if (activateQA) {
-          registry.fill(HIST("hSelections"), 1, ptCandB0);
-        }
-        // LOGF(info, "B0 candidate selection failed at hfflag check");
-        continue;
-      }
       SETBIT(statusB0ToDPi, SelectionStep::RecoSkims); // RecoSkims = 0 --> statusB0ToDPi = 1
       if (activateQA) {
         registry.fill(HIST("hSelections"), 2 + SelectionStep::RecoSkims, ptCandB0);

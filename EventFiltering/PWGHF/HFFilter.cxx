@@ -19,6 +19,8 @@
 /// \author Biao Zhang <biao.zhang@cern.ch>, CCNU
 /// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University
 
+#include "TRandom3.h"
+
 #include "CommonConstants/PhysicsConstants.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPMagField.h"
@@ -125,6 +127,10 @@ struct HfFilter { // Main struct for HF triggers
 
   // parameter for Optimisation Tree
   Configurable<bool> applyOptimisation{"applyOptimisation", false, "Flag to enable or disable optimisation"};
+
+  // manual downscale factors
+  Configurable<bool> applyDownscale{"applyDownscale", false, "Flag to enable or disable the application of downscale factors"};
+  Configurable<LabeledArray<double>> downscaleFactors{"downscaleFactors", {defDownscaleFactors[0], kNtriggersHF, 1, hfTriggerNames, labelsDownscaleFactor}, "Downscale factors for each trigger (from 0 to 1)"};
 
   // array of BDT thresholds
   std::array<LabeledArray<double>, kNCharmParticles> thresholdBDTScores;
@@ -289,8 +295,7 @@ struct HfFilter { // Main struct for HF triggers
 
       bool keepEvent[kNtriggersHF]{false};
       if (applyEventSelection && (!collision.sel8() || std::fabs(collision.posZ()) > 11.f || (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && applyTimeFrameBorderCut))) { // safety margin for Zvtx
-
-        tags(keepEvent[kHighPt2P], keepEvent[kHighPt3P], keepEvent[kBeauty3P], keepEvent[kBeauty4P], keepEvent[kFemto2P], keepEvent[kFemto3P], keepEvent[kDoubleCharm2P], keepEvent[kDoubleCharm3P], keepEvent[kDoubleCharmMix], keepEvent[kV0Charm2P], keepEvent[kV0Charm3P], keepEvent[kCharmBarToXiBach], keepEvent[kSigmaCPPK], keepEvent[kSigmaC0K0], keepEvent[kPhotonCharm2P], keepEvent[kPhotonCharm3P]);
+        tags(keepEvent[kHighPt2P], keepEvent[kHighPt3P], keepEvent[kBeauty3P], keepEvent[kBeauty4P], keepEvent[kFemto2P], keepEvent[kFemto3P], keepEvent[kDoubleCharm2P], keepEvent[kDoubleCharm3P], keepEvent[kDoubleCharmMix], keepEvent[kV0Charm2P], keepEvent[kV0Charm3P], keepEvent[kCharmBarToXiBach], keepEvent[kSigmaCPPK], keepEvent[kSigmaC0K0], keepEvent[kPhotonCharm2P], keepEvent[kPhotonCharm3P], keepEvent[kSingleCharm2P], keepEvent[kSingleCharm3P], keepEvent[kSingleNonPromptCharm2P], keepEvent[kSingleNonPromptCharm3P]);
         continue;
       }
 
@@ -376,6 +381,11 @@ struct HfFilter { // Main struct for HF triggers
           continue;
         }
 
+        keepEvent[kSingleCharm2P] = true;
+        if (isBeautyTagged) {
+          keepEvent[kSingleNonPromptCharm2P] = true;
+        }
+
         auto pVec2Prong = RecoDecay::pVec(pVecPos, pVecNeg);
         auto pt2Prong = RecoDecay::pt(pVec2Prong);
 
@@ -418,7 +428,7 @@ struct HfFilter { // Main struct for HF triggers
 
           if (!keepEvent[kBeauty3P] && isBeautyTagged) {
             auto isTrackSelected = helper.isSelectedTrackForSoftPionOrBeauty(track, trackParThird, dcaThird, kBeauty3P);
-            if (isTrackSelected && ((TESTBIT(selD0, 0) && track.sign() < 0) || (TESTBIT(selD0, 1) && track.sign() > 0))) {
+            if (TESTBIT(isTrackSelected, kForBeauty) && ((TESTBIT(selD0, 0) && track.sign() < 0) || (TESTBIT(selD0, 1) && track.sign() > 0))) { // D0 pi- and D0bar pi+
               auto massCand = RecoDecay::m(std::array{pVec2Prong, pVecThird}, std::array{massD0, massPi});
               auto pVecBeauty3Prong = RecoDecay::pVec(pVec2Prong, pVecThird);
               auto ptCand = RecoDecay::pt(pVecBeauty3Prong);
@@ -431,47 +441,50 @@ struct HfFilter { // Main struct for HF triggers
                 if (activateQA) {
                   hMassVsPtB[kBplus]->Fill(ptCand, massCand);
                 }
-              } else if (TESTBIT(isTrackSelected, kSoftPionForBeauty)) {
-                std::array<float, 2> massDausD0{massPi, massKa};
-                auto massD0dau = massD0Cand;
-                if (track.sign() < 0) {
-                  massDausD0[0] = massKa;
-                  massDausD0[1] = massPi;
-                  massD0dau = massD0BarCand;
+              }
+            }
+            if (!keepEvent[kBeauty3P] && TESTBIT(isTrackSelected, kSoftPionForBeauty) && ((TESTBIT(selD0, 0) && track.sign() > 0) || (TESTBIT(selD0, 1) && track.sign() < 0))) { // D0 pi+ and D0bar pi-
+              auto pVecBeauty3Prong = RecoDecay::pVec(pVec2Prong, pVecThird);
+              auto ptCand = RecoDecay::pt(pVecBeauty3Prong);
+              std::array<float, 2> massDausD0{massPi, massKa};
+              auto massD0dau = massD0Cand;
+              if (track.sign() < 0) {
+                massDausD0[0] = massKa;
+                massDausD0[1] = massPi;
+                massD0dau = massD0BarCand;
+              }
+              auto massDstarCand = RecoDecay::m(std::array{pVecPos, pVecNeg, pVecThird}, std::array{massDausD0[0], massDausD0[1], massPi});
+              auto massDiffDstar = massDstarCand - massD0dau;
+              if (cutsPtDeltaMassCharmReso->get(0u, 0u) <= massDiffDstar && massDiffDstar <= cutsPtDeltaMassCharmReso->get(1u, 0u) && ptCand > cutsPtDeltaMassCharmReso->get(2u, 0u)) { // additional check for B0->D*pi polarization studies
+                if (activateQA) {
+                  hMassVsPtC[kNCharmParticles]->Fill(ptCand, massDiffDstar);
                 }
-                auto massDstarCand = RecoDecay::m(std::array{pVecPos, pVecNeg, pVecThird}, std::array{massDausD0[0], massDausD0[1], massPi});
-                auto massDiffDstar = massDstarCand - massD0dau;
-                if (cutsPtDeltaMassCharmReso->get(0u, 0u) <= massDiffDstar && massDiffDstar <= cutsPtDeltaMassCharmReso->get(1u, 0u) && ptCand > cutsPtDeltaMassCharmReso->get(2u, 0u)) { // additional check for B0->D*pi polarization studies
-                  if (activateQA) {
-                    hMassVsPtC[kNCharmParticles]->Fill(ptCand, massDiffDstar);
+                for (const auto& trackIdB : trackIdsThisCollision) { // start loop over tracks
+                  auto trackB = trackIdB.track_as<BigTracksPID>();
+                  if (track.globalIndex() == trackB.globalIndex()) {
+                    continue;
                   }
-                  for (const auto& trackIdB : trackIdsThisCollision) { // start loop over tracks
-                    auto trackB = trackIdB.track_as<BigTracksPID>();
-                    if (track.globalIndex() == trackB.globalIndex()) {
-                      continue;
-                    }
-                    auto trackParFourth = getTrackPar(trackB);
-                    o2::gpu::gpustd::array<float, 2> dcaFourth{trackB.dcaXY(), trackB.dcaZ()};
-                    std::array<float, 3> pVecFourth = trackB.pVector();
-                    if (trackB.collisionId() != thisCollId) {
-                      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParFourth, 2.f, noMatCorr, &dcaFourth);
-                      getPxPyPz(trackParFourth, pVecFourth);
-                    }
+                  auto trackParFourth = getTrackPar(trackB);
+                  o2::gpu::gpustd::array<float, 2> dcaFourth{trackB.dcaXY(), trackB.dcaZ()};
+                  std::array<float, 3> pVecFourth = trackB.pVector();
+                  if (trackB.collisionId() != thisCollId) {
+                    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParFourth, 2.f, noMatCorr, &dcaFourth);
+                    getPxPyPz(trackParFourth, pVecFourth);
+                  }
 
-                    auto isTrackFourthSelected = helper.isSelectedTrackForSoftPionOrBeauty(trackB, trackParFourth, dcaFourth, kBeauty3P);
-                    if (track.sign() * trackB.sign() < 0 && TESTBIT(isTrackFourthSelected, kForBeauty)) {
-                      auto massCandB0 = RecoDecay::m(std::array{pVecBeauty3Prong, pVecFourth}, std::array{massDStar, massPi});
-                      if (std::fabs(massCandB0 - massB0) <= deltaMassBeauty->get(0u, 2u)) {
-                        keepEvent[kBeauty3P] = true;
-                        // fill optimisation tree for D0
-                        if (applyOptimisation) {
-                          optimisationTreeBeauty(thisCollId, 413, pt2Prong, scores[0], scores[1], scores[2], dcaFourth[0]); // pdgCode of D*(2010)+: 413
-                        }
-                        if (activateQA) {
-                          auto pVecBeauty4Prong = RecoDecay::pVec(pVec2Prong, pVecThird, pVecFourth);
-                          auto ptCandBeauty4Prong = RecoDecay::pt(pVecBeauty4Prong);
-                          hMassVsPtB[kB0toDStar]->Fill(ptCandBeauty4Prong, massCandB0);
-                        }
+                  auto isTrackFourthSelected = helper.isSelectedTrackForSoftPionOrBeauty(trackB, trackParFourth, dcaFourth, kBeauty3P);
+                  if (track.sign() * trackB.sign() < 0 && TESTBIT(isTrackFourthSelected, kForBeauty)) {
+                    auto massCandB0 = RecoDecay::m(std::array{pVecBeauty3Prong, pVecFourth}, std::array{massDStar, massPi});
+                    if (std::fabs(massCandB0 - massB0) <= deltaMassBeauty->get(0u, 2u)) {
+                      keepEvent[kBeauty3P] = true;
+                      // fill optimisation tree for D0
+                      if (applyOptimisation) {
+                        optimisationTreeBeauty(thisCollId, 413, pt2Prong, scores[0], scores[1], scores[2], dcaFourth[0]); // pdgCode of D*(2010)+: 413
+                      }
+                      if (activateQA) {
+                        auto pVecBeauty4Prong = RecoDecay::pVec(pVec2Prong, pVecThird, pVecFourth);
+                        auto ptCandBeauty4Prong = RecoDecay::pt(pVecBeauty4Prong);
+                        hMassVsPtB[kB0toDStar]->Fill(ptCandBeauty4Prong, massCandB0);
                       }
                     }
                   }
@@ -588,7 +601,7 @@ struct HfFilter { // Main struct for HF triggers
                 }
 
                 int isTrackSelected = helper.isSelectedTrackForSoftPionOrBeauty(trackBachelor, trackParBachelor, dcaBachelor, -1);
-                if (TESTBIT(isTrackSelected, kSoftPion) && ((TESTBIT(selD0, 0) && trackBachelor.sign() < 0) || (TESTBIT(selD0, 1) && trackBachelor.sign() > 0))) {
+                if (TESTBIT(isTrackSelected, kSoftPion) && ((TESTBIT(selD0, 0) && trackBachelor.sign() > 0) || (TESTBIT(selD0, 1) && trackBachelor.sign() < 0))) {
                   std::array<float, 2> massDausD0{massPi, massKa};
                   auto massD0dau = massD0Cand;
                   if (trackBachelor.sign() < 0) {
@@ -766,6 +779,11 @@ struct HfFilter { // Main struct for HF triggers
 
         if (!std::accumulate(isSignalTagged.begin(), isSignalTagged.end(), 0)) {
           continue;
+        }
+
+        keepEvent[kSingleCharm3P] = true;
+        if (std::accumulate(isBeautyTagged.begin(), isBeautyTagged.end(), 0)) {
+          keepEvent[kSingleNonPromptCharm3P] = true;
         }
 
         if ((!keepOnlyDplusForDouble3Prongs && std::accumulate(isCharmTagged.begin(), isCharmTagged.end(), 0)) || (keepOnlyDplusForDouble3Prongs && isCharmTagged[kDplus - 1])) {
@@ -1010,9 +1028,9 @@ struct HfFilter { // Main struct for HF triggers
 
             auto pVecReso3Prong = RecoDecay::pVec(pVec3Prong, pVecPhoton);
             auto ptCand = RecoDecay::pt(pVecReso3Prong);
-            if (ptCand > cutsPtDeltaMassCharmReso->get(2u, 1u)) {
-              bool isGoodDsStarToKKPi = (cutsPtDeltaMassCharmReso->get(0u, 1u) < massDiffDsStarToKKPi && massDiffDsStarToKKPi < cutsPtDeltaMassCharmReso->get(1u, 1u));
-              bool isGoodDsStarToPiKK = (cutsPtDeltaMassCharmReso->get(0u, 1u) < massDiffDsStarToPiKK && massDiffDsStarToPiKK < cutsPtDeltaMassCharmReso->get(1u, 1u));
+            if (ptCand > cutsPtDeltaMassCharmReso->get(2u, 2u)) {
+              bool isGoodDsStarToKKPi = (cutsPtDeltaMassCharmReso->get(0u, 2u) < massDiffDsStarToKKPi && massDiffDsStarToKKPi < cutsPtDeltaMassCharmReso->get(1u, 2u));
+              bool isGoodDsStarToPiKK = (cutsPtDeltaMassCharmReso->get(0u, 2u) < massDiffDsStarToPiKK && massDiffDsStarToPiKK < cutsPtDeltaMassCharmReso->get(1u, 2u));
               if (isGoodDsStarToKKPi || isGoodDsStarToPiKK) {
                 if (activateQA) {
                   if (isGoodDsStarToKKPi) {
@@ -1282,7 +1300,17 @@ struct HfFilter { // Main struct for HF triggers
         keepEvent[kDoubleCharmMix] = true;
       }
 
-      tags(keepEvent[kHighPt2P], keepEvent[kHighPt3P], keepEvent[kBeauty3P], keepEvent[kBeauty4P], keepEvent[kFemto2P], keepEvent[kFemto3P], keepEvent[kDoubleCharm2P], keepEvent[kDoubleCharm3P], keepEvent[kDoubleCharmMix], keepEvent[kV0Charm2P], keepEvent[kV0Charm3P], keepEvent[kCharmBarToXiBach], keepEvent[kSigmaCPPK], keepEvent[kSigmaC0K0], keepEvent[kPhotonCharm2P], keepEvent[kPhotonCharm3P]);
+      // apply downscale factors, if required
+      if (applyDownscale) {
+        auto rndValue = gRandom->Rndm();
+        for (int iTrigger{0}; iTrigger < kNtriggersHF; ++iTrigger) {
+          if (rndValue > downscaleFactors->get(iTrigger, 0u)) {
+            keepEvent[iTrigger] = false;
+          }
+        }
+      }
+
+      tags(keepEvent[kHighPt2P], keepEvent[kHighPt3P], keepEvent[kBeauty3P], keepEvent[kBeauty4P], keepEvent[kFemto2P], keepEvent[kFemto3P], keepEvent[kDoubleCharm2P], keepEvent[kDoubleCharm3P], keepEvent[kDoubleCharmMix], keepEvent[kV0Charm2P], keepEvent[kV0Charm3P], keepEvent[kCharmBarToXiBach], keepEvent[kSigmaCPPK], keepEvent[kSigmaC0K0], keepEvent[kPhotonCharm2P], keepEvent[kPhotonCharm3P], keepEvent[kSingleCharm2P], keepEvent[kSingleCharm3P], keepEvent[kSingleNonPromptCharm2P], keepEvent[kSingleNonPromptCharm3P]);
 
       if (!std::accumulate(keepEvent, keepEvent + kNtriggersHF, 0)) {
         hProcessedEvents->Fill(1);

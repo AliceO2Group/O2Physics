@@ -53,14 +53,14 @@ struct JetMatchingSub {
   {
   }
 
-  void processDummy(JetCollisions const&)
+  void processDummy(aod::JetCollisions const&)
   {
   }
   PROCESS_SWITCH(JetMatchingSub, processDummy, "Dummy process", true);
 
-  void processJets(JetCollisions const& collisions,
+  void processJets(aod::JetCollisions const& collisions,
                    JetsBase const& jetsBase, JetsTag const& jetsTag,
-                   JetTracks const& tracks, TracksTag const& tracksSub, Candidates const& candidates)
+                   aod::JetTracks const& tracks, TracksTag const& tracksSub, Candidates const& candidates)
   {
 
     // initialise objects used to store the matching index arrays (array in case a mcCollision is split) before filling the matching tables
@@ -79,7 +79,7 @@ struct JetMatchingSub {
       const auto jetsBasePerColl = jetsBase.sliceBy(baseJetsPerCollision, collision.globalIndex());
       const auto jetsTagPerColl = jetsTag.sliceBy(tagJetsPerCollision, collision.globalIndex());
 
-      jetmatchingutilities::doAllMatching<jetsBaseIsMc, jetsTagIsMc>(jetsBasePerColl, jetsTagPerColl, jetsBasetoTagMatchingGeo, jetsBasetoTagMatchingPt, jetsBasetoTagMatchingHF, jetsTagtoBaseMatchingGeo, jetsTagtoBaseMatchingPt, jetsTagtoBaseMatchingHF, candidates, candidates, tracks, tracksSub, doMatchingGeo, doMatchingHf, doMatchingPt, maxMatchingDistance, minPtFraction);
+      jetmatchingutilities::doAllMatching<jetsBaseIsMc, jetsTagIsMc>(jetsBasePerColl, jetsTagPerColl, jetsBasetoTagMatchingGeo, jetsBasetoTagMatchingPt, jetsBasetoTagMatchingHF, jetsTagtoBaseMatchingGeo, jetsTagtoBaseMatchingPt, jetsTagtoBaseMatchingHF, candidates, candidates, tracks, tracks, tracksSub, tracksSub, doMatchingGeo, doMatchingHf, doMatchingPt, maxMatchingDistance, minPtFraction);
     }
 
     for (auto i = 0; i < jetsBase.size(); ++i) {
@@ -103,20 +103,25 @@ using D0ChargedJetMatching = JetMatchingSub<soa::Join<aod::D0ChargedJets, aod::D
                                             aod::D0ChargedJetsMatchedToD0ChargedEventWiseSubtractedJets,
                                             aod::D0ChargedEventWiseSubtractedJetsMatchedToD0ChargedJets,
                                             aod::JTrackD0Subs,
-                                            CandidatesD0Data>;
+                                            aod::CandidatesD0Data>;
 using LcChargedJetMatching = JetMatchingSub<soa::Join<aod::LcChargedJets, aod::LcChargedJetConstituents>,
                                             soa::Join<aod::LcChargedEventWiseSubtractedJets, aod::LcChargedEventWiseSubtractedJetConstituents>,
                                             aod::LcChargedJetsMatchedToLcChargedEventWiseSubtractedJets,
                                             aod::LcChargedEventWiseSubtractedJetsMatchedToLcChargedJets,
                                             aod::JTrackLcSubs,
-                                            CandidatesLcData>;
+                                            aod::CandidatesLcData>;
 /*using BplusChargedJetMatching = JetMatchingSub<soa::Join<aod::BplusChargedJets, aod::BplusChargedJetConstituents>,
                                                soa::Join<aod::BplusChargedEventWiseSubtractedJets, aod::BplusChargedEventWiseSubtractedJetConstituents>,
                                                aod::BplusChargedJetsMatchedToBplusChargedEventWiseSubtractedJets,
                                                aod::BplusChargedEventWiseSubtractedJetsMatchedToBplusChargedJets,
                                                aod::JTrackBplusSubs,
-                                               CandidatesBplusData>;*/
-
+                                               aod::CandidatesBplusData>;*/
+using DielectronChargedJetMatching = JetMatchingSub<soa::Join<aod::DielectronChargedJets, aod::DielectronChargedJetConstituents>,
+                                                    soa::Join<aod::DielectronChargedEventWiseSubtractedJets, aod::DielectronChargedEventWiseSubtractedJetConstituents>,
+                                                    aod::DielectronChargedJetsMatchedToDielectronChargedEventWiseSubtractedJets,
+                                                    aod::DielectronChargedEventWiseSubtractedJetsMatchedToDielectronChargedJets,
+                                                    aod::JTrackDielectronSubs,
+                                                    aod::CandidatesDielectronData>;
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   std::vector<o2::framework::DataProcessorSpec> tasks;
@@ -125,6 +130,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   tasks.emplace_back(adaptAnalysisTask<D0ChargedJetMatching>(cfgc, TaskName{"jet-matching-sub-d0-ch"}));
   tasks.emplace_back(adaptAnalysisTask<LcChargedJetMatching>(cfgc, TaskName{"jet-matching-sub-lc-ch"}));
   // tasks.emplace_back(adaptAnalysisTask<BplusChargedJetMatching>(cfgc, TaskName{"jet-matching-sub-bplus-ch"}));
+  tasks.emplace_back(adaptAnalysisTask<DielectronChargedJetMatching>(cfgc, TaskName{"jet-matching-sub-dielectron-ch"}));
 
   return WorkflowSpec{tasks};
 }

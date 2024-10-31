@@ -46,8 +46,8 @@ void createPbPbAliases(map<int, TString>& mAliases)
 void upload_trigger_aliases_run3()
 {
   map<int, TString> mAliases;
-  // createDefaultAliases(mAliases);
-  createPbPbAliases(mAliases);
+  createDefaultAliases(mAliases);
+  // createPbPbAliases(mAliases);
 
   TObjArray* classNames[kNaliases];
   for (auto& al : mAliases) {
@@ -62,7 +62,7 @@ void upload_trigger_aliases_run3()
   map<string, string> metadata;
 
   // read list of runs from text file
-  std::ifstream f("run3_pbpb2023.txt");
+  std::ifstream f("runs.txt");
   std::vector<int> runs;
   int r = 0;
   while (f >> r) {
@@ -117,7 +117,7 @@ void upload_trigger_aliases_run3()
     TriggerAliases* aliases = new TriggerAliases();
     for (auto& al : mAliases) {
       int aliasId = al.first;
-      LOGP(debug, "alias = {}", al.second);
+      LOGP(debug, "alias = {}", al.second.Data());
       for (const auto& className : *(classNames[aliasId])) {
         TString sname = className->GetName();
         LOGP(debug, " className = {}", sname.Data());
@@ -150,6 +150,6 @@ void upload_trigger_aliases_run3()
       }
     }
     aliases->Print();
-    ccdb.storeAsTFileAny(aliases, "EventSelection/TriggerAliases", metadata, sor, eor + 10000); // adding tolerance of 10s to eor
+    ccdb.storeAsTFileAny(aliases, "EventSelection/TriggerAliases", metadata, sor - 1000, eor + 10000); // adding tolerance of 10s to eor
   }
 }

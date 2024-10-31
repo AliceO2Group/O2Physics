@@ -31,7 +31,7 @@ enum ParticleType {
 };
 
 template <typename T>
-int testPIDhypo(T trackPID)
+int testPIDhypoTPC(T trackPID)
 {
   float nSigmaTPC[3];
   nSigmaTPC[P_ELECTRON] = std::abs(trackPID.tpcNSigmaEl());
@@ -41,6 +41,33 @@ int testPIDhypo(T trackPID)
                                     std::min_element(std::begin(nSigmaTPC), std::end(nSigmaTPC)));
   if (trackPID.hasTPC()) {
     return enumChoiceTPC;
+  } else {
+    return -1;
+  }
+}
+
+template <typename T>
+int testPIDhypo(T trackPID)
+{
+  float nSigmaTPC[3];
+  nSigmaTPC[P_ELECTRON] = std::abs(trackPID.tpcNSigmaEl());
+  nSigmaTPC[P_MUON] = std::abs(trackPID.tpcNSigmaMu());
+  nSigmaTPC[P_PROTON] = std::abs(trackPID.tpcNSigmaPr());
+  int enumChoiceTPC = std::distance(std::begin(nSigmaTPC),
+                                    std::min_element(std::begin(nSigmaTPC), std::end(nSigmaTPC)));
+
+  float nSigmaTOF[3];
+  nSigmaTOF[P_ELECTRON] = std::abs(trackPID.tofNSigmaEl());
+  nSigmaTOF[P_MUON] = std::abs(trackPID.tofNSigmaMu());
+  nSigmaTOF[P_PROTON] = std::abs(trackPID.tofNSigmaPr());
+  int enumChoiceTOF = std::distance(std::begin(nSigmaTOF),
+                                    std::min_element(std::begin(nSigmaTOF), std::end(nSigmaTOF)));
+  if (trackPID.hasTPC() || trackPID.hasTOF()) {
+    if (trackPID.hasTOF()) {
+      return enumChoiceTOF;
+    } else {
+      return enumChoiceTPC;
+    }
   } else {
     return -1;
   }

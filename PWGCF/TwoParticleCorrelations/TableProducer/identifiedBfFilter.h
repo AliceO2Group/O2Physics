@@ -12,6 +12,8 @@
 #ifndef PWGCF_TWOPARTICLECORRELATIONS_TABLEPRODUCER_IDENTIFIEDBFFILTER_H_
 #define PWGCF_TWOPARTICLECORRELATIONS_TABLEPRODUCER_IDENTIFIEDBFFILTER_H_
 
+#include <CCDB/BasicCCDBManager.h>
+
 #include <vector>
 #include <string>
 
@@ -46,13 +48,12 @@ namespace identifiedbffilter
 /// \enum MatchRecoGenSpecies
 /// \brief The species considered by the matching test
 enum MatchRecoGenSpecies {
-  kIdBfCharged = 0, ///< charged particle/track
-  kIdBfElectron,    ///< electron
-  kIdBfMuon,        ///< muon
-  kIdBfPion,        ///< pion
-  kIdBfKaon,        ///< kaon
-  kIdBfProton,      ///< proton
-  kIdBfNoOfSpecies, ///< the number of considered species
+  kIdBfElectron = 0, ///< electron
+  kIdBfPion,         ///< pion
+  kIdBfKaon,         ///< kaon
+  kIdBfProton,       ///< proton
+  kIdBfNoOfSpecies,  ///< the number of considered species
+  kIdBfCharged = 4,
   kWrongSpecies = -1
 };
 
@@ -76,17 +77,15 @@ enum SpeciesPairMatch {
   kIdBfProtonProton      ///< Proton-Proton
 };
 
-const char* speciesName[kIdBfNoOfSpecies] = {"h", "e", "mu", "pi", "ka", "p"};
+const char* speciesName[kIdBfNoOfSpecies] = {"e", "pi", "ka", "p"};
 
-const char* speciesTitle[kIdBfNoOfSpecies] = {"", "e", "#mu", "#pi", "K", "p"};
+const char* speciesTitle[kIdBfNoOfSpecies] = {"e", "#pi", "K", "p"};
 
 const int speciesChargeValue1[kIdBfNoOfSpecies] = {
-  0, //<Unidentified hadron
-  2, //< electron
-  4, //< muon
-  6, //< pion
-  8, //< Kaon
-  10 //< proton
+  0, //< electron
+  2, //< pion
+  4, //< Kaon
+  6  //< proton
 };
 
 /// \enum SystemType
@@ -156,8 +155,6 @@ std::vector<TrackSelection*> trackFilters = {};
 bool dca2Dcut = false;
 float maxDCAz = 1e6f;
 float maxDCAxy = 1e6f;
-
-float minPIDSigma = 3.0;
 
 inline void initializeTrackSelection()
 {
@@ -520,54 +517,40 @@ inline float extractMultiplicity(CollisionObject const& collision, CentMultEstim
 //////////////////////////////////////////////////////////////////////////////////
 /// Centrality selection
 //////////////////////////////////////////////////////////////////////////////////
-
 /// \brief Centrality/multiplicity percentile
 template <typename CollisionObject>
+  requires(o2::aod::HasRun2Centrality<CollisionObject>)
 float getCentMultPercentile(CollisionObject collision)
 {
-  if constexpr (framework::has_type_v<aod::cent::CentRun2V0M, typename CollisionObject::all_columns> ||
-                framework::has_type_v<aod::cent::CentRun2CL0, typename CollisionObject::all_columns> ||
-                framework::has_type_v<aod::cent::CentRun2CL1, typename CollisionObject::all_columns>) {
-    switch (fCentMultEstimator) {
-      case kV0M:
-        return collision.centRun2V0M();
-        break;
-      case kCL0:
-        return collision.centRun2CL0();
-        break;
-      case kCL1:
-        return collision.centRun2CL1();
-        break;
-      default:
-        return 105.0;
-        break;
-    }
+  switch (fCentMultEstimator) {
+    case kV0M:
+      return collision.centRun2V0M();
+    case kCL0:
+      return collision.centRun2CL0();
+    case kCL1:
+      return collision.centRun2CL1();
+    default:
+      return 105.0;
   }
-  if constexpr (framework::has_type_v<aod::cent::CentFV0A, typename CollisionObject::all_columns> ||
-                framework::has_type_v<aod::cent::CentFT0M, typename CollisionObject::all_columns> ||
-                framework::has_type_v<aod::cent::CentFT0A, typename CollisionObject::all_columns> ||
-                framework::has_type_v<aod::cent::CentFT0C, typename CollisionObject::all_columns> ||
-                framework::has_type_v<aod::cent::CentNTPV, typename CollisionObject::all_columns>) {
-    switch (fCentMultEstimator) {
-      case kFV0A:
-        return collision.centFV0A();
-        break;
-      case kFT0M:
-        return collision.centFT0M();
-        break;
-      case kFT0A:
-        return collision.centFT0A();
-        break;
-      case kFT0C:
-        return collision.centFT0C();
-        break;
-      case kNTPV:
-        return collision.centNTPV();
-        break;
-      default:
-        return 105.0;
-        break;
-    }
+}
+
+template <typename CollisionObject>
+  requires(o2::aod::HasCentrality<CollisionObject>)
+float getCentMultPercentile(CollisionObject collision)
+{
+  switch (fCentMultEstimator) {
+    case kFV0A:
+      return collision.centFV0A();
+    case kFT0M:
+      return collision.centFT0M();
+    case kFT0A:
+      return collision.centFT0A();
+    case kFT0C:
+      return collision.centFT0C();
+    case kNTPV:
+      return collision.centNTPV();
+    default:
+      return 105.0;
   }
 }
 

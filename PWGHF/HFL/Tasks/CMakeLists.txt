@@ -9,6 +9,11 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
+o2physics_add_dpl_workflow(task-electron-weak-boson
+                    SOURCES taskElectronWeakBoson.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(task-muon-charm-beauty-separation
                     SOURCES taskMuonCharmBeautySeparation.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -19,12 +24,17 @@ o2physics_add_dpl_workflow(task-single-muon
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(task-single-muon-source
-                    SOURCES taskSingleMuonSource.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(task-single-muon-reader
                     SOURCES taskSingleMuonReader.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGDQCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(task-single-muon-reader-assoc
+                    SOURCES taskSingleMuonReaderAssoc.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGDQCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(task-single-muon-source
+                    SOURCES taskSingleMuonSource.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)

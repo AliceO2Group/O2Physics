@@ -517,6 +517,7 @@ struct DptDptFilterTracks {
   Configurable<bool> cfgOutDebugInfo{"outdebuginfo", false, "Out detailed debug information per track into a text file. Default false"};
   Configurable<bool> cfgFullDerivedData{"fullderiveddata", false, "Produce the full derived data for external storage. Default false"};
   Configurable<int> cfgTrackType{"trktype", 4, "Type of selected tracks: 0 = no selection;1 = Run2 global tracks FB96;3 = Run3 tracks;4 = Run3 tracks MM sel;5 = Run2 TPC only tracks;7 = Run 3 TPC only tracks;30-33 = any/two on 3 ITS,any/all in 7 ITS;40-43 same as 30-33 w tighter DCAxy;50-53 w tighter pT DCAz. Default 4"};
+  Configurable<bool> cfgOnlyInOneSide{"onlyinoneside", false, "select tracks that don't cross the TPC central membrane. Default false"};
   Configurable<o2::analysis::CheckRangeCfg> cfgTraceDCAOutliers{"trackdcaoutliers", {false, 0.0, 0.0}, "Track the generator level DCAxy outliers: false/true, low dcaxy, up dcaxy. Default {false,0.0,0.0}"};
   Configurable<float> cfgTraceOutOfSpeciesParticles{"trackoutparticles", false, "Track the particles which are not e,mu,pi,K,p: false/true. Default false"};
   Configurable<int> cfgRecoIdMethod{"recoidmethod", 0, "Method for identifying reconstructed tracks: 0 No PID, 1 PID, 2 mcparticle, 3 mcparticle only primaries, 4 mcparticle only sec, 5 mcparicle only sec from decays, 6 mcparticle only sec from material. Default 0"};
@@ -572,6 +573,7 @@ struct DptDptFilterTracks {
     traceDCAOutliers = cfgTraceDCAOutliers;
     traceOutOfSpeciesParticles = cfgTraceOutOfSpeciesParticles;
     recoIdMethod = cfgRecoIdMethod;
+    onlyInOneSide = cfgOnlyInOneSide.value;
 
     /* self configure system type and data type */
     /* if the system type is not known at this time, we have to put the initialization somewhere else */
@@ -583,7 +585,8 @@ struct DptDptFilterTracks {
     fPDG = TDatabasePDG::Instance();
 
     /* required ambiguous tracks checks? */
-    if (dofilterDetectorLevelWithoutPIDAmbiguous || dofilterDetectorLevelWithPIDAmbiguous || dofilterRecoWithoutPIDAmbiguous || dofilterRecoWithPIDAmbiguous) {
+    if (dofilterDetectorLevelWithoutPIDAmbiguous || dofilterDetectorLevelWithPIDAmbiguous || dofilterDetectorLevelWithFullPIDAmbiguous ||
+        dofilterRecoWithoutPIDAmbiguous || dofilterRecoWithPIDAmbiguous || dofilterRecoWithFullPIDAmbiguous) {
       checkAmbiguousTracks = true;
     }
 
@@ -837,7 +840,7 @@ struct DptDptFilterTracks {
 
   template <StrongDebugging outdebug, typename TrackObject>
   int8_t trackIdentification(TrackObject const& track);
-  template <StrongDebugging outdebug, typename TrackObject>
+  template <StrongDebugging outdebug, typename CollisionsObject, typename TrackObject>
   int8_t selectTrack(TrackObject const& track);
   template <StrongDebugging outdebug, typename CollisionObjects, typename TrackObject>
   int8_t selectTrackAmbiguousCheck(CollisionObjects const& collisions, TrackObject const& track);
@@ -1101,7 +1104,7 @@ int8_t DptDptFilterTracks::trackIdentification(TrackObject const& track)
   return sp;
 }
 
-template <StrongDebugging outdebug, typename TrackObject>
+template <StrongDebugging outdebug, typename CollisionsObject, typename TrackObject>
 int8_t DptDptFilterTracks::selectTrack(TrackObject const& track)
 {
   using namespace dptdptfilter;
@@ -1111,7 +1114,7 @@ int8_t DptDptFilterTracks::selectTrack(TrackObject const& track)
 
   /* track selection */
   int8_t sp = -127;
-  if (AcceptTrack(track)) {
+  if (AcceptTrack<CollisionsObject>(track)) {
     /* the track has been accepted */
     /* let's identify it */
     sp = trackIdentification<outdebug>(track);
@@ -1166,7 +1169,7 @@ int8_t DptDptFilterTracks::selectTrackAmbiguousCheck(CollisionObjects const& col
     }
   }
 
-  float multiplicityclass = (track.template collision_as<soa::Join<aod::Collisions, aod::DptDptCFCollisionsInfo>>()).centmult();
+  float multiplicityclass = (track.template collision_as<CollisionObjects>()).centmult();
   if (ambiguoustrack) {
     /* keep track of ambiguous tracks */
     fhAmbiguousTrackType->Fill(ambtracktype, multiplicityclass);
@@ -1183,7 +1186,7 @@ int8_t DptDptFilterTracks::selectTrackAmbiguousCheck(CollisionObjects const& col
       /* feedback of no ambiguous tracks only if checks required */
       fhAmbiguousTrackType->Fill(ambtracktype, multiplicityclass);
     }
-    return selectTrack<outdebug>(track);
+    return selectTrack<outdebug, CollisionObjects>(track);
   }
 }
 

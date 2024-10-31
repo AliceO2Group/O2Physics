@@ -16,6 +16,7 @@
 
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Framework/ASoAHelpers.h"
@@ -74,6 +75,7 @@ struct phianalysisTHnSparse {
   ConfigurableAxis ptaxis{"pt-axis", {20, 0., 20.}, "Pt axis binning."};
   ConfigurableAxis vzaxis{"vz-axis", {40, -20., 20.}, "Z vertex position axis binning."};
   ConfigurableAxis multiplicityaxis{"multiplicity-axis", {50, 0., 5000.}, "Multiplicity axis binning."};
+  ConfigurableAxis centralityaxis{"centrality-axis", {20, 0., 100.}, "Centrality axis binning."};
   ConfigurableAxis etaaxis{"eta-axis", {16., -1.0 * static_cast<float>(cut.etatrack), static_cast<float>(cut.etatrack)}, "Pseudorapidity axis binning."};
   ConfigurableAxis rapidityaxis{"rapidity-axis", {10., -1.0 * static_cast<float>(cut.y), static_cast<float>(cut.y)}, "Rapidity axis binning."};
   ConfigurableAxis nsigmaaxisPos{"nsigma-pos-axis", {1, 0., static_cast<float>(cut.tpcnSigmaPos)}, "NSigma of positive particle axis binning in THnSparse."};
@@ -116,11 +118,11 @@ struct phianalysisTHnSparse {
   Filter etaFilter = nabs(aod::track::eta) < static_cast<float>(cut.etatrack);
   Filter dcaFilter = (nabs(o2::aod::track::dcaXY) < static_cast<float>(cut.dcaXY)) && (nabs(o2::aod::track::dcaZ) < static_cast<float>(cut.dcaZ));
 
-  using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults>>;
+  using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms>>;
   using EventCandidate = EventCandidates::iterator;
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullKa>>;
 
-  using EventCandidatesMC = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>>;
+  using EventCandidatesMC = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::McCollisionLabels>>;
   using TrackCandidatesMC = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullKa, aod::McTrackLabels>>;
 
   Partition<TrackCandidates> positive = (aod::track::signed1Pt > 0.0f) && (nabs(o2::aod::pidtpc::tpcNSigmaKa) < std::abs(static_cast<float>(cut.tpcnSigmaPos)));
@@ -136,6 +138,8 @@ struct phianalysisTHnSparse {
     AxisSpec ptAxis = {ptaxis, "p_{T} (GeV/c)", "pt"};
     AxisSpec muAxis = {multiplicityaxis, "N", "mu"};
     AxisSpec mumAxis = {multiplicityaxis, "N", "mum"};
+    AxisSpec ceAxis = {centralityaxis, "N", "ce"};
+    AxisSpec cemAxis = {centralityaxis, "N", "cem"};
     AxisSpec etaAxis = {etaaxis, "#eta", "eta"};
     AxisSpec yAxis = {rapidityaxis, "y", "y"};
     AxisSpec nsAxisPos = {nsigmaaxisPos, fmt::format("nSigma of positive particle ({})", massPos), "ns1"};
@@ -148,7 +152,7 @@ struct phianalysisTHnSparse {
     AxisSpec tpcNClsFoundAxis = {tpcNClsFound_bins, "TPC NCl", "ncl"};
 
     // All axes has to have same order as defined enum o2::analysis::rsn::PairAxisType (name from AxisSpec is taken to compare in o2::analysis::rsn::Output::init())
-    std::vector<AxisSpec> allAxes = {invAxis, ptAxis, muAxis, nsAxisPos, nsAxisNeg, etaAxis, yAxis, vzAxis, mumAxis, vzmAxis};
+    std::vector<AxisSpec> allAxes = {invAxis, ptAxis, muAxis, ceAxis, nsAxisPos, nsAxisNeg, etaAxis, yAxis, vzAxis, mumAxis, cemAxis, vzmAxis};
     std::vector<AxisSpec> allAxes_sys = {tpcNClsFoundAxis};
 
     QA = static_cast<bool>(produce.QA);
@@ -165,6 +169,8 @@ struct phianalysisTHnSparse {
     if (QA) {
       // Event QA
       registry.add("QAEvent/hVtxZ", "", kTH1F, {posZaxis});
+      registry.add("QAEvent/hCent", "", kTH1F, {{20, 0., 100.}});
+      registry.add("QAEvent/hMult", "", kTH1F, {{50, 0., 10000.}});
       registry.add("QAEvent/s4Size", "", kTHnSparseF, {{30, 0., 30.}, {30, 0., 30.}, muAxis, vzAxis});
       registry.add("QAEvent/s2Mult_Vz", "", kTHnSparseF, {axisMultiplicityMixing, axisVertexMixing});
       // Track QA
@@ -181,6 +187,8 @@ struct phianalysisTHnSparse {
       registry.add("QATrack/unlikepm/afterSelection/hTrack1tpcNClsFound", "", kTH1F, {{110, 50., 160.}});
 
       registry.add("QATrack/unlikepm/TPCPID/h2TracknSigma", "", kTH2F, {{120, -6, 6}, {120, -6, 6}});
+
+      registry.add("QAMC/hInvMassTrueFalse", "", kTH1F, {invAxis});
 
       // Mixing QA
       registry.add("QAMixing/s4Mult_Vz", "", kTHnSparseF, {axisMultiplicityMixing, axisMultiplicityMixing, axisVertexMixing, axisVertexMixing});
@@ -218,21 +226,29 @@ struct phianalysisTHnSparse {
   template <typename T>
   float GetMultiplicity(const T& collision)
   {
-    float multiplicity = collision.multFV0C() + collision.multFV0A();
+    float multiplicity = collision.multFT0C() + collision.multFT0A();
     return multiplicity;
   }
+  template <typename T>
+  float GetCentrality(const T& collision)
+  {
+    float centrality = collision.centFT0M();
+    return centrality;
+  }
 
-  double* FillPointPair(double im, double pt, double mu, double ns1, double ns2, double eta, double y, double vz, double mum, double vzm)
+  double* FillPointPair(double im, double pt, double mu, double ce, double ns1, double ns2, double eta, double y, double vz, double mum, double cem, double vzm)
   {
     pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::im)] = im;
     pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::pt)] = pt;
     pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::mu)] = mu;
+    pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::ce)] = ce;
     pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::ns1)] = ns1;
     pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::ns2)] = ns2;
     pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::eta)] = eta;
     pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::y)] = y;
     pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::vz)] = vz;
     pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::mum)] = mum;
+    pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::cem)] = cem;
     pointPair[static_cast<int>(o2::analysis::rsn::PairAxisType::vzm)] = vzm;
 
     return pointPair;
@@ -252,8 +268,11 @@ struct phianalysisTHnSparse {
       LOGF(info, "pos=%lld neg=%lld, Z vertex position: %f [cm], %d, mult:%f.0", posDauthers.size(), negDauthers.size(), collision.posZ(),
            collision.globalIndex(), GetMultiplicity(collision));
 
-    if (QA)
+    if (QA) {
       registry.fill(HIST("QAEvent/hVtxZ"), collision.posZ());
+      registry.fill(HIST("QAEvent/hMult"), GetMultiplicity(collision));
+      registry.fill(HIST("QAEvent/hCent"), GetCentrality(collision));
+    }
 
     for (auto& [track1, track2] : combinations(o2::soa::CombinationsFullIndexPolicy(posDauthers, negDauthers))) {
       if (QA) {
@@ -288,11 +307,13 @@ struct phianalysisTHnSparse {
       pointPair = FillPointPair(mother.Mag(),
                                 mother.Pt(),
                                 GetMultiplicity(collision),
+                                GetCentrality(collision),
                                 (tpcnSigmaPos > 0) ? std::abs(track1.tpcNSigmaKa()) : track1.tpcNSigmaKa(),
                                 (tpcnSigmaNeg > 0) ? std::abs(track2.tpcNSigmaKa()) : track2.tpcNSigmaKa(),
                                 mother.Eta(),
                                 mother.Rapidity(),
                                 collision.posZ(),
+                                0,
                                 0,
                                 0);
       rsnOutput->fillUnlikepm(pointPair);
@@ -315,11 +336,13 @@ struct phianalysisTHnSparse {
         pointPair = FillPointPair(mother.Mag(),
                                   mother.Pt(),
                                   GetMultiplicity(collision),
+                                  GetCentrality(collision),
                                   (tpcnSigmaPos > 0) ? std::abs(track1.tpcNSigmaKa()) : track1.tpcNSigmaKa(),
                                   (tpcnSigmaNeg > 0) ? std::abs(track2.tpcNSigmaKa()) : track2.tpcNSigmaKa(),
                                   mother.Eta(),
                                   mother.Rapidity(),
                                   collision.posZ(),
+                                  0,
                                   0,
                                   0);
 
@@ -341,11 +364,13 @@ struct phianalysisTHnSparse {
         pointPair = FillPointPair(mother.Mag(),
                                   mother.Pt(),
                                   GetMultiplicity(collision),
+                                  GetCentrality(collision),
                                   (tpcnSigmaPos > 0) ? std::abs(track1.tpcNSigmaKa()) : track1.tpcNSigmaKa(),
                                   (tpcnSigmaNeg > 0) ? std::abs(track2.tpcNSigmaKa()) : track2.tpcNSigmaKa(),
                                   mother.Eta(),
                                   mother.Rapidity(),
                                   collision.posZ(),
+                                  0,
                                   0,
                                   0);
 
@@ -397,8 +422,10 @@ struct phianalysisTHnSparse {
       if (!(track1PDG == dautherPosPDG && track2PDG == dautherNegPDG)) {
         continue;
       }
+      n = 0;
       for (auto& mothertrack1 : mctrack1.mothers_as<aod::McParticles>()) {
         for (auto& mothertrack2 : mctrack2.mothers_as<aod::McParticles>()) {
+
           if (mothertrack1.pdgCode() != mothertrack2.pdgCode())
             continue;
 
@@ -414,25 +441,35 @@ struct phianalysisTHnSparse {
           if (std::abs(mothertrack1.pdgCode()) != motherPDG)
             continue;
 
-          n++;
-          if (static_cast<int>(verbose.verboselevel) > 1)
+          if (static_cast<int>(verbose.verboselevel) > 1) {
             LOGF(info, "True: %d, d1=%d (%ld), d2=%d (%ld), mother=%d (%ld)", n, mctrack1.pdgCode(), mctrack1.globalIndex(), mctrack2.pdgCode(), mctrack2.globalIndex(), mothertrack1.pdgCode(), mothertrack1.globalIndex());
+            LOGF(info, "%d px: %f, py=%f, pz=%f, px: %f, py=%f, pz=%f", n, mctrack1.px(), mctrack1.py(), mctrack1.pz(), mctrack2.px(), mctrack2.py(), mctrack2.pz());
+          }
 
           if (!selectedPair(mother, mctrack1, mctrack2))
             continue;
 
+          if (n > 0) {
+            if (QA)
+              registry.fill(HIST("QAMC/hInvMassTrueFalse"), mother.Mag());
+            continue;
+          }
+
           pointPair = FillPointPair(mother.Mag(),
                                     mother.Pt(),
                                     GetMultiplicity(collision),
+                                    GetCentrality(collision),
                                     (tpcnSigmaPos > 0) ? std::abs(track1.tpcNSigmaKa()) : track1.tpcNSigmaKa(),
                                     (tpcnSigmaNeg > 0) ? std::abs(track2.tpcNSigmaKa()) : track2.tpcNSigmaKa(),
                                     mother.Eta(),
                                     mother.Rapidity(),
                                     collision.posZ(),
                                     0,
+                                    0,
                                     0);
 
           rsnOutput->fillUnliketrue(pointPair);
+          n++;
         }
       }
     }
@@ -485,11 +522,13 @@ struct phianalysisTHnSparse {
         pointPair = FillPointPair(mother.Mag(),
                                   mother.Pt(),
                                   0,
+                                  0,
                                   std::abs(static_cast<float>(cut.tpcnSigmaPos) / 2.0),
                                   std::abs(static_cast<float>(cut.tpcnSigmaNeg) / 2.0),
                                   mother.Eta(),
                                   mother.Rapidity(),
                                   mcCollision.posZ(),
+                                  0,
                                   0,
                                   0);
 
@@ -553,12 +592,14 @@ struct phianalysisTHnSparse {
         pointPair = FillPointPair(mother.Mag(),
                                   mother.Pt(),
                                   GetMultiplicity(c1),
+                                  GetCentrality(c1),
                                   (tpcnSigmaPos > 0) ? std::abs(track1.tpcNSigmaKa()) : track1.tpcNSigmaKa(),
                                   (tpcnSigmaNeg > 0) ? std::abs(track2.tpcNSigmaKa()) : track2.tpcNSigmaKa(),
                                   mother.Eta(),
                                   mother.Rapidity(),
                                   c1.posZ(),
                                   GetMultiplicity(c2),
+                                  GetCentrality(c2),
                                   c2.posZ());
 
         rsnOutput->fillMixingpm(pointPair);
@@ -580,12 +621,14 @@ struct phianalysisTHnSparse {
           pointPair = FillPointPair(mother.Mag(),
                                     mother.Pt(),
                                     GetMultiplicity(c1),
+                                    GetCentrality(c1),
                                     (tpcnSigmaPos > 0) ? std::abs(track1.tpcNSigmaKa()) : track1.tpcNSigmaKa(),
                                     (tpcnSigmaNeg > 0) ? std::abs(track2.tpcNSigmaKa()) : track2.tpcNSigmaKa(),
                                     mother.Eta(),
                                     mother.Rapidity(),
                                     c1.posZ(),
                                     GetMultiplicity(c2),
+                                    GetCentrality(c2),
                                     c2.posZ());
 
           rsnOutput->fillMixingpp(pointPair);
@@ -604,12 +647,14 @@ struct phianalysisTHnSparse {
           pointPair = FillPointPair(mother.Mag(),
                                     mother.Pt(),
                                     GetMultiplicity(c1),
+                                    GetCentrality(c1),
                                     (tpcnSigmaPos > 0) ? std::abs(track1.tpcNSigmaKa()) : track1.tpcNSigmaKa(),
                                     (tpcnSigmaNeg > 0) ? std::abs(track2.tpcNSigmaKa()) : track2.tpcNSigmaKa(),
                                     mother.Eta(),
                                     mother.Rapidity(),
                                     c1.posZ(),
                                     GetMultiplicity(c2),
+                                    GetCentrality(c2),
                                     c2.posZ());
 
           rsnOutput->fillMixingmm(pointPair);
@@ -630,12 +675,14 @@ struct phianalysisTHnSparse {
         pointPair = FillPointPair(mother.Mag(),
                                   mother.Pt(),
                                   GetMultiplicity(c1),
+                                  GetCentrality(c1),
                                   (tpcnSigmaPos > 0) ? std::abs(track1.tpcNSigmaKa()) : track1.tpcNSigmaKa(),
                                   (tpcnSigmaNeg > 0) ? std::abs(track2.tpcNSigmaKa()) : track2.tpcNSigmaKa(),
                                   mother.Eta(),
                                   mother.Rapidity(),
                                   c1.posZ(),
                                   GetMultiplicity(c2),
+                                  GetCentrality(c2),
                                   c2.posZ());
 
         rsnOutput->fillMixingmp(pointPair);

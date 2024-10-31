@@ -52,6 +52,8 @@ AxisSpec axisDeltaPhi = {64, -o2::constants::math::PIHalf, 3. * o2::constants::m
 AxisSpec axisPtD = {10, 0., 10., ""};
 AxisSpec axisPtHadron = {11, 0., 11., ""};
 AxisSpec axisPoolBin = {9, 0., 9., ""};
+AxisSpec axisCorrelationState = {2, 0., 2., ""};
+ConfigurableAxis axisMass{"axisMass", {250, 1.65f, 2.15f}, ""};
 
 // definition of vectors for standard ptbin and invariant mass configurables
 const int nPtBinsCorrelations = 12;
@@ -88,7 +90,16 @@ struct HfTaskCorrelationD0Hadrons {
   Configurable<std::vector<double>> sidebandRightInner{"sidebandRightInner", std::vector<double>{vecSidebandRightInner}, "Inner values of right sideband vs pT"};
   Configurable<std::vector<double>> sidebandRightOuter{"sidebandRightOuter", std::vector<double>{vecSidebandRightOuter}, "Outer values of right sideband vs pT"};
   Configurable<std::vector<double>> efficiencyDmeson{"efficiencyDmeson", std::vector<double>{vecEfficiencyDmeson}, "Efficiency values for D meson specie under study"};
+  Configurable<bool> isTowardTransverseAway{"isTowardTransverseAway", false, "Divide into three regions: toward, transverse, and away"};
+  Configurable<double> leadingParticlePtMin{"leadingParticlePtMin", 0., "Min for leading particle pt"};
   Configurable<int> applyEfficiency{"efficiencyFlagD", 1, "Flag for applying efficiency weights"};
+
+  enum Region {
+    Default = 0, // 默认值
+    Toward,
+    Away,
+    Transverse
+  };
 
   HistogramRegistry registry{
     "registry",
@@ -165,8 +176,20 @@ struct HfTaskCorrelationD0Hadrons {
      {"hCorrel2DVsPtGen", stringMcParticles + stringDeltaPhi + stringDeltaEta + stringPtD + "entries", {HistType::kTHnSparseD, {{axisDeltaPhi}, {axisDeltaEta}, {axisPtD}, {axisPtHadron}, {axisPoolBin}}}}, // note: axes 3 and 4 (the pT) are updated in the init(),
      {"hCorrel2DPtIntGen", stringMcParticles + stringDeltaPhi + stringDeltaEta + "entries", {HistType::kTH2F, {{axisDeltaPhi}, {axisDeltaEta}}}},
      {"hDeltaEtaPtIntGen", stringMcParticles + stringDeltaEta + "entries", {HistType::kTH1F, {axisDeltaEta}}},
-     {"hDeltaPhiPtIntGen", stringMcParticles + stringDeltaPhi + "entries", {HistType::kTH1F, {axisDeltaPhi}}}}};
+     {"hDeltaPhiPtIntGen", stringMcParticles + stringDeltaPhi + "entries", {HistType::kTH1F, {axisDeltaPhi}}},
+     // Toward Transverse Away
+     {"hToward", "Toward invmass; ptD; correlationState;entries", {HistType::kTH3F, {{axisMass}, {axisPtD}, {axisCorrelationState}}}},
+     {"hTransverse", "Transverse invmass; ptD; correlationState;entries", {HistType::kTH3F, {{axisMass}, {axisPtD}, {axisCorrelationState}}}},
+     {"hAway", "Away invmass; ptD; correlationState;entries", {HistType::kTH3F, {{axisMass}, {axisPtD}, {axisCorrelationState}}}},
 
+     // Toward Transverse Away for McRec
+     {"hTowardRec", "Toward invmass; ptD; correlationState;entries", {HistType::kTH3F, {{axisMass}, {axisPtD}, {axisCorrelationState}}}},
+     {"hTransverseRec", "Transverse invmass; ptD; correlationState;entries", {HistType::kTH3F, {{axisMass}, {axisPtD}, {axisCorrelationState}}}},
+     {"hAwayRec", "Away invmass; ptD; correlationState;entries", {HistType::kTH3F, {{axisMass}, {axisPtD}, {axisCorrelationState}}}},
+     // Toward Transverse Away for McGen
+     {"hTowardGen", "Toward invmass; ptD; correlationState;entries", {HistType::kTH3F, {{axisMass}, {axisPtD}, {axisCorrelationState}}}},
+     {"hTransverseGen", "Transverse invmass; ptD; correlationState;entries", {HistType::kTH3F, {{axisMass}, {axisPtD}, {axisCorrelationState}}}},
+     {"hAwayGen", "Away invmass; ptD; correlationState;entries", {HistType::kTH3F, {{axisMass}, {axisPtD}, {axisCorrelationState}}}}}};
   void init(InitContext&)
   {
     int nBinsPtAxis = binsCorrelations->size() - 1;
@@ -211,6 +234,16 @@ struct HfTaskCorrelationD0Hadrons {
     registry.get<THnSparse>(HIST("hCorrel2DVsPtGen"))->Sumw2();
   }
 
+  Region getRegion(double deltaPhi)
+  {
+    if (std::abs(deltaPhi) < o2::constants::math::PI / 3.) {
+      return Toward;
+    } else if (deltaPhi > 2. * o2::constants::math::PI / 3. && deltaPhi < 4. * o2::constants::math::PI / 3.) {
+      return Away;
+    } else {
+      return Transverse;
+    }
+  }
   /// D-h correlation pair filling task, from pair tables - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
   /// Works on both USL and LS analyses pair tables
   void processData(aod::DHadronPairFull const& pairEntries)
@@ -227,7 +260,7 @@ struct HfTaskCorrelationD0Hadrons {
       int effBinD = o2::analysis::findBin(binsEfficiency, ptD);
       int ptBinD = o2::analysis::findBin(binsCorrelations, ptD);
       int poolBin = pairEntry.poolBin();
-
+      bool isAutoCorrelated = pairEntry.isAutoCorrelated();
       // reject entries outside pT ranges of interest
       if (ptBinD < 0 || effBinD < 0) {
         continue;
@@ -240,10 +273,47 @@ struct HfTaskCorrelationD0Hadrons {
       if (applyEfficiency) {
         efficiencyWeight = 1. / (efficiencyDmeson->at(o2::analysis::findBin(binsEfficiency, ptD))); // ***** track efficiency to be implemented *****
       }
-
       // reject entries outside pT ranges of interest
       if (ptBinD == -1) { // at least one particle outside accepted pT range
         continue;
+      }
+      //==============================================================================================================
+      if (isTowardTransverseAway) {
+        // Divide into three regions: toward, transverse, and away
+        if (ptHadron < leadingParticlePtMin) {
+          continue;
+        }
+        Region region = getRegion(deltaPhi);
+        if (signalStatus == ParticleTypeData::D0Only || signalStatus == ParticleTypeData::D0D0barBoth) {
+          switch (region) {
+            case Toward:
+              registry.fill(HIST("hToward"), massD, ptD, isAutoCorrelated, efficiencyWeight);
+              break;
+            case Away:
+              registry.fill(HIST("hAway"), massD, ptD, isAutoCorrelated, efficiencyWeight);
+              break;
+            case Transverse:
+              registry.fill(HIST("hTransverse"), massD, ptD, isAutoCorrelated, efficiencyWeight);
+              break;
+            default:
+              break;
+          }
+        }
+        if (signalStatus == ParticleTypeData::D0barOnly || signalStatus == ParticleTypeData::D0D0barBoth) {
+          switch (region) {
+            case Toward:
+              registry.fill(HIST("hToward"), massD, ptD, isAutoCorrelated, efficiencyWeight);
+              break;
+            case Away:
+              registry.fill(HIST("hAway"), massD, ptD, isAutoCorrelated, efficiencyWeight);
+              break;
+            case Transverse:
+              registry.fill(HIST("hTransverse"), massD, ptD, isAutoCorrelated, efficiencyWeight);
+              break;
+            default:
+              break;
+          }
+        }
       }
       // check if correlation entry belongs to signal region, sidebands or is outside both, and fill correlation plots
       if ((massD > signalRegionLeft->at(ptBinD) && massD < signalRegionRight->at(ptBinD)) && ((signalStatus == ParticleTypeData::D0Only) || (signalStatus == ParticleTypeData::D0D0barBoth))) {
@@ -334,12 +404,32 @@ struct HfTaskCorrelationD0Hadrons {
       int signalStatus = pairEntry.signalStatus();
       int ptBinD = o2::analysis::findBin(binsCorrelations, ptD);
       int poolBin = pairEntry.poolBin();
+      bool isAutoCorrelated = pairEntry.isAutoCorrelated();
 
       double efficiencyWeight = 1.;
       if (applyEfficiency) {
         efficiencyWeight = 1. / (efficiencyDmeson->at(o2::analysis::findBin(binsEfficiency, ptD)));
       }
-
+      if (isTowardTransverseAway) {
+        // Divide into three regions: toward, transverse, and away
+        if (ptHadron < leadingParticlePtMin) {
+          continue;
+        }
+        Region region = getRegion(deltaPhi);
+        switch (region) {
+          case Toward:
+            registry.fill(HIST("hTowardRec"), massD, ptD, isAutoCorrelated, efficiencyWeight);
+            break;
+          case Away:
+            registry.fill(HIST("hAwayRec"), massD, ptD, isAutoCorrelated, efficiencyWeight);
+            break;
+          case Transverse:
+            registry.fill(HIST("hTransverseRec"), massD, ptD, isAutoCorrelated, efficiencyWeight);
+            break;
+          default:
+            break;
+        }
+      }
       // fill correlation plots for signal/bagkground correlations
       if (pairEntry.signalStatus()) {
         registry.fill(HIST("hCorrel2DVsPtRecSig"), deltaPhi, deltaEta, ptD, ptHadron, efficiencyWeight);
@@ -528,6 +618,8 @@ struct HfTaskCorrelationD0Hadrons {
       double ptD = pairEntry.ptD();
       double ptHadron = pairEntry.ptHadron();
       int poolBin = pairEntry.poolBin();
+      double massD = pairEntry.mD();
+      bool isAutoCorrelated = pairEntry.isAutoCorrelated();
       // reject entries outside pT ranges of interest
       if (o2::analysis::findBin(binsCorrelations, ptD) < 0) {
         continue;
@@ -535,7 +627,26 @@ struct HfTaskCorrelationD0Hadrons {
       if (ptHadron > ptHadronMax) {
         ptHadron = ptHadronMax + 0.5;
       }
-
+      if (isTowardTransverseAway) {
+        // Divide into three regions: toward, transverse, and away
+        if (ptHadron < leadingParticlePtMin) {
+          continue;
+        }
+        Region region = getRegion(deltaPhi);
+        switch (region) {
+          case Toward:
+            registry.fill(HIST("hTowardGen"), massD, ptD, isAutoCorrelated);
+            break;
+          case Away:
+            registry.fill(HIST("hAwayGen"), massD, ptD, isAutoCorrelated);
+            break;
+          case Transverse:
+            registry.fill(HIST("hTransverseGen"), massD, ptD, isAutoCorrelated);
+            break;
+          default:
+            break;
+        }
+      }
       registry.fill(HIST("hCorrel2DVsPtGen"), deltaPhi, deltaEta, ptD, ptHadron, poolBin);
       registry.fill(HIST("hCorrel2DPtIntGen"), deltaPhi, deltaEta);
       registry.fill(HIST("hDeltaEtaPtIntGen"), deltaEta);

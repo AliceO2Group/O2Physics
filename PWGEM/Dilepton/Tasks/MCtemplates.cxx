@@ -243,13 +243,13 @@ struct AnalysisTrackSelection {
     if (fConfigQA) {
       if (fConfigMCTruthGen) {
         // Add histogram classes for each MC signal at generated level
-        std::vector<TString> mcnamesgen;
+        // std::vector<TString> mcnamesgen;
         for (int isig = 0; isig < sigNamesArray->GetEntries(); ++isig) {
           MCSignal* sig = o2::aod::dqmcsignals::GetMCSignal(sigNamesArray->At(isig)->GetName());
           if (sig) {
             if (sig->GetNProngs() == 1) { // NOTE: only 1 prong signals
               TString nameStr2 = Form("MCTruthGenTrack_%s", sig->GetName());
-              mcnamesgen.push_back(nameStr2);
+              // mcnamesgen.push_back(nameStr2);
               histClasses += Form("%s;", nameStr2.Data()); // TODO: Add these names to a std::vector to avoid using Form in the process function
             }
           }
@@ -333,9 +333,9 @@ struct AnalysisTrackSelection {
             fHistMan->FillHistClass(fHistNamesMCMatched[j][i].Data(), VarManager::fgValues);
           }
         } // end loop over cuts
-      }   // end loop over MC signals
-    }     // end loop over tracks
-  }
+      } // end loop over MC signals
+    } // end loop over tracks
+  } // end runTrackSelection
 
   template <typename TTracksMC>
   void runMCGenTrack(TTracksMC const& groupedMCTracks)
@@ -414,6 +414,7 @@ struct AnalysisSameEventPairing {
   Configurable<std::string> fConfigMCRecSignals{"cfgBarrelMCRecSignals", "", "Comma separated list of MC signals (reconstructed)"};
   Configurable<std::string> fConfigMCGenSignals{"cfgBarrelMCGenSignals", "", "Comma separated list of MC signals (generated)"};
   Configurable<std::string> fConfigAddSEPHistogram{"cfgAddSEPHistogram", "", "Comma separated list of histograms"};
+  Configurable<bool> fConfigRunMCGenPair{"cfgRunMCGenPair", false, "Do pairing of true MC particles"};
   Configurable<bool> fPropToPCA{"cfgPropToPCA", false, "Propagate tracks to secondary vertex"};
   Configurable<bool> fConfigDoSecVtxProp{"cfgDoSecVtxProp", false, "Propagate tracks to secondary vertex"};
   // TODO: here we specify signals, however signal decisions are precomputed and stored in mcReducedFlags
@@ -627,7 +628,8 @@ struct AnalysisSameEventPairing {
     runPairing<VarManager::kDecayToEE, gkTrackFillMap>(tracks, tracks);
     auto groupedMCTracks = tracksMC.sliceBy(perReducedMcEvent, event.reducedMCevent().globalIndex());
     groupedMCTracks.bindInternalIndicesTo(&tracksMC);
-    runMCGenPair(groupedMCTracks);
+    if (fConfigRunMCGenPair)
+      runMCGenPair(groupedMCTracks);
   }
 
   void processDecayToEESkimmedWithCov(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event,
@@ -642,7 +644,8 @@ struct AnalysisSameEventPairing {
     runPairing<VarManager::kDecayToEE, gkTrackFillMapWithCov>(tracks, tracks);
     auto groupedMCTracks = tracksMC.sliceBy(perReducedMcEvent, event.reducedMCevent().globalIndex());
     groupedMCTracks.bindInternalIndicesTo(&tracksMC);
-    runMCGenPair(groupedMCTracks);
+    if (fConfigRunMCGenPair)
+      runMCGenPair(groupedMCTracks);
   }
 
   void processDecayToEEAOD(soa::Filtered<MyEventsSelectedAOD>::iterator const& event,
@@ -657,7 +660,8 @@ struct AnalysisSameEventPairing {
     runPairing<VarManager::kDecayToEE, gkTrackFillMapAOD>(tracks, tracks);
     auto groupedMCTracks = tracksMC.sliceBy(perMcCollision, event.mcCollision().globalIndex());
     groupedMCTracks.bindInternalIndicesTo(&tracksMC);
-    runMCGenPair(groupedMCTracks);
+    if (fConfigRunMCGenPair)
+      runMCGenPair(groupedMCTracks);
   }
 
   void processDummy(MyEvents&)

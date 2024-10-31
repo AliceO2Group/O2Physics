@@ -236,7 +236,7 @@ struct HfCandidateCreatorBplus {
             continue;
           }
         } catch (const std::runtime_error& error) {
-          LOG(info) << "Run time error found: " << error.what() << ". DCFitterN for D cannot work, skipping the candidate.";
+          LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN for D cannot work, skipping the candidate.";
           hCandidatesD->Fill(SVFitting::Fail);
           continue;
         }
@@ -303,7 +303,7 @@ struct HfCandidateCreatorBplus {
               continue;
             }
           } catch (const std::runtime_error& error) {
-            LOG(info) << "Run time error found: " << error.what() << ". DCFitterN for B cannot work, skipping the candidate.";
+            LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN for B cannot work, skipping the candidate.";
             hCandidatesB->Fill(SVFitting::Fail);
             continue;
           }
@@ -335,8 +335,6 @@ struct HfCandidateCreatorBplus {
           auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
           auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
 
-          int hfFlag = BIT(hf_cand_bplus::DecayType::BplusToD0Pi);
-
           // compute invariant mass square and apply selection
           auto invMass2D0Pi = RecoDecay::m2(std::array{pVecD0, pVecBach}, std::array{massD0, massPi});
           if ((invMass2D0Pi < invMass2D0PiMin) || (invMass2D0Pi > invMass2D0PiMax)) {
@@ -353,8 +351,7 @@ struct HfCandidateCreatorBplus {
                            pVecD0[0], pVecD0[1], pVecD0[2],
                            pVecBach[0], pVecBach[1], pVecBach[2],
                            impactParameter0.getY(), impactParameter1.getY(),
-                           std::sqrt(impactParameter0.getSigmaY2()), std::sqrt(impactParameter1.getSigmaY2()),
-                           hfFlag);
+                           std::sqrt(impactParameter0.getSigmaY2()), std::sqrt(impactParameter1.getSigmaY2()));
 
           rowCandidateProngs(candD0.globalIndex(), trackPion.globalIndex()); // index D0 and bachelor
         }                                                                    // track loop

@@ -164,9 +164,6 @@ struct HfTaskBplus {
   {
 
     for (const auto& candidate : selectedBPlusCandidates) {
-      if (!TESTBIT(candidate.hfflag(), hf_cand_bplus::DecayType::BplusToD0Pi)) {
-        continue;
-      }
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
@@ -208,9 +205,6 @@ struct HfTaskBplus {
   {
     // MC rec
     for (const auto& candidate : selectedBPlusCandidatesMC) {
-      if (!TESTBIT(candidate.hfflag(), hf_cand_bplus::DecayType::BplusToD0Pi)) {
-        continue;
-      }
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yBplus(candidate)) > yCandRecoMax) {
         continue;
       }
@@ -294,7 +288,7 @@ struct HfTaskBplus {
           registry.fill(HIST("hPtGenWithRapidityBelowHalf"), ptParticle);
         }
 
-        // reject B0 daughters that are not in geometrical acceptance
+        // reject B+ daughters that are not in geometrical acceptance
         if (!isProngInAcceptance(etaProngs[0], ptProngs[0]) || !isProngInAcceptance(etaProngs[1], ptProngs[1])) {
           continue;
         }

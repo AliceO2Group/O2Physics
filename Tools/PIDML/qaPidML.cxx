@@ -13,6 +13,8 @@
 /// \author Łukasz Sawicki
 /// \since
 
+#include <string>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
@@ -21,13 +23,12 @@
 #include "Common/DataModel/PIDResponse.h"
 #include <TParameter.h>
 #include "Tools/PIDML/pidOnnxModel.h"
-#include <string>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct pidml {
+struct QaPidML {
   static const int maxP = 5;
   // nb of bins for TH1 hists
   static const int binsNb = 100;
@@ -47,9 +48,9 @@ struct pidml {
   // available particles: 211, 2212, 321
   static constexpr int particlesPdgCode[numParticles] = {211, 2212, 321};
 
-  // values of track momentum when to switch from only TPC signal to combined TPC and TOF signal
+  // values of track momentum when to switch from only TPC signal to combined TPC and TOF signal and to TPC+TOF+TRD
   // i-th momentum corresponds to the i-th particle
-  static constexpr float pSwitchValue[numParticles] = {0.5, 0.8, 0.5};
+  static constexpr double pSwitchValue[numParticles][kNDetectors] = {{0.0, 0.5, 0.8}, {0.0, 0.8, 0.8}, {0.0, 0.5, 0.8}};
 
   HistogramRegistry histReg{
     "allHistograms",
@@ -244,34 +245,35 @@ struct pidml {
   template <typename T>
   void fillMcHistos(const T& track, const int pdgCode)
   {
-    // pions
     if (pdgCode == 211) {
+      // pions
       histReg.fill(HIST("MC/211"), track.pt());
     } else if (pdgCode == -211) {
+      // antipions
       histReg.fill(HIST("MC/0211"), track.pt());
-    }
-    // protons
-    else if (pdgCode == 2212) {
+    } else if (pdgCode == 2212) {
+      // protons
       histReg.fill(HIST("MC/2212"), track.pt());
     } else if (pdgCode == -2212) {
+      // antiprotons
       histReg.fill(HIST("MC/02212"), track.pt());
-    }
-    // kaons
-    else if (pdgCode == 321) {
+    } else if (pdgCode == 321) {
+      // kaons
       histReg.fill(HIST("MC/321"), track.pt());
     } else if (pdgCode == -321) {
+      // antikaons
       histReg.fill(HIST("MC/0321"), track.pt());
-    }
-    // electrons
-    else if (pdgCode == 11) {
+    } else if (pdgCode == 11) {
+      // electrons
       histReg.fill(HIST("MC/11"), track.pt());
     } else if (pdgCode == -11) {
+      // positrons
       histReg.fill(HIST("MC/011"), track.pt());
-    }
-    // muons
-    else if (pdgCode == 13) {
+    } else if (pdgCode == 13) {
+      // muons
       histReg.fill(HIST("MC/13"), track.pt());
     } else if (pdgCode == -13) {
+      // antimuons
       histReg.fill(HIST("MC/013"), track.pt());
     } else {
       histReg.fill(HIST("MC/else"), track.pt());
@@ -326,15 +328,9 @@ struct pidml {
   void pidML(const T& track, const int pdgCodeMC)
   {
     float pidCertainties[3];
-    if (track.p() < pSwitchValue[i]) {
-      pidCertainties[0] = model211TPC.applyModel(track);
-      pidCertainties[1] = model2212TPC.applyModel(track);
-      pidCertainties[2] = model321TPC.applyModel(track);
-    } else {
-      pidCertainties[0] = model211All.applyModel(track);
-      pidCertainties[1] = model2212All.applyModel(track);
-      pidCertainties[2] = model321All.applyModel(track);
-    }
+    pidCertainties[0] = model211.applyModel(track);
+    pidCertainties[1] = model2212.applyModel(track);
+    pidCertainties[2] = model321.applyModel(track);
     int pid = getParticlePdg(pidCertainties);
     // condition for sign: we want to work only with pi, p and K, without antiparticles
     if (pid == particlesPdgCode[i] && track.sign() == 1) {
@@ -346,14 +342,10 @@ struct pidml {
     }
   }
 
-  // one model for one particle; Model with all TPC and TOF signal
-  PidONNXModel model211All;
-  PidONNXModel model2212All;
-  PidONNXModel model321All;
-  // Model with only TPC signal model
-  PidONNXModel model211TPC;
-  PidONNXModel model2212TPC;
-  PidONNXModel model321TPC;
+  // one model for one particle
+  PidONNXModel model211;
+  PidONNXModel model2212;
+  PidONNXModel model321;
 
   Configurable<std::string> cfgPathCCDB{"ccdb-path", "Users/m/mkabus/PIDML", "base path to the CCDB directory with ONNX models"};
   Configurable<std::string> cfgCCDBURL{"ccdb-url", "http://alice-ccdb.cern.ch", "URL of the CCDB repository"};
@@ -368,13 +360,9 @@ struct pidml {
     if (cfgUseCCDB) {
       ccdbApi.init(cfgCCDBURL);
     } else {
-      model211All = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, 211, kTPCTOF, 0.5f);
-      model2212All = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, 2211, kTPCTOF, 0.5f);
-      model321All = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, 321, kTPCTOF, 0.5f);
-
-      model211TPC = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, 211, kTPCOnly, 0.5f);
-      model2212TPC = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, 2211, kTPCOnly, 0.5f);
-      model321TPC = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, 321, kTPCOnly, 0.5f);
+      model211 = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, 211, 0.5f, pSwitchValue[0]);
+      model2212 = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, 2211, 0.5f, pSwitchValue[1]);
+      model321 = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, -1, 321, 0.5f, pSwitchValue[2]);
     }
   }
 
@@ -384,13 +372,9 @@ struct pidml {
   {
     auto bc = collisions.iteratorAt(0).bc_as<aod::BCsWithTimestamps>();
     if (cfgUseCCDB && bc.runNumber() != currentRunNumber) {
-      model211All = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, bc.timestamp(), 211, kTPCTOF, 0.5f);
-      model2212All = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, bc.timestamp(), 2211, kTPCTOF, 0.5f);
-      model321All = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, bc.timestamp(), 321, kTPCTOF, 0.5f);
-
-      model211TPC = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, bc.timestamp(), 211, kTPCOnly, 0.5f);
-      model2212TPC = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, bc.timestamp(), 2211, kTPCOnly, 0.5f);
-      model321TPC = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, bc.timestamp(), 321, kTPCOnly, 0.5f);
+      model211 = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, bc.timestamp(), 211, 0.5f, pSwitchValue[0]);
+      model2212 = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, bc.timestamp(), 2211, 0.5f, pSwitchValue[1]);
+      model321 = PidONNXModel(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, bc.timestamp(), 321, 0.5f, pSwitchValue[2]);
     }
 
     for (auto& track : tracks) {
@@ -410,6 +394,6 @@ struct pidml {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<pidml>(cfgc),
+    adaptAnalysisTask<QaPidML>(cfgc),
   };
 }

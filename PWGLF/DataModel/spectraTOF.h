@@ -19,6 +19,8 @@
 #ifndef PWGLF_DATAMODEL_SPECTRATOF_H_
 #define PWGLF_DATAMODEL_SPECTRATOF_H_
 
+#include <memory>
+
 // O2 includes
 #include "ReconstructionDataFormats/Track.h"
 #include "Framework/runDataProcessing.h"
@@ -38,19 +40,18 @@
 
 #include "TPDGCode.h"
 
-using namespace o2;
-using namespace o2::track;
-using namespace o2::framework;
-using namespace o2::framework::expressions;
-
-static constexpr PID::ID Np = 9;
-static constexpr PID::ID NpCharge = Np * 2;
+static constexpr o2::track::PID::ID Np = 9;
+static constexpr int NCharges = 2;
+static constexpr o2::track::PID::ID NpCharge = Np * NCharges;
 static constexpr const char* pT[Np] = {"e", "#mu", "#pi", "K", "p", "d", "t", "{}^{3}He", "#alpha"};
+static constexpr const char* pN[Np] = {"el", "mu", "pi", "ka", "pr", "de", "tr", "he", "al"};
+static constexpr const char* cN[NCharges] = {"pos", "neg"};
 static constexpr const char* pTCharge[NpCharge] = {"e^{-}", "#mu^{-}", "#pi^{+}", "K^{+}", "p", "d", "t", "{}^{3}He", "#alpha",
                                                    "e^{+}", "#mu^{+}", "#pi^{-}", "K^{-}", "#bar{p}", "#bar{d}", "#bar{t}", "{}^{3}#bar{He}", "#bar{#alpha}"};
 static constexpr int PDGs[NpCharge] = {kElectron, kMuonMinus, kPiPlus, kKPlus, kProton, 1000010020, 1000010030, 1000020030, 1000020040,
                                        -kElectron, -kMuonMinus, -kPiPlus, -kKPlus, -kProton, -1000010020, -1000010030, -1000020030, -1000020040};
 
+std::shared_ptr<TH2> hMultiplicityvsPercentile;
 static constexpr std::string_view hnsigmatpctof[NpCharge] = {"nsigmatpctof/pos/el", "nsigmatpctof/pos/mu", "nsigmatpctof/pos/pi",
                                                              "nsigmatpctof/pos/ka", "nsigmatpctof/pos/pr", "nsigmatpctof/pos/de",
                                                              "nsigmatpctof/pos/tr", "nsigmatpctof/pos/he", "nsigmatpctof/pos/al",
@@ -344,6 +345,10 @@ DECLARE_SOA_DYNAMIC_COLUMN(MultTPC, multTPC, //! Dummy
                            [](bool /*v*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(SelectionBit, selection_bit, //! Dummy
                            [](aod::evsel::EventSelectionFlags /*v*/) -> bool { return true; });
+DECLARE_SOA_DYNAMIC_COLUMN(IsInelGt0, isInelGt0, //! is INEL > 0
+                           [](int multPveta1) -> bool { return multPveta1 > 0; });
+DECLARE_SOA_DYNAMIC_COLUMN(IsInelGt1, isInelGt1, //! is INEL > 1
+                           [](int multPveta1) -> bool { return multPveta1 > 1; });
 
 // Track info
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);                                  //! Index to the collision
@@ -393,11 +398,11 @@ DECLARE_SOA_DYNAMIC_COLUMN(TRDSignal, trdSignal, //! Dummy
                            [](float /*v*/) -> float { return 0.f; });
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float signedpt, float eta) -> float { return std::abs(signedpt) * cosh(eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(TrackType, trackType, [](float /*v*/) -> uint8_t { return o2::aod::track::TrackTypeEnum::Track; });
-DECLARE_SOA_COLUMN(IsGlobalTrack, isGlobalTrack, bool);                                   // if a track passed the isGlobalTrack requirement
-DECLARE_SOA_COLUMN(IsGlobalTrackWoDCA, isGlobalTrackWoDCA, bool);                         // if a track passed the isGlobalTrackWoDCA requirement
-DECLARE_SOA_DYNAMIC_COLUMN(Flags, flags, [](float /*v*/) -> uint32_t { return 0; });      // Dummy
+DECLARE_SOA_COLUMN(IsGlobalTrack, isGlobalTrack, bool);                                       // if a track passed the isGlobalTrack requirement
+DECLARE_SOA_COLUMN(IsGlobalTrackWoDCA, isGlobalTrackWoDCA, bool);                             // if a track passed the isGlobalTrackWoDCA requirement
+DECLARE_SOA_DYNAMIC_COLUMN(Flags, flags, [](float /*v*/) -> uint32_t { return 0; });          // Dummy
 DECLARE_SOA_DYNAMIC_COLUMN(TRDPattern, trdPattern, [](float /*v*/) -> uint8_t { return 0; }); // Dummy
-DECLARE_SOA_DYNAMIC_COLUMN(Rapidity, rapidity,                                            //! Track rapidity, computed under the mass assumption given as input
+DECLARE_SOA_DYNAMIC_COLUMN(Rapidity, rapidity,                                                //! Track rapidity, computed under the mass assumption given as input
                            [](float signedPt, float eta, float mass) -> float {
                              const auto pt = std::abs(signedPt);
                              const auto p = std::abs(signedPt) * cosh(eta);
@@ -421,6 +426,8 @@ DECLARE_SOA_TABLE(SpColls, "AOD", "SPCOLLS",
                   spectra::Sel8,
                   spectra::MultNTracksPVeta1,
                   spectra::RunNumber,
+                  spectra::IsInelGt0<spectra::MultNTracksPVeta1>,
+                  spectra::IsInelGt1<spectra::MultNTracksPVeta1>,
                   spectra::CentFV0A<spectra::Sel8>,
                   spectra::CentFT0A<spectra::Sel8>,
                   spectra::CentFT0C<spectra::Sel8>,

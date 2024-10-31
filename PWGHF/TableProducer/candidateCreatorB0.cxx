@@ -241,7 +241,7 @@ struct HfCandidateCreatorB0 {
             continue;
           }
         } catch (const std::runtime_error& error) {
-          LOG(info) << "Run time error found: " << error.what() << ". DCFitterN for D cannot work, skipping the candidate.";
+          LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN for D cannot work, skipping the candidate.";
           hCandidatesD->Fill(SVFitting::Fail);
           continue;
         }
@@ -303,7 +303,7 @@ struct HfCandidateCreatorB0 {
               continue;
             }
           } catch (const std::runtime_error& error) {
-            LOG(info) << "Run time error found: " << error.what() << ". DCFitterN for B cannot work, skipping the candidate.";
+            LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN for B cannot work, skipping the candidate.";
             hCandidatesB->Fill(SVFitting::Fail);
             continue;
           }
@@ -342,8 +342,6 @@ struct HfCandidateCreatorB0 {
           auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
           auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
 
-          int hfFlag = BIT(hf_cand_b0::DecayType::B0ToDPi);
-
           // fill the candidate table for the B0 here:
           rowCandidateBase(thisCollId,
                            collision.posX(), collision.posY(), collision.posZ(),
@@ -353,8 +351,7 @@ struct HfCandidateCreatorB0 {
                            pVecD[0], pVecD[1], pVecD[2],
                            pVecPion[0], pVecPion[1], pVecPion[2],
                            dcaD.getY(), dcaPion.getY(),
-                           std::sqrt(dcaD.getSigmaY2()), std::sqrt(dcaPion.getSigmaY2()),
-                           hfFlag);
+                           std::sqrt(dcaD.getSigmaY2()), std::sqrt(dcaPion.getSigmaY2()));
 
           rowCandidateProngs(candD.globalIndex(), trackPion.globalIndex());
         } // pi loop

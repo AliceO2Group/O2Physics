@@ -58,12 +58,14 @@ enum class PairAxisType {
   im,
   pt,
   mu,
+  ce,
   ns1,
   ns2,
   eta,
   y,
   vz,
   mum,
+  cem,
   vzm,
   unknown
 };
@@ -74,7 +76,7 @@ enum class SystematicsAxisType {
 };
 namespace PairAxis
 {
-std::vector<std::string> names{"im", "pt", "mu", "ns1", "ns2", "eta", "y", "vz", "mum", "vzm"};
+std::vector<std::string> names{"im", "pt", "mu", "ce", "ns1", "ns2", "eta", "y", "vz", "mum", "cem", "vzm"};
 }
 
 namespace SystematicsAxis

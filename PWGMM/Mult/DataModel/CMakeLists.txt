@@ -10,4 +10,4 @@
 # or submit itself to any jurisdiction.
 
 o2physics_add_header_only_library(MultDataModel
-                                  HEADERS ReducedTables.h)
+                                  HEADERS ReducedTables.h Gencentralities.h)

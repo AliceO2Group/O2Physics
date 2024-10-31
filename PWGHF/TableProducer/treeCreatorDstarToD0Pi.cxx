@@ -86,6 +86,7 @@ DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(Y, y, float);
 DECLARE_SOA_COLUMN(E, e, float);
 DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int8_t);
+DECLARE_SOA_COLUMN(PtBhadMother, ptBhadMother, float);
 
 // Events
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
@@ -142,10 +143,11 @@ DECLARE_SOA_TABLE(HfCandDstLites, "AOD", "HFCANDDSTLITE",
                   full::Y,
                   full::CandidateSelFlag,
                   hf_cand_dstar::FlagMcMatchRec,
-                  hf_cand_dstar::OriginMcRec)
+                  hf_cand_dstar::OriginMcRec,
+                  full::PtBhadMother)
 
 DECLARE_SOA_TABLE(HfCandDstFulls, "AOD", "HFCANDDSTFULL",
-                  full::CollisionId,
+                  collision::BCId,
                   collision::NumContrib,
                   collision::PosX,
                   collision::PosY,
@@ -214,7 +216,8 @@ DECLARE_SOA_TABLE(HfCandDstFulls, "AOD", "HFCANDDSTFULL",
                   full::E,
                   full::CandidateSelFlag,
                   hf_cand_dstar::FlagMcMatchRec,
-                  hf_cand_dstar::OriginMcRec);
+                  hf_cand_dstar::OriginMcRec,
+                  full::PtBhadMother);
 
 DECLARE_SOA_TABLE(HfCandDstFullEvs, "AOD", "HFCANDDSTFULLEV",
                   collision::BCId,
@@ -232,7 +235,8 @@ DECLARE_SOA_TABLE(HfCandDstFullPs, "AOD", "HFCANDDSTFULLP",
                   full::Phi,
                   full::Y,
                   hf_cand_dstar::FlagMcMatchGen,
-                  hf_cand_dstar::OriginMcGen);
+                  hf_cand_dstar::OriginMcGen,
+                  full::PtBhadMother);
 
 } // namespace o2::aod
 
@@ -280,7 +284,7 @@ struct HfTreeCreatorDstarToD0Pi {
   }
 
   template <bool doMc = false, typename T>
-  void fillCandidateTable(const T& candidate)
+  void fillCandidateTable(const T& candidate, float ptBhadMotherPart = -1)
   {
     int8_t flagMc{0};
     int8_t originMc{0};
@@ -357,7 +361,8 @@ struct HfTreeCreatorDstarToD0Pi {
         candidate.y(constants::physics::MassDStar),
         candidate.isSelDstarToD0Pi(),
         flagMc,
-        originMc);
+        originMc,
+        ptBhadMotherPart);
     } else {
       rowCandidateFull(
         candidate.collision().bcId(),
@@ -429,7 +434,8 @@ struct HfTreeCreatorDstarToD0Pi {
         candidate.e(constants::physics::MassDStar),
         candidate.isSelDstarToD0Pi(),
         flagMc,
-        originMc);
+        originMc,
+        ptBhadMotherPart);
     }
   }
 
@@ -482,7 +488,7 @@ struct HfTreeCreatorDstarToD0Pi {
         rowCandidateFull.reserve(reconstructedCandSig.size());
       }
       for (const auto& candidate : reconstructedCandSig) {
-        fillCandidateTable<true>(candidate);
+        fillCandidateTable<true>(candidate, candidate.ptBhadMotherPart());
       }
     } else if (fillOnlyBackground) {
       if (fillCandidateLiteTable) {
@@ -506,13 +512,20 @@ struct HfTreeCreatorDstarToD0Pi {
         rowCandidateFull.reserve(candidates.size());
       }
       for (const auto& candidate : candidates) {
-        fillCandidateTable<true>(candidate);
+        fillCandidateTable<true>(candidate, candidate.ptBhadMotherPart());
       }
     }
 
     // Filling particle properties
     rowCandidateFullParticles.reserve(particles.size());
     for (const auto& particle : particles) {
+
+      float ptBhadMother{-1.f};
+      if (particle.originMcGen() == RecoDecay::OriginType::NonPrompt) {
+        auto bHadMother = particles.rawIteratorAt(particle.idxBhadMotherPart());
+        ptBhadMother = bHadMother.pt();
+      }
+
       rowCandidateFullParticles(
         particle.mcCollision().bcId(),
         particle.pt(),
@@ -520,7 +533,8 @@ struct HfTreeCreatorDstarToD0Pi {
         particle.phi(),
         RecoDecay::y(particle.pVector(), o2::constants::physics::MassDStar),
         particle.flagMcMatchGen(),
-        particle.originMcGen());
+        particle.originMcGen(),
+        ptBhadMother);
     }
   }
 

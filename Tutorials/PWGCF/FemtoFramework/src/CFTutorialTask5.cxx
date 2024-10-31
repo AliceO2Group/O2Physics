@@ -51,22 +51,21 @@ struct CFTutorialTask5 {
   Configurable<bool> ConfIsSame{"ConfIsSame", false, "Pairs of the same particle"};
 
   Configurable<int> ConfPDGCodePartOne{"ConfPDGCodePartOne", 2212, "Particle 1 - PDG code"};
-  Configurable<uint32_t> ConfCutPartOne{"ConfCutPartOne", 3191978, "Particle 1 - Selection bit from cutCulator"};
-  Configurable<int> ConfPIDPartOne{"ConfPIDPartOne", 0, "Particle 1 - Index in ConfTrkPIDspecies of producer task"};
-  Configurable<int> ConfPIDValuePartOne{"ConfPIDValuePartOne", 3, "Particle 1 - Read from cutCulator"};
+  Configurable<uint32_t> ConfCutPartOne{"ConfCutPartOne", 3191978, "Particle 1 - Selection bit"};
+  Configurable<uint32_t> ConfPIDTPCPartOne{"ConfPIDTPCPartOne", 2, "Particle 1 - TPC PID Selection bit"};
+  Configurable<uint32_t> ConfPIDTPCTOFPartOne{"ConfPIDTPCTOFPartOne", 4, "Particle 1 - TPCTOF PID Selection bit"};
+  Configurable<float> ConfPIDThresholdPartOne{"ConfPIDThresholdPartOne", 0.75, "Particle 1 - Momentum threshold for TPC to TPCTOF PID"};
 
   Configurable<int> ConfPDGCodePartTwo{"ConfPDGCodePartTwo", 2212, "Particle 2 - PDG code"};
   Configurable<uint32_t> ConfCutPartTwo{"ConfCutPartTwo", 3191978, "Particle 2 - Selection bit"};
-  Configurable<int> ConfPIDPartTwo{"ConfPIDPartTwo", 0, "Particle 2 - Index in ConfTrkPIDspecies of producer task"};
-  Configurable<int> ConfPIDValuePartTwo{"ConfPIDValuePartTwo", 3, "Particle 1 - Read from cutCulator"};
-
-  Configurable<float> ConfPIDThreshold{"ConfPIDThreshold", 0.75, "Momentum threshold for TPC to TPCTOF PID"};
-  Configurable<int> ConfNspecies{"ConfNspecies", 2, "Number of particle spieces with PID info"};
-  Configurable<std::vector<float>> ConfTrkPIDnSigmaMax{"ConfTrkPIDnSigmaMax", std::vector<float>{3.f, 3.5f, 2.5f}, "This configurable needs to be the same as the one used in the producer task"};
+  Configurable<uint32_t> ConfPIDTPCPartTwo{"ConfPIDTPCPartTwo", 0, "Particle 2 - TPC PID Selection bit"};
+  Configurable<uint32_t> ConfPIDTPCTOFPartTwo{"ConfPIDTPCTOFPartTwo", 0, "Particle 2 - TPCTOF PID Selection bit"};
+  Configurable<float> ConfPIDThresholdPartTwo{"ConfPIDThresholdPartTwo", 0.75, "Particle 2 - Momentum threshold for TPC to TPCTOF PID"};
 
   /// Partitions for particle 1 and particle 2
-  Partition<FilteredFDParts> PartsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && ((aod::femtodreamparticle::cut & ConfCutPartOne) == ConfCutPartOne);
-  Partition<FilteredFDParts> PartsTwo = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && ((aod::femtodreamparticle::cut & ConfCutPartTwo) == ConfCutPartTwo);
+  Partition<FilteredFDParts> PartsOne = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && ((aod::femtodreamparticle::cut & ConfCutPartOne) == ConfCutPartOne) && ifnode(aod::femtodreamparticle::pt < ConfPIDThresholdPartOne, ncheckbit(aod::femtodreamparticle::pidcut, ConfPIDTPCPartOne), ncheckbit(aod::femtodreamparticle::pidcut, ConfPIDTPCTOFPartOne));
+
+  Partition<FilteredFDParts> PartsTwo = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && ((aod::femtodreamparticle::cut & ConfCutPartTwo) == ConfCutPartTwo) && ifnode(aod::femtodreamparticle::pt < ConfPIDThresholdPartTwo, ncheckbit(aod::femtodreamparticle::pidcut, ConfPIDTPCPartTwo), ncheckbit(aod::femtodreamparticle::pidcut, ConfPIDTPCTOFPartTwo));
 
   HistogramRegistry HistRegistry{"FemtoTutorial", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -104,7 +103,6 @@ struct CFTutorialTask5 {
   // process same event
   void process(FilteredFDCollision const& col, FilteredFDParts const& /*parts*/)
   {
-
     /// event QA
     HistRegistry.fill(HIST("Event/hZvtx"), col.posZ());
 
@@ -114,94 +112,36 @@ struct CFTutorialTask5 {
 
     /// QA for particle 1
     for (auto& part : GroupPartsOne) {
-      /// check PID of particle 1 using function from FemtoUtils using PID bit
-      if (isFullPIDSelected(part.pidcut(),
-                            part.p(),
-                            ConfPIDThreshold.value,
-                            ConfPIDPartOne.value,
-                            ConfNspecies.value,
-                            ConfTrkPIDnSigmaMax.value,
-                            ConfPIDValuePartOne.value,
-                            ConfPIDValuePartOne.value)) {
-        HistRegistry.fill(HIST("Particle1/hPt"), part.pt());
-        HistRegistry.fill(HIST("Particle1/hEta"), part.eta());
-        HistRegistry.fill(HIST("Particle1/hPhi"), part.phi());
-      }
+      HistRegistry.fill(HIST("Particle1/hPt"), part.pt());
+      HistRegistry.fill(HIST("Particle1/hEta"), part.eta());
+      HistRegistry.fill(HIST("Particle1/hPhi"), part.phi());
     }
 
     /// QA for particle 2
     /// skip QA if particle 1 & 2 are the same
     if (ConfIsSame.value == false) {
       for (auto& part : GroupPartsTwo) {
-        /// check PID of particle 1 using function from FemtoUtils using PID bit
-        if (isFullPIDSelected(part.pidcut(),
-                              part.p(),
-                              ConfPIDThreshold.value,
-                              ConfPIDPartTwo.value,
-                              ConfNspecies.value,
-                              ConfTrkPIDnSigmaMax.value,
-                              ConfPIDValuePartTwo.value,
-                              ConfPIDValuePartTwo.value)) {
-          HistRegistry.fill(HIST("Particle2/hPt"), part.pt());
-          HistRegistry.fill(HIST("Particle2/hEta"), part.eta());
-          HistRegistry.fill(HIST("Particle2/hPhi"), part.phi());
-        }
+        HistRegistry.fill(HIST("Particle2/hPt"), part.pt());
+        HistRegistry.fill(HIST("Particle2/hEta"), part.eta());
+        HistRegistry.fill(HIST("Particle2/hPhi"), part.phi());
       }
     }
 
     float kstar = 0.;
-    float m0 = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartOne.value)->Mass();
-    float m1 = TDatabasePDG::Instance()->GetParticle(ConfPDGCodePartTwo.value)->Mass();
+    float m0 = o2::analysis::femtoDream::getMass(ConfPDGCodePartOne);
+    float m1 = o2::analysis::femtoDream::getMass(ConfPDGCodePartTwo);
 
     /// particle combinations
     /// if particles are the same or not determines the combination stratety
     if (ConfIsSame) {
       for (auto& [p0, p1] : combinations(soa::CombinationsStrictlyUpperIndexPolicy(GroupPartsOne, GroupPartsTwo))) {
-        if (isFullPIDSelected(p0.pidcut(),
-                              p0.p(),
-                              ConfPIDThreshold.value,
-                              ConfPIDPartOne.value,
-                              ConfNspecies.value,
-                              ConfTrkPIDnSigmaMax.value,
-                              ConfPIDValuePartOne.value,
-                              ConfPIDValuePartOne.value) &&
-            isFullPIDSelected(p1.pidcut(),
-                              p1.p(),
-                              ConfPIDThreshold.value,
-                              ConfPIDPartOne.value,
-                              ConfNspecies.value,
-                              ConfTrkPIDnSigmaMax.value,
-                              ConfPIDValuePartOne.value,
-                              ConfPIDValuePartOne.value)
-
-        ) {
-          kstar = FemtoDreamMath::getkstar(p0, m0, p1, m1);
-          HistRegistry.fill(HIST("Pair/hSE"), kstar);
-        }
+        kstar = FemtoDreamMath::getkstar(p0, m0, p1, m1);
+        HistRegistry.fill(HIST("Pair/hSE"), kstar);
       }
     } else {
       for (auto& [p0, p1] : combinations(soa::CombinationsFullIndexPolicy(GroupPartsOne, GroupPartsTwo))) {
-        if (isFullPIDSelected(p0.pidcut(),
-                              p0.p(),
-                              ConfPIDThreshold.value,
-                              ConfPIDPartOne.value,
-                              ConfNspecies.value,
-                              ConfTrkPIDnSigmaMax.value,
-                              ConfPIDValuePartOne.value,
-                              ConfPIDValuePartOne.value) &&
-            isFullPIDSelected(p1.pidcut(),
-                              p1.p(),
-                              ConfPIDThreshold.value,
-                              ConfPIDPartOne.value,
-                              ConfNspecies.value,
-                              ConfTrkPIDnSigmaMax.value,
-                              ConfPIDValuePartOne.value,
-                              ConfPIDValuePartOne.value)
-
-        ) {
-          kstar = FemtoDreamMath::getkstar(p0, m0, p1, m1);
-          HistRegistry.fill(HIST("Pair/hSE"), kstar);
-        }
+        kstar = FemtoDreamMath::getkstar(p0, m0, p1, m1);
+        HistRegistry.fill(HIST("Pair/hSE"), kstar);
       }
     }
   }

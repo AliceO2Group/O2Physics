@@ -41,7 +41,7 @@ struct EmcEventSelectionQA {
     using o2HistType = o2::framework::HistType;
     using o2Axis = o2::framework::AxisSpec;
 
-    o2Axis matchingAxis{3, -0.5, 2.5, "matchingStatus", "Matching status"}, // 0, no vertex,1 vertex found , 2 multiple vertices found
+    o2Axis matchingAxis{3, -0.5, 2.5, "Matching Status (0, 1, 2+ collisions)", "Matching status"}, // 0, no vertex,1 vertex found , 2 multiple vertices found
       bcAxis{4001, -0.5, 4000.5, "bcid", "BC ID"};
 
     mHistManager.add("hCollisionMatching", "Collision Status", o2HistType::kTH1F, {matchingAxis});
@@ -72,6 +72,7 @@ struct EmcEventSelectionQA {
     mHistManager.add("hBCEmcalDJ2", "Bunch crossings with DJ2 trigger from CTP", o2HistType::kTH1F, {bcAxis});
     mHistManager.add("hBCTVX", "Bunch crossings with FIT TVX trigger from CTP", o2HistType::kTH1F, {bcAxis});
     mHistManager.add("hBCEmcalCellContent", "Bunch crossings with non-0 EMCAL cell content", o2HistType::kTH1F, {bcAxis});
+    mHistManager.add("hBCCollisionCounter_TVX", "Number of BCs with a certain number of rec. colls", o2HistType::kTH2F, {bcAxis, matchingAxis});
 
     initCollisionHistogram(mHistManager.get<TH1>(HIST("hCollisionMatching")).get());
     initCollisionHistogram(mHistManager.get<TH1>(HIST("hCollisionMatchingReadout")).get());
@@ -162,10 +163,6 @@ struct EmcEventSelectionQA {
         }
       }
 
-      if (bc.selection_bit(aod::evsel::kIsTriggerTVX)) {
-        mHistManager.fill(HIST("hBCTVX"), bcID);
-      }
-
       // lookup number of cells for global BC of this BC
       // avoid iteration over cell table for speed reason
       auto found = cellGlobalBCs.find(bc.globalBC());
@@ -185,6 +182,12 @@ struct EmcEventSelectionQA {
       } else {
         collisionStatus = 2;
       }
+
+      if (bc.selection_bit(aod::evsel::kIsTriggerTVX)) {
+        mHistManager.fill(HIST("hBCTVX"), bcID);
+        mHistManager.fill(HIST("hBCCollisionCounter_TVX"), bcID, collisionStatus);
+      }
+
       if (collisionStatus >= 0) {
         mHistManager.fill(HIST("hCollisionMatching"), collisionStatus);
         if (isEMCALreadout) {

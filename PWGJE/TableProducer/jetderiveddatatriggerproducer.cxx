@@ -47,35 +47,17 @@ struct JetDerivedDataTriggerProducerTask {
   }
   PROCESS_SWITCH(JetDerivedDataTriggerProducerTask, processChargedJetTriggers, "produces derived charged trigger table", false);
 
-  void processNoChargedJetTriggers(aod::Collision const&)
-  {
-    jChargedTriggerSelsTable(jetderiveddatautilities::JTrigSelCh::noChargedTigger);
-  }
-  PROCESS_SWITCH(JetDerivedDataTriggerProducerTask, processNoChargedJetTriggers, "produces derived charged trigger table when sample is not triggered", true);
-
   void processFullJetTriggers(soa::Join<aod::Collisions, aod::FullJetFilters>::iterator const& collision)
   {
     jFullTriggerSelsTable(jetderiveddatautilities::setFullTriggerSelectionBit(collision));
   }
   PROCESS_SWITCH(JetDerivedDataTriggerProducerTask, processFullJetTriggers, "produces derived full trigger table", false);
 
-  void processNoFullJetTriggers(aod::Collision const&)
-  {
-    jFullTriggerSelsTable(jetderiveddatautilities::JTrigSelFull::noFullTrigger);
-  }
-  PROCESS_SWITCH(JetDerivedDataTriggerProducerTask, processNoFullJetTriggers, "produces derived full trigger table table when sample is not triggered", true);
-
   void processChargedHFJetTriggers(soa::Join<aod::Collisions, aod::JetHFFilters>::iterator const& collision)
   {
     jChargedHFTriggerSelsTable(jetderiveddatautilities::setChargedHFTriggerSelectionBit(collision));
   }
   PROCESS_SWITCH(JetDerivedDataTriggerProducerTask, processChargedHFJetTriggers, "produces derived charged hf trigger table", false);
-
-  void processNoChargedHFJetTriggers(aod::Collision const&)
-  {
-    jChargedHFTriggerSelsTable(jetderiveddatautilities::JTrigSelChHF::noChargedHFTigger);
-  }
-  PROCESS_SWITCH(JetDerivedDataTriggerProducerTask, processNoChargedHFJetTriggers, "produces derived charged hf trigger table when sample is not triggered", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

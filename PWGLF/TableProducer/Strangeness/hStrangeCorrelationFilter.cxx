@@ -33,6 +33,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
+#define bitset(var, nbit) ((var) |= (1 << (nbit)))
 #define bitcheck(var, nbit) ((var) & (1 << (nbit)))
 
 struct hstrangecorrelationfilter {
@@ -40,7 +41,9 @@ struct hstrangecorrelationfilter {
 
   // Operational
   Configurable<bool> fillTableOnlyWithCompatible{"fillTableOnlyWithCompatible", true, "pre-apply dE/dx, broad mass window in table filling"};
-  Configurable<float> strangedEdxNSigma{"strangedEdxNSigma", 5, "Nsigmas for strange decay daughters"};
+  Configurable<float> strangedEdxNSigmaLoose{"strangedEdxNSigmaLoose", 5, "Nsigmas for strange decay daughters"};
+  Configurable<float> strangedEdxNSigma{"strangedEdxNSigma", 4, "Nsigmas for strange decay daughters"};
+  Configurable<float> strangedEdxNSigmaTight{"strangedEdxNSigmaTight", 3, "Nsigmas for strange decay daughters"};
 
   // Trigger particle selections in phase space
   Configurable<float> triggerEtaMin{"triggerEtaCutMin", -0.8, "triggeretamin"};
@@ -102,9 +105,8 @@ struct hstrangecorrelationfilter {
   Configurable<std::vector<float>> massParsOmegaMean{"massParsOmegaMean", {1.67, 0.000298, 0.0, 0.0}, "pars in [0]+[1]*x+[2]*TMath::Exp(-[3]*x)"};
   Configurable<std::vector<float>> massParsOmegaWidth{"massParsOmegaWidth", {0.00189, 0.000325, 0.00606, 1.77}, "pars in [0]+[1]*x+[2]*TMath::Exp(-[3]*x)"};
 
-  // definitions of peak and background
-  Configurable<float> peakNsigma{"peakNsigma", 3.0f, "peak region is +/- this many sigmas away"};
-  Configurable<float> backgroundNsigma{"backgroundNsigma", 6.0f, "bg region is +/- this many sigmas away (minus peak)"};
+  // must include windows for background and peak
+  Configurable<float> maxMassNSigma{"maxMassNSigma", 12.0f, "max mass region to be considered for further analysis"};
 
   // For extracting strangeness mass QA plots
   ConfigurableAxis axisPtQA{"axisPtQA", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for QA histograms"};
@@ -114,6 +116,8 @@ struct hstrangecorrelationfilter {
   ConfigurableAxis axisOmegaMass{"axisOmegaMass", {200, 1.57f, 1.77f}, "Inv. Mass (GeV/c^{2})"};
   ConfigurableAxis axisMult{"axisMult", {VARIABLE_WIDTH, 0.0f, 0.01f, 1.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 70.0f, 100.0f}, "Centrality percentile bins"};
 
+  // QA
+  Configurable<bool> doTrueSelectionInMass{"doTrueSelectionInMass", false, "Fill mass histograms only with true primary Particles for MC"};
   // Do declarative selections for DCAs, if possible
   Filter preFilterTracks = nabs(aod::track::dcaXY) < dcaXYconstant + dcaXYpTdep * nabs(aod::track::signed1Pt);
   Filter preFilterV0 = nabs(aod::v0data::dcapostopv) > dcaPostopv&&
@@ -128,6 +132,7 @@ struct hstrangecorrelationfilter {
   using V0LinkedTagged = soa::Join<aod::V0sLinked, aod::V0Tags>;
   using CascadesLinkedTagged = soa::Join<aod::CascadesLinked, aod::CascTags>;
   using DauTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::TracksDCA>;
+  using DauTracksMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::TracksDCA, aod::McTrackLabels>;
   // using IDTracks= soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::TOFSignal>; // prepared for Bayesian PID
   using IDTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TOFSignal, aod::TracksDCA>;
   using V0DatasWithoutTrackX = soa::Join<aod::V0Indices, aod::V0Cores>;
@@ -166,6 +171,33 @@ struct hstrangecorrelationfilter {
     histos.add("h3dMassOmegaPlus", "h3dMassOmegaPlus", kTH3F, {axisPtQA, axisOmegaMass, axisMult});
   }
 
+  // reco-level trigger quality checks (N.B.: DCA is filtered, not selected)
+  template <class TTrack>
+  bool isValidTrigger(TTrack track)
+  {
+    if (track.eta() > triggerEtaMax || track.eta() < triggerEtaMin) {
+      return false;
+    }
+    // if (track.sign()= 1 ) {continue;}
+    if (track.pt() > triggerPtCutMax || track.pt() < triggerPtCutMin) {
+      return false;
+    }
+    if (track.tpcNClsCrossedRows() < minTPCNCrossedRows) {
+      return false; // crossed rows
+    }
+    if (!track.hasITS() && triggerRequireITS) {
+      return false; // skip, doesn't have ITS signal (skips lots of TPC-only!)
+    }
+    if (track.tpcNClsShared() > triggerMaxTPCSharedClusters) {
+      return false; // skip, has shared clusters
+    }
+    if (!(bitcheck(track.itsClusterMap(), 0)) && triggerRequireL0) {
+      return false; // skip, doesn't have cluster in ITS L0
+    }
+    return true;
+  }
+
+  // for real data processing
   void processTriggers(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<DauTracks> const& tracks)
   {
     // Perform basic event selection
@@ -180,30 +212,48 @@ struct hstrangecorrelationfilter {
     /// _________________________________________________
     /// Step 1: Populate table with trigger tracks
     for (auto const& track : tracks) {
-      if (track.eta() > triggerEtaMax || track.eta() < triggerEtaMin) {
+      if (!isValidTrigger(track))
         continue;
-      }
-      // if (track.sign()= 1 ) {continue;}
-      if (track.pt() > triggerPtCutMax || track.pt() < triggerPtCutMin) {
+      triggerTrack(
+        track.collisionId(),
+        false, // if you decide to check real data for primaries, you'll have a hard time
+        track.globalIndex(),
+        0);
+    }
+  }
+
+  // for MC processing
+  void processTriggersMC(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<DauTracksMC> const& tracks, aod::McParticles const&)
+  {
+    // Perform basic event selection
+    if (!collision.sel8()) {
+      return;
+    }
+    // No need to correlate stuff that's in far collisions
+    if (TMath::Abs(collision.posZ()) > 10.0) {
+      return;
+    }
+
+    /// _________________________________________________
+    /// Step 1: Populate table with trigger tracks
+    for (auto const& track : tracks) {
+      if (!isValidTrigger(track))
         continue;
-      }
-      if (track.tpcNClsCrossedRows() < minTPCNCrossedRows) {
-        continue; // crossed rows
-      }
-      if (!track.hasITS() && triggerRequireITS) {
-        continue; // skip, doesn't have ITS signal (skips lots of TPC-only!)
-      }
-      if (track.tpcNClsShared() > triggerMaxTPCSharedClusters) {
-        continue; // skip, has shared clusters
-      }
-      if (!(bitcheck(track.itsClusterMap(), 0)) && triggerRequireL0) {
-        continue; // skip, doesn't have cluster in ITS L0
+      bool physicalPrimary = false;
+      float origPt = -1;
+      if (track.has_mcParticle()) {
+        auto mcParticle = track.mcParticle();
+        physicalPrimary = mcParticle.isPhysicalPrimary();
+        origPt = mcParticle.pt();
       }
       triggerTrack(
         track.collisionId(),
-        track.globalIndex());
+        physicalPrimary,
+        track.globalIndex(),
+        origPt);
     }
   }
+
   void processAssocPions(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision, soa::Filtered<IDTracks> const& tracks)
   {
     // Perform basic event selection
@@ -287,9 +337,9 @@ struct hstrangecorrelationfilter {
         continue;
       }
       // check dE/dx compatibility
-      bool compatibleK0Short = false;
-      bool compatibleLambda = false;
-      bool compatibleAntiLambda = false;
+      int compatibleK0Short = 0;
+      int compatibleLambda = 0;
+      int compatibleAntiLambda = 0;
 
       auto posdau = v0.posTrack_as<DauTracks>();
       auto negdau = v0.negTrack_as<DauTracks>();
@@ -300,88 +350,55 @@ struct hstrangecorrelationfilter {
       if (posdau.tpcNClsCrossedRows() < minTPCNCrossedRows)
         continue;
 
-      if (TMath::Abs(posdau.tpcNSigmaPi()) < strangedEdxNSigma && TMath::Abs(negdau.tpcNSigmaPi()) < strangedEdxNSigma) {
-        compatibleK0Short = true;
-      }
-      if (TMath::Abs(posdau.tpcNSigmaPr()) < strangedEdxNSigma && TMath::Abs(negdau.tpcNSigmaPi()) < strangedEdxNSigma) {
-        if (v0.v0cosPA() > lambdaCospa) {
-          compatibleLambda = true;
-        }
-      }
-      if (TMath::Abs(posdau.tpcNSigmaPi()) < strangedEdxNSigma && TMath::Abs(negdau.tpcNSigmaPr()) < strangedEdxNSigma) {
-        if (v0.v0cosPA() > lambdaCospa) {
-          compatibleAntiLambda = true;
-        }
-      }
-      // check whether V0s are in the regin
-      int massRegK0Short = -1;
-      if (TMath::Abs(v0.mK0Short() - fK0Mean->Eval(v0.pt()) < peakNsigma * fK0Width->Eval(v0.pt()))) {
-        massRegK0Short = 2;
-      }
-      if (v0.mK0Short() > fK0Mean->Eval(v0.pt()) + peakNsigma * fK0Width->Eval(v0.pt()) && v0.mK0Short() < fK0Mean->Eval(v0.pt()) + backgroundNsigma * fK0Width->Eval(v0.pt())) {
-        massRegK0Short = 3;
-      }
-      if (v0.mK0Short() < fK0Mean->Eval(v0.pt()) - peakNsigma * fK0Width->Eval(v0.pt()) && v0.mK0Short() > fK0Mean->Eval(v0.pt()) - backgroundNsigma * fK0Width->Eval(v0.pt())) {
-        massRegK0Short = 1;
-      }
-      if (v0.mK0Short() > fK0Mean->Eval(v0.pt()) + backgroundNsigma * fK0Width->Eval(v0.pt())) {
-        massRegK0Short = 4;
-      }
-      if (v0.mK0Short() < fK0Mean->Eval(v0.pt()) - backgroundNsigma * fK0Width->Eval(v0.pt())) {
-        massRegK0Short = 0;
-      }
+      if (TMath::Abs(posdau.tpcNSigmaPi()) < strangedEdxNSigmaLoose && TMath::Abs(negdau.tpcNSigmaPi()) < strangedEdxNSigmaLoose)
+        bitset(compatibleK0Short, 0);
+      if (TMath::Abs(posdau.tpcNSigmaPi()) < strangedEdxNSigma && TMath::Abs(negdau.tpcNSigmaPi()) < strangedEdxNSigma)
+        bitset(compatibleK0Short, 1);
+      if (TMath::Abs(posdau.tpcNSigmaPi()) < strangedEdxNSigmaTight && TMath::Abs(negdau.tpcNSigmaPi()) < strangedEdxNSigmaTight)
+        bitset(compatibleK0Short, 2);
 
-      int massRegLambda = -1;
-      if (TMath::Abs(v0.mLambda() - fLambdaMean->Eval(v0.pt()) < peakNsigma * fLambdaWidth->Eval(v0.pt()))) {
-        massRegLambda = 2;
-      }
-      if (v0.mLambda() > fLambdaMean->Eval(v0.pt()) + peakNsigma * fLambdaWidth->Eval(v0.pt()) && v0.mLambda() < fLambdaMean->Eval(v0.pt()) + backgroundNsigma * fLambdaWidth->Eval(v0.pt())) {
-        massRegLambda = 3;
-      }
-      if (v0.mLambda() < fLambdaMean->Eval(v0.pt()) - peakNsigma * fLambdaWidth->Eval(v0.pt()) && v0.mLambda() > fLambdaMean->Eval(v0.pt()) - backgroundNsigma * fLambdaWidth->Eval(v0.pt())) {
-        massRegLambda = 1;
-      }
-      if (v0.mLambda() > fLambdaMean->Eval(v0.pt()) + backgroundNsigma * fLambdaWidth->Eval(v0.pt())) {
-        massRegLambda = 4;
-      }
-      if (v0.mLambda() < fLambdaMean->Eval(v0.pt()) - backgroundNsigma * fLambdaWidth->Eval(v0.pt())) {
-        massRegLambda = 0;
-      }
+      if (TMath::Abs(posdau.tpcNSigmaPr()) < strangedEdxNSigmaLoose && TMath::Abs(negdau.tpcNSigmaPi()) < strangedEdxNSigmaLoose)
+        if (v0.v0cosPA() > lambdaCospa)
+          bitset(compatibleLambda, 0);
+      if (TMath::Abs(posdau.tpcNSigmaPr()) < strangedEdxNSigma && TMath::Abs(negdau.tpcNSigmaPi()) < strangedEdxNSigma)
+        if (v0.v0cosPA() > lambdaCospa)
+          bitset(compatibleLambda, 1);
+      if (TMath::Abs(posdau.tpcNSigmaPr()) < strangedEdxNSigmaTight && TMath::Abs(negdau.tpcNSigmaPi()) < strangedEdxNSigmaTight)
+        if (v0.v0cosPA() > lambdaCospa)
+          bitset(compatibleLambda, 2);
 
-      int massRegAntiLambda = -1;
-      if (TMath::Abs(v0.mAntiLambda() - fLambdaMean->Eval(v0.pt()) < peakNsigma * fLambdaWidth->Eval(v0.pt()))) {
-        massRegAntiLambda = 2;
-      }
-      if (v0.mAntiLambda() > fLambdaMean->Eval(v0.pt()) + peakNsigma * fLambdaWidth->Eval(v0.pt()) && v0.mAntiLambda() < fLambdaMean->Eval(v0.pt()) + backgroundNsigma * fLambdaWidth->Eval(v0.pt())) {
-        massRegAntiLambda = 3;
-      }
-      if (v0.mAntiLambda() < fLambdaMean->Eval(v0.pt()) - peakNsigma * fLambdaWidth->Eval(v0.pt()) && v0.mAntiLambda() > fLambdaMean->Eval(v0.pt()) - backgroundNsigma * fLambdaWidth->Eval(v0.pt())) {
-        massRegAntiLambda = 1;
-      }
-      if (v0.mAntiLambda() > fLambdaMean->Eval(v0.pt()) + backgroundNsigma * fLambdaWidth->Eval(v0.pt())) {
-        massRegAntiLambda = 4;
-      }
-      if (v0.mAntiLambda() < fLambdaMean->Eval(v0.pt()) - backgroundNsigma * fLambdaWidth->Eval(v0.pt())) {
-        massRegAntiLambda = 0;
-      }
+      if (TMath::Abs(posdau.tpcNSigmaPi()) < strangedEdxNSigmaLoose && TMath::Abs(negdau.tpcNSigmaPr()) < strangedEdxNSigmaLoose)
+        if (v0.v0cosPA() > lambdaCospa)
+          bitset(compatibleAntiLambda, 0);
+      if (TMath::Abs(posdau.tpcNSigmaPi()) < strangedEdxNSigma && TMath::Abs(negdau.tpcNSigmaPr()) < strangedEdxNSigma)
+        if (v0.v0cosPA() > lambdaCospa)
+          bitset(compatibleAntiLambda, 1);
+      if (TMath::Abs(posdau.tpcNSigmaPi()) < strangedEdxNSigmaTight && TMath::Abs(negdau.tpcNSigmaPr()) < strangedEdxNSigmaTight)
+        if (v0.v0cosPA() > lambdaCospa)
+          bitset(compatibleAntiLambda, 2);
 
-      if (compatibleK0Short)
+      // simplified handling: calculate NSigma in mass here
+      float massNSigmaK0Short = (v0.mK0Short() - fK0Mean->Eval(v0.pt())) / (fK0Width->Eval(v0.pt()) + 1e-6);
+      float massNSigmaLambda = (v0.mLambda() - fLambdaMean->Eval(v0.pt())) / (fLambdaWidth->Eval(v0.pt()) + 1e-6);
+      float massNSigmaAntiLambda = (v0.mAntiLambda() - fLambdaMean->Eval(v0.pt())) / (fLambdaWidth->Eval(v0.pt()) + 1e-6);
+
+      if (compatibleK0Short && (!doTrueSelectionInMass || (origV0entry.isTrueK0Short() && origV0entry.isPhysicalPrimary())))
         histos.fill(HIST("h3dMassK0Short"), v0.pt(), v0.mK0Short(), collision.centFT0M());
-      if (compatibleLambda)
+      if (compatibleLambda && (!doTrueSelectionInMass || (origV0entry.isTrueLambda() && origV0entry.isPhysicalPrimary())))
         histos.fill(HIST("h3dMassLambda"), v0.pt(), v0.mLambda(), collision.centFT0M());
-      if (compatibleAntiLambda)
+      if (compatibleAntiLambda && (!doTrueSelectionInMass || (origV0entry.isTrueAntiLambda() && origV0entry.isPhysicalPrimary())))
         histos.fill(HIST("h3dMassAntiLambda"), v0.pt(), v0.mAntiLambda(), collision.centFT0M());
 
       if (!fillTableOnlyWithCompatible ||
           ( // start major condition check
-            (compatibleK0Short && massRegK0Short > 0 && massRegK0Short < 4) ||
-            (compatibleLambda && massRegLambda > 0 && massRegLambda < 4) ||
-            (compatibleAntiLambda && massRegAntiLambda > 0 && massRegAntiLambda < 4)) // end major condition check
+            (compatibleK0Short > 0 && std::abs(massNSigmaK0Short) < maxMassNSigma) ||
+            (compatibleLambda > 0 && std::abs(massNSigmaLambda) < maxMassNSigma) ||
+            (compatibleAntiLambda > 0 && std::abs(massNSigmaAntiLambda) < maxMassNSigma)) // end major condition check
       ) {
         assocV0(v0.collisionId(), v0.globalIndex(),
                 compatibleK0Short, compatibleLambda, compatibleAntiLambda,
-                origV0entry.isTrueK0Short(), origV0entry.isTrueLambda(), origV0entry.isTrueAntiLambda(),
-                massRegK0Short, massRegLambda, massRegAntiLambda);
+                origV0entry.isTrueK0Short(), origV0entry.isTrueLambda(), origV0entry.isTrueAntiLambda(), origV0entry.isPhysicalPrimary(),
+                massNSigmaK0Short, massNSigmaLambda, massNSigmaAntiLambda);
       }
     }
   }
@@ -412,82 +429,68 @@ struct hstrangecorrelationfilter {
         continue;
 
       // check dE/dx compatibility
-      bool compatibleXiMinus = false;
-      bool compatibleXiPlus = false;
-      bool compatibleOmegaMinus = false;
-      bool compatibleOmegaPlus = false;
+      int compatibleXiMinus = 0;
+      int compatibleXiPlus = 0;
+      int compatibleOmegaMinus = 0;
+      int compatibleOmegaPlus = 0;
 
-      if (TMath::Abs(posTrackCast.tpcNSigmaPr()) < strangedEdxNSigma && TMath::Abs(negTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && TMath::Abs(bachTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && casc.sign() < 0) {
-        compatibleXiMinus = true;
-      }
-      if (TMath::Abs(posTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && TMath::Abs(negTrackCast.tpcNSigmaPr()) < strangedEdxNSigma && TMath::Abs(bachTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && casc.sign() > 0) {
-        compatibleXiPlus = true;
-      }
-      if (TMath::Abs(posTrackCast.tpcNSigmaPr()) < strangedEdxNSigma && TMath::Abs(negTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && TMath::Abs(bachTrackCast.tpcNSigmaKa()) < strangedEdxNSigma && casc.sign() < 0) {
-        compatibleOmegaMinus = true;
-      }
-      if (TMath::Abs(posTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && TMath::Abs(negTrackCast.tpcNSigmaPr()) < strangedEdxNSigma && TMath::Abs(bachTrackCast.tpcNSigmaKa()) < strangedEdxNSigma && casc.sign() > 0) {
-        compatibleOmegaPlus = true;
-      }
+      if (TMath::Abs(posTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaLoose && TMath::Abs(negTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaLoose && TMath::Abs(bachTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaLoose && casc.sign() < 0)
+        bitset(compatibleXiMinus, 0);
+      if (TMath::Abs(posTrackCast.tpcNSigmaPr()) < strangedEdxNSigma && TMath::Abs(negTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && TMath::Abs(bachTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && casc.sign() < 0)
+        bitset(compatibleXiMinus, 1);
+      if (TMath::Abs(posTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaTight && TMath::Abs(negTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaTight && TMath::Abs(bachTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaTight && casc.sign() < 0)
+        bitset(compatibleXiMinus, 2);
 
-      int massRegXi = -1;
-      if (TMath::Abs(casc.mXi() - fXiMean->Eval(casc.pt()) < peakNsigma * fXiWidth->Eval(casc.pt()))) {
-        massRegXi = 2;
-      }
-      if (casc.mXi() > fXiMean->Eval(casc.pt()) + peakNsigma * fXiWidth->Eval(casc.pt()) && casc.mXi() < fXiMean->Eval(casc.pt()) + backgroundNsigma * fXiWidth->Eval(casc.pt())) {
-        massRegXi = 3;
-      }
-      if (casc.mXi() < fXiMean->Eval(casc.pt()) - peakNsigma * fXiWidth->Eval(casc.pt()) && casc.mXi() > fXiMean->Eval(casc.pt()) - backgroundNsigma * fXiWidth->Eval(casc.pt())) {
-        massRegXi = 1;
-      }
-      if (casc.mXi() > fXiMean->Eval(casc.pt()) + backgroundNsigma * fXiWidth->Eval(casc.pt())) {
-        massRegXi = 4;
-      }
-      if (casc.mXi() < fXiMean->Eval(casc.pt()) - backgroundNsigma * fXiWidth->Eval(casc.pt())) {
-        massRegXi = 0;
-      }
+      if (TMath::Abs(posTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaLoose && TMath::Abs(negTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaLoose && TMath::Abs(bachTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaLoose && casc.sign() > 0)
+        bitset(compatibleXiPlus, 0);
+      if (TMath::Abs(posTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && TMath::Abs(negTrackCast.tpcNSigmaPr()) < strangedEdxNSigma && TMath::Abs(bachTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && casc.sign() > 0)
+        bitset(compatibleXiPlus, 1);
+      if (TMath::Abs(posTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaTight && TMath::Abs(negTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaTight && TMath::Abs(bachTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaTight && casc.sign() > 0)
+        bitset(compatibleXiPlus, 2);
 
-      int massRegOmega = -1;
-      if (TMath::Abs(casc.mOmega() - fOmegaMean->Eval(casc.pt()) < peakNsigma * fOmegaWidth->Eval(casc.pt()))) {
-        massRegOmega = 2;
-      }
-      if (casc.mOmega() > fOmegaMean->Eval(casc.pt()) + peakNsigma * fOmegaWidth->Eval(casc.pt()) && casc.mOmega() < fOmegaMean->Eval(casc.pt()) + backgroundNsigma * fOmegaWidth->Eval(casc.pt())) {
-        massRegOmega = 3;
-      }
-      if (casc.mOmega() < fOmegaMean->Eval(casc.pt()) - peakNsigma * fOmegaWidth->Eval(casc.pt()) && casc.mOmega() > fOmegaMean->Eval(casc.pt()) - backgroundNsigma * fOmegaWidth->Eval(casc.pt())) {
-        massRegOmega = 1;
-      }
-      if (casc.mOmega() > fOmegaMean->Eval(casc.pt()) + backgroundNsigma * fOmegaWidth->Eval(casc.pt())) {
-        massRegOmega = 4;
-      }
-      if (casc.mOmega() < fOmegaMean->Eval(casc.pt()) - backgroundNsigma * fOmegaWidth->Eval(casc.pt())) {
-        massRegOmega = 0;
-      }
+      if (TMath::Abs(posTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaLoose && TMath::Abs(negTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaLoose && TMath::Abs(bachTrackCast.tpcNSigmaKa()) < strangedEdxNSigmaLoose && casc.sign() < 0)
+        bitset(compatibleOmegaMinus, 0);
+      if (TMath::Abs(posTrackCast.tpcNSigmaPr()) < strangedEdxNSigma && TMath::Abs(negTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && TMath::Abs(bachTrackCast.tpcNSigmaKa()) < strangedEdxNSigma && casc.sign() < 0)
+        bitset(compatibleOmegaMinus, 1);
+      if (TMath::Abs(posTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaTight && TMath::Abs(negTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaTight && TMath::Abs(bachTrackCast.tpcNSigmaKa()) < strangedEdxNSigmaTight && casc.sign() < 0)
+        bitset(compatibleOmegaMinus, 2);
 
-      if (compatibleXiMinus)
+      if (TMath::Abs(posTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaLoose && TMath::Abs(negTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaLoose && TMath::Abs(bachTrackCast.tpcNSigmaKa()) < strangedEdxNSigmaLoose && casc.sign() > 0)
+        bitset(compatibleOmegaPlus, 0);
+      if (TMath::Abs(posTrackCast.tpcNSigmaPi()) < strangedEdxNSigma && TMath::Abs(negTrackCast.tpcNSigmaPr()) < strangedEdxNSigma && TMath::Abs(bachTrackCast.tpcNSigmaKa()) < strangedEdxNSigma && casc.sign() > 0)
+        bitset(compatibleOmegaPlus, 1);
+      if (TMath::Abs(posTrackCast.tpcNSigmaPi()) < strangedEdxNSigmaTight && TMath::Abs(negTrackCast.tpcNSigmaPr()) < strangedEdxNSigmaTight && TMath::Abs(bachTrackCast.tpcNSigmaKa()) < strangedEdxNSigmaTight && casc.sign() > 0)
+        bitset(compatibleOmegaPlus, 2);
+
+      float massNSigmaXi = (casc.mXi() - fXiMean->Eval(casc.pt())) / (fXiWidth->Eval(casc.pt()) + 1e-6);
+      float massNSigmaOmega = (casc.mOmega() - fOmegaMean->Eval(casc.pt())) / (fOmegaWidth->Eval(casc.pt()) + 1e-6);
+
+      if (compatibleXiMinus && (!doTrueSelectionInMass || (origCascadeEntry.isTrueXiMinus() && origCascadeEntry.isPhysicalPrimary())))
         histos.fill(HIST("h3dMassXiMinus"), casc.pt(), casc.mXi(), collision.centFT0M());
-      if (compatibleXiPlus)
+      if (compatibleXiPlus && (!doTrueSelectionInMass || (origCascadeEntry.isTrueXiPlus() && origCascadeEntry.isPhysicalPrimary())))
         histos.fill(HIST("h3dMassXiPlus"), casc.pt(), casc.mXi(), collision.centFT0M());
-      if (compatibleOmegaMinus)
+      if (compatibleOmegaMinus && (!doTrueSelectionInMass || (origCascadeEntry.isTrueOmegaMinus() && origCascadeEntry.isPhysicalPrimary())))
         histos.fill(HIST("h3dMassOmegaMinus"), casc.pt(), casc.mOmega(), collision.centFT0M());
-      if (compatibleOmegaPlus)
+      if (compatibleOmegaPlus && (!doTrueSelectionInMass || (origCascadeEntry.isTrueOmegaPlus() && origCascadeEntry.isPhysicalPrimary())))
         histos.fill(HIST("h3dMassOmegaPlus"), casc.pt(), casc.mOmega(), collision.centFT0M());
 
       if (!fillTableOnlyWithCompatible ||
           ( // start major condition check
-            ((compatibleXiMinus || compatibleXiPlus) && massRegXi > 0 && massRegXi < 4) ||
-            ((compatibleOmegaMinus || compatibleOmegaPlus) && massRegOmega > 0 && massRegOmega < 4)) // end major condition check
+            ((compatibleXiMinus > 0 || compatibleXiPlus > 0) && std::abs(massNSigmaXi) < maxMassNSigma) ||
+            ((compatibleOmegaMinus > 0 || compatibleOmegaPlus > 0) && std::abs(massNSigmaOmega) < maxMassNSigma)) // end major condition check
       ) {
         assocCascades(casc.collisionId(), casc.globalIndex(),
                       compatibleXiMinus, compatibleXiPlus, compatibleOmegaMinus, compatibleOmegaPlus,
                       origCascadeEntry.isTrueXiMinus(), origCascadeEntry.isTrueXiPlus(),
                       origCascadeEntry.isTrueOmegaMinus(), origCascadeEntry.isTrueOmegaPlus(),
-                      massRegXi, massRegOmega);
+                      origCascadeEntry.isPhysicalPrimary(),
+                      massNSigmaXi, massNSigmaOmega);
       }
     }
   }
 
   PROCESS_SWITCH(hstrangecorrelationfilter, processTriggers, "Produce trigger tables", true);
+  PROCESS_SWITCH(hstrangecorrelationfilter, processTriggersMC, "Produce trigger tables for MC", false);
   PROCESS_SWITCH(hstrangecorrelationfilter, processV0s, "Produce associated V0 tables", true);
   PROCESS_SWITCH(hstrangecorrelationfilter, processAssocPions, "Produce associated Pion tables", true);
   PROCESS_SWITCH(hstrangecorrelationfilter, processCascades, "Produce associated cascade tables", true);

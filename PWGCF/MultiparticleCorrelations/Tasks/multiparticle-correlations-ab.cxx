@@ -25,28 +25,29 @@ using namespace o2::framework;
 
 // *) Run 3:
 using EventSelection = soa::Join<aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs>;
-using CollisionRec = soa::Join<aod::Collisions, EventSelection>::iterator;
+using CollisionRec = soa::Join<aod::Collisions, EventSelection>::iterator; // use in json "isMC": "true" for "event-selection-task"
 using CollisionRecSim = soa::Join<aod::Collisions, aod::McCollisionLabels, EventSelection>::iterator;
-using CollisionSim = aod::McCollision; // TBI 20240120 add support for centrality also for this case
+using CollisionSim = aod::McCollision;
 using TracksRec = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
 using TrackRec = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>::iterator;
-using TracksRecSim = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels>;
+using TracksRecSim = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels>; // + use in json "isMC" : "true"
 using TrackRecSim = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels>::iterator;
 using TracksSim = aod::McParticles;
 using TrackSim = aod::McParticles::iterator;
 
-// *) Converted Run 2:
-using EventSelection_Run2 = soa::Join<aod::EvSels, aod::Mults, aod::CentRun2V0Ms, aod::CentRun2SPDTrks>;
-using CollisionRec_Run2 = soa::Join<aod::Collisions, EventSelection_Run2>::iterator;
+// *) Run 2:
+using EventSelection_Run2 = soa::Join<aod::EvSels, aod::Mults, aod::CentRun2V0Ms, aod::CentRun2SPDTrks>; // TBI 20240517 do not subscribe to CentRun2CL0s and CentRun2CL1s => see enum
+using CollisionRec_Run2 = soa::Join<aod::Collisions, EventSelection_Run2>::iterator;                     // use in json "isRun2MC" : "true" for "event-selection-task"
 using CollisionRecSim_Run2 = soa::Join<aod::Collisions, aod::McCollisionLabels, EventSelection_Run2>::iterator;
-using TracksRecSim_Run2 = soa::Join<aod::Tracks, aod::McTrackLabels>;
-using TrackRecSim_Run2 = soa::Join<aod::Tracks, aod::McTrackLabels>::iterator;
+// Remark: For tracks, I can use everything same as in Run 3
 
-// *) Converted Run 1:
+// *) Run 1:
 //    TBI 20240205 Since centrality calibration is not available in converted Run 1 data, I cannot treat it for the time being in the same way as converted Run 2.
 //                 Once calibration is available, just use Run 2 above both for Run 2 and Run 1
 using EventSelection_Run1 = soa::Join<aod::EvSels, aod::Mults>; // TBI 20240205 no calibration for centrality in converted LHC10h and LHC11h, at the time of writing
 using CollisionRec_Run1 = soa::Join<aod::Collisions, EventSelection_Run1>::iterator;
+using CollisionRecSim_Run1 = soa::Join<aod::Collisions, aod::McCollisionLabels, EventSelection_Run1>::iterator;
+// Remark: For tracks, I can use everything same as in Run 3
 
 // *) ROOT:
 #include <TList.h>
@@ -92,11 +93,11 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   {
     // *) Trick to avoid name clashes, part 1;
     // *) Default configuration, booking, binning and cuts;
-    // *) Insanity checks;
+    // *) Insanity checks before booking;
     // *) Book random generator;
     // *) Book base list;
     // *) Book all remaining objects;
-    // ...
+    // *) Insanity checks after booking;
     // *) Trick to avoid name clashes, part 2;
 
     // *) Trick to avoid name clashes, part 1:
@@ -104,16 +105,14 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     TH1::AddDirectory(kFALSE);
 
     // *) Default configuration, booking, binning and cuts:
-    DefaultConfiguration();
-    DefaultBooking(); // here I decide only which histograms are booked, not details like binning, etc. That's done later in Book* member functions.
-    DefaultBinning();
-    DefaultCuts(); // Remark: has to be called after DefaultBinning(), since some default cuts are defined through default binning, to ease bookeeping
+    DefaultConfiguration(); // here default values from configurables are taken into account
+    DefaultBooking();       // here I decide only which histograms are booked, not details like binning, etc.
+    DefaultBinning();       // here default values for bins are either hardwired, or values for bins provided via configurables are taken into account
+    DefaultCuts();          // here default values for cuts are either hardwired, or defined through default binning to ease bookeeping, or values for cuts provided via configurables are taken into account
+                            // Remark: DefaultCuts() has to be called after DefaultBinning()
 
-    // *) Set what to process - only rec, both rec and sim, only sim:
-    // WhatToProcess(); // yes, this can be called here, after calling all Default* member functions above, because this has an effect only on Book* members functions, and the ones called afterward
-
-    // *) Insanity checks:
-    InsanityChecks();
+    // *) Insanity checks before booking:
+    InsanityChecksBeforeBooking(); // check only harwired values and the ones obtained from configurables
 
     // *) Book random generator:
     delete gRandom;
@@ -138,6 +137,9 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     BookInternalValidationHistograms();
     BookTest0Histograms();
     BookTheRest(); // here I book everything that was not sorted (yet) in the specific functions above
+
+    // *) Insanity checks after booking:
+    InsanityChecksAfterBooking(); // pointers of all local histograms, etc., are available, so I can do insanity checks directly on all booked objects
 
     // *) Trick to avoid name clashes, part 2:
     TH1::AddDirectory(oldHistAddStatus);
@@ -188,16 +190,16 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   // -------------------------------------------
 
   // C) Process only simulated data:
-  void processSim(CollisionSim const& collision, aod::BCs const&, TracksSim const& tracks)
+  void processSim(CollisionSim const& /*collision*/, aod::BCs const&, TracksSim const& /*tracks*/)
   {
-    Steer<eSim>(collision, tracks);
+    // Steer<eSim>(collision, tracks); // TBI 20240517 not ready yet, but I do not really need this one urgently, since RecSim is working, and I need that one for efficiencies...
   }
   PROCESS_SWITCH(MultiparticleCorrelationsAB, processSim, "process only simulated data", false);
 
   // -------------------------------------------
 
   // D) Process only converted reconstructed Run 2 data:
-  void processRec_Run2(CollisionRec_Run2 const& collision, aod::BCs const&, aod::Tracks const& tracks)
+  void processRec_Run2(CollisionRec_Run2 const& collision, aod::BCs const&, TracksRec const& tracks)
   {
     Steer<eRec_Run2>(collision, tracks);
   }
@@ -206,7 +208,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   // -------------------------------------------
 
   // E) Process both converted reconstructed and corresponding MC truth simulated Run 2 data:
-  void processRecSim_Run2(CollisionRecSim_Run2 const& collision, aod::BCs const&, TracksRecSim_Run2 const& tracks, aod::McParticles const&, aod::McCollisions const&)
+  void processRecSim_Run2(CollisionRecSim_Run2 const& collision, aod::BCs const&, TracksRecSim const& tracks, aod::McParticles const&, aod::McCollisions const&)
   {
     Steer<eRecAndSim_Run2>(collision, tracks);
   }
@@ -215,28 +217,27 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   // -------------------------------------------
 
   // F) Process only converted simulated Run 2 data:
-  void processSim_Run2(aod::Collision const&) // TBI 20240424 not ready yet, just a dummy to version to get later "doprocess..." variable.
+  void processSim_Run2(CollisionSim const& /*collision*/) // TBI 20240517 extend this subscription eventually
   {
-    // Steer<eSim_Run2>(collision, tracks);
+    // Steer<eSim_Run2>(collision, tracks); // TBI 20240517 not ready yet, but I do not really need this one urgently, since RecSim_Run2 is working, and I need that one for efficiencies...
   }
-  PROCESS_SWITCH(MultiparticleCorrelationsAB, processSim_Run2, "process converted only simulated Run 2 data", false);
+  PROCESS_SWITCH(MultiparticleCorrelationsAB, processSim_Run2, "process only converted simulated Run 2 data", false);
 
   // -------------------------------------------
 
   // G) Process only converted reconstructed Run 1 data:
-  void processRec_Run1(CollisionRec_Run1 const& collision, aod::BCs const&, aod::Tracks const& tracks)
+  void processRec_Run1(CollisionRec_Run1 const& collision, aod::BCs const&, TracksRec const& tracks)
   {
     Steer<eRec_Run1>(collision, tracks);
   }
-
   PROCESS_SWITCH(MultiparticleCorrelationsAB, processRec_Run1, "process only converted reconstructed Run 1 data", false);
 
   // -------------------------------------------
 
   // H) Process both converted reconstructed and corresponding MC truth simulated Run 1 data;
-  void processRecSim_Run1(aod::Collision const&) // TBI 20240424 not ready yet, just a dummy to version to get later "doprocess..." variable.
+  void processRecSim_Run1(CollisionRecSim_Run1 const& /*collision*/, aod::BCs const&, TracksRecSim const& /*tracks*/, aod::McParticles const&, aod::McCollisions const&)
   {
-    // Steer<eRecSim_Run1>(collision, tracks);
+    // Steer<eRecAndSim_Run1>(collision, tracks); // TBI 20240517 not ready yet, but for benchmarking in any case I need only "Rec"
   }
   PROCESS_SWITCH(MultiparticleCorrelationsAB, processRecSim_Run1, "process both converted reconstructed and simulated Run 1 data", false);
 
@@ -245,7 +246,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   // I) Process only converted simulated Run 1 data.
   void processSim_Run1(aod::Collision const&) // TBI 20240424 not ready yet, just a dummy to version to get later "doprocess..." variable.
   {
-    // Steer<eSim_Run1>(collision, tracks);
+    // Steer<eSim_Run1>(collision, tracks); // TBI 20240517 not ready yet, but for benchmarking in any case I need only "Rec"
   }
   PROCESS_SWITCH(MultiparticleCorrelationsAB, processSim_Run1, "process only converted simulated Run 1 data", false);
 

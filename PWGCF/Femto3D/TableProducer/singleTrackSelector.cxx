@@ -18,6 +18,9 @@
 
 #include <vector>
 
+#include "EventFiltering/Zorro.h"
+#include "EventFiltering/ZorroSummary.h"
+
 #include "PWGCF/Femto3D/DataModel/singletrackselector.h"
 
 #include "Framework/AnalysisTask.h"
@@ -44,9 +47,14 @@ using namespace o2::aod;
 struct singleTrackSelector {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
+  Zorro zorro;
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
+
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  Configurable<bool> applySkimming{"applySkimming", false, "Skimmed dataset processing"};
+  Configurable<std::string> cfgSkimming{"cfgSkimming", "fPD", "Configurable for skimming"};
 
   Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply rapidity cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
   // Configurable<int> trackSelection{"trackSelection", 1, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
@@ -54,10 +62,11 @@ struct singleTrackSelector {
   Configurable<int> multTableToUse{"multTableToUse", 1, "Flag to choose mult. estimator (Run3 only): 0 -> TPCMults, 1 -> MultNTracksPV, 2 -> MultNTracksPVeta1"};
   Configurable<bool> rejectNotPropagatedTrks{"rejectNotPropagatedTrks", true, "rejects tracks that are not propagated to the primary vertex"};
   Configurable<bool> enable_gen_info{"enable_gen_info", false, "Enable MC true info"};
+  Configurable<bool> fetchRate{"fetchRate", true, "Fetch the hadronic rate from the CCDB"};
 
   Configurable<std::vector<int>> _particlesToKeep{"particlesToKeepPDGs", std::vector<int>{2212, 1000010020}, "PDG codes of perticles for which the 'singletrackselector' tables will be created (only proton and deurton are supported now)"};
   Configurable<std::vector<float>> keepWithinNsigmaTPC{"keepWithinNsigmaTPC", std::vector<float>{-4.0f, 4.0f}, "TPC range for preselection of particles specified with PDG"};
-  Configurable<std::vector<int>> _particlesToReject{"particlesToRejectPDGs", std::vector<int>{211, 321}, "PDG codes of particles that will be rejected with TOF (only pion, kaon, proton and deurton are supported now)"};
+  Configurable<std::vector<int>> _particlesToReject{"particlesToRejectPDGs", std::vector<int>{211, 321, 1000020030}, "PDG codes of particles that will be rejected with TOF (only pion, kaon, proton and deurton are supported now)"};
   Configurable<std::vector<float>> rejectWithinNsigmaTOF{"rejectWithinNsigmaTOF", std::vector<float>{-5.0f, 5.0f}, "TOF rejection Nsigma range for particles specified with PDG to be rejected"};
 
   Configurable<float> _pRemoveTofOutOfRange{"pRemoveTofOutOfRange", 100.f, "momentum starting from which request TOF nSigma to be within the stored range (-10 < Nsigma < 10)"};
@@ -75,9 +84,9 @@ struct singleTrackSelector {
 
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidEvTimeFlags, aod::TracksDCA,
                          aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa,
-                         aod::pidTPCFullPr, aod::pidTPCFullDe,
+                         aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe,
                          aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa,
-                         aod::pidTOFFullPr, aod::pidTOFFullDe,
+                         aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe,
                          aod::TrackSelection, aod::pidTOFbeta>;
 
   using CollRun2 = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentRun2V0Ms>;
@@ -88,6 +97,7 @@ struct singleTrackSelector {
   Produces<o2::aod::SingleCollExtras> tableRowCollExtra;
   Produces<o2::aod::SingleTrackSels> tableRow;
   Produces<o2::aod::SingleTrkExtras> tableRowExtra;
+  Produces<o2::aod::SinglePIDEls> tableRowPIDEl;
   Produces<o2::aod::SingleTrkMCs> tableRowMC;
 
   Filter eventFilter = (applyEvSel.node() == 0) ||
@@ -109,7 +119,7 @@ struct singleTrackSelector {
   std::vector<int> particlesToKeep;
   std::vector<int> particlesToReject;
 
-  HistogramRegistry registry{"registry"};
+  HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
   SliceCache cache;
 
   void init(InitContext&)
@@ -118,17 +128,28 @@ struct singleTrackSelector {
     particlesToKeep = _particlesToKeep;
     particlesToReject = _particlesToReject;
 
+    if (applySkimming) {
+      zorroSummary.setObject(zorro.getZorroSummary());
+    }
     ccdb->setURL(ccdburl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
 
+    if (applySkimming) {
+      registry.add("hNEvents", "hNEvents", {HistType::kTH1D, {{2, 0.f, 2.f}}});
+      registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(1, "All");
+      registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(2, "Skimmed");
+    }
+
     if (enable_gen_info) {
       registry.add("hNEvents_MCGen", "hNEvents_MCGen", {HistType::kTH1F, {{1, 0.f, 1.f}}});
       registry.add("hGen_EtaPhiPt_Proton", "Gen (anti)protons in true collisions", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., 2 * TMath::Pi(), "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
       registry.add("hGen_EtaPhiPt_Deuteron", "Gen (anti)deuteron in true collisions", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., 2 * TMath::Pi(), "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
+      registry.add("hGen_EtaPhiPt_Helium3", "Gen (anti)Helium3 in true collisions", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., 2 * TMath::Pi(), "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
       registry.add("hReco_EtaPhiPt_Proton", "Gen (anti)protons in reco collisions", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., 2 * TMath::Pi(), "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
       registry.add("hReco_EtaPhiPt_Deuteron", "Gen (anti)deuteron in reco collisions", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., 2 * TMath::Pi(), "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
+      registry.add("hReco_EtaPhiPt_Helium3", "Gen (anti)Helium3 in reco collisions", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., 2 * TMath::Pi(), "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
     }
   }
 
@@ -138,6 +159,11 @@ struct singleTrackSelector {
       return;
     }
     d_bz = 0.f;
+
+    if (applySkimming) {
+      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), cfgSkimming.value);
+      zorro.populateHistRegistry(registry, bc.runNumber());
+    }
 
     auto run3grp_timestamp = bc.timestamp();
     o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
@@ -201,24 +227,27 @@ struct singleTrackSelector {
                    track.tpcNClsShared(),
                    track.itsClusterMap(),
                    track.itsClusterSizes(),
-
-                   singletrackselector::packInTable<singletrackselector::binning::dca>(track.dcaXY()),
-                   singletrackselector::packInTable<singletrackselector::binning::dca>(track.dcaZ()),
+                   singletrackselector::packSymmetric<singletrackselector::binning::dca>(track.dcaXY()),
+                   singletrackselector::packSymmetric<singletrackselector::binning::dca>(track.dcaZ()),
                    singletrackselector::packInTable<singletrackselector::binning::chi2>(track.tpcChi2NCl()),
                    singletrackselector::packInTable<singletrackselector::binning::chi2>(track.itsChi2NCl()),
                    singletrackselector::packInTable<singletrackselector::binning::rowsOverFindable>(track.tpcCrossedRowsOverFindableCls()),
-                   singletrackselector::packInTable<singletrackselector::binning::nsigma>(track.tofNSigmaPi()),
-                   singletrackselector::packInTable<singletrackselector::binning::nsigma>(track.tpcNSigmaPi()),
-                   singletrackselector::packInTable<singletrackselector::binning::nsigma>(track.tofNSigmaKa()),
-                   singletrackselector::packInTable<singletrackselector::binning::nsigma>(track.tpcNSigmaKa()),
-                   singletrackselector::packInTable<singletrackselector::binning::nsigma>(track.tofNSigmaPr()),
-                   singletrackselector::packInTable<singletrackselector::binning::nsigma>(track.tpcNSigmaPr()),
-                   singletrackselector::packInTable<singletrackselector::binning::nsigma>(track.tofNSigmaDe()),
-                   singletrackselector::packInTable<singletrackselector::binning::nsigma>(track.tpcNSigmaDe()));
+                   singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tofNSigmaPi()),
+                   singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tpcNSigmaPi()),
+                   singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tofNSigmaKa()),
+                   singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tpcNSigmaKa()),
+                   singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tofNSigmaPr()),
+                   singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tpcNSigmaPr()),
+                   singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tofNSigmaDe()),
+                   singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tpcNSigmaDe()),
+                   singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tofNSigmaHe()),
+                   singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tpcNSigmaHe()));
 
           tableRowExtra(track.tpcInnerParam(),
                         track.tpcSignal(),
                         track.beta());
+
+          tableRowPIDEl(singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tpcNSigmaEl()));
 
           if constexpr (isMC) {
             int origin = -1;
@@ -284,7 +313,21 @@ struct singleTrackSelector {
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
-    double hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; // fetch IR
+
+    if (applySkimming) {
+      registry.fill(HIST("hNEvents"), 0.5);
+      bool zorroSelected = zorro.isSelected(bc.globalBC());
+      if (!zorroSelected) {
+        return;
+      }
+      registry.fill(HIST("hNEvents"), 1.5);
+    }
+
+    double hadronicRate = 0.;
+    if (fetchRate) {
+      hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; // fetch IR
+    }
+    int occupancy = collision.trackOccupancyInTimeRange();
 
     float centValue = -100.0f;
 
@@ -334,10 +377,9 @@ struct singleTrackSelector {
                    collision.posZ(),
                    d_bz);
 
-      tableRowCollExtra(collision.selection_bit(aod::evsel::kNoSameBunchPileup),
-                        collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV),
-                        collision.selection_bit(aod::evsel::kIsVertexITSTPC),
-                        hadronicRate);
+      tableRowCollExtra(collision.selection_raw(),
+                        hadronicRate,
+                        occupancy);
 
       fillTrackTables<false>(tracks);
     }
@@ -382,6 +424,11 @@ struct singleTrackSelector {
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
+    double hadronicRate = 0.;
+    if (fetchRate) {
+      hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; // fetch IR
+    }
+    int occupancy = collision.trackOccupancyInTimeRange();
 
     float centValue = -100.0f;
 
@@ -432,10 +479,9 @@ struct singleTrackSelector {
                    collision.posZ(),
                    d_bz);
 
-      tableRowCollExtra(collision.selection_bit(aod::evsel::kNoSameBunchPileup),
-                        collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV),
-                        collision.selection_bit(aod::evsel::kIsVertexITSTPC),
-                        0.);
+      tableRowCollExtra(collision.selection_raw(),
+                        hadronicRate,
+                        occupancy);
 
       fillTrackTables<true>(tracks);
 
@@ -462,6 +508,12 @@ struct singleTrackSelector {
         } else if (mcParticle.pdgCode() == -2212) {
           registry.fill(HIST("hReco_EtaPhiPt_Proton"), mcParticle.eta(), mcParticle.phi(), mcParticle.pt() * -1);
         }
+
+        if (mcParticle.pdgCode() == 1000020030) {
+          registry.fill(HIST("hReco_EtaPhiPt_Helium3"), mcParticle.eta(), mcParticle.phi(), mcParticle.pt());
+        } else if (mcParticle.pdgCode() == -1000020030) {
+          registry.fill(HIST("hReco_EtaPhiPt_Helium3"), mcParticle.eta(), mcParticle.phi(), mcParticle.pt() * -1);
+        }
       }
     }
   }
@@ -474,7 +526,7 @@ struct singleTrackSelector {
       return;
     }
 
-    if (abs(mcCollision.posZ()) > _vertexZ) {
+    if (std::fabs(mcCollision.posZ()) > _vertexZ) {
       return;
     }
 
@@ -495,6 +547,12 @@ struct singleTrackSelector {
         registry.fill(HIST("hGen_EtaPhiPt_Proton"), mcParticle.eta(), mcParticle.phi(), mcParticle.pt());
       } else if (mcParticle.pdgCode() == -2212) {
         registry.fill(HIST("hGen_EtaPhiPt_Proton"), mcParticle.eta(), mcParticle.phi(), mcParticle.pt() * -1);
+      }
+
+      if (mcParticle.pdgCode() == 1000020030) {
+        registry.fill(HIST("hGen_EtaPhiPt_Helium3"), mcParticle.eta(), mcParticle.phi(), mcParticle.pt());
+      } else if (mcParticle.pdgCode() == -1000020030) {
+        registry.fill(HIST("hGen_EtaPhiPt_Helium3"), mcParticle.eta(), mcParticle.phi(), mcParticle.pt() * -1);
       }
     }
   }
