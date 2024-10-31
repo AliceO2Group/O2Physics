@@ -315,7 +315,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Rapidity, rapidity, //! Track rapidity, computed unde
 
 } // namespace singletrackselector
 
-DECLARE_SOA_TABLE_FULL(SingleTrackSels_v0, "SelTracks", "AOD", "SINGLETRACKSEL", // Table of the variables for single track selection.
+DECLARE_SOA_TABLE(SingleTrackSels_v0, "AOD", "SINGLETRACKSEL", // Table of the variables for single track selection.
                        o2::soa::Index<>,
                        singletrackselector::SingleCollSelId,
                        singletrackselector::P,
@@ -364,7 +364,7 @@ DECLARE_SOA_TABLE_FULL(SingleTrackSels_v0, "SelTracks", "AOD", "SINGLETRACKSEL",
                        singletrackselector::Pz<singletrackselector::P, singletrackselector::Eta>,
                        singletrackselector::PhiStar<singletrackselector::P, singletrackselector::Eta, singletrackselector::Sign, singletrackselector::Phi>);
 
-DECLARE_SOA_TABLE_FULL(SingleTrackSels_v1, "SelTracks", "AOD", "SINGLETRACKSEL1", // Table of the variables for single track selection.
+DECLARE_SOA_TABLE_VERSIONED(SingleTrackSels_v1, "AOD", "SINGLETRACKSEL1", 1, // Table of the variables for single track selection.
                        o2::soa::Index<>,
                        singletrackselector::SingleCollSelId,
                        singletrackselector::P,
@@ -420,7 +420,7 @@ DECLARE_SOA_TABLE_FULL(SingleTrackSels_v1, "SelTracks", "AOD", "SINGLETRACKSEL1"
                        singletrackselector::Pz<singletrackselector::P, singletrackselector::Eta>,
                        singletrackselector::PhiStar<singletrackselector::P, singletrackselector::Eta, singletrackselector::Sign, singletrackselector::Phi>);
 
-DECLARE_SOA_TABLE_FULL(SingleTrackSels_v2, "SelTracks", "AOD", "SINGLETRACKSEL2", // Table of the variables for single track selection.
+DECLARE_SOA_TABLE_VERSIONED(SingleTrackSels_v2, "AOD", "SINGLETRACKSEL2", 2, // Table of the variables for single track selection.
                        o2::soa::Index<>,
                        singletrackselector::SingleCollSelId,
                        singletrackselector::P,
