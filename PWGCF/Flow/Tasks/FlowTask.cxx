@@ -16,6 +16,9 @@
 #include <DataFormatsParameters/GRPMagField.h>
 #include <cmath>
 #include <vector>
+#include <unordered_map>
+#include <string>
+#include <memory>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
