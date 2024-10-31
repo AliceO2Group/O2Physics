@@ -26,21 +26,11 @@
 namespace o2::aod
 {
 
-DECLARE_SOA_TABLE(JDielectronMcCollisions, "AOD", "JDIELMCCOLL",
-                  o2::soa::Index<>,
-                  jmccollision::PosX,
-                  jmccollision::PosY,
-                  jmccollision::PosZ,
-                  o2::soa::Marker<3>);
-
-using JMcCollision = JMcCollisions::iterator;
-
-DECLARE_SOA_TABLE(StoredJDielectronMcCollisions, "AOD1", "JDIELMCCOLL",
-                  o2::soa::Index<>,
-                  jmccollision::PosX,
-                  jmccollision::PosY,
-                  jmccollision::PosZ,
-                  o2::soa::Marker<4>);
+DECLARE_SOA_TABLE_STAGED(JDielectronMcCollisions, "JDIELMCCOLL",
+                         o2::soa::Index<>,
+                         jmccollision::PosX,
+                         jmccollision::PosY,
+                         jmccollision::PosZ);
 
 namespace jdielectronindices
 {
@@ -52,30 +42,16 @@ DECLARE_SOA_INDEX_COLUMN(JMcCollision, mcCollision);
 DECLARE_SOA_INDEX_COLUMN(JMcParticle, mcParticle);
 } // namespace jdielectronindices
 
-DECLARE_SOA_TABLE(JDielectronCollisionIds, "AOD", "JDIELCOLLID",
-                  jdielectronindices::JCollisionId);
+DECLARE_SOA_TABLE_STAGED(JDielectronCollisionIds, "JDIELCOLLID",
+                         jdielectronindices::JCollisionId);
 
-DECLARE_SOA_TABLE(StoredJDielectronCollisionIds, "AOD1", "JDIELCOLLID",
-                  jdielectronindices::JCollisionId,
-                  o2::soa::Marker<1>);
+DECLARE_SOA_TABLE_STAGED(JDielectronMcCollisionIds, "JDIELMCCOLLID",
+                         jdielectronindices::JMcCollisionId);
 
-DECLARE_SOA_TABLE(JDielectronMcCollisionIds, "AOD", "JDIELMCCOLLID",
-                  jdielectronindices::JMcCollisionId);
-
-DECLARE_SOA_TABLE(StoredJDielectronMcCollisionIds, "AOD1", "JDIELMCCOLLID",
-                  jdielectronindices::JMcCollisionId,
-                  o2::soa::Marker<1>);
-
-DECLARE_SOA_TABLE(JDielectronIds, "AOD", "JDIELID",
-                  jdielectronindices::JCollisionId,
-                  jdielectronindices::Prong0Id,
-                  jdielectronindices::Prong1Id);
-
-DECLARE_SOA_TABLE(StoredJDielectronIds, "AOD1", "JDIELID",
-                  jdielectronindices::JCollisionId,
-                  jdielectronindices::Prong0Id,
-                  jdielectronindices::Prong1Id,
-                  o2::soa::Marker<1>);
+DECLARE_SOA_TABLE_STAGED(JDielectronIds, "JDIELID",
+                         jdielectronindices::JCollisionId,
+                         jdielectronindices::Prong0Id,
+                         jdielectronindices::Prong1Id);
 
 namespace jdielectronmc
 {
@@ -103,63 +79,34 @@ DECLARE_SOA_DYNAMIC_COLUMN(P, p,
                            [](float pt, float eta) -> float { return pt * std::cosh(eta); });
 } // namespace jdielectronmc
 
-DECLARE_SOA_TABLE(JDielectronMcs, "AOD", "JDIELMC",
-                  o2::soa::Index<>,
-                  jdielectronindices::JDielectronMcCollisionId,
-                  jdielectronmc::Pt,
-                  jdielectronmc::Eta,
-                  jdielectronmc::Phi,
-                  jdielectronmc::Y,
-                  jdielectronmc::E,
-                  jdielectronmc::M,
-                  jdielectronmc::PdgCode,
-                  jdielectronmc::GenStatusCode,
-                  jdielectronmc::HepMCStatusCode,
-                  jdielectronmc::IsPhysicalPrimary,
-                  jdielectronmc::DecayFlag,
-                  jdielectronmc::Origin,
-                  jdielectronmc::Px<jdielectronmc::Pt, jdielectronmc::Phi>,
-                  jdielectronmc::Py<jdielectronmc::Pt, jdielectronmc::Phi>,
-                  jdielectronmc::Pz<jdielectronmc::Pt, jdielectronmc::Eta>,
-                  jdielectronmc::P<jdielectronmc::Pt, jdielectronmc::Eta>);
+DECLARE_SOA_TABLE_STAGED(JDielectronMcs, "JDIELMC",
+                         o2::soa::Index<>,
+                         jdielectronindices::JDielectronMcCollisionId,
+                         jdielectronmc::Pt,
+                         jdielectronmc::Eta,
+                         jdielectronmc::Phi,
+                         jdielectronmc::Y,
+                         jdielectronmc::E,
+                         jdielectronmc::M,
+                         jdielectronmc::PdgCode,
+                         jdielectronmc::GenStatusCode,
+                         jdielectronmc::HepMCStatusCode,
+                         jdielectronmc::IsPhysicalPrimary,
+                         jdielectronmc::DecayFlag,
+                         jdielectronmc::Origin,
+                         jdielectronmc::Px<jdielectronmc::Pt, jdielectronmc::Phi>,
+                         jdielectronmc::Py<jdielectronmc::Pt, jdielectronmc::Phi>,
+                         jdielectronmc::Pz<jdielectronmc::Pt, jdielectronmc::Eta>,
+                         jdielectronmc::P<jdielectronmc::Pt, jdielectronmc::Eta>);
 
 using JDielectronMc = JDielectronMcs::iterator;
-
-DECLARE_SOA_TABLE(StoredJDielectronMcs, "AOD1", "JDIELMC",
-                  o2::soa::Index<>,
-                  jdielectronindices::JDielectronMcCollisionId,
-                  jdielectronmc::Pt,
-                  jdielectronmc::Eta,
-                  jdielectronmc::Phi,
-                  jdielectronmc::Y,
-                  jdielectronmc::E,
-                  jdielectronmc::M,
-                  jdielectronmc::PdgCode,
-                  jdielectronmc::GenStatusCode,
-                  jdielectronmc::HepMCStatusCode,
-                  jdielectronmc::IsPhysicalPrimary,
-                  jdielectronmc::DecayFlag,
-                  jdielectronmc::Origin,
-                  jdielectronmc::Px<jdielectronmc::Pt, jdielectronmc::Phi>,
-                  jdielectronmc::Py<jdielectronmc::Pt, jdielectronmc::Phi>,
-                  jdielectronmc::Pz<jdielectronmc::Pt, jdielectronmc::Eta>,
-                  jdielectronmc::P<jdielectronmc::Pt, jdielectronmc::Eta>,
-                  o2::soa::Marker<1>);
-
 using StoredJDielectronMc = StoredJDielectronMcs::iterator;
 
-DECLARE_SOA_TABLE(JDielectronMcIds, "AOD", "JDIELMCID",
-                  jdielectronindices::JMcCollisionId,
-                  jdielectronindices::JMcParticleId,
-                  jdielectronmc::MothersIds,
-                  jdielectronmc::DaughtersIdSlice);
-
-DECLARE_SOA_TABLE(StoredJDielectronMcIds, "AOD1", "JDIELMCID",
-                  jdielectronindices::JMcCollisionId,
-                  jdielectronindices::JMcParticleId,
-                  jdielectronmc::MothersIds,
-                  jdielectronmc::DaughtersIdSlice,
-                  o2::soa::Marker<1>);
+DECLARE_SOA_TABLE_STAGED(JDielectronMcIds, "JDIELMCID",
+                         jdielectronindices::JMcCollisionId,
+                         jdielectronindices::JMcParticleId,
+                         jdielectronmc::MothersIds,
+                         jdielectronmc::DaughtersIdSlice);
 
 namespace jdummydq
 {

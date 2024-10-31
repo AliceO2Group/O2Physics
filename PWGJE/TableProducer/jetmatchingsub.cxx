@@ -53,14 +53,14 @@ struct JetMatchingSub {
   {
   }
 
-  void processDummy(JetCollisions const&)
+  void processDummy(aod::JetCollisions const&)
   {
   }
   PROCESS_SWITCH(JetMatchingSub, processDummy, "Dummy process", true);
 
-  void processJets(JetCollisions const& collisions,
+  void processJets(aod::JetCollisions const& collisions,
                    JetsBase const& jetsBase, JetsTag const& jetsTag,
-                   JetTracks const& tracks, TracksTag const& tracksSub, Candidates const& candidates)
+                   aod::JetTracks const& tracks, TracksTag const& tracksSub, Candidates const& candidates)
   {
 
     // initialise objects used to store the matching index arrays (array in case a mcCollision is split) before filling the matching tables
@@ -103,25 +103,25 @@ using D0ChargedJetMatching = JetMatchingSub<soa::Join<aod::D0ChargedJets, aod::D
                                             aod::D0ChargedJetsMatchedToD0ChargedEventWiseSubtractedJets,
                                             aod::D0ChargedEventWiseSubtractedJetsMatchedToD0ChargedJets,
                                             aod::JTrackD0Subs,
-                                            CandidatesD0Data>;
+                                            aod::CandidatesD0Data>;
 using LcChargedJetMatching = JetMatchingSub<soa::Join<aod::LcChargedJets, aod::LcChargedJetConstituents>,
                                             soa::Join<aod::LcChargedEventWiseSubtractedJets, aod::LcChargedEventWiseSubtractedJetConstituents>,
                                             aod::LcChargedJetsMatchedToLcChargedEventWiseSubtractedJets,
                                             aod::LcChargedEventWiseSubtractedJetsMatchedToLcChargedJets,
                                             aod::JTrackLcSubs,
-                                            CandidatesLcData>;
+                                            aod::CandidatesLcData>;
 /*using BplusChargedJetMatching = JetMatchingSub<soa::Join<aod::BplusChargedJets, aod::BplusChargedJetConstituents>,
                                                soa::Join<aod::BplusChargedEventWiseSubtractedJets, aod::BplusChargedEventWiseSubtractedJetConstituents>,
                                                aod::BplusChargedJetsMatchedToBplusChargedEventWiseSubtractedJets,
                                                aod::BplusChargedEventWiseSubtractedJetsMatchedToBplusChargedJets,
                                                aod::JTrackBplusSubs,
-                                               CandidatesBplusData>;*/
+                                               aod::CandidatesBplusData>;*/
 using DielectronChargedJetMatching = JetMatchingSub<soa::Join<aod::DielectronChargedJets, aod::DielectronChargedJetConstituents>,
                                                     soa::Join<aod::DielectronChargedEventWiseSubtractedJets, aod::DielectronChargedEventWiseSubtractedJetConstituents>,
                                                     aod::DielectronChargedJetsMatchedToDielectronChargedEventWiseSubtractedJets,
                                                     aod::DielectronChargedEventWiseSubtractedJetsMatchedToDielectronChargedJets,
                                                     aod::JTrackDielectronSubs,
-                                                    CandidatesDielectronData>;
+                                                    aod::CandidatesDielectronData>;
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   std::vector<o2::framework::DataProcessorSpec> tasks;

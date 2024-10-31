@@ -77,7 +77,7 @@ constexpr bool isDummyTable()
 template <typename T>
 constexpr bool isEMCALCluster()
 {
-  return std::is_same_v<std::decay_t<T>, JetClusters::iterator> || std::is_same_v<std::decay_t<T>, JetClusters::filtered_iterator> || std::is_same_v<std::decay_t<T>, JetClustersMCD::iterator> || std::is_same_v<std::decay_t<T>, JetClustersMCD::filtered_iterator>;
+  return std::is_same_v<std::decay_t<T>, o2::aod::JetClusters::iterator> || std::is_same_v<std::decay_t<T>, o2::aod::JetClusters::filtered_iterator> || std::is_same_v<std::decay_t<T>, o2::aod::JetClustersMCD::iterator> || std::is_same_v<std::decay_t<T>, o2::aod::JetClustersMCD::filtered_iterator>;
 }
 
 /**

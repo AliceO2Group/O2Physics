@@ -69,3 +69,8 @@ o2physics_add_dpl_workflow(hmpid-converter
                     PUBLIC_LINK_LIBRARIES
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(multsextra-converter
+                    SOURCES multsExtraConverter.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+

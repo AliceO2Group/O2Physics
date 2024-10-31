@@ -181,25 +181,25 @@ struct JetFinderV0Task {
     jetfindingutilities::findJets(jetFinder, inputParticles, minJetPt, maxJetPt, jetRadius, jetAreaFractionMin, collision, jetsTable, constituentsTable, registry.get<THn>(HIST("hJetMCP")), fillTHnSparse, true);
   }
 
-  void processDummy(JetCollisions const&)
+  void processDummy(aod::JetCollisions const&)
   {
   }
   PROCESS_SWITCH(JetFinderV0Task, processDummy, "Dummy process function turned on by default", true);
 
-  void processChargedJetsData(soa::Filtered<JetCollisions>::iterator const& collision, soa::Filtered<JetTracks> const& tracks, CandidateTableData const& candidates)
+  void processChargedJetsData(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Filtered<aod::JetTracks> const& tracks, CandidateTableData const& candidates)
   {
     analyseCharged(collision, tracks, candidates, jetsTable, constituentsTable, jetPtMin, jetPtMax);
   }
   PROCESS_SWITCH(JetFinderV0Task, processChargedJetsData, "charged hf jet finding on data", false);
 
-  void processChargedJetsMCD(soa::Filtered<JetCollisions>::iterator const& collision, soa::Filtered<JetTracks> const& tracks, CandidateTableMCD const& candidates)
+  void processChargedJetsMCD(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Filtered<aod::JetTracks> const& tracks, CandidateTableMCD const& candidates)
   {
     analyseCharged(collision, tracks, candidates, jetsTable, constituentsTable, jetPtMin, jetPtMax);
   }
   PROCESS_SWITCH(JetFinderV0Task, processChargedJetsMCD, "charged hf jet finding on MC detector level", false);
 
-  void processChargedJetsMCP(JetMcCollision const& collision,
-                             soa::Filtered<JetParticles> const& particles,
+  void processChargedJetsMCP(aod::JetMcCollision const& collision,
+                             soa::Filtered<aod::JetParticles> const& particles,
                              CandidateTableMCP const& candidates)
   {
     analyseMCP(collision, particles, candidates, 1, jetPtMin, jetPtMax);
