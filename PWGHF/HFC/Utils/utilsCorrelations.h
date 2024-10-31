@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file utilsCorrelations.h
-/// \brief Utilities for HF analyses
+/// \brief Utilities for HFC analyses
 /// \author Xu Wang <waxu@cern.ch>
 
 #ifndef PWGHF_HFC_UTILS_UTILSCORRELATIONS_H_
