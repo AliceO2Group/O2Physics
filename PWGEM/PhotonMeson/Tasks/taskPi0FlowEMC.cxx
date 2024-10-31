@@ -16,6 +16,8 @@
 
 #include <numbers>
 #include <cmath>
+#include <string>
+#include <vector>
 
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/AnalysisTask.h"
@@ -134,7 +136,6 @@ struct EMfTaskPi0Flow {
     fEMEventCut.SetRequireGoodZvtxFT0vsPV(eventcuts.cfgRequireGoodZvtxFT0vsPV);
     fEMEventCut.SetRequireEMCReadoutInMB(eventcuts.cfgRequireEMCReadoutInMB);
     fEMEventCut.SetRequireEMCHardwareTriggered(eventcuts.cfgRequireEMCHardwareTriggered);
-    fEMEventCut.SetOccupancyRange(eventcuts.cfgOccupancyMin, eventcuts.cfgOccupancyMax);
   }
 
   void DefineEMCCut()
@@ -387,6 +388,9 @@ struct EMfTaskPi0Flow {
         // no selection on the centrality is applied on purpose to allow for the resolution study in post-processing
         return;
       }
+      if (!(eventcuts.cfgOccupancyMin <= collision.trackOccupancyInTimeRange() && collision.trackOccupancyInTimeRange() < eventcuts.cfgOccupancyMax)) {
+        return;
+      }
       o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<1>(&registry, collision);
       registry.fill(HIST("Event/before/hCollisionCounter"), 12.0); // accepted
       registry.fill(HIST("Event/after/hCollisionCounter"), 12.0);  // accepted
@@ -423,6 +427,9 @@ struct EMfTaskPi0Flow {
     o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<0>(&registry, collision);
     if (!(fEMEventCut.IsSelected(collision))) {
       // no selection on the centrality is applied on purpose to allow for the resolution study in post-processing
+      return;
+    }
+    if (!(eventcuts.cfgOccupancyMin <= collision.trackOccupancyInTimeRange() && collision.trackOccupancyInTimeRange() < eventcuts.cfgOccupancyMax)) {
       return;
     }
     o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<1>(&registry, collision);

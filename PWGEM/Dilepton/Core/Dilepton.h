@@ -138,8 +138,10 @@ struct Dilepton {
     Configurable<bool> cfgRequireNoSameBunchPileup{"cfgRequireNoSameBunchPileup", false, "require no same bunch pileup in event cut"};
     Configurable<bool> cfgRequireVertexITSTPC{"cfgRequireVertexITSTPC", false, "require Vertex ITSTPC in event cut"}; // ITS-TPC matched track contributes PV.
     Configurable<bool> cfgRequireGoodZvtxFT0vsPV{"cfgRequireGoodZvtxFT0vsPV", false, "require good Zvtx between FT0 vs. PV in event cut"};
-    Configurable<int> cfgOccupancyMin{"cfgOccupancyMin", -1, "min. occupancy"};
-    Configurable<int> cfgOccupancyMax{"cfgOccupancyMax", 1000000000, "max. occupancy"};
+    Configurable<int> cfgTrackOccupancyMin{"cfgTrackOccupancyMin", -1, "min. occupancy"};
+    Configurable<int> cfgTrackOccupancyMax{"cfgTrackOccupancyMax", 1000000000, "max. occupancy"};
+    Configurable<float> cfgFT0COccupancyMin{"cfgFT0COccupancyMin", -1, "min. FT0C occupancy"};
+    Configurable<float> cfgFT0COccupancyMax{"cfgFT0COccupancyMax", 1000000000, "max. FT0C occupancy"};
     Configurable<bool> cfgRequireNoCollInTimeRangeStandard{"cfgRequireNoCollInTimeRangeStandard", false, "require no collision in time range standard"};
   } eventcuts;
 
@@ -498,9 +500,10 @@ struct Dilepton {
 
     if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kQC)) {
       fRegistry.add("Pair/same/uls/hs", "dilepton", kTHnSparseD, {axis_mass, axis_pt, axis_dca}, true);
-      fRegistry.add("Pair/same/uls/hDeltaEtaDeltaPhi", "distance between 2 tracks in #eta-#varphi plane;#Delta#varphi (rad.);#Delta#eta", kTH2D, {{200, -0.5, +0.5}, {200, -0.5, 0.5}}, true);
+      fRegistry.add("Pair/same/uls/hsDeltaP", "difference of p between 2 tracks;#Deltap_{T} = |p_{T,1} - p_{T,2}| (GeV/c);#Delta#eta;#Delta#varphi (rad.);", kTHnSparseD, {{100, 0, 1}, {100, -0.5, +0.5}, {100, -0.5, 0.5}}, true);
+
       if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
-        fRegistry.add("Pair/same/uls/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", kTH2D, {{90, 0, M_PI}, {100, 0.0f, 0.1f}}, true); // phiv is only for dielectron
+        fRegistry.add("Pair/same/uls/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", kTH2D, {{90, 0, M_PI}, {200, 0.0f, 0.2f}}, true); // phiv is only for dielectron
         fRegistry.add("Pair/same/uls/hMvsOpAng", "m_{ee} vs. angle between 2 tracks;#omega (rad.);m_{ee} (GeV/c^{2})", kTH2D, {{200, 0, 4.0}, {100, 0.0f, 3.2}}, true);
       }
       fRegistry.addClone("Pair/same/uls/", "Pair/same/lspp/");
@@ -525,7 +528,6 @@ struct Dilepton {
       const AxisSpec axis_sp{ConfSPBins, Form("#vec{u}_{%d,ll} #upoint #vec{Q}_{%d}^{%s}", nmod, nmod, qvec_det_names[cfgQvecEstimator].data())};
 
       fRegistry.add("Pair/same/uls/hs", "dilepton", kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_sp}, true);
-      // fRegistry.add("Pair/same/uls/hPrfUQ", Form("dilepton <#vec{u}_{%d,ll} #upoint #vec{Q}_{%d}^{%s}>", nmod, nmod, qvec_det_names[cfgQvecEstimator].data()), kTProfile3D, {axis_mass, axis_pt, axis_dca}, true);
       fRegistry.addClone("Pair/same/uls/", "Pair/same/lspp/");
       fRegistry.addClone("Pair/same/uls/", "Pair/same/lsmm/");
 
@@ -598,7 +600,6 @@ struct Dilepton {
     fEMEventCut.SetRequireNoSameBunchPileup(eventcuts.cfgRequireNoSameBunchPileup);
     fEMEventCut.SetRequireVertexITSTPC(eventcuts.cfgRequireVertexITSTPC);
     fEMEventCut.SetRequireGoodZvtxFT0vsPV(eventcuts.cfgRequireGoodZvtxFT0vsPV);
-    fEMEventCut.SetOccupancyRange(eventcuts.cfgOccupancyMin, eventcuts.cfgOccupancyMax);
     fEMEventCut.SetRequireNoCollInTimeRangeStandard(eventcuts.cfgRequireNoCollInTimeRangeStandard);
   }
 
@@ -813,29 +814,30 @@ struct Dilepton {
     }
 
     if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kQC)) {
-      float deta = v1.Eta() - v2.Eta();
-      float dphi = v1.Phi() - v2.Phi();
+      float dpt = fabs(v1.Pt() - v2.Pt());
+      float deta = v1.Pt() > v2.Pt() ? v1.Eta() - v2.Eta() : v2.Eta() - v1.Eta();
+      float dphi = v1.Pt() > v2.Pt() ? v1.Phi() - v2.Phi() : v2.Phi() - v1.Phi();
       o2::math_utils::bringToPMPi(dphi);
       float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), d_bz);
       float opAng = o2::aod::pwgem::dilepton::utils::pairutil::getOpeningAngle(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz());
 
       if (t1.sign() * t2.sign() < 0) { // ULS
         fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), pair_dca, weight);
-        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hDeltaEtaDeltaPhi"), dphi, deta, weight);
+        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hsDeltaP"), dpt, deta, dphi, weight);
         if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
           fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hMvsPhiV"), phiv, v12.M(), weight);
           fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hMvsOpAng"), opAng, v12.M(), weight);
         }
       } else if (t1.sign() > 0 && t2.sign() > 0) { // LS++
         fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hs"), v12.M(), v12.Pt(), pair_dca, weight);
-        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hDeltaEtaDeltaPhi"), dphi, deta, weight);
+        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hsDeltaP"), dpt, deta, dphi, weight);
         if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
           fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hMvsPhiV"), phiv, v12.M(), weight);
           fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hMvsOpAng"), opAng, v12.M(), weight);
         }
       } else if (t1.sign() < 0 && t2.sign() < 0) { // LS--
         fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hs"), v12.M(), v12.Pt(), pair_dca, weight);
-        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hDeltaEtaDeltaPhi"), dphi, deta, weight);
+        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hsDeltaP"), dpt, deta, dphi, weight);
         if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
           fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hMvsPhiV"), phiv, v12.M(), weight);
           fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hMvsOpAng"), opAng, v12.M(), weight);
@@ -1028,7 +1030,8 @@ struct Dilepton {
 
   Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
   Filter collisionFilter_multiplicity = cfgNtracksPV08Min <= o2::aod::mult::multNTracksPV && o2::aod::mult::multNTracksPV < cfgNtracksPV08Max;
-  Filter collisionFilter_occupancy = eventcuts.cfgOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgOccupancyMax;
+  Filter collisionFilter_occupancy_track = eventcuts.cfgTrackOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgTrackOccupancyMax;
+  Filter collisionFilter_occupancy_ft0c = eventcuts.cfgFT0COccupancyMin < o2::aod::evsel::ft0cOccupancyInTimeRange && o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
   using FilteredMyCollisions = soa::Filtered<MyCollisions>;
 
   SliceCache cache;

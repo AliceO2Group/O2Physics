@@ -38,7 +38,6 @@ class EMEventCut : public TNamed
     kNoSameBunchPileup,
     kIsVertexITSTPC,
     kIsGoodZvtxFT0vsPV,
-    kOccupancy,
     kNoCollInTimeRangeStandard,
     kNoCollInTimeRangeNarrow,
     kNCuts
@@ -69,9 +68,6 @@ class EMEventCut : public TNamed
       return false;
     }
     if (mRequireGoodZvtxFT0vsPV && !IsSelected(collision, EMEventCuts::kIsGoodZvtxFT0vsPV)) {
-      return false;
-    }
-    if (!IsSelected(collision, EMEventCuts::kOccupancy)) {
       return false;
     }
     if (mRequireNoCollInTimeRangeStandard && !IsSelected(collision, EMEventCuts::kNoCollInTimeRangeStandard)) {
@@ -111,9 +107,6 @@ class EMEventCut : public TNamed
       case EMEventCuts::kIsGoodZvtxFT0vsPV:
         return collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV);
 
-      case EMEventCuts::kOccupancy:
-        return mMinOccupancy <= collision.trackOccupancyInTimeRange() && collision.trackOccupancyInTimeRange() < mMaxOccupancy;
-
       case EMEventCuts::kNoCollInTimeRangeStandard:
         return collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard);
 
@@ -129,7 +122,6 @@ class EMEventCut : public TNamed
   void SetRequireSel8(bool flag);
   void SetRequireFT0AND(bool flag);
   void SetZvtxRange(float min, float max);
-  void SetOccupancyRange(int min, int max);
   void SetRequireNoTFB(bool flag);
   void SetRequireNoITSROFB(bool flag);
   void SetRequireNoSameBunchPileup(bool flag);
@@ -142,7 +134,6 @@ class EMEventCut : public TNamed
   bool mRequireSel8{true};
   bool mRequireFT0AND{true};
   float mMinZvtx{-10.f}, mMaxZvtx{+10.f};
-  int mMinOccupancy{static_cast<int>(-1e+9)}, mMaxOccupancy{static_cast<int>(+1e+9)};
   bool mRequireNoTFB{true};
   bool mRequireNoITSROFB{true};
   bool mRequireNoSameBunchPileup{false};
