@@ -540,7 +540,7 @@ struct TauTau13topo {
     // pid 3pi
     // registry.add("pidTPC3pi/hpvsdedxElHipCut0", "In hip ;#it{p}_{trk}(GeV/#it{c});dE/dx_{trk}", {HistType::kTH2F, {axisp, dedxAxis}});
     registry.add("pidTPC3pi/hpvsdedxElHipCut1", "All hip;#it{p}_{trk}(GeV/#it{c});dE/dx_{trk}", {HistType::kTH2F, {axisp, dedxAxis}});
-    // pid sequentialy	3pi
+    // pid sequentialy 3pi
     // registry.add("pidTPC3pi/hpvsdedxElHipCut20", "El hip;    #it{p}_{trk} (GeV/#it{c});d#it{E}/d#it{x}_{trk}", {HistType::kTH2F, {axisp, dedxAxis}});
     // registry.add("pidTPC3pi/hpvsdedxElHipCut21", "vPi+20 hip;#it{p}_{trk} (GeV/#it{c});d#it{E}/d#it{x}_{trk}", {HistType::kTH2F, {axisp, dedxAxis}});
     // registry.add("pidTPC3pi/hpvsdedxElHipCut22", "vVc+21 hip;#it{p}_{trk} (GeV/#it{c});d#it{E}/d#it{x}_{trk}", {HistType::kTH2F, {axisp, dedxAxis}});
@@ -792,21 +792,21 @@ struct TauTau13topo {
           registry.get<TH1>(HIST("global/hTrackEfficiencyPVGlobal"))->Fill(9., 1.);
 
           // old version
-          //	  clustermap1 = trk.itsClusterMap();
-          //	  for (int bitNo = 0; bitNo < 7; bitNo++) {
-          //	    if (TESTBIT(clustermap1, bitNo)) { // check ITS bits/layers for each PV track
-          //	      registry.get<TH1>(HIST("global/hITSbitPVtrk"))->Fill(bitNo, 1.);
-          //	      registry.get<TH2>(HIST("global/hITSbitVsEtaPVtrk"))->Fill(p.Eta(), bitNo, 1.);
-          //	      nITSbits++;
-          //	    }
-          //	  } // end of loop over ITS bits
+          // clustermap1 = trk.itsClusterMap();
+          // for (int bitNo = 0; bitNo < 7; bitNo++) {
+          //   if (TESTBIT(clustermap1, bitNo)) { // check ITS bits/layers for each PV track
+          //     registry.get<TH1>(HIST("global/hITSbitPVtrk"))->Fill(bitNo, 1.);
+          //     registry.get<TH2>(HIST("global/hITSbitVsEtaPVtrk"))->Fill(p.Eta(), bitNo, 1.);
+          //     nITSbits++;
+          //   }
+          // } // end of loop over ITS bits
           //
-          //	  isInnerITS = TESTBIT(clustermap1, 0) || TESTBIT(clustermap1, 1) || TESTBIT(clustermap1, 2);
-          //	  if (isInnerITS) {
-          //	    registry.get<TH1>(HIST("global/hTrackEfficiencyPVGlobal"))->Fill(10., 1.);
-          //	  } else {
-          //	    isGlobalTrack = false;
-          //	  }
+          // isInnerITS = TESTBIT(clustermap1, 0) || TESTBIT(clustermap1, 1) || TESTBIT(clustermap1, 2);
+          // if (isInnerITS) {
+          //   registry.get<TH1>(HIST("global/hTrackEfficiencyPVGlobal"))->Fill(10., 1.);
+          // } else {
+          //   isGlobalTrack = false;
+          // }
           //
         } else {
           isGlobalTrack = false;
@@ -837,12 +837,12 @@ struct TauTau13topo {
             nITSbits++;
           }
         } // end of loop over ITS bits
-        //	  isInnerITS = TESTBIT(clustermap1, 0) || TESTBIT(clustermap1, 1) || TESTBIT(clustermap1, 2);
-        //	  if (isInnerITS) {
-        //	    registry.get<TH1>(HIST("global/hTrackEfficiencyPVGlobal"))->Fill(10., 1.);
-        //	  } else {
-        //	    isGlobalTrack = false;
-        //	  }
+        // isInnerITS = TESTBIT(clustermap1, 0) || TESTBIT(clustermap1, 1) || TESTBIT(clustermap1, 2);
+        // if (isInnerITS) {
+        //   registry.get<TH1>(HIST("global/hTrackEfficiencyPVGlobal"))->Fill(10., 1.);
+        // } else {
+        //   isGlobalTrack = false;
+        // }
       } // has ITS
       registry.get<TH2>(HIST("global/hITSnbitsVsEtaPVtrk"))->Fill(p.Eta(), nITSbits);
       if (trk.hasTPC())
@@ -1384,8 +1384,8 @@ struct TauTau13topo {
             if (flagEl[i] && flagPi[i] && !flagVcalPV[i]) {
               registry.get<TH2>(HIST("pidTPC/hpvsdedxElHipCut22"))->Fill(tmpMomentum[i], tmpDedx[i]);
               // for (int j = 0; j < 4; j++) {
-              // 	if (i == j) continue;
-              // 	registry.get<TH2>(HIST("pidTPC3pi/hpvsdedxElHipCut22"))->Fill(tmpMomentum[j], tmpDedx[j]);
+              //  if (i == j) continue;
+              //  registry.get<TH2>(HIST("pidTPC3pi/hpvsdedxElHipCut22"))->Fill(tmpMomentum[j], tmpDedx[j]);
               // }
               FillControlHistos<22>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i]);
               registry.get<TH2>(HIST("control/cut22/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
@@ -1735,10 +1735,10 @@ struct TauTau13topo {
           // one electron with tof hit (cut33)
           if (tmpHasTOF[i]) {
             registry.get<TH1>(HIST("global/hEventEff"))->Fill(20., 1.);
-            //	    registry.get<TH1>(HIST("control/cut33/hDcaZ"))->Fill(dcaZ[i]);
-            //	    registry.get<TH1>(HIST("control/cut33/hDcaXY"))->Fill(dcaXY[i]);
-            //	    registry.get<TH1>(HIST("control/cut33/hChi2TPC"))->Fill(chi2TPC[i]);
-            //	    registry.get<TH1>(HIST("control/cut33/hChi2ITS"))->Fill(chi2ITS[i]);
+            // registry.get<TH1>(HIST("control/cut33/hDcaZ"))->Fill(dcaZ[i]);
+            // registry.get<TH1>(HIST("control/cut33/hDcaXY"))->Fill(dcaXY[i]);
+            // registry.get<TH1>(HIST("control/cut33/hChi2TPC"))->Fill(chi2TPC[i]);
+            // registry.get<TH1>(HIST("control/cut33/hChi2ITS"))->Fill(chi2ITS[i]);
             FillControlHistos<33>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i]);
             registry.get<TH2>(HIST("control/cut33/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
             registry.get<TH2>(HIST("pidTPC/hpvsdedxElHipCut33"))->Fill(tmpMomentum[i], tmpDedx[i]);
@@ -1764,10 +1764,10 @@ struct TauTau13topo {
             // at least one pion with tof hit (cut34)
             if (otherTOFtracks >= 1) {
               registry.get<TH1>(HIST("global/hEventEff"))->Fill(21., 1.);
-              //	      registry.get<TH1>(HIST("control/cut34/hDcaZ"))->Fill(dcaZ[i]);
-              //	      registry.get<TH1>(HIST("control/cut34/hDcaXY"))->Fill(dcaXY[i]);
-              //	      registry.get<TH1>(HIST("control/cut34/hChi2TPC"))->Fill(chi2TPC[i]);
-              //	      registry.get<TH1>(HIST("control/cut34/hChi2ITS"))->Fill(chi2ITS[i]);
+              // registry.get<TH1>(HIST("control/cut34/hDcaZ"))->Fill(dcaZ[i]);
+              // registry.get<TH1>(HIST("control/cut34/hDcaXY"))->Fill(dcaXY[i]);
+              // registry.get<TH1>(HIST("control/cut34/hChi2TPC"))->Fill(chi2TPC[i]);
+              // registry.get<TH1>(HIST("control/cut34/hChi2ITS"))->Fill(chi2ITS[i]);
               FillControlHistos<34>(pi3invMass[i], pi3pt[i], pi3deltaPhi[i], pi3assymav[i], pi3vector[i], pi3scalar[i], nclTPCcrossedRows[i]);
               registry.get<TH2>(HIST("control/cut34/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
               registry.get<TH2>(HIST("pidTPC/hpvsdedxElHipCut34"))->Fill(tmpMomentum[i], tmpDedx[i]);
@@ -1793,33 +1793,33 @@ struct TauTau13topo {
       registry.get<TH1>(HIST("control/cut1/hNtofTrk"))->Fill(nTofTrk);
       registry.get<TH2>(HIST("control/cut1/hZNACenergy"))->Fill(ZNAenergy, ZNCenergy);
       // special case invmass 4pi (2,2.3)
-      //      if (mass4pi<2.3 && mass4pi>2) {
-      //	for (int i = 0; i < 4; i++) {
-      //	  registry.get<TH1>(HIST("control/cut1/cut1a/hDcaZ"))->Fill(dcaZ[i]);
-      //	  registry.get<TH1>(HIST("control/cut1/cut1a/hDcaXY"))->Fill(dcaXY[i]);
-      //	  registry.get<TH1>(HIST("control/cut1/cut1a/hChi2TPC"))->Fill(chi2TPC[i]);
-      //	  registry.get<TH1>(HIST("control/cut1/cut1a/hChi2ITS"))->Fill(chi2ITS[i]);
+      // if (mass4pi<2.3 && mass4pi>2) {
+      // for (int i = 0; i < 4; i++) {
+      //   registry.get<TH1>(HIST("control/cut1/cut1a/hDcaZ"))->Fill(dcaZ[i]);
+      //   registry.get<TH1>(HIST("control/cut1/cut1a/hDcaXY"))->Fill(dcaXY[i]);
+      //   registry.get<TH1>(HIST("control/cut1/cut1a/hChi2TPC"))->Fill(chi2TPC[i]);
+      //   registry.get<TH1>(HIST("control/cut1/cut1a/hChi2ITS"))->Fill(chi2ITS[i]);
       //
-      //	  if (flagTotal[i]) {
-      //	    registry.get<TH1>(HIST("control/cut1/cut1a/h3piMassComb"))->Fill(pi3invMass[i]);
-      //	    registry.get<TH1>(HIST("control/cut1/cut1a/h3trkPtTot"))->Fill(pi3pt[i]);
-      //	    registry.get<TH1>(HIST("control/cut1/cut1a/hDeltaPhi13topo"))->Fill(pi3deltaPhi[i]);
-      //	    registry.get<TH1>(HIST("control/cut1/cut1a/h13AssymPt1ProngAver"))->Fill(pi3assymav[i]);
-      //	    registry.get<TH1>(HIST("control/cut1/cut1a/h13Vector"))->Fill(pi3vector[i]);
-      //	    registry.get<TH1>(HIST("control/cut1/cut1a/h13Scalar"))->Fill(pi3scalar[i]);
-      //	    registry.get<TH1>(HIST("control/cut1/cut1a/h13EtaSum"))->Fill(pi3etasum[i]);
-      //	    registry.get<TH1>(HIST("control/cut1/cut1a/hTPCnCrossedRows"))->Fill(nclTPCcrossedRows[i]);
+      //   if (flagTotal[i]) {
+      //     registry.get<TH1>(HIST("control/cut1/cut1a/h3piMassComb"))->Fill(pi3invMass[i]);
+      //     registry.get<TH1>(HIST("control/cut1/cut1a/h3trkPtTot"))->Fill(pi3pt[i]);
+      //     registry.get<TH1>(HIST("control/cut1/cut1a/hDeltaPhi13topo"))->Fill(pi3deltaPhi[i]);
+      //     registry.get<TH1>(HIST("control/cut1/cut1a/h13AssymPt1ProngAver"))->Fill(pi3assymav[i]);
+      //     registry.get<TH1>(HIST("control/cut1/cut1a/h13Vector"))->Fill(pi3vector[i]);
+      //     registry.get<TH1>(HIST("control/cut1/cut1a/h13Scalar"))->Fill(pi3scalar[i]);
+      //     registry.get<TH1>(HIST("control/cut1/cut1a/h13EtaSum"))->Fill(pi3etasum[i]);
+      //     registry.get<TH1>(HIST("control/cut1/cut1a/hTPCnCrossedRows"))->Fill(nclTPCcrossedRows[i]);
       //
-      //	    registry.get<TH2>(HIST("control/cut1/cut1a/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
-      //	    registry.get<TH1>(HIST("control/cut1/cut1a/hTPCnclsFindable"))->Fill(nclTPCfind[i]);
-      //	    registry.get<TH1>(HIST("control/cut1/cut1a/hsigma3Pi"))->Fill(nSigma3Pi[i]);
-      //	  }
-      //	}
-      //	registry.get<TH1>(HIST("control/cut1/cut1a/h4trkPtTot"))->Fill(pttot);
-      //	registry.get<TH1>(HIST("control/cut1/cut1a/h4piMass"))->Fill(mass4pi);
-      //	registry.get<TH2>(HIST("control/cut1/cut1a/h4trkMassVsPt"))->Fill(mass4pi, pttot);
-      //	registry.get<TH1>(HIST("control/cut1/cut1a/hNtofTrk"))->Fill(nTofTrk);
-      //      } // end of mass window for 4pi case
+      //     registry.get<TH2>(HIST("control/cut1/cut1a/h3piMassVsPt"))->Fill(pi3invMass[i], pi3pt[i]);
+      //     registry.get<TH1>(HIST("control/cut1/cut1a/hTPCnclsFindable"))->Fill(nclTPCfind[i]);
+      //     registry.get<TH1>(HIST("control/cut1/cut1a/hsigma3Pi"))->Fill(nSigma3Pi[i]);
+      //   }
+      // }
+      // registry.get<TH1>(HIST("control/cut1/cut1a/h4trkPtTot"))->Fill(pttot);
+      // registry.get<TH1>(HIST("control/cut1/cut1a/h4piMass"))->Fill(mass4pi);
+      // registry.get<TH2>(HIST("control/cut1/cut1a/h4trkMassVsPt"))->Fill(mass4pi, pttot);
+      // registry.get<TH1>(HIST("control/cut1/cut1a/hNtofTrk"))->Fill(nTofTrk);
+      // } // end of mass window for 4pi case
 
     } else { // more than 1 electron candidate
       if (verbose) {
