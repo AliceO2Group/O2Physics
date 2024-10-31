@@ -42,7 +42,7 @@ struct JetSpectraEseTask {
   ConfigurableAxis binJetPt{"binJetPt", {200, 0., 200.}, ""};
   ConfigurableAxis bindPhi{"bindPhi", {100, -TMath::Pi() - 1, TMath::Pi() + 1}, ""};
   ConfigurableAxis binESE{"binESE", {100, 0, 100}, ""};
-  ConfigurableAxis binCos{"binCos", {100, -1.1, 1.1}, ""};
+  ConfigurableAxis binCos{"binCos", {100, -1.05, 1.05}, ""};
 
   Configurable<float> jetPtMin{"jetPtMin", 5.0, "minimum jet pT cut"};
   Configurable<float> jetR{"jetR", 0.2, "jet resolution parameter"};
@@ -131,15 +131,13 @@ struct JetSpectraEseTask {
   Filter mcCollisionFilter = nabs(aod::jmccollision::posZ) < vertexZCut;
 
   void processESEDataCharged(soa::Join<aod::JetCollisions, aod::JCollisionPIs, aod::BkgChargedRhos>::iterator const& collision,
-                             soa::Join<aod::Collisions, aod::CentFT0Cs, aod::QvectorFT0CVecs, aod::QvectorFT0AVecs, aod::QvectorFV0AVecs, aod::QvectorTPCposVecs, aod::QvectorTPCnegVecs, aod::QPercentileFT0Cs, aod::FEseCols> const&,
+                             soa::Join<aod::Collisions, aod::CentFT0Cs, aod::QvectorFT0CVecs, aod::QvectorFT0AVecs, aod::QvectorFV0AVecs, aod::QvectorTPCposVecs, aod::QvectorTPCnegVecs, aod::QPercentileFT0Cs> const&,
                              soa::Filtered<aod::ChargedJets> const& jets,
                              aod::JetTracks const& tracks)
   {
     float counter{0.5f};
     registry.fill(HIST("hEventCounter"), counter++);
-    const auto originalCollision = collision.collision_as<soa::Join<aod::Collisions, aod::CentFT0Cs, aod::QvectorFT0CVecs, aod::QvectorFT0AVecs, aod::QvectorFV0AVecs, aod::QvectorTPCposVecs, aod::QvectorTPCnegVecs, aod::QPercentileFT0Cs, aod::FEseCols>>();
-    if (originalCollision.fESECOL()[0] != 1)
-      return;
+    const auto originalCollision = collision.collision_as<soa::Join<aod::Collisions, aod::CentFT0Cs, aod::QvectorFT0CVecs, aod::QvectorFT0AVecs, aod::QvectorFV0AVecs, aod::QvectorTPCposVecs, aod::QvectorTPCnegVecs, aod::QPercentileFT0Cs>>();
     registry.fill(HIST("hEventCounter"), counter++);
     if (originalCollision.centFT0C() < CentRange->at(0) || originalCollision.centFT0C() > CentRange->at(1))
       return;
@@ -147,6 +145,10 @@ struct JetSpectraEseTask {
 
     const auto vPsi2 = procEP(originalCollision);
     const auto qPerc = originalCollision.qPERCFT0C();
+    if (qPerc[0] < 0)
+      return;
+    registry.fill(HIST("hEventCounter"), counter++);
+    
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection))
       return;
 
@@ -167,10 +169,8 @@ struct JetSpectraEseTask {
 
       float dPhi = RecoDecay::constrainAngle(jet.phi() - vPsi2, -o2::constants::math::PI);
       registry.fill(HIST("hdPhi"), dPhi);
-      if (qPerc[0] < 0)
-        continue;
-      registry.fill(HIST("hJetPtdPhiq2"), jetpT_bkgsub, dPhi, qPerc[0]);
-    }
+      
+      registry.fill(HIST("hJetPtdPhiq2"), jetpT_bkgsub, dPhi, qPerc[0]); /* check the dphi */
     registry.fill(HIST("hEventCounter"), counter++);
   }
   PROCESS_SWITCH(JetSpectraEseTask, processESEDataCharged, "process ese collisions", true);
@@ -241,11 +241,11 @@ struct JetSpectraEseTask {
     if (!fEPAdditional)
       return epFT0A;
 
-    const auto epFV0A = 1 / 2.0 * TMath::ATan2(vec.qvecFV0AImVec()[0], vec.qvecFV0AReVec()[0]);
-    const auto epFT0C = 1 / 2.0 * TMath::ATan2(vec.qvecFT0CImVec()[0], vec.qvecFT0CReVec()[0]);
+    const auto epFV0A = 1 / 2.0 * std::atan2(vec.qvecFV0AImVec()[0], vec.qvecFV0AReVec()[0]);
+    const auto epFT0C = 1 / 2.0 * std::atan2(vec.qvecFT0CImVec()[0], vec.qvecFT0CReVec()[0]);
 
-    const auto epTPCpos = 1 / 2.0 * TMath::ATan2(vec.qvecTPCposImVec()[0], vec.qvecTPCposReVec()[0]);
-    const auto epTPCneg = 1 / 2.0 * TMath::ATan2(vec.qvecTPCnegImVec()[0], vec.qvecTPCnegReVec()[0]);
+    const auto epTPCpos = 1 / 2.0 * std::atan2(vec.qvecTPCposImVec()[0], vec.qvecTPCposReVec()[0]);
+    const auto epTPCneg = 1 / 2.0 * std::atan2(vec.qvecTPCnegImVec()[0], vec.qvecTPCnegReVec()[0]);
 
     registry.fill(HIST("hPsi2FT0C"), vec.centFT0C(), epFT0C);
     registry.fill(HIST("hPsi2FT0A"), vec.centFT0C(), epFT0A);
@@ -283,7 +283,7 @@ struct JetSpectraEseTask {
   template <typename Psi>
   float cosPsiXY(Psi const& psiX, Psi const& psiY)
   {
-    return TMath::Cos(2.0 * (psiX - psiY));
+    return std::cos(2.0 * (psiX - psiY));
   }
 };
 
