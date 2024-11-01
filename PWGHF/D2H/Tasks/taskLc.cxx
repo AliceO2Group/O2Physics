@@ -304,9 +304,7 @@ struct HfTaskLc {
   }
 
   /// Fill MC histograms at reconstruction level
-  /// \param collision is collision
-  /// \param candidates is candidates
-  /// \param mcParticles is mcParticles
+  /// \tparam fillMl switch to fill ML histograms
   template <bool fillMl, typename CollType, typename CandLcMcRec, typename CandLcMcGen>
   void fillHistosMcRec(CollType const& collision, CandLcMcRec const& candidates, CandLcMcGen const& mcParticles)
   {
@@ -502,8 +500,8 @@ struct HfTaskLc {
     }
   }
 
-  /// Fill MC histograms at genernated level
-  /// \param mcParticles are particles in MC
+  /// Fill MC histograms at generated level
+  /// \tparam fillMl switch to fill ML histograms
   template <typename CandLcMcGen>
   void fillHistosMcGen(CandLcMcGen const& mcParticles)
   {
@@ -666,7 +664,9 @@ struct HfTaskLc {
       }
     }
   }
-  /// Fills Data histograms.
+
+  /// Run the analysis on real data
+  /// \tparam fillMl switch to fill ML histograms
   template <bool fillMl, typename CollType, typename CandType>
   void runAnalysisPerCollisionData(CollType const& collisions,
                                    CandType const& candidates,
@@ -674,12 +674,12 @@ struct HfTaskLc {
   {
 
     for (const auto& collision : collisions) {
-
       fillHistosData<fillMl>(collision, candidates, tracks);
     }
   }
 
-  /// Fills Mc histograms.
+  /// Run the analysis on MC data
+  /// \tparam fillMl switch to fill ML histograms
   template <bool fillMl, typename CollType, typename CandType, typename CandLcMcGen>
   void runAnalysisPerCollisionMc(CollType const& collisions,
                                  CandType const& candidates,
