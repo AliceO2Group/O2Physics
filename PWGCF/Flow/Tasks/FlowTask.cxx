@@ -651,7 +651,6 @@ struct FlowTask {
     int currentRunNumber = bc.runNumber();
     for (auto& ExcludedRun : cfgRunRemoveList.value) {
       if (currentRunNumber == ExcludedRun) {
-        LOGF(info, "Skipping event from run %d", currentRunNumber);
         return;
       }
     }
