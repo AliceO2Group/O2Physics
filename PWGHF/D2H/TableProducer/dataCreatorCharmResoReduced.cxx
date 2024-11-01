@@ -544,11 +544,11 @@ struct HfDataCreatorCharmResoReduced {
           if (indexRecDstar < 0 && indexRecK0 > -1) {
             auto indexRecDstarPartReco = RecoDecay::getMatchedMCRec<false, false, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2]}, Pdg::kDStar, std::array{-kKPlus, +kPiPlus, +kPiPlus}, true, &signDStar, 3);
             if (indexRecDstarPartReco > -1) {
-              if (indexRecDplus > -1) { //Ds1 -> D* K0s -> D+  π0 K0s
+              if (indexRecDplus > -1) { // Ds1 -> D* K0s -> D+  π0 K0s
                 flag = sign * BIT(DecayTypeMc::Ds1ToDStarK0ToDPlusPi0K0s);
               } else {
                 auto indexRecDzeroPartReco = RecoDecay::getMatchedMCRec<false, false, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1]}, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &signD0, 2);
-                if (indexRecDzeroPartReco > -1) { //Ds1 -> D* K0s -> D0 π+ K0s -> K- π+ π0 π+ K0s
+                if (indexRecDzeroPartReco > -1) { // Ds1 -> D* K0s -> D0 π+ K0s -> K- π+ π0 π+ K0s
                   flag = sign * BIT(DecayTypeMc::Ds1ToDStarK0ToD0PiK0sPart);
                 }
               }
@@ -584,7 +584,7 @@ struct HfDataCreatorCharmResoReduced {
             if (indexRecResoToMu > -1) {
               indexRecResoPartReco = -1;
               flag = sign * BIT(DecayTypeMc::Ds1ToDStarK0ToD0PiK0sOneMu);
-            } 
+            }
           }
         }
       }
