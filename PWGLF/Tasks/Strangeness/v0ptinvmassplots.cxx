@@ -48,6 +48,9 @@ struct v0ptinvmassplots {
 
   // Configurable for histograms
   Configurable<int> nBins{"nBins", 100, "N bins in all histos"};
+  Configurable<int> xaxisgenbins{"xaxisgenbins", 20, "Number of bins for Generated Pt Spectrum"};
+  Configurable<float> xaxismingenbin{"xaxismingenbin", 0.0, "Minimum bin value of the Generated Pt Spectrum Plot"};
+  Configurable<float> xaxismaxgenbin{"xaxismaxgenbin", 3.0, "Maximum bin value of the Generated Pt Spectrum Plot"};
 
   // Configurable Kaonsh Topological Cuts (best cuts determined by v0topologicalcuts task)
   Configurable<float> kaonshsetting_dcav0dau{"kaonshsetting_dcav0dau", 100.0, "DCA V0 Daughters"};
@@ -79,9 +82,6 @@ struct v0ptinvmassplots {
   Configurable<std::string> kzeroshsetting_pt_string{"kzerosetting_ptbins", {"0_0,0_15,0_3,0_45,0_6,0_75,0_9,1_05,1_2,1_35,1_5,1_65,1_8,1_95,2_1,2_25,2_4,2_55,2_7,2_85,3_0"}, "Kzero Pt Bin Values"};
   Configurable<std::string> lambdasetting_pt_string{"lambdasetting_ptbins", {"0_0,0_15,0_3,0_45,0_6,0_75,0_9,1_05,1_2,1_35,1_5,1_65,1_8,1_95,2_1,2_25,2_4,2_55,2_7,2_85,3_0"}, "Lambda Pt Bin Values"};
   Configurable<std::string> antilambdasetting_pt_string{"antilambdasetting_ptbins", {"0_0,0_15,0_3,0_45,0_6,0_75,0_9,1_05,1_2,1_35,1_5,1_65,1_8,1_95,2_1,2_25,2_4,2_55,2_7,2_85,3_0"}, "Antilambda Pt Bin Values"};
-  Configurable<int> xaxisgenbins{"xaxisgenbins", 20.0, "Number of bins for Generated Pt Spectrum"};
-  Configurable<float> xaxismingenbin{"xaxismingenbin", 0.0, "Minimum bin value of the Generated Pt Spectrum Plot"};
-  Configurable<float> xaxismaxgenbin{"xaxismaxgenbin", 3.0, "Maximum bin value of the Generated Pt Spectrum Plot"};
 
   void init(InitContext const&)
   {
@@ -90,7 +90,7 @@ struct v0ptinvmassplots {
     AxisSpec LambdaMassAxis = {nBins, 1.085f, 1.145f, "#it{M} p^{+}#pi^{-} [GeV/#it{c}^{2}]"};
     AxisSpec AntiLambdaMassAxis = {nBins, 1.085f, 1.145f, "#it{M} p^{-}#pi^{+} [GeV/#it{c}^{2}]"};
     AxisSpec ptAxis = {nBins, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec GenptAxis = {20, 0.0f, 3.0f, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec GenptAxis = {xaxisgenbins, xaxismingenbin, xaxismaxgenbin, "#it{p}_{T} (GeV/#it{c})"};
 
     rPtAnalysis.add("hV0PtAll", "hV0PtAll", {HistType::kTH1F, {{nBins, 0.0f, 10.0f}}});
 
