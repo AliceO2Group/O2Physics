@@ -90,7 +90,7 @@ struct TreeWriterTpcV0 {
     const float v0radius = v0.v0radius();
     const float gammapsipair = v0.psipair();
 
-    const double pseudoRndm = track.pt() * 1000. - (int64_t)(track.pt() * 1000);
+    const double pseudoRndm = track.pt() * 1000. - static_cast<int64_t>(track.pt() * 1000);
     if (pseudoRndm < dwnSmplFactor) {
       rowTPCTree(track.tpcSignal(),
                  1. / dEdxExp,
@@ -325,7 +325,7 @@ struct TreeWriterTPCTOF {
     const double bg = p / mass;
     const int multTPC = collision.multTPC();
 
-    const double pseudoRndm = track.pt() * 1000. - (int64_t)(track.pt() * 1000);
+    const double pseudoRndm = track.pt() * 1000. - static_cast<int64_t>(track.pt() * 1000);
     if (pseudoRndm < dwnSmplFactor) {
       rowTPCTOFTree(track.tpcSignal(),
                     1. / dEdxExp,
