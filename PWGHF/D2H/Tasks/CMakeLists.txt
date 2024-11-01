@@ -19,15 +19,15 @@ o2physics_add_dpl_workflow(task-b0-reduced
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(task-bplus
-                    SOURCES taskBplus.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
+# o2physics_add_dpl_workflow(task-bplus
+#                     SOURCES taskBplus.cxx
+#                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+#                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(task-bplus-reduced
-                    SOURCES taskBplusReduced.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
+# o2physics_add_dpl_workflow(task-bplus-reduced
+#                     SOURCES taskBplusReduced.cxx
+#                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+#                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(task-bs-reduced
                     SOURCES taskBsReduced.cxx
