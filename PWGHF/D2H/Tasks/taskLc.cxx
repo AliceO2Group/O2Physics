@@ -545,10 +545,8 @@ struct HfTaskLc {
     }
   }
 
-  /// Fill MC histograms at reconstruction level
-  /// \param collision is collision
-  /// \param candidates is candidates
-  /// \param tracks is tracks
+  /// Fill histograms for real data
+  /// \tparam fillMl switch to fill ML histograms
   template <bool fillMl, typename CollType, typename CandType, typename TrackType>
   void fillHistosData(CollType const& collision, CandType const& candidates, TrackType const& tracks)
   {
