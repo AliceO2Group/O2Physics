@@ -19,6 +19,8 @@
 //
 #include <array>
 #include <map>
+#include <string>
+#include <memory>
 #include "Math/Vector4D.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
