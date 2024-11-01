@@ -11,6 +11,8 @@
 
 // author: Arvind Khuntia (arvind.khuntia@cern.ch) INFN Bologna, Italy
 
+#include <string>
+#include <vector>
 #include <TLorentzVector.h>
 #include <TVector2.h>
 
