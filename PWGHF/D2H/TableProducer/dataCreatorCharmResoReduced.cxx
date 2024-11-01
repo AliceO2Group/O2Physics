@@ -15,8 +15,11 @@
 /// \author Luca Aglietta <luca.aglietta@cern.ch>, UniTO Turin
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 
+#include <algorithm>
 #include <cmath>
 #include <map>
+#include <string>
+#include <vector>
 
 #include "DetectorsBase/Propagator.h"
 #include "CommonConstants/PhysicsConstants.h"
