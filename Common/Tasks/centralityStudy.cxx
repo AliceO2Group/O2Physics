@@ -190,8 +190,8 @@ struct centralityStudy {
     histos.fill(HIST("hCollisionSelection"), 9 /* Not at same bunch pile-up */);
 
     float multFT0_touse = collision.multFT0C();
-    if(sumFT0AC){
-      multFT0_touse+=collision.multFT0A();
+    if (sumFT0AC) {
+      multFT0_touse += collision.multFT0A();
     }
     multFT0_touse *= scaleSignalFT0C;
 
@@ -230,7 +230,7 @@ struct centralityStudy {
     // if we got here, we also finally fill the FT0C histogram, please
     histos.fill(HIST("hNPVContributors"), collision.multPVTotalContributors());
     histos.fill(HIST("hFT0C_Collisions"), multFT0_touse);
-    histos.fill(HIST("hFV0A_Collisions"), collision.multFV0A()*scaleSignalFV0A);
+    histos.fill(HIST("hFV0A_Collisions"), collision.multFV0A() * scaleSignalFV0A);
     histos.fill(HIST("hFT0CvsPVz_Collisions_All"), collision.multPVz(), multFT0_touse);
     if (collision.multFT0C() > minFT0CforVertexZ) {
       histos.fill(HIST("hFT0CvsPVz_Collisions"), collision.multPVz(), multFT0_touse);
@@ -289,14 +289,14 @@ struct centralityStudy {
     histos.fill(HIST("hBCSelection"), 4); // FV0OrA
 
     float multFT0_touse = multbc.multBCFT0C();
-    if(sumFT0AC){
-      multFT0_touse+=multbc.multBCFT0A();
+    if (sumFT0AC) {
+      multFT0_touse += multbc.multBCFT0A();
     }
     multFT0_touse *= scaleSignalFT0C;
 
     // if we got here, we also finally fill the FT0C histogram, please
     histos.fill(HIST("hFT0C_BCs"), multFT0_touse);
-    histos.fill(HIST("hFV0A_BCs"), multbc.multBCFV0A()*scaleSignalFV0A);
+    histos.fill(HIST("hFV0A_BCs"), multbc.multBCFV0A() * scaleSignalFV0A);
     if (multbc.multBCFT0PosZValid()) {
       histos.fill(HIST("hFT0CvsPVz_BCs_All"), multbc.multBCFT0PosZ(), multFT0_touse);
       if (multbc.multBCFT0C() > minFT0CforVertexZ) {
