@@ -226,7 +226,7 @@ struct HfFragmentationFunctionTask {
   void processDummy(aod::TracksIU const&) {}
   PROCESS_SWITCH(HfFragmentationFunctionTask, processDummy, "Dummy process function turned on by default", true);
 
-  void processDataChargedSubstructure(JetCollision const& collision,
+  void processDataChargedSubstructure(aod::JetCollision const& collision,
                                       soa::Join<aod::D0ChargedJets, aod::D0ChargedJetConstituents> const& jets,
                                       aod::CandidatesD0Data const&)
   {
@@ -269,7 +269,7 @@ struct HfFragmentationFunctionTask {
 
         // filling table
         distJetTable(axisDistance,
-                     jet.pt(), jet.eta(), jet.phi(), jet.tracks_as<JetTracks>().size(),
+                     jet.pt(), jet.eta(), jet.phi(), jet.tracks_as<aod::JetTracks>().size(),
                      d0Candidate.pt(), d0Candidate.eta(), d0Candidate.phi(), d0Candidate.m(), d0Candidate.y(), d0Candidate.mlScores()[0], d0Candidate.mlScores()[1], d0Candidate.mlScores()[2]);
 
         break; // get out of candidates' loop after first HF particle is found in jet
@@ -284,10 +284,10 @@ struct HfFragmentationFunctionTask {
                            aod::JetCollisionsMCD const& collisions,
                            JetMCDTable const& mcdjets,
                            JetMCPTable const& mcpjets,
-                           CandidatesD0MCD const&,
-                           CandidatesD0MCP const&,
-                           JetTracks const&,
-                           JetParticles const&)
+                           aod::CandidatesD0MCD const&,
+                           aod::CandidatesD0MCP const&,
+                           aod::JetTracks const&,
+                           aod::JetParticles const&)
   {
     for (const auto& mccollision : mccollisions) {
 
@@ -345,7 +345,7 @@ struct HfFragmentationFunctionTask {
 
           // store data in MC detector level table
           mcddistJetTable(RecoDecay::sqrtSumOfSquares(mcdjet.eta() - mcdd0cand.eta(), deltaPhi(mcdjet.phi(), mcdd0cand.phi())),
-                          mcdjet.pt(), mcdjet.eta(), mcdjet.phi(), mcdjet.tracks_as<JetTracks>().size(),                                                              // detector level jet
+                          mcdjet.pt(), mcdjet.eta(), mcdjet.phi(), mcdjet.tracks_as<aod::JetTracks>().size(),                                                              // detector level jet
                           mcdd0cand.pt(), mcdd0cand.eta(), mcdd0cand.phi(), mcdd0cand.m(), mcdd0cand.y(), (mcdd0cand.originMcRec() == RecoDecay::OriginType::Prompt), // detector level D0 candidate
                           mcdjet.has_matchedJetCand(), mcdd0cand.mlScores()[0], mcdd0cand.mlScores()[1], mcdd0cand.mlScores()[2],                                     // ML scores for bkg, prompt and non-prompt
                           matchedFrom, selectedAs);                                                                                                                   // check whether detector level candidate is a reflection
@@ -367,7 +367,7 @@ struct HfFragmentationFunctionTask {
 
         // store data in MC detector level table (calculate angular distance in eta-phi plane on the fly)
         mcpdistJetTable(RecoDecay::sqrtSumOfSquares(mcpjet.eta() - mcpd0cand.eta(), deltaPhi(mcpjet.phi(), mcpd0cand.phi())),
-                        mcpjet.pt(), mcpjet.eta(), mcpjet.phi(), mcpjet.tracks_as<JetParticles>().size(),                                            // particle level jet
+                        mcpjet.pt(), mcpjet.eta(), mcpjet.phi(), mcpjet.tracks_as<aod::JetParticles>().size(),                                            // particle level jet
                         mcpd0cand.pt(), mcpd0cand.eta(), mcpd0cand.phi(), mcpd0cand.y(), (mcpd0cand.originMcGen() == RecoDecay::OriginType::Prompt), // particle level D0
                         mcpjet.has_matchedJetCand());
       }
@@ -375,14 +375,14 @@ struct HfFragmentationFunctionTask {
   }
   PROCESS_SWITCH(HfFragmentationFunctionTask, processMcEfficiency, "non-matched and matched MC HF and jets", false);
 
-  void processMcChargedMatched(JetMcCollisions const& mccollisions,
-                               JetCollisionsMCD const& collisions,
+  void processMcChargedMatched(aod::JetMcCollisions const& mccollisions,
+                               aod::JetCollisionsMCD const& collisions,
                                JetMCDTable const& mcdjets,
-                               JetMCPTable const& mcpjets,
-                               CandidatesD0MCD const&,
-                               CandidatesD0MCP const&,
-                               JetTracks const&,
-                               JetParticles const&)
+                               JetMCPTable const&,
+                               aod::CandidatesD0MCD const&,
+                               aod::CandidatesD0MCP const&,
+                               aod::JetTracks const&,
+                               aod::JetParticles const&)
   {
     for (const auto& mccollision : mccollisions) {
 
@@ -415,7 +415,7 @@ struct HfFragmentationFunctionTask {
           }
 
           // obtain leading HF candidate in jet
-          auto mcdd0cand = mcdjet.candidates_first_as<CandidatesD0MCD>();
+          auto mcdd0cand = mcdjet.candidates_first_as<aod::CandidatesD0MCD>();
 
           // reflection information for storage: +1 = D0, -1 = D0bar, 0 = neither
           int matchedFrom = 0;
@@ -445,12 +445,12 @@ struct HfFragmentationFunctionTask {
             registry.fill(HIST("h_jet_counter"), 2.5);
 
             // obtain leading HF candidate in jet
-            auto mcpd0cand = mcpjet.candidates_first_as<CandidatesD0MCP>();
+            auto mcpd0cand = mcpjet.candidates_first_as<aod::CandidatesD0MCP>();
 
             // store matched particle and detector level data in one single table (calculate angular distance in eta-phi plane on the fly)
-            matchJetTable(RecoDecay::sqrtSumOfSquares(mcpjet.eta() - mcpd0cand.eta(), deltaPhi(mcpjet.phi(), mcpd0cand.phi())), mcpjet.pt(), mcpjet.eta(), mcpjet.phi(), mcpjet.tracks_as<JetParticles>().size(), // particle level jet
+            matchJetTable(RecoDecay::sqrtSumOfSquares(mcpjet.eta() - mcpd0cand.eta(), deltaPhi(mcpjet.phi(), mcpd0cand.phi())), mcpjet.pt(), mcpjet.eta(), mcpjet.phi(), mcpjet.tracks_as<aod::JetParticles>().size(), // particle level jet
                           mcpd0cand.pt(), mcpd0cand.eta(), mcpd0cand.phi(), mcpd0cand.y(), (mcpd0cand.originMcGen() == RecoDecay::OriginType::Prompt),                                                            // particle level D0
-                          RecoDecay::sqrtSumOfSquares(mcdjet.eta() - mcdd0cand.eta(), deltaPhi(mcdjet.phi(), mcdd0cand.phi())), mcdjet.pt(), mcdjet.eta(), mcdjet.phi(), mcdjet.tracks_as<JetTracks>().size(),    // detector level jet
+                          RecoDecay::sqrtSumOfSquares(mcdjet.eta() - mcdd0cand.eta(), deltaPhi(mcdjet.phi(), mcdd0cand.phi())), mcdjet.pt(), mcdjet.eta(), mcdjet.phi(), mcdjet.tracks_as<aod::JetTracks>().size(),    // detector level jet
                           mcdd0cand.pt(), mcdd0cand.eta(), mcdd0cand.phi(), mcdd0cand.m(), mcdd0cand.y(), (mcdd0cand.originMcRec() == RecoDecay::OriginType::Prompt),                                             // detector level D0
                           mcdd0cand.mlScores()[0], mcdd0cand.mlScores()[1], mcdd0cand.mlScores()[2],
                           matchedFrom, selectedAs);
