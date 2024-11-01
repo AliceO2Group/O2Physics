@@ -1,6 +1,7 @@
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_EFFICIENCY_CALCULATOR_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_EFFICIENCY_CALCULATOR_H_
 
+#include <iostream>
 #include <concepts>
 #include <type_traits>
 
@@ -18,13 +19,13 @@ using MCTruthHist = FemtoUniverseParticleHisto<aod::femtouniverseparticle::Parti
 
 template <typename Task>
 struct EfficiencyCalculator {
-  Task& task;
+  Task* task;
   std::array<MCTruthHist, 2> mcTruthHist;
 
-  EfficiencyCalculator(Task& task) : task(task)
+  EfficiencyCalculator(Task* task) : task(task)
   {
     // assume the name of registry in specified task
-    const auto& registry{task.efficiencyRegistry};
+    const auto& registry{task->efficiencyRegistry};
 
     registry.add(
       "MCTruth/hPt",
@@ -35,10 +36,10 @@ struct EfficiencyCalculator {
     for (uint8_t idx{1}; idx <= 2; idx++) {
       mcTruthHist[idx].init(
         registry,
-        task.ConfTempFitVarpTBins,
-        task.ConfTempFitVarPDGBins,
+        task->ConfTempFitVarpTBins,
+        task->ConfTempFitVarPDGBins,
         0,
-        task.ConfPDGCodePartOne,
+        task->ConfPDGCodePartOne,
         false //
       );
 
@@ -50,14 +51,16 @@ struct EfficiencyCalculator {
     }
   }
 
+  ~EfficiencyCalculator()
+  {
+    std::cout << "hello world!\n";
+  }
+
   template <uint8_t Index>
     requires IsOneOrTwo<Index>
-  auto doMCGen(auto particle) -> void
+  auto fillMCTruth(auto particle) -> void
   {
-    if (!task.ConfNoPDGPartOne && (static_cast<int>(particle.pidcut()) != task.ConfPDGCodePartOne)) {
-      return;
-    }
-    histGenPart[Index].fillQA<false, false>(particle);
+    mcTruthHist[Index - 1].fillQA<false, false>(particle);
   }
 };
 
