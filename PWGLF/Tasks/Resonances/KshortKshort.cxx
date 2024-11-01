@@ -24,6 +24,7 @@
 #include <array>
 #include <cmath>
 #include <cstdlib>
+#include <vector>
 #include "TF1.h"
 #include "TRandom3.h"
 #include "Math/Vector3D.h"
