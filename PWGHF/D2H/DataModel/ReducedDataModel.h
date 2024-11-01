@@ -805,6 +805,7 @@ DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t);               // fla
 DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t);               // flag for decay channel classification generator level
 DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);                       // debug flag for mis-association at reconstruction level
 DECLARE_SOA_COLUMN(Origin, origin, int8_t);                               // Flag for origin of MC particle 1=promt, 2=FD
+DECLARE_SOA_COLUMN(SignD0, signD0, int8_t);                               // Sign of the D0 in the channels with D* -> D0 pi, needed in case of non-matched D*
 
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, //!
                            [](float pxProng0, float pxProng1, float pyProng0, float pyProng1) -> float { return RecoDecay::pt((1.f * pxProng0 + 1.f * pxProng1), (1.f * pyProng0 + 1.f * pyProng1)); });
@@ -859,6 +860,7 @@ DECLARE_SOA_TABLE(HfMcRecRedDV0s, "AOD", "HFMCRECREDDV0", //! Table with reconst
                   hf_reso_cand_reduced::FlagMcMatchRec,
                   hf_reso_cand_reduced::DebugMcRec,
                   hf_reso_cand_reduced::Origin,
+                  hf_reso_cand_reduced::SignD0,
                   hf_b0_mc::PtMother,
                   o2::soa::Marker<1>);
 

@@ -603,7 +603,7 @@ struct HfDataCreatorCharmResoReduced {
       }
       registry.fill(HIST("hMCRecDebug"), debug);
     }
-    rowHfDV0McRecReduced(indexHfCandCharm, indexCandV0, flag, debug, origin, motherPt);
+    rowHfDV0McRecReduced(indexHfCandCharm, indexCandV0, flag, debug, origin, signD0, motherPt);
   }
 
   template <bool withMl, bool doMc, uint8_t DecayChannel, typename Coll, typename CCands, typename Tr, typename PParticles, typename BBach>
