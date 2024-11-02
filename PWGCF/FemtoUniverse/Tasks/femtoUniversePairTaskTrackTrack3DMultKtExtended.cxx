@@ -647,38 +647,78 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
         }
       }
 
+      TRandom2* randgen = new TRandom2(0);
+      double rand;
+      rand = randgen->Rndm();
+
       switch (ContType) {
         case 1: {
           float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass2);
-          if (!cfgProcessMultBins) {
-            mixedEventCont.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D, ConfIsIden);
-          } else {
-            std::vector<double> k3d = FemtoUniverseMath::newpairfunc(p1, mass1, p2, mass2, ConfIsIden);
-            mixedEventMultCont.fill_3D<float>(k3d[1], k3d[2], k3d[3], multCol, kT);
+
+          if (rand > 0.5) {
+            if (!cfgProcessMultBins) {
+              mixedEventCont.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D, ConfIsIden);
+            } else {
+              std::vector<double> k3d = FemtoUniverseMath::newpairfunc(p1, mass1, p2, mass2, ConfIsIden);
+              mixedEventMultCont.fill_3D<float>(k3d[1], k3d[2], k3d[3], multCol, kT);
+            }
+          }
+          else {
+            if (!cfgProcessMultBins) {
+              mixedEventCont.setPair<isMC>(p2, p1, multCol, twotracksconfigs.ConfUse3D, ConfIsIden);
+            } else {
+              std::vector<double> k3d = FemtoUniverseMath::newpairfunc(p2, mass2, p1, mass1, ConfIsIden);
+              mixedEventMultCont.fill_3D<float>(k3d[1], k3d[2], k3d[3], multCol, kT);
+            }
           }
           break;
         }
         case 2: {
           float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass1);
-          if (!cfgProcessMultBins) {
-            mixedEventContPP.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D, ConfIsIden);
-          } else {
-            std::vector<double> k3d = FemtoUniverseMath::newpairfunc(p1, mass1, p2, mass2, ConfIsIden);
-            mixedEventMultContPP.fill_3D<float>(k3d[1], k3d[2], k3d[3], multCol, kT);
+          
+          if (rand > 0.5) {
+            if (!cfgProcessMultBins) {
+              mixedEventContPP.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D, ConfIsIden);
+            } else {
+              std::vector<double> k3d = FemtoUniverseMath::newpairfunc(p1, mass1, p2, mass2, ConfIsIden);
+              mixedEventMultContPP.fill_3D<float>(k3d[1], k3d[2], k3d[3], multCol, kT);
+            }
           }
+          else {
+            if (!cfgProcessMultBins) {
+              mixedEventContPP.setPair<isMC>(p2, p1, multCol, twotracksconfigs.ConfUse3D, ConfIsIden);
+            } else {
+              std::vector<double> k3d = FemtoUniverseMath::newpairfunc(p2, mass2, p1, mass1, ConfIsIden);
+              mixedEventMultContPP.fill_3D<float>(k3d[1], k3d[2], k3d[3], multCol, kT);
+            }
+          }
+
           break;
         }
 
         case 3: {
           float kT = FemtoUniverseMath::getkT(p1, mass2, p2, mass2);
-          if (!cfgProcessMultBins) {
-            mixedEventContMM.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D, ConfIsIden);
-          } else {
-            std::vector<double> k3d = FemtoUniverseMath::newpairfunc(p1, mass1, p2, mass2, ConfIsIden);
-            mixedEventMultContMM.fill_3D<float>(k3d[1], k3d[2], k3d[3], multCol, kT);
+          
+          if (rand > 0.5) {
+            if (!cfgProcessMultBins) {
+              mixedEventContMM.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D, ConfIsIden);
+            } else {
+              std::vector<double> k3d = FemtoUniverseMath::newpairfunc(p1, mass1, p2, mass2, ConfIsIden);
+              mixedEventMultContMM.fill_3D<float>(k3d[1], k3d[2], k3d[3], multCol, kT);
+            }
+          }
+          else {
+            if (!cfgProcessMultBins) {
+              mixedEventContMM.setPair<isMC>(p2, p1, multCol, twotracksconfigs.ConfUse3D, ConfIsIden);
+            } else {
+              std::vector<double> k3d = FemtoUniverseMath::newpairfunc(p2, mass2, p1, mass1, ConfIsIden);
+              mixedEventMultContMM.fill_3D<float>(k3d[1], k3d[2], k3d[3], multCol, kT);
+            }
           }
           break;
         }
+        
+        delete randgen;
         default:
           break;
       }
