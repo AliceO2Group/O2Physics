@@ -24,7 +24,6 @@
 #include "CommonConstants/PhysicsConstants.h"
 #include "Common/Core/RecoDecay.h"
 #include "TPDGCode.h"
-#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
