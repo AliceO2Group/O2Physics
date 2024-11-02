@@ -192,7 +192,7 @@ struct SingleTrackQCMC {
   static constexpr std::string_view event_cut_types[2] = {"before/", "after/"};
   static constexpr std::string_view lepton_source_types[9] = {"lf/", "Photon/", "PromptJPsi/", "NonPromptJPsi/", "PromptPsi2S/", "NonPromptPsi2S/", "c2l/", "b2l/", "b2c2l/"};
 
-  ~SingleTrackQCMC(){}
+  ~SingleTrackQCMC() {}
 
   void addhistograms()
   {

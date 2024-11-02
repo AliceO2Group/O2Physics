@@ -208,7 +208,7 @@ struct vpPairQC {
     mRunNumber = collision.runNumber();
   }
 
-  ~vpPairQC(){}
+  ~vpPairQC() {}
 
   void addhistograms()
   {

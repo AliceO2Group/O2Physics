@@ -187,7 +187,7 @@ struct SingleTrackQC {
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false}; // 1 HistogramRegistry can keep up to 512 histograms
   static constexpr std::string_view event_cut_types[2] = {"before/", "after/"};
 
-  ~SingleTrackQC(){}
+  ~SingleTrackQC() {}
 
   void addhistograms()
   {

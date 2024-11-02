@@ -245,7 +245,7 @@ struct DileptonMC {
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
   static constexpr std::string_view event_cut_types[2] = {"before/", "after/"};
 
-  ~DileptonMC(){}
+  ~DileptonMC() {}
 
   void addhistograms()
   {
