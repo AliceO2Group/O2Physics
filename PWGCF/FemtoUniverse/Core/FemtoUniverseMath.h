@@ -93,7 +93,7 @@ class FemtoUniverseMath
     const ROOT::Math::PtEtaPhiMVector PartOneCMSGeo(PartOneCMS);
     const ROOT::Math::PtEtaPhiMVector PartTwoCMSGeo(PartTwoCMS);
 
-    return (PartOneCMSGeo.Theta()-PartTwoCMSGeo.Theta());
+    return (PartOneCMSGeo.Theta() - PartTwoCMSGeo.Theta());
   }
 
   /// Compute the qij of a pair of particles
