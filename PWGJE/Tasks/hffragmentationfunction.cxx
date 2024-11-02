@@ -15,6 +15,9 @@
 ///
 /// The task store data relevant to the calculation of hadronization observables radial
 /// profile and/or jet momentum fraction for charmed hadrons
+#include <vector>
+#include <string>
+
 #include "TVector3.h"
 
 #include "fastjet/PseudoJet.hh"
