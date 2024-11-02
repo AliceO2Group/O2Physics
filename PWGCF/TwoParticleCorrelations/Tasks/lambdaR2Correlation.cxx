@@ -277,6 +277,12 @@ struct lambdaCorrTableProducer {
     // MC Generated Histograms
     if (doprocessMCGen) {
       // McReco Histos
+      histos.add("QA_Checks/h2d_lambda_pt_vs_eta_ps", "", kTH2F, {axisV0Eta, axisV0Pt});
+      histos.add("QA_Checks/h2d_lambda_pt_vs_eta_prim", "", kTH2F, {axisV0Eta, axisV0Pt});
+      histos.add("QA_Checks/h2d_lambda_pt_vs_eta_secd", "", kTH2F, {axisV0Eta, axisV0Pt});
+      histos.add("QA_Checks/h2d_antilambda_pt_vs_eta_ps", "", kTH2F, {axisV0Eta, axisV0Pt});
+      histos.add("QA_Checks/h2d_antilambda_pt_vs_eta_prim", "", kTH2F, {axisV0Eta, axisV0Pt});
+      histos.add("QA_Checks/h2d_antilambda_pt_vs_eta_secd", "", kTH2F, {axisV0Eta, axisV0Pt});
       histos.add("QA_Checks/h2d_tracks_pid_before_mccuts", "PIDs", kTH2F, {axisPID, axisV0Pt});
       histos.add("QA_Checks/h2d_tracks_pid_phyprim", "PIDs", kTH2F, {axisPID, axisV0Pt});
       histos.add("QA_Checks/h2d_tracks_pid_after_sel", "PIDs", kTH2F, {axisPID, axisV0Pt});
@@ -606,15 +612,20 @@ struct lambdaCorrTableProducer {
     if constexpr (reco) {
       auto v0mcpart = v0track.mcParticle();
 
+      // Get information of all the reconstructed V0s
       histos.fill(HIST("QA_Checks/h2d_tracks_pid_before_mccuts"), v0mcpart.pdgCode(), v0mcpart.pt());
 
-      if (cfg_rec_primary_lambda && !v0mcpart.isPhysicalPrimary()) {
-        return;
-      } else if (cfg_rec_secondary_lambda && v0mcpart.isPhysicalPrimary()) {
-        return;
+      // Get all lambdas/anti-lambdas before any selection
+      if (v0mcpart.pdgCode() == kLambda0) {
+        histos.fill(HIST("QA_Checks/h2d_lambda_pt_vs_eta_ps"), v0mcpart.eta(), v0mcpart.pt());
+      } else if (v0mcpart.pdgCode() == kLambda0Bar) {
+        histos.fill(HIST("QA_Checks/h2d_antilambda_pt_vs_eta_ps"), v0mcpart.eta(), v0mcpart.pt());
       }
 
-      histos.fill(HIST("QA_Checks/h2d_tracks_pid_phyprim"), v0mcpart.pdgCode(), v0mcpart.pt());
+      // get all primary reconstructed V0s
+      if (v0mcpart.isPhysicalPrimary()) {
+        histos.fill(HIST("QA_Checks/h2d_tracks_pid_phyprim"), v0mcpart.pdgCode(), v0mcpart.pt());
+      }
 
       // Get Daughters and Mothers
       bool decay_channel_flag = false;
@@ -638,7 +649,30 @@ struct lambdaCorrTableProducer {
           decay_channel_flag = true;
         }
 
+        // check for correct decay channel
         if (!decay_channel_flag) {
+          return;
+        }
+
+        // fill histograms to get secondary contaminations
+        if (v0mcpart.pdgCode() == kLambda0) {
+          if (v0mcpart.isPhysicalPrimary()) {
+            histos.fill(HIST("QA_Checks/h2d_lambda_pt_vs_eta_prim"), v0mcpart.eta(), v0mcpart.pt());
+          } else {
+            histos.fill(HIST("QA_Checks/h2d_lambda_pt_vs_eta_secd"), v0mcpart.eta(), v0mcpart.pt());
+          }
+        } else if (v0mcpart.pdgCode() == kLambda0Bar) {
+          if (v0mcpart.isPhysicalPrimary()) {
+            histos.fill(HIST("QA_Checks/h2d_antilambda_pt_vs_eta_prim"), v0mcpart.eta(), v0mcpart.pt());
+          } else {
+            histos.fill(HIST("QA_Checks/h2d_antilambda_pt_vs_eta_secd"), v0mcpart.eta(), v0mcpart.pt());
+          }
+        }
+
+        // check whether the selected lambda is a Physical Primary / Secondary
+        if (cfg_rec_primary_lambda && !v0mcpart.isPhysicalPrimary()) {
+          return;
+        } else if (cfg_rec_secondary_lambda && v0mcpart.isPhysicalPrimary()) {
           return;
         }
 
@@ -652,6 +686,7 @@ struct lambdaCorrTableProducer {
         }
       }
 
+      // Fill the counter for selected primary/secondary Lambda/AntiLambda
       histos.fill(HIST("QA_Checks/h1d_tracks_info"), 5.5);
       histos.fill(HIST("QA_Checks/h2d_tracks_pid_after_sel"), v0mcpart.pdgCode(), v0mcpart.pt());
     }
