@@ -44,9 +44,7 @@
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
-
 #include "Tools/ML/MlResponse.h"
-#include "PWGEM/Dilepton/Utils/MlResponseDielectronSingleTrack.h"
 
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 #include "PWGEM/Dilepton/Core/DielectronCut.h"
@@ -58,6 +56,7 @@
 #include "PWGEM/Dilepton/Utils/EventHistograms.h"
 #include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
 #include "PWGEM/Dilepton/Utils/PairUtilities.h"
+#include "PWGEM/Dilepton/Utils/MlResponseDielectronSingleTrack.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -203,12 +202,12 @@ struct Dilepton {
     Configurable<bool> enableTTCA{"enableTTCA", true, "Flag to enable or disable TTCA"};
 
     // configuration for PID ML
-    Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{""}, "ONNX file names for each bin (if not from CCDB full path)"};
-    Configurable<std::vector<std::string>> onnxPathsCCDB{"onnxPathsCCDB", std::vector<std::string>{""}, "Paths of models on CCDB"};
+    Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"filename"}, "ONNX file names for each bin (if not from CCDB full path)"};
+    Configurable<std::vector<std::string>> onnxPathsCCDB{"onnxPathsCCDB", std::vector<std::string>{"path"}, "Paths of models on CCDB"};
     Configurable<std::vector<double>> binsMl{"binsMl", std::vector<double>{-999999., 999999.}, "Bin limits for ML application"};
     Configurable<std::vector<double>> cutsMl{"cutsMl", std::vector<double>{0.95}, "ML cuts per bin"};
-    Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{""}, "Names of ML model input features"};
-    Configurable<std::string> nameBinningFeature{"nameBinningFeature", "", "Names of ML model binning feature"};
+    Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature"}, "Names of ML model input features"};
+    Configurable<std::string> nameBinningFeature{"nameBinningFeature", "pt", "Names of ML model binning feature"};
     Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB.  Exceptions: > 0 for the specific timestamp, 0 gets the run dependent timestamp"};
     Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
     Configurable<bool> enableOptimizations{"enableOptimizations", false, "Enables the ONNX extended model-optimization: sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED)"};

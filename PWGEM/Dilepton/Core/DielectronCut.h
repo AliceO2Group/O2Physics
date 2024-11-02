@@ -240,10 +240,9 @@ class DielectronCut : public TNamed
   template <typename TTrack, typename TCollision>
   bool PassPIDML(TTrack const& track, TCollision const& collision) const
   {
-    if (!PassTOFif(track)) { // Allows for pre-selection. But potentially dangerous if analyzers are not aware of it
+    /*if (!PassTOFif(track)) { // Allows for pre-selection. But potentially dangerous if analyzers are not aware of it
       return false;
-    }
-
+    }*/
     std::vector<float> inputFeatures = mPIDMlResponse->getInputFeatures(track, collision);
     float binningFeature = mPIDMlResponse->getBinningFeature(track, collision);
     return mPIDMlResponse->isSelectedMl(inputFeatures, binningFeature);
@@ -422,11 +421,6 @@ class DielectronCut : public TNamed
   void SetPIDMlResponse(o2::analysis::MlResponseDielectronSingleTrack<float>* mlResponse)
   {
     mPIDMlResponse = mlResponse;
-  }
-
-  void SetPIDModel(o2::ml::OnnxModel*)
-  {
-    // dummy
   }
 
   // Getters
