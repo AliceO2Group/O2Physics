@@ -14,6 +14,8 @@
 // This code runs loop over EMCal clusters for EMCal QC.
 //    Please write to: nicolas.strangmann@cern.ch
 
+#include <string>
+#include <vector>
 #include <array>
 #include "TString.h"
 #include "THashList.h"
@@ -100,7 +102,6 @@ struct emcalQC {
     fEMEventCut.SetRequireGoodZvtxFT0vsPV(eventcuts.cfgRequireGoodZvtxFT0vsPV);
     fEMEventCut.SetRequireEMCReadoutInMB(eventcuts.cfgRequireEMCReadoutInMB);
     fEMEventCut.SetRequireEMCHardwareTriggered(eventcuts.cfgRequireEMCHardwareTriggered);
-    fEMEventCut.SetOccupancyRange(eventcuts.cfgOccupancyMin, eventcuts.cfgOccupancyMax);
   }
 
   void DefineEMCCut()
@@ -180,6 +181,9 @@ struct emcalQC {
 
       o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<0>(&fRegistry, collision);
       if (!fEMEventCut.IsSelected(collision)) {
+        continue;
+      }
+      if (!(eventcuts.cfgOccupancyMin <= collision.trackOccupancyInTimeRange() && collision.trackOccupancyInTimeRange() < eventcuts.cfgOccupancyMax)) {
         continue;
       }
 

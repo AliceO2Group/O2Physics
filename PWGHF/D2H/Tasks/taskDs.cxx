@@ -41,13 +41,9 @@ enum DataType { Data = 0,
                 McDplusPrompt,
                 McDplusNonPrompt,
                 McDplusBkg,
+                McLcBkg,
                 McBkg,
                 kDataTypes };
-
-enum SpeciesAndDecay { DsToKKPi = 0,
-                       DplusToKKPi,
-                       DplusToPiKPi,
-                       kSpeciesAndDecay };
 
 template <typename T>
 concept hasDsMlInfo = requires(T candidate)
@@ -110,7 +106,7 @@ struct HfTaskDs {
 
   HistogramRegistry registry{"registry", {}};
 
-  std::array<std::string, DataType::kDataTypes> folders = {"Data/", "MC/Ds/Prompt/", "MC/Ds/NonPrompt/", "MC/Dplus/Prompt/", "MC/Dplus/NonPrompt/", "MC/Dplus/Bkg/", "MC/Bkg/"};
+  std::array<std::string, DataType::kDataTypes> folders = {"Data/", "MC/Ds/Prompt/", "MC/Ds/NonPrompt/", "MC/Dplus/Prompt/", "MC/Dplus/NonPrompt/", "MC/Dplus/Bkg/", "MC/Lc/", "MC/Bkg/"};
 
   std::unordered_map<std::string, histTypes> dataHistograms = {};
   std::unordered_map<std::string, histTypes> mcDsPromptHistograms = {};
@@ -118,9 +114,10 @@ struct HfTaskDs {
   std::unordered_map<std::string, histTypes> mcDplusPromptHistograms = {};
   std::unordered_map<std::string, histTypes> mcDplusNonPromptHistograms = {};
   std::unordered_map<std::string, histTypes> mcDplusBkgHistograms = {};
+  std::unordered_map<std::string, histTypes> mcLcBkgHistograms = {};
   std::unordered_map<std::string, histTypes> mcBkgHistograms = {};
 
-  std::array<std::unordered_map<std::string, histTypes>, DataType::kDataTypes> histosPtr = {dataHistograms, mcDsPromptHistograms, mcDsNonPromptHistograms, mcDplusPromptHistograms, mcDplusNonPromptHistograms, mcDplusBkgHistograms, mcBkgHistograms};
+  std::array<std::unordered_map<std::string, histTypes>, DataType::kDataTypes> histosPtr = {dataHistograms, mcDsPromptHistograms, mcDsNonPromptHistograms, mcDplusPromptHistograms, mcDplusNonPromptHistograms, mcDplusBkgHistograms, mcLcBkgHistograms, mcBkgHistograms};
 
   void init(InitContext&)
   {
@@ -188,7 +185,7 @@ struct HfTaskDs {
         doprocessMc || doprocessMcWithMl) { // processing MC
 
       for (auto i = 0; i < DataType::kDataTypes; ++i) {
-        if (i == DataType::McDsPrompt || i == DataType::McDsNonPrompt || i == DataType::McDplusPrompt || i == DataType::McDplusNonPrompt || i == DataType::McDplusBkg) {
+        if (i == DataType::McDsPrompt || i == DataType::McDsNonPrompt || i == DataType::McDplusPrompt || i == DataType::McDplusNonPrompt || i == DataType::McDplusBkg || i == DataType::McLcBkg) {
 
           histosPtr[i]["hEtaGen"] = registry.add<TH1>((folders[i] + "hEtaGen").c_str(), "3-prong candidates (matched);#eta;entries", {HistType::kTH1F, {{100, -2., 2.}}});
           histosPtr[i]["hPtGen"] = registry.add<TH1>((folders[i] + "hPtGen").c_str(), "MC particles (unmatched);#it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {ptbins}});
@@ -229,6 +226,12 @@ struct HfTaskDs {
   bool isDplusBkg(const CandDs& candidate)
   {
     return std::abs(candidate.flagMcMatchRec()) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi));
+  }
+
+  template <typename CandDs>
+  bool isLcBkg(const CandDs& candidate)
+  {
+    return std::abs(candidate.flagMcMatchRec()) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::LcToPKPi));
   }
 
   /// Checks whether the candidate is in the signal region of either the Ds or D+ decay
@@ -389,19 +392,21 @@ struct HfTaskDs {
   void fillHistoMCRec(const T1& candidate, const CandDsMcGen& mcParticles, DataType dataType)
   {
 
-    SpeciesAndDecay whichSpeciesDecay = SpeciesAndDecay::DsToKKPi;
-    if (dataType == DataType::McDplusPrompt || dataType == DataType::McDplusNonPrompt) {
-      whichSpeciesDecay = SpeciesAndDecay::DplusToKKPi;
-    } else if (dataType == DataType::McDplusBkg) {
-      whichSpeciesDecay = SpeciesAndDecay::DplusToPiKPi;
+    int id = o2::constants::physics::Pdg::kDS;
+    auto yCand = hfHelper.yDs(candidate);
+    if (dataType == DataType::McDplusPrompt || dataType == DataType::McDplusNonPrompt || dataType == DataType::McDplusBkg) {
+      id = o2::constants::physics::Pdg::kDPlus;
+      yCand = hfHelper.yDplus(candidate);
+    } else if (dataType == DataType::McLcBkg) {
+      id = o2::constants::physics::Pdg::kLambdaCPlus;
+      yCand = hfHelper.yLc(candidate);
     }
 
     auto indexMother = RecoDecay::getMother(mcParticles,
                                             candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<CandDsMcGen>(),
-                                            whichSpeciesDecay == SpeciesAndDecay::DsToKKPi ? o2::constants::physics::Pdg::kDS : o2::constants::physics::Pdg::kDPlus, true);
+                                            id, true);
 
     if (indexMother != -1) {
-      auto yCand = whichSpeciesDecay == SpeciesAndDecay::DsToKKPi ? hfHelper.yDs(candidate) : hfHelper.yDplus(candidate);
       if (yCandRecoMax >= 0. && std::abs(yCand) > yCandRecoMax) {
         return;
       }
@@ -462,15 +467,16 @@ struct HfTaskDs {
                                  CandDsMcGen const& mcParticles)
   {
     // MC rec.
-    std::array<MemberFunctionPointer<CandDs>, 5> isOfType = {// Contains the functions to check if the candidate is of a certain type
+    std::array<MemberFunctionPointer<CandDs>, 6> isOfType = {// Contains the functions to check if the candidate is of a certain type
                                                              &HfTaskDs::isDsPrompt<CandDs>,
                                                              &HfTaskDs::isDsNonPrompt<CandDs>,
                                                              &HfTaskDs::isDplusPrompt<CandDs>,
                                                              &HfTaskDs::isDplusNonPrompt<CandDs>,
-                                                             &HfTaskDs::isDplusBkg<CandDs>};
+                                                             &HfTaskDs::isDplusBkg<CandDs>,
+                                                             &HfTaskDs::isLcBkg<CandDs>};
 
     bool isBkg = true;
-    for (int i = DataType::McDsPrompt; i <= DataType::McDplusBkg; i++) { // Check what type of MC signal candidate it is, and fill the corresponding histograms
+    for (int i = DataType::McDsPrompt; i <= DataType::McLcBkg; i++) { // Check what type of MC signal candidate it is, and fill the corresponding histograms
       if ((this->*isOfType[i - DataType::McDsPrompt])(candidate)) {
         isBkg = false;
         fillHistoMCRec<Coll>(candidate, mcParticles, static_cast<DataType>(i));

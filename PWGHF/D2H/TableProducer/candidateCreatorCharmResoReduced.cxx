@@ -101,7 +101,7 @@ struct HfCandidateCreatorCharmResoReduced {
   Partition<aod::HfRedVzeros> candidatesLambda = aod::hf_reso_v0::v0Type == (uint8_t)2 || aod::hf_reso_v0::v0Type == (uint8_t)4;
 
   Preslice<aod::HfRedVzeros> candsV0PerCollision = aod::hf_track_index_reduced::hfRedCollisionId;
-  Preslice<aod::HfRedTracks> candsTrackPerCollision = aod::hf_track_index_reduced::hfRedCollisionId;
+  Preslice<aod::HfRedTrkNoParams> candsTrackPerCollision = aod::hf_track_index_reduced::hfRedCollisionId;
   Preslice<aod::HfRed3PrNoTrks> candsDPerCollision = hf_track_index_reduced::hfRedCollisionId;
 
   // Useful constants
@@ -458,7 +458,7 @@ struct HfCandidateCreatorCharmResoReduced {
   PROCESS_SWITCH(HfCandidateCreatorCharmResoReduced, processLambdaDminusWithMl, "Process LambdaDminus candidates with Ml info", false);
   void processDstarTrack(aod::HfRedCollisions const& collisions,
                          aod::HfRed3PrNoTrks const& candsD,
-                         soa::Join<aod::HfRedTrackBases, aod::HfRedTracksCov> const& candidatesTrack)
+                         aod::HfRedTrkNoParams const& candidatesTrack)
   {
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
@@ -471,8 +471,7 @@ struct HfCandidateCreatorCharmResoReduced {
 
   void processDstarTrackWithMl(aod::HfRedCollisions const& collisions,
                                soa::Join<aod::HfRed3PrNoTrks, aod::HfRed3ProngsMl> const& candsD,
-                               soa::Join<aod::HfRedTrackBases, aod::HfRedTracksCov> const& candidatesTrack)
-  //                                    aod::HfRedTracks const&)
+                               aod::HfRedTrkNoParams const& candidatesTrack)
   {
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();

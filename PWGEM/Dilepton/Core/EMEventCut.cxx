@@ -37,13 +37,6 @@ void EMEventCut::SetZvtxRange(float min, float max)
   LOG(info) << "EM Event Cut, set z vtx range: " << mMinZvtx << " - " << mMaxZvtx;
 }
 
-void EMEventCut::SetOccupancyRange(int min, int max)
-{
-  mMinOccupancy = min;
-  mMaxOccupancy = max;
-  LOG(info) << "EM Event Cut, set occupancy range: " << mMinOccupancy << " - " << mMaxOccupancy;
-}
-
 void EMEventCut::SetRequireNoTFB(bool flag)
 {
   mRequireNoTFB = flag;
