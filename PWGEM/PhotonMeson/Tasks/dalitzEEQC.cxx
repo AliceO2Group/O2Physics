@@ -14,6 +14,9 @@
 // This code runs loop over dalitz ee table for dalitz QC.
 //    Please write to: daiki.sekihata@cern.ch
 
+#include <string>
+#include <vector>
+
 #include "TString.h"
 #include "Math/Vector4D.h"
 #include "Framework/runDataProcessing.h"
@@ -219,7 +222,6 @@ struct DalitzEEQC {
     fEMEventCut.SetRequireNoSameBunchPileup(eventcuts.cfgRequireNoSameBunchPileup);
     fEMEventCut.SetRequireVertexITSTPC(eventcuts.cfgRequireVertexITSTPC);
     fEMEventCut.SetRequireGoodZvtxFT0vsPV(eventcuts.cfgRequireGoodZvtxFT0vsPV);
-    fEMEventCut.SetOccupancyRange(eventcuts.cfgOccupancyMin, eventcuts.cfgOccupancyMax);
   }
 
   void DefineDileptonCut()
@@ -347,6 +349,9 @@ struct DalitzEEQC {
 
       o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<0>(&fRegistry, collision);
       if (!fEMEventCut.IsSelected(collision)) {
+        continue;
+      }
+      if (!(eventcuts.cfgOccupancyMin <= collision.trackOccupancyInTimeRange() && collision.trackOccupancyInTimeRange() < eventcuts.cfgOccupancyMax)) {
         continue;
       }
       o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<1>(&fRegistry, collision);
