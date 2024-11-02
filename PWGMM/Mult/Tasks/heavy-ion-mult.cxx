@@ -23,6 +23,7 @@
 #include <iostream>
 #include <TPDGCode.h>
 #include <TDatabasePDG.h>
+#include <vector>
 
 #include "bestCollisionTable.h"
 #include "CCDB/BasicCCDBManager.h"
