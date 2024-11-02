@@ -45,6 +45,8 @@ namespace analysis
 namespace identifiedbffilter
 {
 
+const std::vector<int> pdgcodes = {11, 211, 321, 2212};
+
 /// \enum MatchRecoGenSpecies
 /// \brief The species considered by the matching test
 enum MatchRecoGenSpecies {
@@ -127,6 +129,8 @@ enum CentMultEstimatorType {
   kNTPV,               ///< NTPV centrality/multiplicity estimator Run 3
   knCentMultEstimators ///< number of centrality/mutiplicity estimator
 };
+
+float overallminp = 0.0f;
 
 /// \enum TriggerSelectionType
 /// \brief The type of trigger to apply for event selection
@@ -716,54 +720,15 @@ void exploreMothers(ParticleObject& particle, MCCollisionObject& collision)
   }
 }
 
-/// \brief Accepts or not the passed generated particle
-/// \param track the particle of interest
-/// \return the internal particle id, -1 if not accepted
-/// TODO: the PID implementation
-/// For the time being we keep the convention
-/// - positive particle pid even
-/// - negative particle pid odd
-/// - charged hadron 0/1
-template <typename ParticleObject, typename MCCollisionObject>
-inline int8_t AcceptParticle(ParticleObject& particle, MCCollisionObject const& collision)
+template <typename ParticleObject>
+inline float getCharge(ParticleObject& particle)
 {
-  float charge = (fPDG->GetParticle(particle.pdgCode())->Charge() / 3 >= 1) ? 1.0 : ((fPDG->GetParticle(particle.pdgCode())->Charge() / 3 <= -1) ? -1.0 : 0.0);
-
-  if (particle.isPhysicalPrimary()) {
-    if ((particle.mcCollisionId() == 0) && traceCollId0) {
-      LOGF(info, "Particle %d passed isPhysicalPrimary", particle.globalIndex());
-    }
-    if (useOwnParticleSelection) {
-      float dcaxy = TMath::Sqrt((particle.vx() - collision.posX()) * (particle.vx() - collision.posX()) +
-                                (particle.vy() - collision.posY()) * (particle.vy() - collision.posY()));
-      float dcaz = TMath::Abs(particle.vz() - collision.posZ());
-      if (!((dcaxy < particleMaxDCAxy) && (dcaz < particleMaxDCAZ))) {
-        if ((particle.mcCollisionId() == 0) && traceCollId0) {
-          LOGF(info, "Rejecting particle with dcaxy: %.2f and dcaz: %.2f", dcaxy, dcaz);
-          LOGF(info, "   assigned collision Id: %d, looping on collision Id: %d", particle.mcCollisionId(), collision.globalIndex());
-          LOGF(info, "   Collision x: %.5f, y: %.5f, z: %.5f", collision.posX(), collision.posY(), collision.posZ());
-          LOGF(info, "   Particle x: %.5f, y: %.5f, z: %.5f", particle.vx(), particle.vy(), particle.vz());
-          LOGF(info, "   index: %d, pdg code: %d", particle.globalIndex(), particle.pdgCode());
-
-          exploreMothers(particle, collision);
-        }
-        return -1;
-      }
-    }
-    if (ptlow < particle.pt() && particle.pt() < ptup && etalow < particle.eta() && particle.eta() < etaup) {
-      if (charge > 0) {
-        return 0;
-      }
-      if (charge < 0) {
-        return 1;
-      }
-    }
-  } else {
-    if ((particle.mcCollisionId() == 0) && traceCollId0) {
-      LOGF(info, "Particle %d NOT passed isPhysicalPrimary", particle.globalIndex());
-    }
+  float charge = 0.0;
+  TParticlePDG* pdgparticle = fPDG->GetParticle(particle.pdgCode());
+  if (pdgparticle != nullptr) {
+    charge = (pdgparticle->Charge() / 3 >= 1) ? 1.0 : ((pdgparticle->Charge() / 3 <= -1) ? -1.0 : 0);
   }
-  return -1;
+  return charge;
 }
 
 } // namespace identifiedbffilter

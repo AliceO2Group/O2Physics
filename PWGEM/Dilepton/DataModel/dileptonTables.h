@@ -104,12 +104,10 @@ DECLARE_SOA_COLUMN(Q4yBTot, q4ybtot, float);                                //! 
 DECLARE_SOA_COLUMN(SpherocityPtWeighted, spherocity_ptweighted, float);     //! transverse spherocity
 DECLARE_SOA_COLUMN(SpherocityPtUnWeighted, spherocity_ptunweighted, float); //! transverse spherocity
 DECLARE_SOA_COLUMN(NtrackSpherocity, ntspherocity, int);
-DECLARE_SOA_COLUMN(IsSelected, isSelected, bool);                                         //! MB event selection info
-DECLARE_SOA_COLUMN(IsEoI, isEoI, bool);                                                   //! lepton or photon exists in MB event (not for CEFP)
-DECLARE_SOA_COLUMN(PosZint16, posZint16, int16_t);                                        //! this is only to reduce data size
-DECLARE_SOA_COLUMN(NumTracksInTimeRange_int16, trackOccupancyInTimeRange_int16, int16_t); //! this is only to reduce data size
+DECLARE_SOA_COLUMN(IsSelected, isSelected, bool);  //! MB event selection info
+DECLARE_SOA_COLUMN(IsEoI, isEoI, bool);            //! lepton or photon exists in MB event (not for CEFP)
+DECLARE_SOA_COLUMN(PosZint16, posZint16, int16_t); //! this is only to reduce data size
 DECLARE_SOA_DYNAMIC_COLUMN(PosZ, posZ, [](int16_t posZint16) -> float { return static_cast<float>(posZint16) * 0.1f; });
-DECLARE_SOA_DYNAMIC_COLUMN(NumTracksInTimeRange, trackOccupancyInTimeRange, [](int16_t trackOccupancyInTimeRange_int16) -> int { return (trackOccupancyInTimeRange_int16 < 0 ? -1 : static_cast<int>(trackOccupancyInTimeRange_int16) * 100); });
 
 DECLARE_SOA_DYNAMIC_COLUMN(Sel8, sel8, [](uint64_t selection_bit) -> bool { return (selection_bit & BIT(o2::aod::evsel::kIsTriggerTVX)) && (selection_bit & BIT(o2::aod::evsel::kNoTimeFrameBorder)) && (selection_bit & BIT(o2::aod::evsel::kNoITSROFrameBorder)); });
 DECLARE_SOA_DYNAMIC_COLUMN(EP2FT0M, ep2ft0m, [](float q2x, float q2y) -> float { return std::atan2(q2y, q2x) / 2.0; });
@@ -214,7 +212,7 @@ DECLARE_SOA_TABLE(EMEoIs, "AOD", "EMEOI", //! joinable to aod::Collisions in cre
 using EMEoI = EMEoIs::iterator;
 
 DECLARE_SOA_TABLE(EMEventNormInfos, "AOD", "EMEVENTNORMINFO", //! event information for normalization
-                  o2::soa::Index<>, evsel::Alias, evsel::Selection, emevent::PosZint16, emevent::NumTracksInTimeRange_int16, emevent::PosZ<emevent::PosZint16>, emevent::Sel8<evsel::Selection>, emevent::NumTracksInTimeRange<emevent::NumTracksInTimeRange_int16>);
+                  o2::soa::Index<>, evsel::Alias, evsel::Selection, emevent::PosZint16, emevent::PosZ<emevent::PosZint16>, emevent::Sel8<evsel::Selection>);
 using EMEventNormInfo = EMEventNormInfos::iterator;
 
 namespace emmcevent
