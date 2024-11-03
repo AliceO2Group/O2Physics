@@ -14,12 +14,12 @@
 ///         and also some basic stuff for decay phi anisotropy studies
 /// \author Jakub Juracka, jakub.juracka@cern.ch
 
+#include <string>
+#include <vector>
+
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/runDataProcessing.h"
-
-#include <string>
-#include <vector>
 
 #include "random"
 #include "TLorentzVector.h"
