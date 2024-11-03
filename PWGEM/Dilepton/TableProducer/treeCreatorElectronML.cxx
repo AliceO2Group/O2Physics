@@ -14,7 +14,6 @@
 // This code will create data table for inputs to machine learning for electrons.
 //    Please write to: daiki.sekihata@cern.ch
 
-
 #include <string>
 #include <map>
 #include <vector>
