@@ -214,6 +214,8 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
   HistogramRegistry SameMultRegistryMM{"SameMultRegistryMM", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry MixedMultRegistryMM{"MixedMultRegistryMM", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
+  TRandom2* randgen;
+
   // PID for protons
   bool IsProtonNSigma(float mom, float nsigmaTPCPr, float nsigmaTOFPr) // previous version from: https://github.com/alisw/AliPhysics/blob/master/PWGCF/FEMTOSCOPY/AliFemtoUser/AliFemtoMJTrackCut.cxx
   {
@@ -485,7 +487,6 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
       }
     } else {
       /// Now build the combinations for identical particles pairs
-      TRandom2* randgen = new TRandom2(0);
       double rand;
       for (auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsOne, groupPartsOne))) {
 
@@ -573,6 +574,7 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
     auto thegroupPartsTwo = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
 
     bool fillQA = true;
+    randgen = new TRandom2(0);
 
     if (cfgProcessPM) {
       doSameEvent<false>(thegroupPartsOne, thegroupPartsTwo, parts, col.magField(), col.multV0M(), 1, fillQA);
@@ -585,6 +587,7 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
     if (cfgProcessMM) {
       doSameEvent<false>(thegroupPartsTwo, thegroupPartsTwo, parts, col.magField(), col.multV0M(), 3, fillQA);
     }
+    delete randgen;
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackTrack3DMultKtExtended, processSameEvent, "Enable processing same event", true);
 
@@ -647,7 +650,6 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
         }
       }
 
-      TRandom2* randgen = new TRandom2(0);
       double rand;
       rand = randgen->Rndm();
 
@@ -690,7 +692,6 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
               mixedEventMultContPP.fill_3D<float>(k3d[1], k3d[2], k3d[3], multCol, kT);
             }
           }
-
           break;
         }
 
@@ -715,7 +716,6 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
           break;
         }
 
-          delete randgen;
         default:
           break;
       }
@@ -727,7 +727,9 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
   /// @param parts subscribe to the femtoUniverseParticleTable
   void processMixedEvent(FilteredFDCollisions& cols,
                          FilteredFemtoFullParticles& parts)
-  {
+  {    
+    randgen = new TRandom2(0);
+
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
 
       const int multiplicityCol = collision1.multV0M();
@@ -756,6 +758,7 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
         doMixedEvent<false>(groupPartsOne, groupPartsTwo, parts, magFieldTesla1, multiplicityCol, 3);
       }
     }
+    delete randgen;
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackTrack3DMultKtExtended, processMixedEvent, "Enable processing mixed events", true);
 
