@@ -195,7 +195,7 @@ class PairSHCentMultKt
       multbinval = 1;
     } else if (absmultval < CentMultBins[3]) {
       multbinval = 2;
-    } else if (ktval < CentMultBins[4]) {
+    } else if (absmultval < CentMultBins[4]) {
       multbinval = 3;
     } else {
       return;
