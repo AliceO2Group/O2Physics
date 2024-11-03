@@ -18,6 +18,9 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/runDataProcessing.h"
 
+#include <string>
+#include <vector>
+
 #include "random"
 #include "TLorentzVector.h"
 
