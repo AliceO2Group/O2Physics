@@ -629,7 +629,7 @@ struct FlowGFWOmegaXi {
         continue;
       if (casc.dcaV0daughters() > cfgcasc_dcav0dau)
         continue;
-      if (TMath::Abs(casc.mLambda() - 1.115683) > cfgcasc_mlambdawindow)
+      if (TMath::Abs(casc.mLambda() - o2::constants::physics::MassLambda0) > cfgcasc_mlambdawindow)
         continue;
       // track quality check
       if (bachelor.tpcNClsFound() < cfgtpcclusters)
