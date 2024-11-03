@@ -570,7 +570,7 @@ struct FlowGFWOmegaXi {
       if (v0.dcaV0daughters() > cfgv0_dcav0dau)
         continue;
       if (PDGCode == kK0Short) {
-        if (TMath::Abs(v0.mK0Short() - 0.49761) < cfgv0_mk0swindow) {
+        if (TMath::Abs(v0.mK0Short() - o2::constants::physics::MassK0Short) < cfgv0_mk0swindow) {
           CandNum[0] = CandNum[0] + 1;
           registry.fill(HIST("InvMassK0s"), v0.pt(), v0.mK0Short(), v0.eta(), cent);
           registry.fill(HIST("hEtaPhiVtxzPOIK0s"), v0.phi(), v0.eta(), vtxz);
