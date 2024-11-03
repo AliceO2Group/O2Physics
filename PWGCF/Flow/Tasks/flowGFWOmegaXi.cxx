@@ -304,17 +304,19 @@ struct FlowGFWOmegaXi {
     fT0AV0ASigma = new TF1("fT0AV0ASigma", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 200000);
     fT0AV0ASigma->SetParameters(463.4144, 6.796509e-02, -9.097136e-07, 7.971088e-12, -2.600581e-17);
 
-    //fWeight output
-    fWeightsREF->SetPtBins(nPtBins, &(axisPt.binEdges)[0]);
-    fWeightsREF->Init(true, false);
-    fWeightsK0s->SetPtBins(nPtBins, &(axisPt.binEdges)[0]);
-    fWeightsK0s->Init(true, false);
-    fWeightsLambda->SetPtBins(nPtBins, &(axisPt.binEdges)[0]);
-    fWeightsLambda->Init(true, false);
-    fWeightsXi->SetPtBins(nPtBins, &(axisPt.binEdges)[0]);
-    fWeightsXi->Init(true, false);
-    fWeightsOmega->SetPtBins(nPtBins, &(axisPt.binEdges)[0]);
-    fWeightsOmega->Init(true, false);
+    // fWeight output
+    if (cfgOutputNUAWeights){
+      fWeightsREF->SetPtBins(nPtBins, &(axisPt.binEdges)[0]);
+      fWeightsREF->Init(true, false);
+      fWeightsK0s->SetPtBins(nPtBins, &(axisPt.binEdges)[0]);
+      fWeightsK0s->Init(true, false);
+      fWeightsLambda->SetPtBins(nPtBins, &(axisPt.binEdges)[0]);
+      fWeightsLambda->Init(true, false);
+      fWeightsXi->SetPtBins(nPtBins, &(axisPt.binEdges)[0]);
+      fWeightsXi->Init(true, false);
+      fWeightsOmega->SetPtBins(nPtBins, &(axisPt.binEdges)[0]);
+      fWeightsOmega->Init(true, false);
+    }
   }
   
   template <char... chars>
