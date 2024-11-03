@@ -12,6 +12,8 @@
 /// In case of questions please write to:
 /// \author Fuchun Cui(fcui@cern.ch)
 
+#include <vector>
+#include <string>
 #include <CCDB/BasicCCDBManager.h>
 #include <cmath>
 #include "Framework/runDataProcessing.h"
@@ -41,8 +43,6 @@
 #include <TF1.h>
 #include <TF2.h>
 #include <TPDGCode.h>
-#include <vector>
-#include <string>
 
 using namespace o2;
 using namespace o2::framework;
