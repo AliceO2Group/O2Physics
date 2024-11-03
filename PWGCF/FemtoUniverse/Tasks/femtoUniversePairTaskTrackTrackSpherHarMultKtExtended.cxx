@@ -542,7 +542,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
     auto thegroupPartsTwo = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
 
     bool fillQA = true;
-    randgen = new TRandom2(0);    
+    randgen = new TRandom2(0);
 
     if (cfgProcessPM) {
       doSameEvent<false>(thegroupPartsOne, thegroupPartsTwo, parts, col.magField(), col.multV0M(), 1, fillQA);
@@ -555,7 +555,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
     if (cfgProcessMM) {
       doSameEvent<false>(thegroupPartsTwo, thegroupPartsTwo, parts, col.magField(), col.multV0M(), 3, fillQA);
     }
-    delete randgen;    
+    delete randgen;
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackTrackSpherHarMultKtExtended, processSameEvent, "Enable processing same event", true);
 
@@ -649,7 +649,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
                          FilteredFemtoFullParticles& parts)
   {
     randgen = new TRandom2(0);
-    
+
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, ConfNEventsMix, -1, cols, cols)) {
 
       const int multiplicityCol = collision1.multV0M();
@@ -678,7 +678,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
         doMixedEvent<false>(groupPartsOne, groupPartsTwo, parts, magFieldTesla1, multiplicityCol, 3);
       }
     }
-    delete randgen;    
+    delete randgen;
   }
 
   /// process function for to fill covariance histograms
