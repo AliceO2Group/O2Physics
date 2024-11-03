@@ -942,7 +942,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       kfOmegac0Candidate.decayLenXYLambda = DecayLxy_Lam;
 
       float DecayLxy_Casc, err_DecayLxy_Casc;
-      kfOmegaToOmegaC.GetDecayLengthXY(DecayLxy_Casc, err_DecayLxy_Casc); 
+      kfOmegaToOmegaC.GetDecayLengthXY(DecayLxy_Casc, err_DecayLxy_Casc);
       kfOmegac0Candidate.decayLenXYCasc = DecayLxy_Casc;
 
       float DecayLxy_Omegac0, err_DecayLxy_Omegac0;
