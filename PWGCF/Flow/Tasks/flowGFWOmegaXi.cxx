@@ -41,6 +41,8 @@
 #include <TF1.h>
 #include <TF2.h>
 #include <TPDGCode.h>
+#include <vector>
+#include <string>
 
 using namespace o2;
 using namespace o2::framework;
