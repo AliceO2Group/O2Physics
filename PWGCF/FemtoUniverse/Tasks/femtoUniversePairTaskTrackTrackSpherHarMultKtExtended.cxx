@@ -15,6 +15,7 @@
 /// \author Pritam Chakraborty, WUT Warsaw, pritam.chakraborty@pw.edu.pl
 
 #include <vector>
+#include <string>
 #include "TRandom2.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
