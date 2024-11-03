@@ -26,8 +26,8 @@
 namespace o2::aod
 {
 DECLARE_SOA_TABLE(Sigma0Collisions, "AOD", "SIGMA0COLLISION", //! basic collision properties: position
-                o2::soa::Index<>, collision::PosX, collision::PosY, collision::PosZ,
-                cent::CentFT0M, cent::CentFT0A, cent::CentFT0C, cent::CentFV0A);
+                  o2::soa::Index<>, collision::PosX, collision::PosY, collision::PosZ,
+                  cent::CentFT0M, cent::CentFT0A, cent::CentFT0C, cent::CentFV0A);
 
 using Sigma0Collision = Sigma0Collisions::iterator;
 
@@ -48,12 +48,12 @@ DECLARE_SOA_COLUMN(SigmaRapidity, sigmaRapidity, float);
 } // namespace sigma0Core
 
 DECLARE_SOA_TABLE(Sigma0Cores, "AOD", "SIGMA0CORES",
-                sigma0Core::SigmapT,
-                sigma0Core::SigmaMass,
-                sigma0Core::SigmaRapidity);
+                  sigma0Core::SigmapT,
+                  sigma0Core::SigmaMass,
+                  sigma0Core::SigmaRapidity);
 
 DECLARE_SOA_TABLE(Sigma0CollRefs, "AOD", "SIGMA0COLLREF", //! optional table to refer back to a collision
-                o2::soa::Index<>, sigma0Core::Sigma0CollisionId);
+                  o2::soa::Index<>, sigma0Core::Sigma0CollisionId);
 
 // For Photon extra info
 namespace sigmaPhotonExtra
@@ -91,35 +91,35 @@ DECLARE_SOA_COLUMN(GammaBDTScore, gammaBDTScore, float);
 } // namespace sigmaPhotonExtra
 
 DECLARE_SOA_TABLE(SigmaPhotonExtras, "AOD", "SIGMA0PHOTON",
-                sigmaPhotonExtra::PhotonPt,
-                sigmaPhotonExtra::PhotonMass,
-                sigmaPhotonExtra::PhotonQt,
-                sigmaPhotonExtra::PhotonAlpha,
-                sigmaPhotonExtra::PhotonRadius,
-                sigmaPhotonExtra::PhotonCosPA,
-                sigmaPhotonExtra::PhotonDCADau,
-                sigmaPhotonExtra::PhotonDCANegPV,
-                sigmaPhotonExtra::PhotonDCAPosPV,
-                sigmaPhotonExtra::PhotonZconv,
-                sigmaPhotonExtra::PhotonEta,
-                sigmaPhotonExtra::PhotonY,
-                sigmaPhotonExtra::PhotonPosTPCNSigma,
-                sigmaPhotonExtra::PhotonNegTPCNSigma,
-                sigmaPhotonExtra::PhotonPosTPCCrossedRows,
-                sigmaPhotonExtra::PhotonNegTPCCrossedRows,
-                sigmaPhotonExtra::PhotonPosPt,
-                sigmaPhotonExtra::PhotonNegPt,
-                sigmaPhotonExtra::PhotonPosEta,
-                sigmaPhotonExtra::PhotonNegEta,
-                sigmaPhotonExtra::PhotonPosY,
-                sigmaPhotonExtra::PhotonNegY,
-                sigmaPhotonExtra::PhotonPsiPair,
-                sigmaPhotonExtra::PhotonPosITSCls,
-                sigmaPhotonExtra::PhotonNegITSCls,
-                sigmaPhotonExtra::PhotonPosITSClSize,
-                sigmaPhotonExtra::PhotonNegITSClSize,
-                sigmaPhotonExtra::PhotonV0Type,
-                sigmaPhotonExtra::GammaBDTScore);
+                  sigmaPhotonExtra::PhotonPt,
+                  sigmaPhotonExtra::PhotonMass,
+                  sigmaPhotonExtra::PhotonQt,
+                  sigmaPhotonExtra::PhotonAlpha,
+                  sigmaPhotonExtra::PhotonRadius,
+                  sigmaPhotonExtra::PhotonCosPA,
+                  sigmaPhotonExtra::PhotonDCADau,
+                  sigmaPhotonExtra::PhotonDCANegPV,
+                  sigmaPhotonExtra::PhotonDCAPosPV,
+                  sigmaPhotonExtra::PhotonZconv,
+                  sigmaPhotonExtra::PhotonEta,
+                  sigmaPhotonExtra::PhotonY,
+                  sigmaPhotonExtra::PhotonPosTPCNSigma,
+                  sigmaPhotonExtra::PhotonNegTPCNSigma,
+                  sigmaPhotonExtra::PhotonPosTPCCrossedRows,
+                  sigmaPhotonExtra::PhotonNegTPCCrossedRows,
+                  sigmaPhotonExtra::PhotonPosPt,
+                  sigmaPhotonExtra::PhotonNegPt,
+                  sigmaPhotonExtra::PhotonPosEta,
+                  sigmaPhotonExtra::PhotonNegEta,
+                  sigmaPhotonExtra::PhotonPosY,
+                  sigmaPhotonExtra::PhotonNegY,
+                  sigmaPhotonExtra::PhotonPsiPair,
+                  sigmaPhotonExtra::PhotonPosITSCls,
+                  sigmaPhotonExtra::PhotonNegITSCls,
+                  sigmaPhotonExtra::PhotonPosITSClSize,
+                  sigmaPhotonExtra::PhotonNegITSClSize,
+                  sigmaPhotonExtra::PhotonV0Type,
+                  sigmaPhotonExtra::GammaBDTScore);
 
 // For Lambda extra info
 namespace sigmaLambdaExtra
@@ -161,39 +161,39 @@ DECLARE_SOA_COLUMN(AntiLambdaBDTScore, antilambdaBDTScore, float);
 } // namespace sigmaLambdaExtra
 
 DECLARE_SOA_TABLE(SigmaLambdaExtras, "AOD", "SIGMA0LAMBDA",
-                sigmaLambdaExtra::LambdaPt,
-                sigmaLambdaExtra::LambdaMass,
-                sigmaLambdaExtra::AntiLambdaMass,
-                sigmaLambdaExtra::LambdaQt,
-                sigmaLambdaExtra::LambdaAlpha,
-                sigmaLambdaExtra::LambdaRadius,
-                sigmaLambdaExtra::LambdaCosPA,
-                sigmaLambdaExtra::LambdaDCADau,
-                sigmaLambdaExtra::LambdaDCANegPV,
-                sigmaLambdaExtra::LambdaDCAPosPV,
-                sigmaLambdaExtra::LambdaEta,
-                sigmaLambdaExtra::LambdaY,
-                sigmaLambdaExtra::LambdaPosPrTPCNSigma,
-                sigmaLambdaExtra::LambdaPosPiTPCNSigma,
-                sigmaLambdaExtra::LambdaNegPrTPCNSigma,
-                sigmaLambdaExtra::LambdaNegPiTPCNSigma,
-                sigmaLambdaExtra::LambdaPosTPCCrossedRows,
-                sigmaLambdaExtra::LambdaNegTPCCrossedRows,
-                sigmaLambdaExtra::LambdaPosPt,
-                sigmaLambdaExtra::LambdaNegPt,
-                sigmaLambdaExtra::LambdaPosEta,
-                sigmaLambdaExtra::LambdaNegEta,
-                sigmaLambdaExtra::LambdaPosPrY,
-                sigmaLambdaExtra::LambdaPosPiY,
-                sigmaLambdaExtra::LambdaNegPrY,
-                sigmaLambdaExtra::LambdaNegPiY,
-                sigmaLambdaExtra::LambdaPosITSCls,
-                sigmaLambdaExtra::LambdaNegITSCls,
-                sigmaLambdaExtra::LambdaPosITSClSize,
-                sigmaLambdaExtra::LambdaNegITSClSize,
-                sigmaLambdaExtra::LambdaV0Type,
-                sigmaLambdaExtra::LambdaBDTScore,
-                sigmaLambdaExtra::AntiLambdaBDTScore);
+                  sigmaLambdaExtra::LambdaPt,
+                  sigmaLambdaExtra::LambdaMass,
+                  sigmaLambdaExtra::AntiLambdaMass,
+                  sigmaLambdaExtra::LambdaQt,
+                  sigmaLambdaExtra::LambdaAlpha,
+                  sigmaLambdaExtra::LambdaRadius,
+                  sigmaLambdaExtra::LambdaCosPA,
+                  sigmaLambdaExtra::LambdaDCADau,
+                  sigmaLambdaExtra::LambdaDCANegPV,
+                  sigmaLambdaExtra::LambdaDCAPosPV,
+                  sigmaLambdaExtra::LambdaEta,
+                  sigmaLambdaExtra::LambdaY,
+                  sigmaLambdaExtra::LambdaPosPrTPCNSigma,
+                  sigmaLambdaExtra::LambdaPosPiTPCNSigma,
+                  sigmaLambdaExtra::LambdaNegPrTPCNSigma,
+                  sigmaLambdaExtra::LambdaNegPiTPCNSigma,
+                  sigmaLambdaExtra::LambdaPosTPCCrossedRows,
+                  sigmaLambdaExtra::LambdaNegTPCCrossedRows,
+                  sigmaLambdaExtra::LambdaPosPt,
+                  sigmaLambdaExtra::LambdaNegPt,
+                  sigmaLambdaExtra::LambdaPosEta,
+                  sigmaLambdaExtra::LambdaNegEta,
+                  sigmaLambdaExtra::LambdaPosPrY,
+                  sigmaLambdaExtra::LambdaPosPiY,
+                  sigmaLambdaExtra::LambdaNegPrY,
+                  sigmaLambdaExtra::LambdaNegPiY,
+                  sigmaLambdaExtra::LambdaPosITSCls,
+                  sigmaLambdaExtra::LambdaNegITSCls,
+                  sigmaLambdaExtra::LambdaPosITSClSize,
+                  sigmaLambdaExtra::LambdaNegITSClSize,
+                  sigmaLambdaExtra::LambdaV0Type,
+                  sigmaLambdaExtra::LambdaBDTScore,
+                  sigmaLambdaExtra::AntiLambdaBDTScore);
 
 // for MC data
 namespace sigmaMCCore
@@ -204,8 +204,8 @@ DECLARE_SOA_COLUMN(IsAntiSigma, isAntiSigma, bool);
 } // namespace sigmaMCCore
 
 DECLARE_SOA_TABLE(SigmaMCCores, "AOD", "SIGMA0MCCORES",
-                sigmaMCCore::IsSigma,
-                sigmaMCCore::IsAntiSigma);
+                  sigmaMCCore::IsSigma,
+                  sigmaMCCore::IsAntiSigma);
 } // namespace o2::aod
 
 #endif // PWGLF_DATAMODEL_LFSIGMATABLES_H_
