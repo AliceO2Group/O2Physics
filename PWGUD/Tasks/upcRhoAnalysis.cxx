@@ -33,31 +33,33 @@ using namespace o2::framework::expressions;
 using FullUDSgCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced, aod::SGCollisions>::iterator;
 using FullUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags>;
 
-namespace o2::aod {
-  namespace dipi {
-    // general
-    DECLARE_SOA_COLUMN(RunNumber, runNumber, int32_t);
-    DECLARE_SOA_COLUMN(NClass, nClass, int);
-    DECLARE_SOA_COLUMN(TotCharge, charge, int);
-    DECLARE_SOA_COLUMN(Pt, pT, double);
-    // system
-    DECLARE_SOA_COLUMN(M, m, double);
-    DECLARE_SOA_COLUMN(Rap, y, double);
-    DECLARE_SOA_COLUMN(PhiRandom, phiRandom, double);
-    DECLARE_SOA_COLUMN(PhiCharge, phiCharge, double);
-    // tracks
-    DECLARE_SOA_COLUMN(UdCollisionId, udCollisionId, int32_t);
-    DECLARE_SOA_COLUMN(Eta, eta, double);
-    DECLARE_SOA_COLUMN(Phi, phi, double);
-    DECLARE_SOA_COLUMN(Sign, sign, int);
-    DECLARE_SOA_COLUMN(DcaZ, dcaZ, double);
-    DECLARE_SOA_COLUMN(DcaXY, dcaXY, double);
-    DECLARE_SOA_COLUMN(NSigmaPi, nSigmaPi, double);
-    DECLARE_SOA_COLUMN(NSigmaEl, nSigmaEl, double);
-  }
-  DECLARE_SOA_TABLE(SystemTree, "AOD", "SYSTEMTREE", dipi::RunNumber, dipi::NClass, dipi::TotCharge, dipi::M, dipi::Pt, dipi::Rap, dipi::PhiRandom, dipi::PhiCharge);
-  DECLARE_SOA_TABLE(TrackTree, "AOD", "TRACKTREE", dipi::RunNumber, dipi::NClass, dipi::UdCollisionId, dipi::Pt, dipi::Eta, dipi::Sign, dipi::DcaZ, dipi::DcaXY, dipi::NSigmaPi, dipi::NSigmaEl);
-}
+namespace o2::aod
+{
+namespace dipi
+{
+// general
+DECLARE_SOA_COLUMN(RunNumber, runNumber, int32_t);
+DECLARE_SOA_COLUMN(NClass, nClass, int);
+DECLARE_SOA_COLUMN(TotCharge, charge, int);
+DECLARE_SOA_COLUMN(Pt, pT, double);
+// system
+DECLARE_SOA_COLUMN(M, m, double);
+DECLARE_SOA_COLUMN(Rap, y, double);
+DECLARE_SOA_COLUMN(PhiRandom, phiRandom, double);
+DECLARE_SOA_COLUMN(PhiCharge, phiCharge, double);
+// tracks
+DECLARE_SOA_COLUMN(UdCollisionId, udCollisionId, int32_t);
+DECLARE_SOA_COLUMN(Eta, eta, double);
+DECLARE_SOA_COLUMN(Phi, phi, double);
+DECLARE_SOA_COLUMN(Sign, sign, int);
+DECLARE_SOA_COLUMN(DcaZ, dcaZ, double);
+DECLARE_SOA_COLUMN(DcaXY, dcaXY, double);
+DECLARE_SOA_COLUMN(NSigmaPi, nSigmaPi, double);
+DECLARE_SOA_COLUMN(NSigmaEl, nSigmaEl, double);
+} // namespace dipi
+DECLARE_SOA_TABLE(SystemTree, "AOD", "SYSTEMTREE", dipi::RunNumber, dipi::NClass, dipi::TotCharge, dipi::M, dipi::Pt, dipi::Rap, dipi::PhiRandom, dipi::PhiCharge);
+DECLARE_SOA_TABLE(TrackTree, "AOD", "TRACKTREE", dipi::RunNumber, dipi::NClass, dipi::UdCollisionId, dipi::Pt, dipi::Eta, dipi::Sign, dipi::DcaZ, dipi::DcaXY, dipi::NSigmaPi, dipi::NSigmaEl);
+} // namespace o2::aod
 
 struct upcRhoAnalysis {
   Produces<o2::aod::SystemTree> systemTree;
@@ -123,44 +125,44 @@ struct upcRhoAnalysis {
     registry.add("QC/tracks/raw/hTpcNCls", ";TPC N_{cls} findable;counts", kTH1D, {{200, 0.0, 200.0}});
     registry.add("QC/tracks/raw/hTpcNClsCrossedRows", ";TPC crossed rows;counts", kTH1D, {{200, 0.0, 200.0}});
     // track quality selections vs system mass
-    registry.add("QC/tracks/2D/mass/leading/hItsNClsVsM", ";m (GeV/#it{c}^{2});ITS N_{cls} of leading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0},{11, -0.5, 10.5}});
-    registry.add("QC/tracks/2D/mass/leading/hItsChi2NClVsM", ";m (GeV/#it{c}^{2});ITS #chi^{2}/N_{cls} of leading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0},{1000, 0.0, 100.0}});
-    registry.add("QC/tracks/2D/mass/leading/hTpcChi2NClVsM", ";m (GeV/#it{c}^{2});TPC #chi^{2}/N_{cls} of leading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0},{1000, 0.0, 100.0}});
-    registry.add("QC/tracks/2D/mass/leading/hTpcNClsVsM", ";m (GeV/#it{c}^{2});TPC N_{cls} of leading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0},{200, 0.0, 200.0}});
-    registry.add("QC/tracks/2D/mass/leading/hTpcNClsCrossedRowsVsM", ";m (GeV/#it{c}^{2});TPC crossed rows of leading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0},{200, 0.0, 200.0}});
-    registry.add("QC/tracks/2D/mass/leading/hTpcNClsCrossedRowsOverTpcNClsFindableVsM", ";m (GeV/#it{c}^{2});TPC crossed rows / TPC N_{cls} findable of leading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0},{1000, 0.0, 10.0}});
-    registry.add("QC/tracks/2D/mass/subleading/hItsNClsVsM", ";m (GeV/#it{c}^{2});ITS N_{cls} of subleading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0},{11, -0.5, 10.5}});
-    registry.add("QC/tracks/2D/mass/subleading/hItsChi2NClVsM", ";m (GeV/#it{c}^{2});ITS #chi^{2}/N_{cls} of subleading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0},{1000, 0.0, 100.0}});
-    registry.add("QC/tracks/2D/mass/subleading/hTpcChi2NClVsM", ";m (GeV/#it{c}^{2});TPC #chi^{2}/N_{cls} of subleading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0},{1000, 0.0, 100.0}});
-    registry.add("QC/tracks/2D/mass/subleading/hTpcNClsVsM", ";m (GeV/#it{c}^{2});TPC N_{cls} of subleading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0},{200, 0.0, 200.0}});
-    registry.add("QC/tracks/2D/mass/subleading/hTpcNClsCrossedRowsVsM", ";m (GeV/#it{c}^{2});TPC crossed rows of subleading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0},{200, 0.0, 200.0}});
-    registry.add("QC/tracks/2D/mass/subleading/hTpcNClsCrossedRowsOverTpcNClsFindableVsM", ";m (GeV/#it{c}^{2});TPC crossed rows / TPC N_{cls} findable of subleading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0},{1000, 0.0, 10.0}});
+    registry.add("QC/tracks/2D/mass/leading/hItsNClsVsM", ";m (GeV/#it{c}^{2});ITS N_{cls} of leading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0}, {11, -0.5, 10.5}});
+    registry.add("QC/tracks/2D/mass/leading/hItsChi2NClVsM", ";m (GeV/#it{c}^{2});ITS #chi^{2}/N_{cls} of leading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0}, {1000, 0.0, 100.0}});
+    registry.add("QC/tracks/2D/mass/leading/hTpcChi2NClVsM", ";m (GeV/#it{c}^{2});TPC #chi^{2}/N_{cls} of leading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0}, {1000, 0.0, 100.0}});
+    registry.add("QC/tracks/2D/mass/leading/hTpcNClsVsM", ";m (GeV/#it{c}^{2});TPC N_{cls} of leading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0}, {200, 0.0, 200.0}});
+    registry.add("QC/tracks/2D/mass/leading/hTpcNClsCrossedRowsVsM", ";m (GeV/#it{c}^{2});TPC crossed rows of leading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0}, {200, 0.0, 200.0}});
+    registry.add("QC/tracks/2D/mass/leading/hTpcNClsCrossedRowsOverTpcNClsFindableVsM", ";m (GeV/#it{c}^{2});TPC crossed rows / TPC N_{cls} findable of leading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0}, {1000, 0.0, 10.0}});
+    registry.add("QC/tracks/2D/mass/subleading/hItsNClsVsM", ";m (GeV/#it{c}^{2});ITS N_{cls} of subleading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0}, {11, -0.5, 10.5}});
+    registry.add("QC/tracks/2D/mass/subleading/hItsChi2NClVsM", ";m (GeV/#it{c}^{2});ITS #chi^{2}/N_{cls} of subleading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0}, {1000, 0.0, 100.0}});
+    registry.add("QC/tracks/2D/mass/subleading/hTpcChi2NClVsM", ";m (GeV/#it{c}^{2});TPC #chi^{2}/N_{cls} of subleading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0}, {1000, 0.0, 100.0}});
+    registry.add("QC/tracks/2D/mass/subleading/hTpcNClsVsM", ";m (GeV/#it{c}^{2});TPC N_{cls} of subleading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0}, {200, 0.0, 200.0}});
+    registry.add("QC/tracks/2D/mass/subleading/hTpcNClsCrossedRowsVsM", ";m (GeV/#it{c}^{2});TPC crossed rows of subleading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0}, {200, 0.0, 200.0}});
+    registry.add("QC/tracks/2D/mass/subleading/hTpcNClsCrossedRowsOverTpcNClsFindableVsM", ";m (GeV/#it{c}^{2});TPC crossed rows / TPC N_{cls} findable of subleading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0}, {1000, 0.0, 10.0}});
     // track quality selections vs system rapidity
-    registry.add("QC/tracks/2D/rapidity/leading/hItsNClsVsY", ";y;ITS N_{cls} of leading-#it{p} track;counts", kTH2D, {{180, -0.9, 0.9},{11, -0.5, 10.5}});
-    registry.add("QC/tracks/2D/rapidity/leading/hItsChi2NClVsY", ";y;ITS #chi^{2}/N_{cls} of leading-#it{p} track;counts", kTH2D, {{180, -0.9, 0.9},{1000, 0.0, 100.0}});
-    registry.add("QC/tracks/2D/rapidity/leading/hTpcChi2NClVsY", ";y;TPC #chi^{2}/N_{cls} of leading-#it{p} track;counts", kTH2D, {{180, -0.9, 0.9},{1000, 0.0, 100.0}});
-    registry.add("QC/tracks/2D/rapidity/leading/hTpcNClsVsY", ";y;TPC N_{cls} of leading-#it{p} track;counts", kTH2D, {{180, -0.9, 0.9},{200, 0.0, 200.0}});
-    registry.add("QC/tracks/2D/rapidity/leading/hTpcNClsCrossedRowsVsY", ";y;TPC crossed rows of leading-#it{p} track;counts", kTH2D, {{180, -0.9, 0.9},{200, 0.0, 200.0}});
-    registry.add("QC/tracks/2D/rapidity/leading/hTpcNClsCrossedRowsOverTpcNClsFindableVsY", ";y;TPC crossed rows / TPC N_{cls} findable of leading-#it{p} track;counts", kTH2D, {{180, -0.9, 0.9},{1000, 0.0, 10.0}});
-    registry.add("QC/tracks/2D/rapidity/subleading/hItsNClsVsY", ";y;ITS N_{cls} of subleading-#it{p} track;counts", kTH2D, {{180, -0.9, 0.9},{11, -0.5, 10.5}});
-    registry.add("QC/tracks/2D/rapidity/subleading/hItsChi2NClVsY", ";y;ITS #chi^{2}/N_{cls} of subleading-#it{p} track;counts", kTH2D, {{180, -0.9, 0.9},{1000, 0.0, 100.0}});
-    registry.add("QC/tracks/2D/rapidity/subleading/hTpcChi2NClVsY", ";y;TPC #chi^{2}/N_{cls} of subleading-#it{p} track;counts", kTH2D, {{180, -0.9, 0.9},{1000, 0.0, 100.0}});
-    registry.add("QC/tracks/2D/rapidity/subleading/hTpcNClsVsY", ";y;TPC N_{cls} of subleading-#it{p} track;counts", kTH2D, {{180, -0.9, 0.9},{200, 0.0, 200.0}});
-    registry.add("QC/tracks/2D/rapidity/subleading/hTpcNClsCrossedRowsVsY", ";y;TPC crossed rows of subleading-#it{p} track;counts", kTH2D, {{180, -0.9, 0.9},{200, 0.0, 200.0}});
-    registry.add("QC/tracks/2D/rapidity/subleading/hTpcNClsCrossedRowsOverTpcNClsFindableVsY", ";y;TPC crossed rows / TPC N_{cls} findable of subleading-#it{p} track;counts", kTH2D, {{180, -0.9, 0.9},{1000, 0.0, 10.0}});
+    registry.add("QC/tracks/2D/rapidity/leading/hItsNClsVsY", ";y;ITS N_{cls} of leading-#it{p} track;counts", kTH2D, {{180, -0.9, 0.9}, {11, -0.5, 10.5}});
+    registry.add("QC/tracks/2D/rapidity/leading/hItsChi2NClVsY", ";y;ITS #chi^{2}/N_{cls} of leading-#it{p} track;counts", kTH2D, {{180, -0.9, 0.9}, {1000, 0.0, 100.0}});
+    registry.add("QC/tracks/2D/rapidity/leading/hTpcChi2NClVsY", ";y;TPC #chi^{2}/N_{cls} of leading-#it{p} track;counts", kTH2D, {{180, -0.9, 0.9}, {1000, 0.0, 100.0}});
+    registry.add("QC/tracks/2D/rapidity/leading/hTpcNClsVsY", ";y;TPC N_{cls} of leading-#it{p} track;counts", kTH2D, {{180, -0.9, 0.9}, {200, 0.0, 200.0}});
+    registry.add("QC/tracks/2D/rapidity/leading/hTpcNClsCrossedRowsVsY", ";y;TPC crossed rows of leading-#it{p} track;counts", kTH2D, {{180, -0.9, 0.9}, {200, 0.0, 200.0}});
+    registry.add("QC/tracks/2D/rapidity/leading/hTpcNClsCrossedRowsOverTpcNClsFindableVsY", ";y;TPC crossed rows / TPC N_{cls} findable of leading-#it{p} track;counts", kTH2D, {{180, -0.9, 0.9}, {1000, 0.0, 10.0}});
+    registry.add("QC/tracks/2D/rapidity/subleading/hItsNClsVsY", ";y;ITS N_{cls} of subleading-#it{p} track;counts", kTH2D, {{180, -0.9, 0.9}, {11, -0.5, 10.5}});
+    registry.add("QC/tracks/2D/rapidity/subleading/hItsChi2NClVsY", ";y;ITS #chi^{2}/N_{cls} of subleading-#it{p} track;counts", kTH2D, {{180, -0.9, 0.9}, {1000, 0.0, 100.0}});
+    registry.add("QC/tracks/2D/rapidity/subleading/hTpcChi2NClVsY", ";y;TPC #chi^{2}/N_{cls} of subleading-#it{p} track;counts", kTH2D, {{180, -0.9, 0.9}, {1000, 0.0, 100.0}});
+    registry.add("QC/tracks/2D/rapidity/subleading/hTpcNClsVsY", ";y;TPC N_{cls} of subleading-#it{p} track;counts", kTH2D, {{180, -0.9, 0.9}, {200, 0.0, 200.0}});
+    registry.add("QC/tracks/2D/rapidity/subleading/hTpcNClsCrossedRowsVsY", ";y;TPC crossed rows of subleading-#it{p} track;counts", kTH2D, {{180, -0.9, 0.9}, {200, 0.0, 200.0}});
+    registry.add("QC/tracks/2D/rapidity/subleading/hTpcNClsCrossedRowsOverTpcNClsFindableVsY", ";y;TPC crossed rows / TPC N_{cls} findable of subleading-#it{p} track;counts", kTH2D, {{180, -0.9, 0.9}, {1000, 0.0, 10.0}});
     // track quality selections vs system pT
-    registry.add("QC/tracks/2D/pT/leading/hItsNClsVsPt", ";p_{T} (GeV/#it{c});ITS N_{cls} of leading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0},{11, -0.5, 10.5}});
-    registry.add("QC/tracks/2D/pT/leading/hItsChi2NClVsPt", ";p_{T} (GeV/#it{c});ITS #chi^{2}/N_{cls} of leading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0},{1000, 0.0, 100.0}});
-    registry.add("QC/tracks/2D/pT/leading/hTpcChi2NClVsPt", ";p_{T} (GeV/#it{c});TPC #chi^{2}/N_{cls} of leading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0},{1000, 0.0, 100.0}});
-    registry.add("QC/tracks/2D/pT/leading/hTpcNClsVsPt", ";p_{T} (GeV/#it{c});TPC N_{cls} of leading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0},{200, 0.0, 200.0}});
-    registry.add("QC/tracks/2D/pT/leading/hTpcNClsCrossedRowsVsPt", ";p_{T} (GeV/#it{c});TPC crossed rows of leading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0},{200, 0.0, 200.0}});
-    registry.add("QC/tracks/2D/pT/leading/hTpcNClsCrossedRowsOverTpcNClsFindableVsPt", ";p_{T} (GeV/#it{c});TPC crossed rows / TPC N_{cls} findable of leading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0},{1000, 0.0, 10.0}});
-    registry.add("QC/tracks/2D/pT/subleading/hItsNClsVsPt", ";p_{T} (GeV/#it{c});ITS N_{cls} of subleading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0},{11, -0.5, 10.5}});
-    registry.add("QC/tracks/2D/pT/subleading/hItsChi2NClVsPt", ";p_{T} (GeV/#it{c});ITS #chi^{2}/N_{cls} of subleading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0},{1000, 0.0, 100.0}});
-    registry.add("QC/tracks/2D/pT/subleading/hTpcChi2NClVsPt", ";p_{T} (GeV/#it{c});TPC #chi^{2}/N_{cls} of subleading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0},{1000, 0.0, 100.0}});
-    registry.add("QC/tracks/2D/pT/subleading/hTpcNClsVsPt", ";p_{T} (GeV/#it{c});TPC N_{cls} of subleading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0},{200, 0.0, 200.0}});
-    registry.add("QC/tracks/2D/pT/subleading/hTpcNClsCrossedRowsVsPt", ";p_{T} (GeV/#it{c});TPC crossed rows of subleading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0},{200, 0.0, 200.0}});
-    registry.add("QC/tracks/2D/pT/subleading/hTpcNClsCrossedRowsOverTpcNClsFindableVsPt", ";p_{T} (GeV/#it{c});TPC crossed rows / TPC N_{cls} findable of subleading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0},{1000, 0.0, 10.0}});
+    registry.add("QC/tracks/2D/pT/leading/hItsNClsVsPt", ";p_{T} (GeV/#it{c});ITS N_{cls} of leading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0}, {11, -0.5, 10.5}});
+    registry.add("QC/tracks/2D/pT/leading/hItsChi2NClVsPt", ";p_{T} (GeV/#it{c});ITS #chi^{2}/N_{cls} of leading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0}, {1000, 0.0, 100.0}});
+    registry.add("QC/tracks/2D/pT/leading/hTpcChi2NClVsPt", ";p_{T} (GeV/#it{c});TPC #chi^{2}/N_{cls} of leading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0}, {1000, 0.0, 100.0}});
+    registry.add("QC/tracks/2D/pT/leading/hTpcNClsVsPt", ";p_{T} (GeV/#it{c});TPC N_{cls} of leading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0}, {200, 0.0, 200.0}});
+    registry.add("QC/tracks/2D/pT/leading/hTpcNClsCrossedRowsVsPt", ";p_{T} (GeV/#it{c});TPC crossed rows of leading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0}, {200, 0.0, 200.0}});
+    registry.add("QC/tracks/2D/pT/leading/hTpcNClsCrossedRowsOverTpcNClsFindableVsPt", ";p_{T} (GeV/#it{c});TPC crossed rows / TPC N_{cls} findable of leading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0}, {1000, 0.0, 10.0}});
+    registry.add("QC/tracks/2D/pT/subleading/hItsNClsVsPt", ";p_{T} (GeV/#it{c});ITS N_{cls} of subleading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0}, {11, -0.5, 10.5}});
+    registry.add("QC/tracks/2D/pT/subleading/hItsChi2NClVsPt", ";p_{T} (GeV/#it{c});ITS #chi^{2}/N_{cls} of subleading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0}, {1000, 0.0, 100.0}});
+    registry.add("QC/tracks/2D/pT/subleading/hTpcChi2NClVsPt", ";p_{T} (GeV/#it{c});TPC #chi^{2}/N_{cls} of subleading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0}, {1000, 0.0, 100.0}});
+    registry.add("QC/tracks/2D/pT/subleading/hTpcNClsVsPt", ";p_{T} (GeV/#it{c});TPC N_{cls} of subleading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0}, {200, 0.0, 200.0}});
+    registry.add("QC/tracks/2D/pT/subleading/hTpcNClsCrossedRowsVsPt", ";p_{T} (GeV/#it{c});TPC crossed rows of subleading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0}, {200, 0.0, 200.0}});
+    registry.add("QC/tracks/2D/pT/subleading/hTpcNClsCrossedRowsOverTpcNClsFindableVsPt", ";p_{T} (GeV/#it{c});TPC crossed rows / TPC N_{cls} findable of subleading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0}, {1000, 0.0, 10.0}});
     // tracks passing selections
     registry.add("QC/tracks/cut/hTpcNSigmaPi2D", ";TPC n#sigma(#pi_{leading});TPC n#sigma(#pi_{subleading});counts", kTH2D, {{400, -10.0, 30.0}, {400, -10.0, 30.0}});
     registry.add("QC/tracks/cut/hTpcNSigmaEl2D", ";TPC n#sigma(e_{leading});TPC n#sigma(e_{subleading});counts", kTH2D, {{400, -10.0, 30.0}, {400, -10.0, 30.0}});
@@ -169,12 +171,15 @@ struct upcRhoAnalysis {
     registry.add("QC/tracks/cut/hRemainingTracks", ";remaining tracks;counts", kTH1D, {{21, -0.5, 20.5}});
     registry.add("QC/tracks/cut/hDcaXYZ", ";DCA_{z} (cm);DCA_{xy} (cm);counts", kTH2D, {{1000, -5.0, 5.0}, {1000, -5.0, 5.0}});
     // selection counter
-    std::vector<std::string> selectionCounterLabels = {"all tracks", "PV contributor", "ITS hit", "ITS N_{clusters}", "ITS #chi^{2}/N_{clusters}", "TPC hit", "TPC N_{clusters}", "TPC #chi^{2}/N_{clusters}", "TPC crossed rows", "TPC crossed rows/N_{clusters}" "TOF requirement", "p_{T}", "DCA", "#eta", "exactly 2 tracks", "PID"};
+    std::vector<std::string> selectionCounterLabels = {"all tracks", "PV contributor", "ITS hit", "ITS N_{clusters}", "ITS #chi^{2}/N_{clusters}", "TPC hit", "TPC N_{clusters}", "TPC #chi^{2}/N_{clusters}", "TPC crossed rows",
+                                                       "TPC crossed rows/N_{clusters}"
+                                                       "TOF requirement",
+                                                       "p_{T}", "DCA", "#eta", "exactly 2 tracks", "PID"};
     auto hSelectionCounter = registry.add<TH1>("QC/tracks/hSelectionCounter", ";;counts", kTH1D, {{static_cast<int>(selectionCounterLabels.size()), -0.5, static_cast<double>(selectionCounterLabels.size()) - 0.5}});
     for (int i = 0; i < static_cast<int>(selectionCounterLabels.size()); ++i)
       hSelectionCounter->GetXaxis()->SetBinLabel(i + 1, selectionCounterLabels[i].c_str());
     // TOF hit check
-    registry.add("QC/tracks/hTofHitCheck", ";leading track TOF hit;subleading track TOF hit;counts", kTH2D, {{2, -0.5, 1.5},{2, -0.5, 1.5}});
+    registry.add("QC/tracks/hTofHitCheck", ";leading track TOF hit;subleading track TOF hit;counts", kTH2D, {{2, -0.5, 1.5}, {2, -0.5, 1.5}});
     // RECO HISTOS //
     // PIONS
     // no selection
@@ -441,7 +446,7 @@ struct upcRhoAnalysis {
     if (static_cast<float>(track.tpcNClsCrossedRows()) / static_cast<float>(track.tpcNClsFindable()) < tracksMinTpcNClsCrossedOverFindableCut)
       return false;
     registry.fill(HIST("QC/tracks/hSelectionCounter"), 9);
-    
+
     if (requireTof && !track.hasTOF())
       return false;
     registry.fill(HIST("QC/tracks/hSelectionCounter"), 10);
@@ -499,7 +504,7 @@ struct upcRhoAnalysis {
   }
 
   double getPhiRandom(const std::vector<TLorentzVector>& cutTracks4Vecs) // decay phi anisotropy
-  {                                                                                 // two possible definitions of phi: randomize the tracks
+  {                                                                      // two possible definitions of phi: randomize the tracks
     std::vector<int> indices = {0, 1};
     unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();    // get time-based seed
     std::shuffle(indices.begin(), indices.end(), std::default_random_engine(seed)); // shuffle indices
@@ -597,7 +602,7 @@ struct upcRhoAnalysis {
 
     if (cutTracks.size() != 2)
       return;
-    for (int i = 0; i < cutTracks.size(); i++) 
+    for (int i = 0; i < cutTracks.size(); i++)
       registry.fill(HIST("QC/tracks/hSelectionCounter"), 14);
 
     registry.fill(HIST("QC/tracks/cut/hTpcNSigmaPi2D"), cutTracks[0].tpcNSigmaPi(), cutTracks[1].tpcNSigmaPi());
@@ -606,7 +611,7 @@ struct upcRhoAnalysis {
 
     if (!tracksPassPiPID(cutTracks))
       return;
-    for (int i = 0; i < cutTracks.size(); i++) 
+    for (int i = 0; i < cutTracks.size(); i++)
       registry.fill(HIST("QC/tracks/hSelectionCounter"), 15);
     registry.fill(HIST("QC/tracks/cut/hTpcNSigmaEl2D"), cutTracks[0].tpcNSigmaEl(), cutTracks[1].tpcNSigmaEl());
 
