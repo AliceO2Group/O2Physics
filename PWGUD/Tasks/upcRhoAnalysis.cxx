@@ -18,7 +18,6 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/runDataProcessing.h"
 
-#include "Math/Vector4D.h"
 #include "random"
 #include "TLorentzVector.h"
 
@@ -77,10 +76,12 @@ struct upcRhoAnalysis {
   Configurable<double> tracksTpcNSigmaPiCut{"tracksTpcNSigmaPiCut", 3.0, "TPC nSigma pion cut"};
   Configurable<double> tracksDcaMaxCut{"tracksDcaMaxCut", 1.0, "max DCA cut on tracks"};
   Configurable<int> tracksMinItsNClsCut{"tracksMinItsNClsCut", 6, "min ITS clusters cut"};
-  Configurable<double> tracksMaxItsChi2NClCut{"tracksMaxItsChi2NClCut", 36.0, "max ITS chi2/Ncls cut"};
-  Configurable<int> tracksMinTpcNClsCut{"tracksMinTpcNClsCut", 1, "min TPC clusters cut"};
-  Configurable<int> tracksMinTpcNClsCrossedRowsCut{"tracksMinTpcNClsCrossedRowsCut", 70, "min TPC crossed rows cut"};
-  Configurable<double> tracksMaxTpcChi2NClCut{"tracksMaxTpcChi2NClCut", 4.0, "max TPC chi2/Ncls cut"};
+  Configurable<double> tracksMaxItsChi2NClCut{"tracksMaxItsChi2NClCut", 3.0, "max ITS chi2/Ncls cut"};
+  Configurable<int> tracksMinTpcNClsCut{"tracksMinTpcNClsCut", 120, "min TPC clusters cut"};
+  Configurable<int> tracksMinTpcNClsCrossedRowsCut{"tracksMinTpcNClsCrossedRowsCut", 140, "min TPC crossed rows cut"};
+  Configurable<double> tracksMinTpcChi2NClCut{"tracksMinTpcChi2NClCut", 1.0, "min TPC chi2/Ncls cut"};
+  Configurable<double> tracksMaxTpcChi2NClCut{"tracksMaxTpcChi2NClCut", 1.8, "max TPC chi2/Ncls cut"};
+  Configurable<double> tracksMinTpcNClsCrossedOverFindableCut{"tracksMinTpcNClsCrossedOverFindableCut", 1.05, "min TPC crossed rows / findable clusters cut"};
   Configurable<double> tracksMinPtCut{"tracksMinPtCut", 0.2, "min pT cut on tracks"};
 
   Configurable<double> systemMassMinCut{"systemMassMinCut", 0.4, "min M cut for reco system"};
@@ -111,13 +112,6 @@ struct upcRhoAnalysis {
     registry.add("QC/collisions/hNumContrib", ";number of contributors;counts", kTH1D, {{36, -0.5, 35.5}});
     registry.add("QC/collisions/hZdcCommonEnergy", ";ZNA common energy;ZNC common energy;counts", kTH2D, {{250, -5.0, 20.0}, {250, -5.0, 20.0}});
     registry.add("QC/collisions/hZdcTime", ";ZNA time (ns);ZNC time (ns);counts", kTH2D, {{200, -10.0, 10.0}, {200, -10.0, 10.0}});
-    registry.add("QC/collisions/hZnaTimeVsCommonEnergy", ";ZNA common energy;ZNA time (ns);counts", kTH2D, {{250, -5.0, 20.0}, {200, -10.0, 10.0}});
-    registry.add("QC/collisions/hZncTimeVsCommonEnergy", ";ZNC common energy;ZNC time (ns);counts", kTH2D, {{250, -5.0, 20.0}, {200, -10.0, 10.0}});
-    registry.add("QC/collisions/hZnaTimeVsPosZ", ";z (cm);ZNA time (ns);counts", kTH2D, {{400, -20.0, 20.0}, {300, -1.5, 1.5}});
-    registry.add("QC/collisions/hZncTimeVsPosZ", ";z (cm);ZNC time (ns);counts", kTH2D, {{400, -20.0, 20.0}, {300, -1.5, 1.5}});
-    registry.add("QC/collisions/hPosZVsZnTimeAdd", ";(ZNA time + ZNC time)/2 (ns);z (cm);counts", kTH2D, {{300, -1.5, 1.5}, {400, -20.0, 20.0}});
-    registry.add("QC/collisions/hPosZVsZnTimeSub", ";(ZNA time - ZNC time)/2 (ns);z (cm);counts", kTH2D, {{300, -1.5, 1.5}, {400, -20.0, 20.0}});
-    registry.add("QC/collisions/hSelectedCollisionVertices", ";x (cm);y (cm);counts", kTH2D, {{4000, -0.2, 0.2}, {4000, -0.2, 0.2}});
     // all tracks
     registry.add("QC/tracks/raw/hTpcNSigmaPi", ";TPC n#sigma_{#pi};counts", kTH1D, {{400, -10.0, 30.0}});
     registry.add("QC/tracks/raw/hTofNSigmaPi", ";TOF n#sigma_{#pi};counts", kTH1D, {{400, -20.0, 20.0}});
@@ -175,10 +169,12 @@ struct upcRhoAnalysis {
     registry.add("QC/tracks/cut/hRemainingTracks", ";remaining tracks;counts", kTH1D, {{21, -0.5, 20.5}});
     registry.add("QC/tracks/cut/hDcaXYZ", ";DCA_{z} (cm);DCA_{xy} (cm);counts", kTH2D, {{1000, -5.0, 5.0}, {1000, -5.0, 5.0}});
     // selection counter
-    std::vector<std::string> selectionCounterLabels = {"all tracks", "PV contributor", "ITS + TPC hit", "ITS N_{clusters} cut", "TOF requirement", "p_{T} cut", "DCA cut", "#eta cut", "exactly 2 tracks", "2D TPC n#sigma_{#pi} cut"};
+    std::vector<std::string> selectionCounterLabels = {"all tracks", "PV contributor", "ITS hit", "ITS N_{clusters}", "ITS #chi^{2}/N_{clusters}", "TPC hit", "TPC N_{clusters}", "TPC #chi^{2}/N_{clusters}", "TPC crossed rows", "TPC crossed rows/N_{clusters}" "TOF requirement", "p_{T}", "DCA", "#eta", "exactly 2 tracks", "PID"};
     auto hSelectionCounter = registry.add<TH1>("QC/tracks/hSelectionCounter", ";;counts", kTH1D, {{static_cast<int>(selectionCounterLabels.size()), -0.5, static_cast<double>(selectionCounterLabels.size()) - 0.5}});
     for (int i = 0; i < static_cast<int>(selectionCounterLabels.size()); ++i)
       hSelectionCounter->GetXaxis()->SetBinLabel(i + 1, selectionCounterLabels[i].c_str());
+    // TOF hit check
+    registry.add("QC/tracks/hTofHitCheck", ";leading track TOF hit;subleading track TOF hit;counts", kTH2D, {{2, -0.5, 1.5},{2, -0.5, 1.5}});
     // RECO HISTOS //
     // PIONS
     // no selection
@@ -223,7 +219,6 @@ struct upcRhoAnalysis {
     registry.add("system/cut/no-selection/unlike-sign/hPhiChargeVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
     registry.add("system/cut/no-selection/unlike-sign/hPyVsPxRandom", ";p_{x} (GeV/#it{c});p_{y} (GeV/#it{c});counts", kTH2D, {momentumFromPhiAxis, momentumFromPhiAxis});
     registry.add("system/cut/no-selection/unlike-sign/hPyVsPxCharge", ";p_{x} (GeV/#it{c});p_{y} (GeV/#it{c});counts", kTH2D, {momentumFromPhiAxis, momentumFromPhiAxis});
-    registry.add("system/cut/no-selection/unlike-sign/hMInPtQuantileBins", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mCutAxis, ptQuantileAxis});
 
     registry.add("system/cut/no-selection/like-sign/positive/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mCutAxis});
     registry.add("system/cut/no-selection/like-sign/positive/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptCutAxis});
@@ -236,7 +231,6 @@ struct upcRhoAnalysis {
     registry.add("system/cut/no-selection/like-sign/positive/hPhiChargeVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
     registry.add("system/cut/no-selection/like-sign/positive/hPyVsPxRandom", ";p_{x} (GeV/#it{c});p_{y} (GeV/#it{c});counts", kTH2D, {momentumFromPhiAxis, momentumFromPhiAxis});
     registry.add("system/cut/no-selection/like-sign/positive/hPyVsPxCharge", ";p_{x} (GeV/#it{c});p_{y} (GeV/#it{c});counts", kTH2D, {momentumFromPhiAxis, momentumFromPhiAxis});
-    registry.add("system/cut/no-selection/like-sign/positive/hMInPtQuantileBins", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mCutAxis, ptQuantileAxis});
 
     registry.add("system/cut/no-selection/like-sign/negative/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mCutAxis});
     registry.add("system/cut/no-selection/like-sign/negative/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptCutAxis});
@@ -249,7 +243,6 @@ struct upcRhoAnalysis {
     registry.add("system/cut/no-selection/like-sign/negative/hPhiChargeVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
     registry.add("system/cut/no-selection/like-sign/negative/hPyVsPxRandom", ";p_{x} (GeV/#it{c});p_{y} (GeV/#it{c});counts", kTH2D, {momentumFromPhiAxis, momentumFromPhiAxis});
     registry.add("system/cut/no-selection/like-sign/negative/hPyVsPxCharge", ";p_{x} (GeV/#it{c});p_{y} (GeV/#it{c});counts", kTH2D, {momentumFromPhiAxis, momentumFromPhiAxis});
-    registry.add("system/cut/no-selection/like-sign/negative/hMInPtQuantileBins", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mCutAxis, ptQuantileAxis});
 
     // 0n0n
     registry.add("system/cut/0n0n/unlike-sign/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mCutAxis});
@@ -263,7 +256,6 @@ struct upcRhoAnalysis {
     registry.add("system/cut/0n0n/unlike-sign/hPhiChargeVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
     registry.add("system/cut/0n0n/unlike-sign/hPyVsPxRandom", ";p_{x} (GeV/#it{c});p_{y} (GeV/#it{c});counts", kTH2D, {momentumFromPhiAxis, momentumFromPhiAxis});
     registry.add("system/cut/0n0n/unlike-sign/hPyVsPxCharge", ";p_{x} (GeV/#it{c});p_{y} (GeV/#it{c});counts", kTH2D, {momentumFromPhiAxis, momentumFromPhiAxis});
-    registry.add("system/cut/0n0n/unlike-sign/hMInPtQuantileBins", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mCutAxis, ptQuantileAxis});
 
     registry.add("system/cut/0n0n/like-sign/positive/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mCutAxis});
     registry.add("system/cut/0n0n/like-sign/positive/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptCutAxis});
@@ -276,7 +268,6 @@ struct upcRhoAnalysis {
     registry.add("system/cut/0n0n/like-sign/positive/hPhiChargeVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
     registry.add("system/cut/0n0n/like-sign/positive/hPyVsPxRandom", ";p_{x} (GeV/#it{c});p_{y} (GeV/#it{c});counts", kTH2D, {momentumFromPhiAxis, momentumFromPhiAxis});
     registry.add("system/cut/0n0n/like-sign/positive/hPyVsPxCharge", ";p_{x} (GeV/#it{c});p_{y} (GeV/#it{c});counts", kTH2D, {momentumFromPhiAxis, momentumFromPhiAxis});
-    registry.add("system/cut/0n0n/like-sign/positive/hMInPtQuantileBins", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mCutAxis, ptQuantileAxis});
 
     registry.add("system/cut/0n0n/like-sign/negative/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mCutAxis});
     registry.add("system/cut/0n0n/like-sign/negative/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptCutAxis});
@@ -289,7 +280,6 @@ struct upcRhoAnalysis {
     registry.add("system/cut/0n0n/like-sign/negative/hPhiChargeVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
     registry.add("system/cut/0n0n/like-sign/negative/hPyVsPxRandom", ";p_{x} (GeV/#it{c});p_{y} (GeV/#it{c});counts", kTH2D, {momentumFromPhiAxis, momentumFromPhiAxis});
     registry.add("system/cut/0n0n/like-sign/negative/hPyVsPxCharge", ";p_{x} (GeV/#it{c});p_{y} (GeV/#it{c});counts", kTH2D, {momentumFromPhiAxis, momentumFromPhiAxis});
-    registry.add("system/cut/0n0n/like-sign/negative/hMInPtQuantileBins", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mCutAxis, ptQuantileAxis});
 
     // Xn0n
     registry.add("system/cut/Xn0n/unlike-sign/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mCutAxis});
@@ -303,7 +293,6 @@ struct upcRhoAnalysis {
     registry.add("system/cut/Xn0n/unlike-sign/hPhiChargeVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
     registry.add("system/cut/Xn0n/unlike-sign/hPyVsPxRandom", ";p_{x} (GeV/#it{c});p_{y} (GeV/#it{c});counts", kTH2D, {momentumFromPhiAxis, momentumFromPhiAxis});
     registry.add("system/cut/Xn0n/unlike-sign/hPyVsPxCharge", ";p_{x} (GeV/#it{c});p_{y} (GeV/#it{c});counts", kTH2D, {momentumFromPhiAxis, momentumFromPhiAxis});
-    registry.add("system/cut/Xn0n/unlike-sign/hMInPtQuantileBins", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mCutAxis, ptQuantileAxis});
 
     registry.add("system/cut/Xn0n/like-sign/positive/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mCutAxis});
     registry.add("system/cut/Xn0n/like-sign/positive/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptCutAxis});
@@ -316,7 +305,6 @@ struct upcRhoAnalysis {
     registry.add("system/cut/Xn0n/like-sign/positive/hPhiChargeVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
     registry.add("system/cut/Xn0n/like-sign/positive/hPyVsPxRandom", ";p_{x} (GeV/#it{c});p_{y} (GeV/#it{c});counts", kTH2D, {momentumFromPhiAxis, momentumFromPhiAxis});
     registry.add("system/cut/Xn0n/like-sign/positive/hPyVsPxCharge", ";p_{x} (GeV/#it{c});p_{y} (GeV/#it{c});counts", kTH2D, {momentumFromPhiAxis, momentumFromPhiAxis});
-    registry.add("system/cut/Xn0n/like-sign/positive/hMInPtQuantileBins", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mCutAxis, ptQuantileAxis});
 
     registry.add("system/cut/Xn0n/like-sign/negative/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mCutAxis});
     registry.add("system/cut/Xn0n/like-sign/negative/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptCutAxis});
@@ -329,7 +317,6 @@ struct upcRhoAnalysis {
     registry.add("system/cut/Xn0n/like-sign/negative/hPhiChargeVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
     registry.add("system/cut/Xn0n/like-sign/negative/hPyVsPxRandom", ";p_{x} (GeV/#it{c});p_{y} (GeV/#it{c});counts", kTH2D, {momentumFromPhiAxis, momentumFromPhiAxis});
     registry.add("system/cut/Xn0n/like-sign/negative/hPyVsPxCharge", ";p_{x} (GeV/#it{c});p_{y} (GeV/#it{c});counts", kTH2D, {momentumFromPhiAxis, momentumFromPhiAxis});
-    registry.add("system/cut/Xn0n/like-sign/negative/hMInPtQuantileBins", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mCutAxis, ptQuantileAxis});
 
     // 0nXn
     registry.add("system/cut/0nXn/unlike-sign/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mCutAxis});
@@ -343,7 +330,6 @@ struct upcRhoAnalysis {
     registry.add("system/cut/0nXn/unlike-sign/hPhiChargeVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
     registry.add("system/cut/0nXn/unlike-sign/hPyVsPxRandom", ";p_{x} (GeV/#it{c});p_{y} (GeV/#it{c});counts", kTH2D, {momentumFromPhiAxis, momentumFromPhiAxis});
     registry.add("system/cut/0nXn/unlike-sign/hPyVsPxCharge", ";p_{x} (GeV/#it{c});p_{y} (GeV/#it{c});counts", kTH2D, {momentumFromPhiAxis, momentumFromPhiAxis});
-    registry.add("system/cut/0nXn/unlike-sign/hMInPtQuantileBins", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mCutAxis, ptQuantileAxis});
 
     registry.add("system/cut/0nXn/like-sign/positive/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mCutAxis});
     registry.add("system/cut/0nXn/like-sign/positive/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptCutAxis});
@@ -356,7 +342,6 @@ struct upcRhoAnalysis {
     registry.add("system/cut/0nXn/like-sign/positive/hPhiChargeVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
     registry.add("system/cut/0nXn/like-sign/positive/hPyVsPxRandom", ";p_{x} (GeV/#it{c});p_{y} (GeV/#it{c});counts", kTH2D, {momentumFromPhiAxis, momentumFromPhiAxis});
     registry.add("system/cut/0nXn/like-sign/positive/hPyVsPxCharge", ";p_{x} (GeV/#it{c});p_{y} (GeV/#it{c});counts", kTH2D, {momentumFromPhiAxis, momentumFromPhiAxis});
-    registry.add("system/cut/0nXn/like-sign/positive/hMInPtQuantileBins", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mCutAxis, ptQuantileAxis});
 
     registry.add("system/cut/0nXn/like-sign/negative/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mCutAxis});
     registry.add("system/cut/0nXn/like-sign/negative/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptCutAxis});
@@ -369,7 +354,6 @@ struct upcRhoAnalysis {
     registry.add("system/cut/0nXn/like-sign/negative/hPhiChargeVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
     registry.add("system/cut/0nXn/like-sign/negative/hPyVsPxRandom", ";p_{x} (GeV/#it{c});p_{y} (GeV/#it{c});counts", kTH2D, {momentumFromPhiAxis, momentumFromPhiAxis});
     registry.add("system/cut/0nXn/like-sign/negative/hPyVsPxCharge", ";p_{x} (GeV/#it{c});p_{y} (GeV/#it{c});counts", kTH2D, {momentumFromPhiAxis, momentumFromPhiAxis});
-    registry.add("system/cut/0nXn/like-sign/negative/hMInPtQuantileBins", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mCutAxis, ptQuantileAxis});
 
     // XnXn
     registry.add("system/cut/XnXn/unlike-sign/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mCutAxis});
@@ -383,7 +367,6 @@ struct upcRhoAnalysis {
     registry.add("system/cut/XnXn/unlike-sign/hPhiChargeVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
     registry.add("system/cut/XnXn/unlike-sign/hPyVsPxRandom", ";p_{x} (GeV/#it{c});p_{y} (GeV/#it{c});counts", kTH2D, {momentumFromPhiAxis, momentumFromPhiAxis});
     registry.add("system/cut/XnXn/unlike-sign/hPyVsPxCharge", ";p_{x} (GeV/#it{c});p_{y} (GeV/#it{c});counts", kTH2D, {momentumFromPhiAxis, momentumFromPhiAxis});
-    registry.add("system/cut/XnXn/unlike-sign/hMInPtQuantileBins", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mCutAxis, ptQuantileAxis});
 
     registry.add("system/cut/XnXn/like-sign/positive/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mCutAxis});
     registry.add("system/cut/XnXn/like-sign/positive/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptCutAxis});
@@ -396,7 +379,6 @@ struct upcRhoAnalysis {
     registry.add("system/cut/XnXn/like-sign/positive/hPhiChargeVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
     registry.add("system/cut/XnXn/like-sign/positive/hPyVsPxRandom", ";p_{x} (GeV/#it{c});p_{y} (GeV/#it{c});counts", kTH2D, {momentumFromPhiAxis, momentumFromPhiAxis});
     registry.add("system/cut/XnXn/like-sign/positive/hPyVsPxCharge", ";p_{x} (GeV/#it{c});p_{y} (GeV/#it{c});counts", kTH2D, {momentumFromPhiAxis, momentumFromPhiAxis});
-    registry.add("system/cut/XnXn/like-sign/positive/hMInPtQuantileBins", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mCutAxis, ptQuantileAxis});
 
     registry.add("system/cut/XnXn/like-sign/negative/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mCutAxis});
     registry.add("system/cut/XnXn/like-sign/negative/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptCutAxis});
@@ -409,7 +391,6 @@ struct upcRhoAnalysis {
     registry.add("system/cut/XnXn/like-sign/negative/hPhiChargeVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
     registry.add("system/cut/XnXn/like-sign/negative/hPyVsPxRandom", ";p_{x} (GeV/#it{c});p_{y} (GeV/#it{c});counts", kTH2D, {momentumFromPhiAxis, momentumFromPhiAxis});
     registry.add("system/cut/XnXn/like-sign/negative/hPyVsPxCharge", ";p_{x} (GeV/#it{c});p_{y} (GeV/#it{c});counts", kTH2D, {momentumFromPhiAxis, momentumFromPhiAxis});
-    registry.add("system/cut/XnXn/like-sign/negative/hMInPtQuantileBins", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mCutAxis, ptQuantileAxis});
   }
 
   template <typename C>
@@ -429,30 +410,54 @@ struct upcRhoAnalysis {
       return false;
     registry.fill(HIST("QC/tracks/hSelectionCounter"), 1);
 
-    if (!track.hasITS() || !track.hasTPC())
+    if (!track.hasITS())
       return false;
     registry.fill(HIST("QC/tracks/hSelectionCounter"), 2);
 
     if (track.itsNCls() < tracksMinItsNClsCut)
       return false;
     registry.fill(HIST("QC/tracks/hSelectionCounter"), 3);
-    
-    if (requireTof && !track.hasTOF())
+
+    if (track.itsChi2NCl() > tracksMaxItsChi2NClCut)
       return false;
     registry.fill(HIST("QC/tracks/hSelectionCounter"), 4);
 
-    if (track.pt() < tracksMinPtCut)
+    if (!track.hasTPC())
       return false;
     registry.fill(HIST("QC/tracks/hSelectionCounter"), 5);
 
-    if (std::abs(track.dcaZ()) > tracksDcaMaxCut || std::abs(track.dcaXY()) > (0.0105 + 0.0350 / std::pow(track.pt(), 1.01)))
+    if ((track.tpcNClsFindable() - track.tpcNClsFindableMinusFound()) < tracksMinTpcNClsCut)
       return false;
     registry.fill(HIST("QC/tracks/hSelectionCounter"), 6);
 
-    if (std::abs(eta(track.px(), track.py(), track.pz())) > PcEtaCut)
+    if (track.tpcChi2NCl() > tracksMaxTpcChi2NClCut || track.tpcChi2NCl() < tracksMinTpcChi2NClCut)
       return false;
     registry.fill(HIST("QC/tracks/hSelectionCounter"), 7);
 
+    if (track.tpcNClsCrossedRows() < tracksMinTpcNClsCrossedRowsCut)
+      return false;
+    registry.fill(HIST("QC/tracks/hSelectionCounter"), 8);
+
+    if (static_cast<float>(track.tpcNClsCrossedRows()) / static_cast<float>(track.tpcNClsFindable()) < tracksMinTpcNClsCrossedOverFindableCut)
+      return false;
+    registry.fill(HIST("QC/tracks/hSelectionCounter"), 9);
+    
+    if (requireTof && !track.hasTOF())
+      return false;
+    registry.fill(HIST("QC/tracks/hSelectionCounter"), 10);
+
+    if (track.pt() < tracksMinPtCut)
+      return false;
+    registry.fill(HIST("QC/tracks/hSelectionCounter"), 11);
+
+    if (std::abs(track.dcaZ()) > tracksDcaMaxCut || std::abs(track.dcaXY()) > (0.0105 + 0.0350 / std::pow(track.pt(), 1.01)))
+      return false;
+    registry.fill(HIST("QC/tracks/hSelectionCounter"), 12);
+
+    if (std::abs(eta(track.px(), track.py(), track.pz())) > PcEtaCut)
+      return false;
+    registry.fill(HIST("QC/tracks/hSelectionCounter"), 13);
+    // if all selections passed
     return true;
   }
 
@@ -466,15 +471,15 @@ struct upcRhoAnalysis {
   }
 
   template <typename T>
-  double tracksTotalCharge(const T& cutTracks) // total charge of selected tracks
+  int tracksTotalCharge(const T& cutTracks) // total charge of selected tracks
   {
-    double charge = 0.0;
+    int charge = 0;
     for (const auto& track : cutTracks)
       charge += track.sign();
     return charge;
   }
 
-  bool systemPassCuts(const ROOT::Math::PxPyPzMVector& system) // system cuts
+  bool systemPassCuts(const TLorentzVector& system) // system cuts
   {
     if (system.M() < systemMassMinCut || system.M() > systemMassMaxCut)
       return false;
@@ -485,41 +490,31 @@ struct upcRhoAnalysis {
     return true;
   }
 
-  ROOT::Math::PxPyPzMVector reconstructSystem(const std::vector<ROOT::Math::PxPyPzMVector>& cutTracks4Vecs) // reconstruct system from 4-vectors
+  TLorentzVector reconstructSystem(const std::vector<TLorentzVector>& cutTracks4Vecs) // reconstruct system from 4-vectors
   {
-    ROOT::Math::PxPyPzMVector system;
+    TLorentzVector system;
     for (const auto& track4Vec : cutTracks4Vecs)
       system += track4Vec;
     return system;
   }
 
-  double deltaPhi(const ROOT::Math::PxPyPzMVector& p1, const ROOT::Math::PxPyPzMVector& p2)
-  {
-    double dPhi = p1.Phi() - p2.Phi();
-    if (dPhi > o2::constants::math::PI)
-      dPhi -= o2::constants::math::TwoPI;
-    else if (dPhi < -o2::constants::math::PI)
-      dPhi += o2::constants::math::TwoPI;
-    return dPhi; // calculate delta phi in (-pi, pi)
-  }
-
-  double getPhiRandom(const std::vector<ROOT::Math::PxPyPzMVector>& cutTracks4Vecs) // decay phi anisotropy
+  double getPhiRandom(const std::vector<TLorentzVector>& cutTracks4Vecs) // decay phi anisotropy
   {                                                                                 // two possible definitions of phi: randomize the tracks
     std::vector<int> indices = {0, 1};
     unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();    // get time-based seed
     std::shuffle(indices.begin(), indices.end(), std::default_random_engine(seed)); // shuffle indices
     // calculate phi
-    ROOT::Math::PxPyPzMVector pOne = cutTracks4Vecs[indices[0]];
-    ROOT::Math::PxPyPzMVector pTwo = cutTracks4Vecs[indices[1]];
-    ROOT::Math::PxPyPzMVector pPlus = pOne + pTwo;
-    ROOT::Math::PxPyPzMVector pMinus = pOne - pTwo;
-    return deltaPhi(pPlus, pMinus);
+    TLorentzVector pOne = cutTracks4Vecs[indices[0]];
+    TLorentzVector pTwo = cutTracks4Vecs[indices[1]];
+    TLorentzVector pPlus = pOne + pTwo;
+    TLorentzVector pMinus = pOne - pTwo;
+    return pPlus.DeltaPhi(pMinus);
   }
 
   template <typename T>
-  double getPhiCharge(const T& cutTracks, const std::vector<ROOT::Math::PxPyPzMVector>& cutTracks4Vecs)
+  double getPhiCharge(const T& cutTracks, const std::vector<TLorentzVector>& cutTracks4Vecs)
   { // two possible definitions of phi: charge-based assignment
-    ROOT::Math::PxPyPzMVector pOne, pTwo;
+    TLorentzVector pOne, pTwo;
     if (cutTracks[0].sign() > 0) {
       pOne = cutTracks4Vecs[0];
       pTwo = cutTracks4Vecs[1];
@@ -527,9 +522,9 @@ struct upcRhoAnalysis {
       pOne = cutTracks4Vecs[1];
       pTwo = cutTracks4Vecs[0];
     }
-    ROOT::Math::PxPyPzMVector pPlus = pOne + pTwo;
-    ROOT::Math::PxPyPzMVector pMinus = pOne - pTwo;
-    return deltaPhi(pPlus, pMinus);
+    TLorentzVector pPlus = pOne + pTwo;
+    TLorentzVector pMinus = pOne - pTwo;
+    return pPlus.DeltaPhi(pMinus);
   }
 
   void processReco(FullUDSgCollision const& collision, FullUDTracks const& tracks)
@@ -539,13 +534,7 @@ struct upcRhoAnalysis {
     registry.fill(HIST("QC/collisions/hPosZ"), collision.posZ());
     registry.fill(HIST("QC/collisions/hZdcCommonEnergy"), collision.energyCommonZNA(), collision.energyCommonZNC());
     registry.fill(HIST("QC/collisions/hZdcTime"), collision.timeZNA(), collision.timeZNC());
-    registry.fill(HIST("QC/collisions/hZnaTimeVsCommonEnergy"), collision.energyCommonZNA(), collision.timeZNA());
-    registry.fill(HIST("QC/collisions/hZncTimeVsCommonEnergy"), collision.energyCommonZNC(), collision.timeZNC());
     registry.fill(HIST("QC/collisions/hNumContrib"), collision.numContrib());
-    registry.fill(HIST("QC/collisions/hZnaTimeVsPosZ"), collision.posZ(), collision.timeZNA());
-    registry.fill(HIST("QC/collisions/hZncTimeVsPosZ"), collision.posZ(), collision.timeZNC());
-    registry.fill(HIST("QC/collisions/hPosZVsZnTimeAdd"), (collision.timeZNA() + collision.timeZNC()) / 2., collision.posZ());
-    registry.fill(HIST("QC/collisions/hPosZVsZnTimeSub"), (collision.timeZNA() - collision.timeZNC()) / 2., collision.posZ());
 
     if (!collisionPassesCuts(collision))
       return;
@@ -572,7 +561,7 @@ struct upcRhoAnalysis {
     }
     // vectors for storing selected tracks and their 4-vectors
     std::vector<decltype(tracks.begin())> cutTracks;
-    std::vector<ROOT::Math::PxPyPzMVector> cutTracks4Vecs;
+    std::vector<TLorentzVector> cutTracks4Vecs;
 
     int trackCounter = 0;
     for (const auto& track : tracks) {
@@ -592,28 +581,37 @@ struct upcRhoAnalysis {
         continue;
       trackCounter++;
       cutTracks.push_back(track);
-      cutTracks4Vecs.push_back(ROOT::Math::PxPyPzMVector(track.px(), track.py(), track.pz(), o2::constants::physics::MassPionCharged)); // apriori assume pion mass
+      TLorentzVector track4Vec;
+      track4Vec.SetXYZM(track.px(), track.py(), track.pz(), o2::constants::physics::MassPionCharged); // apriori assume pion mass
+      cutTracks4Vecs.push_back(track4Vec);
       registry.fill(HIST("QC/tracks/cut/hTpcSignalVsP"), momentum(track.px(), track.py(), track.pz()), track.tpcSignal());
       registry.fill(HIST("QC/tracks/cut/hTpcSignalVsPt"), track.pt(), track.tpcSignal());
       registry.fill(HIST("QC/tracks/cut/hDcaXYZ"), track.dcaZ(), track.dcaXY());
     }
     registry.fill(HIST("QC/tracks/cut/hRemainingTracks"), trackCounter);
 
+    if (cutTracks.size() != cutTracks4Vecs.size()) {
+      LOGF(ERROR, "size mismatch between selected tracks and their 4-vectors");
+      return;
+    }
+
     if (cutTracks.size() != 2)
       return;
-    registry.fill(HIST("QC/tracks/hSelectionCounter"), 8, 2); // weighted by 2 for track pair
+    for (int i = 0; i < cutTracks.size(); i++) 
+      registry.fill(HIST("QC/tracks/hSelectionCounter"), 14);
 
     registry.fill(HIST("QC/tracks/cut/hTpcNSigmaPi2D"), cutTracks[0].tpcNSigmaPi(), cutTracks[1].tpcNSigmaPi());
-    registry.fill(HIST("QC/tracks/cut/hTpcNSigmaEl2D"), cutTracks[0].tpcNSigmaEl(), cutTracks[1].tpcNSigmaEl());
     for (int i = 0; i <= 1; i++)
       trackTree(collision.runNumber(), nClass, cutTracks[i].udCollisionId(), cutTracks[i].pt(), eta(cutTracks[i].px(), cutTracks[i].py(), cutTracks[i].pz()), cutTracks[i].sign(), cutTracks[i].dcaZ(), cutTracks[i].dcaXY(), cutTracks[i].tpcNSigmaPi(), cutTracks[i].tpcNSigmaEl());
 
     if (!tracksPassPiPID(cutTracks))
       return;
-    registry.fill(HIST("QC/tracks/hSelectionCounter"), 9, 2); // weighted by 2 for track pair
+    for (int i = 0; i < cutTracks.size(); i++) 
+      registry.fill(HIST("QC/tracks/hSelectionCounter"), 15);
+    registry.fill(HIST("QC/tracks/cut/hTpcNSigmaEl2D"), cutTracks[0].tpcNSigmaEl(), cutTracks[1].tpcNSigmaEl());
 
     // reonstruct system and calculate total charge, save commonly used values into variables
-    ROOT::Math::PxPyPzMVector system = reconstructSystem(cutTracks4Vecs);
+    TLorentzVector system = reconstructSystem(cutTracks4Vecs);
     int totalCharge = tracksTotalCharge(cutTracks);
     double mass = system.M();
     double pT = system.Pt();
@@ -621,15 +619,17 @@ struct upcRhoAnalysis {
     double rapidity = system.Rapidity();
     double phiRandom = getPhiRandom(cutTracks4Vecs);
     double phiCharge = getPhiCharge(cutTracks, cutTracks4Vecs);
-
+    // differentiate leading- and subleading-momentum tracks
     auto leadingMomentumTrack = momentum(cutTracks[0].px(), cutTracks[0].py(), cutTracks[0].pz()) > momentum(cutTracks[1].px(), cutTracks[1].py(), cutTracks[1].pz()) ? cutTracks[0] : cutTracks[1];
-    auto subleadingMomentumTrack = leadingMomentumTrack == cutTracks[0] ? cutTracks[1] : cutTracks[0];
+    auto subleadingMomentumTrack = (leadingMomentumTrack == cutTracks[0]) ? cutTracks[1] : cutTracks[0];
     double leadingPt = leadingMomentumTrack.pt();
     double subleadingPt = subleadingMomentumTrack.pt();
     double leadingEta = eta(leadingMomentumTrack.px(), leadingMomentumTrack.py(), leadingMomentumTrack.pz());
     double subleadingEta = eta(subleadingMomentumTrack.px(), subleadingMomentumTrack.py(), subleadingMomentumTrack.pz());
     double leadingPhi = phi(leadingMomentumTrack.px(), leadingMomentumTrack.py());
     double subleadingPhi = phi(subleadingMomentumTrack.px(), subleadingMomentumTrack.py());
+    // fill TOF hit checker
+    registry.fill(HIST("QC/tracks/hTofHitCheck"), leadingMomentumTrack.hasTOF(), subleadingMomentumTrack.hasTOF());
     // fill 2D track QC histograms
     // mass
     registry.fill(HIST("QC/tracks/2D/mass/leading/hItsNClsVsM"), mass, leadingMomentumTrack.itsNCls());
@@ -682,7 +682,6 @@ struct upcRhoAnalysis {
         registry.fill(HIST("system/raw/unlike-sign/hPt"), pT);
         registry.fill(HIST("system/raw/unlike-sign/hPtVsM"), mass, pT);
         registry.fill(HIST("system/raw/unlike-sign/hY"), rapidity);
-        registry.fill(HIST("QC/collisions/hSelectedCollisionVertices"), collision.posX(), collision.posY());
         break;
 
       case 2:
@@ -730,7 +729,6 @@ struct upcRhoAnalysis {
         registry.fill(HIST("system/cut/no-selection/unlike-sign/hPhiChargeVsM"), mass, phiCharge);
         registry.fill(HIST("system/cut/no-selection/unlike-sign/hPyVsPxRandom"), pT * std::cos(phiRandom), pT * std::sin(phiRandom));
         registry.fill(HIST("system/cut/no-selection/unlike-sign/hPyVsPxCharge"), pT * std::cos(phiCharge), pT * std::sin(phiCharge));
-        registry.fill(HIST("system/cut/no-selection/unlike-sign/hMInPtQuantileBins"), mass, pT);
         if (OnOn) {
           registry.fill(HIST("system/cut/0n0n/unlike-sign/hM"), mass);
           registry.fill(HIST("system/cut/0n0n/unlike-sign/hPt"), pT);
@@ -743,7 +741,6 @@ struct upcRhoAnalysis {
           registry.fill(HIST("system/cut/0n0n/unlike-sign/hPhiChargeVsM"), mass, phiCharge);
           registry.fill(HIST("system/cut/0n0n/unlike-sign/hPyVsPxRandom"), pT * std::cos(phiRandom), pT * std::sin(phiRandom));
           registry.fill(HIST("system/cut/0n0n/unlike-sign/hPyVsPxCharge"), pT * std::cos(phiCharge), pT * std::sin(phiCharge));
-          registry.fill(HIST("system/cut/0n0n/unlike-sign/hMInPtQuantileBins"), mass, pT);
         } else if (XnOn) {
           registry.fill(HIST("system/cut/Xn0n/unlike-sign/hM"), mass);
           registry.fill(HIST("system/cut/Xn0n/unlike-sign/hPt"), pT);
@@ -756,7 +753,6 @@ struct upcRhoAnalysis {
           registry.fill(HIST("system/cut/Xn0n/unlike-sign/hPhiChargeVsM"), mass, phiCharge);
           registry.fill(HIST("system/cut/Xn0n/unlike-sign/hPyVsPxRandom"), pT * std::cos(phiRandom), pT * std::sin(phiRandom));
           registry.fill(HIST("system/cut/Xn0n/unlike-sign/hPyVsPxCharge"), pT * std::cos(phiCharge), pT * std::sin(phiCharge));
-          registry.fill(HIST("system/cut/Xn0n/unlike-sign/hMInPtQuantileBins"), mass, pT);
         } else if (OnXn) {
           registry.fill(HIST("system/cut/0nXn/unlike-sign/hM"), mass);
           registry.fill(HIST("system/cut/0nXn/unlike-sign/hPt"), pT);
@@ -769,7 +765,6 @@ struct upcRhoAnalysis {
           registry.fill(HIST("system/cut/0nXn/unlike-sign/hPhiChargeVsM"), mass, phiCharge);
           registry.fill(HIST("system/cut/0nXn/unlike-sign/hPyVsPxRandom"), pT * std::cos(phiRandom), pT * std::sin(phiRandom));
           registry.fill(HIST("system/cut/0nXn/unlike-sign/hPyVsPxCharge"), pT * std::cos(phiCharge), pT * std::sin(phiCharge));
-          registry.fill(HIST("system/cut/0nXn/unlike-sign/hMInPtQuantileBins"), mass, pT);
         } else if (XnXn) {
           registry.fill(HIST("system/cut/XnXn/unlike-sign/hM"), mass);
           registry.fill(HIST("system/cut/XnXn/unlike-sign/hPt"), pT);
@@ -782,7 +777,6 @@ struct upcRhoAnalysis {
           registry.fill(HIST("system/cut/XnXn/unlike-sign/hPhiChargeVsM"), mass, phiCharge);
           registry.fill(HIST("system/cut/XnXn/unlike-sign/hPyVsPxRandom"), pT * std::cos(phiRandom), pT * std::sin(phiRandom));
           registry.fill(HIST("system/cut/XnXn/unlike-sign/hPyVsPxCharge"), pT * std::cos(phiCharge), pT * std::sin(phiCharge));
-          registry.fill(HIST("system/cut/XnXn/unlike-sign/hMInPtQuantileBins"), mass, pT);
         }
         break;
 
@@ -801,7 +795,6 @@ struct upcRhoAnalysis {
         registry.fill(HIST("system/cut/no-selection/like-sign/positive/hPhiChargeVsM"), mass, phiCharge);
         registry.fill(HIST("system/cut/no-selection/like-sign/positive/hPyVsPxRandom"), pT * std::cos(phiRandom), pT * std::sin(phiRandom));
         registry.fill(HIST("system/cut/no-selection/like-sign/positive/hPyVsPxCharge"), pT * std::cos(phiCharge), pT * std::sin(phiCharge));
-        registry.fill(HIST("system/cut/no-selection/like-sign/positive/hMInPtQuantileBins"), mass, pT);
         if (OnOn) {
           registry.fill(HIST("system/cut/0n0n/like-sign/positive/hM"), mass);
           registry.fill(HIST("system/cut/0n0n/like-sign/positive/hPt"), pT);
@@ -814,7 +807,6 @@ struct upcRhoAnalysis {
           registry.fill(HIST("system/cut/0n0n/like-sign/positive/hPhiChargeVsM"), mass, phiCharge);
           registry.fill(HIST("system/cut/0n0n/like-sign/positive/hPyVsPxRandom"), pT * std::cos(phiRandom), pT * std::sin(phiRandom));
           registry.fill(HIST("system/cut/0n0n/like-sign/positive/hPyVsPxCharge"), pT * std::cos(phiCharge), pT * std::sin(phiCharge));
-          registry.fill(HIST("system/cut/0n0n/like-sign/positive/hMInPtQuantileBins"), mass, pT);
         } else if (XnOn) {
           registry.fill(HIST("system/cut/Xn0n/like-sign/positive/hM"), mass);
           registry.fill(HIST("system/cut/Xn0n/like-sign/positive/hPt"), pT);
@@ -827,7 +819,6 @@ struct upcRhoAnalysis {
           registry.fill(HIST("system/cut/Xn0n/like-sign/positive/hPhiChargeVsM"), mass, phiCharge);
           registry.fill(HIST("system/cut/Xn0n/like-sign/positive/hPyVsPxRandom"), pT * std::cos(phiRandom), pT * std::sin(phiRandom));
           registry.fill(HIST("system/cut/Xn0n/like-sign/positive/hPyVsPxCharge"), pT * std::cos(phiCharge), pT * std::sin(phiCharge));
-          registry.fill(HIST("system/cut/Xn0n/like-sign/positive/hMInPtQuantileBins"), mass, pT);
         } else if (OnXn) {
           registry.fill(HIST("system/cut/0nXn/like-sign/positive/hM"), mass);
           registry.fill(HIST("system/cut/0nXn/like-sign/positive/hPt"), pT);
@@ -840,7 +831,6 @@ struct upcRhoAnalysis {
           registry.fill(HIST("system/cut/0nXn/like-sign/positive/hPhiChargeVsM"), mass, phiCharge);
           registry.fill(HIST("system/cut/0nXn/like-sign/positive/hPyVsPxRandom"), pT * std::cos(phiRandom), pT * std::sin(phiRandom));
           registry.fill(HIST("system/cut/0nXn/like-sign/positive/hPyVsPxCharge"), pT * std::cos(phiCharge), pT * std::sin(phiCharge));
-          registry.fill(HIST("system/cut/0nXn/like-sign/positive/hMInPtQuantileBins"), mass, pT);
         } else if (XnXn) {
           registry.fill(HIST("system/cut/XnXn/like-sign/positive/hM"), mass);
           registry.fill(HIST("system/cut/XnXn/like-sign/positive/hPt"), pT);
@@ -853,7 +843,6 @@ struct upcRhoAnalysis {
           registry.fill(HIST("system/cut/XnXn/like-sign/positive/hPhiChargeVsM"), mass, phiCharge);
           registry.fill(HIST("system/cut/XnXn/like-sign/positive/hPyVsPxRandom"), pT * std::cos(phiRandom), pT * std::sin(phiRandom));
           registry.fill(HIST("system/cut/XnXn/like-sign/positive/hPyVsPxCharge"), pT * std::cos(phiCharge), pT * std::sin(phiCharge));
-          registry.fill(HIST("system/cut/XnXn/like-sign/positive/hMInPtQuantileBins"), mass, pT);
         }
         break;
 
@@ -872,7 +861,6 @@ struct upcRhoAnalysis {
         registry.fill(HIST("system/cut/no-selection/like-sign/negative/hPhiChargeVsM"), mass, phiCharge);
         registry.fill(HIST("system/cut/no-selection/like-sign/negative/hPyVsPxRandom"), pT * std::cos(phiRandom), pT * std::sin(phiRandom));
         registry.fill(HIST("system/cut/no-selection/like-sign/negative/hPyVsPxCharge"), pT * std::cos(phiCharge), pT * std::sin(phiCharge));
-        registry.fill(HIST("system/cut/no-selection/like-sign/negative/hMInPtQuantileBins"), mass, pT);
         if (OnOn) {
           registry.fill(HIST("system/cut/0n0n/like-sign/negative/hM"), mass);
           registry.fill(HIST("system/cut/0n0n/like-sign/negative/hPt"), pT);
@@ -885,7 +873,6 @@ struct upcRhoAnalysis {
           registry.fill(HIST("system/cut/0n0n/like-sign/negative/hPhiChargeVsM"), mass, phiCharge);
           registry.fill(HIST("system/cut/0n0n/like-sign/negative/hPyVsPxRandom"), pT * std::cos(phiRandom), pT * std::sin(phiRandom));
           registry.fill(HIST("system/cut/0n0n/like-sign/negative/hPyVsPxCharge"), pT * std::cos(phiCharge), pT * std::sin(phiCharge));
-          registry.fill(HIST("system/cut/0n0n/like-sign/negative/hMInPtQuantileBins"), mass, pT);
         } else if (XnOn) {
           registry.fill(HIST("system/cut/Xn0n/like-sign/negative/hM"), mass);
           registry.fill(HIST("system/cut/Xn0n/like-sign/negative/hPt"), pT);
@@ -898,7 +885,6 @@ struct upcRhoAnalysis {
           registry.fill(HIST("system/cut/Xn0n/like-sign/negative/hPhiChargeVsM"), mass, phiCharge);
           registry.fill(HIST("system/cut/Xn0n/like-sign/negative/hPyVsPxRandom"), pT * std::cos(phiRandom), pT * std::sin(phiRandom));
           registry.fill(HIST("system/cut/Xn0n/like-sign/negative/hPyVsPxCharge"), pT * std::cos(phiCharge), pT * std::sin(phiCharge));
-          registry.fill(HIST("system/cut/Xn0n/like-sign/negative/hMInPtQuantileBins"), mass, pT);
         } else if (OnXn) {
           registry.fill(HIST("system/cut/0nXn/like-sign/negative/hM"), mass);
           registry.fill(HIST("system/cut/0nXn/like-sign/negative/hPt"), pT);
@@ -911,7 +897,6 @@ struct upcRhoAnalysis {
           registry.fill(HIST("system/cut/0nXn/like-sign/negative/hPhiChargeVsM"), mass, phiCharge);
           registry.fill(HIST("system/cut/0nXn/like-sign/negative/hPyVsPxRandom"), pT * std::cos(phiRandom), pT * std::sin(phiRandom));
           registry.fill(HIST("system/cut/0nXn/like-sign/negative/hPyVsPxCharge"), pT * std::cos(phiCharge), pT * std::sin(phiCharge));
-          registry.fill(HIST("system/cut/0nXn/like-sign/negative/hMInPtQuantileBins"), mass, pT);
         } else if (XnXn) {
           registry.fill(HIST("system/cut/XnXn/like-sign/negative/hM"), mass);
           registry.fill(HIST("system/cut/XnXn/like-sign/negative/hPt"), pT);
@@ -924,7 +909,6 @@ struct upcRhoAnalysis {
           registry.fill(HIST("system/cut/XnXn/like-sign/negative/hPhiChargeVsM"), mass, phiCharge);
           registry.fill(HIST("system/cut/XnXn/like-sign/negative/hPyVsPxRandom"), pT * std::cos(phiRandom), pT * std::sin(phiRandom));
           registry.fill(HIST("system/cut/XnXn/like-sign/negative/hPyVsPxCharge"), pT * std::cos(phiCharge), pT * std::sin(phiCharge));
-          registry.fill(HIST("system/cut/XnXn/like-sign/negative/hMInPtQuantileBins"), mass, pT);
         }
         break;
 
