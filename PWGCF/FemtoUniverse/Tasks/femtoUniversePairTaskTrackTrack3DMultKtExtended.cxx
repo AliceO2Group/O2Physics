@@ -675,7 +675,7 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
         }
         case 2: {
           float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass1);
-          
+
           if (rand > 0.5) {
             if (!cfgProcessMultBins) {
               mixedEventContPP.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D, ConfIsIden);
@@ -697,8 +697,8 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
         }
 
         case 3: {
-          float kT = FemtoUniverseMath::getkT(p1, mass2, p2, mass2);
-          
+          float kT = FemtoUniverseMath::getkT(p1, mass2, p2, mass2); 
+
           if (rand > 0.5) {
             if (!cfgProcessMultBins) {
               mixedEventContMM.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D, ConfIsIden);
@@ -717,7 +717,7 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
           }
           break;
         }
-        
+
         delete randgen;
         default:
           break;
