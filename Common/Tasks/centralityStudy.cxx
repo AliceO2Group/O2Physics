@@ -226,26 +226,26 @@ struct centralityStudy {
 
     // if we got here, we also finally fill the FT0C histogram, please
     histos.fill(HIST("hNPVContributors"), collision.multPVTotalContributors());
-    histos.fill(HIST("hFT0C_Collisions"), collision.multFT0C()*scaleSignalFT0C);
-    histos.fill(HIST("hFT0M_Collisions"), (collision.multFT0A()+collision.multFT0C())*scaleSignalFT0M);
-    histos.fill(HIST("hFV0A_Collisions"), collision.multFV0A()*scaleSignalFV0A);
-    histos.fill(HIST("hFT0CvsPVz_Collisions_All"), collision.multPVz(), collision.multFT0C()*scaleSignalFT0C);
+    histos.fill(HIST("hFT0C_Collisions"), collision.multFT0C() * scaleSignalFT0C);
+    histos.fill(HIST("hFT0M_Collisions"), (collision.multFT0A() + collision.multFT0C()) * scaleSignalFT0M);
+    histos.fill(HIST("hFV0A_Collisions"), collision.multFV0A() * scaleSignalFV0A);
+    histos.fill(HIST("hFT0CvsPVz_Collisions_All"), collision.multPVz(), collision.multFT0C() * scaleSignalFT0C);
     if (collision.multFT0C() > minFT0CforVertexZ) {
-      histos.fill(HIST("hFT0CvsPVz_Collisions"), collision.multPVz(), collision.multFT0C()*scaleSignalFT0C);
+      histos.fill(HIST("hFT0CvsPVz_Collisions"), collision.multPVz(), collision.multFT0C() * scaleSignalFT0C);
     }
     if (do2DPlots) {
-      histos.fill(HIST("hFT0CvsNContribs"), collision.multNTracksPV(), collision.multFT0C()*scaleSignalFT0C);
+      histos.fill(HIST("hFT0CvsNContribs"), collision.multNTracksPV(), collision.multFT0C() * scaleSignalFT0C);
       histos.fill(HIST("hMatchedVsITSOnly"), collision.multNTracksITSOnly(), collision.multNTracksITSTPC());
     }
 
     // if the table has centrality information
     if constexpr (requires { collision.centFT0C(); }) {
       // process FT0C centrality plots
-      histos.fill(HIST("hNContribsVsCentrality"), collision.centFT0C()*scaleSignalFT0C, collision.multPVTotalContributors());
-      histos.fill(HIST("hNITSTPCTracksVsCentrality"), collision.centFT0C()*scaleSignalFT0C, collision.multNTracksITSTPC());
-      histos.fill(HIST("hNITSOnlyTracksVsCentrality"), collision.centFT0C()*scaleSignalFT0C, collision.multNTracksITSOnly());
-      histos.fill(HIST("hNGlobalTracksVsCentrality"), collision.centFT0C()*scaleSignalFT0C, collision.multNTracksGlobal());
-      histos.fill(HIST("hPVChi2VsCentrality"), collision.centFT0C()*scaleSignalFT0C, collision.multPVChi2());
+      histos.fill(HIST("hNContribsVsCentrality"), collision.centFT0C() * scaleSignalFT0C, collision.multPVTotalContributors());
+      histos.fill(HIST("hNITSTPCTracksVsCentrality"), collision.centFT0C() * scaleSignalFT0C, collision.multNTracksITSTPC());
+      histos.fill(HIST("hNITSOnlyTracksVsCentrality"), collision.centFT0C() * scaleSignalFT0C, collision.multNTracksITSOnly());
+      histos.fill(HIST("hNGlobalTracksVsCentrality"), collision.centFT0C() * scaleSignalFT0C, collision.multNTracksGlobal());
+      histos.fill(HIST("hPVChi2VsCentrality"), collision.centFT0C() * scaleSignalFT0C, collision.multPVChi2());
     }
   }
 
@@ -287,13 +287,13 @@ struct centralityStudy {
     histos.fill(HIST("hBCSelection"), 4); // FV0OrA
 
     // if we got here, we also finally fill the FT0C histogram, please
-    histos.fill(HIST("hFT0C_BCs"), multbc.multBCFT0C()*scaleSignalFT0C);
-    histos.fill(HIST("hFT0M_BCs"), (multbc.multBCFT0A()+multbc.multBCFT0C())*scaleSignalFT0M);
-    histos.fill(HIST("hFV0A_BCs"), multbc.multBCFV0A()*scaleSignalFV0A);
+    histos.fill(HIST("hFT0C_BCs"), multbc.multBCFT0C() * scaleSignalFT0C);
+    histos.fill(HIST("hFT0M_BCs"), (multbc.multBCFT0A() + multbc.multBCFT0C()) * scaleSignalFT0M);
+    histos.fill(HIST("hFV0A_BCs"), multbc.multBCFV0A() * scaleSignalFV0A);
     if (multbc.multBCFT0PosZValid()) {
-      histos.fill(HIST("hFT0CvsPVz_BCs_All"), multbc.multBCFT0PosZ(), multbc.multBCFT0C()*scaleSignalFT0C);
+      histos.fill(HIST("hFT0CvsPVz_BCs_All"), multbc.multBCFT0PosZ(), multbc.multBCFT0C() * scaleSignalFT0C);
       if (multbc.multBCFT0C() > minFT0CforVertexZ) {
-        histos.fill(HIST("hFT0CvsPVz_BCs"), multbc.multBCFT0PosZ(), multbc.multBCFT0C()*scaleSignalFT0C);
+        histos.fill(HIST("hFT0CvsPVz_BCs"), multbc.multBCFT0PosZ(), multbc.multBCFT0C() * scaleSignalFT0C);
       }
     }
 
