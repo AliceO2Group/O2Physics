@@ -697,7 +697,7 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
         }
 
         case 3: {
-          float kT = FemtoUniverseMath::getkT(p1, mass2, p2, mass2); 
+          float kT = FemtoUniverseMath::getkT(p1, mass2, p2, mass2);
 
           if (rand > 0.5) {
             if (!cfgProcessMultBins) {
