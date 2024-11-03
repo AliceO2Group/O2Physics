@@ -579,7 +579,7 @@ struct FlowGFWOmegaXi {
             fWeightsK0s->Fill(v0.phi(), v0.eta(), vtxz, v0.pt(), cent, 0);
         }
       } else if (PDGCode == kLambda0) {
-        if (TMath::Abs(v0.mLambda() - 1.115683) < cfgv0_mlambdawindow) {
+        if (TMath::Abs(v0.mLambda() - o2::constants::physics::MassLambda0) < cfgv0_mlambdawindow) {
           CandNum[1] = CandNum[1] + 1;
           registry.fill(HIST("InvMassLambda"), v0.pt(), v0.mLambda(), v0.eta(), cent);
           registry.fill(HIST("hEtaPhiVtxzPOILambda"), v0.phi(), v0.eta(), vtxz);
