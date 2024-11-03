@@ -727,7 +727,7 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
   /// @param parts subscribe to the femtoUniverseParticleTable
   void processMixedEvent(FilteredFDCollisions& cols,
                          FilteredFemtoFullParticles& parts)
-  {    
+  {
     randgen = new TRandom2(0);
 
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
