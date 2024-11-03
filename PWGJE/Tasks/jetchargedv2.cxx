@@ -21,7 +21,6 @@
 #include <cmath>
 #include <TRandom3.h>
 #include <TF1.h>
-#include <algorithm>
 // o2Physics includes.
 
 #include "CCDB/BasicCCDBManager.h"
@@ -72,7 +71,7 @@ using namespace o2::framework::expressions;
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Qvectors>;
 //=====================< evt pln | end >=====================//
 
-struct Jetrhov2Task {
+struct Jetchargedv2Task {
   HistogramRegistry registry;
   HistogramRegistry histosQA{"histosQA", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
@@ -510,7 +509,7 @@ struct Jetrhov2Task {
       }
     }
   }
-  PROCESS_SWITCH(Jetrhov2Task, processjetQA, "jet rho v2 jet QA", true);
+  PROCESS_SWITCH(Jetchargedv2Task, processjetQA, "jet rho v2 jet QA", true);
 
   //< rho bkg check >//
   void processJetsRhoAreaSubData(soa::Filtered<soa::Join<JetCollisions, aod::BkgChargedRhos>>::iterator const& collision,
@@ -527,7 +526,7 @@ struct Jetrhov2Task {
       fillRhoAreaSubtractedHistograms(jet, collision.centrality(), collision.rho());
     }
   }
-  PROCESS_SWITCH(Jetrhov2Task, processJetsRhoAreaSubData, "jet finder QA for rho-area subtracted jets", true);
+  PROCESS_SWITCH(Jetchargedv2Task, processJetsRhoAreaSubData, "jet finder QA for rho-area subtracted jets", true);
   //< rho bkg check | end >//
 
   void processSigmaPt(soa::Filtered<soa::Join<JetCollisions, aod::BkgChargedRhos, aod::Qvectors>> const& collisions,
@@ -683,7 +682,7 @@ struct Jetrhov2Task {
       evtnum += 1;
     }
   }
-  PROCESS_SWITCH(Jetrhov2Task, processSigmaPt, "QA for charged tracks", true);
+  PROCESS_SWITCH(Jetchargedv2Task, processSigmaPt, "QA for charged tracks", true);
 
   void processRandomConeDataV2(soa::Filtered<soa::Join<JetCollisions, aod::BkgChargedRhos, aod::Qvectors>>::iterator const& collision,
                                soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets,
@@ -748,7 +747,7 @@ struct Jetrhov2Task {
       registry.fill(HIST("h3_centrality_RCpt_RandomCornPhi_rhorandomconewithoutleadingjet"), collision.centrality(), randomConePt - M_PI * randomConeR * randomConeR * collision.rho(), RcPhiPsi2, 1.0);
     }
   }
-  PROCESS_SWITCH(Jetrhov2Task, processRandomConeDataV2, "QA for random cone estimation of background fluctuations in data", true);
+  PROCESS_SWITCH(Jetchargedv2Task, processRandomConeDataV2, "QA for random cone estimation of background fluctuations in data", true);
 
   void processTracks(soa::Filtered<JetCollisions>::iterator const& collision,
                      soa::Filtered<JetTracks> const& tracks)
@@ -777,10 +776,10 @@ struct Jetrhov2Task {
       registry.fill(HIST("h3_track_eta_phi_pt"), track.eta(), track.phi(), track.pt());
     }
   }
-  PROCESS_SWITCH(Jetrhov2Task, processTracks, "QA for charged tracks", true);
+  PROCESS_SWITCH(Jetchargedv2Task, processTracks, "QA for charged tracks", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<Jetrhov2Task>(cfgc, TaskName{"jet-rho-v2"})};
+  return WorkflowSpec{adaptAnalysisTask<Jetchargedv2Task>(cfgc, TaskName{"jet-rho-v2"})};
 }
