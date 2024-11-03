@@ -15,7 +15,6 @@
 #include <vector>
 #include <string>
 #include <cmath>
-#include <CCDB/BasicCCDBManager.h>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
@@ -43,6 +42,7 @@
 #include <TF1.h>
 #include <TF2.h>
 #include <TPDGCode.h>
+#include <CCDB/BasicCCDBManager.h>
 
 using namespace o2;
 using namespace o2::framework;
