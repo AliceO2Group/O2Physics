@@ -715,7 +715,7 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
           break;
         }
 
-         delete randgen;
+          delete randgen;
         default:
           break;
       }
