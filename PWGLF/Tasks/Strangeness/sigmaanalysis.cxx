@@ -135,7 +135,7 @@ struct sigmaanalysis {
   ConfigurableAxis axisDCAtoPV{"axisDCAtoPV", {500, 0.0f, 50.0f}, "DCA (cm)"};
   ConfigurableAxis axisDCAdau{"axisDCAdau", {50, 0.0f, 5.0f}, "DCA (cm)"};
   ConfigurableAxis axisCosPA{"axisCosPA", {200, 0.5f, 1.0f}, "Cosine of pointing angle"};
-  ConfigurableAxis axisCandSel{"axisCandSel", {24, 0.0f, +24.0f}, "Candidate Selection"};
+  ConfigurableAxis axisCandSel{"axisCandSel", {25, 0.5f, +25.5f}, "Candidate Selection"};
 
   // ML
   ConfigurableAxis MLProb{"MLOutput", {100, 0.0f, 1.0f}, ""};
@@ -206,6 +206,9 @@ struct sigmaanalysis {
     histos.add("GeneralQA/hLambdaY", "hLambdaY", kTH1F, {axisRapidity});
     histos.add("GeneralQA/hSigmaY", "hSigmaY", kTH1F, {axisRapidity});
 
+    histos.add("GeneralQA/hPhotonMassSelected", "hPhotonMassSelected", kTH1F, {axisPhotonMass});
+    histos.add("GeneralQA/hLambdaMassSelected", "hLambdaMassSelected", kTH1F, {axisLambdaMass});
+    histos.add("GeneralQA/hAntiLambdaMassSelected", "hAntiLambdaMassSelected", kTH1F, {axisLambdaMass});
     // For Signal Extraction
 
     // Sigma0
@@ -360,6 +363,9 @@ struct sigmaanalysis {
       if (TMath::Abs(cand.sigmaRapidity()) > SigmaMaxRap)
         return false;
       histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 24.);
+      histos.fill(HIST("GeneralQA/hPhotonMassSelected"), cand.photonMass());
+      histos.fill(HIST("GeneralQA/hLambdaMassSelected"), cand.lambdaMass());
+      histos.fill(HIST("GeneralQA/hAntiLambdaMassSelected"), cand.antilambdaMass());
     }
 
     return true;
