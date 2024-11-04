@@ -725,8 +725,9 @@ struct FlowTask {
         if (cfgOutputNUAWeightsRefPt) {
           if (WithinPtRef)
             fWeights->Fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
-        } else
+        } else {
           fWeights->Fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
+        }
       }
       if (!setCurrentParticleWeights(weff, wacc, track.phi(), track.eta(), track.pt(), vtxz))
         continue;
