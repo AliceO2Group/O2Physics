@@ -32,7 +32,6 @@ struct myAnalysis {
   Configurable<float> v0cospa{"v0cospa", 0.995, "V0 CosPA"};
   Configurable<float> dcanegtopv{"dcanegtopv", 0.05, "DCA Neg To PV"};
   Configurable<float> dcapostopv{"dcapostopv", 0.05, "DCA Pos To PV"};
-  
   SliceCache cache;
   HistogramRegistry JEhistos{"JEhistos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
