@@ -938,15 +938,15 @@ struct HfCandidateCreatorXic0Omegac0 {
 
       // KF decay length
       float DecayLxy_Lam, err_DecayLxy_Lam;
-      kfV0.GetDecayLengthXY(DecayLxy_Lam, err_DecayLxy_Lam);
+      kfV0ToCasc.GetDecayLengthXY(DecayLxy_Lam, err_DecayLxy_Lam);
       kfOmegac0Candidate.decayLenXYLambda = DecayLxy_Lam;
 
       float DecayLxy_Casc, err_DecayLxy_Casc;
-      kfOmega.GetDecayLengthXY(DecayLxy_Casc, err_DecayLxy_Casc);
+      kfOmegaToOmegaC.GetDecayLengthXY(DecayLxy_Casc, err_DecayLxy_Casc);
       kfOmegac0Candidate.decayLenXYCasc = DecayLxy_Casc;
 
       float DecayLxy_Omegac0, err_DecayLxy_Omegac0;
-      kfOmegaC0.GetDecayLengthXY(DecayLxy_Omegac0, err_DecayLxy_Omegac0);
+      kfOmegac0ToPv.GetDecayLengthXY(DecayLxy_Omegac0, err_DecayLxy_Omegac0);
       kfOmegac0Candidate.decayLenXYOmegac = DecayLxy_Omegac0;
 
       // KF cosPA
