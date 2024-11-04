@@ -224,7 +224,7 @@ struct SingleTrackQC {
       fRegistry.add("Track/positive/hITSClusterMap", "ITS cluster map", kTH1F, {{128, -0.5, 127.5}}, false);
       fRegistry.add("Track/positive/hTPCdEdx", "TPC dE/dx;p_{in} (GeV/c);TPC dE/dx (a.u.)", kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
       fRegistry.add("Track/positive/hTOFbeta", "TOF #beta;p_{pv} (GeV/c);#beta", kTH2F, {{1000, 0, 10}, {240, 0, 1.2}}, false);
-      fRegistry.add("Track/positive/hChi2TOF", "TOF Chi2;chi2", kTH1F, {{100, 0, 10}}, false);
+      fRegistry.add("Track/positive/hChi2TOF", "TOF Chi2;p_{pv} (GeV/c);chi2", kTH2F, {{1000, 0, 10}, {100, 0, 10}}, false);
       fRegistry.add("Track/positive/hMeanClusterSizeITS", "mean cluster size ITS;p_{pv} (GeV/c);<cluster size> on ITS #times cos(#lambda);", kTH2F, {{1000, 0.f, 10.f}, {150, 0, 15}}, false);
       fRegistry.add("Track/positive/hMeanClusterSizeITSib", "mean cluster size ITS inner barrel;p_{pv} (GeV/c);<cluster size> on ITS #times cos(#lambda);", kTH2F, {{1000, 0.f, 10.f}, {150, 0, 15}}, false);
       fRegistry.add("Track/positive/hMeanClusterSizeITSob", "mean cluster size ITS outer barrel;p_{pv} (GeV/c);<cluster size> on ITS #times cos(#lambda);", kTH2F, {{1000, 0.f, 10.f}, {150, 0, 15}}, false);
@@ -418,7 +418,7 @@ struct SingleTrackQC {
       fRegistry.fill(HIST("Track/positive/hChi2TPC"), track.tpcChi2NCl());
       fRegistry.fill(HIST("Track/positive/hChi2ITS"), track.itsChi2NCl());
       fRegistry.fill(HIST("Track/positive/hITSClusterMap"), track.itsClusterMap());
-      fRegistry.fill(HIST("Track/positive/hChi2TOF"), track.tofChi2());
+      fRegistry.fill(HIST("Track/positive/hChi2TOF"), track.p(), track.tofChi2());
 
       fRegistry.fill(HIST("Track/positive/hTPCdEdx"), track.tpcInnerParam(), track.tpcSignal());
       fRegistry.fill(HIST("Track/positive/hTOFbeta"), track.p(), track.beta());
@@ -452,7 +452,7 @@ struct SingleTrackQC {
       fRegistry.fill(HIST("Track/negative/hChi2TPC"), track.tpcChi2NCl());
       fRegistry.fill(HIST("Track/negative/hChi2ITS"), track.itsChi2NCl());
       fRegistry.fill(HIST("Track/negative/hITSClusterMap"), track.itsClusterMap());
-      fRegistry.fill(HIST("Track/positive/hChi2TOF"), track.tofChi2());
+      fRegistry.fill(HIST("Track/positive/hChi2TOF"), track.p(), track.tofChi2());
 
       fRegistry.fill(HIST("Track/negative/hTPCdEdx"), track.tpcInnerParam(), track.tpcSignal());
       fRegistry.fill(HIST("Track/negative/hTOFbeta"), track.p(), track.beta());
