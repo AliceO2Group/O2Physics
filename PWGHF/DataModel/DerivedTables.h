@@ -37,11 +37,11 @@ namespace o2::aod
 // B0 -> D- + pi+
 // B+ -> D0 + pi+ (drafted)
 // D*+ -> D0 + pi+
-constexpr uint MarkerBase = 0;
-constexpr uint MarkerD0 = 1;
-constexpr uint Marker3P = 2;
-constexpr uint MarkerBplus = 3;
-constexpr uint MarkerB0 = 4;
+constexpr uint MarkerBase = 2;
+constexpr uint MarkerD0 = 3;
+constexpr uint Marker3P = 4;
+constexpr uint MarkerBplus = 5;
+constexpr uint MarkerB0 = 6;
 
 // ================
 // Collision tables
