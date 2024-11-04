@@ -694,9 +694,9 @@ struct nucleiSpectra {
             computeEventPlane(collision.qvecBPosIm(), collision.qvecBPosRe()),
             collision.multTPC()});
         }
-        if(fillTree)
-        {
-          if (track.pt() < cfgCutPtMinTree || track.pt() > cfgCutPtMaxTree) continue;
+        if(fillTree){
+          if (track.pt() < cfgCutPtMinTree || track.pt() > cfgCutPtMaxTree)
+            continue;
         }
         nuclei::candidates.emplace_back(NucleusCandidate{
           static_cast<int>(track.globalIndex()), static_cast<int>(track.collisionId()), (1 - 2 * iC) * mTrackParCov.getPt(), mTrackParCov.getEta(), mTrackParCov.getPhi(),
