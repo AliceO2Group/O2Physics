@@ -32,6 +32,7 @@
 #include "Math/GenVector/Boost.h"
 #include "TF1.h"
 
+// #include "Common/DataModel/Qvectors.h"
 #include "PWGLF/DataModel/SPCalibrationTables.h"
 // #include "SPCalibrationTableswrite.h"
 #include "Framework/runDataProcessing.h"
@@ -97,6 +98,7 @@ struct lambdapolsp {
   Configurable<int> cfgTPCcluster{"cfgTPCcluster", 70, "Number of TPC cluster"};
   Configurable<bool> isPVContributor{"isPVContributor", true, "is PV contributor"};
   Configurable<bool> checkwithpub{"checkwithpub", true, "checking results with published"};
+  Configurable<bool> checkwithpubv2{"checkwithpubv2", true, "checking results with published v2"};
   // Configs for V0
   Configurable<float> ConfV0PtMin{"ConfV0PtMin", 0.f, "Minimum transverse momentum of V0"};
   Configurable<float> ConfV0Rap{"ConfV0Rap", 0.8f, "Rapidity range of V0"};
@@ -147,15 +149,28 @@ struct lambdapolsp {
     AxisSpec qxZDCAxis = {QxyNbins, lbinQxy, hbinQxy, "Qx"};
 
     if (checkwithpub) {
-      histos.add("hpuxQxpvscentpteta", "hpuxQxpvscentpteta", kTProfile3D, {centAxis, ptAxis, etaAxis});
-      histos.add("hpuyQypvscentpteta", "hpuyQypvscentpteta", kTProfile3D, {centAxis, ptAxis, etaAxis});
-      histos.add("hpuxQxtvscentpteta", "hpuxQxtvscentpteta", kTProfile3D, {centAxis, ptAxis, etaAxis});
-      histos.add("hpuyQytvscentpteta", "hpuyQytvscentpteta", kTProfile3D, {centAxis, ptAxis, etaAxis});
-      histos.add("hpuxyQxytvscentpteta", "hpuxyQxytvscentpteta", kTProfile3D, {centAxis, ptAxis, etaAxis});
-      histos.add("hpuxyQxypvscentpteta", "hpuxyQxypvscentpteta", kTProfile3D, {centAxis, ptAxis, etaAxis});
-      histos.add("hpQxtQxpvscent", "hpQxtQxpvscent", kTProfile, {centAxis});
-      histos.add("hpQytQypvscent", "hpQytQypvscent", kTProfile, {centAxis});
-      histos.add("hpQxytpvscent", "hpQxytpvscent", kTProfile, {centAxis});
+      histos.add("hpuxQxpvscentpteta", "hpuxQxpvscentpteta", kTProfile3D, {centAxis, ptAxis, etaAxis}, true);
+      histos.add("hpuyQypvscentpteta", "hpuyQypvscentpteta", kTProfile3D, {centAxis, ptAxis, etaAxis}, true);
+      histos.add("hpuxQxtvscentpteta", "hpuxQxtvscentpteta", kTProfile3D, {centAxis, ptAxis, etaAxis}, true);
+      histos.add("hpuyQytvscentpteta", "hpuyQytvscentpteta", kTProfile3D, {centAxis, ptAxis, etaAxis}, true);
+      histos.add("hpuxyQxytvscentpteta", "hpuxyQxytvscentpteta", kTProfile3D, {centAxis, ptAxis, etaAxis}, true);
+      histos.add("hpuxyQxypvscentpteta", "hpuxyQxypvscentpteta", kTProfile3D, {centAxis, ptAxis, etaAxis}, true);
+      histos.add("hpoddv1vscentpteta", "hpoddv1vscentpteta", kTProfile3D, {centAxis, ptAxis, etaAxis}, true);
+      histos.add("hpevenv1vscentpteta", "hpevenv1vscentpteta", kTProfile3D, {centAxis, ptAxis, etaAxis}, true);
+      histos.add("hpQxtQxpvscent", "hpQxtQxpvscent", kTProfile, {centAxis}, true);
+      histos.add("hpQytQypvscent", "hpQytQypvscent", kTProfile, {centAxis}, true);
+      histos.add("hpQxytpvscent", "hpQxytpvscent", kTProfile, {centAxis}, true);
+      histos.add("hpQxtQypvscent", "hpQxtQypvscent", kTProfile, {centAxis}, true);
+      histos.add("hpQxpQytvscent", "hpQxpQytvscent", kTProfile, {centAxis}, true);
+    }
+
+    if (checkwithpubv2) {
+      histos.add("hpx2Tx1Ax1Cvscent", "hpx2Tx1Ax1Cvscent", kTProfile, {centAxis}, true);
+      histos.add("hpx2Ty1Ay1Cvscent", "hpx2Ty1Ay1Cvscent", kTProfile, {centAxis}, true);
+      histos.add("hpx1Ax1Cvscent", "hpx1Ax1Cvscent", kTProfile, {centAxis}, true);
+      histos.add("hpy1Ay1Cvscent", "hpy1Ay1Cvscent", kTProfile, {centAxis}, true);
+      histos.add("hpy2Tx1Ay1Cvscent", "hpy2Tx1Ay1Cvscent", kTProfile, {centAxis}, true);
+      histos.add("hpy2Ty1Ax1Cvscent", "hpy2Ty1Ax1Cvscent", kTProfile, {centAxis}, true);
     }
 
     histos.add("hCentrality", "Centrality distribution", kTH1F, {{centAxis}});
@@ -321,6 +336,7 @@ struct lambdapolsp {
   Filter acceptanceFilter = (nabs(aod::track::eta) < cfgCutEta && nabs(aod::track::pt) > cfgCutPT);
   Filter dcaCutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
 
+  // using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::SPCalibrationTableswrite, aod::Mults, aod::Qvectors>>;
   using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::SPCalibrationTables, aod::Mults>>;
   // using AllTrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr>;
   using AllTrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa>>;
@@ -345,9 +361,7 @@ struct lambdapolsp {
       return;
     }
     histos.fill(HIST("hCentrality2"), centrality);
-    /*if (additionalEvSel2 && (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))) {
-      return;
-      }*/
+    // if (additionalEvSel2 && (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))) {
     if (additionalEvSel2 && (collision.trackOccupancyInTimeRange() > cfgMaxOccupancy || collision.trackOccupancyInTimeRange() < cfgMinOccupancy)) {
       return;
     }
@@ -356,12 +370,21 @@ struct lambdapolsp {
       return;
     }
 
+    // if (collision.qvecAmp()[6] < 1e-5)
+    // return;
+
+    /*
+    auto qyTPC = collision.qvecIm()[27];
+    auto qxTPC = collision.qvecRe()[27];
+    */
     auto qxZDCA = collision.qxZDCA();
     auto qxZDCC = collision.qxZDCC();
     auto qyZDCA = collision.qyZDCA();
     auto qyZDCC = collision.qyZDCC();
     auto psiZDCC = collision.psiZDCC();
     auto psiZDCA = collision.psiZDCA();
+
+    // LOG(info) << "qx values in tasks" << centrality<<" "<<qxZDCA<<" "<<qxZDCC<<" "<<qyZDCA<<" "<<qyZDCC;
 
     histos.fill(HIST("hCentrality"), centrality);
     histos.fill(HIST("hVtxZ"), collision.posZ());
@@ -378,16 +401,40 @@ struct lambdapolsp {
     histos.fill(HIST("hcentQxZDCC"), centrality, qxZDCC);
     histos.fill(HIST("hcentQyZDCC"), centrality, qyZDCC);
 
+    /*
+    if (checkwithpubv2)
+      {
+  auto x2Tx1Ax1C=qxTPC*qxZDCA*qxZDCC;
+  auto x2Ty1Ay1C=qxTPC*qyZDCA*qyZDCC;
+  auto x1Ax1C=qxZDCA*qxZDCC;
+  auto y1Ay1C=qyZDCA*qyZDCC;
+  auto y2Tx1Ay1C=qyTPC*qxZDCA*qyZDCC;
+  auto y2Ty1Ax1C=qyTPC*qyZDCA*qxZDCC;
+
+  histos.fill(HIST("hpx2Tx1Ax1Cvscent"), centrality, x2Tx1Ax1C);
+  histos.fill(HIST("hpx2Ty1Ay1Cvscent"), centrality, x2Ty1Ay1C);
+  histos.fill(HIST("hpx1Ax1Cvscent"), centrality, x1Ax1C);
+  histos.fill(HIST("hpy1Ay1Cvscent"), centrality, y1Ay1C);
+  histos.fill(HIST("hpy2Tx1Ay1Cvscent"), centrality, y2Tx1Ay1C);
+  histos.fill(HIST("hpy2Ty1Ax1Cvscent"), centrality, y2Ty1Ax1C);
+
+      }
+    */
+
     ///////////checking v1 and v2////////////////////////////////
     if (checkwithpub) {
 
       auto QxtQxp = qxZDCA * qxZDCC;
       auto QytQyp = qyZDCA * qyZDCC;
       auto Qxytp = QxtQxp + QytQyp;
+      auto QxpQyt = qxZDCA * qyZDCC;
+      auto QxtQyp = qxZDCC * qyZDCA;
 
       histos.fill(HIST("hpQxtQxpvscent"), centrality, QxtQxp);
       histos.fill(HIST("hpQytQypvscent"), centrality, QytQyp);
       histos.fill(HIST("hpQxytpvscent"), centrality, Qxytp);
+      histos.fill(HIST("hpQxpQytvscent"), centrality, QxpQyt);
+      histos.fill(HIST("hpQxtQypvscent"), centrality, QxtQyp);
 
       for (auto track : tracks) {
         if (!selectionTrack(track)) {
@@ -399,7 +446,7 @@ struct lambdapolsp {
           continue;
 
         // histos.fill(HIST("hDiff"), track.pt(), (track.p() - track.tpcInnerParam()));
-        // LOG(info) << "Diff values:\t" << (track.p() - track.tpcInnerParam());
+        // LOG(info) << "Sign of tracks are:\t" << sign;
 
         auto ux = TMath::Cos(GetPhiInRange(track.phi()));
         auto uy = TMath::Sin(GetPhiInRange(track.phi()));
@@ -410,6 +457,8 @@ struct lambdapolsp {
         auto uxQxt = ux * qxZDCC;
         auto uyQyt = uy * qyZDCC;
         auto uxyQxyt = uxQxt + uyQyt;
+        auto oddv1 = ux * (qxZDCA - qxZDCC) + uy * (qyZDCA - qyZDCC);
+        auto evenv1 = ux * (qxZDCA + qxZDCC) + uy * (qyZDCA + qyZDCC);
 
         if (tofhit) {
           if (track.hasTOF()) {
@@ -421,6 +470,8 @@ struct lambdapolsp {
 
               histos.fill(HIST("hpuxyQxytvscentpteta"), centrality, track.pt(), track.eta(), uxyQxyt);
               histos.fill(HIST("hpuxyQxypvscentpteta"), centrality, track.pt(), track.eta(), uxyQxyp);
+              histos.fill(HIST("hpoddv1vscentpteta"), centrality, track.pt(), track.eta(), oddv1);
+              histos.fill(HIST("hpevenv1vscentpteta"), centrality, track.pt(), track.eta(), evenv1);
             } else {
               histos.fill(HIST("hpuxQxpvscentpteta"), centrality, track.tpcInnerParam(), track.eta(), uxQxp);
               histos.fill(HIST("hpuyQypvscentpteta"), centrality, track.tpcInnerParam(), track.eta(), uyQyp);
@@ -429,6 +480,8 @@ struct lambdapolsp {
 
               histos.fill(HIST("hpuxyQxytvscentpteta"), centrality, track.tpcInnerParam(), track.eta(), uxyQxyt);
               histos.fill(HIST("hpuxyQxypvscentpteta"), centrality, track.tpcInnerParam(), track.eta(), uxyQxyp);
+              histos.fill(HIST("hpoddv1vscentpteta"), centrality, track.pt(), track.eta(), oddv1);
+              histos.fill(HIST("hpevenv1vscentpteta"), centrality, track.pt(), track.eta(), evenv1);
             }
           }
         } else {
@@ -440,6 +493,8 @@ struct lambdapolsp {
 
             histos.fill(HIST("hpuxyQxytvscentpteta"), centrality, track.pt(), track.eta(), uxyQxyt);
             histos.fill(HIST("hpuxyQxypvscentpteta"), centrality, track.pt(), track.eta(), uxyQxyp);
+            histos.fill(HIST("hpoddv1vscentpteta"), centrality, track.pt(), track.eta(), oddv1);
+            histos.fill(HIST("hpevenv1vscentpteta"), centrality, track.pt(), track.eta(), evenv1);
           } else {
             histos.fill(HIST("hpuxQxpvscentpteta"), centrality, track.tpcInnerParam(), track.eta(), uxQxp);
             histos.fill(HIST("hpuyQypvscentpteta"), centrality, track.tpcInnerParam(), track.eta(), uyQyp);
@@ -448,6 +503,8 @@ struct lambdapolsp {
 
             histos.fill(HIST("hpuxyQxytvscentpteta"), centrality, track.tpcInnerParam(), track.eta(), uxyQxyt);
             histos.fill(HIST("hpuxyQxypvscentpteta"), centrality, track.tpcInnerParam(), track.eta(), uxyQxyp);
+            histos.fill(HIST("hpoddv1vscentpteta"), centrality, track.pt(), track.eta(), oddv1);
+            histos.fill(HIST("hpevenv1vscentpteta"), centrality, track.pt(), track.eta(), evenv1);
           }
         }
       }
