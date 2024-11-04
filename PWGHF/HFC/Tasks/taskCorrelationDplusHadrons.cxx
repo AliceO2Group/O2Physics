@@ -12,6 +12,8 @@
 /// \file taskCorrelationDplusHadrons.cxx
 /// \author Shyam Kumar <shyam.kumar@cern.ch>
 #include <memory> // std::shared_ptr
+#include <string>
+#include <vector>
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
