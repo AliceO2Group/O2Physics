@@ -15,6 +15,8 @@
 /// \brief  Task to produce PID tables for TOF split for pi, K, p, copied from https://github.com/AliceO2Group/O2Physics/blob/master/Common/TableProducer/PID/pidTofMerge.cxx
 ///         It works only for MC and adds the possibility to apply postcalibrations for MC.
 ///
+
+#include <map>
 #include <utility>
 #include <vector>
 #include <string>
