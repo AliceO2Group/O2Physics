@@ -104,7 +104,8 @@ using HfD0CollBase = HfD0CollBases::iterator;
 using StoredHfD0CollBase = StoredHfD0CollBases::iterator;
 
 DECLARE_SOA_TABLE_STAGED(HfD0CollIds, "HFD0COLLID", //! Table with original global indices of collisions
-                         hf_cand::CollisionId);
+                         hf_cand::CollisionId,
+                         o2::soa::Marker<MarkerD0>);
 
 // 3-prong decays (to be replaced by base version)
 
