@@ -933,9 +933,14 @@ struct derivedCascadeAnalysis {
       auto cascMC = casc.cascMCCore_as<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>();
 
       bool isTrueMCCascade = false;
+      bool isTrueMCCascadeDecay = false;
+      bool isCorrectLambdaDecay = false;
       if (cascMC.isPhysicalPrimary() && ((isXi && std::abs(cascMC.pdgCode()) == 3312) || (!isXi && std::abs(cascMC.pdgCode()) == 3334)))
         isTrueMCCascade = true;
-
+      if (isTrueMCCascade && ((isPositive && cascMC.pdgCodePositive() == 211 && cascMC.pdgCodeNegative() == -2212) || (isNegative && cascMC.pdgCodePositive() == 2212 && cascMC.pdgCodeNegative() == -211)))
+        isCorrectLambdaDecay = true;
+      if (isTrueMCCascade && isCorrectLambdaDecay && ((isXi && std::abs(cascMC.pdgCodeBachelor()) == 211) || (!isXi && std::abs(cascMC.pdgCodeBachelor()) == 321)))
+        isTrueMCCascadeDecay = true;
       float ptmc = RecoDecay::sqrtSumOfSquares(cascMC.pxMC(), cascMC.pyMC());
 
       if (!IsCascadeCandidateAccepted(casc, counter, coll.centFT0C()))
@@ -1101,10 +1106,16 @@ struct derivedCascadeAnalysis {
         ++counter;
       }
 
-      if (isPositive)
+      if (isPositive) {
         histos.fill(HIST("InvMassAfterSel/h") + HIST(charge[0]) + HIST("Cascade"), casc.pt(), mass, coll.centFT0C());
-      if (isNegative)
+        if (isTrueMCCascadeDecay)
+          histos.fill(HIST("InvMassAfterSel/hPositiveCascadePtForEfficiency"), ptmc, mass, coll.centFT0C());
+      }
+      if (isNegative) {
         histos.fill(HIST("InvMassAfterSel/h") + HIST(charge[1]) + HIST("Cascade"), casc.pt(), mass, coll.centFT0C());
+        if (isTrueMCCascadeDecay)
+          histos.fill(HIST("InvMassAfterSel/hNegativeCascadePtForEfficiency"), ptmc, mass, coll.centFT0C());
+      }
       if (isTrueMCCascade) {
         if (isPositive)
           histos.fill(HIST("InvMassAfterSelMCrecTruth/h") + HIST(charge[0]) + HIST("Cascade"), ptmc, mass, coll.centFT0C());

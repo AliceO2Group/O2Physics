@@ -86,11 +86,13 @@ struct SingleTrackQCMC {
   Configurable<bool> cfgUseDCAxy{"cfgUseDCAxy", false, "flag to use DCAxy, instead of DCA3D"};
 
   ConfigurableAxis ConfPtlBins{"ConfPtlBins", {VARIABLE_WIDTH, 0.00, 0.05, 0.10, 0.15, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.50, 3.00, 3.50, 4.00, 4.50, 5.00, 6.00, 7.00, 8.00, 9.00, 10.00}, "pTl bins for output histograms"};
+  ConfigurableAxis ConfDCABins{"ConfDCABins", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0}, "DCA bins for output histograms"};
 
   EMEventCut fEMEventCut;
   struct : ConfigurableGroup {
     std::string prefix = "eventcut_group";
-    Configurable<float> cfgZvtxMax{"cfgZvtxMax", 10.f, "max. Zvtx"};
+    Configurable<float> cfgZvtxMin{"cfgZvtxMin", -10.f, "min. Zvtx"};
+    Configurable<float> cfgZvtxMax{"cfgZvtxMax", +10.f, "max. Zvtx"};
     Configurable<bool> cfgRequireSel8{"cfgRequireSel8", true, "require sel8 in event cut"};
     Configurable<bool> cfgRequireFT0AND{"cfgRequireFT0AND", true, "require FT0AND in event cut"};
     Configurable<bool> cfgRequireNoTFB{"cfgRequireNoTFB", true, "require No time frame border in event cut"};
@@ -98,8 +100,10 @@ struct SingleTrackQCMC {
     Configurable<bool> cfgRequireNoSameBunchPileup{"cfgRequireNoSameBunchPileup", false, "require no same bunch pileup in event cut"};
     Configurable<bool> cfgRequireVertexITSTPC{"cfgRequireVertexITSTPC", false, "require Vertex ITSTPC in event cut"}; // ITS-TPC matched track contributes PV.
     Configurable<bool> cfgRequireGoodZvtxFT0vsPV{"cfgRequireGoodZvtxFT0vsPV", false, "require good Zvtx between FT0 vs. PV in event cut"};
-    Configurable<int> cfgOccupancyMin{"cfgOccupancyMin", -1, "min. occupancy"};
-    Configurable<int> cfgOccupancyMax{"cfgOccupancyMax", 1000000000, "max. occupancy"};
+    Configurable<int> cfgTrackOccupancyMin{"cfgTrackOccupancyMin", -2, "min. occupancy"};
+    Configurable<int> cfgTrackOccupancyMax{"cfgTrackOccupancyMax", 1000000000, "max. occupancy"};
+    Configurable<float> cfgFT0COccupancyMin{"cfgFT0COccupancyMin", -2, "min. FT0C occupancy"};
+    Configurable<float> cfgFT0COccupancyMax{"cfgFT0COccupancyMax", 1000000000, "max. FT0C occupancy"};
     Configurable<bool> cfgRequireNoCollInTimeRangeStandard{"cfgRequireNoCollInTimeRangeStandard", false, "require no collision in time range standard"};
   } eventcuts;
 
@@ -205,7 +209,7 @@ struct SingleTrackQCMC {
       if (cfgUseDCAxy) {
         dca_axis_title = "DCA_{e}^{XY} (#sigma)";
       }
-      const AxisSpec axis_dca{{0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0}, dca_axis_title};
+      const AxisSpec axis_dca{ConfDCABins, dca_axis_title};
 
       // generated info
       fRegistry.add("Generated/lf/hs", "gen. single electron", kTHnSparseD, {axis_pt, axis_eta, axis_phi, axis_charge_gen}, true);
@@ -233,6 +237,8 @@ struct SingleTrackQCMC {
         fRegistry.add("Track/lf/positive/hTPCNclsShared", "TPC Ncls shared/Ncls;p_{T} (GeV/c);N_{cls}^{shared}/N_{cls} in TPC", kTH2F, {{1000, 0, 10}, {100, 0, 1}}, false);
         fRegistry.add("Track/lf/positive/hNclsITS", "number of ITS clusters", kTH1F, {{8, -0.5, 7.5}}, false);
         fRegistry.add("Track/lf/positive/hChi2ITS", "chi2/number of ITS clusters", kTH1F, {{100, 0, 10}}, false);
+        fRegistry.add("Track/lf/positive/hDeltaPin", "p_{in} vs. p_{pv};p_{pv} (GeV/c);(p_{in} - p_{pv})/p_{pv}", kTH2F, {{1000, 0, 10}, {200, -1, +1}}, false);
+        fRegistry.add("Track/lf/positive/hChi2TOF", "TOF Chi2;chi2", kTH1F, {{100, 0, 10}}, false);
         fRegistry.add("Track/lf/positive/hITSClusterMap", "ITS cluster map", kTH1F, {{128, -0.5, 127.5}}, false);
         fRegistry.add("Track/lf/positive/hPtGen_DeltaPtOverPtGen", "electron p_{T} resolution;p_{T}^{gen} (GeV/c);(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", kTH2F, {{200, 0, 10}, {200, -1.0f, 1.0f}}, true);
         fRegistry.add("Track/lf/positive/hPtGen_DeltaEta", "electron #eta resolution;p_{T}^{gen} (GeV/c);#eta^{rec} - #eta^{gen}", kTH2F, {{200, 0, 10}, {100, -0.05f, 0.05f}}, true);
@@ -252,6 +258,8 @@ struct SingleTrackQCMC {
         fRegistry.add("Track/PID/positive/hTPCdEdx", "TPC dE/dx;p_{in} (GeV/c);TPC dE/dx (a.u.)", kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
         fRegistry.add("Track/PID/positive/hTOFbeta", "TOF #beta;p_{pv} (GeV/c);#beta", kTH2F, {{1000, 0, 10}, {240, 0, 1.2}}, false);
         fRegistry.add("Track/PID/positive/hMeanClusterSizeITS", "mean cluster size ITS;p_{pv} (GeV/c);<cluster size> on ITS #times cos(#lambda)", kTH2F, {{1000, 0.f, 10.f}, {150, 0, 15}}, false);
+        fRegistry.add("Track/PID/positive/hMeanClusterSizeITSib", "mean cluster size ITS inner barrel;p_{pv} (GeV/c);<cluster size> on ITS #times cos(#lambda)", kTH2F, {{1000, 0.f, 10.f}, {150, 0, 15}}, false);
+        fRegistry.add("Track/PID/positive/hMeanClusterSizeITSob", "mean cluster size ITS outer barrel;p_{pv} (GeV/c);<cluster size> on ITS #times cos(#lambda)", kTH2F, {{1000, 0.f, 10.f}, {150, 0, 15}}, false);
         fRegistry.add("Track/PID/positive/hTPCNsigmaEl", "TPC n sigma el;p_{in} (GeV/c);n #sigma_{e}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
         fRegistry.add("Track/PID/positive/hTPCNsigmaMu", "TPC n sigma mu;p_{in} (GeV/c);n #sigma_{#mu}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
         fRegistry.add("Track/PID/positive/hTPCNsigmaPi", "TPC n sigma pi;p_{in} (GeV/c);n #sigma_{#pi}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
@@ -268,7 +276,7 @@ struct SingleTrackQCMC {
       const AxisSpec axis_pt{ConfPtlBins, "p_{T,#mu} (GeV/c)"};
       const AxisSpec axis_eta{25, -4.5, -2.0, "#eta_{#mu}"};
       const AxisSpec axis_phi{36, 0.0, 2 * M_PI, "#varphi_{#mu} (rad.)"};
-      const AxisSpec axis_dca{{0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0}, "DCA_{#mu}^{XY} (#sigma)"};
+      const AxisSpec axis_dca{ConfDCABins, "DCA_{#mu}^{XY} (#sigma)"};
       const AxisSpec axis_charge_gen{3, -1.5, +1.5, "true charge"};
 
       // generated info
@@ -343,13 +351,12 @@ struct SingleTrackQCMC {
     fEMEventCut = EMEventCut("fEMEventCut", "fEMEventCut");
     fEMEventCut.SetRequireSel8(eventcuts.cfgRequireSel8);
     fEMEventCut.SetRequireFT0AND(eventcuts.cfgRequireFT0AND);
-    fEMEventCut.SetZvtxRange(-eventcuts.cfgZvtxMax, +eventcuts.cfgZvtxMax);
+    fEMEventCut.SetZvtxRange(eventcuts.cfgZvtxMin, eventcuts.cfgZvtxMax);
     fEMEventCut.SetRequireNoTFB(eventcuts.cfgRequireNoTFB);
     fEMEventCut.SetRequireNoITSROFB(eventcuts.cfgRequireNoITSROFB);
     fEMEventCut.SetRequireNoSameBunchPileup(eventcuts.cfgRequireNoSameBunchPileup);
     fEMEventCut.SetRequireVertexITSTPC(eventcuts.cfgRequireVertexITSTPC);
     fEMEventCut.SetRequireGoodZvtxFT0vsPV(eventcuts.cfgRequireGoodZvtxFT0vsPV);
-    fEMEventCut.SetOccupancyRange(eventcuts.cfgOccupancyMin, eventcuts.cfgOccupancyMax);
     fEMEventCut.SetRequireNoCollInTimeRangeStandard(eventcuts.cfgRequireNoCollInTimeRangeStandard);
   }
 
@@ -495,6 +502,8 @@ struct SingleTrackQCMC {
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hTPCNclsShared"), track.pt(), track.tpcFractionSharedCls());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hChi2TPC"), track.tpcChi2NCl());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hChi2ITS"), track.itsChi2NCl());
+        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hChi2TOF"), track.tofChi2());
+        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDeltaPin"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hITSClusterMap"), track.itsClusterMap());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hPtGen_DeltaPtOverPtGen"), mctrack.pt(), (track.pt() - mctrack.pt()) / mctrack.pt());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hPtGen_DeltaEta"), mctrack.pt(), track.eta() - mctrack.eta());
@@ -503,6 +512,8 @@ struct SingleTrackQCMC {
         fRegistry.fill(HIST("Track/PID/positive/hTPCdEdx"), track.tpcInnerParam(), track.tpcSignal());
         fRegistry.fill(HIST("Track/PID/positive/hTOFbeta"), track.p(), track.beta());
         fRegistry.fill(HIST("Track/PID/positive/hMeanClusterSizeITS"), track.p(), track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())));
+        fRegistry.fill(HIST("Track/PID/positive/hMeanClusterSizeITSib"), track.p(), track.meanClusterSizeITSib() * std::cos(std::atan(track.tgl())));
+        fRegistry.fill(HIST("Track/PID/positive/hMeanClusterSizeITSob"), track.p(), track.meanClusterSizeITSob() * std::cos(std::atan(track.tgl())));
         fRegistry.fill(HIST("Track/PID/positive/hTPCNsigmaEl"), track.tpcInnerParam(), track.tpcNSigmaEl());
         fRegistry.fill(HIST("Track/PID/positive/hTPCNsigmaMu"), track.tpcInnerParam(), track.tpcNSigmaMu());
         fRegistry.fill(HIST("Track/PID/positive/hTPCNsigmaPi"), track.tpcInnerParam(), track.tpcNSigmaPi());
@@ -530,6 +541,8 @@ struct SingleTrackQCMC {
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hTPCNclsShared"), track.pt(), track.tpcFractionSharedCls());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hChi2TPC"), track.tpcChi2NCl());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hChi2ITS"), track.itsChi2NCl());
+        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hChi2TOF"), track.tofChi2());
+        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDeltaPin"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hITSClusterMap"), track.itsClusterMap());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hPtGen_DeltaPtOverPtGen"), mctrack.pt(), (track.pt() - mctrack.pt()) / mctrack.pt());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hPtGen_DeltaEta"), mctrack.pt(), track.eta() - mctrack.eta());
@@ -538,6 +551,8 @@ struct SingleTrackQCMC {
         fRegistry.fill(HIST("Track/PID/negative/hTPCdEdx"), track.tpcInnerParam(), track.tpcSignal());
         fRegistry.fill(HIST("Track/PID/negative/hTOFbeta"), track.p(), track.beta());
         fRegistry.fill(HIST("Track/PID/negative/hMeanClusterSizeITS"), track.p(), track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())));
+        fRegistry.fill(HIST("Track/PID/negative/hMeanClusterSizeITSib"), track.p(), track.meanClusterSizeITSib() * std::cos(std::atan(track.tgl())));
+        fRegistry.fill(HIST("Track/PID/negative/hMeanClusterSizeITSob"), track.p(), track.meanClusterSizeITSob() * std::cos(std::atan(track.tgl())));
         fRegistry.fill(HIST("Track/PID/negative/hTPCNsigmaEl"), track.tpcInnerParam(), track.tpcNSigmaEl());
         fRegistry.fill(HIST("Track/PID/negative/hTPCNsigmaMu"), track.tpcInnerParam(), track.tpcNSigmaMu());
         fRegistry.fill(HIST("Track/PID/negative/hTPCNsigmaPi"), track.tpcInnerParam(), track.tpcNSigmaPi());
@@ -906,7 +921,8 @@ struct SingleTrackQCMC {
 
   Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
   Filter collisionFilter_multiplicity = cfgNtracksPV08Min <= o2::aod::mult::multNTracksPV && o2::aod::mult::multNTracksPV < cfgNtracksPV08Max;
-  Filter collisionFilter_occupancy = eventcuts.cfgOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgOccupancyMax;
+  Filter collisionFilter_occupancy_track = eventcuts.cfgTrackOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgTrackOccupancyMax;
+  Filter collisionFilter_occupancy_ft0c = eventcuts.cfgFT0COccupancyMin < o2::aod::evsel::ft0cOccupancyInTimeRange && o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
   using FilteredMyCollisions = soa::Filtered<MyCollisions>;
 
   Partition<aod::EMMCParticles> electronsMC = nabs(o2::aod::mcparticle::pdgCode) == 11; // e+, e-

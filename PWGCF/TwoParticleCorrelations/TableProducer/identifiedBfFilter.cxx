@@ -938,6 +938,8 @@ struct IdentifiedBfFilterTracks {
   MatchRecoGenSpecies trackIdentification(TrackObject const& track);
   template <typename TrackObject>
   int8_t AcceptTrack(TrackObject const& track);
+  template <typename ParticleObject, typename MCCollisionObject>
+  int8_t AcceptParticle(ParticleObject& particle, MCCollisionObject const&);
   template <typename CollisionObjects, typename TrackObject>
   int8_t selectTrackAmbiguousCheck(CollisionObjects const& collisions, TrackObject const& track);
   template <typename ParticleObject>
@@ -1182,7 +1184,6 @@ template <typename ParticleObject>
 inline MatchRecoGenSpecies IdentifiedBfFilterTracks::IdentifyParticle(ParticleObject const& particle)
 {
   using namespace identifiedbffilter;
-
   constexpr int pdgcodeEl = 11;
   constexpr int pdgcodePi = 211;
   constexpr int pdgcodeKa = 321;
@@ -1361,7 +1362,6 @@ template <typename TrackObject>
 MatchRecoGenSpecies IdentifiedBfFilterTracks::trackIdentification(TrackObject const& track)
 {
   using namespace identifiedbffilter;
-
   MatchRecoGenSpecies sp = kWrongSpecies;
   if (recoIdMethod == 0) {
     sp = kIdBfCharged;
@@ -1422,6 +1422,41 @@ inline int8_t IdentifiedBfFilterTracks::AcceptTrack(TrackObject const& track)
     }
   }
   return -1;
+}
+
+/// \brief Accepts or not the passed generated particle
+/// \param track the particle of interest
+/// \return `true` if the particle is accepted, `false` otherwise
+template <typename ParticleObject, typename MCCollisionObject>
+inline int8_t IdentifiedBfFilterTracks::AcceptParticle(ParticleObject& particle, MCCollisionObject const&)
+{
+  /* overall momentum cut */
+  if (!(overallminp < particle.p())) {
+    return kWrongSpecies;
+  }
+
+  float charge = getCharge(particle);
+
+  if (particle.isPhysicalPrimary()) {
+    if ((particle.mcCollisionId() == 0) && traceCollId0) {
+      LOGF(info, "Particle %d passed isPhysicalPrimary", particle.globalIndex());
+    }
+
+    if (ptlow < particle.pt() && particle.pt() < ptup && etalow < particle.eta() && particle.eta() < etaup) {
+      MatchRecoGenSpecies sp = IdentifyParticle(particle);
+      if (charge == 1) {
+        return speciesChargeValue1[sp];
+
+      } else if (charge == -1) {
+        return speciesChargeValue1[sp] + 1;
+      }
+    }
+  } else {
+    if ((particle.mcCollisionId() == 0) && traceCollId0) {
+      LOGF(info, "Particle %d NOT passed isPhysicalPrimary", particle.globalIndex());
+    }
+  }
+  return kWrongSpecies;
 }
 
 template <typename CollisionObjects, typename TrackObject>

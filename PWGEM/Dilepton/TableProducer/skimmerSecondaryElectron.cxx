@@ -257,7 +257,7 @@ struct skimmerSecondaryElectron {
                          track.tpcChi2NCl(), track.tpcInnerParam(),
                          track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
                          track.beta(), track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
-                         track.itsClusterSizes(), track.itsChi2NCl(), track.detectorMap(),
+                         track.itsClusterSizes(), track.itsChi2NCl(), track.tofChi2(), track.detectorMap(),
                          track_par_cov_recalc.getX(), track_par_cov_recalc.getAlpha(), track_par_cov_recalc.getY(), track_par_cov_recalc.getZ(), track_par_cov_recalc.getSnp(), track_par_cov_recalc.getTgl(), isAssociatedToMPC);
 
       emprimaryelectronscov(
@@ -378,7 +378,7 @@ struct skimmerSecondaryElectron {
 
       event(collision.globalIndex(), bc.runNumber(), bc.globalBC(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(),
             collision.posX(), collision.posY(), collision.posZ(),
-            collision.numContrib(), collision.trackOccupancyInTimeRange());
+            collision.numContrib(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
       event_mult(collision.multFT0A(), collision.multFT0C(), collision.multNTracksPV(), collision.multNTracksPVeta1(), collision.multNTracksPVetaHalf());
       event_cent(collision.centFT0M(), collision.centFT0A(), collision.centFT0C());
     } // end of collision loop
@@ -439,7 +439,7 @@ struct skimmerSecondaryElectron {
 
       event(collision.globalIndex(), bc.runNumber(), bc.globalBC(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(),
             collision.posX(), collision.posY(), collision.posZ(),
-            collision.numContrib(), collision.trackOccupancyInTimeRange());
+            collision.numContrib(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
       event_mult(collision.multFT0A(), collision.multFT0C(), collision.multNTracksPV(), collision.multNTracksPVeta1(), collision.multNTracksPVetaHalf());
       event_cent(collision.centFT0M(), collision.centFT0A(), collision.centFT0C());
     } // end of collision loop

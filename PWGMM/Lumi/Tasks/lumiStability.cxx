@@ -13,6 +13,11 @@
 ///        it is meant to be a blank page for further developments.
 /// \author everyone
 
+#include <utility>
+#include <map>
+#include <string>
+#include <vector>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -42,7 +47,8 @@ struct lumiStabilityTask {
   Configurable<int> myMaxDeltaBCFDD{"myMaxDeltaBCFDD", 5, {"My BC cut"}};
   Configurable<int> myMaxDeltaBCFT0{"myMaxDeltaBCFT0", 5, {"My BC cut"}};
   Configurable<int> myMaxDeltaBCFV0{"myMaxDeltaBCFV0", 5, {"My BC cut"}};
-  Configurable<int> nOrbitsConf{"nOrbits", 10000, "number of orbits"};
+  Configurable<int> nOrbitsConf{"nOrbits", 972'288'000, "number of orbits"};
+  Configurable<int> nOrbitsPerTF{"nOrbitsPerTF", 128, "number of orbits per time frame"};
   Configurable<double> minOrbitConf{"minOrbit", 0, "minimum orbit"};
   Configurable<bool> is2022Data{"is2022Data", true, "To 2022 data"};
 
@@ -76,6 +82,7 @@ struct lumiStabilityTask {
     const AxisSpec axisTime{1000, -10, 40};
     const AxisSpec axisTimeFDD{1000, -20, 100};
     const AxisSpec axisCountsTime{2, -0.5, 1.5};
+    const AxisSpec axisOrbits{static_cast<int>(nOrbits / nOrbitsPerTF), 0., static_cast<double>(nOrbits), ""};
 
     histos.add("hBcA", "BC pattern A; BC ; It is present", kTH1F, {axisTriggger});
     histos.add("hBcC", "BC pattern C; BC ; It is present", kTH1F, {axisTriggger});
@@ -87,6 +94,10 @@ struct lumiStabilityTask {
     histos.add("hvertexZ", "Pos Z vertex trigger; Pos z; Count ", kTH1F, {axisPosZ});
     histos.add("hnumContrib", "Num of contributors; Num of contributors; Count ", kTH1I, {axisNumContrib});
     histos.add("hcollisinTime", "Collision Time; ns; Count ", kTH1F, {axisColisionTime});
+    histos.add("hOrbitFDDVertexCoinc", "", kTH1F, {axisOrbits});
+    histos.add("hOrbitFDDVertex", "", kTH1F, {axisOrbits});
+    histos.add("hOrbitFT0vertex", "", kTH1F, {axisOrbits});
+    histos.add("hOrbitFV0Central", "", kTH1F, {axisOrbits});
     // time 32.766 is dummy time
     // histo about triggers
     histos.add("FDD/hCounts", "0 FDDCount - 1 FDDVertexCount - 2 FDDPPVertexCount - 3 FDDCoincidencesVertexCount - 4 FDDPPCoincidencesVertexCount - 5 FDDPPBotSidesCount; Number; counts", kTH1F, {axisCounts});
@@ -208,10 +219,13 @@ struct lumiStabilityTask {
 
   void processMain(aod::FDDs const& fdds, aod::FT0s const& ft0s, aod::FV0As const& fv0s, aod::BCsWithTimestamps const& bcs)
   {
+    int executionCounter = 0;
     uint32_t nOrbitsPerTF = 128; // 128 in 2022, 32 in 2023
     int runNumber = bcs.iteratorAt(0).runNumber();
-    if (runNumber != lastRunNumber) {
+    // std::string histName = "hOrbitFDDVertexCoinc_" + std::to_string(runNumber);
+    if (runNumber != lastRunNumber && executionCounter < 1) {
       lastRunNumber = runNumber; // do it only once
+      executionCounter++;
       int64_t tsSOR = 0;
       int64_t tsEOR = 1;
 
@@ -242,7 +256,7 @@ struct lumiStabilityTask {
           }
         }
 
-        EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", ts);
+        /*EventSelectionParams* par = ccdb->getForTimeStamp<EventSelectionParams>("EventSelection/EventSelectionParams", ts);
         // access orbit-reset timestamp
         auto ctpx = ccdb->getForTimeStamp<std::vector<Long64_t>>("CTP/Calib/OrbitReset", ts);
         int64_t tsOrbitReset = (*ctpx)[0]; // us
@@ -267,15 +281,17 @@ struct lumiStabilityTask {
         // duration of TF in bcs
         nBCsPerTF = nOrbitsPerTF * o2::constants::lhc::LHCMaxBunches;
         LOGP(info, "tsOrbitReset={} us, SOR = {} ms, EOR = {} ms, orbitSOR = {}, nBCsPerTF = {}", tsOrbitReset, tsSOR, tsEOR, orbitSOR, nBCsPerTF);
+        std::cout << "<<<<<<<<<<<<<<<<<<<<<<<<< Orbits per second: >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << nOrbits << std::endl;*/
       }
 
       // create orbit-axis histograms on the fly with binning based on info from GRP if GRP is available
       // otherwise default minOrbit and nOrbits will be used
-      const AxisSpec axisOrbits{static_cast<int>(nOrbits / nOrbitsPerTF), 0., static_cast<double>(nOrbits), ""};
-      histos.add("hOrbitFDDVertexCoinc", "FDD Orbits; Orbit; Entries", kTH1F, {axisOrbits});
-      histos.add("hOrbitFDDVertex", "FDD Orbits; Orbit; Entries", kTH1F, {axisOrbits});
-      histos.add("hOrbitFT0vertex", "FT0 Orbits; Orbit; Entries", kTH1F, {axisOrbits});
-      histos.add("hOrbitFV0Central", "FV0 Orbits; Orbit; Entries", kTH1F, {axisOrbits});
+      /*const AxisSpec axisOrbits{static_cast<int>(nOrbits / nOrbitsPerTF), 0., static_cast<double>(nOrbits), ""};
+      std::cout << "<<<<<<<<<<<<<<<<<<<<<<<<<   Creating histograms >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" << std::endl;
+      histos.add("hOrbitFDDVertexCoinc", "", kTH1F, {axisOrbits});
+      histos.add("hOrbitFDDVertex", "", kTH1F, {axisOrbits});
+      histos.add("hOrbitFT0vertex", "", kTH1F, {axisOrbits});
+      histos.add("hOrbitFV0Central", "", kTH1F, {axisOrbits});*/
     }
 
     for (auto const& fdd : fdds) {

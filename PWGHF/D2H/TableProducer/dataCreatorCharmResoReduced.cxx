@@ -77,14 +77,17 @@ enum DecayTypeMc : uint8_t {
   Ds1ToDStarK0ToD0PiK0s = 0,
   Ds2StarToDplusK0s,
   Ds1ToDStarK0ToDPlusPi0K0s,
-  Ds1ToDStarK0ToD0PiK0sPart
+  Ds1ToDStarK0ToD0PiK0sPart,
+  Ds1ToDStarK0ToD0PiK0sOneMu
 };
 
 enum PartialMatchMc : uint8_t {
   K0Matched = 0,
   D0Matched,
   DStarMatched,
-  DPlusMatched
+  DPlusMatched,
+  K0MuMatched,
+  DStarMuMatched
 };
 
 /// Creation of D-V0 pairs
@@ -534,6 +537,9 @@ struct HfDataCreatorCharmResoReduced {
             flag = sign * BIT(DecayTypeMc::Ds1ToDStarK0ToD0PiK0sPart);
           }
         }
+      } else if (RecoDecay::getMatchedMCRec<false, true, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2], vecDaughtersReso[3], vecDaughtersReso[4]}, Pdg::kDS1, std::array{+kPiPlus, -kKPlus, +kPiPlus, +kMuonPlus, -kPiPlus}, true, &sign, 4) > -1 ||
+                 RecoDecay::getMatchedMCRec<false, true, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2], vecDaughtersReso[3], vecDaughtersReso[4]}, Pdg::kDS1, std::array{+kPiPlus, -kKPlus, +kPiPlus, +kPiPlus, -kMuonPlus}, true, &sign, 4) > -1) { // Verify if one of the pions decayed in a muon
+        flag = sign * BIT(DecayTypeMc::Ds1ToDStarK0ToD0PiK0sOneMu);
       }
       if (flag != 0) {
         auto particleReso = particlesMc.iteratorAt(indexRecReso);
@@ -579,7 +585,8 @@ struct HfDataCreatorCharmResoReduced {
       if (RecoDecay::getMatchedMCRec<false, true>(particlesMc, std::array{vecDaughtersReso[3], vecDaughtersReso[4]}, kK0, std::array{+kPiPlus, -kPiPlus}, true, &signV0, 2) > -1) {
         SETBIT(debug, PartialMatchMc::K0Matched);
       }
-      if (RecoDecay::getMatchedMCRec(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1]}, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &signD0, 1) > -1) {
+      auto indexRecD0 = RecoDecay::getMatchedMCRec(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1]}, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &signD0, 1);
+      if (indexRecD0 > -1) {
         SETBIT(debug, PartialMatchMc::D0Matched);
       }
       if (RecoDecay::getMatchedMCRec<false, false, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2]}, Pdg::kDStar, std::array{-kKPlus, +kPiPlus, +kPiPlus}, true, &signDStar, 2) > -1) {
@@ -587,6 +594,12 @@ struct HfDataCreatorCharmResoReduced {
       }
       if (RecoDecay::getMatchedMCRec(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2]}, Pdg::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &signDPlus, 2) > -1) {
         SETBIT(debug, PartialMatchMc::DPlusMatched);
+      }
+      if (RecoDecay::getMatchedMCRec<false, true, true>(particlesMc, std::array{vecDaughtersReso[3], vecDaughtersReso[4]}, kK0, std::array{+kMuonPlus, -kPiPlus}, true, &signV0, 3) > -1) {
+        SETBIT(debug, PartialMatchMc::K0MuMatched);
+      }
+      if (RecoDecay::getMatchedMCRec<false, false, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2]}, Pdg::kDStar, std::array{-kKPlus, +kPiPlus, +kMuonPlus}, true, &signDStar, 3) > -1) {
+        SETBIT(debug, PartialMatchMc::DStarMuMatched);
       }
       registry.fill(HIST("hMCRecDebug"), debug);
     }
@@ -672,14 +685,44 @@ struct HfDataCreatorCharmResoReduced {
         }
       } // else if
 
+      // Get single track variables
+      float chi2TpcDauMax = -1.f;
+      int nItsClsDauMin = 8, nTpcCrossRowsDauMin = 200;
+      for (const auto& charmHadTrack : charmHadDauTracks) {
+        if (charmHadTrack.itsNCls() < nItsClsDauMin) {
+          nItsClsDauMin = charmHadTrack.itsNCls();
+        }
+        if (charmHadTrack.tpcNClsCrossedRows() < nTpcCrossRowsDauMin) {
+          nTpcCrossRowsDauMin = charmHadTrack.tpcNClsCrossedRows();
+        }
+        if (charmHadTrack.tpcChi2NCl() > chi2TpcDauMax) {
+          chi2TpcDauMax = charmHadTrack.tpcChi2NCl();
+        }
+      }
+
       if constexpr (DecayChannel == DecayChannel::DplusV0 || DecayChannel == DecayChannel::DstarV0) {
         // Loop on V0 candidates
         for (const auto& v0 : bachelors) {
           auto trackPos = v0.template posTrack_as<Tr>();
           auto trackNeg = v0.template negTrack_as<Tr>();
           // Apply selsection
-          if (!buildAndSelectV0(collision, prongIdsD, std::array{trackPos, trackNeg})) {
+          auto v0DauTracks = std::array{trackPos, trackNeg};
+          if (!buildAndSelectV0(collision, prongIdsD, v0DauTracks)) {
             continue;
+          }
+          // Get single track variables
+          float chi2TpcDauV0Max = -1.f;
+          int nItsClsDauV0Min = 8, nTpcCrossRowsDauV0Min = 200;
+          for (const auto& v0Track : v0DauTracks) {
+            if (v0Track.itsNCls() < nItsClsDauV0Min) {
+              nItsClsDauV0Min = v0Track.itsNCls();
+            }
+            if (v0Track.tpcNClsCrossedRows() < nTpcCrossRowsDauV0Min) {
+              nTpcCrossRowsDauV0Min = v0Track.tpcNClsCrossedRows();
+            }
+            if (v0Track.tpcChi2NCl() > chi2TpcDauV0Max) {
+              chi2TpcDauV0Max = v0Track.tpcChi2NCl();
+            }
           }
           // propagate V0 to primary vertex (if enabled)
           if (propagateV0toPV) {
@@ -739,6 +782,7 @@ struct HfDataCreatorCharmResoReduced {
                      candidateV0.momNeg[0], candidateV0.momNeg[1], candidateV0.momNeg[2],
                      candidateV0.cosPA,
                      candidateV0.dcaV0ToPv,
+                     nItsClsDauV0Min, nTpcCrossRowsDauV0Min, chi2TpcDauV0Max,
                      candidateV0.v0Type);
             selectedV0s[v0.globalIndex()] = hfCandV0.lastIndex();
           }
@@ -785,7 +829,7 @@ struct HfDataCreatorCharmResoReduced {
                            track.px(), track.py(), track.pz(), track.sign(),
                            track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
                            track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
-                           track.hasTOF());
+                           track.hasTOF(), track.hasTPC(), track.itsNCls(), track.tpcNClsCrossedRows(), track.tpcChi2NCl());
             selectedTracks[track.globalIndex()] = hfTrackNoParam.lastIndex();
           }
           fillHfCandD = true;
@@ -799,7 +843,7 @@ struct HfDataCreatorCharmResoReduced {
                 candD.pxProng0(), candD.pyProng0(), candD.pzProng0(),
                 candD.pxProng1(), candD.pyProng1(), candD.pzProng1(),
                 pVecProng2[0], pVecProng2[1], pVecProng2[2],
-                dtype);
+                nItsClsDauMin, nTpcCrossRowsDauMin, chi2TpcDauMax, dtype);
         if constexpr (withMl) {
           hfCandDMl(bdtScores[0], bdtScores[1], bdtScores[2], -1., -1., -1.);
         }
