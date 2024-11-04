@@ -412,7 +412,7 @@ struct HfTaskCorrelationDplusHadrons {
             efficiencyWeightD = 1. / mEfficiencyPrompt->GetBinContent(mEfficiencyPrompt->FindBin(ptD));
           }
           registry.fill(HIST("hMassDplusVsPt"), massD, ptD, efficiencyWeightD);
-          registry.fill(HIST("hMassDplusVsPtWoeff"), massD, ptD, 1.0);
+          registry.fill(HIST("hMassDplusVsPtWoEff"), massD, ptD);
           registry.fill(HIST("hMassPromptDplusVsPt"), massD, ptD, efficiencyWeightD);
           registry.fill(HIST("hBdtScorePrompt"), bdtScorePrompt);
           registry.fill(HIST("hBdtScoreBkg"), bdtScoreBkg);
@@ -422,7 +422,7 @@ struct HfTaskCorrelationDplusHadrons {
             efficiencyWeightD = 1. / mEfficiencyFD->GetBinContent(mEfficiencyFD->FindBin(ptD));
           }
           registry.fill(HIST("hMassDplusVsPt"), massD, ptD, efficiencyWeightD);
-          registry.fill(HIST("hMassDplusVsPtWoeff"), massD, ptD, 1.0);
+          registry.fill(HIST("hMassDplusVsPtWoEff"), massD, ptD);
           registry.fill(HIST("hMassNonPromptDplusVsPt"), massD, ptD, efficiencyWeightD);
           registry.fill(HIST("hBdtScorePrompt"), bdtScorePrompt);
           registry.fill(HIST("hBdtScoreBkg"), bdtScoreBkg);
