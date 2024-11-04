@@ -822,7 +822,12 @@ struct mcPidTof {
   void retrieveMcPostCalibFromCcdb(int64_t timestamp)
   {
     std::map<std::string, std::string> metadata;
-    metadata["RecoPassName"] = metadataInfo.get("AnchorPassName");
+    if (metadataInfo.isFullyDefined()) {
+      metadata["RecoPassName"] = metadataInfo.get("AnchorPassName");
+    } else {
+      LOGP(error, "Impossible to read metadata! Using default calibrations (2022 apass7)");
+      metadata["RecoPassName"] = "";
+    }
     auto calibList = ccdb->getSpecific<TList>(mcRecalib.ccdbPath, timestamp, metadata);
     std::vector<int> updatedSpecies{};
     for (auto const& pidId : mEnabledParticles) { // Loop on enabled particle hypotheses (tiny)
