@@ -15,10 +15,12 @@
 /// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 /// \author Malgorzata Janik, WUT Warsaw, majanik@cern.ch
 
+#include <CCDB/BasicCCDBManager.h>
+#include <TDatabasePDG.h> // FIXME
 #include <vector>
 #include <algorithm>
 #include <set>
-#include <CCDB/BasicCCDBManager.h>
+
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -45,7 +47,6 @@
 #include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "ReconstructionDataFormats/Track.h"
-#include <TDatabasePDG.h> // FIXME
 #include "TMath.h"
 #include "TLorentzVector.h"
 #include "Framework/O2DatabasePDGPlugin.h"
