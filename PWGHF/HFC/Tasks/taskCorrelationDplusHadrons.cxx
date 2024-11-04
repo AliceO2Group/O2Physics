@@ -314,7 +314,7 @@ struct HfTaskCorrelationDplusHadrons {
         }
       }
       registry.fill(HIST("hMassDplusVsPt"), massD, ptD, efficiencyWeightD);
-      registry.fill(HIST("hMassDplusVsPtWoeff"), massD, ptD, 1.0);
+      registry.fill(HIST("hMassDplusVsPtWoEff"), massD, ptD);
       registry.fill(HIST("hBdtScorePrompt"), bdtScorePrompt);
       registry.fill(HIST("hBdtScoreBkg"), bdtScoreBkg);
     }
