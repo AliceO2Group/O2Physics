@@ -781,5 +781,5 @@ struct Jetchargedv2Task {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<Jetchargedv2Task>(cfgc, TaskName{"jet-rho-v2"})};
+  return WorkflowSpec{adaptAnalysisTask<Jetchargedv2Task>(cfgc, TaskName{"jet-charged-v2"})};
 }
