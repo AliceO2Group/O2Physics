@@ -32,7 +32,7 @@ struct myAnalysis {
   Configurable<float> v0cospa{"v0cospa", 0.995, "V0 CosPA"};
   Configurable<float> dcanegtopv{"dcanegtopv", 0.05, "DCA Neg To PV"};
   Configurable<float> dcapostopv{"dcapostopv", 0.05, "DCA Pos To PV"};
-
+  
   SliceCache cache;
   HistogramRegistry JEhistos{"JEhistos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -46,7 +46,6 @@ struct myAnalysis {
   Configurable<float> cfgVtxCut{"cfgVtxCut", 10.0, "V_z cut selection"};
   Configurable<float> cfgjetPtMin{"cfgjetPtMin", 15.0, "minimum jet pT cut"};
   Configurable<float> cfgjetR{"cfgjetR", 0.4, "jet resolution parameter"};
-
   Configurable<double> cfgtrkMinPt{"cfgtrkMinPt", 0.15, "set track min pT"};
   Configurable<double> cfgtrkMaxEta{"cfgtrkMaxEta", 0.8, "set track max Eta"};
   Configurable<double> cfgMaxDCArToPVcut{"cfgMaxDCArToPVcut", 0.5, "Track DCAr cut to PV Maximum"};
@@ -58,7 +57,6 @@ struct myAnalysis {
   Configurable<double> cfgnITSChi2{"cfgnITShi2", 36.0, "nITS Chi2 per Cluster"};
   Configurable<bool> cfgConnectedToPV{"cfgConnectedToPV", true, "PV contributor track selection"};
   Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", true, "Primary track selection"};
-
   Configurable<int> cfgnTPCPID{"cfgnTPCPID", 4, "nTPC PID"};
   Configurable<int> cfgnTOFPID{"cfgnTOFPID", 4, "nTOF PID"};
 
@@ -67,7 +65,6 @@ struct myAnalysis {
   Configurable<bool> requireTOF{"requireTOF", false, "require TOF hit"};
   Configurable<bool> requireTPC{"requireTPC", false, "require TPC hit"};
   Configurable<bool> requirepassedSingleTrackSelection{"requirepassedSingleTrackSelection", false, "requirepassedSingleTrackSelection"};
-
   Configurable<float> minITSnCls{"minITSnCls", 4.0f, "min number of ITS clusters"};
   Configurable<float> minTPCnClsFound{"minTPCnClsFound", 80.0f, "min number of found TPC clusters"};
   Configurable<float> minNCrossedRowsTPC{"minNCrossedRowsTPC", 80.0f, "min number of TPC crossed rows"};
@@ -123,6 +120,10 @@ struct myAnalysis {
     const AxisSpec MultAxis = {100, 0, 100};
     const AxisSpec dRAxis = {100, 0, 100};
 
+    const AxisSpec axisPx{200, -10, 10, "#px"};
+    const AxisSpec axisPy{200, -10, 10, "#py"};
+    const AxisSpec axisPz{200, -10, 10, "#pz"};
+
     if (cfgDataHists) {
 
       JEhistos.add("h_track_pt", "track pT;#it{p}_{T,track} (GeV/#it{c});entries", kTH1F, {{200, 0., 200.}});
@@ -149,9 +150,7 @@ struct myAnalysis {
       JEhistos.add("etaHistogram", "etaHistogram", kTH1F, {axisEta});
       JEhistos.add("phiHistogram", "phiHistogram", kTH1F, {axisPhi});
       JEhistos.add("ptHistogram", "ptHistogram", kTH1F, {axisPt});
-
       JEhistos.add("V0Counts", "V0Counts", kTH1F, {{10, 0, 10}});
-
       JEhistos.add("hUSS_1D", "hUSS_1D", kTH1F, {MinvAxis});
       JEhistos.add("hPt", "hPt", {HistType::kTH1F, {{100, 0.0f, 10.0f}}});
       JEhistos.add("hMassVsPtLambda", "hMassVsPtLambda", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {200, 1.016f, 1.216f}}});
@@ -185,9 +184,19 @@ struct myAnalysis {
       registry.get<TH1>(HIST("hNEventsJet"))->GetXaxis()->SetBinLabel(1, "all");
       registry.get<TH1>(HIST("hNEventsJet"))->GetXaxis()->SetBinLabel(2, "zvertex");
       registry.get<TH1>(HIST("hNEventsJet"))->GetXaxis()->SetBinLabel(3, "JCollisionSel::sel8");
-    }
-    registry.add("hV0NEvents", "hV0NEvents", kTH1F, {{1, 0, 1}});
 
+      JEhistos.add("v0Lambdapx", "v0Lambdapx", kTH1F, {axisPx});
+      JEhistos.add("v0Lambdapy", "v0Lambdapy", kTH1F, {axisPy});
+      JEhistos.add("v0Lambdapz", "v0Lambdapz", kTH1F, {axisPz});
+
+      JEhistos.add("v0AntiLambdapx", "v0AntiLambdapx", kTH1F, {axisPx});
+      JEhistos.add("v0AntiLambdapy", "v0AntiLambdapy", kTH1F, {axisPy});
+      JEhistos.add("v0AntiLambdapz", "v0AntiLambdapz", kTH1F, {axisPz});
+
+      JEhistos.add("jetpx", "jetpx", kTH1F, {axisPx});
+      JEhistos.add("jetpy", "jetpy", kTH1F, {axisPy});
+      JEhistos.add("jetpz", "jetpz", kTH1F, {axisPz});
+    }
     eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(cfgeventSelections));
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
   } // end of init
@@ -361,7 +370,6 @@ struct myAnalysis {
 
     return true;
   }
-
   // AntiLambda Selections
   template <typename AntiLambda, typename TrackPos, typename TrackNeg>
   bool passedAntiLambdaSelection(const AntiLambda& v0, const TrackPos& ptrack, const TrackNeg& ntrack)
@@ -392,9 +400,9 @@ struct myAnalysis {
         return false;
     }
     if (requireTPC) {
-      if (ptrack.tpcNSigmaPr() < nsigmaTPCmin || ptrack.tpcNSigmaPr() > nsigmaTPCmax)
+      if (ptrack.tpcNSigmaPi() < nsigmaTPCmin || ptrack.tpcNSigmaPi() > nsigmaTPCmax)
         return false;
-      if (ntrack.tpcNSigmaPi() < nsigmaTPCmin || ntrack.tpcNSigmaPi() > nsigmaTPCmax)
+      if (ntrack.tpcNSigmaPr() < nsigmaTPCmin || ntrack.tpcNSigmaPr() > nsigmaTPCmax)
         return false;
     }
     TLorentzVector lorentzVect;
@@ -402,7 +410,6 @@ struct myAnalysis {
     if (lorentzVect.Rapidity() < yMin || lorentzVect.Rapidity() > yMax) {
       return false;
     }
-
     return true;
   }
   ///////Event selection
@@ -445,11 +452,10 @@ struct myAnalysis {
 
     return true;
   }
-  Filter preFilterV0 = nabs(aod::v0data::dcapostopv) > dcapostopv&&
-                                                         nabs(aod::v0data::dcanegtopv) > dcanegtopv&& aod::v0data::dcaV0daughters < dcaV0DaughtersMax;
+  // Filter preFilterV0 = nabs(aod::v0data::dcapostopv) > dcapostopv&&nabs(aod::v0data::dcanegtopv) > dcanegtopv&& aod::v0data::dcaV0daughters < dcaV0DaughtersMax;
 
   int nEvents = 0;
-  void processJetTracks(JCollisions::iterator const& collision, soa::Filtered<aod::V0Datas> const& fullV0s, soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>> const& chargedjets, soa::Join<aod::JTracks, aod::JTrackPIs> const& tracks, TrackCandidates const&)
+  void processJetTracks(JCollisions::iterator const& collision, soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>> const& chargedjets, soa::Join<aod::JTracks, aod::JTrackPIs> const& tracks, TrackCandidates const&)
   {
 
     if (cDebugLevel > 0) {
@@ -501,6 +507,11 @@ struct myAnalysis {
       JEhistos.fill(HIST("FJetaHistogram"), chargedjet.eta());
       JEhistos.fill(HIST("FJphiHistogram"), chargedjet.phi());
       JEhistos.fill(HIST("FJptHistogram"), chargedjet.pt());
+
+      JEhistos.fill(HIST("jetpx"), chargedjet.px());
+      JEhistos.fill(HIST("jetpy"), chargedjet.py());
+      JEhistos.fill(HIST("jetpz"), chargedjet.pz());
+
       nJets++;
     }
 
@@ -508,7 +519,7 @@ struct myAnalysis {
   }
   PROCESS_SWITCH(myAnalysis, processJetTracks, "process JE Framework", true);
   int nEventsV0 = 0;
-  void processV0(V0Collisions::iterator const& collision, soa::Filtered<aod::V0Datas> const& V0s, TrackCandidates const&)
+  void processV0(V0Collisions::iterator const& collision, aod::V0Datas const& V0s, TrackCandidates const&)
   {
     nEventsV0++;
     JEhistos.fill(HIST("hNEvents"), 0.5);
@@ -536,6 +547,10 @@ struct myAnalysis {
         JEhistos.fill(HIST("hMassLambda"), v0.mLambda());
         JEhistos.fill(HIST("TPCNSigmaPosPr"), pos.tpcNSigmaPr());
         JEhistos.fill(HIST("TPCNSigmaNegPi"), neg.tpcNSigmaPi());
+
+        JEhistos.fill(HIST("v0Lambdapx"), v0.px());
+        JEhistos.fill(HIST("v0Lambdapy"), v0.py());
+        JEhistos.fill(HIST("v0Lambdapz"), v0.pz());
       }
       if (passedAntiLambdaSelection(v0, pos, neg)) {
 
@@ -543,6 +558,10 @@ struct myAnalysis {
         JEhistos.fill(HIST("hMassAntiLambda"), v0.mAntiLambda());
         JEhistos.fill(HIST("TPCNSigmaPosPi"), pos.tpcNSigmaPi());
         JEhistos.fill(HIST("TPCNSigmaNegPr"), neg.tpcNSigmaPr());
+
+        JEhistos.fill(HIST("v0AntiLambdapx"), v0.px());
+        JEhistos.fill(HIST("v0AntiLambdapy"), v0.py());
+        JEhistos.fill(HIST("v0AntiLambdapz"), v0.pz());
       }
     }
     JEhistos.fill(HIST("V0Counts"), V0NumbersPerEvent);
