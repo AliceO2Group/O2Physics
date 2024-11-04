@@ -18,9 +18,6 @@
 #include <vector>
 #include <algorithm>
 #include <set>
-
-#include <TDatabasePDG.h> // FIXME
-
 #include <CCDB/BasicCCDBManager.h>
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
@@ -48,6 +45,7 @@
 #include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "ReconstructionDataFormats/Track.h"
+#include <TDatabasePDG.h> // FIXME
 #include "TMath.h"
 #include "TLorentzVector.h"
 #include "Framework/O2DatabasePDGPlugin.h"
