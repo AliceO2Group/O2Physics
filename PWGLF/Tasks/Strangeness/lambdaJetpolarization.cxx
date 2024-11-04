@@ -23,8 +23,6 @@
 #include "PWGJE/DataModel/Jet.h"
 #include <TLorentzVector.h>
 
-
-
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
