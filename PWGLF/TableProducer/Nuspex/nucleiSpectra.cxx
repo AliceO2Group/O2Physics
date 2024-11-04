@@ -527,7 +527,6 @@ struct nucleiSpectra {
           track.itsChi2NCl() > 36.f) {
         continue;
       }
-        // 
       // temporary fix: tpcInnerParam() returns the momentum in all the software tags before
       bool heliumPID = track.pidForTracking() == o2::track::PID::Helium3 || track.pidForTracking() == o2::track::PID::Alpha;
       float correctedTpcInnerParam = (heliumPID && cfgCompensatePIDinTracking) ? track.tpcInnerParam() / 2 : track.tpcInnerParam();
