@@ -694,7 +694,7 @@ struct nucleiSpectra {
             computeEventPlane(collision.qvecBPosIm(), collision.qvecBPosRe()),
             collision.multTPC()});
         }
-        if(fillTree){
+        if (fillTree) {
           if (track.pt() < cfgCutPtMinTree || track.pt() > cfgCutPtMaxTree)
             continue;
         }
