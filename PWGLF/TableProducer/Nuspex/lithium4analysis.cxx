@@ -58,7 +58,7 @@
 #include "ReconstructionDataFormats/Track.h"
 
 #include "PWGLF/DataModel/EPCalibrationTables.h"
-#include "PWGLF/DataModel/LFLithium4Tables_new.h"
+#include "PWGLF/DataModel/LFLithium4Tables.h"
 #include "PWGLF/Utils/svPoolCreator.h"
 
 using namespace o2;
