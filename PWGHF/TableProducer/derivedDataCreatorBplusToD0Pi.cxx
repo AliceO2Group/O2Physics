@@ -43,15 +43,15 @@ struct HfDerivedDataCreatorBplusToD0Pi {
   Produces<o2::aod::HfBplusIds> rowCandidateId;
   Produces<o2::aod::HfBplusMcs> rowCandidateMc;
   // Collisions
-  Produces<o2::aod::HfBPlusCollBases> rowCollBase;
-  Produces<o2::aod::HfBPlusCollIds> rowCollId;
+  Produces<o2::aod::HfCollBases> rowCollBase;
+  Produces<o2::aod::HfCollIds> rowCollId;
   // MC collisions
-  Produces<o2::aod::HfBPlusMcCollBases> rowMcCollBase;
-  Produces<o2::aod::HfBPlusMcCollIds> rowMcCollId;
-  Produces<o2::aod::HfBPlusMcRCollIds> rowMcRCollId;
+  Produces<o2::aod::HfMcCollBases> rowMcCollBase;
+  Produces<o2::aod::HfMcCollIds> rowMcCollId;
+  Produces<o2::aod::HfMcRCollIds> rowMcRCollId;
   // MC particles
-  Produces<o2::aod::HfBPlusPBases> rowParticleBase;
-  Produces<o2::aod::HfBPlusPIds> rowParticleId;
+  Produces<o2::aod::HfBplusPBases> rowParticleBase;
+  Produces<o2::aod::HfBplusPIds> rowParticleId;
 
   // Switches for filling tables
   Configurable<bool> fillCandidateBase{"fillCandidateBase", true, "Fill candidate base properties"};
@@ -80,11 +80,11 @@ struct HfDerivedDataCreatorBplusToD0Pi {
   using CollisionsWCentMult = soa::Join<aod::Collisions, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::PVMultZeqs>;
   using CollisionsWMcCentMult = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::PVMultZeqs>;
   using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa, aod::TracksPidPr, aod::PidTpcTofFullPr>;
-  using SelectedCandidates = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelBplus>>;
-  using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelBplus>>;
-  using SelectedCandidatesMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelBplus, aod::HfMlBplusToD0Pi>>;
-  using SelectedCandidatesMcMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelBplus, aod::HfMlBplusToD0Pi>>;
-  using MatchedGenCandidatesMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
+  using SelectedCandidates = soa::Filtered<soa::Join<aod::HfCandBplus, aod::HfSelBplus>>;
+  using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCandBplus, aod::HfCandBplusMcRec, aod::HfSelBplus>>;
+  using SelectedCandidatesMl = soa::Filtered<soa::Join<aod::HfCandBplus, aod::HfSelBplus, aod::HfMlBplusToD0Pi>>;
+  using SelectedCandidatesMcMl = soa::Filtered<soa::Join<aod::HfCandBplus, aod::HfCandBplusMcRec, aod::HfSelBplus, aod::HfMlBplusToD0Pi>>;
+  using MatchedGenCandidatesMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCandBplusMcGen>>;
   using TypeMcCollisions = aod::McCollisions;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_bplus::isSelBplusToD0Pi >= 1;
@@ -416,7 +416,7 @@ struct HfDerivedDataCreatorBplusToD0Pi {
       reserveTable(rowParticleBase, fillParticleBase, sizeTablePart);
       reserveTable(rowParticleId, fillParticleId, sizeTablePart);
       for (const auto& particle : particlesThisMcColl) {
-        fillTablesParticle(particle, o2::constants::physics::MassLambdaCPlus);
+        fillTablesParticle(particle, o2::constants::physics::MassBPlus);
       }
     }
   }
