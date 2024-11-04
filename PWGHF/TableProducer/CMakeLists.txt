@@ -276,6 +276,11 @@ o2physics_add_dpl_workflow(tree-creator-dstar-to-d0-pi
 
 # Derived-data creators
 
+o2physics_add_dpl_workflow(derived-data-creator-bplus-to-d0-pi
+                    SOURCES derivedDataCreatorBplusToD0Pi.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(derived-data-creator-d0-to-k-pi
                     SOURCES derivedDataCreatorD0ToKPi.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
