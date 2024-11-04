@@ -55,7 +55,7 @@ DECLARE_SOA_COLUMN(MultFT0M, multFT0M, float);            //! FT0M multiplicity
 DECLARE_SOA_COLUMN(CentFT0A, centFT0A, float);            //! FT0A centrality percentile
 DECLARE_SOA_COLUMN(CentFT0C, centFT0C, float);            //! FT0C centrality percentile
 DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);            //! FT0M centrality percentile
-DECLARE_SOA_COLUMN(CentFV0A, centFV0A, float);            //! FT0A centrality percentile
+DECLARE_SOA_COLUMN(CentFV0A, centFV0A, float);            //! FV0A centrality percentile
 DECLARE_SOA_COLUMN(CentFDDM, centFDDM, float);            //! FDDM centrality percentile
 DECLARE_SOA_COLUMN(MultZeqNTracksPV, multZeqNTracksPV, float); //! z-equalised barrel multiplicity
 } // namespace hf_coll_base
