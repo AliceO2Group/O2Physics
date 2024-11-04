@@ -426,7 +426,7 @@ DECLARE_SOA_INDEX_COLUMN(HfD0Base, hfD0);
 }
 }
 
-DECLARE_SOA_TABLE(HfBplusBases, "AOD", "HFB+BASE", //! Table with basic candidate properties used in the analyses
+DECLARE_SOA_TABLE(HfBplusBases, "AOD", "HFBPBASE", //! Table with basic candidate properties used in the analyses
                   o2::soa::Index<>,
                   hf_cand_base::der_bplus::HfCollBaseId,
                   hf_cand_base::der_bplus::HfD0BaseId,
@@ -649,7 +649,7 @@ DECLARE_SOA_TABLE_STAGED(HfD0PIds, "HFD0PID", //! Table with original global ind
 
 // B+
 
-DECLARE_SOA_TABLE(HfBplusPBases, "AOD", "HFBPLUSPBASE", //! Table with MC particle info
+DECLARE_SOA_TABLE(HfBplusPBases, "AOD", "HFBPPBASE", //! Table with MC particle info
                   o2::soa::Index<>,
                   hf_mc_particle::der_bplus::HfMcCollBaseId,
                   hf_cand_base::Pt,
@@ -664,7 +664,7 @@ DECLARE_SOA_TABLE(HfBplusPBases, "AOD", "HFBPLUSPBASE", //! Table with MC partic
                   hf_cand_base::P<hf_cand_base::Pt, hf_cand_base::Eta>,
                   o2::soa::Marker<MarkerBplus>);
 
-DECLARE_SOA_TABLE(HfBplusPIds, "AOD", "HFBPLUSPID", //! Table with original global indices for MC particles
+DECLARE_SOA_TABLE(HfBplusPIds, "AOD", "HFBPPID", //! Table with original global indices for MC particles
                   hf_mc_particle::McCollisionId,
                   hf_mc_particle::McParticleId,
                   o2::soa::Marker<MarkerBplus>);
