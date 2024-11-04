@@ -13,6 +13,9 @@
 /// \author Katarina Krizkova Gajdosova <katarina.gajdosova@cern.ch>, CERN
 /// \author Maja Kabus <maja.kabus@cern.ch>, CERN
 
+#include <string>
+#include <vector>
+
 #include <TDirectory.h>
 #include <TH1F.h>
 #include <THn.h>
