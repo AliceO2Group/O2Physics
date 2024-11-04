@@ -15,6 +15,8 @@
 /// \brief  Task to produce PID tables for TOF split for pi, K, p, copied from https://github.com/AliceO2Group/O2Physics/blob/master/Common/TableProducer/PID/pidTofMerge.cxx
 ///         It works only for MC and adds the possibility to apply postcalibrations for MC.
 ///
+
+#include <map>
 #include <utility>
 #include <vector>
 #include <string>
@@ -822,7 +824,12 @@ struct mcPidTof {
   void retrieveMcPostCalibFromCcdb(int64_t timestamp)
   {
     std::map<std::string, std::string> metadata;
-    metadata["RecoPassName"] = metadataInfo.get("AnchorPassName");
+    if (metadataInfo.isFullyDefined()) {
+      metadata["RecoPassName"] = metadataInfo.get("AnchorPassName");
+    } else {
+      LOGP(error, "Impossible to read metadata! Using default calibrations (2022 apass7)");
+      metadata["RecoPassName"] = "";
+    }
     auto calibList = ccdb->getSpecific<TList>(mcRecalib.ccdbPath, timestamp, metadata);
     std::vector<int> updatedSpecies{};
     for (auto const& pidId : mEnabledParticles) { // Loop on enabled particle hypotheses (tiny)
