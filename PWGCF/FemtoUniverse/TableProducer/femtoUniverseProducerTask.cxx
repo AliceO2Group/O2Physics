@@ -15,6 +15,10 @@
 /// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 /// \author Malgorzata Janik, WUT Warsaw, majanik@cern.ch
 
+#include <vector>
+#include <algorithm>
+#include <set>
+
 #include <TDatabasePDG.h> // FIXME
 
 #include <CCDB/BasicCCDBManager.h>
@@ -1433,7 +1437,7 @@ struct femtoUniverseProducerTask {
       if (particle.pt() < ConfFilterCuts.ConfPtLowFilterCut || particle.pt() > ConfFilterCuts.ConfPtHighFilterCut)
         continue;
 
-      uint32_t pdgCode = (uint32_t)particle.pdgCode();
+      uint32_t pdgCode = static_cast<uint32_t>(particle.pdgCode());
 
       if (ConfMCTruthAnalysisWithPID) {
         bool pass = false;
