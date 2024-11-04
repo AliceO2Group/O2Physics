@@ -23,6 +23,9 @@
 #include <TDatabasePDG.h>
 
 #include <cmath>
+#include <string>
+#include <algorithm>
+#include <vector>
 #include <array>
 #include <cstdlib>
 #include <iterator> // std::prev
