@@ -109,11 +109,10 @@ struct HfTaskFlow {
   //  HF candidate filter
   //  TODO: use Partition instead of filter
   Filter candidateFilterD0 = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagD0 ||
-                           aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
+                             aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagD0bar;
 
-                           
   Filter candidateFilterLc = aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLcToPKPi ||
-                           aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLcToPiKP;
+                             aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLcToPiKP;
 
   //  Collision filters
   //  FIXME: The filter is applied also on the candidates! Beware!
@@ -273,7 +272,7 @@ struct HfTaskFlow {
     //  =========================
     //      DATA : histograms for TPC-TPC HF-h case for 3PRONG
     //  ===================
-    
+
     registry.add("Data/TpcTpc/HfHadron/SameEvent/3Prong/hMassVsPt", "3-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{500, 0., 5.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("Data/TpcTpc/HfHadron/SameEvent/3Prong/hMass", "3-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{100, 0., 10.}}});
     registry.add("Data/TpcTpc/HfHadron/SameEvent/3Prong/hMassVsPtVsMult", "3-prong candidates;inv. mass (p K #pi) (GeV/#it{c}^{2}); p_{T}; multiplicity", {HistType::kTH3F, {{600, 1.98, 2.58}, {vbins, "#it{p}_{T} (GeV/#it{c})"}, {5000, 0., 10000.}}});
@@ -309,8 +308,6 @@ struct HfTaskFlow {
     registry.add("Data/TpcTpc/HfHadron/SameEvent/3Prong/hImpParErrProng1", "3-prong candidates;prong 1 impact parameter error (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("Data/TpcTpc/HfHadron/SameEvent/3Prong/hImpParErrProng2", "3-prong candidates;prong 2 impact parameter error (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("Data/TpcTpc/HfHadron/SameEvent/3Prong/hDecLenErr", "3-prong candidates;decay length error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    
-
 
     //  =========================
     //      DATA : histograms for TPC-MFT h-h case
@@ -413,7 +410,6 @@ struct HfTaskFlow {
     //      DATA : histograms for TPC-MFT HF-h case FOR 3PRONG
     //  =========================
 
-    
     registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hYieldsCandidate", "multiplicity vs pT vs eta", {HistType::kTH3F, {{200, 0, 200, "multiplicity"}, {40, 0, 20, "p_{T}"}, {100, -2, 2, "#eta"}}});
     registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hNtracksCandidate", "hNtracks", {HistType::kTH1F, {{500, 0, 500}}});
     registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hEtaPhiCandidate", "multiplicity vs eta vs phi in TPC", {HistType::kTH3F, {{200, 0, 200, "multiplicity"}, {100, -2, 2, "#eta"}, {200, 0, TwoPI, "#varphi"}}});
@@ -452,8 +448,6 @@ struct HfTaskFlow {
     registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hImpParErrProng1", "3-prong candidates;prong 1 impact parameter error (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hImpParErrProng2", "3-prong candidates;prong 2 impact parameter error (cm);entries", {HistType::kTH2F, {{100, -1., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hDecLenErr", "3-prong candidates;decay length error (cm);entries", {HistType::kTH2F, {{100, 0., 1.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    
-
 
     //  =========================
     //      MC : histograms for TPC-TPC h-h case
@@ -674,7 +668,7 @@ struct HfTaskFlow {
 
     int nTracks = tracks.size();
     for (const auto& track1 : tracks) {
-      
+
       // apply candidate cuts
       if (!isAcceptedCandidate(track1)) {
         continue;
@@ -710,7 +704,7 @@ struct HfTaskFlow {
         registry.fill(HIST("Data/TpcMft/HadronHadron/SameEvent/hEtaPhiMFT"), multiplicity, track1.eta(), phi);
         registry.fill(HIST("Data/TpcMft/HadronHadron/SameEvent/hPtMFT"), track1.pt());
         registry.fill(HIST("Data/TpcMft/HadronHadron/SameEvent/hYieldsMFT"), multiplicity, track1.pt(), track1.eta());
-      } else {                                                // if TPC tracks
+      } else { // if TPC tracks
         registry.fill(HIST("Data/TpcMft/HadronHadron/SameEvent/hEtaTPC"), track1.eta());
         float phi = track1.phi();
         o2::math_utils::bringTo02Pi(phi);
@@ -765,7 +759,7 @@ struct HfTaskFlow {
       registry.fill(HIST("Data/TpcMft/HadronHadron/MixedEvent/hVtxZMixingMFT"), vz);
 
       for (const auto& track1 : tracks) {
-        
+
         // apply cuts for MFT tracks
         if (!isAcceptedMftTrack(track1)) {
           continue;
@@ -823,7 +817,7 @@ struct HfTaskFlow {
 
         // apply candidate cuts
         if (!isAcceptedCandidate(track1)) {
-        continue;
+          continue;
         }
 
         registry.fill(HIST("Data/TpcMft/HfHadron/MixedEvent/hPtMixingCandidate"), track1.pt());
@@ -833,7 +827,7 @@ struct HfTaskFlow {
       registry.fill(HIST("Data/TpcMft/HfHadron/MixedEvent/hNtracksMixingCandidate"), nTracks);
     }
   }
-  
+
   //  TODO: Check how to put this into a Filter
   template <typename TTrack>
   bool isAcceptedCandidate(TTrack const& candidate)
@@ -858,7 +852,7 @@ struct HfTaskFlow {
     }
   }
 
-  //  TODO: Check how to put this into a Filter 
+  //  TODO: Check how to put this into a Filter
   // I tried to put it as a filter, but filters for normal TPC tracks also apply to MFT tracks I think
   // and it seems that they are not compatible
   template <typename TTrack>
@@ -966,7 +960,7 @@ struct HfTaskFlow {
         registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hMassVsPtVsMult"), hfHelper.invMassLcToPiKP(candidate), pt, nTracks);
         registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hMassVsPt"), hfHelper.invMassLcToPiKP(candidate), pt);
       }
-      
+
       registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hMultiplicity"), nTracks);
       registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hPt"), pt);
       registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hPtProng0"), ptProng0);
@@ -1002,7 +996,6 @@ struct HfTaskFlow {
       registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hDecLenErr"), candidate.errorDecayLength(), pt);
     }
   }
-  
 
   // ---- DATA : TPC-MFT HF-h Same Event (Candidates) QA ----
   //  TODO: Note: we do not need all these plots since they are in D0 and Lc task -> remove it after we are sure this works
@@ -1072,7 +1065,6 @@ struct HfTaskFlow {
       float phi = candidate.phi();
       o2::math_utils::bringTo02Pi(phi);
 
-      
       if (candidate.isSelLcToPKPi() >= selectionFlagLcToPKPi) {
         registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hMass"), hfHelper.invMassLcToPKPi(candidate));
         registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hMassVsPtVsMult"), hfHelper.invMassLcToPKPi(candidate), pt, multiplicity);
@@ -1083,8 +1075,7 @@ struct HfTaskFlow {
         registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hMassVsPtVsMult"), hfHelper.invMassLcToPiKP(candidate), pt, multiplicity);
         registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hMassVsPt"), hfHelper.invMassLcToPiKP(candidate), pt);
       }
-      
-      
+
       registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hYieldsCandidate"), multiplicity, candidate.pt(), candidate.eta());
       registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hEtaPhiCandidate"), multiplicity, candidate.eta(), phi);
       registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hNtracksCandidate"), multiplicity);
