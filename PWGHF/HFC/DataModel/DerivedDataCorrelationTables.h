@@ -26,6 +26,7 @@ DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float); //! Event multiplicity
 DECLARE_SOA_COLUMN(PosZ, posZ, float);                 //! Primary vertex z position
 
 } // namespace hf_collisions_reduced
+
 DECLARE_SOA_TABLE(HfcRedCollisions, "AOD", "HFCREDCOLLISION", //! Table with collision info
                   soa::Index<>,
                   aod::hf_collisions_reduced::Multiplicity,
