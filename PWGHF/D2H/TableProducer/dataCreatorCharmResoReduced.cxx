@@ -949,8 +949,8 @@ struct HfDataCreatorCharmResoReduced {
               if (RecoDecay::isMatchedMCGen(particlesMc, candDStarMC, Pdg::kDStar, std::array{-kKPlus, +kPiPlus, +kPiPlus}, true, &signDStar, 2)) {
                 flag = signDStar * BIT(DecayTypeMc::Ds1ToDStarK0ToD0PiK0s);
                 if (RecoDecay::isMatchedMCGen<false, true>(particlesMc, candV0MC, kK0, std::array{+kPiPlus, -kMuonPlus, +kNuMu}, true, &signV0, 3) ||
-                    RecoDecay::isMatchedMCGen<false, true>(particlesMc, candDStarMC, Pdg::kDStar, std::array{-kKPlus, +kPiPlus, +kMuonPlus, -kNuMu}, true, &signDStar, 3)){
-                  flag = signDStar * BIT(DecayTypeMc::Ds1ToDStarK0ToD0PiK0sOneMu);    
+                    RecoDecay::isMatchedMCGen<false, true>(particlesMc, candDStarMC, Pdg::kDStar, std::array{-kKPlus, +kPiPlus, +kMuonPlus, -kNuMu}, true, &signDStar, 3)) {
+                  flag = signDStar * BIT(DecayTypeMc::Ds1ToDStarK0ToD0PiK0sOneMu);
                 }
               } else if (RecoDecay::isMatchedMCGen(particlesMc, candD0MC, Pdg::kD0, std::array{-kKPlus, +kPiPlus, +kPiPlus, +kPi0}, true, &signDStar, 2) ||
                          RecoDecay::isMatchedMCGen(particlesMc, candD0MC, Pdg::kD0, std::array{-kKPlus, +kPiPlus, +kPiPlus, -kPi0}, true, &signDStar, 2)) {

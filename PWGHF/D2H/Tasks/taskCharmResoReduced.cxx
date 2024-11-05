@@ -42,44 +42,44 @@ enum DecayTypeMc : uint8_t {
 
 namespace o2::aod
 {
-  namespace hf_cand_reso_lite
-  {
-    DECLARE_SOA_COLUMN(PtBach0, ptBach0, float);                               //! Transverse momentum of bachelor 0 (GeV/c)
-    DECLARE_SOA_COLUMN(PtBach1, ptBach1, float);                               //! Transverse momentum of bachelor 1 (GeV/c)
-    DECLARE_SOA_COLUMN(MBach0, mBach0, float);                                 //! Invariant mass of bachelor 0 (GeV/c)
-    DECLARE_SOA_COLUMN(MBach1, mBach1, float);                                 //! Invariant mass of bachelor 1 (GeV/c)
-    DECLARE_SOA_COLUMN(MBachD0, mBachD0, float);                                 //! Invariant mass of D0 bachelor (of bachelor 0) (GeV/c)
-    DECLARE_SOA_COLUMN(M, m, float);                                             //! Invariant mass of candidate (GeV/c2)
-    DECLARE_SOA_COLUMN(Pt, pt, float);                                           //! Transverse momentum of candidate (GeV/c)
-    DECLARE_SOA_COLUMN(P, p, float);                                             //! Momentum of candidate (GeV/c)
-    DECLARE_SOA_COLUMN(Y, y, float);                                             //! Rapidity of candidate
-    DECLARE_SOA_COLUMN(Eta, eta, float);                                         //! Pseudorapidity of candidate
-    DECLARE_SOA_COLUMN(Phi, phi, float);                                         //! Azimuth angle of candidate
-    DECLARE_SOA_COLUMN(E, e, float);                                             //! Energy of candidate (GeV)
-    DECLARE_SOA_COLUMN(Sign, sign, int8_t);                                       //! Sign of candidate 
-    DECLARE_SOA_COLUMN(CosThetaStar, cosThetaStar, float);                       //! VosThetaStar of candidate (GeV)
-    DECLARE_SOA_COLUMN(MlScoreBkgBach0, mlScoreBkgBach0, float);                 //! ML score for background class of charm daughter
-    DECLARE_SOA_COLUMN(MlScorePromptBach0, mlScorePromptBach0, float);           //! ML score for prompt class of charm daughter
-    DECLARE_SOA_COLUMN(MlScoreNonPromptBach0, mlScoreNonPromptBach0, float);     //! ML score for non-prompt class of charm daughter
-    DECLARE_SOA_COLUMN(ItsNClsProngMinBach0, itsNClsProngMinBach0, int);                       //! minimum value of number of ITS clusters for the decay daughter tracks of bachelor 0
-    DECLARE_SOA_COLUMN(TpcNClsCrossedRowsProngMinBach0, tpcNClsCrossedRowsProngMinBach0, int); //! minimum value of number of TPC crossed rows for the decay daughter tracks of bachelor 0
-    DECLARE_SOA_COLUMN(TpcChi2NClProngMaxBach0, tpcChi2NClProngMaxBach0, float);               //! maximum value of TPC chi2 for the decay daughter tracks of bachelor 0
-    DECLARE_SOA_COLUMN(ItsNClsProngMinBach1, itsNClsProngMinBach1, int);                       //! minimum value of number of ITS clusters for the decay daughter tracks of bachelor 1
-    DECLARE_SOA_COLUMN(TpcNClsCrossedRowsProngMinBach1, tpcNClsCrossedRowsProngMinBach1, int); //! minimum value of number of TPC crossed rows for the decay daughter tracks of bachelor 1
-    DECLARE_SOA_COLUMN(TpcChi2NClProngMaxBach1, tpcChi2NClProngMaxBach1, float);               //! maximum value of TPC chi2 for the decay daughter tracks of bachelor 1
-    DECLARE_SOA_COLUMN(CpaBach1, cpaBach1, float);                                //! Cosine of Pointing Angle of bachelor 1
-    DECLARE_SOA_COLUMN(DcaBach1, dcaBach1, float);                                //! DCA of bachelor 1
-    DECLARE_SOA_COLUMN(RadiusBach1, radiusBach1, float);                          //! Radius of bachelor 1
-    DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t);                   //! flag for decay channel classification reconstruction level
-    DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);                           //! debug flag for mis-association at reconstruction level
-    DECLARE_SOA_COLUMN(Origin, origin, int8_t);                                   //! Flag for origin of MC particle 1=promt, 2=FD
-    DECLARE_SOA_COLUMN(PtGen, ptGen, float);                                      //! Transverse momentum of candidate (GeV/c)
-    DECLARE_SOA_COLUMN(SignD0, signD0, float);                                    //! Flag to distinguish D0 and D0Bar
+namespace hf_cand_reso_lite
+{
+DECLARE_SOA_COLUMN(PtBach0, ptBach0, float);                                               //! Transverse momentum of bachelor 0 (GeV/c)
+DECLARE_SOA_COLUMN(PtBach1, ptBach1, float);                                               //! Transverse momentum of bachelor 1 (GeV/c)
+DECLARE_SOA_COLUMN(MBach0, mBach0, float);                                                 //! Invariant mass of bachelor 0 (GeV/c)
+DECLARE_SOA_COLUMN(MBach1, mBach1, float);                                                 //! Invariant mass of bachelor 1 (GeV/c)
+DECLARE_SOA_COLUMN(MBachD0, mBachD0, float);                                               //! Invariant mass of D0 bachelor (of bachelor 0) (GeV/c)
+DECLARE_SOA_COLUMN(M, m, float);                                                           //! Invariant mass of candidate (GeV/c2)
+DECLARE_SOA_COLUMN(Pt, pt, float);                                                         //! Transverse momentum of candidate (GeV/c)
+DECLARE_SOA_COLUMN(P, p, float);                                                           //! Momentum of candidate (GeV/c)
+DECLARE_SOA_COLUMN(Y, y, float);                                                           //! Rapidity of candidate
+DECLARE_SOA_COLUMN(Eta, eta, float);                                                       //! Pseudorapidity of candidate
+DECLARE_SOA_COLUMN(Phi, phi, float);                                                       //! Azimuth angle of candidate
+DECLARE_SOA_COLUMN(E, e, float);                                                           //! Energy of candidate (GeV)
+DECLARE_SOA_COLUMN(Sign, sign, int8_t);                                                    //! Sign of candidate
+DECLARE_SOA_COLUMN(CosThetaStar, cosThetaStar, float);                                     //! VosThetaStar of candidate (GeV)
+DECLARE_SOA_COLUMN(MlScoreBkgBach0, mlScoreBkgBach0, float);                               //! ML score for background class of charm daughter
+DECLARE_SOA_COLUMN(MlScorePromptBach0, mlScorePromptBach0, float);                         //! ML score for prompt class of charm daughter
+DECLARE_SOA_COLUMN(MlScoreNonPromptBach0, mlScoreNonPromptBach0, float);                   //! ML score for non-prompt class of charm daughter
+DECLARE_SOA_COLUMN(ItsNClsProngMinBach0, itsNClsProngMinBach0, int);                       //! minimum value of number of ITS clusters for the decay daughter tracks of bachelor 0
+DECLARE_SOA_COLUMN(TpcNClsCrossedRowsProngMinBach0, tpcNClsCrossedRowsProngMinBach0, int); //! minimum value of number of TPC crossed rows for the decay daughter tracks of bachelor 0
+DECLARE_SOA_COLUMN(TpcChi2NClProngMaxBach0, tpcChi2NClProngMaxBach0, float);               //! maximum value of TPC chi2 for the decay daughter tracks of bachelor 0
+DECLARE_SOA_COLUMN(ItsNClsProngMinBach1, itsNClsProngMinBach1, int);                       //! minimum value of number of ITS clusters for the decay daughter tracks of bachelor 1
+DECLARE_SOA_COLUMN(TpcNClsCrossedRowsProngMinBach1, tpcNClsCrossedRowsProngMinBach1, int); //! minimum value of number of TPC crossed rows for the decay daughter tracks of bachelor 1
+DECLARE_SOA_COLUMN(TpcChi2NClProngMaxBach1, tpcChi2NClProngMaxBach1, float);               //! maximum value of TPC chi2 for the decay daughter tracks of bachelor 1
+DECLARE_SOA_COLUMN(CpaBach1, cpaBach1, float);                                             //! Cosine of Pointing Angle of bachelor 1
+DECLARE_SOA_COLUMN(DcaBach1, dcaBach1, float);                                             //! DCA of bachelor 1
+DECLARE_SOA_COLUMN(RadiusBach1, radiusBach1, float);                                       //! Radius of bachelor 1
+DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t);                                //! flag for decay channel classification reconstruction level
+DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);                                        //! debug flag for mis-association at reconstruction level
+DECLARE_SOA_COLUMN(Origin, origin, int8_t);                                                //! Flag for origin of MC particle 1=promt, 2=FD
+DECLARE_SOA_COLUMN(PtGen, ptGen, float);                                                   //! Transverse momentum of candidate (GeV/c)
+DECLARE_SOA_COLUMN(SignD0, signD0, float);                                                 //! Flag to distinguish D0 and D0Bar
 
-  }// namespace hf_cand_reso_lite
+} // namespace hf_cand_reso_lite
 
-  DECLARE_SOA_TABLE(HfCandResoLites, "AOD", "HFCANDRESOLITE", //! Table with some B0 properties
-                  //Candidate Properties
+DECLARE_SOA_TABLE(HfCandResoLites, "AOD", "HFCANDRESOLITE", //! Table with some B0 properties
+                                                            // Candidate Properties
                   hf_cand_reso_lite::M,
                   hf_cand_reso_lite::Pt,
                   hf_cand_reso_lite::P,
@@ -89,7 +89,7 @@ namespace o2::aod
                   hf_cand_reso_lite::E,
                   hf_cand_reso_lite::CosThetaStar,
                   hf_cand_reso_lite::Sign,
-                  //Bachelors Properties
+                  // Bachelors Properties
                   hf_cand_reso_lite::MBach0,
                   hf_cand_reso_lite::PtBach0,
                   hf_cand_reso_lite::MlScoreBkgBach0,
@@ -106,14 +106,14 @@ namespace o2::aod
                   hf_cand_reso_lite::ItsNClsProngMinBach1,
                   hf_cand_reso_lite::TpcNClsCrossedRowsProngMinBach1,
                   hf_cand_reso_lite::TpcChi2NClProngMaxBach1,
-                  //MC
+                  // MC
                   hf_cand_reso_lite::FlagMcMatchRec,
                   hf_cand_reso_lite::DebugMcRec,
                   hf_cand_reso_lite::Origin,
                   hf_cand_reso_lite::PtGen,
                   hf_cand_reso_lite::SignD0);
-                  
-}// namespace aod 
+
+} // namespace o2::aod
 
 enum DecayChannel : uint8_t {
   Ds1ToDstarK0s = 0,
@@ -168,14 +168,14 @@ struct HfTaskCharmResoReduced {
     registry.add("hZvert", "Collision Z Vtx ; z PV [cm] ; entries", {HistType::kTH1F, {{120, -12., 12.}}});
     registry.add("hBz", "Collision Bz ; Bz [T] ; entries", {HistType::kTH1F, {{20, -10., 10.}}});
     registry.add("hSparse", "THn for production studies with cosThStar and BDT scores", HistType::kTHnSparseF, {axisPt, axisPtProng0, axisPtProng1, axisInvMassReso, axisInvMassProng0, axisInvMassProng1, axisCosThetaStar, axisBkgBdtScore, axisNonPromptBdtScore});
-    
-    if(doprocessDs1Mc || doprocessDs2StarMc){
+
+    if (doprocessDs1Mc || doprocessDs2StarMc) {
       // gen histos
       registry.add("hYGenPrompt", "Prompt {D_{S}}^j particles (generated);#it{p}_{T}^{gen}({D_{S}}^j) (GeV/#it{c});#it{y}^{gen}({D_{S}}^j);entries", {HistType::kTH2F, {axisPt, axisEta}});
       registry.add("hYGenPromptWithProngsInAcceptance", "Prompt {D_{S}}^j particles (generated-daughters in acceptance);#it{p}_{T}^{gen}({D_{S}}^j) (GeV/#it{c});#it{y}^{gen}({D_{S}}^j);entries", {HistType::kTH2F, {axisPt, axisEta}});
       registry.add("hYGenNonPrompt", "NonPrompt {D_{S}}^j particles (generated);#it{p}_{T}^{gen}({D_{S}}^j) (GeV/#it{c});#it{y}^{gen}({D_{S}}^j);entries", {HistType::kTH2F, {axisPt, axisEta}});
       registry.add("hYGenNonPromptWithProngsInAcceptance", "NonPrompt {D_{S}}^j particles (generated-daughters in acceptance);#it{p}_{T}^{gen}({D_{S}}^j) (GeV/#it{c});#it{y}^{gen}({D_{S}}^j);entries", {HistType::kTH2F, {axisPt, axisEta}});
-      if (fillSparses){
+      if (fillSparses) {
         registry.add("hPtYGenSig", "{D_{S}}^j particles (generated);#it{p}_{T}({D_{S}}^j) (GeV/#it{c});#it{y}({D_{S}}^j)", {HistType::kTHnSparseF, {axisPt, axisEta, axisOrigin, axisFlag}});
         registry.add("hPtYWithProngsInAccepanceGenSig", "{D_{S}}^j particles (generated-daughters in acceptance);#it{p}_{T}({D_{S}}^j) (GeV/#it{c});#it{y}({D_{S}}^j)", {HistType::kTHnSparseF, {axisPt, axisEta, axisOrigin, axisFlag}});
       }
@@ -188,33 +188,33 @@ struct HfTaskCharmResoReduced {
   /// \param coll is a reduced collision
   /// \param bach0 is a bachelor of the candidate
   /// \param bach1 is a bachelor of the candidate
-  template <bool doMc, bool withMl, DecayChannel channel, typename Cand, typename Coll,  typename CharmBach, typename V0Bach>
+  template <bool doMc, bool withMl, DecayChannel channel, typename Cand, typename Coll, typename CharmBach, typename V0Bach>
   void fillCand(const Cand& candidate, const Coll& collision, const CharmBach& bach0, const V0Bach& bach1)
-  { 
+  {
     // Compute quantities to be saved
     float invMassReso, pdgMassReso, invMassBach0, invMassBach1, pdgMassBach0, pdgMassBach1, sign, invMassD0, cosThetaStar;
-    if (channel == DecayChannel::Ds1ToDstarK0s){
+    if (channel == DecayChannel::Ds1ToDstarK0s) {
       pdgMassReso = MassDS1;
       pdgMassBach0 = MassDStar;
       pdgMassBach1 = MassK0;
       invMassBach1 = bach1.invMassK0s();
       cosThetaStar = candidate.cosThetaStarDs1();
-      if (bach0.dType() > 0){
+      if (bach0.dType() > 0) {
         invMassBach0 = bach0.invMassDstar();
         invMassD0 = bach0.invMassD0();
         sign = 1;
-        if (useDeltaMass){
-           invMassReso = RecoDecay::m(std::array{bach0.pVectorProng0(), bach0.pVectorProng1(), bach0.pVectorProng2(), bach1.pVector()}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassK0});
+        if (useDeltaMass) {
+          invMassReso = RecoDecay::m(std::array{bach0.pVectorProng0(), bach0.pVectorProng1(), bach0.pVectorProng2(), bach1.pVector()}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassK0});
         }
-      } else{
+      } else {
         invMassBach0 = bach0.invMassAntiDstar();
         invMassD0 = bach0.invMassD0Bar();
         sign = -1;
-        if (useDeltaMass){
-           invMassReso = RecoDecay::m(std::array{bach0.pVectorProng1(), bach0.pVectorProng0(), bach0.pVectorProng2(), bach1.pVector()}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassK0});
+        if (useDeltaMass) {
+          invMassReso = RecoDecay::m(std::array{bach0.pVectorProng1(), bach0.pVectorProng0(), bach0.pVectorProng2(), bach1.pVector()}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassK0});
         }
       }
-    } else if (channel == DecayChannel::Ds2StarToDplusK0s){
+    } else if (channel == DecayChannel::Ds2StarToDplusK0s) {
       pdgMassReso = MassDS2Star;
       pdgMassBach0 = MassDPlus;
       pdgMassBach1 = MassK0;
@@ -222,37 +222,37 @@ struct HfTaskCharmResoReduced {
       invMassD0 = 0;
       invMassBach1 = bach1.invMassK0s();
       cosThetaStar = candidate.cosThetaStarDs2Star();
-      if (useDeltaMass){
-           invMassReso = RecoDecay::m(std::array{bach0.pVectorProng0(), bach0.pVectorProng1(), bach0.pVectorProng2(), bach1.pVector()}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassK0});
+      if (useDeltaMass) {
+        invMassReso = RecoDecay::m(std::array{bach0.pVectorProng0(), bach0.pVectorProng1(), bach0.pVectorProng2(), bach1.pVector()}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassK0});
       }
-      if (bach0.dType() > 0){
+      if (bach0.dType() > 0) {
         sign = 1;
-      } else{
+      } else {
         sign = -1;
       }
-    } 
-    float y = RecoDecay::y(std::array{candidate.px(),candidate.py(),candidate.pz()}, pdgMassReso);
-    float eta = RecoDecay::eta(std::array{candidate.px(),candidate.py(),candidate.pz()});
-    float phi = RecoDecay::phi(candidate.px(),candidate.py());
-    float p = RecoDecay::p(std::array{candidate.px(),candidate.py(),candidate.pz()});
-    float e = RecoDecay::e(std::array{candidate.px(),candidate.py(),candidate.pz()}, pdgMassReso);
-    if (useDeltaMass){
+    }
+    float y = RecoDecay::y(std::array{candidate.px(), candidate.py(), candidate.pz()}, pdgMassReso);
+    float eta = RecoDecay::eta(std::array{candidate.px(), candidate.py(), candidate.pz()});
+    float phi = RecoDecay::phi(candidate.px(), candidate.py());
+    float p = RecoDecay::p(std::array{candidate.px(), candidate.py(), candidate.pz()});
+    float e = RecoDecay::e(std::array{candidate.px(), candidate.py(), candidate.pz()}, pdgMassReso);
+    if (useDeltaMass) {
       invMassReso = invMassReso - invMassBach0;
     } else {
-      invMassReso = RecoDecay::m(std::array{bach0.pVector(),bach1.pVector()}, std::array{pdgMassBach0,pdgMassBach1});
+      invMassReso = RecoDecay::m(std::array{bach0.pVector(), bach1.pVector()}, std::array{pdgMassBach0, pdgMassBach1});
     }
     invMassBach0 = invMassBach0 - invMassD0;
     float ptGen{-1.};
     int8_t origin{-1}, flagMcMatchRec{-1}, debugMcRec{-1}, signD0{0};
-    if constexpr (doMc){
+    if constexpr (doMc) {
       ptGen = candidate.ptMother();
       origin = candidate.origin();
       flagMcMatchRec = candidate.flagMcMatchRec();
       debugMcRec = candidate.debugMcRec();
-      // signD0 = candidate.signD0(); 
+      // signD0 = candidate.signD0();
     }
     float mlScoreBkg{-1.}, mlScorePrompt{-1.}, mlScoreNonPrompt{-1.};
-    if constexpr (withMl){
+    if constexpr (withMl) {
       mlScoreBkg = bach0.mlScoreBkgMassHypo0();
       mlScorePrompt = bach0.mlScorePromptMassHypo0();
       mlScoreNonPrompt = bach0.mlScoreNonpromptMassHypo0();
@@ -268,19 +268,19 @@ struct HfTaskCharmResoReduced {
     registry.fill(HIST("hPt"), candidate.pt());
     registry.fill(HIST("hPtProng0"), candidate.ptProng0());
     registry.fill(HIST("hPtProng1"), candidate.ptProng1());
-    if (fillSparses){
+    if (fillSparses) {
       registry.fill(HIST("hSparse"), candidate.pt(), candidate.ptProng0(), candidate.ptProng1(), candidate.invMass(), candidate.invMassProng0(), candidate.invMassProng1(), cosThetaStar, mlScoreBkg, mlScoreNonPrompt);
     }
-    if (doMc && fillOnlySignal){
-      if (channel == DecayChannel::Ds1ToDstarK0s && !(TESTBIT(flagMcMatchRec,DecayTypeMc::Ds1ToDStarK0ToD0PiK0s) || TESTBIT(flagMcMatchRec,DecayTypeMc::Ds1ToDStarK0ToD0PiK0sPart) || TESTBIT(flagMcMatchRec,DecayTypeMc::Ds1ToDStarK0ToD0NoPiK0sPart) || TESTBIT(flagMcMatchRec,DecayTypeMc::Ds1ToDStarK0ToD0PiK0sOneMu))) {
+    if (doMc && fillOnlySignal) {
+      if (channel == DecayChannel::Ds1ToDstarK0s && !(TESTBIT(flagMcMatchRec, DecayTypeMc::Ds1ToDStarK0ToD0PiK0s) || TESTBIT(flagMcMatchRec, DecayTypeMc::Ds1ToDStarK0ToD0PiK0sPart) || TESTBIT(flagMcMatchRec, DecayTypeMc::Ds1ToDStarK0ToD0NoPiK0sPart) || TESTBIT(flagMcMatchRec, DecayTypeMc::Ds1ToDStarK0ToD0PiK0sOneMu))) {
         return;
       }
-      if (channel == DecayChannel::Ds2StarToDplusK0s && !(TESTBIT(flagMcMatchRec,DecayTypeMc::Ds2StarToDplusK0) || TESTBIT(flagMcMatchRec,DecayTypeMc::Ds1ToDStarK0ToDPlusPi0K0s))) {
+      if (channel == DecayChannel::Ds2StarToDplusK0s && !(TESTBIT(flagMcMatchRec, DecayTypeMc::Ds2StarToDplusK0) || TESTBIT(flagMcMatchRec, DecayTypeMc::Ds1ToDStarK0ToDPlusPi0K0s))) {
         return;
       }
     }
-    if (fillTrees){
-        hfCandResoLite(
+    if (fillTrees) {
+      hfCandResoLite(
         invMassReso,
         candidate.pt(),
         p,
@@ -290,7 +290,7 @@ struct HfTaskCharmResoReduced {
         e,
         cosThetaStar,
         sign,
-        //Bachelors Properties
+        // Bachelors Properties
         invMassBach0,
         bach0.pt(),
         mlScoreBkg,
@@ -307,7 +307,7 @@ struct HfTaskCharmResoReduced {
         bach1.itsNClsProngMin(),
         bach1.tpcNClsCrossedRowsProngMin(),
         bach1.tpcChi2NClProngMax(),
-        //MC
+        // MC
         flagMcMatchRec,
         debugMcRec,
         origin,
@@ -330,12 +330,12 @@ struct HfTaskCharmResoReduced {
         continue;
       }
       float pdgMassReso{0};
-      if (channel == DecayChannel::Ds1ToDstarK0s){
+      if (channel == DecayChannel::Ds1ToDstarK0s) {
         pdgMassReso = MassDS1;
-      } else if(channel == DecayChannel::Ds2StarToDplusK0s){
+      } else if (channel == DecayChannel::Ds2StarToDplusK0s) {
         pdgMassReso = MassDS2Star;
       }
-      if (yCandRecoMax >= 0. && std::abs(RecoDecay::y(std::array{cand.px(),cand.py(),cand.pz()}, pdgMassReso)) > yCandRecoMax ){
+      if (yCandRecoMax >= 0. && std::abs(RecoDecay::y(std::array{cand.px(), cand.py(), cand.pz()}, pdgMassReso)) > yCandRecoMax) {
         continue;
       }
       auto coll = cand.template hfRedCollision_as<Coll>();
@@ -355,12 +355,11 @@ struct HfTaskCharmResoReduced {
     return std::abs(etaProng) <= etaTrackMax && ptProng >= ptTrackMin;
   }
 
-
   /// Fill particle histograms (gen MC truth)
   template <DecayChannel channel>
   void fillCandMcGen(aod::HfMcGenRedResos const& mcParticles)
   {
-    for (const auto& particle : mcParticles){
+    for (const auto& particle : mcParticles) {
       auto ptParticle = particle.ptTrack();
       auto yParticle = particle.yTrack();
       auto etaParticle = particle.etaTrack();
@@ -373,13 +372,13 @@ struct HfTaskCharmResoReduced {
       std::array<float, 2> etaProngs = {particle.etaProng0(), particle.etaProng1()};
       bool prongsInAcc = isProngInAcceptance(etaProngs[0], ptProngs[0]) && isProngInAcceptance(etaProngs[1], ptProngs[1]);
       if ((channel == DecayChannel::Ds1ToDstarK0s && TESTBIT(flag, DecayTypeMc::Ds1ToDStarK0ToD0PiK0s)) ||
-          (channel == DecayChannel::Ds2StarToDplusK0s && TESTBIT(flag, DecayTypeMc::Ds2StarToDplusK0))){
-        if (originParticle == 1){ //prompt particles
+          (channel == DecayChannel::Ds2StarToDplusK0s && TESTBIT(flag, DecayTypeMc::Ds2StarToDplusK0))) {
+        if (originParticle == 1) { // prompt particles
           registry.fill(HIST("hYGenPrompt"), ptParticle, yParticle);
           if (prongsInAcc) {
             registry.fill(HIST("hYGenPromptWithProngsInAcceptance"), ptParticle, yParticle);
           }
-        } else if (originParticle == 2){
+        } else if (originParticle == 2) {
           registry.fill(HIST("hYGenNonPrompt"), ptParticle, yParticle);
           if (prongsInAcc) {
             registry.fill(HIST("hYGenNonPromptWithProngsInAcceptance"), ptParticle, yParticle);
@@ -393,7 +392,7 @@ struct HfTaskCharmResoReduced {
         }
       }
     }
-  }// fillCandMcGen
+  } // fillCandMcGen
 
   // process functions
 
@@ -415,7 +414,7 @@ struct HfTaskCharmResoReduced {
   }
   PROCESS_SWITCH(HfTaskCharmResoReduced, processDs2StarData, "Process data Ds2Star analysis without Ml", false);
 
-   void processDs2StarDataWithMl(aod::HfRedCollisions const& collisions, ReducedResoWithMl const& candidates)
+  void processDs2StarDataWithMl(aod::HfRedCollisions const& collisions, ReducedResoWithMl const& candidates)
   {
     processData<false, true, DecayChannel::Ds2StarToDplusK0s>(collisions, candidates);
   }
