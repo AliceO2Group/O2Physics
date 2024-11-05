@@ -15,6 +15,7 @@
 /// \author Pritam Chakraborty, WUT Warsaw, pritam.chakraborty@pw.edu.pl
 
 #include <vector>
+#include <string>
 #include "TRandom2.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
@@ -213,6 +214,8 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
 
   HistogramRegistry SameMultRegistryMM{"SameMultRegistryMM", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry MixedMultRegistryMM{"MixedMultRegistryMM", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+
+  TRandom2* randgen;
 
   // PID for protons
   bool IsProtonNSigma(float mom, float nsigmaTPCPr, float nsigmaTOFPr) // previous version from: https://github.com/alisw/AliPhysics/blob/master/PWGCF/FEMTOSCOPY/AliFemtoUser/AliFemtoMJTrackCut.cxx
@@ -485,7 +488,6 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
       }
     } else {
       /// Now build the combinations for identical particles pairs
-      TRandom2* randgen = new TRandom2(0);
       double rand;
       for (auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsOne, groupPartsOne))) {
 
@@ -573,6 +575,7 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
     auto thegroupPartsTwo = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
 
     bool fillQA = true;
+    randgen = new TRandom2(0);
 
     if (cfgProcessPM) {
       doSameEvent<false>(thegroupPartsOne, thegroupPartsTwo, parts, col.magField(), col.multV0M(), 1, fillQA);
@@ -585,6 +588,7 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
     if (cfgProcessMM) {
       doSameEvent<false>(thegroupPartsTwo, thegroupPartsTwo, parts, col.magField(), col.multV0M(), 3, fillQA);
     }
+    delete randgen;
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackTrack3DMultKtExtended, processSameEvent, "Enable processing same event", true);
 
@@ -647,38 +651,72 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
         }
       }
 
+      double rand;
+      rand = randgen->Rndm();
+
       switch (ContType) {
         case 1: {
           float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass2);
-          if (!cfgProcessMultBins) {
-            mixedEventCont.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D, ConfIsIden);
+
+          if (rand > 0.5) {
+            if (!cfgProcessMultBins) {
+              mixedEventCont.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D, ConfIsIden);
+            } else {
+              std::vector<double> k3d = FemtoUniverseMath::newpairfunc(p1, mass1, p2, mass2, ConfIsIden);
+              mixedEventMultCont.fill_3D<float>(k3d[1], k3d[2], k3d[3], multCol, kT);
+            }
           } else {
-            std::vector<double> k3d = FemtoUniverseMath::newpairfunc(p1, mass1, p2, mass2, ConfIsIden);
-            mixedEventMultCont.fill_3D<float>(k3d[1], k3d[2], k3d[3], multCol, kT);
+            if (!cfgProcessMultBins) {
+              mixedEventCont.setPair<isMC>(p2, p1, multCol, twotracksconfigs.ConfUse3D, ConfIsIden);
+            } else {
+              std::vector<double> k3d = FemtoUniverseMath::newpairfunc(p2, mass2, p1, mass1, ConfIsIden);
+              mixedEventMultCont.fill_3D<float>(k3d[1], k3d[2], k3d[3], multCol, kT);
+            }
           }
           break;
         }
         case 2: {
           float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass1);
-          if (!cfgProcessMultBins) {
-            mixedEventContPP.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D, ConfIsIden);
+
+          if (rand > 0.5) {
+            if (!cfgProcessMultBins) {
+              mixedEventContPP.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D, ConfIsIden);
+            } else {
+              std::vector<double> k3d = FemtoUniverseMath::newpairfunc(p1, mass1, p2, mass2, ConfIsIden);
+              mixedEventMultContPP.fill_3D<float>(k3d[1], k3d[2], k3d[3], multCol, kT);
+            }
           } else {
-            std::vector<double> k3d = FemtoUniverseMath::newpairfunc(p1, mass1, p2, mass2, ConfIsIden);
-            mixedEventMultContPP.fill_3D<float>(k3d[1], k3d[2], k3d[3], multCol, kT);
+            if (!cfgProcessMultBins) {
+              mixedEventContPP.setPair<isMC>(p2, p1, multCol, twotracksconfigs.ConfUse3D, ConfIsIden);
+            } else {
+              std::vector<double> k3d = FemtoUniverseMath::newpairfunc(p2, mass2, p1, mass1, ConfIsIden);
+              mixedEventMultContPP.fill_3D<float>(k3d[1], k3d[2], k3d[3], multCol, kT);
+            }
           }
           break;
         }
 
         case 3: {
           float kT = FemtoUniverseMath::getkT(p1, mass2, p2, mass2);
-          if (!cfgProcessMultBins) {
-            mixedEventContMM.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D, ConfIsIden);
+
+          if (rand > 0.5) {
+            if (!cfgProcessMultBins) {
+              mixedEventContMM.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D, ConfIsIden);
+            } else {
+              std::vector<double> k3d = FemtoUniverseMath::newpairfunc(p1, mass1, p2, mass2, ConfIsIden);
+              mixedEventMultContMM.fill_3D<float>(k3d[1], k3d[2], k3d[3], multCol, kT);
+            }
           } else {
-            std::vector<double> k3d = FemtoUniverseMath::newpairfunc(p1, mass1, p2, mass2, ConfIsIden);
-            mixedEventMultContMM.fill_3D<float>(k3d[1], k3d[2], k3d[3], multCol, kT);
+            if (!cfgProcessMultBins) {
+              mixedEventContMM.setPair<isMC>(p2, p1, multCol, twotracksconfigs.ConfUse3D, ConfIsIden);
+            } else {
+              std::vector<double> k3d = FemtoUniverseMath::newpairfunc(p2, mass2, p1, mass1, ConfIsIden);
+              mixedEventMultContMM.fill_3D<float>(k3d[1], k3d[2], k3d[3], multCol, kT);
+            }
           }
           break;
         }
+
         default:
           break;
       }
@@ -691,6 +729,8 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
   void processMixedEvent(FilteredFDCollisions& cols,
                          FilteredFemtoFullParticles& parts)
   {
+    randgen = new TRandom2(0);
+
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
 
       const int multiplicityCol = collision1.multV0M();
@@ -719,6 +759,7 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
         doMixedEvent<false>(groupPartsOne, groupPartsTwo, parts, magFieldTesla1, multiplicityCol, 3);
       }
     }
+    delete randgen;
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackTrack3DMultKtExtended, processMixedEvent, "Enable processing mixed events", true);
 

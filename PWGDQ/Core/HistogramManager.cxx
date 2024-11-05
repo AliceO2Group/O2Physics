@@ -180,7 +180,7 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
   varVector.push_back(varY);
   varVector.push_back(varZ);
   varVector.push_back(varT); // variable used for profiling in case of TProfile3D
-  varVector.push_back(isFillLabelx); // whether to fill with the x-axis labels
+  varVector.push_back(isFillLabelx ? 1 : 0); // whether to fill with the x-axis labels
   std::list varList = fVariablesMap[histClass];
   varList.push_back(varVector);
   fVariablesMap[histClass] = varList;
@@ -390,7 +390,7 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
   varVector.push_back(varY);
   varVector.push_back(varZ);
   varVector.push_back(varT); // variable used for profiling in case of TProfile3D
-  varVector.push_back(isFillLabelx); // whether to fill with the x-axis labels
+  varVector.push_back(isFillLabelx ? 1 : 0); // whether to fill with the x-axis labels
   std::list varList = fVariablesMap[histClass];
   varList.push_back(varVector);
   fVariablesMap[histClass] = varList;
@@ -786,9 +786,7 @@ void HistogramManager::FillHistClass(const char* className, Float_t* values)
       varY = varIter->at(4);
       varZ = varIter->at(5);
       varT = varIter->at(6);
-      if (varIter->at(7) == 1) {
-        isFillLabelx = kTRUE;
-      }
+      isFillLabelx = (varIter->at(7) == 1 ? true : false);
     }
 
     if (!isTHn) {
