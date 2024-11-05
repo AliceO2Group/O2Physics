@@ -33,6 +33,7 @@
 #include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
 
 using namespace o2::aod::pwgem::dilepton::utils::emtrackutil;
+using namespace o2::aod::pwgem::dilepton::utils::pairutil;
 
 class DielectronCut : public TNamed
 {
@@ -112,11 +113,9 @@ class DielectronCut : public TNamed
     ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
     ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
 
-    float dca_t1_3d = dca3DinSigma(t1);
-    float dca_t2_3d = dca3DinSigma(t2);
-    float dca_ee_3d = std::sqrt((dca_t1_3d * dca_t1_3d + dca_t2_3d * dca_t2_3d) / 2.);
-    float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), bz);
-    float opAng = o2::aod::pwgem::dilepton::utils::pairutil::getOpeningAngle(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz());
+    float dca_ee_3d = pairDCAQuadSum(dca3DinSigma(t1), dca3DinSigma(t2));
+    float phiv = getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), bz);
+    float opAng = getOpeningAngle(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz());
 
     if (v12.M() < mMinMee || mMaxMee < v12.M()) {
       return false;
