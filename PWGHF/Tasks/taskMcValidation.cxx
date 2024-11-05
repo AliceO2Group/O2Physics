@@ -33,6 +33,10 @@
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
 
+#include <memory>
+#include <algorithm>
+#include <vector>
+
 using namespace o2;
 using namespace o2::analysis;
 using namespace o2::aod;
