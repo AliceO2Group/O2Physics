@@ -79,7 +79,7 @@ struct SingleTrackQC {
   Configurable<int> cfgNtracksPV08Min{"cfgNtracksPV08Min", -1, "min. multNTracksPV"};
   Configurable<int> cfgNtracksPV08Max{"cfgNtracksPV08Max", static_cast<int>(1e+9), "max. multNTracksPV"};
   Configurable<bool> cfgApplyWeightTTCA{"cfgApplyWeightTTCA", false, "flag to apply weighting by 1/N"};
-  Configurable<bool> cfgUseDCAxy{"cfgUseDCAxy", false, "flag to use DCAxy, instead of DCA3D"};
+  Configurable<uint8_t> cfgDCAType{"cfgDCAType", 0, "type of DCA for output. 0:3D, 1:XY, 2:Z, else:3D"};
 
   ConfigurableAxis ConfPtlBins{"ConfPtlBins", {VARIABLE_WIDTH, 0.00, 0.05, 0.10, 0.15, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.50, 3.00, 3.50, 4.00, 4.50, 5.00, 6.00, 7.00, 8.00, 9.00, 10.00}, "pTl bins for output histograms"};
   ConfigurableAxis ConfDCABins{"ConfDCABins", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0}, "DCA bins for output histograms"};
@@ -101,6 +101,9 @@ struct SingleTrackQC {
     Configurable<float> cfgFT0COccupancyMin{"cfgFT0COccupancyMin", -2, "min. FT0C occupancy"};
     Configurable<float> cfgFT0COccupancyMax{"cfgFT0COccupancyMax", 1000000000, "max. FT0C occupancy"};
     Configurable<bool> cfgRequireNoCollInTimeRangeStandard{"cfgRequireNoCollInTimeRangeStandard", false, "require no collision in time range standard"};
+    Configurable<bool> cfgRequireNoCollInTimeRangeStrict{"cfgRequireNoCollInTimeRangeStrict", false, "require no collision in time range strict"};
+    Configurable<bool> cfgRequireNoCollInITSROFStandard{"cfgRequireNoCollInITSROFStandard", false, "require no collision in time range standard"};
+    Configurable<bool> cfgRequireNoCollInITSROFStrict{"cfgRequireNoCollInITSROFStrict", false, "require no collision in time range strict"};
   } eventcuts;
 
   DielectronCut fDielectronCut;
@@ -157,12 +160,6 @@ struct SingleTrackQC {
   DimuonCut fDimuonCut;
   struct : ConfigurableGroup {
     std::string prefix = "dimuoncut_group";
-    Configurable<float> cfg_min_mass{"cfg_min_mass", 0.0, "min mass"};
-    Configurable<float> cfg_max_mass{"cfg_max_mass", 1e+10, "max mass"};
-    Configurable<float> cfg_min_pair_pt{"cfg_min_pair_pt", 0.0, "min pair pt"};
-    Configurable<float> cfg_max_pair_pt{"cfg_max_pair_pt", 1e+10, "max pair pt"};
-    Configurable<float> cfg_min_pair_dcaxy{"cfg_min_pair_dcaxy", 0.0, "min pair dca3d in sigma"};
-    Configurable<float> cfg_max_pair_dcaxy{"cfg_max_pair_dcaxy", 1e+10, "max pair dca3d in sigma"};
 
     Configurable<uint8_t> cfg_track_type{"cfg_track_type", 3, "muon track type [0: MFT-MCH-MID, 3: MCH-MID]"};
     Configurable<float> cfg_min_pt_track{"cfg_min_pt_track", 0.1, "min pT for single track"};
@@ -199,8 +196,10 @@ struct SingleTrackQC {
       const AxisSpec axis_eta{20, -1.0, +1.0, "#eta_{e}"};
       const AxisSpec axis_phi{36, 0.0, 2 * M_PI, "#varphi_{e} (rad.)"};
       std::string dca_axis_title = "DCA_{e}^{3D} (#sigma)";
-      if (cfgUseDCAxy) {
+      if (cfgDCAType == 1) {
         dca_axis_title = "DCA_{e}^{XY} (#sigma)";
+      } else if (cfgDCAType == 2) {
+        dca_axis_title = "DCA_{e}^{Z} (#sigma)";
       }
       const AxisSpec axis_dca{ConfDCABins, dca_axis_title};
 
@@ -311,6 +310,9 @@ struct SingleTrackQC {
     fEMEventCut.SetRequireVertexITSTPC(eventcuts.cfgRequireVertexITSTPC);
     fEMEventCut.SetRequireGoodZvtxFT0vsPV(eventcuts.cfgRequireGoodZvtxFT0vsPV);
     fEMEventCut.SetRequireNoCollInTimeRangeStandard(eventcuts.cfgRequireNoCollInTimeRangeStandard);
+    fEMEventCut.SetRequireNoCollInTimeRangeStrict(eventcuts.cfgRequireNoCollInTimeRangeStrict);
+    fEMEventCut.SetRequireNoCollInITSROFStandard(eventcuts.cfgRequireNoCollInITSROFStandard);
+    fEMEventCut.SetRequireNoCollInITSROFStrict(eventcuts.cfgRequireNoCollInITSROFStrict);
   }
 
   o2::analysis::MlResponseDielectronSingleTrack<float> mlResponseSingleTrack;
@@ -376,11 +378,6 @@ struct SingleTrackQC {
   {
     fDimuonCut = DimuonCut("fDimuonCut", "fDimuonCut");
 
-    // for pair
-    fDimuonCut.SetMassRange(dimuoncuts.cfg_min_mass, dimuoncuts.cfg_max_mass);
-    fDimuonCut.SetPairPtRange(dimuoncuts.cfg_min_pair_pt, dimuoncuts.cfg_max_pair_pt);
-    fDimuonCut.SetPairDCAxyRange(dimuoncuts.cfg_min_pair_dcaxy, dimuoncuts.cfg_max_pair_dcaxy); // DCAxy in cm
-
     // for track
     fDimuonCut.SetTrackType(dimuoncuts.cfg_track_type);
     fDimuonCut.SetTrackPtRange(dimuoncuts.cfg_min_pt_track, 1e10f);
@@ -405,8 +402,10 @@ struct SingleTrackQC {
     }
 
     float dca = dca3DinSigma(track);
-    if (cfgUseDCAxy) {
-      dca = abs(track.dcaXY() / std::sqrt(track.cYY()));
+    if (cfgDCAType == 1) {
+      dca = dcaXYinSigma(track);
+    } else if (cfgDCAType == 2) {
+      dca = dcaZinSigma(track);
     }
 
     if (track.sign() > 0) {
