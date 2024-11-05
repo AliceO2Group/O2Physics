@@ -94,6 +94,7 @@ struct HfCandidateCreatorCharmResoReduced {
   Configurable<std::vector<double>> binsPtD{"binsPtD", std::vector<double>{hf_cuts_d_daughter::vecBinsPt}, "pT bin limits for D daughter cuts"};
   Configurable<LabeledArray<double>> cutsV0{"cutsV0daughter", {hf_cuts_v0_daughter::cuts[0], hf_cuts_v0_daughter::nBinsPt, hf_cuts_v0_daughter::nCutVars, hf_cuts_v0_daughter::labelsPt, hf_cuts_v0_daughter::labelsCutVar}, "V0 daughter selections"};
   Configurable<std::vector<double>> binsPtV0{"binsPtV0", std::vector<double>{hf_cuts_v0_daughter::vecBinsPt}, "pT bin limits for V0 daughter cuts"};
+  
   // Configurables for ME
   Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "Number of events mixed in ME process"};
   Configurable<int> numberEventsToSkip{"numberEventsToSkip", -1, "Number of events to Skip in ME process"};
@@ -174,7 +175,6 @@ struct HfCandidateCreatorCharmResoReduced {
     if (ptBin == -1) {
       return false;
     }
-    // slection on D candidate mass
     if (channel == DecayChannel::Ds2StarToDplusK0s || channel == DecayChannel::XcToDplusLambda || channel == DecayChannel::LambdaDminus) {
       invMassD = candD.invMassDplus();
     } else if (channel == DecayChannel::Ds1ToDstarK0s || channel == DecayChannel::DstarTrack) {
@@ -350,8 +350,7 @@ struct HfCandidateCreatorCharmResoReduced {
                                 invMassReso,
                                 invMassD - invMassD0);
         } else {
-          rowCandidateReso(collision.globalIndex(),
-                           pVecD[0], pVecD[1], pVecD[2],
+          rowCandidateReso(pVecD[0], pVecD[1], pVecD[2],
                            pVecV0Tr[0], pVecV0Tr[1], pVecV0Tr[2],
                            invMassReso,
                            invMassD,
@@ -360,7 +359,8 @@ struct HfCandidateCreatorCharmResoReduced {
                            candV0Tr.dca(),
                            candV0Tr.v0Radius(),
                            invMassD0);
-          rowCandidateResoIndices(candD.globalIndex(),
+          rowCandidateResoIndices(collision.globalIndex(),
+                                  candD.globalIndex(),
                                   candV0Tr.globalIndex());
         }
         if constexpr (fillMl) {
@@ -443,8 +443,7 @@ struct HfCandidateCreatorCharmResoReduced {
             break;
         }
         // Fill output table
-        rowCandidateReso(collision1.globalIndex(),
-                          pVecD[0], pVecD[1], pVecD[2],
+        rowCandidateReso( pVecD[0], pVecD[1], pVecD[2],
                           pVecV0Tr[0], pVecV0Tr[1], pVecV0Tr[2],
                           invMassReso,
                           invMassD,
@@ -453,7 +452,8 @@ struct HfCandidateCreatorCharmResoReduced {
                           bachV0Tr.dca(),
                           bachV0Tr.v0Radius(),
                           invMassD0);
-        rowCandidateResoIndices(bachD.globalIndex(),
+        rowCandidateResoIndices(collision1.globalIndex(),
+                                bachD.globalIndex(),
                                 bachV0Tr.globalIndex());
         if constexpr (fillMl) {
           mlScores(bachD.mlScoreBkgMassHypo0(), bachD.mlScorePromptMassHypo0(), bachD.mlScoreNonpromptMassHypo0());
