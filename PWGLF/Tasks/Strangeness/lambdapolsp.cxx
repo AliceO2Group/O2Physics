@@ -78,6 +78,7 @@ struct lambdapolsp {
   Configurable<bool> mycut{"mycut", false, "select tracks based on my cuts"};
   Configurable<bool> tofhit{"tofhit", true, "select tracks based on tof hit"};
   Configurable<bool> globalpt{"globalpt", true, "select tracks based on pt global vs tpc"};
+  Configurable<bool> useprofile{"useprofile", true, "falg to select profile vs Sparse"};
   Configurable<int> QxyNbins{"QxyNbins", 100, "Number of bins in QxQy histograms"};
   Configurable<float> lbinQxy{"lbinQxy", -5.0, "lower bin value in QxQy histograms"};
   Configurable<float> hbinQxy{"hbinQxy", 5.0, "higher bin value in QxQy histograms"};
@@ -149,19 +150,35 @@ struct lambdapolsp {
     AxisSpec qxZDCAxis = {QxyNbins, lbinQxy, hbinQxy, "Qx"};
 
     if (checkwithpub) {
-      histos.add("hpuxQxpvscentpteta", "hpuxQxpvscentpteta", kTProfile3D, {centAxis, ptAxis, etaAxis}, true);
-      histos.add("hpuyQypvscentpteta", "hpuyQypvscentpteta", kTProfile3D, {centAxis, ptAxis, etaAxis}, true);
-      histos.add("hpuxQxtvscentpteta", "hpuxQxtvscentpteta", kTProfile3D, {centAxis, ptAxis, etaAxis}, true);
-      histos.add("hpuyQytvscentpteta", "hpuyQytvscentpteta", kTProfile3D, {centAxis, ptAxis, etaAxis}, true);
-      histos.add("hpuxyQxytvscentpteta", "hpuxyQxytvscentpteta", kTProfile3D, {centAxis, ptAxis, etaAxis}, true);
-      histos.add("hpuxyQxypvscentpteta", "hpuxyQxypvscentpteta", kTProfile3D, {centAxis, ptAxis, etaAxis}, true);
-      histos.add("hpoddv1vscentpteta", "hpoddv1vscentpteta", kTProfile3D, {centAxis, ptAxis, etaAxis}, true);
-      histos.add("hpevenv1vscentpteta", "hpevenv1vscentpteta", kTProfile3D, {centAxis, ptAxis, etaAxis}, true);
-      histos.add("hpQxtQxpvscent", "hpQxtQxpvscent", kTProfile, {centAxis}, true);
-      histos.add("hpQytQypvscent", "hpQytQypvscent", kTProfile, {centAxis}, true);
-      histos.add("hpQxytpvscent", "hpQxytpvscent", kTProfile, {centAxis}, true);
-      histos.add("hpQxtQypvscent", "hpQxtQypvscent", kTProfile, {centAxis}, true);
-      histos.add("hpQxpQytvscent", "hpQxpQytvscent", kTProfile, {centAxis}, true);
+      if (useprofile) {
+        histos.add("hpuxQxpvscentpteta", "hpuxQxpvscentpteta", kTProfile3D, {centAxis, ptAxis, etaAxis}, true);
+        histos.add("hpuyQypvscentpteta", "hpuyQypvscentpteta", kTProfile3D, {centAxis, ptAxis, etaAxis}, true);
+        histos.add("hpuxQxtvscentpteta", "hpuxQxtvscentpteta", kTProfile3D, {centAxis, ptAxis, etaAxis}, true);
+        histos.add("hpuyQytvscentpteta", "hpuyQytvscentpteta", kTProfile3D, {centAxis, ptAxis, etaAxis}, true);
+        histos.add("hpuxyQxytvscentpteta", "hpuxyQxytvscentpteta", kTProfile3D, {centAxis, ptAxis, etaAxis}, true);
+        histos.add("hpuxyQxypvscentpteta", "hpuxyQxypvscentpteta", kTProfile3D, {centAxis, ptAxis, etaAxis}, true);
+        histos.add("hpoddv1vscentpteta", "hpoddv1vscentpteta", kTProfile3D, {centAxis, ptAxis, etaAxis}, true);
+        histos.add("hpevenv1vscentpteta", "hpevenv1vscentpteta", kTProfile3D, {centAxis, ptAxis, etaAxis}, true);
+        histos.add("hpQxtQxpvscent", "hpQxtQxpvscent", kTProfile, {centAxis}, true);
+        histos.add("hpQytQypvscent", "hpQytQypvscent", kTProfile, {centAxis}, true);
+        histos.add("hpQxytpvscent", "hpQxytpvscent", kTProfile, {centAxis}, true);
+        histos.add("hpQxtQypvscent", "hpQxtQypvscent", kTProfile, {centAxis}, true);
+        histos.add("hpQxpQytvscent", "hpQxpQytvscent", kTProfile, {centAxis}, true);
+      } else {
+        histos.add("hpuxQxpvscentpteta", "hpuxQxpvscentpteta", kTHnSparseF, {centAxis, ptAxis, etaAxis}, true);
+        histos.add("hpuyQypvscentpteta", "hpuyQypvscentpteta", kTHnSparseF, {centAxis, ptAxis, etaAxis}, true);
+        histos.add("hpuxQxtvscentpteta", "hpuxQxtvscentpteta", kTHnSparseF, {centAxis, ptAxis, etaAxis}, true);
+        histos.add("hpuyQytvscentpteta", "hpuyQytvscentpteta", kTHnSparseF, {centAxis, ptAxis, etaAxis}, true);
+        histos.add("hpuxyQxytvscentpteta", "hpuxyQxytvscentpteta", kTHnSparseF, {centAxis, ptAxis, etaAxis}, true);
+        histos.add("hpuxyQxypvscentpteta", "hpuxyQxypvscentpteta", kTHnSparseF, {centAxis, ptAxis, etaAxis}, true);
+        histos.add("hpoddv1vscentpteta", "hpoddv1vscentpteta", kTHnSparseF, {centAxis, ptAxis, etaAxis}, true);
+        histos.add("hpevenv1vscentpteta", "hpevenv1vscentpteta", kTHnSparseF, {centAxis, ptAxis, etaAxis}, true);
+        histos.add("hpQxtQxpvscent", "hpQxtQxpvscent", kTHnSparseF, {centAxis}, true);
+        histos.add("hpQytQypvscent", "hpQytQypvscent", kTHnSparseF, {centAxis}, true);
+        histos.add("hpQxytpvscent", "hpQxytpvscent", kTHnSparseF, {centAxis}, true);
+        histos.add("hpQxtQypvscent", "hpQxtQypvscent", kTHnSparseF, {centAxis}, true);
+        histos.add("hpQxpQytvscent", "hpQxpQytvscent", kTHnSparseF, {centAxis}, true);
+      }
     }
 
     if (checkwithpubv2) {
