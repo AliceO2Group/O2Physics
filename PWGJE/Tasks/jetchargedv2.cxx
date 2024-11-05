@@ -21,6 +21,7 @@
 #include <cmath>
 #include <TRandom3.h>
 #include <TF1.h>
+#include <algorithm>
 // o2Physics includes.
 
 #include "CCDB/BasicCCDBManager.h"
