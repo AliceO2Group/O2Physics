@@ -704,9 +704,10 @@ struct TableMaker {
         // NOTE: The collision ID that is written in the table is the one found in the first association for this track.
         //       However, in data analysis one should loop over associations, so this one should not be used.
         //      In the case of Run2-like analysis, there will be no associations, so this ID will be the one originally assigned in the AO2Ds (updated for the skims)
-        // reducedEventIdx = fCollIndexMap[collision.globalIndex()]; // This gives the first collision form the table 
+        // reducedEventIdx = fCollIndexMap[collision.globalIndex()]; // This gives the first collision form the table
         uint32_t reducedEventIdx = fCollIndexMap[track.collisionId()]; // This gives the original iD of the track
-        if (reducedEventIdx == 0) continue; // Protection against crash where these collisions were removed by pp-filter or zorro selection and hence the track is now orphaned
+        if (reducedEventIdx == 0)
+          continue; // Protection against crash where these collisions were removed by pp-filter or zorro selection and hence the track is now orphaned
         // NOTE: trackBarrelInfo stores the index of the collision as in AO2D (for use in some cases where the analysis on skims is done
         //   in workflows where the original AO2Ds are also present)
         trackBarrelInfo(collision.globalIndex(), collision.posX(), collision.posY(), collision.posZ(), track.globalIndex());
@@ -736,7 +737,8 @@ struct TableMaker {
         }
         fTrackIndexMap[track.globalIndex()] = trackBasic.lastIndex();
       }
-      if (fCollIndexMap[collision.globalIndex()] == 0) continue;
+      if (fCollIndexMap[collision.globalIndex()] == 0)
+        continue;
       // write the skimmed collision - track association
       trackBarrelAssoc(fCollIndexMap[collision.globalIndex()], fTrackIndexMap[track.globalIndex()]);
     } // end loop over associations
