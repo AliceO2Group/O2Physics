@@ -13,6 +13,8 @@
 /// \brief Reconstruction of Resonance candidates
 ///
 /// \author Luca Aglietta <luca.aglietta@cern.ch>, Università degli Studi di Torino
+#include <vector>
+#include <string>
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
