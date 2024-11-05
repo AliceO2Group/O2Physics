@@ -57,6 +57,7 @@ class DielectronCut : public TNamed
     kTPCCrossedRows,
     kTPCCrossedRowsOverNCls,
     kTPCFracSharedClusters,
+    kRelDiffPin,
     kTPCChi2NDF,
     kTPCNsigmaEl,
     kTPCNsigmaMu,
@@ -209,6 +210,9 @@ class DielectronCut : public TNamed
     if (!IsSelectedTrack(track, DielectronCuts::kTPCFracSharedClusters)) {
       return false;
     }
+    if (!IsSelectedTrack(track, DielectronCuts::kRelDiffPin)) {
+      return false;
+    }
     if (!IsSelectedTrack(track, DielectronCuts::kTPCChi2NDF)) {
       return false;
     }
@@ -216,11 +220,6 @@ class DielectronCut : public TNamed
     if (mApplyPF && !IsSelectedTrack(track, DielectronCuts::kPrefilter)) {
       return false;
     }
-
-    // // TOF beta cut
-    // if (track.hasTOF() && (track.beta() < mMinTOFbeta || mMaxTOFbeta < track.beta())) {
-    //   return false;
-    // }
 
     // PID cuts
     if constexpr (isML) {
@@ -282,7 +281,7 @@ class DielectronCut : public TNamed
   {
     bool is_el_included_TPC = mMinTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
     bool is_pi_excluded_TPC = track.tpcInnerParam() < mMaxPinForPionRejectionTPC ? (track.tpcNSigmaPi() < mMinTPCNsigmaPi || mMaxTPCNsigmaPi < track.tpcNSigmaPi()) : true;
-    bool is_el_included_TOF = mMinTOFNsigmaEl < track.tofNSigmaEl() && track.tofNSigmaEl() < mMaxTOFNsigmaEl;
+    bool is_el_included_TOF = (mMinTOFNsigmaEl < track.tofNSigmaEl() && track.tofNSigmaEl() < mMaxTOFNsigmaEl) && (track.hasTOF() && track.tofChi2() < mMaxChi2TOF);
     return is_el_included_TPC && is_pi_excluded_TPC && is_el_included_TOF;
   }
 
@@ -294,7 +293,7 @@ class DielectronCut : public TNamed
     bool is_pi_excluded_TPC = track.tpcInnerParam() < mMaxPinForPionRejectionTPC ? (track.tpcNSigmaPi() < mMinTPCNsigmaPi || mMaxTPCNsigmaPi < track.tpcNSigmaPi()) : true;
     bool is_ka_excluded_TPC = track.tpcNSigmaKa() < mMinTPCNsigmaKa || mMaxTPCNsigmaKa < track.tpcNSigmaKa();
     bool is_pr_excluded_TPC = track.tpcNSigmaPr() < mMinTPCNsigmaPr || mMaxTPCNsigmaPr < track.tpcNSigmaPr();
-    bool is_el_included_TOF = track.hasTOF() ? (mMinTOFNsigmaEl < track.tofNSigmaEl() && track.tofNSigmaEl() < mMaxTOFNsigmaEl) : true;
+    bool is_el_included_TOF = track.hasTOF() ? (mMinTOFNsigmaEl < track.tofNSigmaEl() && track.tofNSigmaEl() < mMaxTOFNsigmaEl && track.tofChi2() < mMaxChi2TOF) : true;
     return is_el_included_TPC && is_mu_excluded_TPC && is_pi_excluded_TPC && is_ka_excluded_TPC && is_pr_excluded_TPC && is_el_included_TOF;
   }
 
@@ -310,7 +309,7 @@ class DielectronCut : public TNamed
   {
     bool is_el_included_TPC = mMinTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
     bool is_pi_excluded_TPC = track.tpcInnerParam() < mMaxPinForPionRejectionTPC ? (track.tpcNSigmaPi() < mMinTPCNsigmaPi || mMaxTPCNsigmaPi < track.tpcNSigmaPi()) : true;
-    bool is_el_included_TOF = track.hasTOF() ? (mMinTOFNsigmaEl < track.tofNSigmaEl() && track.tofNSigmaEl() < mMaxTOFNsigmaEl) : true;
+    bool is_el_included_TOF = track.hasTOF() ? (mMinTOFNsigmaEl < track.tofNSigmaEl() && track.tofNSigmaEl() < mMaxTOFNsigmaEl && track.tofChi2() < mMaxChi2TOF) : true;
     return is_el_included_TPC && is_pi_excluded_TPC && is_el_included_TOF;
   }
 
@@ -338,6 +337,9 @@ class DielectronCut : public TNamed
 
       case DielectronCuts::kTPCFracSharedClusters:
         return track.tpcFractionSharedCls() <= mMaxFracSharedClustersTPC;
+
+      case DielectronCuts::kRelDiffPin:
+        return mMinRelDiffPin < (track.tpcInnerParam() - track.p()) / track.p() && (track.tpcInnerParam() - track.p()) / track.p() < mMaxRelDiffPin;
 
       case DielectronCuts::kTPCChi2NDF:
         return mMinChi2PerClusterTPC < track.tpcChi2NCl() && track.tpcChi2NCl() < mMaxChi2PerClusterTPC;
@@ -386,10 +388,12 @@ class DielectronCut : public TNamed
   void SetMinNCrossedRowsTPC(int minNCrossedRowsTPC);
   void SetMinNCrossedRowsOverFindableClustersTPC(float minNCrossedRowsOverFindableClustersTPC);
   void SetMaxFracSharedClustersTPC(float max);
+  void SetRelDiffPin(float min, float max);
   void SetChi2PerClusterTPC(float min, float max);
   void SetNClustersITS(int min, int max);
   void SetChi2PerClusterITS(float min, float max);
   void SetMeanClusterSizeITS(float min, float max, float minP = 0.f, float maxP = 0.f);
+  void SetChi2TOF(float min, float max);
 
   void SetPIDScheme(int scheme);
   void SetMinPinTOF(float min);
@@ -452,12 +456,14 @@ class DielectronCut : public TNamed
   float mMinChi2PerClusterTPC{-1e10f}, mMaxChi2PerClusterTPC{1e10f}; // max tpc fit chi2 per TPC cluster
   float mMinNCrossedRowsOverFindableClustersTPC{0.f};                // min ratio crossed rows / findable clusters
   float mMaxFracSharedClustersTPC{999.f};                            // max ratio shared clusters / clusters in TPC
+  float mMinRelDiffPin{-1e10f}, mMaxRelDiffPin{1e10f};               // max relative difference between p at TPC inner wall and p at PV
   int mMinNClustersITS{0}, mMaxNClustersITS{7};                      // range in number of ITS clusters
   float mMinChi2PerClusterITS{-1e10f}, mMaxChi2PerClusterITS{1e10f}; // max its fit chi2 per ITS cluster
   float mMaxPinMuonTPConly{0.2f};                                    // max pin cut for muon ID with TPConly
   float mMaxPinForPionRejectionTPC{1e10f};                           // max pin cut for muon ID with TPConly
   bool mRequireITSibAny{true};
   bool mRequireITSib1st{false};
+  float mMinChi2TOF{-1e10f}, mMaxChi2TOF{1e10f}; // max tof chi2 per
 
   float mMinDca3D{0.0f};                        // min dca in 3D in units of sigma
   float mMaxDca3D{1e+10};                       // max dca in 3D in units of sigma

@@ -13,6 +13,9 @@
 // Class for dilepton Cut
 //
 
+#include <utility>
+#include <set>
+
 #include "Framework/Logger.h"
 #include "PWGEM/Dilepton/Core/DielectronCut.h"
 
@@ -112,6 +115,12 @@ void DielectronCut::SetMaxFracSharedClustersTPC(float max)
   mMaxFracSharedClustersTPC = max;
   LOG(info) << "Dielectron Cut, set max fraction of shared clusters in  TPC: " << mMaxFracSharedClustersTPC;
 }
+void DielectronCut::SetRelDiffPin(float min, float max)
+{
+  mMinRelDiffPin = min;
+  mMaxRelDiffPin = max;
+  LOG(info) << "Dielectron Cut, set rel. diff. between Pin and Ppv range: " << mMinRelDiffPin << " - " << mMaxRelDiffPin;
+}
 void DielectronCut::SetChi2PerClusterTPC(float min, float max)
 {
   mMinChi2PerClusterTPC = min;
@@ -139,6 +148,13 @@ void DielectronCut::SetMeanClusterSizeITS(float min, float max, float minP, floa
   mMaxP_ITSClusterSize = maxP;
   LOG(info) << "Dielectron Cut, set mean cluster size ITS range: " << mMinMeanClusterSizeITS << " - " << mMaxMeanClusterSizeITS;
 }
+void DielectronCut::SetChi2TOF(float min, float max)
+{
+  mMinChi2TOF = min;
+  mMaxChi2TOF = max;
+  LOG(info) << "Dielectron Cut, set chi2 TOF range: " << mMinChi2TOF << " - " << mMaxChi2TOF;
+}
+
 void DielectronCut::SetTrackDca3DRange(float min, float max)
 {
   mMinDca3D = min;
