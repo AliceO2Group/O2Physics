@@ -609,13 +609,10 @@ struct TableMaker {
     //     Tracks are written only once, even if they constribute to more than one association
 
     // Calculating the percentage of orphan tracks i.e., tracks which have no collisions associated to it
-    int32_t hcolln = -99;
     for (const auto& track : tracks) {
       if (!track.has_collision()) {
-        hcolln = -1;
-        (reinterpret_cast<TH1D*>(fStatsList->At(3)))->Fill(static_cast<float>(hcolln));
+        (reinterpret_cast<TH1D*>(fStatsList->At(3)))->Fill(static_cast<float>(-1));
       } else {
-        hcolln = track.collisionId();
         (reinterpret_cast<TH1D*>(fStatsList->At(3)))->Fill(0.9);
       }
     }
