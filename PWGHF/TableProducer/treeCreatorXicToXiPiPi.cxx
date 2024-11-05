@@ -76,7 +76,9 @@ DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);     //!
 DECLARE_SOA_COLUMN(DecayLengthXYNormalised, decayLengthXYNormalised, float); //! Normalised transverse decay length of candidate
 DECLARE_SOA_COLUMN(Cpa, cpa, float);                                         //! Cosine pointing angle of candidate
 DECLARE_SOA_COLUMN(CpaXY, cpaXY, float);                                     //! Cosine pointing angle of candidate in transverse plane
+DECLARE_SOA_COLUMN(Chi2XicPlusTopoToPVBeforeConstraint, chi2XicPlusTopoToPVBeforeConstraint, float);
 DECLARE_SOA_COLUMN(Chi2XicPlusTopoToPV, chi2XicPlusTopoToPV, float);
+DECLARE_SOA_COLUMN(Chi2XicPlusTopoXiToXicPlusBeforeConstraint, chi2XicPlusTopoXiToXicPlusBeforeConstraint, float);
 DECLARE_SOA_COLUMN(Chi2XicPlusTopoXiToXicPlus, chi2XicPlusTopoXiToXicPlus, float);
 // properties of daughter tracks
 DECLARE_SOA_COLUMN(PtXi, ptXi, float);                                                 //! Transverse momentum of Xi (prong0) (GeV/c)
@@ -191,7 +193,9 @@ DECLARE_SOA_TABLE(HfCandXicToXiPiPiLiteKfs, "AOD", "HFXICXI2PILITKF",
                   // KF specific columns
                   full::Chi2XiVtx,
                   full::Chi2LamVtx,
+                  full::Chi2XicPlusTopoToPVBeforeConstraint,
                   full::Chi2XicPlusTopoToPV,
+                  full::Chi2XicPlusTopoXiToXicPlusBeforeConstraint,
                   full::Chi2XicPlusTopoXiToXicPlus,
                   full::DcaXYPi0Pi1,
                   full::DcaXYPi0Xi,
@@ -313,7 +317,9 @@ DECLARE_SOA_TABLE(HfCandXicToXiPiPiFullKfs, "AOD", "HFXICXI2PIFULKF",
                   // KF-specific columns
                   full::Chi2XiVtx,
                   full::Chi2LamVtx,
+                  full::Chi2XicPlusTopoToPVBeforeConstraint,
                   full::Chi2XicPlusTopoToPV,
+                  full::Chi2XicPlusTopoXiToXicPlusBeforeConstraint,
                   full::Chi2XicPlusTopoXiToXicPlus,
                   full::DcaXYPi0Pi1,
                   full::DcaXYPi0Xi,
@@ -525,7 +531,9 @@ struct HfTreeCreatorXicToXiPiPi {
           // KF-specific columns
           candidate.kfCascadeChi2(),
           candidate.kfV0Chi2(),
+          candidate.chi2TopoXicPlusToPVBeforeConstraint(),
           candidate.chi2TopoXicPlusToPV(),
+          candidate.chi2TopoXiToXicPlusBeforeConstraint(),
           candidate.chi2TopoXiToXicPlus(),
           candidate.dcaXYPi0Pi1(),
           candidate.dcaXYPi0Xi(),
@@ -592,7 +600,9 @@ struct HfTreeCreatorXicToXiPiPi {
           // KF-specific columns
           candidate.kfCascadeChi2(),
           candidate.kfV0Chi2(),
+          candidate.chi2TopoXicPlusToPVBeforeConstraint(),
           candidate.chi2TopoXicPlusToPV(),
+          candidate.chi2TopoXiToXicPlusBeforeConstraint(),
           candidate.chi2TopoXiToXicPlus(),
           candidate.dcaXYPi0Pi1(),
           candidate.dcaXYPi0Xi(),
