@@ -802,7 +802,7 @@ namespace hf_reso_cand_reduced
 DECLARE_SOA_COLUMN(InvMass, invMass, float);                               //! Invariant mass in GeV/c2
 DECLARE_SOA_COLUMN(InvMassProng0, invMassProng0, float);                   //! Invariant Mass of D daughter in GeV/c
 DECLARE_SOA_COLUMN(InvMassProng1, invMassProng1, float);                   //! Invariant Mass of V0 daughter in GeV/c
-DECLARE_SOA_COLUMN(InvMassD0, invMassD0, float);                            //! Invariant Mass of potential D0 daughter
+DECLARE_SOA_COLUMN(InvMassD0, invMassD0, float);                           //! Invariant Mass of potential D0 daughter
 
 DECLARE_SOA_COLUMN(MlScoreBkgProng0, mlScoreBkgProng0, float);             //! Bkg ML score of the D daughter
 DECLARE_SOA_COLUMN(MlScorePromptProng0, mlScorePromptProng0, float);       //! Prompt ML score of the D daughter
