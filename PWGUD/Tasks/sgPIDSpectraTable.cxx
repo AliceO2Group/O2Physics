@@ -17,6 +17,7 @@
 #include "Framework/AnalysisTask.h"
 
 #include "TVector3.h"
+#include <vector>
 #include "TTree.h"
 #include "TFile.h"
 #include "Common/DataModel/PIDResponse.h"
