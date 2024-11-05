@@ -320,6 +320,7 @@ DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t);         //! flag for
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);               //! particle origin, reconstruction level
 DECLARE_SOA_COLUMN(IsCandidateSwapped, isCandidateSwapped, int8_t); //! swapping of the prongs order
 DECLARE_SOA_COLUMN(FlagMcDecayChanRec, flagMcDecayChanRec, int8_t); //! resonant decay channel flag, reconstruction level
+DECLARE_SOA_COLUMN(MlScoreSig, mlScoreSig, float);                  //! ML score for signal class
 DECLARE_SOA_COLUMN(MlScoreBkg, mlScoreBkg, float);                  //! ML score for background class
 DECLARE_SOA_COLUMN(MlScorePrompt, mlScorePrompt, float);            //! ML score for prompt class
 DECLARE_SOA_COLUMN(MlScoreNonPrompt, mlScoreNonPrompt, float);      //! ML score for non-prompt class
@@ -472,7 +473,6 @@ DECLARE_SOA_TABLE_STAGED(HfBplusParEs, "HFBPPARE", //! Table with additional can
                          hf_cand::ZSecondaryVertex,
                          hf_cand::ErrorDecayLength,
                          hf_cand::ErrorDecayLengthXY,
-                         hf_cand::KfTopolChi2OverNdf,
                          hf_cand_par::RSecondaryVertex,
                          hf_cand_par::PProng1,
                          hf_cand::PxProng1,
@@ -484,7 +484,7 @@ DECLARE_SOA_TABLE_STAGED(HfBplusParEs, "HFBPPARE", //! Table with additional can
                          o2::soa::Marker<MarkerBplus>);
 
 DECLARE_SOA_TABLE_STAGED(HfBplusMls, "HFBPML", //! Table with candidate selection ML scores
-                         hf_cand_mc::MlScores,
+                         hf_cand_mc::MlScoreSig,
                          o2::soa::Marker<MarkerBplus>);
 
 DECLARE_SOA_TABLE_STAGED(HfBplusIds, "HFBPID", //! Table with original global indices for candidates
