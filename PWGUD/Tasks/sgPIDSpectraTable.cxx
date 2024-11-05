@@ -12,12 +12,12 @@
 // \Single Gap Event Analyzer
 // \author Sasha Bylinkin, alexander.bylinkin@gmail.com
 // \since  April 2023
+#include <vector>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 
 #include "TVector3.h"
-#include <vector>
 #include "TTree.h"
 #include "TFile.h"
 #include "Common/DataModel/PIDResponse.h"
