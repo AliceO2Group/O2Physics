@@ -35,11 +35,14 @@ struct sgPIDAnalyzer {
   HistogramRegistry histos{"Histos", {}};
 
   ConfigurableAxis ptAxis{
-    "ptAxis", {198, 0.1, 10.0}, "Pt binning"};
+    "ptAxis",
+    {198, 0.1, 10.0},
+    "Pt binning"};
 
   ConfigurableAxis sigmaAxis{"sigmaAxis", {100, -50, 50}, "nSigma TPC binning"};
 
-  void init(InitContext&) {
+  void init(InitContext&)
+  {
 
     const AxisSpec ptBins{ptAxis, "p_{T} axis"};
     const AxisSpec nSigmaBins{sigmaAxis, "pseudo rapidity axis"};
@@ -80,79 +83,80 @@ struct sgPIDAnalyzer {
     histos.add("TOF/nPr", "Negative TPC Pr vs TOF Pr vs pt", {HistType::kTH3F, {ptBins, nSigmaBins, nSigmaBins}});
     histos.add("TOF/pEl", "Positive TPC El vs TOF El vs pt", {HistType::kTH3F, {ptBins, nSigmaBins, nSigmaBins}});
     histos.add("TOF/nEl", "Negative TPC El vs TOF El vs pt", {HistType::kTH3F, {ptBins, nSigmaBins, nSigmaBins}});
-
   }
 
- void process(aod::SGEvents const& events, aod::SGTracks const& tracks) {
-    int eventIndex = 0;  // Sequential index for SGEvents
+  void process(aod::SGEvents const& events, aod::SGTracks const& tracks)
+  {
+    int eventIndex = 0; // Sequential index for SGEvents
     for (auto event : events) {
       for (auto track : tracks) {
-        if (track.sgEventId() != eventIndex) continue;  // Match track to the current event index
+        if (track.sgEventId() != eventIndex)
+          continue; // Match track to the current event index
         bool isPositive = (track.sign() > 0);
         if (track.tofpi() == -999) {
           // Directly fill histograms without a local variable for histName
-            if (isPositive) {
-                histos.fill(HIST("TPC/pTPC_Pi"), track.pt(), track.tpcpi());
-                histos.fill(HIST("TPC/pTPC_Ka"), track.pt(), track.tpcka());
-                histos.fill(HIST("TPC/pTPC_Pr"), track.pt(), track.tpcpr());
-                histos.fill(HIST("TPC/pTPC_El"), track.pt(), track.tpcel());
+          if (isPositive) {
+            histos.fill(HIST("TPC/pTPC_Pi"), track.pt(), track.tpcpi());
+            histos.fill(HIST("TPC/pTPC_Ka"), track.pt(), track.tpcka());
+            histos.fill(HIST("TPC/pTPC_Pr"), track.pt(), track.tpcpr());
+            histos.fill(HIST("TPC/pTPC_El"), track.pt(), track.tpcel());
             if (abs(track.tpcpi()) < 1) {
-                histos.fill(HIST("TPC/pTPC_Pi_Ka"), track.pt(), track.tpcka());
-                histos.fill(HIST("TPC/pTPC_Pi_Pr"), track.pt(), track.tpcpr());
-                histos.fill(HIST("TPC/pTPC_Pi_El"), track.pt(), track.tpcel());
+              histos.fill(HIST("TPC/pTPC_Pi_Ka"), track.pt(), track.tpcka());
+              histos.fill(HIST("TPC/pTPC_Pi_Pr"), track.pt(), track.tpcpr());
+              histos.fill(HIST("TPC/pTPC_Pi_El"), track.pt(), track.tpcel());
             }
             if (abs(track.tpcka()) < 1) {
-                histos.fill(HIST("TPC/pTPC_Ka_Pi"), track.pt(), track.tpcpi());
-                histos.fill(HIST("TPC/pTPC_Ka_Pr"), track.pt(), track.tpcpr());
-                histos.fill(HIST("TPC/pTPC_Ka_El"), track.pt(), track.tpcel());
+              histos.fill(HIST("TPC/pTPC_Ka_Pi"), track.pt(), track.tpcpi());
+              histos.fill(HIST("TPC/pTPC_Ka_Pr"), track.pt(), track.tpcpr());
+              histos.fill(HIST("TPC/pTPC_Ka_El"), track.pt(), track.tpcel());
             }
             if (abs(track.tpcpr()) < 1) {
-                histos.fill(HIST("TPC/pTPC_Pr_Pi"), track.pt(), track.tpcpi());
-                histos.fill(HIST("TPC/pTPC_Pr_Ka"), track.pt(), track.tpcka());
-                histos.fill(HIST("TPC/pTPC_Pr_El"), track.pt(), track.tpcel());
+              histos.fill(HIST("TPC/pTPC_Pr_Pi"), track.pt(), track.tpcpi());
+              histos.fill(HIST("TPC/pTPC_Pr_Ka"), track.pt(), track.tpcka());
+              histos.fill(HIST("TPC/pTPC_Pr_El"), track.pt(), track.tpcel());
             }
-            } else {
-                histos.fill(HIST("TPC/nTPC_Pi"), track.pt(), track.tpcpi());
-                histos.fill(HIST("TPC/nTPC_Ka"), track.pt(), track.tpcka());
-                histos.fill(HIST("TPC/nTPC_Pr"), track.pt(), track.tpcpr());
-                histos.fill(HIST("TPC/nTPC_El"), track.pt(), track.tpcel());
+          } else {
+            histos.fill(HIST("TPC/nTPC_Pi"), track.pt(), track.tpcpi());
+            histos.fill(HIST("TPC/nTPC_Ka"), track.pt(), track.tpcka());
+            histos.fill(HIST("TPC/nTPC_Pr"), track.pt(), track.tpcpr());
+            histos.fill(HIST("TPC/nTPC_El"), track.pt(), track.tpcel());
             if (abs(track.tpcpi()) < 1) {
-                histos.fill(HIST("TPC/nTPC_Pi_Ka"), track.pt(), track.tpcka());
-                histos.fill(HIST("TPC/nTPC_Pi_Pr"), track.pt(), track.tpcpr());
-                histos.fill(HIST("TPC/nTPC_Pi_El"), track.pt(), track.tpcel());
+              histos.fill(HIST("TPC/nTPC_Pi_Ka"), track.pt(), track.tpcka());
+              histos.fill(HIST("TPC/nTPC_Pi_Pr"), track.pt(), track.tpcpr());
+              histos.fill(HIST("TPC/nTPC_Pi_El"), track.pt(), track.tpcel());
             }
             if (abs(track.tpcka()) < 1) {
-                histos.fill(HIST("TPC/nTPC_Ka_Pi"), track.pt(), track.tpcpi());
-                histos.fill(HIST("TPC/nTPC_Ka_Pr"), track.pt(), track.tpcpr());
-                histos.fill(HIST("TPC/nTPC_Ka_El"), track.pt(), track.tpcel());
+              histos.fill(HIST("TPC/nTPC_Ka_Pi"), track.pt(), track.tpcpi());
+              histos.fill(HIST("TPC/nTPC_Ka_Pr"), track.pt(), track.tpcpr());
+              histos.fill(HIST("TPC/nTPC_Ka_El"), track.pt(), track.tpcel());
             }
             if (abs(track.tpcpr()) < 1) {
-                histos.fill(HIST("TPC/nTPC_Pr_Pi"), track.pt(), track.tpcpi());
-                histos.fill(HIST("TPC/nTPC_Pr_Ka"), track.pt(), track.tpcka());
-                histos.fill(HIST("TPC/nTPC_Pr_El"), track.pt(), track.tpcel());
+              histos.fill(HIST("TPC/nTPC_Pr_Pi"), track.pt(), track.tpcpi());
+              histos.fill(HIST("TPC/nTPC_Pr_Ka"), track.pt(), track.tpcka());
+              histos.fill(HIST("TPC/nTPC_Pr_El"), track.pt(), track.tpcel());
             }
-            }
+          }
         } else {
-if (isPositive) {
-    histos.fill(HIST("TOF/pPi"), track.pt(), track.tpcpi(), track.tofpi());
-    histos.fill(HIST("TOF/pKa"), track.pt(), track.tpcka(), track.tofka());
-    histos.fill(HIST("TOF/pPr"), track.pt(), track.tpcpr(), track.tofpr());
-    histos.fill(HIST("TOF/pEl"), track.pt(), track.tpcel(), track.tofel());
-} else {
-    histos.fill(HIST("TOF/nPi"), track.pt(), track.tpcpi(), track.tofpi());
-    histos.fill(HIST("TOF/nKa"), track.pt(), track.tpcka(), track.tofka());
-    histos.fill(HIST("TOF/nPr"), track.pt(), track.tpcpr(), track.tofpr());
-    histos.fill(HIST("TOF/nEl"), track.pt(), track.tpcel(), track.tofel());
-}
- 	}
+          if (isPositive) {
+            histos.fill(HIST("TOF/pPi"), track.pt(), track.tpcpi(), track.tofpi());
+            histos.fill(HIST("TOF/pKa"), track.pt(), track.tpcka(), track.tofka());
+            histos.fill(HIST("TOF/pPr"), track.pt(), track.tpcpr(), track.tofpr());
+            histos.fill(HIST("TOF/pEl"), track.pt(), track.tpcel(), track.tofel());
+          } else {
+            histos.fill(HIST("TOF/nPi"), track.pt(), track.tpcpi(), track.tofpi());
+            histos.fill(HIST("TOF/nKa"), track.pt(), track.tpcka(), track.tofka());
+            histos.fill(HIST("TOF/nPr"), track.pt(), track.tpcpr(), track.tofpr());
+            histos.fill(HIST("TOF/nEl"), track.pt(), track.tpcel(), track.tofel());
+          }
+        }
       }
       eventIndex++;
     }
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) {
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+{
   return WorkflowSpec{
-    adaptAnalysisTask<sgPIDAnalyzer>(cfgc, TaskName{"sgpidanalyzer"})
-  };
+    adaptAnalysisTask<sgPIDAnalyzer>(cfgc, TaskName{"sgpidanalyzer"})};
 }

@@ -32,9 +32,9 @@ DECLARE_SOA_COLUMN(ZNA, zna, float);
 DECLARE_SOA_COLUMN(ZNC, znc, float);
 DECLARE_SOA_COLUMN(Ntr, ntr, int);
 } // namespace sgevent
-DECLARE_SOA_TABLE(SGEvents, "AOD", "SGEVENT",// o2::soa::Index<>,
-                  sgevent::Run, sgevent::Flag, sgevent::GS, sgevent::ZNA, sgevent::ZNC,sgevent::Ntr);
-                  //sgevent::Run, sgevent::Flag);
+DECLARE_SOA_TABLE(SGEvents, "AOD", "SGEVENT", // o2::soa::Index<>,
+                  sgevent::Run, sgevent::Flag, sgevent::GS, sgevent::ZNA, sgevent::ZNC, sgevent::Ntr);
+// sgevent::Run, sgevent::Flag);
 using SGEvent = SGEvents::iterator;
 namespace sgtrack
 {
@@ -53,7 +53,7 @@ DECLARE_SOA_COLUMN(TOFpr, tofpr, float);
 DECLARE_SOA_COLUMN(TOFel, tofel, float);
 } // namespace sgtrack
 DECLARE_SOA_TABLE(SGTracks, "AOD", "SGTRACK",
-		  o2::soa::Index<>, sgtrack::SGEventId,
+                  o2::soa::Index<>, sgtrack::SGEventId,
                   sgtrack::Pt, sgtrack::Eta, sgtrack::Phi, sgtrack::Sign, sgtrack::TPCpi, sgtrack::TPCka, sgtrack::TPCpr, sgtrack::TPCel, sgtrack::TOFpi, sgtrack::TOFka, sgtrack::TOFpr, sgtrack::TOFel);
 using SGTrack = SGTracks::iterator;
 } // namespace o2::aod
