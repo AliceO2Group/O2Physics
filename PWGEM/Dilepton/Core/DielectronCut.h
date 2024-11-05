@@ -24,8 +24,7 @@
 #include "TNamed.h"
 #include "Math/Vector4D.h"
 
-#include "Tools/ML/MlResponse.h"
-#include "Tools/ML/model.h"
+#include "PWGEM/Dilepton/Utils/MlResponseDielectronSingleTrack.h"
 
 #include "Framework/Logger.h"
 #include "Framework/DataTypes.h"
@@ -241,19 +240,12 @@ class DielectronCut : public TNamed
   template <typename TTrack, typename TCollision>
   bool PassPIDML(TTrack const& track, TCollision const& collision) const
   {
-    std::vector<float> inputFeatures{static_cast<float>(collision.numContrib()), track.p(), track.tgl(),
-                                     track.tpcNSigmaEl(), /*track.tpcNSigmaMu(),*/ track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
-                                     track.tofNSigmaEl(), /*track.tofNSigmaMu(),*/ track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
-                                     track.meanClusterSizeITS() * std::cos(std::atan(track.tgl()))};
-
-    // calculate classifier
-    float prob_ele = mPIDModel->evalModel(inputFeatures)[0];
-    // LOGF(info, "prob_ele = %f", prob_ele);
-    if (prob_ele < 0.95) {
+    /*if (!PassTOFif(track)) { // Allows for pre-selection. But potentially dangerous if analyzers are not aware of it
       return false;
-    } else {
-      return true;
-    }
+    }*/
+    std::vector<float> inputFeatures = mPIDMlResponse->getInputFeatures(track, collision);
+    float binningFeature = mPIDMlResponse->getBinningFeature(track, collision);
+    return mPIDMlResponse->isSelectedMl(inputFeatures, binningFeature);
   }
 
   template <typename T>
@@ -426,9 +418,9 @@ class DielectronCut : public TNamed
   void ApplyPrefilter(bool flag);
   void ApplyPhiV(bool flag);
 
-  void SetPIDModel(o2::ml::OnnxModel* model)
+  void SetPIDMlResponse(o2::analysis::MlResponseDielectronSingleTrack<float>* mlResponse)
   {
-    mPIDModel = model;
+    mPIDMlResponse = mlResponse;
   }
 
   // Getters
@@ -494,7 +486,7 @@ class DielectronCut : public TNamed
   float mMinTOFNsigmaPi{-1e+10}, mMaxTOFNsigmaPi{+1e+10};
   float mMinTOFNsigmaKa{-1e+10}, mMaxTOFNsigmaKa{+1e+10};
   float mMinTOFNsigmaPr{-1e+10}, mMaxTOFNsigmaPr{+1e+10};
-  o2::ml::OnnxModel* mPIDModel{nullptr};
+  o2::analysis::MlResponseDielectronSingleTrack<float>* mPIDMlResponse{nullptr};
 
   ClassDef(DielectronCut, 1);
 };
