@@ -151,7 +151,42 @@ DECLARE_SOA_TABLE_VERSIONED(StraEvSels_002, "AOD", "STRAEVSELS", 2,         //! 
                             mult::MultAllTracksITSTPC,                    // ITSTPC track multiplicities, all, no eta cut
                             mult::MultZNA, mult::MultZNC, mult::MultZEM1, // ZDC signals
                             mult::MultZEM2, mult::MultZPA, mult::MultZPC,
-                            evsel::NumTracksInTimeRange,     // add occupancy as extra
+                            evsel::NumTracksInTimeRange,     // add occupancy in specified time interval by a number of tracks from nearby collisions
+                            udcollision::GapSide,            // UPC info: 0 for side A, 1 for side C, 2 for both sides, 3 neither A or C, 4 not enough or too many pv contributors
+                            udcollision::TotalFT0AmplitudeA, // UPC info: re-assigned FT0-A amplitude, in case of SG event, from the most active bc
+                            udcollision::TotalFT0AmplitudeC, // UPC info: re-assigned FT0-C amplitude, in case of SG event, from the most active bc
+                            udcollision::TotalFV0AmplitudeA, // UPC info: re-assigned FV0-A amplitude, in case of SG event, from the most active bc
+                            udcollision::TotalFDDAmplitudeA, // UPC info: re-assigned FDD-A amplitude, in case of SG event, from the most active bc
+                            udcollision::TotalFDDAmplitudeC, // UPC info: re-assigned FDD-C amplitude, in case of SG event, from the most active bc
+                            udzdc::EnergyCommonZNA,          // UPC info: re-assigned ZN-A amplitude, in case of SG event, from the most active bc
+                            udzdc::EnergyCommonZNC,          // UPC info: re-assigned ZN-C amplitude, in case of SG event, from the most active bc
+
+                            collision::Flags, // Contains Vertex::Flags, with most notably the UPCMode to know whether the vertex has been found using UPC settings
+
+                            // Dynamic columns for manipulating information
+                            // stracollision::TotalFV0AmplitudeA<mult::MultFV0A>,
+                            // stracollision::TotalFT0AmplitudeA<mult::MultFT0A>,
+                            // stracollision::TotalFT0AmplitudeC<mult::MultFT0C>,
+                            // stracollision::TotalFDDAmplitudeA<mult::MultFDDA>,
+                            // stracollision::TotalFDDAmplitudeC<mult::MultFDDC>,
+                            // stracollision::EnergyCommonZNA<mult::MultZNA>,
+                            // stracollision::EnergyCommonZNC<mult::MultZNC>,
+                            stracollision::IsUPC<udcollision::GapSide>);
+
+DECLARE_SOA_TABLE_VERSIONED(StraEvSels_003, "AOD", "STRAEVSELS", 3,         //! debug information
+                            evsel::Sel8, evsel::Selection,                  //! event selection: sel8
+                            mult::MultFT0A, mult::MultFT0C, mult::MultFV0A, // FIT detectors
+                            mult::MultFDDA, mult::MultFDDC,
+                            mult::MultNTracksPVeta1,                      // track multiplicities with eta cut for INEL>0
+                            mult::MultPVTotalContributors,                // number of PV contribs total
+                            mult::MultNTracksGlobal,                      // global track multiplicities
+                            mult::MultNTracksITSTPC,                      // track multiplicities, PV contribs, no eta cut
+                            mult::MultAllTracksTPCOnly,                   // TPConly track multiplicities, all, no eta cut
+                            mult::MultAllTracksITSTPC,                    // ITSTPC track multiplicities, all, no eta cut
+                            mult::MultZNA, mult::MultZNC, mult::MultZEM1, // ZDC signals
+                            mult::MultZEM2, mult::MultZPA, mult::MultZPC,
+                            evsel::NumTracksInTimeRange,     // add occupancy in specified time interval by a number of tracks from nearby collisions
+                            evsel::SumAmpFT0CInTimeRange,    // add occupancy in specified time interval by a sum of FT0C amplitudes from nearby collisions
                             udcollision::GapSide,            // UPC info: 0 for side A, 1 for side C, 2 for both sides, 3 neither A or C, 4 not enough or too many pv contributors
                             udcollision::TotalFT0AmplitudeA, // UPC info: re-assigned FT0-A amplitude, in case of SG event, from the most active bc
                             udcollision::TotalFT0AmplitudeC, // UPC info: re-assigned FT0-C amplitude, in case of SG event, from the most active bc
@@ -190,7 +225,7 @@ DECLARE_SOA_TABLE(StraStamps, "AOD", "STRASTAMPS", //! information for ID-ing ma
                   bc::RunNumber, timestamp::Timestamp);
 
 using StraRawCents = StraRawCents_004;
-using StraEvSels = StraEvSels_002;
+using StraEvSels = StraEvSels_003;
 using StraCollision = StraCollisions::iterator;
 using StraCent = StraCents::iterator;
 
@@ -594,106 +629,58 @@ DECLARE_SOA_TABLE(V0Indices, "AOD", "V0INDEX", //! index table when using AO2Ds
 DECLARE_SOA_TABLE(V0CollRefs, "AOD", "V0COLLREF", //! optional table to refer back to a collision
                   o2::soa::Index<>, v0data::StraCollisionId);
 
-DECLARE_SOA_TABLE(V0Extras, "AOD", "V0EXTRA", //! optional table to refer to custom track extras
-                  o2::soa::Index<>, v0data::PosTrackExtraId, v0data::NegTrackExtraId);
-
-DECLARE_SOA_TABLE(StoredV0Extras, "AOD1", "V0EXTRA", //! optional table to refer to custom track extras
-                  o2::soa::Index<>, v0data::PosTrackExtraId, v0data::NegTrackExtraId, soa::Marker<1>);
+DECLARE_SOA_TABLE_STAGED(V0Extras, "V0EXTRA", //! optional table to refer to custom track extras
+                         o2::soa::Index<>, v0data::PosTrackExtraId, v0data::NegTrackExtraId);
 
 DECLARE_SOA_TABLE(V0TrackXs, "AOD", "V0TRACKX", //! track X positions at minima when using AO2Ds
                   v0data::PosX, v0data::NegX, o2::soa::Marker<1>);
 
-DECLARE_SOA_TABLE_FULL(V0CoresBase, "V0Cores", "AOD", "V0CORE", //! core information about decay, viable with AO2Ds or derived
-                       o2::soa::Index<>,
-                       v0data::X, v0data::Y, v0data::Z,
-                       v0data::PxPos, v0data::PyPos, v0data::PzPos,
-                       v0data::PxNeg, v0data::PyNeg, v0data::PzNeg,
-                       v0data::DCAV0Daughters, v0data::DCAPosToPV, v0data::DCANegToPV,
-                       v0data::V0CosPA, v0data::DCAV0ToPV, v0data::V0Type,
+DECLARE_SOA_TABLE_STAGED(V0CoresBase, "V0CORE", //! core information about decay, viable with AO2Ds or derived
+                         o2::soa::Index<>,
+                         v0data::X, v0data::Y, v0data::Z,
+                         v0data::PxPos, v0data::PyPos, v0data::PzPos,
+                         v0data::PxNeg, v0data::PyNeg, v0data::PzNeg,
+                         v0data::DCAV0Daughters, v0data::DCAPosToPV, v0data::DCANegToPV,
+                         v0data::V0CosPA, v0data::DCAV0ToPV, v0data::V0Type,
 
-                       // Dynamic columns
-                       v0data::PtHypertriton<v0data::PxPos, v0data::PyPos, v0data::PxNeg, v0data::PyNeg>,
-                       v0data::PtAntiHypertriton<v0data::PxPos, v0data::PyPos, v0data::PxNeg, v0data::PyNeg>,
-                       v0data::V0Radius<v0data::X, v0data::Y>,
-                       v0data::DistOverTotMom<v0data::X, v0data::Y, v0data::Z, v0data::Px, v0data::Py, v0data::Pz>,
-                       v0data::Alpha<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::QtArm<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::PsiPair<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::PFracPos<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::PFracNeg<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>, // 24
+                         // Dynamic columns
+                         v0data::PtHypertriton<v0data::PxPos, v0data::PyPos, v0data::PxNeg, v0data::PyNeg>,
+                         v0data::PtAntiHypertriton<v0data::PxPos, v0data::PyPos, v0data::PxNeg, v0data::PyNeg>,
+                         v0data::V0Radius<v0data::X, v0data::Y>,
+                         v0data::DistOverTotMom<v0data::X, v0data::Y, v0data::Z, v0data::Px, v0data::Py, v0data::Pz>,
+                         v0data::Alpha<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::QtArm<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::PsiPair<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::PFracPos<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::PFracNeg<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>, // 24
 
-                       // Invariant masses
-                       v0data::MLambda<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::MAntiLambda<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::MK0Short<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::MGamma<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::MHypertriton<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::MAntiHypertriton<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::M<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         // Invariant masses
+                         v0data::MLambda<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::MAntiLambda<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::MK0Short<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::MGamma<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::MHypertriton<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::MAntiHypertriton<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::M<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
 
-                       // Longitudinal
-                       v0data::YK0Short<v0data::Px, v0data::Py, v0data::Pz>,
-                       v0data::YLambda<v0data::Px, v0data::Py, v0data::Pz>,
-                       v0data::YHypertriton<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::YAntiHypertriton<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::Rapidity<v0data::Px, v0data::Py, v0data::Pz>,
-                       v0data::NegativePt<v0data::PxNeg, v0data::PyNeg>,
-                       v0data::PositivePt<v0data::PxPos, v0data::PyPos>,
-                       v0data::NegativeEta<v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::NegativePhi<v0data::PxNeg, v0data::PyNeg>,
-                       v0data::PositiveEta<v0data::PxPos, v0data::PyPos, v0data::PzPos>,
-                       v0data::PositivePhi<v0data::PxPos, v0data::PyPos>,
-                       v0data::IsStandardV0<v0data::V0Type>,
-                       v0data::IsPhotonTPConly<v0data::V0Type>,
-                       o2::soa::Marker<1>);
+                         // Longitudinal
+                         v0data::YK0Short<v0data::Px, v0data::Py, v0data::Pz>,
+                         v0data::YLambda<v0data::Px, v0data::Py, v0data::Pz>,
+                         v0data::YHypertriton<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::YAntiHypertriton<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::Rapidity<v0data::Px, v0data::Py, v0data::Pz>,
+                         v0data::NegativePt<v0data::PxNeg, v0data::PyNeg>,
+                         v0data::PositivePt<v0data::PxPos, v0data::PyPos>,
+                         v0data::NegativeEta<v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
+                         v0data::NegativePhi<v0data::PxNeg, v0data::PyNeg>,
+                         v0data::PositiveEta<v0data::PxPos, v0data::PyPos, v0data::PzPos>,
+                         v0data::PositivePhi<v0data::PxPos, v0data::PyPos>,
+                         v0data::IsStandardV0<v0data::V0Type>,
+                         v0data::IsPhotonTPConly<v0data::V0Type>);
 
 // extended table with expression columns that can be used as arguments of dynamic columns
 DECLARE_SOA_EXTENDED_TABLE_USER(V0Cores, V0CoresBase, "V0COREEXT",                                                    //!
                                 v0data::Px, v0data::Py, v0data::Pz, v0data::Pt, v0data::P, v0data::Phi, v0data::Eta); // the table name has here to be the one with EXT which is not nice and under study
-
-DECLARE_SOA_TABLE_FULL(StoredV0CoresBase, "V0Cores", "AOD1", "V0CORE", //! core information about decay, viable with AO2Ds or derived
-                       o2::soa::Index<>,
-                       v0data::X, v0data::Y, v0data::Z,
-                       v0data::PxPos, v0data::PyPos, v0data::PzPos,
-                       v0data::PxNeg, v0data::PyNeg, v0data::PzNeg,
-                       v0data::DCAV0Daughters, v0data::DCAPosToPV, v0data::DCANegToPV,
-                       v0data::V0CosPA, v0data::DCAV0ToPV, v0data::V0Type,
-
-                       // Dynamic columns
-                       v0data::PtHypertriton<v0data::PxPos, v0data::PyPos, v0data::PxNeg, v0data::PyNeg>,
-                       v0data::PtAntiHypertriton<v0data::PxPos, v0data::PyPos, v0data::PxNeg, v0data::PyNeg>,
-                       v0data::V0Radius<v0data::X, v0data::Y>,
-                       v0data::DistOverTotMom<v0data::X, v0data::Y, v0data::Z, v0data::Px, v0data::Py, v0data::Pz>,
-                       v0data::Alpha<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::QtArm<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::PsiPair<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::PFracPos<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::PFracNeg<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>, // 24
-
-                       // Invariant masses
-                       v0data::MLambda<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::MAntiLambda<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::MK0Short<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::MGamma<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::MHypertriton<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::MAntiHypertriton<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::M<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-
-                       // Longitudinal
-                       v0data::YK0Short<v0data::Px, v0data::Py, v0data::Pz>,
-                       v0data::YLambda<v0data::Px, v0data::Py, v0data::Pz>,
-                       v0data::YHypertriton<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::YAntiHypertriton<v0data::PxPos, v0data::PyPos, v0data::PzPos, v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::Rapidity<v0data::Px, v0data::Py, v0data::Pz>,
-                       v0data::NegativePt<v0data::PxNeg, v0data::PyNeg>,
-                       v0data::PositivePt<v0data::PxPos, v0data::PyPos>,
-                       v0data::NegativeEta<v0data::PxNeg, v0data::PyNeg, v0data::PzNeg>,
-                       v0data::NegativePhi<v0data::PxNeg, v0data::PyNeg>,
-                       v0data::PositiveEta<v0data::PxPos, v0data::PyPos, v0data::PzPos>,
-                       v0data::PositivePhi<v0data::PxPos, v0data::PyPos>,
-                       v0data::IsStandardV0<v0data::V0Type>,
-                       v0data::IsPhotonTPConly<v0data::V0Type>,
-                       o2::soa::Marker<3>);
 
 // extended table with expression columns that can be used as arguments of dynamic columns
 DECLARE_SOA_EXTENDED_TABLE_USER(StoredV0Cores, StoredV0CoresBase, "V0COREEXT",                                                            //!
@@ -835,11 +822,8 @@ DECLARE_SOA_TABLE(GeK0Short, "AOD", "GeK0Short", v0data::GeneratedK0Short);
 DECLARE_SOA_TABLE(GeLambda, "AOD", "GeLambda", v0data::GeneratedLambda);
 DECLARE_SOA_TABLE(GeAntiLambda, "AOD", "GeAntiLambda", v0data::GeneratedAntiLambda);
 
-DECLARE_SOA_TABLE(V0MCMothers, "AOD", "V0MCMOTHER", //! optional table for MC mothers
-                  o2::soa::Index<>, v0data::MotherMCPartId);
-
-DECLARE_SOA_TABLE(StoredV0MCMothers, "AOD1", "V0MCMOTHER", //! optional table for MC mothers
-                  o2::soa::Index<>, v0data::MotherMCPartId, o2::soa::Marker<1>);
+DECLARE_SOA_TABLE_STAGED(V0MCMothers, "V0MCMOTHER", //! optional table for MC mothers
+                         o2::soa::Index<>, v0data::MotherMCPartId);
 
 using V0MCCores = V0MCCores_002;
 using StoredV0MCCores = StoredV0MCCores_002;
@@ -1008,12 +992,21 @@ DECLARE_SOA_COLUMN(BachX, bachX, float); //! bachelor track X at min
 //______________________________________________________
 // REGULAR COLUMNS FOR CASCCOVS
 // Saved from finding: covariance matrix of parent track (on request)
-DECLARE_SOA_COLUMN(PositionCovMat, positionCovMat, float[6]);                //! covariance matrix elements
-DECLARE_SOA_COLUMN(MomentumCovMat, momentumCovMat, float[6]);                //! covariance matrix elements
+DECLARE_SOA_DYNAMIC_COLUMN(PositionCovMat, positionCovMat, //! for transparent handling
+                           [](const float covMat[21]) -> std::vector<float> {
+                            std::vector<float> posCovMat { covMat[0], covMat[1], covMat[2], covMat[3], covMat[4], covMat[5] };
+                            return posCovMat; });
+DECLARE_SOA_DYNAMIC_COLUMN(MomentumCovMat, momentumCovMat, //! for transparent handling
+                           [](const float covMat[21]) -> std::vector<float> {
+                            std::vector<float> momCovMat { covMat[9], covMat[13], covMat[14], covMat[18], covMat[19], covMat[20] };
+                            return momCovMat; });
 DECLARE_SOA_COLUMN(KFTrackCovMat, kfTrackCovMat, float[21]);                 //! covariance matrix elements for KF method (Cascade)
 DECLARE_SOA_COLUMN(KFTrackCovMatV0, kfTrackCovMatV0, float[21]);             //! covariance matrix elements for KF method (V0)
 DECLARE_SOA_COLUMN(KFTrackCovMatV0DauPos, kfTrackCovMatV0DauPos, float[21]); //! covariance matrix elements for KF method (V0 pos daughter)
 DECLARE_SOA_COLUMN(KFTrackCovMatV0DauNeg, kfTrackCovMatV0DauNeg, float[21]); //! covariance matrix elements for KF method (V0 neg daughter)
+
+// for CascCovs / TraCascCovs, meant to provide consistent interface everywhere
+DECLARE_SOA_COLUMN(CovMat, covMat, float[21]); //! covariance matrix elements
 
 //______________________________________________________
 // REGULAR COLUMNS FOR CASCBBS
@@ -1384,11 +1377,20 @@ DECLARE_SOA_TABLE(CascMCMothers, "AOD", "CASCMCMOTHER", //! optional table for M
 DECLARE_SOA_TABLE(CascBBs, "AOD", "CASCBB", //! bachelor-baryon correlation variables
                   cascdata::BachBaryonCosPA, cascdata::BachBaryonDCAxyToPV)
 
-DECLARE_SOA_TABLE_FULL(CascCovs, "CascCovs", "AOD", "CASCCOVS", //!
-                       cascdata::PositionCovMat, cascdata::MomentumCovMat);
+DECLARE_SOA_TABLE(CascCovs, "AOD", "CASCCOVS", //!
+                  cascdata::CovMat,
+                  cascdata::PositionCovMat<cascdata::CovMat>,
+                  cascdata::MomentumCovMat<cascdata::CovMat>,
+                  o2::soa::Marker<1>);
 
-DECLARE_SOA_TABLE_FULL(KFCascCovs, "KFCascCovs", "AOD", "KFCASCCOVS", //!
-                       cascdata::KFTrackCovMat, cascdata::KFTrackCovMatV0, cascdata::KFTrackCovMatV0DauPos, cascdata::KFTrackCovMatV0DauNeg);
+DECLARE_SOA_TABLE(KFCascCovs, "AOD", "KFCASCCOVS", //!
+                  cascdata::KFTrackCovMat, cascdata::KFTrackCovMatV0, cascdata::KFTrackCovMatV0DauPos, cascdata::KFTrackCovMatV0DauNeg);
+
+DECLARE_SOA_TABLE(TraCascCovs, "AOD", "TRACASCCOVS", //!
+                  cascdata::CovMat,
+                  cascdata::PositionCovMat<cascdata::CovMat>,
+                  cascdata::MomentumCovMat<cascdata::CovMat>,
+                  o2::soa::Marker<2>);
 
 // extended table with expression columns that can be used as arguments of dynamic columns
 DECLARE_SOA_EXTENDED_TABLE_USER(CascCores, StoredCascCores, "CascDATAEXT", //!
@@ -1464,6 +1466,8 @@ using CascadesLinked = soa::Join<Cascades, CascDataLink>;
 using CascadeLinked = CascadesLinked::iterator;
 using KFCascadesLinked = soa::Join<Cascades, KFCascDataLink>;
 using KFCascadeLinked = KFCascadesLinked::iterator;
+using TraCascadesLinked = soa::Join<Cascades, TraCascDataLink>;
+using TraCascadeLinked = TraCascadesLinked::iterator;
 
 namespace cascdata
 {

@@ -286,13 +286,13 @@ struct jetFilter {
     tags(keepEvent[kJetChLowPt], keepEvent[kJetChHighPt], keepEvent[kTrackLowPt], keepEvent[kTrackHighPt]);
   }
 
-  void processWithoutRho(soa::Join<JetCollisions, aod::EvSels>::iterator const& collision, o2::aod::ChargedJets const& jets, soa::Filtered<JetTracks> const& tracks)
+  void processWithoutRho(soa::Join<aod::JetCollisions, aod::EvSels>::iterator const& collision, o2::aod::ChargedJets const& jets, soa::Filtered<aod::JetTracks> const& tracks)
   {
     doTriggering<false>(collision, jets, tracks);
   }
   PROCESS_SWITCH(jetFilter, processWithoutRho, "Do charged jet triggering without background estimation for filling histograms", true);
 
-  void processWithRho(soa::Join<JetCollisions, aod::BkgChargedRhos, aod::EvSels>::iterator const& collision, o2::aod::ChargedJets const& jets, soa::Filtered<JetTracks> const& tracks)
+  void processWithRho(soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::EvSels>::iterator const& collision, o2::aod::ChargedJets const& jets, soa::Filtered<aod::JetTracks> const& tracks)
   {
     doTriggering<true>(collision, jets, tracks);
   }

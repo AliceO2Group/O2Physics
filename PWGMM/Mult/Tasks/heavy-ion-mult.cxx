@@ -23,6 +23,7 @@
 #include <iostream>
 #include <TPDGCode.h>
 #include <TDatabasePDG.h>
+#include <vector>
 
 #include "bestCollisionTable.h"
 #include "CCDB/BasicCCDBManager.h"
@@ -103,7 +104,7 @@ static constexpr TrackSelectionFlags::flagtype trackSelectionDCA =
 static constexpr TrackSelectionFlags::flagtype trackSelectionDCAXYonly =
   TrackSelectionFlags::kDCAxy;
 
-AxisSpec axisEvent{9, 0.5, 9.5, "#Event", "EventAxis"};
+AxisSpec axisEvent{10, 0.5, 10.5, "#Event", "EventAxis"};
 AxisSpec axisVtxZ{40, -20, 20, "Vertex Z", "VzAxis"};
 AxisSpec axisEta{40, -2, 2, "#eta", "EtaAxis"};
 AxisSpec axisPhi{{0, M_PI / 4, M_PI / 2, M_PI * 3. / 4, M_PI, M_PI * 5. / 4, M_PI * 3. / 2, M_PI * 7. / 4, 2 * M_PI}, "#phi", "PhiAxis"};
@@ -150,6 +151,8 @@ struct HeavyIonMultiplicity {
   Configurable<bool> IsApplyExtraPhiCut{"IsApplyExtraPhiCut", false, "Enable extra phi cut"};
   Configurable<float> NPVtracksCut{"NPVtracksCut", 1.0f, "Apply extra NPVtracks cut"};
   Configurable<float> FT0CCut{"FT0CCut", 1.0f, "Apply extra FT0C cut"};
+  Configurable<bool> IsApplyNoCollInTimeRangeStandard{"IsApplyNoCollInTimeRangeStandard", true, "Enable NoCollInTimeRangeStandard cut"};
+  Configurable<bool> IsApplyFT0CbasedOccupancy{"IsApplyFT0CbasedOccupancy", true, "Enable FT0CbasedOccupancy cut"};
 
   void init(InitContext const&)
   {
@@ -176,6 +179,7 @@ struct HeavyIonMultiplicity {
     x->SetBinLabel(7, "kIsVertexTRDmatched"); // at least one of vertex contributors is matched to TRD
     x->SetBinLabel(8, "Centrality");
     x->SetBinLabel(9, "ApplyExtraCorrCut");
+    x->SetBinLabel(10, "ApplyNoCollInTimeRangeStandard");
 
     if (doprocessData) {
       histos.add("CentPercentileHist", "CentPercentileHist", kTH1D, {axisCent}, false);
@@ -312,6 +316,11 @@ struct HeavyIonMultiplicity {
       return false;
     }
     histos.fill(HIST("EventHist"), 9);
+
+    if (IsApplyNoCollInTimeRangeStandard && !col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+      return false;
+    }
+    histos.fill(HIST("EventHist"), 10);
     return true;
   }
 
@@ -329,7 +338,8 @@ struct HeavyIonMultiplicity {
     }
     histos.fill(HIST("VtxZHist"), collision.posZ());
     histos.fill(HIST("CentPercentileHist"), collision.centFT0C());
-    histos.fill(HIST("hdatazvtxcent"), collision.posZ(), collision.centFT0C(), collision.trackOccupancyInTimeRange());
+    auto OccupancyValue = IsApplyFT0CbasedOccupancy ? collision.ft0cOccupancyInTimeRange() : collision.trackOccupancyInTimeRange();
+    histos.fill(HIST("hdatazvtxcent"), collision.posZ(), collision.centFT0C(), OccupancyValue);
 
     auto NchTracks = 0;
     for (auto& track : tracks) {
@@ -338,11 +348,11 @@ struct HeavyIonMultiplicity {
       }
       histos.fill(HIST("PhiVsEtaHist"), track.phi(), track.eta());
       NchTracks++;
-      histos.fill(HIST("hdatadndeta"), collision.posZ(), collision.centFT0C(), collision.trackOccupancyInTimeRange(), track.eta(), track.phi(), kGlobalplusITS);
+      histos.fill(HIST("hdatadndeta"), collision.posZ(), collision.centFT0C(), OccupancyValue, track.eta(), track.phi(), kGlobalplusITS);
       if (track.hasTPC()) {
-        histos.fill(HIST("hdatadndeta"), collision.posZ(), collision.centFT0C(), collision.trackOccupancyInTimeRange(), track.eta(), track.phi(), kGlobalonly);
+        histos.fill(HIST("hdatadndeta"), collision.posZ(), collision.centFT0C(), OccupancyValue, track.eta(), track.phi(), kGlobalonly);
       } else {
-        histos.fill(HIST("hdatadndeta"), collision.posZ(), collision.centFT0C(), collision.trackOccupancyInTimeRange(), track.eta(), track.phi(), kITSonly);
+        histos.fill(HIST("hdatadndeta"), collision.posZ(), collision.centFT0C(), OccupancyValue, track.eta(), track.phi(), kITSonly);
       }
     }
     histos.fill(HIST("hdatamult"), collision.posZ(), NchTracks, collision.centFT0C());
@@ -382,7 +392,8 @@ struct HeavyIonMultiplicity {
       }
       histos.fill(HIST("VtxZHist"), RecCollision.posZ());
       histos.fill(HIST("CentPercentileMCRecHist"), RecCollision.centFT0C());
-      histos.fill(HIST("hmczvtxcent"), RecCollision.posZ(), RecCollision.centFT0C(), RecCollision.trackOccupancyInTimeRange());
+      auto OccupancyValue = IsApplyFT0CbasedOccupancy ? RecCollision.ft0cOccupancyInTimeRange() : RecCollision.trackOccupancyInTimeRange();
+      histos.fill(HIST("hmczvtxcent"), RecCollision.posZ(), RecCollision.centFT0C(), OccupancyValue);
 
       auto Rectrackspart = RecTracks.sliceBy(perCollision, RecCollision.globalIndex());
       for (auto& Rectrack : Rectrackspart) {
@@ -390,7 +401,7 @@ struct HeavyIonMultiplicity {
           continue;
         }
         histos.fill(HIST("MCrecPhiVsEtaHist"), Rectrack.phi(), Rectrack.eta());
-        histos.fill(HIST("hmcrecdndeta"), RecCollision.posZ(), RecCollision.centFT0C(), RecCollision.trackOccupancyInTimeRange(), Rectrack.eta(), Rectrack.phi());
+        histos.fill(HIST("hmcrecdndeta"), RecCollision.posZ(), RecCollision.centFT0C(), OccupancyValue, Rectrack.eta(), Rectrack.phi());
       } // track (mcrec) loop
 
       for (auto& particle : GenParticles) {
@@ -421,7 +432,8 @@ struct HeavyIonMultiplicity {
       }
       histos.fill(HIST("VtxZHist"), RecCollision.posZ());
       histos.fill(HIST("CentPercentileMCRecHist"), RecCollision.centFT0C());
-      histos.fill(HIST("hmczvtxcent"), RecCollision.posZ(), RecCollision.centFT0C(), RecCollision.trackOccupancyInTimeRange());
+      auto OccupancyValue = IsApplyFT0CbasedOccupancy ? RecCollision.ft0cOccupancyInTimeRange() : RecCollision.trackOccupancyInTimeRange();
+      histos.fill(HIST("hmczvtxcent"), RecCollision.posZ(), RecCollision.centFT0C(), OccupancyValue);
 
       auto Rectrackspart = RecTracks.sliceBy(perCollision, RecCollision.globalIndex());
       for (auto& Rectrack : Rectrackspart) {
@@ -464,7 +476,8 @@ struct HeavyIonMultiplicity {
       }
       histos.fill(HIST("VtxZHist"), RecCollision.posZ());
       histos.fill(HIST("CentPercentileMCRecHist"), RecCollision.centFT0C());
-      histos.fill(HIST("hmczvtxcent"), RecCollision.posZ(), RecCollision.centFT0C(), RecCollision.trackOccupancyInTimeRange());
+      auto OccupancyValue = IsApplyFT0CbasedOccupancy ? RecCollision.ft0cOccupancyInTimeRange() : RecCollision.trackOccupancyInTimeRange();
+      histos.fill(HIST("hmczvtxcent"), RecCollision.posZ(), RecCollision.centFT0C(), OccupancyValue);
 
       auto Rectrackspart = RecTracks.sliceBy(perCollision, RecCollision.globalIndex());
       for (auto& Rectrack : Rectrackspart) {
@@ -503,7 +516,8 @@ struct HeavyIonMultiplicity {
       }
       histos.fill(HIST("VtxZHist"), RecCollision.posZ());
       histos.fill(HIST("CentPercentileMCRecHist"), RecCollision.centFT0C());
-      histos.fill(HIST("hmczvtxcent"), RecCollision.posZ(), RecCollision.centFT0C(), RecCollision.trackOccupancyInTimeRange());
+      auto OccupancyValue = IsApplyFT0CbasedOccupancy ? RecCollision.ft0cOccupancyInTimeRange() : RecCollision.trackOccupancyInTimeRange();
+      histos.fill(HIST("hmczvtxcent"), RecCollision.posZ(), RecCollision.centFT0C(), OccupancyValue);
 
       auto Rectrackspart = RecTracks.sliceBy(perCollision, RecCollision.globalIndex());
       std::vector<Int_t> mclabels;
@@ -511,7 +525,7 @@ struct HeavyIonMultiplicity {
         if (!IsTrackSelected(Rectrack)) {
           continue;
         }
-        histos.fill(HIST("FillMCrecSpecies"), RecCollision.centFT0C(), RecCollision.trackOccupancyInTimeRange(), Rectrack.eta(), Double_t(kSpAll));
+        histos.fill(HIST("FillMCrecSpecies"), RecCollision.centFT0C(), OccupancyValue, Rectrack.eta(), Double_t(kSpAll));
         if (Rectrack.has_mcParticle()) {
           Int_t pid = kBkg;
           auto mcpart = Rectrack.template mcParticle_as<aod::McParticles>();
@@ -543,9 +557,9 @@ struct HeavyIonMultiplicity {
             pid = kBkg;
           }
           mclabels.push_back(Rectrack.mcParticleId());
-          histos.fill(HIST("FillMCrecSpecies"), RecCollision.centFT0C(), RecCollision.trackOccupancyInTimeRange(), Rectrack.eta(), Double_t(pid));
+          histos.fill(HIST("FillMCrecSpecies"), RecCollision.centFT0C(), OccupancyValue, Rectrack.eta(), Double_t(pid));
         } else {
-          histos.fill(HIST("FillMCrecSpecies"), RecCollision.centFT0C(), RecCollision.trackOccupancyInTimeRange(), Rectrack.eta(), Double_t(kBkg));
+          histos.fill(HIST("FillMCrecSpecies"), RecCollision.centFT0C(), OccupancyValue, Rectrack.eta(), Double_t(kBkg));
         }
       } // rec track loop
 
