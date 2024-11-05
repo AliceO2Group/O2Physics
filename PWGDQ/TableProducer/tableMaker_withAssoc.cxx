@@ -619,7 +619,7 @@ struct TableMaker {
         (reinterpret_cast<TH1D*>(fStatsList->At(3)))->Fill(0.9);
       }
     }
-    
+
     uint64_t trackFilteringTag = uint64_t(0);
     uint64_t trackTempFilterMap = uint8_t(0);
 
@@ -699,7 +699,6 @@ struct TableMaker {
           trackFilteringTag |= (uint64_t(1) << VarManager::kIsTPCPostcalibrated);
         }
       }
-
       // write the track global index in the map for skimming (to make sure we have it just once)
       if (fTrackIndexMap.find(track.globalIndex()) == fTrackIndexMap.end()) {
         // NOTE: The collision ID that is written in the table is the one found in the first association for this track.
@@ -737,7 +736,7 @@ struct TableMaker {
         }
         fTrackIndexMap[track.globalIndex()] = trackBasic.lastIndex();
       }
-      if (fCollIndexMap[collision.globalIndex()] == 0) continue; 
+      if (fCollIndexMap[collision.globalIndex()] == 0) continue;
       // write the skimmed collision - track association
       trackBarrelAssoc(fCollIndexMap[collision.globalIndex()], fTrackIndexMap[track.globalIndex()]);
     } // end loop over associations
