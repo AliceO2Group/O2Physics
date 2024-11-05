@@ -693,7 +693,7 @@ struct TableMaker {
         //       However, in data analysis one should loop over associations, so this one should not be used.
         //      In the case of Run2-like analysis, there will be no associations, so this ID will be the one originally assigned in the AO2Ds (updated for the skims)
         // reducedEventIdx = fCollIndexMap[collision.globalIndex()]; // This gives the first collision form the table
-        
+
         // Calculating the percentage of orphan tracks i.e., tracks which have no collisions associated to it
         if (!track.has_collision()) {
           (reinterpret_cast<TH1D*>(fStatsList->At(3)))->Fill(static_cast<float>(-1));
