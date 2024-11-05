@@ -48,6 +48,7 @@ struct k892analysis {
   ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4.0, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 5.0, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 5.9, 6.0, 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8, 6.9, 7.0, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9, 8.0, 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 8.7, 8.8, 8.9, 9.0, 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7, 9.8, 9.9, 10.0, 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7, 10.8, 10.9, 11.0, 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7, 11.8, 11.9, 12.0, 12.1, 12.2, 12.3, 12.4, 12.5, 12.6, 12.7, 12.8, 12.9, 13.0, 13.1, 13.2, 13.3, 13.4, 13.5, 13.6, 13.7, 13.8, 13.9, 14.0, 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 14.7, 14.8, 14.9, 15.0}, "Binning of the pT axis"};
   ConfigurableAxis binsPtQA{"binsPtQA", {VARIABLE_WIDTH, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.2, 4.4, 4.6, 4.8, 5.0, 5.2, 5.4, 5.6, 5.8, 6.0, 6.2, 6.4, 6.6, 6.8, 7.0, 7.2, 7.4, 7.6, 7.8, 8.0, 8.2, 8.4, 8.6, 8.8, 9.0, 9.2, 9.4, 9.6, 9.8, 10.0}, "Binning of the pT axis"};
   ConfigurableAxis binsCent{"binsCent", {VARIABLE_WIDTH, 0.0, 1.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0}, "Binning of the centrality axis"};
+  ConfigurableAxis occupancy_bins{"occupancy_bins", {VARIABLE_WIDTH, 0.0, 100, 500, 600, 1000, 1100, 1500, 1600, 2000, 2100, 2500, 2600, 3000, 3100, 3500, 3600, 4000, 4100, 4500, 4600, 5000, 5100, 9999}, "Binning of the occupancy axis"};
   // ConfigurableAxis binsCent{"binsCent", {200, 0.0f, 200.0f}, "Binning of the centrality axis"};
   Configurable<float> cInvMassStart{"cInvMassStart", 0.6, "Invariant mass start"};
   Configurable<float> cInvMassEnd{"cInvMassEnd", 1.5, "Invariant mass end"};
@@ -58,6 +59,9 @@ struct k892analysis {
   Configurable<bool> invmass1D{"invmass1D", false, "Invariant mass 1D"};
   Configurable<bool> study_antiparticle{"study_antiparticle", false, "Study anti-particles separately"};
   Configurable<bool> PIDplots{"PIDplots", false, "Make TPC and TOF PID plots"};
+  Configurable<bool> applyOccupancyCut{"applyOccupancyCut", false, "Apply occupancy cut"};
+  Configurable<int> OccupancyCut{"OccupancyCut", 1000, "Mimimum Occupancy cut"};
+
   /// Event Mixing
   Configurable<int> nEvtMixing{"nEvtMixing", 5, "Number of events to mix"};
   ConfigurableAxis CfgVtxBins{"CfgVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
@@ -139,6 +143,7 @@ struct k892analysis {
     AxisSpec ptAxisQA = {binsPtQA, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec invMassAxis = {cInvMassBins, cInvMassStart, cInvMassEnd, "Invariant Mass (GeV/#it{c}^2)"};
     AxisSpec pidQAAxis = {cPIDBins, -cPIDQALimit, cPIDQALimit};
+    AxisSpec occupancy_axis = {occupancy_bins, "Occupancy [-40,100]"};
 
     if (additionalQAeventPlots) {
       // Test on Mixed event
@@ -248,15 +253,17 @@ struct k892analysis {
     }
 
     // 3d histogram
-    histos.add("h3k892invmassDS", "Invariant mass of K(892)0 differnt sign", kTHnSparseF, {centAxis, ptAxis, invMassAxis});
-    histos.add("h3k892invmassLS", "Invariant mass of K(892)0 same sign", kTHnSparseF, {centAxis, ptAxis, invMassAxis});
-    histos.add("h3k892invmassME", "Invariant mass of K(892)0 mixed event", kTHnSparseF, {centAxis, ptAxis, invMassAxis});
+    histos.add("h3k892invmassDS", "Invariant mass of K(892)0 differnt sign", kTHnSparseF, {centAxis, ptAxis, invMassAxis, occupancy_axis});
+    histos.add("h3k892invmassLS", "Invariant mass of K(892)0 same sign", kTHnSparseF, {centAxis, ptAxis, invMassAxis, occupancy_axis});
+    histos.add("h3k892invmassME", "Invariant mass of K(892)0 mixed event", kTHnSparseF, {centAxis, ptAxis, invMassAxis, occupancy_axis});
+    histos.add("h3k892invmassLSAnti", "Invariant mass of Anti-K(892)0 same sign", kTHnSparseF, {centAxis, ptAxis, invMassAxis, occupancy_axis});
+
     if (study_antiparticle) {
-      histos.add("h3k892invmassDSAnti", "Invariant mass of Anti-K(892)0 differnt sign", kTHnSparseF, {centAxis, ptAxis, invMassAxis});
-      histos.add("h3k892invmassLSAnti", "Invariant mass of Anti-K(892)0 same sign", kTHnSparseF, {centAxis, ptAxis, invMassAxis});
+      histos.add("h3k892invmassDSAnti", "Invariant mass of Anti-K(892)0 differnt sign", kTHnSparseF, {centAxis, ptAxis, invMassAxis, occupancy_axis});
     }
+
     if (IsCalcRotBkg) {
-      histos.add("h3K892InvMassRotation", "Invariant mass of K(892)0 rotation", kTHnSparseF, {centAxis, ptAxis, invMassAxis});
+      histos.add("h3K892InvMassRotation", "Invariant mass of K(892)0 rotation", kTHnSparseF, {centAxis, ptAxis, invMassAxis, occupancy_axis});
     }
 
     if (additionalMEPlots) {
@@ -445,6 +452,10 @@ struct k892analysis {
     if (additionalEvsel && !eventSelected(collision, multiplicity)) {
       return;
     }
+    auto occupancy_no = collision.trackOccupancyInTimeRange();
+    if (applyOccupancyCut && occupancy_no < OccupancyCut) {
+      return;
+    }
 
     if (additionalQAplots) {
       histos.fill(HIST("MultCalib/centglopi_before"), multiplicity, dTracks1.size());            // centrality vs global tracks before the multiplicity calibration cuts
@@ -623,28 +634,28 @@ struct k892analysis {
               float theta2 = rn->Uniform(TMath::Pi() - TMath::Pi() / rotational_cut, TMath::Pi() + TMath::Pi() / rotational_cut);
               ldaughter_rot.SetPtEtaPhiM(trk2.pt(), trk2.eta(), trk2.phi() + theta2, massKa); // for rotated background
               lresonance_rot = lDecayDaughter1 + ldaughter_rot;
-              histos.fill(HIST("h3K892InvMassRotation"), multiplicity, lresonance_rot.Pt(), lresonance_rot.M());
+              histos.fill(HIST("h3K892InvMassRotation"), multiplicity, lresonance_rot.Pt(), lresonance_rot.M(), occupancy_no);
             }
           }
           if (study_antiparticle) {
             if (trk1.sign() < 0) {
               if (invmass1D)
                 histos.fill(HIST("k892invmassDS"), lResonance.M());
-              histos.fill(HIST("h3k892invmassDS"), multiplicity, lResonance.Pt(), lResonance.M());
+              histos.fill(HIST("h3k892invmassDS"), multiplicity, lResonance.Pt(), lResonance.M(), occupancy_no);
             } else if (trk1.sign() > 0) {
               if (invmass1D)
                 histos.fill(HIST("k892invmassDSAnti"), lResonance.M());
-              histos.fill(HIST("h3k892invmassDSAnti"), multiplicity, lResonance.Pt(), lResonance.M());
+              histos.fill(HIST("h3k892invmassDSAnti"), multiplicity, lResonance.Pt(), lResonance.M(), occupancy_no);
             }
           } else {
             if (invmass1D)
               histos.fill(HIST("k892invmassDS"), lResonance.M());
-            histos.fill(HIST("h3k892invmassDS"), multiplicity, lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("h3k892invmassDS"), multiplicity, lResonance.Pt(), lResonance.M(), occupancy_no);
           }
         } else {
           if (invmass1D)
             histos.fill(HIST("k892invmassME"), lResonance.M());
-          histos.fill(HIST("h3k892invmassME"), multiplicity, lResonance.Pt(), lResonance.M());
+          histos.fill(HIST("h3k892invmassME"), multiplicity, lResonance.Pt(), lResonance.M(), occupancy_no);
           if (additionalMEPlots) {
             if (trk1.sign() < 0) {
               if (invmass1D)
@@ -696,20 +707,14 @@ struct k892analysis {
         }
       } else if (trk1.sign() * trk2.sign() > 0) {
         if constexpr (!IsMix) {
-          if (study_antiparticle) {
-            if (trk1.sign() < 0) {
-              if (invmass1D)
-                histos.fill(HIST("k892invmassLS"), lResonance.M());
-              histos.fill(HIST("h3k892invmassLS"), multiplicity, lResonance.Pt(), lResonance.M());
-            } else if (trk1.sign() > 0) {
-              if (invmass1D)
-                histos.fill(HIST("k892invmassLSAnti"), lResonance.M());
-              histos.fill(HIST("h3k892invmassLSAnti"), multiplicity, lResonance.Pt(), lResonance.M());
-            }
-          } else {
+          if (trk1.sign() < 0) {
             if (invmass1D)
               histos.fill(HIST("k892invmassLS"), lResonance.M());
-            histos.fill(HIST("h3k892invmassLS"), multiplicity, lResonance.Pt(), lResonance.M());
+            histos.fill(HIST("h3k892invmassLS"), multiplicity, lResonance.Pt(), lResonance.M(), occupancy_no);
+          } else if (trk1.sign() > 0) {
+            if (invmass1D)
+              histos.fill(HIST("k892invmassLSAnti"), lResonance.M());
+            histos.fill(HIST("h3k892invmassLSAnti"), multiplicity, lResonance.Pt(), lResonance.M(), occupancy_no);
           }
         }
       }
