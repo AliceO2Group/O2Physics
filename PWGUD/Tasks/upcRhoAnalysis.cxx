@@ -33,8 +33,9 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using FullUDSgCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced, aod::SGCollisions>::iterator;
-using FullUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags>;
+using FullUdSgCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced, aod::SGCollisions>::iterator;
+using FullUdDgCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced>::iterator;
+using FullUdTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags>;
 
 namespace o2::aod
 {
@@ -69,9 +70,6 @@ struct upcRhoAnalysis {
   Produces<o2::aod::TrackTree> trackTree;
 
   double PcEtaCut = 0.9; // physics coordination recommendation
-
-  Configurable<bool> specifyGapSide{"specifyGapSide", true, "specify gap side for SG/DG produced data"};
-  Configurable<int> gapSide{"gapSide", 2, "gap side for SG produced data"};
   Configurable<bool> requireTof{"requireTof", false, "require TOF signal"};
 
   Configurable<double> collisionsPosZMaxCut{"collisionsPosZMaxCut", 10.0, "max Z position cut on collisions"};
@@ -125,7 +123,7 @@ struct upcRhoAnalysis {
     registry.add("QC/tracks/raw/hItsNCls", ";ITS N_{cls};counts", kTH1D, {{11, -0.5, 10.5}});
     registry.add("QC/tracks/raw/hItsChi2NCl", ";ITS #chi^{2}/N_{cls};counts", kTH1D, {{1000, 0.0, 100.0}});
     registry.add("QC/tracks/raw/hTpcChi2NCl", ";TPC #chi^{2}/N_{cls};counts", kTH1D, {{1000, 0.0, 100.0}});
-    registry.add("QC/tracks/raw/hTpcNCls", ";TPC N_{cls} findable;counts", kTH1D, {{200, 0.0, 200.0}});
+    registry.add("QC/tracks/raw/hTpcNCls", ";TPC N_{cls} found;counts", kTH1D, {{200, 0.0, 200.0}});
     registry.add("QC/tracks/raw/hTpcNClsCrossedRows", ";TPC crossed rows;counts", kTH1D, {{200, 0.0, 200.0}});
     // track quality selections vs system mass
     registry.add("QC/tracks/2D/mass/leading/hItsNClsVsM", ";m (GeV/#it{c}^{2});ITS N_{cls} of leading-#it{p} track;counts", kTH2D, {{1000, 0.0, 10.0}, {11, -0.5, 10.5}});
@@ -410,16 +408,6 @@ struct upcRhoAnalysis {
     registry.add("system/cut/XnXn/like-sign/negative/hPyVsPxCharge", ";p_{x} (GeV/#it{c});p_{y} (GeV/#it{c});counts", kTH2D, {momentumFromPhiAxis, momentumFromPhiAxis});
   }
 
-  template <typename C>
-  bool collisionPassesCuts(const C& collision) // collision cuts
-  {
-    if (std::abs(collision.posZ()) > collisionsPosZMaxCut)
-      return false;
-    if (specifyGapSide && collision.gapSide() != gapSide)
-      return false;
-    return true;
-  }
-
   template <typename T>
   bool trackPassesCuts(const T& track) // track cuts (PID done separately)
   {
@@ -544,7 +532,8 @@ struct upcRhoAnalysis {
     return pPlus.DeltaPhi(pMinus);
   }
 
-  void processReco(FullUDSgCollision const& collision, FullUDTracks const& tracks)
+  template <typename C, typename T>
+  void processData(C const& collision, T const& tracks)
   {
     // QC histograms
     registry.fill(HIST("QC/collisions/hPosXY"), collision.posX(), collision.posY());
@@ -553,7 +542,7 @@ struct upcRhoAnalysis {
     registry.fill(HIST("QC/collisions/hZdcTime"), collision.timeZNA(), collision.timeZNC());
     registry.fill(HIST("QC/collisions/hNumContrib"), collision.numContrib());
 
-    if (!collisionPassesCuts(collision))
+    if (std::abs(collision.posZ()) > collisionsPosZMaxCut)
       return;
 
     // event tagging
@@ -951,7 +940,20 @@ struct upcRhoAnalysis {
         break;
     }
   }
-  PROCESS_SWITCH(upcRhoAnalysis, processReco, "analyse reco tracks", true);
+
+  void processSGdata(FullUdSgCollision const& collision, FullUdTracks const& tracks)
+  {
+    if (collision.gapSide() != 2)
+      return;
+    processData(collision, tracks);
+  }
+  PROCESS_SWITCH(upcRhoAnalysis, processSGdata, "analyse SG data", true);
+
+  void processDGdata(FullUdDgCollision const& collision, FullUdTracks const& tracks)
+  {
+    processData(collision, tracks);
+  }
+  PROCESS_SWITCH(upcRhoAnalysis, processDGdata, "analyse DG data", false);
 
   // void processMC(aod::UDMcCollisions::iterator const&, aod::UDMcParticles const& mcparticles)
   // {
