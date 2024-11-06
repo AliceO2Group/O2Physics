@@ -13,6 +13,8 @@
 /// \author Sara Haidlova, sara.haidlova@cern.ch
 /// \since March 2024
 
+#include <vector>
+
 // O2 headers
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
