@@ -15,6 +15,7 @@
 #include <unordered_map>
 #include <string>
 #include <vector>
+#include <cstdint>
 
 namespace o2::aod
 {
