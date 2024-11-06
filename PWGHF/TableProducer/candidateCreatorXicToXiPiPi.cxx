@@ -20,6 +20,10 @@
 #define HomogeneousField
 #endif
 
+#include <string>
+#include <utility>
+#include <vector>
+
 #include <KFParticleBase.h>
 #include <KFParticle.h>
 #include <KFPTrack.h>
@@ -416,10 +420,10 @@ struct HfCandidateCreatorXicToXiPiPi {
       float chi2GeoXicPlus = kfXicPlus.GetChi2() / kfXicPlus.GetNDF();
 
       // topological constraint of Xic to PV
-      float chi2topoXicPlusPVBeforeConstraint = kfXicPlus.GetDeviationFromVertex(KFPV);
+      float chi2topoXicPlusToPVBeforeConstraint = kfXicPlus.GetDeviationFromVertex(KFPV);
       KFParticle kfXicPlusToPV = kfXicPlus;
       kfXicPlusToPV.SetProductionVertex(KFPV);
-      float chi2topoXicPlusPV = kfXicPlusToPV.GetChi2() / kfXicPlusToPV.GetNDF();
+      float chi2topoXicPlusToPV = kfXicPlusToPV.GetChi2() / kfXicPlusToPV.GetNDF();
       if (constrainXicPlusToPv) {
         kfXicPlus = kfXicPlusToPV;
         kfXicPlus.TransportToDecayVertex();
@@ -553,7 +557,7 @@ struct HfCandidateCreatorXicToXiPiPi {
                        cpaXi, cpaXYXi, cpaLambda, cpaXYLambda,
                        massXiPi0, massXiPi1);
       rowCandidateKF(casc.kfCascadeChi2(), casc.kfV0Chi2(),
-                     chi2topoXicPlusPVBeforeConstraint, chi2topoXicPlusPV, chi2topoXiToXicPlusBeforeConstraint, chi2topoXiToXicPlus,
+                     chi2topoXicPlusToPVBeforeConstraint, chi2topoXicPlusToPV, chi2topoXiToXicPlusBeforeConstraint, chi2topoXiToXicPlus,
                      dcaXYPi0Pi1, dcaXYPi0Xi, dcaXYPi1Xi,
                      dcaPi0Pi1, dcaPi0Xi, dcaPi1Xi,
                      casc.dcacascdaughters());

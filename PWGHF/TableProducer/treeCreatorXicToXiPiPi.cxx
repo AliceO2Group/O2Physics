@@ -15,6 +15,8 @@
 /// \author Phil Lennart Stahlhut <phil.lennart.stahlhut@cern.ch>, Heidelberg University
 /// \author Carolina Reetz <c.reetz@cern.ch>, Heidelberg University
 
+#include <vector>
+
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
@@ -76,10 +78,10 @@ DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);     //!
 DECLARE_SOA_COLUMN(DecayLengthXYNormalised, decayLengthXYNormalised, float); //! Normalised transverse decay length of candidate
 DECLARE_SOA_COLUMN(Cpa, cpa, float);                                         //! Cosine pointing angle of candidate
 DECLARE_SOA_COLUMN(CpaXY, cpaXY, float);                                     //! Cosine pointing angle of candidate in transverse plane
-DECLARE_SOA_COLUMN(Chi2XicPlusTopoToPVBeforeConstraint, chi2XicPlusTopoToPVBeforeConstraint, float);
-DECLARE_SOA_COLUMN(Chi2XicPlusTopoToPV, chi2XicPlusTopoToPV, float);
-DECLARE_SOA_COLUMN(Chi2XicPlusTopoXiToXicPlusBeforeConstraint, chi2XicPlusTopoXiToXicPlusBeforeConstraint, float);
-DECLARE_SOA_COLUMN(Chi2XicPlusTopoXiToXicPlus, chi2XicPlusTopoXiToXicPlus, float);
+DECLARE_SOA_COLUMN(Chi2TopoXicPlusToPVBeforeConstraint, chi2TopoXicPlusToPVBeforeConstraint, float);
+DECLARE_SOA_COLUMN(Chi2TopoXicPlusToPV, chi2TopoXicPlusToPV, float);
+DECLARE_SOA_COLUMN(Chi2TopoXiToXicPlusBeforeConstraint, chi2TopoXiToXicPlusBeforeConstraint, float);
+DECLARE_SOA_COLUMN(Chi2TopoXiToXicPlus, chi2TopoXiToXicPlus, float);
 // properties of daughter tracks
 DECLARE_SOA_COLUMN(PtXi, ptXi, float);                                                 //! Transverse momentum of Xi (prong0) (GeV/c)
 DECLARE_SOA_COLUMN(ImpactParameterXi, impactParameterXi, float);                       //! Impact parameter of Xi (prong0)
@@ -193,10 +195,10 @@ DECLARE_SOA_TABLE(HfCandXicToXiPiPiLiteKfs, "AOD", "HFXICXI2PILITKF",
                   // KF specific columns
                   full::Chi2XiVtx,
                   full::Chi2LamVtx,
-                  full::Chi2XicPlusTopoToPVBeforeConstraint,
-                  full::Chi2XicPlusTopoToPV,
-                  full::Chi2XicPlusTopoXiToXicPlusBeforeConstraint,
-                  full::Chi2XicPlusTopoXiToXicPlus,
+                  full::Chi2TopoXicPlusToPVBeforeConstraint,
+                  full::Chi2TopoXicPlusToPV,
+                  full::Chi2TopoXiToXicPlusBeforeConstraint,
+                  full::Chi2TopoXiToXicPlus,
                   full::DcaXYPi0Pi1,
                   full::DcaXYPi0Xi,
                   full::DcaXYPi1Xi,
@@ -317,10 +319,10 @@ DECLARE_SOA_TABLE(HfCandXicToXiPiPiFullKfs, "AOD", "HFXICXI2PIFULKF",
                   // KF-specific columns
                   full::Chi2XiVtx,
                   full::Chi2LamVtx,
-                  full::Chi2XicPlusTopoToPVBeforeConstraint,
-                  full::Chi2XicPlusTopoToPV,
-                  full::Chi2XicPlusTopoXiToXicPlusBeforeConstraint,
-                  full::Chi2XicPlusTopoXiToXicPlus,
+                  full::Chi2TopoXicPlusToPVBeforeConstraint,
+                  full::Chi2TopoXicPlusToPV,
+                  full::Chi2TopoXiToXicPlusBeforeConstraint,
+                  full::Chi2TopoXiToXicPlus,
                   full::DcaXYPi0Pi1,
                   full::DcaXYPi0Xi,
                   full::DcaXYPi1Xi,
@@ -625,7 +627,7 @@ struct HfTreeCreatorXicToXiPiPi {
     }
     for (const auto& candidate : candidates) {
       if (fillOnlyBackground && downSampleBkgFactor < 1.) {
-        float pseudoRndm = candidate.ptProng1() * 1000. - (int64_t)(candidate.ptProng1() * 1000);
+        float pseudoRndm = candidate.ptProng1() * 1000. - static_cast<int64_t>(candidate.ptProng1() * 1000);
         if (pseudoRndm >= downSampleBkgFactor && candidate.pt() < ptMaxForDownSample) {
           continue;
         }
@@ -645,7 +647,7 @@ struct HfTreeCreatorXicToXiPiPi {
     }
     for (const auto& candidate : candidates) {
       if (fillOnlyBackground && downSampleBkgFactor < 1.) {
-        float pseudoRndm = candidate.ptProng1() * 1000. - (int64_t)(candidate.ptProng1() * 1000);
+        float pseudoRndm = candidate.ptProng1() * 1000. - static_cast<int64_t>(candidate.ptProng1() * 1000);
         if (pseudoRndm >= downSampleBkgFactor && candidate.pt() < ptMaxForDownSample) {
           continue;
         }
@@ -677,7 +679,7 @@ struct HfTreeCreatorXicToXiPiPi {
         rowCandidateFull.reserve(recBg.size());
       }
       for (const auto& candidate : recBg) {
-        float pseudoRndm = candidate.ptProng1() * 1000. - (int64_t)(candidate.ptProng1() * 1000);
+        float pseudoRndm = candidate.ptProng1() * 1000. - static_cast<int64_t>(candidate.ptProng1() * 1000);
         if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
           continue;
         }
@@ -743,7 +745,7 @@ struct HfTreeCreatorXicToXiPiPi {
         rowCandidateFull.reserve(recBgKf.size());
       }
       for (const auto& candidate : recBgKf) {
-        float pseudoRndm = candidate.ptProng1() * 1000. - (int64_t)(candidate.ptProng1() * 1000);
+        float pseudoRndm = candidate.ptProng1() * 1000. - static_cast<int64_t>(candidate.ptProng1() * 1000);
         if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
           continue;
         }
