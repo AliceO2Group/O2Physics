@@ -95,24 +95,24 @@ class HfMlResponseXicToXiPiPi : public HfMlResponse<TypeOutputScore>
       switch (idx) {
         CHECK_AND_FILL_VEC_XICTOXIPIPI(ptProng0);
         CHECK_AND_FILL_VEC_XICTOXIPIPI(ptProng1);
-		CHECK_AND_FILL_VEC_XICTOXIPIPI(ptProng2);
-		CHECK_AND_FILL_VEC_XICTOXIPIPI(chi2PCA);
-		CHECK_AND_FILL_VEC_XICTOXIPIPI(decayLength);
-		CHECK_AND_FILL_VEC_XICTOXIPIPI(decayLengthNormalised);
-		CHECK_AND_FILL_VEC_XICTOXIPIPI(decayLengthXY);
-		CHECK_AND_FILL_VEC_XICTOXIPIPI(decayLengthXYNormalised);
-		CHECK_AND_FILL_VEC_XICTOXIPIPI(cpa);
-		CHECK_AND_FILL_VEC_XICTOXIPIPI(cpaXY);
-		CHECK_AND_FILL_VEC_XICTOXIPIPI(cosPaXi);
-		CHECK_AND_FILL_VEC_XICTOXIPIPI(cosPaXYXi);
-		CHECK_AND_FILL_VEC_XICTOXIPIPI(cosPaLambda);
-		CHECK_AND_FILL_VEC_XICTOXIPIPI(cosPaXYLambda);
-		CHECK_AND_FILL_VEC_XICTOXIPIPI_FULL(candidate, impactParameterXY0, impactParameter0);
-		CHECK_AND_FILL_VEC_XICTOXIPIPI_FULL(candidate, impactParameterXY1, impactParameter1);
-		CHECK_AND_FILL_VEC_XICTOXIPIPI_FULL(candidate, impactParameterXY2, impactParameter2);
-		CHECK_AND_FILL_VEC_XICTOXIPIPI(impactParameterZ0);
-		CHECK_AND_FILL_VEC_XICTOXIPIPI(impactParameterZ1);
-		CHECK_AND_FILL_VEC_XICTOXIPIPI(impactParameterZ2);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI(ptProng2);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI(chi2PCA);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI(decayLength);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI(decayLengthNormalised);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI(decayLengthXY);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI(decayLengthXYNormalised);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI(cpa);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI(cpaXY);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI(cosPaXi);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI(cosPaXYXi);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI(cosPaLambda);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI(cosPaXYLambda);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI_FULL(candidate, impactParameterXY0, impactParameter0);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI_FULL(candidate, impactParameterXY1, impactParameter1);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI_FULL(candidate, impactParameterXY2, impactParameter2);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI(impactParameterZ0);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI(impactParameterZ1);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI(impactParameterZ2);
       }
     }
 
@@ -124,26 +124,26 @@ class HfMlResponseXicToXiPiPi : public HfMlResponse<TypeOutputScore>
   void setAvailableInputFeatures()
   {
     MlResponse<TypeOutputScore>::mAvailableInputFeatures = {
-	  FILL_MAP_XICTOXIPIPI(ptProng0),
-	  FILL_MAP_XICTOXIPIPI(ptProng1),
-	  FILL_MAP_XICTOXIPIPI(ptProng2),
-	  FILL_MAP_XICTOXIPIPI(chi2PCA),
-	  FILL_MAP_XICTOXIPIPI(decayLength),
-	  FILL_MAP_XICTOXIPIPI(decayLengthNormalised),
-	  FILL_MAP_XICTOXIPIPI(decayLengthXY),
-	  FILL_MAP_XICTOXIPIPI(decayLengthXYNormalised),
-	  FILL_MAP_XICTOXIPIPI(cpa),
-	  FILL_MAP_XICTOXIPIPI(cpaXY),
-	  FILL_MAP_XICTOXIPIPI(cosPaXi),
-	  FILL_MAP_XICTOXIPIPI(cosPaXYXi),
-	  FILL_MAP_XICTOXIPIPI(cosPaLambda),
-	  FILL_MAP_XICTOXIPIPI(cosPaXYLambda),
-	  FILL_MAP_XICTOXIPIPI(impactParameterXY0),
-	  FILL_MAP_XICTOXIPIPI(impactParameterXY1),
-	  FILL_MAP_XICTOXIPIPI(impactParameterXY2),
-	  FILL_MAP_XICTOXIPIPI(impactParameterZ0),
-	  FILL_MAP_XICTOXIPIPI(impactParameterZ1),
-	  FILL_MAP_XICTOXIPIPI(impactParameterZ2)};
+      FILL_MAP_XICTOXIPIPI(ptProng0),
+      FILL_MAP_XICTOXIPIPI(ptProng1),
+      FILL_MAP_XICTOXIPIPI(ptProng2),
+      FILL_MAP_XICTOXIPIPI(chi2PCA),
+      FILL_MAP_XICTOXIPIPI(decayLength),
+      FILL_MAP_XICTOXIPIPI(decayLengthNormalised),
+      FILL_MAP_XICTOXIPIPI(decayLengthXY),
+      FILL_MAP_XICTOXIPIPI(decayLengthXYNormalised),
+      FILL_MAP_XICTOXIPIPI(cpa),
+      FILL_MAP_XICTOXIPIPI(cpaXY),
+      FILL_MAP_XICTOXIPIPI(cosPaXi),
+      FILL_MAP_XICTOXIPIPI(cosPaXYXi),
+      FILL_MAP_XICTOXIPIPI(cosPaLambda),
+      FILL_MAP_XICTOXIPIPI(cosPaXYLambda),
+      FILL_MAP_XICTOXIPIPI(impactParameterXY0),
+      FILL_MAP_XICTOXIPIPI(impactParameterXY1),
+      FILL_MAP_XICTOXIPIPI(impactParameterXY2),
+      FILL_MAP_XICTOXIPIPI(impactParameterZ0),
+      FILL_MAP_XICTOXIPIPI(impactParameterZ1),
+      FILL_MAP_XICTOXIPIPI(impactParameterZ2)};
   }
 };
 
