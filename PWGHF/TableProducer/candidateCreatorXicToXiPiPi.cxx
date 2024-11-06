@@ -416,7 +416,7 @@ struct HfCandidateCreatorXicToXiPiPi {
       float chi2GeoXicPlus = kfXicPlus.GetChi2() / kfXicPlus.GetNDF();
 
       // topological constraint of Xic to PV
-      float chi2topoXicPlusPVBeforeConstraint =  kfXicPlus.GetDeviationFromVertex(KFPV);
+      float chi2topoXicPlusPVBeforeConstraint = kfXicPlus.GetDeviationFromVertex(KFPV);
       KFParticle kfXicPlusToPV = kfXicPlus;
       kfXicPlusToPV.SetProductionVertex(KFPV);
       float chi2topoXicPlusPV = kfXicPlusToPV.GetChi2() / kfXicPlusToPV.GetNDF();
