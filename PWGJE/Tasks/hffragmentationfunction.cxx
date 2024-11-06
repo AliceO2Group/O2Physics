@@ -435,7 +435,7 @@ struct HfFragmentationFunctionTask {
                           jetutilities::deltaR(mcdjet, mcdd0cand), mcdjet.pt(), mcdjet.eta(), mcdjet.phi(), mcdjet.tracks_as<aod::JetTracks>().size(),                // detector level jet
                           mcdd0cand.pt(), mcdd0cand.eta(), mcdd0cand.phi(), mcdd0cand.m(), mcdd0cand.y(), (mcdd0cand.originMcRec() == RecoDecay::OriginType::Prompt), // detector level D0
                           mcdd0cand.mlScores()[0], mcdd0cand.mlScores()[1], mcdd0cand.mlScores()[2],
-                          matchedFrom, mcdd0cand.candidateSelFlag());                                                                                                 // check whether detector level candidate is a reflection, CandidateSelFlag == 0 -> selected as D0, CandidateSelFlag == 1 -> selected as D0bar
+                          matchedFrom, mcdd0cand.candidateSelFlag()); // check whether detector level candidate is a reflection, CandidateSelFlag == 0 -> selected as D0, CandidateSelFlag == 1 -> selected as D0bar
           }
         }
       }
