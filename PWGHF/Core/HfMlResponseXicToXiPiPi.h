@@ -25,9 +25,9 @@
 // Fill the map of available input features
 // the key is the feature's name (std::string)
 // the value is the corresponding value in EnumInputFeatures
-#define FILL_MAP_XICTOXIPIPI(FEATURE)								\
-  {																	\
-#FEATURE, static_cast < uint8_t>(InputFeaturesXicToXiPiPi::FEATURE)	\
+#define FILL_MAP_XICTOXIPIPI(FEATURE)                               \
+  {                                                                 \
+#FEATURE, static_cast < uint8_t>(InputFeaturesXicToXiPiPi::FEATURE) \
   }
 
 // Check if the index of mCachedIndices (index associated to a FEATURE)
@@ -35,17 +35,17 @@
 // if so, the inputFeatures vector is filled with the FEATURE's value
 // by calling the corresponding GETTER from OBJECT
 #define CHECK_AND_FILL_VEC_XICTOXIPIPI_FULL(OBJECT, FEATURE, GETTER)    \
-  case static_cast<uint8_t>(InputFeaturesXicToXiPiPi::FEATURE): {		\
-    inputFeatures.emplace_back(OBJECT.GETTER());						\
-    break;																\
+  case static_cast<uint8_t>(InputFeaturesXicToXiPiPi::FEATURE): {       \
+    inputFeatures.emplace_back(OBJECT.GETTER());                        \
+    break;                                                              \
   }
 
 // Specific case of CHECK_AND_FILL_VEC_XICTOXIPIPI_FULL(OBJECT, FEATURE, GETTER)
 // where OBJECT is named candidate and FEATURE = GETTER
 #define CHECK_AND_FILL_VEC_XICTOXIPIPI(GETTER)                      \
-  case static_cast<uint8_t>(InputFeaturesXicToXiPiPi::GETTER): {	\
-    inputFeatures.emplace_back(candidate.GETTER());					\
-    break;															\
+  case static_cast<uint8_t>(InputFeaturesXicToXiPiPi::GETTER): {    \
+    inputFeatures.emplace_back(candidate.GETTER());                 \
+    break;                                                          \
   }
 
 namespace o2::analysis
