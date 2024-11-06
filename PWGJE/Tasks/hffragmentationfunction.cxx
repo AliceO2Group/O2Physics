@@ -340,32 +340,6 @@ struct HfFragmentationFunctionTask {
             matchedFrom = 0;
           }
 
-          if (mcdjet.has_matchedJetCand()) {
-            registry.fill(HIST("h_jet_counter"), 1.5);
-          }
-
-          // reflection information for storage: +1 = D0, -1 = D0bar, 0 = neither
-          int matchedFrom = 0;
-          int selectedAs = -1;
-          int decayChannel = 1 << aod::hf_cand_2prong::DecayType::D0ToPiK;
-
-          if (mcdd0cand.flagMcMatchRec() == decayChannel) { // matched to D0 on truth level
-            matchedFrom = 1;
-            if (!mcdd0cand.candidateSelFlag()) { // CandidateSelFlag == 0 -> selected as D0, CandidateSelFlag == 1 -> selected as D0bar
-              selectedAs = 1;
-            }
-          } else if (mcdd0cand.flagMcMatchRec() == -decayChannel) { // matched to D0bar on truth level
-            matchedFrom = -1;
-            if (!mcdd0cand.candidateSelFlag()) {
-              selectedAs = 1;
-            }
-          } else { // matched to another kind of particle on truth level
-            matchedFrom = 0;
-            if (!mcdd0cand.candidateSelFlag()) {
-              selectedAs = 1;
-            }
-          }
-
           // store data in MC detector level table
           mcddistJetTable(jetutilities::deltaR(mcdjet, mcdd0cand),
                           mcdjet.pt(), mcdjet.eta(), mcdjet.phi(), mcdjet.tracks_as<aod::JetTracks>().size(),                                                         // detector level jet
@@ -470,7 +444,7 @@ struct HfFragmentationFunctionTask {
                           jetutilities::deltaR(mcdjet, mcdd0cand), mcdjet.pt(), mcdjet.eta(), mcdjet.phi(), mcdjet.tracks_as<aod::JetTracks>().size(),                // detector level jet
                           mcdd0cand.pt(), mcdd0cand.eta(), mcdd0cand.phi(), mcdd0cand.m(), mcdd0cand.y(), (mcdd0cand.originMcRec() == RecoDecay::OriginType::Prompt), // detector level D0
                           mcdd0cand.mlScores()[0], mcdd0cand.mlScores()[1], mcdd0cand.mlScores()[2],
-                          matchedFrom, mcdd0cand.candidateSelFlag()); // check whether detector level candidate is a reflection, CandidateSelFlag == 0 -> selected as D0, CandidateSelFlag == 1 -> selected as D0bar
+                          matchedFrom, mcdd0cand.candidateSelFlag());                                                                                                 // check whether detector level candidate is a reflection, CandidateSelFlag == 0 -> selected as D0, CandidateSelFlag == 1 -> selected as D0bar
           }
         }
       }
