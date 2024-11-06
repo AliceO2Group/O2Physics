@@ -139,8 +139,8 @@ struct HfCorrelatorDsHadrons {
   Produces<aod::DsCandGenInfo> entryDsCandGenInfo;
   Produces<aod::TrackRecoInfo> entryTrackRecoInfo;
   Produces<aod::HfcRedCollisions> collReduced;
-  Produces<aod::DsCandReduced> candReduced;
-  Produces<aod::AssocTrackRed> assocTrackReduced;
+  Produces<aod::DsCandReduceds> candReduced;
+  Produces<aod::AssocTrackReds> assocTrackReduced;
 
   Configurable<bool> fillHistoData{"fillHistoData", true, "Flag for filling histograms in data processes"};
   Configurable<bool> fillHistoMcRec{"fillHistoMcRec", true, "Flag for filling histograms in MC Rec processes"};
