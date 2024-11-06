@@ -26,7 +26,7 @@ using namespace o2::aod;
 //::singletrackselector; // the namespace defined in .h
 
 struct singleTrackSelectorConverter {
-  Produces<o2::aod::SingleTrackSels> tableRow;
+  Produces<o2::aod::SingleTrackSels_v1> tableRow;
 
   void init(InitContext&) {}
 

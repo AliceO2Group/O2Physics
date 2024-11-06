@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file utilsRedDataFormat.h
-/// \brief Event selection utilities for reduced data format analyses
+/// \brief Utilities for reduced data format analyses
 /// \author Luca Aglietta <luca.aglietta@cern.ch>, UniTO Turin
 
 #ifndef PWGHF_D2H_UTILS_UTILSREDDATAFORMAT_H_
@@ -50,5 +50,32 @@ void checkEvSel(Coll const& collision, o2::hf_evsel::HfEventSelection& hfEvSel, 
   }
 }
 } // namespace o2::hf_evsel
+
+namespace o2::pid_tpc_tof_utils
+{
+/// Helper function to retrive PID information of bachelor pion from b-hadron decay
+/// \param prong1 pion track from reduced data format, soa::Join<HfRedTracks, HfRedTracksPid>
+template <typename T1>
+float getTpcTofNSigmaPi1(const T1& prong1)
+{
+  float defaultNSigma = -999.f; // -999.f is the default value set in TPCPIDResponse.h and PIDTOF.h
+
+  bool hasTpc = prong1.hasTPC();
+  bool hasTof = prong1.hasTOF();
+
+  if (hasTpc && hasTof) {
+    float tpcNSigma = prong1.tpcNSigmaPi();
+    float tofNSigma = prong1.tofNSigmaPi();
+    return std::sqrt(.5f * tpcNSigma * tpcNSigma + .5f * tofNSigma * tofNSigma);
+  }
+  if (hasTpc) {
+    return std::abs(prong1.tpcNSigmaPi());
+  }
+  if (hasTof) {
+    return std::abs(prong1.tofNSigmaPi());
+  }
+  return defaultNSigma;
+}
+} // namespace o2::pid_tpc_tof_utils
 
 #endif // PWGHF_D2H_UTILS_UTILSREDDATAFORMAT_H_

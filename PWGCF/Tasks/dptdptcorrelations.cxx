@@ -62,9 +62,11 @@ float deltaphibinwidth = constants::math::TwoPI / deltaphibins;
 float deltaphilow = 0.0 - deltaphibinwidth / 2.0;
 float deltaphiup = constants::math::TwoPI - deltaphibinwidth / 2.0;
 
-bool processpairs = false;
-bool processmixedevents = false;
-bool ptorder = false;
+bool processpairs = false;       // process pairs analysis
+bool processmixedevents = false; // process mixed events
+bool ptorder = false;            // consider pt ordering
+bool invmass = false;            // produce the invariant mass histograms
+bool corrana = false;            // produce the correlation analysis histograms
 
 PairCuts fPairCuts;              // pair suppression engine
 bool fUseConversionCuts = false; // suppress resonances and conversions
@@ -72,6 +74,7 @@ bool fUseTwoTrackCut = false;    // suppress too close tracks
 
 std::vector<std::string> poinames;                     ///< the species of interest names
 std::vector<std::string> tnames;                       ///< the track names
+std::vector<double> poimass;                           ///< the species of interest mass
 std::vector<std::vector<std::string>> trackPairsNames; ///< the track pairs names
 } // namespace correlationstask
 
@@ -102,6 +105,8 @@ struct DptDptCorrelationsTask {
     std::vector<std::vector<TH2F*>> fhSum2DptDpt_vsDEtaDPhi{nch, {nch, nullptr}}; //!<! two-particle  \f$\sum ({p_T}_1- <{p_T}_1>) ({p_T}_2 - <{p_T}_2>) \f$ distribution vs \f$\Delta\eta,\;\Delta\phi\f$ for the different species combinations
     std::vector<std::vector<TH2F*>> fhSupN1N1_vsDEtaDPhi{nch, {nch, nullptr}};    //!<! suppressed n1n1 two-particle distribution vs \f$\Delta\eta,\;\Delta\phi\f$ for the different species combinations
     std::vector<std::vector<TH2F*>> fhSupPt1Pt1_vsDEtaDPhi{nch, {nch, nullptr}};  //!<! suppressed \f${p_T}_1 {p_T}_2\f$ two-particle distribution vs \f$\Delta\eta,\;\Delta\phi\f$ for the different species combinations
+    std::vector<std::vector<TH2D*>> fhInvMassDEta{nch, {nch, nullptr}};           //!<! the pair invariant mass vs delta eta
+    std::vector<std::vector<TH2D*>> fhInvMassDPhi{nch, {nch, nullptr}};           //!<! the pair invariant mass vs delta phi
     /* versus centrality/multiplicity  profiles */
     std::vector<TProfile*> fhN1_vsC{nch, nullptr};                               //!<! weighted single particle distribution vs event centrality/multiplicity, track 1 and 2
     std::vector<TProfile*> fhSum1Pt_vsC{nch, nullptr};                           //!<! accumulated sum of weighted \f$p_T\f$ vs event centrality/multiplicity, track 1 and 2
@@ -160,7 +165,64 @@ struct DptDptCorrelationsTask {
       return etaix * phibins + phiix;
     }
 
-    /// \brief Returns the TH2 global index for the differential histograms
+    /// \brief Returns the delta eta value for the differential eta
+    /// \param t1 the intended track one
+    /// \param t2 the intended track two
+    /// \return the delta eta value for delta eta
+    ///
+    /// WARNING: for performance reasons no checks are done about the consistency
+    /// of tracks' eta and phi within the corresponding ranges so, it is suppossed
+    /// the tracks have been accepted and they are within that ranges
+    /// IF THAT IS NOT THE CASE THE ROUTINE WILL PRODUCE NONSENSE RESULTS
+    template <typename TrackObject>
+    float GetDEtaValue(TrackObject const& t1, TrackObject const& t2)
+    {
+      using namespace correlationstask;
+      using namespace o2::analysis::dptdptfilter;
+
+      /* rule: ix are always zero based while bins are always one based */
+      int etaix_1 = static_cast<int>((t1.eta() - etalow) / etabinwidth);
+      int etaix_2 = static_cast<int>((t2.eta() - etalow) / etabinwidth);
+
+      int deltaeta_ix = etaix_1 - etaix_2 + etabins - 1;
+
+      return deltaetalow + (deltaeta_ix + 0.5) * deltaetabinwidth;
+    }
+
+    /// \brief Returns the delta phi value for the differential phi
+    /// \param t1 the intended track one
+    /// \param t2 the intended track two
+    /// \return the delta phi value within [-pi,pi] for delta phi
+    ///
+    /// WARNING: for performance reasons no checks are done about the consistency
+    /// of tracks' eta and phi within the corresponding ranges so, it is suppossed
+    /// the tracks have been accepted and they are within that ranges
+    /// IF THAT IS NOT THE CASE THE ROUTINE WILL PRODUCE NONSENSE RESULTS
+    template <typename TrackObject>
+    float GetDPhiValue(TrackObject const& t1, TrackObject const& t2)
+    {
+      using namespace correlationstask;
+      using namespace o2::analysis::dptdptfilter;
+
+      /* rule: ix are always zero based while bins are always one based */
+      /* consider a potential phi origin shift */
+      float phi = GetShiftedPhi(t1.phi());
+      int phiix_1 = static_cast<int>((phi - philow) / phibinwidth);
+      /* consider a potential phi origin shift */
+      phi = GetShiftedPhi(t2.phi());
+      int phiix_2 = static_cast<int>((phi - philow) / phibinwidth);
+
+      int deltaphi_ix = phiix_1 - phiix_2;
+      if (deltaphi_ix < 0) {
+        deltaphi_ix += phibins;
+      }
+
+      float value = deltaphilow + (deltaphi_ix + 0.5) * deltaphibinwidth;
+
+      return (value < (deltaphiup - constants::math::PI)) ? value : value - constants::math::TwoPI;
+    }
+
+    /// \brief Returns the TH2 global bin for the differential histograms
     /// \param t1 the intended track one
     /// \param t2 the intended track two
     /// \return the globl TH2 bin for delta eta delta phi
@@ -170,7 +232,7 @@ struct DptDptCorrelationsTask {
     /// the tracks have been accepted and they are within that ranges
     /// IF THAT IS NOT THE CASE THE ROUTINE WILL PRODUCE NONSENSE RESULTS
     template <typename TrackObject>
-    int GetDEtaDPhiGlobalIndex(TrackObject const& t1, TrackObject const& t2)
+    int GetDEtaDPhiGlobalBin(TrackObject const& t1, TrackObject const& t2)
     {
       using namespace correlationstask;
       using namespace o2::analysis::dptdptfilter;
@@ -192,6 +254,39 @@ struct DptDptCorrelationsTask {
       }
 
       return fhN2_vsDEtaDPhi[0][0]->GetBin(deltaeta_ix + 1, deltaphi_ix + 1);
+    }
+
+    /* taken from PWGCF/Core/PairCuts.h implemented by JFGO */
+    template <typename TrackObject>
+    double getInvMassSquared(TrackObject const& track1, double m0_1, TrackObject const& track2, double m0_2)
+    {
+      // calculate inv mass squared
+      // same can be achieved, but with more computing time with
+      /*TLorentzVector photon, p1, p2;
+      p1.SetPtEtaPhiM(triggerParticle->Pt(), triggerEta, triggerParticle->Phi(), 0.510e-3);
+      p2.SetPtEtaPhiM(particle->Pt(), eta[j], particle->Phi(), 0.510e-3);
+      photon = p1+p2;
+      photon.M()*/
+
+      float tantheta1 = 1e10;
+
+      if (track1.eta() < -1e-10 || track1.eta() > 1e-10) {
+        float expTmp = std::exp(-track1.eta());
+        tantheta1 = 2.0 * expTmp / (1.0 - expTmp * expTmp);
+      }
+
+      float tantheta2 = 1e10;
+      if (track2.eta() < -1e-10 || track2.eta() > 1e-10) {
+        float expTmp = std::exp(-track2.eta());
+        tantheta2 = 2.0 * expTmp / (1.0 - expTmp * expTmp);
+      }
+
+      float e1squ = m0_1 * m0_1 + track1.pt() * track1.pt() * (1.0 + 1.0 / tantheta1 / tantheta1);
+      float e2squ = m0_2 * m0_2 + track2.pt() * track2.pt() * (1.0 + 1.0 / tantheta2 / tantheta2);
+
+      float mass2 = m0_1 * m0_1 + m0_2 * m0_2 + 2 * (std::sqrt(e1squ * e2squ) - (track1.pt() * track2.pt() * (std::cos(track1.phi() - track2.phi()) + 1.0 / tantheta1 / tantheta2)));
+
+      return mass2;
     }
 
     void storeTrackCorrections(std::vector<TH3*> corrs)
@@ -315,7 +410,7 @@ struct DptDptCorrelationsTask {
     /// \param trks2 filtered table with the tracks associated to the second track in the pair
     /// \param cmul centrality - multiplicity for the collision being analyzed
     /// Be aware that in most of the cases traks1 and trks2 will have the same content (exception: mixed events)
-    template <bool doptorder, typename TrackOneListObject, typename TrackTwoListObject>
+    template <bool doptorder, bool doinvmass, bool docorrelations, typename TrackOneListObject, typename TrackTwoListObject>
     void processTrackPairs(TrackOneListObject const& trks1, TrackTwoListObject const& trks2, std::vector<float>* corrs1, std::vector<float>* corrs2, std::vector<float>* ptavgs1, std::vector<float>* ptavgs2, float cmul, int bfield)
     {
       using namespace correlationstask;
@@ -329,6 +424,8 @@ struct DptDptCorrelationsTask {
       std::vector<std::vector<double>> sum2PtPtnw(nch, std::vector<double>(nch, 0.0));   ///< accumulated sum of not weighted track 1 track 2 \f${p_T}_1 {p_T}_2\f$ for current collision
       std::vector<std::vector<double>> sum2DptDptnw(nch, std::vector<double>(nch, 0.0)); ///< accumulated sum of not weighted number of track 1 tracks times not weighted track 2 \f$p_T\f$ for current collision
       int index1 = 0;
+      int globalbin = 0;
+      LOGF(debug, "Initializing globalbin to ", globalbin);
 
       for (auto& track1 : trks1) {
         double ptavg_1 = (*ptavgs1)[index1];
@@ -356,7 +453,9 @@ struct DptDptCorrelationsTask {
           double dptdptw = (corr1 * track1.pt() - ptavg_1) * (corr2 * track2.pt() - ptavg_2);
 
           /* get the global bin for filling the differential histograms */
-          int globalbin = GetDEtaDPhiGlobalIndex(track1, track2);
+          if constexpr (docorrelations) {
+            globalbin = GetDEtaDPhiGlobalBin(track1, track2);
+          }
           float deltaeta = track1.eta() - track2.eta();
           float deltaphi = track1.phi() - track2.phi();
           while (deltaphi >= deltaphiup) {
@@ -367,8 +466,10 @@ struct DptDptCorrelationsTask {
           }
           if ((fUseConversionCuts && fPairCuts.conversionCuts(track1, track2)) || (fUseTwoTrackCut && fPairCuts.twoTrackCut(track1, track2, bfield))) {
             /* suppress the pair */
-            fhSupN1N1_vsDEtaDPhi[track1.trackacceptedid()][track2.trackacceptedid()]->AddBinContent(globalbin, corr);
-            fhSupPt1Pt1_vsDEtaDPhi[track1.trackacceptedid()][track2.trackacceptedid()]->AddBinContent(globalbin, track1.pt() * track2.pt() * corr);
+            if constexpr (docorrelations) {
+              fhSupN1N1_vsDEtaDPhi[track1.trackacceptedid()][track2.trackacceptedid()]->AddBinContent(globalbin, corr);
+              fhSupPt1Pt1_vsDEtaDPhi[track1.trackacceptedid()][track2.trackacceptedid()]->AddBinContent(globalbin, track1.pt() * track2.pt() * corr);
+            }
             n2sup[track1.trackacceptedid()][track2.trackacceptedid()] += corr;
           } else {
             /* count the pair */
@@ -379,12 +480,22 @@ struct DptDptCorrelationsTask {
             sum2PtPtnw[track1.trackacceptedid()][track2.trackacceptedid()] += track1.pt() * track2.pt();
             sum2DptDptnw[track1.trackacceptedid()][track2.trackacceptedid()] += dptdptnw;
 
-            fhN2_vsDEtaDPhi[track1.trackacceptedid()][track2.trackacceptedid()]->AddBinContent(globalbin, corr);
-            fhN2cont_vsDEtaDPhi[track1.trackacceptedid()][track2.trackacceptedid()]->Fill(deltaeta, deltaphi, corr);
-            fhSum2DptDpt_vsDEtaDPhi[track1.trackacceptedid()][track2.trackacceptedid()]->AddBinContent(globalbin, dptdptw);
-            fhSum2PtPt_vsDEtaDPhi[track1.trackacceptedid()][track2.trackacceptedid()]->AddBinContent(globalbin, track1.pt() * track2.pt() * corr);
+            if constexpr (docorrelations) {
+              fhN2_vsDEtaDPhi[track1.trackacceptedid()][track2.trackacceptedid()]->AddBinContent(globalbin, corr);
+              fhN2cont_vsDEtaDPhi[track1.trackacceptedid()][track2.trackacceptedid()]->Fill(deltaeta, deltaphi, corr);
+              fhSum2DptDpt_vsDEtaDPhi[track1.trackacceptedid()][track2.trackacceptedid()]->AddBinContent(globalbin, dptdptw);
+              fhSum2PtPt_vsDEtaDPhi[track1.trackacceptedid()][track2.trackacceptedid()]->AddBinContent(globalbin, track1.pt() * track2.pt() * corr);
+              fhN2_vsPtPt[track1.trackacceptedid()][track2.trackacceptedid()]->Fill(track1.pt(), track2.pt(), corr);
+            }
+            if constexpr (doinvmass) {
+              if (!(track2.trackacceptedid() < track1.trackacceptedid())) {
+                /* only 12 combinations, 21 are exactly the same */
+                double invariantMass = std::sqrt(getInvMassSquared(track1, poimass[static_cast<int>(track1.trackacceptedid() / 2)], track2, poimass[static_cast<int>(track2.trackacceptedid() / 2)])) * 1000.0f;
+                fhInvMassDEta[track1.trackacceptedid()][track2.trackacceptedid()]->Fill(GetDEtaValue(track1, track2), invariantMass);
+                fhInvMassDPhi[track1.trackacceptedid()][track2.trackacceptedid()]->Fill(GetDPhiValue(track1, track2), invariantMass);
+              }
+            }
           }
-          fhN2_vsPtPt[track1.trackacceptedid()][track2.trackacceptedid()]->Fill(track1.pt(), track2.pt(), corr);
           index2++;
         }
         index1++;
@@ -398,11 +509,13 @@ struct DptDptCorrelationsTask {
           fhSum2PtPtnw_vsC[pid1][pid2]->Fill(cmul, sum2PtPtnw[pid1][pid2]);
           fhSum2DptDptnw_vsC[pid1][pid2]->Fill(cmul, sum2DptDptnw[pid1][pid2]);
           /* let's also update the number of entries in the differential histograms */
-          fhN2_vsDEtaDPhi[pid1][pid2]->SetEntries(fhN2_vsDEtaDPhi[pid1][pid2]->GetEntries() + n2[pid1][pid2]);
-          fhSum2DptDpt_vsDEtaDPhi[pid1][pid2]->SetEntries(fhSum2DptDpt_vsDEtaDPhi[pid1][pid2]->GetEntries() + n2[pid1][pid2]);
-          fhSum2PtPt_vsDEtaDPhi[pid1][pid2]->SetEntries(fhSum2PtPt_vsDEtaDPhi[pid1][pid2]->GetEntries() + n2[pid1][pid2]);
-          fhSupN1N1_vsDEtaDPhi[pid1][pid2]->SetEntries(fhSupN1N1_vsDEtaDPhi[pid1][pid2]->GetEntries() + n2sup[pid1][pid2]);
-          fhSupPt1Pt1_vsDEtaDPhi[pid1][pid2]->SetEntries(fhSupPt1Pt1_vsDEtaDPhi[pid1][pid2]->GetEntries() + n2sup[pid1][pid2]);
+          if constexpr (docorrelations) {
+            fhN2_vsDEtaDPhi[pid1][pid2]->SetEntries(fhN2_vsDEtaDPhi[pid1][pid2]->GetEntries() + n2[pid1][pid2]);
+            fhSum2DptDpt_vsDEtaDPhi[pid1][pid2]->SetEntries(fhSum2DptDpt_vsDEtaDPhi[pid1][pid2]->GetEntries() + n2[pid1][pid2]);
+            fhSum2PtPt_vsDEtaDPhi[pid1][pid2]->SetEntries(fhSum2PtPt_vsDEtaDPhi[pid1][pid2]->GetEntries() + n2[pid1][pid2]);
+            fhSupN1N1_vsDEtaDPhi[pid1][pid2]->SetEntries(fhSupN1N1_vsDEtaDPhi[pid1][pid2]->GetEntries() + n2sup[pid1][pid2]);
+            fhSupPt1Pt1_vsDEtaDPhi[pid1][pid2]->SetEntries(fhSupPt1Pt1_vsDEtaDPhi[pid1][pid2]->GetEntries() + n2sup[pid1][pid2]);
+          }
         }
       }
     }
@@ -442,15 +555,40 @@ struct DptDptCorrelationsTask {
         /* process pair magnitudes */
         if constexpr (mixed) {
           if (ptorder) {
-            processTrackPairs<true>(Tracks1, Tracks2, corrs1, corrs2, ptavgs1, ptavgs2, centmult, bfield);
+            /* no invariant mass analysis on a mixed event data collection */
+            processTrackPairs<true, false, true>(Tracks1, Tracks2, corrs1, corrs2, ptavgs1, ptavgs2, centmult, bfield);
           } else {
-            processTrackPairs<false>(Tracks1, Tracks2, corrs1, corrs2, ptavgs1, ptavgs2, centmult, bfield);
+            processTrackPairs<false, false, true>(Tracks1, Tracks2, corrs1, corrs2, ptavgs1, ptavgs2, centmult, bfield);
           }
         } else {
           if (ptorder) {
-            processTrackPairs<true>(Tracks1, Tracks1, corrs1, corrs1, ptavgs1, ptavgs1, centmult, bfield);
+            if (invmass) {
+              if (corrana) {
+                processTrackPairs<true, true, true>(Tracks1, Tracks1, corrs1, corrs1, ptavgs1, ptavgs1, centmult, bfield);
+              } else {
+                processTrackPairs<true, true, false>(Tracks1, Tracks1, corrs1, corrs1, ptavgs1, ptavgs1, centmult, bfield);
+              }
+            } else {
+              if (corrana) {
+                processTrackPairs<true, false, true>(Tracks1, Tracks1, corrs1, corrs1, ptavgs1, ptavgs1, centmult, bfield);
+              } else {
+                processTrackPairs<true, false, false>(Tracks1, Tracks1, corrs1, corrs1, ptavgs1, ptavgs1, centmult, bfield);
+              }
+            }
           } else {
-            processTrackPairs<false>(Tracks1, Tracks1, corrs1, corrs1, ptavgs1, ptavgs1, centmult, bfield);
+            if (invmass) {
+              if (corrana) {
+                processTrackPairs<false, true, true>(Tracks1, Tracks1, corrs1, corrs1, ptavgs1, ptavgs1, centmult, bfield);
+              } else {
+                processTrackPairs<false, true, false>(Tracks1, Tracks1, corrs1, corrs1, ptavgs1, ptavgs1, centmult, bfield);
+              }
+            } else {
+              if (corrana) {
+                processTrackPairs<false, false, true>(Tracks1, Tracks1, corrs1, corrs1, ptavgs1, ptavgs1, centmult, bfield);
+              } else {
+                processTrackPairs<false, false, false>(Tracks1, Tracks1, corrs1, corrs1, ptavgs1, ptavgs1, centmult, bfield);
+              }
+            }
           }
         }
 
@@ -465,10 +603,13 @@ struct DptDptCorrelationsTask {
       }
     }
 
+    template <bool doinvmass, bool docorrelations>
     void init(TList* fOutputList)
     {
       using namespace correlationstask;
       using namespace o2::analysis::dptdptfilter;
+
+      LOGF(info, "Do invariant mass: %s; do correlation histograms: %s", doinvmass ? "yes" : "no", docorrelations ? "yes" : "no");
 
       /* create the histograms */
       Bool_t oldstatus = TH1::AddDirectoryStatus();
@@ -596,23 +737,33 @@ struct DptDptCorrelationsTask {
             bool defSumw2 = TH1::GetDefaultSumw2();
             TH1::SetDefaultSumw2(false);
             const char* pname = trackPairsNames[i][j].c_str();
-            fhN2_vsDEtaDPhi[i][j] = new TH2F(TString::Format("n2_12_vsDEtaDPhi_%s", pname), TString::Format("#LT n_{2} #GT (%s);#Delta#eta;#Delta#varphi;#LT n_{2} #GT", pname),
-                                             deltaetabins, deltaetalow, deltaetaup, deltaphibins, deltaphilow, deltaphiup);
-            fhN2cont_vsDEtaDPhi[i][j] = new TH2F(TString::Format("n2_12cont_vsDEtaDPhi_%s", pname), TString::Format("#LT n_{2} #GT (%s);#Delta#eta;#Delta#varphi;#LT n_{2} #GT", pname),
-                                                 deltaetabins, deltaetalow, deltaetaup, deltaphibins, deltaphilow, deltaphiup);
-            fhSum2PtPt_vsDEtaDPhi[i][j] = new TH2F(TString::Format("sumPtPt_12_vsDEtaDPhi_%s", pname), TString::Format("#LT #Sigma p_{t,1}p_{t,2} #GT (%s);#Delta#eta;#Delta#varphi;#LT #Sigma p_{t,1}p_{t,2} #GT (GeV^{2})", pname),
+            if constexpr (docorrelations) {
+              fhN2_vsDEtaDPhi[i][j] = new TH2F(TString::Format("n2_12_vsDEtaDPhi_%s", pname), TString::Format("#LT n_{2} #GT (%s);#Delta#eta;#Delta#varphi;#LT n_{2} #GT", pname),
+                                               deltaetabins, deltaetalow, deltaetaup, deltaphibins, deltaphilow, deltaphiup);
+              fhN2cont_vsDEtaDPhi[i][j] = new TH2F(TString::Format("n2_12cont_vsDEtaDPhi_%s", pname), TString::Format("#LT n_{2} #GT (%s);#Delta#eta;#Delta#varphi;#LT n_{2} #GT", pname),
                                                    deltaetabins, deltaetalow, deltaetaup, deltaphibins, deltaphilow, deltaphiup);
-            fhSum2DptDpt_vsDEtaDPhi[i][j] = new TH2F(TString::Format("sumDptDpt_12_vsDEtaDPhi_%s", pname), TString::Format("#LT #Sigma (p_{t,1} - #LT p_{t,1} #GT)(p_{t,2} - #LT p_{t,2} #GT) #GT (%s);#Delta#eta;#Delta#varphi;#LT #Sigma (p_{t,1} - #LT p_{t,1} #GT)(p_{t,2} - #LT p_{t,2} #GT) #GT (GeV^{2})", pname),
+              fhSum2PtPt_vsDEtaDPhi[i][j] = new TH2F(TString::Format("sumPtPt_12_vsDEtaDPhi_%s", pname), TString::Format("#LT #Sigma p_{t,1}p_{t,2} #GT (%s);#Delta#eta;#Delta#varphi;#LT #Sigma p_{t,1}p_{t,2} #GT (GeV^{2})", pname),
                                                      deltaetabins, deltaetalow, deltaetaup, deltaphibins, deltaphilow, deltaphiup);
-            fhSupN1N1_vsDEtaDPhi[i][j] = new TH2F(TString::Format("suppn1n1_12_vsDEtaDPhi_%s", pname), TString::Format("Suppressed #LT n_{1} #GT#LT n_{1} #GT (%s);#Delta#eta;#Delta#varphi;#LT n_{1} #GT#LT n_{1} #GT", pname),
-                                                  deltaetabins, deltaetalow, deltaetaup, deltaphibins, deltaphilow, deltaphiup);
-            fhSupPt1Pt1_vsDEtaDPhi[i][j] = new TH2F(TString::Format("suppPtPt_12_vsDEtaDPhi_%s", pname), TString::Format("Suppressed #LT p_{t,1} #GT#LT p_{t,2} #GT (%s);#Delta#eta;#Delta#varphi;#LT p_{t,1} #GT#LT p_{t,2} #GT (GeV^{2})", pname),
+              fhSum2DptDpt_vsDEtaDPhi[i][j] = new TH2F(TString::Format("sumDptDpt_12_vsDEtaDPhi_%s", pname), TString::Format("#LT #Sigma (p_{t,1} - #LT p_{t,1} #GT)(p_{t,2} - #LT p_{t,2} #GT) #GT (%s);#Delta#eta;#Delta#varphi;#LT #Sigma (p_{t,1} - #LT p_{t,1} #GT)(p_{t,2} - #LT p_{t,2} #GT) #GT (GeV^{2})", pname),
+                                                       deltaetabins, deltaetalow, deltaetaup, deltaphibins, deltaphilow, deltaphiup);
+              fhSupN1N1_vsDEtaDPhi[i][j] = new TH2F(TString::Format("suppn1n1_12_vsDEtaDPhi_%s", pname), TString::Format("Suppressed #LT n_{1} #GT#LT n_{1} #GT (%s);#Delta#eta;#Delta#varphi;#LT n_{1} #GT#LT n_{1} #GT", pname),
                                                     deltaetabins, deltaetalow, deltaetaup, deltaphibins, deltaphilow, deltaphiup);
+              fhSupPt1Pt1_vsDEtaDPhi[i][j] = new TH2F(TString::Format("suppPtPt_12_vsDEtaDPhi_%s", pname), TString::Format("Suppressed #LT p_{t,1} #GT#LT p_{t,2} #GT (%s);#Delta#eta;#Delta#varphi;#LT p_{t,1} #GT#LT p_{t,2} #GT (GeV^{2})", pname),
+                                                      deltaetabins, deltaetalow, deltaetaup, deltaphibins, deltaphilow, deltaphiup);
+              fhN2_vsPtPt[i][j] = new TH2F(TString::Format("n2_12_vsPtVsPt_%s", pname), TString::Format("#LT n_{2} #GT (%s);p_{t,1} (GeV/c);p_{t,2} (GeV/c);#LT n_{2} #GT", pname),
+                                           ptbins, ptlow, ptup, ptbins, ptlow, ptup);
+            }
+            if constexpr (doinvmass) {
+              if (!(j < i)) {
+                /* only 12 combinations, 21 are exactly the same */
+                fhInvMassDEta[i][j] = new TH2D(TString::Format("n2_invMassDeta_%s", pname), TString::Format("%s invariant mass;#Delta#eta;Mass (MeV/#it{c}^{2})", pname),
+                                               deltaetabins, deltaetalow, deltaetaup, 5000, 0, 5000);
+                fhInvMassDPhi[i][j] = new TH2D(TString::Format("n2_invMassDphi_%s", pname), TString::Format("%s invariant mass;#Delta#varphi;Mass (MeV/#it{c}^{2})", pname),
+                                               deltaphibins, deltaphilow - constants::math::PI, deltaphiup - constants::math::PI, 5000, 0, 5000);
+              }
+            }
             /* we return it back to previuos state */
             TH1::SetDefaultSumw2(defSumw2);
-
-            fhN2_vsPtPt[i][j] = new TH2F(TString::Format("n2_12_vsPtVsPt_%s", pname), TString::Format("#LT n_{2} #GT (%s);p_{t,1} (GeV/c);p_{t,2} (GeV/c);#LT n_{2} #GT", pname),
-                                         ptbins, ptlow, ptup, ptbins, ptlow, ptup);
 
             fhN2_vsC[i][j] = new TProfile(TString::Format("n2_12_vsM_%s", pname), TString::Format("#LT n_{2} #GT (%s) (weighted);Centrality/Multiplicity (%%);#LT n_{2} #GT", pname), 100, 0.0, 100.0);
             fhSum2PtPt_vsC[i][j] = new TProfile(TString::Format("sumPtPt_12_vsM_%s", pname), TString::Format("#LT #Sigma p_{t,1}p_{t,2} #GT (%s) (weighted);Centrality/Multiplicity (%%);#LT #Sigma p_{t,1}p_{t,2} #GT (GeV^{2})", pname), 100, 0.0, 100.0);
@@ -622,26 +773,46 @@ struct DptDptCorrelationsTask {
             fhSum2DptDptnw_vsC[i][j] = new TProfile(TString::Format("sumDptDptNw_12_vsM_%s", pname), TString::Format("#LT #Sigma (p_{t,1} - #LT p_{t,1} #GT)(p_{t,2} - #LT p_{t,2} #GT) #GT (%s);Centrality/Multiplicity (%%);#LT #Sigma (p_{t,1} - #LT p_{t,1} #GT)(p_{t,2} - #LT p_{t,2} #GT) #GT (GeV^{2})", pname), 100, 0.0, 100.0);
 
             /* the statistical uncertainties will be estimated by the subsamples method so let's get rid of the error tracking */
-            fhN2_vsDEtaDPhi[i][j]->SetBit(TH1::kIsNotW);
-            fhN2_vsDEtaDPhi[i][j]->Sumw2(false);
-            fhN2cont_vsDEtaDPhi[i][j]->SetBit(TH1::kIsNotW);
-            fhN2cont_vsDEtaDPhi[i][j]->Sumw2(false);
-            fhSum2PtPt_vsDEtaDPhi[i][j]->SetBit(TH1::kIsNotW);
-            fhSum2PtPt_vsDEtaDPhi[i][j]->Sumw2(false);
-            fhSum2DptDpt_vsDEtaDPhi[i][j]->SetBit(TH1::kIsNotW);
-            fhSum2DptDpt_vsDEtaDPhi[i][j]->Sumw2(false);
-            fhSupN1N1_vsDEtaDPhi[i][j]->SetBit(TH1::kIsNotW);
-            fhSupN1N1_vsDEtaDPhi[i][j]->Sumw2(false);
-            fhSupPt1Pt1_vsDEtaDPhi[i][j]->SetBit(TH1::kIsNotW);
-            fhSupPt1Pt1_vsDEtaDPhi[i][j]->Sumw2(false);
+            if constexpr (docorrelations) {
+              fhN2_vsDEtaDPhi[i][j]->SetBit(TH1::kIsNotW);
+              fhN2_vsDEtaDPhi[i][j]->Sumw2(false);
+              fhN2cont_vsDEtaDPhi[i][j]->SetBit(TH1::kIsNotW);
+              fhN2cont_vsDEtaDPhi[i][j]->Sumw2(false);
+              fhSum2PtPt_vsDEtaDPhi[i][j]->SetBit(TH1::kIsNotW);
+              fhSum2PtPt_vsDEtaDPhi[i][j]->Sumw2(false);
+              fhSum2DptDpt_vsDEtaDPhi[i][j]->SetBit(TH1::kIsNotW);
+              fhSum2DptDpt_vsDEtaDPhi[i][j]->Sumw2(false);
+              fhSupN1N1_vsDEtaDPhi[i][j]->SetBit(TH1::kIsNotW);
+              fhSupN1N1_vsDEtaDPhi[i][j]->Sumw2(false);
+              fhSupPt1Pt1_vsDEtaDPhi[i][j]->SetBit(TH1::kIsNotW);
+              fhSupPt1Pt1_vsDEtaDPhi[i][j]->Sumw2(false);
+            }
+            if constexpr (doinvmass) {
+              if (!(j < i)) {
+                /* only 12 combinations, 21 are exactly the same */
+                fhInvMassDEta[i][j]->SetBit(TH1::kIsNotW);
+                fhInvMassDEta[i][j]->Sumw2(false);
+                fhInvMassDPhi[i][j]->SetBit(TH1::kIsNotW);
+                fhInvMassDPhi[i][j]->Sumw2(false);
+              }
+            }
 
-            fOutputList->Add(fhN2_vsDEtaDPhi[i][j]);
-            fOutputList->Add(fhN2cont_vsDEtaDPhi[i][j]);
-            fOutputList->Add(fhSum2PtPt_vsDEtaDPhi[i][j]);
-            fOutputList->Add(fhSum2DptDpt_vsDEtaDPhi[i][j]);
-            fOutputList->Add(fhSupN1N1_vsDEtaDPhi[i][j]);
-            fOutputList->Add(fhSupPt1Pt1_vsDEtaDPhi[i][j]);
-            fOutputList->Add(fhN2_vsPtPt[i][j]);
+            if constexpr (docorrelations) {
+              fOutputList->Add(fhN2_vsDEtaDPhi[i][j]);
+              fOutputList->Add(fhN2cont_vsDEtaDPhi[i][j]);
+              fOutputList->Add(fhSum2PtPt_vsDEtaDPhi[i][j]);
+              fOutputList->Add(fhSum2DptDpt_vsDEtaDPhi[i][j]);
+              fOutputList->Add(fhSupN1N1_vsDEtaDPhi[i][j]);
+              fOutputList->Add(fhSupPt1Pt1_vsDEtaDPhi[i][j]);
+              fOutputList->Add(fhN2_vsPtPt[i][j]);
+            }
+            if constexpr (doinvmass) {
+              if (!(j < i)) {
+                /* only 12 combinations, 21 are exactly the same */
+                fOutputList->Add(fhInvMassDEta[i][j]);
+                fOutputList->Add(fhInvMassDPhi[i][j]);
+              }
+            }
             fOutputList->Add(fhN2_vsC[i][j]);
             fOutputList->Add(fhSum2PtPt_vsC[i][j]);
             fOutputList->Add(fhSum2DptDpt_vsC[i][j]);
@@ -684,6 +855,8 @@ struct DptDptCorrelationsTask {
   Configurable<float> cfgTwoTrackCutMinRadius{"twotrackcutminradius", 0.8f, "Two-tracks cut: radius in m from which two-tracks cut is applied"};
 
   Configurable<bool> cfgSmallDCE{"smalldce", true, "Use small data collecting engine for singles processing, true = yes. Default = true"};
+  Configurable<bool> cfgDoInvMass{"doinvmass", false, "Do the invariant mass analyis, true = yes. Default = false"};
+  Configurable<bool> cfgDoCorrelations{"docorrelations", true, "Do the correlations analysis, true = yes. Default = true"};
   Configurable<bool> cfgProcessPairs{"processpairs", false, "Process pairs: false = no, just singles, true = yes, process pairs"};
   Configurable<bool> cfgProcessME{"processmixedevents", false, "Process mixed events: false = no, just same event, true = yes, also process mixed events"};
   Configurable<bool> cfgPtOrder{"ptorder", false, "enforce pT_1 < pT_2. Defalut: false"};
@@ -727,6 +900,8 @@ struct DptDptCorrelationsTask {
     processpairs = cfgProcessPairs.value;
     processmixedevents = cfgProcessME.value;
     ptorder = cfgPtOrder.value;
+    invmass = cfgDoInvMass.value;
+    corrana = cfgDoCorrelations.value;
 
     /* self configure the CCDB access to the input file */
     getTaskOptionValue(initContext, "dpt-dpt-filter", "input_ccdburl", cfgCCDBUrl, false);
@@ -803,7 +978,8 @@ struct DptDptCorrelationsTask {
           poinames.push_back(std::string(pidselector.getSpeciesFName(ix)));
           tnames.push_back(std::string(TString::Format("%sP", pidselector.getSpeciesFName(ix)).Data()));
           tnames.push_back(std::string(TString::Format("%sM", pidselector.getSpeciesFName(ix)).Data()));
-          LOGF(info, "Incorporated species name %s to the analysis", poinames[ix].c_str());
+          poimass.push_back(pidselector.getSpeciesMass(ix));
+          LOGF(info, "Incorporated species name %s with mass %f to the analysis", poinames[ix].c_str(), poimass[ix]);
         }
       }
       uint ntracknames = tnames.size();
@@ -839,7 +1015,6 @@ struct DptDptCorrelationsTask {
         fCentMultMin[0] = 0.0f;
         fCentMultMax[0] = 100.0f;
       }
-      dataCE = new DataCollectingEngine<false>*[ncmranges];
       if (cfgSmallDCE) {
         dataCE_small = new DataCollectingEngine<true>*[ncmranges];
       } else {
@@ -850,23 +1025,36 @@ struct DptDptCorrelationsTask {
       }
 
       for (int i = 0; i < ncmranges; ++i) {
-        auto initializeCEInstance = [&fGlobalOutputList](auto dce, auto name) {
+        auto initializeCEInstance = [&fGlobalOutputList](auto dce, auto name, bool im, bool corr) {
           /* crete the output list for the passed centrality/multiplicity range */
           TList* fOutputList = new TList();
           fOutputList->SetName(name);
           fOutputList->SetOwner(true);
           /* init the data collection instance */
-          dce->init(fOutputList);
+          if (im) {
+            if (corr) {
+              dce->template init<true, true>(fOutputList);
+            } else {
+              dce->template init<true, false>(fOutputList);
+            }
+          } else {
+            if (corr) {
+              dce->template init<false, true>(fOutputList);
+            } else {
+              dce->template init<false, false>(fOutputList);
+            }
+          }
           fGlobalOutputList->Add(fOutputList);
         };
         auto builSmallDCEInstance = [&initializeCEInstance](auto rg, bool me = false) {
+          /* only for singles analysis, no sense of inv mass nor no correlations */
           DataCollectingEngine<true>* dce = new DataCollectingEngine<true>();
-          initializeCEInstance(dce, TString::Format("DptDptCorrelationsData%s-%s", me ? "ME" : "", rg));
+          initializeCEInstance(dce, TString::Format("DptDptCorrelationsData%s-%s", me ? "ME" : "", rg), false, false);
           return dce;
         };
-        auto buildCEInstance = [&initializeCEInstance](auto rg, bool me = false) {
+        auto buildCEInstance = [&initializeCEInstance](auto rg, bool im, bool corr, bool me = false) {
           DataCollectingEngine<false>* dce = new DataCollectingEngine<false>();
-          initializeCEInstance(dce, TString::Format("DptDptCorrelationsData%s-%s", me ? "ME" : "", rg));
+          initializeCEInstance(dce, TString::Format("DptDptCorrelationsData%s-%s", me ? "ME" : "", rg), im, corr);
           return dce;
         };
         TString range = TString::Format("%d-%d", static_cast<int>(fCentMultMin[i]), static_cast<int>(fCentMultMax[i]));
@@ -874,16 +1062,30 @@ struct DptDptCorrelationsTask {
           if (processpairs) {
             LOGF(fatal, "Processing pairs cannot be used with the small DCE, please configure properly!!");
           }
+          if (invmass) {
+            LOGF(fatal, "Invariant mass cannot be used with singles in the small DCE mode, please configure properly!!");
+          }
           dataCE_small[i] = builSmallDCEInstance(range.Data());
         } else {
-          dataCE[i] = buildCEInstance(range.Data());
+          if (invmass) {
+            if (!processpairs) {
+              LOGF(fatal, "Invariant mass cannot be used in processing singles, please configure properly!!");
+            }
+          }
+          dataCE[i] = buildCEInstance(range.Data(), invmass, corrana);
         }
         if (processmixedevents) {
           /* consistency check */
           if (cfgSmallDCE.value) {
             LOGF(fatal, "Mixed events cannot be used with the small DCE, please configure properly!!");
           }
-          dataCEME[i] = buildCEInstance(range.Data(), true);
+          if (invmass) {
+            LOGF(warning, "Invariant mass will not be  used with Mixed events!!");
+          }
+          if (!corrana) {
+            LOGF(fatal, "Mixed events makes not sense to run it without correlations, please configure properly!!");
+          }
+          dataCEME[i] = buildCEInstance(range.Data(), false, false, true);
         }
       }
       for (int i = 0; i < ncmranges; ++i) {

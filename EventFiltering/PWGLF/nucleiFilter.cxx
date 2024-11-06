@@ -130,6 +130,7 @@ struct nucleiFilter {
     qaHists.add("fTPCsignalAll", "Specific energy loss (before filter)", HistType::kTH2F, {{1200, -6, 6, "#it{p} (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E} / d#it{X} (a. u.)"}});
     qaHists.add("fTPCsignal", "Specific energy loss", HistType::kTH2F, {{1200, -6, 6, "#it{p} (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E} / d#it{X} (a. u.)"}});
     qaHists.add("fDeuTOFNsigma", "Deuteron TOF Nsigma distribution", HistType::kTH2F, {{1200, -6, 6, "#it{p} (GeV/#it{c})"}, {2000, -100, 100, "TOF n#sigma"}});
+    qaHists.add("fBachDeuTOFNsigma", "Bachelor Deuteron TOF Nsigma distribution", HistType::kTH2F, {{1200, -6, 6, "#it{p} (GeV/#it{c})"}, {2000, -100, 100, "TOF n#sigma"}});
     qaHists.add("fH3LMassVsPt", "Hypertrion mass Vs pT", HistType::kTH2F, {{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"}, {80, 2.96, 3.04, "Inv. Mass (GeV/c^{2})"}});
     qaHists.add("fExtremeIonisationITS", "ITS clusters for extreme ionisation trigger", HistType::kTH3F, {{4, 3.5, 7.5, "Number of ITS clusters"}, {150, 0, 15, "Average cluster size in ITS x cos#lambda"}, {100, 0.1, 10, "#it{p} (GeV/#it{c})"}});
 
@@ -238,6 +239,8 @@ struct nucleiFilter {
       auto track1 = vtx.track1_as<TrackCandidates>();
       auto track2 = vtx.track2_as<TrackCandidates>();
 
+      qaHists.fill(HIST("fBachDeuTOFNsigma"), track2.p() * track2.sign(), vtx.tofNSigmaBachDe());
+
       if (vtx.vtxcosPA(collision.posX(), collision.posY(), collision.posZ()) < minCosPA3body) {
         continue;
       }
@@ -248,7 +251,7 @@ struct nucleiFilter {
       if (vtx.dcaVtxdaughters() > dcavtxdau) {
         continue;
       }
-      if ((track2.tofNSigmaDe() < TofPidNsigmaMin || track2.tofNSigmaDe() > TofPidNsigmaMax) && track2.p() > minDeuteronPUseTOF) {
+      if ((vtx.tofNSigmaBachDe() < TofPidNsigmaMin || vtx.tofNSigmaBachDe() > TofPidNsigmaMax) && track2.p() > minDeuteronPUseTOF) {
         continue;
       }
       if (std::abs(track0.tpcNSigmaPr()) < TpcPidNsigmaCut && std::abs(track1.tpcNSigmaPi()) < TpcPidNsigmaCut && std::abs(track2.tpcNSigmaDe()) < TpcPidNsigmaCut && vtx.mHypertriton() > h3LMassLowerlimit && vtx.mHypertriton() < h3LMassUpperlimit) {

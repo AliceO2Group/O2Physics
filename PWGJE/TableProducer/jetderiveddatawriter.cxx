@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file jetderiveddatawriter.cxx
-/// \brief Task to skim jet framework tables (JetCollisions, JetTracks, JetClusters, ...)
+/// \brief Task to skim jet framework tables (aod::JetCollisions, aod::JetTracks, aod::JetClusters, ...)
 /// while adjusting indices accordingly
 ///
 /// \author Jochen Klein <jochen.klein@cern.ch>
@@ -26,7 +26,6 @@
 #include "Framework/ASoA.h"
 #include "Framework/runDataProcessing.h"
 
-#include "Common/CCDB/EventSelectionParams.h"
 #include "PWGJE/Core/JetHFUtilities.h"
 #include "PWGJE/Core/JetDQUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
@@ -39,24 +38,24 @@ using namespace o2::framework::expressions;
 struct JetDerivedDataWriter {
 
   struct : ConfigurableGroup {
-    Configurable<float> chargedJetPtMin{"chargedJetPtMin", 0.0, "Minimum charged jet pt to accept event"};
-    Configurable<float> chargedEventWiseSubtractedJetPtMin{"chargedEventWiseSubtractedJetPtMin", 0.0, "Minimum charged event-wise subtracted jet pt to accept event"};
-    Configurable<float> chargedMCPJetPtMin{"chargedMCPJetPtMin", 0.0, "Minimum charged mcp jet pt to accept event"};
-    Configurable<float> neutralJetPtMin{"neutralJetPtMin", 0.0, "Minimum neutral jet pt to accept event"};
-    Configurable<float> neutralMCPJetPtMin{"neutralMCPJetPtMin", 0.0, "Minimum neutal mcp jet pt to accept event"};
-    Configurable<float> fullJetPtMin{"fullJetPtMin", 0.0, "Minimum full jet pt to accept event"};
-    Configurable<float> fullMCPJetPtMin{"fullMCPJetPtMin", 0.0, "Minimum full mcp jet pt to accept event"};
-    Configurable<float> chargedD0JetPtMin{"chargedD0JetPtMin", 0.0, "Minimum charged D0 jet pt to accept event"};
-    Configurable<float> chargedEventWiseSubtractedD0JetPtMin{"chargedEventWiseSubtractedD0JetPtMin", 0.0, "Minimum charged event-wise subtracted D0 jet pt to accept event"};
-    Configurable<float> chargedD0MCPJetPtMin{"chargedD0MCPJetPtMin", 0.0, "Minimum charged D0 mcp jet pt to accept event"};
-    Configurable<float> chargedLcJetPtMin{"chargedLcJetPtMin", 0.0, "Minimum charged Lc jet pt to accept event"};
-    Configurable<float> chargedEventWiseSubtractedLcJetPtMin{"chargedEventWiseSubtractedLcJetPtMin", 0.0, "Minimum charged event-wise subtracted Lc jet pt to accept event"};
-    Configurable<float> chargedLcMCPJetPtMin{"chargedLcMCPJetPtMin", 0.0, "Minimum charged Lc mcp jet pt to accept event"};
-    Configurable<float> chargedDielectronJetPtMin{"chargedDielectronJetPtMin", 0.0, "Minimum charged Dielectron jet pt to accept event"};
-    Configurable<float> chargedEventWiseSubtractedDielectronJetPtMin{"chargedEventWiseSubtractedDielectronJetPtMin", 0.0, "Minimum charged event-wise subtracted Dielectron jet pt to accept event"};
-    Configurable<float> chargedDielectronMCPJetPtMin{"chargedDielectronMCPJetPtMin", 0.0, "Minimum charged Dielectron mcp jet pt to accept event"};
-    Configurable<float> triggerTrackPtMin{"triggerTrackPtMin", 0.0, "Minimum trigger track pt to accept event"};
-    Configurable<float> clusterEnergyMin{"clusterEnergyMin", 0.0, "Minimum cluster energy to accept event"};
+    Configurable<float> thresholdChargedJetPtMin{"thresholdChargedJetPtMin", 0.0, "Minimum charged jet pt to accept event"};
+    Configurable<float> thresholdChargedEventWiseSubtractedJetPtMin{"thresholdChargedEventWiseSubtractedJetPtMin", 0.0, "Minimum charged event-wise subtracted jet pt to accept event"};
+    Configurable<float> thresholdChargedMCPJetPtMin{"thresholdChargedMCPJetPtMin", 0.0, "Minimum charged mcp jet pt to accept event"};
+    Configurable<float> thresholdNeutralJetPtMin{"thresholdNeutralJetPtMin", 0.0, "Minimum neutral jet pt to accept event"};
+    Configurable<float> thresholdNeutralMCPJetPtMin{"thresholdNeutralMCPJetPtMin", 0.0, "Minimum neutal mcp jet pt to accept event"};
+    Configurable<float> thresholdFullJetPtMin{"thresholdFullJetPtMin", 0.0, "Minimum full jet pt to accept event"};
+    Configurable<float> thresholdFullMCPJetPtMin{"thresholdFullMCPJetPtMin", 0.0, "Minimum full mcp jet pt to accept event"};
+    Configurable<float> thresholdChargedD0JetPtMin{"thresholdChargedD0JetPtMin", 0.0, "Minimum charged D0 jet pt to accept event"};
+    Configurable<float> thresholdChargedEventWiseSubtractedD0JetPtMin{"thresholdChargedEventWiseSubtractedD0JetPtMin", 0.0, "Minimum charged event-wise subtracted D0 jet pt to accept event"};
+    Configurable<float> thresholdChargedD0MCPJetPtMin{"thresholdChargedD0MCPJetPtMin", 0.0, "Minimum charged D0 mcp jet pt to accept event"};
+    Configurable<float> thresholdChargedLcJetPtMin{"thresholdChargedLcJetPtMin", 0.0, "Minimum charged Lc jet pt to accept event"};
+    Configurable<float> thresholdChargedEventWiseSubtractedLcJetPtMin{"thresholdChargedEventWiseSubtractedLcJetPtMin", 0.0, "Minimum charged event-wise subtracted Lc jet pt to accept event"};
+    Configurable<float> thresholdChargedLcMCPJetPtMin{"thresholdChargedLcMCPJetPtMin", 0.0, "Minimum charged Lc mcp jet pt to accept event"};
+    Configurable<float> thresholdChargedDielectronJetPtMin{"thresholdChargedDielectronJetPtMin", 0.0, "Minimum charged Dielectron jet pt to accept event"};
+    Configurable<float> thresholdChargedEventWiseSubtractedDielectronJetPtMin{"thresholdChargedEventWiseSubtractedDielectronJetPtMin", 0.0, "Minimum charged event-wise subtracted Dielectron jet pt to accept event"};
+    Configurable<float> thresholdChargedDielectronMCPJetPtMin{"thresholdChargedDielectronMCPJetPtMin", 0.0, "Minimum charged Dielectron mcp jet pt to accept event"};
+    Configurable<float> thresholdTriggerTrackPtMin{"thresholdTriggerTrackPtMin", 0.0, "Minimum trigger track pt to accept event"};
+    Configurable<float> thresholdClusterEnergyMin{"thresholdClusterEnergyMin", 0.0, "Minimum cluster energy to accept event"};
     Configurable<int> downscaleFactor{"downscaleFactor", 1, "random downscale of selected events"};
 
     Configurable<float> vertexZCut{"vertexZCut", 10.0, "z-vertex cut on event"};
@@ -72,14 +71,10 @@ struct JetDerivedDataWriter {
     Configurable<bool> saveLcTable{"saveLcTable", false, "save the Lc table to the output"};
     Configurable<bool> saveDielectronTable{"saveDielectronTable", false, "save the Dielectron table to the output"};
 
-    Configurable<float> vertexZCutForCounting{"vertexZCutForCounting", 10.0, "choose z-vertex cut for collision counter"};
-    Configurable<std::string> eventSelectionForCounting{"eventSelectionForCounting", "sel8", "choose event selection for collision counter"};
     Configurable<std::string> triggerMasks{"triggerMasks", "", "possible JE Trigger masks: fJetChLowPt,fJetChHighPt,fTrackLowPt,fTrackHighPt,fJetD0ChLowPt,fJetD0ChHighPt,fJetLcChLowPt,fJetLcChHighPt,fEMCALReadout,fJetFullHighPt,fJetFullLowPt,fJetNeutralHighPt,fJetNeutralLowPt,fGammaVeryHighPtEMCAL,fGammaVeryHighPtDCAL,fGammaHighPtEMCAL,fGammaHighPtDCAL,fGammaLowPtEMCAL,fGammaLowPtDCAL,fGammaVeryLowPtEMCAL,fGammaVeryLowPtDCAL"};
   } config;
 
   struct : ProducesGroup {
-    Produces<aod::StoredBCCounts> storedBCCountsTable;
-    Produces<aod::StoredCollisionCounts> storedCollisionCountsTable;
     Produces<aod::StoredJDummys> storedJDummysTable;
     Produces<aod::StoredJBCs> storedJBCsTable;
     Produces<aod::StoredJBCPIs> storedJBCParentIndexTable;
@@ -146,15 +141,15 @@ struct JetDerivedDataWriter {
   PresliceUnsorted<soa::Join<aod::JMcParticles, aod::JMcParticlePIs>> ParticlesPerMcCollision = aod::jmcparticle::mcCollisionId;
   Preslice<soa::Join<aod::JTracks, aod::JTrackExtras, aod::JTrackPIs, aod::JMcTrackLbs>> TracksPerCollision = aod::jtrack::collisionId;
   Preslice<soa::Join<aod::JClusters, aod::JClusterPIs, aod::JClusterTracks>> ClustersPerCollision = aod::jcluster::collisionId;
-  Preslice<soa::Join<McCollisionsD0, aod::HfD0McRCollIds>> D0McCollisionsPerMcCollision = aod::jd0indices::mcCollisionId;
-  Preslice<soa::Join<McCollisionsLc, aod::Hf3PMcRCollIds>> LcMcCollisionsPerMcCollision = aod::jlcindices::mcCollisionId;
-  Preslice<McCollisionsDielectron> DielectronMcCollisionsPerMcCollision = aod::jdielectronindices::mcCollisionId;
-  Preslice<CollisionsD0> D0CollisionsPerCollision = aod::jd0indices::collisionId;
-  Preslice<CollisionsLc> LcCollisionsPerCollision = aod::jlcindices::collisionId;
-  Preslice<CollisionsDielectron> DielectronCollisionsPerCollision = aod::jdielectronindices::collisionId;
-  Preslice<CandidatesD0MCD> D0sPerCollision = aod::jd0indices::collisionId;
-  Preslice<CandidatesLcMCD> LcsPerCollision = aod::jlcindices::collisionId;
-  Preslice<CandidatesDielectronMCD> DielectronsPerCollision = aod::jdielectronindices::collisionId;
+  Preslice<soa::Join<aod::McCollisionsD0, aod::HfD0McRCollIds>> D0McCollisionsPerMcCollision = aod::jd0indices::mcCollisionId;
+  Preslice<soa::Join<aod::McCollisionsLc, aod::Hf3PMcRCollIds>> LcMcCollisionsPerMcCollision = aod::jlcindices::mcCollisionId;
+  Preslice<aod::McCollisionsDielectron> DielectronMcCollisionsPerMcCollision = aod::jdielectronindices::mcCollisionId;
+  Preslice<aod::CollisionsD0> D0CollisionsPerCollision = aod::jd0indices::collisionId;
+  Preslice<aod::CollisionsLc> LcCollisionsPerCollision = aod::jlcindices::collisionId;
+  Preslice<aod::CollisionsDielectron> DielectronCollisionsPerCollision = aod::jdielectronindices::collisionId;
+  Preslice<aod::CandidatesD0MCD> D0sPerCollision = aod::jd0indices::collisionId;
+  Preslice<aod::CandidatesLcMCD> LcsPerCollision = aod::jlcindices::collisionId;
+  Preslice<aod::CandidatesDielectronMCD> DielectronsPerCollision = aod::jdielectronindices::collisionId;
 
   std::vector<bool> collisionFlag;
   std::vector<bool> McCollisionFlag;
@@ -165,14 +160,11 @@ struct JetDerivedDataWriter {
 
   TRandom3 randomNumber;
 
-  int eventSelection = -1;
-
   std::vector<int> triggerMaskBits;
   void init(InitContext&)
   {
     precisionPositionMask = 0xFFFFFC00; // 13 bits
     precisionMomentumMask = 0xFFFFFC00; // 13 bits  this is currently keept at 13 bits wihich gives roughly a resolution of 1/8000. This can be increased to 15 bits if really needed
-    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(config.eventSelectionForCounting));
     randomNumber.SetSeed(0);
     triggerMaskBits = jetderiveddatautilities::initialiseTriggerMaskBits(config.triggerMasks);
   }
@@ -258,41 +250,41 @@ struct JetDerivedDataWriter {
   {
     float selectionObjectPtMin = 0.0;
     if constexpr (std::is_same_v<std::decay_t<T>, aod::ChargedJets> || std::is_same_v<std::decay_t<T>, aod::ChargedMCDetectorLevelJets>) {
-      selectionObjectPtMin = config.chargedJetPtMin;
+      selectionObjectPtMin = config.thresholdChargedJetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::ChargedEventWiseSubtractedJets> || std::is_same_v<std::decay_t<T>, aod::ChargedMCDetectorLevelEventWiseSubtractedJets>) {
-      selectionObjectPtMin = config.chargedEventWiseSubtractedJetPtMin;
+      selectionObjectPtMin = config.thresholdChargedEventWiseSubtractedJetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::ChargedMCParticleLevelJets>) {
-      selectionObjectPtMin = config.chargedMCPJetPtMin;
+      selectionObjectPtMin = config.thresholdChargedMCPJetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::NeutralJets> || std::is_same_v<std::decay_t<T>, aod::NeutralMCDetectorLevelJets>) {
-      selectionObjectPtMin = config.neutralJetPtMin;
+      selectionObjectPtMin = config.thresholdNeutralJetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::NeutralMCParticleLevelJets>) {
-      selectionObjectPtMin = config.neutralMCPJetPtMin;
+      selectionObjectPtMin = config.thresholdNeutralMCPJetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::FullJets> || std::is_same_v<std::decay_t<T>, aod::FullMCDetectorLevelJets>) {
-      selectionObjectPtMin = config.fullJetPtMin;
+      selectionObjectPtMin = config.thresholdFullJetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::FullMCParticleLevelJets>) {
-      selectionObjectPtMin = config.fullMCPJetPtMin;
+      selectionObjectPtMin = config.thresholdFullMCPJetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::D0ChargedJets> || std::is_same_v<std::decay_t<T>, aod::D0ChargedMCDetectorLevelJets>) {
-      selectionObjectPtMin = config.chargedD0JetPtMin;
+      selectionObjectPtMin = config.thresholdChargedD0JetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::D0ChargedEventWiseSubtractedJets> || std::is_same_v<std::decay_t<T>, aod::D0ChargedMCDetectorLevelEventWiseSubtractedJets>) {
-      selectionObjectPtMin = config.chargedEventWiseSubtractedD0JetPtMin;
+      selectionObjectPtMin = config.thresholdChargedEventWiseSubtractedD0JetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::D0ChargedMCParticleLevelJets>) {
-      selectionObjectPtMin = config.chargedD0MCPJetPtMin;
+      selectionObjectPtMin = config.thresholdChargedD0MCPJetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::LcChargedJets> || std::is_same_v<std::decay_t<T>, aod::LcChargedMCDetectorLevelJets>) {
-      selectionObjectPtMin = config.chargedLcJetPtMin;
+      selectionObjectPtMin = config.thresholdChargedLcJetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::LcChargedEventWiseSubtractedJets> || std::is_same_v<std::decay_t<T>, aod::LcChargedMCDetectorLevelEventWiseSubtractedJets>) {
-      selectionObjectPtMin = config.chargedEventWiseSubtractedLcJetPtMin;
+      selectionObjectPtMin = config.thresholdChargedEventWiseSubtractedLcJetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::LcChargedMCParticleLevelJets>) {
-      selectionObjectPtMin = config.chargedLcMCPJetPtMin;
+      selectionObjectPtMin = config.thresholdChargedLcMCPJetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::DielectronChargedJets> || std::is_same_v<std::decay_t<T>, aod::DielectronChargedMCDetectorLevelJets>) {
-      selectionObjectPtMin = config.chargedDielectronJetPtMin;
+      selectionObjectPtMin = config.thresholdChargedDielectronJetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::DielectronChargedEventWiseSubtractedJets> || std::is_same_v<std::decay_t<T>, aod::DielectronChargedMCDetectorLevelEventWiseSubtractedJets>) {
-      selectionObjectPtMin = config.chargedEventWiseSubtractedDielectronJetPtMin;
+      selectionObjectPtMin = config.thresholdChargedEventWiseSubtractedDielectronJetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::DielectronChargedMCParticleLevelJets>) {
-      selectionObjectPtMin = config.chargedDielectronMCPJetPtMin;
+      selectionObjectPtMin = config.thresholdChargedDielectronMCPJetPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::JTracks>) {
-      selectionObjectPtMin = config.triggerTrackPtMin;
+      selectionObjectPtMin = config.thresholdTriggerTrackPtMin;
     } else if constexpr (std::is_same_v<std::decay_t<T>, aod::JClusters>) {
-      selectionObjectPtMin = config.clusterEnergyMin;
+      selectionObjectPtMin = config.thresholdClusterEnergyMin;
     } else {
       selectionObjectPtMin = 0.0;
     }
@@ -303,15 +295,24 @@ struct JetDerivedDataWriter {
           isTriggerObject = true;
         }
       } else {
+        if constexpr (std::is_same_v<std::decay_t<T>, aod::JTracks>) {
+          if (config.performTrackSelection && !(selectionObject.trackSel() & ~(1 << jetderiveddatautilities::JTrackSel::trackSign))) {
+            continue;
+          }
+        }
         if (selectionObject.pt() >= selectionObjectPtMin) {
           isTriggerObject = true;
         }
       }
       if (isTriggerObject) {
         if constexpr (std::is_same_v<std::decay_t<T>, aod::ChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::NeutralMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::FullMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::D0ChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::LcChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::BplusChargedMCParticleLevelJets> || std::is_same_v<std::decay_t<T>, aod::DielectronChargedMCParticleLevelJets>) {
-          McCollisionFlag[selectionObject.mcCollisionId()] = true;
+          if (selectionObject.mcCollisionId() >= 0) {
+            McCollisionFlag[selectionObject.mcCollisionId()] = true;
+          }
         } else {
-          collisionFlag[selectionObject.collisionId()] = true;
+          if (selectionObject.collisionId() >= 0) {
+            collisionFlag[selectionObject.collisionId()] = true;
+          }
         }
       }
     }
@@ -322,7 +323,7 @@ struct JetDerivedDataWriter {
   PROCESS_SWITCH(JetDerivedDataWriter, processSetupAllCollisionsWithDownscaling, "setup the writing of untriggered collisions with downscaling", false);
   PROCESS_SWITCH(JetDerivedDataWriter, processSetupAllMcCollisionsWithDownscaling, "setup the writing of untriggered mccollisions with downscaling", false);
   PROCESS_SWITCH(JetDerivedDataWriter, processSetupEventTriggering, "process software triggers", false);
-  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processSelectionObjects<aod::ChargedJets>, processSelectingChargedJets, "process charged jets", true);
+  PROCESS_SWITCH_FULL(JetDerivedDataWriter, processSelectionObjects<aod::ChargedJets>, processSelectingChargedJets, "process charged jets", false);
   PROCESS_SWITCH_FULL(JetDerivedDataWriter, processSelectionObjects<aod::ChargedEventWiseSubtractedJets>, processSelectingChargedEventWiseSubtractedJets, "process charged event-wise subtracted jets", false);
   PROCESS_SWITCH_FULL(JetDerivedDataWriter, processSelectionObjects<aod::ChargedMCDetectorLevelJets>, processSelectingChargedMCDJets, "process charged mcd jets", false);
   PROCESS_SWITCH_FULL(JetDerivedDataWriter, processSelectionObjects<aod::ChargedMCDetectorLevelEventWiseSubtractedJets>, processSelectingChargedMCDetectorLevelEventWiseSubtractedJets, "process charged event-wise subtracted mcd jets", false);
@@ -360,109 +361,7 @@ struct JetDerivedDataWriter {
   }
   PROCESS_SWITCH(JetDerivedDataWriter, processStoreDummyTable, "write out dummy output table", true);
 
-  void processStoreBCCounting(aod::JBCs const& bcs, aod::BCCounts const& bcCounts)
-  {
-    int readBCCounter = 0;
-    int readBCWithTVXCounter = 0;
-    int readBCWithTVXAndITSROFBAndNoTFBCounter = 0;
-    for (const auto& bc : bcs) {
-      readBCCounter++;
-      if (bc.selection_bit(aod::evsel::EventSelectionFlags::kIsTriggerTVX)) {
-        readBCWithTVXCounter++;
-        if (bc.selection_bit(aod::evsel::EventSelectionFlags::kNoITSROFrameBorder) && bc.selection_bit(aod::evsel::EventSelectionFlags::kNoTimeFrameBorder)) {
-          readBCWithTVXAndITSROFBAndNoTFBCounter++;
-        }
-      }
-    }
-    std::vector<int> previousReadCounts;
-    std::vector<int> previousReadCountsWithTVX;
-    std::vector<int> previousReadCountsWithTVXAndITSROFBAndNoTFB;
-    int iPreviousDataFrame = 0;
-    for (const auto& bcCount : bcCounts) {
-      auto readBCCounterSpan = bcCount.readCounts();
-      auto readBCWithTVXCounterSpan = bcCount.readCountsWithTVX();
-      auto readBCWithTVXAndITSROFBAndNoTFBCounterSpan = bcCount.readCountsWithTVXAndITSROFBAndNoTFB();
-      if (iPreviousDataFrame == 0) {
-        std::copy(readBCCounterSpan.begin(), readBCCounterSpan.end(), std::back_inserter(previousReadCounts));
-        std::copy(readBCWithTVXCounterSpan.begin(), readBCWithTVXCounterSpan.end(), std::back_inserter(previousReadCountsWithTVX));
-        std::copy(readBCWithTVXAndITSROFBAndNoTFBCounterSpan.begin(), readBCWithTVXAndITSROFBAndNoTFBCounterSpan.end(), std::back_inserter(previousReadCountsWithTVXAndITSROFBAndNoTFB));
-      } else {
-        for (unsigned int i = 0; i < previousReadCounts.size(); i++) {
-          previousReadCounts[i] += readBCCounterSpan[i];
-          previousReadCountsWithTVX[i] += readBCWithTVXCounterSpan[i];
-          previousReadCountsWithTVXAndITSROFBAndNoTFB[i] += readBCWithTVXAndITSROFBAndNoTFBCounterSpan[i];
-        }
-      }
-      iPreviousDataFrame++;
-    }
-    previousReadCounts.push_back(readBCCounter);
-    previousReadCountsWithTVX.push_back(readBCWithTVXCounter);
-    previousReadCountsWithTVXAndITSROFBAndNoTFB.push_back(readBCWithTVXAndITSROFBAndNoTFBCounter);
-    products.storedBCCountsTable(previousReadCounts, previousReadCountsWithTVX, previousReadCountsWithTVXAndITSROFBAndNoTFB);
-  }
-  PROCESS_SWITCH(JetDerivedDataWriter, processStoreBCCounting, "write out bc counting output table", true);
-
-  void processStoreCollisionCounting(aod::JCollisions const& collisions, aod::CollisionCounts const& collisionCounts)
-  {
-    int readCollisionCounter = 0;
-    int readCollisionWithTVXCounter = 0;
-    int readCollisionWithTVXAndSelectionCounter = 0;
-    int readCollisionWithTVXAndSelectionAndZVertexCounter = 0;
-    int writtenCollisionCounter = 0;
-    for (const auto& collision : collisions) {
-      readCollisionCounter++;
-      if (collisionFlag[collision.globalIndex()]) {
-        writtenCollisionCounter++;
-      }
-      if (jetderiveddatautilities::selectCollision(collision, jetderiveddatautilities::JCollisionSel::selTVX)) {
-        readCollisionWithTVXCounter++;
-        if (jetderiveddatautilities::selectCollision(collision, eventSelection)) {
-          readCollisionWithTVXAndSelectionCounter++;
-          if (std::abs(collision.posZ()) < config.vertexZCutForCounting) {
-            readCollisionWithTVXAndSelectionAndZVertexCounter++;
-          }
-        }
-      }
-    }
-    std::vector<int> previousReadCounts;
-    std::vector<int> previousReadCountsWithTVX;
-    std::vector<int> previousReadCountsWithTVXAndSelection;
-    std::vector<int> previousReadCountsWithTVXAndSelectionAndZVertex;
-    std::vector<int> previousWrittenCounts;
-    int iPreviousDataFrame = 0;
-    for (const auto& collisionCount : collisionCounts) {
-      auto readCollisionCounterSpan = collisionCount.readCounts();
-      auto readCollisionWithTVXCounterSpan = collisionCount.readCountsWithTVX();
-      auto readCollisionWithTVXAndSelectionCounterSpan = collisionCount.readCountsWithTVXAndSelection();
-      auto readCollisionWithTVXAndSelectionAndZVertexCounterSpan = collisionCount.readCountsWithTVXAndSelectionAndZVertex();
-      auto writtenCollisionCounterSpan = collisionCount.writtenCounts();
-      if (iPreviousDataFrame == 0) {
-        std::copy(readCollisionCounterSpan.begin(), readCollisionCounterSpan.end(), std::back_inserter(previousReadCounts));
-        std::copy(readCollisionWithTVXCounterSpan.begin(), readCollisionWithTVXCounterSpan.end(), std::back_inserter(previousReadCountsWithTVX));
-        std::copy(readCollisionWithTVXAndSelectionCounterSpan.begin(), readCollisionWithTVXAndSelectionCounterSpan.end(), std::back_inserter(previousReadCountsWithTVXAndSelection));
-        std::copy(readCollisionWithTVXAndSelectionAndZVertexCounterSpan.begin(), readCollisionWithTVXAndSelectionAndZVertexCounterSpan.end(), std::back_inserter(previousReadCountsWithTVXAndSelectionAndZVertex));
-        std::copy(writtenCollisionCounterSpan.begin(), writtenCollisionCounterSpan.end(), std::back_inserter(previousWrittenCounts));
-      } else {
-        for (unsigned int i = 0; i < previousReadCounts.size(); i++) {
-          previousReadCounts[i] += readCollisionCounterSpan[i];
-          previousReadCountsWithTVX[i] += readCollisionWithTVXCounterSpan[i];
-          previousReadCountsWithTVXAndSelection[i] += readCollisionWithTVXAndSelectionCounterSpan[i];
-          previousReadCountsWithTVXAndSelectionAndZVertex[i] += readCollisionWithTVXAndSelectionAndZVertexCounterSpan[i];
-          previousWrittenCounts[i] += writtenCollisionCounterSpan[i];
-        }
-      }
-      iPreviousDataFrame++;
-    }
-    previousReadCounts.push_back(readCollisionCounter);
-    previousReadCountsWithTVX.push_back(readCollisionWithTVXCounter);
-    previousReadCountsWithTVXAndSelection.push_back(readCollisionWithTVXAndSelectionCounter);
-    previousReadCountsWithTVXAndSelectionAndZVertex.push_back(readCollisionWithTVXAndSelectionAndZVertexCounter);
-    previousWrittenCounts.push_back(writtenCollisionCounter);
-    products.storedCollisionCountsTable(previousReadCounts, previousReadCountsWithTVX, previousReadCountsWithTVXAndSelection, previousReadCountsWithTVXAndSelectionAndZVertex, previousWrittenCounts);
-  }
-  PROCESS_SWITCH(JetDerivedDataWriter, processStoreCollisionCounting, "write out collision counting output table", true);
-
-  void processStoreData(soa::Join<aod::JCollisions, aod::JCollisionPIs, aod::JCollisionBCs, aod::JEMCCollisionLbs>::iterator const& collision, soa::Join<aod::JBCs, aod::JBCPIs> const&, soa::Join<aod::JTracks, aod::JTrackExtras, aod::JTrackPIs> const& tracks, soa::Join<aod::JClusters, aod::JClusterPIs, aod::JClusterTracks> const& clusters, CollisionsD0 const& D0Collisions, CandidatesD0Data const& D0s, CollisionsLc const& LcCollisions, CandidatesLcData const& Lcs, CollisionsDielectron const& DielectronCollisions, CandidatesDielectronData const& Dielectrons)
+  void processStoreData(soa::Join<aod::JCollisions, aod::JCollisionPIs, aod::JCollisionBCs, aod::JEMCCollisionLbs>::iterator const& collision, soa::Join<aod::JBCs, aod::JBCPIs> const&, soa::Join<aod::JTracks, aod::JTrackExtras, aod::JTrackPIs> const& tracks, soa::Join<aod::JClusters, aod::JClusterPIs, aod::JClusterTracks> const& clusters, aod::CollisionsD0 const& D0Collisions, aod::CandidatesD0Data const& D0s, aod::CollisionsLc const& LcCollisions, aod::CandidatesLcData const& Lcs, aod::CollisionsDielectron const& DielectronCollisions, aod::CandidatesDielectronData const& Dielectrons)
   {
     std::map<int32_t, int32_t> bcMapping;
     std::map<int32_t, int32_t> trackMapping;
@@ -603,7 +502,7 @@ struct JetDerivedDataWriter {
   // to run after all jet selections
   PROCESS_SWITCH(JetDerivedDataWriter, processStoreData, "write out data output tables", false);
 
-  void processStoreMC(soa::Join<aod::JMcCollisions, aod::JMcCollisionPIs> const& mcCollisions, soa::Join<aod::JCollisions, aod::JCollisionPIs, aod::JCollisionBCs, aod::JMcCollisionLbs, aod::JEMCCollisionLbs> const& collisions, soa::Join<aod::JBCs, aod::JBCPIs> const&, soa::Join<aod::JTracks, aod::JTrackExtras, aod::JTrackPIs, aod::JMcTrackLbs> const& tracks, soa::Join<aod::JClusters, aod::JClusterPIs, aod::JClusterTracks, aod::JMcClusterLbs> const& clusters, soa::Join<aod::JMcParticles, aod::JMcParticlePIs> const& particles, CollisionsD0 const& D0Collisions, CandidatesD0MCD const& D0s, soa::Join<McCollisionsD0, aod::HfD0McRCollIds> const& D0McCollisions, CandidatesD0MCP const& D0Particles, CollisionsLc const& LcCollisions, CandidatesLcMCD const& Lcs, soa::Join<McCollisionsLc, aod::Hf3PMcRCollIds> const& LcMcCollisions, CandidatesLcMCP const& LcParticles, CollisionsDielectron const& DielectronCollisions, CandidatesDielectronMCD const& Dielectrons, McCollisionsDielectron const& DielectronMcCollisions, CandidatesDielectronMCP const& DielectronParticles)
+  void processStoreMC(soa::Join<aod::JMcCollisions, aod::JMcCollisionPIs> const& mcCollisions, soa::Join<aod::JCollisions, aod::JCollisionPIs, aod::JCollisionBCs, aod::JMcCollisionLbs, aod::JEMCCollisionLbs> const& collisions, soa::Join<aod::JBCs, aod::JBCPIs> const&, soa::Join<aod::JTracks, aod::JTrackExtras, aod::JTrackPIs, aod::JMcTrackLbs> const& tracks, soa::Join<aod::JClusters, aod::JClusterPIs, aod::JClusterTracks, aod::JMcClusterLbs> const& clusters, soa::Join<aod::JMcParticles, aod::JMcParticlePIs> const& particles, aod::CollisionsD0 const& D0Collisions, aod::CandidatesD0MCD const& D0s, soa::Join<aod::McCollisionsD0, aod::HfD0McRCollIds> const& D0McCollisions, aod::CandidatesD0MCP const& D0Particles, aod::CollisionsLc const& LcCollisions, aod::CandidatesLcMCD const& Lcs, soa::Join<aod::McCollisionsLc, aod::Hf3PMcRCollIds> const& LcMcCollisions, aod::CandidatesLcMCP const& LcParticles, aod::CollisionsDielectron const& DielectronCollisions, aod::CandidatesDielectronMCD const& Dielectrons, aod::McCollisionsDielectron const& DielectronMcCollisions, aod::CandidatesDielectronMCP const& DielectronParticles)
   {
     std::map<int32_t, int32_t> bcMapping;
     std::map<int32_t, int32_t> paticleMapping;
@@ -932,7 +831,7 @@ struct JetDerivedDataWriter {
           const auto d0McCollisionsPerMcCollision = D0McCollisions.sliceBy(D0McCollisionsPerMcCollision, mcCollision.globalIndex());
           for (const auto& d0McCollisionPerMcCollision : d0McCollisionsPerMcCollision) { // should just be one
             std::vector<int32_t> d0CollisionIDs;
-            for (auto const& d0CollisionPerMcCollision : d0McCollisionPerMcCollision.template hfCollBases_as<CollisionsD0>()) {
+            for (auto const& d0CollisionPerMcCollision : d0McCollisionPerMcCollision.template hfCollBases_as<aod::CollisionsD0>()) {
               auto d0CollisionIndex = D0CollisionMapping.find(d0CollisionPerMcCollision.globalIndex());
               if (d0CollisionIndex != D0CollisionMapping.end()) {
                 d0CollisionIDs.push_back(d0CollisionIndex->second);
@@ -946,7 +845,7 @@ struct JetDerivedDataWriter {
           const auto lcMcCollisionsPerMcCollision = LcMcCollisions.sliceBy(LcMcCollisionsPerMcCollision, mcCollision.globalIndex());
           for (const auto& lcMcCollisionPerMcCollision : lcMcCollisionsPerMcCollision) { // should just be one
             std::vector<int32_t> lcCollisionIDs;
-            for (auto const& lcCollisionPerMcCollision : lcMcCollisionPerMcCollision.template hfCollBases_as<CollisionsLc>()) {
+            for (auto const& lcCollisionPerMcCollision : lcMcCollisionPerMcCollision.template hfCollBases_as<aod::CollisionsLc>()) {
               auto lcCollisionIndex = LcCollisionMapping.find(lcCollisionPerMcCollision.globalIndex());
               if (lcCollisionIndex != LcCollisionMapping.end()) {
                 lcCollisionIDs.push_back(lcCollisionIndex->second);
@@ -962,7 +861,7 @@ struct JetDerivedDataWriter {
   // to run after all jet selections
   PROCESS_SWITCH(JetDerivedDataWriter, processStoreMC, "write out data output tables for mc", false);
 
-  void processStoreMCP(soa::Join<aod::JMcCollisions, aod::JMcCollisionPIs> const& mcCollisions, soa::Join<aod::JMcParticles, aod::JMcParticlePIs> const& particles, McCollisionsD0 const& D0McCollisions, CandidatesD0MCP const& D0Particles, McCollisionsLc const& LcMcCollisions, CandidatesLcMCP const& LcParticles, McCollisionsDielectron const& DielectronMcCollisions, CandidatesDielectronMCP const& DielectronParticles)
+  void processStoreMCP(soa::Join<aod::JMcCollisions, aod::JMcCollisionPIs> const& mcCollisions, soa::Join<aod::JMcParticles, aod::JMcParticlePIs> const& particles, aod::McCollisionsD0 const& D0McCollisions, aod::CandidatesD0MCP const& D0Particles, aod::McCollisionsLc const& LcMcCollisions, aod::CandidatesLcMCP const& LcParticles, aod::McCollisionsDielectron const& DielectronMcCollisions, aod::CandidatesDielectronMCP const& DielectronParticles)
   {
 
     int particleTableIndex = 0;

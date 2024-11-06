@@ -233,7 +233,7 @@ enum eQAEventHistograms2D {
 };
 
 enum eQAParticleHistograms2D {
-  edcaXY_vs_Pt,
+  ePt_vs_dcaXY,
   eQAParticleHistograms2D_N
 };
 

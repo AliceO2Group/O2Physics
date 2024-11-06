@@ -56,8 +56,8 @@ struct femtoUniversePairTaskTrackTrackMcTruth {
   Configurable<float> ConfPtHighPart1{"ConfPtHighPart1", 2.5, "Higher limit for Pt for the first particle"};
 
   /// Partition for particle 1
-  Partition<aod::FDParticles> partsOne = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (ConfNoPDGPartOne || aod::femtouniverseparticle::pidcut == uint32_t(ConfPDGCodePartOne)) &&
-                                         aod::femtouniverseparticle::pt < ConfPtHighPart1 && aod::femtouniverseparticle::pt > ConfPtLowPart1&& nabs(aod::femtouniverseparticle::eta) < ConfEtaMax;
+  Partition<aod::FDParticles> partsOne = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) &&
+                                         (aod::femtouniverseparticle::pt < ConfPtHighPart1) && (aod::femtouniverseparticle::pt > ConfPtLowPart1) && (nabs(aod::femtouniverseparticle::eta) < ConfEtaMax);
 
   /// Histogramming for particle 1
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kMCTruthTrack, 1> trackHistoPartOne;
@@ -70,8 +70,8 @@ struct femtoUniversePairTaskTrackTrackMcTruth {
   Configurable<float> ConfPtHighPart2{"ConfPtHighPart2", 2.5, "Higher limit for Pt for the second particle"};
 
   /// Partition for particle 2
-  Partition<aod::FDParticles> partsTwo = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (ConfNoPDGPartTwo || aod::femtouniverseparticle::pidcut == uint32_t(ConfPDGCodePartTwo)) &&
-                                         aod::femtouniverseparticle::pt < ConfPtHighPart2 && aod::femtouniverseparticle::pt > ConfPtLowPart2&& nabs(aod::femtouniverseparticle::eta) < ConfEtaMax;
+  Partition<aod::FDParticles> partsTwo = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) &&
+                                         (aod::femtouniverseparticle::pt < ConfPtHighPart2) && (aod::femtouniverseparticle::pt > ConfPtLowPart2) && (nabs(aod::femtouniverseparticle::eta) < ConfEtaMax);
 
   /// Histogramming for particle 2
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kMCTruthTrack, 2> trackHistoPartTwo;
@@ -161,31 +161,57 @@ struct femtoUniversePairTaskTrackTrackMcTruth {
 
     /// Histogramming same event
     for (auto& part : groupPartsOne) {
-
+      if (!ConfNoPDGPartOne && part.pidcut() != ConfPDGCodePartOne) {
+        continue;
+      }
       trackHistoPartOne.fillQA<isMC, false>(part);
     }
 
     if (!ConfIsSame) {
       for (auto& part : groupPartsTwo) {
-
+        if (!ConfNoPDGPartTwo && part.pidcut() != ConfPDGCodePartTwo) {
+          continue;
+        }
         trackHistoPartTwo.fillQA<isMC, false>(part);
       }
     }
     /// Now build the combinations
-    for (auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsOne, groupPartsTwo))) {
-      // track cleaning
-      if (!pairCleaner.isCleanPair(p1, p2, parts)) {
-        continue;
-      }
-      if (swpart)
-        sameEventCont.setPair<isMC>(p1, p2, multCol, ConfUse3D);
-      else
-        sameEventCont.setPair<isMC>(p2, p1, multCol, ConfUse3D);
+    if (!ConfIsSame) {
+      // Build the combinations for pairs of non-identical particles
+      for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
+        // track cleaning
+        if (!pairCleaner.isCleanPair(p1, p2, parts)) {
+          continue;
+        }
+        if ((!ConfNoPDGPartOne && p2.pidcut() != ConfPDGCodePartOne) || (!ConfNoPDGPartTwo && p1.pidcut() != ConfPDGCodePartTwo)) {
+          continue;
+        }
+        if (swpart)
+          sameEventCont.setPair<isMC>(p1, p2, multCol, ConfUse3D);
+        else
+          sameEventCont.setPair<isMC>(p2, p1, multCol, ConfUse3D);
 
-      swpart = !swpart;
+        swpart = !swpart;
+      }
+    } else {
+      // Build the combinations for pairs of identical pairs
+      for (auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsOne, groupPartsTwo))) {
+        // track cleaning
+        if (!pairCleaner.isCleanPair(p1, p2, parts)) {
+          continue;
+        }
+        if ((!ConfNoPDGPartOne && p2.pidcut() != ConfPDGCodePartOne) || (!ConfNoPDGPartTwo && p1.pidcut() != ConfPDGCodePartTwo)) {
+          continue;
+        }
+        if (swpart)
+          sameEventCont.setPair<isMC>(p1, p2, multCol, ConfUse3D);
+        else
+          sameEventCont.setPair<isMC>(p2, p1, multCol, ConfUse3D);
+
+        swpart = !swpart;
+      }
     }
   }
-
   /// process function for to call doSameEvent with Data
   /// \param col subscribe to the collision table (Data)
   /// \param parts subscribe to the femtoUniverseParticleTable
@@ -218,6 +244,9 @@ struct femtoUniversePairTaskTrackTrackMcTruth {
     fNeventsProcessed++;
 
     for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
+      if ((!ConfNoPDGPartOne && p2.pidcut() != ConfPDGCodePartOne) || (!ConfNoPDGPartTwo && p1.pidcut() != ConfPDGCodePartTwo)) {
+        continue;
+      }
       if (swpart)
         mixedEventCont.setPair<isMC>(p1, p2, multCol, ConfUse3D);
       else

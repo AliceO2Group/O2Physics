@@ -187,7 +187,7 @@ struct alice3decaypreselector {
         bitoff(selectionMap[track.globalIndex()], kTruePiMinusFromLc);
 
       // XiCC daughters
-      if (!checkPDG(track, 4422, 211)) // 4422 -> 4232 -211, pi from xicc
+      if (!checkPDG(track, 4422, 211)) // 4422 -> 4232 211, pi from xicc
         bitoff(selectionMap[track.globalIndex()], kTruePiFromXiCC);
       if (!checkPDG(track, 4232, 3312)) // 4232 -> 3312 211 211, xi from xic
         bitoff(selectionMap[track.globalIndex()], kTrueXiFromXiC);

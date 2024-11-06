@@ -159,20 +159,17 @@ class FemtoUniverseSHContainer
   /// \param ChosenEventType same or mixed event
   /// \param maxl Maximum valie of L component of the spherical harmonics
   template <bool isMC, typename T>
-  void AddEventPair(T const& part1, T const& part2, uint8_t ChosenEventType, int /*maxl*/)
+  void AddEventPair(T const& part1, T const& part2, uint8_t ChosenEventType, int /*maxl*/, bool isiden)
   {
-    // int fMaxL = 2;
-    // int fMaxJM = (2+1)*(2+1);
     std::vector<std::complex<double>> fYlmBuffer(fMaxJM);
     std::vector<double> f3d;
-    f3d = FemtoUniverseMath::getpairmom3d(part1, mMassOne, part2, mMassTwo, true, true);
+    f3d = FemtoUniverseMath::newpairfunc(part1, mMassOne, part2, mMassTwo, isiden);
 
-    // const float qstar = f3d[0];
+    const float kv = f3d[0];
     const float qout = f3d[1];
     const float qside = f3d[2];
     const float qlong = f3d[3];
 
-    double kv = sqrt(qout * qout + qside * qside + qlong * qlong);
     int nqbin = fbinctn->GetXaxis()->FindFixBin(kv) - 1;
 
     FemtoUniverseSpherHarMath Ylm;

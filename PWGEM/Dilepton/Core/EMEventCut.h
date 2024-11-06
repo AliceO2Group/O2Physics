@@ -111,13 +111,8 @@ class EMEventCut : public TNamed
       case EMEventCuts::kIsGoodZvtxFT0vsPV:
         return collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV);
 
-      case EMEventCuts::kOccupancy: {
-        if (mMinOccupancy < 0) {
-          return true;
-        } else {
-          return mMinOccupancy <= collision.trackOccupancyInTimeRange() && collision.trackOccupancyInTimeRange() < mMaxOccupancy;
-        }
-      }
+      case EMEventCuts::kOccupancy:
+        return mMinOccupancy <= collision.trackOccupancyInTimeRange() && collision.trackOccupancyInTimeRange() < mMaxOccupancy;
 
       case EMEventCuts::kNoCollInTimeRangeStandard:
         return collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard);

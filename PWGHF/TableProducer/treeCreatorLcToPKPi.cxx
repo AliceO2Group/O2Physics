@@ -244,15 +244,12 @@ DECLARE_SOA_TABLE(HfCandLcFullEvs, "AOD", "HFCANDLCFULLEV",
                   full::MultZeqNTracksPV);
 
 DECLARE_SOA_TABLE(HfCandLcFullPs, "AOD", "HFCANDLCFULLP",
-                  full::McCollisionId,
                   full::Pt,
                   full::Eta,
                   full::Phi,
                   full::Y,
                   full::FlagMc,
-                  full::OriginMcGen,
-                  full::McParticleId);
-
+                  full::OriginMcGen);
 } // namespace o2::aod
 
 /// Writes the full information in an output TTree
@@ -502,14 +499,12 @@ struct HfTreeCreatorLcToPKPi {
     for (const auto& particle : particles) {
       if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::LcToPKPi) {
         rowCandidateFullParticles(
-          particle.mcCollisionId(),
           particle.pt(),
           particle.eta(),
           particle.phi(),
           RecoDecay::y(particle.pVector(), o2::constants::physics::MassLambdaCPlus),
           particle.flagMcMatchGen(),
-          particle.originMcGen(),
-          particle.globalIndex());
+          particle.originMcGen());
       }
     }
   }

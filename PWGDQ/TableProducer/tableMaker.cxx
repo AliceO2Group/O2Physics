@@ -95,6 +95,8 @@ using MyBarrelTracksWithV0AndDalitzBits = soa::Join<aod::Tracks, aod::TracksExtr
                                                     aod::pidTPCFullKa, aod::pidTPCFullPr,
                                                     aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi,
                                                     aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta, aod::V0Bits, aod::DalitzBits>;
+using MyBarrelTracksForElectronMuon = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA,
+                                                aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr>;
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
 using MyEventsWithMults = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::MultsExtra>;
 using MyEventsWithFilter = soa::Join<aod::Collisions, aod::EvSels, aod::DQEventFilter>;
@@ -127,6 +129,7 @@ constexpr static uint32_t gkTrackFillMapWithV0Bits = gkTrackFillMap | VarManager
 constexpr static uint32_t gkTrackFillMapWithV0BitsForMaps = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackV0Bits | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackTPCPID;
 constexpr static uint32_t gkTrackFillMapWithDalitzBits = gkTrackFillMap | VarManager::ObjTypes::DalitzBits;
 constexpr static uint32_t gkTrackFillMapWithV0AndDalitzBits = gkTrackFillMap | VarManager::ObjTypes::TrackV0Bits | VarManager::ObjTypes::DalitzBits;
+constexpr static uint32_t gkTrackFillMapForElectronMuon = VarManager::ObjTypes::Track | VarManager::ObjTypes::TrackExtra | VarManager::ObjTypes::TrackDCA | VarManager::ObjTypes::TrackSelection | VarManager::ObjTypes::TrackTPCPID;
 constexpr static uint32_t gkMuonFillMap = VarManager::ObjTypes::Muon;
 constexpr static uint32_t gkMuonFillMapWithCov = VarManager::ObjTypes::Muon | VarManager::ObjTypes::MuonCov;
 constexpr static uint32_t gkMuonFillMapWithCovAmbi = VarManager::ObjTypes::Muon | VarManager::ObjTypes::MuonCov | VarManager::ObjTypes::AmbiMuon;
@@ -160,9 +163,11 @@ struct TableMaker {
   Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Event selection"};
   Configurable<std::string> fConfigTrackCuts{"cfgBarrelTrackCuts", "jpsiO2MCdebugCuts2", "Comma separated list of barrel track cuts"};
   Configurable<std::string> fConfigMuonCuts{"cfgMuonCuts", "muonQualityCuts", "Comma separated list of muon cuts"};
-  Configurable<std::string> fConfigAddEventHistogram{"cfgAddEventHistogram", "", "Comma separated list of histograms"};
-  Configurable<std::string> fConfigAddTrackHistogram{"cfgAddTrackHistogram", "", "Comma separated list of histograms"};
-  Configurable<std::string> fConfigAddMuonHistogram{"cfgAddMuonHistogram", "", "Comma separated list of histograms"};
+  struct : ConfigurableGroup {
+    Configurable<std::string> fConfigAddEventHistogram{"cfgAddEventHistogram", "", "Comma separated list of histograms"};
+    Configurable<std::string> fConfigAddTrackHistogram{"cfgAddTrackHistogram", "", "Comma separated list of histograms"};
+    Configurable<std::string> fConfigAddMuonHistogram{"cfgAddMuonHistogram", "", "Comma separated list of histograms"};
+  } addHistoConfigurations;
   Configurable<float> fConfigBarrelTrackPtLow{"cfgBarrelLowPt", 1.0f, "Low pt cut for tracks in the barrel"};
   Configurable<float> fConfigBarrelTrackMaxAbsEta{"cfgBarrelMaxAbsEta", 0.9f, "Eta absolute value cut for tracks in the barrel"};
   Configurable<float> fConfigMuonPtLow{"cfgMuonLowPt", 1.0f, "Low pt cut for muons"};
@@ -172,13 +177,19 @@ struct TableMaker {
   Configurable<bool> fConfigDetailedQA{"cfgDetailedQA", false, "If true, include more QA histograms (BeforeCuts classes)"};
   Configurable<bool> fIsRun2{"cfgIsRun2", false, "Whether we analyze Run-2 or Run-3 data"};
   Configurable<bool> fIsAmbiguous{"cfgIsAmbiguous", false, "Whether we enable QA plots for ambiguous tracks"};
-  Configurable<bool> fConfigRunZorro{"cfgRunZorro", false, "Enable event selection with zorro [WARNING: under debug, do not enable!]"};
-  Configurable<string> fConfigZorroTrigMask{"cfgZorroTriggerMask", "fDiMuon", "DQ Trigger masks: fSingleE,fLMeeIMR,fLMeeHMR,fDiElectron,fSingleMuLow,fSingleMuHigh,fDiMuon"};
+
+  struct : ConfigurableGroup {
+    Configurable<bool> fConfigRunZorro{"cfgRunZorro", false, "Enable event selection with zorro [WARNING: under debug, do not enable!]"};
+    Configurable<string> fConfigZorroTrigMask{"cfgZorroTriggerMask", "fDiMuon", "DQ Trigger masks: fSingleE,fLMeeIMR,fLMeeHMR,fDiElectron,fSingleMuLow,fSingleMuHigh,fDiMuon"};
+    Configurable<bool> fConfigRunZorroSel{"cfgRunZorroSel", false, "Select events with trigger mask"};
+  } useZorro;
+
   struct : ConfigurableGroup {
     Configurable<string> fConfigCcdbUrl{"useCCDBConfigurations.ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
     Configurable<string> fConfigCcdbPathTPC{"useCCDBConfigurations.ccdb-path-tpc", "Users/z/zhxiong/TPCPID/PostCalib", "base path to the ccdb object"};
-    Configurable<string> fConfigCcdbPathZorro{"useCCDBConfigurations.ccdb-path-zorro", "Users/r/rlietava/EventFiltering/OTS/", "base path to the ccdb object for zorro"};
+    Configurable<string> fConfigCcdbPathZorro{"useCCDBConfigurations.ccdb-path-zorro", "/Users/m/mpuccio/EventFiltering/OTS/", "base path to the ccdb object for zorro"};
   } useCCDBConfigurations;
+
   Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<bool> fConfigComputeTPCpostCalib{"cfgTPCpostCalib", false, "If true, compute TPC post-calibrated n-sigmas(electrons, pions, protons)"};
   Configurable<bool> fConfigComputeTPCpostCalibKaon{"cfgTPCpostCalibKaon", false, "If true, compute TPC post-calibrated n-sigmas for kaons"};
@@ -406,7 +417,7 @@ struct TableMaker {
     }
     // Put the 8 first bits of the event filter in the last 8 bits of the tag
     if constexpr ((TEventFillMap & VarManager::ObjTypes::EventFilter) > 0) {
-      if (!fConfigRunZorro) {
+      if (!useZorro.fConfigRunZorro) {
         tag |= (collision.eventFilter() << 56);
       }
     }
@@ -432,11 +443,16 @@ struct TableMaker {
     }
     (reinterpret_cast<TH2F*>(fStatsList->At(0)))->Fill(2.0, static_cast<float>(kNaliases));
 
-    if (fConfigRunZorro) {
+    if (useZorro.fConfigRunZorro) {
       zorro.setBaseCCDBPath(useCCDBConfigurations.fConfigCcdbPathZorro.value);
-      zorro.initCCDB(fCCDB.service, fCurrentRun, bc.timestamp(), fConfigZorroTrigMask.value);
-      if (zorro.isSelected(bc.globalBC())) {
+      zorro.initCCDB(fCCDB.service, fCurrentRun, bc.timestamp(), useZorro.fConfigZorroTrigMask.value);
+      zorro.populateExternalHists(fCurrentRun, reinterpret_cast<TH2D*>(fStatsList->At(3)), reinterpret_cast<TH2D*>(fStatsList->At(4)));
+      bool zorroSel = zorro.isSelected(bc.globalBC(), 100UL, reinterpret_cast<TH2D*>(fStatsList->At(4)));
+      if (zorroSel) {
         tag |= (static_cast<uint64_t>(true) << 56); // the same bit is used for this zorro selections from ccdb
+      }
+      if (useZorro.fConfigRunZorroSel && (!zorroSel || !fEventCut->IsSelected(VarManager::fgValues))) {
+        return;
       }
     } else {
       if (!fEventCut->IsSelected(VarManager::fgValues)) {
@@ -603,6 +619,10 @@ struct TableMaker {
                          track.beta(),
                          track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
                          track.trdSignal());
+        }
+        if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackTPCPID)) {
+          trackBarrelPID(track.tpcSignal(), track.tpcNSigmaEl(), -1, track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
+                         -1, -1, -1, -1, -1, -1, -1);
         }
       }
     } // end if constexpr (TTrackFillMap)
@@ -806,7 +826,7 @@ struct TableMaker {
         }
       }
     } // end if constexpr (TMuonFillMap)
-  }   // end fullSkimming()
+  } // end fullSkimming()
 
   // Templated function instantianed for all of the process functions
   template <uint32_t TEventFillMap, uint32_t TTrackFillMap, uint32_t TMuonFillMap, typename TEvent, typename TTracks, typename TMuons, typename AssocTracks, typename AssocMuons>
@@ -861,7 +881,7 @@ struct TableMaker {
     }
     // Put the 8 first bits of the event filter in the last 8 bits of the tag
     if constexpr ((TEventFillMap & VarManager::ObjTypes::EventFilter) > 0) {
-      if (!fConfigRunZorro) {
+      if (!useZorro.fConfigRunZorro) {
         tag |= (collision.eventFilter() << 56);
       }
     }
@@ -886,11 +906,16 @@ struct TableMaker {
     }
     (reinterpret_cast<TH2F*>(fStatsList->At(0)))->Fill(2.0, static_cast<float>(kNaliases));
 
-    if (fConfigRunZorro) {
+    if (useZorro.fConfigRunZorro) {
       zorro.setBaseCCDBPath(useCCDBConfigurations.fConfigCcdbPathZorro.value);
-      zorro.initCCDB(fCCDB.service, fCurrentRun, bc.timestamp(), fConfigZorroTrigMask.value);
-      if (zorro.isSelected(bc.globalBC())) {
+      zorro.initCCDB(fCCDB.service, fCurrentRun, bc.timestamp(), useZorro.fConfigZorroTrigMask.value);
+      zorro.populateExternalHists(fCurrentRun, reinterpret_cast<TH2D*>(fStatsList->At(3)), reinterpret_cast<TH2D*>(fStatsList->At(4)));
+      bool zorroSel = zorro.isSelected(bc.globalBC(), 100UL, reinterpret_cast<TH2D*>(fStatsList->At(4)));
+      if (zorroSel) {
         tag |= (static_cast<uint64_t>(true) << 56); // the same bit is used for this zorro selections from ccdb
+      }
+      if (useZorro.fConfigRunZorroSel && (!zorroSel || !fEventCut->IsSelected(VarManager::fgValues))) {
+        return;
       }
     } else {
       if (!fEventCut->IsSelected(VarManager::fgValues)) {
@@ -1037,6 +1062,10 @@ struct TableMaker {
                          track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
                          track.trdSignal());
         }
+        if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackTPCPID)) {
+          trackBarrelPID(track.tpcSignal(), track.tpcNSigmaEl(), -1, track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
+                         -1, -1, -1, -1, -1, -1, -1);
+        }
       }
     } // end if constexpr (TTrackFillMap)
 
@@ -1160,22 +1189,22 @@ struct TableMaker {
                       muon.matchScoreMCHMFT(), muon.mchBitMap(), muon.midBitMap(),
                       muon.midBoards(), muon.trackType(), VarManager::fgValues[VarManager::kMuonDCAx], VarManager::fgValues[VarManager::kMuonDCAy],
                       muon.trackTime(), muon.trackTimeRes());
-        } else {
-          muonExtra(muon.nClusters(), muon.pDca(), muon.rAtAbsorberEnd(),
-                    muon.chi2(), muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT(),
-                    muon.matchScoreMCHMFT(), muon.mchBitMap(), muon.midBitMap(),
-                    muon.midBoards(), muon.trackType(), muon.fwdDcaX(), muon.fwdDcaY(),
-                    muon.trackTime(), muon.trackTimeRes());
-        }
+          } else {
+            muonExtra(muon.nClusters(), muon.pDca(), muon.rAtAbsorberEnd(),
+                      muon.chi2(), muon.chi2MatchMCHMID(), muon.chi2MatchMCHMFT(),
+                      muon.matchScoreMCHMFT(), muon.mchBitMap(), muon.midBitMap(),
+                      muon.midBoards(), muon.trackType(), muon.fwdDcaX(), muon.fwdDcaY(),
+                      muon.trackTime(), muon.trackTimeRes());
+          }
 
-        muonCov(VarManager::fgValues[VarManager::kX], VarManager::fgValues[VarManager::kY], VarManager::fgValues[VarManager::kZ], VarManager::fgValues[VarManager::kPhi], VarManager::fgValues[VarManager::kTgl], muon.sign() / VarManager::fgValues[VarManager::kPt],
-                VarManager::fgValues[VarManager::kMuonCXX], VarManager::fgValues[VarManager::kMuonCXY], VarManager::fgValues[VarManager::kMuonCYY], VarManager::fgValues[VarManager::kMuonCPhiX], VarManager::fgValues[VarManager::kMuonCPhiY], VarManager::fgValues[VarManager::kMuonCPhiPhi],
-                VarManager::fgValues[VarManager::kMuonCTglX], VarManager::fgValues[VarManager::kMuonCTglY], VarManager::fgValues[VarManager::kMuonCTglPhi], VarManager::fgValues[VarManager::kMuonCTglTgl], VarManager::fgValues[VarManager::kMuonC1Pt2X], VarManager::fgValues[VarManager::kMuonC1Pt2Y],
-                VarManager::fgValues[VarManager::kMuonC1Pt2Phi], VarManager::fgValues[VarManager::kMuonC1Pt2Tgl], VarManager::fgValues[VarManager::kMuonC1Pt21Pt2]);
+          muonCov(VarManager::fgValues[VarManager::kX], VarManager::fgValues[VarManager::kY], VarManager::fgValues[VarManager::kZ], VarManager::fgValues[VarManager::kPhi], VarManager::fgValues[VarManager::kTgl], muon.sign() / VarManager::fgValues[VarManager::kPt],
+                  VarManager::fgValues[VarManager::kMuonCXX], VarManager::fgValues[VarManager::kMuonCXY], VarManager::fgValues[VarManager::kMuonCYY], VarManager::fgValues[VarManager::kMuonCPhiX], VarManager::fgValues[VarManager::kMuonCPhiY], VarManager::fgValues[VarManager::kMuonCPhiPhi],
+                  VarManager::fgValues[VarManager::kMuonCTglX], VarManager::fgValues[VarManager::kMuonCTglY], VarManager::fgValues[VarManager::kMuonCTglPhi], VarManager::fgValues[VarManager::kMuonCTglTgl], VarManager::fgValues[VarManager::kMuonC1Pt2X], VarManager::fgValues[VarManager::kMuonC1Pt2Y],
+                  VarManager::fgValues[VarManager::kMuonC1Pt2Phi], VarManager::fgValues[VarManager::kMuonC1Pt2Tgl], VarManager::fgValues[VarManager::kMuonC1Pt21Pt2]);
         }
       }
     } // end if constexpr (TMuonFillMap)
-  }   // end fullSkimming()
+  } // end fullSkimming()
 
   void DefineHistograms(TString histClasses)
   {
@@ -1199,28 +1228,28 @@ struct TableMaker {
         }
       }
 
-      TString histEventName = fConfigAddEventHistogram.value;
+      TString histEventName = addHistoConfigurations.fConfigAddEventHistogram.value;
       if (classStr.Contains("Event")) {
         if (fConfigQA) {
           dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "event", histEventName);
         }
       }
 
-      TString histTrackName = fConfigAddTrackHistogram.value;
+      TString histTrackName = addHistoConfigurations.fConfigAddTrackHistogram.value;
       if (classStr.Contains("Track")) {
         if (fConfigQA) {
           dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "track", histTrackName);
         }
       }
 
-      TString histMuonName = fConfigAddMuonHistogram.value;
+      TString histMuonName = addHistoConfigurations.fConfigAddMuonHistogram.value;
       if (classStr.Contains("Muons")) {
         if (fConfigQA) {
           dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "track", histMuonName);
         }
       }
 
-      TString histMftName = fConfigAddMuonHistogram.value;
+      TString histMftName = addHistoConfigurations.fConfigAddMuonHistogram.value;
       if (classStr.Contains("Mft")) {
         if (fConfigDetailedQA) {
           dqhistograms::DefineHistograms(fHistMan, objArray->At(iclass)->GetName(), "track", histMftName);
@@ -1260,6 +1289,13 @@ struct TableMaker {
       histMuons->GetXaxis()->SetBinLabel(ib, (*cut).GetName());
     }
     fStatsList->Add(histMuons);
+
+    if (useZorro.fConfigRunZorro) {
+      TH2D* histZorroInfo = new TH2D("ZorroInfo", "Zorro information", 1, -0.5, 0.5, 1, -0.5, 0.5);
+      fStatsList->Add(histZorroInfo);
+      TH2D* histZorroSel = new TH2D("ZorroSel", "trigger of interested", 1, -0.5, 0.5, 1, -0.5, 0.5);
+      fStatsList->Add(histZorroSel);
+    }
   }
 
   // Produce barrel + muon tables -------------------------------------------------------------------------------------------------------------
@@ -1324,6 +1360,13 @@ struct TableMaker {
     if (collision.eventFilter()) {
       fullSkimming<gkEventFillMapWithMult, gkTrackFillMapWithCov, gkMuonFillMapWithCov>(collision, bcs, tracksBarrel, tracksMuon, nullptr, nullptr);
     }
+  }
+
+  // Produce barrel + muon tables for the eletron-muon analysis, without PIDTOF----------------------------------------------------------------------
+  void processFullForElectronMuon(MyEvents::iterator const& collision, aod::BCsWithTimestamps const& bcs,
+                                  soa::Filtered<MyBarrelTracksForElectronMuon> const& tracksBarrel, soa::Filtered<MyMuons> const& tracksMuon)
+  {
+    fullSkimming<gkEventFillMap, gkTrackFillMapForElectronMuon, gkMuonFillMap>(collision, bcs, tracksBarrel, tracksMuon, nullptr, nullptr);
   }
 
   // Produce barrel only tables, with V0Bits ------------------------------------------------------------------------------------------------
@@ -1683,6 +1726,7 @@ struct TableMaker {
   PROCESS_SWITCH(TableMaker, processFullWithCent, "Build full DQ skimmed data model, w/ centrality", false);
   PROCESS_SWITCH(TableMaker, processFullWithCentAndMults, "Build full DQ skimmed data model, w/ centrality and multiplicities", false);
   PROCESS_SWITCH(TableMaker, processFullWithCovCentAndMults, "Build full DQ skimmed data model, w/ centrality, multiplicities and track covariances", false);
+  PROCESS_SWITCH(TableMaker, processFullForElectronMuon, "Build full DQ skimmed data model for electron-muon correlation analysis, w/o centrality", false);
   PROCESS_SWITCH(TableMaker, processBarrelOnlyWithV0Bits, "Build full DQ skimmed data model, w/o centrality, w/ V0Bits", false);
   PROCESS_SWITCH(TableMaker, processBarrelOnlyWithV0BitsAndMaps, "Build full DQ skimmed data model, w/o multiplicity, w/ V0Bits", false);
   PROCESS_SWITCH(TableMaker, processBarrelOnlyWithDalitzBits, "Build barrel-only DQ skimmed data model, w/o centrality, w/ DalitzBits", false);

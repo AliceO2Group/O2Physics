@@ -137,10 +137,10 @@ struct ParticleCounter {
       }
       // is neutral
       if (requireNeutral) {
-        if (abs(p->Charge()) > 1e-3)
+        if (std::abs(p->Charge()) > 1e-3)
           continue;
       } else {
-        if (abs(p->Charge()) <= 1e-3)
+        if (std::abs(p->Charge()) <= 1e-3)
           continue;
       }
       // in acceptance
@@ -154,6 +154,8 @@ struct ParticleCounter {
   float countFT0A(const aod::McParticles& mcParticles) { return countMultInAcceptance(mcParticles, 3.5f, 4.9f); }
   float countFT0C(const aod::McParticles& mcParticles) { return countMultInAcceptance(mcParticles, -3.3f, -2.1f); }
   float countFV0A(const aod::McParticles& mcParticles) { return countMultInAcceptance(mcParticles, 2.2f, 5.1f); }
+  float countV0A(const aod::McParticles& mcParticles) { return countMultInAcceptance(mcParticles, 2.8f, 5.1f); }
+  float countV0C(const aod::McParticles& mcParticles) { return countMultInAcceptance(mcParticles, -3.7f, -1.7f); }
   float countFDDA(const aod::McParticles& mcParticles) { return countMultInAcceptance(mcParticles, 4.9f, 6.3f); }
   float countFDDC(const aod::McParticles& mcParticles) { return countMultInAcceptance(mcParticles, -7.f, -4.9f); }
 
@@ -161,6 +163,8 @@ struct ParticleCounter {
   float countZNC(const aod::McParticles& mcParticles) { return countEnergyInAcceptance(mcParticles, -100.f, -8.8f, true); }
 
   float countITSIB(const aod::McParticles& mcParticles) { return countMultInAcceptance(mcParticles, -2.f, 2.f); }
+  float countEta05(const aod::McParticles& mcParticles) { return countMultInAcceptance(mcParticles, -0.5f, 0.5f); }
+  float countEta08(const aod::McParticles& mcParticles) { return countMultInAcceptance(mcParticles, -0.8f, 0.8f); }
 };
 
 } // namespace pwglf

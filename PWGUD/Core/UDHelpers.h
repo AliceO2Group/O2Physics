@@ -101,29 +101,31 @@ float rPVtrwTOF(TCs tracks, int nPVTracks)
 // true BC.
 //
 template <typename T>
-T compatibleBCs(uint64_t meanBC, int deltaBC, T const& bcs);
+T compatibleBCs(uint64_t const& meanBC, int const& deltaBC, T const& bcs);
 
-template <typename I, typename T>
-T compatibleBCs(I& bcIter, uint64_t meanBC, int deltaBC, T const& bcs);
+template <typename B, typename T>
+T compatibleBCs(B const& bc, uint64_t const& meanBC, int const& deltaBC, T const& bcs);
 
 // In this variant of compatibleBCs the bcIter is ideally placed within
 // [minBC, maxBC], but it does not need to be. The range is given by meanBC +- delatBC.
-template <typename I, typename T>
-T compatibleBCs(I& bcIter, uint64_t meanBC, int deltaBC, T const& bcs)
+template <typename B, typename T>
+T compatibleBCs(B const& bc, uint64_t const& meanBC, int const& deltaBC, T const& bcs)
 {
+  // get BCs iterator
+  auto bcIter = bcs.iteratorAt(bc.globalIndex());
+
   // range of BCs to consider
   uint64_t minBC = (uint64_t)deltaBC < meanBC ? meanBC - (uint64_t)deltaBC : 0;
   uint64_t maxBC = meanBC + (uint64_t)deltaBC;
-  LOGF(debug, "  minBC %d maxBC %d bcIterator %d (%d)", minBC, maxBC, bcIter.globalBC(), bcIter.globalIndex());
+  LOGF(debug, "  minBC %d maxBC %d bcIterator %d (%d) #BCs %d", minBC, maxBC, bcIter.globalBC(), bcIter.globalIndex(), bcs.size());
 
   // check [min,max]BC to overlap with [bcs.iteratorAt([0,bcs.size() - 1])
   if (maxBC < bcs.iteratorAt(0).globalBC() || minBC > bcs.iteratorAt(bcs.size() - 1).globalBC()) {
-    LOGF(debug, "<compatibleBCs> No overlap of [%d, %d] and [%d, %d]", minBC, maxBC, bcs.iteratorAt(0).globalBC(), bcs.iteratorAt(bcs.size() - 1).globalBC());
+    LOGF(info, "<compatibleBCs> No overlap of [%d, %d] and [%d, %d]", minBC, maxBC, bcs.iteratorAt(0).globalBC(), bcs.iteratorAt(bcs.size() - 1).globalBC());
     return T{{bcs.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
   }
 
   // find slice of BCs table with BC in [minBC, maxBC]
-  int moveCount = 0;
   int64_t minBCId = bcIter.globalIndex();
   int64_t maxBCId = bcIter.globalIndex();
 
@@ -131,14 +133,12 @@ T compatibleBCs(I& bcIter, uint64_t meanBC, int deltaBC, T const& bcs)
   if (bcIter.globalBC() < minBC) {
     while (bcIter != bcs.end() && bcIter.globalBC() < minBC) {
       ++bcIter;
-      ++moveCount;
       minBCId = bcIter.globalIndex();
     }
   } else {
     while (bcIter.globalIndex() > 0 && bcIter.globalBC() >= minBC) {
       minBCId = bcIter.globalIndex();
       --bcIter;
-      --moveCount;
     }
   }
 
@@ -147,26 +147,19 @@ T compatibleBCs(I& bcIter, uint64_t meanBC, int deltaBC, T const& bcs)
     while (bcIter != bcs.end() && bcIter.globalBC() <= maxBC) {
       maxBCId = bcIter.globalIndex();
       ++bcIter;
-      ++moveCount;
     }
-
   } else {
     while (bcIter.globalIndex() > 0 && bcIter.globalBC() > maxBC) {
       --bcIter;
-      --moveCount;
       maxBCId = bcIter.globalIndex();
     }
   }
-  LOGF(debug, "  BC range: %d - %d", minBCId, maxBCId);
-
-  // reset bcIter
-  bcIter.moveByIndex(-moveCount);
 
   // create bc slice
-  T slice{{bcs.asArrowTable()->Slice(minBCId, maxBCId - minBCId + 1)}, (uint64_t)minBCId};
-  bcs.copyIndexBindings(slice);
-  LOGF(debug, "  size of slice %d", slice.size());
-  return slice;
+  T bcslice{{bcs.asArrowTable()->Slice(minBCId, maxBCId - minBCId + 1)}, (uint64_t)minBCId};
+  bcs.copyIndexBindings(bcslice);
+  LOGF(debug, "  size of slice %d", bcslice.size());
+  return bcslice;
 }
 
 // In this variant of compatibleBCs the range of compatible BCs is calculated from the
@@ -200,7 +193,7 @@ T compatibleBCs(C const& collision, int ndt, T const& bcs, int nMinBCs = 7)
 
 // In this variant of compatibleBCs the range of compatible BCs is defined by meanBC +- deltaBC.
 template <typename T>
-T compatibleBCs(uint64_t meanBC, int deltaBC, T const& bcs)
+T compatibleBCs(uint64_t const& meanBC, int const& deltaBC, T const& bcs)
 {
   // find BC with globalBC ~ meanBC
   uint64_t ind = (uint64_t)(bcs.size() / 2);
@@ -212,13 +205,13 @@ T compatibleBCs(uint64_t meanBC, int deltaBC, T const& bcs)
 // -----------------------------------------------------------------------------
 // Same as above but for collisions with MC information
 template <typename F, typename T>
-T MCcompatibleBCs(F const& collision, int ndt, T const& bcs, int nMinBCs = 7)
+T MCcompatibleBCs(F const& collision, int const& ndt, T const& bcs, int const& nMinBCs = 7)
 {
   LOGF(debug, "Collision time / resolution [ns]: %f / %f", collision.collisionTime(), collision.collisionTimeRes());
 
   // return if collisions has no associated BC
   if (!collision.has_foundBC()) {
-    LOGF(info, "Collision %i - no BC found!", collision.globalIndex());
+    LOGF(debug, "Collision %i - no BC found!", collision.globalIndex());
     return T{{bcs.asArrowTable()->Slice(0, 0)}, (uint64_t)0};
   }
 
@@ -651,6 +644,9 @@ void fillBGBBFlags(upchelpers::FITInfo& info, uint64_t const& minbc, BCR const& 
 
     // 0 <= bit <= 31
     auto bit = bc.globalBC() - minbc;
+    if (bit < 0 || bit > 31)
+      continue;
+
     if (!bc.selection_bit(o2::aod::evsel::kNoBGT0A))
       SETBIT(info.BGFT0Apf, bit);
     if (!bc.selection_bit(o2::aod::evsel::kNoBGT0C))
@@ -676,52 +672,42 @@ void fillBGBBFlags(upchelpers::FITInfo& info, uint64_t const& minbc, BCR const& 
 
 // -----------------------------------------------------------------------------
 // extract FIT information
-template <typename B>
-void getFITinfo(upchelpers::FITInfo& info, uint64_t const& bcnum, B const& bcs, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
+template <typename BC, typename BCS>
+void getFITinfo(upchelpers::FITInfo& info, BC& bc, BCS const& bcs, aod::FT0s const& ft0s, aod::FV0As const& fv0as, aod::FDDs const& fdds)
 {
-  // find bc with globalBC = bcnum
-  Partition<B> selbc = aod::bc::globalBC == bcnum;
-  selbc.bindTable(bcs);
+  // FV0A
+  if (bc.has_foundFV0()) {
+    auto fv0 = fv0as.iteratorAt(bc.foundFV0Id());
+    info.timeFV0A = fv0.time();
+    info.ampFV0A = FV0AmplitudeA(fv0);
+    info.triggerMaskFV0A = fv0.triggerMask();
+  }
 
-  // if BC exists then update FIT information for this BC
-  if (selbc.size() > 0) {
-    auto bc = selbc.begin();
+  // FT0
+  if (bc.has_foundFT0()) {
+    auto ft0 = ft0s.iteratorAt(bc.foundFT0Id());
+    info.timeFT0A = ft0.timeA();
+    info.timeFT0C = ft0.timeC();
+    info.ampFT0A = FT0AmplitudeA(ft0);
+    info.ampFT0C = FT0AmplitudeC(ft0);
+    info.triggerMaskFT0 = ft0.triggerMask();
+  }
 
-    // FV0A
-    if (bc.has_foundFV0()) {
-      auto fv0 = fv0as.iteratorAt(bc.foundFV0Id());
-      info.timeFV0A = fv0.time();
-      info.ampFV0A = FV0AmplitudeA(fv0);
-      info.triggerMaskFV0A = fv0.triggerMask();
-    }
-
-    // FT0
-    if (bc.has_foundFT0()) {
-      auto ft0 = ft0s.iteratorAt(bc.foundFT0Id());
-      info.timeFT0A = ft0.timeA();
-      info.timeFT0C = ft0.timeC();
-      info.ampFT0A = FT0AmplitudeA(ft0);
-      info.ampFT0C = FT0AmplitudeC(ft0);
-      info.triggerMaskFT0 = ft0.triggerMask();
-    }
-
-    // FDD
-    if (bc.has_foundFDD()) {
-      auto fdd = fdds.iteratorAt(bc.foundFDDId());
-      info.timeFDDA = fdd.timeA();
-      info.timeFDDC = fdd.timeC();
-      info.ampFDDA = FDDAmplitudeA(fdd);
-      info.ampFDDC = FDDAmplitudeC(fdd);
-      info.triggerMaskFDD = fdd.triggerMask();
-    }
+  // FDD
+  if (bc.has_foundFDD()) {
+    auto fdd = fdds.iteratorAt(bc.foundFDDId());
+    info.timeFDDA = fdd.timeA();
+    info.timeFDDC = fdd.timeC();
+    info.ampFDDA = FDDAmplitudeA(fdd);
+    info.ampFDDC = FDDAmplitudeC(fdd);
+    info.triggerMaskFDD = fdd.triggerMask();
   }
 
   // fill BG and BB flags
-  auto minbc = bcnum - 16;
-  auto maxbc = bcnum + 15;
-  Partition<B> bcrange = aod::bc::globalBC >= minbc && aod::bc::globalBC <= maxbc;
-  bcrange.bindTable(bcs);
-  fillBGBBFlags(info, minbc, bcrange);
+  auto bcnum = bc.globalBC();
+  auto bcrange = compatibleBCs(bc, bcnum, 16, bcs);
+  LOGF(debug, "size of bcrange %d", bcrange.size());
+  fillBGBBFlags(info, bcnum - 16, bcrange);
 }
 
 // -----------------------------------------------------------------------------

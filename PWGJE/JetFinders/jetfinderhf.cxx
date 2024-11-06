@@ -165,11 +165,11 @@ struct JetFinderHFTask {
   }
 
   aod::EMCALClusterDefinition clusterDefinition = aod::emcalcluster::getClusterDefinitionFromString(clusterDefinitionS.value);
-  Filter collisionFilter = (nabs(aod::jcollision::posZ) < vertexZCut && aod::jcollision::centrality >= centralityMin && aod::jcollision::centrality < centralityMax && aod::jcollision::trackOccupancyInTimeRange < trackOccupancyInTimeRangeMax);
-  Filter trackCuts = (aod::jtrack::pt >= trackPtMin && aod::jtrack::pt < trackPtMax && aod::jtrack::eta > trackEtaMin && aod::jtrack::eta < trackEtaMax && aod::jtrack::phi >= trackPhiMin && aod::jtrack::phi <= trackPhiMax);
-  Filter trackSubCuts = (aod::jtracksub::pt >= trackPtMin && aod::jtracksub::pt < trackPtMax && aod::jtracksub::eta > trackEtaMin && aod::jtracksub::eta < trackEtaMax && aod::jtracksub::phi >= trackPhiMin && aod::jtracksub::phi <= trackPhiMax);
-  Filter partCuts = (aod::jmcparticle::pt >= trackPtMin && aod::jmcparticle::pt < trackPtMax);
-  Filter clusterFilter = (aod::jcluster::definition == static_cast<int>(clusterDefinition) && aod::jcluster::eta > clusterEtaMin && aod::jcluster::eta < clusterEtaMax && aod::jcluster::phi >= clusterPhiMin && aod::jcluster::phi <= clusterPhiMax && aod::jcluster::energy >= clusterEnergyMin && aod::jcluster::time > clusterTimeMin && aod::jcluster::time < clusterTimeMax && (clusterRejectExotics && aod::jcluster::isExotic != true));
+  Filter collisionFilter = (nabs(aod::jcollision::posZ) < vertexZCut && aod::jcollision::centrality >= centralityMin && aod::jcollision::centrality < centralityMax && aod::jcollision::trackOccupancyInTimeRange <= trackOccupancyInTimeRangeMax);
+  Filter trackCuts = (aod::jtrack::pt >= trackPtMin && aod::jtrack::pt < trackPtMax && aod::jtrack::eta >= trackEtaMin && aod::jtrack::eta <= trackEtaMax && aod::jtrack::phi >= trackPhiMin && aod::jtrack::phi <= trackPhiMax);
+  Filter trackSubCuts = (aod::jtracksub::pt >= trackPtMin && aod::jtracksub::pt < trackPtMax && aod::jtracksub::eta >= trackEtaMin && aod::jtracksub::eta <= trackEtaMax && aod::jtracksub::phi >= trackPhiMin && aod::jtracksub::phi <= trackPhiMax);
+  Filter partCuts = (aod::jmcparticle::pt >= trackPtMin && aod::jmcparticle::pt < trackPtMax && aod::jmcparticle::eta >= trackEtaMin && aod::jmcparticle::eta <= trackEtaMax && aod::jmcparticle::phi >= trackPhiMin && aod::jmcparticle::phi <= trackPhiMax);
+  Filter clusterFilter = (aod::jcluster::definition == static_cast<int>(clusterDefinition) && aod::jcluster::eta >= clusterEtaMin && aod::jcluster::eta <= clusterEtaMax && aod::jcluster::phi >= clusterPhiMin && aod::jcluster::phi <= clusterPhiMax && aod::jcluster::energy >= clusterEnergyMin && aod::jcluster::time > clusterTimeMin && aod::jcluster::time < clusterTimeMax && (clusterRejectExotics && aod::jcluster::isExotic != true));
   // Filter candidateCuts = (aod::hfcand::pt >= candPtMin && aod::hfcand::pt < candPtMax && aod::hfcand::y >= candYMin && aod::hfcand::y < candYMax);
 
   PresliceOptional<soa::Filtered<JetTracksSubTable>> perD0Candidate = aod::bkgd0::candidateId;
@@ -221,12 +221,12 @@ struct JetFinderHFTask {
     jetfindingutilities::findJets(jetFinder, inputParticles, minJetPt, maxJetPt, jetRadius, jetAreaFractionMin, collision, jetsTable, constituentsTable, registry.get<THn>(HIST("hJetMCP")), fillTHnSparse, true);
   }
 
-  void processDummy(JetCollisions const&)
+  void processDummy(aod::JetCollisions const&)
   {
   }
   PROCESS_SWITCH(JetFinderHFTask, processDummy, "Dummy process function turned on by default", true);
 
-  void processChargedJetsData(soa::Filtered<JetCollisions>::iterator const& collision, soa::Filtered<JetTracks> const& tracks, CandidateTableData const& candidates)
+  void processChargedJetsData(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Filtered<aod::JetTracks> const& tracks, CandidateTableData const& candidates)
   {
     for (typename CandidateTableData::iterator const& candidate : candidates) { // why can the type not be auto?  try const auto
       analyseCharged<false>(collision, tracks, candidate, jetsTable, constituentsTable, tracks, jetPtMin, jetPtMax);
@@ -234,7 +234,7 @@ struct JetFinderHFTask {
   }
   PROCESS_SWITCH(JetFinderHFTask, processChargedJetsData, "charged hf jet finding on data", false);
 
-  void processChargedEvtWiseSubJetsData(soa::Filtered<JetCollisions>::iterator const& collision, soa::Filtered<JetTracksSubTable> const& tracks, CandidateTableData const& candidates)
+  void processChargedEvtWiseSubJetsData(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Filtered<JetTracksSubTable> const& tracks, CandidateTableData const& candidates)
   {
     for (typename CandidateTableData::iterator const& candidate : candidates) {
       analyseCharged<true>(collision, jetcandidateutilities::slicedPerCandidate(tracks, candidate, perD0Candidate, perLcCandidate, perBplusCandidate, perDielectronCandidate), candidate, jetsEvtWiseSubTable, constituentsEvtWiseSubTable, tracks, jetEWSPtMin, jetEWSPtMax);
@@ -242,7 +242,7 @@ struct JetFinderHFTask {
   }
   PROCESS_SWITCH(JetFinderHFTask, processChargedEvtWiseSubJetsData, "charged hf jet finding on data with event-wise constituent subtraction", false);
 
-  void processChargedJetsMCD(soa::Filtered<JetCollisions>::iterator const& collision, soa::Filtered<JetTracks> const& tracks, CandidateTableMCD const& candidates)
+  void processChargedJetsMCD(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Filtered<aod::JetTracks> const& tracks, CandidateTableMCD const& candidates)
   {
     for (typename CandidateTableMCD::iterator const& candidate : candidates) {
       analyseCharged<false>(collision, tracks, candidate, jetsTable, constituentsTable, tracks, jetPtMin, jetPtMax);
@@ -250,7 +250,7 @@ struct JetFinderHFTask {
   }
   PROCESS_SWITCH(JetFinderHFTask, processChargedJetsMCD, "charged hf jet finding on MC detector level", false);
 
-  void processChargedEvtWiseSubJetsMCD(soa::Filtered<JetCollisions>::iterator const& collision, soa::Filtered<JetTracksSubTable> const& tracks, CandidateTableMCD const& candidates)
+  void processChargedEvtWiseSubJetsMCD(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Filtered<JetTracksSubTable> const& tracks, CandidateTableMCD const& candidates)
   {
     for (typename CandidateTableMCD::iterator const& candidate : candidates) {
       analyseCharged<true>(collision, jetcandidateutilities::slicedPerCandidate(tracks, candidate, perD0Candidate, perLcCandidate, perBplusCandidate, perDielectronCandidate), candidate, jetsEvtWiseSubTable, constituentsEvtWiseSubTable, tracks, jetEWSPtMin, jetEWSPtMax);
@@ -258,8 +258,8 @@ struct JetFinderHFTask {
   }
   PROCESS_SWITCH(JetFinderHFTask, processChargedEvtWiseSubJetsMCD, "charged hf jet finding on MC detector level with event-wise constituent subtraction", false);
 
-  void processChargedJetsMCP(JetMcCollision const& collision,
-                             soa::Filtered<JetParticles> const& particles,
+  void processChargedJetsMCP(aod::JetMcCollision const& collision,
+                             soa::Filtered<aod::JetParticles> const& particles,
                              CandidateTableMCP const& candidates)
   {
     for (typename CandidateTableMCP::iterator const& candidate : candidates) {

@@ -13,7 +13,8 @@
 /// \brief Ξc± → (Ξ∓ → (Λ → p π∓) π∓) π± π± analysis task
 /// \note adapted from taskBs.cxx
 ///
-/// \author Phil Stahlhut <phil.lennart.stahlhut@cern.ch>
+/// \author Phil Lennart Stahlhut <phil.lennart.stahlhut@cern.ch>, Heidelberg University
+/// \author Carolina Reetz <c.reetz@cern.ch>, Heidelberg University
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"

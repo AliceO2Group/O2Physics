@@ -228,10 +228,10 @@ struct SinglePhoton {
           custom_cut->SetM02Range(EMC_minM02, EMC_maxM02);
           custom_cut->SetTimeRange(EMC_minTime, EMC_maxTime);
 
-          custom_cut->SetTrackMatchingEta([&a, &b, &c](float pT) {
+          custom_cut->SetTrackMatchingEta([a, b, c](float pT) {
             return a + pow(pT + b, c);
           });
-          custom_cut->SetTrackMatchingPhi([&d, &e, &f](float pT) {
+          custom_cut->SetTrackMatchingPhi([d, e, f](float pT) {
             return d + pow(pT + e, f);
           });
 
@@ -331,8 +331,8 @@ struct SinglePhoton {
           reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hY"))->Fill(photon.eta());
           reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hPhi"))->Fill(photon.phi());
         } // end of photon loop
-      }   // end of cut loop
-    }     // end of collision loop
+      } // end of cut loop
+    } // end of collision loop
   }
 
   Partition<MyCollisions> grouped_collisions = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax); // this goes to same event.

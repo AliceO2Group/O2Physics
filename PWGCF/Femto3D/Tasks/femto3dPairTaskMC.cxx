@@ -321,7 +321,7 @@ struct FemtoCorrelationsMC {
     int trackPDG, trackOrigin;
 
     for (auto track : tracks) {
-      if (abs(track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().posZ()) > _vertexZ)
+      if (std::fabs(track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().posZ()) > _vertexZ)
         continue;
       if (track.tpcFractionSharedCls() > _tpcFractionSharedCls || track.itsNCls() < _itsNCls)
         continue;
@@ -351,7 +351,7 @@ struct FemtoCorrelationsMC {
         if (trackOrigin > -1 && trackOrigin < 3)
           DCA_histos_1[centBin][track.origin()]->Fill(track.pt(), track.dcaXY(), track.dcaZ());
 
-        if (abs(track.dcaXY()) > _dcaXY.value[0] + _dcaXY.value[1] * std::pow(track.pt(), _dcaXY.value[2]) || abs(track.dcaZ()) > _dcaZ.value[0] + _dcaZ.value[1] * std::pow(track.pt(), _dcaZ.value[2]))
+        if (std::fabs(track.dcaXY()) > _dcaXY.value[0] + _dcaXY.value[1] * std::pow(track.pt(), _dcaXY.value[2]) || std::fabs(track.dcaZ()) > _dcaZ.value[0] + _dcaZ.value[1] * std::pow(track.pt(), _dcaZ.value[2]))
           continue;
 
         trackPDG = abs(track.pdgCode());
@@ -372,7 +372,7 @@ struct FemtoCorrelationsMC {
         if (trackOrigin > -1 && trackOrigin < 3)
           DCA_histos_2[centBin][track.origin()]->Fill(track.pt(), track.dcaXY(), track.dcaZ());
 
-        if (abs(track.dcaXY()) > _dcaXY.value[0] + _dcaXY.value[1] * std::pow(track.pt(), _dcaXY.value[2]) || abs(track.dcaZ()) > _dcaZ.value[0] + _dcaZ.value[1] * std::pow(track.pt(), _dcaZ.value[2]))
+        if (std::fabs(track.dcaXY()) > _dcaXY.value[0] + _dcaXY.value[1] * std::pow(track.pt(), _dcaXY.value[2]) || std::fabs(track.dcaZ()) > _dcaZ.value[0] + _dcaZ.value[1] * std::pow(track.pt(), _dcaZ.value[2]))
           continue;
 
         trackPDG = abs(track.pdgCode());

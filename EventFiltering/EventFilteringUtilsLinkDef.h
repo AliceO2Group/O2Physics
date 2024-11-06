@@ -14,4 +14,5 @@
 #pragma link off all functions;
 
 #pragma link C++ class ZorroHelper + ;
+#pragma link C++ class ZorroSummary + ;
 #pragma link C++ class std::vector < ZorroHelper> + ;

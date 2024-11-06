@@ -65,8 +65,11 @@ struct strangeness_tutorial {
   Configurable<bool> QAv0_daughters{"QAv0_daughters", false, "QA of v0 daughters"};
   Configurable<bool> QAevents{"QAevents", false, "QA of events"};
   Configurable<bool> inv_mass1D{"inv_mass1D", false, "1D invariant mass histograms"};
+  Configurable<bool> correlation2Dhist{"correlation2Dhist", true, "Lamda K0 mass correlation"};
   Configurable<bool> DCAv0topv{"DCAv0topv", false, "DCA V0 to PV"};
   Configurable<bool> armcut{"armcut", true, "arm cut"};
+  Configurable<bool> globalTracks{"globalTracks", false, "Global tracks"};
+  Configurable<bool> hasTPC{"hasTPC", false, "TPC"};
 
   // Configurable for event selection
   Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
@@ -145,6 +148,7 @@ struct strangeness_tutorial {
   TF1* fMultCutHigh = nullptr;
   TF1* fMultMultPVCut = nullptr;
   Service<o2::framework::O2DatabasePDG> PDGdatabase;
+  TRandom* rn = new TRandom();
 
   void init(InitContext const&)
   {
@@ -203,6 +207,19 @@ struct strangeness_tutorial {
     hglue.add("htrackscheck_v0_daughters", "htrackscheck_v0_daughters", kTH1I, {{15, 0, 15}});
 
     // K0s topological/PID cuts
+    if (correlation2Dhist) {
+      rKzeroShort.add("mass_lambda_kshort_before", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
+      rKzeroShort.add("mass_lambda_kshort_after1", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
+      rKzeroShort.add("mass_lambda_kshort_after2", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
+      rKzeroShort.add("mass_lambda_kshort_after3", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
+      rKzeroShort.add("mass_lambda_kshort_after4", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
+      rKzeroShort.add("mass_lambda_kshort_after5", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
+      rKzeroShort.add("mass_lambda_kshort_after6", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
+      rKzeroShort.add("mass_lambda_kshort_after7", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
+      rKzeroShort.add("mass_lambda_kshort_after8", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
+      rKzeroShort.add("mass_lambda_kshort_after9", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
+      rKzeroShort.add("mass_lambda_kshort_after10", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
+    }
     if (QAv0) {
       // Invariant Mass
       rKzeroShort.add("hMassK0Shortbefore", "hMassK0Shortbefore", kTHnSparseF, {K0ShortMassAxis, ptAxis});
@@ -215,8 +232,7 @@ struct strangeness_tutorial {
       rKzeroShort.add("Mass_lambda", "Mass under lambda hypothesis", kTH1F, {glueballMassAxis});
       rKzeroShort.add("mass_AntiLambda", "Mass under anti-lambda hypothesis", kTH1F, {glueballMassAxis});
       rKzeroShort.add("mass_Gamma", "Mass under Gamma hypothesis", kTH1F, {glueballMassAxis});
-      rKzeroShort.add("mass_lambda_kshort_before", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
-      rKzeroShort.add("mass_lambda_kshort_after", "mass under lambda hypotheses and Kshort mass", kTH2F, {{100, 0.2, 0.8}, {100, 0.9, 1.5}});
+
       // rKzeroShort.add("mass_Hypertriton", "Mass under hypertriton hypothesis", kTH1F, {glueballMassAxis});
       // rKzeroShort.add("mass_AnitHypertriton", "Mass under anti-hypertriton hypothesis", kTH1F, {glueballMassAxis});
       rKzeroShort.add("rapidity", "Rapidity distribution", kTH1F, {{100, -1.0f, 1.0f}});
@@ -272,26 +288,27 @@ struct strangeness_tutorial {
       return false;
     }
     hglue.fill(HIST("heventscheck"), 2.5);
+
     if (!collision.sel8()) {
       return false;
     }
     hglue.fill(HIST("heventscheck"), 3.5);
+
     if (piluprejection && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       return false;
     }
     hglue.fill(HIST("heventscheck"), 4.5);
+
     if (goodzvertex && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return false;
     }
     hglue.fill(HIST("heventscheck"), 5.5);
+
     if (itstpctracks && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
       return false;
     }
     hglue.fill(HIST("heventscheck"), 6.5);
-    // if (collision.alias_bit(kTVXinTRD)) {
-    //   // TRD triggered
-    //   // return 0;
-    // }
+
     auto multNTracksPV = collision.multNTracksPV();
     if (additionalEvsel && multNTracksPV < fMultPVCutLow->Eval(multiplicity)) {
       return false;
@@ -301,12 +318,7 @@ struct strangeness_tutorial {
       return false;
     }
     hglue.fill(HIST("heventscheck"), 8.5);
-    // if (multTrk < fMultCutLow->Eval(multiplicity))
-    //  return 0;
-    // if (multTrk > fMultCutHigh->Eval(multiplicity))
-    //  return 0;
-    // if (multTrk > fMultMultPVCut->Eval(multNTracksPV))
-    //  return 0;
+
     return true;
   }
 
@@ -346,70 +358,85 @@ struct strangeness_tutorial {
       rKzeroShort.fill(HIST("halpha"), candidate.alpha());
       rKzeroShort.fill(HIST("hqtarmbyalpha"), arm);
       rKzeroShort.fill(HIST("hpsipair"), candidate.psipair());
-      rKzeroShort.fill(HIST("mass_lambda_kshort_before"), candidate.mK0Short(), candidate.mLambda());
     }
+    if (correlation2Dhist)
+      rKzeroShort.fill(HIST("mass_lambda_kshort_before"), candidate.mK0Short(), candidate.mLambda());
 
     hglue.fill(HIST("htrackscheck_v0"), 0.5);
 
-    if (!DCAv0topv && fabs(candidate.dcav0topv()) > cMaxV0DCA) {
+    if (DCAv0topv && fabs(candidate.dcav0topv()) > cMaxV0DCA) {
       return false;
     }
-
     hglue.fill(HIST("htrackscheck_v0"), 1.5);
+    if (correlation2Dhist)
+      rKzeroShort.fill(HIST("mass_lambda_kshort_after1"), candidate.mK0Short(), candidate.mLambda());
 
     if (rapidityks && TMath::Abs(candidate.yK0Short()) >= ConfKsrapidity) {
       return false;
     }
-
     hglue.fill(HIST("htrackscheck_v0"), 2.5);
-
-    // if (isStandarv0 && candidate.isStandardV0 == 0) {
-    //   return false;
-    // }
+    if (correlation2Dhist)
+      rKzeroShort.fill(HIST("mass_lambda_kshort_after2"), candidate.mK0Short(), candidate.mLambda());
 
     if (pT < ConfV0PtMin) {
       return false;
     }
     hglue.fill(HIST("htrackscheck_v0"), 3.5);
+    if (correlation2Dhist)
+      rKzeroShort.fill(HIST("mass_lambda_kshort_after3"), candidate.mK0Short(), candidate.mLambda());
 
     if (dcaDaughv0 > ConfV0DCADaughMax) {
       return false;
     }
     hglue.fill(HIST("htrackscheck_v0"), 4.5);
+    if (correlation2Dhist)
+      rKzeroShort.fill(HIST("mass_lambda_kshort_after4"), candidate.mK0Short(), candidate.mLambda());
 
     if (cpav0 < ConfV0CPAMin) {
       return false;
     }
     hglue.fill(HIST("htrackscheck_v0"), 5.5);
+    if (correlation2Dhist)
+      rKzeroShort.fill(HIST("mass_lambda_kshort_after5"), candidate.mK0Short(), candidate.mLambda());
 
     if (tranRad < ConfV0TranRadV0Min) {
       return false;
     }
     hglue.fill(HIST("htrackscheck_v0"), 6.5);
+    if (correlation2Dhist)
+      rKzeroShort.fill(HIST("mass_lambda_kshort_after6"), candidate.mK0Short(), candidate.mLambda());
 
     if (tranRad > ConfV0TranRadV0Max) {
       return false;
     }
     hglue.fill(HIST("htrackscheck_v0"), 7.5);
+    if (correlation2Dhist)
+      rKzeroShort.fill(HIST("mass_lambda_kshort_after7"), candidate.mK0Short(), candidate.mLambda());
 
     if (fabs(CtauK0s) > cMaxV0LifeTime) {
       return false;
     }
     hglue.fill(HIST("htrackscheck_v0"), 8.5);
+    if (correlation2Dhist)
+      rKzeroShort.fill(HIST("mass_lambda_kshort_after8"), candidate.mK0Short(), candidate.mLambda());
 
-    if (!armcut && arm < Confarmcut) {
+    if (armcut && arm < Confarmcut) {
       return false;
     }
     hglue.fill(HIST("htrackscheck_v0"), 9.5);
+    if (correlation2Dhist)
+      rKzeroShort.fill(HIST("mass_lambda_kshort_after9"), candidate.mK0Short(), candidate.mLambda());
 
     if (apply_competingcut && (TMath::Abs(candidate.mLambda() - PDGdatabase->Mass(3122)) <= competingcascrejlambda || TMath::Abs(candidate.mAntiLambda() - PDGdatabase->Mass(-3122)) <= competingcascrejlambdaanti)) {
       return false;
     }
     hglue.fill(HIST("htrackscheck_v0"), 10.5);
+    if (correlation2Dhist)
+      rKzeroShort.fill(HIST("mass_lambda_kshort_after10"), candidate.mK0Short(), candidate.mLambda());
 
     if (QAv0) {
       rKzeroShort.fill(HIST("hMassK0ShortSelected"), candidate.mK0Short(), candidate.pt());
-      rKzeroShort.fill(HIST("mass_lambda_kshort_after"), candidate.mK0Short(), candidate.mLambda());
+      // rKzeroShort.fill(HIST("mass_lambda_kshort_after"), candidate.mK0Short(), candidate.mLambda());
     }
 
     if (candidate.mK0Short() < lowmasscutks0 || candidate.mK0Short() > highmasscutks0) {
@@ -421,64 +448,59 @@ struct strangeness_tutorial {
   template <typename T, typename V0s>
   bool isSelectedV0Daughter(T const& track, float charge, double nsigmaV0Daughter, V0s const& /*candidate*/)
   {
-    //  if (QAv0_daughters) {
-    //     (charge == -1) ? rKzeroShort.fill(HIST("negative_pt"), track.pt()) : rKzeroShort.fill(HIST("positive_pt"), track.pt());
-    //     (charge == -1) ? rKzeroShort.fill(HIST("negative_eta"), track.eta()) : rKzeroShort.fill(HIST("positive_eta"), track.eta());
-    //     (charge == -1) ? rKzeroShort.fill(HIST("negative_phi"), track.phi()) : rKzeroShort.fill(HIST("positive_phi"), track.phi());
-    //   }
     if (QAPID) {
       // Filling the PID of the V0 daughters in the region of the K0 peak.
-      // tpcInnerParam is the momentum at the inner wall of TPC. So momentum of tpc vs nsigma of tpc is plotted.
-      // if (0.45 < candidate.mK0Short() && candidate.mK0Short() < 0.55) {
-      // }
       (charge == 1) ? rKzeroShort.fill(HIST("hNSigmaPosPionK0s_before"), track.tpcInnerParam(), track.tpcNSigmaPi()) : rKzeroShort.fill(HIST("hNSigmaNegPionK0s_before"), track.tpcInnerParam(), track.tpcNSigmaPi());
       rKzeroShort.fill(HIST("dE_by_dx_TPC"), track.p(), track.tpcSignal());
     }
     const auto eta = track.eta();
     const auto tpcNClsF = track.tpcNClsFound();
-    // const auto dcaXY = track.dcaXY(); // for this we need TrackDCA table
     const auto sign = track.sign();
+
     hglue.fill(HIST("htrackscheck_v0_daughters"), 0.5);
-    if (!track.hasTPC())
+
+    if (hasTPC && !track.hasTPC())
       return false;
     hglue.fill(HIST("htrackscheck_v0_daughters"), 1.5);
-    if (track.tpcNClsCrossedRows() < tpcCrossedrows)
-      return false;
-    hglue.fill(HIST("htrackscheck_v0_daughters"), 2.5);
-    if (track.tpcCrossedRowsOverFindableCls() < tpcCrossedrowsOverfcls)
-      return false;
-    hglue.fill(HIST("htrackscheck_v0_daughters"), 3.5);
+
+    if (!globalTracks) {
+      if (track.tpcNClsCrossedRows() < tpcCrossedrows)
+        return false;
+      hglue.fill(HIST("htrackscheck_v0_daughters"), 2.5);
+
+      if (track.tpcCrossedRowsOverFindableCls() < tpcCrossedrowsOverfcls)
+        return false;
+      hglue.fill(HIST("htrackscheck_v0_daughters"), 3.5);
+
+      if (tpcNClsF < ConfDaughTPCnclsMin) {
+        return false;
+      }
+      hglue.fill(HIST("htrackscheck_v0_daughters"), 4.5);
+    } else {
+      if (!track.isGlobalTrack())
+        return false;
+      hglue.fill(HIST("htrackscheck_v0_daughters"), 4.5);
+    }
 
     if (charge < 0 && sign > 0) {
       return false;
     }
-    hglue.fill(HIST("htrackscheck_v0_daughters"), 4.5);
+    hglue.fill(HIST("htrackscheck_v0_daughters"), 5.5);
+
     if (charge > 0 && sign < 0) {
       return false;
     }
-    hglue.fill(HIST("htrackscheck_v0_daughters"), 5.5);
+    hglue.fill(HIST("htrackscheck_v0_daughters"), 6.5);
+
     if (std::abs(eta) > ConfDaughEta) {
       return false;
     }
-    hglue.fill(HIST("htrackscheck_v0_daughters"), 6.5);
-    if (tpcNClsF < ConfDaughTPCnclsMin) {
-      return false;
-    }
     hglue.fill(HIST("htrackscheck_v0_daughters"), 7.5);
-    // if (std::abs(dcaXY) < ConfDaughDCAMin) {
-    //   return false;
-    // }
-    // v0 PID selection
+
     if (std::abs(nsigmaV0Daughter) > ConfDaughPIDCuts) {
       return false;
     }
     hglue.fill(HIST("htrackscheck_v0_daughters"), 8.5);
-
-    // if (QAPID) {
-    //   // if (0.45 < candidate.mK0Short() && candidate.mK0Short() < 0.55) {
-    //   (charge == 1) ? rKzeroShort.fill(HIST("hNSigmaPosPionK0s_after"), track.tpcInnerParam(), track.tpcNSigmaPi()) : rKzeroShort.fill(HIST("hNSigmaNegPionK0s_after"), track.tpcInnerParam(), track.tpcNSigmaPi());
-    //   // }
-    // }
 
     return true;
   }
@@ -606,16 +628,12 @@ struct strangeness_tutorial {
 
       // polarization calculations
 
-      auto phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
-      auto thetaRandom = gRandom->Uniform(0.f, constants::math::PI);
       ROOT::Math::PxPyPzMVector fourVecDau = ROOT::Math::PxPyPzMVector(daughter1.Px(), daughter1.Py(), daughter1.Pz(), massK0s); // Kshort
 
       ROOT::Math::PxPyPzMVector fourVecMother = ROOT::Math::PxPyPzMVector(lv3.Px(), lv3.Py(), lv3.Pz(), lv3.M()); // mass of KshortKshort pair
       ROOT::Math::Boost boost{fourVecMother.BoostToCM()};                                                         // boost mother to center of mass frame
       ROOT::Math::PxPyPzMVector fourVecDauCM = boost(fourVecDau);                                                 // boost the frame of daughter same as mother
       ROOT::Math::XYZVector threeVecDauCM = fourVecDauCM.Vect();                                                  // get the 3 vector of daughter in the frame of mother
-
-      TRandom* rn = new TRandom();
 
       if (TMath::Abs(lv3.Rapidity() < 0.5)) {
 
@@ -655,6 +673,8 @@ struct strangeness_tutorial {
             hglue.fill(HIST("h3glueInvMassRot"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarBeam);
           }
         } else if (activateTHnSparseCosThStarRandom) {
+          auto phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
+          auto thetaRandom = gRandom->Uniform(0.f, constants::math::PI);
           ROOT::Math::XYZVector randomVec = ROOT::Math::XYZVector(std::sin(thetaRandom) * std::cos(phiRandom), std::sin(thetaRandom) * std::sin(phiRandom), std::cos(thetaRandom));
           auto cosThetaStarRandom = randomVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
           hglue.fill(HIST("h3glueInvMassDS"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarRandom);
@@ -750,8 +770,6 @@ struct strangeness_tutorial {
           lv2.SetPtEtaPhiM(t2.pt(), t2.eta(), t2.phi(), massK0s);
           lv3 = lv1 + lv2;
 
-          auto phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
-          auto thetaRandom = gRandom->Uniform(0.f, constants::math::PI);
           ROOT::Math::PxPyPzMVector fourVecDau = ROOT::Math::PxPyPzMVector(daughter1.Px(), daughter1.Py(), daughter1.Pz(), massK0s); // Kshort
 
           ROOT::Math::PxPyPzMVector fourVecMother = ROOT::Math::PxPyPzMVector(lv3.Px(), lv3.Py(), lv3.Pz(), lv3.M()); // mass of KshortKshort pair
@@ -774,6 +792,8 @@ struct strangeness_tutorial {
               auto cosThetaStarBeam = beamVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
               hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarBeam);
             } else if (activateTHnSparseCosThStarRandom) {
+              auto phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
+              auto thetaRandom = gRandom->Uniform(0.f, constants::math::PI);
               ROOT::Math::XYZVector randomVec = ROOT::Math::XYZVector(std::sin(thetaRandom) * std::cos(phiRandom), std::sin(thetaRandom) * std::sin(phiRandom), std::cos(thetaRandom));
               auto cosThetaStarRandom = randomVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
               hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarRandom);
@@ -841,8 +861,6 @@ struct strangeness_tutorial {
           lv2.SetPtEtaPhiM(t2.pt(), t2.eta(), t2.phi(), massK0s);
           lv3 = lv1 + lv2;
 
-          auto phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
-          auto thetaRandom = gRandom->Uniform(0.f, constants::math::PI);
           ROOT::Math::PxPyPzMVector fourVecDau = ROOT::Math::PxPyPzMVector(daughter1.Px(), daughter1.Py(), daughter1.Pz(), massK0s); // Kshort
 
           ROOT::Math::PxPyPzMVector fourVecMother = ROOT::Math::PxPyPzMVector(lv3.Px(), lv3.Py(), lv3.Pz(), lv3.M()); // mass of KshortKshort pair
@@ -865,6 +883,8 @@ struct strangeness_tutorial {
               auto cosThetaStarBeam = beamVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
               hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarBeam);
             } else if (activateTHnSparseCosThStarRandom) {
+              auto phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
+              auto thetaRandom = gRandom->Uniform(0.f, constants::math::PI);
               ROOT::Math::XYZVector randomVec = ROOT::Math::XYZVector(std::sin(thetaRandom) * std::cos(phiRandom), std::sin(thetaRandom) * std::sin(phiRandom), std::cos(thetaRandom));
               auto cosThetaStarRandom = randomVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
               hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarRandom);

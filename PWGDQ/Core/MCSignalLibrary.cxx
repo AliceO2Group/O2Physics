@@ -456,6 +456,24 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "Electrons from Lambda_c decays", {prong}, {-1});
     return signal;
   }
+  if (!nameStr.compare("eFromXiC0")) {
+    MCProng prong(2, {11, Pdg::kXiC0}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {true});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "Electrons from Xi_c_0 decays", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("eFromXiCPlus")) {
+    MCProng prong(2, {11, Pdg::kXiCPlus}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {true});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "Electrons from Xi_c_+ decays", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("eFromXiCPlusPlus")) {
+    MCProng prong(2, {11, Pdg::kXiCCPlusPlus}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {true});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "Electrons from Xi_c_++ decays", {prong}, {-1});
+    return signal;
+  }
   if (!nameStr.compare("eFromHb")) {
     MCProng prong(2, {11, 502}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
@@ -886,30 +904,105 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   }
 
   // Any b to any c in history b -> c -> e
-  if (!nameStr.compare("eeFromBtoCandBtoC")) {
+  if (!nameStr.compare("eeFromAnyBtoCandAnyBtoC")) {
     MCProng prong(2, {11, 402}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {false}); // check if mother pdg code is in history
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "ee pairs with any beauty to charm in decay chain", {prong, prong}, {-1, -1}); // signal at pair level
     return signal;
   }
 
-  // Any b->e and Any b->c->e
-  if (!nameStr.compare("eeFromBandBtoC")) {
-    MCProng prongB(2, {11, 502}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}); // check if mother pdg code is in history
-    prongB.SetSourceBit(0, MCProng::kPhysicalPrimary);
-    MCProng prongBtoC(2, {11, 402}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {false}); // check if mother pdg code is in history
-    prongBtoC.SetSourceBit(0, MCProng::kPhysicalPrimary);
-    signal = new MCSignal(name, "ee pairs from b->e and b->c->e", {prongB, prongBtoC}, {-1, -1}); // signal at pair level
+  // b->c->e, b->c->e
+  if (!nameStr.compare("eeFromBtoCandBtoC")) {
+    MCProng prong(3, {11, 402, 502}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false}, false); // check if mother pdg code is in history
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "ee pairs with any beauty to charm in decay chain", {prong, prong}, {-1, -1}); // signal at pair level
     return signal;
   }
 
-  // Any b->e and Any b->c->e
-  if (!nameStr.compare("eeFromBandBtoCBis")) {
-    MCProng prongB(2, {11, 502}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}); // check if mother pdg code is in history
+  // Any b->e and Any b->X->c->e
+  // Looking at such decays: B -> (e) D -> (e)e and bar{B} -> e
+  // Signal allows combinations of ee from the same B meson
+  // + the combination of e fom B and e from bar{B}
+  if (!nameStr.compare("eeFromBandAnyBtoC")) {
+    MCProng prongB(2, {11, 502}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     prongB.SetSourceBit(0, MCProng::kPhysicalPrimary);
     MCProng prongBtoC(2, {11, 402}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {false}); // check if mother pdg code is in history
     prongBtoC.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "ee pairs from b->e and b->X->c->e", {prongB, prongBtoC}, {-1, -1}); // signal at pair level
+    return signal;
+  }
+
+  // Any b->e and Any b->X->c->e
+  if (!nameStr.compare("eeFromBandAnyBtoCBis")) {
+    MCProng prongB(2, {11, 502}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prongB.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    MCProng prongBtoC(2, {11, 402}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {false}); // check if mother pdg code is in history
+    prongBtoC.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "ee pairs from b->X->c->e and b->e", {prongBtoC, prongB}, {-1, -1}); // signal at pair level
+    return signal;
+  }
+
+  // b->e and b->c->e
+  if (!nameStr.compare("eeFromBandBtoC")) {
+    MCProng prongB(2, {11, 502}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prongB.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    MCProng prongBtoC(3, {11, 402, 502}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false}, false); // check if mother pdg code is in history
+    prongBtoC.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "direkt ee pairs from b->e and b->c->e", {prongB, prongBtoC}, {-1, -1}); // signal at pair level
+    return signal;
+  }
+
+  // b->e and b->c->e
+  if (!nameStr.compare("eeFromBandBtoCBis")) {
+    MCProng prongB(2, {11, 502}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prongB.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    MCProng prongBtoC(3, {11, 402, 502}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false}, false); // check if mother pdg code is in history
+    prongBtoC.SetSourceBit(0, MCProng::kPhysicalPrimary);
     signal = new MCSignal(name, "ee pairs from b->c->e and b->e", {prongBtoC, prongB}, {-1, -1}); // signal at pair level
+    return signal;
+  }
+
+  // b->e and b->c->e (same mother/grandmother)
+  // require that the mother is the grandmother of the other electron
+  if (!nameStr.compare("eeFromBandBtoCsameGM")) {
+    MCProng prongB(2, {11, 502}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prongB.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    MCProng prongBtoC(3, {11, 402, 502}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false}, false); // check if mother pdg code is in history
+    prongBtoC.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "ee pairs from b->e and b->c->e, mother = grandmother", {prongB, prongBtoC}, {1, 2}, false); // signal at pair level, accept commonAncestor Pairs
+    return signal;
+  }
+
+  // b->e and b->c->e (same mother/grandmother)
+  // require that the mother is the grandmother of the other electron
+  if (!nameStr.compare("eeFromBandBtoCsameGMBis")) {
+    MCProng prongB(2, {11, 502}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prongB.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    MCProng prongBtoC(3, {11, 402, 502}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false}, false); // check if mother pdg code is in history
+    prongBtoC.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "ee pairs from b->c->e and b->e, mother = grandmother", {prongBtoC, prongB}, {2, 1}, false); // signal at pair level, accept commonAncestor Pairs
+    return signal;
+  }
+
+  // b->e and b->c->e (different mother/grandmother)
+  // require that the mother is not the grandmother of the other electron
+  if (!nameStr.compare("eeFromBandBtoCdiffGM")) {
+    MCProng prongB(2, {11, 502}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prongB.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    MCProng prongBtoC(3, {11, 402, 502}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false}, false); // check if mother pdg code is in history
+    prongBtoC.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "ee pairs from b->e and b->c->e, mother != grandmother", {prongB, prongBtoC}, {1, 2}, true); // signal at pair level, exclude commonAncestor Pairs
+    return signal;
+  }
+
+  // b->e and b->c->e (different mother/grandmother)
+  // require that the mother is not the grandmother of the other electron
+  if (!nameStr.compare("eeFromBandBtoCdiffGMBis")) {
+    MCProng prongB(2, {11, 502}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prongB.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    MCProng prongBtoC(3, {11, 402, 502}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false}, false); // check if mother pdg code is in history
+    prongBtoC.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "ee pairs from b->c->e and b->e, mother != grandmother", {prongBtoC, prongB}, {2, 1}, true); // signal at pair level, exclude commonAncestor Pairs
     return signal;
   }
 

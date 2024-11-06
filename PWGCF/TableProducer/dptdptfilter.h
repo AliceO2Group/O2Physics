@@ -94,12 +94,16 @@ enum CentMultEstimatorType {
 /// \enum TriggerSelectionType
 /// \brief The type of trigger to apply for event selection
 enum TriggerSelectionType {
-  kNONE = 0,         ///< do not use trigger selection
-  kMB,               ///< Minimum bias trigger
-  kVTXTOFMATCHED,    ///< at least one vertex contributor is matched to TOF
-  kVTXTRDMATCHED,    ///< at least one vertex contributor is matched to TRD
-  kVTXTRDTOFMATCHED, ///< at least one vertex contributor is matched to TRD and TOF
-  knEventSelection   ///< number of triggers for event selection
+  kNONE = 0,              ///< do not use trigger selection
+  kMB,                    ///< Minimum bias trigger
+  kMBEXTRA,               ///< Additional Run3 event quality
+  kVTXTOFMATCHED,         ///< at least one vertex contributor is matched to TOF
+  kVTXTRDMATCHED,         ///< at least one vertex contributor is matched to TRD
+  kVTXTRDTOFMATCHED,      ///< at least one vertex contributor is matched to TRD and TOF
+  kEXTRAVTXTOFMATCHED,    ///< Additional Run3 event quality and at least one vertex contributor is matched to TOF
+  kEXTRAVTXTRDMATCHED,    ///< Additional Run3 event quality and at least one vertex contributor is matched to TRD
+  kEXTRAVTXTRDTOFMATCHED, ///< Additional Run3 event quality and at least one vertex contributor is matched to TRD and TOF
+  knEventSelection        ///< number of triggers for event selection
 };
 
 /// \enum StrongDebugging
@@ -131,6 +135,7 @@ float zvtxlow = -10.0, zvtxup = 10.0;
 int phibins = 72;
 float philow = 0.0;
 float phiup = constants::math::TwoPI;
+bool onlyInOneSide = false; /* select only tracks that don't cross the TPC central membrane */
 
 /* selection criteria from PWGMM */
 // default quality criteria for tracks with ITS contribution
@@ -312,12 +317,20 @@ inline TriggerSelectionType getTriggerSelection(std::string const& triggstr)
 {
   if (triggstr.empty() || triggstr == "MB") {
     return kMB;
+  } else if (triggstr == "MBEXTRA") {
+    return kMBEXTRA;
   } else if (triggstr == "VTXTOFMATCHED") {
     return kVTXTOFMATCHED;
   } else if (triggstr == "VTXTRDMATCHED") {
     return kVTXTRDMATCHED;
   } else if (triggstr == "VTXTRDTOFMATCHED") {
     return kVTXTRDTOFMATCHED;
+  } else if (triggstr == "EXTRAVTXTOFMATCHED") {
+    return kEXTRAVTXTOFMATCHED;
+  } else if (triggstr == "EXTRAVTXTRDMATCHED") {
+    return kEXTRAVTXTRDMATCHED;
+  } else if (triggstr == "EXTRAVTXTRDTOFMATCHED") {
+    return kEXTRAVTXTRDTOFMATCHED;
   } else if (triggstr == "None") {
     return kNONE;
   } else {
@@ -481,9 +494,10 @@ inline bool triggerSelectionReco(CollisionObject const& collision)
     case kppRun3:
     case kPbPbRun3: {
       auto run3Accepted = [](auto const& coll) {
+        return coll.sel8();
+      };
+      auto run3ExtraAccepted = [](auto const& coll) {
         return coll.sel8() &&
-               coll.selection_bit(aod::evsel::kNoITSROFrameBorder) &&
-               coll.selection_bit(aod::evsel::kNoTimeFrameBorder) &&
                coll.selection_bit(aod::evsel::kNoSameBunchPileup) &&
                coll.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) &&
                coll.selection_bit(aod::evsel::kIsVertexITSTPC);
@@ -491,6 +505,11 @@ inline bool triggerSelectionReco(CollisionObject const& collision)
       switch (fTriggerSelection) {
         case kMB:
           if (run3Accepted(collision)) {
+            trigsel = true;
+          }
+          break;
+        case kMBEXTRA:
+          if (run3ExtraAccepted(collision)) {
             trigsel = true;
           }
           break;
@@ -506,6 +525,21 @@ inline bool triggerSelectionReco(CollisionObject const& collision)
           break;
         case kVTXTRDTOFMATCHED:
           if (run3Accepted(collision) && collision.selection_bit(aod::evsel::kIsVertexTRDmatched) && collision.selection_bit(aod::evsel::kIsVertexTOFmatched)) {
+            trigsel = true;
+          }
+          break;
+        case kEXTRAVTXTOFMATCHED:
+          if (run3ExtraAccepted(collision) && collision.selection_bit(aod::evsel::kIsVertexTOFmatched)) {
+            trigsel = true;
+          }
+          break;
+        case kEXTRAVTXTRDMATCHED:
+          if (run3ExtraAccepted(collision) && collision.selection_bit(aod::evsel::kIsVertexTRDmatched)) {
+            trigsel = true;
+          }
+          break;
+        case kEXTRAVTXTRDTOFMATCHED:
+          if (run3ExtraAccepted(collision) && collision.selection_bit(aod::evsel::kIsVertexTRDmatched) && collision.selection_bit(aod::evsel::kIsVertexTOFmatched)) {
             trigsel = true;
           }
           break;
@@ -628,51 +662,38 @@ inline float extractMultiplicity(CollisionObject const& collision, CentMultEstim
 
 /// \brief Centrality/multiplicity percentile
 template <typename CollisionObject>
+  requires(o2::aod::HasRun2Centrality<CollisionObject>)
 float getCentMultPercentile(CollisionObject collision)
 {
-  if constexpr (framework::has_type_v<aod::cent::CentRun2V0M, typename CollisionObject::all_columns> ||
-                framework::has_type_v<aod::cent::CentRun2CL0, typename CollisionObject::all_columns> ||
-                framework::has_type_v<aod::cent::CentRun2CL1, typename CollisionObject::all_columns>) {
-    switch (fCentMultEstimator) {
-      case kV0M:
-        return collision.centRun2V0M();
-        break;
-      case kCL0:
-        return collision.centRun2CL0();
-        break;
-      case kCL1:
-        return collision.centRun2CL1();
-        break;
-      default:
-        return 105.0;
-        break;
-    }
+  switch (fCentMultEstimator) {
+    case kV0M:
+      return collision.centRun2V0M();
+    case kCL0:
+      return collision.centRun2CL0();
+    case kCL1:
+      return collision.centRun2CL1();
+    default:
+      return 105.0;
   }
-  if constexpr (framework::has_type_v<aod::cent::CentFV0A, typename CollisionObject::all_columns> ||
-                framework::has_type_v<aod::cent::CentFT0M, typename CollisionObject::all_columns> ||
-                framework::has_type_v<aod::cent::CentFT0A, typename CollisionObject::all_columns> ||
-                framework::has_type_v<aod::cent::CentFT0C, typename CollisionObject::all_columns> ||
-                framework::has_type_v<aod::cent::CentNTPV, typename CollisionObject::all_columns>) {
-    switch (fCentMultEstimator) {
-      case kFV0A:
-        return collision.centFV0A();
-        break;
-      case kFT0M:
-        return collision.centFT0M();
-        break;
-      case kFT0A:
-        return collision.centFT0A();
-        break;
-      case kFT0C:
-        return collision.centFT0C();
-        break;
-      case kNTPV:
-        return collision.centNTPV();
-        break;
-      default:
-        return 105.0;
-        break;
-    }
+}
+
+template <typename CollisionObject>
+  requires(o2::aod::HasCentrality<CollisionObject>)
+float getCentMultPercentile(CollisionObject collision)
+{
+  switch (fCentMultEstimator) {
+    case kFV0A:
+      return collision.centFV0A();
+    case kFT0M:
+      return collision.centFT0M();
+    case kFT0A:
+      return collision.centFT0A();
+    case kFT0C:
+      return collision.centFT0C();
+    case kNTPV:
+      return collision.centNTPV();
+    default:
+      return 105.0;
   }
 }
 
@@ -777,7 +798,14 @@ inline bool IsEvtSelected(CollisionObject const& collision, float& centormult)
   bool zvtxsel = false;
   /* TODO: vertex quality checks */
   if (zvtxlow < collision.posZ() && collision.posZ() < zvtxup) {
-    zvtxsel = true;
+    if (onlyInOneSide) {
+      if (collision.posZ() != 0.0) {
+        /* if only one side, we accept collisions which have zvtx different than zero */
+        zvtxsel = true;
+      }
+    } else {
+      zvtxsel = true;
+    }
   }
 
   bool centmultsel = centralitySelection(collision, centormult);
@@ -820,7 +848,7 @@ inline bool matchTrackType(TrackObject const& track)
           }
         };
         auto checkDcaZcut = [&](auto const& track) {
-          return ((maxDcaZPtDep) ? abs(track.dcaZ()) <= maxDcaZPtDep(track.pt()) : true);
+          return ((maxDcaZPtDep) ? std::fabs(track.dcaZ()) <= maxDcaZPtDep(track.pt()) : true);
         };
 
         /* tight pT dependent DCAz cut */
@@ -841,9 +869,12 @@ inline bool matchTrackType(TrackObject const& track)
 /// \brief Checks if the passed track is within the acceptance conditions of the analysis
 /// \param track the track of interest
 /// \return true if the track is in the acceptance, otherwise false
-template <typename TrackObject>
+template <typename CollisionsObject, typename TrackObject>
 inline bool InTheAcceptance(TrackObject const& track)
 {
+  /* the side on which the collision happened */
+  float side = track.template collision_as<CollisionsObject>().posZ();
+
   /* overall minimum momentum cut for the analysis */
   if (!(overallminp < track.p())) {
     return false;
@@ -852,6 +883,22 @@ inline bool InTheAcceptance(TrackObject const& track)
   if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
     if (track.mcParticleId() < 0) {
       return false;
+    }
+  }
+
+  /* check the side of the collision and decide if one side */
+  if (onlyInOneSide) {
+    if (side < 0) {
+      if (track.eta() >= 0.0) {
+        return false;
+      }
+    } else if (side > 0) {
+      if (track.eta() <= 0.0) {
+        return false;
+      }
+    } else {
+      /* if only one side we should not have collisions with zvtx = 0 */
+      LOGF(fatal, "Selecting one side tracks with a zvtx zero collision");
     }
   }
 
@@ -864,10 +911,10 @@ inline bool InTheAcceptance(TrackObject const& track)
 /// \brief Accepts or not the passed track
 /// \param track the track of interest
 /// \return true if the track is accepted, otherwise false
-template <typename TrackObject>
+template <typename CollisionsObject, typename TrackObject>
 inline bool AcceptTrack(TrackObject const& track)
 {
-  if (InTheAcceptance(track)) {
+  if (InTheAcceptance<CollisionsObject>(track)) {
     if (matchTrackType(track)) {
       return true;
     }
@@ -939,6 +986,7 @@ struct PIDSpeciesSelection {
   const std::vector<std::string_view> sptitles = {"e", "#mu", "#pi", "K", "p"};
   const std::vector<std::string_view> spfnames = {"E", "Mu", "Pi", "Ka", "Pr"};
   const std::vector<std::string_view> spadjnames = {"Electron", "Muon", "Pion", "Kaon", "Proton"};
+  const std::vector<double> spmasses = {o2::constants::physics::MassElectron, o2::constants::physics::MassMuon, o2::constants::physics::MassPionCharged, o2::constants::physics::MassKaonCharged, o2::constants::physics::MassProton};
   const std::vector<std::string_view> chadjnames = {"P", "M"};
   const char* hadname = "h";
   const char* hadtitle = "h";
@@ -947,6 +995,7 @@ struct PIDSpeciesSelection {
   const char* getSpeciesName(uint8_t ix) { return spnames[species[ix]].data(); }
   const char* getSpeciesTitle(uint8_t ix) { return sptitles[species[ix]].data(); }
   const char* getSpeciesFName(uint8_t ix) { return spfnames[species[ix]].data(); }
+  double getSpeciesMass(uint8_t ix) { return spmasses[species[ix]]; }
   const char* getHadName() { return hadname; }
   const char* getHadTitle() { return hadtitle; }
   const char* getHadFName() { return hadfname; }

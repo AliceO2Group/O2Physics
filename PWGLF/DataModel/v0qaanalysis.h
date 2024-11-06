@@ -58,6 +58,8 @@ DECLARE_SOA_COLUMN(IsPhysicalPrimary, isphysprimary, bool);
 DECLARE_SOA_COLUMN(MultFT0M, multft0m, float);
 DECLARE_SOA_COLUMN(MultFV0A, multfv0a, float);
 DECLARE_SOA_COLUMN(EvFlag, evflag, int);
+DECLARE_SOA_COLUMN(Alpha, alpha, float);
+DECLARE_SOA_COLUMN(QtArm, qtarm, float);
 
 } // namespace myv0candidates
 
@@ -73,7 +75,7 @@ DECLARE_SOA_TABLE(MyV0Candidates, "AOD", "MYV0CANDIDATES", o2::soa::Index<>,
                   myv0candidates::PosHasTOF, myv0candidates::NegHasTOF,
                   myv0candidates::PDGCode, myv0candidates::IsPhysicalPrimary,
                   myv0candidates::MultFT0M, myv0candidates::MultFV0A,
-                  myv0candidates::EvFlag);
+                  myv0candidates::EvFlag, myv0candidates::Alpha, myv0candidates::QtArm);
 
 } // namespace o2::aod
 

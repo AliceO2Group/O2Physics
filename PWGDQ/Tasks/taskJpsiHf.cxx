@@ -48,7 +48,7 @@ static const std::vector<std::string> labelsCutsBdt = {"BDT background", "BDT pr
 // Declarations of various short names
 using MyRedEvents = aod::RedJpDmColls;
 using MyRedPairCandidatesSelected = aod::RedJpDmDileptons;
-using MyRedD0CandidatesSelected = soa::Join<aod::RedJpDmDmesons, aod::RedJpDmD0Masss, aod::RedJpDmDmesBdts>;
+using MyRedD0CandidatesSelected = soa::Join<aod::RedJpDmDmesons, aod::RedJpDmD0Masss, aod::RedJpDmDmesBdts, aod::RedJpDmDmDau0s, aod::RedJpDmDmDau1s>;
 
 struct taskJPsiHf {
   //
@@ -60,7 +60,7 @@ struct taskJPsiHf {
 
   // HF configurables
   Configurable<float> massHfCandMin{"massHfCandMin", 1.5f, "minimum HF mass"};
-  Configurable<float> massHfCandMax{"massHfCandMax", 2.1f, "maximum HF mass"};
+  Configurable<float> massHfCandMax{"massHfCandMax", 2.3f, "maximum HF mass"};
   Configurable<std::vector<float>> binsPtDmesForBdt{"binsPtDmesForBdt", std::vector<float>{bdtcuts::binsPt, bdtcuts::binsPt + bdtcuts::nBinsPt + 1}, "pT bin limits for BDT cuts"};
   Configurable<LabeledArray<float>> cutsDmesBdt{"cutsDmesBdt", {bdtcuts::bdtCuts[0], bdtcuts::nBinsPt, 3, bdtcuts::labelsPt, bdtcuts::labelsCutsBdt}, "D-meson BDT selections per pT bin"};
 
@@ -112,6 +112,11 @@ struct taskJPsiHf {
           continue;
         }
 
+        auto minItsClsDmesDau = (dmeson.numItsClsDmesProng0() < dmeson.numItsClsDmesProng1()) ? dmeson.numItsClsDmesProng0() : dmeson.numItsClsDmesProng1();
+        auto minTpcCrossRowsDmesDau = (dmeson.numTpcCrossedRowsDmesProng0() < dmeson.numTpcCrossedRowsDmesProng1()) ? dmeson.numTpcCrossedRowsDmesProng0() : dmeson.numTpcCrossedRowsDmesProng1();
+        auto minPtDmesDau = (dmeson.ptDmesProng0() < dmeson.ptDmesProng1()) ? dmeson.ptDmesProng0() : dmeson.ptDmesProng1();
+        auto minAbsEtaDmesDau = (std::abs(dmeson.etaDmesProng0()) < std::abs(dmeson.etaDmesProng1())) ? std::abs(dmeson.etaDmesProng0()) : std::abs(dmeson.etaDmesProng1());
+
         if (dmeson.massD0() > 0) {
           rapDmeson = RecoDecay::y(std::array{dmeson.px(), dmeson.py(), dmeson.pz()}, constants::physics::MassD0);
           deltaRap = rapDilepton - rapDmeson;
@@ -119,7 +124,7 @@ struct taskJPsiHf {
           auto bdtPrompt = dmeson.bdtPromptMassHypo0();
           auto bdtNonPrompt = dmeson.bdtNonpromptMassHypo0();
           if ((dilepton.mass() > massDileptonCandMin && dilepton.mass() < massDileptonCandMax) && (dmeson.massD0() > massHfCandMin && dmeson.massD0() < massHfCandMax && bdtBkg < cutsDmesBdt->get(ptBinDmesForBdt, "BDT background") && bdtPrompt > cutsDmesBdt->get(ptBinDmesForBdt, "BDT prompt") && bdtNonPrompt > cutsDmesBdt->get(ptBinDmesForBdt, "BDT nonprompt"))) {
-            redDileptDimesAll(dilepton.mass(), dmeson.massD0(), ptDilepton, ptDmeson, rapDilepton, rapDmeson, phiDilepton, phiDmeson, deltaRap, deltaPhi, bdtBkg, bdtPrompt, bdtNonPrompt);
+            redDileptDimesAll(dilepton.mass(), dmeson.massD0(), ptDilepton, ptDmeson, rapDilepton, rapDmeson, phiDilepton, phiDmeson, deltaRap, deltaPhi, bdtBkg, bdtPrompt, bdtNonPrompt, minItsClsDmesDau, minTpcCrossRowsDmesDau, minPtDmesDau, minAbsEtaDmesDau);
           }
         }
         if (dmeson.massD0bar() > 0) {
@@ -129,7 +134,7 @@ struct taskJPsiHf {
           auto bdtPrompt = dmeson.bdtPromptMassHypo1();
           auto bdtNonPrompt = dmeson.bdtNonpromptMassHypo1();
           if ((dilepton.mass() > massDileptonCandMin && dilepton.mass() < massDileptonCandMax) && (dmeson.massD0bar() > massHfCandMin && dmeson.massD0bar() < massHfCandMax && bdtBkg < cutsDmesBdt->get(ptBinDmesForBdt, "BDT background") && bdtPrompt > cutsDmesBdt->get(ptBinDmesForBdt, "BDT prompt") && bdtNonPrompt > cutsDmesBdt->get(ptBinDmesForBdt, "BDT nonprompt"))) {
-            redDileptDimesAll(dilepton.mass(), dmeson.massD0bar(), ptDilepton, ptDmeson, rapDilepton, rapDmeson, phiDilepton, phiDmeson, deltaRap, deltaPhi, bdtBkg, bdtPrompt, bdtNonPrompt);
+            redDileptDimesAll(dilepton.mass(), dmeson.massD0bar(), ptDilepton, ptDmeson, rapDilepton, rapDmeson, phiDilepton, phiDmeson, deltaRap, deltaPhi, bdtBkg, bdtPrompt, bdtNonPrompt, minItsClsDmesDau, minTpcCrossRowsDmesDau, minPtDmesDau, minAbsEtaDmesDau);
           }
         }
       }

@@ -14,3 +14,9 @@ o2physics_add_dpl_workflow(fwd-tracks-extra-converter
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
 
+
+o2physics_add_dpl_workflow(collisions-converter
+                           SOURCES UDCollisionsConverter.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)
+

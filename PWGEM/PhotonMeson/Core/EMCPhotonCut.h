@@ -61,7 +61,7 @@ class EMCPhotonCut : public TNamed
     if (!IsSelectedEMCal(EMCPhotonCuts::kTiming, cluster)) {
       return false;
     }
-    if (!IsSelectedEMCal(EMCPhotonCuts::kTM, cluster)) {
+    if (mUseTM && (!IsSelectedEMCal(EMCPhotonCuts::kTM, cluster))) {
       return false;
     }
     if (!IsSelectedEMCal(EMCPhotonCuts::kExotic, cluster)) {
@@ -121,6 +121,7 @@ class EMCPhotonCut : public TNamed
   void SetTrackMatchingPhi(std::function<float(float)> funcTM);
   void SetMinEoverP(float min = 0.7f);
   void SetUseExoticCut(bool flag = true);
+  void SetUseTM(bool flag = true);
 
   /// @brief Print the cluster selection
   void print() const;
@@ -135,6 +136,7 @@ class EMCPhotonCut : public TNamed
   float mMaxTime{25.f};     ///< maximum cluster timing
   float mMinEoverP{1.75f};  ///< minimum cluster energy over track momentum ratio needed for the pair to be considered matched
   bool mUseExoticCut{true}; ///< flag to decide if the exotic cluster cut is to be checked or not
+  bool mUseTM{true};        ///< flag to decide if track matching cut is to be checek or not
 
   std::function<float(float)> mTrackMatchingEta{}; ///< function to get check if a pre matched track and cluster pair is considered an actual match for eta
   std::function<float(float)> mTrackMatchingPhi{}; ///< function to get check if a pre matched track and cluster pair is considered an actual match for phi

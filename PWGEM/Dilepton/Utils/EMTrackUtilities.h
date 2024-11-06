@@ -40,6 +40,18 @@ float dca3DinSigma(T const& track)
 }
 //_______________________________________________________________________
 template <typename T>
+float dcaXYinSigma(T const& track)
+{
+  return track.dcaXY() / std::sqrt(track.cYY());
+}
+//_______________________________________________________________________
+template <typename T>
+float dcaZinSigma(T const& track)
+{
+  return track.dcaZ() / std::sqrt(track.cZZ());
+}
+//_______________________________________________________________________
+template <typename T>
 float fwdDcaXYinSigma(T const& track)
 {
   float cXX = track.cXX();
@@ -56,6 +68,36 @@ float fwdDcaXYinSigma(T const& track)
   }
 }
 //_______________________________________________________________________
+template <typename T>
+float sigmaPt(T const& track)
+{
+  return std::sqrt(track.c1Pt21Pt2()) / std::pow(track.signed1Pt(), 2); // pT resolution
+}
+//_______________________________________________________________________
+template <typename T>
+float sigmaPhi(T const& track)
+{
+  return std::sqrt(track.cSnpSnp()) / std::sqrt(1.f - std::pow(track.snp(), 2)); // phi resolution
+}
+//_______________________________________________________________________
+template <typename T>
+float sigmaTheta(T const& track)
+{
+  return std::sqrt(track.cTglTgl()) / (1.f + std::pow(track.tgl(), 2)); // theta resolution = lambda resolution. // lambda = pi/2 - theta. theta is polar angle.
+}
+//_______________________________________________________________________
+template <typename T>
+float sigmaEta(T const& track)
+{
+  return std::sqrt(track.cTglTgl()) / std::sqrt(1.f + std::pow(track.tgl(), 2));
+}
+//_______________________________________________________________________
+template <typename T>
+float sigmaP(T const& track)
+{
+  // p = 1/1/pT x 1/cos(lambda);
+  return std::sqrt(std::pow(1.f / track.signed1Pt(), 4) * ((1.f + std::pow(track.tgl(), 2)) * track.c1Pt21Pt2() + 1.f / (1.f + std::pow(track.tgl(), 2)) * std::pow(track.signed1Pt() * track.tgl(), 2) * track.cTglTgl() - 2.f * track.signed1Pt() * track.tgl() * track.c1PtTgl()));
+}
 //_______________________________________________________________________
 } // namespace o2::aod::pwgem::dilepton::utils::emtrackutil
 #endif // PWGEM_DILEPTON_UTILS_EMTRACKUTILITIES_H_

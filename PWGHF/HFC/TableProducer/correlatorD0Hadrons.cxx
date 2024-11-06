@@ -280,6 +280,28 @@ struct HfCorrelatorD0Hadrons {
     int leadingIndex = leadingParticle.globalIndex();
     return leadingIndex;
   }
+  // ======= Find Leading Particle for McGen ============
+  template <typename TMcParticles>
+  int findLeadingParticleMcGen(TMcParticles const& mcParticles)
+  {
+    auto leadingParticle = mcParticles.begin();
+    for (auto const& mcParticle : mcParticles) {
+      if (std::abs(mcParticle.eta()) > etaTrackMax) {
+        continue;
+      }
+      if (mcParticle.pt() < ptTrackMin) {
+        continue;
+      }
+      if ((std::abs(mcParticle.pdgCode()) != kElectron) && (std::abs(mcParticle.pdgCode()) != kMuonMinus) && (std::abs(mcParticle.pdgCode()) != kPiPlus) && (std::abs(mcParticle.pdgCode()) != kKPlus) && (std::abs(mcParticle.pdgCode()) != kProton)) {
+        continue;
+      }
+      if (mcParticle.pt() > leadingParticle.pt()) {
+        leadingParticle = mcParticle;
+      }
+    }
+    int leadingIndex = leadingParticle.globalIndex();
+    return leadingIndex;
+  }
   // =======  Process starts for Data, Same event ============
 
   /// D0-h correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
@@ -559,7 +581,7 @@ struct HfCorrelatorD0Hadrons {
           if (track.globalIndex() != leadingIndex) {
             continue;
           }
-          registry.fill(HIST("hTrackCounter"), 4); // fill no. of tracks  have leading particle
+          registry.fill(HIST("hTrackCounterRec"), 4); // fill no. of tracks  have leading particle
         }
 
         int signalStatus = 0;
@@ -605,6 +627,10 @@ struct HfCorrelatorD0Hadrons {
   {
     registry.fill(HIST("hEvtCountGen"), 0);
     // MC gen level
+    // find leading particle
+    if (correlateD0WithLeadingParticle) {
+      leadingIndex = findLeadingParticleMcGen(mcParticles);
+    }
     for (const auto& particle1 : mcParticles) {
       // check if the particle is D0 or D0bar (for general plot filling and selection, so both cases are fine) - NOTE: decay channel is not probed!
       if (std::abs(particle1.pdgCode()) != Pdg::kD0) {
@@ -647,10 +673,22 @@ struct HfCorrelatorD0Hadrons {
 
         auto indexMotherPi = RecoDecay::getMother(mcParticles, particle2, Pdg::kDStar, true, nullptr, 1); // last arguement 1 is written to consider immediate decay mother only
         auto indexMotherD0 = RecoDecay::getMother(mcParticles, particle1, Pdg::kDStar, true, nullptr, 1);
-        if (std::abs(particle2.pdgCode()) == kPiPlus && indexMotherPi >= 0 && indexMotherD0 >= 0 && indexMotherPi == indexMotherD0)
-          continue;
+        bool correlationStatus = false;
+        if (std::abs(particle2.pdgCode()) == kPiPlus && indexMotherPi >= 0 && indexMotherD0 >= 0 && indexMotherPi == indexMotherD0) {
+          if (!storeAutoCorrelationFlag) {
+            continue;
+          }
+          correlationStatus = true;
+        }
 
         registry.fill(HIST("hTrackCounterGen"), 3); // fill after soft pion removal
+
+        if (correlateD0WithLeadingParticle) {
+          if (particle2.globalIndex() != leadingIndex) {
+            continue;
+          }
+          registry.fill(HIST("hTrackCounterGen"), 4); // fill no. of tracks  have leading particle
+        }
 
         auto getTracksSize = [&mcParticles](aod::McCollision const& /*collision*/) {
           int nTracks = 0;
@@ -664,8 +702,6 @@ struct HfCorrelatorD0Hadrons {
         using BinningTypeMcGen = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::mccollision::PosZ, decltype(getTracksSize)>;
         BinningTypeMcGen corrBinningMcGen{{getTracksSize}, {zPoolBins, multPoolBinsMcGen}, true};
         int poolBin = corrBinningMcGen.getBin(std::make_tuple(mcCollision.posZ(), getTracksSize(mcCollision)));
-
-        bool correlationStatus = false;
         entryD0HadronPair(getDeltaPhi(particle2.phi(), particle1.phi()),
                           particle2.eta() - particle1.eta(),
                           particle1.pt(),

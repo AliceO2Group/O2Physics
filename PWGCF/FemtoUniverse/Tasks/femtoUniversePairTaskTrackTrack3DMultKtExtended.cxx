@@ -134,7 +134,8 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
   Configurable<float> ConfV0MHigh{"ConfV0MHigh", 25000.0, "Upper limit for V0M multiplicity"};
 
   Filter collV0Mfilter = ((o2::aod::femtouniversecollision::multV0M > ConfV0MLow) && (o2::aod::femtouniversecollision::multV0M < ConfV0MHigh));
-  // Filter trackAdditionalfilter = (nabs(aod::femtouniverseparticle::eta) < twotracksconfigs.ConfEtaMax); // example filtering on configurable
+  using FilteredFDCollisions = soa::Filtered<aod::FDCollisions>;
+  using FilteredFDCollision = soa::Filtered<aod::FDCollisions>::iterator;
 
   /// Particle part
   ConfigurableAxis ConfTempFitVarBins{"ConfDTempFitVarBins", {300, -0.15, 0.15}, "binning of the TempFitVar in the pT vs. TempFitVar plot"};
@@ -412,7 +413,7 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
   template <typename CollisionType>
   void fillCollision(CollisionType col)
   {
-    MixQaRegistry.fill(HIST("MixingQA/hSECollisionBins"), colBinning.getBin({col.posZ(), col.multNtr()}));
+    MixQaRegistry.fill(HIST("MixingQA/hSECollisionBins"), colBinning.getBin({col.posZ(), col.multV0M()}));
     eventHisto.fillQA(col);
   }
 
@@ -476,9 +477,9 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
         float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass2);
 
         if (!cfgProcessMultBins) {
-          sameEventCont.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D, ConfIsIden, ConfIsLCMS);
+          sameEventCont.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D, ConfIsIden);
         } else {
-          std::vector<double> k3d = FemtoUniverseMath::getpairmom3d(p1, mass1, p2, mass2, ConfIsIden, ConfIsLCMS);
+          std::vector<double> k3d = FemtoUniverseMath::newpairfunc(p1, mass1, p2, mass2, ConfIsIden);
           sameEventMultCont.fill_3D<float>(k3d[1], k3d[2], k3d[3], multCol, kT);
         }
       }
@@ -515,16 +516,16 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
 
             if (rand > 0.5) {
               if (!cfgProcessMultBins) {
-                sameEventContPP.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D, ConfIsIden, ConfIsLCMS);
+                sameEventContPP.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D, ConfIsIden);
               } else {
-                k3d = FemtoUniverseMath::getpairmom3d(p1, mass1, p2, mass2, ConfIsIden, ConfIsLCMS);
+                k3d = FemtoUniverseMath::newpairfunc(p1, mass1, p2, mass2, ConfIsIden);
                 sameEventMultContPP.fill_3D<float>(k3d[1], k3d[2], k3d[3], multCol, kT);
               }
             } else {
               if (!cfgProcessMultBins) {
-                sameEventContPP.setPair<isMC>(p2, p1, multCol, twotracksconfigs.ConfUse3D, ConfIsIden, ConfIsLCMS);
+                sameEventContPP.setPair<isMC>(p2, p1, multCol, twotracksconfigs.ConfUse3D, ConfIsIden);
               } else {
-                k3d = FemtoUniverseMath::getpairmom3d(p2, mass2, p1, mass1, ConfIsIden, ConfIsLCMS);
+                k3d = FemtoUniverseMath::newpairfunc(p2, mass2, p1, mass1, ConfIsIden);
                 sameEventMultContPP.fill_3D<float>(k3d[1], k3d[2], k3d[3], multCol, kT);
               }
             }
@@ -538,16 +539,16 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
 
             if (rand > 0.5) {
               if (!cfgProcessMultBins) {
-                sameEventContMM.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D, ConfIsIden, ConfIsLCMS);
+                sameEventContMM.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D, ConfIsIden);
               } else {
-                k3d = FemtoUniverseMath::getpairmom3d(p1, mass1, p2, mass2, ConfIsIden, ConfIsLCMS);
+                k3d = FemtoUniverseMath::newpairfunc(p1, mass1, p2, mass2, ConfIsIden);
                 sameEventMultContMM.fill_3D<float>(k3d[1], k3d[2], k3d[3], multCol, kT);
               }
             } else {
               if (!cfgProcessMultBins) {
-                sameEventContMM.setPair<isMC>(p2, p1, multCol, twotracksconfigs.ConfUse3D, ConfIsIden, ConfIsLCMS);
+                sameEventContMM.setPair<isMC>(p2, p1, multCol, twotracksconfigs.ConfUse3D, ConfIsIden);
               } else {
-                k3d = FemtoUniverseMath::getpairmom3d(p2, mass2, p1, mass1, ConfIsIden, ConfIsLCMS);
+                k3d = FemtoUniverseMath::newpairfunc(p2, mass2, p1, mass1, ConfIsIden);
                 sameEventMultContMM.fill_3D<float>(k3d[1], k3d[2], k3d[3], multCol, kT);
               }
             }
@@ -563,7 +564,7 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
   /// process function for to call doSameEvent with Data
   /// \param col subscribe to the collision table (Data)
   /// \param parts subscribe to the femtoUniverseParticleTable
-  void processSameEvent(soa::Filtered<o2::aod::FDCollisions>::iterator& col,
+  void processSameEvent(FilteredFDCollision& col,
                         FilteredFemtoFullParticles& parts)
   {
     fillCollision(col);
@@ -574,15 +575,15 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
     bool fillQA = true;
 
     if (cfgProcessPM) {
-      doSameEvent<false>(thegroupPartsOne, thegroupPartsTwo, parts, col.magField(), col.multNtr(), 1, fillQA);
+      doSameEvent<false>(thegroupPartsOne, thegroupPartsTwo, parts, col.magField(), col.multV0M(), 1, fillQA);
     }
 
     if (cfgProcessPP) {
-      doSameEvent<false>(thegroupPartsOne, thegroupPartsOne, parts, col.magField(), col.multNtr(), 2, fillQA);
+      doSameEvent<false>(thegroupPartsOne, thegroupPartsOne, parts, col.magField(), col.multV0M(), 2, fillQA);
     }
 
     if (cfgProcessMM) {
-      doSameEvent<false>(thegroupPartsTwo, thegroupPartsTwo, parts, col.magField(), col.multNtr(), 3, fillQA);
+      doSameEvent<false>(thegroupPartsTwo, thegroupPartsTwo, parts, col.magField(), col.multV0M(), 3, fillQA);
     }
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackTrack3DMultKtExtended, processSameEvent, "Enable processing same event", true);
@@ -603,15 +604,15 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
     bool fillQA = true;
 
     if (cfgProcessPM) {
-      doSameEvent<false>(thegroupPartsOne, thegroupPartsTwo, parts, col.magField(), col.multNtr(), 1, fillQA);
+      doSameEvent<false>(thegroupPartsOne, thegroupPartsTwo, parts, col.magField(), col.multV0M(), 1, fillQA);
     }
 
     if (cfgProcessPP) {
-      doSameEvent<true>(thegroupPartsOne, thegroupPartsOne, parts, col.magField(), col.multNtr(), 2, fillQA);
+      doSameEvent<true>(thegroupPartsOne, thegroupPartsOne, parts, col.magField(), col.multV0M(), 2, fillQA);
     }
 
     if (cfgProcessMM) {
-      doSameEvent<true>(thegroupPartsTwo, thegroupPartsTwo, parts, col.magField(), col.multNtr(), 3, fillQA);
+      doSameEvent<true>(thegroupPartsTwo, thegroupPartsTwo, parts, col.magField(), col.multV0M(), 3, fillQA);
     }
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackTrack3DMultKtExtended, processSameEventMC, "Enable processing same event for Monte Carlo", false);
@@ -650,9 +651,9 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
         case 1: {
           float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass2);
           if (!cfgProcessMultBins) {
-            mixedEventCont.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D, ConfIsIden, ConfIsLCMS);
+            mixedEventCont.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D, ConfIsIden);
           } else {
-            std::vector<double> k3d = FemtoUniverseMath::getpairmom3d(p1, mass1, p2, mass2, ConfIsIden, ConfIsLCMS);
+            std::vector<double> k3d = FemtoUniverseMath::newpairfunc(p1, mass1, p2, mass2, ConfIsIden);
             mixedEventMultCont.fill_3D<float>(k3d[1], k3d[2], k3d[3], multCol, kT);
           }
           break;
@@ -660,9 +661,9 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
         case 2: {
           float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass1);
           if (!cfgProcessMultBins) {
-            mixedEventContPP.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D, ConfIsIden, ConfIsLCMS);
+            mixedEventContPP.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D, ConfIsIden);
           } else {
-            std::vector<double> k3d = FemtoUniverseMath::getpairmom3d(p1, mass1, p2, mass2, ConfIsIden, ConfIsLCMS);
+            std::vector<double> k3d = FemtoUniverseMath::newpairfunc(p1, mass1, p2, mass2, ConfIsIden);
             mixedEventMultContPP.fill_3D<float>(k3d[1], k3d[2], k3d[3], multCol, kT);
           }
           break;
@@ -671,9 +672,9 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
         case 3: {
           float kT = FemtoUniverseMath::getkT(p1, mass2, p2, mass2);
           if (!cfgProcessMultBins) {
-            mixedEventContMM.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D, ConfIsIden, ConfIsLCMS);
+            mixedEventContMM.setPair<isMC>(p1, p2, multCol, twotracksconfigs.ConfUse3D, ConfIsIden);
           } else {
-            std::vector<double> k3d = FemtoUniverseMath::getpairmom3d(p1, mass1, p2, mass2, ConfIsIden, ConfIsLCMS);
+            std::vector<double> k3d = FemtoUniverseMath::newpairfunc(p1, mass1, p2, mass2, ConfIsIden);
             mixedEventMultContMM.fill_3D<float>(k3d[1], k3d[2], k3d[3], multCol, kT);
           }
           break;
@@ -687,12 +688,12 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
   /// process function for to call doMixedEvent with Data
   /// @param cols subscribe to the collisions table (Data)
   /// @param parts subscribe to the femtoUniverseParticleTable
-  void processMixedEvent(soa::Filtered<o2::aod::FDCollisions>& cols,
+  void processMixedEvent(FilteredFDCollisions& cols,
                          FilteredFemtoFullParticles& parts)
   {
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
 
-      const int multiplicityCol = collision1.multNtr();
+      const int multiplicityCol = collision1.multV0M();
       MixQaRegistry.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision1.posZ(), multiplicityCol}));
 
       const auto& magFieldTesla1 = collision1.magField();
@@ -731,7 +732,7 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
   {
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
 
-      const int multiplicityCol = collision1.multNtr();
+      const int multiplicityCol = collision1.multV0M();
       MixQaRegistry.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision1.posZ(), multiplicityCol}));
 
       const auto& magFieldTesla1 = collision1.magField();

@@ -77,22 +77,40 @@ struct lambdakzeromcbuilder {
     h->GetXaxis()->SetBinLabel(2, "V0MCCores population");
     h->GetXaxis()->SetBinLabel(3, "x check: duplicates");
     h->GetXaxis()->SetBinLabel(4, "x check: unique");
+
+    auto hK0s = histos.add<TH1>("hStatisticsK0s", "hBuildingStatisticsK0s", kTH1F, {{3, -0.5, 2.5f}});
+    hK0s->GetXaxis()->SetBinLabel(1, "MC associated to reco.");
+    hK0s->GetXaxis()->SetBinLabel(2, "Not originating from decay");
+    hK0s->GetXaxis()->SetBinLabel(3, "MC with un-recoed V0");
+
+    auto hLambda = histos.add<TH1>("hStatisticsLambda", "hBuildingStatisticsLambda", kTH1F, {{3, -0.5, 2.5f}});
+    hLambda->GetXaxis()->SetBinLabel(1, "MC associated to reco.");
+    hLambda->GetXaxis()->SetBinLabel(2, "Not originating from decay");
+    hLambda->GetXaxis()->SetBinLabel(3, "MC with un-recoed V0");
+
+    auto hAlambda = histos.add<TH1>("hStatisticsAlambda", "hBuildingStatisticsAlambda", kTH1F, {{3, -0.5, 2.5f}});
+    hAlambda->GetXaxis()->SetBinLabel(1, "MC associated to reco.");
+    hAlambda->GetXaxis()->SetBinLabel(2, "Not originating from decay");
+    hAlambda->GetXaxis()->SetBinLabel(3, "MC with un-recoed V0");
   }
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   // Helper struct to contain V0MCCore information prior to filling
   struct mcV0info {
-    int label;
-    int motherLabel;
-    int pdgCode;
-    int pdgCodeMother;
-    int pdgCodePositive;
-    int pdgCodeNegative;
-    int mcCollision;
-    bool isPhysicalPrimary;
+    int label = -1;
+    int motherLabel = -1;
+    int pdgCode = 0;
+    int pdgCodeMother = 0;
+    int pdgCodePositive = 0;
+    int pdgCodeNegative = 0;
+    int mcCollision = -1;
+    bool isPhysicalPrimary = false;
+    int processPositive = -1;
+    int processNegative = -1;
     std::array<float, 3> xyz;
     std::array<float, 3> posP;
     std::array<float, 3> negP;
+    std::array<float, 3> momentum;
     uint64_t packedMcParticleIndices;
   };
   mcV0info thisInfo;
@@ -124,17 +142,21 @@ struct lambdakzeromcbuilder {
       thisInfo.xyz[0] = thisInfo.xyz[1] = thisInfo.xyz[2] = 0.0f;
       thisInfo.posP[0] = thisInfo.posP[1] = thisInfo.posP[2] = 0.0f;
       thisInfo.negP[0] = thisInfo.negP[1] = thisInfo.negP[2] = 0.0f;
+      thisInfo.momentum[0] = thisInfo.momentum[1] = thisInfo.momentum[2] = 0.0f;
       auto lNegTrack = v0.negTrack_as<aod::McTrackLabels>();
       auto lPosTrack = v0.posTrack_as<aod::McTrackLabels>();
 
       // Association check
       // There might be smarter ways of doing this in the future
       if (lNegTrack.has_mcParticle() && lPosTrack.has_mcParticle()) {
-        thisInfo.packedMcParticleIndices = combineProngIndices(lPosTrack.mcParticleId(), lNegTrack.mcParticleId());
         auto lMCNegTrack = lNegTrack.mcParticle_as<aod::McParticles>();
         auto lMCPosTrack = lPosTrack.mcParticle_as<aod::McParticles>();
+
+        thisInfo.packedMcParticleIndices = combineProngIndices(lPosTrack.mcParticleId(), lNegTrack.mcParticleId());
         thisInfo.pdgCodePositive = lMCPosTrack.pdgCode();
         thisInfo.pdgCodeNegative = lMCNegTrack.pdgCode();
+        thisInfo.processPositive = lMCPosTrack.getProcess();
+        thisInfo.processNegative = lMCNegTrack.getProcess();
         thisInfo.posP[0] = lMCPosTrack.px();
         thisInfo.posP[1] = lMCPosTrack.py();
         thisInfo.posP[2] = lMCPosTrack.pz();
@@ -146,17 +168,50 @@ struct lambdakzeromcbuilder {
             for (auto& lPosMother : lMCPosTrack.mothers_as<aod::McParticles>()) {
               if (lNegMother.globalIndex() == lPosMother.globalIndex()) {
                 thisInfo.label = lNegMother.globalIndex();
+                thisInfo.xyz[0] = lMCPosTrack.vx();
+                thisInfo.xyz[1] = lMCPosTrack.vy();
+                thisInfo.xyz[2] = lMCPosTrack.vz();
+
+                // MC pos. and neg. daughters are the same! Looking for replacement...
+                if (lMCPosTrack.globalIndex() == lMCNegTrack.globalIndex()) {
+                  auto const& daughters = lNegMother.daughters_as<aod::McParticles>();
+                  for (auto& ldau : daughters) {
+                    // check if the candidate originate from a decay
+                    // if not, this is not a suitable candidate for one of the decay daughters
+                    if (ldau.getProcess() != 4) // see TMCProcess.h
+                      continue;
+
+                    if (lMCPosTrack.pdgCode() < 0 && ldau.pdgCode() > 0) { // the positive track needs to be changed
+                      thisInfo.pdgCodePositive = ldau.pdgCode();
+                      thisInfo.processPositive = ldau.getProcess();
+                      thisInfo.posP[0] = ldau.px();
+                      thisInfo.posP[1] = ldau.py();
+                      thisInfo.posP[2] = ldau.pz();
+                      thisInfo.xyz[0] = ldau.vx();
+                      thisInfo.xyz[1] = ldau.vy();
+                      thisInfo.xyz[2] = ldau.vz();
+                    }
+                    if (lMCNegTrack.pdgCode() > 0 && ldau.pdgCode() < 0) { // the negative track needs to be changed
+                      thisInfo.pdgCodeNegative = ldau.pdgCode();
+                      thisInfo.processNegative = ldau.getProcess();
+                      thisInfo.negP[0] = ldau.px();
+                      thisInfo.negP[1] = ldau.py();
+                      thisInfo.negP[2] = ldau.pz();
+                    }
+                  }
+                }
 
                 if (lNegMother.has_mcCollision()) {
                   thisInfo.mcCollision = lNegMother.mcCollisionId(); // save this reference, please
                 }
 
                 // acquire information
-                thisInfo.xyz[0] = lMCPosTrack.vx();
-                thisInfo.xyz[1] = lMCPosTrack.vy();
-                thisInfo.xyz[2] = lMCPosTrack.vz();
                 thisInfo.pdgCode = lNegMother.pdgCode();
                 thisInfo.isPhysicalPrimary = lNegMother.isPhysicalPrimary();
+                thisInfo.momentum[0] = lNegMother.px();
+                thisInfo.momentum[1] = lNegMother.py();
+                thisInfo.momentum[2] = lNegMother.pz();
+
                 if (lNegMother.has_mothers()) {
                   for (auto& lNegGrandMother : lNegMother.mothers_as<aod::McParticles>()) {
                     thisInfo.pdgCodeMother = lNegGrandMother.pdgCode();
@@ -173,8 +228,8 @@ struct lambdakzeromcbuilder {
         thisInfo.label, thisInfo.motherLabel);
 
       // Mark mcParticle as recoed (no searching necessary afterwards)
-      if (thisInfo.motherLabel > -1) {
-        mcParticleIsReco[thisInfo.motherLabel] = true;
+      if (thisInfo.label > -1) {
+        mcParticleIsReco[thisInfo.label] = true;
       }
 
       // ---] Symmetric populate [---
@@ -187,7 +242,8 @@ struct lambdakzeromcbuilder {
           thisInfo.pdgCodeMother, thisInfo.pdgCodePositive, thisInfo.pdgCodeNegative,
           thisInfo.isPhysicalPrimary, thisInfo.xyz[0], thisInfo.xyz[1], thisInfo.xyz[2],
           thisInfo.posP[0], thisInfo.posP[1], thisInfo.posP[2],
-          thisInfo.negP[0], thisInfo.negP[1], thisInfo.negP[2]);
+          thisInfo.negP[0], thisInfo.negP[1], thisInfo.negP[2],
+          thisInfo.momentum[0], thisInfo.momentum[1], thisInfo.momentum[2]);
         v0mccollref(thisInfo.mcCollision);
 
         // n.b. placing the interlink index here allows for the writing of
@@ -204,17 +260,45 @@ struct lambdakzeromcbuilder {
         // step 1: check if this element is already provided in the table
         //         using the packedIndices variable calculated above
         for (uint32_t ii = 0; ii < mcV0infos.size(); ii++) {
-          if (thisInfo.packedMcParticleIndices == mcV0infos[ii].packedMcParticleIndices && mcV0infos[ii].packedMcParticleIndices > 0) {
+          if (thisInfo.label == mcV0infos[ii].label && mcV0infos[ii].label > -1) {
             thisV0MCCoreIndex = ii;
             histos.fill(HIST("hBuildingStatistics"), 2.0f); // found
             break;                                          // this exists already in list
           }
         }
-        if (thisV0MCCoreIndex < 0) {
+        if (thisV0MCCoreIndex < 0 && thisInfo.label > -1) {
           // this V0MCCore does not exist yet. Create it and reference it
           histos.fill(HIST("hBuildingStatistics"), 3.0f); // new
           thisV0MCCoreIndex = mcV0infos.size();
           mcV0infos.push_back(thisInfo);
+
+          // For bookkeeping
+          if (thisInfo.label > -1 && thisInfo.isPhysicalPrimary) {
+            float ymc = 1e3;
+            if (thisInfo.pdgCode == 310)
+              ymc = RecoDecay::y(std::array{thisInfo.posP[0] + thisInfo.negP[0], thisInfo.posP[1] + thisInfo.negP[1], thisInfo.posP[2] + thisInfo.negP[2]}, o2::constants::physics::MassKaonNeutral);
+            else if (TMath::Abs(thisInfo.pdgCode) == 3122)
+              ymc = RecoDecay::y(std::array{thisInfo.posP[0] + thisInfo.negP[0], thisInfo.posP[1] + thisInfo.negP[1], thisInfo.posP[2] + thisInfo.negP[2]}, o2::constants::physics::MassLambda);
+
+            if (thisInfo.pdgCode == 310 && TMath::Abs(ymc) < rapidityWindow) {
+              histos.fill(HIST("hStatisticsK0s"), 0.0f); // found
+              if (thisInfo.processPositive != 4 || thisInfo.processNegative != 4) {
+                histos.fill(HIST("hStatisticsK0s"), 1.0f); // Not originating from decay
+              }
+            }
+            if (thisInfo.pdgCode == 3122 && TMath::Abs(ymc) < rapidityWindow) {
+              histos.fill(HIST("hStatisticsLambda"), 0.0f); // found
+              if (thisInfo.processPositive != 4 || thisInfo.processNegative != 4) {
+                histos.fill(HIST("hStatisticsLambda"), 1.0f); // Not originating from decay
+              }
+            }
+            if (thisInfo.pdgCode == -3122 && TMath::Abs(ymc) < rapidityWindow) {
+              histos.fill(HIST("hStatisticsAlambda"), 0.0f); // found
+              if (thisInfo.processPositive != 4 || thisInfo.processNegative != 4) {
+                histos.fill(HIST("hStatisticsAlambda"), 1.0f); // Not originating from decay
+              }
+            }
+          }
         }
         v0CoreMCLabels(thisV0MCCoreIndex); // interlink index
       }
@@ -228,13 +312,14 @@ struct lambdakzeromcbuilder {
         thisInfo.label = -1;
         thisInfo.motherLabel = -1;
         thisInfo.pdgCode = 0;
-        thisInfo.pdgCodeMother = 0;
-        thisInfo.pdgCodePositive = 0;
-        thisInfo.pdgCodeNegative = 0;
+        thisInfo.pdgCodeMother = -1;
+        thisInfo.pdgCodePositive = -1;
+        thisInfo.pdgCodeNegative = -1;
         thisInfo.mcCollision = -1;
         thisInfo.xyz[0] = thisInfo.xyz[1] = thisInfo.xyz[2] = 0.0f;
         thisInfo.posP[0] = thisInfo.posP[1] = thisInfo.posP[2] = 0.0f;
         thisInfo.negP[0] = thisInfo.negP[1] = thisInfo.negP[2] = 0.0f;
+        thisInfo.momentum[0] = thisInfo.momentum[1] = thisInfo.momentum[2] = 0.0f;
 
         if (mcParticleIsReco[mcParticle.globalIndex()] == true)
           continue; // skip if already created in list
@@ -249,16 +334,65 @@ struct lambdakzeromcbuilder {
           (addGeneratedGamma && mcParticle.pdgCode() == 22)) {
           thisInfo.pdgCode = mcParticle.pdgCode();
           thisInfo.isPhysicalPrimary = mcParticle.isPhysicalPrimary();
+          thisInfo.label = mcParticle.globalIndex();
 
           if (mcParticle.has_mcCollision()) {
             thisInfo.mcCollision = mcParticle.mcCollisionId(); // save this reference, please
           }
 
-          // guarantee compressibility: keep momentum entirely in the positive prong
-          // WARNING: THIS IS AS ARBITRARY AS IT GETS but should be ok
-          thisInfo.posP[0] = mcParticle.px();
-          thisInfo.posP[1] = mcParticle.py();
-          thisInfo.posP[2] = mcParticle.pz();
+          //
+          thisInfo.momentum[0] = mcParticle.px();
+          thisInfo.momentum[1] = mcParticle.py();
+          thisInfo.momentum[2] = mcParticle.pz();
+
+          if (mcParticle.has_mothers()) {
+            auto const& mother = mcParticle.mothers_first_as<aod::McParticles>();
+            thisInfo.pdgCodeMother = mother.pdgCode();
+            thisInfo.motherLabel = mother.globalIndex();
+          }
+          if (mcParticle.has_daughters()) {
+            auto const& daughters = mcParticle.daughters_as<aod::McParticles>();
+
+            for (auto& dau : daughters) {
+              if (dau.getProcess() != 4)
+                continue;
+
+              if (dau.pdgCode() > 0) {
+                thisInfo.pdgCodePositive = dau.pdgCode();
+                thisInfo.processPositive = dau.getProcess();
+                thisInfo.posP[0] = dau.px();
+                thisInfo.posP[1] = dau.py();
+                thisInfo.posP[2] = dau.pz();
+                thisInfo.xyz[0] = dau.vx();
+                thisInfo.xyz[1] = dau.vy();
+                thisInfo.xyz[2] = dau.vz();
+              }
+              if (dau.pdgCode() < 0) {
+                thisInfo.pdgCodeNegative = dau.pdgCode();
+                thisInfo.processNegative = dau.getProcess();
+                thisInfo.negP[0] = dau.px();
+                thisInfo.negP[1] = dau.py();
+                thisInfo.negP[2] = dau.pz();
+              }
+            }
+          }
+
+          // For bookkeeping
+          float ymc = 1e3;
+          if (mcParticle.pdgCode() == 310)
+            ymc = RecoDecay::y(std::array{thisInfo.posP[0] + thisInfo.negP[0], thisInfo.posP[1] + thisInfo.negP[0], thisInfo.posP[2] + thisInfo.negP[2]}, o2::constants::physics::MassKaonNeutral);
+          else if (TMath::Abs(mcParticle.pdgCode()) == 3122)
+            ymc = RecoDecay::y(std::array{thisInfo.posP[0] + thisInfo.negP[0], thisInfo.posP[1] + thisInfo.negP[0], thisInfo.posP[2] + thisInfo.negP[2]}, o2::constants::physics::MassLambda);
+
+          if (mcParticle.pdgCode() == 310 && mcParticle.isPhysicalPrimary() && TMath::Abs(ymc) < rapidityWindow) {
+            histos.fill(HIST("hStatisticsK0s"), 2.0f); // found
+          }
+          if (mcParticle.pdgCode() == 3122 && mcParticle.isPhysicalPrimary() && TMath::Abs(ymc) < rapidityWindow) {
+            histos.fill(HIST("hStatisticsLambda"), 2.0f); // found
+          }
+          if (mcParticle.pdgCode() == -3122 && mcParticle.isPhysicalPrimary() && TMath::Abs(ymc) < rapidityWindow) {
+            histos.fill(HIST("hStatisticsAlambda"), 2.0f); // found
+          }
 
           // if I got here, it means this MC particle was not recoed and is of interest. Add it please
           mcV0infos.push_back(thisInfo);
@@ -271,8 +405,9 @@ struct lambdakzeromcbuilder {
           info.pdgCodeMother, info.pdgCodePositive, info.pdgCodeNegative,
           info.isPhysicalPrimary, info.xyz[0], info.xyz[1], info.xyz[2],
           info.posP[0], info.posP[1], info.posP[2],
-          info.negP[0], info.negP[1], info.negP[2]);
-        v0mccollref(thisInfo.mcCollision);
+          info.negP[0], info.negP[1], info.negP[2],
+          info.momentum[0], info.momentum[1], info.momentum[2]);
+        v0mccollref(info.mcCollision);
       }
     }
 

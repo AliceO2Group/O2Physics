@@ -22,6 +22,7 @@
 #include "Framework/runDataProcessing.h"
 
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -77,10 +78,11 @@ DECLARE_SOA_COLUMN(MaxNormalisedDeltaIP, maxNormalisedDeltaIP, float);       //!
 DECLARE_SOA_COLUMN(ImpactParameterXY, impactParameterXY, float);             //! Transverse impact parameter of candidate (cm)
 DECLARE_SOA_COLUMN(DeltaMassPhi, deltaMassPhi, float);                       //! Absolute mass difference between kaon-pair and phi-meson invariant mass (Gev/c2)
 DECLARE_SOA_COLUMN(AbsCos3PiK, absCos3PiK, float);                           //! Cube of absolute value of the cosine of pion-kaon angle in the phi rest frame
+DECLARE_SOA_COLUMN(Sign, sign, int8_t);                                      //! Sign of the candidate
 // Events
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int); //! Event rejection flag
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);         //! Run number
-DECLARE_SOA_COLUMN(Sign, sign, int8_t);                //! Sign
+DECLARE_SOA_COLUMN(Centrality, centrality, float);     //! Centrality (or multiplicity) percentile
 } // namespace full
 
 DECLARE_SOA_TABLE(HfCandDsLites, "AOD", "HFCANDDSLITE",
@@ -126,9 +128,12 @@ DECLARE_SOA_TABLE(HfCandDsLites, "AOD", "HFCANDDSLITE",
                   full::DeltaMassPhi,
                   full::AbsCos3PiK,
                   hf_cand::Chi2PCA,
+                  full::Centrality,
+                  collision::NumContrib,
                   hf_cand_3prong::FlagMcMatchRec,
                   hf_cand_3prong::OriginMcRec,
                   hf_cand_3prong::FlagMcDecayChanRec,
+                  hf_cand_3prong::IsCandidateSwapped,
                   full::Sign);
 
 DECLARE_SOA_TABLE(HfCandDsFulls, "AOD", "HFCANDDSFULL",
@@ -197,9 +202,11 @@ DECLARE_SOA_TABLE(HfCandDsFulls, "AOD", "HFCANDDSFULL",
                   full::DeltaMassPhi,
                   full::AbsCos3PiK,
                   hf_cand::Chi2PCA,
+                  full::Centrality,
                   hf_cand_3prong::FlagMcMatchRec,
                   hf_cand_3prong::OriginMcRec,
                   hf_cand_3prong::FlagMcDecayChanRec,
+                  hf_cand_3prong::IsCandidateSwapped,
                   full::Sign);
 
 DECLARE_SOA_TABLE(HfCandDsFullEvs, "AOD", "HFCANDDSFULLEV",
@@ -208,6 +215,7 @@ DECLARE_SOA_TABLE(HfCandDsFullEvs, "AOD", "HFCANDDSFULLEV",
                   collision::PosX,
                   collision::PosY,
                   collision::PosZ,
+                  full::Centrality,
                   full::IsEventReject,
                   full::RunNumber);
 
@@ -245,6 +253,10 @@ struct HfTreeCreatorDsToKKPi {
   using CandDsMcGen = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
   using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
 
+  using CollisionsWithFT0C = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
+  using CollisionsWithFT0M = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
+  using CollisionsWithNTracksPV = soa::Join<aod::Collisions, aod::EvSels, aod::CentNTPVs>;
+
   int offsetDplusDecayChannel = aod::hf_cand_3prong::DecayChannelDToKKPi::DplusToPhiPi - aod::hf_cand_3prong::DecayChannelDToKKPi::DsToPhiPi; // Offset between Dplus and Ds to use the same decay channel. See aod::hf_cand_3prong::DecayChannelDToKKPi
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
@@ -269,6 +281,7 @@ struct HfTreeCreatorDsToKKPi {
       collision.posX(),
       collision.posY(),
       collision.posZ(),
+      o2::hf_centrality::getCentralityColl(collision),
       isEventReject,
       runNumber);
   }
@@ -277,12 +290,13 @@ struct HfTreeCreatorDsToKKPi {
   /// \param doMc true to fill MC information
   /// \param massHypo mass hypothesis considered: 0 = KKPi, 1 = PiKK
   /// \param candidate is candidate
-  template <bool doMc = false, int massHypo = 0, typename T>
+  template <bool doMc = false, int massHypo = 0, typename Coll, typename T>
   void fillCandidateTable(const T& candidate)
   {
     int8_t flagMc = 0;
     int8_t originMc = 0;
     int8_t channelMc = 0;
+    int8_t isSwapped = massHypo; // 0 if KKPi, 1 if PiKK
     float yCand = 0;
     float eCand = 0;
     float ctCand = 0;
@@ -290,6 +304,7 @@ struct HfTreeCreatorDsToKKPi {
       flagMc = candidate.flagMcMatchRec();
       originMc = candidate.originMcRec();
       channelMc = candidate.flagMcDecayChanRec();
+      isSwapped = candidate.isCandidateSwapped();
       if (fillDplusMc && candidate.flagMcDecayChanRec() == (decayChannel + offsetDplusDecayChannel)) {
         yCand = hfHelper.yDplus(candidate);
         eCand = hfHelper.eDplus(candidate);
@@ -313,6 +328,9 @@ struct HfTreeCreatorDsToKKPi {
       deltaMassPhiKK = hfHelper.deltaMassPhiDsToPiKK(candidate);
       absCos3PiKDs = hfHelper.absCos3PiKDsToPiKK(candidate);
     }
+
+    auto const& collision = candidate.template collision_as<Coll>();
+    float centrality = o2::hf_centrality::getCentralityColl(collision);
 
     auto prong0 = candidate.template prong0_as<TracksWPid>();
     auto prong1 = candidate.template prong1_as<TracksWPid>();
@@ -344,8 +362,8 @@ struct HfTreeCreatorDsToKKPi {
         prong2.tofNSigmaKa(),
         prong2.tpcTofNSigmaPi(),
         prong2.tpcTofNSigmaKa(),
-        candidate.isSelDsToKKPi(),
-        candidate.isSelDsToPiKK(),
+        massHypo == 0 ? candidate.isSelDsToKKPi() : -1,
+        massHypo == 1 ? candidate.isSelDsToPiKK() : -1,
         invMassDs,
         candidate.pt(),
         candidate.eta(),
@@ -362,14 +380,17 @@ struct HfTreeCreatorDsToKKPi {
         deltaMassPhiKK,
         absCos3PiKDs,
         candidate.chi2PCA(),
+        centrality,
+        candidate.template collision_as<Coll>().numContrib(),
         flagMc,
         originMc,
         channelMc,
+        isSwapped,
         prong0.sign() + prong1.sign() + prong2.sign());
     } else {
       rowCandidateFull(
-        candidate.collision().bcId(),
-        candidate.collision().numContrib(),
+        candidate.template collision_as<Coll>().bcId(),
+        candidate.template collision_as<Coll>().numContrib(),
         candidate.posX(),
         candidate.posY(),
         candidate.posZ(),
@@ -409,8 +430,8 @@ struct HfTreeCreatorDsToKKPi {
         prong2.tofNSigmaKa(),
         prong2.tpcTofNSigmaPi(),
         prong2.tpcTofNSigmaKa(),
-        candidate.isSelDsToKKPi(),
-        candidate.isSelDsToPiKK(),
+        massHypo == 0 ? candidate.isSelDsToKKPi() : -1,
+        massHypo == 1 ? candidate.isSelDsToPiKK() : -1,
         candidate.xSecondaryVertex(),
         candidate.ySecondaryVertex(),
         candidate.zSecondaryVertex(),
@@ -433,16 +454,18 @@ struct HfTreeCreatorDsToKKPi {
         deltaMassPhiKK,
         absCos3PiKDs,
         candidate.chi2PCA(),
+        centrality,
         flagMc,
         originMc,
         channelMc,
+        isSwapped,
         prong0.sign() + prong1.sign() + prong2.sign());
     }
   }
 
-  void processData(aod::Collisions const& collisions,
-                   CandDsData const&,
-                   TracksWPid const&)
+  template <typename Coll>
+  void runData(Coll const& collisions,
+               CandDsData const&)
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
@@ -464,7 +487,7 @@ struct HfTreeCreatorDsToKKPi {
           continue;
         }
       }
-      fillCandidateTable<false, 0>(candidate);
+      fillCandidateTable<false, 0, Coll>(candidate);
     }
 
     for (const auto& candidate : selectedDsToPiKKCand) {
@@ -474,17 +497,15 @@ struct HfTreeCreatorDsToKKPi {
           continue;
         }
       }
-      fillCandidateTable<false, 1>(candidate);
+      fillCandidateTable<false, 1, Coll>(candidate);
     }
   }
 
-  PROCESS_SWITCH(HfTreeCreatorDsToKKPi, processData, "Process data", true);
-
-  void processMc(aod::Collisions const& collisions,
-                 aod::McCollisions const&,
-                 CandDsMcReco const&,
-                 CandDsMcGen const& mcParticles,
-                 TracksWPid const&)
+  template <typename Coll>
+  void runMc(Coll const& collisions,
+             aod::McCollisions const&,
+             CandDsMcReco const&,
+             CandDsMcGen const& mcParticles)
   {
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
@@ -502,10 +523,10 @@ struct HfTreeCreatorDsToKKPi {
 
       for (const auto& candidate : reconstructedCandSig) {
         if (candidate.isCandidateSwapped() == 0) {
-          fillCandidateTable<true, 0>(candidate);
+          fillCandidateTable<true, 0, Coll>(candidate);
         }
         if (candidate.isCandidateSwapped() == 1) {
-          fillCandidateTable<true, 1>(candidate);
+          fillCandidateTable<true, 1, Coll>(candidate);
         }
       }
     } else if (fillOnlyBackground) {
@@ -524,10 +545,10 @@ struct HfTreeCreatorDsToKKPi {
         }
         // Bkg candidates are not matched to MC so rely on selections only
         if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
-          fillCandidateTable<true, 0>(candidate);
+          fillCandidateTable<true, 0, Coll>(candidate);
         }
         if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
-          fillCandidateTable<true, 1>(candidate);
+          fillCandidateTable<true, 1, Coll>(candidate);
         }
       }
     } else {
@@ -539,20 +560,20 @@ struct HfTreeCreatorDsToKKPi {
 
       for (const auto& candidate : reconstructedCandSig) {
         if (candidate.isCandidateSwapped() == 0) {
-          fillCandidateTable<true, 0>(candidate);
+          fillCandidateTable<true, 0, Coll>(candidate);
         }
         if (candidate.isCandidateSwapped() == 1) {
-          fillCandidateTable<true, 1>(candidate);
+          fillCandidateTable<true, 1, Coll>(candidate);
         }
       }
 
       for (const auto& candidate : reconstructedCandBkg) {
         // Bkg candidates are not matched to MC so rely on selections only
         if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
-          fillCandidateTable<true, 0>(candidate);
+          fillCandidateTable<true, 0, Coll>(candidate);
         }
         if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
-          fillCandidateTable<true, 1>(candidate);
+          fillCandidateTable<true, 1, Coll>(candidate);
         }
       }
     }
@@ -571,7 +592,77 @@ struct HfTreeCreatorDsToKKPi {
     }
   }
 
-  PROCESS_SWITCH(HfTreeCreatorDsToKKPi, processMc, "Process MC", false);
+  void processDataWithFT0C(CollisionsWithFT0C const& collisions,
+                           CandDsData const& candsDs,
+                           TracksWPid const&)
+  {
+    runData<CollisionsWithFT0C>(collisions, candsDs);
+  }
+  PROCESS_SWITCH(HfTreeCreatorDsToKKPi, processDataWithFT0C, "Process data with centrality information from FT0C", false);
+
+  void processDataWithFT0M(CollisionsWithFT0M const& collisions,
+                           CandDsData const& candsDs,
+                           TracksWPid const&)
+  {
+    runData<CollisionsWithFT0M>(collisions, candsDs);
+  }
+  PROCESS_SWITCH(HfTreeCreatorDsToKKPi, processDataWithFT0M, "Process data with centrality information from FT0M", false);
+
+  void processDataWithNTracksPV(CollisionsWithNTracksPV const& collisions,
+                                CandDsData const& candsDs,
+                                TracksWPid const&)
+  {
+    runData<CollisionsWithNTracksPV>(collisions, candsDs);
+  }
+  PROCESS_SWITCH(HfTreeCreatorDsToKKPi, processDataWithNTracksPV, "Process data with centrality information from NTracksPV", false);
+
+  void processData(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+                   CandDsData const& candsDs,
+                   TracksWPid const&)
+  {
+    runData<soa::Join<aod::Collisions, aod::EvSels>>(collisions, candsDs);
+  }
+  PROCESS_SWITCH(HfTreeCreatorDsToKKPi, processData, "Process data without centrality information", true);
+
+  void processMcWithFT0C(CollisionsWithFT0C const& collisions,
+                         aod::McCollisions const& mcCollisions,
+                         CandDsMcReco const& mcRecoCands,
+                         CandDsMcGen const& mcParticles,
+                         TracksWPid const&)
+  {
+    runMc(collisions, mcCollisions, mcRecoCands, mcParticles);
+  }
+  PROCESS_SWITCH(HfTreeCreatorDsToKKPi, processMcWithFT0C, "Process MC with centrality information from FT0C", false);
+
+  void processMcWithFT0M(CollisionsWithFT0M const& collisions,
+                         aod::McCollisions const& mcCollisions,
+                         CandDsMcReco const& mcRecoCands,
+                         CandDsMcGen const& mcParticles,
+                         TracksWPid const&)
+  {
+    runMc(collisions, mcCollisions, mcRecoCands, mcParticles);
+  }
+  PROCESS_SWITCH(HfTreeCreatorDsToKKPi, processMcWithFT0M, "Process MC with centrality information from FT0M", false);
+
+  void processMcWithNTracksPV(CollisionsWithNTracksPV const& collisions,
+                              aod::McCollisions const& mcCollisions,
+                              CandDsMcReco const& mcRecoCands,
+                              CandDsMcGen const& mcParticles,
+                              TracksWPid const&)
+  {
+    runMc(collisions, mcCollisions, mcRecoCands, mcParticles);
+  }
+  PROCESS_SWITCH(HfTreeCreatorDsToKKPi, processMcWithNTracksPV, "Process MC with centrality information from NTracksPV", false);
+
+  void processMc(soa::Join<aod::Collisions, aod::EvSels> const& collisions,
+                 aod::McCollisions const& mcCollisions,
+                 CandDsMcReco const& mcRecoCands,
+                 CandDsMcGen const& mcParticles,
+                 TracksWPid const&)
+  {
+    runMc(collisions, mcCollisions, mcRecoCands, mcParticles);
+  }
+  PROCESS_SWITCH(HfTreeCreatorDsToKKPi, processMc, "Process MC without centrality information", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

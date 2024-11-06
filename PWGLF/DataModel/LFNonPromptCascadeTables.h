@@ -28,7 +28,9 @@ DECLARE_SOA_COLUMN(MatchingChi2, matchingChi2, float);
 DECLARE_SOA_COLUMN(ITSClusSize, itsClusSize, float);
 DECLARE_SOA_COLUMN(IsGoodMatch, isGoodMatch, bool);
 DECLARE_SOA_COLUMN(IsGoodCascade, isGoodCascade, bool);
-DECLARE_SOA_COLUMN(PdgCodePrimary, pdgCodePrimary, int);
+DECLARE_SOA_COLUMN(PdgCodeMom, pdgCodeMom, int);
+DECLARE_SOA_COLUMN(IsFromBeauty, isFromBeauty, bool);
+DECLARE_SOA_COLUMN(IsFromCharm, isFromCharm, bool);
 
 DECLARE_SOA_COLUMN(PvX, pvX, float);
 DECLARE_SOA_COLUMN(PvY, pvY, float);
@@ -162,7 +164,9 @@ DECLARE_SOA_TABLE(NPCascTableMC, "AOD", "NPCASCTABLEMC",
                   NPCascadeTable::ITSClusSize,
                   NPCascadeTable::IsGoodMatch,
                   NPCascadeTable::IsGoodCascade,
-                  NPCascadeTable::PdgCodePrimary,
+                  NPCascadeTable::PdgCodeMom,
+                  NPCascadeTable::IsFromBeauty,
+                  NPCascadeTable::IsFromCharm,
                   NPCascadeTable::PvX,
                   NPCascadeTable::PvY,
                   NPCascadeTable::PvZ,
@@ -221,6 +225,18 @@ DECLARE_SOA_TABLE(NPCascTableMC, "AOD", "NPCASCTABLEMC",
                   NPCascadeTable::DCAyMC,
                   NPCascadeTable::DCAzMC,
                   NPCascadeTable::MCcollisionMatch)
+
+DECLARE_SOA_TABLE(NPCascTableGen, "AOD", "NPCASCTABLEGen",
+                  NPCascadeTable::gPt,
+                  NPCascadeTable::gEta,
+                  NPCascadeTable::gPhi,
+                  NPCascadeTable::PDGcode,
+                  NPCascadeTable::PdgCodeMom,
+                  NPCascadeTable::DCAxMC,
+                  NPCascadeTable::DCAyMC,
+                  NPCascadeTable::DCAzMC,
+                  NPCascadeTable::IsFromBeauty,
+                  NPCascadeTable::IsFromCharm)
 
 } // namespace o2::aod
 
