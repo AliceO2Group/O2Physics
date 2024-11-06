@@ -444,7 +444,7 @@ struct EMfTaskPi0Flow {
         continue;
       }
       float cent = getCentrality(collision);
-      if (cent < cfgMinCent || cent > cfgMaxCent) {
+      if (cent < eventcuts.cfgMinCent || cent > eventcuts.cfgMaxCent) {
         continue;
       }
       o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<1>(&registry, collision);
@@ -483,7 +483,7 @@ struct EMfTaskPi0Flow {
           registry.fill(HIST("hTanThetaPhi"), vMeson.M(), getAngleDegree(atan(dTheta / dPhi)));
           registry.fill(HIST("hAlphaPt"), (v1.E() - v2.E()) / (v1.E() + v2.E()), vMeson.Pt());
         }
-        if (minTanThetadPhi > std::fabs(getAngleDegree(atan(dTheta / dPhi)))) {
+        if (mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(atan(dTheta / dPhi)))) {
           continue;
         }
         runFlowAnalysis(collision, vMeson);
