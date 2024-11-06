@@ -439,6 +439,10 @@ struct TableMaker {
       histMuons->GetXaxis()->SetBinLabel(ib, (*cut).GetName());
     }
     fStatsList->Add(histMuons);
+    TH1D* histOrphanTracks = new TH1D("histOrphanTracks", "Orphan Track statistics", 2, -1, 1);
+    histOrphanTracks->GetXaxis()->SetBinLabel(1, "Track w/o collision ID");
+    histOrphanTracks->GetXaxis()->SetBinLabel(2, "Track with +ve collision ID");
+    fStatsList->Add(histOrphanTracks);
 
     if (fConfigRunZorro) {
       TH2D* histZorroInfo = new TH2D("ZorroInfo", "Zorro information", 1, -0.5, 0.5, 1, -0.5, 0.5);
@@ -683,13 +687,25 @@ struct TableMaker {
           trackFilteringTag |= (uint64_t(1) << VarManager::kIsTPCPostcalibrated);
         }
       }
-
       // write the track global index in the map for skimming (to make sure we have it just once)
       if (fTrackIndexMap.find(track.globalIndex()) == fTrackIndexMap.end()) {
         // NOTE: The collision ID that is written in the table is the one found in the first association for this track.
         //       However, in data analysis one should loop over associations, so this one should not be used.
         //      In the case of Run2-like analysis, there will be no associations, so this ID will be the one originally assigned in the AO2Ds (updated for the skims)
-        uint32_t reducedEventIdx = fCollIndexMap[collision.globalIndex()];
+        // reducedEventIdx = fCollIndexMap[collision.globalIndex()]; // This gives the first collision form the table
+
+        // Calculating the percentage of orphan tracks i.e., tracks which have no collisions associated to it
+        if (!track.has_collision()) {
+          (reinterpret_cast<TH1D*>(fStatsList->At(3)))->Fill(static_cast<float>(-1));
+        } else {
+          (reinterpret_cast<TH1D*>(fStatsList->At(3)))->Fill(0.9);
+        }
+
+        // Protection against crash, where the original collision IDs of tracks were removed by pp-filter or zorro selection and hence the track is now orphaned
+        if (fCollIndexMap.find(track.collisionId()) == fCollIndexMap.end()) {
+          continue;
+        }
+        uint32_t reducedEventIdx = fCollIndexMap[track.collisionId()]; // This gives the original iD of the track
         // NOTE: trackBarrelInfo stores the index of the collision as in AO2D (for use in some cases where the analysis on skims is done
         //   in workflows where the original AO2Ds are also present)
         trackBarrelInfo(collision.globalIndex(), collision.posX(), collision.posY(), collision.posZ(), track.globalIndex());

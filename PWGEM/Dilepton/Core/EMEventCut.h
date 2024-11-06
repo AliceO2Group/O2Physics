@@ -39,7 +39,9 @@ class EMEventCut : public TNamed
     kIsVertexITSTPC,
     kIsGoodZvtxFT0vsPV,
     kNoCollInTimeRangeStandard,
-    kNoCollInTimeRangeNarrow,
+    kNoCollInTimeRangeStrict,
+    kNoCollInITSROFStandard,
+    kNoCollInITSROFStrict,
     kNCuts
   };
 
@@ -73,7 +75,13 @@ class EMEventCut : public TNamed
     if (mRequireNoCollInTimeRangeStandard && !IsSelected(collision, EMEventCuts::kNoCollInTimeRangeStandard)) {
       return false;
     }
-    if (mRequireNoCollInTimeRangeNarrow && !IsSelected(collision, EMEventCuts::kNoCollInTimeRangeNarrow)) {
+    if (mRequireNoCollInTimeRangeStrict && !IsSelected(collision, EMEventCuts::kNoCollInTimeRangeStrict)) {
+      return false;
+    }
+    if (mRequireNoCollInITSROFStandard && !IsSelected(collision, EMEventCuts::kNoCollInITSROFStandard)) {
+      return false;
+    }
+    if (mRequireNoCollInITSROFStrict && !IsSelected(collision, EMEventCuts::kNoCollInITSROFStrict)) {
       return false;
     }
     return true;
@@ -110,8 +118,14 @@ class EMEventCut : public TNamed
       case EMEventCuts::kNoCollInTimeRangeStandard:
         return collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard);
 
-      case EMEventCuts::kNoCollInTimeRangeNarrow:
-        return collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow);
+      case EMEventCuts::kNoCollInTimeRangeStrict:
+        return collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict);
+
+      case EMEventCuts::kNoCollInITSROFStandard:
+        return collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard);
+
+      case EMEventCuts::kNoCollInITSROFStrict:
+        return collision.selection_bit(o2::aod::evsel::kNoCollInRofStrict);
 
       default:
         return true;
@@ -128,7 +142,9 @@ class EMEventCut : public TNamed
   void SetRequireVertexITSTPC(bool flag);
   void SetRequireGoodZvtxFT0vsPV(bool flag);
   void SetRequireNoCollInTimeRangeStandard(bool flag);
-  void SetRequireNoCollInTimeRangeNarrow(bool flag);
+  void SetRequireNoCollInTimeRangeStrict(bool flag);
+  void SetRequireNoCollInITSROFStandard(bool flag);
+  void SetRequireNoCollInITSROFStrict(bool flag);
 
  private:
   bool mRequireSel8{true};
@@ -140,7 +156,9 @@ class EMEventCut : public TNamed
   bool mRequireVertexITSTPC{false};
   bool mRequireGoodZvtxFT0vsPV{false};
   bool mRequireNoCollInTimeRangeStandard{false};
-  bool mRequireNoCollInTimeRangeNarrow{false};
+  bool mRequireNoCollInTimeRangeStrict{false};
+  bool mRequireNoCollInITSROFStandard{false};
+  bool mRequireNoCollInITSROFStrict{false};
 
   ClassDef(EMEventCut, 1);
 };

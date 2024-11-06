@@ -256,6 +256,8 @@ struct threebodyKFTask {
           vtx3bodydata.dcatrackpostopv(), vtx3bodydata.dcatracknegtopv(), vtx3bodydata.dcatrackbachtopv(),
           vtx3bodydata.track0sign(), vtx3bodydata.track1sign(), vtx3bodydata.track2sign(), // proton, pion, deuteron
           vtx3bodydata.tpcnsigmaproton(), vtx3bodydata.tpcnsigmapion(), vtx3bodydata.tpcnsigmadeuteron(),
+          vtx3bodydata.tpcdedxproton(), vtx3bodydata.tpcdedxpion(), vtx3bodydata.tpcdedxdeuteron(),
+          vtx3bodydata.tofnsigmadeuteron(),
           // MC info (-1 if not matched to MC particle)
           genP,
           genPt,
@@ -379,6 +381,8 @@ struct threebodyKFTask {
         -1, -1, -1,
         -1, -1, -1,
         -1, -1, -1,
+        -1, -1, -1,
+        -1,
         // gen information
         mcparticle.p(),
         mcparticle.pt(),

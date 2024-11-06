@@ -80,6 +80,7 @@ struct FlowTask {
   O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, false, "Use Nch for flow observables")
   O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 10, "Number of subsamples")
   O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeights, bool, false, "Fill and output NUA weights")
+  O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeightsRefPt, bool, false, "NUA weights are filled in ref pt bins")
   O2_DEFINE_CONFIGURABLE(cfgEfficiency, std::string, "", "CCDB path to efficiency object")
   O2_DEFINE_CONFIGURABLE(cfgAcceptance, std::string, "", "CCDB path to acceptance object")
   O2_DEFINE_CONFIGURABLE(cfgMagnetField, std::string, "GLO/Config/GRPMagField", "CCDB path to Magnet field object")
@@ -717,13 +718,19 @@ struct FlowTask {
         continue;
       if (cfgRejectionTPCsectorOverlap && !RejectionTPCoverlap(track, Magnetfield))
         continue;
-      if (cfgOutputNUAWeights)
-        fWeights->Fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
-      if (!setCurrentParticleWeights(weff, wacc, track.phi(), track.eta(), track.pt(), vtxz))
-        continue;
       bool WithinPtPOI = (cfgCutPtPOIMin < track.pt()) && (track.pt() < cfgCutPtPOIMax); // within POI pT range
       bool WithinPtRef = (cfgCutPtRefMin < track.pt()) && (track.pt() < cfgCutPtRefMax); // within RF pT range
       bool WithinEtaGap08 = (track.eta() >= -0.4) && (track.eta() <= 0.4);
+      if (cfgOutputNUAWeights) {
+        if (cfgOutputNUAWeightsRefPt) {
+          if (WithinPtRef)
+            fWeights->Fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
+        } else {
+          fWeights->Fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
+        }
+      }
+      if (!setCurrentParticleWeights(weff, wacc, track.phi(), track.eta(), track.pt(), vtxz))
+        continue;
       registry.fill(HIST("hPt"), track.pt());
       if (WithinPtRef) {
         registry.fill(HIST("hPhi"), track.phi());
