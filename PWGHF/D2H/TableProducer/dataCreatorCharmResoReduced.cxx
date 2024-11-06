@@ -245,11 +245,11 @@ struct HfDataCreatorCharmResoReduced {
     registry.add("hMassDstarProton", "D^{*}-proton candidates;m_{D^{*}p} - m_{D^{*}} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0.9, 1.4}}});
     registry.add("hDType", "D selection flag", {HistType::kTH1F, {{5, -2.5, 2.5}}});
 
-    registry.add("hMCRecCounter", "Number of Reconstructed MC Matched candidates per channel", {HistType::kTH1F, {{17, -8.5, 8.5}}});
+    registry.add("hMCRecCounter", "Number of Reconstructed MC Matched candidates per channel", {HistType::kTH1F, {{65, -32.5, 32.5}}});
     registry.add("hMCRecDebug", "Debug of MC Reco", {HistType::kTH1F, {{16, -0.5, 15.5}}});
     registry.add("hMCRecOrigin", "Origin of Matched particles", {HistType::kTH1F, {{3, -0.5, 2.5}}});
 
-    registry.add("hMCGenCounter", "Number of Generated particles; Decay Channel Flag; pT [GeV/c]", {HistType::kTH2F, {{17, -8.5, 8.5}, {100, 0, 50}}});
+    registry.add("hMCGenCounter", "Number of Generated particles; Decay Channel Flag; pT [GeV/c]", {HistType::kTH2F, {{65, -32.5, 32.5}, {100, 0, 50}}});
     registry.add("hMCSignCounter", "Sign of Generated particles", {HistType::kTH1F, {{3, -1.5, 1.5}}});
     registry.add("hMCGenOrigin", "Origin of Generated particles", {HistType::kTH1F, {{3, -0.5, 2.5}}});
     registry.add("hMCOriginCounterWrongDecay", "Origin of Generated particles in Wrong decay", {HistType::kTH1F, {{3, -0.5, 2.5}}});
@@ -940,14 +940,18 @@ struct HfDataCreatorCharmResoReduced {
           origin = RecoDecay::getCharmHadronOrigin(particlesMc, particle, false, &idxBhadMothers);
           registry.fill(HIST("hMCGenOrigin"), origin);
           auto candV0MC = particlesMc.rawIteratorAt(particle.daughtersIds().back());
+          auto candDStarMC = particlesMc.rawIteratorAt(particle.daughtersIds().front());
           // K0 -> K0s -> π+π-
           if (RecoDecay::isMatchedMCGen<false, true>(particlesMc, candV0MC, kK0, std::array{+kPiPlus, -kPiPlus}, true, &signV0, 2)) {
-            auto candDStarMC = particlesMc.rawIteratorAt(particle.daughtersIds().front());
             // D* -> D0 π+ -> K-π+π+
             if (RecoDecay::isMatchedMCGen(particlesMc, candDStarMC, Pdg::kDStar, std::array{static_cast<int>(Pdg::kD0), +static_cast<int>(kPiPlus)}, true, &signDStar, 1)) {
               auto candD0MC = particlesMc.rawIteratorAt(candDStarMC.daughtersIds().front());
               if (RecoDecay::isMatchedMCGen(particlesMc, candDStarMC, Pdg::kDStar, std::array{-kKPlus, +kPiPlus, +kPiPlus}, true, &signDStar, 2)) {
                 flag = signDStar * BIT(DecayTypeMc::Ds1ToDStarK0ToD0PiK0s);
+                if (RecoDecay::isMatchedMCGen<false, true>(particlesMc, candV0MC, kK0, std::array{+kPiPlus, -kMuonPlus, +kNuMu}, true, &signV0, 3) ||
+                    RecoDecay::isMatchedMCGen<false, true>(particlesMc, candDStarMC, Pdg::kDStar, std::array{-kKPlus, +kPiPlus, +kMuonPlus, -kNuMu}, true, &signDStar, 3)) {
+                  flag = signDStar * BIT(DecayTypeMc::Ds1ToDStarK0ToD0PiK0sOneMu);
+                }
               } else if (RecoDecay::isMatchedMCGen(particlesMc, candD0MC, Pdg::kD0, std::array{-kKPlus, +kPiPlus, +kPiPlus, +kPi0}, true, &signDStar, 2) ||
                          RecoDecay::isMatchedMCGen(particlesMc, candD0MC, Pdg::kD0, std::array{-kKPlus, +kPiPlus, +kPiPlus, -kPi0}, true, &signDStar, 2)) {
                 flag = signDStar * BIT(DecayTypeMc::Ds1ToDStarK0ToD0PiK0sPart);
