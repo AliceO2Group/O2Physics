@@ -15,6 +15,8 @@
 /// \brief  Task to produce PID tables for TOF split for pi, K, p, copied from https://github.com/AliceO2Group/O2Physics/blob/master/Common/TableProducer/PID/pidTofMerge.cxx
 ///         It works only for MC and adds the possibility to apply postcalibrations for MC.
 ///
+
+#include <map>
 #include <utility>
 #include <vector>
 #include <string>
@@ -747,11 +749,6 @@ struct mcPidTof {
       }
       hnSigmaFull[iSpecie] = histos.add<TH2>(Form("nSigmaFull/%s", particleNames[iSpecie].c_str()), Form("N_{#sigma}^{TOF}(%s)", particleNames[iSpecie].c_str()), kTH2F, {pAxis, nSigmaAxis});
     }
-
-    if (mcRecalib.enable && mTOFCalibConfig.collisionSystem() != CollisionSystemType::kCollSyspp) {
-      LOGP(info, "Disabling MC recalibration, only available for pp");
-      mcRecalib.enable.value = false;
-    }
   }
 
   // Reserves an empty table for the given particle ID with size of the given track table
@@ -827,9 +824,23 @@ struct mcPidTof {
   void retrieveMcPostCalibFromCcdb(int64_t timestamp)
   {
     std::map<std::string, std::string> metadata;
-    metadata["RecoPassName"] = metadataInfo.get("AnchorPassName");
+    if (metadataInfo.isFullyDefined()) {
+      metadata["RecoPassName"] = metadataInfo.get("AnchorPassName");
+    } else {
+      LOGP(error, "Impossible to read metadata! Using default calibrations (2022 apass7)");
+      metadata["RecoPassName"] = "";
+    }
     auto calibList = ccdb->getSpecific<TList>(mcRecalib.ccdbPath, timestamp, metadata);
-    for (auto const& pidId : mEnabledParticles) { // Loop on enabled particle hypotheses
+    std::vector<int> updatedSpecies{};
+    for (auto const& pidId : mEnabledParticles) { // Loop on enabled particle hypotheses (tiny)
+      gMcPostCalibMean[pidId] = reinterpret_cast<TGraph*>(calibList->FindObject(Form("Mean%s", particleNames[pidId].data())));
+      gMcPostCalibSigma[pidId] = reinterpret_cast<TGraph*>(calibList->FindObject(Form("Sigma%s", particleNames[pidId].data())));
+      updatedSpecies.push_back(pidId);
+    }
+    for (auto const& pidId : mEnabledParticlesFull) { // Loop on enabled particle hypotheses (full)
+      if (std::find(updatedSpecies.begin(), updatedSpecies.end(), pidId) != updatedSpecies.end()) {
+        continue;
+      }
       gMcPostCalibMean[pidId] = reinterpret_cast<TGraph*>(calibList->FindObject(Form("Mean%s", particleNames[pidId].data())));
       gMcPostCalibSigma[pidId] = reinterpret_cast<TGraph*>(calibList->FindObject(Form("Sigma%s", particleNames[pidId].data())));
     }
@@ -887,6 +898,9 @@ struct mcPidTof {
         continue;
       }
       mTOFCalibConfig.processSetup(mRespParamsV3, ccdb, coll.bc_as<aod::BCsWithTimestamps>()); // Update the calibration parameters
+      if (mcRecalib.enable && mTOFCalibConfig.collisionSystem() != CollisionSystemType::kCollSyspp) {
+        LOGP(fatal, "MC recalibration only available for pp! Change the mcRecalib.enable configurable to 0 and rerun");
+      }
       break;
     }
 

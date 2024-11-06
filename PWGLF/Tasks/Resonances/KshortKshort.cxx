@@ -24,6 +24,7 @@
 #include <array>
 #include <cmath>
 #include <cstdlib>
+#include <vector>
 #include "TF1.h"
 #include "TRandom3.h"
 #include "Math/Vector3D.h"
@@ -79,6 +80,8 @@ struct strangeness_tutorial {
   Configurable<bool> goodzvertex{"goodzvertex", false, "removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference."};
   Configurable<bool> itstpctracks{"itstpctracks", false, "selects collisions with at least one ITS-TPC track,"};
   Configurable<bool> additionalEvsel{"additionalEvsel", false, "Additional event selcection"};
+  Configurable<bool> applyOccupancyCut{"applyOccupancyCut", false, "Apply occupancy cut"};
+  Configurable<int> OccupancyCut{"OccupancyCut", 1000, "Mimimum Occupancy cut"};
 
   // Configurable parameters for V0 selection
   Configurable<float> ConfV0DCADaughMax{"ConfV0DCADaughMax", 1.0f, "DCA b/w V0 daughters"};
@@ -140,6 +143,7 @@ struct strangeness_tutorial {
   ConfigurableAxis axisdEdx{"axisdEdx", {20000, 0.0f, 200.0f}, "dE/dx (a.u.)"};
   ConfigurableAxis axisPtfordEbydx{"axisPtfordEbydx", {2000, 0, 20}, "pT (GeV/c)"};
   ConfigurableAxis axisMultdist{"axisMultdist", {3500, 0, 70000}, "Multiplicity distribution"};
+  ConfigurableAxis occupancy_bins{"occupancy_bins", {VARIABLE_WIDTH, 0.0, 100, 500, 600, 1000, 1100, 1500, 1600, 2000, 2100, 2500, 2600, 3000, 3100, 3500, 3600, 4000, 4100, 4500, 4600, 5000, 5100, 9999}, "Binning of the occupancy axis"};
 
   // Event selection cuts - Alex (Temporary, need to fix!)
   TF1* fMultPVCutLow = nullptr;
@@ -160,6 +164,7 @@ struct strangeness_tutorial {
     // AxisSpec multiplicityAxis = {110, 0.0f, 150.0f, "Multiplicity Axis"};
     AxisSpec multiplicityAxis = {binsCent, "Multiplicity Axis"};
     AxisSpec thnAxisPOL{configThnAxisPOL, "Configurabel theta axis"};
+    AxisSpec occupancy_axis = {occupancy_bins, "Occupancy [-40,100]"};
 
     //  THnSparses
     std::array<int, 4> sparses = {activateTHnSparseCosThStarHelicity, activateTHnSparseCosThStarProduction, activateTHnSparseCosThStarBeam, activateTHnSparseCosThStarRandom};
@@ -199,9 +204,9 @@ struct strangeness_tutorial {
       hglue.add("h1glueInvMassRot", "h1glueInvMassRot", kTH1F, {glueballMassAxis});
     }
 
-    hglue.add("h3glueInvMassDS", "h3glueInvMassDS", kTHnSparseF, {multiplicityAxis, ptAxis, glueballMassAxis, thnAxisPOL}, true);
-    hglue.add("h3glueInvMassME", "h3glueInvMassME", kTHnSparseF, {multiplicityAxis, ptAxis, glueballMassAxis, thnAxisPOL}, true);
-    hglue.add("h3glueInvMassRot", "h3glueInvMassRot", kTHnSparseF, {multiplicityAxis, ptAxis, glueballMassAxis, thnAxisPOL}, true);
+    hglue.add("h3glueInvMassDS", "h3glueInvMassDS", kTHnSparseF, {multiplicityAxis, ptAxis, glueballMassAxis, thnAxisPOL, occupancy_axis}, true);
+    hglue.add("h3glueInvMassME", "h3glueInvMassME", kTHnSparseF, {multiplicityAxis, ptAxis, glueballMassAxis, thnAxisPOL, occupancy_axis}, true);
+    hglue.add("h3glueInvMassRot", "h3glueInvMassRot", kTHnSparseF, {multiplicityAxis, ptAxis, glueballMassAxis, thnAxisPOL, occupancy_axis}, true);
     hglue.add("heventscheck", "heventscheck", kTH1I, {{10, 0, 10}});
     hglue.add("htrackscheck_v0", "htrackscheck_v0", kTH1I, {{15, 0, 15}});
     hglue.add("htrackscheck_v0_daughters", "htrackscheck_v0_daughters", kTH1I, {{15, 0, 15}});
@@ -540,6 +545,11 @@ struct strangeness_tutorial {
       return;
     }
 
+    auto occupancy_no = collision.trackOccupancyInTimeRange();
+    if (applyOccupancyCut && occupancy_no < OccupancyCut) {
+      return;
+    }
+
     if (QAevents) {
       rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
       rEventSelection.fill(HIST("hmultiplicity"), multiplicity);
@@ -644,45 +654,45 @@ struct strangeness_tutorial {
         if (activateTHnSparseCosThStarHelicity) {
           ROOT::Math::XYZVector helicityVec = fourVecMother.Vect(); // 3 vector of mother in COM frame
           auto cosThetaStarHelicity = helicityVec.Dot(threeVecDauCM) / (std::sqrt(threeVecDauCM.Mag2()) * std::sqrt(helicityVec.Mag2()));
-          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarHelicity);
+          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarHelicity, occupancy_no);
           for (int i = 0; i < c_nof_rotations; i++) {
             float theta2 = rn->Uniform(TMath::Pi() - TMath::Pi() / rotational_cut, TMath::Pi() + TMath::Pi() / rotational_cut);
             lv4.SetPtEtaPhiM(v1.pt(), v1.eta(), v1.phi() + theta2, massK0s); // for rotated background
             lv5 = lv2 + lv4;
-            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarHelicity);
+            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarHelicity, occupancy_no);
           }
 
         } else if (activateTHnSparseCosThStarProduction) {
           ROOT::Math::XYZVector normalVec = ROOT::Math::XYZVector(lv3.Py(), -lv3.Px(), 0.f);
           auto cosThetaStarProduction = normalVec.Dot(threeVecDauCM) / (std::sqrt(threeVecDauCM.Mag2()) * std::sqrt(normalVec.Mag2()));
-          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarProduction);
+          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarProduction, occupancy_no);
           for (int i = 0; i < c_nof_rotations; i++) {
             float theta2 = rn->Uniform(TMath::Pi() - TMath::Pi() / rotational_cut, TMath::Pi() + TMath::Pi() / rotational_cut);
             lv4.SetPtEtaPhiM(v1.pt(), v1.eta(), v1.phi() + theta2, massK0s); // for rotated background
             lv5 = lv2 + lv4;
-            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarProduction);
+            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarProduction, occupancy_no);
           }
         } else if (activateTHnSparseCosThStarBeam) {
           ROOT::Math::XYZVector beamVec = ROOT::Math::XYZVector(0.f, 0.f, 1.f);
           auto cosThetaStarBeam = beamVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
-          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarBeam);
+          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarBeam, occupancy_no);
           for (int i = 0; i < c_nof_rotations; i++) {
             float theta2 = rn->Uniform(TMath::Pi() - TMath::Pi() / rotational_cut, TMath::Pi() + TMath::Pi() / rotational_cut);
             lv4.SetPtEtaPhiM(v1.pt(), v1.eta(), v1.phi() + theta2, massK0s); // for rotated background
             lv5 = lv2 + lv4;
-            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarBeam);
+            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarBeam, occupancy_no);
           }
         } else if (activateTHnSparseCosThStarRandom) {
           auto phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
           auto thetaRandom = gRandom->Uniform(0.f, constants::math::PI);
           ROOT::Math::XYZVector randomVec = ROOT::Math::XYZVector(std::sin(thetaRandom) * std::cos(phiRandom), std::sin(thetaRandom) * std::sin(phiRandom), std::cos(thetaRandom));
           auto cosThetaStarRandom = randomVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
-          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarRandom);
+          hglue.fill(HIST("h3glueInvMassDS"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarRandom, occupancy_no);
           for (int i = 0; i < c_nof_rotations; i++) {
             float theta2 = rn->Uniform(TMath::Pi() - TMath::Pi() / rotational_cut, TMath::Pi() + TMath::Pi() / rotational_cut);
             lv4.SetPtEtaPhiM(v1.pt(), v1.eta(), v1.phi() + theta2, massK0s); // for rotated background
             lv5 = lv2 + lv4;
-            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarRandom);
+            hglue.fill(HIST("h3glueInvMassRot"), multiplicity, lv5.Pt(), lv5.M(), cosThetaStarRandom, occupancy_no);
           }
         }
       }
@@ -725,6 +735,11 @@ struct strangeness_tutorial {
         if (!eventselection(c1, multiplicity) || !eventselection(c2, multiplicity)) {
           continue;
         }
+        auto occupancy_no = c1.trackOccupancyInTimeRange();
+        auto occupancy_no2 = c2.trackOccupancyInTimeRange();
+        if (applyOccupancyCut && (occupancy_no < OccupancyCut || occupancy_no2 < OccupancyCut)) {
+          return;
+        }
 
         for (auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
 
@@ -782,21 +797,21 @@ struct strangeness_tutorial {
             if (activateTHnSparseCosThStarHelicity) {
               ROOT::Math::XYZVector helicityVec = fourVecMother.Vect(); // 3 vector of mother in COM frame
               auto cosThetaStarHelicity = helicityVec.Dot(threeVecDauCM) / (std::sqrt(threeVecDauCM.Mag2()) * std::sqrt(helicityVec.Mag2()));
-              hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarHelicity);
+              hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarHelicity, occupancy_no);
             } else if (activateTHnSparseCosThStarProduction) {
               ROOT::Math::XYZVector normalVec = ROOT::Math::XYZVector(lv3.Py(), -lv3.Px(), 0.f);
               auto cosThetaStarProduction = normalVec.Dot(threeVecDauCM) / (std::sqrt(threeVecDauCM.Mag2()) * std::sqrt(normalVec.Mag2()));
-              hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarProduction);
+              hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarProduction, occupancy_no);
             } else if (activateTHnSparseCosThStarBeam) {
               ROOT::Math::XYZVector beamVec = ROOT::Math::XYZVector(0.f, 0.f, 1.f);
               auto cosThetaStarBeam = beamVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
-              hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarBeam);
+              hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarBeam, occupancy_no);
             } else if (activateTHnSparseCosThStarRandom) {
               auto phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
               auto thetaRandom = gRandom->Uniform(0.f, constants::math::PI);
               ROOT::Math::XYZVector randomVec = ROOT::Math::XYZVector(std::sin(thetaRandom) * std::cos(phiRandom), std::sin(thetaRandom) * std::sin(phiRandom), std::cos(thetaRandom));
               auto cosThetaStarRandom = randomVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
-              hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarRandom);
+              hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarRandom, occupancy_no);
             }
           }
 
@@ -817,6 +832,11 @@ struct strangeness_tutorial {
         if (!eventselection(c1, multiplicity) || !eventselection(c2, multiplicity)) {
           continue;
         }
+        auto occupancy_no = c1.trackOccupancyInTimeRange();
+        auto occupancy_no2 = c2.trackOccupancyInTimeRange();
+        if (applyOccupancyCut && (occupancy_no < OccupancyCut || occupancy_no2 < OccupancyCut)) {
+          return;
+        }
 
         for (auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
           if (t1.size() == 0 || t2.size() == 0) {
@@ -873,21 +893,21 @@ struct strangeness_tutorial {
             if (activateTHnSparseCosThStarHelicity) {
               ROOT::Math::XYZVector helicityVec = fourVecMother.Vect(); // 3 vector of mother in COM frame
               auto cosThetaStarHelicity = helicityVec.Dot(threeVecDauCM) / (std::sqrt(threeVecDauCM.Mag2()) * std::sqrt(helicityVec.Mag2()));
-              hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarHelicity);
+              hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarHelicity, occupancy_no);
             } else if (activateTHnSparseCosThStarProduction) {
               ROOT::Math::XYZVector normalVec = ROOT::Math::XYZVector(lv3.Py(), -lv3.Px(), 0.f);
               auto cosThetaStarProduction = normalVec.Dot(threeVecDauCM) / (std::sqrt(threeVecDauCM.Mag2()) * std::sqrt(normalVec.Mag2()));
-              hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarProduction);
+              hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarProduction, occupancy_no);
             } else if (activateTHnSparseCosThStarBeam) {
               ROOT::Math::XYZVector beamVec = ROOT::Math::XYZVector(0.f, 0.f, 1.f);
               auto cosThetaStarBeam = beamVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
-              hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarBeam);
+              hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarBeam, occupancy_no);
             } else if (activateTHnSparseCosThStarRandom) {
               auto phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
               auto thetaRandom = gRandom->Uniform(0.f, constants::math::PI);
               ROOT::Math::XYZVector randomVec = ROOT::Math::XYZVector(std::sin(thetaRandom) * std::cos(phiRandom), std::sin(thetaRandom) * std::sin(phiRandom), std::cos(thetaRandom));
               auto cosThetaStarRandom = randomVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
-              hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarRandom);
+              hglue.fill(HIST("h3glueInvMassME"), multiplicity, lv3.Pt(), lv3.M(), cosThetaStarRandom, occupancy_no);
             }
           }
 

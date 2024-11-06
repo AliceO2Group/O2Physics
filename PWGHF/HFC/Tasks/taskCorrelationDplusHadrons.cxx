@@ -11,7 +11,9 @@
 
 /// \file taskCorrelationDplusHadrons.cxx
 /// \author Shyam Kumar <shyam.kumar@cern.ch>
-
+#include <memory> // std::shared_ptr
+#include <string>
+#include <vector>
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
@@ -162,6 +164,7 @@ struct HfTaskCorrelationDplusHadrons {
     registry.add("hBdtScorePrompt", "D+ BDT prompt score", {HistType::kTH1F, {axisBdtScore}});
     registry.add("hBdtScoreBkg", "D+ BDT bkg score", {HistType::kTH1F, {axisBdtScore}});
     registry.add("hMassDplusVsPt", "D+ candidates massVsPt", {HistType::kTH2F, {{axisMassD}, {axisPtD}}});
+    registry.add("hMassDplusVsPtWoEff", "D+ candidates massVsPt without efficiency", {HistType::kTH2F, {{axisMassD}, {axisPtD}}});
     if (fillHistoData) {
       registry.add("hDeltaEtaPtIntSignalRegion", stringDHadron + stringSignal + stringDeltaEta + "entries", {HistType::kTH1F, {axisDeltaEta}});
       registry.add("hDeltaPhiPtIntSignalRegion", stringDHadron + stringSignal + stringDeltaPhi + "entries", {HistType::kTH1F, {axisDeltaPhi}});
@@ -313,6 +316,7 @@ struct HfTaskCorrelationDplusHadrons {
         }
       }
       registry.fill(HIST("hMassDplusVsPt"), massD, ptD, efficiencyWeightD);
+      registry.fill(HIST("hMassDplusVsPtWoEff"), massD, ptD);
       registry.fill(HIST("hBdtScorePrompt"), bdtScorePrompt);
       registry.fill(HIST("hBdtScoreBkg"), bdtScoreBkg);
     }
@@ -410,6 +414,7 @@ struct HfTaskCorrelationDplusHadrons {
             efficiencyWeightD = 1. / mEfficiencyPrompt->GetBinContent(mEfficiencyPrompt->FindBin(ptD));
           }
           registry.fill(HIST("hMassDplusVsPt"), massD, ptD, efficiencyWeightD);
+          registry.fill(HIST("hMassDplusVsPtWoEff"), massD, ptD);
           registry.fill(HIST("hMassPromptDplusVsPt"), massD, ptD, efficiencyWeightD);
           registry.fill(HIST("hBdtScorePrompt"), bdtScorePrompt);
           registry.fill(HIST("hBdtScoreBkg"), bdtScoreBkg);
@@ -419,6 +424,7 @@ struct HfTaskCorrelationDplusHadrons {
             efficiencyWeightD = 1. / mEfficiencyFD->GetBinContent(mEfficiencyFD->FindBin(ptD));
           }
           registry.fill(HIST("hMassDplusVsPt"), massD, ptD, efficiencyWeightD);
+          registry.fill(HIST("hMassDplusVsPtWoEff"), massD, ptD);
           registry.fill(HIST("hMassNonPromptDplusVsPt"), massD, ptD, efficiencyWeightD);
           registry.fill(HIST("hBdtScorePrompt"), bdtScorePrompt);
           registry.fill(HIST("hBdtScoreBkg"), bdtScoreBkg);

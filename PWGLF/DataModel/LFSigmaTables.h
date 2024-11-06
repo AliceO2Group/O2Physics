@@ -91,8 +91,8 @@ DECLARE_SOA_COLUMN(GammaBDTScore, gammaBDTScore, float);
 } // namespace sigmaPhotonExtra
 
 DECLARE_SOA_TABLE(SigmaPhotonExtras, "AOD", "SIGMA0PHOTON",
-                  sigmaPhotonExtra::PhotonMass,
                   sigmaPhotonExtra::PhotonPt,
+                  sigmaPhotonExtra::PhotonMass,
                   sigmaPhotonExtra::PhotonQt,
                   sigmaPhotonExtra::PhotonAlpha,
                   sigmaPhotonExtra::PhotonRadius,

@@ -195,7 +195,7 @@ class PairSHCentMultKt
       multbinval = 1;
     } else if (absmultval < CentMultBins[3]) {
       multbinval = 2;
-    } else if (ktval < CentMultBins[4]) {
+    } else if (absmultval < CentMultBins[4]) {
       multbinval = 3;
     } else {
       return;
@@ -374,13 +374,13 @@ class PairSHCentMultKt
   }
 
  private:
-  std::array<std::array<std::array<std::shared_ptr<TH1>, 15>, 10>, 10>
+  std::array<std::array<std::array<std::shared_ptr<TH1>, 10>, 4>, 4>
     fnumsreal{};
-  std::array<std::array<std::array<std::shared_ptr<TH1>, 15>, 10>, 10>
+  std::array<std::array<std::array<std::shared_ptr<TH1>, 10>, 4>, 4>
     fnumsimag{};
-  std::array<std::array<std::array<std::shared_ptr<TH1>, 15>, 10>, 10>
+  std::array<std::array<std::array<std::shared_ptr<TH1>, 10>, 4>, 4>
     fdensreal{};
-  std::array<std::array<std::array<std::shared_ptr<TH1>, 15>, 10>, 10>
+  std::array<std::array<std::array<std::shared_ptr<TH1>, 10>, 4>, 4>
     fdensimag{};
 
   TH1D* fbinctn[10][10];
@@ -389,13 +389,13 @@ class PairSHCentMultKt
   static constexpr int fMaxL = 2;
   static constexpr int fMaxJM = (fMaxL + 1) * (fMaxL + 1);
 
-  std::array<std::array<std::array<float, (fMaxJM * fMaxJM * 4 * 100)>, 10>, 10>
+  std::array<std::array<std::array<float, (fMaxJM * fMaxJM * 4 * 100)>, 4>, 4>
     fcovmnum{}; ///< Covariance matrix for the numerator
-  std::array<std::array<std::array<float, (fMaxJM * fMaxJM * 4 * 100)>, 10>, 10>
+  std::array<std::array<std::array<float, (fMaxJM * fMaxJM * 4 * 100)>, 4>, 4>
     fcovmden{}; ///< Covariance matrix for the numerator
 
-  std::array<std::array<std::shared_ptr<TH3>, 10>, 10> fcovnum{};
-  std::array<std::array<std::shared_ptr<TH3>, 10>, 10> fcovden{};
+  std::array<std::array<std::shared_ptr<TH3>, 4>, 4> fcovnum{};
+  std::array<std::array<std::shared_ptr<TH3>, 4>, 4> fcovden{};
 
  protected:
   HistogramRegistry* PairSHCentMultKtRegistry = nullptr;

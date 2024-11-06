@@ -20,6 +20,8 @@
 #include <TH2F.h>
 #include <TLorentzVector.h>
 #include <TPDGCode.h>
+#include <string>
+#include <vector>
 #include <TDatabasePDG.h>
 #include <cmath>
 #include <array>
@@ -83,6 +85,7 @@ struct kstarpbpb {
   Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 2.0f, "DCAxy range for tracks"};
   Configurable<float> cfgCutDCAz{"cfgCutDCAz", 2.0f, "DCAz range for tracks"};
   Configurable<bool> useGlobalTrack{"useGlobalTrack", true, "use Global track"};
+  Configurable<float> nsigmaCutTOF{"nsigmacutTOF", 3.0, "Value of the TOF Nsigma cut"};
   Configurable<float> nsigmaCutTPC{"nsigmacutTPC", 3.0, "Value of the TPC Nsigma cut"};
   Configurable<float> nsigmaCutCombined{"nsigmaCutCombined", 3.0, "Value of the TOF Nsigma cut"};
   Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 1, "Number of mixed events per event"};
@@ -269,17 +272,11 @@ struct kstarpbpb {
   bool selectionPID(const T& candidate, int PID)
   {
     if (PID == 0) {
-      if (!candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC) {
-        return true;
-      }
-      if (candidate.hasTOF() && ((candidate.tofNSigmaKa() * candidate.tofNSigmaKa()) + (candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa())) < (nsigmaCutCombined * nsigmaCutCombined)) {
+      if (candidate.hasTOF() && TMath::Abs(candidate.tofNSigmaKa()) < nsigmaCutTOF) {
         return true;
       }
     } else if (PID == 1) {
-      if (!candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaPi()) < nsigmaCutTPC) {
-        return true;
-      }
-      if (candidate.hasTOF() && ((candidate.tofNSigmaPi() * candidate.tofNSigmaPi()) + (candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi())) < (nsigmaCutCombined * nsigmaCutCombined)) {
+      if (candidate.hasTOF() && TMath::Abs(candidate.tofNSigmaPi()) < nsigmaCutTOF) {
         return true;
       }
     }

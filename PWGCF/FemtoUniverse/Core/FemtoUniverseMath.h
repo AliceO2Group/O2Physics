@@ -65,6 +65,37 @@ class FemtoUniverseMath
     return 0.5 * trackRelK.P();
   }
 
+  /// \tparam T type of tracks
+  /// \param part1 Particle 1
+  /// \param mass1 Mass of particle 1
+  /// \param part2 Particle 2
+  /// \param mass2 Mass of particle 2
+  template <typename T>
+  static float getthetastar(const T& part1, const float mass1, const T& part2, const float mass2)
+  {
+    const ROOT::Math::PtEtaPhiMVector vecpart1(part1.pt(), part1.eta(), part1.phi(), mass1);
+    const ROOT::Math::PtEtaPhiMVector vecpart2(part2.pt(), part2.eta(), part2.phi(), mass2);
+    const ROOT::Math::PtEtaPhiMVector trackSum = vecpart1 + vecpart2;
+    const ROOT::Math::PtEtaPhiMVector trackDiff = vecpart1 - vecpart2;
+
+    const float beta = trackSum.Beta();
+    const float betax = beta * std::cos(trackSum.Phi()) * std::sin(trackSum.Theta());
+    const float betay = beta * std::sin(trackSum.Phi()) * std::sin(trackSum.Theta());
+    const float betaz = beta * std::cos(trackSum.Theta());
+
+    ROOT::Math::PxPyPzMVector PartOneCMS(vecpart1);
+    ROOT::Math::PxPyPzMVector PartTwoCMS(vecpart2);
+
+    const ROOT::Math::Boost boostPRF = ROOT::Math::Boost(-betax, -betay, -betaz);
+    PartOneCMS = boostPRF(PartOneCMS);
+    PartTwoCMS = boostPRF(PartTwoCMS);
+
+    const ROOT::Math::PtEtaPhiMVector PartOneCMSGeo(PartOneCMS);
+    const ROOT::Math::PtEtaPhiMVector PartTwoCMSGeo(PartTwoCMS);
+
+    return (PartOneCMSGeo.Theta() - PartTwoCMSGeo.Theta());
+  }
+
   /// Compute the qij of a pair of particles
   /// \tparam T type of tracks
   /// \param vecparti Particle i PxPyPzMVector
