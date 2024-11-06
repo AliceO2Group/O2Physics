@@ -14,6 +14,8 @@
 /// \author Grazia Luparello <grazia.luparello@cern.ch>
 /// \author Samuele Cattaruzzi <samuele.cattaruzzi@cern.ch>
 
+#include <vector>
+
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
@@ -136,9 +138,9 @@ struct HfCorrelatorDsHadrons {
   Produces<aod::DsCandRecoInfo> entryDsCandRecoInfo;
   Produces<aod::DsCandGenInfo> entryDsCandGenInfo;
   Produces<aod::TrackRecoInfo> entryTrackRecoInfo;
-  Produces<aod::HfRedCollisions> collReduced;
+  Produces<aod::HfcRedCollisions> collReduced;
   Produces<aod::DsCandReduced> candReduced;
-  Produces<aod::AssocTrackReduced> assocTrackReduced;
+  Produces<aod::AssocTrackRed> assocTrackReduced;
 
   Configurable<bool> fillHistoData{"fillHistoData", true, "Flag for filling histograms in data processes"};
   Configurable<bool> fillHistoMcRec{"fillHistoMcRec", true, "Flag for filling histograms in MC Rec processes"};
