@@ -761,32 +761,32 @@ DECLARE_SOA_TABLE_FULL(V0fCCovs, "V0fCCovs", "AOD", "V0FCCOVS", //! V0 covarianc
                        v0data::PositionCovMat, v0data::MomentumCovMat, o2::soa::Marker<2>);
 
 DECLARE_SOA_TABLE_STAGED(V0MCCores_000, "V0MCCORE", //! MC properties of the V0 for posterior analysis
-                  v0data::PDGCode, v0data::PDGCodeMother,
-                  v0data::PDGCodePositive, v0data::PDGCodeNegative,
-                  v0data::IsPhysicalPrimary, v0data::XMC, v0data::YMC, v0data::ZMC,
-                  v0data::PxPosMC, v0data::PyPosMC, v0data::PzPosMC,
-                  v0data::PxNegMC, v0data::PyNegMC, v0data::PzNegMC);
+                         v0data::PDGCode, v0data::PDGCodeMother,
+                         v0data::PDGCodePositive, v0data::PDGCodeNegative,
+                         v0data::IsPhysicalPrimary, v0data::XMC, v0data::YMC, v0data::ZMC,
+                         v0data::PxPosMC, v0data::PyPosMC, v0data::PzPosMC,
+                         v0data::PxNegMC, v0data::PyNegMC, v0data::PzNegMC);
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(V0MCCores_001, "V0MCCORE", 1, //! debug information
-                            v0data::ParticleIdMC,                //! MC properties of the V0 for posterior analysis
-                            v0data::PDGCode, v0data::PDGCodeMother,
-                            v0data::PDGCodePositive, v0data::PDGCodeNegative,
-                            v0data::IsPhysicalPrimary, v0data::XMC, v0data::YMC, v0data::ZMC,
-                            v0data::PxPosMC, v0data::PyPosMC, v0data::PzPosMC,
-                            v0data::PxNegMC, v0data::PyNegMC, v0data::PzNegMC);
+                                   v0data::ParticleIdMC,         //! MC properties of the V0 for posterior analysis
+                                   v0data::PDGCode, v0data::PDGCodeMother,
+                                   v0data::PDGCodePositive, v0data::PDGCodeNegative,
+                                   v0data::IsPhysicalPrimary, v0data::XMC, v0data::YMC, v0data::ZMC,
+                                   v0data::PxPosMC, v0data::PyPosMC, v0data::PzPosMC,
+                                   v0data::PxNegMC, v0data::PyNegMC, v0data::PzNegMC);
 
 DECLARE_SOA_TABLE_STAGED_VERSIONED(V0MCCores_002, "V0MCCORE", 2, //! debug information
-                            v0data::ParticleIdMC,                //! MC properties of the V0 for posterior analysis
-                            v0data::PDGCode, v0data::PDGCodeMother,
-                            v0data::PDGCodePositive, v0data::PDGCodeNegative,
-                            v0data::IsPhysicalPrimary, v0data::XMC, v0data::YMC, v0data::ZMC,
-                            v0data::PxPosMC, v0data::PyPosMC, v0data::PzPosMC,
-                            v0data::PxNegMC, v0data::PyNegMC, v0data::PzNegMC,
-                            v0data::PxMC, v0data::PyMC, v0data::PzMC,
-                            v0data::RapidityMC<v0data::PxMC, v0data::PyMC, v0data::PzMC>,
-                            v0data::NegativePtMC<v0data::PxNegMC, v0data::PyNegMC>,
-                            v0data::PositivePtMC<v0data::PxPosMC, v0data::PyPosMC>,
-                            v0data::PtMC<v0data::PxMC, v0data::PyMC>);
+                                   v0data::ParticleIdMC,         //! MC properties of the V0 for posterior analysis
+                                   v0data::PDGCode, v0data::PDGCodeMother,
+                                   v0data::PDGCodePositive, v0data::PDGCodeNegative,
+                                   v0data::IsPhysicalPrimary, v0data::XMC, v0data::YMC, v0data::ZMC,
+                                   v0data::PxPosMC, v0data::PyPosMC, v0data::PzPosMC,
+                                   v0data::PxNegMC, v0data::PyNegMC, v0data::PzNegMC,
+                                   v0data::PxMC, v0data::PyMC, v0data::PzMC,
+                                   v0data::RapidityMC<v0data::PxMC, v0data::PyMC, v0data::PzMC>,
+                                   v0data::NegativePtMC<v0data::PxNegMC, v0data::PyNegMC>,
+                                   v0data::PositivePtMC<v0data::PxPosMC, v0data::PyPosMC>,
+                                   v0data::PtMC<v0data::PxMC, v0data::PyMC>);
 
 // DECLARE_SOA_TABLE(StoredV0MCCores_000, "AOD", "V0MCCORE", //! MC properties of the V0 for posterior analysis
 //                   v0data::PDGCode, v0data::PDGCodeMother,
