@@ -81,7 +81,7 @@ struct NucleiHistTask {
     // QA histograms
     spectra_reg.add("histRecVtxZData", "collision z position", HistType::kTH1F, {{200, -20., +20., "z position (cm)"}});
     spectra_reg.add("histTpcSignalData", "Specific energy loss", HistType::kTH2F, {{600, -6., 6., "#it{p*} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
-    spectra_reg.add("histTofSignalData", "TOF signal", HistType::kTH2F, {{600, -6., 6., "#it{p*} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});    
+    spectra_reg.add("histTofSignalData", "TOF signal", HistType::kTH2F, {{600, -6., 6., "#it{p*} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
     spectra_reg.add("histDcaVsPtData_particle", "dcaXY vs Pt (particle)", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
     spectra_reg.add("histDcaZVsPtData_particle", "dcaZ vs Pt (particle)", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     spectra_reg.add("histDcaVsPtData_antiparticle", "dcaXY vs Pt (antiparticle)", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
@@ -104,7 +104,7 @@ struct NucleiHistTask {
     pion_reg.add("histDcaZVsPtData", "dcaZ vs Pt (#pi^{+})", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     pion_reg.add("histTOFm2", "TOF m^2 vs Pt (#pi^{+})", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
     pion_reg.add("histTpcNsigmaData", "n-sigma TPC (#pi^{+})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#pi^{+}}"}});
-    pion_reg.add("histTofNsigmaData", "n-sigma TOF (#pi^{+})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#pi^{+}}"}});    
+    pion_reg.add("histTofNsigmaData", "n-sigma TOF (#pi^{+})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#pi^{+}}"}});
     pion_reg.add("histNClusterTPC", "Number of Clusters in TPC vs Pt (#pi^{+})", HistType::kTH2F, {ptAxis, {160, 0.0, 160.0, "nCluster"}});
     pion_reg.add("histNClusterITS", "Number of Clusters in ITS vs Pt (#pi^{+})", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
     pion_reg.add("histNClusterITSib", "Number of Clusters in ib of ITS vs Pt (#pi^{+})", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
@@ -119,12 +119,12 @@ struct NucleiHistTask {
 
     // histograms for pi⁻
     apion_reg.add("histTpcSignalData", "Specific energy loss (#pi^{-})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
-    apion_reg.add("histTofSignalData", "TOF signal (#pi^{-})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}}); 
+    apion_reg.add("histTofSignalData", "TOF signal (#pi^{-})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
     apion_reg.add("histDcaVsPtData", "dcaXY vs Pt (#pi^{-})", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
     apion_reg.add("histDcaZVsPtData", "dcaZ vs Pt (#pi^{-})", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     apion_reg.add("histTOFm2", "TOF m^2 vs Pt (#pi^{-})", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
     apion_reg.add("histTpcNsigmaData", "n-sigma TPC (#pi^{-})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#pi^{+}}"}});
-    apion_reg.add("histTofNsigmaData", "n-sigma TOF (#pi^{-})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#pi^{+}}"}});    
+    apion_reg.add("histTofNsigmaData", "n-sigma TOF (#pi^{-})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#pi^{+}}"}});
     apion_reg.add("histNClusterTPC", "Number of Clusters in TPC vs Pt (#pi^{-})", HistType::kTH2F, {ptAxis, {160, 0.0, 160.0, "nCluster"}});
     apion_reg.add("histNClusterITS", "Number of Clusters in ITS vs Pt (#pi^{-})", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
     apion_reg.add("histNClusterITSib", "Number of Clusters in ib of ITS vs Pt (#pi^{-})", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
@@ -139,12 +139,12 @@ struct NucleiHistTask {
 
     // histograms for Proton
     proton_reg.add("histTpcSignalData", "Specific energy loss (p)", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
-    proton_reg.add("histTofSignalData", "TOF signal (p)", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});    
+    proton_reg.add("histTofSignalData", "TOF signal (p)", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
     proton_reg.add("histDcaVsPtData", "dcaXY vs Pt (p)", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
     proton_reg.add("histDcaZVsPtData", "dcaZ vs Pt (p)", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     proton_reg.add("histTOFm2", "TOF m^2 vs Pt (p)", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
     proton_reg.add("histTpcNsigmaData", "n-sigma TPC (p)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{p}"}});
-    proton_reg.add("histTofNsigmaData", "n-sigma TOF (p)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{p}"}});    
+    proton_reg.add("histTofNsigmaData", "n-sigma TOF (p)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{p}"}});
     proton_reg.add("histNClusterTPC", "Number of Clusters in TPC vs Pt (p)", HistType::kTH2F, {ptAxis, {160, 0.0, 160.0, "nCluster"}});
     proton_reg.add("histNClusterITS", "Number of Clusters in ITS vs Pt (p)", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
     proton_reg.add("histNClusterITSib", "Number of Clusters in ib of ITS vs Pt (p)", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
@@ -159,12 +159,12 @@ struct NucleiHistTask {
 
     // histograms for antiProton
     aproton_reg.add("histTpcSignalData", "Specific energy loss (#bar{p})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
-    aproton_reg.add("histTofSignalData", "TOF signal (#bar{p})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});    
+    aproton_reg.add("histTofSignalData", "TOF signal (#bar{p})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
     aproton_reg.add("histDcaVsPtData", "dcaXY vs Pt (#bar{p})", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
     aproton_reg.add("histDcaZVsPtData", "dcaZ vs Pt (#bar{p})", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     aproton_reg.add("histTOFm2", "TOF m^2 vs Pt (#bar{p})", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
     aproton_reg.add("histTpcNsigmaData", "n-sigma TPC (#bar{p})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#bar{p}}"}});
-    aproton_reg.add("histTofNsigmaData", "n-sigma TOF (#bar{p})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#bar{p}}"}});    
+    aproton_reg.add("histTofNsigmaData", "n-sigma TOF (#bar{p})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#bar{p}}"}});
     aproton_reg.add("histNClusterTPC", "Number of Clusters in TPC vs Pt (#bar{p})", HistType::kTH2F, {ptAxis, {160, 0.0, 160.0, "nCluster"}});
     aproton_reg.add("histNClusterITS", "Number of Clusters in ITS vs Pt (#bar{p})", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
     aproton_reg.add("histNClusterITSib", "Number of Clusters in ib of ITS vs Pt (#bar{p})", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
@@ -179,12 +179,12 @@ struct NucleiHistTask {
 
     // histograms for Deuterons
     deuteron_reg.add("histTpcSignalData", "Specific energy loss (d)", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
-    deuteron_reg.add("histTofSignalData", "TOF signal (d)", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});    
+    deuteron_reg.add("histTofSignalData", "TOF signal (d)", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
     deuteron_reg.add("histDcaVsPtData", "dcaXY vs Pt (d)", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
     deuteron_reg.add("histDcaZVsPtData", "dcaZ vs Pt (d)", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     deuteron_reg.add("histTOFm2", "TOF m^2 vs Pt (d)", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
     deuteron_reg.add("histTpcNsigmaData", "n-sigma TPC (d)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{d}"}});
-    deuteron_reg.add("histTofNsigmaData", "n-sigma TOF (d)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{d}"}});    
+    deuteron_reg.add("histTofNsigmaData", "n-sigma TOF (d)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{d}"}});
     deuteron_reg.add("histNClusterTPC", "Number of Clusters in TPC vs Pt (d)", HistType::kTH2F, {ptAxis, {160, 0.0, 160.0, "nCluster"}});
     deuteron_reg.add("histNClusterITS", "Number of Clusters in ITS vs Pt (d)", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
     deuteron_reg.add("histNClusterITSib", "Number of Clusters in ib of ITS vs Pt (d)", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
@@ -199,12 +199,12 @@ struct NucleiHistTask {
 
     // histograms for antiDeuterons
     adeuteron_reg.add("histTpcSignalData", "Specific energy loss (#bar{d})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
-    adeuteron_reg.add("histTofSignalData", "TOF signal (#bar{d})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});    
+    adeuteron_reg.add("histTofSignalData", "TOF signal (#bar{d})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
     adeuteron_reg.add("histDcaVsPtData", "dcaXY vs Pt (#bar{d})", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
     adeuteron_reg.add("histDcaZVsPtData", "dcaZ vs Pt (#bar{d})", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     adeuteron_reg.add("histTOFm2", "TOF m^2 vs Pt (#bar{d})", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
     adeuteron_reg.add("histTpcNsigmaData", "n-sigma TPC (#bar{d})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#bar{d}}"}});
-    adeuteron_reg.add("histTofNsigmaData", "n-sigma TOF (#bar{d})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#bar{d}}"}});    
+    adeuteron_reg.add("histTofNsigmaData", "n-sigma TOF (#bar{d})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#bar{d}}"}});
     adeuteron_reg.add("histNClusterTPC", "Number of Clusters in TPC vs Pt (#bar{d})", HistType::kTH2F, {ptAxis, {160, 0.0, 160.0, "nCluster"}});
     adeuteron_reg.add("histNClusterITS", "Number of Clusters in ITS vs Pt (#bar{d})", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
     adeuteron_reg.add("histNClusterITSib", "Number of Clusters in ib of ITS vs Pt (#bar{d})", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
@@ -219,12 +219,12 @@ struct NucleiHistTask {
 
     // histograms for Triton
     triton_reg.add("histTpcSignalData", "Specific energy loss (t)", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
-    triton_reg.add("histTofSignalData", "TOF signal (t)", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});    
+    triton_reg.add("histTofSignalData", "TOF signal (t)", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
     triton_reg.add("histDcaVsPtData", "dcaXY vs Pt (t)", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
     triton_reg.add("histDcaZVsPtData", "dcaZ vs Pt (t)", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     triton_reg.add("histTOFm2", "TOF m^2 vs Pt (t)", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
     triton_reg.add("histTpcNsigmaData", "n-sigma TPC (t)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{t}"}});
-    triton_reg.add("histTofNsigmaData", "n-sigma TOF (t)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{t}"}});    
+    triton_reg.add("histTofNsigmaData", "n-sigma TOF (t)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{t}"}});
     triton_reg.add("histNClusterTPC", "Number of Clusters in TPC vs Pt (t)", HistType::kTH2F, {ptAxis, {160, 0.0, 160.0, "nCluster"}});
     triton_reg.add("histNClusterITS", "Number of Clusters in ITS vs Pt (t)", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
     triton_reg.add("histNClusterITSib", "Number of Clusters in ib of ITS vs Pt (t)", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
@@ -239,12 +239,12 @@ struct NucleiHistTask {
 
     // histograms for antiTriton
     atriton_reg.add("histTpcSignalData", "Specific energy loss (#bar{t})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
-    atriton_reg.add("histTofSignalData", "TOF signal (#bar{t})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});  
+    atriton_reg.add("histTofSignalData", "TOF signal (#bar{t})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
     atriton_reg.add("histDcaVsPtData", "dcaXY vs Pt (#bar{t})", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
     atriton_reg.add("histDcaZVsPtData", "dcaZ vs Pt (#bar{t})", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     atriton_reg.add("histTOFm2", "TOF m^2 vs Pt (#bar{t})", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
     atriton_reg.add("histTpcNsigmaData", "n-sigma TPC (#bar{t})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#bar{t}}"}});
-    atriton_reg.add("histTofNsigmaData", "n-sigma TOF (#bar{t})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#bar{t}}"}});    
+    atriton_reg.add("histTofNsigmaData", "n-sigma TOF (#bar{t})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{#bar{t}}"}});
     atriton_reg.add("histNClusterTPC", "Number of Clusters in TPC vs Pt (#bar{t})", HistType::kTH2F, {ptAxis, {160, 0.0, 160.0, "nCluster"}});
     atriton_reg.add("histNClusterITS", "Number of Clusters in ITS vs Pt (#bar{t})", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
     atriton_reg.add("histNClusterITSib", "Number of Clusters in ib of ITS vs Pt (#bar{t})", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
@@ -259,12 +259,12 @@ struct NucleiHistTask {
 
     // histograms for Helium-3
     Helium3_reg.add("histTpcSignalData", "Specific energy loss (^{3}He)", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
-    Helium3_reg.add("histTofSignalData", "TOF signal (^{3}He)", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});    
+    Helium3_reg.add("histTofSignalData", "TOF signal (^{3}He)", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
     Helium3_reg.add("histDcaVsPtData", "dcaXY vs Pt (^{3}He)", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
     Helium3_reg.add("histDcaZVsPtData", "dcaZ vs Pt (^{3}He)", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     Helium3_reg.add("histTOFm2", "TOF m^2 vs Pt (^{3}He)", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
     Helium3_reg.add("histTpcNsigmaData", "n-sigma TPC (^{3}He)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{^{3}He}"}});
-    Helium3_reg.add("histTofNsigmaData", "n-sigma TOF (^{3}He)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{^{3}He}"}});  
+    Helium3_reg.add("histTofNsigmaData", "n-sigma TOF (^{3}He)", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{^{3}He}"}});
     Helium3_reg.add("histNClusterTPC", "Number of Clusters in TPC vs Pt (^{3}He)", HistType::kTH2F, {ptAxis, {160, 0.0, 160.0, "nCluster"}});
     Helium3_reg.add("histNClusterITS", "Number of Clusters in ITS vs Pt (^{3}He)", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
     Helium3_reg.add("histNClusterITSib", "Number of Clusters in ib of ITS vs Pt (^{3}He)", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
@@ -279,12 +279,12 @@ struct NucleiHistTask {
 
     // histograms for antiHelium-3
     aHelium3_reg.add("histTpcSignalData", "Specific energy loss (^{3}#bar{He})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
-    aHelium3_reg.add("histTofSignalData", "TOF signal (^{3}#bar{He})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});    
+    aHelium3_reg.add("histTofSignalData", "TOF signal (^{3}#bar{He})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
     aHelium3_reg.add("histDcaVsPtData", "dcaXY vs Pt (^{3}#bar{He})", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
     aHelium3_reg.add("histDcaZVsPtData", "dcaZ vs Pt (^{3}#bar{He})", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     aHelium3_reg.add("histTOFm2", "TOF m^2 vs Pt (^{3}#bar{He})", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
     aHelium3_reg.add("histTpcNsigmaData", "n-sigma TPC (^{3}#bar{He})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{^{3}He}"}});
-    aHelium3_reg.add("histTofNsigmaData", "n-sigma TOF (^{3}#bar{He})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{^{3}He}"}});    
+    aHelium3_reg.add("histTofNsigmaData", "n-sigma TOF (^{3}#bar{He})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{^{3}He}"}});
     aHelium3_reg.add("histNClusterTPC", "Number of Clusters in TPC vs Pt (^{3}#bar{He})", HistType::kTH2F, {ptAxis, {160, 0.0, 160.0, "nCluster"}});
     aHelium3_reg.add("histNClusterITS", "Number of Clusters in ITS vs Pt (^{3}#bar{He})", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
     aHelium3_reg.add("histNClusterITSib", "Number of Clusters in ib of ITS vs Pt (^{3}#bar{He})", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
@@ -299,7 +299,7 @@ struct NucleiHistTask {
 
     // histograms for Helium-4 (alpha)
     Helium4_reg.add("histTpcSignalData", "Specific energy loss (^{4}He)", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
-    Helium4_reg.add("histTofSignalData", "TOF signal (^{4}He)", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});    
+    Helium4_reg.add("histTofSignalData", "TOF signal (^{4}He)", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
     Helium4_reg.add("histDcaVsPtData", "dcaXY vs Pt (^{4}He)", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
     Helium4_reg.add("histDcaZVsPtData", "dcaZ vs Pt (^{4}He)", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     Helium4_reg.add("histTOFm2", "TOF m^2 vs Pt (^{4}He)", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
@@ -319,12 +319,12 @@ struct NucleiHistTask {
 
     // histograms for antiHelium-4 (alpha)
     aHelium4_reg.add("histTpcSignalData", "Specific energy loss (^{4}#bar{He})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {5000, 0, 5000, "d#it{E} / d#it{X} (a. u.)"}});
-    aHelium4_reg.add("histTofSignalData", "TOF signal (^{4}#bar{He})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});    
+    aHelium4_reg.add("histTofSignalData", "TOF signal (^{4}#bar{He})", HistType::kTH2F, {{600, 0., 6., "#it{p} (GeV/#it{c})"}, {550, 0.0, 1.1, "#beta (TOF)"}});
     aHelium4_reg.add("histDcaVsPtData", "dcaXY vs Pt (^{4}#bar{He})", HistType::kTH2F, {ptAxis, {250, -0.5, 0.5, "dca"}});
     aHelium4_reg.add("histDcaZVsPtData", "dcaZ vs Pt (^{4}#bar{He})", HistType::kTH2F, {ptAxis, {1000, -2.0, 2.0, "dca"}});
     aHelium4_reg.add("histTOFm2", "TOF m^2 vs Pt (^{4}#bar{He})", HistType::kTH2F, {pAxis, {400, 0.0, 10.0, "m^2"}});
     aHelium4_reg.add("histTpcNsigmaData", "n-sigma TPC (^{4}#bar{He})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{antiHe-4}"}});
-    aHelium4_reg.add("histTofNsigmaData", "n-sigma TOF (^{4}#bar{He})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{antiHe-4}"}});    
+    aHelium4_reg.add("histTofNsigmaData", "n-sigma TOF (^{4}#bar{He})", HistType::kTH2F, {pAxis, {160, -20., +20., "n#sigma_{antiHe-4}"}});
     aHelium4_reg.add("histNClusterTPC", "Number of Clusters in TPC vs Pt (^{4}#bar{He})", HistType::kTH2F, {ptAxis, {160, 0.0, 160.0, "nCluster"}});
     aHelium4_reg.add("histNClusterITS", "Number of Clusters in ITS vs Pt (^{4}#bar{He})", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
     aHelium4_reg.add("histNClusterITSib", "Number of Clusters in ib of ITS vs Pt (^{4}#bar{He})", HistType::kTH2F, {ptAxis, {10, 0.0, 10.0, "nCluster"}});
@@ -440,10 +440,11 @@ struct NucleiHistTask {
           momentum = track.tpcInnerParam();
           break;
         default:
-           momentum_getter = -1;
+          momentum_getter = -1;
           break;
       }
-      if (momentum_getter == -1) break;
+      if (momentum_getter == -1)
+        break;
 
       float TPCnumberClsFound = track.tpcNClsFound();
       float TPC_nCls_Crossed_Rows = track.tpcNClsCrossedRows();
@@ -658,7 +659,7 @@ struct NucleiHistTask {
           if (track.hasTOF()) {
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
-            adeuteron_reg.fill(HIST("histTOFm2"),momentum, TOFmass2);
+            adeuteron_reg.fill(HIST("histTOFm2"), momentum, TOFmass2);
             adeuteron_reg.fill(HIST("histTofSignalData"), momentum, beta);
             adeuteron_reg.fill(HIST("histTofNsigmaData"), momentum, track.tofNSigmaDe());
           }
@@ -844,7 +845,8 @@ struct NucleiHistTask {
           momentum_getter = -1;
           break;
       }
-      if (momentum_getter == -1) break;
+      if (momentum_getter == -1)
+        break;
 
       spectra_reg.fill(HIST("histEtaWithOverFlow"), track.eta());
       spectra_reg.fill(HIST("histEta_cent"), event.centFT0C(), track.eta());
@@ -919,7 +921,7 @@ struct NucleiHistTask {
 
           if ((event.centFT0C() > minCentrality) && (event.centFT0C() < maxCentrality)) {
             pion_reg.fill(HIST("histTofm2_eta"), momentum, track.mass() * track.mass(), track.eta());
-            pion_reg.fill(HIST("histTofNsigmaData_eta"),momentum, track.tofNSigmaPi(), track.eta());
+            pion_reg.fill(HIST("histTofNsigmaData_eta"), momentum, track.tofNSigmaPi(), track.eta());
             proton_reg.fill(HIST("histTofm2_eta"), momentum, track.mass() * track.mass(), track.eta());
             proton_reg.fill(HIST("histTofNsigmaData_eta"), momentum, track.tofNSigmaPr(), track.eta());
             deuteron_reg.fill(HIST("histTofm2_eta"), momentum, track.mass() * track.mass(), track.eta());
@@ -1086,7 +1088,7 @@ struct NucleiHistTask {
           pdgbin = -1;
           break;
       }
-      
+
       double momentum = 0.0;
       int momentum_getter = 0;
       switch (use_momentum_getter) {
@@ -1103,7 +1105,8 @@ struct NucleiHistTask {
           momentum_getter = -1;
           break;
       }
-      if (momentum_getter == -1) break;
+      if (momentum_getter == -1)
+        break;
 
       TLorentzVector lorentzVector_pion{};
       TLorentzVector lorentzVector_kaon{};
