@@ -593,6 +593,7 @@ class VarManager : public TObject
     kPhiHE,
     kPhiCS,
     kDeltaPhiPair2,
+    kDeltaEtaPair2,
     kPsiPair,
     kDeltaPhiPair,
     kOpeningAngle,
@@ -2558,6 +2559,10 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
     }
   }
 
+  if (fgUsedVars[kDeltaEtaPair2]) {
+    values[kDeltaEtaPair2] = v1.Eta() - v2.Eta();
+  }
+
   if (fgUsedVars[kPsiPair]) {
     values[kDeltaPhiPair] = (t1.sign() * fgMagField > 0.) ? (v1.Phi() - v2.Phi()) : (v2.Phi() - v1.Phi());
     double xipair = TMath::ACos((v1.Px() * v2.Px() + v1.Py() * v2.Py() + v1.Pz() * v2.Pz()) / v1.P() / v2.P());
@@ -2905,6 +2910,10 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
     } else {
       values[kDeltaPhiPair2] = phipair2ME;
     }
+  }
+
+  if (fgUsedVars[kDeltaEtaPair2]) {
+    values[kDeltaEtaPair2] = v1.Eta() - v2.Eta();
   }
 
   // TODO: provide different computations for vn
