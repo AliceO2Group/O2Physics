@@ -97,13 +97,14 @@ DECLARE_SOA_TABLE(DHadronRecoInfo, "AOD", "DHADRONRECOINFO", //! D0-Hadrons pair
 // Note: definition of columns and tables for Lc-Hadron correlation pairs
 namespace hf_correlation_lc_hadron
 {
-DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);       //! DeltaPhi between Lc and Hadrons
-DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);       //! DeltaEta between Lc and Hadrons
-DECLARE_SOA_COLUMN(PtLc, ptLc, float);               //! Transverse momentum of Lc
-DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);       //! Transverse momentum of Hadron
-DECLARE_SOA_COLUMN(MLc, mLc, float);                 //! Invariant mass of Lc
-DECLARE_SOA_COLUMN(SignalStatus, signalStatus, int); //! Tag for LcToPKPi/LcToPiKP
-DECLARE_SOA_COLUMN(PoolBin, poolBin, int);           //! Pool Bin for the MixedEvent
+DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);                //! DeltaPhi between Lc and Hadrons
+DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);                //! DeltaEta between Lc and Hadrons
+DECLARE_SOA_COLUMN(PtLc, ptLc, float);                        //! Transverse momentum of Lc
+DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);                //! Transverse momentum of Hadron
+DECLARE_SOA_COLUMN(MLc, mLc, float);                          //! Invariant mass of Lc
+DECLARE_SOA_COLUMN(SignalStatus, signalStatus, int);          //! Tag for LcToPKPi/LcToPiKP
+DECLARE_SOA_COLUMN(PoolBin, poolBin, int);                    //! Pool Bin for the MixedEvent
+DECLARE_SOA_COLUMN(IsAutoCorrelated, isAutoCorrelated, bool); //! Correlation Status
 } // namespace hf_correlation_lc_hadron
 
 DECLARE_SOA_TABLE(LcHadronPair, "AOD", "LCHPAIR", //! Lc-Hadrons pairs Informations
@@ -111,7 +112,8 @@ DECLARE_SOA_TABLE(LcHadronPair, "AOD", "LCHPAIR", //! Lc-Hadrons pairs Informati
                   aod::hf_correlation_lc_hadron::DeltaEta,
                   aod::hf_correlation_lc_hadron::PtLc,
                   aod::hf_correlation_lc_hadron::PtHadron,
-                  aod::hf_correlation_lc_hadron::PoolBin);
+                  aod::hf_correlation_lc_hadron::PoolBin,
+                  aod::hf_correlation_lc_hadron::IsAutoCorrelated);
 
 DECLARE_SOA_TABLE(LcHadronRecoInfo, "AOD", "LCHRECOINFO", //! Lc-Hadrons pairs Reconstructed Informations
                   aod::hf_correlation_lc_hadron::MLc,

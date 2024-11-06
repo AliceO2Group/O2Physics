@@ -14,6 +14,9 @@
 // This code will create data table for inputs to machine learning for electrons.
 //    Please write to: daiki.sekihata@cern.ch
 
+#include <string>
+#include <map>
+#include <vector>
 #include <random>
 #include "Math/Vector4D.h"
 #include "Framework/runDataProcessing.h"
@@ -582,7 +585,7 @@ struct TreeCreatorElectronML {
               track.tpcChi2NCl(), track.tpcInnerParam(),
               track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
               track.beta(), track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
-              0., track.itsChi2NCl(), track.itsClusterSizes(), // todo: add track.tofChi2() (currently a dummy 0.), once we have it in derived data
+              track.tofChi2(), track.itsChi2NCl(), track.itsClusterSizes(),
               mctrack.vx(), mctrack.vy(), mctrack.vz(),
               mctrack.pdgCode(), mctrack.isPhysicalPrimary(), mothers_id, mothers_pdg);
 

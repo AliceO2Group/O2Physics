@@ -1041,9 +1041,18 @@ struct lambdak0sflattenicity {
         continue;
       }
 
+      float etap = mcParticle.eta();
+      float phip = mcParticle.phi();
+      isegment = 0;
       for (int ieta = 0; ieta < 5; ieta++) {
         etamax = maxEtaFV0 - ieta * detaFV0;
+        if (ieta == 0) {
+          etamax = maxEtaFV0;
+        }
         etamin = maxEtaFV0 - (ieta + 1) * detaFV0;
+        if (ieta == 4) {
+          etamin = minEtaFV0;
+        }
         nsectors = 8;
         if (ieta == 4) {
           nsectors = 16;
@@ -1052,7 +1061,7 @@ struct lambdak0sflattenicity {
           minphi = iphi * 2.0 * TMath::Pi() / nsectors;
           maxphi = (iphi + 1) * 2.0 * TMath::Pi() / nsectors;
           dphi = TMath::Abs(maxphi - minphi);
-          if (mcParticle.eta() >= etamin && mcParticle.eta() < etamax && mcParticle.phi() >= minphi && mcParticle.phi() < maxphi) {
+          if (etap >= etamin && etap < etamax && phip >= minphi && phip < maxphi) {
             RhoLatticeFV0AMC[isegment] += 1.0 / TMath::Abs(dphi * detaFV0);
           }
           isegment++;
@@ -1061,7 +1070,7 @@ struct lambdak0sflattenicity {
     }
 
     flattenicity =
-      GetFlatenicity({RhoLatticeFV0AMC.data(), RhoLatticeFV0AMC.size()});
+      1.0 - GetFlatenicity({RhoLatticeFV0AMC.data(), RhoLatticeFV0AMC.size()});
     return flattenicity;
   }
   // ====================== Flattenicity estimation ends =====================
@@ -1530,7 +1539,7 @@ struct lambdak0sflattenicity {
   PROCESS_SWITCH(lambdak0sflattenicity, processDataRun3, "Process Run 3 Data",
                  false);
   PROCESS_SWITCH(lambdak0sflattenicity, processRecMC,
-                 "Process Run 3 mc, reconstructed", false);
+                 "Process Run 3 mc, reconstructed", true);
   PROCESS_SWITCH(lambdak0sflattenicity, processGenMC,
                  "Process Run 3 mc, generated", true);
 };
