@@ -44,6 +44,7 @@
 #include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/Core/FastJetUtilities.h"
 #include "PWGJE/Core/JetHFUtilities.h"
+#include "PWGJE/Core/JetUtilities.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -71,7 +72,7 @@ DECLARE_SOA_COLUMN(JetHfDist, jethfdist, float);
 DECLARE_SOA_COLUMN(JetPt, jetpt, float);
 DECLARE_SOA_COLUMN(JetEta, jeteta, float);
 DECLARE_SOA_COLUMN(JetPhi, jetphi, float);
-DECLARE_SOA_COLUMN(JetConst, jetconst, float);
+DECLARE_SOA_COLUMN(JetNConst, jetnconst, float);
 DECLARE_SOA_COLUMN(HfPt, hfpt, float);
 DECLARE_SOA_COLUMN(HfEta, hfeta, float);
 DECLARE_SOA_COLUMN(HfPhi, hfphi, float);
@@ -88,7 +89,7 @@ DECLARE_SOA_COLUMN(MCJetHfDist, mcjethfdist, float);
 DECLARE_SOA_COLUMN(MCJetPt, mcjetpt, float);
 DECLARE_SOA_COLUMN(MCJetEta, mcjeteta, float);
 DECLARE_SOA_COLUMN(MCJetPhi, mcjetphi, float);
-DECLARE_SOA_COLUMN(MCJetConst, mcjetconst, float);
+DECLARE_SOA_COLUMN(MCJetNConst, mcjetnconst, float);
 DECLARE_SOA_COLUMN(MCHfPt, mchfpt, float);
 DECLARE_SOA_COLUMN(MCHfEta, mchfeta, float);
 DECLARE_SOA_COLUMN(MCHfPhi, mchfphi, float);
@@ -101,7 +102,7 @@ DECLARE_SOA_TABLE(JetDistanceTable, "AOD", "JETDISTTABLE",
                   jet_distance::JetPt,
                   jet_distance::JetEta,
                   jet_distance::JetPhi,
-                  jet_distance::JetConst,
+                  jet_distance::JetNConst,
                   jet_distance::HfPt,
                   jet_distance::HfEta,
                   jet_distance::HfPhi,
@@ -115,7 +116,7 @@ DECLARE_SOA_TABLE(MCPJetDistanceTable, "AOD", "MCPJETDISTTABLE",
                   jet_distance::MCJetPt,
                   jet_distance::MCJetEta,
                   jet_distance::MCJetPhi,
-                  jet_distance::MCJetConst,
+                  jet_distance::MCJetNConst,
                   jet_distance::MCHfPt,
                   jet_distance::MCHfEta,
                   jet_distance::MCHfPhi,
@@ -127,7 +128,7 @@ DECLARE_SOA_TABLE(MCDJetDistanceTable, "AOD", "MCDJETDISTTABLE",
                   jet_distance::JetPt,
                   jet_distance::JetEta,
                   jet_distance::JetPhi,
-                  jet_distance::JetConst,
+                  jet_distance::JetNConst,
                   jet_distance::HfPt,
                   jet_distance::HfEta,
                   jet_distance::HfPhi,
@@ -145,7 +146,7 @@ DECLARE_SOA_TABLE(MatchJetDistanceTable, "AOD", "MATCHTABLE",
                   jet_distance::MCJetPt,
                   jet_distance::MCJetEta,
                   jet_distance::MCJetPhi,
-                  jet_distance::MCJetConst,
+                  jet_distance::MCJetNConst,
                   jet_distance::MCHfPt,
                   jet_distance::MCHfEta,
                   jet_distance::MCHfPhi,
@@ -155,7 +156,7 @@ DECLARE_SOA_TABLE(MatchJetDistanceTable, "AOD", "MATCHTABLE",
                   jet_distance::JetPt,
                   jet_distance::JetEta,
                   jet_distance::JetPhi,
-                  jet_distance::JetConst,
+                  jet_distance::JetNConst,
                   jet_distance::HfPt,
                   jet_distance::HfEta,
                   jet_distance::HfPhi,
@@ -240,8 +241,6 @@ struct HfFragmentationFunctionTask {
     }
     registry.fill(HIST("h_collision_counter"), 3.0);
 
-    double axisDistance = 0;
-
     for (auto& jet : jets) {
       // fill jet counter histogram
       registry.fill(HIST("h_jet_counter"), 0.5);
@@ -257,7 +256,7 @@ struct HfFragmentationFunctionTask {
         double z_parallel = (jetVector * d0Vector) / (jetVector * jetVector);
 
         // calculating angular distance in eta-phi plane
-        axisDistance = RecoDecay::sqrtSumOfSquares(jet.eta() - d0Candidate.eta(), deltaPhi(jet.phi(), d0Candidate.phi()));
+        double axisDistance = jetutilities::deltaR(jet, d0Candidate);
 
         // filling histograms
         registry.fill(HIST("h_d0_jet_projection"), z_parallel);
@@ -326,32 +325,22 @@ struct HfFragmentationFunctionTask {
 
           // reflection information for storage: +1 = D0, -1 = D0bar, 0 = neither
           int matchedFrom = 0;
-          int selectedAs = -1;
           int decayChannel = 1 << aod::hf_cand_2prong::DecayType::D0ToPiK;
 
           if (mcdd0cand.flagMcMatchRec() == decayChannel) { // matched to D0 on truth level
             matchedFrom = 1;
-            if (!mcdd0cand.candidateSelFlag()) { // CandidateSelFlag == 0 -> selected as D0, CandidateSelFlag == 1 -> selected as D0bar
-              selectedAs = 1;
-            }
           } else if (mcdd0cand.flagMcMatchRec() == -decayChannel) { // matched to D0bar on truth level
             matchedFrom = -1;
-            if (!mcdd0cand.candidateSelFlag()) {
-              selectedAs = 1;
-            }
           } else { // matched to another kind of particle on truth level
             matchedFrom = 0;
-            if (!mcdd0cand.candidateSelFlag()) {
-              selectedAs = 1;
-            }
           }
 
           // store data in MC detector level table
-          mcddistJetTable(RecoDecay::sqrtSumOfSquares(mcdjet.eta() - mcdd0cand.eta(), deltaPhi(mcdjet.phi(), mcdd0cand.phi())),
+          mcddistJetTable(jetutilities::deltaR(mcdjet, mcdd0cand),
                           mcdjet.pt(), mcdjet.eta(), mcdjet.phi(), mcdjet.tracks_as<aod::JetTracks>().size(),                                                         // detector level jet
                           mcdd0cand.pt(), mcdd0cand.eta(), mcdd0cand.phi(), mcdd0cand.m(), mcdd0cand.y(), (mcdd0cand.originMcRec() == RecoDecay::OriginType::Prompt), // detector level D0 candidate
                           mcdjet.has_matchedJetCand(), mcdd0cand.mlScores()[0], mcdd0cand.mlScores()[1], mcdd0cand.mlScores()[2],                                     // ML scores for bkg, prompt and non-prompt
-                          matchedFrom, selectedAs);                                                                                                                   // check whether detector level candidate is a reflection
+                          matchedFrom, mcdd0cand.candidateSelFlag());                                                                                                 // check whether detector level candidate is a reflection, CandidateSelFlag == 0 -> selected as D0, CandidateSelFlag == 1 -> selected as D0bar
         }
       }
 
@@ -369,7 +358,7 @@ struct HfFragmentationFunctionTask {
         }
 
         // store data in MC detector level table (calculate angular distance in eta-phi plane on the fly)
-        mcpdistJetTable(RecoDecay::sqrtSumOfSquares(mcpjet.eta() - mcpd0cand.eta(), deltaPhi(mcpjet.phi(), mcpd0cand.phi())),
+        mcpdistJetTable(jetutilities::deltaR(mcpjet, mcpd0cand),
                         mcpjet.pt(), mcpjet.eta(), mcpjet.phi(), mcpjet.tracks_as<aod::JetParticles>().size(),                                       // particle level jet
                         mcpd0cand.pt(), mcpd0cand.eta(), mcpd0cand.phi(), mcpd0cand.y(), (mcpd0cand.originMcGen() == RecoDecay::OriginType::Prompt), // particle level D0
                         mcpjet.has_matchedJetCand());
@@ -422,24 +411,14 @@ struct HfFragmentationFunctionTask {
 
           // reflection information for storage: +1 = D0, -1 = D0bar, 0 = neither
           int matchedFrom = 0;
-          int selectedAs = -1;
           int decayChannel = 1 << aod::hf_cand_2prong::DecayType::D0ToPiK;
 
           if (mcdd0cand.flagMcMatchRec() == decayChannel) { // matched to D0 on truth level
             matchedFrom = 1;
-            if (!mcdd0cand.candidateSelFlag()) { // CandidateSelFlag == 0 -> selected as D0, CandidateSelFlag == 1 -> selected as D0bar
-              selectedAs = 1;
-            }
           } else if (mcdd0cand.flagMcMatchRec() == -decayChannel) { // matched to D0bar on truth level
             matchedFrom = -1;
-            if (!mcdd0cand.candidateSelFlag()) {
-              selectedAs = 1;
-            }
           } else { // matched to another kind of particle on truth level
             matchedFrom = 0;
-            if (!mcdd0cand.candidateSelFlag()) {
-              selectedAs = 1;
-            }
           }
 
           // loop through detector level matched to current particle level
@@ -451,12 +430,12 @@ struct HfFragmentationFunctionTask {
             auto mcpd0cand = mcpjet.candidates_first_as<aod::CandidatesD0MCP>();
 
             // store matched particle and detector level data in one single table (calculate angular distance in eta-phi plane on the fly)
-            matchJetTable(RecoDecay::sqrtSumOfSquares(mcpjet.eta() - mcpd0cand.eta(), deltaPhi(mcpjet.phi(), mcpd0cand.phi())), mcpjet.pt(), mcpjet.eta(), mcpjet.phi(), mcpjet.tracks_as<aod::JetParticles>().size(), // particle level jet
-                          mcpd0cand.pt(), mcpd0cand.eta(), mcpd0cand.phi(), mcpd0cand.y(), (mcpd0cand.originMcGen() == RecoDecay::OriginType::Prompt),                                                                 // particle level D0
-                          RecoDecay::sqrtSumOfSquares(mcdjet.eta() - mcdd0cand.eta(), deltaPhi(mcdjet.phi(), mcdd0cand.phi())), mcdjet.pt(), mcdjet.eta(), mcdjet.phi(), mcdjet.tracks_as<aod::JetTracks>().size(),    // detector level jet
-                          mcdd0cand.pt(), mcdd0cand.eta(), mcdd0cand.phi(), mcdd0cand.m(), mcdd0cand.y(), (mcdd0cand.originMcRec() == RecoDecay::OriginType::Prompt),                                                  // detector level D0
+            matchJetTable(jetutilities::deltaR(mcpjet, mcpd0cand), mcpjet.pt(), mcpjet.eta(), mcpjet.phi(), mcpjet.tracks_as<aod::JetParticles>().size(),             // particle level jet
+                          mcpd0cand.pt(), mcpd0cand.eta(), mcpd0cand.phi(), mcpd0cand.y(), (mcpd0cand.originMcGen() == RecoDecay::OriginType::Prompt),                // particle level D0
+                          jetutilities::deltaR(mcdjet, mcdd0cand), mcdjet.pt(), mcdjet.eta(), mcdjet.phi(), mcdjet.tracks_as<aod::JetTracks>().size(),                // detector level jet
+                          mcdd0cand.pt(), mcdd0cand.eta(), mcdd0cand.phi(), mcdd0cand.m(), mcdd0cand.y(), (mcdd0cand.originMcRec() == RecoDecay::OriginType::Prompt), // detector level D0
                           mcdd0cand.mlScores()[0], mcdd0cand.mlScores()[1], mcdd0cand.mlScores()[2],
-                          matchedFrom, selectedAs);
+                          matchedFrom, mcdd0cand.candidateSelFlag());                                                                                                 // check whether detector level candidate is a reflection, CandidateSelFlag == 0 -> selected as D0, CandidateSelFlag == 1 -> selected as D0bar
           }
         }
       }
