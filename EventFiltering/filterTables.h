@@ -16,7 +16,8 @@
 #include <string>
 #include <vector>
 
-namespace o2::aod {
+namespace o2::aod
+{
 template <uint32_t T>
 struct Hash;
 }
@@ -26,19 +27,19 @@ struct Hash;
 namespace o2::soa
 {
 template <typename T>
-  requires (!std::same_as<typename o2::aod::MetadataTrait<std::decay_t<T>>::metadata, void>)
+  requires(!std::same_as<typename o2::aod::MetadataTrait<std::decay_t<T>>::metadata, void>)
 const char* getTableLabel()
 {
-    return o2::aod::MetadataTrait<std::decay_t<T>>::metadata::tableLabel();
+  return o2::aod::MetadataTrait<std::decay_t<T>>::metadata::tableLabel();
 }
 
 template <typename T>
-  requires requires {T::ref.label_hash;}
+  requires requires { T::ref.label_hash; }
 const char* getTableLabel()
 {
   return o2::aod::Hash<T::ref.label_hash>::str;
 }
-}
+} // namespace o2::soa
 
 namespace o2::aod
 {

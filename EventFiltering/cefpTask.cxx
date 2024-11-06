@@ -200,10 +200,10 @@ static const float defaultDownscaling[128][1]{
   {1.f},
   {1.f}}; /// Max number of columns for triggers is 128 (extendible)
 
-#define FILTER_CONFIGURABLE(_TYPE_)                                                                                                                                                                               \
-  Configurable<LabeledArray<float>> cfg##_TYPE_                                                                                                                                                                   \
-  {                                                                                                                                                                                                               \
-#_TYPE_, {defaultDownscaling[0], NumberOfColumns(typename _TYPE_::table_t::persistent_columns_t{}), 1, ColumnsNames(typename _TYPE_::table_t::persistent_columns_t{}), downscalingName }, #_TYPE_ " downscalings" \
+#define FILTER_CONFIGURABLE(_TYPE_)                                                                                                                                                                                  \
+  Configurable<LabeledArray<float>> cfg##_TYPE_                                                                                                                                                                      \
+  {                                                                                                                                                                                                                  \
+    #_TYPE_, {defaultDownscaling[0], NumberOfColumns(typename _TYPE_::table_t::persistent_columns_t{}), 1, ColumnsNames(typename _TYPE_::table_t::persistent_columns_t{}), downscalingName}, #_TYPE_ " downscalings" \
   }
 } // namespace
 
