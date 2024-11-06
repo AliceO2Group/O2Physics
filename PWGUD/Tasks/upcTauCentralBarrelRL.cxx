@@ -88,7 +88,15 @@ struct UpcTauCentralBarrelRL {
   Configurable<int> cutMyGTtpcNClsCrossedRowsMin{"cutMyGTtpcNClsCrossedRowsMin", 70, {"MyGlobalTrack cut"}};
   Configurable<float> cutMyGTtpcNClsCrossedRowsOverNClsMin{"cutMyGTtpcNClsCrossedRowsOverNClsMin", 0.8f, {"MyGlobalTrack cut"}};
   Configurable<float> cutMyGTtpcChi2NclMax{"cutMyGTtpcChi2NclMax", 4.f, {"MyGlobalTrack cut"}};
-  Configurable<bool> applyTauEventSelection{"applyTauEventSelection", true, {"Select event"}};
+  Configurable<bool> applyTauEventSelection{"applyTauEventSelection", true, {"Select tau event"}};
+  Configurable<float> cutMyElectronNsigmaU{"cutMyElectronNsigmaU", 2.0, {"Upper n sigma cut on el hypo of selected electron. What is more goes away"}};
+  Configurable<float> cutMyElectronNsigmaL{"cutMyElectronNsigmaL", -1.0, {"Lower n sigma cut on el hypo of selected electron. What is less goes away"}};
+  Configurable<float> cutMyElectronPiNsigmaU{"cutMyElectronPiNsigmaU", 4.0, {"Upper n sigma cut on pi hypo of selected electron. What is less till lower cut goes away"}};
+  Configurable<float> cutMyElectronPiNsigmaL{"cutMyElectronPiNsigmaL", -4.0, {"Lower n sigma cut on pi hypo of selected electron. What is more till upper cut goes away"}};
+  Configurable<bool> useCutMyNoRho{"useCutMyNoRho", false, {"Cut out rho mass under two tracks are pions hypothesis"}};
+  Configurable<bool> useCutMyOnlyRho{"useCutMyOnlyRho", false, {"Cut on rho mass under two tracks are pions hypothesis"}};
+  Configurable<float> cutMyRhoLow{"cutMyRhoLow", 0.6, {"Lower limit on the rho mass region for cut"}};
+  Configurable<float> cutMyRhoHigh{"cutMyRhoHigh", 0.95, {"Higher limit on the rho mass region for cut"}};
   Configurable<bool> doMainHistos{"doMainHistos", true, {"Fill main histos"}};
   Configurable<bool> doPIDhistos{"doPIDhistos", true, {"Fill PID histos"}};
   Configurable<bool> doTwoTracks{"doTwoTracks", true, {"Define histos for two tracks and allow to fill them"}};
@@ -1041,6 +1049,42 @@ struct UpcTauCentralBarrelRL {
     }
   }
 
+  template <typename T>
+  bool selectedGoodElectron(T const& electronCandidate){
+    if (!electronCandidate.hasTOF())
+      return false;
+    if (electronCandidate.tpcNSigmaEl() < cutMyElectronNsigmaL || electronCandidate.tpcNSigmaEl() > cutMyElectronNsigmaU)
+      return false;
+    if (electronCandidate.tpcNSigmaPi() > cutMyElectronPiNsigmaL && electronCandidate.tpcNSigmaPi() > cutMyElectronPiNsigmaU)
+      return false;
+    return true;
+    }
+
+  template <typename T>
+  bool selectedTauEvent(T const& trkDaug1, T const& trkDaug2){
+    TLorentzVector mother, daug[2], motherOfPions, pion[2];
+    daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
+    daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(trackPDG(trkDaug2, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
+    mother = daug[0] + daug[1];
+    pion[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(211), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
+    pion[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(211), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
+    motherOfPions = pion[0] + pion[1];
+    if (trkDaug1.sign() * trkDaug2.sign() > 0)
+      return false;
+    if (calculateAcoplanarity(daug[0].Phi(), daug[1].Phi()) > 4 * o2::constants::math::PI / 5)
+      return false;
+    bool goodElectron = (enumMyParticle(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON) ? selectedGoodElectron(trkDaug1) : selectedGoodElectron(trkDaug2);
+    if (!goodElectron)
+      return false;
+    if (electronPiNsigma < cutMyElectronPiNsigma && electronNsigma > cutMyElectronNsigma)
+      return false;
+    if (useCutMyNoRho && (motherOfPions.M() > cutMyRhoLow && motherOfPions.M() < cutMyRhoHigh))
+      return false;
+    if (useCutMyOnlyRho && (motherOfPions.M() > cutMyRhoHigh || motherOfPions.M() < cutMyRhoLow))
+      return false;
+    return true;
+  }
+
   template <typename C, typename Ts>
   void fillHistograms(C reconstructedCollision, Ts reconstructedBarrelTracks)
   {
@@ -1179,14 +1223,8 @@ struct UpcTauCentralBarrelRL {
       auto acoplanarity = calculateAcoplanarity(daug[0].Phi(), daug[1].Phi());
       auto sign = trkDaug1.sign() * trkDaug2.sign();
       bool passAvgITSclsSizesCut = passITSAvgClsSizesLowMomCut(trkDaug1, cutAvgITSclusterSize, cutPtAvgITSclusterSize) && passITSAvgClsSizesLowMomCut(trkDaug2, cutAvgITSclusterSize, cutPtAvgITSclusterSize);
-      if (applyTauEventSelection) {
-        if (sign > 0)
-          return;
-        if (acoplanarity > 4 * o2::constants::math::PI / 5)
-          return; // max opening angle 144 degrees (I hope, check)
-                  //        if (daug[0].Pt() < 0.2 || daug[1].Pt() < 0.2) return;
-                  //        if (motherOfPions.M() > 0.55 || motherOfPions.M() < 1.05) return;
-                  //        if (!trkDaug1.hasTOF() || !trkDaug2.hasTOF()) return;
+      if (applyTauEventSelection && !selectedTauEvent(trkDaug1,trkDaug2)) {
+        return;
       }
 
       histos.get<TH1>(HIST("EventTwoTracks/hInvariantMass"))->Fill(mother.M());
@@ -2213,6 +2251,10 @@ struct UpcTauCentralBarrelRL {
       pion[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(211), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
       muon[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(13), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
       muon[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(13), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
+      auto acoplanarity = calculateAcoplanarity(daug[0].Phi(), daug[1].Phi());
+      if (applyTauEventSelection && !selectedTauEvent(trkDaug1,trkDaug2)) {
+        return;
+      }
 
       if (trkDaug1.hasTPC()) {
         histos.get<TH2>(HIST("EventTwoTracks/PID/hTPCsignalVsP"))->Fill(daug[0].P(), trkDaug1.tpcSignal());
