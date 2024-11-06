@@ -357,6 +357,8 @@ struct nucleiEbye {
       histos.fill(HIST("QA/nClsTPC"), track.tpcNcls());
 
       for (int iP{0}; iP < kNpart; ++iP) {
+        if (track.mass != iP)
+          continue;
         if (trackPt < ptMin[iP] || trackPt > ptMax[iP]) {
           continue;
         }

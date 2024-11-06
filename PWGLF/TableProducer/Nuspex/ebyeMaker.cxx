@@ -985,16 +985,18 @@ struct ebyeMaker {
           candidateV0.globalIndexPos);
       }
 
-      for (auto& candidateTrack : candidateTracks[1]) { // deuterons
-        nucleiEbyeTable(
-          collisionEbyeTable.lastIndex(),
-          candidateTrack.pt,
-          candidateTrack.eta,
-          candidateTrack.mass,
-          candidateTrack.dcapv,
-          candidateTrack.tpcncls,
-          candidateTrack.tpcnsigma,
-          candidateTrack.tofmass);
+      for (int iP{0}; iP < kNpart; ++iP) {
+        for (auto& candidateTrack : candidateTracks[iP]) { // deuterons + protons
+          nucleiEbyeTable(
+            collisionEbyeTable.lastIndex(),
+            candidateTrack.pt,
+            candidateTrack.eta,
+            candidateTrack.mass,
+            candidateTrack.dcapv,
+            candidateTrack.tpcncls,
+            candidateTrack.tpcnsigma,
+            candidateTrack.tofmass);
+        }
       }
     }
   }
@@ -1061,16 +1063,18 @@ struct ebyeMaker {
           candidateV0.globalIndexPos);
       }
 
-      for (auto& candidateTrack : candidateTracks[1]) { // deuterons
-        nucleiEbyeTable(
-          collisionEbyeTable.lastIndex(),
-          candidateTrack.pt,
-          candidateTrack.eta,
-          candidateTrack.mass,
-          candidateTrack.dcapv,
-          candidateTrack.tpcncls,
-          candidateTrack.tpcnsigma,
-          candidateTrack.tofmass);
+      for (int iP{0}; iP < kNpart; ++iP) {
+        for (auto& candidateTrack : candidateTracks[iP]) { // deuterons + protons
+          nucleiEbyeTable(
+            collisionEbyeTable.lastIndex(),
+            candidateTrack.pt,
+            candidateTrack.eta,
+            candidateTrack.mass,
+            candidateTrack.dcapv,
+            candidateTrack.tpcncls,
+            candidateTrack.tpcnsigma,
+            candidateTrack.tofmass);
+        }
       }
     }
   }
@@ -1173,20 +1177,22 @@ struct ebyeMaker {
           candidateV0.isreco);
       }
 
-      for (auto& candidateTrack : candidateTracks[1]) { // deuterons
-        mcNucleiEbyeTable(
-          collisionEbyeTable.lastIndex(),
-          candidateTrack.pt,
-          candidateTrack.eta,
-          candidateTrack.mass,
-          candidateTrack.dcapv,
-          candidateTrack.tpcncls,
-          candidateTrack.tpcnsigma,
-          candidateTrack.tofmass,
-          candidateTrack.genpt,
-          candidateTrack.geneta,
-          candidateTrack.pdgcode,
-          candidateTrack.isreco);
+      for (int iP{0}; iP < kNpart; ++iP) {
+        for (auto& candidateTrack : candidateTracks[iP]) { // deuterons + protons
+          mcNucleiEbyeTable(
+            collisionEbyeTable.lastIndex(),
+            candidateTrack.pt,
+            candidateTrack.eta,
+            candidateTrack.mass,
+            candidateTrack.dcapv,
+            candidateTrack.tpcncls,
+            candidateTrack.tpcnsigma,
+            candidateTrack.tofmass,
+            candidateTrack.genpt,
+            candidateTrack.geneta,
+            candidateTrack.pdgcode,
+            candidateTrack.isreco);
+        }
       }
     }
   }
@@ -1239,20 +1245,22 @@ struct ebyeMaker {
           candidateV0.isreco);
       }
 
-      for (auto& candidateTrack : candidateTracks[1]) { // deuterons
-        mcNucleiEbyeTable(
-          collisionEbyeTable.lastIndex(),
-          candidateTrack.pt,
-          candidateTrack.eta,
-          candidateTrack.mass,
-          candidateTrack.dcapv,
-          candidateTrack.tpcncls,
-          candidateTrack.tpcnsigma,
-          candidateTrack.tofmass,
-          candidateTrack.genpt,
-          candidateTrack.geneta,
-          candidateTrack.pdgcode,
-          candidateTrack.isreco);
+      for (int iP{0}; iP < kNpart; ++iP) {
+        for (auto& candidateTrack : candidateTracks[iP]) { // deuterons + protons
+          mcNucleiEbyeTable(
+            collisionEbyeTable.lastIndex(),
+            candidateTrack.pt,
+            candidateTrack.eta,
+            candidateTrack.mass,
+            candidateTrack.dcapv,
+            candidateTrack.tpcncls,
+            candidateTrack.tpcnsigma,
+            candidateTrack.tofmass,
+            candidateTrack.genpt,
+            candidateTrack.geneta,
+            candidateTrack.pdgcode,
+            candidateTrack.isreco);
+        }
       }
     }
   }
