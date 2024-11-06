@@ -13,6 +13,8 @@
 #include <utility>
 #include <random>
 #include <iostream>
+#include <memory>
+#include <algorithm>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"

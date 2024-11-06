@@ -12,6 +12,8 @@
 #include <vector>
 #include <utility>
 #include <random>
+#include <string>
+#include <algorithm>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
