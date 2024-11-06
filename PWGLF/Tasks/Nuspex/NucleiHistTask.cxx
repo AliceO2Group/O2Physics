@@ -16,6 +16,7 @@
 #include <TLorentzVector.h>
 #include <TMath.h>
 #include <TObjArray.h>
+#include <vector>
 
 #include "ReconstructionDataFormats/Track.h"
 #include "Framework/runDataProcessing.h"
