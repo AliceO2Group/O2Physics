@@ -87,11 +87,7 @@ struct sgPIDAnalyzer {
 
   void process(aod::SGEvents const& events, aod::SGTracks const& tracks)
   {
-    int eventIndex = 0; // Sequential index for SGEvents
-    for (auto event : events) {
-      for (auto track : tracks) {
-        if (track.sgEventId() != eventIndex)
-          continue; // Match track to the current event index
+for (const auto& track : tracks) {
         bool isPositive = (track.sign() > 0);
         if (track.tofpi() == -999) {
           // Directly fill histograms without a local variable for histName
@@ -100,17 +96,17 @@ struct sgPIDAnalyzer {
             histos.fill(HIST("TPC/pTPC_Ka"), track.pt(), track.tpcka());
             histos.fill(HIST("TPC/pTPC_Pr"), track.pt(), track.tpcpr());
             histos.fill(HIST("TPC/pTPC_El"), track.pt(), track.tpcel());
-            if (abs(track.tpcpi()) < 1) {
+            if (std::abs(track.tpcpi()) < 1) {
               histos.fill(HIST("TPC/pTPC_Pi_Ka"), track.pt(), track.tpcka());
               histos.fill(HIST("TPC/pTPC_Pi_Pr"), track.pt(), track.tpcpr());
               histos.fill(HIST("TPC/pTPC_Pi_El"), track.pt(), track.tpcel());
             }
-            if (abs(track.tpcka()) < 1) {
+            if (std::abs(track.tpcka()) < 1) {
               histos.fill(HIST("TPC/pTPC_Ka_Pi"), track.pt(), track.tpcpi());
               histos.fill(HIST("TPC/pTPC_Ka_Pr"), track.pt(), track.tpcpr());
               histos.fill(HIST("TPC/pTPC_Ka_El"), track.pt(), track.tpcel());
             }
-            if (abs(track.tpcpr()) < 1) {
+            if (std::abs(track.tpcpr()) < 1) {
               histos.fill(HIST("TPC/pTPC_Pr_Pi"), track.pt(), track.tpcpi());
               histos.fill(HIST("TPC/pTPC_Pr_Ka"), track.pt(), track.tpcka());
               histos.fill(HIST("TPC/pTPC_Pr_El"), track.pt(), track.tpcel());
@@ -120,17 +116,17 @@ struct sgPIDAnalyzer {
             histos.fill(HIST("TPC/nTPC_Ka"), track.pt(), track.tpcka());
             histos.fill(HIST("TPC/nTPC_Pr"), track.pt(), track.tpcpr());
             histos.fill(HIST("TPC/nTPC_El"), track.pt(), track.tpcel());
-            if (abs(track.tpcpi()) < 1) {
+            if (std::abs(track.tpcpi()) < 1) {
               histos.fill(HIST("TPC/nTPC_Pi_Ka"), track.pt(), track.tpcka());
               histos.fill(HIST("TPC/nTPC_Pi_Pr"), track.pt(), track.tpcpr());
               histos.fill(HIST("TPC/nTPC_Pi_El"), track.pt(), track.tpcel());
             }
-            if (abs(track.tpcka()) < 1) {
+            if (std::abs(track.tpcka()) < 1) {
               histos.fill(HIST("TPC/nTPC_Ka_Pi"), track.pt(), track.tpcpi());
               histos.fill(HIST("TPC/nTPC_Ka_Pr"), track.pt(), track.tpcpr());
               histos.fill(HIST("TPC/nTPC_Ka_El"), track.pt(), track.tpcel());
             }
-            if (abs(track.tpcpr()) < 1) {
+            if (std::abs(track.tpcpr()) < 1) {
               histos.fill(HIST("TPC/nTPC_Pr_Pi"), track.pt(), track.tpcpi());
               histos.fill(HIST("TPC/nTPC_Pr_Ka"), track.pt(), track.tpcka());
               histos.fill(HIST("TPC/nTPC_Pr_El"), track.pt(), track.tpcel());
@@ -150,8 +146,6 @@ struct sgPIDAnalyzer {
           }
         }
       }
-      eventIndex++;
-    }
   }
 };
 
