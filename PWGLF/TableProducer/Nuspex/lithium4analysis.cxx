@@ -389,7 +389,7 @@ struct lithium4analysis {
   bool selectionPIDProton(const Ttrack& candidate)
   {
     m_qaRegistry.fill(HIST("h2NsigmaProtonTPC_preselection"), candidate.tpcInnerParam(), candidate.tpcNSigmaPr());
-    if (candidate.hasTOF() && candidate.pt() < setting_cutPtMinTOFPr) {
+    if (candidate.hasTOF() && candidate.pt() > setting_cutPtMinTOFPr) {
       if (std::abs(candidate.tpcNSigmaPr() > setting_cutNsigmaTPC)) {
         return false;
       }
