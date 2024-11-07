@@ -547,8 +547,8 @@ struct HfTaskLc {
 
   /// Fill histograms for real data
   /// \tparam fillMl switch to fill ML histograms
-  template <bool fillMl, typename CollType, typename CandType, typename TrackType>
-  void fillHistosData(CollType const& collision, CandType const& candidates, TrackType const& tracks)
+  template <bool fillMl, typename CollType, typename CandType>
+  void fillHistosData(CollType const& collision, CandType const& candidates)
   {
     auto thisCollId = collision.globalIndex();
     auto groupedLcCandidates = candidates.sliceBy(candLcPerCollision, thisCollId);
@@ -659,11 +659,11 @@ struct HfTaskLc {
   template <bool fillMl, typename CollType, typename CandType>
   void runAnalysisPerCollisionData(CollType const& collisions,
                                    CandType const& candidates,
-                                   aod::TracksWDca const& tracks)
+                                   aod::Tracks const&)
   {
 
     for (const auto& collision : collisions) {
-      fillHistosData<fillMl>(collision, candidates, tracks);
+      fillHistosData<fillMl>(collision, candidates);
     }
   }
 
@@ -685,49 +685,49 @@ struct HfTaskLc {
 
   void processDataStd(Collisions const& collisions,
                       LcCandidates const& selectedLcCandidates,
-                      aod::TracksWDca const& tracks)
+                      aod::Tracks const&)
   {
-    runAnalysisPerCollisionData<false>(collisions, selectedLcCandidates, tracks);
+    runAnalysisPerCollisionData<false>(collisions, selectedLcCandidates);
   }
   PROCESS_SWITCH(HfTaskLc, processDataStd, "Process Data with the standard method", true);
 
   void processDataWithMl(Collisions const& collisions,
                          LcCandidatesMl const& selectedLcCandidatesMl,
-                         aod::TracksWDca const& tracks)
+                         aod::Tracks const&)
   {
-    runAnalysisPerCollisionData<true>(collisions, selectedLcCandidatesMl, tracks);
+    runAnalysisPerCollisionData<true>(collisions, selectedLcCandidatesMl);
   }
   PROCESS_SWITCH(HfTaskLc, processDataWithMl, "Process real data with the ML method and without centrality", false);
 
   void processDataStdWithFT0C(CollisionsWithFT0C const& collisions,
                               LcCandidates const& selectedLcCandidates,
-                              aod::TracksWDca const& tracks)
+                              aod::Tracks const&)
   {
-    runAnalysisPerCollisionData<false>(collisions, selectedLcCandidates, tracks);
+    runAnalysisPerCollisionData<false>(collisions, selectedLcCandidates);
   }
   PROCESS_SWITCH(HfTaskLc, processDataStdWithFT0C, "Process real data with the standard method and with FT0C centrality", false);
 
   void processDataWithMlWithFT0C(CollisionsWithFT0C const& collisions,
                                  LcCandidatesMl const& selectedLcCandidatesMl,
-                                 aod::TracksWDca const& tracks)
+                                 aod::Tracks const&)
   {
-    runAnalysisPerCollisionData<true>(collisions, selectedLcCandidatesMl, tracks);
+    runAnalysisPerCollisionData<true>(collisions, selectedLcCandidatesMl);
   }
   PROCESS_SWITCH(HfTaskLc, processDataWithMlWithFT0C, "Process real data with the ML method and with FT0C centrality", false);
 
   void processDataStdWithFT0M(CollisionsWithFT0M const& collisions,
                               LcCandidates const& selectedLcCandidates,
-                              aod::TracksWDca const& tracks)
+                              aod::Tracks const&)
   {
-    runAnalysisPerCollisionData<false>(collisions, selectedLcCandidates, tracks);
+    runAnalysisPerCollisionData<false>(collisions, selectedLcCandidates);
   }
   PROCESS_SWITCH(HfTaskLc, processDataStdWithFT0M, "Process real data with the standard method and with FT0M centrality", false);
 
   void processDataWithMlWithFT0M(CollisionsWithFT0M const& collisions,
                                  LcCandidatesMl const& selectedLcCandidatesMl,
-                                 aod::TracksWDca const& tracks)
+                                 aod::Tracks const&)
   {
-    runAnalysisPerCollisionData<true>(collisions, selectedLcCandidatesMl, tracks);
+    runAnalysisPerCollisionData<true>(collisions, selectedLcCandidatesMl);
   }
   PROCESS_SWITCH(HfTaskLc, processDataWithMlWithFT0M, "Process real data with the ML method and with FT0M centrality", false);
 
