@@ -14,6 +14,9 @@
 
 #include "Math/Vector3D.h"
 #include "TRandom3.h"
+#include <vector>
+#include <string>
+#include <memory>
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
