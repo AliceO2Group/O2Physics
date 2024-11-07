@@ -121,8 +121,6 @@ static const std::vector<std::string> labelsCutScore = {"Background score", "Sig
 
 struct cascadeFlow {
 
-  PresliceUnsorted<soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraCollLabels>> perMcCollision = aod::v0data::straMCCollisionId;
-
   // axes
   ConfigurableAxis axisQVs{"axisQVs", {500, -10.f, 10.f}, "axisQVs"};
   ConfigurableAxis axisQVsNorm{"axisQVsNorm", {200, -1.f, 1.f}, "axisQVsNorm"};
@@ -173,43 +171,50 @@ struct cascadeFlow {
   o2::analysis::MlResponse<float> mlResponseOmega;
 
   template <typename TCollision>
-  bool AcceptEvent(TCollision const& collision)
+  bool AcceptEvent(TCollision const& collision, bool isFillHisto)
   {
-    histos.fill(HIST("hNEvents"), 0.5);
-    histos.fill(HIST("hEventNchCorrelationBefCuts"), collision.multNTracksPVeta1(), collision.multNTracksGlobal());
-    histos.fill(HIST("hEventPVcontributorsVsCentralityBefCuts"), collision.centFT0C(), collision.multNTracksPVeta1());
-    histos.fill(HIST("hEventGlobalTracksVsCentralityBefCuts"), collision.centFT0C(), collision.multNTracksGlobal());
+    if (isFillHisto) {
+      histos.fill(HIST("hNEvents"), 0.5);
+      histos.fill(HIST("hEventNchCorrelationBefCuts"), collision.multNTracksPVeta1(), collision.multNTracksGlobal());
+      histos.fill(HIST("hEventPVcontributorsVsCentralityBefCuts"), collision.centFT0C(), collision.multNTracksPVeta1());
+      histos.fill(HIST("hEventGlobalTracksVsCentralityBefCuts"), collision.centFT0C(), collision.multNTracksGlobal());
+    }
 
     // Event selection if required
     if (sel8 && !collision.sel8()) {
       return false;
     }
-    histos.fill(HIST("hNEvents"), 1.5);
+    if (isFillHisto)
+      histos.fill(HIST("hNEvents"), 1.5);
 
     // Z vertex selection
     if (TMath::Abs(collision.posZ()) > cutzvertex) {
       return false;
     }
-    histos.fill(HIST("hNEvents"), 2.5);
+    if (isFillHisto)
+      histos.fill(HIST("hNEvents"), 2.5);
 
     // kNoSameBunchPileup selection
     if (isNoSameBunchPileupCut && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       return false;
     }
-    histos.fill(HIST("hNEvents"), 3.5);
+    if (isFillHisto)
+      histos.fill(HIST("hNEvents"), 3.5);
 
     // kIsGoodZvtxFT0vsPV selection
     if (isGoodZvtxFT0vsPVCut && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return false;
     }
-    histos.fill(HIST("hNEvents"), 4.5);
+    if (isFillHisto)
+      histos.fill(HIST("hNEvents"), 4.5);
 
     // occupancy cut
     int occupancy = collision.trackOccupancyInTimeRange();
     if (occupancy < MinOccupancy || occupancy > MaxOccupancy) {
       return false;
     }
-    histos.fill(HIST("hNEvents"), 5.5);
+    if (isFillHisto)
+      histos.fill(HIST("hNEvents"), 5.5);
 
     if (isCollInStandardTimeRange && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       return false;
@@ -218,11 +223,14 @@ struct cascadeFlow {
     if (isCollInNarrowTimeRange && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
       return false;
     }
-    histos.fill(HIST("hNEvents"), 6.5);
+    if (isFillHisto)
+      histos.fill(HIST("hNEvents"), 6.5);
 
-    histos.fill(HIST("hEventNchCorrelation"), collision.multNTracksPVeta1(), collision.multNTracksGlobal());
-    histos.fill(HIST("hEventPVcontributorsVsCentrality"), collision.centFT0C(), collision.multNTracksPVeta1());
-    histos.fill(HIST("hEventGlobalTracksVsCentrality"), collision.centFT0C(), collision.multNTracksGlobal());
+    if (isFillHisto) {
+      histos.fill(HIST("hEventNchCorrelation"), collision.multNTracksPVeta1(), collision.multNTracksGlobal());
+      histos.fill(HIST("hEventPVcontributorsVsCentrality"), collision.centFT0C(), collision.multNTracksPVeta1());
+      histos.fill(HIST("hEventGlobalTracksVsCentrality"), collision.centFT0C(), collision.multNTracksGlobal());
+    }
 
     return true;
   }
@@ -355,7 +363,8 @@ struct cascadeFlow {
     const AxisSpec v2Axis{200, -1., 1., "#it{v}_{2}"};
     const AxisSpec CentAxis{18, 0., 90., "FT0C centrality percentile"};
     TString hNEventsLabels[8] = {"All", "sel8", "z vrtx", "kNoSameBunchPileup", "kIsGoodZvtxFT0vsPV", "trackOccupancyInTimeRange", "kNoCollInTimeRange", "kIsGoodEventEP"};
-    TString hNEventsLabelsMC[5] = {"All", "z vtx", ">=1RecoColl", "1Reco", "2Reco"};
+    TString hNEventsLabelsMC[6] = {"All", "z vtx", ">=1RecoColl", "1Reco", "2Reco", "EvSelected"};
+    TString hNCascLabelsMC[8] = {"All Xi", "all Omega", "Xi: has MC coll", "Om: has MC coll", "Xi: isPrimary", "Om: is Primary", "Xi: |eta|<0.8", "Om: |eta| < 0.8"};
 
     resolution.add("QVectorsT0CTPCA", "QVectorsT0CTPCA", HistType::kTH2F, {axisQVs, CentAxis});
     resolution.add("QVectorsT0CTPCC", "QVectorsT0CTPCC", HistType::kTH2F, {axisQVs, CentAxis});
@@ -400,9 +409,13 @@ struct cascadeFlow {
     histosMCGen.add("hGenXiY", "hGenXiY", HistType::kTH1F, {{100, -1, 1}});
     histosMCGen.add("hGenOmegaY", "hGenOmegaY", HistType::kTH1F, {{100, -1, 1}});
     histosMCGen.add("hZvertexGen", "hZvertexGen", HistType::kTH1F, {{100, -20, 20}});
-    histosMCGen.add("hNEventsMC", "hNEventsMC", {HistType::kTH1F, {{5, 0.f, 5.f}}});
+    histosMCGen.add("hNEventsMC", "hNEventsMC", {HistType::kTH1F, {{6, 0.f, 6.f}}});
     for (Int_t n = 1; n <= histosMCGen.get<TH1>(HIST("hNEventsMC"))->GetNbinsX(); n++) {
       histosMCGen.get<TH1>(HIST("hNEventsMC"))->GetXaxis()->SetBinLabel(n, hNEventsLabelsMC[n - 1]);
+    }
+    histosMCGen.add("hNCascGen", "hNCascGen", {HistType::kTH1F, {{8, 0.f, 8.f}}});
+    for (Int_t n = 1; n <= histosMCGen.get<TH1>(HIST("hNCascGen"))->GetNbinsX(); n++) {
+      histosMCGen.get<TH1>(HIST("hNCascGen"))->GetXaxis()->SetBinLabel(n, hNCascLabelsMC[n - 1]);
     }
 
     for (int iS{0}; iS < 2; ++iS) {
@@ -437,7 +450,7 @@ struct cascadeFlow {
 
     int counter = 0;
 
-    if (!AcceptEvent(coll)) {
+    if (!AcceptEvent(coll, 1)) {
       return;
     }
 
@@ -488,7 +501,7 @@ struct cascadeFlow {
   void processTrainingSignal(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels>::iterator const& coll, CascMCCandidates const& Cascades, DauTracks const&, soa::Join<aod::CascMCCores, aod::CascMCCollRefs> const&)
   {
 
-    if (!AcceptEvent(coll)) {
+    if (!AcceptEvent(coll, 1)) {
       return;
     }
     histos.fill(HIST("hEventCentrality"), coll.centFT0C());
@@ -520,7 +533,7 @@ struct cascadeFlow {
   void processAnalyseData(CollEventPlane const& coll, CascCandidates const& Cascades, DauTracks const&)
   {
 
-    if (!AcceptEvent(coll)) {
+    if (!AcceptEvent(coll, 1)) {
       return;
     }
 
@@ -642,7 +655,7 @@ struct cascadeFlow {
   void processAnalyseDataEPCentralFW(CollEventPlaneCentralFW const& coll, CascCandidates const& Cascades, DauTracks const&)
   {
 
-    if (!AcceptEvent(coll)) {
+    if (!AcceptEvent(coll, 1)) {
       return;
     }
 
@@ -770,7 +783,7 @@ struct cascadeFlow {
   void processAnalyseMC(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels>::iterator const& coll, CascMCCandidates const& Cascades, DauTracks const&, soa::Join<aod::CascMCCores, aod::CascMCCollRefs> const&)
   {
 
-    if (!AcceptEvent(coll)) {
+    if (!AcceptEvent(coll, 1)) {
       return;
     }
 
@@ -797,7 +810,7 @@ struct cascadeFlow {
         pdgCode = 0;
       }
 
-      // true cascades before applying any selection
+      // true reco cascades before applying any selection
       if (std::abs(pdgCode) == 3312 && std::abs(cascMC.pdgCodeV0()) == 3122 && std::abs(cascMC.pdgCodeBachelor()) == 211) {
         histos.fill(HIST("hXiPtvsCent"), coll.centFT0C(), casc.pt());
       } else if (std::abs(pdgCode) == 3334 && std::abs(cascMC.pdgCodeV0()) == 3122 && std::abs(cascMC.pdgCodeBachelor()) == 321) {
@@ -880,83 +893,98 @@ struct cascadeFlow {
     }
   }
 
-  void processMCGen(MCCollisionsStra const& mcCollisions, soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraCollLabels> const& collisions, soa::Join<aod::CascMCCores, aod::CascMCCollRefs> const& CascMCCores)
+  void processMCGen(MCCollisionsStra::iterator const& mcCollision, const soa::SmallGroups<soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraCollLabels>>& collisions, const soa::SmallGroups<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>& cascMC)
   {
 
-    for (auto const& mcCollision : mcCollisions) {
-      histosMCGen.fill(HIST("hZvertexGen"), mcCollision.posZ());
-      histosMCGen.fill(HIST("hNEventsMC"), 0.5);
-      // Generated with accepted z vertex
-      if (TMath::Abs(mcCollision.posZ()) > cutzvertex) {
-        return;
+    histosMCGen.fill(HIST("hZvertexGen"), mcCollision.posZ());
+    histosMCGen.fill(HIST("hNEventsMC"), 0.5);
+    // Generated with accepted z vertex
+    if (TMath::Abs(mcCollision.posZ()) > cutzvertex) {
+      return;
+    }
+    histosMCGen.fill(HIST("hNEventsMC"), 1.5);
+    // Check if there is at least one of the reconstructed collisions associated to this MC collision
+    if (collisions.size() < 1)
+      return;
+    histosMCGen.fill(HIST("hNEventsMC"), 2.5);
+    if (collisions.size() == 1)
+      histosMCGen.fill(HIST("hNEventsMC"), 3.5);
+    else if (collisions.size() == 2)
+      histosMCGen.fill(HIST("hNEventsMC"), 4.5);
+
+    int biggestNContribs = -1;
+    int bestCollisionIndex = -1;
+    float centrality = 100.5f;
+    int nCollisions = 0;
+    for (auto const& coll : collisions) {
+      if (!AcceptEvent(coll, 0)) {
+        continue;
       }
-      histosMCGen.fill(HIST("hNEventsMC"), 1.5);
-      // Check if there is at least one of the reconstructed collisions associated to this MC collision
-
-      auto groupedCollisions = collisions.sliceBy(perMcCollision, mcCollision.globalIndex());
-
-      int biggestNContribs = -1;
-      int bestCollisionIndex = -1;
-      float centrality = 100.5f;
-      int nCollisions = 0;
-      for (auto const& collision : groupedCollisions) {
-
-        if (!AcceptEvent(collision)) {
-          continue;
-        }
-        if (biggestNContribs < collision.multPVTotalContributors()) {
-          biggestNContribs = collision.multPVTotalContributors();
-          bestCollisionIndex = collision.globalIndex();
-          centrality = collision.centFT0C();
-        }
-        nCollisions++;
+      if (biggestNContribs < coll.multPVTotalContributors()) {
+        biggestNContribs = coll.multPVTotalContributors();
+        bestCollisionIndex = coll.globalIndex();
+        centrality = coll.centFT0C();
       }
-      if (nCollisions < 1) {
-        return;
-      }
-      histosMCGen.fill(HIST("hNEventsMC"), 2.5);
-      if (nCollisions == 1)
-        histosMCGen.fill(HIST("hNEventsMC"), 3.5);
-      else if (nCollisions == 2)
-        histosMCGen.fill(HIST("hNEventsMC"), 4.5);
-      for (auto const& cascMC : CascMCCores) {
-        if (!cascMC.has_straMCCollision())
-          continue;
+      nCollisions++;
+    }
+    if (nCollisions < 1) {
+      return;
+    }
 
-        if (!cascMC.isPhysicalPrimary())
-          continue;
+    histosMCGen.fill(HIST("hNEventsMC"), 5.5);
 
-        float ptmc = RecoDecay::sqrtSumOfSquares(cascMC.pxMC(), cascMC.pyMC());
+    for (auto const& cascmc : cascMC) {
+      if (TMath::Abs(cascmc.pdgCode()) == 3312)
+        histosMCGen.fill(HIST("hNCascGen"), 0.5);
+      else if (TMath::Abs(cascmc.pdgCode()) == 3334)
+        histosMCGen.fill(HIST("hNCascGen"), 1.5);
+      if (!cascmc.has_straMCCollision())
+        continue;
+      if (TMath::Abs(cascmc.pdgCode()) == 3312)
+        histosMCGen.fill(HIST("hNCascGen"), 2.5);
+      else if (TMath::Abs(cascmc.pdgCode()) == 3334)
+        histosMCGen.fill(HIST("hNCascGen"), 3.5);
+      if (!cascmc.isPhysicalPrimary())
+        continue;
+      if (TMath::Abs(cascmc.pdgCode()) == 3312)
+        histosMCGen.fill(HIST("hNCascGen"), 4.5);
+      else if (TMath::Abs(cascmc.pdgCode()) == 3334)
+        histosMCGen.fill(HIST("hNCascGen"), 5.5);
 
-        float theta = std::atan(ptmc / cascMC.pzMC()); //-pi/2 < theta < pi/2
+      float ptmc = RecoDecay::sqrtSumOfSquares(cascmc.pxMC(), cascmc.pyMC());
 
-        float theta1 = 0;
+      float theta = std::atan(ptmc / cascmc.pzMC()); //-pi/2 < theta < pi/2
 
-        // if pz is positive (i.e. positive rapidity): 0 < theta < pi/2
-        if (theta > 0)
-          theta1 = theta; // 0 < theta1/2 < pi/4 --> 0 < tan (theta1/2) < 1 --> positive eta
-        // if pz is negative (i.e. negative rapidity): -pi/2 < theta < 0 --> we need 0 < theta1/2 < pi/2 for the ln to be defined
-        else
-          theta1 = TMath::Pi() + theta; // pi/2 < theta1 < pi --> pi/4 < theta1/2 <  pi/2 --> 1 < tan (theta1/2) --> negative eta
+      float theta1 = 0;
 
-        float cascMCeta = -log(std::tan(theta1 / 2));
-        float cascMCy = 0;
+      // if pz is positive (i.e. positive rapidity): 0 < theta < pi/2
+      if (theta > 0)
+        theta1 = theta; // 0 < theta1/2 < pi/4 --> 0 < tan (theta1/2) < 1 --> positive eta
+      // if pz is negative (i.e. negative rapidity): -pi/2 < theta < 0 --> we need 0 < theta1/2 < pi/2 for the ln to be defined
+      else
+        theta1 = TMath::Pi() + theta; // pi/2 < theta1 < pi --> pi/4 < theta1/2 <  pi/2 --> 1 < tan (theta1/2) --> negative eta
 
-        if (TMath::Abs(cascMC.pdgCode()) == 3312) {
-          cascMCy = RecoDecay::y(std::array{cascMC.pxMC(), cascMC.pyMC(), cascMC.pzMC()}, constants::physics::MassXiMinus);
-          if (TMath::Abs(cascMCeta) < etaCascMCGen)
-            histosMCGen.fill(HIST("h2DGenXiEta08"), centrality, ptmc);
-          if (TMath::Abs(cascMCy) < yCascMCGen)
-            histosMCGen.fill(HIST("h2DGenXiY05"), centrality, ptmc);
-          histosMCGen.fill(HIST("hGenXiY"), cascMCy);
-        } else if (TMath::Abs(cascMC.pdgCode() == 3334)) {
-          cascMCy = RecoDecay::y(std::array{cascMC.pxMC(), cascMC.pyMC(), cascMC.pzMC()}, constants::physics::MassOmegaMinus);
-          if (TMath::Abs(cascMCeta) < etaCascMCGen)
-            histosMCGen.fill(HIST("h2DGenOmegaEta08"), centrality, ptmc);
-          if (TMath::Abs(cascMCy) < yCascMCGen)
-            histosMCGen.fill(HIST("h2DGenOmegaY05"), centrality, ptmc);
-          histosMCGen.fill(HIST("hGenOmegaY"), cascMCy);
+      float cascMCeta = -log(std::tan(theta1 / 2));
+      float cascMCy = 0;
+
+      if (TMath::Abs(cascmc.pdgCode()) == 3312) {
+        cascMCy = RecoDecay::y(std::array{cascmc.pxMC(), cascmc.pyMC(), cascmc.pzMC()}, constants::physics::MassXiMinus);
+        if (TMath::Abs(cascMCeta) < etaCascMCGen) {
+          histosMCGen.fill(HIST("h2DGenXiEta08"), centrality, ptmc);
+          histosMCGen.fill(HIST("hNCascGen"), 6.5);
         }
+        if (TMath::Abs(cascMCy) < yCascMCGen)
+          histosMCGen.fill(HIST("h2DGenXiY05"), centrality, ptmc);
+        histosMCGen.fill(HIST("hGenXiY"), cascMCy);
+      } else if (TMath::Abs(cascmc.pdgCode() == 3334)) {
+        cascMCy = RecoDecay::y(std::array{cascmc.pxMC(), cascmc.pyMC(), cascmc.pzMC()}, constants::physics::MassOmegaMinus);
+        if (TMath::Abs(cascMCeta) < etaCascMCGen) {
+          histosMCGen.fill(HIST("h2DGenOmegaEta08"), centrality, ptmc);
+          histosMCGen.fill(HIST("hNCascGen"), 7.5);
+        }
+        if (TMath::Abs(cascMCy) < yCascMCGen)
+          histosMCGen.fill(HIST("h2DGenOmegaY05"), centrality, ptmc);
+        histosMCGen.fill(HIST("hGenOmegaY"), cascMCy);
       }
     }
   }
