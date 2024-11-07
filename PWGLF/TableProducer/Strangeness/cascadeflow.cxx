@@ -381,10 +381,13 @@ struct cascadeFlow {
     histos.add("hEventNchCorrelationAfterEP", "hEventNchCorrelationAfterEP", kTH2F, {{5000, 0, 5000}, {2500, 0, 2500}});
     histos.add("hEventPVcontributorsVsCentralityAfterEP", "hEventPVcontributorsVsCentralityAfterEP", kTH2F, {{100, 0, 100}, {5000, 0, 5000}});
     histos.add("hEventGlobalTracksVsCentralityAfterEP", "hEventGlobalTracksVsCentralityAfterEP", kTH2F, {{100, 0, 100}, {2500, 0, 2500}});
+    histos.add("hMultNTracksITSTPCVsCentrality", "hMultNTracksITSTPCVsCentrality", kTH2F, {{100, 0, 100}, {1000, 0, 5000}});
 
     histos.add("hCandidate", "hCandidate", HistType::kTH1F, {{22, -0.5, 21.5}});
     histos.add("hCascadeSignal", "hCascadeSignal", HistType::kTH1F, {{6, -0.5, 5.5}});
     histos.add("hCascade", "hCascade", HistType::kTH1F, {{6, -0.5, 5.5}});
+    histos.add("hXiPtvsCent", "hXiPtvsCent", HistType::kTH2F, {{100, 0, 100}, {200, 0, 20}});
+    histos.add("hOmegaPtvsCent", "hOmegaPtvsCent", HistType::kTH2F, {{100, 0, 100}, {200, 0, 20}});
     histos.add("hCascadePhi", "hCascadePhi", HistType::kTH1F, {{100, 0, 2 * TMath::Pi()}});
     histos.add("hcascminuspsiT0C", "hcascminuspsiT0C", HistType::kTH1F, {{100, 0, TMath::Pi()}});
     histos.add("hv2CEPvsFT0C", "hv2CEPvsFT0C", HistType::kTH2F, {CentAxis, {100, -1, 1}});
@@ -396,6 +399,7 @@ struct cascadeFlow {
     histosMCGen.add("h2DGenOmegaY05", "h2DGenOmegaY05", HistType::kTH2F, {{100, 0, 100}, {200, 0, 20}});
     histosMCGen.add("hGenXiY", "hGenXiY", HistType::kTH1F, {{100, -1, 1}});
     histosMCGen.add("hGenOmegaY", "hGenOmegaY", HistType::kTH1F, {{100, -1, 1}});
+    histosMCGen.add("hZvertexGen", "hZvertexGen", HistType::kTH1F, {{100, -20, 20}});
     histosMCGen.add("hNEventsMC", "hNEventsMC", {HistType::kTH1F, {{5, 0.f, 5.f}}});
     for (Int_t n = 1; n <= histosMCGen.get<TH1>(HIST("hNEventsMC"))->GetNbinsX(); n++) {
       histosMCGen.get<TH1>(HIST("hNEventsMC"))->GetXaxis()->SetBinLabel(n, hNEventsLabelsMC[n - 1]);
@@ -776,6 +780,7 @@ struct cascadeFlow {
     histos.fill(HIST("hEventGlobalTracksVsCentralityAfterEP"), coll.centFT0C(), coll.multNTracksGlobal());
     histos.fill(HIST("hEventCentrality"), coll.centFT0C());
     histos.fill(HIST("hEventVertexZ"), coll.posZ());
+    histos.fill(HIST("hMultNTracksITSTPCVsCentrality"), coll.centFT0C(), coll.multNTracksITSTPC());
 
     std::vector<float> bdtScore[2];
     for (auto& casc : Cascades) {
@@ -792,6 +797,14 @@ struct cascadeFlow {
         pdgCode = 0;
       }
 
+      //true cascades before applying any selection
+      if (std::abs(pdgCode) == 3312 && std::abs(cascMC.pdgCodeV0()) == 3122 && std::abs(cascMC.pdgCodeBachelor()) == 211){
+	histos.fill(HIST("hXiPtvsCent"), coll.centFT0C(), casc.pt());
+      }
+      else if (std::abs(pdgCode) == 3334 && std::abs(cascMC.pdgCodeV0()) == 3122 && std::abs(cascMC.pdgCodeBachelor()) == 321) {
+	histos.fill(HIST("hOmegaPtvsCent"), coll.centFT0C(), casc.pt());
+      }
+      
       /// Add some minimal cuts for single track variables (min number of TPC clusters)
       auto negExtra = casc.negTrackExtra_as<DauTracks>();
       auto posExtra = casc.posTrackExtra_as<DauTracks>();
@@ -819,7 +832,6 @@ struct cascadeFlow {
 
       float massCasc[2]{casc.mXi(), casc.mOmega()};
 
-      // inv mass loose cut
       if (casc.pt() < MinPt || casc.pt() > MaxPt) {
         continue;
       }
@@ -873,6 +885,7 @@ struct cascadeFlow {
   {
 
     for (auto const& mcCollision : mcCollisions) {
+      histosMCGen.fill(HIST("hZvertexGen"), mcCollision.posZ());
       histosMCGen.fill(HIST("hNEventsMC"), 0.5);
       // Generated with accepted z vertex
       if (TMath::Abs(mcCollision.posZ()) > cutzvertex) {
