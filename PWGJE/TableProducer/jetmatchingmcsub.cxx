@@ -53,15 +53,15 @@ struct JetMatchingMcSub {
   {
   }
 
-  void processDummy(JetCollisions const&)
+  void processDummy(aod::JetCollisions const&)
   {
   }
   PROCESS_SWITCH(JetMatchingMcSub, processDummy, "Dummy process", true);
 
-  void processJets(JetCollisions const& collisions,
+  void processJets(aod::JetCollisions const& collisions,
                    JetsBase const& jetsBase, JetsTag const& jetsTag,
-                   JetTracks const& tracks,
-                   JetTracksSub const& tracksSub,
+                   aod::JetTracks const& tracks,
+                   aod::JetTracksSub const& tracksSub,
                    Candidates const& candidates)
   {
 
@@ -103,22 +103,22 @@ using D0ChargedJetMatching = JetMatchingMcSub<soa::Join<aod::D0ChargedMCDetector
                                               soa::Join<aod::D0ChargedMCDetectorLevelEventWiseSubtractedJets, aod::D0ChargedMCDetectorLevelEventWiseSubtractedJetConstituents>,
                                               aod::D0ChargedMCDetectorLevelJetsMatchedToD0ChargedMCDetectorLevelEventWiseSubtractedJets,
                                               aod::D0ChargedMCDetectorLevelEventWiseSubtractedJetsMatchedToD0ChargedMCDetectorLevelJets,
-                                              CandidatesD0MCD>;
+                                              aod::CandidatesD0MCD>;
 using LcChargedJetMatching = JetMatchingMcSub<soa::Join<aod::LcChargedMCDetectorLevelJets, aod::LcChargedMCDetectorLevelJetConstituents>,
                                               soa::Join<aod::LcChargedMCDetectorLevelEventWiseSubtractedJets, aod::LcChargedMCDetectorLevelEventWiseSubtractedJetConstituents>,
                                               aod::LcChargedMCDetectorLevelJetsMatchedToLcChargedMCDetectorLevelEventWiseSubtractedJets,
                                               aod::LcChargedMCDetectorLevelEventWiseSubtractedJetsMatchedToLcChargedMCDetectorLevelJets,
-                                              CandidatesLcMCD>;
+                                              aod::CandidatesLcMCD>;
 /*using BplusChargedJetMatching = JetMatchingMcSub<soa::Join<aod::BplusChargedMCDetectorLevelJets, aod::BplusChargedMCDetectorLevelJetConstituents>,
                                                  soa::Join<aod::BplusChargedMCDetectorLevelEventWiseSubtractedJets, aod::BplusChargedMCDetectorLevelEventWiseSubtractedJetConstituents>,
                                                  aod::BplusChargedMCDetectorLevelJetsMatchedToBplusChargedMCDetectorLevelEventWiseSubtractedJets,
                                                  aod::BplusChargedMCDetectorLevelEventWiseSubtractedJetsMatchedToBplusChargedMCDetectorLevelJets,
-                                                 CandidatesBplusMCD>;*/
+                                                 aod::CandidatesBplusMCD>;*/
 using DielectronChargedJetMatching = JetMatchingMcSub<soa::Join<aod::DielectronChargedMCDetectorLevelJets, aod::DielectronChargedMCDetectorLevelJetConstituents>,
                                                       soa::Join<aod::DielectronChargedMCDetectorLevelEventWiseSubtractedJets, aod::DielectronChargedMCDetectorLevelEventWiseSubtractedJetConstituents>,
                                                       aod::DielectronChargedMCDetectorLevelJetsMatchedToDielectronChargedMCDetectorLevelEventWiseSubtractedJets,
                                                       aod::DielectronChargedMCDetectorLevelEventWiseSubtractedJetsMatchedToDielectronChargedMCDetectorLevelJets,
-                                                      CandidatesDielectronMCD>;
+                                                      aod::CandidatesDielectronMCD>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

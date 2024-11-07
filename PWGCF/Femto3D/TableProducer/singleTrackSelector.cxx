@@ -18,6 +18,9 @@
 
 #include <vector>
 
+#include "EventFiltering/Zorro.h"
+#include "EventFiltering/ZorroSummary.h"
+
 #include "PWGCF/Femto3D/DataModel/singletrackselector.h"
 
 #include "Framework/AnalysisTask.h"
@@ -44,9 +47,14 @@ using namespace o2::aod;
 struct singleTrackSelector {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
+  Zorro zorro;
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
+
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  Configurable<bool> applySkimming{"applySkimming", false, "Skimmed dataset processing"};
+  Configurable<std::string> cfgSkimming{"cfgSkimming", "fPD", "Configurable for skimming"};
 
   Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply rapidity cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
   // Configurable<int> trackSelection{"trackSelection", 1, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
@@ -89,6 +97,7 @@ struct singleTrackSelector {
   Produces<o2::aod::SingleCollExtras> tableRowCollExtra;
   Produces<o2::aod::SingleTrackSels> tableRow;
   Produces<o2::aod::SingleTrkExtras> tableRowExtra;
+  Produces<o2::aod::SinglePIDEls> tableRowPIDEl;
   Produces<o2::aod::SingleTrkMCs> tableRowMC;
 
   Filter eventFilter = (applyEvSel.node() == 0) ||
@@ -110,7 +119,7 @@ struct singleTrackSelector {
   std::vector<int> particlesToKeep;
   std::vector<int> particlesToReject;
 
-  HistogramRegistry registry{"registry"};
+  HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
   SliceCache cache;
 
   void init(InitContext&)
@@ -119,10 +128,19 @@ struct singleTrackSelector {
     particlesToKeep = _particlesToKeep;
     particlesToReject = _particlesToReject;
 
+    if (applySkimming) {
+      zorroSummary.setObject(zorro.getZorroSummary());
+    }
     ccdb->setURL(ccdburl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
+
+    if (applySkimming) {
+      registry.add("hNEvents", "hNEvents", {HistType::kTH1D, {{2, 0.f, 2.f}}});
+      registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(1, "All");
+      registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(2, "Skimmed");
+    }
 
     if (enable_gen_info) {
       registry.add("hNEvents_MCGen", "hNEvents_MCGen", {HistType::kTH1F, {{1, 0.f, 1.f}}});
@@ -141,6 +159,11 @@ struct singleTrackSelector {
       return;
     }
     d_bz = 0.f;
+
+    if (applySkimming) {
+      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), cfgSkimming.value);
+      zorro.populateHistRegistry(registry, bc.runNumber());
+    }
 
     auto run3grp_timestamp = bc.timestamp();
     o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
@@ -224,6 +247,8 @@ struct singleTrackSelector {
                         track.tpcSignal(),
                         track.beta());
 
+          tableRowPIDEl(singletrackselector::packSymmetric<singletrackselector::binning::nsigma>(track.tpcNSigmaEl()));
+
           if constexpr (isMC) {
             int origin = -1;
             if (track.mcParticle().isPhysicalPrimary()) {
@@ -288,6 +313,16 @@ struct singleTrackSelector {
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
+
+    if (applySkimming) {
+      registry.fill(HIST("hNEvents"), 0.5);
+      bool zorroSelected = zorro.isSelected(bc.globalBC());
+      if (!zorroSelected) {
+        return;
+      }
+      registry.fill(HIST("hNEvents"), 1.5);
+    }
+
     double hadronicRate = 0.;
     if (fetchRate) {
       hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; // fetch IR

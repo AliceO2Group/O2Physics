@@ -124,9 +124,9 @@ struct SecondaryVertexReconstruction {
 
   Filter trackCuts = (aod::jtrack::pt > ptMinTrack && aod::jtrack::eta > etaMinTrack && aod::jtrack::eta < etaMaxTrack);
 
-  using JetCollisionwPIs = soa::Join<JetCollisions, aod::JCollisionPIs>;
-  using JetTracksData = soa::Filtered<soa::Join<JetTracks, aod::JTrackPIs>>;
-  using JetTracksMCDwPIs = soa::Filtered<soa::Join<JetTracksMCD, aod::JTrackPIs>>;
+  using JetCollisionwPIs = soa::Join<aod::JetCollisions, aod::JCollisionPIs>;
+  using JetTracksData = soa::Filtered<soa::Join<aod::JetTracks, aod::JTrackPIs>>;
+  using JetTracksMCDwPIs = soa::Filtered<soa::Join<aod::JetTracksMCD, aod::JTrackPIs>>;
   using OriginalTracks = soa::Join<aod::Tracks, aod::TracksCov, aod::TrackSelection, aod::TracksDCA, aod::TracksDCACov>;
 
   template <unsigned int numProngs, bool externalMagneticField, typename AnyCollision, typename AnyJet, typename AnyParticles>

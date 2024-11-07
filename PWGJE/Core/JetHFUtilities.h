@@ -38,7 +38,6 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/DataModel/DerivedTables.h"
-#include "PWGHF/DataModel/DerivedTablesStored.h"
 
 #include "PWGJE/Core/FastJetUtilities.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
@@ -54,7 +53,7 @@ namespace jethfutilities
 template <typename T>
 constexpr bool isD0Candidate()
 {
-  return std::is_same_v<std::decay_t<T>, CandidatesD0Data::iterator> || std::is_same_v<std::decay_t<T>, CandidatesD0Data::filtered_iterator> || std::is_same_v<std::decay_t<T>, CandidatesD0MCD::iterator> || std::is_same_v<std::decay_t<T>, CandidatesD0MCD::filtered_iterator>;
+  return std::is_same_v<std::decay_t<T>, o2::aod::CandidatesD0Data::iterator> || std::is_same_v<std::decay_t<T>, o2::aod::CandidatesD0Data::filtered_iterator> || std::is_same_v<std::decay_t<T>, o2::aod::CandidatesD0MCD::iterator> || std::is_same_v<std::decay_t<T>, o2::aod::CandidatesD0MCD::filtered_iterator>;
 }
 
 /**
@@ -63,7 +62,7 @@ constexpr bool isD0Candidate()
 template <typename T>
 constexpr bool isD0McCandidate()
 {
-  return std::is_same_v<std::decay_t<T>, CandidatesD0MCP::iterator> || std::is_same_v<std::decay_t<T>, CandidatesD0MCP::filtered_iterator>;
+  return std::is_same_v<std::decay_t<T>, o2::aod::CandidatesD0MCP::iterator> || std::is_same_v<std::decay_t<T>, o2::aod::CandidatesD0MCP::filtered_iterator>;
 }
 
 /**
@@ -90,7 +89,7 @@ constexpr bool isD0McTable()
 template <typename T>
 constexpr bool isLcCandidate()
 {
-  return std::is_same_v<std::decay_t<T>, CandidatesLcData::iterator> || std::is_same_v<std::decay_t<T>, CandidatesLcData::filtered_iterator> || std::is_same_v<std::decay_t<T>, CandidatesLcMCD::iterator> || std::is_same_v<std::decay_t<T>, CandidatesLcMCD::filtered_iterator>;
+  return std::is_same_v<std::decay_t<T>, o2::aod::CandidatesLcData::iterator> || std::is_same_v<std::decay_t<T>, o2::aod::CandidatesLcData::filtered_iterator> || std::is_same_v<std::decay_t<T>, o2::aod::CandidatesLcMCD::iterator> || std::is_same_v<std::decay_t<T>, o2::aod::CandidatesLcMCD::filtered_iterator>;
 }
 
 /**
@@ -99,7 +98,7 @@ constexpr bool isLcCandidate()
 template <typename T>
 constexpr bool isLcMcCandidate()
 {
-  return std::is_same_v<std::decay_t<T>, CandidatesLcMCP::iterator> || std::is_same_v<std::decay_t<T>, CandidatesLcMCP::filtered_iterator>;
+  return std::is_same_v<std::decay_t<T>, o2::aod::CandidatesLcMCP::iterator> || std::is_same_v<std::decay_t<T>, o2::aod::CandidatesLcMCP::filtered_iterator>;
 }
 
 /**
@@ -126,7 +125,7 @@ constexpr bool isLcMcTable()
 template <typename T>
 constexpr bool isBplusCandidate()
 {
-  return std::is_same_v<std::decay_t<T>, CandidatesBplusData::iterator> || std::is_same_v<std::decay_t<T>, CandidatesBplusData::filtered_iterator> || std::is_same_v<std::decay_t<T>, CandidatesBplusMCD::iterator> || std::is_same_v<std::decay_t<T>, CandidatesBplusMCD::filtered_iterator>;
+  return std::is_same_v<std::decay_t<T>, o2::aod::CandidatesBplusData::iterator> || std::is_same_v<std::decay_t<T>, o2::aod::CandidatesBplusData::filtered_iterator> || std::is_same_v<std::decay_t<T>, o2::aod::CandidatesBplusMCD::iterator> || std::is_same_v<std::decay_t<T>, o2::aod::CandidatesBplusMCD::filtered_iterator>;
 }
 
 /**
@@ -135,7 +134,7 @@ constexpr bool isBplusCandidate()
 template <typename T>
 constexpr bool isBplusMcCandidate()
 {
-  return std::is_same_v<std::decay_t<T>, CandidatesBplusMCP::iterator> || std::is_same_v<std::decay_t<T>, CandidatesBplusMCP::filtered_iterator>;
+  return std::is_same_v<std::decay_t<T>, o2::aod::CandidatesBplusMCP::iterator> || std::is_same_v<std::decay_t<T>, o2::aod::CandidatesBplusMCP::filtered_iterator>;
 }
 
 /**

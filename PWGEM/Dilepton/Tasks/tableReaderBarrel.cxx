@@ -11,6 +11,10 @@
 //
 // Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //
+
+#include <map>
+#include <string>
+#include <memory>
 #include <iostream>
 #include <vector>
 #include <algorithm>
@@ -137,8 +141,8 @@ struct AnalysisEventSelection {
     Configurable<bool> cfgRequireGoodZvtxFT0vsPV{"cfgRequireGoodZvtxFT0vsPV", false, "require good Zvtx between FT0 vs. PV in event cut"};
     Configurable<float> cfgCentFT0CMin{"cfgCentralityMin", -1000000000.f, "min. centrality"};
     Configurable<float> cfgCentFT0CMax{"cfgCentralityMax", 1000000000.f, "max. centrality"};
-    Configurable<int> cfgOccupancyMin{"cfgOccupancyMin", -1000000000, "min. occupancy"};
-    Configurable<int> cfgOccupancyMax{"cfgOccupancyMax", 1000000000, "max. occupancy"};
+    Configurable<int> cfgTrackOccupancyMin{"cfgTrackOccupancyMin", -1000000000, "min. occupancy"};
+    Configurable<int> cfgTrackOccupancyMax{"cfgTrackOccupancyMax", 1000000000, "max. occupancy"};
   } eventcuts;
 
   HistogramManager* fHistMan = nullptr;
@@ -233,7 +237,7 @@ struct AnalysisEventSelection {
     if (eventcuts.cfgRequireGoodZvtxFT0vsPV)
       cut->AddCut(VarManager::kIsGoodZvtxFT0vsPV, 0.5, 1.5);
     cut->AddCut(VarManager::kCentFT0C, eventcuts.cfgCentFT0CMin, eventcuts.cfgCentFT0CMax);
-    cut->AddCut(VarManager::kTrackOccupancyInTimeRange, eventcuts.cfgOccupancyMin, eventcuts.cfgOccupancyMax);
+    cut->AddCut(VarManager::kTrackOccupancyInTimeRange, eventcuts.cfgTrackOccupancyMin, eventcuts.cfgTrackOccupancyMax);
     return cut;
   }
 
@@ -639,7 +643,7 @@ struct AnalysisTrackSelection {
       for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); cut++, iCut++) {
         if ((*cut).IsSelected(VarManager::fgValues)) {
           if (iCut != fConfigPrefilterCutId) {
-            filterMap |= (uint32_t(1) << iCut);
+            filterMap |= (static_cast<uint32_t>(1) << iCut);
           }
           if (iCut == fConfigPrefilterCutId) {
             prefilterSelected = true;
@@ -835,7 +839,7 @@ struct AnalysisEventMixing {
           Form("PairsBarrelMEMM_trackcut%d", icut)};
         histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
         fTrackHistNames.push_back(names);
-        fTwoTrackFilterMask |= (uint32_t(1) << icut);
+        fTwoTrackFilterMask |= (static_cast<uint32_t>(1) << icut);
       }
     }
 
@@ -854,7 +858,7 @@ struct AnalysisEventMixing {
     uint32_t twoTrackFilter = 0;
     for (auto& track1 : tracks1) {
       for (auto& track2 : tracks2) {
-        twoTrackFilter = uint32_t(track1.isBarrelSelected()) & uint32_t(track2.isBarrelSelected()) & fTwoTrackFilterMask;
+        twoTrackFilter = static_cast<uint32_t>(track1.isBarrelSelected()) & static_cast<uint32_t>(track2.isBarrelSelected()) & fTwoTrackFilterMask;
 
         if (!twoTrackFilter) { // the tracks must have at least one filter bit in common to continue
           continue;
@@ -871,7 +875,7 @@ struct AnalysisEventMixing {
         }
 
         for (unsigned int icut = 0; icut < ncuts; icut++) {
-          if (twoTrackFilter & (uint32_t(1) << icut)) {
+          if (twoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
             if (track1.sign() * track2.sign() < 0) {
               fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues);
             } else {
@@ -882,9 +886,9 @@ struct AnalysisEventMixing {
               }
             }
           } // end if (filter bits)
-        }   // end for (cuts)
-      }     // end for (track2)
-    }       // end for (track1)
+        } // end for (cuts)
+      } // end for (track2)
+    } // end for (track1)
   }
 
   // barrel-barrel and muon-muon event mixing
@@ -1076,7 +1080,7 @@ struct AnalysisSameEventPairing {
 
     if (fConfigNbTrackCut > 0 && fConfigNbTrackCut < 31) {   // if track cuts
       for (int icut = 0; icut < fConfigNbTrackCut; ++icut) { // loop over track cuts
-        fTwoTrackFilterMask |= (uint32_t(1) << icut);
+        fTwoTrackFilterMask |= (static_cast<uint32_t>(1) << icut);
         // no pair cuts
         names = {
           Form("PairsBarrelSEPM_trackcut%d", icut),
@@ -1095,9 +1099,9 @@ struct AnalysisSameEventPairing {
           histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
 
           fTrackHistNames.push_back(names);
-        }   // end loop (pair cuts)
-      }     // end loop (track cuts)
-    }       // end if (track cuts)
+        } // end loop (pair cuts)
+      } // end loop (track cuts)
+    } // end if (track cuts)
 
     VarManager::SetCollisionSystem((TString)fCollisionSystem, fCenterMassEnergy); // set collision system and center of mass energy
 
@@ -1125,7 +1129,7 @@ struct AnalysisSameEventPairing {
     uint32_t twoTrackFilter = 0;
 
     for (auto& [t1, t2] : combinations(tracks1, tracks2)) {
-      twoTrackFilter = uint32_t(t1.isBarrelSelected()) & uint32_t(t2.isBarrelSelected()) & fTwoTrackFilterMask;
+      twoTrackFilter = static_cast<uint32_t>(t1.isBarrelSelected()) & static_cast<uint32_t>(t2.isBarrelSelected()) & fTwoTrackFilterMask;
 
       if (!twoTrackFilter) { // the tracks must have at least one filter bit in common to continue
         continue;
@@ -1144,7 +1148,7 @@ struct AnalysisSameEventPairing {
 
       int iCut = 0;
       for (int icut = 0; icut < fConfigNbTrackCut; icut++) {
-        if (twoTrackFilter & (uint32_t(1) << icut)) {
+        if (twoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
           if (t1.sign() * t2.sign() < 0) {
             fHistMan->FillHistClass(histNames[iCut][0].Data(), VarManager::fgValues);
           } else {
@@ -1168,12 +1172,12 @@ struct AnalysisSameEventPairing {
                 fHistMan->FillHistClass(histNames[iCut][2].Data(), VarManager::fgValues);
               }
             }
-          }      // end loop (pair cuts)
+          } // end loop (pair cuts)
         } else { // end if (filter bits)
           iCut = iCut + 1 + fPairCuts.size();
         }
       } // end loop (cuts)
-    }   // end loop over pairs
+    } // end loop over pairs
   }
 
   void processDecayToEESkimmed(soa::Filtered<MyEventsSelected>::iterator const& event, soa::Filtered<MyBarrelTracksSelected> const& tracks)

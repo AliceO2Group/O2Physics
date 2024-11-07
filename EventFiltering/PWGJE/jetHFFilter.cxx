@@ -75,7 +75,7 @@ struct JetHFFilterTask {
     registry.add("h_collisions", "Collision ;entries", {HistType::kTH1F, {{5, 0.0, 5.0}}});
   }
 
-  void processJets(soa::Join<JetCollisions, aod::EvSels>::iterator const& /*collision*/, soa::Join<o2::aod::D0ChargedJets, o2::aod::D0ChargedJetConstituents> const& d0Jets, CandidatesD0Data const& /*d0Candidates*/, soa::Join<o2::aod::LcChargedJets, o2::aod::LcChargedJetConstituents> const& lcJets, CandidatesLcData const& /*lcCandidates*/, JetTracks const& /*tracks*/)
+  void processJets(soa::Join<aod::JetCollisions, aod::EvSels>::iterator const& /*collision*/, soa::Join<o2::aod::D0ChargedJets, o2::aod::D0ChargedJetConstituents> const& d0Jets, aod::CandidatesD0Data const& /*d0Candidates*/, soa::Join<o2::aod::LcChargedJets, o2::aod::LcChargedJetConstituents> const& lcJets, aod::CandidatesLcData const& /*lcCandidates*/, aod::JetTracks const& /*tracks*/)
   {
     registry.fill(HIST("h_collisions"), 0.5);
     bool keepEvent[kAllObjects]{false};

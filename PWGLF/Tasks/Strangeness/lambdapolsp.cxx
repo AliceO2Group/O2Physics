@@ -32,6 +32,7 @@
 #include "Math/GenVector/Boost.h"
 #include "TF1.h"
 
+// #include "Common/DataModel/Qvectors.h"
 #include "PWGLF/DataModel/SPCalibrationTables.h"
 // #include "SPCalibrationTableswrite.h"
 #include "Framework/runDataProcessing.h"
@@ -75,9 +76,15 @@ struct lambdapolsp {
   Configurable<bool> additionalEvSel3{"additionalEvSel3", false, "additionalEvSel3"};
   Configurable<bool> correction{"correction", false, "fill histograms including corrections"};
   Configurable<bool> mycut{"mycut", false, "select tracks based on my cuts"};
+  Configurable<bool> tofhit{"tofhit", true, "select tracks based on tof hit"};
+  Configurable<bool> globalpt{"globalpt", true, "select tracks based on pt global vs tpc"};
+  Configurable<int> useprofile{"useprofile", 3, "flag to select profile vs Sparse"};
   Configurable<int> QxyNbins{"QxyNbins", 100, "Number of bins in QxQy histograms"};
   Configurable<float> lbinQxy{"lbinQxy", -5.0, "lower bin value in QxQy histograms"};
   Configurable<float> hbinQxy{"hbinQxy", 5.0, "higher bin value in QxQy histograms"};
+  Configurable<int> cfgMaxOccupancy{"cfgMaxOccupancy", 1000, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
+  Configurable<int> cfgMinOccupancy{"cfgMinOccupancy", 0, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
+
   // events
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> cfgCutCentralityMax{"cfgCutCentralityMax", 50.0f, "Accepted maximum Centrality"};
@@ -92,6 +99,7 @@ struct lambdapolsp {
   Configurable<int> cfgTPCcluster{"cfgTPCcluster", 70, "Number of TPC cluster"};
   Configurable<bool> isPVContributor{"isPVContributor", true, "is PV contributor"};
   Configurable<bool> checkwithpub{"checkwithpub", true, "checking results with published"};
+  Configurable<bool> checkwithpubv2{"checkwithpubv2", true, "checking results with published v2"};
   // Configs for V0
   Configurable<float> ConfV0PtMin{"ConfV0PtMin", 0.f, "Minimum transverse momentum of V0"};
   Configurable<float> ConfV0Rap{"ConfV0Rap", 0.8f, "Rapidity range of V0"};
@@ -126,6 +134,16 @@ struct lambdapolsp {
   Configurable<int> ptNbins{"ptNbins", 50, "Number of bins in pt"};
   Configurable<float> lbinpt{"lbinpt", 0.0, "lower bin value in pt histograms"};
   Configurable<float> hbinpt{"hbinpt", 10.0, "higher bin value in pt histograms"};
+  Configurable<int> etaNbins{"etaNbins", 20, "Number of bins in eta"};
+  Configurable<float> lbineta{"lbineta", -1.0, "lower bin value in eta histograms"};
+  Configurable<float> hbineta{"hbineta", 1.0, "higher bin value in eta histograms"};
+  Configurable<int> spNbins{"spNbins", 2000, "Number of bins in sp"};
+  Configurable<float> lbinsp{"lbinsp", -1.0, "lower bin value in sp histograms"};
+  Configurable<float> hbinsp{"hbinsp", 1.0, "higher bin value in sp histograms"};
+
+  ConfigurableAxis configcentAxis{"configcentAxis", {VARIABLE_WIDTH, 0.0, 10.0, 40.0, 80.0}, "Cent V0M"};
+  ConfigurableAxis configthnAxispT{"configthnAxisPt", {VARIABLE_WIDTH, 0.2, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.5, 8.0, 10.0, 100.0}, "#it{p}_{T} (GeV/#it{c})"};
+  ConfigurableAxis configetaAxis{"configetaAxis", {VARIABLE_WIDTH, -0.8, -0.4, 0, 0.4, 0.8}, "Eta"};
 
   SliceCache cache;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -137,34 +155,64 @@ struct lambdapolsp {
     AxisSpec thnAxisPol{PolNbins, lbinPol, hbinPol, "Sin(#phi - #psi)"};
     AxisSpec thnAxisCosThetaStar{SANbins, lbinSA, hbinSA, "SA"};
     AxisSpec centAxis = {CentNbins, lbinCent, hbinCent, "V0M (%)"};
-    AxisSpec etaAxis = {8, -0.8, 0.8, "Eta"};
+    AxisSpec etaAxis = {etaNbins, lbineta, hbineta, "Eta"};
+    // AxisSpec ptAxis = {200, 0.0, 20.0, "Pt"};
+    AxisSpec spAxis = {spNbins, lbinsp, hbinsp, "Sp"};
     AxisSpec qxZDCAxis = {QxyNbins, lbinQxy, hbinQxy, "Qx"};
 
     if (checkwithpub) {
-      histos.add("hpuxQxpvscent", "hpuxQxpvscent", kTProfile, {centAxis});
-      histos.add("hpuyQypvscent", "hpuyQypvscent", kTProfile, {centAxis});
-      histos.add("hpuxQxtvscent", "hpuxQxtvscent", kTProfile, {centAxis});
-      histos.add("hpuyQytvscent", "hpuyQytvscent", kTProfile, {centAxis});
-      histos.add("hpQxtQxpvscent", "hpQxtQxpvscent", kTProfile, {centAxis});
-      histos.add("hpQytQypvscent", "hpQytQypvscent", kTProfile, {centAxis});
+      if (useprofile == 1) {
+        histos.add("hpuxQxpvscentpteta", "hpuxQxpvscentpteta", kTProfile3D, {centAxis, thnAxispT, etaAxis}, true);
+        histos.add("hpuyQypvscentpteta", "hpuyQypvscentpteta", kTProfile3D, {centAxis, thnAxispT, etaAxis}, true);
+        histos.add("hpuxQxtvscentpteta", "hpuxQxtvscentpteta", kTProfile3D, {centAxis, thnAxispT, etaAxis}, true);
+        histos.add("hpuyQytvscentpteta", "hpuyQytvscentpteta", kTProfile3D, {centAxis, thnAxispT, etaAxis}, true);
+        histos.add("hpuxyQxytvscentpteta", "hpuxyQxytvscentpteta", kTProfile3D, {centAxis, thnAxispT, etaAxis}, true);
+        histos.add("hpuxyQxypvscentpteta", "hpuxyQxypvscentpteta", kTProfile3D, {centAxis, thnAxispT, etaAxis}, true);
+        histos.add("hpoddv1vscentpteta", "hpoddv1vscentpteta", kTProfile3D, {centAxis, thnAxispT, etaAxis}, true);
+        histos.add("hpevenv1vscentpteta", "hpevenv1vscentpteta", kTProfile3D, {centAxis, thnAxispT, etaAxis}, true);
+        histos.add("hpQxtQxpvscent", "hpQxtQxpvscent", kTProfile, {centAxis}, true);
+        histos.add("hpQytQypvscent", "hpQytQypvscent", kTProfile, {centAxis}, true);
+        histos.add("hpQxytpvscent", "hpQxytpvscent", kTProfile, {centAxis}, true);
+        histos.add("hpQxtQypvscent", "hpQxtQypvscent", kTProfile, {centAxis}, true);
+        histos.add("hpQxpQytvscent", "hpQxpQytvscent", kTProfile, {centAxis}, true);
+      } else if (useprofile == 2) {
+        histos.add("hpuxQxpvscentpteta", "hpuxQxpvscentpteta", HistType::kTHnSparseF, {centAxis, thnAxispT, etaAxis, spAxis}, true);
+        histos.add("hpuyQypvscentpteta", "hpuyQypvscentpteta", HistType::kTHnSparseF, {centAxis, thnAxispT, etaAxis, spAxis}, true);
+        histos.add("hpuxQxtvscentpteta", "hpuxQxtvscentpteta", HistType::kTHnSparseF, {centAxis, thnAxispT, etaAxis, spAxis}, true);
+        histos.add("hpuyQytvscentpteta", "hpuyQytvscentpteta", HistType::kTHnSparseF, {centAxis, thnAxispT, etaAxis, spAxis}, true);
+        histos.add("hpuxyQxytvscentpteta", "hpuxyQxytvscentpteta", HistType::kTHnSparseF, {centAxis, thnAxispT, etaAxis, spAxis}, true);
+        histos.add("hpuxyQxypvscentpteta", "hpuxyQxypvscentpteta", HistType::kTHnSparseF, {centAxis, thnAxispT, etaAxis, spAxis}, true);
+        histos.add("hpoddv1vscentpteta", "hpoddv1vscentpteta", HistType::kTHnSparseF, {centAxis, thnAxispT, etaAxis, spAxis}, true);
+        histos.add("hpevenv1vscentpteta", "hpevenv1vscentpteta", HistType::kTHnSparseF, {centAxis, thnAxispT, etaAxis, spAxis}, true);
+        histos.add("hpQxtQxpvscent", "hpQxtQxpvscent", HistType::kTHnSparseF, {centAxis, spAxis}, true);
+        histos.add("hpQytQypvscent", "hpQytQypvscent", HistType::kTHnSparseF, {centAxis, spAxis}, true);
+        histos.add("hpQxytpvscent", "hpQxytpvscent", HistType::kTHnSparseF, {centAxis, spAxis}, true);
+        histos.add("hpQxtQypvscent", "hpQxtQypvscent", HistType::kTHnSparseF, {centAxis, spAxis}, true);
+        histos.add("hpQxpQytvscent", "hpQxpQytvscent", HistType::kTHnSparseF, {centAxis, spAxis}, true);
+      } else {
+        histos.add("hpuxQxpvscentpteta", "hpuxQxpvscentpteta", HistType::kTHnSparseF, {configcentAxis, configthnAxispT, configetaAxis, spAxis}, true);
+        histos.add("hpuyQypvscentpteta", "hpuyQypvscentpteta", HistType::kTHnSparseF, {configcentAxis, configthnAxispT, configetaAxis, spAxis}, true);
+        histos.add("hpuxQxtvscentpteta", "hpuxQxtvscentpteta", HistType::kTHnSparseF, {configcentAxis, configthnAxispT, configetaAxis, spAxis}, true);
+        histos.add("hpuyQytvscentpteta", "hpuyQytvscentpteta", HistType::kTHnSparseF, {configcentAxis, configthnAxispT, configetaAxis, spAxis}, true);
+        histos.add("hpuxyQxytvscentpteta", "hpuxyQxytvscentpteta", HistType::kTHnSparseF, {configcentAxis, configthnAxispT, configetaAxis, spAxis}, true);
+        histos.add("hpuxyQxypvscentpteta", "hpuxyQxypvscentpteta", HistType::kTHnSparseF, {configcentAxis, configthnAxispT, configetaAxis, spAxis}, true);
+        histos.add("hpoddv1vscentpteta", "hpoddv1vscentpteta", HistType::kTHnSparseF, {configcentAxis, configthnAxispT, configetaAxis, spAxis}, true);
+        histos.add("hpevenv1vscentpteta", "hpevenv1vscentpteta", HistType::kTHnSparseF, {configcentAxis, configthnAxispT, configetaAxis, spAxis}, true);
+        histos.add("hpQxtQxpvscent", "hpQxtQxpvscent", HistType::kTHnSparseF, {configcentAxis, spAxis}, true);
+        histos.add("hpQytQypvscent", "hpQytQypvscent", HistType::kTHnSparseF, {configcentAxis, spAxis}, true);
+        histos.add("hpQxytpvscent", "hpQxytpvscent", HistType::kTHnSparseF, {configcentAxis, spAxis}, true);
+        histos.add("hpQxtQypvscent", "hpQxtQypvscent", HistType::kTHnSparseF, {configcentAxis, spAxis}, true);
+        histos.add("hpQxpQytvscent", "hpQxpQytvscent", HistType::kTHnSparseF, {configcentAxis, spAxis}, true);
+      }
+    }
 
-      histos.add("hpuxQxpvseta", "hpuxQxpvseta", kTProfile, {etaAxis});
-      histos.add("hpuyQypvseta", "hpuyQypvseta", kTProfile, {etaAxis});
-      histos.add("hpuxQxtvseta", "hpuxQxtvseta", kTProfile, {etaAxis});
-      histos.add("hpuyQytvseta", "hpuyQytvseta", kTProfile, {etaAxis});
-      histos.add("hpuxyQxytvscent", "hpuxyQxytvscent", kTProfile, {centAxis});
-      histos.add("hpuxyQxypvscent", "hpuxyQxypvscent", kTProfile, {centAxis});
-      histos.add("hpQxytpvscent", "hpQxytpvscent", kTProfile, {centAxis});
-      histos.add("hpQxpQxpvscent", "hpQxpQxpvscent", kTProfile, {centAxis});
-      histos.add("hpQypQypvscent", "hpQypQypvscent", kTProfile, {centAxis});
-      histos.add("hpQxtQxtvscent", "hpQxtQxtvscent", kTProfile, {centAxis});
-      histos.add("hpQytQytvscent", "hpQytQytvscent", kTProfile, {centAxis});
-      histos.add("hppuxyQxytvscenteta", "hppuxyQxytvscenteta", kTProfile2D, {centAxis, etaAxis});
-      histos.add("hppuxyQxypvscenteta", "hppuxyQxypvscenteta", kTProfile2D, {centAxis, etaAxis});
-      // histos.add("hppQxytpvscenteta", "hppQxytpvscenteta", kTProfile2D, {centAxis, etaAxis});
-
-      histos.add("hpv1Avscent", "hpv1Avscent", kTProfile, {centAxis});
-      histos.add("hpv1Cvscent", "hpv1Cvscent", kTProfile, {centAxis});
+    if (checkwithpubv2) {
+      histos.add("hpx2Tx1Ax1Cvscent", "hpx2Tx1Ax1Cvscent", kTProfile, {centAxis}, true);
+      histos.add("hpx2Ty1Ay1Cvscent", "hpx2Ty1Ay1Cvscent", kTProfile, {centAxis}, true);
+      histos.add("hpx1Ax1Cvscent", "hpx1Ax1Cvscent", kTProfile, {centAxis}, true);
+      histos.add("hpy1Ay1Cvscent", "hpy1Ay1Cvscent", kTProfile, {centAxis}, true);
+      histos.add("hpy2Tx1Ay1Cvscent", "hpy2Tx1Ay1Cvscent", kTProfile, {centAxis}, true);
+      histos.add("hpy2Ty1Ax1Cvscent", "hpy2Ty1Ax1Cvscent", kTProfile, {centAxis}, true);
     }
 
     histos.add("hCentrality", "Centrality distribution", kTH1F, {{centAxis}});
@@ -172,23 +220,23 @@ struct lambdapolsp {
     histos.add("hCentrality1", "Centrality distribution1", kTH1F, {{centAxis}});
     histos.add("hCentrality2", "Centrality distribution2", kTH1F, {{centAxis}});
     histos.add("hCentrality3", "Centrality distribution3", kTH1F, {{centAxis}});
-    histos.add("hVtxZ", "Vertex distribution in Z;Z (cm)", kTH1F, {{20, -10.0, 10.0}});
-    histos.add("hEta", "Eta distribution", kTH1F, {{20, -1.0, 1.0}});
-    // histos.add("hPhi", "Phi distribution", kTH1F, {{120, -6.28, 6.28}});
-    histos.add("hpRes", "hpRes", kTProfile, {centAxis});
+
+    // histos.add("hDiff", "Diff distribution", kTH2F, {{100,0.0,10.0}, {100000, -5.0, 5.0}});
+    //  histos.add("hPhi", "Phi distribution", kTH1F, {{120, -6.28, 6.28}});
+
     if (!checkwithpub) {
+      histos.add("hVtxZ", "Vertex distribution in Z;Z (cm)", kTH1F, {{20, -10.0, 10.0}});
+      histos.add("hpRes", "hpRes", kTProfile, {centAxis});
       histos.add("hpResSin", "hpResSin", kTProfile, {centAxis});
       histos.add("hpCosPsiA", "hpCosPsiA", kTProfile, {centAxis});
       histos.add("hpCosPsiC", "hpCosPsiC", kTProfile, {centAxis});
       histos.add("hpSinPsiA", "hpSinPsiA", kTProfile, {centAxis});
       histos.add("hpSinPsiC", "hpSinPsiC", kTProfile, {centAxis});
-    }
-    histos.add("hcentQxZDCA", "hcentQxZDCA", kTH2F, {{centAxis}, {qxZDCAxis}});
-    histos.add("hcentQyZDCA", "hcentQyZDCA", kTH2F, {{centAxis}, {qxZDCAxis}});
-    histos.add("hcentQxZDCC", "hcentQxZDCC", kTH2F, {{centAxis}, {qxZDCAxis}});
-    histos.add("hcentQyZDCC", "hcentQyZDCC", kTH2F, {{centAxis}, {qxZDCAxis}});
+      histos.add("hcentQxZDCA", "hcentQxZDCA", kTH2F, {{centAxis}, {qxZDCAxis}});
+      histos.add("hcentQyZDCA", "hcentQyZDCA", kTH2F, {{centAxis}, {qxZDCAxis}});
+      histos.add("hcentQxZDCC", "hcentQxZDCC", kTH2F, {{centAxis}, {qxZDCAxis}});
+      histos.add("hcentQyZDCC", "hcentQyZDCC", kTH2F, {{centAxis}, {qxZDCAxis}});
 
-    if (!checkwithpub) {
       histos.add("hSparseLambdaPolA", "hSparseLambdaPolA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxispT, thnAxisPol, centAxis}, true);
       histos.add("hSparseLambdaPolC", "hSparseLambdaPolC", HistType::kTHnSparseF, {thnAxisInvMass, thnAxispT, thnAxisPol, centAxis}, true);
       histos.add("hSparseAntiLambdaPolA", "hSparseAntiLambdaPolA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxispT, thnAxisPol, centAxis}, true);
@@ -330,6 +378,7 @@ struct lambdapolsp {
   Filter acceptanceFilter = (nabs(aod::track::eta) < cfgCutEta && nabs(aod::track::pt) > cfgCutPT);
   Filter dcaCutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
 
+  // using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::SPCalibrationTableswrite, aod::Mults, aod::Qvectors>>;
   using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::SPCalibrationTables, aod::Mults>>;
   // using AllTrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr>;
   using AllTrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa>>;
@@ -354,7 +403,8 @@ struct lambdapolsp {
       return;
     }
     histos.fill(HIST("hCentrality2"), centrality);
-    if (additionalEvSel2 && (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))) {
+    // if (additionalEvSel2 && (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))) {
+    if (additionalEvSel2 && (collision.trackOccupancyInTimeRange() > cfgMaxOccupancy || collision.trackOccupancyInTimeRange() < cfgMinOccupancy)) {
       return;
     }
     histos.fill(HIST("hCentrality3"), centrality);
@@ -362,6 +412,13 @@ struct lambdapolsp {
       return;
     }
 
+    // if (collision.qvecAmp()[6] < 1e-5)
+    // return;
+
+    /*
+    auto qyTPC = collision.qvecIm()[27];
+    auto qxTPC = collision.qvecRe()[27];
+    */
     auto qxZDCA = collision.qxZDCA();
     auto qxZDCC = collision.qxZDCC();
     auto qyZDCA = collision.qyZDCA();
@@ -370,19 +427,39 @@ struct lambdapolsp {
     auto psiZDCA = collision.psiZDCA();
 
     histos.fill(HIST("hCentrality"), centrality);
-    histos.fill(HIST("hVtxZ"), collision.posZ());
-    histos.fill(HIST("hpRes"), centrality, (TMath::Cos(GetPhiInRange(psiZDCA - psiZDCC))));
     if (!checkwithpub) {
+      histos.fill(HIST("hVtxZ"), collision.posZ());
+      histos.fill(HIST("hpRes"), centrality, (TMath::Cos(GetPhiInRange(psiZDCA - psiZDCC))));
       histos.fill(HIST("hpResSin"), centrality, (TMath::Sin(GetPhiInRange(psiZDCA - psiZDCC))));
       histos.fill(HIST("hpCosPsiA"), centrality, (TMath::Cos(GetPhiInRange(psiZDCA))));
       histos.fill(HIST("hpCosPsiC"), centrality, (TMath::Cos(GetPhiInRange(psiZDCC))));
       histos.fill(HIST("hpSinPsiA"), centrality, (TMath::Sin(GetPhiInRange(psiZDCA))));
       histos.fill(HIST("hpSinPsiC"), centrality, (TMath::Sin(GetPhiInRange(psiZDCC))));
+      histos.fill(HIST("hcentQxZDCA"), centrality, qxZDCA);
+      histos.fill(HIST("hcentQyZDCA"), centrality, qyZDCA);
+      histos.fill(HIST("hcentQxZDCC"), centrality, qxZDCC);
+      histos.fill(HIST("hcentQyZDCC"), centrality, qyZDCC);
     }
-    histos.fill(HIST("hcentQxZDCA"), centrality, qxZDCA);
-    histos.fill(HIST("hcentQyZDCA"), centrality, qyZDCA);
-    histos.fill(HIST("hcentQxZDCC"), centrality, qxZDCC);
-    histos.fill(HIST("hcentQyZDCC"), centrality, qyZDCC);
+
+    /*
+    if (checkwithpubv2)
+      {
+  auto x2Tx1Ax1C=qxTPC*qxZDCA*qxZDCC;
+  auto x2Ty1Ay1C=qxTPC*qyZDCA*qyZDCC;
+  auto x1Ax1C=qxZDCA*qxZDCC;
+  auto y1Ay1C=qyZDCA*qyZDCC;
+  auto y2Tx1Ay1C=qyTPC*qxZDCA*qyZDCC;
+  auto y2Ty1Ax1C=qyTPC*qyZDCA*qxZDCC;
+
+  histos.fill(HIST("hpx2Tx1Ax1Cvscent"), centrality, x2Tx1Ax1C);
+  histos.fill(HIST("hpx2Ty1Ay1Cvscent"), centrality, x2Ty1Ay1C);
+  histos.fill(HIST("hpx1Ax1Cvscent"), centrality, x1Ax1C);
+  histos.fill(HIST("hpy1Ay1Cvscent"), centrality, y1Ay1C);
+  histos.fill(HIST("hpy2Tx1Ay1Cvscent"), centrality, y2Tx1Ay1C);
+  histos.fill(HIST("hpy2Ty1Ax1Cvscent"), centrality, y2Ty1Ax1C);
+
+      }
+    */
 
     ///////////checking v1 and v2////////////////////////////////
     if (checkwithpub) {
@@ -390,18 +467,14 @@ struct lambdapolsp {
       auto QxtQxp = qxZDCA * qxZDCC;
       auto QytQyp = qyZDCA * qyZDCC;
       auto Qxytp = QxtQxp + QytQyp;
-      auto QxpQxp = qxZDCA * qxZDCA;
-      auto QxtQxt = qxZDCC * qxZDCC;
-      auto QypQyp = qyZDCA * qyZDCA;
-      auto QytQyt = qyZDCC * qyZDCC;
+      auto QxpQyt = qxZDCA * qyZDCC;
+      auto QxtQyp = qxZDCC * qyZDCA;
 
       histos.fill(HIST("hpQxtQxpvscent"), centrality, QxtQxp);
       histos.fill(HIST("hpQytQypvscent"), centrality, QytQyp);
       histos.fill(HIST("hpQxytpvscent"), centrality, Qxytp);
-      histos.fill(HIST("hpQxpQxpvscent"), centrality, QxpQxp);
-      histos.fill(HIST("hpQxtQxtvscent"), centrality, QxtQxt);
-      histos.fill(HIST("hpQypQypvscent"), centrality, QypQyp);
-      histos.fill(HIST("hpQytQytvscent"), centrality, QytQyt);
+      histos.fill(HIST("hpQxpQytvscent"), centrality, QxpQyt);
+      histos.fill(HIST("hpQxtQypvscent"), centrality, QxtQyp);
 
       for (auto track : tracks) {
         if (!selectionTrack(track)) {
@@ -412,17 +485,11 @@ struct lambdapolsp {
         if (sign == 0.0) // removing neutral particles
           continue;
 
-        histos.fill(HIST("hEta"), track.eta());
-        // histos.fill(HIST("hPhi"), track.phi());
+        // histos.fill(HIST("hDiff"), track.pt(), (track.p() - track.tpcInnerParam()));
+        // LOG(info) << "Sign of tracks are:\t" << sign;
 
         auto ux = TMath::Cos(GetPhiInRange(track.phi()));
         auto uy = TMath::Sin(GetPhiInRange(track.phi()));
-
-        auto v1ZDCA = TMath::Cos(GetPhiInRange(track.phi() - psiZDCA));
-        auto v1ZDCC = TMath::Cos(GetPhiInRange(track.phi() - psiZDCC));
-
-        // LOG(info) << "DCA values:\t" << mycut<<" "<<track.dcaXY()<<" "<<track.dcaZ()<<" "<<ux<<" "<<uy;
-        // LOG(info) << "Daughters PDG:\t" << ux << " "<< uxcheck<<" "<<uy<<" "<<uycheck;
 
         auto uxQxp = ux * qxZDCA;
         auto uyQyp = uy * qyZDCA;
@@ -430,27 +497,56 @@ struct lambdapolsp {
         auto uxQxt = ux * qxZDCC;
         auto uyQyt = uy * qyZDCC;
         auto uxyQxyt = uxQxt + uyQyt;
+        auto oddv1 = ux * (qxZDCA - qxZDCC) + uy * (qyZDCA - qyZDCC);
+        auto evenv1 = ux * (qxZDCA + qxZDCC) + uy * (qyZDCA + qyZDCC);
 
-        histos.fill(HIST("hpuxQxpvscent"), centrality, uxQxp);
-        histos.fill(HIST("hpuyQypvscent"), centrality, uyQyp);
-        histos.fill(HIST("hpuxQxtvscent"), centrality, uxQxt);
-        histos.fill(HIST("hpuyQytvscent"), centrality, uyQyt);
+        if (tofhit) {
+          if (track.hasTOF()) {
+            if (globalpt) {
+              histos.fill(HIST("hpuxQxpvscentpteta"), centrality, track.pt(), track.eta(), uxQxp);
+              histos.fill(HIST("hpuyQypvscentpteta"), centrality, track.pt(), track.eta(), uyQyp);
+              histos.fill(HIST("hpuxQxtvscentpteta"), centrality, track.pt(), track.eta(), uxQxt);
+              histos.fill(HIST("hpuyQytvscentpteta"), centrality, track.pt(), track.eta(), uyQyt);
 
-        histos.fill(HIST("hpuxyQxytvscent"), centrality, uxyQxyt);
-        histos.fill(HIST("hpuxyQxypvscent"), centrality, uxyQxyp);
-        histos.fill(HIST("hppuxyQxytvscenteta"), centrality, track.eta(), uxyQxyt);
-        histos.fill(HIST("hppuxyQxypvscenteta"), centrality, track.eta(), uxyQxyp);
-        // histos.fill(HIST("hppQxytpvscenteta"), centrality, track.eta(), Qxytp);
+              histos.fill(HIST("hpuxyQxytvscentpteta"), centrality, track.pt(), track.eta(), uxyQxyt);
+              histos.fill(HIST("hpuxyQxypvscentpteta"), centrality, track.pt(), track.eta(), uxyQxyp);
+              histos.fill(HIST("hpoddv1vscentpteta"), centrality, track.pt(), track.eta(), oddv1);
+              histos.fill(HIST("hpevenv1vscentpteta"), centrality, track.pt(), track.eta(), evenv1);
+            } else {
+              histos.fill(HIST("hpuxQxpvscentpteta"), centrality, track.tpcInnerParam(), track.eta(), uxQxp);
+              histos.fill(HIST("hpuyQypvscentpteta"), centrality, track.tpcInnerParam(), track.eta(), uyQyp);
+              histos.fill(HIST("hpuxQxtvscentpteta"), centrality, track.tpcInnerParam(), track.eta(), uxQxt);
+              histos.fill(HIST("hpuyQytvscentpteta"), centrality, track.tpcInnerParam(), track.eta(), uyQyt);
 
-        if (centrality > 30.0 && centrality < 40.0) {
-          histos.fill(HIST("hpuxQxpvseta"), track.eta(), uxQxp);
-          histos.fill(HIST("hpuyQypvseta"), track.eta(), uyQyp);
-          histos.fill(HIST("hpuxQxtvseta"), track.eta(), uxQxt);
-          histos.fill(HIST("hpuyQytvseta"), track.eta(), uyQyt);
+              histos.fill(HIST("hpuxyQxytvscentpteta"), centrality, track.tpcInnerParam(), track.eta(), uxyQxyt);
+              histos.fill(HIST("hpuxyQxypvscentpteta"), centrality, track.tpcInnerParam(), track.eta(), uxyQxyp);
+              histos.fill(HIST("hpoddv1vscentpteta"), centrality, track.pt(), track.eta(), oddv1);
+              histos.fill(HIST("hpevenv1vscentpteta"), centrality, track.pt(), track.eta(), evenv1);
+            }
+          }
+        } else {
+          if (globalpt) {
+            histos.fill(HIST("hpuxQxpvscentpteta"), centrality, track.pt(), track.eta(), uxQxp);
+            histos.fill(HIST("hpuyQypvscentpteta"), centrality, track.pt(), track.eta(), uyQyp);
+            histos.fill(HIST("hpuxQxtvscentpteta"), centrality, track.pt(), track.eta(), uxQxt);
+            histos.fill(HIST("hpuyQytvscentpteta"), centrality, track.pt(), track.eta(), uyQyt);
+
+            histos.fill(HIST("hpuxyQxytvscentpteta"), centrality, track.pt(), track.eta(), uxyQxyt);
+            histos.fill(HIST("hpuxyQxypvscentpteta"), centrality, track.pt(), track.eta(), uxyQxyp);
+            histos.fill(HIST("hpoddv1vscentpteta"), centrality, track.pt(), track.eta(), oddv1);
+            histos.fill(HIST("hpevenv1vscentpteta"), centrality, track.pt(), track.eta(), evenv1);
+          } else {
+            histos.fill(HIST("hpuxQxpvscentpteta"), centrality, track.tpcInnerParam(), track.eta(), uxQxp);
+            histos.fill(HIST("hpuyQypvscentpteta"), centrality, track.tpcInnerParam(), track.eta(), uyQyp);
+            histos.fill(HIST("hpuxQxtvscentpteta"), centrality, track.tpcInnerParam(), track.eta(), uxQxt);
+            histos.fill(HIST("hpuyQytvscentpteta"), centrality, track.tpcInnerParam(), track.eta(), uyQyt);
+
+            histos.fill(HIST("hpuxyQxytvscentpteta"), centrality, track.tpcInnerParam(), track.eta(), uxyQxyt);
+            histos.fill(HIST("hpuxyQxypvscentpteta"), centrality, track.tpcInnerParam(), track.eta(), uxyQxyp);
+            histos.fill(HIST("hpoddv1vscentpteta"), centrality, track.pt(), track.eta(), oddv1);
+            histos.fill(HIST("hpevenv1vscentpteta"), centrality, track.pt(), track.eta(), evenv1);
+          }
         }
-
-        histos.fill(HIST("hpv1Avscent"), centrality, v1ZDCA);
-        histos.fill(HIST("hpv1Cvscent"), centrality, v1ZDCC);
       }
     } else {
       for (auto v0 : V0s) {

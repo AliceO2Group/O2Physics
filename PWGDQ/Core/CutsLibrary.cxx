@@ -412,6 +412,29 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("emu_electronCuts_tof")) {
+    cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug4"));
+    cut->AddCut(GetAnalysisCut("electronPIDnsigmaSkewed"));
+    cut->AddCut(GetAnalysisCut("tof_electron_sigma_2"));
+    return cut;
+  }
+
+  if (!nameStr.compare("emu_electronCuts_tightTPC")) {
+    cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug4"));
+    cut->AddCut(GetAnalysisCut("electronPIDnsigmaSkewed_2"));
+    return cut;
+  }
+
+  if (!nameStr.compare("emu_electronCuts_tof_tightTPC")) {
+    cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug4"));
+    cut->AddCut(GetAnalysisCut("electronPIDnsigmaSkewed_2"));
+    cut->AddCut(GetAnalysisCut("tof_electron_sigma_2"));
+    return cut;
+  }
+
   if (!nameStr.compare("jpsiKineAndQuality")) {
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQuality"));
@@ -2512,6 +2535,22 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("trackCut_compareDQEMframework")) { // cut setting to check least common factor between reduced data sets of PWGEM and PWGDQ
+    cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
+    cut->AddCut(GetAnalysisCut("trackQuality_compareDQEMframework"));
+    cut->AddCut(GetAnalysisCut("trackDCA1cm"));
+    AnalysisCompositeCut* cut_tpc_nSigma = new AnalysisCompositeCut("pid_TPCnSigma", "pid_TPCnSigma", kTRUE);
+    cut_tpc_nSigma->AddCut(GetAnalysisCut("lmee_commonDQEM_PID_TPC"));
+
+    AnalysisCompositeCut* cut_tof_nSigma = new AnalysisCompositeCut("pid_TOFnSigma", "pid_TOFnSigma", kTRUE);
+    cut_tof_nSigma->AddCut(GetAnalysisCut("lmee_commonDQEM_PID_TOF"));
+
+    AnalysisCompositeCut* cut_pid_OR = new AnalysisCompositeCut("e_NSigma", "e_NSigma", kFALSE);
+    cut_pid_OR->AddCut(cut_tpc_nSigma);
+    cut_pid_OR->AddCut(cut_tof_nSigma);
+    return cut;
+  }
+
   // -------------------------------------------------------------------------------------------------
   // lmee pair cuts
 
@@ -2546,6 +2585,11 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
 
   if (!nameStr.compare("matchedQualityCuts")) {
     cut->AddCut(GetAnalysisCut("matchedQualityCuts"));
+    return cut;
+  }
+
+  if (!nameStr.compare("matchedQualityCutsMFTeta")) {
+    cut->AddCut(GetAnalysisCut("matchedQualityCutsMFTeta"));
     return cut;
   }
 
@@ -3801,6 +3845,17 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("trackQuality_compareDQEMframework")) { // cut setting to check least common factor between reduced data sets of PWGEM and PWGDQ
+    cut->AddCut(VarManager::kIsSPDfirst, 0.5, 1.5);
+    cut->AddCut(VarManager::kITSchi2, 0.0, 5.0);
+    cut->AddCut(VarManager::kITSncls, 4.5, 7.5);
+    cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
+    cut->AddCut(VarManager::kTPCnclsCR, 80.0, 161.);
+    cut->AddCut(VarManager::kTPCnCRoverFindCls, 0.8, 1e+10);
+    cut->AddCut(VarManager::kTPCncls, 90.0, 170.);
+    return cut;
+  }
+
   if ((!nameStr.compare("TightGlobalTrackRun3")) || (!nameStr.compare("lmeeQCTrackCuts"))) {
     cut->AddCut(VarManager::kIsSPDfirst, 0.5, 1.5);
     cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
@@ -4046,6 +4101,12 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   if (!nameStr.compare("standardPrimaryTrack")) {
     cut->AddCut(VarManager::kTrackDCAxy, -1.0, 1.0);
     cut->AddCut(VarManager::kTrackDCAz, -3.0, 3.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("trackDCA1cm")) { // cut setting to check least common factor between reduced data sets of PWGEM and PWGDQ
+    cut->AddCut(VarManager::kTrackDCAxy, -1.0, 1.0);
+    cut->AddCut(VarManager::kTrackDCAz, -1.0, 1.0);
     return cut;
   }
 
@@ -4406,6 +4467,21 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kTPCnSigmaEl, -3.0, 3.0);
     cut->AddCut(VarManager::kTPCnSigmaPr, 3.0, 3000.0);
     cut->AddCut(VarManager::kTPCnSigmaPi, 3.0, 3000.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("lmee_commonDQEM_PID_TPC")) { // cut setting to check least common factor between reduced data sets of PWGEM and PWGDQ
+    cut->AddCut(VarManager::kTPCnSigmaEl, -2.5, 3., false, VarManager::kPin, 0.0, 1e+10, false);
+    cut->AddCut(VarManager::kTPCnSigmaPi, -1e12, 3.5, true, VarManager::kPin, 0.0, 1e+10, false);
+    cut->AddCut(VarManager::kTPCnSigmaKa, -3., 3., true, VarManager::kPin, 0.0, 1e+10, false);
+    cut->AddCut(VarManager::kTPCnSigmaPr, -3., 3., true, VarManager::kPin, 0.0, 1e+10, false);
+    return cut;
+  }
+
+  if (!nameStr.compare("lmee_commonDQEM_PID_TOF")) { // cut setting to check least common factor between reduced data sets of PWGEM and PWGDQ
+    cut->AddCut(VarManager::kTPCnSigmaEl, -2.5, 3., false, VarManager::kPin, 0.0, 1e+10, false);
+    cut->AddCut(VarManager::kTPCnSigmaPi, -3., 3.5, true, VarManager::kPin, 0.0, 1e+10, false);
+    cut->AddCut(VarManager::kTOFnSigmaEl, -3., 3., false, VarManager::kPin, 0.3, 1e+10, false);
     return cut;
   }
 
@@ -4780,6 +4856,13 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("electronPIDnsigmaSkewed_2")) {
+    cut->AddCut(VarManager::kTPCnSigmaEl, -0.0, 3.0);
+    cut->AddCut(VarManager::kTPCnSigmaPr, 3.5, 3000.0);
+    cut->AddCut(VarManager::kTPCnSigmaPi, 3.5, 3000.0);
+    return cut;
+  }
+
   if (!nameStr.compare("electronPIDPrKaPiRej")) {
     cut->AddCut(VarManager::kTPCnSigmaEl, -3.0, 3.0);
     cut->AddCut(VarManager::kTPCnSigmaPr, -3.0, 3.0, true);
@@ -4941,6 +5024,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (!nameStr.compare("tof_electron_sigma")) {
     cut->AddCut(VarManager::kTOFnSigmaEl, -2., 2., false, VarManager::kPin, 0.0, 1e+10, false);
+    return cut;
+  }
+
+  if (!nameStr.compare("tof_electron_sigma_2")) {
+    cut->AddCut(VarManager::kTOFnSigmaEl, -3., 3.);
     return cut;
   }
 
@@ -5259,6 +5347,17 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (!nameStr.compare("matchedQualityCuts")) {
     cut->AddCut(VarManager::kEta, -4.0, -2.5);
+    cut->AddCut(VarManager::kMuonRAtAbsorberEnd, 17.6, 89.5);
+    cut->AddCut(VarManager::kMuonPDca, 0.0, 594.0, false, VarManager::kMuonRAtAbsorberEnd, 17.6, 26.5);
+    cut->AddCut(VarManager::kMuonPDca, 0.0, 324.0, false, VarManager::kMuonRAtAbsorberEnd, 26.5, 89.5);
+    cut->AddCut(VarManager::kMuonChi2, 0.0, 1e6);
+    cut->AddCut(VarManager::kMuonChi2MatchMCHMID, 0.0, 1e6); // matching MCH-MID
+    cut->AddCut(VarManager::kMuonChi2MatchMCHMFT, 0.0, 1e6); // matching MFT-MCH
+    return cut;
+  }
+
+  if (!nameStr.compare("matchedQualityCutsMFTeta")) {
+    cut->AddCut(VarManager::kEta, -3.6, -2.5);
     cut->AddCut(VarManager::kMuonRAtAbsorberEnd, 17.6, 89.5);
     cut->AddCut(VarManager::kMuonPDca, 0.0, 594.0, false, VarManager::kMuonRAtAbsorberEnd, 17.6, 26.5);
     cut->AddCut(VarManager::kMuonPDca, 0.0, 324.0, false, VarManager::kMuonRAtAbsorberEnd, 26.5, 89.5);

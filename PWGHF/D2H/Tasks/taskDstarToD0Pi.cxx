@@ -15,6 +15,10 @@
 /// \author Deependra Sharma <deependra.sharma@cern.ch>, IITB
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 
+#include <algorithm>
+#include <utility>
+#include <vector>
+
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
@@ -39,6 +43,7 @@ struct HfTaskDstarToD0Pi {
   Configurable<std::vector<double>> ptBins{"ptBins", std::vector<double>{hf_cuts_dstar_to_d0_pi::vecBinsPt}, "pT bin limits for Dstar"};
 
   using CandDstarWSelFlag = soa::Join<aod::HfD0FromDstar, aod::HfCandDstars, aod::HfSelDstarToD0Pi>;
+  using CandDstarWSelFlagWMl = soa::Join<aod::HfD0FromDstar, aod::HfCandDstars, aod::HfSelDstarToD0Pi, aod::HfMlDstarToD0Pi>;
   /// @brief specially for MC data
   // full reconstructed Dstar candidate
   using CandDstarWSelFlagMcRec = soa::Join<aod::HfD0FromDstar, aod::HfCandDstars, aod::HfSelDstarToD0Pi, aod::HfCandDstarMcRec>;
@@ -49,6 +54,7 @@ struct HfTaskDstarToD0Pi {
 
   Filter candFilter = aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == selectionFlagDstarToD0Pi;
   Preslice<soa::Filtered<CandDstarWSelFlag>> preslicSelectedCandDstarPerCol = aod::hf_cand::collisionId;
+  Preslice<soa::Filtered<CandDstarWSelFlagWMl>> preslicSelectedCandDstarPerColWMl = aod::hf_cand::collisionId;
 
   PresliceUnsorted<CollisionsWCentMcLabel> colsPerMcCollision = aod::mccollisionlabel::mcCollisionId;
   SliceCache cache;
@@ -58,8 +64,10 @@ struct HfTaskDstarToD0Pi {
   ConfigurableAxis binningImpactParam{"binningImpactParam", {1000, 0.1, -0.1}, " Bins of Impact Parameter"};
   ConfigurableAxis binningDecayLength{"binningDecayLength", {1000, 0.0, 0.7}, "Bins of Decay Length"};
   ConfigurableAxis binningNormDecayLength{"binningNormDecayLength", {1000, 0.0, 40.0}, "Bins of Normalised Decay Length"};
-  ConfigurableAxis binningCentrality{"binningCentrality", {VARIABLE_WIDTH, 0.0, 10.0, 20.0, 30.0, 60.0, 100.0}, "centrality binning"};
+  ConfigurableAxis binningCentrality{"binningCentrality", {VARIABLE_WIDTH, 0.0, 1.0, 10.0, 30.0, 50.0, 70.0, 100.0}, "centrality binning"};
   ConfigurableAxis binningDeltaInvMass{"binningDeltaInvMass", {100, 0.13, 0.16}, "Bins of Delta InvMass of Dstar"};
+  ConfigurableAxis binningBkgBDTScore{"binningBkgBDTScore", {100, 0.0f, 1.0f}, "Bins for background BDT Score"};
+  ConfigurableAxis binningSigBDTScore{"binningSigBDTScore", {100, 0.0f, 1.0f}, "Bins for Signal (Prompts + Non Prompt) BDT Score"};
 
   HistogramRegistry registry{
     "registry",
@@ -81,6 +89,9 @@ struct HfTaskDstarToD0Pi {
     AxisSpec axisNormDecayLength = {binningNormDecayLength, "normalised decay length (cm)"};
     AxisSpec axisCentrality = {binningCentrality, "centrality (%)"};
     AxisSpec axisDeltaInvMass = {binningDeltaInvMass, "#Delta #it{M}_{inv} D*"};
+    AxisSpec axisBDTScorePrompt = {binningSigBDTScore, "BDT Score for Prompt Cand"};
+    AxisSpec axisBDTScoreNonPrompt = {binningSigBDTScore, "BDT Score for Non-Prompt Cand"};
+    AxisSpec axisBDTScoreBackground = {binningBkgBDTScore, "BDT Score for Background Cand"};
 
     registry.add("Yield/hDeltaInvMassDstar3D", "#Delta #it{M}_{inv} D* Candidate; inv. mass ((#pi #pi k) - (#pi k)) (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c}); FT0M centrality", {HistType::kTH3F, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisCentrality}}}, true);
     registry.add("Yield/hDeltaInvMassDstar2D", "#Delta #it{M}_{inv} D* Candidate; inv. mass ((#pi #pi k) - (#pi k)) (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}}, true);
@@ -116,6 +127,7 @@ struct HfTaskDstarToD0Pi {
     registry.add("QA/hPtVsYRecoTopolDstarRecSig", "MC Matched RecoTopol D* Candidates at Reconstruction Level; #it{p}_{T} of D* at Reconstruction Level (GeV/#it{c}); #it{y}", {HistType::kTH2F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
     registry.add("QA/hPtVsYRecoPidDstarRecSig", "MC Matched RecoPid D* Candidates at Reconstruction Level; #it{p}_{T} of  D* at Reconstruction Level (GeV/#it{c}); #it{y}", {HistType::kTH2F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
     registry.add("QA/hPtFullRecoDstarRecSig", "MC Matched FullReco D* Candidates at Reconstruction Level; #it{p}_{T} of  D* at Reconstruction Level (GeV/#it{c})", {HistType::kTH1F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("Efficiency/hPtVsCentFullRecoDstarRecSig", "MC Matched  FullReco D* Candidates at Reconstruction Level; #it{p}_{T} of  D* at Reconstruction Level (GeV/#it{c}); Centrality (%)", {HistType::kTH2F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisCentrality}}}, true);
     // Only Prompt RecSig
     registry.add("QA/hPtVsYSkimPromptDstarRecSig", "MC Matched Skimed Prompt D* Candidates at Reconstruction Level; #it{p}_{T} of  D* at Reconstruction Level (GeV/#it{c}; #it{y})", {HistType::kTH2F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
     registry.add("QA/hPtVsYRecoTopolPromptDstarRecSig", "MC Matched RecoTopol Prompt D* Candidates at Reconstruction Level; #it{p}_{T} of  D* at Reconstruction Level (GeV/#it{c}); #it{y}", {HistType::kTH2F, {{vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {100, -5., 5.}}});
@@ -148,9 +160,13 @@ struct HfTaskDstarToD0Pi {
     registry.add("Efficiency/hNumPvContributorsAll", "PV Contributors; PV Contributor; FT0M Centrality", {HistType::kTH2F, {{100, 0, 300}, {axisCentrality}}}, true);
     registry.add("Efficiency/hNumPvContributorsCand", "PV Contributors; PV Contributor; FT0M Centrality", {HistType::kTH2F, {{100, 0, 300}, {axisCentrality}}}, true);
     registry.add("Efficiency/hNumPvContributorsCandInMass", "PV Contributors; PV Contributor; FT0M Centrality", {HistType::kTH2F, {{100, 0, 300}, {axisCentrality}}}, true);
+
+    // BDT Score (axisBDTScoreBackground, axisBDTScorePrompt, axisBDTScoreNonPrompt)
+    registry.add("Yield/hDeltaInvMassVsPtVsCentVsBDTScore", "#Delta #it{M}_{inv} Vs Pt Vs Cent Vs BDTScore", {HistType::kTHnSparseL, {{axisDeltaInvMass}, {vecPtBins, "#it{p}_{T} (GeV/#it{c})"}, {axisCentrality}, {axisBDTScoreBackground}, {axisBDTScorePrompt}, {axisBDTScoreNonPrompt}}});
   }
 
-  void process(CollisionsWCent const& cols, soa::Filtered<CandDstarWSelFlag> const& selectedCands)
+  template <bool applyMl, typename T1, typename T2>
+  void runTaskDstar(CollisionsWCent const& cols, T1 selectedCands, T2 preslice)
   {
     for (const auto& col : cols) {
       auto nPVContributors = col.numContrib();
@@ -158,7 +174,7 @@ struct HfTaskDstarToD0Pi {
       registry.fill(HIST("Efficiency/hNumPvContributorsAll"), nPVContributors, centrality);
 
       auto gIndexCol = col.globalIndex();
-      auto selectedCandsCurrentCol = selectedCands.sliceBy(preslicSelectedCandDstarPerCol, gIndexCol);
+      auto selectedCandsCurrentCol = selectedCands.sliceBy(preslice, gIndexCol);
       auto nCandsCurrentCol = selectedCandsCurrentCol.size();
 
       if (nCandsCurrentCol > 0) {
@@ -207,6 +223,12 @@ struct HfTaskDstarToD0Pi {
           if (0.142f < deltaMDstar && deltaMDstar < 0.15f) {
             nCandsSignalRegion++;
           }
+
+          if constexpr (applyMl) {
+            auto mlBdtScore = candDstar.mlProbDstarToD0Pi();
+            registry.fill(HIST("Yield/hDeltaInvMassVsPtVsCentVsBDTScore"), deltaMDstar, candDstar.pt(), centrality, mlBdtScore[0], mlBdtScore[1], mlBdtScore[2]);
+          }
+
           registry.fill(HIST("Yield/hDeltaInvMassDstar3D"), deltaMDstar, candDstar.pt(), centrality);
           registry.fill(HIST("Yield/hDeltaInvMassDstar2D"), deltaMDstar, candDstar.pt());
           registry.fill(HIST("Yield/hInvMassD0"), invD0, candDstar.ptD0());
@@ -237,6 +259,20 @@ struct HfTaskDstarToD0Pi {
     } // collision loop ends
   }
 
+  // process function without susing ML
+  void processWoML(CollisionsWCent const& cols, soa::Filtered<CandDstarWSelFlag> const& selectedCands)
+  {
+    runTaskDstar<false, soa::Filtered<CandDstarWSelFlag>, Preslice<soa::Filtered<CandDstarWSelFlag>>>(cols, selectedCands, preslicSelectedCandDstarPerCol);
+  }
+  PROCESS_SWITCH(HfTaskDstarToD0Pi, processWoML, "Process without ML", true);
+
+  // process function with susing ML, Here we store BDT score as well
+  void processWML(CollisionsWCent const& cols, soa::Filtered<CandDstarWSelFlagWMl> const& selectedCands)
+  {
+    runTaskDstar<true, soa::Filtered<CandDstarWSelFlagWMl>, Preslice<soa::Filtered<CandDstarWSelFlagWMl>>>(cols, selectedCands, preslicSelectedCandDstarPerColWMl);
+  }
+  PROCESS_SWITCH(HfTaskDstarToD0Pi, processWML, "Process with ML", false);
+
   void processMC(aod::McCollisions const&, CollisionsWCentMcLabel const& collisions, CandDstarWSelFlagMcRec const&,
                  CandDstarMcGen const& rowsMcPartilces,
                  aod::TracksWMc const&)
@@ -259,6 +295,7 @@ struct HfTaskDstarToD0Pi {
         auto particleMother = rowsMcPartilces.rawIteratorAt(indexMother);  // What is difference between rawIterator() or iteratorAt() methods?
         registry.fill(HIST("QA/hPtSkimDstarGenSig"), particleMother.pt()); // generator level pt
         registry.fill(HIST("Efficiency/hPtVsCentSkimDstarGenSig"), particleMother.pt(), centrality);
+        registry.fill(HIST("Efficiency/hPtVsCentFullRecoDstarRecSig"), ptDstarRecSig, centrality);
 
         // auto recCollision = candDstarMcRec.collision_as<CollisionsWCentMcLabel>();
         // float centFT0M = recCollision.centFT0M();

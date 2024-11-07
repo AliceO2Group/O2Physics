@@ -37,11 +37,23 @@
 /PWGEM/Dilepton @alibuild @mikesas @rbailhac @dsekihat @ivorobye @feisenhu
 /PWGEM/PhotonMeson @alibuild @mikesas @rbailhac @m-c-danisch @novitzky @mhemmer-cern @dsekihat
 /PWGHF @alibuild @vkucera @fcolamar @fgrosa @fcatalan92 @mfaggin @mmazzilli @deepathoms @NicoleBastid @hahassan7 @jpxrk @apalasciano
-/PWGLF @alibuild @ercolessi @fmazzasc @chiarapinto @maciacco @BongHwi @smaff92 @ChiaraDeMartin95 @njacazio @skundu692 @gbencedi @omvazque
-/PWGMM @alibuild @aalkin @njacazio @skundu692
+# PWG-LF
+/PWGLF @alibuild @njacazio @skundu692
+/PWGLF/Tasks/GlobalEventProperties         @alibuild @njacazio @skundu692 @gbencedi @omvazque
+/PWGLF/TableProducer/GlobalEventProperties @alibuild @njacazio @skundu692 @gbencedi @omvazque
+/PWGLF/Tasks/Nuspex         @alibuild @njacazio @skundu692 @fmazzasc @chiarapinto @maciacco
+/PWGLF/TableProducer/Nuspex @alibuild @njacazio @skundu692 @fmazzasc @chiarapinto @maciacco
+/PWGLF/Tasks/Resonances         @alibuild @njacazio @skundu692 @BongHwi @smaff92
+/PWGLF/TableProducer/Resonances @alibuild @njacazio @skundu692 @BongHwi @smaff92
+/PWGLF/Tasks/Strangeness         @alibuild @njacazio @skundu692 @ercolessi @ChiaraDeMartin95
+/PWGLF/TableProducer/Strangeness @alibuild @njacazio @skundu692 @ercolessi @ChiaraDeMartin95
+
+# PWG-MM
+/PWGMM      @alibuild @njacazio @skundu692 @aalkin
+/PWGMM/Mult @alibuild @njacazio @skundu692 @aalkin @aortizve @ddobrigk
 /PWGMM/Lumi @alibuild @aalkin
-/PWGMM/Mult @alibuild @aalkin @aortizve @ddobrigk
-/PWGMM/UE @alibuild @aalkin @aortizve
+/PWGMM/UE   @alibuild @aalkin @aortizve
+
 /PWGUD @alibuild @pbuehler @abylinkin @rolavick
 /PWGJE @alibuild @lhavener @maoyx @nzardosh @ddobrigk @mfasDa
 /Tools/PIDML @alibuild @saganatt

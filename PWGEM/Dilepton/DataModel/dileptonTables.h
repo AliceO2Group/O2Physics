@@ -104,12 +104,10 @@ DECLARE_SOA_COLUMN(Q4yBTot, q4ybtot, float);                                //! 
 DECLARE_SOA_COLUMN(SpherocityPtWeighted, spherocity_ptweighted, float);     //! transverse spherocity
 DECLARE_SOA_COLUMN(SpherocityPtUnWeighted, spherocity_ptunweighted, float); //! transverse spherocity
 DECLARE_SOA_COLUMN(NtrackSpherocity, ntspherocity, int);
-DECLARE_SOA_COLUMN(IsSelected, isSelected, bool);                                         //! MB event selection info
-DECLARE_SOA_COLUMN(IsEoI, isEoI, bool);                                                   //! lepton or photon exists in MB event (not for CEFP)
-DECLARE_SOA_COLUMN(PosZint16, posZint16, int16_t);                                        //! this is only to reduce data size
-DECLARE_SOA_COLUMN(NumTracksInTimeRange_int16, trackOccupancyInTimeRange_int16, int16_t); //! this is only to reduce data size
+DECLARE_SOA_COLUMN(IsSelected, isSelected, bool);  //! MB event selection info
+DECLARE_SOA_COLUMN(IsEoI, isEoI, bool);            //! lepton or photon exists in MB event (not for CEFP)
+DECLARE_SOA_COLUMN(PosZint16, posZint16, int16_t); //! this is only to reduce data size
 DECLARE_SOA_DYNAMIC_COLUMN(PosZ, posZ, [](int16_t posZint16) -> float { return static_cast<float>(posZint16) * 0.1f; });
-DECLARE_SOA_DYNAMIC_COLUMN(NumTracksInTimeRange, trackOccupancyInTimeRange, [](int16_t trackOccupancyInTimeRange_int16) -> int { return (trackOccupancyInTimeRange_int16 < 0 ? -1 : static_cast<int>(trackOccupancyInTimeRange_int16) * 100); });
 
 DECLARE_SOA_DYNAMIC_COLUMN(Sel8, sel8, [](uint64_t selection_bit) -> bool { return (selection_bit & BIT(o2::aod::evsel::kIsTriggerTVX)) && (selection_bit & BIT(o2::aod::evsel::kNoTimeFrameBorder)) && (selection_bit & BIT(o2::aod::evsel::kNoITSROFrameBorder)); });
 DECLARE_SOA_DYNAMIC_COLUMN(EP2FT0M, ep2ft0m, [](float q2x, float q2y) -> float { return std::atan2(q2y, q2x) / 2.0; });
@@ -132,10 +130,17 @@ DECLARE_SOA_DYNAMIC_COLUMN(EP4BNeg, ep4bneg, [](float q4x, float q4y) -> float {
 DECLARE_SOA_DYNAMIC_COLUMN(EP4BTot, ep4btot, [](float q4x, float q4y) -> float { return std::atan2(q4y, q4x) / 4.0; });
 } // namespace emevent
 
-DECLARE_SOA_TABLE(EMEvents, "AOD", "EMEVENT", //!   Main event information table
+DECLARE_SOA_TABLE(EMEvents_000, "AOD", "EMEVENT", //!   Main event information table
                   o2::soa::Index<>, emevent::CollisionId, bc::RunNumber, bc::GlobalBC, evsel::Alias, evsel::Selection, timestamp::Timestamp,
                   collision::PosX, collision::PosY, collision::PosZ,
                   collision::NumContrib, evsel::NumTracksInTimeRange, emevent::Sel8<evsel::Selection>);
+
+DECLARE_SOA_TABLE_VERSIONED(EMEvents_001, "AOD", "EMEVENT", 1, //!   Main event information table
+                            o2::soa::Index<>, emevent::CollisionId, bc::RunNumber, bc::GlobalBC, evsel::Alias, evsel::Selection, timestamp::Timestamp,
+                            collision::PosX, collision::PosY, collision::PosZ,
+                            collision::NumContrib, evsel::NumTracksInTimeRange, evsel::SumAmpFT0CInTimeRange, emevent::Sel8<evsel::Selection>);
+
+using EMEvents = EMEvents_001;
 using EMEvent = EMEvents::iterator;
 
 DECLARE_SOA_TABLE(EMEventsCov, "AOD", "EMEVENTCOV", //! joinable to EMEvents
@@ -207,7 +212,7 @@ DECLARE_SOA_TABLE(EMEoIs, "AOD", "EMEOI", //! joinable to aod::Collisions in cre
 using EMEoI = EMEoIs::iterator;
 
 DECLARE_SOA_TABLE(EMEventNormInfos, "AOD", "EMEVENTNORMINFO", //! event information for normalization
-                  o2::soa::Index<>, evsel::Alias, evsel::Selection, emevent::PosZint16, emevent::NumTracksInTimeRange_int16, emevent::PosZ<emevent::PosZint16>, emevent::Sel8<evsel::Selection>, emevent::NumTracksInTimeRange<emevent::NumTracksInTimeRange_int16>);
+                  o2::soa::Index<>, evsel::Alias, evsel::Selection, emevent::PosZint16, emevent::PosZ<emevent::PosZint16>, emevent::Sel8<evsel::Selection>);
 using EMEventNormInfo = EMEventNormInfos::iterator;
 
 namespace emmcevent
@@ -414,7 +419,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(MeanClusterSizeITSob, meanClusterSizeITSob, [](uint32
   }
 });
 } // namespace emprimaryelectron
-DECLARE_SOA_TABLE(EMPrimaryElectrons, "AOD", "EMPRIMARYEL", //!
+DECLARE_SOA_TABLE(EMPrimaryElectrons_000, "AOD", "EMPRIMARYEL", //!
                   o2::soa::Index<>, emprimaryelectron::CollisionId,
                   emprimaryelectron::TrackId, emprimaryelectron::Sign,
                   track::Pt, track::Eta, track::Phi, track::DcaXY, track::DcaZ,
@@ -442,6 +447,37 @@ DECLARE_SOA_TABLE(EMPrimaryElectrons, "AOD", "EMPRIMARYEL", //!
                   emprimaryelectron::MeanClusterSizeITS<track::ITSClusterSizes>,
                   emprimaryelectron::MeanClusterSizeITSib<track::ITSClusterSizes>,
                   emprimaryelectron::MeanClusterSizeITSob<track::ITSClusterSizes>);
+
+DECLARE_SOA_TABLE_VERSIONED(EMPrimaryElectrons_001, "AOD", "EMPRIMARYEL", 1, //!
+                            o2::soa::Index<>, emprimaryelectron::CollisionId,
+                            emprimaryelectron::TrackId, emprimaryelectron::Sign,
+                            track::Pt, track::Eta, track::Phi, track::DcaXY, track::DcaZ,
+                            track::TPCNClsFindable, track::TPCNClsFindableMinusFound, track::TPCNClsFindableMinusCrossedRows, track::TPCNClsShared,
+                            track::TPCChi2NCl, track::TPCInnerParam,
+                            track::TPCSignal, pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaMu, pidtpc::TPCNSigmaPi, pidtpc::TPCNSigmaKa, pidtpc::TPCNSigmaPr,
+                            pidtofbeta::Beta, pidtof::TOFNSigmaEl, pidtof::TOFNSigmaMu, pidtof::TOFNSigmaPi, pidtof::TOFNSigmaKa, pidtof::TOFNSigmaPr,
+                            track::ITSClusterSizes, track::ITSChi2NCl, track::TOFChi2, track::DetectorMap,
+                            track::X, track::Alpha, track::Y, track::Z, track::Snp, track::Tgl, emprimaryelectron::IsAssociatedToMPC,
+
+                            // dynamic column
+                            track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                            track::TPCNClsCrossedRows<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                            track::TPCCrossedRowsOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusCrossedRows>,
+                            track::TPCFoundOverFindableCls<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                            track::TPCFractionSharedCls<track::TPCNClsShared, track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,
+                            track::v001::ITSClusterMap<track::ITSClusterSizes>, track::v001::ITSNCls<track::ITSClusterSizes>, track::v001::ITSNClsInnerBarrel<track::ITSClusterSizes>,
+                            track::HasITS<track::DetectorMap>, track::HasTPC<track::DetectorMap>, track::HasTRD<track::DetectorMap>, track::HasTOF<track::DetectorMap>,
+                            emprimaryelectron::Signed1Pt<track::Pt, emprimaryelectron::Sign>,
+                            emprimaryelectron::P<track::Pt, track::Eta>,
+                            emprimaryelectron::Px<track::Pt, track::Phi>,
+                            emprimaryelectron::Py<track::Pt, track::Phi>,
+                            emprimaryelectron::Pz<track::Pt, track::Eta>,
+                            emprimaryelectron::Theta<track::Tgl>,
+                            emprimaryelectron::MeanClusterSizeITS<track::ITSClusterSizes>,
+                            emprimaryelectron::MeanClusterSizeITSib<track::ITSClusterSizes>,
+                            emprimaryelectron::MeanClusterSizeITSob<track::ITSClusterSizes>);
+
+using EMPrimaryElectrons = EMPrimaryElectrons_001;
 // iterators
 using EMPrimaryElectron = EMPrimaryElectrons::iterator;
 
