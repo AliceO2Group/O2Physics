@@ -658,8 +658,7 @@ struct HfTaskLc {
   /// \tparam fillMl switch to fill ML histograms
   template <bool fillMl, typename CollType, typename CandType>
   void runAnalysisPerCollisionData(CollType const& collisions,
-                                   CandType const& candidates,
-                                   aod::Tracks const&)
+                                   CandType const& candidates)
   {
 
     for (const auto& collision : collisions) {
