@@ -14,7 +14,7 @@
 /// \author Ravindra Singh, GSI, ravindra.singh@cern.ch
 
 #include <string>
-#include <vector> 
+#include <vector>
 #include "CCDB/BasicCCDBManager.h"
 
 #include "Common/Core/trackUtilities.h"
