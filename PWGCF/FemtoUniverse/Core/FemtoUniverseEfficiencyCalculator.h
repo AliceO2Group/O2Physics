@@ -43,8 +43,8 @@ struct EfficiencyCalculator {
   EfficiencyCalculator(Task* task, int PDG1, int PDG2, MCRecoHist<1>& mcRecoHist1, MCRecoHist<2>& mcRecoHist2)
     : task(task), PDG1(PDG1), PDG2(PDG2), mcRecoHist1(mcRecoHist1), mcRecoHist2(mcRecoHist2), registry(task->efficiencyRegistry)
   {
-    mcTruthHist1.init(&registry, task->ConfTempFitVarpTBins, task->ConfTempFitVarPDGBins, 0, PDG1, false);
-    mcTruthHist2.init(&registry, task->ConfTempFitVarpTBins, task->ConfTempFitVarPDGBins, 0, PDG2, false);
+    mcTruthHist1.init(&registry, task->ConfTempFitVarpTBins, task->ConfTempFitVarPDGBins, false, PDG1, false);
+    mcTruthHist2.init(&registry, task->ConfTempFitVarpTBins, task->ConfTempFitVarPDGBins, false, PDG2, false);
 
     registry.add("Efficiency/part1", "Efficiency origin/generated ; p_{T} (GeV/c); Efficiency", HistType::kTH1F, {{100, 0, 4}});
     registry.add("Efficiency/part2", "Efficiency origin/generated ; p_{T} (GeV/c); Efficiency", HistType::kTH1F, {{100, 0, 4}});
@@ -74,12 +74,16 @@ struct EfficiencyCalculator {
 
   template <uint8_t N>
     requires IsOneOrTwo<N>
-  auto fillMCTruth(auto particle) -> void
+  auto doMCTruth(auto particles, int pdg) -> void
   {
-    if constexpr (N == 1) {
-      mcTruthHist1.fillQA<false, false>(particle);
-    } else if constexpr (N == 2) {
-      mcTruthHist2.fillQA<false, false>(particle);
+    for (const auto& particle : particles) {
+      if (static_cast<int>(particle.pidcut()) == pdg) {
+        if constexpr (N == 1) {
+          mcTruthHist1.fillQA<false, false>(particle);
+        } else if constexpr (N == 2) {
+          mcTruthHist2.fillQA<false, false>(particle);
+        }
+      }
     }
   }
 };
