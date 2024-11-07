@@ -197,7 +197,6 @@ struct qqbar2hypahyp {
     Configurable<float> maxDeltaTimeKaon{"cascSelections.maxDeltaTimeKaon", 1e+9, "check maximum allowed time"};
   } cascSelections;
 
-
   Configurable<bool> qaCentrality{"qaCentrality", false, "qa centrality flag: check base raw values"};
 
   // for MC
@@ -659,7 +658,7 @@ struct qqbar2hypahyp {
     histos.print();
   }
 
-  template<typename TCollision> // TCollision should be of the type: soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps>::iterator or so
+  template <typename TCollision> // TCollision should be of the type: soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps>::iterator or so
   void initCCDB(TCollision const& collision)
   {
     if (mRunNumber == collision.runNumber()) {
