@@ -565,12 +565,13 @@ struct MultiplicityTable {
               }
             }
 
-            int bcNumber = bc.globalBC() % 3564;
-
             tableExtra(collision.numContrib(), collision.chi2(), collision.collisionTimeRes(),
                        mRunNumber, collision.posZ(), collision.sel8(),
                        nHasITS, nHasTPC, nHasTOF, nHasTRD, nITSonly, nTPConly, nITSTPC,
-                       nAllTracksTPCOnly, nAllTracksITSTPC, collision.trackOccupancyInTimeRange(), collision.flags());
+                       nAllTracksTPCOnly, nAllTracksITSTPC,
+                       collision.trackOccupancyInTimeRange(),
+                       collision.ft0cOccupancyInTimeRange(),
+                       collision.flags());
           } break;
           case kMultSelections: // Multiplicity selections
           {

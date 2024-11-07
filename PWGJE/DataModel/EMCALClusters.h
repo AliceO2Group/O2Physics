@@ -36,6 +36,7 @@ const EMCALClusterDefinition kV3Default(ClusterAlgorithm_t::kV3, 10, 1, "kV3Defa
 const EMCALClusterDefinition kV3Variation1(ClusterAlgorithm_t::kV3, 11, 1, "kV3Variation1", 0.5, 0.1, -10000, 10000, true, 0.);
 const EMCALClusterDefinition kV3Variation2(ClusterAlgorithm_t::kV3, 12, 1, "kV3Variation2", 0.5, 0.1, -10000, 10000, false, 0.);
 const EMCALClusterDefinition kV3Variation3(ClusterAlgorithm_t::kV3, 13, 1, "kV3Variation3", 0.5, 0.1, -10000, 10000, true, 20.);
+const EMCALClusterDefinition kV3LowSeed(ClusterAlgorithm_t::kV3, 14, 1, "kV3LowSeed", 0.3, 0.1, -10000, 10000, false, 0.);
 
 /// \brief function returns EMCALClusterDefinition for the given name
 /// \param name name of the cluster definition
@@ -56,6 +57,8 @@ const EMCALClusterDefinition getClusterDefinitionFromString(const std::string& c
     return kV3Variation2;
   } else if (clusterDefinitionName == "kV3Variation3") {
     return kV3Variation3;
+  } else if (clusterDefinitionName == "kV3LowSeed") {
+    return kV3LowSeed;
   } else {
     throw std::invalid_argument("Cluster definition name not recognized");
   }

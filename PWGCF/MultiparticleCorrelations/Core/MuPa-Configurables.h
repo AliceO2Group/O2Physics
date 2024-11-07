@@ -178,7 +178,7 @@ struct : ConfigurableGroup {
   Configurable<vector<int>> cfMultRangeInternalValidation{"cfMultRangeInternalValidation", {1000, 1001}, "{min, max}, with convention: min <= M < max"};
 } cf_iv;
 
-// Results histograms:
+// *) Results histograms:
 struct : ConfigurableGroup {
   Configurable<bool> cfSaveResultsHistograms{"cfSaveResultsHistograms", false, "save or not results histograms"};
   // Fixed-length binning (default):
@@ -186,15 +186,14 @@ struct : ConfigurableGroup {
   Configurable<vector<float>> cfFixedLength_cent_bins{"cfFixedLength_cent_bins", {110, 0., 110.}, "nCentBins, centMin, centMax"};
   Configurable<vector<float>> cfFixedLength_pt_bins{"cfFixedLength_pt_bins", {1000, 0., 100.}, "nPtBins, ptMin, ptMax"};
   Configurable<vector<float>> cfFixedLength_eta_bins{"cfFixedLength_eta_bins", {1000, -2., 2.}, "nEtaBins, etaMin, etaMax"};
-  // Variable-length binning: TBI 20240113 I do it via string + tokenize + Atof(), use arrays eventually as for FixedLength case above.
   Configurable<bool> cfUseVariableLength_mult_bins{"cfUseVariableLength_mult_bins", false, "use or not variable-length multiplicity bins"};
-  Configurable<string> cfVariableLength_mult_bins{"cfVariableLength_mult_bins", "0.,100.,250.,1000.", "variable-length multiplicity bins"};
+  Configurable<vector<float>> cfVariableLength_mult_bins{"cfVariableLength_mult_bins", {0., 5., 6., 7., 8., 9., 100., 200., 500., 1000., 10000.}, "variable-length multiplicity bins"};
   Configurable<bool> cfUseVariableLength_cent_bins{"cfUseVariableLength_cent_bins", false, "use or not variable-length centrality bins"};
-  Configurable<string> cfVariableLength_cent_bins{"cfVariableLength_cent_bins", "0.,10.,50.,100.", "variable-length centrality bins"};
+  Configurable<vector<float>> cfVariableLength_cent_bins{"cfVariableLength_cent_bins", {0., 10., 50., 100.}, "variable-length centrality bins"};
   Configurable<bool> cfUseVariableLength_pt_bins{"cfUseVariableLength_pt_bins", false, "use or not variable-length pt bins"};
-  Configurable<string> cfVariableLength_pt_bins{"cfVariableLength_pt_bins", "1.0,2.0,5.0", "variable-length pt bins"};
+  Configurable<vector<float>> cfVariableLength_pt_bins{"cfVariableLength_pt_bins", {0.20, 0.30, 0.40, 0.65, 1.00, 2.00, 5.00}, "variable-length pt bins"};
   Configurable<bool> cfUseVariableLength_eta_bins{"cfUseVariableLength_eta_bins", false, "use or not variable-length eta bins"};
-  Configurable<string> cfVariableLength_eta_bins{"cfVariableLength_eta_bins", "-0.8,-0.4,0.0,0.4,0.8", "variable-length eta bins"};
+  Configurable<vector<float>> cfVariableLength_eta_bins{"cfVariableLength_eta_bins", {3.0, -1.0, -0.4, 0.0, 0.4, 1.0, 3.0}, "variable-length eta bins"};
 } cf_res;
 
 #endif // PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_CONFIGURABLES_H_

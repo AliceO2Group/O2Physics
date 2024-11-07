@@ -10,42 +10,37 @@
 // or submit itself to any jurisdiction.
 
 /// \file FFitWeights.cxx
-/// \brief Implementation file for FFitWeights.h, see the header fore more information
+/// \brief Implementation file for FFitWeights.h, see the header for more information
 ///
-/// \author Joachim C. K. B. Hansen, Lund University
+/// \author Joachim C. K. B. Hansen
 
 #include "FFitWeights.h"
 
-// using std::complex;
-// using std::pair;
-// using std::string;
-// using std::vector;
+#include <TSpline.h>
 
 ClassImp(FFitWeights)
 
   FFitWeights::FFitWeights() : TNamed("", ""),
                                fW_data{nullptr},
-                               vGain{0},
                                CentBin{100},
-                               ChIDBin{220},
-                               sAmpl{nullptr},
-                               sqVec{nullptr},
-                               sqCorVec{nullptr}
+                               qAxis{nullptr},
+                               nResolution{3000},
+                               qnTYPE{0}
 {
 }
 
 FFitWeights::FFitWeights(const char* name) : TNamed(name, name),
                                              fW_data{nullptr},
-                                             vGain{0},
                                              CentBin{100},
-                                             ChIDBin{220},
-                                             sAmpl{nullptr},
-                                             sqVec{nullptr},
-                                             sqCorVec{nullptr} {}
+                                             qAxis{nullptr},
+                                             nResolution{3000},
+                                             qnTYPE{0} {}
 
 FFitWeights::~FFitWeights()
 {
   delete fW_data;
+  if (qAxis)
+    delete qAxis;
 };
 
 void FFitWeights::Init()
@@ -54,31 +49,14 @@ void FFitWeights::Init()
   fW_data->SetName("FFitWeights_Data");
   fW_data->SetOwner(kTRUE);
 
-  this->SetBinAxis(1000, 0, 5000, 0);
-  this->SetBinAxis(250, -3500, 3500, 1);
-  this->SetBinAxis(250, -250, 250, 2);
-
-  const char* tnd = "FT0Ampl";
-  fW_data->Add(new TH2F(tnd, ";channel;amplitude", ChIDBin, 0, ChIDBin, sAmpl->GetNbins(), sAmpl->GetXmin(), sAmpl->GetXmax()));
-  fW_data->Add(new TH2F(Form("%sCorr", tnd), ";channel;amplitude", ChIDBin, 0, ChIDBin, sAmpl->GetNbins(), sAmpl->GetXmin(), sAmpl->GetXmax()));
-
-  fW_data->Add(new TH2F(Form("hQ%s%i_FT0C", "x", 2), ";Centrality;Qx_{2}", CentBin, 0, CentBin, sqVec->GetNbins(), sqVec->GetXmin(), sqVec->GetXmax()));
-  fW_data->Add(new TH2F(Form("hQ%s%i_FT0C", "y", 2), ";Centrality;Qy_{2}", CentBin, 0, CentBin, sqVec->GetNbins(), sqVec->GetXmin(), sqVec->GetXmax()));
-  fW_data->Add(new TH2F(Form("hQ%s%i_FT0C", "x", 3), ";Centrality;Qx_{3}", CentBin, 0, CentBin, sqVec->GetNbins(), sqVec->GetXmin(), sqVec->GetXmax()));
-  fW_data->Add(new TH2F(Form("hQ%s%i_FT0C", "y", 3), ";Centrality;Qy_{3}", CentBin, 0, CentBin, sqVec->GetNbins(), sqVec->GetXmin(), sqVec->GetXmax()));
-
-  fW_data->Add(new TH2F(Form("hQ%s%i_FT0C_Rec", "x", 2), ";Centrality;Qx_{2}", CentBin, 0, CentBin, sqVec->GetNbins(), sqVec->GetXmin(), sqVec->GetXmax()));
-  fW_data->Add(new TH2F(Form("hQ%s%i_FT0C_Rec", "y", 2), ";Centrality;Qy_{2}", CentBin, 0, CentBin, sqVec->GetNbins(), sqVec->GetXmin(), sqVec->GetXmax()));
-  fW_data->Add(new TH2F(Form("hQ%s%i_FT0C_Rec", "x", 3), ";Centrality;Qx_{3}", CentBin, 0, CentBin, sqVec->GetNbins(), sqVec->GetXmin(), sqVec->GetXmax()));
-  fW_data->Add(new TH2F(Form("hQ%s%i_FT0C_Rec", "y", 3), ";Centrality;Qy_{3}", CentBin, 0, CentBin, sqVec->GetNbins(), sqVec->GetXmin(), sqVec->GetXmax()));
-
-  fW_data->Add(new TH2F(Form("hQ%s%i_FT0C_RecTot", "x", 2), ";Centrality;Qx_{2}", CentBin, 0, CentBin, sqCorVec->GetNbins(), sqCorVec->GetXmin(), sqCorVec->GetXmax()));
-  fW_data->Add(new TH2F(Form("hQ%s%i_FT0C_RecTot", "y", 2), ";Centrality;Qy_{2}", CentBin, 0, CentBin, sqCorVec->GetNbins(), sqCorVec->GetXmin(), sqCorVec->GetXmax()));
-  fW_data->Add(new TH2F(Form("hQ%s%i_FT0C_RecTot", "x", 3), ";Centrality;Qx_{3}", CentBin, 0, CentBin, sqCorVec->GetNbins(), sqCorVec->GetXmin(), sqCorVec->GetXmax()));
-  fW_data->Add(new TH2F(Form("hQ%s%i_FT0C_RecTot", "y", 3), ";Centrality;Qy_{3}", CentBin, 0, CentBin, sqCorVec->GetNbins(), sqCorVec->GetXmin(), sqCorVec->GetXmax()));
+  if (!qAxis)
+    this->SetBinAxis(500, 0, 25);
+  for (const auto& qn : qnTYPE) {
+    fW_data->Add(new TH2D(this->GetQName(qn.first, qn.second.c_str()), this->GetAxisName(qn.first, qn.second.c_str()), CentBin, 0, CentBin, qAxis->GetNbins(), qAxis->GetXmin(), qAxis->GetXmax()));
+  }
 };
 
-void FFitWeights::FillFT0(std::size_t iCh, float amplitude, float GainCst)
+void FFitWeights::Fill(float centrality, float qn, int nh, const char* pf)
 {
   TObjArray* tar{nullptr};
 
@@ -86,209 +64,107 @@ void FFitWeights::FillFT0(std::size_t iCh, float amplitude, float GainCst)
   if (!tar)
     return;
 
-  TH2F* th2 = reinterpret_cast<TH2F*>(tar->FindObject("FT0Ampl"));
+  TH2D* th2 = reinterpret_cast<TH2D*>(tar->FindObject(this->GetQName(nh, pf)));
   if (!th2) {
-    tar->Add(new TH2F("FT0Ampl", ";channel;amplitude", ChIDBin, 0, ChIDBin, sAmpl->GetNbins(), sAmpl->GetXmin(), sAmpl->GetXmax()));
-    th2 = reinterpret_cast<TH2F*>(tar->At(tar->GetEntries() - 1));
+    tar->Add(new TH2D(this->GetQName(nh, pf), this->GetAxisName(nh, pf), CentBin, 0, CentBin, qAxis->GetNbins(), qAxis->GetXmin(), qAxis->GetXmax()));
+    th2 = reinterpret_cast<TH2D*>(tar->At(tar->GetEntries() - 1));
   }
-  th2->Fill(iCh, amplitude);
-
-  TH2F* th2Cor = reinterpret_cast<TH2F*>(tar->FindObject("FT0AmplCorr"));
-  if (!th2Cor) {
-    tar->Add(new TH2F("FT0AmplCorr", ";channel;amplitude", ChIDBin, 0, ChIDBin, sAmpl->GetNbins(), sAmpl->GetXmin(), sAmpl->GetXmax()));
-    th2Cor = reinterpret_cast<TH2F*>(tar->At(tar->GetEntries() - 1));
-  }
-  th2Cor->Fill(iCh, amplitude / GainCst);
+  th2->Fill(centrality, qn);
 };
 
-void FFitWeights::FillQ(float mult, float vec, int nHarm, const char* coord, const char* qType)
+Long64_t FFitWeights::Merge(TCollection* collist)
 {
-  TObjArray* tar{nullptr};
-
-  tar = fW_data;
-  if (!tar)
-    return;
-
-  TH2F* th2 = reinterpret_cast<TH2F*>(tar->FindObject(Form("hQ%s%i_FT0C%s", coord, nHarm, qType)));
-  if (!th2) {
-    tar->Add(new TH2F(Form("hQ%s%i_FT0C%s", coord, nHarm, qType), Form(";Centrality;Q%s_{%i}", coord, nHarm), CentBin, 0, CentBin, sqVec->GetNbins(), sqVec->GetXmin(), sqVec->GetXmax()));
-    th2 = reinterpret_cast<TH2F*>(tar->At(tar->GetEntries() - 1));
+  Long64_t nmerged = 0;
+  if (!fW_data) {
+    fW_data = new TObjArray();
+    fW_data->SetName("FFitWeights_Data");
+    fW_data->SetOwner(kTRUE);
   }
-  th2->Fill(mult, vec);
+  FFitWeights* l_w = 0;
+  TIter all_w(collist);
+  while ((l_w = (reinterpret_cast<FFitWeights*>(all_w())))) {
+    AddArray(fW_data, l_w->GetDataArray());
+    nmerged++;
+  }
+  return nmerged;
 };
-
-void FFitWeights::CreateGain()
+void FFitWeights::AddArray(TObjArray* targ, TObjArray* sour)
 {
-  vGain.clear();
-
-  TH1D* h1;
-  if (fW_data->GetEntries() < 1)
+  if (!sour) {
+    printf("Source array does not exist!\n");
     return;
-
-  TH2F* hGain = reinterpret_cast<TH2F*>(fW_data->At(0)->Clone("FT0Ampl"));
-  double vMean{0}; // = hGain->GetMean(2);
-  // c-side first bin ich: 97 (last 208)'
-  // gain split for c-side 144
-  hGain->GetXaxis()->SetRangeUser(96, 144);
-  float vMeanC_inner = hGain->GetMean(2);
-
-  hGain->GetXaxis()->SetRangeUser(144, 208);
-  float vMeanC_outer = hGain->GetMean(2);
-
-  hGain->GetXaxis()->SetRangeUser(0, -1);
-
-  for (int iCh{0}; iCh < hGain->GetNbinsX(); iCh++) {
-    h1 = static_cast<TH1D*>(hGain->ProjectionY(Form("proj%i", iCh), iCh, iCh));
-    double mean = h1->GetMean();
-    double meanErr = h1->GetMeanError();
-
-    if (iCh > 95 && iCh < 144)
-      vMean = vMeanC_inner;
-    else if (iCh > 144)
-      vMean = vMeanC_outer;
-    double fWeight = mean / vMean;
-
-    if (fWeight > 0) {
-      vGain.push_back(fWeight);
+  }
+  for (int i = 0; i < sour->GetEntries(); i++) {
+    TH2D* sourh = reinterpret_cast<TH2D*>(sour->At(i));
+    TH2D* targh = reinterpret_cast<TH2D*>(targ->FindObject(sourh->GetName()));
+    if (!targh) {
+      targh = reinterpret_cast<TH2D*>(sourh->Clone(sourh->GetName()));
+      targh->SetDirectory(0);
+      targ->Add(targh);
     } else {
-      vGain.push_back(1.0);
-    }
-
-    TObjArray* tar = fW_data;
-    if (!tar)
-      return;
-
-    fW_data->Add(new TH1F("FT0MultCorr", ";channel", ChIDBin, 0, ChIDBin));
-    TH1F* htmp = reinterpret_cast<TH1F*>(tar->FindObject("FT0MultCorr"));
-    if (!htmp)
-      return;
-
-    htmp->SetBinContent(iCh, mean);
-    htmp->SetBinError(iCh, meanErr);
-  }
-
-  // note to self if FT0A is implemented this has to be done differently
-};
-
-std::vector<float> FFitWeights::GetGain()
-{
-  return vGain;
-};
-
-void FFitWeights::CreateRecenter(const char* xy)
-{
-  if (fW_data->GetEntries() < 1)
-    return;
-
-  TObjArray* tar{nullptr};
-
-  tar = fW_data;
-  if (!tar)
-    return;
-
-  for (int nHarm{2}; nHarm <= 3; nHarm++) {
-    fW_data->Add(new TH1F(Form("havgQ%s%i_FT0C", xy, nHarm), "", CentBin, 0, CentBin));
-    TH1F* hRec = reinterpret_cast<TH1F*>(tar->FindObject(Form("havgQ%s%i_FT0C", xy, nHarm)));
-    if (!hRec)
-      return;
-
-    TH2F* hQ = reinterpret_cast<TH2F*>(fW_data->At(0)->Clone(Form("hQ%s%i_FT0C", xy, nHarm)));
-    TH1D* h1;
-
-    for (int i{1}; i < hQ->GetXaxis()->GetNbins() + 1; i++) {
-      h1 = static_cast<TH1D*>(hQ->ProjectionY(Form("proj%i_Q%s%is", i, xy, nHarm), i, i));
-
-      double mean = h1->GetMean();
-      double meanErr = h1->GetMeanError();
-      int binc = hRec->GetXaxis()->GetBinCenter(i);
-
-      hRec->SetBinContent(binc, mean);
-      hRec->SetBinError(binc, meanErr);
+      targh->Add(sourh);
     }
   }
 };
 
-void FFitWeights::CreateRMS(const char* xy)
+void FFitWeights::qSelectionSpline(std::vector<int> nhv, std::vector<std::string> stv) /* only execute OFFLINE */
 {
-  if (fW_data->GetEntries() < 1)
-    return;
-
   TObjArray* tar{nullptr};
 
   tar = fW_data;
   if (!tar)
     return;
 
-  for (int nHarm{2}; nHarm <= 3; nHarm++) {
-    fW_data->Add(new TH1F(Form("hrmsQ%s%i_FT0C", xy, nHarm), "", CentBin, 0, CentBin));
-    TH1F* hRec = reinterpret_cast<TH1F*>(tar->FindObject(Form("hrmsQ%s%i_FT0C", xy, nHarm)));
-    if (!hRec)
-      return;
+  for (const auto& pf : stv) {
+    for (const auto& nh : nhv) {
+      TH2D* th2 = reinterpret_cast<TH2D*>(tar->FindObject(this->GetQName(nh, pf.c_str())));
+      if (!th2) {
+        printf("qh not found!\n");
+        return;
+      }
 
-    TH2F* hQ = reinterpret_cast<TH2F*>(fW_data->At(0)->Clone(Form("hQ%s%i_FT0C", xy, nHarm)));
-    TH1D* h1;
-
-    for (int i{1}; i < hQ->GetXaxis()->GetNbins() + 1; i++) {
-      h1 = static_cast<TH1D*>(hQ->ProjectionY(Form("proj%i_Q%s%is", i, xy, nHarm), i, i));
-
-      double mean = h1->GetRMS();
-      double meanErr = h1->GetRMSError();
-      int binc = hRec->GetXaxis()->GetBinCenter(i);
-
-      hRec->SetBinContent(binc, mean);
-      hRec->SetBinError(binc, meanErr);
+      TH1D* tmp = nullptr;
+      TGraph* tmpgr = nullptr;
+      TSpline3* spline = nullptr;
+      for (int iSP{0}; iSP < 90; iSP++) {
+        tmp = th2->ProjectionY(Form("q%i_%i_%i", nh, iSP, iSP + 1), iSP + 1, iSP + 1);
+        std::vector<double> xq(nResolution);
+        std::vector<double> yq(nResolution);
+        for (int i{0}; i < nResolution; i++)
+          xq[i] = static_cast<double>(i + 1) / static_cast<double>(nResolution);
+        tmp->GetQuantiles(nResolution, yq.data(), xq.data());
+        tmpgr = new TGraph(nResolution, yq.data(), xq.data());
+        spline = new TSpline3(Form("sp_q%i%s_%i", nh, pf.c_str(), iSP), tmpgr);
+        spline->SetName(Form("sp_q%i%s_%i", nh, pf.c_str(), iSP));
+        fW_data->Add(spline);
+      }
     }
   }
 };
 
-float FFitWeights::GetRecVal(int cent, const char* xy, const int nHarm)
+float FFitWeights::EvalSplines(float centr, const float& dqn, const int nh, const char* pf)
 {
   TObjArray* tar{nullptr};
 
   tar = fW_data;
   if (!tar)
-    return -999;
+    return -1;
 
-  TH1F* htmp = reinterpret_cast<TH1F*>(tar->FindObject(Form("havgQ%s%i_FT0C", xy, nHarm)));
+  int isp = static_cast<int>(centr);
+  if (isp < 0 || isp > 90) {
+    return -1;
+  }
 
-  return htmp->GetBinContent(cent);
+  TSpline3* spline = nullptr;
+  spline = reinterpret_cast<TSpline3*>(tar->FindObject(Form("sp_q%i%s_%i", nh, pf, isp)));
+  if (!spline) {
+    return -1;
+  }
+
+  float qn_val = 100. * spline->Eval(dqn);
+  if (qn_val < 0) {
+    return -1;
+  }
+
+  return qn_val;
 };
-
-float FFitWeights::GetRMSVal(int cent, const char* xy, const int nHarm)
-{
-  TObjArray* tar{nullptr};
-
-  tar = fW_data;
-  if (!tar)
-    return -999;
-
-  TH1F* htmp = reinterpret_cast<TH1F*>(tar->FindObject(Form("hrmsQ%s%i_FT0C", xy, nHarm)));
-
-  return htmp->GetBinContent(cent);
-};
-
-TH1F* FFitWeights::GetRecHist(const char* xy, const int nHarm)
-{
-  TObjArray* tar{nullptr};
-
-  tar = fW_data;
-  if (!tar)
-    return nullptr;
-
-  return reinterpret_cast<TH1F*>(tar->FindObject(Form("havgQ%s%i_FT0C", xy, nHarm)));
-};
-
-TH1F* FFitWeights::GetRmsHist(const char* xy, const int nHarm)
-{
-  TObjArray* tar{nullptr};
-
-  tar = fW_data;
-  if (!tar)
-    return nullptr;
-
-  return reinterpret_cast<TH1F*>(tar->FindObject(Form("hrmsQ%s%i_FT0C", xy, nHarm)));
-};
-
-// float FFitWeights::EventPlane(const float& x, const float& y, const float& nHarm) {
-//   return 1/nHarm * TMath::ATan2(y, x);
-// };

@@ -14,6 +14,9 @@
 // This code will create data table for inputs to machine learning for electrons.
 //    Please write to: daiki.sekihata@cern.ch
 
+#include <string>
+#include <map>
+#include <vector>
 #include <random>
 #include "Math/Vector4D.h"
 #include "Framework/runDataProcessing.h"
@@ -37,6 +40,7 @@
 #include "CCDB/BasicCCDBManager.h"
 #include "PWGEM/Dilepton/Utils/MCUtilities.h"
 #include "PWGEM/Dilepton/Utils/PairUtilities.h"
+#include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -64,10 +68,9 @@ DECLARE_SOA_COLUMN(MCPosY, mcposY, float); //!
 DECLARE_SOA_COLUMN(MCPosZ, mcposZ, float); //!
 } // namespace mycollision
 DECLARE_SOA_TABLE(MyCollisions, "AOD", "MYCOLLISION", //! vertex information of collision
-                  o2::soa::Index<>, bc::GlobalBC, bc::RunNumber, collision::PosX, collision::PosY, collision::PosZ, collision::NumContrib, evsel::Sel8, mycollision::Bz,
-                  mccollision::GeneratorsID, mycollision::MCPosX, mycollision::MCPosY, mycollision::MCPosZ,
-                  mult::MultTPC, mult::MultFV0A, mult::MultFV0C, mult::MultFT0A, mult::MultFT0C,
-                  mult::MultFDDA, mult::MultFDDC, mult::MultZNA, mult::MultZNC, mult::MultTracklets, mult::MultNTracksPV, mult::MultNTracksPVeta1);
+                  o2::soa::Index<>, bc::GlobalBC, bc::RunNumber, collision::PosX, collision::PosY, collision::PosZ, collision::NumContrib, evsel::NumTracksInTimeRange, evsel::Sel8, mycollision::Bz,
+                  mccollision::GeneratorsID, mycollision::MCPosX, mycollision::MCPosY, mycollision::MCPosZ, mult::MultNTracksPV,
+                  cent::CentFT0M, cent::CentFT0A, cent::CentFT0C);
 using MyCollision = MyCollisions::iterator;
 
 namespace mytrack
@@ -89,14 +92,13 @@ DECLARE_SOA_COLUMN(MotherPdgCodes, motherpdgCodes, std::vector<int>); //! eta va
 // reconstructed track information
 DECLARE_SOA_TABLE(MyTracks, "AOD", "MYTRACK", //!
                   o2::soa::Index<>, mytrack::MyCollisionId, mytrack::Sign,
-                  track::Pt, track::Eta, track::Phi,
+                  track::Pt, track::Eta, track::Phi, track::Tgl,
                   track::DcaXY, track::DcaZ, mytrack::DCAresXY, mytrack::DCAresZ, track::CZY,
                   track::TPCNClsFindable, mytrack::TPCNClsFound, mytrack::TPCNClsCrossedRows,
                   track::TPCChi2NCl, track::TPCInnerParam,
                   track::TPCSignal, pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaMu, pidtpc::TPCNSigmaPi, pidtpc::TPCNSigmaKa, pidtpc::TPCNSigmaPr,
                   pidtofbeta::Beta, pidtof::TOFNSigmaEl, pidtof::TOFNSigmaMu, pidtof::TOFNSigmaPi, pidtof::TOFNSigmaKa, pidtof::TOFNSigmaPr,
                   track::TOFChi2, track::ITSChi2NCl, track::ITSClusterSizes,
-                  track::TRDSignal, track::TRDPattern,
                   mytrack::MCVx, mytrack::MCVy, mytrack::MCVz,
                   mcparticle::PdgCode, mytrack::IsPhysicalPrimary, mytrack::MotherIds, mytrack::MotherPdgCodes);
 
@@ -132,7 +134,7 @@ DECLARE_SOA_TABLE(MyPairs, "AOD", "MYPAIR", //!
                   mypair::Mass, mypair::Pt, mypair::Eta, mypair::Phi, mypair::PhiV, mypair::PairDCAxy, mypair::PairDCAz,
                   mypair::CosOpAng, mypair::CosPA, mypair::Lxy, mypair::Chi2PCA,
                   mypair::IsSM, mypair::IsHF, mypair::PairType, mypair::IsPrompt,
-                  mcparticle::PdgCode, mcparticle::StatusCode, mcparticle::Flags,
+                  mcparticle::PdgCode, mcparticle::Flags,
                   mcparticle::Vx, mcparticle::Vy, mcparticle::Vz,
 
                   // dynamic column
@@ -163,7 +165,7 @@ struct TreeCreatorElectronML {
   HistogramRegistry registry{
     "registry",
     {
-      {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{5, 0.5f, 5.5f}}}},
+      {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{2, 0.f, 2.f}}}},
     },
   };
 
@@ -179,6 +181,10 @@ struct TreeCreatorElectronML {
   Configurable<bool> d_UseAbsDCA{"d_UseAbsDCA", true, "Use Abs DCAs"};
   Configurable<bool> d_UseWeightedPCA{"d_UseWeightedPCA", false, "Vertices use cov matrices"};
   Configurable<int> useMatCorrType{"useMatCorrType", 0, "0: none, 1: TGeo, 2: LUT"};
+
+  // collision
+  Configurable<float> maxVtxZ{"maxVtxZ", 10.0, "max VtxZ [cm]"};
+  Configurable<int> maxOccupancy{"maxOccupancy", 999999, "max occupancy"};
 
   // track
   Configurable<int> mincrossedrows{"mincrossedrows", 70, "min. crossed rows"};
@@ -197,6 +203,10 @@ struct TreeCreatorElectronML {
   Configurable<float> downSamplePr{"downSamplePr", 1.0, "down scaling factor for protons"};
   Configurable<float> downSampleMu{"downSampleMu", 1.0, "down scaling factor for muons"};
   Configurable<float> downSampleNucl{"downSampleNucl", 1.0, "down scaling factor for nuclei"};
+
+  // pid
+  Configurable<float> maxNSigmaElTPC{"maxNSigmaElTPC", 999, "max nsigma_el for TPC"};
+  Configurable<float> maxNSigmaElTOF{"maxNSigmaElTOF", 999, "max nsgima_el for TOF (if available)"};
 
   // pair
   Configurable<float> minPairPt{"minPairPt", 0.2, "min. pT,ee"};
@@ -257,7 +267,8 @@ struct TreeCreatorElectronML {
     fitter.setMatCorrType(matCorr);
   }
 
-  void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
+  template <typename TBC>
+  void initCCDB(TBC const& bc)
   {
     if (mRunNumber == bc.runNumber()) {
       return;
@@ -304,102 +315,6 @@ struct TreeCreatorElectronML {
       // setMatLUT only after magfield has been initalized (setMatLUT has implicit and problematic init field call if not)
       o2::base::Propagator::Instance()->setMatLUT(lut);
     }
-  }
-
-  template <typename TTrack>
-  float get_phiv(TTrack const& t1, TTrack const& t2)
-  {
-    // cos(phiv) = w*a /|w||a|
-    // with w = u x v
-    // and  a = u x z / |u x z|   , unit vector perpendicular to v12 and z-direction (magnetic field)
-    // u = v12 / |v12|            , the unit vector of v12
-    // v = v1 x v2 / |v1 x v2|    , unit vector perpendicular to v1 and v2
-
-    // float bz = fgFitterTwoProngBarrel.getBz();
-
-    ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron);
-    ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
-    ROOT::Math::PtEtaPhiMVector v12 = v1 + v2;
-
-    bool swapTracks = false;
-    if (v1.Pt() < v2.Pt()) { // ordering of track, pt1 > pt2
-      ROOT::Math::PtEtaPhiMVector v3 = v1;
-      v1 = v2;
-      v2 = v3;
-      swapTracks = true;
-    }
-
-    // momentum of e+ and e- in (ax,ay,az) axis. Note that az=0 by definition.
-    // vector product of pep X pem
-    float vpx = 0, vpy = 0, vpz = 0;
-    if (t1.sign() * t2.sign() > 0) { // Like Sign
-      if (!swapTracks) {
-        if (d_bz * t1.sign() < 0) {
-          vpx = v1.Py() * v2.Pz() - v1.Pz() * v2.Py();
-          vpy = v1.Pz() * v2.Px() - v1.Px() * v2.Pz();
-          vpz = v1.Px() * v2.Py() - v1.Py() * v2.Px();
-        } else {
-          vpx = v2.Py() * v1.Pz() - v2.Pz() * v1.Py();
-          vpy = v2.Pz() * v1.Px() - v2.Px() * v1.Pz();
-          vpz = v2.Px() * v1.Py() - v2.Py() * v1.Px();
-        }
-      } else { // swaped tracks
-        if (d_bz * t2.sign() < 0) {
-          vpx = v1.Py() * v2.Pz() - v1.Pz() * v2.Py();
-          vpy = v1.Pz() * v2.Px() - v1.Px() * v2.Pz();
-          vpz = v1.Px() * v2.Py() - v1.Py() * v2.Px();
-        } else {
-          vpx = v2.Py() * v1.Pz() - v2.Pz() * v1.Py();
-          vpy = v2.Pz() * v1.Px() - v2.Px() * v1.Pz();
-          vpz = v2.Px() * v1.Py() - v2.Py() * v1.Px();
-        }
-      }
-    } else { // Unlike Sign
-      if (!swapTracks) {
-        if (d_bz * t1.sign() > 0) {
-          vpx = v1.Py() * v2.Pz() - v1.Pz() * v2.Py();
-          vpy = v1.Pz() * v2.Px() - v1.Px() * v2.Pz();
-          vpz = v1.Px() * v2.Py() - v1.Py() * v2.Px();
-        } else {
-          vpx = v2.Py() * v1.Pz() - v2.Pz() * v1.Py();
-          vpy = v2.Pz() * v1.Px() - v2.Px() * v1.Pz();
-          vpz = v2.Px() * v1.Py() - v2.Py() * v1.Px();
-        }
-      } else { // swaped tracks
-        if (d_bz * t2.sign() > 0) {
-          vpx = v1.Py() * v2.Pz() - v1.Pz() * v2.Py();
-          vpy = v1.Pz() * v2.Px() - v1.Px() * v2.Pz();
-          vpz = v1.Px() * v2.Py() - v1.Py() * v2.Px();
-        } else {
-          vpx = v2.Py() * v1.Pz() - v2.Pz() * v1.Py();
-          vpy = v2.Pz() * v1.Px() - v2.Px() * v1.Pz();
-          vpz = v2.Px() * v1.Py() - v2.Py() * v1.Px();
-        }
-      }
-    }
-
-    // unit vector of pep X pem
-    float vx = vpx / TMath::Sqrt(vpx * vpx + vpy * vpy + vpz * vpz);
-    float vy = vpy / TMath::Sqrt(vpx * vpx + vpy * vpy + vpz * vpz);
-    float vz = vpz / TMath::Sqrt(vpx * vpx + vpy * vpy + vpz * vpz);
-
-    float px = v12.Px();
-    float py = v12.Py();
-    float pz = v12.Pz();
-
-    // unit vector of (pep+pem)
-    float ux = px / TMath::Sqrt(px * px + py * py + pz * pz);
-    float uy = py / TMath::Sqrt(px * px + py * py + pz * pz);
-    float uz = pz / TMath::Sqrt(px * px + py * py + pz * pz);
-    float ax = uy / TMath::Sqrt(ux * ux + uy * uy);
-    float ay = -ux / TMath::Sqrt(ux * ux + uy * uy);
-
-    // The third axis defined by vector product (ux,uy,uz)X(vx,vy,vz)
-    float wx = uy * vz - uz * vy;
-    float wy = uz * vx - ux * vz;
-    // by construction, (wx,wy,wz) must be a unit vector. Measure angle between (wx,wy,wz) and (ax,ay,0).
-    // The angle between them should be small if the pair is conversion. This function then returns values close to pi!
-    return TMath::ACos(wx * ax + wy * ay); // phiv in [0,pi] //cosPhiV = wx * ax + wy * ay;
   }
 
   template <typename TMCParticle1, typename TMCParticle2, typename TMCParticles>
@@ -466,6 +381,15 @@ struct TreeCreatorElectronML {
     if (track.itsNClsInnerBarrel() < minITSClustersIB) {
       return false;
     }
+
+    if (fabs(track.tpcNSigmaEl()) > maxNSigmaElTPC) {
+      return false;
+    }
+    if (track.hasTOF()) {
+      if (fabs(track.tofNSigmaEl()) > maxNSigmaElTOF) {
+        return false;
+      }
+    }
     return true;
   }
 
@@ -516,18 +440,14 @@ struct TreeCreatorElectronML {
   }
 
   template <typename TTrack, typename TMCParticles, typename TCollision>
-  void doPair(TTrack const& t1, TTrack const& t2, int pairtype, TMCParticles const& mctracks, TCollision const& collision, std::map<uint64_t, int>& fNewLabels, std::vector<uint64_t>& fSelected_old_labels, int& fCounter)
+  void doPair(TTrack const& t1, TTrack const& t2, int mc1_id, int mc2_id, int pairtype, TMCParticles const& mctracks, TCollision const& collision, std::map<uint64_t, int>& fNewLabels, std::vector<uint64_t>& fSelected_old_labels, int& fCounter, uint64_t collisionId, std::vector<uint64_t>& collisions_old_labels, int& collisions_counter)
   {
     if (!IsSelected(t1) || !IsSelected(t2)) {
       return;
     }
 
-    if (!t1.has_mcParticle() || !t2.has_mcParticle()) {
-      return;
-    }
-
-    auto mc1 = mctracks.iteratorAt(t1.mcParticleId());
-    auto mc2 = mctracks.iteratorAt(t2.mcParticleId());
+    auto mc1 = mctracks.iteratorAt(mc1_id);
+    auto mc2 = mctracks.iteratorAt(mc2_id);
 
     if (abs(mc1.pdgCode()) != 11 || abs(mc2.pdgCode()) != 11) {
       return;
@@ -541,7 +461,7 @@ struct TreeCreatorElectronML {
       return;
     }
 
-    float phiv = get_phiv(t1, t2);
+    float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(t1.px(), t1.py(), t1.pz(), t2.px(), t2.py(), t2.pz(), t1.sign(), t2.sign(), d_bz);
     float pair_dca_xy = sqrt((pow(t1.dcaXY() / sqrt(t1.cYY()), 2) + pow(t2.dcaXY() / sqrt(t2.cYY()), 2)) / 2.);
     float pair_dca_z = sqrt((pow(t1.dcaZ() / sqrt(t1.cZZ()), 2) + pow(t2.dcaZ() / sqrt(t2.cZZ()), 2)) / 2.);
 
@@ -557,7 +477,6 @@ struct TreeCreatorElectronML {
 
     bool is_prompt = false;
     int pdgCode = 0;
-    int statusCode = 0;
     uint8_t flags = 0;
     float vx = 0.f;
     float vy = 0.f;
@@ -572,7 +491,6 @@ struct TreeCreatorElectronML {
         auto mcpair = mctracks.iteratorAt(common_mother_id);
         is_prompt = true; // only relevant for prompt jpsi
         pdgCode = mcpair.pdgCode();
-        statusCode = mcpair.statusCode();
         flags = mcpair.flags();
         vx = mcpair.vx();
         vy = mcpair.vy();
@@ -617,181 +535,290 @@ struct TreeCreatorElectronML {
         fSelected_old_labels.push_back(t2.globalIndex());
         fCounter++;
       }
-      mypair(mycollision.lastIndex(), fNewLabels[t1.globalIndex()], fNewLabels[t2.globalIndex()],
+      if (find(collisions_old_labels.begin(), collisions_old_labels.end(), collisionId) == collisions_old_labels.end()) {
+        collisions_counter++;
+        collisions_old_labels.push_back(collisionId);
+      }
+      mypair(collisions_counter, fNewLabels[t1.globalIndex()], fNewLabels[t2.globalIndex()],
              v12.M(), v12.Pt(), v12.Eta(), v12.Phi(), phiv, pair_dca_xy, pair_dca_z, cosOpAng, cosPA, lxy_proper, pow(pca, 2),
-             isSM, isHF, pairtype, is_prompt, pdgCode, statusCode, flags,
+             isSM, isHF, pairtype, is_prompt, pdgCode, flags,
              vx, vy, vz);
     }
+  }
+
+  template <typename TTrack, typename TMCParticle, typename TMCParticles>
+  void doSingleTrack(TTrack& track, TMCParticle& mctrack, TMCParticles& mctracks, uint64_t collisionId, std::vector<uint64_t>& collisions_old_labels, int& collisions_counter, bool use_downsample = true)
+  {
+    if (!IsSelected(track)) {
+      return;
+    }
+
+    if ((!use_downsample) || (downSample(abs(mctrack.pdgCode())))) {
+      // store all mother relation
+      std::vector<int> mothers_id;
+      std::vector<int> mothers_pdg;
+      if (mctrack.has_mothers()) {
+        int motherid = mctrack.mothersIds()[0]; // first mother index
+        while (motherid > -1) {
+          if (motherid < mctracks.size()) { // protect against bad mother indices. why is this needed?
+            auto mp = mctracks.iteratorAt(motherid);
+            mothers_id.emplace_back(motherid);
+            mothers_pdg.emplace_back(mp.pdgCode());
+
+            if (mp.has_mothers()) {
+              motherid = mp.mothersIds()[0];
+            } else {
+              motherid = -999;
+            }
+          } else {
+            LOGF(info, "Mother label(%d) exceeds the McParticles size(%d)", motherid, mctracks.size());
+          }
+        }
+      }
+      if (find(collisions_old_labels.begin(), collisions_old_labels.end(), collisionId) == collisions_old_labels.end()) {
+        collisions_counter++;
+        collisions_old_labels.push_back(collisionId);
+      }
+      mytrack(collisions_counter,
+              track.sign(), track.pt(), track.eta(), track.phi(), track.tgl(), track.dcaXY(), track.dcaZ(), sqrt(track.cYY()), sqrt(track.cZZ()), track.cZY(),
+              track.tpcNClsFindable(), track.tpcNClsFound(), track.tpcNClsCrossedRows(),
+              track.tpcChi2NCl(), track.tpcInnerParam(),
+              track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
+              track.beta(), track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
+              track.tofChi2(), track.itsChi2NCl(), track.itsClusterSizes(),
+              mctrack.vx(), mctrack.vy(), mctrack.vz(),
+              mctrack.pdgCode(), mctrack.isPhysicalPrimary(), mothers_id, mothers_pdg);
+
+      mothers_id.shrink_to_fit();
+      mothers_pdg.shrink_to_fit();
+    }
+  }
+
+  template <typename TCollision, typename TMCCollision>
+  void doCollision(TCollision& collision, TMCCollision& mccollision, uint64_t globalBC, int runNumber)
+  {
+    registry.fill(HIST("hEventCounter"), 1.5);
+    mycollision(globalBC, runNumber, collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), collision.trackOccupancyInTimeRange(), collision.sel8(), d_bz,
+                mccollision.generatorsID(), mccollision.posX(), mccollision.posY(), mccollision.posZ(),
+                collision.multNTracksPV(), collision.centFT0M(), collision.centFT0A(), collision.centFT0C());
+  }
+
+  template <typename TCollision, typename TBC, typename TMCCollision>
+  void doCollision(TCollision& collision, TBC& bc, TMCCollision& mccollision)
+  {
+    doCollision(collision, mccollision, bc.globalBC(), bc.runNumber());
   }
 
   Filter trackFilter = o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& o2::aod::track::itsChi2NCl < maxchi2its&& o2::aod::track::tpcChi2NCl < maxchi2tpc&& nabs(o2::aod::track::dcaXY) < maxDcaXY&& nabs(o2::aod::track::dcaZ) < maxDcaZ;
   using MyFilteredTracksMC = soa::Filtered<FullTracksExtMC>;
   Preslice<MyFilteredTracksMC> perCollision = aod::track::collisionId;
 
-  void processSingleTrack(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels> const& collisions, aod::BCsWithTimestamps const&, MyFilteredTracksMC const& tracks, aod::McParticles const& mctracks, aod::McCollisions const&)
+  Filter collisionFilter = nabs(o2::aod::collision::posZ) < maxVtxZ && o2::aod::evsel::trackOccupancyInTimeRange < maxOccupancy;
+  using MyFilteredCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>>;
+
+  void processSingleTrack(MyFilteredCollisions const& collisions, aod::BCsWithTimestamps const&, MyFilteredTracksMC const& tracks, aod::McParticles const& mctracks, aod::McCollisions const&)
   {
+    int collisions_counter = -1;
+    std::vector<uint64_t> collisions_old_labels;
+
     for (auto& collision : collisions) {
-      // TODO: investigate the collisions without corresponding mcCollision
       if (!collision.has_mcCollision()) {
         continue;
       }
-
-      registry.fill(HIST("hEventCounter"), 1.0); // all
-
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-      auto mccollision = collision.mcCollision();
-      mycollision(bc.globalBC(), bc.runNumber(), collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), collision.sel8(), d_bz,
-                  mccollision.generatorsID(), mccollision.posX(), mccollision.posY(), mccollision.posZ(),
-                  collision.multTPC(), collision.multFV0A(), collision.multFV0C(), collision.multFT0A(), collision.multFT0C(),
-                  collision.multFDDA(), collision.multFDDC(), collision.multZNA(), collision.multZNC(), collision.multTracklets(), collision.multNTracksPV(), collision.multNTracksPVeta1());
+      registry.fill(HIST("hEventCounter"), 0.5);
 
       auto tracks_coll = tracks.sliceBy(perCollision, collision.globalIndex());
       for (auto& track : tracks_coll) {
-
-        if (!IsSelected(track)) {
+        if (!track.has_mcParticle()) {
           continue;
         }
-
-        if (!track.has_mcParticle()) {
-          continue; // If no MC particle is found, skip the track
-        }
         auto mctrack = track.mcParticle_as<aod::McParticles>();
+        doSingleTrack(track, mctrack, mctracks, collision.globalIndex(), collisions_old_labels, collisions_counter);
+      }
+    }
 
-        // store all mother relation
-        std::vector<int> mothers_id;
-        std::vector<int> mothers_pdg;
-        if (mctrack.has_mothers()) {
-          int motherid = mctrack.mothersIds()[0]; // first mother index
-          while (motherid > -1) {
-            if (motherid < mctracks.size()) { // protect against bad mother indices. why is this needed?
-              auto mp = mctracks.iteratorAt(motherid);
-              mothers_id.emplace_back(motherid);
-              mothers_pdg.emplace_back(mp.pdgCode());
-
-              if (mp.has_mothers()) {
-                motherid = mp.mothersIds()[0];
-              } else {
-                motherid = -999;
-              }
-            } else {
-              LOGF(info, "Mother label(%d) exceeds the McParticles size(%d)", motherid, mctracks.size());
-            }
-          }
-        }
-
-        if (downSample(abs(mctrack.pdgCode()))) {
-          mytrack(mycollision.lastIndex(),
-                  track.sign(), track.pt(), track.eta(), track.phi(), track.dcaXY(), track.dcaZ(), sqrt(track.cYY()), sqrt(track.cZZ()), track.cZY(),
-                  track.tpcNClsFindable(), track.tpcNClsFound(), track.tpcNClsCrossedRows(),
-                  track.tpcChi2NCl(), track.tpcInnerParam(),
-                  track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
-                  track.beta(), track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
-                  track.tofChi2(), track.itsChi2NCl(), track.itsClusterSizes(),
-                  track.trdSignal(), track.trdPattern(),
-                  mctrack.vx(), mctrack.vy(), mctrack.vz(),
-                  mctrack.pdgCode(), mctrack.isPhysicalPrimary(), mothers_id, mothers_pdg);
-        }
-        mothers_id.shrink_to_fit();
-        mothers_pdg.shrink_to_fit();
-
-      } // end of track loop
-    }   // end of collision loop
-  }     // end of process
+    for (uint64_t collision_label : collisions_old_labels) {
+      auto collision = collisions.rawIteratorAt(collision_label);
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      auto mccollision = collision.mcCollision();
+      doCollision(collision, bc, mccollision);
+    }
+  }
   PROCESS_SWITCH(TreeCreatorElectronML, processSingleTrack, "produce ML input for single track level", false);
+
+  using MyFilteredCollisionsSkimmed = soa::Filtered<soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMMCEventLabels>>;
+  using MyFilteredTracksMCSkimmed = soa::Filtered<soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronsCov, aod::EMPrimaryElectronMCLabels, aod::EMPrimaryElectronEMEventIds>>;
+  Preslice<MyFilteredTracksMCSkimmed> perCollisionSkimmed = aod::emprimaryelectron::emeventId;
+
+  void processSingleTrackSkimmed(MyFilteredCollisionsSkimmed const& collisions, MyFilteredTracksMCSkimmed const& tracks, aod::EMMCParticles const& mctracks, aod::EMMCEvents const&)
+  {
+    int collisions_counter = -1;
+    std::vector<uint64_t> collisions_old_labels;
+
+    for (auto& collision : collisions) {
+      if (!collision.has_emmcevent()) {
+        continue;
+      }
+      registry.fill(HIST("hEventCounter"), 0.5);
+
+      auto tracks_coll = tracks.sliceBy(perCollisionSkimmed, collision.globalIndex());
+      for (auto& track : tracks_coll) {
+        if (!track.has_emmcparticle()) {
+          continue;
+        }
+        auto mctrack = track.emmcparticle_as<aod::EMMCParticles>();
+        doSingleTrack(track, mctrack, mctracks, collision.globalIndex(), collisions_old_labels, collisions_counter);
+      }
+    }
+
+    for (uint64_t collision_label : collisions_old_labels) {
+      auto collision = collisions.rawIteratorAt(collision_label);
+      auto mccollision = collision.emmcevent();
+      doCollision(collision, mccollision, collision.globalBC(), collision.runNumber());
+    }
+  }
+  PROCESS_SWITCH(TreeCreatorElectronML, processSingleTrackSkimmed, "produce ML input for single track level on skimmed data", false);
 
   Partition<MyFilteredTracksMC> posTracks = o2::aod::track::signed1Pt > 0.f;
   Partition<MyFilteredTracksMC> negTracks = o2::aod::track::signed1Pt < 0.f;
 
-  void processPair(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels> const& collisions, aod::BCsWithTimestamps const&, MyFilteredTracksMC const& tracks, aod::McParticles const& mctracks, aod::McCollisions const&)
+  void processPair(MyFilteredCollisions const& collisions, aod::BCsWithTimestamps const&, MyFilteredTracksMC const& tracks, aod::McParticles const& mctracks, aod::McCollisions const&)
   {
     std::map<uint64_t, int> fNewLabels;
     int fCounter = 0;
 
+    std::vector<uint64_t> collisions_old_labels;
+    int collisions_counter = -1;
+
     for (auto& collision : collisions) {
-      std::vector<uint64_t> fSelected_old_labels;
-      // TODO: investigate the collisions without corresponding mcCollision
       if (!collision.has_mcCollision()) {
         continue;
       }
+      registry.fill(HIST("hEventCounter"), 0.5);
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-      auto mccollision = collision.mcCollision();
       initCCDB(bc);
-
-      registry.fill(HIST("hEventCounter"), 1.0); // all
-
-      mycollision(bc.globalBC(), bc.runNumber(), collision.posX(), collision.posY(), collision.posZ(), collision.numContrib(), collision.sel8(), d_bz,
-                  mccollision.generatorsID(), mccollision.posX(), mccollision.posY(), mccollision.posZ(),
-                  collision.multTPC(), collision.multFV0A(), collision.multFV0C(), collision.multFT0A(), collision.multFT0C(),
-                  collision.multFDDA(), collision.multFDDC(), collision.multZNA(), collision.multZNC(), collision.multTracklets(), collision.multNTracksPV(), collision.multNTracksPVeta1());
+      std::vector<uint64_t> fSelected_old_labels;
 
       auto negTracks_coll = negTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
       auto posTracks_coll = posTracks->sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), cache);
 
       for (auto& [ele, pos] : combinations(CombinationsFullIndexPolicy(negTracks_coll, posTracks_coll))) {
-        doPair(pos, ele, EM_EEPairType::kULS, mctracks, collision, fNewLabels, fSelected_old_labels, fCounter);
+        if (!ele.has_mcParticle() || !pos.has_mcParticle()) {
+          continue;
+        }
+        doPair(pos, ele, pos.mcParticleId(), ele.mcParticleId(), EM_EEPairType::kULS, mctracks, collision, fNewLabels, fSelected_old_labels, fCounter, collision.globalIndex(), collisions_old_labels, collisions_counter);
       }
 
       if (!doLS) {
         continue;
       }
       for (auto& [pos1, pos2] : combinations(CombinationsStrictlyUpperIndexPolicy(posTracks_coll, posTracks_coll))) {
-        doPair(pos1, pos2, EM_EEPairType::kLSpp, mctracks, collision, fNewLabels, fSelected_old_labels, fCounter);
+        if (!pos1.has_mcParticle() || !pos2.has_mcParticle()) {
+          continue;
+        }
+        doPair(pos1, pos2, pos1.mcParticleId(), pos2.mcParticleId(), EM_EEPairType::kLSpp, mctracks, collision, fNewLabels, fSelected_old_labels, fCounter, collision.globalIndex(), collisions_old_labels, collisions_counter);
       }
 
       for (auto& [ele1, ele2] : combinations(CombinationsStrictlyUpperIndexPolicy(negTracks_coll, negTracks_coll))) {
-        doPair(ele1, ele2, EM_EEPairType::kLSnn, mctracks, collision, fNewLabels, fSelected_old_labels, fCounter);
+        if (!ele1.has_mcParticle() || !ele2.has_mcParticle()) {
+          continue;
+        }
+        doPair(ele1, ele2, ele1.mcParticleId(), ele2.mcParticleId(), EM_EEPairType::kLSnn, mctracks, collision, fNewLabels, fSelected_old_labels, fCounter, collision.globalIndex(), collisions_old_labels, collisions_counter);
       }
 
       // single tracks, only if selected in at least one pair
       for (uint64_t track_label : fSelected_old_labels) {
         auto track = tracks.rawIteratorAt(track_label);
         auto mctrack = track.mcParticle_as<aod::McParticles>();
-        // store all mother relation
-        std::vector<int> mothers_id;
-        std::vector<int> mothers_pdg;
-        if (mctrack.has_mothers()) {
-          int motherid = mctrack.mothersIds()[0]; // first mother index
-          while (motherid > -1) {
-            if (motherid < mctracks.size()) { // protect against bad mother indices. why is this needed?
-              auto mp = mctracks.iteratorAt(motherid);
-              mothers_id.emplace_back(motherid);
-              mothers_pdg.emplace_back(mp.pdgCode());
 
-              if (mp.has_mothers()) {
-                motherid = mp.mothersIds()[0];
-              } else {
-                motherid = -999;
-              }
-            } else {
-              LOGF(info, "Mother label(%d) exceeds the McParticles size(%d)", motherid, mctracks.size());
-            }
-          }
-        }
-
-        mytrack(mycollision.lastIndex(),
-                track.sign(), track.pt(), track.eta(), track.phi(), track.dcaXY(), track.dcaZ(), sqrt(track.cYY()), sqrt(track.cZZ()), track.cZY(),
-                track.tpcNClsFindable(), track.tpcNClsFound(), track.tpcNClsCrossedRows(),
-                track.tpcChi2NCl(), track.tpcInnerParam(),
-                track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
-                track.beta(), track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
-                track.tofChi2(), track.itsChi2NCl(), track.itsClusterSizes(),
-                track.trdSignal(), track.trdPattern(),
-                mctrack.vx(), mctrack.vy(), mctrack.vz(),
-                mctrack.pdgCode(), mctrack.isPhysicalPrimary(), mothers_id, mothers_pdg);
-
-        mothers_id.shrink_to_fit();
-        mothers_pdg.shrink_to_fit();
+        doSingleTrack(track, mctrack, mctracks, collision.globalIndex(), collisions_old_labels, collisions_counter, false);
 
       } // end of track loop
 
     } // end of collision loop
+
+    for (uint64_t collision_label : collisions_old_labels) {
+      auto collision = collisions.rawIteratorAt(collision_label);
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      auto mccollision = collision.mcCollision();
+      doCollision(collision, bc, mccollision);
+    }
+
     fNewLabels.clear();
     fCounter = 0;
   } // end of process
   PROCESS_SWITCH(TreeCreatorElectronML, processPair, "produce ML input for pair level", false);
 
-  void processDummy(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels> const&) {}
-  PROCESS_SWITCH(TreeCreatorElectronML, processDummy, "process dummy", true);
+  Partition<MyFilteredTracksMCSkimmed> posTracksSkimmed = o2::aod::emprimaryelectron::sign > static_cast<int8_t>(0);
+  Partition<MyFilteredTracksMCSkimmed> negTracksSkimmed = o2::aod::emprimaryelectron::sign < static_cast<int8_t>(0);
+
+  void processPairSkimmed(MyFilteredCollisionsSkimmed const& collisions, MyFilteredTracksMCSkimmed const& tracks, aod::EMMCParticles const& mctracks, aod::EMMCEvents const&)
+  {
+    std::map<uint64_t, int> fNewLabels;
+    int fCounter = 0;
+
+    std::vector<uint64_t> collisions_old_labels;
+    int collisions_counter = -1;
+    std::vector<uint64_t> collisions_old_labels_track = {};
+    int collisions_counter_track = -1;
+
+    for (auto& collision : collisions) {
+      if (!collision.has_emmcevent()) {
+        continue;
+      }
+      registry.fill(HIST("hEventCounter"), 0.5);
+
+      initCCDB(collision);
+      std::vector<uint64_t> fSelected_old_labels;
+
+      auto negTracks_coll = negTracksSkimmed->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);
+      auto posTracks_coll = posTracksSkimmed->sliceByCached(o2::aod::emprimaryelectron::emeventId, collision.globalIndex(), cache);
+
+      for (auto& [ele, pos] : combinations(CombinationsFullIndexPolicy(negTracks_coll, posTracks_coll))) {
+        if (!ele.has_emmcparticle() || !pos.has_emmcparticle()) {
+          continue;
+        }
+        doPair(pos, ele, pos.emmcparticleId(), ele.emmcparticleId(), EM_EEPairType::kULS, mctracks, collision, fNewLabels, fSelected_old_labels, fCounter, collision.globalIndex(), collisions_old_labels, collisions_counter);
+      }
+
+      if (!doLS) {
+        continue;
+      }
+      for (auto& [pos1, pos2] : combinations(CombinationsStrictlyUpperIndexPolicy(posTracks_coll, posTracks_coll))) {
+        if (!pos1.has_emmcparticle() || !pos2.has_emmcparticle()) {
+          continue;
+        }
+        doPair(pos1, pos2, pos1.emmcparticleId(), pos2.emmcparticleId(), EM_EEPairType::kLSpp, mctracks, collision, fNewLabels, fSelected_old_labels, fCounter, collision.globalIndex(), collisions_old_labels, collisions_counter);
+      }
+
+      for (auto& [ele1, ele2] : combinations(CombinationsStrictlyUpperIndexPolicy(negTracks_coll, negTracks_coll))) {
+        if (!ele1.has_emmcparticle() || !ele2.has_emmcparticle()) {
+          continue;
+        }
+        doPair(ele1, ele2, ele1.emmcparticleId(), ele2.emmcparticleId(), EM_EEPairType::kLSnn, mctracks, collision, fNewLabels, fSelected_old_labels, fCounter, collision.globalIndex(), collisions_old_labels, collisions_counter);
+      }
+
+      // single tracks, only if selected in at least one pair
+      for (uint64_t track_label : fSelected_old_labels) {
+        auto track = tracks.rawIteratorAt(track_label);
+        auto mctrack = track.emmcparticle_as<aod::EMMCParticles>();
+
+        doSingleTrack(track, mctrack, mctracks, collision.globalIndex(), collisions_old_labels_track, collisions_counter_track, false);
+
+      } // end of track loop
+
+    } // end of collision loop
+
+    for (uint64_t collision_label : collisions_old_labels) {
+      auto collision = collisions.rawIteratorAt(collision_label);
+      auto mccollision = collision.emmcevent();
+      doCollision(collision, mccollision, collision.globalBC(), collision.runNumber());
+    }
+
+    fNewLabels.clear();
+    fCounter = 0;
+  } // end of process
+  PROCESS_SWITCH(TreeCreatorElectronML, processPairSkimmed, "produce ML input for pair level on skimmed data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
