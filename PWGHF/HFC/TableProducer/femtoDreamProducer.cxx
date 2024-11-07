@@ -13,6 +13,8 @@
 /// \brief Tasks that produces the track tables used for the pairing
 /// \author Ravindra Singh, GSI, ravindra.singh@cern.ch
 
+#include <string>
+#include <vector> 
 #include "CCDB/BasicCCDBManager.h"
 
 #include "Common/Core/trackUtilities.h"
