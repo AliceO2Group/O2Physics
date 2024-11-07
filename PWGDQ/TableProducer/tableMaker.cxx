@@ -17,6 +17,13 @@
 // The skimming can optionally produce just the barrel, muon, or both barrel and muon tracks
 // The event filtering (filterPP), centrality, and V0Bits (from v0-selector) can be switched on/off by selecting one
 //  of the process functions
+// C++ includes
+#include <iostream>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
+// other includes
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
@@ -55,12 +62,6 @@
 #include "DetectorsBase/Propagator.h"
 #include "DetectorsBase/GeometryManager.h"
 #include "EventFiltering/Zorro.h"
-// C++ includes
-#include <iostream>
-#include <map>
-#include <memory>
-#include <string>
-#include <vector>
 
 using std::cout;
 using std::endl;
