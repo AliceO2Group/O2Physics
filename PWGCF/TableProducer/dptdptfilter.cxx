@@ -11,6 +11,8 @@
 
 #include <cmath>
 #include <algorithm>
+#include <string>
+#include <vector>
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -176,8 +178,8 @@ struct Multiplicity {
     kCL1GAP
   };
 
-  float getMultiplicityClass() { return multiplicityclass; };
-  float getMultiplicity() { return multiplicity; };
+  float getMultiplicityClass() { return multiplicityclass; }
+  float getMultiplicity() { return multiplicity; }
 
   multest classestimator = kV0M;
 
