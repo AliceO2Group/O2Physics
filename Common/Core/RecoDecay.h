@@ -24,7 +24,7 @@
 #include <vector>    // std::vector
 
 #include "TMCProcess.h" // for VMC Particle Production Process
-#include "TPDGCode.h" // for PDG codes
+#include "TPDGCode.h"   // for PDG codes
 #include "CommonConstants/MathConstants.h"
 
 /// Base class for calculating properties of reconstructed decays
@@ -717,13 +717,13 @@ struct RecoDecay {
       }
       auto particleI = arrDaughters[iProng].mcParticle(); // ith daughter particle
       auto motherI = particleI.template mothers_first_as<T>();
-      if (acceptTrackDecay){
-        if (std::abs(particleI.pdgCode()) == std::abs(kMuonPlus) && std::abs(motherI.pdgCode()) == std::abs(kPiPlus)){
+      if (acceptTrackDecay) {
+        if (std::abs(particleI.pdgCode()) == std::abs(kMuonPlus) && std::abs(motherI.pdgCode()) == std::abs(kPiPlus)) {
           // LOGF(info, "found muon %d with mother %d", particleI.pdgCode(), motherI.pdgCode());
-          piToMu +=1;
+          piToMu += 1;
           particleI = motherI;
-        } else if (std::abs(particleI.pdgCode()) == std::abs(kPiPlus) && std::abs(motherI.pdgCode()) == std::abs(kKPlus)){
-          kaToPi +=1;
+        } else if (std::abs(particleI.pdgCode()) == std::abs(kPiPlus) && std::abs(motherI.pdgCode()) == std::abs(kKPlus)) {
+          kaToPi += 1;
           particleI = motherI;
         }
       }
@@ -799,10 +799,10 @@ struct RecoDecay {
     if (sign) {
       *sign = sgn;
     }
-    if (nPiToMu){
+    if (nPiToMu) {
       *nPiToMu = piToMu;
     }
-    if (nKaToPi){
+    if (nKaToPi) {
       *nKaToPi = kaToPi;
     }
     return indexMother;
