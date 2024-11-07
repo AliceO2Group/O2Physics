@@ -15,6 +15,7 @@
 /// \author Biao Zhang, Heidelberg University, biao.zhang@cern.ch
 
 #include <vector>
+#include <string>
 
 #include "Framework/Expressions.h"
 #include "Framework/AnalysisTask.h"
