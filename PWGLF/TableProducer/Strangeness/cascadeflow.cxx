@@ -797,14 +797,13 @@ struct cascadeFlow {
         pdgCode = 0;
       }
 
-      //true cascades before applying any selection
-      if (std::abs(pdgCode) == 3312 && std::abs(cascMC.pdgCodeV0()) == 3122 && std::abs(cascMC.pdgCodeBachelor()) == 211){
-	histos.fill(HIST("hXiPtvsCent"), coll.centFT0C(), casc.pt());
+      // true cascades before applying any selection
+      if (std::abs(pdgCode) == 3312 && std::abs(cascMC.pdgCodeV0()) == 3122 && std::abs(cascMC.pdgCodeBachelor()) == 211) {
+        histos.fill(HIST("hXiPtvsCent"), coll.centFT0C(), casc.pt());
+      } else if (std::abs(pdgCode) == 3334 && std::abs(cascMC.pdgCodeV0()) == 3122 && std::abs(cascMC.pdgCodeBachelor()) == 321) {
+        histos.fill(HIST("hOmegaPtvsCent"), coll.centFT0C(), casc.pt());
       }
-      else if (std::abs(pdgCode) == 3334 && std::abs(cascMC.pdgCodeV0()) == 3122 && std::abs(cascMC.pdgCodeBachelor()) == 321) {
-	histos.fill(HIST("hOmegaPtvsCent"), coll.centFT0C(), casc.pt());
-      }
-      
+
       /// Add some minimal cuts for single track variables (min number of TPC clusters)
       auto negExtra = casc.negTrackExtra_as<DauTracks>();
       auto posExtra = casc.posTrackExtra_as<DauTracks>();
