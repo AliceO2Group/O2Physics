@@ -55,6 +55,10 @@
 #include "DetectorsBase/Propagator.h"
 #include "DetectorsBase/GeometryManager.h"
 #include "EventFiltering/Zorro.h"
+#include <string>
+#include <map>
+#include <memory>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -503,7 +507,7 @@ struct TableMaker {
       // if the BC found by event selection does not coincide with the collision.bc()
       auto bcEvSel = collision.template foundBC_as<TBCs>();
       if (bcEvSel.globalIndex() != bc.globalIndex()) {
-        tag |= (uint64_t(1) << 0);
+        tag |= (static_cast<uint64_t>(1) << 0);
       }
       // Put the 8 first bits of the event filter in the last 8 bits of the tag
       if constexpr ((TEventFillMap & VarManager::ObjTypes::EventFilter) > 0) {
@@ -614,7 +618,7 @@ struct TableMaker {
     //     One can apply here cuts which depend on the association (e.g. DCA), which will discard (hopefully most) wrong associations.
     //     Tracks are written only once, even if they constribute to more than one association
 
-    uint64_t trackFilteringTag = uint64_t(0);
+    uint64_t trackFilteringTag = static_cast<uint64_t>(0);
     uint64_t trackTempFilterMap = uint8_t(0);
 
     // material correction for track propagation
@@ -625,7 +629,7 @@ struct TableMaker {
       // get track
       auto track = assoc.template track_as<TTracks>();
 
-      trackFilteringTag = uint64_t(0);
+      trackFilteringTag = static_cast<uint64_t>(0);
       trackTempFilterMap = uint8_t(0);
       VarManager::FillTrack<TTrackFillMap>(track);
 
@@ -657,40 +661,40 @@ struct TableMaker {
 
       // store selection information in the track tag
       if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackV0Bits)) { // BIT0-4: V0Bits
-        trackFilteringTag |= uint64_t(track.pidbit());
+        trackFilteringTag |= static_cast<uint64_t>(track.pidbit());
         for (int iv0 = 0; iv0 < 5; iv0++) {
           if (track.pidbit() & (uint8_t(1) << iv0)) {
             (reinterpret_cast<TH1D*>(fStatsList->At(1)))->Fill(fTrackCuts.size() + static_cast<float>(iv0));
           }
         }
         if (fConfigIsOnlyforMaps) {
-          if (trackFilteringTag & (uint64_t(1) << VarManager::kIsConversionLeg)) { // for electron
+          if (trackFilteringTag & static_cast<uint64_t>(1) << VarManager::kIsConversionLeg)) { // for electron
             fHistMan->FillHistClass("TrackBarrel_PostCalibElectron", VarManager::fgValues);
           }
-          if (trackFilteringTag & (uint64_t(1) << VarManager::kIsK0sLeg)) { // for pion
+          if (trackFilteringTag & static_cast<uint64_t>(1) << VarManager::kIsK0sLeg)) { // for pion
             fHistMan->FillHistClass("TrackBarrel_PostCalibPion", VarManager::fgValues);
           }
-          if ((static_cast<bool>(trackFilteringTag & (uint64_t(1) << VarManager::kIsLambdaLeg)) * (track.sign()) > 0)) { // for proton from Lambda
+          if ((static_cast<bool>(trackFilteringTag & (static_cast<uint64_t>(1) << VarManager::kIsLambdaLeg)) * (track.sign()) > 0)) { // for proton from Lambda
             fHistMan->FillHistClass("TrackBarrel_PostCalibProton", VarManager::fgValues);
           }
-          if ((static_cast<bool>(trackFilteringTag & (uint64_t(1) << VarManager::kIsALambdaLeg)) * (track.sign()) < 0)) { // for proton from AntiLambda
+          if ((static_cast<bool>(trackFilteringTag & (static_cast<uint64_t>(1) << VarManager::kIsALambdaLeg)) * (track.sign()) < 0)) { // for proton from AntiLambda
             fHistMan->FillHistClass("TrackBarrel_PostCalibProton", VarManager::fgValues);
           }
         }
         if (fConfigSaveElectronSample) { // only save electron sample
-          if (!(trackFilteringTag & (uint64_t(1) << VarManager::kIsConversionLeg))) {
+          if (!(trackFilteringTag & (static_cast<uint64_t>(1) << VarManager::kIsConversionLeg))) {
             continue;
           }
         }
       } // end if V0Bits
       if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::DalitzBits)) {
-        trackFilteringTag |= (uint64_t(track.dalitzBits()) << VarManager::kDalitzBits); // BIT5-12: Dalitz
+        trackFilteringTag |= (static_cast<uint64_t>(track.dalitzBits()) << VarManager::kDalitzBits); // BIT5-12: Dalitz
       }
-      trackFilteringTag |= (uint64_t(trackTempFilterMap) << VarManager::kBarrelUserCutsBits); // BIT13-...:  user track filters
+      trackFilteringTag |= (static_cast<uint64_t>(trackTempFilterMap) << VarManager::kBarrelUserCutsBits); // BIT13-...:  user track filters
 
       if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackPID)) {
         if (fConfigComputeTPCpostCalib) {
-          trackFilteringTag |= (uint64_t(1) << VarManager::kIsTPCPostcalibrated);
+          trackFilteringTag |= (static_cast<uint64_t>(1) << VarManager::kIsTPCPostcalibrated);
         }
       }
       // write the track global index in the map for skimming (to make sure we have it just once)
@@ -763,7 +767,7 @@ struct TableMaker {
       // write the MFT track global index in the map for skimming (to make sure we have it just once)
       if (fMftIndexMap.find(track.globalIndex()) == fMftIndexMap.end()) {
         uint32_t reducedEventIdx = fCollIndexMap[collision.globalIndex()];
-        mftTrack(reducedEventIdx, uint64_t(0), track.pt(), track.eta(), track.phi());
+        mftTrack(reducedEventIdx, static_cast<uint64_t>(0), track.pt(), track.eta(), track.phi());
         // TODO: We are not writing the DCA at the moment, because this depend on the collision association
         mftTrackExtra(track.mftClusterSizesAndTrackFlags(), track.sign(), 0.0, 0.0, track.nClusters());
 

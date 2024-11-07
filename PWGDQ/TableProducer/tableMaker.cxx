@@ -56,6 +56,10 @@
 #include "DetectorsBase/Propagator.h"
 #include "DetectorsBase/GeometryManager.h"
 #include "EventFiltering/Zorro.h"
+#include <string>
+#include <map>
+#include <memory>
+#include <vector>
 
 using std::cout;
 using std::endl;
@@ -413,7 +417,7 @@ struct TableMaker {
     // if the BC found by event selection does not coincide with the collision.bc()
     auto bcEvSel = collision.template foundBC_as<aod::BCsWithTimestamps>();
     if (bcEvSel.globalIndex() != bc.globalIndex()) {
-      tag |= (uint64_t(1) << 0);
+      tag |= (static_cast<uint64_t>(1) << 0);
     }
     // Put the 8 first bits of the event filter in the last 8 bits of the tag
     if constexpr ((TEventFillMap & VarManager::ObjTypes::EventFilter) > 0) {
@@ -437,7 +441,7 @@ struct TableMaker {
     uint32_t triggerAliases = collision.alias_raw();
     // fill stats information, before selections
     for (int i = 0; i < kNaliases; i++) {
-      if (triggerAliases & (uint32_t(1) << i)) {
+      if (triggerAliases & (static_cast<uint32_t>(1) << i)) {
         (reinterpret_cast<TH2F*>(fStatsList->At(0)))->Fill(2.0, static_cast<float>(i));
       }
     }
@@ -462,7 +466,7 @@ struct TableMaker {
 
     // fill stats information, after selections
     for (int i = 0; i < kNaliases; i++) {
-      if (triggerAliases & (uint32_t(1) << i)) {
+      if (triggerAliases & (static_cast<uint32_t>(1) << i)) {
         (reinterpret_cast<TH2F*>(fStatsList->At(0)))->Fill(3.0, static_cast<float>(i));
       }
     }
@@ -524,7 +528,7 @@ struct TableMaker {
           }
         }
 
-        trackFilteringTag = uint64_t(0);
+        trackFilteringTag = static_cast<uint64_t>(0);
         trackTempFilterMap = uint8_t(0);
         VarManager::FillTrack<TTrackFillMap>(track);
         if (fDoDetailedQA) {
@@ -560,35 +564,35 @@ struct TableMaker {
           trackFilteringTag |= (uint64_t(1) << 1); // BIT1: global track SSD
         }*/
         if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackV0Bits)) { // BIT0-4: V0Bits
-          trackFilteringTag = uint64_t(track.pidbit());
+          trackFilteringTag = static_cast<uint64_t>(track.pidbit());
           for (int iv0 = 0; iv0 < 5; iv0++) {
             if (track.pidbit() & (uint8_t(1) << iv0)) {
               (reinterpret_cast<TH1D*>(fStatsList->At(1)))->Fill(fTrackCuts.size() + static_cast<float>(iv0));
             }
           }
           if (fConfigIsOnlyforMaps) {
-            if (trackFilteringTag & (uint64_t(1) << VarManager::kIsConversionLeg)) { // for electron
+            if (trackFilteringTag & (static_cast<uint64_t>(1) << VarManager::kIsConversionLeg)) { // for electron
               fHistMan->FillHistClass("TrackBarrel_PostCalibElectron", VarManager::fgValues);
             }
-            if (trackFilteringTag & (uint64_t(1) << VarManager::kIsK0sLeg)) { // for pion
+            if (trackFilteringTag & (static_cast<uint64_t>(1) << VarManager::kIsK0sLeg)) { // for pion
               fHistMan->FillHistClass("TrackBarrel_PostCalibPion", VarManager::fgValues);
             }
-            if ((static_cast<bool>(trackFilteringTag & (uint64_t(1) << VarManager::kIsLambdaLeg)) * (track.sign()) > 0)) { // for proton from Lambda
+            if ((static_cast<bool>(trackFilteringTag & (static_cast<uint64_t>(1) << VarManager::kIsLambdaLeg)) * (track.sign()) > 0)) { // for proton from Lambda
               fHistMan->FillHistClass("TrackBarrel_PostCalibProton", VarManager::fgValues);
             }
-            if ((static_cast<bool>(trackFilteringTag & (uint64_t(1) << VarManager::kIsALambdaLeg)) * (track.sign()) < 0)) { // for proton from AntiLambda
+            if ((static_cast<bool>(trackFilteringTag & (static_cast<uint64_t>(1) << VarManager::kIsALambdaLeg)) * (track.sign()) < 0)) { // for proton from AntiLambda
               fHistMan->FillHistClass("TrackBarrel_PostCalibProton", VarManager::fgValues);
             }
           }
         }
         if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::DalitzBits)) {
-          trackFilteringTag |= (uint64_t(track.dalitzBits()) << VarManager::kDalitzBits); // BIT5-12: Dalitz selection bits
+          trackFilteringTag |= (static_cast<uint64_t>(track.dalitzBits()) << VarManager::kDalitzBits); // BIT5-12: Dalitz selection bits
         }
-        trackFilteringTag |= (uint64_t(trackTempFilterMap) << VarManager::kBarrelUserCutsBits); // BIT13-20...:  user track filters
+        trackFilteringTag |= (static_cast<uint64_t>(trackTempFilterMap) << VarManager::kBarrelUserCutsBits); // BIT13-20...:  user track filters
 
         if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackPID)) {
           if (fConfigComputeTPCpostCalib) {
-            trackFilteringTag |= (uint64_t(1) << VarManager::kIsTPCPostcalibrated); // store the info on whether TPC pid is skimmed as postcalibrated
+            trackFilteringTag |= (static_cast<uint64_t>(1) << VarManager::kIsTPCPostcalibrated); // store the info on whether TPC pid is skimmed as postcalibrated
           }
         }
 
@@ -683,7 +687,7 @@ struct TableMaker {
       std::map<int, int> newMFTMatchIndex;
 
       for (auto& muon : tracksMuon) {
-        fwdFilteringTag = uint64_t(0);
+        fwdFilteringTag = static_cast<uint64_t>(0);
         VarManager::FillTrack<TMuonFillMap>(muon);
         if (fPropMuon) {
           VarManager::FillPropagateMuon<TMuonFillMap>(muon, collision);
@@ -877,7 +881,7 @@ struct TableMaker {
     // if the BC found by event selection does not coincide with the collision.bc()
     auto bcEvSel = collision.template foundBC_as<aod::BCsWithTimestamps>();
     if (bcEvSel.globalIndex() != bc.globalIndex()) {
-      tag |= (uint64_t(1) << 0);
+      tag |= (static_cast<uint64_t>(1) << 0);
     }
     // Put the 8 first bits of the event filter in the last 8 bits of the tag
     if constexpr ((TEventFillMap & VarManager::ObjTypes::EventFilter) > 0) {
@@ -900,7 +904,7 @@ struct TableMaker {
 
     // fill stats information, before selections
     for (int i = 0; i < kNaliases; i++) {
-      if (triggerAliases & (uint32_t(1) << i)) {
+      if (triggerAliases & (static_cast<uint32_t>(1) << i)) {
         (reinterpret_cast<TH2F*>(fStatsList->At(0)))->Fill(2.0, static_cast<float>(i));
       }
     }
@@ -925,7 +929,7 @@ struct TableMaker {
 
     // fill stats information, after selections
     for (int i = 0; i < kNaliases; i++) {
-      if (triggerAliases & (uint32_t(1) << i)) {
+      if (triggerAliases & (static_cast<uint32_t>(1) << i)) {
         (reinterpret_cast<TH2F*>(fStatsList->At(0)))->Fill(3.0, static_cast<float>(i));
       }
     }
@@ -973,7 +977,7 @@ struct TableMaker {
             isAmbiguous = (track.compatibleCollIds().size() != 1);
           }
         }
-        trackFilteringTag = uint64_t(0);
+        trackFilteringTag = static_cast<uint64_t>(0);
         trackTempFilterMap = uint8_t(0);
         VarManager::FillTrack<TTrackFillMap>(track);
         if (fDoDetailedQA) {
@@ -1003,37 +1007,37 @@ struct TableMaker {
 
         // store filtering information
         if (track.isGlobalTrack()) {
-          trackFilteringTag |= (uint64_t(1) << 0); // BIT0: global track
+          trackFilteringTag |= (static_cast<uint64_t>(1) << 0); // BIT0: global track
         }
         if (track.isGlobalTrackSDD()) {
-          trackFilteringTag |= (uint64_t(1) << 1); // BIT1: global track SSD
+          trackFilteringTag |= (static_cast<uint64_t>(1) << 1); // BIT1: global track SSD
         }
         if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackV0Bits)) { // BIT2-6: V0Bits
-          trackFilteringTag |= (uint64_t(track.pidbit()) << 2);
+          trackFilteringTag |= (static_cast<uint64_t>(track.pidbit()) << 2);
           for (int iv0 = 0; iv0 < 5; iv0++) {
             if (track.pidbit() & (uint8_t(1) << iv0)) {
               (reinterpret_cast<TH1D*>(fStatsList->At(1)))->Fill(fTrackCuts.size() + static_cast<float>(iv0));
             }
           }
           if (fConfigIsOnlyforMaps) {
-            if (trackFilteringTag & (uint64_t(1) << 2)) { // for electron
+            if (trackFilteringTag & (static_cast<uint64_t>(1) << 2)) { // for electron
               fHistMan->FillHistClass("TrackBarrel_PostCalibElectron", VarManager::fgValues);
             }
-            if (trackFilteringTag & (uint64_t(1) << 3)) { // for pion
+            if (trackFilteringTag & (static_cast<uint64_t>(1) << 3)) { // for pion
               fHistMan->FillHistClass("TrackBarrel_PostCalibPion", VarManager::fgValues);
             }
-            if ((static_cast<bool>(trackFilteringTag & (uint64_t(1) << 4)) * (track.sign()) > 0)) { // for proton from Lambda
+            if ((static_cast<bool>(trackFilteringTag & (static_cast<uint64_t>(1) << 4)) * (track.sign()) > 0)) { // for proton from Lambda
               fHistMan->FillHistClass("TrackBarrel_PostCalibProton", VarManager::fgValues);
             }
-            if ((static_cast<bool>(trackFilteringTag & (uint64_t(1) << 5)) * (track.sign()) < 0)) { // for proton from AntiLambda
+            if ((static_cast<bool>(trackFilteringTag & (static_cast<uint64_t>(1) << 5)) * (track.sign()) < 0)) { // for proton from AntiLambda
               fHistMan->FillHistClass("TrackBarrel_PostCalibProton", VarManager::fgValues);
             }
           }
         }
         if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::DalitzBits)) {
-          trackFilteringTag |= (uint64_t(track.dalitzBits()) << 7); // BIT7-14: Dalitz
+          trackFilteringTag |= (static_cast<uint64_t>(track.dalitzBits()) << 7); // BIT7-14: Dalitz
         }
-        trackFilteringTag |= (uint64_t(trackTempFilterMap) << 15); // BIT15-...:  user track filters
+        trackFilteringTag |= (static_cast<uint64_t>(trackTempFilterMap) << 15); // BIT15-...:  user track filters
 
         // create the track tables
         trackBarrelInfo(track.collisionId(), collision.posX(), collision.posY(), collision.posZ(), track.globalIndex());
@@ -1087,7 +1091,7 @@ struct TableMaker {
 
       for (const auto& muonId : fwdtrackIndices) { // start loop over tracks
         auto muon = muonId.template fwdtrack_as<TMuons>();
-        trackFilteringTag = uint64_t(0);
+        trackFilteringTag = static_cast<uint64_t>(0);
         VarManager::FillTrack<TMuonFillMap>(muon);
 
         if (muon.index() > idxPrev + 1) { // checks if some muons are filtered even before the skimming function
@@ -1117,7 +1121,7 @@ struct TableMaker {
             isAmbiguous = (muon.compatibleCollIds().size() != 1);
           }
         }
-        trackFilteringTag = uint64_t(0);
+        trackFilteringTag = static_cast<uint64_t>(0);
         trackTempFilterMap = uint8_t(0);
 
         VarManager::FillTrack<TMuonFillMap>(muon);
