@@ -1076,8 +1076,6 @@ struct UpcTauCentralBarrelRL {
     bool goodElectron = (enumMyParticle(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON) ? selectedGoodElectron(trkDaug1) : selectedGoodElectron(trkDaug2);
     if (!goodElectron)
       return false;
-    if (electronPiNsigma < cutMyElectronPiNsigma && electronNsigma > cutMyElectronNsigma)
-      return false;
     if (useCutMyNoRho && (motherOfPions.M() > cutMyRhoLow && motherOfPions.M() < cutMyRhoHigh))
       return false;
     if (useCutMyOnlyRho && (motherOfPions.M() > cutMyRhoHigh || motherOfPions.M() < cutMyRhoLow))
