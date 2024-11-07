@@ -11,7 +11,7 @@
 //
 //__________________________________________________
 // this task provides produces histograms containing
-// the number of generated quarkonia per unit of 
+// the number of generated quarkonia per unit of
 // percentile and per unit of pT
 // It is meant to help with providing auxiliary information
 // when dealing with derived data.
@@ -157,7 +157,7 @@ struct generatedQuarkonia {
     histos.fill(HIST("h2dNVerticesVsCentrality"), bestCentrality, collisions.size());
 
     for (auto& mcp : mcParticles) {
-      if (TMath::Abs(mcp.y()) < 0.5/* && mcp.isPhysicalPrimary()*/) {
+      if (TMath::Abs(mcp.y()) < 0.5 /* && mcp.isPhysicalPrimary()*/) {
         static_for<0, nSpecies - 1>([&](auto i) {
           constexpr int index = i.value;
           if (mcp.pdgCode() == particlePDGCodes[index] && bitcheck(enabledBits, index)) {
@@ -189,7 +189,7 @@ struct generatedQuarkonia {
 
       auto mcParticles = mcParticlesEntireTable.sliceBy(mcParticlePerMcCollision, mcCollIndex);
       for (auto& mcp : mcParticles) {
-        if (TMath::Abs(mcp.y()) < 0.5/* && mcp.isPhysicalPrimary()*/) {
+        if (TMath::Abs(mcp.y()) < 0.5 /* && mcp.isPhysicalPrimary()*/) {
           auto binNumber = hBinFinder->FindBin(mcCollision.bestCollisionCentFT0C(), mcp.pt()); // caution: pack
           if (mcp.pdgCode() == 441)
             genEtaC1S[binNumber]++;
@@ -235,7 +235,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 //__________________________________________________
 // do not over-populate general namespace, keep scope generatedQuarkonia::
 const std::vector<std::string> generatedQuarkonia::particleNames{"EtaC1S", "JPsi", "ChiC0", "ChiC1",
-                                                                "hC", "ChiC2", "EtaC2S", "Psi2S"};
+                                                                 "hC", "ChiC2", "EtaC2S", "Psi2S"};
 const std::vector<int> generatedQuarkonia::particlePDGCodes{441, 443, 10441, 20443, 10443, 445, 100441, 100443};
 const std::vector<std::string> generatedQuarkonia::parameterNames{"Enable"};
 

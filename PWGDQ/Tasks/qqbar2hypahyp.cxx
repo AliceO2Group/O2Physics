@@ -197,9 +197,9 @@ struct qqbar2hypahyp {
     Configurable<float> maxDeltaTimeKaon{"cascSelections.maxDeltaTimeKaon", 1e+9, "check maximum allowed time"};
   } cascSelections;
 
-  
+
   Configurable<bool> qaCentrality{"qaCentrality", false, "qa centrality flag: check base raw values"};
-  
+
   // for MC
   Configurable<bool> doMCAssociation{"doMCAssociation", true, "if MC, do MC association"};
 
@@ -473,7 +473,7 @@ struct qqbar2hypahyp {
       float value = 100.5f - static_cast<float>(ii);
       hRawCentrality->SetBinContent(ii, value);
     }
-    
+
     // histograms versus mass
     if (buildLaLaBarPairs) {
       histos.add("LaLaBar/h3dMassLaLabar", "h3dMassLaLabar", kTH3F, {axisCentrality, axisPt, axisQuarkoniumMass});
@@ -485,9 +485,9 @@ struct qqbar2hypahyp {
         histos.add("LaLaBar/h3dMassLaLabarSGC", "h3dMassLaLabarSGC", kTH3F, {axisCentrality, axisPt, axisQuarkoniumMass});
         histos.add("LaLaBar/h3dMassLaLabarDG", "h3dMassLaLabarDG", kTH3F, {axisCentrality, axisPt, axisQuarkoniumMass});
       }
-      histos.add("LaLaBar/h2dNbrOfK0ShortVsCentrality", "h2dNbrOfK0ShortVsCentrality", kTH2F, {axisCentrality, {10, -0.5f, 9.5f}}); 
+      histos.add("LaLaBar/h2dNbrOfK0ShortVsCentrality", "h2dNbrOfK0ShortVsCentrality", kTH2F, {axisCentrality, {10, -0.5f, 9.5f}});
       histos.add("LaLaBar/h2dNbrOfLambdaVsCentrality", "h2dNbrOfLambdaVsCentrality", kTH2F, {axisCentrality, {10, -0.5f, 9.5f}});
-      histos.add("LaLaBar/h2dNbrOfAntiLambdaVsCentrality", "h2dNbrOfAntiLambdaVsCentrality", kTH2F, {axisCentrality, {10, -0.5f, 9.5f}}); 
+      histos.add("LaLaBar/h2dNbrOfAntiLambdaVsCentrality", "h2dNbrOfAntiLambdaVsCentrality", kTH2F, {axisCentrality, {10, -0.5f, 9.5f}});
       // QA plot
       // Candidates after Lambda selections
       histos.add("LaLaBar/Lambda/hPosDCAToPV", "hPosDCAToPV", kTH1F, {axisDCAtoPV});
@@ -540,7 +540,7 @@ struct qqbar2hypahyp {
         histos.add("XiXiBar/h3dMassXiXibarDG", "h3dMassXiXibarDG", kTH3F, {axisCentrality, axisPt, axisQuarkoniumMass});
       }
       histos.add("XiXiBar/h2dNbrOfXiVsCentrality", "h2dNbrOfXiVsCentrality", kTH2F, {axisCentrality, {10, -0.5f, 9.5f}});
-      histos.add("XiXiBar/h2dNbrOfAntiXiVsCentrality", "h2dNbrOfAntiXiVsCentrality", kTH2F, {axisCentrality, {10, -0.5f, 9.5f}}); 
+      histos.add("XiXiBar/h2dNbrOfAntiXiVsCentrality", "h2dNbrOfAntiXiVsCentrality", kTH2F, {axisCentrality, {10, -0.5f, 9.5f}});
       // QA plot
       // Candidates after Xi selections
       histos.add("XiXiBar/Xi/hBachDCAToPV", "hBachDCAToPV", kTH1F, {axisDCAtoPV});
@@ -606,7 +606,7 @@ struct qqbar2hypahyp {
         histos.add("OmOmBar/h3dMassOmOmbarDG", "h3dMassOmOmbarDG", kTH3F, {axisCentrality, axisPt, axisQuarkoniumMass});
       }
       histos.add("OmOmBar/h2dNbrOfOmegaVsCentrality", "h2dNbrOfOmegaVsCentrality", kTH2F, {axisCentrality, {10, -0.5f, 9.5f}});
-      histos.add("OmOmBar/h2dNbrOfAntiOmegaVsCentrality", "h2dNbrOfAntiOmegaVsCentrality", kTH2F, {axisCentrality, {10, -0.5f, 9.5f}}); 
+      histos.add("OmOmBar/h2dNbrOfAntiOmegaVsCentrality", "h2dNbrOfAntiOmegaVsCentrality", kTH2F, {axisCentrality, {10, -0.5f, 9.5f}});
       // QA plot
       // Candidates after Omega selections
       histos.add("OmOmBar/Omega/hBachDCAToPV", "hBachDCAToPV", kTH1F, {axisDCAtoPV});
@@ -659,7 +659,7 @@ struct qqbar2hypahyp {
     histos.print();
   }
 
-  template<typename TCollision> //TCOllision should be of the type: soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps>::iterator or so
+  template<typename TCollision> // TCollision should be of the type: soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps>::iterator or so
   void initCCDB(TCollision const& collision)
   {
     if (mRunNumber == collision.runNumber()) {
@@ -810,10 +810,10 @@ struct qqbar2hypahyp {
   }
 
   template <typename TCollision>
-  void fillEventHistograms(TCollision collision, float& centrality, int& selGapSide) 
+  void fillEventHistograms(TCollision collision, float& centrality, int& selGapSide)
   {
     if (isPP) { //
-      centrality = collision.centFT0M(); 
+      centrality = collision.centFT0M();
 
       if (qaCentrality) {
         auto hRawCentrality = histos.get<TH1>(HIST("hRawCentrality"));
@@ -1023,12 +1023,12 @@ struct qqbar2hypahyp {
     if (casc.sign() < 0) { // Xi- or Omega- --> positive/negative daughter = proton/pion
       if (TMath::Abs(casc.dcapostopv()) < cascSelections.dcaprotontopv)
         return false;
-      if(TMath::Abs(casc.dcanegtopv()) < cascSelections.dcapiontopv)
+      if (TMath::Abs(casc.dcanegtopv()) < cascSelections.dcapiontopv)
         return false;
     } else { // Xi+ or Omega+ --> positive/negative daughter = pion/proton
       if (TMath::Abs(casc.dcapostopv()) < cascSelections.dcapiontopv)
         return false;
-      if(TMath::Abs(casc.dcanegtopv()) < cascSelections.dcaprotontopv)
+      if (TMath::Abs(casc.dcanegtopv()) < cascSelections.dcaprotontopv)
         return false;
     }
     // V0 cosine of pointing angle
@@ -1145,7 +1145,6 @@ struct qqbar2hypahyp {
           return false;
         if (!isXi && fabs(casc.posTOFDeltaTOmPr()) > cascSelections.maxDeltaTimeProton)
           return false;
-        
       } else { // Xi+ or Omega+ --> positive daughter = pion
         if (isXi && fabs(casc.posTOFDeltaTXiPi()) > cascSelections.maxDeltaTimePion)
           return false;
@@ -1176,7 +1175,7 @@ struct qqbar2hypahyp {
         return false;
       if (!isXi && fabs(casc.tofNSigmaOmKa()) > cascSelections.TofPidNsigmaCutOmKa)
         return false;
-    } 
+    }
     // Positive track
     if (posTrackExtra.hasTOF()) {
       if (casc.sign() < 0) { // Xi- or Omega- --> positive daughter = proton
@@ -1187,7 +1186,7 @@ struct qqbar2hypahyp {
       } else { // Xi+ or Omega+ --> positive daughter = pion
         if (isXi && fabs(casc.tofNSigmaXiLaPi()) > cascSelections.TofPidNsigmaCutLaPi)
           return false;
-        if (!isXi &&fabs(casc.tofNSigmaOmLaPi()) > cascSelections.TofPidNsigmaCutLaPi)
+        if (!isXi && fabs(casc.tofNSigmaOmLaPi()) > cascSelections.TofPidNsigmaCutLaPi)
           return false;
       }
     }
@@ -1217,7 +1216,7 @@ struct qqbar2hypahyp {
     //
     // MC association (if asked)
     if (doMCAssociation) {
-      if constexpr (requires { casc.template cascMCCore_as<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>(); }) { // check if MC information is available 
+      if constexpr (requires { casc.template cascMCCore_as<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>(); }) { // check if MC information is available
         auto cascMC = casc.template cascMCCore_as<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>();
 
         if (isXi) {
@@ -1332,16 +1331,16 @@ struct qqbar2hypahyp {
     }
 
     // need local index because of the grouping of collisions
-    selK0ShortIndices[v0.globalIndex() - v0TableOffset] = passK0ShortSelections; 
+    selK0ShortIndices[v0.globalIndex() - v0TableOffset] = passK0ShortSelections;
     selLambdaIndices[v0.globalIndex() - v0TableOffset] = passLambdaSelections;
     selAntiLambdaIndices[v0.globalIndex() - v0TableOffset] = passAntiLambdaSelections;
   }
 
   template <typename TCollision, typename THyperon>
-  void fillQAplot(TCollision collision, THyperon hyperon, THyperon antiHyperon, int type) 
-  { // fill QA information about hyperon - antihyperon pair 
+  void fillQAplot(TCollision collision, THyperon hyperon, THyperon antiHyperon, int type)
+  { // fill QA information about hyperon - antihyperon pair
     if (type == 0) {
-      if constexpr (requires { hyperon.mK0Short(); antiHyperon.mK0Short();}) { // check if Cascade information is available 
+      if constexpr (requires { hyperon.mK0Short(); antiHyperon.mK0Short(); }) { // check if v0 information is available
         auto posTrackExtraHyperon = hyperon.template posTrackExtra_as<dauTracks>();
         auto negTrackExtraHyperon = hyperon.template negTrackExtra_as<dauTracks>();
 
@@ -1382,7 +1381,7 @@ struct qqbar2hypahyp {
       }
     }
     if (type == 1) {
-      if constexpr (requires { hyperon.dcabachtopv(); antiHyperon.dcabachtopv();}) { // check if Cascade information is available 
+      if constexpr (requires { hyperon.dcabachtopv(); antiHyperon.dcabachtopv(); }) { // check if Cascade information is available
         auto bachTrackExtraHyperon = hyperon.template bachTrackExtra_as<dauTracks>();
         auto posTrackExtraHyperon = hyperon.template posTrackExtra_as<dauTracks>();
         auto negTrackExtraHyperon = hyperon.template negTrackExtra_as<dauTracks>();
@@ -1439,7 +1438,7 @@ struct qqbar2hypahyp {
       }
     }
     if (type == 2) {
-      if constexpr (requires { hyperon.dcabachtopv(); antiHyperon.dcabachtopv();}) { // check if Cascade information is available 
+      if constexpr (requires { hyperon.dcabachtopv(); antiHyperon.dcabachtopv(); }) { // check if Cascade information is available
         auto bachTrackExtraHyperon = hyperon.template bachTrackExtra_as<dauTracks>();
         auto posTrackExtraHyperon = hyperon.template posTrackExtra_as<dauTracks>();
         auto negTrackExtraHyperon = hyperon.template negTrackExtra_as<dauTracks>();
@@ -1505,11 +1504,11 @@ struct qqbar2hypahyp {
     float pt = RecoDecay::pt(hyperon.px() + antiHyperon.px(), hyperon.py() + antiHyperon.py());
 
     float invmass = -1;
-    if (type == 0) 
+    if (type == 0)
       invmass = RecoDecay::m(std::array{std::array{hyperon.px(), hyperon.py(), hyperon.pz()}, std::array{antiHyperon.px(), antiHyperon.py(), antiHyperon.pz()}}, std::array{o2::constants::physics::MassLambda0, o2::constants::physics::MassLambda0Bar});
-    if (type == 1) 
+    if (type == 1)
       invmass = RecoDecay::m(std::array{std::array{hyperon.px(), hyperon.py(), hyperon.pz()}, std::array{antiHyperon.px(), antiHyperon.py(), antiHyperon.pz()}}, std::array{o2::constants::physics::MassXiMinus, o2::constants::physics::MassXiPlusBar});
-    if (type == 2) 
+    if (type == 2)
       invmass = RecoDecay::m(std::array{std::array{hyperon.px(), hyperon.py(), hyperon.pz()}, std::array{antiHyperon.px(), antiHyperon.py(), antiHyperon.pz()}}, std::array{o2::constants::physics::MassOmegaMinus, o2::constants::physics::MassOmegaPlusBar});
 
     float rapidity = RecoDecay::y(std::array{hyperon.px() + antiHyperon.px(), hyperon.py() + antiHyperon.py(), hyperon.pz() + antiHyperon.pz()}, invmass);
@@ -1521,10 +1520,10 @@ struct qqbar2hypahyp {
     // fillV0sInfo(lambda, antiLambda, centrality);
 
     // __________________________________________
-    // main analysis  
+    // main analysis
     if (type == 0) {
       if (doMCAssociation) {
-        if constexpr (requires { hyperon.template v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>(); }) { // check if MC information is available 
+        if constexpr (requires { hyperon.template v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>(); }) { // check if MC information is available
           auto hyperonMC = hyperon.template v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
           auto antiHyperonMC = antiHyperon.template v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
 
@@ -1576,11 +1575,11 @@ struct qqbar2hypahyp {
         else
           histos.fill(HIST("LaLaBar/h3dMassLaLabarHadronic"), centrality, pt, invmass);
       }
-      fillQAplot(collision, hyperon, antiHyperon, 0); 
+      fillQAplot(collision, hyperon, antiHyperon, 0);
     }
     if (type == 1) {
       if (doMCAssociation) {
-        if constexpr (requires { hyperon.template cascMCCore_as<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>(); }) { // check if MC information is available 
+        if constexpr (requires { hyperon.template cascMCCore_as<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>(); }) { // check if MC information is available
           auto hyperonMC = hyperon.template cascMCCore_as<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>();
           auto antiHyperonMC = antiHyperon.template cascMCCore_as<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>();
 
@@ -1632,11 +1631,11 @@ struct qqbar2hypahyp {
         else
           histos.fill(HIST("XiXiBar/h3dMassXiXibarHadronic"), centrality, pt, invmass);
       }
-      fillQAplot(collision, hyperon, antiHyperon, 1); 
+      fillQAplot(collision, hyperon, antiHyperon, 1);
     }
     if (type == 2) {
       if (doMCAssociation) {
-        if constexpr (requires { hyperon.template cascMCCore_as<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>(); }) { // check if MC information is available 
+        if constexpr (requires { hyperon.template cascMCCore_as<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>(); }) { // check if MC information is available
           auto hyperonMC = hyperon.template cascMCCore_as<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>();
           auto antiHyperonMC = antiHyperon.template cascMCCore_as<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>();
 
@@ -1670,16 +1669,15 @@ struct qqbar2hypahyp {
         else
           histos.fill(HIST("OmOmBar/h3dMassOmOmbarHadronic"), centrality, pt, invmass);
       }
-      fillQAplot(collision, hyperon, antiHyperon, 2); 
+      fillQAplot(collision, hyperon, antiHyperon, 2);
     }
   }
 
-  
   template <typename TCollision, typename THyperons>
   void buildHyperonAntiHyperonPairs(TCollision const& collision, THyperons const& fullHyperons, std::vector<bool> selHypIndices, std::vector<bool> selAntiHypIndices, float centrality, uint8_t gapSide, int type)
   {
     // 1st loop over all v0s/cascades
-    for (auto& hyperon : fullHyperons) { 
+    for (auto& hyperon : fullHyperons) {
       // select only v0s matching Lambda selections
       if (!selHypIndices[hyperon.globalIndex() - fullHyperons.offset()]) { // local index needed due to collisions grouping
         continue;
@@ -1716,7 +1714,7 @@ struct qqbar2hypahyp {
       initCCDB(collision);
     }
 
-    if(!IsEventAccepted(collision, true)) {
+    if (!IsEventAccepted(collision, true)) {
       return;
     }
 
@@ -1770,9 +1768,10 @@ struct qqbar2hypahyp {
       std::vector<bool> selOmIndices(fullCascades.size());
       std::vector<bool> selAntiOmIndices(fullCascades.size());
       for (auto& cascade : fullCascades) {
-        if (std::abs(cascade.negativeeta()) > cascSelections.daughterEtaCut || 
-            std::abs(cascade.positiveeta()) > cascSelections.daughterEtaCut || 
-            std::abs(cascade.bacheloreta()) > cascSelections.daughterEtaCut ) continue; // remove acceptance that's badly reproduced by MC / superfluous in future
+        if (std::abs(cascade.negativeeta()) > cascSelections.daughterEtaCut ||
+            std::abs(cascade.positiveeta()) > cascSelections.daughterEtaCut ||
+            std::abs(cascade.bacheloreta()) > cascSelections.daughterEtaCut)
+          continue; // remove acceptance that's badly reproduced by MC / superfluous in future
 
         if (buildXiXiBarPairs) {
           if (cascade.sign() < 0) {
@@ -1831,7 +1830,7 @@ struct qqbar2hypahyp {
       initCCDB(collision);
     }
 
-    if(!IsEventAccepted(collision, true)) {
+    if (!IsEventAccepted(collision, true)) {
       return;
     }
 
@@ -1894,9 +1893,10 @@ struct qqbar2hypahyp {
       std::vector<bool> selOmIndices(fullCascades.size());
       std::vector<bool> selAntiOmIndices(fullCascades.size());
       for (auto& cascade : fullCascades) {
-        if (std::abs(cascade.negativeeta()) > cascSelections.daughterEtaCut || 
-            std::abs(cascade.positiveeta()) > cascSelections.daughterEtaCut || 
-            std::abs(cascade.bacheloreta()) > cascSelections.daughterEtaCut ) continue; // remove acceptance that's badly reproduced by MC / superfluous in future
+        if (std::abs(cascade.negativeeta()) > cascSelections.daughterEtaCut ||
+            std::abs(cascade.positiveeta()) > cascSelections.daughterEtaCut ||
+            std::abs(cascade.bacheloreta()) > cascSelections.daughterEtaCut)
+          continue; // remove acceptance that's badly reproduced by MC / superfluous in future
 
         if (!cascade.has_cascMCCore())
           continue;
@@ -1958,7 +1958,6 @@ struct qqbar2hypahyp {
 
   PROCESS_SWITCH(qqbar2hypahyp, processRealData, "process as if real data", true);
   PROCESS_SWITCH(qqbar2hypahyp, processMonteCarlo, "process as if MC", false);
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
