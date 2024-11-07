@@ -20,6 +20,7 @@
 #include <algorithm> // std::find
 #include <array>     // std::array
 #include <cmath>     // std::abs, std::sqrt
+#include <cstdio>
 #include <utility>   // std::move
 #include <vector>    // std::vector
 
