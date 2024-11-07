@@ -1257,7 +1257,13 @@ struct TableMaker {
       }
     }
 
-    // create statistics histograms (event, tracks, muons)
+    // create statistics histograms
+    // 0: Event statistics
+    // 1: Track statistics
+    // 2: Muon statistics
+    // 3: Zorro information
+    // 4: Zorro trigger selection
+    // NOTE: Please keep the order of the histograms in the list
     fStatsList.setObject(new TList());
     fStatsList->SetOwner(kTRUE);
     std::vector<TString> eventLabels{"BCs", "Collisions before filtering", "Before cuts", "After cuts"};
@@ -1270,7 +1276,7 @@ struct TableMaker {
       histEvents->GetYaxis()->SetBinLabel(ib, aliasLabels[ib - 1].data());
     }
     histEvents->GetYaxis()->SetBinLabel(kNaliases + 1, "Total");
-    fStatsList->Add(histEvents);
+    fStatsList->Add(histEvents); // At index 0
 
     // Track statistics: one bin for each track selection and 5 bins for V0 tags (gamma, K0s, Lambda, anti-Lambda, Omega)
     TH1D* histTracks = new TH1D("TrackStats", "Track statistics", fTrackCuts.size() + 5.0, -0.5, fTrackCuts.size() - 0.5 + 5.0);
@@ -1282,20 +1288,19 @@ struct TableMaker {
     for (ib = 0; ib < 5; ib++) {
       histTracks->GetXaxis()->SetBinLabel(fTrackCuts.size() + 1 + ib, v0TagNames[ib]);
     }
-    fStatsList->Add(histTracks);
+    fStatsList->Add(histTracks); // At index 1
     TH1D* histMuons = new TH1D("MuonStats", "Muon statistics", fMuonCuts.size(), -0.5, fMuonCuts.size() - 0.5);
     ib = 1;
     for (auto cut = fMuonCuts.begin(); cut != fMuonCuts.end(); cut++, ib++) {
       histMuons->GetXaxis()->SetBinLabel(ib, (*cut).GetName());
     }
-    fStatsList->Add(histMuons);
+    fStatsList->Add(histMuons); // At index 2
 
-    if (useZorro.fConfigRunZorro) {
-      TH2D* histZorroInfo = new TH2D("ZorroInfo", "Zorro information", 1, -0.5, 0.5, 1, -0.5, 0.5);
-      fStatsList->Add(histZorroInfo);
-      TH2D* histZorroSel = new TH2D("ZorroSel", "trigger of interested", 1, -0.5, 0.5, 1, -0.5, 0.5);
-      fStatsList->Add(histZorroSel);
-    }
+    TH2D* histZorroInfo = new TH2D("ZorroInfo", "Zorro information", 1, -0.5, 0.5, 1, -0.5, 0.5);
+    fStatsList->Add(histZorroInfo); // At index 3
+
+    TH2D* histZorroSel = new TH2D("ZorroSel", "trigger of interested", 1, -0.5, 0.5, 1, -0.5, 0.5);
+    fStatsList->Add(histZorroSel); // At index 4
   }
 
   // Produce barrel + muon tables -------------------------------------------------------------------------------------------------------------
