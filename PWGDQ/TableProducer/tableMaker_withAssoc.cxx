@@ -55,9 +55,10 @@
 #include "DetectorsBase/Propagator.h"
 #include "DetectorsBase/GeometryManager.h"
 #include "EventFiltering/Zorro.h"
-#include <string>
+// C++ includes
 #include <map>
 #include <memory>
+#include <string>
 #include <vector>
 
 using namespace o2;
