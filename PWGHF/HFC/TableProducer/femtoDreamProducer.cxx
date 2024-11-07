@@ -197,16 +197,21 @@ struct HfFemtoDreamProducer {
                      particle.dcaXY(),
                      particle.dcaZ(),
                      particle.tpcSignal(),
+                     -999.,
                      particle.tpcNSigmaPi(),
                      particle.tpcNSigmaKa(),
                      particle.tpcNSigmaPr(),
+                     -999.,
+                     -999.,
+                     -999.,
+                     -999.,
                      particle.tofNSigmaPi(),
                      particle.tofNSigmaKa(),
                      particle.tofNSigmaPr(),
-                     -999., -999., -999., -999.,
-                     -999., -999., -999., -999.,
-                     -999., -999., -999., -999.,
-                     -999., -999.);
+                     -999.,
+                     -999.,
+                     -999.,
+                     -999., -999., -999., -999., -999., -999.);
   }
 
   template <typename CollisionType, typename ParticleType>
