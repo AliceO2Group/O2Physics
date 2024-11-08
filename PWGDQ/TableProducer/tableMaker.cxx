@@ -272,7 +272,7 @@ struct TableMaker {
                                context.mOptions.get<bool>("processBarrelOnlyWithMultsAndEventFilter") || context.mOptions.get<bool>("processBarrelOnlyWithCovAndEventFilter") ||
                                context.mOptions.get<bool>("processBarrelOnlyWithDalitzBits") || context.mOptions.get<bool>("processBarrelOnlyWithV0Bits") || context.mOptions.get<bool>("processBarrelWithDalitzEvent") ||
                                context.mOptions.get<bool>("processBarrelOnlyWithV0BitsAndMaps") || context.mOptions.get<bool>("processAmbiguousBarrelOnly")) ||
-                              context.mOptions.get<bool>("processBarrelWithV0AndDalitzEvent");
+                              context.mOptions.get<bool>("processBarrelWithV0AndDalitzEvent") || context.mOptions.get<bool>("processBarrelOnlyWithV0BitsAndMults");
     bool enableMuonHistos = (context.mOptions.get<bool>("processFull") || context.mOptions.get<bool>("processFullWithCov") ||
                              context.mOptions.get<bool>("processFullWithCent") || context.mOptions.get<bool>("processFullWithCovAndEventFilter") ||
                              context.mOptions.get<bool>("processFullWithCovMultsAndEventFilter") || context.mOptions.get<bool>("processMuonOnlyWithCovAndCent") ||
@@ -1376,6 +1376,13 @@ struct TableMaker {
     fullSkimming<gkEventFillMap, gkTrackFillMapWithV0Bits, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr);
   }
 
+  // Produce barrel only tables, with V0Bits and Mults
+  void processBarrelOnlyWithV0BitsAndMults(MyEventsWithMults::iterator const& collision, aod::BCsWithTimestamps const& bcs,
+                                           soa::Filtered<MyBarrelTracksWithV0Bits> const& tracksBarrel)
+  {
+    fullSkimming<gkEventFillMapWithMult, gkTrackFillMapWithV0Bits, 0u>(collision, bcs, tracksBarrel, nullptr, nullptr, nullptr);
+  }
+
   // Produce barrel only tables, with V0Bits and produce maps ------------------------------------------------------------------------------
   void processBarrelOnlyWithV0BitsAndMaps(MyEvents::iterator const& collision, aod::BCsWithTimestamps const& bcs,
                                           soa::Filtered<MyBarrelTracksWithV0BitsForMaps> const& tracksBarrel)
@@ -1728,6 +1735,7 @@ struct TableMaker {
   PROCESS_SWITCH(TableMaker, processFullWithCovCentAndMults, "Build full DQ skimmed data model, w/ centrality, multiplicities and track covariances", false);
   PROCESS_SWITCH(TableMaker, processFullForElectronMuon, "Build full DQ skimmed data model for electron-muon correlation analysis, w/o centrality", false);
   PROCESS_SWITCH(TableMaker, processBarrelOnlyWithV0Bits, "Build full DQ skimmed data model, w/o centrality, w/ V0Bits", false);
+  PROCESS_SWITCH(TableMaker, processBarrelOnlyWithV0BitsAndMults, "Build full DQ skimmed data model, w/ multiplicity, w/ V0Bits", false);
   PROCESS_SWITCH(TableMaker, processBarrelOnlyWithV0BitsAndMaps, "Build full DQ skimmed data model, w/o multiplicity, w/ V0Bits", false);
   PROCESS_SWITCH(TableMaker, processBarrelOnlyWithDalitzBits, "Build barrel-only DQ skimmed data model, w/o centrality, w/ DalitzBits", false);
   PROCESS_SWITCH(TableMaker, processBarrelWithDalitzEvent, "Build barrel-only DQ skimmed data model, w/o centrality, w/ DalitzBits", false);

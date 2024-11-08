@@ -618,10 +618,38 @@ struct decay3bodyBuilder {
 
   //------------------------------------------------------------------
   // 3body candidate builder with KFParticle
-  template <class TTrackTo, typename TCollision>
+  template <class TTrackTo, class TCollisionTo, typename TCollision>
   void buildVtx3BodyDataTableKFParticle(TCollision const& collision, aod::Decay3Bodys const& decay3bodys, int bachelorcharge = 1)
   {
     LOG(debug) << "buildVtx3BodyDataTableKFParticle called.";
+
+    // initialise KF primary vertex
+    KFPVertex kfpVertex = createKFPVertexFromCollision(collision);
+    KFParticle kfpv(kfpVertex);
+    LOG(debug) << "Created KF PV.";
+
+    // fill event QA histograms
+    if (kfparticleConfigurations.doVertexQA) {
+      registry.fill(HIST("QA/Event/hVtxXKF"), kfpv.GetX());
+      registry.fill(HIST("QA/Event/hVtxYKF"), kfpv.GetY());
+      registry.fill(HIST("QA/Event/hVtxZKF"), kfpv.GetZ());
+      registry.fill(HIST("QA/Event/hVtxCovXXKF"), kfpv.GetCovariance(0));
+      registry.fill(HIST("QA/Event/hVtxCovYYKF"), kfpv.GetCovariance(2));
+      registry.fill(HIST("QA/Event/hVtxCovZZKF"), kfpv.GetCovariance(5));
+      registry.fill(HIST("QA/Event/hVtxCovXYKF"), kfpv.GetCovariance(1));
+      registry.fill(HIST("QA/Event/hVtxCovXZKF"), kfpv.GetCovariance(3));
+      registry.fill(HIST("QA/Event/hVtxCovYZKF"), kfpv.GetCovariance(4));
+      registry.fill(HIST("QA/Event/hVtxX"), collision.posX());
+      registry.fill(HIST("QA/Event/hVtxY"), collision.posY());
+      registry.fill(HIST("QA/Event/hVtxZ"), collision.posZ());
+      registry.fill(HIST("QA/Event/hVtxCovXX"), collision.covXX());
+      registry.fill(HIST("QA/Event/hVtxCovYY"), collision.covYY());
+      registry.fill(HIST("QA/Event/hVtxCovZZ"), collision.covZZ());
+      registry.fill(HIST("QA/Event/hVtxCovXY"), collision.covXY());
+      registry.fill(HIST("QA/Event/hVtxCovXZ"), collision.covXZ());
+      registry.fill(HIST("QA/Event/hVtxCovYZ"), collision.covYZ());
+    }
+
     for (auto& vtx3body : decay3bodys) {
       LOG(debug) << "Entered decay3bodys loop.";
 
@@ -635,13 +663,9 @@ struct decay3bodyBuilder {
       auto trackParCovBach = getTrackParCov(trackBach);
       LOG(debug) << "Got all daughter tracks.";
 
-      KFPVertex kfpVertex = createKFPVertexFromCollision(collision);
-      KFParticle kfpv(kfpVertex);
-      LOG(debug) << "Created KF PV.";
-
       bool isMatter = trackBach.sign() > 0 ? true : false;
 
-      // ---------- fill trackQA and vertexQA histograms
+      // ---------- fill track QA histograms ----------
       if (kfparticleConfigurations.doTrackQA) {
         registry.fill(HIST("QA/Tracks/hTrackPosTPCNcls"), trackPos.tpcNClsFound());
         registry.fill(HIST("QA/Tracks/hTrackNegTPCNcls"), trackNeg.tpcNClsFound());
@@ -663,27 +687,6 @@ struct decay3bodyBuilder {
         }
         registry.fill(HIST("QA/Tracks/hTrackBachTPCPID"), trackBach.sign() * trackBach.tpcInnerParam(), trackBach.tpcNSigmaDe());
         registry.fill(HIST("QA/Tracks/hTrackBachPt"), trackBach.pt());
-      }
-
-      if (kfparticleConfigurations.doVertexQA) {
-        registry.fill(HIST("QA/Event/hVtxXKF"), kfpv.GetX());
-        registry.fill(HIST("QA/Event/hVtxYKF"), kfpv.GetY());
-        registry.fill(HIST("QA/Event/hVtxZKF"), kfpv.GetZ());
-        registry.fill(HIST("QA/Event/hVtxCovXXKF"), kfpv.GetCovariance(0));
-        registry.fill(HIST("QA/Event/hVtxCovYYKF"), kfpv.GetCovariance(2));
-        registry.fill(HIST("QA/Event/hVtxCovZZKF"), kfpv.GetCovariance(5));
-        registry.fill(HIST("QA/Event/hVtxCovXYKF"), kfpv.GetCovariance(1));
-        registry.fill(HIST("QA/Event/hVtxCovXZKF"), kfpv.GetCovariance(3));
-        registry.fill(HIST("QA/Event/hVtxCovYZKF"), kfpv.GetCovariance(4));
-        registry.fill(HIST("QA/Event/hVtxX"), collision.posX());
-        registry.fill(HIST("QA/Event/hVtxY"), collision.posY());
-        registry.fill(HIST("QA/Event/hVtxZ"), collision.posZ());
-        registry.fill(HIST("QA/Event/hVtxCovXX"), collision.covXX());
-        registry.fill(HIST("QA/Event/hVtxCovYY"), collision.covYY());
-        registry.fill(HIST("QA/Event/hVtxCovZZ"), collision.covZZ());
-        registry.fill(HIST("QA/Event/hVtxCovXY"), collision.covXY());
-        registry.fill(HIST("QA/Event/hVtxCovXZ"), collision.covXZ());
-        registry.fill(HIST("QA/Event/hVtxCovYZ"), collision.covYZ());
       }
 
       // -------- STEP 1: track selection --------
@@ -731,22 +734,36 @@ struct decay3bodyBuilder {
       // TPC PID
       float tpcNsigmaProton;
       float tpcNsigmaPion;
+      float dEdxProton;
+      float dEdxPion;
       float tpcNsigmaDeuteron = trackBach.tpcNSigmaDe();
+      float dEdxDeuteron = trackBach.tpcSignal();
       if (isMatter) { // hypertriton (proton, pi-, deuteron)
         tpcNsigmaProton = trackPos.tpcNSigmaPr();
         tpcNsigmaPion = trackNeg.tpcNSigmaPi();
+        dEdxProton = trackPos.tpcSignal();
+        dEdxPion = trackNeg.tpcSignal();
         if (!selectTPCPID(trackPos, trackNeg, trackBach)) {
           continue;
         }
       } else if (!isMatter) { // anti-hypertriton (anti-proton, pi+, deuteron)
         tpcNsigmaProton = trackNeg.tpcNSigmaPr();
         tpcNsigmaPion = trackPos.tpcNSigmaPi();
+        dEdxProton = trackNeg.tpcSignal();
+        dEdxPion = trackPos.tpcSignal();
         if (!selectTPCPID(trackNeg, trackPos, trackBach)) {
           continue;
         }
       }
       registry.fill(HIST("hVtx3BodyCounterKFParticle"), kKfVtxTPCPID);
       LOG(debug) << "Basic track selections done.";
+
+      // TOF PID of deuteron (set motherhyp correctly)
+      double tofNSigmaDeuteron = -999;
+      if (trackBach.has_collision() && trackBach.hasTOF()) {
+        auto originalcol = trackBach.template collision_as<TCollisionTo>();
+        tofNSigmaDeuteron = bachelorTOFPID.GetTOFNSigma(trackBach, originalcol, collision);
+      }
 
       // track DCAxy and DCAz to PV associated with decay3body
       o2::dataformats::VertexBase mPV;
@@ -1000,7 +1017,11 @@ struct decay3bodyBuilder {
         // daughter PID
         tpcNsigmaProton,
         tpcNsigmaPion,
-        tpcNsigmaDeuteron);
+        tpcNsigmaDeuteron,
+        dEdxProton,
+        dEdxPion,
+        dEdxDeuteron,
+        tofNSigmaDeuteron);
 
       if (kfparticleConfigurations.fillCandidateLiteTable) {
         kfvtx3bodydatalite(
@@ -1050,7 +1071,11 @@ struct decay3bodyBuilder {
           // daughter PID
           tpcNsigmaProton,
           tpcNsigmaPion,
-          tpcNsigmaDeuteron);
+          tpcNsigmaDeuteron,
+          dEdxProton,
+          dEdxPion,
+          dEdxDeuteron,
+          tofNSigmaDeuteron);
       }
       LOG(debug) << "Table filled.";
 
@@ -1074,7 +1099,7 @@ struct decay3bodyBuilder {
   }
   PROCESS_SWITCH(decay3bodyBuilder, processRun3, "Produce DCA fitter decay3body tables", true);
 
-  void processRun3withKFParticle(MyCollisions const& collisions, FullTracksExtPIDIU const&, aod::Decay3Bodys const& decay3bodys, aod::BCsWithTimestamps const&)
+  void processRun3withKFParticle(ColwithEvTimes const& collisions, TrackExtPIDIUwithEvTimes const&, aod::Decay3Bodys const& decay3bodys, aod::BCsWithTimestamps const&)
   {
     for (const auto& collision : collisions) {
       // event selection
@@ -1097,7 +1122,7 @@ struct decay3bodyBuilder {
       // LOG(debug) << "Collision index: " << collIdx;
       auto Decay3BodyTable_thisCollision = decay3bodys.sliceBy(perCollision, collIdx);
       // LOG(debug) << "Decay3Body tables sliced per collision. Calling buildVtx3BodyDataTableKFParticle function...";
-      buildVtx3BodyDataTableKFParticle<FullTracksExtPIDIU>(collision, Decay3BodyTable_thisCollision, bachelorcharge);
+      buildVtx3BodyDataTableKFParticle<TrackExtPIDIUwithEvTimes, ColwithEvTimes>(collision, Decay3BodyTable_thisCollision, bachelorcharge);
       LOG(debug) << "End of processKFParticle.";
     }
   }

@@ -15,9 +15,12 @@
 /// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 /// \author Malgorzata Janik, WUT Warsaw, majanik@cern.ch
 
-#include <TDatabasePDG.h> // FIXME
-
 #include <CCDB/BasicCCDBManager.h>
+#include <TDatabasePDG.h> // FIXME
+#include <vector>
+#include <algorithm>
+#include <set>
+
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -861,7 +864,7 @@ struct femtoUniverseProducerTask {
     }
 
     // colCuts.fillQA(col); //for now, TODO: create a configurable so in the FemroUniverseCollisionSelection.h there is an option to plot QA just for the posZ
-    if (occupancy > ConfTPCOccupancyMin && occupancy <= ConfTPCOccupancyMax) {
+    if ((col.selection_bit(aod::evsel::kNoSameBunchPileup)) && (col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) && (occupancy > ConfTPCOccupancyMin && occupancy <= ConfTPCOccupancyMax)) {
       if (ConfDoSpher) {
         outputCollision(vtxZ, cent, multNtr, colCuts.computeSphericity(col, tracks), mMagField);
       } else {
@@ -1433,7 +1436,7 @@ struct femtoUniverseProducerTask {
       if (particle.pt() < ConfFilterCuts.ConfPtLowFilterCut || particle.pt() > ConfFilterCuts.ConfPtHighFilterCut)
         continue;
 
-      uint32_t pdgCode = (uint32_t)particle.pdgCode();
+      uint32_t pdgCode = static_cast<uint32_t>(particle.pdgCode());
 
       if (ConfMCTruthAnalysisWithPID) {
         bool pass = false;
