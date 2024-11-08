@@ -180,7 +180,7 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
   ConfigurableAxis ConfmTBins3D{"ConfmTBins3D", {VARIABLE_WIDTH, 1.02f, 1.14f, 1.20f, 1.26f, 1.38f, 1.56f, 1.86f, 4.50f}, "mT Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<twotracksconfigs.ConfUse3D>> to true in order to use)"};
   ConfigurableAxis ConfmultBins3D{"ConfmultBins3D", {VARIABLE_WIDTH, 0.0f, 20.0f, 30.0f, 40.0f, 99999.0f}, "multiplicity Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<twotracksconfigs.ConfUse3D>> to true in order to use)"};
 
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{ConfVtxBins, ConfMultBins}, true};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinning{{ConfVtxBins, ConfMultBins}, true};
 
   ConfigurableAxis ConfkstarBins{"ConfkstarBins", {1500, 0., 6.}, "binning kstar"};
   ConfigurableAxis ConfkTBins{"ConfkTBins", {150, 0., 9.}, "binning kT"};
@@ -258,20 +258,10 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
     // ConfNsigmaCombined -> TPC and TOF Sigma (combined) for momentum > ConfTOFpMin
 
     if (mom < twotracksconfigs.ConfTOFpMin) {
-      if (TMath::Abs(nsigmaTPC) < twotracksconfigs.ConfNsigmaTPC) {
-        return true;
-      } else {
-        return false;
-      }
+      return TMath::Abs(nsigmaTPC) < twotracksconfigs.ConfNsigmaTPC;
     } else {
-      if (TMath::Hypot(nsigmaTOF, nsigmaTPC) < twotracksconfigs.ConfNsigmaCombined) {
-        return true;
-      } else {
-        return false;
-      }
+      return TMath::Hypot(nsigmaTOF, nsigmaTPC) < twotracksconfigs.ConfNsigmaCombined;
     }
-
-    return false;
   }
 
   /// TPC Kaon Sigma selection (stricter cuts for K+ and K-) -- based on Run2 results
@@ -279,57 +269,33 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
   {
     if (twotracksconfigs.IsKaonNsigma == true) {
       if (mom < 0.4) {
-        if (TMath::Abs(nsigmaTPCK) < 2) {
-          return true;
-        } else {
-          return false;
-        }
+        return TMath::Abs(nsigmaTPCK) < 2;
       } else if (mom > 0.4 && mom < 0.45) {
-        if (TMath::Abs(nsigmaTPCK) < 1) {
-          return true;
-        } else {
-          return false;
-        }
+        return TMath::Abs(nsigmaTPCK) < 1;
       } else if (mom > 0.45 && mom < 0.8) {
-        if (TMath::Abs(nsigmaTPCK) < 3 && TMath::Abs(nsigmaTOFK) < 2) {
-          return true;
-        } else {
-          return false;
-        }
+        return (TMath::Abs(nsigmaTPCK) < 3 && TMath::Abs(nsigmaTOFK) < 2);
       } else if (mom > 0.8 && mom < 1.5) {
-        if (TMath::Abs(nsigmaTPCK) < 3 && TMath::Abs(nsigmaTOFK) < 1.5) {
-          return true;
-        } else {
-          return false;
-        }
+        return (TMath::Abs(nsigmaTPCK) < 3 && TMath::Abs(nsigmaTOFK) < 1.5);
       } else {
         return false;
       }
     } else {
       return IsNSigma(mom, nsigmaTPCK, nsigmaTOFK);
     }
-
-    return false;
   }
 
   /// TPC Deuteron Sigma selection
   bool IsDeuteronNSigma(float mom, float nsigmaTPCDe, float nsigmaTOFDe)
   {
-    if (mom < deuteronconfigs.ConfTOFpMinDe) {
-      if (TMath::Abs(nsigmaTPCDe) < deuteronconfigs.ConfNsigmaTPCDe) {
-        return true;
+    if (mom > deuteronconfigs.ConfPLowDe && mom < deuteronconfigs.ConfPHighDe) {
+      if (mom < deuteronconfigs.ConfTOFpMinDe) {
+        return TMath::Abs(nsigmaTPCDe) < deuteronconfigs.ConfNsigmaTPCDe;
       } else {
-        return false;
+        return (TMath::Abs(nsigmaTOFDe) < deuteronconfigs.ConfNsigmaTOFDe && (TMath::Abs(nsigmaTPCDe) < deuteronconfigs.ConfNsigmaTPCDe));
       }
     } else {
-      if ((TMath::Abs(nsigmaTOFDe) < deuteronconfigs.ConfNsigmaTOFDe) && (TMath::Abs(nsigmaTPCDe) < deuteronconfigs.ConfNsigmaTPCDe)) {
-        return true;
-      } else {
-        return false;
-      }
+      return false;
     }
-
-    return false;
   }
 
   /// Linear cut for clearer TPC Deuteron Sigma
@@ -491,7 +457,7 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
   template <typename CollisionType>
   void fillCollision(CollisionType col)
   {
-    MixQaRegistry.fill(HIST("MixingQA/hSECollisionBins"), colBinning.getBin({col.posZ(), col.multNtr()}));
+    MixQaRegistry.fill(HIST("MixingQA/hSECollisionBins"), colBinning.getBin({col.posZ(), col.multV0M()}));
     eventHisto.fillQA(col);
   }
 
@@ -510,13 +476,13 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
   template <bool isMC, typename PartitionType, typename PartType>
   void doSameEvent(PartitionType groupPartsOne, PartitionType groupPartsTwo, PartType parts, float magFieldTesla, int multCol, int pairType, bool fillQA)
   {
+
     /// Histogramming same event
     if ((pairType == 1 || pairType == 2) && fillQA) {
       for (auto& part : groupPartsOne) {
         if (!IsParticleNSigma((int8_t)1, part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(part, o2::track::PID::Deuteron), trackCuts.getNsigmaTOF(part, o2::track::PID::Deuteron), part.tpcSignal())) {
           continue;
         }
-
         trackHistoPartOne.fillQA<isMC, true>(part);
       }
     }
@@ -526,7 +492,6 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
         if (!IsParticleNSigma((int8_t)2, part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(part, o2::track::PID::Deuteron), trackCuts.getNsigmaTOF(part, o2::track::PID::Deuteron), part.tpcSignal())) {
           continue;
         }
-
         trackHistoPartTwo.fillQA<isMC, true>(part);
       }
     }
@@ -586,7 +551,6 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
         }
 
         switch (pairType) {
-
           case 2: {
             if (IsPairIdentical == true) {
               float kstar = FemtoUniverseMath::getkstar(p1, mass1, p2, mass1);
@@ -648,13 +612,13 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
     bool fillQA = true;
 
     if (cfgProcessPM) {
-      doSameEvent<false>(thegroupPartsOne, thegroupPartsTwo, parts, col.magField(), col.multNtr(), 1, fillQA);
+      doSameEvent<false>(thegroupPartsOne, thegroupPartsTwo, parts, col.magField(), col.multV0M(), 1, fillQA);
       fillQA = false;
     }
     if (cfgProcessPP)
-      doSameEvent<false>(thegroupPartsOne, thegroupPartsOne, parts, col.magField(), col.multNtr(), 2, fillQA);
+      doSameEvent<false>(thegroupPartsOne, thegroupPartsOne, parts, col.magField(), col.multV0M(), 2, fillQA);
     if (cfgProcessMM)
-      doSameEvent<false>(thegroupPartsTwo, thegroupPartsTwo, parts, col.magField(), col.multNtr(), 3, fillQA);
+      doSameEvent<false>(thegroupPartsTwo, thegroupPartsTwo, parts, col.magField(), col.multV0M(), 3, fillQA);
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackTrackMultKtExtended, processSameEvent, "Enable processing same event", true);
 
@@ -673,13 +637,13 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
 
     bool fillQA = true;
     if (cfgProcessPM) {
-      doSameEvent<false>(thegroupPartsOne, thegroupPartsTwo, parts, col.magField(), col.multNtr(), 1, fillQA);
+      doSameEvent<false>(thegroupPartsOne, thegroupPartsTwo, parts, col.magField(), col.multV0M(), 1, fillQA);
       fillQA = false;
     }
     if (cfgProcessPP)
-      doSameEvent<true>(thegroupPartsOne, thegroupPartsOne, parts, col.magField(), col.multNtr(), 2, fillQA);
+      doSameEvent<true>(thegroupPartsOne, thegroupPartsOne, parts, col.magField(), col.multV0M(), 2, fillQA);
     if (cfgProcessMM)
-      doSameEvent<true>(thegroupPartsTwo, thegroupPartsTwo, parts, col.magField(), col.multNtr(), 3, fillQA);
+      doSameEvent<true>(thegroupPartsTwo, thegroupPartsTwo, parts, col.magField(), col.multV0M(), 3, fillQA);
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackTrackMultKtExtended, processSameEventMC, "Enable processing same event for Monte Carlo", false);
 
@@ -697,6 +661,7 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
   template <bool isMC, typename PartitionType, typename PartType>
   void doMixedEvent(PartitionType groupPartsOne, PartitionType groupPartsTwo, PartType parts, float magFieldTesla, int multCol, int pairType)
   {
+
     for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
 
       if (!IsParticleNSigma((int8_t)2, p1.p(), trackCuts.getNsigmaTPC(p1, o2::track::PID::Proton), trackCuts.getNsigmaTOF(p1, o2::track::PID::Proton), trackCuts.getNsigmaTPC(p1, o2::track::PID::Pion), trackCuts.getNsigmaTOF(p1, o2::track::PID::Pion), trackCuts.getNsigmaTPC(p1, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p1, o2::track::PID::Kaon), trackCuts.getNsigmaTPC(p1, o2::track::PID::Deuteron), trackCuts.getNsigmaTOF(p1, o2::track::PID::Deuteron), p1.tpcSignal())) {
@@ -714,7 +679,6 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
       }
 
       switch (pairType) {
-
         case 1: {
           float kstar = FemtoUniverseMath::getkstar(p1, mass1, p2, mass2);
           float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass2);
@@ -725,7 +689,6 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
 
           break;
         }
-
         case 2: {
           if (IsPairIdentical == true) {
             float kstar = FemtoUniverseMath::getkstar(p1, mass1, p2, mass1);
@@ -779,7 +742,7 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
   {
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
 
-      const int multiplicityCol = collision1.multNtr();
+      const int multiplicityCol = collision1.multV0M();
       MixQaRegistry.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision1.posZ(), multiplicityCol}));
 
       const auto& magFieldTesla1 = collision1.magField();
@@ -818,7 +781,7 @@ struct femtoUniversePairTaskTrackTrackMultKtExtended {
   {
     for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
 
-      const int multiplicityCol = collision1.multNtr();
+      const int multiplicityCol = collision1.multV0M();
       MixQaRegistry.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision1.posZ(), multiplicityCol}));
 
       const auto& magFieldTesla1 = collision1.magField();
