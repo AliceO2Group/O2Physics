@@ -10,6 +10,8 @@
 // or submit itself to any jurisdiction.
 
 #include <cmath>
+#include <vector>
+#include <map>
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
 #include "ReconstructionDataFormats/Vertex.h"
