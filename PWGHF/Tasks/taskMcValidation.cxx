@@ -68,10 +68,10 @@ enum DecayChannels { DzeroToKPi = 0,
                      nChannels
 }; // always keep nChannels at the end
 
-static constexpr int nCharmMesonChannels = 10;                                                      // number of charm meson channels
-static constexpr int nBeautyMesonChannels = 1;                                                      // number of beauty meson channels
-static constexpr int nCharmBaryonChannels = nChannels - nCharmMesonChannels - nBeautyMesonChannels; // number of charm baryon channels
-static constexpr int nOriginTypes = 2;                                                              // number of origin types (prompt, non-prompt; only for charm hadrons)
+static constexpr int nCharmMesonChannels = 10;                                                  // number of charm meson channels
+static constexpr int nBeautyChannels = 1;                                                       // number of beauty hadron channels
+static constexpr int nCharmBaryonChannels = nChannels - nCharmMesonChannels - nBeautyChannels;  // number of charm baryon channels
+static constexpr int nOriginTypes = 2;                                                          // number of origin types (prompt, non-prompt; only for charm hadrons)
 static constexpr std::array<int, nChannels> PDGArrayParticle = {o2::constants::physics::Pdg::kD0, o2::constants::physics::Pdg::kDStar,
                                                                 o2::constants::physics::Pdg::kDPlus, o2::constants::physics::Pdg::kDPlus,
                                                                 o2::constants::physics::Pdg::kDS, o2::constants::physics::Pdg::kDS, o2::constants::physics::Pdg::kDS1, o2::constants::physics::Pdg::kDS2Star,
@@ -128,7 +128,7 @@ struct HfTaskMcValidationGen {
   AxisSpec axisCent{110, 0., 110.};
   AxisSpec axisOcc{3000, 0., 15000.};
   AxisSpec axisCharmMesonSpecies{nCharmMesonChannels, -0.5, static_cast<float>(nCharmMesonChannels) - 0.5};
-  AxisSpec axisBeautyMesonSpecies{nBeautyMesonChannels, -0.5, static_cast<float>(nBeautyMesonChannels) - 0.5};
+  AxisSpec axisBeautySpecies{nBeautyChannels, -0.5, static_cast<float>(nBeautyChannels) - 0.5};
   AxisSpec axisCharmBaryonSpecies{nCharmBaryonChannels, -0.5, static_cast<float>(nCharmBaryonChannels) - 0.5};
   AxisSpec axisDecLen{100, 0., 10000.};
 
@@ -148,28 +148,28 @@ struct HfTaskMcValidationGen {
      {"Quarks/hPtVsYCharmQuark", "Y vs. Pt - charm quarks ; #it{p}_{T}^{gen} (GeV/#it{c}); #it{y}^{gen}", {HistType::kTH2F, {axisPt, axisY}}},
      {"Quarks/hPtVsYBeautyQuark", "Y vs. Pt - beauty quarks ; #it{p}_{T}^{gen} (GeV/#it{c}); #it{y}^{gen}", {HistType::kTH2F, {axisPt, axisY}}},
      {"PromptCharmMesons/hPromptMesonsPtDistr", "Pt distribution vs prompt charm meson in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c})", {HistType::kTH2F, {axisCharmMesonSpecies, axisPt}}},
-     {"PromptCharmMesons/hPromptMesonsPtCentDistr", "Pt vs Cent vs distribution vs prompt charm meson in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c}); Centrality (%)", {HistType::kTH3F, {axisCharmMesonSpecies, axisPt, axisCent}}},
-     {"PromptCharmMesons/hPromptMesonsPtOccDistr", "Pt vs Occ vs distribution vs prompt charm meson in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c}); Occupancy", {HistType::kTH3F, {axisCharmMesonSpecies, axisPt, axisOcc}}},
+     {"PromptCharmMesons/hPromptMesonsPtCentDistr", "Pt vs Cent distribution vs prompt charm meson in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c}); Centrality (%)", {HistType::kTH3F, {axisCharmMesonSpecies, axisPt, axisCent}}},
+     {"PromptCharmMesons/hPromptMesonsPtOccDistr", "Pt vs Occ distribution vs prompt charm meson in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c}); Occupancy", {HistType::kTH3F, {axisCharmMesonSpecies, axisPt, axisOcc}}},
      {"PromptCharmMesons/hPromptMesonsYDistr", "Y distribution vs prompt charm meson; ; #it{y}^{gen}", {HistType::kTH2F, {axisCharmMesonSpecies, axisY}}},
      {"PromptCharmMesons/hPromptMesonsDecLenDistr", "Decay length distribution vs prompt charm meson; ; decay length (#mum)", {HistType::kTH2F, {axisCharmMesonSpecies, axisDecLen}}},
      {"NonPromptCharmMesons/hNonPromptMesonsPtDistr", "Pt distribution vs non-prompt charm meson in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c})", {HistType::kTH2F, {axisCharmMesonSpecies, axisPt}}},
-     {"NonPromptCharmMesons/hNonPromptMesonsPtCentDistr", "Pt vs Cent vs distribution vs non-prompt charm meson in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c}); Centrality (%)", {HistType::kTH3F, {axisCharmMesonSpecies, axisPt, axisCent}}},
-     {"NonPromptCharmMesons/hNonPromptMesonsPtOccDistr", "Pt vs Occ vs distribution vs non-prompt charm meson in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c}); Occupancy", {HistType::kTH3F, {axisCharmMesonSpecies, axisPt, axisOcc}}},
+     {"NonPromptCharmMesons/hNonPromptMesonsPtCentDistr", "Pt vs Cent distribution vs non-prompt charm meson in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c}); Centrality (%)", {HistType::kTH3F, {axisCharmMesonSpecies, axisPt, axisCent}}},
+     {"NonPromptCharmMesons/hNonPromptMesonsPtOccDistr", "Pt vs Occ distribution vs non-prompt charm meson in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c}); Occupancy", {HistType::kTH3F, {axisCharmMesonSpecies, axisPt, axisOcc}}},
      {"NonPromptCharmMesons/hNonPromptMesonsYDistr", "Y distribution vs non-prompt charm meson; ; #it{y}^{gen}", {HistType::kTH2F, {axisCharmMesonSpecies, axisY}}},
      {"NonPromptCharmMesons/hNonPromptMesonsDecLenDistr", "Decay length distribution vs non-prompt charm meson; ; decay length (#mum)", {HistType::kTH2F, {axisCharmMesonSpecies, axisDecLen}}},
-     {"BeautyMesons/hMesonsPtDistr", "Pt distribution vs beauty meson in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c})", {HistType::kTH2F, {axisBeautyMesonSpecies, axisPt}}},
-     {"BeautyMesons/hMesonsPtCentDistr", "Pt vs Cent vs distribution vs beauty meson in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c}); Centrality (%)", {HistType::kTH3F, {axisBeautyMesonSpecies, axisPt, axisCent}}},
-     {"BeautyMesons/hMesonsPtOccDistr", "Pt vs Occ vs distribution vs beauty meson in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c}); Occupancy", {HistType::kTH3F, {axisBeautyMesonSpecies, axisPt, axisOcc}}},
-     {"BeautyMesons/hMesonsYDistr", "Y distribution vs beauty meson; ; #it{y}^{gen}", {HistType::kTH2F, {axisBeautyMesonSpecies, axisY}}},
-     {"BeautyMesons/hMesonsDecLenDistr", "Decay length distribution vs beauty meson; ; decay length (#mum)", {HistType::kTH2F, {axisBeautyMesonSpecies, axisDecLen}}},
+     {"Beauty/hPtDistr", "Pt distribution vs beauty hadron in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c})", {HistType::kTH2F, {axisBeautySpecies, axisPt}}},
+     {"Beauty/hPtCentDistr", "Pt vs Cent distribution vs beauty hadron in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c}); Centrality (%)", {HistType::kTH3F, {axisBeautySpecies, axisPt, axisCent}}},
+     {"Beauty/hPtOccDistr", "Pt vs Occ distribution vs beauty hadron in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c}); Occupancy", {HistType::kTH3F, {axisBeautySpecies, axisPt, axisOcc}}},
+     {"Beauty/hYDistr", "Y distribution vs beauty hadron; ; #it{y}^{gen}", {HistType::kTH2F, {axisBeautySpecies, axisY}}},
+     {"Beauty/hDecLenDistr", "Decay length distribution vs beauty hadron; ; decay length (#mum)", {HistType::kTH2F, {axisBeautySpecies, axisDecLen}}},
      {"PromptCharmBaryons/hPromptBaryonsPtDistr", "Pt distribution vs prompt charm baryon in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c})", {HistType::kTH2F, {axisCharmBaryonSpecies, axisPt}}},
-     {"PromptCharmBaryons/hPromptBaryonsPtCentDistr", "Pt vs Cent vs distribution vs prompt charm baryons in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c}); Centrality (%)", {HistType::kTH3F, {axisCharmBaryonSpecies, axisPt, axisCent}}},
+     {"PromptCharmBaryons/hPromptBaryonsPtCentDistr", "Pt vs Cent distribution vs prompt charm baryons in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c}); Centrality (%)", {HistType::kTH3F, {axisCharmBaryonSpecies, axisPt, axisCent}}},
      {"PromptCharmBaryons/hPromptBaryonsYDistr", "Y distribution vs prompt charm baryon; ; #it{y}^{gen}", {HistType::kTH2F, {axisCharmBaryonSpecies, axisY}}},
-     {"PromptCharmBaryons/hPromptBaryonsPtOccDistr", "Pt vs Occ vs distribution vs prompt charm baryons in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c}); Occupancy", {HistType::kTH3F, {axisCharmBaryonSpecies, axisPt, axisOcc}}},
+     {"PromptCharmBaryons/hPromptBaryonsPtOccDistr", "Pt vs Occ distribution vs prompt charm baryons in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c}); Occupancy", {HistType::kTH3F, {axisCharmBaryonSpecies, axisPt, axisOcc}}},
      {"PromptCharmBaryons/hPromptBaryonsDecLenDistr", "Decay length distribution vs prompt charm baryon; ; decay length (#mum)", {HistType::kTH2F, {axisCharmBaryonSpecies, axisDecLen}}},
      {"NonPromptCharmBaryons/hNonPromptBaryonsPtDistr", "Pt distribution vs non-prompt charm baryon in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c})", {HistType::kTH2F, {axisCharmBaryonSpecies, axisPt}}},
-     {"NonPromptCharmBaryons/hNonPromptBaryonsPtCentDistr", "Pt vs Cent vs distribution vs prompt charm baryons in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c}); Centrality (%)", {HistType::kTH3F, {axisCharmBaryonSpecies, axisPt, axisCent}}},
-     {"NonPromptCharmBaryons/hNonPromptBaryonsPtOccDistr", "Pt vs Occ vs distribution vs prompt charm baryons in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c}); Occupancy", {HistType::kTH3F, {axisCharmBaryonSpecies, axisPt, axisOcc}}},
+     {"NonPromptCharmBaryons/hNonPromptBaryonsPtCentDistr", "Pt vs Cent distribution vs prompt charm baryons in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c}); Centrality (%)", {HistType::kTH3F, {axisCharmBaryonSpecies, axisPt, axisCent}}},
+     {"NonPromptCharmBaryons/hNonPromptBaryonsPtOccDistr", "Pt vs Occ distribution vs prompt charm baryons in |#it{y}^{gen}|<0.5; ; #it{p}_{T}^{gen} (GeV/#it{c}); Occupancy", {HistType::kTH3F, {axisCharmBaryonSpecies, axisPt, axisOcc}}},
      {"NonPromptCharmBaryons/hNonPromptBaryonsYDistr", "Y distribution vs non-prompt charm baryon; ; #it{y}^{gen}", {HistType::kTH2F, {axisCharmBaryonSpecies, axisY}}},
      {"NonPromptCharmBaryons/hNonPromptBaryonsDecLenDistr", "Decay length distribution vs non-prompt charm baryon; ; decay length (#mum)", {HistType::kTH2F, {axisCharmBaryonSpecies, axisDecLen}}}}};
 
@@ -187,13 +187,13 @@ struct HfTaskMcValidationGen {
         registry.add(Form("%sCharmMesons/hCount%s%s", originNames[iOrigin].data(), originNames[iOrigin].data(), particleNames[iChannel].data()),
                      Form("Event counter - %s %s; Events Per Collision; entries", originNames[iOrigin].data(), labels[iChannel].data()), {HistType::kTH1F, {axisNhadrons}});
       }
-      for (int iChannel = nCharmMesonChannels + nBeautyMesonChannels; iChannel < nChannels; iChannel++) { // Charm baryons
+      for (int iChannel = nCharmMesonChannels + nBeautyChannels; iChannel < nChannels; iChannel++) { // Charm baryons
         registry.add(Form("%sCharmBaryons/hCount%s%s", originNames[iOrigin].data(), originNames[iOrigin].data(), particleNames[iChannel].data()),
                      Form("Event counter - %s %s; Events Per Collision; entries", originNames[iOrigin].data(), labels[iChannel].data()), {HistType::kTH1F, {axisNhadrons}});
       }
     }
-    for (int iChannel = nCharmMesonChannels; iChannel < nCharmMesonChannels + nBeautyMesonChannels; iChannel++) { // Beauty mesons
-      registry.add(Form("BeautyMesons/hCount%s", particleNames[iChannel].data()),
+    for (int iChannel = nCharmMesonChannels; iChannel < nCharmMesonChannels + nBeautyChannels; iChannel++) { // Beauty mesons
+      registry.add(Form("Beauty/hCount%s", particleNames[iChannel].data()),
                    Form("Event counter - %s; Events Per Collision; entries", labels[iChannel].data()), {HistType::kTH1F, {axisNhadrons}});
     }
 
@@ -209,24 +209,24 @@ struct HfTaskMcValidationGen {
       registry.get<TH2>(HIST("NonPromptCharmMesons/hNonPromptMesonsYDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
       registry.get<TH2>(HIST("NonPromptCharmMesons/hNonPromptMesonsDecLenDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin - 1].data());
     }
-    for (auto iBin = 1; iBin <= nBeautyMesonChannels; ++iBin) {
-      registry.get<TH2>(HIST("BeautyMesons/hMesonsPtDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nCharmMesonChannels - 1].data());
-      registry.get<TH3>(HIST("BeautyMesons/hMesonsPtCentDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nCharmMesonChannels - 1].data());
-      registry.get<TH3>(HIST("BeautyMesons/hMesonsPtOccDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nCharmMesonChannels - 1].data());
-      registry.get<TH2>(HIST("BeautyMesons/hMesonsYDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nCharmMesonChannels - 1].data());
-      registry.get<TH2>(HIST("BeautyMesons/hMesonsDecLenDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nCharmMesonChannels - 1].data());
+    for (auto iBin = 1; iBin <= nBeautyChannels; ++iBin) {
+      registry.get<TH2>(HIST("Beauty/hPtDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nCharmMesonChannels - 1].data());
+      registry.get<TH3>(HIST("Beauty/hPtCentDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nCharmMesonChannels - 1].data());
+      registry.get<TH3>(HIST("Beauty/hPtOccDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nCharmMesonChannels - 1].data());
+      registry.get<TH2>(HIST("Beauty/hYDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nCharmMesonChannels - 1].data());
+      registry.get<TH2>(HIST("Beauty/hDecLenDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nCharmMesonChannels - 1].data());
     }
     for (auto iBin = 1; iBin <= nCharmBaryonChannels; ++iBin) {
-      registry.get<TH2>(HIST("PromptCharmBaryons/hPromptBaryonsPtDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nCharmMesonChannels + nBeautyMesonChannels - 1].data());
-      registry.get<TH3>(HIST("PromptCharmBaryons/hPromptBaryonsPtCentDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nCharmMesonChannels + nBeautyMesonChannels - 1].data());
-      registry.get<TH3>(HIST("PromptCharmBaryons/hPromptBaryonsPtOccDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nCharmMesonChannels + nBeautyMesonChannels - 1].data());
-      registry.get<TH2>(HIST("PromptCharmBaryons/hPromptBaryonsYDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nCharmMesonChannels + nBeautyMesonChannels - 1].data());
-      registry.get<TH2>(HIST("PromptCharmBaryons/hPromptBaryonsDecLenDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nCharmMesonChannels + nBeautyMesonChannels - 1].data());
-      registry.get<TH2>(HIST("NonPromptCharmBaryons/hNonPromptBaryonsPtDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nCharmMesonChannels + nBeautyMesonChannels - 1].data());
-      registry.get<TH3>(HIST("NonPromptCharmBaryons/hNonPromptBaryonsPtCentDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nCharmMesonChannels + nBeautyMesonChannels - 1].data());
-      registry.get<TH3>(HIST("NonPromptCharmBaryons/hNonPromptBaryonsPtOccDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nCharmMesonChannels + nBeautyMesonChannels - 1].data());
-      registry.get<TH2>(HIST("NonPromptCharmBaryons/hNonPromptBaryonsYDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nCharmMesonChannels + nBeautyMesonChannels - 1].data());
-      registry.get<TH2>(HIST("NonPromptCharmBaryons/hNonPromptBaryonsDecLenDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nCharmMesonChannels + nBeautyMesonChannels - 1].data());
+      registry.get<TH2>(HIST("PromptCharmBaryons/hPromptBaryonsPtDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nCharmMesonChannels + nBeautyChannels - 1].data());
+      registry.get<TH3>(HIST("PromptCharmBaryons/hPromptBaryonsPtCentDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nCharmMesonChannels + nBeautyChannels - 1].data());
+      registry.get<TH3>(HIST("PromptCharmBaryons/hPromptBaryonsPtOccDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nCharmMesonChannels + nBeautyChannels - 1].data());
+      registry.get<TH2>(HIST("PromptCharmBaryons/hPromptBaryonsYDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nCharmMesonChannels + nBeautyChannels - 1].data());
+      registry.get<TH2>(HIST("PromptCharmBaryons/hPromptBaryonsDecLenDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nCharmMesonChannels + nBeautyChannels - 1].data());
+      registry.get<TH2>(HIST("NonPromptCharmBaryons/hNonPromptBaryonsPtDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nCharmMesonChannels + nBeautyChannels - 1].data());
+      registry.get<TH3>(HIST("NonPromptCharmBaryons/hNonPromptBaryonsPtCentDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nCharmMesonChannels + nBeautyChannels - 1].data());
+      registry.get<TH3>(HIST("NonPromptCharmBaryons/hNonPromptBaryonsPtOccDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nCharmMesonChannels + nBeautyChannels - 1].data());
+      registry.get<TH2>(HIST("NonPromptCharmBaryons/hNonPromptBaryonsYDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nCharmMesonChannels + nBeautyChannels - 1].data());
+      registry.get<TH2>(HIST("NonPromptCharmBaryons/hNonPromptBaryonsDecLenDistr"))->GetXaxis()->SetBinLabel(iBin, labels[iBin + nCharmMesonChannels + nBeautyChannels - 1].data());
     }
 
     // inspect for which particle species the candidates were created and which zPvPosMax cut was set for reconstructed
@@ -393,7 +393,7 @@ struct HfTaskMcValidationGen {
             continue;
           }
           if (iD == B0ToDminusPi &&
-              !RecoDecay::isMatchedMCGen(mcParticles, particle, PDGArrayParticle[iD], std::array{-o2::constants::physics::Pdg::kDPlus, +kPiPlus}, true)) {
+              !RecoDecay::isMatchedMCGen<true, false>(mcParticles, particle, PDGArrayParticle[iD], std::array{-o2::constants::physics::Pdg::kDPlus, +kPiPlus}, true)) {
             continue;
           }
         }
@@ -445,7 +445,7 @@ struct HfTaskMcValidationGen {
         registry.fill(HIST("hPtDiffMotherDaughterGen"), ptDiff);
 
         int origin{0};
-        if (iD < nCharmMesonChannels || iD >= nCharmMesonChannels + nBeautyMesonChannels) { // Charm hadrons
+        if (iD < nCharmMesonChannels || iD >= nCharmMesonChannels + nBeautyChannels) { // Charm hadrons
           origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle);
           if (origin == RecoDecay::OriginType::Prompt) {
             counterPrompt[iD]++;
@@ -480,34 +480,34 @@ struct HfTaskMcValidationGen {
             registry.fill(HIST("NonPromptCharmMesons/hNonPromptMesonsYDistr"), iD, particle.y());
             registry.fill(HIST("NonPromptCharmMesons/hNonPromptMesonsDecLenDistr"), iD, decayLength * 10000);
           }
-        } else if (iD < nCharmMesonChannels + nBeautyMesonChannels) { // Beauty mesons
+        } else if (iD < nCharmMesonChannels + nBeautyChannels) { // Beauty mesons
           if (std::abs(particle.y()) < 0.5) {
-            registry.fill(HIST("BeautyMesons/hMesonsPtDistr"), iD - nCharmMesonChannels, particle.pt());
-            registry.fill(HIST("BeautyMesons/hMesonsPtCentDistr"), iD - nCharmMesonChannels, particle.pt(), centrality);
+            registry.fill(HIST("Beauty/hPtDistr"), iD - nCharmMesonChannels, particle.pt());
+            registry.fill(HIST("Beauty/hPtCentDistr"), iD - nCharmMesonChannels, particle.pt(), centrality);
           }
-          registry.fill(HIST("BeautyMesons/hMesonsYDistr"), iD - nCharmMesonChannels, particle.y());
-          registry.fill(HIST("BeautyMesons/hMesonsDecLenDistr"), iD - nCharmMesonChannels, decayLength * 10000);
+          registry.fill(HIST("Beauty/hYDistr"), iD - nCharmMesonChannels, particle.y());
+          registry.fill(HIST("Beauty/hDecLenDistr"), iD - nCharmMesonChannels, decayLength * 10000);
         } else { // Charm baryons
           if (origin == RecoDecay::OriginType::Prompt) {
             if (std::abs(particle.y()) < 0.5) {
-              registry.fill(HIST("PromptCharmBaryons/hPromptBaryonsPtDistr"), iD - nCharmMesonChannels - nBeautyMesonChannels, particle.pt());
-              registry.fill(HIST("PromptCharmBaryons/hPromptBaryonsPtCentDistr"), iD - nCharmMesonChannels - nBeautyMesonChannels, particle.pt(), centrality);
+              registry.fill(HIST("PromptCharmBaryons/hPromptBaryonsPtDistr"), iD - nCharmMesonChannels - nBeautyChannels, particle.pt());
+              registry.fill(HIST("PromptCharmBaryons/hPromptBaryonsPtCentDistr"), iD - nCharmMesonChannels - nBeautyChannels, particle.pt(), centrality);
               if (storeOccupancy) {
-                registry.fill(HIST("PromptCharmBaryons/hPromptBaryonsPtOccDistr"), iD - nCharmMesonChannels - nBeautyMesonChannels, particle.pt(), occupancy);
+                registry.fill(HIST("PromptCharmBaryons/hPromptBaryonsPtOccDistr"), iD - nCharmMesonChannels - nBeautyChannels, particle.pt(), occupancy);
               }
             }
-            registry.fill(HIST("PromptCharmBaryons/hPromptBaryonsYDistr"), iD - nCharmMesonChannels - nBeautyMesonChannels, particle.y());
-            registry.fill(HIST("PromptCharmBaryons/hPromptBaryonsDecLenDistr"), iD - nCharmMesonChannels - nBeautyMesonChannels, decayLength * 10000);
+            registry.fill(HIST("PromptCharmBaryons/hPromptBaryonsYDistr"), iD - nCharmMesonChannels - nBeautyChannels, particle.y());
+            registry.fill(HIST("PromptCharmBaryons/hPromptBaryonsDecLenDistr"), iD - nCharmMesonChannels - nBeautyChannels, decayLength * 10000);
           } else if (origin == RecoDecay::OriginType::NonPrompt) {
             if (std::abs(particle.y()) < 0.5) {
-              registry.fill(HIST("NonPromptCharmBaryons/hNonPromptBaryonsPtDistr"), iD - nCharmMesonChannels - nBeautyMesonChannels, particle.pt());
-              registry.fill(HIST("NonPromptCharmBaryons/hNonPromptBaryonsPtCentDistr"), iD - nCharmMesonChannels - nBeautyMesonChannels, particle.pt(), centrality);
+              registry.fill(HIST("NonPromptCharmBaryons/hNonPromptBaryonsPtDistr"), iD - nCharmMesonChannels - nBeautyChannels, particle.pt());
+              registry.fill(HIST("NonPromptCharmBaryons/hNonPromptBaryonsPtCentDistr"), iD - nCharmMesonChannels - nBeautyChannels, particle.pt(), centrality);
               if (storeOccupancy) {
-                registry.fill(HIST("NonPromptCharmBaryons/hNonPromptBaryonsPtOccDistr"), iD - nCharmMesonChannels - nBeautyMesonChannels, particle.pt(), occupancy);
+                registry.fill(HIST("NonPromptCharmBaryons/hNonPromptBaryonsPtOccDistr"), iD - nCharmMesonChannels - nBeautyChannels, particle.pt(), occupancy);
               }
             }
-            registry.fill(HIST("NonPromptCharmBaryons/hNonPromptBaryonsYDistr"), iD - nCharmMesonChannels - nBeautyMesonChannels, particle.y());
-            registry.fill(HIST("NonPromptCharmBaryons/hNonPromptBaryonsDecLenDistr"), iD - nCharmMesonChannels - nBeautyMesonChannels, decayLength * 10000);
+            registry.fill(HIST("NonPromptCharmBaryons/hNonPromptBaryonsYDistr"), iD - nCharmMesonChannels - nBeautyChannels, particle.y());
+            registry.fill(HIST("NonPromptCharmBaryons/hNonPromptBaryonsDecLenDistr"), iD - nCharmMesonChannels - nBeautyChannels, decayLength * 10000);
           }
         }
       }
@@ -534,11 +534,11 @@ struct HfTaskMcValidationGen {
         registry.fill(HIST("PromptCharmMesons/hCountPrompt") + HIST(particleNames[index]), counterPrompt[index]);
         registry.fill(HIST("NonPromptCharmMesons/hCountNonPrompt") + HIST(particleNames[index]), counterNonPrompt[index]);
       });
-      static_for<nCharmMesonChannels, nCharmMesonChannels + nBeautyMesonChannels - 1>([&](auto i) { // Beauty mesons
+      static_for<nCharmMesonChannels, nCharmMesonChannels + nBeautyChannels - 1>([&](auto i) { // Beauty hadrons
         constexpr int index = i.value;
-        registry.fill(HIST("BeautyMesons/hCount") + HIST(particleNames[index]), counterPrompt[index]);
+        registry.fill(HIST("Beauty/hCount") + HIST(particleNames[index]), counterPrompt[index]);
       });
-      static_for<nCharmMesonChannels + nBeautyMesonChannels, nChannels - 1>([&](auto i) { // Charm baryons
+      static_for<nCharmMesonChannels + nBeautyChannels, nChannels - 1>([&](auto i) { // Charm baryons
         constexpr int index = i.value;
         registry.fill(HIST("PromptCharmBaryons/hCountPrompt") + HIST(particleNames[index]), counterPrompt[index]);
         registry.fill(HIST("NonPromptCharmBaryons/hCountNonPrompt") + HIST(particleNames[index]), counterNonPrompt[index]);
@@ -562,11 +562,11 @@ struct HfTaskMcValidationGen {
         registry.fill(HIST("PromptCharmMesons/hCountPrompt") + HIST(particleNames[index]), counterPrompt[index]);
         registry.fill(HIST("NonPromptCharmMesons/hCountNonPrompt") + HIST(particleNames[index]), counterNonPrompt[index]);
       });
-      static_for<nCharmMesonChannels, nCharmMesonChannels + nBeautyMesonChannels - 1>([&](auto i) { // Beauty mesons
+      static_for<nCharmMesonChannels, nCharmMesonChannels + nBeautyChannels - 1>([&](auto i) { // Beauty
         constexpr int index = i.value;
-        registry.fill(HIST("BeautyMesons/hCount") + HIST(particleNames[index]), counterPrompt[index]);
+        registry.fill(HIST("Beauty/hCount") + HIST(particleNames[index]), counterPrompt[index]);
       });
-      static_for<nCharmMesonChannels + nBeautyMesonChannels, nChannels - 1>([&](auto i) { // Charm baryons
+      static_for<nCharmMesonChannels + nBeautyChannels, nChannels - 1>([&](auto i) { // Charm baryons
         constexpr int index = i.value;
         registry.fill(HIST("PromptCharmBaryons/hCountPrompt") + HIST(particleNames[index]), counterPrompt[index]);
         registry.fill(HIST("NonPromptCharmBaryons/hCountNonPrompt") + HIST(particleNames[index]), counterNonPrompt[index]);
@@ -590,11 +590,11 @@ struct HfTaskMcValidationGen {
         registry.fill(HIST("PromptCharmMesons/hCountPrompt") + HIST(particleNames[index]), counterPrompt[index]);
         registry.fill(HIST("NonPromptCharmMesons/hCountNonPrompt") + HIST(particleNames[index]), counterNonPrompt[index]);
       });
-      static_for<nCharmMesonChannels, nCharmMesonChannels + nBeautyMesonChannels - 1>([&](auto i) { // Beauty mesons
+      static_for<nCharmMesonChannels, nCharmMesonChannels + nBeautyChannels - 1>([&](auto i) { // Beauty mesons
         constexpr int index = i.value;
-        registry.fill(HIST("BeautyMesons/hCount") + HIST(particleNames[index]), counterPrompt[index]);
+        registry.fill(HIST("Beauty/hCount") + HIST(particleNames[index]), counterPrompt[index]);
       });
-      static_for<nCharmMesonChannels + nBeautyMesonChannels, nChannels - 1>([&](auto i) { // Charm baryons
+      static_for<nCharmMesonChannels + nBeautyChannels, nChannels - 1>([&](auto i) { // Charm baryons
         constexpr int index = i.value;
         registry.fill(HIST("PromptCharmBaryons/hCountPrompt") + HIST(particleNames[index]), counterPrompt[index]);
         registry.fill(HIST("NonPromptCharmBaryons/hCountNonPrompt") + HIST(particleNames[index]), counterNonPrompt[index]);
@@ -780,7 +780,7 @@ struct HfTaskMcValidationRec {
             histImpactParameterDau[iHad][iOrigin][iDau] = registryMesons.add<TH1>(Form("%s/histImpactParameterDau%d%s", particleNames[iHad].data(), iDau, originNames[iOrigin].data()), Form("Daughter %d DCAxy reco - %s %s; DCAxy (cm); entries", iDau, originNames[iOrigin].data(), labels[iHad].data()), HistType::kTH1F, {axisDeltaVtx});
           }
         }
-      } else if (iHad >= nCharmMesonChannels + nBeautyMesonChannels) {
+      } else if (iHad >= nCharmMesonChannels + nBeautyChannels) {
         histDeltaPt[iHad] = registryBaryons.add<TH1>(Form("%s/histDeltaPt", particleNames[iHad].data()), Form("Pt difference reco - MC %s; #it{p}_{T}^{reco} - #it{p}_{T}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaMom});
         histDeltaPx[iHad] = registryBaryons.add<TH1>(Form("%s/histDeltaPx", particleNames[iHad].data()), Form("Px difference reco - MC %s; #it{p}_{x}^{reco} - #it{p}_{x}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaMom});
         histDeltaPy[iHad] = registryBaryons.add<TH1>(Form("%s/histDeltaPy", particleNames[iHad].data()), Form("Py difference reco - MC %s; #it{p}_{y}^{reco} - #it{p}_{y}^{gen} (GeV/#it{c}); entries", labels[iHad].data()), HistType::kTH1F, {axisDeltaMom});
