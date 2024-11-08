@@ -15,6 +15,7 @@
 /// \author Biao Zhang, Heidelberg University, biao.zhang@cern.ch
 
 #include <vector>
+#include <string>
 
 #include "Framework/Expressions.h"
 #include "Framework/AnalysisTask.h"
@@ -61,10 +62,18 @@ struct HfTaskCharmHadronsFemtoDream {
   ConfigurableAxis binTempFitVarTrack{"binTempFitVarTrack", {300, -0.15, 0.15}, "binning of the TempFitVar in the pT vs. TempFitVar plot (Track)"};
   ConfigurableAxis binmT{"binmT", {225, 0., 7.5}, "binning mT"};
   ConfigurableAxis binmultTempFit{"binmultTempFit", {1, 0, 1}, "multiplicity Binning for the TempFitVar plot"};
+  ConfigurableAxis binMulPercentile{"binMulPercentile", {10, 0.0f, 100.0f}, "multiplicity percentile Binning"};
   ConfigurableAxis binpT{"binpT", {20, 0.5, 4.05}, "pT binning"};
   ConfigurableAxis binpTTrack{"binpTTrack", {50, 0.5, 10.05}, "pT binning of the pT vs. TempFitVar plot (Track)"};
+  ConfigurableAxis binEta{"binEta", {{200, -1.5, 1.5}}, "eta binning"};
+  ConfigurableAxis binPhi{"binPhi", {{200, 0, TMath::TwoPi()}}, "phi binning"};
   ConfigurableAxis binkT{"binkT", {150, 0., 9.}, "binning kT"};
   ConfigurableAxis binkstar{"binkstar", {1500, 0., 6.}, "binning kstar"};
+  ConfigurableAxis binNSigmaTPC{"binNSigmaTPC", {1600, -8, 8}, "Binning of Nsigma TPC plot"};
+  ConfigurableAxis binNSigmaTOF{"binNSigmaTOF", {3000, -15, 15}, "Binning of the Nsigma TOF plot"};
+  ConfigurableAxis binNSigmaTPCTOF{"binNSigmaTPCTOF", {3000, -15, 15}, "Binning of the Nsigma TPC+TOF plot"};
+  ConfigurableAxis binTPCClusters{"binTPCClusters", {163, -0.5, 162.5}, "Binning of TPC found clusters plot"};
+  Configurable<int> ConfTempFitVarMomentum{"ConfTempFitVarMomentum", 0, "Momentum used for binning: 0 -> pt; 1 -> preco; 2 -> ptpc"};
 
   /// Particle 2 (Charm Hadrons)
   Configurable<float> charmHadBkgBDTmax{"charmHadBkgBDTmax", 1., "Maximum background bdt score for Charm Hadron (particle 2)"};
@@ -149,10 +158,10 @@ struct HfTaskCharmHadronsFemtoDream {
   using FilteredMcColisions = soa::Filtered<soa::Join<aod::FDCollisions, FDColMasks, aod::FDMCCollLabels>>;
   using FilteredMcColision = FilteredMcColisions::iterator;
 
-  using FilteredFDMcParts = soa::Filtered<soa::Join<aod::FDParticles, aod::FDParticlesIndex, aod::FDMCLabels>>;
+  using FilteredFDMcParts = soa::Filtered<soa::Join<aod::FDParticles, aod::FDParticlesIndex, aod::FDExtParticles, aod::FDMCLabels, aod::FDExtMCLabels>>;
   using FilteredFDMcPart = FilteredFDMcParts::iterator;
 
-  using FilteredFDParticles = soa::Filtered<soa::Join<aod::FDParticles, aod::FDParticlesIndex>>;
+  using FilteredFDParticles = soa::Filtered<soa::Join<aod::FDParticles, aod::FDExtParticles, aod::FDParticlesIndex>>;
   using FilteredFDParticle = FilteredFDParticles::iterator;
 
   femtodreamcollision::BitMaskType BitMask = 1 << 0;
@@ -166,7 +175,7 @@ struct HfTaskCharmHadronsFemtoDream {
   HistogramRegistry registryMixQa{"registryMixQa"};
   /// Partition for particle 1
 
-  Partition<FilteredFDParticles> partitionTrk1 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack));
+  Partition<FilteredFDParticles> partitionTrk1 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && (ncheckbit(aod::femtodreamparticle::cut, cutBitTrack1)) && ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= pidThresTrack1, ncheckbit(aod::femtodreamparticle::pidcut, tpcBitTrack1), ncheckbit(aod::femtodreamparticle::pidcut, tpcTofBitTrack1));
 
   Partition<FilteredFDMcParts> partitionMcTrk1 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
                                                  (ncheckbit(aod::femtodreamparticle::cut, cutBitTrack1)) &&
@@ -188,7 +197,7 @@ struct HfTaskCharmHadronsFemtoDream {
   void init(InitContext& /*context*/)
   {
     eventHisto.init(&registry);
-    trackHistoPartOne.init(&registry, binmultTempFit, dummy, binpTTrack, dummy, dummy, binTempFitVarTrack, dummy, dummy, dummy, dummy, dummy, isMc, pdgCodeTrack1);
+    trackHistoPartOne.init(&registry, binmultTempFit, binMulPercentile, binpTTrack, binEta, binPhi, binTempFitVarTrack, binNSigmaTPC, binNSigmaTOF, binNSigmaTPCTOF, binTPCClusters, dummy, isMc, pdgCodeTrack1, true);
 
     sameEventCont.init<true>(&registry,
                              binkstar, binpT, binkT, binmT, mixingBinMult, mixingBinMultPercentile,
@@ -233,7 +242,7 @@ struct HfTaskCharmHadronsFemtoDream {
     /// Histogramming same event
     for (auto const& part : sliceTrk1) {
 
-      trackHistoPartOne.fillQA<isMc, false>(part, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
+      trackHistoPartOne.fillQA<isMc, true>(part, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
     }
 
     for (auto const& [p1, p2] : combinations(CombinationsFullIndexPolicy(sliceTrk1, sliceCharmHad))) {
@@ -452,6 +461,7 @@ struct HfTaskCharmHadronsFemtoDream {
   void processSameEventMc(FilteredMcColision const& col,
                           FilteredFDMcParts const& parts,
                           o2::aod::FDMCParticles const&,
+                          o2::aod::FDExtMCParticles const&,
                           FilteredCharmMcCands const&)
   {
     if ((col.bitmaskTrackOne() & BitMask) != BitMask || (col.bitmaskTrackTwo() & BitMask) != BitMask) {
@@ -474,6 +484,7 @@ struct HfTaskCharmHadronsFemtoDream {
   void processMixedEventMc(FilteredMcColisions const& cols,
                            FilteredFDMcParts const& parts,
                            o2::aod::FDMCParticles const&,
+                           o2::aod::FDExtMCParticles const&,
                            FilteredCharmMcCands const&)
   {
     switch (mixingBinPolicy.value) {
