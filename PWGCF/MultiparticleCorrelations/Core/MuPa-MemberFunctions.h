@@ -5901,8 +5901,7 @@ void CalculateKineTest0(eAsFunctionOf AFO_variable)
             // cout<<Form("h = %d, t0.fTest0Labels[%d][%d] = ",h,mo,mi)<<t0.fTest0Labels[mo][mi]->Data()<<endl;
             TObjArray* oa = t0.fTest0Labels[mo][mi]->Tokenize(" ");
             if (!oa) {
-              cout << __LINE__ << endl;
-              exit(1);
+              LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
             }
             n[h] = TString(oa->At(h)->GetName()).Atoi();
             delete oa; // yes, otherwise it's a memory leak
@@ -8118,8 +8117,7 @@ Double_t CalculateKineCustomNestedLoops(TArrayI* harmonics, eAsFunctionOf AFO_va
   // a) Determine the order of correlator;
   Int_t order = harmonics->GetSize();
   if (0 == order || order > gMaxCorrelator) {
-    cout << __LINE__ << endl;
-    exit(1);
+    LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
   }
 
   if (order > nParticles) {
@@ -8468,7 +8466,7 @@ void BanishmentLoopOverParticles(T const& tracks)
     if (!tc.fUseFisherYates) {
       track = tracks.iteratorAt(i);
     } else {
-      track = tracks.iteratorAt((int64_t)tc.fRandomIndices->GetAt(i));
+      track = tracks.iteratorAt(static_cast<int64_t>(tc.fRandomIndices->GetAt(i)));
     }
 
     // *) Skip track objects which are not valid tracks (e.g. Run 2 and 1 tracklets, etc.):
@@ -8997,7 +8995,7 @@ void MainLoopOverParticles(T const& tracks)
     if (!tc.fUseFisherYates) {
       track = tracks.iteratorAt(i);
     } else {
-      track = tracks.iteratorAt((int64_t)tc.fRandomIndices->GetAt(i));
+      track = tracks.iteratorAt(static_cast<int64_t>(tc.fRandomIndices->GetAt(i)));
     }
 
     // *) Skip track objects which are not valid tracks (e.g. Run 2 and 1 tracklets, etc.):
