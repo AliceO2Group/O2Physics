@@ -13,6 +13,8 @@
 #include <utility>
 #include <random>
 #include <iostream>
+#include <memory>
+#include <algorithm>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -357,6 +359,8 @@ struct nucleiEbye {
       histos.fill(HIST("QA/nClsTPC"), track.tpcNcls());
 
       for (int iP{0}; iP < kNpart; ++iP) {
+        if (track.mass() != iP)
+          continue;
         if (trackPt < ptMin[iP] || trackPt > ptMax[iP]) {
           continue;
         }

@@ -129,10 +129,16 @@ class DielectronCut : public TNamed
     if (mApplyPhiV && ((phiv < mMinPhivPair || (mMaxPhivPairMeeDep ? mMaxPhivPairMeeDep(v12.M()) : mMaxPhivPair) < phiv) ^ mSelectPC)) {
       return false;
     }
+
     if (dca_ee_3d < mMinPairDCA3D || mMaxPairDCA3D < dca_ee_3d) { // in sigma for pair
       return false;
     }
+
     if (opAng < mMinOpAng || mMaxOpAng < opAng) { // in sigma for pair
+      return false;
+    }
+
+    if (mRequireDiffSides && t1.eta() * t2.eta() > 0.0) {
       return false;
     }
 
@@ -380,6 +386,7 @@ class DielectronCut : public TNamed
   void SetPhivPairRange(float min, float max);
   void SelectPhotonConversion(bool flag);
   void SetMindEtadPhi(bool flag, float min_deta, float min_dphi);
+  void SetRequireDifferentSides(bool flag);
 
   void SetTrackPtRange(float minPt = 0.f, float maxPt = 1e10f);
   void SetTrackEtaRange(float minEta = -1e10f, float maxEta = 1e10f);
@@ -444,6 +451,7 @@ class DielectronCut : public TNamed
   float mMinDeltaEta{0.f};
   float mMinDeltaPhi{0.f};
   float mMinOpAng{0.f}, mMaxOpAng{1e10f};
+  bool mRequireDiffSides{false}; // flag to require 2 tracks to be from different sides. (A-C combination). If one wants 2 tracks to be in the same side (A-A or C-C), one can simply use track eta cut.
 
   // kinematic cuts
   float mMinTrackPt{0.f}, mMaxTrackPt{1e10f};        // range in pT
