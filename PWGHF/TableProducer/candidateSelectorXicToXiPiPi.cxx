@@ -13,6 +13,7 @@
 /// \brief Ξc± → Ξ∓ π± π± candidate selector
 ///
 /// \author Phil Lennart Stahlhut <phil.lennart.stahlhut@cern.ch>, Heidelberg University
+/// \author Jaeyoon Cho <jaeyoon.cho@cern.ch>, Inha University
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
@@ -32,6 +33,7 @@ using namespace o2::analysis;
 
 struct HfCandidateSelectorXicToXiPiPi {
   Produces<aod::HfSelXicToXiPiPi> hfSelXicToXiPiPiCandidate;
+  Produces<aod::HfMlXicToXiPiPi> hfMlXicToXiPiPiCandidate; // Jaeyoon Nov 8th
 
   Configurable<float> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<float> ptCandMax{"ptCandMax", 36., "Upper bound of candidate pT"};
@@ -240,6 +242,11 @@ struct HfCandidateSelectorXicToXiPiPi {
       // topological cuts
       if (!selectionTopol(hfCandXic)) {
         hfSelXicToXiPiPiCandidate(statusXicToXiPiPi);
+		// +++++++++++ Jaeyoon Nov 8th
+        if(applyMl){
+          hfMlXicToXiPiPiCandidate(outputMlXicToXiPiPi);
+        }
+		// +++++++++++ Jaeyoon Nov 8th
         continue;
       }
       SETBIT(statusXicToXiPiPi, SelectionStep::RecoTopol); // RecoTopol = 1 --> statusXicToXiPiPi = 3
@@ -270,6 +277,11 @@ struct HfCandidateSelectorXicToXiPiPi {
 
         if (!selectionPid(pidTrackPi0, pidTrackPi1, pidTrackPr, pidTrackPiLam, pidTrackPiXi, acceptPIDNotApplicable.value)) {
           hfSelXicToXiPiPiCandidate(statusXicToXiPiPi);
+		  // +++++++++++ Jaeyoon Nov 8th
+          if(applyMl){
+            hfMlXicToXiPiPiCandidate(outputMlXicToXiPiPi);
+          }
+		  // +++++++++++ Jaeyoon Nov 8th
           continue;
         }
         SETBIT(statusXicToXiPiPi, SelectionStep::RecoPID); // RecoPID = 2 --> statusXicToXiPiPi = 7
@@ -285,6 +297,8 @@ struct HfCandidateSelectorXicToXiPiPi {
         std::vector<float> inputFeaturesXicToXiPiPi = hfMlResponse.getInputFeatures(hfCandXic);
 
         isSelectedMlXicToXiPiPi = hfMlResponse.isSelectedMl(inputFeaturesXicToXiPiPi, ptCandXic, outputMlXicToXiPiPi);
+
+        hfMlXicToXiPiPiCandidate(outputMlXicToXiPiPi); // Jaeyoon Nov 8th
 
         if(!isSelectedMlXicToXiPiPi){
            hfSelXicToXiPiPiCandidate(statusXicToXiPiPi);
