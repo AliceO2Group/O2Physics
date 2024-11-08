@@ -665,7 +665,7 @@ struct RecoDecay {
   /// Checks whether the reconstructed decay candidate is the expected decay.
   /// \param checkProcess  switch to accept only decay daughters by checking the production process of MC particles
   /// \param acceptIncompleteReco  switch to accept candidates with only part of the daughters reconstructed
-  /// \param acceptTrackDecay  switch to accept candidates with one or more tracks decayed during transport
+  /// \tparam acceptTrackDecay  switch to accept candidates with daughter tracks of pions and kaons which decayed
   /// \param particlesMC  table with MC particles
   /// \param arrDaughters  array of candidate daughters
   /// \param PDGMother  expected mother PDG code
@@ -673,8 +673,8 @@ struct RecoDecay {
   /// \param acceptAntiParticles  switch to accept the antiparticle version of the expected decay
   /// \param sign  antiparticle indicator of the found mother w.r.t. PDGMother; 1 if particle, -1 if antiparticle, 0 if mother not found
   /// \param depthMax  maximum decay tree level to check; Daughters up to this level will be considered. If -1, all levels are considered.
-  /// \param nPiToMu  number of pions decayed in a muon during transport
-  /// \param nKaToPi  number of kaons decayed in a pion during transport
+  /// \param nPiToMu  number of pion prongs decayed to a muon
+  /// \param nKaToPi  number of kaon prongs decayed to a pion
   /// \return index of the mother particle if the mother and daughters are correct, -1 otherwise
   template <bool acceptFlavourOscillation = false, bool checkProcess = false, bool acceptIncompleteReco = false, bool acceptTrackDecay = false, std::size_t N, typename T, typename U>
   static int getMatchedMCRec(const T& particlesMC,
@@ -690,8 +690,10 @@ struct RecoDecay {
     // Printf("MC Rec: Expected mother PDG: %d", PDGMother);
     int8_t coefFlavourOscillation = 1;     // 1 if no B0(s) flavour oscillation occured, -1 else
     int8_t sgn = 0;                        // 1 if the expected mother is particle, -1 if antiparticle (w.r.t. PDGMother)
-    int8_t piToMu = 0;                     // number of pions decayed to a muon >=1 if any are found
-    int8_t kaToPi = 0;                     // number of kaons decayed to a pion >=1 if any are found
+    if constexpr (acceptTrackDecay) {
+      int8_t nPiToMuLocal = 0; // number of pion prongs decayed to a muon
+      int8_t nKaToPiLocal = 0; // number of kaon prongs decayed to a pion
+    }
     int indexMother = -1;                  // index of the mother particle
     std::vector<int> arrAllDaughtersIndex; // vector of indices of all daughters of the mother of the first provided daughter
     std::array<int, N> arrDaughtersIndex;  // array of indices of provided daughters
@@ -717,14 +719,18 @@ struct RecoDecay {
         return -1;
       }
       auto particleI = arrDaughters[iProng].mcParticle(); // ith daughter particle
-      auto motherI = particleI.template mothers_first_as<T>();
-      if (acceptTrackDecay) {
-        if (std::abs(particleI.pdgCode()) == std::abs(kMuonPlus) && std::abs(motherI.pdgCode()) == std::abs(kPiPlus)) {
-          // LOGF(info, "found muon %d with mother %d", particleI.pdgCode(), motherI.pdgCode());
-          piToMu += 1;
+      if constexpr (acceptTrackDecay) {
+        // Replace the MC particle associated with the prong by its mother for π → μ and K → π.
+        auto motherI = particleI.template mothers_first_as<T>();
+        auto pdgI = std::abs(particleI.pdgCode());
+        auto pdgMotherI = std::abs(motherI.pdgCode());
+        if (pdgI == kMuonMinus && pdgMotherI == kPiPlus) {
+          // π → μ
+          nPiToMuLocal++;
           particleI = motherI;
-        } else if (std::abs(particleI.pdgCode()) == std::abs(kPiPlus) && std::abs(motherI.pdgCode()) == std::abs(kKPlus)) {
-          kaToPi += 1;
+        } else if (pdgI == kPiPlus && pdgMotherI == kKPlus) {
+          // K → π
+          nKaToPiLocal++;
           particleI = motherI;
         }
       }
@@ -800,11 +806,13 @@ struct RecoDecay {
     if (sign) {
       *sign = sgn;
     }
-    if (nPiToMu) {
-      *nPiToMu = piToMu;
-    }
-    if (nKaToPi) {
-      *nKaToPi = kaToPi;
+    if constexpr (acceptTrackDecay) {
+      if (nPiToMu) {
+        *nPiToMu = nPiToMuLocal;
+      }
+      if (nKaToPi) {
+        *nKaToPi = nKaToPiLocal;
+      }
     }
     return indexMother;
   }
