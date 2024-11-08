@@ -14,6 +14,10 @@
 /// \analysis task for lmee light flavour cocktail
 /// \author Daniel Samitz, <daniel.samitz@cern.ch>, SMI Vienna
 
+#include <map>
+#include <vector>
+#include <string>
+
 #include "Math/Vector4D.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -62,6 +66,10 @@ struct lmeelfcocktail {
 
   HistogramRegistry registry{"registry", {}};
 
+  Configurable<bool> fConfigApplyDEtaDPhi{"cfgApplyDEtaDPhi", false, "flag to apply deta-phi cut"};
+  Configurable<float> fConfigMinDEta{"cfgMinDEta", 0.02, "minimum deta"};
+  Configurable<float> fConfigMinDPhi{"cfgMinDPhi", 0.2, "minimum dphi"};
+
   Configurable<float> fConfigMaxEta{"cfgMaxEta", 0.8, "maxium |eta|"};
   Configurable<float> fConfigMinPt{"cfgMinPt", 0.2, "minium pT"};
   Configurable<float> fConfigMaxPt{"cfgMaxPt", 8.0, "maximum pT"};
@@ -70,6 +78,7 @@ struct lmeelfcocktail {
   Configurable<float> fConfigMaxRapee{"cfgMaxRapee", 999., "maximum pair rapidity"};
   ConfigurableAxis fConfigMeeBins{"cfgMeeBins", {600, 0.f, 6.f}, "Mee binning"};
   ConfigurableAxis fConfigPteeBins{"cfgPteeBins", {400, 0.f, 10.f}, "pTee binning"};
+  ConfigurableAxis fConfigCos2DPhi{"cfgCos2DPhi", {200, -1.f, +1.f}, "cos(2x(phiee-PsiRP)) binning"}; // for dilepton v2.
   ConfigurableAxis fConfigPtBins{"cfgPtBins", {200, 0.f, 10.f}, "pT binning"};
   ConfigurableAxis fConfigEtaBins{"cfgEtaBins", {200, -5.f, 5.f}, "eta binning"};
   ConfigurableAxis fConfigPhiBins{"cfgPhiBins", {200, -TMath::Pi(), TMath::Pi()}, "phi binning"};
@@ -79,6 +88,7 @@ struct lmeelfcocktail {
 
   std::vector<std::shared_ptr<TH1>> histograms1D;
   std::vector<std::shared_ptr<TH2>> histograms2D;
+  std::vector<std::shared_ptr<THnSparse>> histogramsND;
 
   template <typename T, typename U>
   bool from_primary(T& p1, U& mcParticles)
@@ -113,12 +123,22 @@ struct lmeelfcocktail {
       return false;
     }
     ROOT::Math::PtEtaPhiMVector p12 = p1 + p2;
-    if (p12.Pt() < fConfigMinPtee)
+    if (p12.Pt() < fConfigMinPtee) {
       return false;
-    if (o2::aod::pwgem::dilepton::utils::pairutil::getOpeningAngle(p1.Px(), p1.Py(), p1.Pz(), p2.Px(), p2.Py(), p2.Pz()) < fConfigMinOpAng)
+    }
+    if (o2::aod::pwgem::dilepton::utils::pairutil::getOpeningAngle(p1.Px(), p1.Py(), p1.Pz(), p2.Px(), p2.Py(), p2.Pz()) < fConfigMinOpAng) {
       return false;
-    if (fabs(p12.Rapidity()) > fConfigMaxRapee)
+    }
+    if (fabs(p12.Rapidity()) > fConfigMaxRapee) {
       return false;
+    }
+
+    float deta = p1.Eta() - p2.Eta();
+    float dphi = p1.Phi() - p2.Phi();
+    o2::math_utils::bringToPMPi(dphi);
+    if (fConfigApplyDEtaDPhi && std::pow(deta / fConfigMinDEta, 2) + std::pow(dphi / fConfigMinDPhi, 2) < 1.f) {
+      return false;
+    }
     return true;
   }
 
@@ -205,6 +225,35 @@ struct lmeelfcocktail {
     }
   }
 
+  template <typename TAxes>
+  void addHistogramND_stage(TString histname, TAxes const& axes, int& i, TString s)
+  {
+    i++;
+    TString name = s + histname;
+    histogramId[name] = i;
+    histogramsND.push_back(registry.add<THnSparse>(name, histname, HistType::kTHnSparseF, axes, true));
+    for (auto const& [pdg, meson] : mesons) {
+      i++;
+      name = s + meson.name + histname;
+      histogramId[name] = i;
+      histogramsND.push_back(registry.add<THnSparse>(name, histname, HistType::kTHnSparseF, axes, true));
+      for (auto const& mode : meson.decayModes) {
+        i++;
+        name = s + meson.name + decays[mode] + histname;
+        histogramId[name] = i;
+        histogramsND.push_back(registry.add<THnSparse>(name, histname, HistType::kTHnSparseF, axes, true));
+      }
+    }
+  }
+
+  template <typename TAxes>
+  void addHistogramND(TString histname, TAxes const& axes, int& i)
+  {
+    for (auto s : stage) {
+      addHistogramND_stage(histname, axes, i, s);
+    }
+  }
+
   void fillHistogram1D(TString histname, int s, int pdg, int other_daughter_pdg, float value, float weight)
   {
     histograms1D[histogramId[stage[s] + histname]]->Fill(value, weight);
@@ -225,10 +274,18 @@ struct lmeelfcocktail {
     histograms2D[histogramId[stage[s] + mesons[pdg].name + decays[other_daughter_pdg] + histname]]->Fill(value1, value2, weight);
   }
 
+  void fillHistogramND(TString histname, int s, int pdg, int other_daughter_pdg, double* values, double weight)
+  {
+    histogramsND[histogramId[stage[s] + histname]]->Fill(values, weight);
+    histogramsND[histogramId[stage[s] + mesons[pdg].name + histname]]->Fill(values, weight);
+    histogramsND[histogramId[stage[s] + mesons[pdg].name + decays[other_daughter_pdg] + histname]]->Fill(values, weight);
+  }
+
   void init(InitContext& context)
   {
     AxisSpec mass_axis = {fConfigMeeBins, "m_{ee} (GeV/#it{c}^{2})"};
     AxisSpec ptee_axis = {fConfigPteeBins, "#it{p}_{T,ee} (GeV/#it{c})"};
+    AxisSpec cos2dphi_axis = {fConfigCos2DPhi, "cos(2(#varphi_{ee} - #Psi_{RP}))"}; // PsiRP = 0 rad. in generator.
     AxisSpec eta_axis = {fConfigEtaBins, "#it{#eta}_{e}"};
     AxisSpec pt_axis = {fConfigPtBins, "#it{p}_{T,e} (GeV/c)"};
     AxisSpec phi_axis = {fConfigPhiBins, "#it{#varphi}_{e}"};
@@ -263,10 +320,11 @@ struct lmeelfcocktail {
       addHistogram1D_stage("Dca", dca_axis, i, "rec/");
       addHistogram1D_stage("Dcaee", dcaee_axis, i, "rec/");
       i = -1;
-      addHistogram2D("MeeVsPtee", mass_axis, ptee_axis, i);
       addHistogram2D_stage("DcaVsPt", dca_axis, pt_axis, i, "rec/");
       addHistogram2D_stage("DcaeeVsPtee", dcaee_axis, ptee_axis, i, "rec/");
       addHistogram2D_stage("DcaeeVsMee", dcaee_axis, mass_axis, i, "rec/");
+      i = -1;
+      addHistogramND("MeeVsPteeVsCos2DPhiRP", std::vector<AxisSpec>{mass_axis, ptee_axis, cos2dphi_axis}, i);
     }
   }
 
@@ -397,7 +455,9 @@ struct lmeelfcocktail {
           float opAng = o2::aod::pwgem::dilepton::utils::pairutil::getOpeningAngle(pPos.Px(), pPos.Py(), pPos.Pz(), pEle.Px(), pEle.Py(), pEle.Pz());
           float phiV = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(pPos.Px(), pPos.Py(), pPos.Pz(), pEle.Px(), pEle.Py(), pEle.Pz(), 1, -1, 1);
           float dcaee = sqrt((pow(dcaEle, 2) + pow(dcaPos, 2)) / 2);
-          fillHistogram2D("MeeVsPtee", s, pdg, other_daughter_pdg, mee, ptee, pairWeight);
+          float cos2dphi = std::cos(2.f * p12.Phi()); // PsiRP = 0 rad.
+          double values[3] = {mee, ptee, cos2dphi};
+          fillHistogramND("MeeVsPteeVsCos2DPhiRP", s, pdg, other_daughter_pdg, values, pairWeight);
           fillHistogram1D("Mee", s, pdg, other_daughter_pdg, mee, pairWeight);
           fillHistogram1D("Ptee", s, pdg, other_daughter_pdg, ptee, pairWeight);
           fillHistogram1D("PhiV", s, pdg, other_daughter_pdg, phiV, pairWeight);
