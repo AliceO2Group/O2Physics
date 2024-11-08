@@ -373,8 +373,14 @@ struct HfTaskMcValidationGen {
         }
 
         if (nDaughters[iD] == 4) {
-          if (!RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, PDGArrayParticle[iD], arrPDGFinal4Prong[iD], true, nullptr, maxDepthForSearch[iD], &listDaughters)) {
-            continue;
+          if (iD != B0ToDminusPi) {
+            if (!RecoDecay::isMatchedMCGen<false, true>(mcParticles, particle, PDGArrayParticle[iD], arrPDGFinal4Prong[iD], true, nullptr, maxDepthForSearch[iD], &listDaughters)) {
+              continue;
+            }
+          } else { // For B0 we consider flavour oscillations
+            if (!RecoDecay::isMatchedMCGen<true, true>(mcParticles, particle, PDGArrayParticle[iD], arrPDGFinal4Prong[iD], true, nullptr, maxDepthForSearch[iD], &listDaughters)) {
+              continue;
+            }
           }
           if (iD == D10ToDStarPi &&
               !RecoDecay::isMatchedMCGen(mcParticles, particle, PDGArrayParticle[iD], std::array{+o2::constants::physics::Pdg::kDStar, -kPiPlus}, true)) {
