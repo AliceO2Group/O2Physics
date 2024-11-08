@@ -68,10 +68,7 @@ enum class InputFeaturesXicToXiPiPi : uint8_t {
   cosPaXYLambda,
   impactParameterXY0,
   impactParameterXY1,
-  impactParameterXY2,
-  impactParameterZ0,
-  impactParameterZ1,
-  impactParameterZ2	
+  impactParameterXY2
 };
 
 template <typename TypeOutputScore = float>
@@ -86,7 +83,7 @@ class HfMlResponseXicToXiPiPi : public HfMlResponse<TypeOutputScore>
   /// Method to get the input features vector needed for ML inference
   /// \param candidate is the Xic candidate
   /// \return inputFeatures vector
-  template <typename T1, typename T2>
+  template <typename T1>
   std::vector<float> getInputFeatures(T1 const& candidate)
   {
     std::vector<float> inputFeatures;
@@ -110,9 +107,6 @@ class HfMlResponseXicToXiPiPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_XICTOXIPIPI_FULL(candidate, impactParameterXY0, impactParameter0);
         CHECK_AND_FILL_VEC_XICTOXIPIPI_FULL(candidate, impactParameterXY1, impactParameter1);
         CHECK_AND_FILL_VEC_XICTOXIPIPI_FULL(candidate, impactParameterXY2, impactParameter2);
-        CHECK_AND_FILL_VEC_XICTOXIPIPI(impactParameterZ0);
-        CHECK_AND_FILL_VEC_XICTOXIPIPI(impactParameterZ1);
-        CHECK_AND_FILL_VEC_XICTOXIPIPI(impactParameterZ2);
       }
     }
 
@@ -140,10 +134,7 @@ class HfMlResponseXicToXiPiPi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_XICTOXIPIPI(cosPaXYLambda),
       FILL_MAP_XICTOXIPIPI(impactParameterXY0),
       FILL_MAP_XICTOXIPIPI(impactParameterXY1),
-      FILL_MAP_XICTOXIPIPI(impactParameterXY2),
-      FILL_MAP_XICTOXIPIPI(impactParameterZ0),
-      FILL_MAP_XICTOXIPIPI(impactParameterZ1),
-      FILL_MAP_XICTOXIPIPI(impactParameterZ2)};
+      FILL_MAP_XICTOXIPIPI(impactParameterXY2)};
   }
 };
 

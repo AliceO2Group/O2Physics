@@ -69,6 +69,9 @@ struct HfCandidateSelectorXicToXiPiPi {
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
   // +++++++++++ // jaeyoon Nov 7th
 
+  o2::analysis::HfMlResponseXicToXiPiPi<float> hfMlResponse;	// jaeyoon Nov 8th
+  std::vector<float> outputMlXicToXiPiPi = {};	// jaeyoon Nov 8th 
+  o2::ccdb::CcdbApi ccdbApi;	// jaeyoon Nov 8th 
   TrackSelectorPi selectorPion;
   TrackSelectorPr selectorProton;
 
@@ -109,6 +112,21 @@ struct HfCandidateSelectorXicToXiPiPi {
         registry.get<TH2>(HIST("hSelections"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
       }
     }
+
+	// ++++++++++++++ // jaeyoon Nov 8th
+    if (applyMl) {
+      hfMlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
+      if (loadModelsFromCCDB) {
+        ccdbApi.init(ccdbUrl);
+        hfMlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
+      } else {
+        hfMlResponse.setModelPathsLocal(onnxFileNames);
+      }
+      hfMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
+      hfMlResponse.init();
+    }
+	// ++++++++++++++ // jaeyoon Nov 8th
+
   }
 
   /// Conjugate-independent topological cuts
@@ -204,6 +222,9 @@ struct HfCandidateSelectorXicToXiPiPi {
   {
     for (const auto& hfCandXic : hfCandsXic) {
       int statusXicToXiPiPi = 0;
+
+      outputMlXicToXiPiPi.clear();	// jaeyoon Nov 8th
+
       auto ptCandXic = hfCandXic.pt();
 
       if (activateQA) {
@@ -256,6 +277,24 @@ struct HfCandidateSelectorXicToXiPiPi {
           registry.fill(HIST("hSelections"), 2 + SelectionStep::RecoPID, ptCandXic);
         }
       }
+
+      // ++++++++++++++ // jaeyoon Nov 8th
+      // ML selections
+      if(applyMl){
+        bool isSelectedMlXicToXiPiPi = false; 
+        std::vector<float> inputFeaturesXicToXiPiPi = hfMlResponse.getInputFeatures(hfCandXic);
+
+        isSelectedMlXicToXiPiPi = hfMlResponse.isSelectedMl(inputFeaturesXicToXiPiPi, ptCandXic, outputMlXicToXiPiPi);
+
+        if(!isSelectedMlXicToXiPiPi){
+           hfSelXicToXiPiPiCandidate(statusXicToXiPiPi);
+           continue;
+        }
+
+        SETBIT(statusXicToXiPiPi, aod::SelectionStep::RecoMl);
+
+        }
+      // ++++++++++++++ // jaeyoon Nov 8th
 
       hfSelXicToXiPiPiCandidate(statusXicToXiPiPi);
     }
