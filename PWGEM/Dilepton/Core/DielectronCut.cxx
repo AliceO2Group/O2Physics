@@ -77,6 +77,11 @@ void DielectronCut::SetMindEtadPhi(bool flag, float min_deta, float min_dphi)
   mMinDeltaPhi = min_dphi;
   LOG(info) << "Dielectron Cut, set apply deta-dphi cut: " << mApplydEtadPhi << " min_deta: " << mMinDeltaEta << " min_dphi: " << mMinDeltaPhi;
 }
+void DielectronCut::SetRequireDifferentSides(bool flag)
+{
+  mRequireDiffSides = flag;
+  LOG(info) << "Dielectron Cut, require 2 tracks to be from different sides: " << mRequireDiffSides;
+}
 void DielectronCut::SetTrackPtRange(float minPt, float maxPt)
 {
   mMinTrackPt = minPt;

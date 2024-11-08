@@ -97,6 +97,7 @@ struct PhotonHBT {
   Configurable<bool> cfgDo3D{"cfgDo3D", false, "enable 3D analysis"};
   Configurable<int> cfgEP2Estimator_for_Mix{"cfgEP2Estimator_for_Mix", 3, "FT0M:0, FT0A:1, FT0C:2, BTot:3, BPos:4, BNeg:5"};
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
+  Configurable<int> cfgOccupancyEstimator{"cfgOccupancyEstimator", 0, "FT0C:0, Track:1"};
   Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 999, "max. centrality"};
   // Configurable<float> cfgSpherocityMin{"cfgSpherocityMin", -999.f, "min. spherocity"};
@@ -329,6 +330,7 @@ struct PhotonHBT {
       }
     }
 
+    LOGF(info, "cfgOccupancyEstimator = %d", cfgOccupancyEstimator.value);
     if (ConfOccupancyBins.value[0] == VARIABLE_WIDTH) {
       occ_bin_edges = std::vector<float>(ConfOccupancyBins.value.begin(), ConfOccupancyBins.value.end());
       occ_bin_edges.erase(occ_bin_edges.begin());
@@ -717,7 +719,15 @@ struct PhotonHBT {
         epbin = static_cast<int>(ep_bin_edges.size()) - 2;
       }
 
-      int occbin = lower_bound(occ_bin_edges.begin(), occ_bin_edges.end(), collision.trackOccupancyInTimeRange()) - occ_bin_edges.begin() - 1;
+      int occbin = -1;
+      if (cfgOccupancyEstimator == 0) {
+        occbin = lower_bound(occ_bin_edges.begin(), occ_bin_edges.end(), collision.ft0cOccupancyInTimeRange()) - occ_bin_edges.begin() - 1;
+      } else if (cfgOccupancyEstimator == 1) {
+        occbin = lower_bound(occ_bin_edges.begin(), occ_bin_edges.end(), collision.trackOccupancyInTimeRange()) - occ_bin_edges.begin() - 1;
+      } else {
+        occbin = lower_bound(occ_bin_edges.begin(), occ_bin_edges.end(), collision.ft0cOccupancyInTimeRange()) - occ_bin_edges.begin() - 1;
+      }
+
       if (occbin < 0) {
         occbin = 0;
       } else if (static_cast<int>(occ_bin_edges.size()) - 2 < occbin) {
