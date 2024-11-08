@@ -79,7 +79,7 @@ struct SGCandProducer {
                         aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                         aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl,
                         aod::TOFSignal, aod::pidTOFbeta,
-                        aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl, 
+                        aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl,
                         aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
   using FWs = aod::FwdTracks;
 
@@ -131,13 +131,13 @@ struct SGCandProducer {
                     track.tofNSigmaKa(),
                     track.tofNSigmaPr());
     outputTracksPIDExtra(track.tpcNSigmaDe(),
-                    track.tpcNSigmaTr(),
-                    track.tpcNSigmaHe(),
-                    track.tpcNSigmaAl(),
-                    track.tofNSigmaDe(),
-                    track.tofNSigmaTr(),
-                    track.tofNSigmaHe(),
-                    track.tofNSigmaAl());
+                         track.tpcNSigmaTr(),
+                         track.tpcNSigmaHe(),
+                         track.tpcNSigmaAl(),
+                         track.tofNSigmaDe(),
+                         track.tofNSigmaTr(),
+                         track.tofNSigmaHe(),
+                         track.tofNSigmaAl());
     outputTracksExtra(track.tpcInnerParam(),
                       track.itsClusterSizes(),
                       track.tpcNClsFindable(),
