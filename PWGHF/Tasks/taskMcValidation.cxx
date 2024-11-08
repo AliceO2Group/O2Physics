@@ -68,10 +68,10 @@ enum DecayChannels { DzeroToKPi = 0,
                      nChannels
 }; // always keep nChannels at the end
 
-static constexpr int nCharmMesonChannels = 10;                                                  // number of charm meson channels
-static constexpr int nBeautyChannels = 1;                                                       // number of beauty hadron channels
-static constexpr int nCharmBaryonChannels = nChannels - nCharmMesonChannels - nBeautyChannels;  // number of charm baryon channels
-static constexpr int nOriginTypes = 2;                                                          // number of origin types (prompt, non-prompt; only for charm hadrons)
+static constexpr int nCharmMesonChannels = 10;                                                 // number of charm meson channels
+static constexpr int nBeautyChannels = 1;                                                      // number of beauty hadron channels
+static constexpr int nCharmBaryonChannels = nChannels - nCharmMesonChannels - nBeautyChannels; // number of charm baryon channels
+static constexpr int nOriginTypes = 2;                                                         // number of origin types (prompt, non-prompt; only for charm hadrons)
 static constexpr std::array<int, nChannels> PDGArrayParticle = {o2::constants::physics::Pdg::kD0, o2::constants::physics::Pdg::kDStar,
                                                                 o2::constants::physics::Pdg::kDPlus, o2::constants::physics::Pdg::kDPlus,
                                                                 o2::constants::physics::Pdg::kDS, o2::constants::physics::Pdg::kDS, o2::constants::physics::Pdg::kDS1, o2::constants::physics::Pdg::kDS2Star,
