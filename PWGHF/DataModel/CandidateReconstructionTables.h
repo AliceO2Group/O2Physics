@@ -956,6 +956,13 @@ enum DecayChannelDToKKPi {
   DplusToK0starK // used to describe D+ in MC production for Ds analysis
 };
 
+// KF related properties
+DECLARE_SOA_COLUMN(KfMassPKPi, kfMassPKPi, float);       //! mass of the PKPi candidate from the KFParticle fit
+DECLARE_SOA_COLUMN(KfMassPiKP, kfMassPiKP, float);       //! mass of the PiKP candidate from the KFParticle fit
+DECLARE_SOA_COLUMN(KfMassPiKPi, kfMassPiKPi, float);     //! mass of the PiKPi candidate from the KFParticle fit
+DECLARE_SOA_COLUMN(KfMassKKPi, kfMassKKPi, float);       //! mass of the KKPi candidate from the KFParticle fit
+DECLARE_SOA_COLUMN(KfMassPiKK, kfMassPiKK, float);       //! mass of the PiKK candidate from the KFParticle fit
+
 } // namespace hf_cand_3prong
 
 // 3-prong decay candidate table
@@ -1004,6 +1011,10 @@ DECLARE_SOA_EXTENDED_TABLE_USER(HfCand3ProngExt, HfCand3ProngBase, "HFCAND3PEXT"
                                 hf_cand_3prong::Px, hf_cand_3prong::Py, hf_cand_3prong::Pz);
 
 using HfCand3Prong = HfCand3ProngExt;
+
+DECLARE_SOA_TABLE(HfCand3ProngKF, "AOD", "HFCAND3PKF",
+                  hf_cand::KfTopolChi2OverNdf,
+                  hf_cand_3prong::KfMassPKPi, hf_cand_3prong::KfMassPiKP, hf_cand_3prong::KfMassPiKPi, hf_cand_3prong::KfMassKKPi, hf_cand_3prong::KfMassPiKK);
 
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfCand3ProngMcRec, "AOD", "HFCAND3PMCREC", //!
