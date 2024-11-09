@@ -99,6 +99,7 @@ struct DileptonMC {
   Configurable<int> cfgNtracksPV08Max{"cfgNtracksPV08Max", static_cast<int>(1e+9), "max. multNTracksPV"};
   Configurable<bool> cfgApplyWeightTTCA{"cfgApplyWeightTTCA", false, "flag to apply weighting by 1/N"};
   Configurable<uint8_t> cfgDCAType{"cfgDCAType", 0, "type of DCA for output. 0:3D, 1:XY, 2:Z, else:3D"};
+  Configurable<bool> cfgFillUnfolding{"cfgFillUnfolding", false, "flag to fill histograms for unfolding"};
 
   ConfigurableAxis ConfMllBins{"ConfMllBins", {VARIABLE_WIDTH, 0.00, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.20, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.30, 0.31, 0.32, 0.33, 0.34, 0.35, 0.36, 0.37, 0.38, 0.39, 0.40, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49, 0.50, 0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.60, 0.61, 0.62, 0.63, 0.64, 0.65, 0.66, 0.67, 0.68, 0.69, 0.70, 0.71, 0.72, 0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 0.80, 0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.90, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.00, 1.01, 1.02, 1.03, 1.04, 1.05, 1.06, 1.07, 1.08, 1.09, 1.10, 1.11, 1.12, 1.13, 1.14, 1.15, 1.16, 1.17, 1.18, 1.19, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.10, 2.20, 2.30, 2.40, 2.50, 2.60, 2.70, 2.75, 2.80, 2.85, 2.90, 2.95, 3.00, 3.05, 3.10, 3.15, 3.20, 3.25, 3.30, 3.35, 3.40, 3.45, 3.50, 3.55, 3.60, 3.65, 3.70, 3.75, 3.80, 3.85, 3.90, 3.95, 4.00}, "mll bins for output histograms"};
   ConfigurableAxis ConfPtllBins{"ConfPtllBins", {VARIABLE_WIDTH, 0.00, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.50, 3.00, 3.50, 4.00, 4.50, 5.00, 6.00, 7.00, 8.00, 9.00, 10.00}, "pTll bins for output histograms"};
@@ -343,6 +344,7 @@ struct DileptonMC {
     fRegistry.addClone("Pair/sm/Photon/", "Pair/sm/NonPromptJPsi/");
     fRegistry.addClone("Pair/sm/Photon/", "Pair/sm/PromptPsi2S/");
     fRegistry.addClone("Pair/sm/Photon/", "Pair/sm/NonPromptPsi2S/");
+
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
       fRegistry.add("Pair/sm/Photon/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{90, 0, M_PI}, {100, 0.0f, 0.1f}}, true);
       fRegistry.add("Pair/sm/Pi0/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{90, 0, M_PI}, {100, 0.0f, 0.1f}}, true);
@@ -363,6 +365,20 @@ struct DileptonMC {
     fRegistry.addClone("Pair/corr_bkg_eh/uls/", "Pair/corr_bkg_eh/lsmm/");
     fRegistry.addClone("Pair/corr_bkg_eh/", "Pair/corr_bkg_hh/");
     fRegistry.addClone("Pair/corr_bkg_eh/", "Pair/comb_bkg/");
+
+    if (cfgFillUnfolding) {
+      // for 2D unfolding
+      const AxisSpec axis_mass_gen{ConfMllBins, "m_{ll}^{gen} (GeV/c^{2})"};
+      const AxisSpec axis_pt_gen{ConfPtllBins, "p_{T,ll}^{gen} (GeV/c)"};
+      const AxisSpec axis_mass_rec{ConfMllBins, "m_{ll}^{rec} (GeV/c^{2})"};
+      const AxisSpec axis_pt_rec{ConfPtllBins, "p_{T,ll}^{rec} (GeV/c)"};
+      fRegistry.add("Unfold/lf/hs", "dilepton for unfolding", kTHnSparseD, {axis_mass_gen, axis_pt_gen, axis_mass_rec, axis_pt_rec}, true);
+      fRegistry.addClone("Unfold/lf/", "Unfold/PromptJPsi/");
+      fRegistry.addClone("Unfold/lf/", "Unfold/NonPromptJPsi/");
+      fRegistry.addClone("Unfold/lf/", "Unfold/ccbar_uls/");
+      fRegistry.addClone("Unfold/lf/", "Unfold/bbbar_uls/");
+      fRegistry.addClone("Unfold/lf/", "Unfold/bbbar_ls/");
+    }
   }
 
   float beamM1 = o2::constants::physics::MassProton; // mass of beam
@@ -766,6 +782,9 @@ struct DileptonMC {
       return false;
     }
 
+    ROOT::Math::PtEtaPhiMVector v1mc(t1mc.pt(), t1mc.eta(), t1mc.phi(), leptonM1); // true momentum without smearing
+    ROOT::Math::PtEtaPhiMVector v2mc(t2mc.pt(), t2mc.eta(), t2mc.phi(), leptonM2); // true momentum without smearing
+    ROOT::Math::PtEtaPhiMVector v12mc = v1mc + v2mc;
     if (mother_id > -1 && t1mc.pdgCode() * t2mc.pdgCode() < 0) {
       auto mcmother = mcparticles.iteratorAt(mother_id);
       if (mcmother.isPhysicalPrimary() || mcmother.producedByGenerator()) {
@@ -773,27 +792,45 @@ struct DileptonMC {
           switch (abs(mcmother.pdgCode())) {
             case 111:
               fRegistry.fill(HIST("Pair/sm/Pi0/hs"), v12.M(), v12.Pt(), v12.Rapidity(), abs(dphi), deta, abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), pair_dca, weight);
+              if (cfgFillUnfolding) {
+                fRegistry.fill(HIST("Unfold/lf/hs"), v12mc.M(), v12mc.Pt(), v12.M(), v12.Pt(), weight);
+              }
               if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
                 fRegistry.fill(HIST("Pair/sm/Pi0/hMvsPhiV"), phiv, v12.M());
               }
               break;
             case 221:
               fRegistry.fill(HIST("Pair/sm/Eta/hs"), v12.M(), v12.Pt(), v12.Rapidity(), abs(dphi), deta, abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), pair_dca, weight);
+              if (cfgFillUnfolding) {
+                fRegistry.fill(HIST("Unfold/lf/hs"), v12mc.M(), v12mc.Pt(), v12.M(), v12.Pt(), weight);
+              }
               break;
             case 331:
               fRegistry.fill(HIST("Pair/sm/EtaPrime/hs"), v12.M(), v12.Pt(), v12.Rapidity(), abs(dphi), deta, abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), pair_dca, weight);
+              if (cfgFillUnfolding) {
+                fRegistry.fill(HIST("Unfold/lf/hs"), v12mc.M(), v12mc.Pt(), v12.M(), v12.Pt(), weight);
+              }
               break;
             case 113:
               fRegistry.fill(HIST("Pair/sm/Rho/hs"), v12.M(), v12.Pt(), v12.Rapidity(), abs(dphi), deta, abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), pair_dca, weight);
+              if (cfgFillUnfolding) {
+                fRegistry.fill(HIST("Unfold/lf/hs"), v12mc.M(), v12mc.Pt(), v12.M(), v12.Pt(), weight);
+              }
               break;
             case 223:
               fRegistry.fill(HIST("Pair/sm/Omega/hs"), v12.M(), v12.Pt(), v12.Rapidity(), abs(dphi), deta, abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), pair_dca, weight);
+              if (cfgFillUnfolding) {
+                fRegistry.fill(HIST("Unfold/lf/hs"), v12mc.M(), v12mc.Pt(), v12.M(), v12.Pt(), weight);
+              }
               if (mcmother.daughtersIds().size() == 2) { // omeag->ee
                 fRegistry.fill(HIST("Pair/sm/Omega2ll/hs"), v12.M(), v12.Pt(), v12.Rapidity(), abs(dphi), deta, abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), pair_dca, weight);
               }
               break;
             case 333:
               fRegistry.fill(HIST("Pair/sm/Phi/hs"), v12.M(), v12.Pt(), v12.Rapidity(), abs(dphi), deta, abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), pair_dca, weight);
+              if (cfgFillUnfolding) {
+                fRegistry.fill(HIST("Unfold/lf/hs"), v12mc.M(), v12mc.Pt(), v12.M(), v12.Pt(), weight);
+              }
               if (mcmother.daughtersIds().size() == 2) { // phi->ee
                 fRegistry.fill(HIST("Pair/sm/Phi2ll/hs"), v12.M(), v12.Pt(), v12.Rapidity(), abs(dphi), deta, abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), pair_dca, weight);
               }
@@ -801,8 +838,14 @@ struct DileptonMC {
             case 443: {
               if (IsFromBeauty(mcmother, mcparticles) > 0) {
                 fRegistry.fill(HIST("Pair/sm/NonPromptJPsi/hs"), v12.M(), v12.Pt(), v12.Rapidity(), abs(dphi), deta, abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), pair_dca, weight);
+                if (cfgFillUnfolding) {
+                  fRegistry.fill(HIST("Unfold/NonPromptJPsi/hs"), v12mc.M(), v12mc.Pt(), v12.M(), v12.Pt(), weight);
+                }
               } else {
                 fRegistry.fill(HIST("Pair/sm/PromptJPsi/hs"), v12.M(), v12.Pt(), v12.Rapidity(), abs(dphi), deta, abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), pair_dca, weight);
+                if (cfgFillUnfolding) {
+                  fRegistry.fill(HIST("Unfold/PromptJPsi/hs"), v12mc.M(), v12mc.Pt(), v12.M(), v12.Pt(), weight);
+                }
               }
               break;
             }
@@ -839,6 +882,9 @@ struct DileptonMC {
           switch (hfee_type) {
             case static_cast<int>(EM_HFeeType::kCe_Ce): {
               fRegistry.fill(HIST("Pair/ccbar/c2l_c2l/hadron_hadron/hs"), v12.M(), v12.Pt(), v12.Rapidity(), abs(dphi), deta, abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), pair_dca, weight);
+              if (cfgFillUnfolding) {
+                fRegistry.fill(HIST("Unfold/ccbar_uls/hs"), v12mc.M(), v12mc.Pt(), v12.M(), v12.Pt(), weight);
+              }
               if (isCharmMeson(mp1) && isCharmMeson(mp2)) {
                 fRegistry.fill(HIST("Pair/ccbar/c2l_c2l/meson_meson/hs"), v12.M(), v12.Pt(), v12.Rapidity(), abs(dphi), deta, abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), pair_dca, weight);
               } else if (isCharmBaryon(mp1) && isCharmBaryon(mp2)) {
@@ -850,6 +896,9 @@ struct DileptonMC {
             }
             case static_cast<int>(EM_HFeeType::kBe_Be): {
               fRegistry.fill(HIST("Pair/bbbar/b2l_b2l/hadron_hadron/hs"), v12.M(), v12.Pt(), v12.Rapidity(), abs(dphi), deta, abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), pair_dca, weight);
+              if (cfgFillUnfolding) {
+                fRegistry.fill(HIST("Unfold/bbbar_uls/hs"), v12mc.M(), v12mc.Pt(), v12.M(), v12.Pt(), weight);
+              }
               if (isBeautyMeson(mp1) && isBeautyMeson(mp2)) {
                 fRegistry.fill(HIST("Pair/bbbar/b2l_b2l/meson_meson/hs"), v12.M(), v12.Pt(), v12.Rapidity(), abs(dphi), deta, abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), pair_dca, weight);
               } else if (isBeautyBaryon(mp1) && isBeautyBaryon(mp2)) {
@@ -861,6 +910,9 @@ struct DileptonMC {
             }
             case static_cast<int>(EM_HFeeType::kBCe_BCe): {
               fRegistry.fill(HIST("Pair/bbbar/b2c2l_b2c2l/hadron_hadron/hs"), v12.M(), v12.Pt(), v12.Rapidity(), abs(dphi), deta, abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), pair_dca, weight);
+              if (cfgFillUnfolding) {
+                fRegistry.fill(HIST("Unfold/bbbar_uls/hs"), v12mc.M(), v12mc.Pt(), v12.M(), v12.Pt(), weight);
+              }
               if (isCharmMeson(mp1) && isCharmMeson(mp2)) {
                 fRegistry.fill(HIST("Pair/bbbar/b2c2l_b2c2l/meson_meson/hs"), v12.M(), v12.Pt(), v12.Rapidity(), abs(dphi), deta, abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), pair_dca, weight);
               } else if (isCharmBaryon(mp1) && isCharmBaryon(mp2)) {
@@ -872,6 +924,9 @@ struct DileptonMC {
             }
             case static_cast<int>(EM_HFeeType::kBCe_Be_SameB): { // ULS
               fRegistry.fill(HIST("Pair/bbbar/b2c2l_b2l_sameb/hadron_hadron/hs"), v12.M(), v12.Pt(), v12.Rapidity(), abs(dphi), deta, abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), pair_dca, weight);
+              if (cfgFillUnfolding) {
+                fRegistry.fill(HIST("Unfold/bbbar_uls/hs"), v12mc.M(), v12mc.Pt(), v12.M(), v12.Pt(), weight);
+              }
               if ((isCharmMeson(mp1) && isBeautyMeson(mp2)) || (isCharmMeson(mp2) && isBeautyMeson(mp1))) {
                 fRegistry.fill(HIST("Pair/bbbar/b2c2l_b2l_sameb/meson_meson/hs"), v12.M(), v12.Pt(), v12.Rapidity(), abs(dphi), deta, abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), pair_dca, weight);
               } else if ((isCharmBaryon(mp1) && isBeautyBaryon(mp2)) || (isCharmBaryon(mp2) && isBeautyBaryon(mp1))) {
@@ -903,6 +958,9 @@ struct DileptonMC {
               break;
             case static_cast<int>(EM_HFeeType::kBCe_Be_DiffB): { // LS
               fRegistry.fill(HIST("Pair/bbbar/b2c2l_b2l_diffb/hadron_hadron/hs"), v12.M(), v12.Pt(), v12.Rapidity(), abs(dphi), deta, abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), pair_dca, weight);
+              if (cfgFillUnfolding) {
+                fRegistry.fill(HIST("Unfold/bbbar_ls/hs"), v12mc.M(), v12mc.Pt(), v12.M(), v12.Pt(), weight);
+              }
               if ((isCharmMeson(mp1) && isBeautyMeson(mp2)) || (isCharmMeson(mp2) && isBeautyMeson(mp1))) {
                 fRegistry.fill(HIST("Pair/bbbar/b2c2l_b2l_diffb/meson_meson/hs"), v12.M(), v12.Pt(), v12.Rapidity(), abs(dphi), deta, abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), pair_dca, weight);
               } else if ((isCharmBaryon(mp1) && isBeautyBaryon(mp2)) || (isCharmBaryon(mp2) && isBeautyBaryon(mp1))) {
