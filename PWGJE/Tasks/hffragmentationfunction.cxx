@@ -194,11 +194,6 @@ struct HfFragmentationFunctionTask {
 
   int eventSelection = -1;
 
-  Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
-  Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
-
-  int eventSelection = -1;
-
   void init(InitContext const&)
   {
     // initialise event selection:
@@ -362,10 +357,6 @@ struct HfFragmentationFunctionTask {
 
         // obtain leading HF particle in jet
         auto mcpd0cand = mcpjet.candidates_first_as<aod::CandidatesD0MCP>();
-
-        if (mcpjet.has_matchedJetCand()) {
-          registry.fill(HIST("h_jet_counter"), 1.0);
-        }
 
         if (mcpjet.has_matchedJetCand()) {
           registry.fill(HIST("h_jet_counter"), 1.0);
