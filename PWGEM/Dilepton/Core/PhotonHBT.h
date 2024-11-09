@@ -184,8 +184,11 @@ struct PhotonHBT {
     Configurable<bool> cfg_require_itsib_1st{"cfg_require_itsib_1st", true, "flag to require ITS ib 1st hit"};
     Configurable<float> cfg_phiv_slope{"cfg_phiv_slope", 0.0185, "slope for m vs. phiv"};
     Configurable<float> cfg_phiv_intercept{"cfg_phiv_intercept", -0.0280, "intercept for m vs. phiv"};
-    Configurable<bool> cfg_apply_phiv_meedep{"cfg_apply_phiv_meedep", false, "flag to apply mee-dependent phiv cut"};
+    Configurable<bool> cfg_apply_phiv_meedep{"cfg_apply_phiv_meedep", true, "flag to apply mee-dependent phiv cut"};
+    Configurable<float> cfg_min_phiv{"cfg_min_phiv", 0.0, "min phiv (constant)"};
     Configurable<float> cfg_max_phiv{"cfg_max_phiv", 3.2, "max phiv (constant)"};
+    Configurable<float> cfg_min_mee_for_phiv{"cfg_min_mee_for_phiv", 0.0, "min mee for phiv (constant)"};
+    Configurable<float> cfg_max_mee_for_phiv{"cfg_max_mee_for_phiv", 1e+10, "max mee for phiv (constant)"};
 
     Configurable<float> cfg_min_pt_track{"cfg_min_pt_track", 0.2, "min pT for single track"};
     Configurable<float> cfg_min_eta_track{"cfg_min_eta_track", -0.8, "max eta for single track"};
@@ -535,7 +538,7 @@ struct PhotonHBT {
     if (dielectroncuts.cfg_apply_phiv_meedep) {
       fDielectronCut.SetMaxPhivPairMeeDep([&](float mll) { return (mll - dielectroncuts.cfg_phiv_intercept) / dielectroncuts.cfg_phiv_slope; });
     } else {
-      fDielectronCut.SetPhivPairRange(0.f, dielectroncuts.cfg_max_phiv);
+      fDielectronCut.SetPhivPairRange(dielectroncuts.cfg_min_phiv, dielectroncuts.cfg_max_phiv, dielectroncuts.cfg_min_mee_for_phiv, dielectroncuts.cfg_max_mee_for_phiv);
     }
     fDielectronCut.SetPairDCARange(dielectroncuts.cfg_min_pair_dca3d, dielectroncuts.cfg_max_pair_dca3d); // in sigma
     fDielectronCut.ApplyPhiV(dielectroncuts.cfg_apply_phiv);
