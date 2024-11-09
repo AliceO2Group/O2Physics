@@ -106,8 +106,6 @@ struct lambdak0sflattenicity {
                             "Accept events that pass sel8 selection"};
   Configurable<float> cutzvertex{"cutzvertex", 10.0f,
                                  "Accepted z-vertex range (cm)"};
-  Configurable<bool> applyEvSelMCGen{"applyEvSelGen", true,
-                                     "Apply event selection to MCGen"};
   Configurable<bool> IsINELgt0{"isINELgt0", true, "is INEL gt 0"};
   Configurable<bool> IsNoTimeFrameBorder{
     "IsNoTimeFrameBorder", true,
@@ -228,6 +226,8 @@ struct lambdak0sflattenicity {
     if (doprocessRecMC) {
       rEventSelection.add("hFlattenicityDistributionMCGen_Rec", "hFlattenicityDistributionMCGen_Rec",
                           {HistType::kTH1F, {flatAxis}});
+      rEventSelection.add("hFlattenicity_Corr_Gen_vs_Rec", "hFlattenicity_Corr_Gen_vs_Rec",
+                          {HistType::kTH2F, {flatAxis, flatAxis}});
     }
     if (doprocessGenMC) {
       rEventSelection.add("hVertexZGen", "hVertexZGen",
@@ -1329,7 +1329,7 @@ struct lambdak0sflattenicity {
       if (applyEvSel &&
           !(isEventSelected(collision))) { // Checking if the event passes the
                                            // selection criteria
-        return;
+        continue;
       }
 
       auto vtxZ = collision.posZ();
@@ -1349,10 +1349,6 @@ struct lambdak0sflattenicity {
         const auto& posDaughterTrack = v0.posTrack_as<TrackCandidatesMC>();
         const auto& negDaughterTrack = v0.negTrack_as<TrackCandidatesMC>();
 
-        // if (!posDaughterTrack.has_mcParticle() ||
-        // !negDaughterTrack.has_mcParticle()) {
-        //   continue;
-        // }
         if (TMath::Abs(posDaughterTrack.eta()) > cfgTrkEtaCut ||
             TMath::Abs(negDaughterTrack.eta()) > cfgTrkEtaCut ||
             negDaughterTrack.pt() < cfgTrkLowPtCut ||
@@ -1360,8 +1356,6 @@ struct lambdak0sflattenicity {
           continue;
         }
 
-        // auto mcnegtrack = negDaughterTrack.mcParticle_as<aod::McParticles>();
-        // auto mcpostrack = posDaughterTrack.mcParticle_as<aod::McParticles>();
         if (!v0.has_mcParticle()) {
           continue;
         }
@@ -1388,15 +1382,6 @@ struct lambdak0sflattenicity {
         float ctauAntiLambda = decaylength * massAntiLambda / v0p;
         auto v0mcParticle = v0.mcParticle();
         // Cut on dynamic columns for K0s
-
-        // for (auto& particleMotherOfNeg :
-        // mcnegtrack.mothers_as<aod::McParticles>()) {
-        //   for (auto& particleMotherOfPos :
-        //   mcpostrack.mothers_as<aod::McParticles>()) {
-        // if (particleMotherOfNeg == particleMotherOfPos &&
-        // (particleMotherOfNeg.pdgCode() == 3122 || particleMotherOfNeg.pdgCode()
-        // == -3122 || particleMotherOfNeg.pdgCode() == 310) &&
-        // particleMotherOfNeg.isPhysicalPrimary()) {
 
         if (v0mcParticle.pdgCode() == 310 && v0.v0cosPA() >= v0setting_cospaK0s &&
             v0.v0radius() >= v0setting_radiusK0s &&
@@ -1489,14 +1474,13 @@ struct lambdak0sflattenicity {
                              negDaughterTrack.tpcInnerParam());
           }
         }
-        //   }
-        //   }
-        // }
       }
 
       const auto particlesInCollision = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache1);
       float flattenicityMCGen = EstimateFlattenicityFV0MC(particlesInCollision);
       rEventSelection.fill(HIST("hFlattenicityDistributionMCGen_Rec"), flattenicityMCGen);
+      rEventSelection.fill(HIST("hFlattenicity_Corr_Gen_vs_Rec"), flattenicityMCGen, flattenicity);
+
       for (auto& mcParticle : particlesInCollision) {
         if (!mcParticle.isPhysicalPrimary()) {
           continue;
@@ -1590,7 +1574,7 @@ struct lambdak0sflattenicity {
       //=====================================
 
       rEventSelection.fill(HIST("hNEventsMCReco"), 0.5);
-      if (!isEventSelected(collision)) {
+      if (applyEvSel && !isEventSelected(collision)) {
         continue;
       }
       rEventSelection.fill(HIST("hEventsSelected"), 10.5);
