@@ -9,6 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include <vector>
 #include "map"
 
 #include "Framework/runDataProcessing.h"
@@ -31,8 +32,6 @@
 #include "TH1F.h"
 #include "TH2F.h"
 #include "TH3.h"
-
-#include <vector>
 
 using namespace o2::framework;
 using namespace o2;
