@@ -26,6 +26,7 @@ enum eConfiguration {
   eUseFisherYates,
   eFixedNumberOfRandomlySelectedTracks,
   eUseStopwatch,
+  eFloatingPointPrecision,
   eConfiguration_N
 };
 
