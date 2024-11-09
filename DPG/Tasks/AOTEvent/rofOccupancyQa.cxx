@@ -8,6 +8,7 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+#include <vector>
 
 #include "Framework/ConfigParamSpec.h"
 #include "Framework/runDataProcessing.h"
@@ -18,7 +19,7 @@
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/LHCConstants.h"
 #include "Framework/HistogramRegistry.h"
-#include "DataFormatsParameters/GRPLHCIFData.h"
+// #include "DataFormatsParameters/GRPLHCIFData.h"
 #include "ITSMFTBase/DPLAlpideParam.h"
 #include "DataFormatsParameters/AggregatedRunInfo.h"
 
@@ -48,8 +49,8 @@ struct RofOccupancyQaTask {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  int lastRun = -1;                                          // last run number (needed to access ccdb only if run!=lastRun)
-  std::bitset<o2::constants::lhc::LHCMaxBunches> bcPatternB; // bc pattern of colliding bunches
+  int lastRun = -1; // last run number (needed to access ccdb only if run!=lastRun)
+  // std::bitset<o2::constants::lhc::LHCMaxBunches> bcPatternB; // bc pattern of colliding bunches
 
   int64_t bcSOR = -1;     // global bc of the start of the first orbit
   int64_t nBCsPerTF = -1; // duration of TF in bcs, should be 128*3564 or 32*3564
@@ -158,8 +159,9 @@ struct RofOccupancyQaTask {
     histos.add("hEtaVzMinus15", "", kTH1D, {{500, -2.5, 2.5}});
     histos.add("hEtaVsVz", "", kTH2D, {{250, -25, 25}, {250, -2.5, 2.5}});
     histos.add("hNPVcontribVsVz", "", kTH2D, {{250, -25, 25}, {500, 0., 8000}});
+    histos.add("hNPVcontribVsVz_eta08", "", kTH2D, {{250, -25, 25}, {500, 0., 8000}});
 
-    // general QA histos
+    //
     histos.add("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyByTracks", "", kTH2D, {{250, 0., 25000 * k}, {250, 0., 8000}});
     histos.add("vZ_TF_ROF_border_cuts/hThisEvITSTPCTr_vs_occupancyByTracks", "", kTH2D, {{250, 0., 25000 * k}, {250, 0., 8000}});
     histos.add("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyByFT0C", "", kTH2D, {{250, 0., 2.5e5 * k}, {250, 0., 8000}});
@@ -296,6 +298,16 @@ struct RofOccupancyQaTask {
     histos.add("ROFbyROF/nPV_01x10", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 8000 * k}});
     histos.add("ROFbyROF/nPV_00x11", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 8000 * k}});
 
+    histos.add("ROFbyROF/nPV_10x00_nearbyByFT0C", "", kTH2D, {{250, 0., 80000 * k}, {250, 0., 8000 * k}});
+    histos.add("ROFbyROF/nPV_01x00_nearbyByFT0C", "", kTH2D, {{250, 0., 80000 * k}, {250, 0., 8000 * k}});
+    histos.add("ROFbyROF/nPV_00x10_nearbyByFT0C", "", kTH2D, {{250, 0., 80000 * k}, {250, 0., 8000 * k}});
+    histos.add("ROFbyROF/nPV_00x01_nearbyByFT0C", "", kTH2D, {{250, 0., 80000 * k}, {250, 0., 8000 * k}});
+
+    histos.add("ROFbyROF/nPV_10x00_thisFT0C", "", kTH2D, {{250, 0., 80000 * k}, {250, 0., 8000 * k}});
+    histos.add("ROFbyROF/nPV_01x00_thisFT0C", "", kTH2D, {{250, 0., 80000 * k}, {250, 0., 8000 * k}});
+    histos.add("ROFbyROF/nPV_00x10_thisFT0C", "", kTH2D, {{250, 0., 80000 * k}, {250, 0., 8000 * k}});
+    histos.add("ROFbyROF/nPV_00x01_thisFT0C", "", kTH2D, {{250, 0., 80000 * k}, {250, 0., 8000 * k}});
+
     // histos.add("ROFbyROF/nPV_11x11", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 8000 * k}});
 
     // ### sub-ROFs:
@@ -353,7 +365,8 @@ struct RofOccupancyQaTask {
     histos.add("nPV_vs_occupancyByFT0C/NoCollInTimeAndRofStrict_vZ_5cm", "", kTH2D, {{250, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
   }
 
-  Partition<FullTracksIU> pvTracks = ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
+  Partition<FullTracksIU> pvTracks = ((aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor));
+  // Partition<FullTracksIU> pvTracks = ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
   Preslice<FullTracksIU> perCollision = aod::track::collisionId;
 
   using ColEvSels = soa::Join<aod::Collisions, aod::EvSels>; //, aod::Mults, aod::CentFT0Cs>;
@@ -368,12 +381,9 @@ struct RofOccupancyQaTask {
       bcSOR = runInfo.orbitSOR * o2::constants::lhc::LHCMaxBunches;
       // duration of TF in bcs
       nBCsPerTF = runInfo.orbitsPerTF * o2::constants::lhc::LHCMaxBunches;
-      // colliding bc pattern
-      int64_t ts = bcs.iteratorAt(0).timestamp();
-      auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", ts);
-      bcPatternB = grplhcif->getBunchFilling().getBCPattern();
 
       // extract ITS ROF parameters
+      int64_t ts = bcs.iteratorAt(0).timestamp();
       auto alppar = ccdb->getForTimeStamp<o2::itsmft::DPLAlpideParam<0>>("ITS/Config/AlpideParam", ts);
       rofOffset = alppar->roFrameBiasInBC;
       rofLength = alppar->roFrameLengthInBC;
@@ -382,6 +392,7 @@ struct RofOccupancyQaTask {
 
     std::vector<int> vTracksITS567perColl(cols.size(), 0);                                    // counter of tracks per collision for occupancy studies
     std::vector<int> vTracksITSTPCperColl(cols.size(), 0);                                    // counter of tracks per collision for occupancy studies
+    std::vector<int> vTracksITS567eta08perColl(cols.size(), 0);                               // counter of tracks per collision for occupancy studies
     std::vector<float> vAmpFT0CperColl(cols.size(), 0);                                       // amplitude FT0C per collision
     std::vector<bool> vIsFullInfoForOccupancy(cols.size(), 0);                                // info for occupancy in +/- windows is available (i.e. a given coll is not too close to the TF borders)
     const float timeWinOccupancyCalcMinNS = confTimeIntervalForOccupancyCalculationMin * 1e3; // ns
@@ -419,7 +430,7 @@ struct RofOccupancyQaTask {
 
       vCollVz[colIndex] = col.posZ();
       vIsSel8[colIndex] = col.sel8();
-      vCombCond[colIndex] = vIsSel8[colIndex] && (fabs(vCollVz[colIndex]) < 10) && (vAmpFT0CperColl[colIndex] > 500 /* a.u.*/);
+      vCombCond[colIndex] = vIsSel8[colIndex] && (fabs(vCollVz[colIndex]) < 8) && (vAmpFT0CperColl[colIndex] > 500 /* a.u.*/);
 
       int bcInTF = col.bcInTF(); //(bc.globalBC() - bcSOR) % nBCsPerTF;
       vIsFullInfoForOccupancy[colIndex] = ((bcInTF - 300) * bcNS > -timeWinOccupancyCalcMinNS) && ((nBCsPerTF - 4000 - bcInTF) * bcNS > timeWinOccupancyCalcMaxNS) ? true : false;
@@ -442,6 +453,8 @@ struct RofOccupancyQaTask {
       for (auto& track : colPvTracks) {
         if (track.itsNCls() >= 5) {
           vTracksITS567perColl[colIndex]++;
+          if (fabs(track.eta() < 0.8))
+            vTracksITS567eta08perColl[colIndex]++;
           if (track.tpcNClsFound() > 70)
             vTracksITSTPCperColl[colIndex]++;
           if (fabs(col.posZ()) < 1)
@@ -466,8 +479,10 @@ struct RofOccupancyQaTask {
         }
       }
 
-      if (col.sel8())
+      if (col.sel8()) {
         histos.fill(HIST("hNPVcontribVsVz"), col.posZ(), vTracksITS567perColl[colIndex]);
+        histos.fill(HIST("hNPVcontribVsVz_eta08"), col.posZ(), vTracksITS567eta08perColl[colIndex]);
+      }
     }
 
     // ROF-by-ROF study:
@@ -497,9 +512,17 @@ struct RofOccupancyQaTask {
       // prev 1 coll
       if (vCombCond[k] && vCombCond[k - 1]) {
         if (vCollRofId[k - 2] < vCollRofId[k] - 2 && vCollRofId[k - 1] == vCollRofId[k] - 2 && /* next coll is far */ vCollRofId[k + 1] > vCollRofId[k] + 2) // 10x00
+        {
           histos.fill(HIST("ROFbyROF/nPV_10x00"), vTracksITS567perColl[k - 1], vTracksITS567perColl[k]);
+          histos.fill(HIST("ROFbyROF/nPV_10x00_nearbyByFT0C"), vAmpFT0CperColl[k - 1], vTracksITS567perColl[k]);
+          histos.fill(HIST("ROFbyROF/nPV_10x00_thisFT0C"), vAmpFT0CperColl[k], vTracksITS567perColl[k]);
+        }
         if (vCollRofId[k - 2] < vCollRofId[k] - 2 && vCollRofId[k - 1] == vCollRofId[k] - 1 && /* next coll is far */ vCollRofId[k + 1] > vCollRofId[k] + 2) // 01x00
+        {
           histos.fill(HIST("ROFbyROF/nPV_01x00"), vTracksITS567perColl[k - 1], vTracksITS567perColl[k]);
+          histos.fill(HIST("ROFbyROF/nPV_01x00_nearbyByFT0C"), vAmpFT0CperColl[k - 1], vTracksITS567perColl[k]);
+          histos.fill(HIST("ROFbyROF/nPV_01x00_thisFT0C"), vAmpFT0CperColl[k], vTracksITS567perColl[k]);
+        }
 
         if (vCollRofId[k - 2] < vCollRofId[k] - 2 && vCollRofId[k - 1] == vCollRofId[k] - 1 && /* next coll is far */ vCollRofId[k + 1] > vCollRofId[k] + 1) // 01x0
         {
@@ -529,7 +552,11 @@ struct RofOccupancyQaTask {
       // next 1 coll
       if (vCombCond[k] && vCombCond[k + 1]) {
         if (vCollRofId[k - 1] < vCollRofId[k] - 2 /* prev coll is far */ && vCollRofId[k + 1] == vCollRofId[k] + 1 && vCollRofId[k + 2] > vCollRofId[k] + 2) // 00x10
+        {
           histos.fill(HIST("ROFbyROF/nPV_00x10"), vTracksITS567perColl[k + 1], vTracksITS567perColl[k]);
+          histos.fill(HIST("ROFbyROF/nPV_00x10_nearbyByFT0C"), vAmpFT0CperColl[k + 1], vTracksITS567perColl[k]);
+          histos.fill(HIST("ROFbyROF/nPV_00x10_thisFT0C"), vAmpFT0CperColl[k], vTracksITS567perColl[k]);
+        }
 
         if (vCollRofId[k - 1] < vCollRofId[k] - 1 /* prev coll is far */ && vCollRofId[k + 1] == vCollRofId[k] + 1 && vCollRofId[k + 2] > vCollRofId[k] + 2) // 0x10
         {
@@ -557,7 +584,11 @@ struct RofOccupancyQaTask {
         }
 
         if (vCollRofId[k - 1] < vCollRofId[k] - 2 /* prev coll is far */ && vCollRofId[k + 1] == vCollRofId[k] + 2 && vCollRofId[k + 2] > vCollRofId[k] + 2) // 00x01
+        {
           histos.fill(HIST("ROFbyROF/nPV_00x01"), vTracksITS567perColl[k + 1], vTracksITS567perColl[k]);
+          histos.fill(HIST("ROFbyROF/nPV_00x01_nearbyByFT0C"), vAmpFT0CperColl[k + 1], vTracksITS567perColl[k]);
+          histos.fill(HIST("ROFbyROF/nPV_00x01_thisFT0C"), vAmpFT0CperColl[k], vTracksITS567perColl[k]);
+        }
       }
 
       // 2 colls
@@ -739,8 +770,6 @@ struct RofOccupancyQaTask {
         nSumAmplFT0CforRofVetoStrict += vAmpFT0CperColl[thisColIndex];
         vNumCollinROF[colIndex]++;
         vInROFcollIndex[colIndex] = thisBcInITSROF > bcInITSROF ? 0 : 1; // if colIndex is for the first coll in ROF => inROFindex=0, otherwise =1
-        if (fabs(vCollVz[thisColIndex]) < 10)
-          vNumCollinROFinVz10[colIndex]++;
 
         // if (vTracksITS567perColl[thisColIndex] > confNtracksCutVetoOnCollInROF)
         // nITS567tracksForRofVetoStandard += vTracksITS567perColl[thisColIndex];
@@ -759,7 +788,7 @@ struct RofOccupancyQaTask {
             nArrITS567tracksForRofVetoOnCloseVz[i]++;
         }
 
-        if (fabs(vZ) < 8.) {
+        if (fabs(vZ) < 10) {
           histos.fill(HIST("hDeltaVz"), vCollVz[thisColIndex] - vZ);
           if (vTracksITS567perColl[colIndex] >= 100 && vTracksITS567perColl[thisColIndex] < 100)
             histos.fill(HIST("hDeltaVzGivenCollAbove100NearbyBelow100"), vCollVz[thisColIndex] - vZ);
@@ -854,13 +883,13 @@ struct RofOccupancyQaTask {
         } else if (dt > -4.0 && dt <= -2.0) { // us, strict veto to suppress fake ITS-TPC matches more
           if (vTracksITS567perColl[thisColIndex] > confNtracksCutVetoOnCollInTimeRange / 5)
             nITS567tracksForVetoStandard += vTracksITS567perColl[thisColIndex];
-        } else if (fabs(dt) < 8 + fabs(vZ) / driftV) { // loose veto, 8 us corresponds to maximum possible |vZ|, which is ~20 cm
+        } else if (fabs(dt) < 10 + fabs(vZ) / driftV) { // loose veto, 8 us corresponds to maximum possible |vZ|, which is ~20 cm
           // counting number of other collisions with mult above threshold
           if (vTracksITS567perColl[thisColIndex] > confNtracksCutVetoOnCollInTimeRange)
             nITS567tracksForVetoStandard += vTracksITS567perColl[thisColIndex];
         }
         // vZ-dependent time cut to avoid collinear tracks from other collisions (experimental)
-        if (fabs(dt) < 8 + fabs(vZ) / driftV) {
+        if (fabs(dt) < 10 + fabs(vZ) / driftV) {
           if (dt < 0) {
             // check distance between given vZ and (moving in two directions) vZ of drifting tracks from past collisions
             if ((fabs(vCollVz[thisColIndex] - fabs(dt) * driftV - vZ) < confEpsilonDistanceForVzDependentVetoTPC) ||
@@ -919,7 +948,7 @@ struct RofOccupancyQaTask {
         float ft0C = vAmpFT0CperColl[colIndex];
 
         // ROF-by-ROF
-        if (fabs(vZ) < 10) {
+        if (fabs(vZ) < 8) {
           histos.fill(HIST("ROFbyROF/nPV_vs_ROFid"), nPV, vCollRofIdPerOrbit[colIndex]);
           histos.fill(HIST("ROFbyROF/nPV_vs_subROFid"), nPV, vCollRofSubIdPerOrbit[colIndex]);
 
@@ -927,7 +956,7 @@ struct RofOccupancyQaTask {
           histos.fill(HIST("ROFbyROF/FT0C_vs_subROFid"), ft0C, vCollRofSubIdPerOrbit[colIndex]);
         }
         // vs occupancy
-        if (occTracks >= 0 && fabs(vZ) < 10) {
+        if (occTracks >= 0 && fabs(vZ) < 8) {
           histos.fill(HIST("nPV_vs_occupancyByTracks/sel8"), nPV, occTracks);
           if (col.selection_bit(kNoCollInTimeRangeNarrow))
             histos.fill(HIST("nPV_vs_occupancyByTracks/NoCollInTimeRangeNarrow"), nPV, occTracks);
@@ -948,7 +977,7 @@ struct RofOccupancyQaTask {
           if (col.selection_bit(kNoCollInTimeRangeStrict) && col.selection_bit(kNoCollInRofStrict) && fabs(vZ) < 5)
             histos.fill(HIST("nPV_vs_occupancyByTracks/NoCollInTimeAndRofStrict_vZ_5cm"), nPV, occTracks);
         }
-        if (occFT0C >= 0 && fabs(vZ) < 10) {
+        if (occFT0C >= 0 && fabs(vZ) < 8) {
           histos.fill(HIST("nPV_vs_occupancyByFT0C/sel8"), nPV, occFT0C);
           if (col.selection_bit(kNoCollInTimeRangeNarrow))
             histos.fill(HIST("nPV_vs_occupancyByFT0C/NoCollInTimeRangeNarrow"), nPV, occFT0C);
@@ -985,7 +1014,7 @@ struct RofOccupancyQaTask {
         histos.fill(HIST("hThisEvITSTr_vs_ThisEvFT0C/all"), vAmpFT0CperColl[colIndex], vTracksITS567perColl[colIndex]);
         histos.fill(HIST("hThisEvITSTPCTr_vs_ThisEvITStr/all"), vTracksITS567perColl[colIndex], vTracksITSTPCperColl[colIndex]);
 
-        if (sel8 && fabs(col.posZ()) < 10) {
+        if (sel8 && fabs(col.posZ()) < 8) {
           histos.fill(HIST("hOccupancyByFT0C_vs_ByTracks_vZ_TF_ROF_border_cuts"), vNumTracksITS567inFullTimeWin[colIndex], vSumAmpFT0CinFullTimeWin[colIndex]);
 
           // if (vAmpFT0CperColl[colIndex] > 5000 && vAmpFT0CperColl[colIndex] < 10000) {
