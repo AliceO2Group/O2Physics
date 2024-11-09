@@ -15,11 +15,11 @@
 /// \author M. Hemmer, marvin.hemmer@cern.ch
 
 #include <numbers>
-#include <array>
 #include <iterator>
+#include <array>
 #include <string>
-#include <algorithm>
 #include <map>
+#include <algorithm>
 #include <vector>
 #include <tuple>
 #include <utility>
@@ -70,6 +70,8 @@ struct EMfTaskPi0Flow {
   // configurable for flow
   Configurable<int> harmonic{"harmonic", 2, "harmonic number"};
   Configurable<int> qvecDetector{"qvecDetector", 0, "Detector for Q vector estimation (FT0M: 0, FT0A: 1, FT0C: 2, TPC Pos: 3, TPC Neg: 4, TPC Tot: 5)"};
+  Configurable<int> qvecSubADetector{"qvecSubADetector", 3, "Sub A Detector for Q vector estimation for resolution (FT0M: 0, FT0A: 1, FT0C: 2, TPC Pos: 3, TPC Neg: 4, TPC Tot: 5)"};
+  Configurable<int> qvecSubBDetector{"qvecSubBDetector", 4, "Sub B Detector for Q vector estimation for resolution (FT0M: 0, FT0A: 1, FT0C: 2, TPC Pos: 3, TPC Neg: 4, TPC Tot: 5)"};
   Configurable<int> centEstimator{"centEstimator", 2, "Centrality estimation (FT0A: 1, FT0C: 2, FT0M: 3)"};
   Configurable<bool> saveEpResoHisto{"saveEpResoHisto", false, "Flag to save event plane resolution histogram"};
   Configurable<bool> saveSPResoHist{"saveSPResoHist", false, "Flag to save scalar product resolution histogram"};
@@ -96,10 +98,12 @@ struct EMfTaskPi0Flow {
     Configurable<bool> cfgRequireGoodZvtxFT0vsPV{"cfgRequireGoodZvtxFT0vsPV", false, "require good Zvtx between FT0 vs. PV in event cut"};
     Configurable<bool> cfgRequireEMCReadoutInMB{"cfgRequireEMCReadoutInMB", true, "require the EMC to be read out in an MB collision (kTVXinEMC)"};
     Configurable<bool> cfgRequireEMCHardwareTriggered{"cfgRequireEMCHardwareTriggered", false, "require the EMC to be hardware triggered (kEMC7 or kDMC7)"};
-    Configurable<int> cfgOccupancyMin{"cfgOccupancyMin", -1, "min. occupancy"};
-    Configurable<int> cfgOccupancyMax{"cfgOccupancyMax", 1000000000, "max. occupancy"};
+    Configurable<int> cfgTrackOccupancyMin{"cfgTrackOccupancyMin", -1, "min. track occupancy"};
+    Configurable<int> cfgTrackOccupancyMax{"cfgTrackOccupancyMax", 1000000000, "max. track occupancy"};
+    Configurable<int> cfgFT0COccupancyMin{"cfgFT0COccupancyMin", -1, "min. FT0C occupancy"};
+    Configurable<int> cfgFT0COccupancyMax{"cfgFT0COccupancyMax", 1000000000, "max. FT0C occupancy"};
     Configurable<float> cfgMinCent{"cfgMinCent", 0, "min. centrality (%)"};
-    Configurable<float> cfgMaxCent{"cfgMaxCent", 100, "max. centrality (%)"};
+    Configurable<float> cfgMaxCent{"cfgMaxCent", 90, "max. centrality (%)"};
     Configurable<bool> onlyKeepWeightedEvents{"onlyKeepWeightedEvents", false, "flag to keep only weighted events (for JJ MCs) and remove all MB events (with weight = 1)"};
     Configurable<bool> enableQA{"enableQA", false, "flag to turn QA plots on/off"};
   } eventcuts;
@@ -130,13 +134,28 @@ struct EMfTaskPi0Flow {
     ConfigurableAxis thConfigAxisTanThetaPhi{"thConfigAxisTanThetaPhi", {180, -90.f, 90.f}, ""};
   } mesonConfig;
 
-  using CollsWithQvecs = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec>;
-  using EMCalPhotons = soa::Join<aod::EMCEMEventIds, aod::SkimEMCClusters>;
+  struct : ConfigurableGroup {
+    std::string prefix = "event-mixing";
+    ConfigurableAxis ConfVtxBins{"ConfVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
+    ConfigurableAxis ConfCentBins{"ConfCentBins", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.f}, "Mixing bins - centrality"};
+    ConfigurableAxis ConfEPBins{"ConfEPBins", {8, -M_PI / 2, +M_PI / 2}, "Mixing bins - event plane angle"};
+    ConfigurableAxis ConfOccupancyBins{"ConfOccupancyBins", {VARIABLE_WIDTH, 0, 100, 500, 1000, 2000}, "Mixing bins - occupancy"};
+    Configurable<int> ConfMixingDepth{"ConfMixingDepth", 2, "Mixing depth"};
+  } mixingConfig;
 
   SliceCache cache;
   EventPlaneHelper epHelper;
-  Preslice<EMCalPhotons> perCollision_emc = aod::emccluster::emeventId;
   o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
+
+  Filter clusterFilter = aod::skimmedcluster::time >= emccuts.EMC_minTime && aod::skimmedcluster::time <= emccuts.EMC_maxTime && aod::skimmedcluster::m02 >= emccuts.EMC_minM02 && aod::skimmedcluster::m02 <= emccuts.EMC_maxM02 && skimmedcluster::e >= emccuts.EMC_minE;
+  Filter collisionFilter = aod::evsel::sel8 && nabs(aod::collision::posZ) <= eventcuts.cfgZvtxMax && aod::evsel::trackOccupancyInTimeRange <= eventcuts.cfgTrackOccupancyMax && aod::evsel::trackOccupancyInTimeRange >= eventcuts.cfgTrackOccupancyMin && aod::evsel::ft0cOccupancyInTimeRange <= eventcuts.cfgFT0COccupancyMax && aod::evsel::ft0cOccupancyInTimeRange >= eventcuts.cfgFT0COccupancyMin;
+  using FilteredEMCalPhotons = soa::Filtered<soa::Join<aod::EMCEMEventIds, aod::SkimEMCClusters>>;
+  using EMCalPhotons = soa::Join<aod::EMCEMEventIds, aod::SkimEMCClusters>;
+  using FilteredCollsWithQvecs = soa::Filtered<soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec>>;
+  using CollsWithQvecs = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec>;
+
+  Preslice<EMCalPhotons> perCollision_emc = aod::emccluster::emeventId;
+  Preslice<FilteredEMCalPhotons> perCollision_emc_filtered = aod::emccluster::emeventId;
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
@@ -197,35 +216,48 @@ struct EMfTaskPi0Flow {
     const AxisSpec thAxisTanThetaPhi{mesonConfig.thConfigAxisTanThetaPhi, "atan(#Delta#theta/#Delta#varphi)"};
     const AxisSpec thAxisClusterEnergy{thnConfigAxisPt, "#it{E} (GeV)"};
     const AxisSpec thAxisAlpha{100, -1., +1, "#alpha"};
+    const AxisSpec thAxisMult{1000, 0., +1000, "#it{N}_{ch}"};
+    const AxisSpec thAxisEnergy{1000, 0., 100., "#it{E}_{clus} (GeV)"};
+    const AxisSpec thAxisTime{1500, -600, 900, "#it{t}_{cl} (ns)"};
+    const AxisSpec thAxisEta{160, -0.8, 0.8, "#eta"};
+    const AxisSpec thAxisPhi{72, 0, 2 * 3.14159, "phi"};
+    const AxisSpec thAxisNCell{17664, 0.5, +17664.5, "#it{N}_{cell}"};
 
     registry.add("hSparsePi0Flow", "THn for SP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCent, thnAxisScalarProd});
+    auto hClusterCuts = registry.add<TH1>("hClusterCuts", "hClusterCuts;;Counts", kTH1D, {{6, 0.5, 6.5}}, false);
+    hClusterCuts->GetXaxis()->SetBinLabel(1, "in");
+    hClusterCuts->GetXaxis()->SetBinLabel(2, "opening angle");
+    hClusterCuts->GetXaxis()->SetBinLabel(3, "#it{M}_{#gamma#gamma}");
+    hClusterCuts->GetXaxis()->SetBinLabel(4, "#it{p}_{T}");
+    hClusterCuts->GetXaxis()->SetBinLabel(5, "conversion cut");
+    hClusterCuts->GetXaxis()->SetBinLabel(6, "out");
 
     if (saveSPResoHist) {
-      registry.add("spReso/hSpResoFT0cFT0a", "hSpResoFT0cFT0a; centrality; Q_{FT0c} #bullet Q_{FT0a}", {HistType::kTProfile, {thnAxisCent, thnAxisScalarProd}});
-      registry.add("spReso/hSpResoFT0cTPCpos", "hSpResoFT0cTPCpos; centrality; Q_{FT0c} #bullet Q_{TPCpos}", {HistType::kTProfile, {thnAxisCent, thnAxisScalarProd}});
-      registry.add("spReso/hSpResoFT0cTPCneg", "hSpResoFT0cTPCneg; centrality; Q_{FT0c} #bullet Q_{TPCneg}", {HistType::kTProfile, {thnAxisCent, thnAxisScalarProd}});
-      registry.add("spReso/hSpResoFT0cTPCtot", "hSpResoFT0cTPCtot; centrality; Q_{FT0c} #bullet Q_{TPCtot}", {HistType::kTProfile, {thnAxisCent, thnAxisScalarProd}});
-      registry.add("spReso/hSpResoFT0aTPCpos", "hSpResoFT0aTPCpos; centrality; Q_{FT0a} #bullet Q_{TPCpos}", {HistType::kTProfile, {thnAxisCent, thnAxisScalarProd}});
-      registry.add("spReso/hSpResoFT0aTPCneg", "hSpResoFT0aTPCneg; centrality; Q_{FT0a} #bullet Q_{TPCneg}", {HistType::kTProfile, {thnAxisCent, thnAxisScalarProd}});
-      registry.add("spReso/hSpResoFT0aTPCtot", "hSpResoFT0aTPCtot; centrality; Q_{FT0m} #bullet Q_{TPCtot}", {HistType::kTProfile, {thnAxisCent, thnAxisScalarProd}});
-      registry.add("spReso/hSpResoFT0mTPCpos", "hSpResoFT0mTPCpos; centrality; Q_{FT0m} #bullet Q_{TPCpos}", {HistType::kTProfile, {thnAxisCent, thnAxisScalarProd}});
-      registry.add("spReso/hSpResoFT0mTPCneg", "hSpResoFT0mTPCneg; centrality; Q_{FT0m} #bullet Q_{TPCneg}", {HistType::kTProfile, {thnAxisCent, thnAxisScalarProd}});
-      registry.add("spReso/hSpResoFT0mTPCtot", "hSpResoFT0mTPCtot; centrality; Q_{FT0m} #bullet Q_{TPCtot}", {HistType::kTProfile, {thnAxisCent, thnAxisScalarProd}});
-      registry.add("spReso/hSpResoTPCposTPCneg", "hSpResoTPCposTPCneg; centrality; Q_{TPCpos} #bullet Q_{TPCneg}", {HistType::kTProfile, {thnAxisCent, thnAxisScalarProd}});
+      registry.add("spReso/hSpResoFT0cFT0a", "hSpResoFT0cFT0a; centrality; Q_{FT0c} #bullet Q_{FT0a}", {HistType::kTProfile, {thnAxisCent}});
+      registry.add("spReso/hSpResoFT0cTPCpos", "hSpResoFT0cTPCpos; centrality; Q_{FT0c} #bullet Q_{TPCpos}", {HistType::kTProfile, {thnAxisCent}});
+      registry.add("spReso/hSpResoFT0cTPCneg", "hSpResoFT0cTPCneg; centrality; Q_{FT0c} #bullet Q_{TPCneg}", {HistType::kTProfile, {thnAxisCent}});
+      registry.add("spReso/hSpResoFT0cTPCtot", "hSpResoFT0cTPCtot; centrality; Q_{FT0c} #bullet Q_{TPCtot}", {HistType::kTProfile, {thnAxisCent}});
+      registry.add("spReso/hSpResoFT0aTPCpos", "hSpResoFT0aTPCpos; centrality; Q_{FT0a} #bullet Q_{TPCpos}", {HistType::kTProfile, {thnAxisCent}});
+      registry.add("spReso/hSpResoFT0aTPCneg", "hSpResoFT0aTPCneg; centrality; Q_{FT0a} #bullet Q_{TPCneg}", {HistType::kTProfile, {thnAxisCent}});
+      registry.add("spReso/hSpResoFT0aTPCtot", "hSpResoFT0aTPCtot; centrality; Q_{FT0m} #bullet Q_{TPCtot}", {HistType::kTProfile, {thnAxisCent}});
+      registry.add("spReso/hSpResoFT0mTPCpos", "hSpResoFT0mTPCpos; centrality; Q_{FT0m} #bullet Q_{TPCpos}", {HistType::kTProfile, {thnAxisCent}});
+      registry.add("spReso/hSpResoFT0mTPCneg", "hSpResoFT0mTPCneg; centrality; Q_{FT0m} #bullet Q_{TPCneg}", {HistType::kTProfile, {thnAxisCent}});
+      registry.add("spReso/hSpResoFT0mTPCtot", "hSpResoFT0mTPCtot; centrality; Q_{FT0m} #bullet Q_{TPCtot}", {HistType::kTProfile, {thnAxisCent}});
+      registry.add("spReso/hSpResoTPCposTPCneg", "hSpResoTPCposTPCneg; centrality; Q_{TPCpos} #bullet Q_{TPCneg}", {HistType::kTProfile, {thnAxisCent}});
     }
 
     if (saveEpResoHisto) {
-      registry.add("epReso/hEpResoFT0cFT0a", "hEpResoFT0cFT0a; centrality; #Delta#Psi_{sub}", {HistType::kTProfile, {thnAxisCent, thnAxisCosNPhi}});
-      registry.add("epReso/hEpResoFT0cTPCpos", "hEpResoFT0cTPCpos; centrality; #Delta#Psi_{sub}", {HistType::kTProfile, {thnAxisCent, thnAxisCosNPhi}});
-      registry.add("epReso/hEpResoFT0cTPCneg", "hEpResoFT0cTPCneg; centrality; #Delta#Psi_{sub}", {HistType::kTProfile, {thnAxisCent, thnAxisCosNPhi}});
-      registry.add("epReso/hEpResoFT0cTPCtot", "hEpResoFT0cTPCtot; centrality; #Delta#Psi_{sub}", {HistType::kTProfile, {thnAxisCent, thnAxisCosNPhi}});
-      registry.add("epReso/hEpResoFT0aTPCpos", "hEpResoFT0aTPCpos; centrality; #Delta#Psi_{sub}", {HistType::kTProfile, {thnAxisCent, thnAxisCosNPhi}});
-      registry.add("epReso/hEpResoFT0aTPCneg", "hEpResoFT0aTPCneg; centrality; #Delta#Psi_{sub}", {HistType::kTProfile, {thnAxisCent, thnAxisCosNPhi}});
-      registry.add("epReso/hEpResoFT0aTPCtot", "hEpResoFT0aTPCtot; centrality; #Delta#Psi_{sub}", {HistType::kTProfile, {thnAxisCent, thnAxisCosNPhi}});
-      registry.add("epReso/hEpResoFT0mTPCpos", "hEpResoFT0mTPCpos; centrality; #Delta#Psi_{sub}", {HistType::kTProfile, {thnAxisCent, thnAxisCosNPhi}});
-      registry.add("epReso/hEpResoFT0mTPCneg", "hEpResoFT0mTPCneg; centrality; #Delta#Psi_{sub}", {HistType::kTProfile, {thnAxisCent, thnAxisCosNPhi}});
-      registry.add("epReso/hEpResoFT0mTPCtot", "hEpResoFT0mTPCtot; centrality; #Delta#Psi_{sub}", {HistType::kTProfile, {thnAxisCent, thnAxisCosNPhi}});
-      registry.add("epReso/hEpResoTPCposTPCneg", "hEpResoTPCposTPCneg; centrality; #Delta#Psi_{sub}", {HistType::kTProfile, {thnAxisCent, thnAxisCosNPhi}});
+      registry.add("epReso/hEpResoFT0cFT0a", "hEpResoFT0cFT0a; centrality; #Delta#Psi_{sub}", {HistType::kTProfile, {thnAxisCent}});
+      registry.add("epReso/hEpResoFT0cTPCpos", "hEpResoFT0cTPCpos; centrality; #Delta#Psi_{sub}", {HistType::kTProfile, {thnAxisCent}});
+      registry.add("epReso/hEpResoFT0cTPCneg", "hEpResoFT0cTPCneg; centrality; #Delta#Psi_{sub}", {HistType::kTProfile, {thnAxisCent}});
+      registry.add("epReso/hEpResoFT0cTPCtot", "hEpResoFT0cTPCtot; centrality; #Delta#Psi_{sub}", {HistType::kTProfile, {thnAxisCent}});
+      registry.add("epReso/hEpResoFT0aTPCpos", "hEpResoFT0aTPCpos; centrality; #Delta#Psi_{sub}", {HistType::kTProfile, {thnAxisCent}});
+      registry.add("epReso/hEpResoFT0aTPCneg", "hEpResoFT0aTPCneg; centrality; #Delta#Psi_{sub}", {HistType::kTProfile, {thnAxisCent}});
+      registry.add("epReso/hEpResoFT0aTPCtot", "hEpResoFT0aTPCtot; centrality; #Delta#Psi_{sub}", {HistType::kTProfile, {thnAxisCent}});
+      registry.add("epReso/hEpResoFT0mTPCpos", "hEpResoFT0mTPCpos; centrality; #Delta#Psi_{sub}", {HistType::kTProfile, {thnAxisCent}});
+      registry.add("epReso/hEpResoFT0mTPCneg", "hEpResoFT0mTPCneg; centrality; #Delta#Psi_{sub}", {HistType::kTProfile, {thnAxisCent}});
+      registry.add("epReso/hEpResoFT0mTPCtot", "hEpResoFT0mTPCtot; centrality; #Delta#Psi_{sub}", {HistType::kTProfile, {thnAxisCent}});
+      registry.add("epReso/hEpResoTPCposTPCneg", "hEpResoTPCposTPCneg; centrality; #Delta#Psi_{sub}", {HistType::kTProfile, {thnAxisCent}});
     }
     if (eventcuts.enableQA) {
       auto hCollisionEMCCheck = registry.add<TH1>("hCollisionEMCCheck", "collision counter;;Counts", kTH1D, {{7, 0.5, 7.5}}, false);
@@ -236,6 +268,10 @@ struct EMfTaskPi0Flow {
       hCollisionEMCCheck->GetXaxis()->SetBinLabel(5, "EMC MB Readout but no clusters");
       hCollisionEMCCheck->GetXaxis()->SetBinLabel(6, "No EMC MB Readout but has clusters");
       hCollisionEMCCheck->GetXaxis()->SetBinLabel(7, "No EMC MB Readout and no clusters");
+      registry.add("LED/hMult", "multiplicity in LED events", HistType::kTH1D, {thAxisMult});
+      registry.add("LED/hClusterEtaPhi", "hClusterEtaPhi", HistType::kTH2D, {thAxisPhi, thAxisEta});
+      registry.add("LED/clusterTimeVsE", "Cluster time vs energy", HistType::kTH2D, {thAxisTime, thAxisEnergy});
+      registry.add("LED/hNCell", "hNCell", HistType::kTH1D, {thAxisNCell});
     }
 
     if (emccuts.enableQA) {
@@ -252,6 +288,9 @@ struct EMfTaskPi0Flow {
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
+
+    LOG(info) << "thnConfigAxisInvMass.value[1] = " << thnConfigAxisInvMass.value[1] << " thnConfigAxisInvMass.value.back() = " << thnConfigAxisInvMass.value.back();
+    LOG(info) << "thnConfigAxisPt.value[1] = " << thnConfigAxisPt.value[1] << " thnConfigAxisPt.value.back() = " << thnConfigAxisPt.value.back();
   }; // end init
 
   /// Change radians to degree
@@ -313,13 +352,26 @@ struct EMfTaskPi0Flow {
     return cent;
   }
 
+  /// Get all used Q vector
+  /// \param collision is the collision with the Q vector information
+  std::vector<float> getAllQvec(CollsWithQvecs::iterator const& collision)
+  {
+    // Retrieve the Q vectors using the helper function for each detector
+    auto [xQVecMain, yQVecMain] = getQvec(collision, qvecDetector);
+    auto [xQVecSubA, yQVecSubA] = getQvec(collision, qvecSubADetector);
+    auto [xQVecSubB, yQVecSubB] = getQvec(collision, qvecSubBDetector);
+
+    return {xQVecMain, yQVecMain, xQVecSubA, yQVecSubA, xQVecSubB, yQVecSubB};
+  }
+
   /// Get the Q vector
   /// \param collision is the collision with the Q vector information
-  std::vector<float> getQvec(CollsWithQvecs::iterator const& collision)
+  std::pair<float, float> getQvec(CollsWithQvecs::iterator const& collision, int detector)
   {
-    float xQVec = -999.;
-    float yQVec = -999.;
-    switch (qvecDetector) {
+    float xQVec = -999.f;
+    float yQVec = -999.f;
+
+    switch (detector) {
       case QvecEstimator::FT0M:
         if (harmonic == 2) {
           xQVec = collision.q2xft0m();
@@ -375,7 +427,7 @@ struct EMfTaskPi0Flow {
         }
         break;
       default:
-        LOG(warning) << "Q vector estimator not valid. Please choose between FT0M, FT0A, FT0C, TPC Pos, TPC Neg. Fallback to FT0M";
+        LOG(warning) << "Q vector estimator not valid. Falling back to FT0M";
         if (harmonic == 2) {
           xQVec = collision.q2xft0m();
           yQVec = collision.q2yft0m();
@@ -388,14 +440,26 @@ struct EMfTaskPi0Flow {
     return {xQVec, yQVec};
   }
 
+  /// Check if the QVector values are within reasonable range
+  /// \param collision is the collision with the Q vector information
+  bool isQvecGood(std::vector<float> const& QVecs)
+  {
+    bool isgood = true;
+    for (auto& QVec : QVecs) {
+      if (std::fabs(QVec) > 20.f) {
+        isgood = false;
+        break;
+      }
+    }
+    return isgood;
+  }
+
   /// Compute the scalar product
   /// \param collision is the collision with the Q vector information and event plane
   /// \param meson are the selected candidates
   void runFlowAnalysis(CollsWithQvecs::iterator const& collision, ROOT::Math::PtEtaPhiMVector const& meson)
   {
-    std::vector<float> qVecs = getQvec(collision);
-    float xQVec = qVecs[0];
-    float yQVec = qVecs[1];
+    auto [xQVec, yQVec] = getQvec(collision, qvecDetector);
     float cent = getCentrality(collision);
 
     float massCand = meson.M();
@@ -417,6 +481,7 @@ struct EMfTaskPi0Flow {
       auto photons_per_collision = clusters.sliceBy(perCollision_emc, collision.globalIndex());
 
       if (eventcuts.enableQA) {
+        // TODO: check EMCal NCells in collisions without EMC Readout
         registry.fill(HIST("hCollisionEMCCheck"), 1.); // all
         if (collision.alias_bit(kTVXinEMC) == true) {
           registry.fill(HIST("hCollisionEMCCheck"), 2.); // has EMC read out
@@ -430,6 +495,12 @@ struct EMfTaskPi0Flow {
           if (photons_per_collision.size() > 0) {
             registry.fill(HIST("hCollisionEMCCheck"), 3.); // has EMC cluster
             registry.fill(HIST("hCollisionEMCCheck"), 6.); // has no EMC read out and clusters
+            registry.fill(HIST("LED/hMult"), collision.multFT0C());
+            for (auto& photon : photons_per_collision) {
+              registry.fill(HIST("LED/hClusterEtaPhi"), photon.phi(), photon.eta());
+              registry.fill(HIST("LED/clusterTimeVsE"), photon.time(), photon.e());
+              registry.fill(HIST("LED/hNCell"), photon.nCells());
+            }
           } else {
             registry.fill(HIST("hCollisionEMCCheck"), 7.); // has no EMC read out and no clusters
           }
@@ -437,14 +508,21 @@ struct EMfTaskPi0Flow {
       }
       o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<0>(&registry, collision);
       if (!(fEMEventCut.IsSelected(collision))) {
-        // no selection on the centrality is applied on purpose to allow for the resolution study in post-processing
+        // general event selection
+        continue;
         continue;
       }
-      if (!(eventcuts.cfgOccupancyMin <= collision.trackOccupancyInTimeRange() && collision.trackOccupancyInTimeRange() < eventcuts.cfgOccupancyMax)) {
+      if (!(eventcuts.cfgTrackOccupancyMin <= collision.trackOccupancyInTimeRange() && collision.trackOccupancyInTimeRange() < eventcuts.cfgTrackOccupancyMax)) {
+        // occupancy selection
         continue;
       }
       float cent = getCentrality(collision);
       if (cent < eventcuts.cfgMinCent || cent > eventcuts.cfgMaxCent) {
+        // event selection
+        continue;
+      }
+      if (!isQvecGood(getAllQvec(collision))) {
+        // selection based on QVector
         continue;
       }
       o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<1>(&registry, collision);
@@ -471,11 +549,17 @@ struct EMfTaskPi0Flow {
         float dTheta = v1.Theta() - v2.Theta();
         float dPhi = v1.Phi() - v2.Phi();
         float openingAngle = std::acos(v1.Vect().Dot(v2.Vect()) / (v1.P() * v2.P()));
-
+        registry.fill(HIST("hClusterCuts"), 1);
         if (openingAngle <= mesonConfig.minOpenAngle) {
+          registry.fill(HIST("hClusterCuts"), 2);
           continue;
         }
-        if (thnConfigAxisInvMass.value.front() > vMeson.M() || thnConfigAxisInvMass.value.back() < vMeson.M() || thnConfigAxisPt.value.front() > vMeson.Pt() || thnConfigAxisPt.value.back() < vMeson.Pt()) {
+        if (thnConfigAxisInvMass.value[1] > vMeson.M() || thnConfigAxisInvMass.value.back() < vMeson.M()) {
+          registry.fill(HIST("hClusterCuts"), 3);
+          continue;
+        }
+        if (thnConfigAxisPt.value[1] > vMeson.Pt() || thnConfigAxisPt.value.back() < vMeson.Pt()) {
+          registry.fill(HIST("hClusterCuts"), 4);
           continue;
         }
         if (mesonConfig.enableQA) {
@@ -484,13 +568,88 @@ struct EMfTaskPi0Flow {
           registry.fill(HIST("hAlphaPt"), (v1.E() - v2.E()) / (v1.E() + v2.E()), vMeson.Pt());
         }
         if (mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(atan(dTheta / dPhi)))) {
+          registry.fill(HIST("hClusterCuts"), 5);
           continue;
         }
+        registry.fill(HIST("hClusterCuts"), 6);
         runFlowAnalysis(collision, vMeson);
       }
     }
   }
   PROCESS_SWITCH(EMfTaskPi0Flow, processEMCal, "Process EMCal Pi0 candidates", true);
+
+  // Pi0 from EMCal
+  void processEMCalMixed(FilteredCollsWithQvecs const& collisions, FilteredEMCalPhotons const& clusters)
+  {
+    auto getClustersSize =
+      [&clusters, this](FilteredCollsWithQvecs::iterator const& col) {
+        auto associatedClusters = clusters.sliceByCached(emccluster::emeventId, col.globalIndex(), this->cache); // it's cached, so slicing/grouping happens only once
+        return associatedClusters.size();
+      };
+
+    using BinningType = FlexibleBinningPolicy<std::tuple<decltype(getClustersSize)>, aod::collision::PosZ, aod::cent::CentFT0C, emevent::EP2FT0M<emevent::Q2xFT0M, emevent::Q2yFT0M>>;
+    BinningType binningWithLambda{{getClustersSize}, {mixingConfig.ConfVtxBins, mixingConfig.ConfCentBins, mixingConfig.ConfEPBins}, true};
+
+    auto clustersTuple = std::make_tuple(clusters);
+    SameKindPair<FilteredCollsWithQvecs, FilteredEMCalPhotons, BinningType> pair{binningWithLambda, mixingConfig.ConfMixingDepth, -1, collisions, clustersTuple, &cache}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
+
+    for (auto& [c1, clusters1, c2, clusters2] : pair) {
+      if (!(fEMEventCut.IsSelected(c1)) || !(fEMEventCut.IsSelected(c2))) {
+        // general event selection
+        continue;
+      }
+      if (!(eventcuts.cfgTrackOccupancyMin <= c1.trackOccupancyInTimeRange() && c1.trackOccupancyInTimeRange() < eventcuts.cfgTrackOccupancyMax) || !(eventcuts.cfgTrackOccupancyMin <= c2.trackOccupancyInTimeRange() && c2.trackOccupancyInTimeRange() < eventcuts.cfgTrackOccupancyMax)) {
+        // occupancy selection
+        continue;
+      }
+      if (getCentrality(c1) < eventcuts.cfgMinCent || getCentrality(c1) > eventcuts.cfgMaxCent || getCentrality(c2) < eventcuts.cfgMinCent || getCentrality(c2) > eventcuts.cfgMaxCent) {
+        // event selection
+        continue;
+      }
+      if (!isQvecGood(getAllQvec(c1)) || !isQvecGood(getAllQvec(c2))) {
+        // selection based on QVector
+        continue;
+      }
+      for (auto& [g1, g2] : combinations(CombinationsFullIndexPolicy(clusters1, clusters2))) {
+        if (!(fEMCCut.IsSelected<EMCalPhotons::iterator>(g1)) || !(fEMCCut.IsSelected<EMCalPhotons::iterator>(g2))) {
+          continue;
+        }
+        ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
+        ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
+        ROOT::Math::PtEtaPhiMVector vMeson = v1 + v2;
+
+        float dTheta = v1.Theta() - v2.Theta();
+        float dPhi = v1.Phi() - v2.Phi();
+        float openingAngle = std::acos(v1.Vect().Dot(v2.Vect()) / (v1.P() * v2.P()));
+
+        registry.fill(HIST("hClusterCuts"), 1);
+        if (openingAngle <= mesonConfig.minOpenAngle) {
+          registry.fill(HIST("hClusterCuts"), 2);
+          continue;
+        }
+        if (thnConfigAxisInvMass.value[1] > vMeson.M() || thnConfigAxisInvMass.value.back() < vMeson.M()) {
+          registry.fill(HIST("hClusterCuts"), 3);
+          continue;
+        }
+        if (thnConfigAxisPt.value[1] > vMeson.Pt() || thnConfigAxisPt.value.back() < vMeson.Pt()) {
+          registry.fill(HIST("hClusterCuts"), 4);
+          continue;
+        }
+        if (mesonConfig.enableQA) {
+          registry.fill(HIST("hInvMassPt"), vMeson.M(), vMeson.Pt());
+          registry.fill(HIST("hTanThetaPhi"), vMeson.M(), getAngleDegree(atan(dTheta / dPhi)));
+          registry.fill(HIST("hAlphaPt"), (v1.E() - v2.E()) / (v1.E() + v2.E()), vMeson.Pt());
+        }
+        if (mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(atan(dTheta / dPhi)))) {
+          registry.fill(HIST("hClusterCuts"), 5);
+          continue;
+        }
+        registry.fill(HIST("hClusterCuts"), 6);
+        runFlowAnalysis(c1, vMeson);
+      }
+    }
+  }
+  PROCESS_SWITCH(EMfTaskPi0Flow, processEMCalMixed, "Process EMCal Pi0 mixed event candidates", false);
 
   // Resolution
   void processResolution(CollsWithQvecs::iterator const& collision)
@@ -500,7 +659,16 @@ struct EMfTaskPi0Flow {
       // no selection on the centrality is applied on purpose to allow for the resolution study in post-processing
       return;
     }
-    if (!(eventcuts.cfgOccupancyMin <= collision.trackOccupancyInTimeRange() && collision.trackOccupancyInTimeRange() < eventcuts.cfgOccupancyMax)) {
+    if (!(eventcuts.cfgTrackOccupancyMin <= collision.trackOccupancyInTimeRange() && collision.trackOccupancyInTimeRange() < eventcuts.cfgTrackOccupancyMax)) {
+      return;
+    }
+    float cent = getCentrality(collision);
+    if (cent < eventcuts.cfgMinCent || cent > eventcuts.cfgMaxCent) {
+      // event selection
+      return;
+    }
+    if (!isQvecGood(getAllQvec(collision))) {
+      // selection based on QVector
       return;
     }
     o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<1>(&registry, collision);
