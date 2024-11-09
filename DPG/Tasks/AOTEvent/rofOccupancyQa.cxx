@@ -22,6 +22,8 @@
 #include "ITSMFTBase/DPLAlpideParam.h"
 #include "DataFormatsParameters/AggregatedRunInfo.h"
 
+#include <vector>
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::aod::evsel;
@@ -364,7 +366,8 @@ struct RofOccupancyQaTask {
     histos.add("nPV_vs_occupancyByFT0C/NoCollInTimeAndRofStrict_vZ_5cm", "", kTH2D, {{250, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
   }
 
-  Partition<FullTracksIU> pvTracks = ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
+  Partition<FullTracksIU> pvTracks = ((aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor));
+  // Partition<FullTracksIU> pvTracks = ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
   Preslice<FullTracksIU> perCollision = aod::track::collisionId;
 
   using ColEvSels = soa::Join<aod::Collisions, aod::EvSels>; //, aod::Mults, aod::CentFT0Cs>;
