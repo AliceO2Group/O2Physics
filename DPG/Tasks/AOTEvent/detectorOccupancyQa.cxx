@@ -32,6 +32,8 @@
 #include "TH2F.h"
 #include "TH3.h"
 
+#include <vector>
+
 using namespace o2::framework;
 using namespace o2;
 using namespace o2::aod::evsel;
