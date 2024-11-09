@@ -9,6 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include <memory>
+#include <string>
+#include <vector>
+#include <tuple>
+
 #include "CCDB/BasicCCDBManager.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -389,7 +394,7 @@ struct NonPromptCascadeTask {
           mom = grandma;
         }
       }
-      return {fromCharm, fromBeauty};
+      return {fromBeauty, fromCharm};
     };
 
     for (const auto& trackedCascade : trackedCascades) {
