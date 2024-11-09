@@ -31,7 +31,8 @@ void BookBaseList()
   fBaseList.setObject(temp);
   // fBaseList.object->SetName("4444");
 
-  fBasePro = new TProfile("fBasePro", "flags for the whole analysis", eConfiguration_N, 0.5, 0.5 + static_cast<float>(eConfiguration_N));
+  fBasePro = new TProfile("fBasePro", "flags for the whole analysis", eConfiguration_N - 1, 0.5, static_cast<float>(eConfiguration_N) - 0.5);
+  // yes, eConfiguration_N - 1 and -0.5, because eConfiguration kicks off from 1
   fBasePro->SetStats(kFALSE);
   fBasePro->SetLineColor(eColor);
   fBasePro->SetFillColor(eFillColor);
@@ -45,36 +46,39 @@ void BookBaseList()
   // Then, I replace placeholder with run number in DetermineAndPropagateRunNumber(T const& collision)
 
   fBasePro->GetXaxis()->SetBinLabel(eDryRun, "fDryRun");
-  fBasePro->Fill(eDryRun, static_cast<int>(tc.fDryRun));
+  fBasePro->Fill(eDryRun, static_cast<double>(tc.fDryRun));
 
   fBasePro->GetXaxis()->SetBinLabel(eVerbose, "fVerbose");
-  fBasePro->Fill(eVerbose, static_cast<int>(tc.fVerbose));
+  fBasePro->Fill(eVerbose, static_cast<double>(tc.fVerbose));
 
   fBasePro->GetXaxis()->SetBinLabel(eVerboseForEachParticle, "fVerboseForEachParticle");
-  fBasePro->Fill(eVerboseForEachParticle, static_cast<int>(tc.fVerboseForEachParticle));
+  fBasePro->Fill(eVerboseForEachParticle, static_cast<double>(tc.fVerboseForEachParticle));
 
   fBasePro->GetXaxis()->SetBinLabel(eDoAdditionalInsanityChecks, "fDoAdditionalInsanityChecks");
-  fBasePro->Fill(eDoAdditionalInsanityChecks, static_cast<int>(tc.fDoAdditionalInsanityChecks));
+  fBasePro->Fill(eDoAdditionalInsanityChecks, static_cast<double>(tc.fDoAdditionalInsanityChecks));
 
   fBasePro->GetXaxis()->SetBinLabel(eInsanityCheckForEachParticle, "fInsanityCheckForEachParticle");
-  fBasePro->Fill(eInsanityCheckForEachParticle, static_cast<int>(tc.fInsanityCheckForEachParticle));
+  fBasePro->Fill(eInsanityCheckForEachParticle, static_cast<double>(tc.fInsanityCheckForEachParticle));
 
   fBasePro->GetXaxis()->SetBinLabel(eUseCCDB, "fUseCCDB");
-  fBasePro->Fill(eUseCCDB, static_cast<int>(tc.fUseCCDB));
+  fBasePro->Fill(eUseCCDB, static_cast<double>(tc.fUseCCDB));
 
   fBasePro->GetXaxis()->SetBinLabel(eWhichProcess, Form("WhichProcess = %s", tc.fWhichProcess.Data()));
 
   fBasePro->GetXaxis()->SetBinLabel(eRandomSeed, "fRandomSeed");
-  fBasePro->Fill(eRandomSeed, static_cast<int>(tc.fRandomSeed));
+  fBasePro->Fill(eRandomSeed, static_cast<double>(tc.fRandomSeed));
 
   fBasePro->GetXaxis()->SetBinLabel(eUseFisherYates, "fUseFisherYates");
-  fBasePro->Fill(eUseFisherYates, static_cast<int>(tc.fUseFisherYates));
+  fBasePro->Fill(eUseFisherYates, static_cast<double>(tc.fUseFisherYates));
 
   fBasePro->GetXaxis()->SetBinLabel(eFixedNumberOfRandomlySelectedTracks, "fFixedNumberOfRandomlySelectedTracks");
   fBasePro->Fill(eFixedNumberOfRandomlySelectedTracks, static_cast<int>(tc.fFixedNumberOfRandomlySelectedTracks));
 
   fBasePro->GetXaxis()->SetBinLabel(eUseStopwatch, "fUseStopwatch");
-  fBasePro->Fill(eUseStopwatch, static_cast<int>(tc.fUseStopwatch));
+  fBasePro->Fill(eUseStopwatch, static_cast<double>(tc.fUseStopwatch));
+
+  fBasePro->GetXaxis()->SetBinLabel(eFloatingPointPrecision, "fFloatingPointPrecision");
+  fBasePro->Fill(eFloatingPointPrecision, tc.fFloatingPointPrecision);
 
   fBaseList->Add(fBasePro);
 
@@ -186,6 +190,7 @@ void DefaultConfiguration()
   tc.fUseFisherYates = cf_tc.cfUseFisherYates;
   tc.fFixedNumberOfRandomlySelectedTracks = cf_tc.cfFixedNumberOfRandomlySelectedTracks;
   tc.fUseStopwatch = cf_tc.cfUseStopwatch;
+  tc.fFloatingPointPrecision = cf_tc.cfFloatingPointPrecision;
 
   // *) Event histograms:
   eh.fEventHistogramsName[eNumberOfEvents] = "NumberOfEvents";
@@ -324,13 +329,6 @@ void DefaultConfiguration()
   t0.fCalculateTest0AsFunctionOf[AFO_CENTRALITY] = cf_t0.cfCalculateTest0AsFunctionOfCentrality;
   t0.fCalculateTest0AsFunctionOf[AFO_PT] = cf_t0.cfCalculateTest0AsFunctionOfPt;
   t0.fCalculateTest0AsFunctionOf[AFO_ETA] = cf_t0.cfCalculateTest0AsFunctionOfEta;
-  // Use above Test0 flags to automatically set the main Test0 flag: TBI 20240521 do I really want to do it this way?
-  for (Int_t v = 0; v < eAsFunctionOf_N; v++) {
-    if (t0.fCalculateTest0AsFunctionOf[v]) {
-      t0.fCalculateTest0 = true;
-      break; // yes, it suffices one diff. flag to be true, for the main Test0 flag to be true
-    }
-  }
   t0.fFileWithLabels = TString(cf_t0.cfFileWithLabels);
 
   // *) Particle weights:
@@ -1303,6 +1301,14 @@ void InsanityChecksBeforeBooking()
     LOGF(fatal, "\033[1;31m%s at line %d : Cannot calculate Test0, in case Q-vectors are not filled \033[0m", __FUNCTION__, __LINE__);
   }
 
+  // **) If some differential Test0 flag is set to true, but the main fCalculateTest0 is false, only print the warning that that differential Test0 won't be calculated.
+  //     This is not fatal, because this way I can turn off all differential Test0 flags, just by setting fCalculateTest0 to false, e.g. when I want to fill only control histograms.
+  for (Int_t v = 0; v < eAsFunctionOf_N; v++) {
+    if (t0.fCalculateTest0AsFunctionOf[v] && !t0.fCalculateTest0) {
+      LOGF(warning, "\033[1;33m%s at line %d : t0.fCalculateTest0AsFunctionOf[%d] is true, but t0.fCalculateTest0 is false. This differential Test0 won't be calculated.\033[0m", __FUNCTION__, __LINE__, v);
+    }
+  }
+
   // **) Enforce that if fixed number of randomly selected tracks is used in the analysis, that Fisher-Yates algorithm is enabled:
   if (tc.fFixedNumberOfRandomlySelectedTracks > 0 && !tc.fUseFisherYates) {
     LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
@@ -1353,6 +1359,11 @@ void InsanityChecksBeforeBooking()
     if (ec.fUseEventCuts[eTrigger]) {
       LOGF(fatal, "\033[1;31m%s at line %d : offline trigger eTrigger (e.g. kINT7) cannot be used in Run 3\033[0m", __FUNCTION__, __LINE__);
     }
+  }
+
+  // **) Ensure that fFloatingPointPrecision makes sense:
+  if (!(tc.fFloatingPointPrecision > 0.)) {
+    LOGF(fatal, "\033[1;31m%s at line %d : set fFloatingPointPrecision = %f to some small positive value, which will determine if two floats are the same \033[0m", __FUNCTION__, __LINE__, tc.fFloatingPointPrecision);
   }
 
   // b) Ensure that Run 1/2 specific cuts and flags are used only in Run 1/2 (both data and sim):
@@ -1488,6 +1499,18 @@ void InsanityChecksAfterBooking()
   }
 
   // a) Insanity checks on booking:
+
+  // **) Check that the last bin is not empty in fBasePro, and that there is no underflow or overflow bins:
+  if (TString(fBasePro->GetXaxis()->GetBinLabel(eConfiguration_N - 1)).EqualTo("")) {
+    LOGF(fatal, "\033[1;31m%s at line %d : The very last bin of \"fBasePro\" doesn't have the title, check the booking of this hostogram. \033[0m", __FUNCTION__, __LINE__);
+  }
+  if (TMath::Abs(fBasePro->GetBinContent(0)) > 0.) {
+    LOGF(fatal, "\033[1;31m%s at line %d : In \"fBasePro\" something was filled in the underflow, check the booking of this hostogram. \033[0m", __FUNCTION__, __LINE__);
+  }
+  if (TMath::Abs(fBasePro->GetBinContent(eConfiguration_N)) > 0.) {
+    LOGF(fatal, "\033[1;31m%s at line %d : In \"fBasePro\" something was filled in the overflow, check the booking of this hostogram. \033[0m", __FUNCTION__, __LINE__);
+  }
+
   // ...
 
 } // void InsanityChecksAfterBooking()
@@ -1889,7 +1912,7 @@ void BookEventHistograms()
           continue;
         }
 
-        eh.fEventHistograms[t][rs][ba] = new TH1D(
+        eh.fEventHistograms[t][rs][ba] = new TH1F(
           Form("fEventHistograms[%s][%s][%s]", eh.fEventHistogramsName[t].Data(), srs[rs].Data(), sba[ba].Data()),
           Form("%s, %s, %s", "__RUN_NUMBER__", srs_long[rs].Data(), sba_long[ba].Data()), // __RUN_NUMBER__ is handled in DetermineAndPropagateRunNumber(T const& collision)
           static_cast<int>(eh.fEventHistogramsBins[t][0]),
@@ -1966,7 +1989,8 @@ void BookEventCutsHistograms()
         continue;
       }
 
-      ec.fEventCutCounterHist[rs][cc] = new TH1D(Form("fEventCutCounterHist[%s][%s]", srs[rs].Data(), scc[cc].Data()), Form("%s, %s, event cut counter (%s)", "__RUN_NUMBER__", srs_long[rs].Data(), scc_long[cc].Data()), eEventCuts_N, 0.5, static_cast<float>(eEventCuts_N) + 0.5);
+      ec.fEventCutCounterHist[rs][cc] = new TH1I(Form("fEventCutCounterHist[%s][%s]", srs[rs].Data(), scc[cc].Data()), Form("%s, %s, event cut counter (%s)", "__RUN_NUMBER__", srs_long[rs].Data(), scc_long[cc].Data()), eEventCuts_N, 0.5, static_cast<double>(eEventCuts_N) + 0.5); // I cast in double the last argument, because that's what this particular TH1I constructor expects
+                                                                                                                                                                                                                                                                                        // Yes, +0.5, because eEventCuts kicks off from 0
       ec.fEventCutCounterHist[rs][cc]->SetStats(kFALSE);
       ec.fEventCutCounterHist[rs][cc]->SetLineColor(eColor);
       ec.fEventCutCounterHist[rs][cc]->SetFillColor(eFillColor);
@@ -2037,7 +2061,7 @@ void BookParticleHistograms()
 
       for (Int_t ba = 0; ba < 2; ba++) // before/after cuts
       {
-        ph.fParticleHistograms[t][rs][ba] = new TH1D(Form("fParticleHistograms[%s][%s][%s]", ph.fParticleHistogramsName[t].Data(), srs[rs].Data(), sba[ba].Data()),
+        ph.fParticleHistograms[t][rs][ba] = new TH1F(Form("fParticleHistograms[%s][%s][%s]", ph.fParticleHistogramsName[t].Data(), srs[rs].Data(), sba[ba].Data()),
                                                      Form("%s, %s, %s", "__RUN_NUMBER__", srs_long[rs].Data(), sba_long[ba].Data()),
                                                      static_cast<int>(ph.fParticleHistogramsBins[t][0]), ph.fParticleHistogramsBins[t][1], ph.fParticleHistogramsBins[t][2]);
         ph.fParticleHistograms[t][rs][ba]->SetLineColor(ec.fBeforeAfterColor[ba]);
@@ -2183,7 +2207,9 @@ void BookParticleCutsHistograms()
         continue;
       }
 
-      pc.fParticleCutCounterHist[rs][cc] = new TH1D(Form("fParticleCutCounterHist[%s][%s]", srs[rs].Data(), scc[cc].Data()), Form("%s, %s, particle cut counter (%s)", "__RUN_NUMBER__", srs_long[rs].Data(), scc_long[cc].Data()), eParticleCuts_N, 0.5, static_cast<float>(eParticleCuts_N) + 0.5);
+      pc.fParticleCutCounterHist[rs][cc] = new TH1I(Form("fParticleCutCounterHist[%s][%s]", srs[rs].Data(), scc[cc].Data()), Form("%s, %s, particle cut counter (%s)", "__RUN_NUMBER__", srs_long[rs].Data(), scc_long[cc].Data()), eParticleCuts_N, 0.5, static_cast<double>(eParticleCuts_N) + 0.5);
+      // I cast in double the last argument, because that's what this particular TH1I constructor expects
+      // Yes, +0.5, because eParticleCuts kicks off from 0
       pc.fParticleCutCounterHist[rs][cc]->SetStats(kFALSE);
       pc.fParticleCutCounterHist[rs][cc]->SetLineColor(eColor);
       pc.fParticleCutCounterHist[rs][cc]->SetFillColor(eFillColor);
@@ -2829,16 +2855,16 @@ void InternalValidation()
     ResetEventByEventQuantities();
 
     // b1) Determine multiplicity, centrality, reaction plane and configure p.d.f. for azimuthal angles if harmonics are not constant e-by-e:
-    Int_t nMult = gRandom->Uniform(iv.fMultRangeInternalValidation[eMin], iv.fMultRangeInternalValidation[eMax]);
+    Int_t nMult = static_cast<int>(gRandom->Uniform(iv.fMultRangeInternalValidation[eMin], iv.fMultRangeInternalValidation[eMax]));
 
-    Double_t fReactionPlane = gRandom->Uniform(0., TMath::TwoPi());
+    Double_t fReactionPlane = gRandom->Uniform(0., TMath::TwoPi()); // no cast is needed, since Uniform(...) returns double
     if (iv.fHarmonicsOptionInternalValidation->EqualTo("constant")) {
       fPhiPDF->SetParameter(18, fReactionPlane);
     } else if (iv.fHarmonicsOptionInternalValidation->EqualTo("correlated")) {
       fPhiPDF->SetParameter(3, fReactionPlane);
     }
 
-    ebye.fCentrality = gRandom->Uniform(0., 100.); // this is perfectly fine for this exercise
+    ebye.fCentrality = static_cast<float>(gRandom->Uniform(0., 100.)); // this is perfectly fine for this exercise
 
     //    b2) Fill event histograms:
     if (eh.fFillEventHistograms) {
@@ -3245,7 +3271,7 @@ void DetermineAndPropagateRunNumber(T const& collision)
 
   // b) Propagate run number to all booked objects, wherever that info is relevant:
   // *) base:
-  fBasePro->GetXaxis()->SetBinLabel(eRunNumber, Form("tc.fRunNumber = %s", tc.fRunNumber.Data()));
+  fBasePro->GetXaxis()->SetBinLabel(eRunNumber, Form("fRunNumber = %s", tc.fRunNumber.Data()));
 
   // *) common title var:
   TString histTitle = "";
@@ -3562,6 +3588,8 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
 {
   // Event cuts on reconstructed and simulated data. Supports event cut counters, both absolute and sequential.
   // There is also a related enum eEventCuts.
+  // Remark: I have added to all if statemets below which deals with floats, e.g. TMath::Abs(ebye.fCentrality - ec.fdEventCuts[eCentrality][eMax]) < tc.fFloatingPointPrecision ,
+  //           to enforce the ROOT convention: "lower boundary included, upper boundary excluded"
 
   // a) Event cuts on reconstructed, and corresponding MC truth simulated (common to Run 3, Run 2 and Run 1);
   // b) Event cuts only on simulated (common to Run 3, Run 2 and Run 1);
@@ -3650,7 +3678,7 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eTotalMultiplicity]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eTotalMultiplicity, eCutCounterBinning);
-      } else if (tracks.size() < ec.fdEventCuts[eTotalMultiplicity][eMin] || tracks.size() > ec.fdEventCuts[eTotalMultiplicity][eMax]) {
+      } else if (tracks.size() < ec.fdEventCuts[eTotalMultiplicity][eMin] || tracks.size() > ec.fdEventCuts[eTotalMultiplicity][eMax] || TMath::Abs(tracks.size() - ec.fdEventCuts[eTotalMultiplicity][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eRec, eTotalMultiplicity, cutModus)) {
           return kFALSE;
         }
@@ -3665,7 +3693,7 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eCentrality]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eCentrality, eCutCounterBinning);
-      } else if (ebye.fCentrality < ec.fdEventCuts[eCentrality][eMin] || ebye.fCentrality > ec.fdEventCuts[eCentrality][eMax]) {
+      } else if (ebye.fCentrality < ec.fdEventCuts[eCentrality][eMin] || ebye.fCentrality > ec.fdEventCuts[eCentrality][eMax] || TMath::Abs(ebye.fCentrality - ec.fdEventCuts[eCentrality][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eRec, eCentrality, cutModus)) {
           return kFALSE;
         }
@@ -3676,7 +3704,7 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eVertex_x]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eVertex_x, eCutCounterBinning);
-      } else if (collision.posX() < ec.fdEventCuts[eVertex_x][eMin] || collision.posX() > ec.fdEventCuts[eVertex_x][eMax]) {
+      } else if (collision.posX() < ec.fdEventCuts[eVertex_x][eMin] || collision.posX() > ec.fdEventCuts[eVertex_x][eMax] || TMath::Abs(collision.posX() - ec.fdEventCuts[eVertex_x][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eRec, eVertex_x, cutModus)) {
           return kFALSE;
         }
@@ -3687,7 +3715,7 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eVertex_y]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eVertex_y, eCutCounterBinning);
-      } else if (collision.posY() < ec.fdEventCuts[eVertex_y][eMin] || collision.posY() > ec.fdEventCuts[eVertex_y][eMax]) {
+      } else if (collision.posY() < ec.fdEventCuts[eVertex_y][eMin] || collision.posY() > ec.fdEventCuts[eVertex_y][eMax] || TMath::Abs(collision.posY() - ec.fdEventCuts[eVertex_y][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eRec, eVertex_y, cutModus)) {
           return kFALSE;
         }
@@ -3698,7 +3726,7 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eVertex_z]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eVertex_z, eCutCounterBinning);
-      } else if (collision.posZ() < ec.fdEventCuts[eVertex_z][eMin] || collision.posZ() > ec.fdEventCuts[eVertex_z][eMax]) {
+      } else if (collision.posZ() < ec.fdEventCuts[eVertex_z][eMin] || collision.posZ() > ec.fdEventCuts[eVertex_z][eMax] || TMath::Abs(collision.posZ() - ec.fdEventCuts[eVertex_z][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eRec, eVertex_z, cutModus)) {
           return kFALSE;
         }
@@ -3709,7 +3737,7 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eNContributors]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eNContributors, eCutCounterBinning);
-      } else if (collision.numContrib() < ec.fdEventCuts[eNContributors][eMin] || collision.numContrib() > ec.fdEventCuts[eNContributors][eMax]) {
+      } else if (collision.numContrib() < ec.fdEventCuts[eNContributors][eMin] || collision.numContrib() > ec.fdEventCuts[eNContributors][eMax] || TMath::Abs(collision.numContrib() - ec.fdEventCuts[eNContributors][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eRec, eNContributors, cutModus)) {
           return kFALSE;
         }
@@ -3751,7 +3779,7 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eImpactParameter]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eSim, eImpactParameter, eCutCounterBinning);
-      } else if (collision.impactParameter() < ec.fdEventCuts[eImpactParameter][eMin] || collision.impactParameter() > ec.fdEventCuts[eImpactParameter][eMax]) {
+      } else if (collision.impactParameter() < ec.fdEventCuts[eImpactParameter][eMin] || collision.impactParameter() > ec.fdEventCuts[eImpactParameter][eMax] || TMath::Abs(collision.impactParameter() - ec.fdEventCuts[eImpactParameter][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eSim, eImpactParameter, cutModus)) {
           return kFALSE;
         }
@@ -3770,7 +3798,7 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eVertex_x]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eSim, eVertex_x, eCutCounterBinning);
-      } else if (collision.posX() < ec.fdEventCuts[eVertex_x][eMin] || collision.posX() > ec.fdEventCuts[eVertex_x][eMax]) {
+      } else if (collision.posX() < ec.fdEventCuts[eVertex_x][eMin] || collision.posX() > ec.fdEventCuts[eVertex_x][eMax] || TMath::Abs(collision.posX() - ec.fdEventCuts[eVertex_x][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eSim, eVertex_x, cutModus)) {
           return kFALSE;
         }
@@ -3781,7 +3809,7 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eVertex_y]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eSim, eVertex_y, eCutCounterBinning);
-      } else if (collision.posY() < ec.fdEventCuts[eVertex_y][eMin] || collision.posY() > ec.fdEventCuts[eVertex_y][eMax]) {
+      } else if (collision.posY() < ec.fdEventCuts[eVertex_y][eMin] || collision.posY() > ec.fdEventCuts[eVertex_y][eMax] || TMath::Abs(collision.posY() - ec.fdEventCuts[eVertex_y][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eSim, eVertex_y, cutModus)) {
           return kFALSE;
         }
@@ -3792,7 +3820,7 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eVertex_z]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eSim, eVertex_z, eCutCounterBinning);
-      } else if (collision.posZ() < ec.fdEventCuts[eVertex_z][eMin] || collision.posZ() > ec.fdEventCuts[eVertex_z][eMax]) {
+      } else if (collision.posZ() < ec.fdEventCuts[eVertex_z][eMin] || collision.posZ() > ec.fdEventCuts[eVertex_z][eMax] || TMath::Abs(collision.posZ() - ec.fdEventCuts[eVertex_z][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eSim, eVertex_z, cutModus)) {
           return kFALSE;
         }
@@ -3822,7 +3850,7 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eMultFV0M]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eMultFV0M, eCutCounterBinning);
-      } else if (collision.multFV0M() < ec.fdEventCuts[eMultFV0M][eMin] || collision.multFV0M() > ec.fdEventCuts[eMultFV0M][eMax]) {
+      } else if (collision.multFV0M() < ec.fdEventCuts[eMultFV0M][eMin] || collision.multFV0M() > ec.fdEventCuts[eMultFV0M][eMax] || TMath::Abs(collision.multFV0M() - ec.fdEventCuts[eMultFV0M][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eRec, eVertex_z, cutModus)) {
           return kFALSE;
         }
@@ -3833,7 +3861,7 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eMultFT0M]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eMultFT0M, eCutCounterBinning);
-      } else if (collision.multFT0M() < ec.fdEventCuts[eMultFT0M][eMin] || collision.multFT0M() > ec.fdEventCuts[eMultFT0M][eMax]) {
+      } else if (collision.multFT0M() < ec.fdEventCuts[eMultFT0M][eMin] || collision.multFT0M() > ec.fdEventCuts[eMultFT0M][eMax] || TMath::Abs(collision.multFT0M() - ec.fdEventCuts[eMultFT0M][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eRec, eVertex_z, cutModus)) {
           return kFALSE;
         }
@@ -3844,7 +3872,7 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eMultTPC]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eMultTPC, eCutCounterBinning);
-      } else if (collision.multTPC() < ec.fdEventCuts[eMultTPC][eMin] || collision.multTPC() > ec.fdEventCuts[eMultTPC][eMax]) {
+      } else if (collision.multTPC() < ec.fdEventCuts[eMultTPC][eMin] || collision.multTPC() > ec.fdEventCuts[eMultTPC][eMax] || TMath::Abs(collision.multTPC() - ec.fdEventCuts[eMultTPC][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eRec, eVertex_z, cutModus)) {
           return kFALSE;
         }
@@ -3855,7 +3883,7 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eMultNTracksPV]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eMultNTracksPV, eCutCounterBinning);
-      } else if (collision.multNTracksPV() < ec.fdEventCuts[eMultNTracksPV][eMin] || collision.multNTracksPV() > ec.fdEventCuts[eMultNTracksPV][eMax]) {
+      } else if (collision.multNTracksPV() < ec.fdEventCuts[eMultNTracksPV][eMin] || collision.multNTracksPV() > ec.fdEventCuts[eMultNTracksPV][eMax] || TMath::Abs(collision.multNTracksPV() - ec.fdEventCuts[eMultNTracksPV][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eRec, eMultNTracksPV, cutModus)) {
           return kFALSE;
         }
@@ -3933,7 +3961,7 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eMultTracklets]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eMultTracklets, eCutCounterBinning);
-      } else if (collision.multTracklets() < ec.fdEventCuts[eMultTracklets][eMin] || collision.multTracklets() > ec.fdEventCuts[eMultTracklets][eMax]) {
+      } else if (collision.multTracklets() < ec.fdEventCuts[eMultTracklets][eMin] || collision.multTracklets() > ec.fdEventCuts[eMultTracklets][eMax] || TMath::Abs(collision.multTracklets() - ec.fdEventCuts[eMultTracklets][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eRec, eMultTracklets, cutModus)) {
           return kFALSE;
         }
@@ -3984,7 +4012,7 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eTotalMultiplicity]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eTotalMultiplicity, eCutCounterBinning);
-      } else if (tracks.size() < ec.fdEventCuts[eTotalMultiplicity][eMin] || tracks.size() > ec.fdEventCuts[eTotalMultiplicity][eMax]) {
+      } else if (tracks.size() < ec.fdEventCuts[eTotalMultiplicity][eMin] || tracks.size() > ec.fdEventCuts[eTotalMultiplicity][eMax] || TMath::Abs(tracks.size() - ec.fdEventCuts[eTotalMultiplicity][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eRec, eTotalMultiplicity, cutModus)) {
           return kFALSE;
         }
@@ -3995,7 +4023,7 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eVertex_z]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eSim, eVertex_z, eCutCounterBinning);
-      } else if (collision.posZ() < ec.fdEventCuts[eVertex_z][eMin] || collision.posZ() > ec.fdEventCuts[eVertex_z][eMax]) {
+      } else if (collision.posZ() < ec.fdEventCuts[eVertex_z][eMin] || collision.posZ() > ec.fdEventCuts[eVertex_z][eMax] || TMath::Abs(collision.posZ() - ec.fdEventCuts[eVertex_z][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eSim, eVertex_z, cutModus)) {
           return kFALSE;
         }
@@ -4006,7 +4034,7 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eCentrality]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eCentrality, eCutCounterBinning);
-      } else if (ebye.fCentrality < ec.fdEventCuts[eCentrality][eMin] || ebye.fCentrality > ec.fdEventCuts[eCentrality][eMax]) {
+      } else if (ebye.fCentrality < ec.fdEventCuts[eCentrality][eMin] || ebye.fCentrality > ec.fdEventCuts[eCentrality][eMax] || TMath::Abs(ebye.fCentrality - ec.fdEventCuts[eCentrality][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eRec, eCentrality, cutModus)) {
           return kFALSE;
         }
@@ -4519,6 +4547,8 @@ Bool_t ParticleCuts(T const& track, eCutModus cutModus)
 {
   // Particle cuts on reconstructed and simulated data. Supports particle cut counters, both absolute and sequential.
   // There is also a related enum eParticleCuts.
+  // Remark: I have added to all if statemets below which deals with floats, e.g. TMath::Abs(track.eta() - pc.fdParticleCuts[eEta][eMax]) < tc.fFloatingPointPrecision ,
+  //           to enforce the ROOT convention: "lower boundary included, upper boundary excluded"
 
   // a) Particle cuts on reconstructed, and corresponding MC truth simulated (common to Run 3, Run 2 and Run 1);
   // b) Particle cuts only on simulated (common to Run 3, Run 2 and Run 1);
@@ -4540,7 +4570,7 @@ Bool_t ParticleCuts(T const& track, eCutModus cutModus)
     if (pc.fUseParticleCuts[ePhi]) {
       if (cutModus == eCutCounterBinning) {
         ParticleCut(eRec, ePhi, eCutCounterBinning);
-      } else if (track.phi() < pc.fdParticleCuts[ePhi][eMin] || track.phi() > pc.fdParticleCuts[ePhi][eMax]) {
+      } else if (track.phi() < pc.fdParticleCuts[ePhi][eMin] || track.phi() > pc.fdParticleCuts[ePhi][eMax] || TMath::Abs(track.phi() - pc.fdParticleCuts[ePhi][eMax]) < tc.fFloatingPointPrecision) {
         if (!ParticleCut(eRec, ePhi, cutModus)) {
           return kFALSE;
         }
@@ -4551,7 +4581,7 @@ Bool_t ParticleCuts(T const& track, eCutModus cutModus)
     if (pc.fUseParticleCuts[ePt]) {
       if (cutModus == eCutCounterBinning) {
         ParticleCut(eRec, ePt, eCutCounterBinning);
-      } else if (track.pt() < pc.fdParticleCuts[ePt][eMin] || track.pt() > pc.fdParticleCuts[ePt][eMax]) {
+      } else if (track.pt() < pc.fdParticleCuts[ePt][eMin] || track.pt() > pc.fdParticleCuts[ePt][eMax] || TMath::Abs(track.pt() - pc.fdParticleCuts[ePt][eMax]) < tc.fFloatingPointPrecision) {
         if (!ParticleCut(eRec, ePt, cutModus)) {
           return kFALSE;
         }
@@ -4562,7 +4592,7 @@ Bool_t ParticleCuts(T const& track, eCutModus cutModus)
     if (pc.fUseParticleCuts[eEta]) {
       if (cutModus == eCutCounterBinning) {
         ParticleCut(eRec, eEta, eCutCounterBinning);
-      } else if (track.eta() < pc.fdParticleCuts[eEta][eMin] || track.eta() > pc.fdParticleCuts[eEta][eMax]) {
+      } else if (track.eta() < pc.fdParticleCuts[eEta][eMin] || track.eta() > pc.fdParticleCuts[eEta][eMax] || TMath::Abs(track.eta() - pc.fdParticleCuts[eEta][eMax]) < tc.fFloatingPointPrecision) {
         if (!ParticleCut(eRec, eEta, cutModus)) {
           return kFALSE;
         }
@@ -4574,7 +4604,8 @@ Bool_t ParticleCuts(T const& track, eCutModus cutModus)
       if (cutModus == eCutCounterBinning) {
         ParticleCut(eRec, eCharge, eCutCounterBinning);
       } else if (0 == track.sign() || track.sign() < pc.fdParticleCuts[eCharge][eMin] || track.sign() > pc.fdParticleCuts[eCharge][eMax]) {
-        // TBI 20240511 with first condition, I always throw away neutral particles, so for the time being that is hardcoded
+        // With first condition, I always throw away neutral particles.
+        // I can use safely == here, because track.sign() returns short int.
         if (!ParticleCut(eRec, eCharge, cutModus)) {
           return kFALSE;
         }
@@ -4651,7 +4682,7 @@ Bool_t ParticleCuts(T const& track, eCutModus cutModus)
     if (pc.fUseParticleCuts[etpcCrossedRowsOverFindableCls]) {
       if (cutModus == eCutCounterBinning) {
         ParticleCut(eRec, etpcCrossedRowsOverFindableCls, eCutCounterBinning);
-      } else if (track.tpcCrossedRowsOverFindableCls() < pc.fdParticleCuts[etpcCrossedRowsOverFindableCls][eMin] || track.tpcCrossedRowsOverFindableCls() > pc.fdParticleCuts[etpcCrossedRowsOverFindableCls][eMax]) {
+      } else if (track.tpcCrossedRowsOverFindableCls() < pc.fdParticleCuts[etpcCrossedRowsOverFindableCls][eMin] || track.tpcCrossedRowsOverFindableCls() > pc.fdParticleCuts[etpcCrossedRowsOverFindableCls][eMax] || TMath::Abs(track.tpcCrossedRowsOverFindableCls() - pc.fdParticleCuts[etpcCrossedRowsOverFindableCls][eMax]) < tc.fFloatingPointPrecision) {
         if (!ParticleCut(eRec, etpcCrossedRowsOverFindableCls, cutModus)) {
           return kFALSE;
         }
@@ -4662,7 +4693,7 @@ Bool_t ParticleCuts(T const& track, eCutModus cutModus)
     if (pc.fUseParticleCuts[etpcFoundOverFindableCls]) {
       if (cutModus == eCutCounterBinning) {
         ParticleCut(eRec, etpcFoundOverFindableCls, eCutCounterBinning);
-      } else if (track.tpcFoundOverFindableCls() < pc.fdParticleCuts[etpcFoundOverFindableCls][eMin] || track.tpcFoundOverFindableCls() > pc.fdParticleCuts[etpcFoundOverFindableCls][eMax]) {
+      } else if (track.tpcFoundOverFindableCls() < pc.fdParticleCuts[etpcFoundOverFindableCls][eMin] || track.tpcFoundOverFindableCls() > pc.fdParticleCuts[etpcFoundOverFindableCls][eMax] || TMath::Abs(track.tpcFoundOverFindableCls() - pc.fdParticleCuts[etpcFoundOverFindableCls][eMax]) < tc.fFloatingPointPrecision) {
         if (!ParticleCut(eRec, etpcFoundOverFindableCls, cutModus)) {
           return kFALSE;
         }
@@ -4673,7 +4704,7 @@ Bool_t ParticleCuts(T const& track, eCutModus cutModus)
     if (pc.fUseParticleCuts[etpcFractionSharedCls]) {
       if (cutModus == eCutCounterBinning) {
         ParticleCut(eRec, etpcFractionSharedCls, eCutCounterBinning);
-      } else if (track.tpcFractionSharedCls() < pc.fdParticleCuts[etpcFractionSharedCls][eMin] || track.tpcFractionSharedCls() > pc.fdParticleCuts[etpcFractionSharedCls][eMax]) {
+      } else if (track.tpcFractionSharedCls() < pc.fdParticleCuts[etpcFractionSharedCls][eMin] || track.tpcFractionSharedCls() > pc.fdParticleCuts[etpcFractionSharedCls][eMax] || TMath::Abs(track.tpcFractionSharedCls() - pc.fdParticleCuts[etpcFractionSharedCls][eMax]) < tc.fFloatingPointPrecision) {
         if (!ParticleCut(eRec, etpcFractionSharedCls, cutModus)) {
           return kFALSE;
         }
@@ -4684,7 +4715,7 @@ Bool_t ParticleCuts(T const& track, eCutModus cutModus)
     if (pc.fUseParticleCuts[edcaXY]) {
       if (cutModus == eCutCounterBinning) {
         ParticleCut(eRec, edcaXY, eCutCounterBinning);
-      } else if (track.dcaXY() < pc.fdParticleCuts[edcaXY][eMin] || track.dcaXY() > pc.fdParticleCuts[edcaXY][eMax]) {
+      } else if (track.dcaXY() < pc.fdParticleCuts[edcaXY][eMin] || track.dcaXY() > pc.fdParticleCuts[edcaXY][eMax] || TMath::Abs(track.dcaXY() - pc.fdParticleCuts[edcaXY][eMax]) < tc.fFloatingPointPrecision) {
         if (!ParticleCut(eRec, edcaXY, cutModus)) {
           return kFALSE;
         }
@@ -4695,7 +4726,7 @@ Bool_t ParticleCuts(T const& track, eCutModus cutModus)
     if (pc.fUseParticleCuts[edcaZ]) {
       if (cutModus == eCutCounterBinning) {
         ParticleCut(eRec, edcaZ, eCutCounterBinning);
-      } else if (track.dcaZ() < pc.fdParticleCuts[edcaZ][eMin] || track.dcaZ() > pc.fdParticleCuts[edcaZ][eMax]) {
+      } else if (track.dcaZ() < pc.fdParticleCuts[edcaZ][eMin] || track.dcaZ() > pc.fdParticleCuts[edcaZ][eMax] || TMath::Abs(track.dcaZ() - pc.fdParticleCuts[edcaZ][eMax]) < tc.fFloatingPointPrecision) {
         if (!ParticleCut(eRec, edcaZ, cutModus)) {
           return kFALSE;
         }
@@ -4839,7 +4870,7 @@ Bool_t ParticleCuts(T const& track, eCutModus cutModus)
     if (pc.fUseParticleCuts[ePhi]) {
       if (cutModus == eCutCounterBinning) {
         ParticleCut(eSim, ePhi, eCutCounterBinning);
-      } else if (track.phi() < pc.fdParticleCuts[ePhi][eMin] || track.phi() > pc.fdParticleCuts[ePhi][eMax]) {
+      } else if (track.phi() < pc.fdParticleCuts[ePhi][eMin] || track.phi() > pc.fdParticleCuts[ePhi][eMax] || TMath::Abs(track.phi() - pc.fdParticleCuts[ePhi][eMax]) < tc.fFloatingPointPrecision) {
         if (!ParticleCut(eSim, ePhi, cutModus)) {
           return kFALSE;
         }
@@ -4850,7 +4881,7 @@ Bool_t ParticleCuts(T const& track, eCutModus cutModus)
     if (pc.fUseParticleCuts[ePt]) {
       if (cutModus == eCutCounterBinning) {
         ParticleCut(eSim, ePt, eCutCounterBinning);
-      } else if (track.pt() < pc.fdParticleCuts[ePt][eMin] || track.pt() > pc.fdParticleCuts[ePt][eMax]) {
+      } else if (track.pt() < pc.fdParticleCuts[ePt][eMin] || track.pt() > pc.fdParticleCuts[ePt][eMax] || TMath::Abs(track.pt() - pc.fdParticleCuts[ePt][eMax]) < tc.fFloatingPointPrecision) {
         if (!ParticleCut(eSim, ePt, cutModus)) {
           return kFALSE;
         }
@@ -4861,7 +4892,7 @@ Bool_t ParticleCuts(T const& track, eCutModus cutModus)
     if (pc.fUseParticleCuts[eEta]) {
       if (cutModus == eCutCounterBinning) {
         ParticleCut(eSim, eEta, eCutCounterBinning);
-      } else if (track.eta() < pc.fdParticleCuts[eEta][eMin] || track.eta() > pc.fdParticleCuts[eEta][eMax]) {
+      } else if (track.eta() < pc.fdParticleCuts[eEta][eMin] || track.eta() > pc.fdParticleCuts[eEta][eMax] || TMath::Abs(track.eta() - pc.fdParticleCuts[eEta][eMax]) < tc.fFloatingPointPrecision) {
         if (!ParticleCut(eSim, eEta, cutModus)) {
           return kFALSE;
         }
@@ -4970,7 +5001,7 @@ Bool_t ParticleCuts(T const& track, eCutModus cutModus)
     if (pc.fUseParticleCuts[ePhi]) {
       if (cutModus == eCutCounterBinning) {
         ParticleCut(eRec, ePhi, eCutCounterBinning);
-      } else if (track.phi() < pc.fdParticleCuts[ePhi][eMin] || track.phi() > pc.fdParticleCuts[ePhi][eMax]) {
+      } else if (track.phi() < pc.fdParticleCuts[ePhi][eMin] || track.phi() > pc.fdParticleCuts[ePhi][eMax] || TMath::Abs(track.phi() - pc.fdParticleCuts[ePhi][eMax]) < tc.fFloatingPointPrecision) {
         if (!ParticleCut(eRec, ePhi, cutModus)) {
           return kFALSE;
         }
@@ -4981,7 +5012,7 @@ Bool_t ParticleCuts(T const& track, eCutModus cutModus)
     if (pc.fUseParticleCuts[ePt]) {
       if (cutModus == eCutCounterBinning) {
         ParticleCut(eRec, ePt, eCutCounterBinning);
-      } else if (track.pt() < pc.fdParticleCuts[ePt][eMin] || track.pt() > pc.fdParticleCuts[ePt][eMax]) {
+      } else if (track.pt() < pc.fdParticleCuts[ePt][eMin] || track.pt() > pc.fdParticleCuts[ePt][eMax] || TMath::Abs(track.pt() - pc.fdParticleCuts[ePt][eMax]) < tc.fFloatingPointPrecision) {
         if (!ParticleCut(eRec, ePt, cutModus)) {
           return kFALSE;
         }
@@ -4992,7 +5023,7 @@ Bool_t ParticleCuts(T const& track, eCutModus cutModus)
     if (pc.fUseParticleCuts[eEta]) {
       if (cutModus == eCutCounterBinning) {
         ParticleCut(eRec, eEta, eCutCounterBinning);
-      } else if (track.eta() < pc.fdParticleCuts[eEta][eMin] || track.eta() > pc.fdParticleCuts[eEta][eMax]) {
+      } else if (track.eta() < pc.fdParticleCuts[eEta][eMin] || track.eta() > pc.fdParticleCuts[eEta][eMax] || TMath::Abs(track.eta() - pc.fdParticleCuts[eEta][eMax]) < tc.fFloatingPointPrecision) {
         if (!ParticleCut(eRec, eEta, cutModus)) {
           return kFALSE;
         }
@@ -5391,7 +5422,7 @@ void CalculateCorrelations()
       harmonics->SetAt(h, 0);
       harmonics->SetAt(-h, 1);
       Double_t nestedLoopValue = this->CalculateCustomNestedLoops(harmonics);
-      if (TMath::Abs(nestedLoopValue) > 0. && TMath::Abs(twoC - nestedLoopValue) > 1.e-5) {
+      if (TMath::Abs(nestedLoopValue) > 0. && TMath::Abs(twoC - nestedLoopValue) > tc.fFloatingPointPrecision) {
         LOGF(fatal, "\033[1;31m%s at line %d : nestedLoopValue = %f is not the same as twoC = %f\033[0m", __FUNCTION__, __LINE__, nestedLoopValue, twoC);
       } else {
         LOGF(info, "  e-b-e check with CustomNestedLoops is OK for isotropic 2-p, harmonic %d", h);
@@ -5444,7 +5475,7 @@ void CalculateCorrelations()
       harmonics->SetAt(-h, 2);
       harmonics->SetAt(-h, 3);
       Double_t nestedLoopValue = this->CalculateCustomNestedLoops(harmonics);
-      if (TMath::Abs(nestedLoopValue) > 0. && TMath::Abs(fourC - nestedLoopValue) > 1.e-5) {
+      if (TMath::Abs(nestedLoopValue) > 0. && TMath::Abs(fourC - nestedLoopValue) > tc.fFloatingPointPrecision) {
         LOGF(fatal, "\033[1;31m%s at line %d : nestedLoopValue = %f is not the same as fourC = %f\033[0m", __FUNCTION__, __LINE__, nestedLoopValue, fourC);
       } else {
         LOGF(info, "  e-b-e check with CustomNestedLoops is OK for isotropic 4-p, harmonic %d", h);
@@ -5499,7 +5530,7 @@ void CalculateCorrelations()
       harmonics->SetAt(-h, 4);
       harmonics->SetAt(-h, 5);
       Double_t nestedLoopValue = this->CalculateCustomNestedLoops(harmonics);
-      if (TMath::Abs(nestedLoopValue) > 0. && TMath::Abs(sixC - nestedLoopValue) > 1.e-5) {
+      if (TMath::Abs(nestedLoopValue) > 0. && TMath::Abs(sixC - nestedLoopValue) > tc.fFloatingPointPrecision) {
         LOGF(fatal, "\033[1;31m%s at line %d : nestedLoopValue = %f is not the same as sixC = %f\033[0m", __FUNCTION__, __LINE__, nestedLoopValue, sixC);
       } else {
         LOGF(info, "  e-b-e check with CustomNestedLoops is OK for isotropic 6-p, harmonic %d", h);
@@ -5556,7 +5587,7 @@ void CalculateCorrelations()
       harmonics->SetAt(-h, 6);
       harmonics->SetAt(-h, 7);
       Double_t nestedLoopValue = this->CalculateCustomNestedLoops(harmonics);
-      if (TMath::Abs(nestedLoopValue) > 0. && TMath::Abs(eightC - nestedLoopValue) > 1.e-5) {
+      if (TMath::Abs(nestedLoopValue) > 0. && TMath::Abs(eightC - nestedLoopValue) > tc.fFloatingPointPrecision) {
         LOGF(fatal, "\033[1;31m%s at line %d : nestedLoopValue = %f is not the same as eightC = %f\033[0m", __FUNCTION__, __LINE__, nestedLoopValue, eightC);
       } else {
         LOGF(info, "  e-b-e check with CustomNestedLoops is OK for isotropic 8-p, harmonic %d", h);
@@ -5759,7 +5790,7 @@ void CalculateTest0()
           Double_t nestedLoopValue = this->CalculateCustomNestedLoops(harmonics);
           if (!(TMath::Abs(nestedLoopValue) > 0.)) {
             LOGF(info, "  e-b-e check with CustomNestedLoops was NOT calculated for %d-p Test0 corr. %s", mo + 1, t0.fTest0Labels[mo][mi]->Data());
-          } else if (TMath::Abs(nestedLoopValue) > 0. && TMath::Abs(correlation / weight - nestedLoopValue) > 1.e-5) {
+          } else if (TMath::Abs(nestedLoopValue) > 0. && TMath::Abs(correlation / weight - nestedLoopValue) > tc.fFloatingPointPrecision) {
             LOGF(fatal, "\033[1;31m%s at line %d : nestedLoopValue = %f is not the same as correlation/weight = %f, for correlator %s\033[0m", __FUNCTION__, __LINE__, nestedLoopValue, correlation / weight, t0.fTest0Labels[mo][mi]->Data());
           } else {
             LOGF(info, "  e-b-e check with CustomNestedLoops is OK for %d-p Test0 corr. %s", mo + 1, t0.fTest0Labels[mo][mi]->Data());
@@ -5870,8 +5901,7 @@ void CalculateKineTest0(eAsFunctionOf AFO_variable)
             // cout<<Form("h = %d, t0.fTest0Labels[%d][%d] = ",h,mo,mi)<<t0.fTest0Labels[mo][mi]->Data()<<endl;
             TObjArray* oa = t0.fTest0Labels[mo][mi]->Tokenize(" ");
             if (!oa) {
-              cout << __LINE__ << endl;
-              exit(1);
+              LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
             }
             n[h] = TString(oa->At(h)->GetName()).Atoi();
             delete oa; // yes, otherwise it's a memory leak
@@ -5959,7 +5989,7 @@ void CalculateKineTest0(eAsFunctionOf AFO_variable)
             Double_t nestedLoopValue = this->CalculateKineCustomNestedLoops(harmonics, AFO_variable, b);
             if (!(TMath::Abs(nestedLoopValue) > 0.)) {
               LOGF(info, "  e-b-e check with CalculateKineCustomNestedLoops was NOT calculated for %d-p Test0 corr. %s, bin = %d", mo + 1, t0.fTest0Labels[mo][mi]->Data(), b + 1);
-            } else if (TMath::Abs(nestedLoopValue) > 0. && TMath::Abs(correlation / weight - nestedLoopValue) > 1.e-5) {
+            } else if (TMath::Abs(nestedLoopValue) > 0. && TMath::Abs(correlation / weight - nestedLoopValue) > tc.fFloatingPointPrecision) {
               LOGF(fatal, "\033[1;31m%s at line %d : correlator: %s \n correlation: %f \n custom loop: %f \033[0m", __FUNCTION__, __LINE__, t0.fTest0Labels[mo][mi]->Data(), correlation / weight, nestedLoopValue);
             } else {
               LOGF(info, "  e-b-e check with CalculateKineCustomNestedLoops is OK for %d-p Test0 corr. %s, bin = %d", mo + 1, t0.fTest0Labels[mo][mi]->Data(), b + 1);
@@ -6359,7 +6389,7 @@ void ComparisonNestedLoopsVsCorrelations()
           if (TMath::Abs(valueQV) > 0. && TMath::Abs(valueNL) > 0.) {
             LOGF(info, "   bin=%d, h=%d, Q-vectors:    %f", b, h + 1, valueQV);
             LOGF(info, "   bin=%d, h=%d, Nested loops: %f", b, h + 1, valueNL);
-            if (TMath::Abs(valueQV - valueNL) > 1.e-5) {
+            if (TMath::Abs(valueQV - valueNL) > tc.fFloatingPointPrecision) {
               LOGF(info, "\n\033[1;33m[%d][%d][%d] \033[0m\n", o, h, v);
               LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
             }
@@ -6955,11 +6985,11 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* runNumber, const
     }
 
     // Compare with min and max value store in external weights.root file using MakeWeights.C:
-    if (!(TMath::Abs(TString(oa->At(nEntries - 1)->GetName()).Atof() - max) < 1.e-6)) {
+    if (!(TMath::Abs(TString(oa->At(nEntries - 1)->GetName()).Atof() - max) < tc.fFloatingPointPrecision)) {
       LOGF(info, "\033[1;33m hist->GetTitle() = %s, res.fResultsPro[AFO]->GetName() = %s\033[0m", hist->GetTitle(), res.fResultsPro[AFO]->GetName());
       LOGF(fatal, "in function \033[1;31m%s at line %d : mismatch in upper bin boundaries \n from title = %f , local = %f\033[0m", __FUNCTION__, __LINE__, TString(oa->At(nEntries - 1)->GetName()).Atof(), max);
     }
-    if (!(TMath::Abs(TString(oa->At(nEntries - 5)->GetName()).Atof() - min) < 1.e-6)) {
+    if (!(TMath::Abs(TString(oa->At(nEntries - 5)->GetName()).Atof() - min) < tc.fFloatingPointPrecision)) {
       LOGF(info, "\033[1;33m hist->GetTitle() = %s, res.fResultsPro[AFO]->GetName() = %s\033[0m", hist->GetTitle(), res.fResultsPro[AFO]->GetName());
       LOGF(fatal, "in function \033[1;31m%s at line %d : mismatch in lower bin boundaries \n from title = %f , local = %f\033[0m", __FUNCTION__, __LINE__, TString(oa->At(nEntries - 5)->GetName()).Atof(), min);
     }
@@ -7704,6 +7734,7 @@ Bool_t MaxNumberOfEvents(eBeforeAfter ba)
 void PrintEventCounter(eBeforeAfter ba)
 {
   // Print how many events were processed by now.
+  // If I am processing RecSim, the counter is corresponding to Rec.
 
   if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
@@ -7758,10 +7789,10 @@ void EventCounter(eEventCounter eVar)
       break;
     case ePrint:
       // Print current status of event counter:
-      // Remark: if I am processign RecSim, the counter is corresponding to Rec.
+      // Remark: if I am processing RecSim, the counter is corresponding to Rec.
       if (eh.fEventHistograms[eNumberOfEvents][eRec][eAfter]) {
         LOGF(info, "Processing event %d (dry run) ....", static_cast<int>(eh.fEventHistograms[eNumberOfEvents][eRec][eAfter]->GetBinContent(1)));
-      } else if (eh.fEventHistograms[eNumberOfEvents][eRec][eBefore] && eh.fEventHistograms[eNumberOfEvents][eRec][eAfter]) {
+      } else if (eh.fEventHistograms[eNumberOfEvents][eSim][eAfter]) {
         LOGF(info, "Processing event %d (dry run) ....", static_cast<int>(eh.fEventHistograms[eNumberOfEvents][eSim][eAfter]->GetBinContent(1)));
       }
       break;
@@ -8086,8 +8117,7 @@ Double_t CalculateKineCustomNestedLoops(TArrayI* harmonics, eAsFunctionOf AFO_va
   // a) Determine the order of correlator;
   Int_t order = harmonics->GetSize();
   if (0 == order || order > gMaxCorrelator) {
-    cout << __LINE__ << endl;
-    exit(1);
+    LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
   }
 
   if (order > nParticles) {
@@ -8357,7 +8387,7 @@ void DetermineCentrality(T const& collision)
 
   // g) Test case:
   if constexpr (rs == eTest) {
-    ebye.fCentrality = gRandom->Uniform(0., 100.);
+    ebye.fCentrality = static_cast<float>(gRandom->Uniform(0., 100.));
   }
 
   // *) Print centrality for the audience...:
@@ -8436,7 +8466,7 @@ void BanishmentLoopOverParticles(T const& tracks)
     if (!tc.fUseFisherYates) {
       track = tracks.iteratorAt(i);
     } else {
-      track = tracks.iteratorAt((int64_t)tc.fRandomIndices->GetAt(i));
+      track = tracks.iteratorAt(static_cast<int64_t>(tc.fRandomIndices->GetAt(i)));
     }
 
     // *) Skip track objects which are not valid tracks (e.g. Run 2 and 1 tracklets, etc.):
@@ -8831,7 +8861,7 @@ void Steer(T1 const& collision, T2 const& tracks)
     tc.fTimer[eGlobal]->Continue(); // yes
   }
 
-  // *) Do all thingies before starting to process data from this collision (e.g. cut on number of events (bot total and selected), fetch the run number, etc.):
+  // *) Do all thingies before starting to process data from this collision (e.g. cut on number of events (both total and selected), fetch the run number, etc.):
   Preprocess(collision);
 
   // *) Determine collision centrality:
@@ -8965,7 +8995,7 @@ void MainLoopOverParticles(T const& tracks)
     if (!tc.fUseFisherYates) {
       track = tracks.iteratorAt(i);
     } else {
-      track = tracks.iteratorAt((int64_t)tc.fRandomIndices->GetAt(i));
+      track = tracks.iteratorAt(static_cast<int64_t>(tc.fRandomIndices->GetAt(i)));
     }
 
     // *) Skip track objects which are not valid tracks (e.g. Run 2 and 1 tracklets, etc.):
