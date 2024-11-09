@@ -8,6 +8,7 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+#include <vector>
 
 #include "Framework/ConfigParamSpec.h"
 #include "Framework/runDataProcessing.h"
@@ -21,8 +22,6 @@
 // #include "DataFormatsParameters/GRPLHCIFData.h"
 #include "ITSMFTBase/DPLAlpideParam.h"
 #include "DataFormatsParameters/AggregatedRunInfo.h"
-
-#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
