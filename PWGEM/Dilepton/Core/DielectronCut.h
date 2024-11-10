@@ -126,8 +126,16 @@ class DielectronCut : public TNamed
       return false;
     }
 
-    if (mApplyPhiV && ((phiv < mMinPhivPair || (mMaxPhivPairMeeDep ? mMaxPhivPairMeeDep(v12.M()) : mMaxPhivPair) < phiv) ^ mSelectPC)) {
-      return false;
+    if (mApplyPhiV) {
+      if (mMaxPhivPairMeeDep) {
+        if ((phiv < mMinPhivPair || mMaxPhivPairMeeDep(v12.M()) < phiv) ^ mSelectPC) {
+          return false;
+        }
+      } else {
+        if ((!(mMinPhivPair < phiv && phiv < mMaxPhivPair) && !(mMinMeeForPhivPair < v12.M() && v12.M() < mMaxMeeForPhivPair)) ^ mSelectPC) {
+          return false;
+        }
+      }
     }
 
     if (dca_ee_3d < mMinPairDCA3D || mMaxPairDCA3D < dca_ee_3d) { // in sigma for pair
@@ -383,7 +391,7 @@ class DielectronCut : public TNamed
   void SetMeeRange(float min = 0.f, float max = 0.5);
   void SetPairOpAng(float minOpAng = 0.f, float maxOpAng = 1e10f);
   void SetMaxPhivPairMeeDep(std::function<float(float)> meeDepCut);
-  void SetPhivPairRange(float min, float max);
+  void SetPhivPairRange(float min_phiv, float max_phiv, float min_mee, float max_mee);
   void SelectPhotonConversion(bool flag);
   void SetMindEtadPhi(bool flag, float min_deta, float min_dphi);
   void SetRequireDifferentSides(bool flag);
@@ -445,6 +453,7 @@ class DielectronCut : public TNamed
   float mMinPairY{-1e10f}, mMaxPairY{1e10f};      // range in rapidity
   float mMinPairDCA3D{0.f}, mMaxPairDCA3D{1e10f}; // range in 3D DCA in sigma
   float mMinPhivPair{0.f}, mMaxPhivPair{+3.2};
+  float mMinMeeForPhivPair{0.f}, mMaxMeeForPhivPair{1e10f};
   std::function<float(float)> mMaxPhivPairMeeDep{}; // max phiv as a function of mee
   bool mSelectPC{false};                            // flag to select photon conversion used in mMaxPhivPairMeeDep
   bool mApplydEtadPhi{false};                       // flag to apply deta, dphi cut between 2 tracks
