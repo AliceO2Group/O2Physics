@@ -887,7 +887,7 @@ struct decay3bodyBuilder {
       LOG(debug) << "KFParticle created from deuteron track.";
       // Construct 3body vertex
       int nDaughters3body = 3;
-      const KFParticle* Daughters3body[nDaughters3body] = {&kfpProton, &kfpPion, &kfpDeuteron};
+      const KFParticle* Daughters3body[3] = {&kfpProton, &kfpPion, &kfpDeuteron};
       KFParticle KFHt;
       KFHt.SetConstructMethod(2);
       try {
