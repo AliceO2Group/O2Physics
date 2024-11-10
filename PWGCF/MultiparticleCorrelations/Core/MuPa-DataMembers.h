@@ -42,7 +42,8 @@ struct TaskConfiguration {
   TString fRunNumber = "";                         // over which run number this task is executed
   Bool_t fRunNumberIsDetermined = kFALSE;          // ensures that run number is determined in process() and propagated to already booked objects only once
   Bool_t fDryRun = kFALSE;                         // book all histos and run without storing and calculating anything
-  Bool_t fVerbose = kFALSE;                        // print additional info during debugging, but not for function calls per particle (see next)
+  Bool_t fVerbose = kFALSE;                        // print additional info during debugging, but not for simply utility function or function calls per particle (see next)
+  Bool_t fVerboseUtility = kFALSE;                 // print additional info during debugging also for simply utility function, but not for function calls per particle (see next)
   Bool_t fVerboseForEachParticle = kFALSE;         // print additional info during debugging, also for function calls per particle
   Bool_t fDoAdditionalInsanityChecks = kFALSE;     // do additional insanity checks at run time, at the expense of losing a bit of performance
                                                    // (for instance, check if the run number in the current 'collision' is the same as run number in the first 'collision', etc.)
@@ -67,6 +68,7 @@ struct TaskConfiguration {
 struct EventByEventQuantities {
   Int_t fSelectedTracks = 0; // integer counter of tracks used to calculate Q-vectors, after all particle cuts have been applied
   Float_t fCentrality = 0.;  // event-by-event centrality. Value of the default centrality estimator, set via configurable cfCentralityEstimator
+  Float_t fOccupancy = 0.;   // event-by-event occupancy. Value of the default occupancy estimator, set via configurable cfOccupancyEstimator
 } ebye;                      // "ebye" is a common label for objects in this struct
 
 // *) QA:
@@ -90,6 +92,8 @@ struct QualityAssurance {
   // Int_t fQAParticleHistograms2DRebin[eQAParticleHistograms2D_N][2] = {{1}};       // to reduce memory consumption, use this number to merge bins together (i.e. "rebinning") [type - see enum][x,y]
   Float_t fCentrality[eCentralityEstimators_N] = {0.};              // used mostly in QA correlation plots
   TString fCentralityEstimatorName[eCentralityEstimators_N] = {""}; //
+  Float_t fOccupancy[eOccupancyEstimators_N] = {0.};                // used mostly in QA correlation plots
+  TString fOccupancyEstimatorName[eOccupancyEstimators_N] = {""};   //
 } qa;                                                               // "qa" is a common label for objects in this struct
 
 // *) Event histograms:
@@ -258,12 +262,12 @@ struct Results {                                   // This is in addition also s
   TProfile* fResultsPro[eAsFunctionOf_N] = {NULL}; //!<! example histogram to store some results + "abstract" interface, which defines common binning, etc., for other groups of histograms.
 
   // Remark: These settings apply to following categories fCorrelationsPro, fNestedLoopsPro, fTest0Pro, and fResultsHist
-  Float_t fResultsProFixedLengthBins[eAsFunctionOf_N][3] = {{0.}};                                                // [nBins,min,max]
-  TArrayF* fResultsProVariableLengthBins[eAsFunctionOf_N] = {NULL};                                               // here for each variable in eAsFunctionOf I specify array holding bin boundaries
-  Bool_t fUseResultsProVariableLengthBins[eAsFunctionOf_N] = {kFALSE};                                            // use or not variable-length bins
-  TString fResultsProVariableLengthBinsString[eAsFunctionOf_N] = {""};                                            // TBI 20240113 temporary I do it this way
-  TString fResultsProXaxisTitle[eAsFunctionOf_N] = {"integrated", "multiplicity", "centrality", "p_{T}", "#eta"}; // keep ordering in sync with enum eAsFunctionOf
-  TString fResultsProRawName[eAsFunctionOf_N] = {"int", "mult", "cent", "pt", "eta"};                             // this is how it appears simplified in the hist name when saved to the file
-} res;                                                                                                            // "res" labels an instance of this group of histograms
+  Float_t fResultsProFixedLengthBins[eAsFunctionOf_N][3] = {{0.}};                                                             // [nBins,min,max]
+  TArrayF* fResultsProVariableLengthBins[eAsFunctionOf_N] = {NULL};                                                            // here for each variable in eAsFunctionOf I specify array holding bin boundaries
+  Bool_t fUseResultsProVariableLengthBins[eAsFunctionOf_N] = {kFALSE};                                                         // use or not variable-length bins
+  TString fResultsProVariableLengthBinsString[eAsFunctionOf_N] = {""};                                                         // TBI 20241110 this one is obsolete, can be removed
+  TString fResultsProXaxisTitle[eAsFunctionOf_N] = {"integrated", "multiplicity", "centrality", "p_{T}", "#eta", "occupancy"}; // keep ordering in sync with enum eAsFunctionOf
+  TString fResultsProRawName[eAsFunctionOf_N] = {"int", "mult", "cent", "pt", "eta", "occu"};                                  // this is how it appears simplified in the hist name when saved to the file
+} res;                                                                                                                         // "res" labels an instance of this group of histograms
 
 #endif // PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_DATAMEMBERS_H_
