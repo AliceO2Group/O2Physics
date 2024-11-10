@@ -87,6 +87,9 @@ struct UpcCandProducer {
   Configurable<int> fSearchITSTPC{"searchITSTPC", 0, "Search for ITS-TPC tracks near candidates"};
   Configurable<int> fSearchRangeITSTPC{"searchRangeITSTPC", 50, "BC range for ITS-TPC tracks search wrt TOF tracks"};
 
+  Configurable<float> fMinEtaMFT{"minEtaMFT", -3.6, "Minimum eta for MFT tracks"};
+  Configurable<float> fMaxEtaMFT{"maxEtaMFT", -2.5, "Maximum eta for MFT tracks"};
+
   // QA histograms
   HistogramRegistry histRegistry{"HistRegistry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -1510,6 +1513,7 @@ struct UpcCandProducer {
     auto nFT0s = mapGlobalBcWithT0A.size();
     auto nFV0As = mapGlobalBcWithV0A.size();
     auto nZdcs = mapGlobalBcWithZdc.size();
+    auto nBcsWithMID = bcsMatchedTrIdsMID.size();
 
     // todo: calculate position of UD collision?
     float dummyX = 0.;
@@ -1521,8 +1525,8 @@ struct UpcCandProducer {
     std::vector<int> selTrackIdsGlobal{};
 
     // storing n-prong matches
-    int32_t candID = 0;
-
+    int32_t candID = 0; 
+    auto midIt = bcsMatchedTrIdsMID.begin();
     for (auto& pair : bcsMatchedTrIdsGlobal) { // candidates with MFT
       auto globalBC = static_cast<int64_t>(pair.first);
       const auto& fwdTrackIDs = pair.second;
@@ -1530,9 +1534,19 @@ struct UpcCandProducer {
       if (nMFTs > fNFwdProngs) // too many tracks
         continue;
       std::vector<int64_t> trkCandIDs{};
-
+      auto midBC  = static_cast<int64_t>(midIt->first);
+      const auto& midTrackIDs = midIt->second;
       if (nMFTs == fNFwdProngs) {
-        trkCandIDs.insert(trkCandIDs.end(), fwdTrackIDs.begin(), fwdTrackIDs.end());
+        for(auto iMft : fwdTrackIDs) {
+          auto trk = fwdTracks.iteratorAt(iMft);
+          auto trkEta = trk.eta();
+          if (trkEta > fMinEtaMFT && trkEta < fMaxEtaMFT) { // If the track is in the MFT acceptance, store the global track
+            trkCandIDs.insert(trkCandIDs.end(), fwdTrackIDs.begin(), fwdTrackIDs.end());
+          }
+          else { // If the track is not in the MFT acceptance, store the MCH-MID track
+            trkCandIDs.insert(trkCandIDs.end(), midTrackIDs.begin(), midTrackIDs.end());
+          }
+        }
       }
       uint64_t closestBcMCH = 0;
       upchelpers::FITInfo fitInfo{};
@@ -1614,6 +1628,7 @@ struct UpcCandProducer {
                              amplitudesV0A,
                              relBCsV0A);
       candID++;
+      midIt++;
       trkCandIDs.clear();
     }
 
