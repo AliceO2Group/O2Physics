@@ -104,7 +104,7 @@ struct threebodyKFTask {
     registry.add<TH1>("hTrueAntiHypertritonMCPtPion_nonReco", "Pion #it{p}_{T} gen. of non-reco. Anti- H3L", HistType::kTH1F, {{100, 0.0f, 6.0f, "#it{p}_{T}(#pi) (GeV/#it{c})"}});
   }
 
-  template<typename TCand>
+  template <typename TCand>
   void fillQAPlots(TCand const& vtx3body)
   {
     // Mass plot
