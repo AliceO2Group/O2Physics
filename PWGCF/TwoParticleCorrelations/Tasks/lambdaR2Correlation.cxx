@@ -14,6 +14,7 @@
 /// \author Yash Patley <yash.patley@cern.ch>
 
 #include <vector>
+#include <string>
 
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Centrality.h"
@@ -1076,7 +1077,7 @@ struct lambdaCorrelationAnalysis {
       str = "h3f_antilambda_corr_fact";
     }
 
-    TH3F* hist = (TH3F*)ccdb_obj->FindObject(Form("%s", str.c_str()));
+    TH3F* hist = reinterpret_cast<TH3F*>(ccdb_obj->FindObject(Form("%s", str.c_str())));
 
     int pt_bin = hist->GetXaxis()->FindBin(track.pt());
     int eta_bin = hist->GetYaxis()->FindBin(track.eta());
