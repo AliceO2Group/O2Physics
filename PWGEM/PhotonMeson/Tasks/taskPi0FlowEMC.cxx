@@ -497,6 +497,9 @@ struct EMfTaskPi0Flow {
         // only combine rotated photons with other photons
         continue;
       }
+      if (!(fEMCCut.IsSelected<EMCalPhotons::iterator>(photon))) {
+        continue;
+      }
 
       ROOT::Math::PtEtaPhiMVector photon3(photon.pt(), photon.eta(), photon.phi(), 0.);
       ROOT::Math::PtEtaPhiMVector mother1 = photon1 + photon3;
