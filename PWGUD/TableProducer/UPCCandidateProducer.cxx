@@ -12,6 +12,13 @@
 /// \author Diana Krupova, diana.krupova@cern.ch
 /// \since 04.06.2024
 
+#include <limits>
+#include <unordered_set>
+#include <utility>
+#include <unordered_map>
+#include <algorithm>
+#include <map>
+#include <vector>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
