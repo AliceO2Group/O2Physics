@@ -237,6 +237,8 @@ struct EMfTaskPi0Flow {
     const AxisSpec thAxisPhi{72, 0, 2 * 3.14159, "phi"};
     const AxisSpec thAxisNCell{17664, 0.5, +17664.5, "#it{N}_{cell}"};
 
+    const AxisSpec thAxisPsi{360 / harmonic, 0.f, 2. / harmonic * M_PI, Form("#Psi_{%d}", harmonic)};
+
     registry.add("hSparsePi0Flow", "THn for SP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCent, thnAxisScalarProd});
     registry.add("hSparseBkgFlow", "THn for SP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCent, thnAxisScalarProd});
     auto hClusterCuts = registry.add<TH1>("hClusterCuts", "hClusterCuts;;Counts", kTH1D, {{6, 0.5, 6.5}}, false);
@@ -262,6 +264,9 @@ struct EMfTaskPi0Flow {
     }
 
     if (saveEpResoHisto) {
+      registry.add("hEventPlaneAngleFT0M", "hEventPlaneAngleFT0M", HistType::kTH2D, {thnAxisCent, thAxisPsi});
+      registry.add("hEventPlaneAngleTPCpos", "hEventPlaneAngleTPCpos", HistType::kTH2D, {thnAxisCent, thAxisPsi});
+      registry.add("hEventPlaneAngleTPCneg", "hEventPlaneAngleTPCneg", HistType::kTH2D, {thnAxisCent, thAxisPsi});
       registry.add("epReso/hEpResoFT0cFT0a", "hEpResoFT0cFT0a; centrality; #Delta#Psi_{sub}", {HistType::kTProfile, {thnAxisCent}});
       registry.add("epReso/hEpResoFT0cTPCpos", "hEpResoFT0cTPCpos; centrality; #Delta#Psi_{sub}", {HistType::kTProfile, {thnAxisCent}});
       registry.add("epReso/hEpResoFT0cTPCneg", "hEpResoFT0cTPCneg; centrality; #Delta#Psi_{sub}", {HistType::kTProfile, {thnAxisCent}});
@@ -816,6 +821,10 @@ struct EMfTaskPi0Flow {
       float epBPoss = epHelper.GetEventPlane(xQVecBPos, yQVecBPos, harmonic);
       float epBNegs = epHelper.GetEventPlane(xQVecBNeg, yQVecBNeg, harmonic);
       float epBTots = epHelper.GetEventPlane(xQVecBTot, yQVecBTot, harmonic);
+
+      registry.fill(HIST("hEventPlaneAngleFT0M"), centrality, epFT0m);
+      registry.fill(HIST("hEventPlaneAngleTPCpos"), centrality, epBPoss);
+      registry.fill(HIST("hEventPlaneAngleTPCneg"), centrality, epBNegs);
 
       registry.fill(HIST("epReso/hEpResoFT0cFT0a"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0c, epFT0a)));
       registry.fill(HIST("epReso/hEpResoFT0cTPCpos"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0c, epBPoss)));
