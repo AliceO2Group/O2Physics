@@ -16,6 +16,7 @@
 #include <cmath>
 #include <array>
 #include <cstdlib>
+#include <vector>
 #include <TLorentzVector.h>
 
 #include "Framework/runDataProcessing.h"

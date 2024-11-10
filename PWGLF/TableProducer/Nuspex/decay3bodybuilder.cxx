@@ -16,6 +16,8 @@
 #include <cmath>
 #include <array>
 #include <cstdlib>
+#include <string>
+#include <vector>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
