@@ -32,6 +32,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 using MyMCCollisions = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::EMCALMatchedCollisions>;
+using MyBCs = o2::soa::Join<o2::aod::BCs, o2::aod::BcSels>;
 
 struct MCGeneratorStudies {
   HistogramRegistry mHistManager{"MCGeneratorStudyHistograms"};
@@ -55,6 +56,11 @@ struct MCGeneratorStudies {
     hCollisionCounter->GetXaxis()->SetBinLabel(6, "+unique");      // TVX with z < 10cm and Sel8 and good z xertex and unique (only collision in the BC)
     hCollisionCounter->GetXaxis()->SetBinLabel(7, "+EMC readout"); // TVX with z < 10cm and Sel8 and good z xertex and unique (only collision in the BC) and kTVXinEMC
 
+    auto hBCCounter = mHistManager.add<TH1>("hBCCounter", "Number of BCs after BC cuts", HistType::kTH1F, {{3, 0.5, 3.5}});
+    hBCCounter->GetXaxis()->SetBinLabel(1, "all");
+    hBCCounter->GetXaxis()->SetBinLabel(2, "+TVX");
+    hBCCounter->GetXaxis()->SetBinLabel(3, "+Collision");
+
     TString mesonLatexString = (TString)mSelectedParticleCode;
     switch (mSelectedParticleCode) {
       case 0:
@@ -77,6 +83,11 @@ struct MCGeneratorStudies {
     mHistManager.add("Yield_TZSGUE", Form("Generated %s in unique TVXinEMC collisions with good z < 10cm and Sel8", mesonLatexString.Data()), HistType::kTH1F, {pTAxis});
     mHistManager.add("Yield_TZSGUE_Accepted", Form("Accepted %s in unique TVXinEMC collisions with good z < 10cm and Sel8", mesonLatexString.Data()), HistType::kTH1F, {pTAxis});
 
+    mHistManager.add("Yield_BC_T", Form("Generated %s in TVX triggered BCs", mesonLatexString.Data()), HistType::kTH1F, {pTAxis});
+    mHistManager.add("Yield_BC_TC", Form("Generated %s in TVX triggered BCs that have at least one collision", mesonLatexString.Data()), HistType::kTH1F, {pTAxis});
+    mHistManager.add("NCollisionsMCCollisions", "Number of (MC)Collisions in the BC;#it{N}_(Collisions);#it{N}_(MC Collisions)", kTH2F, {{4, -0.5, 3.5}, {4, -0.5, 3.5}});
+    mHistManager.add("NTVXCollisionsMCCollisions", "Number of (MC)Collisions in the TVX triggered BC;#it{N}_(Collisions);#it{N}_(MC Collisions)", kTH2F, {{4, -0.5, 3.5}, {4, -0.5, 3.5}});
+
     auto hEMCollisionCounter = mHistManager.add<TH1>("hEMCollisionCounter", "collision counter;;Number of events", kTH1F, {{13, 0.5, 13.5}}, false);
     hEMCollisionCounter->GetXaxis()->SetBinLabel(1, "all");
     hEMCollisionCounter->GetXaxis()->SetBinLabel(2, "No TF border");
@@ -97,40 +108,79 @@ struct MCGeneratorStudies {
 
   PresliceUnsorted<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
 
-  void process(MyMCCollisions::iterator const& collision, aod::McCollisions const&, aod::McParticles const& mcParticles)
+  void process(MyBCs::iterator const& bc, MyMCCollisions const& collisions, aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
   {
-    fillEventHistogram(&mHistManager, collision);
 
-    auto mcCollision = collision.mcCollision();
-    auto mcParticles_inColl = mcParticles.sliceBy(perMcCollision, mcCollision.globalIndex());
+    mHistManager.fill(HIST("NCollisionsMCCollisions"), collisions.size(), mcCollisions.size());
+    mHistManager.fill(HIST("hBCCounter"), 1);
 
-    for (auto& mcParticle : mcParticles_inColl) {
-      if (mcParticle.pdgCode() != 0 && mcParticle.pdgCode() != mSelectedParticleCode)
-        continue;
-      if (fabs(mcParticle.y()) > mRapidityCut)
-        continue;
-      if (!mcParticle.isPhysicalPrimary() && !mcParticle.producedByGenerator())
-        continue;
-      if (mRequireGammaGammaDecay && !isGammaGammaDecay(mcParticle, mcParticles))
-        continue;
+    if (bc.selection_bit(aod::evsel::kIsTriggerTVX)) { // Count BCs with TVX trigger with and without a collision, as well as the generated particles within
 
-      mHistManager.fill(HIST("Yield"), mcParticle.pt());
-      if (isAccepted(mcParticle, mcParticles))
-        mHistManager.fill(HIST("Yield_Accepted"), mcParticle.pt());
-      if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
-        mHistManager.fill(HIST("Yield_T"), mcParticle.pt());
-        if (abs(collision.posZ()) < mVertexCut) {
-          mHistManager.fill(HIST("Yield_TZ"), mcParticle.pt());
-          if (collision.sel8()) {
-            mHistManager.fill(HIST("Yield_TZS"), mcParticle.pt());
-            if (collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
-              mHistManager.fill(HIST("Yield_TZSG"), mcParticle.pt());
-              if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
-                mHistManager.fill(HIST("Yield_TZSGU"), mcParticle.pt());
-                if (mRequireEMCCellContent ? collision.isemcreadout() : collision.alias_bit(kTVXinEMC)) {
-                  mHistManager.fill(HIST("Yield_TZSGUE"), mcParticle.pt());
-                  if (isAccepted(mcParticle, mcParticles))
-                    mHistManager.fill(HIST("Yield_TZSGUE_Accepted"), mcParticle.pt());
+      mHistManager.fill(HIST("NTVXCollisionsMCCollisions"), collisions.size(), mcCollisions.size());
+
+      mHistManager.fill(HIST("hBCCounter"), 2);
+
+      bool bcHasCollision = collisions.size() > 0;
+
+      if (bcHasCollision)
+        mHistManager.fill(HIST("hBCCounter"), 3);
+
+      for (auto& mcCollision : mcCollisions) {
+
+        auto mcParticles_inColl = mcParticles.sliceBy(perMcCollision, mcCollision.globalIndex());
+
+        for (auto& mcParticle : mcParticles_inColl) {
+          if (mcParticle.pdgCode() != 0 && mcParticle.pdgCode() != mSelectedParticleCode)
+            continue;
+          if (fabs(mcParticle.y()) > mRapidityCut)
+            continue;
+          if (!mcParticle.isPhysicalPrimary() && !mcParticle.producedByGenerator())
+            continue;
+          if (mRequireGammaGammaDecay && !isGammaGammaDecay(mcParticle, mcParticles))
+            continue;
+
+          mHistManager.fill(HIST("Yield_BC_T"), mcParticle.pt());
+
+          if (bcHasCollision)
+            mHistManager.fill(HIST("Yield_BC_TC"), mcParticle.pt());
+        }
+      }
+    }
+
+    for (auto& collision : collisions) {
+      fillEventHistogram(&mHistManager, collision);
+
+      auto mcCollision = collision.mcCollision();
+      auto mcParticles_inColl = mcParticles.sliceBy(perMcCollision, mcCollision.globalIndex());
+
+      for (auto& mcParticle : mcParticles_inColl) {
+        if (mcParticle.pdgCode() != 0 && mcParticle.pdgCode() != mSelectedParticleCode)
+          continue;
+        if (fabs(mcParticle.y()) > mRapidityCut)
+          continue;
+        if (!mcParticle.isPhysicalPrimary() && !mcParticle.producedByGenerator())
+          continue;
+        if (mRequireGammaGammaDecay && !isGammaGammaDecay(mcParticle, mcParticles))
+          continue;
+
+        mHistManager.fill(HIST("Yield"), mcParticle.pt());
+        if (isAccepted(mcParticle, mcParticles))
+          mHistManager.fill(HIST("Yield_Accepted"), mcParticle.pt());
+        if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+          mHistManager.fill(HIST("Yield_T"), mcParticle.pt());
+          if (abs(collision.posZ()) < mVertexCut) {
+            mHistManager.fill(HIST("Yield_TZ"), mcParticle.pt());
+            if (collision.sel8()) {
+              mHistManager.fill(HIST("Yield_TZS"), mcParticle.pt());
+              if (collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+                mHistManager.fill(HIST("Yield_TZSG"), mcParticle.pt());
+                if (collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+                  mHistManager.fill(HIST("Yield_TZSGU"), mcParticle.pt());
+                  if (mRequireEMCCellContent ? collision.isemcreadout() : collision.alias_bit(kTVXinEMC)) {
+                    mHistManager.fill(HIST("Yield_TZSGUE"), mcParticle.pt());
+                    if (isAccepted(mcParticle, mcParticles))
+                      mHistManager.fill(HIST("Yield_TZSGUE_Accepted"), mcParticle.pt());
+                  }
                 }
               }
             }
