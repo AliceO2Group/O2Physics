@@ -94,32 +94,33 @@ struct cascademcbuilder {
   mcCascinfo thisInfo;
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 
-  // kink handling 
-  template <typename mcpart> 
-  int getOriginatingParticle(mcpart const& part, int& indexForPositionOfDecay){
-    int returnValue = -1; 
+  // kink handling
+  template <typename mcpart>
+  int getOriginatingParticle(mcpart const& part, int& indexForPositionOfDecay)
+  {
+    int returnValue = -1;
     if (part.has_mothers()) {
       auto const& motherList = part.template mothers_as<aod::McParticles>();
-      if (motherList.size()==1){
+      if (motherList.size() == 1) {
         for (const auto& mother : motherList) {
-          if(std::abs(mother.pdgCode()) == 13 && treatPiToMuDecays){
+          if (std::abs(mother.pdgCode()) == 13 && treatPiToMuDecays) {
             // muon decay, de-ref mother twice
             if (mother.has_mothers()) {
               auto grandMotherList = mother.template mothers_as<aod::McParticles>();
-              if (grandMotherList.size()==1){
+              if (grandMotherList.size() == 1) {
                 for (const auto& grandMother : grandMotherList) {
                   returnValue = grandMother.globalIndex();
-                  indexForPositionOfDecay = mother.globalIndex(); //for V0 decay position: grab muon
+                  indexForPositionOfDecay = mother.globalIndex(); // for V0 decay position: grab muon
                 }
               }
             }
-          }else{
+          } else {
             returnValue = mother.globalIndex();
-            indexForPositionOfDecay = part.globalIndex(); 
+            indexForPositionOfDecay = part.globalIndex();
           }
         }
       }
-    } 
+    }
     return returnValue;
   }
 
@@ -179,8 +180,8 @@ struct cascademcbuilder {
         thisInfo.processBachelor = lMCBachTrack.getProcess();
 
         // Step 0: treat pi -> mu + antineutrino
-        // if present, de-reference original V0 correctly and provide label to original object 
-        // NOTA BENE: the prong info will still correspond to a muon, treat carefully! 
+        // if present, de-reference original V0 correctly and provide label to original object
+        // NOTA BENE: the prong info will still correspond to a muon, treat carefully!
         int negOriginating = -1, posOriginating = -1, bachOriginating = -1;
         int particleForLambdaDecayPositionIdx = -1, particleForCascadeDecayPositionIdx = -1;
         negOriginating = getOriginatingParticle(lMCNegTrack, particleForLambdaDecayPositionIdx);
@@ -190,13 +191,13 @@ struct cascademcbuilder {
         if (negOriginating == posOriginating) {
           auto originatingV0 = mcParticles.rawIteratorAt(negOriginating);
           auto particleForLambdaDecayPosition = mcParticles.rawIteratorAt(particleForLambdaDecayPositionIdx);
-          
+
           thisInfo.label = originatingV0.globalIndex();
           thisInfo.lxyz[0] = particleForLambdaDecayPosition.vx();
           thisInfo.lxyz[1] = particleForLambdaDecayPosition.vy();
           thisInfo.lxyz[2] = particleForLambdaDecayPosition.vz();
 
-          if(originatingV0.has_mothers()){ 
+          if (originatingV0.has_mothers()) {
             for (auto& lV0Mother : originatingV0.template mothers_as<aod::McParticles>()) {
               if (lV0Mother.globalIndex() == bachOriginating) { // found mother particle
                 thisInfo.label = lV0Mother.globalIndex();
@@ -221,8 +222,8 @@ struct cascademcbuilder {
                 }
               }
             } // end v0 mother loop
-          }   // end has_mothers check for V0
-        }   // end conditional of pos/neg originating being the same
+          } // end has_mothers check for V0
+        } // end conditional of pos/neg originating being the same
       }     // end association check
       // Construct label table (note: this will be joinable with CascDatas)
       casclabels(

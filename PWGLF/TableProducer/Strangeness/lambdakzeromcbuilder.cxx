@@ -117,32 +117,33 @@ struct lambdakzeromcbuilder {
   mcV0info thisInfo;
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 
-  // kink handling 
-  template <typename mcpart> 
-  int getOriginatingParticle(mcpart const& part, int& indexForPositionOfDecay){
-    int returnValue = -1; 
+  // kink handling
+  template <typename mcpart>
+  int getOriginatingParticle(mcpart const& part, int& indexForPositionOfDecay)
+  {
+    int returnValue = -1;
     if (part.has_mothers()) {
       auto const& motherList = part.template mothers_as<aod::McParticles>();
-      if (motherList.size()==1){
+      if (motherList.size() == 1) {
         for (const auto& mother : motherList) {
-          if(std::abs(mother.pdgCode()) == 13 && treatPiToMuDecays){
+          if (std::abs(mother.pdgCode()) == 13 && treatPiToMuDecays) {
             // muon decay, de-ref mother twice
             if (mother.has_mothers()) {
               auto grandMotherList = mother.template mothers_as<aod::McParticles>();
-              if (grandMotherList.size()==1){
+              if (grandMotherList.size() == 1) {
                 for (const auto& grandMother : grandMotherList) {
                   returnValue = grandMother.globalIndex();
-                  indexForPositionOfDecay = mother.globalIndex(); //for V0 decay position: grab muon
+                  indexForPositionOfDecay = mother.globalIndex(); // for V0 decay position: grab muon
                 }
               }
             }
-          }else{
+          } else {
             returnValue = mother.globalIndex();
-            indexForPositionOfDecay = part.globalIndex(); 
+            indexForPositionOfDecay = part.globalIndex();
           }
         }
       }
-    } 
+    }
     return returnValue;
   }
 
@@ -186,9 +187,9 @@ struct lambdakzeromcbuilder {
         thisInfo.negP[1] = lMCNegTrack.py();
         thisInfo.negP[2] = lMCNegTrack.pz();
 
-        // check for pi -> mu + antineutrino decay 
-        // if present, de-reference original V0 correctly and provide label to original object 
-        // NOTA BENE: the prong info will still correspond to a muon, treat carefully! 
+        // check for pi -> mu + antineutrino decay
+        // if present, de-reference original V0 correctly and provide label to original object
+        // NOTA BENE: the prong info will still correspond to a muon, treat carefully!
         int negOriginating = -1, posOriginating = -1, particleForDecayPositionIdx = -1;
         negOriginating = getOriginatingParticle(lMCNegTrack, particleForDecayPositionIdx);
         posOriginating = getOriginatingParticle(lMCPosTrack, particleForDecayPositionIdx);
@@ -196,7 +197,7 @@ struct lambdakzeromcbuilder {
         if (negOriginating == posOriginating) {
           auto originatingV0 = mcParticles.rawIteratorAt(negOriginating);
           auto particleForDecayPosition = mcParticles.rawIteratorAt(particleForDecayPositionIdx);
-          
+
           thisInfo.label = originatingV0.globalIndex();
           thisInfo.xyz[0] = particleForDecayPosition.vx();
           thisInfo.xyz[1] = particleForDecayPosition.vy();
