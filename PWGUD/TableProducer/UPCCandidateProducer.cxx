@@ -1525,7 +1525,7 @@ struct UpcCandProducer {
     std::vector<int> selTrackIdsGlobal{};
 
     // storing n-prong matches
-    int32_t candID = 0; 
+    int32_t candID = 0;
     auto midIt = bcsMatchedTrIdsMID.begin();
     for (auto& pair : bcsMatchedTrIdsGlobal) { // candidates with MFT
       auto globalBC = static_cast<int64_t>(pair.first);
@@ -1534,16 +1534,15 @@ struct UpcCandProducer {
       if (nMFTs > fNFwdProngs) // too many tracks
         continue;
       std::vector<int64_t> trkCandIDs{};
-      auto midBC  = static_cast<int64_t>(midIt->first);
+      auto midBC = static_cast<int64_t>(midIt->first);
       const auto& midTrackIDs = midIt->second;
       if (nMFTs == fNFwdProngs) {
-        for(auto iMft : fwdTrackIDs) {
+        for (auto iMft : fwdTrackIDs) {
           auto trk = fwdTracks.iteratorAt(iMft);
           auto trkEta = trk.eta();
           if (trkEta > fMinEtaMFT && trkEta < fMaxEtaMFT) { // If the track is in the MFT acceptance, store the global track
             trkCandIDs.insert(trkCandIDs.end(), fwdTrackIDs.begin(), fwdTrackIDs.end());
-          }
-          else { // If the track is not in the MFT acceptance, store the MCH-MID track
+          } else { // If the track is not in the MFT acceptance, store the MCH-MID track
             trkCandIDs.insert(trkCandIDs.end(), midTrackIDs.begin(), midTrackIDs.end());
           }
         }
