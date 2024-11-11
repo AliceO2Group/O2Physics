@@ -602,7 +602,7 @@ struct kstar892analysis {
           }
 
           // MC histograms
-          if (trk1.motherPDG() < 0) {
+          if (trk1.motherPDG() > 0) {
             histos.fill(HIST("k892Rec"), lResonance.Pt(), multiplicity);
             histos.fill(HIST("ImpactParPlots/k892Rec"), lResonance.Pt(), impactpar);
             histos.fill(HIST("k892Recinvmass"), lResonance.M());
