@@ -82,7 +82,7 @@ struct RobustFluctuationObservables {
   // for vertex vs time:
   bool flagShowInfo = false;
   int lastRunNumber = -1;
-  int nBCsPerOrbit = 3564;
+  uint64_t nBCsPerOrbit = 3564;
 
   // bc position correlations
   int64_t prevOrbit = -1;
@@ -101,7 +101,7 @@ struct RobustFluctuationObservables {
   int64_t orbitSOR = -1;
   // int64_t bcSORbis = -1; // global bc of the start of the first orbit - try alternative
   int64_t nBCsPerTF = 1; // 128*3564; // duration of TF in bcs
-  int64_t TFid = -1;     // count time frames in a given run
+  uint64_t TFid = 0;     // count time frames in a given run
   bool flagWaitForNewTF = false;
   uint32_t nOrbitsPerTF = 0;
 
@@ -154,7 +154,7 @@ struct RobustFluctuationObservables {
   // hand-made ITS ROF cut
   Configurable<int> nITSROF{"nITSROF", 6, "nITSROF"};
   Configurable<int> nITSROF_BC_offset{"nITSROF_BC_offset", 65, "nITSROF_BC_offset"};
-  Configurable<int> nITSROF_BC_cutWidth{"nITSROF_BC_cutWidth", 40, "nITSROF_BC_cutWidth"};
+  Configurable<uint64_t> nITSROF_BC_cutWidth{"nITSROF_BC_cutWidth", 40, "nITSROF_BC_cutWidth"};
   // Configurable<int> nITSROF_middle_cut_forITSonlyVert{"nITSROF_middle_cut_forITSonlyVert", 198/2 /*ROF=198 in pp*/, "nITSROF_middle_cut_forITSonlyVert"};
   // Configurable<int> nNoITSonlyVertices{"nNoITSonlyVertices", false, "nITSROF_middle_cut_forITSonlyVert"};
 
@@ -163,7 +163,7 @@ struct RobustFluctuationObservables {
   Configurable<float> cutVzTrackT0diffUpper{"cutVzTrackT0diffUpper", 1., "cutVzTrackT0diffUpper, cm"};
 
   // splitting of the orbit into several BC ranges
-  Configurable<std::vector<int>> vSplitBCpointsOfTheOrbit{"SplitBCpointsOfTheOrbit", {1200, 2000, 3000}, "BC split points of the orbit"};
+  Configurable<std::vector<uint64_t>> vSplitBCpointsOfTheOrbit{"SplitBCpointsOfTheOrbit", {1200, 2000, 3000}, "BC split points of the orbit"};
 
   // orbit QA
   uint32_t orbitAtCollIndexZero = 0;

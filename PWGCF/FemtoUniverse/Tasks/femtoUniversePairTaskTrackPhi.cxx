@@ -765,7 +765,7 @@ struct femtoUniversePairTaskTrackPhi {
         registryMCtruth.fill(HIST("MCtruthKp"), part.pt(), part.eta());
         registryMCtruth.fill(HIST("MCtruthKpPt"), part.pt());
       }
-      if ((pdgCode == 333)) {
+      if (pdgCode == 333) {
         registryMCtruth.fill(HIST("MCtruthPhi"), part.pt(), part.eta());
         continue;
       }
