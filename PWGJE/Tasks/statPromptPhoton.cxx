@@ -405,7 +405,7 @@ struct statPromptPhoton {
   using jfilteredMCClusters = soa::Filtered<jMCClusters>;
 
   int nEventsRecMC_JE = 0;
-  void processMCRec_JE(jfilteredCollisions::iterator const& collision, jfilteredMCClusters const& mcclusters, jTrackCandidates const& tracks, soa::Join<aod::JTracks, aod::JTrackExtras, aod::JTrackPIs> const&  /*caltracks*/, aod::JMcParticles const&, TrackCandidates const&)
+  void processMCRec_JE(jfilteredCollisions::iterator const& collision, jfilteredMCClusters const& mcclusters, jTrackCandidates const& tracks, soa::Join<aod::JTracks, aod::JTrackExtras, aod::JTrackPIs> const& /*caltracks*/, aod::JMcParticles const&, TrackCandidates const&)
   {
 
     nEventsRecMC_JE++;
