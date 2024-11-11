@@ -1624,9 +1624,10 @@ inline bool HfFilterHelper::isSelectedKaon4Charm3Prong(const T& track)
 /// \param upLimitSB  is the dca of the pion daughter track
 /// \return true if the candidate passes the mass selection.
 template <typename T1>
-inline bool isCharmHadronMassInSbRegions(T1 const& massHypo1, T1 const& massHypo2, const float& lowLimitSB, const float& upLimitSB){
-  
-  if((massHypo1 < lowLimitSB || massHypo1 > upLimitSB) && (massHypo2 < lowLimitSB || massHypo2 > upLimitSB)){
+inline bool isCharmHadronMassInSbRegions(T1 const& massHypo1, T1 const& massHypo2, const float& lowLimitSB, const float& upLimitSB)
+{
+
+  if ((massHypo1 < lowLimitSB || massHypo1 > upLimitSB) && (massHypo2 < lowLimitSB || massHypo2 > upLimitSB)) {
     return false;
   }
 
