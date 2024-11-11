@@ -88,3 +88,7 @@ o2physics_add_dpl_workflow(threebody-kf-task
     SOURCES threebodyKFTask.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
+o2physics_add_dpl_workflow(pihe3analysis
+    SOURCES piHe3analysis.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
+    COMPONENT_NAME Analysis)
