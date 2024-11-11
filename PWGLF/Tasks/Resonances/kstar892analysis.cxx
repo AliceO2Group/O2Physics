@@ -18,6 +18,7 @@
 
 #include <TLorentzVector.h>
 #include "TF1.h"
+#include <vector>
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/PIDResponse.h"
