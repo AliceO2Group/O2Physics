@@ -360,7 +360,7 @@ struct kstarpbpb {
     return result;
   }
   template <typename T>
-  bool isFakeKaon(T const& track, int PID)
+  bool isFakeKaon(T const& track, int /*PID*/)
   {
     const auto pglobal = track.p();
     const auto ptpc = track.tpcInnerParam();

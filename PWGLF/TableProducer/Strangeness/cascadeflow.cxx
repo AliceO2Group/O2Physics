@@ -916,7 +916,6 @@ struct cascadeFlow {
       histosMCGen.fill(HIST("hNEventsMC"), 4.5);
 
     int biggestNContribs = -1;
-    int bestCollisionIndex = -1;
     float centrality = 100.5f;
     int nCollisions = 0;
     for (auto const& coll : collisions) {
@@ -925,7 +924,6 @@ struct cascadeFlow {
       }
       if (biggestNContribs < coll.multPVTotalContributors()) {
         biggestNContribs = coll.multPVTotalContributors();
-        bestCollisionIndex = coll.globalIndex();
         centrality = coll.centFT0C();
       }
       nCollisions++;

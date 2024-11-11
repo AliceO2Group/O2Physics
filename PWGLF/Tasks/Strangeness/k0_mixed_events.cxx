@@ -297,7 +297,7 @@ struct K0MixedEvents {
       }
 
       registry.fill(HIST("Trks"), 1);
-      const float& vtxZ = track.singleCollSel_as<FilteredCollisions>().posZ();
+      const float vtxZ = track.singleCollSel_as<FilteredCollisions>().posZ();
       registry.fill(HIST("VTX"), vtxZ);
       if (std::abs(vtxZ) > _vertexZ)
         continue;

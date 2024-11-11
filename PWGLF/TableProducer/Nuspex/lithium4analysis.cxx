@@ -82,8 +82,6 @@ namespace
 constexpr double betheBlochDefault[1][6]{{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32}};
 static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
 
-constexpr float he3Mass = o2::constants::physics::MassHelium3;
-constexpr float protonMass = o2::constants::physics::MassProton;
 constexpr int li4PDG = 1000030040;
 constexpr int prPDG = 2212;
 constexpr int hePDG = 1000020030;
@@ -390,7 +388,7 @@ struct lithium4analysis {
   {
     m_qaRegistry.fill(HIST("h2NsigmaProtonTPC_preselection"), candidate.tpcInnerParam(), candidate.tpcNSigmaPr());
     if (candidate.hasTOF() && candidate.pt() > setting_cutPtMinTOFPr) {
-      if (std::abs(candidate.tpcNSigmaPr() > setting_cutNsigmaTPC)) {
+      if (std::abs(candidate.tpcNSigmaPr()) > setting_cutNsigmaTPC) {
         return false;
       }
       m_qaRegistry.fill(HIST("h2NsigmaProtonTOF_preselection"), candidate.p(), candidate.tofNSigmaPr());

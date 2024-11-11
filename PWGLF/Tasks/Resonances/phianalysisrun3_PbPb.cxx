@@ -324,7 +324,7 @@ struct phianalysisrun3_PbPb {
     {
       return;
     }
-    float multiplicity;
+    float multiplicity{-1};
     if (cfgMultFT0)
       multiplicity = collision.centFT0C();
     histos.fill(HIST("hCentrality"), multiplicity);
