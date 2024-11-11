@@ -277,8 +277,7 @@ struct PhotonIsolationQA {
       registry.fill(HIST("hEnergy_NCells"), cluster.energy(), cluster.nCells(), weight);
       registry.fill(HIST("hEnergy_m02_m20"), cluster.energy(), cluster.m02(), cluster.m20(), weight);
       registry.fill(HIST("hShowerShape"), cluster.m02(), cluster.m20(), weight);
-    }
-    else {
+    } else {
       registry.fill(HIST("hEnergy_ShowerShapeLong"), cluster.energy(), cluster.m02());
       registry.fill(HIST("hEnergy_ShowerShapeShort"), cluster.energy(), cluster.m20());
       registry.fill(HIST("hEnergy_NCells"), cluster.energy(), cluster.nCells());
@@ -302,8 +301,7 @@ struct PhotonIsolationQA {
       if ((Pt_iso > 4.0) && (cluster.m02() < 2.0) && (cluster.m02() > 0.4)) {
         registry.fill(HIST("hABCDControlRegion"), 3.5, cluster.energy(), weight);
       }
-    }
-    else {
+    } else {
       if ((Pt_iso < 1.5) && (cluster.m02() < 0.3) && (cluster.m02() > 0.1)) {
         registry.fill(HIST("hABCDControlRegion"), 0.5, cluster.energy());
       }
