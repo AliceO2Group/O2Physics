@@ -313,7 +313,7 @@ struct JetTutorialTask {
       return;
     }
     for (auto& jet : jets) {
-      if (std::abs(RecoDecay::constrainAngle(jet.phi() - leadingTrackPhi, -o2::constants::math::PIHalf) > 0.6)) {
+      if (std::abs(RecoDecay::constrainAngle(jet.phi() - leadingTrackPhi, -o2::constants::math::PIHalf)) > 0.6) {
         registry.fill(HIST("h_recoil_jet_pt"), jet.pt());
         registry.fill(HIST("h_recoil_jet_eta"), jet.eta());
         registry.fill(HIST("h_recoil_jet_phi"), jet.phi());
