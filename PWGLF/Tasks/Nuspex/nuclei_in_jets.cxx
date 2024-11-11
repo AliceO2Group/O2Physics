@@ -180,9 +180,17 @@ struct nuclei_in_jets {
     registryData.add("antideuteron_ue_tpc", "antideuteron_ue_tpc", HistType::kTH2F, {{nbins, min * 2, max * 2, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}});
     registryData.add("antideuteron_ue_tof", "antideuteron_ue_tof", HistType::kTH2F, {{nbins, min * 2, max * 2, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TOF}"}});
 
+    // Deuterons 
+    registryData.add("deuteron_jet_tof", "deuteron_jet_tof", HistType::kTH2F, {{nbins, min * 2, max * 2, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TOF}"}});
+    registryData.add("deuteron_ue_tof", "deuteron_ue_tof", HistType::kTH2F, {{nbins, min * 2, max * 2, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TOF}"}});
+
     // Antihelium-3
     registryData.add("antihelium3_jet_tpc", "antihelium3_jet_tpc", HistType::kTH2F, {{nbins, min * 3, max * 3, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}});
     registryData.add("antihelium3_ue_tpc", "antihelium3_ue_tpc", HistType::kTH2F, {{nbins, min * 3, max * 3, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}});
+
+    // Helium-3
+    registryData.add("helium3_jet_tpc", "helium3_jet_tpc", HistType::kTH2F, {{nbins, min * 3, max * 3, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}});
+    registryData.add("helium3_ue_tpc", "helium3_ue_tpc", HistType::kTH2F, {{nbins, min * 3, max * 3, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}});
 
     // Generated
     registryMC.add("antiproton_jet_gen", "antiproton_jet_gen", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
@@ -619,9 +627,7 @@ struct nuclei_in_jets {
           continue;
         if (require_PV_contributor && !(track.isPVContributor()))
           continue;
-        if (track.sign() > 0)
-          continue;
-
+        
         // Variables
         double nsigmaTPCPr = track.tpcNSigmaPr();
         double nsigmaTOFPr = track.tofNSigmaPr();
@@ -644,15 +650,16 @@ struct nuclei_in_jets {
         double deltaR_ue2 = sqrt(deltaEta_ue2 * deltaEta_ue2 + deltaPhi_ue2 * deltaPhi_ue2);
 
         // DCAxy Distributions of Antiprotons
-        if (isHighPurityAntiproton(track) && TMath::Abs(dcaz) < max_dcaz) {
-          if (deltaR_jet < Rjet) {
-            registryData.fill(HIST("antiproton_dca_jet"), pt, dcaxy);
-          }
-          if (deltaR_ue1 < Rjet || deltaR_ue2 < Rjet) {
-            registryData.fill(HIST("antiproton_dca_ue"), pt, dcaxy);
+        if (track.sign() < 0){ //only antiprotons
+          if (isHighPurityAntiproton(track) && TMath::Abs(dcaz) < max_dcaz) {
+            if (deltaR_jet < Rjet) {
+              registryData.fill(HIST("antiproton_dca_jet"), pt, dcaxy);
+            }
+            if (deltaR_ue1 < Rjet || deltaR_ue2 < Rjet) {
+              registryData.fill(HIST("antiproton_dca_ue"), pt, dcaxy);
+            }
           }
         }
-
         // DCA Cuts
         if (TMath::Abs(dcaxy) > max_dcaxy)
           continue;
@@ -662,39 +669,61 @@ struct nuclei_in_jets {
         // Jet
         if (deltaR_jet < Rjet) {
 
-          // Antiproton
-          if (pt < max_pt_for_nsigmaTPC)
-            registryData.fill(HIST("antiproton_jet_tpc"), pt, nsigmaTPCPr);
-          if (pt >= 0.5 && nsigmaTPCPr > min_nsigmaTPC && nsigmaTPCPr < max_nsigmaTPC && track.hasTOF())
-            registryData.fill(HIST("antiproton_jet_tof"), pt, nsigmaTOFPr);
-
-          // Antideuteron
-          if (pt < max_pt_for_nsigmaTPC)
-            registryData.fill(HIST("antideuteron_jet_tpc"), pt, nsigmaTPCDe);
-          if (pt >= 0.5 && nsigmaTPCDe > min_nsigmaTPC && nsigmaTPCDe < max_nsigmaTPC && track.hasTOF())
-            registryData.fill(HIST("antideuteron_jet_tof"), pt, nsigmaTOFDe);
-
-          // Antihelium3
-          registryData.fill(HIST("antihelium3_jet_tpc"), 2.0 * pt, nsigmaTPCHe);
+          if (track.sign() < 0){ //only antimatter
+            // Antiproton
+            if (pt < max_pt_for_nsigmaTPC)
+              registryData.fill(HIST("antiproton_jet_tpc"), pt, nsigmaTPCPr);
+            if (pt >= 0.5 && nsigmaTPCPr > min_nsigmaTPC && nsigmaTPCPr < max_nsigmaTPC && track.hasTOF())
+              registryData.fill(HIST("antiproton_jet_tof"), pt, nsigmaTOFPr);
+          
+            // Antideuteron
+            if (pt < max_pt_for_nsigmaTPC)
+              registryData.fill(HIST("antideuteron_jet_tpc"), pt, nsigmaTPCDe);
+            if (pt >= 0.5 && nsigmaTPCDe > min_nsigmaTPC && nsigmaTPCDe < max_nsigmaTPC && track.hasTOF())
+              registryData.fill(HIST("antideuteron_jet_tof"), pt, nsigmaTOFDe);
+          
+            // Antihelium3
+            registryData.fill(HIST("antihelium3_jet_tpc"), 2.0 * pt, nsigmaTPCHe);
+          }
+        
+          if (track.sign() > 0){ //only matter
+          // Deuteron
+            if (pt >= 0.5 && nsigmaTPCDe > min_nsigmaTPC && nsigmaTPCDe < max_nsigmaTPC && track.hasTOF())
+              registryData.fill(HIST("deuteron_jet_tof"), pt, nsigmaTOFDe);
+          
+            // Helium3
+            registryData.fill(HIST("helium3_jet_tpc"), 2.0 * pt, nsigmaTPCHe);
+          }
         }
 
         // UE
         if (deltaR_ue1 < Rjet || deltaR_ue2 < Rjet) {
 
-          // Antiproton
-          if (pt < max_pt_for_nsigmaTPC)
-            registryData.fill(HIST("antiproton_ue_tpc"), pt, nsigmaTPCPr);
-          if (pt >= 0.5 && nsigmaTPCPr > min_nsigmaTPC && nsigmaTPCPr < max_nsigmaTPC && track.hasTOF())
-            registryData.fill(HIST("antiproton_ue_tof"), pt, nsigmaTOFPr);
+          if (track.sign() < 0){ //only antimatter
+            // Antiproton
+            if (pt < max_pt_for_nsigmaTPC)
+              registryData.fill(HIST("antiproton_ue_tpc"), pt, nsigmaTPCPr);
+            if (pt >= 0.5 && nsigmaTPCPr > min_nsigmaTPC && nsigmaTPCPr < max_nsigmaTPC && track.hasTOF())
+              registryData.fill(HIST("antiproton_ue_tof"), pt, nsigmaTOFPr);
 
-          // Antideuteron
-          if (pt < max_pt_for_nsigmaTPC)
-            registryData.fill(HIST("antideuteron_ue_tpc"), pt, nsigmaTPCDe);
-          if (pt >= 0.5 && nsigmaTPCDe > min_nsigmaTPC && nsigmaTPCDe < max_nsigmaTPC && track.hasTOF())
-            registryData.fill(HIST("antideuteron_ue_tof"), pt, nsigmaTOFDe);
+            // Antideuteron
+            if (pt < max_pt_for_nsigmaTPC)
+              registryData.fill(HIST("antideuteron_ue_tpc"), pt, nsigmaTPCDe);
+            if (pt >= 0.5 && nsigmaTPCDe > min_nsigmaTPC && nsigmaTPCDe < max_nsigmaTPC && track.hasTOF())
+              registryData.fill(HIST("antideuteron_ue_tof"), pt, nsigmaTOFDe);
 
-          // Antihelium3
-          registryData.fill(HIST("antihelium3_ue_tpc"), 2.0 * pt, nsigmaTPCHe);
+            // Antihelium3
+            registryData.fill(HIST("antihelium3_ue_tpc"), 2.0 * pt, nsigmaTPCHe);
+          }
+            
+          if (track.sign() > 0){ //only matter
+            // Deuteron
+            if (pt >= 0.5 && nsigmaTPCDe > min_nsigmaTPC && nsigmaTPCDe < max_nsigmaTPC && track.hasTOF())
+              registryData.fill(HIST("deuteron_ue_tof"), pt, nsigmaTOFDe);
+          
+            // Helium3
+            registryData.fill(HIST("helium3_ue_tpc"), 2.0 * pt, nsigmaTPCHe);
+          }
         }
       }
     }
