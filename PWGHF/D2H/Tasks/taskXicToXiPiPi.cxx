@@ -15,6 +15,7 @@
 ///
 /// \author Phil Lennart Stahlhut <phil.lennart.stahlhut@cern.ch>, Heidelberg University
 /// \author Carolina Reetz <c.reetz@cern.ch>, Heidelberg University
+/// \author Jaeyoon Cho <jaeyoon.cho@cern.ch>, Inha University
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
@@ -42,6 +43,19 @@ struct HfTaskXicToXiPiPi {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_xic_to_xi_pi_pi::vecBinsPt}, "pT bin limits"};
   // MC checks
   Configurable<bool> checkDecayTypeMc{"checkDecayTypeMc", false, "Flag to enable DecayType histogram"};
+  // +++++++++++++++++++ Jaeyoon Nov 11th
+  // THnSparese for ML selection check
+  Configurable<bool> enableTHn{"enableTHn", false, "Fill THnSparse for Xic"};
+  ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {400, 0., 40.}, ""};
+  ConfigurableAxis thnConfigAxisMass{"thnConfigAxisMass", {300, 1.8, 3.0}, ""};
+  ConfigurableAxis thnConfigAxisPtProng{"thnConfigAxisPtProng", {300, 0., 30.}, ""};
+  ConfigurableAxis thnConfigAxisChi2PCA{"thnConfigAxisChi2PCA", {200, 0., 20}, ""};
+  ConfigurableAxis thnConfigAxisDecLength{"thnConfigAxisDecLength", {200, 0., 0.5}, ""};
+  ConfigurableAxis thnConfigAxisDecLengthXY{"thnConfigAxisDecLengthXY", {200, 0., 0.5}, ""};
+  ConfigurableAxis thnConfigAxisCPA{"thnConfigAxisCPA", {110, -1.1, 1.1}, ""};
+  ConfigurableAxis thnConfigAxisBdtScoreBkg{"thnConfigAxisBdtScoreBkg", {100, 0., 1.}, ""};
+  ConfigurableAxis thnConfigAxisBdtScoreSignal{"thnConfigAxisBdtScoreSignal", {100, 0., 1.}, ""};
+  // +++++++++++++++++++ Jaeyoon Nov 11th
 
   // Axis
   ConfigurableAxis binsDecLength{"binsDecLength", {200, 0., 0.5}, ""};
@@ -235,7 +249,29 @@ struct HfTaskXicToXiPiPi {
         registry.get<TH3>(HIST("hDecayTypeMc"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin]);
       }
     }
-  }
+
+    // +++++++++++++ Jaeyoon Nov 11th
+    if(enableTHn){
+      const AxisSpec thnAxisPt{thnConfigAxisPt, "#it{p}_{T} (GeV/#it{c})"};
+      const AxisSpec thnAxisMass{thnConfigAxisMass, "inv. mass #Xi^{#mp} #pi^{#pm} #pi^{#pm}"};
+      const AxisSpec thnAxisChi2PCA{thnConfigAxisChi2PCA, "Chi2PCA to sec. vertex (cm)"};
+      const AxisSpec thnAxisDecLength{thnConfigAxisDecLength, "decay length (cm)"};
+      const AxisSpec thnAxisDecLengthXY{thnConfigAxisDecLengthXY, "decay length xy (cm)"};
+      const AxisSpec thnAxisCPA{thnConfigAxisCPA, "#Xi^{#plus}_{c} candidate cosine of pointing angle"};
+      const AxisSpec thnAxisBdtScoreBkg{thnConfigAxisBdtScoreBkg, "BDT score of background"};
+      const AxisSpec thnAxisBdtScoreSignal{thnConfigAxisBdtScoreSignal, "BDT score of prompt Xic"};
+
+      if(doprocessWithKFParticleAndML || doprocessWithDCAFitterAndML || doprocessMcWithKFParticleAndML || doprocessMcWithDCAFitterAndML){
+        // with ML information 
+        registry.add("hXicToXiPiPiVarsWithML", "THnSparse for Xic with ML", HistType::kTHnSparseF, {thnAxisPt, thnAxisMass, thnAxisChi2PCA, thnAxisDecLength, thnAxisDecLengthXY, thnAxisCPA, thnAxisBdtScoreBkg, thnAxisBdtScoreSignal});
+      } else {
+        // without ML information
+        registry.add("hXicToXiPiPiVars", "THnSparse for Xic", HistType::kTHnSparseF, {thnAxisPt, thnAxisMass, thnAxisChi2PCA, thnAxisDecLength, thnAxisDecLengthXY, thnAxisCPA});
+      }
+    }	// enable THnSpare
+    // +++++++++++++ Jaeyoon Nov 11th
+
+  }	// end init
 
   /// Selection of Xic daughter in geometrical acceptance
   /// \param etaProng is the pseudorapidity of Xic prong
@@ -248,7 +284,7 @@ struct HfTaskXicToXiPiPi {
   }
 
   /// Function to fill histograms
-  template <bool useKfParticle, typename TCanTable>
+  template <bool useKfParticle, bool useMl, typename TCanTable>	// +++++++++++++ Jaeyoon Nov 11th
   void fillHistograms(TCanTable const& candidates)
   {
     for (const auto& candidate : candidates) {
@@ -299,11 +335,30 @@ struct HfTaskXicToXiPiPi {
         registry.fill(HIST("hChi2geoXi"), candidate.kfCascadeChi2(), ptCandXic);
         registry.fill(HIST("hChi2geoLam"), candidate.kfV0Chi2(), ptCandXic);
       }
+
+      // +++++++++++++ Jaeyoon Nov 11th
+      // fill THnSparse
+      if(enableTHn){
+        if constexpr (useMl) {
+          // with ML information
+          double outputBkg = -99.;
+          double outputPrompt = -99.;
+          if(candidate.mlProbXicToXiPiPi().size() > 0){
+            outputBkg = candidate.mlProbXicToXiPiPi()[0];
+            outputPrompt = candidate.mlProbXicToXiPiPi()[1];
+          }
+          registry.get<THnSparse>(HIST("hXicToXiPiPiVarsWithML"))->Fill(candidate.pt(), candidate.invMassXic(), candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa(), outputBkg, outputPrompt);
+        } else {
+          // without ML information
+          registry.get<THnSparse>(HIST("hXicToXiPiPiVars"))->Fill(candidate.pt(), candidate.invMassXic(), candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa());
+        } // useMl
+      } // enableTHn
+      // +++++++++++++ Jaeyoon Nov 11th
     } // candidate loop
   }
 
   /// Function for MC analysis and histogram filling
-  template <bool useKfParticle, typename TCandTable>
+  template <bool useKfParticle, bool useMl, typename TCandTable>	// +++++++++++++ Jaeyoon Nov 11th
   void fillHistogramsMc(TCandTable const& candidates,
                         soa::Join<aod::McParticles, aod::HfCandXicMcGen> const& mcParticles,
                         aod::TracksWMc const&)
@@ -413,6 +468,25 @@ struct HfTaskXicToXiPiPi {
           registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_xic_to_xi_pi_pi::DecayType::NDecayType, candidate.invMassXic(), ptCandXic);
         }
       }
+      // +++++++++++++ Jaeyoon Nov 11th
+      // fill THnSparse
+      if(enableTHn){
+        if constexpr (useMl) {
+          // with ML information
+          double outputBkg = -99.;
+          double outputPrompt = -99.;
+          if(candidate.mlProbXicToXiPiPi().size() > 0){
+            outputBkg = candidate.mlProbXicToXiPiPi()[0];
+            outputPrompt = candidate.mlProbXicToXiPiPi()[1];
+          }
+          registry.get<THnSparse>(HIST("hXicToXiPiPiVarsWithML"))->Fill(candidate.pt(), candidate.invMassXic(), candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa(), outputBkg, outputPrompt);
+        } else {
+          // without ML information
+          registry.get<THnSparse>(HIST("hXicToXiPiPiVars"))->Fill(candidate.pt(), candidate.invMassXic(), candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa());
+        } // useMl      
+      }
+      // +++++++++++++ Jaeyoon Nov 11th
+
     } // rec
 
     // MC gen. level
@@ -475,22 +549,37 @@ struct HfTaskXicToXiPiPi {
 
   void processWithDCAFitter(soa::Filtered<soa::Join<aod::HfCandXic, aod::HfSelXicToXiPiPi>> const& candidates)
   {
-    fillHistograms<false>(candidates);
+    fillHistograms<false, false>(candidates);	// +++++++++++++ Jaeyoon Nov 11th
   }
   PROCESS_SWITCH(HfTaskXicToXiPiPi, processWithDCAFitter, "Process data with DCAFitter", true);
 
   void processWithKFParticle(soa::Filtered<soa::Join<aod::HfCandXic, aod::HfCandXicKF, aod::HfSelXicToXiPiPi>> const& candidates)
   {
-    fillHistograms<true>(candidates);
+    fillHistograms<true, false>(candidates);	// +++++++++++++ Jaeyoon Nov 11th
   }
   PROCESS_SWITCH(HfTaskXicToXiPiPi, processWithKFParticle, "Process data with KFParticle", false);
+
+  // +++++++++++++ Jaeyoon Nov 11th
+  // Analysis and fill histogram with ML
+  void processWithDCAFitterAndML(soa::Filtered<soa::Join<aod::HfCandXic, aod::HfSelXicToXiPiPi, aod::HfMlXicToXiPiPi>> const& candidates)
+  {
+    fillHistograms<false, true>(candidates);
+  }
+  PROCESS_SWITCH(HfTaskXicToXiPiPi, processWithDCAFitterAndML, "Process data with DCAFitter and ML approach", false);
+
+  void processWithKFParticleAndML(soa::Filtered<soa::Join<aod::HfCandXic, aod::HfCandXicKF, aod::HfSelXicToXiPiPi, aod::HfMlXicToXiPiPi>> const& candidates)
+  {
+    fillHistograms<true, true>(candidates); 
+  }
+  PROCESS_SWITCH(HfTaskXicToXiPiPi, processWithKFParticleAndML, "Process data with KFParticle and ML approach", false);
+  // +++++++++++++ Jaeyoon Nov 11th
 
   /// MC analysis and fill histograms
   void processMcWithDCAFitter(soa::Filtered<soa::Join<aod::HfCandXic, aod::HfSelXicToXiPiPi, aod::HfCandXicMcRec>> const& candidates,
                               soa::Join<aod::McParticles, aod::HfCandXicMcGen> const& mcParticles,
                               aod::TracksWMc const& tracksWMc)
   {
-    fillHistogramsMc<false>(candidates, mcParticles, tracksWMc);
+    fillHistogramsMc<false, false>(candidates, mcParticles, tracksWMc);	// +++++++++++++ Jaeyoon Nov 11th
   }
   PROCESS_SWITCH(HfTaskXicToXiPiPi, processMcWithDCAFitter, "Process MC with DCAFitter", false);
 
@@ -499,9 +588,29 @@ struct HfTaskXicToXiPiPi {
                                soa::Join<aod::McParticles, aod::HfCandXicMcGen> const& mcParticles,
                                aod::TracksWMc const& tracksWMc)
   {
-    fillHistogramsMc<true>(candidates, mcParticles, tracksWMc);
+    fillHistogramsMc<true, false>(candidates, mcParticles, tracksWMc);	// +++++++++++++ Jaeyoon Nov 11th
   }
   PROCESS_SWITCH(HfTaskXicToXiPiPi, processMcWithKFParticle, "Process MC with KFParticle", false);
+
+  // +++++++++++++ Jaeyoon Nov 11th
+  // MC analysis and fill histograms with ML
+  void processMcWithDCAFitterAndML(soa::Filtered<soa::Join<aod::HfCandXic, aod::HfSelXicToXiPiPi, aod::HfMlXicToXiPiPi, aod::HfCandXicMcRec>> const& candidates,
+                              soa::Join<aod::McParticles, aod::HfCandXicMcGen> const& mcParticles,
+                              aod::TracksWMc const& tracksWMc)
+  {
+    fillHistogramsMc<false, true>(candidates, mcParticles, tracksWMc);	// +++++++++++++ Jaeyoon Nov 11th
+  }
+  PROCESS_SWITCH(HfTaskXicToXiPiPi, processMcWithDCAFitterAndML, "Process MC with DCAFitter and ML approach", false);
+
+  void processMcWithKFParticleAndML(soa::Filtered<soa::Join<aod::HfCandXic, aod::HfCandXicKF, aod::HfSelXicToXiPiPi, aod::HfMlXicToXiPiPi, aod::HfCandXicMcRec>> const& candidates,
+                               soa::Join<aod::McParticles, aod::HfCandXicMcGen> const& mcParticles,
+                               aod::TracksWMc const& tracksWMc)
+  {
+    fillHistogramsMc<true, true>(candidates, mcParticles, tracksWMc);	// +++++++++++++ Jaeyoon Nov 11th
+  }
+  PROCESS_SWITCH(HfTaskXicToXiPiPi, processMcWithKFParticleAndML, "Process MC with KFParticle and ML approach", false);  
+  // +++++++++++++ Jaeyoon Nov 11th
+
 }; // struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
