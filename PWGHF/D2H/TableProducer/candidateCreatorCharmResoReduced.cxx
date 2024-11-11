@@ -279,7 +279,7 @@ struct HfCandidateCreatorCharmResoReduced {
         invMassD0 = candD.invMassD0Bar();
       }
       std::array<float, 3> pVecD = {candD.px(), candD.py(), candD.pz()};
-      std::array<int, 3> dDaughtersIds = {candD.prong0Id(), candD.prong1Id(), candD.prong2Id()};
+
       // loop on V0 or track candidates
       bool alreadyCounted{false};
       for (const auto& candV0Tr : candsV0Tr) {
