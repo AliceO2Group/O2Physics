@@ -10,6 +10,8 @@
 // or submit itself to any jurisdiction.
 
 #include <cmath>
+#include <vector>
+#include <map>
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
 #include "ReconstructionDataFormats/Vertex.h"
@@ -58,6 +60,7 @@ struct SGCandProducer {
   Produces<aod::UDTracksCov> outputTracksCov;
   Produces<aod::UDTracksDCA> outputTracksDCA;
   Produces<aod::UDTracksPID> outputTracksPID;
+  Produces<aod::UDTracksPIDExtra> outputTracksPIDExtra;
   Produces<aod::UDTracksExtra> outputTracksExtra;
   Produces<aod::UDTracksFlags> outputTracksFlag;
   Produces<aod::UDFwdTracks> outputFwdTracks;
@@ -76,7 +79,9 @@ struct SGCandProducer {
   using BC = BCs::iterator;
   using TCs = soa::Join<aod::Tracks, /*aod::TracksCov,*/ aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                         aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
+                        aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl,
                         aod::TOFSignal, aod::pidTOFbeta,
+                        aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl,
                         aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
   using FWs = aod::FwdTracks;
 
@@ -127,6 +132,14 @@ struct SGCandProducer {
                     track.tofNSigmaPi(),
                     track.tofNSigmaKa(),
                     track.tofNSigmaPr());
+    outputTracksPIDExtra(track.tpcNSigmaDe(),
+                         track.tpcNSigmaTr(),
+                         track.tpcNSigmaHe(),
+                         track.tpcNSigmaAl(),
+                         track.tofNSigmaDe(),
+                         track.tofNSigmaTr(),
+                         track.tofNSigmaHe(),
+                         track.tofNSigmaAl());
     outputTracksExtra(track.tpcInnerParam(),
                       track.itsClusterSizes(),
                       track.tpcNClsFindable(),

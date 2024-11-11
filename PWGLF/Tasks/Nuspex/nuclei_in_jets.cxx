@@ -22,6 +22,7 @@
 #include <TLorentzVector.h>
 #include <TDatabasePDG.h>
 #include "TGrid.h"
+#include <string>
 
 #include "CCDB/BasicCCDBManager.h"
 #include "CCDB/CcdbApi.h"
@@ -110,6 +111,7 @@ struct nuclei_in_jets {
   Configurable<double> max_nsigmaTPC{"max_nsigmaTPC", +3.0, "Maximum nsigma TPC"};
   Configurable<double> min_nsigmaTOF{"min_nsigmaTOF", -3.0, "Minimum nsigma TOF"};
   Configurable<double> max_nsigmaTOF{"max_nsigmaTOF", +3.5, "Maximum nsigma TOF"};
+  Configurable<double> max_pt_for_nsigmaTPC{"max_pt_for_nsigmaTPC", 2.0, "Maximum pt for TPC analysis"};
   Configurable<bool> require_PV_contributor{"require_PV_contributor", true, "require that the track is a PV contributor"};
   Configurable<bool> setDCAselectionPtDep{"setDCAselectionPtDep", true, "require pt dependent selection"};
   Configurable<bool> applyReweighting{"applyReweighting", true, "apply reweighting"};
@@ -661,13 +663,13 @@ struct nuclei_in_jets {
         if (deltaR_jet < Rjet) {
 
           // Antiproton
-          if (pt < 1.0)
+          if (pt < max_pt_for_nsigmaTPC)
             registryData.fill(HIST("antiproton_jet_tpc"), pt, nsigmaTPCPr);
           if (pt >= 0.5 && nsigmaTPCPr > min_nsigmaTPC && nsigmaTPCPr < max_nsigmaTPC && track.hasTOF())
             registryData.fill(HIST("antiproton_jet_tof"), pt, nsigmaTOFPr);
 
           // Antideuteron
-          if (pt < 1.0)
+          if (pt < max_pt_for_nsigmaTPC)
             registryData.fill(HIST("antideuteron_jet_tpc"), pt, nsigmaTPCDe);
           if (pt >= 0.5 && nsigmaTPCDe > min_nsigmaTPC && nsigmaTPCDe < max_nsigmaTPC && track.hasTOF())
             registryData.fill(HIST("antideuteron_jet_tof"), pt, nsigmaTOFDe);
@@ -680,13 +682,13 @@ struct nuclei_in_jets {
         if (deltaR_ue1 < Rjet || deltaR_ue2 < Rjet) {
 
           // Antiproton
-          if (pt < 1.0)
+          if (pt < max_pt_for_nsigmaTPC)
             registryData.fill(HIST("antiproton_ue_tpc"), pt, nsigmaTPCPr);
           if (pt >= 0.5 && nsigmaTPCPr > min_nsigmaTPC && nsigmaTPCPr < max_nsigmaTPC && track.hasTOF())
             registryData.fill(HIST("antiproton_ue_tof"), pt, nsigmaTOFPr);
 
           // Antideuteron
-          if (pt < 1.0)
+          if (pt < max_pt_for_nsigmaTPC)
             registryData.fill(HIST("antideuteron_ue_tpc"), pt, nsigmaTPCDe);
           if (pt >= 0.5 && nsigmaTPCDe > min_nsigmaTPC && nsigmaTPCDe < max_nsigmaTPC && track.hasTOF())
             registryData.fill(HIST("antideuteron_ue_tof"), pt, nsigmaTOFDe);
@@ -840,7 +842,7 @@ struct nuclei_in_jets {
 
         // Antiproton
         if (particle.pdgCode() == -2212) {
-          if (pt < 1.0 && nsigmaTPCPr > min_nsigmaTPC && nsigmaTPCPr < max_nsigmaTPC) {
+          if (pt < max_pt_for_nsigmaTPC && nsigmaTPCPr > min_nsigmaTPC && nsigmaTPCPr < max_nsigmaTPC) {
             registryMC.fill(HIST("antiproton_jet_rec_tpc"), pt, w_antip_jet);
             registryMC.fill(HIST("antiproton_ue_rec_tpc"), pt, w_antip_ue);
           }
@@ -852,7 +854,7 @@ struct nuclei_in_jets {
 
         // Antideuteron
         if (particle.pdgCode() == -1000010020) {
-          if (pt < 1.0 && nsigmaTPCDe > min_nsigmaTPC && nsigmaTPCDe < max_nsigmaTPC) {
+          if (pt < max_pt_for_nsigmaTPC && nsigmaTPCDe > min_nsigmaTPC && nsigmaTPCDe < max_nsigmaTPC) {
             registryMC.fill(HIST("antideuteron_jet_rec_tpc"), pt);
             registryMC.fill(HIST("antideuteron_ue_rec_tpc"), pt);
           }

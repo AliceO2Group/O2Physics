@@ -31,7 +31,8 @@ void BookBaseList()
   fBaseList.setObject(temp);
   // fBaseList.object->SetName("4444");
 
-  fBasePro = new TProfile("fBasePro", "flags for the whole analysis", eConfiguration_N, 0.5, 0.5 + static_cast<float>(eConfiguration_N));
+  fBasePro = new TProfile("fBasePro", "flags for the whole analysis", eConfiguration_N - 1, 0.5, static_cast<float>(eConfiguration_N) - 0.5);
+  // yes, eConfiguration_N - 1 and -0.5, because eConfiguration kicks off from 1
   fBasePro->SetStats(kFALSE);
   fBasePro->SetLineColor(eColor);
   fBasePro->SetFillColor(eFillColor);
@@ -45,36 +46,39 @@ void BookBaseList()
   // Then, I replace placeholder with run number in DetermineAndPropagateRunNumber(T const& collision)
 
   fBasePro->GetXaxis()->SetBinLabel(eDryRun, "fDryRun");
-  fBasePro->Fill(eDryRun, static_cast<int>(tc.fDryRun));
+  fBasePro->Fill(eDryRun, static_cast<double>(tc.fDryRun));
 
   fBasePro->GetXaxis()->SetBinLabel(eVerbose, "fVerbose");
-  fBasePro->Fill(eVerbose, static_cast<int>(tc.fVerbose));
+  fBasePro->Fill(eVerbose, static_cast<double>(tc.fVerbose));
 
   fBasePro->GetXaxis()->SetBinLabel(eVerboseForEachParticle, "fVerboseForEachParticle");
-  fBasePro->Fill(eVerboseForEachParticle, static_cast<int>(tc.fVerboseForEachParticle));
+  fBasePro->Fill(eVerboseForEachParticle, static_cast<double>(tc.fVerboseForEachParticle));
 
   fBasePro->GetXaxis()->SetBinLabel(eDoAdditionalInsanityChecks, "fDoAdditionalInsanityChecks");
-  fBasePro->Fill(eDoAdditionalInsanityChecks, static_cast<int>(tc.fDoAdditionalInsanityChecks));
+  fBasePro->Fill(eDoAdditionalInsanityChecks, static_cast<double>(tc.fDoAdditionalInsanityChecks));
 
   fBasePro->GetXaxis()->SetBinLabel(eInsanityCheckForEachParticle, "fInsanityCheckForEachParticle");
-  fBasePro->Fill(eInsanityCheckForEachParticle, static_cast<int>(tc.fInsanityCheckForEachParticle));
+  fBasePro->Fill(eInsanityCheckForEachParticle, static_cast<double>(tc.fInsanityCheckForEachParticle));
 
   fBasePro->GetXaxis()->SetBinLabel(eUseCCDB, "fUseCCDB");
-  fBasePro->Fill(eUseCCDB, static_cast<int>(tc.fUseCCDB));
+  fBasePro->Fill(eUseCCDB, static_cast<double>(tc.fUseCCDB));
 
   fBasePro->GetXaxis()->SetBinLabel(eWhichProcess, Form("WhichProcess = %s", tc.fWhichProcess.Data()));
 
   fBasePro->GetXaxis()->SetBinLabel(eRandomSeed, "fRandomSeed");
-  fBasePro->Fill(eRandomSeed, static_cast<int>(tc.fRandomSeed));
+  fBasePro->Fill(eRandomSeed, static_cast<double>(tc.fRandomSeed));
 
   fBasePro->GetXaxis()->SetBinLabel(eUseFisherYates, "fUseFisherYates");
-  fBasePro->Fill(eUseFisherYates, static_cast<int>(tc.fUseFisherYates));
+  fBasePro->Fill(eUseFisherYates, static_cast<double>(tc.fUseFisherYates));
 
   fBasePro->GetXaxis()->SetBinLabel(eFixedNumberOfRandomlySelectedTracks, "fFixedNumberOfRandomlySelectedTracks");
   fBasePro->Fill(eFixedNumberOfRandomlySelectedTracks, static_cast<int>(tc.fFixedNumberOfRandomlySelectedTracks));
 
   fBasePro->GetXaxis()->SetBinLabel(eUseStopwatch, "fUseStopwatch");
-  fBasePro->Fill(eUseStopwatch, static_cast<int>(tc.fUseStopwatch));
+  fBasePro->Fill(eUseStopwatch, static_cast<double>(tc.fUseStopwatch));
+
+  fBasePro->GetXaxis()->SetBinLabel(eFloatingPointPrecision, "fFloatingPointPrecision");
+  fBasePro->Fill(eFloatingPointPrecision, tc.fFloatingPointPrecision);
 
   fBaseList->Add(fBasePro);
 
@@ -116,8 +120,9 @@ void DefaultConfiguration()
   tc.fDryRun = cf_tc.cfDryRun;
   tc.fVerbose = cf_tc.cfVerbose;
   if (tc.fVerbose) {
-    LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__); // yes, here
+    StartFunction(__FUNCTION__); // yes, here
   }
+  tc.fVerboseUtility = cf_tc.cfVerboseUtility;
   tc.fVerboseForEachParticle = cf_tc.cfVerboseForEachParticle;
   tc.fDoAdditionalInsanityChecks = cf_tc.cfDoAdditionalInsanityChecks;
   tc.fUseCCDB = cf_tc.cfUseCCDB;
@@ -186,6 +191,7 @@ void DefaultConfiguration()
   tc.fUseFisherYates = cf_tc.cfUseFisherYates;
   tc.fFixedNumberOfRandomlySelectedTracks = cf_tc.cfFixedNumberOfRandomlySelectedTracks;
   tc.fUseStopwatch = cf_tc.cfUseStopwatch;
+  tc.fFloatingPointPrecision = cf_tc.cfFloatingPointPrecision;
 
   // *) Event histograms:
   eh.fEventHistogramsName[eNumberOfEvents] = "NumberOfEvents";
@@ -202,6 +208,7 @@ void DefaultConfiguration()
   eh.fEventHistogramsName[eVertex_z] = "Vertex_z";
   eh.fEventHistogramsName[eNContributors] = "NContributors";
   eh.fEventHistogramsName[eImpactParameter] = "ImpactParameter";
+  eh.fEventHistogramsName[eOccupancy] = "Occupancy";
   for (Int_t t = 0; t < eEventHistograms_N; t++) {
     if (eh.fEventHistogramsName[t].EqualTo("")) {
       LOGF(fatal, "\033[1;31m%s at line %d : name of fEventHistogramsName[%d] is not set \033[0m", __FUNCTION__, __LINE__, static_cast<int>(t));
@@ -228,6 +235,7 @@ void DefaultConfiguration()
   ec.fEventCutName[eVertex_z] = "Vertex_z";
   ec.fEventCutName[eNContributors] = "NContributors";
   ec.fEventCutName[eImpactParameter] = "ImpactParameter";
+  ec.fEventCutName[eOccupancy] = "Occupancy";
   ec.fEventCutName[eTrigger] = "Trigger";
   ec.fEventCutName[eSel7] = "Sel7";
   ec.fEventCutName[eSel8] = "Sel8";
@@ -238,6 +246,7 @@ void DefaultConfiguration()
   ec.fEventCutName[eIsVertexITSTPC] = "IsVertexITSTPC";
   ec.fEventCutName[eIsVertexTOFmatched] = "IsVertexTOFmatched";
   ec.fEventCutName[eIsVertexTRDmatched] = "IsVertexTRDmatched";
+  ec.fEventCutName[eOccupancyEstimator] = "OccupancyEstimator";
   for (Int_t t = 0; t < eEventCuts_N; t++) {
     if (ec.fEventCutName[t].EqualTo("")) {
       LOGF(fatal, "\033[1;31m%s at line %d : event cut name is not set for ec.fEventCutName[%d]. The last cut name which was set is \"%s\" \033[0m", __FUNCTION__, __LINE__, t, ec.fEventCutName[t - 1].Data());
@@ -324,13 +333,7 @@ void DefaultConfiguration()
   t0.fCalculateTest0AsFunctionOf[AFO_CENTRALITY] = cf_t0.cfCalculateTest0AsFunctionOfCentrality;
   t0.fCalculateTest0AsFunctionOf[AFO_PT] = cf_t0.cfCalculateTest0AsFunctionOfPt;
   t0.fCalculateTest0AsFunctionOf[AFO_ETA] = cf_t0.cfCalculateTest0AsFunctionOfEta;
-  // Use above Test0 flags to automatically set the main Test0 flag: TBI 20240521 do I really want to do it this way?
-  for (Int_t v = 0; v < eAsFunctionOf_N; v++) {
-    if (t0.fCalculateTest0AsFunctionOf[v]) {
-      t0.fCalculateTest0 = true;
-      break; // yes, it suffices one diff. flag to be true, for the main Test0 flag to be true
-    }
-  }
+  t0.fCalculateTest0AsFunctionOf[AFO_OCCUPANCY] = cf_t0.cfCalculateTest0AsFunctionOfOccupancy;
   t0.fFileWithLabels = TString(cf_t0.cfFileWithLabels);
 
   // *) Particle weights:
@@ -439,6 +442,10 @@ void DefaultConfiguration()
   qa.fCentralityEstimatorName[eCentRun2V0M] = "CentRun2V0M";
   qa.fCentralityEstimatorName[eCentRun2SPDTracklets] = "CentRun2SPDTracklets";
 
+  // **) Occupancy estimators:
+  qa.fOccupancyEstimatorName[eTrackOccupancyInTimeRange] = "TrackOccupancyInTimeRange";
+  qa.fOccupancyEstimatorName[eFT0COccupancyInTimeRange] = "FT0COccupancyInTimeRange";
+
   // **) Names of 2D event histograms:
   qa.fEventHistogramsName2D[eMultTPC_vs_NContributors] = Form("%s_vs_%s", eh.fEventHistogramsName[eMultTPC].Data(), eh.fEventHistogramsName[eNContributors].Data());
   qa.fEventHistogramsName2D[eVertex_z_vs_MultTPC] = Form("%s_vs_%s", eh.fEventHistogramsName[eVertex_z].Data(), eh.fEventHistogramsName[eMultTPC].Data());
@@ -446,6 +453,7 @@ void DefaultConfiguration()
   qa.fEventHistogramsName2D[eCentFT0M_vs_CentNTPV] = Form("%s_vs_%s", qa.fCentralityEstimatorName[eCentFT0M].Data(), qa.fCentralityEstimatorName[eCentNTPV].Data());
   qa.fEventHistogramsName2D[eCentRun2V0M_vs_CentRun2SPDTracklets] = Form("%s_vs_%s", qa.fCentralityEstimatorName[eCentRun2V0M].Data(), qa.fCentralityEstimatorName[eCentRun2SPDTracklets].Data());
   qa.fEventHistogramsName2D[eCentRun2V0M_vs_NContributors] = Form("%s_vs_%s", qa.fCentralityEstimatorName[eCentRun2V0M].Data(), eh.fEventHistogramsName[eNContributors].Data());
+  qa.fEventHistogramsName2D[eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange] = Form("%s_vs_%s", qa.fOccupancyEstimatorName[eTrackOccupancyInTimeRange].Data(), qa.fOccupancyEstimatorName[eFT0COccupancyInTimeRange].Data());
 
   // ***) Quick insanity check that all names are set:
   for (Int_t t = 0; t < eQAEventHistograms2D_N; t++) {
@@ -475,9 +483,12 @@ Bool_t Alright(TString s)
   // a) Insanity check on the format;
   // b) Do the thing.
 
-  if (tc.fVerbose) {
-    LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
+  if (tc.fVerboseUtility) {
+    StartFunction(__FUNCTION__);
+    LOGF(info, "\033[1;32m  TString s = %s\033[0m", s.Data());
   }
+
+  Bool_t returnValue = kFALSE;
 
   // a) Insanity check on the format:
   TObjArray* oa = s.Tokenize("-");
@@ -493,14 +504,19 @@ Bool_t Alright(TString s)
   //    Algorithm: I split "someName-0" with respect to "-" as a field separator, and check what is in the 2nd field.
   if (TString(oa->At(1)->GetName()).EqualTo("0")) {
     delete oa;
-    return kFALSE;
+    returnValue = kFALSE;
   } else if (TString(oa->At(1)->GetName()).EqualTo("1")) {
     delete oa;
-    return kTRUE;
+    returnValue = kTRUE;
   } else {
     LOGF(fatal, "\033[1;31m%s at line %d : string expected in this function must be formatted as \"someName-0\" or \"someName-1\" => s = %s\033[0m", __FUNCTION__, __LINE__, s.Data());
   }
-  return kFALSE; // obsolete, but suppresses the warning
+
+  if (tc.fVerboseUtility) {
+    ExitFunction(__FUNCTION__);
+  }
+
+  return returnValue;
 
 } // Bool_t Alright(const char* name)
 
@@ -517,7 +533,7 @@ void DefaultBooking()
   // e) QA;
 
   if (tc.fVerbose) {
-    LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
+    StartFunction(__FUNCTION__);
   }
 
   // a) Event histograms 1D:
@@ -559,6 +575,7 @@ void DefaultBooking()
   eh.fBookEventHistograms[eVertex_z] = Alright(lBookEventHistograms[eVertex_z]) && eh.fFillEventHistograms;
   eh.fBookEventHistograms[eNContributors] = Alright(lBookEventHistograms[eNContributors]) && eh.fFillEventHistograms;
   eh.fBookEventHistograms[eImpactParameter] = Alright(lBookEventHistograms[eImpactParameter]) && eh.fFillEventHistograms;
+  eh.fBookEventHistograms[eOccupancy] = Alright(lBookEventHistograms[eOccupancy]) && eh.fFillEventHistograms;
 
   // b) Event histograms 2D:
   // TBI 20240515 Ideally, all 2D shall go to QA group, see below
@@ -610,12 +627,21 @@ void DefaultBooking()
   ph.fFillParticleHistograms2D = cf_ph.cfFillParticleHistograms2D;
 
   // If you do not want particular 2D particle histogram to be booked, use configurable array cfBookParticleHistograms2D, where you can specify flags 1 (book) or 0 (do not book).
-  // Ordering of the flags in that array is interpreted through ordering of enums in enum eParticleHistograms2D. // TBI 20240124 is this safe enough?
+  // *) Ordering of the flags in that array is interpreted through ordering of enums in enum eParticleHistograms2D. // TBI 20240124 is this safe enough?
   auto lBookParticleHistograms2D = (vector<string>)cf_ph.cfBookParticleHistograms2D; // this is now the local version of that int array from configurable. TBI 20240124 why is this casting mandatory?
   if (lBookParticleHistograms2D.size() != eParticleHistograms2D_N) {
     LOGF(info, "\033[1;31m lBookParticleHistograms2D.size() = %d\033[0m", lBookParticleHistograms2D.size());
     LOGF(info, "\033[1;31m eParticleHistograms2D_N) = %d\033[0m", static_cast<int>(eParticleHistograms2D_N));
     LOGF(fatal, "in function \033[1;31m%s at line %d Mismatch in the number of flags in configurable cfBookParticleHistograms2D, and number of entries in enum eParticleHistograms2D \n \033[0m", __FUNCTION__, __LINE__);
+  }
+
+  // *) Insanity check on the content and ordering of 2D particle histograms in the initialization in configurable cfBookParticleHistograms2D:
+  // TBI 20241109 I do not need this in fact, I can automate initialization even without ordering in configurable, but it feels with the ordering enforced, it's much safer.
+  for (Int_t name = 0; name < eParticleHistograms2D_N; name++) {
+    // TBI 20241109 I could implement even a strickter EqualTo instead of BeginsWith, but then I need to tokenize, etc., etc. This shall be safe enough.
+    if (!TString(lBookParticleHistograms2D[name]).BeginsWith(ph.fParticleHistogramsName2D[name].Data())) {
+      LOGF(fatal, "\033[1;31m%s at line %d : Wrong content or ordering of contents in configurable cfBookParticleHistograms2D => name = %d, lBookParticleHistograms2D[name] = \"%s\", ph.fParticleHistogramsName2D[name] = \"%s\" \033[0m", __FUNCTION__, __LINE__, name, TString(lBookParticleHistograms2D[name]).Data(), ph.fParticleHistogramsName2D[name].Data());
+    }
   }
 
   // I append "&& ph.fFillParticleHistograms2D" below, to switch off booking of all 2D particle histograms with one common flag:
@@ -652,6 +678,7 @@ void DefaultBooking()
   qa.fBookQAEventHistograms2D[eCentFT0M_vs_CentNTPV] = Alright(lBookQAEventHistograms2D[eCentFT0M_vs_CentNTPV]) && qa.fFillQAEventHistograms2D;
   qa.fBookQAEventHistograms2D[eCentRun2V0M_vs_CentRun2SPDTracklets] = Alright(lBookQAEventHistograms2D[eCentRun2V0M_vs_CentRun2SPDTracklets]) && qa.fFillQAEventHistograms2D;
   qa.fBookQAEventHistograms2D[eCentRun2V0M_vs_NContributors] = Alright(lBookQAEventHistograms2D[eCentRun2V0M_vs_NContributors]) && qa.fFillQAEventHistograms2D;
+  qa.fBookQAEventHistograms2D[eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange] = Alright(lBookQAEventHistograms2D[eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange]) && qa.fFillQAEventHistograms2D;
 
   // **) QA 2D particle histograms:
   qa.fFillQAParticleHistograms2D = cf_qa.cfFillQAParticleHistograms2D;
@@ -679,6 +706,10 @@ void DefaultBooking()
 
   // ...
 
+  if (tc.fVerbose) {
+    ExitFunction(__FUNCTION__);
+  }
+
 } // void DefaultBooking()
 
 //============================================================
@@ -697,7 +728,7 @@ void DefaultBinning()
   // e) Variable-length binning set via MuPa-Configurables.h.
 
   if (tc.fVerbose) {
-    LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
+    StartFunction(__FUNCTION__);
   }
 
   // a) Default binning for event histograms:
@@ -754,8 +785,12 @@ void DefaultBinning()
   eh.fEventHistogramsBins[eNContributors][2] = 10000.;
 
   eh.fEventHistogramsBins[eImpactParameter][0] = 2000;
-  eh.fEventHistogramsBins[eImpactParameter][1] = -1000.;
-  eh.fEventHistogramsBins[eImpactParameter][2] = 1000.; // It's set to -999 is not meaningful
+  eh.fEventHistogramsBins[eImpactParameter][1] = -1000.; // It's set to -999 if not meaningful
+  eh.fEventHistogramsBins[eImpactParameter][2] = 1000.;
+
+  eh.fEventHistogramsBins[eOccupancy][0] = 151;
+  eh.fEventHistogramsBins[eOccupancy][1] = -100.; // It's set to -1 if not meaningful TBI 20241109 check this further
+  eh.fEventHistogramsBins[eOccupancy][2] = 15000.;
 
   // b) Default binning for particle histograms 1D:
   ph.fParticleHistogramsBins[ePhi][0] = 360;
@@ -853,6 +888,8 @@ void DefaultBinning()
   this->InitializeFixedLengthBins(AFO_PT);
   // *) Fixed-length binning vs. eta:
   this->InitializeFixedLengthBins(AFO_ETA);
+  // *) Fixed-length binning vs. occupancy:
+  this->InitializeFixedLengthBins(AFO_OCCUPANCY);
 
   // e) Variable-length binning set via MuPa-Configurables.h:
   // *) Variable-length binning vs. multiplicity:
@@ -871,6 +908,14 @@ void DefaultBinning()
   if (cf_res.cfUseVariableLength_eta_bins) {
     this->InitializeVariableLengthBins(AFO_ETA);
   }
+  // *) Variable-length binning vs. occupancy:
+  if (cf_res.cfUseVariableLength_occu_bins) {
+    this->InitializeVariableLengthBins(AFO_OCCUPANCY);
+  }
+
+  if (tc.fVerbose) {
+    ExitFunction(__FUNCTION__);
+  }
 
 } // void DefaultBinning()
 
@@ -882,7 +927,7 @@ void InitializeFixedLengthBins(eAsFunctionOf AFO)
   // It merely initalizes res.fResultsProFixedLengthBins[...] from corresponding configurables + a few other minor thingies.
 
   if (tc.fVerbose) {
-    LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
+    StartFunction(__FUNCTION__);
   }
 
   // Common local vector for all fixed-length bins:
@@ -900,6 +945,9 @@ void InitializeFixedLengthBins(eAsFunctionOf AFO)
       break;
     case AFO_ETA:
       lFixedLength_bins = cf_res.cfFixedLength_eta_bins.value;
+      break;
+    case AFO_OCCUPANCY:
+      lFixedLength_bins = cf_res.cfFixedLength_occu_bins.value;
       break;
     // ...
     default:
@@ -920,6 +968,7 @@ void InitializeFixedLengthBins(eAsFunctionOf AFO)
     LOGF(info, "\033[1;32m [0] : %f \033[0m", res.fResultsProFixedLengthBins[AFO][0]);
     LOGF(info, "\033[1;32m [1] : %f \033[0m", res.fResultsProFixedLengthBins[AFO][1]);
     LOGF(info, "\033[1;32m [2] : %f \033[0m", res.fResultsProFixedLengthBins[AFO][2]);
+    ExitFunction(__FUNCTION__);
   }
 
 } // void InitializeFixedLengthBins(eAsFunctionOf AFO)
@@ -932,7 +981,7 @@ void InitializeVariableLengthBins(eAsFunctionOf AFO)
   // It merely initalizes res.fResultsProVariableLengthBins[...] from corresponding configurables + a few other minor thingies.
 
   if (tc.fVerbose) {
-    LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
+    StartFunction(__FUNCTION__);
   }
 
   // Common local vector for all variable-length bins:
@@ -940,7 +989,6 @@ void InitializeVariableLengthBins(eAsFunctionOf AFO)
 
   switch (AFO) {
     case AFO_MULTIPLICITY:
-      // lVariableLength_bins = (vector<float>)cf_res.cfVariableLength_mult_bins; // this works as well, but it requires casting
       lVariableLength_bins = cf_res.cfVariableLength_mult_bins.value;
       break;
     case AFO_CENTRALITY:
@@ -951,6 +999,9 @@ void InitializeVariableLengthBins(eAsFunctionOf AFO)
       break;
     case AFO_ETA:
       lVariableLength_bins = cf_res.cfVariableLength_eta_bins.value;
+      break;
+    case AFO_OCCUPANCY:
+      lVariableLength_bins = cf_res.cfVariableLength_occu_bins.value;
       break;
     // ...
     default:
@@ -969,6 +1020,10 @@ void InitializeVariableLengthBins(eAsFunctionOf AFO)
     for (Int_t i = 0; i < res.fResultsProVariableLengthBins[AFO]->GetSize(); i++) {
       LOGF(info, "\033[1;32m [%d] : %f \033[0m", i, res.fResultsProVariableLengthBins[AFO]->GetAt(i));
     }
+  }
+
+  if (tc.fVerbose) {
+    ExitFunction(__FUNCTION__);
   }
 
 } // void InitializeVariableLengthBins(eAsFunctionOf AFO)
@@ -996,7 +1051,6 @@ void CastStringIntoArray(Int_t AFO)
   Int_t nEntries = oa->GetEntries();
   res.fResultsProVariableLengthBins[AFO] = new TArrayF(nEntries);
   for (Int_t i = 0; i < nEntries; i++) {
-    // cout<< TString(oa->At(i)->GetName()).Atof() <<endl;
     res.fResultsProVariableLengthBins[AFO]->AddAt(TString(oa->At(i)->GetName()).Atof(), i);
   }
   delete oa; // yes, otherwise it's a memory leak
@@ -1023,7 +1077,7 @@ void DefaultCuts()
   // b) Default particle cuts.
 
   if (tc.fVerbose) {
-    LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
+    StartFunction(__FUNCTION__);
   }
 
   // a) Default event cuts:
@@ -1061,6 +1115,7 @@ void DefaultCuts()
   ec.fUseEventCuts[eVertex_z] = Alright(lUseEventCuts[eVertex_z]);
   ec.fUseEventCuts[eNContributors] = Alright(lUseEventCuts[eNContributors]);
   ec.fUseEventCuts[eImpactParameter] = Alright(lUseEventCuts[eImpactParameter]);
+  ec.fUseEventCuts[eOccupancy] = Alright(lUseEventCuts[eOccupancy]);
   // *) from enum eEventCuts:
   ec.fUseEventCuts[eTrigger] = Alright(lUseEventCuts[eTrigger]);
   ec.fUseEventCuts[eSel7] = Alright(lUseEventCuts[eSel7]);
@@ -1072,6 +1127,7 @@ void DefaultCuts()
   ec.fUseEventCuts[eIsVertexITSTPC] = Alright(lUseEventCuts[eIsVertexITSTPC]);
   ec.fUseEventCuts[eIsVertexTOFmatched] = Alright(lUseEventCuts[eIsVertexTOFmatched]);
   ec.fUseEventCuts[eIsVertexTRDmatched] = Alright(lUseEventCuts[eIsVertexTRDmatched]);
+  ec.fUseEventCuts[eOccupancyEstimator] = Alright(lUseEventCuts[eOccupancyEstimator]);
 
   // **) event cuts defined via booleans:
   ec.fUseEventCuts[eSel7] = ec.fUseEventCuts[eSel7] && cf_ec.cfUseSel7;
@@ -1139,6 +1195,10 @@ void DefaultCuts()
   ec.fdEventCuts[eImpactParameter][eMin] = lImpactParameter[eMin];
   ec.fdEventCuts[eImpactParameter][eMax] = lImpactParameter[eMax];
 
+  auto lOccupancy = (vector<float>)cf_ec.cfOccupancy;
+  ec.fdEventCuts[eOccupancy][eMin] = lOccupancy[eMin];
+  ec.fdEventCuts[eOccupancy][eMax] = lOccupancy[eMax];
+
   auto lSelectedEvents = (vector<int>)cf_ec.cfSelectedEvents;
   ec.fdEventCuts[eSelectedEvents][eMin] = lSelectedEvents[eMin];
   ec.fdEventCuts[eSelectedEvents][eMax] = lSelectedEvents[eMax];
@@ -1146,6 +1206,7 @@ void DefaultCuts()
   // **) event cuts defined via string:
   ec.fsEventCuts[eCentralityEstimator] = cf_ec.cfCentralityEstimator;
   ec.fsEventCuts[eTrigger] = cf_ec.cfTrigger;
+  ec.fsEventCuts[eOccupancyEstimator] = cf_ec.cfOccupancyEstimator;
 
   // ----------------------------------------------------------------------
 
@@ -1270,6 +1331,10 @@ void DefaultCuts()
   // **) particles cuts defined via string:
   pc.fsParticleCuts[ePtDependentDCAxyParameterization] = cf_pc.cfPtDependentDCAxyParameterization;
 
+  if (tc.fVerbose) {
+    ExitFunction(__FUNCTION__);
+  }
+
 } // void DefaultCuts()
 
 //============================================================
@@ -1284,11 +1349,13 @@ void InsanityChecksBeforeBooking()
   // b) Ensure that Run 1/2 specific cuts and flags are used only in Run 1/2 (both data and sim);
   // c) Ensure that Run 3 specific cuts and flags are used only in Run 3 (both data and sim);
   // d) Insanity checks on binning;
-  // e) Insanity checks on Toy NUA;
-  // f) Insanity checks on internal validation.
+  // e) Insanity checks on events cuts;
+  // f) Insanity checks on Toy NUA;
+  // g) Insanity checks on internal validation;
+  // h) Insanity checks on results histograms.
 
   if (tc.fVerbose) {
-    LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
+    StartFunction(__FUNCTION__);
   }
 
   // a) Insanity checks on configuration:
@@ -1301,6 +1368,14 @@ void InsanityChecksBeforeBooking()
   // **) Cannot calculate Test0, in case Q-vectors are not filled:
   if (t0.fCalculateTest0 && !qv.fCalculateQvectors) {
     LOGF(fatal, "\033[1;31m%s at line %d : Cannot calculate Test0, in case Q-vectors are not filled \033[0m", __FUNCTION__, __LINE__);
+  }
+
+  // **) If some differential Test0 flag is set to true, but the main fCalculateTest0 is false, only print the warning that that differential Test0 won't be calculated.
+  //     This is not fatal, because this way I can turn off all differential Test0 flags, just by setting fCalculateTest0 to false, e.g. when I want to fill only control histograms.
+  for (Int_t v = 0; v < eAsFunctionOf_N; v++) {
+    if (t0.fCalculateTest0AsFunctionOf[v] && !t0.fCalculateTest0) {
+      LOGF(warning, "\033[1;33m%s at line %d : t0.fCalculateTest0AsFunctionOf[%d] is true, but t0.fCalculateTest0 is false. This differential Test0 won't be calculated.\033[0m", __FUNCTION__, __LINE__, v);
+    }
   }
 
   // **) Enforce that if fixed number of randomly selected tracks is used in the analysis, that Fisher-Yates algorithm is enabled:
@@ -1353,6 +1428,11 @@ void InsanityChecksBeforeBooking()
     if (ec.fUseEventCuts[eTrigger]) {
       LOGF(fatal, "\033[1;31m%s at line %d : offline trigger eTrigger (e.g. kINT7) cannot be used in Run 3\033[0m", __FUNCTION__, __LINE__);
     }
+  }
+
+  // **) Ensure that fFloatingPointPrecision makes sense:
+  if (!(tc.fFloatingPointPrecision > 0.)) {
+    LOGF(fatal, "\033[1;31m%s at line %d : set fFloatingPointPrecision = %f to some small positive value, which will determine if two floats are the same \033[0m", __FUNCTION__, __LINE__, tc.fFloatingPointPrecision);
   }
 
   // b) Ensure that Run 1/2 specific cuts and flags are used only in Run 1/2 (both data and sim):
@@ -1431,6 +1511,14 @@ void InsanityChecksBeforeBooking()
     }
   }
 
+  // **) Supported occupancy estimators for Run 3 are enlisted here:
+  if (tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim]) {
+    if (!(ec.fsEventCuts[eOccupancyEstimator].EqualTo("TrackOccupancyInTimeRange", TString::kIgnoreCase) ||
+          ec.fsEventCuts[eOccupancyEstimator].EqualTo("FT0COccupancyInTimeRange", TString::kIgnoreCase))) {
+      LOGF(fatal, "\033[1;31m%s at line %d : occupancy estimator = %s is not supported yet for Run 3 analysis. \033[0m", __FUNCTION__, __LINE__, ec.fsEventCuts[eOccupancyEstimator].Data());
+    }
+  }
+
   // **) Protection against particle cuts which are available, but not yet validated, or are meaningless, in Run 3:
   if (tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim]) {
     if (pc.fUseParticleCuts[eisQualityTrack]) {
@@ -1446,10 +1534,13 @@ void InsanityChecksBeforeBooking()
   // d) Insanity checks on binning:
   // ...
 
-  // e) Insanity checks on Toy NUA:
+  // e) Insanity checks on events cuts:
   // ...
 
-  // f) Insanity checks on internal validation:
+  // f) Insanity checks on Toy NUA:
+  // ...
+
+  // g) Insanity checks on internal validation:
   //    Remark: I check here only in the settings I could define in DefaultConfiguration().
   //            The other insanity checks are in BookInternalValidationHistograms() or in InsanityChecksAfterBooking()
   if (iv.fUseInternalValidation) {
@@ -1471,6 +1562,24 @@ void InsanityChecksBeforeBooking()
 
   } // if (iv.fUseInternalValidation) {
 
+  // h) Insanity checks on results histograms:
+  //  **) Check if all arrays are initialized until the end:
+  for (Int_t afo = 0; afo < eAsFunctionOf_N; afo++) {
+    if (res.fResultsProXaxisTitle[afo].EqualTo("")) {
+      LOGF(fatal, "\033[1;31m%s at line %d : res.fResultsProXaxisTitle[%d] is empty.\033[0m", __FUNCTION__, __LINE__, afo);
+    }
+
+    if (res.fResultsProRawName[afo].EqualTo("")) {
+      LOGF(fatal, "\033[1;31m%s at line %d : res.fResultsProRawName[%d] is empty.\033[0m", __FUNCTION__, __LINE__, afo);
+    }
+  } // for(Int_t afo = 0; afo < eAsFunctionOf_N; afo++) {
+
+  // ...
+
+  if (tc.fVerbose) {
+    ExitFunction(__FUNCTION__);
+  }
+
 } // void InsanityChecksBeforeBooking()
 
 //============================================================
@@ -1484,11 +1593,27 @@ void InsanityChecksAfterBooking()
   // ...
 
   if (tc.fVerbose) {
-    LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
+    StartFunction(__FUNCTION__);
   }
 
   // a) Insanity checks on booking:
+
+  // **) Check that the last bin is not empty in fBasePro, and that there is no underflow or overflow bins:
+  if (TString(fBasePro->GetXaxis()->GetBinLabel(eConfiguration_N - 1)).EqualTo("")) {
+    LOGF(fatal, "\033[1;31m%s at line %d : The very last bin of \"fBasePro\" doesn't have the title, check the booking of this hostogram. \033[0m", __FUNCTION__, __LINE__);
+  }
+  if (TMath::Abs(fBasePro->GetBinContent(0)) > 0.) {
+    LOGF(fatal, "\033[1;31m%s at line %d : In \"fBasePro\" something was filled in the underflow, check the booking of this hostogram. \033[0m", __FUNCTION__, __LINE__);
+  }
+  if (TMath::Abs(fBasePro->GetBinContent(eConfiguration_N)) > 0.) {
+    LOGF(fatal, "\033[1;31m%s at line %d : In \"fBasePro\" something was filled in the overflow, check the booking of this hostogram. \033[0m", __FUNCTION__, __LINE__);
+  }
+
   // ...
+
+  if (tc.fVerbose) {
+    ExitFunction(__FUNCTION__);
+  }
 
 } // void InsanityChecksAfterBooking()
 
@@ -1509,7 +1634,7 @@ void BookAndNestAllLists()
   // *) Results.
 
   if (tc.fVerbose) {
-    LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
+    StartFunction(__FUNCTION__);
   }
 
   // *) QA:
@@ -1589,6 +1714,10 @@ void BookAndNestAllLists()
   res.fResultsList->SetName("Results");
   res.fResultsList->SetOwner(kTRUE);
   fBaseList->Add(res.fResultsList);
+
+  if (tc.fVerbose) {
+    ExitFunction(__FUNCTION__);
+  }
 
 } // void BookAndNestAllLists()
 
@@ -1711,6 +1840,16 @@ void BookQAHistograms()
   min_y_Event[eCentRun2V0M_vs_NContributors] = eh.fEventHistogramsBins[eNContributors][1];
   max_y_Event[eCentRun2V0M_vs_NContributors] = eh.fEventHistogramsBins[eNContributors][2];
   title_y_Event[eCentRun2V0M_vs_NContributors] = FancyFormatting(eh.fEventHistogramsName[eNContributors].Data());
+
+  // *) "eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange":
+  nBins_x_Event[eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange] = static_cast<int>(eh.fEventHistogramsBins[eOccupancy][0]);
+  min_x_Event[eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange] = eh.fEventHistogramsBins[eOccupancy][1];
+  max_x_Event[eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange] = eh.fEventHistogramsBins[eOccupancy][2];
+  title_x_Event[eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange] = FancyFormatting(qa.fOccupancyEstimatorName[eTrackOccupancyInTimeRange].Data());
+  nBins_y_Event[eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange] = static_cast<int>(eh.fEventHistogramsBins[eOccupancy][0]);
+  min_y_Event[eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange] = eh.fEventHistogramsBins[eOccupancy][1];
+  max_y_Event[eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange] = eh.fEventHistogramsBins[eOccupancy][2];
+  title_y_Event[eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange] = FancyFormatting(qa.fOccupancyEstimatorName[eFT0COccupancyInTimeRange].Data());
 
   // ...
 
@@ -1889,7 +2028,7 @@ void BookEventHistograms()
           continue;
         }
 
-        eh.fEventHistograms[t][rs][ba] = new TH1D(
+        eh.fEventHistograms[t][rs][ba] = new TH1F(
           Form("fEventHistograms[%s][%s][%s]", eh.fEventHistogramsName[t].Data(), srs[rs].Data(), sba[ba].Data()),
           Form("%s, %s, %s", "__RUN_NUMBER__", srs_long[rs].Data(), sba_long[ba].Data()), // __RUN_NUMBER__ is handled in DetermineAndPropagateRunNumber(T const& collision)
           static_cast<int>(eh.fEventHistogramsBins[t][0]),
@@ -1966,7 +2105,8 @@ void BookEventCutsHistograms()
         continue;
       }
 
-      ec.fEventCutCounterHist[rs][cc] = new TH1D(Form("fEventCutCounterHist[%s][%s]", srs[rs].Data(), scc[cc].Data()), Form("%s, %s, event cut counter (%s)", "__RUN_NUMBER__", srs_long[rs].Data(), scc_long[cc].Data()), eEventCuts_N, 0.5, static_cast<float>(eEventCuts_N) + 0.5);
+      ec.fEventCutCounterHist[rs][cc] = new TH1I(Form("fEventCutCounterHist[%s][%s]", srs[rs].Data(), scc[cc].Data()), Form("%s, %s, event cut counter (%s)", "__RUN_NUMBER__", srs_long[rs].Data(), scc_long[cc].Data()), eEventCuts_N, 0.5, static_cast<double>(eEventCuts_N) + 0.5); // I cast in double the last argument, because that's what this particular TH1I constructor expects
+                                                                                                                                                                                                                                                                                        // Yes, +0.5, because eEventCuts kicks off from 0
       ec.fEventCutCounterHist[rs][cc]->SetStats(kFALSE);
       ec.fEventCutCounterHist[rs][cc]->SetLineColor(eColor);
       ec.fEventCutCounterHist[rs][cc]->SetFillColor(eFillColor);
@@ -1990,7 +2130,7 @@ void BookParticleHistograms()
   // c) Book specific particle histograms 2D.
 
   if (tc.fVerbose) {
-    LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
+    StartFunction(__FUNCTION__);
   }
 
   // a) Book the profile holding flags:
@@ -2037,7 +2177,7 @@ void BookParticleHistograms()
 
       for (Int_t ba = 0; ba < 2; ba++) // before/after cuts
       {
-        ph.fParticleHistograms[t][rs][ba] = new TH1D(Form("fParticleHistograms[%s][%s][%s]", ph.fParticleHistogramsName[t].Data(), srs[rs].Data(), sba[ba].Data()),
+        ph.fParticleHistograms[t][rs][ba] = new TH1F(Form("fParticleHistograms[%s][%s][%s]", ph.fParticleHistogramsName[t].Data(), srs[rs].Data(), sba[ba].Data()),
                                                      Form("%s, %s, %s", "__RUN_NUMBER__", srs_long[rs].Data(), sba_long[ba].Data()),
                                                      static_cast<int>(ph.fParticleHistogramsBins[t][0]), ph.fParticleHistogramsBins[t][1], ph.fParticleHistogramsBins[t][2]);
         ph.fParticleHistograms[t][rs][ba]->SetLineColor(ec.fBeforeAfterColor[ba]);
@@ -2118,6 +2258,10 @@ void BookParticleHistograms()
   } // for(Int_t t=0;t<eParticleHistograms_N;t++) // type, see enum
     // eParticleHistograms
 
+  if (tc.fVerbose) {
+    ExitFunction(__FUNCTION__);
+  }
+
 } // void BookParticleHistograms()
 
 //============================================================
@@ -2132,7 +2276,7 @@ void BookParticleCutsHistograms()
   // d) Book the formula for pt-dependent DCAxy cut.
 
   if (tc.fVerbose) {
-    LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
+    StartFunction(__FUNCTION__);
   }
 
   // a) Book the profile holding flags:
@@ -2183,7 +2327,9 @@ void BookParticleCutsHistograms()
         continue;
       }
 
-      pc.fParticleCutCounterHist[rs][cc] = new TH1D(Form("fParticleCutCounterHist[%s][%s]", srs[rs].Data(), scc[cc].Data()), Form("%s, %s, particle cut counter (%s)", "__RUN_NUMBER__", srs_long[rs].Data(), scc_long[cc].Data()), eParticleCuts_N, 0.5, static_cast<float>(eParticleCuts_N) + 0.5);
+      pc.fParticleCutCounterHist[rs][cc] = new TH1I(Form("fParticleCutCounterHist[%s][%s]", srs[rs].Data(), scc[cc].Data()), Form("%s, %s, particle cut counter (%s)", "__RUN_NUMBER__", srs_long[rs].Data(), scc_long[cc].Data()), eParticleCuts_N, 0.5, static_cast<double>(eParticleCuts_N) + 0.5);
+      // I cast in double the last argument, because that's what this particular TH1I constructor expects
+      // Yes, +0.5, because eParticleCuts kicks off from 0
       pc.fParticleCutCounterHist[rs][cc]->SetStats(kFALSE);
       pc.fParticleCutCounterHist[rs][cc]->SetLineColor(eColor);
       pc.fParticleCutCounterHist[rs][cc]->SetFillColor(eFillColor);
@@ -2203,6 +2349,10 @@ void BookParticleCutsHistograms()
     }
   } // if(pc.fUseParticleCuts[ePtDependentDCAxyParameterization]) {
 
+  if (tc.fVerbose) {
+    ExitFunction(__FUNCTION__);
+  }
+
 } // void BookParticleCutsHistograms()
 
 //============================================================
@@ -2215,7 +2365,7 @@ void BookQvectorHistograms()
   // b) ...
 
   if (tc.fVerbose) {
-    LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
+    StartFunction(__FUNCTION__);
   }
 
   // a) Book the profile holding flags:
@@ -2235,6 +2385,10 @@ void BookQvectorHistograms()
 
   // b) ...
 
+  if (tc.fVerbose) {
+    ExitFunction(__FUNCTION__);
+  }
+
 } // void BookQvectorHistograms()
 
 //============================================================
@@ -2249,7 +2403,7 @@ void BookCorrelationsHistograms()
   // d) Few quick insanity checks on booking.
 
   if (tc.fVerbose) {
-    LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
+    StartFunction(__FUNCTION__);
   }
 
   // a) Book the profile holding flags:
@@ -2305,6 +2459,10 @@ void BookCorrelationsHistograms()
     LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__); // ordering in enum eAsFunctionOf is not the same as in TString fResultsProXaxisTitle[eAsFunctionOf_N]
   }
 
+  if (tc.fVerbose) {
+    ExitFunction(__FUNCTION__);
+  }
+
 } // BookCorrelationsHistograms()
 
 //============================================================
@@ -2318,7 +2476,7 @@ void BookWeightsHistograms()
   // c) Histograms for differential weights.
 
   if (tc.fVerbose) {
-    LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
+    StartFunction(__FUNCTION__);
   }
 
   // a) Book the profile holding flags:
@@ -2356,6 +2514,10 @@ void BookWeightsHistograms()
   // c) Histograms for differential weights:
   //    Same comment applies as for b) => add histograms to the list, only after they are cloned from external files.
 
+  if (tc.fVerbose) {
+    ExitFunction(__FUNCTION__);
+  }
+
 } // void BookWeightsHistograms()
 
 //============================================================
@@ -2370,7 +2532,7 @@ void BookNestedLoopsHistograms()
   // d) Few quick insanity checks on booking.
 
   if (tc.fVerbose) {
-    LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
+    StartFunction(__FUNCTION__);
   }
 
   // a) Book the profile holding flags:
@@ -2473,6 +2635,10 @@ void BookNestedLoopsHistograms()
     LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__); // ordering in enum eAsFunctionOf is not the same as in TString fResultsProXaxisTitle[eAsFunctionOf_N]
   }
 
+  if (tc.fVerbose) {
+    ExitFunction(__FUNCTION__);
+  }
+
 } // void BookNestedLoopsHistograms()
 
 //============================================================
@@ -2486,7 +2652,7 @@ void BookNUAHistograms()
   // c) Histograms.
 
   if (tc.fVerbose) {
-    LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
+    StartFunction(__FUNCTION__);
   }
 
   // a) Book the profile holding flags:
@@ -2611,6 +2777,10 @@ void BookNUAHistograms()
 
   } // for(Int_t pdf=0;pdf<eNUAPDF_N;pdf++) // use pdfs for NUA in (phi, pt, eta, ...).
 
+  if (tc.fVerbose) {
+    ExitFunction(__FUNCTION__);
+  }
+
 } // void BookNUAHistograms()
 
 //============================================================
@@ -2625,7 +2795,7 @@ void BookInternalValidationHistograms()
   // d) Handle multiplicity for internal validation.
 
   if (tc.fVerbose) {
-    LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
+    StartFunction(__FUNCTION__);
   }
 
   // a) Book the profile holding flags:
@@ -2698,6 +2868,10 @@ void BookInternalValidationHistograms()
     LOGF(fatal, "\033[1;31m%s at line %d : iv.fMultRangeInternalValidation[eMin] >= iv.fMultRangeInternalValidation[eMax] \n \033[0m", __FUNCTION__, __LINE__);
   }
 
+  if (tc.fVerbose) {
+    ExitFunction(__FUNCTION__);
+  }
+
 } // BookInternalValidationHistograms()
 
 //============================================================
@@ -2712,7 +2886,7 @@ TComplex TheoreticalValue(TArrayI* harmonics, TArrayD* amplitudes, TArrayD* plan
   // c) Return value.
 
   if (tc.fVerbose) {
-    LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
+    StartFunction(__FUNCTION__);
   }
 
   // a) Insanity checks:
@@ -2737,6 +2911,9 @@ TComplex TheoreticalValue(TArrayI* harmonics, TArrayD* amplitudes, TArrayD* plan
   } // for(Int_t h=0;h<harmonics->GetSize();h++)
 
   // c) Return value:
+  if (tc.fVerbose) {
+    ExitFunction(__FUNCTION__);
+  }
   return value;
 
 } // TComplex TheoreticalValue(TArrayI *harmonics, TArrayD *amplitudes, TArrayD *planes)
@@ -2761,7 +2938,7 @@ void InternalValidation()
   // c) Delete persistent objects.
 
   if (tc.fVerbose) {
-    LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
+    StartFunction(__FUNCTION__);
   }
 
   // a) Fourier like p.d.f. for azimuthal angles and flow amplitudes:
@@ -2829,16 +3006,17 @@ void InternalValidation()
     ResetEventByEventQuantities();
 
     // b1) Determine multiplicity, centrality, reaction plane and configure p.d.f. for azimuthal angles if harmonics are not constant e-by-e:
-    Int_t nMult = gRandom->Uniform(iv.fMultRangeInternalValidation[eMin], iv.fMultRangeInternalValidation[eMax]);
+    Int_t nMult = static_cast<int>(gRandom->Uniform(iv.fMultRangeInternalValidation[eMin], iv.fMultRangeInternalValidation[eMax]));
 
-    Double_t fReactionPlane = gRandom->Uniform(0., TMath::TwoPi());
+    Double_t fReactionPlane = gRandom->Uniform(0., TMath::TwoPi()); // no cast is needed, since Uniform(...) returns double
     if (iv.fHarmonicsOptionInternalValidation->EqualTo("constant")) {
       fPhiPDF->SetParameter(18, fReactionPlane);
     } else if (iv.fHarmonicsOptionInternalValidation->EqualTo("correlated")) {
       fPhiPDF->SetParameter(3, fReactionPlane);
     }
 
-    ebye.fCentrality = gRandom->Uniform(0., 100.); // this is perfectly fine for this exercise
+    ebye.fCentrality = static_cast<float>(gRandom->Uniform(0., 100.));  // this is perfectly fine for this exercise
+    ebye.fOccupancy = static_cast<float>(gRandom->Uniform(0., 10000.)); // this is perfectly fine for this exercise
 
     //    b2) Fill event histograms:
     if (eh.fFillEventHistograms) {
@@ -2846,6 +3024,7 @@ void InternalValidation()
       !eh.fEventHistograms[eTotalMultiplicity][eSim][eAfter] ? true : eh.fEventHistograms[eTotalMultiplicity][eSim][eAfter]->Fill(nMult);
       !eh.fEventHistograms[eSelectedTracks][eSim][eAfter] ? true : eh.fEventHistograms[eSelectedTracks][eSim][eAfter]->Fill(ebye.fSelectedTracks);
       !eh.fEventHistograms[eCentrality][eSim][eAfter] ? true : eh.fEventHistograms[eCentrality][eSim][eAfter]->Fill(ebye.fCentrality);
+      !eh.fEventHistograms[eOccupancy][eSim][eAfter] ? true : eh.fEventHistograms[eCentrality][eSim][eAfter]->Fill(ebye.fOccupancy);
     }
 
     // configure p.d.f. for azimuthal angles if harmonics are not constant e-by-e:
@@ -2976,6 +3155,10 @@ void InternalValidation()
     delete fvnPDF;
   }
 
+  if (tc.fVerbose) {
+    ExitFunction(__FUNCTION__);
+  }
+
 } // void InternalValidation()
 
 //============================================================
@@ -3082,6 +3265,9 @@ void BookTest0Histograms()
             continue;
           }
           if (AFO_ETA == v && !t0.fCalculateTest0AsFunctionOf[AFO_ETA]) {
+            continue;
+          }
+          if (AFO_OCCUPANCY == v && !t0.fCalculateTest0AsFunctionOf[AFO_OCCUPANCY]) {
             continue;
           }
 
@@ -3245,7 +3431,7 @@ void DetermineAndPropagateRunNumber(T const& collision)
 
   // b) Propagate run number to all booked objects, wherever that info is relevant:
   // *) base:
-  fBasePro->GetXaxis()->SetBinLabel(eRunNumber, Form("tc.fRunNumber = %s", tc.fRunNumber.Data()));
+  fBasePro->GetXaxis()->SetBinLabel(eRunNumber, Form("fRunNumber = %s", tc.fRunNumber.Data()));
 
   // *) common title var:
   TString histTitle = "";
@@ -3411,7 +3597,8 @@ void ResetEventByEventQuantities()
 
   // a) Event-by-event quantities:
   ebye.fSelectedTracks = 0;
-  ebye.fCentrality = 0;
+  ebye.fCentrality = 0.;
+  ebye.fOccupancy = 0.;
 
   // b) Q-vectors:
   if (qv.fCalculateQvectors) {
@@ -3562,6 +3749,8 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
 {
   // Event cuts on reconstructed and simulated data. Supports event cut counters, both absolute and sequential.
   // There is also a related enum eEventCuts.
+  // Remark: I have added to all if statemets below which deals with floats, e.g. TMath::Abs(ebye.fCentrality - ec.fdEventCuts[eCentrality][eMax]) < tc.fFloatingPointPrecision ,
+  //           to enforce the ROOT convention: "lower boundary included, upper boundary excluded"
 
   // a) Event cuts on reconstructed, and corresponding MC truth simulated (common to Run 3, Run 2 and Run 1);
   // b) Event cuts only on simulated (common to Run 3, Run 2 and Run 1);
@@ -3650,7 +3839,7 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eTotalMultiplicity]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eTotalMultiplicity, eCutCounterBinning);
-      } else if (tracks.size() < ec.fdEventCuts[eTotalMultiplicity][eMin] || tracks.size() > ec.fdEventCuts[eTotalMultiplicity][eMax]) {
+      } else if (tracks.size() < ec.fdEventCuts[eTotalMultiplicity][eMin] || tracks.size() > ec.fdEventCuts[eTotalMultiplicity][eMax] || TMath::Abs(tracks.size() - ec.fdEventCuts[eTotalMultiplicity][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eRec, eTotalMultiplicity, cutModus)) {
           return kFALSE;
         }
@@ -3665,7 +3854,7 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eCentrality]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eCentrality, eCutCounterBinning);
-      } else if (ebye.fCentrality < ec.fdEventCuts[eCentrality][eMin] || ebye.fCentrality > ec.fdEventCuts[eCentrality][eMax]) {
+      } else if (ebye.fCentrality < ec.fdEventCuts[eCentrality][eMin] || ebye.fCentrality > ec.fdEventCuts[eCentrality][eMax] || TMath::Abs(ebye.fCentrality - ec.fdEventCuts[eCentrality][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eRec, eCentrality, cutModus)) {
           return kFALSE;
         }
@@ -3676,7 +3865,7 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eVertex_x]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eVertex_x, eCutCounterBinning);
-      } else if (collision.posX() < ec.fdEventCuts[eVertex_x][eMin] || collision.posX() > ec.fdEventCuts[eVertex_x][eMax]) {
+      } else if (collision.posX() < ec.fdEventCuts[eVertex_x][eMin] || collision.posX() > ec.fdEventCuts[eVertex_x][eMax] || TMath::Abs(collision.posX() - ec.fdEventCuts[eVertex_x][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eRec, eVertex_x, cutModus)) {
           return kFALSE;
         }
@@ -3687,7 +3876,7 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eVertex_y]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eVertex_y, eCutCounterBinning);
-      } else if (collision.posY() < ec.fdEventCuts[eVertex_y][eMin] || collision.posY() > ec.fdEventCuts[eVertex_y][eMax]) {
+      } else if (collision.posY() < ec.fdEventCuts[eVertex_y][eMin] || collision.posY() > ec.fdEventCuts[eVertex_y][eMax] || TMath::Abs(collision.posY() - ec.fdEventCuts[eVertex_y][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eRec, eVertex_y, cutModus)) {
           return kFALSE;
         }
@@ -3698,7 +3887,7 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eVertex_z]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eVertex_z, eCutCounterBinning);
-      } else if (collision.posZ() < ec.fdEventCuts[eVertex_z][eMin] || collision.posZ() > ec.fdEventCuts[eVertex_z][eMax]) {
+      } else if (collision.posZ() < ec.fdEventCuts[eVertex_z][eMin] || collision.posZ() > ec.fdEventCuts[eVertex_z][eMax] || TMath::Abs(collision.posZ() - ec.fdEventCuts[eVertex_z][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eRec, eVertex_z, cutModus)) {
           return kFALSE;
         }
@@ -3709,7 +3898,7 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eNContributors]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eNContributors, eCutCounterBinning);
-      } else if (collision.numContrib() < ec.fdEventCuts[eNContributors][eMin] || collision.numContrib() > ec.fdEventCuts[eNContributors][eMax]) {
+      } else if (collision.numContrib() < ec.fdEventCuts[eNContributors][eMin] || collision.numContrib() > ec.fdEventCuts[eNContributors][eMax] || TMath::Abs(collision.numContrib() - ec.fdEventCuts[eNContributors][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eRec, eNContributors, cutModus)) {
           return kFALSE;
         }
@@ -3751,7 +3940,7 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eImpactParameter]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eSim, eImpactParameter, eCutCounterBinning);
-      } else if (collision.impactParameter() < ec.fdEventCuts[eImpactParameter][eMin] || collision.impactParameter() > ec.fdEventCuts[eImpactParameter][eMax]) {
+      } else if (collision.impactParameter() < ec.fdEventCuts[eImpactParameter][eMin] || collision.impactParameter() > ec.fdEventCuts[eImpactParameter][eMax] || TMath::Abs(collision.impactParameter() - ec.fdEventCuts[eImpactParameter][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eSim, eImpactParameter, cutModus)) {
           return kFALSE;
         }
@@ -3770,7 +3959,7 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eVertex_x]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eSim, eVertex_x, eCutCounterBinning);
-      } else if (collision.posX() < ec.fdEventCuts[eVertex_x][eMin] || collision.posX() > ec.fdEventCuts[eVertex_x][eMax]) {
+      } else if (collision.posX() < ec.fdEventCuts[eVertex_x][eMin] || collision.posX() > ec.fdEventCuts[eVertex_x][eMax] || TMath::Abs(collision.posX() - ec.fdEventCuts[eVertex_x][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eSim, eVertex_x, cutModus)) {
           return kFALSE;
         }
@@ -3781,7 +3970,7 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eVertex_y]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eSim, eVertex_y, eCutCounterBinning);
-      } else if (collision.posY() < ec.fdEventCuts[eVertex_y][eMin] || collision.posY() > ec.fdEventCuts[eVertex_y][eMax]) {
+      } else if (collision.posY() < ec.fdEventCuts[eVertex_y][eMin] || collision.posY() > ec.fdEventCuts[eVertex_y][eMax] || TMath::Abs(collision.posY() - ec.fdEventCuts[eVertex_y][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eSim, eVertex_y, cutModus)) {
           return kFALSE;
         }
@@ -3792,7 +3981,7 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eVertex_z]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eSim, eVertex_z, eCutCounterBinning);
-      } else if (collision.posZ() < ec.fdEventCuts[eVertex_z][eMin] || collision.posZ() > ec.fdEventCuts[eVertex_z][eMax]) {
+      } else if (collision.posZ() < ec.fdEventCuts[eVertex_z][eMin] || collision.posZ() > ec.fdEventCuts[eVertex_z][eMax] || TMath::Abs(collision.posZ() - ec.fdEventCuts[eVertex_z][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eSim, eVertex_z, cutModus)) {
           return kFALSE;
         }
@@ -3822,7 +4011,7 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eMultFV0M]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eMultFV0M, eCutCounterBinning);
-      } else if (collision.multFV0M() < ec.fdEventCuts[eMultFV0M][eMin] || collision.multFV0M() > ec.fdEventCuts[eMultFV0M][eMax]) {
+      } else if (collision.multFV0M() < ec.fdEventCuts[eMultFV0M][eMin] || collision.multFV0M() > ec.fdEventCuts[eMultFV0M][eMax] || TMath::Abs(collision.multFV0M() - ec.fdEventCuts[eMultFV0M][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eRec, eVertex_z, cutModus)) {
           return kFALSE;
         }
@@ -3833,7 +4022,7 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eMultFT0M]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eMultFT0M, eCutCounterBinning);
-      } else if (collision.multFT0M() < ec.fdEventCuts[eMultFT0M][eMin] || collision.multFT0M() > ec.fdEventCuts[eMultFT0M][eMax]) {
+      } else if (collision.multFT0M() < ec.fdEventCuts[eMultFT0M][eMin] || collision.multFT0M() > ec.fdEventCuts[eMultFT0M][eMax] || TMath::Abs(collision.multFT0M() - ec.fdEventCuts[eMultFT0M][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eRec, eVertex_z, cutModus)) {
           return kFALSE;
         }
@@ -3844,7 +4033,7 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eMultTPC]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eMultTPC, eCutCounterBinning);
-      } else if (collision.multTPC() < ec.fdEventCuts[eMultTPC][eMin] || collision.multTPC() > ec.fdEventCuts[eMultTPC][eMax]) {
+      } else if (collision.multTPC() < ec.fdEventCuts[eMultTPC][eMin] || collision.multTPC() > ec.fdEventCuts[eMultTPC][eMax] || TMath::Abs(collision.multTPC() - ec.fdEventCuts[eMultTPC][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eRec, eVertex_z, cutModus)) {
           return kFALSE;
         }
@@ -3855,8 +4044,19 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eMultNTracksPV]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eMultNTracksPV, eCutCounterBinning);
-      } else if (collision.multNTracksPV() < ec.fdEventCuts[eMultNTracksPV][eMin] || collision.multNTracksPV() > ec.fdEventCuts[eMultNTracksPV][eMax]) {
+      } else if (collision.multNTracksPV() < ec.fdEventCuts[eMultNTracksPV][eMin] || collision.multNTracksPV() > ec.fdEventCuts[eMultNTracksPV][eMax] || TMath::Abs(collision.multNTracksPV() - ec.fdEventCuts[eMultNTracksPV][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eRec, eMultNTracksPV, cutModus)) {
+          return kFALSE;
+        }
+      }
+    }
+
+    //   *) Occupancy:
+    if (ec.fUseEventCuts[eOccupancy]) {
+      if (cutModus == eCutCounterBinning) {
+        EventCut(eRec, eOccupancy, eCutCounterBinning);
+      } else if (ebye.fOccupancy < ec.fdEventCuts[eOccupancy][eMin] || ebye.fOccupancy > ec.fdEventCuts[eOccupancy][eMax] || TMath::Abs(ebye.fOccupancy - ec.fdEventCuts[eOccupancy][eMax]) < tc.fFloatingPointPrecision) {
+        if (!EventCut(eRec, eOccupancy, cutModus)) {
           return kFALSE;
         }
       }
@@ -3933,7 +4133,7 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eMultTracklets]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eMultTracklets, eCutCounterBinning);
-      } else if (collision.multTracklets() < ec.fdEventCuts[eMultTracklets][eMin] || collision.multTracklets() > ec.fdEventCuts[eMultTracklets][eMax]) {
+      } else if (collision.multTracklets() < ec.fdEventCuts[eMultTracklets][eMin] || collision.multTracklets() > ec.fdEventCuts[eMultTracklets][eMax] || TMath::Abs(collision.multTracklets() - ec.fdEventCuts[eMultTracklets][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eRec, eMultTracklets, cutModus)) {
           return kFALSE;
         }
@@ -3984,7 +4184,7 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eTotalMultiplicity]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eTotalMultiplicity, eCutCounterBinning);
-      } else if (tracks.size() < ec.fdEventCuts[eTotalMultiplicity][eMin] || tracks.size() > ec.fdEventCuts[eTotalMultiplicity][eMax]) {
+      } else if (tracks.size() < ec.fdEventCuts[eTotalMultiplicity][eMin] || tracks.size() > ec.fdEventCuts[eTotalMultiplicity][eMax] || TMath::Abs(tracks.size() - ec.fdEventCuts[eTotalMultiplicity][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eRec, eTotalMultiplicity, cutModus)) {
           return kFALSE;
         }
@@ -3995,7 +4195,7 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eVertex_z]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eSim, eVertex_z, eCutCounterBinning);
-      } else if (collision.posZ() < ec.fdEventCuts[eVertex_z][eMin] || collision.posZ() > ec.fdEventCuts[eVertex_z][eMax]) {
+      } else if (collision.posZ() < ec.fdEventCuts[eVertex_z][eMin] || collision.posZ() > ec.fdEventCuts[eVertex_z][eMax] || TMath::Abs(collision.posZ() - ec.fdEventCuts[eVertex_z][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eSim, eVertex_z, cutModus)) {
           return kFALSE;
         }
@@ -4006,7 +4206,7 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
     if (ec.fUseEventCuts[eCentrality]) {
       if (cutModus == eCutCounterBinning) {
         EventCut(eRec, eCentrality, eCutCounterBinning);
-      } else if (ebye.fCentrality < ec.fdEventCuts[eCentrality][eMin] || ebye.fCentrality > ec.fdEventCuts[eCentrality][eMax]) {
+      } else if (ebye.fCentrality < ec.fdEventCuts[eCentrality][eMin] || ebye.fCentrality > ec.fdEventCuts[eCentrality][eMax] || TMath::Abs(ebye.fCentrality - ec.fdEventCuts[eCentrality][eMax]) < tc.fFloatingPointPrecision) {
         if (!EventCut(eRec, eCentrality, cutModus)) {
           return kFALSE;
         }
@@ -4149,6 +4349,11 @@ void FillEventHistograms(T1 const& collision, T2 const& tracks, eBeforeAfter ba)
     if (eh.fFillEventHistograms) {
       !eh.fEventHistograms[eMultFT0M][eRec][ba] ? true : eh.fEventHistograms[eMultFT0M][eRec][ba]->Fill(collision.multFT0M());
       !eh.fEventHistograms[eMultFV0M][eRec][ba] ? true : eh.fEventHistograms[eMultFV0M][eRec][ba]->Fill(collision.multFV0M());
+      !eh.fEventHistograms[eOccupancy][eRec][ba] ? true : eh.fEventHistograms[eOccupancy][eRec][ba]->Fill(ebye.fOccupancy);
+    }
+    // QA:
+    if (qa.fFillQAEventHistograms2D) {
+      !qa.fQAEventHistograms2D[eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange][eRec][ba] ? true : qa.fQAEventHistograms2D[eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange][eRec][ba]->Fill(collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
     }
 
     // ... and corresponding MC truth simulated (Run 3 specific)
@@ -4519,6 +4724,8 @@ Bool_t ParticleCuts(T const& track, eCutModus cutModus)
 {
   // Particle cuts on reconstructed and simulated data. Supports particle cut counters, both absolute and sequential.
   // There is also a related enum eParticleCuts.
+  // Remark: I have added to all if statemets below which deals with floats, e.g. TMath::Abs(track.eta() - pc.fdParticleCuts[eEta][eMax]) < tc.fFloatingPointPrecision ,
+  //           to enforce the ROOT convention: "lower boundary included, upper boundary excluded"
 
   // a) Particle cuts on reconstructed, and corresponding MC truth simulated (common to Run 3, Run 2 and Run 1);
   // b) Particle cuts only on simulated (common to Run 3, Run 2 and Run 1);
@@ -4540,7 +4747,7 @@ Bool_t ParticleCuts(T const& track, eCutModus cutModus)
     if (pc.fUseParticleCuts[ePhi]) {
       if (cutModus == eCutCounterBinning) {
         ParticleCut(eRec, ePhi, eCutCounterBinning);
-      } else if (track.phi() < pc.fdParticleCuts[ePhi][eMin] || track.phi() > pc.fdParticleCuts[ePhi][eMax]) {
+      } else if (track.phi() < pc.fdParticleCuts[ePhi][eMin] || track.phi() > pc.fdParticleCuts[ePhi][eMax] || TMath::Abs(track.phi() - pc.fdParticleCuts[ePhi][eMax]) < tc.fFloatingPointPrecision) {
         if (!ParticleCut(eRec, ePhi, cutModus)) {
           return kFALSE;
         }
@@ -4551,7 +4758,7 @@ Bool_t ParticleCuts(T const& track, eCutModus cutModus)
     if (pc.fUseParticleCuts[ePt]) {
       if (cutModus == eCutCounterBinning) {
         ParticleCut(eRec, ePt, eCutCounterBinning);
-      } else if (track.pt() < pc.fdParticleCuts[ePt][eMin] || track.pt() > pc.fdParticleCuts[ePt][eMax]) {
+      } else if (track.pt() < pc.fdParticleCuts[ePt][eMin] || track.pt() > pc.fdParticleCuts[ePt][eMax] || TMath::Abs(track.pt() - pc.fdParticleCuts[ePt][eMax]) < tc.fFloatingPointPrecision) {
         if (!ParticleCut(eRec, ePt, cutModus)) {
           return kFALSE;
         }
@@ -4562,7 +4769,7 @@ Bool_t ParticleCuts(T const& track, eCutModus cutModus)
     if (pc.fUseParticleCuts[eEta]) {
       if (cutModus == eCutCounterBinning) {
         ParticleCut(eRec, eEta, eCutCounterBinning);
-      } else if (track.eta() < pc.fdParticleCuts[eEta][eMin] || track.eta() > pc.fdParticleCuts[eEta][eMax]) {
+      } else if (track.eta() < pc.fdParticleCuts[eEta][eMin] || track.eta() > pc.fdParticleCuts[eEta][eMax] || TMath::Abs(track.eta() - pc.fdParticleCuts[eEta][eMax]) < tc.fFloatingPointPrecision) {
         if (!ParticleCut(eRec, eEta, cutModus)) {
           return kFALSE;
         }
@@ -4574,7 +4781,8 @@ Bool_t ParticleCuts(T const& track, eCutModus cutModus)
       if (cutModus == eCutCounterBinning) {
         ParticleCut(eRec, eCharge, eCutCounterBinning);
       } else if (0 == track.sign() || track.sign() < pc.fdParticleCuts[eCharge][eMin] || track.sign() > pc.fdParticleCuts[eCharge][eMax]) {
-        // TBI 20240511 with first condition, I always throw away neutral particles, so for the time being that is hardcoded
+        // With first condition, I always throw away neutral particles.
+        // I can use safely == here, because track.sign() returns short int.
         if (!ParticleCut(eRec, eCharge, cutModus)) {
           return kFALSE;
         }
@@ -4651,7 +4859,7 @@ Bool_t ParticleCuts(T const& track, eCutModus cutModus)
     if (pc.fUseParticleCuts[etpcCrossedRowsOverFindableCls]) {
       if (cutModus == eCutCounterBinning) {
         ParticleCut(eRec, etpcCrossedRowsOverFindableCls, eCutCounterBinning);
-      } else if (track.tpcCrossedRowsOverFindableCls() < pc.fdParticleCuts[etpcCrossedRowsOverFindableCls][eMin] || track.tpcCrossedRowsOverFindableCls() > pc.fdParticleCuts[etpcCrossedRowsOverFindableCls][eMax]) {
+      } else if (track.tpcCrossedRowsOverFindableCls() < pc.fdParticleCuts[etpcCrossedRowsOverFindableCls][eMin] || track.tpcCrossedRowsOverFindableCls() > pc.fdParticleCuts[etpcCrossedRowsOverFindableCls][eMax] || TMath::Abs(track.tpcCrossedRowsOverFindableCls() - pc.fdParticleCuts[etpcCrossedRowsOverFindableCls][eMax]) < tc.fFloatingPointPrecision) {
         if (!ParticleCut(eRec, etpcCrossedRowsOverFindableCls, cutModus)) {
           return kFALSE;
         }
@@ -4662,7 +4870,7 @@ Bool_t ParticleCuts(T const& track, eCutModus cutModus)
     if (pc.fUseParticleCuts[etpcFoundOverFindableCls]) {
       if (cutModus == eCutCounterBinning) {
         ParticleCut(eRec, etpcFoundOverFindableCls, eCutCounterBinning);
-      } else if (track.tpcFoundOverFindableCls() < pc.fdParticleCuts[etpcFoundOverFindableCls][eMin] || track.tpcFoundOverFindableCls() > pc.fdParticleCuts[etpcFoundOverFindableCls][eMax]) {
+      } else if (track.tpcFoundOverFindableCls() < pc.fdParticleCuts[etpcFoundOverFindableCls][eMin] || track.tpcFoundOverFindableCls() > pc.fdParticleCuts[etpcFoundOverFindableCls][eMax] || TMath::Abs(track.tpcFoundOverFindableCls() - pc.fdParticleCuts[etpcFoundOverFindableCls][eMax]) < tc.fFloatingPointPrecision) {
         if (!ParticleCut(eRec, etpcFoundOverFindableCls, cutModus)) {
           return kFALSE;
         }
@@ -4673,7 +4881,7 @@ Bool_t ParticleCuts(T const& track, eCutModus cutModus)
     if (pc.fUseParticleCuts[etpcFractionSharedCls]) {
       if (cutModus == eCutCounterBinning) {
         ParticleCut(eRec, etpcFractionSharedCls, eCutCounterBinning);
-      } else if (track.tpcFractionSharedCls() < pc.fdParticleCuts[etpcFractionSharedCls][eMin] || track.tpcFractionSharedCls() > pc.fdParticleCuts[etpcFractionSharedCls][eMax]) {
+      } else if (track.tpcFractionSharedCls() < pc.fdParticleCuts[etpcFractionSharedCls][eMin] || track.tpcFractionSharedCls() > pc.fdParticleCuts[etpcFractionSharedCls][eMax] || TMath::Abs(track.tpcFractionSharedCls() - pc.fdParticleCuts[etpcFractionSharedCls][eMax]) < tc.fFloatingPointPrecision) {
         if (!ParticleCut(eRec, etpcFractionSharedCls, cutModus)) {
           return kFALSE;
         }
@@ -4684,7 +4892,7 @@ Bool_t ParticleCuts(T const& track, eCutModus cutModus)
     if (pc.fUseParticleCuts[edcaXY]) {
       if (cutModus == eCutCounterBinning) {
         ParticleCut(eRec, edcaXY, eCutCounterBinning);
-      } else if (track.dcaXY() < pc.fdParticleCuts[edcaXY][eMin] || track.dcaXY() > pc.fdParticleCuts[edcaXY][eMax]) {
+      } else if (track.dcaXY() < pc.fdParticleCuts[edcaXY][eMin] || track.dcaXY() > pc.fdParticleCuts[edcaXY][eMax] || TMath::Abs(track.dcaXY() - pc.fdParticleCuts[edcaXY][eMax]) < tc.fFloatingPointPrecision) {
         if (!ParticleCut(eRec, edcaXY, cutModus)) {
           return kFALSE;
         }
@@ -4695,7 +4903,7 @@ Bool_t ParticleCuts(T const& track, eCutModus cutModus)
     if (pc.fUseParticleCuts[edcaZ]) {
       if (cutModus == eCutCounterBinning) {
         ParticleCut(eRec, edcaZ, eCutCounterBinning);
-      } else if (track.dcaZ() < pc.fdParticleCuts[edcaZ][eMin] || track.dcaZ() > pc.fdParticleCuts[edcaZ][eMax]) {
+      } else if (track.dcaZ() < pc.fdParticleCuts[edcaZ][eMin] || track.dcaZ() > pc.fdParticleCuts[edcaZ][eMax] || TMath::Abs(track.dcaZ() - pc.fdParticleCuts[edcaZ][eMax]) < tc.fFloatingPointPrecision) {
         if (!ParticleCut(eRec, edcaZ, cutModus)) {
           return kFALSE;
         }
@@ -4839,7 +5047,7 @@ Bool_t ParticleCuts(T const& track, eCutModus cutModus)
     if (pc.fUseParticleCuts[ePhi]) {
       if (cutModus == eCutCounterBinning) {
         ParticleCut(eSim, ePhi, eCutCounterBinning);
-      } else if (track.phi() < pc.fdParticleCuts[ePhi][eMin] || track.phi() > pc.fdParticleCuts[ePhi][eMax]) {
+      } else if (track.phi() < pc.fdParticleCuts[ePhi][eMin] || track.phi() > pc.fdParticleCuts[ePhi][eMax] || TMath::Abs(track.phi() - pc.fdParticleCuts[ePhi][eMax]) < tc.fFloatingPointPrecision) {
         if (!ParticleCut(eSim, ePhi, cutModus)) {
           return kFALSE;
         }
@@ -4850,7 +5058,7 @@ Bool_t ParticleCuts(T const& track, eCutModus cutModus)
     if (pc.fUseParticleCuts[ePt]) {
       if (cutModus == eCutCounterBinning) {
         ParticleCut(eSim, ePt, eCutCounterBinning);
-      } else if (track.pt() < pc.fdParticleCuts[ePt][eMin] || track.pt() > pc.fdParticleCuts[ePt][eMax]) {
+      } else if (track.pt() < pc.fdParticleCuts[ePt][eMin] || track.pt() > pc.fdParticleCuts[ePt][eMax] || TMath::Abs(track.pt() - pc.fdParticleCuts[ePt][eMax]) < tc.fFloatingPointPrecision) {
         if (!ParticleCut(eSim, ePt, cutModus)) {
           return kFALSE;
         }
@@ -4861,7 +5069,7 @@ Bool_t ParticleCuts(T const& track, eCutModus cutModus)
     if (pc.fUseParticleCuts[eEta]) {
       if (cutModus == eCutCounterBinning) {
         ParticleCut(eSim, eEta, eCutCounterBinning);
-      } else if (track.eta() < pc.fdParticleCuts[eEta][eMin] || track.eta() > pc.fdParticleCuts[eEta][eMax]) {
+      } else if (track.eta() < pc.fdParticleCuts[eEta][eMin] || track.eta() > pc.fdParticleCuts[eEta][eMax] || TMath::Abs(track.eta() - pc.fdParticleCuts[eEta][eMax]) < tc.fFloatingPointPrecision) {
         if (!ParticleCut(eSim, eEta, cutModus)) {
           return kFALSE;
         }
@@ -4970,7 +5178,7 @@ Bool_t ParticleCuts(T const& track, eCutModus cutModus)
     if (pc.fUseParticleCuts[ePhi]) {
       if (cutModus == eCutCounterBinning) {
         ParticleCut(eRec, ePhi, eCutCounterBinning);
-      } else if (track.phi() < pc.fdParticleCuts[ePhi][eMin] || track.phi() > pc.fdParticleCuts[ePhi][eMax]) {
+      } else if (track.phi() < pc.fdParticleCuts[ePhi][eMin] || track.phi() > pc.fdParticleCuts[ePhi][eMax] || TMath::Abs(track.phi() - pc.fdParticleCuts[ePhi][eMax]) < tc.fFloatingPointPrecision) {
         if (!ParticleCut(eRec, ePhi, cutModus)) {
           return kFALSE;
         }
@@ -4981,7 +5189,7 @@ Bool_t ParticleCuts(T const& track, eCutModus cutModus)
     if (pc.fUseParticleCuts[ePt]) {
       if (cutModus == eCutCounterBinning) {
         ParticleCut(eRec, ePt, eCutCounterBinning);
-      } else if (track.pt() < pc.fdParticleCuts[ePt][eMin] || track.pt() > pc.fdParticleCuts[ePt][eMax]) {
+      } else if (track.pt() < pc.fdParticleCuts[ePt][eMin] || track.pt() > pc.fdParticleCuts[ePt][eMax] || TMath::Abs(track.pt() - pc.fdParticleCuts[ePt][eMax]) < tc.fFloatingPointPrecision) {
         if (!ParticleCut(eRec, ePt, cutModus)) {
           return kFALSE;
         }
@@ -4992,7 +5200,7 @@ Bool_t ParticleCuts(T const& track, eCutModus cutModus)
     if (pc.fUseParticleCuts[eEta]) {
       if (cutModus == eCutCounterBinning) {
         ParticleCut(eRec, eEta, eCutCounterBinning);
-      } else if (track.eta() < pc.fdParticleCuts[eEta][eMin] || track.eta() > pc.fdParticleCuts[eEta][eMax]) {
+      } else if (track.eta() < pc.fdParticleCuts[eEta][eMin] || track.eta() > pc.fdParticleCuts[eEta][eMax] || TMath::Abs(track.eta() - pc.fdParticleCuts[eEta][eMax]) < tc.fFloatingPointPrecision) {
         if (!ParticleCut(eRec, eEta, cutModus)) {
           return kFALSE;
         }
@@ -5391,7 +5599,7 @@ void CalculateCorrelations()
       harmonics->SetAt(h, 0);
       harmonics->SetAt(-h, 1);
       Double_t nestedLoopValue = this->CalculateCustomNestedLoops(harmonics);
-      if (TMath::Abs(nestedLoopValue) > 0. && TMath::Abs(twoC - nestedLoopValue) > 1.e-5) {
+      if (TMath::Abs(nestedLoopValue) > 0. && TMath::Abs(twoC - nestedLoopValue) > tc.fFloatingPointPrecision) {
         LOGF(fatal, "\033[1;31m%s at line %d : nestedLoopValue = %f is not the same as twoC = %f\033[0m", __FUNCTION__, __LINE__, nestedLoopValue, twoC);
       } else {
         LOGF(info, "  e-b-e check with CustomNestedLoops is OK for isotropic 2-p, harmonic %d", h);
@@ -5416,6 +5624,10 @@ void CalculateCorrelations()
     // vs. centrality:
     if (mupa.fCorrelationsPro[0][h - 1][AFO_CENTRALITY]) {
       mupa.fCorrelationsPro[0][h - 1][AFO_CENTRALITY]->Fill(ebye.fCentrality, twoC, wTwo);
+    }
+    // vs. occupancy:
+    if (mupa.fCorrelationsPro[0][h - 1][AFO_OCCUPANCY]) {
+      mupa.fCorrelationsPro[0][h - 1][AFO_OCCUPANCY]->Fill(ebye.fOccupancy, twoC, wTwo);
     }
 
     // 4p:
@@ -5444,7 +5656,7 @@ void CalculateCorrelations()
       harmonics->SetAt(-h, 2);
       harmonics->SetAt(-h, 3);
       Double_t nestedLoopValue = this->CalculateCustomNestedLoops(harmonics);
-      if (TMath::Abs(nestedLoopValue) > 0. && TMath::Abs(fourC - nestedLoopValue) > 1.e-5) {
+      if (TMath::Abs(nestedLoopValue) > 0. && TMath::Abs(fourC - nestedLoopValue) > tc.fFloatingPointPrecision) {
         LOGF(fatal, "\033[1;31m%s at line %d : nestedLoopValue = %f is not the same as fourC = %f\033[0m", __FUNCTION__, __LINE__, nestedLoopValue, fourC);
       } else {
         LOGF(info, "  e-b-e check with CustomNestedLoops is OK for isotropic 4-p, harmonic %d", h);
@@ -5469,6 +5681,10 @@ void CalculateCorrelations()
     // vs. centrality:
     if (mupa.fCorrelationsPro[1][h - 1][AFO_CENTRALITY]) {
       mupa.fCorrelationsPro[1][h - 1][AFO_CENTRALITY]->Fill(ebye.fCentrality, fourC, wFour);
+    }
+    // vs. occupancy:
+    if (mupa.fCorrelationsPro[1][h - 1][AFO_OCCUPANCY]) {
+      mupa.fCorrelationsPro[1][h - 1][AFO_OCCUPANCY]->Fill(ebye.fOccupancy, fourC, wFour);
     }
 
     // 6p:
@@ -5499,7 +5715,7 @@ void CalculateCorrelations()
       harmonics->SetAt(-h, 4);
       harmonics->SetAt(-h, 5);
       Double_t nestedLoopValue = this->CalculateCustomNestedLoops(harmonics);
-      if (TMath::Abs(nestedLoopValue) > 0. && TMath::Abs(sixC - nestedLoopValue) > 1.e-5) {
+      if (TMath::Abs(nestedLoopValue) > 0. && TMath::Abs(sixC - nestedLoopValue) > tc.fFloatingPointPrecision) {
         LOGF(fatal, "\033[1;31m%s at line %d : nestedLoopValue = %f is not the same as sixC = %f\033[0m", __FUNCTION__, __LINE__, nestedLoopValue, sixC);
       } else {
         LOGF(info, "  e-b-e check with CustomNestedLoops is OK for isotropic 6-p, harmonic %d", h);
@@ -5524,6 +5740,10 @@ void CalculateCorrelations()
     // vs. centrality:
     if (mupa.fCorrelationsPro[2][h - 1][AFO_CENTRALITY]) {
       mupa.fCorrelationsPro[2][h - 1][AFO_CENTRALITY]->Fill(ebye.fCentrality, sixC, wSix);
+    }
+    // vs. occupancy:
+    if (mupa.fCorrelationsPro[2][h - 1][AFO_OCCUPANCY]) {
+      mupa.fCorrelationsPro[2][h - 1][AFO_OCCUPANCY]->Fill(ebye.fOccupancy, sixC, wSix);
     }
 
     // 8p:
@@ -5556,7 +5776,7 @@ void CalculateCorrelations()
       harmonics->SetAt(-h, 6);
       harmonics->SetAt(-h, 7);
       Double_t nestedLoopValue = this->CalculateCustomNestedLoops(harmonics);
-      if (TMath::Abs(nestedLoopValue) > 0. && TMath::Abs(eightC - nestedLoopValue) > 1.e-5) {
+      if (TMath::Abs(nestedLoopValue) > 0. && TMath::Abs(eightC - nestedLoopValue) > tc.fFloatingPointPrecision) {
         LOGF(fatal, "\033[1;31m%s at line %d : nestedLoopValue = %f is not the same as eightC = %f\033[0m", __FUNCTION__, __LINE__, nestedLoopValue, eightC);
       } else {
         LOGF(info, "  e-b-e check with CustomNestedLoops is OK for isotropic 8-p, harmonic %d", h);
@@ -5582,6 +5802,11 @@ void CalculateCorrelations()
     if (mupa.fCorrelationsPro[3][h - 1][AFO_CENTRALITY]) {
       mupa.fCorrelationsPro[3][h - 1][AFO_CENTRALITY]->Fill(ebye.fCentrality, eightC, wEight);
     }
+    // vs. occupancy:
+    if (mupa.fCorrelationsPro[3][h - 1][AFO_OCCUPANCY]) {
+      mupa.fCorrelationsPro[3][h - 1][AFO_OCCUPANCY]->Fill(ebye.fOccupancy, eightC, wEight);
+    }
+
   } // for(Int_t h=1;h<=gMaxHarmonic;h++) // harmonic
 
   // c) Flush the generic Q-vectors:
@@ -5759,7 +5984,7 @@ void CalculateTest0()
           Double_t nestedLoopValue = this->CalculateCustomNestedLoops(harmonics);
           if (!(TMath::Abs(nestedLoopValue) > 0.)) {
             LOGF(info, "  e-b-e check with CustomNestedLoops was NOT calculated for %d-p Test0 corr. %s", mo + 1, t0.fTest0Labels[mo][mi]->Data());
-          } else if (TMath::Abs(nestedLoopValue) > 0. && TMath::Abs(correlation / weight - nestedLoopValue) > 1.e-5) {
+          } else if (TMath::Abs(nestedLoopValue) > 0. && TMath::Abs(correlation / weight - nestedLoopValue) > tc.fFloatingPointPrecision) {
             LOGF(fatal, "\033[1;31m%s at line %d : nestedLoopValue = %f is not the same as correlation/weight = %f, for correlator %s\033[0m", __FUNCTION__, __LINE__, nestedLoopValue, correlation / weight, t0.fTest0Labels[mo][mi]->Data());
           } else {
             LOGF(info, "  e-b-e check with CustomNestedLoops is OK for %d-p Test0 corr. %s", mo + 1, t0.fTest0Labels[mo][mi]->Data());
@@ -5795,6 +6020,10 @@ void CalculateTest0()
         // vs. centrality:
         if (t0.fTest0Pro[mo][mi][AFO_CENTRALITY]) {
           t0.fTest0Pro[mo][mi][AFO_CENTRALITY]->Fill(ebye.fCentrality, correlation / weight, weight);
+        }
+        // vs. occupancy:
+        if (t0.fTest0Pro[mo][mi][AFO_OCCUPANCY]) {
+          t0.fTest0Pro[mo][mi][AFO_OCCUPANCY]->Fill(ebye.fOccupancy, correlation / weight, weight);
         }
       } // if(t0.fTest0Labels[mo][mi])
     } // for(Int_t mi=0;mi<gMaxIndex;mi++)
@@ -5870,8 +6099,7 @@ void CalculateKineTest0(eAsFunctionOf AFO_variable)
             // cout<<Form("h = %d, t0.fTest0Labels[%d][%d] = ",h,mo,mi)<<t0.fTest0Labels[mo][mi]->Data()<<endl;
             TObjArray* oa = t0.fTest0Labels[mo][mi]->Tokenize(" ");
             if (!oa) {
-              cout << __LINE__ << endl;
-              exit(1);
+              LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
             }
             n[h] = TString(oa->At(h)->GetName()).Atoi();
             delete oa; // yes, otherwise it's a memory leak
@@ -5959,7 +6187,7 @@ void CalculateKineTest0(eAsFunctionOf AFO_variable)
             Double_t nestedLoopValue = this->CalculateKineCustomNestedLoops(harmonics, AFO_variable, b);
             if (!(TMath::Abs(nestedLoopValue) > 0.)) {
               LOGF(info, "  e-b-e check with CalculateKineCustomNestedLoops was NOT calculated for %d-p Test0 corr. %s, bin = %d", mo + 1, t0.fTest0Labels[mo][mi]->Data(), b + 1);
-            } else if (TMath::Abs(nestedLoopValue) > 0. && TMath::Abs(correlation / weight - nestedLoopValue) > 1.e-5) {
+            } else if (TMath::Abs(nestedLoopValue) > 0. && TMath::Abs(correlation / weight - nestedLoopValue) > tc.fFloatingPointPrecision) {
               LOGF(fatal, "\033[1;31m%s at line %d : correlator: %s \n correlation: %f \n custom loop: %f \033[0m", __FUNCTION__, __LINE__, t0.fTest0Labels[mo][mi]->Data(), correlation / weight, nestedLoopValue);
             } else {
               LOGF(info, "  e-b-e check with CalculateKineCustomNestedLoops is OK for %d-p Test0 corr. %s, bin = %d", mo + 1, t0.fTest0Labels[mo][mi]->Data(), b + 1);
@@ -6125,6 +6353,11 @@ void CalculateNestedLoops()
           nl.fNestedLoopsPro[0][h][AFO_CENTRALITY]->Fill(
             ebye.fCentrality, TMath::Cos((h + 1.) * (dPhi1 - dPhi2)), dW1 * dW2);
         }
+        // fill cos, 2p, vs. occupancy:
+        if (nl.fNestedLoopsPro[0][h][AFO_OCCUPANCY]) {
+          nl.fNestedLoopsPro[0][h][AFO_OCCUPANCY]->Fill(
+            ebye.fOccupancy, TMath::Cos((h + 1.) * (dPhi1 - dPhi2)), dW1 * dW2);
+        }
       } // for(int h=1; h<=6; h++)
     } // for(int i2=0; i2<nParticles; i2++)
   } // for(int i1=0; i1<nParticles; i1++)
@@ -6171,6 +6404,10 @@ void CalculateNestedLoops()
             // fill cos, 4p, all harmonics, vs. centrality:
             if (nl.fNestedLoopsPro[1][h][AFO_CENTRALITY]) {
               nl.fNestedLoopsPro[1][h][AFO_CENTRALITY]->Fill(ebye.fCentrality, TMath::Cos((h + 1.) * (dPhi1 + dPhi2 - dPhi3 - dPhi4)), dW1 * dW2 * dW3 * dW4);
+            }
+            // fill cos, 4p, all harmonics, vs. occupancy:
+            if (nl.fNestedLoopsPro[1][h][AFO_OCCUPANCY]) {
+              nl.fNestedLoopsPro[1][h][AFO_OCCUPANCY]->Fill(ebye.fOccupancy, TMath::Cos((h + 1.) * (dPhi1 + dPhi2 - dPhi3 - dPhi4)), dW1 * dW2 * dW3 * dW4);
             }
           } // for(int h=0; h<gMaxHarmonic; h++)
         } // for(int i4=0; i4<nParticles; i4++)
@@ -6229,9 +6466,13 @@ void CalculateNestedLoops()
                 if (nl.fNestedLoopsPro[2][h][AFO_MULTIPLICITY]) {
                   nl.fNestedLoopsPro[2][h][AFO_MULTIPLICITY]->Fill(ebye.fSelectedTracks + 0.5, TMath::Cos((h + 1.) * (dPhi1 + dPhi2 + dPhi3 - dPhi4 - dPhi5 - dPhi6)), dW1 * dW2 * dW3 * dW4 * dW5 * dW6);
                 }
-                // fill cos, 6p, all harmonics, vs. M:
+                // fill cos, 6p, all harmonics, vs. centrality:
                 if (nl.fNestedLoopsPro[2][h][AFO_CENTRALITY]) {
                   nl.fNestedLoopsPro[2][h][AFO_CENTRALITY]->Fill(ebye.fCentrality, TMath::Cos((h + 1.) * (dPhi1 + dPhi2 + dPhi3 - dPhi4 - dPhi5 - dPhi6)), dW1 * dW2 * dW3 * dW4 * dW5 * dW6);
+                }
+                // fill cos, 6p, all harmonics, vs. occupancy:
+                if (nl.fNestedLoopsPro[2][h][AFO_OCCUPANCY]) {
+                  nl.fNestedLoopsPro[2][h][AFO_OCCUPANCY]->Fill(ebye.fOccupancy, TMath::Cos((h + 1.) * (dPhi1 + dPhi2 + dPhi3 - dPhi4 - dPhi5 - dPhi6)), dW1 * dW2 * dW3 * dW4 * dW5 * dW6);
                 }
               } // for(int h=0; h<gMaxHarmonic; h++)
             } // if(i6==i1||i6==i2||i6==i3||i6==i4||i6==i5){continue;}
@@ -6304,9 +6545,13 @@ void CalculateNestedLoops()
                     if (nl.fNestedLoopsPro[3][h][AFO_MULTIPLICITY]) {
                       nl.fNestedLoopsPro[3][h][AFO_MULTIPLICITY]->Fill(ebye.fSelectedTracks + 0.5, TMath::Cos((h + 1.) * (dPhi1 + dPhi2 + dPhi3 + dPhi4 - dPhi5 - dPhi6 - dPhi7 - dPhi8)), dW1 * dW2 * dW3 * dW4 * dW5 * dW6 * dW7 * dW8);
                     }
-                    // fill cos, 8p, all harmonics, vs. M:
+                    // fill cos, 8p, all harmonics, vs. centrality:
                     if (nl.fNestedLoopsPro[3][h][AFO_CENTRALITY]) {
                       nl.fNestedLoopsPro[3][h][AFO_CENTRALITY]->Fill(ebye.fCentrality, TMath::Cos((h + 1.) * (dPhi1 + dPhi2 + dPhi3 + dPhi4 - dPhi5 - dPhi6 - dPhi7 - dPhi8)), dW1 * dW2 * dW3 * dW4 * dW5 * dW6 * dW7 * dW8);
+                    }
+                    // fill cos, 8p, all harmonics, vs. occupancy:
+                    if (nl.fNestedLoopsPro[3][h][AFO_OCCUPANCY]) {
+                      nl.fNestedLoopsPro[3][h][AFO_OCCUPANCY]->Fill(ebye.fOccupancy, TMath::Cos((h + 1.) * (dPhi1 + dPhi2 + dPhi3 + dPhi4 - dPhi5 - dPhi6 - dPhi7 - dPhi8)), dW1 * dW2 * dW3 * dW4 * dW5 * dW6 * dW7 * dW8);
                     }
                   } // for(int h=0; h<gMaxHarmonic; h++)
                 } // for(int i8=0; i8<nParticles; i8++)
@@ -6359,7 +6604,7 @@ void ComparisonNestedLoopsVsCorrelations()
           if (TMath::Abs(valueQV) > 0. && TMath::Abs(valueNL) > 0.) {
             LOGF(info, "   bin=%d, h=%d, Q-vectors:    %f", b, h + 1, valueQV);
             LOGF(info, "   bin=%d, h=%d, Nested loops: %f", b, h + 1, valueNL);
-            if (TMath::Abs(valueQV - valueNL) > 1.e-5) {
+            if (TMath::Abs(valueQV - valueNL) > tc.fFloatingPointPrecision) {
               LOGF(info, "\n\033[1;33m[%d][%d][%d] \033[0m\n", o, h, v);
               LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
             }
@@ -6955,11 +7200,11 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* runNumber, const
     }
 
     // Compare with min and max value store in external weights.root file using MakeWeights.C:
-    if (!(TMath::Abs(TString(oa->At(nEntries - 1)->GetName()).Atof() - max) < 1.e-6)) {
+    if (!(TMath::Abs(TString(oa->At(nEntries - 1)->GetName()).Atof() - max) < tc.fFloatingPointPrecision)) {
       LOGF(info, "\033[1;33m hist->GetTitle() = %s, res.fResultsPro[AFO]->GetName() = %s\033[0m", hist->GetTitle(), res.fResultsPro[AFO]->GetName());
       LOGF(fatal, "in function \033[1;31m%s at line %d : mismatch in upper bin boundaries \n from title = %f , local = %f\033[0m", __FUNCTION__, __LINE__, TString(oa->At(nEntries - 1)->GetName()).Atof(), max);
     }
-    if (!(TMath::Abs(TString(oa->At(nEntries - 5)->GetName()).Atof() - min) < 1.e-6)) {
+    if (!(TMath::Abs(TString(oa->At(nEntries - 5)->GetName()).Atof() - min) < tc.fFloatingPointPrecision)) {
       LOGF(info, "\033[1;33m hist->GetTitle() = %s, res.fResultsPro[AFO]->GetName() = %s\033[0m", hist->GetTitle(), res.fResultsPro[AFO]->GetName());
       LOGF(fatal, "in function \033[1;31m%s at line %d : mismatch in lower bin boundaries \n from title = %f , local = %f\033[0m", __FUNCTION__, __LINE__, TString(oa->At(nEntries - 5)->GetName()).Atof(), min);
     }
@@ -7704,6 +7949,7 @@ Bool_t MaxNumberOfEvents(eBeforeAfter ba)
 void PrintEventCounter(eBeforeAfter ba)
 {
   // Print how many events were processed by now.
+  // If I am processing RecSim, the counter is corresponding to Rec.
 
   if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
@@ -7758,10 +8004,10 @@ void EventCounter(eEventCounter eVar)
       break;
     case ePrint:
       // Print current status of event counter:
-      // Remark: if I am processign RecSim, the counter is corresponding to Rec.
+      // Remark: if I am processing RecSim, the counter is corresponding to Rec.
       if (eh.fEventHistograms[eNumberOfEvents][eRec][eAfter]) {
         LOGF(info, "Processing event %d (dry run) ....", static_cast<int>(eh.fEventHistograms[eNumberOfEvents][eRec][eAfter]->GetBinContent(1)));
-      } else if (eh.fEventHistograms[eNumberOfEvents][eRec][eBefore] && eh.fEventHistograms[eNumberOfEvents][eRec][eAfter]) {
+      } else if (eh.fEventHistograms[eNumberOfEvents][eSim][eAfter]) {
         LOGF(info, "Processing event %d (dry run) ....", static_cast<int>(eh.fEventHistograms[eNumberOfEvents][eSim][eAfter]->GetBinContent(1)));
       }
       break;
@@ -7783,8 +8029,9 @@ const char* FancyFormatting(const char* name)
   //  2. add additional information to defalt name (e.g. "Centrality" => "Centrality (V0M)"
   //  3. ...
 
-  if (tc.fVerbose) {
-    LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__);
+  if (tc.fVerboseUtility) {
+    StartFunction(__FUNCTION__);
+    LOGF(info, "\033[1;32m  const char* name = %s\033[0m", name);
   }
 
   // By default, do nothing and return the same thing:
@@ -7812,6 +8059,20 @@ const char* FancyFormatting(const char* name)
     }
   } else if (TString(name).EqualTo("Trigger")) {
     fancyFormatting = Form("Trigger (%s)", ec.fsEventCuts[eTrigger].Data());
+  } else if (TString(name).EqualTo("TrackOccupancyInTimeRange")) {
+    fancyFormatting = "trackOccupancyInTimeRange()";
+  } else if (TString(name).EqualTo("FT0COccupancyInTimeRange")) {
+    fancyFormatting = "ft0cOccupancyInTimeRange()";
+  } else if (TString(name).EqualTo("Occupancy")) {
+    if (ec.fsEventCuts[eOccupancyEstimator].BeginsWith("Track")) {
+      fancyFormatting = "Occupancy (getter trackOccupancyInTimeRange())";
+    } else if (ec.fsEventCuts[eOccupancyEstimator].BeginsWith("FT0C")) {
+      fancyFormatting = "Occupancy (getter ft0cOccupancyInTimeRange())";
+    }
+  }
+
+  if (tc.fVerboseUtility) {
+    ExitFunction(__FUNCTION__);
   }
 
   return fancyFormatting;
@@ -8086,8 +8347,7 @@ Double_t CalculateKineCustomNestedLoops(TArrayI* harmonics, eAsFunctionOf AFO_va
   // a) Determine the order of correlator;
   Int_t order = harmonics->GetSize();
   if (0 == order || order > gMaxCorrelator) {
-    cout << __LINE__ << endl;
-    exit(1);
+    LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
   }
 
   if (order > nParticles) {
@@ -8282,7 +8542,8 @@ void DetermineCentrality(T const& collision)
   // d) Same as b), just for converted Run 2 data;
   // e) Same as a), just for converted Run 1 data;
   // f) Same as b), just for converted Run 1 data;
-  // g) Test case.
+  // g) Test case;
+  // h) Print centrality for the audience...
 
   if (tc.fVerbose) {
     LOGF(info, "\033[1;32m%s\033[0m", __FUNCTION__); // just a bare function name
@@ -8357,15 +8618,64 @@ void DetermineCentrality(T const& collision)
 
   // g) Test case:
   if constexpr (rs == eTest) {
-    ebye.fCentrality = gRandom->Uniform(0., 100.);
+    ebye.fCentrality = static_cast<float>(gRandom->Uniform(0., 100.));
   }
 
-  // *) Print centrality for the audience...:
+  // h) Print centrality for the audience...:
   if (tc.fVerbose) {
     LOGF(info, "\033[1;32m ebye.fCentrality = %f\033[0m", ebye.fCentrality);
+    ExitFunction(__FUNCTION__);
   }
 
 } // template <eRecSim rs, typename T> void DetermineCentrality(T const& collision)
+
+//============================================================
+
+template <eRecSim rs, typename T>
+void DetermineOccupancy(T const& collision)
+{
+  // Determine collision occupancy.
+
+  // a) Determine occupancy from default occupancy estimator, only for eRec and eRecAndSim;
+  // b) For all other cases, set occupancy to -1 (not defined).
+  // c) Print occupancy for the audience...
+
+  if (tc.fVerbose) {
+    StartFunction(__FUNCTION__);
+  }
+
+  // a) Determine occupancy from default occupancy estimator, only for eRec and eRecAndSim:
+  if constexpr (rs == eRec || rs == eRecAndSim) {
+    if (ec.fsEventCuts[eOccupancyEstimator].EqualTo("TrackOccupancyInTimeRange", TString::kIgnoreCase)) {
+      ebye.fOccupancy = collision.trackOccupancyInTimeRange();
+    } else if (ec.fsEventCuts[eOccupancyEstimator].EqualTo("FT0COccupancyInTimeRange", TString::kIgnoreCase)) {
+      ebye.fOccupancy = collision.ft0cOccupancyInTimeRange();
+    } else {
+      LOGF(fatal, "\033[1;31m%s at line %d : occupancy estimator = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, ec.fsEventCuts[eOccupancyEstimator].Data());
+    }
+    // QA:
+    if (qa.fFillQAEventHistograms2D) { // TBI 20240515 this flag is too general here, I need to make it more specific
+      qa.fOccupancy[eTrackOccupancyInTimeRange] = collision.trackOccupancyInTimeRange();
+      qa.fOccupancy[eFT0COccupancyInTimeRange] = collision.ft0cOccupancyInTimeRange();
+    }
+  } else {
+    // b) For all other cases, set occupancy to -1 (not defined):
+    ebye.fOccupancy = -1.;
+    // QA:
+    if (qa.fFillQAEventHistograms2D) { // TBI 20240515 this flag is too general here, I need to make it more specific
+      for (Int_t oe = 0; oe < eOccupancyEstimators_N; oe++) {
+        qa.fOccupancy[oe] = -1.;
+      }
+    }
+  }
+
+  // c) Print occupancy for the audience...:
+  if (tc.fVerbose) {
+    LOGF(info, "\033[1;32m ebye.fOccupancy = %f\033[0m", ebye.fOccupancy);
+    ExitFunction(__FUNCTION__);
+  }
+
+} // template <eRecSim rs, typename T> void DetermineOccupancy(T const& collision)
 
 //============================================================
 
@@ -8436,7 +8746,7 @@ void BanishmentLoopOverParticles(T const& tracks)
     if (!tc.fUseFisherYates) {
       track = tracks.iteratorAt(i);
     } else {
-      track = tracks.iteratorAt((int64_t)tc.fRandomIndices->GetAt(i));
+      track = tracks.iteratorAt(static_cast<int64_t>(tc.fRandomIndices->GetAt(i)));
     }
 
     // *) Skip track objects which are not valid tracks (e.g. Run 2 and 1 tracklets, etc.):
@@ -8528,6 +8838,27 @@ void Trace(const char* functionName, Int_t lineNumber)
   LOGF(info, "\033[1;32m%s .... line %d\033[0m", functionName, lineNumber);
 
 } // void Trace(const char* functionName, Int_t lineNumber)
+
+//============================================================
+
+void StartFunction(const char* functionName)
+{
+  // A simple utility wrapper, used when tc.fVerbose = kTRUE. It merely ensures uniform formatting of notification when the function starts.
+
+  LOGF(info, "\033[1;32mStart %s\033[0m", functionName); // prints in green
+
+} // void StartFunction(const char* functionName)
+
+//============================================================
+
+void ExitFunction(const char* functionName)
+{
+  // A simple utility wrapper, used when tc.fVerbose = kTRUE. It merely ensures uniform formatting of notification when the function exits.
+
+  LOGF(info, "\033[1;32mExit %s\033[0m\n", functionName); // prints in green
+  sleep(0.1);
+
+} // void ExitFunction(const char* functionName)
 
 //============================================================
 
@@ -8831,11 +9162,14 @@ void Steer(T1 const& collision, T2 const& tracks)
     tc.fTimer[eGlobal]->Continue(); // yes
   }
 
-  // *) Do all thingies before starting to process data from this collision (e.g. cut on number of events (bot total and selected), fetch the run number, etc.):
+  // *) Do all thingies before starting to process data from this collision (e.g. cut on number of events (both total and selected), fetch the run number, etc.):
   Preprocess(collision);
 
   // *) Determine collision centrality:
   DetermineCentrality<rs>(collision);
+
+  // *) Determine collision occupancy:
+  DetermineOccupancy<rs>(collision);
 
   // *) Fill event histograms before event cuts:
   if (eh.fFillEventHistograms || qa.fFillQAEventHistograms2D) {
@@ -8965,7 +9299,7 @@ void MainLoopOverParticles(T const& tracks)
     if (!tc.fUseFisherYates) {
       track = tracks.iteratorAt(i);
     } else {
-      track = tracks.iteratorAt((int64_t)tc.fRandomIndices->GetAt(i));
+      track = tracks.iteratorAt(static_cast<int64_t>(tc.fRandomIndices->GetAt(i)));
     }
 
     // *) Skip track objects which are not valid tracks (e.g. Run 2 and 1 tracklets, etc.):
