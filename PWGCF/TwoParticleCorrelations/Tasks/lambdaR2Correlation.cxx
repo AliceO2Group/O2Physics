@@ -238,12 +238,18 @@ struct lambdaCorrTableProducer {
     histos.add("QA_Sel_Lambda/h1d_V0_inv_mass", "V_{0} mass", kTH1F, {axisV0Mass});
     histos.add("QA_Sel_Lambda/h1d_V0_pt", "V_{0} p_{T}", kTH1F, {axisV0Pt});
     histos.add("QA_Sel_Lambda/h1d_V0_eta", "#eta-distribution", kTH1F, {axisV0Eta});
-    histos.add("QA_Sel_Lambda/h1d_V0_rap", "y-distribution", kTH1F, {axisV0Rap});
+    histos.add("QA_Sel_Lambda/h1d_V0_rap", "y-distribution", kTH1F, {axisV0Eta});
     histos.add("QA_Sel_Lambda/h1d_V0_phi", "#phi-distribution", kTH1F, {axisV0Phi});
     histos.add("QA_Sel_Lambda/h2d_V0_pt_vs_eta", "p_{T} vs #eta", kTH2F, {axisV0Eta, axisV0Pt});
-    histos.add("QA_Sel_Lambda/h2d_V0_pt_vs_rap", "p_{T} vs y", kTH2F, {axisV0Rap, axisV0Pt});
+    histos.add("QA_Sel_Lambda/h2d_V0_pt_vs_rap", "p_{T} vs y", kTH2F, {axisV0Eta, axisV0Pt});
     histos.add("QA_Sel_Lambda/h2d_V0_pt_vs_phi", "p_{T} vs #phi", kTH2F, {axisV0Phi, axisV0Pt});
     histos.add("QA_Sel_Lambda/h2d_V0_pt_vs_mass", "p_{T} vs M_{p#pi}", kTH2F, {axisV0Mass, axisV0Pt});
+
+    histos.add("QA_Sel_Lambda/h1d_eta_check_V0_pt", "V_{0} p_{T}", kTH1F, {axisV0Pt});
+    histos.add("QA_Sel_Lambda/h1d_eta_check_V0_eta", "#eta-distribution", kTH1F, {axisV0Eta});
+    histos.add("QA_Sel_Lambda/h1d_eta_check_V0_rap", "y-distribution", kTH1F, {axisV0Eta});
+    histos.add("QA_Sel_Lambda/h2d_eta_check_V0_pt_vs_eta", "p_{T} vs #eta", kTH2F, {axisV0Eta, axisV0Pt});
+    histos.add("QA_Sel_Lambda/h2d_eta_check_V0_pt_vs_rap", "p_{T} vs y", kTH2F, {axisV0Eta, axisV0Pt});
 
     histos.add("QA_Sel_Lambda/h1d_dca_V0_daughters", "DCA between V0 daughters", kTH1F, {axisDcaDau});
     histos.add("QA_Sel_Lambda/h1d_dca_pos_to_PV", "DCA positive prong to PV", kTH1F, {axisDcaProngPV});
@@ -261,6 +267,13 @@ struct lambdaCorrTableProducer {
     histos.add("QA_Sel_Lambda/h1d_neg_prong_eta", "Neg-Prong #eta-distribution", kTH1F, {axisV0Eta});
     histos.add("QA_Sel_Lambda/h1d_pos_prong_phi", "Pos-Prong #phi-distribution", kTH1F, {axisV0Phi});
     histos.add("QA_Sel_Lambda/h1d_neg_prong_phi", "Neg-Prong #phi-distribution", kTH1F, {axisV0Phi});
+
+    histos.add("QA_Sel_Lambda/h1d_eta_check_pos_prong_pt", "Pos-Prong p_{T}", kTH1F, {axisTrackPt});
+    histos.add("QA_Sel_Lambda/h1d_eta_check_neg_prong_pt", "Neg-Prong p_{T}", kTH1F, {axisTrackPt});
+    histos.add("QA_Sel_Lambda/h1d_eta_check_pos_prong_eta", "Pos-Prong #eta-distribution", kTH1F, {axisV0Eta});
+    histos.add("QA_Sel_Lambda/h1d_eta_check_neg_prong_eta", "Neg-Prong #eta-distribution", kTH1F, {axisV0Eta});
+    histos.add("QA_Sel_Lambda/h1d_eta_check_pos_prong_phi", "Pos-Prong #phi-distribution", kTH1F, {axisV0Phi});
+    histos.add("QA_Sel_Lambda/h1d_eta_check_neg_prong_phi", "Neg-Prong #phi-distribution", kTH1F, {axisV0Phi});
 
     histos.add("QA_Sel_Lambda/h2d_pos_prong_dcaXY_vs_pt", "DCA vs p_{T}", kTH2F, {axisTrackPt, axisTrackDCA});
     histos.add("QA_Sel_Lambda/h2d_neg_prong_dcaXY_vs_pt", "DCA vs p_{T}", kTH2F, {axisTrackPt, axisTrackDCA});
@@ -523,6 +536,14 @@ struct lambdaCorrTableProducer {
     histos.fill(HIST(sub_dir[part]) + HIST("h2d_V0_pt_vs_phi"), v0.phi(), v0.pt());
     histos.fill(HIST(sub_dir[part]) + HIST("h2d_V0_pt_vs_mass"), mass, v0.pt());
 
+    if (fabs(v0.eta()) > 0.8) {
+      histos.fill(HIST(sub_dir[part]) + HIST("h1d_eta_check_V0_pt"), v0.pt());
+      histos.fill(HIST(sub_dir[part]) + HIST("h1d_eta_check_V0_eta"), v0.eta());
+      histos.fill(HIST(sub_dir[part]) + HIST("h1d_eta_check_V0_rap"), v0.yLambda());
+      histos.fill(HIST(sub_dir[part]) + HIST("h2d_eta_check_V0_pt_vs_eta"), v0.eta(), v0.pt());
+      histos.fill(HIST(sub_dir[part]) + HIST("h2d_eta_check_V0_pt_vs_rap"), v0.yLambda(), v0.pt());
+    }
+
     histos.fill(HIST(sub_dir[part]) + HIST("h1d_dca_V0_daughters"), v0.dcaV0daughters());
     histos.fill(HIST(sub_dir[part]) + HIST("h1d_dca_pos_to_PV"), v0.dcapostopv());
     histos.fill(HIST(sub_dir[part]) + HIST("h1d_dca_neg_to_PV"), v0.dcanegtopv());
@@ -539,6 +560,16 @@ struct lambdaCorrTableProducer {
     histos.fill(HIST(sub_dir[part]) + HIST("h1d_neg_prong_pt"), negtrack.pt());
     histos.fill(HIST(sub_dir[part]) + HIST("h1d_neg_prong_eta"), negtrack.eta());
     histos.fill(HIST(sub_dir[part]) + HIST("h1d_neg_prong_phi"), negtrack.phi());
+
+    if (fabs(v0.eta()) > 0.8) {
+      histos.fill(HIST(sub_dir[part]) + HIST("h1d_eta_check_pos_prong_pt"), postrack.pt());
+      histos.fill(HIST(sub_dir[part]) + HIST("h1d_eta_check_pos_prong_eta"), postrack.eta());
+      histos.fill(HIST(sub_dir[part]) + HIST("h1d_eta_check_pos_prong_phi"), postrack.phi());
+      histos.fill(HIST(sub_dir[part]) + HIST("h1d_eta_check_neg_prong_pt"), negtrack.pt());
+      histos.fill(HIST(sub_dir[part]) + HIST("h1d_eta_check_neg_prong_eta"), negtrack.eta());
+      histos.fill(HIST(sub_dir[part]) + HIST("h1d_eta_check_neg_prong_phi"), negtrack.phi());
+    }
+
     histos.fill(HIST(sub_dir[part]) + HIST("h2d_pos_prong_dcaXY_vs_pt"), postrack.pt(), postrack.dcaXY());
     histos.fill(HIST(sub_dir[part]) + HIST("h2d_neg_prong_dcaXY_vs_pt"), negtrack.pt(), negtrack.dcaXY());
     histos.fill(HIST(sub_dir[part]) + HIST("h2d_pos_prong_dEdx_vs_p"), postrack.tpcInnerParam(), postrack.tpcSignal());
@@ -836,7 +867,7 @@ struct lambdaCorrTableProducer {
       }
 
       // apply kinematic acceptance
-      if (mcpart.pt() < cfg_v0_pt_min || mcpart.pt() > cfg_v0_pt_max) {
+      if (mcpart.pt() <= cfg_v0_pt_min || mcpart.pt() >= cfg_v0_pt_max) {
         continue;
       }
 
@@ -847,7 +878,7 @@ struct lambdaCorrTableProducer {
         rap = mcpart.y();
       }
 
-      if (fabs(rap) > cfg_v0_rap_max) {
+      if (fabs(rap) >= cfg_v0_rap_max) {
         continue;
       }
 
@@ -993,8 +1024,8 @@ struct lambdaCorrelationAnalysis {
     histos.add("Reco/h1d_n1_pt_LaM", "#rho_{1}^{#bar{#Lambda}}", kTH1D, {axisPt});
     histos.add("Reco/h1d_n1_eta_LaP", "#rho_{1}^{#Lambda}", kTH1D, {axisEta});
     histos.add("Reco/h1d_n1_eta_LaM", "#rho_{1}^{#bar{#Lambda}}", kTH1D, {axisEta});
-    histos.add("Reco/h1d_n1_rap_LaP", "#rho_{1}^{#Lambda}", kTH1D, {axisRap});
-    histos.add("Reco/h1d_n1_rap_LaM", "#rho_{1}^{#bar{#Lambda}}", kTH1D, {axisRap});
+    histos.add("Reco/h1d_n1_rap_LaP", "#rho_{1}^{#Lambda}", kTH1D, {axisEta});
+    histos.add("Reco/h1d_n1_rap_LaM", "#rho_{1}^{#bar{#Lambda}}", kTH1D, {axisEta});
     histos.add("Reco/h1d_n1_phi_LaP", "#rho_{1}^{#Lambda}", kTH1D, {axisPhi});
     histos.add("Reco/h1d_n1_phi_LaM", "#rho_{1}^{#bar{#Lambda}}", kTH1D, {axisPhi});
     histos.add("Reco/h2d_n1_pt_vs_eta_LaP", "#rho_{1}^{#Lambda}", kTH2D, {axisEta, axisPt});
@@ -1163,11 +1194,15 @@ struct lambdaCorrelationAnalysis {
         get_corr_factor<part>(eff, track.pt());
       }
       ++ntrk3;
+
+      // QA and Efficiency Calculation Plots
       histos.fill(HIST(sub_dir_recgen[rec_gen]) + HIST("h1d_n1_pt_") + HIST(sub_dir_hist[part]), track.pt(), eff);
       histos.fill(HIST(sub_dir_recgen[rec_gen]) + HIST("h1d_n1_eta_") + HIST(sub_dir_hist[part]), track.eta(), eff);
       histos.fill(HIST(sub_dir_recgen[rec_gen]) + HIST("h1d_n1_phi_") + HIST(sub_dir_hist[part]), track.phi(), eff);
       histos.fill(HIST(sub_dir_recgen[rec_gen]) + HIST("h1d_n1_rap_") + HIST(sub_dir_hist[part]), track.rap(), eff);
       histos.fill(HIST(sub_dir_recgen[rec_gen]) + HIST("h2d_n1_pt_vs_eta_") + HIST(sub_dir_hist[part]), track.eta(), track.pt(), eff);
+
+      // Rho1 for R2 Calculation
       histos.fill(HIST(sub_dir_recgen[rec_gen]) + HIST("h2d_n1_") + HIST(sub_dir_hist[part]), track.rap(), track.phi(), eff);
     }
 

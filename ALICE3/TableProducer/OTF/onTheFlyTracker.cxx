@@ -81,7 +81,7 @@ struct OnTheFlyTracker {
   Produces<aod::UpgradeCascades> upgradeCascades;
 
   // optionally produced, empty (to be tuned later)
-  Produces<aod::StoredTracksExtra> tracksExtra; // base table, extend later
+  Produces<aod::StoredTracksExtra_001> tracksExtra; // base table, extend later
   Produces<aod::TrackSelection> trackSelection;
   Produces<aod::TrackSelectionExtension> trackSelectionExtension;
 

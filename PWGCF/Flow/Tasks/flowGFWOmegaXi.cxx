@@ -89,8 +89,8 @@ struct FlowGFWOmegaXi {
   O2_DEFINE_CONFIGURABLE(cfgNSigmaCascProton, float, 3, "NSigmaCascProton")
   O2_DEFINE_CONFIGURABLE(cfgNSigmaCascKaon, float, 3, "NSigmaCascKaon")
   O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeights, bool, true, "Fill and output NUA weights")
-  O2_DEFINE_CONFIGURABLE(cfgAcceptancePath, std::vector<std::string>, std::vector<std::string>{"PathtoRef"}, "CCDB path to acceptance object")
-  O2_DEFINE_CONFIGURABLE(cfgEfficiencyPath, std::vector<std::string>, std::vector<std::string>{"PathtoRef"}, "CCDB path to efficiency object")
+  O2_DEFINE_CONFIGURABLE(cfgAcceptancePath, std::vector<std::string>, (std::vector<std::string>{"Users/f/fcui/NUA/NUAREFPartical", "Users/f/fcui/NUA/NUAK0s", "Users/f/fcui/NUA/NUALambda", "Users/f/fcui/NUA/NUAXi", "Users/f/fcui/NUA/NUAOmega"}), "CCDB path to acceptance object")
+  O2_DEFINE_CONFIGURABLE(cfgEfficiencyPath, std::vector<std::string>, (std::vector<std::string>{"PathtoRef"}), "CCDB path to efficiency object")
 
   ConfigurableAxis cfgaxisVertex{"axisVertex", {20, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis cfgaxisPhi{"axisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
@@ -401,20 +401,23 @@ struct FlowGFWOmegaXi {
   {
     if (correctionsLoaded)
       return;
-    if (cfgAcceptance.size() == 5 && cfgEfficiency.size() == 5) {
+    if (cfgAcceptance.size() == 5) {
       for (int i = 0; i <= 4; i++) {
         mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance[i], timestamp));
-        mEfficiency.push_back(ccdb->getForTimeStamp<TH1D>(cfgEfficiency[i], timestamp));
       }
       if (mAcceptance.size() == 5)
         LOGF(info, "Loaded acceptance weights");
       else
         LOGF(warning, "Could not load acceptance weights");
-
+    }
+    if (cfgEfficiency.size() == 5) {
+      for (int i = 0; i <= 4; i++) {
+        mAcceptance.push_back(ccdb->getForTimeStamp<GFWWeights>(cfgAcceptance[i], timestamp));
+      }
       if (mEfficiency.size() == 5)
+        LOGF(info, "Loaded efficiency histogram");
+      else
         LOGF(fatal, "Could not load efficiency histogram");
-
-      LOGF(info, "Loaded efficiency histogram");
     }
     correctionsLoaded = true;
   }

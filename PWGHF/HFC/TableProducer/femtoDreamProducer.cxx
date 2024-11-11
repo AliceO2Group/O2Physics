@@ -13,6 +13,8 @@
 /// \brief Tasks that produces the track tables used for the pairing
 /// \author Ravindra Singh, GSI, ravindra.singh@cern.ch
 
+#include <string>
+#include <vector>
 #include "CCDB/BasicCCDBManager.h"
 
 #include "Common/Core/trackUtilities.h"
@@ -197,16 +199,21 @@ struct HfFemtoDreamProducer {
                      particle.dcaXY(),
                      particle.dcaZ(),
                      particle.tpcSignal(),
+                     -999.,
                      particle.tpcNSigmaPi(),
                      particle.tpcNSigmaKa(),
                      particle.tpcNSigmaPr(),
+                     -999.,
+                     -999.,
+                     -999.,
+                     -999.,
                      particle.tofNSigmaPi(),
                      particle.tofNSigmaKa(),
                      particle.tofNSigmaPr(),
-                     -999., -999., -999., -999.,
-                     -999., -999., -999., -999.,
-                     -999., -999., -999., -999.,
-                     -999., -999.);
+                     -999.,
+                     -999.,
+                     -999.,
+                     -999., -999., -999., -999., -999., -999.);
   }
 
   template <typename CollisionType, typename ParticleType>

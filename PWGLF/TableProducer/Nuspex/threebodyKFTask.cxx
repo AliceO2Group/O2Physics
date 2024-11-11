@@ -16,6 +16,7 @@
 #include <cmath>
 #include <array>
 #include <cstdlib>
+#include <vector>
 #include <TLorentzVector.h>
 
 #include "Framework/runDataProcessing.h"
@@ -75,6 +76,11 @@ struct threebodyKFTask {
     registry.add<TH2>("hDalitzHypertriton", "Dalitz diagram", HistType::kTH2F, {axisM2PrPi, axisM2PiDe})->GetYaxis()->SetTitle("#it{m}^{2}(#pi^{-},d) ((GeV/#it{c}^{2})^{2})");
     registry.add<TH2>("hDalitzAntiHypertriton", "Dalitz diagram", HistType::kTH2F, {axisM2PrPi, axisM2PiDe})->GetXaxis()->SetTitle("#it{m}^{2}(#bar{p},#pi^{+}) ((GeV/#it{c}^{2})^{2})");
 
+    // bachelor histgrams
+    registry.add<TH1>("hAverageITSClusterSizeBachelor", "Average ITS cluster size bachelor track", HistType::kTH1F, {{15, 0.5, 15.5, "#langle ITS cluster size #rangle"}});
+    registry.add<TH1>("hdEdxBachelor", "TPC dE/dx bachelor track", HistType::kTH1F, {{200, 0.0f, 200.0f, "Average ITS cluster size"}});
+    registry.add<TH1>("hPIDTrackingBachelor", "Tracking PID bachelor track", HistType::kTH1F, {{20, 0.5, 20.5, "Tracking PID identifier"}});
+
     // for gen information of reco candidates
     auto LabelHist = registry.add<TH1>("hLabelCounter", "Reco MC candidate counter", HistType::kTH1F, {{3, 0.0f, 3.0f}});
     LabelHist->GetXaxis()->SetBinLabel(1, "Total");
@@ -99,8 +105,16 @@ struct threebodyKFTask {
   }
 
   template <typename TCand>
-  void fillDalitzPlot(TCand const& vtx3body)
+  void fillQAPlots(TCand const& vtx3body)
   {
+    // Mass plot
+    if (vtx3body.track2sign() > 0) { // hypertriton
+      registry.fill(HIST("hMassHypertriton"), vtx3body.mass());
+    } else if (vtx3body.track2sign() < 0) { // anti-hypertriton
+      registry.fill(HIST("hMassAntiHypertriton"), vtx3body.mass());
+    }
+
+    // Dalitz plot
     auto m2prpi = RecoDecay::m2(array{array{vtx3body.pxtrack0(), vtx3body.pytrack0(), vtx3body.pztrack0()}, array{vtx3body.pxtrack1(), vtx3body.pytrack1(), vtx3body.pztrack1()}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged});
     auto m2pide = RecoDecay::m2(array{array{vtx3body.pxtrack1(), vtx3body.pytrack1(), vtx3body.pztrack1()}, array{vtx3body.pxtrack2(), vtx3body.pytrack2(), vtx3body.pztrack2()}}, array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassDeuteron});
     if (std::abs(vtx3body.mass() - o2::constants::physics::MassHyperTriton) <= 0.005) {
@@ -110,16 +124,11 @@ struct threebodyKFTask {
         registry.fill(HIST("hDalitzAntiHypertriton"), m2prpi, m2pide);
       }
     }
-  }
 
-  template <typename TCand>
-  void fillMassPlot(TCand const& vtx3body)
-  {
-    if (vtx3body.track2sign() > 0) { // hypertriton
-      registry.fill(HIST("hMassHypertriton"), vtx3body.mass());
-    } else if (vtx3body.track2sign() < 0) { // anti-hypertriton
-      registry.fill(HIST("hMassAntiHypertriton"), vtx3body.mass());
-    }
+    // ITS cluster sizes
+    registry.fill(HIST("hAverageITSClusterSizeBachelor"), vtx3body.itsclussizedeuteron());
+    registry.fill(HIST("hdEdxBachelor"), vtx3body.tpcdedxdeuteron());
+    registry.fill(HIST("hPIDTrackingBachelor"), vtx3body.pidtrackingdeuteron());
   }
 
   //------------------------------------------------------------------
@@ -130,10 +139,8 @@ struct threebodyKFTask {
     registry.fill(HIST("hCentFT0C"), collision.centFT0C());
 
     for (auto& vtx3bodydata : vtx3bodydatas) {
-      // inv mass spectrum
-      fillMassPlot(vtx3bodydata);
-      // Dalitz plot
-      fillDalitzPlot(vtx3bodydata);
+      // QA histograms
+      fillQAPlots(vtx3bodydata);
     }
   }
   PROCESS_SWITCH(threebodyKFTask, processData, "Data analysis", true);
@@ -165,11 +172,8 @@ struct threebodyKFTask {
       for (auto& vtx3bodydata : Decay3BodyTable_thisCollision) {
         registry.fill(HIST("hLabelCounter"), 0.5);
 
-        // fill Dalitz plot for all reco candidates
-        fillDalitzPlot(vtx3bodydata);
-
-        // fill inv mass spectrum for all reco candidates
-        fillMassPlot(vtx3bodydata);
+        // fill QA histograms for all reco candidates
+        fillQAPlots(vtx3bodydata);
 
         double MClifetime = -1.;
         bool isTrueH3L = false;
@@ -244,18 +248,24 @@ struct threebodyKFTask {
           vtx3bodydata.chi2geondf(), vtx3bodydata.chi2topondf(),
           vtx3bodydata.ctaukftopo(),
           vtx3bodydata.massv0(), vtx3bodydata.chi2massv0(),
-          vtx3bodydata.pxtrack0(), vtx3bodydata.pytrack0(), vtx3bodydata.pztrack0(),                            // proton
-          vtx3bodydata.pxtrack1(), vtx3bodydata.pytrack1(), vtx3bodydata.pztrack1(),                            // pion
-          vtx3bodydata.pxtrack2(), vtx3bodydata.pytrack2(), vtx3bodydata.pztrack2(),                            // deuteron
-          vtx3bodydata.dcatrack0topvkf(), vtx3bodydata.dcatrack1topvkf(), vtx3bodydata.dcatrack2topvkf(),       // proton, pion, deuteron
-          vtx3bodydata.dcaxytrack0topvkf(), vtx3bodydata.dcaxytrack1topvkf(), vtx3bodydata.dcaxytrack2topvkf(), // proton, pion, deuteron
-          vtx3bodydata.dcaxytrack0tosvkf(), vtx3bodydata.dcaxytrack1tosvkf(), vtx3bodydata.dcaxytrack2tosvkf(), // proton, pion, deuteron
+          vtx3bodydata.cospav0(),
+          vtx3bodydata.pxtrack0(), vtx3bodydata.pytrack0(), vtx3bodydata.pztrack0(),                                  // proton
+          vtx3bodydata.pxtrack1(), vtx3bodydata.pytrack1(), vtx3bodydata.pztrack1(),                                  // pion
+          vtx3bodydata.pxtrack2(), vtx3bodydata.pytrack2(), vtx3bodydata.pztrack2(),                                  // deuteron
+          vtx3bodydata.tpcinnerparamtrack0(), vtx3bodydata.tpcinnerparamtrack1(), vtx3bodydata.tpcinnerparamtrack2(), // proton, pion, deuteron
+          vtx3bodydata.dcatrack0topvkf(), vtx3bodydata.dcatrack1topvkf(), vtx3bodydata.dcatrack2topvkf(),             // proton, pion, deuteron
+          vtx3bodydata.dcaxytrack0topvkf(), vtx3bodydata.dcaxytrack1topvkf(), vtx3bodydata.dcaxytrack2topvkf(),       // proton, pion, deuteron
+          vtx3bodydata.dcaxytrack0tosvkf(), vtx3bodydata.dcaxytrack1tosvkf(), vtx3bodydata.dcaxytrack2tosvkf(),       // proton, pion, deuteron
           vtx3bodydata.dcaxytrack0totrack1kf(), vtx3bodydata.dcaxytrack0totrack2kf(), vtx3bodydata.dcaxytrack1totrack2kf(),
           vtx3bodydata.dcavtxdaughterskf(),
           vtx3bodydata.dcaxytrackpostopv(), vtx3bodydata.dcaxytracknegtopv(), vtx3bodydata.dcaxytrackbachtopv(),
           vtx3bodydata.dcatrackpostopv(), vtx3bodydata.dcatracknegtopv(), vtx3bodydata.dcatrackbachtopv(),
           vtx3bodydata.track0sign(), vtx3bodydata.track1sign(), vtx3bodydata.track2sign(), // proton, pion, deuteron
           vtx3bodydata.tpcnsigmaproton(), vtx3bodydata.tpcnsigmapion(), vtx3bodydata.tpcnsigmadeuteron(),
+          vtx3bodydata.tpcdedxproton(), vtx3bodydata.tpcdedxpion(), vtx3bodydata.tpcdedxdeuteron(),
+          vtx3bodydata.tofnsigmadeuteron(),
+          vtx3bodydata.itsclussizedeuteron(),
+          vtx3bodydata.pidtrackingdeuteron(),
           // MC info (-1 if not matched to MC particle)
           genP,
           genPt,
@@ -367,6 +377,8 @@ struct threebodyKFTask {
         -1, -1,
         -1,
         -1, -1,
+        -1,
+        -1, -1, -1,
         -1, -1, -1,
         -1, -1, -1,
         -1, -1, -1,
@@ -379,6 +391,10 @@ struct threebodyKFTask {
         -1, -1, -1,
         -1, -1, -1,
         -1, -1, -1,
+        -1, -1, -1,
+        -1,
+        -1,
+        -1,
         // gen information
         mcparticle.p(),
         mcparticle.pt(),
