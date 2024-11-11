@@ -85,7 +85,7 @@ struct sgPIDAnalyzer {
     histos.add("TOF/nEl", "Negative TPC El vs TOF El vs pt", {HistType::kTH3F, {ptBins, nSigmaBins, nSigmaBins}});
   }
 
-  void process(aod::SGEvents const& events, aod::SGTracks const& tracks)
+  void process(aod::SGEvents const&, aod::SGTracks const& tracks)
   {
     for (const auto& track : tracks) {
       bool isPositive = (track.sign() > 0);

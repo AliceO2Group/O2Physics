@@ -484,9 +484,9 @@ struct UPCPionAnalysis {
         if (!trackselector(t, parameters))
           continue;
 
-        int NFindable = t.tpcNClsFindable();
-        int NMinusFound = t.tpcNClsFindableMinusFound();
-        int NCluster = NFindable - NMinusFound;
+        // int NFindable = t.tpcNClsFindable();
+        // int NMinusFound = t.tpcNClsFindableMinusFound();
+        // int NCluster = NFindable - NMinusFound;
 
         /*if (NCluster < TPC_cluster) {
            continue;

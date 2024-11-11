@@ -577,7 +577,6 @@ struct McDGCandProducer {
     auto dgcandAtEnd = dgcand == lastdgcand;
     auto mccolAtEnd = mccol == lastmccol;
     bool goon = !dgcandAtEnd || !mccolAtEnd;
-    int counter = 0;
 
     while (goon) {
       // check if dgcand has an associated Collision and McCollision
@@ -621,7 +620,6 @@ struct McDGCandProducer {
           // update UDMcColsLabels (for each UDCollision -> UDMcCollisions)
           LOGF(debug, "  writing %d to outputMcCollsLabels", mcColIsSaved[mcdgId]);
           outputMcCollsLabels(mcColIsSaved[mcdgId]);
-          counter++;
 
           // update UDMcParticles
           auto mcPartsSlice = mcparts.sliceBy(mcPartsPerMcCollision, mcdgId);
@@ -637,7 +635,6 @@ struct McDGCandProducer {
           // update UDMcColsLabels (for each UDCollision -> UDMcCollisions)
           LOGF(debug, "  writing %d to UDMcCollsLabels", -1);
           outputMcCollsLabels(-1);
-          counter++;
 
           // update UDMcParticles and UDMcTrackLabels (for each UDTrack -> UDMcParticles)
           // loop over tracks of dgcand

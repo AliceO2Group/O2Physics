@@ -679,7 +679,7 @@ struct sgExclusivePhi {
         // auto ksize = allTracksAreITSonlyAndFourITSclusters.size();
         registry.fill(HIST("hTracksITSonly"), allTracksAreITSonlyAndFourITSclusters.size());
 
-        for (int kaon = 0; kaon < allTracksAreITSonlyAndFourITSclusters.size(); kaon++) {
+        for (std::size_t kaon = 0; kaon < allTracksAreITSonlyAndFourITSclusters.size(); kaon++) {
 
           int clusterSize[7];
           double averageClusterSize = 0.;
