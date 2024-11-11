@@ -378,7 +378,7 @@ struct HfTaskMcValidationGen {
               continue;
             }
           } else { // For B0 we consider flavour oscillations
-            if (!RecoDecay::isMatchedMCGen<true, true>(mcParticles, particle, PDGArrayParticle[iD], arrPDGFinal4Prong[iD], true, nullptr, maxDepthForSearch[iD], &listDaughters)) {
+            if (!RecoDecay::isMatchedMCGen<true, false>(mcParticles, particle, PDGArrayParticle[iD], arrPDGFinal4Prong[iD], true, nullptr, maxDepthForSearch[iD], &listDaughters)) {
               continue;
             }
           }
