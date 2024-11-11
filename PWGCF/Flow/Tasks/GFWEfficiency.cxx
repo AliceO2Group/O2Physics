@@ -26,7 +26,6 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
 
-
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -44,7 +43,6 @@ struct GFWEfficiency {
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.2, 0.25, 0.30, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.20, 2.40, 2.60, 2.80, 3.00}, "pt axis for histograms"};
 
   ConfigurableAxis axisCentrality{"axisCentrality", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, "centrality axis for histograms"};
-
 
   // Filter the tracks
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && (nabs(aod::track::dcaXY) < cfgCutDCAxy);
@@ -94,8 +92,8 @@ struct GFWEfficiency {
   void processReco(Colls::iterator const& collision, myTracks const& tracks, aod::McParticles const&)
   {
     registry.fill(HIST("eventCounter"), 0.5);
-      const auto centrality = collision.centFT0C();
-      registry.fill(HIST("hCenMCRec"), centrality);
+    const auto centrality = collision.centFT0C();
+    registry.fill(HIST("hCenMCRec"), centrality);
     for (const auto& track : tracks) {
       if (track.tpcNClsCrossedRows() < 70)
         continue;
@@ -104,37 +102,37 @@ struct GFWEfficiency {
         auto mcParticle = track.mcParticle();
         if (isStable(mcParticle.pdgCode())) {
           registry.fill(HIST("hPtMCRec"), track.pt());
-            if (centrality >0 && centrality<=5){
-                registry.fill(HIST("hPtMCRec05"), track.pt());
-            }
-            if (centrality >=50 && centrality<=60){
-                registry.fill(HIST("hPtMCRec5060"), track.pt());
-            }
+          if (centrality > 0 && centrality <= 5) {
+            registry.fill(HIST("hPtMCRec05"), track.pt());
+          }
+          if (centrality >= 50 && centrality <= 60) {
+            registry.fill(HIST("hPtMCRec5060"), track.pt());
+          }
         }
       }
     }
   }
   PROCESS_SWITCH(GFWEfficiency, processReco, "process reconstructed information", true);
 
-  void processSim(aod::McCollision const&, soa::SmallGroups<soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels>> const& collisions, myMcParticles const& mcParticles, myMcCollisionsFT0Cs const& mcCollisionsFT0Cs )
+  void processSim(aod::McCollision const&, soa::SmallGroups<soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels>> const& collisions, myMcParticles const& mcParticles, myMcCollisionsFT0Cs const& mcCollisionsFT0Cs)
   {
     if (collisions.size() > -1) {
       registry.fill(HIST("mcEventCounter"), 0.5);
-        for (const auto& mcCollisionsFT0C : mcCollisionsFT0Cs) {
-          registry.fill(HIST("hCenMCGen"), mcCollisionsFT0C.centFT0C());
-        }
+      for (const auto& mcCollisionsFT0C : mcCollisionsFT0Cs) {
+        registry.fill(HIST("hCenMCGen"), mcCollisionsFT0C.centFT0C());
+      }
 
-    for (const auto& mcCollisionsFT0C : mcCollisionsFT0Cs) {
+      for (const auto& mcCollisionsFT0C : mcCollisionsFT0Cs) {
         const auto centrality = mcCollisionsFT0C.centFT0C();
-      for (const auto& mcParticle : mcParticles) {
+        for (const auto& mcParticle : mcParticles) {
           if (mcParticle.isPhysicalPrimary() && isStable(mcParticle.pdgCode())) {
-              registry.fill(HIST("hPtMCGen"), mcParticle.pt());
-              if (centrality >0 && centrality<=5){
-                  registry.fill(HIST("hPtMCGen05"), mcParticle.pt());
-              }
-              if (centrality >=50 && centrality<=60){
-                  registry.fill(HIST("hPtMCGen5060"), mcParticle.pt());
-              }
+            registry.fill(HIST("hPtMCGen"), mcParticle.pt());
+            if (centrality > 0 && centrality <= 5) {
+              registry.fill(HIST("hPtMCGen05"), mcParticle.pt());
+            }
+            if (centrality >= 50 && centrality <= 60) {
+              registry.fill(HIST("hPtMCGen5060"), mcParticle.pt());
+            }
           }
         }
       }
