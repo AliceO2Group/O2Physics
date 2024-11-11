@@ -193,7 +193,7 @@ struct v0ptinvmassplots {
   void RecMCprocess(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const&,
                     soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s,
                     DaughterTracks const&, // no need to define a variable for tracks, if we don't access them directly
-                    aod::McParticles const&  /*mcParticles*/)
+                    aod::McParticles const& /*mcParticles*/)
   {
     for (const auto& v0 : V0s) {
       rPtAnalysis.fill(HIST("hV0PtAll"), v0.pt());
