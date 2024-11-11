@@ -249,7 +249,7 @@ struct FlowZDCtask {
     ColEvSels const& cols,
     BCsRun3 const& /*bcs*/,
     aod::Zdcs const& /*zdcs*/,
-    aod::FT0s const&  /*ft0s*/)
+    aod::FT0s const& /*ft0s*/)
   {
     double sumCosPsiDiff = 0.0; // initialize Sum of cosPsiDiff for averaging
     double sumSinPsiDiff = 0.0; // initialize Sum of cosPsiDiff for averaging
