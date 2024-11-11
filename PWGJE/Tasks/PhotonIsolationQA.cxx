@@ -17,6 +17,8 @@
 #include <string>
 #include <vector>
 #include <cmath>
+#include <set>
+#include <utility>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
