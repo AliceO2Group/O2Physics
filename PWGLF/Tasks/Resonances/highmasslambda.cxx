@@ -25,6 +25,7 @@
 #include <cmath>
 #include <array>
 #include <cstdlib>
+#include <vector>
 
 #include "TRandom3.h"
 #include "Math/Vector3D.h"
