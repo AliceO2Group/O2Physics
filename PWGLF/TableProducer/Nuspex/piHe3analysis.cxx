@@ -63,7 +63,7 @@
 
 #include "PWGLF/DataModel/EPCalibrationTables.h"
 #include "PWGLF/DataModel/LFLithium4Tables.h"
-//pi
+// pi
 #include "PWGLF/DataModel/piHe3Tables.h"
 #include "PWGLF/Utils/svPoolCreator.h"
 
@@ -91,11 +91,10 @@ constexpr int li4PDG = 1000030040;
 constexpr int prPDG = 2212;
 constexpr int hePDG = 1000020030;
 
-//pi
+// pi
 constexpr int pichargedPDG = 211;
 constexpr float pionchargedMass = o2::constants::physics::MassPiPlus;
 constexpr float pionneutralMass = o2::constants::physics::MassPi0;
-
 
 enum Selections {
   kNoCuts = 0,
@@ -114,14 +113,14 @@ struct Lithium4Candidate {
   float recoPtPr() const { return sign * std::hypot(momPr[0], momPr[1]); }
   float recoPhiPr() const { return std::atan2(momPr[1], momPr[0]); }
   float recoEtaPr() const { return std::asinh(momPr[2] / recoPtPr()); }
-  //pi
+  // pi
   float recoPtPion() const { return sign * std::hypot(momPion[0], momPion[1]); }
   float recoPhiPion() const { return std::atan2(momPion[1], momPion[0]); }
   float recoEtaPion() const { return std::asinh(momPion[2] / recoPtPion()); }
 
   std::array<float, 3> momHe3 = {99.f, 99.f, 99.f};
   std::array<float, 3> momPr = {99.f, 99.f, 99.f};
-  //pi
+  // pi
   std::array<float, 3> momPion = {99.f, 99.f, 99.f};
 
   float sign = 1.f;
@@ -130,7 +129,7 @@ struct Lithium4Candidate {
   float DCAzHe3 = -10.f;
   float DCAxyPr = -10.f;
   float DCAzPr = -10.f;
-  //pi
+  // pi
   float DCAxyPion = -10.f;
   float DCAzPion = -10.f;
 
@@ -151,7 +150,7 @@ struct Lithium4Candidate {
   float massTOFPr = -10;
   uint32_t itsClSizeHe3 = 0u;
   uint32_t itsClSizePr = 0u;
-  //pi
+  // pi
   uint16_t tpcSignalPion = 0u;
   float momPionTPC = -99.f;
   uint8_t nTPCClustersPion = 0u;
@@ -177,7 +176,7 @@ struct Lithium4Candidate {
   float momPrMC = -99.f;
   float etaPrMC = -99.f;
   float phiPrMC = -99.f;
-  //pi
+  // pi
   float momPionMC = -99.f;
   float etaPionMC = -99.f;
   float phiPionMC = -99.f;
@@ -188,10 +187,10 @@ struct Lithium4Candidate {
 
 struct pihe3analysis {
 
-  //Produces<aod::Lithium4Table> m_outputDataTable;
+  // Produces<aod::Lithium4Table> m_outputDataTable;
   Produces<aod::Lithium4TableMC> m_outputMCTable;
   Produces<aod::Lithium4Mult> m_outputMultiplicityTable;
-//pi
+  // pi
   Produces<aod::PiHe3Table> m_outputDataTable;
 
   // Selections
@@ -202,12 +201,12 @@ struct pihe3analysis {
   Configurable<float> setting_cutDCAz{"setting_cutDCAz", 2.0f, "DCAz range for tracks"};
   Configurable<float> setting_cutChi2tpcLow{"setting_cutChi2tpcLow", 0.5f, "Low cut on TPC chi2"};
   Configurable<float> setting_cutInvMass{"setting_cutInvMass", 0.0f, "Invariant mass upper limit"};
-  Configurable<float> setting_cutPtMinLi{"setting_cutPtMinLi", 0.0f, "Minimum PT cut on Li4"};
+  Configurable<float> setting_cutPtMinpiHe3{"setting_cutPtMinpiHe3", 0.0f, "Minimum PT cut on piHe3"};
   Configurable<float> setting_cutClSizeItsHe3{"setting_cutClSizeItsHe3", 4.0f, "Minimum ITS cluster size for He3"};
   Configurable<float> setting_cutNsigmaTPC{"setting_cutNsigmaTPC", 3.0f, "Value of the TPC Nsigma cut"};
-  //Configurable<float> setting_cutPtMinTOFPr{"setting_cutPtMinTOFPr", 0.5f, "Minimum pT to apply the TOF cut on protons"};
-  //pi
-  Configurable<float> setting_cutPtMinTOFPion{"setting_cutPtMinTOFPion", 0.5f, "Minimum pT to apply the TOF cut on pion"};
+  // Configurable<float> setting_cutPtMinTOFPr{"setting_cutPtMinTOFPr", 0.5f, "Minimum pT to apply the TOF cut on protons"};
+  // pi
+  Configurable<float> setting_cutPtMinTOFPion{"setting_cutPtMinTOFPion", 0.4f, "Minimum pT to apply the TOF cut on pion"};
   Configurable<float> setting_cutNsigmaTOF{"setting_cutNsigmaTOF", 3.0f, "Value of the TOF Nsigma cut"};
   Configurable<int> setting_noMixedEvents{"setting_noMixedEvents", 5, "Number of mixed events per event"};
   Configurable<bool> setting_enableBkgUS{"setting_enableBkgUS", false, "Enable US background"};
@@ -249,15 +248,15 @@ struct pihe3analysis {
 
   std::vector<int> m_recoCollisionIDs;
   std::vector<bool> m_goodCollisions;
-  std::vector<SVCand> m_trackPairs;/*
-  struct SVCand {
-  int tr0Idx;
-  int tr1Idx;
-  CollBracket collBracket{};
-};*/
+  std::vector<SVCand> m_trackPairs; /*
+   struct SVCand {
+   int tr0Idx;
+   int tr1Idx;
+   CollBracket collBracket{};
+ };*/
   o2::vertexing::DCAFitterN<2> m_fitter;
-  //svPoolCreator m_svPoolCreator{hePDG, prPDG};
-  //pi
+  // svPoolCreator m_svPoolCreator{hePDG, prPDG};
+  // pi
   svPoolCreator m_svPoolCreator{hePDG, pichargedPDG};
 
   int m_runNumber;
@@ -279,18 +278,18 @@ struct pihe3analysis {
       {"hEmptyPool", "svPoolCreator did not find track pairs false/true", {HistType::kTH1F, {{2, -0.5, 1.5}}}},
       {"hDCAxyHe3", ";DCA_{xy} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
       {"hDCAzHe3", ";DCA_{z} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
-      {"hLitInvMass", "; M(^{3}He + p) (GeV/#it{c}^{2})", {HistType::kTH1F, {{50, 3.74f, 3.85f}}}},
+      {"hpiHe3tInvMass", "; M(^{3}He + p) (GeV/#it{c}^{2})", {HistType::kTH1F, {{50, 3.74f, 3.85f}}}},
       {"hHe3Pt", "#it{p}_{T} distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{200, -6.0f, 6.0f}}}},
-     // {"hProtonPt", "Pt distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{200, -3.0f, 3.0f}}}},
+      // {"hProtonPt", "Pt distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{200, -3.0f, 3.0f}}}},
       {"h2dEdxHe3candidates", "dEdx distribution; #it{p} (GeV/#it{c}); dE/dx (a.u.)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {100, 0.0f, 2000.0f}}}},
       {"h2ClSizeCosLamHe3", "; n#sigma_{TPC} ; #LT ITS Cluster Size #GT #LT cos#lambda #GT (^{3}He)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {120, 0.0f, 15.0f}}}},
       {"h2NsigmaHe3TPC", "NsigmaHe3 TPC distribution; #it{p}/z (GeV/#it{c}); n#sigma_{TPC}(^{3}He)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
       {"h2NsigmaHe3TPC_preselection", "NsigmaHe3 TPC distribution; #it{p}/z (GeV/#it{c}); n#sigma_{TPC}(^{3}He)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {200, -10.0f, 10.0f}}}},
-     // {"h2NsigmaProtonTPC", "NsigmaProton TPC distribution; #it{p}/z (GeV/#it{c}); n#sigma_{TPC}(p)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
-     // {"h2NsigmaProtonTPC_preselection", "NsigmaHe3 TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(^{3}He)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {200, -10.0f, 10.0f}}}},
-     // {"h2NsigmaProtonTOF", "NsigmaProton TOF distribution; #it{p} (GeV/#it{c}); n#sigma_{TOF}(p)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
-     // {"h2NsigmaProtonTOF_preselection", "NsigmaProton TOF distribution; #it{p} (GeV/#it{c}); n#sigma_{TOF}(p)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {200, -10.0f, 10.0f}}}},
-      //pi
+      // {"h2NsigmaProtonTPC", "NsigmaProton TPC distribution; #it{p}/z (GeV/#it{c}); n#sigma_{TPC}(p)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
+      // {"h2NsigmaProtonTPC_preselection", "NsigmaHe3 TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(^{3}He)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {200, -10.0f, 10.0f}}}},
+      // {"h2NsigmaProtonTOF", "NsigmaProton TOF distribution; #it{p} (GeV/#it{c}); n#sigma_{TOF}(p)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
+      // {"h2NsigmaProtonTOF_preselection", "NsigmaProton TOF distribution; #it{p} (GeV/#it{c}); n#sigma_{TOF}(p)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {200, -10.0f, 10.0f}}}},
+      // pi
       {"hPionPt", "Pt distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{200, -3.0f, 3.0f}}}},
       {"h2NsigmaPionTPC", "NsigmaPion TPC distribution; #it{p}/z (GeV/#it{c}); n#sigma_{TPC}(p)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
       {"h2NsigmaPionTPC_preselection", "NsigmaHe3 TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(^{3}He)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {200, -10.0f, 10.0f}}}},
@@ -438,26 +437,26 @@ struct pihe3analysis {
   template <typename Ttrack>
   bool selectionPIDProton(const Ttrack& candidate)
   {
-    //m_qaRegistry.fill(HIST("h2NsigmaProtonTPC_preselection"), candidate.tpcInnerParam(), candidate.tpcNSigmaPr());
-    if (candidate.hasTOF() && candidate.pt() > 0.5/*setting_cutPtMinTOFPr*/) {
+    // m_qaRegistry.fill(HIST("h2NsigmaProtonTPC_preselection"), candidate.tpcInnerParam(), candidate.tpcNSigmaPr());
+    if (candidate.hasTOF() && candidate.pt() > 0.5 /*setting_cutPtMinTOFPr*/) {
       if (std::abs(candidate.tpcNSigmaPr() > setting_cutNsigmaTPC)) {
         return false;
       }
-      //m_qaRegistry.fill(HIST("h2NsigmaProtonTOF_preselection"), candidate.p(), candidate.tofNSigmaPr());
+      // m_qaRegistry.fill(HIST("h2NsigmaProtonTOF_preselection"), candidate.p(), candidate.tofNSigmaPr());
       if (std::abs(candidate.tofNSigmaPr()) > setting_cutNsigmaTOF) {
         return false;
       }
-      //m_qaRegistry.fill(HIST("h2NsigmaProtonTPC"), candidate.tpcInnerParam(), candidate.tpcNSigmaPr());
-      //m_qaRegistry.fill(HIST("h2NsigmaProtonTOF"), candidate.p(), candidate.tofNSigmaPr());
+      // m_qaRegistry.fill(HIST("h2NsigmaProtonTPC"), candidate.tpcInnerParam(), candidate.tpcNSigmaPr());
+      // m_qaRegistry.fill(HIST("h2NsigmaProtonTOF"), candidate.p(), candidate.tofNSigmaPr());
       return true;
     } else if (std::abs(candidate.tpcNSigmaPr()) < setting_cutNsigmaTPC) {
-      //m_qaRegistry.fill(HIST("h2NsigmaProtonTPC"), candidate.tpcInnerParam(), candidate.tpcNSigmaPr());
+      // m_qaRegistry.fill(HIST("h2NsigmaProtonTPC"), candidate.tpcInnerParam(), candidate.tpcNSigmaPr());
       return true;
     }
     return false;
   }
-//pi
-template <typename Ttrack>
+  // pi
+  template <typename Ttrack>
   bool selectionPIDPion(const Ttrack& candidate)
   {
     m_qaRegistry.fill(HIST("h2NsigmaPionTPC_preselection"), candidate.tpcInnerParam(), candidate.tpcNSigmaPi());
@@ -582,7 +581,7 @@ template <typename Ttrack>
       return false;
     }
     float ptLi = std::hypot(li4cand.momHe3[0] + li4cand.momPr[0], li4cand.momHe3[1] + li4cand.momPr[1]);
-    if (ptLi < setting_cutPtMinLi) {
+    if (ptLi < setting_cutPtMinpiHe3) {
       return false;
     }
 
@@ -692,8 +691,8 @@ template <typename Ttrack>
     if (setting_cutInvMass > 0 && invMass > setting_cutInvMass) {
       return false;
     }
-    float ptLi = std::hypot(li4cand.momHe3[0] + li4cand.momPion[0], li4cand.momHe3[1] + li4cand.momPion[1]);
-    if (ptLi < setting_cutPtMinLi) {
+    float ptpiHe3 = std::hypot(li4cand.momHe3[0] + li4cand.momPion[0], li4cand.momHe3[1] + li4cand.momPion[1]);
+    if (ptpiHe3 < setting_cutPtMinpiHe3) {
       return false;
     }
 
@@ -726,7 +725,7 @@ template <typename Ttrack>
     li4cand.sharedClustersHe3 = trackHe3.tpcNClsShared();
     li4cand.sharedClustersPion = trackPion.tpcNClsShared();
 
-    li4cand.isBkgUS = trackHe3.sign() * trackPion.sign() < 0;//?
+    li4cand.isBkgUS = trackHe3.sign() * trackPion.sign() < 0; //?
     li4cand.isBkgEM = isMixedEvent;
 
     li4cand.invMass = invMass;
@@ -787,7 +786,7 @@ template <typename Ttrack>
         if (track0 == track1) {
           continue;
         }
-       //?
+        //?
         if (!setting_enableBkgUS) {
           if (track0.sign() * track1.sign() < 0) {
             continue;
@@ -797,8 +796,8 @@ template <typename Ttrack>
         /*if (!selectTrack(track1) || !selectionPIDProton(track1)) {
           continue;
         }*/
-       //pi
-         if (!selectTrack(track1) || !selectionPIDPion(track1)) {
+        // pi
+        if (!selectTrack(track1) || !selectionPIDPion(track1)) {
           continue;
         }
 
@@ -813,9 +812,9 @@ template <typename Ttrack>
     }
   }
 
-//pi
+  // pi
   template <typename T>
-  //void pairTracksEventMixing(T& he3Cands, T& protonCands)
+  // void pairTracksEventMixing(T& he3Cands, T& protonCands)
   void pairTracksEventMixing(T& he3Cands, T& pionCands)
   {
     for (auto& he3Cand : he3Cands) {
@@ -829,7 +828,7 @@ template <typename Ttrack>
 
         SVCand trackPair;
         trackPair.tr0Idx = he3Cand.globalIndex();
-        //trackPair.tr1Idx = protonCand.globalIndex();
+        // trackPair.tr1Idx = protonCand.globalIndex();
         trackPair.tr1Idx = pionCand.globalIndex();
         const int collIdx = he3Cand.collisionId();
         CollBracket collBracket{collIdx, collIdx};
@@ -839,7 +838,7 @@ template <typename Ttrack>
     }
   }
 
-  //template <typename Tcoll>
+  // template <typename Tcoll>
   /*void fillTable(const Lithium4Candidate& li4cand, const Tcoll& collision, bool isMC = false)
   {
     m_outputDataTable(
@@ -890,8 +889,8 @@ template <typename Ttrack>
         collision.multFT0C());
     }
   }*/
-//pi
-   template <typename Tcoll>
+  // pi
+  template <typename Tcoll>
   void pifillTable(const Lithium4Candidate& li4cand, const Tcoll& collision, bool isMC = false)
   {
     m_outputDataTable(
@@ -946,11 +945,11 @@ template <typename Ttrack>
   void fillHistograms(const Lithium4Candidate& li4cand)
   {
     m_qaRegistry.fill(HIST("hHe3Pt"), li4cand.recoPtHe3());
-    //m_qaRegistry.fill(HIST("hProtonPt"), li4cand.recoPtPr());
-    m_qaRegistry.fill(HIST("hLitInvMass"), li4cand.invMass);
+    // m_qaRegistry.fill(HIST("hProtonPt"), li4cand.recoPtPr());
+    m_qaRegistry.fill(HIST("hpiHe3tInvMass"), li4cand.invMass);
     m_qaRegistry.fill(HIST("hDCAxyHe3"), li4cand.DCAxyHe3);
     m_qaRegistry.fill(HIST("hDCAzHe3"), li4cand.DCAzHe3);
-    //pi
+    // pi
     m_qaRegistry.fill(HIST("hPionPt"), li4cand.recoPtPion());
   }
 
@@ -962,8 +961,8 @@ template <typename Ttrack>
     for (auto& trackPair : m_trackPairs) {
 
       auto heTrack = tracks.rawIteratorAt(trackPair.tr0Idx);
-      //auto prTrack = tracks.rawIteratorAt(trackPair.tr1Idx);
-      //pi
+      // auto prTrack = tracks.rawIteratorAt(trackPair.tr1Idx);
+      // pi
       auto piTrack = tracks.rawIteratorAt(trackPair.tr1Idx);
       auto collBracket = trackPair.collBracket;
 
@@ -973,19 +972,18 @@ template <typename Ttrack>
       }
       fillHistograms(li4cand);
       auto collision = collisions.rawIteratorAt(li4cand.collisionID);*/
-      //fillTable(li4cand, collision, /*isMC*/ false);
+      // fillTable(li4cand, collision, /*isMC*/ false);
 
-      //pi
+      // pi
       Lithium4Candidate piHe3cand;
 
       if (!PionfillCandidateInfo(heTrack, piTrack, collBracket, collisions, piHe3cand, tracks, isMixedEvent)) {
         continue;
       }
-      
+
       fillHistograms(piHe3cand);
       auto collision = collisions.rawIteratorAt(piHe3cand.collisionID);
       pifillTable(piHe3cand, collision, /*isMC*/ false);
-
     }
   }
 
@@ -1018,7 +1016,7 @@ template <typename Ttrack>
         Lithium4Candidate li4cand;
         fillCandidateInfoMC(mcHe3, mcPr, mcParticle, li4cand);
         auto collision = collisions.rawIteratorAt(li4cand.collisionID);
-       // fillTable(li4cand, collision, /*isMC*/ true);
+        // fillTable(li4cand, collision, /*isMC*/ true);
       }
     }
   }
@@ -1126,7 +1124,7 @@ template <typename Ttrack>
             fillCandidateInfoMC(mctrackHe3, mctrackPr, mothertrack, li4cand);
             fillHistograms(li4cand);
             auto collision = collisions.rawIteratorAt(li4cand.collisionID);
-            //fillTable(li4cand, collision, /*isMC*/ true);
+            // fillTable(li4cand, collision, /*isMC*/ true);
             filledMothers.push_back(mothertrack.globalIndex());
           }
         }
@@ -1254,7 +1252,7 @@ template <typename Ttrack>
           fillCandidateInfoMC(mctrackHe3, mctrackPr, mothertrackHe, li4cand);
           fillHistograms(li4cand);
           auto collision = collisions.rawIteratorAt(li4cand.collisionID);
-          //fillTable(li4cand, collision, /*isMC*/ true);
+          // fillTable(li4cand, collision, /*isMC*/ true);
           filledMothers.push_back(mothertrackHe.globalIndex());
         }
       }
