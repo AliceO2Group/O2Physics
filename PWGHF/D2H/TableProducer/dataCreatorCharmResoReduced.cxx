@@ -262,7 +262,7 @@ struct HfDataCreatorCharmResoReduced {
     registry.add("hMCGenOrigin", "Origin of Generated particles", {HistType::kTH1F, {{3, -0.5, 2.5}}});
     registry.add("hMCOriginCounterWrongDecay", "Origin of Generated particles in Wrong decay", {HistType::kTH1F, {{3, -0.5, 2.5}}});
 
-    if (doMcRecQa){
+    if (doMcRecQa) {
       registry.add("hMassVsPtK0Matched", "K0s candidates Matched ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassKzero}});
       registry.add("hMassVsPtD0Matched", "D0 candidates Matched ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassDplus}});
       registry.add("hMassVsPtDstarMatched", "Dstar candidates Matched ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassDstar}});
@@ -562,7 +562,7 @@ struct HfDataCreatorCharmResoReduced {
         indexRecReso = RecoDecay::getMatchedMCRec<false, true, false, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2], vecDaughtersReso[3], vecDaughtersReso[4]}, Pdg::kDS1, std::array{+kPiPlus, -kKPlus, +kPiPlus, +kPiPlus, -kPiPlus}, true, &sign, 3, &nPiToMuReso, &nKaToPiReso);
         if (indexRecReso > -1 && nPiToMuReso == 0 && nKaToPiReso == 0) {
           flag = sign * DecayTypeMc::Ds1ToDStarK0ToD0PiK0s;
-        } else if (indexRecReso > -1 && nPiToMuReso >= 1 && nKaToPiReso == 0){
+        } else if (indexRecReso > -1 && nPiToMuReso >= 1 && nKaToPiReso == 0) {
           flag = sign * DecayTypeMc::Ds1ToDStarK0ToD0PiK0sOneMu;
         }
       }
@@ -600,57 +600,57 @@ struct HfDataCreatorCharmResoReduced {
           indexParticle = indexRecReso;
         } else if (indexRecResoPartReco > -1) {
           indexParticle = indexRecResoPartReco;
-        } 
+        }
         auto particleReso = particlesMc.iteratorAt(indexParticle);
         origin = RecoDecay::getCharmHadronOrigin(particlesMc, particleReso, false, &idxBhadMothers);
         motherPt = particleReso.pt();
       }
-      if (doMcRecQa){
-        if (indexRecReso > -1){
-          if (nPiToMuReso == 0 && nKaToPiReso == 0){
+      if (doMcRecQa) {
+        if (indexRecReso > -1) {
+          if (nPiToMuReso == 0 && nKaToPiReso == 0) {
             registry.fill(HIST("hMassVsPtDs1Matched"), varUtils.ptD, varUtils.invMassKPiPiV0 - varUtils.invMassD);
           }
-          if (nPiToMuReso >= 1){
+          if (nPiToMuReso >= 1) {
             registry.fill(HIST("hMassVsPtDs1MatchedPiToMu"), varUtils.ptD, varUtils.invMassKPiPiV0 - varUtils.invMassD);
           }
-          if (nKaToPiReso >= 1){
+          if (nKaToPiReso >= 1) {
             registry.fill(HIST("hMassVsPtDs1MatchedKaToPi"), varUtils.ptD, varUtils.invMassKPiPiV0 - varUtils.invMassD);
           }
         }
-        if (indexRecD0 > -1){
-          if (nPiToMuD0 == 0 && nKaToPiD0 == 0){
+        if (indexRecD0 > -1) {
+          if (nPiToMuD0 == 0 && nKaToPiD0 == 0) {
             registry.fill(HIST("hMassVsPtD0Matched"), varUtils.ptD, varUtils.invMassDdau);
           }
-          if (nPiToMuD0 >= 1){
+          if (nPiToMuD0 >= 1) {
             registry.fill(HIST("hMassVsPtD0MatchedPiToMu"), varUtils.ptD, varUtils.invMassDdau);
           }
-          if (nKaToPiD0 >= 1){
+          if (nKaToPiD0 >= 1) {
             registry.fill(HIST("hMassVsPtD0MatchedKaToPi"), varUtils.ptD, varUtils.invMassDdau);
           }
         }
-        if (indexRecDstar > -1){
-          if (nPiToMuDstar == 0 && nKaToPiDstar == 0){
+        if (indexRecDstar > -1) {
+          if (nPiToMuDstar == 0 && nKaToPiDstar == 0) {
             registry.fill(HIST("hMassVsPtDstarMatched"), varUtils.ptD, varUtils.invMassD - varUtils.invMassDdau);
           }
-          if (nPiToMuDstar >= 1){
+          if (nPiToMuDstar >= 1) {
             registry.fill(HIST("hMassVsPtDstarMatchedPiToMu"), varUtils.ptD, varUtils.invMassD - varUtils.invMassDdau);
           }
-          if (nKaToPiDstar >= 1){
+          if (nKaToPiDstar >= 1) {
             registry.fill(HIST("hMassVsPtDstarMatchedKaToPi"), varUtils.ptD, varUtils.invMassD - varUtils.invMassDdau);
           }
         }
-        if (indexRecK0 > -1){
-          if (nPiToMuV0 == 0 && nKaToPiV0 == 0){
-            registry.fill(HIST("hMassVsPtK0Matched"),  candidateV0.pT, candidateV0.mK0Short);
+        if (indexRecK0 > -1) {
+          if (nPiToMuV0 == 0 && nKaToPiV0 == 0) {
+            registry.fill(HIST("hMassVsPtK0Matched"), candidateV0.pT, candidateV0.mK0Short);
           }
-          if (nPiToMuV0 >= 1){
+          if (nPiToMuV0 >= 1) {
             registry.fill(HIST("hMassVsPtK0MatchedPiToMu"), candidateV0.pT, candidateV0.mK0Short);
           }
-          if (nKaToPiV0 >= 1){
+          if (nKaToPiV0 >= 1) {
             registry.fill(HIST("hMassVsPtK0MatchedKaToPi"), candidateV0.pT, candidateV0.mK0Short);
           }
         }
-      } 
+      }
     } else if constexpr (decChannel == DecayChannel::DplusV0) {
       // Ds2Star → D+ K0 → (π+K-π+) K0s → (π+K-π+)(π+π-)
       indexRecK0 = RecoDecay::getMatchedMCRec<false, true, false, true>(particlesMc, std::array{vecDaughtersReso[3], vecDaughtersReso[4]}, kK0, std::array{+kPiPlus, -kPiPlus}, true, &signV0, 2, &nPiToMuV0, &nKaToPiV0);
@@ -659,60 +659,60 @@ struct HfDataCreatorCharmResoReduced {
         indexRecReso = RecoDecay::getMatchedMCRec<false, false, false, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2], vecDaughtersReso[3], vecDaughtersReso[4]}, Pdg::kDS2Star, std::array{+kPiPlus, -kKPlus, +kPiPlus, +kPiPlus, -kPiPlus}, true, &sign, 3, &nPiToMuReso, &nKaToPiReso);
         if (indexRecReso > -1 && nPiToMuReso == 0 && nKaToPiReso == 0) {
           flag = sign * DecayTypeMc::Ds2StarToDplusK0sToPiKaPiPiPi;
-        } else if (indexRecReso > -1 && nPiToMuReso >= 1 && nKaToPiReso == 0){
+        } else if (indexRecReso > -1 && nPiToMuReso >= 1 && nKaToPiReso == 0) {
           flag = sign * DecayTypeMc::Ds2StarToDplusK0sOneMu;
-        } else if (indexRecReso < 0) { 
+        } else if (indexRecReso < 0) {
           // Verify partly reconstructed decay Ds1 -> D* K0s -> D+  π0 K0s
           indexRecDstar = RecoDecay::getMatchedMCRec<false, false, true, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2]}, Pdg::kDStar, std::array{-kKPlus, +kPiPlus, +kPiPlus}, true, &signDStar, 2);
-          if (indexRecDstar > -1){
+          if (indexRecDstar > -1) {
             indexRecReso = RecoDecay::getMatchedMCRec<false, true, true, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2], vecDaughtersReso[3], vecDaughtersReso[4]}, Pdg::kDS1, std::array{+kPiPlus, -kKPlus, +kPiPlus, +kPiPlus, -kPiPlus}, true, &sign, 3);
-            if (indexRecReso > -1){
+            if (indexRecReso > -1) {
               flag = sign * DecayTypeMc::Ds1ToDStarK0ToDPlusPi0K0s;
             }
           }
         }
-      } 
+      }
       if (flag != 0) {
         auto particleReso = particlesMc.iteratorAt(indexRecReso);
         origin = RecoDecay::getCharmHadronOrigin(particlesMc, particleReso, false, &idxBhadMothers);
         motherPt = particleReso.pt();
       }
-      if (doMcRecQa){
-        if (indexRecReso > -1){
-          if (nPiToMuReso == 0 && nKaToPiReso == 0){
+      if (doMcRecQa) {
+        if (indexRecReso > -1) {
+          if (nPiToMuReso == 0 && nKaToPiReso == 0) {
             registry.fill(HIST("hMassVsPtDs2StarMatched"), varUtils.ptD, varUtils.invMassKPiPiV0 - varUtils.invMassD);
           }
-          if (nPiToMuReso >= 1){
+          if (nPiToMuReso >= 1) {
             registry.fill(HIST("hMassVsPtDs2StarMatchedPiToMu"), varUtils.ptD, varUtils.invMassKPiPiV0 - varUtils.invMassD);
           }
-          if (nKaToPiReso >= 1){
+          if (nKaToPiReso >= 1) {
             registry.fill(HIST("hMassVsPtDs2StarMatchedKaToPi"), varUtils.ptD, varUtils.invMassKPiPiV0 - varUtils.invMassD);
           }
         }
-        if (indexRecDplus > -1){
-          if (nPiToMuDplus == 0 && nKaToPiDplus == 0){
+        if (indexRecDplus > -1) {
+          if (nPiToMuDplus == 0 && nKaToPiDplus == 0) {
             registry.fill(HIST("hMassVsPtDplusMatched"), varUtils.ptD, varUtils.invMassD);
           }
-          if (nPiToMuDplus >= 1){
+          if (nPiToMuDplus >= 1) {
             registry.fill(HIST("hMassVsPtDplusMatchedPiToMu"), varUtils.ptD, varUtils.invMassD);
           }
-          if (nKaToPiDplus >= 1){
+          if (nKaToPiDplus >= 1) {
             registry.fill(HIST("hMassVsPtDplusMatchedKaToPi"), varUtils.ptD, varUtils.invMassD);
           }
         }
-        if (indexRecK0 > -1){
-          if (nPiToMuV0 == 0 && nKaToPiV0 == 0){
-            registry.fill(HIST("hMassVsPtK0Matched"),  candidateV0.pT, candidateV0.mK0Short);
+        if (indexRecK0 > -1) {
+          if (nPiToMuV0 == 0 && nKaToPiV0 == 0) {
+            registry.fill(HIST("hMassVsPtK0Matched"), candidateV0.pT, candidateV0.mK0Short);
           }
-          if (nPiToMuV0 >= 1){
+          if (nPiToMuV0 >= 1) {
             registry.fill(HIST("hMassVsPtK0MatchedPiToMu"), candidateV0.pT, candidateV0.mK0Short);
           }
-          if (nKaToPiV0 >= 1){
+          if (nKaToPiV0 >= 1) {
             registry.fill(HIST("hMassVsPtK0MatchedKaToPi"), candidateV0.pT, candidateV0.mK0Short);
           }
         }
-      } 
-    } // DecayChannel::DplusV0 
+      }
+    } // DecayChannel::DplusV0
     if (flag != 0) {
       registry.fill(HIST("hMCRecCounter"), flag);
       registry.fill(HIST("hMCRecOrigin"), origin);
