@@ -99,6 +99,8 @@ struct HfCandidateCreator3Prong {
   double massPiKPi{0.};
   double massKKPi{0.};
   double massPiKK{0.};
+  double massKPi{0.};
+  double massPiK{0.};
   double bz{0.};
 
   using FilteredHf3Prongs = soa::Filtered<aod::Hf3Prongs>;
@@ -150,6 +152,8 @@ struct HfCandidateCreator3Prong {
     registry.add("hMass3PiKPi", "3-prong candidates;inv. mass (#pi K#pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{600, 1.6, 2.2}}});
     registry.add("hMass3KKPi", "3-prong candidates;inv. mass (KK #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{600, 1.7, 2.3}}});
     registry.add("hMass3PiKK", "3-prong candidates;inv. mass (#pi KK) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{600, 1.7, 2.3}}});
+    registry.add("hMass2KPi", "2-prong pairs;inv. mass (K#pi) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{1200, 0.8, 2.0}}});
+    registry.add("hMass2PiK", "2-prong pairs;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{1200, 0.8, 2.0}}});
     registry.add("hCovPVXX", "3-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 1.e-4}}});
     registry.add("hCovSVXX", "3-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 0.2}}});
     registry.add("hCovPVYY", "3-prong candidates;YY element of cov. matrix of prim. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 1.e-4}}});
@@ -333,16 +337,20 @@ struct HfCandidateCreator3Prong {
       if (fillHistograms) {
         // calculate invariant mass
         auto arrayMomenta = std::array{pvec0, pvec1, pvec2};
-        massPKPi = RecoDecay::m(std::move(arrayMomenta), std::array{massP, massK, massPi});
-        massPiKP = RecoDecay::m(std::move(arrayMomenta), std::array{massPi, massK, massP});
-        massPiKPi = RecoDecay::m(std::move(arrayMomenta), std::array{massPi, massK, massPi});
-        massKKPi = RecoDecay::m(std::move(arrayMomenta), std::array{massK, massK, massPi});
-        massPiKK = RecoDecay::m(std::move(arrayMomenta), std::array{massPi, massK, massK});
+        massPKPi = RecoDecay::m(arrayMomenta, std::array{massP, massK, massPi});
+        massPiKP = RecoDecay::m(arrayMomenta, std::array{massPi, massK, massP});
+        massPiKPi = RecoDecay::m(arrayMomenta, std::array{massPi, massK, massPi});
+        massKKPi = RecoDecay::m(arrayMomenta, std::array{massK, massK, massPi});
+        massPiKK = RecoDecay::m(arrayMomenta, std::array{massPi, massK, massK});
+        massKPi = RecoDecay::m(std::array{arrayMomenta.at(1), arrayMomenta.at(2)}, std::array{massK, massPi});
+        massPiK = RecoDecay::m(std::array{arrayMomenta.at(0), arrayMomenta.at(1)}, std::array{massPi, massK});
         registry.fill(HIST("hMass3PiKPi"), massPiKPi);
         registry.fill(HIST("hMass3PKPi"), massPKPi);
         registry.fill(HIST("hMass3PiKP"), massPiKP);
         registry.fill(HIST("hMass3KKPi"), massKKPi);
         registry.fill(HIST("hMass3PiKK"), massPiKK);
+        registry.fill(HIST("hMass2KPi"), massKPi);
+        registry.fill(HIST("hMass2PiK"), massPiK);
       }
     }
   }
@@ -448,23 +456,35 @@ struct HfCandidateCreator3Prong {
       KFParticle kfCandPiKPi;
       const KFParticle* kfDaughtersPiKPi[3] = {&kfFirstPion, &kfSecondKaon, &kfThirdPion};
       kfCandPiKPi.SetConstructMethod(2);
-      kfCandPiKPi.Construct(kfDaughtersPKPi, 3);
+      kfCandPiKPi.Construct(kfDaughtersPiKPi, 3);
 
       // Ds± → K± K∓ π±
       KFParticle kfCandKKPi;
       const KFParticle* kfDaughtersKKPi[3] = {&kfFirstKaon, &kfSecondKaon, &kfThirdPion};
       kfCandKKPi.SetConstructMethod(2);
-      kfCandKKPi.Construct(kfDaughtersPKPi, 3);
+      kfCandKKPi.Construct(kfDaughtersKKPi, 3);
       KFParticle kfCandPiKK;
       const KFParticle* kfDaughtersPiKK[3] = {&kfFirstPion, &kfSecondKaon, &kfThirdKaon};
       kfCandPiKK.SetConstructMethod(2);
-      kfCandPiKK.Construct(kfDaughtersPKPi, 3);
+      kfCandPiKK.Construct(kfDaughtersPiKK, 3);
+
+      KFParticle kfPairKPi;
+      const KFParticle* kfDaughtersKPi[3] = {&kfSecondKaon, &kfThirdPion};
+      kfPairKPi.SetConstructMethod(2);
+      kfPairKPi.Construct(kfDaughtersKPi, 2);
+
+      KFParticle kfPairPiK;
+      const KFParticle* kfDaughtersPiK[3] = {&kfFirstPion, &kfSecondKaon};
+      kfPairPiK.SetConstructMethod(2);
+      kfPairPiK.Construct(kfDaughtersPiK, 2);
 
       auto massPKPi = kfCandPKPi.GetMass();
       auto massPiKP = kfCandPiKP.GetMass();
       auto massPiKPi = kfCandPiKPi.GetMass();
       auto massKKPi = kfCandKKPi.GetMass();
       auto massPiKK = kfCandPiKK.GetMass();
+      auto massKPi = kfPairKPi.GetMass();
+      auto massPiK = kfPairPiK.GetMass();
 
       registry.fill(HIST("hCovSVXX"), kfCandPKPi.Covariance(0, 0));
       registry.fill(HIST("hCovSVYY"), kfCandPKPi.Covariance(1, 1));
@@ -513,15 +533,17 @@ struct HfCandidateCreator3Prong {
 
       // fill KF info
       rowCandidateKF(topolChi2PerNdf,
-                     massPKPi, massPiKP, massPiKPi, massKKPi, massPiKK);
+                     massPKPi, massPiKP, massPiKPi, massKKPi, massPiKK, massKPi, massPiK);
 
       // fill histograms
       if (fillHistograms) {
         registry.fill(HIST("hMass3PiKPi"), massPiKPi);
         registry.fill(HIST("hMass3PKPi"), massPKPi);
         registry.fill(HIST("hMass3PiKP"), massPiKP);
-        registry.fill(HIST("hMass3KKP"), massKKPi);
+        registry.fill(HIST("hMass3KKPi"), massKKPi);
         registry.fill(HIST("hMass3PiKK"), massPiKK);
+        registry.fill(HIST("hMass2KPi"), massKPi);
+        registry.fill(HIST("hMass2PiK"), massPiK);
       }
     }
   }
@@ -558,7 +580,7 @@ struct HfCandidateCreator3Prong {
                       aod::TracksWCovExtra const& tracks,
                       aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
-    runCreator3ProngWithDCAFitterN</*doPvRefit*/ true, CentralityEstimator::None>(collisions, rowsTrackIndexProng3, tracks, bcWithTimeStamps);
+    runCreator3ProngWithKFParticle</*doPvRefit*/ true, CentralityEstimator::None>(collisions, rowsTrackIndexProng3, tracks, bcWithTimeStamps);
   }
   PROCESS_SWITCH(HfCandidateCreator3Prong, processPvRefitWithKFParticle, "Run candidate creator using KFParticle package with PV refit and w/o centrality selections", false);
 
@@ -568,7 +590,7 @@ struct HfCandidateCreator3Prong {
                         aod::TracksWCovExtra const& tracks,
                         aod::BCsWithTimestamps const& bcWithTimeStamps)
   {
-    runCreator3ProngWithDCAFitterN</*doPvRefit*/ false, CentralityEstimator::None>(collisions, rowsTrackIndexProng3, tracks, bcWithTimeStamps);
+    runCreator3ProngWithKFParticle</*doPvRefit*/ false, CentralityEstimator::None>(collisions, rowsTrackIndexProng3, tracks, bcWithTimeStamps);
   }
   PROCESS_SWITCH(HfCandidateCreator3Prong, processNoPvRefitWithKFParticle, "Run candidate creator using KFParticle package without PV refit and w/o centrality selections", false);
 

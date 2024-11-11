@@ -962,6 +962,8 @@ DECLARE_SOA_COLUMN(KfMassPiKP, kfMassPiKP, float);       //! mass of the PiKP ca
 DECLARE_SOA_COLUMN(KfMassPiKPi, kfMassPiKPi, float);     //! mass of the PiKPi candidate from the KFParticle fit
 DECLARE_SOA_COLUMN(KfMassKKPi, kfMassKKPi, float);       //! mass of the KKPi candidate from the KFParticle fit
 DECLARE_SOA_COLUMN(KfMassPiKK, kfMassPiKK, float);       //! mass of the PiKK candidate from the KFParticle fit
+DECLARE_SOA_COLUMN(KfMassKPi, kfMassKPi, float);         //! mass of the KPi pair from the KFParticle fit
+DECLARE_SOA_COLUMN(KfMassPiK, kfMassPiK, float);         //! mass of the PiK pair from the KFParticle fit
 
 } // namespace hf_cand_3prong
 
@@ -1014,7 +1016,7 @@ using HfCand3Prong = HfCand3ProngExt;
 
 DECLARE_SOA_TABLE(HfCand3ProngKF, "AOD", "HFCAND3PKF",
                   hf_cand::KfTopolChi2OverNdf,
-                  hf_cand_3prong::KfMassPKPi, hf_cand_3prong::KfMassPiKP, hf_cand_3prong::KfMassPiKPi, hf_cand_3prong::KfMassKKPi, hf_cand_3prong::KfMassPiKK);
+                  hf_cand_3prong::KfMassPKPi, hf_cand_3prong::KfMassPiKP, hf_cand_3prong::KfMassPiKPi, hf_cand_3prong::KfMassKKPi, hf_cand_3prong::KfMassPiKK, hf_cand_3prong::KfMassKPi, hf_cand_3prong::KfMassPiK);
 
 // table with results of reconstruction level MC matching
 DECLARE_SOA_TABLE(HfCand3ProngMcRec, "AOD", "HFCAND3PMCREC", //!
