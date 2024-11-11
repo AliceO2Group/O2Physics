@@ -222,8 +222,8 @@ struct k892analysis_PbPb {
 
       histos.add("h1k892Recsplit", "k892 Rec split", HistType::kTH1F, {{200, 0.0f, 20.0f}});
       // MC QA
-      histos.add("QAMCTrue/hGlobalIndexMotherRec", "index of rec mothers", HistType::kTH1F, {{(int)1e5, 0.0f, 1e5f}});
-      histos.add("QAMCTrue/hGlobalIndexMotherGen", "index of gen mothers", HistType::kTH1F, {{(int)1e5, 0.0f, 1e5f}});
+      histos.add("QAMCTrue/hGlobalIndexMotherRec", "index of rec mothers", HistType::kTH1F, {{static_cast<int>(1e5), 0.0f, 1e5f}});
+      histos.add("QAMCTrue/hGlobalIndexMotherGen", "index of gen mothers", HistType::kTH1F, {{static_cast<int>(1e5), 0.0f, 1e5f}});
       histos.add("QAMCTrue/TOF_Nsigma_pi_all", "TOF NSigma for Pion;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Pion};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
       histos.add("QAMCTrue/TPC_Nsigma_pi_all", "TPC NSigma for Pion;#it{p}_{T} (GeV/#it{c});#sigma_{TPC}^{Pion};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
       histos.add("QAMCTrue/TOF_Nsigma_ka_all", "TOF NSigma for Kaon;#it{p}_{T} (GeV/#it{c});#sigma_{TOF}^{Kaon};", {HistType::kTH3F, {centAxis, ptAxisQA, pidQAAxis}});
@@ -494,8 +494,6 @@ struct k892analysis_PbPb {
                 continue;
               if (mothertrack1.globalIndex() != mothertrack2.globalIndex())
                 continue;
-              // if (TMath::Abs(mothertrack1.y()) > 0.5)
-              // 	continue;
               if (TMath::Abs(mothertrack1.pdgCode()) != 313)
                 continue;
               if (avoidsplitrackMC && oldindex == mothertrack1.globalIndex()) {
