@@ -454,7 +454,7 @@ struct Jetchargedv2Task {
           if (jetderiveddatautilities::selectTrack(track, trackSelection) && (fabs(track.eta() - leadingJetEta) > jetRadius) && track.pt() >= 0.2 && track.pt() <= 5.) {
             registry.fill(HIST("h2_phi_track_pt"), track.pt(), track.phi());
             registry.fill(HIST("h2_phi_track_eta"), track.eta(), track.phi());
-            registry.fill(HIST("h_ptsum_sumpt"), track.phi(), track.pt()); // \sigma p_T distribution test
+            registry.fill(HIST("h_ptsum_sumpt"), track.phi(), track.pt());                                  // \sigma p_T distribution test
             registry.fill(HIST("h2_centrality_phi_w_pt"), collision.centrality(), track.phi(), track.pt()); // \sigma track.pt() distribution with centrality test
             registry.fill(HIST("h2_evtnum_phi_w_pt"), evtnum, track.phi(), track.pt());
           }
@@ -529,7 +529,7 @@ struct Jetchargedv2Task {
   PROCESS_SWITCH(Jetchargedv2Task, processRandomConeDataV2, "QA for random cone estimation of background fluctuations in data", true);
 
   void processTracksQA(soa::Filtered<JetCollisions>::iterator const& collision,
-                     soa::Filtered<JetTracks> const& tracks)
+                       soa::Filtered<JetTracks> const& tracks)
   {
     registry.fill(HIST("h2_centrality_collisions"), collision.centrality(), 0.5);
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
