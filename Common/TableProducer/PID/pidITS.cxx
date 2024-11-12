@@ -41,22 +41,55 @@ using namespace o2::track;
 /// Task to produce the TOF signal from the trackTime information
 struct itsPid {
 
-  // void init(o2::framework::InitContext& initContext)
-  // {
-  // }
+  Configurable<float> bb1{"bb1", 0.f, "Bethe Bloch parameter 1"};
+  Configurable<float> bb2{"bb2", 0.f, "Bethe Bloch parameter 2"};
+  Configurable<float> bb3{"bb3", 0.f, "Bethe Bloch parameter 3"};
+  Configurable<float> bb4{"bb4", 0.f, "Bethe Bloch parameter 4"};
+  Configurable<float> bb5{"bb5", 0.f, "Bethe Bloch parameter 5"};
+  Configurable<float> chargeExponent{"chargeExponent", 0.f, "Charge exponent"};
+  Configurable<float> resolution{"resolution", 0.f, "Charge exponent"};
+  Configurable<bool> getFromCCDB{"getFromCCDB", false, "Get the parameters from CCDB"};
+
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Configurable<std::string> paramfile{"param-file", "", "Path to the parametrization object, if empty the parametrization is not taken from file"};
+  Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> ccdbPath{"ccdbPath", "Analysis/PID/TPC/Response", "Path of the TPC parametrization on the CCDB"};
+  Configurable<std::string> recoPass{"recoPass", "", "Reconstruction pass name for CCDB query (automatically takes latest object for timestamp if blank)"};
+  Configurable<int64_t> ccdbTimestamp{"ccdb-timestamp", 0, "timestamp of the object used to query in CCDB the detector response. Exceptions: -1 gets the latest object, 0 gets the run dependent timestamp"};
+
+  void init(o2::framework::InitContext&)
+  {
+    if (getFromCCDB) {
+      ccdb->setURL(url.value);
+      ccdb->setCaching(true);
+      ccdb->setLocalObjectValidityChecking();
+      ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+    } else {
+      o2::aod::mITSParams.mBetheBlochParams[0] = bb1;
+      o2::aod::mITSParams.mBetheBlochParams[1] = bb2;
+      o2::aod::mITSParams.mBetheBlochParams[2] = bb3;
+      o2::aod::mITSParams.mBetheBlochParams[3] = bb4;
+      o2::aod::mITSParams.mBetheBlochParams[4] = bb5;
+      o2::aod::mITSParams.mChargeFactor = chargeExponent;
+      o2::aod::mITSParams.mResolution = resolution;
+    }
+  }
 
   /// Dummy process function for BCs, needed in case both Run2 and Run3 process functions are disabled
-  void process(aod::BCs const&, o2::soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidITSEl> const& tracks)
-  {
+  void process(aod::BCs const&) {}
 
-    int nels = 0;
-    for (const auto& track : tracks) {
-      if (track.itsNSigmaEl(1, 1, 2)) {
-        nels++;
-      }
+  void processTest(o2::soa::Join<aod::TracksIU, aod::TracksExtra> const& tracks)
+  {
+    auto tracksWithPid = soa::Attach<o2::soa::Join<aod::TracksIU, aod::TracksExtra>,
+                                     aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaMu, aod::pidits::ITSNSigmaPi,
+                                     aod::pidits::ITSNSigmaKa, aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe,
+                                     aod::pidits::ITSNSigmaTr, aod::pidits::ITSNSigmaHe, aod::pidits::ITSNSigmaAl>(tracks);
+
+    for (const auto& track : tracksWithPid) {
+      LOG(info) << track.itsNSigmaEl();
     }
-    LOG(info) << nels;
   }
+  PROCESS_SWITCH(itsPid, processTest, "Produce a test", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
