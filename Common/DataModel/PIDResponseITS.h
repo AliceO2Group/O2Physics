@@ -41,7 +41,7 @@ float averageClusterSize(uint32_t itsClusterSizes)
   float average = 0;
   int nclusters = 0;
 
-  for (int i = 0; i < 7; i++) {
+  for (int layer = 0; layer < 7; layer++) {
     if ((itsClusterSizes >> (layer * 4)) & 0xf) {
       nclusters++;
       average += (itsClusterSizes >> (layer * 4)) & 0xf;
@@ -53,17 +53,22 @@ float averageClusterSize(uint32_t itsClusterSizes)
   return average / nclusters;
 };
 
+namespace pidits
+{
 DECLARE_SOA_DYNAMIC_COLUMN(ITSNSigmaEl, itsNSigmaEl, //! E Nsigma separation with the ITS detector for electron
                            [](uint32_t itsClusterSizes, float momentum, float eta) -> float {
-                             const o2cp::PID::ID id = o2cp::PID::Electron;
+                             const o2::track::PID::ID id = o2::track::PID::Electron;
                              const float bethe = o2::tpc::BetheBlochAleph(momentum / o2::track::pid_constants::sMasses[id],
                                                                           mITSParams.mBetheBlochParams[0], mITSParams.mBetheBlochParams[1], mITSParams.mBetheBlochParams[2], mITSParams.mBetheBlochParams[3], mITSParams.mBetheBlochParams[4]) *
                                                  std::pow(static_cast<float>(o2::track::pid_constants::sCharges[id]), mITSParams.mChargeFactor);
+                             const float average = eta * averageClusterSize(itsClusterSizes);
                              const float resolution = 0.07 * bethe;
                              return (average - bethe) / resolution;
                            });
+} // namespace pidits
+
 DECLARE_SOA_TABLE(pidITSEl, "AOD", "pidITSEl", //! Table of the ITS response with expected signal, expected resolution and Nsigma for electron
-                  pidtof::ITSNSigmaEl<track::ITSClusterSizes, track::P, track::Eta>);
+                  pidits::ITSNSigmaEl<track::ITSClusterSizes, track::P, track::Eta>);
 } // namespace o2::aod
 
 #endif // COMMON_DATAMODEL_PIDRESPONSEITS_H_
