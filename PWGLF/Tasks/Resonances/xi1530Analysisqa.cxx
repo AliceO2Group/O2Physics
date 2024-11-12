@@ -959,4 +959,3 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<xi1530analysisqa>(cfgc)};
 }
- 
