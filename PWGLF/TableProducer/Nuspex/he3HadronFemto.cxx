@@ -653,12 +653,13 @@ struct he3hadronfemto {
           if (track0.sign() * track1.sign() < 0) {
             continue;
           }
-        }
-        else if(setting_enableBkgUS){
+        } else if (setting_enableBkgUS) {
           if (track0.sign() * track1.sign() > 0) {
             continue;
           }
-        }else{LOG(info) << "setting_enableBkgUS has to be 0 or 1";}
+        } else {
+          LOG(info) << "setting_enableBkgUS has to be 0 or 1";
+        }
 
         if (!selectTrack(track1) || !selectionPIDHadron(track1)) {
           continue;
