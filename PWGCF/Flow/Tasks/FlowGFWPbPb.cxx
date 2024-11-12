@@ -74,8 +74,9 @@ struct FlowGFWPbPb {
   O2_DEFINE_CONFIGURABLE(cfgNoCollInTimeRangeStandard, bool, false, "kNoCollInTimeRangeStandard");
   O2_DEFINE_CONFIGURABLE(cfgOccupancy, bool, false, "Bool for event selection on detector occupancy");
   O2_DEFINE_CONFIGURABLE(cfgMultCut, bool, false, "Use additional event cut on mult correlations");
-  O2_DEFINE_CONFIGURABLE(ITSonly, bool, false, "ITS only tracks")
   O2_DEFINE_CONFIGURABLE(Global, bool, false, "Global tracks")
+  O2_DEFINE_CONFIGURABLE(ITSonly, bool, false, "ITS only tracks")
+
 
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis axisPhi{"axisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
@@ -122,6 +123,7 @@ struct FlowGFWPbPb {
     kc26,
     kc28,
     kc22etagap,
+    kc32,
     kc32etagap,
     kc34,
 
@@ -224,8 +226,24 @@ struct FlowGFWPbPb {
     registry.add("c26", ";Centrality  (%) ; C_{2}{6}", {HistType::kTProfile, {axisCentrality}});
     registry.add("c28", ";Centrality  (%) ; C_{2}{8}", {HistType::kTProfile, {axisCentrality}});
     registry.add("c22etagap", ";Centrality  (%) ; C_{2}{2} (|#eta| < 0.8) ", {HistType::kTProfile, {axisCentrality}});
+    registry.add("c32", ";Centrality  (%) ; C_{3}{2} ", {HistType::kTProfile, {axisCentrality}});
     registry.add("c32etagap", ";Centrality  (%) ; C_{3}{2} (|#eta| < 0.8) ", {HistType::kTProfile, {axisCentrality}});
     registry.add("c34", ";Centrality  (%) ; C_{3}{4} ", {HistType::kTProfile, {axisCentrality}});
+
+
+    // create histograms for Reco and MC
+    const AxisSpec axisCounter{1, 0, +1, ""};
+    registry.add("eventCounter", "eventCounter", kTH1F, {axisCounter});
+    registry.add("hPtMCRec", "Monte Carlo Reco", {HistType::kTH1D, {axisPt}});
+    registry.add("hCenMCRec", "Monte Carlo Reco", {HistType::kTH1D, {axisCentrality}});
+    registry.add("hPtMCRec05", "Monte Carlo Reco", {HistType::kTH1D, {axisPt}});
+    registry.add("hPtMCRec5060", "Monte Carlo Reco", {HistType::kTH1D, {axisPt}});
+
+    registry.add("mcEventCounter", "Monte Carlo Truth EventCounter", kTH1F, {axisCounter});
+    registry.add("hPtMCGen", "Monte Carlo Truth", {HistType::kTH1D, {axisPt}});
+    registry.add("hCenMCGen", "Monte Carlo Truth", {HistType::kTH1D, {axisCentrality}});
+    registry.add("hPtMCGen05", "Monte Carlo Truth", {HistType::kTH1D, {axisPt}});
+    registry.add("hPtMCGen5060", "Monte Carlo Truth", {HistType::kTH1D, {axisPt}});
 
     // initial array
     BootstrapArray.resize(cfgNbootstrap);
@@ -238,9 +256,10 @@ struct FlowGFWPbPb {
       BootstrapArray[i][kc24] = registry.add<TProfile>(Form("BootstrapContainer_%d/c24", i), ";Centrality  (%) ; C_{2}{4}", {HistType::kTProfile, {axisCentrality}});
       BootstrapArray[i][kc26] = registry.add<TProfile>(Form("BootstrapContainer_%d/c26", i), ";Centrality  (%) ; C_{2}{6}", {HistType::kTProfile, {axisCentrality}});
       BootstrapArray[i][kc28] = registry.add<TProfile>(Form("BootstrapContainer_%d/c28", i), ";Centrality  (%) ; C_{2}{8}", {HistType::kTProfile, {axisCentrality}});
-      BootstrapArray[i][kc22etagap] = registry.add<TProfile>(Form("BootstrapContainer_%d/c22etagap", i), ";Centrality  (%) ; C_{2}{2} (|#eta| < 0.8)", {HistType::kTProfile, {axisCentrality}});
-      BootstrapArray[i][kc32etagap] = registry.add<TProfile>(Form("BootstrapContainer_%d/c32etagap", i), ";Centrality  (%) ; C_{3}{2} (|#eta| < 0.8)", {HistType::kTProfile, {axisCentrality}});
-      BootstrapArray[i][kc34] = registry.add<TProfile>(Form("BootstrapContainer_%d/c34", i), ";Centrality  (%) ; C_{3}{4}", {HistType::kTProfile, {axisCentrality}});
+      BootstrapArray[i][kc22etagap] = registry.add<TProfile>(Form("BootstrapContainer_%d/c22etagap", i), ";Centrality (%) ; C_{2}{2} (|#eta| < 0.8)", {HistType::kTProfile, {axisCentrality}});
+      BootstrapArray[i][kc32] = registry.add<TProfile>(Form("BootstrapContainer_%d/c32", i), ";Centrality  (%) ; C_{3}{2}", {HistType::kTProfile, {axisCentrality}});
+      BootstrapArray[i][kc32etagap] = registry.add<TProfile>(Form("BootstrapContainer_%d/c32etagap", i), ";Centrality (%) ; C_{3}{2} (|#eta| < 0.8)", {HistType::kTProfile, {axisCentrality}});
+      BootstrapArray[i][kc34] = registry.add<TProfile>(Form("BootstrapContainer_%d/c34", i), ";Centrality (%) ; C_{3}{4}", {HistType::kTProfile, {axisCentrality}});
     }
 
     o2::framework::AxisSpec axis = axisPt;
@@ -269,6 +288,7 @@ struct FlowGFWPbPb {
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 2 2 -2 -2 -2}", "ChFull26", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {2 2 2 2  -2 -2 -2 -2}", "ChFull28", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN10 {2} refP10 {-2}", "Ch10Gap22", kFALSE));
+    corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {3 -3}", "ChFull32", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN10 {3} refP10 {-3}", "Ch10Gap32", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("full {3 3 -3 -3}", "ChFull34", kFALSE));
     fGFW->CreateRegions(); // finalize the initialization
@@ -513,7 +533,7 @@ struct FlowGFWPbPb {
   using Colls = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs>>;                  // collisions filter
   using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksDCA, aod::TracksExtra>>;    // tracks filter
 
-  void process(Colls::iterator const& collision, aod::BCsWithTimestamps const&, aodTracks const& tracks)
+  void processData(Colls::iterator const& collision, aod::BCsWithTimestamps const&, aodTracks const& tracks)
   {
     registry.fill(HIST("hEventCount"), kFILTERED);
     if (!collision.sel8())
@@ -635,8 +655,9 @@ struct FlowGFWPbPb {
     FillProfile(corrconfigs.at(2), HIST("c26"), centrality);
     FillProfile(corrconfigs.at(3), HIST("c28"), centrality);
     FillProfile(corrconfigs.at(4), HIST("c22etagap"), centrality);
-    FillProfile(corrconfigs.at(5), HIST("c32etagap"), centrality);
-    FillProfile(corrconfigs.at(6), HIST("c34"), centrality);
+    FillProfile(corrconfigs.at(5), HIST("c32"), centrality);
+    FillProfile(corrconfigs.at(6), HIST("c32etagap"), centrality);
+    FillProfile(corrconfigs.at(7), HIST("c34"), centrality);
 
     // Filling Bootstrap Samples
     int SampleIndex = static_cast<int>(cfgNbootstrap * l_Random);
@@ -645,8 +666,9 @@ struct FlowGFWPbPb {
     FillProfile(corrconfigs.at(2), BootstrapArray[SampleIndex][kc26], centrality);
     FillProfile(corrconfigs.at(3), BootstrapArray[SampleIndex][kc28], centrality);
     FillProfile(corrconfigs.at(4), BootstrapArray[SampleIndex][kc22etagap], centrality);
-    FillProfile(corrconfigs.at(5), BootstrapArray[SampleIndex][kc32etagap], centrality);
-    FillProfile(corrconfigs.at(6), BootstrapArray[SampleIndex][kc34], centrality);
+    FillProfile(corrconfigs.at(5), BootstrapArray[SampleIndex][kc32], centrality);
+    FillProfile(corrconfigs.at(6), BootstrapArray[SampleIndex][kc32etagap], centrality);
+    FillProfile(corrconfigs.at(7), BootstrapArray[SampleIndex][kc34], centrality);
 
     // Filling Flow Container
     for (uint l_ind = 0; l_ind < corrconfigs.size(); l_ind++) {
@@ -654,6 +676,65 @@ struct FlowGFWPbPb {
     }
 
   } // End of process
+    PROCESS_SWITCH(FlowGFWPbPb, processData, "Process analysis for Run 3 data", false);
+
+
+    // Filter the Reco tracks
+    Filter mytrackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && (nabs(aod::track::dcaXY) < cfgCutDCAxy);
+    using myTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA, aod::McTrackLabels>>;
+    using myCollision = soa::Join<aod::Collisions, aod::CentFT0Cs>;
+
+    void processReco(myCollision::iterator const& collision, myTracks const& tracks, aod::McParticles const&)
+    {
+      registry.fill(HIST("eventCounter"), 0.5);
+        const auto centrality = collision.centFT0C();
+        registry.fill(HIST("hCenMCRec"), centrality);
+      for (const auto& track : tracks) {
+        if (track.tpcNClsCrossedRows() < 70)
+          continue;
+
+        if (track.has_mcParticle()) {
+            registry.fill(HIST("hPtMCRec"), track.pt());
+              if (centrality >0 && centrality<=5){
+                  registry.fill(HIST("hPtMCRec05"), track.pt());
+              }
+              if (centrality >=50 && centrality<=60){
+                  registry.fill(HIST("hPtMCRec5060"), track.pt());
+          }
+        }
+      }
+    }
+    PROCESS_SWITCH(FlowGFWPbPb, processReco, "process reconstructed information", false);
+
+    // Filter for MCParticle
+    Filter particleFilter = (nabs(aod::mcparticle::eta) < cfgCutEta) && (aod::mcparticle::pt > cfgCutPtMin) && (aod::mcparticle::pt < cfgCutPtMax);
+    using myMcParticles = soa::Filtered<aod::McParticles>;
+    using myMcCollisionsFT0Cs = soa::Join<o2::aod::Collisions, o2::aod::EvSels, o2::aod::CentFT0Cs>;
+
+    void processSim(aod::McCollision const&, soa::SmallGroups<soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels>> const& collisions, myMcParticles const& mcParticles, myMcCollisionsFT0Cs const& mcCollisionsFT0Cs )
+    {
+      if (collisions.size() > -1) {
+        registry.fill(HIST("mcEventCounter"), 0.5);
+          for (const auto& mcCollisionsFT0C : mcCollisionsFT0Cs) {
+            registry.fill(HIST("hCenMCGen"), mcCollisionsFT0C.centFT0C());
+          }
+
+      for (const auto& mcCollisionsFT0C : mcCollisionsFT0Cs) {
+        const auto centrality = mcCollisionsFT0C.centFT0C();
+          for (const auto& mcParticle : mcParticles) {
+                registry.fill(HIST("hPtMCGen"), mcParticle.pt());
+                if (centrality >0 && centrality<=5){
+                    registry.fill(HIST("hPtMCGen05"), mcParticle.pt());
+                }
+                if (centrality >=50 && centrality<=60){
+                    registry.fill(HIST("hPtMCGen5060"), mcParticle.pt());
+            }
+          }
+        }
+      }
+    }
+    PROCESS_SWITCH(FlowGFWPbPb, processSim, "process pure simulation information", false);
+
 }; // End of struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
