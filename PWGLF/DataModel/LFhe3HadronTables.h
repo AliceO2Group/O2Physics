@@ -17,8 +17,8 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
 
-#ifndef PWGLF_DATAMODEL_LFhe3HadronTABLES_H_
-#define PWGLF_DATAMODEL_LFhe3HadronTABLES_H_
+#ifndef PWGLF_DATAMODEL_LFHE3HADRONTABLES_H_
+#define PWGLF_DATAMODEL_LFHE3HADRONTABLES_H_
 
 namespace o2::aod
 {
@@ -121,4 +121,4 @@ DECLARE_SOA_TABLE(he3HadronMult, "AOD", "HE3HADMULT",
 
 } // namespace o2::aod
 
-#endif // PWGLF_DATAMODEL_LFHE3HADTABLES_H_
+#endif  // PWGLF_DATAMODEL_LFHE3HADRONTABLES_H_
