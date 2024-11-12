@@ -16,6 +16,7 @@
 #include <cstdlib>
 #include <chrono>
 #include <string>
+#include <vector>
 
 #include "TLorentzVector.h"
 #include "TRandom3.h"
@@ -207,10 +208,10 @@ struct lambdapolarization {
       histos.add(Form("psi%d/h_alambda_vncos", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
       histos.add(Form("psi%d/h_alambda_vnsin", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
     }
-     histos.add("QA/ptspec_l", "", {HistType::kTH3F, {massAxis, ptAxis, centAxis}});
-     histos.add("QA/ptspec_al", "", {HistType::kTH3F, {massAxis, ptAxis, centAxis}});
-     histos.add("QA/ptspecCor_l", "", {HistType::kTH3F, {massAxis, ptAxis, centAxis}});
-     histos.add("QA/ptspecCor_al", "", {HistType::kTH3F, {massAxis, ptAxis, centAxis}});
+    histos.add("QA/ptspec_l", "", {HistType::kTH3F, {massAxis, ptAxis, centAxis}});
+    histos.add("QA/ptspec_al", "", {HistType::kTH3F, {massAxis, ptAxis, centAxis}});
+    histos.add("QA/ptspecCor_l", "", {HistType::kTH3F, {massAxis, ptAxis, centAxis}});
+    histos.add("QA/ptspecCor_al", "", {HistType::kTH3F, {massAxis, ptAxis, centAxis}});
 
     if (cfgQAv0) {
       histos.add("QA/CentDist", "", {HistType::kTH1F, {centQaAxis}});
@@ -570,18 +571,18 @@ struct lambdapolarization {
         histos.fill(HIST("QA/ptspec_l"), v0.mLambda(), v0.pt(), centrality);
         if (cfgEffCor) {
           histos.fill(HIST("QA/ptspecCor_l"), v0.mLambda(), v0.pt(), centrality,
-            1.0/EffMap->GetBinContent(EffMap->GetXaxis()->FindBin(v0.pt()), EffMap->GetYaxis()->FindBin(centrality)));
+                      1.0 / EffMap->GetBinContent(EffMap->GetXaxis()->FindBin(v0.pt()), EffMap->GetYaxis()->FindBin(centrality)));
         }
       }
       if (aLambdaTag) {
         histos.fill(HIST("QA/ptspec_al"), v0.mAntiLambda(), v0.pt(), centrality);
         if (cfgEffCor) {
           histos.fill(HIST("QA/ptspecCor_al"), v0.mAntiLambda(), v0.pt(), centrality,
-            1.0/EffMap->GetBinContent(EffMap->GetXaxis()->FindBin(v0.pt()), EffMap->GetYaxis()->FindBin(centrality)));
+                      1.0 / EffMap->GetBinContent(EffMap->GetXaxis()->FindBin(v0.pt()), EffMap->GetYaxis()->FindBin(centrality)));
         }
       }
 
-      double weight = cfgEffCor ? 1.0/EffMap->GetBinContent(EffMap->GetXaxis()->FindBin(v0.pt()), EffMap->GetYaxis()->FindBin(centrality)) : 1.;
+      double weight = cfgEffCor ? 1.0 / EffMap->GetBinContent(EffMap->GetXaxis()->FindBin(v0.pt()), EffMap->GetYaxis()->FindBin(centrality)) : 1.;
 
       if (nmode == 2) { ////////////
         if (LambdaTag) {
