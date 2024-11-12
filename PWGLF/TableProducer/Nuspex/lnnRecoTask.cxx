@@ -12,6 +12,11 @@
 // Build \Lambda-n-n candidates from V0s and tracks
 // ==============================================================================
 #include <array>
+#include <memory>
+#include <string>
+#include <vector> 
+#include <algorithm>
+
 #include <TLorentzVector.h>
 
 #include "Framework/runDataProcessing.h"
