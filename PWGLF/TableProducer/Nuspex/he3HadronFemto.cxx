@@ -162,7 +162,7 @@ struct he3hadronfemto {
   Produces<aod::he3HadronMult> m_outputMultiplicityTable;
 
   // Selections
-  Configurable<int>  setting_HadPDGCode{"setting_HadPDGCode", 211, "Hadron - PDG code"};
+  Configurable<int> setting_HadPDGCode{"setting_HadPDGCode", 211, "Hadron - PDG code"};
   Configurable<float> setting_cutVertex{"setting_cutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> setting_cutRigidityMinHe3{"setting_cutRigidityMinHe3", 0.8f, "Minimum rigidity for He3"};
   Configurable<float> setting_cutEta{"setting_cutEta", 0.9f, "Eta cut on daughter track"};
@@ -390,29 +390,31 @@ struct he3hadronfemto {
 
   template <typename Ttrack>
   float computeTPCNSigmaHadron(const Ttrack& candidate)
-  { 
+  {
     float tpcNSigmaHad = 0;
-    if(setting_HadPDGCode == 211){
-        tpcNSigmaHad = candidate.tpcNSigmaPi();
-        LOG(info) << "pion";
-    }else if(setting_HadPDGCode == 2212){ 
+    if (setting_HadPDGCode == 211) {
+      tpcNSigmaHad = candidate.tpcNSigmaPi();
+      LOG(info) << "pion";
+    } else if (setting_HadPDGCode == 2212) {
       tpcNSigmaHad = candidate.tpcNSigmaPr();
-    }else{
-        LOG(info) << "invalid PDG code for TPC";
+    } else {
+      LOG(info) << "invalid PDG code for TPC";
     }
     return tpcNSigmaHad;
   }
 
   template <typename Ttrack>
   float computeTOFNSigmaHadron(const Ttrack& candidate)
-  { 
+  {
     float tofNSigmaHad = 0;
-    if(setting_HadPDGCode == 211){
-        tofNSigmaHad = candidate.tofNSigmaPi();
-        LOG(info) << "piontof";
-     }else if(setting_HadPDGCode == 2212){ 
-        tofNSigmaHad = candidate.tofNSigmaPr();
-     }else{LOG(info) << "invalid PDG code for TOF";}
+    if (setting_HadPDGCode == 211) {
+      tofNSigmaHad = candidate.tofNSigmaPi();
+      LOG(info) << "piontof";
+    } else if (setting_HadPDGCode == 2212) {
+      tofNSigmaHad = candidate.tofNSigmaPr();
+    } else {
+      LOG(info) << "invalid PDG code for TOF";
+    }
     return tofNSigmaHad;
   }
 
@@ -422,9 +424,9 @@ struct he3hadronfemto {
     auto tpcNSigmaHad = computeTPCNSigmaHadron(candidate);
     m_qaRegistry.fill(HIST("h2NsigmaHadronTPC_preselection"), candidate.tpcInnerParam(), tpcNSigmaHad);
     if (candidate.hasTOF() && candidate.pt() > setting_cutPtMinTOFHad) {
-        auto tofNSigmaHad = computeTOFNSigmaHadron(candidate);
+      auto tofNSigmaHad = computeTOFNSigmaHadron(candidate);
 
-      if (std::abs(tpcNSigmaHad) > setting_cutNsigmaTPC){
+      if (std::abs(tpcNSigmaHad) > setting_cutNsigmaTPC) {
         return false;
       }
       m_qaRegistry.fill(HIST("h2NsigmaHadronTOF_preselection"), candidate.p(), tpcNSigmaHad);
@@ -538,13 +540,15 @@ struct he3hadronfemto {
     for (int i = 0; i < 3; i++)
       he3Hadcand.momHe3[i] = he3Hadcand.momHe3[i] * 2;
     he3Hadcand.momHad = std::array{trackHad.px(), trackHad.py(), trackHad.pz()};
-    float invMass=0;
-    if(setting_HadPDGCode == 211){
-        invMass = RecoDecay::m(std::array{he3Hadcand.momHe3, he3Hadcand.momHad}, std::array{o2::constants::physics::MassHelium3, o2::constants::physics::MassPiPlus});
-     }else if(setting_HadPDGCode == 2212){ 
-        invMass = RecoDecay::m(std::array{he3Hadcand.momHe3, he3Hadcand.momHad}, std::array{o2::constants::physics::MassHelium3, o2::constants::physics::MassProton});
-     }else{LOG(info) << "invalid PDG code for invMass";}
-    //float invMass = RecoDecay::m(std::array{he3Hadcand.momHe3, he3Hadcand.momHad}, std::array{o2::constants::physics::MassHelium3, o2::constants::physics::MassPiPlus});
+    float invMass = 0;
+    if (setting_HadPDGCode == 211) {
+      invMass = RecoDecay::m(std::array{he3Hadcand.momHe3, he3Hadcand.momHad}, std::array{o2::constants::physics::MassHelium3, o2::constants::physics::MassPiPlus});
+    } else if (setting_HadPDGCode == 2212) {
+      invMass = RecoDecay::m(std::array{he3Hadcand.momHe3, he3Hadcand.momHad}, std::array{o2::constants::physics::MassHelium3, o2::constants::physics::MassProton});
+    } else {
+      LOG(info) << "invalid PDG code for invMass";
+    }
+    // float invMass = RecoDecay::m(std::array{he3Hadcand.momHe3, he3Hadcand.momHad}, std::array{o2::constants::physics::MassHelium3, o2::constants::physics::MassPiPlus});
     if (setting_cutInvMass > 0 && invMass > setting_cutInvMass) {
       return false;
     }
@@ -552,7 +556,7 @@ struct he3hadronfemto {
     if (pthe3Had < setting_cutPtMinhe3Had) {
       return false;
     }
-     
+
     he3Hadcand.sign = trackHe3.sign();
 
     he3Hadcand.DCAxyHe3 = trackHe3.dcaXY();
@@ -570,7 +574,7 @@ struct he3hadronfemto {
     he3Hadcand.nTPCClustersHe3 = trackHe3.tpcNClsFound();
     he3Hadcand.nSigmaHe3 = computeNSigmaHe3(trackHe3);
     he3Hadcand.nSigmaHad = computeTPCNSigmaHadron(trackHad);
-    //he3Hadcand.nSigmaHad = trackHad.tpcNSigmaPi();/*tpcNSigmaHad*/
+    // he3Hadcand.nSigmaHad = trackHad.tpcNSigmaPi();/*tpcNSigmaHad*/
     he3Hadcand.chi2TPCHe3 = trackHe3.tpcChi2NCl();
     he3Hadcand.chi2TPCHad = trackHad.tpcChi2NCl();
 
@@ -650,6 +654,11 @@ struct he3hadronfemto {
             continue;
           }
         }
+        else if(setting_enableBkgUS){
+          if (track0.sign() * track1.sign() > 0) {
+            continue;
+          }
+        }else{LOG(info) << "setting_enableBkgUS has to be 0 or 1";}
 
         if (!selectTrack(track1) || !selectionPIDHadron(track1)) {
           continue;
