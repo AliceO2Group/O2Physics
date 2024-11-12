@@ -1286,7 +1286,7 @@ struct strangeness_in_jets {
 
       // Apply event selection
       if (!AcceptEvent(collision)) {
-        return;
+        continue;
       }
 
       if (!collision.has_mcCollision()) {
