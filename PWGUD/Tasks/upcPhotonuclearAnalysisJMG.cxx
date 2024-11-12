@@ -17,6 +17,7 @@
 #include "Framework/runDataProcessing.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/StepTHn.h"
+#include <TTree.h>
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/TrackSelection.h"
@@ -34,9 +35,21 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+namespace o2::aod{
+  namespace tree{
+    DECLARE_SOA_COLUMN(PT, Pt, float);
+    DECLARE_SOA_COLUMN(RAP, rap, float);
+    DECLARE_SOA_COLUMN(PHI, Phi, float);
+  } // namespace tree
+  DECLARE_SOA_TABLE(TREE, "AOD", "Tree",
+                    tree::PT,
+                    tree::RAP,
+                    tree::PHI);
+} // namespace o2:aod
 
 struct upcPhotonuclearAnalysisJMG {
 
+  Produces<aod::TREE> tree;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // Declare configurables on events/collisions
@@ -79,6 +92,15 @@ struct upcPhotonuclearAnalysisJMG {
   Configurable<float> cutMyTPCChi2NclMax{"cutMyTPCChi2NclMax", 4.f, {"My Track cut"}};
   // Declare configurables for correlations
   Configurable<float> cfgTwoTrackCut{"cfgTwoTrackCut", -1, {"Two track cut"}};
+  ConfigurableAxis axisVertex{"axisVertex", {7, -7, 7}, "vertex axis for histograms"};
+  ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -constants::math::PIHalf, constants::math::PIHalf * 3}, "delta phi axis for histograms"};
+  ConfigurableAxis axisDeltaEta{"axisDeltaEta", {40, -2, 2}, "delta eta axis for histograms"};
+  ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt trigger axis for histograms"};
+  ConfigurableAxis axisPtAssoc{"axisPtAssoc", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0}, "pt associated axis for histograms"};
+  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 100.1},"multiplicity / centrality axis for histograms"};
+  ConfigurableAxis axisVertexEfficiency{"axisVertexEfficiency", {10, -10, 10}, "vertex axis for efficiency histograms"};
+  ConfigurableAxis axisEtaEfficiency{"axisEtaEfficiency", {20, -1.0, 1.0}, "eta axis for efficiency histograms"};
+  ConfigurableAxis axisPtEfficiency{"axisPtEfficiency", {VARIABLE_WIDTH, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25,2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0}, "pt axis for efficiency histograms"};
 
   using FullSGUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::SGCollisions, aod::UDZdcsReduced>::iterator;
   using FullUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksFlags>;
@@ -89,7 +111,7 @@ struct upcPhotonuclearAnalysisJMG {
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
-  PairCuts mPairCuts;
+  //PairCuts mPairCuts;
 
   struct Config {
     bool mPairCuts = false;
@@ -115,6 +137,11 @@ struct upcPhotonuclearAnalysisJMG {
     const AxisSpec axisChi2NCls{100, 0, 50};
     const AxisSpec axisTPCNClsCrossedRowsMin{100, -0.05, 2.05};
 
+    histos.add("yields", "multiplicity/centrality vs pT vs eta", {HistType::kTH3F, {{100, 0, 100, "/multiplicity/centrality"}, {40, 0, 20, "p_{T}"}, {100, -2, 2, "#eta"}}});
+    histos.add("etaphi", "multiplicity/centrality vs eta vs phi", {HistType::kTH3F, {{100, 0, 100, "multiplicity/centrality"}, {100, -2, 2, "#eta"}, {200, 0, 2 * M_PI, "#varphi"}}});
+
+    const int maxMixBin = axisMultiplicity->size() * axisVertex->size();
+    histos.add("eventcount", "bin", {HistType::kTH1F, {{maxMixBin + 2, -2.5, -0.5 + maxMixBin, "bin"}}});
     histos.add("Events/hCountCollisions", "0 total - 1 side A - 2 side C - 3 both side; Number of analysed collision; counts", kTH1F, {axisCollision});
 
     // histos to selection gap in side A
@@ -200,6 +227,19 @@ struct upcPhotonuclearAnalysisJMG {
     histos.add("Events/SGsideBoth/hAmplitudFT0A", "Amplitud in side A distribution; Amplitud in side A; counts", kTH1F, {axisFT0Amplitud});
     histos.add("Events/SGsideBoth/hAmplitudFT0C", "Amplitud in side C distribution; Amplitud in side C; counts", kTH1F, {axisFT0Amplitud});
 
+    std::vector<AxisSpec> corrAxis = {{axisDeltaEta, "#Delta#eta"},
+                                     {axisPtAssoc, "p_{T} (GeV/c)"},
+                                     {axisPtTrigger, "p_{T} (GeV/c)"},
+                                     {axisMultiplicity, "multiplicity / centrality"},
+                                     {axisDeltaPhi, "#Delta#varphi (rad)"},
+                                     {axisVertex, "z-vtx (cm)"}};
+  std::vector<AxisSpec> effAxis = {{axisEtaEfficiency, "#eta"},
+                                  {axisEtaEfficiency, "#eta"},
+                                  {axisPtEfficiency, "p_{T} (GeV/c)"},
+                                  {axisVertexEfficiency, "z-vtx (cm)"}};
+  same.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, {}));
+  mixed.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, {}));
+
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
@@ -225,25 +265,25 @@ struct upcPhotonuclearAnalysisJMG {
         if ((collision.energyCommonZNA() < cutAGapMyEnergyZNAMax && collision.energyCommonZNC() >= cutAGapMyEnergyZNCMin) == false) { // 0n - A side && Xn - C Side
           return false;
         }
-        if ((collision.totalFT0AmplitudeA() < cutAGapMyAmplitudeFT0AMax && collision.totalFT0AmplitudeC() >= cutAGapMyAmplitudeFT0CMin) == false) {
+        /*if ((collision.totalFT0AmplitudeA() < cutAGapMyAmplitudeFT0AMax && collision.totalFT0AmplitudeC() >= cutAGapMyAmplitudeFT0CMin) == false) {
           return false;
-        }
+        }*/
         break;
       case 1:                                                                                                                         // Gap in C side
         if ((collision.energyCommonZNA() >= cutCGapMyEnergyZNAMin && collision.energyCommonZNC() < cutCGapMyEnergyZNCMax) == false) { // Xn - A side && 0n - C Side
           return false;
         }
-        if ((collision.totalFT0AmplitudeA() >= cutCGapMyAmplitudeFT0AMin && collision.totalFT0AmplitudeC() < cutCGapMyAmplitudeFT0CMax) == false) {
+        /*if ((collision.totalFT0AmplitudeA() >= cutCGapMyAmplitudeFT0AMin && collision.totalFT0AmplitudeC() < cutCGapMyAmplitudeFT0CMax) == false) {
           return false;
-        }
+        }*/
         break;
       case 2:                                                                                                                              // Gap in Both Sides
         if ((collision.energyCommonZNA() < cutBothGapMyEnergyZNAMax && collision.energyCommonZNC() < cutBothGapMyEnergyZNCMax) == false) { // 0n - A side && 0n - C Side
           return false;
         }
-        if ((collision.totalFT0AmplitudeA() < cutBothGapMyAmplitudeFT0AMax && collision.totalFT0AmplitudeC() < cutBothGapMyAmplitudeFT0CMax) == false) {
+        /*if ((collision.totalFT0AmplitudeA() < cutBothGapMyAmplitudeFT0AMax && collision.totalFT0AmplitudeC() < cutBothGapMyAmplitudeFT0CMax) == false) {
           return false;
-        }
+        }*/
         break;
     }
     return true;
@@ -307,30 +347,38 @@ struct upcPhotonuclearAnalysisJMG {
     return true;
   }
 
-  template <CorrelationContainer::CFStep step, typename TTarget, typename TTracks1, typename TTracks2>
-  void fillCorrelationUPC(TTarget target, TTracks1& tracks1, TTracks2& tracks2, float multiplicity, float posZ, int magField, float eventWeight)
+  template <typename TCollision, typename TTracks>
+  void fillQAUD(TCollision collision, float centrality, TTracks tracks)
   {
-    for (auto& track1: tracks1) {
-      for (auto& track2: tracks2) {
-        if constexpr (std::is_same<TTracks1, TTracks2>::value) {
-          if (track1.globalIndex() == track2.globalIndex()) {
-            continue;
-          }
+    for (auto& track : tracks) {
+    histos.fill(HIST("yields"), centrality, track.pt(), eta(track.px(), track.py(), track.pz()));
+    histos.fill(HIST("etaphi"), centrality, eta(track.px(), track.py(), track.pz()), phi(track.px(), track.py()));
+    }
+  }
+
+  template <typename TTarget, typename TCollision>
+  bool fillCollisionUD(TTarget target, TCollision collision, float centrality)
+  {
+    target->fillEvent(centrality, CorrelationContainer::kCFStepAll);
+    /*if (!collision.alias_bit(kINT7) || !collision.sel7()) {
+      return false;
+    }*/
+    target->fillEvent(centrality, CorrelationContainer::kCFStepReconstructed);
+    return true;
+  }
+
+  template <typename TTarget, typename TTracks>
+  void fillCorrelationsUD(TTarget target, TTracks tracks1, TTracks tracks2, float centrality, float posZ)
+  {
+    for (auto& track1 : tracks1) {
+      target->getTriggerHist()->Fill(CorrelationContainer::kCFStepReconstructed, track1.pt(), centrality, posZ, 1.0);
+      for (auto& track2 : tracks2) {
+        if (track1 == track2) {
+          continue;
         }
-
-        if constexpr (std::is_same<TTracks1, TTracks2>::value) {
-          if constexpr (step >= CorrelationContainer::kCFStepReconstructed) {
-            if (cfg.mPairCuts && mPairCuts.conversionCuts(track1, track2)) {
-              continue;
-            }
-
-            if (cfgTwoTrackCut > 0 && mPairCuts.twoTrackCut(track1, track2, magField)) {
-              continue;
-            }
-          }
-        }
-
-        float associatedWeight = eventWeight;
+        /*if (doPairCuts && mPairCuts.conversionCuts(track1, track2)) {
+          continue;
+        }*/
         float deltaPhi = phi(track1.px(), track1.py()) - phi(track2.px(), track2.py());
         if (deltaPhi > 1.5f * PI) {
           deltaPhi -= TwoPI;
@@ -338,9 +386,7 @@ struct upcPhotonuclearAnalysisJMG {
         if (deltaPhi < -PIHalf) {
           deltaPhi += TwoPI;
         }
-
-        //target->getPairHist()->Fill(step, eta(track1.px(), track1.py(), track1.pz()) - eta(track2.px(), track2.py(), track2.pz()), track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ, associatedWeight);
-
+        target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed, eta(track1.px(), track1.py(), track1.pz()) - eta(track2.px(), track2.py(), track2.pz()), track2.pt(), track1.pt(), centrality, deltaPhi, posZ, 1.0);
       }
     }
   }
@@ -357,6 +403,7 @@ struct upcPhotonuclearAnalysisJMG {
       return;
     }
 
+    float centrality = 50.0;
     switch (SGside) {
       case 0: // for side A
         if (isCollisionCutSG(reconstructedCollision, 0) == false) {
@@ -379,6 +426,8 @@ struct upcPhotonuclearAnalysisJMG {
             }
             nTracksCharged++;
             sumPt += track.pt();
+            // filling tree
+            tree(track.pt(), eta(track.px(), track.py(), track.pz()), phi(track.px(), track.py()));
             histos.fill(HIST("Tracks/SGsideA/hTrackPt"), track.pt());
             histos.fill(HIST("Tracks/SGsideA/hTrackPhi"), phi(track.px(), track.py()));
             histos.fill(HIST("Tracks/SGsideA/hTrackEta"), eta(track.px(), track.py(), track.pz()));
@@ -395,10 +444,12 @@ struct upcPhotonuclearAnalysisJMG {
             histos.fill(HIST("Tracks/SGsideA/hTrackTPCNClsFindableMinusCrossedRows"), track.tpcNClsFindableMinusCrossedRows());
             histos.fill(HIST("Tracks/SGsideA/hTrackTPCChi2NCls"), track.tpcChi2NCl());
             histos.fill(HIST("Tracks/SGsideA/hTrackITSNClsTPCCls"), track.tpcNClsFindable() - track.tpcNClsFindableMinusFound(), track.itsNCls());
+
+            //histos.fill(HIST("yields"), centrality, track.pt(), eta(track.px(), track.py(), track.pz()));
+            //histos.fill(HIST("etaphi"), centrality, eta(track.px(), track.py(), track.pz()), phi(track.px(), track.py()));
           }
         }
         multiplicity = nTracksCharged;
-        //fillCorrelationUPC<CorrelationContainer::kCFStepReconstructed>(same, reconstructedTracks, reconstructedTracks, multiplicity, reconstructedCollision.posZ(), 5, 1.0f);
         histos.fill(HIST("Events/SGsideA/hNch"), nTracksCharged);
         histos.fill(HIST("Events/SGsideA/hPtVSNch"), nTracksCharged, (sumPt / nTracksCharged));
         nTracksCharged = sumPt = 0;
@@ -491,6 +542,75 @@ struct upcPhotonuclearAnalysisJMG {
     }
   }
   PROCESS_SWITCH(upcPhotonuclearAnalysisJMG, processSG, "Process in UD tables", true);
+
+  void processSame(FullSGUDCollision const& reconstructedCollision, FullUDTracks const& reconstructedTracks)
+  {
+    int SGside = reconstructedCollision.gapSide();
+    //int nTracksCharged = 0;
+    //float sumPt = 0;
+    //int multiplicity = 0;
+
+    if (isGlobalCollisionCut(reconstructedCollision) == false) {
+      return;
+    }
+
+    float centrality = 50.0;
+    switch (SGside) {
+      case 0: // for side A
+        if (isCollisionCutSG(reconstructedCollision, 0) == false) {
+          return;
+        }
+        if (fillCollisionUD(same, reconstructedCollision, centrality) == false) {
+        return;
+        }
+        histos.fill(HIST("eventcount"), -2);
+        fillQAUD(reconstructedCollision, centrality, reconstructedTracks);
+        fillCorrelationsUD(same, reconstructedTracks, reconstructedTracks, centrality, reconstructedCollision.posZ());
+        break;
+      case 1: // for side C
+        if (isCollisionCutSG(reconstructedCollision, 1) == false) {
+          return;
+        }
+        break;
+      default:
+        return;
+        break;
+    }
+  }
+  PROCESS_SWITCH(upcPhotonuclearAnalysisJMG, processSame, "Process same event", true);
+
+  void processMixed(FullSGUDCollision const& reconstructedCollision, FullUDTracks const& reconstructedTracks)
+  {
+    int SGside = reconstructedCollision.gapSide();
+
+    if (isGlobalCollisionCut(reconstructedCollision) == false) {
+      return;
+    }
+
+    float centrality = 50.0;
+    switch (SGside) {
+      case 0: // for side A
+        if (isCollisionCutSG(reconstructedCollision, 0) == false) {
+          return;
+        }
+        if (fillCollisionUD(mixed, reconstructedCollision, centrality) == false) {
+        return;
+        }
+        histos.fill(HIST("eventcount"), -2);
+        fillQAUD(reconstructedCollision, centrality, reconstructedTracks);
+        fillCorrelationsUD(mixed, reconstructedTracks, reconstructedTracks, centrality, reconstructedCollision.posZ());
+        break;
+      case 1: // for side C
+        if (isCollisionCutSG(reconstructedCollision, 1) == false) {
+          return;
+        }
+        break;
+      default:
+        return;
+        break;
+    }
+  }
+  PROCESS_SWITCH(upcPhotonuclearAnalysisJMG, processMixed, "Process mixed events", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
