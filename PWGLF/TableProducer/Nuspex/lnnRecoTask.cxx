@@ -14,7 +14,7 @@
 #include <array>
 #include <memory>
 #include <string>
-#include <vector> 
+#include <vector>
 #include <algorithm>
 
 #include <TLorentzVector.h>
@@ -428,7 +428,7 @@ struct lnnRecoTask {
 
         beta = h3track.beta();
         lnnCand.mass2TrTOF = h3track.mass() * h3track.mass();
-        if (lnnCand.mass2TrTOF < TrTOFMass2Cut and beta < BetaTrTOF) {
+        if (lnnCand.mass2TrTOF < TrTOFMass2Cut || beta < BetaTrTOF) {
           continue;
         }
       }
