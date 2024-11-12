@@ -665,7 +665,7 @@ struct lambdapolarization {
     }
     if (cfgEffCor) {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-      EffMap = ccdb->GetForTimeStamp<TProfile2D>(cfgEffCorPath.value, bc.timestamp());
+      EffMap = ccdb->getForTimeStamp<TProfile2D>(cfgEffCorPath.value, bc.timestamp());
     }
     for (int i = 2; i < cfgnMods + 2; i++) {
       if (cfgShiftCorrDef) {
