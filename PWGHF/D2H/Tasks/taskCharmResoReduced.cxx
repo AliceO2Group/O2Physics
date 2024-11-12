@@ -192,7 +192,7 @@ struct HfTaskCharmResoReduced {
   void fillCand(const Cand& candidate, const Coll& collision, const CharmBach& bach0, const V0Bach& bach1)
   {
     // Compute quantities to be saved
-    float invMassReso, pdgMassReso, invMassBach0, invMassBach1, pdgMassBach0, pdgMassBach1, sign, invMassD0, cosThetaStar;
+    float invMassReso{0}, pdgMassReso, invMassBach0, invMassBach1, pdgMassBach0, pdgMassBach1, sign, invMassD0, cosThetaStar;
     if (channel == DecayChannel::Ds1ToDstarK0s) {
       pdgMassReso = MassDS1;
       pdgMassBach0 = MassDStar;
@@ -362,7 +362,6 @@ struct HfTaskCharmResoReduced {
     for (const auto& particle : mcParticles) {
       auto ptParticle = particle.ptTrack();
       auto yParticle = particle.yTrack();
-      auto etaParticle = particle.etaTrack();
       auto originParticle = particle.origin();
       auto flag = particle.flagMcMatchGen();
       if (yCandGenMax >= 0. && std::abs(yParticle) > yCandGenMax) {
