@@ -105,38 +105,6 @@ struct HfTaskDirectedFlowCharmHadrons {
     ccdb->setLocalObjectValidityChecking();
   }; // end init
 
-  /// Fill THnSparse
-  /// \param mass is the invariant mass of the candidate
-  /// \param pt is the transverse momentum of the candidate
-  /// \param eta is the pseudorapidity of the candidate
-  /// \param cent is the centrality of the collision
-  /// \params uiQi{p/t} are the correlation of Q vectors of the particle and ZDC
-  /// \param outputMl are the ML scores
-  /// \param sign is the sign of the candidate D+ or D-
-  void fillThn(double& mass,
-               double& pt,
-               double& eta,
-               double& cent,
-               double& uxQxp,
-               double& uyQyp,
-               double& uxQxt,
-               double& uyQyt,
-               std::vector<double>& outputMl,
-               double& sign)
-  {
-    if (storeMl) {
-      registry.fill(HIST("hpuxQxpvscentpteta"), mass, cent, pt, eta, uxQxp, sign, outputMl[0], outputMl[1]);
-      registry.fill(HIST("hpuyQypvscentpteta"), mass, cent, pt, eta, uyQyp, sign, outputMl[0], outputMl[1]);
-      registry.fill(HIST("hpuxQxtvscentpteta"), mass, cent, pt, eta, uxQxt, sign, outputMl[0], outputMl[1]);
-      registry.fill(HIST("hpuyQytvscentpteta"), mass, cent, pt, eta, uyQyt, sign, outputMl[0], outputMl[1]);
-    } else {
-      registry.fill(HIST("hpuxQxpvscentpteta"), mass, cent, pt, eta, uxQxp, sign);
-      registry.fill(HIST("hpuyQypvscentpteta"), mass, cent, pt, eta, uyQyp, sign);
-      registry.fill(HIST("hpuxQxtvscentpteta"), mass, cent, pt, eta, uxQxt, sign);
-      registry.fill(HIST("hpuyQytvscentpteta"), mass, cent, pt, eta, uyQyt, sign);
-    }
-  }
-
   /// Get the centrality
   /// \param collision is the collision with the centrality information
   double getCentrality(CollsWithQvecs::iterator const& collision)
@@ -181,7 +149,7 @@ struct HfTaskDirectedFlowCharmHadrons {
 
     auto qxZDCA = collision.qxZDCA();
     auto qyZDCA = collision.qyZDCA();
-    auto qxZDCC = collision.qxZDCC();
+    auto qxZDCC = collision.qxZDCC(); // extracting q vectors of ZDC
     auto qyZDCC = collision.qyZDCC();
 
     auto QxtQxp = qxZDCC * qxZDCA;
@@ -222,7 +190,17 @@ struct HfTaskDirectedFlowCharmHadrons {
       auto uxQxt = ux * qxZDCC;
       auto uyQyt = uy * qyZDCC;
 
-      fillThn(massCand, ptCand, etaCand, cent, uxQxp, uyQyp, uxQxt, uyQyt, outputMl, sign);
+      if (storeMl) {
+        registry.fill(HIST("hpuxQxpvscentpteta"), mass, cent, pt, eta, uxQxp, sign, outputMl[0], outputMl[1]);
+        registry.fill(HIST("hpuyQypvscentpteta"), mass, cent, pt, eta, uyQyp, sign, outputMl[0], outputMl[1]);
+        registry.fill(HIST("hpuxQxtvscentpteta"), mass, cent, pt, eta, uxQxt, sign, outputMl[0], outputMl[1]);
+        registry.fill(HIST("hpuyQytvscentpteta"), mass, cent, pt, eta, uyQyt, sign, outputMl[0], outputMl[1]);
+      } else {
+        registry.fill(HIST("hpuxQxpvscentpteta"), mass, cent, pt, eta, uxQxp, sign);
+        registry.fill(HIST("hpuyQypvscentpteta"), mass, cent, pt, eta, uyQyp, sign);
+        registry.fill(HIST("hpuxQxtvscentpteta"), mass, cent, pt, eta, uxQxt, sign);
+        registry.fill(HIST("hpuyQytvscentpteta"), mass, cent, pt, eta, uyQyt, sign);
+      }
     }
   }
   // Dplus with ML
