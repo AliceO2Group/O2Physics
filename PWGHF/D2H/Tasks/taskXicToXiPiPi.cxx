@@ -78,7 +78,7 @@ struct HfTaskXicToXiPiPi {
 
   void init(InitContext const&)
   {
-    if (!doprocessWithKFParticle && !doprocessWithDCAFitter && !doprocessMcWithKFParticle && !doprocessMcWithDCAFitter) {
+    if (!doprocessWithKFParticle && !doprocessWithDCAFitter && !doprocessWithDCAFitterAndML && !doprocessWithKFParticleAndML && !doprocessMcWithKFParticle && !doprocessMcWithDCAFitter && !doprocessMcWithDCAFitterAndML && !doprocessMcWithKFParticleAndML) {
       LOGF(fatal, "No process function enabled. Please enable one.");
     }
     if (doprocessWithKFParticle && doprocessWithDCAFitter) {
@@ -134,14 +134,14 @@ struct HfTaskXicToXiPiPi {
     registry.add("hMassXiPi1", "#Xi^{#plus}_{c} candidates;inv. mass #Xi^{#mp} #pi^{#pm} (prong 1) (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisMassXiRes, axisPt}});
     registry.add("hMassXiPi2", "#Xi^{#plus}_{c} candidates;inv. mass #Xi^{#mp} #pi^{#pm} (prong 2) (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c})", {HistType::kTH2F, {axisMassXiRes, axisPt}});
 
-    if (doprocessWithKFParticle) {
+    if (doprocessWithKFParticle || doprocessWithKFParticleAndML) {
       registry.add("hChi2geoXi", "#Xi^{#plus}_{c} candidates;#Xi^{#mp} #chi^{2}_{geo};entries", {HistType::kTH2F, {axisChi2, axisPt}});
       registry.add("hChi2geoLam", "#Xi^{#plus}_{c} candidates;#Lambda #chi^{2}_{geo};entries", {HistType::kTH2F, {axisChi2, axisPt}});
       registry.add("hChi2topoToPV", "#Xi^{#plus}_{c} candidates;#Xi^{#plus}_{c} candidate #chi^{2}_{topo} to PV;entries", {HistType::kTH2F, {axisChi2, axisPt}});
       registry.add("hChi2topoXiToXicPlus", "#Xi^{#plus}_{c} candidates;#Xi^{#mp} candidate #chi^{2}_{topo} to #Xi^{#plus}_{c};entries", {HistType::kTH2F, {axisChi2, axisPt}});
     }
 
-    if (doprocessMcWithKFParticle || doprocessMcWithDCAFitter) {
+    if (doprocessMcWithKFParticle || doprocessMcWithDCAFitter || doprocessMcWithKFParticleAndML || doprocessMcWithDCAFitterAndML) {
       // MC reconstructed
       registry.add("hPtGenSig", "#Xi^{#plus}_{c} candidates (gen+rec);candidate #it{p}_{T}^{gen.} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}});
       registry.add("hPtRecSig", "#Xi^{#plus}_{c} candidates (matched);candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{300, 0., 30.}}});
@@ -205,7 +205,7 @@ struct HfTaskXicToXiPiPi {
       registry.add("hMassXiPi2RecSig", "#Xi^{#plus}_{c} candidates (matched);inv. mass #Xi^{#mp} #pi^{#pm} (prong 2) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{300, 1.0, 2.0}, axisPt}});
       registry.add("hMassXiPi2RecBg", "#Xi^{#plus}_{c} candidates (unmatched);inv. mass #Xi^{#mp} #pi^{#pm} (prong 2) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{300, 1.0, 2.0}, axisPt}});
 
-      if (doprocessMcWithKFParticle) {
+      if (doprocessMcWithKFParticle || doprocessMcWithDCAFitterAndML) {
         registry.add("hChi2topoToPVRecSig", "#Xi^{#plus}_{c} candidates (matched);#Xi^{#plus}_{c} candidate #chi^{2}_{topo} to PV;entries", {HistType::kTH2F, {axisChi2, axisPt}});
         registry.add("hChi2topoToPVRecBg", "#Xi^{#plus}_{c} candidates (unmatched);#Xi^{#plus}_{c} candidate #chi^{2}_{topo} to PV;entries", {HistType::kTH2F, {axisChi2, axisPt}});
         registry.add("hChi2geoXiRecSig", "#Xi^{#plus}_{c} candidates (matched);#Xi^{#mp} #chi^{2}_{geo};entries", {HistType::kTH2F, {axisChi2, axisPt}});
