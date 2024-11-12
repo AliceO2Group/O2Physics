@@ -139,7 +139,7 @@ struct HfCandidateSelectorBsToDsPiReduced {
   template <bool withDmesMl, typename Cands>
   void runSelection(Cands const& hfCandsBs,
                     TracksPion const&,
-                    HfCandBsConfigs const& configs)
+                    HfCandBsConfigs const&)
   {
     for (const auto& hfCandBs : hfCandsBs) {
       int statusBsToDsPi = 0;

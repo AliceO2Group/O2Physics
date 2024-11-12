@@ -40,6 +40,8 @@ struct sgPIDAnalyzer {
     "Pt binning"};
 
   ConfigurableAxis sigmaAxis{"sigmaAxis", {100, -50, 50}, "nSigma TPC binning"};
+  Configurable<float> eta_min{"eta_min", -0.9, "Track Pseudorapidity"};
+  Configurable<float> eta_max{"eta_max", 0.9, "Track Pseudorapidity"};
 
   void init(InitContext&)
   {
@@ -54,6 +56,16 @@ struct sgPIDAnalyzer {
     histos.add("TPC/nTPC_Pr", "Negative TPC Pr Tracks", {HistType::kTH2F, {ptBins, nSigmaBins}});
     histos.add("TPC/pTPC_El", "Positive TPC El Tracks", {HistType::kTH2F, {ptBins, nSigmaBins}});
     histos.add("TPC/nTPC_El", "Negative TPC El Tracks", {HistType::kTH2F, {ptBins, nSigmaBins}});
+    histos.add("TPC/pTPC_De", "Positive TPC De Tracks", {HistType::kTH2F, {ptBins, nSigmaBins}});
+    histos.add("TPC/nTPC_De", "Negative TPC De Tracks", {HistType::kTH2F, {ptBins, nSigmaBins}});
+    histos.add("TPC/pTPC_Tr", "Positive TPC Tr Tracks", {HistType::kTH2F, {ptBins, nSigmaBins}});
+    histos.add("TPC/nTPC_Tr", "Negative TPC Tr Tracks", {HistType::kTH2F, {ptBins, nSigmaBins}});
+    histos.add("TPC/pTPC_He", "Positive TPC He Tracks", {HistType::kTH2F, {ptBins, nSigmaBins}});
+    histos.add("TPC/nTPC_He", "Negative TPC He Tracks", {HistType::kTH2F, {ptBins, nSigmaBins}});
+    histos.add("TPC/pTPC_Al", "Positive TPC Al Tracks", {HistType::kTH2F, {ptBins, nSigmaBins}});
+    histos.add("TPC/nTPC_Al", "Negative TPC Al Tracks", {HistType::kTH2F, {ptBins, nSigmaBins}});
+    histos.add("TPC/pTPC_Mu", "Positive TPC Mu Tracks", {HistType::kTH2F, {ptBins, nSigmaBins}});
+    histos.add("TPC/nTPC_Mu", "Negative TPC Mu Tracks", {HistType::kTH2F, {ptBins, nSigmaBins}});
 
     histos.add("TPC/pTPC_Pi_Ka", "Positive TPC Pi vs Ka", {HistType::kTH2F, {ptBins, nSigmaBins}});
     histos.add("TPC/pTPC_Pi_Pr", "Positive TPC Pi vs Pr", {HistType::kTH2F, {ptBins, nSigmaBins}});
@@ -64,6 +76,9 @@ struct sgPIDAnalyzer {
     histos.add("TPC/pTPC_Pr_Pi", "Positive TPC Pr vs Pi", {HistType::kTH2F, {ptBins, nSigmaBins}});
     histos.add("TPC/pTPC_Pr_Ka", "Positive TPC Pr vs Ka", {HistType::kTH2F, {ptBins, nSigmaBins}});
     histos.add("TPC/pTPC_Pr_El", "Positive TPC Pr vs El", {HistType::kTH2F, {ptBins, nSigmaBins}});
+    histos.add("TPC/pTPC_El_Pi", "Positive TPC Pr vs Pi", {HistType::kTH2F, {ptBins, nSigmaBins}});
+    histos.add("TPC/pTPC_El_Ka", "Positive TPC Pr vs Ka", {HistType::kTH2F, {ptBins, nSigmaBins}});
+    histos.add("TPC/pTPC_El_Pr", "Positive TPC Pr vs El", {HistType::kTH2F, {ptBins, nSigmaBins}});
 
     histos.add("TPC/nTPC_Pi_Ka", "Positive TPC Pi vs Ka", {HistType::kTH2F, {ptBins, nSigmaBins}});
     histos.add("TPC/nTPC_Pi_Pr", "Positive TPC Pi vs Pr", {HistType::kTH2F, {ptBins, nSigmaBins}});
@@ -74,6 +89,9 @@ struct sgPIDAnalyzer {
     histos.add("TPC/nTPC_Pr_Pi", "Positive TPC Pr vs Pi", {HistType::kTH2F, {ptBins, nSigmaBins}});
     histos.add("TPC/nTPC_Pr_Ka", "Positive TPC Pr vs Ka", {HistType::kTH2F, {ptBins, nSigmaBins}});
     histos.add("TPC/nTPC_Pr_El", "Positive TPC Pr vs El", {HistType::kTH2F, {ptBins, nSigmaBins}});
+    histos.add("TPC/nTPC_El_Pi", "Positive TPC Pr vs Pi", {HistType::kTH2F, {ptBins, nSigmaBins}});
+    histos.add("TPC/nTPC_El_Ka", "Positive TPC Pr vs Ka", {HistType::kTH2F, {ptBins, nSigmaBins}});
+    histos.add("TPC/nTPC_El_Pr", "Positive TPC Pr vs El", {HistType::kTH2F, {ptBins, nSigmaBins}});
 
     histos.add("TOF/pPi", "Positive TPC Pi vs TOF Pi vs pt", {HistType::kTH3F, {ptBins, nSigmaBins, nSigmaBins}});
     histos.add("TOF/nPi", "Negative TPC Pi vs TOF Pi vs pt", {HistType::kTH3F, {ptBins, nSigmaBins, nSigmaBins}});
@@ -83,11 +101,23 @@ struct sgPIDAnalyzer {
     histos.add("TOF/nPr", "Negative TPC Pr vs TOF Pr vs pt", {HistType::kTH3F, {ptBins, nSigmaBins, nSigmaBins}});
     histos.add("TOF/pEl", "Positive TPC El vs TOF El vs pt", {HistType::kTH3F, {ptBins, nSigmaBins, nSigmaBins}});
     histos.add("TOF/nEl", "Negative TPC El vs TOF El vs pt", {HistType::kTH3F, {ptBins, nSigmaBins, nSigmaBins}});
+    histos.add("TOF/pDe", "Positive TPC De vs TOF Pi vs pt", {HistType::kTH3F, {ptBins, nSigmaBins, nSigmaBins}});
+    histos.add("TOF/nDe", "Negative TPC De vs TOF Pi vs pt", {HistType::kTH3F, {ptBins, nSigmaBins, nSigmaBins}});
+    histos.add("TOF/pTr", "Positive TPC Tr vs TOF Ka vs pt", {HistType::kTH3F, {ptBins, nSigmaBins, nSigmaBins}});
+    histos.add("TOF/nTr", "Negative TPC Tr vs TOF Ka vs pt", {HistType::kTH3F, {ptBins, nSigmaBins, nSigmaBins}});
+    histos.add("TOF/pHe", "Positive TPC He vs TOF Pr vs pt", {HistType::kTH3F, {ptBins, nSigmaBins, nSigmaBins}});
+    histos.add("TOF/nHe", "Negative TPC He vs TOF Pr vs pt", {HistType::kTH3F, {ptBins, nSigmaBins, nSigmaBins}});
+    histos.add("TOF/pAl", "Positive TPC Al vs TOF El vs pt", {HistType::kTH3F, {ptBins, nSigmaBins, nSigmaBins}});
+    histos.add("TOF/nAl", "Negative TPC Al vs TOF El vs pt", {HistType::kTH3F, {ptBins, nSigmaBins, nSigmaBins}});
+    histos.add("TOF/pMu", "Positive TPC Mu vs TOF El vs pt", {HistType::kTH3F, {ptBins, nSigmaBins, nSigmaBins}});
+    histos.add("TOF/nMu", "Negative TPC Mu vs TOF El vs pt", {HistType::kTH3F, {ptBins, nSigmaBins, nSigmaBins}});
   }
 
   void process(aod::SGEvents const& events, aod::SGTracks const& tracks)
   {
     for (const auto& track : tracks) {
+      if (track.eta() < eta_min || track.eta() > eta_max)
+        continue;
       bool isPositive = (track.sign() > 0);
       if (track.tofpi() == -999) {
         // Directly fill histograms without a local variable for histName
@@ -96,40 +126,60 @@ struct sgPIDAnalyzer {
           histos.fill(HIST("TPC/pTPC_Ka"), track.pt(), track.tpcka());
           histos.fill(HIST("TPC/pTPC_Pr"), track.pt(), track.tpcpr());
           histos.fill(HIST("TPC/pTPC_El"), track.pt(), track.tpcel());
+          histos.fill(HIST("TPC/pTPC_De"), track.pt(), track.tpcde());
+          histos.fill(HIST("TPC/pTPC_Tr"), track.pt(), track.tpctr());
+          histos.fill(HIST("TPC/pTPC_He"), track.pt(), track.tpche());
+          histos.fill(HIST("TPC/pTPC_Al"), track.pt(), track.tpcal());
+          histos.fill(HIST("TPC/pTPC_Mu"), track.pt(), track.tpcmu());
           if (std::abs(track.tpcpi()) < 1) {
-            histos.fill(HIST("TPC/pTPC_Pi_Ka"), track.pt(), track.tpcka());
-            histos.fill(HIST("TPC/pTPC_Pi_Pr"), track.pt(), track.tpcpr());
-            histos.fill(HIST("TPC/pTPC_Pi_El"), track.pt(), track.tpcel());
+            histos.fill(HIST("TPC/pTPC_Ka_Pi"), track.pt(), track.tpcka());
+            histos.fill(HIST("TPC/pTPC_Pr_Pi"), track.pt(), track.tpcpr());
+            histos.fill(HIST("TPC/pTPC_El_Pi"), track.pt(), track.tpcel());
           }
           if (std::abs(track.tpcka()) < 1) {
-            histos.fill(HIST("TPC/pTPC_Ka_Pi"), track.pt(), track.tpcpi());
-            histos.fill(HIST("TPC/pTPC_Ka_Pr"), track.pt(), track.tpcpr());
-            histos.fill(HIST("TPC/pTPC_Ka_El"), track.pt(), track.tpcel());
+            histos.fill(HIST("TPC/pTPC_Pi_Ka"), track.pt(), track.tpcpi());
+            histos.fill(HIST("TPC/pTPC_Pr_Ka"), track.pt(), track.tpcpr());
+            histos.fill(HIST("TPC/pTPC_El_Ka"), track.pt(), track.tpcel());
           }
           if (std::abs(track.tpcpr()) < 1) {
-            histos.fill(HIST("TPC/pTPC_Pr_Pi"), track.pt(), track.tpcpi());
-            histos.fill(HIST("TPC/pTPC_Pr_Ka"), track.pt(), track.tpcka());
-            histos.fill(HIST("TPC/pTPC_Pr_El"), track.pt(), track.tpcel());
+            histos.fill(HIST("TPC/pTPC_Pi_Pr"), track.pt(), track.tpcpi());
+            histos.fill(HIST("TPC/pTPC_Ka_Pr"), track.pt(), track.tpcka());
+            histos.fill(HIST("TPC/pTPC_El_Pr"), track.pt(), track.tpcel());
+          }
+          if (std::abs(track.tpcel()) < 1) {
+            histos.fill(HIST("TPC/pTPC_Pi_El"), track.pt(), track.tpcpi());
+            histos.fill(HIST("TPC/pTPC_Ka_El"), track.pt(), track.tpcka());
+            histos.fill(HIST("TPC/pTPC_Pr_El"), track.pt(), track.tpcpr());
           }
         } else {
           histos.fill(HIST("TPC/nTPC_Pi"), track.pt(), track.tpcpi());
           histos.fill(HIST("TPC/nTPC_Ka"), track.pt(), track.tpcka());
           histos.fill(HIST("TPC/nTPC_Pr"), track.pt(), track.tpcpr());
           histos.fill(HIST("TPC/nTPC_El"), track.pt(), track.tpcel());
+          histos.fill(HIST("TPC/nTPC_De"), track.pt(), track.tpcde());
+          histos.fill(HIST("TPC/nTPC_Tr"), track.pt(), track.tpctr());
+          histos.fill(HIST("TPC/nTPC_He"), track.pt(), track.tpche());
+          histos.fill(HIST("TPC/nTPC_Al"), track.pt(), track.tpcal());
+          histos.fill(HIST("TPC/nTPC_Mu"), track.pt(), track.tpcmu());
           if (std::abs(track.tpcpi()) < 1) {
-            histos.fill(HIST("TPC/nTPC_Pi_Ka"), track.pt(), track.tpcka());
-            histos.fill(HIST("TPC/nTPC_Pi_Pr"), track.pt(), track.tpcpr());
-            histos.fill(HIST("TPC/nTPC_Pi_El"), track.pt(), track.tpcel());
+            histos.fill(HIST("TPC/nTPC_Ka_Pi"), track.pt(), track.tpcka());
+            histos.fill(HIST("TPC/nTPC_Pr_Pi"), track.pt(), track.tpcpr());
+            histos.fill(HIST("TPC/nTPC_El_Pi"), track.pt(), track.tpcel());
           }
           if (std::abs(track.tpcka()) < 1) {
-            histos.fill(HIST("TPC/nTPC_Ka_Pi"), track.pt(), track.tpcpi());
-            histos.fill(HIST("TPC/nTPC_Ka_Pr"), track.pt(), track.tpcpr());
-            histos.fill(HIST("TPC/nTPC_Ka_El"), track.pt(), track.tpcel());
+            histos.fill(HIST("TPC/nTPC_Pi_Ka"), track.pt(), track.tpcpi());
+            histos.fill(HIST("TPC/nTPC_Pr_Ka"), track.pt(), track.tpcpr());
+            histos.fill(HIST("TPC/nTPC_El_Ka"), track.pt(), track.tpcel());
           }
           if (std::abs(track.tpcpr()) < 1) {
-            histos.fill(HIST("TPC/nTPC_Pr_Pi"), track.pt(), track.tpcpi());
-            histos.fill(HIST("TPC/nTPC_Pr_Ka"), track.pt(), track.tpcka());
-            histos.fill(HIST("TPC/nTPC_Pr_El"), track.pt(), track.tpcel());
+            histos.fill(HIST("TPC/nTPC_Pi_Pr"), track.pt(), track.tpcpi());
+            histos.fill(HIST("TPC/nTPC_Ka_Pr"), track.pt(), track.tpcka());
+            histos.fill(HIST("TPC/nTPC_El_Pr"), track.pt(), track.tpcel());
+          }
+          if (std::abs(track.tpcel()) < 1) {
+            histos.fill(HIST("TPC/nTPC_Pi_El"), track.pt(), track.tpcpi());
+            histos.fill(HIST("TPC/nTPC_Ka_El"), track.pt(), track.tpcka());
+            histos.fill(HIST("TPC/nTPC_Pr_El"), track.pt(), track.tpcpr());
           }
         }
       } else {
@@ -138,11 +188,21 @@ struct sgPIDAnalyzer {
           histos.fill(HIST("TOF/pKa"), track.pt(), track.tpcka(), track.tofka());
           histos.fill(HIST("TOF/pPr"), track.pt(), track.tpcpr(), track.tofpr());
           histos.fill(HIST("TOF/pEl"), track.pt(), track.tpcel(), track.tofel());
+          histos.fill(HIST("TOF/pDe"), track.pt(), track.tpcpi(), track.tofde());
+          histos.fill(HIST("TOF/pTr"), track.pt(), track.tpcka(), track.toftr());
+          histos.fill(HIST("TOF/pHe"), track.pt(), track.tpcpr(), track.tofhe());
+          histos.fill(HIST("TOF/pAl"), track.pt(), track.tpcel(), track.tofal());
+          histos.fill(HIST("TOF/pMu"), track.pt(), track.tpcel(), track.tofmu());
         } else {
           histos.fill(HIST("TOF/nPi"), track.pt(), track.tpcpi(), track.tofpi());
           histos.fill(HIST("TOF/nKa"), track.pt(), track.tpcka(), track.tofka());
           histos.fill(HIST("TOF/nPr"), track.pt(), track.tpcpr(), track.tofpr());
           histos.fill(HIST("TOF/nEl"), track.pt(), track.tpcel(), track.tofel());
+          histos.fill(HIST("TOF/nDe"), track.pt(), track.tpcpi(), track.tofde());
+          histos.fill(HIST("TOF/nTr"), track.pt(), track.tpcka(), track.toftr());
+          histos.fill(HIST("TOF/nHe"), track.pt(), track.tpcpr(), track.tofhe());
+          histos.fill(HIST("TOF/nAl"), track.pt(), track.tpcel(), track.tofal());
+          histos.fill(HIST("TOF/nMu"), track.pt(), track.tpcel(), track.tofmu());
         }
       }
     }
