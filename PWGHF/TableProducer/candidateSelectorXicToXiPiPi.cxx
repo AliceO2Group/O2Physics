@@ -292,6 +292,7 @@ struct HfCandidateSelectorXicToXiPiPi {
 
       // ++++++++++++++ // jaeyoon Nov 8th
       // ML selections
+
       if(applyMl){
         bool isSelectedMlXicToXiPiPi = false; 
         std::vector<float> inputFeaturesXicToXiPiPi = hfMlResponse.getInputFeatures(hfCandXic);
@@ -304,9 +305,7 @@ struct HfCandidateSelectorXicToXiPiPi {
            hfSelXicToXiPiPiCandidate(statusXicToXiPiPi);
            continue;
         }
-
         SETBIT(statusXicToXiPiPi, aod::SelectionStep::RecoMl);
-
         }
       // ++++++++++++++ // jaeyoon Nov 8th
 
