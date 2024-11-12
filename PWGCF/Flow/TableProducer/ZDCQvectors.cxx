@@ -17,6 +17,8 @@
 #include <numeric>
 #include <vector>
 #include <typeinfo>
+#include <memory>
+#include <string>
 
 #include "CCDB/BasicCCDBManager.h"
 #include "Common/CCDB/EventSelectionParams.h"
@@ -488,9 +490,6 @@ struct ZDCqvectors {
     std::vector<double> sumZN(2, 0.);
     std::vector<double> xEnZN(2, 0.);
     std::vector<double> yEnZN(2, 0.);
-
-    // if (!collision.sel8())
-    //   return;
 
     auto cent = collision.centFT0C();
 
