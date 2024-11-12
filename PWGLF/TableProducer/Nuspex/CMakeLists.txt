@@ -44,8 +44,8 @@ o2physics_add_dpl_workflow(nucleustreecreator
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(lithium4analysis
-    SOURCES lithium4analysis.cxx
+o2physics_add_dpl_workflow(he3hadronfemto
+    SOURCES he3HadronFemto.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
@@ -87,8 +87,4 @@ o2physics_add_dpl_workflow(pidtof-generic
 o2physics_add_dpl_workflow(threebody-kf-task
     SOURCES threebodyKFTask.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-    COMPONENT_NAME Analysis)
-o2physics_add_dpl_workflow(pihe3analysis
-    SOURCES piHe3analysis.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
