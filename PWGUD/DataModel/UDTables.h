@@ -86,16 +86,21 @@ DECLARE_SOA_COLUMN(TotalFT0AmplitudeC, totalFT0AmplitudeC, float); //! sum of am
 DECLARE_SOA_COLUMN(TimeFT0A, timeFT0A, float);                     //! FT0A average time
 DECLARE_SOA_COLUMN(TimeFT0C, timeFT0C, float);                     //! FT0C average time
 DECLARE_SOA_COLUMN(TriggerMaskFT0, triggerMaskFT0, uint8_t);       //! FT0 trigger mask
+DECLARE_SOA_COLUMN(ChFT0A, chFT0A, uint8_t);                       //! number of FT0A active channels
+DECLARE_SOA_COLUMN(ChFT0C, chFT0C, uint8_t);                       //! number of FT0C active channels
 // FDD information
 DECLARE_SOA_COLUMN(TotalFDDAmplitudeA, totalFDDAmplitudeA, float); //! sum of amplitudes on A side of FDD
 DECLARE_SOA_COLUMN(TotalFDDAmplitudeC, totalFDDAmplitudeC, float); //! sum of amplitudes on C side of FDD
 DECLARE_SOA_COLUMN(TimeFDDA, timeFDDA, float);                     //! FDDA average time
 DECLARE_SOA_COLUMN(TimeFDDC, timeFDDC, float);                     //! FDDC average time
 DECLARE_SOA_COLUMN(TriggerMaskFDD, triggerMaskFDD, uint8_t);       //! FDD trigger mask
+DECLARE_SOA_COLUMN(ChFDDA, chFDDA, uint8_t);                       //! number of FDDA active channels
+DECLARE_SOA_COLUMN(ChFDDC, chFDDC, uint8_t);                       //! number of FDDC active channels
 // FV0A information
 DECLARE_SOA_COLUMN(TotalFV0AmplitudeA, totalFV0AmplitudeA, float); //! sum of amplitudes on A side of FDD
 DECLARE_SOA_COLUMN(TimeFV0A, timeFV0A, float);                     //! FV0A average time
 DECLARE_SOA_COLUMN(TriggerMaskFV0A, triggerMaskFV0A, uint8_t);     //! FV0 trigger mask
+DECLARE_SOA_COLUMN(ChFV0A, chFV0A, uint8_t);                       //! number of FV0A active channels
 // Gap Side Information
 DECLARE_SOA_COLUMN(GapSide, gapSide, uint8_t); // 0 for side A, 1 for side C, 2 for both sides (or use an enum for better readability)
 // FIT selection flags
@@ -198,6 +203,13 @@ DECLARE_SOA_TABLE(UDCollisionsSels, "AOD", "UDCOLLISIONSEL",
                   udcollision::BBFV0A<udcollision::BBFV0APF>, udcollision::BGFV0A<udcollision::BGFV0APF>,
                   udcollision::BBFDDA<udcollision::BBFDDAPF>, udcollision::BBFDDC<udcollision::BBFDDCPF>, udcollision::BGFDDA<udcollision::BGFDDAPF>, udcollision::BGFDDC<udcollision::BGFDDCPF>);
 
+DECLARE_SOA_TABLE(UDCollisionSelExtras, "AOD", "UDCOLSELEXTRA",
+                  udcollision::ChFT0A,  //! number of active channels in FT0A
+                  udcollision::ChFT0C,  //! number of active channels in FT0C
+                  udcollision::ChFDDA,  //! number of active channels in FDDA
+                  udcollision::ChFDDC,  //! number of active channels in FDDC
+                  udcollision::ChFV0A); //! number of active channels in FV0A
+
 // central barrel-specific selections
 DECLARE_SOA_TABLE(UDCollisionsSelsCent, "AOD", "UDCOLSELCNT",
                   udcollision::DBcTOR,
@@ -227,6 +239,7 @@ using SGCollision = SGCollisions::iterator;
 using UDCollisionsSel = UDCollisionsSels::iterator;
 using UDCollisionsSelCent = UDCollisionsSelsCent::iterator;
 using UDCollisionsSelFwd = UDCollisionsSelsFwd::iterator;
+using UDCollisionSelExtra = UDCollisionSelExtras::iterator;
 using UDCollsLabel = UDCollsLabels::iterator;
 using UDMcCollsLabel = UDMcCollsLabels::iterator;
 
