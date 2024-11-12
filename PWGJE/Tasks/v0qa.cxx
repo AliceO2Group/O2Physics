@@ -1258,7 +1258,7 @@ struct V0QA {
 
   using DaughterJTracks = soa::Join<aod::JetTracks, aod::JTrackPIs>;
   using DaughterTracks = soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::TracksCov>;
-  void processV0TrackQA(aod::JetCollision const& jcoll, soa::Join<aod::CandidatesV0Data, aod::V0SignalFlags> const& v0s, DaughterJTracks const&, DaughterTracks const&)
+  void processV0TrackQA(aod::JetCollision const& /*jcoll*/, soa::Join<aod::CandidatesV0Data, aod::V0SignalFlags> const& v0s, DaughterJTracks const&, DaughterTracks const&)
   {
     //   if (!jetderiveddatautilities::selectCollision(jcoll, eventSelection)) {
     //     return;

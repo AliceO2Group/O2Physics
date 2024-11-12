@@ -109,7 +109,6 @@ struct ClusterMonitor {
     mHistManager.add("numberOfClustersSMBC", "number of clusters per supermodule per bunch crossing (ambiguous BCs)", o2HistType::kTH2F, {numberClustersAxis, {20, -0.5, 19.5, "SupermoduleID"}});
 
     // cluster properties (matched clusters)
-    int MaxMatched = 20; // maximum number of matched tracks, hardcoded in emcalCorrectionTask.cxx!
     mHistManager.add("clusterE", "Energy of cluster", o2HistType::kTH1F, {energyAxis});
     mHistManager.add("clusterEMatched", "Energy of cluster (with match)", o2HistType::kTH1F, {energyAxis});
     mHistManager.add("clusterESupermodule", "Energy of the cluster vs. supermoduleID", o2HistType::kTH2F, {energyAxis, supermoduleAxis});
