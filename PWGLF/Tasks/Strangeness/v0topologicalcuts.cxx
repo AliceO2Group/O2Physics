@@ -14,7 +14,7 @@
 /// \author Roman Lietava (roman.lietava@cern.ch)
 
 /*Description
-This task creates 20 histograms (for each of the 5 different V0 topological cuts, namely cosPointingAngle,
+This task creates <=20 histograms (for each of the 5 different V0 topological cuts, namely cosPointingAngle,
 DCA[between]V0daughters, v0radius,DCA-positive[daughter]to-primary-vertex and DCA-negative[daughter]to-primary-vertex)
 that are filled with the V0 invariant mass under the K0, Lambda and Antilambda mass assumption
 (so 20cutsx5parametersx3particles=300 mass invariant plots).It also produces plots of the topological parameters themselves.
