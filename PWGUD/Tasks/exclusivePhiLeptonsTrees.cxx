@@ -55,8 +55,7 @@ DECLARE_SOA_TABLE(TREE, "AOD", "Tree",
                   tree::PZ2,
                   tree::PE2,
                   tree::NCOUNTERPV,
-                  tree::NELECTRONSTOF
-                  );
+                  tree::NELECTRONSTOF);
 } // namespace o2::aod
 
 
@@ -143,7 +142,6 @@ struct ExclusivePhiLeptonsTrees {
     // - (px,py,pz,E)2
     int counterPV = 0;
     for (auto trk : tracks) {
-      
       // ----------------------------------------
       // SELECTIONS:
       // - PV track
@@ -193,7 +191,7 @@ struct ExclusivePhiLeptonsTrees {
       TLorentzVector electron;
       electron.SetXYZM(trk.px(), trk.py(), trk.pz(), o2::constants::physics::MassElectron);
       if (fabs(electron.Eta()) > 0.8) {
-          return;
+        return;
       }
       auto nSigmaEl = trk.tpcNSigmaEl();
       auto nSigmaElTOF = trk.tofNSigmaEl();
@@ -226,7 +224,7 @@ struct ExclusivePhiLeptonsTrees {
 
       int signSum = -999.;
       double sigmaTotal = -999.;
-      TLorentzVector a,b;
+      TLorentzVector a, b;
       // two electrons in the TPC
       if (onlyElectronTracksTOF.size() == 0) {
 
@@ -288,7 +286,6 @@ struct ExclusivePhiLeptonsTrees {
       } else if (onlyElectronTracksTOF.size() == 2) {
         registry.fill(HIST("hNsigEvsKa2"), onlyElectronSigmaTOF[0], onlyElectronSigmaTOF[1]);
       }
-
 
       if (signSum != 0) {
         registry.fill(HIST("hMassPtLikeSignElectron"), resonance.M(), resonance.Pt());
