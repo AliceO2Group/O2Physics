@@ -19,6 +19,7 @@
 /// \author Biao Zhang <biao.zhang@cern.ch>, CCNU
 /// \author Antonio Palasciano <antonio.palasciano@cern.ch>, INFN Bari
 
+#include <string>
 #if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
 #include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h> // needed for HFFilterHelpers, to be fixed
 #else
@@ -57,10 +58,10 @@ struct HfFilterPrepareMlSamples { // Main struct
   Configurable<bool> fillSignal{"fillSignal", true, "Flag to fill derived tables with signal for ML trainings"};
   Configurable<bool> fillOnlyBackground{"fillOnlyBackground", true, "Flag to fill derived tables with background for ML trainings"};
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
-  Configurable<float> leftLimitLSB{"leftLimitLSB", 1.72, "Left Sideband Lower Minv limit"};
-  Configurable<float> rightLimitLSB{"rightLimitLSB", 1.78, "Left Sideband Upper Minv limit"};
-  Configurable<float> leftLimitRSB{"leftLimitRSB", 1.94, "Right Sideband Lower Minv limit"};
-  Configurable<float> rightLimitRSB{"rightLimitRSB", 1.98, "Right Sideband Upper Minv limit"};
+  Configurable<float> leftLimitLSB{"leftLimitLSB", 1.72, "Left Sideband Lower Minv limit 2 Prong"};
+  Configurable<float> rightLimitLSB{"rightLimitLSB", 1.78, "Left Sideband Upper Minv limit 2 Prong"};
+  Configurable<float> leftLimitRSB{"leftLimitRSB", 1.94, "Right Sideband Lower Minv limit 2 Prong"};
+  Configurable<float> rightLimitRSB{"rightLimitRSB", 1.98, "Right Sideband Upper Minv limit 2 Prong"};
 
   // CCDB configuration
   o2::ccdb::CcdbApi ccdbApi;
@@ -128,7 +129,7 @@ struct HfFilterPrepareMlSamples { // Main struct
       auto invMassD0 = RecoDecay::m(std::array{pVecPos, pVecNeg}, std::array{massPi, massKa});
       auto invMassD0bar = RecoDecay::m(std::array{pVecPos, pVecNeg}, std::array{massKa, massPi});
 
-      int8_t flag = RecoDecay::OriginType::None;
+      auto flag = RecoDecay::OriginType::None;
 
       if (fillOnlyBackground && !(isCharmHadronMassInSbRegions(invMassD0, invMassD0bar, leftLimitLSB, rightLimitLSB) || (isCharmHadronMassInSbRegions(invMassD0, invMassD0bar, leftLimitRSB, rightLimitRSB))))
         continue;
@@ -206,7 +207,7 @@ struct HfFilterPrepareMlSamples { // Main struct
         deltaMassKKSecond = std::abs(RecoDecay::m(std::array{pVecThird, pVecSecond}, std::array{massKa, massKa}) - massPhi);
       }
       int8_t sign = 0;
-      int8_t flag = RecoDecay::OriginType::None;
+      auto flag = RecoDecay::OriginType::None;
 
       float pseudoRndm = trackFirst.pt() * 1000. - (int64_t)(trackFirst.pt() * 1000);
       if (pseudoRndm < downSampleBkgFactor) {
