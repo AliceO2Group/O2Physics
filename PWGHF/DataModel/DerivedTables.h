@@ -501,7 +501,9 @@ DECLARE_SOA_TABLE_STAGED(HfBplusMls, "HFBPML", //! Table with candidate selectio
 
 DECLARE_SOA_TABLE_STAGED(HfBplusIds, "HFBPID", //! Table with original global indices for candidates
                          hf_cand::CollisionId,
-                         hf_track_index::Prong1Id,
+                         hf_track_index::Prong0Id, // D0 prong 0
+                         hf_track_index::Prong1Id, // D0 prong 1
+                         hf_track_index::Prong2Id, // bachelor pion
                          o2::soa::Marker<MarkerBplus>);
 
 DECLARE_SOA_TABLE_STAGED(HfBplusIdD0s, "HFBPIDD0", //! Table with an index pointing to the derived D0 table

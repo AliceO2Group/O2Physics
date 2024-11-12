@@ -93,6 +93,7 @@ struct HfDerivedDataCreatorBplusToD0Pi {
   using MatchedGenCandidatesMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCandBplusMcGen>>;
   using TypeMcCollisions = aod::McCollisions;
   using THfCandDaughters = aod::HfCand2Prong;
+  using THfCandDaughtersDerived = soa::Join<aod::HfD0CollBases, aod::HfD0Ids>; // TODO: Default or optional? Needed for linking to derived D0.
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_bplus::isSelBplusToD0Pi >= 1;
   Filter filterMcGenMatching = nabs(aod::hf_cand_bplus::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_bplus::DecayType::BplusToD0Pi));
@@ -182,7 +183,7 @@ struct HfDerivedDataCreatorBplusToD0Pi {
   }
 
   template <typename T, typename U, typename V>
-  void fillTablesCandidate(const T& candidate, const U& prong0, const V& prong1, int candFlag, double invMass,
+  void fillTablesCandidate(const T& candidate, const U& prongD0, const V& prongPion, int candFlag, double invMass,
                            double ct, double y, int8_t flagMc, int8_t origin, float mlScore)
   {
     if (fillCandidateBase) {
@@ -206,12 +207,12 @@ struct HfDerivedDataCreatorBplusToD0Pi {
         candidate.ptProng1(),
         candidate.impactParameter1(),
         candidate.impactParameterNormalised1(),
-        prong1.tpcNSigmaPi(),
-        prong1.tofNSigmaPi(),
-        prong1.tpcTofNSigmaPi(),
-        prong1.tpcNSigmaKa(),
-        prong1.tofNSigmaKa(),
-        prong1.tpcTofNSigmaKa(),
+        prongPion.tpcNSigmaPi(),
+        prongPion.tofNSigmaPi(),
+        prongPion.tpcTofNSigmaPi(),
+        prongPion.tpcNSigmaKa(),
+        prongPion.tofNSigmaKa(),
+        prongPion.tpcTofNSigmaKa(),
         candidate.maxNormalisedDeltaIP(),
         candidate.impactParameterProduct());
     }
@@ -256,6 +257,8 @@ struct HfDerivedDataCreatorBplusToD0Pi {
     if (fillCandidateId) {
       rowCandidateId(
         candidate.collisionId(),
+        prongD0.prong0Id(),
+        prongD0.prong1Id(),
         candidate.prong1Id());
     }
     if (fillCandidateIdD0) {
@@ -355,8 +358,8 @@ struct HfDerivedDataCreatorBplusToD0Pi {
             }
           }
         }
-        auto prong0 = candidate.template prong0_as<THfCandDaughters>();
-        auto prong1 = candidate.template prong1_as<TracksWPid>();
+        auto prongD0 = candidate.template prong0_as<THfCandDaughters>();
+        auto prongPion = candidate.template prong1_as<TracksWPid>();
         double ct = hfHelper.ctBplus(candidate);
         double y = hfHelper.yBplus(candidate);
         float massBplusToD0Pi = hfHelper.invMassBplusToD0Pi(candidate);
@@ -365,7 +368,7 @@ struct HfDerivedDataCreatorBplusToD0Pi {
           mlScoreBplusToD0Pi = candidate.mlProbBplusToD0Pi();
         }
         if (candidate.isSelBplusToD0Pi()) {
-          fillTablesCandidate(candidate, prong0, prong1, 0, massBplusToD0Pi, ct, y, flagMcRec, origin, mlScoreBplusToD0Pi);
+          fillTablesCandidate(candidate, prongD0, prongPion, 0, massBplusToD0Pi, ct, y, flagMcRec, origin, mlScoreBplusToD0Pi);
         }
       }
     }
