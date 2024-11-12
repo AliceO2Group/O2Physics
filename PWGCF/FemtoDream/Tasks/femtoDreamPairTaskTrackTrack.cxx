@@ -18,6 +18,7 @@
 #include <cstdint>
 #include <vector>
 #include <bitset>
+#include <string>
 #include "TRandom3.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"

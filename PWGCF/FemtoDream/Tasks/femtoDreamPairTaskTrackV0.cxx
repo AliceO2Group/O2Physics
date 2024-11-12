@@ -16,6 +16,7 @@
 #include <sys/stat.h>
 #include <cstdint>
 #include <vector>
+#include <string>
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
