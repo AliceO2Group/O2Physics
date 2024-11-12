@@ -22,6 +22,9 @@ The cuts are passed as configurable strings for convenience.
 This analysis includes two processes, one for Real Data and one for MC Data switchable at the end of the code, only run one at a time*/
 
 #include <iostream>
+#include <memory>
+#include <vector>
+#include <string>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Common/DataModel/EventSelection.h"
