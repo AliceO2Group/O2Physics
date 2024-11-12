@@ -261,7 +261,7 @@ struct Jetchargedv2Task {
   }
 
   Preslice<aod::ChargedJets> JetsPerJCollision = aod::jet::collisionId;
-  Preslice<JetTracks> tracksPerJCollision = o2::aod::jtrack::collisionId;
+  Preslice<aod::JetTracks> tracksPerJCollision = o2::aod::jtrack::collisionId;
 
   Filter trackCuts = (aod::jtrack::pt >= trackPtMin && aod::jtrack::pt < trackPtMax && aod::jtrack::eta > trackEtaMin && aod::jtrack::eta < trackEtaMax);
   Filter trackSubCuts = (aod::jtracksub::pt >= trackPtMin && aod::jtracksub::pt < trackPtMax && aod::jtracksub::eta > trackEtaMin && aod::jtracksub::eta < trackEtaMax);
@@ -318,15 +318,15 @@ struct Jetchargedv2Task {
     registry.fill(HIST("leadJetEta"), leadingJetEta);
   } // end of fillLeadingJetQA template
 
-  void processjetQA(soa::Filtered<JetCollisions>::iterator const& collision,
-                    soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets, JetTracks const& tracks)
+  void processjetQA(soa::Filtered<aod::JetCollisions>::iterator const& collision,
+                    soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets, aod::JetTracks const& tracks)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
     }
     double leadingTrackpT = 0.0;
     double leadingTrackPhi = 0.0;
-    for (auto& track : tracks) {
+    for (auto const& track : tracks) {
       if (track.pt() > 6.0 && track.pt() < 10.0) {
         if (track.pt() > leadingTrackpT) {
           leadingTrackpT = track.pt();
@@ -347,9 +347,9 @@ struct Jetchargedv2Task {
   }
   PROCESS_SWITCH(Jetchargedv2Task, processjetQA, "jet rho v2 jet QA", true);
 
-  void processSigmaPt(soa::Filtered<soa::Join<JetCollisions, aod::BkgChargedRhos, aod::Qvectors>> const& collisions,
+  void processSigmaPt(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::Qvectors>> const& collisions,
                       soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets,
-                      JetTracks const& tracks)
+                      aod::JetTracks const& tracks)
   {
     double collnum = 1;
     for (const auto& collision : collisions) {
@@ -408,7 +408,7 @@ struct Jetchargedv2Task {
             if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
               continue;
             }
-            if (!isAcceptedJet<JetTracks>(jet)) {
+            if (!isAcceptedJet<aod::JetTracks>(jet)) {
               continue;
             }
             phiMinusPsi2 = jet.phi() - evtPl2;
@@ -431,7 +431,7 @@ struct Jetchargedv2Task {
             if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
               continue;
             }
-            if (!isAcceptedJet<JetTracks>(jet)) {
+            if (!isAcceptedJet<aod::JetTracks>(jet)) {
               continue;
             }
             phiMinusPsi3 = jet.phi() - evtPl3;
@@ -467,9 +467,9 @@ struct Jetchargedv2Task {
   }
   PROCESS_SWITCH(Jetchargedv2Task, processSigmaPt, "QA for charged tracks", true);
 
-  void processRandomConeDataV2(soa::Filtered<soa::Join<JetCollisions, aod::BkgChargedRhos, aod::Qvectors>>::iterator const& collision,
+  void processRandomConeDataV2(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::Qvectors>>::iterator const& collision,
                                soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets,
-                               soa::Filtered<JetTracks> const& tracks)
+                               soa::Filtered<aod::JetTracks> const& tracks)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
@@ -529,8 +529,8 @@ struct Jetchargedv2Task {
   }
   PROCESS_SWITCH(Jetchargedv2Task, processRandomConeDataV2, "QA for random cone estimation of background fluctuations in data", true);
 
-  void processTracksQA(soa::Filtered<JetCollisions>::iterator const& collision,
-                       soa::Filtered<JetTracks> const& tracks)
+  void processTracksQA(soa::Filtered<aod::JetCollisions>::iterator const& collision,
+                       soa::Filtered<aod::JetTracks> const& tracks)
   {
     registry.fill(HIST("h2_centrality_collisions"), collision.centrality(), 0.5);
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
@@ -538,7 +538,7 @@ struct Jetchargedv2Task {
     }
     registry.fill(HIST("h2_centrality_collisions"), collision.centrality(), 1.5);
 
-    for (auto& track : tracks) {
+    for (auto const& track : tracks) {
       if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
         continue;
       }
