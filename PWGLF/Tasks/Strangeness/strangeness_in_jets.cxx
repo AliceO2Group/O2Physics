@@ -1340,6 +1340,7 @@ struct strangeness_in_jets {
         if (passedAntiLambdaSelection(v0, pos, neg) && pdg_parent == -3122) {
           registryMC.fill(HIST("AntiLambda_reconstructed_incl"), multiplicity, v0.pt());
         }
+
         if (!isPhysPrim)
           continue;
 
@@ -1519,6 +1520,8 @@ struct strangeness_in_jets {
   }
   PROCESS_SWITCH(strangeness_in_jets, processMCefficiency, "Process MC Efficiency", false);
 
+  Service<o2::framework::O2DatabasePDG> pdgDB;
+
   void processGen(o2::aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
   {
     for (const auto& mccollision : mcCollisions) {
@@ -1528,7 +1531,13 @@ struct strangeness_in_jets {
       // Selection on z_{vertex}
       if (TMath::Abs(mccollision.posZ()) > 10)
         continue;
+
       registryMC.fill(HIST("number_of_events_mc"), 1.5);
+
+      if (isINELgt0 && !pwglf::isINELgtNmc(mcParticles, 0, pdgDB)) {
+        continue;
+      }
+      registryMC.fill(HIST("number_of_events_mc"), 2.5);
 
       // MC Particles per Collision
       auto mcParticles_per_coll = mcParticles.sliceBy(perMCCollision, mccollision.globalIndex());
