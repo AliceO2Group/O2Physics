@@ -231,6 +231,12 @@ struct femtoDreamPairTaskTrackTrack {
 
   void init(InitContext& context)
   {
+
+    // setup columnpolicy for binning
+    colBinningMult = {{Mixing.VztxMixBins, Mixing.MultMixBins}, true};
+    colBinningMultPercentile = {{Mixing.VztxMixBins, Mixing.MultPercentileMixBins}, true};
+    colBinningMultMultPercentile = {{Mixing.VztxMixBins, Mixing.MultMixBins, Mixing.MultPercentileMixBins}, true};
+
     if (Option.RandomizePair.value) {
       random = new TRandom3(0);
     }
