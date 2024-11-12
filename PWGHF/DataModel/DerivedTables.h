@@ -467,6 +467,11 @@ DECLARE_SOA_TABLE_STAGED(HfBplusPars, "HFBPPAR", //! Table with candidate proper
                          hf_cand_par::ImpactParameterProduct,
                          o2::soa::Marker<MarkerBplus>);
 
+DECLARE_SOA_TABLE_STAGED(HfBplusParD0s, "HFBPPARD0", //! Table with D0 candidate properties used for selection
+                         hf_cand_par::PtProng0,
+                         hf_cand::ImpactParameter0,
+                         hf_cand_par::ImpactParameterNormalised0);
+
 DECLARE_SOA_TABLE_STAGED(HfBplusParEs, "HFBPPARE", //! Table with additional candidate properties used for selection
                          hf_cand::XSecondaryVertex,
                          hf_cand::YSecondaryVertex,
@@ -482,6 +487,13 @@ DECLARE_SOA_TABLE_STAGED(HfBplusParEs, "HFBPPARE", //! Table with additional can
                          hf_cand_par::CosThetaStar,
                          hf_cand_par::Ct,
                          o2::soa::Marker<MarkerBplus>);
+
+DECLARE_SOA_TABLE_STAGED(HfBplusParED0s, "HFBPPARED0", //! Table with additional D0 candidate properties used for selection
+                         hf_cand_par::PProng0,
+                         hf_cand::PxProng0,
+                         hf_cand::PyProng0,
+                         hf_cand::PzProng0,
+                         hf_cand::ErrorImpactParameter0);
 
 DECLARE_SOA_TABLE_STAGED(HfBplusMls, "HFBPML", //! Table with candidate selection ML scores
                          hf_cand_mc::MlScoreSig,

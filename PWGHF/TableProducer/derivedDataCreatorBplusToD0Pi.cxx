@@ -37,7 +37,9 @@ struct HfDerivedDataCreatorBplusToD0Pi {
   // Candidates
   Produces<o2::aod::HfBplusBases> rowCandidateBase;
   Produces<o2::aod::HfBplusPars> rowCandidatePar;
+  Produces<o2::aod::HfBplusParD0s> rowCandidateParD0;
   Produces<o2::aod::HfBplusParEs> rowCandidateParE;
+  Produces<o2::aod::HfBplusParED0s> rowCandidateParED0;
   // Produces<o2::aod::HfBplusSels> rowCandidateSel;
   Produces<o2::aod::HfBplusMls> rowCandidateMl;
   Produces<o2::aod::HfBplusIds> rowCandidateId;
@@ -56,7 +58,9 @@ struct HfDerivedDataCreatorBplusToD0Pi {
   // Switches for filling tables
   Configurable<bool> fillCandidateBase{"fillCandidateBase", true, "Fill candidate base properties"};
   Configurable<bool> fillCandidatePar{"fillCandidatePar", true, "Fill candidate parameters"};
+  Configurable<bool> fillCandidateParD0{"fillCandidateParD0", true, "Fill D0 candidate parameters"};
   Configurable<bool> fillCandidateParE{"fillCandidateParE", true, "Fill candidate extended parameters"};
+  Configurable<bool> fillCandidateParED0{"fillCandidateParED0", true, "Fill D0 candidate extended parameters"};
   Configurable<bool> fillCandidateSel{"fillCandidateSel", true, "Fill candidate selection flags"};
   Configurable<bool> fillCandidateMl{"fillCandidateMl", true, "Fill candidate selection ML scores"};
   Configurable<bool> fillCandidateId{"fillCandidateId", true, "Fill original indices from the candidate table"};
@@ -210,6 +214,12 @@ struct HfDerivedDataCreatorBplusToD0Pi {
         candidate.maxNormalisedDeltaIP(),
         candidate.impactParameterProduct());
     }
+    if (fillCandidateParD0) {
+      rowCandidateParD0(
+        candidate.ptProng0(),
+        candidate.impactParameter0(),
+        candidate.impactParameterNormalised0());
+    }
     if (fillCandidateParE) {
       rowCandidateParE(
         candidate.xSecondaryVertex(),
@@ -225,6 +235,14 @@ struct HfDerivedDataCreatorBplusToD0Pi {
         candidate.errorImpactParameter1(),
         hfHelper.cosThetaStarBplus(candidate),
         ct);
+    }
+    if (fillCandidateParED0) {
+      rowCandidateParED0(
+        RecoDecay::p(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()),
+        candidate.pxProng0(),
+        candidate.pyProng0(),
+        candidate.pzProng0(),
+        candidate.errorImpactParameter0());
     }
     // if (fillCandidateSel) {
     //   rowCandidateSel(
