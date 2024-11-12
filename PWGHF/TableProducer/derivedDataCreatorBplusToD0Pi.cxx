@@ -43,6 +43,7 @@ struct HfDerivedDataCreatorBplusToD0Pi {
   // Produces<o2::aod::HfBplusSels> rowCandidateSel;
   Produces<o2::aod::HfBplusMls> rowCandidateMl;
   Produces<o2::aod::HfBplusIds> rowCandidateId;
+  Produces<o2::aod::HfBplusIdD0s> rowCandidateIdD0;
   Produces<o2::aod::HfBplusMcs> rowCandidateMc;
   // Collisions
   Produces<o2::aod::HfCollBases> rowCollBase;
@@ -64,6 +65,7 @@ struct HfDerivedDataCreatorBplusToD0Pi {
   Configurable<bool> fillCandidateSel{"fillCandidateSel", true, "Fill candidate selection flags"};
   Configurable<bool> fillCandidateMl{"fillCandidateMl", true, "Fill candidate selection ML scores"};
   Configurable<bool> fillCandidateId{"fillCandidateId", true, "Fill original indices from the candidate table"};
+  Configurable<bool> fillCandidateIdD0{"fillCandidateIdD0", true, "Fill index to the derived D0 candidate table"};
   Configurable<bool> fillCandidateMc{"fillCandidateMc", true, "Fill candidate MC info"};
   Configurable<bool> fillCollBase{"fillCollBase", true, "Fill collision base properties"};
   Configurable<bool> fillCollId{"fillCollId", true, "Fill original collision indices"};
@@ -186,7 +188,6 @@ struct HfDerivedDataCreatorBplusToD0Pi {
     if (fillCandidateBase) {
       rowCandidateBase(
         rowCollBase.lastIndex(),
-        -1, // FIXME
         candidate.pt(),
         candidate.eta(),
         candidate.phi(),
@@ -256,6 +257,10 @@ struct HfDerivedDataCreatorBplusToD0Pi {
       rowCandidateId(
         candidate.collisionId(),
         candidate.prong1Id());
+    }
+    if (fillCandidateIdD0) {
+      rowCandidateIdD0(
+        -1); // FIXME
     }
     if (fillCandidateMc) {
       rowCandidateMc(

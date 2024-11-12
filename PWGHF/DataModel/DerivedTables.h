@@ -35,7 +35,7 @@ namespace o2::aod
 // Ds+ -> K- + K+ + pi+ (3P table with adapted PID columns)
 // composite species
 // B0 -> D- + pi+
-// B+ -> D0 + pi+ (drafted)
+// B+ -> D0 + pi+ (in progress)
 // D*+ -> D0 + pi+
 constexpr uint MarkerBase = 2;
 constexpr uint MarkerD0 = 3;
@@ -419,18 +419,18 @@ DECLARE_SOA_TABLE_STAGED(HfD0Mcs, "HFD0MC", //! Table with MC candidate info
                          o2::soa::Marker<MarkerD0>);
 
 // B+
+
 namespace hf_cand_base
 {
 namespace der_bplus
 {
-DECLARE_SOA_INDEX_COLUMN(HfD0Base, hfD0);
+DECLARE_SOA_INDEX_COLUMN(HfD0Base, hfD0); //! Index to the D0 candidate in the derived table
 }
 } // namespace hf_cand_base
 
 DECLARE_SOA_TABLE_STAGED(HfBplusBases, "HFBPBASE", //! Table with basic candidate properties used in the analyses
                          o2::soa::Index<>,
                          hf_cand_base::der_bplus::HfCollBaseId,
-                         hf_cand_base::der_bplus::HfD0BaseId,
                          hf_cand_base::Pt,
                          hf_cand_base::Eta,
                          hf_cand_base::Phi,
@@ -503,6 +503,9 @@ DECLARE_SOA_TABLE_STAGED(HfBplusIds, "HFBPID", //! Table with original global in
                          hf_cand::CollisionId,
                          hf_track_index::Prong1Id,
                          o2::soa::Marker<MarkerBplus>);
+
+DECLARE_SOA_TABLE_STAGED(HfBplusIdD0s, "HFBPIDD0", //! Table with an index pointing to the derived D0 table
+                         hf_cand_base::der_bplus::HfD0BaseId);
 
 DECLARE_SOA_TABLE_STAGED(HfBplusMcs, "HFBPMC", //! Table with MC candidate info
                          hf_cand_mc::FlagMcMatchRec,
