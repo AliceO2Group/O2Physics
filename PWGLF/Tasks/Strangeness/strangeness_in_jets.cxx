@@ -34,6 +34,7 @@
 #include "Framework/runDataProcessing.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "ReconstructionDataFormats/Track.h"
+#include "PWGLF/Utils/inelGt.h"
 
 using namespace std;
 using namespace o2;
@@ -42,8 +43,8 @@ using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 using std::array;
 
-using SelCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
-using SimCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::McCollisionLabels>;
+using SelCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>;
+using SimCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::McCollisionLabels, aod::PVMults>;
 using StrHadronDaughterTracks = soa::Join<aod::Tracks, aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
 using MCTracks = soa::Join<StrHadronDaughterTracks, aod::McTrackLabels>;
 
@@ -54,10 +55,15 @@ struct strangeness_in_jets {
   HistogramRegistry registryQC{"registryQC", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   // Global Parameters
+  Configurable<bool> sel8{"sel8", 0, "Apply sel8 event selection"};
+  Configurable<bool> isTriggerTVX{"isTriggerTVX", 1, "Is Trigger TVX"};
+  Configurable<bool> isNoTimeFrameBorder{"isNoTimeFrameBorder", 1, "Is No Time Frame Border"};
+  Configurable<bool> isNoITSROFrameBorder{"isNoITSROFrameBorder", 1, "Is No ITS Readout Frame Border"};
+  Configurable<bool> isINELgt0{"isINELgt0", 1, "Is INEL > 0 "};
+  Configurable<double> zVtx{"zVtx", 10.0, "Maximum zVertex"};
   Configurable<int> particle_of_interest{"particle_of_interest", 0, "0=v0, 1=cascade, 2=pions"};
   Configurable<double> min_jet_pt{"min_jet_pt", 10.0, "Minimum pt of the jet"};
   Configurable<double> Rjet{"Rjet", 0.3, "Jet resolution parameter R"};
-  Configurable<double> zVtx{"zVtx", 10.0, "Maximum zVertex"};
   Configurable<int> min_nPartInJet{"min_nPartInJet", 2, "Minimum number of particles inside jet"};
   Configurable<int> n_jets_per_event_max{"n_jets_per_event_max", 1000, "Maximum number of jets per event"};
   Configurable<bool> requireNoOverlap{"requireNoOverlap", false, "require no overlap between jets and UE cones"};
@@ -111,8 +117,9 @@ struct strangeness_in_jets {
   void init(InitContext const&)
   {
     // Event Counters
-    registryData.add("number_of_events_data", "number of events in data", HistType::kTH1D, {{20, 0, 20, "Event Cuts"}});
+    registryData.add("number_of_events_reco", "number of events in data", HistType::kTH1D, {{20, 0, 20, "Event Cuts"}});
     registryData.add("number_of_events_vsmultiplicity", "number of events in data vs multiplicity", HistType::kTH1D, {{101, 0, 101, "Multiplicity percentile"}});
+    registryData.add("number_of_events_withjet_vsmultiplicity", "number of events in events with jet vs multiplicity", HistType::kTH1D, {{101, 0, 101, "Multiplicity percentile"}});
     registryMC.add("number_of_events_mc", "number of events in mc", HistType::kTH1D, {{10, 0, 10, "Event Cuts"}});
 
     // QC Histograms
@@ -766,25 +773,55 @@ struct strangeness_in_jets {
     return false;
   }
 
+  template <typename TCollision>
+  bool AcceptEvent(TCollision const& collision)
+  {
+    if (sel8 && !collision.sel8()) {
+      return false;
+    }
+    registryData.fill(HIST("number_of_events_reco"), 1.5);
+    if (isTriggerTVX && !collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
+      return false;
+    }
+    registryData.fill(HIST("number_of_events_reco"), 2.5);
+    if (TMath::Abs(collision.posZ()) > zVtx) {
+      return false;
+    }
+    registryData.fill(HIST("number_of_events_reco"), 3.5);
+    if (isNoTimeFrameBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+      return false;
+    }
+    registryData.fill(HIST("number_of_events_reco"), 4.5);
+    if (isNoITSROFrameBorder && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+      return false;
+    }
+    registryData.fill(HIST("number_of_events_reco"), 5.5);
+    if (isINELgt0 && !collision.isInelGt0()) {
+      return false;
+    }
+    registryData.fill(HIST("number_of_events_reco"), 6.5);
+
+    return true;
+  }
+
   void processData(SelCollisions::iterator const& collision, aod::V0Datas const& fullV0s, aod::CascDataExt const& Cascades, StrHadronDaughterTracks const& tracks)
   {
 
     // Event Counter: before event selection
-    registryData.fill(HIST("number_of_events_data"), 0.5);
+    registryData.fill(HIST("number_of_events_reco"), 0.5);
 
-    // Event Selection
-    if (!collision.sel8())
+    // Apply event selection
+    if (!AcceptEvent(collision)) {
       return;
+    }
 
-    // Event Counter: after event selection sel8
-    registryData.fill(HIST("number_of_events_data"), 1.5);
+    // Event Counter: after all selections
+    registryData.fill(HIST("number_of_events_reco"), 7.5);
 
-    // Cut on z-vertex
-    if (TMath::Abs(collision.posZ()) > zVtx)
-      return;
+    // Event multiplicity
+    float multiplicity = collision.centFT0M();
 
-    // Event Counter: after z-vertex cut
-    registryData.fill(HIST("number_of_events_data"), 2.5);
+    registryData.fill(HIST("number_of_events_vsmultiplicity"), multiplicity);
 
     // List of Tracks
     std::vector<TVector3> trk;
@@ -918,7 +955,7 @@ struct strangeness_in_jets {
 
     if (n_jets_selected == 0)
       return;
-    registryData.fill(HIST("number_of_events_data"), 3.5);
+    registryData.fill(HIST("number_of_events_reco"), 8.5);
 
     // Overlaps
     int nOverlaps(0);
@@ -937,16 +974,13 @@ struct strangeness_in_jets {
 
     if (n_jets_selected > n_jets_per_event_max)
       return;
-    registryData.fill(HIST("number_of_events_data"), 4.5);
+    registryData.fill(HIST("number_of_events_reco"), 9.5);
 
     if (requireNoOverlap && nOverlaps > 0)
       return;
-    registryData.fill(HIST("number_of_events_data"), 5.5);
+    registryData.fill(HIST("number_of_events_reco"), 10.5);
 
-    // Event multiplicity
-    float multiplicity = collision.centFT0M();
-
-    registryData.fill(HIST("number_of_events_vsmultiplicity"), multiplicity);
+    registryData.fill(HIST("number_of_events_withjet_vsmultiplicity"), multiplicity);
 
     for (int i = 0; i < static_cast<int>(jet.size()); i++) {
 
@@ -1144,13 +1178,13 @@ struct strangeness_in_jets {
 
   void processK0s(SelCollisions::iterator const& collision, aod::V0Datas const& fullV0s, StrHadronDaughterTracks const&)
   {
-    registryData.fill(HIST("number_of_events_data"), 10.5);
+    registryData.fill(HIST("number_of_events_reco"), 11.5);
     if (!collision.sel8())
       return;
-    registryData.fill(HIST("number_of_events_data"), 11.5);
+    registryData.fill(HIST("number_of_events_reco"), 12.5);
     if (TMath::Abs(collision.posZ()) > zVtx)
       return;
-    registryData.fill(HIST("number_of_events_data"), 12.5);
+    registryData.fill(HIST("number_of_events_reco"), 13.5);
 
     for (auto& v0 : fullV0s) {
       const auto& ptrack = v0.posTrack_as<StrHadronDaughterTracks>();
@@ -1247,15 +1281,20 @@ struct strangeness_in_jets {
   void processMCefficiency(SimCollisions const& collisions, MCTracks const& mcTracks, aod::V0Datas const& fullV0s, aod::CascDataExt const& Cascades, const aod::McParticles& mcParticles)
   {
     for (const auto& collision : collisions) {
-      registryMC.fill(HIST("number_of_events_mc"), 0.5);
-      if (!collision.sel8())
-        continue;
 
-      registryMC.fill(HIST("number_of_events_mc"), 1.5);
-      if (TMath::Abs(collision.posZ()) > 10.0)
-        continue;
+      registryMC.fill(HIST("number_of_events_reco"), 0.5);
 
-      registryMC.fill(HIST("number_of_events_mc"), 2.5);
+      // Apply event selection
+      if (!AcceptEvent(collision)) {
+        return;
+      }
+
+      if (!collision.has_mcCollision()) {
+        continue;
+      }
+
+      registryMC.fill(HIST("number_of_events_reco"), 7.5);
+
       float multiplicity = collision.centFT0M();
 
       auto v0s_per_coll = fullV0s.sliceBy(perCollisionV0, collision.globalIndex());
@@ -1484,12 +1523,12 @@ struct strangeness_in_jets {
   {
     for (const auto& mccollision : mcCollisions) {
 
-      registryMC.fill(HIST("number_of_events_mc"), 3.5);
+      registryMC.fill(HIST("number_of_events_mc"), 0.5);
 
       // Selection on z_{vertex}
       if (TMath::Abs(mccollision.posZ()) > 10)
         continue;
-      registryMC.fill(HIST("number_of_events_mc"), 4.5);
+      registryMC.fill(HIST("number_of_events_mc"), 1.5);
 
       // MC Particles per Collision
       auto mcParticles_per_coll = mcParticles.sliceBy(perMCCollision, mccollision.globalIndex());
