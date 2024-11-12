@@ -108,8 +108,8 @@ std::vector<double> e(8, 0.);    // calibrated energies (a1, a2, a3, a4, c1, c2,
 //  Define variables needed to do the recentring steps.
 double centrality = 0;
 int runnumber = 0;
-std::vector<double> v(3,0); // vx, vy, vz
-bool isSelected = false; 
+std::vector<double> v(3, 0); // vx, vy, vz
+bool isSelected = false;
 
 } // namespace o2::analysis::qvectortask
 
@@ -233,7 +233,6 @@ struct ZDCqvectors {
     // recentered q-vectors (to check what steps are finished in the end)
     registry.add("hStep", "hStep", {HistType::kTH1D, {{10, 0., 10.}}});
     registry.add("hIteration", "hIteration", {HistType::kTH1D, {{10, 0., 10.}}});
-
   }
 
   inline void fillRegistry(int iteration, int step)
@@ -669,7 +668,7 @@ struct ZDCqvectors {
           counter++;
           return;
         }
-    LOGF(warning, "We return without saving table... -> THis is a problem"); 
+        LOGF(warning, "We return without saving table... -> THis is a problem");
   } // end of process
 };
 
