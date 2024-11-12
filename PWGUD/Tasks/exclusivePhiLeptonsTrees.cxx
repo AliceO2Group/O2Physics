@@ -8,6 +8,7 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+#include <vector>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -17,7 +18,6 @@
 #include "TLorentzVector.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "PWGUD/Core/SGSelector.h"
-#include <vector>
 using std::array;
 using namespace std;
 using namespace o2;
