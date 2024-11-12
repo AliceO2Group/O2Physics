@@ -185,7 +185,7 @@ struct UpcPhotonuclearAnalysisJMG {
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
-  PairCuts mPairCuts;
+  //PairCuts mPairCuts;
 
   struct Config {
     bool mPairCuts = false;
@@ -608,7 +608,6 @@ struct UpcPhotonuclearAnalysisJMG {
           histos.fill(HIST("Tracks/SGsideA/hTrackITSNClsTPCCls"), track.tpcNClsFindable() - track.tpcNClsFindableMinusFound(), track.itsNCls());
         }
         multiplicity = nTracksCharged;
-        //fillCorrelationUPC<CorrelationContainer::kCFStepReconstructed>(same, reconstructedTracks, reconstructedTracks, multiplicity, reconstructedCollision.posZ(), 5, 1.0f);
         histos.fill(HIST("Events/SGsideA/hNch"), nTracksCharged);
         histos.fill(HIST("Events/SGsideA/hMultiplicity"), reconstructedTracks.size());
         histos.fill(HIST("Events/SGsideA/hPtVSNch"), nTracksCharged, (sumPt / nTracksCharged));
