@@ -136,7 +136,8 @@ struct HfTaskDirectedFlowCharmHadrons {
   /// \param candidates are the selected candidates
   template <DecayChannel channel, typename T1, typename Trk>
   void runFlowAnalysis(CollsWithQvecs::iterator const& collision,
-                       T1 const& candidates, Trk const& /*tracks*/)
+                       T1 const& candidates,
+                       Trk const& /*tracks*/)
   {
     double cent = getCentrality(collision);
     if (cent < centralityMin || cent > centralityMax) {
@@ -205,7 +206,8 @@ struct HfTaskDirectedFlowCharmHadrons {
   }
   // Dplus with ML
   void processDplusMl(CollsWithQvecs::iterator const& collision,
-                      CandDplusDataWMl const& candidatesDplus, TracksWithExtra const& tracks)
+                      CandDplusDataWMl const& candidatesDplus,
+                      TracksWithExtra const& tracks)
   {
     runFlowAnalysis<DecayChannel::DplusToPiKPi>(collision, candidatesDplus, tracks);
   }
@@ -213,7 +215,8 @@ struct HfTaskDirectedFlowCharmHadrons {
 
   // Dplus with rectangular cuts
   void processDplusStd(CollsWithQvecs::iterator const& collision,
-                       CandDplusData const& candidatesDplus, TracksWithExtra const& tracks)
+                       CandDplusData const& candidatesDplus,
+                       TracksWithExtra const& tracks)
   {
     runFlowAnalysis<DecayChannel::DplusToPiKPi>(collision, candidatesDplus, tracks);
   }
