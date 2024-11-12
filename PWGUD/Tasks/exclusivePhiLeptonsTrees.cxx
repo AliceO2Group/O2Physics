@@ -17,6 +17,7 @@
 #include "TLorentzVector.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "PWGUD/Core/SGSelector.h"
+#include <vector>
 using std::array;
 using namespace std;
 using namespace o2;
@@ -45,17 +46,7 @@ DECLARE_SOA_COLUMN(NCOUNTERPV, nCounterPV, int);
 DECLARE_SOA_COLUMN(NELECTRONSTOF, nElectronsTOF, int);
 } // namespace tree
 
-DECLARE_SOA_TABLE(TREE, "AOD", "Tree",
-                  tree::PX1,
-                  tree::PY1,
-                  tree::PZ1,
-                  tree::PE1,
-                  tree::PX2,
-                  tree::PY2,
-                  tree::PZ2,
-                  tree::PE2,
-                  tree::NCOUNTERPV,
-                  tree::NELECTRONSTOF);
+DECLARE_SOA_TABLE(TREE, "AOD", "Tree", tree::PX1, tree::PY1, tree::PZ1, tree::PE1, tree::PX2, tree::PY2, tree::PZ2, tree::PE2, tree::NCOUNTERPV, tree::NELECTRONSTOF);
 } // namespace o2::aod
 
 struct ExclusivePhiLeptonsTrees {
