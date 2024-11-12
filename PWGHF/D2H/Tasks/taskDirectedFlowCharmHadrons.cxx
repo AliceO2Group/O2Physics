@@ -9,33 +9,15 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file taskv1CharmHadrons.cxx
-/// \brief Analysis task for charm hadron flow
+/// \file taskDirectedFlowCharmHadrons.cxx
+/// \brief Analysis task for charm hadron directed flow
 ///
 /// \author Prottay Das, prottay.das@cern.ch
 
 #include <string>
 #include <vector>
-#include <TH1F.h>
-#include <TDirectory.h>
-#include <THn.h>
-#include <TLorentzVector.h>
 #include <TMath.h>
-#include <TObjArray.h>
-#include <TFile.h>
-#include <TH2F.h>
-#include <TLorentzVector.h>
-#include <TPDGCode.h>
-#include <TDatabasePDG.h>
-#include <cmath>
-#include <array>
 #include <cstdlib>
-
-#include "TRandom3.h"
-#include "Math/Vector3D.h"
-#include "Math/Vector4D.h"
-#include "Math/GenVector/Boost.h"
-#include "TF1.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/AnalysisTask.h"
@@ -67,7 +49,7 @@ struct HfTaskDirectedFlowCharmHadrons {
   Configurable<float> centralityMax{"centralityMax", 100., "Maximum centrality accepted in SP computation"};
   Configurable<bool> storeMl{"storeMl", false, "Flag to store ML scores"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::vector<int>> classMl{"classMl", {0, 2}, "Indexes of BDT scores to be stored. Two indexes max."};
+  Configurable<std::vector<int>> classMl{"classMl", {0, 2}, "Indices of BDT scores to be stored. Two indexes max."};
 
   ConfigurableAxis thnConfigAxisInvMass{"thnConfigAxisInvMass", {100, 1.78, 2.05}, ""};
   ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {VARIABLE_WIDTH, 0.2, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.5, 8.0, 10.0}, ""};
@@ -126,11 +108,11 @@ struct HfTaskDirectedFlowCharmHadrons {
   /// Fill THnSparse
   /// \param mass is the invariant mass of the candidate
   /// \param pt is the transverse momentum of the candidate
+  /// \param eta is the pseudorapidity of the candidate
   /// \param cent is the centrality of the collision
-  /// \param cosNPhi is the cosine of the n*phi angle
-  /// \param cosDeltaPhi is the cosine of the n*(phi - evtPl) angle
-  /// \param sp is the scalar product
+  /// \params uiQi{p/t} are the correlation of Q vectors of the particle and ZDC
   /// \param outputMl are the ML scores
+  /// \param sign is the sign of the candidate D+ or D-
   void fillThn(double& mass,
                double& pt,
                double& eta,
@@ -181,37 +163,6 @@ struct HfTaskDirectedFlowCharmHadrons {
     return cent;
   }
 
-  /// Check if the collision is selected
-  /// \param collision is the collision with the Q vector information
-  /// \param bc is the bunch crossing with timestamp information
-  /// \return true if the collision is selected, false otherwise
-  template <o2::hf_centrality::CentralityEstimator centEstimator>
-  bool isCollSelected(CollsWithQvecs::iterator const& collision,
-                      aod::BCsWithTimestamps const&)
-  {
-    double centrality{-1.f};
-    const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, centEstimator, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
-
-    /// monitor the satisfied event selections
-    hfEvSel.fillHistograms(collision, rejectionMask, centrality);
-    return rejectionMask == 0;
-  }
-
-  /// Get the Q vector
-  /// \param collision is the collision with the Q vector information
-  std::vector<double> getQvec(CollsWithQvecs::iterator const& collision)
-  {
-    double qxAQVec = 0.0;
-    double qyAQVec = 0.0;
-    double qxCQVec = 0.0;
-    double qyCQVec = 0.0;
-    qxAQVec = collision.qxZDCA();
-    qyAQVec = collision.qyZDCA();
-    qxCQVec = collision.qxZDCC();
-    qyCQVec = collision.qyZDCC();
-    return {qxAQVec, qyAQVec, qxCQVec, qyCQVec};
-  }
-
   /// Compute the scalar product
   /// \param collision is the collision with the Q vector information and event plane
   /// \param candidates are the selected candidates
@@ -228,23 +179,17 @@ struct HfTaskDirectedFlowCharmHadrons {
       return;
     }
 
-    std::vector<double> qVecs = getQvec(collision);
-    double qxAQVec = qVecs[0];
-    double qyAQVec = qVecs[1];
-    double qxCQVec = qVecs[2];
-    double qyCQVec = qVecs[3];
-
-    auto qxZDCA = qxAQVec;
-    auto qyZDCA = qyAQVec;
-    auto qxZDCC = qxCQVec;
-    auto qyZDCC = qyCQVec;
+    auto qxZDCA = collision.qxZDCA();
+    auto qyZDCA = collision.qyZDCA();
+    auto qxZDCC = collision.qxZDCC();
+    auto qyZDCC = collision.qyZDCC();
 
     auto QxtQxp = qxZDCC * qxZDCA;
     auto QytQyp = qyZDCC * qyZDCA;
     auto QxpQyt = qxZDCA * qyZDCC;
     auto QxtQyp = qxZDCC * qyZDCA;
 
-    // denominators for SP calculation
+    // correlations in the denominators for SP calculation
     registry.fill(HIST("hpQxtQxpvscent"), cent, QxtQxp);
     registry.fill(HIST("hpQytQypvscent"), cent, QytQyp);
     registry.fill(HIST("hpQxpQytvscent"), cent, QxpQyt);
@@ -262,7 +207,7 @@ struct HfTaskDirectedFlowCharmHadrons {
       }
 
       auto trackprong0 = candidate.template prong0_as<Trk>();
-      double sign = trackprong0.sign();
+      double sign = trackprong0.sign(); // to differentiate between D+ and D-
 
       double ptCand = candidate.pt();
       double etaCand = candidate.eta();
@@ -270,10 +215,10 @@ struct HfTaskDirectedFlowCharmHadrons {
       double cosNPhi = std::cos(phiCand);
       double sinNPhi = std::sin(phiCand);
 
-      auto ux = cosNPhi;
-      auto uy = sinNPhi;
+      auto ux = cosNPhi; // real part of candidate q vector
+      auto uy = sinNPhi; // imaginary part of candidate q vector
       auto uxQxp = ux * qxZDCA;
-      auto uyQyp = uy * qyZDCA;
+      auto uyQyp = uy * qyZDCA; // correlations of particle and ZDC q vectors
       auto uxQxt = ux * qxZDCC;
       auto uyQyt = uy * qyZDCC;
 
@@ -289,12 +234,12 @@ struct HfTaskDirectedFlowCharmHadrons {
   PROCESS_SWITCH(HfTaskDirectedFlowCharmHadrons, processDplusMl, "Process Dplus candidates with ML", false);
 
   // Dplus with rectangular cuts
-  void processDplus(CollsWithQvecs::iterator const& collision,
-                    CandDplusData const& candidatesDplus, TracksWithExtra const& tracks)
+  void processDplusStd(CollsWithQvecs::iterator const& collision,
+                       CandDplusData const& candidatesDplus, TracksWithExtra const& tracks)
   {
     runFlowAnalysis<DecayChannel::DplusToPiKPi>(collision, candidatesDplus, tracks);
   }
-  PROCESS_SWITCH(HfTaskDirectedFlowCharmHadrons, processDplus, "Process Dplus candidates", true);
+  PROCESS_SWITCH(HfTaskDirectedFlowCharmHadrons, processDplusStd, "Process Dplus candidates", true);
 
 }; // End struct HfTaskDirectedFlowCharmHadrons
 
