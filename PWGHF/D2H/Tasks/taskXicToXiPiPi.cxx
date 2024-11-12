@@ -93,6 +93,44 @@ struct HfTaskXicToXiPiPi {
     if (doprocessWithDCAFitter && doprocessMcWithKFParticle) {
       LOGF(fatal, "Cannot enable doprocessWithDCAFitter and doprocessMcWithKFParticle at the same time. Please choose one.");
     }
+    // +++++++++ Jaeyoon Nov 12
+    if (doprocessWithKFParticleAndML && doprocessWithDCAFitterAndML){
+      LOGF(fatal, "Cannot enable doprocessWithKFParticleAndML and doprocessWithDCAFitterAndML at the same time. Please choose one.");
+    }
+    if(doprocessMcWithKFParticleAndML && doprocessMcWithDCAFitterAndML){
+      LOGF(fatal, "Cannot enable doprocessMcWithKFParticleAndML and doprocessMcWithDCAFitterAndML at the same time. Please choose one.");
+    }
+    if(doprocessWithKFParticleAndML && doprocessMcWithDCAFitterAndML){
+      LOGF(fatal, "Cannot enable doprocessWithKFParticleAndML and doprocessMcWithDCAFitterAndML at the same time. Please choose one.");
+    }
+    if(doprocessWithDCAFitterAndML && doprocessMcWithKFParticleAndML){
+      LOGF(fatal, "Cannot enable doprocessWithDCAFitterAndML and doprocessMcWithKFParticleAndML at the same time. Please choose one.");
+    }
+    if(doprocessWithKFParticle && doprocessWithDCAFitterAndML){
+      LOGF(fatal, "Cannot enable doprocessWithKFParticle and doprocessWithDCAFitterAndML at the same time. Please choose one.");
+    }
+    if(doprocessWithKFParticle && doprocessMcWithDCAFitterAndML){
+      LOGF(fatal, "Cannot enable doprocessWithKFParticle and doprocessMcWithDCAFitterAndML at the same time. Please choose one.");
+    }
+    if(doprocessWithDCAFitterAndML && doprocessMcWithKFParticle){
+      LOGF(fatal, "Cannot enable doprocessWithDCAFitterAndML and doprocessMcWithKFParticle at the same time. Please choose one.");
+    }
+    if(doprocessMcWithKFParticle && doprocessMcWithDCAFitterAndML){
+      LOGF(fatal, "Cannot enable doprocessMcWithKFParticle and doprocessMcWithDCAFitterAndML at the same time. Please choose one.");
+    }
+    if(doprocessWithKFParticleAndML && doprocessWithDCAFitter){
+      LOGF(fatal, "Cannot enable doprocessWithKFParticleAndML and doprocessWithDCAFitter at the same time. Please choose one.");
+    }
+    if(doprocessWithKFParticleAndML && doprocessMcWithDCAFitter){
+      LOGF(fatal, "Cannot enable doprocessWithKFParticleAndML and doprocessMcWithDCAFitter at the same time. Please choose one.");
+    }
+    if(doprocessWithDCAFitter && doprocessMcWithKFParticleAndML){
+      LOGF(fatal, "Cannot enable doprocessWithDCAFitter and doprocessMcWithKFParticleAndML at the same time. Please choose one.");
+    }
+    if(doprocessMcWithKFParticleAndML && doprocessMcWithDCAFitter){
+      LOGF(fatal, "Cannot enable doprocessMcWithKFParticleAndML and doprocessMcWithDCAFitter at the same time. Please choose one.");
+    }
+    // +++++++++ Jaeyoon Nov 12
 
     static const AxisSpec axisMassXic = {300, 1.8, 3.0, "inv. mass (GeV/#it{c}^{2})"};
     static const AxisSpec axisMassXiRes = {300, 1.0, 2.0, "inv. mass (GeV/#it{c}^{2})"};
