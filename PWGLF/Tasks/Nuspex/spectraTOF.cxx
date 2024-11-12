@@ -1334,30 +1334,30 @@ struct tofSpectra {
       if (!isTrackSelected<true>(track, collision)) {
         continue;
       }
-if (includeCentralityToTracks) {
+      if (includeCentralityToTracks) {
 
-if (track.sign() > 0) {
-if (track.hasITS() && track.hasTPC() && track.hasTOF()) {
+        if (track.sign() > 0) {
+          if (track.hasITS() && track.hasTPC() && track.hasTOF()) {
             histos.fill(HIST("Data/cent/pos/pt/its_tpc_tof"), track.pt(), collision.centFT0C(), occupancy);
-            }
-if (track.hasITS() && track.hasTOF()) {
-histos.fill(HIST("Data/cent/pos/pt/its_tof"), track.pt(), collision.centFT0C(), occupancy);
-            }
-            if (track.hasITS() && track.hasTPC()) {
-            histos.fill(HIST("Data/cent/pos/pt/its_tpc"), track.pt(), collision.centFT0C(), occupancy);
-            }
-            } else {
-            if (track.hasITS() && track.hasTPC() && track.hasTOF()) {
-            histos.fill(HIST("Data/cent/neg/pt/its_tpc_tof"), track.pt(), collision.centFT0C(), occupancy);
-            }
-            if (track.hasITS() && track.hasTPC()) {
-            histos.fill(HIST("Data/cent/neg/pt/its_tpc"), track.pt(), collision.centFT0C(), occupancy);
-            }
-            if (track.hasITS() && track.hasTOF()) {
-             histos.fill(HIST("Data/cent/neg/pt/its_tof"), track.pt(), collision.centFT0C(), occupancy);
-             }
-           }
           }
+          if (track.hasITS() && track.hasTOF()) {
+            histos.fill(HIST("Data/cent/pos/pt/its_tof"), track.pt(), collision.centFT0C(), occupancy);
+          }
+          if (track.hasITS() && track.hasTPC()) {
+            histos.fill(HIST("Data/cent/pos/pt/its_tpc"), track.pt(), collision.centFT0C(), occupancy);
+          }
+        } else {
+          if (track.hasITS() && track.hasTPC() && track.hasTOF()) {
+            histos.fill(HIST("Data/cent/neg/pt/its_tpc_tof"), track.pt(), collision.centFT0C(), occupancy);
+          }
+          if (track.hasITS() && track.hasTPC()) {
+            histos.fill(HIST("Data/cent/neg/pt/its_tpc"), track.pt(), collision.centFT0C(), occupancy);
+          }
+          if (track.hasITS() && track.hasTOF()) {
+            histos.fill(HIST("Data/cent/neg/pt/its_tof"), track.pt(), collision.centFT0C(), occupancy);
+          }
+        }
+      }
       const auto& nsigmaTPCPi = o2::aod::pidutils::tpcNSigma<2>(track);
       const auto& nsigmaTPCKa = o2::aod::pidutils::tpcNSigma<3>(track);
       const auto& nsigmaTPCPr = o2::aod::pidutils::tpcNSigma<4>(track);
