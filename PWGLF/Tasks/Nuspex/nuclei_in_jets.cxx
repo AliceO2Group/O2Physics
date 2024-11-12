@@ -112,6 +112,7 @@ struct nuclei_in_jets {
   Configurable<double> min_nsigmaTOF{"min_nsigmaTOF", -3.0, "Minimum nsigma TOF"};
   Configurable<double> max_nsigmaTOF{"max_nsigmaTOF", +3.5, "Maximum nsigma TOF"};
   Configurable<double> max_pt_for_nsigmaTPC{"max_pt_for_nsigmaTPC", 2.0, "Maximum pt for TPC analysis"};
+  Configurable<double> min_pt_for_nsigmaTOF{"min_pt_for_nsigmaTOF", 0.5, "Minimum pt for TOF analysis"};
   Configurable<bool> require_PV_contributor{"require_PV_contributor", true, "require that the track is a PV contributor"};
   Configurable<bool> setDCAselectionPtDep{"setDCAselectionPtDep", true, "require pt dependent selection"};
   Configurable<bool> applyReweighting{"applyReweighting", true, "apply reweighting"};
@@ -673,13 +674,13 @@ struct nuclei_in_jets {
             // Antiproton
             if (pt < max_pt_for_nsigmaTPC)
               registryData.fill(HIST("antiproton_jet_tpc"), pt, nsigmaTPCPr);
-            if (pt >= 0.5 && nsigmaTPCPr > min_nsigmaTPC && nsigmaTPCPr < max_nsigmaTPC && track.hasTOF())
+            if (pt >= min_pt_for_nsigmaTOF && nsigmaTPCPr > min_nsigmaTPC && nsigmaTPCPr < max_nsigmaTPC && track.hasTOF())
               registryData.fill(HIST("antiproton_jet_tof"), pt, nsigmaTOFPr);
 
             // Antideuteron
             if (pt < max_pt_for_nsigmaTPC)
               registryData.fill(HIST("antideuteron_jet_tpc"), pt, nsigmaTPCDe);
-            if (pt >= 0.5 && nsigmaTPCDe > min_nsigmaTPC && nsigmaTPCDe < max_nsigmaTPC && track.hasTOF())
+            if (pt >= min_pt_for_nsigmaTOF && nsigmaTPCDe > min_nsigmaTPC && nsigmaTPCDe < max_nsigmaTPC && track.hasTOF())
               registryData.fill(HIST("antideuteron_jet_tof"), pt, nsigmaTOFDe);
 
             // Antihelium3
@@ -688,7 +689,7 @@ struct nuclei_in_jets {
 
           if (track.sign() > 0) { // only matter
             // Deuteron
-            if (pt >= 0.5 && nsigmaTPCDe > min_nsigmaTPC && nsigmaTPCDe < max_nsigmaTPC && track.hasTOF())
+            if (pt >= min_pt_for_nsigmaTOF && nsigmaTPCDe > min_nsigmaTPC && nsigmaTPCDe < max_nsigmaTPC && track.hasTOF())
               registryData.fill(HIST("deuteron_jet_tof"), pt, nsigmaTOFDe);
 
             // Helium3
@@ -703,13 +704,13 @@ struct nuclei_in_jets {
             // Antiproton
             if (pt < max_pt_for_nsigmaTPC)
               registryData.fill(HIST("antiproton_ue_tpc"), pt, nsigmaTPCPr);
-            if (pt >= 0.5 && nsigmaTPCPr > min_nsigmaTPC && nsigmaTPCPr < max_nsigmaTPC && track.hasTOF())
+            if (pt >= min_pt_for_nsigmaTOF && nsigmaTPCPr > min_nsigmaTPC && nsigmaTPCPr < max_nsigmaTPC && track.hasTOF())
               registryData.fill(HIST("antiproton_ue_tof"), pt, nsigmaTOFPr);
 
             // Antideuteron
             if (pt < max_pt_for_nsigmaTPC)
               registryData.fill(HIST("antideuteron_ue_tpc"), pt, nsigmaTPCDe);
-            if (pt >= 0.5 && nsigmaTPCDe > min_nsigmaTPC && nsigmaTPCDe < max_nsigmaTPC && track.hasTOF())
+            if (pt >= min_pt_for_nsigmaTOF && nsigmaTPCDe > min_nsigmaTPC && nsigmaTPCDe < max_nsigmaTPC && track.hasTOF())
               registryData.fill(HIST("antideuteron_ue_tof"), pt, nsigmaTOFDe);
 
             // Antihelium3
@@ -718,7 +719,7 @@ struct nuclei_in_jets {
 
           if (track.sign() > 0) { // only matter
             // Deuteron
-            if (pt >= 0.5 && nsigmaTPCDe > min_nsigmaTPC && nsigmaTPCDe < max_nsigmaTPC && track.hasTOF())
+            if (pt >= min_pt_for_nsigmaTOF && nsigmaTPCDe > min_nsigmaTPC && nsigmaTPCDe < max_nsigmaTPC && track.hasTOF())
               registryData.fill(HIST("deuteron_ue_tof"), pt, nsigmaTOFDe);
 
             // Helium3
@@ -875,7 +876,7 @@ struct nuclei_in_jets {
             registryMC.fill(HIST("antiproton_jet_rec_tpc"), pt, w_antip_jet);
             registryMC.fill(HIST("antiproton_ue_rec_tpc"), pt, w_antip_ue);
           }
-          if (pt >= 0.5 && nsigmaTPCPr > min_nsigmaTPC && nsigmaTPCPr < max_nsigmaTPC && track.hasTOF() && nsigmaTOFPr > min_nsigmaTOF && nsigmaTOFPr < max_nsigmaTOF) {
+          if (pt >= min_pt_for_nsigmaTOF && nsigmaTPCPr > min_nsigmaTPC && nsigmaTPCPr < max_nsigmaTPC && track.hasTOF() && nsigmaTOFPr > min_nsigmaTOF && nsigmaTOFPr < max_nsigmaTOF) {
             registryMC.fill(HIST("antiproton_jet_rec_tof"), pt, w_antip_jet);
             registryMC.fill(HIST("antiproton_ue_rec_tof"), pt, w_antip_ue);
           }
@@ -887,7 +888,7 @@ struct nuclei_in_jets {
             registryMC.fill(HIST("antideuteron_jet_rec_tpc"), pt);
             registryMC.fill(HIST("antideuteron_ue_rec_tpc"), pt);
           }
-          if (pt >= 0.5 && nsigmaTPCDe > min_nsigmaTPC && nsigmaTPCDe < max_nsigmaTPC && track.hasTOF() && nsigmaTOFDe > min_nsigmaTOF && nsigmaTOFDe < max_nsigmaTOF) {
+          if (pt >= min_pt_for_nsigmaTOF && nsigmaTPCDe > min_nsigmaTPC && nsigmaTPCDe < max_nsigmaTPC && track.hasTOF() && nsigmaTOFDe > min_nsigmaTOF && nsigmaTOFDe < max_nsigmaTOF) {
             registryMC.fill(HIST("antideuteron_jet_rec_tof"), pt);
             registryMC.fill(HIST("antideuteron_ue_rec_tof"), pt);
           }
