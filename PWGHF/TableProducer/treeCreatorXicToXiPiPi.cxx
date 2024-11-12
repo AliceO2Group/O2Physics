@@ -788,7 +788,7 @@ struct HfTreeCreatorXicToXiPiPi {
   }
   PROCESS_SWITCH(HfTreeCreatorXicToXiPiPi, processMcKf, "Process MC with KF Particle reconstruction", false);
 
-  void processResiduals(SelectedCandidatesMc const& candidates,
+  void processResiduals(SelectedCandidatesMc const&,
                         aod::TracksWMc const& tracks,
                         aod::McParticles const& particles)
   {
