@@ -682,9 +682,9 @@ DECLARE_SOA_TABLE_STAGED(V0CoresBase, "V0CORE", //! core information about decay
 DECLARE_SOA_EXTENDED_TABLE_USER(V0Cores, V0CoresBase, "V0COREEXT",                                                    //!
                                 v0data::Px, v0data::Py, v0data::Pz, v0data::Pt, v0data::P, v0data::Phi, v0data::Eta); // the table name has here to be the one with EXT which is not nice and under study
 
-// extended table with expression columns that can be used as arguments of dynamic columns
-DECLARE_SOA_EXTENDED_TABLE_USER(StoredV0Cores, StoredV0CoresBase, "V0COREEXT",                                                            //!
-                                v0data::Px, v0data::Py, v0data::Pz, v0data::Pt, v0data::P, v0data::Phi, v0data::Eta, o2::soa::Marker<2>); // the table name has here to be the one with EXT which is not nice and under study
+// // extended table with expression columns that can be used as arguments of dynamic columns
+// DECLARE_SOA_EXTENDED_TABLE_USER(StoredV0Cores, StoredV0CoresBase, "V0COREEXT",                                                            //!
+//                                 v0data::Px, v0data::Py, v0data::Pz, v0data::Pt, v0data::P, v0data::Phi, v0data::Eta, o2::soa::Marker<2>); // the table name has here to be the one with EXT which is not nice and under study
 
 DECLARE_SOA_TABLE(V0TraPosAtDCAs, "AOD", "V0TRAPOSATDCAs", //! positions of tracks at their DCA for debug
                   v0data::XPosAtDCA, v0data::YPosAtDCA, v0data::ZPosAtDCA,
@@ -760,60 +760,60 @@ DECLARE_SOA_EXTENDED_TABLE_USER(V0fCCores, StoredV0fCCores, "V0FCCOREEXT",      
 DECLARE_SOA_TABLE_FULL(V0fCCovs, "V0fCCovs", "AOD", "V0FCCOVS", //! V0 covariance matrices
                        v0data::PositionCovMat, v0data::MomentumCovMat, o2::soa::Marker<2>);
 
-DECLARE_SOA_TABLE(V0MCCores_000, "AOD", "V0MCCORE", //! MC properties of the V0 for posterior analysis
-                  v0data::PDGCode, v0data::PDGCodeMother,
-                  v0data::PDGCodePositive, v0data::PDGCodeNegative,
-                  v0data::IsPhysicalPrimary, v0data::XMC, v0data::YMC, v0data::ZMC,
-                  v0data::PxPosMC, v0data::PyPosMC, v0data::PzPosMC,
-                  v0data::PxNegMC, v0data::PyNegMC, v0data::PzNegMC);
+DECLARE_SOA_TABLE_STAGED(V0MCCores_000, "V0MCCORE", //! MC properties of the V0 for posterior analysis
+                         v0data::PDGCode, v0data::PDGCodeMother,
+                         v0data::PDGCodePositive, v0data::PDGCodeNegative,
+                         v0data::IsPhysicalPrimary, v0data::XMC, v0data::YMC, v0data::ZMC,
+                         v0data::PxPosMC, v0data::PyPosMC, v0data::PzPosMC,
+                         v0data::PxNegMC, v0data::PyNegMC, v0data::PzNegMC);
 
-DECLARE_SOA_TABLE_VERSIONED(V0MCCores_001, "AOD", "V0MCCORE", 1, //! debug information
-                            v0data::ParticleIdMC,                //! MC properties of the V0 for posterior analysis
-                            v0data::PDGCode, v0data::PDGCodeMother,
-                            v0data::PDGCodePositive, v0data::PDGCodeNegative,
-                            v0data::IsPhysicalPrimary, v0data::XMC, v0data::YMC, v0data::ZMC,
-                            v0data::PxPosMC, v0data::PyPosMC, v0data::PzPosMC,
-                            v0data::PxNegMC, v0data::PyNegMC, v0data::PzNegMC);
+DECLARE_SOA_TABLE_STAGED_VERSIONED(V0MCCores_001, "V0MCCORE", 1, //! debug information
+                                   v0data::ParticleIdMC,         //! MC properties of the V0 for posterior analysis
+                                   v0data::PDGCode, v0data::PDGCodeMother,
+                                   v0data::PDGCodePositive, v0data::PDGCodeNegative,
+                                   v0data::IsPhysicalPrimary, v0data::XMC, v0data::YMC, v0data::ZMC,
+                                   v0data::PxPosMC, v0data::PyPosMC, v0data::PzPosMC,
+                                   v0data::PxNegMC, v0data::PyNegMC, v0data::PzNegMC);
 
-DECLARE_SOA_TABLE_VERSIONED(V0MCCores_002, "AOD", "V0MCCORE", 2, //! debug information
-                            v0data::ParticleIdMC,                //! MC properties of the V0 for posterior analysis
-                            v0data::PDGCode, v0data::PDGCodeMother,
-                            v0data::PDGCodePositive, v0data::PDGCodeNegative,
-                            v0data::IsPhysicalPrimary, v0data::XMC, v0data::YMC, v0data::ZMC,
-                            v0data::PxPosMC, v0data::PyPosMC, v0data::PzPosMC,
-                            v0data::PxNegMC, v0data::PyNegMC, v0data::PzNegMC,
-                            v0data::PxMC, v0data::PyMC, v0data::PzMC,
-                            v0data::RapidityMC<v0data::PxMC, v0data::PyMC, v0data::PzMC>,
-                            v0data::NegativePtMC<v0data::PxNegMC, v0data::PyNegMC>,
-                            v0data::PositivePtMC<v0data::PxPosMC, v0data::PyPosMC>,
-                            v0data::PtMC<v0data::PxMC, v0data::PyMC>);
+DECLARE_SOA_TABLE_STAGED_VERSIONED(V0MCCores_002, "V0MCCORE", 2, //! debug information
+                                   v0data::ParticleIdMC,         //! MC properties of the V0 for posterior analysis
+                                   v0data::PDGCode, v0data::PDGCodeMother,
+                                   v0data::PDGCodePositive, v0data::PDGCodeNegative,
+                                   v0data::IsPhysicalPrimary, v0data::XMC, v0data::YMC, v0data::ZMC,
+                                   v0data::PxPosMC, v0data::PyPosMC, v0data::PzPosMC,
+                                   v0data::PxNegMC, v0data::PyNegMC, v0data::PzNegMC,
+                                   v0data::PxMC, v0data::PyMC, v0data::PzMC,
+                                   v0data::RapidityMC<v0data::PxMC, v0data::PyMC, v0data::PzMC>,
+                                   v0data::NegativePtMC<v0data::PxNegMC, v0data::PyNegMC>,
+                                   v0data::PositivePtMC<v0data::PxPosMC, v0data::PyPosMC>,
+                                   v0data::PtMC<v0data::PxMC, v0data::PyMC>);
 
-DECLARE_SOA_TABLE(StoredV0MCCores_000, "AOD", "V0MCCORE", //! MC properties of the V0 for posterior analysis
-                  v0data::PDGCode, v0data::PDGCodeMother,
-                  v0data::PDGCodePositive, v0data::PDGCodeNegative,
-                  v0data::IsPhysicalPrimary, v0data::XMC, v0data::YMC, v0data::ZMC,
-                  v0data::PxPosMC, v0data::PyPosMC, v0data::PzPosMC,
-                  v0data::PxNegMC, v0data::PyNegMC, v0data::PzNegMC,
-                  o2::soa::Marker<1>);
+// DECLARE_SOA_TABLE(StoredV0MCCores_000, "AOD", "V0MCCORE", //! MC properties of the V0 for posterior analysis
+//                   v0data::PDGCode, v0data::PDGCodeMother,
+//                   v0data::PDGCodePositive, v0data::PDGCodeNegative,
+//                   v0data::IsPhysicalPrimary, v0data::XMC, v0data::YMC, v0data::ZMC,
+//                   v0data::PxPosMC, v0data::PyPosMC, v0data::PzPosMC,
+//                   v0data::PxNegMC, v0data::PyNegMC, v0data::PzNegMC,
+//                   o2::soa::Marker<1>);
 
-DECLARE_SOA_TABLE_VERSIONED(StoredV0MCCores_001, "AOD", "V0MCCORE", 1, //! debug information
-                            v0data::ParticleIdMC,                      //! MC properties of the V0 for posterior analysis
-                            v0data::PDGCode, v0data::PDGCodeMother,
-                            v0data::PDGCodePositive, v0data::PDGCodeNegative,
-                            v0data::IsPhysicalPrimary, v0data::XMC, v0data::YMC, v0data::ZMC,
-                            v0data::PxPosMC, v0data::PyPosMC, v0data::PzPosMC,
-                            v0data::PxNegMC, v0data::PyNegMC, v0data::PzNegMC,
-                            o2::soa::Marker<1>);
+// DECLARE_SOA_TABLE_VERSIONED(StoredV0MCCores_001, "AOD", "V0MCCORE", 1, //! debug information
+//                             v0data::ParticleIdMC,                      //! MC properties of the V0 for posterior analysis
+//                             v0data::PDGCode, v0data::PDGCodeMother,
+//                             v0data::PDGCodePositive, v0data::PDGCodeNegative,
+//                             v0data::IsPhysicalPrimary, v0data::XMC, v0data::YMC, v0data::ZMC,
+//                             v0data::PxPosMC, v0data::PyPosMC, v0data::PzPosMC,
+//                             v0data::PxNegMC, v0data::PyNegMC, v0data::PzNegMC,
+//                             o2::soa::Marker<1>);
 
-DECLARE_SOA_TABLE_VERSIONED(StoredV0MCCores_002, "AOD", "V0MCCORE", 2, //! debug information
-                            v0data::ParticleIdMC,                      //! MC properties of the V0 for posterior analysis
-                            v0data::PDGCode, v0data::PDGCodeMother,
-                            v0data::PDGCodePositive, v0data::PDGCodeNegative,
-                            v0data::IsPhysicalPrimary, v0data::XMC, v0data::YMC, v0data::ZMC,
-                            v0data::PxPosMC, v0data::PyPosMC, v0data::PzPosMC,
-                            v0data::PxNegMC, v0data::PyNegMC, v0data::PzNegMC,
-                            v0data::PxMC, v0data::PyMC, v0data::PzMC,
-                            o2::soa::Marker<1>);
+// DECLARE_SOA_TABLE_VERSIONED(StoredV0MCCores_002, "AOD", "V0MCCORE", 2, //! debug information
+//                             v0data::ParticleIdMC,                      //! MC properties of the V0 for posterior analysis
+//                             v0data::PDGCode, v0data::PDGCodeMother,
+//                             v0data::PDGCodePositive, v0data::PDGCodeNegative,
+//                             v0data::IsPhysicalPrimary, v0data::XMC, v0data::YMC, v0data::ZMC,
+//                             v0data::PxPosMC, v0data::PyPosMC, v0data::PzPosMC,
+//                             v0data::PxNegMC, v0data::PyNegMC, v0data::PzNegMC,
+//                             v0data::PxMC, v0data::PyMC, v0data::PzMC,
+//                             o2::soa::Marker<1>);
 
 DECLARE_SOA_TABLE(V0MCCollRefs, "AOD", "V0MCCOLLREF", //! refers MC candidate back to proper MC Collision
                   o2::soa::Index<>, v0data::StraMCCollisionId, o2::soa::Marker<2>);
