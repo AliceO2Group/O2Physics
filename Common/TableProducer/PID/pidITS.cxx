@@ -41,12 +41,22 @@ using namespace o2::track;
 /// Task to produce the TOF signal from the trackTime information
 struct itsPid {
 
-  void init(o2::framework::InitContext& initContext)
-  {
-  }
+  // void init(o2::framework::InitContext& initContext)
+  // {
+  // }
 
   /// Dummy process function for BCs, needed in case both Run2 and Run3 process functions are disabled
-  void process(aod::BCs const&) {}
+  void process(aod::BCs const&, o2::soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidITSEl> const& tracks)
+  {
+
+    int nels = 0;
+    for (const auto& track : tracks) {
+      if (track.itsNSigmaEl(1, 1, 2)) {
+        nels++;
+      }
+    }
+    LOG(info) << nels;
+  }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
