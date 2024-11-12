@@ -58,7 +58,6 @@ DECLARE_SOA_TABLE(TREE, "AOD", "Tree",
                   tree::NELECTRONSTOF);
 } // namespace o2::aod
 
-
 struct ExclusivePhiLeptonsTrees {
   Produces<aod::TREE> tree;
   Configurable<float> gap_Side{"gap", 2, "gap selection"};
