@@ -39,7 +39,6 @@
 #include "MathUtils/Utils.h"
 #include "ReconstructionDataFormats/GlobalTrackID.h"
 
-#include <TDatabasePDG.h>
 #include <TPDGCode.h>
 
 #include "Index.h"
