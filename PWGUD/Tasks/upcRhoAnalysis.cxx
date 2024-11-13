@@ -43,31 +43,23 @@ namespace dipi
 {
 // general
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int32_t);
-DECLARE_SOA_COLUMN(NClass, nClass, int);
+DECLARE_SOA_COLUMN(NeutronClass, neutronClass, int);
+DECLARE_SOA_COLUMN(TofClass, tofClass, int);
 DECLARE_SOA_COLUMN(TotCharge, charge, int);
-DECLARE_SOA_COLUMN(Pt, pT, double);
+DECLARE_SOA_COLUMN(Pt, pt, double);
 // system
 DECLARE_SOA_COLUMN(M, m, double);
 DECLARE_SOA_COLUMN(Rap, y, double);
 DECLARE_SOA_COLUMN(PhiRandom, phiRandom, double);
 DECLARE_SOA_COLUMN(PhiCharge, phiCharge, double);
-// tracks
-DECLARE_SOA_COLUMN(UdCollisionId, udCollisionId, int32_t);
 DECLARE_SOA_COLUMN(Eta, eta, double);
 DECLARE_SOA_COLUMN(Phi, phi, double);
-DECLARE_SOA_COLUMN(Sign, sign, int);
-DECLARE_SOA_COLUMN(DcaZ, dcaZ, double);
-DECLARE_SOA_COLUMN(DcaXY, dcaXY, double);
-DECLARE_SOA_COLUMN(NSigmaPi, nSigmaPi, double);
-DECLARE_SOA_COLUMN(NSigmaEl, nSigmaEl, double);
 } // namespace dipi
-DECLARE_SOA_TABLE(SystemTree, "AOD", "SYSTEMTREE", dipi::RunNumber, dipi::NClass, dipi::TotCharge, dipi::M, dipi::Pt, dipi::Rap, dipi::PhiRandom, dipi::PhiCharge);
-DECLARE_SOA_TABLE(TrackTree, "AOD", "TRACKTREE", dipi::RunNumber, dipi::NClass, dipi::UdCollisionId, dipi::Pt, dipi::Eta, dipi::Sign, dipi::DcaZ, dipi::DcaXY, dipi::NSigmaPi, dipi::NSigmaEl);
+DECLARE_SOA_TABLE(SystemTree, "AOD", "SYSTEMTREE", dipi::RunNumber, dipi::NeutronClass, dipi::TofClass, dipi::TotCharge, dipi::M, dipi::Pt, dipi::Rap, dipi::PhiRandom, dipi::PhiCharge, dipi::Eta, dipi::Phi);
 } // namespace o2::aod
 
 struct upcRhoAnalysis {
   Produces<o2::aod::SystemTree> systemTree;
-  Produces<o2::aod::TrackTree> trackTree;
 
   double PcEtaCut = 0.9; // physics coordination recommendation
   Configurable<bool> requireTof{"requireTof", false, "require TOF signal"};
@@ -422,7 +414,7 @@ struct upcRhoAnalysis {
     MC.add("MC/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
     MC.add("MC/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
     MC.add("MC/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
-    MC.add("MC/hY", ";y;counts", kTH1D, {{400, -20.0, 20.0}});
+    MC.add("MC/hY", ";y;counts", kTH1D, {yAxis});
     MC.add("MC/hPhiRandom", ";#phi;counts", kTH1D, {phiAsymmAxis});
     MC.add("MC/hPhiCharge", ";#phi;counts", kTH1D, {phiAsymmAxis});
   }
@@ -572,23 +564,23 @@ struct upcRhoAnalysis {
 
     // event tagging
     bool XnXn = false, OnOn = false, XnOn = false, OnXn = false; // note: On == 0n...
-    int nClass = -1;
+    int neutronClass = -1;
     if (collision.energyCommonZNA() < ZNcommonEnergyCut && collision.energyCommonZNC() < ZNcommonEnergyCut) {
       OnOn = true;
-      nClass = 0;
+      neutronClass = 0;
+    }
+    if (collision.energyCommonZNA() > ZNcommonEnergyCut && std::abs(collision.timeZNA()) < ZNtimeCut && collision.energyCommonZNC() < ZNcommonEnergyCut) {
+      XnOn = true;
+      neutronClass = 1;
+    }
+    if (collision.energyCommonZNA() < ZNcommonEnergyCut && collision.energyCommonZNC() > ZNcommonEnergyCut && std::abs(collision.timeZNC()) < ZNtimeCut) {
+      OnXn = true;
+      neutronClass = 2;
     }
     if (collision.energyCommonZNA() > ZNcommonEnergyCut && std::abs(collision.timeZNA()) < ZNtimeCut &&
         collision.energyCommonZNC() > ZNcommonEnergyCut && std::abs(collision.timeZNC()) < ZNtimeCut) {
       XnXn = true;
-      nClass = 3;
-    }
-    if (collision.energyCommonZNA() > ZNcommonEnergyCut && std::abs(collision.timeZNA()) < ZNtimeCut && collision.energyCommonZNC() < ZNcommonEnergyCut) {
-      XnOn = true;
-      nClass = 1;
-    }
-    if (collision.energyCommonZNA() < ZNcommonEnergyCut && collision.energyCommonZNC() > ZNcommonEnergyCut && std::abs(collision.timeZNC()) < ZNtimeCut) {
-      OnXn = true;
-      nClass = 2;
+      neutronClass = 3;
     }
     // vectors for storing selected tracks and their 4-vectors
     std::vector<decltype(tracks.begin())> cutTracks;
@@ -632,9 +624,7 @@ struct upcRhoAnalysis {
       QC.fill(HIST("QC/tracks/hSelectionCounter"), 14);
 
     QC.fill(HIST("QC/tracks/cut/hTpcNSigmaPi2D"), cutTracks[0].tpcNSigmaPi(), cutTracks[1].tpcNSigmaPi());
-    for (int i = 0; i <= 1; i++)
-      trackTree(collision.runNumber(), nClass, cutTracks[i].udCollisionId(), cutTracks[i].pt(), eta(cutTracks[i].px(), cutTracks[i].py(), cutTracks[i].pz()), cutTracks[i].sign(), cutTracks[i].dcaZ(), cutTracks[i].dcaXY(), cutTracks[i].tpcNSigmaPi(), cutTracks[i].tpcNSigmaEl());
-
+    
     if (!tracksPassPiPID(cutTracks))
       return;
     for (int i = 0; i < static_cast<int>(cutTracks.size()); i++)
@@ -711,7 +701,7 @@ struct upcRhoAnalysis {
     QC.fill(HIST("QC/tracks/2D/pT/subleading/hTpcNClsCrossedRowsVsPt"), pT, subleadingMomentumTrack.tpcNClsCrossedRows());
     QC.fill(HIST("QC/tracks/2D/pT/subleading/hTpcNClsCrossedRowsOverTpcNClsFindableVsPt"), pT, (static_cast<double>(subleadingMomentumTrack.tpcNClsCrossedRows()) / static_cast<double>(subleadingMomentumTrack.tpcNClsFindable())));
     // fill tree
-    systemTree(collision.runNumber(), nClass, totalCharge, mass, pT, rapidity, phiRandom, phiCharge);
+    systemTree(collision.runNumber(), neutronClass, tofClass, totalCharge, mass, pT, rapidity, phiRandom, phiCharge, system.PseudoRapidity(), system.Phi());
     // fill raw histograms according to the total charge
     switch (totalCharge) {
       case 0:
@@ -978,6 +968,8 @@ struct upcRhoAnalysis {
     for (auto const& mcParticle : mcParticles) {
       MC.fill(HIST("MC/QC/hPdgCode"), mcParticle.pdgCode());
       MC.fill(HIST("MC/QC/hProducedByGenerator"), mcParticle.producedByGenerator());
+      if (!mcParticle.producedByGenerator())
+        continue;
       if (std::abs(mcParticle.pdgCode()) != 211)
         continue;
       cutMcParticles.push_back(mcParticle);
@@ -999,6 +991,9 @@ struct upcRhoAnalysis {
     double rapidity = system.Rapidity();
     double phiRandom = getPhiRandom(mcParticles4Vecs);
     double phiCharge = getPhiChargeMC(cutMcParticles, mcParticles4Vecs);
+
+    if (std::abs(rapidity) > systemYCut)
+      return;
 
     MC.fill(HIST("MC/hM"), mass);
     MC.fill(HIST("MC/hPt"), pT);
