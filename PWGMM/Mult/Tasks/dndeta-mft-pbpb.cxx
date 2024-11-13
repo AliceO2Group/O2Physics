@@ -64,7 +64,9 @@ struct PseudorapidityDensityMFT {
 
   // Histogram registry
   HistogramRegistry registry{
-      "registry", {}, OutputObjHandlingPolicy::AnalysisObject};
+    "registry",
+    {},
+    OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry QAregistry{
       "QAregistry", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
 
