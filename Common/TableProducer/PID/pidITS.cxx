@@ -38,14 +38,13 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::track;
 
-/// Task to produce the TOF signal from the trackTime information
+/// Task to produce the ITS PID information for each particle species
+/// The parametrization is: [p0/(bg)**p1 + p2] * pow(q, p3), being bg = p/m and q the charge 
 struct itsPid {
 
   Configurable<float> bb1{"bb1", 0.f, "Bethe Bloch parameter 1"};
   Configurable<float> bb2{"bb2", 0.f, "Bethe Bloch parameter 2"};
   Configurable<float> bb3{"bb3", 0.f, "Bethe Bloch parameter 3"};
-  Configurable<float> bb4{"bb4", 0.f, "Bethe Bloch parameter 4"};
-  Configurable<float> bb5{"bb5", 0.f, "Bethe Bloch parameter 5"};
   Configurable<float> chargeExponent{"chargeExponent", 0.f, "Charge exponent"};
   Configurable<float> resolution{"resolution", 0.f, "Charge exponent"};
   Configurable<bool> getFromCCDB{"getFromCCDB", false, "Get the parameters from CCDB"};
@@ -65,13 +64,11 @@ struct itsPid {
       ccdb->setLocalObjectValidityChecking();
       ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
     } else {
-      o2::aod::mITSParams.mBetheBlochParams[0] = bb1;
-      o2::aod::mITSParams.mBetheBlochParams[1] = bb2;
-      o2::aod::mITSParams.mBetheBlochParams[2] = bb3;
-      o2::aod::mITSParams.mBetheBlochParams[3] = bb4;
-      o2::aod::mITSParams.mBetheBlochParams[4] = bb5;
-      o2::aod::mITSParams.mChargeFactor = chargeExponent;
-      o2::aod::mITSParams.mResolution = resolution;
+      o2::aod::mITSResponse.mITSRespParams[0] = bb1;
+      o2::aod::mITSResponse.mITSRespParams[1] = bb2;
+      o2::aod::mITSResponse.mITSRespParams[2] = bb3;
+      o2::aod::mITSResponse.mChargeFactor = chargeExponent;
+      o2::aod::mITSResponse.mResolution = resolution;
     }
   }
 
@@ -86,7 +83,7 @@ struct itsPid {
                                      aod::pidits::ITSNSigmaTr, aod::pidits::ITSNSigmaHe, aod::pidits::ITSNSigmaAl>(tracks);
 
     for (const auto& track : tracksWithPid) {
-      LOG(info) << track.itsNSigmaEl();
+      LOG(info) << track.itsNSigmaPr();
     }
   }
   PROCESS_SWITCH(itsPid, processTest, "Produce a test", false);
