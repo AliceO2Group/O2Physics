@@ -38,6 +38,8 @@
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
