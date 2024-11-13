@@ -102,25 +102,15 @@ DECLARE_SOA_TABLE(HfCandLcLites, "AOD", "HFCANDLCLITE",
                   collision::PosZ,
                   hf_cand::NProngsContributorsPV,
                   hf_cand::BitmapProngsContributorsPV,
-                  // hf_cand::ErrorDecayLength,
-                  // hf_cand::ErrorDecayLengthXY,
                   hf_cand::Chi2PCA,
                   full::DecayLength,
                   full::DecayLengthXY,
-                  // full::DecayLengthNormalised,
-                  // full::DecayLengthXYNormalised,
-                  // full::ImpactParameterNormalised0,
                   full::PtProng0,
-                  // full::ImpactParameterNormalised1,
                   full::PtProng1,
-                  // full::ImpactParameterNormalised2,
                   full::PtProng2,
                   hf_cand::ImpactParameter0,
                   hf_cand::ImpactParameter1,
                   hf_cand::ImpactParameter2,
-                  // hf_cand::ErrorImpactParameter0,
-                  // hf_cand::ErrorImpactParameter1,
-                  // hf_cand::ErrorImpactParameter2,
                   full::NSigTpcPi0,
                   full::NSigTpcPr0,
                   full::NSigTofPi0,
@@ -262,6 +252,7 @@ struct HfTreeCreatorLcToPKPi {
   Produces<o2::aod::HfCandLcFullEvs> rowCandidateFullEvents;
   Produces<o2::aod::HfCandLcFullPs> rowCandidateFullParticles;
 
+  Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
   Configurable<bool> fillCandidateLiteTable{"fillCandidateLiteTable", false, "Switch to fill lite table with candidate properties"};
   Configurable<bool> fillCollIdTable{"fillCollIdTable", false, "Fill a single-column table with collision index"};
   Configurable<bool> keepOnlySignalMc{"keepOnlySignalMc", false, "Fill MC tree only with signal candidates"};
@@ -352,7 +343,7 @@ struct HfTreeCreatorLcToPKPi {
                            float FunctionE,
                            float FunctionInvMassKPi) {
         double pseudoRndm = trackPos1.pt() * 1000. - (int64_t)(trackPos1.pt() * 1000);
-        if (FunctionSelection >= 1 && (/*keep all*/ (!keepOnlySignalMc && !keepOnlyBkg) || /*keep only signal*/ (keepOnlySignalMc && isMcCandidateSignal) || /*keep only background and downsample it*/ (keepOnlyBkg && !isMcCandidateSignal && (candidate.pt() > downSampleBkgPtMax || (pseudoRndm < downSampleBkgFactor && candidate.pt() < downSampleBkgPtMax))))) {
+        if (FunctionSelection >= selectionFlagLc && (/*keep all*/ (!keepOnlySignalMc && !keepOnlyBkg) || /*keep only signal*/ (keepOnlySignalMc && isMcCandidateSignal) || /*keep only background and downsample it*/ (keepOnlyBkg && !isMcCandidateSignal && (candidate.pt() > downSampleBkgPtMax || (pseudoRndm < downSampleBkgFactor && candidate.pt() < downSampleBkgPtMax))))) {
           if (fillCandidateLiteTable) {
             rowCandidateLite(
               candidate.posX(),
@@ -360,25 +351,15 @@ struct HfTreeCreatorLcToPKPi {
               candidate.posZ(),
               candidate.nProngsContributorsPV(),
               candidate.bitmapProngsContributorsPV(),
-              // candidate.errorDecayLength(),
-              // candidate.errorDecayLengthXY(),
               candidate.chi2PCA(),
               candidate.decayLength(),
               candidate.decayLengthXY(),
-              // candidate.decayLengthNormalised(),
-              // candidate.decayLengthXYNormalised(),
-              // candidate.impactParameterNormalised0(),
               candidate.ptProng0(),
-              // candidate.impactParameterNormalised1(),
               candidate.ptProng1(),
-              // candidate.impactParameterNormalised2(),
               candidate.ptProng2(),
               candidate.impactParameter0(),
               candidate.impactParameter1(),
               candidate.impactParameter2(),
-              // candidate.errorImpactParameter0(),
-              // candidate.errorImpactParameter1(),
-              // candidate.errorImpactParameter2(),
               trackPos1.tpcNSigmaPi(),
               trackPos1.tpcNSigmaPr(),
               trackPos1.tofNSigmaPi(),
@@ -408,7 +389,6 @@ struct HfTreeCreatorLcToPKPi {
               candidate.isCandidateSwapped(),
               candidate.flagMcDecayChanRec(),
               FunctionInvMassKPi);
-            // candidate.globalIndex());
 
             if (fillCollIdTable) {
               /// save also candidate collision indices
