@@ -158,7 +158,7 @@ struct HfCorrelatorHfeHadrons {
   // mix event electron-hadron correlation
 
   template <typename TracksType, typename ElectronType, typename CollisionType1, typename CollisionType2>
-  void fillMixCorrelation(CollisionType1 const& c1, CollisionType2 const& c2, ElectronType const& tracks1, TracksType const& tracks2)
+  void fillMixCorrelation(CollisionType1 const&, CollisionType2 const& c2, ElectronType const& tracks1, TracksType const& tracks2)
   {
     if (!(isRun3 ? c2.sel8() : (c2.sel7() && c2.alias_bit(kINT7))))
       return;

@@ -520,7 +520,7 @@ struct HfDataCreatorCharmResoReduced {
     std::vector<int> idxBhadMothers{};
     float motherPt{-1.f};
     int indexRecReso{-1}, indexRecDstar{-1}, indexRecDplus{-1}, indexRecD0{-1}, indexRecK0{-1};
-    int indexRecDstarToMu{-1}, indexRecD0ToMu{-1}, indexRecK0ToMu{-1}, indexRecResoToMu{-1}, indexRecResoPartReco{-1};
+    int indexRecDstarToMu{-1}, indexRecK0ToMu{-1}, indexRecResoToMu{-1}, indexRecResoPartReco{-1};
 
     if constexpr (decChannel == DecayChannel::DstarV0) {
       // Ds1 → D* K0 → (D0 π+) K0s → ((K-π+) π+)(π+π-)
