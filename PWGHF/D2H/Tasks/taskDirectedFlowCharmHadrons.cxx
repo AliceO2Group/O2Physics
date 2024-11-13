@@ -77,6 +77,16 @@ struct HfTaskDirectedFlowCharmHadrons {
 
   void init(InitContext&)
   {
+
+    /// check process functions
+    std::array<int, 2> processes = {doprocessDplusStd, doprocessDplusMl};
+    const int nProcesses = std::accumulate(processes.begin(), processes.end(), 0);
+    if (nProcesses > 1) {
+      LOGP(fatal, "Only one process function should be enabled at a time, please check your configuration");
+    } else if (nProcesses == 0) {
+      LOGP(fatal, "No process function enabled");
+    }
+
     const AxisSpec thnAxisInvMass{thnConfigAxisInvMass, "Inv. mass (GeV/#it{c}^{2})"};
     const AxisSpec thnAxisPt{thnConfigAxisPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec thnAxisEta{thnConfigAxisEta, "#it{#eta}"};
@@ -192,15 +202,15 @@ struct HfTaskDirectedFlowCharmHadrons {
       auto uyQyt = uy * qyZDCC;
 
       if (storeMl) {
-        registry.fill(HIST("hpuxQxpvscentpteta"), mass, cent, pt, eta, uxQxp, sign, outputMl[0], outputMl[1]);
-        registry.fill(HIST("hpuyQypvscentpteta"), mass, cent, pt, eta, uyQyp, sign, outputMl[0], outputMl[1]);
-        registry.fill(HIST("hpuxQxtvscentpteta"), mass, cent, pt, eta, uxQxt, sign, outputMl[0], outputMl[1]);
-        registry.fill(HIST("hpuyQytvscentpteta"), mass, cent, pt, eta, uyQyt, sign, outputMl[0], outputMl[1]);
+        registry.fill(HIST("hpuxQxpvscentpteta"), massCand, cent, ptCand, etaCand, uxQxp, sign, outputMl[0], outputMl[1]);
+        registry.fill(HIST("hpuyQypvscentpteta"), massCand, cent, ptCand, etaCand, uyQyp, sign, outputMl[0], outputMl[1]);
+        registry.fill(HIST("hpuxQxtvscentpteta"), massCand, cent, ptCand, etaCand, uxQxt, sign, outputMl[0], outputMl[1]);
+        registry.fill(HIST("hpuyQytvscentpteta"), massCand, cent, ptCand, etaCand, uyQyt, sign, outputMl[0], outputMl[1]);
       } else {
-        registry.fill(HIST("hpuxQxpvscentpteta"), mass, cent, pt, eta, uxQxp, sign);
-        registry.fill(HIST("hpuyQypvscentpteta"), mass, cent, pt, eta, uyQyp, sign);
-        registry.fill(HIST("hpuxQxtvscentpteta"), mass, cent, pt, eta, uxQxt, sign);
-        registry.fill(HIST("hpuyQytvscentpteta"), mass, cent, pt, eta, uyQyt, sign);
+        registry.fill(HIST("hpuxQxpvscentpteta"), massCand, cent, ptCand, etaCand, uxQxp, sign);
+        registry.fill(HIST("hpuyQypvscentpteta"), massCand, cent, ptCand, etaCand, uyQyp, sign);
+        registry.fill(HIST("hpuxQxtvscentpteta"), massCand, cent, ptCand, etaCand, uxQxt, sign);
+        registry.fill(HIST("hpuyQytvscentpteta"), massCand, cent, ptCand, etaCand, uyQyt, sign);
       }
     }
   }
@@ -220,7 +230,7 @@ struct HfTaskDirectedFlowCharmHadrons {
   {
     runFlowAnalysis<DecayChannel::DplusToPiKPi>(collision, candidatesDplus, tracks);
   }
-  PROCESS_SWITCH(HfTaskDirectedFlowCharmHadrons, processDplusStd, "Process Dplus candidates", true);
+  PROCESS_SWITCH(HfTaskDirectedFlowCharmHadrons, processDplusStd, "Process Dplus candidates with rectangular cuts", true);
 
 }; // End struct HfTaskDirectedFlowCharmHadrons
 
