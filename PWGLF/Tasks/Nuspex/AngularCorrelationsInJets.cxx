@@ -12,6 +12,8 @@
 // author: Lars Jörgensen
 
 #include <vector>
+#include <utility>
+#include <map>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
