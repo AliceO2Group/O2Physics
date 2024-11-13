@@ -312,7 +312,7 @@ struct HfCandidateCreatorCharmResoReduced {
 
         if constexpr (channel == DecayChannel::DstarTrack) {
           invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{massDstar, massProton});
-          registry.fill(HIST("hMassDstarTrack"), invMassReso, ptReso);
+          registry.fill(HIST("hMassDstarTrack"), invMassReso-invMassD, ptReso);
         } else {
           switch (channel) {
             case DecayChannel::Ds1ToDstarK0s:
