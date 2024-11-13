@@ -21,6 +21,9 @@
 #include "Framework/AnalysisTask.h"
 #include "Common/DataModel/Multiplicity.h"
 
+// O2Physics includes
+#include "TableHelper.h"
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::zdc;
@@ -29,13 +32,21 @@ using namespace o2::zdc;
 struct bcConverter {
   Produces<aod::BCs_001> bc_001;
 
-  void process(aod::BCs_000 const& bcTable)
+  void init(o2::framework::InitContext& initContext)
+  {
+    if (!doprocessConverter) {
+      doprocessConverter.value = isTableRequiredInWorkflow(initContext, "BCs_001");
+    }
+  }
+  void process(aod::Timestamps const&) {}
+  void processConverter(aod::BCs_000 const& bcTable)
   {
     for (auto& bc : bcTable) {
       constexpr uint64_t lEmptyTriggerInputs = 0;
       bc_001(bc.runNumber(), bc.globalBC(), bc.triggerMask(), lEmptyTriggerInputs);
     }
   }
+  PROCESS_SWITCH(bcConverter, processConverter, "Process converter (autoset if false)", false);
 };
 
 // Swaps covariance matrix elements if the data is known to be bogus (collision_000 is bogus)
@@ -356,6 +367,35 @@ struct mcCollisionConverter {
         mcCollision.t(), mcCollision.weight(),
         mcCollision.impactParameter(),
         0.0f); // dummy event plane, not available in _000
+    }
+  }
+};
+
+struct MftTracksConverter {
+  Produces<aod::StoredMFTTracks_001> mftTracks_001;
+  void process(aod::MFTTracks_000 const& mftTracks_000)
+  {
+
+    for (const auto& track0 : mftTracks_000) {
+      uint64_t mftClusterSizesAndTrackFlags = 0;
+      int8_t nClusters = track0.nClusters();
+
+      for (int layer = 0; layer < 10; ++layer) {
+        mftClusterSizesAndTrackFlags &= ~(0x3fULL << (layer * 6));
+        mftClusterSizesAndTrackFlags |= (layer < nClusters) ? (1ULL << (layer * 6)) : 0;
+      }
+
+      mftTracks_001(track0.collisionId(),
+                    track0.x(),
+                    track0.y(),
+                    track0.z(),
+                    track0.phi(),
+                    track0.tgl(),
+                    track0.signed1Pt(),
+                    mftClusterSizesAndTrackFlags,
+                    track0.chi2(),
+                    track0.trackTime(),
+                    track0.trackTimeRes());
     }
   }
 };
