@@ -315,7 +315,7 @@ struct HfCandidateCreatorCharmResoReduced {
         float ptReso = RecoDecay::pt(RecoDecay::sumOfVec(pVecV0Tr, pVecD));
 
         if constexpr (channel == DecayChannel::DstarTrack) {
-          if (candD.dType() > 0 ) {
+          if (candD.dType() > 0) {
             invMassReso = RecoDecay::m(std::array{candD.pVectorProng0(), candD.pVectorProng1(), candD.pVectorProng2(), pVecV0Tr}, std::array{massPion, massKaon, massPion, massProton});
           } else {
             invMassReso = RecoDecay::m(std::array{candD.pVectorProng1(), candD.pVectorProng0(), candD.pVectorProng2(), pVecV0Tr}, std::array{massPion, massKaon, massPion, massProton});
