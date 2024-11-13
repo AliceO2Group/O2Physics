@@ -386,6 +386,7 @@ struct NucleiHistTask {
 
   // Configurables
   Configurable<int> use_momentum_getter{"use_momentum_getter", 0, "0: track.p(), 1: track.pt(), 2: track.tpcInnerParam()"};
+  Configurable<int> momentum_He3{"momentum_He3", 0, "0: momentum * 1.0, 1: momentum * 2.0"};
   Configurable<float> yMin{"yMin", -0.5, "Maximum rapidity"};
   Configurable<float> yMax{"yMax", 0.5, "Minimum rapidity"};
   Configurable<float> p_min{"p_min", 0.1f, "min momentum"};
@@ -429,22 +430,57 @@ struct NucleiHistTask {
         continue;
 
       double momentum = 0.0;
+      double momentum_Z_equal_2 = 0.0;
       int momentum_getter = 0;
+      int momentum_getter_Z_equal_2 = 0;
       switch (use_momentum_getter) {
         case 0:
           momentum = track.p();
+          switch (momentum_He3) {
+            case 0:
+              momentum_Z_equal_2 = track.p();
+              break;
+            case 1:
+              momentum_Z_equal_2 = track.p() * 2.0;
+              break;
+            default:
+              momentum_getter_Z_equal_2 = -1;
+              break;
+          }
           break;
         case 1:
           momentum = track.pt();
+          switch (momentum_He3) {
+            case 0:
+              momentum_Z_equal_2 = track.pt();
+              break;
+            case 1:
+              momentum_Z_equal_2 = track.pt() * 2.0;
+              break;
+            default:
+              momentum_getter_Z_equal_2 = -1;
+              break;
+          }
           break;
         case 2:
           momentum = track.tpcInnerParam();
+          switch (momentum_He3) {
+            case 0:
+              momentum_Z_equal_2 = track.tpcInnerParam();
+              break;
+            case 1:
+              momentum_Z_equal_2 = track.tpcInnerParam() * 2.0;
+              break;
+            default:
+              momentum_getter_Z_equal_2 = -1;
+              break;
+          }
           break;
         default:
           momentum_getter = -1;
           break;
       }
-      if (momentum_getter == -1)
+      if (momentum_getter == -1 || momentum_getter_Z_equal_2 == -1)
         break;
 
       float TPCnumberClsFound = track.tpcNClsFound();
@@ -507,8 +543,8 @@ struct NucleiHistTask {
         proton_reg.fill(HIST("histTpcNsigmaData"), momentum, nSigmaProton);
         deuteron_reg.fill(HIST("histTpcNsigmaData"), momentum, nSigmaDeut);
         triton_reg.fill(HIST("histTpcNsigmaData"), momentum, nSigmaTriton);
-        Helium3_reg.fill(HIST("histTpcNsigmaData"), momentum * 2.0, nSigmaHe3);
-        Helium4_reg.fill(HIST("histTpcNsigmaData"), momentum * 2.0, nSigmaHe4);
+        Helium3_reg.fill(HIST("histTpcNsigmaData"), momentum_Z_equal_2 * 2.0, nSigmaHe3);
+        Helium4_reg.fill(HIST("histTpcNsigmaData"), momentum_Z_equal_2 * 2.0, nSigmaHe4);
 
         if (track.hasTOF()) {
           Float_t TOFmass2 = ((track.mass()) * (track.mass()));
@@ -521,8 +557,8 @@ struct NucleiHistTask {
         aproton_reg.fill(HIST("histTpcNsigmaData"), momentum, nSigmaProton);
         adeuteron_reg.fill(HIST("histTpcNsigmaData"), momentum, nSigmaDeut);
         atriton_reg.fill(HIST("histTpcNsigmaData"), momentum, nSigmaTriton);
-        aHelium3_reg.fill(HIST("histTpcNsigmaData"), momentum * 2.0, nSigmaHe3);
-        aHelium4_reg.fill(HIST("histTpcNsigmaData"), momentum * 2.0, nSigmaHe4);
+        aHelium3_reg.fill(HIST("histTpcNsigmaData"), momentum_Z_equal_2 * 2.0, nSigmaHe3);
+        aHelium4_reg.fill(HIST("histTpcNsigmaData"), momentum_Z_equal_2 * 2.0, nSigmaHe4);
 
         if (track.hasTOF()) {
           Float_t TOFmass2 = ((track.mass()) * (track.mass()));
@@ -725,7 +761,7 @@ struct NucleiHistTask {
         if (track.sign() > 0) {
           Helium3_reg.fill(HIST("histDcaVsPtData"), track.pt() * 2.0, track.dcaXY());
           Helium3_reg.fill(HIST("histDcaZVsPtData"), track.pt() * 2.0, track.dcaZ());
-          Helium3_reg.fill(HIST("histTpcSignalData"), momentum * 2.0, track.tpcSignal());
+          Helium3_reg.fill(HIST("histTpcSignalData"), momentum_Z_equal_2 * 2.0, track.tpcSignal());
           Helium3_reg.fill(HIST("histNClusterTPC"), track.pt() * 2.0, track.tpcNClsFound());
           Helium3_reg.fill(HIST("histNClusterITS"), track.pt() * 2.0, track.itsNCls());
           Helium3_reg.fill(HIST("histNClusterITSib"), track.pt() * 2.0, track.itsNClsInnerBarrel());
@@ -735,16 +771,16 @@ struct NucleiHistTask {
           if (track.hasTOF()) {
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
-            Helium3_reg.fill(HIST("histTOFm2"), momentum * 2.0, TOFmass2);
-            Helium3_reg.fill(HIST("histTofSignalData"), momentum * 2.0, beta);
-            Helium3_reg.fill(HIST("histTofNsigmaData"), momentum * 2.0, track.tofNSigmaHe());
+            Helium3_reg.fill(HIST("histTOFm2"), momentum_Z_equal_2 * 2.0, TOFmass2);
+            Helium3_reg.fill(HIST("histTofSignalData"), momentum_Z_equal_2 * 2.0, beta);
+            Helium3_reg.fill(HIST("histTofNsigmaData"), momentum_Z_equal_2 * 2.0, track.tofNSigmaHe());
           }
         }
 
         if (track.sign() < 0) {
           aHelium3_reg.fill(HIST("histDcaVsPtData"), track.pt() * 2.0, track.dcaXY());
           aHelium3_reg.fill(HIST("histDcaZVsPtData"), track.pt() * 2.0, track.dcaZ());
-          aHelium3_reg.fill(HIST("histTpcSignalData"), momentum * 2.0, track.tpcSignal());
+          aHelium3_reg.fill(HIST("histTpcSignalData"), momentum_Z_equal_2 * 2.0, track.tpcSignal());
           aHelium3_reg.fill(HIST("histNClusterTPC"), track.pt() * 2.0, track.tpcNClsFound());
           aHelium3_reg.fill(HIST("histNClusterITS"), track.pt() * 2.0, track.itsNCls());
           aHelium3_reg.fill(HIST("histNClusterITSib"), track.pt() * 2.0, track.itsNClsInnerBarrel());
@@ -754,14 +790,14 @@ struct NucleiHistTask {
           if (track.hasTOF()) {
             Float_t TOFmass2 = ((track.mass()) * (track.mass()));
             Float_t beta = track.beta();
-            aHelium3_reg.fill(HIST("histTOFm2"), momentum * 2.0, TOFmass2);
-            aHelium3_reg.fill(HIST("histTofSignalData"), momentum * 2.0, beta);
-            aHelium3_reg.fill(HIST("histTofNsigmaData"), momentum * 2.0, track.tofNSigmaHe());
+            aHelium3_reg.fill(HIST("histTOFm2"), momentum_Z_equal_2 * 2.0, TOFmass2);
+            aHelium3_reg.fill(HIST("histTofSignalData"), momentum_Z_equal_2 * 2.0, beta);
+            aHelium3_reg.fill(HIST("histTofNsigmaData"), momentum_Z_equal_2 * 2.0, track.tofNSigmaHe());
           }
         }
 
         if (track.hasTOF()) {
-          spectra_reg.fill(HIST("histTofSignalData"), momentum * 2.0 * track.sign(), track.beta());
+          spectra_reg.fill(HIST("histTofSignalData"), momentum_Z_equal_2 * 2.0 * track.sign(), track.beta());
         }
       }
 
