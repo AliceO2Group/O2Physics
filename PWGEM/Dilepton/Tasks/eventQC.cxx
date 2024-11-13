@@ -579,16 +579,6 @@ struct eventQC {
       return false;
     }
 
-    uint32_t itsClusterSizes = track.itsClusterSizes();
-    int total_cluster_size = 0, nl = 0;
-    for (unsigned int layer = 0; layer < 7; layer++) {
-      int cluster_size_per_layer = (itsClusterSizes >> (layer * 4)) & 0xf;
-      if (cluster_size_per_layer > 0) {
-        nl++;
-      }
-      total_cluster_size += cluster_size_per_layer;
-    }
-
     return true;
   }
 
