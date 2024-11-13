@@ -2490,7 +2490,6 @@ struct AnalysisDileptonTrack {
     bool isBarrelAsymmetric = context.mOptions.get<bool>("processDstarToD0Pi");
     bool isMuon = context.mOptions.get<bool>("processMuonSkimmed");
     bool isMuonME = context.mOptions.get<bool>("processMuonMixedEvent");
-    bool isAnyProcessEnabled = isBarrel || isBarrelME || isMuon || isMuonME;
 
     fCurrentRun = 0;
     fValuesDilepton = new float[VarManager::kNVars];
