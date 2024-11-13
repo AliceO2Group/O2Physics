@@ -1898,23 +1898,23 @@ struct UpcCandProducer {
   }
 
   void processForwardGlobalMC(ForwardTracks const& fwdTracks,
-                        o2::aod::FwdTrkCls const& fwdTrkClusters,
-                        o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
-                        BCsWithBcSels const& bcs,
-                        o2::aod::Collisions const& collisions,
-                        o2::aod::FT0s const& ft0s,
-                        o2::aod::FDDs const& fdds,
-                        o2::aod::FV0As const& fv0as,
-                        o2::aod::Zdcs const& zdcs,
-                        o2::aod::McCollisions const& mcCollisions, o2::aod::McParticles const& mcParticles,
-                        o2::aod::McFwdTrackLabels const& mcFwdTrackLabels)
+                              o2::aod::FwdTrkCls const& fwdTrkClusters,
+                              o2::aod::AmbiguousFwdTracks const& ambFwdTracks,
+                              BCsWithBcSels const& bcs,
+                              o2::aod::Collisions const& collisions,
+                              o2::aod::FT0s const& ft0s,
+                              o2::aod::FDDs const& fdds,
+                              o2::aod::FV0As const& fv0as,
+                              o2::aod::Zdcs const& zdcs,
+                              o2::aod::McCollisions const& mcCollisions, o2::aod::McParticles const& mcParticles,
+                              o2::aod::McFwdTrackLabels const& mcFwdTrackLabels)
   {
     fDoMC = true;
     skimMCInfo(mcCollisions, mcParticles, bcs);
     createCandidatesFwdGlobal(fwdTracks, fwdTrkClusters, ambFwdTracks,
-                        bcs, collisions,
-                        ft0s, fdds, fv0as, zdcs,
-                        &mcFwdTrackLabels);
+                              bcs, collisions,
+                              ft0s, fdds, fv0as, zdcs,
+                              &mcFwdTrackLabels);
     fNewPartIDs.clear();
   }
 
