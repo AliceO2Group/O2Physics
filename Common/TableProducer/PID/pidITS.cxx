@@ -32,21 +32,29 @@
 
 // O2Physics includes
 #include "Common/DataModel/PIDResponseITS.h"
+#include "MetadataHelper.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::track;
 
+MetadataHelper metadataInfo;
+
+static constexpr int nCases = 2;
+static constexpr int nParameters = 5;
+static const std::vector<std::string> casesNames{"Data", "MC"};
+static const std::vector<std::string> parameterNames{"bb1", "bb2", "bb3", "Charge exponent", "Resolution"};
+static constexpr float defaultParameters[nCases][nParameters]{{0.903, 2.014, 2.440, 2.299999952316284f, 0.15f},
+                                                              {0.903, 2.014, 2.440, 2.299999952316284f, 0.15f}};
+
 /// Task to produce the ITS PID information for each particle species
 /// The parametrization is: [p0/(bg)**p1 + p2] * pow(q, p3), being bg = p/m and q the charge
 struct itsPid {
 
-  Configurable<float> bb1{"bb1", 0.f, "Bethe Bloch parameter 1"};
-  Configurable<float> bb2{"bb2", 0.f, "Bethe Bloch parameter 2"};
-  Configurable<float> bb3{"bb3", 0.f, "Bethe Bloch parameter 3"};
-  Configurable<float> chargeExponent{"chargeExponent", 0.f, "Charge exponent"};
-  Configurable<float> resolution{"resolution", 0.f, "Charge exponent"};
+  Configurable<LabeledArray<float>> itsParams{"itsParams",
+                                              {defaultParameters[0], nCases, nParameters, casesNames, parameterNames},
+                                              "Response parameters"};
   Configurable<bool> getFromCCDB{"getFromCCDB", false, "Get the parameters from CCDB"};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -63,13 +71,19 @@ struct itsPid {
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();
       ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+      LOG(fatal) << "Not implemented yet";
     } else {
-      o2::aod::ITSResponse::setParameters(bb1, bb2, bb3, chargeExponent, resolution);
+      const char* key = metadataInfo.isMC() ? "MC" : "Data";
+      o2::aod::ITSResponse::setParameters(itsParams->get(key, "bb1"),
+                                          itsParams->get(key, "bb2"),
+                                          itsParams->get(key, "bb3"),
+                                          itsParams->get(key, "Charge exponent"),
+                                          itsParams->get(key, "Resolution"));
     }
   }
 
   /// Dummy process function for BCs, needed in case both Run2 and Run3 process functions are disabled
-  void process(aod::BCs const&) {}
+  void process(aod::Timestamps const&) {}
 
   void processTest(o2::soa::Join<aod::TracksIU, aod::TracksExtra> const& tracks)
   {
@@ -89,6 +103,8 @@ struct itsPid {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
+  // Parse the metadata
+  metadataInfo.initMetadata(cfgc);
   auto workflow = WorkflowSpec{adaptAnalysisTask<itsPid>(cfgc)};
   return workflow;
 }
