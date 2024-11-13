@@ -939,7 +939,7 @@ struct IdentifiedBfFilterTracks {
   template <typename TrackObject>
   int8_t AcceptTrack(TrackObject const& track);
   template <typename ParticleObject, typename MCCollisionObject>
-  int8_t AcceptParticle(ParticleObject& particle, MCCollisionObject const&);
+  int8_t AcceptParticle(ParticleObject& particle, MCCollisionObject const& mccollision);
   template <typename CollisionObjects, typename TrackObject>
   int8_t selectTrackAmbiguousCheck(CollisionObjects const& collisions, TrackObject const& track);
   template <typename ParticleObject>
@@ -1051,36 +1051,8 @@ struct IdentifiedBfFilterTracks {
           /* track selection */
           /* TODO: at some point the pid has to be substituted by the identified species */
           pid = AcceptParticle(particle, mccollision);
-          if (!(pid < 0)) {
-            /* the particle has been accepted */
-            /* let's identify the particle */
-            /* TODO: probably this needs to go to AcceptParticle */
-            MatchRecoGenSpecies sp = IdentifyParticle(particle);
-            if (sp != kWrongSpecies) {
-              if (sp != kIdBfCharged) {
-                /* fill the charged particle histograms */
-                fillParticleHistosAfterSelection(particle, mccollision, charge, kIdBfCharged);
-                /* update charged multiplicities */
-                if (pid % 2 == 0) {
-                  partMultPos[kIdBfCharged]++;
-                }
-                if (pid % 2 == 1) {
-                  partMultNeg[kIdBfCharged]++;
-                }
-              }
-              /* fill the species  histograms */
-              fillParticleHistosAfterSelection(particle, mccollision, charge, sp);
-              /* update species multiplicities */
-              if (pid % 2 == 0) {
-                partMultPos[sp]++;
-              }
-              if (pid % 2 == 1) {
-                partMultNeg[sp]++;
-              }
-              acceptedparticles++;
-            } else {
-              pid = -1;
-            }
+          if(!(pid<-1)){
+            acceptedparticles++;
           }
         }
       } else {
@@ -1161,7 +1133,7 @@ struct IdentifiedBfFilterTracks {
   }
   PROCESS_SWITCH(IdentifiedBfFilterTracks, filterRecoWithoutPIDAmbiguous, "Track filtering without PID information with ambiguous tracks check", false)
 
-  void filterDetectorLevelWithoutPID(soa::Join<aod::Collisions, aod::IdentifiedBfCFCollisionsInfo> const& collisions, IdBfFullTracksDetLevel const& tracks)
+  void filterDetectorLevelWithoutPID(soa::Join<aod::Collisions, aod::IdentifiedBfCFCollisionsInfo> const& collisions, IdBfFullTracksDetLevel const& tracks, aod::McParticles const& )
   {
     filterTracks(collisions, tracks);
   }
@@ -1428,7 +1400,7 @@ inline int8_t IdentifiedBfFilterTracks::AcceptTrack(TrackObject const& track)
 /// \param track the particle of interest
 /// \return `true` if the particle is accepted, `false` otherwise
 template <typename ParticleObject, typename MCCollisionObject>
-inline int8_t IdentifiedBfFilterTracks::AcceptParticle(ParticleObject& particle, MCCollisionObject const&)
+inline int8_t IdentifiedBfFilterTracks::AcceptParticle(ParticleObject& particle, MCCollisionObject const& mccollision)
 {
   /* overall momentum cut */
   if (!(overallminp < particle.p())) {
@@ -1444,6 +1416,28 @@ inline int8_t IdentifiedBfFilterTracks::AcceptParticle(ParticleObject& particle,
 
     if (ptlow < particle.pt() && particle.pt() < ptup && etalow < particle.eta() && particle.eta() < etaup) {
       MatchRecoGenSpecies sp = IdentifyParticle(particle);
+      if (sp != kWrongSpecies) {
+        if (sp != kIdBfCharged) {
+          /* fill the charged particle histograms */
+          fillParticleHistosAfterSelection(particle, mccollision, charge, kIdBfCharged);
+          /* update charged multiplicities */
+          if (charge == 1) {
+            partMultPos[kIdBfCharged]++;
+          }
+          if (charge == -1) {
+            partMultNeg[kIdBfCharged]++;
+          }
+        }
+        /* fill the species  histograms */
+        fillParticleHistosAfterSelection(particle, mccollision, charge, sp);
+        /* update species multiplicities */
+        if (charge == 1) {
+          partMultPos[sp]++;
+        }
+        if (charge == -1) {
+          partMultNeg[sp]++;
+        }
+      }
       if (charge == 1) {
         return speciesChargeValue1[sp];
 
