@@ -19,10 +19,24 @@
 // O2 includes
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
+#include "Common/DataModel/Multiplicity.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::zdc;
+
+// Converts bc_000 into bc_001
+struct bcConverter {
+  Produces<aod::BCs_001> bc_001;
+
+  void process(aod::BCs_000 const& bcTable)
+  {
+    for (auto& bc : bcTable) {
+      constexpr uint64_t lEmptyTriggerInputs = 0;
+      bc_001(bc.runNumber(), bc.globalBC(), bc.triggerMask(), lEmptyTriggerInputs);
+    }
+  }
+};
 
 // Swaps covariance matrix elements if the data is known to be bogus (collision_000 is bogus)
 struct collisionConverter {
@@ -327,6 +341,60 @@ struct zdcConverter {
   }
 };
 
+struct mcCollisionConverter {
+  Produces<aod::McCollisions_001> mcCollisions_001;
+
+  void process(aod::McCollisions_000 const& mcCollisionTable)
+  {
+    for (auto& mcCollision : mcCollisionTable) {
+
+      // Repopulate new table
+      mcCollisions_001(
+        mcCollision.bcId(),
+        mcCollision.generatorsID(),
+        mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(),
+        mcCollision.t(), mcCollision.weight(),
+        mcCollision.impactParameter(),
+        0.0f); // dummy event plane, not available in _000
+    }
+  }
+};
+
+/// Spawn the extended table for MFTTracks001 to avoid the call to the internal spawner and a consequent circular dependency
+struct MFTTracksSpawner {
+  Spawns<aod::MFTTracks_001> mftTracks_001;
+};
+
+struct MultsExtraConverter {
+  Produces<aod::MultsExtra_001> multsExtra_001;
+  void process(aod::MultsExtra_000 const& multsExtra_000)
+  {
+    for (const auto& r : multsExtra_000) {
+      multsExtra_001(r.multPVTotalContributors(), r.multPVChi2(),
+                     r.multCollisionTimeRes(), r.multRunNumber(), r.multPVz(), r.multSel8(),
+                     r.multNTracksHasITS(), r.multNTracksHasTPC(), r.multNTracksHasTOF(),
+                     r.multNTracksHasTRD(), r.multNTracksITSOnly(),
+                     r.multNTracksTPCOnly(), r.multNTracksITSTPC(),
+                     r.multAllTracksTPCOnly(), r.multAllTracksITSTPC(),
+                     r.trackOccupancyInTimeRange(),
+                     0.0f,
+                     r.flags());
+    }
+  }
+};
+
+struct V0Converter {
+  Produces<aod::V0s_002> v0s_002;
+
+  void process(aod::V0s_001 const& v0s)
+  {
+    for (auto& v0 : v0s) {
+      uint8_t bitMask = static_cast<uint8_t>(1); // first bit on
+      v0s_002(v0.collisionId(), v0.posTrackId(), v0.negTrackId(), bitMask);
+    }
+  }
+};
+
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   auto workflow = WorkflowSpec{};
@@ -335,6 +403,9 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     for (auto t : tables) {
       if (t == "O2cascade_001") {
       } else if (t == "O2cascade_000") {
+      } else if (t == "O2bc_001") {
+      } else if (t == "O2bc_000") {
+        workflow.push_back(adaptAnalysisTask<bcConverter>(cfgc));
       } else if (t == "O2collision_001") {
       } else if (t == "O2collision_000") {
         workflow.push_back(adaptAnalysisTask<collisionConverter>(cfgc));
@@ -347,6 +418,21 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
       } else if (t == "O2mccalolabel_001") {
       } else if (t == "O2mccalolabel_000") {
         workflow.push_back(adaptAnalysisTask<caloLabelConverter>(cfgc));
+      } else if (t == "O2mfttrack_001") {
+      } else if (t == "O2mfttrack_000") {
+        workflow.push_back(adaptAnalysisTask<MftTracksConverter>(cfgc));
+        workflow.push_back(adaptAnalysisTask<MFTTracksSpawner>(cfgc));
+      } else if (t == "O2multextra_001") {
+      } else if (t == "O2multextra_000") {
+        workflow.push_back(adaptAnalysisTask<MultsExtraConverter>(cfgc));
+      } else if (t == "O2v0_002") {
+      } else if (t == "O2v0_001") {
+        workflow.push_back(adaptAnalysisTask<V0Converter>(cfgc));
+      } else if (t == "O2v0_000") {
+        workflow.push_back(adaptAnalysisTask<V0Converter>(cfgc));
+      } else if (t == "O2mccollision_001") {
+      } else if (t == "O2mccollision_000") {
+        workflow.push_back(adaptAnalysisTask<mcCollisionConverter>(cfgc));
       } else if (t == "O2mcparticle_001") {
       } else if (t == "O2mcparticle_000") {
         workflow.push_back(adaptAnalysisTask<McConverter>(cfgc));
