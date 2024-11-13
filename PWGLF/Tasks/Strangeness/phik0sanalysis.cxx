@@ -152,13 +152,15 @@ struct phik0shortanalysis {
   Configurable<float> upmPhiMB{"upmPhiMB", 1.02778f, "Upper limits on Phi mass Minimum Bias"};
 
   // Configurables for phi selection
-  Configurable<double> cMinPtcut{"cMinPtcut", 0.15, "Track minimum pt cut"};
   Configurable<float> cfgCutCharge{"cfgCutCharge", 0.0, "Cut on charge"};
   Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", false, "Primary track selection"};
   Configurable<bool> cfgGlobalWoDCATrack{"cfgGlobalWoDCATrack", true, "Global track selection without DCA"};
   Configurable<bool> cfgPVContributor{"cfgPVContributor", true, "PV contributor track selection"};
-  Configurable<double> cMaxDCArToPVcut{"cMaxDCArToPVcut", 0.5, "Track DCAr cut to PV Maximum"};
-  Configurable<double> cMaxDCAzToPVcut{"cMaxDCAzToPVcut", 2.0, "Track DCAz cut to PV Maximum"};
+  Configurable<double> cMinPtcut{"cMinPtcut", 0.15, "Track minimum pt cut"};
+  Configurable<float> cMaxDCAzToPVcut{"cMaxDCAzToPVcut", 2.0f, "Track DCAz cut to PV Maximum"};
+  Configurable<float> cMaxDCArToPV1{"cMaxDCArToPV1", 0.004f, "Track DCAr cut to PV config 1"};
+  Configurable<float> cMaxDCArToPV2{"cMaxDCArToPV2", 0.013f, "Track DCAr cut to PV config 2"};
+  Configurable<float> cMaxDCArToPV3{"cMaxDCArToPV3", 1.0f, "Track DCAr cut to PV config 3"};
 
   Configurable<bool> isNoTOF{"isNoTOF", false, "isNoTOF"};
   Configurable<float> nsigmaCutTPCKa{"nsigmacutTPC", 3.0, "Value of the TPC Nsigma cut"};
@@ -554,18 +556,18 @@ struct phik0shortanalysis {
   template <typename T>
   bool selectionTrackResonance(const T& track)
   {
-    if (std::abs(track.pt()) < cMinPtcut)
-      return false;
-    if (std::abs(track.dcaXY()) > cMaxDCArToPVcut)
-      return false;
-    if (std::abs(track.dcaZ()) > cMaxDCAzToPVcut)
-      return false;
-
     if (cfgPrimaryTrack && !track.isPrimaryTrack())
       return false;
     if (cfgGlobalWoDCATrack && !track.isGlobalTrackWoDCA())
       return false;
     if (cfgPVContributor && !track.isPVContributor())
+      return false;
+
+    if (track.pt() < cMinPtcut)
+      return false;
+    if (std::abs(track.dcaZ()) > cMaxDCAzToPVcut)
+      return false;
+    if (std::abs(track.dcaXY()) > cMaxDCArToPV1 + (cMaxDCArToPV2 / std::pow(track.pt(), cMaxDCArToPV3)))
       return false;
     return true;
   }
@@ -579,6 +581,16 @@ struct phik0shortanalysis {
     if (!isNoTOF && !candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPCKa)
       return true;
     if (isNoTOF && std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPCKa)
+      return true;
+    return false;
+  }
+
+  template <typename T>
+  bool selectionPIDKaonpTdependent(const T& candidate)
+  {
+    if (candidate.pt() < 0.5 && std::abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC)
+      return true;
+    if (candidate.pt() >= 0.5 && candidate.hasTOF() && ((candidate.tofNSigmaKa() * candidate.tofNSigmaKa()) + (candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa())) < (nsigmaCutCombined * nsigmaCutCombined))
       return true;
     return false;
   }
@@ -744,7 +756,7 @@ struct phik0shortanalysis {
     bool isFilledhV0 = false;
 
     for (auto track1 : posThisColl) { // loop over all selected tracks
-      if (!selectionTrackResonance(track1) || !selectionPIDKaon(track1))
+      if (!selectionTrackResonance(track1) || !selectionPIDKaonpTdependent(track1))
         continue; // topological and PID selection
 
       PhicandHist.fill(HIST("hEta"), track1.eta());
@@ -757,7 +769,7 @@ struct phik0shortanalysis {
 
       // Loop over all negative candidates
       for (auto track2 : negThisColl) {
-        if (!selectionTrackResonance(track2) || !selectionPIDKaon(track2))
+        if (!selectionTrackResonance(track2) || !selectionPIDKaonpTdependent(track2))
           continue; // topological and PID selection
 
         auto track2ID = track2.globalIndex();
@@ -916,14 +928,14 @@ struct phik0shortanalysis {
       // Phi reconstruction
       // Loop over positive candidates
       for (auto track1 : posThisColl) { // loop over all selected tracks
-        if (!selectionTrackResonance(track1) || !selectionPIDKaon(track1))
+        if (!selectionTrackResonance(track1) || !selectionPIDKaonpTdependent(track1))
           continue; // topological and PID selection
 
         auto track1ID = track1.globalIndex();
 
         // Loop over all negative candidates
         for (auto track2 : negThisColl) {
-          if (!selectionTrackResonance(track2) || !selectionPIDKaon(track2))
+          if (!selectionTrackResonance(track2) || !selectionPIDKaonpTdependent(track2))
             continue; // topological and PID selection
 
           auto track2ID = track2.globalIndex();
@@ -1057,14 +1069,14 @@ struct phik0shortanalysis {
       // Phi reconstruction
       // Loop over positive candidates
       for (auto track1 : posThisColl) { // loop over all selected tracks
-        if (!selectionTrackResonance(track1) || !selectionPIDKaon(track1))
+        if (!selectionTrackResonance(track1) || !selectionPIDKaonpTdependent(track1))
           continue; // topological and PID selection
 
         auto track1ID = track1.globalIndex();
 
         // Loop over all negative candidates
         for (auto track2 : negThisColl) {
-          if (!selectionTrackResonance(track2) || !selectionPIDKaon(track2))
+          if (!selectionTrackResonance(track2) || !selectionPIDKaonpTdependent(track2))
             continue; // topological and PID selection
 
           auto track2ID = track2.globalIndex();
@@ -1213,7 +1225,7 @@ struct phik0shortanalysis {
 
         // Combinatorial background simulation
         for (auto& [track1, track2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(posThisColl, negThisColl))) {
-          if (!selectionTrackResonance(track1) || !selectionPIDKaon(track1) || !selectionTrackResonance(track2) || !selectionPIDKaon(track2))
+          if (!selectionTrackResonance(track1) || !selectionPIDKaonpTdependent(track1) || !selectionTrackResonance(track2) || !selectionPIDKaonpTdependent(track2))
             continue; // topological and PID selection
 
           TLorentzVector recPhi;
@@ -1326,7 +1338,7 @@ struct phik0shortanalysis {
 
         // Combinatorial background simulation
         for (auto& [track1, track2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(posThisColl, negThisColl))) {
-          if (!selectionTrackResonance(track1) || !selectionPIDKaon(track1) || !selectionTrackResonance(track2) || !selectionPIDKaon(track2))
+          if (!selectionTrackResonance(track1) || !selectionPIDKaonpTdependent(track1) || !selectionTrackResonance(track2) || !selectionPIDKaonpTdependent(track2))
             continue; // topological and PID selection
 
           TLorentzVector recPhi;
@@ -1432,7 +1444,7 @@ struct phik0shortanalysis {
     bool isCountedPhi = false;
 
     for (auto track1 : posThisColl) { // loop over all selected tracks
-      if (!selectionTrackResonance(track1) || !selectionPIDKaon(track1))
+      if (!selectionTrackResonance(track1) || !selectionPIDKaonpTdependent(track1))
         continue; // topological and PID selection
 
       auto track1ID = track1.globalIndex();
@@ -1442,7 +1454,7 @@ struct phik0shortanalysis {
 
       // Loop over all negative candidates
       for (auto track2 : negThisColl) {
-        if (!selectionTrackResonance(track2) || !selectionPIDKaon(track2))
+        if (!selectionTrackResonance(track2) || !selectionPIDKaonpTdependent(track2))
           continue; // topological and PID selection
 
         auto track2ID = track2.globalIndex();
@@ -1668,7 +1680,7 @@ struct phik0shortanalysis {
 
       // Phi reconstruction
       for (auto track1 : posThisColl) { // loop over all selected tracks
-        if (!selectionTrackResonance(track1) || !selectionPIDKaon(track1))
+        if (!selectionTrackResonance(track1) || !selectionPIDKaonpTdependent(track1))
           continue; // topological and PID selection
 
         auto track1ID = track1.globalIndex();
@@ -1677,7 +1689,7 @@ struct phik0shortanalysis {
           continue;
 
         for (auto track2 : negThisColl) {
-          if (!selectionTrackResonance(track2) || !selectionPIDKaon(track2))
+          if (!selectionTrackResonance(track2) || !selectionPIDKaonpTdependent(track2))
             continue; // topological and PID selection
 
           auto track2ID = track2.globalIndex();
@@ -1863,7 +1875,7 @@ struct phik0shortanalysis {
 
       // Phi reconstruction
       for (auto track1 : posThisColl) { // loop over all selected tracks
-        if (!selectionTrackResonance(track1) || !selectionPIDKaon(track1))
+        if (!selectionTrackResonance(track1) || !selectionPIDKaonpTdependent(track1))
           continue; // topological and PID selection
 
         auto track1ID = track1.globalIndex();
@@ -1872,7 +1884,7 @@ struct phik0shortanalysis {
           continue;
 
         for (auto track2 : negThisColl) {
-          if (!selectionTrackResonance(track2) || !selectionPIDKaon(track2))
+          if (!selectionTrackResonance(track2) || !selectionPIDKaonpTdependent(track2))
             continue; // topological and PID selection
 
           auto track2ID = track2.globalIndex();
@@ -2017,14 +2029,14 @@ struct phik0shortanalysis {
     bool isCountedPhi = false;
 
     for (auto track1 : posThisColl) { // loop over all selected tracks
-      if (!selectionTrackResonance(track1) || !selectionPIDKaon(track1))
+      if (!selectionTrackResonance(track1) || !selectionPIDKaonpTdependent(track1))
         continue; // topological and PID selection
 
       auto track1ID = track1.globalIndex();
 
       // Loop over all negative candidates
       for (auto track2 : negThisColl) {
-        if (!selectionTrackResonance(track2) || !selectionPIDKaon(track2))
+        if (!selectionTrackResonance(track2) || !selectionPIDKaonpTdependent(track2))
           continue; // topological and PID selection
 
         auto track2ID = track2.globalIndex();
@@ -2171,13 +2183,13 @@ struct phik0shortanalysis {
 
       // Phi reconstruction
       for (auto track1 : posThisColl) { // loop over all selected tracks
-        if (!selectionTrackResonance(track1) || !selectionPIDKaon(track1))
+        if (!selectionTrackResonance(track1) || !selectionPIDKaonpTdependent(track1))
           continue; // topological and PID selection
 
         auto track1ID = track1.globalIndex();
 
         for (auto track2 : negThisColl) {
-          if (!selectionTrackResonance(track2) || !selectionPIDKaon(track2))
+          if (!selectionTrackResonance(track2) || !selectionPIDKaonpTdependent(track2))
             continue; // topological and PID selection
 
           auto track2ID = track2.globalIndex();
@@ -2323,13 +2335,13 @@ struct phik0shortanalysis {
 
       // Phi reconstruction
       for (auto track1 : posThisColl) { // loop over all selected tracks
-        if (!selectionTrackResonance(track1) || !selectionPIDKaon(track1))
+        if (!selectionTrackResonance(track1) || !selectionPIDKaonpTdependent(track1))
           continue; // topological and PID selection
 
         auto track1ID = track1.globalIndex();
 
         for (auto track2 : negThisColl) {
-          if (!selectionTrackResonance(track2) || !selectionPIDKaon(track2))
+          if (!selectionTrackResonance(track2) || !selectionPIDKaonpTdependent(track2))
             continue; // topological and PID selection
 
           auto track2ID = track2.globalIndex();
