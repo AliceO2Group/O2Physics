@@ -410,6 +410,21 @@ struct upcRhoAnalysis {
     System.add("system/cut/XnXn/like-sign/negative/hPhiChargeVsM", ";m (GeV/#it{c}^{2});#phi;counts", kTH2D, {mCutAxis, phiAsymmAxis});
     System.add("system/cut/XnXn/like-sign/negative/hPyVsPxRandom", ";p_{x} (GeV/#it{c});p_{y} (GeV/#it{c});counts", kTH2D, {momentumFromPhiAxis, momentumFromPhiAxis});
     System.add("system/cut/XnXn/like-sign/negative/hPyVsPxCharge", ";p_{x} (GeV/#it{c});p_{y} (GeV/#it{c});counts", kTH2D, {momentumFromPhiAxis, momentumFromPhiAxis});
+
+    // MC
+    MC.add("MC/QC/hPosXY", ";x (cm);y (cm);counts", kTH2D, {{2000, -0.1, 0.1}, {2000, -0.1, 0.1}});
+    MC.add("MC/QC/hPosZ", ";z (cm);counts", kTH1D, {{400, -20.0, 20.0}});
+    MC.add("MC/QC/hPdgCode", ";pdg code;counts", kTH1D, {{2001, -1000.5, 1000.5}});
+    MC.add("MC/QC/hProducedByGenerator", ";produced by generator;counts", kTH1D, {{2, -0.5, 1.5}});
+    MC.add("MC/QC/hNPions", ";number of pions;counts", kTH1D, {{11, -0.5, 10.5}});
+
+    MC.add("MC/hM", ";m (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
+    MC.add("MC/hPt", ";p_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
+    MC.add("MC/hPt2", ";p_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
+    MC.add("MC/hPtVsM", ";m (GeV/#it{c}^{2});p_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
+    MC.add("MC/hY", ";y;counts", kTH1D, {{400, -20.0, 20.0}});
+    MC.add("MC/hPhiRandom", ";#phi;counts", kTH1D, {phiAsymmAxis});
+    MC.add("MC/hPhiCharge", ";#phi;counts", kTH1D, {phiAsymmAxis});
   }
 
   template <typename T>
@@ -447,7 +462,7 @@ struct upcRhoAnalysis {
       return false;
     QC.fill(HIST("QC/tracks/hSelectionCounter"), 8);
 
-    if ((static_cast<float>(track.tpcNClsCrossedRows()) / static_cast<float>(track.tpcNClsFindable())) < tracksMinTpcNClsCrossedOverFindableCut)
+    if ((static_cast<double>(track.tpcNClsCrossedRows()) / static_cast<double>(track.tpcNClsFindable())) < tracksMinTpcNClsCrossedOverFindableCut)
       return false;
     QC.fill(HIST("QC/tracks/hSelectionCounter"), 9);
 
@@ -524,13 +539,19 @@ struct upcRhoAnalysis {
   double getPhiCharge(const T& cutTracks, const std::vector<TLorentzVector>& cutTracks4Vecs)
   { // two possible definitions of phi: charge-based assignment
     TLorentzVector pOne, pTwo;
-    if (cutTracks[0].sign() > 0) {
-      pOne = cutTracks4Vecs[0];
-      pTwo = cutTracks4Vecs[1];
-    } else {
-      pOne = cutTracks4Vecs[1];
-      pTwo = cutTracks4Vecs[0];
-    }
+    pOne = (cutTracks[0].sign() > 0) ? cutTracks4Vecs[0] : cutTracks4Vecs[1];
+    pTwo = (cutTracks[0].sign() > 0) ? cutTracks4Vecs[1] : cutTracks4Vecs[0];
+    TLorentzVector pPlus = pOne + pTwo;
+    TLorentzVector pMinus = pOne - pTwo;
+    return pPlus.DeltaPhi(pMinus);
+  }
+
+  template <typename T>
+  double getPhiChargeMC(const T& cutTracks, const std::vector<TLorentzVector>& cutTracks4Vecs)
+  { // two possible definitions of phi: charge-based assignment
+    TLorentzVector pOne, pTwo;
+    pOne = (cutTracks[0].pdgCode() > 0) ? cutTracks4Vecs[0] : cutTracks4Vecs[1];
+    pTwo = (cutTracks[0].pdgCode() > 0) ? cutTracks4Vecs[1] : cutTracks4Vecs[0];
     TLorentzVector pPlus = pOne + pTwo;
     TLorentzVector pMinus = pOne - pTwo;
     return pPlus.DeltaPhi(pMinus);
@@ -656,39 +677,39 @@ struct upcRhoAnalysis {
     QC.fill(HIST("QC/tracks/2D/mass/leading/hTpcChi2NClVsM"), mass, leadingMomentumTrack.tpcChi2NCl());
     QC.fill(HIST("QC/tracks/2D/mass/leading/hTpcNClsVsM"), mass, leadingMomentumTrack.tpcNClsFindable() - leadingMomentumTrack.tpcNClsFindableMinusFound());
     QC.fill(HIST("QC/tracks/2D/mass/leading/hTpcNClsCrossedRowsVsM"), mass, leadingMomentumTrack.tpcNClsCrossedRows());
-    QC.fill(HIST("QC/tracks/2D/mass/leading/hTpcNClsCrossedRowsOverTpcNClsFindableVsM"), mass, (static_cast<float>(leadingMomentumTrack.tpcNClsCrossedRows()) / static_cast<float>(leadingMomentumTrack.tpcNClsFindable())));
+    QC.fill(HIST("QC/tracks/2D/mass/leading/hTpcNClsCrossedRowsOverTpcNClsFindableVsM"), mass, (static_cast<double>(leadingMomentumTrack.tpcNClsCrossedRows()) / static_cast<double>(leadingMomentumTrack.tpcNClsFindable())));
     QC.fill(HIST("QC/tracks/2D/mass/subleading/hItsNClsVsM"), mass, subleadingMomentumTrack.itsNCls());
     QC.fill(HIST("QC/tracks/2D/mass/subleading/hItsChi2NClVsM"), mass, subleadingMomentumTrack.itsChi2NCl());
     QC.fill(HIST("QC/tracks/2D/mass/subleading/hTpcChi2NClVsM"), mass, subleadingMomentumTrack.tpcChi2NCl());
     QC.fill(HIST("QC/tracks/2D/mass/subleading/hTpcNClsVsM"), mass, subleadingMomentumTrack.tpcNClsFindable() - subleadingMomentumTrack.tpcNClsFindableMinusFound());
     QC.fill(HIST("QC/tracks/2D/mass/subleading/hTpcNClsCrossedRowsVsM"), mass, subleadingMomentumTrack.tpcNClsCrossedRows());
-    QC.fill(HIST("QC/tracks/2D/mass/subleading/hTpcNClsCrossedRowsOverTpcNClsFindableVsM"), mass, (static_cast<float>(subleadingMomentumTrack.tpcNClsCrossedRows()) / static_cast<float>(subleadingMomentumTrack.tpcNClsFindable())));
+    QC.fill(HIST("QC/tracks/2D/mass/subleading/hTpcNClsCrossedRowsOverTpcNClsFindableVsM"), mass, (static_cast<double>(subleadingMomentumTrack.tpcNClsCrossedRows()) / static_cast<double>(subleadingMomentumTrack.tpcNClsFindable())));
     // rapidity
     QC.fill(HIST("QC/tracks/2D/rapidity/leading/hItsNClsVsY"), rapidity, leadingMomentumTrack.itsNCls());
     QC.fill(HIST("QC/tracks/2D/rapidity/leading/hItsChi2NClVsY"), rapidity, leadingMomentumTrack.itsChi2NCl());
     QC.fill(HIST("QC/tracks/2D/rapidity/leading/hTpcChi2NClVsY"), rapidity, leadingMomentumTrack.tpcChi2NCl());
     QC.fill(HIST("QC/tracks/2D/rapidity/leading/hTpcNClsVsY"), rapidity, leadingMomentumTrack.tpcNClsFindable() - leadingMomentumTrack.tpcNClsFindableMinusFound());
     QC.fill(HIST("QC/tracks/2D/rapidity/leading/hTpcNClsCrossedRowsVsY"), rapidity, leadingMomentumTrack.tpcNClsCrossedRows());
-    QC.fill(HIST("QC/tracks/2D/rapidity/leading/hTpcNClsCrossedRowsOverTpcNClsFindableVsY"), rapidity, (static_cast<float>(leadingMomentumTrack.tpcNClsCrossedRows()) / static_cast<float>(leadingMomentumTrack.tpcNClsFindable())));
+    QC.fill(HIST("QC/tracks/2D/rapidity/leading/hTpcNClsCrossedRowsOverTpcNClsFindableVsY"), rapidity, (static_cast<double>(leadingMomentumTrack.tpcNClsCrossedRows()) / static_cast<double>(leadingMomentumTrack.tpcNClsFindable())));
     QC.fill(HIST("QC/tracks/2D/rapidity/subleading/hItsNClsVsY"), rapidity, subleadingMomentumTrack.itsNCls());
     QC.fill(HIST("QC/tracks/2D/rapidity/subleading/hItsChi2NClVsY"), rapidity, subleadingMomentumTrack.itsChi2NCl());
     QC.fill(HIST("QC/tracks/2D/rapidity/subleading/hTpcChi2NClVsY"), rapidity, subleadingMomentumTrack.tpcChi2NCl());
     QC.fill(HIST("QC/tracks/2D/rapidity/subleading/hTpcNClsVsY"), rapidity, subleadingMomentumTrack.tpcNClsFindable() - subleadingMomentumTrack.tpcNClsFindableMinusFound());
     QC.fill(HIST("QC/tracks/2D/rapidity/subleading/hTpcNClsCrossedRowsVsY"), rapidity, subleadingMomentumTrack.tpcNClsCrossedRows());
-    QC.fill(HIST("QC/tracks/2D/rapidity/subleading/hTpcNClsCrossedRowsOverTpcNClsFindableVsY"), rapidity, (static_cast<float>(subleadingMomentumTrack.tpcNClsCrossedRows()) / static_cast<float>(subleadingMomentumTrack.tpcNClsFindable())));
+    QC.fill(HIST("QC/tracks/2D/rapidity/subleading/hTpcNClsCrossedRowsOverTpcNClsFindableVsY"), rapidity, (static_cast<double>(subleadingMomentumTrack.tpcNClsCrossedRows()) / static_cast<double>(subleadingMomentumTrack.tpcNClsFindable())));
     // pT
     QC.fill(HIST("QC/tracks/2D/pT/leading/hItsNClsVsPt"), pT, leadingMomentumTrack.itsNCls());
     QC.fill(HIST("QC/tracks/2D/pT/leading/hItsChi2NClVsPt"), pT, leadingMomentumTrack.itsChi2NCl());
     QC.fill(HIST("QC/tracks/2D/pT/leading/hTpcChi2NClVsPt"), pT, leadingMomentumTrack.tpcChi2NCl());
     QC.fill(HIST("QC/tracks/2D/pT/leading/hTpcNClsVsPt"), pT, leadingMomentumTrack.tpcNClsFindable() - leadingMomentumTrack.tpcNClsFindableMinusFound());
     QC.fill(HIST("QC/tracks/2D/pT/leading/hTpcNClsCrossedRowsVsPt"), pT, leadingMomentumTrack.tpcNClsCrossedRows());
-    QC.fill(HIST("QC/tracks/2D/pT/leading/hTpcNClsCrossedRowsOverTpcNClsFindableVsPt"), pT, (static_cast<float>(leadingMomentumTrack.tpcNClsCrossedRows()) / static_cast<float>(leadingMomentumTrack.tpcNClsFindable())));
+    QC.fill(HIST("QC/tracks/2D/pT/leading/hTpcNClsCrossedRowsOverTpcNClsFindableVsPt"), pT, (static_cast<double>(leadingMomentumTrack.tpcNClsCrossedRows()) / static_cast<double>(leadingMomentumTrack.tpcNClsFindable())));
     QC.fill(HIST("QC/tracks/2D/pT/subleading/hItsNClsVsPt"), pT, subleadingMomentumTrack.itsNCls());
     QC.fill(HIST("QC/tracks/2D/pT/subleading/hItsChi2NClVsPt"), pT, subleadingMomentumTrack.itsChi2NCl());
     QC.fill(HIST("QC/tracks/2D/pT/subleading/hTpcChi2NClVsPt"), pT, subleadingMomentumTrack.tpcChi2NCl());
     QC.fill(HIST("QC/tracks/2D/pT/subleading/hTpcNClsVsPt"), pT, subleadingMomentumTrack.tpcNClsFindable() - subleadingMomentumTrack.tpcNClsFindableMinusFound());
     QC.fill(HIST("QC/tracks/2D/pT/subleading/hTpcNClsCrossedRowsVsPt"), pT, subleadingMomentumTrack.tpcNClsCrossedRows());
-    QC.fill(HIST("QC/tracks/2D/pT/subleading/hTpcNClsCrossedRowsOverTpcNClsFindableVsPt"), pT, (static_cast<float>(subleadingMomentumTrack.tpcNClsCrossedRows()) / static_cast<float>(subleadingMomentumTrack.tpcNClsFindable())));
+    QC.fill(HIST("QC/tracks/2D/pT/subleading/hTpcNClsCrossedRowsOverTpcNClsFindableVsPt"), pT, (static_cast<double>(subleadingMomentumTrack.tpcNClsCrossedRows()) / static_cast<double>(subleadingMomentumTrack.tpcNClsFindable())));
     // fill tree
     systemTree(collision.runNumber(), nClass, totalCharge, mass, pT, rapidity, phiRandom, phiCharge);
     // fill raw histograms according to the total charge
@@ -946,14 +967,46 @@ struct upcRhoAnalysis {
   }
 
   template <typename C, typename T>
-  void processMC(C const& mcCollision, T const& mcparticles)
+  void processMC(C const& mcCollision, T const& mcParticles)
   {
-    // loop over all particles in the event
-    for (auto const& mcparticle : mcparticles) {
-      // only consider charged pions
-      if (std::abs(mcparticle.pdgCode()) != 211)
+    MC.fill(HIST("MC/QC/hPosXY"), mcCollision.posX(), mcCollision.posY());
+    MC.fill(HIST("MC/QC/hPosZ"), mcCollision.posZ());
+
+    std::vector<decltype(mcParticles.begin())> cutMcParticles;
+    std::vector<TLorentzVector> mcParticles4Vecs;
+
+    for (auto const& mcParticle : mcParticles) {
+      MC.fill(HIST("MC/QC/hPdgCode"), mcParticle.pdgCode());
+      MC.fill(HIST("MC/QC/hProducedByGenerator"), mcParticle.producedByGenerator());
+      if (std::abs(mcParticle.pdgCode()) != 211)
         continue;
+      cutMcParticles.push_back(mcParticle);
+      TLorentzVector pion4Vec;
+      pion4Vec.SetPxPyPzE(mcParticle.px(), mcParticle.py(), mcParticle.pz(), mcParticle.e());
+      mcParticles4Vecs.push_back(pion4Vec);
     }
+    MC.fill(HIST("MC/QC/hNPions"), cutMcParticles.size());
+
+    if (mcParticles4Vecs.size() != cutMcParticles.size())
+      return;
+    if (mcParticles4Vecs.size() != 2)
+      return;
+    TLorentzVector system = mcParticles4Vecs[0] + mcParticles4Vecs[1];
+
+    double mass = system.M();
+    double pT = system.Pt();
+    double pTsquare = pT * pT;
+    double rapidity = system.Rapidity();
+    double phiRandom = getPhiRandom(mcParticles4Vecs);
+    double phiCharge = getPhiChargeMC(cutMcParticles, mcParticles4Vecs);
+
+    MC.fill(HIST("MC/hM"), mass);
+    MC.fill(HIST("MC/hPt"), pT);
+    MC.fill(HIST("MC/hPtVsM"), mass, pT);
+    MC.fill(HIST("MC/hPt2"), pTsquare);
+    MC.fill(HIST("MC/hY"), rapidity);
+    MC.fill(HIST("MC/hPhiRandom"), phiRandom);
+    MC.fill(HIST("MC/hPhiCharge"), phiCharge);
   }
 
   void processSGdata(FullUdSgCollision const& collision, FullUdTracks const& tracks)
