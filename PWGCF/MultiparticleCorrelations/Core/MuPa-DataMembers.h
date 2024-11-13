@@ -181,13 +181,15 @@ struct Qvector {
 
 // *) Multiparticle correlations (standard, isotropic, same harmonic):
 struct MultiparticleCorrelations {
-  TList* fCorrelationsList = NULL;                                           // list to hold all correlations objects
-  TProfile* fCorrelationsFlagsPro = NULL;                                    // profile to hold all flags for correlations
-  Bool_t fCalculateCorrelations = kTRUE;                                     // calculate and store integrated correlations
-  TProfile* fCorrelationsPro[4][gMaxHarmonic][eAsFunctionOf_N] = {{{NULL}}}; //! multiparticle correlations
-                                                                             //! [2p=0,4p=1,6p=2,8p=3][n=1,n=2,...,n=gMaxHarmonic][0=integrated,1=vs.
-                                                                             //! multiplicity,2=vs. centrality,3=pT,4=eta]
-} mupa;                                                                      // "mupa" is a common label for objects in this struct
+  TList* fCorrelationsList = NULL;                                                                     // list to hold all correlations objects
+  TProfile* fCorrelationsFlagsPro = NULL;                                                              // profile to hold all flags for correlations
+  Bool_t fCalculateCorrelations = kTRUE;                                                               // calculate and store integrated correlations
+  TProfile* fCorrelationsPro[4][gMaxHarmonic][eAsFunctionOf_N] = {{{NULL}}};                           //! multiparticle correlations
+                                                                                                       //  [2p=0,4p=1,6p=2,8p=3][n=1,n=2,...,n=gMaxHarmonic]
+                                                                                                       //  [0=integrated,1=vs. multiplicity,2=vs. centrality,3=pT,4=eta,5=vs. occupancy]
+  Bool_t fCalculateCorrelationsAsFunctionOf[eAsFunctionOf_N] = {true, true, true, false, false, true}; //! [0=integrated,1=vs. multiplicity,2=vs. centrality,3=pT,4=eta,5=vs. occupancy]
+                                                                                                       //  As of 20241111, 3=pT and 4=eta are not implemented, see void CalculateKineCorrelations(...)
+} mupa;                                                                                                // "mupa" is a common label for objects in this struct
 
 // *) Particle weights:
 struct ParticleWeights {
@@ -234,9 +236,11 @@ struct InternalValidation {
   TList* fInternalValidationList = NULL;              // list to hold all objects for internal validation
   TProfile* fInternalValidationFlagsPro = NULL;       // profile to hold all flags for internal validation
   Bool_t fUseInternalValidation = kFALSE;             // use internal validation
-  Bool_t fInternalValidationForceBailout = kFALSE;    // force bailout after fnEventsInternalValidation is reached. In HL, for each real event, I do fnEventsInternalValidation events
-  UInt_t fnEventsInternalValidation = 0;              // how many events will be sampled on-the-fly for internal validation
-  TString* fHarmonicsOptionInternalValidation = NULL; // see .cxx for full documentation
+  Bool_t fInternalValidationForceBailout = kFALSE;    // force bailout in internal validation after either eNumberOfEvents or eSelectedEvents is reached.
+                                                      // This is OK as long as I do not apply any event cuts in InternalValidation().
+                                                      // Remember that for each real event, I do fnEventsInternalValidation events on-the-fly.
+  UInt_t fnEventsInternalValidation = 0;              // how many on-the-fly events will be sampled for each real event, for internal validation
+  TString* fHarmonicsOptionInternalValidation = NULL; // "constant" or "correlated", see .cxx for full documentation
   Bool_t fRescaleWithTheoreticalInput = kFALSE;       // if kTRUE, all measured correlators are rescaled with theoretical input, so that in profiles everything is at 1
   TArrayD* fInternalValidationVnPsin[2] = {NULL};     // 0 = { v1, v2, ... }, 1 = { Psi1, Psi2, ... }
   Int_t fMultRangeInternalValidation[2] = {0, 0};     // min and max values for uniform multiplicity distribution in on-the-fly analysis (convention: min <= M < max)
@@ -244,15 +248,15 @@ struct InternalValidation {
 
 // *) Test0:
 struct Test0 {
-  TList* fTest0List = NULL;                                                               // list to hold all objects for Test0
-  TProfile* fTest0FlagsPro = NULL;                                                        // store all flags for Test0
-  Bool_t fCalculateTest0 = kFALSE;                                                        // calculate or not Test0
-  TProfile* fTest0Pro[gMaxCorrelator][gMaxIndex][eAsFunctionOf_N] = {{{NULL}}};           //! [order][index][0=integrated,1=vs. multiplicity,2=vs. centrality,3=pT,4=eta]
-  TString* fTest0Labels[gMaxCorrelator][gMaxIndex] = {{NULL}};                            // all labels: k-p'th order is stored in k-1'th index. So yes, I also store 1-p
-  Bool_t fCalculateTest0AsFunctionOf[eAsFunctionOf_N] = {true, true, true, false, false}; //! [0=integrated,1=vs. multiplicity,2=vs. centrality,3=pT,4=eta]
-  TString fFileWithLabels = "";                                                           // path to external ROOT file which specifies all labels of interest
-  TH1I* fTest0LabelsPlaceholder = NULL;                                                   // store all Test0 labels in this histogram
-} t0;                                                                                     // "t0" labels an instance of this group of histograms
+  TList* fTest0List = NULL;                                                                      // list to hold all objects for Test0
+  TProfile* fTest0FlagsPro = NULL;                                                               // store all flags for Test0
+  Bool_t fCalculateTest0 = kFALSE;                                                               // calculate or not Test0
+  TProfile* fTest0Pro[gMaxCorrelator][gMaxIndex][eAsFunctionOf_N] = {{{NULL}}};                  //! [order][index][0=integrated,1=vs. multiplicity,2=vs. centrality,3=pT,4=eta]
+  TString* fTest0Labels[gMaxCorrelator][gMaxIndex] = {{NULL}};                                   // all labels: k-p'th order is stored in k-1'th index. So yes, I also store 1-p
+  Bool_t fCalculateTest0AsFunctionOf[eAsFunctionOf_N] = {true, true, true, false, false, false}; //! [0=integrated,1=vs. multiplicity,2=vs. centrality,3=pT,4=eta,5=vs. occupancy]
+  TString fFileWithLabels = "";                                                                  // path to external ROOT file which specifies all labels of interest
+  TH1I* fTest0LabelsPlaceholder = NULL;                                                          // store all Test0 labels in this histogram
+} t0;                                                                                            // "t0" labels an instance of this group of histograms
 
 // *) Results:
 struct Results {                                   // This is in addition also sort of "abstract" interface, which defines common binning, etc., for other groups of histograms.
