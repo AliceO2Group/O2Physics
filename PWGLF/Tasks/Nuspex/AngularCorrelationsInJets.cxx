@@ -363,7 +363,7 @@ struct AngularCorrelationsInJets {
         return false;
       if (track.pt() > fProtonTPCTOFpT && TMath::Abs(track.tpcNSigmaPr()) > fProtonTPCnsigHighYield)
         return false;
-      
+
       registryData.fill(HIST("hTOFnsigmaProton"), jetParticle.pt(), jetParticle.tofNSigmaPr());
 
       // TOF
