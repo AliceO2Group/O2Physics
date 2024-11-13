@@ -25,6 +25,7 @@
 #include <iostream>
 #include <iterator>
 #include <string>
+#include <vector>
 
 #include "EventFiltering/Zorro.h"
 #include "EventFiltering/ZorroSummary.h"
