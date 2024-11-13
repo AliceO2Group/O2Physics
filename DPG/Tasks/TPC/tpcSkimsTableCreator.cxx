@@ -84,7 +84,6 @@ struct TreeWriterTpcV0 {
     const int multTPC = collision.multTPC();
     auto trackocc = collision.trackOccupancyInTimeRange();
     auto ft0occ = collision.ft0cOccupancyInTimeRange();
-    
 
     const float alpha = v0.alpha();
     const float qt = v0.qtarm();
@@ -331,7 +330,6 @@ struct TreeWriterTPCTOF {
     const int multTPC = collision.multTPC();
     auto trackocc = collision.trackOccupancyInTimeRange();
     auto ft0occ = collision.ft0cOccupancyInTimeRange();
-
 
     const double pseudoRndm = track.pt() * 1000. - static_cast<int64_t>(track.pt() * 1000);
     if (pseudoRndm < dwnSmplFactor) {
