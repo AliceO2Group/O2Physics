@@ -20,6 +20,7 @@
 
 #include <chrono>
 #include <cmath>
+#include <vector>
 
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
@@ -1438,10 +1439,10 @@ struct PseudorapidityDensityMFT {
       if constexpr (C::template contains<aod::CentFT0Cs>()) {
         c_rec = collision.centFT0C();
         QAregistry.fill(HIST("Events/Centrality/hRecPerGenColls"),
-                        float(collisions.size()) / mcCollisions.size(), c_rec);
+                        static_cast<float>(collisions.size()) / mcCollisions.size(), c_rec);
       } else {
         QAregistry.fill(HIST("Events/hRecPerGenColls"),
-                        float(collisions.size()) / mcCollisions.size());
+                        static_cast<float>(collisions.size()) / mcCollisions.size());
       }
 
       if (!isGoodEvent<false>(collision)) {
@@ -1462,11 +1463,11 @@ struct PseudorapidityDensityMFT {
       if constexpr (C::template contains<aod::CentFT0Cs>()) {
         QAregistry.fill(HIST("Tracks/Centrality/hNmftTrks"), Ntracks, c_rec);
         QAregistry.fill(HIST("Tracks/Centrality/hFracAmbiguousMftTrks"),
-                        float(Natracks) / Ntracks, c_rec);
+                        static_cast<float>(Natracks) / Ntracks, c_rec);
       } else {
         QAregistry.fill(HIST("Tracks/hNmftTrks"), Ntracks);
         QAregistry.fill(HIST("Tracks/hFracAmbiguousMftTrks"),
-                        float(Natracks) / Ntracks);
+                        static_cast<float>(Natracks) / Ntracks);
       }
     }
   }
