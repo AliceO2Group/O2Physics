@@ -64,11 +64,7 @@ struct itsPid {
       ccdb->setLocalObjectValidityChecking();
       ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
     } else {
-      o2::aod::mITSResponse.mITSRespParams[0] = bb1;
-      o2::aod::mITSResponse.mITSRespParams[1] = bb2;
-      o2::aod::mITSResponse.mITSRespParams[2] = bb3;
-      o2::aod::mITSResponse.mChargeFactor = chargeExponent;
-      o2::aod::mITSResponse.mResolution = resolution;
+      o2::aod::ITSResponse::setParameters(bb1, bb2, bb3, chargeExponent, resolution);
     }
   }
 
@@ -83,6 +79,8 @@ struct itsPid {
                                      aod::pidits::ITSNSigmaTr, aod::pidits::ITSNSigmaHe, aod::pidits::ITSNSigmaAl>(tracks);
 
     for (const auto& track : tracksWithPid) {
+      LOG(info) << track.itsNSigmaEl();
+      LOG(info) << track.itsNSigmaPi();
       LOG(info) << track.itsNSigmaPr();
     }
   }
