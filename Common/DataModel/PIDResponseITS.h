@@ -140,14 +140,14 @@ DECLARE_SOA_DYNAMIC_COLUMN(ITSNSigmaAlImp, itsNSigmaAl, //! Nsigma separation wi
 
 // Define user friendly names for the columns to join with the tracks
 using ITSNSigmaEl = ITSNSigmaElImp<o2::aod::track::ITSClusterSizes, o2::aod::track::P>;
-using ITSNSigmaMu = ITSNSigmaMuImp<o2::aod::track::ITSClusterSizes, o2::aod::track::P>
-using ITSNSigmaPi = ITSNSigmaPiImp<o2::aod::track::ITSClusterSizes, o2::aod::track::P>
-using ITSNSigmaKa = ITSNSigmaKaImp<o2::aod::track::ITSClusterSizes, o2::aod::track::P>
-using ITSNSigmaPr = ITSNSigmaPrImp<o2::aod::track::ITSClusterSizes, o2::aod::track::P>
-using ITSNSigmaDe = ITSNSigmaDeImp<o2::aod::track::ITSClusterSizes, o2::aod::track::P>
-using ITSNSigmaTr = ITSNSigmaTrImp<o2::aod::track::ITSClusterSizes, o2::aod::track::P>
-using ITSNSigmaHe = ITSNSigmaHeImp<o2::aod::track::ITSClusterSizes, o2::aod::track::P>
-using ITSNSigmaAl = ITSNSigmaAlImp<o2::aod::track::ITSClusterSizes, o2::aod::track::P>
+using ITSNSigmaMu = ITSNSigmaMuImp<o2::aod::track::ITSClusterSizes, o2::aod::track::P>;
+using ITSNSigmaPi = ITSNSigmaPiImp<o2::aod::track::ITSClusterSizes, o2::aod::track::P>;
+using ITSNSigmaKa = ITSNSigmaKaImp<o2::aod::track::ITSClusterSizes, o2::aod::track::P>;
+using ITSNSigmaPr = ITSNSigmaPrImp<o2::aod::track::ITSClusterSizes, o2::aod::track::P>;
+using ITSNSigmaDe = ITSNSigmaDeImp<o2::aod::track::ITSClusterSizes, o2::aod::track::P>;
+using ITSNSigmaTr = ITSNSigmaTrImp<o2::aod::track::ITSClusterSizes, o2::aod::track::P>;
+using ITSNSigmaHe = ITSNSigmaHeImp<o2::aod::track::ITSClusterSizes, o2::aod::track::P>;
+using ITSNSigmaAl = ITSNSigmaAlImp<o2::aod::track::ITSClusterSizes, o2::aod::track::P>;
 
 } // namespace pidits
 } // namespace o2::aod
