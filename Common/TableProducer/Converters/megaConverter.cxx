@@ -16,6 +16,9 @@
 /// \brief  Combined converter task
 ///
 
+#include <vector>
+#include <string>
+
 // O2 includes
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
