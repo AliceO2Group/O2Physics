@@ -1924,8 +1924,8 @@ struct UpcCandProducer {
   PROCESS_SWITCH(UpcCandProducer, processCentralMC, "Produce candidates in central region with MC information", false);
   PROCESS_SWITCH(UpcCandProducer, processForward, "Produce candidates in forward region", false);
   PROCESS_SWITCH(UpcCandProducer, processForwardGlobal, "Produce candidates in forward region with MFT", true);
-  PROCESS_SWITCH(UpcCandProducer, processForwardMC, "Produce caniddates in forward region with MC information", false);
-  PROCESS_SWITCH(UpcCandProducer, processForwardGlobalMC, "Produce caniddates in forward region with MFT and MC information", false);
+  PROCESS_SWITCH(UpcCandProducer, processForwardMC, "Produce candidates in forward region with MC information", false);
+  PROCESS_SWITCH(UpcCandProducer, processForwardGlobalMC, "Produce candidates in forward region with MFT and MC information", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
