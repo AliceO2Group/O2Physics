@@ -102,7 +102,6 @@ struct HfTaskLc {
      {"MC/reconstructed/signal/hPtRecProng2Sig", "3-prong candidates (matched);prong 2 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
      {"MC/reconstructed/prompt/hPtRecProng2SigPrompt", "3-prong candidates (matched, prompt);prong 2 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
      {"MC/reconstructed/nonprompt/hPtRecProng2SigNonPrompt", "3-prong candidates (matched, non-prompt);prong 2 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}}},
-     {"Data/hMultiplicity", "multiplicity;multiplicity;entries", {HistType::kTH1F, {{10000, 0., 10000.}}}},
      /// DCAxy to prim. vertex prongs
      {"Data/hd0Prong0", "3-prong candidates;prong 0 DCAxy to prim. vertex (cm);entries", {HistType::kTH1F, {{600, -0.4, 0.4}}}},
      {"MC/reconstructed/signal/hd0RecProng0Sig", "3-prong candidates (matched);prong 0 DCAxy to prim. vertex (cm);entries", {HistType::kTH1F, {{600, -0.4, 0.4}}}},
@@ -175,7 +174,7 @@ struct HfTaskLc {
 
     auto vbins = (std::vector<double>)binsPt;
     /// mass candidate
-    registry.add("Data/hMassVsPtVsMult", "3-prong candidates;inv. mass (p K #pi) (GeV/#it{c}^{2}); p_{T}; multiplicity", {HistType::kTH3F, {{600, 1.98, 2.58}, {vbins, "#it{p}_{T} (GeV/#it{c})"}, {5000, 0., 10000.}}});
+    registry.add("Data/hMassVsPtVsNPvContributors", "3-prong candidates;inv. mass (p K #pi) (GeV/#it{c}^{2}); p_{T}; Number of PV contributors", {HistType::kTH3F, {{600, 1.98, 2.58}, {vbins, "#it{p}_{T} (GeV/#it{c})"}, {5000, 0., 10000.}}});
     registry.add("Data/hMassVsPt", "3-prong candidates;inv. mass (p K #pi) (GeV/#it{c}^{2}); p_{T}", {HistType::kTH2F, {{600, 1.98, 2.58}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("MC/reconstructed/signal/hMassVsPtRecSig", "3-prong candidates (matched);inv. mass (p K #pi) (GeV/#it{c}^{2}); p_{T}", {HistType::kTH2F, {{600, 1.98, 2.58}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("MC/reconstructed/prompt/hMassVsPtRecSigPrompt", "3-prong candidates (matched, prompt);inv. mass (p K #pi) (GeV/#it{c}^{2}); p_{T}", {HistType::kTH2F, {{600, 1.98, 2.58}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -547,25 +546,12 @@ struct HfTaskLc {
 
   /// Fill histograms for real data
   /// \tparam fillMl switch to fill ML histograms
-  template <bool fillMl, typename CollType, typename CandType, typename TrackType>
-  void fillHistosData(CollType const& collision, CandType const& candidates, TrackType const& tracks)
+  template <bool fillMl, typename CollType, typename CandType>
+  void fillHistosData(CollType const& collision, CandType const& candidates)
   {
     auto thisCollId = collision.globalIndex();
     auto groupedLcCandidates = candidates.sliceBy(candLcPerCollision, thisCollId);
-
-    int nTracks = 0;
-    if (collision.numContrib() > 1) {
-      for (const auto& track : tracks) {
-        if (std::abs(track.eta()) > 4.0) {
-          continue;
-        }
-        if (std::abs(track.dcaXY()) > 0.0025 || std::abs(track.dcaZ()) > 0.0025) {
-          continue;
-        }
-        nTracks++;
-      }
-    }
-    registry.fill(HIST("Data/hMultiplicity"), nTracks);
+    auto numPvContributors = collision.numContrib();
 
     for (const auto& candidate : groupedLcCandidates) {
       if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
@@ -586,12 +572,12 @@ struct HfTaskLc {
 
       if (candidate.isSelLcToPKPi() >= selectionFlagLc) {
         registry.fill(HIST("Data/hMass"), hfHelper.invMassLcToPKPi(candidate));
-        registry.fill(HIST("Data/hMassVsPtVsMult"), hfHelper.invMassLcToPKPi(candidate), pt, nTracks);
+        registry.fill(HIST("Data/hMassVsPtVsNPvContributors"), hfHelper.invMassLcToPKPi(candidate), pt, numPvContributors);
         registry.fill(HIST("Data/hMassVsPt"), hfHelper.invMassLcToPKPi(candidate), pt);
       }
       if (candidate.isSelLcToPiKP() >= selectionFlagLc) {
         registry.fill(HIST("Data/hMass"), hfHelper.invMassLcToPiKP(candidate));
-        registry.fill(HIST("Data/hMassVsPtVsMult"), hfHelper.invMassLcToPiKP(candidate), pt, nTracks);
+        registry.fill(HIST("Data/hMassVsPtVsNPvContributors"), hfHelper.invMassLcToPiKP(candidate), pt, numPvContributors);
         registry.fill(HIST("Data/hMassVsPt"), hfHelper.invMassLcToPiKP(candidate), pt);
       }
       registry.fill(HIST("Data/hPt"), pt);
@@ -669,12 +655,11 @@ struct HfTaskLc {
   /// \tparam fillMl switch to fill ML histograms
   template <bool fillMl, typename CollType, typename CandType>
   void runAnalysisPerCollisionData(CollType const& collisions,
-                                   CandType const& candidates,
-                                   aod::TracksWDca const& tracks)
+                                   CandType const& candidates)
   {
 
     for (const auto& collision : collisions) {
-      fillHistosData<fillMl>(collision, candidates, tracks);
+      fillHistosData<fillMl>(collision, candidates);
     }
   }
 
@@ -696,49 +681,49 @@ struct HfTaskLc {
 
   void processDataStd(Collisions const& collisions,
                       LcCandidates const& selectedLcCandidates,
-                      aod::TracksWDca const& tracks)
+                      aod::Tracks const&)
   {
-    runAnalysisPerCollisionData<false>(collisions, selectedLcCandidates, tracks);
+    runAnalysisPerCollisionData<false>(collisions, selectedLcCandidates);
   }
   PROCESS_SWITCH(HfTaskLc, processDataStd, "Process Data with the standard method", true);
 
   void processDataWithMl(Collisions const& collisions,
                          LcCandidatesMl const& selectedLcCandidatesMl,
-                         aod::TracksWDca const& tracks)
+                         aod::Tracks const&)
   {
-    runAnalysisPerCollisionData<true>(collisions, selectedLcCandidatesMl, tracks);
+    runAnalysisPerCollisionData<true>(collisions, selectedLcCandidatesMl);
   }
   PROCESS_SWITCH(HfTaskLc, processDataWithMl, "Process real data with the ML method and without centrality", false);
 
   void processDataStdWithFT0C(CollisionsWithFT0C const& collisions,
                               LcCandidates const& selectedLcCandidates,
-                              aod::TracksWDca const& tracks)
+                              aod::Tracks const&)
   {
-    runAnalysisPerCollisionData<false>(collisions, selectedLcCandidates, tracks);
+    runAnalysisPerCollisionData<false>(collisions, selectedLcCandidates);
   }
   PROCESS_SWITCH(HfTaskLc, processDataStdWithFT0C, "Process real data with the standard method and with FT0C centrality", false);
 
   void processDataWithMlWithFT0C(CollisionsWithFT0C const& collisions,
                                  LcCandidatesMl const& selectedLcCandidatesMl,
-                                 aod::TracksWDca const& tracks)
+                                 aod::Tracks const&)
   {
-    runAnalysisPerCollisionData<true>(collisions, selectedLcCandidatesMl, tracks);
+    runAnalysisPerCollisionData<true>(collisions, selectedLcCandidatesMl);
   }
   PROCESS_SWITCH(HfTaskLc, processDataWithMlWithFT0C, "Process real data with the ML method and with FT0C centrality", false);
 
   void processDataStdWithFT0M(CollisionsWithFT0M const& collisions,
                               LcCandidates const& selectedLcCandidates,
-                              aod::TracksWDca const& tracks)
+                              aod::Tracks const&)
   {
-    runAnalysisPerCollisionData<false>(collisions, selectedLcCandidates, tracks);
+    runAnalysisPerCollisionData<false>(collisions, selectedLcCandidates);
   }
   PROCESS_SWITCH(HfTaskLc, processDataStdWithFT0M, "Process real data with the standard method and with FT0M centrality", false);
 
   void processDataWithMlWithFT0M(CollisionsWithFT0M const& collisions,
                                  LcCandidatesMl const& selectedLcCandidatesMl,
-                                 aod::TracksWDca const& tracks)
+                                 aod::Tracks const&)
   {
-    runAnalysisPerCollisionData<true>(collisions, selectedLcCandidatesMl, tracks);
+    runAnalysisPerCollisionData<true>(collisions, selectedLcCandidatesMl);
   }
   PROCESS_SWITCH(HfTaskLc, processDataWithMlWithFT0M, "Process real data with the ML method and with FT0M centrality", false);
 

@@ -17,6 +17,7 @@ enum eConfiguration {
   eRunNumber,
   eDryRun,
   eVerbose,
+  eVerboseUtility,
   eVerboseForEachParticle,
   eDoAdditionalInsanityChecks,
   eInsanityCheckForEachParticle,
@@ -26,6 +27,7 @@ enum eConfiguration {
   eUseFisherYates,
   eFixedNumberOfRandomlySelectedTracks,
   eUseStopwatch,
+  eFloatingPointPrecision,
   eConfiguration_N
 };
 
@@ -100,30 +102,32 @@ enum eEventHistograms {
   eVertex_z,
   eNContributors, // number of tracks used for the vertex
   eImpactParameter,
+  eOccupancy, // from helper task o2-analysis-event-selection, see also IA's presentation in https://indico.cern.ch/event/1464946, slide 38. Use specific occupancy estimator via eOccupancyEstimator
   eEventHistograms_N
 };
 
 enum eEventCuts {
-  // a) For available event selection bits, check https://github.com/ekryshen/O2Physics/blob/ede841e3d9037919680f34acc1d555dfc6d5df55/Common/CCDB/EventSelectionParams.cxx
-  // b) Some settings are configurable, check: https://github.com/ekryshen/O2Physics/blob/master/Common/TableProducer/eventSelection.cxx#L44
+  // a) For available event selection bits, check https://github.com/AliceO2Group/O2Physics/blob/master/Common/CCDB/EventSelectionParams.cxx
+  // b) Some settings are configurable, check: https://github.com/AliceO2Group/O2Physics/blob/master/Common/TableProducer/eventSelection.cxx
   eTrigger = eEventHistograms_N, // Do NOT use eTrigger for Run 3. Validated only for Run 2, and it has to be "kINT7" . TBI 20240522 investigate for Run 1
-  eSel7,                         // Event selection decision based on V0A & V0C => use only in Run 2 and Run 1. TBI 20240522 I stil need to validate this one over MC
-  eSel8,                         // Event selection decision based on TVX => use only in Run 3, both for data and MC
-                                 // *) As of 20240410, kNoITSROFrameBorder (only in MC) and kNoTimeFrameBorder event selection cuts are part of Sel8 => see def. of sel8 in Ref. a)
+  eSel7,                         // See def. of sel7 in Ref. b) above. Event selection decision based on V0A & V0C => use only in Run 2 and Run 1. TBI 20240522 I stil need to validate this one over MC
+  eSel8,                         // See def. of sel7 in Ref. b) above. Event selection decision based on TVX => use only in Run 3, both for data and MC
+                                 // *) As of 20240410, kNoITSROFrameBorder (only in MC) and kNoTimeFrameBorder event selection cuts are part of Sel8
                                  //    See also email from EK from 20240410
-  eCentralityEstimator,          // the default centrality estimator, set via configurable. All supported centrality estimatos, for QA, etc, are in enum eCentralityEstimators
+  eCentralityEstimator,          // the default centrality estimator, set via configurable. All supported centrality estimators, for QA, etc, are in enum eCentralityEstimators
   eSelectedEvents,               // selected events = eNumberOfEvents + eAfter => therefore I do not need a special histogram for it
   eNoSameBunchPileup,            // reject collisions in case of pileup with another collision in the same foundBC (emails from IA on 20240404 and EK on 20240410)
   eIsGoodZvtxFT0vsPV,            // small difference between z-vertex from PV and from FT0 (emails from IA on 20240404 and EK on 20240410)
   eIsVertexITSTPC,               // at least one ITS-TPC track (reject vertices built from ITS-only tracks) (emails from IA on 20240404 and EK on 20240410
   eIsVertexTOFmatched,           // at least one of vertex contributors is matched to TOF
   eIsVertexTRDmatched,           // at least one of vertex contributors is matched to TRD
+  eOccupancyEstimator,           // the default Occupancy estimator, set via configurable. All supported centrality estimators, for QA, etc, are in enum eOccupancyEstimators
   eEventCuts_N
 };
 
 enum eParticleHistograms {
 
-  // from o2::aod::Tracks: (Track parameters at collision vertex)
+  // from o2::aod::Tracks (Track parameters at their point closest to the collision vertex)
   ePhi = 0,
   ePt,
   eEta,
@@ -179,6 +183,7 @@ enum eAsFunctionOf {
   AFO_CENTRALITY = 2,   // vs. default centrality estimator, see how it's calculated in DetermineCentrality(...)
   AFO_PT = 3,
   AFO_ETA = 4,
+  AFO_OCCUPANCY = 5, // vs. default "occupancy" variable which is (at the moment) "TrackOccupancyInTimeRange" (alternative is "FT0COccupancyInTimeRange")
   eAsFunctionOf_N
 }; // prefix is needed, to avoid conflict with enum eKinematics
 
@@ -229,6 +234,7 @@ enum eQAEventHistograms2D {
   // Run 2 (do not use in Run 1 converted, because there is no centrality information):
   eCentRun2V0M_vs_CentRun2SPDTracklets,
   eCentRun2V0M_vs_NContributors,
+  eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange,
   eQAEventHistograms2D_N
 };
 
@@ -246,6 +252,12 @@ enum eCentralityEstimators {
   eCentRun2V0M,
   eCentRun2SPDTracklets,
   eCentralityEstimators_N
+};
+
+enum eOccupancyEstimators {
+  eTrackOccupancyInTimeRange, // from helper task o2-analysis-event-selection, see also IA's presentation in https://indico.cern.ch/event/1464946, slide 38
+  eFT0COccupancyInTimeRange,  // from helper task o2-analysis-event-selection
+  eOccupancyEstimators_N
 };
 
 #endif // PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_ENUMS_H_
