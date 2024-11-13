@@ -39,7 +39,7 @@ using namespace o2::framework::expressions;
 using namespace o2::track;
 
 /// Task to produce the ITS PID information for each particle species
-/// The parametrization is: [p0/(bg)**p1 + p2] * pow(q, p3), being bg = p/m and q the charge 
+/// The parametrization is: [p0/(bg)**p1 + p2] * pow(q, p3), being bg = p/m and q the charge
 struct itsPid {
 
   Configurable<float> bb1{"bb1", 0.f, "Bethe Bloch parameter 1"};
