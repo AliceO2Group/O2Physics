@@ -121,8 +121,8 @@ struct phik0shortanalysis {
   Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
 
   // Configurables for V0 selection
-  Configurable<float> minTPCnClsFound{"minTPCnClsFound", 80.0f, "min number of found TPC clusters"};
-  Configurable<float> minNCrossedRowsTPC{"minNCrossedRowsTPC", 80.0f, "min number of TPC crossed rows"};
+  Configurable<int> minTPCnClsFound{"minTPCnClsFound", 70, "min number of found TPC clusters"};
+  Configurable<int> minNCrossedRowsTPC{"minNCrossedRowsTPC", 80, "min number of TPC crossed rows"};
   Configurable<float> maxChi2TPC{"maxChi2TPC", 4.0f, "max chi2 per cluster TPC"};
   Configurable<float> etaMax{"etaMax", 0.8f, "eta max"};
 
@@ -156,7 +156,7 @@ struct phik0shortanalysis {
   Configurable<bool> cfgPrimaryTrack{"cfgPrimaryTrack", false, "Primary track selection"};
   Configurable<bool> cfgGlobalWoDCATrack{"cfgGlobalWoDCATrack", true, "Global track selection without DCA"};
   Configurable<bool> cfgPVContributor{"cfgPVContributor", true, "PV contributor track selection"};
-  Configurable<double> cMinPtcut{"cMinPtcut", 0.15, "Track minimum pt cut"};
+  Configurable<float> cMinPtcut{"cMinPtcut", 0.15f, "Track minimum pt cut"};
   Configurable<float> cMaxDCAzToPVcut{"cMaxDCAzToPVcut", 2.0f, "Track DCAz cut to PV Maximum"};
   Configurable<float> cMaxDCArToPV1{"cMaxDCArToPV1", 0.004f, "Track DCAr cut to PV config 1"};
   Configurable<float> cMaxDCArToPV2{"cMaxDCArToPV2", 0.013f, "Track DCAr cut to PV config 2"};
@@ -167,7 +167,7 @@ struct phik0shortanalysis {
   Configurable<float> nsigmaCutCombinedKa{"nsigmaCutCombined", 3.0, "Value of the TOF Nsigma cut"};
 
   // Configurables for pions selection(extra with respect to a few of those defined for V0)
-  Configurable<float> minITSnCls{"minITSnCls", 4.0f, "min number of ITS clusters"};
+  Configurable<int> minITSnCls{"minITSnCls", 4, "min number of ITS clusters"};
   Configurable<float> maxChi2ITS{"maxChi2ITS", 36.0f, "max chi2 per cluster ITS"};
   Configurable<float> dcaxyMax{"dcaxyMax", 0.1f, "Maximum DCAxy to primary vertex"};
   Configurable<float> dcazMax{"dcazMax", 0.1f, "Maximum DCAz to primary vertex"};
@@ -568,6 +568,8 @@ struct phik0shortanalysis {
     if (std::abs(track.dcaZ()) > cMaxDCAzToPVcut)
       return false;
     if (std::abs(track.dcaXY()) > cMaxDCArToPV1 + (cMaxDCArToPV2 / std::pow(track.pt(), cMaxDCArToPV3)))
+      return false;
+    if (track.tpcNClsFound() < minTPCnClsFound)
       return false;
     return true;
   }
