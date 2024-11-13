@@ -624,7 +624,7 @@ struct upcRhoAnalysis {
       QC.fill(HIST("QC/tracks/hSelectionCounter"), 14);
 
     QC.fill(HIST("QC/tracks/cut/hTpcNSigmaPi2D"), cutTracks[0].tpcNSigmaPi(), cutTracks[1].tpcNSigmaPi());
-    
+
     if (!tracksPassPiPID(cutTracks))
       return;
     for (int i = 0; i < static_cast<int>(cutTracks.size()); i++)
