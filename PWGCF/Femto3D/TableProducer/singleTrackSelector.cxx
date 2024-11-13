@@ -282,14 +282,14 @@ struct singleTrackSelector {
   }
 
   void processDataRun2(soa::Filtered<CollRun2>::iterator const& collision,
-  soa::Filtered<Trks> const& tracks,
-  aod::BCsWithTimestamps const&)
+                       soa::Filtered<Trks> const& tracks,
+                       aod::BCsWithTimestamps const&)
   {
 
-        auto tracksWithITSPid = soa::Attach<Trks,
-                                     aod::pidits::ITSNSigmaPi, 
-                                     aod::pidits::ITSNSigmaKa,
-                                     aod::pidits::ITSNSigmaPr>(tracks);
+    auto tracksWithITSPid = soa::Attach<Trks,
+                                        aod::pidits::ITSNSigmaPi,
+                                        aod::pidits::ITSNSigmaKa,
+                                        aod::pidits::ITSNSigmaPr>(tracks);
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
 
@@ -324,13 +324,13 @@ struct singleTrackSelector {
   PROCESS_SWITCH(singleTrackSelector, processDataRun2, "process data Run2", false);
 
   void processDataRun3(soa::Filtered<CollRun3>::iterator const& collision,
-                       soa::Filtered<Trks> const& tracks, 
+                       soa::Filtered<Trks> const& tracks,
                        aod::BCsWithTimestamps const&)
   {
     auto tracksWithITSPid = soa::Attach<Trks,
-                                     aod::pidits::ITSNSigmaPi, 
-                                     aod::pidits::ITSNSigmaKa,
-                                     aod::pidits::ITSNSigmaPr>(tracks);
+                                        aod::pidits::ITSNSigmaPi,
+                                        aod::pidits::ITSNSigmaKa,
+                                        aod::pidits::ITSNSigmaPr>(tracks);
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
 
@@ -407,14 +407,14 @@ struct singleTrackSelector {
   PROCESS_SWITCH(singleTrackSelector, processDataRun3, "process data Run3", true);
 
   void processMCRun2(soa::Filtered<CollRun2>::iterator const& collision,
-  soa::Filtered<soa::Join<Trks, aod::McTrackLabels>> const& tracks,
-  aod::McParticles const&, aod::BCsWithTimestamps const&)
+                     soa::Filtered<soa::Join<Trks, aod::McTrackLabels>> const& tracks,
+                     aod::McParticles const&, aod::BCsWithTimestamps const&)
   {
 
-           auto tracksWithITSPid = soa::Attach<soa::Join<Trks, aod::McTrackLabels>,
-                                     aod::pidits::ITSNSigmaPi, 
-                                     aod::pidits::ITSNSigmaKa,
-                                     aod::pidits::ITSNSigmaPr>(tracks);
+    auto tracksWithITSPid = soa::Attach<soa::Join<Trks, aod::McTrackLabels>,
+                                        aod::pidits::ITSNSigmaPi,
+                                        aod::pidits::ITSNSigmaKa,
+                                        aod::pidits::ITSNSigmaPr>(tracks);
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
 
@@ -448,14 +448,14 @@ struct singleTrackSelector {
   PROCESS_SWITCH(singleTrackSelector, processMCRun2, "process MC Run2", false);
 
   void processMCRun3(soa::Filtered<CollRun3MC>::iterator const& collision, aod::McCollisions const&,
-  soa::Filtered<soa::Join<Trks, aod::McTrackLabels>> const& tracks, 
-  aod::McParticles const& mcParticles, 
-  aod::BCsWithTimestamps const&)
+                     soa::Filtered<soa::Join<Trks, aod::McTrackLabels>> const& tracks,
+                     aod::McParticles const& mcParticles,
+                     aod::BCsWithTimestamps const&)
   {
-            auto tracksWithITSPid = soa::Attach<soa::Join<Trks, aod::McTrackLabels>,
-                                     aod::pidits::ITSNSigmaPi, 
-                                     aod::pidits::ITSNSigmaKa,
-                                     aod::pidits::ITSNSigmaPr>(tracks);
+    auto tracksWithITSPid = soa::Attach<soa::Join<Trks, aod::McTrackLabels>,
+                                        aod::pidits::ITSNSigmaPi,
+                                        aod::pidits::ITSNSigmaKa,
+                                        aod::pidits::ITSNSigmaPr>(tracks);
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
     double hadronicRate = 0.;
