@@ -65,7 +65,6 @@ struct HfCandidateCreator3Prong {
   Produces<aod::HfCand3ProngKF> rowCandidateKF;
 
   // vertexing
-  Configurable<bool> constrainKfToPv{"constrainKfToPv", true, "constraint KFParticle to PV"};
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
   Configurable<bool> useAbsDCA{"useAbsDCA", false, "Minimise abs. distance rather than chi2"};
   Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", false, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
@@ -355,6 +354,44 @@ struct HfCandidateCreator3Prong {
     }
   }
 
+  float KFCalculateChi2ToPrimaryVertex(KFParticle track, const KFParticle& vtx) { // track must be passed as a copy
+    const float PvPoint[3] = {vtx.X(), vtx.Y(), vtx.Z()};
+
+    track.TransportToPoint(PvPoint);
+    return track.GetDeviationFromVertex(vtx);
+  }
+
+  float KFCalculateDistanceBetweenParticles(KFParticle track1, KFParticle track2) { // tracks must be passed as a copy
+    float dS[2];
+    float dsdr[4][6];
+    float params1[8], params2[8];
+    float covs1[36], covs2[36];
+    track1.GetDStoParticle(track2, dS, dsdr);
+    track1.Transport(dS[0], dsdr[0], params1, covs1);
+    track2.Transport(dS[1], dsdr[3], params2, covs2);
+    const float dx = params1[0] - params2[0];
+    const float dy = params1[1] - params2[1];
+    const float dz = params1[2] - params2[2];
+    return std::sqrt(dx * dx + dy * dy + dz * dz);
+  }
+
+  float KFCalculateChi2geoBetweenParticles(KFParticle track1, KFParticle track2) { // tracks must be passed as a copy
+    KFParticle kfPair;
+    const KFParticle* kfDaughters[3] = {&track1, &track2};
+    kfPair.SetConstructMethod(2);
+    kfPair.Construct(kfDaughters, 2);
+
+    return kfPair.Chi2() / kfPair.NDF();
+  }
+
+  std::pair<float, float> KFCalculateLdL(KFParticle candidate, const KFParticle& vtx) { // candidate must be passed as a copy
+    float l, dl;
+    candidate.SetProductionVertex(vtx);
+    candidate.KFParticleBase::GetDecayLength(l, dl);
+
+    return std::make_pair(l, dl);
+  }
+
   template <bool doPvRefit = false, o2::hf_centrality::CentralityEstimator centEstimator, typename Coll, typename Cand>
   void runCreator3ProngWithKFParticle(Coll const&,
                         Cand const& rowsTrackIndexProng3,
@@ -442,6 +479,18 @@ struct HfCandidateCreator3Prong {
         registry.fill(HIST("hDcaZProngs"), track2.pt(), -999.f);
       }
 
+      const float chi2prim_first = KFCalculateChi2ToPrimaryVertex(kfFirstProton, KFPV);
+      const float chi2prim_second = KFCalculateChi2ToPrimaryVertex(kfSecondKaon, KFPV);
+      const float chi2prim_third = KFCalculateChi2ToPrimaryVertex(kfThirdPion, KFPV);
+
+      const float DCA_second_third = KFCalculateDistanceBetweenParticles(kfSecondKaon, kfThirdPion);
+      const float DCA_first_third = KFCalculateDistanceBetweenParticles(kfFirstProton, kfThirdPion);
+      const float DCA_first_second = KFCalculateDistanceBetweenParticles(kfFirstProton, kfSecondKaon);
+
+      const float chi2geo_second_third = KFCalculateChi2geoBetweenParticles(kfSecondKaon, kfThirdPion);
+      const float chi2geo_first_third = KFCalculateChi2geoBetweenParticles(kfFirstProton, kfThirdPion);
+      const float chi2geo_first_second = KFCalculateChi2geoBetweenParticles(kfFirstProton, kfSecondKaon);
+
       // Λc± → p± K∓ π±,  Ξc± → p± K∓ π±
       KFParticle kfCandPKPi;
       const KFParticle* kfDaughtersPKPi[3] = {&kfFirstProton, &kfSecondKaon, &kfThirdPion};
@@ -478,13 +527,19 @@ struct HfCandidateCreator3Prong {
       kfPairPiK.SetConstructMethod(2);
       kfPairPiK.Construct(kfDaughtersPiK, 2);
 
-      auto massPKPi = kfCandPKPi.GetMass();
-      auto massPiKP = kfCandPiKP.GetMass();
-      auto massPiKPi = kfCandPiKPi.GetMass();
-      auto massKKPi = kfCandKKPi.GetMass();
-      auto massPiKK = kfCandPiKK.GetMass();
-      auto massKPi = kfPairKPi.GetMass();
-      auto massPiK = kfPairPiK.GetMass();
+      const float massPKPi = kfCandPKPi.GetMass();
+      const float massPiKP = kfCandPiKP.GetMass();
+      const float massPiKPi = kfCandPiKPi.GetMass();
+      const float massKKPi = kfCandKKPi.GetMass();
+      const float massPiKK = kfCandPiKK.GetMass();
+      const float massKPi = kfPairKPi.GetMass();
+      const float massPiK = kfPairPiK.GetMass();
+
+      const float chi2geo = kfCandPKPi.Chi2() / kfCandPKPi.NDF();
+      const float chi2topo = KFCalculateChi2ToPrimaryVertex(kfCandPKPi, KFPV);
+      const std::pair<float, float> ldl = KFCalculateLdL(kfCandPKPi, KFPV);
+
+      const float errorPt = kfCandPKPi.GetErrPt();
 
       registry.fill(HIST("hCovSVXX"), kfCandPKPi.Covariance(0, 0));
       registry.fill(HIST("hCovSVYY"), kfCandPKPi.Covariance(1, 1));
@@ -497,14 +552,6 @@ struct HfCandidateCreator3Prong {
       getPointDirection(std::array{KFPV.GetX(), KFPV.GetY(), KFPV.GetZ()}, std::array{kfCandPKPi.GetX(), kfCandPKPi.GetY(), kfCandPKPi.GetZ()}, phi, theta);
       auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixSV, phi, theta));
       auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixSV, phi, 0.));
-
-      float topolChi2PerNdf = -999.;
-      KFParticle kfCandPKPiTopol2PV;
-      if (constrainKfToPv) {
-        kfCandPKPiTopol2PV = kfCandPKPi;
-        kfCandPKPiTopol2PV.SetProductionVertex(KFPV);
-        topolChi2PerNdf = kfCandPKPiTopol2PV.GetChi2() / kfCandPKPiTopol2PV.GetNDF();
-      }
 
       auto indexCollision = collision.globalIndex();
       uint8_t nProngsContributorsPV = 0;
@@ -532,8 +579,12 @@ struct HfCandidateCreator3Prong {
                        rowTrackIndexProng3.hfflag());
 
       // fill KF info
-      rowCandidateKF(topolChi2PerNdf,
-                     massPKPi, massPiKP, massPiKPi, massKKPi, massPiKK, massKPi, massPiK);
+      rowCandidateKF(massPKPi, massPiKP, massPiKPi, massKKPi, massPiKK, massKPi, massPiK,
+                     chi2prim_first, chi2prim_second, chi2prim_third,
+                     DCA_second_third, DCA_first_third, DCA_first_second,
+                     chi2geo_second_third, chi2geo_first_third, chi2geo_first_second,
+                     chi2geo, ldl.first, ldl.second, chi2topo,
+                     errorPt);
 
       // fill histograms
       if (fillHistograms) {
