@@ -208,6 +208,7 @@ DECLARE_SOA_COLUMN(StoredTPCNSigmaHe, storedTpcNSigmaHe, binning::nsigma::binned
 
 DECLARE_SOA_COLUMN(StoredTOFNSigmaPi_v1, storedTofNSigmaPi_v1, binning::nsigma::binned_t); // (v1)
 DECLARE_SOA_COLUMN(StoredTPCNSigmaPi_v1, storedTpcNSigmaPi_v1, binning::nsigma::binned_t); // (v1)
+DECLARE_SOA_COLUMN(StoredITSNSigmaPi_v1, storedItsNSigmaPi_v1, binning::nsigma::binned_t); // (v1)
 DECLARE_SOA_COLUMN(StoredTOFNSigmaKa_v1, storedTofNSigmaKa_v1, binning::nsigma::binned_t); // (v1)
 DECLARE_SOA_COLUMN(StoredTPCNSigmaKa_v1, storedTpcNSigmaKa_v1, binning::nsigma::binned_t); // (v1)
 DECLARE_SOA_COLUMN(StoredTOFNSigmaPr_v1, storedTofNSigmaPr_v1, binning::nsigma::binned_t); // (v1)
