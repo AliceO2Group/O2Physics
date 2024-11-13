@@ -51,9 +51,9 @@ struct ITSResponse {
   template <o2::track::PID::ID id>
   static float expSignal(const float momentum)
   {
-    static constexpr float invmass = 1. / o2::track::pid_constants::sMasses[id];
-    static constexpr int charge = static_cast<float>(o2::track::pid_constants::sCharges[id]);
-    const float bg = momentum * invmass;
+    static constexpr float inverseMass = 1. / o2::track::pid_constants::sMasses[id];
+    static constexpr float charge = static_cast<float>(o2::track::pid_constants::sCharges[id]);
+    const float bg = momentum * inverseMass;
     return (mITSRespParams[0] / (std::pow(bg, mITSRespParams[1])) + mITSRespParams[2]) * std::pow(charge, mChargeFactor);
   }
 
