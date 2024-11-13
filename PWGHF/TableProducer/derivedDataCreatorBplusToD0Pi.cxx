@@ -183,7 +183,7 @@ struct HfDerivedDataCreatorBplusToD0Pi {
   }
 
   template <typename T, typename U, typename V>
-  void fillTablesCandidate(const T& candidate, const U& prongD0, const V& prongPion, int candFlag, double invMass,
+  void fillTablesCandidate(const T& candidate, const U& prongCharm, const V& prongBachelor, int candFlag, double invMass,
                            double ct, double y, int8_t flagMc, int8_t origin, float mlScore)
   {
     if (fillCandidateBase) {
@@ -207,12 +207,12 @@ struct HfDerivedDataCreatorBplusToD0Pi {
         candidate.ptProng1(),
         candidate.impactParameter1(),
         candidate.impactParameterNormalised1(),
-        prongPion.tpcNSigmaPi(),
-        prongPion.tofNSigmaPi(),
-        prongPion.tpcTofNSigmaPi(),
-        prongPion.tpcNSigmaKa(),
-        prongPion.tofNSigmaKa(),
-        prongPion.tpcTofNSigmaKa(),
+        prongBachelor.tpcNSigmaPi(),
+        prongBachelor.tofNSigmaPi(),
+        prongBachelor.tpcTofNSigmaPi(),
+        prongBachelor.tpcNSigmaKa(),
+        prongBachelor.tofNSigmaKa(),
+        prongBachelor.tpcTofNSigmaKa(),
         candidate.maxNormalisedDeltaIP(),
         candidate.impactParameterProduct());
     }
@@ -257,8 +257,8 @@ struct HfDerivedDataCreatorBplusToD0Pi {
     if (fillCandidateId) {
       rowCandidateId(
         candidate.collisionId(),
-        prongD0.prong0Id(),
-        prongD0.prong1Id(),
+        prongCharm.prong0Id(),
+        prongCharm.prong1Id(),
         candidate.prong1Id());
     }
     if (fillCandidateIdD0) {
@@ -358,8 +358,8 @@ struct HfDerivedDataCreatorBplusToD0Pi {
             }
           }
         }
-        auto prongD0 = candidate.template prong0_as<THfCandDaughters>();
-        auto prongPion = candidate.template prong1_as<TracksWPid>();
+        auto prongCharm = candidate.template prong0_as<THfCandDaughters>();
+        auto prongBachelor = candidate.template prong1_as<TracksWPid>();
         double ct = hfHelper.ctBplus(candidate);
         double y = hfHelper.yBplus(candidate);
         float massBplusToD0Pi = hfHelper.invMassBplusToD0Pi(candidate);
@@ -368,7 +368,7 @@ struct HfDerivedDataCreatorBplusToD0Pi {
           mlScoreBplusToD0Pi = candidate.mlProbBplusToD0Pi();
         }
         if (candidate.isSelBplusToD0Pi()) {
-          fillTablesCandidate(candidate, prongD0, prongPion, 0, massBplusToD0Pi, ct, y, flagMcRec, origin, mlScoreBplusToD0Pi);
+          fillTablesCandidate(candidate, prongCharm, prongBachelor, 0, massBplusToD0Pi, ct, y, flagMcRec, origin, mlScoreBplusToD0Pi);
         }
       }
     }
