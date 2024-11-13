@@ -209,10 +209,10 @@ struct lambdapolsp {
     }
 
     histos.add("hCentrality", "Centrality distribution", kTH1F, {{centAxis}});
-    histos.add("hCentrality0", "Centrality distribution0", kTH1F, {{centAxis}});
-    histos.add("hCentrality1", "Centrality distribution1", kTH1F, {{centAxis}});
-    histos.add("hCentrality2", "Centrality distribution2", kTH1F, {{centAxis}});
-    histos.add("hCentrality3", "Centrality distribution3", kTH1F, {{centAxis}});
+    // histos.add("hCentrality0", "Centrality distribution0", kTH1F, {{centAxis}});
+    // histos.add("hCentrality1", "Centrality distribution1", kTH1F, {{centAxis}});
+    // histos.add("hCentrality2", "Centrality distribution2", kTH1F, {{centAxis}});
+    // histos.add("hCentrality3", "Centrality distribution3", kTH1F, {{centAxis}});
 
     if (!checkwithpub) {
       // histos.add("hVtxZ", "Vertex distribution in Z;Z (cm)", kTH1F, {{20, -10.0, 10.0}});
@@ -228,10 +228,12 @@ struct lambdapolsp {
         histos.add("hcentQxZDCC", "hcentQxZDCC", kTH2F, {{centAxis}, {qxZDCAxis}});
         histos.add("hcentQyZDCC", "hcentQyZDCC", kTH2F, {{centAxis}, {qxZDCAxis}});
       }
-      histos.add("hSparseLambdaPolA", "hSparseLambdaPolA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxispT, thnAxisPol, centAxis}, true);
-      histos.add("hSparseLambdaPolC", "hSparseLambdaPolC", HistType::kTHnSparseF, {thnAxisInvMass, thnAxispT, thnAxisPol, centAxis}, true);
-      histos.add("hSparseAntiLambdaPolA", "hSparseAntiLambdaPolA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxispT, thnAxisPol, centAxis}, true);
-      histos.add("hSparseAntiLambdaPolC", "hSparseAntiLambdaPolC", HistType::kTHnSparseF, {thnAxisInvMass, thnAxispT, thnAxisPol, centAxis}, true);
+      if (!correction) {
+        histos.add("hSparseLambdaPolA", "hSparseLambdaPolA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxispT, thnAxisPol, centAxis}, true);
+        histos.add("hSparseLambdaPolC", "hSparseLambdaPolC", HistType::kTHnSparseF, {thnAxisInvMass, thnAxispT, thnAxisPol, centAxis}, true);
+        histos.add("hSparseAntiLambdaPolA", "hSparseAntiLambdaPolA", HistType::kTHnSparseF, {thnAxisInvMass, thnAxispT, thnAxisPol, centAxis}, true);
+        histos.add("hSparseAntiLambdaPolC", "hSparseAntiLambdaPolC", HistType::kTHnSparseF, {thnAxisInvMass, thnAxispT, thnAxisPol, centAxis}, true);
+      }
       if (correction) {
         histos.add("hSparseLambdaPolA_corr", "hSparseLambdaPolA_corr", HistType::kTHnSparseF, {thnAxisInvMass, thnAxispT, thnAxisCosThetaStar, thnAxisPol, thnAxisPol, thnAxisPol, centAxis}, true);
         histos.add("hSparseLambdaPolC_corr", "hSparseLambdaPolC_corr", HistType::kTHnSparseF, {thnAxisInvMass, thnAxispT, thnAxisCosThetaStar, thnAxisPol, thnAxisPol, thnAxisPol, centAxis}, true);
@@ -383,21 +385,21 @@ struct lambdapolsp {
     }
     auto centrality = collision.centFT0C();
 
-    histos.fill(HIST("hCentrality0"), centrality);
+    // histos.fill(HIST("hCentrality0"), centrality);
     if (!collision.triggerevent()) {
       return;
     }
-    histos.fill(HIST("hCentrality1"), centrality);
+    // histos.fill(HIST("hCentrality1"), centrality);
 
     if (additionalEvSel && (!collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
       return;
     }
-    histos.fill(HIST("hCentrality2"), centrality);
-    // if (additionalEvSel2 && (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))) {
+    // histos.fill(HIST("hCentrality2"), centrality);
+    //  if (additionalEvSel2 && (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))) {
     if (additionalEvSel2 && (collision.trackOccupancyInTimeRange() > cfgMaxOccupancy || collision.trackOccupancyInTimeRange() < cfgMinOccupancy)) {
       return;
     }
-    histos.fill(HIST("hCentrality3"), centrality);
+    // histos.fill(HIST("hCentrality3"), centrality);
     if (additionalEvSel3 && (!collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
       return;
     }
