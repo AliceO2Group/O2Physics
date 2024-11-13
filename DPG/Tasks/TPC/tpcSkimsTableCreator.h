@@ -41,6 +41,8 @@ DECLARE_SOA_COLUMN(PtV0, ptV0, float);
 DECLARE_SOA_COLUMN(RadiusV0, radiusV0, float);
 DECLARE_SOA_COLUMN(GammaPsiPair, gammaPsiPair, float);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
+DECLARE_SOA_COLUMN(TrackOcc, trackOcc, float);
+DECLARE_SOA_COLUMN(Ft0Occ, ft0Occ, float);
 } // namespace tpcskims
 DECLARE_SOA_TABLE(SkimmedTPCV0Tree, "AOD", "TPCSKIMV0TREE",
                   o2::aod::track::TPCSignal,
@@ -64,7 +66,9 @@ DECLARE_SOA_TABLE(SkimmedTPCV0Tree, "AOD", "TPCSKIMV0TREE",
                   tpcskims::PtV0,
                   tpcskims::RadiusV0,
                   tpcskims::GammaPsiPair,
-                  tpcskims::RunNumber);
+                  tpcskims::RunNumber,
+                  tpcskims::TrackOcc,
+                  tpcskims::Ft0Occ);
 
 DECLARE_SOA_TABLE(SkimmedTPCTOFTree, "AOD", "TPCTOFSKIMTREE",
                   o2::aod::track::TPCSignal,
@@ -82,6 +86,8 @@ DECLARE_SOA_TABLE(SkimmedTPCTOFTree, "AOD", "TPCTOFSKIMTREE",
                   tpcskims::PidIndex,
                   tpcskims::NSigTPC,
                   tpcskims::NSigTOF,
-                  tpcskims::RunNumber);
+                  tpcskims::RunNumber,
+                  tpcskims::TrackOcc,
+                  tpcskims::Ft0Occ);
 } // namespace o2::aod
 #endif // DPG_TASKS_TPC_TPCSKIMSTABLECREATOR_H_
