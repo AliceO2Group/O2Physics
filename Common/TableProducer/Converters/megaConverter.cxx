@@ -39,7 +39,7 @@ struct bcConverter {
     if (!doprocessConverter) {
       doprocessConverter.value = isTableRequiredInWorkflow(initContext, "BCs_001");
     }
-    if(doprocessConverter){
+    if (doprocessConverter) {
       LOG(info) << "Enabling converter for table BCs_001";
     }
   }
@@ -69,7 +69,7 @@ struct collisionConverter {
     if (!doprocessConverter) {
       doprocessConverter.value = isTableRequiredInWorkflow(initContext, "Collisions_001");
     }
-    if(doprocessConverter){
+    if (doprocessConverter) {
       LOG(info) << "Enabling converter for table Collisions_001";
     }
     const AxisSpec axisCYYdebug{nbins, -1.0f, +1.0f, ""};
@@ -137,7 +137,7 @@ struct FddConverter {
     if (!doprocessConverter) {
       doprocessConverter.value = isTableRequiredInWorkflow(initContext, "FDDs_001");
     }
-    if(doprocessConverter){
+    if (doprocessConverter) {
       LOG(info) << "Enabling converter for table FDDs_001";
     }
   }
@@ -170,7 +170,7 @@ struct hmpConverter {
     if (!doprocessConverter) {
       doprocessConverter.value = isTableRequiredInWorkflow(initContext, "HMPID_001");
     }
-    if(doprocessConverter){
+    if (doprocessConverter) {
       LOG(info) << "Enabling converter for table HMPID_001";
     }
   }
@@ -215,7 +215,7 @@ struct caloLabelConverter {
     if (!doprocessConverter) {
       doprocessConverter.value = isTableRequiredInWorkflow(initContext, "McCaloLabels_001");
     }
-    if(doprocessConverter){
+    if (doprocessConverter) {
       LOG(info) << "Enabling converter for table BCs_001";
     }
   }
@@ -242,7 +242,7 @@ struct McConverter {
     if (!doprocessConverter) {
       doprocessConverter.value = isTableRequiredInWorkflow(initContext, "StoredMcParticles_001");
     }
-    if(doprocessConverter){
+    if (doprocessConverter) {
       LOG(info) << "Enabling converter for table StoredMcParticles_001";
     }
   }
@@ -282,7 +282,7 @@ struct TracksExtraConverter {
     if (!doprocessConverter) {
       doprocessConverter.value = isTableRequiredInWorkflow(initContext, "StoredTracksExtra_002");
     }
-    if(doprocessConverter){
+    if (doprocessConverter) {
       LOG(info) << "Enabling converter for table StoredTracksExtra_002";
     }
   }
@@ -330,7 +330,7 @@ struct zdcConverter {
     if (!doprocessConverter) {
       doprocessConverter.value = isTableRequiredInWorkflow(initContext, "Zdcs_001");
     }
-    if(doprocessConverter){
+    if (doprocessConverter) {
       LOG(info) << "Enabling converter for table Zdcs_001";
     }
   }
@@ -426,7 +426,7 @@ struct mcCollisionConverter {
     if (!doprocessConverter) {
       doprocessConverter.value = isTableRequiredInWorkflow(initContext, "McCollisions_001");
     }
-    if(doprocessConverter){
+    if (doprocessConverter) {
       LOG(info) << "Enabling converter for table McCollisions_001";
     }
   }
@@ -454,7 +454,7 @@ struct MftTracksConverter {
     if (!doprocessConverter) {
       doprocessConverter.value = isTableRequiredInWorkflow(initContext, "StoredMFTTracks_001");
     }
-    if(doprocessConverter){
+    if (doprocessConverter) {
       LOG(info) << "Enabling converter for table StoredMFTTracks_001";
     }
   }
@@ -498,7 +498,7 @@ struct MultsExtraConverter {
     if (!doprocessConverter) {
       doprocessConverter.value = isTableRequiredInWorkflow(initContext, "MultsExtra_001");
     }
-    if(doprocessConverter){
+    if (doprocessConverter) {
       LOG(info) << "Enabling converter for table MultsExtra_001";
     }
   }
@@ -526,7 +526,7 @@ struct V0Converter {
     if (!doprocessConverter) {
       doprocessConverter.value = isTableRequiredInWorkflow(initContext, "V0s_002");
     }
-    if(doprocessConverter){
+    if (doprocessConverter) {
       LOG(info) << "Enabling converter for table V0s_002";
     }
   }
