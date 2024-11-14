@@ -107,7 +107,7 @@ class DielectronCut : public TNamed
     return true;
   }
 
-  template <typename TTrack1, typename TTrack2>
+  template <bool dont_require_rapidity = false, typename TTrack1, typename TTrack2>
   bool IsSelectedPair(TTrack1 const& t1, TTrack2 const& t2, const float bz) const
   {
     ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron);
@@ -122,7 +122,7 @@ class DielectronCut : public TNamed
       return false;
     }
 
-    if (v12.Rapidity() < mMinPairY || mMaxPairY < v12.Rapidity()) {
+    if (!dont_require_rapidity && (v12.Rapidity() < mMinPairY || mMaxPairY < v12.Rapidity())) {
       return false;
     }
 
@@ -160,19 +160,22 @@ class DielectronCut : public TNamed
     return true;
   }
 
-  template <bool isML = false, typename TTrack, typename TCollision = int>
+  template <bool dont_require_pteta = false, bool isML = false, typename TTrack, typename TCollision = int>
   bool IsSelectedTrack(TTrack const& track, TCollision const& collision = 0) const
   {
     if (!track.hasITS() || !track.hasTPC()) { // track has to be ITS-TPC matched track
       return false;
     }
 
-    if (!IsSelectedTrack(track, DielectronCuts::kTrackPtRange)) {
-      return false;
+    if (!dont_require_pteta) {
+      if (!IsSelectedTrack(track, DielectronCuts::kTrackPtRange)) {
+        return false;
+      }
+      if (!IsSelectedTrack(track, DielectronCuts::kTrackEtaRange)) {
+        return false;
+      }
     }
-    if (!IsSelectedTrack(track, DielectronCuts::kTrackEtaRange)) {
-      return false;
-    }
+
     if (!IsSelectedTrack(track, DielectronCuts::kTrackPhiRange)) {
       return false;
     }
