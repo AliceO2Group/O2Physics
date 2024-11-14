@@ -17,6 +17,8 @@
 #include <numeric>
 #include <vector>
 #include <typeinfo>
+#include <memory>
+#include <string>
 
 #include "CCDB/BasicCCDBManager.h"
 #include "Common/CCDB/EventSelectionParams.h"
