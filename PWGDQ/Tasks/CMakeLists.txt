@@ -109,7 +109,7 @@ o2physics_add_dpl_workflow(task-fwd-track-pid
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGDQCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(qqbar-to-hypahyp
-                    SOURCES qqbar2hypahyp.cxx
+o2physics_add_dpl_workflow(quarkonia-to-hyperons
+                    SOURCES quarkoniaToHyperons.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)

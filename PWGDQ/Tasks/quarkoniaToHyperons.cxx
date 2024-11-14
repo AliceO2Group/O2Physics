@@ -77,7 +77,7 @@ using cascadeMCCandidates = soa::Join<aod::CascCollRefs, aod::CascCores, aod::Ca
 #define bitset(var, nbit) ((var) |= (static_cast<uint64_t>(1) << static_cast<uint64_t>(nbit)))
 #define bitcheck(var, nbit) ((var) & (static_cast<uint64_t>(1) << static_cast<uint64_t>(nbit)))
 
-struct qqbar2hypahyp {
+struct quarkoniaToHyperons {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // master analysis switches
@@ -2002,12 +2002,12 @@ struct qqbar2hypahyp {
     }
   }
 
-  PROCESS_SWITCH(qqbar2hypahyp, processRealData, "process as if real data", true);
-  PROCESS_SWITCH(qqbar2hypahyp, processMonteCarlo, "process as if MC", false);
+  PROCESS_SWITCH(quarkoniaToHyperons, processRealData, "process as if real data", true);
+  PROCESS_SWITCH(quarkoniaToHyperons, processMonteCarlo, "process as if MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<qqbar2hypahyp>(cfgc)};
+    adaptAnalysisTask<quarkoniaToHyperons>(cfgc)};
 }
