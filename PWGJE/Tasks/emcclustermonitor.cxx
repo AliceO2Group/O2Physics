@@ -76,6 +76,7 @@ struct ClusterMonitor {
 
   std::vector<int> mVetoBCIDs;
   std::vector<int> mSelectBCIDs;
+  std::vector<float> mCellTime;
 
   /// \brief Create output histograms and initialize geometry
   void init(InitContext const&)
@@ -243,20 +244,20 @@ struct ClusterMonitor {
       auto cellsofcluster = emccluscells.sliceBy(perCluster, cluster.globalIndex());
       double maxamp = 0;
       double ampfraction = 0;
-      std::vector<float> vCellTime;
-      vCellTime.reserve(cellsofcluster.size());
+      mCellTime.clear();
+      mCellTime.reserve(cellsofcluster.size());
       for (const auto& cell : cellsofcluster) {
         // example how to get any information of the cell associated with cluster
         LOG(debug) << "Cell ID:" << cell.calo().amplitude() << " Time " << cell.calo().time();
         if (cell.calo().amplitude() > maxamp) {
           maxamp = cell.calo().amplitude();
         }
-        vCellTime.push_back(cell.calo().time());
+        mCellTime.push_back(cell.calo().time());
       } // end of loop over cells
-      mHistManager.fill(HIST("clusterCellTimeMean"), std::accumulate(vCellTime.begin(), vCellTime.end(), 0.0f) / vCellTime.size());
-      for (int iCell1 = 0; iCell1 < vCellTime.size() - 1; iCell1++) {
-        for (int iCell2 = iCell1 + 1; iCell2 < vCellTime.size(); iCell2++) {
-          mHistManager.fill(HIST("clusterCellTimeDiff"), vCellTime[iCell1] - vCellTime[iCell2]);
+      mHistManager.fill(HIST("clusterCellTimeMean"), std::accumulate(mCellTime.begin(), mCellTime.end(), 0.0f) / mCellTime.size());
+      for (int iCell1 = 0; iCell1 < mCellTime.size() - 1; iCell1++) {
+        for (int iCell2 = iCell1 + 1; iCell2 < mCellTime.size(); iCell2++) {
+          mHistManager.fill(HIST("clusterCellTimeDiff"), mCellTime[iCell1] - mCellTime[iCell2]);
         }
       }
       ampfraction = maxamp / cluster.energy();
