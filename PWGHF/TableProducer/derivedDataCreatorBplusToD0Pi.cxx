@@ -40,7 +40,6 @@ struct HfDerivedDataCreatorBplusToD0Pi {
   Produces<o2::aod::HfBplusParD0s> rowCandidateParD0;
   Produces<o2::aod::HfBplusParEs> rowCandidateParE;
   Produces<o2::aod::HfBplusParED0s> rowCandidateParED0;
-  // Produces<o2::aod::HfBplusSels> rowCandidateSel;
   Produces<o2::aod::HfBplusMls> rowCandidateMl;
   Produces<o2::aod::HfBplusIds> rowCandidateId;
   Produces<o2::aod::HfBplusIdD0s> rowCandidateIdD0;
@@ -62,7 +61,6 @@ struct HfDerivedDataCreatorBplusToD0Pi {
   Configurable<bool> fillCandidateParD0{"fillCandidateParD0", true, "Fill D0 candidate parameters"};
   Configurable<bool> fillCandidateParE{"fillCandidateParE", true, "Fill candidate extended parameters"};
   Configurable<bool> fillCandidateParED0{"fillCandidateParED0", true, "Fill D0 candidate extended parameters"};
-  Configurable<bool> fillCandidateSel{"fillCandidateSel", true, "Fill candidate selection flags"};
   Configurable<bool> fillCandidateMl{"fillCandidateMl", true, "Fill candidate selection ML scores"};
   Configurable<bool> fillCandidateId{"fillCandidateId", true, "Fill original indices from the candidate table"};
   Configurable<bool> fillCandidateIdD0{"fillCandidateIdD0", true, "Fill index to the derived D0 candidate table"};
@@ -246,10 +244,6 @@ struct HfDerivedDataCreatorBplusToD0Pi {
         candidate.pzProng0(),
         candidate.errorImpactParameter0());
     }
-    // if (fillCandidateSel) {
-    //   rowCandidateSel(
-    //     BIT(candFlag));
-    // }
     if (fillCandidateMl) {
       rowCandidateMl(
         mlScore);
@@ -331,7 +325,6 @@ struct HfDerivedDataCreatorBplusToD0Pi {
       reserveTable(rowCandidateBase, fillCandidateBase, sizeTableCand);
       reserveTable(rowCandidatePar, fillCandidatePar, sizeTableCand);
       reserveTable(rowCandidateParE, fillCandidateParE, sizeTableCand);
-      // reserveTable(rowCandidateSel, fillCandidateSel, sizeTableCand);
       reserveTable(rowCandidateId, fillCandidateId, sizeTableCand);
       if constexpr (isMc) {
         reserveTable(rowCandidateMc, fillCandidateMc, sizeTableCand);
