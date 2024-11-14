@@ -24,6 +24,12 @@
 #include <tuple>
 #include <utility>
 
+#include "Math/Vector4D.h"
+#include "Math/Vector3D.h"
+#include "Math/LorentzRotation.h"
+#include "Math/Rotation3D.h"
+#include "Math/AxisAngle.h"
+
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
@@ -33,6 +39,11 @@
 #include "Common/Core/EventPlaneHelper.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Qvectors.h"
+
+#include "DetectorsBase/GeometryManager.h"
+#include "DataFormatsEMCAL/Constants.h"
+#include "EMCALBase/Geometry.h"
+#include "EMCALCalib/BadChannelMap.h"
 
 #include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
 #include "PWGEM/PhotonMeson/Core/EMCPhotonCut.h"
@@ -207,6 +218,9 @@ struct EMfTaskPi0Flow {
     fEMCCut.SetUseTM(emccuts.EMC_UseTM); // disables TM
     o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&registry);
 
+    // Load EMCal geometry
+    o2::emcal::Geometry::GetInstanceFromRunNumber(300000);
+
     const AxisSpec thnAxisInvMass{thnConfigAxisInvMass, "#it{M}_{#gamma#gamma} (GeV/#it{c}^{2})"};
     const AxisSpec thnAxisPt{thnConfigAxisPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec thnAxisCent{thnConfigAxisCent, "Centrality (%)"};
@@ -223,7 +237,10 @@ struct EMfTaskPi0Flow {
     const AxisSpec thAxisPhi{72, 0, 2 * 3.14159, "phi"};
     const AxisSpec thAxisNCell{17664, 0.5, +17664.5, "#it{N}_{cell}"};
 
+    const AxisSpec thAxisPsi{360 / harmonic, 0.f, 2. / harmonic * M_PI, Form("#Psi_{%d}", harmonic.value)};
+
     registry.add("hSparsePi0Flow", "THn for SP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCent, thnAxisScalarProd});
+    registry.add("hSparseBkgFlow", "THn for SP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCent, thnAxisScalarProd});
     auto hClusterCuts = registry.add<TH1>("hClusterCuts", "hClusterCuts;;Counts", kTH1D, {{6, 0.5, 6.5}}, false);
     hClusterCuts->GetXaxis()->SetBinLabel(1, "in");
     hClusterCuts->GetXaxis()->SetBinLabel(2, "opening angle");
@@ -247,6 +264,9 @@ struct EMfTaskPi0Flow {
     }
 
     if (saveEpResoHisto) {
+      registry.add("hEventPlaneAngleFT0M", "hEventPlaneAngleFT0M", HistType::kTH2D, {thnAxisCent, thAxisPsi});
+      registry.add("hEventPlaneAngleTPCpos", "hEventPlaneAngleTPCpos", HistType::kTH2D, {thnAxisCent, thAxisPsi});
+      registry.add("hEventPlaneAngleTPCneg", "hEventPlaneAngleTPCneg", HistType::kTH2D, {thnAxisCent, thAxisPsi});
       registry.add("epReso/hEpResoFT0cFT0a", "hEpResoFT0cFT0a; centrality; #Delta#Psi_{sub}", {HistType::kTProfile, {thnAxisCent}});
       registry.add("epReso/hEpResoFT0cTPCpos", "hEpResoFT0cTPCpos; centrality; #Delta#Psi_{sub}", {HistType::kTProfile, {thnAxisCent}});
       registry.add("epReso/hEpResoFT0cTPCneg", "hEpResoFT0cTPCneg; centrality; #Delta#Psi_{sub}", {HistType::kTProfile, {thnAxisCent}});
@@ -454,6 +474,71 @@ struct EMfTaskPi0Flow {
     return isgood;
   }
 
+  /// \brief Calculate background using rotation background method
+  template <typename TPhotons>
+  void RotationBackground(const ROOT::Math::PtEtaPhiMVector& meson, ROOT::Math::PtEtaPhiMVector photon1, ROOT::Math::PtEtaPhiMVector photon2, TPhotons const& photons_coll, unsigned int ig1, unsigned int ig2, CollsWithQvecs::iterator const& collision)
+  {
+    // if less than 3 clusters are present skip event since we need at least 3 clusters
+    if (photons_coll.size() < 3) {
+      return;
+    }
+
+    auto [xQVec, yQVec] = getQvec(collision, qvecDetector);
+    float cent = getCentrality(collision);
+
+    const float rotationAngle = M_PI / 2.0; // rotaion angle 90 degree
+    ROOT::Math::AxisAngle rotationAxis(meson.Vect(), rotationAngle);
+    ROOT::Math::Rotation3D rotationMatrix(rotationAxis);
+    photon1 = rotationMatrix * photon1;
+    photon2 = rotationMatrix * photon2;
+
+    for (auto& photon : photons_coll) {
+      if (photon.globalIndex() == ig1 || photon.globalIndex() == ig2) {
+        // only combine rotated photons with other photons
+        continue;
+      }
+      if (!(fEMCCut.IsSelected<EMCalPhotons::iterator>(photon))) {
+        continue;
+      }
+
+      ROOT::Math::PtEtaPhiMVector photon3(photon.pt(), photon.eta(), photon.phi(), 0.);
+      ROOT::Math::PtEtaPhiMVector mother1 = photon1 + photon3;
+      ROOT::Math::PtEtaPhiMVector mother2 = photon2 + photon3;
+
+      float openingAngle1 = std::acos(photon1.Vect().Dot(photon3.Vect()) / (photon1.P() * photon3.P()));
+      float openingAngle2 = std::acos(photon2.Vect().Dot(photon3.Vect()) / (photon2.P() * photon3.P()));
+
+      int iCellID_photon1 = 0;
+      int iCellID_photon2 = 0;
+
+      float cosNPhi1 = std::cos(harmonic * mother1.Phi());
+      float sinNPhi1 = std::sin(harmonic * mother1.Phi());
+      float scalprodCand1 = cosNPhi1 * xQVec + sinNPhi1 * yQVec;
+
+      float cosNPhi2 = std::cos(harmonic * mother2.Phi());
+      float sinNPhi2 = std::sin(harmonic * mother2.Phi());
+      float scalprodCand2 = cosNPhi2 * xQVec + sinNPhi2 * yQVec;
+
+      try {
+        iCellID_photon1 = o2::emcal::Geometry::GetInstance()->GetAbsCellIdFromEtaPhi(photon1.Eta(), photon1.Phi());
+      } catch (o2::emcal::InvalidPositionException& e) {
+        iCellID_photon1 = -1;
+      }
+      try {
+        iCellID_photon2 = o2::emcal::Geometry::GetInstance()->GetAbsCellIdFromEtaPhi(photon2.Eta(), photon2.Phi());
+      } catch (o2::emcal::InvalidPositionException& e) {
+        iCellID_photon2 = -1;
+      }
+
+      if (openingAngle1 > mesonConfig.minOpenAngle && iCellID_photon1 > 0 && thnConfigAxisInvMass.value[1] <= mother1.M() && thnConfigAxisInvMass.value.back() >= mother1.M() && thnConfigAxisPt.value[1] > mother1.Pt() && thnConfigAxisPt.value.back() < mother1.Pt()) {
+        registry.fill(HIST("hSparseBkgFlow"), mother1.M(), mother1.Pt(), cent, scalprodCand1);
+      }
+      if (openingAngle2 > mesonConfig.minOpenAngle && iCellID_photon2 > 0 && thnConfigAxisInvMass.value[1] <= mother2.M() && thnConfigAxisInvMass.value.back() >= mother2.M() && thnConfigAxisPt.value[1] > mother2.Pt() && thnConfigAxisPt.value.back() < mother2.Pt()) {
+        registry.fill(HIST("hSparseBkgFlow"), mother2.M(), mother2.Pt(), cent, scalprodCand2);
+      }
+    }
+  }
+
   /// Compute the scalar product
   /// \param collision is the collision with the Q vector information and event plane
   /// \param meson are the selected candidates
@@ -545,6 +630,8 @@ struct EMfTaskPi0Flow {
         ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
         ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
         ROOT::Math::PtEtaPhiMVector vMeson = v1 + v2;
+
+        RotationBackground<EMCalPhotons>(vMeson, v1, v2, photons_per_collision, g1.globalIndex(), g2.globalIndex(), collision);
 
         float dTheta = v1.Theta() - v2.Theta();
         float dPhi = v1.Phi() - v2.Phi();
@@ -737,6 +824,10 @@ struct EMfTaskPi0Flow {
       float epBPoss = epHelper.GetEventPlane(xQVecBPos, yQVecBPos, harmonic);
       float epBNegs = epHelper.GetEventPlane(xQVecBNeg, yQVecBNeg, harmonic);
       float epBTots = epHelper.GetEventPlane(xQVecBTot, yQVecBTot, harmonic);
+
+      registry.fill(HIST("hEventPlaneAngleFT0M"), centrality, epFT0m);
+      registry.fill(HIST("hEventPlaneAngleTPCpos"), centrality, epBPoss);
+      registry.fill(HIST("hEventPlaneAngleTPCneg"), centrality, epBNegs);
 
       registry.fill(HIST("epReso/hEpResoFT0cFT0a"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0c, epFT0a)));
       registry.fill(HIST("epReso/hEpResoFT0cTPCpos"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0c, epBPoss)));
