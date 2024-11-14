@@ -33,6 +33,8 @@
 #include "PWGJE/DataModel/EMCALClusters.h"
 
 #include "PWGHF/HFL/DataModel/ElectronSelectionTable.h"
+#include "Common/Core/trackUtilities.h"
+#include "Tools/KFparticle/KFUtilities.h"
 
 using namespace o2;
 using namespace o2::constants::physics;
@@ -40,6 +42,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 
+auto massEl = o2::constants::physics::MassElectron;
 const int etaAxisBins = 100;
 const float trackEtaAxisMin = -1.5;
 const float trackEtaAxisMax = 1.5;
@@ -72,7 +75,7 @@ struct HfElectronSelectionWithTpcEmcal {
   Produces<aod::HfSelEl> electronSel;
   // Configurables
   // EMCal Cluster information
-
+  KFParticle KFNonHfe;
   Configurable<bool> fillEmcClusterInfo{"fillEmcClusterInfo", true, "Fill histograms with EMCal cluster info before and after track match"};
 
   // Event Selection
@@ -85,6 +88,14 @@ struct HfElectronSelectionWithTpcEmcal {
   Configurable<float> etaTrackMax{"etaTrackMax", 0.6f, "Eta range for electron tracks"};
   Configurable<float> etaTrackMin{"etaTrackMin", -0.6f, "Eta range for electron tracks"};
   Configurable<float> ptTrackMin{"ptTrackMin", 3.0f, "Transverse MOmentum range for electron tracks"};
+
+  // Associated electron selection cut
+  Configurable<float> etaAssoTrackMax{"etaAssoTrackMax", 0.9f, "Eta range for Associatred electron tracks"};
+  Configurable<float> etaAssoTrackMin{"etaAssoTrackMin", -0.9f, "Eta range for  Associatred  electron tracks"};
+  Configurable<float> ptAssoTrackMin{"ptAssoTrackMin", 0.2f, "Transverse MOmentum range for  Associatred electron tracks"};
+  Configurable<float> tpcNsigmaAssoElectronMin{"tpcNsigmaAssoElectronMin", -3.0f, "min Associated Electron TPCnsigma"};
+  Configurable<float> tpcNsigmaAssoElectronMax{"tpcNsigmaAssoElectronMax", 3.0f, "max Associated Electron TPCnsigma"};
+  Configurable<float> invariantMass{"invariantMass", 0.14f, "max Invariant Mass for Photonic electron"};
 
   // EMcal and Dcal selection cut
   Configurable<float> etaTrackDCalNegativeMax{"etaTrackDCalNegativeMax", -0.22f, "Eta range for electron Dcal tracks"};
@@ -157,6 +168,8 @@ struct HfElectronSelectionWithTpcEmcal {
     "registry",
     {{"hNevents", "No of events", {HistType::kTH1F, {{3, 1, 4}}}},
      {"hZvertex", "z vertex", {HistType::kTH1F, {{100, -100, 100}}}},
+     {"hLikeMass", "Like mass", {HistType::kTH1F, {{1000, 0, 2.0}}}},
+     {"hUnLikeMass", "unLike mass", {HistType::kTH1F, {{1000, 0, 1.0}}}},
      {"hEmcClusterM02", "m02", {HistType::kTH1F, {{m02AxisBins, m02AxisMin, m02AxisMax}}}},
      {"hEmcClusterM20", "m20", {HistType::kTH1F, {{m20AxisBins, m20AxisMin, m20AxisMax}}}},
      {"hTrackEtaPhi", "TPC EtaPhi Info; #eta;#varphi;passEMcal;", {HistType::kTH3F, {{etaAxisBins, trackEtaAxisMin, trackEtaAxisMax}, {phiAxisBins, trackPhiAxisMin, trackPhiAxisMax}, {passEMCalBins, passEMCalAxisMin, passEMCalAxisMax}}}},
@@ -211,7 +224,29 @@ struct HfElectronSelectionWithTpcEmcal {
     }
     return true;
   }
+  // Associated electron Selection Cut
+  template <typename T>
+  bool selAssoTracks(T const& track)
+  {
+    if (!track.isGlobalTrackWoDCA()) {
+      return false;
+    }
+    if (std::abs(track.dcaXY()) > dcaXYTrackMax || std::abs(track.dcaZ()) > dcaZTrackMax) {
+      return false;
+    }
+    if (track.eta() < etaAssoTrackMin || track.eta() > etaAssoTrackMax) {
+      return false;
+    }
 
+    if (track.pt() < ptAssoTrackMin) {
+      return false;
+    }
+    if ((track.tpcNSigmaEl() < tpcNsigmaAssoElectronMin || track.tpcNSigmaEl() > tpcNsigmaAssoElectronMax)) {
+      return false;
+    }
+
+    return true;
+  }
   // Electron Identification
   template <bool isMc, typename TracksType, typename EmcClusterType, typename MatchType, typename CollisionType, typename ParticleType>
   void fillElectronTrack(CollisionType const& collision, TracksType const& tracks, EmcClusterType const& emcClusters, MatchType const& matchedTracks, ParticleType const& /*particlemc*/)
@@ -287,6 +322,8 @@ struct HfElectronSelectionWithTpcEmcal {
       float deltaEtaMatch = -999.;
       float eop = -999;
       bool isEMcal = false;
+      bool isLSElectronFound = 0;
+      bool isULSElectronFound = 0;
 
       float trackRapidity = track.rapidity(MassElectron);
 
@@ -365,18 +402,88 @@ struct HfElectronSelectionWithTpcEmcal {
           continue;
         }
 
-        isEMcal = true;
-        std::cout << " electron id  in selection" << electronId << std::endl;
-        electronSel(matchTrack.collisionId(), electronId, etaMatchTrack, phiMatchTrack, ptMatchTrack, pMatchTrack, trackRapidity, matchTrack.dcaXY(), matchTrack.dcaZ(), matchTrack.tpcNSigmaEl(), matchTrack.tofNSigmaEl(),
-                    eMatchEmcCluster, etaMatchEmcCluster, phiMatchEmcCluster, m02MatchEmcCluster, m20MatchEmcCluster, cellEmcCluster, timeEmcCluster, deltaEtaMatch, deltaPhiMatch, isEMcal);
+        /////////////////////////////////////////////////////////////            photonic electron          ///////////////////////////////////////////////////////
+
+        isLSElectronFound = 0;
+        isULSElectronFound = 0;
+        bool isLSElectron = 0;
+        bool isULSElectron = 0;
+        float invMassElectron = 0.;
+        float massLike = 0;
+        float massUnLike = 0;
+        float energy = 0;
+        float pSum2 = 0;
+        for (const auto& pTrack : tracks) {
+
+          if (pTrack.globalIndex() == matchTrack.globalIndex())
+            continue;
+
+          // Apply Associated electron Selection
+
+          if (!selAssoTracks(pTrack)) {
+            continue;
+          }
+          Int_t PDGe1 = 11;
+          Int_t PDGe2 = 11;
+          if (matchTrack.sign() > 0)
+            PDGe1 = -11;
+          if (pTrack.sign() > 0)
+            PDGe2 = -11;
+          KFPTrack kfpTrack = createKFPTrackFromTrack(matchTrack);
+          KFPTrack kfpAssociatedTrack = createKFPTrackFromTrack(pTrack);
+          KFParticle KFTrack(kfpTrack, PDGe1);
+          KFParticle kfAssociatedTrack(kfpAssociatedTrack, PDGe2);
+          const KFParticle* LcDaughters[2] = {&KFTrack, &kfAssociatedTrack};
+          KFNonHfe.SetConstructMethod(2);
+          KFNonHfe.Construct(LcDaughters, 2);
+
+          Int_t ndf = KFNonHfe.GetNDF();
+          Double_t chi2recg = KFNonHfe.GetChi2() / ndf;
+          if (ndf < 1)
+            continue;
+
+          if (std::sqrt(std::abs(chi2recg)) > 3.)
+            continue;
+
+          // find invariant mass
+          pSum2 = RecoDecay::p2(matchTrack.px() + pTrack.px(), matchTrack.py() + pTrack.py(), matchTrack.pz() + pTrack.pz());
+          energy = matchTrack.energy(massEl) + pTrack.energy(massEl);
+          invMassElectron = std::sqrt(energy * energy - pSum2);
+
+          // for like charge
+          if (pTrack.sign() == matchTrack.sign()) {
+            massLike = invMassElectron;
+            isLSElectron = true;
+            registry.fill(HIST("hLikeMass"), massLike);
+          }
+          // for unlike charge
+          if (pTrack.sign() != matchTrack.sign()) {
+            massUnLike = invMassElectron;
+            isULSElectron = true;
+            registry.fill(HIST("hUnLikeMass"), massUnLike);
+          }
+
+          // for like charge
+          if (isLSElectron && (invMassElectron <= invariantMass)) {
+            massLike = invMassElectron;
+            isLSElectronFound = 1;
+          }
+          // for unlike charge
+          if (isULSElectron && (invMassElectron <= invariantMass)) {
+            massUnLike = invMassElectron;
+            isULSElectronFound = 1;
+          }
+        }
+        electronSel(track.collisionId(), matchTrack.globalIndex(), etaMatchTrack, phiMatchTrack, ptMatchTrack, pMatchTrack, trackRapidity, matchTrack.dcaXY(), matchTrack.dcaZ(), matchTrack.tpcNSigmaEl(), matchTrack.tofNSigmaEl(),
+                    eMatchEmcCluster, etaMatchEmcCluster, phiMatchEmcCluster, m02MatchEmcCluster, m20MatchEmcCluster, cellEmcCluster, timeEmcCluster, deltaEtaMatch, deltaPhiMatch, isEMcal, isLSElectronFound, isULSElectronFound);
       }
 
       /// Electron information without Emcal and use TPC and TOF
       if (isEMcal) {
         continue;
       }
-      electronSel(track.collisionId(), electronId, etaTrack, phiTrack, ptTrack, pTrack, trackRapidity, dcaxyTrack, dcazTrack, track.tpcNSigmaEl(), track.tofNSigmaEl(),
-                  eMatchEmcCluster, etaMatchEmcCluster, phiMatchEmcCluster, m02MatchEmcCluster, m20MatchEmcCluster, cellEmcCluster, timeEmcCluster, deltaEtaMatch, deltaPhiMatch, isEMcal);
+      electronSel(track.collisionId(), track.globalIndex(), etaTrack, phiTrack, ptTrack, pTrack, trackRapidity, dcaxyTrack, dcazTrack, track.tpcNSigmaEl(), track.tofNSigmaEl(),
+                  eMatchEmcCluster, etaMatchEmcCluster, phiMatchEmcCluster, m02MatchEmcCluster, m20MatchEmcCluster, cellEmcCluster, timeEmcCluster, deltaEtaMatch, deltaPhiMatch, isEMcal, isLSElectronFound, isULSElectronFound);
     }
   }
 
