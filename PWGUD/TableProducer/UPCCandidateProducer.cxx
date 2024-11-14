@@ -81,7 +81,7 @@ struct UpcCandProducer {
   Configurable<int> fFilterTVX{"filterTVX", -1, "Filter candidates by FT0 TVX"};
   Configurable<int> fFilterFV0{"filterFV0", -1, "Filter candidates by FV0A"};
 
-  Configurable<int> fBCWindowFITAmps{"bcWindowFITAmps", 20, "BC range for T0A/V0A amplitudes array [-range, +(range-1)]"};
+  Configurable<uint64_t> fBCWindowFITAmps{"bcWindowFITAmps", 20, "BC range for T0A/V0A amplitudes array [-range, +(range-1)]"};
   Configurable<int> fBcWindowMCH{"bcWindowMCH", 20, "Time window for MCH-MID to MCH-only matching for Muon candidates"};
   Configurable<int> fBcWindowITSTPC{"bcWindowITSTPC", 20, "Time window for TOF/ITS-TPC to ITS-TPC matching for Central candidates"};
 
@@ -884,7 +884,7 @@ struct UpcCandProducer {
     for (auto& pair : bcsMatchedTrIdsTOF) {
       auto globalBC = pair.first;
       auto& barrelTrackIDs = pair.second;
-      int32_t nTOFs = barrelTrackIDs.size();
+      uint32_t nTOFs = barrelTrackIDs.size();
       if (nTOFs > fNBarProngs) // too many tracks
         continue;
       auto closestBcITSTPC = std::numeric_limits<uint64_t>::max();
@@ -898,7 +898,7 @@ struct UpcCandProducer {
         if (std::abs(distClosestBcITSTPC) > fBcWindowITSTPC)
           continue;
         auto& itstpcTracks = itClosestBcITSTPC->second;
-        int32_t nITSTPCs = itstpcTracks.size();
+        uint32_t nITSTPCs = itstpcTracks.size();
         if ((nTOFs + nITSTPCs) != fNBarProngs)
           continue;
         barrelTrackIDs.insert(barrelTrackIDs.end(), itstpcTracks.begin(), itstpcTracks.end());
@@ -953,7 +953,7 @@ struct UpcCandProducer {
     for (auto& pair : bcsMatchedTrIdsITSTPC) {
       auto globalBC = pair.first;
       auto& barrelTrackIDs = pair.second;
-      int32_t nThisITSTPCs = barrelTrackIDs.size();
+      uint32_t nThisITSTPCs = barrelTrackIDs.size();
       if (nThisITSTPCs > fNBarProngs || nThisITSTPCs == 0) // too many tracks / already matched to TOF
         continue;
       auto closestBcITSTPC = std::numeric_limits<uint64_t>::max();
@@ -967,7 +967,7 @@ struct UpcCandProducer {
         if (std::abs(distClosestBcITSTPC) > fBcWindowITSTPC)
           continue;
         auto& itstpcTracks = itClosestBcITSTPC->second;
-        int32_t nITSTPCs = itstpcTracks.size();
+        uint32_t nITSTPCs = itstpcTracks.size();
         if ((nThisITSTPCs + nITSTPCs) != fNBarProngs)
           continue;
         barrelTrackIDs.insert(barrelTrackIDs.end(), itstpcTracks.begin(), itstpcTracks.end());
@@ -1208,7 +1208,7 @@ struct UpcCandProducer {
                       const std::map<uint64_t, int32_t>& mapBCs,
                       std::vector<float>& amps,
                       std::vector<int8_t>& relBCs,
-                      int64_t gbc)
+                      uint64_t gbc)
   {
     auto s = gbc - fBCWindowFITAmps;
     auto e = gbc + (fBCWindowFITAmps - 1);
@@ -1344,7 +1344,7 @@ struct UpcCandProducer {
     for (auto& pair : bcsMatchedTrIdsMID) { // candidates without MFT
       auto globalBC = static_cast<int64_t>(pair.first);
       const auto& fwdTrackIDs = pair.second; // only MID-matched tracks at the moment
-      int32_t nMIDs = fwdTrackIDs.size();
+      uint32_t nMIDs = fwdTrackIDs.size();
       if (nMIDs > fNFwdProngs) // too many tracks
         continue;
       std::vector<int64_t> trkCandIDs{};
@@ -1359,7 +1359,7 @@ struct UpcCandProducer {
         if (std::abs(distClosestBcMCH) > fBcWindowMCH)
           continue;
         auto& mchTracks = itClosestBcMCH->second;
-        int32_t nMCHs = mchTracks.size();
+        uint32_t nMCHs = mchTracks.size();
         if ((nMCHs + nMIDs) != fNFwdProngs)
           continue;
         trkCandIDs.insert(trkCandIDs.end(), fwdTrackIDs.begin(), fwdTrackIDs.end());
@@ -1589,7 +1589,6 @@ struct UpcCandProducer {
     auto nFT0s = mapGlobalBcWithT0A.size();
     auto nFV0As = mapGlobalBcWithV0A.size();
     auto nZdcs = mapGlobalBcWithZdc.size();
-    auto nBcsWithMID = bcsMatchedTrIdsMID.size();
     auto nFDDs = mapGlobalBcWithFDD.size();
 
     // todo: calculate position of UD collision?
@@ -1607,11 +1606,10 @@ struct UpcCandProducer {
     for (auto& pair : bcsMatchedTrIdsGlobal) { // candidates with MFT
       auto globalBC = static_cast<int64_t>(pair.first);
       const auto& fwdTrackIDs = pair.second;
-      int32_t nMFTs = fwdTrackIDs.size();
+      uint32_t nMFTs = fwdTrackIDs.size();
       if (nMFTs > fNFwdProngs) // too many tracks
         continue;
       std::vector<int64_t> trkCandIDs{};
-      auto midBC = static_cast<int64_t>(midIt->first);
       const auto& midTrackIDs = midIt->second;
       if (nMFTs == fNFwdProngs) {
         for (auto iMft : fwdTrackIDs) {
