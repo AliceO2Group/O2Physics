@@ -1687,27 +1687,27 @@ struct quarkoniaToHyperons {
       auto antiHypBachTrackExtra = antiHyperon.template bachTrackExtra_as<dauTracks>();
 
       // check that bachelor track from hyperon is different from daughter tracks of antiHyperon
-      if (hypBachTrackExtra.globalIndex() == antiHypBachTrackExtra.globalIndex() || 
-          hypBachTrackExtra.globalIndex() == antiHypPosTrackExtra.globalIndex()  ||
+      if (hypBachTrackExtra.globalIndex() == antiHypBachTrackExtra.globalIndex() ||
+          hypBachTrackExtra.globalIndex() == antiHypPosTrackExtra.globalIndex() ||
           hypBachTrackExtra.globalIndex() == antiHypNegTrackExtra.globalIndex())
         return false;
       // check that positive track from hyperon is different from daughter tracks of antiHyperon
-      if (hypPosTrackExtra.globalIndex() == antiHypBachTrackExtra.globalIndex() || 
-          hypPosTrackExtra.globalIndex() == antiHypPosTrackExtra.globalIndex()  ||
+      if (hypPosTrackExtra.globalIndex() == antiHypBachTrackExtra.globalIndex() ||
+          hypPosTrackExtra.globalIndex() == antiHypPosTrackExtra.globalIndex() ||
           hypPosTrackExtra.globalIndex() == antiHypNegTrackExtra.globalIndex())
         return false;
       // check that negative track from hyperon is different from daughter tracks of antiHyperon
-      if (hypNegTrackExtra.globalIndex() == antiHypBachTrackExtra.globalIndex() || 
-          hypNegTrackExtra.globalIndex() == antiHypPosTrackExtra.globalIndex()  ||
+      if (hypNegTrackExtra.globalIndex() == antiHypBachTrackExtra.globalIndex() ||
+          hypNegTrackExtra.globalIndex() == antiHypPosTrackExtra.globalIndex() ||
           hypNegTrackExtra.globalIndex() == antiHypNegTrackExtra.globalIndex())
         return false;
     } else { // v0 case
       // check that positive track from hyperon is different from daughter tracks of antiHyperon
-      if (hypPosTrackExtra.globalIndex() == antiHypPosTrackExtra.globalIndex()  ||
+      if (hypPosTrackExtra.globalIndex() == antiHypPosTrackExtra.globalIndex() ||
           hypPosTrackExtra.globalIndex() == antiHypNegTrackExtra.globalIndex())
         return false;
       // check that negative track from hyperon is different from daughter tracks of antiHyperon
-      if (hypNegTrackExtra.globalIndex() == antiHypPosTrackExtra.globalIndex()  ||
+      if (hypNegTrackExtra.globalIndex() == antiHypPosTrackExtra.globalIndex() ||
           hypNegTrackExtra.globalIndex() == antiHypNegTrackExtra.globalIndex())
         return false;
     }

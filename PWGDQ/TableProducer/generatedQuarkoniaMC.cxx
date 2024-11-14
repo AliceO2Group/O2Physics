@@ -235,7 +235,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 //__________________________________________________
 // do not over-populate general namespace, keep scope generatedQuarkoniaMC::
 const std::vector<std::string> generatedQuarkoniaMC::particleNames{"EtaC1S", "JPsi", "ChiC0", "ChiC1",
-                                                                 "hC", "ChiC2", "EtaC2S", "Psi2S"};
+                                                                   "hC", "ChiC2", "EtaC2S", "Psi2S"};
 const std::vector<int> generatedQuarkoniaMC::particlePDGCodes{441, 443, 10441, 20443, 10443, 445, 100441, 100443};
 const std::vector<std::string> generatedQuarkoniaMC::parameterNames{"Enable"};
 
