@@ -363,6 +363,7 @@ struct HfDerivedDataCreatorD0ToKPi {
       reserveTable(rowCandidatePar, fillCandidatePar, sizeTableCand);
       reserveTable(rowCandidateParE, fillCandidateParE, sizeTableCand);
       reserveTable(rowCandidateSel, fillCandidateSel, sizeTableCand);
+      reserveTable(rowCandidateMl, fillCandidateMl, sizeTableCand);
       reserveTable(rowCandidateId, fillCandidateId, sizeTableCand);
       if constexpr (isMc) {
         reserveTable(rowCandidateMc, fillCandidateMc, sizeTableCand);
@@ -448,6 +449,7 @@ struct HfDerivedDataCreatorD0ToKPi {
     // Fill MC collision properties
     auto sizeTableMcColl = mcCollisions.size();
     reserveTable(rowMcCollBase, fillMcCollBase, sizeTableMcColl);
+    reserveTable(rowMcCollId, fillMcCollId, sizeTableMcColl);
     reserveTable(rowMcRCollId, fillMcRCollId, sizeTableMcColl);
     for (const auto& mcCollision : mcCollisions) {
       auto thisMcCollId = mcCollision.globalIndex();
