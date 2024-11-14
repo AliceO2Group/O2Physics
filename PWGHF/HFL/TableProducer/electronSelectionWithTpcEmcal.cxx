@@ -42,7 +42,6 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 
-
 auto massEl = o2::constants::physics::MassElectron;
 const int etaAxisBins = 100;
 const float trackEtaAxisMin = -1.5;
@@ -76,9 +75,7 @@ struct HfElectronSelectionWithTpcEmcal {
   Produces<aod::HfSelEl> electronSel;
   // Configurables
   // EMCal Cluster information
-
   KFParticle KFNonHfe;
-
   Configurable<bool> fillEmcClusterInfo{"fillEmcClusterInfo", true, "Fill histograms with EMCal cluster info before and after track match"};
 
   // Event Selection
@@ -171,10 +168,8 @@ struct HfElectronSelectionWithTpcEmcal {
     "registry",
     {{"hNevents", "No of events", {HistType::kTH1F, {{3, 1, 4}}}},
      {"hZvertex", "z vertex", {HistType::kTH1F, {{100, -100, 100}}}},
-
      {"hLikeMass", "Like mass", {HistType::kTH1F, {{1000, 0, 2.0}}}},
      {"hUnLikeMass", "unLike mass", {HistType::kTH1F, {{1000, 0, 1.0}}}},
-
      {"hEmcClusterM02", "m02", {HistType::kTH1F, {{m02AxisBins, m02AxisMin, m02AxisMax}}}},
      {"hEmcClusterM20", "m20", {HistType::kTH1F, {{m20AxisBins, m20AxisMin, m20AxisMax}}}},
      {"hTrackEtaPhi", "TPC EtaPhi Info; #eta;#varphi;passEMcal;", {HistType::kTH3F, {{etaAxisBins, trackEtaAxisMin, trackEtaAxisMax}, {phiAxisBins, trackPhiAxisMin, trackPhiAxisMax}, {passEMCalBins, passEMCalAxisMin, passEMCalAxisMax}}}},
@@ -406,7 +401,7 @@ struct HfElectronSelectionWithTpcEmcal {
         if (eop < eopElectronMin || eop > eopElectronMax) {
           continue;
         }
-        
+
         /////////////////////////////////////////////////////////////            photonic electron          ///////////////////////////////////////////////////////
 
         isLSElectronFound = 0;
@@ -481,12 +476,6 @@ struct HfElectronSelectionWithTpcEmcal {
         }
         electronSel(track.collisionId(), matchTrack.globalIndex(), etaMatchTrack, phiMatchTrack, ptMatchTrack, pMatchTrack, trackRapidity, matchTrack.dcaXY(), matchTrack.dcaZ(), matchTrack.tpcNSigmaEl(), matchTrack.tofNSigmaEl(),
                     eMatchEmcCluster, etaMatchEmcCluster, phiMatchEmcCluster, m02MatchEmcCluster, m20MatchEmcCluster, cellEmcCluster, timeEmcCluster, deltaEtaMatch, deltaPhiMatch, isEMcal, isLSElectronFound, isULSElectronFound);
-
-        isEMcal = true;
-        std::cout << " electron id  in selection" << electronId << std::endl;
-        electronSel(matchTrack.collisionId(), electronId, etaMatchTrack, phiMatchTrack, ptMatchTrack, pMatchTrack, trackRapidity, matchTrack.dcaXY(), matchTrack.dcaZ(), matchTrack.tpcNSigmaEl(), matchTrack.tofNSigmaEl(),
-                    eMatchEmcCluster, etaMatchEmcCluster, phiMatchEmcCluster, m02MatchEmcCluster, m20MatchEmcCluster, cellEmcCluster, timeEmcCluster, deltaEtaMatch, deltaPhiMatch, isEMcal);
-
       }
 
       /// Electron information without Emcal and use TPC and TOF
@@ -495,10 +484,6 @@ struct HfElectronSelectionWithTpcEmcal {
       }
       electronSel(track.collisionId(), track.globalIndex(), etaTrack, phiTrack, ptTrack, pTrack, trackRapidity, dcaxyTrack, dcazTrack, track.tpcNSigmaEl(), track.tofNSigmaEl(),
                   eMatchEmcCluster, etaMatchEmcCluster, phiMatchEmcCluster, m02MatchEmcCluster, m20MatchEmcCluster, cellEmcCluster, timeEmcCluster, deltaEtaMatch, deltaPhiMatch, isEMcal, isLSElectronFound, isULSElectronFound);
-
-      electronSel(track.collisionId(), electronId, etaTrack, phiTrack, ptTrack, pTrack, trackRapidity, dcaxyTrack, dcazTrack, track.tpcNSigmaEl(), track.tofNSigmaEl(),
-                  eMatchEmcCluster, etaMatchEmcCluster, phiMatchEmcCluster, m02MatchEmcCluster, m20MatchEmcCluster, cellEmcCluster, timeEmcCluster, deltaEtaMatch, deltaPhiMatch, isEMcal);
-
     }
   }
 
