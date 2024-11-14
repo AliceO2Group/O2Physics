@@ -70,6 +70,8 @@ const float nSigmaAxisMax = 15.;
 const int dEdxAxisBins = 480;
 const float dEdxAxisMin = 0.;
 const float dEdxAxisMax = 160.;
+const Int_t kElectronPDG = -11; // PDG code for electron
+const Int_t kPositronPDG = 11;  // PDG code for positron
 struct HfElectronSelectionWithTpcEmcal {
 
   Produces<aod::HfSelEl> electronSel;
@@ -96,6 +98,7 @@ struct HfElectronSelectionWithTpcEmcal {
   Configurable<float> tpcNsigmaAssoElectronMin{"tpcNsigmaAssoElectronMin", -3.0f, "min Associated Electron TPCnsigma"};
   Configurable<float> tpcNsigmaAssoElectronMax{"tpcNsigmaAssoElectronMax", 3.0f, "max Associated Electron TPCnsigma"};
   Configurable<float> invariantMass{"invariantMass", 0.14f, "max Invariant Mass for Photonic electron"};
+  Configurable<float> chiSquareMax{"chiSquareMax", 3.0f, "chiSquare on the reconstructed parent particle"};
 
   // EMcal and Dcal selection cut
   Configurable<float> etaTrackDCalNegativeMax{"etaTrackDCalNegativeMax", -0.22f, "Eta range for electron Dcal tracks"};
@@ -241,7 +244,7 @@ struct HfElectronSelectionWithTpcEmcal {
     if (track.pt() < ptAssoTrackMin) {
       return false;
     }
-    if ((track.tpcNSigmaEl() < tpcNsigmaAssoElectronMin || track.tpcNSigmaEl() > tpcNsigmaAssoElectronMax)) {
+    if (track.tpcNSigmaEl() < tpcNsigmaAssoElectronMin || track.tpcNSigmaEl() > tpcNsigmaAssoElectronMax) {
       return false;
     }
 
@@ -411,8 +414,7 @@ struct HfElectronSelectionWithTpcEmcal {
         float invMassElectron = 0.;
         float massLike = 0;
         float massUnLike = 0;
-        float energy = 0;
-        float pSum2 = 0;
+
         for (const auto& pTrack : tracks) {
 
           if (pTrack.globalIndex() == matchTrack.globalIndex())
@@ -423,12 +425,12 @@ struct HfElectronSelectionWithTpcEmcal {
           if (!selAssoTracks(pTrack)) {
             continue;
           }
-          Int_t PDGe1 = 11;
-          Int_t PDGe2 = 11;
+          Int_t PDGe1 = kPositronPDG;
+          Int_t PDGe2 = kPositronPDG;
           if (matchTrack.sign() > 0)
-            PDGe1 = -11;
+            PDGe1 = kElectronPDG;
           if (pTrack.sign() > 0)
-            PDGe2 = -11;
+            PDGe2 = kElectronPDG;
           KFPTrack kfpTrack = createKFPTrackFromTrack(matchTrack);
           KFPTrack kfpAssociatedTrack = createKFPTrackFromTrack(pTrack);
           KFParticle KFTrack(kfpTrack, PDGe1);
@@ -439,16 +441,15 @@ struct HfElectronSelectionWithTpcEmcal {
 
           Int_t ndf = KFNonHfe.GetNDF();
           Double_t chi2recg = KFNonHfe.GetChi2() / ndf;
-          if (ndf < 1)
+          if (ndf < 1.0)
             continue;
 
-          if (std::sqrt(std::abs(chi2recg)) > 3.)
+          if (std::sqrt(std::abs(chi2recg)) > chiSquareMax)
             continue;
-
+          std::array<float, 3> pEle{pTrack.pVector()};
+          std::array<float, 3> pAssoEl{matchTrack.pVector()};
           // find invariant mass
-          pSum2 = RecoDecay::p2(matchTrack.px() + pTrack.px(), matchTrack.py() + pTrack.py(), matchTrack.pz() + pTrack.pz());
-          energy = matchTrack.energy(massEl) + pTrack.energy(massEl);
-          invMassElectron = std::sqrt(energy * energy - pSum2);
+          invMassElectron = RecoDecay::m(std::array{pEle, pAssoEl}, std::array{massEl, massEl});
 
           // for like charge
           if (pTrack.sign() == matchTrack.sign()) {
