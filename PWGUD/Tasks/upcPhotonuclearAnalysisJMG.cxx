@@ -26,7 +26,6 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "PWGCF/Core/CorrelationContainer.h"
-#include "PWGCF/Core/PairCuts.h"
 #include "DataFormatsParameters/GRPObject.h"
 
 #include "CCDB/BasicCCDBManager.h"
@@ -183,16 +182,8 @@ struct UpcPhotonuclearAnalysisJMG {
   OutputObj<CorrelationContainer> same{"sameEvent"};
   OutputObj<CorrelationContainer> mixed{"mixedEvent"};
 
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
-
-  //PairCuts mPairCuts;
-
-  struct Config {
-    bool mPairCuts = false;
-    THn* mEfficiencyTrigger = nullptr;
-    THn* mEfficiencyAssociated = nullptr;
-    bool efficiencyLoaded = false;
-  } cfg;
+  UPCPairCuts mPairCuts;
+  bool doPairCuts = false;
 
   void init(InitContext const&)
   {
