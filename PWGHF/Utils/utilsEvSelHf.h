@@ -48,7 +48,12 @@ enum EventRejection {
   NContrib,
   Chi2,
   PositionZ,
-  NEventRejection
+  NEventRejection,
+  NoCollInTimeRangeNarrow,
+  NoCollInTimeRangeStrict,
+  NoCollInTimeRangeVzDependent,
+  NoCollInRofStrict,
+  NoCollInRofStandard,
 };
 
 o2::framework::AxisSpec axisEvents = {EventRejection::NEventRejection, -0.5f, +EventRejection::NEventRejection - 0.5f, ""};
@@ -73,6 +78,11 @@ void setEventRejectionLabels(Histo& hRejection, std::string softwareTriggerLabel
   hRejection->GetXaxis()->SetBinLabel(EventRejection::NContrib + 1, "# of PV contributors");
   hRejection->GetXaxis()->SetBinLabel(EventRejection::Chi2 + 1, "PV #it{#chi}^{2}");
   hRejection->GetXaxis()->SetBinLabel(EventRejection::PositionZ + 1, "PV #it{z}");
+  hRejection->GetXaxis()->SetBinLabel(EventRejection::NoCollInTimeRangeNarrow + 1, "No coll timerange narrow");
+  hRejection->GetXaxis()->SetBinLabel(EventRejection::NoCollInTimeRangeStrict + 1, "No coll timerange strict");
+  hRejection->GetXaxis()->SetBinLabel(EventRejection::NoCollInTimeRangeVzDependent + 1, "No coll timerange Vz dep.");
+  hRejection->GetXaxis()->SetBinLabel(EventRejection::NoCollInRofStrict + 1, "No coll in ROF strict");
+  hRejection->GetXaxis()->SetBinLabel(EventRejection::NoCollInRofStandard + 1, "No coll in ROF std");
 }
 
 struct HfEventSelection : o2::framework::ConfigurableGroup {
@@ -94,6 +104,11 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> chi2PvMax{"chi2PvMax", -1.f, "Maximum PV chi2"};
   o2::framework::Configurable<float> zPvPosMin{"zPvPosMin", -10.f, "Minimum PV posZ (cm)"};
   o2::framework::Configurable<float> zPvPosMax{"zPvPosMax", 10.f, "Maximum PV posZ (cm)"};
+  o2::framework::Configurable<bool> useNoCollInTimeRangeNarrow{"useNoCollInTimeRangeNarrow", false, "Reject collisions in time range narrow"};
+  o2::framework::Configurable<bool> useNoCollInTimeRangeStrict{"useNoCollInTimeRangeStrict", false, "Reject collisions in time range strict"};
+  o2::framework::Configurable<bool> useNoCollInTimeRangeVzDependent{"useNoCollInTimeRangeVzDependent", false, "Reject collisions in time range Vz dependent"};
+  o2::framework::Configurable<bool> useNoCollInRofStrict{"useNoCollInRofStrict", false, "Reject collisions in ROF strict"};
+  o2::framework::Configurable<bool> useNoCollInRofStandard{"useNoCollInRofStandard", false, "Reject collisions in ROF standard"};
   o2::framework::Configurable<std::string> softwareTrigger{"softwareTrigger", "", "Label of software trigger. Multiple triggers can be selected dividing them by a comma. Set None if you want bcs that are not selected by any trigger"};
   o2::framework::Configurable<uint64_t> bcMarginForSoftwareTrigger{"bcMarginForSoftwareTrigger", 100, "Number of BCs of margin for software triggers"};
   o2::framework::Configurable<std::string> ccdbPathSoftwareTrigger{"ccdbPathSoftwareTrigger", "Users/m/mpuccio/EventFiltering/OTS/", "ccdb path for ZORRO objects"};
@@ -142,9 +157,9 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   /// \param registry reference to the histogram registry needed for zorro
   /// \return bitmask with the event selection criteria not satisfied by the collision
   template <bool useEvSel, o2::hf_centrality::CentralityEstimator centEstimator, typename BCs, typename Coll>
-  uint16_t getHfCollisionRejectionMask(const Coll& collision, float& centrality, o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb, o2::framework::HistogramRegistry& registry)
+  uint32_t getHfCollisionRejectionMask(const Coll& collision, float& centrality, o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb, o2::framework::HistogramRegistry& registry)
   {
-    uint16_t rejectionMask{0}; // 16 bits, in case new ev. selections will be added
+    uint32_t rejectionMask{0}; // 16 bits, in case new ev. selections will be added
 
     if constexpr (centEstimator != o2::hf_centrality::CentralityEstimator::None) {
       if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0A) {
@@ -213,6 +228,31 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
       SETBIT(rejectionMask, EventRejection::PositionZ);
     }
 
+    /// No collisions in time range narrow
+    if (useNoCollInTimeRangeNarrow && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
+      SETBIT(rejectionMask, EventRejection::NoCollInTimeRangeNarrow);
+    }
+
+    /// No collisions in time range strict
+    if (useNoCollInTimeRangeStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict)) {
+      SETBIT(rejectionMask, EventRejection::NoCollInTimeRangeStrict);
+    }
+
+    /// No collisions in time range vz dependent
+    if (useNoCollInTimeRangeVzDependent && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeVzDependent)) {
+      SETBIT(rejectionMask, EventRejection::NoCollInTimeRangeVzDependent);
+    }
+
+    /// No collisions in ROF strict
+    if (useNoCollInRofStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStrict)) {
+      SETBIT(rejectionMask, EventRejection::NoCollInRofStrict);
+    }
+
+    /// No collisions in ROF standard
+    if (useNoCollInRofStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+      SETBIT(rejectionMask, EventRejection::NoCollInRofStandard);
+    }
+
     if (softwareTrigger.value != "") {
       // we might have to update it from CCDB
       auto bc = collision.template bc_as<BCs>();
@@ -244,7 +284,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   /// \param collision analysed collision
   /// \param rejectionMask bitmask storing the info about which ev. selections are not satisfied by the collision
   template <typename Coll>
-  void fillHistograms(Coll const& collision, const uint16_t rejectionMask, float& centrality)
+  void fillHistograms(Coll const& collision, const uint32_t rejectionMask, float& centrality)
   {
     hCollisions->Fill(EventRejection::None);
     const float posZ = collision.posZ();
@@ -318,9 +358,9 @@ struct HfEventSelectionMc {
   /// \param centrality centrality variable to be set in this function
   /// \return a bitmask with the event selections not satisfied by the analysed collision
   template <typename TBc, o2::hf_centrality::CentralityEstimator centEstimator, typename CCs, typename TMcColl>
-  uint16_t getHfMcCollisionRejectionMask(TMcColl const& mcCollision, CCs const& collSlice, float& centrality)
+  uint32_t getHfMcCollisionRejectionMask(TMcColl const& mcCollision, CCs const& collSlice, float& centrality)
   {
-    uint16_t rejectionMask{0};
+    uint32_t rejectionMask{0};
     float zPv = mcCollision.posZ();
     auto bc = mcCollision.template bc_as<TBc>();
 
@@ -377,7 +417,7 @@ struct HfEventSelectionMc {
 
   /// \brief Fills histogram for monitoring event selections satisfied by the collision.
   /// \param rejectionMask bitmask storing the info about which ev. selections are not satisfied by the collision
-  void fillHistograms(const uint16_t rejectionMask)
+  void fillHistograms(const uint32_t rejectionMask)
   {
     hParticles->Fill(EventRejection::None);
 
