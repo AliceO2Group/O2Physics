@@ -420,14 +420,6 @@ DECLARE_SOA_TABLE_STAGED(HfD0Mcs, "HFD0MC", //! Table with MC candidate info
 
 // B+
 
-namespace hf_cand_base
-{
-namespace der_bplus
-{
-DECLARE_SOA_INDEX_COLUMN(HfD0Base, hfD0); //! Index to the D0 candidate in the derived table
-}
-} // namespace hf_cand_base
-
 DECLARE_SOA_TABLE_STAGED(HfBplusBases, "HFBPBASE", //! Table with basic candidate properties used in the analyses
                          o2::soa::Index<>,
                          hf_cand_base::der_bplus::HfCollBaseId,
@@ -505,9 +497,6 @@ DECLARE_SOA_TABLE_STAGED(HfBplusIds, "HFBPID", //! Table with original global in
                          hf_track_index::Prong1Id, // D0 prong 1
                          hf_track_index::Prong2Id, // bachelor pion
                          o2::soa::Marker<MarkerBplus>);
-
-DECLARE_SOA_TABLE_STAGED(HfBplusIdD0s, "HFBPIDD0", //! Table with an index pointing to the derived D0 table
-                         hf_cand_base::der_bplus::HfD0BaseId);
 
 DECLARE_SOA_TABLE_STAGED(HfBplusMcs, "HFBPMC", //! Table with MC candidate info
                          hf_cand_mc::FlagMcMatchRec,
