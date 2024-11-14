@@ -345,7 +345,7 @@ struct AngularCorrelationsInJets {
         return false;
       if (TMath::Abs(track.dcaZ()) > fProtonDCAzCF)
         return false;
-      
+
       registryData.fill(HIST("hTPCnsigmaProtonCF"), track.pt(), track.tpcNSigmaPr());
 
       // TPC
@@ -501,9 +501,9 @@ struct AngularCorrelationsInJets {
           return false;
         if (TMath::Abs(track.dcaZ()) > fNucleiDCAzCF)
           return false;
-        
+
         registryData.fill(HIST("hTPCnsigmaNucleiCF"), track.pt(), track.tpcNSigmaHe());
-        
+
         // TPC
         if (track.pt() < fNucleiTPCTOFpT && TMath::Abs(track.tpcNSigmaHe()) > fNucleiTPCnsigLowCF)
           return false;
@@ -602,7 +602,7 @@ struct AngularCorrelationsInJets {
           return false;
 
         registryData.fill(HIST("hTPCnsigmaAntinucleiCF"), track.pt(), track.tpcNSigmaHe());
-        
+
         // TPC
         if (track.pt() < fAntinucleiTPCTOFpT && TMath::Abs(track.tpcNSigmaHe()) > fAntinucleiTPCnsigLowCF)
           return false;
