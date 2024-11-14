@@ -15,6 +15,8 @@
 /// \author Shirajum Monira, WUT Warsaw, shirajum.monira.dokt@pw.edu.pl
 
 #include <vector>
+#include <string>
+#include <memory>
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
