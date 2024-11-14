@@ -12,7 +12,9 @@
 // \brief Saves relevant information of DG candidates
 // \author Paul Buehler, paul.buehler@oeaw.ac.at
 
-#include "Framework/runDataProcessing.h"
+#include <string>
+#include <vector>
+#include <map>
 #include "Framework/AnalysisTask.h"
 #include "ReconstructionDataFormats/Vertex.h"
 #include "PWGUD/DataModel/UDTables.h"
