@@ -242,7 +242,7 @@ struct EMfTaskPi0Flow {
     const AxisSpec thAxisEta{160, -0.8, 0.8, "#eta"};
     const AxisSpec thAxisPhi{72, 0, 2 * 3.14159, "phi"};
     const AxisSpec thAxisNCell{17664, 0.5, +17664.5, "#it{N}_{cell}"};
-    const AxisSpec thAxisPsi{360 / harmonic.value, -(1. / (float)harmonic.value) * M_PI, (1. / (float)harmonic.value) * M_PI, Form("#Psi_{%d}", harmonic.value)};
+    const AxisSpec thAxisPsi{360 / harmonic.value, -(1. / static_cast<float>(harmonic.value)) * M_PI, (1. / static_cast<float>(harmonic.value)) * M_PI, Form("#Psi_{%d}", harmonic.value)};
 
     registry.add("hSparsePi0Flow", "THn for SP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCent, thnAxisScalarProd});
     registry.add("hSparseBkgFlow", "THn for SP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCent, thnAxisScalarProd});
