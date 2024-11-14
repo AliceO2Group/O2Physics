@@ -18,86 +18,11 @@
 
 #include <vector>
 #include <string>
-#include <functional>
-#include <algorithm>
-#include "Framework/ASoAHelpers.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "PWGCF/DataModel/FemtoDerived.h"
 
 namespace o2::analysis::femtoDream
 {
-
-// TODO: remove all these functions pertaining to PID selection for the next tutorial session they have been removed from femtodream tasks but are still present in tutorial files
-
-enum kDetector { kTPC,
-                 kTPCTOF,
-                 kNdetectors };
-
-/// internal function that returns the kPIDselection element corresponding to a
-/// specifica n-sigma value \param nSigma number of sigmas for PID
-/// \param vNsigma vector with the number of sigmas of interest
-/// \return kPIDselection corresponding to n-sigma
-int getPIDselection(float nSigma, std::vector<float> vNsigma)
-{
-  std::sort(vNsigma.begin(), vNsigma.end(), std::greater<>());
-  auto it = std::find(vNsigma.begin(), vNsigma.end(), nSigma);
-  if (it == vNsigma.end()) {
-    it = vNsigma.begin() + 1;
-    LOG(warn) << "Invalid value of nSigma: " << nSigma << ". Return the first value of the vector: " << *(it);
-  }
-  return std::distance(vNsigma.begin(), it);
-}
-
-/// function that checks whether the PID selection specified in the vectors is
-/// fulfilled
-/// \param pidcut Bit-wise container for the PID
-/// \param vSpecies vector with ID corresponding to the selected species (output from cutculator)
-/// \param nSpecies number of available selected species (output from cutculator)
-/// \param nSigma number of sigma selection fo PID
-/// \param vNsigma vector with available n-sigma selections for PID
-/// \param kDetector enum corresponding to the PID technique
-/// \return Whether the PID selection specified in the vectors is fulfilled
-bool isPIDSelected(aod::femtodreamparticle::cutContainerType pidcut,
-                   int vSpecies,
-                   int nSpecies,
-                   float nSigma,
-                   std::vector<float> vNsigma,
-                   kDetector iDet)
-{
-  int iNsigma = getPIDselection(nSigma, vNsigma);
-  int nDet = static_cast<int>(kDetector::kNdetectors);
-  int bit_to_check = 1 + (vNsigma.size() - (iNsigma + 1)) * nDet * nSpecies + (nSpecies - (vSpecies + 1)) * nSpecies + (nDet - 1 - iDet);
-  return ((pidcut >> (bit_to_check)) & 1) == 1;
-};
-
-/// function that checks whether the PID selection specified in the vectors is fulfilled, depending on the momentum TPC or TPC+TOF PID is conducted
-/// \param pidcut Bit-wise container for the PID
-/// \param momentum Momentum of the track
-/// \param pidThresh Momentum threshold that separates between TPC and TPC+TOF PID
-/// \param vSpecies Vector with the species of interest (number returned by the CutCulator)
-/// \param nSpecies number of available selected species (output from cutculator)
-/// \param nSigmaTPC Number of TPC sigmas for selection
-/// \param nSigmaTPCTOF Number of TPC+TOF sigmas for selection (circular selection)
-/// \return Whether the PID selection is fulfilled
-bool isFullPIDSelected(aod::femtodreamparticle::cutContainerType const& pidCut,
-                       float momentum,
-                       float pidThresh,
-                       int vSpecies,
-                       int nSpecies,
-                       std::vector<float> vNsigma,
-                       float nSigmaTPC,
-                       float nSigmaTPCTOF)
-{
-  bool pidSelection = true;
-  if (momentum < pidThresh) {
-    /// TPC PID only
-    pidSelection = isPIDSelected(pidCut, vSpecies, nSpecies, nSigmaTPC, vNsigma, kDetector::kTPC);
-  } else {
-    /// TPC + TOF PID
-    pidSelection = isPIDSelected(pidCut, vSpecies, nSpecies, nSigmaTPCTOF, vNsigma, kDetector::kTPCTOF);
-  }
-  return pidSelection;
-};
 
 /// function for getting the mass of a particle depending on the pdg code
 /// \param pdgCode pdg code of the particle
@@ -109,26 +34,32 @@ inline float getMass(int pdgCode)
   float mass = 0;
   // add new particles if necessary here
   switch (std::abs(pdgCode)) {
-    case kPiPlus: // charged pions, changed magic number as per their pdg name
+    case kPiPlus:
       mass = o2::constants::physics::MassPiPlus;
       break;
-    case kKPlus: // charged kaon
+    case kKPlus:
       mass = o2::constants::physics::MassKPlus;
       break;
-    case kProton: // proton
+    case kProton:
       mass = o2::constants::physics::MassProton;
       break;
-    case kLambda0: // Lambda
+    case kLambda0:
       mass = o2::constants::physics::MassLambda;
       break;
-    case o2::constants::physics::Pdg::kPhi: // Phi Meson
+    case o2::constants::physics::Pdg::kPhi:
       mass = o2::constants::physics::MassPhi;
       break;
-    case o2::constants::physics::Pdg::kLambdaCPlus: // Charm Lambda
+    case o2::constants::physics::Pdg::kLambdaCPlus:
       mass = o2::constants::physics::MassLambdaCPlus;
       break;
-    case o2::constants::physics::Pdg::kDeuteron: // Deuteron
+    case o2::constants::physics::Pdg::kDeuteron:
       mass = o2::constants::physics::MassDeuteron;
+      break;
+    case o2::constants::physics::Pdg::kTriton:
+      mass = o2::constants::physics::MassTriton;
+      break;
+    case o2::constants::physics::Pdg::kHelium3:
+      mass = o2::constants::physics::MassHelium3;
       break;
     default:
       LOG(fatal) << "PDG code is not suppored";
@@ -141,10 +72,10 @@ inline int checkDaughterType(o2::aod::femtodreamparticle::ParticleType partType,
   int partOrigin = 0;
   if (partType == o2::aod::femtodreamparticle::ParticleType::kTrack) {
     switch (abs(motherPDG)) {
-      case 3122:
+      case kLambda0:
         partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterLambda;
         break;
-      case 3222:
+      case kSigmaPlus:
         partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterSigmaplus;
         break;
       default:
@@ -156,10 +87,10 @@ inline int checkDaughterType(o2::aod::femtodreamparticle::ParticleType partType,
 
   } else if (partType == o2::aod::femtodreamparticle::ParticleType::kV0Child) {
     switch (abs(motherPDG)) {
-      case 3122:
+      case kLambda0:
         partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterLambda;
         break;
-      case 3222:
+      case kSigmaPlus:
         partOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kSecondaryDaughterSigmaplus;
         break;
       default:

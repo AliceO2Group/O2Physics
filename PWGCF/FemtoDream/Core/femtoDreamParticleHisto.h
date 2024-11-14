@@ -357,19 +357,19 @@ class FemtoDreamParticleHisto
         float pidTOF = 0.;
 
         switch (abs(mPDG)) {
-          case 11:
+          case kElectron:
             pidTPC = part.tpcNSigmaEl();
             pidTOF = part.tofNSigmaEl();
             break;
-          case 211:
+          case kPiPlus:
             pidTPC = part.tpcNSigmaPi();
             pidTOF = part.tofNSigmaPi();
             break;
-          case 321:
+          case kKPlus:
             pidTPC = part.tpcNSigmaKa();
             pidTOF = part.tofNSigmaKa();
             break;
-          case 2212:
+          case kProton:
             pidTPC = part.tpcNSigmaPr();
             pidTOF = part.tofNSigmaPr();
             break;

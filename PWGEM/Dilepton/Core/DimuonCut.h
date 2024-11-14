@@ -79,7 +79,7 @@ class DimuonCut : public TNamed
     return true;
   }
 
-  template <typename TTrack1, typename TTrack2>
+  template <bool dont_require_rapidity = false, typename TTrack1, typename TTrack2>
   bool IsSelectedPair(TTrack1 const& t1, TTrack2 const& t2) const
   {
     ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassMuon);
@@ -94,11 +94,7 @@ class DimuonCut : public TNamed
       return false;
     }
 
-    if (v12.Pt() < mMinPairPt || mMaxPairPt < v12.Pt()) {
-      return false;
-    }
-
-    if (v12.Rapidity() < mMinPairY || mMaxPairY < v12.Rapidity()) {
+    if (!dont_require_rapidity && (v12.Rapidity() < mMinPairY || mMaxPairY < v12.Rapidity())) {
       return false;
     }
 
@@ -116,16 +112,56 @@ class DimuonCut : public TNamed
     return true;
   }
 
-  template <typename TTrack>
+  template <bool dont_require_pteta = false, typename TTrack>
   bool IsSelectedTrack(TTrack const& track) const
   {
     if (!IsSelectedTrack(track, DimuonCuts::kTrackType)) {
       return false;
     }
-    if (!IsSelectedTrack(track, DimuonCuts::kTrackPtRange)) {
+
+    if (!dont_require_pteta) {
+      if (!IsSelectedTrack(track, DimuonCuts::kTrackPtRange)) {
+        return false;
+      }
+      if (!IsSelectedTrack(track, DimuonCuts::kTrackEtaRange)) {
+        return false;
+      }
+    }
+    if (!IsSelectedTrack(track, DimuonCuts::kTrackPhiRange)) {
       return false;
     }
-    if (!IsSelectedTrack(track, DimuonCuts::kTrackEtaRange)) {
+    if (!IsSelectedTrack(track, DimuonCuts::kDCAxy)) {
+      return false;
+    }
+    if (track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) && !IsSelectedTrack(track, DimuonCuts::kMFTNCls)) {
+      return false;
+    }
+    if (!IsSelectedTrack(track, DimuonCuts::kMCHMIDNCls)) {
+      return false;
+    }
+    if (!IsSelectedTrack(track, DimuonCuts::kChi2)) {
+      return false;
+    }
+    if (track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) && !IsSelectedTrack(track, DimuonCuts::kMatchingChi2MCHMFT)) {
+      return false;
+    }
+    if (!IsSelectedTrack(track, DimuonCuts::kMatchingChi2MCHMID)) {
+      return false;
+    }
+    if (!IsSelectedTrack(track, DimuonCuts::kPDCA)) {
+      return false;
+    }
+    if (!IsSelectedTrack(track, DimuonCuts::kRabs)) {
+      return false;
+    }
+
+    return true;
+  }
+
+  template <typename TTrack>
+  bool IsSelectedTrackWoPtEta(TTrack const& track) const
+  {
+    if (!IsSelectedTrack(track, DimuonCuts::kTrackType)) {
       return false;
     }
     if (!IsSelectedTrack(track, DimuonCuts::kTrackPhiRange)) {

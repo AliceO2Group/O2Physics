@@ -161,7 +161,7 @@ struct spvector {
   int mRunNumber{-1};
 
   template <typename TCollision>
-  bool eventSelected(TCollision collision, const float& centrality)
+  bool eventSelected(TCollision collision, const double& centrality)
   {
     auto multNTracksPV = collision.multNTracksPV();
     if (multNTracksPV < fMultPVCutLow->Eval(centrality))
@@ -309,8 +309,8 @@ struct spvector {
     auto vx = collision.posX();
     auto vy = collision.posY();
 
-    float psiZDCC = -99;
-    float psiZDCA = -99;
+    double psiZDCC = -99;
+    double psiZDCA = -99;
     auto qxZDCA = 0.0;
     auto qxZDCC = 0.0;
     auto qyZDCA = 0.0;
@@ -338,12 +338,12 @@ struct spvector {
       return;
     }
 
-    if (znaEnergy[0] < 0.0 || znaEnergy[1] < 0.0 || znaEnergy[2] < 0.0 || znaEnergy[3] < 0.0) {
+    if (znaEnergy[0] <= 0.0 || znaEnergy[1] <= 0.0 || znaEnergy[2] <= 0.0 || znaEnergy[3] <= 0.0) {
       triggerevent = false;
       spcalibrationtable(triggerevent, currentRunNumber, centrality, vx, vy, vz, znaEnergycommon, zncEnergycommon, znaEnergy[0], znaEnergy[1], znaEnergy[2], znaEnergy[3], zncEnergy[0], zncEnergy[1], zncEnergy[2], zncEnergy[3], qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
       return;
     }
-    if (zncEnergy[0] < 0.0 || zncEnergy[1] < 0.0 || zncEnergy[2] < 0.0 || zncEnergy[3] < 0.0) {
+    if (zncEnergy[0] <= 0.0 || zncEnergy[1] <= 0.0 || zncEnergy[2] <= 0.0 || zncEnergy[3] <= 0.0) {
       triggerevent = false;
       spcalibrationtable(triggerevent, currentRunNumber, centrality, vx, vy, vz, znaEnergycommon, zncEnergycommon, znaEnergy[0], znaEnergy[1], znaEnergy[2], znaEnergy[3], zncEnergy[0], zncEnergy[1], zncEnergy[2], zncEnergy[3], qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
       return;
@@ -360,8 +360,8 @@ struct spvector {
 
       auto gainequal = 1.0;
       auto alphaZDC = 0.395;
-      constexpr float x[4] = {-1.75, 1.75, -1.75, 1.75};
-      constexpr float y[4] = {-1.75, -1.75, 1.75, 1.75};
+      constexpr double x[4] = {-1.75, 1.75, -1.75, 1.75};
+      constexpr double y[4] = {-1.75, -1.75, 1.75, 1.75};
 
       // histos.fill(HIST("ZDCAmpCommon"), 0.5, vz, centrality, znaEnergycommon);
       // histos.fill(HIST("ZDCAmpCommon"), 1.5, vz, centrality, zncEnergycommon);
@@ -384,11 +384,11 @@ struct spvector {
             spcalibrationtable(triggerevent, currentRunNumber, centrality, vx, vy, vz, znaEnergycommon, zncEnergycommon, znaEnergy[0], znaEnergy[1], znaEnergy[2], znaEnergy[3], zncEnergy[0], zncEnergy[1], zncEnergy[2], zncEnergy[3], qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
             return;
           } else {
-            float ampl = gainequal * znaEnergy[iChA];
+            double ampl = gainequal * znaEnergy[iChA];
             if (followpub) {
               ampl = TMath::Power(ampl, alphaZDC);
             }
-            qxZDCA = qxZDCA + ampl * x[iChA];
+            qxZDCA = qxZDCA - ampl * x[iChA];
             qyZDCA = qyZDCA + ampl * y[iChA];
             sumA = sumA + ampl;
             histos.fill(HIST("ZDCAmp"), chanelid + 0.5, vz, ampl);
@@ -400,11 +400,11 @@ struct spvector {
             spcalibrationtable(triggerevent, currentRunNumber, centrality, vx, vy, vz, znaEnergycommon, zncEnergycommon, znaEnergy[0], znaEnergy[1], znaEnergy[2], znaEnergy[3], zncEnergy[0], zncEnergy[1], zncEnergy[2], zncEnergy[3], qxZDCA, qxZDCC, qyZDCA, qyZDCC, psiZDCC, psiZDCA);
             return;
           } else {
-            float ampl = gainequal * zncEnergy[iChA - 4];
+            double ampl = gainequal * zncEnergy[iChA - 4];
             if (followpub) {
               ampl = TMath::Power(ampl, alphaZDC);
             }
-            qxZDCC = qxZDCC - ampl * x[iChA - 4];
+            qxZDCC = qxZDCC + ampl * x[iChA - 4];
             qyZDCC = qyZDCC + ampl * y[iChA - 4];
             sumC = sumC + ampl;
             histos.fill(HIST("ZDCAmp"), chanelid + 0.5, vz, ampl);
@@ -474,24 +474,24 @@ struct spvector {
 
         // Get the global bin for meanxA
         int globalBinMeanxA = hrecentereSp->GetBin(binCoords);
-        float meanxA = hrecentereSp->GetBinContent(globalBinMeanxA);
-        float meanxAerror = hrecentereSp->GetBinError(globalBinMeanxA);
+        double meanxA = hrecentereSp->GetBinContent(globalBinMeanxA);
+        double meanxAerror = hrecentereSp->GetBinError(globalBinMeanxA);
 
         // Repeat for other channels (meanyA, meanxC, meanyC)
         binCoords[4] = channelAxis->FindBin(1.5); // Channel for meanyA
         int globalBinMeanyA = hrecentereSp->GetBin(binCoords);
-        float meanyA = hrecentereSp->GetBinContent(globalBinMeanyA);
-        float meanyAerror = hrecentereSp->GetBinError(globalBinMeanyA);
+        double meanyA = hrecentereSp->GetBinContent(globalBinMeanyA);
+        double meanyAerror = hrecentereSp->GetBinError(globalBinMeanyA);
 
         binCoords[4] = channelAxis->FindBin(2.5); // Channel for meanxC
         int globalBinMeanxC = hrecentereSp->GetBin(binCoords);
-        float meanxC = hrecentereSp->GetBinContent(globalBinMeanxC);
-        float meanxCerror = hrecentereSp->GetBinError(globalBinMeanxC);
+        double meanxC = hrecentereSp->GetBinContent(globalBinMeanxC);
+        double meanxCerror = hrecentereSp->GetBinError(globalBinMeanxC);
 
         binCoords[4] = channelAxis->FindBin(3.5); // Channel for meanyC
         int globalBinMeanyC = hrecentereSp->GetBin(binCoords);
-        float meanyC = hrecentereSp->GetBinContent(globalBinMeanyC);
-        float meanyCerror = hrecentereSp->GetBinError(globalBinMeanyC);
+        double meanyC = hrecentereSp->GetBinContent(globalBinMeanyC);
+        double meanyCerror = hrecentereSp->GetBinError(globalBinMeanyC);
 
         if (rejbadevent) {
           if ((TMath::Abs(meanxA) > 90000.0 || TMath::Abs(meanxC) > 90000.0 || TMath::Abs(meanyA) > 90000.0 || TMath::Abs(meanyC) > 90000.0) && (TMath::Abs(meanxAerror) > 9000.0 || TMath::Abs(meanxCerror) > 9000.0 || TMath::Abs(meanyAerror) > 9000.0 || TMath::Abs(meanyCerror) > 9000.0)) {
@@ -524,15 +524,15 @@ struct spvector {
 
       if (useRecenterefineSp && hrecenterecentSp) {
 
-        float meanxAcent = hrecenterecentSp->GetBinContent(hrecenterecentSp->FindBin(centrality, 0.5));
-        float meanyAcent = hrecenterecentSp->GetBinContent(hrecenterecentSp->FindBin(centrality, 1.5));
-        float meanxCcent = hrecenterecentSp->GetBinContent(hrecenterecentSp->FindBin(centrality, 2.5));
-        float meanyCcent = hrecenterecentSp->GetBinContent(hrecenterecentSp->FindBin(centrality, 3.5));
+        double meanxAcent = hrecenterecentSp->GetBinContent(hrecenterecentSp->FindBin(centrality, 0.5));
+        double meanyAcent = hrecenterecentSp->GetBinContent(hrecenterecentSp->FindBin(centrality, 1.5));
+        double meanxCcent = hrecenterecentSp->GetBinContent(hrecenterecentSp->FindBin(centrality, 2.5));
+        double meanyCcent = hrecenterecentSp->GetBinContent(hrecenterecentSp->FindBin(centrality, 3.5));
 
-        float meanxAcenterror = hrecenterecentSp->GetBinError(hrecenterecentSp->FindBin(centrality, 0.5));
-        float meanyAcenterror = hrecenterecentSp->GetBinError(hrecenterecentSp->FindBin(centrality, 1.5));
-        float meanxCcenterror = hrecenterecentSp->GetBinError(hrecenterecentSp->FindBin(centrality, 2.5));
-        float meanyCcenterror = hrecenterecentSp->GetBinError(hrecenterecentSp->FindBin(centrality, 3.5));
+        double meanxAcenterror = hrecenterecentSp->GetBinError(hrecenterecentSp->FindBin(centrality, 0.5));
+        double meanyAcenterror = hrecenterecentSp->GetBinError(hrecenterecentSp->FindBin(centrality, 1.5));
+        double meanxCcenterror = hrecenterecentSp->GetBinError(hrecenterecentSp->FindBin(centrality, 2.5));
+        double meanyCcenterror = hrecenterecentSp->GetBinError(hrecenterecentSp->FindBin(centrality, 3.5));
 
         if (rejbadeventcent) {
           if ((TMath::Abs(meanxAcent) > 90000.0 || TMath::Abs(meanxCcent) > 90000.0 || TMath::Abs(meanyAcent) > 90000.0 || TMath::Abs(meanyCcent) > 90000.0) && (TMath::Abs(meanxAcenterror) > 9000.0 || TMath::Abs(meanxCcenterror) > 9000.0 || TMath::Abs(meanyAcenterror) > 9000.0 || TMath::Abs(meanyCcenterror) > 9000.0)) {
@@ -557,15 +557,15 @@ struct spvector {
 
       if (useRecenterefineSp && hrecenterevxSp) {
 
-        float meanxAvx = hrecenterevxSp->GetBinContent(hrecenterevxSp->FindBin(vx, 0.5));
-        float meanyAvx = hrecenterevxSp->GetBinContent(hrecenterevxSp->FindBin(vx, 1.5));
-        float meanxCvx = hrecenterevxSp->GetBinContent(hrecenterevxSp->FindBin(vx, 2.5));
-        float meanyCvx = hrecenterevxSp->GetBinContent(hrecenterevxSp->FindBin(vx, 3.5));
+        double meanxAvx = hrecenterevxSp->GetBinContent(hrecenterevxSp->FindBin(vx, 0.5));
+        double meanyAvx = hrecenterevxSp->GetBinContent(hrecenterevxSp->FindBin(vx, 1.5));
+        double meanxCvx = hrecenterevxSp->GetBinContent(hrecenterevxSp->FindBin(vx, 2.5));
+        double meanyCvx = hrecenterevxSp->GetBinContent(hrecenterevxSp->FindBin(vx, 3.5));
 
-        float meanxAvxerror = hrecenterevxSp->GetBinError(hrecenterevxSp->FindBin(vx, 0.5));
-        float meanyAvxerror = hrecenterevxSp->GetBinError(hrecenterevxSp->FindBin(vx, 1.5));
-        float meanxCvxerror = hrecenterevxSp->GetBinError(hrecenterevxSp->FindBin(vx, 2.5));
-        float meanyCvxerror = hrecenterevxSp->GetBinError(hrecenterevxSp->FindBin(vx, 3.5));
+        double meanxAvxerror = hrecenterevxSp->GetBinError(hrecenterevxSp->FindBin(vx, 0.5));
+        double meanyAvxerror = hrecenterevxSp->GetBinError(hrecenterevxSp->FindBin(vx, 1.5));
+        double meanxCvxerror = hrecenterevxSp->GetBinError(hrecenterevxSp->FindBin(vx, 2.5));
+        double meanyCvxerror = hrecenterevxSp->GetBinError(hrecenterevxSp->FindBin(vx, 3.5));
 
         if (rejbadeventvx) {
           if ((TMath::Abs(meanxAvx) > 90000.0 || TMath::Abs(meanxCvx) > 90000.0 || TMath::Abs(meanyAvx) > 90000.0 || TMath::Abs(meanyCvx) > 90000.0) && (TMath::Abs(meanxAvxerror) > 9000.0 || TMath::Abs(meanxCvxerror) > 9000.0 || TMath::Abs(meanyAvxerror) > 9000.0 || TMath::Abs(meanyCvxerror) > 9000.0)) {
@@ -590,15 +590,15 @@ struct spvector {
 
       if (useRecenterefineSp && hrecenterevySp) {
 
-        float meanxAvy = hrecenterevySp->GetBinContent(hrecenterevySp->FindBin(vy, 0.5));
-        float meanyAvy = hrecenterevySp->GetBinContent(hrecenterevySp->FindBin(vy, 1.5));
-        float meanxCvy = hrecenterevySp->GetBinContent(hrecenterevySp->FindBin(vy, 2.5));
-        float meanyCvy = hrecenterevySp->GetBinContent(hrecenterevySp->FindBin(vy, 3.5));
+        double meanxAvy = hrecenterevySp->GetBinContent(hrecenterevySp->FindBin(vy, 0.5));
+        double meanyAvy = hrecenterevySp->GetBinContent(hrecenterevySp->FindBin(vy, 1.5));
+        double meanxCvy = hrecenterevySp->GetBinContent(hrecenterevySp->FindBin(vy, 2.5));
+        double meanyCvy = hrecenterevySp->GetBinContent(hrecenterevySp->FindBin(vy, 3.5));
 
-        float meanxAvyerror = hrecenterevySp->GetBinError(hrecenterevySp->FindBin(vy, 0.5));
-        float meanyAvyerror = hrecenterevySp->GetBinError(hrecenterevySp->FindBin(vy, 1.5));
-        float meanxCvyerror = hrecenterevySp->GetBinError(hrecenterevySp->FindBin(vy, 2.5));
-        float meanyCvyerror = hrecenterevySp->GetBinError(hrecenterevySp->FindBin(vy, 3.5));
+        double meanxAvyerror = hrecenterevySp->GetBinError(hrecenterevySp->FindBin(vy, 0.5));
+        double meanyAvyerror = hrecenterevySp->GetBinError(hrecenterevySp->FindBin(vy, 1.5));
+        double meanxCvyerror = hrecenterevySp->GetBinError(hrecenterevySp->FindBin(vy, 2.5));
+        double meanyCvyerror = hrecenterevySp->GetBinError(hrecenterevySp->FindBin(vy, 3.5));
 
         if (rejbadeventvy) {
           if ((TMath::Abs(meanxAvy) > 90000.0 || TMath::Abs(meanxCvy) > 90000.0 || TMath::Abs(meanyAvy) > 90000.0 || TMath::Abs(meanyCvy) > 90000.0) && (TMath::Abs(meanxAvyerror) > 9000.0 || TMath::Abs(meanxCvyerror) > 9000.0 || TMath::Abs(meanyAvyerror) > 9000.0 || TMath::Abs(meanyCvyerror) > 9000.0)) {
@@ -623,15 +623,15 @@ struct spvector {
 
       if (useRecenterefineSp && hrecenterevzSp) {
 
-        float meanxAvz = hrecenterevzSp->GetBinContent(hrecenterevzSp->FindBin(vz, 0.5));
-        float meanyAvz = hrecenterevzSp->GetBinContent(hrecenterevzSp->FindBin(vz, 1.5));
-        float meanxCvz = hrecenterevzSp->GetBinContent(hrecenterevzSp->FindBin(vz, 2.5));
-        float meanyCvz = hrecenterevzSp->GetBinContent(hrecenterevzSp->FindBin(vz, 3.5));
+        double meanxAvz = hrecenterevzSp->GetBinContent(hrecenterevzSp->FindBin(vz, 0.5));
+        double meanyAvz = hrecenterevzSp->GetBinContent(hrecenterevzSp->FindBin(vz, 1.5));
+        double meanxCvz = hrecenterevzSp->GetBinContent(hrecenterevzSp->FindBin(vz, 2.5));
+        double meanyCvz = hrecenterevzSp->GetBinContent(hrecenterevzSp->FindBin(vz, 3.5));
 
-        float meanxAvzerror = hrecenterevzSp->GetBinError(hrecenterevzSp->FindBin(vz, 0.5));
-        float meanyAvzerror = hrecenterevzSp->GetBinError(hrecenterevzSp->FindBin(vz, 1.5));
-        float meanxCvzerror = hrecenterevzSp->GetBinError(hrecenterevzSp->FindBin(vz, 2.5));
-        float meanyCvzerror = hrecenterevzSp->GetBinError(hrecenterevzSp->FindBin(vz, 3.5));
+        double meanxAvzerror = hrecenterevzSp->GetBinError(hrecenterevzSp->FindBin(vz, 0.5));
+        double meanyAvzerror = hrecenterevzSp->GetBinError(hrecenterevzSp->FindBin(vz, 1.5));
+        double meanxCvzerror = hrecenterevzSp->GetBinError(hrecenterevzSp->FindBin(vz, 2.5));
+        double meanyCvzerror = hrecenterevzSp->GetBinError(hrecenterevzSp->FindBin(vz, 3.5));
 
         if (rejbadeventvz) {
           if ((TMath::Abs(meanxAvz) > 90000.0 || TMath::Abs(meanxCvz) > 90000.0 || TMath::Abs(meanyAvz) > 90000.0 || TMath::Abs(meanyCvz) > 90000.0) && (TMath::Abs(meanxAvzerror) > 9000.0 || TMath::Abs(meanxCvzerror) > 9000.0 || TMath::Abs(meanyAvzerror) > 9000.0 || TMath::Abs(meanyCvzerror) > 9000.0)) {

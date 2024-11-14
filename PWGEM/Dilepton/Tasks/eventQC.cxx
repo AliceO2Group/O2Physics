@@ -14,6 +14,7 @@
 // This code is for event QC for PWG-EM.
 //    Please write to: daiki.sekihata@cern.ch
 
+#include <string>
 #include <vector>
 #include <algorithm>
 #include <type_traits>
@@ -23,6 +24,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
 #include "Common/Core/RecoDecay.h"
+#include "MathUtils/Utils.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -41,9 +43,8 @@ using namespace o2::soa;
 using MyBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
 using MyQvectors = soa::Join<aod::QvectorFT0CVecs, aod::QvectorFT0AVecs, aod::QvectorFT0MVecs, aod::QvectorBPosVecs, aod::QvectorBNegVecs, aod::QvectorBTotVecs>;
 
-using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>;
-using MyCollisions_Cent = soa::Join<MyCollisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentNTPVs>; // centrality table has dependency on multiplicity table.
-using MyCollisions_Cent_Qvec = soa::Join<MyCollisions_Cent, MyQvectors>;
+using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>;
+using MyCollisions_Qvec = soa::Join<MyCollisions, MyQvectors>;
 
 using MyTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TracksCov,
                            aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
@@ -73,11 +74,14 @@ struct eventQC {
     Configurable<bool> cfgRequireNoITSROFB{"cfgRequireNoITSROFB", true, "require no ITS readout frame border in event cut"};
     Configurable<bool> cfgRequireNoSameBunchPileup{"cfgRequireNoSameBunchPileup", false, "require no same bunch pileup in event cut"};
     Configurable<bool> cfgRequireGoodZvtxFT0vsPV{"cfgRequireGoodZvtxFT0vsPV", false, "require good Zvtx between FT0 vs. PV in event cut"};
-    Configurable<bool> cfgRequirekNoCollInRofStrict{"cfgRequirekNoCollInRofStrict", false, "require no other collisions in this Readout Frame"};
-    Configurable<bool> cfgRequirekNoCollInRofStandard{"cfgRequirekNoCollInRofStandard", false, "require no other collisions in this Readout Frame with per-collision multiplicity above threshold"};
-    Configurable<int> cfgOccupancyMin{"cfgOccupancyMin", -1, "min. occupancy"};
-    Configurable<int> cfgOccupancyMax{"cfgOccupancyMax", 1000000000, "max. occupancy"};
+    Configurable<int> cfgTrackOccupancyMin{"cfgTrackOccupancyMin", -2, "min. track occupancy"};
+    Configurable<int> cfgTrackOccupancyMax{"cfgTrackOccupancyMax", 1000000000, "max. track occupancy"};
+    Configurable<float> cfgFT0COccupancyMin{"cfgFT0COccupancyMin", -2, "min. FT0C occupancy"};
+    Configurable<float> cfgFT0COccupancyMax{"cfgFT0COccupancyMax", 1000000000, "max. FT0C occupancy"};
     Configurable<bool> cfgRequireNoCollInTimeRangeStandard{"cfgRequireNoCollInTimeRangeStandard", false, "require no collision in time range standard"};
+    Configurable<bool> cfgRequireNoCollInTimeRangeStrict{"cfgRequireNoCollInTimeRangeStrict", false, "require no collision in time range strict"};
+    Configurable<bool> cfgRequirekNoCollInRofStandard{"cfgRequirekNoCollInRofStandard", false, "require no other collisions in this Readout Frame with per-collision multiplicity above threshold"};
+    Configurable<bool> cfgRequirekNoCollInRofStrict{"cfgRequirekNoCollInRofStrict", false, "require no other collisions in this Readout Frame"};
   } eventcuts;
 
   struct : ConfigurableGroup {
@@ -102,10 +106,6 @@ struct eventQC {
     Configurable<float> cfg_max_TPCNsigmaPi{"cfg_max_TPCNsigmaPi", 0.0, "max n sigma pi in TPC for exclusion"};
     Configurable<float> cfg_min_TOFNsigmaEl{"cfg_min_TOFNsigmaEl", -1e+10, "min n sigma e in TOF"};
     Configurable<float> cfg_max_TOFNsigmaEl{"cfg_max_TOFNsigmaEl", +1e+10, "max n sigma e in TOF"};
-    Configurable<float> cfg_min_p_its_cluster_size{"cfg_min_p_its_cluster_size", 0.0, "min p to apply ITS cluster size cut"};
-    Configurable<float> cfg_max_p_its_cluster_size{"cfg_max_p_its_cluster_size", 0.0, "max p to apply ITS cluster size cut"};
-    Configurable<float> cfg_slope_its_cluster_size{"cfg_slope_its_cluster_size", 0.4f, "slope for max ITS cluster size vs. p"};
-    Configurable<float> cfg_intercept_its_cluster_size{"cfg_intercept_its_cluster_size", 1.94f, "intercept for max ITS cluster size vs. p"};
     Configurable<bool> cfg_requireTOF{"cfg_requireTOF", false, "require TOF hit"};
   } trackcuts;
 
@@ -158,6 +158,7 @@ struct eventQC {
     fRegistry.add("Event/before/hNTracksPVvsOccupancy", "hNTracksPVvsOccupancy;N_{track} to PV;N_{track} in time range", kTH2F, {{600, 0, 6000}, {200, 0, 20000}}, false);
     fRegistry.add("Event/before/hNGlobalTracksvsOccupancy", "hNGlobalTracksvsOccupancy;N_{track}^{global};N_{track} in time range", kTH2F, {{600, 0, 6000}, {200, 0, 20000}}, false);
     fRegistry.add("Event/before/hNGlobalTracksPVvsOccupancy", "hNGlobalTracksPVvsOccupancy;N_{track}^{global} to PV;N_{track} in time range", kTH2F, {{600, 0, 6000}, {200, 0, 20000}}, false);
+    fRegistry.add("Event/before/hCorrOccupancy", "occupancy correlation;FT0C occupancy;track-based occupancy", kTH2F, {{200, 0, 200000}, {200, 0, 20000}}, false);
     fRegistry.addClone("Event/before/", "Event/after/");
 
     fRegistry.add("Event/after/hMultNGlobalTracks", "hMultNGlobalTracks; N_{track}^{global}", kTH1F, {{6001, -0.5, 6000.5}}, false);
@@ -243,12 +244,14 @@ struct eventQC {
     fRegistry.add("Track/hNclsTPC", "number of TPC clusters", kTH1F, {{161, -0.5, 160.5}}, false);
     fRegistry.add("Track/hNcrTPC", "number of TPC crossed rows", kTH1F, {{161, -0.5, 160.5}}, false);
     fRegistry.add("Track/hChi2TPC", "chi2/number of TPC clusters", kTH1F, {{100, 0, 10}}, false);
+    fRegistry.add("Track/hDeltaPin", "p_{in} vs. p_{pv};p_{pv} (GeV/c);(p_{in} - p_{pv})/p_{pv}", kTH2F, {{1000, 0, 10}, {200, -1, +1}}, false);
     fRegistry.add("Track/hTPCNcr2Nf", "TPC Ncr/Nfindable", kTH1F, {{200, 0, 2}}, false);
     fRegistry.add("Track/hTPCNcls2Nf", "TPC Ncls/Nfindable", kTH1F, {{200, 0, 2}}, false);
     fRegistry.add("Track/hTPCNclsShared", "TPC Ncls shared/Ncls;p_{T} (GeV/c);N_{cls}^{shared}/N_{cls} in TPC", kTH2F, {{1000, 0, 10}, {100, 0, 1}}, false);
     fRegistry.add("Track/hNclsITS", "number of ITS clusters", kTH1F, {{8, -0.5, 7.5}}, false);
     fRegistry.add("Track/hChi2ITS", "chi2/number of ITS clusters", kTH1F, {{100, 0, 10}}, false);
     fRegistry.add("Track/hITSClusterMap", "ITS cluster map", kTH1F, {{128, -0.5, 127.5}}, false);
+    fRegistry.add("Track/hChi2TOF", "chi2 of TOF", kTH1F, {{100, 0, 10}}, false);
 
     if (cfgFillPID) {
       fRegistry.add("Track/hTPCdEdx", "TPC dE/dx;p_{pv} (GeV/c);TPC dE/dx (a.u.)", kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
@@ -284,8 +287,10 @@ struct eventQC {
     fRegistry.fill(HIST("Track/hTPCNcls2Nf"), track.tpcFoundOverFindableCls());
     fRegistry.fill(HIST("Track/hTPCNclsShared"), track.pt(), track.tpcFractionSharedCls());
     fRegistry.fill(HIST("Track/hChi2TPC"), track.tpcChi2NCl());
+    fRegistry.fill(HIST("Track/hDeltaPin"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
     fRegistry.fill(HIST("Track/hChi2ITS"), track.itsChi2NCl());
     fRegistry.fill(HIST("Track/hITSClusterMap"), track.itsClusterMap());
+    fRegistry.fill(HIST("Track/hChi2TOF"), track.tofChi2());
 
     if (cfgFillPID) {
       int nsize = 0;
@@ -353,15 +358,14 @@ struct eventQC {
     fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hMultFT0CvsMultNTracksPV"), collision.multFT0C(), collision.multNTracksPV());
     fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hMultFT0CvsOccupancy"), collision.multFT0C(), collision.trackOccupancyInTimeRange());
     fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hNTracksPVvsOccupancy"), collision.multNTracksPV(), collision.trackOccupancyInTimeRange());
+    fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCorrOccupancy"), collision.ft0cOccupancyInTimeRange(), collision.trackOccupancyInTimeRange());
 
-    if constexpr (std::is_same_v<std::decay_t<TCollision>, FilteredMyCollision_Cent> || std::is_same_v<std::decay_t<TCollision>, FilteredMyCollision_Cent_Qvec>) {
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCentFT0A"), collision.centFT0A());
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCentFT0C"), collision.centFT0C());
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCentFT0M"), collision.centFT0M());
-      fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCentFT0CvsMultNTracksPV"), collision.centFT0C(), collision.multNTracksPV());
-    }
+    fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCentFT0A"), collision.centFT0A());
+    fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCentFT0C"), collision.centFT0C());
+    fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCentFT0M"), collision.centFT0M());
+    fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCentFT0CvsMultNTracksPV"), collision.centFT0C(), collision.multNTracksPV());
 
-    if constexpr (ev_id == 1 && std::is_same_v<std::decay_t<TCollision>, FilteredMyCollision_Cent_Qvec>) {
+    if constexpr (ev_id == 1 && std::is_same_v<std::decay_t<TCollision>, FilteredMyCollision_Qvec>) {
       if (std::find(cfgnMods->begin(), cfgnMods->end(), 2) != cfgnMods->end()) {
         fillQvectorInfo<ev_id, 2>(collision);
       }
@@ -575,23 +579,6 @@ struct eventQC {
       return false;
     }
 
-    uint32_t itsClusterSizes = track.itsClusterSizes();
-    int total_cluster_size = 0, nl = 0;
-    for (unsigned int layer = 0; layer < 7; layer++) {
-      int cluster_size_per_layer = (itsClusterSizes >> (layer * 4)) & 0xf;
-      if (cluster_size_per_layer > 0) {
-        nl++;
-      }
-      total_cluster_size += cluster_size_per_layer;
-    }
-
-    float clsize = static_cast<float>(total_cluster_size) / static_cast<float>(nl) * std::cos(std::atan(track.tgl()));
-    float upper_edge = trackcuts.cfg_slope_its_cluster_size * track.p() + trackcuts.cfg_intercept_its_cluster_size;
-
-    if ((trackcuts.cfg_min_p_its_cluster_size < track.p() && track.p() < trackcuts.cfg_max_p_its_cluster_size) && clsize > upper_edge) {
-      return false;
-    }
-
     return true;
   }
 
@@ -630,6 +617,10 @@ struct eventQC {
       return false;
     }
 
+    if (eventcuts.cfgRequireNoCollInTimeRangeStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict)) {
+      return false;
+    }
+
     if (eventcuts.cfgRequirekNoCollInRofStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
       return false;
     }
@@ -638,7 +629,11 @@ struct eventQC {
       return false;
     }
 
-    if (!(eventcuts.cfgOccupancyMin <= collision.trackOccupancyInTimeRange() && collision.trackOccupancyInTimeRange() < eventcuts.cfgOccupancyMax)) {
+    if (!(eventcuts.cfgTrackOccupancyMin <= collision.trackOccupancyInTimeRange() && collision.trackOccupancyInTimeRange() < eventcuts.cfgTrackOccupancyMax)) {
+      return false;
+    }
+
+    if (!(eventcuts.cfgFT0COccupancyMin < collision.ft0cOccupancyInTimeRange() && collision.ft0cOccupancyInTimeRange() < eventcuts.cfgFT0COccupancyMax)) {
       return false;
     }
 
@@ -647,14 +642,13 @@ struct eventQC {
 
   Filter collisionFilter_evsel = o2::aod::evsel::sel8 == true && nabs(o2::aod::collision::posZ) < eventcuts.cfgZvtxMax;
   Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
-  Filter collisionFilter_occupancy = eventcuts.cfgOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgOccupancyMax;
+  Filter collisionFilter_track_occupancy = eventcuts.cfgTrackOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgTrackOccupancyMax;
+  Filter collisionFilter_ft0c_occupancy = eventcuts.cfgFT0COccupancyMin < o2::aod::evsel::ft0cOccupancyInTimeRange && o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
   using FilteredMyCollisions = soa::Filtered<MyCollisions>;
-  using FilteredMyCollisions_Cent = soa::Filtered<MyCollisions_Cent>;
-  using FilteredMyCollisions_Cent_Qvec = soa::Filtered<MyCollisions_Cent_Qvec>;
+  using FilteredMyCollisions_Qvec = soa::Filtered<MyCollisions_Qvec>;
 
   using FilteredMyCollision = FilteredMyCollisions::iterator;
-  using FilteredMyCollision_Cent = FilteredMyCollisions_Cent::iterator;
-  using FilteredMyCollision_Cent_Qvec = FilteredMyCollisions_Cent_Qvec::iterator;
+  using FilteredMyCollision_Qvec = FilteredMyCollisions_Qvec::iterator;
 
   Filter trackFilter = (trackcuts.cfg_min_pt_track < o2::aod::track::pt && o2::aod::track::pt < trackcuts.cfg_max_pt_track) && (trackcuts.cfg_min_eta_track < o2::aod::track::eta && o2::aod::track::eta < trackcuts.cfg_max_eta_track) && nabs(o2::aod::track::dcaXY) < trackcuts.cfg_max_dcaxy && nabs(o2::aod::track::dcaZ) < trackcuts.cfg_max_dcaz && o2::aod::track::tpcChi2NCl < trackcuts.cfg_max_chi2tpc && o2::aod::track::itsChi2NCl < trackcuts.cfg_max_chi2its && ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true && ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC) == true;
   using FilteredMyTracks = soa::Filtered<MyTracks>;
@@ -666,13 +660,9 @@ struct eventQC {
   void processQC(TCollisions const& collisions, FilteredMyTracks const& tracks)
   {
     for (auto& collision : collisions) {
-      if constexpr (std::is_same_v<std::decay_t<TCollisions>, FilteredMyCollisions_Cent> || std::is_same_v<std::decay_t<TCollisions>, FilteredMyCollisions_Cent_Qvec>) {
-        const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
-        if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
-          continue;
-        }
-        if constexpr (std::is_same_v<std::decay_t<TCollisions>, FilteredMyCollisions_Cent_Qvec>) {
-        }
+      const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
+        continue;
       }
       fillEventInfo<0>(collision);
       if (!isSelectedEvent(collision)) {
@@ -694,7 +684,7 @@ struct eventQC {
         if (fabs(track.eta()) < 0.8) {
           nGlobalTracks++;
 
-          if constexpr (std::is_same_v<std::decay_t<TCollisions>, FilteredMyCollisions_Cent_Qvec>) {
+          if constexpr (std::is_same_v<std::decay_t<TCollisions>, FilteredMyCollisions_Qvec>) {
             for (int i = 0; i < static_cast<int>(cfgnMods->size()); i++) {
               if (cfgnMods->at(i) == 2) {
                 fillVn<2>(collision, track);
@@ -716,17 +706,15 @@ struct eventQC {
       fRegistry.fill(HIST("Event/after/hMultFT0CvsMultNGlobalTracksPV"), collision.multFT0C(), nGlobalTracksPV);
       fRegistry.fill(HIST("Event/after/hNGlobalTracksvsOccupancy"), nGlobalTracks, collision.trackOccupancyInTimeRange());
       fRegistry.fill(HIST("Event/after/hNGlobalTracksPVvsOccupancy"), nGlobalTracksPV, collision.trackOccupancyInTimeRange());
-      if constexpr (std::is_same_v<std::decay_t<TCollisions>, FilteredMyCollisions_Cent> || std::is_same_v<std::decay_t<TCollisions>, FilteredMyCollisions_Cent_Qvec>) {
+      if constexpr (std::is_same_v<std::decay_t<TCollisions>, FilteredMyCollisions_Qvec>) {
         fRegistry.fill(HIST("Event/after/hCentFT0CvsMultNGlobalTracks"), collision.centFT0C(), nGlobalTracks);
         fRegistry.fill(HIST("Event/after/hCentFT0CvsMultNGlobalTracksPV"), collision.centFT0C(), nGlobalTracksPV);
       }
     } // end of collision loop
-
   } // end of process
 
   PROCESS_SWITCH_FULL(eventQC, processQC<FilteredMyCollisions>, processEventQC, "event QC", true);
-  PROCESS_SWITCH_FULL(eventQC, processQC<FilteredMyCollisions_Cent>, processEventQC_Cent, "event QC + centrality", false);
-  PROCESS_SWITCH_FULL(eventQC, processQC<FilteredMyCollisions_Cent_Qvec>, processEventQC_Cent_Qvec, "event QC + centrality + q vector", false);
+  PROCESS_SWITCH_FULL(eventQC, processQC<FilteredMyCollisions_Qvec>, processEventQC_Cent_Qvec, "event QC + q vector", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

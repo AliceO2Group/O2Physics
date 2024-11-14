@@ -119,6 +119,11 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "Inclusive jpsi", {prong}, {-1});
     return signal;
   }
+  if (!nameStr.compare("Helium3")) {
+    MCProng prong(1, {1000020030}, {true}, {false}, {0}, {0}, {false});
+    signal = new MCSignal(name, "Helium3", {prong}, {-1});
+    return signal;
+  }
   if (!nameStr.compare("nonPromptJpsi")) {
     MCProng prong(2, {443, 503}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "Non-prompt jpsi", {prong}, {-1});
@@ -172,6 +177,21 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   if (!nameStr.compare("Chic012")) {
     MCProng prong(1, {904}, {true}, {false}, {0}, {0}, {false});
     signal = new MCSignal(name, "Inclusive Chic0, Chic1 and Chic2", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("Upsilon1S")) {
+    MCProng prong(1, {553}, {true}, {false}, {0}, {0}, {false});
+    signal = new MCSignal(name, "Inclusive Upsilon1S", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("Upsilon2S")) {
+    MCProng prong(1, {100553}, {true}, {false}, {0}, {0}, {false});
+    signal = new MCSignal(name, "Inclusive Upsilon2S", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("Upsilon3S")) {
+    MCProng prong(1, {200553}, {true}, {false}, {0}, {0}, {false});
+    signal = new MCSignal(name, "Inclusive Upsilon3S", {prong}, {-1});
     return signal;
   }
   if (!nameStr.compare("allBeautyHadrons")) {
@@ -707,6 +727,21 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   if (!nameStr.compare("mumuFromPsi2S")) {
     MCProng prong(2, {13, 100443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "mumu pairs from psi2s decays", {prong, prong}, {1, 1}); // signal at pair level
+    return signal;
+  }
+  if (!nameStr.compare("mumuFromUpsilon1S")) {
+    MCProng prong(2, {13, 553}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "mumu pairs from upsilon1s decays", {prong, prong}, {1, 1}); // signal at pair level
+    return signal;
+  }
+  if (!nameStr.compare("mumuFromUpsilon2S")) {
+    MCProng prong(2, {13, 100553}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "mumu pairs from upsilon2s decays", {prong, prong}, {1, 1}); // signal at pair level
+    return signal;
+  }
+  if (!nameStr.compare("mumuFromUpsilon3S")) {
+    MCProng prong(2, {13, 200553}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "mumu pairs from upsilon3s decays", {prong, prong}, {1, 1}); // signal at pair level
     return signal;
   }
   if (!nameStr.compare("eeFromLMeeLFQ")) {
