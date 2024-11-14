@@ -140,15 +140,10 @@ struct phik0shortanalysis {
   Configurable<int> nBinsy{"nBinsy", 10, "Number of bins in y and deltay axis"};
   Configurable<float> cfgyAcceptance{"cfgyAcceptance", 0.5, "Rapidity acceptance"};
   Configurable<float> cfgFirstCutonDeltay{"cgfFirstCutonDeltay", 0.5, "First upper bound on Deltay selection"};
-  Configurable<float> cfgSecondCutonDeltay{"cgfSecondCutonDeltay", 0.2, "Second upper bound on Deltay selection"};
+  Configurable<float> cfgSecondCutonDeltay{"cgfSecondCutonDeltay", 0.1, "Second upper bound on Deltay selection"};
 
   // Configurable for RecMC
   Configurable<bool> cfgiskNoITSROFrameBorder{"cfgiskNoITSROFrameBorder", false, "kNoITSROFrameBorder request on RecMC collisions"};
-
-  // Configurable axis
-  ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for bin"};
-  ConfigurableAxis axisMultiplicityClass{"axisMultiplicityClass", {20, 0, 100}, "multiplicity percentile for bin"};
-  ConfigurableAxis axisMultiplicity{"axisMultiplicity", {2000, 0, 10000}, "TPC multiplicity  for bin"};
 
   // Constants
   double massKa = o2::constants::physics::MassKPlus;
