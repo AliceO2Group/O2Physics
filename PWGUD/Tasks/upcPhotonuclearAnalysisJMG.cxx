@@ -26,10 +26,10 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "PWGCF/Core/CorrelationContainer.h"
-#include "PWGCF/Core/PairCuts.h"
 #include "DataFormatsParameters/GRPObject.h"
 
 #include "PWGUD/DataModel/UDTables.h"
+#include "PWGUD/Core/UPCPairCuts.h"
 #include "PWGUD/Core/UPCTauCentralBarrelHelperRL.h"
 
 using namespace o2;
@@ -46,6 +46,8 @@ namespace o2::aod{
                     tree::RAP,
                     tree::PHI);
 } // namespace o2:aod
+
+static constexpr float cfgPairCutDefaults[1][5] = {{-1, -1, -1, -1, -1}};
 
 struct upcPhotonuclearAnalysisJMG {
 
@@ -91,6 +93,15 @@ struct upcPhotonuclearAnalysisJMG {
   Configurable<float> cutMyTPCNClsOverFindableNClsMin{"cutMyTPCNClsOverFindableNClsMin", 0.5f, {"My Track cut"}};
   Configurable<float> cutMyTPCChi2NclMax{"cutMyTPCChi2NclMax", 4.f, {"My Track cut"}};
   // Declare configurables for correlations
+  Configurable<float> cfgZVtxCut = {"zvtxcut", 7.0, "Vertex z cut. Default 7 cm"};
+  Configurable<float> cfgPtCutMin = {"minpt", 0.2, "Minimum accepted track pT. Default 0.2 GeV"};
+  Configurable<float> cfgPtCutMax = {"maxpt", 10.0, "Maximum accepted track pT. Default 5.0 GeV"};
+  Configurable<float> cfgEtaCut = {"etacut", 0.8, "Eta cut. Default 0.8"};
+  Configurable<LabeledArray<float>> cfgPairCut{"cfgPairCut",
+                                              {cfgPairCutDefaults[0],
+                                              5,
+                                              {"Photon", "K0", "Lambda", "Phi", "Rho"}},
+                                              "Pair cuts on various particles"};
   Configurable<float> cfgTwoTrackCut{"cfgTwoTrackCut", -1, {"Two track cut"}};
   ConfigurableAxis axisVertex{"axisVertex", {7, -7, 7}, "vertex axis for histograms"};
   ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -constants::math::PIHalf, constants::math::PIHalf * 3}, "delta phi axis for histograms"};
@@ -109,16 +120,8 @@ struct upcPhotonuclearAnalysisJMG {
   OutputObj<CorrelationContainer> same{"sameEvent"};
   OutputObj<CorrelationContainer> mixed{"mixedEvent"};
 
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
-
-  //PairCuts mPairCuts;
-
-  struct Config {
-    bool mPairCuts = false;
-    THn* mEfficiencyTrigger = nullptr;
-    THn* mEfficiencyAssociated = nullptr;
-    bool efficiencyLoaded = false;
-  } cfg;
+  UPCPairCuts mPairCuts;
+  bool doPairCuts = false;
 
   void init(InitContext const&)
   {
@@ -142,6 +145,16 @@ struct upcPhotonuclearAnalysisJMG {
 
     const int maxMixBin = axisMultiplicity->size() * axisVertex->size();
     histos.add("eventcount", "bin", {HistType::kTH1F, {{maxMixBin + 2, -2.5, -0.5 + maxMixBin, "bin"}}});
+    mPairCuts.SetHistogramRegistry(&histos);
+    if (cfgPairCut->get("Photon") > 0 || cfgPairCut->get("K0") > 0 || cfgPairCut->get("Lambda") > 0 ||
+    cfgPairCut->get("Phi") > 0 || cfgPairCut->get("Rho") > 0) {
+    mPairCuts.SetPairCut(UPCPairCuts::Photon, cfgPairCut->get("Photon"));
+    mPairCuts.SetPairCut(UPCPairCuts::K0, cfgPairCut->get("K0"));
+    mPairCuts.SetPairCut(UPCPairCuts::Lambda, cfgPairCut->get("Lambda"));
+    mPairCuts.SetPairCut(UPCPairCuts::Phi, cfgPairCut->get("Phi"));
+    mPairCuts.SetPairCut(UPCPairCuts::Rho, cfgPairCut->get("Rho"));
+    doPairCuts = true;
+    }
     histos.add("Events/hCountCollisions", "0 total - 1 side A - 2 side C - 3 both side; Number of analysed collision; counts", kTH1F, {axisCollision});
 
     // histos to selection gap in side A
@@ -233,17 +246,23 @@ struct upcPhotonuclearAnalysisJMG {
                                      {axisMultiplicity, "multiplicity / centrality"},
                                      {axisDeltaPhi, "#Delta#varphi (rad)"},
                                      {axisVertex, "z-vtx (cm)"}};
-  std::vector<AxisSpec> effAxis = {{axisEtaEfficiency, "#eta"},
-                                  {axisEtaEfficiency, "#eta"},
-                                  {axisPtEfficiency, "p_{T} (GeV/c)"},
-                                  {axisVertexEfficiency, "z-vtx (cm)"}};
-  same.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, {}));
-  mixed.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, {}));
-
-    ccdb->setURL("http://alice-ccdb.cern.ch");
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
+    std::vector<AxisSpec> effAxis = {{axisEtaEfficiency, "#eta"},
+                                    {axisEtaEfficiency, "#eta"},
+                                    {axisPtEfficiency, "p_{T} (GeV/c)"},
+                                    {axisVertexEfficiency, "z-vtx (cm)"}};
+    same.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, {}));
+    mixed.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, {}));
   }
+
+  std::vector<double> vtxBinsEdges{VARIABLE_WIDTH, -7.0f, -5.0f, -3.0f, -1.0f, 1.0f, 3.0f, 5.0f, 7.0f};
+  SliceCache cache;
+
+  // Binning only on PosZ without centrality
+  ColumnBinningPolicy<aod::collision::PosZ> bindingOnVtx{{vtxBinsEdges}, true};
+
+  SameKindPair<soa::Filtered<soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::SGCollisions, aod::UDZdcsReduced>>,
+               soa::Filtered<soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksFlags>>,
+               ColumnBinningPolicy<aod::collision::PosZ>> pair{bindingOnVtx, 5, -1, &cache};
 
   template <typename C>
   bool isGlobalCollisionCut(C const& collision)
@@ -554,7 +573,7 @@ struct upcPhotonuclearAnalysisJMG {
       return;
     }
 
-    float centrality = 50.0;
+    float centrality = 100.0;
     switch (SGside) {
       case 0: // for side A
         if (isCollisionCutSG(reconstructedCollision, 0) == false) {
@@ -587,28 +606,30 @@ struct upcPhotonuclearAnalysisJMG {
       return;
     }
 
-    float centrality = 50.0;
-    switch (SGside) {
-      case 0: // for side A
-        if (isCollisionCutSG(reconstructedCollision, 0) == false) {
+    for (auto& [collision1, tracks1, collision2, tracks2] : pair) {
+      float centrality = 100.0;
+      switch (SGside) {
+        case 0: // for side A
+          if (isCollisionCutSG(reconstructedCollision, 0) == false) {
+            return;
+          }
+          if (fillCollisionUD(mixed, collision1, centrality) == false) {
+            return;
+          }
+          histos.fill(HIST("eventcount"), bindingOnVtx.getBin({collision1.posZ()}));
+          fillCorrelationsUD(mixed, tracks1, tracks2, centrality, collision1.posZ());
+          break;
+        case 1: // for side C
+          if (isCollisionCutSG(reconstructedCollision, 1) == false) {
+            return;
+          }
+          break;
+        default:
           return;
-        }
-        if (fillCollisionUD(mixed, reconstructedCollision, centrality) == false) {
-        return;
-        }
-        histos.fill(HIST("eventcount"), -2);
-        fillQAUD(reconstructedCollision, centrality, reconstructedTracks);
-        fillCorrelationsUD(mixed, reconstructedTracks, reconstructedTracks, centrality, reconstructedCollision.posZ());
-        break;
-      case 1: // for side C
-        if (isCollisionCutSG(reconstructedCollision, 1) == false) {
-          return;
-        }
-        break;
-      default:
-        return;
-        break;
+          break;
+      }
     }
+
   }
   PROCESS_SWITCH(upcPhotonuclearAnalysisJMG, processMixed, "Process mixed events", true);
 };

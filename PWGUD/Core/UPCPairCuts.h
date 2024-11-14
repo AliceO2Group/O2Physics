@@ -65,12 +65,12 @@ public:
   bool conversionCuts(T const& track1, T const& track2);
 
   template <typename T>
-  bool twoTrackCut(T const& track1, T const& track2, int magField);
+  bool twoTrackCut(T const& track1, T const& track2);
 protected:
   float mCuts[ParticlesLastEntry] = {-1};
   float mTwoTrackDistance = -1; // distance below which the pair is flagged as to be removed
   float mTwoTrackRadius = 0.8f; // radius at which the two track cuts are applied
-  int magField = 5 // magField: B field in kG
+  int magField = 5; // magField: B field in kG
 
   HistogramRegistry* histogramRegistry = nullptr; // if set, control histograms are stored here
 
@@ -88,7 +88,7 @@ protected:
 };
 
 template <typename T>
-bool PairCuts::conversionCuts(T const& track1, T const& track2)
+bool UPCPairCuts::conversionCuts(T const& track1, T const& track2)
 {
   // skip if like sign
   if (track1.sign() * track2.sign() > 0) {
@@ -113,7 +113,7 @@ bool PairCuts::conversionCuts(T const& track1, T const& track2)
 }
 
 template <typename T>
-bool PairCuts::twoTrackCut(T const& track1, T const& track2)
+bool UPCPairCuts::twoTrackCut(T const& track1, T const& track2)
 {
   // the variables & cut have been developed in Run 1 by the CF - HBT group
   //
@@ -163,7 +163,7 @@ bool PairCuts::twoTrackCut(T const& track1, T const& track2)
 }
 
 template <typename T>
-bool PairCuts::conversionCut(T const& track1, T const& track2, Particle conv, double cut)
+bool UPCPairCuts::conversionCut(T const& track1, T const& track2, Particle conv, double cut)
 {
   //LOGF(info, "pt is %f %f", track1.pt(), track2.pt());
 
@@ -225,7 +225,7 @@ bool PairCuts::conversionCut(T const& track1, T const& track2, Particle conv, do
 }
 
 template <typename T>
-double PairCuts::getInvMassSquared(T const& track1, double m0_1, T const& track2, double m0_2)
+double UPCPairCuts::getInvMassSquared(T const& track1, double m0_1, T const& track2, double m0_2)
 {
   // calculate inv mass squared
   // same can be achieved, but with more computing time with
@@ -259,7 +259,7 @@ double PairCuts::getInvMassSquared(T const& track1, double m0_1, T const& track2
 }
 
 template <typename T>
-double PairCuts::getInvMassSquaredFast(T const& track1, double m0_1, T const& track2, double m0_2)
+double UPCPairCuts::getInvMassSquaredFast(T const& track1, double m0_1, T const& track2, double m0_2)
 {
   // calculate inv mass squared approximately
 
@@ -312,7 +312,7 @@ double PairCuts::getInvMassSquaredFast(T const& track1, double m0_1, T const& tr
 }
 
 template <typename T>
-float PairCuts::getDPhiStar(T const& track1, T const& track2, float radius, int magField)
+float UPCPairCuts::getDPhiStar(T const& track1, T const& track2, float radius, int magField)
 {
   //
   // calculates dphistar
