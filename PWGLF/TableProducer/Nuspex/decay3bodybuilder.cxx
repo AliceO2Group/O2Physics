@@ -16,6 +16,8 @@
 #include <cmath>
 #include <array>
 #include <cstdlib>
+#include <string>
+#include <vector>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -618,10 +620,38 @@ struct decay3bodyBuilder {
 
   //------------------------------------------------------------------
   // 3body candidate builder with KFParticle
-  template <class TTrackTo, typename TCollision>
+  template <class TTrackTo, class TCollisionTo, typename TCollision>
   void buildVtx3BodyDataTableKFParticle(TCollision const& collision, aod::Decay3Bodys const& decay3bodys, int bachelorcharge = 1)
   {
     LOG(debug) << "buildVtx3BodyDataTableKFParticle called.";
+
+    // initialise KF primary vertex
+    KFPVertex kfpVertex = createKFPVertexFromCollision(collision);
+    KFParticle kfpv(kfpVertex);
+    LOG(debug) << "Created KF PV.";
+
+    // fill event QA histograms
+    if (kfparticleConfigurations.doVertexQA) {
+      registry.fill(HIST("QA/Event/hVtxXKF"), kfpv.GetX());
+      registry.fill(HIST("QA/Event/hVtxYKF"), kfpv.GetY());
+      registry.fill(HIST("QA/Event/hVtxZKF"), kfpv.GetZ());
+      registry.fill(HIST("QA/Event/hVtxCovXXKF"), kfpv.GetCovariance(0));
+      registry.fill(HIST("QA/Event/hVtxCovYYKF"), kfpv.GetCovariance(2));
+      registry.fill(HIST("QA/Event/hVtxCovZZKF"), kfpv.GetCovariance(5));
+      registry.fill(HIST("QA/Event/hVtxCovXYKF"), kfpv.GetCovariance(1));
+      registry.fill(HIST("QA/Event/hVtxCovXZKF"), kfpv.GetCovariance(3));
+      registry.fill(HIST("QA/Event/hVtxCovYZKF"), kfpv.GetCovariance(4));
+      registry.fill(HIST("QA/Event/hVtxX"), collision.posX());
+      registry.fill(HIST("QA/Event/hVtxY"), collision.posY());
+      registry.fill(HIST("QA/Event/hVtxZ"), collision.posZ());
+      registry.fill(HIST("QA/Event/hVtxCovXX"), collision.covXX());
+      registry.fill(HIST("QA/Event/hVtxCovYY"), collision.covYY());
+      registry.fill(HIST("QA/Event/hVtxCovZZ"), collision.covZZ());
+      registry.fill(HIST("QA/Event/hVtxCovXY"), collision.covXY());
+      registry.fill(HIST("QA/Event/hVtxCovXZ"), collision.covXZ());
+      registry.fill(HIST("QA/Event/hVtxCovYZ"), collision.covYZ());
+    }
+
     for (auto& vtx3body : decay3bodys) {
       LOG(debug) << "Entered decay3bodys loop.";
 
@@ -635,13 +665,9 @@ struct decay3bodyBuilder {
       auto trackParCovBach = getTrackParCov(trackBach);
       LOG(debug) << "Got all daughter tracks.";
 
-      KFPVertex kfpVertex = createKFPVertexFromCollision(collision);
-      KFParticle kfpv(kfpVertex);
-      LOG(debug) << "Created KF PV.";
-
       bool isMatter = trackBach.sign() > 0 ? true : false;
 
-      // ---------- fill trackQA and vertexQA histograms
+      // ---------- fill track QA histograms ----------
       if (kfparticleConfigurations.doTrackQA) {
         registry.fill(HIST("QA/Tracks/hTrackPosTPCNcls"), trackPos.tpcNClsFound());
         registry.fill(HIST("QA/Tracks/hTrackNegTPCNcls"), trackNeg.tpcNClsFound());
@@ -663,27 +689,6 @@ struct decay3bodyBuilder {
         }
         registry.fill(HIST("QA/Tracks/hTrackBachTPCPID"), trackBach.sign() * trackBach.tpcInnerParam(), trackBach.tpcNSigmaDe());
         registry.fill(HIST("QA/Tracks/hTrackBachPt"), trackBach.pt());
-      }
-
-      if (kfparticleConfigurations.doVertexQA) {
-        registry.fill(HIST("QA/Event/hVtxXKF"), kfpv.GetX());
-        registry.fill(HIST("QA/Event/hVtxYKF"), kfpv.GetY());
-        registry.fill(HIST("QA/Event/hVtxZKF"), kfpv.GetZ());
-        registry.fill(HIST("QA/Event/hVtxCovXXKF"), kfpv.GetCovariance(0));
-        registry.fill(HIST("QA/Event/hVtxCovYYKF"), kfpv.GetCovariance(2));
-        registry.fill(HIST("QA/Event/hVtxCovZZKF"), kfpv.GetCovariance(5));
-        registry.fill(HIST("QA/Event/hVtxCovXYKF"), kfpv.GetCovariance(1));
-        registry.fill(HIST("QA/Event/hVtxCovXZKF"), kfpv.GetCovariance(3));
-        registry.fill(HIST("QA/Event/hVtxCovYZKF"), kfpv.GetCovariance(4));
-        registry.fill(HIST("QA/Event/hVtxX"), collision.posX());
-        registry.fill(HIST("QA/Event/hVtxY"), collision.posY());
-        registry.fill(HIST("QA/Event/hVtxZ"), collision.posZ());
-        registry.fill(HIST("QA/Event/hVtxCovXX"), collision.covXX());
-        registry.fill(HIST("QA/Event/hVtxCovYY"), collision.covYY());
-        registry.fill(HIST("QA/Event/hVtxCovZZ"), collision.covZZ());
-        registry.fill(HIST("QA/Event/hVtxCovXY"), collision.covXY());
-        registry.fill(HIST("QA/Event/hVtxCovXZ"), collision.covXZ());
-        registry.fill(HIST("QA/Event/hVtxCovYZ"), collision.covYZ());
       }
 
       // -------- STEP 1: track selection --------
@@ -731,22 +736,47 @@ struct decay3bodyBuilder {
       // TPC PID
       float tpcNsigmaProton;
       float tpcNsigmaPion;
+      float dEdxProton;
+      float dEdxPion;
       float tpcNsigmaDeuteron = trackBach.tpcNSigmaDe();
+      float dEdxDeuteron = trackBach.tpcSignal();
       if (isMatter) { // hypertriton (proton, pi-, deuteron)
         tpcNsigmaProton = trackPos.tpcNSigmaPr();
         tpcNsigmaPion = trackNeg.tpcNSigmaPi();
+        dEdxProton = trackPos.tpcSignal();
+        dEdxPion = trackNeg.tpcSignal();
         if (!selectTPCPID(trackPos, trackNeg, trackBach)) {
           continue;
         }
       } else if (!isMatter) { // anti-hypertriton (anti-proton, pi+, deuteron)
         tpcNsigmaProton = trackNeg.tpcNSigmaPr();
         tpcNsigmaPion = trackPos.tpcNSigmaPi();
+        dEdxProton = trackNeg.tpcSignal();
+        dEdxPion = trackPos.tpcSignal();
         if (!selectTPCPID(trackNeg, trackPos, trackBach)) {
           continue;
         }
       }
       registry.fill(HIST("hVtx3BodyCounterKFParticle"), kKfVtxTPCPID);
       LOG(debug) << "Basic track selections done.";
+
+      // TOF PID of deuteron (set motherhyp correctly)
+      double tofNSigmaDeuteron = -999;
+      if (trackBach.has_collision() && trackBach.hasTOF()) {
+        auto originalcol = trackBach.template collision_as<TCollisionTo>();
+        tofNSigmaDeuteron = bachelorTOFPID.GetTOFNSigma(trackBach, originalcol, collision);
+      }
+
+      // Average ITS cluster size of deuteron track
+      double averageClusterSizeDeuteron(0);
+      int nCls(0);
+      for (int i = 0; i < 7; i++) {
+        int clusterSize = trackBach.itsClsSizeInLayer(i);
+        averageClusterSizeDeuteron += static_cast<double>(clusterSize);
+        if (clusterSize > 0)
+          nCls++;
+      }
+      averageClusterSizeDeuteron = averageClusterSizeDeuteron / static_cast<double>(nCls);
 
       // track DCAxy and DCAz to PV associated with decay3body
       o2::dataformats::VertexBase mPV;
@@ -784,6 +814,18 @@ struct decay3bodyBuilder {
       auto TrackNegDca = std::sqrt(TrackNegDcaXY * TrackNegDcaXY + TrackNegDcaZ * TrackNegDcaZ);
       auto TrackBachDca = std::sqrt(TrackBachDcaXY * TrackBachDcaXY + TrackBachDcaZ * TrackBachDcaZ);
 
+      // daughter track momentum at inner wall of TPC
+      float tpcInnerParamProton;
+      float tpcInnerParamPion;
+      float tpcInnerParamDeuteron = trackBach.tpcInnerParam();
+      if (isMatter) { // hypertriton (proton, pi-, deuteron)
+        tpcInnerParamProton = trackPos.tpcInnerParam();
+        tpcInnerParamPion = trackNeg.tpcInnerParam();
+      } else if (!isMatter) { // anti-hypertriton (anti-proton, pi+, deuteron)
+        tpcInnerParamProton = trackNeg.tpcInnerParam();
+        tpcInnerParamPion = trackPos.tpcInnerParam();
+      }
+
       // -------- STEP 2: fit vertex with proton and pion --------
       // Fit vertex with DCA fitter to find minimization point --> uses material corrections implicitly
       if (kfparticleConfigurations.doDCAFitterPreMinimum) {
@@ -812,13 +854,13 @@ struct decay3bodyBuilder {
       }
       LOG(debug) << "KFParticle objects created from daughter tracks.";
 
-      // Construct V0
+      // Construct V0 as intermediate step
       KFParticle KFV0;
-      int nDaughters = 2;
-      const KFParticle* Daughters[2] = {&kfpProton, &kfpPion};
+      int nDaughtersV0 = 2;
+      const KFParticle* DaughtersV0[2] = {&kfpProton, &kfpPion};
       KFV0.SetConstructMethod(2);
       try {
-        KFV0.Construct(Daughters, nDaughters);
+        KFV0.Construct(DaughtersV0, nDaughtersV0);
       } catch (std::runtime_error& e) {
         LOG(debug) << "Failed to create V0 vertex from daughter tracks." << e.what();
         continue;
@@ -838,31 +880,35 @@ struct decay3bodyBuilder {
       }
       registry.fill(HIST("hVtx3BodyCounterKFParticle"), kKfVtxV0MassConst);
 
-      // -------- STEP 3: fit vertex with V0 and deuteron --------
+      // -------- STEP 3: fit three body vertex --------
       // Create KFParticle object from deuteron track
       KFParticle kfpDeuteron;
       kfpDeuteron = createKFParticleFromTrackParCov(trackParCovBach, trackBach.sign() * bachelorcharge, constants::physics::MassDeuteron);
       LOG(debug) << "KFParticle created from deuteron track.";
-      // Add deuteron to V0 vertex
+      // Construct 3body vertex
+      int nDaughters3body = 3;
+      const KFParticle* Daughters3body[3] = {&kfpProton, &kfpPion, &kfpDeuteron};
       KFParticle KFHt;
-      KFHt = KFV0;
       KFHt.SetConstructMethod(2);
       try {
-        KFHt.AddDaughter(kfpDeuteron);
+        KFHt.Construct(Daughters3body, nDaughters3body);
       } catch (std::runtime_error& e) {
-        LOG(debug) << "Failed to create Hyper triton from V0 and deuteron." << e.what();
+        LOG(debug) << "Failed to create Hyper triton 3-body vertex." << e.what();
         continue;
       }
+      // transport all daughter tracks to hypertriton vertex
+      float HtVtx[3] = {0.};
+      HtVtx[0] = KFHt.GetX();
+      HtVtx[1] = KFHt.GetY();
+      HtVtx[2] = KFHt.GetZ();
+      kfpProton.TransportToPoint(HtVtx);
+      kfpPion.TransportToPoint(HtVtx);
+      kfpDeuteron.TransportToPoint(HtVtx);
       registry.fill(HIST("hVtx3BodyCounterKFParticle"), kKfVtxhasSV);
       LOG(debug) << "Hypertriton vertex constructed.";
 
       // -------- STEP 4: selections after geometrical vertex fit --------
-      // Get updated daughter tracks
-      kfpProton.SetProductionVertex(KFHt);
-      kfpPion.SetProductionVertex(KFHt);
-      kfpDeuteron.SetProductionVertex(KFHt);
-      LOG(debug) << "Topo constraint applied to daughters.";
-      // daughter DCAs
+      // daughter DCAs with KF
       if ((kfpProton.GetDistanceFromParticle(kfpPion) >= kfparticleConfigurations.maxDcaProPi) || (kfpProton.GetDistanceFromParticle(kfpDeuteron) >= kfparticleConfigurations.maxDcaProDeu) || (kfpPion.GetDistanceFromParticle(kfpDeuteron) >= kfparticleConfigurations.maxDcaPiDe)) {
         continue;
       }
@@ -971,10 +1017,13 @@ struct decay3bodyBuilder {
         KFHtPV.GetLifeTime(),
         // V0
         massV0, chi2massV0,
-        // daughter momenta
+        cpaFromKF(KFV0, kfpv),
+        // daughter momenta at vertex
         kfpProton.GetPx(), kfpProton.GetPy(), kfpProton.GetPz(),
         kfpPion.GetPx(), kfpPion.GetPy(), kfpPion.GetPz(),
         kfpDeuteron.GetPx(), kfpDeuteron.GetPy(), kfpDeuteron.GetPz(),
+        // daughter momenta at inner wall of TPC
+        tpcInnerParamProton, tpcInnerParamPion, tpcInnerParamDeuteron,
         // daughter DCAs KF
         kfpProton.GetDistanceFromVertex(kfpv),
         kfpPion.GetDistanceFromVertex(kfpv),
@@ -1000,31 +1049,37 @@ struct decay3bodyBuilder {
         // daughter PID
         tpcNsigmaProton,
         tpcNsigmaPion,
-        tpcNsigmaDeuteron);
+        tpcNsigmaDeuteron,
+        dEdxProton,
+        dEdxPion,
+        dEdxDeuteron,
+        tofNSigmaDeuteron,
+        averageClusterSizeDeuteron,
+        trackBach.pidForTracking());
 
       if (kfparticleConfigurations.fillCandidateLiteTable) {
         kfvtx3bodydatalite(
           // hypertriton
           massHt,
           KFHt.GetX(), KFHt.GetY(), KFHt.GetZ(),
-          KFHt.GetErrX(), KFHt.GetErrY(), KFHt.GetErrZ(),
           KFHt.GetPx(), KFHt.GetPy(), KFHt.GetPz(), KFHt.GetPt(),
           KFHt.GetQ(),
           KFHt.GetDistanceFromVertex(kfpv), KFHt.GetDistanceFromVertexXY(kfpv),
           cpaFromKF(KFHt, kfpv), // before topo constraint
           cpaXYFromKF(KFHt, kfpv),
-          cpaFromKF(KFHtPV, kfpv), // after topo constraint
-          cpaXYFromKF(KFHtPV, kfpv),
           KFHtPV.GetDecayLength(), KFHtPV.GetDecayLengthXY(),   // decay length defined after topological constraint
           KFHtPV.GetDecayLength() / KFHtPV.GetErrDecayLength(), // ldl
           chi2geoNDF, chi2topoNDF,
           KFHtPV.GetLifeTime(),
           // V0
           massV0, chi2massV0,
-          // daughter momenta
+          cpaFromKF(KFV0, kfpv),
+          // daughter momenta at vertex
           kfpProton.GetPx(), kfpProton.GetPy(), kfpProton.GetPz(),
           kfpPion.GetPx(), kfpPion.GetPy(), kfpPion.GetPz(),
           kfpDeuteron.GetPx(), kfpDeuteron.GetPy(), kfpDeuteron.GetPz(),
+          // daughter momenta at inner wall of TPC
+          tpcInnerParamProton, tpcInnerParamPion, tpcInnerParamDeuteron,
           // daughter DCAs KF
           kfpProton.GetDistanceFromVertex(kfpv),
           kfpPion.GetDistanceFromVertex(kfpv),
@@ -1039,10 +1094,6 @@ struct decay3bodyBuilder {
           kfpProton.GetDistanceFromParticle(kfpDeuteron),
           kfpPion.GetDistanceFromParticle(kfpDeuteron),
           DCAvtxDaughters3D,
-          // daughter DCAs to PV in XY propagated with material
-          TrackPosDcaXY, TrackNegDcaXY, TrackBachDcaXY,
-          // daughter DCAs to PV in 3D propagated with material
-          TrackPosDca, TrackNegDca, TrackBachDca,
           // daughter signs
           kfpProton.GetQ(),
           kfpPion.GetQ(),
@@ -1050,7 +1101,13 @@ struct decay3bodyBuilder {
           // daughter PID
           tpcNsigmaProton,
           tpcNsigmaPion,
-          tpcNsigmaDeuteron);
+          tpcNsigmaDeuteron,
+          dEdxProton,
+          dEdxPion,
+          dEdxDeuteron,
+          tofNSigmaDeuteron,
+          averageClusterSizeDeuteron,
+          trackBach.pidForTracking());
       }
       LOG(debug) << "Table filled.";
 
@@ -1074,7 +1131,7 @@ struct decay3bodyBuilder {
   }
   PROCESS_SWITCH(decay3bodyBuilder, processRun3, "Produce DCA fitter decay3body tables", true);
 
-  void processRun3withKFParticle(MyCollisions const& collisions, FullTracksExtPIDIU const&, aod::Decay3Bodys const& decay3bodys, aod::BCsWithTimestamps const&)
+  void processRun3withKFParticle(ColwithEvTimes const& collisions, TrackExtPIDIUwithEvTimes const&, aod::Decay3Bodys const& decay3bodys, aod::BCsWithTimestamps const&)
   {
     for (const auto& collision : collisions) {
       // event selection
@@ -1097,7 +1154,7 @@ struct decay3bodyBuilder {
       // LOG(debug) << "Collision index: " << collIdx;
       auto Decay3BodyTable_thisCollision = decay3bodys.sliceBy(perCollision, collIdx);
       // LOG(debug) << "Decay3Body tables sliced per collision. Calling buildVtx3BodyDataTableKFParticle function...";
-      buildVtx3BodyDataTableKFParticle<FullTracksExtPIDIU>(collision, Decay3BodyTable_thisCollision, bachelorcharge);
+      buildVtx3BodyDataTableKFParticle<TrackExtPIDIUwithEvTimes, ColwithEvTimes>(collision, Decay3BodyTable_thisCollision, bachelorcharge);
       LOG(debug) << "End of processKFParticle.";
     }
   }

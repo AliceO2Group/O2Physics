@@ -8,6 +8,7 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+#include <vector>
 
 #include "Framework/ConfigParamSpec.h"
 #include "Framework/runDataProcessing.h"
@@ -15,40 +16,22 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/CCDB/EventSelectionParams.h"
-#include "Common/CCDB/TriggerAliases.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/LHCConstants.h"
 #include "Framework/HistogramRegistry.h"
-#include "DataFormatsFT0/Digit.h"
-#include "DataFormatsParameters/GRPLHCIFData.h"
-#include "DataFormatsParameters/GRPECSObject.h"
+// #include "DataFormatsParameters/GRPLHCIFData.h"
 #include "ITSMFTBase/DPLAlpideParam.h"
-#include "MetadataHelper.h"
 #include "DataFormatsParameters/AggregatedRunInfo.h"
-
-#include "TH1D.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::aod::evsel;
 
-MetadataHelper metadataInfo; // Metadata helper
-
-using BCsWithRun2InfosTimestampsAndMatches = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps, aod::Run2MatchedToBCSparse>;
-using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
-using BCsWithBcSelsRun2 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run2BCInfos, aod::Run2MatchedToBCSparse>;
 using BCsWithBcSelsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 using FullTracksIU = soa::Join<aod::TracksIU, aod::TracksExtra>;
 const double bcNS = o2::constants::lhc::LHCBunchSpacingNS;
 
 struct RofOccupancyQaTask {
-  SliceCache cache;
-  // Produces<aod::EvSels> evsel;
-  Configurable<int> muonSelection{"muonSelection", 0, "0 - barrel, 1 - muon selection with pileup cuts, 2 - muon selection without pileup cuts"};
-  Configurable<float> maxDiffZvtxFT0vsPV{"maxDiffZvtxFT0vsPV", 1., "maximum difference (in cm) between z-vertex from FT0 and PV"};
-  Configurable<int> isMC{"isMC", 0, "-1 - autoset, 0 - data, 1 - MC"};
-  Configurable<int> confSigmaBCforHighPtTracks{"confSigmaBCforHighPtTracks", 4, "Custom sigma (in bcs) for collisions with high-pt tracks"};
-
   // configurables for occupancy-based event selection
   Configurable<float> confTimeIntervalForOccupancyCalculationMin{"TimeIntervalForOccupancyCalculationMin", -40, "Min time diff window for TPC occupancy calculation, us"};
   Configurable<float> confTimeIntervalForOccupancyCalculationMax{"TimeIntervalForOccupancyCalculationMax", 100, "Max time diff window for TPC occupancy calculation, us"};
@@ -63,98 +46,31 @@ struct RofOccupancyQaTask {
 
   Configurable<float> confFactorForHistRange{"kFactorForHistRange", 1.0, "To change axes b/n pp and Pb-Pb"};
 
-  Partition<aod::Tracks> tracklets = (aod::track::trackType == static_cast<uint8_t>(o2::aod::track::TrackTypeEnum::Run2Tracklet));
-
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  int lastRun = -1;                                          // last run number (needed to access ccdb only if run!=lastRun)
-  std::bitset<o2::constants::lhc::LHCMaxBunches> bcPatternB; // bc pattern of colliding bunches
+  int lastRun = -1; // last run number (needed to access ccdb only if run!=lastRun)
+  // std::bitset<o2::constants::lhc::LHCMaxBunches> bcPatternB; // bc pattern of colliding bunches
 
   int64_t bcSOR = -1;     // global bc of the start of the first orbit
   int64_t nBCsPerTF = -1; // duration of TF in bcs, should be 128*3564 or 32*3564
   int rofOffset = -1;     // ITS ROF offset, in bc
   int rofLength = -1;     // ITS ROF length, in bc
 
-  int32_t findClosest(int64_t globalBC, std::map<int64_t, int32_t>& bcs)
-  {
-    auto it = bcs.lower_bound(globalBC);
-    int64_t bc1 = it->first;
-    int32_t index1 = it->second;
-    if (it != bcs.begin())
-      --it;
-    int64_t bc2 = it->first;
-    int32_t index2 = it->second;
-    int64_t dbc1 = std::abs(bc1 - globalBC);
-    int64_t dbc2 = std::abs(bc2 - globalBC);
-    return (dbc1 <= dbc2) ? index1 : index2;
-  }
-
-  // helper function to find median time in the vector of TOF or TRD-track times
-  float getMedian(std::vector<float> v)
-  {
-    int medianIndex = v.size() / 2;
-    std::nth_element(v.begin(), v.begin() + medianIndex, v.end());
-    return v[medianIndex];
-  }
-
-  // helper function to find closest TVX signal in time and in zVtx
-  int64_t findBestGlobalBC(int64_t meanBC, int64_t sigmaBC, int32_t nContrib, float zVtxCol, std::map<int64_t, float>& mapGlobalBcVtxZ)
-  {
-    int64_t minBC = meanBC - 3 * sigmaBC;
-    int64_t maxBC = meanBC + 3 * sigmaBC;
-    // TODO: use ITS ROF bounds to reduce the search range?
-
-    float zVtxSigma = 2.7 * pow(nContrib, -0.466) + 0.024;
-    zVtxSigma += 1.0; // additional uncertainty due to imperfectections of FT0 time calibration
-
-    auto itMin = mapGlobalBcVtxZ.lower_bound(minBC);
-    auto itMax = mapGlobalBcVtxZ.upper_bound(maxBC);
-
-    float bestChi2 = 1e+10;
-    int64_t bestGlobalBC = 0;
-    for (std::map<int64_t, float>::iterator it = itMin; it != itMax; ++it) {
-      float chi2 = pow((it->second - zVtxCol) / zVtxSigma, 2) + pow((it->first - meanBC) / sigmaBC, 2.);
-      if (chi2 < bestChi2) {
-        bestChi2 = chi2;
-        bestGlobalBC = it->first;
-      }
-    }
-
-    return bestGlobalBC;
-  }
-
   void init(InitContext&)
   {
-    if (metadataInfo.isFullyDefined()) { // Check if the metadata is initialized (only if not forced from the workflow configuration)
-                                         // if (!doprocessRun2 && !doprocessRun3) {
-                                         // if (!doprocessRun3) {
-      LOG(info) << "Autosetting the processing mode (Run2 or Run3) based on metadata";
-      if (metadataInfo.isRun3()) {
-        doprocessRun3.value = true;
-      } else {
-        // doprocessRun2.value = false;
-      }
-      // }
-      if (isMC == -1) {
-        LOG(info) << "Autosetting the MC mode based on metadata";
-        if (metadataInfo.isMC()) {
-          isMC.value = 1;
-        } else {
-          isMC.value = 0;
-        }
-      }
-    }
-
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 
-    histos.add("hColCounterAll", "", kTH1D, {{1, 0., 1.}});
-    histos.add("hColCounterTVX", "", kTH1D, {{1, 0., 1.}});
-    histos.add("hColCounterAcc", "", kTH1D, {{1, 0., 1.}});
-
     float k = confFactorForHistRange;
+    histos.add("hDeltaTime", "", kTH1D, {{1500, -50, 100}});
+    histos.add("hDeltaTimeAboveNtracksCut", "", kTH1D, {{1500, -50, 100}});
+    histos.add("hDeltaTime_vZ10cm", "", kTH1D, {{1500, -50, 100}});
+    histos.add("hDeltaTime_sel8", "", kTH1D, {{1500, -50, 100}});
+    histos.add("hDeltaTime_sel8_vZ10cm", "", kTH1D, {{1500, -50, 100}});
+    histos.add("hDeltaTimeAboveNtracksCut_sel8_vZ10cm", "", kTH1D, {{1500, -50, 100}});
+
     histos.add("hOccupancyWeights", "", kTH1D, {{150, -50, 100}});
     histos.add("hOccupancyByTracks", "", kTH1D, {{250, 0., 25000 * k}});
     histos.add("hOccupancyByFT0C", "", kTH1D, {{250, 0., 2.5e5 * k}});
@@ -170,51 +86,51 @@ struct RofOccupancyQaTask {
     histos.add("hOccupancyByFT0C_CROSSCHECK", "", kTH1D, {{250, 0., 2.5e5 * k}});
 
     // this ev nITStr vs FT0C
-    histos.add("hThisEvITSTr_vs_ThisEvFT0C", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
-    histos.add("hThisEvITSTr_vs_ThisEvFT0C_vZ_TF_ROF_border_cuts", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
-    histos.add("hThisEvITSTr_vs_ThisEvFT0C_afterNarrowDeltaTimeCut", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
-    histos.add("hThisEvITSTr_vs_ThisEvFT0C_afterStrictDeltaTimeCut", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
-    histos.add("hThisEvITSTr_vs_ThisEvFT0C_afterStandardDeltaTimeCut", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
-    histos.add("hThisEvITSTr_vs_ThisEvFT0C_afterVzDependentDeltaTimeCut", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
+    histos.add("hThisEvITSTr_vs_ThisEvFT0C/all", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
+    histos.add("hThisEvITSTr_vs_ThisEvFT0C/vZ_TF_ROF_border_cuts", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
+    histos.add("hThisEvITSTr_vs_ThisEvFT0C/afterNarrowDeltaTimeCut", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
+    histos.add("hThisEvITSTr_vs_ThisEvFT0C/afterStrictDeltaTimeCut", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
+    histos.add("hThisEvITSTr_vs_ThisEvFT0C/afterStandardDeltaTimeCut", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
+    histos.add("hThisEvITSTr_vs_ThisEvFT0C/afterVzDependentDeltaTimeCut", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
 
-    histos.add("hThisEvITSTr_vs_ThisEvFT0C_kNoCollInRofStrict", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
-    histos.add("hThisEvITSTr_vs_ThisEvFT0C_kNoCollInRofStandard", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
-    histos.add("hThisEvITSTr_vs_ThisEvFT0C_kNoCollInRofWithCloseVz", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
+    histos.add("hThisEvITSTr_vs_ThisEvFT0C/kNoCollInRofStrict", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
+    histos.add("hThisEvITSTr_vs_ThisEvFT0C/kNoCollInRofStandard", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
+    histos.add("hThisEvITSTr_vs_ThisEvFT0C/kNoCollInRofWithCloseVz", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
 
-    histos.add("hThisEvITSTr_vs_ThisEvFT0C_NarrowDeltaCut_StdTimeAndRofCuts", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
+    histos.add("hThisEvITSTr_vs_ThisEvFT0C/NarrowDeltaCut_StdTimeAndRofCuts", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
 
-    histos.add("hThisEvITSTr_vs_ThisEvFT0C_occupBelow2000", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
-    histos.add("hThisEvITSTPCTr_vs_ThisEvFT0C_occupBelow2000", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
-    histos.add("hThisEvITSTr_vs_ThisEvFT0C_NarrowDeltaCut_StdTimeAndRofCuts_occupBelow2000", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
-    histos.add("hThisEvITSTPCTr_vs_ThisEvFT0C_NarrowDeltaCut_StdTimeAndRofCuts_occupBelow2000", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
+    histos.add("hThisEvITSTr_vs_ThisEvFT0C/occupBelow2000", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
+    histos.add("hThisEvITSTr_vs_ThisEvFT0C/hThisEvITSTPCTr_vs_ThisEvFT0C_occupBelow2000", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
+    histos.add("hThisEvITSTr_vs_ThisEvFT0C/NarrowDeltaCut_StdTimeAndRofCuts_occupBelow2000", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
+    histos.add("hThisEvITSTr_vs_ThisEvFT0C/hThisEvITSTPCTr_vs_ThisEvFT0C_NarrowDeltaCut_StdTimeAndRofCuts_occupBelow2000", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
 
     // CROSS-CHECK SEL BITS:
-    histos.add("hThisEvITSTr_vs_ThisEvFT0C_CROSSCHECK_afterNarrowDeltaTimeCut", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
-    histos.add("hThisEvITSTr_vs_ThisEvFT0C_CROSSCHECK_afterStrictDeltaTimeCut", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
-    histos.add("hThisEvITSTr_vs_ThisEvFT0C_CROSSCHECK_afterStandardDeltaTimeCut", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
-    histos.add("hThisEvITSTr_vs_ThisEvFT0C_CROSSCHECK_afterVzDependentDeltaTimeCut", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
+    histos.add("hThisEvITSTr_vs_ThisEvFT0C/CROSSCHECK_afterNarrowDeltaTimeCut", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
+    histos.add("hThisEvITSTr_vs_ThisEvFT0C/CROSSCHECK_afterStrictDeltaTimeCut", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
+    histos.add("hThisEvITSTr_vs_ThisEvFT0C/CROSSCHECK_afterStandardDeltaTimeCut", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
+    histos.add("hThisEvITSTr_vs_ThisEvFT0C/CROSSCHECK_afterVzDependentDeltaTimeCut", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
 
-    histos.add("hThisEvITSTr_vs_ThisEvFT0C_CROSSCHECK_kNoCollInRofStrict", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
-    histos.add("hThisEvITSTr_vs_ThisEvFT0C_CROSSCHECK_kNoCollInRofStandard", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
-    // histos.add("hThisEvITSTr_vs_ThisEvFT0C_CROSSCHECK_kNoCollInRofWithCloseVz", "", kTH2D, {{250, 0., 1e5*k}, {250, 0., 10000*k}});
+    histos.add("hThisEvITSTr_vs_ThisEvFT0C/CROSSCHECK_kNoCollInRofStrict", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
+    histos.add("hThisEvITSTr_vs_ThisEvFT0C/CROSSCHECK_kNoCollInRofStandard", "", kTH2D, {{250, 0., 1e5 * k}, {250, 0., 10000 * k}});
+    // histos.add("hThisEvITSTr_vs_ThisEvFT0C/CROSSCHECK_kNoCollInRofWithCloseVz", "", kTH2D, {{250, 0., 1e5*k}, {250, 0., 10000*k}});
 
     // this ev nITSTPCtr vs nITStr
-    histos.add("hThisEvITSTPCTr_vs_ThisEvITStr", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 5000 * k}});
-    histos.add("hThisEvITSTPCTr_vs_ThisEvITStr_vZ_TF_ROF_border_cuts", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 5000 * k}});
-    histos.add("hThisEvITSTPCTr_vs_ThisEvITStr_afterNarrowDeltaTimeCut", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 5000 * k}});
-    histos.add("hThisEvITSTPCTr_vs_ThisEvITStr_afterStrictDeltaTimeCut", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 5000 * k}});
-    histos.add("hThisEvITSTPCTr_vs_ThisEvITStr_afterStandardDeltaTimeCut", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 5000 * k}});
-    histos.add("hThisEvITSTPCTr_vs_ThisEvITStr_afterVzDependentDeltaTimeCut", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 5000 * k}});
+    histos.add("hThisEvITSTPCTr_vs_ThisEvITStr/all", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 5000 * k}});
+    histos.add("hThisEvITSTPCTr_vs_ThisEvITStr/vZ_TF_ROF_border_cuts", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 5000 * k}});
+    histos.add("hThisEvITSTPCTr_vs_ThisEvITStr/afterNarrowDeltaTimeCut", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 5000 * k}});
+    histos.add("hThisEvITSTPCTr_vs_ThisEvITStr/afterStrictDeltaTimeCut", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 5000 * k}});
+    histos.add("hThisEvITSTPCTr_vs_ThisEvITStr/afterStandardDeltaTimeCut", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 5000 * k}});
+    histos.add("hThisEvITSTPCTr_vs_ThisEvITStr/afterVzDependentDeltaTimeCut", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 5000 * k}});
 
-    histos.add("hThisEvITSTPCTr_vs_ThisEvITStr_kNoCollInRofStrict", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 5000 * k}});
-    histos.add("hThisEvITSTPCTr_vs_ThisEvITStr_kNoCollInRofStandard", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 5000 * k}});
-    histos.add("hThisEvITSTPCTr_vs_ThisEvITStr_kNoCollInRofWithCloseVz", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 5000 * k}});
+    histos.add("hThisEvITSTPCTr_vs_ThisEvITStr/kNoCollInRofStrict", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 5000 * k}});
+    histos.add("hThisEvITSTPCTr_vs_ThisEvITStr/kNoCollInRofStandard", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 5000 * k}});
+    histos.add("hThisEvITSTPCTr_vs_ThisEvITStr/kNoCollInRofWithCloseVz", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 5000 * k}});
 
-    histos.add("hThisEvITSTPCTr_vs_ThisEvITStr_NarrowDeltaCut_StdTimeAndRofCuts", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 5000 * k}});
+    histos.add("hThisEvITSTPCTr_vs_ThisEvITStr/NarrowDeltaCut_StdTimeAndRofCuts", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 5000 * k}});
 
-    histos.add("hThisEvITSTPCTr_vs_ThisEvITStr_occupBelow2000", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 5000 * k}});
-    histos.add("hThisEvITSTPCTr_vs_ThisEvITStr_occupBelow2000_NarrowDeltaCut_StdTimeAndRofCuts", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 5000 * k}});
-    histos.add("hThisEvITSTPCTr_vs_ThisEvITStr_occupBelow2000_StrictDeltaTimeCutAndRofCuts", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 5000 * k}});
+    histos.add("hThisEvITSTPCTr_vs_ThisEvITStr/occupBelow2000", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 5000 * k}});
+    histos.add("hThisEvITSTPCTr_vs_ThisEvITStr/occupBelow2000_NarrowDeltaCut_StdTimeAndRofCuts", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 5000 * k}});
+    histos.add("hThisEvITSTPCTr_vs_ThisEvITStr/occupBelow2000_StrictDeltaTimeCutAndRofCuts", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 5000 * k}});
 
     histos.add("hThisEvITStr_vs_vZcut", "", kTH2D, {{200, 0., 10.}, {200, 0., 8000 * k}});
     histos.add("hThisEvITSTPCtr_vs_vZcut", "", kTH2D, {{200, 0., 10.}, {200, 0., 5000 * k}});
@@ -222,6 +138,7 @@ struct RofOccupancyQaTask {
     histos.add("hThisEvITStr_vs_vZ", "", kTH2D, {{400, -20, 20.}, {200, 0., 8000 * k}});
     histos.add("hThisEvITSTPCtr_vs_vZ", "", kTH2D, {{400, -20, 20.}, {200, 0., 5000 * k}});
 
+    histos.add("hVz", "", kTH1D, {{1600, -40, 40.}});
     histos.add("hDeltaVz", "", kTH1D, {{1600, -40, 40.}});
     histos.add("hDeltaVzAfterCuts", "", kTH1D, {{1600, -40, 40.}});
     histos.add("hDeltaVzAfterTFandROFborderCuts", "", kTH1D, {{1600, -40, 40.}});
@@ -240,6 +157,9 @@ struct RofOccupancyQaTask {
     histos.add("hEtaVzMinus10", "", kTH1D, {{500, -2.5, 2.5}});
     histos.add("hEtaVzPlus15", "", kTH1D, {{500, -2.5, 2.5}});
     histos.add("hEtaVzMinus15", "", kTH1D, {{500, -2.5, 2.5}});
+    histos.add("hEtaVsVz", "", kTH2D, {{250, -25, 25}, {250, -2.5, 2.5}});
+    histos.add("hNPVcontribVsVz", "", kTH2D, {{250, -25, 25}, {500, 0., 8000}});
+    histos.add("hNPVcontribVsVz_eta08", "", kTH2D, {{250, -25, 25}, {500, 0., 8000}});
 
     //
     histos.add("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyByTracks", "", kTH2D, {{250, 0., 25000 * k}, {250, 0., 8000}});
@@ -316,12 +236,34 @@ struct RofOccupancyQaTask {
     histos.add("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyInPreviousROF_1collPerROF", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 8000 * k}});
     histos.add("afterNarrowDeltaTimeCut/hThisEvITSTr_vs_occupancyInPreviousROF_1collPerROF", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 8000 * k}});
 
+    histos.add("afterNarrowDeltaTimeCut/hThisEvITSTr_vs_occupancyInPrevPrevROF_1collPerROF", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 8000 * k}});
+
     // coll on x axis always has more tracks:
     histos.add("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyInROF_2coll_XaxisWins", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 8000 * k}});
     histos.add("afterNarrowDeltaTimeCut/hThisEvITSTr_vs_occupancyInROF_2coll_XaxisWins", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 8000 * k}});
 
     histos.add("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyInPreviousROF_1collPerROF_XaxisWins", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 8000 * k}});
     histos.add("afterNarrowDeltaTimeCut/hThisEvITSTr_vs_occupancyInPreviousROF_1collPerROF_XaxisWins", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 8000 * k}});
+
+    // 2,3,4 colls in ROF
+    histos.add("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyInROF_2coll_noVzCutOnOtherVertices", "", kTH2D, {{500, 0., 20000 * k}, {250, 0., 8000 * k}});
+    histos.add("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyInROF_3coll_noVzCutOnOtherVertices", "", kTH2D, {{500, 0., 20000 * k}, {250, 0., 8000 * k}});
+    histos.add("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyInROF_4coll_noVzCutOnOtherVertices", "", kTH2D, {{500, 0., 20000 * k}, {250, 0., 8000 * k}});
+
+    histos.add("vZ_TF_ROF_border_cuts/hThisEvITSTr_1coll_in_ROF", "", kTH1D, {{250, 0., 8000 * k}});
+    histos.add("vZ_TF_ROF_border_cuts/hThisEvITSTr_2coll_in_ROF", "", kTH1D, {{250, 0., 8000 * k}});
+    histos.add("vZ_TF_ROF_border_cuts/hThisEvITSTr_3coll_in_ROF", "", kTH1D, {{250, 0., 8000 * k}});
+    histos.add("vZ_TF_ROF_border_cuts/hThisEvITSTr_4coll_in_ROF", "", kTH1D, {{250, 0., 8000 * k}});
+    histos.add("vZ_TF_ROF_border_cuts/hThisEvITSTr_5collOrMore_in_ROF", "", kTH1D, {{250, 0., 8000 * k}});
+
+    // 1D
+    histos.add("vZ_TF_ROF_border_cuts/hThisEvITSTr_allOccup_2coll_inROF", "", kTH1D, {{250, 0., 8000 * k}});
+    histos.add("vZ_TF_ROF_border_cuts/hThisEvITSTr_lowOccup_2coll_inROF", "", kTH1D, {{250, 0., 8000 * k}});
+    histos.add("vZ_TF_ROF_border_cuts/hThisEvITSTr_highOccup_2coll_inROF", "", kTH1D, {{250, 0., 8000 * k}});
+
+    histos.add("vZ_TF_ROF_border_cuts/hThisEvITSTr_allOccup_1collPerROF", "", kTH1D, {{250, 0., 8000 * k}});
+    histos.add("vZ_TF_ROF_border_cuts/hThisEvITSTr_lowOccup_1collPerROF", "", kTH1D, {{250, 0., 8000 * k}});
+    histos.add("vZ_TF_ROF_border_cuts/hThisEvITSTr_highOccup_1collPerROF", "", kTH1D, {{250, 0., 8000 * k}});
 
     // now with the ratio on y-axis:
     histos.add("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyInROF_2coll_XaxisWins_RatioV2toV1", "", kTH2D, {{250, 0., 8000 * k}, {220, 0., 1.1}});
@@ -330,15 +272,104 @@ struct RofOccupancyQaTask {
     histos.add("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyInPreviousROF_1collPerROF_XaxisWins_RatioV2toV1", "", kTH2D, {{250, 0., 8000 * k}, {220, 0., 1.1}});
     histos.add("afterNarrowDeltaTimeCut/hThisEvITSTr_vs_occupancyInPreviousROF_1collPerROF_XaxisWins_RatioV2toV1", "", kTH2D, {{250, 0., 8000 * k}, {220, 0., 1.1}});
 
+    histos.add("afterNarrowDeltaTimeCut/hSum_2coll_withFT0above4000_inROF", "", kTH1D, {{500, 0., 15000 * k}});
+    histos.add("afterNarrowDeltaTimeCut/hSum_2coll_withFT0above4000_thisROFprevROF", "", kTH1D, {{500, 0., 15000 * k}});
+    histos.add("afterNarrowDeltaTimeCut/hSum_2coll_withFT0above4000_thisROFprevPrevROF", "", kTH1D, {{500, 0., 15000 * k}});
+    histos.add("afterNarrowDeltaTimeCut/hSum_2coll_withFT0above4000_thisROFearlierThanPrevPrevROF", "", kTH1D, {{500, 0., 15000 * k}});
+
     //
     histos.add("hNcollPerROF", "", kTH1D, {{16, -0.5, 15.5}});
+
+    // ROF-by-ROF study:
+    histos.add("ROFbyROF/nPV_vs_ROFid", "", kTH2D, {{800, 0., 8000 * k}, {10, -0.5, 9.5}});
+    histos.add("ROFbyROF/nPV_vs_subROFid", "", kTH2D, {{800, 0., 8000 * k}, {20, -0.5, 19.5}});
+
+    histos.add("ROFbyROF/FT0C_vs_ROFid", "", kTH2D, {{800, 0., 80000 * k}, {10, -0.5, 9.5}});
+    histos.add("ROFbyROF/FT0C_vs_subROFid", "", kTH2D, {{800, 0., 80000 * k}, {20, -0.5, 19.5}});
+
+    histos.add("ROFbyROF/nPV_00x00", "", kTH1D, {{250, 0., 8000 * k}});
+
+    histos.add("ROFbyROF/nPV_10x00", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 8000 * k}});
+    histos.add("ROFbyROF/nPV_01x00", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 8000 * k}});
+    histos.add("ROFbyROF/nPV_00x10", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 8000 * k}});
+    histos.add("ROFbyROF/nPV_00x01", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 8000 * k}});
+
+    histos.add("ROFbyROF/nPV_11x00", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 8000 * k}});
+    histos.add("ROFbyROF/nPV_01x10", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 8000 * k}});
+    histos.add("ROFbyROF/nPV_00x11", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 8000 * k}});
+
+    histos.add("ROFbyROF/nPV_10x00_nearbyByFT0C", "", kTH2D, {{250, 0., 80000 * k}, {250, 0., 8000 * k}});
+    histos.add("ROFbyROF/nPV_01x00_nearbyByFT0C", "", kTH2D, {{250, 0., 80000 * k}, {250, 0., 8000 * k}});
+    histos.add("ROFbyROF/nPV_00x10_nearbyByFT0C", "", kTH2D, {{250, 0., 80000 * k}, {250, 0., 8000 * k}});
+    histos.add("ROFbyROF/nPV_00x01_nearbyByFT0C", "", kTH2D, {{250, 0., 80000 * k}, {250, 0., 8000 * k}});
+
+    histos.add("ROFbyROF/nPV_10x00_thisFT0C", "", kTH2D, {{250, 0., 80000 * k}, {250, 0., 8000 * k}});
+    histos.add("ROFbyROF/nPV_01x00_thisFT0C", "", kTH2D, {{250, 0., 80000 * k}, {250, 0., 8000 * k}});
+    histos.add("ROFbyROF/nPV_00x10_thisFT0C", "", kTH2D, {{250, 0., 80000 * k}, {250, 0., 8000 * k}});
+    histos.add("ROFbyROF/nPV_00x01_thisFT0C", "", kTH2D, {{250, 0., 80000 * k}, {250, 0., 8000 * k}});
+
+    // histos.add("ROFbyROF/nPV_11x11", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 8000 * k}});
+
+    // ### sub-ROFs:
+    histos.add("ROFbyROF/nPV_0_x00_0", "", kTH1D, {{250, 0., 8000 * k}});
+    histos.add("ROFbyROF/nPV_0_0x0_0", "", kTH1D, {{250, 0., 8000 * k}});
+    histos.add("ROFbyROF/nPV_0_00x_0", "", kTH1D, {{250, 0., 8000 * k}});
+
+    // corr with prev subROFs:
+    histos.add("ROFbyROF/nPV_0_00x_y00_000", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 8000 * k}});
+    histos.add("ROFbyROF/nPV_0_0x0_y00_000", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 8000 * k}});
+    histos.add("ROFbyROF/nPV_0_x00_y00_000", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 8000 * k}});
+
+    histos.add("ROFbyROF/nPV_0_00x_0y0_000", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 8000 * k}});
+    histos.add("ROFbyROF/nPV_0_0x0_0y0_000", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 8000 * k}});
+    histos.add("ROFbyROF/nPV_0_x00_0y0_000", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 8000 * k}});
+
+    histos.add("ROFbyROF/nPV_0_00x_00y_000", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 8000 * k}});
+    histos.add("ROFbyROF/nPV_0_0x0_00y_000", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 8000 * k}});
+    histos.add("ROFbyROF/nPV_0_x00_00y_000", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 8000 * k}});
+
+    // corr with next subROFs:
+    histos.add("ROFbyROF/nPV_000_y00_00x_0", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 8000 * k}});
+    histos.add("ROFbyROF/nPV_000_y00_0x0_0", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 8000 * k}});
+    histos.add("ROFbyROF/nPV_000_y00_x00_0", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 8000 * k}});
+
+    histos.add("ROFbyROF/nPV_000_0y0_00x_0", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 8000 * k}});
+    histos.add("ROFbyROF/nPV_000_0y0_0x0_0", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 8000 * k}});
+    histos.add("ROFbyROF/nPV_000_0y0_x00_0", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 8000 * k}});
+
+    histos.add("ROFbyROF/nPV_000_00y_00x_0", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 8000 * k}});
+    histos.add("ROFbyROF/nPV_000_00y_0x0_0", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 8000 * k}});
+    histos.add("ROFbyROF/nPV_000_00y_x00_0", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 8000 * k}});
+
+    // #### new occupancy studies
+    histos.add("nPV_vs_occupancyByTracks/sel8", "", kTH2D, {{250, 0., 8000 * k}, {100, 0., 25000 * k}});
+    histos.add("nPV_vs_occupancyByTracks/NoCollInTimeRangeNarrow", "", kTH2D, {{250, 0., 8000 * k}, {100, 0., 25000 * k}});
+    histos.add("nPV_vs_occupancyByTracks/NoCollInTimeRangeStrict", "", kTH2D, {{250, 0., 8000 * k}, {100, 0., 25000 * k}});
+    histos.add("nPV_vs_occupancyByTracks/NoCollInTimeRangeStandard", "", kTH2D, {{250, 0., 8000 * k}, {100, 0., 25000 * k}});
+    histos.add("nPV_vs_occupancyByTracks/NoCollInTimeRangeVzDependent", "", kTH2D, {{250, 0., 8000 * k}, {100, 0., 25000 * k}});
+    histos.add("nPV_vs_occupancyByTracks/NoCollInRofStrict", "", kTH2D, {{250, 0., 8000 * k}, {100, 0., 25000 * k}});
+    histos.add("nPV_vs_occupancyByTracks/NoCollInRofStandard", "", kTH2D, {{250, 0., 8000 * k}, {100, 0., 25000 * k}});
+    histos.add("nPV_vs_occupancyByTracks/NoCollInTimeAndRofStandard", "", kTH2D, {{250, 0., 8000 * k}, {100, 0., 25000 * k}});
+    histos.add("nPV_vs_occupancyByTracks/NoCollInTimeAndRofStrict", "", kTH2D, {{250, 0., 8000 * k}, {100, 0., 25000 * k}});
+    histos.add("nPV_vs_occupancyByTracks/NoCollInTimeAndRofStrict_vZ_5cm", "", kTH2D, {{250, 0., 8000 * k}, {100, 0., 25000 * k}});
+
+    histos.add("nPV_vs_occupancyByFT0C/sel8", "", kTH2D, {{250, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
+    histos.add("nPV_vs_occupancyByFT0C/NoCollInTimeRangeNarrow", "", kTH2D, {{250, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
+    histos.add("nPV_vs_occupancyByFT0C/NoCollInTimeRangeStrict", "", kTH2D, {{250, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
+    histos.add("nPV_vs_occupancyByFT0C/NoCollInTimeRangeStandard", "", kTH2D, {{250, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
+    histos.add("nPV_vs_occupancyByFT0C/NoCollInTimeRangeVzDependent", "", kTH2D, {{250, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
+    histos.add("nPV_vs_occupancyByFT0C/NoCollInRofStrict", "", kTH2D, {{250, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
+    histos.add("nPV_vs_occupancyByFT0C/NoCollInRofStandard", "", kTH2D, {{250, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
+    histos.add("nPV_vs_occupancyByFT0C/NoCollInTimeAndRofStandard", "", kTH2D, {{250, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
+    histos.add("nPV_vs_occupancyByFT0C/NoCollInTimeAndRofStrict", "", kTH2D, {{250, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
+    histos.add("nPV_vs_occupancyByFT0C/NoCollInTimeAndRofStrict_vZ_5cm", "", kTH2D, {{250, 0., 8000 * k}, {100, 0., 2.5e5 * k}});
   }
 
-  Partition<FullTracksIU> pvTracks = ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
+  Partition<FullTracksIU> pvTracks = ((aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor));
+  // Partition<FullTracksIU> pvTracks = ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
   Preslice<FullTracksIU> perCollision = aod::track::collisionId;
 
   using ColEvSels = soa::Join<aod::Collisions, aod::EvSels>; //, aod::Mults, aod::CentFT0Cs>;
-  // void processRun3(aod::Collisions const& cols, FullTracksIU const&, BCsWithBcSelsRun3 const& bcs, aod::FT0s const&)
   void processRun3(ColEvSels const& cols, FullTracksIU const&, BCsWithBcSelsRun3 const& bcs, aod::FT0s const&)
   {
     int run = bcs.iteratorAt(0).runNumber();
@@ -350,57 +381,19 @@ struct RofOccupancyQaTask {
       bcSOR = runInfo.orbitSOR * o2::constants::lhc::LHCMaxBunches;
       // duration of TF in bcs
       nBCsPerTF = runInfo.orbitsPerTF * o2::constants::lhc::LHCMaxBunches;
-      // colliding bc pattern
-      int64_t ts = bcs.iteratorAt(0).timestamp();
-      auto grplhcif = ccdb->getForTimeStamp<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", ts);
-      bcPatternB = grplhcif->getBunchFilling().getBCPattern();
 
       // extract ITS ROF parameters
-      // auto timestamps = ccdb->getRunDuration(run, true); /// fatalise if timestamps are not found
-      // int64_t sorTimestamp = timestamps.first;           // timestamp of the SOR/SOX/STF in ms
-      // int64_t eorTimestamp = timestamps.second;          // timestamp of the EOR/EOX/ETF in ms
-      // int64_t ts = eorTimestamp / 2 + sorTimestamp / 2;  // timestamp of the middle of the run
+      int64_t ts = bcs.iteratorAt(0).timestamp();
       auto alppar = ccdb->getForTimeStamp<o2::itsmft::DPLAlpideParam<0>>("ITS/Config/AlpideParam", ts);
       rofOffset = alppar->roFrameBiasInBC;
       rofLength = alppar->roFrameLengthInBC;
       LOGP(info, "rofOffset={} rofLength={}", rofOffset, rofLength);
     }
 
-    // create maps from globalBC to bc index for TVX-fired bcs
-    // to be used for closest TVX searches
-    std::map<int64_t, int32_t> mapGlobalBcWithTVX;
-    std::map<int64_t, float> mapGlobalBcVtxZ;
-    for (auto& bc : bcs) {
-      int64_t globalBC = bc.globalBC();
-      // skip non-colliding bcs for data and anchored runs
-      if (run >= 500000 && bcPatternB[globalBC % o2::constants::lhc::LHCMaxBunches] == 0) {
-        continue;
-      }
-      if (bc.selection_bit(kIsTriggerTVX)) {
-        mapGlobalBcWithTVX[globalBC] = bc.globalIndex();
-        mapGlobalBcVtxZ[globalBC] = bc.has_ft0() ? bc.ft0().posZ() : 0;
-      }
-    }
-
-    // protection against empty FT0 maps
-    if (mapGlobalBcWithTVX.size() == 0) {
-      LOGP(error, "FT0 table is empty or corrupted.");
-      // for (auto& col : cols) {
-      //   auto bc = col.bc_as<BCsWithBcSelsRun3>();
-      //   int32_t foundBC = bc.globalIndex();
-      //   int32_t foundFT0 = bc.foundFT0Id();
-      //   int32_t foundFV0 = bc.foundFV0Id();
-      //   int32_t foundFDD = bc.foundFDDId();
-      //   int32_t foundZDC = bc.foundZDCId();
-      //   int bcInTF = (bc.globalBC() - bcSOR) % nBCsPerTF;
-      //   // evsel(bc.alias_raw(), bc.selection_raw(), kFALSE, kFALSE, foundBC, foundFT0, foundFV0, foundFDD, foundZDC, bcInTF, -1, -1, -1);
-      // }
-      return;
-    }
     std::vector<int> vTracksITS567perColl(cols.size(), 0);                                    // counter of tracks per collision for occupancy studies
     std::vector<int> vTracksITSTPCperColl(cols.size(), 0);                                    // counter of tracks per collision for occupancy studies
+    std::vector<int> vTracksITS567eta08perColl(cols.size(), 0);                               // counter of tracks per collision for occupancy studies
     std::vector<float> vAmpFT0CperColl(cols.size(), 0);                                       // amplitude FT0C per collision
-    std::vector<float> vCollVz(cols.size(), 0);                                               // vector with vZ positions for each collision
     std::vector<bool> vIsFullInfoForOccupancy(cols.size(), 0);                                // info for occupancy in +/- windows is available (i.e. a given coll is not too close to the TF borders)
     const float timeWinOccupancyCalcMinNS = confTimeIntervalForOccupancyCalculationMin * 1e3; // ns
     const float timeWinOccupancyCalcMaxNS = confTimeIntervalForOccupancyCalculationMax * 1e3; // ns
@@ -408,150 +401,214 @@ struct RofOccupancyQaTask {
     std::vector<bool> vIsVertexTOFmatched(cols.size(), 0);                                    // at least one of vertex contributors is matched to TOF
     std::vector<bool> vIsVertexTRDmatched(cols.size(), 0);                                    // at least one of vertex contributors is matched to TRD
 
-    std::vector<int> vCollisionsPerBc(bcs.size(), 0);    // counter of collisions per found bc for pileup checks
+    // std::vector<int> vCollisionsPerBc(bcs.size(), 0);    // counter of collisions per found bc for pileup checks
     std::vector<int> vFoundBCindex(cols.size(), -1);     // indices of found bcs
     std::vector<int64_t> vFoundGlobalBC(cols.size(), 0); // global BCs for collisions
 
-    std::vector<bool> vIsVertexTOF(cols.size(), 0);
-    std::vector<bool> vIsVertexTRD(cols.size(), 0);
-    std::vector<bool> vIsVertexTPC(cols.size(), 0);
-    std::vector<bool> vIsVertexHighPtTPC(cols.size(), 0);
-    std::vector<int> vNcontributors(cols.size(), 0);
-    std::vector<float> vWeightedTimesTPCnoTOFnoTRD(cols.size(), 0);
-    std::vector<float> vWeightedSigmaTPCnoTOFnoTRD(cols.size(), 0);
+    std::vector<float> vCollVz(cols.size(), 0); // vector with vZ positions for each collision
+    std::vector<bool> vIsSel8(cols.size(), 0);
+    std::vector<bool> vCombCond(cols.size(), 0);
 
-    // temporary vectors to find tracks with median time
-    std::vector<float> vTrackTimesTOF;
-    std::vector<float> vTrackTimesTRDnoTOF;
+    std::vector<int> vCollRofId(cols.size(), 0);            // rof Id for each collision
+    std::vector<int> vCollRofIdPerOrbit(cols.size(), 0);    // rof Id for each collision, per orbit
+    std::vector<int> vCollRofSubId(cols.size(), 0);         // rof sub-Id for each collision
+    std::vector<int> vCollRofSubIdPerOrbit(cols.size(), 0); // rof sub-Id for each collision, per orbit
 
-    // first loop to match collisions to TVX, also extract other per-collision information for further use
+    // first loop over collisions - collecting info
     for (auto& col : cols) {
       int32_t colIndex = col.globalIndex();
-      auto bc = col.bc_as<BCsWithBcSelsRun3>();
+      // auto bc = col.bc_as<BCsWithBcSelsRun3>();
+      const auto& bc = col.foundBC_as<BCsWithBcSelsRun3>();
+      int64_t globalBC = bc.globalBC();
+
+      int32_t foundBC = bc.globalIndex();
+      vFoundBCindex[colIndex] = foundBC;
+      vFoundGlobalBC[colIndex] = globalBC; // bc.globalBC();
+
+      if (bc.has_foundFT0())
+        vAmpFT0CperColl[colIndex] = bc.foundFT0().sumAmpC();
 
       vCollVz[colIndex] = col.posZ();
+      vIsSel8[colIndex] = col.sel8();
+      vCombCond[colIndex] = vIsSel8[colIndex] && (fabs(vCollVz[colIndex]) < 8) && (vAmpFT0CperColl[colIndex] > 500 /* a.u.*/);
 
-      int64_t globalBC = bc.globalBC();
-      int bcInTF = (bc.globalBC() - bcSOR) % nBCsPerTF;
+      int bcInTF = col.bcInTF(); //(bc.globalBC() - bcSOR) % nBCsPerTF;
       vIsFullInfoForOccupancy[colIndex] = ((bcInTF - 300) * bcNS > -timeWinOccupancyCalcMinNS) && ((nBCsPerTF - 4000 - bcInTF) * bcNS > timeWinOccupancyCalcMaxNS) ? true : false;
 
-      // const auto& colPvTracks = pvTracks.sliceByCached(aod::track::collisionId, col.globalIndex(), cache);
-      // const auto& colPvTracks = pvTracks.sliceBy(aod::track::collisionId, col.globalIndex(), cache);
+      // int64_t rofId = (globalBC + 3564 - rofOffset) / rofLength;
+      int rofId = (bcInTF - rofOffset) / rofLength;
+      vCollRofId[colIndex] = rofId;
+
+      int rofIdPerOrbit = rofId % (3564 / rofLength);
+      vCollRofIdPerOrbit[colIndex] = rofIdPerOrbit;
+
+      int bcInITSROF = (globalBC + 3564 - rofOffset) % rofLength;
+      int subRofId = bcInITSROF / (rofLength / 3);
+      vCollRofSubId[colIndex] = subRofId;
+      vCollRofSubIdPerOrbit[colIndex] = 3 * rofIdPerOrbit + subRofId;
+      // LOGP(info, ">> rofId={} rofIdPerOrbit={} subRofId={} vCollRofSubId={}", rofId, rofIdPerOrbit, subRofId, vCollRofSubId[colIndex]);
+
       auto colPvTracks = pvTracks.sliceBy(perCollision, col.globalIndex());
 
-      vTrackTimesTOF.clear();
-      vTrackTimesTRDnoTOF.clear();
-      int nPvTracksTPCnoTOFnoTRD = 0;
-      int nPvTracksHighPtTPCnoTOFnoTRD = 0;
-      float sumTime = 0, sumW = 0, sumHighPtTime = 0, sumHighPtW = 0;
       for (auto& track : colPvTracks) {
-        float trackTime = track.trackTime();
         if (track.itsNCls() >= 5) {
           vTracksITS567perColl[colIndex]++;
+          if (fabs(track.eta() < 0.8))
+            vTracksITS567eta08perColl[colIndex]++;
           if (track.tpcNClsFound() > 70)
             vTracksITSTPCperColl[colIndex]++;
           if (fabs(col.posZ()) < 1)
-            histos.get<TH1>(HIST("hEtaVz02"))->Fill(track.eta());
-          else if (col.posZ() > 8 && col.posZ() < 10)
-            histos.get<TH1>(HIST("hEtaVzPlus10"))->Fill(track.eta());
-          else if (col.posZ() > -10 && col.posZ() < -8)
-            histos.get<TH1>(HIST("hEtaVzMinus10"))->Fill(track.eta());
-          else if (col.posZ() > 14 && col.posZ() < 16)
-            histos.get<TH1>(HIST("hEtaVzPlus15"))->Fill(track.eta());
-          else if (col.posZ() > -16 && col.posZ() < -14)
-            histos.get<TH1>(HIST("hEtaVzMinus15"))->Fill(track.eta());
+            histos.fill(HIST("hEtaVz02"), track.eta());
+          else if (col.posZ() > 9.5 && col.posZ() < 10.5)
+            histos.fill(HIST("hEtaVzPlus10"), track.eta());
+          else if (col.posZ() > -10.5 && col.posZ() < -9.5)
+            histos.fill(HIST("hEtaVzMinus10"), track.eta());
+          else if (col.posZ() > 14.5 && col.posZ() < 15.5)
+            histos.fill(HIST("hEtaVzPlus15"), track.eta());
+          else if (col.posZ() > -15.5 && col.posZ() < -14.5)
+            histos.fill(HIST("hEtaVzMinus15"), track.eta());
+
+          histos.fill(HIST("hEtaVsVz"), col.posZ(), track.eta());
         }
         if (track.hasTRD())
           vIsVertexTRDmatched[colIndex] = 1;
         if (track.hasTPC())
           vIsVertexITSTPC[colIndex] = 1;
         if (track.hasTOF()) {
-          vTrackTimesTOF.push_back(trackTime);
           vIsVertexTOFmatched[colIndex] = 1;
-        } else if (track.hasTRD()) {
-          vTrackTimesTRDnoTOF.push_back(trackTime);
-        } else if (track.hasTPC()) {
-          float trackTimeRes = track.trackTimeRes();
-          float trackPt = track.pt();
-          float w = 1. / (trackTimeRes * trackTimeRes);
-          sumTime += trackTime * w;
-          sumW += w;
-          nPvTracksTPCnoTOFnoTRD++;
-          if (trackPt > 1) {
-            sumHighPtTime += trackTime * w;
-            sumHighPtW += w;
-            nPvTracksHighPtTPCnoTOFnoTRD++;
-          }
-        }
-      }
-      vWeightedTimesTPCnoTOFnoTRD[colIndex] = sumW > 0 ? sumTime / sumW : 0;
-      vWeightedSigmaTPCnoTOFnoTRD[colIndex] = sumW > 0 ? sqrt(1. / sumW) : 0;
-      vNcontributors[colIndex] = colPvTracks.size();
-      int nPvTracksTOF = vTrackTimesTOF.size();
-      int nPvTracksTRDnoTOF = vTrackTimesTRDnoTOF.size();
-      // collision type
-      vIsVertexTOF[colIndex] = nPvTracksTOF > 0;
-      vIsVertexTRD[colIndex] = nPvTracksTRDnoTOF > 0;
-      vIsVertexTPC[colIndex] = nPvTracksTPCnoTOFnoTRD > 0;
-      vIsVertexHighPtTPC[colIndex] = nPvTracksHighPtTPCnoTOFnoTRD > 0;
-
-      int64_t foundGlobalBC = 0;
-      int32_t foundBCindex = -1;
-
-      if (nPvTracksTOF > 0) {
-        // for collisions with TOF tracks:
-        // take bc corresponding to TOF track with median time
-        int64_t tofGlobalBC = globalBC + TMath::Nint(getMedian(vTrackTimesTOF) / bcNS);
-        std::map<int64_t, int32_t>::iterator it = mapGlobalBcWithTVX.find(tofGlobalBC);
-        if (it != mapGlobalBcWithTVX.end()) {
-          foundGlobalBC = it->first;
-          foundBCindex = it->second;
-        }
-      } else if (nPvTracksTPCnoTOFnoTRD == 0 && nPvTracksTRDnoTOF > 0) {
-        // for collisions with TRD tracks but without TOF or ITSTPC-only tracks:
-        // take bc corresponding to TRD track with median time
-        int64_t trdGlobalBC = globalBC + TMath::Nint(getMedian(vTrackTimesTRDnoTOF) / bcNS);
-        std::map<int64_t, int32_t>::iterator it = mapGlobalBcWithTVX.find(trdGlobalBC);
-        if (it != mapGlobalBcWithTVX.end()) {
-          foundGlobalBC = it->first;
-          foundBCindex = it->second;
-        }
-      } else if (nPvTracksHighPtTPCnoTOFnoTRD > 0) {
-        // for collisions with high-pt ITSTPC-nonTOF-nonTRD tracks
-        // search in 3*confSigmaBCforHighPtTracks range (3*4 bcs by default)
-        int64_t meanBC = globalBC + TMath::Nint(sumHighPtTime / sumHighPtW / bcNS);
-        int64_t bestGlobalBC = findBestGlobalBC(meanBC, confSigmaBCforHighPtTracks, vNcontributors[colIndex], col.posZ(), mapGlobalBcVtxZ);
-        if (bestGlobalBC > 0) {
-          foundGlobalBC = bestGlobalBC;
-          foundBCindex = mapGlobalBcWithTVX[bestGlobalBC];
         }
       }
 
-      // fill foundBC indices and global BCs
-      // keep current bc if TVX matching failed at this step
-      vFoundBCindex[colIndex] = foundBCindex >= 0 ? foundBCindex : bc.globalIndex();
-      vFoundGlobalBC[colIndex] = foundGlobalBC > 0 ? foundGlobalBC : globalBC;
-
-      // erase found global BC with TVX from the pool of bcs for the next loop over low-pt TPCnoTOFnoTRD collisions
-      if (foundBCindex >= 0)
-        mapGlobalBcVtxZ.erase(foundGlobalBC);
+      if (col.sel8()) {
+        histos.fill(HIST("hNPVcontribVsVz"), col.posZ(), vTracksITS567perColl[colIndex]);
+        histos.fill(HIST("hNPVcontribVsVz_eta08"), col.posZ(), vTracksITS567eta08perColl[colIndex]);
+      }
     }
 
-    // second loop to match remaining low-pt TPCnoTOFnoTRD collisions
+    // ROF-by-ROF study:
+    int nColls = vCombCond.size();
     for (auto& col : cols) {
-      int32_t colIndex = col.globalIndex();
-      if (vIsVertexTPC[colIndex] > 0 && vIsVertexTOF[colIndex] == 0 && vIsVertexHighPtTPC[colIndex] == 0) {
-        float weightedTime = vWeightedTimesTPCnoTOFnoTRD[colIndex];
-        float weightedSigma = vWeightedSigmaTPCnoTOFnoTRD[colIndex];
-        auto bc = col.bc_as<BCsWithBcSelsRun3>();
-        int64_t globalBC = bc.globalBC();
-        int64_t meanBC = globalBC + TMath::Nint(weightedTime / bcNS);
-        int64_t bestGlobalBC = findBestGlobalBC(meanBC, weightedSigma / bcNS, vNcontributors[colIndex], col.posZ(), mapGlobalBcVtxZ);
-        vFoundGlobalBC[colIndex] = bestGlobalBC > 0 ? bestGlobalBC : globalBC;
-        vFoundBCindex[colIndex] = bestGlobalBC > 0 ? mapGlobalBcWithTVX[bestGlobalBC] : bc.globalIndex();
+      int32_t k = col.globalIndex();
+
+      if (k - 2 < 0 || k + 2 > nColls - 1)
+        continue;
+
+      // the "purest case"
+      if (vCombCond[k]) {
+        if (vCollRofId[k - 1] < vCollRofId[k] - 2 && /* next coll is far */ vCollRofId[k + 1] > vCollRofId[k] + 2) // 00x00
+          histos.fill(HIST("ROFbyROF/nPV_00x00"), vTracksITS567perColl[k]);
+
+        if (vCollRofId[k - 1] < vCollRofId[k] - 1 && /* next coll is far */ vCollRofId[k + 1] > vCollRofId[k] + 1) // 0x0
+        {
+          if (vCollRofSubId[k] == 0)
+            histos.fill(HIST("ROFbyROF/nPV_0_x00_0"), vTracksITS567perColl[k]);
+          if (vCollRofSubId[k] == 1)
+            histos.fill(HIST("ROFbyROF/nPV_0_0x0_0"), vTracksITS567perColl[k]);
+          if (vCollRofSubId[k] == 2)
+            histos.fill(HIST("ROFbyROF/nPV_0_00x_0"), vTracksITS567perColl[k]);
+        }
       }
-      // fill pileup counter
-      vCollisionsPerBc[vFoundBCindex[colIndex]]++;
+
+      // prev 1 coll
+      if (vCombCond[k] && vCombCond[k - 1]) {
+        if (vCollRofId[k - 2] < vCollRofId[k] - 2 && vCollRofId[k - 1] == vCollRofId[k] - 2 && /* next coll is far */ vCollRofId[k + 1] > vCollRofId[k] + 2) // 10x00
+        {
+          histos.fill(HIST("ROFbyROF/nPV_10x00"), vTracksITS567perColl[k - 1], vTracksITS567perColl[k]);
+          histos.fill(HIST("ROFbyROF/nPV_10x00_nearbyByFT0C"), vAmpFT0CperColl[k - 1], vTracksITS567perColl[k]);
+          histos.fill(HIST("ROFbyROF/nPV_10x00_thisFT0C"), vAmpFT0CperColl[k], vTracksITS567perColl[k]);
+        }
+        if (vCollRofId[k - 2] < vCollRofId[k] - 2 && vCollRofId[k - 1] == vCollRofId[k] - 1 && /* next coll is far */ vCollRofId[k + 1] > vCollRofId[k] + 2) // 01x00
+        {
+          histos.fill(HIST("ROFbyROF/nPV_01x00"), vTracksITS567perColl[k - 1], vTracksITS567perColl[k]);
+          histos.fill(HIST("ROFbyROF/nPV_01x00_nearbyByFT0C"), vAmpFT0CperColl[k - 1], vTracksITS567perColl[k]);
+          histos.fill(HIST("ROFbyROF/nPV_01x00_thisFT0C"), vAmpFT0CperColl[k], vTracksITS567perColl[k]);
+        }
+
+        if (vCollRofId[k - 2] < vCollRofId[k] - 2 && vCollRofId[k - 1] == vCollRofId[k] - 1 && /* next coll is far */ vCollRofId[k + 1] > vCollRofId[k] + 1) // 01x0
+        {
+          // sub-ROFs:
+          if (vCollRofSubId[k - 1] == 2 && vCollRofSubId[k] == 0)
+            histos.fill(HIST("ROFbyROF/nPV_0_00x_y00_000"), vTracksITS567perColl[k - 1], vTracksITS567perColl[k]);
+          if (vCollRofSubId[k - 1] == 1 && vCollRofSubId[k] == 0)
+            histos.fill(HIST("ROFbyROF/nPV_0_0x0_y00_000"), vTracksITS567perColl[k - 1], vTracksITS567perColl[k]);
+          if (vCollRofSubId[k - 1] == 0 && vCollRofSubId[k] == 0)
+            histos.fill(HIST("ROFbyROF/nPV_0_x00_y00_000"), vTracksITS567perColl[k - 1], vTracksITS567perColl[k]);
+
+          if (vCollRofSubId[k - 1] == 2 && vCollRofSubId[k] == 1)
+            histos.fill(HIST("ROFbyROF/nPV_0_00x_0y0_000"), vTracksITS567perColl[k - 1], vTracksITS567perColl[k]);
+          if (vCollRofSubId[k - 1] == 1 && vCollRofSubId[k] == 1)
+            histos.fill(HIST("ROFbyROF/nPV_0_0x0_0y0_000"), vTracksITS567perColl[k - 1], vTracksITS567perColl[k]);
+          if (vCollRofSubId[k - 1] == 0 && vCollRofSubId[k] == 1)
+            histos.fill(HIST("ROFbyROF/nPV_0_x00_0y0_000"), vTracksITS567perColl[k - 1], vTracksITS567perColl[k]);
+
+          if (vCollRofSubId[k - 1] == 2 && vCollRofSubId[k] == 2)
+            histos.fill(HIST("ROFbyROF/nPV_0_00x_00y_000"), vTracksITS567perColl[k - 1], vTracksITS567perColl[k]);
+          if (vCollRofSubId[k - 1] == 1 && vCollRofSubId[k] == 2)
+            histos.fill(HIST("ROFbyROF/nPV_0_0x0_00y_000"), vTracksITS567perColl[k - 1], vTracksITS567perColl[k]);
+          if (vCollRofSubId[k - 1] == 0 && vCollRofSubId[k] == 2)
+            histos.fill(HIST("ROFbyROF/nPV_0_x00_00y_000"), vTracksITS567perColl[k - 1], vTracksITS567perColl[k]);
+        }
+      }
+      // next 1 coll
+      if (vCombCond[k] && vCombCond[k + 1]) {
+        if (vCollRofId[k - 1] < vCollRofId[k] - 2 /* prev coll is far */ && vCollRofId[k + 1] == vCollRofId[k] + 1 && vCollRofId[k + 2] > vCollRofId[k] + 2) // 00x10
+        {
+          histos.fill(HIST("ROFbyROF/nPV_00x10"), vTracksITS567perColl[k + 1], vTracksITS567perColl[k]);
+          histos.fill(HIST("ROFbyROF/nPV_00x10_nearbyByFT0C"), vAmpFT0CperColl[k + 1], vTracksITS567perColl[k]);
+          histos.fill(HIST("ROFbyROF/nPV_00x10_thisFT0C"), vAmpFT0CperColl[k], vTracksITS567perColl[k]);
+        }
+
+        if (vCollRofId[k - 1] < vCollRofId[k] - 1 /* prev coll is far */ && vCollRofId[k + 1] == vCollRofId[k] + 1 && vCollRofId[k + 2] > vCollRofId[k] + 2) // 0x10
+        {
+          // sub-ROFs:
+          if (vCollRofSubId[k + 1] == 2 && vCollRofSubId[k] == 0)
+            histos.fill(HIST("ROFbyROF/nPV_000_y00_00x_0"), vTracksITS567perColl[k + 1], vTracksITS567perColl[k]);
+          if (vCollRofSubId[k + 1] == 1 && vCollRofSubId[k] == 0)
+            histos.fill(HIST("ROFbyROF/nPV_000_y00_0x0_0"), vTracksITS567perColl[k + 1], vTracksITS567perColl[k]);
+          if (vCollRofSubId[k + 1] == 0 && vCollRofSubId[k] == 0)
+            histos.fill(HIST("ROFbyROF/nPV_000_y00_x00_0"), vTracksITS567perColl[k + 1], vTracksITS567perColl[k]);
+
+          if (vCollRofSubId[k + 1] == 2 && vCollRofSubId[k] == 1)
+            histos.fill(HIST("ROFbyROF/nPV_000_0y0_00x_0"), vTracksITS567perColl[k + 1], vTracksITS567perColl[k]);
+          if (vCollRofSubId[k + 1] == 1 && vCollRofSubId[k] == 1)
+            histos.fill(HIST("ROFbyROF/nPV_000_0y0_0x0_0"), vTracksITS567perColl[k + 1], vTracksITS567perColl[k]);
+          if (vCollRofSubId[k + 1] == 0 && vCollRofSubId[k] == 1)
+            histos.fill(HIST("ROFbyROF/nPV_000_0y0_x00_0"), vTracksITS567perColl[k + 1], vTracksITS567perColl[k]);
+
+          if (vCollRofSubId[k + 1] == 2 && vCollRofSubId[k] == 2)
+            histos.fill(HIST("ROFbyROF/nPV_000_00y_00x_0"), vTracksITS567perColl[k + 1], vTracksITS567perColl[k]);
+          if (vCollRofSubId[k + 1] == 1 && vCollRofSubId[k] == 2)
+            histos.fill(HIST("ROFbyROF/nPV_000_00y_0x0_0"), vTracksITS567perColl[k + 1], vTracksITS567perColl[k]);
+          if (vCollRofSubId[k + 1] == 0 && vCollRofSubId[k] == 2)
+            histos.fill(HIST("ROFbyROF/nPV_000_00y_x00_0"), vTracksITS567perColl[k + 1], vTracksITS567perColl[k]);
+        }
+
+        if (vCollRofId[k - 1] < vCollRofId[k] - 2 /* prev coll is far */ && vCollRofId[k + 1] == vCollRofId[k] + 2 && vCollRofId[k + 2] > vCollRofId[k] + 2) // 00x01
+        {
+          histos.fill(HIST("ROFbyROF/nPV_00x01"), vTracksITS567perColl[k + 1], vTracksITS567perColl[k]);
+          histos.fill(HIST("ROFbyROF/nPV_00x01_nearbyByFT0C"), vAmpFT0CperColl[k + 1], vTracksITS567perColl[k]);
+          histos.fill(HIST("ROFbyROF/nPV_00x01_thisFT0C"), vAmpFT0CperColl[k], vTracksITS567perColl[k]);
+        }
+      }
+
+      // 2 colls
+      if (vCombCond[k] && vCombCond[k - 1] && vCombCond[k - 2]) {
+        if (vCollRofId[k - 2] == vCollRofId[k] - 2 && vCollRofId[k - 1] == vCollRofId[k] - 1 && vCollRofId[k + 1] > vCollRofId[k] + 2) // 11x00
+          histos.fill(HIST("ROFbyROF/nPV_11x00"), vTracksITS567perColl[k - 1], vTracksITS567perColl[k]);
+      }
+
+      if (vCombCond[k] && vCombCond[k - 1] && vCombCond[k + 1]) {
+        if (vCollRofId[k - 2] < vCollRofId[k] - 2 && vCollRofId[k - 1] == vCollRofId[k] - 1 && vCollRofId[k + 1] == vCollRofId[k] + 1 && vCollRofId[k + 2] > vCollRofId[k] + 2) // 01x10
+          histos.fill(HIST("ROFbyROF/nPV_01x10"), vTracksITS567perColl[k - 1], vTracksITS567perColl[k]);
+      }
+
+      if (vCombCond[k] && vCombCond[k + 1] && vCombCond[k + 2]) {
+        if (vCollRofId[k - 1] < vCollRofId[k] - 2 && vCollRofId[k + 1] == vCollRofId[k] + 1 && vCollRofId[k + 2] == vCollRofId[k] + 2) // 00x11
+          histos.fill(HIST("ROFbyROF/nPV_00x11"), vTracksITS567perColl[k + 1], vTracksITS567perColl[k]);
+      }
+
+      // many colls around
+      // histos.add("ROFbyROF/nPV_11x11", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 8000 * k}});
     }
 
     // save indices of collisions in time range for occupancy calculation
@@ -561,10 +618,6 @@ struct RofOccupancyQaTask {
     for (auto& col : cols) {
       int32_t colIndex = col.globalIndex();
       int64_t foundGlobalBC = vFoundGlobalBC[colIndex];
-
-      auto bc = bcs.iteratorAt(vFoundBCindex[colIndex]);
-      if (bc.has_foundFT0())
-        vAmpFT0CperColl[colIndex] = bc.foundFT0().sumAmpC();
 
       // int bcInTF = (foundGlobalBC - bcSOR) % nBCsPerTF;
       // int bcInITSROF = (foundGlobalBC + 3564 - rofOffset) % rofLength;
@@ -676,8 +729,8 @@ struct RofOccupancyQaTask {
 
       // QA:
       if (vAmpFT0CperColl[colIndex] > 5000) {
-        histos.get<TH2>(HIST("hThisEvITStr_vs_vZ"))->Fill(vZ, vTracksITS567perColl[colIndex]);
-        histos.get<TH2>(HIST("hThisEvITSTPCtr_vs_vZ"))->Fill(vZ, vTracksITSTPCperColl[colIndex]);
+        histos.fill(HIST("hThisEvITStr_vs_vZ"), vZ, vTracksITS567perColl[colIndex]);
+        histos.fill(HIST("hThisEvITSTPCtr_vs_vZ"), vZ, vTracksITSTPCperColl[colIndex]);
       }
 
       // ### in-ROF occupancy
@@ -685,7 +738,7 @@ struct RofOccupancyQaTask {
       // int bcInTF = (vFoundGlobalBC[colIndex] - bcSOR) % nBCsPerTF;
       int bcInITSROF = (vFoundGlobalBC[colIndex] + 3564 - rofOffset) % rofLength;
       int rofIdInTF = (vFoundGlobalBC[colIndex] + 3564 - rofOffset) / rofLength;
-      auto bc = bcs.iteratorAt(vFoundBCindex[colIndex]);
+      // auto bc = bcs.iteratorAt(vFoundBCindex[colIndex]);
       // LOGP(info, "#### starting new coll: bc={} bcInTF={} bcInITSROF={} rofId={};  noROFborder={};   rofOffset={} rofLength={}", vFoundGlobalBC[colIndex], bcInTF, bcInITSROF, rofId, bc.selection_bit(kNoITSROFrameBorder), rofOffset, rofLength);
       // LOGP(info, "#### starting new coll: bcInTF={} bcInITSROF={} rofIdInTF={};  noROFborder={},  vZ={} mult={};   rofOffset={} rofLength={}", bcInTF, bcInITSROF, rofIdInTF, bc.selection_bit(kNoITSROFrameBorder), vZ, vTracksITS567perColl[colIndex], rofOffset, rofLength);
 
@@ -717,8 +770,6 @@ struct RofOccupancyQaTask {
         nSumAmplFT0CforRofVetoStrict += vAmpFT0CperColl[thisColIndex];
         vNumCollinROF[colIndex]++;
         vInROFcollIndex[colIndex] = thisBcInITSROF > bcInITSROF ? 0 : 1; // if colIndex is for the first coll in ROF => inROFindex=0, otherwise =1
-        if (fabs(vCollVz[thisColIndex]) < 10)
-          vNumCollinROFinVz10[colIndex]++;
 
         // if (vTracksITS567perColl[thisColIndex] > confNtracksCutVetoOnCollInROF)
         // nITS567tracksForRofVetoStandard += vTracksITS567perColl[thisColIndex];
@@ -737,18 +788,18 @@ struct RofOccupancyQaTask {
             nArrITS567tracksForRofVetoOnCloseVz[i]++;
         }
 
-        if (fabs(vZ) < 8.) {
-          histos.get<TH1>(HIST("hDeltaVz"))->Fill(vCollVz[thisColIndex] - vZ);
+        if (fabs(vZ) < 10) {
+          histos.fill(HIST("hDeltaVz"), vCollVz[thisColIndex] - vZ);
           if (vTracksITS567perColl[colIndex] >= 100 && vTracksITS567perColl[thisColIndex] < 100)
-            histos.get<TH1>(HIST("hDeltaVzGivenCollAbove100NearbyBelow100"))->Fill(vCollVz[thisColIndex] - vZ);
+            histos.fill(HIST("hDeltaVzGivenCollAbove100NearbyBelow100"), vCollVz[thisColIndex] - vZ);
           if (vTracksITS567perColl[colIndex] <= 100 && vTracksITS567perColl[thisColIndex] > 100)
-            histos.get<TH1>(HIST("hDeltaVzGivenCollBelow100NearbyAbove100"))->Fill(vCollVz[thisColIndex] - vZ);
+            histos.fill(HIST("hDeltaVzGivenCollBelow100NearbyAbove100"), vCollVz[thisColIndex] - vZ);
           if (vTracksITS567perColl[colIndex] > 20 && vTracksITS567perColl[thisColIndex] > 20)
-            histos.get<TH1>(HIST("hDeltaVzAfterCuts"))->Fill(vCollVz[thisColIndex] - vZ);
-          if (bc.selection_bit(kIsTriggerTVX) && bc.selection_bit(kNoTimeFrameBorder) && bc.selection_bit(kNoITSROFrameBorder))
-            histos.get<TH1>(HIST("hDeltaVzAfterTFandROFborderCuts"))->Fill(vCollVz[thisColIndex] - vZ);
-          if (vTracksITS567perColl[colIndex] > 20 && vTracksITS567perColl[thisColIndex] > 20 && bc.selection_bit(kIsTriggerTVX) && bc.selection_bit(kNoTimeFrameBorder) && bc.selection_bit(kNoITSROFrameBorder))
-            histos.get<TH1>(HIST("hDeltaVzAfterAllCuts"))->Fill(vCollVz[thisColIndex] - vZ);
+            histos.fill(HIST("hDeltaVzAfterCuts"), vCollVz[thisColIndex] - vZ);
+          if (col.sel8()) // bc.selection_bit(kIsTriggerTVX) && bc.selection_bit(kNoTimeFrameBorder) && bc.selection_bit(kNoITSROFrameBorder))
+            histos.fill(HIST("hDeltaVzAfterTFandROFborderCuts"), vCollVz[thisColIndex] - vZ);
+          if (vTracksITS567perColl[colIndex] > 20 && vTracksITS567perColl[thisColIndex] > 20 && col.sel8()) // bc.selection_bit(kIsTriggerTVX) && bc.selection_bit(kNoTimeFrameBorder) && bc.selection_bit(kNoITSROFrameBorder))
+            histos.fill(HIST("hDeltaVzAfterAllCuts"), vCollVz[thisColIndex] - vZ);
         }
       }
       vNumTracksITS567inROF[colIndex] = nITS567tracksForRofVetoStrict; // occupancy in ROF (excluding a given collision)
@@ -782,6 +833,22 @@ struct RofOccupancyQaTask {
       for (uint32_t iCol = 0; iCol < vAssocToThisCol.size(); iCol++) {
         int thisColIndex = vAssocToThisCol[iCol];
         float dt = vCollsTimeDeltaWrtGivenColl[iCol] / 1e3; // ns -> us
+        histos.fill(HIST("hDeltaTime"), dt);
+        if (vTracksITS567perColl[colIndex] > 50 && vTracksITS567perColl[thisColIndex] > 50)
+          histos.fill(HIST("hDeltaTimeAboveNtracksCut"), dt);
+
+        if (fabs(vCollVz[colIndex]) < 10 && fabs(vCollVz[thisColIndex]) < 10)
+          histos.fill(HIST("hDeltaTime_vZ10cm"), dt);
+
+        if (vIsSel8[colIndex] && vIsSel8[thisColIndex])
+          histos.fill(HIST("hDeltaTime_sel8"), dt);
+
+        if (fabs(vCollVz[colIndex]) < 10 && vIsSel8[colIndex] && fabs(vCollVz[thisColIndex]) < 10 && vIsSel8[thisColIndex]) {
+          histos.fill(HIST("hDeltaTime_sel8_vZ10cm"), dt);
+          if (vTracksITS567perColl[colIndex] > 50 && vTracksITS567perColl[thisColIndex] > 50)
+            histos.fill(HIST("hDeltaTimeAboveNtracksCut_sel8_vZ10cm"), dt);
+        }
+
         float wOccup = 1.;
         if (confUseWeightsForOccupancyVariable) {
           // weighted occupancy
@@ -797,7 +864,7 @@ struct RofOccupancyQaTask {
           else if (dt >= 40 && dt < 100) // collisions from the distant future
             wOccup = -0.4 / 60 * dt + 0.6 + 0.8 / 3;
           if (wOccup > 0)
-            histos.get<TH1>(HIST("hOccupancyWeights"))->Fill(dt, wOccup);
+            histos.fill(HIST("hOccupancyWeights"), dt, wOccup);
         }
         nITS567tracksInFullTimeWindow += wOccup * vTracksITS567perColl[thisColIndex];
         sumAmpFT0CInFullTimeWindow += wOccup * vAmpFT0CperColl[thisColIndex];
@@ -816,13 +883,13 @@ struct RofOccupancyQaTask {
         } else if (dt > -4.0 && dt <= -2.0) { // us, strict veto to suppress fake ITS-TPC matches more
           if (vTracksITS567perColl[thisColIndex] > confNtracksCutVetoOnCollInTimeRange / 5)
             nITS567tracksForVetoStandard += vTracksITS567perColl[thisColIndex];
-        } else if (fabs(dt) < 8 + fabs(vZ) / driftV) { // loose veto, 8 us corresponds to maximum possible |vZ|, which is ~20 cm
+        } else if (fabs(dt) < 10 + fabs(vZ) / driftV) { // loose veto, 8 us corresponds to maximum possible |vZ|, which is ~20 cm
           // counting number of other collisions with mult above threshold
           if (vTracksITS567perColl[thisColIndex] > confNtracksCutVetoOnCollInTimeRange)
             nITS567tracksForVetoStandard += vTracksITS567perColl[thisColIndex];
         }
         // vZ-dependent time cut to avoid collinear tracks from other collisions (experimental)
-        if (fabs(dt) < 8 + fabs(vZ) / driftV) {
+        if (fabs(dt) < 10 + fabs(vZ) / driftV) {
           if (dt < 0) {
             // check distance between given vZ and (moving in two directions) vZ of drifting tracks from past collisions
             if ((fabs(vCollVz[thisColIndex] - fabs(dt) * driftV - vZ) < confEpsilonDistanceForVzDependentVetoTPC) ||
@@ -831,9 +898,9 @@ struct RofOccupancyQaTask {
 
             // FOR QA:
             if (fabs(vCollVz[thisColIndex] - fabs(dt) * driftV - vZ) < confEpsilonDistanceForVzDependentVetoTPC)
-              histos.get<TH2>(HIST("hDeltaVzVsDeltaTime1"))->Fill(vCollVz[thisColIndex] - fabs(dt) * driftV - vZ, dt);
+              histos.fill(HIST("hDeltaVzVsDeltaTime1"), vCollVz[thisColIndex] - fabs(dt) * driftV - vZ, dt);
             if (fabs(vCollVz[thisColIndex] + fabs(dt) * driftV - vZ) < confEpsilonDistanceForVzDependentVetoTPC)
-              histos.get<TH2>(HIST("hDeltaVzVsDeltaTime2"))->Fill(vCollVz[thisColIndex] + fabs(dt) * driftV - vZ, dt);
+              histos.fill(HIST("hDeltaVzVsDeltaTime2"), vCollVz[thisColIndex] + fabs(dt) * driftV - vZ, dt);
 
           } else { // dt>0
             // check distance between drifted vZ of given collision (in two directions) and vZ of future collisions
@@ -843,9 +910,9 @@ struct RofOccupancyQaTask {
 
             // FOR QA:
             if (fabs(vZ - dt * driftV - vCollVz[thisColIndex]) < confEpsilonDistanceForVzDependentVetoTPC)
-              histos.get<TH2>(HIST("hDeltaVzVsDeltaTime3"))->Fill(vZ - dt * driftV - vCollVz[thisColIndex], dt);
+              histos.fill(HIST("hDeltaVzVsDeltaTime3"), vZ - dt * driftV - vCollVz[thisColIndex], dt);
             if (fabs(vZ + dt * driftV - vCollVz[thisColIndex]) < confEpsilonDistanceForVzDependentVetoTPC)
-              histos.get<TH2>(HIST("hDeltaVzVsDeltaTime4"))->Fill(vZ + dt * driftV - vCollVz[thisColIndex], dt);
+              histos.fill(HIST("hDeltaVzVsDeltaTime4"), vZ + dt * driftV - vCollVz[thisColIndex], dt);
           }
         }
       }
@@ -864,121 +931,177 @@ struct RofOccupancyQaTask {
 
     for (auto& col : cols) {
       int32_t colIndex = col.globalIndex();
-      int32_t foundBC = vFoundBCindex[colIndex];
-      auto bc = bcs.iteratorAt(foundBC);
-      // int32_t foundFT0 = bc.foundFT0Id();
-      // int32_t foundFV0 = bc.foundFV0Id();
-      // int32_t foundFDD = bc.foundFDDId();
-      // int32_t foundZDC = bc.foundZDCId();
+      bool sel8 = col.sel8(); // bc.selection_bit(kIsTriggerTVX) && bc.selection_bit(kNoTimeFrameBorder) && bc.selection_bit(kNoITSROFrameBorder);
 
-      // // compare zVtx from FT0 and from PV
-      // bool isGoodZvtxFT0vsPV = bc.has_foundFT0() ? fabs(bc.foundFT0().posZ() - col.posZ()) < maxDiffZvtxFT0vsPV : 0;
+      float vZ = vCollVz[colIndex];
+      int occTracks = col.trackOccupancyInTimeRange();
+      float occFT0C = col.ft0cOccupancyInTimeRange();
 
-      // // copy alias decisions from bcsel table
-      // uint32_t alias = bc.alias_raw();
-
-      // // copy selection decisions from bcsel table
-      // uint64_t selection = bc.selection_raw();
-      // selection |= vCollisionsPerBc[foundBC] <= 1 ? BIT(kNoSameBunchPileup) : 0;
-      // selection |= vIsVertexITSTPC[colIndex] ? BIT(kIsVertexITSTPC) : 0;
-      // selection |= vIsVertexTOFmatched[colIndex] ? BIT(kIsVertexTOFmatched) : 0;
-      // selection |= vIsVertexTRDmatched[colIndex] ? BIT(kIsVertexTRDmatched) : 0;
-      // selection |= isGoodZvtxFT0vsPV ? BIT(kIsGoodZvtxFT0vsPV) : 0;
-
-      // // selection bits based on occupancy time pattern
-      // selection |= vNoCollInTimeRangeNarrow[colIndex] ? BIT(kNoCollInTimeRangeNarrow) : 0;
-      // selection |= vNoCollInTimeRangeStrict[colIndex] ? BIT(kNoCollInTimeRangeStrict) : 0;
-      // selection |= vNoHighMultCollInTimeRange[colIndex] ? BIT(kNoCollInTimeRangeStandard) : 0;
-      // selection |= vNoCollInVzDependentTimeRange[colIndex] ? BIT(kNoCollInTimeRangeVzDependent) : 0;
-
-      // selection |= vNoCollInSameRofStrict[colIndex] ? BIT(kNoCollInRofStrict) : 0;
-      // selection |= (vNoCollInSameRofStandard[colIndex] && vNoCollInSameRofWithCloseVz[colIndex]) ? BIT(kNoCollInRofStandard) : 0;
-      // selection |= vNoCollInSameRofWithCloseVz[colIndex] ? BIT(kNoCollInRofWithCloseVz) : 0;
-
-      // apply int7-like selections
-      // bool sel7 = 0;
-
-      // TODO apply other cuts for sel8
-      // TODO introduce sel1 etc?
-      // TODO introduce array of sel[0]... sel[8] or similar?
-      bool sel8 = bc.selection_bit(kIsTriggerTVX) && bc.selection_bit(kNoTimeFrameBorder) && bc.selection_bit(kNoITSROFrameBorder);
-
-      // fill counters
-      histos.get<TH1>(HIST("hColCounterAll"))->Fill(Form("%d", bc.runNumber()), 1);
-      if (bc.selection_bit(kIsTriggerTVX)) {
-        histos.get<TH1>(HIST("hColCounterTVX"))->Fill(Form("%d", bc.runNumber()), 1);
-      }
       if (sel8) {
-        histos.get<TH1>(HIST("hColCounterAcc"))->Fill(Form("%d", bc.runNumber()), 1);
+        // histos.fill(HIST("hColCounterAcc"),Form("%d", bc.runNumber()), 1);
         if (vInROFcollIndex[colIndex] == 0)
-          histos.get<TH1>(HIST("hNcollPerROF"))->Fill(vNumCollinROF[colIndex]);
+          histos.fill(HIST("hNcollPerROF"), vNumCollinROF[colIndex]);
+
+        histos.fill(HIST("hVz"), vZ);
+
+        int nPV = vTracksITS567perColl[colIndex];
+        float ft0C = vAmpFT0CperColl[colIndex];
+
+        // ROF-by-ROF
+        if (fabs(vZ) < 8) {
+          histos.fill(HIST("ROFbyROF/nPV_vs_ROFid"), nPV, vCollRofIdPerOrbit[colIndex]);
+          histos.fill(HIST("ROFbyROF/nPV_vs_subROFid"), nPV, vCollRofSubIdPerOrbit[colIndex]);
+
+          histos.fill(HIST("ROFbyROF/FT0C_vs_ROFid"), ft0C, vCollRofIdPerOrbit[colIndex]);
+          histos.fill(HIST("ROFbyROF/FT0C_vs_subROFid"), ft0C, vCollRofSubIdPerOrbit[colIndex]);
+        }
+        // vs occupancy
+        if (occTracks >= 0 && fabs(vZ) < 8) {
+          histos.fill(HIST("nPV_vs_occupancyByTracks/sel8"), nPV, occTracks);
+          if (col.selection_bit(kNoCollInTimeRangeNarrow))
+            histos.fill(HIST("nPV_vs_occupancyByTracks/NoCollInTimeRangeNarrow"), nPV, occTracks);
+          if (col.selection_bit(kNoCollInTimeRangeStrict))
+            histos.fill(HIST("nPV_vs_occupancyByTracks/NoCollInTimeRangeStrict"), nPV, occTracks);
+          if (col.selection_bit(kNoCollInTimeRangeStandard))
+            histos.fill(HIST("nPV_vs_occupancyByTracks/NoCollInTimeRangeStandard"), nPV, occTracks);
+          if (col.selection_bit(kNoCollInTimeRangeVzDependent))
+            histos.fill(HIST("nPV_vs_occupancyByTracks/NoCollInTimeRangeVzDependent"), nPV, occTracks);
+          if (col.selection_bit(kNoCollInRofStrict))
+            histos.fill(HIST("nPV_vs_occupancyByTracks/NoCollInRofStrict"), nPV, occTracks);
+          if (col.selection_bit(kNoCollInRofStandard))
+            histos.fill(HIST("nPV_vs_occupancyByTracks/NoCollInRofStandard"), nPV, occTracks);
+          if (col.selection_bit(kNoCollInTimeRangeStandard) && col.selection_bit(kNoCollInRofStandard))
+            histos.fill(HIST("nPV_vs_occupancyByTracks/NoCollInTimeAndRofStandard"), nPV, occTracks);
+          if (col.selection_bit(kNoCollInTimeRangeStrict) && col.selection_bit(kNoCollInRofStrict))
+            histos.fill(HIST("nPV_vs_occupancyByTracks/NoCollInTimeAndRofStrict"), nPV, occTracks);
+          if (col.selection_bit(kNoCollInTimeRangeStrict) && col.selection_bit(kNoCollInRofStrict) && fabs(vZ) < 5)
+            histos.fill(HIST("nPV_vs_occupancyByTracks/NoCollInTimeAndRofStrict_vZ_5cm"), nPV, occTracks);
+        }
+        if (occFT0C >= 0 && fabs(vZ) < 8) {
+          histos.fill(HIST("nPV_vs_occupancyByFT0C/sel8"), nPV, occFT0C);
+          if (col.selection_bit(kNoCollInTimeRangeNarrow))
+            histos.fill(HIST("nPV_vs_occupancyByFT0C/NoCollInTimeRangeNarrow"), nPV, occFT0C);
+          if (col.selection_bit(kNoCollInTimeRangeStrict))
+            histos.fill(HIST("nPV_vs_occupancyByFT0C/NoCollInTimeRangeStrict"), nPV, occFT0C);
+          if (col.selection_bit(kNoCollInTimeRangeStandard))
+            histos.fill(HIST("nPV_vs_occupancyByFT0C/NoCollInTimeRangeStandard"), nPV, occFT0C);
+          if (col.selection_bit(kNoCollInTimeRangeVzDependent))
+            histos.fill(HIST("nPV_vs_occupancyByFT0C/NoCollInTimeRangeVzDependent"), nPV, occFT0C);
+          if (col.selection_bit(kNoCollInRofStrict))
+            histos.fill(HIST("nPV_vs_occupancyByFT0C/NoCollInRofStrict"), nPV, occFT0C);
+          if (col.selection_bit(kNoCollInRofStandard))
+            histos.fill(HIST("nPV_vs_occupancyByFT0C/NoCollInRofStandard"), nPV, occFT0C);
+          if (col.selection_bit(kNoCollInTimeRangeStandard) && col.selection_bit(kNoCollInRofStandard))
+            histos.fill(HIST("nPV_vs_occupancyByFT0C/NoCollInTimeAndRofStandard"), nPV, occFT0C);
+          if (col.selection_bit(kNoCollInTimeRangeStrict) && col.selection_bit(kNoCollInRofStrict))
+            histos.fill(HIST("nPV_vs_occupancyByFT0C/NoCollInTimeAndRofStrict"), nPV, occFT0C);
+          if (col.selection_bit(kNoCollInTimeRangeStrict) && col.selection_bit(kNoCollInRofStrict) && fabs(vZ) < 5)
+            histos.fill(HIST("nPV_vs_occupancyByFT0C/NoCollInTimeAndRofStrict_vZ_5cm"), nPV, occFT0C);
+        }
       }
 
-      if (col.trackOccupancyInTimeRange() >= 0)
-        histos.get<TH1>(HIST("hOccupancyByTracks_CROSSCHECK"))->Fill(col.trackOccupancyInTimeRange());
-      if (col.ft0cOccupancyInTimeRange() >= 0)
-        histos.get<TH1>(HIST("hOccupancyByFT0C_CROSSCHECK"))->Fill(col.ft0cOccupancyInTimeRange());
+      if (occTracks >= 0)
+        histos.fill(HIST("hOccupancyByTracks_CROSSCHECK"), occTracks);
+      if (occFT0C >= 0)
+        histos.fill(HIST("hOccupancyByFT0C_CROSSCHECK"), occFT0C);
 
       if (vNumTracksITS567inFullTimeWin[colIndex] >= 0) {
-        histos.get<TH1>(HIST("hOccupancyByTracks"))->Fill(vNumTracksITS567inFullTimeWin[colIndex]);
-        histos.get<TH1>(HIST("hOccupancyByFT0C"))->Fill(vSumAmpFT0CinFullTimeWin[colIndex]);
+        histos.fill(HIST("hOccupancyByTracks"), vNumTracksITS567inFullTimeWin[colIndex]);
+        histos.fill(HIST("hOccupancyByFT0C"), vSumAmpFT0CinFullTimeWin[colIndex]);
 
-        histos.get<TH1>(HIST("hOccupancyByTrInROF"))->Fill(vNumTracksITS567inROF[colIndex]);
-        histos.get<TH2>(HIST("hOccupancyByFT0C_vs_ByTracks"))->Fill(vNumTracksITS567inFullTimeWin[colIndex], vSumAmpFT0CinFullTimeWin[colIndex]);
-        histos.get<TH2>(HIST("hThisEvITSTr_vs_ThisEvFT0C"))->Fill(vAmpFT0CperColl[colIndex], vTracksITS567perColl[colIndex]);
-        histos.get<TH2>(HIST("hThisEvITSTPCTr_vs_ThisEvITStr"))->Fill(vTracksITS567perColl[colIndex], vTracksITSTPCperColl[colIndex]);
+        histos.fill(HIST("hOccupancyByTrInROF"), vNumTracksITS567inROF[colIndex]);
+        histos.fill(HIST("hOccupancyByFT0C_vs_ByTracks"), vNumTracksITS567inFullTimeWin[colIndex], vSumAmpFT0CinFullTimeWin[colIndex]);
+        histos.fill(HIST("hThisEvITSTr_vs_ThisEvFT0C/all"), vAmpFT0CperColl[colIndex], vTracksITS567perColl[colIndex]);
+        histos.fill(HIST("hThisEvITSTPCTr_vs_ThisEvITStr/all"), vTracksITS567perColl[colIndex], vTracksITSTPCperColl[colIndex]);
 
-        if (sel8 && fabs(col.posZ()) < 10) {
-          histos.get<TH2>(HIST("hOccupancyByFT0C_vs_ByTracks_vZ_TF_ROF_border_cuts"))->Fill(vNumTracksITS567inFullTimeWin[colIndex], vSumAmpFT0CinFullTimeWin[colIndex]);
+        if (sel8 && fabs(col.posZ()) < 8) {
+          histos.fill(HIST("hOccupancyByFT0C_vs_ByTracks_vZ_TF_ROF_border_cuts"), vNumTracksITS567inFullTimeWin[colIndex], vSumAmpFT0CinFullTimeWin[colIndex]);
 
           // if (vAmpFT0CperColl[colIndex] > 5000 && vAmpFT0CperColl[colIndex] < 10000) {
           // if (vAmpFT0CperColl[colIndex] > 500) {
           if (vAmpFT0CperColl[colIndex] > 0) { // 50) {
 
-            histos.get<TH2>(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyByFT0C"))->Fill(vSumAmpFT0CinFullTimeWin[colIndex], vTracksITS567perColl[colIndex]);
-            histos.get<TH2>(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTPCTr_vs_occupancyByFT0C"))->Fill(vSumAmpFT0CinFullTimeWin[colIndex], vTracksITSTPCperColl[colIndex]);
-            histos.get<TH2>(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyByTracks"))->Fill(vNumTracksITS567inFullTimeWin[colIndex], vTracksITS567perColl[colIndex]);
-            histos.get<TH2>(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTPCTr_vs_occupancyByTracks"))->Fill(vNumTracksITS567inFullTimeWin[colIndex], vTracksITSTPCperColl[colIndex]);
+            histos.fill(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyByFT0C"), vSumAmpFT0CinFullTimeWin[colIndex], vTracksITS567perColl[colIndex]);
+            histos.fill(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTPCTr_vs_occupancyByFT0C"), vSumAmpFT0CinFullTimeWin[colIndex], vTracksITSTPCperColl[colIndex]);
+            histos.fill(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyByTracks"), vNumTracksITS567inFullTimeWin[colIndex], vTracksITS567perColl[colIndex]);
+            histos.fill(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTPCTr_vs_occupancyByTracks"), vNumTracksITS567inFullTimeWin[colIndex], vTracksITSTPCperColl[colIndex]);
 
-            histos.get<TH2>(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyInROF"))->Fill(vNumTracksITS567inROF[colIndex], vTracksITS567perColl[colIndex]);
-            histos.get<TH2>(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTPCTr_vs_occupancyInROF"))->Fill(vNumTracksITS567inROF[colIndex], vTracksITSTPCperColl[colIndex]);
+            histos.fill(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyInROF"), vNumTracksITS567inROF[colIndex], vTracksITS567perColl[colIndex]);
+            histos.fill(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTPCTr_vs_occupancyInROF"), vNumTracksITS567inROF[colIndex], vTracksITSTPCperColl[colIndex]);
 
             if (vNumTracksITS567inROF[colIndex] > 0) {
-              histos.get<TH2>(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyInROF_HasNeighbours"))->Fill(vNumTracksITS567inROF[colIndex], vTracksITS567perColl[colIndex]);
-              histos.get<TH2>(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyFT0CInROF_HasNeighbours"))->Fill(vSumAmpFT0CinROF[colIndex], vTracksITS567perColl[colIndex]);
+              histos.fill(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyInROF_HasNeighbours"), vNumTracksITS567inROF[colIndex], vTracksITS567perColl[colIndex]);
+              histos.fill(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyFT0CInROF_HasNeighbours"), vSumAmpFT0CinROF[colIndex], vTracksITS567perColl[colIndex]);
 
-              histos.get<TH2>(HIST("vZ_TF_ROF_border_cuts/hThisEvFT0C_vs_occupancyFT0CInROF_HasNeighbours"))->Fill(vSumAmpFT0CinROF[colIndex], vAmpFT0CperColl[colIndex]);
+              histos.fill(HIST("vZ_TF_ROF_border_cuts/hThisEvFT0C_vs_occupancyFT0CInROF_HasNeighbours"), vSumAmpFT0CinROF[colIndex], vAmpFT0CperColl[colIndex]);
             }
 
+            // two collisions in one ROF (both with |vZ|<10 cm)
             if (vNumCollinROF[colIndex] == 2 && vNumCollinROFinVz10[colIndex] == 2 && vInROFcollIndex[colIndex] == 1) {
-              histos.get<TH2>(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyInROF_2coll"))->Fill(vNumTracksITS567inROF[colIndex], vTracksITS567perColl[colIndex]);
-              histos.get<TH2>(HIST("vZ_TF_ROF_border_cuts/hThisEvFT0C_vs_occupancyFT0CInROF_2coll"))->Fill(vSumAmpFT0CinROF[colIndex], vAmpFT0CperColl[colIndex]);
+              histos.fill(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyInROF_2coll"), vNumTracksITS567inROF[colIndex], vTracksITS567perColl[colIndex]);
+              histos.fill(HIST("vZ_TF_ROF_border_cuts/hThisEvFT0C_vs_occupancyFT0CInROF_2coll"), vSumAmpFT0CinROF[colIndex], vAmpFT0CperColl[colIndex]);
 
               if (vNumTracksITS567inROF[colIndex] > vTracksITS567perColl[colIndex]) {
-                histos.get<TH2>(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyInROF_2coll_XaxisWins"))->Fill(vNumTracksITS567inROF[colIndex], vTracksITS567perColl[colIndex]);
+                histos.fill(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyInROF_2coll_XaxisWins"), vNumTracksITS567inROF[colIndex], vTracksITS567perColl[colIndex]);
                 if (vNumTracksITS567inROF[colIndex] > 0)
-                  histos.get<TH2>(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyInROF_2coll_XaxisWins_RatioV2toV1"))->Fill(vNumTracksITS567inROF[colIndex], 1.0 * vTracksITS567perColl[colIndex] / vNumTracksITS567inROF[colIndex]);
+                  histos.fill(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyInROF_2coll_XaxisWins_RatioV2toV1"), vNumTracksITS567inROF[colIndex], 1.0 * vTracksITS567perColl[colIndex] / vNumTracksITS567inROF[colIndex]);
+
               } else {
-                histos.get<TH2>(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyInROF_2coll_XaxisWins"))->Fill(vTracksITS567perColl[colIndex], vNumTracksITS567inROF[colIndex]);
+                histos.fill(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyInROF_2coll_XaxisWins"), vTracksITS567perColl[colIndex], vNumTracksITS567inROF[colIndex]);
+
+                histos.fill(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTr_allOccup_2coll_inROF"), vTracksITS567perColl[colIndex]);
+                if (occTracks < 500)
+                  histos.fill(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTr_lowOccup_2coll_inROF"), vTracksITS567perColl[colIndex]);
+                else if (occTracks > 1000)
+                  histos.fill(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTr_highOccup_2coll_inROF"), vTracksITS567perColl[colIndex]);
+
                 if (vTracksITS567perColl[colIndex] > 0)
-                  histos.get<TH2>(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyInROF_2coll_XaxisWins_RatioV2toV1"))->Fill(vTracksITS567perColl[colIndex], 1.0 * vNumTracksITS567inROF[colIndex] / vTracksITS567perColl[colIndex]);
+                  histos.fill(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyInROF_2coll_XaxisWins_RatioV2toV1"), vTracksITS567perColl[colIndex], 1.0 * vNumTracksITS567inROF[colIndex] / vTracksITS567perColl[colIndex]);
               }
             }
+
+            // 3 or 4 collisions in one ROF
+            if (vNumCollinROF[colIndex] == 2 && vInROFcollIndex[colIndex] == 1)
+              histos.fill(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyInROF_2coll_noVzCutOnOtherVertices"), vNumTracksITS567inROF[colIndex], vTracksITS567perColl[colIndex]);
+            if (vNumCollinROF[colIndex] == 3 && vInROFcollIndex[colIndex] == 1)
+              histos.fill(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyInROF_3coll_noVzCutOnOtherVertices"), vNumTracksITS567inROF[colIndex], vTracksITS567perColl[colIndex]);
+            if (vNumCollinROF[colIndex] == 4 && vInROFcollIndex[colIndex] == 1)
+              histos.fill(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyInROF_4coll_noVzCutOnOtherVertices"), vNumTracksITS567inROF[colIndex], vTracksITS567perColl[colIndex]);
+
+            // now 1D histograms vs nCollInROF
+            if (vNumCollinROF[colIndex] == 1)
+              histos.fill(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTr_1coll_in_ROF"), vTracksITS567perColl[colIndex]);
+            if (vNumCollinROF[colIndex] == 2)
+              histos.fill(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTr_2coll_in_ROF"), vTracksITS567perColl[colIndex]);
+            if (vNumCollinROF[colIndex] == 3)
+              histos.fill(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTr_3coll_in_ROF"), vTracksITS567perColl[colIndex]);
+            if (vNumCollinROF[colIndex] == 4)
+              histos.fill(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTr_4coll_in_ROF"), vTracksITS567perColl[colIndex]);
+            if (vNumCollinROF[colIndex] >= 5)
+              histos.fill(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTr_5collOrMore_in_ROF"), vTracksITS567perColl[colIndex]);
+
             // compare with previous ROF
             if (colIndex - 1 >= 0) {
               if (vNumCollinROF[colIndex] == 1 && vNumCollinROFinVz10[colIndex] == 1 && vInROFcollIndex[colIndex] == 0 && vNumCollinROF[colIndex - 1] == 1 && vNumCollinROFinVz10[colIndex - 1] == 1 && vInROFcollIndex[colIndex - 1] == 0) {
-                histos.get<TH2>(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyInAnotherEarlierROF_1collPerROF"))->Fill(vTracksITS567perColl[colIndex - 1], vTracksITS567perColl[colIndex]);
+                histos.fill(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyInAnotherEarlierROF_1collPerROF"), vTracksITS567perColl[colIndex - 1], vTracksITS567perColl[colIndex]);
                 if (vROFidThisColl[colIndex] == vROFidThisColl[colIndex - 1] + 1) // one ROF right after the previous
                 {
-                  histos.get<TH2>(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyInPreviousROF_1collPerROF"))->Fill(vTracksITS567perColl[colIndex - 1], vTracksITS567perColl[colIndex]);
+                  histos.fill(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyInPreviousROF_1collPerROF"), vTracksITS567perColl[colIndex - 1], vTracksITS567perColl[colIndex]);
                   if (vTracksITS567perColl[colIndex - 1] > vTracksITS567perColl[colIndex]) {
-                    histos.get<TH2>(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyInPreviousROF_1collPerROF_XaxisWins"))->Fill(vTracksITS567perColl[colIndex - 1], vTracksITS567perColl[colIndex]);
+                    histos.fill(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyInPreviousROF_1collPerROF_XaxisWins"), vTracksITS567perColl[colIndex - 1], vTracksITS567perColl[colIndex]);
                     if (vTracksITS567perColl[colIndex - 1] > 0)
-                      histos.get<TH2>(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyInPreviousROF_1collPerROF_XaxisWins_RatioV2toV1"))->Fill(vTracksITS567perColl[colIndex - 1], 1.0 * vTracksITS567perColl[colIndex] / vTracksITS567perColl[colIndex - 1]);
+                      histos.fill(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyInPreviousROF_1collPerROF_XaxisWins_RatioV2toV1"), vTracksITS567perColl[colIndex - 1], 1.0 * vTracksITS567perColl[colIndex] / vTracksITS567perColl[colIndex - 1]);
                   } else {
-                    histos.get<TH2>(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyInPreviousROF_1collPerROF_XaxisWins"))->Fill(vTracksITS567perColl[colIndex], vTracksITS567perColl[colIndex - 1]);
+                    histos.fill(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyInPreviousROF_1collPerROF_XaxisWins"), vTracksITS567perColl[colIndex], vTracksITS567perColl[colIndex - 1]);
+
+                    histos.fill(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTr_allOccup_1collPerROF"), vTracksITS567perColl[colIndex]);
+                    if (occTracks < 500)
+                      histos.fill(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTr_lowOccup_1collPerROF"), vTracksITS567perColl[colIndex]);
+                    else if (occTracks > 1000)
+                      histos.fill(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTr_highOccup_1collPerROF"), vTracksITS567perColl[colIndex]);
+
                     if (vTracksITS567perColl[colIndex] > 0)
-                      histos.get<TH2>(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyInPreviousROF_1collPerROF_XaxisWins_RatioV2toV1"))->Fill(vTracksITS567perColl[colIndex], 1.0 * vTracksITS567perColl[colIndex - 1] / vTracksITS567perColl[colIndex]);
+                      histos.fill(HIST("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyInPreviousROF_1collPerROF_XaxisWins_RatioV2toV1"), vTracksITS567perColl[colIndex], 1.0 * vTracksITS567perColl[colIndex - 1] / vTracksITS567perColl[colIndex]);
                   }
                 }
               }
@@ -986,93 +1109,93 @@ struct RofOccupancyQaTask {
           }
 
           if (vNoCollInTimeRangeNarrow[colIndex])
-            histos.get<TH2>(HIST("hOccupancyByFT0C_vs_ByTracks_afterNarrowDeltaTimeCut"))->Fill(vNumTracksITS567inFullTimeWin[colIndex], vSumAmpFT0CinFullTimeWin[colIndex]);
+            histos.fill(HIST("hOccupancyByFT0C_vs_ByTracks_afterNarrowDeltaTimeCut"), vNumTracksITS567inFullTimeWin[colIndex], vSumAmpFT0CinFullTimeWin[colIndex]);
           if (vNoCollInTimeRangeStrict[colIndex])
-            histos.get<TH2>(HIST("hOccupancyByFT0C_vs_ByTracks_afterStrictDeltaTimeCut"))->Fill(vNumTracksITS567inFullTimeWin[colIndex], vSumAmpFT0CinFullTimeWin[colIndex]);
+            histos.fill(HIST("hOccupancyByFT0C_vs_ByTracks_afterStrictDeltaTimeCut"), vNumTracksITS567inFullTimeWin[colIndex], vSumAmpFT0CinFullTimeWin[colIndex]);
           if (vNoHighMultCollInTimeRange[colIndex])
-            histos.get<TH2>(HIST("hOccupancyByFT0C_vs_ByTracks_afterStandardDeltaTimeCut"))->Fill(vNumTracksITS567inFullTimeWin[colIndex], vSumAmpFT0CinFullTimeWin[colIndex]);
+            histos.fill(HIST("hOccupancyByFT0C_vs_ByTracks_afterStandardDeltaTimeCut"), vNumTracksITS567inFullTimeWin[colIndex], vSumAmpFT0CinFullTimeWin[colIndex]);
           if (vNoCollInVzDependentTimeRange[colIndex])
-            histos.get<TH2>(HIST("hOccupancyByFT0C_vs_ByTracks_afterVzDependentDeltaTimeCut"))->Fill(vNumTracksITS567inFullTimeWin[colIndex], vSumAmpFT0CinFullTimeWin[colIndex]);
+            histos.fill(HIST("hOccupancyByFT0C_vs_ByTracks_afterVzDependentDeltaTimeCut"), vNumTracksITS567inFullTimeWin[colIndex], vSumAmpFT0CinFullTimeWin[colIndex]);
 
           // same-event 2D correlations:
-          histos.get<TH2>(HIST("hThisEvITSTr_vs_ThisEvFT0C_vZ_TF_ROF_border_cuts"))->Fill(vAmpFT0CperColl[colIndex], vTracksITS567perColl[colIndex]);
+          histos.fill(HIST("hThisEvITSTr_vs_ThisEvFT0C/vZ_TF_ROF_border_cuts"), vAmpFT0CperColl[colIndex], vTracksITS567perColl[colIndex]);
 
           if (vNoCollInTimeRangeNarrow[colIndex])
-            histos.get<TH2>(HIST("hThisEvITSTr_vs_ThisEvFT0C_afterNarrowDeltaTimeCut"))->Fill(vAmpFT0CperColl[colIndex], vTracksITS567perColl[colIndex]);
+            histos.fill(HIST("hThisEvITSTr_vs_ThisEvFT0C/afterNarrowDeltaTimeCut"), vAmpFT0CperColl[colIndex], vTracksITS567perColl[colIndex]);
           if (vNoCollInTimeRangeStrict[colIndex])
-            histos.get<TH2>(HIST("hThisEvITSTr_vs_ThisEvFT0C_afterStrictDeltaTimeCut"))->Fill(vAmpFT0CperColl[colIndex], vTracksITS567perColl[colIndex]);
+            histos.fill(HIST("hThisEvITSTr_vs_ThisEvFT0C/afterStrictDeltaTimeCut"), vAmpFT0CperColl[colIndex], vTracksITS567perColl[colIndex]);
           if (vNoHighMultCollInTimeRange[colIndex])
-            histos.get<TH2>(HIST("hThisEvITSTr_vs_ThisEvFT0C_afterStandardDeltaTimeCut"))->Fill(vAmpFT0CperColl[colIndex], vTracksITS567perColl[colIndex]);
+            histos.fill(HIST("hThisEvITSTr_vs_ThisEvFT0C/afterStandardDeltaTimeCut"), vAmpFT0CperColl[colIndex], vTracksITS567perColl[colIndex]);
           if (vNoCollInVzDependentTimeRange[colIndex])
-            histos.get<TH2>(HIST("hThisEvITSTr_vs_ThisEvFT0C_afterVzDependentDeltaTimeCut"))->Fill(vAmpFT0CperColl[colIndex], vTracksITS567perColl[colIndex]);
+            histos.fill(HIST("hThisEvITSTr_vs_ThisEvFT0C/afterVzDependentDeltaTimeCut"), vAmpFT0CperColl[colIndex], vTracksITS567perColl[colIndex]);
 
           if (vNoCollInSameRofStrict[colIndex])
-            histos.get<TH2>(HIST("hThisEvITSTr_vs_ThisEvFT0C_kNoCollInRofStrict"))->Fill(vAmpFT0CperColl[colIndex], vTracksITS567perColl[colIndex]);
+            histos.fill(HIST("hThisEvITSTr_vs_ThisEvFT0C/kNoCollInRofStrict"), vAmpFT0CperColl[colIndex], vTracksITS567perColl[colIndex]);
           if (vNoCollInSameRofStandard[colIndex])
-            histos.get<TH2>(HIST("hThisEvITSTr_vs_ThisEvFT0C_kNoCollInRofStandard"))->Fill(vAmpFT0CperColl[colIndex], vTracksITS567perColl[colIndex]);
+            histos.fill(HIST("hThisEvITSTr_vs_ThisEvFT0C/kNoCollInRofStandard"), vAmpFT0CperColl[colIndex], vTracksITS567perColl[colIndex]);
           if (vNoCollInSameRofWithCloseVz[colIndex])
-            histos.get<TH2>(HIST("hThisEvITSTr_vs_ThisEvFT0C_kNoCollInRofWithCloseVz"))->Fill(vAmpFT0CperColl[colIndex], vTracksITS567perColl[colIndex]);
+            histos.fill(HIST("hThisEvITSTr_vs_ThisEvFT0C/kNoCollInRofWithCloseVz"), vAmpFT0CperColl[colIndex], vTracksITS567perColl[colIndex]);
 
           // CROSS CHECK WITH SEL BITS:
-          if (col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow))
-            histos.get<TH2>(HIST("hThisEvITSTr_vs_ThisEvFT0C_CROSSCHECK_afterNarrowDeltaTimeCut"))->Fill(vAmpFT0CperColl[colIndex], vTracksITS567perColl[colIndex]);
-          if (col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict))
-            histos.get<TH2>(HIST("hThisEvITSTr_vs_ThisEvFT0C_CROSSCHECK_afterStrictDeltaTimeCut"))->Fill(vAmpFT0CperColl[colIndex], vTracksITS567perColl[colIndex]);
-          if (col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))
-            histos.get<TH2>(HIST("hThisEvITSTr_vs_ThisEvFT0C_CROSSCHECK_afterStandardDeltaTimeCut"))->Fill(vAmpFT0CperColl[colIndex], vTracksITS567perColl[colIndex]);
-          if (col.selection_bit(o2::aod::evsel::kNoCollInTimeRangeVzDependent))
-            histos.get<TH2>(HIST("hThisEvITSTr_vs_ThisEvFT0C_CROSSCHECK_afterVzDependentDeltaTimeCut"))->Fill(vAmpFT0CperColl[colIndex], vTracksITS567perColl[colIndex]);
+          if (col.selection_bit(kNoCollInTimeRangeNarrow))
+            histos.fill(HIST("hThisEvITSTr_vs_ThisEvFT0C/CROSSCHECK_afterNarrowDeltaTimeCut"), vAmpFT0CperColl[colIndex], vTracksITS567perColl[colIndex]);
+          if (col.selection_bit(kNoCollInTimeRangeStrict))
+            histos.fill(HIST("hThisEvITSTr_vs_ThisEvFT0C/CROSSCHECK_afterStrictDeltaTimeCut"), vAmpFT0CperColl[colIndex], vTracksITS567perColl[colIndex]);
+          if (col.selection_bit(kNoCollInTimeRangeStandard))
+            histos.fill(HIST("hThisEvITSTr_vs_ThisEvFT0C/CROSSCHECK_afterStandardDeltaTimeCut"), vAmpFT0CperColl[colIndex], vTracksITS567perColl[colIndex]);
+          if (col.selection_bit(kNoCollInTimeRangeVzDependent))
+            histos.fill(HIST("hThisEvITSTr_vs_ThisEvFT0C/CROSSCHECK_afterVzDependentDeltaTimeCut"), vAmpFT0CperColl[colIndex], vTracksITS567perColl[colIndex]);
 
-          if (col.selection_bit(o2::aod::evsel::kNoCollInRofStrict))
-            histos.get<TH2>(HIST("hThisEvITSTr_vs_ThisEvFT0C_CROSSCHECK_kNoCollInRofStrict"))->Fill(vAmpFT0CperColl[colIndex], vTracksITS567perColl[colIndex]);
-          if (col.selection_bit(o2::aod::evsel::kNoCollInRofStandard))
-            histos.get<TH2>(HIST("hThisEvITSTr_vs_ThisEvFT0C_CROSSCHECK_kNoCollInRofStandard"))->Fill(vAmpFT0CperColl[colIndex], vTracksITS567perColl[colIndex]);
+          if (col.selection_bit(kNoCollInRofStrict))
+            histos.fill(HIST("hThisEvITSTr_vs_ThisEvFT0C/CROSSCHECK_kNoCollInRofStrict"), vAmpFT0CperColl[colIndex], vTracksITS567perColl[colIndex]);
+          if (col.selection_bit(kNoCollInRofStandard))
+            histos.fill(HIST("hThisEvITSTr_vs_ThisEvFT0C/CROSSCHECK_kNoCollInRofStandard"), vAmpFT0CperColl[colIndex], vTracksITS567perColl[colIndex]);
 
           if (vNumTracksITS567inFullTimeWin[colIndex] < 2000) {
-            histos.get<TH2>(HIST("hThisEvITSTr_vs_ThisEvFT0C_occupBelow2000"))->Fill(vAmpFT0CperColl[colIndex], vTracksITS567perColl[colIndex]);
-            histos.get<TH2>(HIST("hThisEvITSTPCTr_vs_ThisEvFT0C_occupBelow2000"))->Fill(vAmpFT0CperColl[colIndex], vTracksITSTPCperColl[colIndex]);
+            histos.fill(HIST("hThisEvITSTr_vs_ThisEvFT0C/occupBelow2000"), vAmpFT0CperColl[colIndex], vTracksITS567perColl[colIndex]);
+            histos.fill(HIST("hThisEvITSTr_vs_ThisEvFT0C/hThisEvITSTPCTr_vs_ThisEvFT0C_occupBelow2000"), vAmpFT0CperColl[colIndex], vTracksITSTPCperColl[colIndex]);
           }
 
           if (vNoCollInTimeRangeNarrow[colIndex] && vNoHighMultCollInTimeRange[colIndex] && vNoCollInSameRofStandard[colIndex] && vNoCollInSameRofWithCloseVz[colIndex]) {
-            histos.get<TH2>(HIST("hThisEvITSTr_vs_ThisEvFT0C_NarrowDeltaCut_StdTimeAndRofCuts"))->Fill(vAmpFT0CperColl[colIndex], vTracksITS567perColl[colIndex]);
+            histos.fill(HIST("hThisEvITSTr_vs_ThisEvFT0C/NarrowDeltaCut_StdTimeAndRofCuts"), vAmpFT0CperColl[colIndex], vTracksITS567perColl[colIndex]);
 
             if (vNumTracksITS567inFullTimeWin[colIndex] < 2000) {
-              histos.get<TH2>(HIST("hThisEvITSTr_vs_ThisEvFT0C_NarrowDeltaCut_StdTimeAndRofCuts_occupBelow2000"))->Fill(vAmpFT0CperColl[colIndex], vTracksITS567perColl[colIndex]);
-              histos.get<TH2>(HIST("hThisEvITSTPCTr_vs_ThisEvFT0C_NarrowDeltaCut_StdTimeAndRofCuts_occupBelow2000"))->Fill(vAmpFT0CperColl[colIndex], vTracksITSTPCperColl[colIndex]);
+              histos.fill(HIST("hThisEvITSTr_vs_ThisEvFT0C/NarrowDeltaCut_StdTimeAndRofCuts_occupBelow2000"), vAmpFT0CperColl[colIndex], vTracksITS567perColl[colIndex]);
+              histos.fill(HIST("hThisEvITSTr_vs_ThisEvFT0C/hThisEvITSTPCTr_vs_ThisEvFT0C_NarrowDeltaCut_StdTimeAndRofCuts_occupBelow2000"), vAmpFT0CperColl[colIndex], vTracksITSTPCperColl[colIndex]);
             }
           }
 
           // now ITSTPC vs ITS tr (this event)
-          histos.get<TH2>(HIST("hThisEvITSTPCTr_vs_ThisEvITStr_vZ_TF_ROF_border_cuts"))->Fill(vTracksITS567perColl[colIndex], vTracksITSTPCperColl[colIndex]);
+          histos.fill(HIST("hThisEvITSTPCTr_vs_ThisEvITStr/vZ_TF_ROF_border_cuts"), vTracksITS567perColl[colIndex], vTracksITSTPCperColl[colIndex]);
 
           if (vNoCollInTimeRangeNarrow[colIndex])
-            histos.get<TH2>(HIST("hThisEvITSTPCTr_vs_ThisEvITStr_afterNarrowDeltaTimeCut"))->Fill(vTracksITS567perColl[colIndex], vTracksITSTPCperColl[colIndex]);
+            histos.fill(HIST("hThisEvITSTPCTr_vs_ThisEvITStr/afterNarrowDeltaTimeCut"), vTracksITS567perColl[colIndex], vTracksITSTPCperColl[colIndex]);
           if (vNoCollInTimeRangeStrict[colIndex])
-            histos.get<TH2>(HIST("hThisEvITSTPCTr_vs_ThisEvITStr_afterStrictDeltaTimeCut"))->Fill(vTracksITS567perColl[colIndex], vTracksITSTPCperColl[colIndex]);
+            histos.fill(HIST("hThisEvITSTPCTr_vs_ThisEvITStr/afterStrictDeltaTimeCut"), vTracksITS567perColl[colIndex], vTracksITSTPCperColl[colIndex]);
           if (vNoHighMultCollInTimeRange[colIndex])
-            histos.get<TH2>(HIST("hThisEvITSTPCTr_vs_ThisEvITStr_afterStandardDeltaTimeCut"))->Fill(vTracksITS567perColl[colIndex], vTracksITSTPCperColl[colIndex]);
+            histos.fill(HIST("hThisEvITSTPCTr_vs_ThisEvITStr/afterStandardDeltaTimeCut"), vTracksITS567perColl[colIndex], vTracksITSTPCperColl[colIndex]);
           if (vNoCollInVzDependentTimeRange[colIndex])
-            histos.get<TH2>(HIST("hThisEvITSTPCTr_vs_ThisEvITStr_afterVzDependentDeltaTimeCut"))->Fill(vTracksITS567perColl[colIndex], vTracksITSTPCperColl[colIndex]);
+            histos.fill(HIST("hThisEvITSTPCTr_vs_ThisEvITStr/afterVzDependentDeltaTimeCut"), vTracksITS567perColl[colIndex], vTracksITSTPCperColl[colIndex]);
 
           if (vNoCollInSameRofStrict[colIndex])
-            histos.get<TH2>(HIST("hThisEvITSTPCTr_vs_ThisEvITStr_kNoCollInRofStrict"))->Fill(vTracksITS567perColl[colIndex], vTracksITSTPCperColl[colIndex]);
+            histos.fill(HIST("hThisEvITSTPCTr_vs_ThisEvITStr/kNoCollInRofStrict"), vTracksITS567perColl[colIndex], vTracksITSTPCperColl[colIndex]);
           if (vNoCollInSameRofStandard[colIndex])
-            histos.get<TH2>(HIST("hThisEvITSTPCTr_vs_ThisEvITStr_kNoCollInRofStandard"))->Fill(vTracksITS567perColl[colIndex], vTracksITSTPCperColl[colIndex]);
+            histos.fill(HIST("hThisEvITSTPCTr_vs_ThisEvITStr/kNoCollInRofStandard"), vTracksITS567perColl[colIndex], vTracksITSTPCperColl[colIndex]);
           if (vNoCollInSameRofWithCloseVz[colIndex])
-            histos.get<TH2>(HIST("hThisEvITSTPCTr_vs_ThisEvITStr_kNoCollInRofWithCloseVz"))->Fill(vTracksITS567perColl[colIndex], vTracksITSTPCperColl[colIndex]);
+            histos.fill(HIST("hThisEvITSTPCTr_vs_ThisEvITStr/kNoCollInRofWithCloseVz"), vTracksITS567perColl[colIndex], vTracksITSTPCperColl[colIndex]);
 
           if (vNumTracksITS567inFullTimeWin[colIndex] < 2000)
-            histos.get<TH2>(HIST("hThisEvITSTPCTr_vs_ThisEvITStr_occupBelow2000"))->Fill(vTracksITS567perColl[colIndex], vTracksITSTPCperColl[colIndex]);
+            histos.fill(HIST("hThisEvITSTPCTr_vs_ThisEvITStr/occupBelow2000"), vTracksITS567perColl[colIndex], vTracksITSTPCperColl[colIndex]);
 
           if (vNoCollInTimeRangeNarrow[colIndex] && vNoHighMultCollInTimeRange[colIndex] && vNoCollInSameRofStandard[colIndex] && vNoCollInSameRofWithCloseVz[colIndex]) {
-            histos.get<TH2>(HIST("hThisEvITSTPCTr_vs_ThisEvITStr_NarrowDeltaCut_StdTimeAndRofCuts"))->Fill(vTracksITS567perColl[colIndex], vTracksITSTPCperColl[colIndex]);
+            histos.fill(HIST("hThisEvITSTPCTr_vs_ThisEvITStr/NarrowDeltaCut_StdTimeAndRofCuts"), vTracksITS567perColl[colIndex], vTracksITSTPCperColl[colIndex]);
             if (vNumTracksITS567inFullTimeWin[colIndex] < 2000)
-              histos.get<TH2>(HIST("hThisEvITSTPCTr_vs_ThisEvITStr_occupBelow2000_NarrowDeltaCut_StdTimeAndRofCuts"))->Fill(vTracksITS567perColl[colIndex], vTracksITSTPCperColl[colIndex]);
+              histos.fill(HIST("hThisEvITSTPCTr_vs_ThisEvITStr/occupBelow2000_NarrowDeltaCut_StdTimeAndRofCuts"), vTracksITS567perColl[colIndex], vTracksITSTPCperColl[colIndex]);
           }
 
           if (vNoCollInTimeRangeStrict[colIndex] && vNoCollInSameRofStrict[colIndex] && vNoCollInSameRofWithCloseVz[colIndex]) {
             if (vNumTracksITS567inFullTimeWin[colIndex] < 2000)
-              histos.get<TH2>(HIST("hThisEvITSTPCTr_vs_ThisEvITStr_occupBelow2000_StrictDeltaTimeCutAndRofCuts"))->Fill(vTracksITS567perColl[colIndex], vTracksITSTPCperColl[colIndex]);
+              histos.fill(HIST("hThisEvITSTPCTr_vs_ThisEvITStr/occupBelow2000_StrictDeltaTimeCutAndRofCuts"), vTracksITS567perColl[colIndex], vTracksITSTPCperColl[colIndex]);
           }
 
           // vZ bins to tune vZthresh cut
@@ -1080,8 +1203,8 @@ struct RofOccupancyQaTask {
 
             for (int i = 0; i < 200; i++) {
               if (fabs(col.posZ()) < 8 && !vArrNoCollInSameRofWithCloseVz[colIndex][i]) {
-                histos.get<TH2>(HIST("hThisEvITStr_vs_vZcut"))->Fill(0.025 + 0.05 * i, vTracksITS567perColl[colIndex]);
-                histos.get<TH2>(HIST("hThisEvITSTPCtr_vs_vZcut"))->Fill(0.025 + 0.05 * i, vTracksITSTPCperColl[colIndex]);
+                histos.fill(HIST("hThisEvITStr_vs_vZcut"), 0.025 + 0.05 * i, vTracksITS567perColl[colIndex]);
+                histos.fill(HIST("hThisEvITSTPCtr_vs_vZcut"), 0.025 + 0.05 * i, vTracksITSTPCperColl[colIndex]);
               }
             }
           }
@@ -1092,134 +1215,143 @@ struct RofOccupancyQaTask {
           if (vAmpFT0CperColl[colIndex] > 0) { // 100) {
 
             if (vNoCollInTimeRangeNarrow[colIndex]) {
-              histos.get<TH2>(HIST("afterNarrowDeltaTimeCut/hThisEvITSTr_vs_occupancyByFT0C"))->Fill(vSumAmpFT0CinFullTimeWin[colIndex], vTracksITS567perColl[colIndex]);
-              histos.get<TH2>(HIST("afterNarrowDeltaTimeCut/hThisEvITSTPCTr_vs_occupancyByFT0C"))->Fill(vSumAmpFT0CinFullTimeWin[colIndex], vTracksITSTPCperColl[colIndex]);
-              histos.get<TH2>(HIST("afterNarrowDeltaTimeCut/hThisEvITSTr_vs_occupancyByTracks"))->Fill(vNumTracksITS567inFullTimeWin[colIndex], vTracksITS567perColl[colIndex]);
-              histos.get<TH2>(HIST("afterNarrowDeltaTimeCut/hThisEvITSTPCTr_vs_occupancyByTracks"))->Fill(vNumTracksITS567inFullTimeWin[colIndex], vTracksITSTPCperColl[colIndex]);
+              histos.fill(HIST("afterNarrowDeltaTimeCut/hThisEvITSTr_vs_occupancyByFT0C"), vSumAmpFT0CinFullTimeWin[colIndex], vTracksITS567perColl[colIndex]);
+              histos.fill(HIST("afterNarrowDeltaTimeCut/hThisEvITSTPCTr_vs_occupancyByFT0C"), vSumAmpFT0CinFullTimeWin[colIndex], vTracksITSTPCperColl[colIndex]);
+              histos.fill(HIST("afterNarrowDeltaTimeCut/hThisEvITSTr_vs_occupancyByTracks"), vNumTracksITS567inFullTimeWin[colIndex], vTracksITS567perColl[colIndex]);
+              histos.fill(HIST("afterNarrowDeltaTimeCut/hThisEvITSTPCTr_vs_occupancyByTracks"), vNumTracksITS567inFullTimeWin[colIndex], vTracksITSTPCperColl[colIndex]);
 
-              histos.get<TH2>(HIST("afterNarrowDeltaTimeCut/hThisEvITSTr_vs_occupancyInROF"))->Fill(vNumTracksITS567inROF[colIndex], vTracksITS567perColl[colIndex]);
-              histos.get<TH2>(HIST("afterNarrowDeltaTimeCut/hThisEvITSTPCTr_vs_occupancyInROF"))->Fill(vNumTracksITS567inROF[colIndex], vTracksITSTPCperColl[colIndex]);
+              histos.fill(HIST("afterNarrowDeltaTimeCut/hThisEvITSTr_vs_occupancyInROF"), vNumTracksITS567inROF[colIndex], vTracksITS567perColl[colIndex]);
+              histos.fill(HIST("afterNarrowDeltaTimeCut/hThisEvITSTPCTr_vs_occupancyInROF"), vNumTracksITS567inROF[colIndex], vTracksITSTPCperColl[colIndex]);
 
               if (vNumTracksITS567inROF[colIndex] > 0) {
-                histos.get<TH2>(HIST("afterNarrowDeltaTimeCut/hThisEvITSTr_vs_occupancyInROF_HasNeighbours"))->Fill(vNumTracksITS567inROF[colIndex], vTracksITS567perColl[colIndex]);
-                histos.get<TH2>(HIST("afterNarrowDeltaTimeCut/hThisEvITSTr_vs_occupancyFT0CInROF_HasNeighbours"))->Fill(vSumAmpFT0CinROF[colIndex], vTracksITS567perColl[colIndex]);
+                histos.fill(HIST("afterNarrowDeltaTimeCut/hThisEvITSTr_vs_occupancyInROF_HasNeighbours"), vNumTracksITS567inROF[colIndex], vTracksITS567perColl[colIndex]);
+                histos.fill(HIST("afterNarrowDeltaTimeCut/hThisEvITSTr_vs_occupancyFT0CInROF_HasNeighbours"), vSumAmpFT0CinROF[colIndex], vTracksITS567perColl[colIndex]);
 
-                histos.get<TH2>(HIST("afterNarrowDeltaTimeCut/hThisEvFT0C_vs_occupancyFT0CInROF_HasNeighbours"))->Fill(vSumAmpFT0CinROF[colIndex], vAmpFT0CperColl[colIndex]);
+                histos.fill(HIST("afterNarrowDeltaTimeCut/hThisEvFT0C_vs_occupancyFT0CInROF_HasNeighbours"), vSumAmpFT0CinROF[colIndex], vAmpFT0CperColl[colIndex]);
               }
 
               if (vNumCollinROF[colIndex] == 2 && vNumCollinROFinVz10[colIndex] == 2 && vInROFcollIndex[colIndex] == 1) {
-                histos.get<TH2>(HIST("afterNarrowDeltaTimeCut/hThisEvITSTr_vs_occupancyInROF_2coll"))->Fill(vNumTracksITS567inROF[colIndex], vTracksITS567perColl[colIndex]);
-                histos.get<TH2>(HIST("afterNarrowDeltaTimeCut/hThisEvFT0C_vs_occupancyFT0CInROF_2coll"))->Fill(vSumAmpFT0CinROF[colIndex], vAmpFT0CperColl[colIndex]);
+                histos.fill(HIST("afterNarrowDeltaTimeCut/hThisEvITSTr_vs_occupancyInROF_2coll"), vNumTracksITS567inROF[colIndex], vTracksITS567perColl[colIndex]);
+                histos.fill(HIST("afterNarrowDeltaTimeCut/hThisEvFT0C_vs_occupancyFT0CInROF_2coll"), vSumAmpFT0CinROF[colIndex], vAmpFT0CperColl[colIndex]);
 
                 if (vNumTracksITS567inROF[colIndex] > vTracksITS567perColl[colIndex]) {
-                  histos.get<TH2>(HIST("afterNarrowDeltaTimeCut/hThisEvITSTr_vs_occupancyInROF_2coll_XaxisWins"))->Fill(vNumTracksITS567inROF[colIndex], vTracksITS567perColl[colIndex]);
+                  histos.fill(HIST("afterNarrowDeltaTimeCut/hThisEvITSTr_vs_occupancyInROF_2coll_XaxisWins"), vNumTracksITS567inROF[colIndex], vTracksITS567perColl[colIndex]);
                   if (vNumTracksITS567inROF[colIndex] > 0)
-                    histos.get<TH2>(HIST("afterNarrowDeltaTimeCut/hThisEvITSTr_vs_occupancyInROF_2coll_XaxisWins_RatioV2toV1"))->Fill(vNumTracksITS567inROF[colIndex], 1.0 * vTracksITS567perColl[colIndex] / vNumTracksITS567inROF[colIndex]);
+                    histos.fill(HIST("afterNarrowDeltaTimeCut/hThisEvITSTr_vs_occupancyInROF_2coll_XaxisWins_RatioV2toV1"), vNumTracksITS567inROF[colIndex], 1.0 * vTracksITS567perColl[colIndex] / vNumTracksITS567inROF[colIndex]);
                 } else {
-                  histos.get<TH2>(HIST("afterNarrowDeltaTimeCut/hThisEvITSTr_vs_occupancyInROF_2coll_XaxisWins"))->Fill(vTracksITS567perColl[colIndex], vNumTracksITS567inROF[colIndex]);
+                  histos.fill(HIST("afterNarrowDeltaTimeCut/hThisEvITSTr_vs_occupancyInROF_2coll_XaxisWins"), vTracksITS567perColl[colIndex], vNumTracksITS567inROF[colIndex]);
                   if (vTracksITS567perColl[colIndex] > 0)
-                    histos.get<TH2>(HIST("afterNarrowDeltaTimeCut/hThisEvITSTr_vs_occupancyInROF_2coll_XaxisWins_RatioV2toV1"))->Fill(vTracksITS567perColl[colIndex], 1.0 * vNumTracksITS567inROF[colIndex] / vTracksITS567perColl[colIndex]);
+                    histos.fill(HIST("afterNarrowDeltaTimeCut/hThisEvITSTr_vs_occupancyInROF_2coll_XaxisWins_RatioV2toV1"), vTracksITS567perColl[colIndex], 1.0 * vNumTracksITS567inROF[colIndex] / vTracksITS567perColl[colIndex]);
                 }
+
+                // the sum of v1 and v2:
+                if (vSumAmpFT0CinROF[colIndex] > 4000 && vAmpFT0CperColl[colIndex] > 4000)
+                  histos.fill(HIST("afterNarrowDeltaTimeCut/hSum_2coll_withFT0above4000_inROF"), vTracksITS567perColl[colIndex] + vNumTracksITS567inROF[colIndex]);
               }
               // compare with previous ROF
               if (colIndex - 1 >= 0) {
                 if (vNumCollinROF[colIndex] == 1 && vNumCollinROFinVz10[colIndex] == 1 && vInROFcollIndex[colIndex] == 0 && vNumCollinROF[colIndex - 1] == 1 && vNumCollinROFinVz10[colIndex - 1] == 1 && vInROFcollIndex[colIndex - 1] == 0) {
-                  histos.get<TH2>(HIST("afterNarrowDeltaTimeCut/hThisEvITSTr_vs_occupancyInAnotherEarlierROF_1collPerROF"))->Fill(vTracksITS567perColl[colIndex - 1], vTracksITS567perColl[colIndex]);
+                  histos.fill(HIST("afterNarrowDeltaTimeCut/hThisEvITSTr_vs_occupancyInAnotherEarlierROF_1collPerROF"), vTracksITS567perColl[colIndex - 1], vTracksITS567perColl[colIndex]);
                   if (vROFidThisColl[colIndex] == vROFidThisColl[colIndex - 1] + 1) // one ROF right after the previous
                   {
-                    histos.get<TH2>(HIST("afterNarrowDeltaTimeCut/hThisEvITSTr_vs_occupancyInPreviousROF_1collPerROF"))->Fill(vTracksITS567perColl[colIndex - 1], vTracksITS567perColl[colIndex]);
+                    histos.fill(HIST("afterNarrowDeltaTimeCut/hThisEvITSTr_vs_occupancyInPreviousROF_1collPerROF"), vTracksITS567perColl[colIndex - 1], vTracksITS567perColl[colIndex]);
 
                     if (vTracksITS567perColl[colIndex - 1] > vTracksITS567perColl[colIndex]) {
-                      histos.get<TH2>(HIST("afterNarrowDeltaTimeCut/hThisEvITSTr_vs_occupancyInPreviousROF_1collPerROF_XaxisWins"))->Fill(vTracksITS567perColl[colIndex - 1], vTracksITS567perColl[colIndex]);
+                      histos.fill(HIST("afterNarrowDeltaTimeCut/hThisEvITSTr_vs_occupancyInPreviousROF_1collPerROF_XaxisWins"), vTracksITS567perColl[colIndex - 1], vTracksITS567perColl[colIndex]);
                       if (vTracksITS567perColl[colIndex - 1] > 0)
-                        histos.get<TH2>(HIST("afterNarrowDeltaTimeCut/hThisEvITSTr_vs_occupancyInPreviousROF_1collPerROF_XaxisWins_RatioV2toV1"))->Fill(vTracksITS567perColl[colIndex - 1], 1.0 * vTracksITS567perColl[colIndex] / vTracksITS567perColl[colIndex - 1]);
+                        histos.fill(HIST("afterNarrowDeltaTimeCut/hThisEvITSTr_vs_occupancyInPreviousROF_1collPerROF_XaxisWins_RatioV2toV1"), vTracksITS567perColl[colIndex - 1], 1.0 * vTracksITS567perColl[colIndex] / vTracksITS567perColl[colIndex - 1]);
                     } else {
-                      histos.get<TH2>(HIST("afterNarrowDeltaTimeCut/hThisEvITSTr_vs_occupancyInPreviousROF_1collPerROF_XaxisWins"))->Fill(vTracksITS567perColl[colIndex], vTracksITS567perColl[colIndex - 1]);
+                      histos.fill(HIST("afterNarrowDeltaTimeCut/hThisEvITSTr_vs_occupancyInPreviousROF_1collPerROF_XaxisWins"), vTracksITS567perColl[colIndex], vTracksITS567perColl[colIndex - 1]);
                       if (vTracksITS567perColl[colIndex] > 0)
-                        histos.get<TH2>(HIST("afterNarrowDeltaTimeCut/hThisEvITSTr_vs_occupancyInPreviousROF_1collPerROF_XaxisWins_RatioV2toV1"))->Fill(vTracksITS567perColl[colIndex], 1.0 * vTracksITS567perColl[colIndex - 1] / vTracksITS567perColl[colIndex]);
+                        histos.fill(HIST("afterNarrowDeltaTimeCut/hThisEvITSTr_vs_occupancyInPreviousROF_1collPerROF_XaxisWins_RatioV2toV1"), vTracksITS567perColl[colIndex], 1.0 * vTracksITS567perColl[colIndex - 1] / vTracksITS567perColl[colIndex]);
                     }
+                    // the sum of v1 and v2:
+                    if (vAmpFT0CperColl[colIndex] > 4000 && vAmpFT0CperColl[colIndex - 1] > 4000)
+                      histos.fill(HIST("afterNarrowDeltaTimeCut/hSum_2coll_withFT0above4000_thisROFprevROF"), vTracksITS567perColl[colIndex] + vTracksITS567perColl[colIndex - 1]);
+                  } else if (vROFidThisColl[colIndex] == vROFidThisColl[colIndex - 1] + 2) {
+                    // ROF vs ROF-2
+                    histos.fill(HIST("afterNarrowDeltaTimeCut/hThisEvITSTr_vs_occupancyInPrevPrevROF_1collPerROF"), vTracksITS567perColl[colIndex - 1], vTracksITS567perColl[colIndex]);
+                    if (vAmpFT0CperColl[colIndex] > 4000 && vAmpFT0CperColl[colIndex - 1] > 4000)
+                      histos.fill(HIST("afterNarrowDeltaTimeCut/hSum_2coll_withFT0above4000_thisROFprevPrevROF"), vTracksITS567perColl[colIndex] + vTracksITS567perColl[colIndex - 1]);
+                  } else {
+                    // ROF is earlier than previous
+                    // the sum of v1 and v2:
+                    if (vAmpFT0CperColl[colIndex] > 4000 && vAmpFT0CperColl[colIndex - 1] > 4000)
+                      histos.fill(HIST("afterNarrowDeltaTimeCut/hSum_2coll_withFT0above4000_thisROFearlierThanPrevPrevROF"), vTracksITS567perColl[colIndex] + vTracksITS567perColl[colIndex - 1]);
                   }
                 }
               }
             }
             if (vNoCollInTimeRangeStrict[colIndex]) {
-              histos.get<TH2>(HIST("afterStrictDeltaTimeCut/hThisEvITSTr_vs_occupancyByFT0C"))->Fill(vSumAmpFT0CinFullTimeWin[colIndex], vTracksITS567perColl[colIndex]);
-              histos.get<TH2>(HIST("afterStrictDeltaTimeCut/hThisEvITSTPCTr_vs_occupancyByFT0C"))->Fill(vSumAmpFT0CinFullTimeWin[colIndex], vTracksITSTPCperColl[colIndex]);
-              histos.get<TH2>(HIST("afterStrictDeltaTimeCut/hThisEvITSTr_vs_occupancyByTracks"))->Fill(vNumTracksITS567inFullTimeWin[colIndex], vTracksITS567perColl[colIndex]);
-              histos.get<TH2>(HIST("afterStrictDeltaTimeCut/hThisEvITSTPCTr_vs_occupancyByTracks"))->Fill(vNumTracksITS567inFullTimeWin[colIndex], vTracksITSTPCperColl[colIndex]);
+              histos.fill(HIST("afterStrictDeltaTimeCut/hThisEvITSTr_vs_occupancyByFT0C"), vSumAmpFT0CinFullTimeWin[colIndex], vTracksITS567perColl[colIndex]);
+              histos.fill(HIST("afterStrictDeltaTimeCut/hThisEvITSTPCTr_vs_occupancyByFT0C"), vSumAmpFT0CinFullTimeWin[colIndex], vTracksITSTPCperColl[colIndex]);
+              histos.fill(HIST("afterStrictDeltaTimeCut/hThisEvITSTr_vs_occupancyByTracks"), vNumTracksITS567inFullTimeWin[colIndex], vTracksITS567perColl[colIndex]);
+              histos.fill(HIST("afterStrictDeltaTimeCut/hThisEvITSTPCTr_vs_occupancyByTracks"), vNumTracksITS567inFullTimeWin[colIndex], vTracksITSTPCperColl[colIndex]);
             }
             if (vNoHighMultCollInTimeRange[colIndex]) {
-              histos.get<TH2>(HIST("afterStandardDeltaTimeCut/hThisEvITSTr_vs_occupancyByFT0C"))->Fill(vSumAmpFT0CinFullTimeWin[colIndex], vTracksITS567perColl[colIndex]);
-              histos.get<TH2>(HIST("afterStandardDeltaTimeCut/hThisEvITSTPCTr_vs_occupancyByFT0C"))->Fill(vSumAmpFT0CinFullTimeWin[colIndex], vTracksITSTPCperColl[colIndex]);
-              histos.get<TH2>(HIST("afterStandardDeltaTimeCut/hThisEvITSTr_vs_occupancyByTracks"))->Fill(vNumTracksITS567inFullTimeWin[colIndex], vTracksITS567perColl[colIndex]);
-              histos.get<TH2>(HIST("afterStandardDeltaTimeCut/hThisEvITSTPCTr_vs_occupancyByTracks"))->Fill(vNumTracksITS567inFullTimeWin[colIndex], vTracksITSTPCperColl[colIndex]);
+              histos.fill(HIST("afterStandardDeltaTimeCut/hThisEvITSTr_vs_occupancyByFT0C"), vSumAmpFT0CinFullTimeWin[colIndex], vTracksITS567perColl[colIndex]);
+              histos.fill(HIST("afterStandardDeltaTimeCut/hThisEvITSTPCTr_vs_occupancyByFT0C"), vSumAmpFT0CinFullTimeWin[colIndex], vTracksITSTPCperColl[colIndex]);
+              histos.fill(HIST("afterStandardDeltaTimeCut/hThisEvITSTr_vs_occupancyByTracks"), vNumTracksITS567inFullTimeWin[colIndex], vTracksITS567perColl[colIndex]);
+              histos.fill(HIST("afterStandardDeltaTimeCut/hThisEvITSTPCTr_vs_occupancyByTracks"), vNumTracksITS567inFullTimeWin[colIndex], vTracksITSTPCperColl[colIndex]);
             }
 
             if (vNoCollInVzDependentTimeRange[colIndex]) {
-              histos.get<TH2>(HIST("afterVzDependentDeltaTimeCut/hThisEvITSTr_vs_occupancyByFT0C"))->Fill(vSumAmpFT0CinFullTimeWin[colIndex], vTracksITS567perColl[colIndex]);
-              histos.get<TH2>(HIST("afterVzDependentDeltaTimeCut/hThisEvITSTPCTr_vs_occupancyByFT0C"))->Fill(vSumAmpFT0CinFullTimeWin[colIndex], vTracksITSTPCperColl[colIndex]);
-              histos.get<TH2>(HIST("afterVzDependentDeltaTimeCut/hThisEvITSTr_vs_occupancyByTracks"))->Fill(vNumTracksITS567inFullTimeWin[colIndex], vTracksITS567perColl[colIndex]);
-              histos.get<TH2>(HIST("afterVzDependentDeltaTimeCut/hThisEvITSTPCTr_vs_occupancyByTracks"))->Fill(vNumTracksITS567inFullTimeWin[colIndex], vTracksITSTPCperColl[colIndex]);
+              histos.fill(HIST("afterVzDependentDeltaTimeCut/hThisEvITSTr_vs_occupancyByFT0C"), vSumAmpFT0CinFullTimeWin[colIndex], vTracksITS567perColl[colIndex]);
+              histos.fill(HIST("afterVzDependentDeltaTimeCut/hThisEvITSTPCTr_vs_occupancyByFT0C"), vSumAmpFT0CinFullTimeWin[colIndex], vTracksITSTPCperColl[colIndex]);
+              histos.fill(HIST("afterVzDependentDeltaTimeCut/hThisEvITSTr_vs_occupancyByTracks"), vNumTracksITS567inFullTimeWin[colIndex], vTracksITS567perColl[colIndex]);
+              histos.fill(HIST("afterVzDependentDeltaTimeCut/hThisEvITSTPCTr_vs_occupancyByTracks"), vNumTracksITS567inFullTimeWin[colIndex], vTracksITSTPCperColl[colIndex]);
             }
 
             if (vNoCollInSameRofStrict[colIndex]) {
-              histos.get<TH2>(HIST("kNoCollInRofStrict/hThisEvITSTr_vs_occupancyByFT0C"))->Fill(vSumAmpFT0CinFullTimeWin[colIndex], vTracksITS567perColl[colIndex]);
-              histos.get<TH2>(HIST("kNoCollInRofStrict/hThisEvITSTPCTr_vs_occupancyByFT0C"))->Fill(vSumAmpFT0CinFullTimeWin[colIndex], vTracksITSTPCperColl[colIndex]);
-              histos.get<TH2>(HIST("kNoCollInRofStrict/hThisEvITSTr_vs_occupancyByTracks"))->Fill(vNumTracksITS567inFullTimeWin[colIndex], vTracksITS567perColl[colIndex]);
-              histos.get<TH2>(HIST("kNoCollInRofStrict/hThisEvITSTPCTr_vs_occupancyByTracks"))->Fill(vNumTracksITS567inFullTimeWin[colIndex], vTracksITSTPCperColl[colIndex]);
+              histos.fill(HIST("kNoCollInRofStrict/hThisEvITSTr_vs_occupancyByFT0C"), vSumAmpFT0CinFullTimeWin[colIndex], vTracksITS567perColl[colIndex]);
+              histos.fill(HIST("kNoCollInRofStrict/hThisEvITSTPCTr_vs_occupancyByFT0C"), vSumAmpFT0CinFullTimeWin[colIndex], vTracksITSTPCperColl[colIndex]);
+              histos.fill(HIST("kNoCollInRofStrict/hThisEvITSTr_vs_occupancyByTracks"), vNumTracksITS567inFullTimeWin[colIndex], vTracksITS567perColl[colIndex]);
+              histos.fill(HIST("kNoCollInRofStrict/hThisEvITSTPCTr_vs_occupancyByTracks"), vNumTracksITS567inFullTimeWin[colIndex], vTracksITSTPCperColl[colIndex]);
             }
 
             if (vNoCollInSameRofStandard[colIndex]) {
-              histos.get<TH2>(HIST("kNoCollInRofStandard/hThisEvITSTr_vs_occupancyByFT0C"))->Fill(vSumAmpFT0CinFullTimeWin[colIndex], vTracksITS567perColl[colIndex]);
-              histos.get<TH2>(HIST("kNoCollInRofStandard/hThisEvITSTPCTr_vs_occupancyByFT0C"))->Fill(vSumAmpFT0CinFullTimeWin[colIndex], vTracksITSTPCperColl[colIndex]);
-              histos.get<TH2>(HIST("kNoCollInRofStandard/hThisEvITSTr_vs_occupancyByTracks"))->Fill(vNumTracksITS567inFullTimeWin[colIndex], vTracksITS567perColl[colIndex]);
-              histos.get<TH2>(HIST("kNoCollInRofStandard/hThisEvITSTPCTr_vs_occupancyByTracks"))->Fill(vNumTracksITS567inFullTimeWin[colIndex], vTracksITSTPCperColl[colIndex]);
+              histos.fill(HIST("kNoCollInRofStandard/hThisEvITSTr_vs_occupancyByFT0C"), vSumAmpFT0CinFullTimeWin[colIndex], vTracksITS567perColl[colIndex]);
+              histos.fill(HIST("kNoCollInRofStandard/hThisEvITSTPCTr_vs_occupancyByFT0C"), vSumAmpFT0CinFullTimeWin[colIndex], vTracksITSTPCperColl[colIndex]);
+              histos.fill(HIST("kNoCollInRofStandard/hThisEvITSTr_vs_occupancyByTracks"), vNumTracksITS567inFullTimeWin[colIndex], vTracksITS567perColl[colIndex]);
+              histos.fill(HIST("kNoCollInRofStandard/hThisEvITSTPCTr_vs_occupancyByTracks"), vNumTracksITS567inFullTimeWin[colIndex], vTracksITSTPCperColl[colIndex]);
             }
 
             if (vNoCollInSameRofWithCloseVz[colIndex]) {
-              histos.get<TH2>(HIST("kNoCollInRofWithCloseVz/hThisEvITSTr_vs_occupancyByFT0C"))->Fill(vSumAmpFT0CinFullTimeWin[colIndex], vTracksITS567perColl[colIndex]);
-              histos.get<TH2>(HIST("kNoCollInRofWithCloseVz/hThisEvITSTPCTr_vs_occupancyByFT0C"))->Fill(vSumAmpFT0CinFullTimeWin[colIndex], vTracksITSTPCperColl[colIndex]);
-              histos.get<TH2>(HIST("kNoCollInRofWithCloseVz/hThisEvITSTr_vs_occupancyByTracks"))->Fill(vNumTracksITS567inFullTimeWin[colIndex], vTracksITS567perColl[colIndex]);
-              histos.get<TH2>(HIST("kNoCollInRofWithCloseVz/hThisEvITSTPCTr_vs_occupancyByTracks"))->Fill(vNumTracksITS567inFullTimeWin[colIndex], vTracksITSTPCperColl[colIndex]);
+              histos.fill(HIST("kNoCollInRofWithCloseVz/hThisEvITSTr_vs_occupancyByFT0C"), vSumAmpFT0CinFullTimeWin[colIndex], vTracksITS567perColl[colIndex]);
+              histos.fill(HIST("kNoCollInRofWithCloseVz/hThisEvITSTPCTr_vs_occupancyByFT0C"), vSumAmpFT0CinFullTimeWin[colIndex], vTracksITSTPCperColl[colIndex]);
+              histos.fill(HIST("kNoCollInRofWithCloseVz/hThisEvITSTr_vs_occupancyByTracks"), vNumTracksITS567inFullTimeWin[colIndex], vTracksITS567perColl[colIndex]);
+              histos.fill(HIST("kNoCollInRofWithCloseVz/hThisEvITSTPCTr_vs_occupancyByTracks"), vNumTracksITS567inFullTimeWin[colIndex], vTracksITSTPCperColl[colIndex]);
 
               if (vNumTracksITS567inROF[colIndex] > 0) {
-                histos.get<TH2>(HIST("kNoCollInRofWithCloseVz/hThisEvITSTr_vs_occupancyInROF_HasNeighbours"))->Fill(vNumTracksITS567inROF[colIndex], vTracksITS567perColl[colIndex]);
-                histos.get<TH2>(HIST("kNoCollInRofWithCloseVz/hThisEvITSTr_vs_occupancyFT0CInROF_HasNeighbours"))->Fill(vSumAmpFT0CinROF[colIndex], vTracksITS567perColl[colIndex]);
+                histos.fill(HIST("kNoCollInRofWithCloseVz/hThisEvITSTr_vs_occupancyInROF_HasNeighbours"), vNumTracksITS567inROF[colIndex], vTracksITS567perColl[colIndex]);
+                histos.fill(HIST("kNoCollInRofWithCloseVz/hThisEvITSTr_vs_occupancyFT0CInROF_HasNeighbours"), vSumAmpFT0CinROF[colIndex], vTracksITS567perColl[colIndex]);
 
-                histos.get<TH2>(HIST("kNoCollInRofWithCloseVz/hThisEvFT0C_vs_occupancyFT0CInROF_HasNeighbours"))->Fill(vSumAmpFT0CinROF[colIndex], vAmpFT0CperColl[colIndex]);
+                histos.fill(HIST("kNoCollInRofWithCloseVz/hThisEvFT0C_vs_occupancyFT0CInROF_HasNeighbours"), vSumAmpFT0CinROF[colIndex], vAmpFT0CperColl[colIndex]);
               }
 
               if (vNumCollinROF[colIndex] == 2 && vNumCollinROFinVz10[colIndex] == 2 && vInROFcollIndex[colIndex] == 1) {
-                histos.get<TH2>(HIST("kNoCollInRofWithCloseVz/hThisEvITSTr_vs_occupancyInROF_2coll"))->Fill(vNumTracksITS567inROF[colIndex], vTracksITS567perColl[colIndex]);
-                histos.get<TH2>(HIST("kNoCollInRofWithCloseVz/hThisEvFT0C_vs_occupancyFT0CInROF_2coll"))->Fill(vSumAmpFT0CinROF[colIndex], vAmpFT0CperColl[colIndex]);
+                histos.fill(HIST("kNoCollInRofWithCloseVz/hThisEvITSTr_vs_occupancyInROF_2coll"), vNumTracksITS567inROF[colIndex], vTracksITS567perColl[colIndex]);
+                histos.fill(HIST("kNoCollInRofWithCloseVz/hThisEvFT0C_vs_occupancyFT0CInROF_2coll"), vSumAmpFT0CinROF[colIndex], vAmpFT0CperColl[colIndex]);
               }
             }
 
             if (vNoCollInTimeRangeNarrow[colIndex] && vNoHighMultCollInTimeRange[colIndex] && vNoCollInSameRofStandard[colIndex] && vNoCollInSameRofWithCloseVz[colIndex]) {
-              histos.get<TH2>(HIST("NarrowDeltaCut_StdTimeAndRofCuts/hThisEvITSTr_vs_occupancyByFT0C"))->Fill(vSumAmpFT0CinFullTimeWin[colIndex], vTracksITS567perColl[colIndex]);
-              histos.get<TH2>(HIST("NarrowDeltaCut_StdTimeAndRofCuts/hThisEvITSTPCTr_vs_occupancyByFT0C"))->Fill(vSumAmpFT0CinFullTimeWin[colIndex], vTracksITSTPCperColl[colIndex]);
-              histos.get<TH2>(HIST("NarrowDeltaCut_StdTimeAndRofCuts/hThisEvITSTr_vs_occupancyByTracks"))->Fill(vNumTracksITS567inFullTimeWin[colIndex], vTracksITS567perColl[colIndex]);
-              histos.get<TH2>(HIST("NarrowDeltaCut_StdTimeAndRofCuts/hThisEvITSTPCTr_vs_occupancyByTracks"))->Fill(vNumTracksITS567inFullTimeWin[colIndex], vTracksITSTPCperColl[colIndex]);
+              histos.fill(HIST("NarrowDeltaCut_StdTimeAndRofCuts/hThisEvITSTr_vs_occupancyByFT0C"), vSumAmpFT0CinFullTimeWin[colIndex], vTracksITS567perColl[colIndex]);
+              histos.fill(HIST("NarrowDeltaCut_StdTimeAndRofCuts/hThisEvITSTPCTr_vs_occupancyByFT0C"), vSumAmpFT0CinFullTimeWin[colIndex], vTracksITSTPCperColl[colIndex]);
+              histos.fill(HIST("NarrowDeltaCut_StdTimeAndRofCuts/hThisEvITSTr_vs_occupancyByTracks"), vNumTracksITS567inFullTimeWin[colIndex], vTracksITS567perColl[colIndex]);
+              histos.fill(HIST("NarrowDeltaCut_StdTimeAndRofCuts/hThisEvITSTPCTr_vs_occupancyByTracks"), vNumTracksITS567inFullTimeWin[colIndex], vTracksITSTPCperColl[colIndex]);
             }
           }
         }
       }
-
-      // int bcInTF = (bc.globalBC() - bcSOR) % nBCsPerTF;
-
-      // evsel(alias, selection, sel7, sel8, foundBC, foundFT0, foundFV0, foundFDD, foundZDC, bcInTF,
-      //       vNumTracksITS567inFullTimeWin[colIndex], vSumAmpFT0CinFullTimeWin[colIndex], vNumTracksITS567inROF[colIndex]);
     }
   }
 
-  PROCESS_SWITCH(RofOccupancyQaTask, processRun3, "Process Run3 event selection", true);
+  PROCESS_SWITCH(RofOccupancyQaTask, processRun3, "Process Run3 ROF occupancy QA", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  // Parse the metadata
-  metadataInfo.initMetadata(cfgc);
-
   return WorkflowSpec{
     adaptAnalysisTask<RofOccupancyQaTask>(cfgc)};
 }

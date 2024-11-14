@@ -61,11 +61,17 @@ struct centralityStudy {
   Configurable<float> minTimeDelta{"minTimeDelta", -1.0f, "reject collision if another collision is this close or less in time"};
   Configurable<float> minFT0CforVertexZ{"minFT0CforVertexZ", 250, "minimum FT0C for vertex-Z profile calculation"};
 
+  Configurable<float> scaleSignalFT0C{"scaleSignalFT0C", 1.00f, "scale FT0C signal for convenience"};
+  Configurable<float> scaleSignalFT0M{"scaleSignalFT0M", 1.00f, "scale FT0M signal for convenience"};
+  Configurable<float> scaleSignalFV0A{"scaleSignalFV0A", 1.00f, "scale FV0A signal for convenience"};
+
   // Configurable Axes
   ConfigurableAxis axisMultFT0C{"axisMultFT0C", {2000, 0, 100000}, "FT0C amplitude"};
   ConfigurableAxis axisMultPVContributors{"axisMultPVContributors", {200, 0, 6000}, "Number of PV Contributors"};
 
   // For one-dimensional plots, where binning is no issue
+  ConfigurableAxis axisMultUltraFineFV0A{"axisMultUltraFineFV0A", {60000, 0, 60000}, "FV0A amplitude"};
+  ConfigurableAxis axisMultUltraFineFT0M{"axisMultUltraFineFT0M", {50000, 0, 200000}, "FT0M amplitude"};
   ConfigurableAxis axisMultUltraFineFT0C{"axisMultUltraFineFT0C", {60000, 0, 60000}, "FT0C amplitude"};
   ConfigurableAxis axisMultUltraFinePVContributors{"axisMultUltraFinePVContributors", {10000, 0, 10000}, "Number of PV Contributors"};
 
@@ -100,6 +106,8 @@ struct centralityStudy {
       histos.get<TH1>(HIST("hCollisionSelection"))->GetXaxis()->SetBinLabel(13, "no ITS in-ROF pileup (strict)");
 
       histos.add("hFT0C_Collisions", "hFT0C_Collisions", kTH1D, {axisMultUltraFineFT0C});
+      histos.add("hFT0M_Collisions", "hFT0M_Collisions", kTH1D, {axisMultUltraFineFT0M});
+      histos.add("hFV0A_Collisions", "hFV0A_Collisions", kTH1D, {axisMultUltraFineFV0A});
       histos.add("hNPVContributors", "hNPVContributors", kTH1D, {axisMultUltraFinePVContributors});
 
       histos.add("hFT0CvsPVz_Collisions_All", "hFT0CvsPVz_Collisions_All", kTProfile, {axisPVz});
@@ -109,6 +117,8 @@ struct centralityStudy {
     if (doprocessBCs) {
       histos.add("hBCSelection", "hBCSelection", kTH1D, {{20, -0.5, 19.5f}});
       histos.add("hFT0C_BCs", "hFT0C_BCs", kTH1D, {axisMultUltraFineFT0C});
+      histos.add("hFT0M_BCs", "hFT0M_BCs", kTH1D, {axisMultUltraFineFT0M});
+      histos.add("hFV0A_BCs", "hFV0A_BCs", kTH1D, {axisMultUltraFineFV0A});
 
       histos.add("hFT0CvsPVz_BCs_All", "hFT0CvsPVz_BCs_All", kTProfile, {axisPVz});
       histos.add("hFT0CvsPVz_BCs", "hFT0CvsPVz_BCs", kTProfile, {axisPVz});
@@ -123,6 +133,7 @@ struct centralityStudy {
 
     if (doprocessCollisionsWithCentrality) {
       // in case requested: do vs centrality debugging
+      histos.add("hCentrality", "hCentrality", kTH1F, {axisCentrality});
       histos.add("hNContribsVsCentrality", "hNContribsVsCentrality", kTH2F, {axisCentrality, axisMultPVContributors});
       histos.add("hNITSTPCTracksVsCentrality", "hNITSTPCTracksVsCentrality", kTH2F, {axisCentrality, axisMultPVContributors});
       histos.add("hNITSOnlyTracksVsCentrality", "hNITSOnlyTracksVsCentrality", kTH2F, {axisCentrality, axisMultPVContributors});
@@ -216,19 +227,22 @@ struct centralityStudy {
 
     // if we got here, we also finally fill the FT0C histogram, please
     histos.fill(HIST("hNPVContributors"), collision.multPVTotalContributors());
-    histos.fill(HIST("hFT0C_Collisions"), collision.multFT0C());
-    histos.fill(HIST("hFT0CvsPVz_Collisions_All"), collision.multPVz(), collision.multFT0C());
+    histos.fill(HIST("hFT0C_Collisions"), collision.multFT0C() * scaleSignalFT0C);
+    histos.fill(HIST("hFT0M_Collisions"), (collision.multFT0A() + collision.multFT0C()) * scaleSignalFT0M);
+    histos.fill(HIST("hFV0A_Collisions"), collision.multFV0A() * scaleSignalFV0A);
+    histos.fill(HIST("hFT0CvsPVz_Collisions_All"), collision.multPVz(), collision.multFT0C() * scaleSignalFT0C);
     if (collision.multFT0C() > minFT0CforVertexZ) {
-      histos.fill(HIST("hFT0CvsPVz_Collisions"), collision.multPVz(), collision.multFT0C());
+      histos.fill(HIST("hFT0CvsPVz_Collisions"), collision.multPVz(), collision.multFT0C() * scaleSignalFT0C);
     }
     if (do2DPlots) {
-      histos.fill(HIST("hFT0CvsNContribs"), collision.multNTracksPV(), collision.multFT0C());
+      histos.fill(HIST("hFT0CvsNContribs"), collision.multNTracksPV(), collision.multFT0C() * scaleSignalFT0C);
       histos.fill(HIST("hMatchedVsITSOnly"), collision.multNTracksITSOnly(), collision.multNTracksITSTPC());
     }
 
     // if the table has centrality information
     if constexpr (requires { collision.centFT0C(); }) {
       // process FT0C centrality plots
+      histos.fill(HIST("hCentrality"), collision.centFT0C());
       histos.fill(HIST("hNContribsVsCentrality"), collision.centFT0C(), collision.multPVTotalContributors());
       histos.fill(HIST("hNITSTPCTracksVsCentrality"), collision.centFT0C(), collision.multNTracksITSTPC());
       histos.fill(HIST("hNITSOnlyTracksVsCentrality"), collision.centFT0C(), collision.multNTracksITSOnly());
@@ -275,11 +289,13 @@ struct centralityStudy {
     histos.fill(HIST("hBCSelection"), 4); // FV0OrA
 
     // if we got here, we also finally fill the FT0C histogram, please
-    histos.fill(HIST("hFT0C_BCs"), multbc.multBCFT0C());
+    histos.fill(HIST("hFT0C_BCs"), multbc.multBCFT0C() * scaleSignalFT0C);
+    histos.fill(HIST("hFT0M_BCs"), (multbc.multBCFT0A() + multbc.multBCFT0C()) * scaleSignalFT0M);
+    histos.fill(HIST("hFV0A_BCs"), multbc.multBCFV0A() * scaleSignalFV0A);
     if (multbc.multBCFT0PosZValid()) {
-      histos.fill(HIST("hFT0CvsPVz_BCs_All"), multbc.multBCFT0PosZ(), multbc.multBCFT0C());
+      histos.fill(HIST("hFT0CvsPVz_BCs_All"), multbc.multBCFT0PosZ(), multbc.multBCFT0C() * scaleSignalFT0C);
       if (multbc.multBCFT0C() > minFT0CforVertexZ) {
-        histos.fill(HIST("hFT0CvsPVz_BCs"), multbc.multBCFT0PosZ(), multbc.multBCFT0C());
+        histos.fill(HIST("hFT0CvsPVz_BCs"), multbc.multBCFT0PosZ(), multbc.multBCFT0C() * scaleSignalFT0C);
       }
     }
 

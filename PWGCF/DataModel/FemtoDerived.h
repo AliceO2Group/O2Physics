@@ -451,8 +451,8 @@ namespace hash
 {
 DECLARE_SOA_COLUMN(Bin, bin, int); //! Hash for the event mixing
 } // namespace hash
-DECLARE_SOA_TABLE(Hashes, "AOD", "HASH", hash::Bin);
-using Hash = Hashes::iterator;
+DECLARE_SOA_TABLE(MixingHashes, "AOD", "HASH", hash::Bin);
+using MixingHash = MixingHashes::iterator;
 
 } // namespace o2::aod
 

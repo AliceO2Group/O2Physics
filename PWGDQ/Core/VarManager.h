@@ -593,6 +593,7 @@ class VarManager : public TObject
     kPhiHE,
     kPhiCS,
     kDeltaPhiPair2,
+    kDeltaEtaPair2,
     kPsiPair,
     kDeltaPhiPair,
     kOpeningAngle,
@@ -2558,6 +2559,10 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
     }
   }
 
+  if (fgUsedVars[kDeltaEtaPair2]) {
+    values[kDeltaEtaPair2] = v1.Eta() - v2.Eta();
+  }
+
   if (fgUsedVars[kPsiPair]) {
     values[kDeltaPhiPair] = (t1.sign() * fgMagField > 0.) ? (v1.Phi() - v2.Phi()) : (v2.Phi() - v1.Phi());
     double xipair = TMath::ACos((v1.Px() * v2.Px() + v1.Py() * v2.Py() + v1.Pz() * v2.Pz()) / v1.P() / v2.P());
@@ -2895,6 +2900,21 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
   // values[kPhi] = v12.Phi();
   values[kPhi] = v12.Phi() > 0 ? v12.Phi() : v12.Phi() + 2. * M_PI;
   values[kRap] = -v12.Rapidity();
+
+  if (fgUsedVars[kDeltaPhiPair2]) {
+    double phipair2ME = v1.Phi() - v2.Phi();
+    if (phipair2ME > 3 * TMath::Pi() / 2) {
+      values[kDeltaPhiPair2] = phipair2ME - 2 * TMath::Pi();
+    } else if (phipair2ME < -TMath::Pi() / 2) {
+      values[kDeltaPhiPair2] = phipair2ME + 2 * TMath::Pi();
+    } else {
+      values[kDeltaPhiPair2] = phipair2ME;
+    }
+  }
+
+  if (fgUsedVars[kDeltaEtaPair2]) {
+    values[kDeltaEtaPair2] = v1.Eta() - v2.Eta();
+  }
 
   // TODO: provide different computations for vn
   // Compute the scalar product UQ for two muon from different event using Q-vector from A, for second and third harmonic

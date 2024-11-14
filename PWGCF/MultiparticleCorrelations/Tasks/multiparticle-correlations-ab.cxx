@@ -108,7 +108,8 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     DefaultConfiguration(); // here default values from configurables are taken into account
     DefaultBooking();       // here I decide only which histograms are booked, not details like binning, etc.
     DefaultBinning();       // here default values for bins are either hardwired, or values for bins provided via configurables are taken into account
-    DefaultCuts();          // here default values for cuts are either hardwired, or defined through default binning to ease bookeeping, or values for cuts provided via configurables are taken into account
+    DefaultCuts();          // here default values for cuts are either hardwired, or defined through default binning to ease bookeeping,
+                            // or values for cuts provided via configurables are taken into account
                             // Remark: DefaultCuts() has to be called after DefaultBinning()
 
     // *) Insanity checks before booking:
