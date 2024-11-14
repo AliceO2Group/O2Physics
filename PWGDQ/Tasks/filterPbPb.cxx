@@ -17,6 +17,7 @@
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
 #include "PWGDQ/Core/VarManager.h"
 #include "CommonConstants/LHCConstants.h"
+#include "ReconstructionDataFormats/Vertex.h"
 
 using namespace std;
 
@@ -58,7 +59,7 @@ struct DQFilterPbPbTask {
     fStats->GetXaxis()->SetBinLabel(1, "Events inspected");
     fStats->GetXaxis()->SetBinLabel(2, "Events selected");
     // setup the FilterOutcome histogram
-    fFilterOutcome.setObject(new TH1D("Filter outcome", "Filter outcome", 8, 0.5, 8.5));
+    fFilterOutcome.setObject(new TH1D("Filter outcome", "Filter outcome", 9, 0.5, 9.5));
     fFilterOutcome->GetXaxis()->SetBinLabel(1, "Events inspected");
     fFilterOutcome->GetXaxis()->SetBinLabel(2, "Events selected");
     fFilterOutcome->GetXaxis()->SetBinLabel(3, "!A && !C");
@@ -67,6 +68,7 @@ struct DQFilterPbPbTask {
     fFilterOutcome->GetXaxis()->SetBinLabel(6, "A && C");
     fFilterOutcome->GetXaxis()->SetBinLabel(7, Form("numContrib not in [%d, %d]", fConfigMinNPVCs.value, fConfigMaxNPVCs.value));
     fFilterOutcome->GetXaxis()->SetBinLabel(8, "BC not found");
+    fFilterOutcome->GetXaxis()->SetBinLabel(9, "ITS UPC settings used");
 
     TString eventTypesString = fConfigEventTypes.value;
     for (std::vector<std::string>::size_type i = 0; i < eventTypeOptions.size(); i++) {
@@ -264,6 +266,12 @@ struct DQFilterPbPbTask {
 
     bool isSelected = filter;
     fStats->Fill(-1.0, isSelected);
+
+    // Record whether UPC settings were used for this event
+    if (collision.flags() & dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode) {
+      filter |= (uint64_t(1) << VarManager::kITSUPCMode);
+      fFilterOutcome->Fill(9, 1);
+    }
 
     eventFilter(filter);
   }

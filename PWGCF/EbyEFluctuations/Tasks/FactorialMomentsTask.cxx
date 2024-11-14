@@ -228,44 +228,29 @@ struct FactorialMoments {
     fqEvent = {{{{{0, 0, 0, 0, 0, 0}}}}};
     binConEvent = {{{0, 0, 0, 0, 0}}};
     for (auto const& track : tracks) {
-      if (includeGlobalTracks && (!track.isGlobalTrack())) {
-        continue;
+      if (track.hasTPC()) {
+        histos.fill(HIST("mCollID"), track.collisionId());
+        histos.fill(HIST("mEta"), track.eta());
+        histos.fill(HIST("mPt"), track.pt());
+        histos.fill(HIST("mPhi"), track.phi());
+        histos.fill(HIST("mNFindableClsTPC"), track.tpcNClsFindable());
+        histos.fill(HIST("mNClsTPC"), track.tpcNClsFound());
+        histos.fill(HIST("mNClsITS"), track.itsNCls());
+        histos.fill(HIST("mChi2TPC"), track.tpcChi2NCl());
+        histos.fill(HIST("mChi2ITS"), track.itsChi2NCl());
+        histos.fill(HIST("mChi2TRD"), track.trdChi2());
+        histos.fill(HIST("mDCAxy"), track.dcaXY());
+        histos.fill(HIST("mDCAx"), track.dcaZ());
+        histos.fill(HIST("mDCAxyPt"), track.pt(), track.dcaXY());
+        histos.fill(HIST("mDCAzPt"), track.pt(), track.dcaZ());
+        histos.fill(HIST("mNSharedClsTPC"), track.tpcNClsShared());
+        histos.fill(HIST("mCrossedRowsTPC"), track.tpcNClsCrossedRows());
+        histos.fill(HIST("mNFinClsminusCRows"), track.tpcNClsFindableMinusCrossedRows());
+        histos.fill(HIST("mNFractionShClsTPC"), track.tpcFractionSharedCls());
+        histos.fill(HIST("mSharedClsvsPt"), track.pt(), track.tpcNClsShared());
+        histos.fill(HIST("mSharedClsProbvsPt"), track.pt(), track.tpcFractionSharedCls() / track.tpcNClsCrossedRows());
+        checkpT(track);
       }
-      if (includeTPCTracks && (!track.hasTPC())) {
-        continue;
-      }
-      if (includeITSTracks && (!track.hasITS())) {
-        continue;
-      }
-      histos.fill(HIST("mDCAxyPtbcut"), track.pt(), track.dcaXY());
-      histos.fill(HIST("mDCAzPtbcut"), track.pt(), track.dcaZ());
-      if ((track.pt() < confPtMin) || (track.tpcNClsFindable() < confMinTPCCls)) {
-        continue;
-      }
-      if (TMath::Abs(track.dcaXY()) > (0.0105 + 0.0350 / TMath::Power(track.pt(), 1.1))) {
-        continue;
-      }
-      histos.fill(HIST("mCollID"), track.collisionId());
-      histos.fill(HIST("mEta"), track.eta());
-      histos.fill(HIST("mPt"), track.pt());
-      histos.fill(HIST("mPhi"), track.phi());
-      histos.fill(HIST("mNFindableClsTPC"), track.tpcNClsFindable());
-      histos.fill(HIST("mNClsTPC"), track.tpcNClsFound());
-      histos.fill(HIST("mNClsITS"), track.itsNCls());
-      histos.fill(HIST("mChi2TPC"), track.tpcChi2NCl());
-      histos.fill(HIST("mChi2ITS"), track.itsChi2NCl());
-      histos.fill(HIST("mChi2TRD"), track.trdChi2());
-      histos.fill(HIST("mDCAxy"), track.dcaXY());
-      histos.fill(HIST("mDCAx"), track.dcaZ());
-      histos.fill(HIST("mDCAxyPt"), track.pt(), track.dcaXY());
-      histos.fill(HIST("mDCAzPt"), track.pt(), track.dcaZ());
-      histos.fill(HIST("mNSharedClsTPC"), track.tpcNClsShared());
-      histos.fill(HIST("mCrossedRowsTPC"), track.tpcNClsCrossedRows());
-      histos.fill(HIST("mNFinClsminusCRows"), track.tpcNClsFindableMinusCrossedRows());
-      histos.fill(HIST("mNFractionShClsTPC"), track.tpcFractionSharedCls());
-      histos.fill(HIST("mSharedClsvsPt"), track.pt(), track.tpcNClsShared());
-      histos.fill(HIST("mSharedClsProbvsPt"), track.pt(), track.tpcFractionSharedCls() / track.tpcNClsCrossedRows());
-      checkpT(track);
     }
     for (auto iPt = 0; iPt < confNumPt; ++iPt) {
       // if (countTracks[iPt] > 0)

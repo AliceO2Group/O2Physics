@@ -18,6 +18,7 @@
 /// \author Katarzyna Gwiździel, WUT Warsaw, katarzyna.gwizdziel@cern.ch
 
 #include <vector>
+#include <string>
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
@@ -56,9 +57,7 @@ static constexpr int nPart = 2;
 static constexpr int nCuts = 5;
 static const std::vector<std::string> partNames{"D0", "Track"};
 static const std::vector<std::string> cutNames{"MaxPt", "PIDthr", "nSigmaTPC", "nSigmaTPCTOF", "MaxP"};
-static const float cutsTable[nPart][nCuts]{
-  {4.05f, 1.f, 3.f, 3.f, 100.f},
-  {4.05f, 1.f, 3.f, 3.f, 100.f}};
+static const float cutsTable[nPart][nCuts]{{4.05f, 1.f, 3.f, 3.f, 100.f}, {4.05f, 1.f, 3.f, 3.f, 100.f}};
 } // namespace
 
 /// Returns deltaPhi value within the range [-pi/2, 3/2*pi]
@@ -483,9 +482,9 @@ struct femtoUniversePairTaskTrackD0 {
       }
       // filling QA plots for D0 mesons' negative daughters (pi-)
       if (daughD0D0bar.mLambda() == -1 && daughD0D0bar.mAntiLambda() == 1) {
-        qaRegistry.fill(HIST("D0_pos_daugh/pt"), daughD0D0bar.pt());
-        qaRegistry.fill(HIST("D0_pos_daugh/eta"), daughD0D0bar.eta());
-        qaRegistry.fill(HIST("D0_pos_daugh/phi"), daughD0D0bar.phi());
+        qaRegistry.fill(HIST("D0_neg_daugh/pt"), daughD0D0bar.pt());
+        qaRegistry.fill(HIST("D0_neg_daugh/eta"), daughD0D0bar.eta());
+        qaRegistry.fill(HIST("D0_neg_daugh/phi"), daughD0D0bar.phi());
       }
       // filling QA plots for D0bar mesons' positive daughters (pi+)
       if (daughD0D0bar.mLambda() == 1 && daughD0D0bar.mAntiLambda() == -1) {
@@ -556,7 +555,7 @@ struct femtoUniversePairTaskTrackD0 {
           }
         }
       } // It is the end of the for loop over D0bar mesons
-    }   // It is the end of the for loop over all candidates
+    } // It is the end of the for loop over all candidates
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackD0, processSideBand, "Enable processing side-band methode", false);
 
@@ -578,6 +577,7 @@ struct femtoUniversePairTaskTrackD0 {
     for (auto& d0candidate : groupPartsD0) {
       trackHistoPartD0D0bar.fillQA<isMC, false>(d0candidate);
     }
+
     float tpcNSigmaPr, tofNSigmaPr, tpcNSigmaPi, tofNSigmaPi, tpcNSigmaKa, tofNSigmaKa;
 
     if (!ConfTrack.ConfIsSame) {

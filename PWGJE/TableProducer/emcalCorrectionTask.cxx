@@ -75,7 +75,6 @@ struct EmcalCorrectionTask {
   Configurable<int> selectedCellType{"selectedCellType", 1, "EMCAL Cell type"};
   Configurable<std::string> clusterDefinitions{"clusterDefinition", "kV3Default", "cluster definition to be selected, e.g. V3Default. Multiple definitions can be specified separated by comma"};
   Configurable<float> maxMatchingDistance{"maxMatchingDistance", 0.4f, "Max matching distance track-cluster"};
-  Configurable<bool> hasPropagatedTracks{"hasPropagatedTracks", false, "temporary flag, only set to true when running over data which has the tracks propagated to EMCal/PHOS!"};
   Configurable<std::string> nonlinearityFunction{"nonlinearityFunction", "DATA_TestbeamFinal", "Nonlinearity correction at cluster level"};
   Configurable<bool> disableNonLin{"disableNonLin", false, "Disable NonLin correction if set to true"};
   Configurable<bool> hasShaperCorrection{"hasShaperCorrection", true, "Apply correction for shaper saturation"};
@@ -88,6 +87,7 @@ struct EmcalCorrectionTask {
   Configurable<float> exoticCellInCrossMinAmplitude{"exoticCellInCrossMinAmplitude", 0.1, "Minimum energy of cells in cross, if lower not considered in cross"};
   Configurable<bool> useWeightExotic{"useWeightExotic", false, "States if weights should be used for exotic cell cut"};
   Configurable<bool> isMC{"isMC", false, "States if run over MC"};
+  Configurable<int> applyCellTimeShift{"applyCellTimeShift", 0, "apply shift to the cell time; 0 = off; 1 = const shift; 2 = eta-dependent shift"};
 
   // Require EMCAL cells (CALO type 1)
   Filter emccellfilter = aod::calo::caloType == selectedCellType;
@@ -109,6 +109,9 @@ struct EmcalCorrectionTask {
   // QA
   o2::framework::HistogramRegistry mHistManager{"EMCALCorrectionTaskQAHistograms"};
 
+  // EMCal geometry
+  o2::emcal::Geometry* geometry;
+
   void init(InitContext const&)
   {
     LOG(debug) << "Start init!";
@@ -125,7 +128,7 @@ struct EmcalCorrectionTask {
       mCcdbManager->get<TGeoManager>("GLO/Config/Geometry");
     }
     LOG(debug) << "After load geometry!";
-    o2::emcal::Geometry* geometry = o2::emcal::Geometry::GetInstanceFromRunNumber(223409);
+    geometry = o2::emcal::Geometry::GetInstanceFromRunNumber(223409);
     if (!geometry) {
       LOG(error) << "Failure accessing geometry";
     }
@@ -176,29 +179,32 @@ struct EmcalCorrectionTask {
     using o2HistType = o2::framework::HistType;
     using o2Axis = o2::framework::AxisSpec;
     o2Axis energyAxis{200, 0., 100., "E (GeV)"},
+      timeAxis{300, -100, 200., "t (ns)"},
       etaAxis{160, -0.8, 0.8, "#eta"},
       phiAxis{72, 0, 2 * 3.14159, "phi"};
     mHistManager.add("hCellE", "hCellE", o2HistType::kTH1F, {energyAxis});
-    mHistManager.add("hCellTowerID", "hCellTowerID", o2HistType::kTH1I, {{20000, 0, 20000}});
+    mHistManager.add("hCellTowerID", "hCellTowerID", o2HistType::kTH1D, {{20000, 0, 20000}});
     mHistManager.add("hCellEtaPhi", "hCellEtaPhi", o2HistType::kTH2F, {etaAxis, phiAxis});
     // NOTE: Reversed column and row because it's more natural for presentation.
-    mHistManager.add("hCellRowCol", "hCellRowCol;Column;Row", o2HistType::kTH2I, {{97, 0, 97}, {600, 0, 600}});
+    mHistManager.add("hCellRowCol", "hCellRowCol;Column;Row", o2HistType::kTH2D, {{97, 0, 97}, {600, 0, 600}});
     mHistManager.add("hClusterE", "hClusterE", o2HistType::kTH1F, {energyAxis});
     mHistManager.add("hClusterEtaPhi", "hClusterEtaPhi", o2HistType::kTH2F, {etaAxis, phiAxis});
+    mHistManager.add("hClusterTime", "hClusterTime", o2HistType::kTH1F, {timeAxis});
     mHistManager.add("hGlobalTrackEtaPhi", "hGlobalTrackEtaPhi", o2HistType::kTH2F, {etaAxis, phiAxis});
-    mHistManager.add("hGlobalTrackMult", "hGlobalTrackMult", o2HistType::kTH1I, {{200, -0.5, 199.5, "N_{trk}"}});
-    mHistManager.add("hCollisionType", "hCollisionType;;#it{count}", o2HistType::kTH1I, {{3, -0.5, 2.5}});
+    mHistManager.add("hGlobalTrackMult", "hGlobalTrackMult", o2HistType::kTH1D, {{200, -0.5, 199.5, "N_{trk}"}});
+    mHistManager.add("hCollisionType", "hCollisionType;;#it{count}", o2HistType::kTH1D, {{3, -0.5, 2.5}});
     auto hCollisionType = mHistManager.get<TH1>(HIST("hCollisionType"));
     hCollisionType->GetXaxis()->SetBinLabel(1, "no collision");
     hCollisionType->GetXaxis()->SetBinLabel(2, "normal collision");
     hCollisionType->GetXaxis()->SetBinLabel(3, "mult. collisions");
-    mHistManager.add("hClusterType", "hClusterType;;#it{count}", o2HistType::kTH1I, {{3, -0.5, 2.5}});
+    mHistManager.add("hClusterType", "hClusterType;;#it{count}", o2HistType::kTH1D, {{3, -0.5, 2.5}});
     auto hClusterType = mHistManager.get<TH1>(HIST("hClusterType"));
     hClusterType->GetXaxis()->SetBinLabel(1, "no collision");
     hClusterType->GetXaxis()->SetBinLabel(2, "normal collision");
     hClusterType->GetXaxis()->SetBinLabel(3, "mult. collisions");
-    mHistManager.add("hCollPerBC", "hCollPerBC;#it{N}_{coll.};#it{count}", o2HistType::kTH1I, {{100, -0.5, 99.5}});
-    mHistManager.add("hBC", "hBC;;#it{count}", o2HistType::kTH1I, {{8, -0.5, 7.5}});
+    mHistManager.add("hCollPerBC", "hCollPerBC;#it{N}_{coll.};#it{count}", o2HistType::kTH1D, {{100, -0.5, 99.5}});
+    mHistManager.add("hBC", "hBC;;#it{count}", o2HistType::kTH1D, {{8, -0.5, 7.5}});
+    mHistManager.add("hCollisionTimeReso", "hCollisionTimeReso;#Delta t_{coll};#it{count}", o2HistType::kTH1D, {{2000, 0, 2000}});
     auto hBC = mHistManager.get<TH1>(HIST("hBC"));
     hBC->GetXaxis()->SetBinLabel(1, "with EMCal cells");
     hBC->GetXaxis()->SetBinLabel(2, "with EMCal cells but no collision");
@@ -258,7 +264,7 @@ struct EmcalCorrectionTask {
         }
         cellsBC.emplace_back(cell.cellNumber(),
                              amplitude,
-                             cell.time(),
+                             cell.time() + getCellTimeShift(cell.cellNumber()),
                              o2::emcal::intToChannelType(cell.cellType()));
         cellIndicesBC.emplace_back(cell.globalIndex());
       }
@@ -284,6 +290,7 @@ struct EmcalCorrectionTask {
           // dummy loop to get the first collision
           for (const auto& col : collisionsInFoundBC) {
             if (col.foundBCId() == bc.globalIndex()) {
+              mHistManager.fill(HIST("hCollisionTimeReso"), col.collisionTimeRes());
               mHistManager.fill(HIST("hCollPerBC"), 1);
               mHistManager.fill(HIST("hCollisionType"), 1);
               math_utils::Point3D<float> vertex_pos = {col.posX(), col.posY(), col.posZ()};
@@ -376,7 +383,7 @@ struct EmcalCorrectionTask {
         }
         cellsBC.emplace_back(cell.cellNumber(),
                              amplitude,
-                             cell.time(),
+                             cell.time() + getCellTimeShift(cell.cellNumber()),
                              o2::emcal::intToChannelType(cell.cellType()));
         cellIndicesBC.emplace_back(cell.globalIndex());
         cellLabels.emplace_back(cell.mcParticleIds(), cell.amplitudeA());
@@ -478,7 +485,7 @@ struct EmcalCorrectionTask {
       for (auto& cell : cellsInBC) {
         cellsBC.emplace_back(cell.cellNumber(),
                              cell.amplitude(),
-                             cell.time(),
+                             cell.time() + getCellTimeShift(cell.cellNumber()),
                              o2::emcal::intToChannelType(cell.cellType()));
         cellIndicesBC.emplace_back(cell.globalIndex());
       }
@@ -617,6 +624,7 @@ struct EmcalCorrectionTask {
       } // end of cells of cluser loop
       // fill histograms
       mHistManager.fill(HIST("hClusterE"), cluster.E());
+      mHistManager.fill(HIST("hClusterTime"), cluster.getClusterTime());
       mHistManager.fill(HIST("hClusterEtaPhi"), pos.Eta(), TVector2::Phi_0_2pi(pos.Phi()));
       if (IndexMapPair && trackGlobalIndex) {
         for (unsigned int iTrack = 0; iTrack < std::get<0>(*IndexMapPair)[iCluster].size(); iTrack++) {
@@ -669,7 +677,7 @@ struct EmcalCorrectionTask {
         clustercellsambiguous(clustersAmbiguous.lastIndex(),
                               cellIndicesBC[cellindex]);
       } // end of cells of cluster loop
-    }   // end of cluster loop
+    } // end of cluster loop
   }
 
   template <typename Collision>
@@ -719,18 +727,10 @@ struct EmcalCorrectionTask {
         continue;
       }
       NTrack++;
-      if (hasPropagatedTracks) { // only temporarily while not every data
-                                 // has the tracks propagated to EMCal/PHOS
-        trackPhi.emplace_back(TVector2::Phi_0_2pi(track.trackPhiEmcal()));
-        trackEta.emplace_back(track.trackEtaEmcal());
-        mHistManager.fill(HIST("hGlobalTrackEtaPhi"), track.trackEtaEmcal(),
-                          TVector2::Phi_0_2pi(track.trackPhiEmcal()));
-      } else {
-        trackPhi.emplace_back(TVector2::Phi_0_2pi(track.phi()));
-        trackEta.emplace_back(track.eta());
-        mHistManager.fill(HIST("hGlobalTrackEtaPhi"), track.eta(),
-                          TVector2::Phi_0_2pi(track.phi()));
-      }
+      trackPhi.emplace_back(TVector2::Phi_0_2pi(track.trackPhiEmcal()));
+      trackEta.emplace_back(track.trackEtaEmcal());
+      mHistManager.fill(HIST("hGlobalTrackEtaPhi"), track.trackEtaEmcal(),
+                        TVector2::Phi_0_2pi(track.trackPhiEmcal()));
       trackGlobalIndex.emplace_back(track.globalIndex());
     }
     mHistManager.fill(HIST("hGlobalTrackMult"), NTrack);
@@ -787,6 +787,30 @@ struct EmcalCorrectionTask {
       return vCellAbsScaleFactor.value[std::get<1>(res)];
     } else {
       return 1.f;
+    }
+  }
+
+  // Apply shift of the cell time
+  // This has to be done to shift the cell time in MC (which is not calibrated to 0 due to the flight time of the particles to the EMCal surface (~15ns))
+  float getCellTimeShift(const int16_t cellID)
+  {
+    if (isMC) {
+      if (applyCellTimeShift == 1) { // constant shift
+        LOG(debug) << "shift the cell time by 15ns";
+        return -15.f;                       // roughly calculated by assuming particles travel with v=c (photons) and EMCal is 4.4m away from vertex
+      } else if (applyCellTimeShift == 2) { // eta dependent shift ( as larger eta values are further away from collision point)
+        // Use distance between vertex and EMCal (at eta = 0) and distance on EMCal surface (cell size times column) to calculate distance to cell
+        // 0.2 is cell size in m (0.06) divided by the speed of light in m/ns (0.3)
+        // 47.5 is the "middle" of the EMCal (2*48 cells in one column)
+        float timeCol = 0.2f * (geometry->GlobalCol(cellID) - 47.5f); // calculate time to get to specific column
+        float time = -sqrt(215.f + timeCol * timeCol);                // 215 is 14.67ns^2 (time it takes to get the cell at eta = 0)
+        LOG(debug) << "shift the cell time by " << time << "  applyCellTimeShift " << applyCellTimeShift;
+        return time;
+      } else {
+        return 0.f;
+      }
+    } else { // data
+      return 0.f;
     }
   }
 };

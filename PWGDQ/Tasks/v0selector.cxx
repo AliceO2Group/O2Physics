@@ -19,6 +19,8 @@
 //
 #include <array>
 #include <map>
+#include <string>
+#include <memory>
 #include "Math/Vector4D.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -301,7 +303,7 @@ struct v0selector {
           registry.fill(HIST("hMassGamma"), V0radius, mGamma);
           registry.fill(HIST("hV0Psi"), psipair, mGamma);
         }
-        if (mGamma < v0max_mee && TMath::Abs(V0.posTrack_as<FullTracksExt>().tpcNSigmaEl()) < 5 && TMath::Abs(V0.negTrack_as<FullTracksExt>().tpcNSigmaEl()) < 5 && psipair < maxpsipair) {
+        if (mGamma < v0max_mee && TMath::Abs(V0.posTrack_as<FullTracksExt>().tpcNSigmaEl()) < 5 && TMath::Abs(V0.negTrack_as<FullTracksExt>().tpcNSigmaEl()) < 5 && TMath::Abs(psipair) < maxpsipair) {
           pidmap[V0.posTrackId()] |= (uint8_t(1) << kGamma);
           pidmap[V0.negTrackId()] |= (uint8_t(1) << kGamma);
           if (fillhisto) {

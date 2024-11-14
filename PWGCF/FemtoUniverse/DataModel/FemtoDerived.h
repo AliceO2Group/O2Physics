@@ -126,6 +126,24 @@ DECLARE_SOA_COLUMN(DecayVtxZ, decayVtxZ, float);     //! Z position of the decay
 DECLARE_SOA_COLUMN(MKaon, mKaon, float);             //! The invariant mass of V0 candidate, assuming kaon
 
 } // namespace femtouniverseparticle
+
+/// FemtoUniverseCascadeTrack
+namespace femtouniversecascparticle
+{
+
+DECLARE_SOA_COLUMN(DcaV0daughters, dcaV0daughters, float);     //! DCA between V0 daughters
+DECLARE_SOA_COLUMN(Cpav0, cpav0, float);                       //! V0 cos of pointing angle
+DECLARE_SOA_COLUMN(V0radius, v0radius, float);                 //! V0 transverse radius
+DECLARE_SOA_COLUMN(CpaCasc, cpaCasc, float);                   //! cascade cosinus of pointing angle
+DECLARE_SOA_COLUMN(Dcacascdaughters, dcacascdaughters, float); //! DCA between cascade daughters
+DECLARE_SOA_COLUMN(Cascradius, cascradius, float);             //! cascade transverse radius
+DECLARE_SOA_COLUMN(Dcapostopv, dcapostopv, float);             //! DCA of positive daughter to PV
+DECLARE_SOA_COLUMN(Dcanegtopv, dcanegtopv, float);             //! DCA of negative daughter to PV
+DECLARE_SOA_COLUMN(Dcabachtopv, dcabachtopv, float);           //! DCA of bachelor track to PV
+DECLARE_SOA_COLUMN(Dcav0topv, dcav0topv, float);               //! DCA of V0 to PV
+
+} // namespace femtouniversecascparticle
+
 DECLARE_SOA_TABLE(FDParticles, "AOD", "FDPARTICLE",
                   o2::soa::Index<>,
                   femtouniverseparticle::FDCollisionId,
@@ -186,6 +204,36 @@ DECLARE_SOA_TABLE(FDExtParticles, "AOD", "FDEXTPARTICLE",
                   pidtof_tiny::TOFNSigmaPr<pidtof_tiny::TOFNSigmaStorePr>,
                   pidtof_tiny::TOFNSigmaDe<pidtof_tiny::TOFNSigmaStoreDe>);
 using FDFullParticle = FDExtParticles::iterator;
+
+DECLARE_SOA_TABLE(FDCascParticles, "AOD", "FDCASCPARTICLE",
+                  o2::soa::Index<>,
+                  femtouniverseparticle::FDCollisionId,
+                  femtouniverseparticle::Pt,
+                  femtouniverseparticle::Eta,
+                  femtouniverseparticle::Phi,
+                  femtouniverseparticle::PartType,
+                  femtouniverseparticle::Cut,
+                  femtouniverseparticle::PIDCut,
+                  femtouniverseparticle::TempFitVar,
+                  femtouniverseparticle::ChildrenIds,
+                  femtouniverseparticle::MLambda,
+                  femtouniverseparticle::MAntiLambda,
+                  femtouniverseparticle::Theta<femtouniverseparticle::Eta>,
+                  femtouniverseparticle::Px<femtouniverseparticle::Pt, femtouniverseparticle::Phi>,
+                  femtouniverseparticle::Py<femtouniverseparticle::Pt, femtouniverseparticle::Phi>,
+                  femtouniverseparticle::Pz<femtouniverseparticle::Pt, femtouniverseparticle::Eta>,
+                  femtouniverseparticle::P<femtouniverseparticle::Pt, femtouniverseparticle::Eta>,
+                  femtouniversecascparticle::DcaV0daughters,
+                  femtouniversecascparticle::Cpav0,
+                  femtouniversecascparticle::V0radius,
+                  femtouniversecascparticle::CpaCasc,
+                  femtouniversecascparticle::Dcacascdaughters,
+                  femtouniversecascparticle::Cascradius,
+                  femtouniversecascparticle::Dcapostopv,
+                  femtouniversecascparticle::Dcanegtopv,
+                  femtouniversecascparticle::Dcabachtopv,
+                  femtouniversecascparticle::Dcav0topv);
+using FDCascParticle = FDCascParticles::iterator;
 
 /// FemtoUniverseTrackMC
 namespace femtouniverseMCparticle
@@ -253,8 +301,8 @@ namespace hash
 {
 DECLARE_SOA_COLUMN(Bin, bin, int); //! Hash for the event mixing
 } // namespace hash
-DECLARE_SOA_TABLE(Hashes, "AOD", "HASH", hash::Bin);
-using Hash = Hashes::iterator;
+DECLARE_SOA_TABLE(MixingHashes, "AOD", "HASH", hash::Bin);
+using MixingHash = MixingHashes::iterator;
 
 } // namespace o2::aod
 

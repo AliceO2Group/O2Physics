@@ -85,6 +85,9 @@ struct threebodyRecoTask {
   std::vector<unsigned int> filledMothers;
   std::vector<bool> isGoodCollision;
 
+  //------------------------------------------------------------------
+  Preslice<aod::Vtx3BodyDatas> perCollisionVtx3BodyDatas = o2::aod::vtx3body::collisionId;
+
   // Selection criteria
   Configurable<double> vtxcospa{"vtxcospa", 0.99, "Vtx CosPA"};         // double -> N.B. dcos(x)/dx = 0 at x=0)
   Configurable<float> dcavtxdau{"dcavtxdau", 1.0, "DCA Vtx Daughters"}; // loose cut
@@ -95,6 +98,7 @@ struct threebodyRecoTask {
   Configurable<float> TofPidNsigmaMax{"TofPidNsigmaMax", 5, "TofPidNsigmaMax"};
   Configurable<float> TpcPidNsigmaCut{"TpcPidNsigmaCut", 5, "TpcPidNsigmaCut"};
   Configurable<bool> event_sel8_selection{"event_sel8_selection", true, "event selection count post sel8 cut"};
+  Configurable<bool> mc_event_selection{"mc_event_selection", true, "mc event selection count post kIsTriggerTVX and kNoTimeFrameBorder"};
   Configurable<bool> event_posZ_selection{"event_posZ_selection", true, "event selection count post poZ cut"};
   Configurable<float> lifetimecut{"lifetimecut", 40., "lifetimecut"}; // ct
   Configurable<float> minProtonPt{"minProtonPt", 0.3, "minProtonPt"};
@@ -144,16 +148,16 @@ struct threebodyRecoTask {
   //------------------------------------------------------------------
   // Fill stats histograms
   enum vtxstep { kCandAll = 0,
-                 kCandCosPA,
                  kCandDauEta,
+                 kCandDauPt,
+                 kCandTPCNcls,
+                 kCandTPCPID,
+                 kCandTOFPID,
+                 kCandDcaToPV,
                  kCandRapidity,
                  kCandct,
+                 kCandCosPA,
                  kCandDcaDau,
-                 kCandTOFPID,
-                 kCandTPCPID,
-                 kCandTPCNcls,
-                 kCandDauPt,
-                 kCandDcaToPV,
                  kCandInvMass,
                  kNCandSteps };
 
@@ -202,6 +206,10 @@ struct threebodyRecoTask {
     registry.add("hDiffRVtxDeuteron", "hDiffRVtxDeuteron", HistType::kTH1F, {{100, -10, 10}}); // difference between the radius of decay vertex and minR of deuteron
     registry.add("hDiffDaughterR", "hDiffDaughterR", HistType::kTH1F, {{10000, -100, 100}});   // difference between minR of pion&proton and R of deuteron(bachelor)
 
+    if (doprocessDataLikeSign == true) {
+      registry.add("hCorrectMassHypertriton", "hCorrectMassHypertriton", HistType::kTH1F, {{80, 2.96f, 3.04f}}); // check if there are contamination of possible signals which are caused by unexpected PID
+    }
+
     if (doprocessMC == true) {
       registry.add("hTrueHypertritonCounter", "hTrueHypertritonCounter", HistType::kTH1F, {{12, 0.0f, 12.0f}});
       auto hGeneratedHypertritonCounter = registry.add<TH1>("hGeneratedHypertritonCounter", "hGeneratedHypertritonCounter", HistType::kTH1F, {{2, 0.0f, 2.0f}});
@@ -217,7 +225,7 @@ struct threebodyRecoTask {
       registry.add("hRapidityGeneratedAntiHypertriton", "hRapidityGeneratedAntiHypertriton", HistType::kTH1F, {{40, -2.0f, 2.0f}});
     }
 
-    TString CandCounterbinLabel[kNCandSteps] = {"Total", "VtxCosPA", "TrackEta", "MomRapidity", "Lifetime", "VtxDcaDau", "d TOFPID", "TPCPID", "TPCNcls", "DauPt", "PionDcatoPV", "InvMass"};
+    TString CandCounterbinLabel[kNCandSteps] = {"Total", "TrackEta", "DauPt", "TPCNcls", "TPCPID", "d TOFPID", "PionDcatoPV", "MomRapidity", "Lifetime", "VtxCosPA", "VtxDcaDau", "InvMass"};
     for (int i{0}; i < kNCandSteps; i++) {
       registry.get<TH1>(HIST("hCandidatesCounter"))->GetXaxis()->SetBinLabel(i + 1, CandCounterbinLabel[i]);
       if (doprocessMC == true) {
@@ -227,8 +235,7 @@ struct threebodyRecoTask {
   }
 
   //------------------------------------------------------------------
-  Preslice<aod::Vtx3BodyDatas> perCollisionVtx3BodyDatas = o2::aod::vtx3body::collisionId;
-  //------------------------------------------------------------------
+  // Check if the mcparticle is hypertriton which decays into 3 daughters
   template <class TMCTrackTo, typename TMCParticle>
   bool is3bodyDecayed(TMCParticle const& particle)
   {
@@ -260,104 +267,24 @@ struct threebodyRecoTask {
   }
 
   //------------------------------------------------------------------
-  // Analysis process for a single candidate
-  template <class TTrackClass, typename TCollisionTable, typename TCandTable>
-  void CandidateAnalysis(TCollisionTable const& dCollision, TCandTable const& candData, bool& if_hasvtx, bool isTrueCand = false, int lLabel = -1, TLorentzVector lmother = {0, 0, 0, 0}, double MClifetime = -1)
+  // Fill candidate table
+  template <typename TCollisionTable, typename TTrackTable, typename TCandTable>
+  void FillCand(TCollisionTable const& collision, TCandTable const& candData, TTrackTable const& trackProton, TTrackTable const& trackPion, TTrackTable const& trackDeuteron, bool isMatter, bool isTrueCand = false, int lLabel = -1, TLorentzVector lmother = {0, 0, 0, 0}, double MClifetime = -1)
   {
 
-    FillCandCounter(kCandAll, isTrueCand);
-
-    auto track0 = candData.template track0_as<TTrackClass>();
-    auto track1 = candData.template track1_as<TTrackClass>();
-    auto track2 = candData.template track2_as<TTrackClass>();
-
-    auto& trackProton = (track2.sign() > 0) ? track0 : track1;
-    auto& trackPion = (track2.sign() > 0) ? track1 : track0;
-    auto& trackDeuteron = track2;
-
-    double cospa = candData.vtxcosPA(dCollision.posX(), dCollision.posY(), dCollision.posZ());
-    if (cospa < vtxcospa) {
-      return;
-    }
-    FillCandCounter(kCandCosPA, isTrueCand);
-    if (std::abs(trackProton.eta()) > etacut || std::abs(trackPion.eta()) > etacut || std::abs(trackDeuteron.eta()) > etacut) {
-      return;
-    }
-    FillCandCounter(kCandDauEta, isTrueCand);
-    if (std::abs(candData.yHypertriton()) > rapiditycut) {
-      return;
-    }
-    FillCandCounter(kCandRapidity, isTrueCand);
-    double ct = candData.distovertotmom(dCollision.posX(), dCollision.posY(), dCollision.posZ()) * o2::constants::physics::MassHyperTriton;
-    if (ct > lifetimecut) {
-      return;
-    }
-    FillCandCounter(kCandct, isTrueCand);
-    if (candData.dcaVtxdaughters() > dcavtxdau) {
-      return;
-    }
-    FillCandCounter(kCandDcaDau, isTrueCand);
-
-    registry.fill(HIST("hDeuteronTOFVsPBeforeTOFCut"), trackDeuteron.sign() * trackDeuteron.p(), candData.tofNSigmaBachDe());
-    if ((candData.tofNSigmaBachDe() < TofPidNsigmaMin || candData.tofNSigmaBachDe() > TofPidNsigmaMax) && trackDeuteron.p() > minDeuteronPUseTOF) {
-      return;
-    }
-    FillCandCounter(kCandTOFPID, isTrueCand);
-    registry.fill(HIST("hDeuteronTOFVsPAtferTOFCut"), trackDeuteron.sign() * trackDeuteron.p(), candData.tofNSigmaBachDe());
-
-    if (std::abs(trackProton.tpcNSigmaPr()) > TpcPidNsigmaCut || std::abs(trackPion.tpcNSigmaPi()) > TpcPidNsigmaCut || std::abs(trackDeuteron.tpcNSigmaDe()) > TpcPidNsigmaCut) {
-      return;
-    }
-    FillCandCounter(kCandTPCPID, isTrueCand);
-
-    if (trackProton.tpcNClsFound() < mintpcNClsproton || trackPion.tpcNClsFound() < mintpcNClspion || trackDeuteron.tpcNClsFound() < mintpcNClsdeuteron) {
-      return;
-    }
-    FillCandCounter(kCandTPCNcls, isTrueCand);
-
-    if (trackProton.pt() < minProtonPt || trackProton.pt() > maxProtonPt || trackPion.pt() < minPionPt || trackPion.pt() > maxPionPt || trackDeuteron.pt() < minDeuteronPt || trackDeuteron.pt() > maxDeuteronPt) {
-      return;
-    }
-    FillCandCounter(kCandDauPt, isTrueCand);
-
-    double dcapion = (track2.sign() > 0) ? candData.dcatrack1topv() : candData.dcatrack0topv();
-    if (std::abs(dcapion) < dcapiontopv) {
-      return;
-    }
-    FillCandCounter(kCandDcaToPV, isTrueCand);
+    double cospa = candData.vtxcosPA(collision.posX(), collision.posY(), collision.posZ());
+    double ct = candData.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassHyperTriton;
 
     Candidate3body cand3body;
-    // Hypertriton
-    if ((track2.sign() > 0 && candData.mHypertriton() > h3LMassLowerlimit && candData.mHypertriton() < h3LMassUpperlimit)) {
-      FillCandCounter(kCandInvMass, isTrueCand);
-
-      registry.fill(HIST("hMassHypertriton"), candData.mHypertriton());
-      registry.fill(HIST("hMassHypertritonTotal"), candData.mHypertriton());
-
-      cand3body.isMatter = true;
+    cand3body.isMatter = isMatter;
+    if (isMatter == true) {
       cand3body.lproton.SetXYZM(candData.pxtrack0(), candData.pytrack0(), candData.pztrack0(), o2::constants::physics::MassProton);
       cand3body.lpion.SetXYZM(candData.pxtrack1(), candData.pytrack1(), candData.pztrack1(), o2::constants::physics::MassPionCharged);
-
-      if (candData.mHypertriton() > lowersignallimit && candData.mHypertriton() < uppersignallimit) {
-        registry.fill(HIST("hDalitz"), RecoDecay::m2(array{array{candData.pxtrack0(), candData.pytrack0(), candData.pztrack0()}, array{candData.pxtrack2(), candData.pytrack2(), candData.pztrack2()}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassDeuteron}), RecoDecay::m2(array{array{candData.pxtrack0(), candData.pytrack0(), candData.pztrack0()}, array{candData.pxtrack1(), candData.pytrack1(), candData.pztrack1()}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged}));
-      }
-    } else if ((track2.sign() < 0 && candData.mAntiHypertriton() > h3LMassLowerlimit && candData.mAntiHypertriton() < h3LMassUpperlimit)) {
-      // AntiHypertriton
-      FillCandCounter(kCandInvMass, isTrueCand);
-      cand3body.isMatter = false;
+    } else {
       cand3body.lproton.SetXYZM(candData.pxtrack1(), candData.pytrack1(), candData.pztrack1(), o2::constants::physics::MassPionCharged);
       cand3body.lpion.SetXYZM(candData.pxtrack0(), candData.pytrack0(), candData.pztrack0(), o2::constants::physics::MassProton);
-
-      registry.fill(HIST("hMassAntiHypertriton"), candData.mAntiHypertriton());
-      registry.fill(HIST("hMassHypertritonTotal"), candData.mAntiHypertriton());
-      if (candData.mAntiHypertriton() > lowersignallimit && candData.mAntiHypertriton() < uppersignallimit) {
-        registry.fill(HIST("hDalitz"), RecoDecay::m2(array{array{candData.pxtrack1(), candData.pytrack1(), candData.pztrack1()}, array{candData.pxtrack2(), candData.pytrack2(), candData.pztrack2()}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassDeuteron}), RecoDecay::m2(array{array{candData.pxtrack1(), candData.pytrack1(), candData.pztrack1()}, array{candData.pxtrack0(), candData.pytrack0(), candData.pztrack0()}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged}));
-      }
-    } else {
-      return;
     }
 
-    if_hasvtx = true;
     cand3body.mcmotherId = lLabel;
     cand3body.track0Id = candData.track0Id();
     cand3body.track1Id = candData.track1Id();
@@ -367,7 +294,7 @@ struct threebodyRecoTask {
     cand3body.ct = ct;
     cand3body.cosPA = cospa;
     cand3body.dcadaughters = candData.dcaVtxdaughters();
-    cand3body.dcacandtopv = candData.dcavtxtopv(dCollision.posX(), dCollision.posY(), dCollision.posZ());
+    cand3body.dcacandtopv = candData.dcavtxtopv(collision.posX(), collision.posY(), collision.posZ());
     cand3body.vtxradius = candData.vtxradius();
     cand3body.lbachelor.SetXYZM(candData.pxtrack2(), candData.pytrack2(), candData.pztrack2(), o2::constants::physics::MassDeuteron);
     cand3body.dautpcNclusters[0] = trackProton.tpcNClsFound();
@@ -419,11 +346,148 @@ struct threebodyRecoTask {
   }
 
   //------------------------------------------------------------------
+  // Selections for candidates
+  template <typename TCollisionTable, typename TTrackTable, typename TCandTable>
+  bool SelectCand(TCollisionTable const& collision, TCandTable const& candData, TTrackTable const& trackProton, TTrackTable const& trackPion, TTrackTable const& trackDeuteron, bool isMatter, bool isTrueCand = false)
+  {
+    FillCandCounter(kCandAll, isTrueCand);
+
+    // Selection on daughters
+    if (std::abs(trackProton.eta()) > etacut || std::abs(trackPion.eta()) > etacut || std::abs(trackDeuteron.eta()) > etacut) {
+      return false;
+    }
+    FillCandCounter(kCandDauEta, isTrueCand);
+
+    if (trackProton.pt() < minProtonPt || trackProton.pt() > maxProtonPt || trackPion.pt() < minPionPt || trackPion.pt() > maxPionPt || trackDeuteron.pt() < minDeuteronPt || trackDeuteron.pt() > maxDeuteronPt) {
+      return false;
+    }
+    FillCandCounter(kCandDauPt, isTrueCand);
+
+    if (trackProton.tpcNClsFound() < mintpcNClsproton || trackPion.tpcNClsFound() < mintpcNClspion || trackDeuteron.tpcNClsFound() < mintpcNClsdeuteron) {
+      return false;
+    }
+    FillCandCounter(kCandTPCNcls, isTrueCand);
+
+    if (std::abs(trackProton.tpcNSigmaPr()) > TpcPidNsigmaCut || std::abs(trackPion.tpcNSigmaPi()) > TpcPidNsigmaCut || std::abs(trackDeuteron.tpcNSigmaDe()) > TpcPidNsigmaCut) {
+      return false;
+    }
+    FillCandCounter(kCandTPCPID, isTrueCand);
+
+    registry.fill(HIST("hDeuteronTOFVsPBeforeTOFCut"), trackDeuteron.sign() * trackDeuteron.p(), candData.tofNSigmaBachDe());
+    if ((candData.tofNSigmaBachDe() < TofPidNsigmaMin || candData.tofNSigmaBachDe() > TofPidNsigmaMax) && trackDeuteron.p() > minDeuteronPUseTOF) {
+      return false;
+    }
+    FillCandCounter(kCandTOFPID, isTrueCand);
+    registry.fill(HIST("hDeuteronTOFVsPAtferTOFCut"), trackDeuteron.sign() * trackDeuteron.p(), candData.tofNSigmaBachDe());
+
+    double dcapion = isMatter ? candData.dcatrack1topv() : candData.dcatrack0topv();
+    if (std::abs(dcapion) < dcapiontopv) {
+      return false;
+    }
+    FillCandCounter(kCandDcaToPV, isTrueCand);
+
+    // Selection on candidate hypertriton
+    if (std::abs(candData.yHypertriton()) > rapiditycut) {
+      return false;
+    }
+    FillCandCounter(kCandRapidity, isTrueCand);
+
+    double ct = candData.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassHyperTriton;
+    if (ct > lifetimecut) {
+      return false;
+    }
+    FillCandCounter(kCandct, isTrueCand);
+
+    double cospa = candData.vtxcosPA(collision.posX(), collision.posY(), collision.posZ());
+    if (cospa < vtxcospa) {
+      return false;
+    }
+    FillCandCounter(kCandCosPA, isTrueCand);
+
+    if (candData.dcaVtxdaughters() > dcavtxdau) {
+      return false;
+    }
+    FillCandCounter(kCandDcaDau, isTrueCand);
+
+    if ((isMatter && candData.mHypertriton() > h3LMassLowerlimit && candData.mHypertriton() < h3LMassUpperlimit)) {
+      // Hypertriton
+      registry.fill(HIST("hMassHypertriton"), candData.mHypertriton());
+      registry.fill(HIST("hMassHypertritonTotal"), candData.mHypertriton());
+      if (candData.mHypertriton() > lowersignallimit && candData.mHypertriton() < uppersignallimit) {
+        registry.fill(HIST("hDalitz"), RecoDecay::m2(array{array{candData.pxtrack0(), candData.pytrack0(), candData.pztrack0()}, array{candData.pxtrack2(), candData.pytrack2(), candData.pztrack2()}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassDeuteron}), RecoDecay::m2(array{array{candData.pxtrack0(), candData.pytrack0(), candData.pztrack0()}, array{candData.pxtrack1(), candData.pytrack1(), candData.pztrack1()}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged}));
+      }
+    } else if ((!isMatter && candData.mAntiHypertriton() > h3LMassLowerlimit && candData.mAntiHypertriton() < h3LMassUpperlimit)) {
+      // AntiHypertriton
+      registry.fill(HIST("hMassAntiHypertriton"), candData.mAntiHypertriton());
+      registry.fill(HIST("hMassHypertritonTotal"), candData.mAntiHypertriton());
+      if (candData.mAntiHypertriton() > lowersignallimit && candData.mAntiHypertriton() < uppersignallimit) {
+        registry.fill(HIST("hDalitz"), RecoDecay::m2(array{array{candData.pxtrack1(), candData.pytrack1(), candData.pztrack1()}, array{candData.pxtrack2(), candData.pytrack2(), candData.pztrack2()}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassDeuteron}), RecoDecay::m2(array{array{candData.pxtrack1(), candData.pytrack1(), candData.pztrack1()}, array{candData.pxtrack0(), candData.pytrack0(), candData.pztrack0()}}, array{o2::constants::physics::MassProton, o2::constants::physics::MassPionCharged}));
+      }
+    } else {
+      return false;
+    }
+    FillCandCounter(kCandInvMass, isTrueCand);
+
+    return true;
+  }
+
+  //------------------------------------------------------------------
+  // Analysis process for a single candidate
+  template <class TTrackClass, typename TCollisionTable, typename TCandTable>
+  void CandidateAnalysis(TCollisionTable const& collision, TCandTable const& candData, bool& if_hasvtx, bool isTrueCand = false, int lLabel = -1, TLorentzVector lmother = {0, 0, 0, 0}, double MClifetime = -1)
+  {
+
+    auto track0 = candData.template track0_as<TTrackClass>();
+    auto track1 = candData.template track1_as<TTrackClass>();
+    auto track2 = candData.template track2_as<TTrackClass>();
+
+    bool isMatter = track2.sign() > 0; // true if the candidate is hypertriton (p pi- d)
+
+    auto& trackProton = isMatter ? track0 : track1;
+    auto& trackPion = isMatter ? track1 : track0;
+    auto& trackDeuteron = track2;
+
+    if (SelectCand(collision, candData, trackProton, trackPion, trackDeuteron, isMatter, isTrueCand)) {
+      if_hasvtx = true;
+      FillCand(collision, candData, trackProton, trackPion, trackDeuteron, isMatter, isTrueCand, lLabel, lmother, MClifetime);
+    }
+  }
+
+  //------------------------------------------------------------------
+  // Analysis process for like-sign background : (p pi- anti-d) or (anti-p pi+ d)
+  template <class TTrackClass, typename TCollisionTable, typename TCandTable>
+  void LikeSignAnalysis(TCollisionTable const& collision, TCandTable const& candData, bool& if_hasvtx, bool isTrueCand = false, int lLabel = -1, TLorentzVector lmother = {0, 0, 0, 0}, double MClifetime = -1)
+  {
+
+    auto track0 = candData.template track0_as<TTrackClass>();
+    auto track1 = candData.template track1_as<TTrackClass>();
+    auto track2 = candData.template track2_as<TTrackClass>();
+
+    bool isMatter = track2.sign() < 0; // true if seach for background consists of (p pi- anti-d)
+
+    // Assume proton has an oppisite charge with deuteron
+    auto& trackProton = isMatter ? track0 : track1;
+    auto& trackPion = isMatter ? track1 : track0;
+    auto& trackDeuteron = track2;
+
+    if (SelectCand(collision, candData, trackProton, trackPion, trackDeuteron, isMatter, isTrueCand)) {
+      if_hasvtx = true;
+      FillCand(collision, candData, trackProton, trackPion, trackDeuteron, isMatter, isTrueCand, lLabel, lmother, MClifetime);
+      // QA for if signals have the possibility to be reconginzed as a like-sign background
+      if (isMatter) {
+        registry.fill(HIST("hCorrectMassHypertriton"), candData.mHypertriton());
+      } else {
+        registry.fill(HIST("hCorrectMassHypertriton"), candData.mAntiHypertriton());
+      }
+    }
+  }
+
+  //------------------------------------------------------------------
   // collect information for generated hypertriton (should be called after event selection)
   void GetGeneratedH3LInfo(aod::McParticles const& particlesMC)
   {
     for (auto& mcparticle : particlesMC) {
-      if (mcparticle.pdgCode() != motherPdgCode && mcparticle.pdgCode() != -motherPdgCode) {
+      if (std::abs(mcparticle.pdgCode()) != motherPdgCode) {
         continue;
       }
       registry.fill(HIST("hGeneratedHypertritonCounter"), 0.5);
@@ -510,17 +574,61 @@ struct threebodyRecoTask {
   PROCESS_SWITCH(threebodyRecoTask, processData, "Real data reconstruction", true);
 
   //------------------------------------------------------------------
+  // process like-sign signal
+  void processDataLikeSign(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions, aod::Vtx3BodyDatas const& vtx3bodydatas, FullTracksExtIU const& /*tracks*/)
+  {
+    for (auto collision : collisions) {
+      Candidates3body.clear();
+      registry.fill(HIST("hEventCounter"), 0.5);
+      if (event_sel8_selection && !collision.sel8()) {
+        continue;
+      }
+      registry.fill(HIST("hEventCounter"), 1.5);
+      if (event_posZ_selection && abs(collision.posZ()) > 10.f) { // 10cm
+        continue;
+      }
+      registry.fill(HIST("hEventCounter"), 2.5);
+      registry.fill(HIST("hCentFT0C"), collision.centFT0C());
+
+      bool if_hasvtx = false;
+      auto d3bodyCands = vtx3bodydatas.sliceBy(perCollisionVtx3BodyDatas, collision.globalIndex());
+      for (auto vtx : d3bodyCands) {
+        LikeSignAnalysis<FullTracksExtIU>(collision, vtx, if_hasvtx);
+      }
+      if (if_hasvtx)
+        registry.fill(HIST("hEventCounter"), 3.5);
+      fillHistos();
+      resetHistos();
+
+      for (auto& cand3body : Candidates3body) {
+        outputDataTable(collision.centFT0C(),
+                        cand3body.isMatter, cand3body.invmass, cand3body.lcand.P(), cand3body.lcand.Pt(), cand3body.ct,
+                        cand3body.cosPA, cand3body.dcadaughters, cand3body.dcacandtopv, cand3body.vtxradius,
+                        cand3body.lproton.Pt(), cand3body.lproton.Eta(), cand3body.lproton.Phi(), cand3body.dauinnermostR[0],
+                        cand3body.lpion.Pt(), cand3body.lpion.Eta(), cand3body.lpion.Phi(), cand3body.dauinnermostR[1],
+                        cand3body.lbachelor.Pt(), cand3body.lbachelor.Eta(), cand3body.lbachelor.Phi(), cand3body.dauinnermostR[2],
+                        cand3body.dautpcNclusters[0], cand3body.dautpcNclusters[1], cand3body.dautpcNclusters[2],
+                        cand3body.dauitsclussize[0], cand3body.dauitsclussize[1], cand3body.dauitsclussize[2],
+                        cand3body.dautpcNsigma[0], cand3body.dautpcNsigma[1], cand3body.dautpcNsigma[2], cand3body.bachelortofNsigma,
+                        cand3body.daudcaxytopv[0], cand3body.daudcaxytopv[1], cand3body.daudcaxytopv[2],
+                        cand3body.daudcatopv[0], cand3body.daudcatopv[1], cand3body.daudcatopv[2]);
+      }
+    }
+  }
+  PROCESS_SWITCH(threebodyRecoTask, processDataLikeSign, "Like-sign signal reconstruction", false);
+
+  //------------------------------------------------------------------
   // process mc analysis
   void processMC(soa::Join<aod::Collisions, o2::aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs> const& collisions, aod::Vtx3BodyDatas const& vtx3bodydatas, aod::McParticles const& particlesMC, MCLabeledTracksIU const& /*tracks*/, aod::McCollisions const& mcCollisions)
   {
-    Candidates3body.clear();
     filledMothers.clear();
     GetGeneratedH3LInfo(particlesMC);
     isGoodCollision.resize(mcCollisions.size(), false);
 
     for (const auto& collision : collisions) {
+      Candidates3body.clear();
       registry.fill(HIST("hEventCounter"), 0.5);
-      if (event_sel8_selection && !collision.sel8()) {
+      if (mc_event_selection && (!collision.selection_bit(aod::evsel::kIsTriggerTVX) || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))) {
         continue;
       }
       registry.fill(HIST("hEventCounter"), 1.5);

@@ -124,18 +124,19 @@ struct HfCorrelatorHfeHadrons {
       ptElectron = eTrack.ptTrack();
       phiElectron = eTrack.phiTrack();
       etaElectron = eTrack.etaTrack();
+
       double deltaPhi = -999;
       double deltaEta = -999;
       double ptHadron = -999;
       double etaHadron = -999;
       double phiHadron = -999;
+
       if (!eTrack.isEmcal())
         continue;
 
       registry.fill(HIST("hptElectron"), ptElectron);
       for (const auto& hTrack : tracks) {
-
-        if (hTrack.globalIndex() == eTrack.globalIndex())
+        if (hTrack.globalIndex() == eTrack.trackId())
           continue;
         // Apply Hadron cut
         if (!selAssoHadron(hTrack))
@@ -157,7 +158,7 @@ struct HfCorrelatorHfeHadrons {
   // mix event electron-hadron correlation
 
   template <typename TracksType, typename ElectronType, typename CollisionType1, typename CollisionType2>
-  void fillMixCorrelation(CollisionType1 const& c1, CollisionType2 const& c2, ElectronType const& tracks1, TracksType const& tracks2)
+  void fillMixCorrelation(CollisionType1 const&, CollisionType2 const& c2, ElectronType const& tracks1, TracksType const& tracks2)
   {
     if (!(isRun3 ? c2.sel8() : (c2.sel7() && c2.alias_bit(kINT7))))
       return;

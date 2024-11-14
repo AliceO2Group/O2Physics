@@ -62,9 +62,6 @@ using namespace o2::soa;
 using namespace o2::constants::physics;
 
 struct f0980pbpbanalysis {
-  using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults, aod::Qvectors>;
-  using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi>;
-
   HistogramRegistry histos{
     "histos",
     {},
@@ -75,6 +72,13 @@ struct f0980pbpbanalysis {
 
   Configurable<std::string> cfgURL{"cfgURL", "http://alice-ccdb.cern.ch", "Address of the CCDB to browse"};
   Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "Latest acceptable timestamp of creation for the object"};
+
+  Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0, "PV selection"};
+  Configurable<bool> cfgQvecSel{"cfgQvecSel", true, "Reject events when no QVector"};
+  Configurable<bool> cfgOccupancySel{"cfgOccupancySe", false, "Occupancy selection"};
+  Configurable<int> cfgMaxOccupancy{"cfgMaxOccupancy", 999999, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
+  Configurable<int> cfgMinOccupancy{"cfgMinOccupancy", -100, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
+  Configurable<bool> cfgNCollinTR{"cfgNCollinTR", false, "Additional selection for the number of coll in time range"};
 
   Configurable<float> cfgCentSel{"cfgCentSel", 80., "Centrality selection"};
   Configurable<int> cfgCentEst{"cfgCentEst", 1, "Centrality estimator, 1: FT0C, 2: FT0M"};
@@ -127,6 +131,13 @@ struct f0980pbpbanalysis {
 
   double massPi = o2::constants::physics::MassPionCharged;
 
+  Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
+  Filter acceptanceFilter = (nabs(aod::track::eta) < cfgMaxEta && nabs(aod::track::pt) > cfgMinPt);
+  Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgMaxDCArToPVcut) && (nabs(aod::track::dcaZ) < cfgMaxDCAzToPVcut);
+
+  using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults, aod::Qvectors>>;
+  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi>>;
+
   template <typename T>
   int GetDetId(const T& name)
   {
@@ -172,7 +183,13 @@ struct f0980pbpbanalysis {
     if (!collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       return 0;
     }
-    if (collision.qvecAmp()[DetId] < 1e-4 || collision.qvecAmp()[RefAId] < 1e-4 || collision.qvecAmp()[RefAId] < 1e-4) {
+    if (cfgQvecSel && (collision.qvecAmp()[DetId] < 1e-4 || collision.qvecAmp()[RefAId] < 1e-4 || collision.qvecAmp()[RefAId] < 1e-4)) {
+      return 0;
+    }
+    if (cfgOccupancySel && (collision.trackOccupancyInTimeRange() > cfgMaxOccupancy || collision.trackOccupancyInTimeRange() < cfgMinOccupancy)) {
+      return 0;
+    }
+    if (cfgNCollinTR && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       return 0;
     }
 
@@ -247,9 +264,9 @@ struct f0980pbpbanalysis {
     double eventPlaneRefB = TMath::ATan2(collision.qvecIm()[QvecRefBInd], collision.qvecRe()[QvecRefBInd]) / static_cast<float>(nmode);
 
     histos.fill(HIST("QA/EPhist"), centrality, eventPlaneDet);
-    histos.fill(HIST("QA/QA/EPResAB"), centrality, TMath::Cos(static_cast<float>(nmode) * (eventPlaneDet - eventPlaneRefA)));
-    histos.fill(HIST("QA/QA/EPResAC"), centrality, TMath::Cos(static_cast<float>(nmode) * (eventPlaneDet - eventPlaneRefB)));
-    histos.fill(HIST("QA/QA/EPResBC"), centrality, TMath::Cos(static_cast<float>(nmode) * (eventPlaneRefA - eventPlaneRefB)));
+    histos.fill(HIST("QA/EPResAB"), centrality, TMath::Cos(static_cast<float>(nmode) * (eventPlaneDet - eventPlaneRefA)));
+    histos.fill(HIST("QA/EPResAC"), centrality, TMath::Cos(static_cast<float>(nmode) * (eventPlaneDet - eventPlaneRefB)));
+    histos.fill(HIST("QA/EPResBC"), centrality, TMath::Cos(static_cast<float>(nmode) * (eventPlaneRefA - eventPlaneRefB)));
 
     TLorentzVector Pion1, Pion2, Reco;
     for (auto& [trk1, trk2] :

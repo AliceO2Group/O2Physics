@@ -52,7 +52,7 @@ DECLARE_SOA_COLUMN(Nphotons, nphotons, float);
 DECLARE_SOA_COLUMN(ChargeMIP, chargeMIP, float);
 DECLARE_SOA_COLUMN(ClusterSize, clustersize, float);
 DECLARE_SOA_COLUMN(Chamber, chamber, float);
-DECLARE_SOA_COLUMN(Photons_charge, photons_charge, float);
+DECLARE_SOA_COLUMN(Photons_charge, photons_charge, float[10]);
 
 DECLARE_SOA_COLUMN(EtaTrack, etatrack, float);
 DECLARE_SOA_COLUMN(PhiTrack, phitrack, float);
@@ -116,11 +116,17 @@ struct pidHmpidAnalysis {
         continue;
       }
 
+      float hmpidPhotsCharge2[10];
+
+      for (int i = 0; i < 10; i++) {
+        hmpidPhotsCharge2[i] = t.hmpidPhotsCharge()[i];
+      }
+
       /////FILL TABLE
       HMPID_analysis(t.hmpidSignal(), t.track_as<TrackCandidates>().phi(), t.track_as<TrackCandidates>().eta(), t.hmpidMom(),
                      track.p(), t.hmpidXTrack(), t.hmpidYTrack(), t.hmpidXMip(),
                      t.hmpidYMip(), t.hmpidNPhotons(), t.hmpidQMip(), (t.hmpidClusSize() % 1000000) / 1000, t.hmpidClusSize() / 1000000,
-                     *t.hmpidPhotsCharge(), track.eta(), track.phi(), track.itsNCls(), track.tpcNClsFound(), track.tpcNClsCrossedRows(),
+                     hmpidPhotsCharge2, track.eta(), track.phi(), track.itsNCls(), track.tpcNClsFound(), track.tpcNClsCrossedRows(),
                      track.tpcChi2NCl(), track.itsChi2NCl(), track.dcaXY(), track.dcaZ(),
                      track.tpcNSigmaPi(), track.tofNSigmaPi(), track.tpcNSigmaKa(), track.tofNSigmaKa(),
                      track.tpcNSigmaPr(), track.tofNSigmaPr(), track.tpcNSigmaDe(), track.tofNSigmaDe());

@@ -109,11 +109,9 @@ T getCompatibleBCs(aod::AmbiguousMFTTrack const& atrack, aod::Collision const& c
   }
 
   int64_t maxBCId = bcIt.globalIndex();
-  auto maxGlobalBC = bcIt.globalBC();
 
   while (bcIt != bcs.end() && bcIt.globalBC() < lastBC + deltaBC) {
     maxBCId = bcIt.globalIndex();
-    maxGlobalBC = bcIt.globalBC();
 
     ++bcIt;
   }
@@ -149,12 +147,10 @@ T getCompatibleBCs(aod::MFTTracks::iterator const& track, aod::Collision const& 
   // int64_t collLastBC = collFirstBC + 2*collOrig.collisionTimeRes()/o2::constants::lhc::LHCBunchSpacingNS +1;
 
   int64_t minBCId = bcIt.globalIndex();
-  uint64_t minGlobalBC = bcIt.globalBC();
 
   if ((int64_t)bcIt.globalBC() < firstBC + deltaBC) {
     while (bcIt != bcs.end() && (int64_t)bcIt.globalBC() < firstBC + deltaBC) {
       minBCId = bcIt.globalIndex();
-      minGlobalBC = bcIt.globalBC();
 
       ++bcIt;
     }
@@ -164,19 +160,16 @@ T getCompatibleBCs(aod::MFTTracks::iterator const& track, aod::Collision const& 
     }
     // minGlobalBC needs to be >= to firstBC+deltaBC
     minBCId = bcIt.globalIndex();
-    minGlobalBC = bcIt.globalBC();
 
   } else {
     // here bcIt.globalBC() >= firstBC + deltaBC
 
     while (bcIt != bcs.begin() && (int64_t)bcIt.globalBC() >= (int64_t)firstBC + deltaBC) {
       minBCId = bcIt.globalIndex();
-      minGlobalBC = bcIt.globalBC();
       --bcIt;
     }
     if (bcIt == bcs.begin() && (int64_t)bcIt.globalBC() >= (int64_t)firstBC + deltaBC) {
       minBCId = bcIt.globalIndex();
-      minGlobalBC = bcIt.globalBC();
     }
     ++bcIt; // retrieve the pointer which gave minBCId and minGlobalBC
     if (bcIt == bcs.end()) {
@@ -185,7 +178,6 @@ T getCompatibleBCs(aod::MFTTracks::iterator const& track, aod::Collision const& 
   }
 
   int64_t maxBCId = bcIt.globalIndex();
-  uint64_t maxGlobalBC = bcIt.globalBC();
 
   if ((int64_t)bcIt.globalBC() > (int64_t)lastBC + deltaBC) {
     // the previous minimum is actually bigger than the right boundary
@@ -218,7 +210,6 @@ T getCompatibleBCs(aod::MFTTracks::iterator const& track, aod::Collision const& 
 
   while (bcIt != bcs.end() && (int64_t)bcIt.globalBC() <= (int64_t)lastBC + deltaBC) {
     maxBCId = bcIt.globalIndex();
-    maxGlobalBC = bcIt.globalBC();
 
     ++bcIt;
   }

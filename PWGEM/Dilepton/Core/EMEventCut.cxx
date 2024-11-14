@@ -37,13 +37,6 @@ void EMEventCut::SetZvtxRange(float min, float max)
   LOG(info) << "EM Event Cut, set z vtx range: " << mMinZvtx << " - " << mMaxZvtx;
 }
 
-void EMEventCut::SetOccupancyRange(int min, int max)
-{
-  mMinOccupancy = min;
-  mMaxOccupancy = max;
-  LOG(info) << "EM Event Cut, set occupancy range: " << mMinOccupancy << " - " << mMaxOccupancy;
-}
-
 void EMEventCut::SetRequireNoTFB(bool flag)
 {
   mRequireNoTFB = flag;
@@ -79,8 +72,20 @@ void EMEventCut::SetRequireNoCollInTimeRangeStandard(bool flag)
   mRequireNoCollInTimeRangeStandard = flag;
   LOG(info) << "EM Event Cut, require No collision in time range standard: " << mRequireNoCollInTimeRangeStandard;
 }
-void EMEventCut::SetRequireNoCollInTimeRangeNarrow(bool flag)
+
+void EMEventCut::SetRequireNoCollInTimeRangeStrict(bool flag)
 {
-  mRequireNoCollInTimeRangeNarrow = flag;
-  LOG(info) << "EM Event Cut, require No collision in time range narrow: " << mRequireNoCollInTimeRangeNarrow;
+  mRequireNoCollInTimeRangeStrict = flag;
+  LOG(info) << "EM Event Cut, require No collision in time range strict: " << mRequireNoCollInTimeRangeStrict;
+}
+void EMEventCut::SetRequireNoCollInITSROFStandard(bool flag)
+{
+  mRequireNoCollInITSROFStandard = flag;
+  LOG(info) << "EM Event Cut, require No collision in ITS TOF standard: " << mRequireNoCollInITSROFStandard;
+}
+
+void EMEventCut::SetRequireNoCollInITSROFStrict(bool flag)
+{
+  mRequireNoCollInITSROFStrict = flag;
+  LOG(info) << "EM Event Cut, require No collision in ITS ROF strict: " << mRequireNoCollInITSROFStrict;
 }

@@ -111,8 +111,9 @@ struct strangeness_in_jets {
   void init(InitContext const&)
   {
     // Event Counters
-    registryData.add("number_of_events_data", "number of events in data", HistType::kTH1F, {{20, 0, 20, "Event Cuts"}});
-    registryMC.add("number_of_events_mc", "number of events in mc", HistType::kTH1F, {{10, 0, 10, "Event Cuts"}});
+    registryData.add("number_of_events_data", "number of events in data", HistType::kTH1D, {{20, 0, 20, "Event Cuts"}});
+    registryData.add("number_of_events_vsmultiplicity", "number of events in data vs multiplicity", HistType::kTH1D, {{101, 0, 101, "Multiplicity percentile"}});
+    registryMC.add("number_of_events_mc", "number of events in mc", HistType::kTH1D, {{10, 0, 10, "Event Cuts"}});
 
     // QC Histograms
     registryQC.add("deltaEtadeltaPhi_jet", "deltaEtadeltaPhi_jet", HistType::kTH2F, {{200, -0.5, 0.5, "#Delta#eta"}, {200, 0, 0.5 * TMath::Pi(), "#Delta#phi"}});
@@ -945,6 +946,8 @@ struct strangeness_in_jets {
     // Event multiplicity
     float multiplicity = collision.centFT0M();
 
+    registryData.fill(HIST("number_of_events_vsmultiplicity"), multiplicity);
+
     for (int i = 0; i < static_cast<int>(jet.size()); i++) {
 
       if (isSelected[i] == 0)
@@ -1224,6 +1227,14 @@ struct strangeness_in_jets {
           continue;
         registryQC.fill(HIST("survivedK0"), 15.5);
       }
+    }
+
+    for (auto& v0 : fullV0s) {
+      const auto& ptrack = v0.posTrack_as<StrHadronDaughterTracks>();
+      const auto& ntrack = v0.negTrack_as<StrHadronDaughterTracks>();
+      if (!passedK0ShortSelection(v0, ptrack, ntrack))
+        continue;
+      registryQC.fill(HIST("survivedK0"), 16.5);
     }
   }
   PROCESS_SWITCH(strangeness_in_jets, processK0s, "Process K0s", false);
