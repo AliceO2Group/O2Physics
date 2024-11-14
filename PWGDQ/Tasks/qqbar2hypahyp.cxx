@@ -1672,6 +1672,48 @@ struct qqbar2hypahyp {
     }
   }
 
+  // function to check that the hyperon and antihyperon have different daughter tracks
+  template <typename THyperon>
+  bool checkTrackIndices(THyperon hyperon, THyperon antiHyperon)
+  {
+    auto hypPosTrackExtra = hyperon.template posTrackExtra_as<dauTracks>();
+    auto hypNegTrackExtra = hyperon.template negTrackExtra_as<dauTracks>();
+
+    auto antiHypPosTrackExtra = antiHyperon.template posTrackExtra_as<dauTracks>();
+    auto antiHypNegTrackExtra = antiHyperon.template negTrackExtra_as<dauTracks>();
+
+    if constexpr (requires { hyperon.template bachTrackExtra_as<dauTracks>(); }) { // cascade case: check if bachelor information is available
+      auto hypBachTrackExtra = hyperon.template bachTrackExtra_as<dauTracks>();
+      auto antiHypBachTrackExtra = antiHyperon.template bachTrackExtra_as<dauTracks>();
+
+      // check that bachelor track from hyperon is different from daughter tracks of antiHyperon
+      if (hypBachTrackExtra.globalIndex() == antiHypBachTrackExtra.globalIndex() || 
+          hypBachTrackExtra.globalIndex() == antiHypPosTrackExtra.globalIndex()  ||
+          hypBachTrackExtra.globalIndex() == antiHypNegTrackExtra.globalIndex())
+        return false;
+      // check that positive track from hyperon is different from daughter tracks of antiHyperon
+      if (hypPosTrackExtra.globalIndex() == antiHypBachTrackExtra.globalIndex() || 
+          hypPosTrackExtra.globalIndex() == antiHypPosTrackExtra.globalIndex()  ||
+          hypPosTrackExtra.globalIndex() == antiHypNegTrackExtra.globalIndex())
+        return false;
+      // check that negative track from hyperon is different from daughter tracks of antiHyperon
+      if (hypNegTrackExtra.globalIndex() == antiHypBachTrackExtra.globalIndex() || 
+          hypNegTrackExtra.globalIndex() == antiHypPosTrackExtra.globalIndex()  ||
+          hypNegTrackExtra.globalIndex() == antiHypNegTrackExtra.globalIndex())
+        return false;
+    } else { // v0 case
+      // check that positive track from hyperon is different from daughter tracks of antiHyperon
+      if (hypPosTrackExtra.globalIndex() == antiHypPosTrackExtra.globalIndex()  ||
+          hypPosTrackExtra.globalIndex() == antiHypNegTrackExtra.globalIndex())
+        return false;
+      // check that negative track from hyperon is different from daughter tracks of antiHyperon
+      if (hypNegTrackExtra.globalIndex() == antiHypPosTrackExtra.globalIndex()  ||
+          hypNegTrackExtra.globalIndex() == antiHypNegTrackExtra.globalIndex())
+        return false;
+    }
+    return true;
+  }
+
   template <typename TCollision, typename THyperons>
   void buildHyperonAntiHyperonPairs(TCollision const& collision, THyperons const& fullHyperons, std::vector<bool> selHypIndices, std::vector<bool> selAntiHypIndices, float centrality, uint8_t gapSide, int type)
   {
@@ -1691,6 +1733,11 @@ struct qqbar2hypahyp {
 
         // check we don't look at the same v0s/cascades
         if (hyperon.globalIndex() == antiHyperon.globalIndex()) {
+          continue;
+        }
+
+        // check that the two hyperons have different daughter tracks
+        if (!checkTrackIndices(hyperon, antiHyperon)) {
           continue;
         }
 
