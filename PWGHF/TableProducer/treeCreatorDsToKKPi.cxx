@@ -133,6 +133,7 @@ DECLARE_SOA_TABLE(HfCandDsLites, "AOD", "HFCANDDSLITE",
                   hf_cand_3prong::FlagMcMatchRec,
                   hf_cand_3prong::OriginMcRec,
                   hf_cand_3prong::FlagMcDecayChanRec,
+                  hf_cand_3prong::IsCandidateSwapped,
                   full::Sign);
 
 DECLARE_SOA_TABLE(HfCandDsFulls, "AOD", "HFCANDDSFULL",
@@ -205,6 +206,7 @@ DECLARE_SOA_TABLE(HfCandDsFulls, "AOD", "HFCANDDSFULL",
                   hf_cand_3prong::FlagMcMatchRec,
                   hf_cand_3prong::OriginMcRec,
                   hf_cand_3prong::FlagMcDecayChanRec,
+                  hf_cand_3prong::IsCandidateSwapped,
                   full::Sign);
 
 DECLARE_SOA_TABLE(HfCandDsFullEvs, "AOD", "HFCANDDSFULLEV",
@@ -294,6 +296,7 @@ struct HfTreeCreatorDsToKKPi {
     int8_t flagMc = 0;
     int8_t originMc = 0;
     int8_t channelMc = 0;
+    int8_t isSwapped = massHypo; // 0 if KKPi, 1 if PiKK
     float yCand = 0;
     float eCand = 0;
     float ctCand = 0;
@@ -301,6 +304,7 @@ struct HfTreeCreatorDsToKKPi {
       flagMc = candidate.flagMcMatchRec();
       originMc = candidate.originMcRec();
       channelMc = candidate.flagMcDecayChanRec();
+      isSwapped = candidate.isCandidateSwapped();
       if (fillDplusMc && candidate.flagMcDecayChanRec() == (decayChannel + offsetDplusDecayChannel)) {
         yCand = hfHelper.yDplus(candidate);
         eCand = hfHelper.eDplus(candidate);
@@ -358,8 +362,8 @@ struct HfTreeCreatorDsToKKPi {
         prong2.tofNSigmaKa(),
         prong2.tpcTofNSigmaPi(),
         prong2.tpcTofNSigmaKa(),
-        candidate.isSelDsToKKPi(),
-        candidate.isSelDsToPiKK(),
+        massHypo == 0 ? candidate.isSelDsToKKPi() : -1,
+        massHypo == 1 ? candidate.isSelDsToPiKK() : -1,
         invMassDs,
         candidate.pt(),
         candidate.eta(),
@@ -381,6 +385,7 @@ struct HfTreeCreatorDsToKKPi {
         flagMc,
         originMc,
         channelMc,
+        isSwapped,
         prong0.sign() + prong1.sign() + prong2.sign());
     } else {
       rowCandidateFull(
@@ -425,8 +430,8 @@ struct HfTreeCreatorDsToKKPi {
         prong2.tofNSigmaKa(),
         prong2.tpcTofNSigmaPi(),
         prong2.tpcTofNSigmaKa(),
-        candidate.isSelDsToKKPi(),
-        candidate.isSelDsToPiKK(),
+        massHypo == 0 ? candidate.isSelDsToKKPi() : -1,
+        massHypo == 1 ? candidate.isSelDsToPiKK() : -1,
         candidate.xSecondaryVertex(),
         candidate.ySecondaryVertex(),
         candidate.zSecondaryVertex(),
@@ -453,6 +458,7 @@ struct HfTreeCreatorDsToKKPi {
         flagMc,
         originMc,
         channelMc,
+        isSwapped,
         prong0.sign() + prong1.sign() + prong2.sign());
     }
   }

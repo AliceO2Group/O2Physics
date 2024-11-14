@@ -263,6 +263,7 @@ struct lambdakzeroBuilder {
   static constexpr float defaultLambdaWindowParameters[1][4] = {{1.17518e-03, 1.24099e-04, 5.47937e-03, 3.08009e-01}};
   Configurable<LabeledArray<float>> massCutK0{"massCutK0", {defaultK0MassWindowParameters[0], 4, {"constant", "linear", "expoConstant", "expoRelax"}}, "mass parameters for K0"};
   Configurable<LabeledArray<float>> massCutLambda{"massCutLambda", {defaultLambdaWindowParameters[0], 4, {"constant", "linear", "expoConstant", "expoRelax"}}, "mass parameters for Lambda"};
+  Configurable<float> massCutPhoton{"massCutPhoton", 0.2, "Photon max mass"};
   Configurable<float> massWindownumberOfSigmas{"massWindownumberOfSigmas", 5e+6, "number of sigmas around mass peaks to keep"};
   Configurable<bool> massWindowWithTPCPID{"massWindowWithTPCPID", false, "when checking mass windows, correlate with TPC dE/dx"};
   Configurable<float> massWindowSafetyMargin{"massWindowSafetyMargin", 0.001, "Extra mass window safety margin"};
@@ -977,15 +978,18 @@ struct lambdakzeroBuilder {
     bool desiredMassK0Short = false;
     bool desiredMassLambda = false;
     bool desiredMassAntiLambda = false;
+    bool desiredMassGamma = false;
 
     if (massWindownumberOfSigmas > 1e+3) {
       desiredMassK0Short = true;    // safety fallback
       desiredMassLambda = true;     // safety fallback
       desiredMassAntiLambda = true; // safety fallback
+      desiredMassGamma = true;      // safety fallback
     } else {
       desiredMassK0Short = TMath::Abs(v0candidate.k0ShortMass - o2::constants::physics::MassKaonNeutral) < massWindownumberOfSigmas * getMassSigmaK0Short(lPt) + massWindowSafetyMargin;
       desiredMassLambda = TMath::Abs(v0candidate.lambdaMass - o2::constants::physics::MassLambda) < massWindownumberOfSigmas * getMassSigmaLambda(lPt) + massWindowSafetyMargin;
       desiredMassAntiLambda = TMath::Abs(v0candidate.antiLambdaMass - o2::constants::physics::MassLambda) < massWindownumberOfSigmas * getMassSigmaLambda(lPt) + massWindowSafetyMargin;
+      desiredMassGamma = TMath::Abs(lGammaMass) < massCutPhoton;
     }
 
     // check if user requested to correlate mass requirement with TPC PID
@@ -993,6 +997,7 @@ struct lambdakzeroBuilder {
     bool dEdxK0Short = V0.isdEdxK0Short() || !massWindowWithTPCPID;
     bool dEdxLambda = V0.isdEdxLambda() || !massWindowWithTPCPID;
     bool dEdxAntiLambda = V0.isdEdxAntiLambda() || !massWindowWithTPCPID;
+    bool dEdxGamma = V0.isdEdxGamma() || !massWindowWithTPCPID;
 
     // check proper lifetime if asked for
     bool passML2P_K0Short = lML2P_K0Short < lifetimecut->get("lifetimecutK0S") || lifetimecut->get("lifetimecutK0S") > 1000;
@@ -1003,6 +1008,8 @@ struct lambdakzeroBuilder {
     if (passML2P_Lambda && dEdxLambda && desiredMassLambda)
       keepCandidate = true;
     if (passML2P_Lambda && dEdxAntiLambda && desiredMassAntiLambda)
+      keepCandidate = true;
+    if (dEdxGamma && desiredMassGamma)
       keepCandidate = true;
 
     if (!keepCandidate)

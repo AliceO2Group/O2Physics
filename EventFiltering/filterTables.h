@@ -15,7 +15,32 @@
 #include <unordered_map>
 #include <string>
 #include <vector>
-#include "Framework/AnalysisDataModel.h"
+#include <cstdint>
+
+namespace o2::aod
+{
+template <uint32_t T>
+struct Hash;
+}
+
+#include "Framework/ASoA.h"
+
+namespace o2::soa
+{
+template <typename T>
+  requires(!std::same_as<typename o2::aod::MetadataTrait<std::decay_t<T>>::metadata, void>)
+const char* getTableLabel()
+{
+  return o2::aod::MetadataTrait<std::decay_t<T>>::metadata::tableLabel();
+}
+
+template <typename T>
+  requires requires { T::ref.label_hash; }
+const char* getTableLabel()
+{
+  return o2::aod::Hash<T::ref.label_hash>::str;
+}
+} // namespace o2::soa
 
 namespace o2::aod
 {
@@ -280,7 +305,7 @@ static_assert(o2::framework::pack_size(FiltersPack) == NumberOfFilters);
 template <typename T, typename C>
 void addColumnToMap(std::unordered_map<std::string, std::unordered_map<std::string, float>>& map)
 {
-  map[MetadataTrait<T>::metadata::tableLabel()][C::columnLabel()] = 1.f;
+  map[o2::soa::getTableLabel<T>()][C::columnLabel()] = 1.f;
 }
 
 template <typename T, typename... C>
@@ -297,7 +322,7 @@ void addColumnsToMap(o2::framework::pack<C...>, std::unordered_map<std::string, 
 template <typename... T>
 void FillFiltersMap(o2::framework::pack<T...>, std::unordered_map<std::string, std::unordered_map<std::string, float>>& map)
 {
-  (addColumnsToMap<T>(typename T::table_t::columns{}, map), ...);
+  (addColumnsToMap<T>(typename T::table_t::persistent_columns_t{}, map), ...);
 }
 
 template <typename... C>

@@ -27,30 +27,42 @@
 /EventFiltering/PWGCF @alibuild @lauraser @mpuccio @lietava
 /EventFiltering/PWGMM @alibuild @aortizve @mpuccio @lietava
 /EventFiltering/PWGJE @alibuild @fkrizek @nzardosh @mpuccio @lietava
-/PWGCF               @alibuild @saganatt @victor-gonzalez @zchochul
-/PWGCF/Core          @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul
-/PWGCF/DataModel     @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul
-/PWGCF/TableProducer @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul
-/PWGCF/Tasks         @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul
+/PWGCF               @alibuild @saganatt @victor-gonzalez @zchochul @lgraczykCern @prchakra @lauraser @ariedel-cern @EmilGorm @otonvd @shouqiye
+/PWGCF/Core          @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul @lgraczykCern @prchakra @lauraser @ariedel-cern @EmilGorm @otonvd @shouqiye
+/PWGCF/DataModel     @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul @lgraczykCern @prchakra @lauraser @ariedel-cern @EmilGorm @otonvd @shouqiye
+/PWGCF/TableProducer @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul @lgraczykCern @prchakra @lauraser @ariedel-cern @EmilGorm @otonvd @shouqiye
+/PWGCF/Tasks         @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul @lgraczykCern @prchakra @lauraser @ariedel-cern @EmilGorm @otonvd @shouqiye
 /PWGDQ @alibuild @iarsene @dsekihat @feisenhu @lucamicheletti93
 /PWGEM @alibuild @mikesas @rbailhac @feisenhu
 /PWGEM/Dilepton @alibuild @mikesas @rbailhac @dsekihat @ivorobye @feisenhu
 /PWGEM/PhotonMeson @alibuild @mikesas @rbailhac @m-c-danisch @novitzky @mhemmer-cern @dsekihat
 /PWGHF @alibuild @vkucera @fcolamar @fgrosa @fcatalan92 @mfaggin @mmazzilli @deepathoms @NicoleBastid @hahassan7 @jpxrk @apalasciano
-/PWGLF @alibuild @ercolessi @fmazzasc @chiarapinto @maciacco @BongHwi @smaff92 @ChiaraDeMartin95 @njacazio @skundu692
-/PWGMM @alibuild @aalkin @njacazio @skundu692
+# PWG-LF
+/PWGLF @alibuild @njacazio @skundu692
+/PWGLF/Tasks/GlobalEventProperties         @alibuild @njacazio @skundu692 @gbencedi @omvazque
+/PWGLF/TableProducer/GlobalEventProperties @alibuild @njacazio @skundu692 @gbencedi @omvazque
+/PWGLF/Tasks/Nuspex         @alibuild @njacazio @skundu692 @fmazzasc @chiarapinto @maciacco
+/PWGLF/TableProducer/Nuspex @alibuild @njacazio @skundu692 @fmazzasc @chiarapinto @maciacco
+/PWGLF/Tasks/Resonances         @alibuild @njacazio @skundu692 @BongHwi @smaff92
+/PWGLF/TableProducer/Resonances @alibuild @njacazio @skundu692 @BongHwi @smaff92
+/PWGLF/Tasks/Strangeness         @alibuild @njacazio @skundu692 @ercolessi @ChiaraDeMartin95
+/PWGLF/TableProducer/Strangeness @alibuild @njacazio @skundu692 @ercolessi @ChiaraDeMartin95
+
+# PWG-MM
+/PWGMM      @alibuild @njacazio @skundu692 @aalkin
+/PWGMM/Mult @alibuild @njacazio @skundu692 @aalkin @aortizve @ddobrigk
 /PWGMM/Lumi @alibuild @aalkin
-/PWGMM/Mult @alibuild @aalkin @aortizve @ddobrigk
-/PWGMM/UE @alibuild @aalkin @aortizve
+/PWGMM/UE   @alibuild @aalkin @aortizve
+
 /PWGUD @alibuild @pbuehler @abylinkin @rolavick
-/PWGJE @alibuild @lhavener @maoyx @nzardosh @ddobrigk @mfasDa
+/PWGJE @alibuild @lhavener @maoyx @nzardosh @fjonasALICE @mfasDa
 /Tools/PIDML @alibuild @saganatt
 /Tools/ML @alibuild @fcatalan92 @fmazzasc
 /Tutorials/PWGCF @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul
 /Tutorials/PWGDQ @alibuild @iarsene @dsekihat @feisenhu @lucamicheletti93
 /Tutorials/PWGEM @alibuild @mikesas @rbailhac @dsekihat @ivorobye @feisenhu
 /Tutorials/PWGHF @alibuild @vkucera @fcolamar @fgrosa
-/Tutorials/PWGJE @alibuild @lhavener @maoyx @nzardosh @ddobrigk @mfasDa
+/Tutorials/PWGJE @alibuild @lhavener @maoyx @nzardosh @mfasDa @fjonasALICE
 /Tutorials/PWGLF @alibuild @alcaliva @lbariogl @chiarapinto @BongHwi @lbarnby @mbombara @iravasen @njacazio @ChiaraDeMartin95 @skundu692
 /Tutorials/PWGMM @alibuild @aalkin @ddobrigk
 /Tutorials/PWGUD @alibuild @pbuehler

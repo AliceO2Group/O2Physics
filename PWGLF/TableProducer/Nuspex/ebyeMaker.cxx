@@ -12,6 +12,8 @@
 #include <vector>
 #include <utility>
 #include <random>
+#include <string>
+#include <algorithm>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -276,6 +278,8 @@ struct ebyeMaker {
   Configurable<float> v0setting_nsigmatpc{"v0setting_nsigmatpc", 4.f, "nsigmatpc"};
   Configurable<float> lambdaMassCut{"lambdaMassCut", 0.02f, "maximum deviation from PDG mass (for QA histograms)"};
 
+  Configurable<bool> constDCASel{"constDCASel", true, "use DCA selections independent of pt"};
+
   Configurable<float> antidItsClsSizeCut{"antidItsClsSizeCut", 1.e-10f, "cluster size cut for antideuterons"};
   Configurable<float> antidPtItsClsSizeCut{"antidPtItsClsSizeCut", 10.f, "pt for cluster size cut for antideuterons"};
 
@@ -357,6 +361,11 @@ struct ebyeMaker {
       sum += (track.itsClusterSizes() >> (iL * 4)) & 0xf;
     }
     return sum / track.itsNCls();
+  }
+
+  float dcaSigma(float const& pt)
+  {
+    return 0.0105 + 0.0350 / std::pow(std::abs(pt), 1.1);
   }
 
   template <class Bc>
@@ -477,9 +486,9 @@ struct ebyeMaker {
       mask |= kChi2TPCTight;
     else if (track.tpcchi2 < cfgTrackSels->get("chi2TpcMid"))
       mask |= kChi2TPCMid;
-    if (std::abs(track.dcaxypv) < cfgTrackSels->get("dcaxyTight"))
+    if (std::abs(track.dcaxypv) < cfgTrackSels->get("dcaxyTight") * (constDCASel ? 1. : dcaSigma(track.pt)))
       mask |= kDCAxyTight;
-    else if (std::abs(track.dcaxypv) < cfgTrackSels->get("dcaxyMid"))
+    else if (std::abs(track.dcaxypv) < cfgTrackSels->get("dcaxyMid") * (constDCASel ? 1. : dcaSigma(track.pt)))
       mask |= kDCAxyMid;
     if (std::abs(track.dcazpv) < cfgTrackSels->get("dcazTight"))
       mask |= kDCAzTight;
@@ -591,7 +600,10 @@ struct ebyeMaker {
       if (dca > cfgDcaSels->get("dca")) { // dca
         continue;
       }
-      if (std::abs(dcaInfo[0]) > cfgDcaSels->get("dcaxy") || std::abs(dcaInfo[1]) > cfgDcaSels->get("dcaz")) { // dcaxy and dcaz
+      if (std::abs(dcaInfo[1]) > cfgDcaSels->get("dcaz")) { // dcaz
+        continue;
+      }
+      if (std::abs(dcaInfo[0]) > cfgDcaSels->get("dcaxy") * (constDCASel ? 1. : dcaSigma(track.pt()))) { // dcaxy
         continue;
       }
       histos.fill(HIST("QA/tpcSignal"), track.tpcInnerParam(), track.tpcSignal());
@@ -975,16 +987,18 @@ struct ebyeMaker {
           candidateV0.globalIndexPos);
       }
 
-      for (auto& candidateTrack : candidateTracks[1]) { // deuterons
-        nucleiEbyeTable(
-          collisionEbyeTable.lastIndex(),
-          candidateTrack.pt,
-          candidateTrack.eta,
-          candidateTrack.mass,
-          candidateTrack.dcapv,
-          candidateTrack.tpcncls,
-          candidateTrack.tpcnsigma,
-          candidateTrack.tofmass);
+      for (int iP{0}; iP < kNpart; ++iP) {
+        for (auto& candidateTrack : candidateTracks[iP]) { // deuterons + protons
+          nucleiEbyeTable(
+            collisionEbyeTable.lastIndex(),
+            candidateTrack.pt,
+            candidateTrack.eta,
+            candidateTrack.mass,
+            candidateTrack.dcapv,
+            candidateTrack.tpcncls,
+            candidateTrack.tpcnsigma,
+            candidateTrack.tofmass);
+        }
       }
     }
   }
@@ -1051,16 +1065,18 @@ struct ebyeMaker {
           candidateV0.globalIndexPos);
       }
 
-      for (auto& candidateTrack : candidateTracks[1]) { // deuterons
-        nucleiEbyeTable(
-          collisionEbyeTable.lastIndex(),
-          candidateTrack.pt,
-          candidateTrack.eta,
-          candidateTrack.mass,
-          candidateTrack.dcapv,
-          candidateTrack.tpcncls,
-          candidateTrack.tpcnsigma,
-          candidateTrack.tofmass);
+      for (int iP{0}; iP < kNpart; ++iP) {
+        for (auto& candidateTrack : candidateTracks[iP]) { // deuterons + protons
+          nucleiEbyeTable(
+            collisionEbyeTable.lastIndex(),
+            candidateTrack.pt,
+            candidateTrack.eta,
+            candidateTrack.mass,
+            candidateTrack.dcapv,
+            candidateTrack.tpcncls,
+            candidateTrack.tpcnsigma,
+            candidateTrack.tofmass);
+        }
       }
     }
   }
@@ -1163,20 +1179,22 @@ struct ebyeMaker {
           candidateV0.isreco);
       }
 
-      for (auto& candidateTrack : candidateTracks[1]) { // deuterons
-        mcNucleiEbyeTable(
-          collisionEbyeTable.lastIndex(),
-          candidateTrack.pt,
-          candidateTrack.eta,
-          candidateTrack.mass,
-          candidateTrack.dcapv,
-          candidateTrack.tpcncls,
-          candidateTrack.tpcnsigma,
-          candidateTrack.tofmass,
-          candidateTrack.genpt,
-          candidateTrack.geneta,
-          candidateTrack.pdgcode,
-          candidateTrack.isreco);
+      for (int iP{0}; iP < kNpart; ++iP) {
+        for (auto& candidateTrack : candidateTracks[iP]) { // deuterons + protons
+          mcNucleiEbyeTable(
+            collisionEbyeTable.lastIndex(),
+            candidateTrack.pt,
+            candidateTrack.eta,
+            candidateTrack.mass,
+            candidateTrack.dcapv,
+            candidateTrack.tpcncls,
+            candidateTrack.tpcnsigma,
+            candidateTrack.tofmass,
+            candidateTrack.genpt,
+            candidateTrack.geneta,
+            candidateTrack.pdgcode,
+            candidateTrack.isreco);
+        }
       }
     }
   }
@@ -1229,20 +1247,22 @@ struct ebyeMaker {
           candidateV0.isreco);
       }
 
-      for (auto& candidateTrack : candidateTracks[1]) { // deuterons
-        mcNucleiEbyeTable(
-          collisionEbyeTable.lastIndex(),
-          candidateTrack.pt,
-          candidateTrack.eta,
-          candidateTrack.mass,
-          candidateTrack.dcapv,
-          candidateTrack.tpcncls,
-          candidateTrack.tpcnsigma,
-          candidateTrack.tofmass,
-          candidateTrack.genpt,
-          candidateTrack.geneta,
-          candidateTrack.pdgcode,
-          candidateTrack.isreco);
+      for (int iP{0}; iP < kNpart; ++iP) {
+        for (auto& candidateTrack : candidateTracks[iP]) { // deuterons + protons
+          mcNucleiEbyeTable(
+            collisionEbyeTable.lastIndex(),
+            candidateTrack.pt,
+            candidateTrack.eta,
+            candidateTrack.mass,
+            candidateTrack.dcapv,
+            candidateTrack.tpcncls,
+            candidateTrack.tpcnsigma,
+            candidateTrack.tofmass,
+            candidateTrack.genpt,
+            candidateTrack.geneta,
+            candidateTrack.pdgcode,
+            candidateTrack.isreco);
+        }
       }
     }
   }

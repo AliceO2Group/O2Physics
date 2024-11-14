@@ -59,6 +59,7 @@ DECLARE_SOA_COLUMN(Flags, flags, uint8_t);                                // Fla
 DECLARE_SOA_COLUMN(TPCmom3H, tpcMom3H, float);                            // TPC momentum of the 3H daughter
 DECLARE_SOA_COLUMN(TPCmomPi, tpcMomPi, float);                            // TPC momentum of the Pi daughter
 DECLARE_SOA_COLUMN(MassTrTOF, mass2TrTOF, float);                         // TOF 3H mass
+DECLARE_SOA_COLUMN(TPCchi3H, tpcChi3H, float);                            // tpcChi3H
 DECLARE_SOA_COLUMN(ITSclusterSizes3H, itsClusterSizes3H, uint32_t);       // ITS cluster size of the 3H daughter
 DECLARE_SOA_COLUMN(ITSclusterSizesPi, itsClusterSizesPi, uint32_t);       // ITS cluster size of the Pi daughter
 DECLARE_SOA_COLUMN(Dca3H, dca3H, float);                                  // DCA between 3H daughter and V0
@@ -88,7 +89,7 @@ DECLARE_SOA_TABLE(DataLnnCands, "AOD", "LNNCANDS",
                   lnnrec::DcaV0Daug, lnnrec::Dca3H, lnnrec::DcaPi,
                   lnnrec::NSigma3H, lnnrec::NTPCclus3H, lnnrec::NTPCclusPi,
                   lnnrec::TPCmom3H, lnnrec::TPCmomPi, lnnrec::TPCsignal3H, lnnrec::TPCsignalPi,
-                  lnnrec::MassTrTOF,
+                  lnnrec::MassTrTOF, lnnrec::TPCchi3H,
                   lnnrec::ITSclusterSizes3H, lnnrec::ITSclusterSizesPi,
                   lnnrec::Flags);
 
@@ -104,7 +105,7 @@ DECLARE_SOA_TABLE(MCLnnCands, "AOD", "MCLNNCANDS",
                   lnnrec::DcaV0Daug, lnnrec::Dca3H, lnnrec::DcaPi,
                   lnnrec::NSigma3H, lnnrec::NTPCclus3H, lnnrec::NTPCclusPi,
                   lnnrec::TPCmom3H, lnnrec::TPCmomPi, lnnrec::TPCsignal3H, lnnrec::TPCsignalPi,
-                  lnnrec::MassTrTOF,
+                  lnnrec::MassTrTOF, lnnrec::TPCchi3H,
                   lnnrec::ITSclusterSizes3H, lnnrec::ITSclusterSizesPi,
                   lnnrec::Flags,
                   lnnrec::GenPt,

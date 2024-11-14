@@ -15,6 +15,8 @@
 /// \author Samrangy Sadhu <samrangy.sadhu@cern.ch>, INFN Bari
 /// \author Swapnesh Santosh Khade <swapnesh.santosh.khade@cern.ch>, IIT Indore
 
+#include <vector>
+
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
@@ -30,12 +32,14 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/HFC/DataModel/CorrelationTables.h"
+#include "PWGHF/HFC/Utils/utilsCorrelations.h"
 
 using namespace o2;
 using namespace o2::analysis;
 using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::analysis::hf_correlations;
 
 ///
 /// Returns deltaPhi value in range [-pi/2., 3.*pi/2], typically used for correlation studies
@@ -264,44 +268,6 @@ struct HfCorrelatorD0Hadrons {
     registry.add("hCountD0TriggersGen", "D0 trigger particles - MC gen;;N of trigger D0", {HistType::kTH2F, {{1, -0.5, 0.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
-  // Find Leading Particle
-  template <typename TTracks>
-  int findLeadingParticle(TTracks const& tracks)
-  {
-    auto leadingParticle = tracks.begin();
-    for (auto const& track : tracks) {
-      if (std::abs(track.dcaXY()) >= 1. || std::abs(track.dcaZ()) >= 1.) {
-        continue;
-      }
-      if (track.pt() > leadingParticle.pt()) {
-        leadingParticle = track;
-      }
-    }
-    int leadingIndex = leadingParticle.globalIndex();
-    return leadingIndex;
-  }
-  // ======= Find Leading Particle for McGen ============
-  template <typename TMcParticles>
-  int findLeadingParticleMcGen(TMcParticles const& mcParticles)
-  {
-    auto leadingParticle = mcParticles.begin();
-    for (auto const& mcParticle : mcParticles) {
-      if (std::abs(mcParticle.eta()) > etaTrackMax) {
-        continue;
-      }
-      if (mcParticle.pt() < ptTrackMin) {
-        continue;
-      }
-      if ((std::abs(mcParticle.pdgCode()) != kElectron) && (std::abs(mcParticle.pdgCode()) != kMuonMinus) && (std::abs(mcParticle.pdgCode()) != kPiPlus) && (std::abs(mcParticle.pdgCode()) != kKPlus) && (std::abs(mcParticle.pdgCode()) != kProton)) {
-        continue;
-      }
-      if (mcParticle.pt() > leadingParticle.pt()) {
-        leadingParticle = mcParticle;
-      }
-    }
-    int leadingIndex = leadingParticle.globalIndex();
-    return leadingIndex;
-  }
   // =======  Process starts for Data, Same event ============
 
   /// D0-h correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
@@ -315,7 +281,7 @@ struct HfCorrelatorD0Hadrons {
     }
     // find leading particle
     if (correlateD0WithLeadingParticle) {
-      leadingIndex = findLeadingParticle(tracks);
+      leadingIndex = findLeadingParticle(tracks, dcaXYTrackMax.value, dcaZTrackMax.value);
     }
 
     int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multFT0M()));
@@ -459,7 +425,7 @@ struct HfCorrelatorD0Hadrons {
     }
     // find leading particle
     if (correlateD0WithLeadingParticle) {
-      leadingIndex = findLeadingParticle(tracks);
+      leadingIndex = findLeadingParticle(tracks, dcaXYTrackMax.value, dcaZTrackMax.value);
     }
     int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multFT0M()));
     int nTracks = 0;
@@ -629,7 +595,7 @@ struct HfCorrelatorD0Hadrons {
     // MC gen level
     // find leading particle
     if (correlateD0WithLeadingParticle) {
-      leadingIndex = findLeadingParticleMcGen(mcParticles);
+      leadingIndex = findLeadingParticleMcGen(mcParticles, etaTrackMax.value, ptTrackMin.value);
     }
     for (const auto& particle1 : mcParticles) {
       // check if the particle is D0 or D0bar (for general plot filling and selection, so both cases are fine) - NOTE: decay channel is not probed!

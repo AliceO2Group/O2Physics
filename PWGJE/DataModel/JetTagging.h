@@ -120,15 +120,17 @@ JETSV_TABLES_DEF(Charged, SecondaryVertex3Prong, "3PRONG");
 JETSV_TABLES_DEF(Charged, SecondaryVertex2Prong, "2PRONG");
 
 // Defines the jet substrcuture table definition
-#define JETTAGGING_TABLE_DEF(_jet_type_, _name_, _description_) \
-  namespace _name_##tagging                                     \
-  {                                                             \
-    DECLARE_SOA_COLUMN(Origin, origin, int);                    \
-    DECLARE_SOA_COLUMN(JetProb, jetProb, std::vector<float>);   \
-    DECLARE_SOA_COLUMN(FlagtaggedjetIP, flagtaggedjetIP, bool); \
-    DECLARE_SOA_COLUMN(FlagtaggedjetSV, flagtaggedjetSV, bool); \
-  }                                                             \
-  DECLARE_SOA_TABLE(_jet_type_##Tags, "AOD", _description_ "Tags", _name_##tagging::Origin, _name_##tagging::JetProb, _name_##tagging::FlagtaggedjetIP, _name_##tagging::FlagtaggedjetSV);
+#define JETTAGGING_TABLE_DEF(_jet_type_, _name_, _description_)       \
+  namespace _name_##tagging                                           \
+  {                                                                   \
+    DECLARE_SOA_COLUMN(Origin, origin, int);                          \
+    DECLARE_SOA_COLUMN(JetProb, jetProb, std::vector<float>);         \
+    DECLARE_SOA_COLUMN(FlagtaggedjetIP, flagtaggedjetIP, bool);       \
+    DECLARE_SOA_COLUMN(FlagtaggedjetIPxyz, flagtaggedjetIPxyz, bool); \
+    DECLARE_SOA_COLUMN(FlagtaggedjetSV, flagtaggedjetSV, bool);       \
+    DECLARE_SOA_COLUMN(FlagtaggedjetSVxyz, flagtaggedjetSVxyz, bool); \
+  }                                                                   \
+  DECLARE_SOA_TABLE(_jet_type_##Tags, "AOD", _description_ "Tags", _name_##tagging::Origin, _name_##tagging::JetProb, _name_##tagging::FlagtaggedjetIP, _name_##tagging::FlagtaggedjetIPxyz, _name_##tagging::FlagtaggedjetSV, _name_##tagging::FlagtaggedjetSVxyz);
 
 #define JETTAGGING_TABLES_DEF(_jet_type_, _description_)                                                    \
   JETTAGGING_TABLE_DEF(_jet_type_##Jet, _jet_type_##jet, _description_)                                     \

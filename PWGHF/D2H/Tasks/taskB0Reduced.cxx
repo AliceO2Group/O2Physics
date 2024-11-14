@@ -140,7 +140,7 @@ struct HfTaskB0Reduced {
     if ((std::accumulate(processFuncData.begin(), processFuncData.end(), 0)) > 1) {
       LOGP(fatal, "Only one process function for data can be enabled at a time.");
     }
-    std::array<bool, 5> processFuncMc{doprocessMc, doprocessMcWithDecayTypeCheck, doprocessMcWithDmesMl, doprocessMcWithB0Ml, doprocessMcWithB0MlAndDecayTypeCheck};
+    std::array<bool, 6> processFuncMc{doprocessMc, doprocessMcWithDecayTypeCheck, doprocessMcWithDmesMl, doprocessMcWithDmesMlAndDecayTypeCheck, doprocessMcWithB0Ml, doprocessMcWithB0MlAndDecayTypeCheck};
     if ((std::accumulate(processFuncMc.begin(), processFuncMc.end(), 0)) > 1) {
       LOGP(fatal, "Only one process function for MC can be enabled at a time.");
     }
@@ -334,7 +334,7 @@ struct HfTaskB0Reduced {
     auto invMassB0 = hfHelper.invMassB0ToDPi(candidate);
     auto candD = candidate.template prong0_as<aod::HfRed3Prongs>();
     auto ptD = candidate.ptProng0();
-    auto invMassD = candD.invMass();
+    auto invMassD = candD.invMassHypo0();
     std::array<float, 3> posPv{candidate.posX(), candidate.posY(), candidate.posZ()};
     std::array<float, 3> posSvD{candD.xSecondaryVertex(), candD.ySecondaryVertex(), candD.zSecondaryVertex()};
     std::array<float, 3> momD{candD.pVector()};

@@ -26,6 +26,7 @@
 #include "Framework/HistogramSpec.h"
 #include "Framework/OutputObjHeader.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "EventFiltering/Zorro.h"
 #include "EventFiltering/ZorroSummary.h"
 #include "PWGHF/Core/CentralityEstimation.h"

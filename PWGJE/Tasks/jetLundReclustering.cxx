@@ -112,15 +112,15 @@ struct JetLundReclustering {
   }
 
   // Dummy process
-  void processDummy(JetCollisions const&)
+  void processDummy(aod::JetCollisions const&)
   {
   }
   PROCESS_SWITCH(JetLundReclustering, processDummy, "Dummy process function, turned on by default", true);
 
   // Process function for charged jets
-  void processChargedJets(soa::Filtered<JetCollisions>::iterator const& collision,
+  void processChargedJets(soa::Filtered<aod::JetCollisions>::iterator const& collision,
                           soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>> const& jets,
-                          JetTracks const&)
+                          aod::JetTracks const&)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
@@ -128,7 +128,7 @@ struct JetLundReclustering {
     for (const auto& jet : jets) {
       registry.fill(HIST("jet_PtEtaPhi"), jet.pt(), jet.eta(), jet.phi());
       jetConstituents.clear();
-      for (auto& jetConstituent : jet.tracks_as<JetTracks>()) {
+      for (auto& jetConstituent : jet.tracks_as<aod::JetTracks>()) {
         fastjetutilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex());
       }
       // Perform jet reclustering

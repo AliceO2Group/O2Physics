@@ -334,6 +334,7 @@ class VarManager : public TObject
     kIsSingleGapA, // Rapidity gap on side A
     kIsSingleGapC, // Rapidity gap on side C
     kIsSingleGap,  // Rapidity gap on either side
+    kIsITSUPCMode, // UPC mode used for event
     kTwoEvPosZ1,   // vtx-z for collision 1 in two events correlations
     kTwoEvPosZ2,   // vtx-z for collision 2 in two events correlations
     kTwoEvPosR1,   // vtx-R for collision 1 in two events correlations
@@ -367,10 +368,22 @@ class VarManager : public TObject
     kQ2Y0A2,
     kU2Q2Ev1,
     kU2Q2Ev2,
-    kTwoR2SP1, // Scalar product resolution of event1 for ME technique
-    kTwoR2SP2, // Scalar product resolution of event2 for ME technique
-    kTwoR2EP1, // Event plane resolution of event2 for ME technique
-    kTwoR2EP2, // Event plane resolution of event2 for ME technique
+    kTwoR2SP1,    // Scalar product resolution of event1 for ME technique
+    kTwoR2SP2,    // Scalar product resolution of event2 for ME technique
+    kTwoR2EP1,    // Event plane resolution of event2 for ME technique
+    kTwoR2EP2,    // Event plane resolution of event2 for ME technique
+    kTwoR2SP_AB1, // Scalar product resolution of event1 for ME technique
+    kTwoR2SP_AB2, // Scalar product resolution of event2 for ME technique
+    kTwoR2SP_AC1, // Scalar product resolution of event1 for ME technique
+    kTwoR2SP_AC2, // Scalar product resolution of event2 for ME technique
+    kTwoR2SP_BC1, // Scalar product resolution of event1 for ME technique
+    kTwoR2SP_BC2, // Scalar product resolution of event2 for ME technique
+    kTwoR2EP_AB1, // Event plane resolution of event2 for ME technique
+    kTwoR2EP_AB2, // Event plane resolution of event2 for ME technique
+    kTwoR2EP_AC1, // Event plane resolution of event2 for ME technique
+    kTwoR2EP_AC2, // Event plane resolution of event2 for ME technique
+    kTwoR2EP_BC1, // Event plane resolution of event2 for ME technique
+    kTwoR2EP_BC2, // Event plane resolution of event2 for ME technique
 
     // Basic track/muon/pair wise variables
     kX,
@@ -432,6 +445,7 @@ class VarManager : public TObject
     kTPCncls,
     kITSClusterMap,
     kTPCnclsCR,
+    kTPCnCRoverFindCls,
     kTPCchi2,
     kTPCsignal,
     kTPCsignalRandomized,
@@ -579,6 +593,7 @@ class VarManager : public TObject
     kPhiHE,
     kPhiCS,
     kDeltaPhiPair2,
+    kDeltaEtaPair2,
     kPsiPair,
     kDeltaPhiPair,
     kOpeningAngle,
@@ -608,15 +623,27 @@ class VarManager : public TObject
     kM1111REF,
     kM0111POI,
     kCORR2REF,
+    kCORR2REFw,
+    kCORR2REFsquaredw,
     kCORR2POI,
+    kCORR2POIw,
+    kCORR2POIsquaredw,
+    kCORR2POIsquaredMpw,
     kCORR4REF,
+    kCORR4REFw,
+    kCORR4REFsquaredw,
     kCORR4POI,
+    kCORR4POIw,
+    kCORR4POIsquaredw,
+    kCORR4POIsquaredMpw,
     kM11REFoverMp,
     kM01POIoverMp,
     kM1111REFoverMp,
     kM0111POIoverMp,
     kCORR2POIMp,
     kCORR4POIMp,
+    kCORR2POIMpw,
+    kCORR4POIMpw,
     kPsi2A,
     kPsi2APOS,
     kPsi2ANEG,
@@ -718,7 +745,8 @@ class VarManager : public TObject
   enum EventFilters {
     kDoubleGap = 0,
     kSingleGapA,
-    kSingleGapC
+    kSingleGapC,
+    kITSUPCMode
   };
 
   enum MuonExtrapolation {
@@ -1465,6 +1493,9 @@ void VarManager::FillEvent(T const& event, float* values)
       values[kIsSingleGapC] = (event.tag_bit(56 + kSingleGapC) > 0);
       values[kIsSingleGap] = values[kIsSingleGapA] || values[kIsSingleGapC];
     }
+    if (fgUsedVars[kIsITSUPCMode]) {
+      values[kIsITSUPCMode] = (event.tag_bit(56 + kITSUPCMode) > 0);
+    }
     values[kCollisionTime] = event.collisionTime();
     values[kCollisionTimeRes] = event.collisionTimeRes();
   }
@@ -1577,8 +1608,12 @@ void VarManager::FillEvent(T const& event, float* values)
     if constexpr ((fillMap & ReducedEventRefFlow) > 0) {
       values[kM1111REF] = event.m1111ref();
       values[kM11REF] = event.m11ref();
-      values[kCORR4REF] = event.corr4ref();
       values[kCORR2REF] = event.corr2ref();
+      values[kCORR2REFw] = event.corr2ref();
+      values[kCORR2REFsquaredw] = event.corr2ref();
+      values[kCORR4REF] = event.corr4ref();
+      values[kCORR4REFw] = event.corr4ref();
+      values[kCORR4REFsquaredw] = event.corr4ref();
       values[kMultA] = event.multa();
     }
   }
@@ -1667,6 +1702,7 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kIsSingleGapA] = (event.eventFilter() & (uint64_t(1) << kSingleGapA)) > 0;
     values[kIsSingleGapC] = (event.eventFilter() & (uint64_t(1) << kSingleGapC)) > 0;
     values[kIsSingleGap] = values[kIsSingleGapA] || values[kIsSingleGapC];
+    values[kIsITSUPCMode] = (event.eventFilter() & (uint64_t(1) << kITSUPCMode)) > 0;
   }
 
   if constexpr ((fillMap & ReducedZdc) > 0) {
@@ -1773,21 +1809,78 @@ void VarManager::FillTwoMixEvents(T1 const& ev1, T1 const& ev2, T2 const& /*trac
     for (auto& track2 : tracks2) { Track2Filter = uint32_t(track2.isMuonSelected());}
    */
   if constexpr ((fillMap & ReducedEventQvector) > 0) {
-    values[kTwoR2SP1] = (ev1.q2x0b() * ev1.q2x0c() + ev1.q2y0b() * ev1.q2y0c());
-    values[kTwoR2SP2] = (ev2.q2x0b() * ev2.q2x0c() + ev2.q2y0b() * ev2.q2y0c());
-
-    if (ev1.q2y0b() * ev1.q2y0c() != 0.0) {
-      values[kTwoR2EP1] = TMath::Cos(2 * (getEventPlane(2, ev1.q2x0b(), ev1.q2y0b()) - getEventPlane(2, ev1.q2x0c(), ev1.q2y0c())));
-    }
-
-    if (ev2.q2y0b() * ev2.q2y0c() != 0.0) {
-      values[kTwoR2EP2] = TMath::Cos(2 * (getEventPlane(2, ev2.q2x0b(), ev2.q2y0b()) - getEventPlane(2, ev2.q2x0c(), ev2.q2y0c())));
-    }
     // Tobe used for the calculation of u1q1 and u2q2
     values[kQ2X0A1] = ev1.q2x0a();
     values[kQ2X0A2] = ev2.q2x0a();
     values[kQ2Y0A1] = ev1.q2y0a();
     values[kQ2Y0A2] = ev2.q2y0a();
+
+    values[kTwoR2SP1] = (ev1.q2x0b() * ev1.q2x0c() + ev1.q2y0b() * ev1.q2y0c());
+    values[kTwoR2SP2] = (ev2.q2x0b() * ev2.q2x0c() + ev2.q2y0b() * ev2.q2y0c());
+    values[kTwoR2SP_AB1] = (ev1.q2x0a() * ev1.q2x0b() + ev1.q2y0a() * ev1.q2y0b());
+    values[kTwoR2SP_AB2] = (ev2.q2x0a() * ev2.q2x0b() + ev2.q2y0a() * ev2.q2y0b());
+    values[kTwoR2SP_AC1] = (ev1.q2x0a() * ev1.q2x0c() + ev1.q2y0a() * ev1.q2y0c());
+    values[kTwoR2SP_AC2] = (ev2.q2x0a() * ev2.q2x0c() + ev2.q2y0a() * ev2.q2y0c());
+    values[kTwoR2SP_BC1] = (ev1.q2x0b() * ev1.q2x0c() + ev1.q2y0b() * ev1.q2y0c());
+    values[kTwoR2SP_BC2] = (ev2.q2x0b() * ev2.q2x0c() + ev2.q2y0b() * ev2.q2y0c());
+
+    if (ev1.q2y0a() * ev1.q2y0b() != 0.0) {
+      values[kTwoR2EP_AB1] = TMath::Cos(2 * (getEventPlane(2, ev1.q2x0a(), ev1.q2y0a()) - getEventPlane(2, ev1.q2x0b(), ev1.q2y0b())));
+    }
+    if (ev2.q2y0a() * ev2.q2y0b() != 0.0) {
+      values[kTwoR2EP_AB2] = TMath::Cos(2 * (getEventPlane(2, ev2.q2x0a(), ev2.q2y0a()) - getEventPlane(2, ev2.q2x0b(), ev2.q2y0b())));
+    }
+    if (ev1.q2y0a() * ev1.q2y0c() != 0.0) {
+      values[kTwoR2EP_AC1] = TMath::Cos(2 * (getEventPlane(2, ev1.q2x0a(), ev1.q2y0a()) - getEventPlane(2, ev1.q2x0c(), ev1.q2y0c())));
+    }
+    if (ev2.q2y0a() * ev2.q2y0c() != 0.0) {
+      values[kTwoR2EP_AC2] = TMath::Cos(2 * (getEventPlane(2, ev2.q2x0a(), ev2.q2y0a()) - getEventPlane(2, ev2.q2x0c(), ev2.q2y0c())));
+    }
+    if (ev1.q2y0b() * ev1.q2y0c() != 0.0) {
+      values[kTwoR2EP1] = TMath::Cos(2 * (getEventPlane(2, ev1.q2x0b(), ev1.q2y0b()) - getEventPlane(2, ev1.q2x0c(), ev1.q2y0c())));
+      values[kTwoR2EP_BC1] = TMath::Cos(2 * (getEventPlane(2, ev1.q2x0b(), ev1.q2y0b()) - getEventPlane(2, ev1.q2x0c(), ev1.q2y0c())));
+    }
+    if (ev2.q2y0b() * ev2.q2y0c() != 0.0) {
+      values[kTwoR2EP2] = TMath::Cos(2 * (getEventPlane(2, ev2.q2x0b(), ev2.q2y0b()) - getEventPlane(2, ev2.q2x0c(), ev2.q2y0c())));
+      values[kTwoR2EP_BC2] = TMath::Cos(2 * (getEventPlane(2, ev2.q2x0b(), ev2.q2y0b()) - getEventPlane(2, ev2.q2x0c(), ev2.q2y0c())));
+    }
+  }
+  if constexpr ((fillMap & CollisionQvect) > 0) {
+    // Tobe used for the calculation of u1q1 and u2q2
+    values[kQ2X0A1] = (ev1.qvecBPosRe() * ev1.nTrkBPos() + ev1.qvecBNegRe() * ev1.nTrkBNeg()) / (ev1.nTrkBPos() + ev1.nTrkBNeg());
+    values[kQ2X0A2] = (ev2.qvecBPosRe() * ev2.nTrkBPos() + ev2.qvecBNegRe() * ev2.nTrkBNeg()) / (ev2.nTrkBPos() + ev2.nTrkBNeg());
+    values[kQ2Y0A1] = (ev1.qvecBPosIm() * ev1.nTrkBPos() + ev1.qvecBNegIm() * ev1.nTrkBNeg()) / (ev1.nTrkBPos() + ev1.nTrkBNeg());
+    values[kQ2Y0A2] = (ev2.qvecBPosIm() * ev2.nTrkBPos() + ev2.qvecBNegIm() * ev2.nTrkBNeg()) / (ev2.nTrkBPos() + ev2.nTrkBNeg());
+
+    values[kTwoR2SP1] = (ev1.qvecFT0ARe() * ev1.qvecFT0CRe() + ev1.qvecFT0AIm() * ev1.qvecFT0CIm());
+    values[kTwoR2SP2] = (ev2.qvecFT0ARe() * ev2.qvecFT0CRe() + ev2.qvecFT0AIm() * ev2.qvecFT0CIm());
+    values[kTwoR2SP_AB1] = (values[kQ2X0A1] * ev1.qvecFT0ARe() + values[kQ2Y0A1] * ev1.qvecFT0AIm());
+    values[kTwoR2SP_AB2] = (values[kQ2X0A2] * ev2.qvecFT0ARe() + values[kQ2Y0A2] * ev2.qvecFT0AIm());
+    values[kTwoR2SP_AC1] = (values[kQ2X0A1] * ev1.qvecFT0CRe() + values[kQ2Y0A1] * ev1.qvecFT0CIm());
+    values[kTwoR2SP_AC2] = (values[kQ2X0A2] * ev2.qvecFT0CRe() + values[kQ2Y0A2] * ev2.qvecFT0CIm());
+    values[kTwoR2SP_BC1] = values[kTwoR2SP1];
+    values[kTwoR2SP_BC2] = values[kTwoR2SP2];
+
+    if (values[kQ2Y0A1] * ev1.qvecFT0AIm() != 0.0) {
+      values[kTwoR2EP_AB1] = TMath::Cos(2 * (getEventPlane(2, values[kQ2X0A1], values[kQ2Y0A1]) - getEventPlane(2, ev1.qvecFT0ARe(), ev1.qvecFT0AIm())));
+    }
+    if (values[kQ2Y0A2] * ev2.qvecFT0AIm() != 0.0) {
+      values[kTwoR2EP_AB2] = TMath::Cos(2 * (getEventPlane(2, values[kQ2X0A2], values[kQ2Y0A2]) - getEventPlane(2, ev2.qvecFT0ARe(), ev2.qvecFT0AIm())));
+    }
+    if (values[kQ2Y0A1] * ev1.qvecFT0CIm() != 0.0) {
+      values[kTwoR2EP_AC1] = TMath::Cos(2 * (getEventPlane(2, values[kQ2X0A1], values[kQ2Y0A1]) - getEventPlane(2, ev1.qvecFT0CRe(), ev1.qvecFT0CIm())));
+    }
+    if (values[kQ2Y0A2] * ev2.qvecFT0CIm() != 0.0) {
+      values[kTwoR2EP_AC2] = TMath::Cos(2 * (getEventPlane(2, values[kQ2X0A2], values[kQ2Y0A2]) - getEventPlane(2, ev2.qvecFT0CRe(), ev2.qvecFT0CIm())));
+    }
+    if (ev1.qvecFT0AIm() * ev1.qvecFT0CIm() != 0.0) {
+      values[kTwoR2EP1] = TMath::Cos(2 * (getEventPlane(2, ev1.qvecFT0ARe(), ev1.qvecFT0AIm()) - getEventPlane(2, ev1.qvecFT0CRe(), ev1.qvecFT0CIm())));
+      values[kTwoR2EP_BC1] = values[kTwoR2EP1];
+    }
+    if (ev2.qvecFT0AIm() * ev2.qvecFT0CIm() != 0.0) {
+      values[kTwoR2EP2] = TMath::Cos(2 * (getEventPlane(2, ev2.qvecFT0ARe(), ev2.qvecFT0AIm()) - getEventPlane(2, ev2.qvecFT0CRe(), ev2.qvecFT0CIm())));
+      values[kTwoR2EP_BC2] = values[kTwoR2EP2];
+    }
   }
 
   if (std::isnan(VarManager::fgValues[VarManager::kTwoR2SP1]) == true || std::isnan(VarManager::fgValues[VarManager::kTwoR2EP1]) == true) {
@@ -1795,6 +1888,24 @@ void VarManager::FillTwoMixEvents(T1 const& ev1, T1 const& ev2, T2 const& /*trac
     values[kTwoR2SP2] = -999.;
     values[kTwoR2EP1] = -999.;
     values[kTwoR2EP2] = -999.;
+  }
+  if (std::isnan(VarManager::fgValues[VarManager::kTwoR2SP_AB1]) == true || std::isnan(VarManager::fgValues[VarManager::kTwoR2EP_AB1]) == true) {
+    values[kTwoR2SP_AB1] = -999.;
+    values[kTwoR2SP_AB2] = -999.;
+    values[kTwoR2EP_AB1] = -999.;
+    values[kTwoR2EP_AB2] = -999.;
+  }
+  if (std::isnan(VarManager::fgValues[VarManager::kTwoR2SP_AC1]) == true || std::isnan(VarManager::fgValues[VarManager::kTwoR2EP_AC1]) == true) {
+    values[kTwoR2SP_AC1] = -999.;
+    values[kTwoR2SP_AC2] = -999.;
+    values[kTwoR2EP_AC1] = -999.;
+    values[kTwoR2EP_AC2] = -999.;
+  }
+  if (std::isnan(VarManager::fgValues[VarManager::kTwoR2SP_BC1]) == true || std::isnan(VarManager::fgValues[VarManager::kTwoR2EP_BC1]) == true) {
+    values[kTwoR2SP_BC1] = -999.;
+    values[kTwoR2SP_BC2] = -999.;
+    values[kTwoR2EP_BC1] = -999.;
+    values[kTwoR2EP_BC2] = -999.;
   }
 }
 
@@ -1952,6 +2063,9 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kHasTPC] = track.hasTPC();
 
     if constexpr ((fillMap & TrackExtra) > 0) {
+      if (fgUsedVars[kTPCnCRoverFindCls]) {
+        values[kTPCnCRoverFindCls] = track.tpcCrossedRowsOverFindableCls();
+      }
       if (fgUsedVars[kITSncls]) {
         values[kITSncls] = track.itsNCls(); // dynamic column
       }
@@ -2445,6 +2559,10 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
     }
   }
 
+  if (fgUsedVars[kDeltaEtaPair2]) {
+    values[kDeltaEtaPair2] = v1.Eta() - v2.Eta();
+  }
+
   if (fgUsedVars[kPsiPair]) {
     values[kDeltaPhiPair] = (t1.sign() * fgMagField > 0.) ? (v1.Phi() - v2.Phi()) : (v2.Phi() - v1.Phi());
     double xipair = TMath::ACos((v1.Px() * v2.Px() + v1.Py() * v2.Py() + v1.Pz() * v2.Pz()) / v1.P() / v2.P());
@@ -2782,6 +2900,21 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
   // values[kPhi] = v12.Phi();
   values[kPhi] = v12.Phi() > 0 ? v12.Phi() : v12.Phi() + 2. * M_PI;
   values[kRap] = -v12.Rapidity();
+
+  if (fgUsedVars[kDeltaPhiPair2]) {
+    double phipair2ME = v1.Phi() - v2.Phi();
+    if (phipair2ME > 3 * TMath::Pi() / 2) {
+      values[kDeltaPhiPair2] = phipair2ME - 2 * TMath::Pi();
+    } else if (phipair2ME < -TMath::Pi() / 2) {
+      values[kDeltaPhiPair2] = phipair2ME + 2 * TMath::Pi();
+    } else {
+      values[kDeltaPhiPair2] = phipair2ME;
+    }
+  }
+
+  if (fgUsedVars[kDeltaEtaPair2]) {
+    values[kDeltaEtaPair2] = v1.Eta() - v2.Eta();
+  }
 
   // TODO: provide different computations for vn
   // Compute the scalar product UQ for two muon from different event using Q-vector from A, for second and third harmonic
@@ -3756,9 +3889,9 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
           values[kVertexingTauxyProjectedNs] = values[kVertexingTauxyProjected] / o2::constants::physics::LightSpeedCm2NS;
           values[kVertexingTauzProjected] = (values[kVertexingLzProjected] * KFGeoThreeProng.GetMass()) / TMath::Abs(KFGeoThreeProng.GetPz());
         } // end Run 2 quantities
-      }   // end eventHasVtxCov
-    }     // end (candidateType == kBtoJpsiEEK) && trackHasCov
-  }       // end KF
+      } // end eventHasVtxCov
+    } // end (candidateType == kBtoJpsiEEK) && trackHasCov
+  } // end KF
 }
 
 template <typename C, typename A>
@@ -3827,6 +3960,12 @@ void VarManager::FillQVectorFromGFW(C const& /*collision*/, A const& compA11, A 
   values[kM1111REF] = S41A - 6. * S12A * S21A + 8. * S13A * S11A + 3. * S22A - 6. * S14A;
   values[kCORR2REF] = (norm(compA21) - S12A) / values[kM11REF];
   values[kCORR4REF] = (pow(norm(compA21), 2) + norm(compA42) - 2. * (compA42 * conj(compA21) * conj(compA21)).real() + 8. * (compA23 * conj(compA21)).real() - 4. * S12A * norm(compA21) - 6. * S14A - 2. * S22A) / values[kM1111REF];
+  values[kCORR2REF] = std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF]) ? 0 : values[kCORR2REF];
+  values[kCORR4REF] = std::isnan(values[kCORR4REF]) || std::isinf(values[kCORR4REF]) ? 0 : values[kCORR4REF];
+  values[kCORR2REFw] = values[kCORR2REF] * values[kM11REF];
+  values[kCORR2REFsquaredw] = values[kCORR2REF] * values[kCORR2REF] * values[kM11REF];
+  values[kCORR4REFw] = values[kCORR4REF] * values[kM1111REF];
+  values[kCORR4REFsquaredw] = values[kCORR4REF] * values[kCORR4REF] * values[kM1111REF];
 
   // TODO: provide different computations for R
   // Compute the R factor using the 2 sub-events technique for second and third harmonic
@@ -3858,14 +3997,14 @@ void VarManager::FillQVectorFromCentralFW(C const& collision, float* values)
     values = fgValues;
   }
 
-  float xQVecFT0a = collision.qvecFT0ARe(); // already normalised
-  float yQVecFT0a = collision.qvecFT0AIm(); // already normalised
-  float xQVecFT0c = collision.qvecFT0CRe(); // already normalised
-  float yQVecFT0c = collision.qvecFT0CIm(); // already normalised
-  float xQVecFT0m = collision.qvecFT0MRe(); // already normalised
-  float yQVecFT0m = collision.qvecFT0MIm(); // already normalised
-  float xQVecFV0a = collision.qvecFV0ARe(); // already normalised
-  float yQVecFV0a = collision.qvecFV0AIm(); // already normalised
+  float xQVecFT0a = collision.qvecFT0ARe();   // already normalised
+  float yQVecFT0a = collision.qvecFT0AIm();   // already normalised
+  float xQVecFT0c = collision.qvecFT0CRe();   // already normalised
+  float yQVecFT0c = collision.qvecFT0CIm();   // already normalised
+  float xQVecFT0m = collision.qvecFT0MRe();   // already normalised
+  float yQVecFT0m = collision.qvecFT0MIm();   // already normalised
+  float xQVecFV0a = collision.qvecFV0ARe();   // already normalised
+  float yQVecFV0a = collision.qvecFV0AIm();   // already normalised
   float xQVecBPos = collision.qvecTPCposRe(); // already normalised
   float yQVecBPos = collision.qvecTPCposIm(); // already normalised
   float xQVecBNeg = collision.qvecTPCnegRe(); // already normalised

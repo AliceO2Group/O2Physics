@@ -13,6 +13,8 @@
 /// \brief Tasks that produces the track tables used for the pairing
 /// \author Ravindra Singh, GSI, ravindra.singh@cern.ch
 
+#include <string>
+#include <vector>
 #include "CCDB/BasicCCDBManager.h"
 
 #include "Common/Core/trackUtilities.h"
@@ -46,6 +48,7 @@ using namespace o2::analysis::femtoDream;
 struct HfFemtoDreamProducer {
 
   Produces<aod::FDCollisions> outputCollision;
+  Produces<aod::FDColMasks> rowMasks;
   Produces<aod::FDHfCand> rowCandCharmHad;
   Produces<aod::FDHfCandMC> rowCandMcCharmHad;
   Produces<aod::FDHfCandMCGen> rowCandCharmHadGen;
@@ -196,13 +199,21 @@ struct HfFemtoDreamProducer {
                      particle.dcaXY(),
                      particle.dcaZ(),
                      particle.tpcSignal(),
+                     -999.,
                      particle.tpcNSigmaPi(),
                      particle.tpcNSigmaKa(),
                      particle.tpcNSigmaPr(),
+                     -999.,
+                     -999.,
+                     -999.,
+                     -999.,
                      particle.tofNSigmaPi(),
                      particle.tofNSigmaKa(),
                      particle.tofNSigmaPr(),
-                     -999., -999., -999., -999., -999., -999., -999., -999., -999., -999.);
+                     -999.,
+                     -999.,
+                     -999.,
+                     -999., -999., -999., -999., -999., -999.);
   }
 
   template <typename CollisionType, typename ParticleType>
@@ -275,8 +286,8 @@ struct HfFemtoDreamProducer {
     }
   }
 
-  template <bool isMc = false, typename TrackType, typename CollisionType, typename ProngType>
-  bool fillTracksForCharmHadron(CollisionType const& col, TrackType const& tracks, ProngType const& prong0, ProngType const& prong1, ProngType const& prong2, int candSize)
+  template <bool isMc = false, typename TrackType, typename CollisionType>
+  bool fillTracksForCharmHadron(CollisionType const& col, TrackType const& tracks)
   {
 
     std::vector<int> childIDs = {0, 0}; // these IDs are necessary to keep track of the children
@@ -290,9 +301,6 @@ struct HfFemtoDreamProducer {
         continue;
       }
 
-      if ((candSize == 1) && (track.globalIndex() == prong0.globalIndex() || track.globalIndex() == prong1.globalIndex() || track.globalIndex() == prong2.globalIndex()))
-        continue;
-
       trackCuts.fillQA<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::TrackType::kNoChild, true>(track);
       // the bit-wise container of the systematic variations is obtained
       auto cutContainer = trackCuts.getCutContainer<aod::femtodreamparticle::cutContainerType>(track, track.pt(), track.eta(), sqrtf(powf(track.dcaXY(), 2.f) + powf(track.dcaZ(), 2.f)));
@@ -301,7 +309,7 @@ struct HfFemtoDreamProducer {
       outputPartsIndex(track.globalIndex());
       // now the table is filled
 
-      outputParts(outputCollision.lastIndex() + 1,
+      outputParts(outputCollision.lastIndex(),
                   track.pt(),
                   track.eta(),
                   track.phi(),
@@ -327,8 +335,6 @@ struct HfFemtoDreamProducer {
   {
     const auto vtxZ = col.posZ();
     const auto sizeCand = candidates.size();
-    if (sizeCand == 0)
-      return;
 
     const auto spher = colCuts.computeSphericity(col, tracks);
     float mult = 0;
@@ -356,6 +362,12 @@ struct HfFemtoDreamProducer {
     if (colCuts.isEmptyCollision(col, tracks, trackCuts)) {
       return;
     }
+
+    outputCollision(vtxZ, mult, multNtr, spher, magField);
+    if constexpr (isMc) {
+      fillMcCollision(col);
+    }
+
     // Filling candidate properties
     rowCandCharmHad.reserve(sizeCand);
     bool isTrackFilled = false;
@@ -386,22 +398,6 @@ struct HfFemtoDreamProducer {
                            float BDTScorePrompt,
                            float BDTScoreFD) {
         if (FunctionSelection >= 1){
-        // Fill tracks if it is not filled for Lc Candidate in an event
-            if (!isTrackFilled) {
-              isTrackFilled = fillTracksForCharmHadron<isMc>(col, tracks, trackPos1, trackNeg, trackPos2, sizeCand);
-
-              // If track filling was successful, fill the collision table
-              if (isTrackFilled) {
-                outputCollision(vtxZ, mult, multNtr, spher, magField);
-                if constexpr (isMc) {
-                  fillMcCollision(col);
-                }
-              }
-            }
-
-            // fill collision table if track table is filled, i.e., there is at least one Lc-p pair
-            if (isTrackFilled) {
-                // Row for candidate charm hadron
                 rowCandCharmHad(
                     outputCollision.lastIndex(),
                     trackPos1.sign() + trackNeg.sign() + trackPos2.sign(),
@@ -426,14 +422,31 @@ struct HfFemtoDreamProducer {
                 if constexpr (isMc) {
                   rowCandMcCharmHad(
                     candidate.flagMcMatchRec(),
-                    candidate.originMcRec());
-                }
-            }
+                    candidate.originMcRec());}
       } };
 
       fillTable(0, candidate.isSelLcToPKPi(), outputMlPKPi.at(0), outputMlPKPi.at(1), outputMlPKPi.at(2));
       fillTable(1, candidate.isSelLcToPiKP(), outputMlPiKP.at(0), outputMlPiKP.at(1), outputMlPiKP.at(2));
     }
+
+    if (!isTrackFilled) {
+      isTrackFilled = fillTracksForCharmHadron<isMc>(col, tracks);
+      // If track filling was successful, fill the collision table
+    }
+
+    aod::femtodreamcollision::BitMaskType bitTrack = 0;
+    if (isTrackFilled) {
+      bitTrack |= 1 << 0;
+    }
+
+    aod::femtodreamcollision::BitMaskType bitCand = 0;
+    if (sizeCand > 0) {
+      bitCand |= 1 << 0;
+    }
+
+    rowMasks(static_cast<aod::femtodreamcollision::BitMaskType>(bitTrack),
+             static_cast<aod::femtodreamcollision::BitMaskType>(bitCand),
+             0);
   }
 
   template <typename ParticleType>

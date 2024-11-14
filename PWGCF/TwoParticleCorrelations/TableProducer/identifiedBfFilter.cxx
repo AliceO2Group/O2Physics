@@ -642,6 +642,8 @@ struct IdentifiedBfFilterTracks {
   Configurable<float> minRejectSigma{"minrejectsigma", -1.0, "Minimum required sigma for PID double match rejection"};
   Configurable<float> maxRejectSigma{"maxrejectsigma", 1.0, "Maximum required sigma for PID double match rejection"};
 
+  Configurable<float> tofCut{"TOFCutoff", 0.8, "Momentum under which we don't use TOF PID data"};
+
   OutputObj<TList> fOutput{"IdentifiedBfFilterTracksInfo", OutputObjHandlingPolicy::AnalysisObject};
   bool checkAmbiguousTracks = false;
 
@@ -936,6 +938,8 @@ struct IdentifiedBfFilterTracks {
   MatchRecoGenSpecies trackIdentification(TrackObject const& track);
   template <typename TrackObject>
   int8_t AcceptTrack(TrackObject const& track);
+  template <typename ParticleObject, typename MCCollisionObject>
+  int8_t AcceptParticle(ParticleObject& particle, MCCollisionObject const&);
   template <typename CollisionObjects, typename TrackObject>
   int8_t selectTrackAmbiguousCheck(CollisionObjects const& collisions, TrackObject const& track);
   template <typename ParticleObject>
@@ -1180,7 +1184,6 @@ template <typename ParticleObject>
 inline MatchRecoGenSpecies IdentifiedBfFilterTracks::IdentifyParticle(ParticleObject const& particle)
 {
   using namespace identifiedbffilter;
-
   constexpr int pdgcodeEl = 11;
   constexpr int pdgcodePi = 211;
   constexpr int pdgcodeKa = 321;
@@ -1221,13 +1224,11 @@ void fillNSigmaHistos(TrackObject const& track)
   float actualTPCNSigmaKa = track.tpcNSigmaKa();
   float actualTPCNSigmaPr = track.tpcNSigmaPr();
 
-  if (track.tpcInnerParam() > 0.3) {
-    if (loadfromccdb) {
-      actualTPCNSigmaEl = actualTPCNSigmaEl - fhNSigmaCorrection[kIdBfElectron]->GetBinContent(fhNSigmaCorrection[kIdBfElectron]->FindBin(track.tpcInnerParam()));
-      actualTPCNSigmaPi = actualTPCNSigmaPi - fhNSigmaCorrection[kIdBfPion]->GetBinContent(fhNSigmaCorrection[kIdBfPion]->FindBin(track.tpcInnerParam()));
-      actualTPCNSigmaKa = actualTPCNSigmaKa - fhNSigmaCorrection[kIdBfKaon]->GetBinContent(fhNSigmaCorrection[kIdBfKaon]->FindBin(track.tpcInnerParam()));
-      actualTPCNSigmaPr = actualTPCNSigmaPr - fhNSigmaCorrection[kIdBfProton]->GetBinContent(fhNSigmaCorrection[kIdBfProton]->FindBin(track.tpcInnerParam()));
-    }
+  if (loadfromccdb) {
+    actualTPCNSigmaEl = actualTPCNSigmaEl - fhNSigmaCorrection[kIdBfElectron]->GetBinContent(fhNSigmaCorrection[kIdBfElectron]->FindBin(track.tpcInnerParam()));
+    actualTPCNSigmaPi = actualTPCNSigmaPi - fhNSigmaCorrection[kIdBfPion]->GetBinContent(fhNSigmaCorrection[kIdBfPion]->FindBin(track.tpcInnerParam()));
+    actualTPCNSigmaKa = actualTPCNSigmaKa - fhNSigmaCorrection[kIdBfKaon]->GetBinContent(fhNSigmaCorrection[kIdBfKaon]->FindBin(track.tpcInnerParam()));
+    actualTPCNSigmaPr = actualTPCNSigmaPr - fhNSigmaCorrection[kIdBfProton]->GetBinContent(fhNSigmaCorrection[kIdBfProton]->FindBin(track.tpcInnerParam()));
   }
 
   fhNSigmaTPC[kIdBfElectron]->Fill(actualTPCNSigmaEl, track.tpcInnerParam());
@@ -1260,16 +1261,14 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::IdentifyTrack(TrackObject c
 
   float nsigmas[kIdBfNoOfSpecies];
 
-  if (track.tpcInnerParam() > 0.3) {
-    if (loadfromccdb) {
-      actualTPCNSigmaEl = actualTPCNSigmaEl - fhNSigmaCorrection[kIdBfElectron]->GetBinContent(fhNSigmaCorrection[kIdBfElectron]->FindBin(track.tpcInnerParam()));
-      actualTPCNSigmaPi = actualTPCNSigmaPi - fhNSigmaCorrection[kIdBfPion]->GetBinContent(fhNSigmaCorrection[kIdBfPion]->FindBin(track.tpcInnerParam()));
-      actualTPCNSigmaKa = actualTPCNSigmaKa - fhNSigmaCorrection[kIdBfKaon]->GetBinContent(fhNSigmaCorrection[kIdBfKaon]->FindBin(track.tpcInnerParam()));
-      actualTPCNSigmaPr = actualTPCNSigmaPr - fhNSigmaCorrection[kIdBfProton]->GetBinContent(fhNSigmaCorrection[kIdBfProton]->FindBin(track.tpcInnerParam()));
-    }
+  if (loadfromccdb) {
+    actualTPCNSigmaEl = actualTPCNSigmaEl - fhNSigmaCorrection[kIdBfElectron]->GetBinContent(fhNSigmaCorrection[kIdBfElectron]->FindBin(track.tpcInnerParam()));
+    actualTPCNSigmaPi = actualTPCNSigmaPi - fhNSigmaCorrection[kIdBfPion]->GetBinContent(fhNSigmaCorrection[kIdBfPion]->FindBin(track.tpcInnerParam()));
+    actualTPCNSigmaKa = actualTPCNSigmaKa - fhNSigmaCorrection[kIdBfKaon]->GetBinContent(fhNSigmaCorrection[kIdBfKaon]->FindBin(track.tpcInnerParam()));
+    actualTPCNSigmaPr = actualTPCNSigmaPr - fhNSigmaCorrection[kIdBfProton]->GetBinContent(fhNSigmaCorrection[kIdBfProton]->FindBin(track.tpcInnerParam()));
   }
 
-  if (track.tpcInnerParam() < 0.8 && !reqTOF && !onlyTOF) {
+  if (track.tpcInnerParam() < tofCut && !reqTOF && !onlyTOF) {
 
     nsigmas[kIdBfElectron] = actualTPCNSigmaEl;
     nsigmas[kIdBfPion] = actualTPCNSigmaPi;
@@ -1363,7 +1362,6 @@ template <typename TrackObject>
 MatchRecoGenSpecies IdentifiedBfFilterTracks::trackIdentification(TrackObject const& track)
 {
   using namespace identifiedbffilter;
-
   MatchRecoGenSpecies sp = kWrongSpecies;
   if (recoIdMethod == 0) {
     sp = kIdBfCharged;
@@ -1424,6 +1422,41 @@ inline int8_t IdentifiedBfFilterTracks::AcceptTrack(TrackObject const& track)
     }
   }
   return -1;
+}
+
+/// \brief Accepts or not the passed generated particle
+/// \param track the particle of interest
+/// \return `true` if the particle is accepted, `false` otherwise
+template <typename ParticleObject, typename MCCollisionObject>
+inline int8_t IdentifiedBfFilterTracks::AcceptParticle(ParticleObject& particle, MCCollisionObject const&)
+{
+  /* overall momentum cut */
+  if (!(overallminp < particle.p())) {
+    return kWrongSpecies;
+  }
+
+  float charge = getCharge(particle);
+
+  if (particle.isPhysicalPrimary()) {
+    if ((particle.mcCollisionId() == 0) && traceCollId0) {
+      LOGF(info, "Particle %d passed isPhysicalPrimary", particle.globalIndex());
+    }
+
+    if (ptlow < particle.pt() && particle.pt() < ptup && etalow < particle.eta() && particle.eta() < etaup) {
+      MatchRecoGenSpecies sp = IdentifyParticle(particle);
+      if (charge == 1) {
+        return speciesChargeValue1[sp];
+
+      } else if (charge == -1) {
+        return speciesChargeValue1[sp] + 1;
+      }
+    }
+  } else {
+    if ((particle.mcCollisionId() == 0) && traceCollId0) {
+      LOGF(info, "Particle %d NOT passed isPhysicalPrimary", particle.globalIndex());
+    }
+  }
+  return kWrongSpecies;
 }
 
 template <typename CollisionObjects, typename TrackObject>
