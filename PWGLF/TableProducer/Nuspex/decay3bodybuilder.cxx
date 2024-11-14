@@ -71,6 +71,22 @@ using TrackExtPIDIUwithEvTimes = soa::Join<FullTracksExtPIDIU, aod::EvTimeTOFFT0
 
 using MCLabeledTracksIU = soa::Join<FullTracksExtIU, aod::McTrackLabels>;
 
+struct vtxCandidate {
+  int track0Id;
+  int track1Id;
+  int track2Id;
+  int collisionId;
+  int decay3bodyId;
+  float vtxPos[3];
+  float track0P[3];
+  float track1P[3];
+  float track2P[3];
+  float dcadaughters;
+  float daudcaxytopv[3]; // 0 - proton, 1 - pion, 2 - bachelor
+  float daudcatopv[3];   // 0 - proton, 1 - pion, 2 - bachelor
+  float bachelortofNsigma;
+};
+
 struct decay3bodyBuilder {
 
   Produces<aod::StoredVtx3BodyDatas> vtx3bodydata;
@@ -78,6 +94,7 @@ struct decay3bodyBuilder {
   Produces<aod::KFVtx3BodyDatasLite> kfvtx3bodydatalite;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
+  std::vector<vtxCandidate> vtxCandidates;
 
   // Configurables
   Configurable<bool> d_UseAbsDCA{"d_UseAbsDCA", true, "Use Abs DCAs"};
@@ -273,7 +290,7 @@ struct decay3bodyBuilder {
     fitter3body.setMatCorrType(matCorr);
 
     // Add histograms separately for different process functions
-    if (doprocessRun3 == true) {
+    if (doprocessRun3 == true || doprocessRun3EM == true) {
       registry.add("hEventCounter", "hEventCounter", HistType::kTH1F, {{1, 0.0f, 1.0f}});
       auto hVtx3BodyCounter = registry.add<TH1>("hVtx3BodyCounter", "hVtx3BodyCounter", HistType::kTH1F, {{6, 0.0f, 6.0f}});
       hVtx3BodyCounter->GetXaxis()->SetBinLabel(1, "Total");
@@ -512,110 +529,133 @@ struct decay3bodyBuilder {
 
   //------------------------------------------------------------------
   // 3body candidate builder
-  template <class TCollisionClass, class TTrackClass, typename TCollisionTable, typename TTrackTable>
-  // void buildVtx3BodyDataTable(TCollisionTable const& /*allcollisions*/, TCollisionTable::iterator const& collision, TTrackTable const& /*tracks*/, aod::Decay3Bodys const& decay3bodys, int bachelorcharge = 1)
-  void buildVtx3BodyDataTable(TCollisionTable const& collision, TTrackTable const& /*tracks*/, aod::Decay3Bodys const& decay3bodys, int bachelorcharge = 1)
+  template <class TCollisionClass, typename TCollisionTable, typename TTrackTable>
+  void fillVtxCand(TCollisionTable const& collision, TTrackTable const& t0, TTrackTable const& t1, TTrackTable const& t2, int64_t decay3bodyId, int bachelorcharge = 1)
   {
 
-    for (auto& vtx3body : decay3bodys) {
+    registry.fill(HIST("hVtx3BodyCounter"), kVtxAll);
 
-      registry.fill(HIST("hVtx3BodyCounter"), kVtxAll);
+    if (t0.tpcNClsFound() < mintpcNCls || t1.tpcNClsFound() < mintpcNCls || t2.tpcNClsFound() < mintpcNCls) {
+      return;
+    }
+    registry.fill(HIST("hVtx3BodyCounter"), kVtxTPCNcls);
 
-      auto t0 = vtx3body.template track0_as<TTrackClass>();
-      auto t1 = vtx3body.template track1_as<TTrackClass>();
-      auto t2 = vtx3body.template track2_as<TTrackClass>();
-
-      if (t0.tpcNClsFound() < mintpcNCls || t1.tpcNClsFound() < mintpcNCls || t2.tpcNClsFound() < mintpcNCls) {
-        continue;
-      }
-      registry.fill(HIST("hVtx3BodyCounter"), kVtxTPCNcls);
-
-      // Recalculate the TOF PID
-      double tofNSigmaBach = -999;
-      if (t2.has_collision() && t2.hasTOF()) {
-        auto originalcol = t2.template collision_as<TCollisionClass>();
+    // Recalculate the TOF PID
+    double tofNSigmaBach = -999;
+    if (t2.has_collision() && t2.hasTOF()) {
+      auto originalcol = t2.template collision_as<TCollisionClass>();
+      if (decay3bodyId == -1) {
+        tofNSigmaBach = bachelorTOFPID.GetTOFNSigma(t2, originalcol, originalcol);
+      } else {
         tofNSigmaBach = bachelorTOFPID.GetTOFNSigma(t2, originalcol, collision);
       }
-
-      if (enablePidCut) {
-        if (t2.sign() > 0) {
-          if (!checkPIDH3L(t0, t1, t2, tofNSigmaBach))
-            continue;
-        } else {
-          if (!checkPIDH3L(t1, t0, t2, tofNSigmaBach))
-            continue;
-        }
-      }
-
-      registry.fill(HIST("hVtx3BodyCounter"), kVtxPIDCut);
-
-      // Calculate DCA with respect to the collision associated to the V0, not individual tracks
-      gpu::gpustd::array<float, 2> dcaInfo;
-
-      auto Track0Par = getTrackPar(t0);
-      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, Track0Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
-      auto Track0dcaXY = dcaInfo[0];
-      auto Track0dca = std::sqrt(Track0dcaXY * Track0dcaXY + dcaInfo[1] * dcaInfo[1]);
-
-      auto Track1Par = getTrackPar(t1);
-      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, Track1Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
-      auto Track1dcaXY = dcaInfo[0];
-      auto Track1dca = std::sqrt(Track1dcaXY * Track1dcaXY + dcaInfo[1] * dcaInfo[1]);
-
-      auto Track2Par = getTrackPar(t2);
-      o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, Track2Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
-      auto Track2dcaXY = dcaInfo[0];
-      auto Track2dca = std::sqrt(Track2dcaXY * Track2dcaXY + dcaInfo[1] * dcaInfo[1]);
-
-      auto Track0 = getTrackParCov(t0);
-      auto Track1 = getTrackParCov(t1);
-      auto Track2 = getTrackParCov(t2);
-      int n3bodyVtx = fitter3body.process(Track0, Track1, Track2);
-      if (n3bodyVtx == 0) { // discard this pair
-        continue;
-      }
-      registry.fill(HIST("hVtx3BodyCounter"), kVtxhasSV);
-
-      std::array<float, 3> pos = {0.};
-      const auto& vtxXYZ = fitter3body.getPCACandidate();
-      for (int i = 0; i < 3; i++) {
-        pos[i] = vtxXYZ[i];
-      }
-
-      std::array<float, 3> p0 = {0.}, p1 = {0.}, p2{0.};
-      const auto& propagatedTrack0 = fitter3body.getTrack(0);
-      const auto& propagatedTrack1 = fitter3body.getTrack(1);
-      const auto& propagatedTrack2 = fitter3body.getTrack(2);
-      propagatedTrack0.getPxPyPzGlo(p0);
-      propagatedTrack1.getPxPyPzGlo(p1);
-      propagatedTrack2.getPxPyPzGlo(p2);
-      for (int i = 0; i < 3; i++) {
-        p2[i] *= bachelorcharge;
-      }
-      std::array<float, 3> p3B = {p0[0] + p1[0] + p2[0], p0[1] + p1[1] + p2[1], p0[2] + p1[2] + p2[2]};
-
-      if (fitter3body.getChi2AtPCACandidate() > dcavtxdau) {
-        continue;
-      }
-      registry.fill(HIST("hVtx3BodyCounter"), kVtxDcaDau);
-
-      float VtxcosPA = RecoDecay::cpa(array{collision.posX(), collision.posY(), collision.posZ()}, array{pos[0], pos[1], pos[2]}, array{p3B[0], p3B[1], p3B[2]});
-      if (VtxcosPA < minCosPA3body) {
-        continue;
-      }
-      registry.fill(HIST("hVtx3BodyCounter"), kVtxCosPA);
-
-      registry.fill(HIST("hBachelorTOFNSigmaDe"), t2.sign() * t2.p(), tofNSigmaBach);
-
-      vtx3bodydata(
-        t0.globalIndex(), t1.globalIndex(), t2.globalIndex(), collision.globalIndex(), vtx3body.globalIndex(),
-        pos[0], pos[1], pos[2],
-        p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], p2[0], p2[1], p2[2],
-        fitter3body.getChi2AtPCACandidate(),
-        Track0dcaXY, Track1dcaXY, Track2dcaXY,
-        Track0dca, Track1dca, Track2dca,
-        tofNSigmaBach);
     }
+
+    if (enablePidCut) {
+      if (t2.sign() > 0) {
+        if (!checkPIDH3L(t0, t1, t2, tofNSigmaBach))
+          return;
+      } else {
+        if (!checkPIDH3L(t1, t0, t2, tofNSigmaBach))
+          return;
+      }
+    }
+
+    registry.fill(HIST("hVtx3BodyCounter"), kVtxPIDCut);
+
+    // Calculate DCA with respect to the collision associated to the V0, not individual tracks
+    gpu::gpustd::array<float, 2> dcaInfo;
+
+    auto Track0Par = getTrackPar(t0);
+    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, Track0Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
+    auto Track0dcaXY = dcaInfo[0];
+    auto Track0dca = std::sqrt(Track0dcaXY * Track0dcaXY + dcaInfo[1] * dcaInfo[1]);
+
+    auto Track1Par = getTrackPar(t1);
+    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, Track1Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
+    auto Track1dcaXY = dcaInfo[0];
+    auto Track1dca = std::sqrt(Track1dcaXY * Track1dcaXY + dcaInfo[1] * dcaInfo[1]);
+
+    auto Track2Par = getTrackPar(t2);
+    o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, Track2Par, 2.f, fitter3body.getMatCorrType(), &dcaInfo);
+    auto Track2dcaXY = dcaInfo[0];
+    auto Track2dca = std::sqrt(Track2dcaXY * Track2dcaXY + dcaInfo[1] * dcaInfo[1]);
+
+    auto Track0 = getTrackParCov(t0);
+    auto Track1 = getTrackParCov(t1);
+    auto Track2 = getTrackParCov(t2);
+    int n3bodyVtx = fitter3body.process(Track0, Track1, Track2);
+    if (n3bodyVtx == 0) { // discard this pair
+      return;
+    }
+    registry.fill(HIST("hVtx3BodyCounter"), kVtxhasSV);
+
+    std::array<float, 3> pos = {0.};
+    const auto& vtxXYZ = fitter3body.getPCACandidate();
+    for (int i = 0; i < 3; i++) {
+      pos[i] = vtxXYZ[i];
+    }
+
+    std::array<float, 3> p0 = {0.}, p1 = {0.}, p2{0.};
+    const auto& propagatedTrack0 = fitter3body.getTrack(0);
+    const auto& propagatedTrack1 = fitter3body.getTrack(1);
+    const auto& propagatedTrack2 = fitter3body.getTrack(2);
+    propagatedTrack0.getPxPyPzGlo(p0);
+    propagatedTrack1.getPxPyPzGlo(p1);
+    propagatedTrack2.getPxPyPzGlo(p2);
+    for (int i = 0; i < 3; i++) {
+      p2[i] *= bachelorcharge;
+    }
+    std::array<float, 3> p3B = {p0[0] + p1[0] + p2[0], p0[1] + p1[1] + p2[1], p0[2] + p1[2] + p2[2]};
+
+    if (fitter3body.getChi2AtPCACandidate() > dcavtxdau) {
+      return;
+    }
+    registry.fill(HIST("hVtx3BodyCounter"), kVtxDcaDau);
+
+    float VtxcosPA = RecoDecay::cpa(array{collision.posX(), collision.posY(), collision.posZ()}, array{pos[0], pos[1], pos[2]}, array{p3B[0], p3B[1], p3B[2]});
+    if (VtxcosPA < minCosPA3body) {
+      return;
+    }
+    registry.fill(HIST("hVtx3BodyCounter"), kVtxCosPA);
+
+    registry.fill(HIST("hBachelorTOFNSigmaDe"), t2.sign() * t2.p(), tofNSigmaBach);
+
+    vtxCandidate candVtx;
+    candVtx.track0Id = t0.globalIndex();
+    candVtx.track1Id = t1.globalIndex();
+    candVtx.track2Id = t2.globalIndex();
+    candVtx.collisionId = collision.globalIndex();
+    candVtx.decay3bodyId = decay3bodyId;
+    candVtx.vtxPos[0] = pos[0];
+    candVtx.vtxPos[1] = pos[1];
+    candVtx.vtxPos[2] = pos[2];
+    candVtx.track0P[0] = p0[0];
+    candVtx.track0P[1] = p0[1];
+    candVtx.track0P[2] = p0[2];
+    candVtx.track1P[0] = p1[0];
+    candVtx.track1P[1] = p1[1];
+    candVtx.track1P[2] = p1[2];
+    candVtx.track2P[0] = p2[0];
+    candVtx.track2P[1] = p2[1];
+    candVtx.track2P[2] = p2[2];
+    candVtx.dcadaughters = fitter3body.getChi2AtPCACandidate();
+    candVtx.daudcaxytopv[0] = Track0dcaXY;
+    candVtx.daudcaxytopv[1] = Track1dcaXY;
+    candVtx.daudcaxytopv[2] = Track2dcaXY;
+    candVtx.daudcatopv[0] = Track0dca;
+    candVtx.daudcatopv[1] = Track1dca;
+    candVtx.daudcatopv[2] = Track2dca;
+    candVtx.bachelortofNsigma = tofNSigmaBach;
+    vtxCandidates.push_back(candVtx);
+    /*vtx3bodydata(
+      t0.globalIndex(), t1.globalIndex(), t2.globalIndex(), collision.globalIndex(), decay3bodyId,
+      pos[0], pos[1], pos[2],
+      p0[0], p0[1], p0[2], p1[0], p1[1], p1[2], p2[0], p2[1], p2[2],
+      fitter3body.getChi2AtPCACandidate(),
+      Track0dcaXY, Track1dcaXY, Track2dcaXY,
+      Track0dca, Track1dca, Track2dca,
+      tofNSigmaBach);*/
   }
 
   //------------------------------------------------------------------
@@ -1117,19 +1157,95 @@ struct decay3bodyBuilder {
   }
 
   //------------------------------------------------------------------
-  void processRun3(ColwithEvTimes const& collisions, TrackExtPIDIUwithEvTimes const& tracksIU, aod::Decay3Bodys const& decay3bodys, aod::BCsWithTimestamps const&)
+  void processRun3(ColwithEvTimes const& collisions, TrackExtPIDIUwithEvTimes const& /*tracksIU*/, aod::Decay3Bodys const& decay3bodys, aod::BCsWithTimestamps const&)
   {
+    vtxCandidates.clear();
+
     for (const auto& collision : collisions) {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       registry.fill(HIST("hEventCounter"), 0.5);
 
       const auto& d3bodysInCollision = decay3bodys.sliceBy(perCollision, collision.globalIndex());
-      // buildVtx3BodyDataTable<ColwithEvTimes, TrackExtPIDIUwithEvTimes>(collisions, collision, tracksIU, d3bodysInCollision, bachelorcharge);
-      buildVtx3BodyDataTable<ColwithEvTimes, TrackExtPIDIUwithEvTimes>(collision, tracksIU, d3bodysInCollision, bachelorcharge);
+      for (auto& d3body : d3bodysInCollision) {
+        auto t0 = d3body.template track0_as<TrackExtPIDIUwithEvTimes>();
+        auto t1 = d3body.template track1_as<TrackExtPIDIUwithEvTimes>();
+        auto t2 = d3body.template track2_as<TrackExtPIDIUwithEvTimes>();
+        fillVtxCand<ColwithEvTimes>(collision, t0, t1, t2, d3body.globalIndex(), bachelorcharge);
+      }
+    }
+
+    for (auto& candVtx : vtxCandidates) {
+      vtx3bodydata(
+        candVtx.track0Id, candVtx.track1Id, candVtx.track2Id, candVtx.collisionId, candVtx.decay3bodyId,
+        candVtx.vtxPos[0], candVtx.vtxPos[1], candVtx.vtxPos[2],
+        candVtx.track0P[0], candVtx.track0P[1], candVtx.track0P[2], candVtx.track1P[0], candVtx.track1P[1], candVtx.track1P[2], candVtx.track2P[0], candVtx.track2P[1], candVtx.track2P[2],
+        candVtx.dcadaughters,
+        candVtx.daudcaxytopv[0], candVtx.daudcaxytopv[1], candVtx.daudcaxytopv[2],
+        candVtx.daudcatopv[0], candVtx.daudcatopv[1], candVtx.daudcatopv[2],
+        candVtx.bachelortofNsigma);
     }
   }
   PROCESS_SWITCH(decay3bodyBuilder, processRun3, "Produce DCA fitter decay3body tables", true);
+
+  // Sets for event mixing
+  Preslice<TrackExtPIDIUwithEvTimes> m_perCol = aod::track::collisionId;
+  SliceCache cache;
+  std::vector<double> xBins{VARIABLE_WIDTH, -0.064, -0.062, -0.060, 0.066, 0.068, 0.070, 0.072};
+  using BinningType = ColumnBinningPolicy<aod::collision::PosZ>;
+  BinningType binningEvent{{xBins}, true};
+  SameKindPair<ColwithEvTimes, TrackExtPIDIUwithEvTimes, BinningType> pair{binningEvent, 5, -1, &cache};
+  // template <typename G, typename A1, typename A2, typename BP, typename T1 = int, typename GroupingPolicy = o2::soa::CombinationsBlockStrictlyUpperSameIndexPolicy<BP, T1, G, G>>
+  // using myGroup = GroupedCombinationsGenerator<T1, GroupingPolicy, BP, G, A1, A2>;
+  // myGroup<ColwithEvTimes, std::tuple<TrackExtPIDIUwithEvTimes, aod::Decay3Bodys>, BinningType> pair{binningEvent, 5, -1, &cache};
+  // SameKindPair<ColwithEvTimes, std::tuple<TrackExtPIDIUwithEvTimes, aod::Decay3Bodys>, BinningType> pair{binningEvent, 5, -1, &cache};
+
+  void processRun3EM(ColwithEvTimes const& collisions, TrackExtPIDIUwithEvTimes const& tracksIU, aod::BCsWithTimestamps const&)
+  {
+    LOGF(info, "Input data Collisions %d, Tracks %d ", collisions.size(), tracksIU.size());
+    vtxCandidates.clear();
+
+    for (auto& [c1, tracks1, c2, tracks2] : pair) {
+      /*Partition<TrackExtPIDIUwithEvTimes> bachelorTracks = nabs(aod::pidtpc::tpcNSigmaDe) < 5.f;
+      Partition<TrackExtPIDIUwithEvTimes> posTracks = aod::track::signed1Pt > 0.f;
+      Partition<TrackExtPIDIUwithEvTimes> negTracks = aod::track::signed1Pt < 0.f;*/
+      auto bc = c1.bc_as<aod::BCsWithTimestamps>();
+      initCCDB(bc);
+      /*bachelorTracks.bindTable(tracks2);
+      posTracks.bindTable(tracks1);
+      negTracks.bindTable(tracks1);
+
+      LOGF(info, "Mixed event collisions: (%d, %d), tracks: (%d, %d, %d)", c1.globalIndex(), c2.globalIndex(), posTracks.size(), negTracks.size(), bachelorTracks.size());*/
+      LOGF(info, "Mixed event collisions: (%d, %d)", c1.globalIndex(), c2.globalIndex());
+
+      /*for (auto& [tpos, tneg, tbach] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(posTracks, negTracks, bachelorTracks))) {
+        if (tpos.sign() < 0 || tneg.sign() > 0 || tpos.collisionId() != tneg.collisionId() || tpos.collisionId() == tbach.collisionId() || tpos.collisionId() != c1.globalIndex() || tbach.collisionId() != c2.globalIndex()) {
+          LOGF(info, "WRONG Mixed event: tracks pair: (%d, %d, %d) from events (%d, %d)", tpos.index(), tneg.index(), tbach.index(), c1.index(), c2.index());
+        }*/
+      for (auto& [tpos, tneg, tbach] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks1, tracks2))) {
+        if (tpos.sign() < 0 || tneg.sign() > 0 || tpos.globalIndex() == tneg.globalIndex()) {
+          continue;
+        }
+        fillVtxCand<ColwithEvTimes, ColwithEvTimes::iterator, TrackExtPIDIUwithEvTimes::iterator>(c1, tpos, tneg, tbach, -1, bachelorcharge);
+      }
+    }
+
+    std::sort(vtxCandidates.begin(), vtxCandidates.end(), [](const vtxCandidate a, const vtxCandidate b) {
+      return a.collisionId < b.collisionId;
+    });
+
+    for (auto& candVtx : vtxCandidates) {
+      vtx3bodydata(
+        candVtx.track0Id, candVtx.track1Id, candVtx.track2Id, candVtx.collisionId, candVtx.decay3bodyId,
+        candVtx.vtxPos[0], candVtx.vtxPos[1], candVtx.vtxPos[2],
+        candVtx.track0P[0], candVtx.track0P[1], candVtx.track0P[2], candVtx.track1P[0], candVtx.track1P[1], candVtx.track1P[2], candVtx.track2P[0], candVtx.track2P[1], candVtx.track2P[2],
+        candVtx.dcadaughters,
+        candVtx.daudcaxytopv[0], candVtx.daudcaxytopv[1], candVtx.daudcaxytopv[2],
+        candVtx.daudcatopv[0], candVtx.daudcatopv[1], candVtx.daudcatopv[2],
+        candVtx.bachelortofNsigma);
+    }
+  }
+  PROCESS_SWITCH(decay3bodyBuilder, processRun3EM, "Produce event-mix background", false);
 
   void processRun3withKFParticle(ColwithEvTimes const& collisions, TrackExtPIDIUwithEvTimes const&, aod::Decay3Bodys const& decay3bodys, aod::BCsWithTimestamps const&)
   {
@@ -1161,6 +1277,7 @@ struct decay3bodyBuilder {
   PROCESS_SWITCH(decay3bodyBuilder, processRun3withKFParticle, "Produce KFParticle decay3body tables", false);
 };
 
+// build link from decay3body -> vtx3body
 struct decay3bodyDataLinkBuilder {
   Produces<aod::Decay3BodyDataLink> vtxdataLink;
 
@@ -1173,7 +1290,9 @@ struct decay3bodyDataLinkBuilder {
     for (int ii = 0; ii < decay3bodytable.size(); ii++)
       lIndices[ii] = -1;
     for (auto& vtxdata : vtxdatatable) {
-      lIndices[vtxdata.decay3bodyId()] = vtxdata.globalIndex();
+      if (vtxdata.decay3bodyId() != -1) {
+        lIndices[vtxdata.decay3bodyId()] = vtxdata.globalIndex();
+      }
     }
     for (int ii = 0; ii < decay3bodytable.size(); ii++) {
       vtxdataLink(lIndices[ii]);

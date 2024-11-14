@@ -636,6 +636,8 @@ struct threebodyRecoTask {
         continue;
       }
       registry.fill(HIST("hEventCounter"), 2.5);
+      registry.fill(HIST("hCentFT0C"), collision.centFT0C());
+
       if (collision.mcCollisionId() >= 0) {
         isGoodCollision[collision.mcCollisionId()] = true;
       }
