@@ -79,9 +79,10 @@ struct HfCorrelatorDMesonPairs {
 
   HistogramConfigSpec hTH1Pt{HistType::kTH1F, {{180, 0., 36.}}};
   HistogramConfigSpec hTH1Y{HistType::kTH1F, {{100, -5., 5.}}};
+  HistogramConfigSpec hTH1NContrib{HistType::kTH1F, {{120, -0.5, 119.5}}};
   HistogramConfigSpec hTH1Phi{HistType::kTH1F, {{32, 0., o2::constants::math::TwoPI}}};
   HistogramConfigSpec hTH2Pid{HistType::kTH2F, {{500, 0., 10.}, {400, -20., 20.}}};
-  HistogramConfigSpec hTH2PtVsY{HistType::kTH2F, {{360, 0., 36.}, {20, -1., 1.}}};
+  HistogramConfigSpec hTH3PtVsYVsNContrib{HistType::kTH3F, {{360, 0., 36.}, {20, -1., 1.}, {120, -0.5, 119.5}}};
 
   HistogramRegistry registry{
     "registry",
@@ -97,9 +98,11 @@ struct HfCorrelatorDMesonPairs {
      {"hPtCandAfterCutMcGen", "D meson candidates after pT cut;candidate #it{p}_{T} (GeV/#it{c});entries", hTH1Pt},
      {"hEtaMcGen", "D meson candidates MC Gen;candidate #it{#eta};entries", hTH1Y},
      {"hPhiMcGen", "D meson candidates MC Gen;candidate #it{#varphi};entries", hTH1Phi},
-     {"hPtVsYMcGen", "D meson candidates MC Gen;candidate #it{p}_{T} (GeV/#it{c});#it{y}", hTH2PtVsY},
+     {"hPtVsYVsNContribMcGen", "D meson candidates MC Gen;candidate #it{p}_{T} (GeV/#it{c});#it{y};Number of contributors", hTH3PtVsYVsNContrib},
+     {"hNContribMcGen", "D meson candidates MC Gen;Number of contributors", hTH1NContrib},
      // MC Rec plots
-     {"hPtVsYMcRec", "D meson candidates MC Rec;candidate #it{p}_{T} (GeV/#it{c});#it{y}", hTH2PtVsY},
+     {"hPtVsYVsNContribMcRec", "D meson candidates MC Rec;candidate #it{p}_{T} (GeV/#it{c});#it{y};Number of contributors", hTH3PtVsYVsNContrib},
+     {"hNContribMcRec", "D meson candidates MC Rec;Number of contributors", hTH1NContrib},
      // PID plots ----- Not definitively here
      {"PID/hTofNSigmaPi", "(TOFsignal-time#pi)/tofSigPid;p[GeV/c];(TOFsignal-time#pi)/tofSigPid", hTH2Pid},
      {"PID/hTofNSigmaKa", "(TOFsignal-timeK)/tofSigPid;p[GeV/c];(TOFsignal-timeK)/tofSigPid", hTH2Pid},
@@ -559,7 +562,8 @@ struct HfCorrelatorDMesonPairs {
       if (isDCand1) {
         if (isTrueDCand1) {
           registry.fill(HIST("hMass"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt());
-          registry.fill(HIST("hPtVsYMcRec"), candidate1.pt(), hfHelper.yD0(candidate1));
+          registry.fill(HIST("hPtVsYVsNContribMcRec"), candidate1.pt(), hfHelper.yD0(candidate1), collision.numContrib());
+          registry.fill(HIST("hNContribMcRec"), collision.numContrib());
           if (originRec1 == 1) {
             registry.fill(HIST("hMassMcRecPrompt"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt());
           } else if (originRec1 == 2) {
@@ -572,7 +576,8 @@ struct HfCorrelatorDMesonPairs {
       if (isDbarCand1) {
         if (isTrueDbarCand1) {
           registry.fill(HIST("hMass"), hfHelper.invMassD0barToKPi(candidate1), candidate1.pt());
-          registry.fill(HIST("hPtVsYMcRec"), candidate1.pt(), hfHelper.yD0(candidate1));
+          registry.fill(HIST("hPtVsYVsNContribMcRec"), candidate1.pt(), hfHelper.yD0(candidate1), collision.numContrib());
+          registry.fill(HIST("hNContribMcRec"), collision.numContrib());
           if (originRec1 == 1) {
             registry.fill(HIST("hMassMcRecPrompt"), hfHelper.invMassD0barToKPi(candidate1), candidate1.pt());
           } else if (originRec1 == 2) {
@@ -665,7 +670,7 @@ struct HfCorrelatorDMesonPairs {
 
   PROCESS_SWITCH(HfCorrelatorDMesonPairs, processMcRec, "Process Mc reco mode", false);
 
-  void processMcGen(aod::McCollision const&, McParticlesPlus2Prong const& mcParticles)
+  void processMcGen(aod::McCollision const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions, McParticlesPlus2Prong const& mcParticles)
   {
     // Get counters per event
     int nDevent = 0, nDbarevent = 0, nDDbarevent = 0, nDorDbarevent = 0;
@@ -750,7 +755,14 @@ struct HfCorrelatorDMesonPairs {
         registry.fill(HIST("hStatusSinglePartMcGen"), 4);
       }
 
-      registry.fill(HIST("hPtVsYMcGen"), particle1.pt(), particle1.y());
+      for (auto collision : collisions) {
+        if (collision.has_mcCollision()) {
+          if (collision.mcCollisionId() == mcCollision.globalIndex()) {
+            registry.fill(HIST("hPtVsYVsNContribMcGen"), particle1.pt(), particle1.y(), collision.numContrib());
+            registry.fill(HIST("hNContribMcGen"), collision.numContrib());
+          }
+        }
+      }
 
       for (auto particle2 = particle1 + 1; particle2 != mcParticles.end(); ++particle2) {
         // check if the particle is D0 or D0bar
