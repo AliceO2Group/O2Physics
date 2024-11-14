@@ -260,7 +260,7 @@ struct midEfficiency {
           if (isPbPb)
             histos.fill(HIST("hSparseCentFiredBothperRPC"), deId, cent, pt, eta, phi);
           else
-            histos.fill(HIST("hSparseCentFiredNBPperRPC"), deId, pt, eta, phi);
+            histos.fill(HIST("hSparseCentFiredBothperRPC"), deId, pt, eta, phi);
         }
 
         if (effFlag < 3) {
