@@ -20,10 +20,12 @@
 #include <algorithm> // std::find
 #include <array>     // std::array
 #include <cmath>     // std::abs, std::sqrt
+#include <cstdio>
 #include <utility>   // std::move
 #include <vector>    // std::vector
 
 #include "TMCProcess.h" // for VMC Particle Production Process
+#include "TPDGCode.h"   // for PDG codes
 #include "CommonConstants/MathConstants.h"
 
 /// Base class for calculating properties of reconstructed decays
@@ -662,6 +664,8 @@ struct RecoDecay {
 
   /// Checks whether the reconstructed decay candidate is the expected decay.
   /// \param checkProcess  switch to accept only decay daughters by checking the production process of MC particles
+  /// \param acceptIncompleteReco  switch to accept candidates with only part of the daughters reconstructed
+  /// \tparam acceptTrackDecay  switch to accept candidates with daughter tracks of pions and kaons which decayed
   /// \param particlesMC  table with MC particles
   /// \param arrDaughters  array of candidate daughters
   /// \param PDGMother  expected mother PDG code
@@ -669,19 +673,25 @@ struct RecoDecay {
   /// \param acceptAntiParticles  switch to accept the antiparticle version of the expected decay
   /// \param sign  antiparticle indicator of the found mother w.r.t. PDGMother; 1 if particle, -1 if antiparticle, 0 if mother not found
   /// \param depthMax  maximum decay tree level to check; Daughters up to this level will be considered. If -1, all levels are considered.
+  /// \param nPiToMu  number of pion prongs decayed to a muon
+  /// \param nKaToPi  number of kaon prongs decayed to a pion
   /// \return index of the mother particle if the mother and daughters are correct, -1 otherwise
-  template <bool acceptFlavourOscillation = false, bool checkProcess = false, std::size_t N, typename T, typename U>
+  template <bool acceptFlavourOscillation = false, bool checkProcess = false, bool acceptIncompleteReco = false, bool acceptTrackDecay = false, std::size_t N, typename T, typename U>
   static int getMatchedMCRec(const T& particlesMC,
                              const std::array<U, N>& arrDaughters,
                              int PDGMother,
                              std::array<int, N> arrPDGDaughters,
                              bool acceptAntiParticles = false,
                              int8_t* sign = nullptr,
-                             int depthMax = 1)
+                             int depthMax = 1,
+                             int8_t* nPiToMu = nullptr,
+                             int8_t* nKaToPi = nullptr)
   {
     // Printf("MC Rec: Expected mother PDG: %d", PDGMother);
     int8_t coefFlavourOscillation = 1;     // 1 if no B0(s) flavour oscillation occured, -1 else
     int8_t sgn = 0;                        // 1 if the expected mother is particle, -1 if antiparticle (w.r.t. PDGMother)
+    int8_t nPiToMuLocal = 0;               // number of pion prongs decayed to a muon
+    int8_t nKaToPiLocal = 0;               // number of kaon prongs decayed to a pion
     int indexMother = -1;                  // index of the mother particle
     std::vector<int> arrAllDaughtersIndex; // vector of indices of all daughters of the mother of the first provided daughter
     std::array<int, N> arrDaughtersIndex;  // array of indices of provided daughters
@@ -707,6 +717,21 @@ struct RecoDecay {
         return -1;
       }
       auto particleI = arrDaughters[iProng].mcParticle(); // ith daughter particle
+      if constexpr (acceptTrackDecay) {
+        // Replace the MC particle associated with the prong by its mother for π → μ and K → π.
+        auto motherI = particleI.template mothers_first_as<T>();
+        auto pdgI = std::abs(particleI.pdgCode());
+        auto pdgMotherI = std::abs(motherI.pdgCode());
+        if (pdgI == kMuonMinus && pdgMotherI == kPiPlus) {
+          // π → μ
+          nPiToMuLocal++;
+          particleI = motherI;
+        } else if (pdgI == kPiPlus && pdgMotherI == kKPlus) {
+          // K → π
+          nKaToPiLocal++;
+          particleI = motherI;
+        }
+      }
       arrDaughtersIndex[iProng] = particleI.globalIndex();
       // Get the list of daughter indices from the mother of the first prong.
       if (iProng == 0) {
@@ -726,7 +751,7 @@ struct RecoDecay {
           return -1;
         }
         // Check that the number of direct daughters is not larger than the number of expected final daughters.
-        if constexpr (!checkProcess) {
+        if constexpr (!acceptIncompleteReco && !checkProcess) {
           if (particleMother.daughtersIds().back() - particleMother.daughtersIds().front() + 1 > static_cast<int>(N)) {
             // Printf("MC Rec: Rejected: too many direct daughters: %d (expected %ld final)", particleMother.daughtersIds().back() - particleMother.daughtersIds().front() + 1, N);
             return -1;
@@ -740,7 +765,7 @@ struct RecoDecay {
         // }
         // printf("\n");
         //  Check whether the number of actual final daughters is equal to the number of expected final daughters (i.e. the number of provided prongs).
-        if (arrAllDaughtersIndex.size() != N) {
+        if (!acceptIncompleteReco && arrAllDaughtersIndex.size() != N) {
           // Printf("MC Rec: Rejected: incorrect number of final daughters: %ld (expected %ld)", arrAllDaughtersIndex.size(), N);
           return -1;
         }
@@ -778,6 +803,14 @@ struct RecoDecay {
     // Printf("MC Rec: Accepted: m: %d", indexMother);
     if (sign) {
       *sign = sgn;
+    }
+    if constexpr (acceptTrackDecay) {
+      if (nPiToMu) {
+        *nPiToMu = nPiToMuLocal;
+      }
+      if (nKaToPi) {
+        *nKaToPi = nKaToPiLocal;
+      }
     }
     return indexMother;
   }

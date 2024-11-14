@@ -141,7 +141,7 @@ struct GammaJetTreeProducer {
     return true;
   }
 
-  double ch_iso_in_cone(const auto& cluster, JetTracks const& tracks, float radius = 0.4)
+  double ch_iso_in_cone(const auto& cluster, aod::JetTracks const& tracks, float radius = 0.4)
   {
     double iso = 0;
     for (auto track : tracks) {
@@ -156,7 +156,7 @@ struct GammaJetTreeProducer {
     }
     return iso;
   }
-  double ch_perp_cone_rho(const auto& cluster, JetTracks const& tracks, float radius = 0.4)
+  double ch_perp_cone_rho(const auto& cluster, aod::JetTracks const& tracks, float radius = 0.4)
   {
     double ptSumLeft = 0;
     double ptSumRight = 0;
@@ -191,7 +191,7 @@ struct GammaJetTreeProducer {
   // ---------------------
   // Processing functions
   // ---------------------
-  void processClearMaps(JetCollisions const&)
+  void processClearMaps(aod::JetCollisions const&)
   {
     collisionMapping.clear();
   }
@@ -202,7 +202,7 @@ struct GammaJetTreeProducer {
   // an integer instead
   Filter clusterDefinitionSelection = (o2::aod::jcluster::definition == mClusterDefinition);
   // Process clusters
-  void processClusters(soa::Join<JetCollisions, aod::BkgChargedRhos, aod::JCollisionBCs>::iterator const& collision, selectedClusters const& clusters, JetTracks const& tracks)
+  void processClusters(soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::JCollisionBCs>::iterator const& collision, selectedClusters const& clusters, aod::JetTracks const& tracks)
   {
     if (!isEventAccepted(collision)) {
       return;
@@ -259,7 +259,7 @@ struct GammaJetTreeProducer {
 
   Filter jetCuts = aod::jet::pt > jetPtMin&& aod::jet::r == nround(jetR.node() * 100.0f);
   // Process charged jets
-  void processChargedJets(soa::Join<JetCollisions, aod::BkgChargedRhos, aod::JCollisionBCs>::iterator const& collision, soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>> const& chargedJets, JetTracks const&)
+  void processChargedJets(soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::JCollisionBCs>::iterator const& collision, soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>> const& chargedJets, aod::JetTracks const&)
   {
     // event selection
     if (!isEventAccepted(collision)) {
@@ -272,7 +272,7 @@ struct GammaJetTreeProducer {
         continue;
       ushort nconst = 0;
       // loop over constituents
-      for (auto& constituent : jet.template tracks_as<JetTracks>()) {
+      for (auto& constituent : jet.template tracks_as<aod::JetTracks>()) {
         mHistograms.fill(HIST("chjetpt_vs_constpt"), jet.pt(), constituent.pt());
         nconst++;
       }

@@ -12,8 +12,10 @@
 /// \file taskCharmHadronsFemtoDream.cxx.cxx
 /// \brief Tasks that reads the track tables used for the pairing and builds pairs of two tracks
 /// \author Ravindra SIngh, GSI, ravindra.singh@cern.ch
+/// \author Biao Zhang, Heidelberg University, biao.zhang@cern.ch
 
 #include <vector>
+#include <string>
 
 #include "Framework/Expressions.h"
 #include "Framework/AnalysisTask.h"
@@ -60,10 +62,18 @@ struct HfTaskCharmHadronsFemtoDream {
   ConfigurableAxis binTempFitVarTrack{"binTempFitVarTrack", {300, -0.15, 0.15}, "binning of the TempFitVar in the pT vs. TempFitVar plot (Track)"};
   ConfigurableAxis binmT{"binmT", {225, 0., 7.5}, "binning mT"};
   ConfigurableAxis binmultTempFit{"binmultTempFit", {1, 0, 1}, "multiplicity Binning for the TempFitVar plot"};
+  ConfigurableAxis binMulPercentile{"binMulPercentile", {10, 0.0f, 100.0f}, "multiplicity percentile Binning"};
   ConfigurableAxis binpT{"binpT", {20, 0.5, 4.05}, "pT binning"};
   ConfigurableAxis binpTTrack{"binpTTrack", {50, 0.5, 10.05}, "pT binning of the pT vs. TempFitVar plot (Track)"};
+  ConfigurableAxis binEta{"binEta", {{200, -1.5, 1.5}}, "eta binning"};
+  ConfigurableAxis binPhi{"binPhi", {{200, 0, TMath::TwoPi()}}, "phi binning"};
   ConfigurableAxis binkT{"binkT", {150, 0., 9.}, "binning kT"};
   ConfigurableAxis binkstar{"binkstar", {1500, 0., 6.}, "binning kstar"};
+  ConfigurableAxis binNSigmaTPC{"binNSigmaTPC", {1600, -8, 8}, "Binning of Nsigma TPC plot"};
+  ConfigurableAxis binNSigmaTOF{"binNSigmaTOF", {3000, -15, 15}, "Binning of the Nsigma TOF plot"};
+  ConfigurableAxis binNSigmaTPCTOF{"binNSigmaTPCTOF", {3000, -15, 15}, "Binning of the Nsigma TPC+TOF plot"};
+  ConfigurableAxis binTPCClusters{"binTPCClusters", {163, -0.5, 162.5}, "Binning of TPC found clusters plot"};
+  Configurable<int> ConfTempFitVarMomentum{"ConfTempFitVarMomentum", 0, "Momentum used for binning: 0 -> pt; 1 -> preco; 2 -> ptpc"};
 
   /// Particle 2 (Charm Hadrons)
   Configurable<float> charmHadBkgBDTmax{"charmHadBkgBDTmax", 1., "Maximum background bdt score for Charm Hadron (particle 2)"};
@@ -92,11 +102,11 @@ struct HfTaskCharmHadronsFemtoDream {
   ConfigurableAxis dummy{"dummy", {1, 0, 1}, "dummy axis"};
 
   // Mixing configurables
-  ConfigurableAxis mixingBinMult{"mixingBinMult", {VARIABLE_WIDTH, 0.0f, 200.0f}, "Mixing bins - multiplicity"};
+  ConfigurableAxis mixingBinMult{"mixingBinMult", {VARIABLE_WIDTH, 0.0f, 20.0f, 60.0f, 200.0f}, "Mixing bins - multiplicity"};
   ConfigurableAxis mixingBinMultPercentile{"mixingBinMultPercentile", {VARIABLE_WIDTH, 0.0f, 100.f}, "Mixing bins - multiplicity percentile"};
   ConfigurableAxis mixingBinVztx{"mixingBinVztx", {VARIABLE_WIDTH, -10.0f, -4.f, 0.f, 4.f, 10.f}, "Mixing bins - z-vertex"};
   Configurable<int> mixingDepth{"mixingDepth", 5, "Number of events for mixing"};
-  Configurable<int> mixingPolicy{"mixingBinPolicy", 0, "Binning policy for mixing - 0: multiplicity, 1: multipliciy percentile, 2: both"};
+  Configurable<int> mixingBinPolicy{"mixingBinPolicy", 0, "Binning policy for mixing - 0: multiplicity, 1: multipliciy percentile, 2: both"};
 
   /// Event selection
   struct : ConfigurableGroup {
@@ -125,8 +135,8 @@ struct HfTaskCharmHadronsFemtoDream {
   FemtoDreamContainer<femtoDreamContainer::EventType::same, femtoDreamContainer::Observable::kstar> sameEventCont;
   FemtoDreamContainer<femtoDreamContainer::EventType::mixed, femtoDreamContainer::Observable::kstar> mixedEventCont;
   FemtoDreamPairCleaner<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kCharmHadron> pairCleaner;
-  FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kCharmHadron> pairCloseRejection;
-
+  FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kCharmHadron> pairCloseRejectionSE;
+  FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kCharmHadron> pairCloseRejectionME;
   Filter eventMultiplicity = aod::femtodreamcollision::multNtr >= eventSel.multMin && aod::femtodreamcollision::multNtr <= eventSel.multMax;
   Filter eventMultiplicityPercentile = aod::femtodreamcollision::multV0M >= eventSel.multPercentileMin && aod::femtodreamcollision::multV0M <= eventSel.multPercentileMax;
   Filter hfCandSelFilter = aod::fdhf::candidateSelFlag >= charmHadCandSel.value;
@@ -142,17 +152,19 @@ struct HfTaskCharmHadronsFemtoDream {
   using FilteredCharmMcCands = soa::Filtered<soa::Join<aod::FDHfCand, aod::FDHfCandMC>>;
   using FilteredCharmMcCand = FilteredCharmMcCands::iterator;
 
-  using FilteredColisions = FDCollisions;
+  using FilteredColisions = soa::Filtered<soa::Join<FDCollisions, FDColMasks>>;
   using FilteredColision = FilteredColisions::iterator;
 
-  using FilteredMcColisions = soa::Filtered<soa::Join<aod::FDCollisions, aod::FDMCCollLabels>>;
+  using FilteredMcColisions = soa::Filtered<soa::Join<aod::FDCollisions, FDColMasks, aod::FDMCCollLabels>>;
   using FilteredMcColision = FilteredMcColisions::iterator;
 
-  using FilteredFDMcParts = soa::Filtered<soa::Join<aod::FDParticles, aod::FDParticlesIndex, aod::FDMCLabels>>;
+  using FilteredFDMcParts = soa::Filtered<soa::Join<aod::FDParticles, aod::FDParticlesIndex, aod::FDExtParticles, aod::FDMCLabels, aod::FDExtMCLabels>>;
   using FilteredFDMcPart = FilteredFDMcParts::iterator;
 
-  using FilteredFDParticles = soa::Filtered<soa::Join<aod::FDParticles, aod::FDParticlesIndex>>;
+  using FilteredFDParticles = soa::Filtered<soa::Join<aod::FDParticles, aod::FDExtParticles, aod::FDParticlesIndex>>;
   using FilteredFDParticle = FilteredFDParticles::iterator;
+
+  femtodreamcollision::BitMaskType BitMask = 1 << 0;
 
   /// Histogramming for particle 1
   FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kTrack, 1> trackHistoPartOne;
@@ -160,10 +172,10 @@ struct HfTaskCharmHadronsFemtoDream {
   FemtoDreamEventHisto eventHisto;
   /// Histogram output
   HistogramRegistry registry{"CorrelationsAndQA", {}, OutputObjHandlingPolicy::AnalysisObject};
-
+  HistogramRegistry registryMixQa{"registryMixQa"};
   /// Partition for particle 1
 
-  Partition<FilteredFDParticles> partitionTrk1 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack));
+  Partition<FilteredFDParticles> partitionTrk1 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && (ncheckbit(aod::femtodreamparticle::cut, cutBitTrack1)) && ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= pidThresTrack1, ncheckbit(aod::femtodreamparticle::pidcut, tpcBitTrack1), ncheckbit(aod::femtodreamparticle::pidcut, tpcTofBitTrack1));
 
   Partition<FilteredFDMcParts> partitionMcTrk1 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
                                                  (ncheckbit(aod::femtodreamparticle::cut, cutBitTrack1)) &&
@@ -185,7 +197,7 @@ struct HfTaskCharmHadronsFemtoDream {
   void init(InitContext& /*context*/)
   {
     eventHisto.init(&registry);
-    trackHistoPartOne.init(&registry, binmultTempFit, dummy, binpTTrack, dummy, dummy, binTempFitVarTrack, dummy, dummy, dummy, dummy, dummy, isMc, pdgCodeTrack1);
+    trackHistoPartOne.init(&registry, binmultTempFit, binMulPercentile, binpTTrack, binEta, binPhi, binTempFitVarTrack, binNSigmaTPC, binNSigmaTOF, binNSigmaTPCTOF, binTPCClusters, dummy, isMc, pdgCodeTrack1, true);
 
     sameEventCont.init<true>(&registry,
                              binkstar, binpT, binkT, binmT, mixingBinMult, mixingBinMultPercentile,
@@ -203,24 +215,51 @@ struct HfTaskCharmHadronsFemtoDream {
                               smearingByOrigin, binInvMass);
 
     mixedEventCont.setPDGCodes(pdgCodeTrack1, charmHadPDGCode);
+    registryMixQa.add("MixingQA/hSECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
+    registryMixQa.add("MixingQA/hSECollisionPool", ";bin;Entries", kTH2F, {{100, -10, 10}, {2000, 0, 200}});
+    registryMixQa.add("MixingQA/hMECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
     pairCleaner.init(&registry);
     if (useCPR.value) {
-      pairCloseRejection.init(&registry, &registry, cprDeltaPhiMax.value, cprDeltaEtaMax.value, cprPlotPerRadii.value);
+      pairCloseRejectionSE.init(&registry, &registry, cprDeltaPhiMax.value, cprDeltaEtaMax.value, cprPlotPerRadii.value, 1);
+      pairCloseRejectionME.init(&registry, &registry, cprDeltaPhiMax.value, cprDeltaEtaMax.value, cprPlotPerRadii.value, 2);
     }
+  }
+
+  template <typename CollisionType>
+  void fillCollision(CollisionType const& col)
+  {
+    registryMixQa.fill(HIST("MixingQA/hSECollisionBins"), colBinningMult.getBin({col.posZ(), col.multNtr()}));
+    registryMixQa.fill(HIST("MixingQA/hSECollisionPool"), col.posZ(), col.multNtr());
   }
 
   /// This function processes the same event and takes care of all the histogramming
   template <bool isMc, typename PartitionType, typename CandType, typename TableTracks, typename Collision>
   void doSameEvent(PartitionType& sliceTrk1, CandType& sliceCharmHad, TableTracks const& parts, Collision const& col)
   {
+    fillCollision(col);
+
     processType = 1; // for same event
     /// Histogramming same event
     for (auto const& part : sliceTrk1) {
 
-      trackHistoPartOne.fillQA<isMc, false>(part, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
+      trackHistoPartOne.fillQA<isMc, true>(part, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
     }
 
     for (auto const& [p1, p2] : combinations(CombinationsFullIndexPolicy(sliceTrk1, sliceCharmHad))) {
+
+      if (p1.trackId() == p2.prong0Id() || p1.trackId() == p2.prong1Id() || p1.trackId() == p2.prong2Id())
+        continue;
+
+      if (useCPR.value) {
+        if (pairCloseRejectionSE.isClosePair(p1, p2, parts, col.magField())) {
+          continue;
+        }
+      }
+
+      if (!pairCleaner.isCleanPair(p1, p2, parts)) {
+        continue;
+      }
+
       // proton track charge
       float chargeTrack = 0.;
       if ((p1.cut() & 2) == 2) {
@@ -246,16 +285,6 @@ struct HfTaskCharmHadronsFemtoDream {
       // } else {
       //   partSign = 1 << 1;
       // }
-
-      if (useCPR.value) {
-        if (pairCloseRejection.isClosePair(p1, p2, parts, col.magField())) {
-          continue;
-        }
-      }
-
-      if (!pairCleaner.isCleanPair(p1, p2, parts)) {
-        continue;
-      }
 
       float invMass;
       if (p2.candidateSelFlag() == 1) {
@@ -303,13 +332,38 @@ struct HfTaskCharmHadronsFemtoDream {
   template <bool isMc, typename CollisionType, typename PartType, typename PartitionType1, typename PartitionType2, typename BinningType>
   void doMixedEvent(CollisionType const& cols, PartType const& parts, PartitionType1& part1, PartitionType2& part2, BinningType policy)
   {
-    processType = 1 << 1; // for mixed event
 
-    for (auto const& [collision1, collision2] : soa::selfCombinations(policy, mixingDepth.value, -1, cols, cols)) {
+    // Mixed events that contain the pair of interest
+    processType = 2; // for mixed event
+
+    Partition<CollisionType> PartitionMaskedCol1 = (aod::femtodreamcollision::bitmaskTrackOne & BitMask) == BitMask;
+    PartitionMaskedCol1.bindTable(cols);
+
+    Partition<CollisionType> PartitionMaskedCol2 = (aod::femtodreamcollision::bitmaskTrackTwo & BitMask) == BitMask;
+    PartitionMaskedCol2.bindTable(cols);
+
+    for (auto const& [collision1, collision2] : combinations(soa::CombinationsBlockFullIndexPolicy(policy, mixingDepth.value, -1, *PartitionMaskedCol1.mFiltered, *PartitionMaskedCol2.mFiltered))) {
+      // make sure that tracks in the same events are not mixed
+      if (collision1.globalIndex() == collision2.globalIndex()) {
+        continue;
+      }
+
+      const int multiplicityCol = collision1.multNtr();
+
+      registryMixQa.fill(HIST("MixingQA/hMECollisionBins"), colBinningMult.getBin({collision1.posZ(), multiplicityCol}));
 
       auto sliceTrk1 = part1->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision1.globalIndex(), cache);
       auto sliceCharmHad = part2->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision2.globalIndex(), cache);
       for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(sliceTrk1, sliceCharmHad))) {
+
+        if (useCPR.value) {
+          if (pairCloseRejectionME.isClosePair(p1, p2, parts, collision1.magField())) {
+            continue;
+          }
+        }
+        if (!pairCleaner.isCleanPair(p1, p2, parts)) {
+          continue;
+        }
 
         float chargeTrack = 0.;
         if ((p1.cut() & 2) == 2) {
@@ -329,7 +383,6 @@ struct HfTaskCharmHadronsFemtoDream {
         if (kstar > highkstarCut) {
           continue;
         }
-
         float invMass;
         if (p2.candidateSelFlag() == 1) {
           invMass = p2.m(std::array{o2::constants::physics::MassProton, o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
@@ -361,14 +414,6 @@ struct HfTaskCharmHadronsFemtoDream {
           charmHadMc,
           originType);
 
-        if (useCPR.value) {
-          if (pairCloseRejection.isClosePair(p1, p2, parts, collision1.magField())) {
-            continue;
-          }
-        }
-        if (!pairCleaner.isCleanPair(p1, p2, parts)) {
-          continue;
-        }
         // if constexpr (!isMc) mixedEventCont.setPair<isMc, true>(p1, p2, collision1.multNtr(), collision1.multV0M(), use4D, extendedPlots, smearingByOrigin);
         mixedEventCont.setPair<isMc, true>(p1, p2, collision1.multNtr(), collision1.multV0M(), use4D, extendedPlots, smearingByOrigin);
       }
@@ -379,6 +424,9 @@ struct HfTaskCharmHadronsFemtoDream {
                         FilteredFDParticles const& parts,
                         FilteredCharmCands const&)
   {
+    if ((col.bitmaskTrackOne() & BitMask) != BitMask || (col.bitmaskTrackTwo() & BitMask) != BitMask) {
+      return;
+    }
     eventHisto.fillQA(col);
     auto sliceTrk1 = partitionTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     auto sliceCharmHad = partitionCharmHadron->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
@@ -390,7 +438,7 @@ struct HfTaskCharmHadronsFemtoDream {
                          FilteredFDParticles const& parts,
                          FilteredCharmCands const&)
   {
-    switch (mixingPolicy.value) {
+    switch (mixingBinPolicy.value) {
       case femtodreamcollision::kMult:
         doMixedEvent<false>(cols, parts, partitionTrk1, partitionCharmHadron, colBinningMult);
         break;
@@ -413,8 +461,12 @@ struct HfTaskCharmHadronsFemtoDream {
   void processSameEventMc(FilteredMcColision const& col,
                           FilteredFDMcParts const& parts,
                           o2::aod::FDMCParticles const&,
+                          o2::aod::FDExtMCParticles const&,
                           FilteredCharmMcCands const&)
   {
+    if ((col.bitmaskTrackOne() & BitMask) != BitMask || (col.bitmaskTrackTwo() & BitMask) != BitMask) {
+      return;
+    }
     auto sliceMcTrk1 = partitionMcTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     auto sliceMcCharmHad = partitionMcCharmHadron->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
 
@@ -432,9 +484,10 @@ struct HfTaskCharmHadronsFemtoDream {
   void processMixedEventMc(FilteredMcColisions const& cols,
                            FilteredFDMcParts const& parts,
                            o2::aod::FDMCParticles const&,
+                           o2::aod::FDExtMCParticles const&,
                            FilteredCharmMcCands const&)
   {
-    switch (mixingPolicy.value) {
+    switch (mixingBinPolicy.value) {
       case femtodreamcollision::kMult:
         doMixedEvent<true>(cols, parts, partitionMcTrk1, partitionMcCharmHadron, colBinningMult);
         break;

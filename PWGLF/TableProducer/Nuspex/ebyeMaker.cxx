@@ -12,6 +12,8 @@
 #include <vector>
 #include <utility>
 #include <random>
+#include <string>
+#include <algorithm>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -201,7 +203,6 @@ struct ebyeMaker {
   int mRunNumber;
   float d_bz;
   uint8_t nTrackletsColl;
-  uint8_t nTrackletsCollMid;
   // o2::base::MatLayerCylSet* lut = nullptr;
 
   Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrNONE), "Type of material correction"};
@@ -276,6 +277,8 @@ struct ebyeMaker {
   Configurable<float> v0setting_lifetime{"v0setting_lifetime", 40.f, "v0 lifetime cut"};
   Configurable<float> v0setting_nsigmatpc{"v0setting_nsigmatpc", 4.f, "nsigmatpc"};
   Configurable<float> lambdaMassCut{"lambdaMassCut", 0.02f, "maximum deviation from PDG mass (for QA histograms)"};
+
+  Configurable<bool> constDCASel{"constDCASel", true, "use DCA selections independent of pt"};
 
   Configurable<float> antidItsClsSizeCut{"antidItsClsSizeCut", 1.e-10f, "cluster size cut for antideuterons"};
   Configurable<float> antidPtItsClsSizeCut{"antidPtItsClsSizeCut", 10.f, "pt for cluster size cut for antideuterons"};
@@ -358,6 +361,11 @@ struct ebyeMaker {
       sum += (track.itsClusterSizes() >> (iL * 4)) & 0xf;
     }
     return sum / track.itsNCls();
+  }
+
+  float dcaSigma(float const& pt)
+  {
+    return 0.0105 + 0.0350 / std::pow(std::abs(pt), 1.1);
   }
 
   template <class Bc>
@@ -478,9 +486,9 @@ struct ebyeMaker {
       mask |= kChi2TPCTight;
     else if (track.tpcchi2 < cfgTrackSels->get("chi2TpcMid"))
       mask |= kChi2TPCMid;
-    if (std::abs(track.dcaxypv) < cfgTrackSels->get("dcaxyTight"))
+    if (std::abs(track.dcaxypv) < cfgTrackSels->get("dcaxyTight") * (constDCASel ? 1. : dcaSigma(track.pt)))
       mask |= kDCAxyTight;
-    else if (std::abs(track.dcaxypv) < cfgTrackSels->get("dcaxyMid"))
+    else if (std::abs(track.dcaxypv) < cfgTrackSels->get("dcaxyMid") * (constDCASel ? 1. : dcaSigma(track.pt)))
       mask |= kDCAxyMid;
     if (std::abs(track.dcazpv) < cfgTrackSels->get("dcazTight"))
       mask |= kDCAzTight;
@@ -592,7 +600,10 @@ struct ebyeMaker {
       if (dca > cfgDcaSels->get("dca")) { // dca
         continue;
       }
-      if (std::abs(dcaInfo[0]) > cfgDcaSels->get("dcaxy") || std::abs(dcaInfo[1]) > cfgDcaSels->get("dcaz")) { // dcaxy and dcaz
+      if (std::abs(dcaInfo[1]) > cfgDcaSels->get("dcaz")) { // dcaz
+        continue;
+      }
+      if (std::abs(dcaInfo[0]) > cfgDcaSels->get("dcaxy") * (constDCASel ? 1. : dcaSigma(track.pt()))) { // dcaxy
         continue;
       }
       histos.fill(HIST("QA/tpcSignal"), track.tpcInnerParam(), track.tpcSignal());
@@ -656,7 +667,6 @@ struct ebyeMaker {
     }
     if (doprocessRun2 || doprocessMcRun2 || doprocessMiniRun2 || doprocessMiniMcRun2) {
       histos.fill(HIST("QA/nTrklCorrelation"), nTracklets[0], nTracklets[1]);
-      nTrackletsCollMid = nTracklets[0];
       nTrackletsColl = nTracklets[1];
     }
 
@@ -977,16 +987,18 @@ struct ebyeMaker {
           candidateV0.globalIndexPos);
       }
 
-      for (auto& candidateTrack : candidateTracks[1]) { // deuterons
-        nucleiEbyeTable(
-          collisionEbyeTable.lastIndex(),
-          candidateTrack.pt,
-          candidateTrack.eta,
-          candidateTrack.mass,
-          candidateTrack.dcapv,
-          candidateTrack.tpcncls,
-          candidateTrack.tpcnsigma,
-          candidateTrack.tofmass);
+      for (int iP{0}; iP < kNpart; ++iP) {
+        for (auto& candidateTrack : candidateTracks[iP]) { // deuterons + protons
+          nucleiEbyeTable(
+            collisionEbyeTable.lastIndex(),
+            candidateTrack.pt,
+            candidateTrack.eta,
+            candidateTrack.mass,
+            candidateTrack.dcapv,
+            candidateTrack.tpcncls,
+            candidateTrack.tpcnsigma,
+            candidateTrack.tofmass);
+        }
       }
     }
   }
@@ -1053,16 +1065,18 @@ struct ebyeMaker {
           candidateV0.globalIndexPos);
       }
 
-      for (auto& candidateTrack : candidateTracks[1]) { // deuterons
-        nucleiEbyeTable(
-          collisionEbyeTable.lastIndex(),
-          candidateTrack.pt,
-          candidateTrack.eta,
-          candidateTrack.mass,
-          candidateTrack.dcapv,
-          candidateTrack.tpcncls,
-          candidateTrack.tpcnsigma,
-          candidateTrack.tofmass);
+      for (int iP{0}; iP < kNpart; ++iP) {
+        for (auto& candidateTrack : candidateTracks[iP]) { // deuterons + protons
+          nucleiEbyeTable(
+            collisionEbyeTable.lastIndex(),
+            candidateTrack.pt,
+            candidateTrack.eta,
+            candidateTrack.mass,
+            candidateTrack.dcapv,
+            candidateTrack.tpcncls,
+            candidateTrack.tpcnsigma,
+            candidateTrack.tofmass);
+        }
       }
     }
   }
@@ -1096,7 +1110,7 @@ struct ebyeMaker {
       fillRecoEvent(collision, tracks, V0Table_thisCollision, cV0M);
 
       uint8_t trigger = collision.alias_bit(kINT7) ? 0x1 : 0x0;
-      miniCollTable(std::abs(collision.posZ()), trigger, nTrackletsColl, nTrackletsCollMid, cV0M);
+      miniCollTable(static_cast<int8_t>(collision.posZ() * 10), trigger, nTrackletsColl, cV0M);
 
       for (auto& candidateTrack : candidateTracks[0]) { // protons
         auto tk = tracks.rawIteratorAt(candidateTrack.globalIndex);
@@ -1108,7 +1122,7 @@ struct ebyeMaker {
         miniTrkTable(
           miniCollTable.lastIndex(),
           candidateTrack.pt,
-          std::abs(candidateTrack.eta) * 10.,
+          static_cast<int8_t>(candidateTrack.eta * 100),
           selMask,
           candidateTrack.outerPID);
       }
@@ -1165,20 +1179,22 @@ struct ebyeMaker {
           candidateV0.isreco);
       }
 
-      for (auto& candidateTrack : candidateTracks[1]) { // deuterons
-        mcNucleiEbyeTable(
-          collisionEbyeTable.lastIndex(),
-          candidateTrack.pt,
-          candidateTrack.eta,
-          candidateTrack.mass,
-          candidateTrack.dcapv,
-          candidateTrack.tpcncls,
-          candidateTrack.tpcnsigma,
-          candidateTrack.tofmass,
-          candidateTrack.genpt,
-          candidateTrack.geneta,
-          candidateTrack.pdgcode,
-          candidateTrack.isreco);
+      for (int iP{0}; iP < kNpart; ++iP) {
+        for (auto& candidateTrack : candidateTracks[iP]) { // deuterons + protons
+          mcNucleiEbyeTable(
+            collisionEbyeTable.lastIndex(),
+            candidateTrack.pt,
+            candidateTrack.eta,
+            candidateTrack.mass,
+            candidateTrack.dcapv,
+            candidateTrack.tpcncls,
+            candidateTrack.tpcnsigma,
+            candidateTrack.tofmass,
+            candidateTrack.genpt,
+            candidateTrack.geneta,
+            candidateTrack.pdgcode,
+            candidateTrack.isreco);
+        }
       }
     }
   }
@@ -1231,20 +1247,22 @@ struct ebyeMaker {
           candidateV0.isreco);
       }
 
-      for (auto& candidateTrack : candidateTracks[1]) { // deuterons
-        mcNucleiEbyeTable(
-          collisionEbyeTable.lastIndex(),
-          candidateTrack.pt,
-          candidateTrack.eta,
-          candidateTrack.mass,
-          candidateTrack.dcapv,
-          candidateTrack.tpcncls,
-          candidateTrack.tpcnsigma,
-          candidateTrack.tofmass,
-          candidateTrack.genpt,
-          candidateTrack.geneta,
-          candidateTrack.pdgcode,
-          candidateTrack.isreco);
+      for (int iP{0}; iP < kNpart; ++iP) {
+        for (auto& candidateTrack : candidateTracks[iP]) { // deuterons + protons
+          mcNucleiEbyeTable(
+            collisionEbyeTable.lastIndex(),
+            candidateTrack.pt,
+            candidateTrack.eta,
+            candidateTrack.mass,
+            candidateTrack.dcapv,
+            candidateTrack.tpcncls,
+            candidateTrack.tpcnsigma,
+            candidateTrack.tofmass,
+            candidateTrack.genpt,
+            candidateTrack.geneta,
+            candidateTrack.pdgcode,
+            candidateTrack.isreco);
+        }
       }
     }
   }
@@ -1275,7 +1293,7 @@ struct ebyeMaker {
       fillMcEvent(collision, tracks, V0Table_thisCollision, cV0M, mcParticles, mcLab);
       fillMcGen(mcParticles, mcLab, collision.mcCollisionId());
 
-      miniCollTable(std::abs(collision.posZ()), 0x0, nTrackletsColl, nTrackletsCollMid, cV0M);
+      miniCollTable(static_cast<int8_t>(collision.posZ() * 10), 0x0, nTrackletsColl, cV0M);
 
       for (auto& candidateTrack : candidateTracks[0]) { // protons
         int selMask = -1;
@@ -1290,11 +1308,11 @@ struct ebyeMaker {
         mcMiniTrkTable(
           miniCollTable.lastIndex(),
           candidateTrack.pt,
-          std::abs(candidateTrack.eta) * 10.,
+          static_cast<int8_t>(candidateTrack.eta * 100),
           selMask,
           candidateTrack.outerPID,
           candidateTrack.pdgcode > 0 ? candidateTrack.genpt : -candidateTrack.genpt,
-          candidateTrack.geneta,
+          static_cast<int8_t>(candidateTrack.geneta * 100),
           candidateTrack.isreco);
       }
     }

@@ -83,3 +83,8 @@ o2physics_add_dpl_workflow(pidtof-generic
     SOURCES pidTOFGeneric.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::TOFBase
     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(threebody-kf-task
+    SOURCES threebodyKFTask.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)

@@ -10,8 +10,11 @@
 // or submit itself to any jurisdiction.
 
 #include <cmath>
+#include <vector>
+#include <map>
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
+#include "ReconstructionDataFormats/Vertex.h"
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/EventSelection.h"
 #include "CommonConstants/LHCConstants.h"
@@ -38,6 +41,11 @@ struct SGCandProducer {
   Configurable<bool> noSameBunchPileUp{"noSameBunchPileUp", true, "reject SameBunchPileUp"};
   Configurable<bool> IsGoodVertex{"IsGoodVertex", false, "Select FT0 PV vertex matching"};
   Configurable<bool> ITSTPCVertex{"ITSTPCVertex", true, "reject ITS-only vertex"}; // if one wants to look at Single Gap pp events
+
+  // Configurables to decide which tables are filled
+  Configurable<bool> fillTrackTables{"fillTrackTables", true, "Fill track tables"};
+  Configurable<bool> fillFwdTrackTables{"fillFwdTrackTables", true, "Fill forward track tables"};
+
   //  SG selector
   SGSelector sgSelector;
 
@@ -47,11 +55,12 @@ struct SGCandProducer {
   Produces<aod::UDCollisionsSels> outputCollisionsSels;
   Produces<aod::UDCollsLabels> outputCollsLabels;
   Produces<aod::UDZdcs> outputZdcs;
-  Produces<o2::aod::UDZdcsReduced> udZdcsReduced;
+  Produces<aod::UDZdcsReduced> udZdcsReduced;
   Produces<aod::UDTracks> outputTracks;
   Produces<aod::UDTracksCov> outputTracksCov;
   Produces<aod::UDTracksDCA> outputTracksDCA;
   Produces<aod::UDTracksPID> outputTracksPID;
+  Produces<aod::UDTracksPIDExtra> outputTracksPIDExtra;
   Produces<aod::UDTracksExtra> outputTracksExtra;
   Produces<aod::UDTracksFlags> outputTracksFlag;
   Produces<aod::UDFwdTracks> outputFwdTracks;
@@ -70,7 +79,9 @@ struct SGCandProducer {
   using BC = BCs::iterator;
   using TCs = soa::Join<aod::Tracks, /*aod::TracksCov,*/ aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                         aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
+                        aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl,
                         aod::TOFSignal, aod::pidTOFbeta,
+                        aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl,
                         aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
   using FWs = aod::FwdTracks;
 
@@ -121,6 +132,14 @@ struct SGCandProducer {
                     track.tofNSigmaPi(),
                     track.tofNSigmaKa(),
                     track.tofNSigmaPr());
+    outputTracksPIDExtra(track.tpcNSigmaDe(),
+                         track.tpcNSigmaTr(),
+                         track.tpcNSigmaHe(),
+                         track.tpcNSigmaAl(),
+                         track.tofNSigmaDe(),
+                         track.tofNSigmaTr(),
+                         track.tofNSigmaHe(),
+                         track.tofNSigmaAl());
     outputTracksExtra(track.tpcInnerParam(),
                       track.itsClusterSizes(),
                       track.tpcNClsFindable(),
@@ -208,10 +227,15 @@ struct SGCandProducer {
       upchelpers::FITInfo fitInfo{};
       udhelpers::getFITinfo(fitInfo, newbc, bcs, ft0s, fv0as, fdds);
       // update SG candidates tables
+      int upc_flag = 0;
+      ushort flags = collision.flags();
+      if (flags & dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode)
+        upc_flag = 1;
       outputCollisions(bc.globalBC(), bc.runNumber(),
-                       collision.posX(), collision.posY(), collision.posZ(),
+                       collision.posX(), collision.posY(), collision.posZ(), upc_flag,
                        collision.numContrib(), udhelpers::netCharge<true>(tracks),
                        1.); // rtrwTOF); //omit the calculation to speed up the things while skimming
+
       outputSGCollisions(issgevent);
       outputCollisionsSels(fitInfo.ampFT0A, fitInfo.ampFT0C, fitInfo.timeFT0A, fitInfo.timeFT0C,
                            fitInfo.triggerMaskFT0,
@@ -229,22 +253,26 @@ struct SGCandProducer {
         udZdcsReduced(outputCollisions.lastIndex(), -999, -999, -999, -999);
       }
       // update SGTracks tables
-      for (auto& track : tracks) {
-        if (track.pt() > sameCuts.minPt() && track.eta() > sameCuts.minEta() && track.eta() < sameCuts.maxEta()) {
-          if (track.isPVContributor()) {
-            updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
-          } else if (saveAllTracks) {
-            if (track.itsClusterSizes() && track.itsChi2NCl() > 0 && ((track.tpcNClsFindable() == 0 && savenonPVCITSOnlyTracks) || track.tpcNClsFindable() > 50))
+      if (fillTrackTables) {
+        for (auto& track : tracks) {
+          if (track.pt() > sameCuts.minPt() && track.eta() > sameCuts.minEta() && track.eta() < sameCuts.maxEta()) {
+            if (track.isPVContributor()) {
               updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
-            // if (track.isPVContributor())  updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
+            } else if (saveAllTracks) {
+              if (track.itsClusterSizes() && track.itsChi2NCl() > 0 && ((track.tpcNClsFindable() == 0 && savenonPVCITSOnlyTracks) || track.tpcNClsFindable() > 50))
+                updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
+              // if (track.isPVContributor())  updateUDTrackTables(outputCollisions.lastIndex(), track, bc.globalBC());
+            }
           }
         }
       }
       // update SGFwdTracks tables
-      if (sameCuts.withFwdTracks()) {
-        for (auto& fwdtrack : fwdtracks) {
-          if (!sgSelector.FwdTrkSelector(fwdtrack))
-            updateUDFwdTrackTables(fwdtrack, bc.globalBC());
+      if (fillFwdTrackTables) {
+        if (sameCuts.withFwdTracks()) {
+          for (auto& fwdtrack : fwdtracks) {
+            if (!sgSelector.FwdTrkSelector(fwdtrack))
+              updateUDFwdTrackTables(fwdtrack, bc.globalBC());
+          }
         }
       }
     }
@@ -275,10 +303,10 @@ struct McSGCandProducer {
     {}};
 
   template <typename TMcCollision>
-  void updateUDMcCollisions(TMcCollision const& mccol)
+  void updateUDMcCollisions(TMcCollision const& mccol, uint64_t globBC)
   {
     // save mccol
-    outputMcCollisions(mccol.bcId(),
+    outputMcCollisions(globBC,
                        mccol.generatorsID(),
                        mccol.posX(),
                        mccol.posY(),
@@ -476,6 +504,9 @@ struct McSGCandProducer {
     bool goon = !sgcandAtEnd || !mccolAtEnd;
     int counter = 0;
     while (goon) {
+      auto bcIter = mccol.bc_as<BCs>();
+      uint64_t globBC = bcIter.globalBC();
+      // uint64_t globBC = 0;
       // check if dgcand has an associated McCollision
       if (sgcand.has_collision()) {
         auto sgcandCol = sgcand.collision_as<CCs>();
@@ -510,7 +541,7 @@ struct McSGCandProducer {
             LOGF(info, "  Saving McCollision %d", mcsgId);
             // update UDMcCollisions
             auto sgcandMcCol = sgcand.collision_as<CCs>().mcCollision();
-            updateUDMcCollisions(sgcandMcCol);
+            updateUDMcCollisions(sgcandMcCol, globBC);
             mcColIsSaved[mcsgId] = outputMcCollisions.lastIndex();
           }
 
@@ -565,7 +596,7 @@ struct McSGCandProducer {
         if (mcColIsSaved.find(mccolId) == mcColIsSaved.end()) {
           LOGF(info, "  Saving McCollision %d", mccolId);
           // update UDMcCollisions
-          updateUDMcCollisions(mccol);
+          updateUDMcCollisions(mccol, globBC);
           mcColIsSaved[mccolId] = outputMcCollisions.lastIndex();
 
           // update UDMcParticles

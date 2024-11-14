@@ -89,6 +89,7 @@ struct PhotonIsolationQA {
 
   // Preslices
   Preslice<aod::Collisions> collisionsPerBC = aod::collision::bcId;
+  Preslice<aod::Tracks> TracksPercollision = aod::track::collisionId;
   Preslice<o2::aod::EMCALMatchedTracks> perClusterMatchedTracks = o2::aod::emcalclustercell::emcalclusterId;
   Preslice<selectedMCClusters> ClustersPerCol = aod::emcalcluster::collisionId;
   Preslice<aod::EMCALClusterCells> CellsPerCluster = aod::emcalclustercell::emcalclusterId;
@@ -113,7 +114,7 @@ struct PhotonIsolationQA {
     const o2Axis NCells_Axis{50, 0, 50, "N Cells"};
     const o2Axis Num_Track_Axis{20, -0.5, 19.5, "N Tracks"};
     const o2Axis PtIso_Axis{100, -10, 15, "P_{T, Iso} (GeV/c)"};
-    const o2Axis Rho_Axis{50, 5, 4995, "#rho (#frac{GeV/c}{A})"};
+    const o2Axis Rho_Axis{200, 0, 200, "#rho (#frac{GeV/c}{A})"};
     const o2Axis ABCD_Axis{5, 0, 5, "ABCD"};
     const o2Axis NLM_Axis{50, -0.5, 49.5, "NLM"};
     const o2Axis PDG_Axis{20000, -10000.5, 9999.5, "PDG Code"};
@@ -138,6 +139,7 @@ struct PhotonIsolationQA {
     Data_Info.add("hABCDControlRegion", "Yield Control Regions", o2HistType::kTH2F, {{ABCD_Axis}, {Energy_Axis}});
     Data_Info.add("hCollperBC", "collisions per BC", o2HistType::kTH1F, {BC_Axis});
     Data_Info.add("hEnergy_NLM_Flag", "Energy vs NLM", o2HistType::kTH3F, {{Energy_Axis}, {NLM_Axis}, {SM_Flag_Axis}});
+    Data_Info.add("hNCells_NLM_Flag", "Energy vs NLM", o2HistType::kTH3F, {{NCells_Axis}, {NLM_Axis}, {SM_Flag_Axis}});
 
     MC_Info.add("hPosZ", "Z Position of collision", o2HistType::kTH1F, {PosZ_Axis});
     MC_Info.add("hNumClusters", "Number of cluster per collision", o2HistType::kTH1F, {Num_Cluster_Axis});
@@ -159,6 +161,8 @@ struct PhotonIsolationQA {
     MC_Info.add("hMotherStatusCodeVsPDG", "Statuscode of candidate photons mother", o2HistType::kTH2F, {{Status_Code_Axis}, {PDG_Axis}});
     MC_Info.add("hCollperBC", "collisions per BC", o2HistType::kTH1F, {BC_Axis});
     MC_Info.add("hEnergy_NLM_Flag", "Energy vs NLM", o2HistType::kTH3F, {{Energy_Axis}, {NLM_Axis}, {SM_Flag_Axis}});
+    MC_Info.add("hNCells_NLM_Flag", "Energy vs NLM", o2HistType::kTH3F, {{NCells_Axis}, {NLM_Axis}, {SM_Flag_Axis}});
+    MC_Info.add("hPromtPhoton", "Energy vs m02 vs NCells, PtIso", o2HistType::kTHnSparseF, {{Energy_Axis}, {Shower_Shape_Long_Axis}, {NCells_Axis}, {PtIso_Axis}});
 
     std::vector<std::string> bin_names = {"A", "B", "C", "D", "True Bckgr A"};
     for (size_t i = 0; i < bin_names.size(); i++) {
@@ -356,6 +360,7 @@ struct PhotonIsolationQA {
         for (const auto& Collision : collisionsInBC) {
           MC_Info.fill(HIST("hPosZ"), Collision.posZ());
           auto ClustersInCol = mcclusters.sliceBy(ClustersPerCol, Collision.globalIndex());
+          auto tracksInCol = tracks.sliceBy(TracksPercollision, Collision.globalIndex());
 
           if (ClustersInCol.size() > 0) {
             MC_Info.fill(HIST("hNumClusters"), ClustersInCol.size());
@@ -369,32 +374,36 @@ struct PhotonIsolationQA {
             auto CellsInCluster = ClusterCells.sliceBy(CellsPerCluster, mccluster.globalIndex());
             auto [NLM, flag] = CalculateNLM(CellsInCluster);
             MC_Info.fill(HIST("hEnergy_NLM_Flag"), mccluster.energy(), NLM, flag);
+            MC_Info.fill(HIST("hNCells_NLM_Flag"), mccluster.nCells(), NLM, flag);
 
             if (!track_matching(mccluster, tracksofcluster)) { // no track with significant momentum is matched to cluster
-              double Pt_Cone = sum_Pt_tracks_in_cone(mccluster, tracks);
-              double Rho_Perpen_Cone = Rho_Perpendicular_Cone(mccluster, tracks);
-              double Pt_iso = Pt_Iso(Pt_Cone, Rho_Perpen_Cone);
+              if (NLM <= maxNLM) {
+                double Pt_Cone = sum_Pt_tracks_in_cone(mccluster, tracksInCol);
+                double Rho_Perpen_Cone = Rho_Perpendicular_Cone(mccluster, tracksInCol);
+                double Pt_iso = Pt_Iso(Pt_Cone, Rho_Perpen_Cone);
 
-              MC_Info.fill(HIST("hEvsPtIso"), mccluster.energy(), Pt_iso);
-              MC_Info.fill(HIST("hRho_Perpen_Cone"), mccluster.energy(), Rho_Perpen_Cone);
-              MC_Info.fill(HIST("hSigmaLongvsPtIso"), mccluster.m02(), Pt_iso);
-              fillABCDHisto(MC_Info, mccluster, Pt_iso);
+                MC_Info.fill(HIST("hEvsPtIso"), mccluster.energy(), Pt_iso);
+                MC_Info.fill(HIST("hRho_Perpen_Cone"), mccluster.energy(), Rho_Perpen_Cone);
+                MC_Info.fill(HIST("hSigmaLongvsPtIso"), mccluster.m02(), Pt_iso);
+                fillABCDHisto(MC_Info, mccluster, Pt_iso);
 
-              // acces mc true info
-              auto ClusterParticles = mccluster.mcParticle_as<aod::McParticles>();
-              bool background = true;
-              for (auto& clusterparticle : ClusterParticles) {
-                if (clusterparticle.pdgCode() == 22) {
-                  MC_Info.fill(HIST("hClusterEnergy_MCParticleEnergy"), mccluster.energy(), clusterparticle.e());
-                  int first_mother_status_code = getOriginalMotherIndex<aod::McParticles>(clusterparticle);
-                  if (abs(first_mother_status_code) == 23) {
-                    background = false;
+                // acces mc true info
+                auto ClusterParticles = mccluster.mcParticle_as<aod::McParticles>();
+                bool background = true;
+                for (auto& clusterparticle : ClusterParticles) {
+                  if (clusterparticle.pdgCode() == 22) {
+                    MC_Info.fill(HIST("hClusterEnergy_MCParticleEnergy"), mccluster.energy(), clusterparticle.e());
+                    int first_mother_status_code = getOriginalMotherIndex<aod::McParticles>(clusterparticle);
+                    if (abs(first_mother_status_code) == 23) {
+                      background = false;
+                      MC_Info.fill(HIST("hPromtPhoton"), mccluster.energy(), mccluster.m02(), mccluster.nCells(), Pt_iso);
+                    }
                   }
                 }
-              }
-              if (background) {
-                if ((Pt_iso < 1.5) && (mccluster.m02() < 0.3) && (mccluster.m02() > 0.1)) {
-                  MC_Info.fill(HIST("hABCDControlRegion"), 4.5, mccluster.energy());
+                if (background) {
+                  if ((Pt_iso < 1.5) && (mccluster.m02() < 0.3) && (mccluster.m02() > 0.1)) {
+                    MC_Info.fill(HIST("hABCDControlRegion"), 4.5, mccluster.energy());
+                  }
                 }
               }
             }
@@ -415,6 +424,7 @@ struct PhotonIsolationQA {
         for (const auto& Collision : collisionsInBC) {
           Data_Info.fill(HIST("hPosZ"), Collision.posZ());
           auto ClustersInCol = clusters.sliceBy(ClustersPerCol, Collision.globalIndex());
+          auto tracksInCol = tracks.sliceBy(TracksPercollision, Collision.globalIndex());
 
           if (ClustersInCol.size() > 0) {
             Data_Info.fill(HIST("hNumClusters"), ClustersInCol.size());
@@ -428,16 +438,19 @@ struct PhotonIsolationQA {
             auto CellsInCluster = ClusterCells.sliceBy(CellsPerCluster, cluster.globalIndex());
             auto [NLM, flag] = CalculateNLM(CellsInCluster);
             Data_Info.fill(HIST("hEnergy_NLM_Flag"), cluster.energy(), NLM, flag);
+            Data_Info.fill(HIST("hNCells_NLM_Flag"), cluster.nCells(), NLM, flag);
 
             if (!track_matching(cluster, tracksofcluster)) { // no track with significant momentum is matched to cluster
-              double Pt_Cone = sum_Pt_tracks_in_cone(cluster, tracks);
-              double Rho_Perpen_Cone = Rho_Perpendicular_Cone(cluster, tracks);
-              double Pt_iso = Pt_Iso(Pt_Cone, Rho_Perpen_Cone);
+              if (NLM < maxNLM) {
+                double Pt_Cone = sum_Pt_tracks_in_cone(cluster, tracksInCol);
+                double Rho_Perpen_Cone = Rho_Perpendicular_Cone(cluster, tracksInCol);
+                double Pt_iso = Pt_Iso(Pt_Cone, Rho_Perpen_Cone);
 
-              Data_Info.fill(HIST("hEvsPtIso"), cluster.energy(), Pt_iso);
-              Data_Info.fill(HIST("hRho_Perpen_Cone"), cluster.energy(), Rho_Perpen_Cone);
-              Data_Info.fill(HIST("hSigmaLongvsPtIso"), cluster.m02(), Pt_iso);
-              fillABCDHisto(Data_Info, cluster, Pt_iso);
+                Data_Info.fill(HIST("hEvsPtIso"), cluster.energy(), Pt_iso);
+                Data_Info.fill(HIST("hRho_Perpen_Cone"), cluster.energy(), Rho_Perpen_Cone);
+                Data_Info.fill(HIST("hSigmaLongvsPtIso"), cluster.m02(), Pt_iso);
+                fillABCDHisto(Data_Info, cluster, Pt_iso);
+              }
             }
           }
         }

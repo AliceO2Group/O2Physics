@@ -41,6 +41,15 @@ struct MultiplicityExtraTable {
   Configurable<float> minFT0CforBCTable{"minFT0CforBCTable", 25.0f, "Minimum FT0C amplitude to fill BC table to reduce data"};
   Configurable<bool> saveOnlyBCsWithCollisions{"saveOnlyBCsWithCollisions", true, "save only BCs with collisions in them"};
 
+  Configurable<float> bcTableFloatPrecision{"bcTableFloatPrecision", 0.1, "float precision in bc table for data reduction"};
+
+  float tru(float value)
+  {
+    if (bcTableFloatPrecision < 1e-4)
+      return value; // make sure nothing bad happens in case zero (best precision)
+    return bcTableFloatPrecision * std::round(value / bcTableFloatPrecision) + 0.5f * bcTableFloatPrecision;
+  };
+
   // needed for downscale
   unsigned int randomSeed = 0;
 
@@ -231,9 +240,10 @@ struct MultiplicityExtraTable {
 
       bc2mult(bc2multArray[bc.globalIndex()]);
       multBC(
-        multFT0A, multFT0C, posZFT0, posZFT0valid, multFV0A,
-        multFDDA, multFDDC, multZNA, multZNC, multZEM1,
-        multZEM2, multZPA, multZPC, Tvx, isFV0OrA,
+        tru(multFT0A), tru(multFT0C),
+        tru(posZFT0), posZFT0valid, tru(multFV0A),
+        tru(multFDDA), tru(multFDDC), tru(multZNA), tru(multZNC), tru(multZEM1),
+        tru(multZEM2), tru(multZPA), tru(multZPC), Tvx, isFV0OrA,
         multFV0TriggerBits, multFT0TriggerBits, multFDDTriggerBits, multBCTriggerMask, collidingBC,
         bc.flags());
     }

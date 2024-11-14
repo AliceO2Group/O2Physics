@@ -263,7 +263,7 @@ struct mcParticlePrediction {
       hestimators[i]->GetXaxis()->SetTitle(Form("Multiplicity %s", name));
 
       auto make2DH = [&](const std::string& h, const char* ytitle) {
-        auto hist = histos.add<TH2>(Form("%s/%s", h.c_str(), name),
+        auto hist = histos.add<TH2>(Form("%s%s", h.c_str(), name),
                                     name,
                                     kTH2D,
                                     {axisMultiplicity, axisMultiplicity});
@@ -414,7 +414,7 @@ struct mcParticlePrediction {
     }
 
     histos.fill(HIST("collisions/generated"), 1);
-    if (abs(mcCollision.posZ()) > 10.f) {
+    if (std::abs(mcCollision.posZ()) > 10.f) {
       return;
     }
     histos.fill(HIST("collisions/generated"), 2);
@@ -455,14 +455,14 @@ struct mcParticlePrediction {
 
       TParticlePDG* p = pdgDB->GetParticle(particle.pdgCode());
       if (p) {
-        if (abs(p->Charge()) > 1e-3) {
+        if (std::abs(p->Charge()) > 1e-3) {
           histos.fill(HIST("particles/eta/charged"), particle.eta());
         } else {
           histos.fill(HIST("particles/eta/neutral"), particle.eta());
         }
       }
 
-      if (abs(particle.y()) > 0.5) {
+      if (std::abs(particle.y()) > 0.5) {
         continue;
       }
 
@@ -536,7 +536,7 @@ struct mcParticlePrediction {
     }
     histos.fill(HIST("collisions/reconstructed"), 8);
 
-    if (abs(collision.posZ()) > posZCut.value) {
+    if (std::abs(collision.posZ()) > posZCut.value) {
       return;
     }
     histos.fill(HIST("collisions/reconstructed"), 9);

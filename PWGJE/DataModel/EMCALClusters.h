@@ -27,35 +27,34 @@ namespace emcalcluster
 {
 
 // define global cluster definitions
-// the V1 algorithm is not yet implemented, but the V3 algorithm is
 // New definitions should be added here!
-const EMCALClusterDefinition kV1Default(ClusterAlgorithm_t::kV1, 0, 1, "kV1Default", 0.5, 0.1, -10000, 10000, true, 0.03);       // dummy
-const EMCALClusterDefinition kV1Variation1(ClusterAlgorithm_t::kV3, 1, 1, "kV1Variation1", 0.3, 0.1, -10000, 10000, true, 0.03); // dummy
-const EMCALClusterDefinition kV1Variation2(ClusterAlgorithm_t::kV3, 2, 1, "kV1Variation2", 0.2, 0.1, -10000, 10000, true, 0.03); // dummy
+const EMCALClusterDefinition kV3NoSplit(ClusterAlgorithm_t::kV3, 0, 1, "kV3NoSplit", 0.5, 0.1, -10000, 10000, false, 0.);
+const EMCALClusterDefinition kV3NoSplitLowSeed(ClusterAlgorithm_t::kV3, 1, 1, "kV3NoSplitLowSeed", 0.3, 0.1, -10000, 10000, false, 0.);
+const EMCALClusterDefinition kV3NoSplitLowerSeed(ClusterAlgorithm_t::kV3, 2, 1, "kV3NoSplitLowerSeed", 0.2, 0.1, -10000, 10000, false, 0.);
 const EMCALClusterDefinition kV3Default(ClusterAlgorithm_t::kV3, 10, 1, "kV3Default", 0.5, 0.1, -10000, 10000, true, 0.03);
-const EMCALClusterDefinition kV3Variation1(ClusterAlgorithm_t::kV3, 11, 1, "kV3Variation1", 0.5, 0.1, -10000, 10000, true, 0.);
-const EMCALClusterDefinition kV3Variation2(ClusterAlgorithm_t::kV3, 12, 1, "kV3Variation2", 0.5, 0.1, -10000, 10000, false, 0.);
-const EMCALClusterDefinition kV3Variation3(ClusterAlgorithm_t::kV3, 13, 1, "kV3Variation3", 0.5, 0.1, -10000, 10000, true, 20.);
+const EMCALClusterDefinition kV3MostSplit(ClusterAlgorithm_t::kV3, 11, 1, "kV3MostSplit", 0.5, 0.1, -10000, 10000, true, 0.);
+const EMCALClusterDefinition kV3LowSeed(ClusterAlgorithm_t::kV3, 12, 1, "kV3LowSeed", 0.3, 0.1, -10000, 10000, true, 0.03);
+const EMCALClusterDefinition kV3MostSplitLowSeed(ClusterAlgorithm_t::kV3, 13, 1, "kV3MostSplitLowSeed", 0.3, 0.1, -10000, 10000, true, 0.);
 
 /// \brief function returns EMCALClusterDefinition for the given name
 /// \param name name of the cluster definition
 /// \return EMCALClusterDefinition for the given name
 const EMCALClusterDefinition getClusterDefinitionFromString(const std::string& clusterDefinitionName)
 {
-  if (clusterDefinitionName == "kV1Default") {
-    return kV1Default;
-  } else if (clusterDefinitionName == "kV1Variation1") {
-    return kV1Variation1;
-  } else if (clusterDefinitionName == "kV1Variation2") {
-    return kV1Variation2;
+  if (clusterDefinitionName == "kV3NoSplit") {
+    return kV3NoSplit;
+  } else if (clusterDefinitionName == "kV3NoSplitLowSeed") {
+    return kV3NoSplitLowSeed;
+  } else if (clusterDefinitionName == "kV3NoSplitLowerSeed") {
+    return kV3NoSplitLowerSeed;
   } else if (clusterDefinitionName == "kV3Default") {
     return kV3Default;
-  } else if (clusterDefinitionName == "kV3Variation1") {
-    return kV3Variation1;
-  } else if (clusterDefinitionName == "kV3Variation2") {
-    return kV3Variation2;
-  } else if (clusterDefinitionName == "kV3Variation3") {
-    return kV3Variation3;
+  } else if (clusterDefinitionName == "kV3MostSplit") {
+    return kV3MostSplit;
+  } else if (clusterDefinitionName == "kV3LowSeed") {
+    return kV3LowSeed;
+  } else if (clusterDefinitionName == "kV3MostSplitLowSeed") {
+    return kV3MostSplitLowSeed;
   } else {
     throw std::invalid_argument("Cluster definition name not recognized");
   }

@@ -377,7 +377,7 @@ struct strangeYieldPbPb {
   template <int partID>
   void addHistograms(HistogramRegistry& histos)
   {
-    histos.add(Form("%s/h5dMass", particlenames[partID].data()), "h5dMass", kTHnF, {axisFT0C, axisPt, axisInvMass.at(partID), axisSelGap, {{100, -0.5, 99.5}}});
+    histos.add(Form("%s/h5dMass", particlenames[partID].data()), "h5dMass", kTHnF, {axisFT0C, axisPt, axisInvMass.at(partID), axisSelGap, {100, -0.5f, 99.5f}});
     histos.add(Form("%s/h2dMass", particlenames[partID].data()), "h2dMass", kTH2F, {axisInvMass.at(partID), axisSelGap});
     if (doPlainTopoQA) {
       addTopoHistograms<partID>(histos);
