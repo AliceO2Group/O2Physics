@@ -550,7 +550,7 @@ struct phik0shortanalysis {
         return false;
     }
 
-    if (track.pt() > 0.5) {
+    if (track.pt() >= 0.5) {
       if (!track.hasTOF())
         return false;
     }
@@ -1166,14 +1166,6 @@ struct phik0shortanalysis {
     const auto& mcCollision = collision.mcCollision_as<MCCollisions>();
     float genmultiplicity = mcCollision.centFT0M();
 
-    int iBin = 0;
-    for (int i = 0; i < nMultBin; i++) {
-      if (multBin[i] < genmultiplicity && genmultiplicity <= multBin[i + 1]) {
-        iBin = i;
-        break;
-      }
-    }
-
     // Defining positive and negative tracks for phi reconstruction
     auto posThisColl = posMCTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto negThisColl = negMCTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
@@ -1274,16 +1266,15 @@ struct phik0shortanalysis {
             isCountedPhi = true;
           }
 
-          if (lowmPhiInc->at(iBin) <= recPhi.M() && recPhi.M() <= upmPhiInc->at(iBin))
+          if (lowmPhi <= recPhi.M() && recPhi.M() <= upmPhi) {
             countInclusive++;
-          if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) > cfgFirstCutonDeltay)
-            continue;
-          if (lowmPhiFCut->at(iBin) <= recPhi.M() && recPhi.M() <= upmPhiFCut->at(iBin))
+            if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) > cfgFirstCutonDeltay)
+              continue;
             countLtFirstCut++;
-          if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) > cfgSecondCutonDeltay)
-            continue;
-          if (lowmPhiSCut->at(iBin) <= recPhi.M() && recPhi.M() <= upmPhiSCut->at(iBin))
+            if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) > cfgSecondCutonDeltay)
+              continue;
             countLtSecondCut++;
+          }
         }
       }
 
@@ -1307,50 +1298,7 @@ struct phik0shortanalysis {
         MCeventHist.fill(HIST("thereisnoPhiwK0SMC"), 2);
       }
 
-      switch (iBin) {
-        case 0: {
-          fillInvMass2D<false, true, 0>(recK0S, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
-          break;
-        }
-        case 1: {
-          fillInvMass2D<false, true, 1>(recK0S, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
-          break;
-        }
-        case 2: {
-          fillInvMass2D<false, true, 2>(recK0S, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
-          break;
-        }
-        case 3: {
-          fillInvMass2D<false, true, 3>(recK0S, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
-          break;
-        }
-        case 4: {
-          fillInvMass2D<false, true, 4>(recK0S, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
-          break;
-        }
-        case 5: {
-          fillInvMass2D<false, true, 5>(recK0S, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
-          break;
-        }
-        case 6: {
-          fillInvMass2D<false, true, 6>(recK0S, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
-          break;
-        }
-        case 7: {
-          fillInvMass2D<false, true, 7>(recK0S, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
-          break;
-        }
-        case 8: {
-          fillInvMass2D<false, true, 8>(recK0S, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
-          break;
-        }
-        case 9: {
-          fillInvMass2D<false, true, 9>(recK0S, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
-          break;
-        }
-        default:
-          break;
-      }
+      fillInvMass2D<true>(recK0S, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
     }
   }
 
@@ -1366,14 +1314,6 @@ struct phik0shortanalysis {
 
     const auto& mcCollision = collision.mcCollision_as<MCCollisions>();
     float genmultiplicity = mcCollision.centFT0M();
-
-    int iBin = 0;
-    for (int i = 0; i < nMultBin; i++) {
-      if (multBin[i] < genmultiplicity && genmultiplicity <= multBin[i + 1]) {
-        iBin = i;
-        break;
-      }
-    }
 
     // Defining positive and negative tracks for phi reconstruction
     auto posThisColl = posMCTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
@@ -1469,16 +1409,15 @@ struct phik0shortanalysis {
             isCountedPhi = true;
           }
 
-          if (lowmPhiInc->at(iBin) <= recPhi.M() && recPhi.M() <= upmPhiInc->at(iBin))
+          if (lowmPhi <= recPhi.M() && recPhi.M() <= upmPhi) {
             countInclusive++;
-          if (std::abs(recPi.Rapidity() - recPhi.Rapidity()) > cfgFirstCutonDeltay)
-            continue;
-          if (lowmPhiFCut->at(iBin) <= recPhi.M() && recPhi.M() <= upmPhiFCut->at(iBin))
+            if (std::abs(recPi.Rapidity() - recPhi.Rapidity()) > cfgFirstCutonDeltay)
+              continue;
             countLtFirstCut++;
-          if (std::abs(recPi.Rapidity() - recPhi.Rapidity()) > cfgSecondCutonDeltay)
-            continue;
-          if (lowmPhiSCut->at(iBin) <= recPhi.M() && recPhi.M() <= upmPhiSCut->at(iBin))
+            if (std::abs(recPi.Rapidity() - recPhi.Rapidity()) > cfgSecondCutonDeltay)
+              continue;
             countLtSecondCut++;
+          }
         }
       }
 
@@ -1502,50 +1441,7 @@ struct phik0shortanalysis {
         MCeventHist.fill(HIST("thereisnoPhiwPiMC"), 2);
       }
 
-      switch (iBin) {
-        case 0: {
-          fillInvMassNSigma<false, true, 0>(recPi, nsigmaTPC, nsigmaTOF, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
-          break;
-        }
-        case 1: {
-          fillInvMassNSigma<false, true, 1>(recPi, nsigmaTPC, nsigmaTOF, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
-          break;
-        }
-        case 2: {
-          fillInvMassNSigma<false, true, 2>(recPi, nsigmaTPC, nsigmaTOF, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
-          break;
-        }
-        case 3: {
-          fillInvMassNSigma<false, true, 3>(recPi, nsigmaTPC, nsigmaTOF, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
-          break;
-        }
-        case 4: {
-          fillInvMassNSigma<false, true, 4>(recPi, nsigmaTPC, nsigmaTOF, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
-          break;
-        }
-        case 5: {
-          fillInvMassNSigma<false, true, 5>(recPi, nsigmaTPC, nsigmaTOF, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
-          break;
-        }
-        case 6: {
-          fillInvMassNSigma<false, true, 6>(recPi, nsigmaTPC, nsigmaTOF, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
-          break;
-        }
-        case 7: {
-          fillInvMassNSigma<false, true, 7>(recPi, nsigmaTPC, nsigmaTOF, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
-          break;
-        }
-        case 8: {
-          fillInvMassNSigma<false, true, 8>(recPi, nsigmaTPC, nsigmaTOF, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
-          break;
-        }
-        case 9: {
-          fillInvMassNSigma<false, true, 9>(recPi, nsigmaTPC, nsigmaTOF, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
-          break;
-        }
-        default:
-          break;
-      }
+      fillInvMassNSigma<true>(recPi, nsigmaTPC, nsigmaTOF, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
     }
   }
 
@@ -1695,14 +1591,6 @@ struct phik0shortanalysis {
     const auto& mcCollision = collision.mcCollision_as<MCCollisions>();
     float genmultiplicity = mcCollision.centFT0M();
 
-    int iBin = 0;
-    for (int i = 0; i < nMultBin; i++) {
-      if (multBin[i] < genmultiplicity && genmultiplicity <= multBin[i + 1]) {
-        iBin = i;
-        break;
-      }
-    }
-
     // Defining positive and negative tracks for phi reconstruction
     auto posThisColl = posMCTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto negThisColl = negMCTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
@@ -1745,16 +1633,15 @@ struct phik0shortanalysis {
 
           listrecPhi.push_back(recPhi);
 
-          if (lowmPhiInc->at(iBin) <= recPhi.M() && recPhi.M() <= upmPhiInc->at(iBin))
+          if (lowmPhi <= recPhi.M() && recPhi.M() <= upmPhi) {
             countInclusive++;
-          if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) > cfgFirstCutonDeltay)
-            continue;
-          if (lowmPhiFCut->at(iBin) <= recPhi.M() && recPhi.M() <= upmPhiFCut->at(iBin))
+            if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) > cfgFirstCutonDeltay)
+              continue;
             countLtFirstCut++;
-          if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) > cfgSecondCutonDeltay)
-            continue;
-          if (lowmPhiSCut->at(iBin) <= recPhi.M() && recPhi.M() <= upmPhiSCut->at(iBin))
+            if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) > cfgSecondCutonDeltay)
+              continue;
             countLtSecondCut++;
+          }
         }
       }
 
@@ -1778,50 +1665,7 @@ struct phik0shortanalysis {
         MCeventHist.fill(HIST("thereisnoPhiwK0SMC"), 2);
       }
 
-      switch (iBin) {
-        case 0: {
-          fillInvMass2D<false, true, 0>(recK0S, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
-          break;
-        }
-        case 1: {
-          fillInvMass2D<false, true, 1>(recK0S, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
-          break;
-        }
-        case 2: {
-          fillInvMass2D<false, true, 2>(recK0S, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
-          break;
-        }
-        case 3: {
-          fillInvMass2D<false, true, 3>(recK0S, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
-          break;
-        }
-        case 4: {
-          fillInvMass2D<false, true, 4>(recK0S, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
-          break;
-        }
-        case 5: {
-          fillInvMass2D<false, true, 5>(recK0S, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
-          break;
-        }
-        case 6: {
-          fillInvMass2D<false, true, 6>(recK0S, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
-          break;
-        }
-        case 7: {
-          fillInvMass2D<false, true, 7>(recK0S, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
-          break;
-        }
-        case 8: {
-          fillInvMass2D<false, true, 8>(recK0S, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
-          break;
-        }
-        case 9: {
-          fillInvMass2D<false, true, 9>(recK0S, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
-          break;
-        }
-        default:
-          break;
-      }
+      fillInvMass2D<true>(recK0S, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
     }
   }
 
@@ -1837,14 +1681,6 @@ struct phik0shortanalysis {
 
     const auto& mcCollision = collision.mcCollision_as<MCCollisions>();
     float genmultiplicity = mcCollision.centFT0M();
-
-    int iBin = 0;
-    for (int i = 0; i < nMultBin; i++) {
-      if (multBin[i] < genmultiplicity && genmultiplicity <= multBin[i + 1]) {
-        iBin = i;
-        break;
-      }
-    }
 
     // Defining positive and negative tracks for phi reconstruction
     auto posThisColl = posMCTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
@@ -1897,16 +1733,15 @@ struct phik0shortanalysis {
 
           listrecPhi.push_back(recPhi);
 
-          if (lowmPhiInc->at(iBin) <= recPhi.M() && recPhi.M() <= upmPhiInc->at(iBin))
+          if (lowmPhi <= recPhi.M() && recPhi.M() <= upmPhi) {
             countInclusive++;
-          if (std::abs(recPi.Rapidity() - recPhi.Rapidity()) > cfgFirstCutonDeltay)
-            continue;
-          if (lowmPhiFCut->at(iBin) <= recPhi.M() && recPhi.M() <= upmPhiFCut->at(iBin))
+            if (std::abs(recPi.Rapidity() - recPhi.Rapidity()) > cfgFirstCutonDeltay)
+              continue;
             countLtFirstCut++;
-          if (std::abs(recPi.Rapidity() - recPhi.Rapidity()) > cfgSecondCutonDeltay)
-            continue;
-          if (lowmPhiSCut->at(iBin) <= recPhi.M() && recPhi.M() <= upmPhiSCut->at(iBin))
+            if (std::abs(recPi.Rapidity() - recPhi.Rapidity()) > cfgSecondCutonDeltay)
+              continue;
             countLtSecondCut++;
+          }
         }
       }
 
@@ -1930,50 +1765,7 @@ struct phik0shortanalysis {
         MCeventHist.fill(HIST("thereisnoPhiwPiMC"), 2);
       }
 
-      switch (iBin) {
-        case 0: {
-          fillInvMassNSigma<false, true, 0>(recPi, nsigmaTPC, nsigmaTOF, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
-          break;
-        }
-        case 1: {
-          fillInvMassNSigma<false, true, 1>(recPi, nsigmaTPC, nsigmaTOF, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
-          break;
-        }
-        case 2: {
-          fillInvMassNSigma<false, true, 2>(recPi, nsigmaTPC, nsigmaTOF, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
-          break;
-        }
-        case 3: {
-          fillInvMassNSigma<false, true, 3>(recPi, nsigmaTPC, nsigmaTOF, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
-          break;
-        }
-        case 4: {
-          fillInvMassNSigma<false, true, 4>(recPi, nsigmaTPC, nsigmaTOF, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
-          break;
-        }
-        case 5: {
-          fillInvMassNSigma<false, true, 5>(recPi, nsigmaTPC, nsigmaTOF, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
-          break;
-        }
-        case 6: {
-          fillInvMassNSigma<false, true, 6>(recPi, nsigmaTPC, nsigmaTOF, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
-          break;
-        }
-        case 7: {
-          fillInvMassNSigma<false, true, 7>(recPi, nsigmaTPC, nsigmaTOF, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
-          break;
-        }
-        case 8: {
-          fillInvMassNSigma<false, true, 8>(recPi, nsigmaTPC, nsigmaTOF, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
-          break;
-        }
-        case 9: {
-          fillInvMassNSigma<false, true, 9>(recPi, nsigmaTPC, nsigmaTOF, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
-          break;
-        }
-        default:
-          break;
-      }
+      fillInvMassNSigma<true>(recPi, nsigmaTPC, nsigmaTOF, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
     }
   }
 
