@@ -375,7 +375,8 @@ struct McDGCandProducer {
   void updateUDMcCollisions(TMcCollision const& mccol)
   {
     // save mccol
-    outputMcCollisions(mccol.bcId(),
+    auto bc = mccol.template bc_as<BCs>();
+    outputMcCollisions(bc.globalBC(),
                        mccol.generatorsID(),
                        mccol.posX(),
                        mccol.posY(),
