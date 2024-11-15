@@ -502,7 +502,6 @@ struct McSGCandProducer {
     auto sgcandAtEnd = sgcand == lastsgcand;
     auto mccolAtEnd = mccol == lastmccol;
     bool goon = !sgcandAtEnd || !mccolAtEnd;
-    int counter = 0;
     while (goon) {
       auto bcIter = mccol.bc_as<BCs>();
       uint64_t globBC = bcIter.globalBC();
@@ -547,7 +546,6 @@ struct McSGCandProducer {
 
           // update UDMcColsLabels (for each UDCollision -> UDMcCollisions)
           outputMcCollsLabels(mcColIsSaved[mcsgId]);
-          counter++;
 
           // update UDMcParticles
           auto mcPartsSlice = mcparts.sliceBy(mcPartsPerMcCollision, mcsgId);
@@ -563,7 +561,6 @@ struct McSGCandProducer {
 
           // update UDMcColsLabels (for each UDCollision -> UDMcCollisions)
           outputMcCollsLabels(-1);
-          counter++;
 
           // update UDMcParticles and UDMcTrackLabels (for each UDTrack -> UDMcParticles)
           // loop over tracks of dgcand
