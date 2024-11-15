@@ -83,8 +83,8 @@ struct sigmaanalysis {
   Configurable<float> LambdaMinv0cospa{"LambdaMinv0cospa", 0.95, "Min V0 CosPA"};
   Configurable<float> LambdaWindow{"LambdaWindow", 0.015, "Mass window around expected (in GeV/c2)"};
   Configurable<float> LambdaMaxRap{"LambdaMaxRap", 0.8, "Max lambda rapidity"};
-  Configurable<float> LambdaMaxTPCNSigmas{"LambdaMaxTPCNSigmas", 5, "Max TPC NSigmas for daughters"};
-  Configurable<float> LambdaMaxTOFNSigmas{"LambdaMaxTOFNSigmas", 5, "Max TOF NSigmas for daughters"};
+  Configurable<float> LambdaMaxTPCNSigmas{"LambdaMaxTPCNSigmas", 1e+9, "Max TPC NSigmas for daughters"};
+  Configurable<float> LambdaMaxTOFNSigmas{"LambdaMaxTOFNSigmas", 1e+9, "Max TOF NSigmas for daughters"};
 
   //// Photon standard criteria:
   // Configurable<float> PhotonMaxDauPseudoRap{"PhotonMaxDauPseudoRap", 0.9, "Max pseudorapidity of daughter tracks"};
@@ -417,9 +417,6 @@ struct sigmaanalysis {
       if (TMath::Abs(cand.sigmaRapidity()) > SigmaMaxRap)
         return false;
       histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 24.);
-      histos.fill(HIST("GeneralQA/hPhotonMassSelected"), cand.photonMass());
-      histos.fill(HIST("GeneralQA/hLambdaMassSelected"), cand.lambdaMass());
-      histos.fill(HIST("GeneralQA/hAntiLambdaMassSelected"), cand.antilambdaMass());
     }
 
     return true;
@@ -490,7 +487,7 @@ struct sigmaanalysis {
         }
 
         // TOF PID:
-        if ((TMath::Abs(sigma.lambdaPrTOFNSigma()) < 5) && (TMath::Abs(sigma.lambdaPiTOFNSigma()) < 5)){
+        if ((TMath::Abs(sigma.lambdaPrTOFNSigma()) < LambdaMaxTOFNSigmas) && (TMath::Abs(sigma.lambdaPiTOFNSigma()) < LambdaMaxTOFNSigmas)){
           fPassTOFPID = true;
           histos.fill(HIST("MC/hPtLambdaCandidates_TOFPID"), sigma.lambdaPt());
           if (sigma.lambdaCandPDGCode()==3122)
@@ -535,20 +532,27 @@ struct sigmaanalysis {
       // MC association (signal study)
       if (sigma.isSigma() || sigma.isAntiSigma()) { 
         histos.fill(HIST("MC/h2dPtVsMassSigma_SignalOnly"), sigma.sigmapT(), sigma.sigmaMass());
-        histos.fill(HIST("MC/h2dArmenterosAfterSel"), sigma.photonAlpha(), sigma.photonQt());
-        histos.fill(HIST("MC/h2dArmenterosAfterSel"), sigma.lambdaAlpha(), sigma.lambdaQt());
         histos.fill(HIST("MC/h2dPtVsOPAngle_SignalOnly"), sigma.sigmapT(), sigma.sigmaOPAngle());
-      
         histos.fill(HIST("MC/hPtTrueSigma_AfterSel"), sigma.sigmapT());
-        
+        histos.fill(HIST("GeneralQA/hPhotonMassSelected"), sigma.photonMass());
         if (sigma.isSigma()) {
-          histos.fill(HIST("MC/hMassSigma0"), sigma.sigmaMass());
-          histos.fill(HIST("MC/hPtSigma0"), sigma.sigmapT());
-          histos.fill(HIST("MC/h3dMassSigma0"), coll.centFT0C(), sigma.sigmapT(), sigma.sigmaMass());
+          // PID selections
+          if ((TMath::Abs(sigma.lambdaPosPrTPCNSigma()) < LambdaMaxTPCNSigmas) && (TMath::Abs(sigma.lambdaNegPiTPCNSigma()) < LambdaMaxTPCNSigmas) && (TMath::Abs(sigma.lambdaPrTOFNSigma()) < LambdaMaxTOFNSigmas) && (TMath::Abs(sigma.lambdaPiTOFNSigma()) < LambdaMaxTOFNSigmas)){
+            histos.fill(HIST("MC/h2dArmenterosAfterSel"), sigma.photonAlpha(), sigma.photonQt());
+            histos.fill(HIST("MC/h2dArmenterosAfterSel"), sigma.lambdaAlpha(), sigma.lambdaQt());
+            histos.fill(HIST("GeneralQA/hLambdaMassSelected"), sigma.lambdaMass());
+            histos.fill(HIST("MC/hMassSigma0"), sigma.sigmaMass());
+            histos.fill(HIST("MC/hPtSigma0"), sigma.sigmapT());
+            histos.fill(HIST("MC/h3dMassSigma0"), coll.centFT0C(), sigma.sigmapT(), sigma.sigmaMass());}
         } else {
-          histos.fill(HIST("MC/hMassAntiSigma0"), sigma.sigmaMass());
-          histos.fill(HIST("MC/hPtAntiSigma0"), sigma.sigmapT());
-          histos.fill(HIST("MC/h3dMassAntiSigma0"), coll.centFT0C(), sigma.sigmapT(), sigma.sigmaMass());
+          // PID selections
+          if ((TMath::Abs(sigma.lambdaPosPiTPCNSigma()) < LambdaMaxTPCNSigmas) && (TMath::Abs(sigma.lambdaNegPrTPCNSigma()) < LambdaMaxTPCNSigmas) && (TMath::Abs(sigma.aLambdaPrTOFNSigma()) < LambdaMaxTOFNSigmas) && (TMath::Abs(sigma.aLambdaPiTOFNSigma()) < LambdaMaxTOFNSigmas)){
+            histos.fill(HIST("MC/h2dArmenterosAfterSel"), sigma.photonAlpha(), sigma.photonQt());
+            histos.fill(HIST("GeneralQA/hAntiLambdaMassSelected"), sigma.antilambdaMass());
+            histos.fill(HIST("MC/h2dArmenterosAfterSel"), sigma.lambdaAlpha(), sigma.lambdaQt());
+            histos.fill(HIST("MC/hMassAntiSigma0"), sigma.sigmaMass());
+            histos.fill(HIST("MC/hPtAntiSigma0"), sigma.sigmapT());
+            histos.fill(HIST("MC/h3dMassAntiSigma0"), coll.centFT0C(), sigma.sigmapT(), sigma.sigmaMass());}
         }
       }
     }
@@ -569,19 +573,27 @@ struct sigmaanalysis {
       if (!processSigmaCandidate(sigma))
         continue;
 
-      histos.fill(HIST("GeneralQA/h2dArmenterosAfterSel"), sigma.photonAlpha(), sigma.photonQt());
-      histos.fill(HIST("GeneralQA/h2dArmenterosAfterSel"), sigma.lambdaAlpha(), sigma.lambdaQt());
-
-      if (sigma.lambdaAlpha() > 0) {
-        histos.fill(HIST("Sigma0/hMassSigma0"), sigma.sigmaMass());
-        histos.fill(HIST("Sigma0/hPtSigma0"), sigma.sigmapT());
-        histos.fill(HIST("Sigma0/hRapiditySigma0"), sigma.sigmaRapidity());
-        histos.fill(HIST("Sigma0/h3dMassSigma0"), coll.centFT0C(), sigma.sigmapT(), sigma.sigmaMass());
+      histos.fill(HIST("GeneralQA/hPhotonMassSelected"), sigma.photonMass());
+      if (sigma.lambdaAlpha() > 0) { 
+        // PID selections
+        if ((TMath::Abs(sigma.lambdaPosPrTPCNSigma()) < LambdaMaxTPCNSigmas) && (TMath::Abs(sigma.lambdaNegPiTPCNSigma()) < LambdaMaxTPCNSigmas) && (TMath::Abs(sigma.lambdaPrTOFNSigma()) < LambdaMaxTOFNSigmas) && (TMath::Abs(sigma.lambdaPiTOFNSigma()) < LambdaMaxTOFNSigmas)){
+          histos.fill(HIST("GeneralQA/h2dArmenterosAfterSel"), sigma.photonAlpha(), sigma.photonQt());
+          histos.fill(HIST("GeneralQA/h2dArmenterosAfterSel"), sigma.lambdaAlpha(), sigma.lambdaQt());
+          histos.fill(HIST("GeneralQA/hLambdaMassSelected"), sigma.lambdaMass());
+          histos.fill(HIST("Sigma0/hMassSigma0"), sigma.sigmaMass());
+          histos.fill(HIST("Sigma0/hPtSigma0"), sigma.sigmapT());
+          histos.fill(HIST("Sigma0/hRapiditySigma0"), sigma.sigmaRapidity());
+          histos.fill(HIST("Sigma0/h3dMassSigma0"), coll.centFT0C(), sigma.sigmapT(), sigma.sigmaMass());}
       } else {
-        histos.fill(HIST("AntiSigma0/hMassAntiSigma0"), sigma.sigmaMass());
-        histos.fill(HIST("AntiSigma0/hPtAntiSigma0"), sigma.sigmapT());
-        histos.fill(HIST("AntiSigma0/hRapidityAntiSigma0"), sigma.sigmaRapidity());
-        histos.fill(HIST("AntiSigma0/h3dMassAntiSigma0"), coll.centFT0C(), sigma.sigmapT(), sigma.sigmaMass());
+        // PID selections
+        if ((TMath::Abs(sigma.lambdaPosPiTPCNSigma()) < LambdaMaxTPCNSigmas) && (TMath::Abs(sigma.lambdaNegPrTPCNSigma()) < LambdaMaxTPCNSigmas) && (TMath::Abs(sigma.aLambdaPrTOFNSigma()) < LambdaMaxTOFNSigmas) && (TMath::Abs(sigma.aLambdaPiTOFNSigma()) < LambdaMaxTOFNSigmas)){
+          histos.fill(HIST("GeneralQA/h2dArmenterosAfterSel"), sigma.photonAlpha(), sigma.photonQt());
+          histos.fill(HIST("GeneralQA/h2dArmenterosAfterSel"), sigma.lambdaAlpha(), sigma.lambdaQt());
+          histos.fill(HIST("GeneralQA/hAntiLambdaMassSelected"), sigma.antilambdaMass());
+          histos.fill(HIST("AntiSigma0/hMassAntiSigma0"), sigma.sigmaMass());
+          histos.fill(HIST("AntiSigma0/hPtAntiSigma0"), sigma.sigmapT());
+          histos.fill(HIST("AntiSigma0/hRapidityAntiSigma0"), sigma.sigmaRapidity());
+          histos.fill(HIST("AntiSigma0/h3dMassAntiSigma0"), coll.centFT0C(), sigma.sigmapT(), sigma.sigmaMass());}
       }
     }
   }
