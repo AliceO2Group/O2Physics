@@ -229,12 +229,12 @@ enum eQAEventHistograms2D {
   eMultTPC_vs_NContributors = 0,
   eVertex_z_vs_MultTPC,
   eVertex_z_vs_NContributors,
-  // Run 3:
-  eCentFT0M_vs_CentNTPV,
-  // Run 2 (do not use in Run 1 converted, because there is no centrality information):
-  eCentRun2V0M_vs_CentRun2SPDTracklets,
-  eCentRun2V0M_vs_NContributors,
+  eCentFT0M_vs_CentNTPV,                // Run 3 centrality
+  eCentRun2V0M_vs_CentRun2SPDTracklets, // Run 2 centrality (do not use in Run 1 converted, because there is no centrality information)
+  eCentRun2V0M_vs_NContributors,        // Run 2 centrality (do not use in Run 1 converted, because there is no centrality information)
   eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange,
+  eTrackOccupancyInTimeRange_vs_MultTPC,
+  eTrackOccupancyInTimeRange_vs_Vertex_z,
   eQAEventHistograms2D_N
 };
 

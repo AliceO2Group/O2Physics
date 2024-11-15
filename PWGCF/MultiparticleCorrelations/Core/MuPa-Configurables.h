@@ -38,7 +38,7 @@ struct : ConfigurableGroup {
 struct : ConfigurableGroup {
   Configurable<bool> cfCheckUnderflowAndOverflow{"cfCheckUnderflowAndOverflow", false, "check and bail out if in event and particle histograms there are entries which went to underflow or overflow bins (use only locally)"};
   Configurable<bool> cfFillQAEventHistograms2D{"cfFillQAEventHistograms2D", false, "if false, all QA 2D event histograms are not filled. if true, only the ones for which fBookQAEventHistograms2D[...] is true, are filled"};
-  Configurable<vector<string>> cfBookQAEventHistograms2D{"cfBookQAEventHistograms2D", {"MultTPC_vs_NContributors-1", "Vertex_z_vs_MultTPC-1", "Vertex_z_vs_NContributors-1", "CentFT0M_vs_CentNTPV-1", "CentRun2V0M_vs_CentRun2SPDTracklets-1", "CentRun2V0M_vs_NContributors-1", "TrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange-1"}, "book (1) or do not book (0) this QA 2D event histogram"};
+  Configurable<vector<string>> cfBookQAEventHistograms2D{"cfBookQAEventHistograms2D", {"MultTPC_vs_NContributors-1", "Vertex_z_vs_MultTPC-1", "Vertex_z_vs_NContributors-1", "CentFT0M_vs_CentNTPV-1", "CentRun2V0M_vs_CentRun2SPDTracklets-1", "CentRun2V0M_vs_NContributors-1", "TrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange-1", "TrackOccupancyInTimeRange_vs_MultTPC-1", "TrackOccupancyInTimeRange_vs_Vertex_z-1"}, "book (1) or do not book (0) this QA 2D event histogram"};
   Configurable<bool> cfFillQAParticleHistograms2D{"cfFillQAParticleHistograms2D", false, "if false, all QA 2D particle histograms are not filled. if true, only the ones for which fBookQAParticleHistograms2D[...] is true, are filled"};
   Configurable<vector<string>> cfBookQAParticleHistograms2D{"cfBookQAParticleHistograms2D", {"Pt_vs_dcaXY-1"}, "book (1) or do not book (0) this QA 2D particle histogram"};
 } cf_qa;
@@ -131,6 +131,12 @@ struct : ConfigurableGroup {
 // *) Multiparticle correlations:
 struct : ConfigurableGroup {
   Configurable<bool> cfCalculateCorrelations{"cfCalculateCorrelations", false, "calculate or not multiparticle correlations"};
+  Configurable<bool> cfCalculateCorrelationsAsFunctionOfIntegrated{"cfCalculateCorrelationsAsFunctionOfIntegrated", false, "calculate or not correlations as a function of integrated"};
+  Configurable<bool> cfCalculateCorrelationsAsFunctionOfMultiplicity{"cfCalculateCorrelationsAsFunctionOfMultiplicity", false, "calculate or not correlations as a function of multiplicity"};
+  Configurable<bool> cfCalculateCorrelationsAsFunctionOfCentrality{"cfCalculateCorrelationsAsFunctionOfCentrality", false, "calculate or not correlations as a function of centrality"};
+  Configurable<bool> cfCalculateCorrelationsAsFunctionOfPt{"cfCalculateCorrelationsAsFunctionOfPt", false, "calculate or not correlations as a function of pt"};
+  Configurable<bool> cfCalculateCorrelationsAsFunctionOfEta{"cfCalculateCorrelationsAsFunctionOfEta", false, "calculate or not correlations as a function of eta"};
+  Configurable<bool> cfCalculateCorrelationsAsFunctionOfOccupancy{"cfCalculateCorrelationsAsFunctionOfOccupancy", false, "calculate or not correlations as a function of occupancy"};
 } cf_mupa;
 
 // *) Test0:
@@ -176,7 +182,7 @@ struct : ConfigurableGroup {
   Configurable<bool> cfUseInternalValidation{"cfUseInternalValidation", false, "perform internal validation using flow analysis on-the-fly"};
   Configurable<bool> cfInternalValidationForceBailout{"cfInternalValidationForceBailout", false, "force bailout (use only locally, since there is no graceful exit (yet))"};
   Configurable<unsigned int> cfnEventsInternalValidation{"cfnEventsInternalValidation", 0, "number of events simulated on-the-fly for internal validation"};
-  Configurable<string> cfHarmonicsOptionInternalValidation{"cfHarmonicsOptionInternalValidation", "constant", "for internal validation, set whether flow amplitudes are \"constant\" or \"correlared\""};
+  Configurable<string> cfHarmonicsOptionInternalValidation{"cfHarmonicsOptionInternalValidation", "constant", "for internal validation, set whether flow amplitudes are \"constant\" or \"correlated\""};
   Configurable<bool> cfRescaleWithTheoreticalInput{"cfRescaleWithTheoreticalInput", false, "if kTRUE, all correlators are rescaled with theoretical input, so that all results in profiles are 1"};
   Configurable<vector<float>> cfInternalValidationAmplitudes{"cfInternalValidationAmplitudes", {0.01, 0.02, 0.03, 0.04}, "{v1, v2, v3, v4, ...} + has an effect only in combination with cfHarmonicsOptionInternalValidation = \"constant\". Max number of vn's is gMaxHarmonic."};
   Configurable<vector<float>> cfInternalValidationPlanes{"cfInternalValidationPlanes", {0.0, 0.0, 0.0, 0.0}, "{Psi1, Psi2, Psi3, Psi4, ...} + has an effect only in combination with cfHarmonicsOptionInternalValidation = \"constant\". Max number of Psin's is gMaxHarmonic."};
