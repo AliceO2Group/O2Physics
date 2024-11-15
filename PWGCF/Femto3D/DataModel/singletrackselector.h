@@ -497,16 +497,16 @@ DECLARE_SOA_TABLE(SinglePIDEls, "AOD", "SINGLEPIDEL",
                   singletrackselector::TPCNSigmaEl<singletrackselector::StoredTPCNSigmaEl>);
 
 DECLARE_SOA_TABLE(SinglePIDsITSPi, "AOD", "STSPIDITSPI",
-                  singletrackselector::StoredITSNSigmaPi,
-                  singletrackselector::ITSNSigmaPi<singletrackselector::StoredITSNSigmaPi>);
+                  singletrackselector::StoredITSNSigmaPi_v1,
+                  singletrackselector::ITSNSigmaPi<singletrackselector::StoredITSNSigmaPi_v1>);
 
 DECLARE_SOA_TABLE(SinglePIDsITSKa, "AOD", "STSPIDITSKA",
-                  singletrackselector::StoredITSNSigmaKa,
-                  singletrackselector::ITSNSigmaKa<singletrackselector::StoredITSNSigmaKa>);
+                  singletrackselector::StoredITSNSigmaKa_v1,
+                  singletrackselector::ITSNSigmaKa<singletrackselector::StoredITSNSigmaKa_v1>);
 
 DECLARE_SOA_TABLE(SinglePIDsITSPr, "AOD", "STSPIDITSPR",
-                  singletrackselector::StoredITSNSigmaPr,
-                  singletrackselector::ITSNSigmaPr<singletrackselector::StoredITSNSigmaPr>);
+                  singletrackselector::StoredITSNSigmaPr_v1,
+                  singletrackselector::ITSNSigmaPr<singletrackselector::StoredITSNSigmaPr_v1>);
 
 namespace singletrackselector
 {
