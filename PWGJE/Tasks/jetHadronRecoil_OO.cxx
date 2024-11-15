@@ -12,6 +12,10 @@
 /// \brief: hadron-jet correlation analysis for OO collisions
 /// \author: Kotliarov Artem <artem.kotliarov@cern.ch>
 
+#include <string>
+#include <tuple>
+#include <vector>
+
 #include "TRandom3.h"
 #include "TVector2.h"
 
