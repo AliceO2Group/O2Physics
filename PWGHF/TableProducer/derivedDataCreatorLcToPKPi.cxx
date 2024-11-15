@@ -27,10 +27,12 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/DataModel/DerivedTables.h"
+#include "PWGHF/Utils/utilsDerivedData.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::analysis::hf_derived;
 
 /// Writes the full information in an output TTree
 struct HfDerivedDataCreatorLcToPKPi {
@@ -114,14 +116,6 @@ struct HfDerivedDataCreatorLcToPKPi {
       LOGP(fatal, "Only one process function can be enabled at a time.");
     }
   }
-
-  template <typename T>
-  void reserveTable(T& table, const Configurable<bool>& enabled, const uint64_t size)
-  {
-    if (enabled.value) {
-      table.reserve(size);
-    }
-  };
 
   template <bool isMC, typename T>
   // void fillTablesCollision(const T& collision, int isEventReject, int runNumber)
