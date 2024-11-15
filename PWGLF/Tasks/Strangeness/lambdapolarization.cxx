@@ -325,7 +325,7 @@ struct lambdapolarization {
       return false;
     if (candidate.v0cosPA() < cfgv0CosPA)
       return false;
-    if (candidate.dcaV0daughters() > cfgDCAV0Dau)
+    if (std::abs(candidate.dcaV0daughters()) > cfgDCAV0Dau)
       return false;
     if (candidate.pt() < cfgV0PtMin)
       return false;
