@@ -17,6 +17,8 @@
 #include <Framework/AnalysisDataModel.h>
 
 #include <vector>
+#include <string>
+#include <utility>
 
 #include "EventFiltering/Zorro.h"
 #include "EventFiltering/ZorroSummary.h"
