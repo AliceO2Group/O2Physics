@@ -673,8 +673,16 @@ struct HfCorrelatorDMesonPairs {
 
   PROCESS_SWITCH(HfCorrelatorDMesonPairs, processMcRec, "Process Mc reco mode", false);
 
-  void processMcGen(aod::McCollision const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions, McParticlesPlus2Prong const& mcParticles)
+  void processMcGen(aod::McCollision const&, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions>> const& collisions, McParticlesPlus2Prong const& mcParticles)
   {
+    int numPvContributorsGen{0};
+    for (const auto& collision : collisions) { // loop over reco collisions associated to this gen collision
+      int numPvContributors = collision.numContrib();
+
+      if (numPvContributors > numPvContributorsGen) { // we take the associated reconstructed collision with higher number of PV contributors
+        numPvContributorsGen = numPvContributors;
+      }
+    }
     // Get counters per event
     int nDevent = 0, nDbarevent = 0, nDDbarevent = 0, nDorDbarevent = 0;
     for (const auto& particle : mcParticles) {
@@ -758,12 +766,8 @@ struct HfCorrelatorDMesonPairs {
         registry.fill(HIST("hStatusSinglePartMcGen"), 4);
       }
 
-      for (auto const& collision : collisions) {
-        if (collision.has_mcCollision()) {
-          registry.fill(HIST("hPtVsYVsNContribMcGen"), particle1.pt(), particle1.y(), collision.numContrib());
-          registry.fill(HIST("hNContribMcGen"), collision.numContrib());
-        }
-      }
+      registry.fill(HIST("hPtVsYVsNContribMcGen"), particle1.pt(), particle1.y(), numPvContributorsGen);
+      registry.fill(HIST("hNContribMcGen"), numPvContributorsGen);
 
       for (auto particle2 = particle1 + 1; particle2 != mcParticles.end(); ++particle2) {
         // check if the particle is D0 or D0bar
