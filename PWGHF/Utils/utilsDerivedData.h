@@ -16,7 +16,13 @@
 #ifndef PWGHF_UTILS_UTILSDERIVEDDATA_H_
 #define PWGHF_UTILS_UTILSDERIVEDDATA_H_
 
-#include <Framework/Core/include/Framework/Configurable.h>
+#include <Framework/Configurable.h>
+
+// Macro to set nSigma for prong _id_ with PID hypothesis _hyp_
+#define SETNSIGMAPRONG(_array_, _candidate_, _id_, _hyp_) \
+  _array_[0] = _candidate_.nSigTpc##_hyp_##_id_(); \
+  _array_[1] = _candidate_.nSigTof##_hyp_##_id_(); \
+  _array_[2] = _candidate_.tpcTofNSigma##_hyp_##_id_();
 
 namespace o2::analysis::hf_derived
 {

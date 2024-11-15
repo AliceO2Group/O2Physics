@@ -28,10 +28,12 @@
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/DataModel/DerivedTables.h"
 #include "PWGHF/Utils/utilsDerivedData.h"
+#include "PWGHF/Utils/utilsPid.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::aod::pid_tpc_tof_utils;
 using namespace o2::analysis::hf_derived;
 
 /// Writes the full information in an output TTree
@@ -199,33 +201,17 @@ struct HfDerivedDataCreatorD0ToKPi {
         y);
     }
     if (fillCandidatePar) {
-      float tpcNSigmaPiExpPi{}, tofNSigmaPiExpPi{}, tpcTofNSigmaPiExpPi{}, tpcNSigmaKaExpPi{}, tofNSigmaKaExpPi{}, tpcTofNSigmaKaExpPi{}, tpcNSigmaPiExpKa{}, tofNSigmaPiExpKa{}, tpcTofNSigmaPiExpKa{}, tpcNSigmaKaExpKa{}, tofNSigmaKaExpKa{}, tpcTofNSigmaKaExpKa{};
+      std::array<std::array<std::array<float, 3>, 2>, 2> sigmas; // PID nSigma [Expected][Hypothesis][TPC/TOF/TPC+TOF]
       if (candFlag == 0) {
-        tpcNSigmaPiExpPi = candidate.nSigTpcPi0();
-        tofNSigmaPiExpPi = candidate.nSigTofPi0();
-        tpcTofNSigmaPiExpPi = candidate.tpcTofNSigmaPi0();
-        tpcNSigmaKaExpPi = candidate.nSigTpcKa0();
-        tofNSigmaKaExpPi = candidate.nSigTofKa0();
-        tpcTofNSigmaKaExpPi = candidate.tpcTofNSigmaKa0();
-        tpcNSigmaPiExpKa = candidate.nSigTpcPi1();
-        tofNSigmaPiExpKa = candidate.nSigTofPi1();
-        tpcTofNSigmaPiExpKa = candidate.tpcTofNSigmaPi1();
-        tpcNSigmaKaExpKa = candidate.nSigTpcKa1();
-        tofNSigmaKaExpKa = candidate.nSigTofKa1();
-        tpcTofNSigmaKaExpKa = candidate.tpcTofNSigmaKa1();
+        SETNSIGMAPRONG(sigmas[HfProngSpecies::Pion][HfProngSpecies::Pion], candidate, 0, Pi)
+        SETNSIGMAPRONG(sigmas[HfProngSpecies::Pion][HfProngSpecies::Kaon], candidate, 0, Ka)
+        SETNSIGMAPRONG(sigmas[HfProngSpecies::Kaon][HfProngSpecies::Pion], candidate, 1, Pi)
+        SETNSIGMAPRONG(sigmas[HfProngSpecies::Kaon][HfProngSpecies::Kaon], candidate, 1, Ka)
       } else if (candFlag == 1) {
-        tpcNSigmaPiExpPi = candidate.nSigTpcPi1();
-        tofNSigmaPiExpPi = candidate.nSigTofPi1();
-        tpcTofNSigmaPiExpPi = candidate.tpcTofNSigmaPi1();
-        tpcNSigmaKaExpPi = candidate.nSigTpcKa1();
-        tofNSigmaKaExpPi = candidate.nSigTofKa1();
-        tpcTofNSigmaKaExpPi = candidate.tpcTofNSigmaKa1();
-        tpcNSigmaPiExpKa = candidate.nSigTpcPi0();
-        tofNSigmaPiExpKa = candidate.nSigTofPi0();
-        tpcTofNSigmaPiExpKa = candidate.tpcTofNSigmaPi0();
-        tpcNSigmaKaExpKa = candidate.nSigTpcKa0();
-        tofNSigmaKaExpKa = candidate.nSigTofKa0();
-        tpcTofNSigmaKaExpKa = candidate.tpcTofNSigmaKa0();
+        SETNSIGMAPRONG(sigmas[HfProngSpecies::Pion][HfProngSpecies::Pion], candidate, 1, Pi)
+        SETNSIGMAPRONG(sigmas[HfProngSpecies::Pion][HfProngSpecies::Kaon], candidate, 1, Ka)
+        SETNSIGMAPRONG(sigmas[HfProngSpecies::Kaon][HfProngSpecies::Pion], candidate, 0, Pi)
+        SETNSIGMAPRONG(sigmas[HfProngSpecies::Kaon][HfProngSpecies::Kaon], candidate, 0, Ka)
       }
       rowCandidatePar(
         candidate.chi2PCA(),
@@ -241,18 +227,18 @@ struct HfDerivedDataCreatorD0ToKPi {
         candidate.impactParameter1(),
         candidate.impactParameterNormalised0(),
         candidate.impactParameterNormalised1(),
-        tpcNSigmaPiExpPi,
-        tofNSigmaPiExpPi,
-        tpcTofNSigmaPiExpPi,
-        tpcNSigmaKaExpPi,
-        tofNSigmaKaExpPi,
-        tpcTofNSigmaKaExpPi,
-        tpcNSigmaPiExpKa,
-        tofNSigmaPiExpKa,
-        tpcTofNSigmaPiExpKa,
-        tpcNSigmaKaExpKa,
-        tofNSigmaKaExpKa,
-        tpcTofNSigmaKaExpKa,
+        sigmas[HfProngSpecies::Pion][HfProngSpecies::Pion][0],
+        sigmas[HfProngSpecies::Pion][HfProngSpecies::Pion][1],
+        sigmas[HfProngSpecies::Pion][HfProngSpecies::Pion][2],
+        sigmas[HfProngSpecies::Pion][HfProngSpecies::Kaon][0],
+        sigmas[HfProngSpecies::Pion][HfProngSpecies::Kaon][1],
+        sigmas[HfProngSpecies::Pion][HfProngSpecies::Kaon][2],
+        sigmas[HfProngSpecies::Kaon][HfProngSpecies::Pion][0],
+        sigmas[HfProngSpecies::Kaon][HfProngSpecies::Pion][1],
+        sigmas[HfProngSpecies::Kaon][HfProngSpecies::Pion][2],
+        sigmas[HfProngSpecies::Kaon][HfProngSpecies::Kaon][0],
+        sigmas[HfProngSpecies::Kaon][HfProngSpecies::Kaon][1],
+        sigmas[HfProngSpecies::Kaon][HfProngSpecies::Kaon][2],
         candidate.maxNormalisedDeltaIP(),
         candidate.impactParameterProduct());
     }

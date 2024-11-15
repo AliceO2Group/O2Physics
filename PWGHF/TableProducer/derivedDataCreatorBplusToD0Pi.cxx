@@ -28,10 +28,12 @@
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/DataModel/DerivedTables.h"
 #include "PWGHF/Utils/utilsDerivedData.h"
+#include "PWGHF/Utils/utilsPid.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::aod::pid_tpc_tof_utils;
 using namespace o2::analysis::hf_derived;
 
 /// Writes the full information in an output TTree
@@ -88,7 +90,7 @@ struct HfDerivedDataCreatorBplusToD0Pi {
   using SelectedCandidatesMcMl = soa::Filtered<soa::Join<aod::HfCandBplus, aod::HfCandBplusMcRec, aod::HfSelBplusToD0Pi, aod::HfMlBplusToD0Pi>>;
   using MatchedGenCandidatesMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCandBplusMcGen>>;
   using TypeMcCollisions = aod::McCollisions;
-  using THfCandDaughters = aod::HfCand2Prong;
+  using THfCandDaughters = aod::HfCand2ProngWPid;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_bplus::isSelBplusToD0Pi >= 1;
   Filter filterMcGenMatching = nabs(aod::hf_cand_bplus::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_bplus::DecayType::BplusToD0Pi));
@@ -207,24 +209,36 @@ struct HfDerivedDataCreatorBplusToD0Pi {
         candidate.impactParameterProduct());
     }
     if (fillCandidateParD0) {
+      std::array<std::array<std::array<float, 3>, 2>, 2> sigmas; // PID nSigma [Expected][Hypothesis][TPC/TOF/TPC+TOF]
+      if (candFlag == 0) {
+        SETNSIGMAPRONG(sigmas[HfProngSpecies::Pion][HfProngSpecies::Pion], prongCharm, 0, Pi)
+        SETNSIGMAPRONG(sigmas[HfProngSpecies::Pion][HfProngSpecies::Kaon], prongCharm, 0, Ka)
+        SETNSIGMAPRONG(sigmas[HfProngSpecies::Kaon][HfProngSpecies::Pion], prongCharm, 1, Pi)
+        SETNSIGMAPRONG(sigmas[HfProngSpecies::Kaon][HfProngSpecies::Kaon], prongCharm, 1, Ka)
+      } else if (candFlag == 1) {
+        SETNSIGMAPRONG(sigmas[HfProngSpecies::Pion][HfProngSpecies::Pion], prongCharm, 1, Pi)
+        SETNSIGMAPRONG(sigmas[HfProngSpecies::Pion][HfProngSpecies::Kaon], prongCharm, 1, Ka)
+        SETNSIGMAPRONG(sigmas[HfProngSpecies::Kaon][HfProngSpecies::Pion], prongCharm, 0, Pi)
+        SETNSIGMAPRONG(sigmas[HfProngSpecies::Kaon][HfProngSpecies::Kaon], prongCharm, 0, Ka)
+      }
       rowCandidateParD0(
         prongCharm.cpa(),
         prongCharm.decayLength(),
         prongCharm.impactParameter0(),
         prongCharm.impactParameter1(),
         prongCharm.impactParameterProduct(),
-        prongCharm.nSigTpcPiExpPi(),
-        prongCharm.nSigTofPiExpPi(),
-        prongCharm.nSigTpcTofPiExpPi(),
-        prongCharm.nSigTpcKaExpPi(),
-        prongCharm.nSigTofKaExpPi(),
-        prongCharm.nSigTpcTofKaExpPi(),
-        prongCharm.nSigTpcPiExpKa(),
-        prongCharm.nSigTofPiExpKa(),
-        prongCharm.nSigTpcTofPiExpKa(),
-        prongCharm.nSigTpcKaExpKa(),
-        prongCharm.nSigTofKaExpKa(),
-        prongCharm.nSigTpcTofKaExpKa());
+        sigmas[HfProngSpecies::Pion][HfProngSpecies::Pion][0],
+        sigmas[HfProngSpecies::Pion][HfProngSpecies::Pion][1],
+        sigmas[HfProngSpecies::Pion][HfProngSpecies::Pion][2],
+        sigmas[HfProngSpecies::Pion][HfProngSpecies::Kaon][0],
+        sigmas[HfProngSpecies::Pion][HfProngSpecies::Kaon][1],
+        sigmas[HfProngSpecies::Pion][HfProngSpecies::Kaon][2],
+        sigmas[HfProngSpecies::Kaon][HfProngSpecies::Pion][0],
+        sigmas[HfProngSpecies::Kaon][HfProngSpecies::Pion][1],
+        sigmas[HfProngSpecies::Kaon][HfProngSpecies::Pion][2],
+        sigmas[HfProngSpecies::Kaon][HfProngSpecies::Kaon][0],
+        sigmas[HfProngSpecies::Kaon][HfProngSpecies::Kaon][1],
+        sigmas[HfProngSpecies::Kaon][HfProngSpecies::Kaon][2]);
     }
     if (fillCandidateParE) {
       rowCandidateParE(

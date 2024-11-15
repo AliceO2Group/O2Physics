@@ -17,13 +17,9 @@
 #ifndef PWGHF_UTILS_UTILSPID_H_
 #define PWGHF_UTILS_UTILSPID_H_
 
-namespace o2::aod
+namespace o2::aod::pid_tpc_tof_utils
 {
-
-namespace pid_tpc_tof_utils
-{
-
-enum HfProngSpecies : int { Pion = 0,
+enum HfProngSpecies : uint8_t { Pion = 0,
                             Kaon,
                             Proton };
 
@@ -100,9 +96,6 @@ void fillProngPid(TRK const& track, ROW& rowPid)
   // fill candidate prong PID rows
   rowPid(nSigTpc, nSigTof);
 }
-
-} // namespace pid_tpc_tof_utils
-
-} // namespace o2::aod
+} // namespace o2::aod::pid_tpc_tof_utils
 
 #endif // PWGHF_UTILS_UTILSPID_H_
