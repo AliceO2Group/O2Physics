@@ -9,6 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include <algorithm>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "CCDB/BasicCCDBManager.h"
@@ -18,8 +20,6 @@
 
 #include "TPDGCode.h"
 #include "RecoDecay.h"
-
-#include <algorithm>
 
 using namespace o2;
 using namespace o2::framework;
