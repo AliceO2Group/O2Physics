@@ -43,7 +43,6 @@ struct HfTaskXicToXiPiPi {
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_xic_to_xi_pi_pi::vecBinsPt}, "pT bin limits"};
   // MC checks
   Configurable<bool> checkDecayTypeMc{"checkDecayTypeMc", false, "Flag to enable DecayType histogram"};
-  // +++++++++++++++++++ Jaeyoon Nov 11th
   // THnSparese for ML selection check
   Configurable<bool> enableTHn{"enableTHn", false, "Fill THnSparse for Xic"};
   ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {400, 0., 40.}, ""};
@@ -55,8 +54,6 @@ struct HfTaskXicToXiPiPi {
   ConfigurableAxis thnConfigAxisCPA{"thnConfigAxisCPA", {110, -1.1, 1.1}, ""};
   ConfigurableAxis thnConfigAxisBdtScoreBkg{"thnConfigAxisBdtScoreBkg", {100, 0., 1.}, ""};
   ConfigurableAxis thnConfigAxisBdtScoreSignal{"thnConfigAxisBdtScoreSignal", {100, 0., 1.}, ""};
-  // +++++++++++++++++++ Jaeyoon Nov 11th
-
   // Axis
   ConfigurableAxis binsDecLength{"binsDecLength", {200, 0., 0.5}, ""};
   ConfigurableAxis binsErrDecLength{"binsErrDecLength", {100, 0., 1.}, ""};
@@ -78,59 +75,13 @@ struct HfTaskXicToXiPiPi {
 
   void init(InitContext const&)
   {
-    if (!doprocessWithKFParticle && !doprocessWithDCAFitter && !doprocessWithDCAFitterAndML && !doprocessWithKFParticleAndML && !doprocessMcWithKFParticle && !doprocessMcWithDCAFitter && !doprocessMcWithDCAFitterAndML && !doprocessMcWithKFParticleAndML) {
-      LOGF(fatal, "No process function enabled. Please enable one.");
+    std::array<bool, 8> doprocess{doprocessWithDCAFitter, doprocessWithKFParticle, doprocessWithDCAFitterAndML, doprocessWithKFParticleAndML, doprocessMcWithDCAFitter, doprocessMcWithKFParticle, doprocessMcWithDCAFitterAndML, doprocessMcWithKFParticleAndML};
+    if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) == 0) {
+      LOGP(fatal, "No process function enabled. Please enable one.");
     }
-    if (doprocessWithKFParticle && doprocessWithDCAFitter) {
-      LOGF(fatal, "Cannot enable doprocessWithKFParticle and doprocessWithDCAFitter at the same time. Please choose one.");
+    if((std::accumulate(doprocess.begin(), doprocess.end(), 0)) > 1) {
+      LOGP(fatal, "Cannot enable more than one process function at the same time. Please choose one.");
     }
-    if (doprocessMcWithKFParticle && doprocessMcWithDCAFitter) {
-      LOGF(fatal, "Cannot enable doprocessMcWithKFParticle and doprocessMcWithDCAFitter at the same time. Please choose one.");
-    }
-    if (doprocessWithKFParticle && doprocessMcWithDCAFitter) {
-      LOGF(fatal, "Cannot enable doprocessWithKFParticle and doprocessMcWithDCAFitter at the same time. Please choose one.");
-    }
-    if (doprocessWithDCAFitter && doprocessMcWithKFParticle) {
-      LOGF(fatal, "Cannot enable doprocessWithDCAFitter and doprocessMcWithKFParticle at the same time. Please choose one.");
-    }
-    // +++++++++ Jaeyoon Nov 12
-    if (doprocessWithKFParticleAndML && doprocessWithDCAFitterAndML){
-      LOGF(fatal, "Cannot enable doprocessWithKFParticleAndML and doprocessWithDCAFitterAndML at the same time. Please choose one.");
-    }
-    if(doprocessMcWithKFParticleAndML && doprocessMcWithDCAFitterAndML){
-      LOGF(fatal, "Cannot enable doprocessMcWithKFParticleAndML and doprocessMcWithDCAFitterAndML at the same time. Please choose one.");
-    }
-    if(doprocessWithKFParticleAndML && doprocessMcWithDCAFitterAndML){
-      LOGF(fatal, "Cannot enable doprocessWithKFParticleAndML and doprocessMcWithDCAFitterAndML at the same time. Please choose one.");
-    }
-    if(doprocessWithDCAFitterAndML && doprocessMcWithKFParticleAndML){
-      LOGF(fatal, "Cannot enable doprocessWithDCAFitterAndML and doprocessMcWithKFParticleAndML at the same time. Please choose one.");
-    }
-    if(doprocessWithKFParticle && doprocessWithDCAFitterAndML){
-      LOGF(fatal, "Cannot enable doprocessWithKFParticle and doprocessWithDCAFitterAndML at the same time. Please choose one.");
-    }
-    if(doprocessWithKFParticle && doprocessMcWithDCAFitterAndML){
-      LOGF(fatal, "Cannot enable doprocessWithKFParticle and doprocessMcWithDCAFitterAndML at the same time. Please choose one.");
-    }
-    if(doprocessWithDCAFitterAndML && doprocessMcWithKFParticle){
-      LOGF(fatal, "Cannot enable doprocessWithDCAFitterAndML and doprocessMcWithKFParticle at the same time. Please choose one.");
-    }
-    if(doprocessMcWithKFParticle && doprocessMcWithDCAFitterAndML){
-      LOGF(fatal, "Cannot enable doprocessMcWithKFParticle and doprocessMcWithDCAFitterAndML at the same time. Please choose one.");
-    }
-    if(doprocessWithKFParticleAndML && doprocessWithDCAFitter){
-      LOGF(fatal, "Cannot enable doprocessWithKFParticleAndML and doprocessWithDCAFitter at the same time. Please choose one.");
-    }
-    if(doprocessWithKFParticleAndML && doprocessMcWithDCAFitter){
-      LOGF(fatal, "Cannot enable doprocessWithKFParticleAndML and doprocessMcWithDCAFitter at the same time. Please choose one.");
-    }
-    if(doprocessWithDCAFitter && doprocessMcWithKFParticleAndML){
-      LOGF(fatal, "Cannot enable doprocessWithDCAFitter and doprocessMcWithKFParticleAndML at the same time. Please choose one.");
-    }
-    if(doprocessMcWithKFParticleAndML && doprocessMcWithDCAFitter){
-      LOGF(fatal, "Cannot enable doprocessMcWithKFParticleAndML and doprocessMcWithDCAFitter at the same time. Please choose one.");
-    }
-    // +++++++++ Jaeyoon Nov 12
 
     static const AxisSpec axisMassXic = {300, 1.8, 3.0, "inv. mass (GeV/#it{c}^{2})"};
     static const AxisSpec axisMassXiRes = {300, 1.0, 2.0, "inv. mass (GeV/#it{c}^{2})"};
@@ -288,7 +239,6 @@ struct HfTaskXicToXiPiPi {
       }
     }
 
-    // +++++++++++++ Jaeyoon Nov 11th
     if(enableTHn){
       const AxisSpec thnAxisPt{thnConfigAxisPt, "#it{p}_{T} (GeV/#it{c})"};
       const AxisSpec thnAxisMass{thnConfigAxisMass, "inv. mass #Xi^{#mp} #pi^{#pm} #pi^{#pm}"};
@@ -307,9 +257,28 @@ struct HfTaskXicToXiPiPi {
         registry.add("hXicToXiPiPiVars", "THnSparse for Xic", HistType::kTHnSparseF, {thnAxisPt, thnAxisMass, thnAxisChi2PCA, thnAxisDecLength, thnAxisDecLengthXY, thnAxisCPA});
       }
     }	// enable THnSpare
-    // +++++++++++++ Jaeyoon Nov 11th
 
   }	// end init
+
+  /// Fill THnSpare depending on whether ML selection is used 
+  // \param candidate is candidate
+  template <bool useMl, typename T1> 
+  void fillTHnSparse(const T1& candidate)
+  {
+    if constexpr (useMl) {
+      // with ML information
+      double outputBkg = -99.;
+      double outputPrompt = -99.;
+      if(candidate.mlProbXicToXiPiPi().size() > 0){
+        outputBkg = candidate.mlProbXicToXiPiPi()[0];
+        outputPrompt = candidate.mlProbXicToXiPiPi()[1];
+      }
+      registry.get<THnSparse>(HIST("hXicToXiPiPiVarsWithML"))->Fill(candidate.pt(), candidate.invMassXic(), candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa(), outputBkg, outputPrompt);
+    } else {
+      // without ML information
+      registry.get<THnSparse>(HIST("hXicToXiPiPiVars"))->Fill(candidate.pt(), candidate.invMassXic(), candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa());   
+    }
+  }
 
   /// Selection of Xic daughter in geometrical acceptance
   /// \param etaProng is the pseudorapidity of Xic prong
@@ -322,7 +291,7 @@ struct HfTaskXicToXiPiPi {
   }
 
   /// Function to fill histograms
-  template <bool useKfParticle, bool useMl, typename TCanTable>	// +++++++++++++ Jaeyoon Nov 11th
+  template <bool useKfParticle, bool useMl, typename TCanTable>
   void fillHistograms(TCanTable const& candidates)
   {
     for (const auto& candidate : candidates) {
@@ -374,29 +343,19 @@ struct HfTaskXicToXiPiPi {
         registry.fill(HIST("hChi2geoLam"), candidate.kfV0Chi2(), ptCandXic);
       }
 
-      // +++++++++++++ Jaeyoon Nov 11th
       // fill THnSparse
       if(enableTHn){
         if constexpr (useMl) {
-          // with ML information
-          double outputBkg = -99.;
-          double outputPrompt = -99.;
-          if(candidate.mlProbXicToXiPiPi().size() > 0){
-            outputBkg = candidate.mlProbXicToXiPiPi()[0];
-            outputPrompt = candidate.mlProbXicToXiPiPi()[1];
-          }
-          registry.get<THnSparse>(HIST("hXicToXiPiPiVarsWithML"))->Fill(candidate.pt(), candidate.invMassXic(), candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa(), outputBkg, outputPrompt);
-        } else {
-          // without ML information
-          registry.get<THnSparse>(HIST("hXicToXiPiPiVars"))->Fill(candidate.pt(), candidate.invMassXic(), candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa());
-        } // useMl
-      } // enableTHn
-      // +++++++++++++ Jaeyoon Nov 11th
+          fillTHnSparse<true>(candidate);
+		} else {
+          fillTHnSparse<false>(candidate);
+        }
+      }
     } // candidate loop
   }
 
   /// Function for MC analysis and histogram filling
-  template <bool useKfParticle, bool useMl, typename TCandTable>	// +++++++++++++ Jaeyoon Nov 11th
+  template <bool useKfParticle, bool useMl, typename TCandTable>
   void fillHistogramsMc(TCandTable const& candidates,
                         soa::Join<aod::McParticles, aod::HfCandXicMcGen> const& mcParticles,
                         aod::TracksWMc const&)
@@ -506,24 +465,14 @@ struct HfTaskXicToXiPiPi {
           registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_xic_to_xi_pi_pi::DecayType::NDecayType, candidate.invMassXic(), ptCandXic);
         }
       }
-      // +++++++++++++ Jaeyoon Nov 11th
       // fill THnSparse
       if(enableTHn){
         if constexpr (useMl) {
-          // with ML information
-          double outputBkg = -99.;
-          double outputPrompt = -99.;
-          if(candidate.mlProbXicToXiPiPi().size() > 0){
-            outputBkg = candidate.mlProbXicToXiPiPi()[0];
-            outputPrompt = candidate.mlProbXicToXiPiPi()[1];
-          }
-          registry.get<THnSparse>(HIST("hXicToXiPiPiVarsWithML"))->Fill(candidate.pt(), candidate.invMassXic(), candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa(), outputBkg, outputPrompt);
+          fillTHnSparse<true>(candidate);
         } else {
-          // without ML information
-          registry.get<THnSparse>(HIST("hXicToXiPiPiVars"))->Fill(candidate.pt(), candidate.invMassXic(), candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa());
-        } // useMl      
+          fillTHnSparse<false>(candidate);
+        }
       }
-      // +++++++++++++ Jaeyoon Nov 11th
 
     } // rec
 
@@ -585,20 +534,20 @@ struct HfTaskXicToXiPiPi {
     } // gen
   }
 
+  /// Data analysis and fill histograms
   void processWithDCAFitter(soa::Filtered<soa::Join<aod::HfCandXic, aod::HfSelXicToXiPiPi>> const& candidates)
   {
-    fillHistograms<false, false>(candidates);	// +++++++++++++ Jaeyoon Nov 11th
+    fillHistograms<false, false>(candidates);	
   }
   PROCESS_SWITCH(HfTaskXicToXiPiPi, processWithDCAFitter, "Process data with DCAFitter", true);
 
   void processWithKFParticle(soa::Filtered<soa::Join<aod::HfCandXic, aod::HfCandXicKF, aod::HfSelXicToXiPiPi>> const& candidates)
   {
-    fillHistograms<true, false>(candidates);	// +++++++++++++ Jaeyoon Nov 11th
+    fillHistograms<true, false>(candidates);
   }
   PROCESS_SWITCH(HfTaskXicToXiPiPi, processWithKFParticle, "Process data with KFParticle", false);
 
-  // +++++++++++++ Jaeyoon Nov 11th
-  // Analysis and fill histogram with ML
+  /// Data analysis and fill histograms with ML
   void processWithDCAFitterAndML(soa::Filtered<soa::Join<aod::HfCandXic, aod::HfSelXicToXiPiPi, aod::HfMlXicToXiPiPi>> const& candidates)
   {
     fillHistograms<false, true>(candidates);
@@ -610,14 +559,13 @@ struct HfTaskXicToXiPiPi {
     fillHistograms<true, true>(candidates); 
   }
   PROCESS_SWITCH(HfTaskXicToXiPiPi, processWithKFParticleAndML, "Process data with KFParticle and ML approach", false);
-  // +++++++++++++ Jaeyoon Nov 11th
 
   /// MC analysis and fill histograms
   void processMcWithDCAFitter(soa::Filtered<soa::Join<aod::HfCandXic, aod::HfSelXicToXiPiPi, aod::HfCandXicMcRec>> const& candidates,
                               soa::Join<aod::McParticles, aod::HfCandXicMcGen> const& mcParticles,
                               aod::TracksWMc const& tracksWMc)
   {
-    fillHistogramsMc<false, false>(candidates, mcParticles, tracksWMc);	// +++++++++++++ Jaeyoon Nov 11th
+    fillHistogramsMc<false, false>(candidates, mcParticles, tracksWMc);	
   }
   PROCESS_SWITCH(HfTaskXicToXiPiPi, processMcWithDCAFitter, "Process MC with DCAFitter", false);
 
@@ -626,17 +574,16 @@ struct HfTaskXicToXiPiPi {
                                soa::Join<aod::McParticles, aod::HfCandXicMcGen> const& mcParticles,
                                aod::TracksWMc const& tracksWMc)
   {
-    fillHistogramsMc<true, false>(candidates, mcParticles, tracksWMc);	// +++++++++++++ Jaeyoon Nov 11th
+    fillHistogramsMc<true, false>(candidates, mcParticles, tracksWMc);	
   }
   PROCESS_SWITCH(HfTaskXicToXiPiPi, processMcWithKFParticle, "Process MC with KFParticle", false);
 
-  // +++++++++++++ Jaeyoon Nov 11th
   // MC analysis and fill histograms with ML
   void processMcWithDCAFitterAndML(soa::Filtered<soa::Join<aod::HfCandXic, aod::HfSelXicToXiPiPi, aod::HfMlXicToXiPiPi, aod::HfCandXicMcRec>> const& candidates,
                               soa::Join<aod::McParticles, aod::HfCandXicMcGen> const& mcParticles,
                               aod::TracksWMc const& tracksWMc)
   {
-    fillHistogramsMc<false, true>(candidates, mcParticles, tracksWMc);	// +++++++++++++ Jaeyoon Nov 11th
+    fillHistogramsMc<false, true>(candidates, mcParticles, tracksWMc);	
   }
   PROCESS_SWITCH(HfTaskXicToXiPiPi, processMcWithDCAFitterAndML, "Process MC with DCAFitter and ML approach", false);
 
@@ -644,10 +591,9 @@ struct HfTaskXicToXiPiPi {
                                soa::Join<aod::McParticles, aod::HfCandXicMcGen> const& mcParticles,
                                aod::TracksWMc const& tracksWMc)
   {
-    fillHistogramsMc<true, true>(candidates, mcParticles, tracksWMc);	// +++++++++++++ Jaeyoon Nov 11th
+    fillHistogramsMc<true, true>(candidates, mcParticles, tracksWMc);	
   }
   PROCESS_SWITCH(HfTaskXicToXiPiPi, processMcWithKFParticleAndML, "Process MC with KFParticle and ML approach", false);  
-  // +++++++++++++ Jaeyoon Nov 11th
 
 }; // struct
 
