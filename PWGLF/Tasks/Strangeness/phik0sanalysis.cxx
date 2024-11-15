@@ -371,7 +371,7 @@ struct phik0shortanalysis {
         return false;
       if (QA)
         eventHist.fill(HIST("hEventSelection"), 1); // sel8 collisions
-      if (std::abs(collision.posZ()) > cutzvertex)
+      if (std::abs(collision.posZ()) >= cutzvertex)
         return false;
       if (QA) {
         eventHist.fill(HIST("hEventSelection"), 2); // vertex-Z selected
@@ -1843,9 +1843,9 @@ struct phik0shortanalysis {
           continue;
         bool isPosKaon = false, isNegKaon = false;
         for (auto kDaughter2 : kDaughters2) {
-          if (kDaughter2.pdgCode() == 321 && kDaughter2.pt() >= cMinKaonPtcut)
+          if (kDaughter2.pdgCode() == 321)
             isPosKaon = true;
-          if (kDaughter2.pdgCode() == -321 && kDaughter2.pt() >= cMinKaonPtcut)
+          if (kDaughter2.pdgCode() == -321)
             isNegKaon = true;
         }
         if (!isPosKaon || !isNegKaon)
@@ -1926,9 +1926,9 @@ struct phik0shortanalysis {
           continue;
         bool isPosKaon = false, isNegKaon = false;
         for (auto kDaughter : kDaughters) {
-          if (kDaughter.pdgCode() == 321 && kDaughter.pt() >= cMinKaonPtcut)
+          if (kDaughter.pdgCode() == 321)
             isPosKaon = true;
-          if (kDaughter.pdgCode() == -321 && kDaughter.pt() >= cMinKaonPtcut)
+          if (kDaughter.pdgCode() == -321)
             isNegKaon = true;
         }
         if (!isPosKaon || !isNegKaon)
