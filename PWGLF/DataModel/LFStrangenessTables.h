@@ -22,6 +22,7 @@
 #include "Common/DataModel/Qvectors.h"
 #include "Common/DataModel/McCollisionExtra.h"
 #include "PWGLF/DataModel/EPCalibrationTables.h"
+#include "PWGLF/DataModel/SPCalibrationTables.h"
 #include "PWGUD/DataModel/UDTables.h"
 
 namespace o2::aod
@@ -221,6 +222,8 @@ DECLARE_SOA_TABLE(StraTPCQVs, "AOD", "STRATPCQVS", //! tpc Qvec
                   qvec::QvecBPosRe, qvec::QvecBPosIm, epcalibrationtable::QTPCR);
 DECLARE_SOA_TABLE(StraFT0CQVsEv, "AOD", "STRAFT0CQVSEv", //! events used to compute t0c Qvec
                   epcalibrationtable::TriggerEventEP);
+DECLARE_SOA_TABLE(StraZDCSP, "AOD", "STRAZDCSP", //! events used to compute the ZDC spectator plane
+                  spcalibrationtable::TriggerEventSP, spcalibrationtable::PsiZDCA, spcalibrationtable::PsiZDCC);
 DECLARE_SOA_TABLE(StraStamps, "AOD", "STRASTAMPS", //! information for ID-ing mag field if needed
                   bc::RunNumber, timestamp::Timestamp);
 
