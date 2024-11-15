@@ -14,8 +14,8 @@
 /// \author Rashi Gupta <rashi.gupta@cern.ch>, IIT Indore
 /// \author Ravindra Singh <ravindra.singh@cern.ch>, IIT Indore
 
-#include <boost/move/detail/meta_utils_core.hpp>
 #include "THnSparse.h"
+#include "TPDGCode.h"
 
 #include "DataFormatsEMCAL/AnalysisCluster.h"
 #include "Framework/AnalysisTask.h"
@@ -23,6 +23,7 @@
 #include "Framework/runDataProcessing.h"
 
 #include "Common/Core/PID/TPCPIDResponse.h"
+#include "Common/Core/trackUtilities.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -30,11 +31,11 @@
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
+#include "Tools/KFparticle/KFUtilities.h"
+
 #include "PWGJE/DataModel/EMCALClusters.h"
 
 #include "PWGHF/HFL/DataModel/ElectronSelectionTable.h"
-#include "Common/Core/trackUtilities.h"
-#include "Tools/KFparticle/KFUtilities.h"
 
 using namespace o2;
 using namespace o2::constants::physics;
@@ -42,7 +43,6 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 
-auto massEl = o2::constants::physics::MassElectron;
 const int etaAxisBins = 100;
 const float trackEtaAxisMin = -1.5;
 const float trackEtaAxisMax = 1.5;
@@ -70,8 +70,6 @@ const float nSigmaAxisMax = 15.;
 const int dEdxAxisBins = 480;
 const float dEdxAxisMin = 0.;
 const float dEdxAxisMax = 160.;
-const Int_t kElectronPDG = -11; // PDG code for electron
-const Int_t kPositronPDG = 11;  // PDG code for positron
 struct HfElectronSelectionWithTpcEmcal {
 
   Produces<aod::HfSelEl> electronSel;
@@ -425,12 +423,12 @@ struct HfElectronSelectionWithTpcEmcal {
           if (!selAssoTracks(pTrack)) {
             continue;
           }
-          Int_t PDGe1 = kPositronPDG;
-          Int_t PDGe2 = kPositronPDG;
+          Int_t PDGe1 = kElectron;
+          Int_t PDGe2 = kElectron;
           if (matchTrack.sign() > 0)
-            PDGe1 = kElectronPDG;
+            PDGe1 = kPositron;
           if (pTrack.sign() > 0)
-            PDGe2 = kElectronPDG;
+            PDGe2 = kPositron;
           KFPTrack kfpTrack = createKFPTrackFromTrack(matchTrack);
           KFPTrack kfpAssociatedTrack = createKFPTrackFromTrack(pTrack);
           KFParticle KFTrack(kfpTrack, PDGe1);
@@ -441,15 +439,15 @@ struct HfElectronSelectionWithTpcEmcal {
 
           Int_t ndf = KFNonHfe.GetNDF();
           Double_t chi2recg = KFNonHfe.GetChi2() / ndf;
-          if (ndf < 1.0)
+          if (ndf < 1.0) {
             continue;
+          }
 
-          if (std::sqrt(std::abs(chi2recg)) > chiSquareMax)
+          if (std::sqrt(std::abs(chi2recg)) > chiSquareMax) {
             continue;
-          std::array<float, 3> pEle{pTrack.pVector()};
-          std::array<float, 3> pAssoEl{matchTrack.pVector()};
-          // find invariant mass
-          invMassElectron = RecoDecay::m(std::array{pEle, pAssoEl}, std::array{massEl, massEl});
+          } 
+
+          invMassElectron = RecoDecay::m(std::array{pTrack.pVector(), matchTrack.pVector()}, std::array{MassElectron, MassElectron});
 
           // for like charge
           if (pTrack.sign() == matchTrack.sign()) {
