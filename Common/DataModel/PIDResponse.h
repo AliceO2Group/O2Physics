@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 ///
-/// \file   PIDResponse.h
+/// \file   PIDResponseTPC.h
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
 /// \brief  Set of tables, tasks and utilities to provide the interface between
 ///         the analysis data model and the PID response
