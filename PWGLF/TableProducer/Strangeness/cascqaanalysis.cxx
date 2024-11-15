@@ -16,6 +16,9 @@
 /// \modified by Roman Nepeivoda (roman.nepeivoda@cern.ch)
 /// \since June 1, 2023
 
+#include <algorithm>
+#include <vector>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -29,8 +32,6 @@
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "PWGLF/Utils/inelGt.h"
 #include "PWGLF/DataModel/mcCentrality.h"
-#include <algorithm>
-#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
