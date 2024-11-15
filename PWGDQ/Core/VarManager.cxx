@@ -358,6 +358,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kMultNTracksTPCOnly] = "";
   fgVariableNames[kMultNTracksITSTPC] = "# ITS-TPC tracks in PV";
   fgVariableUnits[kMultNTracksITSTPC] = "";
+  fgVariableNames[kNoCollInTimeRangeStandard] = "track occupancy in TPC drift standart time";
+  fgVariableUnits[kNoCollInTimeRangeStandard] = "";
   fgVariableNames[kTrackOccupancyInTimeRange] = "track occupancy in TPC drift time (PV tracks)";
   fgVariableUnits[kTrackOccupancyInTimeRange] = "";
   fgVariableNames[kMultAllTracksITSTPC] = "# ITS-TPC tracks";
@@ -755,6 +757,8 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kS31A] = "";
   fgVariableNames[kM11REF] = "M_{11}^{REF} ";
   fgVariableUnits[kM11REF] = "";
+  fgVariableNames[kM11REFetagap] = "M_{11}^{REF}-etagap ";
+  fgVariableUnits[kM11REFetagap] = "";
   fgVariableNames[kM01POI] = "M^{'}_{01}^{POI} ";
   fgVariableUnits[kM01POI] = "";
   fgVariableNames[kM1111REF] = "M_{1111}^{REF} ";
@@ -765,8 +769,16 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kCORR2REF] = "";
   fgVariableNames[kCORR2REFw] = "<2w> ";
   fgVariableUnits[kCORR2REFw] = "";
+  fgVariableNames[kCORR2REFsquared] = "<M11*2^2> ";
+  fgVariableUnits[kCORR2REFsquared] = "";
   fgVariableNames[kCORR2REFsquaredw] = "<M11*2^2> ";
   fgVariableUnits[kCORR2REFsquaredw] = "";
+  fgVariableNames[kCORR2REFetagap] = "<2-etagap> ";
+  fgVariableUnits[kCORR2REFetagap] = "";
+  fgVariableNames[kCORR2REFetagapw] = "<2w-etagap> ";
+  fgVariableUnits[kCORR2REFetagapw] = "";
+  fgVariableNames[kCORR2REFetagapsquaredw] = "<M11*2^2-etagap> ";
+  fgVariableUnits[kCORR2REFetagapsquaredw] = "";
   fgVariableNames[kCORR2POI] = "<2'> ";
   fgVariableUnits[kCORR2POI] = "";
   fgVariableNames[kCORR2POIw] = "<2'w> ";
