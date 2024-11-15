@@ -445,7 +445,7 @@ struct HfElectronSelectionWithTpcEmcal {
 
           if (std::sqrt(std::abs(chi2recg)) > chiSquareMax) {
             continue;
-          } 
+          }
 
           invMassElectron = RecoDecay::m(std::array{pTrack.pVector(), matchTrack.pVector()}, std::array{MassElectron, MassElectron});
 
