@@ -200,6 +200,10 @@ struct sigma0builder {
     if ((lambda.v0Type() == 0) || (gamma.v0Type() == 0))
       return false;
 
+    // Checking if both V0s are made of the very same tracks
+    if ((gamma.posTrackExtraId() == lambda.posTrackExtraId()) || (gamma.negTrackExtraId() == lambda.negTrackExtraId()) || (gamma.posTrackExtraId() == lambda.negTrackExtraId()) || (gamma.negTrackExtraId() == lambda.posTrackExtraId()) || (gamma.posTrackExtraId() == lambda.negTrackExtraId()))
+       return false;
+
     if constexpr (
       requires { gamma.gammaBDTScore(); } &&
       requires { lambda.lambdaBDTScore(); } &&
