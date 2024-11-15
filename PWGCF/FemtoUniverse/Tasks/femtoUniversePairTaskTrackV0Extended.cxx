@@ -31,6 +31,8 @@
 #include "Framework/O2DatabasePDGPlugin.h"
 #include <TFile.h>
 #include <TH1.h>
+#include <string>
+#include <memory>
 
 using namespace o2;
 using namespace o2::soa;
