@@ -1047,7 +1047,7 @@ struct IdentifiedBfFilterTracks {
 
           /* track selection */
           pid = AcceptParticle(particle, mccollision);
-          if(!(pid < 0)){ //if PID isn't negative
+          if (!(pid < 0)) { // if PID isn't negative
             acceptedparticles++;
           }
         }
@@ -1129,7 +1129,7 @@ struct IdentifiedBfFilterTracks {
   }
   PROCESS_SWITCH(IdentifiedBfFilterTracks, filterRecoWithoutPIDAmbiguous, "Track filtering without PID information with ambiguous tracks check", false)
 
-  void filterDetectorLevelWithoutPID(soa::Join<aod::Collisions, aod::IdentifiedBfCFCollisionsInfo> const& collisions, IdBfFullTracksDetLevel const& tracks, aod::McParticles const& )
+  void filterDetectorLevelWithoutPID(soa::Join<aod::Collisions, aod::IdentifiedBfCFCollisionsInfo> const& collisions, IdBfFullTracksDetLevel const& tracks, aod::McParticles const&)
   {
     filterTracks(collisions, tracks);
   }
@@ -1326,7 +1326,6 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::IdentifyTrack(TrackObject c
   }
 }
 
-
 /// \brief Accepts or not the passed track
 /// \param track the track of interest
 /// \return the internal track id, -1 if not accepted
@@ -1371,11 +1370,11 @@ inline int8_t IdentifiedBfFilterTracks::AcceptTrack(TrackObject const& track)
       }
       if (!(sp < 0)) {
         fillTrackHistosAfterSelection(track, sp); //<Fill accepted track histo with PID
-        if (track.sign() > 0) { //if positive
+        if (track.sign() > 0) {                   // if positive
           trkMultPos[sp]++; //<< Update Particle Multiplicity
           return speciesChargeValue1[sp];
         }
-        if (track.sign() < 0) { //if negative
+        if (track.sign() < 0) { // if negative
           trkMultNeg[sp]++; //<< Update Particle Multiplicity
           return speciesChargeValue1[sp] + 1;
         }
@@ -1412,8 +1411,7 @@ inline int8_t IdentifiedBfFilterTracks::AcceptParticle(ParticleObject& particle,
           /* update charged multiplicities */
           if (charge == 1) {
             partMultPos[kIdBfCharged]++;
-          }
-          else if (charge == -1) {
+          } else if (charge == -1) {
             partMultNeg[kIdBfCharged]++;
           }
         }
@@ -1422,8 +1420,7 @@ inline int8_t IdentifiedBfFilterTracks::AcceptParticle(ParticleObject& particle,
         /* update species multiplicities */
         if (charge == 1) {
           partMultPos[sp]++;
-        }
-        else if (charge == -1) {
+        } else if (charge == -1) {
           partMultNeg[sp]++;
         }
       }
