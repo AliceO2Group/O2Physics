@@ -215,17 +215,6 @@ struct phik0shortanalysis {
     eventHist.add("hVertexZ", "hVertexZ", kTH1F, {vertexZAxis});
     eventHist.add("hMultiplicityPercent", "Multiplicity Percentile", kTH1F, {multAxis});
 
-    // Histo to check phi numbers in data
-    eventHist.add("thereisnoPhiwK0S", "thereisnoPhiwK0S", kTH1F, {{3, -0.5, 2.5}});
-    eventHist.get<TH1>(HIST("thereisnoPhiwK0S"))->GetXaxis()->SetBinLabel(1, "Inclusive");
-    eventHist.get<TH1>(HIST("thereisnoPhiwK0S"))->GetXaxis()->SetBinLabel(2, "|#Delta y|<0.5");
-    eventHist.get<TH1>(HIST("thereisnoPhiwK0S"))->GetXaxis()->SetBinLabel(3, "|#Delta y|<0.2");
-
-    eventHist.add("thereisnoPhiwPi", "thereisnoPhiwPi", kTH1F, {{3, -0.5, 2.5}});
-    eventHist.get<TH1>(HIST("thereisnoPhiwPi"))->GetXaxis()->SetBinLabel(1, "Inclusive");
-    eventHist.get<TH1>(HIST("thereisnoPhiwPi"))->GetXaxis()->SetBinLabel(2, "|#Delta y|<0.5");
-    eventHist.get<TH1>(HIST("thereisnoPhiwPi"))->GetXaxis()->SetBinLabel(3, "|#Delta y|<0.2");
-
     // Number of MC events per selection for Rec and Gen
     MCeventHist.add("hRecMCEventSelection", "hRecMCEventSelection", kTH1F, {{8, -0.5f, 7.5f}});
     MCeventHist.get<TH1>(HIST("hRecMCEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
@@ -237,28 +226,17 @@ struct phik0shortanalysis {
     MCeventHist.get<TH1>(HIST("hRecMCEventSelection"))->GetXaxis()->SetBinLabel(7, "With at least a gen coll");
     MCeventHist.get<TH1>(HIST("hRecMCEventSelection"))->GetXaxis()->SetBinLabel(8, "With at least a #phi");
 
-    // MC Event information for Rec and Gen
-    MCeventHist.add("hRecMCVertexZ", "hRecMCVertexZ", kTH1F, {vertexZAxis});
-    MCeventHist.add("hRecMCMultiplicityPercent", "RecMC Multiplicity Percentile", kTH1F, {multAxis});
-    MCeventHist.add("hRecMCGenMultiplicityPercent", "RecMC Gen Multiplicity Percentile", kTH1F, {binnedmultAxis});
-
-    // Histo to check phi numbers in RecMC
-    MCeventHist.add("thereisnoPhiwK0SMC", "thereisnoPhiwK0SMC", kTH1F, {{3, -0.5, 2.5}});
-    MCeventHist.get<TH1>(HIST("thereisnoPhiwK0SMC"))->GetXaxis()->SetBinLabel(1, "Inclusive");
-    MCeventHist.get<TH1>(HIST("thereisnoPhiwK0SMC"))->GetXaxis()->SetBinLabel(2, "|#Delta y|<0.5");
-    MCeventHist.get<TH1>(HIST("thereisnoPhiwK0SMC"))->GetXaxis()->SetBinLabel(3, "|#Delta y|<0.2");
-
-    MCeventHist.add("thereisnoPhiwPiMC", "thereisnoPhiwPiMC", kTH1F, {{3, -0.5, 2.5}});
-    MCeventHist.get<TH1>(HIST("thereisnoPhiwPiMC"))->GetXaxis()->SetBinLabel(1, "Inclusive");
-    MCeventHist.get<TH1>(HIST("thereisnoPhiwPiMC"))->GetXaxis()->SetBinLabel(2, "|#Delta y|<0.5");
-    MCeventHist.get<TH1>(HIST("thereisnoPhiwPiMC"))->GetXaxis()->SetBinLabel(3, "|#Delta y|<0.2");
-
     MCeventHist.add("hGenMCEventSelection", "hGenMCEventSelection", kTH1F, {{5, -0.5f, 4.5f}});
     MCeventHist.get<TH1>(HIST("hGenMCEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
     MCeventHist.get<TH1>(HIST("hGenMCEventSelection"))->GetXaxis()->SetBinLabel(2, "posZ cut");
     MCeventHist.get<TH1>(HIST("hGenMCEventSelection"))->GetXaxis()->SetBinLabel(3, "INEL>0 cut");
     MCeventHist.get<TH1>(HIST("hGenMCEventSelection"))->GetXaxis()->SetBinLabel(4, "With at least a #phi");
     MCeventHist.get<TH1>(HIST("hGenMCEventSelection"))->GetXaxis()->SetBinLabel(5, "With at least a reco coll");
+
+    // MC Event information for Rec and Gen
+    MCeventHist.add("hRecMCVertexZ", "hRecMCVertexZ", kTH1F, {vertexZAxis});
+    MCeventHist.add("hRecMCMultiplicityPercent", "RecMC Multiplicity Percentile", kTH1F, {multAxis});
+    MCeventHist.add("hRecMCGenMultiplicityPercent", "RecMC Gen Multiplicity Percentile", kTH1F, {binnedmultAxis});
 
     MCeventHist.add("hGenMCVertexZ", "hGenMCVertexZ", kTH1F, {vertexZAxis});
     MCeventHist.add("hGenMCMultiplicityPercent", "GenMC Multiplicity Percentile", kTH1F, {binnedmultAxis});
@@ -564,7 +542,7 @@ struct phik0shortanalysis {
 
   // Fill 2D invariant mass histogram for V0 and Phi
   template <bool isMC>
-  void fillInvMass2D(TLorentzVector V0, const std::vector<TLorentzVector> listPhi, float multiplicity, double weightInclusive, double weightLtFirstCut, double weightLtSecondCut)
+  void fillInvMass2D(TLorentzVector V0, const std::vector<TLorentzVector> listPhi, float multiplicity, const std::array<float, 3> weights)
   {
     double massV0 = V0.M();
     double ptV0 = V0.Pt();
@@ -576,28 +554,28 @@ struct phik0shortanalysis {
       double deltay = std::abs(rapidityV0 - rapidityPhi);
 
       if constexpr (!isMC) { // same event
-        PhiK0SHist.fill(HIST("h4PhiK0SSEInc"), multiplicity, ptV0, massV0, massPhi, weightInclusive);
+        PhiK0SHist.fill(HIST("h4PhiK0SSEInc"), multiplicity, ptV0, massV0, massPhi, weights.at(0));
         if (deltay > cfgFirstCutonDeltay)
           continue;
-        PhiK0SHist.fill(HIST("h4PhiK0SSEFCut"), multiplicity, ptV0, massV0, massPhi, weightLtFirstCut);
+        PhiK0SHist.fill(HIST("h4PhiK0SSEFCut"), multiplicity, ptV0, massV0, massPhi, weights.at(1));
         if (deltay > cfgSecondCutonDeltay)
           continue;
-        PhiK0SHist.fill(HIST("h4PhiK0SSESCut"), multiplicity, ptV0, massV0, massPhi, weightLtSecondCut);
+        PhiK0SHist.fill(HIST("h4PhiK0SSESCut"), multiplicity, ptV0, massV0, massPhi, weights.at(2));
       } else { // MC event
-        MCPhiK0SHist.fill(HIST("h3RecMCPhiK0SSEInc"), multiplicity, ptV0, massV0, weightInclusive);
+        MCPhiK0SHist.fill(HIST("h3RecMCPhiK0SSEInc"), multiplicity, ptV0, massV0, weights.at(0));
         if (deltay > cfgFirstCutonDeltay)
           continue;
-        MCPhiK0SHist.fill(HIST("h3RecMCPhiK0SSEFCut"), multiplicity, ptV0, massV0, weightLtFirstCut);
+        MCPhiK0SHist.fill(HIST("h3RecMCPhiK0SSEFCut"), multiplicity, ptV0, massV0, weights.at(1));
         if (deltay > cfgSecondCutonDeltay)
           continue;
-        MCPhiK0SHist.fill(HIST("h3RecMCPhiK0SSESCut"), multiplicity, ptV0, massV0, weightLtSecondCut);
+        MCPhiK0SHist.fill(HIST("h3RecMCPhiK0SSESCut"), multiplicity, ptV0, massV0, weights.at(2));
       }
     }
   }
 
   // Fill Phi invariant mass vs Pion nSigmadE/dx histogram
   template <bool isMC>
-  void fillInvMassNSigma(TLorentzVector Pi, float nSigmaTPCPi, float nSigmaTOFPi, const std::vector<TLorentzVector> listPhi, float multiplicity, double weightInclusive, double weightLtFirstCut, double weightLtSecondCut)
+  void fillInvMassNSigma(TLorentzVector Pi, float nSigmaTPCPi, float nSigmaTOFPi, const std::vector<TLorentzVector> listPhi, float multiplicity, const std::array<float, 3> weights)
   {
     double rapidityPi = Pi.Rapidity();
     double ptPi = Pi.Pt();
@@ -608,21 +586,21 @@ struct phik0shortanalysis {
       double deltay = std::abs(rapidityPi - rapidityPhi);
 
       if constexpr (!isMC) { // same event
-        PhiPionHist.fill(HIST("h5PhiPiSEInc"), multiplicity, ptPi, nSigmaTPCPi, nSigmaTOFPi, massPhi, weightInclusive);
+        PhiPionHist.fill(HIST("h5PhiPiSEInc"), multiplicity, ptPi, nSigmaTPCPi, nSigmaTOFPi, massPhi, weights.at(0));
         if (deltay > cfgFirstCutonDeltay)
           continue;
-        PhiPionHist.fill(HIST("h5PhiPiSEFCut"), multiplicity, ptPi, nSigmaTPCPi, nSigmaTOFPi, massPhi, weightLtFirstCut);
+        PhiPionHist.fill(HIST("h5PhiPiSEFCut"), multiplicity, ptPi, nSigmaTPCPi, nSigmaTOFPi, massPhi, weights.at(1));
         if (deltay > cfgSecondCutonDeltay)
           continue;
-        PhiPionHist.fill(HIST("h5PhiPiSESCut"), multiplicity, ptPi, nSigmaTPCPi, nSigmaTOFPi, massPhi, weightLtSecondCut);
+        PhiPionHist.fill(HIST("h5PhiPiSESCut"), multiplicity, ptPi, nSigmaTPCPi, nSigmaTOFPi, massPhi, weights.at(2));
       } else { // MC event
-        MCPhiPionHist.fill(HIST("h4RecMCPhiPiSEInc"), multiplicity, ptPi, nSigmaTPCPi, nSigmaTOFPi, weightInclusive);
+        MCPhiPionHist.fill(HIST("h4RecMCPhiPiSEInc"), multiplicity, ptPi, nSigmaTPCPi, nSigmaTOFPi, weights.at(0));
         if (deltay > cfgFirstCutonDeltay)
           continue;
-        MCPhiPionHist.fill(HIST("h4RecMCPhiPiSEFCut"), multiplicity, ptPi, nSigmaTPCPi, nSigmaTOFPi, weightLtFirstCut);
+        MCPhiPionHist.fill(HIST("h4RecMCPhiPiSEFCut"), multiplicity, ptPi, nSigmaTPCPi, nSigmaTOFPi, weights.at(1));
         if (deltay > cfgSecondCutonDeltay)
           continue;
-        MCPhiPionHist.fill(HIST("h4RecMCPhiPiSESCut"), multiplicity, ptPi, nSigmaTPCPi, nSigmaTOFPi, weightLtSecondCut);
+        MCPhiPionHist.fill(HIST("h4RecMCPhiPiSESCut"), multiplicity, ptPi, nSigmaTPCPi, nSigmaTOFPi, weights.at(2));
       }
     }
   }
@@ -846,7 +824,7 @@ struct phik0shortanalysis {
         weights.at(i) = (counts.at(i) > 0 ? 1. / static_cast<float>(counts.at(i)) : 0);
       }
 
-      fillInvMass2D<false>(recK0S, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+      fillInvMass2D<false>(recK0S, listrecPhi, multiplicity, weights);
     }
   }
 
@@ -856,6 +834,9 @@ struct phik0shortanalysis {
   {
     if (!collision.isInelGt0())
       return;
+
+    float multiplicity = collision.centFT0M();
+    eventHist.fill(HIST("hMultiplicityPercent"), multiplicity);
 
     // Defining positive and negative tracks for phi reconstruction
     auto posThisColl = posTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
@@ -921,7 +902,7 @@ struct phik0shortanalysis {
         weights.at(i) = (counts.at(i) > 0 ? 1. / static_cast<float>(counts.at(i)) : 0);
       }
 
-      fillInvMassNSigma<false>(recPi, nsigmaTPC, nsigmaTOF, listrecPhi, multiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+      fillInvMassNSigma<false>(recPi, nsigmaTPC, nsigmaTOF, listrecPhi, multiplicity, weights);
     }
   }
 
@@ -1247,7 +1228,7 @@ struct phik0shortanalysis {
         weights.at(i) = (counts.at(i) > 0 ? 1. / static_cast<float>(counts.at(i)) : 0);
       }
 
-      fillInvMass2D<true>(recK0S, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+      fillInvMass2D<true>(recK0S, listrecPhi, genmultiplicity, weights);
     }
   }
 
@@ -1369,7 +1350,7 @@ struct phik0shortanalysis {
         weights.at(i) = (counts.at(i) > 0 ? 1. / static_cast<float>(counts.at(i)) : 0);
       }
 
-      fillInvMassNSigma<true>(recPi, nsigmaTPC, nsigmaTOF, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+      fillInvMassNSigma<true>(recPi, nsigmaTPC, nsigmaTOF, listrecPhi, genmultiplicity, weights);
     }
   }
 
