@@ -370,9 +370,8 @@ struct HfDerivedDataCreatorBplusToD0Pi {
         if constexpr (isMl) {
           mlScoreBplusToD0Pi = candidate.mlProbBplusToD0Pi();
         }
-        if (candidate.isSelBplusToD0Pi()) {
-          fillTablesCandidate(candidate, prongCharm, prongBachelor, 0, massBplusToD0Pi, ct, y, flagMcRec, origin, mlScoreBplusToD0Pi);
-        }
+        // flag = 0 for D0 pi-, flag = 1 for D0(bar) pi+
+        fillTablesCandidate(candidate, prongCharm, prongBachelor, prongBachelor.sign() < 0 ? 0 : 1, massBplusToD0Pi, ct, y, flagMcRec, origin, mlScoreBplusToD0Pi);
       }
     }
   }
