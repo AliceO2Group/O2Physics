@@ -339,7 +339,9 @@ DECLARE_SOA_TABLE(ResoMCParents, "AOD", "RESOMCPARENTS",
                   resodaughter::Pz,
                   resodaughter::Eta,
                   resodaughter::Phi,
-                  mcparticle::Y);
+                  mcparticle::Y,
+                  mcparticle::E,
+                  mcparticle::StatusCode);
 using ResoMCParent = ResoMCParents::iterator;
 
 using Reso2TracksExt = soa::Join<aod::FullTracks, aod::TracksDCA>; // without Extra
