@@ -674,8 +674,8 @@ struct HfTaskLc {
       // MC Rec.
       fillHistosMcRec<fillMl>(collision, candidates, mcParticles);
     }
-      // MC gen.
-      fillHistosMcGen(mcParticles);
+    // MC gen.
+    fillHistosMcGen(mcParticles);
   }
 
   void processDataStd(Collisions const& collisions,
