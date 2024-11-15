@@ -27,10 +27,12 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/DataModel/DerivedTables.h"
+#include "PWGHF/Utils/utilsDerivedData.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::analysis::hf_derived;
 
 /// Writes the full information in an output TTree
 struct HfDerivedDataCreatorBplusToD0Pi {
@@ -39,7 +41,6 @@ struct HfDerivedDataCreatorBplusToD0Pi {
   Produces<o2::aod::HfBplusPars> rowCandidatePar;
   Produces<o2::aod::HfBplusParD0s> rowCandidateParD0;
   Produces<o2::aod::HfBplusParEs> rowCandidateParE;
-  Produces<o2::aod::HfBplusParED0s> rowCandidateParED0;
   Produces<o2::aod::HfBplusMls> rowCandidateMl;
   Produces<o2::aod::HfBplusIds> rowCandidateId;
   Produces<o2::aod::HfBplusMcs> rowCandidateMc;
@@ -59,7 +60,6 @@ struct HfDerivedDataCreatorBplusToD0Pi {
   Configurable<bool> fillCandidatePar{"fillCandidatePar", true, "Fill candidate parameters"};
   Configurable<bool> fillCandidateParD0{"fillCandidateParD0", true, "Fill D0 candidate parameters"};
   Configurable<bool> fillCandidateParE{"fillCandidateParE", true, "Fill candidate extended parameters"};
-  Configurable<bool> fillCandidateParED0{"fillCandidateParED0", true, "Fill D0 candidate extended parameters"};
   Configurable<bool> fillCandidateMl{"fillCandidateMl", true, "Fill candidate selection ML scores"};
   Configurable<bool> fillCandidateId{"fillCandidateId", true, "Fill original indices from the candidate table"};
   Configurable<bool> fillCandidateMc{"fillCandidateMc", true, "Fill candidate MC info"};
@@ -89,7 +89,6 @@ struct HfDerivedDataCreatorBplusToD0Pi {
   using MatchedGenCandidatesMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCandBplusMcGen>>;
   using TypeMcCollisions = aod::McCollisions;
   using THfCandDaughters = aod::HfCand2Prong;
-  using THfCandDaughtersDerived = soa::Join<aod::HfD0CollBases, aod::HfD0Ids>; // TODO: Default or optional? Needed for linking to derived D0.
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_bplus::isSelBplusToD0Pi >= 1;
   Filter filterMcGenMatching = nabs(aod::hf_cand_bplus::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_bplus::DecayType::BplusToD0Pi));
@@ -118,14 +117,6 @@ struct HfDerivedDataCreatorBplusToD0Pi {
       LOGP(fatal, "Only one process function can be enabled at a time.");
     }
   }
-
-  template <typename T>
-  void reserveTable(T& table, const Configurable<bool>& enabled, const uint64_t size)
-  {
-    if (enabled.value) {
-      table.reserve(size);
-    }
-  };
 
   template <bool isMC, typename T>
   // void fillTablesCollision(const T& collision, int isEventReject, int runNumber)
@@ -200,8 +191,11 @@ struct HfDerivedDataCreatorBplusToD0Pi {
         candidate.decayLengthXY(),
         candidate.decayLengthNormalised(),
         candidate.decayLengthXYNormalised(),
+        candidate.ptProng0(),
         candidate.ptProng1(),
+        candidate.impactParameter0(),
         candidate.impactParameter1(),
+        candidate.impactParameterNormalised0(),
         candidate.impactParameterNormalised1(),
         prongBachelor.tpcNSigmaPi(),
         prongBachelor.tofNSigmaPi(),
@@ -214,9 +208,23 @@ struct HfDerivedDataCreatorBplusToD0Pi {
     }
     if (fillCandidateParD0) {
       rowCandidateParD0(
-        candidate.ptProng0(),
-        candidate.impactParameter0(),
-        candidate.impactParameterNormalised0());
+        prongCharm.cpa(),
+        prongCharm.decayLength(),
+        prongCharm.impactParameter0(),
+        prongCharm.impactParameter1(),
+        prongCharm.impactParameterProduct(),
+        prongCharm.nSigTpcPiExpPi(),
+        prongCharm.nSigTofPiExpPi(),
+        prongCharm.nSigTpcTofPiExpPi(),
+        prongCharm.nSigTpcKaExpPi(),
+        prongCharm.nSigTofKaExpPi(),
+        prongCharm.nSigTpcTofKaExpPi(),
+        prongCharm.nSigTpcPiExpKa(),
+        prongCharm.nSigTofPiExpKa(),
+        prongCharm.nSigTpcTofPiExpKa(),
+        prongCharm.nSigTpcKaExpKa(),
+        prongCharm.nSigTofKaExpKa(),
+        prongCharm.nSigTpcTofKaExpKa());
     }
     if (fillCandidateParE) {
       rowCandidateParE(
@@ -233,14 +241,6 @@ struct HfDerivedDataCreatorBplusToD0Pi {
         candidate.errorImpactParameter1(),
         hfHelper.cosThetaStarBplus(candidate),
         ct);
-    }
-    if (fillCandidateParED0) {
-      rowCandidateParED0(
-        RecoDecay::p(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()),
-        candidate.pxProng0(),
-        candidate.pyProng0(),
-        candidate.pzProng0(),
-        candidate.errorImpactParameter0());
     }
     if (fillCandidateMl) {
       rowCandidateMl(
@@ -320,7 +320,6 @@ struct HfDerivedDataCreatorBplusToD0Pi {
       reserveTable(rowCandidatePar, fillCandidatePar, sizeTableCand);
       reserveTable(rowCandidateParD0, fillCandidateParD0, sizeTableCand);
       reserveTable(rowCandidateParE, fillCandidateParE, sizeTableCand);
-      reserveTable(rowCandidateParED0, fillCandidateParED0, sizeTableCand);
       reserveTable(rowCandidateMl, fillCandidateMl, sizeTableCand);
       reserveTable(rowCandidateId, fillCandidateId, sizeTableCand);
       if constexpr (isMc) {
