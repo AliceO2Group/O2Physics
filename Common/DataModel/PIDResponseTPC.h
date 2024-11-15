@@ -129,7 +129,6 @@ perSpeciesWrapper(tpcExpSignalDiff);
 
 #undef perSpeciesWrapper
 
-
 // PID index as function argument for TPC
 #define perSpeciesWrapper(functionName)                                                                             \
   template <typename TrackType>                                                                                     \
@@ -230,7 +229,6 @@ perSpeciesWrapper(tpcExpSignalDiff);
 #undef perSpeciesWrapper
 
 } // namespace pidutils
-
 
 // Macro to convert the stored Nsigmas to floats
 #define DEFINE_UNWRAP_NSIGMA_COLUMN(COLUMN, COLUMN_NAME) \
