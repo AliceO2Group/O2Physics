@@ -11,7 +11,7 @@
 
 /// \file derivedDataCreatorBplusToD0Pi.cxx
 /// \brief Producer of derived tables of B+ candidates, collisions and MC particles
-/// \note Based on derivedDataCreatorBplusToD0Pi.cxx
+/// \note Based on derivedDataCreatorLcToPKPi.cxx
 ///
 /// \author Vít Kučera <vit.kucera@cern.ch>, Inha University
 
