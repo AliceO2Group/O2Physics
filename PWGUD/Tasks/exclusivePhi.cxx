@@ -17,7 +17,7 @@
 #include "PWGUD/DataModel/UDTables.h"
 #include <TString.h>
 #include "TLorentzVector.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 
 using std::array;
 using namespace std;

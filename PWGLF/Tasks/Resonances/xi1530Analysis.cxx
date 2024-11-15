@@ -17,7 +17,8 @@
 #include <TRandom.h>
 #include <vector>
 
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Framework/AnalysisTask.h"

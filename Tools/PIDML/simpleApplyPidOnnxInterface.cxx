@@ -20,7 +20,8 @@
 #include "Framework/AnalysisTask.h"
 #include "CCDB/CcdbApi.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Tools/PIDML/pidOnnxInterface.h"
 
 using namespace o2;

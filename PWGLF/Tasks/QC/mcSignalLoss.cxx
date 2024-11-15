@@ -40,7 +40,8 @@
 #include "Common/TableProducer/PID/pidTOFBase.h"
 #include "Framework/HistogramRegistry.h"
 #include "Common/Core/PID/TPCPIDResponse.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "PWGLF/Utils/inelGt.h"
 

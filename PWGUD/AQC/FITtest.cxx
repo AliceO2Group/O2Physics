@@ -21,7 +21,8 @@
 #include "Common/DataModel/FT0Corrected.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "CommonConstants/LHCConstants.h"
 
 #include "Framework/StaticFor.h"

@@ -19,7 +19,6 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "PWGLF/DataModel/QC/strangenessTablesQC.h"
 
 using namespace o2;

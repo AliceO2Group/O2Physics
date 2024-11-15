@@ -24,7 +24,7 @@
 // O2Physics
 #include "PID/ParamBase.h"
 #include "PID/PIDTOF.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
 
 static constexpr int nSpecies = 9;
 static constexpr int nParameters = 1;

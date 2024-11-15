@@ -29,7 +29,8 @@
 #include "Framework/runDataProcessing.h"
 /// O2Physics
 #include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGDQ/DataModel/ReducedInfoTables.h"

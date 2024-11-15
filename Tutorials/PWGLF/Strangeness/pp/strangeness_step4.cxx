@@ -17,7 +17,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Common/DataModel/EventSelection.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 
 using namespace o2;

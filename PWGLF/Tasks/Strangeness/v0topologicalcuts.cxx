@@ -29,7 +29,6 @@ This analysis includes two processes, one for Real Data and one for MC Data swit
 #include "Framework/AnalysisTask.h"
 #include "Common/DataModel/EventSelection.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "CommonUtils/StringUtils.h"
 
 // namespaces to be used for the plot names and topological cuts that will be given by a configurable string

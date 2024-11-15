@@ -21,7 +21,8 @@
 #include "TFile.h"
 #include <TH1F.h>
 #include <TH2F.h>
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "PWGUD/DataModel/SGTables.h"
 #include "PWGUD/Core/UDHelpers.h"
 #include "PWGUD/Core/SGSelector.h"

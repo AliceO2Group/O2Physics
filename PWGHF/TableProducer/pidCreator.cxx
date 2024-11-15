@@ -18,7 +18,8 @@
 #include "Framework/runDataProcessing.h"
 
 #include "Common/Core/TableHelper.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 

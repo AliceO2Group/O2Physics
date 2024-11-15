@@ -15,7 +15,8 @@
 #include "Framework/AnalysisTask.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Framework/ASoAHelpers.h"
 
 using namespace o2;

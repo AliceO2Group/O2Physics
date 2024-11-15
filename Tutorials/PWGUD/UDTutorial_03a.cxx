@@ -20,7 +20,7 @@
 #include "TLorentzVector.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "PWGUD/Core/UDHelpers.h"
 
 using namespace o2;

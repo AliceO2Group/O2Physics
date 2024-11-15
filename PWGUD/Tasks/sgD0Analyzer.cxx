@@ -20,7 +20,8 @@
 #include "iostream"
 #include "PWGUD/DataModel/UDTables.h"
 #include "PWGUD/Core/SGSelector.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "PWGUD/Core/SGTrackSelector.h"
 #include <TString.h>
 #include "TLorentzVector.h"

@@ -15,7 +15,9 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseCombined.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "PIDSelectionFilterAndAnalysis.h"
 
 using namespace o2;

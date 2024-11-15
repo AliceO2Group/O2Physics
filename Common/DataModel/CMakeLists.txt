@@ -15,7 +15,11 @@ o2physics_add_header_only_library(DataModel
                                           EventSelection.h
                                           FT0Corrected.h
                                           Multiplicity.h
-                                          PIDResponse.h
+                                          PIDResponseITS.h
+                                          PIDResponseTPC.h
+                                          PIDResponseTOF.h
+                                          PIDResponseCombined.h
+                                          PIDUtils.h
                                           CollisionAssociationTables.h
                                           TrackSelectionTables.h
                                           McCollisionExtra.h

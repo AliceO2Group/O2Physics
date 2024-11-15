@@ -23,7 +23,8 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/Expressions.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 
 namespace o2::aod
 {

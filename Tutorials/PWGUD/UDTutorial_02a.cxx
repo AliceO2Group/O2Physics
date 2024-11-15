@@ -18,7 +18,8 @@
 
 #include "TDatabasePDG.h"
 #include "TLorentzVector.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "PWGUD/DataModel/UDTables.h"
 #include "PWGUD/Core/UDHelpers.h"
 
