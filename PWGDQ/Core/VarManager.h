@@ -1359,6 +1359,9 @@ void VarManager::FillEvent(T const& event, float* values)
     if (fgUsedVars[kIsNoSameBunch]) {
       values[kIsNoSameBunch] = event.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
     }
+    if (fgUsedVars[kTrackOccupancyInTimeRange]) {
+      values[kTrackOccupancyInTimeRange] = event.trackOccupancyInTimeRange();
+    }
     if (fgUsedVars[kIsGoodZvtxFT0vsPV]) {
       values[kIsGoodZvtxFT0vsPV] = event.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV);
     }
