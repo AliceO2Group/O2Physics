@@ -757,7 +757,7 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kS31A] = "";
   fgVariableNames[kM11REF] = "M_{11}^{REF} ";
   fgVariableUnits[kM11REF] = "";
-  fgVariableNames[kM11REFetagap] = "M_{11}^{REF}-etagap ";
+  fgVariableNames[kM11REFetagap] = "M_{11}^{REF}-etagap";
   fgVariableUnits[kM11REFetagap] = "";
   fgVariableNames[kM01POI] = "M^{'}_{01}^{POI} ";
   fgVariableUnits[kM01POI] = "";
