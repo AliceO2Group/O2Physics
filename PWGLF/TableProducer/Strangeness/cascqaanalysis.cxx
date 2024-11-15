@@ -29,6 +29,8 @@
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "PWGLF/Utils/inelGt.h"
 #include "PWGLF/DataModel/mcCentrality.h"
+#include <algorithm>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -175,7 +177,7 @@ struct cascqaanalysis {
      aod::cascdata::dcaV0daughters < dcav0dau &&
      aod::cascdata::dcacascdaughters < dcacascdau);
 
-  Partition<DauTracks> pvContribTracksIUEta1 = (nabs(aod::track::eta) < 1.0f) && ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
+  Partition<DauTracks> pvContribTracksIUEta1 = (nabs(aod::track::eta) < 1.0f) && ((aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor));
   Partition<DauTracks> globalTracksIUEta05 = (nabs(aod::track::eta) < 0.5f) && (requireGlobalTrackInFilter());
 
   template <class TCascTracksTo, typename TCascade>
