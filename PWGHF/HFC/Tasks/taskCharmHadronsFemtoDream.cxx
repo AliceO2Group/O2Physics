@@ -197,9 +197,9 @@ struct HfTaskCharmHadronsFemtoDream {
   void init(InitContext& /*context*/)
   {
     // setup columnpolicy for binning
-    colBinningMult = {{Mixing.VztxMixBins, Mixing.MultMixBins}, true};
-    colBinningMultPercentile = {{Mixing.VztxMixBins, Mixing.MultPercentileMixBins}, true};
-    colBinningMultMultPercentile = {{Mixing.VztxMixBins, Mixing.MultMixBins, Mixing.MultPercentileMixBins}, true};
+    colBinningMult = {{mixingBinVztx, mixingBinMult}, true};
+    colBinningMultPercentile = {{mixingBinVztx, mixingBinMultPercentile}, true};
+    colBinningMultMultPercentile = {{mixingBinVztx, mixingBinMult, mixingBinMultPercentile}, true};
 
     eventHisto.init(&registry);
     trackHistoPartOne.init(&registry, binmultTempFit, binMulPercentile, binpTTrack, binEta, binPhi, binTempFitVarTrack, binNSigmaTPC, binNSigmaTOF, binNSigmaTPCTOF, binTPCClusters, dummy, isMc, pdgCodeTrack1, true);
