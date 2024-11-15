@@ -98,6 +98,8 @@ struct quarkoniaToHyperons {
   Configurable<bool> buildXiXiBarPairs{"buildXiXiBarPairs", false, "Build Xi antiXi from charmonia decay"};
   Configurable<bool> buildOmOmBarPairs{"buildOmOmBarPairs", false, "Build Omega antiOmega from charmonia decay"};
 
+  Configurable<bool> buildSameSignPairs{"buildSameSignPairs", false, "If true: build same-sign pairs, otherwise consider only opposite-sign pairs"};
+
   // fast check on occupancy
   Configurable<float> minOccupancy{"minOccupancy", -1, "minimum occupancy from neighbouring collisions"};
   Configurable<float> maxOccupancy{"maxOccupancy", -1, "maximum occupancy from neighbouring collisions"};
@@ -1349,7 +1351,7 @@ struct quarkoniaToHyperons {
         float hyperonDecayLength = std::sqrt(std::pow(hyperon.x() - collision.posX(), 2) + std::pow(hyperon.y() - collision.posY(), 2) + std::pow(hyperon.z() - collision.posZ(), 2)) * o2::constants::physics::MassLambda0 / (hyperon.p() + 1E-10);
         float antiHyperonDecayLength = std::sqrt(std::pow(antiHyperon.x() - collision.posX(), 2) + std::pow(antiHyperon.y() - collision.posY(), 2) + std::pow(antiHyperon.z() - collision.posZ(), 2)) * o2::constants::physics::MassLambda0 / (antiHyperon.p() + 1E-10);
 
-        // Candidates after Xi selections
+        // Candidates after Lambda selections
         histos.fill(HIST("LaLaBar/Lambda/hPosDCAToPV"), hyperon.dcapostopv());
         histos.fill(HIST("LaLaBar/Lambda/hNegDCAToPV"), hyperon.dcapostopv());
         histos.fill(HIST("LaLaBar/Lambda/hDCAV0Daughters"), hyperon.dcaV0daughters());
@@ -1363,7 +1365,7 @@ struct quarkoniaToHyperons {
         histos.fill(HIST("LaLaBar/Lambda/hNegTPCNsigma"), negTrackExtraHyperon.tpcNSigmaPi());
         histos.fill(HIST("LaLaBar/Lambda/h2dPositiveITSvsTPCpts"), posTrackExtraHyperon.tpcCrossedRows(), posTrackExtraHyperon.itsNCls());
         histos.fill(HIST("LaLaBar/Lambda/h2dNegativeITSvsTPCpts"), negTrackExtraHyperon.tpcCrossedRows(), negTrackExtraHyperon.itsNCls());
-        // Candidates after AntiXi selections
+        // Candidates after AntiLambda selections
         histos.fill(HIST("LaLaBar/AntiLambda/hPosDCAToPV"), antiHyperon.dcapostopv());
         histos.fill(HIST("LaLaBar/AntiLambda/hNegDCAToPV"), antiHyperon.dcapostopv());
         histos.fill(HIST("LaLaBar/AntiLambda/hDCAV0Daughters"), antiHyperon.dcaV0daughters());
@@ -1794,8 +1796,14 @@ struct quarkoniaToHyperons {
 
       // Check the number of Lambdas and antiLambdas
       // needs at least 1 of each
-      if (nLambdas >= 1 && nAntiLambdas >= 1) {
+      if (!buildSameSignPairs && nLambdas >= 1 && nAntiLambdas >= 1) { // consider Lambda antiLambda pairs
         buildHyperonAntiHyperonPairs(collision, fullV0s, selLambdaIndices, selAntiLambdaIndices, centrality, selGapSide, 0);
+      }
+      if (buildSameSignPairs && nLambdas > 1) { // consider Lambda Lambda pairs
+        buildHyperonAntiHyperonPairs(collision, fullV0s, selLambdaIndices, selLambdaIndices, centrality, selGapSide, 0);
+      }
+      if (buildSameSignPairs && nAntiLambdas > 1) { // consider antiLambda antiLambda pairs
+        buildHyperonAntiHyperonPairs(collision, fullV0s, selAntiLambdaIndices, selAntiLambdaIndices, centrality, selGapSide, 0);
       }
     }
 
@@ -1839,8 +1847,14 @@ struct quarkoniaToHyperons {
 
         // Check the number of Lambdas and antiLambdas
         // needs at least 1 of each
-        if (nXis >= 1 && nAntiXis >= 1) {
+        if (!buildSameSignPairs && nXis >= 1 && nAntiXis >= 1) {
           buildHyperonAntiHyperonPairs(collision, fullCascades, selXiIndices, selAntiXiIndices, centrality, selGapSide, 1);
+        }
+        if (buildSameSignPairs && nXis > 1) {
+          buildHyperonAntiHyperonPairs(collision, fullCascades, selXiIndices, selXiIndices, centrality, selGapSide, 1);
+        }
+        if (buildSameSignPairs && nAntiXis > 1) {
+          buildHyperonAntiHyperonPairs(collision, fullCascades, selAntiXiIndices, selAntiXiIndices, centrality, selGapSide, 1);
         }
       }
       if (buildOmOmBarPairs) {
@@ -1849,8 +1863,14 @@ struct quarkoniaToHyperons {
 
         // Check the number of Lambdas and antiLambdas
         // needs at least 1 of each
-        if (nOmegas >= 1 && nAntiOmegas >= 1) {
+        if (!buildSameSignPairs && nOmegas >= 1 && nAntiOmegas >= 1) {
           buildHyperonAntiHyperonPairs(collision, fullCascades, selOmIndices, selAntiOmIndices, centrality, selGapSide, 2);
+        }
+        if (buildSameSignPairs && nOmegas > 1) {
+          buildHyperonAntiHyperonPairs(collision, fullCascades, selOmIndices, selOmIndices, centrality, selGapSide, 2);
+        }
+        if (buildSameSignPairs && nAntiOmegas > 1) {
+          buildHyperonAntiHyperonPairs(collision, fullCascades, selAntiOmIndices, selAntiOmIndices, centrality, selGapSide, 2);
         }
       }
     }
@@ -1919,8 +1939,14 @@ struct quarkoniaToHyperons {
       histos.fill(HIST("LaLaBar/h2dNbrOfLambdaVsCentrality"), centrality, nLambdas);
       histos.fill(HIST("LaLaBar/h2dNbrOfAntiLambdaVsCentrality"), centrality, nAntiLambdas);
 
-      if (nLambdas >= 1 && nAntiLambdas >= 1) {
+      if (!buildSameSignPairs && nLambdas >= 1 && nAntiLambdas >= 1) { // consider Lambda antiLambda pairs
         buildHyperonAntiHyperonPairs(collision, fullV0s, selLambdaIndices, selAntiLambdaIndices, centrality, selGapSide, 0);
+      }
+      if (buildSameSignPairs && nLambdas > 1) { // consider Lambda Lambda pairs
+        buildHyperonAntiHyperonPairs(collision, fullV0s, selLambdaIndices, selLambdaIndices, centrality, selGapSide, 0);
+      }
+      if (buildSameSignPairs && nAntiLambdas > 1) { // consider antiLambda antiLambda pairs
+        buildHyperonAntiHyperonPairs(collision, fullV0s, selAntiLambdaIndices, selAntiLambdaIndices, centrality, selGapSide, 0);
       }
     }
 
@@ -1976,8 +2002,14 @@ struct quarkoniaToHyperons {
 
         // Check the number of Lambdas and antiLambdas
         // needs at least 1 of each
-        if (nXis >= 1 && nAntiXis >= 1) {
+        if (!buildSameSignPairs && nXis >= 1 && nAntiXis >= 1) {
           buildHyperonAntiHyperonPairs(collision, fullCascades, selXiIndices, selAntiXiIndices, centrality, selGapSide, 1);
+        }
+        if (buildSameSignPairs && nXis > 1) {
+          buildHyperonAntiHyperonPairs(collision, fullCascades, selXiIndices, selXiIndices, centrality, selGapSide, 1);
+        }
+        if (buildSameSignPairs && nAntiXis > 1) {
+          buildHyperonAntiHyperonPairs(collision, fullCascades, selAntiXiIndices, selAntiXiIndices, centrality, selGapSide, 1);
         }
       }
       if (buildOmOmBarPairs) {
@@ -1986,8 +2018,14 @@ struct quarkoniaToHyperons {
 
         // Check the number of Lambdas and antiLambdas
         // needs at least 1 of each
-        if (nOmegas >= 1 && nAntiOmegas >= 1) {
+        if (!buildSameSignPairs && nOmegas >= 1 && nAntiOmegas >= 1) {
           buildHyperonAntiHyperonPairs(collision, fullCascades, selOmIndices, selAntiOmIndices, centrality, selGapSide, 2);
+        }
+        if (buildSameSignPairs && nOmegas > 1) {
+          buildHyperonAntiHyperonPairs(collision, fullCascades, selOmIndices, selOmIndices, centrality, selGapSide, 2);
+        }
+        if (buildSameSignPairs && nAntiOmegas > 1) {
+          buildHyperonAntiHyperonPairs(collision, fullCascades, selAntiOmIndices, selAntiOmIndices, centrality, selGapSide, 2);
         }
       }
     }
