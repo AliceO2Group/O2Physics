@@ -234,7 +234,7 @@ using StraCent = StraCents::iterator;
 // also allows for collision association cross-checks
 DECLARE_SOA_TABLE(StraMCCollisions, "AOD", "STRAMCCOLLISION", //! MC collision properties
                   o2::soa::Index<>, mccollision::PosX, mccollision::PosY, mccollision::PosZ,
-                  mccollision::ImpactParameter);
+                  mccollision::ImpactParameter, mccollision::EventPlaneAngle);
 DECLARE_SOA_TABLE(StraMCCollMults, "AOD", "STRAMCCOLLMULTS", //! MC collision multiplicities
                   mult::MultMCFT0A, mult::MultMCFT0C, mult::MultMCNParticlesEta05, mult::MultMCNParticlesEta08, mult::MultMCNParticlesEta10, o2::soa::Marker<2>);
 
