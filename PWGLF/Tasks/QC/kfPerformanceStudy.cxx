@@ -27,7 +27,6 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Multiplicity.h"
 
 using namespace o2;

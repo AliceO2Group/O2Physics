@@ -23,7 +23,8 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Tools/PIDML/pidOnnxModel.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "TMath.h"
 

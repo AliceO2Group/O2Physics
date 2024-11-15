@@ -16,7 +16,8 @@
 /// \since  03/05/2024
 ///
 
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "TH1F.h"
 #include "TCanvas.h"
 #include "TRandom.h"

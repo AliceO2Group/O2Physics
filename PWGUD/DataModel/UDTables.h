@@ -18,7 +18,8 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/DataTypes.h"
 #include "MathUtils/Utils.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 namespace o2::aod

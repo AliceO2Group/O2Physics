@@ -21,7 +21,8 @@
 #include "Framework/StaticFor.h"
 
 // O2Physics includes
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 
 using namespace o2;
 using namespace o2::aod::pidutils;

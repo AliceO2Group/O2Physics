@@ -35,7 +35,7 @@
 #include "EventFiltering/ZorroSummary.h"
 
 #include "Common/Core/PID/TPCPIDResponse.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "DCAFitter/DCAFitterN.h"
 
 #include "PWGLF/DataModel/LFDoubleCascTables.h"

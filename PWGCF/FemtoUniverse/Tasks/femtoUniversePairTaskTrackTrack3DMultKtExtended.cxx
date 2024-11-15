@@ -26,7 +26,8 @@
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "TDatabasePDG.h"
 #include "ReconstructionDataFormats/PID.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 
 #include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseParticleHisto.h"

@@ -29,7 +29,7 @@
 #include "Framework/AnalysisTask.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "CCDB/CcdbApi.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/Core/PID/TPCPIDResponse.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Common/DataModel/Multiplicity.h"
