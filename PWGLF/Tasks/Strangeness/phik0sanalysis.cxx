@@ -854,6 +854,10 @@ struct phik0shortanalysis {
       if (std::abs(recPi.Rapidity()) > cfgyAcceptance)
         continue;
 
+      float nsigmaTPC, nsigmaTOF;
+      nsigmaTPC = (track.hasTPC() ? track.tpcNSigmaPi() : -9.99);
+      nsigmaTOF = (track.hasTOF() ? track.tofNSigmaPi() : -9.99);
+
       std::vector<TLorentzVector> listrecPhi;
       std::array<int, 3> counts{};
 
@@ -892,10 +896,6 @@ struct phik0shortanalysis {
           }
         }
       }
-
-      float nsigmaTPC, nsigmaTOF;
-      nsigmaTPC = (track.hasTPC() ? track.tpcNSigmaPi() : -9.99);
-      nsigmaTOF = (track.hasTOF() ? track.tofNSigmaPi() : -9.99);
 
       std::array<float, 3> weights{};
       for (unsigned int i = 0; i < counts.size(); i++) {
@@ -1518,7 +1518,7 @@ struct phik0shortanalysis {
         continue;
 
       std::vector<TLorentzVector> listrecPhi;
-      int countInclusive = 0, countLtFirstCut = 0, countLtSecondCut = 0;
+      std::array<int, 3> counts{};
 
       // Phi reconstruction
       for (auto track1 : posThisColl) { // loop over all selected tracks
@@ -1543,38 +1543,23 @@ struct phik0shortanalysis {
           listrecPhi.push_back(recPhi);
 
           if (lowmPhi <= recPhi.M() && recPhi.M() <= upmPhi) {
-            countInclusive++;
+            counts.at(0)++;
             if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) > cfgFirstCutonDeltay)
               continue;
-            countLtFirstCut++;
+            counts.at(1)++;
             if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) > cfgSecondCutonDeltay)
               continue;
-            countLtSecondCut++;
+            counts.at(2)++;
           }
         }
       }
 
-      float weightInclusive, weightLtFirstCut, weightLtSecondCut;
-      if (countInclusive > 0) {
-        weightInclusive = 1. / static_cast<float>(countInclusive);
-      } else {
-        weightInclusive = 0;
-        MCeventHist.fill(HIST("thereisnoPhiwK0SMC"), 0);
-      }
-      if (countLtFirstCut > 0) {
-        weightLtFirstCut = 1. / static_cast<float>(countLtFirstCut);
-      } else {
-        weightLtFirstCut = 0;
-        MCeventHist.fill(HIST("thereisnoPhiwK0SMC"), 1);
-      }
-      if (countLtSecondCut > 0) {
-        weightLtSecondCut = 1. / static_cast<float>(countLtSecondCut);
-      } else {
-        weightLtSecondCut = 0;
-        MCeventHist.fill(HIST("thereisnoPhiwK0SMC"), 2);
+      std::array<float, 3> weights{};
+      for (unsigned int i = 0; i < counts.size(); i++) {
+        weights.at(i) = (counts.at(i) > 0 ? 1. / static_cast<float>(counts.at(i)) : 0);
       }
 
-      fillInvMass2D<true>(recK0S, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+      fillInvMass2D<true>(recK0S, listrecPhi, genmultiplicity, weights);
     }
   }
 
@@ -1608,17 +1593,11 @@ struct phik0shortanalysis {
         continue;
 
       float nsigmaTPC, nsigmaTOF;
-      if (track.hasTPC())
-        nsigmaTPC = track.tpcNSigmaPi();
-      else
-        nsigmaTPC = -9.99;
-      if (track.hasTOF())
-        nsigmaTOF = track.tofNSigmaPi();
-      else
-        nsigmaTOF = -9.99;
+      nsigmaTPC = (track.hasTPC() ? track.tpcNSigmaPi() : -9.99);
+      nsigmaTOF = (track.hasTOF() ? track.tofNSigmaPi() : -9.99);
 
       std::vector<TLorentzVector> listrecPhi;
-      int countInclusive = 0, countLtFirstCut = 0, countLtSecondCut = 0;
+      std::array<int, 3> counts{};
 
       // Phi reconstruction
       for (auto track1 : posThisColl) { // loop over all selected tracks
@@ -1643,38 +1622,23 @@ struct phik0shortanalysis {
           listrecPhi.push_back(recPhi);
 
           if (lowmPhi <= recPhi.M() && recPhi.M() <= upmPhi) {
-            countInclusive++;
+            counts.at(0)++;
             if (std::abs(recPi.Rapidity() - recPhi.Rapidity()) > cfgFirstCutonDeltay)
               continue;
-            countLtFirstCut++;
+            counts.at(1)++;
             if (std::abs(recPi.Rapidity() - recPhi.Rapidity()) > cfgSecondCutonDeltay)
               continue;
-            countLtSecondCut++;
+            counts.at(2)++;
           }
         }
       }
 
-      float weightInclusive, weightLtFirstCut, weightLtSecondCut;
-      if (countInclusive > 0) {
-        weightInclusive = 1. / static_cast<float>(countInclusive);
-      } else {
-        weightInclusive = 0;
-        MCeventHist.fill(HIST("thereisnoPhiwPiMC"), 0);
-      }
-      if (countLtFirstCut > 0) {
-        weightLtFirstCut = 1. / static_cast<float>(countLtFirstCut);
-      } else {
-        weightLtFirstCut = 0;
-        MCeventHist.fill(HIST("thereisnoPhiwPiMC"), 1);
-      }
-      if (countLtSecondCut > 0) {
-        weightLtSecondCut = 1. / static_cast<float>(countLtSecondCut);
-      } else {
-        weightLtSecondCut = 0;
-        MCeventHist.fill(HIST("thereisnoPhiwPiMC"), 2);
+      std::array<float, 3> weights{};
+      for (unsigned int i = 0; i < counts.size(); i++) {
+        weights.at(i) = (counts.at(i) > 0 ? 1. / static_cast<float>(counts.at(i)) : 0);
       }
 
-      fillInvMassNSigma<true>(recPi, nsigmaTPC, nsigmaTOF, listrecPhi, genmultiplicity, weightInclusive, weightLtFirstCut, weightLtSecondCut);
+      fillInvMassNSigma<true>(recPi, nsigmaTPC, nsigmaTOF, listrecPhi, genmultiplicity, weights);
     }
   }
 
