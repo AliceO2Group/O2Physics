@@ -758,12 +758,10 @@ struct HfCorrelatorDMesonPairs {
         registry.fill(HIST("hStatusSinglePartMcGen"), 4);
       }
 
-      for (auto collision : collisions) {
+      for (auto const& collision : collisions) {
         if (collision.has_mcCollision()) {
-          if (collision.mcCollisionId() == mcCollision.globalIndex()) {
-            registry.fill(HIST("hPtVsYVsNContribMcGen"), particle1.pt(), particle1.y(), collision.numContrib());
-            registry.fill(HIST("hNContribMcGen"), collision.numContrib());
-          }
+          registry.fill(HIST("hPtVsYVsNContribMcGen"), particle1.pt(), particle1.y(), collision.numContrib());
+          registry.fill(HIST("hNContribMcGen"), collision.numContrib());
         }
       }
 
