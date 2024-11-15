@@ -12,9 +12,6 @@
 // \brief Saves relevant information of DG candidates
 // \author Paul Buehler, paul.buehler@oeaw.ac.at
 
-#include <string>
-#include <vector>
-#include <map>
 #include <vector>
 #include <string>
 #include <map>
