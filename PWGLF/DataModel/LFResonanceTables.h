@@ -136,21 +136,21 @@ DECLARE_SOA_COLUMN(CascTransRadius, casctransRadius, float);                 //!
 DECLARE_SOA_COLUMN(DecayVtxX, decayVtxX, float);                             //! X position of the decay vertex
 DECLARE_SOA_COLUMN(DecayVtxY, decayVtxY, float);                             //! Y position of the decay vertex
 DECLARE_SOA_COLUMN(DecayVtxZ, decayVtxZ, float);                             //! Z position of the decay vertex
-DECLARE_SOA_COLUMN(DaughterTPCNSigmaPosPi, daughterTPCNSigmaPosPi, float);       //! TPC PID of the positive daughter as Pion
-DECLARE_SOA_COLUMN(DaughterTPCNSigmaPosKa, daughterTPCNSigmaPosKa, float);       //! TPC PID of the positive daughter as Kaon
-DECLARE_SOA_COLUMN(DaughterTPCNSigmaPosPr, daughterTPCNSigmaPosPr, float);       //! TPC PID of the positive daughter as Proton
-DECLARE_SOA_COLUMN(DaughterTPCNSigmaNegPi, daughterTPCNSigmaNegPi, float);       //! TPC PID of the negative daughter as Pion
-DECLARE_SOA_COLUMN(DaughterTPCNSigmaNegKa, daughterTPCNSigmaNegKa, float);       //! TPC PID of the negative daughter as Kaon
-DECLARE_SOA_COLUMN(DaughterTPCNSigmaNegPr, daughterTPCNSigmaNegPr, float);       //! TPC PID of the negative daughter as Proton
+DECLARE_SOA_COLUMN(DaughterTPCNSigmaPosPi, daughterTPCNSigmaPosPi, float);   //! TPC PID of the positive daughter as Pion
+DECLARE_SOA_COLUMN(DaughterTPCNSigmaPosKa, daughterTPCNSigmaPosKa, float);   //! TPC PID of the positive daughter as Kaon
+DECLARE_SOA_COLUMN(DaughterTPCNSigmaPosPr, daughterTPCNSigmaPosPr, float);   //! TPC PID of the positive daughter as Proton
+DECLARE_SOA_COLUMN(DaughterTPCNSigmaNegPi, daughterTPCNSigmaNegPi, float);   //! TPC PID of the negative daughter as Pion
+DECLARE_SOA_COLUMN(DaughterTPCNSigmaNegKa, daughterTPCNSigmaNegKa, float);   //! TPC PID of the negative daughter as Kaon
+DECLARE_SOA_COLUMN(DaughterTPCNSigmaNegPr, daughterTPCNSigmaNegPr, float);   //! TPC PID of the negative daughter as Proton
 DECLARE_SOA_COLUMN(DaughterTPCNSigmaBachPi, daughterTPCNSigmaBachPi, float); //! TPC PID of the bachelor daughter as Pion
 DECLARE_SOA_COLUMN(DaughterTPCNSigmaBachKa, daughterTPCNSigmaBachKa, float); //! TPC PID of the bachelor daughter as Kaon
 DECLARE_SOA_COLUMN(DaughterTPCNSigmaBachPr, daughterTPCNSigmaBachPr, float); //! TPC PID of the bachelor daughter as Proton
-DECLARE_SOA_COLUMN(DaughterTOFNSigmaPosPi, daughterTOFNSigmaPosPi, float);       //! TOF PID of the positive daughter as Pion
-DECLARE_SOA_COLUMN(DaughterTOFNSigmaPosKa, daughterTOFNSigmaPosKa, float);       //! TOF PID of the positive daughter as Kaon
-DECLARE_SOA_COLUMN(DaughterTOFNSigmaPosPr, daughterTOFNSigmaPosPr, float);       //! TOF PID of the positive daughter as Proton
-DECLARE_SOA_COLUMN(DaughterTOFNSigmaNegPi, daughterTOFNSigmaNegPi, float);       //! TOF PID of the negative daughter as Pion
-DECLARE_SOA_COLUMN(DaughterTOFNSigmaNegKa, daughterTOFNSigmaNegKa, float);       //! TOF PID of the negative daughter as Kaon
-DECLARE_SOA_COLUMN(DaughterTOFNSigmaNegPr, daughterTOFNSigmaNegPr, float);       //! TOF PID of the negative daughter as Proton
+DECLARE_SOA_COLUMN(DaughterTOFNSigmaPosPi, daughterTOFNSigmaPosPi, float);   //! TOF PID of the positive daughter as Pion
+DECLARE_SOA_COLUMN(DaughterTOFNSigmaPosKa, daughterTOFNSigmaPosKa, float);   //! TOF PID of the positive daughter as Kaon
+DECLARE_SOA_COLUMN(DaughterTOFNSigmaPosPr, daughterTOFNSigmaPosPr, float);   //! TOF PID of the positive daughter as Proton
+DECLARE_SOA_COLUMN(DaughterTOFNSigmaNegPi, daughterTOFNSigmaNegPi, float);   //! TOF PID of the negative daughter as Pion
+DECLARE_SOA_COLUMN(DaughterTOFNSigmaNegKa, daughterTOFNSigmaNegKa, float);   //! TOF PID of the negative daughter as Kaon
+DECLARE_SOA_COLUMN(DaughterTOFNSigmaNegPr, daughterTOFNSigmaNegPr, float);   //! TOF PID of the negative daughter as Proton
 DECLARE_SOA_COLUMN(DaughterTOFNSigmaBachPi, daughterTOFNSigmaBachPi, float); //! TOF PID of the bachelor daughter as Pion
 DECLARE_SOA_COLUMN(DaughterTOFNSigmaBachKa, daughterTOFNSigmaBachKa, float); //! TOF PID of the bachelor daughter as Kaon
 DECLARE_SOA_COLUMN(DaughterTOFNSigmaBachPr, daughterTOFNSigmaBachPr, float); //! TOF PID of the bachelor daughter as Proton
