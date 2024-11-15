@@ -20,8 +20,8 @@
 namespace o2::aod::pid_tpc_tof_utils
 {
 enum HfProngSpecies : uint8_t { Pion = 0,
-                            Kaon,
-                            Proton };
+                                Kaon,
+                                Proton };
 
 /// Function to combine TPC and TOF NSigma
 /// \param tiny switch between full and tiny (binned) PID tables

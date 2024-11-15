@@ -20,23 +20,23 @@
 
 // Macro to store nSigma for prong _id_ with PID hypothesis _hyp_ in an array
 #define GET_N_SIGMA_PRONG(_array_, _candidate_, _id_, _hyp_) \
-  _array_[0] = _candidate_.nSigTpc##_hyp_##_id_(); \
-  _array_[1] = _candidate_.nSigTof##_hyp_##_id_(); \
+  _array_[0] = _candidate_.nSigTpc##_hyp_##_id_();           \
+  _array_[1] = _candidate_.nSigTof##_hyp_##_id_();           \
   _array_[2] = _candidate_.tpcTofNSigma##_hyp_##_id_();
 
 namespace o2::analysis::hf_derived
 {
-  /// Reserve space in the filled table for all entries in the source table.
-  /// \param cursor  cursor of the filled table
-  /// \param enabled  switch for filling the table
-  /// \param size  size of the source table
-  template <typename T>
-  void reserveTable(T& cursor, const o2::framework::Configurable<bool>& enabled, const uint64_t size)
-  {
-    if (enabled.value) {
-      cursor.reserve(size);
-    }
-  };
+/// Reserve space in the filled table for all entries in the source table.
+/// \param cursor  cursor of the filled table
+/// \param enabled  switch for filling the table
+/// \param size  size of the source table
+template <typename T>
+void reserveTable(T& cursor, const o2::framework::Configurable<bool>& enabled, const uint64_t size)
+{
+  if (enabled.value) {
+    cursor.reserve(size);
+  }
+};
 } // namespace o2::analysis::hf_derived
 
 #endif // PWGHF_UTILS_UTILSDERIVEDDATA_H_
