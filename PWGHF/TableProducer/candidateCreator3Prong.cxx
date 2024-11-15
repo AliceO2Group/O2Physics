@@ -539,8 +539,6 @@ struct HfCandidateCreator3Prong {
       const float chi2topo = KFCalculateChi2ToPrimaryVertex(kfCandPKPi, KFPV);
       const std::pair<float, float> ldl = KFCalculateLdL(kfCandPKPi, KFPV);
 
-      const float errorPt = kfCandPKPi.GetErrPt();
-
       registry.fill(HIST("hCovSVXX"), kfCandPKPi.Covariance(0, 0));
       registry.fill(HIST("hCovSVYY"), kfCandPKPi.Covariance(1, 1));
       registry.fill(HIST("hCovSVXZ"), kfCandPKPi.Covariance(2, 0));
@@ -580,11 +578,13 @@ struct HfCandidateCreator3Prong {
 
       // fill KF info
       rowCandidateKF(massPKPi, massPiKP, massPiKPi, massKKPi, massPiKK, massKPi, massPiK,
+                     kfCandPKPi.GetPx(), kfCandPKPi.GetPy(), kfCandPKPi.GetPz(),
+                     kfCandPKPi.GetErrPx(), kfCandPKPi.GetErrPy(), kfCandPKPi.GetErrPz(),
                      chi2prim_first, chi2prim_second, chi2prim_third,
                      DCA_second_third, DCA_first_third, DCA_first_second,
                      chi2geo_second_third, chi2geo_first_third, chi2geo_first_second,
-                     chi2geo, ldl.first, ldl.second, chi2topo,
-                     errorPt);
+                     chi2geo, ldl.first, ldl.second, chi2topo
+      );
 
       // fill histograms
       if (fillHistograms) {
