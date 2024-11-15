@@ -126,7 +126,7 @@ struct lambdakzeromcbuilder {
       auto const& motherList = part.template mothers_as<aod::McParticles>();
       if (motherList.size() == 1) {
         for (const auto& mother : motherList) {
-          if (std::abs(mother.pdgCode()) == 13 && treatPiToMuDecays) {
+          if (std::abs(part.pdgCode()) == 13 && treatPiToMuDecays) {
             // muon decay, de-ref mother twice
             if (mother.has_mothers()) {
               auto grandMotherList = mother.template mothers_as<aod::McParticles>();
@@ -194,7 +194,7 @@ struct lambdakzeromcbuilder {
         negOriginating = getOriginatingParticle(lMCNegTrack, particleForDecayPositionIdx);
         posOriginating = getOriginatingParticle(lMCPosTrack, particleForDecayPositionIdx);
 
-        if (negOriginating == posOriginating) {
+        if (negOriginating > -1 && negOriginating == posOriginating) {
           auto originatingV0 = mcParticles.rawIteratorAt(negOriginating);
           auto particleForDecayPosition = mcParticles.rawIteratorAt(particleForDecayPositionIdx);
 
