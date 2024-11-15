@@ -18,8 +18,8 @@
 
 #include <Framework/Configurable.h>
 
-// Macro to set nSigma for prong _id_ with PID hypothesis _hyp_
-#define SETNSIGMAPRONG(_array_, _candidate_, _id_, _hyp_) \
+// Macro to store nSigma for prong _id_ with PID hypothesis _hyp_ in an array
+#define GET_N_SIGMA_PRONG(_array_, _candidate_, _id_, _hyp_) \
   _array_[0] = _candidate_.nSigTpc##_hyp_##_id_(); \
   _array_[1] = _candidate_.nSigTof##_hyp_##_id_(); \
   _array_[2] = _candidate_.tpcTofNSigma##_hyp_##_id_();
