@@ -18,6 +18,7 @@
 ///
 
 // O2 includes
+#include <string>
 #include "ReconstructionDataFormats/Track.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -38,7 +39,6 @@
 #include "PWGLF/DataModel/mcCentrality.h"
 #include "Common/Core/RecoDecay.h"
 #include "TPDGCode.h"
-
 using namespace o2;
 using namespace o2::track;
 using namespace o2::framework;
@@ -416,12 +416,12 @@ struct tofSpectra {
     histos.add("Data/neg/pt/tpc", "neg TPC", kTH1D, {ptAxis});
 
     if (includeCentralityToTracks) {
-      histos.add("Data/cent/pos/pt/its_tpc_tof", "pos ITS-TPC-TOF", kTH2D, {ptAxis, multAxis});
-      histos.add("Data/cent/neg/pt/its_tpc_tof", "neg ITS-TPC-TOF", kTH2D, {ptAxis, multAxis});
-      histos.add("Data/cent/pos/pt/its_tpc", "pos ITS-TPC", kTH2D, {ptAxis, multAxis});
-      histos.add("Data/cent/neg/pt/its_tpc", "neg ITS-TPC", kTH2D, {ptAxis, multAxis});
-      histos.add("Data/cent/pos/pt/its_tof", "pos ITS-TOF", kTH2D, {ptAxis, multAxis});
-      histos.add("Data/cent/neg/pt/its_tof", "neg ITS-TOF", kTH2D, {ptAxis, multAxis});
+      histos.add("Data/cent/pos/pt/its_tpc_tof", "pos ITS-TPC-TOF", kTH3D, {ptAxis, multAxis, occupancyAxis});
+      histos.add("Data/cent/neg/pt/its_tpc_tof", "neg ITS-TPC-TOF", kTH3D, {ptAxis, multAxis, occupancyAxis});
+      histos.add("Data/cent/pos/pt/its_tpc", "pos ITS-TPC", kTH3D, {ptAxis, multAxis, occupancyAxis});
+      histos.add("Data/cent/neg/pt/its_tpc", "neg ITS-TPC", kTH3D, {ptAxis, multAxis, occupancyAxis});
+      histos.add("Data/cent/pos/pt/its_tof", "pos ITS-TOF", kTH3D, {ptAxis, multAxis, occupancyAxis});
+      histos.add("Data/cent/neg/pt/its_tof", "neg ITS-TOF", kTH3D, {ptAxis, multAxis, occupancyAxis});
     }
 
     if (doprocessOccupancy) {
@@ -634,7 +634,6 @@ struct tofSpectra {
         }
         histos.add(hpt_den_prm_mcgoodev[i].data(), pTCharge[i], kTH2D, {ptAxis, multAxis});
         histos.add(hpt_den_prm_mcbadev[i].data(), pTCharge[i], kTH2D, {ptAxis, multAxis});
-
         const std::string cpName = Form("/%s/%s", (i < Np) ? "pos" : "neg", pN[i % Np]);
         if (enableDCAxyzHistograms) {
           hDcaXYZPrm[i] = histos.add<TH3>("dcaprm" + cpName, pTCharge[i], kTH3D, {ptAxis, dcaXyAxis, dcaZAxis});
@@ -1210,14 +1209,8 @@ struct tofSpectra {
       if (track.hasITS() && track.hasTPC() && track.hasTOF()) {
         if (track.sign() > 0) {
           histos.fill(HIST("Data/pos/pt/its_tpc_tof"), track.pt());
-          if (includeCentralityToTracks) {
-            histos.fill(HIST("Data/cent/pos/pt/its_tpc_tof"), track.pt(), collision.centFT0C());
-          }
         } else {
           histos.fill(HIST("Data/neg/pt/its_tpc_tof"), track.pt());
-          if (includeCentralityToTracks) {
-            histos.fill(HIST("Data/cent/neg/pt/its_tpc_tof"), track.pt(), collision.centFT0C());
-          }
         }
       }
       if (track.hasITS() && track.hasTRD() && track.hasTOF()) {
@@ -1237,14 +1230,8 @@ struct tofSpectra {
       if (track.hasITS() && track.hasTPC()) {
         if (track.sign() > 0) {
           histos.fill(HIST("Data/pos/pt/its_tpc"), track.pt());
-          if (includeCentralityToTracks) {
-            histos.fill(HIST("Data/cent/pos/pt/its_tpc"), track.pt(), collision.centFT0C());
-          }
         } else {
           histos.fill(HIST("Data/neg/pt/its_tpc"), track.pt());
-          if (includeCentralityToTracks) {
-            histos.fill(HIST("Data/cent/neg/pt/its_tpc"), track.pt(), collision.centFT0C());
-          }
         }
       }
       if (track.hasTRD() && track.hasTOF()) {
@@ -1264,14 +1251,8 @@ struct tofSpectra {
       if (track.hasITS() && track.hasTOF()) {
         if (track.sign() > 0) {
           histos.fill(HIST("Data/pos/pt/its_tof"), track.pt());
-          if (includeCentralityToTracks) {
-            histos.fill(HIST("Data/cent/pos/pt/its_tof"), track.pt(), collision.centFT0C());
-          }
         } else {
           histos.fill(HIST("Data/neg/pt/its_tof"), track.pt());
-          if (includeCentralityToTracks) {
-            histos.fill(HIST("Data/cent/neg/pt/its_tof"), track.pt(), collision.centFT0C());
-          }
         }
       }
       if (track.hasTPC() && track.hasTRD()) {
@@ -1352,6 +1333,30 @@ struct tofSpectra {
     for (const auto& track : tracks) {
       if (!isTrackSelected<true>(track, collision)) {
         continue;
+      }
+      if (includeCentralityToTracks) {
+
+        if (track.sign() > 0) {
+          if (track.hasITS() && track.hasTPC() && track.hasTOF()) {
+            histos.fill(HIST("Data/cent/pos/pt/its_tpc_tof"), track.pt(), collision.centFT0C(), occupancy);
+          }
+          if (track.hasITS() && track.hasTOF()) {
+            histos.fill(HIST("Data/cent/pos/pt/its_tof"), track.pt(), collision.centFT0C(), occupancy);
+          }
+          if (track.hasITS() && track.hasTPC()) {
+            histos.fill(HIST("Data/cent/pos/pt/its_tpc"), track.pt(), collision.centFT0C(), occupancy);
+          }
+        } else {
+          if (track.hasITS() && track.hasTPC() && track.hasTOF()) {
+            histos.fill(HIST("Data/cent/neg/pt/its_tpc_tof"), track.pt(), collision.centFT0C(), occupancy);
+          }
+          if (track.hasITS() && track.hasTPC()) {
+            histos.fill(HIST("Data/cent/neg/pt/its_tpc"), track.pt(), collision.centFT0C(), occupancy);
+          }
+          if (track.hasITS() && track.hasTOF()) {
+            histos.fill(HIST("Data/cent/neg/pt/its_tof"), track.pt(), collision.centFT0C(), occupancy);
+          }
+        }
       }
       const auto& nsigmaTPCPi = o2::aod::pidutils::tpcNSigma<2>(track);
       const auto& nsigmaTPCKa = o2::aod::pidutils::tpcNSigma<3>(track);

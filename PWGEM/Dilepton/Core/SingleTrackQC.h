@@ -553,11 +553,11 @@ struct SingleTrackQC {
       if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
         for (auto& track : tracks_per_coll) {
           if (dielectroncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) {
-            if (!cut.template IsSelectedTrack<true>(track, collision)) {
+            if (!cut.template IsSelectedTrack<false, true>(track, collision)) {
               continue;
             }
           } else { // cut-based
-            if (!cut.template IsSelectedTrack(track)) {
+            if (!cut.template IsSelectedTrack<false, false>(track)) {
               continue;
             }
           }
@@ -601,11 +601,11 @@ struct SingleTrackQC {
       if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
         for (auto& track : tracks_per_coll) {
           if (dielectroncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) {
-            if (!cut.template IsSelectedTrack<true>(track, collision)) {
+            if (!cut.template IsSelectedTrack<false, true>(track, collision)) {
               continue;
             }
           } else { // cut-based
-            if (!cut.template IsSelectedTrack(track)) {
+            if (!cut.template IsSelectedTrack<false, false>(track)) {
               continue;
             }
           }

@@ -518,7 +518,7 @@ struct Dilepton {
       fRegistry.add("Pair/same/uls/hsDeltaP", "difference of p between 2 tracks;|p_{T,1} - p_{T,2}|/|p_{T,1} + p_{T,2}|;#Delta#eta;#Delta#varphi (rad.);", kTHnSparseD, {{20, 0, 1}, {100, -0.5, +0.5}, {100, -0.5, 0.5}}, true);
 
       if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
-        fRegistry.add("Pair/same/uls/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", kTH2D, {{90, 0, M_PI}, {500, 0.0f, 0.5f}}, true); // phiv is only for dielectron
+        fRegistry.add("Pair/same/uls/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", kTH2D, {{90, 0, M_PI}, {100, 0.0f, 1.0f}}, true); // phiv is only for dielectron
         fRegistry.add("Pair/same/uls/hMvsOpAng", "m_{ee} vs. angle between 2 tracks;#omega (rad.);m_{ee} (GeV/c^{2})", kTH2D, {{100, 0, 2.0}, {20, 0.0f, 3.2}}, true);
       }
       fRegistry.addClone("Pair/same/uls/", "Pair/same/lspp/");
@@ -792,11 +792,11 @@ struct Dilepton {
     if constexpr (ev_id == 0) {
       if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
         if (dielectroncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) {
-          if (!cut.template IsSelectedTrack<true>(t1, collision) || !cut.template IsSelectedTrack<true>(t2, collision)) {
+          if (!cut.template IsSelectedTrack<false, true>(t1, collision) || !cut.template IsSelectedTrack<false, true>(t2, collision)) {
             return false;
           }
         } else { // cut-based
-          if (!cut.template IsSelectedTrack(t1) || !cut.template IsSelectedTrack(t2)) {
+          if (!cut.template IsSelectedTrack<false, false>(t1) || !cut.template IsSelectedTrack<false, false>(t2)) {
             return false;
           }
         }
@@ -1298,11 +1298,11 @@ struct Dilepton {
   {
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
       if (dielectroncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) {
-        if (!cut.template IsSelectedTrack<true>(t1, collision) || !cut.template IsSelectedTrack<true>(t2, collision)) {
+        if (!cut.template IsSelectedTrack<false, true>(t1, collision) || !cut.template IsSelectedTrack<false, true>(t2, collision)) {
           return false;
         }
       } else { // cut-based
-        if (!cut.template IsSelectedTrack(t1) || !cut.template IsSelectedTrack(t2)) {
+        if (!cut.template IsSelectedTrack<false, false>(t1) || !cut.template IsSelectedTrack<false, false>(t2)) {
           return false;
         }
       }

@@ -123,19 +123,37 @@ DECLARE_SOA_COLUMN(HasITS, hasITS, bool);                            //! Has ITS
 DECLARE_SOA_COLUMN(HasTPC, hasTPC, bool);                            //! Has TPC
 DECLARE_SOA_COLUMN(HasTOF, hasTOF, bool);                            //! Has TOF
 DECLARE_SOA_COLUMN(TPCCrossedRowsOverFindableCls, tpcCrossedRowsOverFindableCls, float);
-DECLARE_SOA_COLUMN(DaughDCA, daughDCA, float);               //! DCA between daughters
-DECLARE_SOA_COLUMN(CascDaughDCA, cascdaughDCA, float);       //! DCA between daughters from cascade
-DECLARE_SOA_COLUMN(V0CosPA, v0CosPA, float);                 //! V0 Cosine of Pointing Angle
-DECLARE_SOA_COLUMN(CascCosPA, cascCosPA, float);             //! Cascade Cosine of Pointing Angle
-DECLARE_SOA_COLUMN(MLambda, mLambda, float);                 //! The invariant mass of V0 candidate, assuming lambda
-DECLARE_SOA_COLUMN(MAntiLambda, mAntiLambda, float);         //! The invariant mass of V0 candidate, assuming antilambda
-DECLARE_SOA_COLUMN(MK0Short, mK0Short, float);               //! The invariant mass of V0 candidate, assuming k0s
-DECLARE_SOA_COLUMN(MXi, mXi, float);                         //! The invariant mass of Xi candidate
-DECLARE_SOA_COLUMN(TransRadius, transRadius, float);         //! Transverse radius of the decay vertex
-DECLARE_SOA_COLUMN(CascTransRadius, casctransRadius, float); //! Transverse radius of the decay vertex from cascade
-DECLARE_SOA_COLUMN(DecayVtxX, decayVtxX, float);             //! X position of the decay vertex
-DECLARE_SOA_COLUMN(DecayVtxY, decayVtxY, float);             //! Y position of the decay vertex
-DECLARE_SOA_COLUMN(DecayVtxZ, decayVtxZ, float);             //! Z position of the decay vertex
+DECLARE_SOA_COLUMN(DaughDCA, daughDCA, float);                               //! DCA between daughters
+DECLARE_SOA_COLUMN(CascDaughDCA, cascdaughDCA, float);                       //! DCA between daughters from cascade
+DECLARE_SOA_COLUMN(V0CosPA, v0CosPA, float);                                 //! V0 Cosine of Pointing Angle
+DECLARE_SOA_COLUMN(CascCosPA, cascCosPA, float);                             //! Cascade Cosine of Pointing Angle
+DECLARE_SOA_COLUMN(MLambda, mLambda, float);                                 //! The invariant mass of V0 candidate, assuming lambda
+DECLARE_SOA_COLUMN(MAntiLambda, mAntiLambda, float);                         //! The invariant mass of V0 candidate, assuming antilambda
+DECLARE_SOA_COLUMN(MK0Short, mK0Short, float);                               //! The invariant mass of V0 candidate, assuming k0s
+DECLARE_SOA_COLUMN(MXi, mXi, float);                                         //! The invariant mass of Xi candidate
+DECLARE_SOA_COLUMN(TransRadius, transRadius, float);                         //! Transverse radius of the decay vertex
+DECLARE_SOA_COLUMN(CascTransRadius, casctransRadius, float);                 //! Transverse radius of the decay vertex from cascade
+DECLARE_SOA_COLUMN(DecayVtxX, decayVtxX, float);                             //! X position of the decay vertex
+DECLARE_SOA_COLUMN(DecayVtxY, decayVtxY, float);                             //! Y position of the decay vertex
+DECLARE_SOA_COLUMN(DecayVtxZ, decayVtxZ, float);                             //! Z position of the decay vertex
+DECLARE_SOA_COLUMN(DaughterTPCNSigmaPi1, daughterTPCNSigmaPi1, float);       //! TPC PID of the first daughter as Pion
+DECLARE_SOA_COLUMN(DaughterTPCNSigmaKa1, daughterTPCNSigmaKa1, float);       //! TPC PID of the first daughter as Kaon
+DECLARE_SOA_COLUMN(DaughterTPCNSigmaPr1, daughterTPCNSigmaPr1, float);       //! TPC PID of the first daughter as Proton
+DECLARE_SOA_COLUMN(DaughterTPCNSigmaPi2, daughterTPCNSigmaPi2, float);       //! TPC PID of the second daughter as Pion
+DECLARE_SOA_COLUMN(DaughterTPCNSigmaKa2, daughterTPCNSigmaKa2, float);       //! TPC PID of the second daughter as Kaon
+DECLARE_SOA_COLUMN(DaughterTPCNSigmaPr2, daughterTPCNSigmaPr2, float);       //! TPC PID of the second daughter as Proton
+DECLARE_SOA_COLUMN(DaughterTPCNSigmaPiBach, daughterTPCNSigmaPiBach, float); //! TPC PID of the bachelor daughter as Pion
+DECLARE_SOA_COLUMN(DaughterTPCNSigmaKaBach, daughterTPCNSigmaKaBach, float); //! TPC PID of the bachelor daughter as Kaon
+DECLARE_SOA_COLUMN(DaughterTPCNSigmaPrBach, daughterTPCNSigmaPrBach, float); //! TPC PID of the bachelor daughter as Proton
+DECLARE_SOA_COLUMN(DaughterTOFNSigmaPi1, daughterTOFNSigmaPi1, float);       //! TOF PID of the first daughter as Pion
+DECLARE_SOA_COLUMN(DaughterTOFNSigmaKa1, daughterTOFNSigmaKa1, float);       //! TOF PID of the first daughter as Kaon
+DECLARE_SOA_COLUMN(DaughterTOFNSigmaPr1, daughterTOFNSigmaPr1, float);       //! TOF PID of the first daughter as Proton
+DECLARE_SOA_COLUMN(DaughterTOFNSigmaPi2, daughterTOFNSigmaPi2, float);       //! TOF PID of the second daughter as Pion
+DECLARE_SOA_COLUMN(DaughterTOFNSigmaKa2, daughterTOFNSigmaKa2, float);       //! TOF PID of the second daughter as Kaon
+DECLARE_SOA_COLUMN(DaughterTOFNSigmaPr2, daughterTOFNSigmaPr2, float);       //! TOF PID of the second daughter as Proton
+DECLARE_SOA_COLUMN(DaughterTOFNSigmaPiBach, daughterTOFNSigmaPiBach, float); //! TOF PID of the bachelor daughter as Pion
+DECLARE_SOA_COLUMN(DaughterTOFNSigmaKaBach, daughterTOFNSigmaKaBach, float); //! TOF PID of the bachelor daughter as Kaon
+DECLARE_SOA_COLUMN(DaughterTOFNSigmaPrBach, daughterTOFNSigmaPrBach, float); //! TOF PID of the bachelor daughter as Proton
 // For MC
 DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle); //! Index of the corresponding MC particle
 DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool);
@@ -200,6 +218,18 @@ DECLARE_SOA_TABLE(ResoV0s, "AOD", "RESOV0S",
                   resodaughter::Eta,
                   resodaughter::Phi,
                   resodaughter::Indices,
+                  resodaughter::DaughterTPCNSigmaPi1,
+                  resodaughter::DaughterTPCNSigmaKa1,
+                  resodaughter::DaughterTPCNSigmaPr1,
+                  resodaughter::DaughterTPCNSigmaPi2,
+                  resodaughter::DaughterTPCNSigmaKa2,
+                  resodaughter::DaughterTPCNSigmaPr2,
+                  resodaughter::DaughterTOFNSigmaPi1,
+                  resodaughter::DaughterTOFNSigmaKa1,
+                  resodaughter::DaughterTOFNSigmaPr1,
+                  resodaughter::DaughterTOFNSigmaPi2,
+                  resodaughter::DaughterTOFNSigmaKa2,
+                  resodaughter::DaughterTOFNSigmaPr2,
                   resodaughter::V0CosPA,
                   resodaughter::DaughDCA,
                   v0data::DCAPosToPV,
@@ -224,6 +254,24 @@ DECLARE_SOA_TABLE(ResoCascades, "AOD", "RESOCASCADES",
                   resodaughter::Eta,
                   resodaughter::Phi,
                   resodaughter::CascadeIndices,
+                  resodaughter::DaughterTPCNSigmaPi1,
+                  resodaughter::DaughterTPCNSigmaKa1,
+                  resodaughter::DaughterTPCNSigmaPr1,
+                  resodaughter::DaughterTPCNSigmaPi2,
+                  resodaughter::DaughterTPCNSigmaKa2,
+                  resodaughter::DaughterTPCNSigmaPr2,
+                  resodaughter::DaughterTPCNSigmaPiBach,
+                  resodaughter::DaughterTPCNSigmaKaBach,
+                  resodaughter::DaughterTPCNSigmaPrBach,
+                  resodaughter::DaughterTOFNSigmaPi1,
+                  resodaughter::DaughterTOFNSigmaKa1,
+                  resodaughter::DaughterTOFNSigmaPr1,
+                  resodaughter::DaughterTOFNSigmaPi2,
+                  resodaughter::DaughterTOFNSigmaKa2,
+                  resodaughter::DaughterTOFNSigmaPr2,
+                  resodaughter::DaughterTOFNSigmaPiBach,
+                  resodaughter::DaughterTOFNSigmaKaBach,
+                  resodaughter::DaughterTOFNSigmaPrBach,
                   resodaughter::V0CosPA,
                   resodaughter::CascCosPA,
                   resodaughter::DaughDCA,
