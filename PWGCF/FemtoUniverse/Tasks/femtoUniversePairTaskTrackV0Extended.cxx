@@ -15,6 +15,8 @@
 /// \author Shirajum Monira, WUT Warsaw, shirajum.monira.dokt@pw.edu.pl
 
 #include <vector>
+#include <string>
+#include <memory>
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
@@ -31,8 +33,6 @@
 #include "Framework/O2DatabasePDGPlugin.h"
 #include <TFile.h>
 #include <TH1.h>
-#include <string>
-#include <memory>
 
 using namespace o2;
 using namespace o2::soa;
