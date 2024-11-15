@@ -12,6 +12,8 @@
 
 #include <cmath>
 #include <algorithm>
+#include <string>
+#include <vector>
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -26,8 +28,6 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Framework/runDataProcessing.h"
-#include <string>
-#include <vector>
 #include <TROOT.h>
 #include <TDatabasePDG.h>
 #include <TParameter.h>
