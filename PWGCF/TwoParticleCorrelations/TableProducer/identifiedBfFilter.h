@@ -533,17 +533,17 @@ float getCentMultPercentile(CollisionObject collision)
         return collision.centRun2V0M();
         break;
       case kCL0:
-        if constexpr(framework::has_type_v<aod::cent::CentRun2CL0, typename CollisionObject::all_columns>){
+        if constexpr (framework::has_type_v<aod::cent::CentRun2CL0, typename CollisionObject::all_columns>) {
           return collision.centRun2CL0();
-        } else{
+        } else {
           return 105.0;
-        } 
-          break;
-          
+        }
+        break;
+
       case kCL1:
-        if constexpr(framework::has_type_v<aod::cent::CentRun2CL1, typename CollisionObject::all_columns>){
+        if constexpr (framework::has_type_v<aod::cent::CentRun2CL1, typename CollisionObject::all_columns>) {
           return collision.centRun2CL1();
-        } else{
+        } else {
           return 105.0;
         }
         break;
