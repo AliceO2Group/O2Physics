@@ -204,21 +204,22 @@ struct HfDerivedDataCreatorD0ToKPi {
         invMass,
         y);
     }
-
     if (fillCandidatePar) {
-      float tpcNSigmaPiExpPi = candidate.nSigTpcPi0();
-      float tofNSigmaPiExpPi = candidate.nSigTofPi0();
-      float tpcTofNSigmaPiExpPi = candidate.tpcTofNSigmaPi0();
-      float tpcNSigmaKaExpPi = candidate.nSigTpcKa0();
-      float tofNSigmaKaExpPi = candidate.nSigTofKa0();
-      float tpcTofNSigmaKaExpPi = candidate.tpcTofNSigmaKa0();
-      float tpcNSigmaPiExpKa = candidate.nSigTpcPi1();
-      float tofNSigmaPiExpKa = candidate.nSigTofPi1();
-      float tpcTofNSigmaPiExpKa = candidate.tpcTofNSigmaPi1();
-      float tpcNSigmaKaExpKa = candidate.nSigTpcKa1();
-      float tofNSigmaKaExpKa = candidate.nSigTofKa1();
-      float tpcTofNSigmaKaExpKa = candidate.tpcTofNSigmaKa1();
-      if (candFlag == 1) {
+      float tpcNSigmaPiExpPi{}, tofNSigmaPiExpPi{}, tpcTofNSigmaPiExpPi{}, tpcNSigmaKaExpPi{}, tofNSigmaKaExpPi{}, tpcTofNSigmaKaExpPi{}, tpcNSigmaPiExpKa{}, tofNSigmaPiExpKa{}, tpcTofNSigmaPiExpKa{}, tpcNSigmaKaExpKa{}, tofNSigmaKaExpKa{}, tpcTofNSigmaKaExpKa{};
+      if (candFlag == 0) {
+        tpcNSigmaPiExpPi = candidate.nSigTpcPi0();
+        tofNSigmaPiExpPi = candidate.nSigTofPi0();
+        tpcTofNSigmaPiExpPi = candidate.tpcTofNSigmaPi0();
+        tpcNSigmaKaExpPi = candidate.nSigTpcKa0();
+        tofNSigmaKaExpPi = candidate.nSigTofKa0();
+        tpcTofNSigmaKaExpPi = candidate.tpcTofNSigmaKa0();
+        tpcNSigmaPiExpKa = candidate.nSigTpcPi1();
+        tofNSigmaPiExpKa = candidate.nSigTofPi1();
+        tpcTofNSigmaPiExpKa = candidate.tpcTofNSigmaPi1();
+        tpcNSigmaKaExpKa = candidate.nSigTpcKa1();
+        tofNSigmaKaExpKa = candidate.nSigTofKa1();
+        tpcTofNSigmaKaExpKa = candidate.tpcTofNSigmaKa1();
+      } else if (candFlag == 1) {
         tpcNSigmaPiExpPi = candidate.nSigTpcPi1();
         tofNSigmaPiExpPi = candidate.nSigTofPi1();
         tpcTofNSigmaPiExpPi = candidate.tpcTofNSigmaPi1();
