@@ -26,6 +26,10 @@
 
 namespace o2::analysis::hf_derived
 {
+  /// Reserve space in the filled table for all entries in the source table.
+  /// \param cursor  cursor of the filled table
+  /// \param enabled  switch for filling the table
+  /// \param size  size of the source table
   template <typename T>
   void reserveTable(T& cursor, const o2::framework::Configurable<bool>& enabled, const uint64_t size)
   {
