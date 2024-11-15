@@ -414,7 +414,7 @@ struct strangederivedbuilder {
     // ______________________________________________
     // fill all MC collisions, correlate via index later on
     for (const auto& mccollision : mcCollisions) {
-      strangeMCColl(mccollision.posX(), mccollision.posY(), mccollision.posZ(), 
+      strangeMCColl(mccollision.posX(), mccollision.posY(), mccollision.posZ(),
                     mccollision.impactParameter(), mccollision.eventPlaneAngle());
       strangeMCMults(mccollision.multMCFT0A(), mccollision.multMCFT0C(),
                      mccollision.multMCNParticlesEta05(),
