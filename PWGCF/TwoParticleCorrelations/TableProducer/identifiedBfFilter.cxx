@@ -935,8 +935,6 @@ struct IdentifiedBfFilterTracks {
   template <typename TrackObject>
   inline MatchRecoGenSpecies IdentifyTrack(TrackObject const& track);
   template <typename TrackObject>
-  MatchRecoGenSpecies trackIdentification(TrackObject const& track);
-  template <typename TrackObject>
   int8_t AcceptTrack(TrackObject const& track);
   template <typename ParticleObject, typename MCCollisionObject>
   int8_t AcceptParticle(ParticleObject& particle, MCCollisionObject const& mccollision);
@@ -1020,7 +1018,6 @@ struct IdentifiedBfFilterTracks {
   void filterParticles(soa::Join<aod::McCollisions, aod::IdentifiedBfCFGenCollisionsInfo> const& gencollisions, aod::McParticles const& particles)
   {
     using namespace identifiedbffilter;
-
     int acceptedparticles = 0;
     int acceptedcollisions = 0;
     if (!fullDerivedData) {
@@ -1049,9 +1046,8 @@ struct IdentifiedBfFilterTracks {
           fillParticleHistosBeforeSelection(particle, mccollision, charge);
 
           /* track selection */
-          /* TODO: at some point the pid has to be substituted by the identified species */
           pid = AcceptParticle(particle, mccollision);
-          if(!(pid<-1)){
+          if(!(pid < 0)){ //if PID isn't negative
             acceptedparticles++;
           }
         }
@@ -1330,29 +1326,6 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::IdentifyTrack(TrackObject c
   }
 }
 
-template <typename TrackObject>
-MatchRecoGenSpecies IdentifiedBfFilterTracks::trackIdentification(TrackObject const& track)
-{
-  using namespace identifiedbffilter;
-  MatchRecoGenSpecies sp = kWrongSpecies;
-  if (recoIdMethod == 0) {
-    sp = kIdBfCharged;
-  } else if (recoIdMethod == 1) {
-
-    if constexpr (framework::has_type_v<aod::pidtpc_tiny::TPCNSigmaStorePi, typename TrackObject::all_columns> || framework::has_type_v<aod::pidtpc::TPCNSigmaPi, typename TrackObject::all_columns>) {
-      sp = IdentifyTrack(track);
-    } else {
-      LOGF(fatal, "Track identification required but PID information not present");
-    }
-  } else if (recoIdMethod == 2) {
-    if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
-      sp = IdentifyParticle(track.template mcParticle_as<aod::McParticles>());
-    } else {
-      LOGF(fatal, "Track identification required from MC particle but MC information not present");
-    }
-  }
-  return sp;
-}
 
 /// \brief Accepts or not the passed track
 /// \param track the track of interest
@@ -1376,17 +1349,33 @@ inline int8_t IdentifiedBfFilterTracks::AcceptTrack(TrackObject const& track)
   if (matchTrackType(track)) {
     if (ptlow < track.pt() && track.pt() < ptup && etalow < track.eta() && track.eta() < etaup) {
       fillTrackHistosAfterSelection(track, kIdBfCharged);
-      MatchRecoGenSpecies sp = trackIdentification(track);
+      MatchRecoGenSpecies sp = kWrongSpecies;
+      if (recoIdMethod == 0) {
+        sp = kIdBfCharged;
+      } else if (recoIdMethod == 1) {
+
+        if constexpr (framework::has_type_v<aod::pidtpc_tiny::TPCNSigmaStorePi, typename TrackObject::all_columns> || framework::has_type_v<aod::pidtpc::TPCNSigmaPi, typename TrackObject::all_columns>) {
+          sp = IdentifyTrack(track);
+        } else {
+          LOGF(fatal, "Track identification required but PID information not present");
+        }
+      } else if (recoIdMethod == 2) {
+        if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
+          sp = IdentifyParticle(track.template mcParticle_as<aod::McParticles>());
+        } else {
+          LOGF(fatal, "Track identification required from MC particle but MC information not present");
+        }
+      }
       if (sp == kWrongSpecies) {
         return -1;
       }
       if (!(sp < 0)) {
         fillTrackHistosAfterSelection(track, sp); //<Fill accepted track histo with PID
-        if (track.sign() > 0) {
+        if (track.sign() > 0) { //if positive
           trkMultPos[sp]++; //<< Update Particle Multiplicity
           return speciesChargeValue1[sp];
         }
-        if (track.sign() < 0) {
+        if (track.sign() < 0) { //if negative
           trkMultNeg[sp]++; //<< Update Particle Multiplicity
           return speciesChargeValue1[sp] + 1;
         }
@@ -1424,7 +1413,7 @@ inline int8_t IdentifiedBfFilterTracks::AcceptParticle(ParticleObject& particle,
           if (charge == 1) {
             partMultPos[kIdBfCharged]++;
           }
-          if (charge == -1) {
+          else if (charge == -1) {
             partMultNeg[kIdBfCharged]++;
           }
         }
@@ -1434,7 +1423,7 @@ inline int8_t IdentifiedBfFilterTracks::AcceptParticle(ParticleObject& particle,
         if (charge == 1) {
           partMultPos[sp]++;
         }
-        if (charge == -1) {
+        else if (charge == -1) {
           partMultNeg[sp]++;
         }
       }
