@@ -20,7 +20,7 @@
 
 #include "Common/Core/TrackSelectorPID.h"
 
-#include "PWGHF/Core/HfMlResponseXicToXiPiPi.h"	// jaeyoon Nov 7th
+#include "PWGHF/Core/HfMlResponseXicToXiPiPi.h"	
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -33,7 +33,7 @@ using namespace o2::analysis;
 
 struct HfCandidateSelectorXicToXiPiPi {
   Produces<aod::HfSelXicToXiPiPi> hfSelXicToXiPiPiCandidate;
-  Produces<aod::HfMlXicToXiPiPi> hfMlXicToXiPiPiCandidate; // Jaeyoon Nov 8th
+  Produces<aod::HfMlXicToXiPiPi> hfMlXicToXiPiPiCandidate; 
 
   Configurable<float> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<float> ptCandMax{"ptCandMax", 36., "Upper bound of candidate pT"};
@@ -55,7 +55,6 @@ struct HfCandidateSelectorXicToXiPiPi {
   Configurable<float> ptPidTofMax{"ptPidTofMax", 20., "Upper bound of track pT for TOF PID"};
   Configurable<float> nSigmaTofMax{"nSigmaTofMax", 5., "Nsigma cut on TOF only"};
   Configurable<float> nSigmaTofCombinedMax{"nSigmaTofCombinedMax", 5., "Nsigma cut on TOF combined with TPC"};
-  // ++++++++++++++ // jaeyoon Nov 7th
   // ML inference
   Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
   Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{hf_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
@@ -69,11 +68,10 @@ struct HfCandidateSelectorXicToXiPiPi {
   Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"ModelHandler_onnx_XicToXiPiPi.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
-  // +++++++++++ // jaeyoon Nov 7th
 
-  o2::analysis::HfMlResponseXicToXiPiPi<float> hfMlResponse;	// jaeyoon Nov 8th
-  std::vector<float> outputMlXicToXiPiPi = {};	// jaeyoon Nov 8th 
-  o2::ccdb::CcdbApi ccdbApi;	// jaeyoon Nov 8th 
+  o2::analysis::HfMlResponseXicToXiPiPi<float> hfMlResponse;
+  std::vector<float> outputMlXicToXiPiPi = {};	 
+  o2::ccdb::CcdbApi ccdbApi;	
   TrackSelectorPi selectorPion;
   TrackSelectorPr selectorProton;
 
@@ -115,7 +113,6 @@ struct HfCandidateSelectorXicToXiPiPi {
       }
     }
 
-	// ++++++++++++++ // jaeyoon Nov 8th
     if (applyMl) {
       hfMlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
       if (loadModelsFromCCDB) {
@@ -127,7 +124,6 @@ struct HfCandidateSelectorXicToXiPiPi {
       hfMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
       hfMlResponse.init();
     }
-	// ++++++++++++++ // jaeyoon Nov 8th
 
   }
 
@@ -225,7 +221,7 @@ struct HfCandidateSelectorXicToXiPiPi {
     for (const auto& hfCandXic : hfCandsXic) {
       int statusXicToXiPiPi = 0;
 
-      outputMlXicToXiPiPi.clear();	// jaeyoon Nov 8th
+      outputMlXicToXiPiPi.clear();
 
       auto ptCandXic = hfCandXic.pt();
 
@@ -242,11 +238,9 @@ struct HfCandidateSelectorXicToXiPiPi {
       // topological cuts
       if (!selectionTopol(hfCandXic)) {
         hfSelXicToXiPiPiCandidate(statusXicToXiPiPi);
-		// +++++++++++ Jaeyoon Nov 8th
         if(applyMl){
           hfMlXicToXiPiPiCandidate(outputMlXicToXiPiPi);
         }
-		// +++++++++++ Jaeyoon Nov 8th
         continue;
       }
       SETBIT(statusXicToXiPiPi, SelectionStep::RecoTopol); // RecoTopol = 1 --> statusXicToXiPiPi = 3
@@ -277,11 +271,9 @@ struct HfCandidateSelectorXicToXiPiPi {
 
         if (!selectionPid(pidTrackPi0, pidTrackPi1, pidTrackPr, pidTrackPiLam, pidTrackPiXi, acceptPIDNotApplicable.value)) {
           hfSelXicToXiPiPiCandidate(statusXicToXiPiPi);
-		  // +++++++++++ Jaeyoon Nov 8th
           if(applyMl){
             hfMlXicToXiPiPiCandidate(outputMlXicToXiPiPi);
           }
-		  // +++++++++++ Jaeyoon Nov 8th
           continue;
         }
         SETBIT(statusXicToXiPiPi, SelectionStep::RecoPID); // RecoPID = 2 --> statusXicToXiPiPi = 7
@@ -290,7 +282,6 @@ struct HfCandidateSelectorXicToXiPiPi {
         }
       }
 
-      // ++++++++++++++ // jaeyoon Nov 8th
       // ML selections
 
       if(applyMl){
@@ -299,7 +290,7 @@ struct HfCandidateSelectorXicToXiPiPi {
 
         isSelectedMlXicToXiPiPi = hfMlResponse.isSelectedMl(inputFeaturesXicToXiPiPi, ptCandXic, outputMlXicToXiPiPi);
 
-        hfMlXicToXiPiPiCandidate(outputMlXicToXiPiPi); // Jaeyoon Nov 8th
+        hfMlXicToXiPiPiCandidate(outputMlXicToXiPiPi);
 
         if(!isSelectedMlXicToXiPiPi){
            hfSelXicToXiPiPiCandidate(statusXicToXiPiPi);
@@ -307,7 +298,6 @@ struct HfCandidateSelectorXicToXiPiPi {
         }
         SETBIT(statusXicToXiPiPi, aod::SelectionStep::RecoMl);
         }
-      // ++++++++++++++ // jaeyoon Nov 8th
 
       hfSelXicToXiPiPiCandidate(statusXicToXiPiPi);
     }
