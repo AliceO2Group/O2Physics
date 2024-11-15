@@ -68,7 +68,7 @@
     if (candidate.signSoftPi() > 0) {                                                             \
       inputFeatures.emplace_back(OBJECTPOS.GETTER());                                             \
     } else {                                                                                      \
-      inputFeatures.emplace_back(OBJECTNEG.GETTER());                                          \
+      inputFeatures.emplace_back(OBJECTNEG.GETTER());                                             \
     }                                                                                             \
     break;                                                                                        \
   }
