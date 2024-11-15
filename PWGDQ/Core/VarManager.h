@@ -235,8 +235,8 @@ class VarManager : public TObject
     kMultNTracksTPCOnly,
     kMultNTracksITSTPC,
     kTrackOccupancyInTimeRange,
-    kNoCollInTimeRangeStandard
-      kMultAllTracksTPCOnly,
+    kNoCollInTimeRangeStandard,
+    kMultAllTracksTPCOnly,
     kMultAllTracksITSTPC,
     kNTPCpileupContribA,
     kNTPCpileupContribC,
