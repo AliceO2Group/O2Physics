@@ -17,6 +17,12 @@
 /// \author Stefano Politanò <stefano.politano@cern.ch>, Politecnico & INFN Torino
 /// \author Fabrizio Chinu <fabrizio.chinu@cern.ch>, Universita and INFN Torino
 
+#include <memory>
+#include <unordered_map>
+#include <vector>
+#include <map>
+#include <string>
+
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
