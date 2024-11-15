@@ -8,29 +8,35 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
+/// \file converterDstarIndices.cxx
+/// \brief Task for conversion of HfDstars to version 001, using the collision index from the D0 daughter
+///
+/// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+
 using namespace o2;
 using namespace o2::framework;
 
-// Creates an empty BCFlags for data that doesn't have it to be used seamlessly
-// n.b. this will overwrite existing BCFlags, to be discussed if data in mixed condition
-struct bcFlagsCreator {
-  Produces<aod::BCFlags> bcFlags;
+struct HfConverterDstarIndices {
+  Produces<aod::HfDstars_001> dstarIndices;
 
-  void process(aod::BCs const& bcTable)
+  void process(aod::HfDstars_000::iterator const& candDstar,
+               aod::Hf2Prongs const&)
   {
-    for (int64_t i = 0; i < bcTable.size(); ++i) {
-      bcFlags(0);
-    }
+    auto candDzero = candDstar.prongD0_as<aod::Hf2Prongs>();
+    dstarIndices(candDzero.collisionId(), candDstar.prong0Id(), candDstar.prongD0Id());
   }
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<bcFlagsCreator>(cfgc),
+    adaptAnalysisTask<HfConverterDstarIndices>(cfgc),
   };
 }

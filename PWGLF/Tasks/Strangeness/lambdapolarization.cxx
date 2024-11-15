@@ -16,6 +16,7 @@
 #include <cstdlib>
 #include <chrono>
 #include <string>
+#include <vector>
 
 #include "TLorentzVector.h"
 #include "TRandom3.h"
@@ -128,6 +129,9 @@ struct lambdapolarization {
   Configurable<bool> cfgShiftCorrDef{"cfgShiftCorrDef", false, "additional shift correction definition"};
   Configurable<std::string> cfgShiftPath{"cfgShiftPath", "Users/j/junlee/Qvector/QvecCalib/Shift", "Path for Shift"};
 
+  Configurable<bool> cfgEffCor{"cfgEffCor", false, "flag to apply efficiency correction"};
+  Configurable<std::string> cfgEffCorPath{"cfgEffCorPath", "", "path for pseudo efficiency correction"};
+
   ConfigurableAxis massAxis{"massAxis", {30, 1.1, 1.13}, "Invariant mass axis"};
   ConfigurableAxis ptAxis{"ptAxis", {VARIABLE_WIDTH, 0.2, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.5, 8.0, 10.0, 100.0}, "Transverse momentum bins"};
   ConfigurableAxis centAxis{"centAxis", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 100}, "Centrality interval"};
@@ -151,6 +155,7 @@ struct lambdapolarization {
   int currentRunNumber = -999;
   int lastRunNumber = -999;
   std::vector<TProfile3D*> shiftprofile{};
+  TProfile2D* EffMap = nullptr;
 
   std::string fullCCDBShiftCorrPath;
 
@@ -203,6 +208,10 @@ struct lambdapolarization {
       histos.add(Form("psi%d/h_alambda_vncos", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
       histos.add(Form("psi%d/h_alambda_vnsin", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
     }
+    histos.add("QA/ptspec_l", "", {HistType::kTH3F, {massAxis, ptAxis, centAxis}});
+    histos.add("QA/ptspec_al", "", {HistType::kTH3F, {massAxis, ptAxis, centAxis}});
+    histos.add("QA/ptspecCor_l", "", {HistType::kTH3F, {massAxis, ptAxis, centAxis}});
+    histos.add("QA/ptspecCor_al", "", {HistType::kTH3F, {massAxis, ptAxis, centAxis}});
 
     if (cfgQAv0) {
       histos.add("QA/CentDist", "", {HistType::kTH1F, {centQaAxis}});
@@ -558,50 +567,67 @@ struct lambdapolarization {
         continue;
       }
 
+      if (LambdaTag) {
+        histos.fill(HIST("QA/ptspec_l"), v0.mLambda(), v0.pt(), centrality);
+        if (cfgEffCor) {
+          histos.fill(HIST("QA/ptspecCor_l"), v0.mLambda(), v0.pt(), centrality,
+                      1.0 / EffMap->GetBinContent(EffMap->GetXaxis()->FindBin(v0.pt()), EffMap->GetYaxis()->FindBin(centrality)));
+        }
+      }
+      if (aLambdaTag) {
+        histos.fill(HIST("QA/ptspec_al"), v0.mAntiLambda(), v0.pt(), centrality);
+        if (cfgEffCor) {
+          histos.fill(HIST("QA/ptspecCor_al"), v0.mAntiLambda(), v0.pt(), centrality,
+                      1.0 / EffMap->GetBinContent(EffMap->GetXaxis()->FindBin(v0.pt()), EffMap->GetYaxis()->FindBin(centrality)));
+        }
+      }
+
+      double weight = cfgEffCor ? 1.0 / EffMap->GetBinContent(EffMap->GetXaxis()->FindBin(v0.pt()), EffMap->GetYaxis()->FindBin(centrality)) : 1.;
+
       if (nmode == 2) { ////////////
         if (LambdaTag) {
-          histos.fill(HIST("psi2/h_lambda_cos"), v0.mLambda(), v0.pt(), angle, centrality, relphi);
-          histos.fill(HIST("psi2/h_lambda_cos2"), v0.mLambda(), v0.pt(), angle * angle, centrality, relphi);
-          histos.fill(HIST("psi2/h_lambda_cossin"), v0.mLambda(), v0.pt(), angle * TMath::Sin(relphi), centrality);
-          histos.fill(HIST("psi2/h_lambda_vncos"), v0.mLambda(), v0.pt(), TMath::Cos(relphi), centrality);
-          histos.fill(HIST("psi2/h_lambda_vnsin"), v0.mLambda(), v0.pt(), TMath::Sin(relphi), centrality);
+          histos.fill(HIST("psi2/h_lambda_cos"), v0.mLambda(), v0.pt(), angle, centrality, relphi, weight);
+          histos.fill(HIST("psi2/h_lambda_cos2"), v0.mLambda(), v0.pt(), angle * angle, centrality, relphi, weight);
+          histos.fill(HIST("psi2/h_lambda_cossin"), v0.mLambda(), v0.pt(), angle * TMath::Sin(relphi), centrality, weight);
+          histos.fill(HIST("psi2/h_lambda_vncos"), v0.mLambda(), v0.pt(), TMath::Cos(relphi), centrality, weight);
+          histos.fill(HIST("psi2/h_lambda_vnsin"), v0.mLambda(), v0.pt(), TMath::Sin(relphi), centrality, weight);
         }
         if (aLambdaTag) {
-          histos.fill(HIST("psi2/h_alambda_cos"), v0.mAntiLambda(), v0.pt(), angle, centrality, relphi);
-          histos.fill(HIST("psi2/h_alambda_cos2"), v0.mAntiLambda(), v0.pt(), angle * angle, centrality, relphi);
-          histos.fill(HIST("psi2/h_alambda_cossin"), v0.mAntiLambda(), v0.pt(), angle * TMath::Sin(relphi), centrality);
-          histos.fill(HIST("psi2/h_alambda_vncos"), v0.mLambda(), v0.pt(), TMath::Cos(relphi), centrality);
-          histos.fill(HIST("psi2/h_alambda_vnsin"), v0.mLambda(), v0.pt(), TMath::Sin(relphi), centrality);
+          histos.fill(HIST("psi2/h_alambda_cos"), v0.mAntiLambda(), v0.pt(), angle, centrality, relphi, weight);
+          histos.fill(HIST("psi2/h_alambda_cos2"), v0.mAntiLambda(), v0.pt(), angle * angle, centrality, relphi, weight);
+          histos.fill(HIST("psi2/h_alambda_cossin"), v0.mAntiLambda(), v0.pt(), angle * TMath::Sin(relphi), centrality, weight);
+          histos.fill(HIST("psi2/h_alambda_vncos"), v0.mLambda(), v0.pt(), TMath::Cos(relphi), centrality, weight);
+          histos.fill(HIST("psi2/h_alambda_vnsin"), v0.mLambda(), v0.pt(), TMath::Sin(relphi), centrality, weight);
         }
       } else if (nmode == 3) {
         if (LambdaTag) {
-          histos.fill(HIST("psi3/h_lambda_cos"), v0.mLambda(), v0.pt(), angle, centrality, relphi);
-          histos.fill(HIST("psi3/h_lambda_cos2"), v0.mLambda(), v0.pt(), angle * angle, centrality, relphi);
-          histos.fill(HIST("psi3/h_lambda_cossin"), v0.mLambda(), v0.pt(), angle * TMath::Sin(relphi), centrality);
-          histos.fill(HIST("psi3/h_lambda_vncos"), v0.mLambda(), v0.pt(), TMath::Cos(relphi), centrality);
-          histos.fill(HIST("psi3/h_lambda_vnsin"), v0.mLambda(), v0.pt(), TMath::Sin(relphi), centrality);
+          histos.fill(HIST("psi3/h_lambda_cos"), v0.mLambda(), v0.pt(), angle, centrality, relphi, weight);
+          histos.fill(HIST("psi3/h_lambda_cos2"), v0.mLambda(), v0.pt(), angle * angle, centrality, relphi, weight);
+          histos.fill(HIST("psi3/h_lambda_cossin"), v0.mLambda(), v0.pt(), angle * TMath::Sin(relphi), centrality, weight);
+          histos.fill(HIST("psi3/h_lambda_vncos"), v0.mLambda(), v0.pt(), TMath::Cos(relphi), centrality, weight);
+          histos.fill(HIST("psi3/h_lambda_vnsin"), v0.mLambda(), v0.pt(), TMath::Sin(relphi), centrality, weight);
         }
         if (aLambdaTag) {
-          histos.fill(HIST("psi3/h_alambda_cos"), v0.mAntiLambda(), v0.pt(), angle, centrality, relphi);
-          histos.fill(HIST("psi3/h_alambda_cos2"), v0.mAntiLambda(), v0.pt(), angle * angle, centrality, relphi);
-          histos.fill(HIST("psi3/h_alambda_cossin"), v0.mAntiLambda(), v0.pt(), angle * TMath::Sin(relphi), centrality);
-          histos.fill(HIST("psi3/h_alambda_vncos"), v0.mLambda(), v0.pt(), TMath::Cos(relphi), centrality);
-          histos.fill(HIST("psi3/h_alambda_vnsin"), v0.mLambda(), v0.pt(), TMath::Sin(relphi), centrality);
+          histos.fill(HIST("psi3/h_alambda_cos"), v0.mAntiLambda(), v0.pt(), angle, centrality, relphi, weight);
+          histos.fill(HIST("psi3/h_alambda_cos2"), v0.mAntiLambda(), v0.pt(), angle * angle, centrality, relphi, weight);
+          histos.fill(HIST("psi3/h_alambda_cossin"), v0.mAntiLambda(), v0.pt(), angle * TMath::Sin(relphi), centrality, weight);
+          histos.fill(HIST("psi3/h_alambda_vncos"), v0.mLambda(), v0.pt(), TMath::Cos(relphi), centrality, weight);
+          histos.fill(HIST("psi3/h_alambda_vnsin"), v0.mLambda(), v0.pt(), TMath::Sin(relphi), centrality, weight);
         }
       } else if (nmode == 4) {
         if (LambdaTag) {
-          histos.fill(HIST("psi4/h_lambda_cos"), v0.mLambda(), v0.pt(), angle, centrality, relphi);
-          histos.fill(HIST("psi4/h_lambda_cos2"), v0.mLambda(), v0.pt(), angle * angle, centrality, relphi);
-          histos.fill(HIST("psi4/h_lambda_cossin"), v0.mLambda(), v0.pt(), angle * TMath::Sin(relphi), centrality);
-          histos.fill(HIST("psi4/h_lambda_vncos"), v0.mLambda(), v0.pt(), TMath::Cos(relphi), centrality);
-          histos.fill(HIST("psi4/h_lambda_vnsin"), v0.mLambda(), v0.pt(), TMath::Sin(relphi), centrality);
+          histos.fill(HIST("psi4/h_lambda_cos"), v0.mLambda(), v0.pt(), angle, centrality, relphi, weight);
+          histos.fill(HIST("psi4/h_lambda_cos2"), v0.mLambda(), v0.pt(), angle * angle, centrality, relphi, weight);
+          histos.fill(HIST("psi4/h_lambda_cossin"), v0.mLambda(), v0.pt(), angle * TMath::Sin(relphi), centrality, weight);
+          histos.fill(HIST("psi4/h_lambda_vncos"), v0.mLambda(), v0.pt(), TMath::Cos(relphi), centrality, weight);
+          histos.fill(HIST("psi4/h_lambda_vnsin"), v0.mLambda(), v0.pt(), TMath::Sin(relphi), centrality, weight);
         }
         if (aLambdaTag) {
-          histos.fill(HIST("psi4/h_alambda_cos"), v0.mAntiLambda(), v0.pt(), angle, centrality, relphi);
-          histos.fill(HIST("psi4/h_alambda_cos2"), v0.mAntiLambda(), v0.pt(), angle * angle, centrality, relphi);
-          histos.fill(HIST("psi4/h_alambda_cossin"), v0.mAntiLambda(), v0.pt(), angle * TMath::Sin(relphi), centrality);
-          histos.fill(HIST("psi4/h_alambda_vncos"), v0.mLambda(), v0.pt(), TMath::Cos(relphi), centrality);
-          histos.fill(HIST("psi4/h_alambda_vnsin"), v0.mLambda(), v0.pt(), TMath::Sin(relphi), centrality);
+          histos.fill(HIST("psi4/h_alambda_cos"), v0.mAntiLambda(), v0.pt(), angle, centrality, relphi, weight);
+          histos.fill(HIST("psi4/h_alambda_cos2"), v0.mAntiLambda(), v0.pt(), angle * angle, centrality, relphi, weight);
+          histos.fill(HIST("psi4/h_alambda_cossin"), v0.mAntiLambda(), v0.pt(), angle * TMath::Sin(relphi), centrality, weight);
+          histos.fill(HIST("psi4/h_alambda_vncos"), v0.mLambda(), v0.pt(), TMath::Cos(relphi), centrality, weight);
+          histos.fill(HIST("psi4/h_alambda_vnsin"), v0.mLambda(), v0.pt(), TMath::Sin(relphi), centrality, weight);
         }
       } ////////// FIXME: not possible to get histograms using nmode
     }
@@ -636,6 +662,10 @@ struct lambdapolarization {
         }
         lastRunNumber = currentRunNumber;
       }
+    }
+    if (cfgEffCor) {
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      EffMap = ccdb->getForTimeStamp<TProfile2D>(cfgEffCorPath.value, bc.timestamp());
     }
     for (int i = 2; i < cfgnMods + 2; i++) {
       if (cfgShiftCorrDef) {

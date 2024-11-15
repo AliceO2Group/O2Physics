@@ -139,6 +139,11 @@ o2physics_add_dpl_workflow(xi1530analysis
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(xi1530analysisqa
+    SOURCES xi1530Analysisqa.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(kaonkaonanalysis
     SOURCES kaonkaonanalysis.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
