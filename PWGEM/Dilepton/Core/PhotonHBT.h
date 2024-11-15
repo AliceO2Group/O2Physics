@@ -97,6 +97,7 @@ struct PhotonHBT {
   Configurable<bool> cfgDo3D{"cfgDo3D", false, "enable 3D analysis"};
   Configurable<int> cfgEP2Estimator_for_Mix{"cfgEP2Estimator_for_Mix", 3, "FT0M:0, FT0A:1, FT0C:2, BTot:3, BPos:4, BNeg:5"};
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
+  Configurable<int> cfgOccupancyEstimator{"cfgOccupancyEstimator", 0, "FT0C:0, Track:1"};
   Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 999, "max. centrality"};
   // Configurable<float> cfgSpherocityMin{"cfgSpherocityMin", -999.f, "min. spherocity"};
@@ -183,8 +184,11 @@ struct PhotonHBT {
     Configurable<bool> cfg_require_itsib_1st{"cfg_require_itsib_1st", true, "flag to require ITS ib 1st hit"};
     Configurable<float> cfg_phiv_slope{"cfg_phiv_slope", 0.0185, "slope for m vs. phiv"};
     Configurable<float> cfg_phiv_intercept{"cfg_phiv_intercept", -0.0280, "intercept for m vs. phiv"};
-    Configurable<bool> cfg_apply_phiv_meedep{"cfg_apply_phiv_meedep", false, "flag to apply mee-dependent phiv cut"};
+    Configurable<bool> cfg_apply_phiv_meedep{"cfg_apply_phiv_meedep", true, "flag to apply mee-dependent phiv cut"};
+    Configurable<float> cfg_min_phiv{"cfg_min_phiv", 0.0, "min phiv (constant)"};
     Configurable<float> cfg_max_phiv{"cfg_max_phiv", 3.2, "max phiv (constant)"};
+    Configurable<float> cfg_min_mee_for_phiv{"cfg_min_mee_for_phiv", 0.0, "min mee for phiv (constant)"};
+    Configurable<float> cfg_max_mee_for_phiv{"cfg_max_mee_for_phiv", 1e+10, "max mee for phiv (constant)"};
 
     Configurable<float> cfg_min_pt_track{"cfg_min_pt_track", 0.2, "min pT for single track"};
     Configurable<float> cfg_min_eta_track{"cfg_min_eta_track", -0.8, "max eta for single track"};
@@ -329,6 +333,7 @@ struct PhotonHBT {
       }
     }
 
+    LOGF(info, "cfgOccupancyEstimator = %d", cfgOccupancyEstimator.value);
     if (ConfOccupancyBins.value[0] == VARIABLE_WIDTH) {
       occ_bin_edges = std::vector<float>(ConfOccupancyBins.value.begin(), ConfOccupancyBins.value.end());
       occ_bin_edges.erase(occ_bin_edges.begin());
@@ -533,7 +538,7 @@ struct PhotonHBT {
     if (dielectroncuts.cfg_apply_phiv_meedep) {
       fDielectronCut.SetMaxPhivPairMeeDep([&](float mll) { return (mll - dielectroncuts.cfg_phiv_intercept) / dielectroncuts.cfg_phiv_slope; });
     } else {
-      fDielectronCut.SetPhivPairRange(0.f, dielectroncuts.cfg_max_phiv);
+      fDielectronCut.SetPhivPairRange(dielectroncuts.cfg_min_phiv, dielectroncuts.cfg_max_phiv, dielectroncuts.cfg_min_mee_for_phiv, dielectroncuts.cfg_max_mee_for_phiv);
     }
     fDielectronCut.SetPairDCARange(dielectroncuts.cfg_min_pair_dca3d, dielectroncuts.cfg_max_pair_dca3d); // in sigma
     fDielectronCut.ApplyPhiV(dielectroncuts.cfg_apply_phiv);
@@ -717,7 +722,15 @@ struct PhotonHBT {
         epbin = static_cast<int>(ep_bin_edges.size()) - 2;
       }
 
-      int occbin = lower_bound(occ_bin_edges.begin(), occ_bin_edges.end(), collision.trackOccupancyInTimeRange()) - occ_bin_edges.begin() - 1;
+      int occbin = -1;
+      if (cfgOccupancyEstimator == 0) {
+        occbin = lower_bound(occ_bin_edges.begin(), occ_bin_edges.end(), collision.ft0cOccupancyInTimeRange()) - occ_bin_edges.begin() - 1;
+      } else if (cfgOccupancyEstimator == 1) {
+        occbin = lower_bound(occ_bin_edges.begin(), occ_bin_edges.end(), collision.trackOccupancyInTimeRange()) - occ_bin_edges.begin() - 1;
+      } else {
+        occbin = lower_bound(occ_bin_edges.begin(), occ_bin_edges.end(), collision.ft0cOccupancyInTimeRange()) - occ_bin_edges.begin() - 1;
+      }
+
       if (occbin < 0) {
         occbin = 0;
       } else if (static_cast<int>(occ_bin_edges.size()) - 2 < occbin) {
@@ -804,11 +817,11 @@ struct PhotonHBT {
             continue;
           }
           if (dielectroncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) {
-            if (!cut1.template IsSelectedTrack<true>(pos1, collision) || !cut1.template IsSelectedTrack<true>(ele1, collision)) {
+            if (!cut1.template IsSelectedTrack<false, true>(pos1, collision) || !cut1.template IsSelectedTrack<false, true>(ele1, collision)) {
               continue;
             }
           } else { // cut-based
-            if (!cut1.template IsSelectedTrack<false>(pos1, collision) || !cut1.template IsSelectedTrack<false>(ele1, collision)) {
+            if (!cut1.template IsSelectedTrack<false, false>(pos1, collision) || !cut1.template IsSelectedTrack<false, false>(ele1, collision)) {
               continue;
             }
           }
@@ -832,11 +845,11 @@ struct PhotonHBT {
               continue;
             }
             if (dielectroncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) {
-              if (!cut2.template IsSelectedTrack<true>(pos2, collision) || !cut2.template IsSelectedTrack<true>(ele2, collision)) {
+              if (!cut2.template IsSelectedTrack<false, true>(pos2, collision) || !cut2.template IsSelectedTrack<false, true>(ele2, collision)) {
                 continue;
               }
             } else { // cut-based
-              if (!cut2.template IsSelectedTrack<false>(pos2, collision) || !cut2.template IsSelectedTrack<false>(ele2, collision)) {
+              if (!cut2.template IsSelectedTrack<false, false>(pos2, collision) || !cut2.template IsSelectedTrack<false, false>(ele2, collision)) {
                 continue;
               }
             }
@@ -942,11 +955,11 @@ struct PhotonHBT {
               continue;
             }
             if (dielectroncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) {
-              if (!cut2.template IsSelectedTrack<true>(pos2, collision) || !cut2.template IsSelectedTrack<true>(ele2, collision)) {
+              if (!cut2.template IsSelectedTrack<false, true>(pos2, collision) || !cut2.template IsSelectedTrack<false, true>(ele2, collision)) {
                 continue;
               }
             } else { // cut-based
-              if (!cut2.template IsSelectedTrack<false>(pos2, collision) || !cut2.template IsSelectedTrack<false>(ele2, collision)) {
+              if (!cut2.template IsSelectedTrack<false, false>(pos2, collision) || !cut2.template IsSelectedTrack<false, false>(ele2, collision)) {
                 continue;
               }
             }
@@ -1278,11 +1291,11 @@ struct PhotonHBT {
           continue;
         }
         if (dielectroncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) {
-          if (!cut.template IsSelectedTrack<true>(pos, collision) || !cut.template IsSelectedTrack<true>(ele, collision)) {
+          if (!cut.template IsSelectedTrack<false, true>(pos, collision) || !cut.template IsSelectedTrack<false, true>(ele, collision)) {
             continue;
           }
         } else { // cut-based
-          if (!cut.template IsSelectedTrack<false>(pos, collision) || !cut.template IsSelectedTrack<false>(ele, collision)) {
+          if (!cut.template IsSelectedTrack<false, false>(pos, collision) || !cut.template IsSelectedTrack<false, false>(ele, collision)) {
             continue;
           }
         }

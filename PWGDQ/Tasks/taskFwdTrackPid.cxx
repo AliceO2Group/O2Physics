@@ -62,6 +62,7 @@ struct taskFwdTrackPid {
   Produces<aod::FwdPidsAll> fwdPidAllList;
 
   Configurable<float> fConfigMaxDCA{"cfgMaxDCA", 0.5f, "Manually set maximum DCA of the track"};
+  Configurable<float> downSampleFactor{"downSampleFactor", 1., "Fraction of candidates to keep for ML"};
 
   void init(o2::framework::InitContext& context)
   {
@@ -84,6 +85,12 @@ struct taskFwdTrackPid {
     if constexpr (TMatchedOnly == false) {
       for (const auto& mftTrack : mftTracks) {
         if (TMath::Abs(mftTrack.fwdDcaX()) < fConfigMaxDCA && TMath::Abs(mftTrack.fwdDcaY()) < fConfigMaxDCA) {
+          if (downSampleFactor < 1.) {
+            float pseudoRndm = mftTrack.pt() * 1000. - (int64_t)(mftTrack.pt() * 1000);
+            if (pseudoRndm >= downSampleFactor) {
+              continue;
+            }
+          }
           fwdPidAllList(4, event.posX(), event.posY(), event.posZ(), event.numContrib(), mftTrack.pt(), mftTrack.eta(), mftTrack.phi(), mftTrack.sign(), mftTrack.mftClusterSizesAndTrackFlags(), mftTrack.fwdDcaX(), mftTrack.fwdDcaY(), -999, -999);
         }
       }

@@ -31,10 +31,10 @@ DECLARE_SOA_COLUMN(Vx, vx, float);
 DECLARE_SOA_COLUMN(Vy, vy, float);
 DECLARE_SOA_COLUMN(Vz, vz, float);
 DECLARE_SOA_COLUMN(QXA, qxA, float);
-DECLARE_SOA_COLUMN(QXC, qxC, float);
 DECLARE_SOA_COLUMN(QYA, qyA, float);
+DECLARE_SOA_COLUMN(QXC, qxC, float);
 DECLARE_SOA_COLUMN(QYC, qyC, float);
-// keep track of where we are in steps and iterations.
+DECLARE_SOA_COLUMN(IsSelected, isSelected, bool);
 DECLARE_SOA_COLUMN(Iteration, iteration, int);
 DECLARE_SOA_COLUMN(Step, step, int);
 
@@ -47,9 +47,10 @@ DECLARE_SOA_TABLE(SPTableZDC, "AOD", "SPZDC",
                   sptablezdc::Vy,
                   sptablezdc::Vz,
                   sptablezdc::QXA,
-                  sptablezdc::QXC,
                   sptablezdc::QYA,
+                  sptablezdc::QXC,
                   sptablezdc::QYC,
+                  sptablezdc::IsSelected,
                   sptablezdc::Iteration,
                   sptablezdc::Step);
 } // namespace o2::aod

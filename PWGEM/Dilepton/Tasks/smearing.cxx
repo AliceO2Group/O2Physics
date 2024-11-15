@@ -13,8 +13,10 @@
 // Analysis task to produce smeared pt, eta, phi for electrons/muons in dilepton analysis
 //    Please write to: daiki.sekihata@cern.ch
 
-#include <CCDB/BasicCCDBManager.h>
+#include <string>
 #include <chrono>
+
+#include "CCDB/BasicCCDBManager.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -221,7 +223,21 @@ struct ApplySmearing {
     applySmearing(tracksMC);
   }
 
-  void processDummyCocktail(aod::McParticles const&) {}
+  void processDummyCocktail(aod::McParticles const& tracksMC)
+  {
+    // don't apply smearing
+    for (auto& mctrack : tracksMC) {
+      int pdgCode = mctrack.pdgCode();
+      if (abs(pdgCode) == 11) {
+        smearedelectron(mctrack.pt(), mctrack.eta(), mctrack.phi(), 1.0, 0.0);
+      } else if (abs(pdgCode) == 13) {
+        smearedmuon(mctrack.pt(), mctrack.eta(), mctrack.phi(), 1.0, 0.0, mctrack.pt(), mctrack.eta(), mctrack.phi(), 1.0, 0.0);
+      } else {
+        smearedelectron(mctrack.pt(), mctrack.eta(), mctrack.eta(), 1.0, 0.0);
+        smearedmuon(mctrack.pt(), mctrack.eta(), mctrack.phi(), 1.0, 0.0, mctrack.pt(), mctrack.eta(), mctrack.phi(), 1.0, 0.0);
+      }
+    }
+  }
 
   void processDummyMCanalysis(ReducedMCTracks const&) {}
 

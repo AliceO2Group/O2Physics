@@ -58,10 +58,13 @@ enum V0Type : uint8_t {
 };
 
 enum DecayTypeMc : uint8_t {
-  Ds1ToDStarK0ToD0PiK0s = 0,
+  Ds1ToDStarK0ToD0PiK0s = 1,
   Ds2StarToDplusK0sToPiKaPiPiPi,
   Ds1ToDStarK0ToDPlusPi0K0s,
-  Ds1ToDStarK0ToDPlusGammaK0s
+  Ds1ToDStarK0ToD0PiK0sPart,
+  Ds1ToDStarK0ToD0NoPiK0sPart,
+  Ds1ToDStarK0ToD0PiK0sOneMu,
+  Ds2StarToDplusK0sOneMu
 };
 
 const int nBinsPt = 7;
@@ -103,7 +106,7 @@ struct HfCandidateCreatorCharmResoReduced {
   ConfigurableAxis multPoolBins{"multPoolBins", {VARIABLE_WIDTH, 0., 45., 60., 75., 95, 250}, "event multiplicity pools (PV contributors for now)"};
   ConfigurableAxis zPoolBins{"zPoolBins", {VARIABLE_WIDTH, -10.0, -4, -1, 1, 4, 10.0}, "z vertex position pools"};
 
-  using reducedDWithMl = soa::Join<aod::HfRed3PrNoTrks, aod::HfRed3ProngsMl>;
+  using HfRed3PrNoTrksWithMl = soa::Join<aod::HfRed3PrNoTrks, aod::HfRed3ProngsMl>;
 
   // Partition of V0 candidates based on v0Type
   Partition<aod::HfRedVzeros> candidatesK0s = aod::hf_reso_v0::v0Type == (uint8_t)1 || aod::hf_reso_v0::v0Type == (uint8_t)3 || aod::hf_reso_v0::v0Type == (uint8_t)5;
@@ -113,6 +116,7 @@ struct HfCandidateCreatorCharmResoReduced {
   Preslice<aod::HfRedVzeros> candsV0PerCollision = aod::hf_track_index_reduced::hfRedCollisionId;
   Preslice<aod::HfRedTrkNoParams> candsTrackPerCollision = aod::hf_track_index_reduced::hfRedCollisionId;
   Preslice<aod::HfRed3PrNoTrks> candsDPerCollision = hf_track_index_reduced::hfRedCollisionId;
+  Preslice<HfRed3PrNoTrksWithMl> candsDPerCollisionWithMl = hf_track_index_reduced::hfRedCollisionId;
 
   // Useful constants
   double massK0{0.};
@@ -165,6 +169,7 @@ struct HfCandidateCreatorCharmResoReduced {
     massDstar = o2::constants::physics::MassDStar;
     massD0 = o2::constants::physics::MassD0;
   }
+
   /// Basic selection of D candidates
   /// \param candD is the reduced D meson candidate
   /// \return true if selections are passed
@@ -277,7 +282,7 @@ struct HfCandidateCreatorCharmResoReduced {
         invMassD0 = candD.invMassD0Bar();
       }
       std::array<float, 3> pVecD = {candD.px(), candD.py(), candD.pz()};
-      std::array<int, 3> dDaughtersIds = {candD.prong0Id(), candD.prong1Id(), candD.prong2Id()};
+
       // loop on V0 or track candidates
       bool alreadyCounted{false};
       for (const auto& candV0Tr : candsV0Tr) {
@@ -484,7 +489,7 @@ struct HfCandidateCreatorCharmResoReduced {
   {
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
-      auto candsDThisColl = candsD.sliceBy(candsDPerCollision, thisCollId);
+      auto candsDThisColl = candsD.sliceBy(candsDPerCollisionWithMl, thisCollId);
       auto k0sThisColl = candidatesK0s.sliceBy(candsV0PerCollision, thisCollId);
       runCandidateCreation<true, DecayChannel::Ds2StarToDplusK0s>(collision, candsDThisColl, k0sThisColl);
     }
@@ -500,7 +505,7 @@ struct HfCandidateCreatorCharmResoReduced {
   PROCESS_SWITCH(HfCandidateCreatorCharmResoReduced, processDs2StarToDplusK0sMixedEvent, "Process Ds2Star mixed Event without ML", false);
 
   void processDs2StarToDplusK0sMixedEventWithMl(aod::HfRedCollisions const& collisions,
-                                                reducedDWithMl const& candsD,
+                                                HfRed3PrNoTrksWithMl const& candsD,
                                                 aod::HfRedVzeros const& candsV0)
   {
     runCandidateCreationMixedEvent<true, DecayChannel::Ds2StarToDplusK0s>(collisions, candsD, candsV0);
@@ -521,12 +526,12 @@ struct HfCandidateCreatorCharmResoReduced {
   PROCESS_SWITCH(HfCandidateCreatorCharmResoReduced, processDs1ToDstarK0s, "Process Ds1 candidates without Ml info", false);
 
   void processDs1ToDstarK0sWithMl(aod::HfRedCollisions const& collisions,
-                                  reducedDWithMl const& candsD,
+                                  HfRed3PrNoTrksWithMl const& candsD,
                                   aod::HfRedVzeros const&)
   {
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
-      auto candsDThisColl = candsD.sliceBy(candsDPerCollision, thisCollId);
+      auto candsDThisColl = candsD.sliceBy(candsDPerCollisionWithMl, thisCollId);
       auto k0sThisColl = candidatesK0s.sliceBy(candsV0PerCollision, thisCollId);
       runCandidateCreation<true, DecayChannel::Ds1ToDstarK0s>(collision, candsDThisColl, k0sThisColl);
     }
@@ -542,7 +547,7 @@ struct HfCandidateCreatorCharmResoReduced {
   PROCESS_SWITCH(HfCandidateCreatorCharmResoReduced, processDs1ToDstarK0sMixedEvent, "Process Ds1 mixed Event without ML", false);
 
   void processDs1ToDstarK0sMixedEventWithMl(aod::HfRedCollisions const& collisions,
-                                            reducedDWithMl const& candsD,
+                                            HfRed3PrNoTrksWithMl const& candsD,
                                             aod::HfRedVzeros const& candsV0)
   {
     runCandidateCreationMixedEvent<true, DecayChannel::Ds1ToDstarK0s>(collisions, candsD, candsV0);
@@ -563,12 +568,12 @@ struct HfCandidateCreatorCharmResoReduced {
   PROCESS_SWITCH(HfCandidateCreatorCharmResoReduced, processXcToDplusLambda, "Process Xc candidates without Ml info", false);
 
   void processXcToDplusLambdaWithMl(aod::HfRedCollisions const& collisions,
-                                    soa::Join<aod::HfRed3PrNoTrks, aod::HfRed3ProngsMl> const& candsD,
+                                    HfRed3PrNoTrksWithMl const& candsD,
                                     aod::HfRedVzeros const&)
   {
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
-      auto candsDThisColl = candsD.sliceBy(candsDPerCollision, thisCollId);
+      auto candsDThisColl = candsD.sliceBy(candsDPerCollisionWithMl, thisCollId);
       auto lambdaThisColl = candidatesLambda.sliceBy(candsV0PerCollision, thisCollId);
       runCandidateCreation<true, DecayChannel::XcToDplusLambda>(collision, candsDThisColl, lambdaThisColl);
     }
@@ -589,12 +594,12 @@ struct HfCandidateCreatorCharmResoReduced {
   PROCESS_SWITCH(HfCandidateCreatorCharmResoReduced, processLambdaDminus, "Process LambdaDminus candidates without Ml info", false);
 
   void processLambdaDminusWithMl(aod::HfRedCollisions const& collisions,
-                                 soa::Join<aod::HfRed3PrNoTrks, aod::HfRed3ProngsMl> const& candsD,
+                                 HfRed3PrNoTrksWithMl const& candsD,
                                  aod::HfRedVzeros const&)
   {
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
-      auto candsDThisColl = candsD.sliceBy(candsDPerCollision, thisCollId);
+      auto candsDThisColl = candsD.sliceBy(candsDPerCollisionWithMl, thisCollId);
       auto lambdaThisColl = candidatesLambda.sliceBy(candsV0PerCollision, thisCollId);
       runCandidateCreation<true, DecayChannel::LambdaDminus>(collision, candsDThisColl, lambdaThisColl);
     }
@@ -614,12 +619,12 @@ struct HfCandidateCreatorCharmResoReduced {
   PROCESS_SWITCH(HfCandidateCreatorCharmResoReduced, processDstarTrack, "Process DStar candidates without Ml info", false);
 
   void processDstarTrackWithMl(aod::HfRedCollisions const& collisions,
-                               soa::Join<aod::HfRed3PrNoTrks, aod::HfRed3ProngsMl> const& candsD,
+                               HfRed3PrNoTrksWithMl const& candsD,
                                aod::HfRedTrkNoParams const& candidatesTrack)
   {
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
-      auto candsDThisColl = candsD.sliceBy(candsDPerCollision, thisCollId);
+      auto candsDThisColl = candsD.sliceBy(candsDPerCollisionWithMl, thisCollId);
       auto trackThisColl = candidatesTrack.sliceBy(candsTrackPerCollision, thisCollId);
       runCandidateCreation<true, DecayChannel::DstarTrack>(collision, candsDThisColl, trackThisColl);
     }
@@ -674,13 +679,14 @@ struct HfCandidateCreatorCharmResoReducedExpressions {
         }
         rowResoMcRec(rowDV0McRec.flagMcMatchRec(), rowDV0McRec.debugMcRec(), rowDV0McRec.origin(), rowDV0McRec.ptMother());
         filledMcInfo = true;
-        if (TESTBIT(rowDV0McRec.flagMcMatchRec(), DecayTypeMc::Ds1ToDStarK0ToD0PiK0s) || TESTBIT(rowDV0McRec.flagMcMatchRec(), DecayTypeMc::Ds2StarToDplusK0sToPiKaPiPiPi)) {
+        if (std::abs(rowDV0McRec.flagMcMatchRec()) == DecayTypeMc::Ds1ToDStarK0ToD0PiK0s || std::abs(rowDV0McRec.flagMcMatchRec()) == DecayTypeMc::Ds2StarToDplusK0sToPiKaPiPiPi ||
+            std::abs(rowDV0McRec.flagMcMatchRec()) == DecayTypeMc::Ds1ToDStarK0ToD0PiK0sOneMu || std::abs(rowDV0McRec.flagMcMatchRec()) == DecayTypeMc::Ds2StarToDplusK0sOneMu) {
           registry.fill(HIST("hMassMcMatched"), candReso.invMass(), candReso.pt());
           registry.fill(HIST("hMassMcMatchedVsBach0Mass"), candReso.invMass(), candReso.invMassProng0() - candReso.invMassD0());
           registry.fill(HIST("hMassMcMatchedVsBach1Mass"), candReso.invMass(), candReso.invMassProng1());
           registry.fill(HIST("hMassMcMatchedVsD0Mass"), candReso.invMass(), candReso.invMassD0());
 
-        } else if (TESTBIT(rowDV0McRec.flagMcMatchRec(), DecayTypeMc::Ds1ToDStarK0ToDPlusGammaK0s) || TESTBIT(rowDV0McRec.flagMcMatchRec(), DecayTypeMc::Ds1ToDStarK0ToDPlusPi0K0s)) {
+        } else if (std::abs(rowDV0McRec.flagMcMatchRec()) == DecayTypeMc::Ds1ToDStarK0ToD0NoPiK0sPart || std::abs(rowDV0McRec.flagMcMatchRec()) == DecayTypeMc::Ds1ToDStarK0ToDPlusPi0K0s) {
           registry.fill(HIST("hMassMcMatchedIncomplete"), candReso.invMass(), candReso.pt());
         } else {
           registry.fill(HIST("hMassMcUnmatched"), candReso.invMass(), candReso.pt());
@@ -705,7 +711,11 @@ struct HfCandidateCreatorCharmResoReducedExpressions {
     fillResoMcRec(rowsDV0McRec, candsReso);
   }
   PROCESS_SWITCH(HfCandidateCreatorCharmResoReducedExpressions, processMc, "Process MC", false);
+
+  void processDummy(CandResoWithIndices const&) {}
+  PROCESS_SWITCH(HfCandidateCreatorCharmResoReducedExpressions, processDummy, "Process dummy", true);
 };
+
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<HfCandidateCreatorCharmResoReduced>(cfgc),

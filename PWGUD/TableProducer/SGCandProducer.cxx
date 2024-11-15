@@ -10,6 +10,8 @@
 // or submit itself to any jurisdiction.
 
 #include <cmath>
+#include <vector>
+#include <map>
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
 #include "ReconstructionDataFormats/Vertex.h"
@@ -58,6 +60,7 @@ struct SGCandProducer {
   Produces<aod::UDTracksCov> outputTracksCov;
   Produces<aod::UDTracksDCA> outputTracksDCA;
   Produces<aod::UDTracksPID> outputTracksPID;
+  Produces<aod::UDTracksPIDExtra> outputTracksPIDExtra;
   Produces<aod::UDTracksExtra> outputTracksExtra;
   Produces<aod::UDTracksFlags> outputTracksFlag;
   Produces<aod::UDFwdTracks> outputFwdTracks;
@@ -76,7 +79,9 @@ struct SGCandProducer {
   using BC = BCs::iterator;
   using TCs = soa::Join<aod::Tracks, /*aod::TracksCov,*/ aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                         aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
+                        aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe, aod::pidTPCFullAl,
                         aod::TOFSignal, aod::pidTOFbeta,
+                        aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe, aod::pidTOFFullAl,
                         aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
   using FWs = aod::FwdTracks;
 
@@ -127,6 +132,14 @@ struct SGCandProducer {
                     track.tofNSigmaPi(),
                     track.tofNSigmaKa(),
                     track.tofNSigmaPr());
+    outputTracksPIDExtra(track.tpcNSigmaDe(),
+                         track.tpcNSigmaTr(),
+                         track.tpcNSigmaHe(),
+                         track.tpcNSigmaAl(),
+                         track.tofNSigmaDe(),
+                         track.tofNSigmaTr(),
+                         track.tofNSigmaHe(),
+                         track.tofNSigmaAl());
     outputTracksExtra(track.tpcInnerParam(),
                       track.itsClusterSizes(),
                       track.tpcNClsFindable(),
@@ -290,10 +303,10 @@ struct McSGCandProducer {
     {}};
 
   template <typename TMcCollision>
-  void updateUDMcCollisions(TMcCollision const& mccol)
+  void updateUDMcCollisions(TMcCollision const& mccol, uint64_t globBC)
   {
     // save mccol
-    outputMcCollisions(mccol.bcId(),
+    outputMcCollisions(globBC,
                        mccol.generatorsID(),
                        mccol.posX(),
                        mccol.posY(),
@@ -489,8 +502,10 @@ struct McSGCandProducer {
     auto sgcandAtEnd = sgcand == lastsgcand;
     auto mccolAtEnd = mccol == lastmccol;
     bool goon = !sgcandAtEnd || !mccolAtEnd;
-    int counter = 0;
     while (goon) {
+      auto bcIter = mccol.bc_as<BCs>();
+      uint64_t globBC = bcIter.globalBC();
+      // uint64_t globBC = 0;
       // check if dgcand has an associated McCollision
       if (sgcand.has_collision()) {
         auto sgcandCol = sgcand.collision_as<CCs>();
@@ -525,13 +540,12 @@ struct McSGCandProducer {
             LOGF(info, "  Saving McCollision %d", mcsgId);
             // update UDMcCollisions
             auto sgcandMcCol = sgcand.collision_as<CCs>().mcCollision();
-            updateUDMcCollisions(sgcandMcCol);
+            updateUDMcCollisions(sgcandMcCol, globBC);
             mcColIsSaved[mcsgId] = outputMcCollisions.lastIndex();
           }
 
           // update UDMcColsLabels (for each UDCollision -> UDMcCollisions)
           outputMcCollsLabels(mcColIsSaved[mcsgId]);
-          counter++;
 
           // update UDMcParticles
           auto mcPartsSlice = mcparts.sliceBy(mcPartsPerMcCollision, mcsgId);
@@ -547,7 +561,6 @@ struct McSGCandProducer {
 
           // update UDMcColsLabels (for each UDCollision -> UDMcCollisions)
           outputMcCollsLabels(-1);
-          counter++;
 
           // update UDMcParticles and UDMcTrackLabels (for each UDTrack -> UDMcParticles)
           // loop over tracks of dgcand
@@ -580,7 +593,7 @@ struct McSGCandProducer {
         if (mcColIsSaved.find(mccolId) == mcColIsSaved.end()) {
           LOGF(info, "  Saving McCollision %d", mccolId);
           // update UDMcCollisions
-          updateUDMcCollisions(mccol);
+          updateUDMcCollisions(mccol, globBC);
           mcColIsSaved[mccolId] = outputMcCollisions.lastIndex();
 
           // update UDMcParticles

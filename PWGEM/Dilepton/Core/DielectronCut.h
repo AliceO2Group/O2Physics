@@ -107,7 +107,7 @@ class DielectronCut : public TNamed
     return true;
   }
 
-  template <typename TTrack1, typename TTrack2>
+  template <bool dont_require_rapidity = false, typename TTrack1, typename TTrack2>
   bool IsSelectedPair(TTrack1 const& t1, TTrack2 const& t2, const float bz) const
   {
     ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron);
@@ -122,17 +122,31 @@ class DielectronCut : public TNamed
       return false;
     }
 
-    if (v12.Rapidity() < mMinPairY || mMaxPairY < v12.Rapidity()) {
+    if (!dont_require_rapidity && (v12.Rapidity() < mMinPairY || mMaxPairY < v12.Rapidity())) {
       return false;
     }
 
-    if (mApplyPhiV && ((phiv < mMinPhivPair || (mMaxPhivPairMeeDep ? mMaxPhivPairMeeDep(v12.M()) : mMaxPhivPair) < phiv) ^ mSelectPC)) {
-      return false;
+    if (mApplyPhiV) {
+      if (mMaxPhivPairMeeDep) {
+        if ((phiv < mMinPhivPair || mMaxPhivPairMeeDep(v12.M()) < phiv) ^ mSelectPC) {
+          return false;
+        }
+      } else {
+        if ((!(mMinPhivPair < phiv && phiv < mMaxPhivPair) && !(mMinMeeForPhivPair < v12.M() && v12.M() < mMaxMeeForPhivPair)) ^ mSelectPC) {
+          return false;
+        }
+      }
     }
+
     if (dca_ee_3d < mMinPairDCA3D || mMaxPairDCA3D < dca_ee_3d) { // in sigma for pair
       return false;
     }
+
     if (opAng < mMinOpAng || mMaxOpAng < opAng) { // in sigma for pair
+      return false;
+    }
+
+    if (mRequireDiffSides && t1.eta() * t2.eta() > 0.0) {
       return false;
     }
 
@@ -146,19 +160,22 @@ class DielectronCut : public TNamed
     return true;
   }
 
-  template <bool isML = false, typename TTrack, typename TCollision = int>
+  template <bool dont_require_pteta = false, bool isML = false, typename TTrack, typename TCollision = int>
   bool IsSelectedTrack(TTrack const& track, TCollision const& collision = 0) const
   {
     if (!track.hasITS() || !track.hasTPC()) { // track has to be ITS-TPC matched track
       return false;
     }
 
-    if (!IsSelectedTrack(track, DielectronCuts::kTrackPtRange)) {
-      return false;
+    if (!dont_require_pteta) {
+      if (!IsSelectedTrack(track, DielectronCuts::kTrackPtRange)) {
+        return false;
+      }
+      if (!IsSelectedTrack(track, DielectronCuts::kTrackEtaRange)) {
+        return false;
+      }
     }
-    if (!IsSelectedTrack(track, DielectronCuts::kTrackEtaRange)) {
-      return false;
-    }
+
     if (!IsSelectedTrack(track, DielectronCuts::kTrackPhiRange)) {
       return false;
     }
@@ -377,9 +394,10 @@ class DielectronCut : public TNamed
   void SetMeeRange(float min = 0.f, float max = 0.5);
   void SetPairOpAng(float minOpAng = 0.f, float maxOpAng = 1e10f);
   void SetMaxPhivPairMeeDep(std::function<float(float)> meeDepCut);
-  void SetPhivPairRange(float min, float max);
+  void SetPhivPairRange(float min_phiv, float max_phiv, float min_mee, float max_mee);
   void SelectPhotonConversion(bool flag);
   void SetMindEtadPhi(bool flag, float min_deta, float min_dphi);
+  void SetRequireDifferentSides(bool flag);
 
   void SetTrackPtRange(float minPt = 0.f, float maxPt = 1e10f);
   void SetTrackEtaRange(float minEta = -1e10f, float maxEta = 1e10f);
@@ -438,12 +456,14 @@ class DielectronCut : public TNamed
   float mMinPairY{-1e10f}, mMaxPairY{1e10f};      // range in rapidity
   float mMinPairDCA3D{0.f}, mMaxPairDCA3D{1e10f}; // range in 3D DCA in sigma
   float mMinPhivPair{0.f}, mMaxPhivPair{+3.2};
+  float mMinMeeForPhivPair{0.f}, mMaxMeeForPhivPair{1e10f};
   std::function<float(float)> mMaxPhivPairMeeDep{}; // max phiv as a function of mee
   bool mSelectPC{false};                            // flag to select photon conversion used in mMaxPhivPairMeeDep
   bool mApplydEtadPhi{false};                       // flag to apply deta, dphi cut between 2 tracks
   float mMinDeltaEta{0.f};
   float mMinDeltaPhi{0.f};
   float mMinOpAng{0.f}, mMaxOpAng{1e10f};
+  bool mRequireDiffSides{false}; // flag to require 2 tracks to be from different sides. (A-C combination). If one wants 2 tracks to be in the same side (A-A or C-C), one can simply use track eta cut.
 
   // kinematic cuts
   float mMinTrackPt{0.f}, mMaxTrackPt{1e10f};        // range in pT
