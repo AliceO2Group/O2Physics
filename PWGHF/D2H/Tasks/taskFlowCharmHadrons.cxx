@@ -75,9 +75,13 @@ struct HfTaskFlowCharmHadrons {
   ConfigurableAxis thnConfigAxisScalarProd{"thnConfigAxisScalarProd", {100, 0., 1.}, ""};
   ConfigurableAxis thnConfigAxisMlOne{"thnConfigAxisMlOne", {1000, 0., 1.}, ""};
   ConfigurableAxis thnConfigAxisMlTwo{"thnConfigAxisMlTwo", {1000, 0., 1.}, ""};
-  ConfigurableAxis thnConfigAxisOccupancy{"thnConfigAxisOccupancy", {14, 0, 14000}, ""};
-  ConfigurableAxis thnConfigAxisOccupancyFT0C{"thnConfigAxisOccupancyFT0C", {14, 0, 14000}, "M"};
-  ConfigurableAxis thnConfigAxisHfEvSelFlags{"thnConfigAxisHfEvSelFlags", {10, 0, 10}, ""};
+  ConfigurableAxis thnConfigAxisOccupancyITS{"thnConfigAxisOccupancyITS", {14, 0, 14000}, ""};
+  ConfigurableAxis thnConfigAxisOccupancyFT0C{"thnConfigAxisOccupancyFT0C", {14, 0, 140000}, ""};
+  ConfigurableAxis thnConfigAxisNoSameBunchPileup{"thnConfigAxisNoSameBunchPileup", {2, 0, 2}, ""};
+  ConfigurableAxis thnConfigAxisNumTracksInTimeRange{"thnConfigAxisNumTracksInTimeRange", {2, 0, 2}, ""};
+  ConfigurableAxis thnConfigAxisNoCollInTimeRangeNarrow{"thnConfigAxisNoCollInTimeRangeNarrow", {2, 0, 2}, ""};
+  ConfigurableAxis thnConfigAxisNoCollInTimeRangeStandard{"thnConfigAxisNoCollInTimeRangeStandard", {2, 0, 2}, ""};
+  ConfigurableAxis thnConfigAxisNoCollInRofStandard{"thnConfigAxisNoCollInRofStandard", {2, 0, 2}, ""};
 
   using CandDsDataWMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfMlDsToKKPi>>;
   using CandDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>>;
@@ -125,10 +129,14 @@ struct HfTaskFlowCharmHadrons {
     const AxisSpec thnAxisScalarProd{thnConfigAxisScalarProd, "SP"};
     const AxisSpec thnAxisMlOne{thnConfigAxisMlOne, "Bkg score"};
     const AxisSpec thnAxisMlTwo{thnConfigAxisMlTwo, "FD score"};
-    const AxisSpec thnAxisOccupancy{thnConfigAxisOccupancy, "Occupancy"};
+    const AxisSpec thnAxisOccupancyITS{thnConfigAxisOccupancyITS, "OccupancyITS"};
     const AxisSpec thnAxisOccupancyFT0C{thnConfigAxisOccupancyFT0C, "OccupancyFT0C"};
-    const AxisSpec thnAxisHfEvSelFlags{thnConfigAxisHfEvSelFlags, "HfEvSelFlags"};
-
+    const AxisSpec thnAxisNoSameBunchPileup{thnConfigAxisNoSameBunchPileup,"NoSameBunchPileup"};
+    const AxisSpec thnAxisNumTracksInTimeRange{thnConfigAxisNumTracksInTimeRange,"NumTracksInTimeRange"};
+    const AxisSpec thnAxisNoCollInTimeRangeNarrow{thnConfigAxisNoCollInTimeRangeNarrow,"NoCollInTimeRangeNarrow"};
+    const AxisSpec thnAxisNoCollInTimeRangeStandard{thnConfigAxisNoCollInTimeRangeStandard,"NoCollInTimeRangeStandard"};
+    const AxisSpec thnAxisNoCollInRofStandard{thnConfigAxisNoCollInRofStandard,"NoCollInRofStandard"};
+    
     std::vector<AxisSpec> axes = {thnAxisInvMass, thnAxisPt, thnAxisCent, thnAxisScalarProd};
     if (storeEP) {
       axes.insert(axes.end(), {thnAxisCosNPhi, thnAxisCosDeltaPhi});
@@ -137,12 +145,18 @@ struct HfTaskFlowCharmHadrons {
       axes.insert(axes.end(), {thnAxisMlOne, thnAxisMlTwo});
     }
     if (storeOccupancy) {
-      axes.insert(axes.end(), {thnAxisOccupancy, thnAxisHfEvSelFlags});
+      if (occEstimator == 1) {
+        axes.insert(axes.end(), {thnAxisOccupancyITS, thnAxisNoSameBunchPileup, thnAxisNumTracksInTimeRange, 
+                                thnAxisNoCollInTimeRangeNarrow, thnAxisNoCollInTimeRangeStandard, thnAxisNoCollInRofStandard});
+      } else {
+        axes.insert(axes.end(), {thnAxisOccupancyFT0C, thnAxisNoSameBunchPileup, thnAxisNumTracksInTimeRange, 
+                                thnAxisNoCollInTimeRangeNarrow, thnAxisNoCollInTimeRangeStandard, thnAxisNoCollInRofStandard});
+      }
     }
     registry.add("hSparseFlowCharm", "THn for SP", HistType::kTHnSparseF, axes);
 
     if (storeOccupancy) {
-      registry.add("trackOcc/FTOOcc", "trackOcc/FTOOcc; trackOcc; FTOOcc", {HistType::kTH2F, {thnAxisOccupancy, thnAxisOccupancyFT0C}});
+      registry.add("trackOccVsFT0COcc", "trackOccVsFT0COcc; trackOcc; FT0COcc", {HistType::kTH2F, {thnAxisOccupancyITS, thnAxisOccupancyFT0C}});
     }
 
     if (doprocessResolution) { // enable resolution histograms only for resolution process
@@ -261,20 +275,40 @@ struct HfTaskFlowCharmHadrons {
                float& sp,
                std::vector<float>& outputMl,
                float& occupancy,
-               int& hfevselflag)
+               uint16_t& hfevselflag)
   {
     if(storeOccupancy) {
       if (storeMl) {
         if (storeEP) {
-          registry.fill(HIST("hSparseFlowCharm"), mass, pt, cent, sp, cosNPhi, cosDeltaPhi, outputMl[0], outputMl[1], occupancy, hfevselflag);
+          registry.fill(HIST("hSparseFlowCharm"), mass, pt, cent, sp, cosNPhi, cosDeltaPhi, outputMl[0], outputMl[1], occupancy,
+                                                  TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoSameBunchPileup),
+                                                  TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NumTracksInTimeRange),
+                                                  TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoCollInTimeRangeNarrow),
+                                                  TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoCollInTimeRangeStandard),
+                                                  TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoCollInRofStandard));
         } else {
-          registry.fill(HIST("hSparseFlowCharm"), mass, pt, cent, sp, outputMl[0], outputMl[1], occupancy, hfevselflag);
+          registry.fill(HIST("hSparseFlowCharm"), mass, pt, cent, sp, outputMl[0], outputMl[1], occupancy,
+                                                  TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoSameBunchPileup),
+                                                  TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NumTracksInTimeRange),
+                                                  TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoCollInTimeRangeNarrow),
+                                                  TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoCollInTimeRangeStandard),
+                                                  TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoCollInRofStandard));
         }
       } else {
         if (storeEP) {
-          registry.fill(HIST("hSparseFlowCharm"), mass, pt, cent, sp, cosNPhi, cosDeltaPhi, occupancy, hfevselflag);
+          registry.fill(HIST("hSparseFlowCharm"), mass, pt, cent, sp, cosNPhi, cosDeltaPhi, occupancy, 
+                                                  TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoSameBunchPileup),
+                                                  TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NumTracksInTimeRange),
+                                                  TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoCollInTimeRangeNarrow),
+                                                  TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoCollInTimeRangeStandard),
+                                                  TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoCollInRofStandard));
         } else {
-          registry.fill(HIST("hSparseFlowCharm"), mass, pt, cent, sp, occupancy, hfevselflag);
+          registry.fill(HIST("hSparseFlowCharm"), mass, pt, cent, sp, occupancy, 
+                                                  TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoSameBunchPileup),
+                                                  TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NumTracksInTimeRange),
+                                                  TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoCollInTimeRangeNarrow),
+                                                  TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoCollInTimeRangeStandard),
+                                                  TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoCollInRofStandard));
         }
       }
     } else {
@@ -312,31 +346,6 @@ struct HfTaskFlowCharmHadrons {
         break;
     }
     return occupancy;
-  }
-
-  /// Get the centrality estimator
-  o2::hf_centrality::CentralityEstimator getCentralityEstimator()
-  {
-    o2::hf_centrality::CentralityEstimator centEst;
-    switch (centEstimator) {
-      case CentralityEstimator::FV0A:
-        centEst = CentralityEstimator::FV0A;
-        break;
-      case CentralityEstimator::FT0M:
-        centEst = CentralityEstimator::FT0M;
-        break;
-      case CentralityEstimator::FT0A:
-        centEst = CentralityEstimator::FT0A;
-        break;
-      case CentralityEstimator::FT0C:
-        centEst = CentralityEstimator::FT0C;
-        break;
-      default:
-        LOG(warning) << "Centrality estimator not valid. Possible values are V0A, T0M, T0A, T0C. Fallback to V0A";
-        centEst = CentralityEstimator::FV0A;
-        break;
-    }
-    return centEst;
   }
 
   /// Get the centrality
@@ -432,47 +441,20 @@ struct HfTaskFlowCharmHadrons {
   /// Compute the scalar product
   /// \param collision is the collision with the Q vector information and event plane
   /// \param candidates are the selected candidates
-  /// \param bc is the bunch crossing with timestamp information
-  // template <DecayChannel channel, typename T1, o2::hf_centrality::CentralityEstimator centEstimator>
   template <DecayChannel channel, typename T1>
   void runFlowAnalysis(CollsWithQvecs::iterator const& collision,
-                       T1 const& candidates) // ,
-                      //  aod::BCsWithTimestamps const&)
+                       T1 const& candidates)
   {
     float cent = getCentrality(collision);
     if (cent < centralityMin || cent > centralityMax) {
       return;
     }
     float occupancy = 0.;
-    int hfevflag = 0;
+    uint16_t hfevflag;
     if(storeOccupancy) {
       occupancy = getOccupancy(collision);
-      registry.fill(HIST("trackOcc/FTOOcc"), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
-      switch (centEstimator) {
-        case CentralityEstimator::FV0A:
-          hfevflag = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::FV0A, 
-                                                         aod::BCsWithTimestamps>(collision, cent, ccdb, registry);
-          break;
-        case CentralityEstimator::FT0M:
-          hfevflag = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::FT0M, 
-                                                         aod::BCsWithTimestamps>(collision, cent, ccdb, registry);
-          break;
-        case CentralityEstimator::FT0A:
-          hfevflag = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::FT0A, 
-                                                         aod::BCsWithTimestamps>(collision, cent, ccdb, registry);
-          break;
-        case CentralityEstimator::FT0C:
-          hfevflag = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::FT0C, 
-                                                         aod::BCsWithTimestamps>(collision, cent, ccdb, registry);
-          break;
-        default:
-          LOG(warning) << "Centrality estimator not valid. Possible values are V0A, T0M, T0A, T0C. Fallback to V0A";
-          hfevflag = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::FV0A, 
-                                                         aod::BCsWithTimestamps>(collision, cent, ccdb, registry);
-          break;
-      }
-      // o2::hf_centrality::CentralityEstimator centEst = getCentralityEstimator();
-      // hfevflag = hfEvSel.getHfCollisionRejectionMask<true, centEst, aod::BCsWithTimestamps>(collision, cent, ccdb, registry);
+      registry.fill(HIST("trackOccVsFT0COcc"), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
+      hfevflag = static_cast<int>(hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, cent, ccdb, registry));
     }
 
     std::vector<float> qVecs = getQvec(collision);
@@ -572,7 +554,7 @@ struct HfTaskFlowCharmHadrons {
       float sinNPhi = std::sin(harmonic * phiCand);
       float scalprodCand = cosNPhi * xQVec + sinNPhi * yQVec;
       float cosDeltaPhi = std::cos(harmonic * (phiCand - evtPl));
-
+      
       fillThn(massCand, ptCand, cent, cosNPhi, cosDeltaPhi, scalprodCand, outputMl, occupancy, hfevflag);
     }
   }
