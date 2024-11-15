@@ -1610,7 +1610,7 @@ struct UpcCandProducer {
       if (nMFTs > fNFwdProngs) // too many tracks
         continue;
       std::vector<int64_t> trkCandIDs{};
-      const auto& midTrackIDs = midIt->second;
+      const auto& midTrackIDs = midIt->second; // to retrieve corresponding MCH-MID tracks
       if (nMFTs == fNFwdProngs) {
         for (auto iMft : fwdTrackIDs) {
           auto trk = fwdTracks.iteratorAt(iMft);
