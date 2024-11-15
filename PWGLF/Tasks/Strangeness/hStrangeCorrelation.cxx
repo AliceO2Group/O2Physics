@@ -20,6 +20,8 @@
 /// \author David Dobrigkeit Chinellato (david.dobrigkeit.chinellato@cern.ch)
 /// \author Zhongbao Yin (Zhong-Bao.Yin@cern.ch)
 
+#include <string>
+#include <vector>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -33,8 +35,6 @@
 #include "Common/DataModel/Centrality.h"
 #include "Framework/StaticFor.h"
 #include "CCDB/BasicCCDBManager.h"
-#include <string>
-#include <vector>
 
 using namespace o2;
 using namespace o2::constants::math;
