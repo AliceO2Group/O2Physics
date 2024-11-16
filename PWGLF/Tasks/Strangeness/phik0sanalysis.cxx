@@ -62,8 +62,8 @@ const int nPtBinK0S = 7;
 const float pTBinK0S[nPtBinK0S + 1] = {0.0, 0.5, 1.0, 1.5, 2.0f, 3.0f, 4.0, 6.0f};
 auto vecPtBinK0S = std::vector<float>{pTBinK0S, pTBinK0S + nPtBinK0S + 1};
 
-static constexpr int nPtBinPi = 8;
-constexpr float pTBinPi[nPtBinPi + 1] = {0.2f, 0.4f, 0.6f, 0.8f, 1.0f, 1.2f, 1.5f, 2.0f, 3.0f};
+const int nPtBinPi = 8;
+const float pTBinPi[nPtBinPi + 1] = {0.2f, 0.4f, 0.6f, 0.8f, 1.0f, 1.2f, 1.5f, 2.0f, 3.0f};
 auto vecPtBinPi = std::vector<float>{pTBinPi, pTBinPi + nPtBinPi + 1};
 } // namespace
 
