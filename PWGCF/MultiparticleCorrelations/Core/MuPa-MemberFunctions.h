@@ -8455,15 +8455,6 @@ const char* FancyFormatting(const char* name)
     ExitFunction(__FUNCTION__);
   }
 
-  /*
-    qa.fCentralityEstimatorName[eCentFT0C] = "CentFT0C";
-    qa.fCentralityEstimatorName[eCentFT0M] = "CentFT0M";
-    qa.fCentralityEstimatorName[eCentFV0A] = "CentFV0A";
-    qa.fCentralityEstimatorName[eCentNTPV] = "CentNTPV";
-    qa.fCentralityEstimatorName[eCentRun2V0M] = "CentRun2V0M";
-    qa.fCentralityEstimatorName[eCentRun2SPDTracklets] = "CentRun2SPDTracklets";
-  */
-
   return fancyFormatting;
 
 } // const char* FancyFormatting(const char *name)
