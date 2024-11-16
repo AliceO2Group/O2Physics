@@ -64,9 +64,6 @@ void BookBaseList()
   fBasePro->GetXaxis()->SetBinLabel(eInsanityCheckForEachParticle, "fInsanityCheckForEachParticle");
   fBasePro->Fill(eInsanityCheckForEachParticle, static_cast<double>(tc.fInsanityCheckForEachParticle));
 
-  fBasePro->GetXaxis()->SetBinLabel(eUseCCDB, "fUseCCDB");
-  fBasePro->Fill(eUseCCDB, static_cast<double>(tc.fUseCCDB));
-
   fBasePro->GetXaxis()->SetBinLabel(eWhichProcess, Form("WhichProcess = %s", tc.fWhichProcess.Data()));
 
   fBasePro->GetXaxis()->SetBinLabel(eRandomSeed, "fRandomSeed");
@@ -136,7 +133,6 @@ void DefaultConfiguration()
   tc.fVerboseUtility = cf_tc.cfVerboseUtility;
   tc.fVerboseForEachParticle = cf_tc.cfVerboseForEachParticle;
   tc.fDoAdditionalInsanityChecks = cf_tc.cfDoAdditionalInsanityChecks;
-  tc.fUseCCDB = cf_tc.cfUseCCDB;
   // Set automatically what to process, from an implicit variable "doprocessSomeProcessName" within a PROCESS_SWITCH clause:
   tc.fProcess[eProcessRec] = doprocessRec;
   tc.fProcess[eProcessRecSim] = doprocessRecSim;
@@ -408,6 +404,7 @@ void DefaultConfiguration()
 
       // *) histogram names with custom NUA distributions in that file + get those histograms immediately here:
       auto lCustomNUAPDFHistNames = (vector<string>)cf_nua.cfCustomNUAPDFHistNames;
+      // TBI 20241115 For some reason, the default values of configurable "cfCustomNUAPDFHistNames" are not correctly propagated in the local variables, but I can circumvent that with JSON settings for the time being      
       if (lCustomNUAPDFHistNames.size() != eNUAPDF_N) {
         LOGF(info, "\033[1;31m lCustomNUAPDFHistNames.size() = %d\033[0m", lCustomNUAPDFHistNames.size());
         LOGF(info, "\033[1;31m eNUAPDF_N = %d\033[0m", static_cast<int>(eNUAPDF_N));
@@ -686,6 +683,7 @@ void DefaultBooking()
   // *) If you do not want particular 2D event histogram to be booked, use configurable array cfBookQAEventHistograms2D, where you can specify flags 1 (book) or 0 (do not book).
   // Ordering of the flags in that array is interpreted through ordering of enums in enum eQAEventHistograms2D
   auto lBookQAEventHistograms2D = cf_qa.cfBookQAEventHistograms2D.value; // this is now the local version of that string array from configurable
+  // TBI 20241115 For some reason, the default values of configurable "cfBookQAEventHistograms2D" are not correctly propagated in the local variables, but I can circumvent that with JSON settings for the time being
   if (lBookQAEventHistograms2D.size() != eQAEventHistograms2D_N) {
     LOGF(info, "\033[1;31m lBookQAEventHistograms2D.size() = %d\033[0m", lBookQAEventHistograms2D.size());
     LOGF(info, "\033[1;31m eQAEventHistograms2D_N = %d\033[0m", static_cast<int>(eQAEventHistograms2D_N));
@@ -1551,11 +1549,11 @@ void InsanityChecksBeforeBooking()
 
   // **) Supported centrality estimators for Run 3 are enlisted here:
   if (tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim]) {
-    if (!(ec.fsEventCuts[eCentralityEstimator].EqualTo("centFT0C") ||
-          ec.fsEventCuts[eCentralityEstimator].EqualTo("centFT0M") ||
-          ec.fsEventCuts[eCentralityEstimator].EqualTo("centFV0A") ||
-          ec.fsEventCuts[eCentralityEstimator].EqualTo("centNTPV"))) {
-      LOGF(fatal, "\033[1;31m%s at line %d : centrality estimator = %s is not supported yet for Run 3 analysis.\nUse \"centFT0C\", \"centFT0M\", \"centFV0A\", or \"centNTPV\" (case sensitive!) \033[0m", __FUNCTION__, __LINE__, ec.fsEventCuts[eCentralityEstimator].Data());
+    if (!(ec.fsEventCuts[eCentralityEstimator].EqualTo("centFT0C", TString::kIgnoreCase) ||
+          ec.fsEventCuts[eCentralityEstimator].EqualTo("centFT0M", TString::kIgnoreCase) ||
+          ec.fsEventCuts[eCentralityEstimator].EqualTo("centFV0A", TString::kIgnoreCase) ||
+          ec.fsEventCuts[eCentralityEstimator].EqualTo("centNTPV", TString::kIgnoreCase))) {
+      LOGF(fatal, "\033[1;31m%s at line %d : centrality estimator = %s is not supported yet for Run 3 analysis.\nUse \"centFT0C\", \"centFT0M\", \"centFV0A\", or \"centNTPV\"\033[0m", __FUNCTION__, __LINE__, ec.fsEventCuts[eCentralityEstimator].Data());
     }
   }
 
@@ -3186,7 +3184,6 @@ void InternalValidation()
     if (iv.fHarmonicsOptionInternalValidation->EqualTo("correlated")) {
       // Sample 3 correlated vn's from TF3 fvnPDF, and with them initialize fPhiPDF:
       fvnPDF->GetRandom3(v1, v2, v3);
-      // cout<<Form("v1 = %.4f, v2 = %.4f, v3 = %.4f",v1,v2,v3)<<endl;
       fPhiPDF->SetParameter(0, v1);
       fPhiPDF->SetParameter(1, v2);
       fPhiPDF->SetParameter(2, v3);
@@ -8433,10 +8430,10 @@ const char* FancyFormatting(const char* name)
     fancyFormatting = "V_{z}";
   } else if (TString(name).EqualTo("Centrality")) {
     TString tmp = ec.fsEventCuts[eCentralityEstimator]; // I have to introduce local TString tmp, because ReplaceAll replaces in-place
-    if (tmp.BeginsWith("centRun2")) {
-      fancyFormatting = Form("Centrality (%s)", tmp.ReplaceAll("centRun2", "").Data()); // "centRun2V0M" => "Centrality (V0M)"
-    } else if (tmp.BeginsWith("cent")) {
-      fancyFormatting = Form("Centrality (%s)", tmp.ReplaceAll("cent", "").Data()); // "centFT0C" => "Centrality (FT0C)"
+    if (tmp.BeginsWith("CentRun2")) {
+      fancyFormatting = Form("Centrality (%s)", tmp.ReplaceAll("CentRun2", "").Data()); // "CentRun2V0M" => "Centrality (V0M)"
+    } else if (tmp.BeginsWith("Cent")) {
+      fancyFormatting = Form("Centrality (%s)", tmp.ReplaceAll("Cent", "").Data()); // "CentFT0C" => "Centrality (FT0C)"
     } else {
       LOGF(fatal, "\033[1;31m%s at line %d : the case tmp = %s is not supported yet\033[0m", __FUNCTION__, __LINE__, tmp.Data());
     }
@@ -8457,6 +8454,15 @@ const char* FancyFormatting(const char* name)
   if (tc.fVerboseUtility) {
     ExitFunction(__FUNCTION__);
   }
+
+  /*
+    qa.fCentralityEstimatorName[eCentFT0C] = "CentFT0C";
+    qa.fCentralityEstimatorName[eCentFT0M] = "CentFT0M";
+    qa.fCentralityEstimatorName[eCentFV0A] = "CentFV0A";
+    qa.fCentralityEstimatorName[eCentNTPV] = "CentNTPV";
+    qa.fCentralityEstimatorName[eCentRun2V0M] = "CentRun2V0M";
+    qa.fCentralityEstimatorName[eCentRun2SPDTracklets] = "CentRun2SPDTracklets";
+  */
 
   return fancyFormatting;
 
@@ -8691,36 +8697,49 @@ Double_t CalculateKineCustomNestedLoops(TArrayI* harmonics, eAsFunctionOf AFO_va
     StartFunction(__FUNCTION__);
   }
 
+  Trace(__FUNCTION__, __LINE__);
+
   if (!harmonics) {
     LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
   }
+
+  Trace(__FUNCTION__, __LINE__);
 
   // *) ...
   eqvectorKine qvKine = eqvectorKine_N; // which component of q-vector
   TString kineVarName = "";
   switch (AFO_variable) {
     case AFO_PT:
+      Trace(__FUNCTION__, __LINE__);
       qvKine = PTq;
       kineVarName = "pt";
       break;
     case AFO_ETA:
+      Trace(__FUNCTION__, __LINE__);
       qvKine = ETAq;
       kineVarName = "eta";
       break;
     default:
+      Trace(__FUNCTION__, __LINE__);
       LOGF(fatal, "\033[1;31m%s at line %d : This AFO_variable = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, static_cast<int>(AFO_variable));
       break;
   } // switch(AFO_variable)
+
+  Trace(__FUNCTION__, __LINE__);
 
   // *) Insanity checks on above settings:
   if (qvKine == eqvectorKine_N) {
     LOGF(fatal, "\033[1;31m%s at line %d : qvKine == eqvectorKine_N => add some more entries to the case statement \033[0m", __FUNCTION__, __LINE__);
   }
 
+  Trace(__FUNCTION__, __LINE__);
+
   if (0 > bin || res.fResultsPro[AFO_variable]->GetNbinsX() < bin) { // this 'bin' starts from 0, i.e. this is an array bin
     // either underflow or overflow is hit, meaning that histogram is booked in narrower range than cuts
     LOGF(fatal, "\033[1;31m%s at line %d => AFO_variable = %d, bin = %d\033[0m", __FUNCTION__, __LINE__, static_cast<int>(AFO_variable), bin);
   }
+
+  Trace(__FUNCTION__, __LINE__);
 
   // Get the number of particles in this kine bin:
   Int_t nParticles = 0;
@@ -8730,25 +8749,40 @@ Double_t CalculateKineCustomNestedLoops(TArrayI* harmonics, eAsFunctionOf AFO_va
     }
   }
 
+  Trace(__FUNCTION__, __LINE__);
+
   // 'qvKine' is enum eqvectorKine:
   if (!res.fResultsPro[AFO_variable]) {
     LOGF(fatal, "\033[1;31m%s at line %d : AFO_variable = %d, bin = %d \033[0m", __FUNCTION__, __LINE__, static_cast<int>(AFO_variable), bin);
   }
+
+  Trace(__FUNCTION__, __LINE__);
+
   LOGF(info, " Processing qvKine = %d (vs. %s), nParticles in this kine bin = %d, bin range = [%f,%f) ....", static_cast<int>(qvKine), kineVarName.Data(), nParticles, res.fResultsPro[AFO_variable]->GetBinLowEdge(bin + 1), res.fResultsPro[AFO_variable]->GetBinLowEdge(bin + 2));
+
+  Trace(__FUNCTION__, __LINE__);
 
   // a) Determine the order of correlator;
   Int_t order = harmonics->GetSize();
   if (0 == order || order > gMaxCorrelator) {
     LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
   }
+
+  Trace(__FUNCTION__, __LINE__);
+
   if (order > nParticles) {
     LOGF(info, "  There is no enough particles in this bin to calculate the requested correlator");
     return 0.; // TBI 20240405 Is this really safe here? Re-think...
   }
+
+  Trace(__FUNCTION__, __LINE__);
+
   if (nl.fMaxNestedLoop > 0 && nl.fMaxNestedLoop < order) {
     LOGF(info, "  nl.fMaxNestedLoop > 0 && nl.fMaxNestedLoop < order, where nl.fMaxNestedLoop = %d, order = %d", nl.fMaxNestedLoop, order);
     return 0.; // TBI 20240405 Is this really safe here? Re-think...
   }
+
+  Trace(__FUNCTION__, __LINE__);
 
   // b) Custom nested loop:
   TProfile* profile = new TProfile("profile", "", 1, 0., 1.); // helper profile to get all averages automatically
@@ -8912,10 +8946,18 @@ Double_t CalculateKineCustomNestedLoops(TArrayI* harmonics, eAsFunctionOf AFO_va
     } // for(int i2=0; i2<nParticles; i2++)
   } // for(int i1=0; i1<nParticles; i1++)
 
+  Trace(__FUNCTION__, __LINE__);
+
   // c) Return value:
   Double_t finalValue = profile->GetBinContent(1);
+
+  Trace(__FUNCTION__, __LINE__);
+
   delete profile;
   profile = NULL;
+
+  Trace(__FUNCTION__, __LINE__);
+
   if (tc.fVerbose) {
     ExitFunction(__FUNCTION__);
   }
@@ -9204,7 +9246,7 @@ void BanishmentLoopOverParticles(T const& tracks)
 
     // *) Break the loop if fixed number of particles is taken randomly from each event (use always in combination with tc.fUseFisherYates = kTRUE):
     if (tc.fFixedNumberOfRandomlySelectedTracks > 0 && tc.fFixedNumberOfRandomlySelectedTracks == lSelectedTracks) {
-      LOGF(info, "%s Breaking the loop over particles, since requested fixed number of %d particles was reached", __FUNCTION__, tc.fFixedNumberOfRandomlySelectedTracks);
+      LOGF(info, "%s : Breaking the loop over particles, since requested fixed number of %d particles was reached", __FUNCTION__, tc.fFixedNumberOfRandomlySelectedTracks);
       break;
     }
 
@@ -9273,6 +9315,19 @@ void Trace(const char* functionName, Int_t lineNumber)
   LOGF(info, "\033[1;32m%s .... line %d\033[0m", functionName, lineNumber);
 
 } // void Trace(const char* functionName, Int_t lineNumber)
+
+//============================================================
+
+void Exit()
+{
+  // A simple utility wrapper. Used only during debugging.
+  // Use directly as:  Exit();
+  // Line number, function name, formatting, etc, are determinad automatically.
+
+  LOGF(info, "\n\n\n\n\n\n\n\n\n\n");
+  exit(1);
+
+} // void Exit()
 
 //============================================================
 
@@ -9838,7 +9893,7 @@ void MainLoopOverParticles(T const& tracks)
 
     // *) Break the loop if fixed number of particles is taken randomly from each event (use always in combination with tc.fUseFisherYates = kTRUE):
     if (tc.fFixedNumberOfRandomlySelectedTracks > 0 && tc.fFixedNumberOfRandomlySelectedTracks == ebye.fSelectedTracks) {
-      LOGF(info, "  Breaking the loop over particles, since requested fixed number of %d particles was reached", tc.fFixedNumberOfRandomlySelectedTracks);
+      LOGF(info, "%s : Breaking the loop over particles, since requested fixed number of %d particles was reached", __FUNCTION__, tc.fFixedNumberOfRandomlySelectedTracks);
       break;
     }
 

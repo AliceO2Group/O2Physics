@@ -26,7 +26,6 @@ struct : ConfigurableGroup {
   Configurable<bool> cfVerboseForEachParticle{"cfVerboseForEachParticle", false, "run or not in verbose mode (also for function calls per particle)"};
   Configurable<bool> cfDoAdditionalInsanityChecks{"cfDoAdditionalInsanityChecks", false, "do additional insanity checks at run time (this leads to small loss of performance)"};
   Configurable<bool> cfInsanityCheckForEachParticle{"cfInsanityCheckForEachParticle", false, "do insanity checks at run time for each particle, at the expense of losing a lot of performance. Use only during debugging."};
-  Configurable<bool> cfUseCCDB{"cfUseCCDB", true, "if requested, access personal files from CCDB (true) or from home dir in AliEn (false)"};
   Configurable<unsigned int> cfRandomSeed{"cfRandomSeed", 0, "0 = random seed is guaranteed to be unique in space and time"};
   Configurable<bool> cfUseFisherYates{"cfUseFisherYates", false, "use or not Fisher-Yates algorithm to randomize particle indices"};
   Configurable<int> cfFixedNumberOfRandomlySelectedTracks{"cfFixedNumberOfRandomlySelectedTracks", -1, "set to some integer > 0, to apply and use. Set to <=0, to ignore."};
@@ -91,7 +90,7 @@ struct : ConfigurableGroup {
   Configurable<bool> cfFillParticleHistograms{"cfFillParticleHistograms", true, "if false, all 1D particle histograms are not filled. if kTRUE, the ones for which fBookParticleHistograms[...] is kTRUE, are filled"};
   Configurable<vector<string>> cfBookParticleHistograms{"cfBookParticleHistograms", {"Phi-1", "Pt-1", "Eta-1", "Charge-1", "tpcNClsFindable-1", "tpcNClsShared-1", "tpcNClsFound-1", "tpcNClsCrossedRows-1", "itsNCls-1", "itsNClsInnerBarrel-1", "tpcCrossedRowsOverFindableCls-1", "tpcFoundOverFindableCls-1", "tpcFractionSharedCls-1", "dcaXY-1", "dcaZ-1", "PDG-1"}, "Book (1) or do not book (0) particle histogram"};
   Configurable<bool> cfFillParticleHistograms2D{"cfFillParticleHistograms2D", true, "if false, all 2D particle histograms are not filled. if kTRUE, the ones for which fBookParticleHistograms2D[...] is kTRUE, are filled"};
-  Configurable<vector<string>> cfBookParticleHistograms2D{"cfBookParticleHistograms2D", {"Phi_vs_Pt-1", "Phi_vs_Eta-1"}, "Book (1) or do not book (0) event histogram"};
+  Configurable<vector<string>> cfBookParticleHistograms2D{"cfBookParticleHistograms2D", {"Phi_vs_Pt-1", "Phi_vs_Eta-1"}, "Book (1) or do not book (0) 2D particle histograms"};
 } cf_ph;
 
 // *) Particle cuts:
