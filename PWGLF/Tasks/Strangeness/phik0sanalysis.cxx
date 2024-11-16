@@ -54,12 +54,12 @@ using namespace o2::framework::expressions;
 
 namespace
 {
-static constexpr int nMultBin = 10;
-constexpr float multBin[nMultBin + 1] = {0.0f, 1.0f, 5.0f, 10.0f, 15.0f, 20.0f, 30.0f, 40.0f, 50.0f, 70.0f, 100.0f};
+const int nMultBin = 10;
+const float multBin[nMultBin + 1] = {0.0f, 1.0f, 5.0f, 10.0f, 15.0f, 20.0f, 30.0f, 40.0f, 50.0f, 70.0f, 100.0f};
 auto vecMultBin = std::vector<float>{multBin, multBin + nMultBin + 1};
 
-static constexpr int nPtBinK0S = 7;
-constexpr float pTBinK0S[nPtBinK0S + 1] = {0.0, 0.5, 1.0, 1.5, 2.0f, 3.0f, 4.0, 6.0f};
+const int nPtBinK0S = 7;
+const float pTBinK0S[nPtBinK0S + 1] = {0.0, 0.5, 1.0, 1.5, 2.0f, 3.0f, 4.0, 6.0f};
 auto vecPtBinK0S = std::vector<float>{pTBinK0S, pTBinK0S + nPtBinK0S + 1};
 
 static constexpr int nPtBinPi = 8;
