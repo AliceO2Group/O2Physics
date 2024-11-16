@@ -54,8 +54,8 @@ DECLARE_SOA_TABLE(Sigma0Cores, "AOD", "SIGMA0CORES",
                   sigma0Core::SigmapT,
                   sigma0Core::SigmaMass,
                   sigma0Core::SigmaRapidity,
-                  sigma0Core::SigmaOPAngle, 
-                  sigma0Core::SigmaDeltaEta, 
+                  sigma0Core::SigmaOPAngle,
+                  sigma0Core::SigmaDeltaEta,
                   sigma0Core::SigmaDeltaPhi);
 
 DECLARE_SOA_TABLE(Sigma0CollRefs, "AOD", "SIGMA0COLLREF", //! optional table to refer back to a collision
@@ -149,8 +149,8 @@ DECLARE_SOA_COLUMN(LambdaPosPrTPCNSigma, lambdaPosPrTPCNSigma, float);
 DECLARE_SOA_COLUMN(LambdaPosPiTPCNSigma, lambdaPosPiTPCNSigma, float);
 DECLARE_SOA_COLUMN(LambdaNegPrTPCNSigma, lambdaNegPrTPCNSigma, float);
 DECLARE_SOA_COLUMN(LambdaNegPiTPCNSigma, lambdaNegPiTPCNSigma, float);
-DECLARE_SOA_COLUMN(LambdaPrTOFNSigma , lambdaPrTOFNSigma , float);
-DECLARE_SOA_COLUMN(LambdaPiTOFNSigma , lambdaPiTOFNSigma , float);
+DECLARE_SOA_COLUMN(LambdaPrTOFNSigma, lambdaPrTOFNSigma, float);
+DECLARE_SOA_COLUMN(LambdaPiTOFNSigma, lambdaPiTOFNSigma, float);
 DECLARE_SOA_COLUMN(ALambdaPrTOFNSigma, aLambdaPrTOFNSigma, float);
 DECLARE_SOA_COLUMN(ALambdaPiTOFNSigma, aLambdaPiTOFNSigma, float);
 DECLARE_SOA_COLUMN(LambdaPosTPCCrossedRows, lambdaPosTPCCrossedRows, uint8_t);
