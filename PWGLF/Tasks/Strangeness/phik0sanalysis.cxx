@@ -54,16 +54,16 @@ using namespace o2::framework::expressions;
 
 namespace
 {
-const int nMultBin = 10;
-const float multBin[nMultBin + 1] = {0.0f, 1.0f, 5.0f, 10.0f, 15.0f, 20.0f, 30.0f, 40.0f, 50.0f, 70.0f, 100.0f};
+static constexpr int nMultBin = 10;
+constexpr float multBin[nMultBin + 1] = {0.0f, 1.0f, 5.0f, 10.0f, 15.0f, 20.0f, 30.0f, 40.0f, 50.0f, 70.0f, 100.0f};
 auto vecMultBin = std::vector<float>{multBin, multBin + nMultBin + 1};
 
-const int nPtBinK0S = 7;
-const float pTBinK0S[nPtBinK0S + 1] = {0.0, 0.5, 1.0, 1.5, 2.0f, 3.0f, 4.0, 6.0f};
+static constexpr int nPtBinK0S = 7;
+constexpr float pTBinK0S[nPtBinK0S + 1] = {0.0, 0.5, 1.0, 1.5, 2.0f, 3.0f, 4.0, 6.0f};
 auto vecPtBinK0S = std::vector<float>{pTBinK0S, pTBinK0S + nPtBinK0S + 1};
 
-const int nPtBinPi = 8;
-const float pTBinPi[nPtBinPi + 1] = {0.2f, 0.4f, 0.6f, 0.8f, 1.0f, 1.2f, 1.5f, 2.0f, 3.0f};
+static constexpr int nPtBinPi = 8;
+constexpr float pTBinPi[nPtBinPi + 1] = {0.2f, 0.4f, 0.6f, 0.8f, 1.0f, 1.2f, 1.5f, 2.0f, 3.0f};
 auto vecPtBinPi = std::vector<float>{pTBinPi, pTBinPi + nPtBinPi + 1};
 } // namespace
 
@@ -200,11 +200,11 @@ struct phik0shortanalysis {
     AxisSpec yAxis = {nBinsy, -cfgyAcceptance, cfgyAcceptance, "#it{y}"};
     AxisSpec deltayAxis = {nBinsy, 0.0f, 1.0f, "|#it{#Deltay}|"};
     AxisSpec multAxis = {120, 0.0f, 120.0f, "centFT0M"};
-    AxisSpec binnedmultAxis{{(std::vector<float>)binsMult}, "centFT0M"};
+    AxisSpec binnedmultAxis{(std::vector<float>)binsMult, "centFT0M"};
     AxisSpec ptK0SAxis = {60, 0.0f, 6.0f, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec binnedptK0SAxis{{(std::vector<float>)binspTK0S}, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec binnedptK0SAxis{(std::vector<float>)binspTK0S, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec ptPiAxis = {30, 0.0f, 3.0f, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec binnedptPiAxis{{(std::vector<float>)binspTPi}, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec binnedptPiAxis{(std::vector<float>)binspTPi, "#it{p}_{T} (GeV/#it{c})"};
 
     // Histograms
     // Number of events per selection
