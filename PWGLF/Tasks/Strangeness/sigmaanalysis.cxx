@@ -107,7 +107,7 @@ struct sigmaanalysis {
   // TODO: Include PsiPair selection
 
   Configurable<float> SigmaMaxRap{"SigmaMaxRap", 0.5, "Max sigma0 rapidity"};
-  Configurable<float> SigmaOPAngle{"SigmaOPAngle", 0.7, "Max sigma0 opening angle between daughters (radians)"};
+  Configurable<float> SigmaOPAngle{"SigmaOPAngle", 1.0, "Max sigma0 opening angle between daughters (radians)"};
 
   // Axis
   // base properties
@@ -132,7 +132,7 @@ struct sigmaanalysis {
   ConfigurableAxis axisDCAtoPV{"axisDCAtoPV", {500, 0.0f, 50.0f}, "DCA (cm)"};
   ConfigurableAxis axisDCAdau{"axisDCAdau", {50, 0.0f, 5.0f}, "DCA (cm)"};
   ConfigurableAxis axisCosPA{"axisCosPA", {200, 0.5f, 1.0f}, "Cosine of pointing angle"};
-  ConfigurableAxis axisCandSel{"axisCandSel", {25, 0.5f, +25.5f}, "Candidate Selection"};
+  ConfigurableAxis axisCandSel{"axisCandSel", {26, 0.5f, +26.5f}, "Candidate Selection"};
 
   // ML
   ConfigurableAxis MLProb{"MLOutput", {100, 0.0f, 1.0f}, ""};
@@ -172,6 +172,9 @@ struct sigmaanalysis {
     histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(21, "Lambda Alpha Cut");
     histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(22, "Lambda CosPA Cut");
     histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(23, "Lambda Y Cut");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(24, "Sigma Y Cut");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(25, "Sigma OP Angle Cut");
+    histos.get<TH1>(HIST("GeneralQA/hCandidateAnalysisSelection"))->GetXaxis()->SetBinLabel(26, "Lambda/ALambda PID Cut");
 
     // Photon Selection QA histos
     histos.add("GeneralQA/hPhotonMass", "hPhotonMass", kTH1F, {axisPhotonMass});
@@ -202,7 +205,12 @@ struct sigmaanalysis {
     histos.add("GeneralQA/hLambdaCosPA", "hLambdaCosPA", kTH1F, {axisCosPA});
     histos.add("GeneralQA/hLambdaY", "hLambdaY", kTH1F, {axisRapidity});
     histos.add("GeneralQA/hSigmaY", "hSigmaY", kTH1F, {axisRapidity});
-
+    histos.add("GeneralQA/hSigmaOPAngle", "hSigmaOPAngle", kTH1F, {{140, 0.0f, +7.0f}});
+    histos.add("GeneralQA/h2dTPCvsTOFNSigma_LambdaPr", "h2dTPCvsTOFNSigma_LambdaPr", kTH2F, {{120, -30, 30}, {120, -30, 30}});  
+    histos.add("GeneralQA/h2dTPCvsTOFNSigma_LambdaPi", "h2dTPCvsTOFNSigma_LambdaPi", kTH2F, {{120, -30, 30}, {120, -30, 30}}); 
+    histos.add("GeneralQA/h2dTPCvsTOFNSigma_ALambdaPr", "h2dTPCvsTOFNSigma_ALambdaPr", kTH2F, {{120, -30, 30}, {120, -30, 30}});  
+    histos.add("GeneralQA/h2dTPCvsTOFNSigma_ALambdaPi", "h2dTPCvsTOFNSigma_ALambdaPi", kTH2F, {{120, -30, 30}, {120, -30, 30}}); 
+    
     histos.add("GeneralQA/hPhotonMassSelected", "hPhotonMassSelected", kTH1F, {axisPhotonMass});
     histos.add("GeneralQA/hLambdaMassSelected", "hLambdaMassSelected", kTH1F, {axisLambdaMass});
     histos.add("GeneralQA/hAntiLambdaMassSelected", "hAntiLambdaMassSelected", kTH1F, {axisLambdaMass});
@@ -416,9 +424,12 @@ struct sigmaanalysis {
       histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 23.);
       if (TMath::Abs(cand.sigmaRapidity()) > SigmaMaxRap)
         return false;
+      histos.fill(HIST("GeneralQA/hSigmaOPAngle"), cand.sigmaOPAngle());
       histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 24.);
-    }
-
+      if (cand.sigmaOPAngle()>SigmaOPAngle)
+        return false;
+      histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 25.);
+    } 
     return true;
   }
 
@@ -576,20 +587,27 @@ struct sigmaanalysis {
       histos.fill(HIST("GeneralQA/hPhotonMassSelected"), sigma.photonMass());
       if (sigma.lambdaAlpha() > 0) { 
         // PID selections
+        histos.fill(HIST("GeneralQA/h2dTPCvsTOFNSigma_LambdaPr"), sigma.lambdaPosPrTPCNSigma(), sigma.lambdaPrTOFNSigma());
+        histos.fill(HIST("GeneralQA/h2dTPCvsTOFNSigma_LambdaPi"), sigma.lambdaNegPiTPCNSigma(), sigma.lambdaPiTOFNSigma());
         if ((TMath::Abs(sigma.lambdaPosPrTPCNSigma()) < LambdaMaxTPCNSigmas) && (TMath::Abs(sigma.lambdaNegPiTPCNSigma()) < LambdaMaxTPCNSigmas) && (TMath::Abs(sigma.lambdaPrTOFNSigma()) < LambdaMaxTOFNSigmas) && (TMath::Abs(sigma.lambdaPiTOFNSigma()) < LambdaMaxTOFNSigmas)){
           histos.fill(HIST("GeneralQA/h2dArmenterosAfterSel"), sigma.photonAlpha(), sigma.photonQt());
           histos.fill(HIST("GeneralQA/h2dArmenterosAfterSel"), sigma.lambdaAlpha(), sigma.lambdaQt());
           histos.fill(HIST("GeneralQA/hLambdaMassSelected"), sigma.lambdaMass());
+          histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 26.);
           histos.fill(HIST("Sigma0/hMassSigma0"), sigma.sigmaMass());
           histos.fill(HIST("Sigma0/hPtSigma0"), sigma.sigmapT());
           histos.fill(HIST("Sigma0/hRapiditySigma0"), sigma.sigmaRapidity());
           histos.fill(HIST("Sigma0/h3dMassSigma0"), coll.centFT0C(), sigma.sigmapT(), sigma.sigmaMass());}
-      } else {
+      } 
+      else {
         // PID selections
+        histos.fill(HIST("GeneralQA/h2dTPCvsTOFNSigma_ALambdaPr"), sigma.lambdaNegPrTPCNSigma(), sigma.aLambdaPrTOFNSigma());
+        histos.fill(HIST("GeneralQA/h2dTPCvsTOFNSigma_ALambdaPi"), sigma.lambdaPosPiTPCNSigma(), sigma.aLambdaPiTOFNSigma());
         if ((TMath::Abs(sigma.lambdaPosPiTPCNSigma()) < LambdaMaxTPCNSigmas) && (TMath::Abs(sigma.lambdaNegPrTPCNSigma()) < LambdaMaxTPCNSigmas) && (TMath::Abs(sigma.aLambdaPrTOFNSigma()) < LambdaMaxTOFNSigmas) && (TMath::Abs(sigma.aLambdaPiTOFNSigma()) < LambdaMaxTOFNSigmas)){
           histos.fill(HIST("GeneralQA/h2dArmenterosAfterSel"), sigma.photonAlpha(), sigma.photonQt());
           histos.fill(HIST("GeneralQA/h2dArmenterosAfterSel"), sigma.lambdaAlpha(), sigma.lambdaQt());
           histos.fill(HIST("GeneralQA/hAntiLambdaMassSelected"), sigma.antilambdaMass());
+          histos.fill(HIST("GeneralQA/hCandidateAnalysisSelection"), 26.);
           histos.fill(HIST("AntiSigma0/hMassAntiSigma0"), sigma.sigmaMass());
           histos.fill(HIST("AntiSigma0/hPtAntiSigma0"), sigma.sigmapT());
           histos.fill(HIST("AntiSigma0/hRapidityAntiSigma0"), sigma.sigmaRapidity());
