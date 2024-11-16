@@ -263,7 +263,7 @@ struct HfTaskBplus {
 
         float ptProngs[2], yProngs[2], etaProngs[2];
         int counter = 0;
-        for (const auto& daught : particle.daughters_as<aod::McParticles>()) {
+        for (const auto& daught : particle.daughters_as<soa::Join<aod::McParticles, aod::HfCandBplusMcGen>>()) {
           ptProngs[counter] = daught.pt();
           etaProngs[counter] = daught.eta();
           yProngs[counter] = RecoDecay::y(daught.pVector(), pdg->Mass(daught.pdgCode()));
