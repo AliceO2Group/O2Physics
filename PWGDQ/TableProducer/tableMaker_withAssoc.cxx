@@ -106,14 +106,6 @@ using MyMuonsCollWithCov = soa::Join<aod::FwdTracks, aod::FwdTracksCov, aod::Fwd
 using MyBCs = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
 using ExtBCs = soa::Join<aod::BCs, aod::Timestamps, aod::MatchedBCCollisionsSparseMulti>;
 
-namespace o2::aod
-{
-DECLARE_SOA_TABLE(AmbiguousTracksMid, "AOD", "AMBIGUOUSTRACKU", //! Table for tracks which are not uniquely associated with a collision
-                  o2::soa::Index<>, o2::aod::ambiguous::TrackId, o2::aod::ambiguous::BCIdSlice, o2::soa::Marker<2>);
-DECLARE_SOA_TABLE(AmbiguousTracksFwd, "AOD", "AMBIGUOUSFWDTRU", //! Table for Fwd tracks which are not uniquely associated with a collision
-                  o2::soa::Index<>, o2::aod::ambiguous::FwdTrackId, o2::aod::ambiguous::BCIdSlice, o2::soa::Marker<2>);
-} // namespace o2::aod
-
 // constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision;
 // constexpr static uint32_t gkEventFillMapWithFilter = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::EventFilter;
 

@@ -24,7 +24,7 @@ using namespace o2;
 using namespace o2::framework;
 
 // *) Run 3:
-using EventSelection = soa::Join<aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs>;
+using EventSelection = soa::Join<aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs>;
 using CollisionRec = soa::Join<aod::Collisions, EventSelection>::iterator; // use in json "isMC": "true" for "event-selection-task"
 using CollisionRecSim = soa::Join<aod::Collisions, aod::McCollisionLabels, EventSelection>::iterator;
 using CollisionSim = aod::McCollision;
@@ -62,6 +62,7 @@ using CollisionRecSim_Run1 = soa::Join<aod::Collisions, aod::McCollisionLabels, 
 #include <TExMap.h>
 #include <TF1.h>
 #include <TF3.h>
+#include <TObjString.h>
 using namespace std;
 
 // *) Enums:
