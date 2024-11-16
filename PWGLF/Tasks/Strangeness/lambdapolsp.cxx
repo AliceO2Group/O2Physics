@@ -162,7 +162,7 @@ struct lambdapolsp {
     AxisSpec etaAxis = {etaNbins, lbineta, hbineta, "Eta"};
     AxisSpec spAxis = {spNbins, lbinsp, hbinsp, "Sp"};
     AxisSpec qxZDCAxis = {QxyNbins, lbinQxy, hbinQxy, "Qx"};
-    AxisSpec psiACAxis = {120, -6.28, 6.28, "psiAC"};
+    // AxisSpec psiACAxis = {120, -6.28, 6.28, "psiAC"};
 
     if (checkwithpub) {
       if (useprofile == 1) {
@@ -211,14 +211,14 @@ struct lambdapolsp {
     }
 
     histos.add("hCentrality", "Centrality distribution", kTH1F, {{centAxis}});
-    histos.add("hpsiApsiC", "hpsiApsiC", kTHnSparseF, {psiACAxis, psiACAxis});
-    // histos.add("hpsiApsiC", "hpsiApsiC", kTH2F, {psiACAxis, psiACAxis});
-    histos.add("hphiminuspsiA", "hphiminuspisA", kTH1F, {{50, 0, 6.28}}, true);
-    histos.add("hphiminuspsiC", "hphiminuspisC", kTH1F, {{50, 0, 6.28}}, true);
-    // histos.add("hCentrality0", "Centrality distribution0", kTH1F, {{centAxis}});
-    // histos.add("hCentrality1", "Centrality distribution1", kTH1F, {{centAxis}});
-    // histos.add("hCentrality2", "Centrality distribution2", kTH1F, {{centAxis}});
-    // histos.add("hCentrality3", "Centrality distribution3", kTH1F, {{centAxis}});
+    // histos.add("hpsiApsiC", "hpsiApsiC", kTHnSparseF, {psiACAxis, psiACAxis});
+    //  histos.add("hpsiApsiC", "hpsiApsiC", kTH2F, {psiACAxis, psiACAxis});
+    // histos.add("hphiminuspsiA", "hphiminuspisA", kTH1F, {{50, 0, 6.28}}, true);
+    // histos.add("hphiminuspsiC", "hphiminuspisC", kTH1F, {{50, 0, 6.28}}, true);
+    //  histos.add("hCentrality0", "Centrality distribution0", kTH1F, {{centAxis}});
+    //  histos.add("hCentrality1", "Centrality distribution1", kTH1F, {{centAxis}});
+    //  histos.add("hCentrality2", "Centrality distribution2", kTH1F, {{centAxis}});
+    //  histos.add("hCentrality3", "Centrality distribution3", kTH1F, {{centAxis}});
 
     if (!checkwithpub) {
       // histos.add("hVtxZ", "Vertex distribution in Z;Z (cm)", kTH1F, {{20, -10.0, 10.0}});
@@ -369,7 +369,7 @@ struct lambdapolsp {
   ROOT::Math::PxPyPzMVector Lambda, Proton, Pion, fourVecDauCM;
   // ROOT::Math::XYZVector threeVecDauCM, threeVecDauCMXY, eventplaneVec, eventplaneVecNorm, beamvector;
   ROOT::Math::XYZVector threeVecDauCM, threeVecDauCMXY;
-  float phiangle = 0.0;
+  double phiangle = 0.0;
   // double massPi = TDatabasePDG::Instance()->GetParticle(kPiPlus)->Mass();
   // double massPr = TDatabasePDG::Instance()->GetParticle(kProton)->Mass();
   // double massLambda = TDatabasePDG::Instance()->GetParticle(kLambda0)->Mass();
@@ -564,14 +564,14 @@ struct lambdapolsp {
         // eventplaneVec = ROOT::Math::XYZVector(collision.qFT0C(), collision.qFT0A(), 0); //this needs to be changed
         // eventplaneVecNorm = eventplaneVec.Cross(beamvector); //z'
         phiangle = TMath::ATan2(fourVecDauCM.Py(), fourVecDauCM.Px());
-        float phiangledir = fourVecDauCM.Phi();
+        // double phiangledir = fourVecDauCM.Phi();
 
         auto phiminuspsiC = GetPhiInRange(phiangle - psiZDCC);
         auto phiminuspsiA = GetPhiInRange(phiangle - psiZDCA);
         // histos.fill(HIST("hpsiApsiC"), psiZDCA, psiZDCC);
-        histos.fill(HIST("hpsiApsiC"), GetPhiInRange(GetPhiInRange(phiangle) - GetPhiInRange(psiZDCA)), phiminuspsiA);
-        histos.fill(HIST("hphiminuspsiA"), (phiminuspsiA));
-        histos.fill(HIST("hphiminuspsiC"), (phiminuspsiC));
+        // histos.fill(HIST("hpsiApsiC"), GetPhiInRange(GetPhiInRange(phiangle) - GetPhiInRange(psiZDCA)), phiminuspsiA);
+        // histos.fill(HIST("hphiminuspsiA"), (phiminuspsiA));
+        // histos.fill(HIST("hphiminuspsiC"), (phiminuspsiC));
         // auto cosThetaStar = eventplaneVecNorm.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(eventplaneVecNorm.Mag2());
         auto cosThetaStar = fourVecDauCM.Pz() / fourVecDauCM.P(); // A0 correction
         auto PolC = TMath::Sin(phiminuspsiC);
