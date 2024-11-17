@@ -235,7 +235,7 @@ using StraCent = StraCents::iterator;
 DECLARE_SOA_TABLE(StraMCCollisions_000, "AOD", "STRAMCCOLLISION", //! MC collision properties
                   o2::soa::Index<>, mccollision::PosX, mccollision::PosY, mccollision::PosZ,
                   mccollision::ImpactParameter);
-DECLARE_SOA_TABLE_VERSIONED(StraMCCollisions_001, "AOD", "STRAMCCOLLISION", 1,     //! debug information
+DECLARE_SOA_TABLE_VERSIONED(StraMCCollisions_001, "AOD", "STRAMCCOLLISION", 1, //! debug information
                             o2::soa::Index<>, mccollision::PosX, mccollision::PosY, mccollision::PosZ,
                             mccollision::ImpactParameter, mccollision::EventPlaneAngle);
 using StraMCCollisions = StraMCCollisions_001;
