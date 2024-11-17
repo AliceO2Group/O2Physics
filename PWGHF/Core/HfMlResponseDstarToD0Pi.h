@@ -61,6 +61,18 @@
     break;                                                                     \
   }
 
+// Very specific case of CHECK_AND_FILL_VEC_DSTAR_CHARGEBASE(OBJECT, FEATURE, GETTER)
+// Use for push back different value for D*+ or D*- candidate getting the correct feature from two different objects (tracks)
+#define CHECK_AND_FILL_VEC_DSTAR_CHARGEBASE_FROMOBJECT(OBJECTPOS, OBJECTNEG, FEATURENAME, GETTER) \
+  case static_cast<uint8_t>(InputFeaturesDstarToD0Pi::FEATURENAME): {                             \
+    if (candidate.signSoftPi() > 0) {                                                             \
+      inputFeatures.emplace_back(OBJECTPOS.GETTER());                                             \
+    } else {                                                                                      \
+      inputFeatures.emplace_back(OBJECTNEG.GETTER());                                             \
+    }                                                                                             \
+    break;                                                                                        \
+  }
+
 // Very specific case of CHECK_AND_FILL_VEC_DSTAR_FULL(OBJECT, FEATURE, GETTER)
 // Use for push back deltaMassD0 for D*+ or D*- candidate
 #define CHECK_AND_FILL_VEC_DSTAR_DELTA_MASS_D0(FEATURENAME)                                  \
@@ -156,36 +168,36 @@ class HfMlResponseDstarToD0Pi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_DSTAR(cpaXYD0);
         CHECK_AND_FILL_VEC_DSTAR(deltaIPNormalisedMaxD0);
         CHECK_AND_FILL_VEC_DSTAR(impactParameterProductD0);
-        CHECK_AND_FILL_VEC_DSTAR(ptProng0);
-        CHECK_AND_FILL_VEC_DSTAR(ptProng1);
+        CHECK_AND_FILL_VEC_DSTAR_CHARGEBASE(ptProng0, ptProng1, ptProng0);
+        CHECK_AND_FILL_VEC_DSTAR_CHARGEBASE(ptProng1, ptProng0, ptProng1);
         CHECK_AND_FILL_VEC_DSTAR(ptSoftPi);
-        CHECK_AND_FILL_VEC_DSTAR(impactParameter0);
-        CHECK_AND_FILL_VEC_DSTAR(impactParameter1);
-        CHECK_AND_FILL_VEC_DSTAR(impactParameterZ0);
-        CHECK_AND_FILL_VEC_DSTAR(impactParameterZ1);
+        CHECK_AND_FILL_VEC_DSTAR_CHARGEBASE(impactParameter0, impactParameter1, impactParameter0);
+        CHECK_AND_FILL_VEC_DSTAR_CHARGEBASE(impactParameter1, impactParameter0, impactParameter1);
+        CHECK_AND_FILL_VEC_DSTAR_CHARGEBASE(impactParameterZ0, impactParameterZ1, impactParameterZ0);
+        CHECK_AND_FILL_VEC_DSTAR_CHARGEBASE(impactParameterZ1, impactParameterZ0, impactParameterZ1);
         CHECK_AND_FILL_VEC_DSTAR(impParamSoftPi);
         CHECK_AND_FILL_VEC_DSTAR(impParamZSoftPi);
-        CHECK_AND_FILL_VEC_DSTAR(impactParameterNormalised0);
-        CHECK_AND_FILL_VEC_DSTAR(impactParameterNormalised1);
-        CHECK_AND_FILL_VEC_DSTAR(impactParameterZNormalised0);
-        CHECK_AND_FILL_VEC_DSTAR(impactParameterZNormalised1);
+        CHECK_AND_FILL_VEC_DSTAR_CHARGEBASE(impactParameterNormalised0, impactParameterNormalised1, impactParameterNormalised0);
+        CHECK_AND_FILL_VEC_DSTAR_CHARGEBASE(impactParameterNormalised1, impactParameterNormalised0, impactParameterNormalised1);
+        CHECK_AND_FILL_VEC_DSTAR_CHARGEBASE(impactParameterZNormalised0, impactParameterZNormalised1, impactParameterZNormalised0);
+        CHECK_AND_FILL_VEC_DSTAR_CHARGEBASE(impactParameterZNormalised1, impactParameterZNormalised0, impactParameterZNormalised1);
         CHECK_AND_FILL_VEC_DSTAR(normalisedImpParamSoftPi);
         CHECK_AND_FILL_VEC_DSTAR(normalisedImpParamZSoftPi);
         CHECK_AND_FILL_VEC_DSTAR_CHARGEBASE(cosThetaStarD0, cosThetaStarD0Bar, cosThetaStarD0);
         CHECK_AND_FILL_VEC_DSTAR_CHARGEBASE(invMassD0, invMassD0Bar, massD0);
         CHECK_AND_FILL_VEC_DSTAR_DELTA_MASS_D0(deltaMassD0);
-        CHECK_AND_FILL_VEC_DSTAR_FULL(prong0, nSigmaTPCPiPr0, tpcNSigmaPi);
-        CHECK_AND_FILL_VEC_DSTAR_FULL(prong0, nSigmaTPCKaPr0, tpcNSigmaKa);
-        CHECK_AND_FILL_VEC_DSTAR_FULL(prong0, nSigmaTOFPiPr0, tofNSigmaPi);
-        CHECK_AND_FILL_VEC_DSTAR_FULL(prong0, nSigmaTOFKaPr0, tofNSigmaKa);
-        CHECK_AND_FILL_VEC_DSTAR_FULL(prong0, nSigmaTPCTOFPiPr0, tpcTofNSigmaPi);
-        CHECK_AND_FILL_VEC_DSTAR_FULL(prong0, nSigmaTPCTOFKaPr0, tpcTofNSigmaKa);
-        CHECK_AND_FILL_VEC_DSTAR_FULL(prong1, nSigmaTPCPiPr1, tpcNSigmaPi);
-        CHECK_AND_FILL_VEC_DSTAR_FULL(prong1, nSigmaTPCKaPr1, tpcNSigmaKa);
-        CHECK_AND_FILL_VEC_DSTAR_FULL(prong1, nSigmaTOFPiPr1, tofNSigmaPi);
-        CHECK_AND_FILL_VEC_DSTAR_FULL(prong1, nSigmaTOFKaPr1, tofNSigmaKa);
-        CHECK_AND_FILL_VEC_DSTAR_FULL(prong1, nSigmaTPCTOFPiPr1, tpcTofNSigmaPi);
-        CHECK_AND_FILL_VEC_DSTAR_FULL(prong1, nSigmaTPCTOFKaPr1, tpcTofNSigmaKa);
+        CHECK_AND_FILL_VEC_DSTAR_CHARGEBASE_FROMOBJECT(prong0, prong1, nSigmaTPCPiPr0, tpcNSigmaPi);
+        CHECK_AND_FILL_VEC_DSTAR_CHARGEBASE_FROMOBJECT(prong0, prong1, nSigmaTPCKaPr0, tpcNSigmaKa);
+        CHECK_AND_FILL_VEC_DSTAR_CHARGEBASE_FROMOBJECT(prong0, prong1, nSigmaTOFPiPr0, tofNSigmaPi);
+        CHECK_AND_FILL_VEC_DSTAR_CHARGEBASE_FROMOBJECT(prong0, prong1, nSigmaTOFKaPr0, tofNSigmaKa);
+        CHECK_AND_FILL_VEC_DSTAR_CHARGEBASE_FROMOBJECT(prong0, prong1, nSigmaTPCTOFPiPr0, tpcTofNSigmaPi);
+        CHECK_AND_FILL_VEC_DSTAR_CHARGEBASE_FROMOBJECT(prong0, prong1, nSigmaTPCTOFKaPr0, tpcTofNSigmaKa);
+        CHECK_AND_FILL_VEC_DSTAR_CHARGEBASE_FROMOBJECT(prong1, prong0, nSigmaTPCPiPr1, tpcNSigmaPi);
+        CHECK_AND_FILL_VEC_DSTAR_CHARGEBASE_FROMOBJECT(prong1, prong0, nSigmaTPCKaPr1, tpcNSigmaKa);
+        CHECK_AND_FILL_VEC_DSTAR_CHARGEBASE_FROMOBJECT(prong1, prong0, nSigmaTOFPiPr1, tofNSigmaPi);
+        CHECK_AND_FILL_VEC_DSTAR_CHARGEBASE_FROMOBJECT(prong1, prong0, nSigmaTOFKaPr1, tofNSigmaKa);
+        CHECK_AND_FILL_VEC_DSTAR_CHARGEBASE_FROMOBJECT(prong1, prong0, nSigmaTPCTOFPiPr1, tpcTofNSigmaPi);
+        CHECK_AND_FILL_VEC_DSTAR_CHARGEBASE_FROMOBJECT(prong1, prong0, nSigmaTPCTOFKaPr1, tpcTofNSigmaKa);
         CHECK_AND_FILL_VEC_DSTAR_FULL(prongSoftPi, nSigmaTPCPiPrSoftPi, tpcNSigmaPi);
         CHECK_AND_FILL_VEC_DSTAR_FULL(prongSoftPi, nSigmaTPCKaPrSoftPi, tpcNSigmaKa);
         CHECK_AND_FILL_VEC_DSTAR_FULL(prongSoftPi, nSigmaTOFPiPrSoftPi, tofNSigmaPi);
