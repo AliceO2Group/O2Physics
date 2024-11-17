@@ -1235,8 +1235,8 @@ struct cascadeBuilder {
     return true;
   }
 
-  template <class TTrackTo, typename TCascObject>
-  bool buildCascadeCandidateWithKF(TCascObject const& cascade)
+  template <class TTrackTo, typename TV0Object, typename TCascObject>
+  bool buildCascadeCandidateWithKF(TCascObject const& cascade, TV0Object const& v0, TTrackTo const& posTrack, TTrackTo const& negTrack)
   {
     registry.fill(HIST("hKFParticleStatistics"), 0.0f);
     //*>~<*>~<*>~<*>~<*>~<*>~<*>~<*>~<*>~<*
@@ -1244,11 +1244,8 @@ struct cascadeBuilder {
     // dispenses prior V0 generation, uses constrained (re-)fit based on bachelor charge
     //*>~<*>~<*>~<*>~<*>~<*>~<*>~<*>~<*>~<*
 
-    // Track casting
+    // Track casting for those not provided
     auto bachTrack = cascade.template bachelor_as<TTrackTo>();
-    auto v0 = cascade.v0();
-    auto posTrack = v0.template posTrack_as<TTrackTo>();
-    auto negTrack = v0.template negTrack_as<TTrackTo>();
     auto const& collision = cascade.collision();
 
     if (calculateBachBaryonVars) {
@@ -1645,7 +1642,19 @@ struct cascadeBuilder {
   {
     statisticsRegistry.eventCounter++;
     for (auto& cascade : cascades) {
-      bool validCascadeCandidateKF = buildCascadeCandidateWithKF<TTrackTo>(cascade);
+      bool validCascadeCandidateKF = false;
+      if constexpr (requires { cascade.template v0(); }) {
+        auto v0 = cascade.template v0_as<aod::V0sLinked>();
+        auto posTrack = v0.template posTrack_as<TTrackTo>();
+        auto negTrack = v0.template negTrack_as<TTrackTo>();
+        validCascadeCandidateKF = buildCascadeCandidateWithKF<TTrackTo>(cascade, v0, posTrack, negTrack);
+      }
+      if constexpr (requires { cascade.template findableV0(); }) {
+        auto v0 = cascade.template findableV0_as<aod::FindableV0sLinked>();
+        auto posTrack = v0.template posTrack_as<TTrackTo>();
+        auto negTrack = v0.template negTrack_as<TTrackTo>();
+        validCascadeCandidateKF = buildCascadeCandidateWithKF<TTrackTo>(cascade, v0, posTrack, negTrack);
+      }
       if (!validCascadeCandidateKF)
         continue; // doesn't pass cascade selections
 
