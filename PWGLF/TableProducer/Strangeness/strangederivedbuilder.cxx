@@ -21,6 +21,8 @@
 #include <map>
 #include <iterator>
 #include <utility>
+#include <string>
+#include <vector>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/RunningWorkflowInfo.h"
