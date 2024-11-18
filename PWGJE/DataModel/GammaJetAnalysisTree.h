@@ -31,7 +31,7 @@ DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float);
 DECLARE_SOA_COLUMN(Centrality, centrality, float);
 DECLARE_SOA_COLUMN(Rho, rho, float);
 DECLARE_SOA_COLUMN(EventSel, eventSel, uint8_t);
-DECLARE_SOA_COLUMN(Occupancy, occupancy, float);
+DECLARE_SOA_COLUMN(Occupancy, occupancy, int);
 DECLARE_SOA_BITMAP_COLUMN(Alias, alias, 32);
 } // namespace gjevent
 DECLARE_SOA_TABLE(GjEvents, "AOD", "GJEVENT", o2::soa::Index<>, gjevent::Multiplicity, gjevent::Centrality, gjevent::Rho, gjevent::EventSel, gjevent::Occupancy, gjevent::Alias)

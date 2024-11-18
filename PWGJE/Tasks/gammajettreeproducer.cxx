@@ -102,7 +102,7 @@ struct GammaJetTreeProducer {
     const o2Axis m02Axis{100, 0, 3, "m02"};
     const o2Axis etaAxis{100, -1, 1, "#eta"};
     const o2Axis phiAxis{100, 0 , 2*TMath::Pi(), "#phi"};
-
+    const o2Axis occupancyAxis{300, 0, 30000, "occupancy"};
     mHistograms.add("clusterE", "Energy of cluster", o2HistType::kTH1F, {energyAxis});
     mHistograms.add("trackPt", "pT of track", o2HistType::kTH1F, {ptAxis});
     mHistograms.add("chjetPt", "pT of charged jet", o2HistType::kTH1F, {ptAxis});
@@ -111,6 +111,7 @@ struct GammaJetTreeProducer {
 
     // track QA THnSparse
     mHistograms.add("trackPtEtaPhi", "Track QA", o2HistType::kTHnSparseF, {ptAxis, etaAxis, phiAxis});
+    mHistograms.add("trackPtEtaOccupancy", "Track QA vs occupancy", o2HistType::kTHnSparseF, {ptAxis, etaAxis, occupancyAxis});
   }
 
   // ---------------------
@@ -217,7 +218,7 @@ struct GammaJetTreeProducer {
     collisionMapping[collision.globalIndex()] = eventsTable.lastIndex();
 
     // loop over tracks one time for QA
-    runTrackQA(tracks);
+    runTrackQA(collision, tracks);
 
     // loop over clusters
     for (auto cluster : clusters) {
