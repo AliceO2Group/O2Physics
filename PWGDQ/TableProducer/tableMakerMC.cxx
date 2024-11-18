@@ -84,14 +84,6 @@ using MyEventsWithMults = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, ao
 using MyEventsWithCent = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::McCollisionLabels>;
 using MyEventsWithCentAndMults = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults, aod::MultsExtra, aod::McCollisionLabels>;
 
-namespace o2::aod
-{
-DECLARE_SOA_TABLE(AmbiguousTracksMid, "AOD", "AMBIGUOUSTRACK", //! Table for tracks which are not uniquely associated with a collision
-                  o2::soa::Index<>, o2::aod::ambiguous::TrackId, o2::aod::ambiguous::BCIdSlice, o2::soa::Marker<2>);
-DECLARE_SOA_TABLE(AmbiguousTracksFwd, "AOD", "AMBIGUOUSFWDTR", //! Table for Fwd tracks which are not uniquely associated with a collision
-                  o2::soa::Index<>, o2::aod::ambiguous::FwdTrackId, o2::aod::ambiguous::BCIdSlice, o2::soa::Marker<2>);
-} // namespace o2::aod
-
 constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision;
 constexpr static uint32_t gkEventFillMapWithMults = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionMult;
 constexpr static uint32_t gkEventFillMapWithCent = VarManager::ObjTypes::BC | VarManager::ObjTypes::Collision | VarManager::ObjTypes::CollisionCent;
@@ -1647,14 +1639,14 @@ struct TableMakerMC {
   // Produce muon tables only for ambiguous tracks studies --------------------------------------------------------------------------------------
   void processAmbiguousMuonOnly(MyEvents const& collisions, aod::BCsWithTimestamps const& bcs,
                                 soa::Filtered<MyMuons> const& tracksMuon,
-                                aod::McCollisions const& mcEvents, aod::McParticles_001 const& mcTracks, aod::AmbiguousTracksFwd const& ambiTracksFwd)
+                                aod::McCollisions const& mcEvents, aod::McParticles_001 const& mcTracks, aod::AmbiguousFwdTracks const& ambiTracksFwd)
   {
     fullSkimming<gkEventFillMap, 0u, gkMuonFillMapWithAmbi>(collisions, bcs, nullptr, tracksMuon, mcEvents, mcTracks, nullptr, ambiTracksFwd);
   }
 
   void processAmbiguousMuonOnlyWithCov(MyEvents const& collisions, aod::BCsWithTimestamps const& bcs,
                                        soa::Filtered<MyMuonsWithCov> const& tracksMuon,
-                                       aod::McCollisions const& mcEvents, aod::McParticles_001 const& mcTracks, aod::AmbiguousTracksFwd const& ambiTracksFwd)
+                                       aod::McCollisions const& mcEvents, aod::McParticles_001 const& mcTracks, aod::AmbiguousFwdTracks const& ambiTracksFwd)
   {
     fullSkimming<gkEventFillMap, 0u, gkMuonFillMapWithCovAmbi>(collisions, bcs, nullptr, tracksMuon, mcEvents, mcTracks, nullptr, ambiTracksFwd);
   }
@@ -1662,7 +1654,7 @@ struct TableMakerMC {
   // Produce track tables only for ambiguous tracks studies -------------------------------------------------------------------------------------
   void processAmbiguousBarrelOnly(MyEvents const& collisions, aod::BCsWithTimestamps const& bcs,
                                   soa::Filtered<MyBarrelTracks> const& tracksBarrel,
-                                  aod::McCollisions const& mcEvents, aod::McParticles_001 const& mcTracks, aod::AmbiguousTracksMid const& ambiTracksMid)
+                                  aod::McCollisions const& mcEvents, aod::McParticles_001 const& mcTracks, aod::AmbiguousTracks const& ambiTracksMid)
   {
     fullSkimming<gkEventFillMap, gkTrackFillMapWithAmbi, 0u>(collisions, bcs, tracksBarrel, nullptr, mcEvents, mcTracks, ambiTracksMid, nullptr);
   }

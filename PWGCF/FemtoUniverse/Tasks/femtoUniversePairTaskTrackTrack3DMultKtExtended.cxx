@@ -731,7 +731,7 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
   {
     randgen = new TRandom2(0);
 
-    for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
+    for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, ConfNEventsMix, -1, cols, cols)) {
 
       const int multiplicityCol = collision1.multV0M();
       MixQaRegistry.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision1.posZ(), multiplicityCol}));
@@ -771,7 +771,7 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
                            soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>& parts,
                            o2::aod::FDMCParticles&)
   {
-    for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, 5, -1, cols, cols)) {
+    for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, ConfNEventsMix, -1, cols, cols)) {
 
       const int multiplicityCol = collision1.multV0M();
       MixQaRegistry.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision1.posZ(), multiplicityCol}));

@@ -12,9 +12,9 @@
 add_subdirectory(Multiplicity)
 add_subdirectory(PID)
 
-o2physics_add_executable(aod-data-model-graph
-    SOURCES aodDataModelGraph.cxx
-    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore)
+#o2physics_add_executable(aod-data-model-graph
+#    SOURCES aodDataModelGraph.cxx
+#    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore)
 
 o2physics_add_library(trackSelectionRequest
     SOURCES trackSelectionRequest.cxx

@@ -24,7 +24,7 @@ using namespace o2;
 using namespace o2::framework;
 
 // *) Run 3:
-using EventSelection = soa::Join<aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs>;
+using EventSelection = soa::Join<aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs>;
 using CollisionRec = soa::Join<aod::Collisions, EventSelection>::iterator; // use in json "isMC": "true" for "event-selection-task"
 using CollisionRecSim = soa::Join<aod::Collisions, aod::McCollisionLabels, EventSelection>::iterator;
 using CollisionSim = aod::McCollision;
@@ -62,6 +62,7 @@ using CollisionRecSim_Run1 = soa::Join<aod::Collisions, aod::McCollisionLabels, 
 #include <TExMap.h>
 #include <TF1.h>
 #include <TF3.h>
+#include <TObjString.h>
 using namespace std;
 
 // *) Enums:
@@ -108,7 +109,8 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     DefaultConfiguration(); // here default values from configurables are taken into account
     DefaultBooking();       // here I decide only which histograms are booked, not details like binning, etc.
     DefaultBinning();       // here default values for bins are either hardwired, or values for bins provided via configurables are taken into account
-    DefaultCuts();          // here default values for cuts are either hardwired, or defined through default binning to ease bookeeping, or values for cuts provided via configurables are taken into account
+    DefaultCuts();          // here default values for cuts are either hardwired, or defined through default binning to ease bookeeping,
+                            // or values for cuts provided via configurables are taken into account
                             // Remark: DefaultCuts() has to be called after DefaultBinning()
 
     // *) Insanity checks before booking:
