@@ -70,6 +70,7 @@ DECLARE_SOA_COLUMN(SignedPtMC, signedPtMC, float);
 DECLARE_SOA_COLUMN(MassMC, massMC, float);
 
 DECLARE_SOA_COLUMN(CollisionId, collisionId, int64_t);
+DECLARE_SOA_COLUMN(ZVertex, zVertex, float);
 DECLARE_SOA_COLUMN(Multiplicity, multiplicity, uint16_t);
 DECLARE_SOA_COLUMN(CentralityFT0C, centFT0C, float);
 DECLARE_SOA_COLUMN(MultiplicityFT0C, multiplicityFT0C, float);
@@ -117,6 +118,7 @@ DECLARE_SOA_TABLE(he3HadronTableMC, "AOD", "HE3HADTABLEMC",
                   he3HadronTablesNS::MassMC)
 DECLARE_SOA_TABLE(he3HadronMult, "AOD", "HE3HADMULT",
                   he3HadronTablesNS::CollisionId,
+                  he3HadronTablesNS::ZVertex,
                   he3HadronTablesNS::Multiplicity,
                   he3HadronTablesNS::CentralityFT0C,
                   he3HadronTablesNS::MultiplicityFT0C)

@@ -738,6 +738,7 @@ struct he3hadronfemto {
     if (setting_fillMultiplicity) {
       m_outputMultiplicityTable(
         collision.globalIndex(),
+        collision.posZ(),
         collision.numContrib(),
         collision.centFT0C(),
         collision.multFT0C());
