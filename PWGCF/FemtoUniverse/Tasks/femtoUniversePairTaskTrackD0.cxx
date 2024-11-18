@@ -109,7 +109,7 @@ struct femtoUniversePairTaskTrackD0 {
     Configurable<bool> ConfIsSame{"ConfIsSame", false, "Pairs of the same particle"};
     Configurable<int> ConfPDGCodeTrack{"ConfPDGCodeTrack", 2212, "Particle 2 - PDG code"};
     Configurable<int> ConfPIDTrack{"ConfPIDTrack", 2, "Particle 2 - Read from cutCulator"}; // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>
-    Configurable<int8_t> ConfTrackSign{"ConfTrackSign", 1, "Track sign"};
+    Configurable<int> ConfTrackSign{"ConfTrackSign", 1, "Track sign"};
     Configurable<bool> ConfIsTrackIdentified{"ConfIsTrackIdentified", true, "Enable PID for the track"};
   } ConfTrack;
 
