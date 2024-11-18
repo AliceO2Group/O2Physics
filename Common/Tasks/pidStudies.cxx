@@ -54,13 +54,13 @@ DECLARE_SOA_COLUMN(NSigmaTofPosPr, nSigmaTofPosPr, float);  //! nSigmaTOF of pos
 DECLARE_SOA_COLUMN(NSigmaTofNegPr, nSigmaTofNegPr, float);  //! nSigmaTOF of negative track with proton hypothesis
 DECLARE_SOA_COLUMN(AlphaArm, alphaArm, float);              //! Armenteros alpha
 DECLARE_SOA_COLUMN(QtArm, qtArm, float);                    //! Armenteros Qt
-DECLARE_SOA_COLUMN(OccupancyFt0c, occupancyFt0c, float);    //! Occupancy of FT0C
-DECLARE_SOA_COLUMN(OccupancyIts, occupancyIts, float);      //! Occupancy of ITS
+DECLARE_SOA_COLUMN(OccupancyFt0c, occupancyFt0c, float);    //! Occupancy from FT0C
+DECLARE_SOA_COLUMN(OccupancyIts, occupancyIts, float);      //! Occupancy from ITS
 DECLARE_SOA_COLUMN(CentralityFT0C, centralityFT0C, float);  //! Centrality from FT0C
 DECLARE_SOA_COLUMN(CentralityFT0M, centralityFT0M, float);  //! Centrality from FT0M
 } // namespace pid_studies
 
-DECLARE_SOA_TABLE(pidInformation, "AOD", "PIDSTUDIES", //! Table with PID information
+DECLARE_SOA_TABLE(pidV0s, "AOD", "PIDV0S", //! Table with PID information
                   pid_studies::MassK0,
                   pid_studies::MassLambda,
                   pid_studies::PtPos,
@@ -90,13 +90,18 @@ DECLARE_SOA_TABLE(pidInformation, "AOD", "PIDSTUDIES", //! Table with PID inform
 
 
 struct pidStudies {
-  Produces <o2::aod::pidInformation> pidInformation;
+  Produces <o2::aod::pidV0s> pidV0;
   HistogramRegistry registry{"registry", {}};
 
   using PIDTracks = soa::Join<aod::Tracks, aod::TracksExtra,
                             aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                             aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
   using CollSels = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms>;
+
+  Configurable<float> massK0Min{"massK0Min", 0.4, "Minimum mass for K0"};
+  Configurable<float> massK0Max{"massK0Max", 0.6, "Maximum mass for K0"};
+  Configurable<float> massLambdaMin{"massLambdaMin", 1.0, "Minimum mass for lambda"};
+  Configurable<float> massLambdaMax{"massLambdaMax", 1.3, "Maximum mass for lambda"};
 
   void init(InitContext&)
   {
@@ -107,7 +112,7 @@ struct pidStudies {
   {
     const auto& posTrack = candidate.template posTrack_as<PIDTracks>();
     const auto& negTrack = candidate.template negTrack_as<PIDTracks>();
-    pidInformation(
+    pidV0(
       candidate.mK0Short(),
       candidate.mLambda(),
       posTrack.pt(),
@@ -138,7 +143,11 @@ struct pidStudies {
   void processData(aod::V0Datas const& V0s, aod::Cascades const& cascades, CollSels const&, PIDTracks const&)
   {
     for (const auto& v0 : V0s) {
-      fillTree<false>(v0);
+      if (v0.mK0Short() > massK0Min && v0.mK0Short() < massK0Max ||
+          v0.mLambda() > massLambdaMin && v0.mLambda() < massLambdaMax ||
+          v0.mAntiLambda() > massLambdaMin && v0.mAntiLambda() < massLambdaMax) {
+        fillTree<false>(v0);
+      }
     }
   }
   PROCESS_SWITCH(pidStudies, processData, "process data", true);
