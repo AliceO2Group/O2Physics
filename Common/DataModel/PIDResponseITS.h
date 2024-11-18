@@ -54,7 +54,7 @@ struct ITSResponse {
     static constexpr float inverseMass = 1. / o2::track::pid_constants::sMasses[id];
     static constexpr float charge = static_cast<float>(o2::track::pid_constants::sCharges[id]);
     const float bg = momentum * inverseMass;
-    if (id==o2::track::PID::Helium3 || id==o2::track::PID::Alpha) {
+    if (id == o2::track::PID::Helium3 || id == o2::track::PID::Alpha) {
       return (mITSRespParamsZ2[0] / (std::pow(bg, mITSRespParamsZ2[1])) + mITSRespParamsZ2[2]);
     }
     return (mITSRespParams[0] / (std::pow(bg, mITSRespParams[1])) + mITSRespParams[2]);
@@ -67,7 +67,7 @@ struct ITSResponse {
     const float average = averageClusterSize(itsClusterSizes);
     const float coslInv = 1. / std::cosh(eta);
     const float resolution = mResolution * exp;
-    return (average*coslInv - exp) / resolution;
+    return (average * coslInv - exp) / resolution;
   };
 
   static void setParameters(float p0, float p1, float p2, float p0_Z2, float p1_Z2, float p2_Z2, float resolution)
