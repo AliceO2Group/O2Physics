@@ -674,7 +674,7 @@ struct TableMakerMC {
           auto mctrack = mft.template mcParticle_as<aod::McParticles_001>();
 
           mcflags = 0;
-          int i = 0;     // runs over the MC signals
+          int i = 0; // runs over the MC signals
           // check all the specified signals and fill histograms for MC truth matched tracks
           for (auto& sig : fMCSignals) {
             if (sig.CheckSignal(true, mctrack)) {
