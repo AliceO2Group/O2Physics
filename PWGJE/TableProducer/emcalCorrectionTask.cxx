@@ -19,6 +19,9 @@
 #include <memory>
 #include <unordered_map>
 #include <cmath>
+#include <string>
+#include <tuple>
+#include <vector>
 
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/runDataProcessing.h"
