@@ -171,7 +171,7 @@ struct FemtoUniversePairTaskTrackTrackExtended {
   HistogramRegistry mixQaRegistry{"mixQaRegistry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   HistogramRegistry efficiencyRegistry{"Efficiency", {}, OutputObjHandlingPolicy::AnalysisObject};
-  EfficiencyCalculator<FemtoUniversePairTaskTrackTrackExtended> efficiencyCalculator{this, trackonefilter.confPDGCodePartOne, tracktwofilter.confPDGCodePartTwo, trackHistoPartOne, trackHistoPartTwo};
+  EfficiencyCalculator<FemtoUniversePairTaskTrackTrackExtended> efficiencyCalculator{this, trackonefilter.confPDGCodePartOne};
 
   /// @brief Counter for particle swapping
   int fNeventsProcessed = 0;
@@ -507,7 +507,9 @@ struct FemtoUniversePairTaskTrackTrackExtended {
         if (!pairCleaner.isCleanPair(p1, p2, parts)) {
           continue;
         }
-        sameEventCont.setPair<isMC>(p1, p2, multCol, twotracksconfigs.confUse3D);
+        auto efficiency = efficiencyCalculator.getEfficiency();
+        auto weight = 1.0f;
+        sameEventCont.setPair<isMC>(p1, p2, multCol, twotracksconfigs.confUse3D, weight);
       }
     }
   }
@@ -538,13 +540,8 @@ struct FemtoUniversePairTaskTrackTrackExtended {
     for (const auto& col : cols) {
       fillCollision(col);
 
-      auto groupMCTruth1{partsOneMCTruth->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache)};
-      efficiencyCalculator.doMCTruth<1>(trackonefilter.confPDGCodePartOne, groupMCTruth1);
-
-      if (!confIsSame) {
-        auto groupMCTruth2{partsTwoMCTruth->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache)};
-        efficiencyCalculator.doMCTruth<2>(tracktwofilter.confPDGCodePartTwo, groupMCTruth2);
-      }
+      auto groupMCTruth{partsOneMCTruth->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache)};
+      efficiencyCalculator.doMCTruth(trackonefilter.confPDGCodePartOne, groupMCTruth);
 
       auto groupMCReco1 = partsOneMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
       auto groupMCReco2 = partsTwoMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
@@ -552,9 +549,17 @@ struct FemtoUniversePairTaskTrackTrackExtended {
       doSameEvent<true>(groupMCReco1, groupMCReco2, parts, col.magField(), col.multNtr());
     }
 
-    efficiencyCalculator.calculate();
+    std::shared_ptr<TH1> efficiencyHist{efficiencyRegistry.get<TH1>(HIST("Efficiency/part1"))};
+
+    std::shared_ptr<TH1> truth{efficiencyRegistry.get<TH1>(HIST("MCTruthTracks_one/hPt"))};
+    std::shared_ptr<TH1> reco{qaRegistry.get<TH1>(HIST("Tracks_one_MC/hPt"))};
+
+    for (int bin{0}; bin < efficiencyHist->GetNbinsX(); bin++) {
+      auto denom{truth->GetBinContent(bin)};
+      efficiencyHist->SetBinContent(bin, denom == 0 ? 0 : reco->GetBinContent(bin) / denom);
+    }
+
     // auto bc = cols.iteratorAt(0).template bc_as<aod::BCsWithTimestamps>();
-    LOG(info) << "saving...";
     efficiencyCalculator.save();
   }
   PROCESS_SWITCH(FemtoUniversePairTaskTrackTrackExtended, processSameEventMC, "Enable processing same event for Monte Carlo", false);
