@@ -173,16 +173,8 @@ struct HfCandidateCreatorBplus {
                aod::BCsWithTimestamps const&)
   {
 
-    static int nCol = 0;
-
     for (const auto& collision : collisions) {
       auto primaryVertex = getPrimaryVertex(collision);
-
-      if (nCol % 10000 == 0) {
-        LOG(debug) << nCol << " collisions parsed";
-      }
-      nCol++;
-
       /// Set the magnetic field from ccdb.
       /// The static instance of the propagator was already modified in the HFTrackIndexSkimCreator,
       /// but this is not true when running on Run2 data/MC already converted into AO2Ds.
