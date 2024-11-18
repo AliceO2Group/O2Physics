@@ -32,13 +32,15 @@ struct : ConfigurableGroup {
   Configurable<int> cfFixedNumberOfRandomlySelectedTracks{"cfFixedNumberOfRandomlySelectedTracks", -1, "set to some integer > 0, to apply and use. Set to <=0, to ignore."};
   Configurable<bool> cfUseStopwatch{"cfUseStopwatch", false, "if true, some basic info on time execution is printed, here and there. Very loosely, this can be used for execution time profiling."};
   Configurable<float> cfFloatingPointPrecision{"cfFloatingPointPrecision", 0.000001, "two floats are the same if TMath::Abs(f1 - f2) < fFloatingPointPrecision"};
+  Configurable<int> cfSequentialBailout{"cfSequentialBailout", 0, "if fSequentialBailout > 0, then each fSequentialBailout events the function BailOut() is called. Can be used for real analysis and for IV"};
+
 } cf_tc;
 
 // *) QA:
 struct : ConfigurableGroup {
   Configurable<bool> cfCheckUnderflowAndOverflow{"cfCheckUnderflowAndOverflow", false, "check and bail out if in event and particle histograms there are entries which went to underflow or overflow bins (use only locally)"};
   Configurable<bool> cfFillQAEventHistograms2D{"cfFillQAEventHistograms2D", false, "if false, all QA 2D event histograms are not filled. if true, only the ones for which fBookQAEventHistograms2D[...] is true, are filled"};
-  Configurable<vector<string>> cfBookQAEventHistograms2D{"cfBookQAEventHistograms2D", {"MultTPC_vs_NContributors-1", "Vertex_z_vs_MultTPC-1", "Vertex_z_vs_NContributors-1", "CentFT0M_vs_CentNTPV-1", "CentRun2V0M_vs_CentRun2SPDTracklets-1", "CentRun2V0M_vs_NContributors-1", "TrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange-1"}, "book (1) or do not book (0) this QA 2D event histogram"};
+  Configurable<vector<string>> cfBookQAEventHistograms2D{"cfBookQAEventHistograms2D", {"MultTPC_vs_NContributors-1", "MultTPC_vs_Centrality-1", "Vertex_z_vs_MultTPC-1", "Vertex_z_vs_NContributors-1", "CentFT0C_vs_CentNTPV-1", "CentFT0M_vs_CentNTPV-1", "CentRun2V0M_vs_CentRun2SPDTracklets-1", "CentRun2V0M_vs_NContributors-1", "TrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange-1", "TrackOccupancyInTimeRange_vs_MultTPC-1", "TrackOccupancyInTimeRange_vs_Vertex_z-1", "TrackOccupancyInTimeRange_vs_Centrality-1"}, "book (1) or do not book (0) this QA 2D event histogram"};
   Configurable<bool> cfFillQAParticleHistograms2D{"cfFillQAParticleHistograms2D", false, "if false, all QA 2D particle histograms are not filled. if true, only the ones for which fBookQAParticleHistograms2D[...] is true, are filled"};
   Configurable<vector<string>> cfBookQAParticleHistograms2D{"cfBookQAParticleHistograms2D", {"Pt_vs_dcaXY-1"}, "book (1) or do not book (0) this QA 2D particle histogram"};
 } cf_qa;
@@ -74,7 +76,7 @@ struct : ConfigurableGroup {
   Configurable<string> cfTrigger{"cfTrigger", "some supported trigger", "set here some supported trigger (kINT7, ...) "};
   Configurable<bool> cfUseSel7{"cfUseSel7", false, "use for Run 1 and 2 data and MC (see official doc)"};
   Configurable<bool> cfUseSel8{"cfUseSel8", false, "use for Run 3 data and MC (see official doc)"};
-  Configurable<string> cfCentralityEstimator{"cfCentralityEstimator", "some supported centrality estimator", "set here some supported centrality estimator (CentFT0M, CentFV0A, CentNTPV, ... for Run 3, and CentRun2V0M, CentRun2SPDTracklets, ..., for Run 2 and 1) "};
+  Configurable<string> cfCentralityEstimator{"cfCentralityEstimator", "some supported centrality estimator", "set here some supported centrality estimator (CentFT0C, CentFT0M, CentFV0A, CentNTPV, ... for Run 3, and CentRun2V0M, CentRun2SPDTracklets, ..., for Run 2 and 1) "};
   Configurable<vector<int>> cfSelectedEvents{"cfSelectedEvents", {-1, 1000000000}, "Selected number of events to process (i.e. only events which survive event cuts): {min, max}, with convention: min <= N < max"};
   Configurable<bool> cfUseNoSameBunchPileup{"cfUseNoSameBunchPileup", false, "TBI 20240521 explanation"};
   Configurable<bool> cfUseIsGoodZvtxFT0vsPV{"cfUseIsGoodZvtxFT0vsPV", false, "TBI 20240521 explanation"};
@@ -89,7 +91,7 @@ struct : ConfigurableGroup {
   Configurable<bool> cfFillParticleHistograms{"cfFillParticleHistograms", true, "if false, all 1D particle histograms are not filled. if kTRUE, the ones for which fBookParticleHistograms[...] is kTRUE, are filled"};
   Configurable<vector<string>> cfBookParticleHistograms{"cfBookParticleHistograms", {"Phi-1", "Pt-1", "Eta-1", "Charge-1", "tpcNClsFindable-1", "tpcNClsShared-1", "tpcNClsFound-1", "tpcNClsCrossedRows-1", "itsNCls-1", "itsNClsInnerBarrel-1", "tpcCrossedRowsOverFindableCls-1", "tpcFoundOverFindableCls-1", "tpcFractionSharedCls-1", "dcaXY-1", "dcaZ-1", "PDG-1"}, "Book (1) or do not book (0) particle histogram"};
   Configurable<bool> cfFillParticleHistograms2D{"cfFillParticleHistograms2D", true, "if false, all 2D particle histograms are not filled. if kTRUE, the ones for which fBookParticleHistograms2D[...] is kTRUE, are filled"};
-  Configurable<vector<string>> cfBookParticleHistograms2D{"cfBookParticleHistograms2D", {"Phi_vs_Pt-1", "Phi_vs_Eta-1"}, "Book (1) or do not book (0) this 2D particle histogram"};
+  Configurable<vector<string>> cfBookParticleHistograms2D{"cfBookParticleHistograms2D", {"Phi_vs_Pt-1", "Phi_vs_Eta-1"}, "Book (1) or do not book (0) event histogram"};
 } cf_ph;
 
 // *) Particle cuts:
@@ -131,6 +133,12 @@ struct : ConfigurableGroup {
 // *) Multiparticle correlations:
 struct : ConfigurableGroup {
   Configurable<bool> cfCalculateCorrelations{"cfCalculateCorrelations", false, "calculate or not multiparticle correlations"};
+  Configurable<bool> cfCalculateCorrelationsAsFunctionOfIntegrated{"cfCalculateCorrelationsAsFunctionOfIntegrated", false, "calculate or not correlations as a function of integrated"};
+  Configurable<bool> cfCalculateCorrelationsAsFunctionOfMultiplicity{"cfCalculateCorrelationsAsFunctionOfMultiplicity", false, "calculate or not correlations as a function of multiplicity"};
+  Configurable<bool> cfCalculateCorrelationsAsFunctionOfCentrality{"cfCalculateCorrelationsAsFunctionOfCentrality", false, "calculate or not correlations as a function of centrality"};
+  Configurable<bool> cfCalculateCorrelationsAsFunctionOfPt{"cfCalculateCorrelationsAsFunctionOfPt", false, "calculate or not correlations as a function of pt"};
+  Configurable<bool> cfCalculateCorrelationsAsFunctionOfEta{"cfCalculateCorrelationsAsFunctionOfEta", false, "calculate or not correlations as a function of eta"};
+  Configurable<bool> cfCalculateCorrelationsAsFunctionOfOccupancy{"cfCalculateCorrelationsAsFunctionOfOccupancy", false, "calculate or not correlations as a function of occupancy"};
 } cf_mupa;
 
 // *) Test0:
@@ -143,6 +151,7 @@ struct : ConfigurableGroup {
   Configurable<bool> cfCalculateTest0AsFunctionOfEta{"cfCalculateTest0AsFunctionOfEta", false, "calculate or not Test0 as a function of eta"};
   Configurable<bool> cfCalculateTest0AsFunctionOfOccupancy{"cfCalculateTest0AsFunctionOfOccupancy", false, "calculate or not Test0 as a function of occupancy"};
   Configurable<string> cfFileWithLabels{"cfFileWithLabels", "/home/abilandz/DatasetsO2/labels.root", "path to external ROOT file which specifies all labels"}; // for AliEn file prepend "/alice/cern.ch/", for CCDB prepend "/alice-ccdb.cern.ch"
+  Configurable<bool> cfUseDefaultLabels{"cfUseDefaultLabels", false, "use default internally hardwired labels, only for testing purposes"};
 } cf_t0;
 
 // *) Particle weights:
@@ -176,10 +185,10 @@ struct : ConfigurableGroup {
   Configurable<bool> cfUseInternalValidation{"cfUseInternalValidation", false, "perform internal validation using flow analysis on-the-fly"};
   Configurable<bool> cfInternalValidationForceBailout{"cfInternalValidationForceBailout", false, "force bailout (use only locally, since there is no graceful exit (yet))"};
   Configurable<unsigned int> cfnEventsInternalValidation{"cfnEventsInternalValidation", 0, "number of events simulated on-the-fly for internal validation"};
-  Configurable<string> cfHarmonicsOptionInternalValidation{"cfHarmonicsOptionInternalValidation", "constant", "for internal validation, set whether flow amplitudes are \"constant\" or \"correlared\""};
+  Configurable<string> cfHarmonicsOptionInternalValidation{"cfHarmonicsOptionInternalValidation", "constant", "for internal validation, set whether flow amplitudes are \"constant\" or \"correlated\""};
   Configurable<bool> cfRescaleWithTheoreticalInput{"cfRescaleWithTheoreticalInput", false, "if kTRUE, all correlators are rescaled with theoretical input, so that all results in profiles are 1"};
-  Configurable<vector<float>> cfInternalValidationAmplitudes{"cfInternalValidationAmplitudes", {0.01, 0.02, 0.03, 0.04}, "{v1, v2, v3, v4, ...} + has an effect only in combination with cfHarmonicsOptionInternalValidation = \"constant\". Max number of vn's is gMaxHarmonic."};
-  Configurable<vector<float>> cfInternalValidationPlanes{"cfInternalValidationPlanes", {0.0, 0.0, 0.0, 0.0}, "{Psi1, Psi2, Psi3, Psi4, ...} + has an effect only in combination with cfHarmonicsOptionInternalValidation = \"constant\". Max number of Psin's is gMaxHarmonic."};
+  Configurable<vector<float>> cfInternalValidationAmplitudes{"cfInternalValidationAmplitudes", {0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09}, "{v1, v2, v3, v4, ...} + has an effect only in combination with cfHarmonicsOptionInternalValidation = \"constant\". Max number of vn's is gMaxHarmonic."};
+  Configurable<vector<float>> cfInternalValidationPlanes{"cfInternalValidationPlanes", {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}, "{Psi1, Psi2, Psi3, Psi4, ...} + has an effect only in combination with cfHarmonicsOptionInternalValidation = \"constant\". Max number of Psin's is gMaxHarmonic."};
   Configurable<vector<int>> cfMultRangeInternalValidation{"cfMultRangeInternalValidation", {1000, 1001}, "{min, max}, with convention: min <= M < max"};
 } cf_iv;
 
@@ -202,7 +211,7 @@ struct : ConfigurableGroup {
   Configurable<bool> cfUseVariableLength_pt_bins{"cfUseVariableLength_pt_bins", false, "use or not variable-length pt bins"};
   Configurable<vector<float>> cfVariableLength_pt_bins{"cfVariableLength_pt_bins", {0.20, 0.30, 0.40, 0.65, 1.00, 2.00, 5.00}, "variable-length pt bins"};
   Configurable<bool> cfUseVariableLength_eta_bins{"cfUseVariableLength_eta_bins", false, "use or not variable-length eta bins"};
-  Configurable<vector<float>> cfVariableLength_eta_bins{"cfVariableLength_eta_bins", {3.0, -1.0, -0.4, 0.0, 0.4, 1.0, 3.0}, "variable-length eta bins"};
+  Configurable<vector<float>> cfVariableLength_eta_bins{"cfVariableLength_eta_bins", {-0.8, 0.0, 0.3, 0.8}, "variable-length eta bins"};
   Configurable<bool> cfUseVariableLength_occu_bins{"cfUseVariableLength_occu_bins", false, "use or not variable-length occupancy bins"};
   Configurable<vector<float>> cfVariableLength_occu_bins{"cfVariableLength_occu_bins", {0., 5., 6., 7., 8., 9., 100., 200., 500., 1000., 10000.}, "variable-length occupancy bins"};
 
