@@ -17,6 +17,9 @@
 ///         Daniel Samitz, <daniel.samitz@cern.ch>, Vienna
 ///         Elisa Meninno, <elisa.meninno@cern.ch>, Vienna
 
+#include <string>
+#include <vector>
+
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"

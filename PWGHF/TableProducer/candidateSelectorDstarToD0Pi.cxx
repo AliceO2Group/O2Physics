@@ -15,6 +15,10 @@
 /// \author Deependra Sharma <deependra.sharma@cern.ch>, IITB
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 
+#include <algorithm>
+#include <string>
+#include <vector>
+
 // O2
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisDataModel.h"

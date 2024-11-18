@@ -14,6 +14,9 @@
 ///
 /// \author Fabio Catalano <fabio.catalano@cern.ch>, CERN
 
+#include <string>
+#include <vector>
+
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 

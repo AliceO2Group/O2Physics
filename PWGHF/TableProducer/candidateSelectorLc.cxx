@@ -17,6 +17,9 @@
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 /// \author Grazia Luparello  <grazia.luparello@cern.ch>, INFN Trieste
 
+#include <string>
+#include <vector>
+
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"

@@ -17,6 +17,9 @@
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 /// \author Cristina Terrevoli <cristina.terrevoli@cern.ch>, INFN BARI
 
+#include <string>
+#include <vector>
+
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
