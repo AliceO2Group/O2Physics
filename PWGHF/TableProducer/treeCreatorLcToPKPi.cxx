@@ -329,10 +329,6 @@ struct HfTreeCreatorLcToPKPi {
       status = 0;
     }
 
-    if(status == -1) {
-      throw std::runtime_error("DetermineSignalBgStatus(): status == -1");
-    }
-
     return status;
   }
 
@@ -410,16 +406,16 @@ struct HfTreeCreatorLcToPKPi {
       auto trackNeg = candidate.template prong1_as<TracksWPid>();  // negative daughter (positive for the antiparticles)
       auto trackPos2 = candidate.template prong2_as<TracksWPid>(); // positive daughter (negative for the antiparticles)
       bool isMcCandidateSignal = std::abs(candidate.flagMcMatchRec()) == (1 << o2::aod::hf_cand_3prong::DecayType::LcToPKPi);
-      auto fillTable = [&](int CandFlag,
-                           int FunctionSelection,
-                           float FunctionInvMass,
-                           float FunctionCt,
-                           float FunctionY,
-                           float FunctionE,
-                           float FunctionInvMassKPi) {
+      auto fillTable = [&](int CandFlag) {
         double pseudoRndm = trackPos1.pt() * 1000. - (int64_t)(trackPos1.pt() * 1000);
+        const int FunctionSelection = CandFlag == 0 ? candidate.isSelLcToPKPi() : candidate.isSelLcToPiKP();
         if (FunctionSelection >= selectionFlagLc && (/*keep all*/ (!keepOnlySignalMc && !keepOnlyBkg) || /*keep only signal*/ (keepOnlySignalMc && isMcCandidateSignal) || /*keep only background and downsample it*/ (keepOnlyBkg && !isMcCandidateSignal && (candidate.pt() > downSampleBkgPtMax || (pseudoRndm < downSampleBkgFactor && candidate.pt() < downSampleBkgPtMax))))) {
           if constexpr (reconstructionType == aod::hf_cand::VertexerType::DCAFitter) {
+            const float FunctionInvMass = CandFlag == 0 ? hfHelper.invMassLcToPKPi(candidate) : hfHelper.invMassLcToPiKP(candidate);
+            const float FunctionCt = hfHelper.ctLc(candidate);
+            const float FunctionY = hfHelper.yLc(candidate);
+            const float FunctionE = hfHelper.eLc(candidate);
+            const float FunctionInvMassKPi = CandFlag == 0 ? hfHelper.invMassKPiPairLcToPKPi(candidate) : hfHelper.invMassKPiPairLcToPiKP(candidate);
             if (fillCandidateLiteTable) {
               rowCandidateLite(
                 candidate.posX(),
@@ -566,14 +562,13 @@ struct HfTreeCreatorLcToPKPi {
             const float T = l * MassLambdaCPlus / LightSpeedCm2PS / p;
             const float deltaT = dl * MassLambdaCPlus / LightSpeedCm2PS / p;
             const float mass = CandFlag == 0 ? candidate.kfMassPKPi() : candidate.kfMassPiKP();
-            const int selectedStatus = CandFlag == 0 ? candidate.isSelLcToPKPi() : candidate.isSelLcToPiKP();
             const int sigbgstatus = DetermineSignalBgStatus(candidate, CandFlag);
             rowCandidateKF(
               chi2prim_proton, chi2prim_kaon, chi2prim_pion,
               dca_proton_kaon, dca_proton_pion, dca_pion_kaon,
               chi2geo_proton_kaon, chi2geo_proton_pion, chi2geo_pion_kaon,
               chi2geo, chi2topo, l, dl, T, deltaT,
-              mass, p, pt, selectedStatus, sigbgstatus
+              mass, p, pt, FunctionSelection, sigbgstatus
             );
 
             if (fillCollIdTable) {
@@ -584,8 +579,8 @@ struct HfTreeCreatorLcToPKPi {
         }
       };
 
-      fillTable(0, candidate.isSelLcToPKPi(), hfHelper.invMassLcToPKPi(candidate), hfHelper.ctLc(candidate), hfHelper.yLc(candidate), hfHelper.eLc(candidate), hfHelper.invMassKPiPairLcToPKPi(candidate));
-      fillTable(1, candidate.isSelLcToPiKP(), hfHelper.invMassLcToPiKP(candidate), hfHelper.ctLc(candidate), hfHelper.yLc(candidate), hfHelper.eLc(candidate), hfHelper.invMassKPiPairLcToPiKP(candidate));
+      fillTable(0);
+      fillTable(1);
     }
 
     // Filling particle properties
