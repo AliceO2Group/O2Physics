@@ -36,11 +36,11 @@ struct sgPIDAnalyzer {
 
   ConfigurableAxis ptAxis{
     "ptAxis",
-    {198, 0.1, 10.0},
+    {200, 0.0, 10.0},
     "Pt binning"};
 
   ConfigurableAxis sigmaAxis{"sigmaAxis", {1000, -20, 180}, "nSigma TPC binning"};
-  ConfigurableAxis tofAxis{"tofAxis", {100, -50, 50}, "nSigma TOF binning"};
+  ConfigurableAxis tofAxis{"tofAxis", {200, -10, 10}, "nSigma TOF binning"};
   Configurable<float> eta_min{"eta_min", -0.9, "Track Pseudorapidity"};
   Configurable<float> eta_max{"eta_max", 0.9, "Track Pseudorapidity"};
 
