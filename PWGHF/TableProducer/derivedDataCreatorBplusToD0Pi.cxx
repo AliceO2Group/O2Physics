@@ -15,6 +15,7 @@
 ///
 /// \author Vít Kučera <vit.kucera@cern.ch>, Inha University
 
+#include <algorithm>
 #include <map>
 #include <vector>
 
