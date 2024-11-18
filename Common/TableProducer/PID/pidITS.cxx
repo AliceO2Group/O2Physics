@@ -42,14 +42,14 @@ using namespace o2::track;
 MetadataHelper metadataInfo;
 
 static constexpr int nCases = 2;
-static constexpr int nParameters = 5;
+static constexpr int nParameters = 7;
 static const std::vector<std::string> casesNames{"Data", "MC"};
-static const std::vector<std::string> parameterNames{"bb1", "bb2", "bb3", "Charge exponent", "Resolution"};
-static constexpr float defaultParameters[nCases][nParameters]{{0.903, 2.014, 2.440, 2.299999952316284f, 0.15f},
-                                                              {0.903, 2.014, 2.440, 2.299999952316284f, 0.15f}};
+static const std::vector<std::string> parameterNames{"RespITSPar1", "RespITSPar2", "RespITSPar3", "RespITSPar1_Z2", "RespITSPar2_Z2", "RespITSPar3_Z2", "Resolution"};
+static constexpr float defaultParameters[nCases][nParameters]{{0.903, 2.014, 2.440, 2.8752, 1.1246, 5.0259, 0.15f},
+                                                              {0.903, 2.014, 2.440, 2.8752, 1.1246, 5.0259, 0.15f}};
 
 /// Task to produce the ITS PID information for each particle species
-/// The parametrization is: [p0/(bg)**p1 + p2] * pow(q, p3), being bg = p/m and q the charge
+/// The parametrization is: [p0/(bg)**p1 + p2] being bg = p/m. Different parametrizations are used for He3 and Alpha particles.
 struct itsPid {
 
   Configurable<LabeledArray<float>> itsParams{"itsParams",
@@ -74,10 +74,12 @@ struct itsPid {
       LOG(fatal) << "Not implemented yet";
     } else {
       const char* key = metadataInfo.isMC() ? "MC" : "Data";
-      o2::aod::ITSResponse::setParameters(itsParams->get(key, "bb1"),
-                                          itsParams->get(key, "bb2"),
-                                          itsParams->get(key, "bb3"),
-                                          itsParams->get(key, "Charge exponent"),
+      o2::aod::ITSResponse::setParameters(itsParams->get(key, "RespITSPar1"),
+                                          itsParams->get(key, "RespITSPar2"),
+                                          itsParams->get(key, "RespITSPar3"),
+                                          itsParams->get(key, "RespITSPar1_Z2"),
+                                          itsParams->get(key, "RespITSPar2_Z2"),
+                                          itsParams->get(key, "RespITSPar3_Z2"),
                                           itsParams->get(key, "Resolution"));
     }
   }

@@ -54,19 +54,23 @@ struct ITSResponse {
     static constexpr float inverseMass = 1. / o2::track::pid_constants::sMasses[id];
     static constexpr float charge = static_cast<float>(o2::track::pid_constants::sCharges[id]);
     const float bg = momentum * inverseMass;
-    return (mITSRespParams[0] / (std::pow(bg, mITSRespParams[1])) + mITSRespParams[2]) * std::pow(charge, mChargeFactor);
+    if (id==o2::track::PID::Helium3 || id==o2::track::PID::Alpha) {
+      return (mITSRespParamsZ2[0] / (std::pow(bg, mITSRespParamsZ2[1])) + mITSRespParamsZ2[2]);
+    }
+    return (mITSRespParams[0] / (std::pow(bg, mITSRespParams[1])) + mITSRespParams[2]);
   }
 
   template <o2::track::PID::ID id>
-  static float nSigmaITS(uint32_t itsClusterSizes, float momentum)
+  static float nSigmaITS(uint32_t itsClusterSizes, float momentum, float eta)
   {
     const float exp = expSignal<id>(momentum);
     const float average = averageClusterSize(itsClusterSizes);
+    const float coslInv = 1. / std::cosh(eta);
     const float resolution = mResolution * exp;
-    return (average - exp) / resolution;
+    return (average*coslInv - exp) / resolution;
   };
 
-  static void setParameters(float p0, float p1, float p2, float chargeFactor, float resolution)
+  static void setParameters(float p0, float p1, float p2, float p0_Z2, float p1_Z2, float p2_Z2, float resolution)
   {
     if (mIsInitialized) {
       LOG(fatal) << "ITSResponse parameters already initialized";
@@ -75,79 +79,81 @@ struct ITSResponse {
     mITSRespParams[0] = p0;
     mITSRespParams[1] = p1;
     mITSRespParams[2] = p2;
-    mChargeFactor = chargeFactor;
+    mITSRespParamsZ2[0] = p0_Z2;
+    mITSRespParamsZ2[1] = p1_Z2;
+    mITSRespParamsZ2[2] = p2_Z2;
     mResolution = resolution;
   }
 
  private:
   static std::array<float, 3> mITSRespParams;
-  static float mChargeFactor;
+  static std::array<float, 3> mITSRespParamsZ2;
   static float mResolution;
   static bool mIsInitialized;
 };
 
 std::array<float, 3> ITSResponse::mITSRespParams = {0.903, 2.014, 2.440};
-float ITSResponse::mChargeFactor = 2.299999952316284f;
-float ITSResponse::mResolution = 0.15f;
+std::array<float, 3> ITSResponse::mITSRespParamsZ2 = {2.8752, 1.1246, 5.0259};
+float ITSResponse::mResolution = 0.16f;
 bool ITSResponse::mIsInitialized = false;
 
 namespace pidits
 {
 DECLARE_SOA_DYNAMIC_COLUMN(ITSNSigmaElImp, itsNSigmaEl, //! Nsigma separation with the ITS detector for electrons
-                           [](uint32_t itsClusterSizes, float momentum) -> float {
-                             return ITSResponse::nSigmaITS<o2::track::PID::Electron>(itsClusterSizes, momentum);
+                           [](uint32_t itsClusterSizes, float momentum, float eta) -> float {
+                             return ITSResponse::nSigmaITS<o2::track::PID::Electron>(itsClusterSizes, momentum, eta);
                            });
 
 DECLARE_SOA_DYNAMIC_COLUMN(ITSNSigmaMuImp, itsNSigmaMu, //! Nsigma separation with the ITS detector for muons
-                           [](uint32_t itsClusterSizes, float momentum) -> float {
-                             return ITSResponse::nSigmaITS<o2::track::PID::Muon>(itsClusterSizes, momentum);
+                           [](uint32_t itsClusterSizes, float momentum, float eta) -> float {
+                             return ITSResponse::nSigmaITS<o2::track::PID::Muon>(itsClusterSizes, momentum, eta);
                            });
 
 DECLARE_SOA_DYNAMIC_COLUMN(ITSNSigmaPiImp, itsNSigmaPi, //! Nsigma separation with the ITS detector for pions
-                           [](uint32_t itsClusterSizes, float momentum) -> float {
-                             return ITSResponse::nSigmaITS<o2::track::PID::Pion>(itsClusterSizes, momentum);
+                           [](uint32_t itsClusterSizes, float momentum, float eta) -> float {
+                             return ITSResponse::nSigmaITS<o2::track::PID::Pion>(itsClusterSizes, momentum, eta);
                            });
 
 DECLARE_SOA_DYNAMIC_COLUMN(ITSNSigmaKaImp, itsNSigmaKa, //! Nsigma separation with the ITS detector for kaons
-                           [](uint32_t itsClusterSizes, float momentum) -> float {
-                             return ITSResponse::nSigmaITS<o2::track::PID::Kaon>(itsClusterSizes, momentum);
+                           [](uint32_t itsClusterSizes, float momentum, float eta) -> float {
+                             return ITSResponse::nSigmaITS<o2::track::PID::Kaon>(itsClusterSizes, momentum, eta);
                            });
 
 DECLARE_SOA_DYNAMIC_COLUMN(ITSNSigmaPrImp, itsNSigmaPr, //! Nsigma separation with the ITS detector for protons
-                           [](uint32_t itsClusterSizes, float momentum) -> float {
-                             return ITSResponse::nSigmaITS<o2::track::PID::Proton>(itsClusterSizes, momentum);
+                           [](uint32_t itsClusterSizes, float momentum, float eta) -> float {
+                             return ITSResponse::nSigmaITS<o2::track::PID::Proton>(itsClusterSizes, momentum, eta);
                            });
 
 DECLARE_SOA_DYNAMIC_COLUMN(ITSNSigmaDeImp, itsNSigmaDe, //! Nsigma separation with the ITS detector for deuterons
-                           [](uint32_t itsClusterSizes, float momentum) -> float {
-                             return ITSResponse::nSigmaITS<o2::track::PID::Deuteron>(itsClusterSizes, momentum);
+                           [](uint32_t itsClusterSizes, float momentum, float eta) -> float {
+                             return ITSResponse::nSigmaITS<o2::track::PID::Deuteron>(itsClusterSizes, momentum, eta);
                            });
 
 DECLARE_SOA_DYNAMIC_COLUMN(ITSNSigmaTrImp, itsNSigmaTr, //! Nsigma separation with the ITS detector for tritons
-                           [](uint32_t itsClusterSizes, float momentum) -> float {
-                             return ITSResponse::nSigmaITS<o2::track::PID::Triton>(itsClusterSizes, momentum);
+                           [](uint32_t itsClusterSizes, float momentum, float eta) -> float {
+                             return ITSResponse::nSigmaITS<o2::track::PID::Triton>(itsClusterSizes, momentum, eta);
                            });
 
 DECLARE_SOA_DYNAMIC_COLUMN(ITSNSigmaHeImp, itsNSigmaHe, //! Nsigma separation with the ITS detector for helium3
-                           [](uint32_t itsClusterSizes, float momentum) -> float {
-                             return ITSResponse::nSigmaITS<o2::track::PID::Helium3>(itsClusterSizes, momentum);
+                           [](uint32_t itsClusterSizes, float momentum, float eta) -> float {
+                             return ITSResponse::nSigmaITS<o2::track::PID::Helium3>(itsClusterSizes, momentum, eta);
                            });
 
 DECLARE_SOA_DYNAMIC_COLUMN(ITSNSigmaAlImp, itsNSigmaAl, //! Nsigma separation with the ITS detector for alphas
-                           [](uint32_t itsClusterSizes, float momentum) -> float {
-                             return ITSResponse::nSigmaITS<o2::track::PID::Alpha>(itsClusterSizes, momentum);
+                           [](uint32_t itsClusterSizes, float momentum, float eta) -> float {
+                             return ITSResponse::nSigmaITS<o2::track::PID::Alpha>(itsClusterSizes, momentum, eta);
                            });
 
 // Define user friendly names for the columns to join with the tracks
-using ITSNSigmaEl = ITSNSigmaElImp<o2::aod::track::ITSClusterSizes, o2::aod::track::P>;
-using ITSNSigmaMu = ITSNSigmaMuImp<o2::aod::track::ITSClusterSizes, o2::aod::track::P>;
-using ITSNSigmaPi = ITSNSigmaPiImp<o2::aod::track::ITSClusterSizes, o2::aod::track::P>;
-using ITSNSigmaKa = ITSNSigmaKaImp<o2::aod::track::ITSClusterSizes, o2::aod::track::P>;
-using ITSNSigmaPr = ITSNSigmaPrImp<o2::aod::track::ITSClusterSizes, o2::aod::track::P>;
-using ITSNSigmaDe = ITSNSigmaDeImp<o2::aod::track::ITSClusterSizes, o2::aod::track::P>;
-using ITSNSigmaTr = ITSNSigmaTrImp<o2::aod::track::ITSClusterSizes, o2::aod::track::P>;
-using ITSNSigmaHe = ITSNSigmaHeImp<o2::aod::track::ITSClusterSizes, o2::aod::track::P>;
-using ITSNSigmaAl = ITSNSigmaAlImp<o2::aod::track::ITSClusterSizes, o2::aod::track::P>;
+using ITSNSigmaEl = ITSNSigmaElImp<o2::aod::track::ITSClusterSizes, o2::aod::track::P, o2::aod::track::Eta>;
+using ITSNSigmaMu = ITSNSigmaMuImp<o2::aod::track::ITSClusterSizes, o2::aod::track::P, o2::aod::track::Eta>;
+using ITSNSigmaPi = ITSNSigmaPiImp<o2::aod::track::ITSClusterSizes, o2::aod::track::P, o2::aod::track::Eta>;
+using ITSNSigmaKa = ITSNSigmaKaImp<o2::aod::track::ITSClusterSizes, o2::aod::track::P, o2::aod::track::Eta>;
+using ITSNSigmaPr = ITSNSigmaPrImp<o2::aod::track::ITSClusterSizes, o2::aod::track::P, o2::aod::track::Eta>;
+using ITSNSigmaDe = ITSNSigmaDeImp<o2::aod::track::ITSClusterSizes, o2::aod::track::P, o2::aod::track::Eta>;
+using ITSNSigmaTr = ITSNSigmaTrImp<o2::aod::track::ITSClusterSizes, o2::aod::track::P, o2::aod::track::Eta>;
+using ITSNSigmaHe = ITSNSigmaHeImp<o2::aod::track::ITSClusterSizes, o2::aod::track::P, o2::aod::track::Eta>;
+using ITSNSigmaAl = ITSNSigmaAlImp<o2::aod::track::ITSClusterSizes, o2::aod::track::P, o2::aod::track::Eta>;
 
 } // namespace pidits
 } // namespace o2::aod
