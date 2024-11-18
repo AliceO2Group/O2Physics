@@ -102,8 +102,7 @@ struct flowPtEfficiency {
     }
     if (cfgCutDCAxyppPass3Enabled) {
       myTrackSel.SetMaxDcaXYPtDep([](float pt) { return 0.004f + 0.013f / pt; });
-    }
-    else {
+    } else {
       myTrackSel.SetMaxDcaXY(cfgCutDCAxy);
     }
     myTrackSel.SetMinNClustersTPC(cfgCutTPCclu);
