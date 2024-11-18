@@ -1,3 +1,4 @@
+PWGJE/TableProducer/emcalCorrectionTask.cxx
 // Copyright 2019-2020 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
@@ -90,7 +91,7 @@ struct EmcalCorrectionTask {
   Configurable<float> exoticCellInCrossMinAmplitude{"exoticCellInCrossMinAmplitude", 0.1, "Minimum energy of cells in cross, if lower not considered in cross"};
   Configurable<bool> useWeightExotic{"useWeightExotic", false, "States if weights should be used for exotic cell cut"};
   Configurable<bool> isMC{"isMC", false, "States if run over MC"};
-  Configurable<int> applyCellTimeShift{"applyCellTimeShift", 0, "apply shift to the cell time for data and MC; 0 = off; 1 = const shift; 2 = eta-dependent shift; data shifted by log function when != 0"};
+  Configurable<int> applyCellTimeShift{"applyCellTimeShift", 0, "apply shift to the cell time for data and MC; For data: 0 = off; non-zero = log function extracted from data - For MC: 0 = off; 1 = const shift; 2 = eta-dependent shift"};
 
   // Require EMCAL cells (CALO type 1)
   Filter emccellfilter = aod::calo::caloType == selectedCellType;
