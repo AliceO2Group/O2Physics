@@ -131,7 +131,7 @@ void fillCorrelations(TTracks tracks1, TTracks tracks2, float posZ, int system, 
     }
   }
 
-//make the filters and cuts. I was told not to include chi2 and dca cuts since they are not needed for run 3 data.
+//make the filters and cuts. I was told not to include chi2 since its not needed for run 3 data.
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgZVtxCut; 
 
