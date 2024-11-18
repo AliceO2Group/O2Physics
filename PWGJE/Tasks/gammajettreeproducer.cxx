@@ -147,7 +147,7 @@ struct GammaJetTreeProducer {
     return true;
   }
 
-  double ch_iso_in_cone(const auto& cluster, aod::JetTracks const& tracks, float radius = 0.4)
+  double ch_iso_in_cone(const auto& cluster, JetTracks const& tracks, float radius = 0.4)
   {
     double iso = 0;
     for (auto track : tracks) {
@@ -162,7 +162,20 @@ struct GammaJetTreeProducer {
     }
     return iso;
   }
-  double ch_perp_cone_rho(const auto& cluster, aod::JetTracks const& tracks, float radius = 0.4)
+
+  void runTrackQA(const auto& collision, JetTracks const& tracks)
+  {
+    for (auto track : tracks) {
+      if (!isTrackSelected(track)) {
+        continue;
+      }
+      mHistograms.fill(HIST("trackPt"), track.pt());
+      mHistograms.fill(HIST("trackPtEtaPhi"), track.pt(), track.eta(), track.phi());
+      mHistograms.fill(HIST("trackPtEtaOccupancy"), track.pt(), track.eta(), collision.trackOccupancyInTimeRange());
+    }
+  }
+
+  double ch_perp_cone_rho(const auto& object, JetTracks const& tracks, float radius = 0.4)
   {
     double ptSumLeft = 0;
     double ptSumRight = 0;
@@ -197,7 +210,7 @@ struct GammaJetTreeProducer {
   // ---------------------
   // Processing functions
   // ---------------------
-  void processClearMaps(aod::JetCollisions const&)
+  void processClearMaps(JetCollisions const&)
   {
     collisionMapping.clear();
   }
@@ -208,7 +221,7 @@ struct GammaJetTreeProducer {
   // an integer instead
   Filter clusterDefinitionSelection = (o2::aod::jcluster::definition == mClusterDefinition);
   // Process clusters
-  void processClusters(soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::JCollisionBCs>::iterator const& collision, selectedClusters const& clusters, aod::JetTracks const& tracks)
+  void processClusters(soa::Join<JetCollisions, aod::BkgChargedRhos, aod::JCollisionBCs>::iterator const& collision, selectedClusters const& clusters, JetTracks const& tracks)
   {
     if (!isEventAccepted(collision)) {
       return;
@@ -266,7 +279,7 @@ struct GammaJetTreeProducer {
 
   Filter jetCuts = aod::jet::pt > jetPtMin;
   // Process charged jets
-  void processChargedJets(soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::JCollisionBCs>::iterator const& collision, soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>> const& chargedJets, aod::JetTracks const&)
+  void processChargedJets(soa::Join<JetCollisions, aod::BkgChargedRhos, aod::JCollisionBCs>::iterator const& collision, soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>> const& chargedJets, JetTracks const& tracks)
   {
     // event selection
     if (!isEventAccepted(collision)) {
@@ -281,7 +294,7 @@ struct GammaJetTreeProducer {
       nconst = 0;
       leadingTrackPt = 0;
       // loop over constituents
-      for (auto& constituent : jet.template tracks_as<aod::JetTracks>()) {
+      for (auto& constituent : jet.template tracks_as<JetTracks>()) {
         mHistograms.fill(HIST("chjetpt_vs_constpt"), jet.pt(), constituent.pt());
         nconst++;
         if (constituent.pt() > leadingTrackPt) {
