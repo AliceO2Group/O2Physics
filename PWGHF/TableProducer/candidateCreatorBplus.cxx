@@ -83,9 +83,6 @@ struct HfCandidateCreatorBplus {
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   int runNumber;
 
-  double massPi{0.};
-  double massD0{0.};
-  double massBplus{0.};
   double invMass2D0PiMin{0.};
   double invMass2D0PiMax{0.};
   double bz{0.};
@@ -114,11 +111,8 @@ struct HfCandidateCreatorBplus {
   void init(InitContext const&)
   {
     // invariant-mass window cut
-    massPi = MassPiPlus;
-    massD0 = MassD0;
-    massBplus = MassBPlus;
-    invMass2D0PiMin = (massBplus - invMassWindowBplus) * (massBplus - invMassWindowBplus);
-    invMass2D0PiMax = (massBplus + invMassWindowBplus) * (massBplus + invMassWindowBplus);
+    invMass2D0PiMin = (MassBPlus - invMassWindowBplus) * (MassBPlus - invMassWindowBplus);
+    invMass2D0PiMax = (MassBPlus + invMassWindowBplus) * (MassBPlus + invMassWindowBplus);
 
     // Initialise fitter for B vertex
     dfB.setPropagateToPCA(propagateToPCA);
@@ -332,7 +326,7 @@ struct HfCandidateCreatorBplus {
           auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
 
           // compute invariant mass square and apply selection
-          auto invMass2D0Pi = RecoDecay::m2(std::array{pVecD0, pVecBach}, std::array{massD0, massPi});
+          auto invMass2D0Pi = RecoDecay::m2(std::array{pVecD0, pVecBach}, std::array{MassD0, MassPiPlus});
           if ((invMass2D0Pi < invMass2D0PiMin) || (invMass2D0Pi > invMass2D0PiMax)) {
             continue;
           }
