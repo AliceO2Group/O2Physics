@@ -284,7 +284,6 @@ struct HfCandidateCreatorBplus {
           auto trackParCovPi = getTrackParCov(trackPion);
           std::array<float, 3> pVecD0 = {0., 0., 0.};
           std::array<float, 3> pVecBach = {0., 0., 0.};
-          std::array<float, 3> pVecBCand = {0., 0., 0.};
 
           // find the DCA between the D0 and the bachelor track, for B+
           hCandidatesB->Fill(SVFitting::BeforeFit);
@@ -307,8 +306,6 @@ struct HfCandidateCreatorBplus {
           auto chi2PCA = dfB.getChi2AtPCACandidate();
           auto covMatrixPCA = dfB.calcPCACovMatrixFlat();
           hCovSVXX->Fill(covMatrixPCA[0]); // FIXME: Calculation of errorDecayLength(XY) gives wrong values without this line.
-
-          pVecBCand = RecoDecay::pVec(pVecD0, pVecBach);
 
           // get track impact parameters
           // This modifies track momenta!
