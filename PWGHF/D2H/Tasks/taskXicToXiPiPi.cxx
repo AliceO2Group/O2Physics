@@ -79,11 +79,11 @@ struct HfTaskXicToXiPiPi {
     if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) == 0) {
       LOGP(fatal, "No process function enabled. Please enable one.");
     }
-    if((doprocessWithDCAFitter || doprocessWithKFParticle || doprocessWithDCAFitterAndML || doprocessWithKFParticleAndML) && (doprocessMcWithDCAFitter || doprocessMcWithKFParticle || doprocessMcWithDCAFitterAndML || doprocessMcWithKFParticleAndML)){
-      LOGP(fatal, "Cannot enable the process function for Data and MC at the same time. Please choose one");
-    }
     if((doprocessWithDCAFitter || doprocessWithDCAFitterAndML || doprocessMcWithDCAFitter || doprocessMcWithDCAFitterAndML) && (doprocessWithKFParticle || doprocessWithKFParticleAndML || doprocessMcWithKFParticle || doprocessMcWithKFParticleAndML)) {
       LOGP(fatal, "Cannot enable DCAFitter and KFParticle at the same time. Please choose one.");
+    }
+    if((doprocessWithDCAFitter || doprocessWithKFParticle || doprocessMcWithDCAFitter || doprocessMcWithKFParticle) && (doprocessWithDCAFitterAndML || doprocessWithKFParticleAndML || doprocessMcWithDCAFitterAndML || doprocessMcWithKFParticleAndML)) {
+      LOGP(fatal, "Cannot enable process function with ML and process function without ML at the same time. Please choose one.");
     }
 
     static const AxisSpec axisMassXic = {300, 1.8, 3.0, "inv. mass (GeV/#it{c}^{2})"};
