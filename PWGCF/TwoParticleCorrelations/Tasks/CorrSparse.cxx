@@ -110,9 +110,9 @@ struct CorrSparse {
   void fillCorrelations(TTracks tracks1, TTracks tracks2, float posZ, int system, float Nch) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
     // loop over all tracks
-    for (auto& track1 : tracks1) {
+    for (auto const& track1 : tracks1) {
 
-      for (auto& track2 : tracks2) {
+      for (auto const& track2 : tracks2) {
         if (track1 == track2) {
           continue;
         }
