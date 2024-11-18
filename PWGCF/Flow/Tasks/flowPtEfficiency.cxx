@@ -14,6 +14,7 @@
 /// \author everyone
 
 #include <iostream>
+#include <vector>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Common/DataModel/TrackSelectionTables.h"
