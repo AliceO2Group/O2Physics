@@ -14,6 +14,7 @@
 /// \author Laura Serksnyte, TU München, laura.serksnyte@tum.de
 /// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 /// \author Malgorzata Janik, WUT Warsaw, majanik@cern.ch
+/// \author Pritam Chakraborty, WUT Warsaw, pritam.chakraborty@cern.ch
 
 #include <CCDB/BasicCCDBManager.h>
 #include <TDatabasePDG.h> // FIXME
