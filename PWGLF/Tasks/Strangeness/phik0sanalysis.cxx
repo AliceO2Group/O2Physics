@@ -59,7 +59,7 @@ constexpr float multBin[nMultBin + 1] = {0.0f, 1.0f, 5.0f, 10.0f, 15.0f, 20.0f, 
 auto vecMultBin = std::vector<float>{multBin, multBin + nMultBin + 1};
 
 const int nPtBinK0S = 7;
-constexpr float pTBinK0S[nPtBinK0S + 1] = {0.0, 0.5, 1.0, 1.5, 2.0f, 3.0f, 4.0, 6.0f};
+constexpr float pTBinK0S[nPtBinK0S + 1] = {0.0f, 0.5f, 1.0f, 1.5f, 2.0f, 3.0f, 4.0f, 6.0f};
 auto vecPtBinK0S = std::vector<float>{pTBinK0S, pTBinK0S + nPtBinK0S + 1};
 
 const int nPtBinPi = 8;
@@ -88,7 +88,7 @@ struct phik0shortanalysis {
   Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
 
   // Configurable on multiplicity bins
-  Configurable<std::vector<float>> binsMult{"binsMult", std::vector<float>{vecMultBin}, "Multiplicity bin limits"};
+  Configurable<std::vector<double>> binsMult{"binsMult", {0.0, 1.0, 5.0, 10.0, 15.0, 20.0, 30.0, 40.0, 50.0, 70.0, 100.0}, "Multiplicity bin limits"};
 
   // Configurables for V0 selection
   Configurable<int> minTPCnClsFound{"minTPCnClsFound", 70, "min number of found TPC clusters"};
@@ -108,7 +108,7 @@ struct phik0shortanalysis {
   Configurable<float> upmK0S{"upmK0S", 0.52, "Upper limit on K0Short mass"};
 
   // Configurable on K0S pT bins
-  Configurable<std::vector<float>> binspTK0S{"binspTK0S", std::vector<float>{vecPtBinK0S}, "pT bin limits for K0S"};
+  Configurable<std::vector<double>> binspTK0S{"binspTK0S", {0.0, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0}, "pT bin limits for K0S"};
 
   // Configurables on Phi mass
   Configurable<int> nBins{"nBins", 14, "N bins in cfgPhimassaxis"};
@@ -138,7 +138,7 @@ struct phik0shortanalysis {
   Configurable<float> NSigmaTOFPion{"NSigmaTOFPion", 5.0, "NSigmaTOFPion"};
 
   // Configurable on pion pT bins
-  Configurable<std::vector<float>> binspTPi{"binspTPi", std::vector<float>{vecPtBinPi}, "pT bin limits for pions"};
+  Configurable<std::vector<double>> binspTPi{"binspTPi", {0.2, 0.4, 0.6, 0.8, 1.0f, 1.2, 1.5, 2.0, 3.0}, "pT bin limits for pions"};
 
   // Configurables for delta y selection
   Configurable<int> nBinsy{"nBinsy", 10, "Number of bins in y and deltay axis"};
