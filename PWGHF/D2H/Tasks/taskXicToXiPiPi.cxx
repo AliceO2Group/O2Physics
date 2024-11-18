@@ -265,9 +265,11 @@ struct HfTaskXicToXiPiPi {
 
   /// Fill THnSpare depending on whether ML selection is used 
   // \param candidate is candidate
-  template <bool fillTHn, bool useMl, typename T1> 
+  template <bool useMl, typename T1> 
   void fillTHnSparse(const T1& candidate)
   {
+    if(!enableTHn) {return;}
+
     if constexpr (useMl) {
       // with ML information
       double outputBkg = -99.;
@@ -282,8 +284,6 @@ struct HfTaskXicToXiPiPi {
       registry.get<THnSparse>(HIST("hXicToXiPiPiVars"))->Fill(candidate.pt(), candidate.invMassXic(), candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa());   
     }
     
-    if(!fillTHn) {return;}
-
   }
 
   /// Selection of Xic daughter in geometrical acceptance
@@ -352,9 +352,9 @@ struct HfTaskXicToXiPiPi {
       // fill THnSparse
       if(enableTHn){
         if constexpr (useMl) {
-          fillTHnSparse<true, true>(candidate);
+          fillTHnSparse<true>(candidate);
 		} else {
-          fillTHnSparse<false, false>(candidate);
+          fillTHnSparse<false>(candidate);
         }
       }
     } // candidate loop
@@ -474,9 +474,9 @@ struct HfTaskXicToXiPiPi {
       // fill THnSparse
       if(enableTHn){
         if constexpr (useMl) {
-          fillTHnSparse<true, true>(candidate);
+          fillTHnSparse<true>(candidate);
         } else {
-          fillTHnSparse<false, false>(candidate);
+          fillTHnSparse<false>(candidate);
         }
       }
 
