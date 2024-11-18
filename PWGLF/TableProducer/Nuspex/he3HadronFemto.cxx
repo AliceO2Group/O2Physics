@@ -8,7 +8,7 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-// Analysis task for anti-lithium4 analysis
+// Analysis task for he3-hadron femto analysis
 
 #include <TH1F.h>
 #include <TDirectory.h>
@@ -61,7 +61,7 @@
 #include "ReconstructionDataFormats/Track.h"
 
 #include "PWGLF/DataModel/EPCalibrationTables.h"
-#include "PWGLF/DataModel/LFLithium4Tables.h"
+#include "PWGLF/DataModel/LFhe3HadronTables.h"
 #include "PWGLF/Utils/svPoolCreator.h"
 
 using namespace o2;
@@ -74,8 +74,8 @@ using McIter = aod::McParticles::iterator;
 using CollBracket = o2::math_utils::Bracket<int>;
 using CollisionsFull = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::FT0Mults>;
 using CollisionsFullMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs, aod::FT0Mults>;
-using TrackCandidates = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TOFSignal, aod::TOFEvTime>;
-using TrackCandidatesMC = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TOFSignal, aod::TOFEvTime, aod::McTrackLabels>;
+using TrackCandidates = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::TOFSignal, aod::TOFEvTime>;
+using TrackCandidatesMC = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::TOFSignal, aod::TOFEvTime, aod::McTrackLabels>;
 
 namespace
 {
@@ -84,9 +84,11 @@ static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3",
 
 constexpr float he3Mass = o2::constants::physics::MassHelium3;
 constexpr float protonMass = o2::constants::physics::MassProton;
+constexpr float pionchargedMass = o2::constants::physics::MassPiPlus;
 constexpr int li4PDG = 1000030040;
 constexpr int prPDG = 2212;
 constexpr int hePDG = 1000020030;
+constexpr int pichargedPDG = 211;
 
 enum Selections {
   kNoCuts = 0,
@@ -97,69 +99,70 @@ enum Selections {
 
 } // namespace
 
-struct Lithium4Candidate {
+struct he3HadCandidate {
 
   float recoPtHe3() const { return sign * std::hypot(momHe3[0], momHe3[1]); }
   float recoPhiHe3() const { return std::atan2(momHe3[1], momHe3[0]); }
   float recoEtaHe3() const { return std::asinh(momHe3[2] / recoPtHe3()); }
-  float recoPtPr() const { return sign * std::hypot(momPr[0], momPr[1]); }
-  float recoPhiPr() const { return std::atan2(momPr[1], momPr[0]); }
-  float recoEtaPr() const { return std::asinh(momPr[2] / recoPtPr()); }
+  float recoPtHad() const { return sign * std::hypot(momHad[0], momHad[1]); }
+  float recoPhiHad() const { return std::atan2(momHad[1], momHad[0]); }
+  float recoEtaHad() const { return std::asinh(momHad[2] / recoPtHad()); }
 
   std::array<float, 3> momHe3 = {99.f, 99.f, 99.f};
-  std::array<float, 3> momPr = {99.f, 99.f, 99.f};
+  std::array<float, 3> momHad = {99.f, 99.f, 99.f};
 
   float sign = 1.f;
   float invMass = -10.f;
   float DCAxyHe3 = -10.f;
   float DCAzHe3 = -10.f;
-  float DCAxyPr = -10.f;
-  float DCAzPr = -10.f;
+  float DCAxyHad = -10.f;
+  float DCAzHad = -10.f;
 
   uint16_t tpcSignalHe3 = 0u;
-  uint16_t tpcSignalPr = 0u;
+  uint16_t tpcSignalHad = 0u;
   float momHe3TPC = -99.f;
-  float momPrTPC = -99.f;
+  float momHadTPC = -99.f;
   uint8_t nTPCClustersHe3 = 0u;
   uint8_t sharedClustersHe3 = 0u;
-  uint8_t sharedClustersPr = 0u;
+  uint8_t sharedClustersHad = 0u;
   float chi2TPCHe3 = -10.f;
-  float chi2TPCPr = -10.f;
+  float chi2TPCHad = -10.f;
   float nSigmaHe3 = -10.f;
-  float nSigmaPr = -10.f;
+  float nSigmaHad = -10.f;
   uint32_t PIDtrkHe3 = 0xFFFFF; // PID in tracking
-  uint32_t PIDtrkPr = 0xFFFFF;
+  uint32_t PIDtrkHad = 0xFFFFF;
   float massTOFHe3 = -10;
-  float massTOFPr = -10;
+  float massTOFHad = -10;
   uint32_t itsClSizeHe3 = 0u;
-  uint32_t itsClSizePr = 0u;
+  uint32_t itsClSizeHad = 0u;
 
   bool isBkgUS = false; // unlike sign
   bool isBkgEM = false; // event mixing
 
   int trackIDHe3 = -1;
-  int trackIDPr = -1;
+  int trackIDHad = -1;
 
   float l4MassMC = -10.f;
   float l4PtMC = -99.f;
   float momHe3MC = -99.f;
   float etaHe3MC = -99.f;
   float phiHe3MC = -99.f;
-  float momPrMC = -99.f;
-  float etaPrMC = -99.f;
-  float phiPrMC = -99.f;
+  float momHadMC = -99.f;
+  float etaHadMC = -99.f;
+  float phiHadMC = -99.f;
 
   // collision information
   int32_t collisionID = 0;
 };
 
-struct lithium4analysis {
+struct he3hadronfemto {
 
-  Produces<aod::Lithium4Table> m_outputDataTable;
-  Produces<aod::Lithium4TableMC> m_outputMCTable;
-  Produces<aod::Lithium4Mult> m_outputMultiplicityTable;
+  Produces<aod::he3HadronTable> m_outputDataTable;
+  Produces<aod::he3HadronTableMC> m_outputMCTable;
+  Produces<aod::he3HadronMult> m_outputMultiplicityTable;
 
   // Selections
+  Configurable<int> setting_HadPDGCode{"setting_HadPDGCode", 211, "Hadron - PDG code"};
   Configurable<float> setting_cutVertex{"setting_cutVertex", 10.0f, "Accepted z-vertex range"};
   Configurable<float> setting_cutRigidityMinHe3{"setting_cutRigidityMinHe3", 0.8f, "Minimum rigidity for He3"};
   Configurable<float> setting_cutEta{"setting_cutEta", 0.9f, "Eta cut on daughter track"};
@@ -167,10 +170,10 @@ struct lithium4analysis {
   Configurable<float> setting_cutDCAz{"setting_cutDCAz", 2.0f, "DCAz range for tracks"};
   Configurable<float> setting_cutChi2tpcLow{"setting_cutChi2tpcLow", 0.5f, "Low cut on TPC chi2"};
   Configurable<float> setting_cutInvMass{"setting_cutInvMass", 0.0f, "Invariant mass upper limit"};
-  Configurable<float> setting_cutPtMinLi{"setting_cutPtMinLi", 0.0f, "Minimum PT cut on Li4"};
+  Configurable<float> setting_cutPtMinhe3Had{"setting_cutPtMinhe3Had", 0.0f, "Minimum PT cut on he3Had4"};
   Configurable<float> setting_cutClSizeItsHe3{"setting_cutClSizeItsHe3", 4.0f, "Minimum ITS cluster size for He3"};
   Configurable<float> setting_cutNsigmaTPC{"setting_cutNsigmaTPC", 3.0f, "Value of the TPC Nsigma cut"};
-  Configurable<float> setting_cutPtMinTOFPr{"setting_cutPtMinTOFPr", 0.5f, "Minimum pT to apply the TOF cut on protons"};
+  Configurable<float> setting_cutPtMinTOFHad{"setting_cutPtMinTOFHad", 0.4f, "Minimum pT to apply the TOF cut on hadrons"};
   Configurable<float> setting_cutNsigmaTOF{"setting_cutNsigmaTOF", 3.0f, "Value of the TOF Nsigma cut"};
   Configurable<int> setting_noMixedEvents{"setting_noMixedEvents", 5, "Number of mixed events per event"};
   Configurable<bool> setting_enableBkgUS{"setting_enableBkgUS", false, "Enable US background"};
@@ -235,17 +238,17 @@ struct lithium4analysis {
       {"hEmptyPool", "svPoolCreator did not find track pairs false/true", {HistType::kTH1F, {{2, -0.5, 1.5}}}},
       {"hDCAxyHe3", ";DCA_{xy} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
       {"hDCAzHe3", ";DCA_{z} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
-      {"hLitInvMass", "; M(^{3}He + p) (GeV/#it{c}^{2})", {HistType::kTH1F, {{50, 3.74f, 3.85f}}}},
+      {"hhe3HadtInvMass", "; M(^{3}He + p) (GeV/#it{c}^{2})", {HistType::kTH1F, {{50, 3.74f, 3.85f}}}},
       {"hHe3Pt", "#it{p}_{T} distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{200, -6.0f, 6.0f}}}},
-      {"hProtonPt", "Pt distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{200, -3.0f, 3.0f}}}},
+      {"hHadronPt", "Pt distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{200, -3.0f, 3.0f}}}},
       {"h2dEdxHe3candidates", "dEdx distribution; #it{p} (GeV/#it{c}); dE/dx (a.u.)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {100, 0.0f, 2000.0f}}}},
       {"h2ClSizeCosLamHe3", "; n#sigma_{TPC} ; #LT ITS Cluster Size #GT #LT cos#lambda #GT (^{3}He)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {120, 0.0f, 15.0f}}}},
       {"h2NsigmaHe3TPC", "NsigmaHe3 TPC distribution; #it{p}/z (GeV/#it{c}); n#sigma_{TPC}(^{3}He)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
       {"h2NsigmaHe3TPC_preselection", "NsigmaHe3 TPC distribution; #it{p}/z (GeV/#it{c}); n#sigma_{TPC}(^{3}He)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {200, -10.0f, 10.0f}}}},
-      {"h2NsigmaProtonTPC", "NsigmaProton TPC distribution; #it{p}/z (GeV/#it{c}); n#sigma_{TPC}(p)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
-      {"h2NsigmaProtonTPC_preselection", "NsigmaHe3 TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(^{3}He)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {200, -10.0f, 10.0f}}}},
-      {"h2NsigmaProtonTOF", "NsigmaProton TOF distribution; #it{p} (GeV/#it{c}); n#sigma_{TOF}(p)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
-      {"h2NsigmaProtonTOF_preselection", "NsigmaProton TOF distribution; #it{p} (GeV/#it{c}); n#sigma_{TOF}(p)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {200, -10.0f, 10.0f}}}},
+      {"h2NsigmaHadronTPC", "NsigmaHadron TPC distribution; #it{p}/z (GeV/#it{c}); n#sigma_{TPC}(p)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
+      {"h2NsigmaHadronTPC_preselection", "NsigmaHe3 TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(^{3}He)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {200, -10.0f, 10.0f}}}},
+      {"h2NsigmaHadronTOF", "NsigmaHadron TOF distribution; #it{p} (GeV/#it{c}); n#sigma_{TOF}(p)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
+      {"h2NsigmaHadronTOF_preselection", "NsigmaHadron TOF distribution; #it{p} (GeV/#it{c}); n#sigma_{TOF}(p)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {200, -10.0f, 10.0f}}}},
     },
     OutputObjHandlingPolicy::AnalysisObject,
     false,
@@ -386,22 +389,55 @@ struct lithium4analysis {
   }
 
   template <typename Ttrack>
-  bool selectionPIDProton(const Ttrack& candidate)
+  float computeTPCNSigmaHadron(const Ttrack& candidate)
   {
-    m_qaRegistry.fill(HIST("h2NsigmaProtonTPC_preselection"), candidate.tpcInnerParam(), candidate.tpcNSigmaPr());
-    if (candidate.hasTOF() && candidate.pt() > setting_cutPtMinTOFPr) {
-      if (std::abs(candidate.tpcNSigmaPr() > setting_cutNsigmaTPC)) {
+    float tpcNSigmaHad = 0;
+    if (setting_HadPDGCode == 211) {
+      tpcNSigmaHad = candidate.tpcNSigmaPi();
+      LOG(info) << "pion";
+    } else if (setting_HadPDGCode == 2212) {
+      tpcNSigmaHad = candidate.tpcNSigmaPr();
+    } else {
+      LOG(info) << "invalid PDG code for TPC";
+    }
+    return tpcNSigmaHad;
+  }
+
+  template <typename Ttrack>
+  float computeTOFNSigmaHadron(const Ttrack& candidate)
+  {
+    float tofNSigmaHad = 0;
+    if (setting_HadPDGCode == 211) {
+      tofNSigmaHad = candidate.tofNSigmaPi();
+      LOG(info) << "piontof";
+    } else if (setting_HadPDGCode == 2212) {
+      tofNSigmaHad = candidate.tofNSigmaPr();
+    } else {
+      LOG(info) << "invalid PDG code for TOF";
+    }
+    return tofNSigmaHad;
+  }
+
+  template <typename Ttrack>
+  bool selectionPIDHadron(const Ttrack& candidate)
+  {
+    auto tpcNSigmaHad = computeTPCNSigmaHadron(candidate);
+    m_qaRegistry.fill(HIST("h2NsigmaHadronTPC_preselection"), candidate.tpcInnerParam(), tpcNSigmaHad);
+    if (candidate.hasTOF() && candidate.pt() > setting_cutPtMinTOFHad) {
+      auto tofNSigmaHad = computeTOFNSigmaHadron(candidate);
+
+      if (std::abs(tpcNSigmaHad) > setting_cutNsigmaTPC) {
         return false;
       }
-      m_qaRegistry.fill(HIST("h2NsigmaProtonTOF_preselection"), candidate.p(), candidate.tofNSigmaPr());
-      if (std::abs(candidate.tofNSigmaPr()) > setting_cutNsigmaTOF) {
+      m_qaRegistry.fill(HIST("h2NsigmaHadronTOF_preselection"), candidate.p(), tpcNSigmaHad);
+      if (std::abs(tpcNSigmaHad) > setting_cutNsigmaTOF) {
         return false;
       }
-      m_qaRegistry.fill(HIST("h2NsigmaProtonTPC"), candidate.tpcInnerParam(), candidate.tpcNSigmaPr());
-      m_qaRegistry.fill(HIST("h2NsigmaProtonTOF"), candidate.p(), candidate.tofNSigmaPr());
+      m_qaRegistry.fill(HIST("h2NsigmaHadronTPC"), candidate.tpcInnerParam(), tpcNSigmaHad);
+      m_qaRegistry.fill(HIST("h2NsigmaHadronTOF"), candidate.p(), tpcNSigmaHad);
       return true;
-    } else if (std::abs(candidate.tpcNSigmaPr()) < setting_cutNsigmaTPC) {
-      m_qaRegistry.fill(HIST("h2NsigmaProtonTPC"), candidate.tpcInnerParam(), candidate.tpcNSigmaPr());
+    } else if (std::abs(tpcNSigmaHad) < setting_cutNsigmaTPC) {
+      m_qaRegistry.fill(HIST("h2NsigmaHadronTPC"), candidate.tpcInnerParam(), tpcNSigmaHad);
       return true;
     }
     return false;
@@ -458,14 +494,14 @@ struct lithium4analysis {
   // ==================================================================================================================
 
   template <typename Ttrack, typename Tcollisions, typename Ttracks>
-  bool fillCandidateInfo(const Ttrack& trackHe3, const Ttrack& trackPr, const CollBracket& collBracket, const Tcollisions& collisions, Lithium4Candidate& li4cand, const Ttracks& /*trackTable*/, bool isMixedEvent)
+  bool fillCandidateInfo(const Ttrack& trackHe3, const Ttrack& trackHad, const CollBracket& collBracket, const Tcollisions& collisions, he3HadCandidate& he3Hadcand, const Ttracks& /*trackTable*/, bool isMixedEvent)
   {
     if (!isMixedEvent) {
       auto trackCovHe3 = getTrackParCov(trackHe3);
-      auto trackCovPr = getTrackParCov(trackPr);
+      auto trackCovHad = getTrackParCov(trackHad);
       int nCand = 0;
       try {
-        nCand = m_fitter.process(trackCovHe3, trackCovPr);
+        nCand = m_fitter.process(trackCovHe3, trackCovHad);
       } catch (...) {
         LOG(error) << "Exception caught in DCA fitter process call!";
         return false;
@@ -495,61 +531,69 @@ struct lithium4analysis {
       if (!m_goodCollisions[collIdxMin]) {
         return false;
       }
-      li4cand.collisionID = collIdxMin;
+      he3Hadcand.collisionID = collIdxMin;
     } else {
-      li4cand.collisionID = collBracket.getMin();
+      he3Hadcand.collisionID = collBracket.getMin();
     }
 
-    li4cand.momHe3 = std::array{trackHe3.px(), trackHe3.py(), trackHe3.pz()};
+    he3Hadcand.momHe3 = std::array{trackHe3.px(), trackHe3.py(), trackHe3.pz()};
     for (int i = 0; i < 3; i++)
-      li4cand.momHe3[i] = li4cand.momHe3[i] * 2;
-    li4cand.momPr = std::array{trackPr.px(), trackPr.py(), trackPr.pz()};
-
-    float invMass = RecoDecay::m(std::array{li4cand.momHe3, li4cand.momPr}, std::array{o2::constants::physics::MassHelium3, o2::constants::physics::MassProton});
+      he3Hadcand.momHe3[i] = he3Hadcand.momHe3[i] * 2;
+    he3Hadcand.momHad = std::array{trackHad.px(), trackHad.py(), trackHad.pz()};
+    float invMass = 0;
+    if (setting_HadPDGCode == 211) {
+      invMass = RecoDecay::m(std::array{he3Hadcand.momHe3, he3Hadcand.momHad}, std::array{o2::constants::physics::MassHelium3, o2::constants::physics::MassPiPlus});
+    } else if (setting_HadPDGCode == 2212) {
+      invMass = RecoDecay::m(std::array{he3Hadcand.momHe3, he3Hadcand.momHad}, std::array{o2::constants::physics::MassHelium3, o2::constants::physics::MassProton});
+    } else {
+      LOG(info) << "invalid PDG code for invMass";
+    }
+    // float invMass = RecoDecay::m(std::array{he3Hadcand.momHe3, he3Hadcand.momHad}, std::array{o2::constants::physics::MassHelium3, o2::constants::physics::MassPiPlus});
     if (setting_cutInvMass > 0 && invMass > setting_cutInvMass) {
       return false;
     }
-    float ptLi = std::hypot(li4cand.momHe3[0] + li4cand.momPr[0], li4cand.momHe3[1] + li4cand.momPr[1]);
-    if (ptLi < setting_cutPtMinLi) {
+    float pthe3Had = std::hypot(he3Hadcand.momHe3[0] + he3Hadcand.momHad[0], he3Hadcand.momHe3[1] + he3Hadcand.momHad[1]);
+    if (pthe3Had < setting_cutPtMinhe3Had) {
       return false;
     }
 
-    li4cand.sign = trackHe3.sign();
+    he3Hadcand.sign = trackHe3.sign();
 
-    li4cand.DCAxyHe3 = trackHe3.dcaXY();
-    li4cand.DCAzHe3 = trackHe3.dcaZ();
-    li4cand.DCAxyPr = trackPr.dcaXY();
-    li4cand.DCAzPr = trackPr.dcaZ();
+    he3Hadcand.DCAxyHe3 = trackHe3.dcaXY();
+    he3Hadcand.DCAzHe3 = trackHe3.dcaZ();
+    he3Hadcand.DCAxyHad = trackHad.dcaXY();
+    he3Hadcand.DCAzHad = trackHad.dcaZ();
 
-    li4cand.tpcSignalHe3 = trackHe3.tpcSignal();
+    he3Hadcand.tpcSignalHe3 = trackHe3.tpcSignal();
     bool heliumPID = trackHe3.pidForTracking() == o2::track::PID::Helium3 || trackHe3.pidForTracking() == o2::track::PID::Alpha;
     float correctedTPCinnerParamHe3 = (heliumPID && setting_compensatePIDinTracking) ? trackHe3.tpcInnerParam() / 2.f : trackHe3.tpcInnerParam();
-    li4cand.momHe3TPC = correctedTPCinnerParamHe3;
-    li4cand.tpcSignalPr = trackPr.tpcSignal();
-    li4cand.momPrTPC = trackPr.tpcInnerParam();
+    he3Hadcand.momHe3TPC = correctedTPCinnerParamHe3;
+    he3Hadcand.tpcSignalHad = trackHad.tpcSignal();
+    he3Hadcand.momHadTPC = trackHad.tpcInnerParam();
 
-    li4cand.nTPCClustersHe3 = trackHe3.tpcNClsFound();
-    li4cand.nSigmaHe3 = computeNSigmaHe3(trackHe3);
-    li4cand.nSigmaPr = trackPr.tpcNSigmaPr();
-    li4cand.chi2TPCHe3 = trackHe3.tpcChi2NCl();
-    li4cand.chi2TPCPr = trackPr.tpcChi2NCl();
+    he3Hadcand.nTPCClustersHe3 = trackHe3.tpcNClsFound();
+    he3Hadcand.nSigmaHe3 = computeNSigmaHe3(trackHe3);
+    he3Hadcand.nSigmaHad = computeTPCNSigmaHadron(trackHad);
+    // he3Hadcand.nSigmaHad = trackHad.tpcNSigmaPi();/*tpcNSigmaHad*/
+    he3Hadcand.chi2TPCHe3 = trackHe3.tpcChi2NCl();
+    he3Hadcand.chi2TPCHad = trackHad.tpcChi2NCl();
 
-    li4cand.PIDtrkHe3 = trackHe3.pidForTracking();
-    li4cand.PIDtrkPr = trackPr.pidForTracking();
+    he3Hadcand.PIDtrkHe3 = trackHe3.pidForTracking();
+    he3Hadcand.PIDtrkHad = trackHad.pidForTracking();
 
-    li4cand.itsClSizeHe3 = trackHe3.itsClusterSizes();
-    li4cand.itsClSizePr = trackPr.itsClusterSizes();
+    he3Hadcand.itsClSizeHe3 = trackHe3.itsClusterSizes();
+    he3Hadcand.itsClSizeHad = trackHad.itsClusterSizes();
 
-    li4cand.sharedClustersHe3 = trackHe3.tpcNClsShared();
-    li4cand.sharedClustersPr = trackPr.tpcNClsShared();
+    he3Hadcand.sharedClustersHe3 = trackHe3.tpcNClsShared();
+    he3Hadcand.sharedClustersHad = trackHad.tpcNClsShared();
 
-    li4cand.isBkgUS = trackHe3.sign() * trackPr.sign() < 0;
-    li4cand.isBkgEM = isMixedEvent;
+    he3Hadcand.isBkgUS = trackHe3.sign() * trackHad.sign() < 0;
+    he3Hadcand.isBkgEM = isMixedEvent;
 
-    li4cand.invMass = invMass;
+    he3Hadcand.invMass = invMass;
 
-    li4cand.trackIDHe3 = trackHe3.globalIndex();
-    li4cand.trackIDPr = trackPr.globalIndex();
+    he3Hadcand.trackIDHe3 = trackHe3.globalIndex();
+    he3Hadcand.trackIDHad = trackHad.globalIndex();
 
     o2::pid::tof::Beta<typename Ttracks::iterator> responseBeta;
     if (trackHe3.hasTOF()) {
@@ -557,29 +601,29 @@ struct lithium4analysis {
       beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
       bool heliumPID = trackHe3.pidForTracking() == o2::track::PID::Helium3 || trackHe3.pidForTracking() == o2::track::PID::Alpha;
       float correctedTPCinnerParamHe3 = (heliumPID && setting_compensatePIDinTracking) ? trackHe3.tpcInnerParam() / 2.f : trackHe3.tpcInnerParam();
-      li4cand.massTOFHe3 = correctedTPCinnerParamHe3 * 2.f * std::sqrt(1.f / (beta * beta) - 1.f);
+      he3Hadcand.massTOFHe3 = correctedTPCinnerParamHe3 * 2.f * std::sqrt(1.f / (beta * beta) - 1.f);
     }
-    if (trackPr.hasTOF()) {
-      float beta = responseBeta.GetBeta(trackPr);
+    if (trackHad.hasTOF()) {
+      float beta = responseBeta.GetBeta(trackHad);
       beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
-      li4cand.massTOFPr = trackPr.tpcInnerParam() * std::sqrt(1.f / (beta * beta) - 1.f);
+      he3Hadcand.massTOFHad = trackHad.tpcInnerParam() * std::sqrt(1.f / (beta * beta) - 1.f);
     }
 
     return true;
   }
 
   template <typename Mc>
-  void fillCandidateInfoMC(const Mc& mctrackHe3, const Mc& mctrackPr, const Mc& mctrackMother, Lithium4Candidate& li4cand)
+  void fillCandidateInfoMC(const Mc& mctrackHe3, const Mc& mctrackHad, const Mc& mctrackMother, he3HadCandidate& he3Hadcand)
   {
-    li4cand.momHe3MC = mctrackHe3.pt() * (mctrackHe3.pdgCode() > 0 ? 1 : -1);
-    li4cand.etaHe3MC = mctrackHe3.eta();
-    li4cand.phiHe3MC = mctrackHe3.phi();
-    li4cand.momPrMC = mctrackPr.pt() * (mctrackPr.pdgCode() > 0 ? 1 : -1);
-    li4cand.etaPrMC = mctrackPr.eta();
-    li4cand.phiPrMC = mctrackPr.phi();
-    li4cand.l4PtMC = mctrackMother.pt() * (mctrackMother.pdgCode() > 0 ? 1 : -1);
-    const double eLit = mctrackHe3.e() + mctrackPr.e();
-    li4cand.l4MassMC = std::sqrt(eLit * eLit - mctrackMother.p() * mctrackMother.p());
+    he3Hadcand.momHe3MC = mctrackHe3.pt() * (mctrackHe3.pdgCode() > 0 ? 1 : -1);
+    he3Hadcand.etaHe3MC = mctrackHe3.eta();
+    he3Hadcand.phiHe3MC = mctrackHe3.phi();
+    he3Hadcand.momHadMC = mctrackHad.pt() * (mctrackHad.pdgCode() > 0 ? 1 : -1);
+    he3Hadcand.etaHadMC = mctrackHad.eta();
+    he3Hadcand.phiHadMC = mctrackHad.phi();
+    he3Hadcand.l4PtMC = mctrackMother.pt() * (mctrackMother.pdgCode() > 0 ? 1 : -1);
+    const double eLit = mctrackHe3.e() + mctrackHad.e();
+    he3Hadcand.l4MassMC = std::sqrt(eLit * eLit - mctrackMother.p() * mctrackMother.p());
   }
 
   template <typename Ttrack>
@@ -609,9 +653,15 @@ struct lithium4analysis {
           if (track0.sign() * track1.sign() < 0) {
             continue;
           }
+        } else if (setting_enableBkgUS) {
+          if (track0.sign() * track1.sign() > 0) {
+            continue;
+          }
+        } else {
+          LOG(info) << "setting_enableBkgUS has to be 0 or 1";
         }
 
-        if (!selectTrack(track1) || !selectionPIDProton(track1)) {
+        if (!selectTrack(track1) || !selectionPIDHadron(track1)) {
           continue;
         }
 
@@ -627,20 +677,20 @@ struct lithium4analysis {
   }
 
   template <typename T>
-  void pairTracksEventMixing(T& he3Cands, T& protonCands)
+  void pairTracksEventMixing(T& he3Cands, T& hadronCands)
   {
     for (auto& he3Cand : he3Cands) {
       if (!selectTrack(he3Cand) || !selectionPIDHe3(he3Cand)) {
         continue;
       }
-      for (auto& protonCand : protonCands) {
-        if (!selectTrack(protonCand) || !selectionPIDProton(protonCand)) {
+      for (auto& hadronCand : hadronCands) {
+        if (!selectTrack(hadronCand) || !selectionPIDHadron(hadronCand)) {
           continue;
         }
 
         SVCand trackPair;
         trackPair.tr0Idx = he3Cand.globalIndex();
-        trackPair.tr1Idx = protonCand.globalIndex();
+        trackPair.tr1Idx = hadronCand.globalIndex();
         const int collIdx = he3Cand.collisionId();
         CollBracket collBracket{collIdx, collIdx};
         trackPair.collBracket = collBracket;
@@ -650,48 +700,48 @@ struct lithium4analysis {
   }
 
   template <typename Tcoll>
-  void fillTable(const Lithium4Candidate& li4cand, const Tcoll& collision, bool isMC = false)
+  void fillTable(const he3HadCandidate& he3Hadcand, const Tcoll& collision, bool isMC = false)
   {
     m_outputDataTable(
-      li4cand.recoPtHe3(),
-      li4cand.recoEtaHe3(),
-      li4cand.recoPhiHe3(),
-      li4cand.recoPtPr(),
-      li4cand.recoEtaPr(),
-      li4cand.recoPhiPr(),
-      li4cand.DCAxyHe3,
-      li4cand.DCAzHe3,
-      li4cand.DCAxyPr,
-      li4cand.DCAzPr,
-      li4cand.tpcSignalHe3,
-      li4cand.momHe3TPC,
-      li4cand.tpcSignalPr,
-      li4cand.momPrTPC,
-      li4cand.nTPCClustersHe3,
-      li4cand.nSigmaHe3,
-      li4cand.nSigmaPr,
-      li4cand.chi2TPCHe3,
-      li4cand.chi2TPCPr,
-      li4cand.massTOFHe3,
-      li4cand.massTOFPr,
-      li4cand.PIDtrkHe3,
-      li4cand.PIDtrkPr,
-      li4cand.itsClSizeHe3,
-      li4cand.itsClSizePr,
-      li4cand.sharedClustersHe3,
-      li4cand.sharedClustersPr,
-      li4cand.isBkgUS,
-      li4cand.isBkgEM);
+      he3Hadcand.recoPtHe3(),
+      he3Hadcand.recoEtaHe3(),
+      he3Hadcand.recoPhiHe3(),
+      he3Hadcand.recoPtHad(),
+      he3Hadcand.recoEtaHad(),
+      he3Hadcand.recoPhiHad(),
+      he3Hadcand.DCAxyHe3,
+      he3Hadcand.DCAzHe3,
+      he3Hadcand.DCAxyHad,
+      he3Hadcand.DCAzHad,
+      he3Hadcand.tpcSignalHe3,
+      he3Hadcand.momHe3TPC,
+      he3Hadcand.tpcSignalHad,
+      he3Hadcand.momHadTPC,
+      he3Hadcand.nTPCClustersHe3,
+      he3Hadcand.nSigmaHe3,
+      he3Hadcand.nSigmaHad,
+      he3Hadcand.chi2TPCHe3,
+      he3Hadcand.chi2TPCHad,
+      he3Hadcand.massTOFHe3,
+      he3Hadcand.massTOFHad,
+      he3Hadcand.PIDtrkHe3,
+      he3Hadcand.PIDtrkHad,
+      he3Hadcand.itsClSizeHe3,
+      he3Hadcand.itsClSizeHad,
+      he3Hadcand.sharedClustersHe3,
+      he3Hadcand.sharedClustersHad,
+      he3Hadcand.isBkgUS,
+      he3Hadcand.isBkgEM);
     if (isMC) {
       m_outputMCTable(
-        li4cand.momHe3MC,
-        li4cand.etaHe3MC,
-        li4cand.phiHe3MC,
-        li4cand.momPrMC,
-        li4cand.etaPrMC,
-        li4cand.phiPrMC,
-        li4cand.l4PtMC,
-        li4cand.l4MassMC);
+        he3Hadcand.momHe3MC,
+        he3Hadcand.etaHe3MC,
+        he3Hadcand.phiHe3MC,
+        he3Hadcand.momHadMC,
+        he3Hadcand.etaHadMC,
+        he3Hadcand.phiHadMC,
+        he3Hadcand.l4PtMC,
+        he3Hadcand.l4MassMC);
     }
     if (setting_fillMultiplicity) {
       m_outputMultiplicityTable(
@@ -701,13 +751,13 @@ struct lithium4analysis {
     }
   }
 
-  void fillHistograms(const Lithium4Candidate& li4cand)
+  void fillHistograms(const he3HadCandidate& he3Hadcand)
   {
-    m_qaRegistry.fill(HIST("hHe3Pt"), li4cand.recoPtHe3());
-    m_qaRegistry.fill(HIST("hProtonPt"), li4cand.recoPtPr());
-    m_qaRegistry.fill(HIST("hLitInvMass"), li4cand.invMass);
-    m_qaRegistry.fill(HIST("hDCAxyHe3"), li4cand.DCAxyHe3);
-    m_qaRegistry.fill(HIST("hDCAzHe3"), li4cand.DCAzHe3);
+    m_qaRegistry.fill(HIST("hHe3Pt"), he3Hadcand.recoPtHe3());
+    m_qaRegistry.fill(HIST("hHadronPt"), he3Hadcand.recoPtHad());
+    m_qaRegistry.fill(HIST("hhe3HadtInvMass"), he3Hadcand.invMass);
+    m_qaRegistry.fill(HIST("hDCAxyHe3"), he3Hadcand.DCAxyHe3);
+    m_qaRegistry.fill(HIST("hDCAzHe3"), he3Hadcand.DCAzHe3);
   }
 
   // ==================================================================================================================
@@ -718,16 +768,16 @@ struct lithium4analysis {
     for (auto& trackPair : m_trackPairs) {
 
       auto heTrack = tracks.rawIteratorAt(trackPair.tr0Idx);
-      auto prTrack = tracks.rawIteratorAt(trackPair.tr1Idx);
+      auto hadTrack = tracks.rawIteratorAt(trackPair.tr1Idx);
       auto collBracket = trackPair.collBracket;
 
-      Lithium4Candidate li4cand;
-      if (!fillCandidateInfo(heTrack, prTrack, collBracket, collisions, li4cand, tracks, isMixedEvent)) {
+      he3HadCandidate he3Hadcand;
+      if (!fillCandidateInfo(heTrack, hadTrack, collBracket, collisions, he3Hadcand, tracks, isMixedEvent)) {
         continue;
       }
-      fillHistograms(li4cand);
-      auto collision = collisions.rawIteratorAt(li4cand.collisionID);
-      fillTable(li4cand, collision, /*isMC*/ false);
+      fillHistograms(he3Hadcand);
+      auto collision = collisions.rawIteratorAt(he3Hadcand.collisionID);
+      fillTable(he3Hadcand, collision, /*isMC*/ false);
     }
   }
 
@@ -745,22 +795,22 @@ struct lithium4analysis {
       }
 
       auto kDaughters = mcParticle.template daughters_as<aod::McParticles>();
-      bool daughtHe3(false), daughtPr(false);
-      McIter mcHe3, mcPr;
+      bool daughtHe3(false), daughtHad(false);
+      McIter mcHe3, mcHad;
       for (auto kCurrentDaughter : kDaughters) {
         if (std::abs(kCurrentDaughter.pdgCode()) == hePDG) {
           daughtHe3 = true;
           mcHe3 = kCurrentDaughter;
         } else if (std::abs(kCurrentDaughter.pdgCode()) == prPDG) {
-          daughtPr = true;
-          mcPr = kCurrentDaughter;
+          daughtHad = true;
+          mcHad = kCurrentDaughter;
         }
       }
-      if (daughtHe3 && daughtPr) {
-        Lithium4Candidate li4cand;
-        fillCandidateInfoMC(mcHe3, mcPr, mcParticle, li4cand);
-        auto collision = collisions.rawIteratorAt(li4cand.collisionID);
-        fillTable(li4cand, collision, /*isMC*/ true);
+      if (daughtHe3 && daughtHad) {
+        he3HadCandidate he3Hadcand;
+        fillCandidateInfoMC(mcHe3, mcHad, mcParticle, he3Hadcand);
+        auto collision = collisions.rawIteratorAt(he3Hadcand.collisionID);
+        fillTable(he3Hadcand, collision, /*isMC*/ true);
       }
     }
   }
@@ -794,7 +844,7 @@ struct lithium4analysis {
       fillPairs(collisions, tracks, /*isMixedEvent*/ false);
     }
   }
-  PROCESS_SWITCH(lithium4analysis, processSameEvent, "Process Same event", false);
+  PROCESS_SWITCH(he3hadronfemto, processSameEvent, "Process Same event", false);
 
   void processMixedEvent(const CollisionsFull& collisions, const TrackCandidates& tracks)
   {
@@ -815,7 +865,7 @@ struct lithium4analysis {
 
     fillPairs(collisions, tracks, /*isMixedEvent*/ true);
   }
-  PROCESS_SWITCH(lithium4analysis, processMixedEvent, "Process Mixed event", false);
+  PROCESS_SWITCH(he3hadronfemto, processMixedEvent, "Process Mixed event", false);
 
   void processMC(const CollisionsFullMC& collisions, const aod::BCsWithTimestamps& bcs, const TrackCandidatesMC& tracks, const aod::McParticles& mcParticles)
   {
@@ -850,27 +900,27 @@ struct lithium4analysis {
         }
 
         auto mctrackHe3 = heTrack.mcParticle();
-        auto mctrackPr = prTrack.mcParticle();
+        auto mctrackHad = prTrack.mcParticle();
 
-        if (std::abs(mctrackHe3.pdgCode()) != hePDG || std::abs(mctrackPr.pdgCode()) != prPDG) {
+        if (std::abs(mctrackHe3.pdgCode()) != hePDG || std::abs(mctrackHad.pdgCode()) != prPDG) {
           continue;
         }
 
         for (auto& mothertrack : mctrackHe3.mothers_as<aod::McParticles>()) {
-          for (auto& mothertrackPr : mctrackPr.mothers_as<aod::McParticles>()) {
+          for (auto& mothertrackHad : mctrackHad.mothers_as<aod::McParticles>()) {
 
-            if (mothertrack != mothertrackPr || std::abs(mothertrack.pdgCode()) != li4PDG || std::abs(mothertrack.y()) > 1) {
+            if (mothertrack != mothertrackHad || std::abs(mothertrack.pdgCode()) != li4PDG || std::abs(mothertrack.y()) > 1) {
               continue;
             }
 
-            Lithium4Candidate li4cand;
-            if (!fillCandidateInfo(heTrack, prTrack, collBracket, collisions, li4cand, tracks, /*mix*/ false)) {
+            he3HadCandidate he3Hadcand;
+            if (!fillCandidateInfo(heTrack, prTrack, collBracket, collisions, he3Hadcand, tracks, /*mix*/ false)) {
               continue;
             }
-            fillCandidateInfoMC(mctrackHe3, mctrackPr, mothertrack, li4cand);
-            fillHistograms(li4cand);
-            auto collision = collisions.rawIteratorAt(li4cand.collisionID);
-            fillTable(li4cand, collision, /*isMC*/ true);
+            fillCandidateInfoMC(mctrackHe3, mctrackHad, mothertrack, he3Hadcand);
+            fillHistograms(he3Hadcand);
+            auto collision = collisions.rawIteratorAt(he3Hadcand.collisionID);
+            fillTable(he3Hadcand, collision, /*isMC*/ true);
             filledMothers.push_back(mothertrack.globalIndex());
           }
         }
@@ -879,7 +929,7 @@ struct lithium4analysis {
 
     fillMcParticles(collisions, mcParticles, filledMothers);
   }
-  PROCESS_SWITCH(lithium4analysis, processMC, "Process MC", false);
+  PROCESS_SWITCH(he3hadronfemto, processMC, "Process MC", false);
 
   void processSameEventPools(const CollisionsFull& collisions, const TrackCandidates& tracks, const aod::AmbiguousTracks& ambiguousTracks, const aod::BCsWithTimestamps& bcs)
   {
@@ -902,9 +952,9 @@ struct lithium4analysis {
         continue;
       m_qaRegistry.fill(HIST("hTrackSel"), Selections::kTrackCuts);
 
-      bool selPr = selectionPIDProton(track);
+      bool selHad = selectionPIDHadron(track);
       bool selHe = selectionPIDHe3(track);
-      if ((!selPr && !selHe) || (selPr && selHe)) {
+      if ((!selHad && !selHe) || (selHad && selHe)) {
         continue;
       }
       m_qaRegistry.fill(HIST("hTrackSel"), Selections::kPID);
@@ -923,7 +973,7 @@ struct lithium4analysis {
 
     fillPairs(collisions, tracks, /*isMixedEvent*/ false);
   }
-  PROCESS_SWITCH(lithium4analysis, processSameEventPools, "Process Same event pools", false);
+  PROCESS_SWITCH(he3hadronfemto, processSameEventPools, "Process Same event pools", false);
 
   void processMcPools(const CollisionsFullMC& collisions, const TrackCandidatesMC& tracks, const aod::AmbiguousTracks& ambiguousTracks, const aod::BCsWithTimestamps& bcs, const aod::McParticles& mcParticles, const aod::McTrackLabels& mcTrackLabels)
   {
@@ -948,9 +998,9 @@ struct lithium4analysis {
         continue;
       m_qaRegistry.fill(HIST("hTrackSel"), Selections::kTrackCuts);
 
-      bool selPr = selectionPIDProton(track);
+      bool selHad = selectionPIDHadron(track);
       bool selHe = selectionPIDHe3(track);
-      if ((!selPr && !selHe) || (selPr && selHe))
+      if ((!selHad && !selHe) || (selHad && selHe))
         continue;
       m_qaRegistry.fill(HIST("hTrackSel"), Selections::kPID);
 
@@ -978,27 +1028,27 @@ struct lithium4analysis {
       }
 
       auto mctrackHe3 = heTrackLabel.mcParticle_as<aod::McParticles>();
-      auto mctrackPr = prTrackLabel.mcParticle_as<aod::McParticles>();
+      auto mctrackHad = prTrackLabel.mcParticle_as<aod::McParticles>();
 
-      if (std::abs(mctrackHe3.pdgCode()) != hePDG || std::abs(mctrackPr.pdgCode()) != prPDG || !mctrackHe3.has_mothers() || !mctrackPr.has_mothers()) {
+      if (std::abs(mctrackHe3.pdgCode()) != hePDG || std::abs(mctrackHad.pdgCode()) != prPDG || !mctrackHe3.has_mothers() || !mctrackHad.has_mothers()) {
         continue;
       }
 
       for (auto& mothertrackHe : mctrackHe3.mothers_as<aod::McParticles>()) {
-        for (auto& mothertrackPr : mctrackPr.mothers_as<aod::McParticles>()) {
+        for (auto& mothertrackHad : mctrackHad.mothers_as<aod::McParticles>()) {
 
-          if (mothertrackHe.globalIndex() != mothertrackPr.globalIndex() || std::abs(mothertrackHe.pdgCode()) != li4PDG || std::abs(mothertrackHe.y()) > 1) {
+          if (mothertrackHe.globalIndex() != mothertrackHad.globalIndex() || std::abs(mothertrackHe.pdgCode()) != li4PDG || std::abs(mothertrackHe.y()) > 1) {
             continue;
           }
 
-          Lithium4Candidate li4cand;
-          if (!fillCandidateInfo(heTrack, prTrack, collBracket, collisions, li4cand, tracks, /*mix*/ false)) {
+          he3HadCandidate he3Hadcand;
+          if (!fillCandidateInfo(heTrack, prTrack, collBracket, collisions, he3Hadcand, tracks, /*mix*/ false)) {
             continue;
           }
-          fillCandidateInfoMC(mctrackHe3, mctrackPr, mothertrackHe, li4cand);
-          fillHistograms(li4cand);
-          auto collision = collisions.rawIteratorAt(li4cand.collisionID);
-          fillTable(li4cand, collision, /*isMC*/ true);
+          fillCandidateInfoMC(mctrackHe3, mctrackHad, mothertrackHe, he3Hadcand);
+          fillHistograms(he3Hadcand);
+          auto collision = collisions.rawIteratorAt(he3Hadcand.collisionID);
+          fillTable(he3Hadcand, collision, /*isMC*/ true);
           filledMothers.push_back(mothertrackHe.globalIndex());
         }
       }
@@ -1006,11 +1056,11 @@ struct lithium4analysis {
 
     fillMcParticles(collisions, mcParticles, filledMothers);
   }
-  PROCESS_SWITCH(lithium4analysis, processMcPools, "Process MC pools", false);
+  PROCESS_SWITCH(he3hadronfemto, processMcPools, "Process MC pools", false);
 };
 
 WorkflowSpec defineDataProcessing(const ConfigContext& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<lithium4analysis>(cfgc, TaskName{"lithium4analysis"})};
+    adaptAnalysisTask<he3hadronfemto>(cfgc, TaskName{"he3hadronfemto"})};
 }

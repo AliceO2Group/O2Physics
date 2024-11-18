@@ -152,6 +152,7 @@ struct phipbpb {
     const AxisSpec thnAxisV2{configThnAxisV2, "V2"};
     const AxisSpec thnAxisRapidity{configThnAxisRapidity, "Rapidity"};
     const AxisSpec thnAxisSA{configThnAxisSA, "SA"};
+    AxisSpec cumulantAxis = {200, -1, 1, "phi"};
     AxisSpec phiAxis = {500, -6.28, 6.28, "phi"};
     AxisSpec resAxis = {2000, -10, 10, "Res"};
     AxisSpec centAxis = {8, 0, 80, "V0M (%)"};
@@ -174,6 +175,11 @@ struct phipbpb {
     histos.add("hPsiTPC", "PsiTPC", kTH3F, {centAxis, occupancyAxis, phiAxis});
     histos.add("hPsiTPCR", "PsiTPCR", kTH3F, {centAxis, occupancyAxis, phiAxis});
     histos.add("hPsiTPCL", "PsiTPCL", kTH3F, {centAxis, occupancyAxis, phiAxis});
+
+    histos.add("hSparseV2SameEventCosPhi", "hSparseV2SameEventCosPhi", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, cumulantAxis, thnAxisCentrality});
+    histos.add("hSparseV2SameEventSinPhi", "hSparseV2SameEventSinPhi", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, cumulantAxis, thnAxisCentrality});
+    histos.add("hSparseV2SameEventCosPsi", "hSparseV2SameEventCosPsi", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, cumulantAxis, thnAxisCentrality});
+    histos.add("hSparseV2SameEventSinPsi", "hSparseV2SameEventSinPsi", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, cumulantAxis, thnAxisCentrality});
 
     histos.add("hSparseV2SameEventCosDeltaPhi", "hSparseV2SameEventCosDeltaPhi", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
     histos.add("hSparseV2MixedEventCosDeltaPhi", "hSparseV2MixedEventCosDeltaPhi", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
@@ -455,10 +461,16 @@ struct phipbpb {
         auto phiminuspsi = GetPhiInRange(PhiMesonMother.Phi() - psiFT0C);
         auto v2 = TMath::Cos(2.0 * phiminuspsi);
         auto v2sin = TMath::Sin(2.0 * phiminuspsi);
+        auto phimother = PhiMesonMother.Phi();
         histos.fill(HIST("hpTvsRapidity"), PhiMesonMother.Pt(), PhiMesonMother.Rapidity());
         if (TMath::Abs(PhiMesonMother.Rapidity()) < confRapidity) {
           histos.fill(HIST("hSparseV2SameEventCosDeltaPhi"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2 * QFT0C, centrality);
           histos.fill(HIST("hSparseV2SameEventSinDeltaPhi"), PhiMesonMother.M(), PhiMesonMother.Pt(), v2sin * QFT0C, centrality);
+
+          histos.fill(HIST("hSparseV2SameEventCosPhi"), PhiMesonMother.M(), PhiMesonMother.Pt(), TMath::Cos(2.0 * phimother), centrality);
+          histos.fill(HIST("hSparseV2SameEventSinPhi"), PhiMesonMother.M(), PhiMesonMother.Pt(), TMath::Sin(2.0 * phimother), centrality);
+          histos.fill(HIST("hSparseV2SameEventCosPsi"), PhiMesonMother.M(), PhiMesonMother.Pt(), TMath::Cos(2.0 * psiFT0C), centrality);
+          histos.fill(HIST("hSparseV2SameEventSinPsi"), PhiMesonMother.M(), PhiMesonMother.Pt(), TMath::Sin(2.0 * psiFT0C), centrality);
         }
         ROOT::Math::Boost boost{PhiMesonMother.BoostToCM()};
         fourVecDauCM = boost(KaonMinus);

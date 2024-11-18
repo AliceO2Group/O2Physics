@@ -59,10 +59,8 @@ struct TaskConfiguration {
   Bool_t fUseStopwatch = kFALSE;                   // do some basing profiling with TStopwatch for where the execution time is going
   TStopwatch* fTimer[eTimer_N] = {NULL};           // stopwatch, global (overal execution time) and local
   Float_t fFloatingPointPrecision = 1.e-6;         // two floats are the same if TMath::Abs(f1 - f2) < fFloatingPointPrecision (there is configurable for it)
-  // Bool_t fRescaleWithTheoreticalInput; // if kTRUE, all measured correlators are
-  // rescaled with theoretical input, so that in profiles everything is at 1. Used
-  // both in OTF and internal val.
-} tc; // "tc" labels an instance of this group of variables.
+  Int_t fSequentialBailout = 0;                    // if fSequentialBailout > 0, then each fSequentialBailout events the function BailOut() is called. Can be used for real analysis and for IV.
+} tc;                                              // "tc" labels an instance of this group of variables.
 
 // *) Event-by-event quantities:
 struct EventByEventQuantities {
@@ -106,6 +104,7 @@ struct EventHistograms {
   Bool_t fBookEventHistograms[eEventHistograms_N] = {kTRUE};     // book or not this histogram, see SetBookEventHistograms
   Float_t fEventHistogramsBins[eEventHistograms_N][3] = {{0.}};  // [nBins,min,max]
   TString fEventHistogramsName[eEventHistograms_N] = {""};       // name of event histogram, used both for 1D and 2D histograms
+  Int_t fEventCounter[eEventCounter_N] = {0};                    // event counters, see enum eEventCounter for full explanation
   // 2D:
   // ...
   // Remark: All 2D event histograms are still in the QA group. Move here only the ones I will use regularly in the analysis
@@ -239,6 +238,7 @@ struct InternalValidation {
   Bool_t fInternalValidationForceBailout = kFALSE;    // force bailout in internal validation after either eNumberOfEvents or eSelectedEvents is reached.
                                                       // This is OK as long as I do not apply any event cuts in InternalValidation().
                                                       // Remember that for each real event, I do fnEventsInternalValidation events on-the-fly.
+                                                      // Can be used in combination with setting fSequentialBailout > 0.
   UInt_t fnEventsInternalValidation = 0;              // how many on-the-fly events will be sampled for each real event, for internal validation
   TString* fHarmonicsOptionInternalValidation = NULL; // "constant" or "correlated", see .cxx for full documentation
   Bool_t fRescaleWithTheoreticalInput = kFALSE;       // if kTRUE, all measured correlators are rescaled with theoretical input, so that in profiles everything is at 1
@@ -255,6 +255,7 @@ struct Test0 {
   TString* fTest0Labels[gMaxCorrelator][gMaxIndex] = {{NULL}};                                   // all labels: k-p'th order is stored in k-1'th index. So yes, I also store 1-p
   Bool_t fCalculateTest0AsFunctionOf[eAsFunctionOf_N] = {true, true, true, false, false, false}; //! [0=integrated,1=vs. multiplicity,2=vs. centrality,3=pT,4=eta,5=vs. occupancy]
   TString fFileWithLabels = "";                                                                  // path to external ROOT file which specifies all labels of interest
+  Bool_t fUseDefaultLabels = kFALSE;                                                             // use default labels hardwired in GetDefaultObjArrayWithLabels()
   TH1I* fTest0LabelsPlaceholder = NULL;                                                          // store all Test0 labels in this histogram
 } t0;                                                                                            // "t0" labels an instance of this group of histograms
 
