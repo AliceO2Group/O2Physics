@@ -294,4 +294,3 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses)
 
   } // end loop over histogram classes
 }
- 
