@@ -112,6 +112,7 @@ DECLARE_SOA_COLUMN(Chi2geo, chi2geo, float);     //! chi2 geo of the full candid
 DECLARE_SOA_COLUMN(Chi2topo, chi2topo, float);     //! chi2 topo of the full candidate (chi2prim of candidate to PV)
 DECLARE_SOA_COLUMN(L, l, float);     //! decay length
 DECLARE_SOA_COLUMN(DeltaL, deltaL, float);     //! decay length error
+DECLARE_SOA_COLUMN(LdL, ldl, float);     //! decay length over its error
 DECLARE_SOA_COLUMN(T, t, float);     //! lifetime
 DECLARE_SOA_COLUMN(DeltaT, deltat, float);     //! lifetime error
 DECLARE_SOA_COLUMN(MassInv, massInv, float);     //! invariant mass
@@ -125,7 +126,7 @@ DECLARE_SOA_TABLE(HfCandLcKFs, "AOD", "HFCANDLCKF",
                   kf::Chi2PrimProton, kf::Chi2PrimKaon, kf::Chi2PrimPion,
                   kf::DCAProtonKaon, kf::DCAProtonPion, kf::DCAPionKaon,
                   kf::Chi2geoProtonKaon, kf::Chi2geoProtonPion, kf::Chi2geoPionKaon,
-                  kf::Chi2geo, kf::Chi2topo, kf::L, kf::DeltaL, kf::T, kf::DeltaT,
+                  kf::Chi2geo, kf::Chi2topo, kf::L, kf::DeltaL, kf::LdL, kf::T, kf::DeltaT,
                   kf::MassInv, kf::P, kf::Pt, kf::IsSelected, kf::SigBgStatus
 );
 
@@ -567,7 +568,7 @@ struct HfTreeCreatorLcToPKPi {
               chi2prim_proton, chi2prim_kaon, chi2prim_pion,
               dca_proton_kaon, dca_proton_pion, dca_pion_kaon,
               chi2geo_proton_kaon, chi2geo_proton_pion, chi2geo_pion_kaon,
-              chi2geo, chi2topo, l, dl, T, deltaT,
+              chi2geo, chi2topo, l, dl, l/dl, T, deltaT,
               mass, p, pt, FunctionSelection, sigbgstatus
             );
 
