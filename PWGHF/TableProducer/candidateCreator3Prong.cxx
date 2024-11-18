@@ -15,6 +15,11 @@
 ///
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include <TPDGCode.h>
 
 #include "CommonConstants/PhysicsConstants.h"

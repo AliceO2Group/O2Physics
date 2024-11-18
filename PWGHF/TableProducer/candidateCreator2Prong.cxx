@@ -20,6 +20,10 @@
 #define HomogeneousField
 #endif
 
+#include <memory>
+#include <string>
+#include <vector>
+
 #include <KFParticleBase.h>
 #include <KFParticle.h>
 #include <KFPTrack.h>
