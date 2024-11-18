@@ -20,7 +20,7 @@
 
 #include "Common/Core/TrackSelectorPID.h"
 
-#include "PWGHF/Core/HfMlResponseXicToXiPiPi.h"	
+#include "PWGHF/Core/HfMlResponseXicToXiPiPi.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -33,7 +33,7 @@ using namespace o2::analysis;
 
 struct HfCandidateSelectorXicToXiPiPi {
   Produces<aod::HfSelXicToXiPiPi> hfSelXicToXiPiPiCandidate;
-  Produces<aod::HfMlXicToXiPiPi> hfMlXicToXiPiPiCandidate; 
+  Produces<aod::HfMlXicToXiPiPi> hfMlXicToXiPiPiCandidate;
 
   Configurable<float> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
   Configurable<float> ptCandMax{"ptCandMax", 36., "Upper bound of candidate pT"};
@@ -70,8 +70,8 @@ struct HfCandidateSelectorXicToXiPiPi {
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
   o2::analysis::HfMlResponseXicToXiPiPi<float> hfMlResponse;
-  std::vector<float> outputMlXicToXiPiPi = {};	 
-  o2::ccdb::CcdbApi ccdbApi;	
+  std::vector<float> outputMlXicToXiPiPi = {};
+  o2::ccdb::CcdbApi ccdbApi;
   TrackSelectorPi selectorPion;
   TrackSelectorPr selectorProton;
 
@@ -124,7 +124,6 @@ struct HfCandidateSelectorXicToXiPiPi {
       hfMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
       hfMlResponse.init();
     }
-
   }
 
   /// Conjugate-independent topological cuts
@@ -238,7 +237,7 @@ struct HfCandidateSelectorXicToXiPiPi {
       // topological cuts
       if (!selectionTopol(hfCandXic)) {
         hfSelXicToXiPiPiCandidate(statusXicToXiPiPi);
-        if(applyMl){
+        if (applyMl) {
           hfMlXicToXiPiPiCandidate(outputMlXicToXiPiPi);
         }
         continue;
@@ -271,7 +270,7 @@ struct HfCandidateSelectorXicToXiPiPi {
 
         if (!selectionPid(pidTrackPi0, pidTrackPi1, pidTrackPr, pidTrackPiLam, pidTrackPiXi, acceptPIDNotApplicable.value)) {
           hfSelXicToXiPiPiCandidate(statusXicToXiPiPi);
-          if(applyMl){
+          if (applyMl) {
             hfMlXicToXiPiPiCandidate(outputMlXicToXiPiPi);
           }
           continue;
@@ -284,20 +283,20 @@ struct HfCandidateSelectorXicToXiPiPi {
 
       // ML selections
 
-      if(applyMl){
-        bool isSelectedMlXicToXiPiPi = false; 
+      if (applyMl) {
+        bool isSelectedMlXicToXiPiPi = false;
         std::vector<float> inputFeaturesXicToXiPiPi = hfMlResponse.getInputFeatures(hfCandXic);
 
         isSelectedMlXicToXiPiPi = hfMlResponse.isSelectedMl(inputFeaturesXicToXiPiPi, ptCandXic, outputMlXicToXiPiPi);
 
         hfMlXicToXiPiPiCandidate(outputMlXicToXiPiPi);
 
-        if(!isSelectedMlXicToXiPiPi){
-           hfSelXicToXiPiPiCandidate(statusXicToXiPiPi);
-           continue;
+        if (!isSelectedMlXicToXiPiPi) {
+          hfSelXicToXiPiPiCandidate(statusXicToXiPiPi);
+          continue;
         }
         SETBIT(statusXicToXiPiPi, aod::SelectionStep::RecoMl);
-        }
+      }
 
       hfSelXicToXiPiPiCandidate(statusXicToXiPiPi);
     }
