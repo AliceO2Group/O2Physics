@@ -49,10 +49,10 @@ int s = 1; // same event
 int m = 2; // mixed event
 
 struct CorrSparse {
- Configurable<float> cfgZVtxCut = {"zvtxcut", 10.0, "Vertex z cut. Default 10 cm"};
- Configurable<float> cfgPtCutMin = {"minpt", 0.2, "Minimum accepted track pT. Default 0.2 GeV"};
+  Configurable<float> cfgZVtxCut = {"zvtxcut", 10.0, "Vertex z cut. Default 10 cm"};
+  Configurable<float> cfgPtCutMin = {"minpt", 0.2, "Minimum accepted track pT. Default 0.2 GeV"};
   Configurable<float> cfgPtCutMax = {"maxpt", 5.0, "Maximum accepted track pT. Default 5.0 GeV"};
- Configurable<float> cfgEtaCut = {"etacut", 0.8, "Eta cut. Default 0.8"};
+  Configurable<float> cfgEtaCut = {"etacut", 0.8, "Eta cut. Default 0.8"};
   Configurable<float> cfgDCAzCut = {"dcacut", 0.3, "DCA z cut. Default 0.3 cm"};
   Configurable<float> cfgDCAxyCut = {"dcacutxy", 0.3, "DCA xy cut. Default 0.2 cm"};
   Configurable<float> cfgDCAxySigmaCut = {"dcacutxysigma", 1, "DCA xy sigma cut. Default 0.3"};
