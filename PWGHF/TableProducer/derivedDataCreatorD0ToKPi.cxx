@@ -205,7 +205,7 @@ struct HfDerivedDataCreatorD0ToKPi {
         y);
     }
     if (fillCandidatePar) {
-      std::array<std::array<std::array<float, 3>, 2>, 2> sigmas; // PID nSigma [Expected][Hypothesis][TPC/TOF/TPC+TOF]
+      std::array<std::array<std::array<float, 3>, 2>, 2> sigmas{}; // PID nSigma [Expected][Hypothesis][TPC/TOF/TPC+TOF]
       if (candFlag == 0) {
         GET_N_SIGMA_PRONG(sigmas[HfProngSpecies::Pion][HfProngSpecies::Pion], candidate, 0, Pi)
         GET_N_SIGMA_PRONG(sigmas[HfProngSpecies::Pion][HfProngSpecies::Kaon], candidate, 0, Ka)

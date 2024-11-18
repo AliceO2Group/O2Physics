@@ -398,6 +398,20 @@ DECLARE_SOA_COLUMN(MlScoreNonPrompt, mlScoreNonPrompt, float);      //! ML score
 DECLARE_SOA_COLUMN(MlScores, mlScores, std::vector<float>);         //! vector of ML scores
 } // namespace hf_cand_mc
 
+// Candidate MC columns of the charm daughter
+namespace hf_cand_mc_charm
+{
+DECLARE_SOA_COLUMN(FlagMcMatchRecCharm, flagMcMatchRecCharm, int8_t);         //! flag for reconstruction level matching
+DECLARE_SOA_COLUMN(OriginMcRecCharm, originMcRecCharm, int8_t);               //! particle origin, reconstruction level
+DECLARE_SOA_COLUMN(IsCandidateSwappedCharm, isCandidateSwappedCharm, int8_t); //! swapping of the prongs order
+DECLARE_SOA_COLUMN(FlagMcDecayChanRecCharm, flagMcDecayChanRecCharm, int8_t); //! resonant decay channel flag, reconstruction level
+DECLARE_SOA_COLUMN(MlScoreSigCharm, mlScoreSigCharm, float);                  //! ML score for signal class
+DECLARE_SOA_COLUMN(MlScoreBkgCharm, mlScoreBkgCharm, float);                  //! ML score for background class
+DECLARE_SOA_COLUMN(MlScorePromptCharm, mlScorePromptCharm, float);            //! ML score for prompt class
+DECLARE_SOA_COLUMN(MlScoreNonPromptCharm, mlScoreNonPromptCharm, float);      //! ML score for non-prompt class
+DECLARE_SOA_COLUMN(MlScoresCharm, mlScoresCharm, std::vector<float>);         //! vector of ML scores
+} // namespace hf_cand_mc_charm
+
 // D0
 
 DECLARE_SOA_TABLE_STAGED(HfD0Bases, "HFD0BASE", //! Table with basic candidate properties used in the analyses
@@ -570,6 +584,10 @@ DECLARE_SOA_TABLE_STAGED(HfBplusParEs, "HFBPPARE", //! Table with additional can
 
 DECLARE_SOA_TABLE_STAGED(HfBplusMls, "HFBPML", //! Table with candidate selection ML scores
                          hf_cand_mc::MlScoreSig,
+                         o2::soa::Marker<MarkerBplus>);
+
+DECLARE_SOA_TABLE_STAGED(HfBplusMlD0s, "HFBPMLD0", //! Table with D0 candidate selection ML scores
+                         hf_cand_mc_charm::MlScoresCharm,
                          o2::soa::Marker<MarkerBplus>);
 
 DECLARE_SOA_TABLE_STAGED(HfBplusIds, "HFBPID", //! Table with original global indices for candidates

@@ -47,6 +47,7 @@ struct HfDerivedDataCreatorBplusToD0Pi {
   Produces<o2::aod::HfBplusParD0s> rowCandidateParD0;
   Produces<o2::aod::HfBplusParEs> rowCandidateParE;
   Produces<o2::aod::HfBplusMls> rowCandidateMl;
+  Produces<o2::aod::HfBplusMlD0s> rowCandidateMlD0;
   Produces<o2::aod::HfBplusIds> rowCandidateId;
   Produces<o2::aod::HfBplusMcs> rowCandidateMc;
   // Collisions
@@ -66,6 +67,7 @@ struct HfDerivedDataCreatorBplusToD0Pi {
   Configurable<bool> fillCandidateParD0{"fillCandidateParD0", true, "Fill D0 candidate parameters"};
   Configurable<bool> fillCandidateParE{"fillCandidateParE", true, "Fill candidate extended parameters"};
   Configurable<bool> fillCandidateMl{"fillCandidateMl", true, "Fill candidate selection ML scores"};
+  Configurable<bool> fillCandidateMlD0{"fillCandidateMlD0", true, "Fill D0 candidate selection ML scores"};
   Configurable<bool> fillCandidateId{"fillCandidateId", true, "Fill original indices from the candidate table"};
   Configurable<bool> fillCandidateMc{"fillCandidateMc", true, "Fill candidate MC info"};
   Configurable<bool> fillCollBase{"fillCollBase", true, "Fill collision base properties"};
@@ -94,6 +96,7 @@ struct HfDerivedDataCreatorBplusToD0Pi {
   using MatchedGenCandidatesMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCandBplusMcGen>>;
   using TypeMcCollisions = aod::McCollisions;
   using THfCandDaughters = aod::HfCand2ProngWPid;
+  using THfCandDaughtersMl = soa::Join<THfCandDaughters, aod::HfMlD0>;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_bplus::isSelBplusToD0Pi >= 1;
   Filter filterMcGenMatching = nabs(aod::hf_cand_bplus::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_bplus::DecayType::BplusToD0Pi));
@@ -176,7 +179,7 @@ struct HfDerivedDataCreatorBplusToD0Pi {
 
   template <typename T, typename U, typename V>
   void fillTablesCandidate(const T& candidate, const U& prongCharm, const V& prongBachelor, int candFlag, double invMass,
-                           double ct, double y, int8_t flagMc, int8_t origin, float mlScore)
+                           double ct, double y, int8_t flagMc, int8_t origin, float mlScore, const std::vector<float>& mlScoresCharm)
   {
     if (fillCandidateBase) {
       rowCandidateBase(
@@ -212,7 +215,7 @@ struct HfDerivedDataCreatorBplusToD0Pi {
         candidate.impactParameterProduct());
     }
     if (fillCandidateParD0) {
-      std::array<std::array<std::array<float, 3>, 2>, 2> sigmas; // PID nSigma [Expected][Hypothesis][TPC/TOF/TPC+TOF]
+      std::array<std::array<std::array<float, 3>, 2>, 2> sigmas{}; // PID nSigma [Expected][Hypothesis][TPC/TOF/TPC+TOF]
       if (candFlag == 0) {
         GET_N_SIGMA_PRONG(sigmas[HfProngSpecies::Pion][HfProngSpecies::Pion], prongCharm, 0, Pi)
         GET_N_SIGMA_PRONG(sigmas[HfProngSpecies::Pion][HfProngSpecies::Kaon], prongCharm, 0, Ka)
@@ -263,6 +266,10 @@ struct HfDerivedDataCreatorBplusToD0Pi {
       rowCandidateMl(
         mlScore);
     }
+    if (fillCandidateMlD0) {
+      rowCandidateMlD0(
+        mlScoresCharm);
+    }
     if (fillCandidateId) {
       rowCandidateId(
         candidate.collisionId(),
@@ -297,10 +304,10 @@ struct HfDerivedDataCreatorBplusToD0Pi {
     }
   }
 
-  template <bool isMl, bool isMc, bool onlyBkg, bool onlySig, typename CollType, typename CandType>
+  template <bool isMl, bool isMc, bool onlyBkg, bool onlySig, typename CollType, typename CandType, typename CandCharmType>
   void processCandidates(CollType const& collisions,
                          Partition<CandType>& candidates,
-                         THfCandDaughters const&,
+                         CandCharmType const&,
                          TracksWPid const&,
                          aod::BCs const&)
   {
@@ -338,6 +345,7 @@ struct HfDerivedDataCreatorBplusToD0Pi {
       reserveTable(rowCandidateParD0, fillCandidateParD0, sizeTableCand);
       reserveTable(rowCandidateParE, fillCandidateParE, sizeTableCand);
       reserveTable(rowCandidateMl, fillCandidateMl, sizeTableCand);
+      reserveTable(rowCandidateMlD0, fillCandidateMlD0, sizeTableCand);
       reserveTable(rowCandidateId, fillCandidateId, sizeTableCand);
       if constexpr (isMc) {
         reserveTable(rowCandidateMc, fillCandidateMc, sizeTableCand);
@@ -364,17 +372,24 @@ struct HfDerivedDataCreatorBplusToD0Pi {
             }
           }
         }
-        auto prongCharm = candidate.template prong0_as<THfCandDaughters>();
+        auto prongCharm = candidate.template prong0_as<CandCharmType>();
         auto prongBachelor = candidate.template prong1_as<TracksWPid>();
         double ct = hfHelper.ctBplus(candidate);
         double y = hfHelper.yBplus(candidate);
         float massBplusToD0Pi = hfHelper.invMassBplusToD0Pi(candidate);
         float mlScoreBplusToD0Pi{-1.f};
+        std::vector<float> mlScoresD0;
+        bool isD0 = prongBachelor.sign() < 0; // D0 or D0bar
         if constexpr (isMl) {
           mlScoreBplusToD0Pi = candidate.mlProbBplusToD0Pi();
+          if (isD0) {
+            std::copy(prongCharm.mlProbD0().begin(), prongCharm.mlProbD0().end(), std::back_inserter(mlScoresD0));
+          } else {
+            std::copy(prongCharm.mlProbD0bar().begin(), prongCharm.mlProbD0bar().end(), std::back_inserter(mlScoresD0));
+          }
         }
-        // flag = 0 for D0 pi-, flag = 1 for D0(bar) pi+
-        fillTablesCandidate(candidate, prongCharm, prongBachelor, prongBachelor.sign() < 0 ? 0 : 1, massBplusToD0Pi, ct, y, flagMcRec, origin, mlScoreBplusToD0Pi);
+        // flag = 0 for D0 pi-, flag = 1 for D0bar pi+
+        fillTablesCandidate(candidate, prongCharm, prongBachelor, isD0 ? 0 : 1, massBplusToD0Pi, ct, y, flagMcRec, origin, mlScoreBplusToD0Pi, mlScoresD0);
       }
     }
   }
@@ -484,7 +499,7 @@ struct HfDerivedDataCreatorBplusToD0Pi {
 
   void processDataMl(CollisionsWCentMult const& collisions,
                      SelectedCandidatesMl const&,
-                     THfCandDaughters const& candidatesDaughters,
+                     THfCandDaughtersMl const& candidatesDaughters,
                      TracksWPid const& tracks,
                      aod::BCs const& bcs)
   {
@@ -496,7 +511,7 @@ struct HfDerivedDataCreatorBplusToD0Pi {
                       SelectedCandidatesMcMl const&,
                       TypeMcCollisions const& mcCollisions,
                       MatchedGenCandidatesMc const& mcParticles,
-                      THfCandDaughters const& candidatesDaughters,
+                      THfCandDaughtersMl const& candidatesDaughters,
                       TracksWPid const& tracks,
                       aod::BCs const& bcs)
   {
@@ -510,7 +525,7 @@ struct HfDerivedDataCreatorBplusToD0Pi {
                       SelectedCandidatesMcMl const&,
                       TypeMcCollisions const& mcCollisions,
                       MatchedGenCandidatesMc const& mcParticles,
-                      THfCandDaughters const& candidatesDaughters,
+                      THfCandDaughtersMl const& candidatesDaughters,
                       TracksWPid const& tracks,
                       aod::BCs const& bcs)
   {
@@ -524,7 +539,7 @@ struct HfDerivedDataCreatorBplusToD0Pi {
                       SelectedCandidatesMcMl const&,
                       TypeMcCollisions const& mcCollisions,
                       MatchedGenCandidatesMc const& mcParticles,
-                      THfCandDaughters const& candidatesDaughters,
+                      THfCandDaughtersMl const& candidatesDaughters,
                       TracksWPid const& tracks,
                       aod::BCs const& bcs)
   {
