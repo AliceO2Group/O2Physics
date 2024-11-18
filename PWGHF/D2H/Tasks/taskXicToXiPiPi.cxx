@@ -79,8 +79,11 @@ struct HfTaskXicToXiPiPi {
     if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) == 0) {
       LOGP(fatal, "No process function enabled. Please enable one.");
     }
-    if((std::accumulate(doprocess.begin(), doprocess.end(), 0)) > 1) {
-      LOGP(fatal, "Cannot enable more than one process function at the same time. Please choose one.");
+    if((doprocessWithDCAFitter || doprocessWithKFParticle || doprocessWithDCAFitterAndML || doprocessWithKFParticleAndML) && (doprocessMcWithDCAFitter || doprocessMcWithKFParticle || doprocessMcWithDCAFitterAndML || doprocessMcWithKFParticleAndML)){
+      LOGP(fatal, "Cannot enable the process function for Data and MC at the same time. Please choose one");
+    }
+    if((doprocessWithDCAFitter || doprocessWithDCAFitterAndML || doprocessMcWithDCAFitter || doprocessMcWithDCAFitterAndML) && (doprocessWithKFParticle || doprocessWithKFParticleAndML || doprocessMcWithKFParticle || doprocessMcWithKFParticleAndML)) {
+      LOGP(fatal, "Cannot enable DCAFitter and KFParticle at the same time. Please choose one.");
     }
 
     static const AxisSpec axisMassXic = {300, 1.8, 3.0, "inv. mass (GeV/#it{c}^{2})"};
@@ -262,7 +265,7 @@ struct HfTaskXicToXiPiPi {
 
   /// Fill THnSpare depending on whether ML selection is used 
   // \param candidate is candidate
-  template <bool useMl, typename T1> 
+  template <bool fillTHn, bool useMl, typename T1> 
   void fillTHnSparse(const T1& candidate)
   {
     if constexpr (useMl) {
@@ -278,6 +281,9 @@ struct HfTaskXicToXiPiPi {
       // without ML information
       registry.get<THnSparse>(HIST("hXicToXiPiPiVars"))->Fill(candidate.pt(), candidate.invMassXic(), candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa());   
     }
+    
+    if(!fillTHn) {return;}
+
   }
 
   /// Selection of Xic daughter in geometrical acceptance
@@ -346,9 +352,9 @@ struct HfTaskXicToXiPiPi {
       // fill THnSparse
       if(enableTHn){
         if constexpr (useMl) {
-          fillTHnSparse<true>(candidate);
+          fillTHnSparse<true, true>(candidate);
 		} else {
-          fillTHnSparse<false>(candidate);
+          fillTHnSparse<false, false>(candidate);
         }
       }
     } // candidate loop
@@ -468,9 +474,9 @@ struct HfTaskXicToXiPiPi {
       // fill THnSparse
       if(enableTHn){
         if constexpr (useMl) {
-          fillTHnSparse<true>(candidate);
+          fillTHnSparse<true, true>(candidate);
         } else {
-          fillTHnSparse<false>(candidate);
+          fillTHnSparse<false, false>(candidate);
         }
       }
 
