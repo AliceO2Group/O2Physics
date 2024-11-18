@@ -25,6 +25,10 @@
 #include <iostream>
 #include <iterator>
 #include <string>
+#include <vector>
+
+#include "EventFiltering/Zorro.h"
+#include "EventFiltering/ZorroSummary.h"
 
 #include "PWGLF/DataModel/ReducedF1ProtonTables.h"
 #include "Framework/ASoAHelpers.h"
@@ -57,6 +61,9 @@ struct f1protonreducedtable {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::ccdb::CcdbApi ccdbApi;
 
+  Zorro zorro;
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
+
   // Configs for events
   Configurable<bool> ConfEvtSelectZvtx{"ConfEvtSelectZvtx", true, "Event selection includes max. z-Vertex"};
   Configurable<float> ConfEvtZvtx{"ConfEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
@@ -66,6 +73,7 @@ struct f1protonreducedtable {
   Configurable<int> trackSphMin{"trackSphMin", 10, "Number of tracks for Spherocity Calculation"};
 
   // Configs for track PID
+  Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", true, "Analysed skimmed events"};
   Configurable<bool> ConfUseManualPIDproton{"ConfUseManualPIDproton", true, "True: use home-made PID solution for proton "};
   Configurable<bool> ConfUseManualPIDkaon{"ConfUseManualPIDkaon", true, "True: use home-made PID solution for kaon "};
   Configurable<bool> ConfUseManualPIDpion{"ConfUseManualPIDpion", true, "True: use home-made PID solution for pion "};
@@ -135,6 +143,7 @@ struct f1protonreducedtable {
   Configurable<double> cMaxRelMom{"cMaxRelMom", 0.5, "Relative momentum cut"};
 
   // Histogram
+  OutputObj<TH1D> hProcessedEvents{TH1D("hProcessedEvents", ";; Number of events", 2, 0.0f, 2.0f)};
   HistogramRegistry qaRegistry{"QAHistos", {
                                              {"hEventstat", "hEventstat", {HistType::kTH1F, {{3, 0.0f, 3.0f}}}},
                                              {"hInvMassf1", "hInvMassf1", {HistType::kTH2F, {{400, 1.1f, 1.9f}, {100, 0.0f, 10.0f}}}},
@@ -163,6 +172,9 @@ struct f1protonreducedtable {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+    zorroSummary.setObject(zorro.getZorroSummary());
+    hProcessedEvents->GetXaxis()->SetBinLabel(1, "All Trigger events");
+    hProcessedEvents->GetXaxis()->SetBinLabel(2, "Events with F1 Trigger");
   }
 
   template <typename T>
@@ -535,10 +547,15 @@ struct f1protonreducedtable {
 
     currentRunNumber = collision.bc_as<aod::BCsWithTimestamps>().runNumber();
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-
+    hProcessedEvents->Fill(0.5);
+    bool zorroSelected = false;
     if (isSelectedEvent(collision)) {
-      if (ConfUseManualPIDproton || ConfUseManualPIDkaon || ConfUseManualPIDpion) {
-        if (currentRunNumber != lastRunNumber) {
+      if (currentRunNumber != lastRunNumber) {
+        if (cfgSkimmedProcessing) {
+          zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), "fTriggerEventF1Proton");
+          zorro.populateHistRegistry(qaRegistry, bc.runNumber());
+        }
+        if (ConfUseManualPIDproton || ConfUseManualPIDkaon || ConfUseManualPIDpion) {
           if (ConfUseManualPIDproton) {
             BBProton = setValuesBB(ccdbApi, bc, ConfPIDBBProton);
             BBAntiproton = setValuesBB(ccdbApi, bc, ConfPIDBBAntiProton);
@@ -551,201 +568,208 @@ struct f1protonreducedtable {
             BBKaon = setValuesBB(ccdbApi, bc, ConfPIDBBKaon);
             BBAntikaon = setValuesBB(ccdbApi, bc, ConfPIDBBAntiKaon);
           }
-          lastRunNumber = currentRunNumber;
         }
+        lastRunNumber = currentRunNumber;
       }
-
-      for (auto& track : tracks) {
-
-        if (!isSelectedTrack(track))
-          continue;
-        qaRegistry.fill(HIST("hDCAxy"), track.dcaXY());
-        qaRegistry.fill(HIST("hDCAz"), track.dcaZ());
-        qaRegistry.fill(HIST("hEta"), track.eta());
-        qaRegistry.fill(HIST("hPhi"), track.phi());
-        double nTPCSigmaP[3]{track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
-        double nTPCSigmaN[3]{track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
-        if (ConfUseManualPIDproton) {
-          auto bgScalingProton = 1 / massPr; // momentum scaling?
-          if (BBProton.size() == 6)
-            nTPCSigmaP[2] = updatePID(track, bgScalingProton, BBProton);
-          if (BBAntiproton.size() == 6)
-            nTPCSigmaN[2] = updatePID(track, bgScalingProton, BBAntiproton);
-        }
-        if (ConfUseManualPIDkaon) {
-          auto bgScalingKaon = 1 / massKa; // momentum scaling?
-          if (BBKaon.size() == 6)
-            nTPCSigmaP[1] = updatePID(track, bgScalingKaon, BBKaon);
-          if (BBAntikaon.size() == 6)
-            nTPCSigmaN[1] = updatePID(track, bgScalingKaon, BBAntikaon);
-        }
-        if (ConfUseManualPIDpion) {
-          auto bgScalingPion = 1 / massPi; // momentum scaling?
-          if (BBPion.size() == 6)
-            nTPCSigmaP[0] = updatePID(track, bgScalingPion, BBPion);
-          if (BBAntipion.size() == 6)
-            nTPCSigmaN[0] = updatePID(track, bgScalingPion, BBAntipion);
-        }
-
-        if ((track.sign() > 0 && SelectionPID(track, strategyPIDPion, 0, nTPCSigmaP[0])) || (track.sign() < 0 && SelectionPID(track, strategyPIDPion, 0, nTPCSigmaN[0]))) {
-          ROOT::Math::PtEtaPhiMVector temp(track.pt(), track.eta(), track.phi(), massPi);
-          pions.push_back(temp);
-          PionIndex.push_back(track.globalIndex());
-          PionCharge.push_back(track.sign());
-          auto PionTOF = 0;
-          if (track.sign() > 0) {
-            qaRegistry.fill(HIST("hNsigmaPtpionTPC"), nTPCSigmaP[0], track.pt());
-          }
-          if (track.sign() < 0) {
-            qaRegistry.fill(HIST("hNsigmaPtpionTPC"), nTPCSigmaN[0], track.pt());
-          }
-          if (track.hasTOF()) {
-            qaRegistry.fill(HIST("hNsigmaPtpionTOF"), track.tofNSigmaPi(), track.pt());
-            PionTOF = 1;
-          }
-          PionTOFHit.push_back(PionTOF);
-        }
-
-        if ((track.pt() > cMinKaonPt && track.sign() > 0 && SelectionPID(track, strategyPIDKaon, 1, nTPCSigmaP[1])) || (track.pt() > cMinKaonPt && track.sign() < 0 && SelectionPID(track, strategyPIDKaon, 1, nTPCSigmaN[1]))) {
-          ROOT::Math::PtEtaPhiMVector temp(track.pt(), track.eta(), track.phi(), massKa);
-          kaons.push_back(temp);
-          KaonIndex.push_back(track.globalIndex());
-          KaonCharge.push_back(track.sign());
-          auto KaonTOF = 0;
-          if (track.sign() > 0) {
-            qaRegistry.fill(HIST("hNsigmaPtkaonTPC"), nTPCSigmaP[1], track.pt());
-          }
-          if (track.sign() < 0) {
-            qaRegistry.fill(HIST("hNsigmaPtkaonTPC"), nTPCSigmaN[1], track.pt());
-          }
-          if (track.hasTOF()) {
-            qaRegistry.fill(HIST("hNsigmaPtkaonTOF"), track.tofNSigmaKa(), track.pt());
-            KaonTOF = 1;
-          }
-          KaonTOFHit.push_back(KaonTOF);
-        }
-
-        if ((track.pt() < cMaxProtonPt && track.sign() > 0 && SelectionPID(track, strategyPIDProton, 2, nTPCSigmaP[2])) || (track.pt() < cMaxProtonPt && track.sign() < 0 && SelectionPID(track, strategyPIDProton, 2, nTPCSigmaN[2]))) {
-          ROOT::Math::PtEtaPhiMVector temp(track.pt(), track.eta(), track.phi(), massPr);
-          protons.push_back(temp);
-          ProtonIndex.push_back(track.globalIndex());
-          ProtonCharge.push_back(track.sign());
-          if (track.sign() > 0) {
-            qaRegistry.fill(HIST("hNsigmaPtprotonTPC"), nTPCSigmaP[2], track.pt());
-            ProtonTPCNsigma.push_back(nTPCSigmaP[2]);
-          }
-          if (track.sign() < 0) {
-            qaRegistry.fill(HIST("hNsigmaPtprotonTPC"), nTPCSigmaN[2], track.pt());
-            ProtonTPCNsigma.push_back(nTPCSigmaN[2]);
-          }
-          if (track.hasTOF()) {
-            qaRegistry.fill(HIST("hNsigmaPtprotonTOF"), track.tofNSigmaPr(), track.pt());
-            ProtonTOFNsigma.push_back(track.tofNSigmaPr());
-            ProtonTOFHit.push_back(1);
-          }
-          if (!track.hasTOF()) {
-            ProtonTOFNsigma.push_back(999.0);
-            ProtonTOFHit.push_back(0);
-          }
-        }
-      } // track loop end
-      for (auto& v0 : V0s) {
-
-        if (!SelectionV0(collision, v0)) {
-          continue;
-        }
-        auto postrack = v0.template posTrack_as<PrimaryTrackCandidates>();
-        auto negtrack = v0.template negTrack_as<PrimaryTrackCandidates>();
-        double nTPCSigmaPos[1]{postrack.tpcNSigmaPi()};
-        double nTPCSigmaNeg[1]{negtrack.tpcNSigmaPi()};
-        if (ConfUseManualPIDdaughterPion) {
-          auto bgScalingPion = 1 / massPi; // momentum scaling?
-          if (BBPion.size() == 6)
-            nTPCSigmaPos[0] = updatePID(postrack, bgScalingPion, BBPion);
-          if (BBAntipion.size() == 6)
-            nTPCSigmaNeg[0] = updatePID(negtrack, bgScalingPion, BBAntipion);
-        }
-        if (!isSelectedV0Daughter(postrack, 1, nTPCSigmaPos[0])) {
-          continue;
-        }
-        if (!isSelectedV0Daughter(negtrack, -1, nTPCSigmaNeg[0])) {
-          continue;
-        }
-        qaRegistry.fill(HIST("hInvMassk0"), v0.mK0Short(), v0.pt());
-        ROOT::Math::PtEtaPhiMVector temp(v0.pt(), v0.eta(), v0.phi(), massK0s);
-        kshorts.push_back(temp);
-        KshortPosDaughIndex.push_back(postrack.globalIndex());
-        KshortNegDaughIndex.push_back(negtrack.globalIndex());
+      if (cfgSkimmedProcessing) {
+        zorroSelected = zorro.isSelected(collision.template bc_as<aod::BCsWithTimestamps>().globalBC());
+      } else {
+        zorroSelected = true;
       }
+      if (zorroSelected) {
+        for (auto& track : tracks) {
+          hProcessedEvents->Fill(1.5);
+          if (!isSelectedTrack(track))
+            continue;
+          qaRegistry.fill(HIST("hDCAxy"), track.dcaXY());
+          qaRegistry.fill(HIST("hDCAz"), track.dcaZ());
+          qaRegistry.fill(HIST("hEta"), track.eta());
+          qaRegistry.fill(HIST("hPhi"), track.phi());
+          double nTPCSigmaP[3]{track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
+          double nTPCSigmaN[3]{track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
+          if (ConfUseManualPIDproton) {
+            auto bgScalingProton = 1 / massPr; // momentum scaling?
+            if (BBProton.size() == 6)
+              nTPCSigmaP[2] = updatePID(track, bgScalingProton, BBProton);
+            if (BBAntiproton.size() == 6)
+              nTPCSigmaN[2] = updatePID(track, bgScalingProton, BBAntiproton);
+          }
+          if (ConfUseManualPIDkaon) {
+            auto bgScalingKaon = 1 / massKa; // momentum scaling?
+            if (BBKaon.size() == 6)
+              nTPCSigmaP[1] = updatePID(track, bgScalingKaon, BBKaon);
+            if (BBAntikaon.size() == 6)
+              nTPCSigmaN[1] = updatePID(track, bgScalingKaon, BBAntikaon);
+          }
+          if (ConfUseManualPIDpion) {
+            auto bgScalingPion = 1 / massPi; // momentum scaling?
+            if (BBPion.size() == 6)
+              nTPCSigmaP[0] = updatePID(track, bgScalingPion, BBPion);
+            if (BBAntipion.size() == 6)
+              nTPCSigmaN[0] = updatePID(track, bgScalingPion, BBAntipion);
+          }
 
-      if (pions.size() != 0 && kaons.size() != 0 && kshorts.size() != 0) {
-        for (auto ipion = pions.begin(); ipion != pions.end(); ++ipion) {
-          for (auto ikaon = kaons.begin(); ikaon != kaons.end(); ++ikaon) {
-            auto i1 = std::distance(pions.begin(), ipion);
-            auto i2 = std::distance(kaons.begin(), ikaon);
-            if (PionIndex.at(i1) == KaonIndex.at(i2))
-              continue;
-            for (auto ikshort = kshorts.begin(); ikshort != kshorts.end(); ++ikshort) {
-              auto i3 = std::distance(kshorts.begin(), ikshort);
-              if (PionIndex.at(i1) == KshortPosDaughIndex.at(i3))
-                continue;
-              if (PionIndex.at(i1) == KshortNegDaughIndex.at(i3))
-                continue;
-              KKs0Vector = kaons.at(i2) + kshorts.at(i3);
-              if (KKs0Vector.M() > cMaxMassKKs0)
-                continue;
-              F1Vector = KKs0Vector + pions.at(i1);
-              if (F1Vector.M() > cMaxMassF1)
-                continue;
-              if (F1Vector.Pt() < cMinF1Pt)
-                continue;
+          if ((track.sign() > 0 && SelectionPID(track, strategyPIDPion, 0, nTPCSigmaP[0])) || (track.sign() < 0 && SelectionPID(track, strategyPIDPion, 0, nTPCSigmaN[0]))) {
+            ROOT::Math::PtEtaPhiMVector temp(track.pt(), track.eta(), track.phi(), massPi);
+            pions.push_back(temp);
+            PionIndex.push_back(track.globalIndex());
+            PionCharge.push_back(track.sign());
+            auto PionTOF = 0;
+            if (track.sign() > 0) {
+              qaRegistry.fill(HIST("hNsigmaPtpionTPC"), nTPCSigmaP[0], track.pt());
+            }
+            if (track.sign() < 0) {
+              qaRegistry.fill(HIST("hNsigmaPtpionTPC"), nTPCSigmaN[0], track.pt());
+            }
+            if (track.hasTOF()) {
+              qaRegistry.fill(HIST("hNsigmaPtpionTOF"), track.tofNSigmaPi(), track.pt());
+              PionTOF = 1;
+            }
+            PionTOFHit.push_back(PionTOF);
+          }
 
-              // check if the pair is unlike or wrongsign
-              auto pairsign = 1;
-              if (PionCharge.at(i1) * KaonCharge.at(i2) > 0) {
-                qaRegistry.fill(HIST("hInvMassf1Like"), F1Vector.M(), F1Vector.Pt());
-                pairsign = -1;
-              }
-              ROOT::Math::PtEtaPhiMVector temp(F1Vector.Pt(), F1Vector.Eta(), F1Vector.Phi(), F1Vector.M());
-              f1resonance.push_back(temp);
-              f1resonanced1.push_back(pions.at(i1));
-              f1resonanced2.push_back(kaons.at(i2));
-              f1resonanced3.push_back(kshorts.at(i3));
-              f1signal.push_back(pairsign);
-              f1kaonkshortmass.push_back(KKs0Vector.M());
-              F1PionIndex.push_back(PionIndex.at(i1));
-              F1KaonIndex.push_back(KaonIndex.at(i2));
-              F1KshortDaughterPositiveIndex.push_back(KshortPosDaughIndex.at(i3));
-              F1KshortDaughterNegativeIndex.push_back(KshortNegDaughIndex.at(i3));
-              PionTOFHitFinal.push_back(PionTOFHit.at(i1)); // Pion TOF Hit
-              KaonTOFHitFinal.push_back(KaonTOFHit.at(i2)); // Kaon TOF Hit
-              if (pairsign == 1) {
-                qaRegistry.fill(HIST("hInvMassf1"), F1Vector.M(), F1Vector.Pt());
-                numberF1 = numberF1 + 1;
-                for (auto iproton = protons.begin(); iproton != protons.end(); ++iproton) {
-                  auto i4 = std::distance(protons.begin(), iproton);
-                  ProtonVectorDummy = protons.at(i4);
-                  if (numberF1 == 1) {
-                    //////////// Fill final proton information after pairing//////////
-                    ROOT::Math::PtEtaPhiMVector temp(ProtonVectorDummy.Pt(), ProtonVectorDummy.Eta(), ProtonVectorDummy.Phi(), massPr);
-                    protonsfinal.push_back(temp);                           // 4 vector
-                    ProtonChargeFinal.push_back(ProtonCharge.at(i4));       // Charge
-                    ProtonTOFHitFinal.push_back(ProtonTOFHit.at(i4));       // TOF Hit
-                    ProtonTOFNsigmaFinal.push_back(ProtonTOFNsigma.at(i4)); // Nsigma TOF
-                    ProtonTPCNsigmaFinal.push_back(ProtonTPCNsigma.at(i4)); // Nsigma TPC
-                    F1ProtonIndex.push_back(ProtonIndex.at(i4));            // proton index for share track
+          if ((track.pt() > cMinKaonPt && track.sign() > 0 && SelectionPID(track, strategyPIDKaon, 1, nTPCSigmaP[1])) || (track.pt() > cMinKaonPt && track.sign() < 0 && SelectionPID(track, strategyPIDKaon, 1, nTPCSigmaN[1]))) {
+            ROOT::Math::PtEtaPhiMVector temp(track.pt(), track.eta(), track.phi(), massKa);
+            kaons.push_back(temp);
+            KaonIndex.push_back(track.globalIndex());
+            KaonCharge.push_back(track.sign());
+            auto KaonTOF = 0;
+            if (track.sign() > 0) {
+              qaRegistry.fill(HIST("hNsigmaPtkaonTPC"), nTPCSigmaP[1], track.pt());
+            }
+            if (track.sign() < 0) {
+              qaRegistry.fill(HIST("hNsigmaPtkaonTPC"), nTPCSigmaN[1], track.pt());
+            }
+            if (track.hasTOF()) {
+              qaRegistry.fill(HIST("hNsigmaPtkaonTOF"), track.tofNSigmaKa(), track.pt());
+              KaonTOF = 1;
+            }
+            KaonTOFHit.push_back(KaonTOF);
+          }
+
+          if ((track.pt() < cMaxProtonPt && track.sign() > 0 && SelectionPID(track, strategyPIDProton, 2, nTPCSigmaP[2])) || (track.pt() < cMaxProtonPt && track.sign() < 0 && SelectionPID(track, strategyPIDProton, 2, nTPCSigmaN[2]))) {
+            ROOT::Math::PtEtaPhiMVector temp(track.pt(), track.eta(), track.phi(), massPr);
+            protons.push_back(temp);
+            ProtonIndex.push_back(track.globalIndex());
+            ProtonCharge.push_back(track.sign());
+            if (track.sign() > 0) {
+              qaRegistry.fill(HIST("hNsigmaPtprotonTPC"), nTPCSigmaP[2], track.pt());
+              ProtonTPCNsigma.push_back(nTPCSigmaP[2]);
+            }
+            if (track.sign() < 0) {
+              qaRegistry.fill(HIST("hNsigmaPtprotonTPC"), nTPCSigmaN[2], track.pt());
+              ProtonTPCNsigma.push_back(nTPCSigmaN[2]);
+            }
+            if (track.hasTOF()) {
+              qaRegistry.fill(HIST("hNsigmaPtprotonTOF"), track.tofNSigmaPr(), track.pt());
+              ProtonTOFNsigma.push_back(track.tofNSigmaPr());
+              ProtonTOFHit.push_back(1);
+            }
+            if (!track.hasTOF()) {
+              ProtonTOFNsigma.push_back(999.0);
+              ProtonTOFHit.push_back(0);
+            }
+          }
+        } // track loop end
+        for (auto& v0 : V0s) {
+
+          if (!SelectionV0(collision, v0)) {
+            continue;
+          }
+          auto postrack = v0.template posTrack_as<PrimaryTrackCandidates>();
+          auto negtrack = v0.template negTrack_as<PrimaryTrackCandidates>();
+          double nTPCSigmaPos[1]{postrack.tpcNSigmaPi()};
+          double nTPCSigmaNeg[1]{negtrack.tpcNSigmaPi()};
+          if (ConfUseManualPIDdaughterPion) {
+            auto bgScalingPion = 1 / massPi; // momentum scaling?
+            if (BBPion.size() == 6)
+              nTPCSigmaPos[0] = updatePID(postrack, bgScalingPion, BBPion);
+            if (BBAntipion.size() == 6)
+              nTPCSigmaNeg[0] = updatePID(negtrack, bgScalingPion, BBAntipion);
+          }
+          if (!isSelectedV0Daughter(postrack, 1, nTPCSigmaPos[0])) {
+            continue;
+          }
+          if (!isSelectedV0Daughter(negtrack, -1, nTPCSigmaNeg[0])) {
+            continue;
+          }
+          qaRegistry.fill(HIST("hInvMassk0"), v0.mK0Short(), v0.pt());
+          ROOT::Math::PtEtaPhiMVector temp(v0.pt(), v0.eta(), v0.phi(), massK0s);
+          kshorts.push_back(temp);
+          KshortPosDaughIndex.push_back(postrack.globalIndex());
+          KshortNegDaughIndex.push_back(negtrack.globalIndex());
+        }
+
+        if (pions.size() != 0 && kaons.size() != 0 && kshorts.size() != 0) {
+          for (auto ipion = pions.begin(); ipion != pions.end(); ++ipion) {
+            for (auto ikaon = kaons.begin(); ikaon != kaons.end(); ++ikaon) {
+              auto i1 = std::distance(pions.begin(), ipion);
+              auto i2 = std::distance(kaons.begin(), ikaon);
+              if (PionIndex.at(i1) == KaonIndex.at(i2))
+                continue;
+              for (auto ikshort = kshorts.begin(); ikshort != kshorts.end(); ++ikshort) {
+                auto i3 = std::distance(kshorts.begin(), ikshort);
+                if (PionIndex.at(i1) == KshortPosDaughIndex.at(i3))
+                  continue;
+                if (PionIndex.at(i1) == KshortNegDaughIndex.at(i3))
+                  continue;
+                KKs0Vector = kaons.at(i2) + kshorts.at(i3);
+                if (KKs0Vector.M() > cMaxMassKKs0)
+                  continue;
+                F1Vector = KKs0Vector + pions.at(i1);
+                if (F1Vector.M() > cMaxMassF1)
+                  continue;
+                if (F1Vector.Pt() < cMinF1Pt)
+                  continue;
+
+                // check if the pair is unlike or wrongsign
+                auto pairsign = 1;
+                if (PionCharge.at(i1) * KaonCharge.at(i2) > 0) {
+                  qaRegistry.fill(HIST("hInvMassf1Like"), F1Vector.M(), F1Vector.Pt());
+                  pairsign = -1;
+                }
+                ROOT::Math::PtEtaPhiMVector temp(F1Vector.Pt(), F1Vector.Eta(), F1Vector.Phi(), F1Vector.M());
+                f1resonance.push_back(temp);
+                f1resonanced1.push_back(pions.at(i1));
+                f1resonanced2.push_back(kaons.at(i2));
+                f1resonanced3.push_back(kshorts.at(i3));
+                f1signal.push_back(pairsign);
+                f1kaonkshortmass.push_back(KKs0Vector.M());
+                F1PionIndex.push_back(PionIndex.at(i1));
+                F1KaonIndex.push_back(KaonIndex.at(i2));
+                F1KshortDaughterPositiveIndex.push_back(KshortPosDaughIndex.at(i3));
+                F1KshortDaughterNegativeIndex.push_back(KshortNegDaughIndex.at(i3));
+                PionTOFHitFinal.push_back(PionTOFHit.at(i1)); // Pion TOF Hit
+                KaonTOFHitFinal.push_back(KaonTOFHit.at(i2)); // Kaon TOF Hit
+                if (pairsign == 1) {
+                  qaRegistry.fill(HIST("hInvMassf1"), F1Vector.M(), F1Vector.Pt());
+                  numberF1 = numberF1 + 1;
+                  for (auto iproton = protons.begin(); iproton != protons.end(); ++iproton) {
+                    auto i4 = std::distance(protons.begin(), iproton);
+                    ProtonVectorDummy = protons.at(i4);
+                    if (numberF1 == 1) {
+                      //////////// Fill final proton information after pairing//////////
+                      ROOT::Math::PtEtaPhiMVector temp(ProtonVectorDummy.Pt(), ProtonVectorDummy.Eta(), ProtonVectorDummy.Phi(), massPr);
+                      protonsfinal.push_back(temp);                           // 4 vector
+                      ProtonChargeFinal.push_back(ProtonCharge.at(i4));       // Charge
+                      ProtonTOFHitFinal.push_back(ProtonTOFHit.at(i4));       // TOF Hit
+                      ProtonTOFNsigmaFinal.push_back(ProtonTOFNsigma.at(i4)); // Nsigma TOF
+                      ProtonTPCNsigmaFinal.push_back(ProtonTPCNsigma.at(i4)); // Nsigma TPC
+                      F1ProtonIndex.push_back(ProtonIndex.at(i4));            // proton index for share track
+                    }
+
+                    if ((ProtonIndex.at(i4) == PionIndex.at(i1)) || (ProtonIndex.at(i4) == KaonIndex.at(i2)) || (ProtonIndex.at(i4) == KshortPosDaughIndex.at(i3)) || (ProtonIndex.at(i4) == KshortNegDaughIndex.at(i3))) {
+                      continue;
+                    }
+
+                    kstar = getkstar(F1Vector, *iproton);
+                    qaRegistry.fill(HIST("hkstarDist"), kstar);
+                    if (kstar > cMaxRelMom) {
+                      continue;
+                    }
+                    qaRegistry.fill(HIST("hInvMassf1kstar"), F1Vector.M(), F1Vector.Pt(), kstar);
+                    keepEventF1Proton = true;
                   }
-
-                  if ((ProtonIndex.at(i4) == PionIndex.at(i1)) || (ProtonIndex.at(i4) == KaonIndex.at(i2)) || (ProtonIndex.at(i4) == KshortPosDaughIndex.at(i3)) || (ProtonIndex.at(i4) == KshortNegDaughIndex.at(i3))) {
-                    continue;
-                  }
-
-                  kstar = getkstar(F1Vector, *iproton);
-                  qaRegistry.fill(HIST("hkstarDist"), kstar);
-                  if (kstar > cMaxRelMom)
-                    continue;
-                  qaRegistry.fill(HIST("hInvMassf1kstar"), F1Vector.M(), F1Vector.Pt(), kstar);
-                  keepEventF1Proton = true;
                 }
               }
             }
