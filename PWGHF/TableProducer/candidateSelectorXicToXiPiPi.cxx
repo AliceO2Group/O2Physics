@@ -15,6 +15,9 @@
 /// \author Phil Lennart Stahlhut <phil.lennart.stahlhut@cern.ch>, Heidelberg University
 /// \author Jaeyoon Cho <jaeyoon.cho@cern.ch>, Inha University
 
+#include <string>
+#include <vector>
+
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
