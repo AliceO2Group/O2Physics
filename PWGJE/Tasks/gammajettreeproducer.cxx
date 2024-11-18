@@ -46,7 +46,7 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using selectedClusters = o2::soa::Filtered<o2::aod::JClusters>;
+using selectedClusters = o2::soa::Filtered<o2::soa::Join<o2::aod::JClusters,o2::aod::JClusterTracks>>;
 
 #include "Framework/runDataProcessing.h"
 
@@ -72,12 +72,11 @@ struct GammaJetTreeProducer {
     trackSelections{"trackSelections", "globalTracks", "set track selections"};
   Configurable<float> trackMinPt{"trackMinPt", 0.15, "minimum track pT cut"};
   Configurable<float> jetPtMin{"jetPtMin", 5.0, "minimum jet pT cut"};
-  Configurable<float> jetR{"jetR", 0.4, "jet resolution parameter"};
   Configurable<float> isoR{"isoR", 0.4, "isolation cone radius"};
-
+  Configurable<float> perpConeJetR{"perpConeJetR", 0.4, "perpendicular cone radius used to calculate perp cone rho for jet"};
+  Configurable<float> trackMatchingEoverP{"trackMatchingEoverP", 2.0, "closest track is required to have E/p < value"};
   // cluster cuts
   Configurable<int> mClusterDefinition{"clusterDefinition", 10, "cluster definition to be selected, e.g. 10=kV3Default"};
-  // Preslice<o2::aod::JClusterTracks> perClusterMatchedTracks = o2::aod::jcluster::clusterId;
 
   int mRunNumber = 0;
   int eventSelection = -1;
@@ -98,14 +97,20 @@ struct GammaJetTreeProducer {
     // create histograms
     LOG(info) << "Creating histograms";
 
-    const o2Axis ptAxis{100, 0, 100, "p_{T} (GeV/c)"};
+    const o2Axis ptAxis{100, 0, 200, "p_{T} (GeV/c)"};
     const o2Axis energyAxis{100, 0, 100, "E (GeV)"};
     const o2Axis m02Axis{100, 0, 3, "m02"};
+    const o2Axis etaAxis{100, -1, 1, "#eta"};
+    const o2Axis phiAxis{100, 0 , 2*TMath::Pi(), "#phi"};
 
     mHistograms.add("clusterE", "Energy of cluster", o2HistType::kTH1F, {energyAxis});
     mHistograms.add("trackPt", "pT of track", o2HistType::kTH1F, {ptAxis});
     mHistograms.add("chjetPt", "pT of charged jet", o2HistType::kTH1F, {ptAxis});
+    mHistograms.add("chjetPtEtaPhi", "pT of charged jet", o2HistType::kTHnSparseF, {ptAxis, etaAxis, phiAxis});
     mHistograms.add("chjetpt_vs_constpt", "pT of charged jet vs pT of constituents", o2HistType::kTH2F, {ptAxis, ptAxis});
+
+    // track QA THnSparse
+    mHistograms.add("trackPtEtaPhi", "Track QA", o2HistType::kTHnSparseF, {ptAxis, etaAxis, phiAxis});
   }
 
   // ---------------------
@@ -161,7 +166,7 @@ struct GammaJetTreeProducer {
     double ptSumLeft = 0;
     double ptSumRight = 0;
 
-    double cPhi = TVector2::Phi_0_2pi(cluster.phi());
+    double cPhi = TVector2::Phi_0_2pi(object.phi());
 
     // rotate cone left by 90 degrees
     float cPhiLeft = cPhi - TMath::Pi() / 2;
@@ -173,8 +178,8 @@ struct GammaJetTreeProducer {
       if (!isTrackSelected(track)) {
         continue;
       }
-      dRLeft = jetutilities::deltaR(cluster.eta(), cPhiLeft, track.eta(), track.phi());
-      dRRight = jetutilities::deltaR(cluster.eta(), cPhiRight, track.eta(), track.phi());
+      dRLeft = jetutilities::deltaR(object.eta(), cPhiLeft, track.eta(), track.phi());
+      dRRight = jetutilities::deltaR(object.eta(), cPhiRight, track.eta(), track.phi());
 
       if (dRLeft < radius) {
         ptSumLeft += track.pt();
@@ -208,8 +213,11 @@ struct GammaJetTreeProducer {
       return;
     }
 
-    eventsTable(collision.multiplicity(), collision.centrality(), collision.rho(), collision.eventSel(), collision.alias_raw());
+    eventsTable(collision.multiplicity(), collision.centrality(), collision.rho(), collision.eventSel(), collision.trackOccupancyInTimeRange(), collision.alias_raw());
     collisionMapping[collision.globalIndex()] = eventsTable.lastIndex();
+
+    // loop over tracks one time for QA
+    runTrackQA(tracks);
 
     // loop over clusters
     for (auto cluster : clusters) {
@@ -226,26 +234,24 @@ struct GammaJetTreeProducer {
       // double dRMin = 100;
       double p = -1;
 
-      // auto tracksofcluster = matchedtracks.sliceBy(perClusterMatchedTracks, cluster.globalIndex());
-      // for (const auto& match : tracksofcluster) {
-      //   // ask the jtracks table for track with ID trackID
-      //   double dR = deltaR(cluster.eta(), cluster.phi(), match.tracks_as<o2::aod::JTracks>().Eta(), match.tracks_as<o2::aod::JTracks>().Phi());
-      //   if (dR < dRMin) {
-      //     dRMin = dR;
-      //     dEta = cluster.eta() - match.tracks_as<o2::aod::JTracks>().eta();
-      //     dPhi = TVector2::Phi_0_2pi(cluster.phi()) - TVector2::Phi_0_2pi(match.tracks_as<o2::aod::JTracks>().phi());
-      //     if (abs(dPhi) > M_PI) {
-      //       dPhi = 2 * M_PI - abs(dPhi);
-      //     }
-      //     p = match.tracks_as<o2::aod::JTracks>().p();
-      //   }
-      // }
-
-      // // for compression reasons make dPhi and dEta 0 if no match is found
-      // if (p == -1) {
-      //   dPhi = 0;
-      //   dEta = 0;
-      // }
+      // do track matching 
+      auto tracksofcluster = cluster.matchedTracks_as<JetTracks>();
+      
+      for (auto track : tracksofcluster) {
+        if (!isTrackSelected(track)) {
+          continue;
+        }
+        // find closest track that still has E/p < trackMatchingEoverP
+        if (cluster.energy()/track.p() > trackMatchingEoverP) {
+          continue;
+        } else {
+          // TODO make it eta on emcal surface and phi on emcal surface
+          dEta = cluster.eta() - track.eta();
+          dPhi = RecoDecay::constrainAngle(RecoDecay::constrainAngle(track.phi(), -M_PI) - RecoDecay::constrainAngle(cluster.phi(), -M_PI), -M_PI);
+          p = track.p();
+          break;
+        }
+      }
 
       gammasTable(eventsTable.lastIndex(), cluster.energy(), cluster.eta(), cluster.phi(), cluster.m02(), cluster.m20(), cluster.nCells(), cluster.time(), cluster.isExotic(), cluster.distanceToBadChannel(), cluster.nlm(), isoraw, perpconerho, dPhi, dEta, p);
     }
@@ -257,7 +263,7 @@ struct GammaJetTreeProducer {
   }
   PROCESS_SWITCH(GammaJetTreeProducer, processClusters, "Process EMCal clusters", true);
 
-  Filter jetCuts = aod::jet::pt > jetPtMin&& aod::jet::r == nround(jetR.node() * 100.0f);
+  Filter jetCuts = aod::jet::pt > jetPtMin;
   // Process charged jets
   void processChargedJets(soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::JCollisionBCs>::iterator const& collision, soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>> const& chargedJets, aod::JetTracks const&)
   {
@@ -265,22 +271,30 @@ struct GammaJetTreeProducer {
     if (!isEventAccepted(collision)) {
       return;
     }
-
+    float leadingTrackPt = 0;
+     ushort nconst = 0;
     // loop over charged jets
     for (auto jet : chargedJets) {
       if (jet.pt() < jetPtMin)
         continue;
-      ushort nconst = 0;
+      nconst = 0;
+      leadingTrackPt = 0;
       // loop over constituents
       for (auto& constituent : jet.template tracks_as<aod::JetTracks>()) {
         mHistograms.fill(HIST("chjetpt_vs_constpt"), jet.pt(), constituent.pt());
         nconst++;
+        if (constituent.pt() > leadingTrackPt) {
+          leadingTrackPt = constituent.pt();
+        }
       }
       int32_t storedColIndex = -1;
       if (auto foundCol = collisionMapping.find(collision.globalIndex()); foundCol != collisionMapping.end()) {
         storedColIndex = foundCol->second;
       }
-      chargedJetsTable(storedColIndex, jet.pt(), jet.eta(), jet.phi(), jet.energy(), jet.mass(), jet.area(), nconst);
+      // calculate perp cone rho
+      double perpconerho = ch_perp_cone_rho(jet, tracks, perpConeJetR);
+      mHistograms.fill(HIST("chjetPtEtaPhi"), jet.pt(), jet.eta(), jet.phi());
+      chargedJetsTable(storedColIndex, jet.pt(), jet.eta(), jet.phi(), jet.r(), jet.energy(), jet.mass(), jet.area(), leadingTrackPt, perpconerho,nconst);
       // fill histograms
       mHistograms.fill(HIST("chjetPt"), jet.pt());
     }

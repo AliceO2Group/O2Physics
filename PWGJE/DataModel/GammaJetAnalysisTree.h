@@ -31,9 +31,10 @@ DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float);
 DECLARE_SOA_COLUMN(Centrality, centrality, float);
 DECLARE_SOA_COLUMN(Rho, rho, float);
 DECLARE_SOA_COLUMN(EventSel, eventSel, uint8_t);
+DECLARE_SOA_COLUMN(Occupancy, occupancy, float);
 DECLARE_SOA_BITMAP_COLUMN(Alias, alias, 32);
 } // namespace gjevent
-DECLARE_SOA_TABLE(GjEvents, "AOD", "GJEVENT", o2::soa::Index<>, gjevent::Multiplicity, gjevent::Centrality, gjevent::Rho, gjevent::EventSel, gjevent::Alias)
+DECLARE_SOA_TABLE(GjEvents, "AOD", "GJEVENT", o2::soa::Index<>, gjevent::Multiplicity, gjevent::Centrality, gjevent::Rho, gjevent::EventSel, gjevent::Occupancy, gjevent::Alias)
 
 using GjEvent = GjEvents::iterator;
 
@@ -64,12 +65,15 @@ DECLARE_SOA_INDEX_COLUMN(GjEvent, gjevent);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
+DECLARE_SOA_COLUMN(Radius, radius, float);
 DECLARE_SOA_COLUMN(Energy, energy, float);
 DECLARE_SOA_COLUMN(Mass, mass, float);
 DECLARE_SOA_COLUMN(Area, area, float);
+DECLARE_SOA_COLUMN(LeadingTrackPt, leadingtrackpt, float);
+DECLARE_SOA_COLUMN(PerpConeRho, perpconerho, float);
 DECLARE_SOA_COLUMN(NConstituents, nConstituents, ushort);
 } // namespace gjchjet
-DECLARE_SOA_TABLE(GjChargedJets, "AOD", "GJCHJET", gjchjet::GjEventId, gjchjet::Pt, gjchjet::Eta, gjchjet::Phi, gjchjet::Energy, gjchjet::Mass, gjchjet::Area, gjchjet::NConstituents)
+DECLARE_SOA_TABLE(GjChargedJets, "AOD", "GJCHJET", gjchjet::GjEventId, gjchjet::Pt, gjchjet::Eta, gjchjet::Phi, gjchjet::Radius, gjchjet::Energy, gjchjet::Mass, gjchjet::Area, gjchjet::LeadingTrackPt,gjchjet::PerpConeRho,gjchjet::NConstituents)
 } // namespace o2::aod
 
 #endif // PWGJE_DATAMODEL_GAMMAJETANALYSISTREE_H_
