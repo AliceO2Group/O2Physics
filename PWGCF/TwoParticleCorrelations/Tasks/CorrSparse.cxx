@@ -28,6 +28,7 @@
 #include <cmath>
 #include "TMath.h"
 #include <iostream>
+#include <vector>
 
 namespace o2::aod
 {
