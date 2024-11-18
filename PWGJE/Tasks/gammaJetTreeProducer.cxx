@@ -158,7 +158,7 @@ struct GammaJetTreeProducer {
     return true;
   }
 
-  double ch_iso_in_cone(const auto& cluster, aod::JetTracks const& tracks, float radius = 0.4)
+  double ch_iso_in_cone(const auto& cluster, JetTracks const& tracks, float radius = 0.4)
   {
     double iso = 0;
     for (auto track : tracks) {
@@ -174,7 +174,11 @@ struct GammaJetTreeProducer {
     return iso;
   }
 
+<<<<<<< HEAD:PWGJE/Tasks/gammaJetTreeProducer.cxx
   void runTrackQA(const auto& collision, aod::JetTracks const& tracks)
+=======
+  void runTrackQA(const auto& collision, JetTracks const& tracks)
+>>>>>>> 7bb11ca33 (fixing merge conflicts):PWGJE/Tasks/gammajettreeproducer.cxx
   {
     for (auto track : tracks) {
       if (!isTrackSelected(track)) {
@@ -186,7 +190,11 @@ struct GammaJetTreeProducer {
     }
   }
 
+<<<<<<< HEAD:PWGJE/Tasks/gammaJetTreeProducer.cxx
   double ch_perp_cone_rho(const auto& object, aod::JetTracks const& tracks, float radius = 0.4)
+=======
+  double ch_perp_cone_rho(const auto& object, JetTracks const& tracks, float radius = 0.4)
+>>>>>>> 7bb11ca33 (fixing merge conflicts):PWGJE/Tasks/gammajettreeproducer.cxx
   {
     double ptSumLeft = 0;
     double ptSumRight = 0;
@@ -224,7 +232,7 @@ struct GammaJetTreeProducer {
   // ---------------------
   // Processing functions
   // ---------------------
-  void processClearMaps(aod::JetCollisions const&)
+  void processClearMaps(JetCollisions const&)
   {
     collisionMapping.clear();
   }
@@ -237,7 +245,11 @@ struct GammaJetTreeProducer {
   PresliceUnsorted<aod::JEMCTracks> EMCTrackPerTrack = aod::jemctrack::trackId;
 
   // Process clusters
+<<<<<<< HEAD:PWGJE/Tasks/gammaJetTreeProducer.cxx
   void processClusters(soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::JCollisionBCs>::iterator const& collision, selectedClusters const& clusters, aod::JetTracks const& tracks, aod::JEMCTracks const& emctracks)
+=======
+  void processClusters(soa::Join<JetCollisions, aod::BkgChargedRhos, aod::JCollisionBCs>::iterator const& collision, selectedClusters const& clusters, JetTracks const& tracks)
+>>>>>>> 7bb11ca33 (fixing merge conflicts):PWGJE/Tasks/gammajettreeproducer.cxx
   {
     if (!isEventAccepted(collision)) {
       return;
@@ -297,7 +309,11 @@ struct GammaJetTreeProducer {
   Filter jetCuts = aod::jet::pt > jetPtMin;
   Filter jetCuts = aod::jet::pt > jetPtMin;
   // Process charged jets
+<<<<<<< HEAD:PWGJE/Tasks/gammaJetTreeProducer.cxx
   void processChargedJets(soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::JCollisionBCs>::iterator const& collision, soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>> const& chargedJets, aod::JetTracks const& tracks)
+=======
+  void processChargedJets(soa::Join<JetCollisions, aod::BkgChargedRhos, aod::JCollisionBCs>::iterator const& collision, soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>> const& chargedJets, JetTracks const& tracks)
+>>>>>>> 7bb11ca33 (fixing merge conflicts):PWGJE/Tasks/gammajettreeproducer.cxx
   {
     // event selection
     if (!isEventAccepted(collision)) {
@@ -314,7 +330,7 @@ struct GammaJetTreeProducer {
       nconst = 0;
       leadingTrackPt = 0;
       // loop over constituents
-      for (auto& constituent : jet.template tracks_as<aod::JetTracks>()) {
+      for (auto& constituent : jet.template tracks_as<JetTracks>()) {
         mHistograms.fill(HIST("chjetpt_vs_constpt"), jet.pt(), constituent.pt());
         nconst++;
         if (constituent.pt() > leadingTrackPt) {
