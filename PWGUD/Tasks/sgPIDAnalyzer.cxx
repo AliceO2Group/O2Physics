@@ -118,7 +118,7 @@ struct sgPIDAnalyzer {
   using SGEvent = aod::SGEvents::iterator;                             
   void process(SGEvent const& event, aod::SGTracks const& tracks)
   {
-    registry.fill(HIST("Events"), event.gs());
+    histos.fill(HIST("Events"), event.gs());
     for (const auto& track : tracks) {
       if (track.eta() < eta_min || track.eta() > eta_max)
         continue;
