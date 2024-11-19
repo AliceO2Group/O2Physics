@@ -60,6 +60,8 @@ DECLARE_SOA_COLUMN(CentFDDM, centFDDM, float);                 //! FDDM centrali
 DECLARE_SOA_COLUMN(MultZeqNTracksPV, multZeqNTracksPV, float); //! z-equalised barrel multiplicity
 } // namespace hf_coll_base
 
+// Common
+
 DECLARE_SOA_TABLE_STAGED(HfCollBases, "HFCOLLBASE", //! Table with basic collision info
                          o2::soa::Index<>,
                          collision::PosX,
@@ -88,7 +90,7 @@ DECLARE_SOA_TABLE_STAGED(HfCollIds, "HFCOLLID", //! Table with original global i
 namespace hf_mc_coll
 {
 DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision);      //! original global index of the MC collision
-DECLARE_SOA_ARRAY_INDEX_COLUMN(HfCollBase, hfCollBases); //! collision index array pointing to the derived reconstructed collisions for D0 candidates
+DECLARE_SOA_ARRAY_INDEX_COLUMN(HfCollBase, hfCollBases); //! collision index array pointing to the derived reconstructed collisions
 } // namespace hf_mc_coll
 
 DECLARE_SOA_TABLE_STAGED(HfMcCollBases, "HFMCCOLLBASE", //! Table with basic MC collision info
@@ -99,6 +101,7 @@ DECLARE_SOA_TABLE_STAGED(HfMcCollBases, "HFMCCOLLBASE", //! Table with basic MC 
                          o2::soa::Marker<MarkerBase>);
 
 using HfMcCollBase = HfMcCollBases::iterator;
+using StoredHfMcCollBase = StoredHfMcCollBases::iterator;
 
 DECLARE_SOA_TABLE_STAGED(HfMcCollIds, "HFMCCOLLID", //! Table with original global indices of MC collisions
                          hf_mc_coll::McCollisionId,
@@ -114,7 +117,7 @@ DECLARE_SOA_TABLE_STAGED(HfMcRCollIds, "HFMCRCOLLID", //! Table with indices poi
 // Basic candidate properties
 namespace hf_cand_base
 {
-DECLARE_SOA_INDEX_COLUMN(HfCollBase, hfCollBase); //! collision index pointing to the derived collision table for B+ candidates
+DECLARE_SOA_INDEX_COLUMN(HfCollBase, hfCollBase); //! collision index pointing to the derived collision table
 DECLARE_SOA_COLUMN(Eta, eta, float); //! pseudorapidity
 DECLARE_SOA_COLUMN(M, m, float);     //! invariant mass
 DECLARE_SOA_COLUMN(Phi, phi, float); //! azimuth
@@ -288,7 +291,9 @@ DECLARE_SOA_COLUMN(MlScoreNonPrompt, mlScoreNonPrompt, float);      //! ML score
 DECLARE_SOA_COLUMN(MlScores, mlScores, std::vector<float>);         //! vector of ML scores
 } // namespace hf_cand_mc
 
-// Candidate MC columns of the charm daughter
+// Candidate MC columns of the charm daughter of a beauty candidate
+// Copy of hf_cand_mc with "Charm" suffix to make it joinable with the beauty candidate table.
+// We don't want to link the charm candidate table because we want to avoid producing it.
 namespace hf_cand_mc_charm
 {
 DECLARE_SOA_COLUMN(FlagMcMatchRecCharm, flagMcMatchRecCharm, int8_t);         //! flag for reconstruction level matching
@@ -302,6 +307,8 @@ DECLARE_SOA_COLUMN(MlScoreNonPromptCharm, mlScoreNonPromptCharm, float);      //
 DECLARE_SOA_COLUMN(MlScoresCharm, mlScoresCharm, std::vector<float>);         //! vector of ML scores
 } // namespace hf_cand_mc_charm
 
+// Common
+
 DECLARE_SOA_TABLE_STAGED(HfBases, "HFBASE", //! Table with basic candidate properties used in the analyses
                          o2::soa::Index<>,
                          hf_cand_base::HfCollBaseId,
@@ -314,7 +321,7 @@ DECLARE_SOA_TABLE_STAGED(HfBases, "HFBASE", //! Table with basic candidate prope
                          hf_cand_base::Py<hf_cand_base::Pt, hf_cand_base::Phi>,
                          hf_cand_base::Pz<hf_cand_base::Pt, hf_cand_base::Eta>,
                          hf_cand_base::P<hf_cand_base::Pt, hf_cand_base::Eta>,
-                         o2::soa::Marker<MarkerD0>);
+                         o2::soa::Marker<MarkerBase>);
 
 // D0
 
@@ -580,6 +587,8 @@ DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);               //! particle
 DECLARE_SOA_COLUMN(FlagMcDecayChanGen, flagMcDecayChanGen, int8_t); //! resonant decay channel flag, generator level
 } // namespace hf_mc_particle
 
+// Common
+
 DECLARE_SOA_TABLE_STAGED(HfPBases, "HFPBASE", //! Table with MC particle info
                          o2::soa::Index<>,
                          hf_mc_particle::HfMcCollBaseId,
@@ -593,12 +602,12 @@ DECLARE_SOA_TABLE_STAGED(HfPBases, "HFPBASE", //! Table with MC particle info
                          hf_cand_base::Py<hf_cand_base::Pt, hf_cand_base::Phi>,
                          hf_cand_base::Pz<hf_cand_base::Pt, hf_cand_base::Eta>,
                          hf_cand_base::P<hf_cand_base::Pt, hf_cand_base::Eta>,
-                         o2::soa::Marker<MarkerD0>);
+                         o2::soa::Marker<MarkerBase>);
 
 DECLARE_SOA_TABLE_STAGED(HfPIds, "HFPID", //! Table with original global indices for MC particles
                          hf_mc_particle::McCollisionId,
                          hf_mc_particle::McParticleId,
-                         o2::soa::Marker<MarkerD0>);
+                         o2::soa::Marker<MarkerBase>);
 } // namespace o2::aod
 
 #endif // PWGHF_DATAMODEL_DERIVEDTABLES_H_
