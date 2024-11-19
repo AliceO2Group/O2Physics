@@ -105,7 +105,7 @@ struct ITSResponse {
   static bool mIsInitialized;
 };
 
-std::array<float, 3> ITSResponse::mITSRespParams = {0.903, 2.014, 2.440};
+std::array<float, 3> ITSResponse::mITSRespParams = {1.1576, 1.684, 1.9453};
 std::array<float, 3> ITSResponse::mITSRespParamsZ2 = {2.8752, 1.1246, 5.0259};
 // relative resolution is modelled with an erf function: [0]*TMath::Erf((x-[1])/[2])
 std::array<float, 3> ITSResponse::mResolutionParams = {0.2431, -0.3293, 1.533};
