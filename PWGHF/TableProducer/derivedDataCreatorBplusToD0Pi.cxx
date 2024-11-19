@@ -43,7 +43,7 @@ using namespace o2::analysis::hf_derived;
 /// Writes the full information in an output TTree
 struct HfDerivedDataCreatorBplusToD0Pi {
   // Candidates
-  Produces<o2::aod::HfBplusBases> rowCandidateBase;
+  Produces<o2::aod::HfBases> rowCandidateBase;
   Produces<o2::aod::HfBplusPars> rowCandidatePar;
   Produces<o2::aod::HfBplusParD0s> rowCandidateParD0;
   Produces<o2::aod::HfBplusParEs> rowCandidateParE;
@@ -59,8 +59,8 @@ struct HfDerivedDataCreatorBplusToD0Pi {
   Produces<o2::aod::HfMcCollIds> rowMcCollId;
   Produces<o2::aod::HfMcRCollIds> rowMcRCollId;
   // MC particles
-  Produces<o2::aod::HfBplusPBases> rowParticleBase;
-  Produces<o2::aod::HfBplusPIds> rowParticleId;
+  Produces<o2::aod::HfPBases> rowParticleBase;
+  Produces<o2::aod::HfPIds> rowParticleId;
 
   // Switches for filling tables
   Configurable<bool> fillCandidateBase{"fillCandidateBase", true, "Fill candidate base properties"};

@@ -506,19 +506,19 @@ DECLARE_SOA_TABLE_STAGED(HfD0Mcs, "HFD0MC", //! Table with MC candidate info
 
 // B+
 
-DECLARE_SOA_TABLE_STAGED(HfBplusBases, "HFBPBASE", //! Table with basic candidate properties used in the analyses
-                         o2::soa::Index<>,
-                         hf_cand_base::der_bplus::HfCollBaseId,
-                         hf_cand_base::Pt,
-                         hf_cand_base::Eta,
-                         hf_cand_base::Phi,
-                         hf_cand_base::M,
-                         hf_cand_base::Y,
-                         hf_cand_base::Px<hf_cand_base::Pt, hf_cand_base::Phi>,
-                         hf_cand_base::Py<hf_cand_base::Pt, hf_cand_base::Phi>,
-                         hf_cand_base::Pz<hf_cand_base::Pt, hf_cand_base::Eta>,
-                         hf_cand_base::P<hf_cand_base::Pt, hf_cand_base::Eta>,
-                         o2::soa::Marker<MarkerBplus>);
+// DECLARE_SOA_TABLE_STAGED(HfBplusBases, "HFBPBASE", //! Table with basic candidate properties used in the analyses
+//                          o2::soa::Index<>,
+//                          hf_cand_base::der_bplus::HfCollBaseId,
+//                          hf_cand_base::Pt,
+//                          hf_cand_base::Eta,
+//                          hf_cand_base::Phi,
+//                          hf_cand_base::M,
+//                          hf_cand_base::Y,
+//                          hf_cand_base::Px<hf_cand_base::Pt, hf_cand_base::Phi>,
+//                          hf_cand_base::Py<hf_cand_base::Pt, hf_cand_base::Phi>,
+//                          hf_cand_base::Pz<hf_cand_base::Pt, hf_cand_base::Eta>,
+//                          hf_cand_base::P<hf_cand_base::Pt, hf_cand_base::Eta>,
+//                          o2::soa::Marker<MarkerBplus>);
 
 // candidates for removal:
 // PxProng0, PyProng0, PzProng0,... (same for 1, 2), we can keep Pt, Eta, Phi instead
@@ -754,25 +754,25 @@ DECLARE_SOA_TABLE_STAGED(HfPIds, "HFPID", //! Table with original global indices
 
 // B+
 
-DECLARE_SOA_TABLE_STAGED(HfBplusPBases, "HFBPPBASE", //! Table with MC particle info
-                         o2::soa::Index<>,
-                         hf_mc_particle::der_bplus::HfMcCollBaseId,
-                         hf_cand_base::Pt,
-                         hf_cand_base::Eta,
-                         hf_cand_base::Phi,
-                         hf_cand_base::Y,
-                         hf_mc_particle::FlagMcMatchGen,
-                         hf_mc_particle::OriginMcGen,
-                         hf_cand_base::Px<hf_cand_base::Pt, hf_cand_base::Phi>,
-                         hf_cand_base::Py<hf_cand_base::Pt, hf_cand_base::Phi>,
-                         hf_cand_base::Pz<hf_cand_base::Pt, hf_cand_base::Eta>,
-                         hf_cand_base::P<hf_cand_base::Pt, hf_cand_base::Eta>,
-                         o2::soa::Marker<MarkerBplus>);
+// DECLARE_SOA_TABLE_STAGED(HfBplusPBases, "HFBPPBASE", //! Table with MC particle info
+//                          o2::soa::Index<>,
+//                          hf_mc_particle::der_bplus::HfMcCollBaseId,
+//                          hf_cand_base::Pt,
+//                          hf_cand_base::Eta,
+//                          hf_cand_base::Phi,
+//                          hf_cand_base::Y,
+//                          hf_mc_particle::FlagMcMatchGen,
+//                          hf_mc_particle::OriginMcGen,
+//                          hf_cand_base::Px<hf_cand_base::Pt, hf_cand_base::Phi>,
+//                          hf_cand_base::Py<hf_cand_base::Pt, hf_cand_base::Phi>,
+//                          hf_cand_base::Pz<hf_cand_base::Pt, hf_cand_base::Eta>,
+//                          hf_cand_base::P<hf_cand_base::Pt, hf_cand_base::Eta>,
+//                          o2::soa::Marker<MarkerBplus>);
 
-DECLARE_SOA_TABLE_STAGED(HfBplusPIds, "HFBPPID", //! Table with original global indices for MC particles
-                         hf_mc_particle::McCollisionId,
-                         hf_mc_particle::McParticleId,
-                         o2::soa::Marker<MarkerBplus>);
+// DECLARE_SOA_TABLE_STAGED(HfBplusPIds, "HFBPPID", //! Table with original global indices for MC particles
+//                          hf_mc_particle::McCollisionId,
+//                          hf_mc_particle::McParticleId,
+//                          o2::soa::Marker<MarkerBplus>);
 
 // 3-prong decays
 
