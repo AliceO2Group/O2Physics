@@ -26,7 +26,6 @@ struct : ConfigurableGroup {
   Configurable<bool> cfVerboseForEachParticle{"cfVerboseForEachParticle", false, "run or not in verbose mode (also for function calls per particle)"};
   Configurable<bool> cfDoAdditionalInsanityChecks{"cfDoAdditionalInsanityChecks", false, "do additional insanity checks at run time (this leads to small loss of performance)"};
   Configurable<bool> cfInsanityCheckForEachParticle{"cfInsanityCheckForEachParticle", false, "do insanity checks at run time for each particle, at the expense of losing a lot of performance. Use only during debugging."};
-  Configurable<bool> cfUseCCDB{"cfUseCCDB", true, "if requested, access personal files from CCDB (true) or from home dir in AliEn (false)"};
   Configurable<unsigned int> cfRandomSeed{"cfRandomSeed", 0, "0 = random seed is guaranteed to be unique in space and time"};
   Configurable<bool> cfUseFisherYates{"cfUseFisherYates", false, "use or not Fisher-Yates algorithm to randomize particle indices"};
   Configurable<int> cfFixedNumberOfRandomlySelectedTracks{"cfFixedNumberOfRandomlySelectedTracks", -1, "set to some integer > 0, to apply and use. Set to <=0, to ignore."};
@@ -91,7 +90,7 @@ struct : ConfigurableGroup {
   Configurable<bool> cfFillParticleHistograms{"cfFillParticleHistograms", true, "if false, all 1D particle histograms are not filled. if kTRUE, the ones for which fBookParticleHistograms[...] is kTRUE, are filled"};
   Configurable<vector<string>> cfBookParticleHistograms{"cfBookParticleHistograms", {"Phi-1", "Pt-1", "Eta-1", "Charge-1", "tpcNClsFindable-1", "tpcNClsShared-1", "tpcNClsFound-1", "tpcNClsCrossedRows-1", "itsNCls-1", "itsNClsInnerBarrel-1", "tpcCrossedRowsOverFindableCls-1", "tpcFoundOverFindableCls-1", "tpcFractionSharedCls-1", "dcaXY-1", "dcaZ-1", "PDG-1"}, "Book (1) or do not book (0) particle histogram"};
   Configurable<bool> cfFillParticleHistograms2D{"cfFillParticleHistograms2D", true, "if false, all 2D particle histograms are not filled. if kTRUE, the ones for which fBookParticleHistograms2D[...] is kTRUE, are filled"};
-  Configurable<vector<string>> cfBookParticleHistograms2D{"cfBookParticleHistograms2D", {"Phi_vs_Pt-1", "Phi_vs_Eta-1"}, "Book (1) or do not book (0) event histogram"};
+  Configurable<vector<string>> cfBookParticleHistograms2D{"cfBookParticleHistograms2D", {"Phi_vs_Pt-1", "Phi_vs_Eta-1"}, "Book (1) or do not book (0) 2D particle histograms"};
 } cf_ph;
 
 // *) Particle cuts:
@@ -163,6 +162,12 @@ struct : ConfigurableGroup {
   Configurable<bool> cfUseDiffPhiEtaWeights{"cfUseDiffPhiEtaWeights", false, "use or not differential phi(eta) weights"};
   Configurable<string> cfFileWithWeights{"cfFileWithWeights", "/home/abilandz/DatasetsO2/weights.root", "path to external ROOT file which holds all particle weights in O2 format"}; // for AliEn file prepend "/alice/cern.ch/", for CCDB prepend "/alice-ccdb.cern.ch"
 } cf_pw;
+
+// *) Centrality weights:
+struct : ConfigurableGroup {
+  Configurable<bool> cfUseCentralityWeights{"cfUseCentralityWeights", false, "use or not centrality weights"};
+  Configurable<string> cfFileWithCentralityWeights{"cfFileWithCentralityWeights", "/home/abilandz/DatasetsO2/centralityWeights.root", "path to external ROOT file which holds centrality weights in O2 format"}; // for AliEn file prepend "/alice/cern.ch/", for CCDB prepend "/alice-ccdb.cern.ch"
+} cf_cw;
 
 // *) Nested loops:
 struct : ConfigurableGroup {
