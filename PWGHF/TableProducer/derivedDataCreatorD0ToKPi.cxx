@@ -51,12 +51,12 @@ struct HfDerivedDataCreatorD0ToKPi {
   Produces<o2::aod::HfD0Ids> rowCandidateId;
   Produces<o2::aod::HfD0Mcs> rowCandidateMc;
   // Collisions
-  Produces<o2::aod::HfD0CollBases> rowCollBase;
-  Produces<o2::aod::HfD0CollIds> rowCollId;
+  Produces<o2::aod::HfCollBases> rowCollBase;
+  Produces<o2::aod::HfCollIds> rowCollId;
   // MC collisions
-  Produces<o2::aod::HfD0McCollBases> rowMcCollBase;
-  Produces<o2::aod::HfD0McCollIds> rowMcCollId;
-  Produces<o2::aod::HfD0McRCollIds> rowMcRCollId;
+  Produces<o2::aod::HfMcCollBases> rowMcCollBase;
+  Produces<o2::aod::HfMcCollIds> rowMcCollId;
+  Produces<o2::aod::HfMcRCollIds> rowMcRCollId;
   // MC particles
   Produces<o2::aod::HfD0PBases> rowParticleBase;
   Produces<o2::aod::HfD0PIds> rowParticleId;

@@ -78,6 +78,7 @@ DECLARE_SOA_TABLE_STAGED(HfCollBases, "HFCOLLBASE", //! Table with basic collisi
                          o2::soa::Marker<MarkerBase>);
 
 using HfCollBase = HfCollBases::iterator;
+using StoredHfCollBase = StoredHfCollBases::iterator;
 
 DECLARE_SOA_TABLE_STAGED(HfCollIds, "HFCOLLID", //! Table with original global indices of collisions
                          hf_cand::CollisionId,
@@ -85,27 +86,27 @@ DECLARE_SOA_TABLE_STAGED(HfCollIds, "HFCOLLID", //! Table with original global i
 
 // D0 (to be replaced by base version)
 
-DECLARE_SOA_TABLE_STAGED(HfD0CollBases, "HFD0COLLBASE", //! Table with basic collision info
-                         o2::soa::Index<>,
-                         collision::PosX,
-                         collision::PosY,
-                         collision::PosZ,
-                         collision::NumContrib,
-                         hf_coll_base::CentFT0A,
-                         hf_coll_base::CentFT0C,
-                         hf_coll_base::CentFT0M,
-                         hf_coll_base::CentFV0A,
-                         hf_coll_base::MultZeqNTracksPV,
-                         // hf_coll_base::IsEventReject,
-                         // bc::RunNumber,
-                         o2::soa::Marker<MarkerD0>);
+// DECLARE_SOA_TABLE_STAGED(HfD0CollBases, "HFD0COLLBASE", //! Table with basic collision info
+//                          o2::soa::Index<>,
+//                          collision::PosX,
+//                          collision::PosY,
+//                          collision::PosZ,
+//                          collision::NumContrib,
+//                          hf_coll_base::CentFT0A,
+//                          hf_coll_base::CentFT0C,
+//                          hf_coll_base::CentFT0M,
+//                          hf_coll_base::CentFV0A,
+//                          hf_coll_base::MultZeqNTracksPV,
+//                          // hf_coll_base::IsEventReject,
+//                          // bc::RunNumber,
+//                          o2::soa::Marker<MarkerD0>);
 
-using HfD0CollBase = HfD0CollBases::iterator;
-using StoredHfD0CollBase = StoredHfD0CollBases::iterator;
+// using HfD0CollBase = HfD0CollBases::iterator;
+// using StoredHfD0CollBase = StoredHfD0CollBases::iterator;
 
-DECLARE_SOA_TABLE_STAGED(HfD0CollIds, "HFD0COLLID", //! Table with original global indices of collisions
-                         hf_cand::CollisionId,
-                         o2::soa::Marker<MarkerD0>);
+// DECLARE_SOA_TABLE_STAGED(HfD0CollIds, "HFD0COLLID", //! Table with original global indices of collisions
+//                          hf_cand::CollisionId,
+//                          o2::soa::Marker<MarkerD0>);
 
 // 3-prong decays (to be replaced by base version)
 
@@ -142,7 +143,7 @@ DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision);      //! original global ind
 DECLARE_SOA_ARRAY_INDEX_COLUMN(HfCollBase, hfCollBases); //! collision index array pointing to the derived reconstructed collisions for D0 candidates
 namespace der_d0
 {
-DECLARE_SOA_ARRAY_INDEX_COLUMN(HfD0CollBase, hfCollBases); //! collision index array pointing to the derived reconstructed collisions for D0 candidates
+// DECLARE_SOA_ARRAY_INDEX_COLUMN(HfD0CollBase, hfCollBases); //! collision index array pointing to the derived reconstructed collisions for D0 candidates
 }
 namespace der_3p
 {
@@ -170,22 +171,22 @@ DECLARE_SOA_TABLE_STAGED(HfMcRCollIds, "HFMCRCOLLID", //! Table with indices poi
 
 // D0
 
-DECLARE_SOA_TABLE_STAGED(HfD0McCollBases, "HFD0MCCOLLBASE", //! Table with basic MC collision info
-                         o2::soa::Index<>,
-                         mccollision::PosX,
-                         mccollision::PosY,
-                         mccollision::PosZ,
-                         o2::soa::Marker<MarkerD0>);
+// DECLARE_SOA_TABLE_STAGED(HfD0McCollBases, "HFD0MCCOLLBASE", //! Table with basic MC collision info
+//                          o2::soa::Index<>,
+//                          mccollision::PosX,
+//                          mccollision::PosY,
+//                          mccollision::PosZ,
+//                          o2::soa::Marker<MarkerD0>);
 
-using HfD0McCollBase = HfD0McCollBases::iterator;
-using StoredHfD0McCollBase = StoredHfD0McCollBases::iterator;
+// using HfD0McCollBase = HfD0McCollBases::iterator;
+// using StoredHfD0McCollBase = StoredHfD0McCollBases::iterator;
 
-DECLARE_SOA_TABLE_STAGED(HfD0McCollIds, "HFD0MCCOLLID", //! Table with original global indices of MC collisions
-                         hf_mc_coll::McCollisionId,
-                         o2::soa::Marker<MarkerD0>);
+// DECLARE_SOA_TABLE_STAGED(HfD0McCollIds, "HFD0MCCOLLID", //! Table with original global indices of MC collisions
+//                          hf_mc_coll::McCollisionId,
+//                          o2::soa::Marker<MarkerD0>);
 
-DECLARE_SOA_TABLE_STAGED(HfD0McRCollIds, "HFD0MCRCOLLID", //! Table with indices pointing to the derived reconstructed-collision table
-                         hf_mc_coll::der_d0::HfD0CollBaseIds);
+// DECLARE_SOA_TABLE_STAGED(HfD0McRCollIds, "HFD0MCRCOLLID", //! Table with indices pointing to the derived reconstructed-collision table
+//                          hf_mc_coll::der_d0::HfD0CollBaseIds);
 
 // 3-prong decays
 
@@ -215,7 +216,7 @@ namespace hf_cand_base
 {
 namespace der_d0
 {
-DECLARE_SOA_INDEX_COLUMN(HfD0CollBase, hfCollBase); //! collision index pointing to the derived collision table for D0 candidates
+// DECLARE_SOA_INDEX_COLUMN(HfD0CollBase, hfCollBase); //! collision index pointing to the derived collision table for D0 candidates
 }
 namespace der_bplus
 {
@@ -416,7 +417,7 @@ DECLARE_SOA_COLUMN(MlScoresCharm, mlScoresCharm, std::vector<float>);         //
 
 DECLARE_SOA_TABLE_STAGED(HfD0Bases, "HFD0BASE", //! Table with basic candidate properties used in the analyses
                          o2::soa::Index<>,
-                         hf_cand_base::der_d0::HfD0CollBaseId,
+                         hf_cand_base::der_bplus::HfCollBaseId,
                          hf_cand_base::Pt,
                          hf_cand_base::Eta,
                          hf_cand_base::Phi,
@@ -714,7 +715,7 @@ DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision); //! MC collision of this par
 DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle);   //! MC particle
 namespace der_d0
 {
-DECLARE_SOA_INDEX_COLUMN(HfD0McCollBase, hfMcCollBase); //! collision index pointing to the derived MC collision table for D0 candidates
+// DECLARE_SOA_INDEX_COLUMN(HfD0McCollBase, hfMcCollBase); //! collision index pointing to the derived MC collision table for D0 candidates
 }
 namespace der_bplus
 {
@@ -733,7 +734,7 @@ DECLARE_SOA_COLUMN(FlagMcDecayChanGen, flagMcDecayChanGen, int8_t); //! resonant
 
 DECLARE_SOA_TABLE_STAGED(HfD0PBases, "HFD0PBASE", //! Table with MC particle info
                          o2::soa::Index<>,
-                         hf_mc_particle::der_d0::HfD0McCollBaseId,
+                         hf_mc_particle::der_bplus::HfMcCollBaseId,
                          hf_cand_base::Pt,
                          hf_cand_base::Eta,
                          hf_cand_base::Phi,
