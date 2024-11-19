@@ -19,7 +19,7 @@
 #include "ReconstructionDataFormats/Vertex.h"
 #include "PWGUD/DataModel/UDTables.h"
 #include "PWGUD/Core/UPCHelpers.h"
-#include "PWGUD/Core/DGSelector.h" 
+#include "PWGUD/Core/DGSelector.h"
 
 using namespace o2;
 using namespace o2::framework;
