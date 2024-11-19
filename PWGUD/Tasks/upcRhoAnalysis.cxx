@@ -39,11 +39,36 @@ using FullUdTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksD
 
 namespace o2::aod
 {
-namespace dipi
+namespace tree
 {
-// general
+// misc event info
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int32_t);
+DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t);
+DECLARE_SOA_COLUMN(NumContrib, numContrib, int);
+// event vertex
+DECLARE_SOA_COLUMN(PosX, posX, double);
+DECLARE_SOA_COLUMN(PosY, posY, double);
+DECLARE_SOA_COLUMN(PosZ, posZ, double);
+// FIT info
+DECLARE_SOA_COLUMN(TotalFT0AmplitudeA, totalFT0AmplitudeA, float);
+DECLARE_SOA_COLUMN(TotalFT0AmplitudeC, totalFT0AmplitudeC, float);
+DECLARE_SOA_COLUMN(TotalFV0AmplitudeA, totalFV0AmplitudeA, float);
+DECLARE_SOA_COLUMN(TotalFDDAmplitudeA, totalFDDAmplitudeA, float);
+DECLARE_SOA_COLUMN(TotalFDDAmplitudeC, totalFDDAmplitudeC, float);
+DECLARE_SOA_COLUMN(TimeFT0A, timeFT0A, float);
+DECLARE_SOA_COLUMN(TimeFT0C, timeFT0C, float);
+DECLARE_SOA_COLUMN(TimeFV0A, timeFV0A, float);
+DECLARE_SOA_COLUMN(TimeFDDA, timeFDDA, float);
+DECLARE_SOA_COLUMN(TimeFDDC, timeFDDC, float);
+// ZDC info
+DECLARE_SOA_COLUMN(EnergyCommonZNA, energyCommonZNA, float);
+DECLARE_SOA_COLUMN(EnergyCommonZNC, energyCommonZNC, float);
+DECLARE_SOA_COLUMN(TimeZNA, timeZNA, float);
+DECLARE_SOA_COLUMN(TimeZNC, timeZNC, float);
 DECLARE_SOA_COLUMN(NeutronClass, neutronClass, int);
+// rest of info stored in vectors - don't need to be declared here
+
+// general
 DECLARE_SOA_COLUMN(TofClass, tofClass, int);
 DECLARE_SOA_COLUMN(TotCharge, charge, int);
 DECLARE_SOA_COLUMN(Pt, pt, double);
@@ -54,12 +79,12 @@ DECLARE_SOA_COLUMN(PhiRandom, phiRandom, double);
 DECLARE_SOA_COLUMN(PhiCharge, phiCharge, double);
 DECLARE_SOA_COLUMN(Eta, eta, double);
 DECLARE_SOA_COLUMN(Phi, phi, double);
-} // namespace dipi
-DECLARE_SOA_TABLE(SystemTree, "AOD", "SYSTEMTREE", dipi::RunNumber, dipi::NeutronClass, dipi::TofClass, dipi::TotCharge, dipi::M, dipi::Pt, dipi::Rap, dipi::PhiRandom, dipi::PhiCharge, dipi::Eta, dipi::Phi);
+} // namespace tree
+DECLARE_SOA_TABLE(Tree, "AOD", "TREE", tree::RunNumber, tree::NeutronClass, tree::TofClass, tree::TotCharge, tree::M, tree::Pt, tree::Rap, tree::PhiRandom, tree::PhiCharge, tree::Eta, tree::Phi);
 } // namespace o2::aod
 
 struct upcRhoAnalysis {
-  Produces<o2::aod::SystemTree> systemTree;
+  Produces<o2::aod::Tree> Tree;
 
   double PcEtaCut = 0.9; // physics coordination recommendation
   Configurable<bool> requireTof{"requireTof", false, "require TOF signal"};
@@ -101,9 +126,22 @@ struct upcRhoAnalysis {
   HistogramRegistry Pions{"Pions", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry System{"System", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry MC{"MC", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry Misc{"Misc", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   void init(o2::framework::InitContext&)
   {
+    Misc.add("Misc/h0n0n", ";p_{T}^{2} (GeV/#it{c})^{2};normalised counts", kTH1D, {{175, 0.0, 0.035}});
+    Misc.add("Misc/hXn0n", ";p_{T}^{2} (GeV/#it{c})^{2};normalised counts", kTH1D, {{175, 0.0, 0.035}});
+    Misc.add("Misc/h0nXn", ";p_{T}^{2} (GeV/#it{c})^{2};normalised counts", kTH1D, {{175, 0.0, 0.035}});
+    Misc.add("Misc/hXnXn", ";p_{T}^{2} (GeV/#it{c})^{2};normalised counts", kTH1D, {{175, 0.0, 0.035}});
+    Misc.add("Misc/h0n0nPhiZero", ";p_{T}^{2} (GeV/#it{c})^{2};normalised counts", kTH1D, {{175, 0.0, 0.035}});
+    Misc.add("Misc/hXn0nPhiZero", ";p_{T}^{2} (GeV/#it{c})^{2};normalised counts", kTH1D, {{175, 0.0, 0.035}});
+    Misc.add("Misc/h0nXnPhiZero", ";p_{T}^{2} (GeV/#it{c})^{2};normalised counts", kTH1D, {{175, 0.0, 0.035}});
+    Misc.add("Misc/hXnXnPhiZero", ";p_{T}^{2} (GeV/#it{c})^{2};normalised counts", kTH1D, {{175, 0.0, 0.035}});
+    Misc.add("Misc/h0n0nPhiPiHalf", ";p_{T}^{2} (GeV/#it{c})^{2};normalised counts", kTH1D, {{175, 0.0, 0.035}});
+    Misc.add("Misc/hXn0nPhiPiHalf", ";p_{T}^{2} (GeV/#it{c})^{2};normalised counts", kTH1D, {{175, 0.0, 0.035}});
+    Misc.add("Misc/h0nXnPhiPiHalf", ";p_{T}^{2} (GeV/#it{c})^{2};normalised counts", kTH1D, {{175, 0.0, 0.035}});
+    Misc.add("Misc/hXnXnPhiPiHalf", ";p_{T}^{2} (GeV/#it{c})^{2};normalised counts", kTH1D, {{175, 0.0, 0.035}});
     // QA //
     // collisions
     QC.add("QC/collisions/hPosXY", ";x (cm);y (cm);counts", kTH2D, {{2000, -0.1, 0.1}, {2000, -0.1, 0.1}});
@@ -640,6 +678,26 @@ struct upcRhoAnalysis {
     double rapidity = system.Rapidity();
     double phiRandom = getPhiRandom(cutTracks4Vecs);
     double phiCharge = getPhiCharge(cutTracks, cutTracks4Vecs);
+
+    if (totalCharge == 0 && pT < 0.2 && mass > 0.65 && mass < 0.9) {
+      if (OnOn) Misc.fill(HIST("Misc/h0n0n"), pTsquare);
+      if (XnOn) Misc.fill(HIST("Misc/hXn0n"), pTsquare);
+      if (OnXn) Misc.fill(HIST("Misc/h0nXn"), pTsquare);
+      if (XnXn) Misc.fill(HIST("Misc/hXnXn"), pTsquare);
+      if (std::abs(phiRandom) < (o2::constants::math::PI / 24.0)) {
+        if (OnOn) Misc.fill(HIST("Misc/h0n0nPhiZero"), pTsquare);
+        if (XnOn) Misc.fill(HIST("Misc/hXn0nPhiZero"), pTsquare);
+        if (OnXn) Misc.fill(HIST("Misc/h0nXnPhiZero"), pTsquare);
+        if (XnXn) Misc.fill(HIST("Misc/hXnXnPhiZero"), pTsquare);
+      }
+      if (std::abs(phiRandom - (o2::constants::math::PI / 2.)) < (o2::constants::math::PI / 24.0)) {
+        if (OnOn) Misc.fill(HIST("Misc/h0n0nPhiPiHalf"), pTsquare);
+        if (XnOn) Misc.fill(HIST("Misc/hXn0nPhiPiHalf"), pTsquare);
+        if (OnXn) Misc.fill(HIST("Misc/h0nXnPhiPiHalf"), pTsquare);
+        if (XnXn) Misc.fill(HIST("Misc/hXnXnPhiPiHalf"), pTsquare);
+      }
+    }
+
     // differentiate leading- and subleading-momentum tracks
     auto leadingMomentumTrack = momentum(cutTracks[0].px(), cutTracks[0].py(), cutTracks[0].pz()) > momentum(cutTracks[1].px(), cutTracks[1].py(), cutTracks[1].pz()) ? cutTracks[0] : cutTracks[1];
     auto subleadingMomentumTrack = (leadingMomentumTrack == cutTracks[0]) ? cutTracks[1] : cutTracks[0];
@@ -701,7 +759,7 @@ struct upcRhoAnalysis {
     QC.fill(HIST("QC/tracks/2D/pT/subleading/hTpcNClsCrossedRowsVsPt"), pT, subleadingMomentumTrack.tpcNClsCrossedRows());
     QC.fill(HIST("QC/tracks/2D/pT/subleading/hTpcNClsCrossedRowsOverTpcNClsFindableVsPt"), pT, (static_cast<double>(subleadingMomentumTrack.tpcNClsCrossedRows()) / static_cast<double>(subleadingMomentumTrack.tpcNClsFindable())));
     // fill tree
-    systemTree(collision.runNumber(), neutronClass, tofClass, totalCharge, mass, pT, rapidity, phiRandom, phiCharge, system.PseudoRapidity(), system.Phi());
+    Tree(collision.runNumber(), neutronClass, tofClass, totalCharge, mass, pT, rapidity, phiRandom, phiCharge, system.PseudoRapidity(), system.Phi());
     // fill raw histograms according to the total charge
     switch (totalCharge) {
       case 0:
