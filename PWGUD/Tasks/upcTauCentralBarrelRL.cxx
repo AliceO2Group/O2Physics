@@ -49,6 +49,7 @@ struct UpcTauCentralBarrelRL {
   // Global varialbes
   bool isFirstReconstructedCollisions;
   bool isMC = false;
+  bool isTruth = false;
   int countCollisions;
   Service<o2::framework::O2DatabasePDG> pdg;
   SGSelector sgSelector;
@@ -63,6 +64,7 @@ struct UpcTauCentralBarrelRL {
   Configurable<float> cutMyGapSideFT0A{"FT0A", 200., "FT0A threshold for SG selector"};
   Configurable<float> cutMyGapSideFT0C{"FT0C", 100., "FT0C threshold for SG selector"};
   Configurable<float> cutMyGapSideZDC{"ZDC", 10., "ZDC threshold for SG selector"};
+  Configurable<float> cutMyFITtime{"cutMyFITtime", 40., "Maximum FIT time allowed. Defualt is 4ns"};
   Configurable<bool> usePIDwTOF{"usePIDwTOF", false, {"Determine whether also TOF should be used in testPIDhypothesis"}};
   Configurable<bool> useScutTOFinTPC{"useScutTOFinTPC", true, {"Determine whether cut on TOF n sigma should be used after TPC-based decision in testPIDhypothesis"}};
   Configurable<float> cutMySiTPC{"cutMySiTPC", 35.f, {"n sigma TPC cut on all particles in absolut values for testPIDhypothesis"}};
@@ -109,6 +111,7 @@ struct UpcTauCentralBarrelRL {
   Configurable<bool> doFourTracks{"doFourTracks", false, {"Define histos for four tracks and allow to fill them"}};
   Configurable<bool> doFourTrackPsi2S{"doFourTrackPsi2S", true, {"Define histos for Psi2S into four charged tracks (pi/mu) and allow to fill them"}};
   Configurable<bool> doSixTracks{"doSixTracks", false, {"Define histos for six tracks and allow to fill them"}};
+  Configurable<bool> doTruth{"doTruth", false, {"Do histograms specific for generated events/particles"}};
 
   ConfigurableAxis axisNtracks{"axisNtracks", {30, -0.5, 29.5}, "Number of tracks in collision"};
   ConfigurableAxis axisZvtx{"axisZvtx", {40, -20., 20.}, "Z-vertex position (cm)"};
@@ -133,12 +136,18 @@ struct UpcTauCentralBarrelRL {
   ConfigurableAxis axisTPCnCls{"axisTPCnCls", {165, -0.5, 164.5}, "TPC n clusters"};
   ConfigurableAxis axisTPCxRwsFrac{"axisTPCxRwsFrac", {200, 0.0, 2.0}, "TPC fraction of crossed raws"};
   ConfigurableAxis axisTPCchi2{"axisTPCchi2", {100, 0, 10}, "TPC chi2"};
+  ConfigurableAxis axisFITtime{"axisFITtime", {201, -40.5, 40.5}, "FIT time in ns"};
 
   using FullUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags>;
   using FullUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels>::iterator;
   using FullSGUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::SGCollisions, aod::UDZdcsReduced>::iterator;
   using FullMCUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags, aod::UDMcTrackLabels>;
   using FullMCUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::UDMcCollsLabels>::iterator;
+  using ReconstructedTCs = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::TOFSignal,
+                                     aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
+                                     aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr,
+                                     aod::McTrackLabels>;
+  using ReconstructedCollision = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>::iterator;
 
   TF1* funcPhiCutL = nullptr;
   TF1* funcPhiCutH = nullptr;
@@ -164,6 +173,16 @@ struct UpcTauCentralBarrelRL {
     histos.add("Events/hNreconstructedPVGTpions", ";Number of good track identified pions from primary vertex in a collision (-);Number of events (-)", HistType::kTH1D, {axisNtracks});
     histos.add("Events/hNreconstructedPVGTothers", ";Number of good track NOT identified electron/muon/pion particles from primary vertex in a collision (-);Number of events (-)", HistType::kTH1D, {axisNtracks});
     histos.add("Events/hChannelsRatio", ";Channels (-);Number of events (-)", HistType::kTH1D, {{10, -0.5, 9.5}});
+    histos.add("Events/FIT/hTimeFT0A", ";Time (ns?);Number of events (-)", HistType::kTH1F, {{axisFITtime}});
+    histos.add("Events/FIT/hTimeFT0C", ";Time (ns?);Number of events (-)", HistType::kTH1F, {{axisFITtime}});
+    histos.add("Events/FIT/hTimeFDDA", ";Time (ns?);Number of events (-)", HistType::kTH1F, {{axisFITtime}});
+    histos.add("Events/FIT/hTimeFDDC", ";Time (ns?);Number of events (-)", HistType::kTH1F, {{axisFITtime}});
+    histos.add("Events/FIT/hTimeFV0A", ";Time (ns?);Number of events (-)", HistType::kTH1F, {{axisFITtime}});
+    histos.add("Events/FIT/hTimeFT0AvsFT0C", ";FT0A time (ns?);FT0C time (ns?)", HistType::kTH2F, {{axisFITtime},{axisFITtime}});
+    histos.add("Events/FIT/hTimeFT0CvsFDDA", ";FT0C time (ns?);FDDA time (ns?)", HistType::kTH2F, {{axisFITtime},{axisFITtime}});
+    histos.add("Events/FIT/hTimeFDDAvsFDDC", ";FDDA time (ns?);FDDC time (ns?)", HistType::kTH2F, {{axisFITtime},{axisFITtime}});
+    histos.add("Events/FIT/hTimeFDDCvsFV0A", ";FDDC time (ns?);FV0A time (ns?)", HistType::kTH2F, {{axisFITtime},{axisFITtime}});
+    histos.add("Events/FIT/hTimeFV0AvsFT0A", ";FV0A time (ns?);FT0A time (ns?)", HistType::kTH2F, {{axisFITtime},{axisFITtime}});
 
     histos.add("Tracks/raw/hTrackZ", ";Track z-vertex (cm);Number of events (-)", HistType::kTH1D, {axisZvtx});
     histos.add("Tracks/raw/hTrackP", ";Track #it{p} (GeV/c);Number of events (-)", HistType::kTH1D, {axisMom});
@@ -474,6 +493,10 @@ struct UpcTauCentralBarrelRL {
       histos.add("EventTwoTracks/ElectronMuPi/hElectronPtVsOtherPt", ";Electron #it{p_{T}} (GeV/c); #mu/#pi #it{p_{T}} (GeV/c)", HistType::kTH2D, {axisPt, axisPt});
       histos.add("EventTwoTracks/ElectronMuPi/hElectronPhiVsOtherPhi", ";Electron #phi (rad); #mu/#pi #phi (rad)", HistType::kTH2D, {axisPhi, axisPhi});
       histos.add("EventTwoTracks/ElectronMuPi/hElectronRapVsOtherRap", ";Electron #it{y} (-); #mu/#pi #it{y} (-)", HistType::kTH2D, {axisRap, axisRap});
+
+      histos.add("EventTwoTracks/ElectronMuPi/PID/mcTruth/nSigmaTPC1", "Paul's way;True electron #it{p} (GeV/c);n#sigma^{e}_{TPC} (arb. units)", HistType::kTH2D, {axisMom, axisNsigma});
+      histos.add("EventTwoTracks/ElectronMuPi/PID/mcTruth/nSigmaTPC2", "Paul's way;True not-electron #it{p} (GeV/c);n#sigma^{e}_{TPC} (arb. units)", HistType::kTH2D, {axisMom, axisNsigma});
+
       histos.add("EventTwoTracks/ElectronMuPi/PID/hTPCsignalVsP", ";Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", HistType::kTH2D, {axisMom, axisTPCdEdx});
       histos.add("EventTwoTracks/ElectronMuPi/PID/hTPCsignalVsEPofE", ";Electron #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", HistType::kTH2D, {axisMom, axisTPCdEdx});
       histos.add("EventTwoTracks/ElectronMuPi/PID/hTPCsignalVsOPofO", ";#mu/#pi #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", HistType::kTH2D, {axisMom, axisTPCdEdx});
@@ -836,6 +859,10 @@ struct UpcTauCentralBarrelRL {
       histos.add("EventSixTracks/SixPions/PID/hTPCsignalVsP", ";Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", HistType::kTH2D, {axisMom, axisTPCdEdx});
     }
 
+    if (doTruth) {
+      histos.add("Events/Truth/hCountCollisions", ";;Number of generated collision (-)", HistType::kTH1D, {{1, 0.5, 1.5}});
+    }
+
   } // end init
 
   // run (always called before process :( )
@@ -1060,6 +1087,20 @@ struct UpcTauCentralBarrelRL {
     }
   }
 
+  template <typename C>
+  bool isGoodFITtime(C const& coll, float maxFITtime){
+
+    // FTOA
+    if ((std::abs(coll.timeFT0A()) > maxFITtime) && coll.timeFT0A() > -998.)
+      return false;
+
+    // FTOC
+    if ((std::abs(coll.timeFT0C()) > maxFITtime) && coll.timeFT0A() > -998.)
+      return false;
+
+    return true;
+  }
+
   template <typename T>
   bool selectedGoodElectron(T const& electronCandidate){
     if (!electronCandidate.hasTOF())
@@ -1095,7 +1136,7 @@ struct UpcTauCentralBarrelRL {
   }
 
   template <typename C, typename Ts>
-  void fillHistograms(C reconstructedCollision, Ts reconstructedBarrelTracks)
+  void fillHistograms(C const& reconstructedCollision, Ts const& reconstructedBarrelTracks)
   {
 
     if (isFirstReconstructedCollisions) {
@@ -2081,7 +2122,7 @@ struct UpcTauCentralBarrelRL {
   } // end fillHistograms
 
   template <typename C, typename Ts>
-  void fillPIDhistograms(C /*reconstructedCollision*/, Ts reconstructedBarrelTracks)
+  void fillPIDhistograms(C const& /*reconstructedCollision*/, Ts const& reconstructedBarrelTracks)
   {
 
     if (isFirstReconstructedCollisions) {
@@ -2600,7 +2641,7 @@ struct UpcTauCentralBarrelRL {
 
   } // end fillPIDhistograms
 
-  void fillMCPIDhistograms(FullMCUDTracks reconstructedBarrelTracks)
+  void fillMCPIDhistograms(FullMCUDTracks const& reconstructedBarrelTracks)
   {
 
     if (isFirstReconstructedCollisions) {
@@ -2648,7 +2689,6 @@ struct UpcTauCentralBarrelRL {
     int countPVGTelectrons = 0;
     int countPVGTmuons = 0;
     int countPVGTpions = 0;
-    int countPVGTmuonsSelection = 0;
     std::vector<int> vecPVidx;
     // Loop over tracks with selections
     for (auto& track : reconstructedBarrelTracks) {
@@ -2764,8 +2804,6 @@ struct UpcTauCentralBarrelRL {
           histos.get<TH2>(HIST("Tracks/GoodTrack/PID/Others/hTOFsignalVsP"))->Fill(momentum(trkPx, trkPy, trkPz), track.tofSignal());
         }
       }
-      if (abs(track.tpcNSigmaMu()) < cutMyTPCnSigmaMu)
-        countPVGTmuonsSelection++;
 
     } // Loop over tracks with selections
 
@@ -2786,6 +2824,25 @@ struct UpcTauCentralBarrelRL {
         if ((countPVGTelectrons == 1 && countPVGTmuons == 1) || (countPVGTelectrons == 1 && countPVGTpions == 1)) {
 
           if (isMC){
+            int pid = 0;
+            if (trkDaug1.has_udMcParticle()) {
+              auto part = trkDaug1.udMcParticle();
+              pid = std::abs(part.pdgCode());
+              if (pid == 11) {
+                histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/PID/mcTruth/nSigmaTPC1"))->Fill(trkDaug1.pt(), trkDaug1.tpcNSigmaEl(), 1.);
+              } else {
+                histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/PID/mcTruth/nSigmaTPC2"))->Fill(trkDaug1.pt(), trkDaug1.tpcNSigmaEl(), 1.);
+              }
+            }
+            if (trkDaug2.has_udMcParticle()) {
+              auto part = trkDaug2.udMcParticle();
+              pid = std::abs(part.pdgCode());
+              if (pid == 11) {
+                histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/PID/mcTruth/nSigmaTPC1"))->Fill(trkDaug2.pt(), trkDaug2.tpcNSigmaEl(), 1.);
+              } else {
+                histos.get<TH2>(HIST("EventTwoTracks/ElectronMuPi/PID/mcTruth/nSigmaTPC2"))->Fill(trkDaug2.pt(), trkDaug2.tpcNSigmaEl(), 1.);
+              }
+            }
             bool isNotTrueElectron = false;
             if (enumMyParticle(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON){
               if (trkDaug1.has_udMcParticle()) {
@@ -2904,12 +2961,38 @@ struct UpcTauCentralBarrelRL {
 
   } // end fillMCPIDhistograms
 
+  template <typename C>
+  void fillFIThistograms(C const& reconstructedCollision){
+
+    histos.get<TH1>(HIST("Events/FIT/hTimeFT0A"))->Fill(reconstructedCollision.timeFT0A());
+    histos.get<TH1>(HIST("Events/FIT/hTimeFT0C"))->Fill(reconstructedCollision.timeFT0C());
+    histos.get<TH1>(HIST("Events/FIT/hTimeFDDA"))->Fill(reconstructedCollision.timeFDDA());
+    histos.get<TH1>(HIST("Events/FIT/hTimeFDDC"))->Fill(reconstructedCollision.timeFDDC());
+    histos.get<TH1>(HIST("Events/FIT/hTimeFV0A"))->Fill(reconstructedCollision.timeFV0A());
+
+    histos.get<TH2>(HIST("Events/FIT/hTimeFT0AvsFT0C"))->Fill(reconstructedCollision.timeFT0A(),reconstructedCollision.timeFT0C());
+    histos.get<TH2>(HIST("Events/FIT/hTimeFT0CvsFDDA"))->Fill(reconstructedCollision.timeFT0C(),reconstructedCollision.timeFDDA());
+    histos.get<TH2>(HIST("Events/FIT/hTimeFDDAvsFDDC"))->Fill(reconstructedCollision.timeFDDA(),reconstructedCollision.timeFDDC());
+    histos.get<TH2>(HIST("Events/FIT/hTimeFDDCvsFV0A"))->Fill(reconstructedCollision.timeFDDC(),reconstructedCollision.timeFV0A());
+    histos.get<TH2>(HIST("Events/FIT/hTimeFV0AvsFT0A"))->Fill(reconstructedCollision.timeFV0A(),reconstructedCollision.timeFT0A());
+  }
+
   void processMCDGrecoLevel(FullMCUDCollision const& reconstructedCollision,
                             FullMCUDTracks const& reconstructedBarrelTracks,
                             aod::UDMcParticles const&)
   {
     countCollisions++;
     isMC = true;
+
+    histos.get<TH1>(HIST("Events/hCountCollisions"))->Fill(1);
+
+    if (!isGoodFITtime(reconstructedCollision,cutMyFITtime))
+      return;
+
+    if (doMainHistos) {
+      fillHistograms(reconstructedCollision, reconstructedBarrelTracks);
+      fillFIThistograms(reconstructedCollision);
+    }
 
     if (doPIDhistos)
       fillMCPIDhistograms(reconstructedBarrelTracks);
@@ -2921,8 +3004,13 @@ struct UpcTauCentralBarrelRL {
   {
     countCollisions++;
 
-    if (doMainHistos)
+    if (!isGoodFITtime(reconstructedCollision,cutMyFITtime))
+      return;
+
+    if (doMainHistos) {
       fillHistograms(reconstructedCollision, reconstructedBarrelTracks);
+      fillFIThistograms(reconstructedCollision);
+    }
     if (doPIDhistos)
       fillPIDhistograms(reconstructedCollision, reconstructedBarrelTracks);
 
@@ -2943,8 +3031,13 @@ struct UpcTauCentralBarrelRL {
     if (gapSide != whichGapSide)
       return;
 
-    if (doMainHistos)
+    if (!isGoodFITtime(reconstructedCollision,cutMyFITtime))
+      return;
+
+    if (doMainHistos) {
       fillHistograms(reconstructedCollision, reconstructedBarrelTracks);
+      fillFIThistograms(reconstructedCollision);
+    }
     if (doPIDhistos)
       fillPIDhistograms(reconstructedCollision, reconstructedBarrelTracks);
 
@@ -2960,10 +3053,10 @@ struct UpcTauCentralBarrelRL {
 
   } // end processAnalysisFinished
 
-  PROCESS_SWITCH(UpcTauCentralBarrelRL, processDGrecoLevel, "Iterate UD tables with reconstructed data created by DG-Candidate-Producer", false);
-  PROCESS_SWITCH(UpcTauCentralBarrelRL, processMCDGrecoLevel, "Iterate Monte Carlo UD tables with reconstructed data created by DG-Candidate-Producer", false);
-  PROCESS_SWITCH(UpcTauCentralBarrelRL, processSGrecoLevel, "Iterate UD tables with reconstructed data created by SG-Candidate-Producer", false);
-  PROCESS_SWITCH(UpcTauCentralBarrelRL, processAnalysisFinished, "Simply runs in the end of the dataframe", true);
+  PROCESS_SWITCH(UpcTauCentralBarrelRL, processDGrecoLevel, "Iterate UD tables with reconstructed data created by DG-Candidate-Producer.", false);
+  PROCESS_SWITCH(UpcTauCentralBarrelRL, processMCDGrecoLevel, "Iterate Monte Carlo UD tables with reconstructed data created by DG-Candidate-Producer. Similar to processDGrecoLevel but uses association to truth level.", false);
+  PROCESS_SWITCH(UpcTauCentralBarrelRL, processSGrecoLevel, "Iterate UD tables with reconstructed data created by SG-Candidate-Producer.", false);
+  PROCESS_SWITCH(UpcTauCentralBarrelRL, processAnalysisFinished, "Simply runs in the end of the dataframe.", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
