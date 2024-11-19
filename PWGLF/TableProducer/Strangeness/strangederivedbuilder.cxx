@@ -21,6 +21,8 @@
 #include <map>
 #include <iterator>
 #include <utility>
+#include <string>
+#include <vector>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/RunningWorkflowInfo.h"
@@ -414,7 +416,8 @@ struct strangederivedbuilder {
     // ______________________________________________
     // fill all MC collisions, correlate via index later on
     for (const auto& mccollision : mcCollisions) {
-      strangeMCColl(mccollision.posX(), mccollision.posY(), mccollision.posZ(), mccollision.impactParameter());
+      strangeMCColl(mccollision.posX(), mccollision.posY(), mccollision.posZ(),
+                    mccollision.impactParameter(), mccollision.eventPlaneAngle());
       strangeMCMults(mccollision.multMCFT0A(), mccollision.multMCFT0C(),
                      mccollision.multMCNParticlesEta05(),
                      mccollision.multMCNParticlesEta08(),
