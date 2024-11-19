@@ -14,6 +14,7 @@
 /// \since  2024-11-12
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
 /// \author Francesco Mazzaschi francesco.mazzaschi@cern.ch
+/// \author Giorgio Alberto Lucia giorgio.alberto.lucia@cern.ch
 /// \brief  Set of tables, tasks and utilities to provide the interface between
 ///         the analysis data model and the PID response of the ITS
 ///
@@ -61,16 +62,26 @@ struct ITSResponse {
   }
 
   template <o2::track::PID::ID id>
+  static float expResolution(const float momentum)
+  {
+    static constexpr float inverseMass = 1. / o2::track::pid_constants::sMasses[id];
+    static constexpr float charge = static_cast<float>(o2::track::pid_constants::sCharges[id]);
+    const float bg = momentum * inverseMass;
+    float relRes = mResolutionParams[0] * std::erf((bg - mResolutionParams[1]) / mResolutionParams[2]);
+    return relRes;
+  }
+
+  template <o2::track::PID::ID id>
   static float nSigmaITS(uint32_t itsClusterSizes, float momentum, float eta)
   {
     const float exp = expSignal<id>(momentum);
     const float average = averageClusterSize(itsClusterSizes);
     const float coslInv = 1. / std::cosh(eta);
-    const float resolution = mResolution * exp;
+    const float resolution = expResolution<id>(momentum) * exp;
     return (average * coslInv - exp) / resolution;
   };
 
-  static void setParameters(float p0, float p1, float p2, float p0_Z2, float p1_Z2, float p2_Z2, float resolution)
+  static void setParameters(float p0, float p1, float p2, float p0_Z2, float p1_Z2, float p2_Z2, float p0_res, float p1_res, float p2_res)
   {
     if (mIsInitialized) {
       LOG(fatal) << "ITSResponse parameters already initialized";
@@ -82,19 +93,22 @@ struct ITSResponse {
     mITSRespParamsZ2[0] = p0_Z2;
     mITSRespParamsZ2[1] = p1_Z2;
     mITSRespParamsZ2[2] = p2_Z2;
-    mResolution = resolution;
+    mResolutionParams[0] = p0_res;
+    mResolutionParams[1] = p1_res;
+    mResolutionParams[2] = p2_res;
   }
 
  private:
   static std::array<float, 3> mITSRespParams;
   static std::array<float, 3> mITSRespParamsZ2;
-  static float mResolution;
+  static std::array<float, 3> mResolutionParams;
   static bool mIsInitialized;
 };
 
 std::array<float, 3> ITSResponse::mITSRespParams = {0.903, 2.014, 2.440};
 std::array<float, 3> ITSResponse::mITSRespParamsZ2 = {2.8752, 1.1246, 5.0259};
-float ITSResponse::mResolution = 0.16f;
+// relative resolution is modelled with an erf function: [0]*TMath::Erf((x-[1])/[2])
+std::array<float, 3> ITSResponse::mResolutionParams = {0.2431, -0.3293, 1.533};
 bool ITSResponse::mIsInitialized = false;
 
 namespace pidits
