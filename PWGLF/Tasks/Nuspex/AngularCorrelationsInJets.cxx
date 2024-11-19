@@ -179,7 +179,7 @@ struct AngularCorrelationsInJets {
     registryData.add("hPtJetAntiproton", "p_{T} of antiprotons", HistType::kTH1D, {axisSpecs.ptAxisPos});
     registryData.add("hPtJetNuclei", "p_{T} of nuclei", HistType::kTH1D, {axisSpecs.ptAxisPos});
     registryData.add("hPtJetAntinuclei", "p_{T} of antinuclei", HistType::kTH1D, {axisSpecs.ptAxisPos});
-    registryData.add("hPtTotalJet", "p_{T} of entire jet;#it{p}_{T} [GeV/#it{c}]", HistType::kTH1F, {{2000, 0, 500}});
+    registryData.add("hPtTotalJet", "p_{T} of entire jet;#it{p}_{T} [GeV/#it{c}]", HistType::kTH1F, {{1000, 0, 500}});
     registryQA.add("hPtJetProton_15", "Proton p_{T} for jet p_{T} < 15 GeV", HistType::kTH1D, {axisSpecs.ptAxisPos});
     registryQA.add("hPtJetProton_20", "Proton p_{T} for jet p_{T} < 20 GeV", HistType::kTH1D, {axisSpecs.ptAxisPos});
     registryQA.add("hPtJetProton_30", "Proton p_{T} for jet p_{T} < 30 GeV", HistType::kTH1D, {axisSpecs.ptAxisPos});
@@ -198,8 +198,8 @@ struct AngularCorrelationsInJets {
     registryQA.add("hPtJetAntinuclei_50", "Antinuclei p_{T} for jet p_{T} < 50 GeV", HistType::kTH1D, {axisSpecs.ptAxisPos});
 
     // nSigma
-    registryData.add("hTPCsignal", "TPC signal", HistType::kTH2F, {{1000, 0, 100, "#it{p} [GeV/#it{c}]"}, {5000, 0, 5000, "d#it{E}/d#it{X} (a.u.)"}});
-    registryData.add("hTOFsignal", "TOF signal", HistType::kTH2F, {{1000, 0, 100, "#it{p} [GeV/#it{c}]"}, {550, 0, 1.1, "#beta (TOF)"}});
+    registryData.add("hTPCsignal", "TPC signal", HistType::kTH2F, {{1000, -100, 100, "#it{p} [GeV/#it{c}]"}, {5000, 0, 5000, "d#it{E}/d#it{X} (a.u.)"}});
+    registryData.add("hTOFsignal", "TOF signal", HistType::kTH2F, {{1000, -100, 100, "#it{p} [GeV/#it{c}]"}, {550, 0, 1.1, "#beta (TOF)"}});
     registryData.add("hTPCnsigmaProton", "TPC n#sigma for proton", HistType::kTH2F, {axisSpecs.nsigmapTAxis, axisSpecs.nsigmaAxis});
     registryData.add("hTOFnsigmaProton", "TOF n#sigma for proton", HistType::kTH2F, {axisSpecs.nsigmapTAxis, axisSpecs.nsigmaAxis});
     registryData.add("hTPCnsigmaAntiproton", "TPC n#sigma for antiproton", HistType::kTH2F, {axisSpecs.nsigmapTAxis, axisSpecs.nsigmaAxis});
