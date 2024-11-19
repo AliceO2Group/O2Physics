@@ -124,108 +124,6 @@ int getOriginalHFMotherIndex(const typename T::iterator& hfparticle)
 }
 
 /**
- * based on getCharmHardronOrigin From Common/Core/RecoDecay.h
- * Finding origin of paritcle (b, c and others)
- * \param particlesMC  table with MC particles
- * \param particle  MC particle
- * \param searchUpToQuark if true tag origin based on charm/beauty quark otherwise on the presence of a b-hadron or c-hadron
- * \param idxBhadMothers optional vector of b-hadron indices (might be more than one in case of searchUpToQuark in case of beauty resonances)
- * \return an integer corresponding to the origin (0: none(others), 1: charm, 2: beauty) as in JetTaggingSpecies
- */
-template <typename T>
-static int getParticleOrigin(const T& particlesMC,
-                             const typename T::iterator& particle,
-                             const bool searchUpToQuark = false,
-                             std::vector<int>* idxBhadMothers = nullptr)
-{
-  int stage = 0; // mother tree level (just for debugging)
-
-  // vector of vectors with mother indices; each line corresponds to a "stage"
-  std::vector<std::vector<int64_t>> arrayIds{};
-  std::vector<int64_t> initVec{particle.globalIndex()};
-  arrayIds.push_back(initVec); // the first vector contains the index of the original particle
-  auto PDGParticle = std::abs(particle.pdgCode());
-  bool couldBeCharm = false;
-  if (PDGParticle / 100 == 4 || PDGParticle / 1000 == 4) {
-    couldBeCharm = true;
-  }
-  while (arrayIds[-stage].size() > 0) {
-    // vector of mother indices for the current stage
-    std::vector<int64_t> arrayIdsStage{};
-    for (auto& iPart : arrayIds[-stage]) { // check all the particles that were the mothers at the previous stage
-      auto particleMother = particlesMC.rawIteratorAt(iPart - particlesMC.offset());
-      if (particleMother.has_mothers()) {
-
-        // we break immediately if searchUpToQuark is false and the first mother is a parton (an hadron should never be the mother of a parton)
-        if (!searchUpToQuark) {
-          auto mother = particlesMC.rawIteratorAt(particleMother.mothersIds().front() - particlesMC.offset());
-          auto PDGParticleIMother = std::abs(mother.pdgCode()); // PDG code of the mother
-          if (PDGParticleIMother < 9 || (PDGParticleIMother > 20 && PDGParticleIMother < 38)) {
-            break;
-          }
-        }
-
-        for (auto iMother = particleMother.mothersIds().front(); iMother <= particleMother.mothersIds().back(); ++iMother) { // loop over the mother particles of the analysed particle
-          if (std::find(arrayIdsStage.begin(), arrayIdsStage.end(), iMother) != arrayIdsStage.end()) {                       // if a mother is still present in the vector, do not check it again
-            continue;
-          }
-          auto mother = particlesMC.rawIteratorAt(iMother - particlesMC.offset());
-          // Check status code
-          auto motherStatusCode = std::abs(mother.getGenStatusCode());
-          auto PDGParticleIMother = std::abs(mother.pdgCode()); // PDG code of the mother
-          // Check mother's PDG code.
-          // printf("getMother: ");
-          // for (int i = stage; i < 0; i++) // Indent to make the tree look nice.
-          // printf(" ");
-          // printf("Stage %d: Mother PDG: %d, status: %d, Index: %d\n", stage, PDGParticleIMother, motherStatusCode, iMother);
-
-          if (searchUpToQuark) {
-            if (idxBhadMothers) {
-              if (PDGParticleIMother / 100 == 5 || // b mesons
-                  PDGParticleIMother / 1000 == 5)  // b baryons
-              {
-                idxBhadMothers->push_back(iMother);
-              }
-            }
-            if (PDGParticleIMother == 5) { // b quark
-              return JetTaggingSpecies::beauty;
-            }
-            if (PDGParticleIMother == 4) { // c quark
-              couldBeCharm = true;
-            }
-          } else {
-            if (
-              (PDGParticleIMother / 100 == 5 || // b mesons
-               PDGParticleIMother / 1000 == 5)  // b baryons
-            ) {
-              if (idxBhadMothers) {
-                idxBhadMothers->push_back(iMother);
-              }
-              return JetTaggingSpecies::beauty;
-            }
-            if (
-              (PDGParticleIMother / 100 == 4 || // c mesons
-               PDGParticleIMother / 1000 == 4)  // c baryons
-            ) {
-              couldBeCharm = true;
-            }
-          }
-          // add mother index in the vector for the current stage
-          arrayIdsStage.push_back(iMother);
-        }
-      }
-    }
-    // add vector of mother indices for the current stage
-    arrayIds.push_back(arrayIdsStage);
-    stage--;
-  }
-  if (couldBeCharm) {
-    return JetTaggingSpecies::charm;
-  }
-  return JetTaggingSpecies::none;
-}
-
-/**
  * checks if atrack in a reco level jet originates from a HF shower. 0:no HF shower, 1:charm shower, 2:beauty shower. The first track originating from an HF shower can be extracted by reference
  *
  * @param jet
@@ -245,7 +143,7 @@ int jetTrackFromHFShower(T const& jet, U const& /*tracks*/, V const& particles, 
     }
     hasMcParticle = true;
     auto const& particle = track.template mcParticle_as<V>();
-    origin = getParticleOrigin(particles, particle, searchUpToQuark);
+    origin = RecoDecay::getParticleOrigin(particles, particle, searchUpToQuark);
     if (origin == 1 || origin == 2) { // 1=charm , 2=beauty
       hftrack = track;
       if (origin == 1) {
@@ -278,7 +176,7 @@ int jetParticleFromHFShower(T const& jet, U const& particles, typename U::iterat
   int origin = -1;
   for (const auto& particle : jet.template tracks_as<U>()) {
     hfparticle = particle; // for init if origin is 1 or 2, the particle is not hfparticle
-    origin = getParticleOrigin(particles, particle, searchUpToQuark);
+    origin = RecoDecay::getParticleOrigin(particles, particle, searchUpToQuark);
     if (origin == 1 || origin == 2) { // 1=charm , 2=beauty
       hfparticle = particle;
       if (origin == 1) {
