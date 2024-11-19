@@ -50,7 +50,7 @@ struct sgPIDAnalyzer {
     const AxisSpec ptBins{ptAxis, "p_{T} axis"};
     const AxisSpec nSigmaBins{sigmaAxis, "pseudo rapidity axis"};
     const AxisSpec ntofBins{tofAxis, "pseudo rapidity axis"};
-    histos.add("Events", "Selected Events", {HistType::kTH1F, {3,-.5, 2.5}});
+    histos.add("Events", "Selected Events", {HistType::kTH1F, {3, -.5, 2.5}});
     histos.add("TPC/pTPC_Pi", "Positive TPC Pi Tracks", {HistType::kTH2F, {ptBins, nSigmaBins}});
     histos.add("TPC/nTPC_Pi", "Negative TPC Pi Tracks", {HistType::kTH2F, {ptBins, nSigmaBins}});
     histos.add("TPC/pTPC_Ka", "Positive TPC Ka Tracks", {HistType::kTH2F, {ptBins, nSigmaBins}});
@@ -115,8 +115,7 @@ struct sgPIDAnalyzer {
     histos.add("TOF/pMu", "Positive TPC Mu vs TOF El vs pt", {HistType::kTH3F, {ptBins, ntofBins, ntofBins}});
     histos.add("TOF/nMu", "Negative TPC Mu vs TOF El vs pt", {HistType::kTH3F, {ptBins, ntofBins, ntofBins}});
   }
-  using SGEvent = aod::SGEvents::iterator;
-                              
+  using SGEvent = aod::SGEvents::iterator;                             
   void process(SGEvent const& event, aod::SGTracks const& tracks)
   {
     registry.fill(HIST("Events"), event.gs());
