@@ -9,14 +9,16 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include <cmath>
-#include <vector>
-#include <deque>
 #include <algorithm>
+#include <cmath>
+#include <deque>
+#include <vector>
 
-#include "Framework/runDataProcessing.h"
+#include "CCDB/BasicCCDBManager.h"
+#include "Common/CCDB/ctpRateFetcher.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -57,6 +59,9 @@ DECLARE_SOA_TABLE(VtxQAtable, "AOD", "VTXQATABLE",
 } // namespace o2::aod
 
 struct vertexQA {
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  ctpRateFetcher mRateFetcher;
+
   Produces<o2::aod::VtxQAtable> vtxQAtable;
 
   Configurable<int> storeTree{"storeTree", 1000, "Store in tree collisions from BC's with more than 'storeTree' vertices, for in-depth analysis"};
@@ -87,9 +92,14 @@ struct vertexQA {
   ConfigurableAxis nContribAxis{"nContribBins", {1000, 0, 5000}, "Binning for number of contributors to PV"};
   ConfigurableAxis nContribDiffAxis{"nContribDiffBins", {1000, -5000, 5000}, "Binning for the difference in number of contributors to PV"};
 
+  ConfigurableAxis irBinning{"IRbinning", {500, 0, 100}, "Binning for the interaction rate (kHz)"};
+  Configurable<std::string> irSource{"irSource", "ZNC hadronic", "Source of the interaction rate"};
+
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   std::deque<BCcoll> colls;
+
+  int64_t mFirstBCid = -1;
 
   void init(InitContext const&)
   {
@@ -121,6 +131,11 @@ struct vertexQA {
 
     histos.add<TH2>("nContribITSRofTimeSeriesHistogram", ";#it{N}_{contrib}^{1};#it{N}_{contrib}^{2}", HistType::kTH2F, {nContribAxis, nContribAxis});
     histos.add<TH1>("tDiffDuplicateTimeSeriesHistogram", ";#Delta#it{t}_{vtx} (ns);Entries", HistType::kTH1F, {tDiffVtxAxisExtend});
+    histos.add<TH2>("tIRvsCollisionRateHistogram", ";IR (kHz);Collision rate (kHz)", HistType::kTH2D, {irBinning, irBinning});
+
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setFatalWhenNull(false);
   }
 
   void process(aod::BC const& bc, aod::Collisions const& collisions)
@@ -231,6 +246,26 @@ struct vertexQA {
       }
     }
   }
+  PROCESS_SWITCH(vertexQA, process, "Standard vertex QA", true);
+
+
+  void processIR(aod::BCsWithTimestamps const&, aod::Collisions const& collisions)
+  {
+    if (collisions.size() > 2) {
+      auto startCollision = collisions.begin();
+      auto endCollision = collisions.rawIteratorAt(collisions.size() - 1);
+      auto startBC = startCollision.template bc_as<aod::BCsWithTimestamps>();
+      auto endBC = endCollision.template bc_as<aod::BCsWithTimestamps>();
+      double startIR = mRateFetcher.fetch(ccdb.service, startBC.timestamp(), startBC.runNumber(), irSource.value);
+      double endIR = mRateFetcher.fetch(ccdb.service, endBC.timestamp(), endBC.runNumber(), irSource.value);
+      double deltaT = (endBC.globalBC() - startBC.globalBC()) * LHCBunchSpacingNS * 1.e-9;
+      double collisionRate = collisions.size() / deltaT;  /// size -1 or -2 to remove the bias of the collisions at extremities?
+      double ir = (startIR + endIR) * 0.5;
+      histos.fill(HIST("tIRvsCollisionRateHistogram"), ir * 1.e-3, collisionRate * 1.e-3);
+    }
+  }
+  PROCESS_SWITCH(vertexQA, processIR, "Checks on interaction rate", true);
+
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
