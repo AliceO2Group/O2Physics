@@ -264,9 +264,9 @@ struct nuclei_in_jets {
 
     // standard selection
     if (!setDCAselectionPtDep) {
-      if (TMath::Abs(track.dcaXY()) > 0.1)
+      if (TMath::Abs(track.dcaXY()) > max_dcaxy)
         return false;
-      if (TMath::Abs(track.dcaZ()) > 0.1)
+      if (TMath::Abs(track.dcaZ()) > max_dcaz)
         return false;
     }
 
@@ -378,7 +378,7 @@ struct nuclei_in_jets {
     double c = pz * pz * pz * pz - py * py * py * py - px * px * py * py;
     double delta = b * b - 4.0 * a * c;
 
-    // Protection agains delta<0
+    // Protection against delta<0
     if (delta < 0) {
       return;
     }
@@ -1127,9 +1127,9 @@ struct nuclei_in_jets {
             continue;
         }
         if (!setDCAselectionPtDep) {
-          if (dcaxy > 0.1)
+          if (dcaxy > max_dcaxy)
             continue;
-          if (dcaz > 0.1)
+          if (dcaz > max_dcaz)
             continue;
         }
 
@@ -1228,9 +1228,9 @@ struct nuclei_in_jets {
               continue;
           }
           if (!setDCAselectionPtDep) {
-            if (dcaxy > 0.1)
+            if (dcaxy > max_dcaxy)
               continue;
-            if (dcaz > 0.1)
+            if (dcaz > max_dcaz)
               continue;
           }
 
