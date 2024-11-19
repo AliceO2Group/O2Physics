@@ -106,43 +106,51 @@ struct MCGeneratorStudies {
     o2::emcal::Geometry::GetInstanceFromRunNumber(300000);
   }
 
-  PresliceUnsorted<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
+  PresliceUnsorted<MyMCCollisions> perFoundBC = aod::evsel::foundBCId;
+  Preslice<aod::McCollisions> MCCollperBC = aod::mccollision::bcId;
+  Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
 
-  void process(MyBCs::iterator const& bc, MyMCCollisions const& collisions, aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
+  void process(MyBCs const& bcs, MyMCCollisions const& collisions, aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
   {
 
-    mHistManager.fill(HIST("NCollisionsMCCollisions"), collisions.size(), mcCollisions.size());
-    mHistManager.fill(HIST("hBCCounter"), 1);
+    for (const auto& bc : bcs) {
 
-    if (bc.selection_bit(aod::evsel::kIsTriggerTVX)) { // Count BCs with TVX trigger with and without a collision, as well as the generated particles within
+      auto collisionsInFoundBC = collisions.sliceBy(perFoundBC, bc.globalIndex());
+      auto MCCollisionsBC = mcCollisions.sliceBy(MCCollperBC, bc.globalIndex());
 
-      mHistManager.fill(HIST("NTVXCollisionsMCCollisions"), collisions.size(), mcCollisions.size());
+      mHistManager.fill(HIST("NCollisionsMCCollisions"), collisionsInFoundBC.size(), MCCollisionsBC.size());
+      mHistManager.fill(HIST("hBCCounter"), 1);
 
-      mHistManager.fill(HIST("hBCCounter"), 2);
+      if (bc.selection_bit(aod::evsel::kIsTriggerTVX)) { // Count BCs with TVX trigger with and without a collision, as well as the generated particles within
 
-      bool bcHasCollision = collisions.size() > 0;
+        mHistManager.fill(HIST("NTVXCollisionsMCCollisions"), collisionsInFoundBC.size(), mcCollisions.size());
 
-      if (bcHasCollision)
-        mHistManager.fill(HIST("hBCCounter"), 3);
+        mHistManager.fill(HIST("hBCCounter"), 2);
 
-      for (auto& mcCollision : mcCollisions) {
+        bool bcHasCollision = collisionsInFoundBC.size() > 0;
 
-        auto mcParticles_inColl = mcParticles.sliceBy(perMcCollision, mcCollision.globalIndex());
+        if (bcHasCollision)
+          mHistManager.fill(HIST("hBCCounter"), 3);
 
-        for (auto& mcParticle : mcParticles_inColl) {
-          if (mcParticle.pdgCode() != 0 && mcParticle.pdgCode() != mSelectedParticleCode)
-            continue;
-          if (fabs(mcParticle.y()) > mRapidityCut)
-            continue;
-          if (!mcParticle.isPhysicalPrimary() && !mcParticle.producedByGenerator())
-            continue;
-          if (mRequireGammaGammaDecay && !isGammaGammaDecay(mcParticle, mcParticles))
-            continue;
+        for (auto& mcCollision : MCCollisionsBC) {
 
-          mHistManager.fill(HIST("Yield_BC_T"), mcParticle.pt());
+          auto mcParticles_inColl = mcParticles.sliceBy(perMcCollision, mcCollision.globalIndex());
 
-          if (bcHasCollision)
-            mHistManager.fill(HIST("Yield_BC_TC"), mcParticle.pt());
+          for (auto& mcParticle : mcParticles_inColl) {
+            if (mcParticle.pdgCode() != 0 && mcParticle.pdgCode() != mSelectedParticleCode)
+              continue;
+            if (fabs(mcParticle.y()) > mRapidityCut)
+              continue;
+            if (!mcParticle.isPhysicalPrimary() && !mcParticle.producedByGenerator())
+              continue;
+            if (mRequireGammaGammaDecay && !isGammaGammaDecay(mcParticle, mcParticles))
+              continue;
+
+            mHistManager.fill(HIST("Yield_BC_T"), mcParticle.pt());
+
+            if (bcHasCollision)
+              mHistManager.fill(HIST("Yield_BC_TC"), mcParticle.pt());
+          }
         }
       }
     }

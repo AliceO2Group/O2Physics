@@ -23,6 +23,10 @@ infrastructure:
           - 'packaging/**'
           - 'pyproject.toml'
 
+datamodel:
+  - changed-files:
+      - any-glob-to-any-file: ['DataModel/**', '*/DataModel/**']
+
 dpg:
   - changed-files:
       - any-glob-to-any-file: ['DPG/**']

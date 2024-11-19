@@ -32,12 +32,13 @@ using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 
 enum DecayTypeMc : uint8_t {
-  Ds1ToDStarK0ToD0PiK0s = 0,
-  Ds2StarToDplusK0,
+  Ds1ToDStarK0ToD0PiK0s = 1,
+  Ds2StarToDplusK0sToPiKaPiPiPi,
   Ds1ToDStarK0ToDPlusPi0K0s,
   Ds1ToDStarK0ToD0PiK0sPart,
   Ds1ToDStarK0ToD0NoPiK0sPart,
-  Ds1ToDStarK0ToD0PiK0sOneMu
+  Ds1ToDStarK0ToD0PiK0sOneMu,
+  Ds2StarToDplusK0sOneMu
 };
 
 namespace o2::aod
@@ -192,7 +193,7 @@ struct HfTaskCharmResoReduced {
   void fillCand(const Cand& candidate, const Coll& collision, const CharmBach& bach0, const V0Bach& bach1)
   {
     // Compute quantities to be saved
-    float invMassReso, pdgMassReso, invMassBach0, invMassBach1, pdgMassBach0, pdgMassBach1, sign, invMassD0, cosThetaStar;
+    float invMassReso{0}, pdgMassReso, invMassBach0, invMassBach1, pdgMassBach0, pdgMassBach1, sign, invMassD0, cosThetaStar;
     if (channel == DecayChannel::Ds1ToDstarK0s) {
       pdgMassReso = MassDS1;
       pdgMassBach0 = MassDStar;
@@ -272,10 +273,10 @@ struct HfTaskCharmResoReduced {
       registry.fill(HIST("hSparse"), candidate.pt(), candidate.ptProng0(), candidate.ptProng1(), candidate.invMass(), candidate.invMassProng0(), candidate.invMassProng1(), cosThetaStar, mlScoreBkg, mlScoreNonPrompt);
     }
     if (doMc && fillOnlySignal) {
-      if (channel == DecayChannel::Ds1ToDstarK0s && !(TESTBIT(flagMcMatchRec, DecayTypeMc::Ds1ToDStarK0ToD0PiK0s) || TESTBIT(flagMcMatchRec, DecayTypeMc::Ds1ToDStarK0ToD0PiK0sPart) || TESTBIT(flagMcMatchRec, DecayTypeMc::Ds1ToDStarK0ToD0NoPiK0sPart) || TESTBIT(flagMcMatchRec, DecayTypeMc::Ds1ToDStarK0ToD0PiK0sOneMu))) {
+      if (channel == DecayChannel::Ds1ToDstarK0s && !(std::abs(flagMcMatchRec) == DecayTypeMc::Ds1ToDStarK0ToD0PiK0s || std::abs(flagMcMatchRec) == DecayTypeMc::Ds1ToDStarK0ToD0PiK0sPart || std::abs(flagMcMatchRec) == DecayTypeMc::Ds1ToDStarK0ToD0NoPiK0sPart || std::abs(flagMcMatchRec) == DecayTypeMc::Ds1ToDStarK0ToD0PiK0sOneMu)) {
         return;
       }
-      if (channel == DecayChannel::Ds2StarToDplusK0s && !(TESTBIT(flagMcMatchRec, DecayTypeMc::Ds2StarToDplusK0) || TESTBIT(flagMcMatchRec, DecayTypeMc::Ds1ToDStarK0ToDPlusPi0K0s))) {
+      if (channel == DecayChannel::Ds2StarToDplusK0s && !(std::abs(flagMcMatchRec) == DecayTypeMc::Ds2StarToDplusK0sToPiKaPiPiPi || std::abs(flagMcMatchRec) == DecayTypeMc::Ds1ToDStarK0ToDPlusPi0K0s || std::abs(flagMcMatchRec) == DecayTypeMc::Ds2StarToDplusK0sOneMu)) {
         return;
       }
     }
@@ -362,17 +363,16 @@ struct HfTaskCharmResoReduced {
     for (const auto& particle : mcParticles) {
       auto ptParticle = particle.ptTrack();
       auto yParticle = particle.yTrack();
-      auto etaParticle = particle.etaTrack();
       auto originParticle = particle.origin();
       auto flag = particle.flagMcMatchGen();
       if (yCandGenMax >= 0. && std::abs(yParticle) > yCandGenMax) {
-        return;
+        continue;
       }
       std::array<float, 2> ptProngs = {particle.ptProng0(), particle.ptProng1()};
       std::array<float, 2> etaProngs = {particle.etaProng0(), particle.etaProng1()};
       bool prongsInAcc = isProngInAcceptance(etaProngs[0], ptProngs[0]) && isProngInAcceptance(etaProngs[1], ptProngs[1]);
-      if ((channel == DecayChannel::Ds1ToDstarK0s && TESTBIT(flag, DecayTypeMc::Ds1ToDStarK0ToD0PiK0s)) ||
-          (channel == DecayChannel::Ds2StarToDplusK0s && TESTBIT(flag, DecayTypeMc::Ds2StarToDplusK0))) {
+      if ((channel == DecayChannel::Ds1ToDstarK0s && std::abs(flag) == DecayTypeMc::Ds1ToDStarK0ToD0PiK0s) ||
+          (channel == DecayChannel::Ds2StarToDplusK0s && std::abs(flag) == DecayTypeMc::Ds2StarToDplusK0sToPiKaPiPiPi)) {
         if (originParticle == 1) { // prompt particles
           registry.fill(HIST("hYGenPrompt"), ptParticle, yParticle);
           if (prongsInAcc) {
@@ -425,14 +425,14 @@ struct HfTaskCharmResoReduced {
     processData<true, false, DecayChannel::Ds1ToDstarK0s>(collisions, candidates);
     fillCandMcGen<DecayChannel::Ds1ToDstarK0s>(mcParticles);
   }
-  PROCESS_SWITCH(HfTaskCharmResoReduced, processDs1Mc, "Process Mc for Ds1 analysis without Ml", true);
+  PROCESS_SWITCH(HfTaskCharmResoReduced, processDs1Mc, "Process Mc for Ds1 analysis without Ml", false);
 
   void processDs1McWithMl(aod::HfRedCollisions const& collisions, ReducedResoWithMlMc const& candidates, aod::HfMcGenRedResos const& mcParticles)
   {
     processData<true, true, DecayChannel::Ds1ToDstarK0s>(collisions, candidates);
     fillCandMcGen<DecayChannel::Ds1ToDstarK0s>(mcParticles);
   }
-  PROCESS_SWITCH(HfTaskCharmResoReduced, processDs1McWithMl, "Process Mc for Ds1 analysis with Ml", true);
+  PROCESS_SWITCH(HfTaskCharmResoReduced, processDs1McWithMl, "Process Mc for Ds1 analysis with Ml", false);
 
   void processDs2StarMc(aod::HfRedCollisions const& collisions, ReducedResoMc const& candidates, aod::HfMcGenRedResos const& mcParticles)
   {

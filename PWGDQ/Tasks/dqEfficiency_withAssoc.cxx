@@ -1954,6 +1954,12 @@ struct AnalysisDileptonTrack {
       if (objArraySingleCuts->FindObject(fConfigTrackCut.value.data()) == nullptr) {
         LOG(fatal) << " Track cut chosen for the correlation task was not computed in the single-track task! Check it out!";
       }
+      for (int icut = 0; icut < objArraySingleCuts->GetEntries(); ++icut) {
+        TString tempStr = objArraySingleCuts->At(icut)->GetName();
+        if (tempStr.CompareTo(fConfigTrackCut.value.data()) == 0) {
+          fTrackCutBit = icut; // the bit corresponding to the track to be combined with dileptons
+        }
+      }
       // get the cuts employed for same-event pairing
       string tempCutsPair;
       if (isBarrel) {
@@ -1965,22 +1971,20 @@ struct AnalysisDileptonTrack {
       if (!tempCutsSingleStr.IsNull() && !tempCutsPairStr.IsNull()) {
         std::unique_ptr<TObjArray> objArray(tempCutsPairStr.Tokenize(","));
         fNCuts = objArray->GetEntries();
-        for (int icut = 0; icut < objArraySingleCuts->GetEntries(); ++icut) {
-          TString tempStr = objArraySingleCuts->At(icut)->GetName();
+        for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
+          TString tempStr = objArray->At(icut)->GetName();
           if (objArray->FindObject(tempStr.Data()) != nullptr) {
             fHistNamesDileptonTrack[icut] = Form("DileptonTrack_%s_%s", tempStr.Data(), fConfigTrackCut.value.data());
             fHistNamesDileptons[icut] = Form("DileptonsSelected_%s", tempStr.Data());
             DefineHistograms(fHistMan, fHistNamesDileptonTrack[icut], fConfigHistogramSubgroups.value.data()); // define dilepton-track histograms
             DefineHistograms(fHistMan, fHistNamesDileptons[icut], "barrel,vertexing");                         // define dilepton histograms
             std::vector<TString> mcHistNames;
+            int isig = 0;
             for (auto& sig : fRecMCSignals) {
               mcHistNames.push_back(Form("DileptonTrackMCMatched_%s_%s_%s", tempStr.Data(), fConfigTrackCut.value.data(), sig.GetName()));
-              DefineHistograms(fHistMan, mcHistNames[mcHistNames.size() - 1], "");
+              DefineHistograms(fHistMan, mcHistNames[mcHistNames.size() - 1], fConfigHistogramSubgroups.value.data());
             }
             fHistNamesDileptonTrackMCmatched[icut] = mcHistNames;
-          }
-          if (tempStr.CompareTo(fConfigTrackCut.value.data()) == 0) {
-            fTrackCutBit = icut; // the bit corresponding to the track to be combined with dileptons
           }
         }
       }

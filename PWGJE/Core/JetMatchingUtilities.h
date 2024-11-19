@@ -473,7 +473,7 @@ auto getConstituents(T const& jet, U const& /*constituents*/)
   if constexpr (jetfindingutilities::isEMCALClusterTable<U>()) {
     return jet.template clusters_as<U>();
   } else if constexpr (jetfindingutilities::isDummyTable<U>()) { // this is for the case where EMCal clusters are tested but no clusters exist, like in the case of charged jet analyses
-    return NULL;
+    return nullptr;
   } else {
     return jet.template tracks_as<U>();
   }
