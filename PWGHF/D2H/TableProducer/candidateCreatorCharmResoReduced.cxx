@@ -119,6 +119,8 @@ struct HfCandidateCreatorCharmResoReduced {
   Preslice<HfRed3PrNoTrksWithMl> candsDPerCollisionWithMl = hf_track_index_reduced::hfRedCollisionId;
 
   // Useful constants
+  double massPion{0.};
+  double massKaon{0.};
   double massK0{0.};
   double massLambda{0.};
   double massProton{0.};
@@ -138,10 +140,11 @@ struct HfCandidateCreatorCharmResoReduced {
     }
     // histograms
     const AxisSpec axisPt{(std::vector<double>)vecBinsPt, "#it{p}_{T} (GeV/#it{c})"};
-    registry.add("hMassDs1", "Ds1 candidates;m_{Ds1} (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{200, 2.5, 2.7}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hMassDs2Star", "Ds^{*}2 candidates; m_Ds^{*}2 (GeV/#it{c}^{2}) ;entries", {HistType::kTH2F, {{100, 2.4, 2.7}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hMassXcRes", "XcRes candidates; m_XcRes (GeV/#it{c}^{2}) ;entries", {HistType::kTH2F, {{100, 2.9, 3.3}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hMassLambdaDminus", "LambdaDminus candidates; m_LambdaDminus (GeV/#it{c}^{2}) ;entries", {HistType::kTH2F, {{100, 2.9, 3.3}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
+    const AxisSpec axisMassDsj{400, 0.49f, 0.89f, ""};
+    registry.add("hMassDs1", "Ds1 candidates;m_{Ds1} (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisMassDsj, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hMassDs2Star", "Ds^{*}2 candidates; m_Ds^{*}2 (GeV/#it{c}^{2}) ;entries", {HistType::kTH2F, {axisMassDsj, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hMassXcRes", "XcRes candidates; m_XcRes (GeV/#it{c}^{2}) ;entries", {HistType::kTH2F, {{300, 1.1, 1.4}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("hMassLambdaDminus", "LambdaDminus candidates; m_LambdaDminus (GeV/#it{c}^{2}) ;entries", {HistType::kTH2F, {{300, 1.1, 1.4}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hMassDstarTrack", "DstarTrack candidates; m_DstarTrack (GeV/#it{c}^{2}) ;entries", {HistType::kTH2F, {{100, 0.9, 1.4}, {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"}}});
     if (doprocessDs1ToDstarK0sMixedEvent) {
       registry.add("hNPvContCorr", "Collision number of PV contributors ; N contrib ; N contrib", {HistType::kTH2F, {{100, 0, 250}, {100, 0, 250}}});
@@ -168,6 +171,8 @@ struct HfCandidateCreatorCharmResoReduced {
     massDplus = o2::constants::physics::MassDPlus;
     massDstar = o2::constants::physics::MassDStar;
     massD0 = o2::constants::physics::MassD0;
+    massPion = o2::constants::physics::MassPiPlus;
+    massKaon = o2::constants::physics::MassKPlus;
   }
 
   /// Basic selection of D candidates
@@ -320,12 +325,16 @@ struct HfCandidateCreatorCharmResoReduced {
           switch (channel) {
             case DecayChannel::Ds1ToDstarK0s:
               invMassV0 = candV0Tr.invMassK0s();
-              invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{massDstar, massK0});
+              if (candD.dType() > 0){
+                invMassReso = RecoDecay::m(std::array{candD.pVectorProng0(), candD.pVectorProng1(), candD.pVectorProng2(), pVecV0Tr}, std::array{massPion, massKaon, massPion, massK0}) - invMassD;
+              } else {
+                invMassReso = RecoDecay::m(std::array{candD.pVectorProng1(), candD.pVectorProng0(), candD.pVectorProng2(), pVecV0Tr}, std::array{massPion, massKaon, massPion, massK0}) - invMassD;
+              }
               registry.fill(HIST("hMassDs1"), invMassReso, ptReso);
               break;
             case DecayChannel::Ds2StarToDplusK0s:
               invMassV0 = candV0Tr.invMassK0s();
-              invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{massDplus, massK0});
+              invMassReso = RecoDecay::m(std::array{candD.pVectorProng0(), candD.pVectorProng1(), candD.pVectorProng2(), pVecV0Tr}, std::array{massPion, massKaon, massPion, massK0}) - invMassD;
               registry.fill(HIST("hMassDs2Star"), invMassReso, ptReso);
               break;
             case DecayChannel::XcToDplusLambda:
@@ -334,7 +343,7 @@ struct HfCandidateCreatorCharmResoReduced {
               } else {
                 invMassV0 = candV0Tr.invMassAntiLambda();
               }
-              invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{massDplus, massLambda});
+              invMassReso = RecoDecay::m(std::array{candD.pVectorProng0(), candD.pVectorProng1(), candD.pVectorProng2(), pVecV0Tr}, std::array{massPion, massKaon, massPion, massLambda}) - invMassD;
               registry.fill(HIST("hMassXcRes"), invMassReso, ptReso);
               break;
             case DecayChannel::LambdaDminus:
@@ -343,7 +352,7 @@ struct HfCandidateCreatorCharmResoReduced {
               } else {
                 invMassV0 = candV0Tr.invMassAntiLambda();
               }
-              invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{massDplus, massLambda});
+              invMassReso = RecoDecay::m(std::array{candD.pVectorProng0(), candD.pVectorProng1(), candD.pVectorProng2(), pVecV0Tr}, std::array{massPion, massKaon, massPion, massLambda}) - invMassD;
               registry.fill(HIST("hMassLambdaDminus"), invMassReso, ptReso);
               break;
             default:
@@ -641,7 +650,7 @@ struct HfCandidateCreatorCharmResoReducedExpressions {
 
   // Configurable axis
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0., 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 8.f, 12.f, 24.f, 50.f}, "#it{p}_{T} (GeV/#it{c})"};
-  ConfigurableAxis axisInvMassReso{"axisInvMassReso", {200, 2.5, 2.7}, "inv. mass (DV_{0}) (GeV/#it{c}^{2})"};
+  ConfigurableAxis axisInvMassReso{"axisInvMassReso", {400, 0.49f, 0.89f}, "inv. mass (DV_{0}) (GeV/#it{c}^{2})"};
   ConfigurableAxis axisInvMassProng0{"axisInvMassProng0", {200, 0.14, 0.17}, "inv. mass (D) (GeV/#it{c}^{2})"};
   ConfigurableAxis axisInvMassProng1{"axisInvMassProng1", {200, 0.47, 0.53}, "inv. mass ({V}_{0}) (GeV/#it{c}^{2})"};
   ConfigurableAxis axisInvMassD0{"axisInvMassD0", {200, 1.65, 2.05}, "inv. mass ({V}_{0}) (GeV/#it{c}^{2})"};
@@ -700,7 +709,7 @@ struct HfCandidateCreatorCharmResoReducedExpressions {
         break;
       }
       if (!filledMcInfo) { // protection to get same size tables in case something went wrong: we created a candidate that was not preselected in the D-Pi creator
-        // rowResoMcRec(0, -1, -1, -1.f);
+        rowResoMcRec(0, -1, -1, -1.f);
         registry.fill(HIST("hMassMcNoEntry"), candReso.invMass(), candReso.pt());
       }
     }
