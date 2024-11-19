@@ -248,7 +248,6 @@ struct vertexQA {
   }
   PROCESS_SWITCH(vertexQA, process, "Standard vertex QA", true);
 
-
   void processIR(aod::BCsWithTimestamps const&, aod::Collisions const& collisions)
   {
     if (collisions.size() > 2) {
@@ -259,13 +258,12 @@ struct vertexQA {
       double startIR = mRateFetcher.fetch(ccdb.service, startBC.timestamp(), startBC.runNumber(), irSource.value);
       double endIR = mRateFetcher.fetch(ccdb.service, endBC.timestamp(), endBC.runNumber(), irSource.value);
       double deltaT = (endBC.globalBC() - startBC.globalBC()) * LHCBunchSpacingNS * 1.e-9;
-      double collisionRate = collisions.size() / deltaT;  /// size -1 or -2 to remove the bias of the collisions at extremities?
+      double collisionRate = collisions.size() / deltaT; /// size -1 or -2 to remove the bias of the collisions at extremities?
       double ir = (startIR + endIR) * 0.5;
       histos.fill(HIST("tIRvsCollisionRateHistogram"), ir * 1.e-3, collisionRate * 1.e-3);
     }
   }
   PROCESS_SWITCH(vertexQA, processIR, "Checks on interaction rate", true);
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
