@@ -191,12 +191,11 @@ struct TableMaker {
     Configurable<std::string> fConfigAddTrackHistogram{"cfgAddTrackHistogram", "", "Comma separated list of histograms"};
     Configurable<std::string> fConfigAddMuonHistogram{"cfgAddMuonHistogram", "", "Comma separated list of histograms"};
   } fConfigHistOutput;
-  
 
   Configurable<bool> fIsRun2{"cfgIsRun2", false, "Whether we analyze Run-2 or Run-3 data"};
-  
+
   // Selections to be applied as Filter on the Track and FwdTrack
-  /*struct : ConfigurableGroup {  
+  /*struct : ConfigurableGroup {
     Configurable<float> fConfigBarrelTrackMaxAbsEta{"cfgBarrelMaxAbsEta", 0.9f, "Eta absolute value cut for tracks in the barrel"};
     Configurable<float> fConfigBarrelTrackMinPt{"cfgBarrelMinPt", 0.5f, "Minimum pt for tracks in the barrel"};
     Configurable<bool> fConfigBarrelRequireTPC{"cfgBarrelRequireTPC", true, "Require TPC for tracks in the barrel"};
@@ -293,7 +292,7 @@ struct TableMaker {
     // Define the event, track and muon cuts
     DefineCuts();
 
-    // Initialize the histogram manager 
+    // Initialize the histogram manager
     VarManager::SetDefaultVarNames();
     fHistMan = new HistogramManager("analysisHistos", "aa", VarManager::kNVars);
     fHistMan->SetUseDefaultVariableNames(kTRUE);
@@ -305,7 +304,7 @@ struct TableMaker {
     }
 
     // Create the histogram class names to be added to the histogram manager
-    // The histogram class names are added into a string and then passed to the DefineHistograms() function which 
+    // The histogram class names are added into a string and then passed to the DefineHistograms() function which
     //   actually configures the HistogramManager
     // Histograms are defined as histogram classes / groups and filled at specific points in the analysis flow
     TString histClasses = "";
@@ -478,7 +477,7 @@ struct TableMaker {
       histTracks->GetXaxis()->SetBinLabel(fTrackCuts.size() + 1 + ib, v0TagNames[ib]);
     }
     fStatsList->AddAt(histTracks, kStatsTracks);
-    
+
     TH1D* histMuons = new TH1D("MuonStats", "Muon statistics", fMuonCuts.size(), -0.5, fMuonCuts.size() - 0.5);
     ib = 1;
     for (auto cut = fMuonCuts.begin(); cut != fMuonCuts.end(); cut++, ib++) {
@@ -665,7 +664,7 @@ struct TableMaker {
     for (const auto& assoc : assocs) {
       // get the track
       auto track = assoc.template track_as<TTracks>();
-      
+
       trackFilteringTag = static_cast<uint64_t>(0);
       trackTempFilterMap = static_cast<uint32_t>(0);
       VarManager::FillTrack<TTrackFillMap>(track);
@@ -736,7 +735,7 @@ struct TableMaker {
       }
       // write the track global index in the map for skimming (to make sure we have it just once)
       if (fTrackIndexMap.find(track.globalIndex()) == fTrackIndexMap.end()) {
-        
+
         // Calculating the percentage of orphan tracks i.e., tracks which have no collisions associated to it
         if (!track.has_collision()) {
           (reinterpret_cast<TH1D*>(fStatsList->At(kStatsOrphanTracks)))->Fill(static_cast<float>(-1));
@@ -746,9 +745,9 @@ struct TableMaker {
 
         // NOTE: The collision ID written in the table is the one of the original collision assigned in the AO2D.
         //      The reason is that the time associated to the track is wrt that collision.
-        //      If new associations are done with the skimmed data, the track time wrt new collision can then be recomputed based on the 
+        //      If new associations are done with the skimmed data, the track time wrt new collision can then be recomputed based on the
         //        relative difference in time between the original and the new collision.
-        
+
         // If the original collision of this track was not selected for skimming, then we skip this track.
         //  Normally, the filter-pp is selecting all collisions which contain the tracks which contributed to the triggering
         //    of an event, so this is rejecting possibly a few tracks originally associated with collisions distant in time.
@@ -854,7 +853,7 @@ struct TableMaker {
         }
         VarManager::FillTrackCollision<TMuonFillMap>(muontrack, collision);
         // NOTE: the MFT track originally associated to the MUON track is currently used in the global muon refit
-        //       Should MUON - MFT time ambiguities be taken into account ? 
+        //       Should MUON - MFT time ambiguities be taken into account ?
         auto mfttrack = muon.template matchMFTTrack_as<MFTTracks>();
         VarManager::FillGlobalMuonRefit<TMuonFillMap>(muontrack, mfttrack, collision);
       } else {
@@ -995,7 +994,7 @@ struct TableMaker {
       VarManager::SetSORandEOR(sor, eor);
 
       fCurrentRun = bcs.begin().runNumber();
-    }  // end updating the CCDB quantities at change of run
+    } // end updating the CCDB quantities at change of run
 
     // skim collisions
     event.reserve(collisions.size());
