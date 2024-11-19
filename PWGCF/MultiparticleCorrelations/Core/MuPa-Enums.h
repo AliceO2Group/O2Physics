@@ -28,6 +28,7 @@ enum eConfiguration {
   eFixedNumberOfRandomlySelectedTracks,
   eUseStopwatch,
   eFloatingPointPrecision,
+  eSequentialBailout,
   eConfiguration_N
 };
 
@@ -206,7 +207,7 @@ enum eTimer {
   eTimer_N
 };
 
-enum eEventCounter {
+enum eEventCounterForDryRun {
   eFill = 0,
   ePrint
 };
@@ -225,16 +226,18 @@ enum eCutCounter {
 };
 
 enum eQAEventHistograms2D {
-  // Common:
   eMultTPC_vs_NContributors = 0,
+  eMultTPC_vs_Centrality, // only vs. chosen centrality estimator
   eVertex_z_vs_MultTPC,
   eVertex_z_vs_NContributors,
-  // Run 3:
-  eCentFT0M_vs_CentNTPV,
-  // Run 2 (do not use in Run 1 converted, because there is no centrality information):
-  eCentRun2V0M_vs_CentRun2SPDTracklets,
-  eCentRun2V0M_vs_NContributors,
+  eCentFT0C_vs_CentNTPV,                // Run 3 centrality
+  eCentFT0M_vs_CentNTPV,                // Run 3 centrality
+  eCentRun2V0M_vs_CentRun2SPDTracklets, // Run 2 centrality (do not use in Run 1 converted, because there is no centrality information)
+  eCentRun2V0M_vs_NContributors,        // Run 2 centrality (do not use in Run 1 converted, because there is no centrality information)
   eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange,
+  eTrackOccupancyInTimeRange_vs_MultTPC,
+  eTrackOccupancyInTimeRange_vs_Vertex_z,
+  eTrackOccupancyInTimeRange_vs_Centrality, // only vs. chosen centrality estimator
   eQAEventHistograms2D_N
 };
 
@@ -245,7 +248,8 @@ enum eQAParticleHistograms2D {
 
 enum eCentralityEstimators {
   // Run 3:
-  eCentFT0M = 0,
+  eCentFT0C = 0,
+  eCentFT0M,
   eCentFV0A,
   eCentNTPV,
   // Run 2:
@@ -258,6 +262,12 @@ enum eOccupancyEstimators {
   eTrackOccupancyInTimeRange, // from helper task o2-analysis-event-selection, see also IA's presentation in https://indico.cern.ch/event/1464946, slide 38
   eFT0COccupancyInTimeRange,  // from helper task o2-analysis-event-selection
   eOccupancyEstimators_N
+};
+
+enum eEventCounter {
+  eTotal,     // total number of events, before any cuts are applied
+  eProcessed, // number of processed events, i.e. number of events which survived cuts and on which analysis have been performed
+  eEventCounter_N
 };
 
 #endif // PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_ENUMS_H_
