@@ -354,7 +354,6 @@ struct HfTaskCharmHadronsFemtoDream {
       }
 
       const int multiplicityCol = collision1.multNtr();
-
       registryMixQa.fill(HIST("MixingQA/hMECollisionBins"), colBinningMult.getBin({collision1.posZ(), multiplicityCol}));
 
       auto sliceTrk1 = part1->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision1.globalIndex(), cache);
