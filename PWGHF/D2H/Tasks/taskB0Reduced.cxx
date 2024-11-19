@@ -40,13 +40,13 @@ DECLARE_SOA_COLUMN(PtD, ptD, float);                                            
 DECLARE_SOA_COLUMN(PtBach, ptBach, float);                                               //! Transverse momentum of bachelor pion (GeV/c)
 DECLARE_SOA_COLUMN(AbsEtaBach, absEtaBach, float);                                       //! Absolute pseudorapidity of bachelor pion
 DECLARE_SOA_COLUMN(ItsNClsBach, itsNClsBach, int);                                       //! Number of ITS clusters of bachelor pion
-DECLARE_SOA_COLUMN(TpcNClsCrossedRowsBach, tpcNClsCrossedRowsBach, int);                 //! Number of TPC crossed rows of prongs of bachelor pion 
-DECLARE_SOA_COLUMN(TpcChi2NClBach, tpcChi2NClBach, float);                               //! Maximum TPC chi2 of prongs of D-meson daughter candidate 
+DECLARE_SOA_COLUMN(TpcNClsCrossedRowsBach, tpcNClsCrossedRowsBach, int);                 //! Number of TPC crossed rows of prongs of bachelor pion
+DECLARE_SOA_COLUMN(TpcChi2NClBach, tpcChi2NClBach, float);                               //! Maximum TPC chi2 of prongs of D-meson daughter candidate
 DECLARE_SOA_COLUMN(PtDmesProngMin, ptProngDmesMin, float);                               //! Minimum pT of prongs of D-meson daughter candidate (GeV/c)
-DECLARE_SOA_COLUMN(AbsEtaDmesProngMin, absEtaProngDmesMin, float);                       //! Minimum absolute pseudorapidity of prongs of D-meson daughter candidate 
-DECLARE_SOA_COLUMN(ItsNClsDmesProngMin, itsNClsDmesProngMin, int);                       //! Minimum number of ITS clusters of prongs of D-meson daughter candidate 
-DECLARE_SOA_COLUMN(TpcNClsCrossedRowsDmesProngMin, tpcNClsCrossedRowsDmesProngMin, int); //! Minimum number of TPC crossed rows of prongs of D-meson daughter candidate 
-DECLARE_SOA_COLUMN(TpcChi2NClDmesProngMax, tpcChi2NClDmesProngMax, float);               //! Maximum TPC chi2 of prongs of D-meson daughter candidate 
+DECLARE_SOA_COLUMN(AbsEtaDmesProngMin, absEtaProngDmesMin, float);                       //! Minimum absolute pseudorapidity of prongs of D-meson daughter candidate
+DECLARE_SOA_COLUMN(ItsNClsDmesProngMin, itsNClsDmesProngMin, int);                       //! Minimum number of ITS clusters of prongs of D-meson daughter candidate
+DECLARE_SOA_COLUMN(TpcNClsCrossedRowsDmesProngMin, tpcNClsCrossedRowsDmesProngMin, int); //! Minimum number of TPC crossed rows of prongs of D-meson daughter candidate
+DECLARE_SOA_COLUMN(TpcChi2NClDmesProngMax, tpcChi2NClDmesProngMax, float);               //! Maximum TPC chi2 of prongs of D-meson daughter candidate
 DECLARE_SOA_COLUMN(MD, mD, float);                                                       //! Invariant mass of D-meson daughter candidates (GeV/c)
 DECLARE_SOA_COLUMN(M, m, float);                                                         //! Invariant mass of candidate (GeV/c2)
 DECLARE_SOA_COLUMN(Pt, pt, float);                                                       //! Transverse momentum of candidate (GeV/c)
@@ -85,7 +85,7 @@ DECLARE_SOA_COLUMN(FlagWrongCollision, flagWrongCollision, int8_t);             
 } // namespace hf_cand_b0_lite
 
 DECLARE_SOA_TABLE(HfRedCandB0Lites, "AOD", "HFREDCANDB0LITE", //! Table with some B0 properties
-                  // B meson features                  hf_cand_b0_lite::M,
+                                                              // B meson features                  hf_cand_b0_lite::M,
                   hf_cand_b0_lite::M,
                   hf_cand_b0_lite::Pt,
                   hf_cand_b0_lite::Eta,
