@@ -200,7 +200,6 @@ struct HfTaskCharmHadronsFemtoDream {
     colBinningMult = {{mixingBinVztx, mixingBinMult}, true};
     colBinningMultPercentile = {{mixingBinVztx, mixingBinMultPercentile}, true};
     colBinningMultMultPercentile = {{mixingBinVztx, mixingBinMult, mixingBinMultPercentile}, true};
-
     eventHisto.init(&registry);
     trackHistoPartOne.init(&registry, binmultTempFit, binMulPercentile, binpTTrack, binEta, binPhi, binTempFitVarTrack, binNSigmaTPC, binNSigmaTOF, binNSigmaTPCTOF, binTPCClusters, dummy, isMc, pdgCodeTrack1, true);
 
