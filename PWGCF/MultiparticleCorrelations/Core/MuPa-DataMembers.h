@@ -48,8 +48,6 @@ struct TaskConfiguration {
   Bool_t fDoAdditionalInsanityChecks = kFALSE;     // do additional insanity checks at run time, at the expense of losing a bit of performance
                                                    // (for instance, check if the run number in the current 'collision' is the same as run number in the first 'collision', etc.)
   Bool_t fInsanityCheckForEachParticle = kFALSE;   // do additional insanity checks at run time for each particle, at the expense of losing a lot of performance. Use only during debugging.
-  Bool_t fUseCCDB = kFALSE;                        // access personal files from CCDB (kTRUE, this is set as default in Configurables),
-                                                   // or from home dir in AliEn (kFALSE, use with care, as this is discouraged)
   Bool_t fProcess[eProcess_N] = {kFALSE};          // set what to process. See enum eProcess for full description. Set via implicit variables within a PROCESS_SWITCH clause.
   TString fWhichProcess = "ProcessRec";            // dump in this variable which process was used
   UInt_t fRandomSeed = 0;                          // argument for TRandom3 constructor. By default it is 0 (seed is guaranteed to be unique in time and space)
@@ -201,6 +199,16 @@ struct ParticleWeights {
   TString fFileWithWeights = "";                                          // path to external ROOT file which holds all particle weights
   Bool_t fParticleWeightsAreFetched = kFALSE;                             // ensures that particle weights are fetched only once
 } pw;                                                                     // "pw" labels an instance of this group of histograms
+
+// *) Centrality weights:
+struct CentralityWeights {
+  TList* fCentralityWeightsList = NULL;         // list to hold all Q-vector objects
+  TProfile* fCentralityWeightsFlagsPro = NULL;  // profile to hold all flags for CentralityWeights
+  Bool_t fUseCentralityWeights = false;         // use centrality weights
+  TH1D* fCentralityWeightsHist = NULL;          // histograms holding centrality weights
+  TString fFileWithCentralityWeights = "";      // path to external ROOT file which holds all centrality weights
+  Bool_t fCentralityWeightsAreFetched = kFALSE; // ensures that centrality weights are fetched only once
+} cw;
 
 // *) Nested loops:
 struct NestedLoops {
