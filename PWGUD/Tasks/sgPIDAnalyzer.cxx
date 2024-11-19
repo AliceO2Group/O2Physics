@@ -50,7 +50,7 @@ struct sgPIDAnalyzer {
     const AxisSpec ptBins{ptAxis, "p_{T} axis"};
     const AxisSpec nSigmaBins{sigmaAxis, "pseudo rapidity axis"};
     const AxisSpec ntofBins{tofAxis, "pseudo rapidity axis"};
-    histos.add("Events", "Selected Events", {HistType::kTH1F, {3, -.5, 2.5}});
+    histos.add("Events", "Selected Events", {HistType::kTH1F, {{3, -.5, 2.5}}});
     histos.add("TPC/pTPC_Pi", "Positive TPC Pi Tracks", {HistType::kTH2F, {ptBins, nSigmaBins}});
     histos.add("TPC/nTPC_Pi", "Negative TPC Pi Tracks", {HistType::kTH2F, {ptBins, nSigmaBins}});
     histos.add("TPC/pTPC_Ka", "Positive TPC Ka Tracks", {HistType::kTH2F, {ptBins, nSigmaBins}});
