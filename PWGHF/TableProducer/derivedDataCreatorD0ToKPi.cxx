@@ -58,8 +58,8 @@ struct HfDerivedDataCreatorD0ToKPi {
   Produces<o2::aod::HfMcCollIds> rowMcCollId;
   Produces<o2::aod::HfMcRCollIds> rowMcRCollId;
   // MC particles
-  Produces<o2::aod::HfD0PBases> rowParticleBase;
-  Produces<o2::aod::HfD0PIds> rowParticleId;
+  Produces<o2::aod::HfPBases> rowParticleBase;
+  Produces<o2::aod::HfPIds> rowParticleId;
 
   // Switches for filling tables
   Configurable<bool> fillCandidateBase{"fillCandidateBase", true, "Fill candidate base properties"};

@@ -732,7 +732,7 @@ DECLARE_SOA_COLUMN(FlagMcDecayChanGen, flagMcDecayChanGen, int8_t); //! resonant
 
 // D0
 
-DECLARE_SOA_TABLE_STAGED(HfD0PBases, "HFD0PBASE", //! Table with MC particle info
+DECLARE_SOA_TABLE_STAGED(HfPBases, "HFPBASE", //! Table with MC particle info
                          o2::soa::Index<>,
                          hf_mc_particle::der_bplus::HfMcCollBaseId,
                          hf_cand_base::Pt,
@@ -747,7 +747,7 @@ DECLARE_SOA_TABLE_STAGED(HfD0PBases, "HFD0PBASE", //! Table with MC particle inf
                          hf_cand_base::P<hf_cand_base::Pt, hf_cand_base::Eta>,
                          o2::soa::Marker<MarkerD0>);
 
-DECLARE_SOA_TABLE_STAGED(HfD0PIds, "HFD0PID", //! Table with original global indices for MC particles
+DECLARE_SOA_TABLE_STAGED(HfPIds, "HFPID", //! Table with original global indices for MC particles
                          hf_mc_particle::McCollisionId,
                          hf_mc_particle::McParticleId,
                          o2::soa::Marker<MarkerD0>);
