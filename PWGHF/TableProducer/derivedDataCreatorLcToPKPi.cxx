@@ -41,7 +41,7 @@ using namespace o2::analysis::hf_derived;
 /// Writes the full information in an output TTree
 struct HfDerivedDataCreatorLcToPKPi {
   // Candidates
-  Produces<o2::aod::Hf3PBases> rowCandidateBase;
+  Produces<o2::aod::HfBases> rowCandidateBase;
   Produces<o2::aod::Hf3PPars> rowCandidatePar;
   Produces<o2::aod::Hf3PParEs> rowCandidateParE;
   Produces<o2::aod::Hf3PSels> rowCandidateSel;
@@ -49,15 +49,15 @@ struct HfDerivedDataCreatorLcToPKPi {
   Produces<o2::aod::Hf3PIds> rowCandidateId;
   Produces<o2::aod::Hf3PMcs> rowCandidateMc;
   // Collisions
-  Produces<o2::aod::Hf3PCollBases> rowCollBase;
-  Produces<o2::aod::Hf3PCollIds> rowCollId;
+  Produces<o2::aod::HfCollBases> rowCollBase;
+  Produces<o2::aod::HfCollIds> rowCollId;
   // MC collisions
-  Produces<o2::aod::Hf3PMcCollBases> rowMcCollBase;
-  Produces<o2::aod::Hf3PMcCollIds> rowMcCollId;
-  Produces<o2::aod::Hf3PMcRCollIds> rowMcRCollId;
+  Produces<o2::aod::HfMcCollBases> rowMcCollBase;
+  Produces<o2::aod::HfMcCollIds> rowMcCollId;
+  Produces<o2::aod::HfMcRCollIds> rowMcRCollId;
   // MC particles
-  Produces<o2::aod::Hf3PPBases> rowParticleBase;
-  Produces<o2::aod::Hf3PPIds> rowParticleId;
+  Produces<o2::aod::HfPBases> rowParticleBase;
+  Produces<o2::aod::HfPIds> rowParticleId;
 
   // Switches for filling tables
   Configurable<bool> fillCandidateBase{"fillCandidateBase", true, "Fill candidate base properties"};
