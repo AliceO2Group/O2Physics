@@ -398,6 +398,9 @@ DECLARE_SOA_COLUMN(FwdDcaX, fwdDcaX, float);                                    
 DECLARE_SOA_COLUMN(FwdDcaY, fwdDcaY, float);                                              //!
 DECLARE_SOA_COLUMN(MftClusterSizesAndTrackFlags, mftClusterSizesAndTrackFlags, uint64_t); //!
 DECLARE_SOA_COLUMN(MftNClusters, mftNClusters, int);                                      //!
+DECLARE_SOA_INDEX_COLUMN(ReducedMCTrack, reducedMCTrack);                                 //!
+DECLARE_SOA_COLUMN(McMask, mcMask, uint16_t);                                             //!
+DECLARE_SOA_COLUMN(McReducedFlags, mcReducedFlags, uint16_t);                             //!
 } // namespace reducedmft
 
 // MFT track kinematics
@@ -410,8 +413,13 @@ DECLARE_SOA_TABLE(ReducedMFTsExtra, "AOD", "RMFTEXTRA", //!
                   reducedmft::MftClusterSizesAndTrackFlags, reducedmft::Sign,
                   reducedmft::FwdDcaX, reducedmft::FwdDcaY, reducedmft::MftNClusters);
 
+DECLARE_SOA_TABLE(ReducedMFTLabels, "AOD", "RTMFTLABELS", //!
+                  reducedmft::ReducedMCTrackId, reducedmft::McMask, reducedmft::McReducedFlags);
+
 // iterator
 using ReducedMFT = ReducedMFTs::iterator;
+using ReducedMFTExtra = ReducedMFTsExtra::iterator;
+using ReducedMFTLabel = ReducedMFTLabels::iterator;
 
 // muon quantities
 namespace reducedmuon
@@ -833,17 +841,18 @@ DECLARE_SOA_TABLE(DitracksExtra, "AOD", "RTDITRKEXTRA", //!
 // mft PID reduced data model
 namespace fwdpid
 {
-DECLARE_SOA_COLUMN(Pt, pt, float);   //!
-DECLARE_SOA_COLUMN(Eta, eta, float); //!
-DECLARE_SOA_COLUMN(Phi, phi, float); //!
-DECLARE_SOA_COLUMN(Sign, sign, int); //!
+DECLARE_SOA_COLUMN(Pt, pt, float);                    //!
+DECLARE_SOA_COLUMN(Eta, eta, float);                  //!
+DECLARE_SOA_COLUMN(Phi, phi, float);                  //!
+DECLARE_SOA_COLUMN(Sign, sign, int);                  //!
+DECLARE_SOA_COLUMN(McDecision, mcDecision, uint32_t); //!
 } // namespace fwdpid
 
 DECLARE_SOA_TABLE(FwdPidsAll, "AOD", "RTFWDPIDALL", //!
                   fwdtrack::TrackType, collision::PosX, collision::PosY, collision::PosZ, collision::NumContrib,
                   fwdpid::Pt, fwdpid::Eta, fwdpid::Phi, fwdpid::Sign,
                   reducedmft::MftClusterSizesAndTrackFlags,
-                  reducedmft::FwdDcaX, reducedmft::FwdDcaY, fwdtrack::Chi2MatchMCHMID, fwdtrack::Chi2MatchMCHMFT);
+                  reducedmft::FwdDcaX, reducedmft::FwdDcaY, fwdtrack::Chi2MatchMCHMID, fwdtrack::Chi2MatchMCHMFT, fwdpid::McDecision);
 
 using FwdPidAll = FwdPidsAll::iterator;
 
