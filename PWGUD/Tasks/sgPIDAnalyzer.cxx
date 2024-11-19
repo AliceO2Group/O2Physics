@@ -115,7 +115,7 @@ struct sgPIDAnalyzer {
     histos.add("TOF/pMu", "Positive TPC Mu vs TOF El vs pt", {HistType::kTH3F, {ptBins, ntofBins, ntofBins}});
     histos.add("TOF/nMu", "Negative TPC Mu vs TOF El vs pt", {HistType::kTH3F, {ptBins, ntofBins, ntofBins}});
   }
-  using SGEvent = aod::SGEvents::iterator;                             
+  using SGEvent = aod::SGEvents::iterator;
   void process(SGEvent const& event, aod::SGTracks const& tracks)
   {
     histos.fill(HIST("Events"), event.gs());
