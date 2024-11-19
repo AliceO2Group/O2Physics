@@ -396,8 +396,8 @@ struct lambdapolsp {
     }
     auto centrality = collision.centFT0C();
 
-    // histos.fill(HIST("hCentrality0"), centrality);
-    if (!collision.triggerevent()) {
+    histos.fill(HIST("hCentrality0"), centrality);
+    if (!collision.triggereventsp()) {
       return;
     }
     // histos.fill(HIST("hCentrality1"), centrality);
