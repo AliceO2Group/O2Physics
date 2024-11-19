@@ -86,7 +86,8 @@ class DielectronCut : public TNamed
     kTPChadrejORTOFreq = 2,
     kTPConly = 3,
     kTOFif = 4,
-    kPIDML = 5
+    kPIDML = 5,
+    kTPChadrejORTOFreq_woTOFif = 6
   };
 
   template <typename T = int, typename TPair>
@@ -285,6 +286,9 @@ class DielectronCut : public TNamed
       case static_cast<int>(PIDSchemes::kPIDML):
         return true; // don't use kPIDML here.
 
+      case static_cast<int>(PIDSchemes::kTPChadrejORTOFreq_woTOFif):
+        return PassTPConlyhadrej(track) || PassTOFreq(track);
+
       case static_cast<int>(PIDSchemes::kUnDef):
         return true;
 
@@ -319,6 +323,17 @@ class DielectronCut : public TNamed
   {
     bool is_el_included_TPC = mMinTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
     return is_el_included_TPC;
+  }
+
+  template <typename T>
+  bool PassTPConlyhadrej(T const& track) const
+  {
+    bool is_el_included_TPC = mMinTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
+    bool is_mu_excluded_TPC = mMuonExclusionTPC ? track.tpcNSigmaMu() < mMinTPCNsigmaMu || mMaxTPCNsigmaMu < track.tpcNSigmaMu() : true;
+    bool is_pi_excluded_TPC = track.tpcInnerParam() < mMaxPinForPionRejectionTPC ? (track.tpcNSigmaPi() < mMinTPCNsigmaPi || mMaxTPCNsigmaPi < track.tpcNSigmaPi()) : true;
+    bool is_ka_excluded_TPC = track.tpcNSigmaKa() < mMinTPCNsigmaKa || mMaxTPCNsigmaKa < track.tpcNSigmaKa();
+    bool is_pr_excluded_TPC = track.tpcNSigmaPr() < mMinTPCNsigmaPr || mMaxTPCNsigmaPr < track.tpcNSigmaPr();
+    return is_el_included_TPC && is_mu_excluded_TPC && is_pi_excluded_TPC && is_ka_excluded_TPC && is_pr_excluded_TPC;
   }
 
   template <typename T>
