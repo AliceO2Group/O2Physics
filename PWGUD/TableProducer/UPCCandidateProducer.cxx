@@ -35,7 +35,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct UpcCandProducer {
-    bool fDoMC{false};
+  bool fDoMC{false};
 
   std::map<int32_t, int32_t> fNewPartIDs;
   uint64_t fMaxBC{0}; // max BC for ITS-TPC search
