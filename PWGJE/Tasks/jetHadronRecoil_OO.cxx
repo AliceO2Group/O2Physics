@@ -447,7 +447,7 @@ struct jetHadronRecoil_OO {
   PROCESS_SWITCH(jetHadronRecoil_OO, processMC_DetLevel, "process MC detector level", false);
 
   void processMC_DetLevel_Weighted(filtered_Coll_DetLevel_to_GetWeight const& collision,
-                                   JetMcCollisions const&,
+                                   aod::JetMcCollisions const&,
                                    filtered_Jets_DetLevel const& jets,
                                    filtered_Tracks const& tracks)
   {
@@ -494,7 +494,7 @@ struct jetHadronRecoil_OO {
   PROCESS_SWITCH(jetHadronRecoil_OO, processJetsMatched, "process matching of MC jets (no weight)", false);
 
   void processJetsMatched_Weighted(filtered_Coll_DetLevel_to_GetWeight const& collision,
-                                   JetMcCollisions const&,
+                                   aod::JetMcCollisions const&,
                                    filtered_Tracks const& tracks,
                                    filtered_MatchedJets_DetLevel const& mcdjets,
                                    filtered_MatchedJets_PartLevel const& mcpjets)
@@ -538,4 +538,4 @@ struct jetHadronRecoil_OO {
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<jetHadronRecoil_OO>(cfgc, TaskName{"jetHadronRecoil_OO"})}; }
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<jetHadronRecoil_OO>(cfgc, TaskName{"jet-hadron-recoil-oo"})}; }
