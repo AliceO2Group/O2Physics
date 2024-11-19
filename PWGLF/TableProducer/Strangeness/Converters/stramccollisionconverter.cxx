@@ -11,19 +11,20 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 
 using namespace o2;
 using namespace o2::framework;
 
-// Creates an empty BCFlags for data that doesn't have it to be used seamlessly
-// n.b. this will overwrite existing BCFlags, to be discussed if data in mixed condition
-struct bcFlagsCreator {
-  Produces<aod::BCFlags> bcFlags;
+// Converts V0 version 001 to 002
+struct stramccollisionconverter {
+  Produces<aod::StraMCCollisions_001> straMCCollisions_001;
 
-  void process(aod::BCs const& bcTable)
+  void process(aod::StraMCCollisions_000 const& straMCcoll)
   {
-    for (int64_t i = 0; i < bcTable.size(); ++i) {
-      bcFlags(0);
+    for (auto& mccollision : straMCcoll) {
+      straMCCollisions_001(mccollision.posX(), mccollision.posY(), mccollision.posZ(),
+                           mccollision.impactParameter(), 0.0f);
     }
   }
 };
@@ -31,6 +32,5 @@ struct bcFlagsCreator {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<bcFlagsCreator>(cfgc),
-  };
+    adaptAnalysisTask<stramccollisionconverter>(cfgc)};
 }

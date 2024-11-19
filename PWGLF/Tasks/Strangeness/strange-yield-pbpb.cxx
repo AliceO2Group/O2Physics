@@ -25,6 +25,7 @@
 #include <TLorentzVector.h>
 #include <TPDGCode.h>
 #include <TDatabasePDG.h>
+#include <vector>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -81,9 +82,10 @@ struct strangeYieldPbPb {
   Configurable<bool> requireIsGoodZvtxFT0VsPV{"requireIsGoodZvtxFT0VsPV", true, "require events with PV position along z consistent (within 1 cm) between PV reconstructed using tracks and PV using FT0 A-C time difference"};
   Configurable<bool> requireIsVertexTOFmatched{"requireIsVertexTOFmatched", false, "require events with at least one of vertex contributors matched to TOF"};
   Configurable<bool> requireIsVertexTRDmatched{"requireIsVertexTRDmatched", false, "require events with at least one of vertex contributors matched to TRD"};
-  Configurable<bool> requireNoCollInTimeRangeStd{"requireNoCollInTimeRangeStd", true, "reject collisions corrupted by the cannibalism, with other collisions within +/- 10 microseconds"};
+  Configurable<bool> requireNoCollInTimeRangeStd{"requireNoCollInTimeRangeStd", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 10 microseconds"};
   Configurable<bool> requireNoCollInTimeRangeNarrow{"requireNoCollInTimeRangeNarrow", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 10 microseconds"};
   Configurable<bool> studyUPConly{"studyUPConly", false, "is UPC-only analysis"};
+  Configurable<bool> useUPCflag{"useUPCflag", false, "select UPC flagged events"};
 
   Configurable<bool> verbose{"verbose", false, "additional printouts"};
 
@@ -172,13 +174,13 @@ struct strangeYieldPbPb {
   Configurable<bool> doPlainTopoQA{"doPlainTopoQA", true, "do simple 1D QA of candidates"};
 
   struct : ConfigurableGroup {
-    ConfigurableAxis axisFT0Aampl{"FT0Aamplitude", {100, 0.0f, 2000.0f}, "FT0Aamplitude"};
-    ConfigurableAxis axisFT0Campl{"FT0Camplitude", {100, 0.0f, 2000.0f}, "FT0Camplitude"};
-    ConfigurableAxis axisFV0Aampl{"FV0Aamplitude", {100, 0.0f, 2000.0f}, "FV0Aamplitude"};
-    ConfigurableAxis axisFDDAampl{"FDDAamplitude", {100, 0.0f, 2000.0f}, "FDDAamplitude"};
-    ConfigurableAxis axisFDDCampl{"FDDCamplitude", {100, 0.0f, 2000.0f}, "FDDCamplitude"};
-    ConfigurableAxis axisZNAampl{"ZNAamplitude", {100, 0.0f, 250.0f}, "ZNAamplitude"};
-    ConfigurableAxis axisZNCampl{"ZNCamplitude", {100, 0.0f, 250.0f}, "ZNCamplitude"};
+    ConfigurableAxis axisFT0Aampl{"axisFT0Aampl", {100, 0.0f, 2000.0f}, "FT0Aamplitude"};
+    ConfigurableAxis axisFT0Campl{"axisFT0Campl", {100, 0.0f, 2000.0f}, "FT0Camplitude"};
+    ConfigurableAxis axisFV0Aampl{"axisFV0Aampl", {100, 0.0f, 2000.0f}, "FV0Aamplitude"};
+    ConfigurableAxis axisFDDAampl{"axisFDDAampl", {100, 0.0f, 2000.0f}, "FDDAamplitude"};
+    ConfigurableAxis axisFDDCampl{"axisFDDCampl", {100, 0.0f, 2000.0f}, "FDDCamplitude"};
+    ConfigurableAxis axisZNAampl{"axisZNAampl", {100, 0.0f, 250.0f}, "ZNAamplitude"};
+    ConfigurableAxis axisZNCampl{"axisZNCampl", {100, 0.0f, 250.0f}, "ZNCamplitude"};
   } axisDetectors;
 
   // for MC
@@ -209,8 +211,16 @@ struct strangeYieldPbPb {
                                                axisOmegaMass,
                                                axisOmegaMass};
 
-  ConfigurableAxis axisNch{"axisNch", {2000, -0.5f, 1999.5f}, "Number of charged particles"};
-  ConfigurableAxis axisFT0C{"FT0C",
+  ConfigurableAxis axisNTracksGlobal{"axisNTracksGlobal", {100, -0.5f, 99.5f}, "Number of global tracks"};
+  ConfigurableAxis axisNTracksPVeta1{"axisNTracksPVeta1", {100, -0.5f, 99.5f}, "Number of PV contributors in |eta| < 1"};
+  ConfigurableAxis axisNTracksTotalExceptITSonly{"axisNTracksTotalExceptITSonly", {100, -0.5f, 99.5f}, "Number of ITS-TPC and TPC only tracks"};
+  ConfigurableAxis axisNchInvMass{"axisNchInvMass", {20, -0.5f, 19.5f}, "Number of charged particles for kTHnSparseF"};
+
+  ConfigurableAxis axisFT0C_QA{"axisFT0C_QA",
+                               {VARIABLE_WIDTH, 0., 0.01, 0.05, 0.1, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 105.5},
+                               "FT0C (%)"};
+
+  ConfigurableAxis axisFT0C{"axisFT0C",
                             {VARIABLE_WIDTH, 0., 0.01, 0.05, 0.1, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 105.5},
                             "FT0C (%)"};
 
@@ -354,30 +364,30 @@ struct strangeYieldPbPb {
     const bool isCascade = (partID > 2.5) ? true : false;
     if (doDetectPropQA == 1) {
       if (isCascade) {
-        histos.add(Form("%s/h8dDetectPropVsCentrality", particlenames[partID].data()), "h8dDetectPropVsCentrality", kTHnF, {axisFT0C, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse});
+        histos.add(Form("%s/h8dDetectPropVsCentrality", particlenames[partID].data()), "h8dDetectPropVsCentrality", kTHnSparseF, {axisFT0C, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse});
       } else {
-        histos.add(Form("%s/h6dDetectPropVsCentrality", particlenames[partID].data()), "h6dDetectPropVsCentrality", kTHnF, {axisFT0C, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse});
+        histos.add(Form("%s/h6dDetectPropVsCentrality", particlenames[partID].data()), "h6dDetectPropVsCentrality", kTHnSparseF, {axisFT0C, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse});
       }
-      histos.add(Form("%s/h4dPosDetectPropVsCentrality", particlenames[partID].data()), "h4dPosDetectPropVsCentrality", kTHnF, {axisFT0C, axisDetMap, axisITScluMap, axisPtCoarse});
-      histos.add(Form("%s/h4dNegDetectPropVsCentrality", particlenames[partID].data()), "h4dNegDetectPropVsCentrality", kTHnF, {axisFT0C, axisDetMap, axisITScluMap, axisPtCoarse});
-      histos.add(Form("%s/h4dBachDetectPropVsCentrality", particlenames[partID].data()), "h4dBachDetectPropVsCentrality", kTHnF, {axisFT0C, axisDetMap, axisITScluMap, axisPtCoarse});
+      histos.add(Form("%s/h4dPosDetectPropVsCentrality", particlenames[partID].data()), "h4dPosDetectPropVsCentrality", kTHnSparseF, {axisFT0C, axisDetMap, axisITScluMap, axisPtCoarse});
+      histos.add(Form("%s/h4dNegDetectPropVsCentrality", particlenames[partID].data()), "h4dNegDetectPropVsCentrality", kTHnSparseF, {axisFT0C, axisDetMap, axisITScluMap, axisPtCoarse});
+      histos.add(Form("%s/h4dBachDetectPropVsCentrality", particlenames[partID].data()), "h4dBachDetectPropVsCentrality", kTHnSparseF, {axisFT0C, axisDetMap, axisITScluMap, axisPtCoarse});
     }
     if (doDetectPropQA == 2) {
       if (isCascade) {
-        histos.add(Form("%s/h9dDetectPropVsCentrality", particlenames[partID].data()), "h9dDetectPropVsCentrality", kTHnF, {axisFT0C, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse, axisInvMass.at(partID)});
+        histos.add(Form("%s/h9dDetectPropVsCentrality", particlenames[partID].data()), "h9dDetectPropVsCentrality", kTHnSparseF, {axisFT0C, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse, axisInvMass.at(partID)});
       } else {
-        histos.add(Form("%s/h7dDetectPropVsCentrality", particlenames[partID].data()), "h7dDetectPropVsCentrality", kTHnF, {axisFT0C, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse, axisInvMass.at(partID)});
+        histos.add(Form("%s/h7dDetectPropVsCentrality", particlenames[partID].data()), "h7dDetectPropVsCentrality", kTHnSparseF, {axisFT0C, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse, axisInvMass.at(partID)});
       }
-      histos.add(Form("%s/h5dPosDetectPropVsCentrality", particlenames[partID].data()), "h5dPosDetectPropVsCentrality", kTHnF, {axisFT0C, axisDetMap, axisITScluMap, axisPtCoarse, axisInvMass.at(partID)});
-      histos.add(Form("%s/h5dNegDetectPropVsCentrality", particlenames[partID].data()), "h5dNegDetectPropVsCentrality", kTHnF, {axisFT0C, axisDetMap, axisITScluMap, axisPtCoarse, axisInvMass.at(partID)});
-      histos.add(Form("%s/h5dBachDetectPropVsCentrality", particlenames[partID].data()), "h5dBachDetectPropVsCentrality", kTHnF, {axisFT0C, axisDetMap, axisITScluMap, axisPtCoarse, axisInvMass.at(partID)});
+      histos.add(Form("%s/h5dPosDetectPropVsCentrality", particlenames[partID].data()), "h5dPosDetectPropVsCentrality", kTHnSparseF, {axisFT0C, axisDetMap, axisITScluMap, axisPtCoarse, axisInvMass.at(partID)});
+      histos.add(Form("%s/h5dNegDetectPropVsCentrality", particlenames[partID].data()), "h5dNegDetectPropVsCentrality", kTHnSparseF, {axisFT0C, axisDetMap, axisITScluMap, axisPtCoarse, axisInvMass.at(partID)});
+      histos.add(Form("%s/h5dBachDetectPropVsCentrality", particlenames[partID].data()), "h5dBachDetectPropVsCentrality", kTHnSparseF, {axisFT0C, axisDetMap, axisITScluMap, axisPtCoarse, axisInvMass.at(partID)});
     }
   }
 
   template <int partID>
   void addHistograms(HistogramRegistry& histos)
   {
-    histos.add(Form("%s/h5dMass", particlenames[partID].data()), "h5dMass", kTHnF, {axisFT0C, axisPt, axisInvMass.at(partID), axisSelGap, {100, -0.5f, 99.5f}});
+    histos.add(Form("%s/h5dMass", particlenames[partID].data()), "h5dMass", kTHnSparseF, {axisFT0C, axisPt, axisInvMass.at(partID), axisSelGap, axisNchInvMass});
     histos.add(Form("%s/h2dMass", particlenames[partID].data()), "h2dMass", kTH2F, {axisInvMass.at(partID), axisSelGap});
     if (doPlainTopoQA) {
       addTopoHistograms<partID>(histos);
@@ -464,7 +474,7 @@ struct strangeYieldPbPb {
     }
 
     histos.fill(HIST(particlenames[partID]) + HIST("/h2dMass"), invMass, gap);
-    histos.fill(HIST(particlenames[partID]) + HIST("/h5dMass"), centrality, pT, invMass, gap, coll.multNTracksGlobal());
+    histos.fill(HIST(particlenames[partID]) + HIST("/h5dMass"), centrality, pT, invMass, gap, coll.multAllTracksTPCOnly() + coll.multAllTracksITSTPC());
     if (doKienmaticQA) {
       histos.fill(HIST(particlenames[partID]) + HIST("/h2dPosEtaPt"), pT, cand.positiveeta(), gap);
       histos.fill(HIST(particlenames[partID]) + HIST("/h2dNegEtaPt"), pT, cand.negativeeta(), gap);
@@ -614,7 +624,7 @@ struct strangeYieldPbPb {
       }
     }
     histos.fill(HIST(particlenames[partID]) + HIST("/h2dMass"), invMass, gap);
-    histos.fill(HIST(particlenames[partID]) + HIST("/h5dMass"), centrality, pT, invMass, gap, coll.multNTracksGlobal());
+    histos.fill(HIST(particlenames[partID]) + HIST("/h5dMass"), centrality, pT, invMass, gap, coll.multAllTracksTPCOnly() + coll.multAllTracksITSTPC());
     if (doKienmaticQA) {
       histos.fill(HIST(particlenames[partID]) + HIST("/h2dPosEtaPt"), pT, cand.positiveeta(), gap);
       histos.fill(HIST(particlenames[partID]) + HIST("/h2dNegEtaPt"), pT, cand.negativeeta(), gap);
@@ -813,7 +823,7 @@ struct strangeYieldPbPb {
     maskSelectionAntiOmega = maskTopologicalCasc | maskKinematicCasc | maskTrackPropertiesCasc | maskAntiOmegaSpecific | (std::bitset<selNum>(1) << selPhysPrimAntiOmega);
 
     // Event Counters
-    histos.add("hEventSelection", "hEventSelection", kTH1F, {{15, -0.5f, +14.5f}});
+    histos.add("hEventSelection", "hEventSelection", kTH1F, {{16, -0.5f, +15.5f}});
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(1, "All collisions");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(2, "kIsTriggerTVX");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(3, "posZ cut");
@@ -829,14 +839,16 @@ struct strangeYieldPbPb {
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(13, "Below min occup.");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(14, "Above max occup.");
     histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(15, "isUPC");
+    histos.get<TH1>(HIST("hEventSelection"))->GetXaxis()->SetBinLabel(16, "has UPC flag");
 
     // Event QA
-    histos.add("eventQA/hEventCentrality", "hEventCentrality", kTH1F, {axisFT0C});
-    histos.add("eventQA/hCentralityVsNch", "hCentralityVsNch", kTH2F, {axisFT0C, axisNch});
-    histos.add("eventQA/hEventOccupancy", "hEventOccupancy", kTH1F, {axisOccupancy});
-    histos.add("eventQA/hCentralityVsOccupancy", "hCentralityVsOccupancy", kTH2F, {axisFT0C, axisOccupancy});
-    histos.add("eventQA/hEventNchCorrelationAfCuts", "hEventNchCorrelationAfCuts", kTH2F, {{5000, 0, 5000}, {5000, 0, 2500}});
-    histos.add("eventQA/hEventGlobalTracksVsCentrality", "hEventGlobalTracksVsCentrality", kTH2F, {{100, 0, 100}, {2500, 0, 2500}});
+    histos.add("eventQA/hCentrality", "hCentrality", kTH1F, {axisFT0C_QA});
+    histos.add("eventQA/hCentralityVsTracksPVeta1", "hCentralityVsTracksPVeta1", kTH2F, {axisFT0C_QA, axisNTracksPVeta1});
+    histos.add("eventQA/hCentralityVsTracksTotalExceptITSonly", "hCentralityVsTracksTotalExceptITSonly", kTH2F, {axisFT0C_QA, axisNTracksTotalExceptITSonly});
+    histos.add("eventQA/hOccupancy", "hOccupancy", kTH1F, {axisOccupancy});
+    histos.add("eventQA/hCentralityVsOccupancy", "hCentralityVsOccupancy", kTH2F, {axisFT0C_QA, axisOccupancy});
+    histos.add("eventQA/hTracksPVeta1VsTracksGlobal", "hTracksPVeta1VsTracksGlobal", kTH2F, {axisNTracksPVeta1, axisNTracksGlobal});
+    histos.add("eventQA/hCentralityVsTracksGlobal", "hCentralityVsTracksGlobal", kTH2F, {axisFT0C_QA, axisNTracksGlobal});
     histos.add("eventQA/hGapSide", "Gap side; Entries", kTH1F, {{5, -0.5, 4.5}});
     histos.add("eventQA/hSelGapSide", "Selected gap side; Entries", kTH1F, {axisSelGap});
     histos.add("eventQA/hPosX", "Vertex position in x", kTH1F, {{100, -0.1, 0.1}});
@@ -946,12 +958,13 @@ struct strangeYieldPbPb {
   {
     // QA histograms
     float centrality = collision.centFT0C();
-    histos.fill(HIST("eventQA/hEventCentrality"), centrality);
-    histos.fill(HIST("eventQA/hCentralityVsNch"), centrality, collision.multNTracksPVeta1());
-    histos.fill(HIST("eventQA/hEventOccupancy"), collision.trackOccupancyInTimeRange());
+    histos.fill(HIST("eventQA/hCentrality"), centrality);
+    histos.fill(HIST("eventQA/hCentralityVsTracksTotalExceptITSonly"), centrality, collision.multAllTracksTPCOnly() + collision.multAllTracksITSTPC());
+    histos.fill(HIST("eventQA/hCentralityVsTracksPVeta1"), centrality, collision.multNTracksPVeta1());
+    histos.fill(HIST("eventQA/hOccupancy"), collision.trackOccupancyInTimeRange());
     histos.fill(HIST("eventQA/hCentralityVsOccupancy"), centrality, collision.trackOccupancyInTimeRange());
-    histos.fill(HIST("eventQA/hEventNchCorrelationAfCuts"), collision.multNTracksPVeta1(), collision.multNTracksGlobal());
-    histos.fill(HIST("eventQA/hEventGlobalTracksVsCentrality"), centrality, collision.multNTracksGlobal());
+    histos.fill(HIST("eventQA/hTracksPVeta1VsTracksGlobal"), collision.multNTracksPVeta1(), collision.multNTracksGlobal());
+    histos.fill(HIST("eventQA/hCentralityVsTracksGlobal"), centrality, collision.multNTracksGlobal());
     histos.fill(HIST("eventQA/hPosX"), collision.posX());
     histos.fill(HIST("eventQA/hPosY"), collision.posY());
     histos.fill(HIST("eventQA/hPosZ"), collision.posZ());
@@ -1031,6 +1044,12 @@ struct strangeYieldPbPb {
       return false;
     } else if (collision.isUPC()) {
       histos.fill(HIST("hEventSelection"), 14 /* is UPC compatible */);
+    }
+
+    if (useUPCflag && (collision.flags() < 1)) {
+      return false;
+    } else if (collision.flags() >= 1) {
+      histos.fill(HIST("hEventSelection"), 15 /* UPC event */);
     }
 
     return true;
