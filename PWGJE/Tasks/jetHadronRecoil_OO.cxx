@@ -47,9 +47,9 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 // Shorthand notations
-using filtered_Coll = soa::Filtered<soa::Join<JetCollisions, aod::BkgChargedRhos, aod::EvSels>>::iterator;
-using filtered_Coll_PartLevel = soa::Filtered<JetMcCollisions>::iterator;
-using filtered_Coll_DetLevel_to_GetWeight = soa::Filtered<soa::Join<JetCollisionsMCD, aod::BkgChargedRhos, aod::EvSels>>::iterator;
+using filtered_Coll = soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::EvSels>>::iterator;
+using filtered_Coll_PartLevel = soa::Filtered<aod::JetMcCollisions>::iterator;
+using filtered_Coll_DetLevel_to_GetWeight = soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::BkgChargedRhos, aod::EvSels>>::iterator;
 
 using filtered_Jets = soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>>;
 using filtered_Jets_DetLevel = soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>>;
@@ -58,7 +58,7 @@ using filtered_Jets_PartLevel = soa::Filtered<soa::Join<aod::ChargedMCParticleLe
 using filtered_MatchedJets_DetLevel = soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>>;
 using filtered_MatchedJets_PartLevel = soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>>;
 
-using filtered_Tracks = soa::Filtered<JetTracks>;
+using filtered_Tracks = soa::Filtered<aod::JetTracks>;
 
 struct jetHadronRecoil_OO {
 
@@ -191,7 +191,7 @@ struct jetHadronRecoil_OO {
 
   // Fill histograms with raw or MC det. level data
   template <typename Collision, typename Jets, typename Tracks>
-  void fillHistograms(const Collision& collision, const Jets& jets, const Tracks& tracks, bool bIsMC = false, float weight = 1.)
+  void fillHistograms(Collision const& collision, Jets const& jets, Tracks const& tracks, bool bIsMC = false, float weight = 1.)
   {
 
     bool bSig_Ev = false;
@@ -274,7 +274,7 @@ struct jetHadronRecoil_OO {
 
   /// \TODO: Currently, we don't have possibility to estimate bgkd for particle MC. Nima told that it could be added
   template </*typename C, */ typename Jets, typename Particles>
-  void fillMCPHistograms(/*C const& collision, */ const Jets& jets, const Particles& particles, float weight = 1.)
+  void fillMCPHistograms(/*C const& collision, */ Jets const& jets, Particles const& particles, float weight = 1.)
   {
     bool bSig_Ev = false;
     std::vector<double> phi_of_TT_cand;
@@ -463,7 +463,7 @@ struct jetHadronRecoil_OO {
 
   void processMC_PartLevel(filtered_Coll_PartLevel const& collision,
                            filtered_Jets_PartLevel const& jets,
-                           JetParticles const& particles)
+                           aod::JetParticles const& particles)
   {
     spectra.fill(HIST("vertexZ"), collision.posZ());
     fillMCPHistograms(jets, particles);
@@ -472,7 +472,7 @@ struct jetHadronRecoil_OO {
 
   void processMC_PartLevel_Weighted(filtered_Coll_PartLevel const& collision,
                                     filtered_Jets_PartLevel const& jets,
-                                    JetParticles const& particles)
+                                    aod::JetParticles const& particles)
   {
     auto weight = collision.weight();
     spectra.fill(HIST("vertexZ"), collision.posZ(), weight);
@@ -481,7 +481,7 @@ struct jetHadronRecoil_OO {
   PROCESS_SWITCH(jetHadronRecoil_OO, processMC_PartLevel_Weighted, "process MC particle level with event weight", false);
 
   void processJetsMatched(filtered_Coll_DetLevel_to_GetWeight const& collision,
-                          JetMcCollisions const&,
+                          aod::JetMcCollisions const&,
                           filtered_Tracks const& tracks,
                           filtered_MatchedJets_DetLevel const& mcdjets,
                           filtered_MatchedJets_PartLevel const& mcpjets)
