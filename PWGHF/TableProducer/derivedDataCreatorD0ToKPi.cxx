@@ -43,7 +43,7 @@ using namespace o2::analysis::hf_derived;
 /// Writes the full information in an output TTree
 struct HfDerivedDataCreatorD0ToKPi {
   // Candidates
-  Produces<o2::aod::HfD0Bases> rowCandidateBase;
+  Produces<o2::aod::HfBases> rowCandidateBase;
   Produces<o2::aod::HfD0Pars> rowCandidatePar;
   Produces<o2::aod::HfD0ParEs> rowCandidateParE;
   Produces<o2::aod::HfD0Sels> rowCandidateSel;

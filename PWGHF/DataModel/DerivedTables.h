@@ -415,7 +415,7 @@ DECLARE_SOA_COLUMN(MlScoresCharm, mlScoresCharm, std::vector<float>);         //
 
 // D0
 
-DECLARE_SOA_TABLE_STAGED(HfD0Bases, "HFD0BASE", //! Table with basic candidate properties used in the analyses
+DECLARE_SOA_TABLE_STAGED(HfBases, "HFBASE", //! Table with basic candidate properties used in the analyses
                          o2::soa::Index<>,
                          hf_cand_base::der_bplus::HfCollBaseId,
                          hf_cand_base::Pt,
