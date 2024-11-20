@@ -24,10 +24,18 @@
 //    david.dobrigkeit.chinellato@cern.ch
 //
 
-#include <Math/Vector4D.h>
 #include <cmath>
 #include <array>
 #include <cstdlib>
+#include <vector>
+
+#include <Math/Vector4D.h>
+#include <TFile.h>
+#include <TLorentzVector.h>
+#include <TH1F.h>
+#include <TH2F.h>
+#include <TProfile.h>
+#include <TPDGCode.h>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -49,14 +57,6 @@
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "PWGMM/Mult/DataModel/Index.h" // for Particles2Tracks table
-
-#include <TFile.h>
-#include <TLorentzVector.h>
-#include <TH1F.h>
-#include <TH2F.h>
-#include <TProfile.h>
-#include <TPDGCode.h>
-#include <TDatabasePDG.h>
 
 using namespace o2;
 using namespace o2::framework;

@@ -13,9 +13,14 @@
 /// \author Sofia Tomassini, Gleb Romanenko, Nicolò Jacazio
 /// \since 31 May 2023
 
+#include <vector>
+#include <map>
+#include <memory>
+#include <utility>
+
 #include <TParameter.h>
 #include <TH1F.h>
-#include <vector>
+#include <TLorentzVector.h>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -32,8 +37,6 @@
 #include "PWGCF/Femto3D/DataModel/singletrackselector.h"
 #include "PWGCF/Femto3D/Core/femto3dPairTask.h"
 
-#include "TLorentzVector.h"
-#include "TDatabasePDG.h"
 
 using namespace o2;
 using namespace o2::soa;
