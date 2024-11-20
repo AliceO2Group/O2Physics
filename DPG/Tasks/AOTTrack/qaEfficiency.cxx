@@ -24,6 +24,7 @@
 #include "ReconstructionDataFormats/DCA.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -35,6 +36,7 @@
 #include "TEfficiency.h"
 #include "THashList.h"
 
+using namespace o2;
 using namespace o2::framework;
 
 // Indices for the track cut histogram
@@ -153,6 +155,20 @@ std::array<std::shared_ptr<TH2>, nParticles> hPtEtaItsTpc;
 std::array<std::shared_ptr<TH2>, nParticles> hPtEtaTrkItsTpc;
 std::array<std::shared_ptr<TH2>, nParticles> hPtEtaItsTpcTof;
 std::array<std::shared_ptr<TH2>, nParticles> hPtEtaGenerated;
+
+// Occupancy
+std::array<std::shared_ptr<TH2>, nParticles> hPtOccItsTpc;
+std::array<std::shared_ptr<TH2>, nParticles> hPtOccTrkIts;
+std::array<std::shared_ptr<TH2>, nParticles> hPtOccTrkItsTpc;
+std::array<std::shared_ptr<TH2>, nParticles> hPtOccTrkItsTpcTof;
+std::array<std::shared_ptr<TH2>, nParticles> hPtOccItsTpcTof;
+std::array<std::shared_ptr<TH2>, nParticles> hPtOccGenerated;
+// Centrality
+std::array<std::shared_ptr<TH2>, nParticles> hPtCentItsTpc;
+std::array<std::shared_ptr<TH2>, nParticles> hPtCentTrkItsTpc;
+std::array<std::shared_ptr<TH2>, nParticles> hPtCentItsTpcTof;
+std::array<std::shared_ptr<TH2>, nParticles> hPtCentGenerated;
+
 // 2D  Pt vs Radius
 std::array<std::shared_ptr<TH2>, nParticles> hPtRadiusItsTpc;
 std::array<std::shared_ptr<TH2>, nParticles> hPtRadiusTrkItsTpc;
@@ -213,6 +229,8 @@ struct QaEfficiency {
   ConfigurableAxis etaBins{"etaBins", {200, -3.f, 3.f}, "Eta binning"};
   ConfigurableAxis phiBins{"phiBins", {200, 0.f, 6.284f}, "Phi binning"};
   ConfigurableAxis yBins{"yBins", {200, -0.5f, 0.5f}, "Y binning"};
+  ConfigurableAxis occBins{"occBins", {1000, 0.f, 14000.f}, "Occupancy binning"};
+  ConfigurableAxis centBins{"centBins", {119, 0.f, 110.f}, "Centrality binning"};
   ConfigurableAxis radiusBins{"radiusBins", {200, 0.f, 100.f}, "Radius binning"};
   // Task configuration
   Configurable<bool> makeEff{"make-eff", false, "Flag to produce the efficiency with TEfficiency"};
@@ -241,11 +259,14 @@ struct QaEfficiency {
   Configurable<float> minDcaZ{"minDcaZ", -2.f, "Additional cut on the minimum abs value of the DCA z"};
   Configurable<float> minDcaXY{"minDcaXY", -1.f, "Additional cut on the minimum abs value of the DCA xy"};
 
+  Configurable<bool> doOccupancy{"doOccupancyStudy", false, "Flag to store Occupancy-related information"};
+  Configurable<bool> useFT0OccEstimator{"useFT0OccEstimator", false, "Flag to adopt FT0c to estimate occupancy instead of ITS"};
+
   // Output objects for TEfficiency
   OutputObj<THashList> listEfficiencyMC{"EfficiencyMC"};
   OutputObj<THashList> listEfficiencyData{"EfficiencyData"};
 
-  using CollisionCandidates = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>;
+  using CollisionCandidates = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, aod::CentFT0Cs>;
   using CollisionCandidatesMC = o2::soa::Join<CollisionCandidates, o2::aod::McCollisionLabels>;
   using TrackCandidates = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TrackSelection, o2::aod::TrackSelectionExtension, o2::aod::TracksDCA>;
   using TrackCandidatesMC = o2::soa::Join<TrackCandidates, o2::aod::McTrackLabels>;
@@ -761,6 +782,8 @@ struct QaEfficiency {
                                 ptMin, ptMax,
                                 phiMin, phiMax);
     const AxisSpec axisEta{etaBins, "#it{#eta}"};
+    const AxisSpec axisOcc{occBins, "Occupancy"};
+    const AxisSpec axisCent{centBins, "Centrality"};
 
     const TString tagPhi = Form("#it{#eta} [%.2f,%.2f] #it{p}_{T} [%.2f,%.2f]",
                                 etaMin, etaMax,
@@ -1682,6 +1705,54 @@ struct QaEfficiency {
     return true;
   }
 
+  /// \brief Function to get MC collision occupancy
+  /// \param collSlice collection of reconstructed collisions
+  /// \return collision occupancy
+  template <typename CCs>
+  int getOccupancyColl(CCs const& collSlice)
+  {
+    float multiplicity{0.f};
+    int occupancy = 0;
+    for (const auto& collision : collSlice) {
+      float collMult{0.f};
+      collMult = collision.numContrib();
+
+      if (collMult > multiplicity) {
+        if (useFT0OccEstimator) {  
+          /// occupancy estimator (FT0c signal amplitudes in +-10us from current collision)
+          occupancy = collision.ft0cOccupancyInTimeRange();
+        } else {
+          /// occupancy estimator (ITS tracks with at least 5 clusters in +-10us from current collision)
+          occupancy = static_cast<float>(collision.trackOccupancyInTimeRange());
+        } 
+        multiplicity = collMult;
+      }
+    } // end loop over collisions
+
+    return occupancy;
+  }
+
+  /// \brief Function to get MC collision centrality
+  /// \param collSlice collection of reconstructed collisions
+  /// \return collision centrality
+  template <typename CCs>
+  int getCentralityColl(CCs const& collSlice)
+  {
+    float multiplicity{0.f};
+    int centrality = 0;
+    for (const auto& collision : collSlice) {
+      float collMult{0.f};
+      collMult = collision.numContrib();
+
+      if (collMult > multiplicity) {
+        centrality = collision.centFT0C();
+        multiplicity = collMult;
+      }
+    } // end loop over collisions
+
+    return centrality;
+  }
+
   // MC process
   // Single-track efficiency calculated only for MC collisions with at least 1 reco. collision
   SliceCache cache;
@@ -1706,6 +1777,12 @@ struct QaEfficiency {
 
       if (groupedCollisions.size() < 1) { // Skipping MC events that have no reconstructed collisions
         continue;
+      }
+      float centrality = -1.;
+      float occupancy = -1.; 
+      if (doOccupancy) {
+        centrality = getCentralityColl(groupedCollisions);
+        occupancy = getOccupancyColl(groupedCollisions);
       }
       histos.fill(HIST("MC/generatedCollisions"), 2);
       if (skipEventsWithoutTPCTracks) {
@@ -1733,6 +1810,14 @@ struct QaEfficiency {
           continue;
         }
         histos.fill(HIST("MC/generatedCollisions"), 5);
+        if (useFT0OccEstimator) {  
+          /// occupancy estimator (FT0c signal amplitudes in +-10us from current collision)
+          occupancy = collision.ft0cOccupancyInTimeRange();
+        } else {
+          /// occupancy estimator (ITS tracks with at least 5 clusters in +-10us from current collision)
+          occupancy = static_cast<float>(collision.trackOccupancyInTimeRange());
+        }
+        centrality = collision.centFT0C();
 
         const auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
 
@@ -1826,13 +1911,13 @@ struct QaEfficiency {
           }
 
           if (doOccupancy) {
-            float trackSign = particle.pdgCode();
+            float partSign = particle.pdgCode();
             float mcPartPt = particle.pt();
-            if (trackSign > 0) { 
+            if (partSign > 0) { 
               histos.fill(HIST("MC/cent/gen/pos"), centrality, mcPartPt);
               histos.fill(HIST("MC/occ/gen/pos"), occupancy, mcPartPt);
             }
-            if (trackSign < 0) { 
+            if (partSign < 0) { 
               histos.fill(HIST("MC/cent/gen/neg"), centrality, mcPartPt);
               histos.fill(HIST("MC/occ/gen/neg"), occupancy, mcPartPt);
             } 
@@ -2014,7 +2099,11 @@ struct QaEfficiency {
       }
 
       histos.fill(HIST("Data/trackLength"), track.length());
-
+      
+      float trackPt = track.pt();
+      float trackEta = track.eta();
+      float trackPhi = track.phi();
+      float trackSign = track.sign();
       if (passedITS) {
         if (trackSign > 0) {
           histos.fill(HIST("Data/pos/pt/its"), trackPt);
@@ -2177,18 +2266,18 @@ struct QaEfficiency {
 
       if (makeEff) {
         if (passedITS) {
-          effITSTPCMatchingVsPt->Fill(passedTPC, track.pt());
+          effITSTPCMatchingVsPt->Fill(passedTPC, trackPt);
         }
         if (passedTPC) {
-          effTPCITSMatchingVsPt->Fill(passedITS, track.pt());
+          effTPCITSMatchingVsPt->Fill(passedITS, trackPt);
         }
         if (passedITS && passedTPC) {
-          effTPCTOFMatchingVsPt->Fill(passedTOF, track.pt());
+          effTPCTOFMatchingVsPt->Fill(passedTOF, trackPt);
           effTPCTOFMatchingVsP->Fill(passedTOF, track.p());
-          effTPCTOFMatchingVsEta->Fill(passedTOF, track.eta());
-          effTPCTOFMatchingVsPhi->Fill(passedTOF, track.phi());
-          effTPCTOFMatchingVsPtVsEta->Fill(passedTOF, track.pt(), track.eta());
-          effTPCTOFMatchingVsPtVsPhi->Fill(passedTOF, track.pt(), track.phi());
+          effTPCTOFMatchingVsEta->Fill(passedTOF, trackEta);
+          effTPCTOFMatchingVsPhi->Fill(passedTOF, trackPhi);
+          effTPCTOFMatchingVsPtVsEta->Fill(passedTOF, trackPt, trackEta);
+          effTPCTOFMatchingVsPtVsPhi->Fill(passedTOF, trackPt, trackPhi);
         }
       }
     }
