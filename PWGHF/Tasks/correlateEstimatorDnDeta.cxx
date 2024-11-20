@@ -17,6 +17,7 @@
 #include <string>
 #include <vector>
 
+#include "TPDGCode.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
@@ -33,11 +34,11 @@ struct CorrelateEstimatorDnDeta {
   static constexpr std::string estimatorsNames[nEstimators] = {"FV0A", "FT0A", "FT0C", "FT0M", "FDDA", "FDDC", "FDDM", "NTPV"};
 
   std::vector<unsigned> consideredParticles = {
-    11,  // e
-    13,  // mu
-    211, // pi
-    321, // K
-    2122 // p
+    kElectron,
+    kMuonMinus,
+    kPiPlus,
+    kKPlus,
+    kProton
   };
 
   ConfigurableAxis axisFV0A = {"axisFV0A", {100, 0., 20000.}, "axis for FV0A estimator"};
