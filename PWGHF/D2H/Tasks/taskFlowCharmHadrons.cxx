@@ -15,6 +15,9 @@
 /// \author S. Politanò, INFN Torino, Italy
 /// \author Wu Chuntai, CUG, China
 
+#include <string>
+#include <vector>
+
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
