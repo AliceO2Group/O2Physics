@@ -38,8 +38,7 @@ struct CorrelateEstimatorDnDeta {
     kMuonMinus,
     kPiPlus,
     kKPlus,
-    kProton
-  };
+    kProton};
 
   ConfigurableAxis axisFV0A = {"axisFV0A", {100, 0., 20000.}, "axis for FV0A estimator"};
   ConfigurableAxis axisFT0A = {"axisFT0A", {100, 0., 10000.}, "axis for FT0A estimator"};
