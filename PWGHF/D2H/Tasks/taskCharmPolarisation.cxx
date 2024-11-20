@@ -16,6 +16,8 @@
 /// \author S. Kundu (CERN) sourav.kundu@cern.ch
 /// \author M. Faggin (CERN) mattia.faggin@cern.ch
 
+#include <vector>
+
 #include "TRandom3.h"
 #include "Math/Vector3D.h"
 #include "Math/Vector4D.h"
@@ -31,8 +33,6 @@
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
-
-#include <vector>
 
 using namespace o2;
 using namespace o2::aod;
