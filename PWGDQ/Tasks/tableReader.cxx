@@ -792,7 +792,7 @@ struct AnalysisEventMixing {
         if (!twoTrackFilter) { // the tracks must have at least one filter bit in common to continue
           continue;
         }
-        VarManager::FillPairME<TEventFillMap, TPairType>(track1, track2);
+        VarManager::FillPairME<TPairType>(track1, track2);
 
         for (unsigned int icut = 0; icut < ncuts; icut++) {
           if (twoTrackFilter & (uint32_t(1) << icut)) {
