@@ -221,17 +221,22 @@ struct JetSpectraChargedTask {
       registry.add("h3_jet_pt_tag_jet_ntracks_tag_jet_ntracks_base_matchedgeopt", ";#it{p}_{T,jet}^{tag} (GeV/#it{c}); N_{jet tracks}^{tag}; N_{jet tracks}^{base}", {HistType::kTH3F, {jetPtAxis, {200, -0.5, 199.5}, {200, -0.5, 199.5}}});
       registry.add("h3_ptcut_jet_pt_tag_jet_pt_base_matchedgeo", "N;#it{p}_{T,jet}^{tag} (GeV/#it{c});#it{p}_{T,jet}^{base} (GeV/#it{c})", {HistType::kTH3F, {{20, 0., 5.}, {300, 0., 300.}, {300, 0., 300.}}});
     }
-
-    if (doprocessTracks || doprocessTracksWeighted) {
+    if (doprocessCollisions) {
       registry.add("h_collisions", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
       registry.add("h2_centrality_collisions", "centrality vs collisions; centrality; collisions", {HistType::kTH2F, {{1200, -10.0, 110.0}, {4, 0.0, 4.0}}});
-      registry.add("h3_centrality_track_pt_track_phi", "centrality vs track pT vs track #varphi; centrality; #it{p}_{T,track} (GeV/#it{c}); #varphi_{track}", {HistType::kTH3F, {{1200, -10.0, 110.0}, {200, 0., 200.}, {160, -1.0, 7.}}});
-      registry.add("h3_centrality_track_pt_track_eta", "centrality vs track pT vs track #eta; centrality; #it{p}_{T,track} (GeV/#it{c}); #eta_{track}", {HistType::kTH3F, {{1200, -10.0, 110.0}, {200, 0., 200.}, trackEtaAxis}});
-      registry.add("h3_centrality_track_pt_track_dcaxy", "centrality vs track pT vs track DCA_{xy}; centrality; #it{p}_{T,track} (GeV/#it{c}); track DCA_{xy}", {HistType::kTH3F, {{120, -10.0, 110.0}, {20, 0., 100.}, {200, -0.15, 0.15}}});
-      registry.add("h3_track_pt_track_eta_track_phi", "track pT vs track #eta vs track #varphi; #it{p}_{T,track} (GeV/#it{c}); #eta_{track}; #varphi_{track}", {HistType::kTH3F, {{200, 0., 200.}, trackEtaAxis, {160, -1.0, 7.}}});
-      if (doprocessTracksWeighted) {
+      registry.add("h_collisions_vertexZ", "position of collision ;#it{Z} (cm)", {HistType::kTH1F, {{30, -15.0, 15.0}}});
+       if (doprocessCollisionsWeighted) {
         registry.add("h_collisions_weighted", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
       }
+    }
+
+    if (doprocessTracks || doprocessTracksWeighted) {
+      registry.add("h2_centrality_track_pt", "centrality vs track pT ; centrality; #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH2F, {{1200, -10.0, 110.0}, {200, 0., 200.}}});
+      registry.add("h2_centrality_track_eta", "centrality vs track #eta; centrality; #eta_{track}", {HistType::kTH2F, {{1200, -10.0, 110.0}, trackEtaAxis}});
+      registry.add("h2_centrality_track_phi", "centrality vs track #varphi ; centrality;; #varphi_{track}", {HistType::kTH2F, {{1200, -10.0, 110.0}, {160, -1.0, 7.}}});
+      registry.add("h2_track_pt_track_dcaxy", "track pT vs track DCA_{xy}; #it{p}_{T,track} (GeV/#it{c}); track DCA_{xy}", {HistType::kTH2F, {{20, 0., 100.}, {200, -0.15, 0.15}}});
+      registry.add("h3_track_pt_track_eta_track_phi", "track pT vs track #eta vs track #varphi; #it{p}_{T,track} (GeV/#it{c}); #eta_{track}; #varphi_{track}", {HistType::kTH3F, {{200, 0., 200.}, trackEtaAxis, {160, -1.0, 7.}}});
+      registry.add("h3_centrality_occupancy_track_pt", "centrality vs occupancy vs track #it{p}_{T}; centrality; occupancy #it{p}_{T,track} (GeV/#it{c})", {HistType::kTH3F, {{1200, -10.0, 110.0}, {60, 0, 30000}, {200, 0., 200.}}});
     }
     if (doprocessTracksSub) {
       registry.add("h3_centrality_track_pt_track_phi_eventwiseconstituentsubtracted", "centrality vs track pT vs track #varphi; centrality; #it{p}_{T,track} (GeV/#it{c}); #varphi_{track}", {HistType::kTH3F, {{1200, -10.0, 110.0}, {200, 0., 200.}, {160, -1.0, 7.}}});
@@ -478,10 +483,12 @@ struct JetSpectraChargedTask {
       if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
         continue;
       }
-      registry.fill(HIST("h3_centrality_track_pt_track_phi"), collision.centrality(), track.pt(), track.phi(), weight);
-      registry.fill(HIST("h3_centrality_track_pt_track_eta"), collision.centrality(), track.pt(), track.eta(), weight);
-      registry.fill(HIST("h3_centrality_track_pt_track_dcaxy"), collision.centrality(), track.pt(), track.dcaXY(), weight);
+      registry.fill(HIST("h2_centrality_track_pt"), collision.centrality(), track.pt(), weight);
+      registry.fill(HIST("h2_centrality_track_eta"), collision.centrality(), track.eta(), weight);
+      registry.fill(HIST("h2_centrality_track_phi"), collision.centrality(), track.phi(), weight);
+      registry.fill(HIST("h2_track_pt_track_dcaxy"), track.pt(), track.dcaXY(), weight);
       registry.fill(HIST("h3_track_pt_track_eta_track_phi"), track.pt(), track.eta(), track.phi(), weight);
+      registry.fill(HIST("h3_centrality_occupancy_track_pt"), collision.centrality(), collision.trackOccupancyInTimeRange(), track.pt(), weight);
     }
   }
 
@@ -730,9 +737,7 @@ struct JetSpectraChargedTask {
   }
   PROCESS_SWITCH(JetSpectraChargedTask, processMCCollisionsWeighted, "collision QA for weighted events", false);
 
-
-  void processTracks(soa::Filtered<aod::JetCollisions>::iterator const& collision,
-                     soa::Filtered<soa::Join<aod::JetTracks, aod::JTrackExtras>> const& tracks)
+  void processCollisions(soa::Filtered<aod::JetCollisions>::iterator const& collision)
   {
     registry.fill(HIST("h_collisions"), 0.5);
     registry.fill(HIST("h2_centrality_collisions"), collision.centrality(), 0.5);
@@ -746,13 +751,13 @@ struct JetSpectraChargedTask {
     }
     registry.fill(HIST("h_collisions"), 2.5);
     registry.fill(HIST("h2_centrality_collisions"), collision.centrality(), 2.5);
-    fillTrackHistograms(collision, tracks);
+    registry.fill(HIST("h_collisions_vertexZ"), collision.posZ());
+      
   }
-  PROCESS_SWITCH(JetSpectraChargedTask, processTracks, "QA for charged tracks", false);
-
-  void processTracksWeighted(soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>::iterator const& collision,
-                             aod::JetMcCollisions const&,
-                             soa::Filtered<soa::Join<aod::JetTracks, aod::JTrackExtras>> const& tracks)
+  PROCESS_SWITCH(JetSpectraChargedTask, processCollisions, "collision QA for events", true);
+  
+  void processCollisionsWeighted(soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>::iterator const& collision,
+                                 aod::JetMcCollisions const&)
   {
     float eventWeight = collision.mcCollision().weight();
     registry.fill(HIST("h_collisions"), 0.5);
@@ -767,6 +772,36 @@ struct JetSpectraChargedTask {
     }
     registry.fill(HIST("h_collisions"), 2.5);
     registry.fill(HIST("h_collisions_weighted"), 2.5, eventWeight);
+    registry.fill(HIST("h_collisions_vertexZ"), collision.posZ(), eventWeight);
+      
+  }
+  PROCESS_SWITCH(JetSpectraChargedTask, processCollisionsWeighted, "collision for weighted events", true);
+
+
+  void processTracks(soa::Filtered<aod::JetCollisions>::iterator const& collision,
+                     soa::Filtered<soa::Join<aod::JetTracks, aod::JTrackExtras>> const& tracks)
+  {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+      return;
+    }
+    if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
+      return;
+    }
+    fillTrackHistograms(collision, tracks);
+  }
+  PROCESS_SWITCH(JetSpectraChargedTask, processTracks, "QA for charged tracks", false);
+
+  void processTracksWeighted(soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>::iterator const& collision,
+                             aod::JetMcCollisions const&,
+                             soa::Filtered<soa::Join<aod::JetTracks, aod::JTrackExtras>> const& tracks)
+  {
+    float eventWeight = collision.mcCollision().weight();
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
+      return;
+    }
+    if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
+      return;
+    }
     fillTrackHistograms(collision, tracks, eventWeight);
   }
   PROCESS_SWITCH(JetSpectraChargedTask, processTracksWeighted, "QA for charged tracks weighted", false);
