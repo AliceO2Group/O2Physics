@@ -13,6 +13,8 @@
 /// \author Youpeng Su (yousu@cern.ch)
 #include <iostream>
 #include <string>
+#include <vector>
+#include <cmath>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Common/DataModel/EventSelection.h"
@@ -26,8 +28,7 @@
 #include "Framework/AnalysisDataModel.h"
 #include <TTree.h>
 #include <TFile.h>
-#include <vector>
-#include <cmath>
+
 
 using std::cout;
 using std::endl;
@@ -492,7 +493,6 @@ struct myAnalysis {
   int nEvents = 0;
   void processJetTracks(JCollisions::iterator const& collision, soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>> const& chargedjets, soa::Join<aod::JTracks, aod::JTrackPIs> const& tracks, TrackCandidates const&)
   {
-
     if (cDebugLevel > 0) {
     }
 
