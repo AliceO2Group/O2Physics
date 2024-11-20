@@ -405,7 +405,7 @@ struct statPromptPhoton {
   using jfilteredMCClusters = soa::Filtered<jMCClusters>;
 
   int nEventsRecMC_JE = 0;
-  void processMCRec_JE(jfilteredCollisions::iterator const& collision, jfilteredMCClusters const& mcclusters, jTrackCandidates const& tracks, soa::Join<aod::JTracks, aod::JTrackExtras, aod::JTrackPIs> const& caltracks, aod::JMcParticles const&, TrackCandidates const&)
+  void processMCRec_JE(jfilteredCollisions::iterator const& collision, jfilteredMCClusters const& mcclusters, jTrackCandidates const& tracks, soa::Join<aod::JTracks, aod::JTrackExtras, aod::JTrackPIs> const& /*caltracks*/, aod::JMcParticles const&, TrackCandidates const&)
   {
 
     nEventsRecMC_JE++;
@@ -437,7 +437,6 @@ struct statPromptPhoton {
       histos.fill(HIST("REC_M02_AC"), mccluster.energy());
       histos.fill(HIST("REC_All_Energy"), mccluster.energy());
       bool photontrigger = false;  // is a neutral cluster
-      bool nonvetotrigger = false; // probably is not a neutral cluster
       bool vetotrigger = false;    // might be a neutral cluster
       bool chargetrigger = false;  // is definitely not a neutral cluster
       double photonPt = 0.0;
@@ -471,7 +470,6 @@ struct statPromptPhoton {
           histos.fill(HIST("REC_Cluster_QA"), 2.5);
           vetotrigger = true;
         } else {
-          nonvetotrigger = true;
           photontrigger = true;
           histos.fill(HIST("REC_Cluster_QA"), 1.5);
         }

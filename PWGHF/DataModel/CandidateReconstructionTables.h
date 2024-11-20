@@ -339,11 +339,11 @@ DECLARE_SOA_TABLE(HfDstars_000, "AOD", "HFDSTAR", //! D* -> D0pi candidates (Run
                   hf_track_index::Prong0Id,
                   hf_track_index::ProngD0Id);
 
-DECLARE_SOA_TABLE(HfDstars_001, "AOD", "HFDSTAR", //! D* -> D0pi candidates (Run 3 format)
-                  o2::soa::Index<>,
-                  hf_track_index::CollisionId,
-                  hf_track_index::Prong0Id,
-                  hf_track_index::ProngD0Id);
+DECLARE_SOA_TABLE_VERSIONED(HfDstars_001, "AOD", "HFDSTAR", 1, //! D* -> D0pi candidates (Run 3 format)
+                            o2::soa::Index<>,
+                            hf_track_index::CollisionId,
+                            hf_track_index::Prong0Id,
+                            hf_track_index::ProngD0Id);
 
 using HfDstars = HfDstars_001;
 using HfDstar = HfDstars::iterator;

@@ -10,6 +10,7 @@
 // or submit itself to any jurisdiction.
 
 #include <memory>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Common/DataModel/EventSelection.h"
@@ -259,8 +260,8 @@ struct r2p24id {
   Configurable<float> maxpT{"maxpT", 2.0, "Maximum pT"};
   Configurable<float> trackpartition{"trackpartition", 1.0, "where(in pT) to partition"};
 
-  Configurable<int8_t> pid_particle1{"pid_particle1", 1, "Define particle1 type"}; // 1->Pion, 2->Kaon, 3->Proton
-  Configurable<int8_t> pid_particle2{"pid_particle2", 1, "Define particle2 type"};
+  Configurable<int> pid_particle1{"pid_particle1", 1, "Define particle1 type"}; // 1->Pion, 2->Kaon, 3->Proton
+  Configurable<int> pid_particle2{"pid_particle2", 1, "Define particle2 type"};
 
   Configurable<bool> iftrackpartition{"iftrackpartition", false, "If track partition is needed"};
   Configurable<bool> ifpid{"ifpid", false, "If PID is needed"};

@@ -148,6 +148,7 @@ struct derivedlambdakzeroanalysis {
 
   // for MC
   Configurable<bool> doMCAssociation{"doMCAssociation", true, "if MC, do MC association"};
+  Configurable<bool> doTreatPiToMuon{"doTreatPiToMuon", false, "Take pi decay into muon into account in MC"};
   Configurable<bool> doCollisionAssociationQA{"doCollisionAssociationQA", true, "check collision association"};
 
   // Machine learning evaluation for pre-selection and corresponding information generation
@@ -816,19 +817,22 @@ struct derivedlambdakzeroanalysis {
   // precalculate this information so that a check is one mask operation, not many
   {
     uint64_t bitMap = 0;
-    // check for specific particle species
+    bool isPositiveProton = v0.pdgCodePositive() == 2212;
+    bool isPositivePion = v0.pdgCodePositive() == 211 || (doTreatPiToMuon && v0.pdgCodePositive() == -13);
+    bool isNegativeProton = v0.pdgCodeNegative() == -2212;
+    bool isNegativePion = v0.pdgCodeNegative() == -211 || (doTreatPiToMuon && v0.pdgCodeNegative() == 13);
 
-    if (v0.pdgCode() == 310 && v0.pdgCodePositive() == 211 && v0.pdgCodeNegative() == -211) {
+    if (v0.pdgCode() == 310 && isPositivePion && isNegativePion) {
       bitset(bitMap, selConsiderK0Short);
       if (v0.isPhysicalPrimary())
         bitset(bitMap, selPhysPrimK0Short);
     }
-    if (v0.pdgCode() == 3122 && v0.pdgCodePositive() == 2212 && v0.pdgCodeNegative() == -211) {
+    if (v0.pdgCode() == 3122 && isPositiveProton && isNegativePion) {
       bitset(bitMap, selConsiderLambda);
       if (v0.isPhysicalPrimary())
         bitset(bitMap, selPhysPrimLambda);
     }
-    if (v0.pdgCode() == -3122 && v0.pdgCodePositive() == 211 && v0.pdgCodeNegative() == -2212) {
+    if (v0.pdgCode() == -3122 && isPositivePion && isNegativeProton) {
       bitset(bitMap, selConsiderAntiLambda);
       if (v0.isPhysicalPrimary())
         bitset(bitMap, selPhysPrimAntiLambda);

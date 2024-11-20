@@ -77,12 +77,13 @@ enum DType : uint8_t {
 };
 
 enum DecayTypeMc : uint8_t {
-  Ds1ToDStarK0ToD0PiK0s = 0,
-  Ds2StarToDplusK0s,
+  Ds1ToDStarK0ToD0PiK0s = 1,
+  Ds2StarToDplusK0sToPiKaPiPiPi,
   Ds1ToDStarK0ToDPlusPi0K0s,
   Ds1ToDStarK0ToD0PiK0sPart,
   Ds1ToDStarK0ToD0NoPiK0sPart,
-  Ds1ToDStarK0ToD0PiK0sOneMu
+  Ds1ToDStarK0ToD0PiK0sOneMu,
+  Ds2StarToDplusK0sOneMu
 };
 
 enum PartialMatchMc : uint8_t {
@@ -116,7 +117,7 @@ struct HfDataCreatorCharmResoReduced {
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> ccdbPathGrpMag{"ccdbPathGrpMag", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object (Run 3)"};
   Configurable<bool> propagateV0toPV{"propagateV0toPV", false, "Enable or disable V0 propagation to V0"};
-  o2::framework::Configurable<bool> rejectBackground{"rejectBackground", true, "Reject particles from background events"};
+  Configurable<bool> doMcRecQa{"doMcRecQa", true, "Fill QA histograms for Mc matching"};
 
   int runNumber{0}; // needed to detect if the run changed and trigger update of calibrations etc.
   // selection D
@@ -188,6 +189,13 @@ struct HfDataCreatorCharmResoReduced {
     uint8_t v0Type;
   } candidateV0;
 
+  struct {
+    float invMassD;
+    float ptD;
+    float invMassDdau;
+    float invMassKPiPiV0;
+    float ptReso;
+  } varUtils;
   using CandsDplusFiltered = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;
   using CandsDplusFilteredWithMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
   using CandDstarFiltered = soa::Filtered<soa::Join<aod::HfD0FromDstar, aod::HfCandDstars, aod::HfSelDstarToD0Pi>>;
@@ -229,6 +237,7 @@ struct HfDataCreatorCharmResoReduced {
     const AxisSpec axisMassDstar{200, 0.139f, 0.179f, ""};
     const AxisSpec axisMassLambda{100, 1.05f, 1.35f, ""};
     const AxisSpec axisMassKzero{100, 0.35f, 0.65f, ""};
+    const AxisSpec axisMassDsj{400, 0.49f, 0.89f, ""};
 
     registry.add("hMassVsPtDplusAll", "Dplus candidates (all, regardless the pairing with V0s);#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassDplus}});
     registry.add("hMassVsPtDstarAll", "Dstar candidates (all, regardless the pairing with V0s);#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassDstar}});
@@ -239,20 +248,40 @@ struct HfDataCreatorCharmResoReduced {
     registry.add("hMassVsPtLambda", "Lambda candidates;#it{p}_{T} (GeV/#it{c});inv. mass (p #pi^{#minus}) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassLambda}});
     registry.add("hdEdxVsP", "Tracks;#it{p} (GeV/#it{c});d#it{E}/d#it{x};entries", {HistType::kTH2F, {axisP, axisDeDx}});
 
-    registry.add("hMassDs1", "Ds1 candidates;m_{Ds1} - m_{D^{*}} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{400, 0.49, 0.89}}});
-    registry.add("hMassDsStar2", "Ds^{*}2 candidates; Ds^{*}2 - m_{D^{#plus}} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{400, 0.49, 0.89}}});
+    registry.add("hMassDs1", "Ds1 candidates;m_{Ds1} - m_{D^{*}} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {axisMassDsj}});
+    registry.add("hMassDsStar2", "Ds^{*}2 candidates; Ds^{*}2 - m_{D^{#plus}} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {axisMassDsj}});
     registry.add("hMassXcRes", "XcRes candidates; XcRes - m_{D^{#plus}} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{300, 1.1, 1.4}}});
     registry.add("hMassDstarProton", "D^{*}-proton candidates;m_{D^{*}p} - m_{D^{*}} (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 0.9, 1.4}}});
     registry.add("hDType", "D selection flag", {HistType::kTH1F, {{5, -2.5, 2.5}}});
 
-    registry.add("hMCRecCounter", "Number of Reconstructed MC Matched candidates per channel", {HistType::kTH1F, {{65, -32.5, 32.5}}});
+    registry.add("hMCRecCounter", "Number of Reconstructed MC Matched candidates per channel", {HistType::kTH1F, {{17, -8.5, 8.5}}});
     registry.add("hMCRecDebug", "Debug of MC Reco", {HistType::kTH1F, {{16, -0.5, 15.5}}});
     registry.add("hMCRecOrigin", "Origin of Matched particles", {HistType::kTH1F, {{3, -0.5, 2.5}}});
 
-    registry.add("hMCGenCounter", "Number of Generated particles; Decay Channel Flag; pT [GeV/c]", {HistType::kTH2F, {{65, -32.5, 32.5}, {100, 0, 50}}});
+    registry.add("hMCGenCounter", "Number of Generated particles; Decay Channel Flag; pT [GeV/c]", {HistType::kTH2F, {{17, -8.5, 8.5}, {100, 0, 50}}});
     registry.add("hMCSignCounter", "Sign of Generated particles", {HistType::kTH1F, {{3, -1.5, 1.5}}});
     registry.add("hMCGenOrigin", "Origin of Generated particles", {HistType::kTH1F, {{3, -0.5, 2.5}}});
     registry.add("hMCOriginCounterWrongDecay", "Origin of Generated particles in Wrong decay", {HistType::kTH1F, {{3, -0.5, 2.5}}});
+
+    if (doMcRecQa) {
+      registry.add("hMassVsPtK0Matched", "K0s candidates Matched ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassKzero}});
+      registry.add("hMassVsPtD0Matched", "D0 candidates Matched ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassDplus}});
+      registry.add("hMassVsPtDstarMatched", "Dstar candidates Matched ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassDstar}});
+      registry.add("hMassVsPtDplusMatched", "Dplus candidates Matched ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassDplus}});
+      registry.add("hMassVsPtDs1Matched", "Ds1 candidates Matched ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassDsj}});
+      registry.add("hMassVsPtDs2StarMatched", "Ds2Star candidates Matched ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassDsj}});
+      registry.add("hMassVsPtK0MatchedPiToMu", "K0s candidates Matched with PiToMu decay ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassKzero}});
+      registry.add("hMassVsPtD0MatchedPiToMu", "D0 candidates Matched with PiToMu decay ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassDplus}});
+      registry.add("hMassVsPtDstarMatchedPiToMu", "Dstar candidates Matched with PiToMu decay ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassDstar}});
+      registry.add("hMassVsPtDplusMatchedPiToMu", "Dplus candidates Matched with PiToMu decay ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassDplus}});
+      registry.add("hMassVsPtDs1MatchedPiToMu", "Ds1 candidates Matched with PiToMu decay ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassDsj}});
+      registry.add("hMassVsPtDs2StarMatchedPiToMu", "Ds2Star candidates Matched with PiToMu decay ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassDsj}});
+      registry.add("hMassVsPtD0MatchedKaToPi", "D0 candidates Matched with KaToPi decay ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassDplus}});
+      registry.add("hMassVsPtDstarMatchedKaToPi", "Dstar candidates Matched with KaToPi decay ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassDstar}});
+      registry.add("hMassVsPtDplusMatchedKaToPi", "Dplus candidates Matched with KaToPi decay ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassDplus}});
+      registry.add("hMassVsPtDs1MatchedKaToPi", "Ds1 candidates Matched with KaToPi decay ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassDsj}});
+      registry.add("hMassVsPtDs2StarMatchedKaToPi", "Ds2Star candidates Matched with KaToPi decay ;#it{p}_{T} (GeV/#it{c});inv. mass (GeV/#it{c}^{2});entries", {HistType::kTH2F, {axisPt, axisMassDsj}});
+    }
 
     // Configure CCDB access
     ccdb->setURL(url.value);
@@ -517,138 +546,129 @@ struct HfDataCreatorCharmResoReduced {
     int8_t flag{0};
     int8_t debug{0};
     int8_t origin{0};
+    int8_t nPiToMuReso{0}, nPiToMuV0, nPiToMuD0{0}, nPiToMuDstar{0}, nPiToMuDplus{0};
+    int8_t nKaToPiReso{0}, nKaToPiV0, nKaToPiD0{0}, nKaToPiDstar{0}, nKaToPiDplus{0};
     std::vector<int> idxBhadMothers{};
     float motherPt{-1.f};
-    int indexRecReso{-1}, indexRecDstar{-1}, indexRecDplus{-1}, indexRecD0{-1}, indexRecK0{-1};
-    int indexRecDstarToMu{-1}, indexRecD0ToMu{-1}, indexRecK0ToMu{-1}, indexRecResoToMu{-1}, indexRecResoPartReco{-1};
+    int indexRecReso{-1}, indexRecDstar{-1}, indexRecDplus{-1}, indexRecD0{-1}, indexRecK0{-1}, indexRecResoPartReco{-1};
 
     if constexpr (decChannel == DecayChannel::DstarV0) {
       // Ds1 → D* K0 → (D0 π+) K0s → ((K-π+) π+)(π+π-)
-      indexRecD0 = RecoDecay::getMatchedMCRec(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1]}, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &signD0, 1);
-      indexRecK0 = RecoDecay::getMatchedMCRec<false, true>(particlesMc, std::array{vecDaughtersReso[3], vecDaughtersReso[4]}, kK0, std::array{+kPiPlus, -kPiPlus}, true, &signV0, 2);
+      indexRecD0 = RecoDecay::getMatchedMCRec<false, false, false, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1]}, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &signD0, 1, &nPiToMuD0, &nKaToPiD0);
+      indexRecK0 = RecoDecay::getMatchedMCRec<false, true, false, true>(particlesMc, std::array{vecDaughtersReso[3], vecDaughtersReso[4]}, kK0, std::array{+kPiPlus, -kPiPlus}, true, &signV0, 2, &nPiToMuV0, &nKaToPiV0);
       if (indexRecD0 > -1) {
-        indexRecDstar = RecoDecay::getMatchedMCRec(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2]}, Pdg::kDStar, std::array{-kKPlus, +kPiPlus, +kPiPlus}, true, &signDStar, 2);
+        indexRecDstar = RecoDecay::getMatchedMCRec<false, false, false, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2]}, Pdg::kDStar, std::array{-kKPlus, +kPiPlus, +kPiPlus}, true, &signDStar, 2, &nPiToMuDstar, &nKaToPiDstar);
       }
       if (indexRecD0 > -1 && indexRecDstar > -1 && indexRecK0 > -1) {
-        indexRecReso = RecoDecay::getMatchedMCRec<false, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2], vecDaughtersReso[3], vecDaughtersReso[4]}, Pdg::kDS1, std::array{+kPiPlus, -kKPlus, +kPiPlus, +kPiPlus, -kPiPlus}, true, &sign, 3);
-        if (indexRecReso > -1) {
-          flag = sign * BIT(DecayTypeMc::Ds1ToDStarK0ToD0PiK0s);
+        indexRecReso = RecoDecay::getMatchedMCRec<false, true, false, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2], vecDaughtersReso[3], vecDaughtersReso[4]}, Pdg::kDS1, std::array{+kPiPlus, -kKPlus, +kPiPlus, +kPiPlus, -kPiPlus}, true, &sign, 3, &nPiToMuReso, &nKaToPiReso);
+        if (indexRecReso > -1 && nPiToMuReso == 0 && nKaToPiReso == 0) {
+          flag = sign * DecayTypeMc::Ds1ToDStarK0ToD0PiK0s;
+        } else if (indexRecReso > -1 && nPiToMuReso >= 1 && nKaToPiReso == 0) {
+          flag = sign * DecayTypeMc::Ds1ToDStarK0ToD0PiK0sOneMu;
         }
       }
 
       // Ds1+ not matched: we check if it is partially reco
       if (indexRecReso < 0) {
-        indexRecResoPartReco = RecoDecay::getMatchedMCRec<false, true, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2], vecDaughtersReso[3], vecDaughtersReso[4]}, Pdg::kDS1, std::array{+kPiPlus, -kKPlus, +kPiPlus, +kPiPlus, -kPiPlus}, true, &sign, 3);
+        indexRecResoPartReco = RecoDecay::getMatchedMCRec<false, true, true, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2], vecDaughtersReso[3], vecDaughtersReso[4]}, Pdg::kDS1, std::array{+kPiPlus, -kKPlus, +kPiPlus, +kPiPlus, -kPiPlus}, true, &sign, 3);
         indexRecDplus = RecoDecay::getMatchedMCRec(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2]}, Pdg::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &signDPlus, 2);
         if (indexRecResoPartReco > -1) { // we look for decays of D* or D0 with more daughters
           if (indexRecDstar < 0 && indexRecK0 > -1) {
-            auto indexRecDstarPartReco = RecoDecay::getMatchedMCRec<false, false, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2]}, Pdg::kDStar, std::array{-kKPlus, +kPiPlus, +kPiPlus}, true, &signDStar, 3);
+            auto indexRecDstarPartReco = RecoDecay::getMatchedMCRec<false, false, true, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2]}, Pdg::kDStar, std::array{-kKPlus, +kPiPlus, +kPiPlus}, true, &signDStar, 3);
             if (indexRecDstarPartReco > -1) {
               if (indexRecDplus > -1) { // Ds1 -> D* K0s -> D+  π0 K0s
-                flag = sign * BIT(DecayTypeMc::Ds1ToDStarK0ToDPlusPi0K0s);
+                flag = sign * DecayTypeMc::Ds1ToDStarK0ToDPlusPi0K0s;
               } else {
-                auto indexRecDzeroPartReco = RecoDecay::getMatchedMCRec<false, false, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1]}, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &signD0, 2);
+                auto indexRecDzeroPartReco = RecoDecay::getMatchedMCRec<false, false, true, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1]}, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &signD0, 2);
                 if (indexRecDzeroPartReco > -1) { // Ds1 -> D* K0s -> D0 π+ K0s -> K- π+ π0 π+ K0s
-                  flag = sign * BIT(DecayTypeMc::Ds1ToDStarK0ToD0PiK0sPart);
+                  flag = sign * DecayTypeMc::Ds1ToDStarK0ToD0PiK0sPart;
                 }
               }
             }
           }
         } else { // we look for D* not matched, but all the other ones yes, we check if we only lost the soft pion
           if (indexRecD0 > -1 && indexRecK0 > -1 && indexRecDstar < 0) {
-            indexRecResoPartReco = RecoDecay::getMatchedMCRec<false, true, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[3], vecDaughtersReso[4]}, Pdg::kDS1, std::array{+kPiPlus, -kKPlus, +kPiPlus, -kPiPlus}, true, &sign, 3);
+            indexRecResoPartReco = RecoDecay::getMatchedMCRec<false, true, true, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[3], vecDaughtersReso[4]}, Pdg::kDS1, std::array{+kPiPlus, -kKPlus, +kPiPlus, -kPiPlus}, true, &sign, 3);
             if (indexRecResoPartReco > -1) {
-              flag = sign * BIT(DecayTypeMc::Ds1ToDStarK0ToD0NoPiK0sPart);
-            }
-          }
-        }
-
-        // Check if one pion decayed to a muon
-        if (indexRecK0 < 0 && indexRecDstar > -1) {
-          int indexDs1[2] = {-1, -1};
-          int nMuons{0};
-          int8_t sgn;
-          for (int iTrack = 3; iTrack <= 4; iTrack++) {
-            if (vecDaughtersReso[iTrack].has_mcParticle()) {
-              auto particleK0Dau = vecDaughtersReso[iTrack].template mcParticle_as<PParticles>();
-              auto absPdgK0Dau = std::abs(particleK0Dau.pdgCode());
-              if (absPdgK0Dau == +kMuonPlus) {
-                nMuons++;
-                indexDs1[iTrack - 3] = RecoDecay::getMother(particlesMc, particleK0Dau, Pdg::kDS1, true, &sgn, 4);
-              } else if (absPdgK0Dau == +kPiPlus) {
-                indexDs1[iTrack - 3] = RecoDecay::getMother(particlesMc, particleK0Dau, Pdg::kDS1, true, &sgn, 3);
-              }
-            }
-          }
-          if (indexDs1[0] > -1 && indexDs1[0] == indexDs1[1] && nMuons > 0) {
-            auto partDstar = particlesMc.rawIteratorAt(indexRecDstar);
-            if (RecoDecay::getMother(particlesMc, partDstar, Pdg::kDS1, true, &sgn, 1) == indexDs1[0]) {
-              indexRecResoToMu = indexDs1[0];
-              indexRecResoPartReco = -1;
-              flag = sign * BIT(DecayTypeMc::Ds1ToDStarK0ToD0PiK0sOneMu);
-            }
-          }
-        }
-        if (indexRecDstar < 0 && indexRecK0 > -1 && indexRecD0 > -1) {
-          int indexDs1{-1};
-          int indexDstar{-1};
-          int8_t sgn;
-          if (vecDaughtersReso[3].has_mcParticle()) {
-            auto particleDstarDau = vecDaughtersReso[3].template mcParticle_as<PParticles>();
-            auto absPdgDstarDau = std::abs(particleDstarDau.pdgCode());
-            if (absPdgDstarDau == +kMuonPlus) {
-              indexDs1 = RecoDecay::getMother(particlesMc, particleDstarDau, Pdg::kDS1, true, &sgn, 3);
-              indexDstar = RecoDecay::getMother(particlesMc, particleDstarDau, Pdg::kDStar, true, &sgn, 2);
-            }
-          }
-          if (indexDs1 > -1 && indexDstar > -1) {
-            auto partK0 = particlesMc.rawIteratorAt(indexRecK0);
-            auto partDstar = particlesMc.rawIteratorAt(indexDstar);
-            auto partD0 = particlesMc.rawIteratorAt(indexRecD0);
-            auto motherDstar = RecoDecay::getMother(particlesMc, partDstar, Pdg::kDS1, true, &sgn, 1);
-            auto motherK0 = RecoDecay::getMother(particlesMc, partK0, Pdg::kDS1, true, &sgn, 1);
-            auto motherD0 = RecoDecay::getMother(particlesMc, partD0, Pdg::kDS1, true, &sgn, 2);
-            if (indexDs1 == motherDstar && indexDs1 == motherD0 && indexDs1 == motherK0) {
-              indexRecResoToMu = indexDs1;
-              indexRecResoPartReco = -1;
-              flag = sign * BIT(DecayTypeMc::Ds1ToDStarK0ToD0PiK0sOneMu);
+              flag = sign * DecayTypeMc::Ds1ToDStarK0ToD0NoPiK0sPart;
             }
           }
         }
       }
-
       if (flag != 0) {
         int indexParticle{-1};
         if (indexRecReso > -1) {
           indexParticle = indexRecReso;
         } else if (indexRecResoPartReco > -1) {
           indexParticle = indexRecResoPartReco;
-        } else if (indexRecResoToMu > -1) {
-          indexParticle = indexRecResoToMu;
         }
         auto particleReso = particlesMc.iteratorAt(indexParticle);
         origin = RecoDecay::getCharmHadronOrigin(particlesMc, particleReso, false, &idxBhadMothers);
         motherPt = particleReso.pt();
       }
+      if (doMcRecQa) {
+        if (indexRecReso > -1) {
+          if (nPiToMuReso == 0 && nKaToPiReso == 0) {
+            registry.fill(HIST("hMassVsPtDs1Matched"), varUtils.ptD, varUtils.invMassKPiPiV0 - varUtils.invMassD);
+          }
+          if (nPiToMuReso >= 1) {
+            registry.fill(HIST("hMassVsPtDs1MatchedPiToMu"), varUtils.ptD, varUtils.invMassKPiPiV0 - varUtils.invMassD);
+          }
+          if (nKaToPiReso >= 1) {
+            registry.fill(HIST("hMassVsPtDs1MatchedKaToPi"), varUtils.ptD, varUtils.invMassKPiPiV0 - varUtils.invMassD);
+          }
+        }
+        if (indexRecD0 > -1) {
+          if (nPiToMuD0 == 0 && nKaToPiD0 == 0) {
+            registry.fill(HIST("hMassVsPtD0Matched"), varUtils.ptD, varUtils.invMassDdau);
+          }
+          if (nPiToMuD0 >= 1) {
+            registry.fill(HIST("hMassVsPtD0MatchedPiToMu"), varUtils.ptD, varUtils.invMassDdau);
+          }
+          if (nKaToPiD0 >= 1) {
+            registry.fill(HIST("hMassVsPtD0MatchedKaToPi"), varUtils.ptD, varUtils.invMassDdau);
+          }
+        }
+        if (indexRecDstar > -1) {
+          if (nPiToMuDstar == 0 && nKaToPiDstar == 0) {
+            registry.fill(HIST("hMassVsPtDstarMatched"), varUtils.ptD, varUtils.invMassD - varUtils.invMassDdau);
+          }
+          if (nPiToMuDstar >= 1) {
+            registry.fill(HIST("hMassVsPtDstarMatchedPiToMu"), varUtils.ptD, varUtils.invMassD - varUtils.invMassDdau);
+          }
+          if (nKaToPiDstar >= 1) {
+            registry.fill(HIST("hMassVsPtDstarMatchedKaToPi"), varUtils.ptD, varUtils.invMassD - varUtils.invMassDdau);
+          }
+        }
+        if (indexRecK0 > -1) {
+          if (nPiToMuV0 == 0 && nKaToPiV0 == 0) {
+            registry.fill(HIST("hMassVsPtK0Matched"), candidateV0.pT, candidateV0.mK0Short);
+          }
+          if (nPiToMuV0 >= 1) {
+            registry.fill(HIST("hMassVsPtK0MatchedPiToMu"), candidateV0.pT, candidateV0.mK0Short);
+          }
+          if (nKaToPiV0 >= 1) {
+            registry.fill(HIST("hMassVsPtK0MatchedKaToPi"), candidateV0.pT, candidateV0.mK0Short);
+          }
+        }
+      }
     } else if constexpr (decChannel == DecayChannel::DplusV0) {
       // Ds2Star → D+ K0 → (π+K-π+) K0s → (π+K-π+)(π+π-)
-      indexRecReso = RecoDecay::getMatchedMCRec<false, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2], vecDaughtersReso[3], vecDaughtersReso[4]}, Pdg::kDS2Star, std::array{+kPiPlus, -kKPlus, +kPiPlus, +kPiPlus, -kPiPlus}, true, &sign, 3);
-      if (indexRecReso > -1) {
-        // D+ → π+ K- π+
-        indexRecDplus = RecoDecay::getMatchedMCRec(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2]}, Pdg::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &signDPlus, 2);
-        indexRecK0 = RecoDecay::getMatchedMCRec<false, true>(particlesMc, std::array{vecDaughtersReso[3], vecDaughtersReso[4]}, kK0, std::array{+kPiPlus, -kPiPlus}, true, &signV0, 2);
-        if (indexRecDplus > -1 && indexRecK0 > -1) {
-          flag = sign * BIT(DecayTypeMc::Ds2StarToDplusK0s);
-        }
-      } else { // Verify partly reconstructed decay Ds1 -> D* K0s -> D+  π0 K0s
-        indexRecReso = RecoDecay::getMatchedMCRec<false, true, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2], vecDaughtersReso[3], vecDaughtersReso[4]}, Pdg::kDS1, std::array{+kPiPlus, -kKPlus, +kPiPlus, +kPiPlus, -kPiPlus}, true, &sign, 3);
-        if (indexRecReso > -1) {
-          indexRecDstar = RecoDecay::getMatchedMCRec<false, false, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2]}, Pdg::kDStar, std::array{-kKPlus, +kPiPlus, +kPiPlus}, true, &signDStar, 2);
-          indexRecK0 = RecoDecay::getMatchedMCRec<false, true>(particlesMc, std::array{vecDaughtersReso[3], vecDaughtersReso[4]}, kK0, std::array{+kPiPlus, -kPiPlus}, true, &signV0, 2);
-          if (indexRecDstar > -1 && indexRecK0 > -1) {
-            indexRecDplus = RecoDecay::getMatchedMCRec(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2]}, Pdg::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
-            if (indexRecDplus > -1) {
-              flag = sign * BIT(DecayTypeMc::Ds1ToDStarK0ToDPlusPi0K0s);
+      indexRecK0 = RecoDecay::getMatchedMCRec<false, true, false, true>(particlesMc, std::array{vecDaughtersReso[3], vecDaughtersReso[4]}, kK0, std::array{+kPiPlus, -kPiPlus}, true, &signV0, 2, &nPiToMuV0, &nKaToPiV0);
+      indexRecDplus = RecoDecay::getMatchedMCRec<false, false, false, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2]}, Pdg::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &signDPlus, 2, &nPiToMuDplus, &nKaToPiDplus);
+      if (indexRecK0 > -1 && indexRecDplus > -1) {
+        indexRecReso = RecoDecay::getMatchedMCRec<false, false, false, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2], vecDaughtersReso[3], vecDaughtersReso[4]}, Pdg::kDS2Star, std::array{+kPiPlus, -kKPlus, +kPiPlus, +kPiPlus, -kPiPlus}, true, &sign, 3, &nPiToMuReso, &nKaToPiReso);
+        if (indexRecReso > -1 && nPiToMuReso == 0 && nKaToPiReso == 0) {
+          flag = sign * DecayTypeMc::Ds2StarToDplusK0sToPiKaPiPiPi;
+        } else if (indexRecReso > -1 && nPiToMuReso >= 1 && nKaToPiReso == 0) {
+          flag = sign * DecayTypeMc::Ds2StarToDplusK0sOneMu;
+        } else if (indexRecReso < 0) {
+          // Verify partly reconstructed decay Ds1 -> D* K0s -> D+  π0 K0s
+          indexRecDstar = RecoDecay::getMatchedMCRec<false, false, true, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2]}, Pdg::kDStar, std::array{-kKPlus, +kPiPlus, +kPiPlus}, true, &signDStar, 2);
+          if (indexRecDstar > -1) {
+            indexRecReso = RecoDecay::getMatchedMCRec<false, true, true, true>(particlesMc, std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2], vecDaughtersReso[3], vecDaughtersReso[4]}, Pdg::kDS1, std::array{+kPiPlus, -kKPlus, +kPiPlus, +kPiPlus, -kPiPlus}, true, &sign, 3);
+            if (indexRecReso > -1) {
+              flag = sign * DecayTypeMc::Ds1ToDStarK0ToDPlusPi0K0s;
             }
           }
         }
@@ -658,7 +678,42 @@ struct HfDataCreatorCharmResoReduced {
         origin = RecoDecay::getCharmHadronOrigin(particlesMc, particleReso, false, &idxBhadMothers);
         motherPt = particleReso.pt();
       }
-    }
+      if (doMcRecQa) {
+        if (indexRecReso > -1) {
+          if (nPiToMuReso == 0 && nKaToPiReso == 0) {
+            registry.fill(HIST("hMassVsPtDs2StarMatched"), varUtils.ptD, varUtils.invMassKPiPiV0 - varUtils.invMassD);
+          }
+          if (nPiToMuReso >= 1) {
+            registry.fill(HIST("hMassVsPtDs2StarMatchedPiToMu"), varUtils.ptD, varUtils.invMassKPiPiV0 - varUtils.invMassD);
+          }
+          if (nKaToPiReso >= 1) {
+            registry.fill(HIST("hMassVsPtDs2StarMatchedKaToPi"), varUtils.ptD, varUtils.invMassKPiPiV0 - varUtils.invMassD);
+          }
+        }
+        if (indexRecDplus > -1) {
+          if (nPiToMuDplus == 0 && nKaToPiDplus == 0) {
+            registry.fill(HIST("hMassVsPtDplusMatched"), varUtils.ptD, varUtils.invMassD);
+          }
+          if (nPiToMuDplus >= 1) {
+            registry.fill(HIST("hMassVsPtDplusMatchedPiToMu"), varUtils.ptD, varUtils.invMassD);
+          }
+          if (nKaToPiDplus >= 1) {
+            registry.fill(HIST("hMassVsPtDplusMatchedKaToPi"), varUtils.ptD, varUtils.invMassD);
+          }
+        }
+        if (indexRecK0 > -1) {
+          if (nPiToMuV0 == 0 && nKaToPiV0 == 0) {
+            registry.fill(HIST("hMassVsPtK0Matched"), candidateV0.pT, candidateV0.mK0Short);
+          }
+          if (nPiToMuV0 >= 1) {
+            registry.fill(HIST("hMassVsPtK0MatchedPiToMu"), candidateV0.pT, candidateV0.mK0Short);
+          }
+          if (nKaToPiV0 >= 1) {
+            registry.fill(HIST("hMassVsPtK0MatchedKaToPi"), candidateV0.pT, candidateV0.mK0Short);
+          }
+        }
+      }
+    } // DecayChannel::DplusV0
     if (flag != 0) {
       registry.fill(HIST("hMCRecCounter"), flag);
       registry.fill(HIST("hMCRecOrigin"), origin);
@@ -674,12 +729,6 @@ struct HfDataCreatorCharmResoReduced {
       }
       if (indexRecDplus > -1) {
         SETBIT(debug, PartialMatchMc::DPlusMatched);
-      }
-      if (indexRecK0ToMu > -1) {
-        SETBIT(debug, PartialMatchMc::K0MuMatched);
-      }
-      if (indexRecDstarToMu > -1) {
-        SETBIT(debug, PartialMatchMc::DStarMuMatched);
       }
       registry.fill(HIST("hMCRecDebug"), debug);
     }
@@ -713,7 +762,6 @@ struct HfDataCreatorCharmResoReduced {
     for (const auto& candD : candsD) {
       // initialize variables depending on decay channel
       bool fillHfCandD = false;
-      float invMassD{0.f}, invMassDdau{0.f};
       std::array<float, 3> pVecD;
       std::array<float, 3> pVecProng2;
       std::array<float, 3> secondaryVertexD;
@@ -721,13 +769,14 @@ struct HfDataCreatorCharmResoReduced {
       int8_t dtype;
       std::array<float, 3> bdtScores;
       std::vector<typename Tr::iterator> charmHadDauTracks{};
+      varUtils.ptD = candD.pt();
       if constexpr (DecayChannel == DecayChannel::DstarV0 || DecayChannel == DecayChannel::DstarTrack) {
         if (candD.signSoftPi() > 0) {
-          invMassD = candD.invMassDstar();
-          invMassDdau = candD.invMassD0();
+          varUtils.invMassD = candD.invMassDstar();
+          varUtils.invMassDdau = candD.invMassD0();
         } else {
-          invMassD = candD.invMassAntiDstar();
-          invMassDdau = candD.invMassD0Bar();
+          varUtils.invMassD = candD.invMassAntiDstar();
+          varUtils.invMassDdau = candD.invMassD0Bar();
         }
         pVecD = candD.pVector();
         secondaryVertexD[0] = candD.xSecondaryVertexD0();
@@ -744,10 +793,10 @@ struct HfDataCreatorCharmResoReduced {
         if constexpr (withMl) {
           std::copy(candD.mlProbDstarToD0Pi().begin(), candD.mlProbDstarToD0Pi().end(), bdtScores.begin());
         }
-        registry.fill(HIST("hMassVsPtDstarAll"), candD.pt(), invMassD - invMassDdau);
+        registry.fill(HIST("hMassVsPtDstarAll"), candD.pt(), varUtils.invMassD - varUtils.invMassDdau);
       } else if constexpr (DecayChannel == DecayChannel::DplusV0) {
         auto prong0 = candD.template prong0_as<Tr>();
-        invMassD = hfHelper.invMassDplusToPiKPi(candD);
+        varUtils.invMassD = hfHelper.invMassDplusToPiKPi(candD);
         pVecD = candD.pVector();
         secondaryVertexD[0] = candD.xSecondaryVertex();
         secondaryVertexD[1] = candD.ySecondaryVertex();
@@ -761,7 +810,7 @@ struct HfDataCreatorCharmResoReduced {
         charmHadDauTracks.push_back(candD.template prong1_as<Tr>());
         charmHadDauTracks.push_back(candD.template prong2_as<Tr>());
         if constexpr (withMl) {
-          registry.fill(HIST("hMassVsPtDplusAll"), candD.pt(), invMassD);
+          registry.fill(HIST("hMassVsPtDplusAll"), candD.pt(), varUtils.invMassD);
         }
       } // else if
 
@@ -814,42 +863,42 @@ struct HfDataCreatorCharmResoReduced {
             o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParK0, 2.f, matCorr, &dcaInfo);
             getPxPyPz(trackParK0, candidateV0.mom);
           }
-          float invMassKPiPiV0{0.f};
           if (TESTBIT(candidateV0.v0Type, K0s)) {
             if constexpr (DecayChannel == DecayChannel::DplusV0) {
-              invMassKPiPiV0 = RecoDecay::m(std::array{candD.pVectorProng0(), candD.pVectorProng1(), candD.pVectorProng2(), candidateV0.mom}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassK0});
+              varUtils.invMassKPiPiV0 = RecoDecay::m(std::array{candD.pVectorProng0(), candD.pVectorProng1(), candD.pVectorProng2(), candidateV0.mom}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassK0});
+              // varUtils.ptReso = RecoDecay::pt(std::array{candD.pVectorProng0(), candD.pVectorProng1(), candD.pVectorProng2(), candidateV0.mom});
             } else if (DecayChannel == DecayChannel::DstarV0) {
+              // varUtils.ptReso = RecoDecay::pt(std::array{candD.pVectorProng0(), candD.pVectorProng1(), candD.pVecSoftPi(), candidateV0.mom});
               if (candD.signSoftPi() > 0) {
-                invMassKPiPiV0 = RecoDecay::m(std::array{candD.pVectorProng0(), candD.pVectorProng1(), candD.pVecSoftPi(), candidateV0.mom}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassK0});
+                varUtils.invMassKPiPiV0 = RecoDecay::m(std::array{candD.pVectorProng0(), candD.pVectorProng1(), candD.pVecSoftPi(), candidateV0.mom}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassK0});
               } else {
-                invMassKPiPiV0 = RecoDecay::m(std::array{candD.pVectorProng1(), candD.pVectorProng0(), candD.pVecSoftPi(), candidateV0.mom}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassK0});
+                varUtils.invMassKPiPiV0 = RecoDecay::m(std::array{candD.pVectorProng1(), candD.pVectorProng0(), candD.pVecSoftPi(), candidateV0.mom}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassK0});
               }
             }
-
             registry.fill(HIST("hMassVsPtK0s"), candidateV0.pT, candidateV0.mK0Short);
             if constexpr (DecayChannel == DecayChannel::DstarV0) {
-              registry.fill(HIST("hMassDs1"), invMassKPiPiV0 - invMassD);
+              registry.fill(HIST("hMassDs1"), varUtils.invMassKPiPiV0 - varUtils.invMassD);
             } else if constexpr (DecayChannel == DecayChannel::DplusV0) {
-              registry.fill(HIST("hMassDsStar2"), invMassKPiPiV0 - invMassD);
+              registry.fill(HIST("hMassDsStar2"), varUtils.invMassKPiPiV0 - varUtils.invMassD);
             }
           }
           bool isLambda = TESTBIT(candidateV0.v0Type, Lambda);
           bool isAntiLambda = TESTBIT(candidateV0.v0Type, AntiLambda);
           if (isLambda || isAntiLambda) {
             if constexpr (DecayChannel == DecayChannel::DplusV0) {
-              invMassKPiPiV0 = RecoDecay::m(std::array{candD.pVectorProng0(), candD.pVectorProng1(), candD.pVectorProng2(), candidateV0.mom}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassLambda0});
+              varUtils.invMassKPiPiV0 = RecoDecay::m(std::array{candD.pVectorProng0(), candD.pVectorProng1(), candD.pVectorProng2(), candidateV0.mom}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassLambda0});
             } else if (DecayChannel == DecayChannel::DstarV0) {
               if (candD.signSoftPi() > 0) {
-                invMassKPiPiV0 = RecoDecay::m(std::array{candD.pVectorProng0(), candD.pVectorProng1(), candD.pVecSoftPi(), candidateV0.mom}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassLambda0});
+                varUtils.invMassKPiPiV0 = RecoDecay::m(std::array{candD.pVectorProng0(), candD.pVectorProng1(), candD.pVecSoftPi(), candidateV0.mom}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassLambda0});
               } else {
-                invMassKPiPiV0 = RecoDecay::m(std::array{candD.pVectorProng1(), candD.pVectorProng0(), candD.pVecSoftPi(), candidateV0.mom}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassLambda0});
+                varUtils.invMassKPiPiV0 = RecoDecay::m(std::array{candD.pVectorProng1(), candD.pVectorProng0(), candD.pVecSoftPi(), candidateV0.mom}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassLambda0});
               }
             }
             if (isLambda || isAntiLambda) {
               registry.fill(HIST("hMassVsPtLambda"), candidateV0.pT, candidateV0.mLambda);
             }
             if constexpr (DecayChannel == DecayChannel::DplusV0) {
-              registry.fill(HIST("hMassXcRes"), invMassKPiPiV0 - invMassD);
+              registry.fill(HIST("hMassXcRes"), varUtils.invMassKPiPiV0 - varUtils.invMassD);
             }
           }
           // fill V0 table
@@ -903,7 +952,7 @@ struct HfDataCreatorCharmResoReduced {
           } else {
             invMassKPiPiP = RecoDecay::m(std::array{candD.pVectorProng1(), candD.pVectorProng0(), candD.pVecSoftPi(), pVecTrack}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassProton});
           }
-          registry.fill(HIST("hMassDstarProton"), invMassKPiPiP - invMassD);
+          registry.fill(HIST("hMassDstarProton"), invMassKPiPiP - varUtils.invMassD);
           if (!selectedTracks.count(track.globalIndex())) {
             hfTrackNoParam(indexHfReducedCollision,
                            track.px(), track.py(), track.pz(), track.sign(),
@@ -929,9 +978,9 @@ struct HfDataCreatorCharmResoReduced {
         }
         fillHfReducedCollision = true;
         if constexpr (DecayChannel == DecayChannel::DstarV0 || DecayChannel == DecayChannel::DstarTrack) {
-          registry.fill(HIST("hMassVsPtDstarPaired"), candD.pt(), invMassD - invMassDdau);
+          registry.fill(HIST("hMassVsPtDstarPaired"), candD.pt(), varUtils.invMassD - varUtils.invMassDdau);
         } else if constexpr (DecayChannel == DecayChannel::DplusV0) {
-          registry.fill(HIST("hMassVsPtDplusPaired"), candD.pt(), invMassD);
+          registry.fill(HIST("hMassVsPtDplusPaired"), candD.pt(), varUtils.invMassD);
         }
         registry.fill(HIST("hDType"), dtype);
       }
@@ -975,14 +1024,10 @@ struct HfDataCreatorCharmResoReduced {
             if (RecoDecay::isMatchedMCGen(particlesMc, candDStarMC, Pdg::kDStar, std::array{static_cast<int>(Pdg::kD0), +static_cast<int>(kPiPlus)}, true, &signDStar, 1)) {
               auto candD0MC = particlesMc.rawIteratorAt(candDStarMC.daughtersIds().front());
               if (RecoDecay::isMatchedMCGen(particlesMc, candDStarMC, Pdg::kDStar, std::array{-kKPlus, +kPiPlus, +kPiPlus}, true, &signDStar, 2)) {
-                flag = signDStar * BIT(DecayTypeMc::Ds1ToDStarK0ToD0PiK0s);
-                if (RecoDecay::isMatchedMCGen<false, true>(particlesMc, candV0MC, kK0, std::array{+kPiPlus, -kMuonPlus, +kNuMu}, true, &signV0, 3) ||
-                    RecoDecay::isMatchedMCGen<false, true>(particlesMc, candDStarMC, Pdg::kDStar, std::array{-kKPlus, +kPiPlus, +kMuonPlus, -kNuMu}, true, &signDStar, 3)) {
-                  flag = signDStar * BIT(DecayTypeMc::Ds1ToDStarK0ToD0PiK0sOneMu);
-                }
+                flag = signDStar * DecayTypeMc::Ds1ToDStarK0ToD0PiK0s;
               } else if (RecoDecay::isMatchedMCGen(particlesMc, candD0MC, Pdg::kD0, std::array{-kKPlus, +kPiPlus, +kPiPlus, +kPi0}, true, &signDStar, 2) ||
                          RecoDecay::isMatchedMCGen(particlesMc, candD0MC, Pdg::kD0, std::array{-kKPlus, +kPiPlus, +kPiPlus, -kPi0}, true, &signDStar, 2)) {
-                flag = signDStar * BIT(DecayTypeMc::Ds1ToDStarK0ToD0PiK0sPart);
+                flag = signDStar * DecayTypeMc::Ds1ToDStarK0ToD0PiK0sPart;
               }
             } else if (RecoDecay::isMatchedMCGen(particlesMc, candDStarMC, Pdg::kDStar, std::array{static_cast<int>(Pdg::kDPlus), static_cast<int>(kGamma)}, true, &signDStar, 1) ||
                        RecoDecay::isMatchedMCGen(particlesMc, candDStarMC, Pdg::kDStar, std::array{static_cast<int>(Pdg::kDPlus), -static_cast<int>(kGamma)}, true, &signDStar, 1) ||
@@ -990,7 +1035,7 @@ struct HfDataCreatorCharmResoReduced {
                        RecoDecay::isMatchedMCGen(particlesMc, candDStarMC, Pdg::kDStar, std::array{static_cast<int>(Pdg::kDPlus), -static_cast<int>(kPi0)}, true, &signDStar, 1)) {
               auto candDPlusMC = particlesMc.rawIteratorAt(candDStarMC.daughtersIds().front());
               if (RecoDecay::isMatchedMCGen(particlesMc, candDPlusMC, Pdg::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &signDPlus, 2))
-                flag = sign * BIT(DecayTypeMc::Ds1ToDStarK0ToDPlusPi0K0s);
+                flag = sign * DecayTypeMc::Ds1ToDStarK0ToDPlusPi0K0s;
             }
           }
         } else {
@@ -1000,7 +1045,7 @@ struct HfDataCreatorCharmResoReduced {
           }
         }
         // save information for task
-        if (!TESTBIT(std::abs(flag), DecayTypeMc::Ds1ToDStarK0ToD0PiK0s) && !TESTBIT(std::abs(flag), DecayTypeMc::Ds1ToDStarK0ToD0PiK0sPart) && !TESTBIT(std::abs(flag), DecayTypeMc::Ds1ToDStarK0ToDPlusPi0K0s)) {
+        if (flag == 0) {
           continue;
         }
 
@@ -1033,7 +1078,7 @@ struct HfDataCreatorCharmResoReduced {
           if (RecoDecay::isMatchedMCGen<false, true>(particlesMc, candV0MC, kK0, std::array{+kPiPlus, -kPiPlus}, true, &signV0, 2)) {
             // D* -> D0 π+ -> K-π+π+
             if (RecoDecay::isMatchedMCGen(particlesMc, candDPlusMC, Pdg::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &signDPlus, 2)) {
-              flag = sign * BIT(DecayTypeMc::Ds2StarToDplusK0s);
+              flag = sign * DecayTypeMc::Ds2StarToDplusK0sToPiKaPiPiPi;
             }
           }
         } else if (RecoDecay::isMatchedMCGen<false, true>(particlesMc, particle, Pdg::kDS1, std::array{static_cast<int>(Pdg::kDStar), +kK0}, true, &sign, 1)) {
@@ -1048,7 +1093,7 @@ struct HfDataCreatorCharmResoReduced {
                 RecoDecay::isMatchedMCGen(particlesMc, candDStarMC, Pdg::kDStar, std::array{static_cast<int>(Pdg::kDPlus), -static_cast<int>(kPi0)}, true, &signDStar, 1)) {
               auto candDPlusMC = particlesMc.rawIteratorAt(candDStarMC.daughtersIds().front());
               if (RecoDecay::isMatchedMCGen(particlesMc, candDPlusMC, Pdg::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &signDPlus, 2))
-                flag = sign * BIT(DecayTypeMc::Ds1ToDStarK0ToDPlusPi0K0s);
+                flag = sign * DecayTypeMc::Ds1ToDStarK0ToDPlusPi0K0s;
             }
           }
         } else {
@@ -1059,7 +1104,7 @@ struct HfDataCreatorCharmResoReduced {
           }
         }
         // save information for task
-        if (!TESTBIT(std::abs(flag), DecayTypeMc::Ds2StarToDplusK0s) && !TESTBIT(std::abs(flag), DecayTypeMc::Ds1ToDStarK0ToDPlusPi0K0s)) {
+        if (flag == 0) {
           continue;
         }
 
