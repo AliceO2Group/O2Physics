@@ -179,8 +179,8 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
   varVector.push_back(varX);              // variables on each axis
   varVector.push_back(varY);
   varVector.push_back(varZ);
-  varVector.push_back(varT); // variable used for profiling in case of TProfile3D
-  varVector.push_back(isFillLabelx); // whether to fill with the x-axis labels
+  varVector.push_back(varT);                 // variable used for profiling in case of TProfile3D
+  varVector.push_back(isFillLabelx ? 1 : 0); // whether to fill with the x-axis labels
   std::list varList = fVariablesMap[histClass];
   varList.push_back(varVector);
   fVariablesMap[histClass] = varList;
@@ -389,8 +389,8 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
   varVector.push_back(varX);              // variables on each axis
   varVector.push_back(varY);
   varVector.push_back(varZ);
-  varVector.push_back(varT); // variable used for profiling in case of TProfile3D
-  varVector.push_back(isFillLabelx); // whether to fill with the x-axis labels
+  varVector.push_back(varT);                 // variable used for profiling in case of TProfile3D
+  varVector.push_back(isFillLabelx ? 1 : 0); // whether to fill with the x-axis labels
   std::list varList = fVariablesMap[histClass];
   varList.push_back(varVector);
   fVariablesMap[histClass] = varList;
@@ -786,9 +786,7 @@ void HistogramManager::FillHistClass(const char* className, Float_t* values)
       varY = varIter->at(4);
       varZ = varIter->at(5);
       varT = varIter->at(6);
-      if (varIter->at(7) == 1) {
-        isFillLabelx = kTRUE;
-      }
+      isFillLabelx = (varIter->at(7) == 1 ? true : false);
     }
 
     if (!isTHn) {
@@ -797,9 +795,9 @@ void HistogramManager::FillHistClass(const char* className, Float_t* values)
           if (isProfile) {
             if (varW > kNothing) {
               if (isFillLabelx) {
-                (reinterpret_cast<TProfile*>(h))->Fill(Form("%d", static_cast<int>(values[varX])), values[varW]);
+                (reinterpret_cast<TProfile*>(h))->Fill(Form("%d", static_cast<int>(values[varX])), values[varY], values[varW]);
               } else {
-                (reinterpret_cast<TProfile*>(h))->Fill(values[varX], values[varW]);
+                (reinterpret_cast<TProfile*>(h))->Fill(values[varX], values[varY], values[varW]);
               }
             } else {
               if (isFillLabelx) {
@@ -882,7 +880,7 @@ void HistogramManager::FillHistClass(const char* className, Float_t* values)
         }
       }
     } // end else
-  }   // end loop over histograms
+  } // end loop over histograms
 }
 
 //____________________________________________________________________________________

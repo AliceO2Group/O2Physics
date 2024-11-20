@@ -14,6 +14,9 @@
 // This code will create data table for inputs to machine learning for electrons.
 //    Please write to: daiki.sekihata@cern.ch
 
+#include <string>
+#include <map>
+#include <vector>
 #include <random>
 #include "Math/Vector4D.h"
 #include "Framework/runDataProcessing.h"
@@ -192,8 +195,8 @@ struct TreeCreatorElectronML {
   Configurable<float> minpt{"minpt", 0.2, "min. pT"};
   Configurable<float> maxDcaZ{"maxDcaZ", 1.0, "max DCA Z"};
   Configurable<float> maxDcaXY{"maxDcaXY", 1.0, "max DCA XY"};
-  Configurable<uint8_t> minITSClusters{"minITSLayers", 5, "min. of ITS clusters"};
-  Configurable<uint8_t> minITSClustersIB{"minITSClustersIB", 3, "min. number of ITS clusters in inner barrel"};
+  Configurable<uint> minITSClusters{"minITSLayers", 5, "min. of ITS clusters"};
+  Configurable<uint> minITSClustersIB{"minITSClustersIB", 3, "min. number of ITS clusters in inner barrel"};
   Configurable<float> downSampleEl{"downSampleEl", 1.0, "down scaling factor for electrons"};
   Configurable<float> downSamplePi{"downSamplePi", 1.0, "down scaling factor for pions"};
   Configurable<float> downSampleKa{"downSampleKa", 1.0, "down scaling factor for kaons"};
@@ -582,7 +585,7 @@ struct TreeCreatorElectronML {
               track.tpcChi2NCl(), track.tpcInnerParam(),
               track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaMu(), track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
               track.beta(), track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
-              0., track.itsChi2NCl(), track.itsClusterSizes(), // todo: add track.tofChi2() (currently a dummy 0.), once we have it in derived data
+              track.tofChi2(), track.itsChi2NCl(), track.itsClusterSizes(),
               mctrack.vx(), mctrack.vy(), mctrack.vz(),
               mctrack.pdgCode(), mctrack.isPhysicalPrimary(), mothers_id, mothers_pdg);
 

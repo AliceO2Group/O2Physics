@@ -14,6 +14,9 @@
 // This code produces reduced events for photon analyses.
 //    Please write to: daiki.sekihata@cern.ch
 
+#include <string>
+#include <unordered_map>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -24,6 +27,7 @@
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "CCDB/BasicCCDBManager.h"
+#include "Common/CCDB/TriggerAliases.h"
 
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 
@@ -65,6 +69,8 @@ struct CreateEMEvent {
   Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
   Configurable<bool> applyEveSel_at_skimming{"applyEveSel_at_skimming", false, "flag to apply minimal event selection at the skimming level"};
+  Configurable<bool> needEMCTrigger{"needEMCTrigger", false, "flag to only save events which have kTVXinEMC trigger bit. To reduce PbPb derived data size"};
+  Configurable<bool> needPHSTrigger{"needPHSTrigger", false, "flag to only save events which have kTVXinPHOS trigger bit. To reduce PbPb derived data size"};
 
   HistogramRegistry registry{"registry"};
   void init(o2::framework::InitContext&)
@@ -141,6 +147,12 @@ struct CreateEMEvent {
       initCCDB(bc);
 
       if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
+        continue;
+      }
+      if (needEMCTrigger && !collision.alias_bit(kTVXinEMC)) {
+        continue;
+      }
+      if (needPHSTrigger && !collision.alias_bit(kTVXinPHOS)) {
         continue;
       }
 

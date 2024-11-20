@@ -105,57 +105,57 @@ class PairWithCentMultKt
   void fill(t1 kstar_value, t1 cent_mult_value, t1 kt_value)
   {
 
-    if (cent_mult_value > CentMultBins[CentMultBins.size() - 1] || cent_mult_value < CentMultBins[0]) {
+    if (cent_mult_value >= CentMultBins[CentMultBins.size() - 1] || cent_mult_value < CentMultBins[0]) {
       PairWithCentMultKtRegistry->fill(HIST("Beyond_Max"), kstar_value);
-    } else if (cent_mult_value <= CentMultBins[1]) {
+    } else if (cent_mult_value < CentMultBins[1]) {
       PairWithCentMultKtRegistry->fill(HIST("mult_0_1/kstar"), kstar_value);
       if (UseKt) {
         auto histMultFolder = HIST("mult_0_1/");
         fill_kT(kstar_value, kt_value, histMultFolder);
       }
-    } else if (cent_mult_value <= CentMultBins[2]) {
+    } else if (cent_mult_value < CentMultBins[2]) {
       PairWithCentMultKtRegistry->fill(HIST("mult_1_2/kstar"), kstar_value);
       if (UseKt) {
         auto histMultFolder = HIST("mult_1_2/");
         fill_kT(kstar_value, kt_value, histMultFolder);
       }
-    } else if (cent_mult_value <= CentMultBins[3]) {
+    } else if (cent_mult_value < CentMultBins[3]) {
       PairWithCentMultKtRegistry->fill(HIST("mult_2_3/kstar"), kstar_value);
       if (UseKt) {
         auto histMultFolder = HIST("mult_2_3/");
         fill_kT(kstar_value, kt_value, histMultFolder);
       }
-    } else if (cent_mult_value <= CentMultBins[4]) {
+    } else if (cent_mult_value < CentMultBins[4]) {
       PairWithCentMultKtRegistry->fill(HIST("mult_3_4/kstar"), kstar_value);
       if (UseKt) {
         auto histMultFolder = HIST("mult_3_4/");
         fill_kT(kstar_value, kt_value, histMultFolder);
       }
-    } else if (cent_mult_value <= CentMultBins[5]) {
+    } else if (cent_mult_value < CentMultBins[5]) {
       PairWithCentMultKtRegistry->fill(HIST("mult_4_5/kstar"), kstar_value);
       if (UseKt) {
         auto histMultFolder = HIST("mult_4_5/");
         fill_kT(kstar_value, kt_value, histMultFolder);
       }
-    } else if (cent_mult_value <= CentMultBins[6]) {
+    } else if (cent_mult_value < CentMultBins[6]) {
       PairWithCentMultKtRegistry->fill(HIST("mult_5_6/kstar"), kstar_value);
       if (UseKt) {
         auto histMultFolder = HIST("mult_5_6/");
         fill_kT(kstar_value, kt_value, histMultFolder);
       }
-    } else if (cent_mult_value <= CentMultBins[7]) {
+    } else if (cent_mult_value < CentMultBins[7]) {
       PairWithCentMultKtRegistry->fill(HIST("mult_6_7/kstar"), kstar_value);
       if (UseKt) {
         auto histMultFolder = HIST("mult_6_7/");
         fill_kT(kstar_value, kt_value, histMultFolder);
       }
-    } else if (cent_mult_value <= CentMultBins[8]) {
+    } else if (cent_mult_value < CentMultBins[8]) {
       PairWithCentMultKtRegistry->fill(HIST("mult_7_8/kstar"), kstar_value);
       if (UseKt) {
         auto histMultFolder = HIST("mult_7_8/");
         fill_kT(kstar_value, kt_value, histMultFolder);
       }
-    } else if (cent_mult_value <= CentMultBins[9]) {
+    } else if (cent_mult_value < CentMultBins[9]) {
       PairWithCentMultKtRegistry->fill(HIST("mult_8_9/kstar"), kstar_value);
       if (UseKt) {
         auto histMultFolder = HIST("mult_8_9/");
@@ -173,23 +173,23 @@ class PairWithCentMultKt
   template <typename t1, typename t2>
   void fill_kT(t1 kstar_value, t1 kt_value, t2 folder)
   {
-    if (kt_value <= KtBins[1]) {
+    if (kt_value < KtBins[1]) {
       PairWithCentMultKtRegistry->fill(folder + HIST("kstar_kt_0_1"), kstar_value);
-    } else if (kt_value <= KtBins[2]) {
+    } else if (kt_value < KtBins[2]) {
       PairWithCentMultKtRegistry->fill(folder + HIST("kstar_kt_1_2"), kstar_value);
-    } else if (kt_value <= KtBins[3]) {
+    } else if (kt_value < KtBins[3]) {
       PairWithCentMultKtRegistry->fill(folder + HIST("kstar_kt_2_3"), kstar_value);
-    } else if (kt_value <= KtBins[4]) {
+    } else if (kt_value < KtBins[4]) {
       PairWithCentMultKtRegistry->fill(folder + HIST("kstar_kt_3_4"), kstar_value);
-    } else if (kt_value <= KtBins[5]) {
+    } else if (kt_value < KtBins[5]) {
       PairWithCentMultKtRegistry->fill(folder + HIST("kstar_kt_4_5"), kstar_value);
-    } else if (kt_value <= KtBins[6]) {
+    } else if (kt_value < KtBins[6]) {
       PairWithCentMultKtRegistry->fill(folder + HIST("kstar_kt_5_6"), kstar_value);
-    } else if (kt_value <= KtBins[7]) {
+    } else if (kt_value < KtBins[7]) {
       PairWithCentMultKtRegistry->fill(folder + HIST("kstar_kt_6_7"), kstar_value);
-    } else if (kt_value <= KtBins[8]) {
+    } else if (kt_value < KtBins[8]) {
       PairWithCentMultKtRegistry->fill(folder + HIST("kstar_kt_7_8"), kstar_value);
-    } else if (kt_value <= KtBins[9]) {
+    } else if (kt_value < KtBins[9]) {
       PairWithCentMultKtRegistry->fill(folder + HIST("kstar_kt_8_9"), kstar_value);
     }
   }
@@ -204,57 +204,57 @@ class PairWithCentMultKt
   void fill_3D(t1 qout_value, t1 qside_value, t1 qlong_value, t1 cent_mult_value, t1 kt_value)
   {
 
-    if (cent_mult_value > CentMultBins[CentMultBins.size() - 1] || cent_mult_value < CentMultBins[0]) {
+    if (cent_mult_value >= CentMultBins[CentMultBins.size() - 1] || cent_mult_value < CentMultBins[0]) {
       PairWithCentMultKtRegistry->fill(HIST("Beyond_Max_3D"), qout_value, qside_value, qlong_value);
-    } else if (cent_mult_value <= CentMultBins[1]) {
+    } else if (cent_mult_value < CentMultBins[1]) {
       PairWithCentMultKtRegistry->fill(HIST("mult_0_1/q3D"), qout_value, qside_value, qlong_value);
       if (Use3D) {
         auto histMultFolder = HIST("mult_0_1/");
         fill_kT_3d(qout_value, qside_value, qlong_value, kt_value, histMultFolder);
       }
-    } else if (cent_mult_value <= CentMultBins[2]) {
+    } else if (cent_mult_value < CentMultBins[2]) {
       // PairWithCentMultKtRegistry->fill(HIST("mult_1_2/q3D"), qout_value, qside_value, qlong_value);
       if (Use3D) {
         auto histMultFolder = HIST("mult_1_2/");
         fill_kT_3d(qout_value, qside_value, qlong_value, kt_value, histMultFolder);
       }
-    } else if (cent_mult_value <= CentMultBins[3]) {
+    } else if (cent_mult_value < CentMultBins[3]) {
       // PairWithCentMultKtRegistry->fill(HIST("mult_2_3/q3D"), qout_value, qside_value, qlong_value);
       if (Use3D) {
         auto histMultFolder = HIST("mult_2_3/");
         fill_kT_3d(qout_value, qside_value, qlong_value, kt_value, histMultFolder);
       }
-    } else if (cent_mult_value <= CentMultBins[4]) {
+    } else if (cent_mult_value < CentMultBins[4]) {
       // PairWithCentMultKtRegistry->fill(HIST("mult_3_4/q3D"), qout_value, qside_value, qlong_value);
       if (Use3D) {
         auto histMultFolder = HIST("mult_3_4/");
         fill_kT_3d(qout_value, qside_value, qlong_value, kt_value, histMultFolder);
       }
-    } else if (cent_mult_value <= CentMultBins[5]) {
+    } else if (cent_mult_value < CentMultBins[5]) {
       // PairWithCentMultKtRegistry->fill(HIST("mult_4_5/q3D"), qout_value, qside_value, qlong_value);
       if (Use3D) {
         auto histMultFolder = HIST("mult_4_5/");
         fill_kT_3d(qout_value, qside_value, qlong_value, kt_value, histMultFolder);
       }
-    } else if (cent_mult_value <= CentMultBins[6]) {
+    } else if (cent_mult_value < CentMultBins[6]) {
       // PairWithCentMultKtRegistry->fill(HIST("mult_5_6/q3D"), qout_value, qside_value, qlong_value);
       if (Use3D) {
         auto histMultFolder = HIST("mult_5_6/");
         fill_kT_3d(qout_value, qside_value, qlong_value, kt_value, histMultFolder);
       }
-    } else if (cent_mult_value <= CentMultBins[7]) {
+    } else if (cent_mult_value < CentMultBins[7]) {
       // PairWithCentMultKtRegistry->fill(HIST("mult_6_7/q3D"), qout_value, qside_value, qlong_value);
       if (Use3D) {
         auto histMultFolder = HIST("mult_6_7/");
         fill_kT_3d(qout_value, qside_value, qlong_value, kt_value, histMultFolder);
       }
-    } else if (cent_mult_value <= CentMultBins[8]) {
+    } else if (cent_mult_value < CentMultBins[8]) {
       // PairWithCentMultKtRegistry->fill(HIST("mult_7_8/q3D"), qout_value, qside_value, qlong_value);
       if (Use3D) {
         auto histMultFolder = HIST("mult_7_8/");
         fill_kT_3d(qout_value, qside_value, qlong_value, kt_value, histMultFolder);
       }
-    } else if (cent_mult_value <= CentMultBins[9]) {
+    } else if (cent_mult_value < CentMultBins[9]) {
       // PairWithCentMultKtRegistry->fill(HIST("mult_8_9/q3D"), qout_value, qside_value, qlong_value);
       if (Use3D) {
         auto histMultFolder = HIST("mult_8_9/");
@@ -273,11 +273,11 @@ class PairWithCentMultKt
   template <typename t1, typename t2>
   void fill_kT_3d(t1 qout_value, t1 qside_value, t1 qlong_value, t1 kt_value, t2 folder)
   {
-    if (kt_value <= KtBins[1]) {
+    if (kt_value < KtBins[1]) {
       PairWithCentMultKtRegistry->fill(folder + HIST("q3D_kt_0_1"), qout_value, qside_value, qlong_value);
-    } else if (kt_value <= KtBins[2]) {
+    } else if (kt_value < KtBins[2]) {
       PairWithCentMultKtRegistry->fill(folder + HIST("q3D_kt_1_2"), qout_value, qside_value, qlong_value);
-    } else if (kt_value <= KtBins[3]) {
+    } else if (kt_value < KtBins[3]) {
       PairWithCentMultKtRegistry->fill(folder + HIST("q3D_kt_2_3"), qout_value, qside_value, qlong_value);
     }
   }
