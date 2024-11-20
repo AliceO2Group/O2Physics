@@ -20,6 +20,7 @@
 
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/Configurable.h>
+#include <Framework/ASoA.h>
 
 #include "Common/Core/RecoDecay.h"
 
@@ -186,6 +187,55 @@ struct ProducesHfDerivedData : o2::framework::ProducesGroup {
       rowParticleId(
         particle.mcCollisionId(),
         particle.globalIndex());
+    }
+  }
+
+  template <typename CollisionType, typename ParticleType>
+  void preProcessMcCollisions(CollisionType const& mcCollisions,
+                              o2::framework::Preslice<ParticleType> const& mcParticlesPerMcCollision,
+                              ParticleType const& mcParticles)
+  {
+    if (!conf->fillMcRCollId.value) {
+      return;
+    }
+    hasMcParticles.clear();
+    // Fill MC collision flags
+    for (const auto& mcCollision : mcCollisions) {
+      auto thisMcCollId = mcCollision.globalIndex();
+      auto particlesThisMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, thisMcCollId);
+      LOGF(debug, "MC collision %d has %d MC particles (preprocess)", thisMcCollId, particlesThisMcColl.size());
+      hasMcParticles[thisMcCollId] = (particlesThisMcColl.size() > 0);
+    }
+  }
+
+  template <typename CollisionType, typename ParticleType, typename TMass>
+  void processMcParticles(CollisionType const& mcCollisions,
+                          o2::framework::Preslice<ParticleType> const& mcParticlesPerMcCollision,
+                          ParticleType const& mcParticles,
+                          TMass const massParticle)
+  {
+    // Fill MC collision properties
+    auto sizeTableMcColl = mcCollisions.size();
+    reserveTablesMcColl(sizeTableMcColl);
+    for (const auto& mcCollision : mcCollisions) {
+      auto thisMcCollId = mcCollision.globalIndex();
+      auto particlesThisMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, thisMcCollId);
+      auto sizeTablePart = particlesThisMcColl.size();
+      LOGF(debug, "MC collision %d has %d MC particles", thisMcCollId, sizeTablePart);
+      // Skip MC collisions without HF particles (and without HF candidates in matched reconstructed collisions if saving indices of reconstructed collisions matched to MC collisions)
+      LOGF(debug, "MC collision %d has %d saved derived rec. collisions", thisMcCollId, matchedCollisions[thisMcCollId].size());
+      if (sizeTablePart == 0 && (!conf->fillMcRCollId.value || matchedCollisions[thisMcCollId].empty())) {
+        LOGF(debug, "Skipping MC collision %d", thisMcCollId);
+        continue;
+      }
+      LOGF(debug, "Filling MC collision %d at derived index %d", thisMcCollId, rowMcCollBase.lastIndex() + 1);
+      fillTablesMcCollision(mcCollision);
+
+      // Fill MC particle properties
+      reserveTablesParticles(sizeTablePart);
+      for (const auto& particle : particlesThisMcColl) {
+        fillTablesParticle(particle, massParticle);
+      }
     }
   }
 };
