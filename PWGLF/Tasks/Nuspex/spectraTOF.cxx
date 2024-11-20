@@ -52,16 +52,21 @@ std::array<std::shared_ptr<TH3>, NpCharge> hDcaXYZMat;
 std::array<std::shared_ptr<TH2>, NpCharge> hDcaXYWrongCollisionPrm;
 std::array<std::shared_ptr<TH2>, NpCharge> hDcaXYWrongCollisionStr;
 std::array<std::shared_ptr<TH2>, NpCharge> hDcaXYWrongCollisionMat;
-std::array<std::shared_ptr<TH2>, NpCharge> hDcaXYMC;       // DCA xy in the MC
-std::array<std::shared_ptr<TH2>, NpCharge> hDcaZMC;        // DCA z in the MC
-std::array<std::shared_ptr<TH2>, NpCharge> hDcaXYMCD0;     // DCA xy in the MC for particles from D0
-std::array<std::shared_ptr<TH2>, NpCharge> hDcaZMCD0;      // DCA z in the MC for particles from D0
-std::array<std::shared_ptr<TH2>, NpCharge> hDcaXYMCCharm;  // DCA xy in the MC for particles from charm
-std::array<std::shared_ptr<TH2>, NpCharge> hdcaZMCCharm;   // DCA z in the MC for particles from charm
-std::array<std::shared_ptr<TH2>, NpCharge> hDcaXYMCBeauty; // DCA xy in the MC for particles from beauty
-std::array<std::shared_ptr<TH2>, NpCharge> hDcaZMCBeauty;  // DCA z in the MC for particles from beauty
-std::array<std::shared_ptr<TH2>, NpCharge> hDcaXYMCNotHF;  // DCA xy in the MC for particles from not a HF
-std::array<std::shared_ptr<TH2>, NpCharge> hDcaZMCNotHF;   // DCA z in the MC for particles from not a HF
+std::array<std::shared_ptr<TH2>, NpCharge> hDcaXYMC;             // DCA xy in the MC
+std::array<std::shared_ptr<TH2>, NpCharge> hDcaZMC;              // DCA z in the MC
+std::array<std::shared_ptr<TH2>, NpCharge> hDcaXYMCD0;           // DCA xy in the MC for particles from D0
+std::array<std::shared_ptr<TH2>, NpCharge> hDcaZMCD0;            // DCA z in the MC for particles from D0
+std::array<std::shared_ptr<TH2>, NpCharge> hDcaXYMCCharm;        // DCA xy in the MC for particles from charm
+std::array<std::shared_ptr<TH2>, NpCharge> hdcaZMCCharm;         // DCA z in the MC for particles from charm
+std::array<std::shared_ptr<TH2>, NpCharge> hDcaXYMCBeauty;       // DCA xy in the MC for particles from beauty
+std::array<std::shared_ptr<TH2>, NpCharge> hDcaZMCBeauty;        // DCA z in the MC for particles from beauty
+std::array<std::shared_ptr<TH2>, NpCharge> hDcaXYMCNotHF;        // DCA xy in the MC for particles from not a HF
+std::array<std::shared_ptr<TH2>, NpCharge> hDcaZMCNotHF;         // DCA z in the MC for particles from not a HF
+std::array<std::shared_ptr<TH2>, NpCharge> hDecayLengthStr;      // Decay Length for particles from Strange
+std::array<std::shared_ptr<TH2>, NpCharge> hDecayLengthMCD0;     // Decay Length in the MC for particles from D0
+std::array<std::shared_ptr<TH2>, NpCharge> hDecayLengthMCCharm;  // Decay Length in the MC for particles from charm
+std::array<std::shared_ptr<TH2>, NpCharge> hDecayLengthMCBeauty; // Decay Length in the MC for particles from charm
+std::array<std::shared_ptr<TH2>, NpCharge> hDecayLengthMCNotHF;  // Decay Length in the MC for particles from not a HF
 
 // Spectra task
 struct tofSpectra {
@@ -335,6 +340,7 @@ struct tofSpectra {
     const AxisSpec phiAxis{200, 0, 7, "#it{#varphi} (rad)"};
     const AxisSpec dcaZAxis{binsOptions.binsDca, "DCA_{z} (cm)"};
     const AxisSpec lengthAxis{100, 0, 600, "Track length (cm)"};
+    const AxisSpec decayLengthAxis{100, 0, 0.1, "Decay Length (cm)"};
 
     if (enableTrackCutHistograms) {
       const AxisSpec chargeAxis{2, -2.f, 2.f, "Charge"};
@@ -653,6 +659,7 @@ struct tofSpectra {
           histos.add(hdcazstr[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaZAxis});
           histos.add(hdcaxymat[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
           histos.add(hdcazmat[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaZAxis});
+          hDecayLengthStr[i] = histos.add<TH2>("decaylengthstr" + cpName, pTCharge[i], kTH2D, {ptAxis, decayLengthAxis});
           if (enableDcaGoodEvents) {
             histos.add(hdcaxyprmgoodevs[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
             histos.add(hdcazprmgoodevs[i].data(), pTCharge[i], kTH2D, {ptAxis, dcaZAxis});
@@ -668,6 +675,10 @@ struct tofSpectra {
             hdcaZMCCharm[i] = histos.add<TH2>("dcazcharm" + cpName, pTCharge[i], kTH2D, {ptAxis, dcaZAxis});
             hDcaXYMCBeauty[i] = histos.add<TH2>("dcaxybeauty" + cpName, pTCharge[i], kTH2D, {ptAxis, dcaXyAxis});
             hDcaZMCBeauty[i] = histos.add<TH2>("dcazbeauty" + cpName, pTCharge[i], kTH2D, {ptAxis, dcaZAxis});
+            hDecayLengthMCD0[i] = histos.add<TH2>("decaylengthD0" + cpName, pTCharge[i], kTH2D, {ptAxis, decayLengthAxis});
+            hDecayLengthMCCharm[i] = histos.add<TH2>("decaylengthcharm" + cpName, pTCharge[i], kTH2D, {ptAxis, decayLengthAxis});
+            hDecayLengthMCBeauty[i] = histos.add<TH2>("decaylengthbeauty" + cpName, pTCharge[i], kTH2D, {ptAxis, decayLengthAxis});
+            hDecayLengthMCNotHF[i] = histos.add<TH2>("decaylengthnothf" + cpName, pTCharge[i], kTH2D, {ptAxis, decayLengthAxis});
           }
         }
 
@@ -1630,6 +1641,13 @@ struct tofSpectra {
           histos.fill(HIST(hdcaxystr[i]), track.pt(), track.dcaXY());
           histos.fill(HIST(hdcazstr[i]), track.pt(), track.dcaZ());
         }
+        if (mcParticle.has_daughters()) {
+          auto daughter0 = mcParticle.template daughters_as<aod::McParticles>().begin();
+          double vertexDau[3] = {daughter0.vx(), daughter0.vy(), daughter0.vz()};
+          double vertexPrimary[3] = {mcCollision.posX(), mcCollision.posY(), mcCollision.posZ()};
+          auto decayLength = RecoDecay::distance(vertexPrimary, vertexDau) / 10000;
+          hDecayLengthStr[i]->Fill(track.pt(), decayLength);
+        }
       } else {
         if (enableDCAxyzHistograms) {
           hDcaXYZMat[i]->Fill(track.pt(), track.dcaXY(), track.dcaZ());
@@ -1658,23 +1676,23 @@ struct tofSpectra {
         bool IsD0Mother = false;
         bool IsCharmMother = false;
         bool IsBeautyMother = false;
+        bool IsNotHFMother = false;
 
         if (mcParticle.has_mothers()) {
           const int charmOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, false);
           for (const auto& mother : mcParticle.template mothers_as<aod::McParticles>()) {
-            const int motherPdgCode = mother.pdgCode();
+            const int motherPdgCode = std::abs(mother.pdgCode());
             if (motherPdgCode == 421) {
               IsD0Mother = true;
             }
-            if (charmOrigin == RecoDecay::OriginType::NonPrompt) {
-              if ((motherPdgCode) / 1000 == 5 || (motherPdgCode) / 100 == 5) {
-                IsBeautyMother = true;
-              }
+            if (charmOrigin == RecoDecay::OriginType::NonPrompt && ((motherPdgCode) / 1000 == 5 || (motherPdgCode) / 100 == 5)) {
+              IsBeautyMother = true;
             }
-            if (charmOrigin == RecoDecay::OriginType::Prompt) {
-              if ((motherPdgCode) / 1000 == 4 || (motherPdgCode) / 100 == 4) {
-                IsCharmMother = true;
-              }
+            if (charmOrigin == RecoDecay::OriginType::Prompt && ((motherPdgCode) / 1000 == 4 || (motherPdgCode) / 100 == 4)) {
+              IsCharmMother = true;
+            }
+            if (!(motherPdgCode / 1000 == 4 || motherPdgCode / 100 == 4) && !(motherPdgCode / 1000 == 5 || motherPdgCode / 100 == 5)) {
+              IsNotHFMother = true;
             }
           }
         }
@@ -1690,9 +1708,29 @@ struct tofSpectra {
           hDcaXYMCBeauty[i]->Fill(track.pt(), track.dcaXY());
           hDcaZMCBeauty[i]->Fill(track.pt(), track.dcaZ());
         }
-        if (!IsCharmMother && !IsBeautyMother) {
+        if (IsNotHFMother) {
           hDcaXYMCNotHF[i]->Fill(track.pt(), track.dcaXY());
           hDcaZMCNotHF[i]->Fill(track.pt(), track.dcaZ());
+        }
+
+        if (mcParticle.has_daughters()) {
+          auto daughter0 = mcParticle.template daughters_as<aod::McParticles>().begin();
+          double vertexDau[3] = {daughter0.vx(), daughter0.vy(), daughter0.vz()};
+          double vertexPrimary[3] = {mcCollision.posX(), mcCollision.posY(), mcCollision.posZ()};
+          auto decayLength = RecoDecay::distance(vertexPrimary, vertexDau) / 10000;
+
+          if (IsD0Mother) {
+            hDecayLengthMCD0[i]->Fill(track.pt(), decayLength);
+          }
+          if (IsCharmMother) {
+            hDecayLengthMCCharm[i]->Fill(track.pt(), decayLength);
+          }
+          if (IsBeautyMother) {
+            hDecayLengthMCBeauty[i]->Fill(track.pt(), decayLength);
+          }
+          if (IsNotHFMother) {
+            hDecayLengthMCNotHF[i]->Fill(track.pt(), decayLength);
+          }
         }
       }
     }
