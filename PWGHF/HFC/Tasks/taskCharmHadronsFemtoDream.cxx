@@ -77,8 +77,8 @@ struct HfTaskCharmHadronsFemtoDream {
 
   /// Particle 2 (Charm Hadrons)
   Configurable<float> charmHadBkgBDTmax{"charmHadBkgBDTmax", 1., "Maximum background bdt score for Charm Hadron (particle 2)"};
-  Configurable<int8_t> charmHadCandSel{"charmHadCandSel", 1, "candidate selection for charm hadron"};
-  Configurable<int8_t> charmHadMcSel{"charmHadMcSel", 2, "charm hadron selection for mc, partDplusToPiKPi (1), partLcToPKPi (2), partDsToKKPi (4), partXicToPKPi (8)"};
+  Configurable<int> charmHadCandSel{"charmHadCandSel", 1, "candidate selection for charm hadron"};
+  Configurable<int> charmHadMcSel{"charmHadMcSel", 2, "charm hadron selection for mc, partDplusToPiKPi (1), partLcToPKPi (2), partDsToKKPi (4), partXicToPKPi (8)"};
   Configurable<float> charmHadFdBDTmin{"charmHadFdBDTmin", 0., "Minimum feed-down bdt score Charm Hadron (particle 2)"};
   Configurable<float> charmHadFdBDTmax{"charmHadFdBDTmax", 1., "Maximum feed-down bdt score Charm Hadron (particle 2)"};
   Configurable<float> charmHadMaxInvMass{"charmHadMaxInvMass", 2.45, "Maximum invariant mass of Charm Hadron (particle 2)"};
