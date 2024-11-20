@@ -29,7 +29,6 @@
 #include <TTree.h>
 #include <TFile.h>
 
-
 using std::cout;
 using std::endl;
 using namespace o2;
@@ -493,9 +492,6 @@ struct myAnalysis {
   int nEvents = 0;
   void processJetTracks(JCollisions::iterator const& collision, soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>> const& chargedjets, soa::Join<aod::JTracks, aod::JTrackPIs> const& tracks, TrackCandidates const&)
   {
-    if (cDebugLevel > 0) {
-    }
-
     registry.fill(HIST("hNEventsJet"), 0.5);
     if (fabs(collision.posZ()) > cfgVtxCut) {
       return;
