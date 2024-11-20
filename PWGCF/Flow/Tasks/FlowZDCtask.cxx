@@ -163,7 +163,6 @@ struct FlowZDCtask {
     histos.add("EnergyZNA", "ZNA Sector Energy", kTH1F, {axisEnergy});
     histos.add("EnergyZNC", "ZNC Sector Energy", kTH1F, {axisEnergy});
     histos.add("hCentFT0C", "FT0C Centrality Distribution", kTH1F, {{100, 0, 105}});
-    
     histos.add("hZNvsFT0Ccent",
            "ZN Energy vs FT0C Centrality;Centrality [%];ZN Energy [TeV]",
            kTH2F,
