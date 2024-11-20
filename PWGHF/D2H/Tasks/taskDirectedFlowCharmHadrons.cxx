@@ -13,6 +13,7 @@
 /// \brief Analysis task for charm hadron directed flow
 ///
 /// \author Prottay Das, prottay.das@cern.ch
+/// \author Biao Zhang, biao.zhanng@cern.ch
 
 #include <string>
 #include <vector>
@@ -40,7 +41,9 @@ using namespace o2::framework::expressions;
 using namespace o2::hf_centrality;
 using namespace o2::hf_evsel;
 
-enum DecayChannel { DplusToPiKPi = 0 };
+enum DecayChannel { DplusToPiKPi = 0,
+                    D0ToPiK,
+                    D0ToKPi };
 
 struct HfTaskDirectedFlowCharmHadrons {
   Configurable<int> centEstimator{"centEstimator", 2, "Centrality estimation (FT0A: 1, FT0C: 2, FT0M: 3, FV0A: 4)"};
@@ -50,7 +53,7 @@ struct HfTaskDirectedFlowCharmHadrons {
   Configurable<bool> storeMl{"storeMl", false, "Flag to store ML scores"};
   Configurable<bool> direct{"direct", false, "Flag to calculate direct v1 odd and even"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::vector<int>> classMl{"classMl", {0, 2}, "Indices of BDT scores to be stored. Two indexes max."};
+  Configurable<std::vector<int>> classMl{"classMl", {0, 1, 2}, "Indices of BDT scores to be stored. Two indexes max."};
 
   ConfigurableAxis thnConfigAxisInvMass{"thnConfigAxisInvMass", {100, 1.78, 2.05}, ""};
   ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {VARIABLE_WIDTH, 0.2, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.5, 8.0, 10.0}, ""};
@@ -60,13 +63,22 @@ struct HfTaskDirectedFlowCharmHadrons {
   ConfigurableAxis thnConfigAxisSign{"thnConfigAxisSign", {2, -2.0, 2.0}, ""};
   ConfigurableAxis thnConfigAxisMlOne{"thnConfigAxisMlOne", {1000, 0., 1.}, ""};
   ConfigurableAxis thnConfigAxisMlTwo{"thnConfigAxisMlTwo", {1000, 0., 1.}, ""};
+  ConfigurableAxis thnConfigAxisMlThree{"thnConfigAxisMlThree", {1000, 0., 1.}, ""};
 
   using CandDplusDataWMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
   using CandDplusData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;
+  using CandD0DataWMl = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfMlD0>>;
+  using CandD0Data = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
   using CollsWithQvecs = soa::Join<aod::Collisions, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::SPCalibrationTables>;
   using TracksWithExtra = soa::Join<aod::Tracks, aod::TracksExtra>;
 
   Filter filterSelectDplusCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlag;
+  Filter filterSelectD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlag || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlag;
+
+  Partition<CandD0Data> selectedD0ToPiK = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlag;
+  Partition<CandD0Data> selectedD0ToKPi = aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlag;
+  Partition<CandD0DataWMl> selectedD0ToPiKWMl = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlag;
+  Partition<CandD0DataWMl> selectedD0ToKPiWMl = aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlag;
 
   SliceCache cache;
   HfHelper hfHelper;
@@ -80,7 +92,7 @@ struct HfTaskDirectedFlowCharmHadrons {
   {
 
     /// check process functions
-    std::array<int, 2> processes = {doprocessDplusStd, doprocessDplusMl};
+    std::array<int, 4> processes = {doprocessDplusStd, doprocessDplusMl, doprocessD0Std, doprocessD0Ml};
     const int nProcesses = std::accumulate(processes.begin(), processes.end(), 0);
     if (nProcesses > 1) {
       LOGP(fatal, "Only one process function should be enabled at a time, please check your configuration");
@@ -95,11 +107,12 @@ struct HfTaskDirectedFlowCharmHadrons {
     const AxisSpec thnAxisScalarProd{thnConfigAxisScalarProd, "SP"};
     const AxisSpec thnAxisSign{thnConfigAxisSign, "Sign"};
     const AxisSpec thnAxisMlOne{thnConfigAxisMlOne, "Bkg score"};
-    const AxisSpec thnAxisMlTwo{thnConfigAxisMlTwo, "FD score"};
+    const AxisSpec thnAxisMlTwo{thnConfigAxisMlTwo, "Prompt score"};
+    const AxisSpec thnAxisMlThree{thnConfigAxisMlThree, "FD score"};
 
     std::vector<AxisSpec> axes = {thnAxisInvMass, thnAxisCent, thnAxisPt, thnAxisEta, thnAxisScalarProd, thnAxisSign};
     if (storeMl) {
-      axes.insert(axes.end(), {thnAxisMlOne, thnAxisMlTwo});
+      axes.insert(axes.end(), {thnAxisMlOne, thnAxisMlTwo, thnAxisMlThree});
     }
 
     if (direct) {
@@ -190,17 +203,36 @@ struct HfTaskDirectedFlowCharmHadrons {
 
     for (const auto& candidate : candidates) {
       double massCand = 0.;
-      std::vector<double> outputMl = {-999., -999.};
+      std::vector<double> outputMl = {-999., -999., -999.};
       if constexpr (std::is_same_v<T1, CandDplusData> || std::is_same_v<T1, CandDplusDataWMl>) {
         massCand = hfHelper.invMassDplusToPiKPi(candidate);
         if constexpr (std::is_same_v<T1, CandDplusDataWMl>) {
           for (unsigned int iclass = 0; iclass < classMl->size(); iclass++)
             outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMl->at(iclass)];
         }
+      } else if constexpr (std::is_same_v<T1, CandD0Data> || std::is_same_v<T1, CandD0DataWMl>) {
+        switch (channel) {
+          case DecayChannel::D0ToPiK:
+            massCand = hfHelper.invMassD0ToPiK(candidate);
+            if constexpr (std::is_same_v<T1, CandD0DataWMl>) {
+              for (unsigned int iclass = 0; iclass < classMl->size(); iclass++)
+                outputMl[iclass] = candidate.mlProbD0()[classMl->at(iclass)];
+            }
+            break;
+          case DecayChannel::D0ToKPi:
+            massCand = hfHelper.invMassD0barToKPi(candidate);
+            if constexpr (std::is_same_v<T1, CandD0DataWMl>) {
+              for (unsigned int iclass = 0; iclass < classMl->size(); iclass++)
+                outputMl[iclass] = candidate.mlProbD0bar()[classMl->at(iclass)];
+            }
+            break;
+          default:
+            break;
+        }
       }
 
       auto trackprong0 = candidate.template prong0_as<Trk>();
-      double sign = trackprong0.sign(); // to differentiate between D+ and D-
+      double sign = trackprong0.sign(); // electric charge of the first daughter track to differentiate particle and antiparticle
 
       double ptCand = candidate.pt();
       double etaCand = candidate.eta();
@@ -221,15 +253,15 @@ struct HfTaskDirectedFlowCharmHadrons {
 
       if (storeMl) {
         if (direct) {
-          registry.fill(HIST("hpuxyQxypvscentpteta"), massCand, cent, ptCand, etaCand, uxyQxyp, sign, outputMl[0], outputMl[1]);
-          registry.fill(HIST("hpuxyQxytvscentpteta"), massCand, cent, ptCand, etaCand, uxyQxyt, sign, outputMl[0], outputMl[1]);
-          registry.fill(HIST("hpoddvscentpteta"), massCand, cent, ptCand, etaCand, oddv1, sign, outputMl[0], outputMl[1]);
-          registry.fill(HIST("hpevenvscentpteta"), massCand, cent, ptCand, etaCand, evenv1, sign, outputMl[0], outputMl[1]);
+          registry.fill(HIST("hpuxyQxypvscentpteta"), massCand, cent, ptCand, etaCand, uxyQxyp, sign, outputMl[0], outputMl[1], outputMl[2]);
+          registry.fill(HIST("hpuxyQxytvscentpteta"), massCand, cent, ptCand, etaCand, uxyQxyt, sign, outputMl[0], outputMl[1], outputMl[2]);
+          registry.fill(HIST("hpoddvscentpteta"), massCand, cent, ptCand, etaCand, oddv1, sign, outputMl[0], outputMl[1], outputMl[2]);
+          registry.fill(HIST("hpevenvscentpteta"), massCand, cent, ptCand, etaCand, evenv1, sign, outputMl[0], outputMl[1], outputMl[2]);
         } else {
-          registry.fill(HIST("hpuxQxpvscentpteta"), massCand, cent, ptCand, etaCand, uxQxp, sign, outputMl[0], outputMl[1]);
-          registry.fill(HIST("hpuyQypvscentpteta"), massCand, cent, ptCand, etaCand, uyQyp, sign, outputMl[0], outputMl[1]);
-          registry.fill(HIST("hpuxQxtvscentpteta"), massCand, cent, ptCand, etaCand, uxQxt, sign, outputMl[0], outputMl[1]);
-          registry.fill(HIST("hpuyQytvscentpteta"), massCand, cent, ptCand, etaCand, uyQyt, sign, outputMl[0], outputMl[1]);
+          registry.fill(HIST("hpuxQxpvscentpteta"), massCand, cent, ptCand, etaCand, uxQxp, sign, outputMl[0], outputMl[1], outputMl[2]);
+          registry.fill(HIST("hpuyQypvscentpteta"), massCand, cent, ptCand, etaCand, uyQyp, sign, outputMl[0], outputMl[1], outputMl[2]);
+          registry.fill(HIST("hpuxQxtvscentpteta"), massCand, cent, ptCand, etaCand, uxQxt, sign, outputMl[0], outputMl[1], outputMl[2]);
+          registry.fill(HIST("hpuyQytvscentpteta"), massCand, cent, ptCand, etaCand, uyQyt, sign, outputMl[0], outputMl[1], outputMl[2]);
         }
       } else {
         if (direct) {
@@ -246,6 +278,28 @@ struct HfTaskDirectedFlowCharmHadrons {
       }
     }
   }
+  // D0 with ML
+  void processD0Ml(CollsWithQvecs::iterator const& collision,
+                   TracksWithExtra const& tracks)
+  {
+    auto candsD0ToPiKWMl = selectedD0ToPiKWMl->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
+    auto candsD0ToKPiWMl = selectedD0ToKPiWMl->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
+    runFlowAnalysis<DecayChannel::D0ToPiK>(collision, candsD0ToPiKWMl, tracks);
+    runFlowAnalysis<DecayChannel::D0ToKPi>(collision, candsD0ToKPiWMl, tracks);
+  }
+  PROCESS_SWITCH(HfTaskDirectedFlowCharmHadrons, processD0Ml, "Process D0 candidates with ML", false);
+
+  // D0 with rectangular cuts
+  void processD0Std(CollsWithQvecs::iterator const& collision,
+                    TracksWithExtra const& tracks)
+  {
+    auto candsD0ToPiK = selectedD0ToPiK->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
+    auto candsD0ToKPi = selectedD0ToKPi->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
+    runFlowAnalysis<DecayChannel::D0ToPiK>(collision, candsD0ToPiK, tracks);
+    runFlowAnalysis<DecayChannel::D0ToKPi>(collision, candsD0ToKPi, tracks);
+  }
+  PROCESS_SWITCH(HfTaskDirectedFlowCharmHadrons, processD0Std, "Process D0 candidates with rectangular cuts", false);
+
   // Dplus with ML
   void processDplusMl(CollsWithQvecs::iterator const& collision,
                       CandDplusDataWMl const& candidatesDplus,
