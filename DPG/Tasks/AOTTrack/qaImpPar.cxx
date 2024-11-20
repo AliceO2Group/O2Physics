@@ -130,7 +130,8 @@ struct QaImpactPar {
                        ((trackSelection.node() == 2) && requireGlobalTrackWoPtEtaInFilter()) ||
                        ((trackSelection.node() == 3) && requireGlobalTrackWoDCAInFilter()) ||
                        ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
-                       ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
+                       ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks)) ||
+                       ((trackSelection.node() == 6) && requireTrackCutInFilter(TrackSelectionFlags::kGlobalTrackWoDCAxy));
   // Pt selection
   Filter ptMinFilter = o2::aod::track::pt > ptMin;
 

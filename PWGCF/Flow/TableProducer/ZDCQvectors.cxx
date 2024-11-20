@@ -17,6 +17,8 @@
 #include <numeric>
 #include <vector>
 #include <typeinfo>
+#include <memory>
+#include <string>
 
 #include "CCDB/BasicCCDBManager.h"
 #include "Common/CCDB/EventSelectionParams.h"
@@ -60,7 +62,7 @@ using namespace o2::aod::track;
 using namespace o2::aod::evsel;
 
 // define my.....
-using myCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>>;
+using myCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
 using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 
 namespace o2::analysis::qvectortask
@@ -89,7 +91,6 @@ std::vector<TProfile2D*> mean_vz_Run(4, nullptr);       // hQXA, hQYA, hQXC, hQY
 // Energy calibration:
 std::vector<TString> names_Ecal(10, "");
 std::vector<std::vector<TString>> names(5, std::vector<TString>()); //(1x 4d 4x 1d)
-std::vector<TString> vnames = {"hvertex_vx", "hvertex_vy"};
 
 // https://alice-notes.web.cern.ch/system/files/notes/analysis/620/017-May-31-analysis_note-ALICE_analysis_note_v2.pdf
 std::vector<double> ZDC_px = {-1.75, 1.75, -1.75, 1.75};
@@ -105,9 +106,10 @@ std::vector<double> meanEZN(10); // mean energies from calibration histos (commo
 std::vector<double> e(8, 0.);    // calibrated energies (a1, a2, a3, a4, c1, c2, c3, c4))
 
 //  Define variables needed to do the recentring steps.
-double centrality;
-int runnumber;
-std::vector<double> v(3); // vx, vy, vz
+double centrality = 0;
+int runnumber = 0;
+std::vector<double> v(3, 0); // vx, vy, vz
+bool isSelected = false;
 
 } // namespace o2::analysis::qvectortask
 
@@ -123,7 +125,7 @@ struct ZDCqvectors {
   ConfigurableAxis axisVx_big{"axisVx_big", {3, -0.006, -0.006}, "for Pos X of collision"};
   ConfigurableAxis axisVy_big{"axisVy_big", {3, -0.003, 0.003}, "for Pos Y of collision"};
   ConfigurableAxis axisVz_big{"axisVz_big", {3, -10, 10}, "for Pos Z of collision"};
-  ConfigurableAxis axisVx{"axisVx", {10, -0.006, -0.006}, "for Pos X of collision"};
+  ConfigurableAxis axisVx{"axisVx", {10, -0.006, 0.006}, "for Pos X of collision"};
   ConfigurableAxis axisVy{"axisVy", {10, -0.003, 0.003}, "for Pos Y of collision"};
   ConfigurableAxis axisVz{"axisVz", {10, -10, 1}, "for vz of collision"};
   ConfigurableAxis axisRun{"axisRun", {1e6, 0, 1e6}, "for runNumber in ThnSparse"};
@@ -145,9 +147,6 @@ struct ZDCqvectors {
 
   //  Define output
   HistogramRegistry registry{"Registry"};
-
-  //  Filters
-  Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
 
   Service<ccdb::BasicCCDBManager> ccdb;
 
@@ -234,10 +233,6 @@ struct ZDCqvectors {
     // recentered q-vectors (to check what steps are finished in the end)
     registry.add("hStep", "hStep", {HistType::kTH1D, {{10, 0., 10.}}});
     registry.add("hIteration", "hIteration", {HistType::kTH1D, {{10, 0., 10.}}});
-
-    // histos with mean v(x/y) per run.
-    registry.add<TProfile>("vmean/hvertex_vx", "hvertex_vx", kTProfile, {{1, 0., 1.}}, "s");
-    registry.add<TProfile>("vmean/hvertex_vy", "hvertex_vy", kTProfile, {{1, 0., 1.}}, "s");
   }
 
   inline void fillRegistry(int iteration, int step)
@@ -495,14 +490,19 @@ struct ZDCqvectors {
     std::vector<double> xEnZN(2, 0.);
     std::vector<double> yEnZN(2, 0.);
 
-    if (!collision.sel8())
-      return;
     auto cent = collision.centFT0C();
-    if (cent < 0 || cent > 90)
+
+    if (cent < 0 || cent > 90) {
+      SPtableZDC(0, 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0);
       return;
+    }
 
     const auto& foundBC = collision.foundBC_as<BCsRun3>();
-    if (foundBC.has_zdc()) {
+
+    if (!foundBC.has_zdc()) {
+      SPtableZDC(0, 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0);
+      return;
+    }
 
       v[0] = collision.posX();
       v[1] = collision.posY();
@@ -523,14 +523,6 @@ struct ZDCqvectors {
         if (counter < 1) {
           LOGF(info, " --> No Energy calibration files found.. -> Only Energy calibration will be done. ");
         }
-      }
-      // load the calibrations for the mean v
-      loadCalibrations(0, 1, foundBC.timestamp(), cfgMeanv, vnames);
-      if (!cal.calibfilesLoaded[0][1]) {
-        if (counter < 1)
-          LOGF(warning, " --> No mean V found.. -> THis wil lead to wrong axis for vx, vy (will be created in vmean/)");
-        registry.get<TProfile>(HIST("vmean/hvertex_vx"))->Fill(Form("%d", runnumber), v[0]);
-        registry.get<TProfile>(HIST("vmean/hvertex_vy"))->Fill(Form("%d", runnumber), v[1]);
       }
 
       if (counter < 1)
@@ -571,10 +563,16 @@ struct ZDCqvectors {
       // if ZNA or ZNC not hit correctly.. do not use event in q-vector calculation
       if (!isZNAhit || !isZNChit) {
         counter++;
+        SPtableZDC(0, 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0);
         return;
       }
 
-      if (cal.calibfilesLoaded[0][0]) {
+      if (!cal.calibfilesLoaded[0][0]) {
+        counter++;
+        SPtableZDC(0, 0, 0, 0, 0, 0, 0, 0, 0, false, 0, 0);
+        return;
+      }
+
         if (counter < 1)
           LOGF(info, "files for step 0 (energy Calibraton) are open!");
 
@@ -618,13 +616,6 @@ struct ZDCqvectors {
           }
         }
 
-        if (cal.calibfilesLoaded[0][1]) {
-          if (counter < 1)
-            LOGF(info, "=====================> Setting v to vmean!");
-          v[0] = v[0] - getCorrection<TProfile>(0, 1, vnames[0].Data());
-          v[1] = v[1] - getCorrection<TProfile>(0, 1, vnames[1].Data());
-        }
-
         for (int iteration = 1; iteration < 5; iteration++) {
           std::vector<std::string> ccdb_dirs;
           if (iteration == 1)
@@ -645,7 +636,7 @@ struct ZDCqvectors {
           if (counter < 1)
             LOGF(warning, "Calibation files missing!!! Output created with q-vectors right after energy gain eq. !!");
           fillAllRegistries(0, 0);
-          SPtableZDC(runnumber, centrality, v[0], v[1], v[2], q[0][0][0], q[0][0][1], q[0][0][2], q[0][0][3], 0, 0);
+          SPtableZDC(runnumber, centrality, v[0], v[1], v[2], q[0][0][0], q[0][0][1], q[0][0][2], q[0][0][3], true, 0, 0);
           counter++;
           return;
         } else {
@@ -673,14 +664,11 @@ struct ZDCqvectors {
           if (counter < 1)
             LOGF(warning, "Calibation files missing!!! Output created with q-vectors at iteration %i and step %i!!!!", cal.atIteration, cal.atStep + 1);
           fillAllRegistries(cal.atIteration, cal.atStep + 1);
-          SPtableZDC(runnumber, centrality, v[0], v[1], v[2], q[cal.atIteration][cal.atStep][0], q[cal.atIteration][cal.atStep][1], q[cal.atIteration][cal.atStep][2], q[cal.atIteration][cal.atStep][3], cal.atIteration, cal.atStep);
+          SPtableZDC(runnumber, centrality, v[0], v[1], v[2], q[cal.atIteration][cal.atStep][0], q[cal.atIteration][cal.atStep][1], q[cal.atIteration][cal.atStep][2], q[cal.atIteration][cal.atStep][3], true, cal.atIteration, cal.atStep);
           counter++;
           return;
         }
-      } // end of cal.calibfilesLoaded[0]
-
-    } // end collision found ZDC
-    counter++;
+        LOGF(warning, "We return without saving table... -> THis is a problem");
   } // end of process
 };
 

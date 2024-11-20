@@ -9,6 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
+#include <vector>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -322,7 +323,7 @@ struct sgExclusivePhiITSselections {
         registry.fill(HIST("hdEdxKaon9"), momentum, dEdx);
         registry.fill(HIST("hTracksITSonly"), allTracksAreITSonlyAndFourITSclusters.size());
 
-        for (int kaon = 0; kaon < allTracksAreITSonlyAndFourITSclusters.size(); kaon++) {
+        for (std::size_t kaon = 0; kaon < allTracksAreITSonlyAndFourITSclusters.size(); kaon++) {
 
           int clusterSize[7];
           double averageClusterSize = 0.;

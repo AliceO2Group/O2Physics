@@ -82,6 +82,8 @@ struct TreeWriterTpcV0 {
     const double mass = o2::track::pid_constants::sMasses[id];
     const double bg = p / mass;
     const int multTPC = collision.multTPC();
+    auto trackocc = collision.trackOccupancyInTimeRange();
+    auto ft0occ = collision.ft0cOccupancyInTimeRange();
 
     const float alpha = v0.alpha();
     const float qt = v0.qtarm();
@@ -113,7 +115,9 @@ struct TreeWriterTpcV0 {
                  pT,
                  v0radius,
                  gammapsipair,
-                 runnumber);
+                 runnumber,
+                 trackocc,
+                 ft0occ);
     }
   };
 
@@ -324,6 +328,8 @@ struct TreeWriterTPCTOF {
     const double mass = o2::track::pid_constants::sMasses[id];
     const double bg = p / mass;
     const int multTPC = collision.multTPC();
+    auto trackocc = collision.trackOccupancyInTimeRange();
+    auto ft0occ = collision.ft0cOccupancyInTimeRange();
 
     const double pseudoRndm = track.pt() * 1000. - static_cast<int64_t>(track.pt() * 1000);
     if (pseudoRndm < dwnSmplFactor) {
@@ -342,7 +348,9 @@ struct TreeWriterTPCTOF {
                     id,
                     nSigmaTPC,
                     nSigmaTOF,
-                    runnumber);
+                    runnumber,
+                    trackocc,
+                    ft0occ);
     }
   };
 
