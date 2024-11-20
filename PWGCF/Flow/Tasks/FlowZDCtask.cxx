@@ -80,9 +80,9 @@ struct FlowZDCtask {
   ConfigurableAxis axisEta{"axisEta", {40, -1., 1.}, "eta axis for histograms"};
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.2, 0.25, 0.30, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.20, 2.40, 2.60, 2.80, 3.00}, "pt axis for histograms"};
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}, "centrality axis for histograms"};
-  ConfigurableAxis axisEnergy{"axisEnergy", {100,0,700}, "energy axis for zdc histos"};
+  ConfigurableAxis axisEnergy{"axisEnergy", {100, 0, 700}, "energy axis for zdc histos"};
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
+  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
 
   Partition<aodTracks> tracksIUWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
 
@@ -131,7 +131,6 @@ struct FlowZDCtask {
     const AxisSpec axisREQ{100, -1, 1, "real Q"};
     const AxisSpec axisIMQ{100, -1, 1, "imag Q"};
 
-
     AxisSpec axisVtxcounts{2, -0.5f, 1.5f, "Vtx info (0=no, 1=yes)"};
     AxisSpec axisZvert{120, -30.f, 30.f, "Vtx z (cm)"};
     AxisSpec axisCent{8, 0.f, 105.f, "centrality"};
@@ -164,16 +163,14 @@ struct FlowZDCtask {
     histos.add("EnergyZNC", "ZNC Sector Energy", kTH1F, {axisEnergy});
     histos.add("hCentFT0C", "FT0C Centrality Distribution", kTH1F, {{100, 0, 105}});
     histos.add("hZNvsFT0Ccent",
-           "ZN Energy vs FT0C Centrality;Centrality [%];ZN Energy [TeV]",
-           kTH2F,
-           {AxisSpec{100, 0, 100, "Centrality [%]"}, AxisSpec{100, 0, 500, "ZN Energy [TeV]"}}
-    );
+               "ZN Energy vs FT0C Centrality;Centrality [%];ZN Energy [TeV]",
+               kTH2F,
+               {AxisSpec{100, 0, 100, "Centrality [%]"}, AxisSpec{100, 0, 500, "ZN Energy [TeV]"}});
 
     histos.add("hZPvsFT0Ccent",
-           "ZP Energy vs FT0C Centrality;Centrality [%];ZP Energy [TeV]",
-           kTH2F,
-           {AxisSpec{100, 0, 100, "Centrality [%]"}, AxisSpec{100, 0, 500, "ZP Energy [TeV]"}}
-    );
+               "ZP Energy vs FT0C Centrality;Centrality [%];ZP Energy [TeV]",
+               kTH2F,
+               {AxisSpec{100, 0, 100, "Centrality [%]"}, AxisSpec{100, 0, 500, "ZP Energy [TeV]"}});
     // for q vector recentering
     histos.add("revsimag", "revsimag", kTH2F, {axisREQ, axisIMQ});
 
@@ -324,7 +321,7 @@ struct FlowZDCtask {
         float common_sumZNA = (zdcread.energyCommonZNA()) / acceptnace_ZNA;
         float common_sumZPC = (zdcread.energyCommonZPC()) / acceptnace_ZPC;
         float common_sumZPA = (zdcread.energyCommonZPA()) / acceptnace_ZPA;
-        float sumZN = (sumZNC ) + (sumZNA );
+        float sumZN = (sumZNC) + (sumZNA);
         float sumZP = (sumZPC) + (sumZPA);
 
         histos.fill(HIST("ZNenergy"), sumZN);
