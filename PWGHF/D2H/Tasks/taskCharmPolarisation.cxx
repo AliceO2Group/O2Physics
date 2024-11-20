@@ -32,6 +32,8 @@
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
+#include <vector>
+
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
