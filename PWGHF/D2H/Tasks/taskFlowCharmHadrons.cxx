@@ -454,7 +454,7 @@ struct HfTaskFlowCharmHadrons {
     if (storeOccupancy) {
       occupancy = getOccupancy(collision);
       registry.fill(HIST("trackOccVsFT0COcc"), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
-      hfevflag = static_cast<int>(hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, cent, ccdb, registry));
+      hfevflag = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, cent, ccdb, registry);
     }
 
     std::vector<float> qVecs = getQvec(collision);
