@@ -72,7 +72,7 @@ o2physics_add_dpl_workflow(tpc-dedx-qa
 
 o2physics_add_dpl_workflow(vertexqa
     SOURCES vertexQA.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(efficiencyqa
