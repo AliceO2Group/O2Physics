@@ -53,7 +53,7 @@ using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using selectedClusters = o2::soa::Filtered<o2::soa::Join<o2::aod::JClusters,o2::aod::JClusterTracks>>;
+using selectedClusters = o2::soa::Filtered<o2::soa::Join<o2::aod::JClusters, o2::aod::JClusterTracks>>;
 
 #include "Framework/runDataProcessing.h"
 
@@ -246,10 +246,14 @@ struct GammaJetTreeProducer {
 
   // Process clusters
 <<<<<<< HEAD:PWGJE/Tasks/gammaJetTreeProducer.cxx
+<<<<<<< HEAD:PWGJE/Tasks/gammaJetTreeProducer.cxx
   void processClusters(soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::JCollisionBCs>::iterator const& collision, selectedClusters const& clusters, aod::JetTracks const& tracks, aod::JEMCTracks const& emctracks)
 =======
   void processClusters(soa::Join<JetCollisions, aod::BkgChargedRhos, aod::JCollisionBCs>::iterator const& collision, selectedClusters const& clusters, JetTracks const& tracks)
 >>>>>>> 7bb11ca33 (fixing merge conflicts):PWGJE/Tasks/gammajettreeproducer.cxx
+=======
+  void processClusters(soa::Join<JetCollisions, aod::BkgChargedRhos, aod::JCollisionBCs>::iterator const& collision, selectedClusters const& clusters, JetTracks const& tracks, aod::JEMCTracks const& emctracks)
+>>>>>>> 8337d62bc (adding emcal eta phi on surface to tree):PWGJE/Tasks/gammajettreeproducer.cxx
   {
     if (!isEventAccepted(collision)) {
       return;
@@ -277,20 +281,20 @@ struct GammaJetTreeProducer {
       // double dRMin = 100;
       double p = -1;
 
-      // do track matching 
+      // do track matching
       auto tracksofcluster = cluster.matchedTracks_as<JetTracks>();
-      
       for (auto track : tracksofcluster) {
         if (!isTrackSelected(track)) {
           continue;
         }
+        auto emcTracksPerTrack = emctracks.sliceBy(EMCTrackPerTrack, track.globalIndex());
+        auto emcTrack = emcTracksPerTrack.iteratorAt(0);
         // find closest track that still has E/p < trackMatchingEoverP
         if (cluster.energy()/track.p() > trackMatchingEoverP) {
           continue;
         } else {
-          // TODO make it eta on emcal surface and phi on emcal surface
-          dEta = cluster.eta() - track.eta();
-          dPhi = RecoDecay::constrainAngle(RecoDecay::constrainAngle(track.phi(), -M_PI) - RecoDecay::constrainAngle(cluster.phi(), -M_PI), -M_PI);
+          dEta = cluster.eta() - emcTrack.etaEmcal();
+          dPhi = RecoDecay::constrainAngle(RecoDecay::constrainAngle(emcTrack.phiEmcal(), -M_PI) - RecoDecay::constrainAngle(cluster.phi(), -M_PI), -M_PI);
           p = track.p();
           break;
         }
@@ -347,7 +351,7 @@ struct GammaJetTreeProducer {
       // calculate perp cone rho
       double perpconerho = ch_perp_cone_rho(jet, tracks, perpConeJetR);
       mHistograms.fill(HIST("chjetPtEtaPhi"), jet.pt(), jet.eta(), jet.phi());
-      chargedJetsTable(storedColIndex, jet.pt(), jet.eta(), jet.phi(), jet.r(), jet.energy(), jet.mass(), jet.area(), leadingTrackPt, perpconerho,nconst);
+      chargedJetsTable(storedColIndex, jet.pt(), jet.eta(), jet.phi(), jet.r(), jet.energy(), jet.mass(), jet.area(), leadingTrackPt, perpconerho, nconst);
       // fill histograms
       mHistograms.fill(HIST("chjetPt"), jet.pt());
     }
