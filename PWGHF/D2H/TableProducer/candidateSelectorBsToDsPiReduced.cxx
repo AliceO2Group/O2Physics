@@ -14,6 +14,9 @@
 ///
 /// \author Fabio Catalano <fabio.catalano@cern.ch>, CERN
 
+#include <string>
+#include <vector>
+
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
@@ -63,7 +66,7 @@ struct HfCandidateSelectorBsToDsPiReduced {
   Configurable<std::vector<double>> binsPtBsMl{"binsPtBsMl", std::vector<double>{hf_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
   Configurable<std::vector<int>> cutDirBsMl{"cutDirBsMl", std::vector<int>{hf_cuts_ml::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
   Configurable<LabeledArray<double>> cutsBsMl{"cutsBsMl", {hf_cuts_ml::cuts[0], hf_cuts_ml::nBinsPt, hf_cuts_ml::nCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
-  Configurable<int8_t> nClassesBsMl{"nClassesBsMl", (int8_t)hf_cuts_ml::nCutScores, "Number of classes in ML model"};
+  Configurable<int> nClassesBsMl{"nClassesBsMl", static_cast<int>(hf_cuts_ml::nCutScores), "Number of classes in ML model"};
   Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
   // CCDB configuration
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
