@@ -24,6 +24,7 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/EventSelection.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+// #include "/home/mdicosta/alice/O2Physics/Common/TableProducer/Converters/mcCollisionConverter.cxx"
 
 using namespace o2;
 using namespace o2::framework;
@@ -97,6 +98,7 @@ struct pidStudies {
                             aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
                             aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
   using CollSels = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms>;
+  using V0sMCRec = soa::Join<aod::V0Cores, aod::V0CoreMCLabels>;
 
   Configurable<float> massK0Min{"massK0Min", 0.4, "Minimum mass for K0"};
   Configurable<float> massK0Max{"massK0Max", 0.6, "Maximum mass for K0"};
@@ -140,6 +142,45 @@ struct pidStudies {
     );
   }
 
+  template <typename T1>
+  bool isMatched(const T1& cand) {
+    LOG(info) << "Checking";
+    if constexpr (std::is_same<T1, V0sMCRec::iterator>::value) {
+      if (!cand.has_v0MCCore())
+        return false;
+      auto v0MC = cand.template v0MCCore_as<aod::V0MCCores>();     
+      bool isTrueLambda = false;
+      bool isPion = false;
+      bool isProton = false;
+      if (std::abs(v0MC.pdgCode()) == 3122)
+        // LOG(info) << "Matched Lambda";
+        isTrueLambda = true;
+      if (isTrueLambda && (abs(v0MC.pdgCodeNegative()) == 211))
+        // LOG(info) << "Matched Pion";
+        isPion = true;
+      if (isPion && (abs(v0MC.pdgCodePositive()) == 2212))
+        // LOG(info) << "Matched Proton";
+        isProton = true;   
+      return isProton;   
+    }
+  }
+
+  void processMC(V0sMCRec const& V0s, aod::V0MCCores const& V0sMC)
+  {
+    LOG(info) << "Processing MC";
+    LOG(info) << "Size: " << V0s.size();
+    for (const auto& v0 : V0s) {
+            bool matched = isMatched(v0); 
+            // LOG(info) << "---------";
+            if(matched) {
+              LOG(info) << "v0 matched";
+            } else {
+              LOG(info) << "v0 not matched";
+            }
+    }
+  }
+  PROCESS_SWITCH(pidStudies, processMC, "process MC", true);
+
   void processData(aod::V0Datas const& V0s, aod::Cascades const& cascades, CollSels const&, PIDTracks const&)
   {
     for (const auto& v0 : V0s) {
@@ -150,7 +191,7 @@ struct pidStudies {
       }
     }
   }
-  PROCESS_SWITCH(pidStudies, processData, "process data", true);
+  PROCESS_SWITCH(pidStudies, processData, "process data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
