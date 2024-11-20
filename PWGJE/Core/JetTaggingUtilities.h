@@ -634,7 +634,7 @@ bool isTaggedJetSV(T const jet, U const& /*prongs*/, float const& prongChi2PCAMi
  * @return The number of vertices (clusters) in the jet.
  */
 template <typename AnyCollision, typename AnalysisJet, typename AnyTracks, typename AnyParticles, typename AnyOriginalParticles>
-int vertexClustering(AnyCollision const& collision, AnalysisJet const& jet, AnyTracks const&, AnyParticles const& particles, AnyOriginalParticles const&, std::unordered_map<std::string, std::vector<int>>& trkLabels, float vtxResParam = 0.01 /* 0.01cm = 100um */, float trackPtMin = 0.5)
+int vertexClustering(AnyCollision const& collision, AnalysisJet const& jet, AnyTracks const&, AnyParticles const& particles, AnyOriginalParticles const&, std::unordered_map<std::string, std::vector<int>>& trkLabels, bool searchUpToQuark, float vtxResParam = 0.01 /* 0.01cm = 100um */, float trackPtMin = 0.5)
 {
   const auto& tracks = jet.template tracks_as<AnyTracks>();
   const int n_trks = tracks.size();
@@ -791,7 +791,7 @@ int vertexClustering(AnyCollision const& collision, AnalysisJet const& jet, AnyT
     else
     {
       const auto &particle = constituent.template mcParticle_as<AnyParticles>();
-      int orig = RecoDecay::getParticleOrigin(particles, particle, true);
+      int orig = RecoDecay::getParticleOrigin(particles, particle, searchUpToQuark);
       trkLabels["trkOrigin"].push_back((orig > 0) ? orig :
                                        (trkLabels["trkVtxIndex"][trkIdx] == 0) ? 3 : 4);
     }

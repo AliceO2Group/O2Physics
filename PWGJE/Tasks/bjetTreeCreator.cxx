@@ -735,7 +735,7 @@ struct BJetTreeCreator {
 
       //+
       TrackLabelMap trkLabels{{"trkVtxIndex", {}}, {"trkOrigin", {}}};
-      int nVertices = jettaggingutilities::vertexClustering(collision.template mcCollision_as<aod::JMcCollisions>(), analysisJet, allTracks, MCParticles, origParticles, trkLabels, vtxRes, trackPtMin);
+      int nVertices = jettaggingutilities::vertexClustering(collision.template mcCollision_as<aod::JMcCollisions>(), analysisJet, allTracks, MCParticles, origParticles, trkLabels, true, vtxRes, trackPtMin);
       analyzeJetTrackInfoForGNN(collision, analysisJet, allTracks, origTracks, tracksIndices, jetFlavor, eventWeight, &trkLabels);
 
       registry.fill(HIST("h2_jetMass_jetpT"), analysisJet.pt(), analysisJet.mass(), eventWeight);
