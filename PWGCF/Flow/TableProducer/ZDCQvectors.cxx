@@ -365,7 +365,7 @@ struct ZDCqvectors {
       cal.calibList[iteration][step] = ccdb->getForTimeStamp<TList>(ccdb_dir, timestamp);
 
       if (cal.calibList[iteration][step]) {
-        for (int i = 0; i < names.size(); i++) {
+        for (std::size_t i = 0; i < names.size(); i++) {
           TObject* obj = reinterpret_cast<TObject*>(cal.calibList[iteration][step]->FindObject(Form("%s", names[i].Data())));
           if (!obj) {
             if (counter < 1) {
@@ -426,7 +426,7 @@ struct ZDCqvectors {
   double getCorrection(int iteration, int step, const char* objName)
   {
     T* hist = nullptr;
-    double calibConstant;
+    double calibConstant{0};
 
     hist = reinterpret_cast<T*>(cal.calibList[iteration][step]->FindObject(Form("%s", objName)));
     if (!hist) {
@@ -460,7 +460,7 @@ struct ZDCqvectors {
         sparsePars.push_back(h->GetAxis(3)->FindBin(v[1]));
         sparsePars.push_back(h->GetAxis(4)->FindBin(v[2]));
       }
-      for (int i = 0; i < sparsePars.size(); i++) {
+      for (std::size_t i = 0; i < sparsePars.size(); i++) {
         h->GetAxis(i)->SetRange(sparsePars[i], sparsePars[i]);
       }
       calibConstant = h->Projection(sparsePars.size())->GetMean();
