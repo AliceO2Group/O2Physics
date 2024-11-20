@@ -87,6 +87,9 @@ struct EMfTaskPi0Flow {
   Configurable<bool> saveEpResoHisto{"saveEpResoHisto", false, "Flag to save event plane resolution histogram"};
   Configurable<bool> saveSPResoHist{"saveSPResoHist", false, "Flag to save scalar product resolution histogram"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<bool> cfgDoRotation{"cfgDoRotation", true, "Flag to enable rotation background method"};
+  Configurable<int> cfgDownsampling{"cfgDownsampling", 1, "Calculate rotation background only for every <value> collision"};
+  Configurable<float> cfgRotAngle{"cfgRotAngle", M_PI / 2., "Angle used for the rotation method"};
 
   // configurable axis
   ConfigurableAxis thnConfigAxisInvMass{"thnConfigAxisInvMass", {200, 0.0, 0.4}, ""};
@@ -139,6 +142,7 @@ struct EMfTaskPi0Flow {
   struct : ConfigurableGroup {
     std::string prefix = "meson";
     Configurable<float> minOpenAngle{"minOpenAngle", 0.0202, "apply min opening angle. Default value one EMCal cell"};
+    Configurable<bool> enableTanThetadPhi{"enableTanThetadPhi", false, "flag to turn cut opening angle in delta theta delta phi on/off"};
     Configurable<float> minTanThetadPhi{"minTanThetadPhi", 4., "apply min opening angle in delta theta delta phi to cut on late conversion"};
     Configurable<float> maxEnergyAsymmetry{"maxEnergyAsymmetry", 1., "apply max energy asymmetry for meson candidate"};
     Configurable<bool> enableQA{"enableQA", false, "flag to turn QA plots on/off"};
@@ -169,6 +173,8 @@ struct EMfTaskPi0Flow {
   Preslice<FilteredEMCalPhotons> perCollision_emc_filtered = aod::emccluster::emeventId;
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
+
+  o2::emcal::Geometry* emcalGeom;
 
   void DefineEMEventCut()
   {
@@ -219,7 +225,7 @@ struct EMfTaskPi0Flow {
     o2::aod::pwgem::photonmeson::utils::eventhistogram::addEventHistograms(&registry);
 
     // Load EMCal geometry
-    o2::emcal::Geometry::GetInstanceFromRunNumber(300000);
+    emcalGeom = o2::emcal::Geometry::GetInstanceFromRunNumber(300000);
 
     const AxisSpec thnAxisInvMass{thnConfigAxisInvMass, "#it{M}_{#gamma#gamma} (GeV/#it{c}^{2})"};
     const AxisSpec thnAxisPt{thnConfigAxisPt, "#it{p}_{T} (GeV/#it{c})"};
@@ -236,8 +242,7 @@ struct EMfTaskPi0Flow {
     const AxisSpec thAxisEta{160, -0.8, 0.8, "#eta"};
     const AxisSpec thAxisPhi{72, 0, 2 * 3.14159, "phi"};
     const AxisSpec thAxisNCell{17664, 0.5, +17664.5, "#it{N}_{cell}"};
-
-    const AxisSpec thAxisPsi{360 / harmonic, 0.f, 2. / harmonic * M_PI, Form("#Psi_{%d}", harmonic.value)};
+    const AxisSpec thAxisPsi{360 / harmonic.value, -(1. / static_cast<float>(harmonic.value)) * M_PI, (1. / static_cast<float>(harmonic.value)) * M_PI, Form("#Psi_{%d}", harmonic.value)};
 
     registry.add("hSparsePi0Flow", "THn for SP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCent, thnAxisScalarProd});
     registry.add("hSparseBkgFlow", "THn for SP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCent, thnAxisScalarProd});
@@ -250,34 +255,34 @@ struct EMfTaskPi0Flow {
     hClusterCuts->GetXaxis()->SetBinLabel(6, "out");
 
     if (saveSPResoHist) {
-      registry.add("spReso/hSpResoFT0cFT0a", "hSpResoFT0cFT0a; centrality; Q_{FT0c} #bullet Q_{FT0a}", {HistType::kTProfile, {thnAxisCent}});
-      registry.add("spReso/hSpResoFT0cTPCpos", "hSpResoFT0cTPCpos; centrality; Q_{FT0c} #bullet Q_{TPCpos}", {HistType::kTProfile, {thnAxisCent}});
-      registry.add("spReso/hSpResoFT0cTPCneg", "hSpResoFT0cTPCneg; centrality; Q_{FT0c} #bullet Q_{TPCneg}", {HistType::kTProfile, {thnAxisCent}});
-      registry.add("spReso/hSpResoFT0cTPCtot", "hSpResoFT0cTPCtot; centrality; Q_{FT0c} #bullet Q_{TPCtot}", {HistType::kTProfile, {thnAxisCent}});
-      registry.add("spReso/hSpResoFT0aTPCpos", "hSpResoFT0aTPCpos; centrality; Q_{FT0a} #bullet Q_{TPCpos}", {HistType::kTProfile, {thnAxisCent}});
-      registry.add("spReso/hSpResoFT0aTPCneg", "hSpResoFT0aTPCneg; centrality; Q_{FT0a} #bullet Q_{TPCneg}", {HistType::kTProfile, {thnAxisCent}});
-      registry.add("spReso/hSpResoFT0aTPCtot", "hSpResoFT0aTPCtot; centrality; Q_{FT0m} #bullet Q_{TPCtot}", {HistType::kTProfile, {thnAxisCent}});
-      registry.add("spReso/hSpResoFT0mTPCpos", "hSpResoFT0mTPCpos; centrality; Q_{FT0m} #bullet Q_{TPCpos}", {HistType::kTProfile, {thnAxisCent}});
-      registry.add("spReso/hSpResoFT0mTPCneg", "hSpResoFT0mTPCneg; centrality; Q_{FT0m} #bullet Q_{TPCneg}", {HistType::kTProfile, {thnAxisCent}});
-      registry.add("spReso/hSpResoFT0mTPCtot", "hSpResoFT0mTPCtot; centrality; Q_{FT0m} #bullet Q_{TPCtot}", {HistType::kTProfile, {thnAxisCent}});
-      registry.add("spReso/hSpResoTPCposTPCneg", "hSpResoTPCposTPCneg; centrality; Q_{TPCpos} #bullet Q_{TPCneg}", {HistType::kTProfile, {thnAxisCent}});
+      registry.add("spReso/hSpResoFT0cFT0a", "hSpResoFT0cFT0a; centrality; Q_{FT0c} #bullet Q_{FT0a}", HistType::kTH2D, {thnAxisCent, thnConfigAxisScalarProd});
+      registry.add("spReso/hSpResoFT0cTPCpos", "hSpResoFT0cTPCpos; centrality; Q_{FT0c} #bullet Q_{TPCpos}", HistType::kTH2D, {thnAxisCent, thnConfigAxisScalarProd});
+      registry.add("spReso/hSpResoFT0cTPCneg", "hSpResoFT0cTPCneg; centrality; Q_{FT0c} #bullet Q_{TPCneg}", HistType::kTH2D, {thnAxisCent, thnConfigAxisScalarProd});
+      registry.add("spReso/hSpResoFT0cTPCtot", "hSpResoFT0cTPCtot; centrality; Q_{FT0c} #bullet Q_{TPCtot}", HistType::kTH2D, {thnAxisCent, thnConfigAxisScalarProd});
+      registry.add("spReso/hSpResoFT0aTPCpos", "hSpResoFT0aTPCpos; centrality; Q_{FT0a} #bullet Q_{TPCpos}", HistType::kTH2D, {thnAxisCent, thnConfigAxisScalarProd});
+      registry.add("spReso/hSpResoFT0aTPCneg", "hSpResoFT0aTPCneg; centrality; Q_{FT0a} #bullet Q_{TPCneg}", HistType::kTH2D, {thnAxisCent, thnConfigAxisScalarProd});
+      registry.add("spReso/hSpResoFT0aTPCtot", "hSpResoFT0aTPCtot; centrality; Q_{FT0m} #bullet Q_{TPCtot}", HistType::kTH2D, {thnAxisCent, thnConfigAxisScalarProd});
+      registry.add("spReso/hSpResoFT0mTPCpos", "hSpResoFT0mTPCpos; centrality; Q_{FT0m} #bullet Q_{TPCpos}", HistType::kTH2D, {thnAxisCent, thnConfigAxisScalarProd});
+      registry.add("spReso/hSpResoFT0mTPCneg", "hSpResoFT0mTPCneg; centrality; Q_{FT0m} #bullet Q_{TPCneg}", HistType::kTH2D, {thnAxisCent, thnConfigAxisScalarProd});
+      registry.add("spReso/hSpResoFT0mTPCtot", "hSpResoFT0mTPCtot; centrality; Q_{FT0m} #bullet Q_{TPCtot}", HistType::kTH2D, {thnAxisCent, thnConfigAxisScalarProd});
+      registry.add("spReso/hSpResoTPCposTPCneg", "hSpResoTPCposTPCneg; centrality; Q_{TPCpos} #bullet Q_{TPCneg}", HistType::kTH2D, {thnAxisCent, thnConfigAxisScalarProd});
     }
 
     if (saveEpResoHisto) {
       registry.add("hEventPlaneAngleFT0M", "hEventPlaneAngleFT0M", HistType::kTH2D, {thnAxisCent, thAxisPsi});
       registry.add("hEventPlaneAngleTPCpos", "hEventPlaneAngleTPCpos", HistType::kTH2D, {thnAxisCent, thAxisPsi});
       registry.add("hEventPlaneAngleTPCneg", "hEventPlaneAngleTPCneg", HistType::kTH2D, {thnAxisCent, thAxisPsi});
-      registry.add("epReso/hEpResoFT0cFT0a", "hEpResoFT0cFT0a; centrality; #Delta#Psi_{sub}", {HistType::kTProfile, {thnAxisCent}});
-      registry.add("epReso/hEpResoFT0cTPCpos", "hEpResoFT0cTPCpos; centrality; #Delta#Psi_{sub}", {HistType::kTProfile, {thnAxisCent}});
-      registry.add("epReso/hEpResoFT0cTPCneg", "hEpResoFT0cTPCneg; centrality; #Delta#Psi_{sub}", {HistType::kTProfile, {thnAxisCent}});
-      registry.add("epReso/hEpResoFT0cTPCtot", "hEpResoFT0cTPCtot; centrality; #Delta#Psi_{sub}", {HistType::kTProfile, {thnAxisCent}});
-      registry.add("epReso/hEpResoFT0aTPCpos", "hEpResoFT0aTPCpos; centrality; #Delta#Psi_{sub}", {HistType::kTProfile, {thnAxisCent}});
-      registry.add("epReso/hEpResoFT0aTPCneg", "hEpResoFT0aTPCneg; centrality; #Delta#Psi_{sub}", {HistType::kTProfile, {thnAxisCent}});
-      registry.add("epReso/hEpResoFT0aTPCtot", "hEpResoFT0aTPCtot; centrality; #Delta#Psi_{sub}", {HistType::kTProfile, {thnAxisCent}});
-      registry.add("epReso/hEpResoFT0mTPCpos", "hEpResoFT0mTPCpos; centrality; #Delta#Psi_{sub}", {HistType::kTProfile, {thnAxisCent}});
-      registry.add("epReso/hEpResoFT0mTPCneg", "hEpResoFT0mTPCneg; centrality; #Delta#Psi_{sub}", {HistType::kTProfile, {thnAxisCent}});
-      registry.add("epReso/hEpResoFT0mTPCtot", "hEpResoFT0mTPCtot; centrality; #Delta#Psi_{sub}", {HistType::kTProfile, {thnAxisCent}});
-      registry.add("epReso/hEpResoTPCposTPCneg", "hEpResoTPCposTPCneg; centrality; #Delta#Psi_{sub}", {HistType::kTProfile, {thnAxisCent}});
+      registry.add("epReso/hEpResoFT0cFT0a", "hEpResoFT0cFT0a; centrality; #Delta#Psi_{sub}", HistType::kTH2D, {thnAxisCent, thnAxisCosNPhi});
+      registry.add("epReso/hEpResoFT0cTPCpos", "hEpResoFT0cTPCpos; centrality; #Delta#Psi_{sub}", HistType::kTH2D, {thnAxisCent, thnAxisCosNPhi});
+      registry.add("epReso/hEpResoFT0cTPCneg", "hEpResoFT0cTPCneg; centrality; #Delta#Psi_{sub}", HistType::kTH2D, {thnAxisCent, thnAxisCosNPhi});
+      registry.add("epReso/hEpResoFT0cTPCtot", "hEpResoFT0cTPCtot; centrality; #Delta#Psi_{sub}", HistType::kTH2D, {thnAxisCent, thnAxisCosNPhi});
+      registry.add("epReso/hEpResoFT0aTPCpos", "hEpResoFT0aTPCpos; centrality; #Delta#Psi_{sub}", HistType::kTH2D, {thnAxisCent, thnAxisCosNPhi});
+      registry.add("epReso/hEpResoFT0aTPCneg", "hEpResoFT0aTPCneg; centrality; #Delta#Psi_{sub}", HistType::kTH2D, {thnAxisCent, thnAxisCosNPhi});
+      registry.add("epReso/hEpResoFT0aTPCtot", "hEpResoFT0aTPCtot; centrality; #Delta#Psi_{sub}", HistType::kTH2D, {thnAxisCent, thnAxisCosNPhi});
+      registry.add("epReso/hEpResoFT0mTPCpos", "hEpResoFT0mTPCpos; centrality; #Delta#Psi_{sub}", HistType::kTH2D, {thnAxisCent, thnAxisCosNPhi});
+      registry.add("epReso/hEpResoFT0mTPCneg", "hEpResoFT0mTPCneg; centrality; #Delta#Psi_{sub}", HistType::kTH2D, {thnAxisCent, thnAxisCosNPhi});
+      registry.add("epReso/hEpResoFT0mTPCtot", "hEpResoFT0mTPCtot; centrality; #Delta#Psi_{sub}", HistType::kTH2D, {thnAxisCent, thnAxisCosNPhi});
+      registry.add("epReso/hEpResoTPCposTPCneg", "hEpResoTPCposTPCneg; centrality; #Delta#Psi_{sub}", HistType::kTH2D, {thnAxisCent, thnAxisCosNPhi});
     }
     if (eventcuts.enableQA) {
       auto hCollisionEMCCheck = registry.add<TH1>("hCollisionEMCCheck", "collision counter;;Counts", kTH1D, {{7, 0.5, 7.5}}, false);
@@ -485,13 +490,28 @@ struct EMfTaskPi0Flow {
 
     auto [xQVec, yQVec] = getQvec(collision, qvecDetector);
     float cent = getCentrality(collision);
+    int iCellID_photon1 = 0;
+    int iCellID_photon2 = 0;
 
-    const float rotationAngle = M_PI / 2.0; // rotaion angle 90 degree
-    ROOT::Math::AxisAngle rotationAxis(meson.Vect(), rotationAngle);
+    ROOT::Math::AxisAngle rotationAxis(meson.Vect(), cfgRotAngle.value);
     ROOT::Math::Rotation3D rotationMatrix(rotationAxis);
     photon1 = rotationMatrix * photon1;
     photon2 = rotationMatrix * photon2;
 
+    try {
+      iCellID_photon1 = emcalGeom->GetAbsCellIdFromEtaPhi(photon1.Eta(), photon1.Phi());
+    } catch (o2::emcal::InvalidPositionException& e) {
+      iCellID_photon1 = -1;
+    }
+    try {
+      iCellID_photon2 = emcalGeom->GetAbsCellIdFromEtaPhi(photon2.Eta(), photon2.Phi());
+    } catch (o2::emcal::InvalidPositionException& e) {
+      iCellID_photon2 = -1;
+    }
+
+    if (iCellID_photon1 == -1 && iCellID_photon2 == -1) {
+      return;
+    }
     for (auto& photon : photons_coll) {
       if (photon.globalIndex() == ig1 || photon.globalIndex() == ig2) {
         // only combine rotated photons with other photons
@@ -500,43 +520,46 @@ struct EMfTaskPi0Flow {
       if (!(fEMCCut.IsSelected<EMCalPhotons::iterator>(photon))) {
         continue;
       }
-
       ROOT::Math::PtEtaPhiMVector photon3(photon.pt(), photon.eta(), photon.phi(), 0.);
-      ROOT::Math::PtEtaPhiMVector mother1 = photon1 + photon3;
-      ROOT::Math::PtEtaPhiMVector mother2 = photon2 + photon3;
-
-      float openingAngle1 = std::acos(photon1.Vect().Dot(photon3.Vect()) / (photon1.P() * photon3.P()));
-      float openingAngle2 = std::acos(photon2.Vect().Dot(photon3.Vect()) / (photon2.P() * photon3.P()));
-
-      int iCellID_photon1 = 0;
-      int iCellID_photon2 = 0;
-
-      float cosNPhi1 = std::cos(harmonic * mother1.Phi());
-      float sinNPhi1 = std::sin(harmonic * mother1.Phi());
-      float scalprodCand1 = cosNPhi1 * xQVec + sinNPhi1 * yQVec;
-
-      float cosNPhi2 = std::cos(harmonic * mother2.Phi());
-      float sinNPhi2 = std::sin(harmonic * mother2.Phi());
-      float scalprodCand2 = cosNPhi2 * xQVec + sinNPhi2 * yQVec;
-
-      try {
-        iCellID_photon1 = o2::emcal::Geometry::GetInstance()->GetAbsCellIdFromEtaPhi(photon1.Eta(), photon1.Phi());
-      } catch (o2::emcal::InvalidPositionException& e) {
-        iCellID_photon1 = -1;
+      if (iCellID_photon1 > 0) {
+        ROOT::Math::PtEtaPhiMVector mother1 = photon1 + photon3;
+        float openingAngle1 = std::acos(photon1.Vect().Dot(photon3.Vect()) / (photon1.P() * photon3.P()));
+        float cosNPhi1 = std::cos(harmonic * mother1.Phi());
+        float sinNPhi1 = std::sin(harmonic * mother1.Phi());
+        float scalprodCand1 = cosNPhi1 * xQVec + sinNPhi1 * yQVec;
+        if (openingAngle1 > mesonConfig.minOpenAngle && thnConfigAxisInvMass.value[1] <= mother1.M() && thnConfigAxisInvMass.value.back() >= mother1.M() && thnConfigAxisPt.value[1] <= mother1.Pt() && thnConfigAxisPt.value.back() >= mother1.Pt()) {
+          if (mesonConfig.enableTanThetadPhi) {
+            float dTheta = photon1.Theta() - photon3.Theta();
+            float dPhi = photon1.Phi() - photon3.Phi();
+            if (mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(atan(dTheta / dPhi)))) {
+              registry.fill(HIST("hSparseBkgFlow"), mother1.M(), mother1.Pt(), cent, scalprodCand1);
+            }
+          } else {
+            registry.fill(HIST("hSparseBkgFlow"), mother1.M(), mother1.Pt(), cent, scalprodCand1);
+          }
+        }
       }
-      try {
-        iCellID_photon2 = o2::emcal::Geometry::GetInstance()->GetAbsCellIdFromEtaPhi(photon2.Eta(), photon2.Phi());
-      } catch (o2::emcal::InvalidPositionException& e) {
-        iCellID_photon2 = -1;
-      }
+      if (iCellID_photon2 > 0) {
+        ROOT::Math::PtEtaPhiMVector mother2 = photon2 + photon3;
+        float openingAngle2 = std::acos(photon2.Vect().Dot(photon3.Vect()) / (photon2.P() * photon3.P()));
+        float cosNPhi2 = std::cos(harmonic * mother2.Phi());
+        float sinNPhi2 = std::sin(harmonic * mother2.Phi());
+        float scalprodCand2 = cosNPhi2 * xQVec + sinNPhi2 * yQVec;
 
-      if (openingAngle1 > mesonConfig.minOpenAngle && iCellID_photon1 > 0 && thnConfigAxisInvMass.value[1] <= mother1.M() && thnConfigAxisInvMass.value.back() >= mother1.M() && thnConfigAxisPt.value[1] > mother1.Pt() && thnConfigAxisPt.value.back() < mother1.Pt()) {
-        registry.fill(HIST("hSparseBkgFlow"), mother1.M(), mother1.Pt(), cent, scalprodCand1);
+        if (openingAngle2 > mesonConfig.minOpenAngle && thnConfigAxisInvMass.value[1] <= mother2.M() && thnConfigAxisInvMass.value.back() >= mother2.M() && thnConfigAxisPt.value[1] <= mother2.Pt() && thnConfigAxisPt.value.back() >= mother2.Pt()) {
+          if (mesonConfig.enableTanThetadPhi) {
+            float dTheta = photon2.Theta() - photon3.Theta();
+            float dPhi = photon2.Phi() - photon3.Phi();
+            if (mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(atan(dTheta / dPhi)))) {
+              registry.fill(HIST("hSparseBkgFlow"), mother2.M(), mother2.Pt(), cent, scalprodCand2);
+            }
+          } else {
+            registry.fill(HIST("hSparseBkgFlow"), mother2.M(), mother2.Pt(), cent, scalprodCand2);
+          }
+        }
       }
-      if (openingAngle2 > mesonConfig.minOpenAngle && iCellID_photon2 > 0 && thnConfigAxisInvMass.value[1] <= mother2.M() && thnConfigAxisInvMass.value.back() >= mother2.M() && thnConfigAxisPt.value[1] > mother2.Pt() && thnConfigAxisPt.value.back() < mother2.Pt()) {
-        registry.fill(HIST("hSparseBkgFlow"), mother2.M(), mother2.Pt(), cent, scalprodCand2);
-      }
-    }
+    } // end of loop over third photon
+    return;
   }
 
   /// Compute the scalar product
@@ -562,6 +585,7 @@ struct EMfTaskPi0Flow {
   // Pi0 from EMCal
   void processEMCal(CollsWithQvecs const& collisions, EMCalPhotons const& clusters)
   {
+    int NColl = 1;
     for (auto& collision : collisions) {
       auto photons_per_collision = clusters.sliceBy(perCollision_emc, collision.globalIndex());
 
@@ -630,9 +654,6 @@ struct EMfTaskPi0Flow {
         ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
         ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
         ROOT::Math::PtEtaPhiMVector vMeson = v1 + v2;
-
-        RotationBackground<EMCalPhotons>(vMeson, v1, v2, photons_per_collision, g1.globalIndex(), g2.globalIndex(), collision);
-
         float dTheta = v1.Theta() - v2.Theta();
         float dPhi = v1.Phi() - v2.Phi();
         float openingAngle = std::acos(v1.Vect().Dot(v2.Vect()) / (v1.P() * v2.P()));
@@ -640,6 +661,11 @@ struct EMfTaskPi0Flow {
         if (openingAngle <= mesonConfig.minOpenAngle) {
           registry.fill(HIST("hClusterCuts"), 2);
           continue;
+        }
+        if (cfgDoRotation) {
+          if (NColl % cfgDownsampling.value == 0) {
+            RotationBackground<EMCalPhotons>(vMeson, v1, v2, photons_per_collision, g1.globalIndex(), g2.globalIndex(), collision);
+          }
         }
         if (thnConfigAxisInvMass.value[1] > vMeson.M() || thnConfigAxisInvMass.value.back() < vMeson.M()) {
           registry.fill(HIST("hClusterCuts"), 3);
@@ -654,12 +680,19 @@ struct EMfTaskPi0Flow {
           registry.fill(HIST("hTanThetaPhi"), vMeson.M(), getAngleDegree(atan(dTheta / dPhi)));
           registry.fill(HIST("hAlphaPt"), (v1.E() - v2.E()) / (v1.E() + v2.E()), vMeson.Pt());
         }
-        if (mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(atan(dTheta / dPhi)))) {
+        if (mesonConfig.enableTanThetadPhi && mesonConfig.minTanThetadPhi > std::fabs(getAngleDegree(atan(dTheta / dPhi)))) {
           registry.fill(HIST("hClusterCuts"), 5);
           continue;
         }
         registry.fill(HIST("hClusterCuts"), 6);
         runFlowAnalysis(collision, vMeson);
+      }
+      if (cfgDoRotation) {
+        if (NColl % cfgDownsampling.value == 0) {
+          NColl = 1; // reset counter
+        } else {
+          NColl++;
+        }
       }
     }
   }
