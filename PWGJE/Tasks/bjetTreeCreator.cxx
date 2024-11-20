@@ -286,8 +286,7 @@ struct BJetTreeCreator {
       registry.add("h2_Response_DetjetpT_PartjetpT_lfjet", "Response matrix lf-jet;#it{p}_{T,jet}^{det} (GeV/#it{c});#it{p}_{T,jet}^{part} (GeV/#it{c})", {HistType::kTH2F, {{200, 0., 200.}, {200, 0., 200.}}});
     }
 
-    if (doprocessMCJetsForGNN)
-    {
+    if (doprocessMCJetsForGNN) {
       //+jet
       registry.add("h_jet_pt", "jet_pt;#it{p}_{T}^{ch jet} (GeV/#it{c});Entries", {HistType::kTH1F, {{100, 0., 200.}}});
       registry.add("h_jet_eta", "jet_eta;#it{#eta}_{ch jet};Entries", {HistType::kTH1F, {{100, -2., 2.}}});
@@ -464,7 +463,7 @@ struct BJetTreeCreator {
   }
 
   template <typename AnyCollision, typename AnalysisJet, typename AnyTracks, typename AnyOriginalTracks>
-  void analyzeJetTrackInfoForGNN(AnyCollision const& /*collision*/, AnalysisJet const& analysisJet, AnyTracks const& /*allTracks*/, AnyOriginalTracks const&, std::vector<int>& trackIndices, int jetFlavor = 0, double eventweight = 1.0, TrackLabelMap *trkLabels = nullptr)
+  void analyzeJetTrackInfoForGNN(AnyCollision const& /*collision*/, AnalysisJet const& analysisJet, AnyTracks const& /*allTracks*/, AnyOriginalTracks const&, std::vector<int>& trackIndices, int jetFlavor = 0, double eventweight = 1.0, TrackLabelMap* trkLabels = nullptr)
   {
     int trkIdx = -1;
     for (auto& constituent : analysisJet.template tracks_as<AnyTracks>()) {
@@ -523,7 +522,7 @@ struct BJetTreeCreator {
         registry.fill(HIST("h_trk_origin"), trkOrigin);
 
         if (produceTree) {
-          bjetTracksExtraTable(/*bjetParamsTable.lastIndex() + 1, */origConstit.phi(), constituent.sign(), origConstit.itsChi2NCl(), origConstit.tpcChi2NCl(), origConstit.itsNCls(), origConstit.tpcNClsFound(), origConstit.tpcNClsCrossedRows(), trkOrigin, trkVtxIndex); //+
+          bjetTracksExtraTable(/*bjetParamsTable.lastIndex() + 1, */ origConstit.phi(), constituent.sign(), origConstit.itsChi2NCl(), origConstit.tpcChi2NCl(), origConstit.itsNCls(), origConstit.tpcNClsFound(), origConstit.tpcNClsCrossedRows(), trkOrigin, trkVtxIndex); //+
         }
       }
 
@@ -693,7 +692,7 @@ struct BJetTreeCreator {
   using MCDJetTableNoSV = soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets, aod::ChargedMCDetectorLevelJetEventWeights>>;
   using JetParticleswID = soa::Join<aod::JetParticles, aod::JMcParticlePIs>;
 
-  void processMCJetsForGNN(FilteredCollisionMCD::iterator const &collision, aod::JMcCollisions const &, MCDJetTableNoSV const &MCDjets, MCPJetTable const &MCPjets, JetTracksMCDwID const &allTracks, JetParticleswID const &MCParticles, OriginalTracks const& origTracks, aod::McParticles const& origParticles)
+  void processMCJetsForGNN(FilteredCollisionMCD::iterator const& collision, aod::JMcCollisions const&, MCDJetTableNoSV const& MCDjets, MCPJetTable const& MCPjets, JetTracksMCDwID const& allTracks, JetParticleswID const& MCParticles, OriginalTracks const& origTracks, aod::McParticles const& origParticles)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection) || (static_cast<double>(std::rand()) / RAND_MAX < eventReductionFactor)) {
       return;
