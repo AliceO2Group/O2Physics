@@ -90,6 +90,7 @@ struct EMfTaskPi0Flow {
   Configurable<bool> cfgDoRotation{"cfgDoRotation", true, "Flag to enable rotation background method"};
   Configurable<int> cfgDownsampling{"cfgDownsampling", 1, "Calculate rotation background only for every <value> collision"};
   Configurable<float> cfgRotAngle{"cfgRotAngle", M_PI / 2., "Angle used for the rotation method"};
+  Configurable<int> cfgDistanceToEdge{"cfgDistanceToEdge", 1, "Distance to edge in cells required for rotated cluster to be accepted"};
 
   // configurable axis
   ConfigurableAxis thnConfigAxisInvMass{"thnConfigAxisInvMass", {200, 0.0, 0.4}, ""};
@@ -158,6 +159,12 @@ struct EMfTaskPi0Flow {
     Configurable<int> ConfMixingDepth{"ConfMixingDepth", 2, "Mixing depth"};
   } mixingConfig;
 
+  struct : ConfigurableGroup {
+    std::string prefix = "correction";
+    Configurable<std::string> cfgSpresoPath{"cfgSpresoPath", "Users/m/mhemmer/EM/Flow/Resolution", "Path to SP resolution file"};
+    Configurable<int> cfgApplySPresolution{"cfgApplySPresolution", 0, "Apply resolution correction"};
+  } correctionConfig;
+
   SliceCache cache;
   EventPlaneHelper epHelper;
   o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -175,6 +182,8 @@ struct EMfTaskPi0Flow {
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
   o2::emcal::Geometry* emcalGeom;
+  TH1D* h1SP_Resolution = nullptr;
+  float epsilon = 1.e-8;
 
   void DefineEMEventCut()
   {
@@ -243,6 +252,8 @@ struct EMfTaskPi0Flow {
     const AxisSpec thAxisPhi{72, 0, 2 * 3.14159, "phi"};
     const AxisSpec thAxisNCell{17664, 0.5, +17664.5, "#it{N}_{cell}"};
     const AxisSpec thAxisPsi{360 / harmonic.value, -(1. / static_cast<float>(harmonic.value)) * M_PI, (1. / static_cast<float>(harmonic.value)) * M_PI, Form("#Psi_{%d}", harmonic.value)};
+    const AxisSpec thAxisCN{8, 0.5, 8.5, "#it{c}_{n}"};
+    const AxisSpec thAxisSN{8, 0.5, 8.5, "#it{s}_{n}"};
 
     registry.add("hSparsePi0Flow", "THn for SP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCent, thnAxisScalarProd});
     registry.add("hSparseBkgFlow", "THn for SP", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisCent, thnAxisScalarProd});
@@ -283,6 +294,18 @@ struct EMfTaskPi0Flow {
       registry.add("epReso/hEpResoFT0mTPCneg", "hEpResoFT0mTPCneg; centrality; #Delta#Psi_{sub}", HistType::kTH2D, {thnAxisCent, thnAxisCosNPhi});
       registry.add("epReso/hEpResoFT0mTPCtot", "hEpResoFT0mTPCtot; centrality; #Delta#Psi_{sub}", HistType::kTH2D, {thnAxisCent, thnAxisCosNPhi});
       registry.add("epReso/hEpResoTPCposTPCneg", "hEpResoTPCposTPCneg; centrality; #Delta#Psi_{sub}", HistType::kTH2D, {thnAxisCent, thnAxisCosNPhi});
+      registry.add("epReso/hEpCosCoefficientsFT0c", "hEpCosCoefficientsFT0c; centrality; c_{n}", HistType::kTProfile2D, {thnAxisCent, thAxisCN});
+      registry.add("epReso/hEpSinCoefficientsFT0c", "hEpSinCoefficientsFT0c; centrality; s_{n}", HistType::kTProfile2D, {thnAxisCent, thAxisSN});
+      registry.add("epReso/hEpCosCoefficientsFT0a", "hEpCosCoefficientsFT0a; centrality; c_{n}", HistType::kTProfile2D, {thnAxisCent, thAxisCN});
+      registry.add("epReso/hEpSinCoefficientsFT0a", "hEpSinCoefficientsFT0a; centrality; s_{n}", HistType::kTProfile2D, {thnAxisCent, thAxisSN});
+      registry.add("epReso/hEpCosCoefficientsFT0m", "hEpCosCoefficientsFT0m; centrality; c_{n}", HistType::kTProfile2D, {thnAxisCent, thAxisCN});
+      registry.add("epReso/hEpSinCoefficientsFT0m", "hEpSinCoefficientsFT0m; centrality; s_{n}", HistType::kTProfile2D, {thnAxisCent, thAxisSN});
+      registry.add("epReso/hEpCosCoefficientsTPCpos", "hEpCosCoefficientsTPCpos; centrality; c_{n}", HistType::kTProfile2D, {thnAxisCent, thAxisCN});
+      registry.add("epReso/hEpSinCoefficientsTPCpos", "hEpSinCoefficientsTPCpos; centrality; s_{n}", HistType::kTProfile2D, {thnAxisCent, thAxisSN});
+      registry.add("epReso/hEpCosCoefficientsTPCneg", "hEpCosCoefficientsTPCneg; centrality; c_{n}", HistType::kTProfile2D, {thnAxisCent, thAxisCN});
+      registry.add("epReso/hEpSinCoefficientsTPCneg", "hEpSinCoefficientsTPCneg; centrality; s_{n}", HistType::kTProfile2D, {thnAxisCent, thAxisSN});
+      registry.add("epReso/hEpCosCoefficientsTPCTots", "hEpCosCoefficientsTPCTots; centrality; c_{n}", HistType::kTProfile2D, {thnAxisCent, thAxisCN});
+      registry.add("epReso/hEpSinCoefficientsTPCTots", "hEpSinCoefficientsTPCTots; centrality; s_{n}", HistType::kTProfile2D, {thnAxisCent, thAxisSN});
     }
     if (eventcuts.enableQA) {
       auto hCollisionEMCCheck = registry.add<TH1>("hCollisionEMCCheck", "collision counter;;Counts", kTH1D, {{7, 0.5, 7.5}}, false);
@@ -313,10 +336,19 @@ struct EMfTaskPi0Flow {
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
+    ccdb->setFatalWhenNull(false);
 
     LOG(info) << "thnConfigAxisInvMass.value[1] = " << thnConfigAxisInvMass.value[1] << " thnConfigAxisInvMass.value.back() = " << thnConfigAxisInvMass.value.back();
     LOG(info) << "thnConfigAxisPt.value[1] = " << thnConfigAxisPt.value[1] << " thnConfigAxisPt.value.back() = " << thnConfigAxisPt.value.back();
   }; // end init
+
+  template <typename TCollision>
+  void initCCDB(TCollision const& collision)
+  {
+    if (correctionConfig.cfgApplySPresolution.value) {
+      h1SP_Resolution = ccdb->getForTimeStamp<TH1D>(correctionConfig.cfgSpresoPath.value, collision.timestamp());
+    }
+  }
 
   /// Change radians to degree
   /// \param angle in radians
@@ -479,6 +511,41 @@ struct EMfTaskPi0Flow {
     return isgood;
   }
 
+  bool IsTooCloseToEdge(const int cellID, const int DistanceToBorder = 1)
+  {
+    if (DistanceToBorder <= 0) {
+      return false;
+    }
+    if (cellID < 0) {
+      return true;
+    }
+
+    int iBadCell = -1;
+
+    // check distance to border in case the cell is okay
+    auto [iSupMod, iMod, iPhi, iEta] = emcalGeom->GetCellIndex(cellID);
+    auto [irow, icol] = emcalGeom->GetCellPhiEtaIndexInSModule(iSupMod, iMod, iPhi, iEta);
+
+    // Check rows/phi
+    int iRowLast = 24;
+    if (emcalGeom->GetSMType(iSupMod) == o2::emcal::EMCALSMType::EMCAL_HALF) {
+      iRowLast /= 2; // 2/3 sm case
+    } else if (emcalGeom->GetSMType(iSupMod) == o2::emcal::EMCALSMType::EMCAL_THIRD) {
+      iRowLast /= 3; // 1/3 sm case
+    } else if (emcalGeom->GetSMType(iSupMod) == o2::emcal::EMCALSMType::DCAL_EXT) {
+      iRowLast /= 3; // 1/3 sm case
+    }
+
+    if (irow < DistanceToBorder || (iRowLast - irow) <= DistanceToBorder) {
+      iBadCell = 1;
+    }
+
+    if (iBadCell > 0) {
+      return true;
+    }
+    return false;
+  }
+
   /// \brief Calculate background using rotation background method
   template <typename TPhotons>
   void RotationBackground(const ROOT::Math::PtEtaPhiMVector& meson, ROOT::Math::PtEtaPhiMVector photon1, ROOT::Math::PtEtaPhiMVector photon2, TPhotons const& photons_coll, unsigned int ig1, unsigned int ig2, CollsWithQvecs::iterator const& collision)
@@ -500,11 +567,17 @@ struct EMfTaskPi0Flow {
 
     try {
       iCellID_photon1 = emcalGeom->GetAbsCellIdFromEtaPhi(photon1.Eta(), photon1.Phi());
+      if (IsTooCloseToEdge(iCellID_photon1, cfgDistanceToEdge.value)) {
+        iCellID_photon1 = -1;
+      }
     } catch (o2::emcal::InvalidPositionException& e) {
       iCellID_photon1 = -1;
     }
     try {
       iCellID_photon2 = emcalGeom->GetAbsCellIdFromEtaPhi(photon2.Eta(), photon2.Phi());
+      if (IsTooCloseToEdge(iCellID_photon2, cfgDistanceToEdge.value)) {
+        iCellID_photon2 = -1;
+      }
     } catch (o2::emcal::InvalidPositionException& e) {
       iCellID_photon2 = -1;
     }
@@ -512,7 +585,7 @@ struct EMfTaskPi0Flow {
     if (iCellID_photon1 == -1 && iCellID_photon2 == -1) {
       return;
     }
-    for (auto& photon : photons_coll) {
+    for (const auto& photon : photons_coll) {
       if (photon.globalIndex() == ig1 || photon.globalIndex() == ig2) {
         // only combine rotated photons with other photons
         continue;
@@ -527,6 +600,11 @@ struct EMfTaskPi0Flow {
         float cosNPhi1 = std::cos(harmonic * mother1.Phi());
         float sinNPhi1 = std::sin(harmonic * mother1.Phi());
         float scalprodCand1 = cosNPhi1 * xQVec + sinNPhi1 * yQVec;
+
+        if (correctionConfig.cfgApplySPresolution.value) {
+          scalprodCand1 = scalprodCand1 / h1SP_Resolution->GetBinContent(h1SP_Resolution->FindBin(cent + epsilon));
+        }
+
         if (openingAngle1 > mesonConfig.minOpenAngle && thnConfigAxisInvMass.value[1] <= mother1.M() && thnConfigAxisInvMass.value.back() >= mother1.M() && thnConfigAxisPt.value[1] <= mother1.Pt() && thnConfigAxisPt.value.back() >= mother1.Pt()) {
           if (mesonConfig.enableTanThetadPhi) {
             float dTheta = photon1.Theta() - photon3.Theta();
@@ -545,6 +623,10 @@ struct EMfTaskPi0Flow {
         float cosNPhi2 = std::cos(harmonic * mother2.Phi());
         float sinNPhi2 = std::sin(harmonic * mother2.Phi());
         float scalprodCand2 = cosNPhi2 * xQVec + sinNPhi2 * yQVec;
+
+        if (correctionConfig.cfgApplySPresolution.value) {
+          scalprodCand2 = scalprodCand2 / h1SP_Resolution->GetBinContent(h1SP_Resolution->FindBin(cent + epsilon));
+        }
 
         if (openingAngle2 > mesonConfig.minOpenAngle && thnConfigAxisInvMass.value[1] <= mother2.M() && thnConfigAxisInvMass.value.back() >= mother2.M() && thnConfigAxisPt.value[1] <= mother2.Pt() && thnConfigAxisPt.value.back() >= mother2.Pt()) {
           if (mesonConfig.enableTanThetadPhi) {
@@ -578,6 +660,10 @@ struct EMfTaskPi0Flow {
     float sinNPhi = std::sin(harmonic * phiCand);
     float scalprodCand = cosNPhi * xQVec + sinNPhi * yQVec;
 
+    if (correctionConfig.cfgApplySPresolution.value) {
+      scalprodCand = scalprodCand / h1SP_Resolution->GetBinContent(h1SP_Resolution->FindBin(cent + epsilon));
+    }
+
     fillThn(massCand, ptCand, cent, scalprodCand);
     return;
   }
@@ -586,7 +672,7 @@ struct EMfTaskPi0Flow {
   void processEMCal(CollsWithQvecs const& collisions, EMCalPhotons const& clusters)
   {
     int NColl = 1;
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       auto photons_per_collision = clusters.sliceBy(perCollision_emc, collision.globalIndex());
 
       if (eventcuts.enableQA) {
@@ -619,7 +705,6 @@ struct EMfTaskPi0Flow {
       if (!(fEMEventCut.IsSelected(collision))) {
         // general event selection
         continue;
-        continue;
       }
       if (!(eventcuts.cfgTrackOccupancyMin <= collision.trackOccupancyInTimeRange() && collision.trackOccupancyInTimeRange() < eventcuts.cfgTrackOccupancyMax)) {
         // occupancy selection
@@ -634,6 +719,7 @@ struct EMfTaskPi0Flow {
         // selection based on QVector
         continue;
       }
+      initCCDB(collision);
       o2::aod::pwgem::photonmeson::utils::eventhistogram::fillEventInfo<1>(&registry, collision);
       registry.fill(HIST("Event/before/hCollisionCounter"), 12.0); // accepted
       registry.fill(HIST("Event/after/hCollisionCounter"), 12.0);  // accepted
@@ -730,6 +816,7 @@ struct EMfTaskPi0Flow {
         // selection based on QVector
         continue;
       }
+      initCCDB(c1);
       for (auto& [g1, g2] : combinations(CombinationsFullIndexPolicy(clusters1, clusters2))) {
         if (!(fEMCCut.IsSelected<EMCalPhotons::iterator>(g1)) || !(fEMCCut.IsSelected<EMCalPhotons::iterator>(g2))) {
           continue;
@@ -873,6 +960,20 @@ struct EMfTaskPi0Flow {
       registry.fill(HIST("epReso/hEpResoFT0mTPCneg"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0m, epBNegs)));
       registry.fill(HIST("epReso/hEpResoFT0mTPCtot"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0m, epBTots)));
       registry.fill(HIST("epReso/hEpResoTPCposTPCneg"), centrality, std::cos(harmonic * getDeltaPsiInRange(epBPoss, epBNegs)));
+      for (int n = 1; n <= 8; n++) {
+        registry.fill(HIST("epReso/hEpCosCoefficientsFT0c"), centrality, n, std::cos(n * epFT0c));
+        registry.fill(HIST("epReso/hEpSinCoefficientsFT0c"), centrality, n, std::sin(n * epFT0c));
+        registry.fill(HIST("epReso/hEpCosCoefficientsFT0a"), centrality, n, std::cos(n * epFT0a));
+        registry.fill(HIST("epReso/hEpSinCoefficientsFT0a"), centrality, n, std::sin(n * epFT0a));
+        registry.fill(HIST("epReso/hEpCosCoefficientsFT0m"), centrality, n, std::cos(n * epFT0m));
+        registry.fill(HIST("epReso/hEpSinCoefficientsFT0m"), centrality, n, std::sin(n * epFT0m));
+        registry.fill(HIST("epReso/hEpCosCoefficientsTPCpos"), centrality, n, std::cos(n * epBPoss));
+        registry.fill(HIST("epReso/hEpSinCoefficientsTPCpos"), centrality, n, std::sin(n * epBPoss));
+        registry.fill(HIST("epReso/hEpCosCoefficientsTPCneg"), centrality, n, std::cos(n * epBNegs));
+        registry.fill(HIST("epReso/hEpSinCoefficientsTPCneg"), centrality, n, std::sin(n * epBNegs));
+        registry.fill(HIST("epReso/hEpCosCoefficientsTPCTots"), centrality, n, std::cos(n * epBTots));
+        registry.fill(HIST("epReso/hEpSinCoefficientsTPCTots"), centrality, n, std::sin(n * epBTots));
+      }
     }
   }
   PROCESS_SWITCH(EMfTaskPi0Flow, processResolution, "Process resolution", false);

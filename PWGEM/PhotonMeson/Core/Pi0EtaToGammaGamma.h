@@ -189,6 +189,7 @@ struct Pi0EtaToGammaGamma {
     Configurable<std::vector<float>> EMC_TM_Phi{"EMC_TM_Phi", {0.015f, 3.65f, -2.f}, "|phi| <= [0]+(pT+[1])^[2] for EMCal track matching"};
     Configurable<float> EMC_Eoverp{"EMC_Eoverp", 1.75, "Minimum cluster energy over track momentum for EMCal track matching"};
     Configurable<bool> EMC_UseExoticCut{"EMC_UseExoticCut", true, "FLag to use the EMCal exotic cluster cut"};
+    Configurable<int> cfgDistanceToEdge{"cfgDistanceToEdge", 1, "Distance to edge in cells required for rotated cluster to be accepted"};
   } emccuts;
 
   PHOSPhotonCut fPHOSCut;
@@ -436,6 +437,42 @@ struct Pi0EtaToGammaGamma {
     fPHOSCut.SetEnergyRange(phoscuts.cfg_min_Ecluster, 1e+10);
   }
 
+  /// \brief returns if cluster is too close to edge of EMCal (using rotation background method only for EMCal!)
+  bool IsTooCloseToEdge(const int cellID, const int DistanceToBorder = 1)
+  {
+    if (DistanceToBorder <= 0) {
+      return false;
+    }
+    if (cellID < 0) {
+      return true;
+    }
+
+    int iBadCell = -1;
+
+    // check distance to border in case the cell is okay
+    auto [iSupMod, iMod, iPhi, iEta] = emcalGeom->GetCellIndex(cellID);
+    auto [irow, icol] = emcalGeom->GetCellPhiEtaIndexInSModule(iSupMod, iMod, iPhi, iEta);
+
+    // Check rows/phi
+    int iRowLast = 24;
+    if (emcalGeom->GetSMType(iSupMod) == o2::emcal::EMCALSMType::EMCAL_HALF) {
+      iRowLast /= 2; // 2/3 sm case
+    } else if (emcalGeom->GetSMType(iSupMod) == o2::emcal::EMCALSMType::EMCAL_THIRD) {
+      iRowLast /= 3; // 1/3 sm case
+    } else if (emcalGeom->GetSMType(iSupMod) == o2::emcal::EMCALSMType::DCAL_EXT) {
+      iRowLast /= 3; // 1/3 sm case
+    }
+
+    if (irow < DistanceToBorder || (iRowLast - irow) <= DistanceToBorder) {
+      iBadCell = 1;
+    }
+
+    if (iBadCell > 0) {
+      return true;
+    }
+    return false;
+  }
+
   /// \brief Calculate background (using rotation background method only for EMCal!)
   template <typename TPhotons>
   void RotationBackground(const ROOT::Math::PtEtaPhiMVector& meson, ROOT::Math::PtEtaPhiMVector photon1, ROOT::Math::PtEtaPhiMVector photon2, TPhotons const& photons_coll, unsigned int ig1, unsigned int ig2, float eventWeight)
@@ -455,11 +492,17 @@ struct Pi0EtaToGammaGamma {
 
     try {
       iCellID_photon1 = emcalGeom->GetAbsCellIdFromEtaPhi(photon1.Eta(), photon1.Phi());
+      if (IsTooCloseToEdge(iCellID_photon1, emccuts.cfgDistanceToEdge.value)) {
+        iCellID_photon1 = -1;
+      }
     } catch (o2::emcal::InvalidPositionException& e) {
       iCellID_photon1 = -1;
     }
     try {
       iCellID_photon2 = emcalGeom->GetAbsCellIdFromEtaPhi(photon2.Eta(), photon2.Phi());
+      if (IsTooCloseToEdge(iCellID_photon2, emccuts.cfgDistanceToEdge.value)) {
+        iCellID_photon2 = -1;
+      }
     } catch (o2::emcal::InvalidPositionException& e) {
       iCellID_photon2 = -1;
     }
