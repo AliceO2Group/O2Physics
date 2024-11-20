@@ -2593,14 +2593,14 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
-  if (!nameStr.compare("muonQualityCuts3SigmaPDCA")) {
-    cut->AddCut(GetAnalysisCut("muonQualityCuts3SigmaPDCA"));
+  if (!nameStr.compare("muonQualityCuts5SigmaPDCA_Run3")) {
+    cut->AddCut(GetAnalysisCut("muonQualityCuts5SigmaPDCA_Run3"));
     return cut;
   }
 
-  if (!nameStr.compare("muonLowPt3SigmaPDCA")) {
+  if (!nameStr.compare("muonLowPt5SigmaPDCA_Run3")) {
     cut->AddCut(GetAnalysisCut("muonLowPt"));
-    cut->AddCut(GetAnalysisCut("muonQualityCuts3SigmaPDCA"));
+    cut->AddCut(GetAnalysisCut("muonQualityCuts5SigmaPDCA_Run3"));
     cut->AddCut(GetAnalysisCut("MCHMID"));
     return cut;
   }
@@ -5353,11 +5353,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
-  if (!nameStr.compare("muonQualityCuts3SigmaPDCA")) {
+  if (!nameStr.compare("muonQualityCuts5SigmaPDCA_Run3")) {
     cut->AddCut(VarManager::kEta, -4.0, -2.5);
     cut->AddCut(VarManager::kMuonRAtAbsorberEnd, 17.6, 89.5);
-    cut->AddCut(VarManager::kMuonPDca, 0.0, 300.0, false, VarManager::kMuonRAtAbsorberEnd, 17.6, 26.5);
-    cut->AddCut(VarManager::kMuonPDca, 0.0, 201.0, false, VarManager::kMuonRAtAbsorberEnd, 26.5, 89.5);
+    cut->AddCut(VarManager::kMuonPDca, 0.0, 500.0, false, VarManager::kMuonRAtAbsorberEnd, 17.6, 26.5);
+    cut->AddCut(VarManager::kMuonPDca, 0.0, 335.0, false, VarManager::kMuonRAtAbsorberEnd, 26.5, 89.5);
     cut->AddCut(VarManager::kMuonChi2, 0.0, 1e6);
     cut->AddCut(VarManager::kMuonChi2MatchMCHMID, 0.0, 1e6); // matching MCH-MID
     return cut;
