@@ -84,6 +84,7 @@ struct BJetTaggingML {
   // event level configurables
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
+  Configurable<bool> useEventWeight{"useEventWeight", true, "Flag whether to scale histograms with the event weight"};
 
   Configurable<float> pTHatMaxMCD{"pTHatMaxMCD", 999.0, "maximum fraction of hard scattering for jet acceptance in detector MC"};
   Configurable<float> pTHatMaxMCP{"pTHatMaxMCP", 999.0, "maximum fraction of hard scattering for jet acceptance in particle MC"};
@@ -450,7 +451,7 @@ struct BJetTaggingML {
         continue;
       }
 
-      float eventWeight = analysisJet.eventWeight();
+      float eventWeight = useEventWeight ? analysisJet.eventWeight() : 1.0;
       float pTHat = 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
       if (analysisJet.pt() > pTHatMaxMCD * pTHat) {
         continue;
@@ -535,7 +536,7 @@ struct BJetTaggingML {
         continue;
       }
 
-      float eventWeight = mcpjet.eventWeight();
+      float eventWeight = useEventWeight ? mcpjet.eventWeight() : 1.0;
       float pTHat = 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
       if (mcpjet.pt() > pTHatMaxMCP * pTHat) {
         continue;
@@ -582,7 +583,7 @@ struct BJetTaggingML {
         continue;
       }
 
-      float eventWeight = mcpjet.eventWeight();
+      float eventWeight = useEventWeight ? mcpjet.eventWeight() : 1.0;
       float pTHat = 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
       if (mcpjet.pt() > pTHatMaxMCP * pTHat) {
         continue;
