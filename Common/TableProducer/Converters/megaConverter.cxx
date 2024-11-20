@@ -36,9 +36,7 @@ struct bcConverter {
   Produces<aod::BCs_001> bc_001;
   void init(o2::framework::InitContext& initContext)
   {
-    if (!doprocessConverter) {
-      doprocessConverter.value = isTableRequiredInWorkflow(initContext, "BCs_001");
-    }
+    doprocessConverter.value = isTableRequiredInWorkflow(initContext, "BCs_001");
     if (doprocessConverter) {
       LOG(info) << "Enabling converter for table BCs_001";
     }
@@ -50,7 +48,7 @@ struct bcConverter {
       bc_001(bc.runNumber(), bc.globalBC(), bc.triggerMask(), lEmptyTriggerInputs);
     }
   }
-  PROCESS_SWITCH(bcConverter, processConverter, "Process converter (autoset if false)", false);
+  PROCESS_SWITCH(bcConverter, processConverter, "Process converter (autoset)", true);
 };
 
 // Swaps covariance matrix elements if the data is known to be bogus (collision_000 is bogus)
@@ -66,9 +64,7 @@ struct collisionConverter {
 
   void init(o2::framework::InitContext& initContext)
   {
-    if (!doprocessConverter) {
-      doprocessConverter.value = isTableRequiredInWorkflow(initContext, "Collisions_001");
-    }
+    doprocessConverter.value = isTableRequiredInWorkflow(initContext, "Collisions_001");
     if (doprocessConverter) {
       LOG(info) << "Enabling converter for table Collisions_001";
     }
@@ -125,7 +121,7 @@ struct collisionConverter {
         collision.collisionTime(), collision.collisionTimeRes());
     }
   }
-  PROCESS_SWITCH(collisionConverter, processConverter, "Process converter (autoset if false)", false);
+  PROCESS_SWITCH(collisionConverter, processConverter, "Process converter (autoset)", true);
 };
 
 // Converts FDD table from version 000 to 001
@@ -134,9 +130,7 @@ struct FddConverter {
 
   void init(o2::framework::InitContext& initContext)
   {
-    if (!doprocessConverter) {
-      doprocessConverter.value = isTableRequiredInWorkflow(initContext, "FDDs_001");
-    }
+    doprocessConverter.value = isTableRequiredInWorkflow(initContext, "FDDs_001");
     if (doprocessConverter) {
       LOG(info) << "Enabling converter for table FDDs_001";
     }
@@ -159,7 +153,7 @@ struct FddConverter {
               p.timeA(), p.timeC(), p.triggerMask());
     }
   }
-  PROCESS_SWITCH(FddConverter, processConverter, "Process converter (autoset if false)", false);
+  PROCESS_SWITCH(FddConverter, processConverter, "Process converter (autoset)", true);
 };
 
 struct hmpConverter {
@@ -167,9 +161,7 @@ struct hmpConverter {
 
   void init(o2::framework::InitContext& initContext)
   {
-    if (!doprocessConverter) {
-      doprocessConverter.value = isTableRequiredInWorkflow(initContext, "HMPID_001");
-    }
+    doprocessConverter.value = isTableRequiredInWorkflow(initContext, "HMPID_001");
     if (doprocessConverter) {
       LOG(info) << "Enabling converter for table HMPID_001";
     }
@@ -204,7 +196,7 @@ struct hmpConverter {
                 hmpidPhotsCharge);
     }
   }
-  PROCESS_SWITCH(hmpConverter, processConverter, "Process converter (autoset if false)", false);
+  PROCESS_SWITCH(hmpConverter, processConverter, "Process converter (autoset)", true);
 };
 
 // Converts the old McCaloLabels_000 table to the new McCaloLabels_001 table where we have a variable size array for associated MCParticles for each calo cell
@@ -212,9 +204,7 @@ struct caloLabelConverter {
   Produces<aod::McCaloLabels_001> McCaloLabels_001;
   void init(o2::framework::InitContext& initContext)
   {
-    if (!doprocessConverter) {
-      doprocessConverter.value = isTableRequiredInWorkflow(initContext, "McCaloLabels_001");
-    }
+    doprocessConverter.value = isTableRequiredInWorkflow(initContext, "McCaloLabels_001");
     if (doprocessConverter) {
       LOG(info) << "Enabling converter for table BCs_001";
     }
@@ -231,7 +221,7 @@ struct caloLabelConverter {
         amplitude);
     }
   }
-  PROCESS_SWITCH(caloLabelConverter, processConverter, "Process converter (autoset if false)", false);
+  PROCESS_SWITCH(caloLabelConverter, processConverter, "Process converter (autoset)", true);
 };
 
 // Converts MCParticle table from version 000 to 001
@@ -239,9 +229,7 @@ struct McConverter {
   Produces<aod::StoredMcParticles_001> mcParticles_001;
   void init(o2::framework::InitContext& initContext)
   {
-    if (!doprocessConverter) {
-      doprocessConverter.value = isTableRequiredInWorkflow(initContext, "StoredMcParticles_001");
-    }
+    doprocessConverter.value = isTableRequiredInWorkflow(initContext, "StoredMcParticles_001");
     if (doprocessConverter) {
       LOG(info) << "Enabling converter for table StoredMcParticles_001";
     }
@@ -272,16 +260,14 @@ struct McConverter {
                       p.vx(), p.vy(), p.vz(), p.vt());
     }
   }
-  PROCESS_SWITCH(McConverter, processConverter, "Process converter (autoset if false)", false);
+  PROCESS_SWITCH(McConverter, processConverter, "Process converter (autoset)", true);
 };
 
 struct TracksExtraConverter {
   Produces<aod::StoredTracksExtra_001> tracksExtra_001;
   void init(o2::framework::InitContext& initContext)
   {
-    if (!doprocessConverter) {
-      doprocessConverter.value = isTableRequiredInWorkflow(initContext, "StoredTracksExtra_002");
-    }
+    doprocessConverter.value = isTableRequiredInWorkflow(initContext, "StoredTracksExtra_002");
     if (doprocessConverter) {
       LOG(info) << "Enabling converter for table StoredTracksExtra_002";
     }
@@ -320,16 +306,18 @@ struct TracksExtraConverter {
                       track0.trackTimeRes());
     }
   }
-  PROCESS_SWITCH(TracksExtraConverter, processConverter, "Process converter (autoset if false)", false);
+  PROCESS_SWITCH(TracksExtraConverter, processConverter, "Process converter (autoset if false)", true);
+};
+
+struct TracksExtraSpawner {
+  Spawns<aod::TracksExtra> tracksExtra;
 };
 
 struct zdcConverter {
   Produces<aod::Zdcs_001> Zdcs_001;
   void init(o2::framework::InitContext& initContext)
   {
-    if (!doprocessConverter) {
-      doprocessConverter.value = isTableRequiredInWorkflow(initContext, "Zdcs_001");
-    }
+    doprocessConverter.value = isTableRequiredInWorkflow(initContext, "Zdcs_001");
     if (doprocessConverter) {
       LOG(info) << "Enabling converter for table Zdcs_001";
     }
@@ -416,16 +404,14 @@ struct zdcConverter {
                zdcChannelsT);
     }
   }
-  PROCESS_SWITCH(zdcConverter, processConverter, "Process converter (autoset if false)", false);
+  PROCESS_SWITCH(zdcConverter, processConverter, "Process converter (autoset)", true);
 };
 
 struct mcCollisionConverter {
   Produces<aod::McCollisions_001> mcCollisions_001;
   void init(o2::framework::InitContext& initContext)
   {
-    if (!doprocessConverter) {
-      doprocessConverter.value = isTableRequiredInWorkflow(initContext, "McCollisions_001");
-    }
+    doprocessConverter.value = isTableRequiredInWorkflow(initContext, "McCollisions_001");
     if (doprocessConverter) {
       LOG(info) << "Enabling converter for table McCollisions_001";
     }
@@ -444,16 +430,14 @@ struct mcCollisionConverter {
         0.0f); // dummy event plane, not available in _000
     }
   }
-  PROCESS_SWITCH(mcCollisionConverter, processConverter, "Process converter (autoset if false)", false);
+  PROCESS_SWITCH(mcCollisionConverter, processConverter, "Process converter (autoset)", true);
 };
 
 struct MftTracksConverter {
   Produces<aod::StoredMFTTracks_001> mftTracks_001;
   void init(o2::framework::InitContext& initContext)
   {
-    if (!doprocessConverter) {
-      doprocessConverter.value = isTableRequiredInWorkflow(initContext, "StoredMFTTracks_001");
-    }
+    doprocessConverter.value = isTableRequiredInWorkflow(initContext, "StoredMFTTracks_001");
     if (doprocessConverter) {
       LOG(info) << "Enabling converter for table StoredMFTTracks_001";
     }
@@ -483,7 +467,7 @@ struct MftTracksConverter {
                     track0.trackTimeRes());
     }
   }
-  PROCESS_SWITCH(MftTracksConverter, processConverter, "Process converter (autoset if false)", false);
+  PROCESS_SWITCH(MftTracksConverter, processConverter, "Process converter (autoset)", true);
 };
 
 /// Spawn the extended table for MFTTracks001 to avoid the call to the internal spawner and a consequent circular dependency
@@ -495,9 +479,7 @@ struct MultsExtraConverter {
   Produces<aod::MultsExtra_001> multsExtra_001;
   void init(o2::framework::InitContext& initContext)
   {
-    if (!doprocessConverter) {
-      doprocessConverter.value = isTableRequiredInWorkflow(initContext, "MultsExtra_001");
-    }
+    doprocessConverter.value = isTableRequiredInWorkflow(initContext, "MultsExtra_001");
     if (doprocessConverter) {
       LOG(info) << "Enabling converter for table MultsExtra_001";
     }
@@ -516,16 +498,14 @@ struct MultsExtraConverter {
                      r.flags());
     }
   }
-  PROCESS_SWITCH(MultsExtraConverter, processConverter, "Process converter (autoset if false)", false);
+  PROCESS_SWITCH(MultsExtraConverter, processConverter, "Process converter (autoset)", true);
 };
 
 struct V0Converter {
   Produces<aod::V0s_002> v0s_002;
   void init(o2::framework::InitContext& initContext)
   {
-    if (!doprocessConverter) {
-      doprocessConverter.value = isTableRequiredInWorkflow(initContext, "V0s_002");
-    }
+    doprocessConverter.value = isTableRequiredInWorkflow(initContext, "V0s_002");
     if (doprocessConverter) {
       LOG(info) << "Enabling converter for table V0s_002";
     }
@@ -537,7 +517,7 @@ struct V0Converter {
       v0s_002(v0.collisionId(), v0.posTrackId(), v0.negTrackId(), bitMask);
     }
   }
-  PROCESS_SWITCH(V0Converter, processConverter, "Process converter (autoset if false)", false);
+  PROCESS_SWITCH(V0Converter, processConverter, "Process converter (autoset)", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
