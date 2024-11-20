@@ -80,10 +80,7 @@ struct FlowZDCtask {
   ConfigurableAxis axisEta{"axisEta", {40, -1., 1.}, "eta axis for histograms"};
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.2, 0.25, 0.30, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.20, 2.40, 2.60, 2.80, 3.00}, "pt axis for histograms"};
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}, "centrality axis for histograms"};
-<<<<<<< HEAD
   ConfigurableAxis axisEnergy{"axisEnergy", {100,0,700}, "energy axis for zdc histos"};
-=======
->>>>>>> 9f74a1517610881aa1fa2fd3e301692364cb8e5e
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
 
@@ -109,18 +106,10 @@ struct FlowZDCtask {
   OutputObj<TProfile> ZDC_ZEM_Energy{TProfile("ZDC_ZEM_Energy", "ZDC vs ZEM Energy", 10, 0, 1000)};
   OutputObj<TProfile> pCosPsiDifferences{TProfile("pCosPsiDifferences", "Differences in cos(psi) vs Centrality;Centrality;Mean cos(psi) Difference", 200, 0, 100, -1, 1)};
   OutputObj<TProfile> pSinPsiDifferences{TProfile("pSinPsiDifferences", "Differences in sin(psi) vs Centrality;Centrality;Mean sin(psi) Difference", 200, 0, 100, -1, 1)};
-<<<<<<< HEAD
   OutputObj<TProfile> pZNvsFT0MAmp{TProfile("pZNvsFT0MAmp", "ZN Energy vs FT0M Amplitude", 1025, 0, 1e7, 0, 500)};
   OutputObj<TProfile> pZPvsFT0MAmp{TProfile("pZPvsFT0MAmp", "ZP Energy vs FT0M Amplitude", 1025, 0, 1e7, 0, 500)};
   OutputObj<TProfile> pZNvsFT0Ccent{TProfile("pZNvsFT0Ccent", "ZN Energy vs FT0C Centrality", 100, 0, 100, 0, 500)};
   OutputObj<TProfile> pZPvsFT0Ccent{TProfile("pZPvsFT0Ccent", "ZP Energy vs FT0C Centrality", 100, 0, 100, 0, 500)};
-=======
-  OutputObj<TProfile> pZNvsFT0MAmp{TProfile("pZNvsFT0MAmp", "ZN Energy vs FT0M Amplitude", 100, 0, 50000, 0, 500)};
-  OutputObj<TProfile> pZPvsFT0MAmp{TProfile("pZPvsFT0MAmp", "ZP Energy vs FT0M Amplitude", 100, 0, 50000, 0, 500)};
-
-  OutputObj<TProfile> pZNvsFT0Ccent{TProfile("pZNvsFT0Ccent", "ZN Energy vs FT0C Centrality", 100, 0, 100, 0, 50000)};
-  OutputObj<TProfile> pZPvsFT0Ccent{TProfile("pZPvsFT0Ccent", "ZP Energy vs FT0C Centrality", 100, 0, 100, 0, 50000)};
->>>>>>> 9f74a1517610881aa1fa2fd3e301692364cb8e5e
   OutputObj<TProfile> pZNratiovscent{TProfile("pZNratiovscent", "Ratio ZNC/ZNA vs FT0C Centrality", 100, 0, 100, 0, 5)};
   OutputObj<TProfile> pZPratiovscent{TProfile("pZPratiovscent", "Ratio ZPC/ZPA vs FT0C Centrality", 100, 0, 100, 0, 5)};
 
@@ -141,11 +130,7 @@ struct FlowZDCtask {
     const AxisSpec axisQZNA{100, -1, 1, "Q"};
     const AxisSpec axisREQ{100, -1, 1, "real Q"};
     const AxisSpec axisIMQ{100, -1, 1, "imag Q"};
-<<<<<<< HEAD
 
-=======
-    const AxisSpec axisEnergy{100, 0, 50000., "energy"};
->>>>>>> 9f74a1517610881aa1fa2fd3e301692364cb8e5e
 
     AxisSpec axisVtxcounts{2, -0.5f, 1.5f, "Vtx info (0=no, 1=yes)"};
     AxisSpec axisZvert{120, -30.f, 30.f, "Vtx z (cm)"};
@@ -178,7 +163,6 @@ struct FlowZDCtask {
     histos.add("EnergyZNA", "ZNA Sector Energy", kTH1F, {axisEnergy});
     histos.add("EnergyZNC", "ZNC Sector Energy", kTH1F, {axisEnergy});
     histos.add("hCentFT0C", "FT0C Centrality Distribution", kTH1F, {{100, 0, 105}});
-<<<<<<< HEAD
     
     histos.add("hZNvsFT0Ccent",
            "ZN Energy vs FT0C Centrality;Centrality [%];ZN Energy [TeV]",
@@ -191,8 +175,6 @@ struct FlowZDCtask {
            kTH2F,
            {AxisSpec{100, 0, 100, "Centrality [%]"}, AxisSpec{100, 0, 500, "ZP Energy [TeV]"}}
     );
-=======
->>>>>>> 9f74a1517610881aa1fa2fd3e301692364cb8e5e
     // for q vector recentering
     histos.add("revsimag", "revsimag", kTH2F, {axisREQ, axisIMQ});
 
@@ -227,15 +209,9 @@ struct FlowZDCtask {
       histos.add("ZPAenergy", "ZP energy side a", kTH1F, {axisEnergy});
       histos.add("ZNenergy", "common zn (a + c sides) energy", kTH1F, {axisEnergy});
       histos.add("ZPenergy", "common zp energy (a + c sides)", kTH1F, {axisEnergy});
-<<<<<<< HEAD
       histos.add("hFT0CAmp", ";Amplitude;counts", kTH1F, {{nBinsAmp, 0, 1e7}});
       histos.add("hFT0AAmp", ";Amplitude;counts", kTH1F, {{nBinsAmp, 0, 1e7}});
       histos.add("hFT0MAmp", ";Amplitude;counts", kTH1F, {{nBinsAmp, 0, 1e7}});
-=======
-      histos.add("hFT0CAmp", ";Amplitude;counts", kTH1F, {{nBinsAmp, 0, 10000000}});
-      histos.add("hFT0AAmp", ";Amplitude;counts", kTH1F, {{nBinsAmp, 0, 10000000}});
-      histos.add("hFT0MAmp", ";Amplitude;counts", kTH1F, {{nBinsAmp, 0, 10000000}});
->>>>>>> 9f74a1517610881aa1fa2fd3e301692364cb8e5e
       histos.add("hMultT0A", ";Amplitude;counts", kTH1F, {{nBinsAmp, 0, 250000}});
       histos.add("hMultT0C", ";Amplitude;counts", kTH1F, {{nBinsAmp, 0, 250000}});
       histos.add("hMultT0M", ";Amplitude;counts", kTH1F, {{nBinsAmp, 0, 250000}});
@@ -345,19 +321,11 @@ struct FlowZDCtask {
         float sumZEM = zdcread.amplitudeZEM1() + zdcread.amplitudeZEM2();
 
         // common energies
-<<<<<<< HEAD
         float common_sumZNC = (zdcread.energyCommonZNC()) / acceptnace_ZNC;
         float common_sumZNA = (zdcread.energyCommonZNA()) / acceptnace_ZNA;
         float common_sumZPC = (zdcread.energyCommonZPC()) / acceptnace_ZPC;
         float common_sumZPA = (zdcread.energyCommonZPA()) / acceptnace_ZPA;
         float sumZN = (sumZNC ) + (sumZNA );
-=======
-        float common_sumZNC = (zdcread.energyCommonZNC());
-        float common_sumZNA = (zdcread.energyCommonZNA());
-        float common_sumZPC = (zdcread.energyCommonZPC());
-        float common_sumZPA = (zdcread.energyCommonZPA());
-        float sumZN = (sumZNC) + (sumZNA);
->>>>>>> 9f74a1517610881aa1fa2fd3e301692364cb8e5e
         float sumZP = (sumZPC) + (sumZPA);
 
         histos.fill(HIST("ZNenergy"), sumZN);
@@ -366,12 +334,8 @@ struct FlowZDCtask {
         histos.fill(HIST("ZNAenergy"), common_sumZNA);
         histos.fill(HIST("ZPAenergy"), common_sumZPA);
         histos.fill(HIST("ZPCenergy"), common_sumZPC);
-<<<<<<< HEAD
         histos.fill(HIST("hZNvsFT0Ccent"), cent, sumZN);
         histos.fill(HIST("hZPvsFT0Ccent"), cent, sumZP);
-=======
-
->>>>>>> 9f74a1517610881aa1fa2fd3e301692364cb8e5e
         float ratioZN = sumZNC / sumZNA;
         float ratioZP = sumZPC / sumZPA;
         pZNratiovscent->Fill(cent, ratioZN);
