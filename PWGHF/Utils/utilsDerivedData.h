@@ -16,6 +16,9 @@
 #ifndef PWGHF_UTILS_UTILSDERIVEDDATA_H_
 #define PWGHF_UTILS_UTILSDERIVEDDATA_H_
 
+#include <vector>
+#include <map>
+
 #include <fairlogger/Logger.h>
 
 #include <Framework/AnalysisHelpers.h>
