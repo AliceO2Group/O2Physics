@@ -42,47 +42,29 @@ using namespace o2::analysis::hf_derived;
 
 /// Writes the full information in an output TTree
 struct HfDerivedDataCreatorD0ToKPi {
+  ProducesHfDerivedData rowsCommon;
   // Candidates
-  Produces<o2::aod::HfBases> rowCandidateBase;
   Produces<o2::aod::HfD0Pars> rowCandidatePar;
   Produces<o2::aod::HfD0ParEs> rowCandidateParE;
   Produces<o2::aod::HfD0Sels> rowCandidateSel;
   Produces<o2::aod::HfD0Mls> rowCandidateMl;
   Produces<o2::aod::HfD0Ids> rowCandidateId;
   Produces<o2::aod::HfD0Mcs> rowCandidateMc;
-  // Collisions
-  Produces<o2::aod::HfCollBases> rowCollBase;
-  Produces<o2::aod::HfCollIds> rowCollId;
-  // MC collisions
-  Produces<o2::aod::HfMcCollBases> rowMcCollBase;
-  Produces<o2::aod::HfMcCollIds> rowMcCollId;
-  Produces<o2::aod::HfMcRCollIds> rowMcRCollId;
-  // MC particles
-  Produces<o2::aod::HfPBases> rowParticleBase;
-  Produces<o2::aod::HfPIds> rowParticleId;
 
   // Switches for filling tables
-  Configurable<bool> fillCandidateBase{"fillCandidateBase", true, "Fill candidate base properties"};
+  ConfigurableHfDerivedData confDerData;
   Configurable<bool> fillCandidatePar{"fillCandidatePar", true, "Fill candidate parameters"};
   Configurable<bool> fillCandidateParE{"fillCandidateParE", true, "Fill candidate extended parameters"};
   Configurable<bool> fillCandidateSel{"fillCandidateSel", true, "Fill candidate selection flags"};
   Configurable<bool> fillCandidateMl{"fillCandidateMl", true, "Fill candidate selection ML scores"};
   Configurable<bool> fillCandidateId{"fillCandidateId", true, "Fill original indices from the candidate table"};
   Configurable<bool> fillCandidateMc{"fillCandidateMc", true, "Fill candidate MC info"};
-  Configurable<bool> fillCollBase{"fillCollBase", true, "Fill collision base properties"};
-  Configurable<bool> fillCollId{"fillCollId", true, "Fill original collision indices"};
-  Configurable<bool> fillMcCollBase{"fillMcCollBase", true, "Fill MC collision base properties"};
-  Configurable<bool> fillMcCollId{"fillMcCollId", true, "Fill original MC collision indices"};
-  Configurable<bool> fillMcRCollId{"fillMcRCollId", true, "Fill indices of saved derived reconstructed collisions matched to saved derived MC collisions"};
-  Configurable<bool> fillParticleBase{"fillParticleBase", true, "Fill MC particle properties"};
-  Configurable<bool> fillParticleId{"fillParticleId", true, "Fill original MC indices"};
   // Parameters for production of training samples
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
 
   HfHelper hfHelper;
   SliceCache cache;
-  std::map<int, std::vector<int>> matchedCollisions; // indices of derived reconstructed collisions matched to the global indices of MC collisions
   std::map<int, bool> hasMcParticles;                // flags for MC collisions with HF particles
 
   using CollisionsWCentMult = soa::Join<aod::Collisions, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::PVMultZeqs>;
@@ -138,72 +120,14 @@ struct HfDerivedDataCreatorD0ToKPi {
     if (std::accumulate(doprocess.begin(), doprocess.end(), 0) != 1) {
       LOGP(fatal, "Only one process function can be enabled at a time.");
     }
-  }
-
-  template <bool isMC, typename T>
-  // void fillTablesCollision(const T& collision, int isEventReject, int runNumber)
-  void fillTablesCollision(const T& collision)
-  {
-    if (fillCollBase) {
-      rowCollBase(
-        collision.posX(),
-        collision.posY(),
-        collision.posZ(),
-        collision.numContrib(),
-        collision.centFT0A(),
-        collision.centFT0C(),
-        collision.centFT0M(),
-        collision.centFV0A(),
-        collision.multZeqNTracksPV());
-      // isEventReject,
-      // runNumber);
-    }
-    if (fillCollId) {
-      rowCollId(
-        collision.globalIndex());
-    }
-    if constexpr (isMC) {
-      if (fillMcRCollId && collision.has_mcCollision()) {
-        // Save rowCollBase.lastIndex() at key collision.mcCollisionId()
-        LOGF(debug, "Rec. collision %d: Filling derived-collision index %d for MC collision %d", collision.globalIndex(), rowCollBase.lastIndex(), collision.mcCollisionId());
-        matchedCollisions[collision.mcCollisionId()].push_back(rowCollBase.lastIndex()); // [] inserts an empty element if it does not exist
-      }
-    }
-  }
-
-  template <typename T>
-  void fillTablesMcCollision(const T& mcCollision)
-  {
-    if (fillMcCollBase) {
-      rowMcCollBase(
-        mcCollision.posX(),
-        mcCollision.posY(),
-        mcCollision.posZ());
-    }
-    if (fillMcCollId) {
-      rowMcCollId(
-        mcCollision.globalIndex());
-    }
-    if (fillMcRCollId) {
-      // Fill the table with the vector of indices of derived reconstructed collisions matched to mcCollision.globalIndex()
-      rowMcRCollId(
-        matchedCollisions[mcCollision.globalIndex()]);
-    }
+    rowsCommon.init(confDerData);
   }
 
   template <typename T>
   void fillTablesCandidate(const T& candidate, int candFlag, double invMass, double cosThetaStar, double topoChi2,
                            double ct, double y, int8_t flagMc, int8_t origin, const std::vector<float>& mlScores)
   {
-    if (fillCandidateBase) {
-      rowCandidateBase(
-        rowCollBase.lastIndex(),
-        candidate.pt(),
-        candidate.eta(),
-        candidate.phi(),
-        invMass,
-        y);
-    }
+    rowsCommon.fillTablesCandidate(candidate, invMass, y);
     if (fillCandidatePar) {
       std::array<std::array<std::array<float, 3>, 2>, 2> sigmas{}; // PID nSigma [Expected][Hypothesis][TPC/TOF/TPC+TOF]
       if (candFlag == 0) {
@@ -289,26 +213,6 @@ struct HfDerivedDataCreatorD0ToKPi {
     }
   }
 
-  template <typename T, typename U>
-  void fillTablesParticle(const T& particle, U mass)
-  {
-    if (fillParticleBase) {
-      rowParticleBase(
-        rowMcCollBase.lastIndex(),
-        particle.pt(),
-        particle.eta(),
-        particle.phi(),
-        RecoDecayPtEtaPhi::y(particle.pt(), particle.eta(), mass),
-        particle.flagMcMatchGen(),
-        particle.originMcGen());
-    }
-    if (fillParticleId) {
-      rowParticleId(
-        particle.mcCollisionId(),
-        particle.globalIndex());
-    }
-  }
-
   template <aod::hf_cand::VertexerType reconstructionType, bool isMl, bool isMc, bool onlyBkg, bool onlySig, typename CollType, typename CandType>
   void processCandidates(CollType const& collisions,
                          Partition<CandType>& candidates,
@@ -317,13 +221,12 @@ struct HfDerivedDataCreatorD0ToKPi {
   {
     // Fill collision properties
     if constexpr (isMc) {
-      if (fillMcRCollId) {
-        matchedCollisions.clear();
+      if (confDerData.fillMcRCollId) {
+        rowsCommon.matchedCollisions.clear();
       }
     }
     auto sizeTableColl = collisions.size();
-    reserveTable(rowCollBase, fillCollBase, sizeTableColl);
-    reserveTable(rowCollId, fillCollId, sizeTableColl);
+    rowsCommon.reserveTablesColl(sizeTableColl);
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
       auto candidatesThisColl = candidates->sliceByCached(aod::hf_cand::collisionId, thisCollId, cache); // FIXME
@@ -332,19 +235,18 @@ struct HfDerivedDataCreatorD0ToKPi {
       // Skip collisions without HF candidates (and without HF particles in matched MC collisions if saving indices of reconstructed collisions matched to MC collisions)
       bool mcCollisionHasMcParticles{false};
       if constexpr (isMc) {
-        mcCollisionHasMcParticles = fillMcRCollId && collision.has_mcCollision() && hasMcParticles[collision.mcCollisionId()];
+        mcCollisionHasMcParticles = confDerData.fillMcRCollId && collision.has_mcCollision() && hasMcParticles[collision.mcCollisionId()];
         LOGF(debug, "Rec. collision %d has MC collision %d with MC particles? %s", thisCollId, collision.mcCollisionId(), mcCollisionHasMcParticles ? "yes" : "no");
       }
-      if (sizeTableCand == 0 && (!fillMcRCollId || !mcCollisionHasMcParticles)) {
+      if (sizeTableCand == 0 && (!confDerData.fillMcRCollId || !mcCollisionHasMcParticles)) {
         LOGF(debug, "Skipping rec. collision %d", thisCollId);
         continue;
       }
-      LOGF(debug, "Filling rec. collision %d at derived index %d", thisCollId, rowCollBase.lastIndex() + 1);
-      // fillTablesCollision(collision, 0, collision.bc().runNumber());
-      fillTablesCollision<isMc>(collision);
+      LOGF(debug, "Filling rec. collision %d at derived index %d", thisCollId, rowsCommon.rowCollBase.lastIndex() + 1);
+      rowsCommon.fillTablesCollision<isMc>(collision);
 
       // Fill candidate properties
-      reserveTable(rowCandidateBase, fillCandidateBase, sizeTableCand);
+      rowsCommon.reserveTablesCandidates(sizeTableCand);
       reserveTable(rowCandidatePar, fillCandidatePar, sizeTableCand);
       reserveTable(rowCandidateParE, fillCandidateParE, sizeTableCand);
       reserveTable(rowCandidateSel, fillCandidateSel, sizeTableCand);
@@ -414,7 +316,7 @@ struct HfDerivedDataCreatorD0ToKPi {
   void preProcessMcCollisions(CollisionType const& mcCollisions,
                               ParticleType const& mcParticles)
   {
-    if (!fillMcRCollId) {
+    if (!confDerData.fillMcRCollId) {
       return;
     }
     hasMcParticles.clear();
@@ -433,28 +335,25 @@ struct HfDerivedDataCreatorD0ToKPi {
   {
     // Fill MC collision properties
     auto sizeTableMcColl = mcCollisions.size();
-    reserveTable(rowMcCollBase, fillMcCollBase, sizeTableMcColl);
-    reserveTable(rowMcCollId, fillMcCollId, sizeTableMcColl);
-    reserveTable(rowMcRCollId, fillMcRCollId, sizeTableMcColl);
+    rowsCommon.reserveTablesMcColl(sizeTableMcColl);
     for (const auto& mcCollision : mcCollisions) {
       auto thisMcCollId = mcCollision.globalIndex();
       auto particlesThisMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, thisMcCollId);
       auto sizeTablePart = particlesThisMcColl.size();
       LOGF(debug, "MC collision %d has %d MC particles", thisMcCollId, sizeTablePart);
       // Skip MC collisions without HF particles (and without HF candidates in matched reconstructed collisions if saving indices of reconstructed collisions matched to MC collisions)
-      LOGF(debug, "MC collision %d has %d saved derived rec. collisions", thisMcCollId, matchedCollisions[thisMcCollId].size());
-      if (sizeTablePart == 0 && (!fillMcRCollId || matchedCollisions[thisMcCollId].empty())) {
+      LOGF(debug, "MC collision %d has %d saved derived rec. collisions", thisMcCollId, rowsCommon.matchedCollisions[thisMcCollId].size());
+      if (sizeTablePart == 0 && (!confDerData.fillMcRCollId || rowsCommon.matchedCollisions[thisMcCollId].empty())) {
         LOGF(debug, "Skipping MC collision %d", thisMcCollId);
         continue;
       }
-      LOGF(debug, "Filling MC collision %d at derived index %d", thisMcCollId, rowMcCollBase.lastIndex() + 1);
-      fillTablesMcCollision(mcCollision);
+      LOGF(debug, "Filling MC collision %d at derived index %d", thisMcCollId, rowsCommon.rowMcCollBase.lastIndex() + 1);
+      rowsCommon.fillTablesMcCollision(mcCollision);
 
       // Fill MC particle properties
-      reserveTable(rowParticleBase, fillParticleBase, sizeTablePart);
-      reserveTable(rowParticleId, fillParticleId, sizeTablePart);
+      rowsCommon.reserveTablesParticles(sizeTablePart);
       for (const auto& particle : particlesThisMcColl) {
-        fillTablesParticle(particle, o2::constants::physics::MassD0);
+        rowsCommon.fillTablesParticle(particle, o2::constants::physics::MassD0);
       }
     }
   }
