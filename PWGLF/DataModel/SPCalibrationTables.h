@@ -28,7 +28,7 @@ namespace o2::aod
 {
 namespace spcalibrationtable
 {
-DECLARE_SOA_COLUMN(TriggerEvent, triggerevent, bool);
+DECLARE_SOA_COLUMN(TriggerEventSP, triggereventsp, bool);
 DECLARE_SOA_COLUMN(TriggerEventRunNo, triggereventrunno, int);
 DECLARE_SOA_COLUMN(Cent, cent, float);
 DECLARE_SOA_COLUMN(Vx, vx, float);
@@ -52,7 +52,7 @@ DECLARE_SOA_COLUMN(PsiZDCC, psiZDCC, float);
 DECLARE_SOA_COLUMN(PsiZDCA, psiZDCA, float);
 } // namespace spcalibrationtable
 DECLARE_SOA_TABLE(SPCalibrationTables, "AOD", "SPCALCOLS",
-                  spcalibrationtable::TriggerEvent,
+                  spcalibrationtable::TriggerEventSP,
                   spcalibrationtable::TriggerEventRunNo,
                   spcalibrationtable::Cent,
                   spcalibrationtable::Vx,

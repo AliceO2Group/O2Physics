@@ -21,7 +21,6 @@ enum eConfiguration {
   eVerboseForEachParticle,
   eDoAdditionalInsanityChecks,
   eInsanityCheckForEachParticle,
-  eUseCCDB,
   eWhichProcess,
   eRandomSeed,
   eUseFisherYates,
