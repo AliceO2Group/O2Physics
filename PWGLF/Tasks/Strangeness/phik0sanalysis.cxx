@@ -291,13 +291,13 @@ struct phik0shortanalysis {
     MCPhiK0SHist.add("h3RecMCPhiK0SSESCut", "2D Invariant mass of Phi and K0Short for RecMC Deltay < SecondCut", kTH3F, {binnedmultAxis, binnedptK0SAxis, K0SmassAxis});
 
     // GenMC K0S coupled to Phi
-    MCPhiK0SHist.add("h2PhiK0SGenMCInclusive", "K0Short coupled to Phi for GenMC Inclusive", kTH2F, {binnedmultAxis, binnedptK0SAxis});
-    MCPhiK0SHist.add("h2PhiK0SGenMCFirstCut", "K0Short coupled to Phi for GenMC Deltay < FirstCut", kTH2F, {binnedmultAxis, binnedptK0SAxis});
-    MCPhiK0SHist.add("h2PhiK0SGenMCSecondCut", "K0Short coupled to Phi for GenMC Deltay < SecondCut", kTH2F, {binnedmultAxis, binnedptK0SAxis});
+    MCPhiK0SHist.add("h2PhiK0SGenMCInc", "K0Short coupled to Phi for GenMC Inclusive", kTH2F, {binnedmultAxis, binnedptK0SAxis});
+    MCPhiK0SHist.add("h2PhiK0SGenMCFCut", "K0Short coupled to Phi for GenMC Deltay < FirstCut", kTH2F, {binnedmultAxis, binnedptK0SAxis});
+    MCPhiK0SHist.add("h2PhiK0SGenMCSCut", "K0Short coupled to Phi for GenMC Deltay < SecondCut", kTH2F, {binnedmultAxis, binnedptK0SAxis});
 
-    MCPhiK0SHist.add("h2PhiK0SGenMCInclusiveAssocReco", "K0Short coupled to Phi for GenMC Inclusive Associated Reco Collision", kTH2F, {binnedmultAxis, binnedptK0SAxis});
-    MCPhiK0SHist.add("h2PhiK0SGenMCFirstCutAssocReco", "K0Short coupled to Phi for GenMC Deltay < FirstCut Associated Reco Collision", kTH2F, {binnedmultAxis, binnedptK0SAxis});
-    MCPhiK0SHist.add("h2PhiK0SGenMCSecondCutAssocReco", "K0Short coupled to Phi for GenMC Deltay < SecondCut Associated Reco Collision", kTH2F, {binnedmultAxis, binnedptK0SAxis});
+    MCPhiK0SHist.add("h2PhiK0SGenMCIncAssocReco", "K0Short coupled to Phi for GenMC Inclusive Associated Reco Collision", kTH2F, {binnedmultAxis, binnedptK0SAxis});
+    MCPhiK0SHist.add("h2PhiK0SGenMCFCutAssocReco", "K0Short coupled to Phi for GenMC Deltay < FirstCut Associated Reco Collision", kTH2F, {binnedmultAxis, binnedptK0SAxis});
+    MCPhiK0SHist.add("h2PhiK0SGenMCSCutAssocReco", "K0Short coupled to Phi for GenMC Deltay < SecondCut Associated Reco Collision", kTH2F, {binnedmultAxis, binnedptK0SAxis});
 
     // Phi mass vs Pion NSigma dE/dx for Data
     PhiPionHist.add("h5PhiPiSEInc", "Phi Invariant mass vs Pion nSigma TPC/TOF for Same Event Inclusive", kTHnSparseF, {binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}, sigPhimassAxis});
@@ -310,13 +310,13 @@ struct phik0shortanalysis {
     MCPhiPionHist.add("h4RecMCPhiPiSESCut", "Phi Invariant mass vs Pion nSigma TPC/TOF for RecMC Deltay < SecondCut", kTHnSparseF, {binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}});
 
     // GenMC Pion coupled to Phi
-    MCPhiPionHist.add("h2PhiPiGenMCInclusive", "Pion coupled to Phi for GenMC Inclusive", kTH2F, {binnedmultAxis, binnedptPiAxis});
-    MCPhiPionHist.add("h2PhiPiGenMCFirstCut", "Pion coupled to Phi for GenMC Deltay < FirstCut", kTH2F, {binnedmultAxis, binnedptPiAxis});
-    MCPhiPionHist.add("h2PhiPiGenMCSecondCut", "Pion coupled to Phi for GenMC Deltay < SecondCut", kTH2F, {binnedmultAxis, binnedptPiAxis});
+    MCPhiPionHist.add("h2PhiPiGenMCInc", "Pion coupled to Phi for GenMC Inclusive", kTH2F, {binnedmultAxis, binnedptPiAxis});
+    MCPhiPionHist.add("h2PhiPiGenMCFCut", "Pion coupled to Phi for GenMC Deltay < FirstCut", kTH2F, {binnedmultAxis, binnedptPiAxis});
+    MCPhiPionHist.add("h2PhiPiGenMCSCut", "Pion coupled to Phi for GenMC Deltay < SecondCut", kTH2F, {binnedmultAxis, binnedptPiAxis});
 
-    MCPhiPionHist.add("h2PhiPiGenMCInclusiveAssocReco", "Pion coupled to Phi for GenMC Inclusive Associated Reco Collision", kTH2F, {binnedmultAxis, binnedptPiAxis});
-    MCPhiPionHist.add("h2PhiPiGenMCFirstCutAssocReco", "Pion coupled to Phi for GenMC Deltay < FirstCut Associated Reco Collision", kTH2F, {binnedmultAxis, binnedptPiAxis});
-    MCPhiPionHist.add("h2PhiPiGenMCSecondCutAssocReco", "Pion coupled to Phi for GenMC Deltay < SecondCut Associated Reco Collision", kTH2F, {binnedmultAxis, binnedptPiAxis});
+    MCPhiPionHist.add("h2PhiPiGenMCIncAssocReco", "Pion coupled to Phi for GenMC Inclusive Associated Reco Collision", kTH2F, {binnedmultAxis, binnedptPiAxis});
+    MCPhiPionHist.add("h2PhiPiGenMCFCutAssocReco", "Pion coupled to Phi for GenMC Deltay < FirstCut Associated Reco Collision", kTH2F, {binnedmultAxis, binnedptPiAxis});
+    MCPhiPionHist.add("h2PhiPiGenMCSCutAssocReco", "Pion coupled to Phi for GenMC Deltay < SecondCut Associated Reco Collision", kTH2F, {binnedmultAxis, binnedptPiAxis});
 
     // MCPhi invariant mass for computing efficiencies and MCnormalisation
     PhieffHist.add("h2PhieffInvMass", "Invariant mass of Phi for Efficiency (no K0S/Pi)", kTH2F, {binnedmultAxis, PhimassAxis});
@@ -1783,25 +1783,25 @@ struct phik0shortanalysis {
           continue;
         if (!isCountedPhi.at(0)) {
           yaccHist.fill(HIST("hyaccK0SGenMC"), genmultiplicity, mcParticle1.pt(), mcParticle1.y());
-          MCPhiK0SHist.fill(HIST("h2PhiK0SGenMCInclusive"), genmultiplicity, mcParticle1.pt());
+          MCPhiK0SHist.fill(HIST("h2PhiK0SGenMCInc"), genmultiplicity, mcParticle1.pt());
           if (isAssocColl)
-            MCPhiK0SHist.fill(HIST("h2PhiK0SGenMCInclusiveAssocReco"), genmultiplicity, mcParticle1.pt());
+            MCPhiK0SHist.fill(HIST("h2PhiK0SGenMCIncAssocReco"), genmultiplicity, mcParticle1.pt());
           isCountedPhi.at(0) = true;
         }
         if (std::abs(mcParticle1.y() - mcParticle2.y()) > cfgFirstCutonDeltay)
           continue;
         if (!isCountedPhi.at(1)) {
-          MCPhiK0SHist.fill(HIST("h2PhiK0SGenMCFirstCut"), genmultiplicity, mcParticle1.pt());
+          MCPhiK0SHist.fill(HIST("h2PhiK0SGenMCFCut"), genmultiplicity, mcParticle1.pt());
           if (isAssocColl)
-            MCPhiK0SHist.fill(HIST("h2PhiK0SGenMCFirstCutAssocReco"), genmultiplicity, mcParticle1.pt());
+            MCPhiK0SHist.fill(HIST("h2PhiK0SGenMCFCutAssocReco"), genmultiplicity, mcParticle1.pt());
           isCountedPhi.at(1) = true;
         }
         if (std::abs(mcParticle1.y() - mcParticle2.y()) > cfgSecondCutonDeltay)
           continue;
         if (!isCountedPhi.at(2)) {
-          MCPhiK0SHist.fill(HIST("h2PhiK0SGenMCSecondCut"), genmultiplicity, mcParticle1.pt());
+          MCPhiK0SHist.fill(HIST("h2PhiK0SGenMCSCut"), genmultiplicity, mcParticle1.pt());
           if (isAssocColl)
-            MCPhiK0SHist.fill(HIST("h2PhiK0SGenMCSecondCutAssocReco"), genmultiplicity, mcParticle1.pt());
+            MCPhiK0SHist.fill(HIST("h2PhiK0SGenMCSCutAssocReco"), genmultiplicity, mcParticle1.pt());
           isCountedPhi.at(2) = true;
         }
       }
@@ -1860,25 +1860,25 @@ struct phik0shortanalysis {
           continue;
         if (!isCountedPhi.at(0)) {
           yaccHist.fill(HIST("hyaccPiGenMC"), genmultiplicity, mcParticle1.pt(), mcParticle1.y());
-          MCPhiPionHist.fill(HIST("h2PhiPiGenMCInclusive"), genmultiplicity, mcParticle1.pt());
+          MCPhiPionHist.fill(HIST("h2PhiPiGenMCInc"), genmultiplicity, mcParticle1.pt());
           if (isAssocColl)
-            MCPhiPionHist.fill(HIST("h2PhiPiGenMCInclusiveAssocReco"), genmultiplicity, mcParticle1.pt());
+            MCPhiPionHist.fill(HIST("h2PhiPiGenMCIncAssocReco"), genmultiplicity, mcParticle1.pt());
           isCountedPhi.at(0) = true;
         }
         if (std::abs(mcParticle1.y() - mcParticle2.y()) > cfgFirstCutonDeltay)
           continue;
         if (!isCountedPhi.at(1)) {
-          MCPhiPionHist.fill(HIST("h2PhiPiGenMCFirstCut"), genmultiplicity, mcParticle1.pt());
+          MCPhiPionHist.fill(HIST("h2PhiPiGenMCFCut"), genmultiplicity, mcParticle1.pt());
           if (isAssocColl)
-            MCPhiPionHist.fill(HIST("h2PhiPiGenMCFirstCutAssocReco"), genmultiplicity, mcParticle1.pt());
+            MCPhiPionHist.fill(HIST("h2PhiPiGenMCFCutAssocReco"), genmultiplicity, mcParticle1.pt());
           isCountedPhi.at(1) = true;
         }
         if (std::abs(mcParticle1.y() - mcParticle2.y()) > cfgSecondCutonDeltay)
           continue;
         if (!isCountedPhi.at(2)) {
-          MCPhiPionHist.fill(HIST("h2PhiPiGenMCSecondCut"), genmultiplicity, mcParticle1.pt());
+          MCPhiPionHist.fill(HIST("h2PhiPiGenMCSCut"), genmultiplicity, mcParticle1.pt());
           if (isAssocColl)
-            MCPhiPionHist.fill(HIST("h2PhiPiGenMCSecondCutAssocReco"), genmultiplicity, mcParticle1.pt());
+            MCPhiPionHist.fill(HIST("h2PhiPiGenMCSCutAssocReco"), genmultiplicity, mcParticle1.pt());
           isCountedPhi.at(2) = true;
         }
       }
