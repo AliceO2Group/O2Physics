@@ -14,6 +14,8 @@
 /// \author Samuele Cattaruzzi <samuele.cattaruzzi@cern.ch>
 /// \author Swapnesh Santosh Khade <swapnesh.santosh.khade@cern.ch>
 
+#include "DhCorrelationFitter.h"
+
 #include <cstdio>
 #include <iostream>
 #include <sstream>
@@ -40,7 +42,6 @@
 #include <TClass.h>
 #include <TVirtualFitter.h>
 #include <TMinuit.h>
-#include "DhCorrelationFitter.h"
 
 using namespace std;
 
