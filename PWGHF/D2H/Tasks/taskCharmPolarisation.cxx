@@ -1172,7 +1172,7 @@ struct TaskPolarisationCharmHadrons {
       }
 
       /// apply rapidity selection on the reconstructed candidate
-      if(std::abs(rapidity) > rapidityCut) {
+      if (std::abs(rapidity) > rapidityCut) {
         continue;
       }
 
