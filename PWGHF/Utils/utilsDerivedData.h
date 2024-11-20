@@ -76,6 +76,7 @@ struct ProducesHfDerivedData : o2::framework::ProducesGroup {
 
   ConfigurableHfDerivedData const* conf;
   std::map<int, std::vector<int>> matchedCollisions; // indices of derived reconstructed collisions matched to the global indices of MC collisions
+  std::map<int, bool> hasMcParticles;                // flags for MC collisions with HF particles
 
   void init(ConfigurableHfDerivedData const& c) {
     conf = &c;

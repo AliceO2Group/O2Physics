@@ -65,7 +65,6 @@ struct HfDerivedDataCreatorD0ToKPi {
 
   HfHelper hfHelper;
   SliceCache cache;
-  std::map<int, bool> hasMcParticles;                // flags for MC collisions with HF particles
 
   using CollisionsWCentMult = soa::Join<aod::Collisions, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::PVMultZeqs>;
   using CollisionsWMcCentMult = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::PVMultZeqs>;
@@ -235,7 +234,7 @@ struct HfDerivedDataCreatorD0ToKPi {
       // Skip collisions without HF candidates (and without HF particles in matched MC collisions if saving indices of reconstructed collisions matched to MC collisions)
       bool mcCollisionHasMcParticles{false};
       if constexpr (isMc) {
-        mcCollisionHasMcParticles = confDerData.fillMcRCollId && collision.has_mcCollision() && hasMcParticles[collision.mcCollisionId()];
+        mcCollisionHasMcParticles = confDerData.fillMcRCollId && collision.has_mcCollision() && rowsCommon.hasMcParticles[collision.mcCollisionId()];
         LOGF(debug, "Rec. collision %d has MC collision %d with MC particles? %s", thisCollId, collision.mcCollisionId(), mcCollisionHasMcParticles ? "yes" : "no");
       }
       if (sizeTableCand == 0 && (!confDerData.fillMcRCollId || !mcCollisionHasMcParticles)) {
@@ -319,13 +318,13 @@ struct HfDerivedDataCreatorD0ToKPi {
     if (!confDerData.fillMcRCollId) {
       return;
     }
-    hasMcParticles.clear();
+    rowsCommon.hasMcParticles.clear();
     // Fill MC collision flags
     for (const auto& mcCollision : mcCollisions) {
       auto thisMcCollId = mcCollision.globalIndex();
       auto particlesThisMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, thisMcCollId);
       LOGF(debug, "MC collision %d has %d MC particles (preprocess)", thisMcCollId, particlesThisMcColl.size());
-      hasMcParticles[thisMcCollId] = (particlesThisMcColl.size() > 0);
+      rowsCommon.hasMcParticles[thisMcCollId] = (particlesThisMcColl.size() > 0);
     }
   }
 
