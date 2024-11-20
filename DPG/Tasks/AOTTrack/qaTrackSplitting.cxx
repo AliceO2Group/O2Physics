@@ -22,7 +22,9 @@
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
+using namespace o2;
 using namespace o2::framework;
+using namespace o2::framework::expressions;
 
 struct qaTrackSplitting {
   Configurable<int> pdg{"pdg", 2212, "PDG code of the particle to be analysed"};
@@ -40,6 +42,14 @@ struct qaTrackSplitting {
     Configurable<float> maxDcaXY{"maxDcaXY", 10000.f, "Additional cut on the maximum abs value of the DCA xy"};
     Configurable<float> maxDcaZ{"maxDcaZ", 2.f, "Additional cut on the maximum abs value of the DCA z"};
     Configurable<float> minTPCNClsFound{"minTPCNClsFound", 0.f, "Additional cut on the minimum value of the number of found clusters in the TPC"};
+
+    Configurable<float> windowEta{"windowEta", 0.f, "Position in eta of the window"};
+    Configurable<float> windowEtaWidth{"windowEtaWidth", 0.1f, "Width of the eta window"};
+    Configurable<float> windowPhi{"windowPhi", 0.785f, "Position in phi of the window"};
+    Configurable<float> windowPhiWidth{"windowPhiWidth", 0.1f, "Width of the phi window"};
+    Configurable<float> windowPt{"windowPt", 1.f, "Position in pt of the window"};
+    Configurable<float> windowPtWidth{"windowPtWidth", 0.1f, "Width of the pt window"};
+
   } cfgCustomTrackCuts;
 
   // Histograms
@@ -51,6 +61,7 @@ struct qaTrackSplitting {
     histos.add("tracks", "tracsk", kTH1D, {{10, -0.5, 9.5, "Track selection"}});
     histos.add("numberOfRecoed", "recoed", kTH1D, {{10, -0.5, 9.5, "Number of tracks associated to a particle"}});
     histos.add("map", "map", kTH3D, {{100, -1, 1, "#Delta #eta"}, {100, -1, 1, "#Delta #varphi"}, {100, -1, 1, "#Delta #it{p}_{T}"}});
+    histos.add("deltaPt", "deltaPt", kTH2D, {{100, 0, 5, "#it{p}_{T}"}, {100, -1, 1, "#Delta #it{p}_{T}"}});
     histos.add("mapMC", "mapMC", kTH3D, {{100, -1, 1, "#Delta #eta"}, {100, -1, 1, "#Delta #varphi"}, {100, -1, 1, "#Delta #it{p}_{T}"}});
 
     customTrackCuts = getGlobalTrackSelectionRun3ITSMatch(cfgCustomTrackCuts.itsPattern);
@@ -69,16 +80,46 @@ struct qaTrackSplitting {
     customTrackCuts.print();
   }
 
-  // Global process
-  using TrackCandidates = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TracksDCA, o2::aod::McTrackLabels>;
-  void process(o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, o2::aod::EvSels>::iterator const& collision,
-               TrackCandidates const& tracks,
-               o2::aod::McParticles const&)
+  using CollisionCandidates = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>;
+  using TrackCandidates = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TracksDCA>;
+  Filter trackFilterEta = nabs(aod::track::eta - cfgCustomTrackCuts.windowEta) < cfgCustomTrackCuts.windowEtaWidth;
+  Filter trackFilterPhi = nabs(aod::track::phi - cfgCustomTrackCuts.windowPhi) < cfgCustomTrackCuts.windowPhiWidth;
+  Filter trackFilterITS = (aod::track::itsClusterSizes > (uint32_t)0);
+  Filter trackFilterTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
+  // Filter trackFilterType = (aod::track::TrackType == aod::track::Track);
+  // Filter filterPt = nabs(aod::track::pt - cfgCustomTrackCuts.windowPt) < cfgCustomTrackCuts.windowPtWidth;
+  void processData(CollisionCandidates const& collisions,
+                   soa::Filtered<TrackCandidates> const& filteredTracks)
+  {
+    for (const auto& coll1 : collisions) {
+      for (const auto& coll2 : collisions) {
+        if (coll1.globalIndex() == coll2.globalIndex()) {
+          continue;
+        }
+        for (const auto& track2 : filteredTracks) {
+          // Compute the delta in pT
+          for (const auto& track1 : filteredTracks) {
+            if (track1.globalIndex() == track2.globalIndex()) {
+              continue;
+            }
+            histos.fill(HIST("deltaPt"), track1.pt(), track1.pt() - track2.pt());
+          }
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(qaTrackSplitting, processData, "Process Data", true);
+
+  using CollisionCandidatesMC = soa::Join<CollisionCandidates, o2::aod::McCollisionLabels>;
+  using TrackCandidatesMC = o2::soa::Join<TrackCandidates, o2::aod::McTrackLabels>;
+  void processMC(CollisionCandidatesMC::iterator const& collision,
+                 TrackCandidatesMC const& tracks,
+                 o2::aod::McParticles const&)
   {
     if (!collision.sel8()) {
       return;
     }
-    typedef std::shared_ptr<TrackCandidates::iterator> trkType;
+    typedef std::shared_ptr<TrackCandidatesMC::iterator> trkType;
 
     std::map<int64_t, std::vector<trkType>> particleUsageCounter;
     for (auto track : tracks) {
@@ -87,11 +128,12 @@ struct qaTrackSplitting {
         continue;
       }
       histos.fill(HIST("tracks"), 1);
-      if (track.mcParticle().pdgCode() != pdg) {
+      const auto& mcParticle = track.mcParticle();
+      if (mcParticle.pdgCode() != pdg) {
         continue;
       }
       histos.fill(HIST("tracks"), 2);
-      if (!track.mcParticle().isPhysicalPrimary()) {
+      if (!mcParticle.isPhysicalPrimary()) {
         continue;
       }
       histos.fill(HIST("tracks"), 3);
@@ -101,21 +143,28 @@ struct qaTrackSplitting {
       histos.fill(HIST("tracks"), 4);
       particleUsageCounter[track.mcParticleId()].push_back(std::make_shared<decltype(track)>(track));
     }
-    for (const auto& [mcId, tracks] : particleUsageCounter) {
-      histos.fill(HIST("numberOfRecoed"), tracks.size());
-      if (tracks.size() > 1) {
+    for (const auto& [mcId, tracksMatched] : particleUsageCounter) {
+      histos.fill(HIST("numberOfRecoed"), tracksMatched.size());
+      if (tracksMatched.size() > 1) {
         bool isFirst = true;
-        for (const auto& track : tracks) {
+        for (const auto& track : tracksMatched) {
           if (isFirst) {
             isFirst = false;
-            histos.fill(HIST("mapMC"), track->eta() - track->mcParticle().eta(), track->phi() - track->mcParticle().phi(), track->pt() - track->mcParticle().pt());
+            histos.fill(HIST("mapMC"),
+                        track->eta() - track->mcParticle().eta(),
+                        track->phi() - track->mcParticle().phi(),
+                        track->pt() - track->mcParticle().pt());
             continue;
           }
-          histos.fill(HIST("map"), track->eta() - tracks[0]->eta(), track->phi() - tracks[0]->phi(), track->pt() - tracks[0]->pt());
+          histos.fill(HIST("map"),
+                      track->eta() - tracksMatched[0]->eta(),
+                      track->phi() - tracksMatched[0]->phi(),
+                      track->pt() - tracksMatched[0]->pt());
         }
       }
     }
   }
+  PROCESS_SWITCH(qaTrackSplitting, processMC, "Process MC", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<qaTrackSplitting>(cfgc)}; }

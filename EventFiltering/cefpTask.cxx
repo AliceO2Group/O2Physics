@@ -200,18 +200,19 @@ static const float defaultDownscaling[128][1]{
   {1.f},
   {1.f}}; /// Max number of columns for triggers is 128 (extendible)
 
-#define FILTER_CONFIGURABLE(_TYPE_)                                                                                                                                                         \
-  Configurable<LabeledArray<float>> cfg##_TYPE_                                                                                                                                             \
-  {                                                                                                                                                                                         \
-#_TYPE_, {defaultDownscaling[0], NumberOfColumns(typename _TYPE_::table_t::columns{}), 1, ColumnsNames(typename _TYPE_::table_t::columns{}), downscalingName }, #_TYPE_ " downscalings" \
+#define FILTER_CONFIGURABLE(_TYPE_)                                                                                                                                                                                  \
+  Configurable<LabeledArray<float>> cfg##_TYPE_                                                                                                                                                                      \
+  {                                                                                                                                                                                                                  \
+    #_TYPE_, {defaultDownscaling[0], NumberOfColumns(typename _TYPE_::table_t::persistent_columns_t{}), 1, ColumnsNames(typename _TYPE_::table_t::persistent_columns_t{}), downscalingName}, #_TYPE_ " downscalings" \
   }
-
 } // namespace
 
 struct centralEventFilterTask {
 
   HistogramRegistry scalers{"scalers", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   Produces<aod::CefpDecisions> tags;
+
+  Configurable<bool> cfgDisableDownscalings{"cfgDisableDownscalings", false, "Disable downscalings"};
 
   FILTER_CONFIGURABLE(F1ProtonFilters);
   FILTER_CONFIGURABLE(NucleiFilters);
@@ -261,17 +262,20 @@ struct centralEventFilterTask {
         col.second = filterOpt.get(col.first.data(), 0u);
       }
     }
+    if (cfgDisableDownscalings.value) {
+      LOG(info) << "Downscalings are disabled for all channels.";
+    }
   }
 
   void run(ProcessingContext& pc)
   {
 
     // Filling output table
-    auto bcTabConsumer = pc.inputs().get<TableConsumer>(aod::MetadataTrait<std::decay_t<aod::BCs>>::metadata::tableLabel());
+    auto bcTabConsumer = pc.inputs().get<TableConsumer>(o2::soa::getTableLabel<aod::BCs>());
     auto bcTabPtr{bcTabConsumer->asArrowTable()};
-    auto collTabConsumer = pc.inputs().get<TableConsumer>(aod::MetadataTrait<std::decay_t<aod::Collisions>>::metadata::tableLabel());
+    auto collTabConsumer = pc.inputs().get<TableConsumer>(o2::soa::getTableLabel<aod::Collisions>());
     auto collTabPtr{collTabConsumer->asArrowTable()};
-    auto evSelConsumer = pc.inputs().get<TableConsumer>(aod::MetadataTrait<std::decay_t<aod::EvSels>>::metadata::tableLabel());
+    auto evSelConsumer = pc.inputs().get<TableConsumer>(o2::soa::getTableLabel<aod::EvSels>());
     auto evSelTabPtr{evSelConsumer->asArrowTable()};
 
     auto columnGloBCId{bcTabPtr->GetColumnByName(aod::BC::GlobalBC::mLabel)};
@@ -327,7 +331,7 @@ struct centralEventFilterTask {
         uint64_t decisionBin{(bin - 2) / 64};
         uint64_t triggerBit{BIT((bin - 2) % 64)};
         auto column{tablePtr->GetColumnByName(colName.first)};
-        double downscaling{colName.second};
+        double downscaling{cfgDisableDownscalings.value ? 1. : colName.second};
         if (column) {
           int entry = 0;
           for (int64_t iC{0}; iC < column->num_chunks(); ++iC) {
@@ -352,12 +356,13 @@ struct centralEventFilterTask {
     mFiltered->SetBinContent(1, mFiltered->GetBinContent(1) + nEvents - startCollision);
 
     for (uint64_t iE{0}; iE < outTrigger.size(); ++iE) {
+      bool triggered{false}, selected{false};
       for (uint64_t iD{0}; iD < outTrigger[0].size(); ++iD) {
         for (int iB{0}; iB < 64; ++iB) {
           if (!(outTrigger[iE][iD] & BIT(iB))) {
             continue;
           }
-          for (int jD{0}; jD < outTrigger[0].size(); ++jD) {
+          for (uint64_t jD{0}; jD < outTrigger[0].size(); ++jD) {
             for (int iC{iB}; iC < 64; ++iC) {
               if (outTrigger[iE][iD] & BIT(iC)) {
                 mCovariance->Fill(iD * 64 + iB, jD * 64 + iC);
@@ -365,12 +370,14 @@ struct centralEventFilterTask {
             }
           }
         }
-        if (outTrigger[iE][iD]) {
-          mScalers->Fill(mScalers->GetNbinsX() - 1);
-        }
-        if (outDecision[iE][iD]) {
-          mFiltered->Fill(mFiltered->GetNbinsX() - 1);
-        }
+        triggered = triggered || outTrigger[iE][iD];
+        selected = selected || outDecision[iE][iD];
+      }
+      if (triggered) {
+        mScalers->Fill(mScalers->GetNbinsX() - 1);
+      }
+      if (selected) {
+        mFiltered->Fill(mFiltered->GetNbinsX() - 1);
       }
     }
 

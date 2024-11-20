@@ -35,7 +35,7 @@ int CheckSameSize(const std::vector<T>& first)
 template <typename T, typename... Args>
 int CheckSameSize(const std::vector<T>& first, const std::vector<Args>&... rest)
 {
-  int size = first.size();
+  size_t size = first.size();
   bool allSameSize = ((size == rest.size()) && ...);
 
   return allSameSize ? size : -1;
@@ -145,7 +145,7 @@ class GFWRegions
 
   auto Print() const
   {
-    for (auto i = 0; i < names.size(); ++i) {
+    for (size_t i = 0; i < names.size(); ++i) {
       LOGF(info, "{%s, %.1f, %.1f, %d, %d}", names[i].c_str(), etaminvals[i], etamaxvals[i], pTDifs[i], bitmasks[i]);
     }
     return;
@@ -190,7 +190,7 @@ class GFWCorrConfigs
 
   auto Print() const
   {
-    for (auto i = 0; i < corrs.size(); ++i) {
+    for (size_t i = 0; i < corrs.size(); ++i) {
       LOGF(info, "{%s,%s,%d,%d}", heads[i].c_str(), corrs[i].c_str(), pTDifs[i], pTCorrMasks[i]);
     }
     return;

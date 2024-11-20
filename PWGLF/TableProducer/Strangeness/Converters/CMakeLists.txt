@@ -24,7 +24,52 @@ o2physics_add_dpl_workflow(strarawcentsconverter2v4
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(straevselsconverter
+                    SOURCES straevselsconverter.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(straevselsconverter2
+                    SOURCES straevselsconverter2.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::ITStracking
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(straevselsconverter3
+                    SOURCES straevselsconverter3.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::ITStracking
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(straevselsconverter2rawcents
+                    SOURCES straevselsconverter2rawcents.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(straevselsconverter2rawcents2
+                    SOURCES straevselsconverter2rawcents2.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(straevselsconverter2rawcents3
+                    SOURCES straevselsconverter2rawcents3.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(v0coresconverter
                     SOURCES v0coresconverter.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(v0coresconverter2
+                    SOURCES v0coresconverter2.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(v0mlscoresconverter
+                    SOURCES v0mlscoresconverter.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(stramccollisionconverter
+                    SOURCES stramccollisionconverter.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)

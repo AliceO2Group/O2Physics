@@ -39,7 +39,7 @@ struct SGExclOmega {
   Configurable<float> FDDC_cut{"FDDC", 10000., "FDDC threshold"};
   Configurable<float> ZDC_cut{"ZDC", 10., "ZDC threshold"};
   // Track Selections
-  Configurable<float> PV_cut{"PV_cut", 0.0, "Use Only PV tracks"};
+  Configurable<float> PV_cut{"PV_cut", 1.0, "Use Only PV tracks"};
   Configurable<float> dcaZ_cut{"dcaZ_cut", 2.0, "dcaZ cut"};
   Configurable<float> dcaXY_cut{"dcaXY_cut", 2.0, "dcaXY cut (0 for Pt-function)"};
   Configurable<float> tpcChi2_cut{"tpcChi2_cut", 4, "Max tpcChi2NCl"};
@@ -79,7 +79,8 @@ struct SGExclOmega {
       {"ss_O_pT_pid_pi0", "pT (GeV/c); Entries", {HistType::kTH1F, {{5000, 0, 10}}}},
       {"ss_O_eTa_pid_pi0", "eTa (GeV/c); Entries", {HistType::kTH1F, {{100, -1., 1.}}}},
       {"ss_O_invm_pid_pi0", "Mass (GeV/c^2); Entries", {HistType::kTH1F, {{5000, 0, 10}}}},
-      {"os_O_pt_invm_pid_pi0", "pt vs Mass", {HistType::kTH2F, {{500, 0, 10.}, {500, 0, 2.5}}}}}};
+      {"os_O_pt_invm_pid_pi0", "pt vs Mass", {HistType::kTH2F, {{500, 0, 10.}, {500, 0, 2.5}}}},
+    }};
   using udtracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksPID>;
   using udtracksfull = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA>;
   using UDCollisionsFull = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionsSels, aod::UDZdcsReduced>; //
@@ -99,6 +100,7 @@ struct SGExclOmega {
     TLorentzVector v4;
     TLorentzVector v5;
     TLorentzVector v01;
+    std::vector<TLorentzVector> els, pis;
     TLorentzVector v00;
     //  int truegapSide = sgSelector.trueGap(collision);
     // int truegapSide = sgSelector.trueGap(collision, FV0_cut, ZDC_cut);
@@ -109,38 +111,38 @@ struct SGExclOmega {
     registry.fill(HIST("GapSide"), gapSide);
     registry.fill(HIST("TrueGapSide"), truegapSide);
     gapSide = truegapSide;
-    if (gapSide != 2)
-      return;
+    // if (gapSide!=2) return;
     int pvtracks = 0;
-    int sign = 0;
+    int esign = 0;
+    int nElec = 0;
     for (auto& t0 : tracks) {
       if (trackselector(t0, parameters) && t0.isPVContributor()) {
         pvtracks++;
-        sign += t0.sign();
+        if (selectionPIDElec(t0, use_tof, nsigmatpc_cut, nsigmatof_cut)) {
+          nElec++;
+          esign += t0.sign();
+          a.SetXYZM(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassElectron);
+          els.push_back(a);
+        } else {
+          a.SetXYZM(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassPionCharged);
+          pis.push_back(a);
+        }
       }
     }
     // Look for D0 and D0bar
-    if (pvtracks != 6)
+    // if (pvtracks != 6) return;
+    if (nElec != 4 || esign != 0 || pvtracks < 6)
       return;
-    for (auto& [t0, t1, t2, t3, t4, t5] : combinations(tracks, tracks, tracks, tracks, tracks, tracks)) {
-      // PID cut - t0=K, t1=pi
-      if (!trackselector(t0, parameters) || !trackselector(t1, parameters))
+    // Apply pion hypothesis and create pairs
+    v00 = els[0] + els[1] + els[2] + els[3];
+    for (auto& [t0, t1] : combinations(tracks, tracks)) {
+      if (selectionPIDElec(t0, use_tof, nsigmatpc_cut, nsigmatof_cut) || selectionPIDElec(t1, use_tof, nsigmatpc_cut, nsigmatof_cut))
         continue;
-      if (!trackselector(t2, parameters) || !trackselector(t3, parameters))
-        continue;
-      if (!trackselector(t4, parameters) || !trackselector(t5, parameters))
-        continue;
-      // Apply pion hypothesis and create pairs
       v0.SetXYZM(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassPionCharged);
-      v1.SetXYZM(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassPionCharged);
-      v2.SetXYZM(t2.px(), t2.py(), t2.pz(), o2::constants::physics::MassElectron);
-      v3.SetXYZM(t3.px(), t3.py(), t3.pz(), o2::constants::physics::MassElectron);
-      v4.SetXYZM(t4.px(), t4.py(), t4.pz(), o2::constants::physics::MassElectron);
-      v5.SetXYZM(t5.px(), t5.py(), t5.pz(), o2::constants::physics::MassElectron);
-      v01 = v0 + v1 + v2 + v3 + v4 + v5;
-      v00 = v2 + v3 + v4 + v5;
+      v1.SetXYZM(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassPionCharged);
+      v01 = v0 + v1 + v00;
       // Opposite sign pairs
-      if (sign == 0) {
+      if (t0.sign() != t1.sign()) {
         registry.fill(HIST("os_O_pT"), v01.Pt());
         registry.fill(HIST("os_O_eTa"), v01.Eta());
         registry.fill(HIST("os_O_invm"), v01.M());
@@ -151,20 +153,20 @@ struct SGExclOmega {
         registry.fill(HIST("ss_O_eTa"), v01.Eta());
         registry.fill(HIST("ss_O_invm"), v01.M());
       }
-      if (selectionPIDPion(t0, use_tof, nsigmatpc_cut, nsigmatof_cut) && selectionPIDPion(t1, use_tof, nsigmatpc_cut, nsigmatof_cut) && selectionPIDElec(t2, use_tof, nsigmatpc_cut, nsigmatof_cut) && selectionPIDElec(t3, use_tof, nsigmatpc_cut, nsigmatof_cut) && selectionPIDElec(t4, use_tof, nsigmatpc_cut, nsigmatof_cut) && selectionPIDElec(t5, use_tof, nsigmatpc_cut, nsigmatof_cut)) {
-        if (sign == 0) {
+      if (selectionPIDPion(t0, use_tof, nsigmatpc_cut, nsigmatof_cut) && selectionPIDPion(t1, use_tof, nsigmatpc_cut, nsigmatof_cut)) {
+        if (t0.sign() != t1.sign()) {
           registry.fill(HIST("os_O_pT_pid"), v01.Pt());
           registry.fill(HIST("os_O_eTa_pid"), v01.Eta());
           registry.fill(HIST("os_O_invm_pid"), v01.M());
           registry.fill(HIST("os_O_pt_invm_pid"), v01.Pt(), v01.M());
-          registry.fill(HIST("pi0_invm_pid"), v00.M());
         } else {
-          registry.fill(HIST("ss_O_pT_pid"), v01.Pt());
-          registry.fill(HIST("ss_O_eTa_pid"), v01.Eta());
-          registry.fill(HIST("ss_O_invm_pid"), v01.M());
+          registry.fill(HIST("ss_O_pT_pid_pi0"), v01.Pt());
+          registry.fill(HIST("ss_O_eTa_pid_pi0"), v01.Eta());
+          registry.fill(HIST("ss_O_invm_pid_pi0"), v01.M());
         }
-        if (abs(v00.M() - o2::constants::physics::MassPionNeutral) < 0.01) {
-          if (sign == 0) {
+
+        if (abs(v00.M() - o2::constants::physics::MassPionNeutral) < 0.1) {
+          if (t0.sign() != t1.sign()) {
             registry.fill(HIST("os_O_pT_pid_pi0"), v01.Pt());
             registry.fill(HIST("os_O_eTa_pid_pi0"), v01.Eta());
             registry.fill(HIST("os_O_invm_pid_pi0"), v01.M());

@@ -77,6 +77,9 @@ struct lambdakzeromlselection {
 
   Produces<aod::V0GammaMLScores> gammaMLSelections;   // optionally aggregate information from ML output for posterior analysis (derived data)
   Produces<aod::V0LambdaMLScores> lambdaMLSelections; // optionally aggregate information from ML output for posterior analysis (derived data)
+  Produces<aod::V0AntiLambdaMLScores> antiLambdaMLSelections; // optionally aggregate information from ML output for posterior analysis (derived data)
+  Produces<aod::V0K0ShortMLScores> kzeroShortMLSelections;    // optionally aggregate information from ML output for posterior analysis (derived data)
+
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // ML inference
@@ -85,6 +88,17 @@ struct lambdakzeromlselection {
   Configurable<bool> PredictGamma{"PredictGamma", true, "Flag to enable or disable the loading of model"};
   Configurable<bool> PredictKZeroShort{"PredictKZeroShort", false, "Flag to enable or disable the loading of model"};
   Configurable<bool> fIsMC{"fIsMC", false, "If true, save additional MC info for analysis"};
+
+  // Feature selection masks:
+
+  //// Order: LambdaMass, AntiLambdaMass, GammaMass, KZeroShortMass, PT, Qt, Alpha, PosEta, NegEta, V0Eta
+  Configurable<std::vector<int>> Kine_SelMap{"Kine_SelMap", std::vector<int>{0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, "Mask to select basic kinematic features for ML Inference"};
+
+  //// Order: Z, V0radius, PA, DCApostopv, DCAnegtopv, DCAV0daughters, DCAv0topv, PsiPair
+  Configurable<std::vector<int>> Topo_SelMap{"Topo_SelMap", std::vector<int>{0, 1, 1, 1, 1, 1, 1, 0}, "Mask to select basic topological features for ML Inference"};
+
+  //// Casting
+  std::vector<int> CastKine_SelMap, CastTopo_SelMap, Feature_SelMask;
 
   // CCDB configuration
   o2::ccdb::CcdbApi ccdbApi;
@@ -163,44 +177,90 @@ struct lambdakzeromlselection {
       if (PredictKZeroShort)
         kzeroshort_bdt.initModel(BDTLocalPathKZeroShort.value, enableOptimizations.value);
     }
+
+    /// Here the Configurables are passed to std::vectors
+    CastKine_SelMap = (std::vector<int>)Kine_SelMap;
+    CastTopo_SelMap = (std::vector<int>)Topo_SelMap;
+
+    // Concatenate the selection masks
+    Feature_SelMask.reserve(CastKine_SelMap.size() + CastTopo_SelMap.size()); // Reserve space to avoid reallocations
+    Feature_SelMask.insert(Feature_SelMask.end(), CastKine_SelMap.begin(), CastKine_SelMap.end());
+    Feature_SelMask.insert(Feature_SelMask.end(), CastTopo_SelMap.begin(), CastTopo_SelMap.end());
+    LOG(info) << "Feature_SelMask size: " << Feature_SelMask.size();
+  }
+
+  template <typename T, typename U>
+  std::vector<float> extractSelectedElements(const std::vector<T>& base_features, const std::vector<U>& Sel_mask)
+  {
+    std::vector<float> selected_elements;
+    for (size_t i = 0; i < Sel_mask.size(); ++i) {
+      if (Sel_mask[i] >= 1) { // If the mask value is true, select the corresponding element
+        selected_elements.push_back(base_features[i]);
+      }
+    }
+    return selected_elements;
   }
 
   // Process candidate and store properties in object
-  template <typename TV0Object>
-  void processCandidate(TV0Object const& cand)
+  template <typename TV0Object, typename T>
+  void processCandidate(TV0Object const& cand, const std::vector<T>& Feature_SelMask)
   {
-    std::vector<float> inputFeatures{cand.pt(), static_cast<float>(cand.qtarm()),
-                                     cand.alpha(), cand.v0radius(),
-                                     cand.v0cosPA(), cand.dcaV0daughters(),
-                                     cand.dcapostopv(), cand.dcanegtopv()};
+    // Select features
+    std::vector<float> base_features{cand.mLambda(), cand.mAntiLambda(),
+                                     cand.mGamma(), cand.mK0Short(),
+                                     cand.pt(), static_cast<float>(cand.qtarm()), cand.alpha(),
+                                     cand.positiveeta(), cand.negativeeta(), cand.eta(),
+                                     cand.z(), cand.v0radius(), static_cast<float>(TMath::ACos(cand.v0cosPA())),
+                                     cand.dcapostopv(), cand.dcanegtopv(), cand.dcaV0daughters(),
+                                     cand.dcav0topv(), cand.psipair()};
 
-    // calculate classifier
-    float* LambdaProbability = lambda_bdt.evalModel(inputFeatures);
-    float* GammaProbability = gamma_bdt.evalModel(inputFeatures);
-    // float* AntiLambdaProbability = antilambda_bdt.evalModel(inputFeatures); // WIP
-    // float* KZeroShortProbability = kzeroshort_bdt.evalModel(inputFeatures); // WIP
+    // Apply mask to select features
+    std::vector<float> inputFeatures = extractSelectedElements(base_features, Feature_SelMask);
 
-    gammaMLSelections(GammaProbability[1]);
-    lambdaMLSelections(LambdaProbability[1]);
+    // calculate classifier output
+    if (PredictLambda) {
+      float* LambdaProbability = lambda_bdt.evalModel(inputFeatures);
+      lambdaMLSelections(LambdaProbability[1]);
+    }
+    if (PredictGamma) {
+      float* GammaProbability = gamma_bdt.evalModel(inputFeatures);
+      gammaMLSelections(GammaProbability[1]);
+    }
+    if (PredictAntiLambda) {
+      float* AntiLambdaProbability = antilambda_bdt.evalModel(inputFeatures);
+      antiLambdaMLSelections(AntiLambdaProbability[1]);
+    }
+    if (PredictKZeroShort) {
+      float* KZeroShortProbability = kzeroshort_bdt.evalModel(inputFeatures);
+      kzeroShortMLSelections(KZeroShortProbability[1]);
+    }
   }
 
   void processDerivedData(aod::StraCollision const& coll, V0DerivedDatas const& v0s)
   {
     histos.fill(HIST("hEventVertexZ"), coll.posZ());
     for (auto& v0 : v0s) {
-      processCandidate(v0);
+      nCandidates++;
+      if (nCandidates % 50000 == 0) {
+        LOG(info) << "Candidates processed: " << nCandidates;
+      }
+      processCandidate(v0, Feature_SelMask);
     }
   }
   void processStandardData(aod::Collision const& coll, V0OriginalDatas const& v0s)
   {
     histos.fill(HIST("hEventVertexZ"), coll.posZ());
     for (auto& v0 : v0s) {
-      processCandidate(v0);
+      nCandidates++;
+      if (nCandidates % 50000 == 0) {
+        LOG(info) << "Candidates processed: " << nCandidates;
+      }
+      processCandidate(v0, Feature_SelMask);
     }
   }
 
-  PROCESS_SWITCH(lambdakzeromlselection, processStandardData, "Process standard data", true);
-  PROCESS_SWITCH(lambdakzeromlselection, processDerivedData, "Process derived data", false);
+  PROCESS_SWITCH(lambdakzeromlselection, processStandardData, "Process standard data", false);
+  PROCESS_SWITCH(lambdakzeromlselection, processDerivedData, "Process derived data", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

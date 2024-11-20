@@ -22,6 +22,8 @@
 #include <string>
 #include <optional>
 
+#include <TPDGCode.h>
+
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoA.h"
@@ -52,7 +54,7 @@ namespace jetv0utilities
 template <typename T>
 constexpr bool isV0Candidate()
 {
-  return std::is_same_v<std::decay_t<T>, CandidatesV0Data::iterator> || std::is_same_v<std::decay_t<T>, CandidatesV0Data::filtered_iterator> || std::is_same_v<std::decay_t<T>, CandidatesV0MCD::iterator> || std::is_same_v<std::decay_t<T>, CandidatesV0MCD::filtered_iterator>;
+  return std::is_same_v<std::decay_t<T>, o2::aod::CandidatesV0Data::iterator> || std::is_same_v<std::decay_t<T>, o2::aod::CandidatesV0Data::filtered_iterator> || std::is_same_v<std::decay_t<T>, o2::aod::CandidatesV0MCD::iterator> || std::is_same_v<std::decay_t<T>, o2::aod::CandidatesV0MCD::filtered_iterator>;
 }
 
 /**
@@ -61,7 +63,7 @@ constexpr bool isV0Candidate()
 template <typename T>
 constexpr bool isV0McCandidate()
 {
-  return std::is_same_v<std::decay_t<T>, CandidatesV0MCP::iterator> || std::is_same_v<std::decay_t<T>, CandidatesV0MCP::filtered_iterator>;
+  return std::is_same_v<std::decay_t<T>, o2::aod::CandidatesV0MCP::iterator> || std::is_same_v<std::decay_t<T>, o2::aod::CandidatesV0MCP::filtered_iterator>;
 }
 
 /**
@@ -80,25 +82,83 @@ constexpr bool isV0Table()
 template <typename T>
 constexpr bool isV0McTable()
 {
-  return std::is_same_v<std::decay_t<T>, CandidatesV0MCP> || std::is_same_v<std::decay_t<T>, o2::soa::Filtered<CandidatesV0MCP>>; // note not optimal way but needed for jetfindingutilities::analyseParticles()
+  return std::is_same_v<std::decay_t<T>, o2::aod::CandidatesV0MCP> || std::is_same_v<std::decay_t<T>, o2::soa::Filtered<o2::aod::CandidatesV0MCP>>; // note not optimal way but needed for jetfindingutilities::analyseParticles()
 }
 
-template <typename T>
-bool isV0Particle(T const& particle)
+/**
+ * returns true if the track is a daughter of the V0 candidate
+ *
+ * @param track track that is being checked
+ * @param candidate V0 candidate that is being checked
+ * @param tracks the track table
+ */
+template <typename T, typename U, typename V>
+bool isV0DaughterTrack(T& track, U& candidate, V const& /*tracks*/)
 {
+  if constexpr (isV0Candidate<U>()) {
+    if (candidate.posTrackId() == track.globalIndex() || candidate.negTrackId() == track.globalIndex()) {
+      return true;
+    } else {
+      return false;
+    }
+  } else {
+    return false;
+  }
+}
 
-  if (TMath::Abs(particle.pdgCode()) == 310) { // k0s
-    return true;
+/**
+ * returns the index of the JMcParticle matched to the V0 candidate
+ *
+ * @param candidate V0 candidate that is being checked
+ * @param tracks track table
+ * @param particles particle table
+ */
+template <typename T, typename U, typename V>
+auto matchedV0ParticleId(const T& candidate, const U& /*tracks*/, const V& /*particles*/)
+{
+  const auto candidateDaughterParticle = candidate.template posTrack_as<U>().template mcParticle_as<V>();
+  return candidateDaughterParticle.template mothers_first_as<V>().globalIndex(); // can we get the Id directly?
+}
+
+/**
+ * returns the JMcParticle matched to the V0 candidate
+ *
+ * @param candidate v0 candidate that is being checked
+ * @param tracks track table
+ * @param particles particle table
+ */
+template <typename T, typename U, typename V>
+auto matchedV0Particle(const T& candidate, const U& /*tracks*/, const V& /*particles*/)
+{
+  const auto candidateDaughterParticle = candidate.template posTrack_as<U>().template mcParticle_as<V>();
+  return candidateDaughterParticle.template mothers_first_as<V>();
+}
+
+/**
+ * returns a slice of the table depending on the index of the V0 candidate
+ *
+ * @param candidate v0 candidate that is being checked
+ * @param table the table to be sliced
+ */
+template <typename T, typename U, typename V>
+auto slicedPerV0Candidate(T const& table, U const& candidate, V const& perV0Candidate)
+{
+  if constexpr (isV0Candidate<U>()) {
+    return table.sliceBy(perV0Candidate, candidate.globalIndex());
+  } else {
+    return table;
   }
-  if (TMath::Abs(particle.pdgCode()) == 3122) { // Lambda
-    return true;
-  }
-  return false;
+}
+
+template <typename T, typename U>
+bool isV0Particle(T const& particles, U const& particle)
+{
+  return RecoDecay::isMatchedMCGen(particles, particle, +kK0Short, std::array{+kPiPlus, -kPiPlus}, true) || RecoDecay::isMatchedMCGen(particles, particle, +kLambda0, std::array{+kProton, -kPiPlus}, true) || RecoDecay::isMatchedMCGen(particles, particle, -kLambda0, std::array{-kProton, +kPiPlus}, true);
 }
 
 enum JV0ParticleDecays {
   K0sToPiPi = 0,
-  LambdaPPi = 1
+  LambdaToPPi = 1
 };
 
 template <typename T>
@@ -114,37 +174,21 @@ int initialiseV0ParticleDecaySelection(std::string v0ParticleDecaySelection)
 {
   if (v0ParticleDecaySelection == "K0sToPiPi") {
     return JV0ParticleDecays::K0sToPiPi;
-  } else if (v0ParticleDecaySelection == "LambdaPPi") {
-    return JV0ParticleDecays::LambdaPPi;
+  } else if (v0ParticleDecaySelection == "LambdaToPPi") {
+    return JV0ParticleDecays::LambdaToPPi;
   }
   return -1;
 }
 
-template <typename U, typename T>
-uint8_t setV0ParticleDecayBit(T const& particle)
+template <typename T, typename U>
+uint8_t setV0ParticleDecayBit(T const& particles, U const& particle)
 {
-
   uint8_t bit = 0;
-
-  if (particle.has_daughters()) {
-    int daughter1PdgCode = 0;
-    int daughter2PdgCode = 0;
-    int i = 0;
-    for (auto daughter : particle.template daughters_as<U>()) {
-      if (i == 0) {
-        daughter1PdgCode = daughter.pdgCode();
-      }
-      if (i == 1) {
-        daughter2PdgCode = daughter.pdgCode();
-      }
-      i++;
-    }
-    if (TMath::Abs(daughter1PdgCode) == 211 && TMath::Abs(daughter2PdgCode) == 211) {
-      SETBIT(bit, JV0ParticleDecays::K0sToPiPi);
-    }
-    if ((TMath::Abs(daughter1PdgCode) == 211 && TMath::Abs(daughter2PdgCode) == 2212) || (TMath::Abs(daughter2PdgCode) == 211 && TMath::Abs(daughter1PdgCode) == 2212)) {
-      SETBIT(bit, JV0ParticleDecays::LambdaPPi);
-    }
+  if (RecoDecay::isMatchedMCGen(particles, particle, +kK0Short, std::array{+kPiPlus, -kPiPlus}, true)) {
+    SETBIT(bit, JV0ParticleDecays::K0sToPiPi);
+  }
+  if (RecoDecay::isMatchedMCGen(particles, particle, +kLambda0, std::array{+kProton, -kPiPlus}, true) || RecoDecay::isMatchedMCGen(particles, particle, -kLambda0, std::array{-kProton, +kPiPlus}, true)) {
+    SETBIT(bit, JV0ParticleDecays::LambdaToPPi);
   }
   return bit;
 }

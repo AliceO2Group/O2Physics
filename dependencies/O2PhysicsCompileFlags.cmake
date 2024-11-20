@@ -11,13 +11,53 @@
 
 include_guard()
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-error \
--Werror=deprecated-enum-float-conversion \
--Werror=narrowing \
--Werror=parentheses \
--Werror=return-type \
--Werror=uninitialized \
--Werror=unused")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
+
+# Enabled warnings supported by Clang and GCC, not treated as errors
+set(O2PHYSICS_WARNINGS_COMMON_NO_ERROR "sign-compare")
+
+# Enabled warnings supported by Clang only, not treated as errors
+set(O2PHYSICS_WARNINGS_CLANG_NO_ERROR "")
+
+# Enabled warnings supported by GCC only, not treated as errors
+set(O2PHYSICS_WARNINGS_GCC_NO_ERROR "")
+
+# Function to build a list of warning flags from their names
+function(o2_build_warning_flags)
+  cmake_parse_arguments(PARSE_ARGV 0 A "" "PREFIX;OUTPUTVARNAME" "WARNINGS")
+  if(A_UNPARSED_ARGUMENTS)
+    message(FATAL_ERROR "Unexpected unparsed arguments: ${A_UNPARSED_ARGUMENTS}")
+  endif()
+  list(TRANSFORM A_WARNINGS STRIP)
+  list(TRANSFORM A_WARNINGS PREPEND ${A_PREFIX})
+  string(JOIN " " OUTPUT ${A_WARNINGS})
+  set(${A_OUTPUTVARNAME} ${OUTPUT} PARENT_SCOPE)
+endfunction()
+
+message(STATUS "O2PHYSICS_WARNINGS_AS_ERRORS: ${O2PHYSICS_WARNINGS_AS_ERRORS}")
+
+# Treat warnings as errors.
+if(O2PHYSICS_WARNINGS_AS_ERRORS)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
+  # Set warning flags for all platforms.
+  o2_build_warning_flags(PREFIX "-Wno-error="
+                         OUTPUTVARNAME O2PHYSICS_CXX_WARNINGS_COMMON_NO_ERROR
+                         WARNINGS ${O2PHYSICS_WARNINGS_COMMON_NO_ERROR})
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${O2PHYSICS_CXX_WARNINGS_COMMON_NO_ERROR}")
+  if(APPLE)
+    # Set warning flags for macOS only.
+    o2_build_warning_flags(PREFIX "-Wno-error="
+                           OUTPUTVARNAME O2PHYSICS_CXX_WARNINGS_APPLE_NO_ERROR
+                           WARNINGS ${O2PHYSICS_WARNINGS_CLANG_NO_ERROR})
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${O2PHYSICS_CXX_WARNINGS_APPLE_NO_ERROR}")
+  elseif(UNIX)
+    # Set warning flags for Linux only.
+    o2_build_warning_flags(PREFIX "-Wno-error="
+                           OUTPUTVARNAME O2PHYSICS_CXX_WARNINGS_UNIX_NO_ERROR
+                           WARNINGS ${O2PHYSICS_WARNINGS_GCC_NO_ERROR})
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${O2PHYSICS_CXX_WARNINGS_UNIX_NO_ERROR}")
+  endif()
+endif()
 
 IF (ENABLE_TIMETRACE)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ftime-trace")
@@ -41,11 +81,11 @@ IF (NOT CMAKE_BUILD_TYPE)
 ENDIF (NOT CMAKE_BUILD_TYPE)
 
 IF(ENABLE_CASSERT) #For the CI, we want to have <cassert> assertions enabled
-    set(CMAKE_CXX_FLAGS_RELEASE "-O2")
-    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g")
+    set(CMAKE_CXX_FLAGS_RELEASE "-O2 -pipe")
+    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g -pipe")
 ELSE()
-    set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG")
-    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g -DNDEBUG")
+    set(CMAKE_CXX_FLAGS_RELEASE "-O2 -DNDEBUG -pipe")
+    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g -DNDEBUG -pipe")
     if (CMAKE_BUILD_TYPE STREQUAL "RELEASE" OR CMAKE_BUILD_TYPE STREQUAL "RELWITHDEBINFO")
       set(FAIR_MIN_SEVERITY "info")
     endif()

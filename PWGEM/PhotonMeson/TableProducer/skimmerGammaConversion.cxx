@@ -181,7 +181,7 @@ struct skimmerGammaConversion {
     v0legs(theTrack.collisionId(),
            theTrack.globalIndex(), theTrack.sign(),
            kfp.GetPx(), kfp.GetPy(), kfp.GetPz(), theTrack.dcaXY(), theTrack.dcaZ(),
-           theTrack.tpcNClsFindable(), theTrack.tpcNClsFindableMinusFound(), theTrack.tpcNClsFindableMinusCrossedRows(),
+           theTrack.tpcNClsFindable(), theTrack.tpcNClsFindableMinusFound(), theTrack.tpcNClsFindableMinusCrossedRows(), theTrack.tpcNClsShared(),
            theTrack.tpcChi2NCl(), theTrack.tpcInnerParam(), theTrack.tpcSignal(),
            theTrack.tpcNSigmaEl(), theTrack.tpcNSigmaPi(),
            theTrack.itsClusterSizes(), theTrack.itsChi2NCl(), theTrack.detectorMap(),
@@ -304,7 +304,7 @@ struct skimmerGammaConversion {
     float sign_tmp = dca_y_v0_to_pv > 0 ? +1 : -1;
     float dca_xy_v0_to_pv = RecoDecay::sqrtSumOfSquares(dca_x_v0_to_pv, dca_y_v0_to_pv) * sign_tmp;
 
-    v0photonskf(collision.globalIndex(), v0legs.lastIndex() + 1, v0legs.lastIndex() + 2,
+    v0photonskf(collision.globalIndex(), v0.globalIndex(), v0legs.lastIndex() + 1, v0legs.lastIndex() + 2,
                 gammaKF_DecayVtx.GetX(), gammaKF_DecayVtx.GetY(), gammaKF_DecayVtx.GetZ(),
                 gammaKF_DecayVtx.GetPx(), gammaKF_DecayVtx.GetPy(), gammaKF_DecayVtx.GetPz(),
                 v0_sv.M(), dca_xy_v0_to_pv, dca_z_v0_to_pv,
@@ -342,7 +342,7 @@ struct skimmerGammaConversion {
         fillV0KF<tracksAndTPCInfo>(collision, v0);
 
       } // end of v0 loop
-    }   // end of collision loop
+    } // end of collision loop
   }
   PROCESS_SWITCH(skimmerGammaConversion, processRec, "process reconstructed info only", true);
 

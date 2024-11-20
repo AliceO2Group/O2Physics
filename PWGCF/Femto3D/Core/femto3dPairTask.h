@@ -16,6 +16,8 @@
 #ifndef PWGCF_FEMTO3D_CORE_FEMTO3DPAIRTASK_H_
 #define PWGCF_FEMTO3D_CORE_FEMTO3DPAIRTASK_H_
 
+#define THETA(eta) 2.0 * atan(exp(-eta))
+
 // #include "Framework/ASoA.h"
 // #include "Framework/DataTypes.h"
 // #include "Framework/AnalysisDataModel.h"
@@ -107,14 +109,14 @@ float GetKstarFrom4vectors(TLorentzVector& first4momentum, TLorentzVector& secon
 {
   if (isIdentical) {
     TLorentzVector fourmomentadiff = first4momentum - second4momentum;
-    return 0.5 * abs(fourmomentadiff.Mag());
+    return 0.5 * std::fabs(fourmomentadiff.Mag());
   } else {
     TLorentzVector fourmomentasum = first4momentum + second4momentum;
     TLorentzVector fourmomentadif = first4momentum - second4momentum;
 
     fourmomentadif.Boost((-1) * fourmomentasum.BoostVector());
 
-    return 0.5 * abs(fourmomentadif.Vect().Mag());
+    return 0.5 * std::fabs(fourmomentadif.Vect().Mag());
   }
 }
 
@@ -191,7 +193,11 @@ class FemtoPair
   TrackType* GetSecondParticle() const { return _second; }
   bool IsIdentical() { return _isidentical; }
 
-  bool IsClosePair(const float& deta = 0.01, const float& dphi = 0.01, const float& radius = 1.2) const;
+  bool IsClosePair(const float& deta, const float& dphi, const float& radius) const;
+  bool IsClosePair(const float& avgSep) const { return static_cast<bool>(GetAvgSep() < avgSep); }
+
+  float GetAvgSep() const;
+
   float GetEtaDiff() const
   {
     if (_first != NULL && _second != NULL)
@@ -209,7 +215,8 @@ class FemtoPair
   float GetKstar() const;
   TVector3 GetQLCMS() const;
   float GetKt() const;
-  float GetMt() const; // test
+  float GetMt() const;       // test
+  float GetGammaOut() const; // test
 
  private:
   TrackType _first = NULL;
@@ -217,6 +224,7 @@ class FemtoPair
   float _magfield1 = 0.0, _magfield2 = 0.0;
   int _PDG1 = 0, _PDG2 = 0;
   bool _isidentical = true;
+  std::array<float, 9> TPCradii = {0.85, 1.05, 1.25, 1.45, 1.65, 1.85, 2.05, 2.25, 2.45};
 };
 
 template <typename TrackType>
@@ -245,12 +253,30 @@ bool FemtoPair<TrackType>::IsClosePair(const float& deta, const float& dphi, con
     return true;
   if (_magfield1 * _magfield2 == 0)
     return true;
-  if (std::pow(abs(GetEtaDiff()) / deta, 2) + std::pow(abs(GetPhiStarDiff(radius)) / dphi, 2) < 1.0f)
+  if (std::pow(std::fabs(GetEtaDiff()) / deta, 2) + std::pow(std::fabs(GetPhiStarDiff(radius)) / dphi, 2) < 1.0f)
     return true;
-  // if (abs(GetEtaDiff()) < deta && abs(GetPhiStarDiff(radius)) < dphi)
+  // if (std::fabs(GetEtaDiff()) < deta && std::fabs(GetPhiStarDiff(radius)) < dphi)
   //   return true;
 
   return false;
+}
+
+template <typename TrackType>
+float FemtoPair<TrackType>::GetAvgSep() const
+{
+  if (_first == NULL || _second == NULL)
+    return -100.f;
+  if (_magfield1 * _magfield2 == 0)
+    return -100.f;
+
+  float dtheta = THETA(_first->eta()) - THETA(_second->eta());
+  float res = 0.0;
+
+  for (const auto& radius : TPCradii) {
+    res += sqrt(pow(2.0 * radius * sin(0.5 * GetPhiStarDiff(radius)), 2) + pow(2.0 * radius * sin(0.5 * dtheta), 2));
+  }
+
+  return 100.0 * res / TPCradii.size();
 }
 
 template <typename TrackType>
@@ -320,6 +346,34 @@ float FemtoPair<TrackType>::GetMt() const
   TLorentzVector fourmomentasum = first4momentum + second4momentum;
 
   return 0.5 * fourmomentasum.Mt();
+}
+
+template <typename TrackType>
+float FemtoPair<TrackType>::GetGammaOut() const
+{
+  if (_first == NULL || _second == NULL)
+    return -1000;
+  if (_magfield1 * _magfield2 == 0)
+    return -1000;
+  if (_PDG1 * _PDG2 == 0)
+    return -1000;
+
+  // double Qinv = 2.0 * GetKstar();
+  // TVector3 QLCMS = GetQLCMS();
+  // double Qout_PRF = sqrt(Qinv * Qinv - QLCMS.Y() * QLCMS.Y() - QLCMS.Z() * QLCMS.Z());
+  // return std::fabs(QLCMS.X() / Qout_PRF);
+
+  TLorentzVector first4momentum;
+  first4momentum.SetPtEtaPhiM(_first->pt(), _first->eta(), _first->phi(), particle_mass(_PDG1));
+  TLorentzVector second4momentum;
+  second4momentum.SetPtEtaPhiM(_second->pt(), _second->eta(), _second->phi(), particle_mass(_PDG2));
+
+  TLorentzVector fourmomentasum = first4momentum + second4momentum;
+
+  fourmomentasum.Boost(0.0, 0.0, (-1) * fourmomentasum.BoostVector().Z()); // boost to LCMS
+  fourmomentasum.RotateZ((-1) * fourmomentasum.Phi());                     // rotate so the X axis is along pair's kT
+
+  return fourmomentasum.Gamma();
 }
 } // namespace o2::aod::singletrackselector
 

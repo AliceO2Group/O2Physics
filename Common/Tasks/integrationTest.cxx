@@ -128,43 +128,43 @@ struct integrationTest {
       hs->GetXaxis()->SetBinLabel(ii + 1, lTableNames[ii].Data());
 
     // Histograms with related indices: per BC
-    histos.add<TH1>("hCollisionsPerBC", "hCollisionsPerBC", HistType::kTH1F, {axisCollisions});
+    histos.add<TH1>("hCollisionsPerBC", "hCollisionsPerBC", HistType::kTH1D, {axisCollisions});
 
     // Histograms with related indices: per collision
-    histos.add<TH1>("hTracks", "hTracks", HistType::kTH1F, {axisTracks});
-    histos.add<TH1>("hTracksITS", "hTracksITS", HistType::kTH1F, {axisTracks});
-    histos.add<TH1>("hTracksTPC", "hTracksTPC", HistType::kTH1F, {axisTracks});
-    histos.add<TH1>("hTracksNoTPCOnly", "hTracksNoTPCOnly", HistType::kTH1F, {axisTracks});
-    histos.add<TH1>("hTracksTRD", "hTracksTRD", HistType::kTH1F, {axisTracks});
-    histos.add<TH1>("hTracksTOF", "hTracksTOF", HistType::kTH1F, {axisTracks});
-    histos.add<TH1>("hMFTTracks", "hMFTTracks", HistType::kTH1F, {axisTracks});
-    histos.add<TH1>("hFWDTracks", "hFWDTracks", HistType::kTH1F, {axisTracks});
+    histos.add<TH1>("hTracks", "hTracks", HistType::kTH1D, {axisTracks});
+    histos.add<TH1>("hTracksITS", "hTracksITS", HistType::kTH1D, {axisTracks});
+    histos.add<TH1>("hTracksTPC", "hTracksTPC", HistType::kTH1D, {axisTracks});
+    histos.add<TH1>("hTracksNoTPCOnly", "hTracksNoTPCOnly", HistType::kTH1D, {axisTracks});
+    histos.add<TH1>("hTracksTRD", "hTracksTRD", HistType::kTH1D, {axisTracks});
+    histos.add<TH1>("hTracksTOF", "hTracksTOF", HistType::kTH1D, {axisTracks});
+    histos.add<TH1>("hMFTTracks", "hMFTTracks", HistType::kTH1D, {axisTracks});
+    histos.add<TH1>("hFWDTracks", "hFWDTracks", HistType::kTH1D, {axisTracks});
 
-    histos.add<TH1>("hV0s", "hV0s", HistType::kTH1F, {axisTracks});
-    histos.add<TH1>("hCascades", "hCascades", HistType::kTH1F, {axisTracks});
-    histos.add<TH1>("hHasDetector", "hHasDetector", HistType::kTH1F, {axisHasDetector});
+    histos.add<TH1>("hV0s", "hV0s", HistType::kTH1D, {axisTracks});
+    histos.add<TH1>("hCascades", "hCascades", HistType::kTH1D, {axisTracks});
+    histos.add<TH1>("hHasDetector", "hHasDetector", HistType::kTH1D, {axisHasDetector});
 
     if (do2DNTrackCorr) {
-      histos.add<TH2>("hTOFvsTRD", "hTOFvsTRD", HistType::kTH2F, {axisTracks2Dtrd, axisTracks2Dtof});
-      histos.add<TH2>("hTOFvsTPC", "hTOFvsTPC", HistType::kTH2F, {axisTracks2Dtpc, axisTracks2Dtof});
-      histos.add<TH2>("hTRDvsTPC", "hTRDvsTPC", HistType::kTH2F, {axisTracks2Dtpc, axisTracks2Dtrd});
-      histos.add<TH2>("hITSvsTPC", "hITSvsTPC", HistType::kTH2F, {axisTracks2Dtpc, axisTracks2Dits});
+      histos.add<TH2>("hTOFvsTRD", "hTOFvsTRD", HistType::kTH2D, {axisTracks2Dtrd, axisTracks2Dtof});
+      histos.add<TH2>("hTOFvsTPC", "hTOFvsTPC", HistType::kTH2D, {axisTracks2Dtpc, axisTracks2Dtof});
+      histos.add<TH2>("hTRDvsTPC", "hTRDvsTPC", HistType::kTH2D, {axisTracks2Dtpc, axisTracks2Dtrd});
+      histos.add<TH2>("hITSvsTPC", "hITSvsTPC", HistType::kTH2D, {axisTracks2Dtpc, axisTracks2Dits});
     }
 
     // pT histograms
-    histos.add<TH1>("hPt", "hPt", HistType::kTH1F, {axisPt});
-    histos.add<TH1>("hPtITS", "hPtITS", HistType::kTH1F, {axisPt});
-    histos.add<TH1>("hPtTPC", "hPtTPC", HistType::kTH1F, {axisPt});
-    histos.add<TH1>("hPtNoTPCOnly", "hPtNoTPCOnly", HistType::kTH1F, {axisPt});
-    histos.add<TH1>("hPtTOF", "hPtTOF", HistType::kTH1F, {axisPt});
-    histos.add<TH1>("hPtTRD", "hPtTRD", HistType::kTH1F, {axisPt});
+    histos.add<TH1>("hPt", "hPt", HistType::kTH1D, {axisPt});
+    histos.add<TH1>("hPtITS", "hPtITS", HistType::kTH1D, {axisPt});
+    histos.add<TH1>("hPtTPC", "hPtTPC", HistType::kTH1D, {axisPt});
+    histos.add<TH1>("hPtNoTPCOnly", "hPtNoTPCOnly", HistType::kTH1D, {axisPt});
+    histos.add<TH1>("hPtTOF", "hPtTOF", HistType::kTH1D, {axisPt});
+    histos.add<TH1>("hPtTRD", "hPtTRD", HistType::kTH1D, {axisPt});
 
     if (doBasicQA) {
       // general QA
-      histos.add<TH2>("h2dPhiVsEtaAll", "h2dPhiVsEtaAll", HistType::kTH2F, {axisEta, axisPhi});
-      histos.add<TH2>("h2dPhiVsEtaNoTPCOnly", "h2dPhiVsEtaNoTPCOnly", HistType::kTH2F, {axisEta, axisPhi});
-      histos.add<TH1>("hNCluAll", "hNCluAll", HistType::kTH1F, {axisNclu});
-      histos.add<TH1>("hNCluNoTPCOnly", "hNCluNoTPCOnly", HistType::kTH1F, {axisNclu});
+      histos.add<TH2>("h2dPhiVsEtaAll", "h2dPhiVsEtaAll", HistType::kTH2D, {axisEta, axisPhi});
+      histos.add<TH2>("h2dPhiVsEtaNoTPCOnly", "h2dPhiVsEtaNoTPCOnly", HistType::kTH2D, {axisEta, axisPhi});
+      histos.add<TH1>("hNCluAll", "hNCluAll", HistType::kTH1D, {axisNclu});
+      histos.add<TH1>("hNCluNoTPCOnly", "hNCluNoTPCOnly", HistType::kTH1D, {axisNclu});
     }
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
@@ -196,38 +196,38 @@ struct integrationTest {
     aod::McMFTTrackLabels const& mcmfttracklabels,
     aod::McFwdTrackLabels const& mcfwdtracklabels)
   {
-    histos.fill(HIST("hTableSizes"), (float)kBC + 0.5f, bcs.size());
-    histos.fill(HIST("hTableSizes"), (float)kCollision + 0.5f, collisions.size());
-    histos.fill(HIST("hTableSizes"), (float)kTrack + 0.5f, tracks.size());
-    histos.fill(HIST("hTableSizes"), (float)kTrackCov + 0.5f, trackcovs.size());
-    histos.fill(HIST("hTableSizes"), (float)kTrackExtra + 0.5f, trackextras.size());
-    histos.fill(HIST("hTableSizes"), (float)kMftTrack + 0.5f, mfttracks.size());
-    histos.fill(HIST("hTableSizes"), (float)kFwdTrack + 0.5f, fwdtracks.size());
-    histos.fill(HIST("hTableSizes"), (float)kFwdTrackCov + 0.5f, fwdtrackcovs.size());
-    histos.fill(HIST("hTableSizes"), (float)kAmbiguousTrack + 0.5f, ambitracks.size());
-    histos.fill(HIST("hTableSizes"), (float)kAmbiguousMftTrack + 0.5f, ambimfttracks.size());
-    histos.fill(HIST("hTableSizes"), (float)kAmbiguousFwdTrack + 0.5f, ambifwdtracks.size());
-    histos.fill(HIST("hTableSizes"), (float)kV0 + 0.5f, v0s.size());
-    histos.fill(HIST("hTableSizes"), (float)kCascade + 0.5f, cascades.size());
-    histos.fill(HIST("hTableSizes"), (float)kCalo + 0.5f, calos.size());
-    histos.fill(HIST("hTableSizes"), (float)kCaloTrigger + 0.5f, calotriggers.size());
-    histos.fill(HIST("hTableSizes"), (float)kFDD + 0.5f, fdds.size());
-    histos.fill(HIST("hTableSizes"), (float)kFT0 + 0.5f, ft0s.size());
-    histos.fill(HIST("hTableSizes"), (float)kV0A + 0.5f, fv0as.size());
-    histos.fill(HIST("hTableSizes"), (float)kZDC + 0.5f, zdcs.size());
-    histos.fill(HIST("hTableSizes"), (float)kMcCollision + 0.5f, mccollisions.size());
-    histos.fill(HIST("hTableSizes"), (float)kMcCollisionLabel + 0.5f, mccollisionlabels.size());
-    histos.fill(HIST("hTableSizes"), (float)kMcParticle + 0.5f, mcparticles.size());
-    histos.fill(HIST("hTableSizes"), (float)kMcTrackLabel + 0.5f, mctracklabels.size());
-    histos.fill(HIST("hTableSizes"), (float)kMcMftTrackLabel + 0.5f, mcmfttracklabels.size());
-    histos.fill(HIST("hTableSizes"), (float)kMcFwdTrackLabel + 0.5f, mcfwdtracklabels.size());
-    histos.fill(HIST("hTableSizes"), (float)kFrameCounter + 0.5f);
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kBC) + 0.5f, bcs.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kCollision) + 0.5f, collisions.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kTrack) + 0.5f, tracks.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kTrackCov) + 0.5f, trackcovs.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kTrackExtra) + 0.5f, trackextras.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kMftTrack) + 0.5f, mfttracks.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kFwdTrack) + 0.5f, fwdtracks.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kFwdTrackCov) + 0.5f, fwdtrackcovs.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kAmbiguousTrack) + 0.5f, ambitracks.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kAmbiguousMftTrack) + 0.5f, ambimfttracks.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kAmbiguousFwdTrack) + 0.5f, ambifwdtracks.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kV0) + 0.5f, v0s.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kCascade) + 0.5f, cascades.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kCalo) + 0.5f, calos.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kCaloTrigger) + 0.5f, calotriggers.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kFDD) + 0.5f, fdds.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kFT0) + 0.5f, ft0s.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kV0A) + 0.5f, fv0as.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kZDC) + 0.5f, zdcs.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kMcCollision) + 0.5f, mccollisions.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kMcCollisionLabel) + 0.5f, mccollisionlabels.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kMcParticle) + 0.5f, mcparticles.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kMcTrackLabel) + 0.5f, mctracklabels.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kMcMftTrackLabel) + 0.5f, mcmfttracklabels.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kMcFwdTrackLabel) + 0.5f, mcfwdtracklabels.size());
+    histos.fill(HIST("hTableSizes"), static_cast<float>(kFrameCounter) + 0.5f);
   }
   PROCESS_SWITCH(integrationTest, processDataModel, "Check data model", true);
 
   void processBCs(aod::BC const&, aod::Collisions const& collisions)
   {
-    histos.fill(HIST("hCollisionsPerBC"), (float)collisions.size());
+    histos.fill(HIST("hCollisionsPerBC"), static_cast<float>(collisions.size()));
   }
   PROCESS_SWITCH(integrationTest, processBCs, "Check collisions per BC", true);
 

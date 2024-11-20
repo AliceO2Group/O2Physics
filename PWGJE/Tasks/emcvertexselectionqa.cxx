@@ -37,6 +37,15 @@ using FullTracksIU = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksDCA>;
 struct EmcVertexSelectionQA {
   o2::framework::HistogramRegistry mHistManager{"EMCALVertexSelectionQAHistograms"};
 
+  Configurable<float> cfgZvtxMax{"cfgZvtxMax", 20.f, "max. Zvtx"};
+  Configurable<bool> cfgRequireSel8{"cfgRequireSel8", false, "require sel8 in event cut"};
+  Configurable<bool> cfgRequireFT0AND{"cfgRequireFT0AND", false, "require FT0AND in event cut"};
+  Configurable<bool> cfgRequireNoTFB{"cfgRequireNoTFB", false, "require No time frame border in event cut"};
+  Configurable<bool> cfgRequireNoITSROFB{"cfgRequireNoITSROFB", false, "require no ITS readout frame border in event cut"};
+  Configurable<bool> cfgRequireNoSameBunchPileup{"cfgRequireNoSameBunchPileup", false, "require no same bunch pileup in event cut"};
+  Configurable<bool> cfgRequireVertexITSTPC{"cfgRequireVertexITSTPC", false, "require Vertex ITSTPC in event cut"}; // ITS-TPC matched track contributes PV.
+  Configurable<bool> cfgRequireGoodZvtxFT0vsPV{"cfgRequireGoodZvtxFT0vsPV", false, "require good Zvtx between FT0 vs. PV in event cut"};
+
   void init(o2::framework::InitContext const&)
   {
     using o2HistType = o2::framework::HistType;
@@ -66,6 +75,10 @@ struct EmcVertexSelectionQA {
     mHistManager.add("hVertexRelDiffRobustStdDevDCA", "Relative Difference of Robust StdDev DCA to StdDev DCA of Vertex vs its Quality", o2HistType::kTH2F, {{200, 0, 2}, qualityAxis});
     mHistManager.add("hVertexRelDiffRobustStdDevTrackTime", "Relative Difference of Robust Standard Deviation to Standard Deviation of Tracks Contributing to the Vertex vs its Quality", o2HistType::kTH2F, {{200, 0, 2}, qualityAxis});
 
+    // Z vertex positions of two vertices in the same BC (to look for two collisions in the same BC with similar z-vertex positions)
+    mHistManager.add("hDoubleZVertex", "Z Vertex Position Correlation of two Collions in the same BC", o2HistType::kTH2F, {{300, -15., 15.}, {300, -15., 15.}});
+    mHistManager.add("hZVertexDiff", "Difference Z Vertex Position of two Collions in the same BC", o2HistType::kTH1F, {{40000, -20., 20., "Z_{vtx 1}-Z_{vtx 2} (cm)"}});
+
     // Set axis labels and bin titles
     initVertexHistogram(mHistManager.get<TH1>(HIST("hCollisionMatching")).get());
     initVertexHistogram(mHistManager.get<TH1>(HIST("hCollisionMatchingReadout")).get());
@@ -84,6 +97,8 @@ struct EmcVertexSelectionQA {
 
     mHistManager.get<TH2>(HIST("hnVertexContributors")).get()->GetXaxis()->SetTitle("N_{contr} to Vtx 1");
     mHistManager.get<TH2>(HIST("hnVertexContributors")).get()->GetYaxis()->SetTitle("N_{contr} to Vtx 2");
+    mHistManager.get<TH2>(HIST("hDoubleZVertex")).get()->GetXaxis()->SetTitle("Z_{vtx 1} (cm)");
+    mHistManager.get<TH2>(HIST("hDoubleZVertex")).get()->GetYaxis()->SetTitle("Z_{vtx 2} (cm)");
   }
 
   Preslice<FullTracksIU> perCollision = aod::track::collisionId;
@@ -91,23 +106,32 @@ struct EmcVertexSelectionQA {
   void process(bcEvSels const& bcs, collEventSels const& collisions, FullTracksIU const& tracks)
   {
     for (const auto& bc : bcs) {
-      bool isEMCALreadout = false;
-
-      if (bc.runNumber() > 300000) {
-        // in case of run3 not all BCs contain EMCAL data, require trigger selection also for min. bias
-        // in addition select also L0/L1 triggers as triggers with EMCAL in reaodut
-        if (bc.alias_bit(kTVXinEMC) || bc.alias_bit(kEMC7) || bc.alias_bit(kEG1) || bc.alias_bit(kEG2) || bc.alias_bit(kDG1) || bc.alias_bit(kDG2) || bc.alias_bit(kEJ1) || bc.alias_bit(kEJ2) || bc.alias_bit(kDJ1) || bc.alias_bit(kDJ2)) {
-          isEMCALreadout = true;
-        }
-      } else {
-        // run1/2: rely on trigger cluster, runlist must contain only runs with EMCAL in readout
-        // Select min. bias trigger and EMCAL L0/L1 triggers
-        if (bc.alias_bit(kINT7) || bc.alias_bit(kEMC7) || bc.alias_bit(kEG1) || bc.alias_bit(kEG2) || bc.alias_bit(kEJ1) || bc.alias_bit(kEJ2)) {
-          isEMCALreadout = true;
-        }
-      }
+      bool isEMCALreadout = (bc.alias_bit(kTVXinEMC) || bc.alias_bit(kEMC7) || bc.alias_bit(kEG1) || bc.alias_bit(kEG2) || bc.alias_bit(kDG1) || bc.alias_bit(kDG2) || bc.alias_bit(kEJ1) || bc.alias_bit(kEJ2) || bc.alias_bit(kDJ1) || bc.alias_bit(kDJ2));
 
       auto colsinbc = collisions.sliceBy(perFoundBC, bc.globalIndex());
+
+      bool isBCAccepted = true;
+      for (auto& col : colsinbc) {
+        if (cfgRequireSel8 && !col.sel8())
+          isBCAccepted = false;
+        if (cfgRequireFT0AND && !col.selection_bit(o2::aod::evsel::kIsTriggerTVX))
+          isBCAccepted = false;
+        if (col.posZ() < -cfgZvtxMax || col.posZ() > cfgZvtxMax)
+          isBCAccepted = false;
+        if (cfgRequireNoTFB && !col.selection_bit(o2::aod::evsel::kNoTimeFrameBorder))
+          isBCAccepted = false;
+        if (cfgRequireNoITSROFB && !col.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))
+          isBCAccepted = false;
+        if (cfgRequireNoSameBunchPileup && !col.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
+          isBCAccepted = false;
+        if (cfgRequireVertexITSTPC && !col.selection_bit(o2::aod::evsel::kIsVertexITSTPC))
+          isBCAccepted = false;
+        if (cfgRequireGoodZvtxFT0vsPV && !col.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
+          isBCAccepted = false;
+      }
+      if (!isBCAccepted)
+        continue;
+
       int collisionStatus = -1;
       if (!colsinbc.size()) {
         collisionStatus = 0;
@@ -127,6 +151,7 @@ struct EmcVertexSelectionQA {
       if (collisionStatus > 0) {
         int nVtx = 0;
         int nVtxwithTOForTRDcontr = 0;
+        std::vector<float> zVertexPositions;
         std::vector<int> nVtxContributors;
         for (auto& col : colsinbc) { // Loop over all collisions/vertices
           int ivtxquality = 0;       // 0: TPC/ITS contributor, 1: TRD contributor , 2: TOF contributor
@@ -184,12 +209,16 @@ struct EmcVertexSelectionQA {
             nVtxwithTOForTRDcontr++;
           }
           nVtxContributors.push_back(nPVContributorTracks);
+          zVertexPositions.push_back(col.posZ());
         }
         mHistManager.fill(HIST("hnVerticeswithTOForTRDcontr"), nVtx, nVtxwithTOForTRDcontr);
         if (collisionStatus == 2) {
           mHistManager.fill(HIST("hnVertexContributors"), nVtxContributors.at(0), nVtxContributors.at(1));
+          mHistManager.fill(HIST("hDoubleZVertex"), zVertexPositions.at(0), zVertexPositions.at(1));
+          mHistManager.fill(HIST("hZVertexDiff"), zVertexPositions.at(0) - zVertexPositions.at(1));
         }
         nVtxContributors.clear();
+        zVertexPositions.clear();
       }
     }
   }

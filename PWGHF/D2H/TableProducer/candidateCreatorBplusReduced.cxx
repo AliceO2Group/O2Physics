@@ -142,7 +142,7 @@ struct HfCandidateCreatorBplusReduced {
             continue;
           }
         } catch (const std::runtime_error& error) {
-          LOG(info) << "Run time error found: " << error.what() << ". DCFitterN cannot work, skipping the candidate.";
+          LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN cannot work, skipping the candidate.";
           hCandidates->Fill(SVFitting::Fail);
           continue;
         }
@@ -291,7 +291,7 @@ struct HfCandidateCreatorBplusReducedExpressions {
         if ((rowD0PiMcRec.prong0Id() != candBplus.prong0Id()) || (rowD0PiMcRec.prong1Id() != candBplus.prong1Id())) {
           continue;
         }
-        rowBplusMcRec(rowD0PiMcRec.flagMcMatchRec(), rowD0PiMcRec.debugMcRec(), rowD0PiMcRec.ptMother());
+        rowBplusMcRec(rowD0PiMcRec.flagMcMatchRec(), rowD0PiMcRec.flagWrongCollision(), rowD0PiMcRec.debugMcRec(), rowD0PiMcRec.ptMother());
         filledMcInfo = true;
         if constexpr (checkDecayTypeMc) {
           rowBplusMcCheck(rowD0PiMcRec.pdgCodeBeautyMother(),
@@ -302,7 +302,7 @@ struct HfCandidateCreatorBplusReducedExpressions {
         break;
       }
       if (!filledMcInfo) { // protection to get same size tables in case something went wrong: we created a candidate that was not preselected in the D0-Pi creator
-        rowBplusMcRec(0, -1, -1.f);
+        rowBplusMcRec(0, -1, -1, -1.f);
         if constexpr (checkDecayTypeMc) {
           rowBplusMcCheck(-1, -1, -1, -1);
         }

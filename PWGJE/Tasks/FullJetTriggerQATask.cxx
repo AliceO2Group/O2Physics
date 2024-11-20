@@ -38,7 +38,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 struct JetTriggerQA {
-  using selectedClusters = o2::soa::Filtered<JetClusters>;
+  using selectedClusters = o2::soa::Filtered<aod::JetClusters>;
   using fullJetInfos = soa::Join<aod::FullJets, aod::FullJetConstituents>;
   using neutralJetInfos = soa::Join<aod::NeutralJets, aod::NeutralJetConstituents>;
   using collisionWithTrigger = soa::Join<aod::JCollisions, aod::JFullTrigSels>::iterator;
@@ -544,7 +544,7 @@ struct JetTriggerQA {
   }
 
   template <typename JetCollection>
-  std::pair<std::vector<typename JetCollection::iterator>, std::vector<typename JetCollection::iterator>> fillJetQA(const JetCollection& jets, JetTracks const& /*tracks*/, selectedClusters const& /*clusters*/, std::bitset<EMCALHardwareTrigger::TRG_NTriggers> /*hwtrg*/, const std::bitset<TriggerType_t::kNTriggers>& triggerstatus)
+  std::pair<std::vector<typename JetCollection::iterator>, std::vector<typename JetCollection::iterator>> fillJetQA(const JetCollection& jets, aod::JetTracks const& /*tracks*/, selectedClusters const& /*clusters*/, std::bitset<EMCALHardwareTrigger::TRG_NTriggers> /*hwtrg*/, const std::bitset<TriggerType_t::kNTriggers>& triggerstatus)
   {
     auto isTrigger = [&triggerstatus](TriggerType_t triggertype) -> bool {
       return triggerstatus.test(triggertype);
@@ -568,7 +568,7 @@ struct JetTriggerQA {
       // This gives us access to all jet substructure information
       // auto tracksInJet = jetTrackConstituents.sliceBy(perJetTrackConstituents, jet.globalIndex());
       // for (const auto& trackList : tracksInJet) {
-      for (auto& track : jet.template tracks_as<JetTracks>()) {
+      for (auto& track : jet.template tracks_as<aod::JetTracks>()) {
         auto trackPt = track.pt();
         auto chargeFrag = track.px() * jet.px() + track.py() * jet.py() + track.pz() * jet.pz();
         chargeFrag /= (jet.p() * jet.p());
@@ -647,12 +647,12 @@ struct JetTriggerQA {
     return std::make_pair(vecMaxJet, vecMaxJetNoFiducial);
   }
 
-  using JetCollisionsTable = soa::Join<JetCollisions, aod::JFullTrigSels>;
+  using JetCollisionsTable = soa::Join<aod::JetCollisions, aod::JFullTrigSels>;
 
   template <typename JetCollection>
   void runQA(collisionWithTrigger const& collision,
              JetCollection const& jets,
-             JetTracks const& tracks,
+             aod::JetTracks const& tracks,
              selectedClusters const& clusters)
   {
     std::bitset<TriggerType_t::kNTriggers> triggerstatus;
@@ -688,55 +688,51 @@ struct JetTriggerQA {
       setTrigger(TriggerType_t::kEmcalMB);
     }
 
-    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::fullHigh)) {
+    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::jetFullHighPt)) {
       fillEventSelectionCounter(3);
       setTrigger(TriggerType_t::kEmcalJetFull);
     }
-    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::fullLow)) {
+    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::jetFullLowPt)) {
       fillEventSelectionCounter(4);
       setTrigger(TriggerType_t::kEmcalJetFullLow);
     }
-    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::neutralHigh)) {
+    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::jetNeutralHighPt)) {
       fillEventSelectionCounter(5);
       setTrigger(TriggerType_t::kEmcalJetNeutral);
     }
-    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::neutralLow)) {
+    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::jetNeutralLowPt)) {
       fillEventSelectionCounter(6);
       setTrigger(TriggerType_t::kEmcalJetNeutralLow);
     }
-    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::neutralLow)) {
-      fillEventSelectionCounter(6);
-      setTrigger(TriggerType_t::kEmcalJetNeutralLow);
-    }
-    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::gammaVeryHighEMCAL)) {
+    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::gammaVeryHighPtEMCAL)) {
       fillEventSelectionCounter(7);
       setTrigger(TriggerType_t::kEmcalGammaVeryHigh);
     }
-    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::gammaVeryHighDCAL)) {
+    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::gammaVeryHighPtDCAL)) {
       fillEventSelectionCounter(8);
       setTrigger(TriggerType_t::kDcalGammaVeryHigh);
     }
-    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::gammaHighEMCAL)) {
+    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::gammaHighPtEMCAL)) {
       fillEventSelectionCounter(9);
       setTrigger(TriggerType_t::kEmcalGammaHigh);
     }
-    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::gammaHighDCAL)) {
+    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::gammaHighPtDCAL)) {
       fillEventSelectionCounter(10);
       setTrigger(TriggerType_t::kDcalGammaHigh);
     }
-    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::gammaLowEMCAL)) {
+    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::gammaLowPtEMCAL)) {
       fillEventSelectionCounter(11);
       setTrigger(TriggerType_t::kEmcalGammaLow);
     }
-    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::gammaLowDCAL)) {
+    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::gammaLowPtDCAL)) {
       fillEventSelectionCounter(12);
       setTrigger(TriggerType_t::kDcalGammaLow);
     }
-    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::gammaVeryLowEMCAL)) {
+    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::gammaVeryLowPtEMCAL)) {
       fillEventSelectionCounter(13);
       setTrigger(TriggerType_t::kEmcalGammaVeryLow);
     }
-    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::gammaVeryLowDCAL)) {
+    if (jetderiveddatautilities::selectFullTrigger(collision, jetderiveddatautilities::JTrigSelFull::gammaVeryLowPtDCAL)) {
       fillEventSelectionCounter(14);
       setTrigger(TriggerType_t::kDcalGammaVeryLow);
     }
@@ -830,7 +826,7 @@ struct JetTriggerQA {
 
   void processFullJets(collisionWithTrigger const& collision,
                        fullJetInfos const& jets,
-                       JetTracks const& tracks,
+                       aod::JetTracks const& tracks,
                        selectedClusters const& clusters)
   {
     runQA(collision, jets, tracks, clusters);
@@ -839,7 +835,7 @@ struct JetTriggerQA {
 
   void processNeutralJets(collisionWithTrigger const& collision,
                           neutralJetInfos const& jets,
-                          JetTracks const& tracks,
+                          aod::JetTracks const& tracks,
                           selectedClusters const& clusters)
   {
     runQA(collision, jets, tracks, clusters);

@@ -299,10 +299,10 @@ struct K0MixedEvents {
       registry.fill(HIST("Trks"), 1);
       const float& vtxZ = track.singleCollSel_as<FilteredCollisions>().posZ();
       registry.fill(HIST("VTX"), vtxZ);
-      if (abs(vtxZ) > _vertexZ)
+      if (std::abs(vtxZ) > _vertexZ)
         continue;
       registry.fill(HIST("eta"), track.pt(), track.eta());
-      if (abs(track.rapidity(particle_mass(_particlePDG_1))) > _maxy) {
+      if (std::abs(track.rapidity(particle_mass(_particlePDG_1))) > _maxy) {
         continue;
       }
       registry.fill(HIST("rapidity_first"), track.pt(), track.rapidity(particle_mass(_particlePDG_1)));

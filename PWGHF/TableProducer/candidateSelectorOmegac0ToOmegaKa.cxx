@@ -129,6 +129,7 @@ struct HfCandidateSelectorToOmegaKa {
   TrackSelectorKa selectorKaon;
 
   using TracksSel = soa::Join<aod::TracksWDcaExtra, aod::TracksPidPi, aod::TracksPidPr, aod::TracksPidKa>;
+  using TracksSelLf = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksPidPi, aod::TracksPidPr, aod::TracksPidKa>;
 
   HistogramRegistry registry{"registry"}; // for QA of selections
 
@@ -194,7 +195,8 @@ struct HfCandidateSelectorToOmegaKa {
   }
 
   void process(aod::HfCandToOmegaK const& candidates,
-               TracksSel const&)
+               TracksSel const& tracks,
+               TracksSelLf const& lfTracks)
   {
 
     // looping over charm baryon candidates
@@ -202,10 +204,14 @@ struct HfCandidateSelectorToOmegaKa {
 
       bool resultSelections = true; // True if the candidate passes all the selections, False otherwise
 
-      auto trackV0PosDau = candidate.posTrack_as<TracksSel>();                   // positive V0 daughter
-      auto trackV0NegDau = candidate.negTrack_as<TracksSel>();                   // negative V0 daughter
-      auto trackKaFromCasc = candidate.bachelor_as<TracksSel>();                 // kaon <- cascade
-      auto trackKaFromCharm = candidate.bachelorFromCharmBaryon_as<TracksSel>(); // kaon <- charm baryon
+      auto trackV0PosDauId = candidate.posTrackId();                   // positive V0 daughter
+      auto trackV0NegDauId = candidate.negTrackId();                   // negative V0 daughter
+      auto trackKaFromCascId = candidate.bachelorId();                 // kaon <- cascade
+      auto trackKaFromCharmId = candidate.bachelorFromCharmBaryonId(); // pion <- charm baryon
+      auto trackV0PosDau = lfTracks.rawIteratorAt(trackV0PosDauId);
+      auto trackV0NegDau = lfTracks.rawIteratorAt(trackV0NegDauId);
+      auto trackKaFromCasc = lfTracks.rawIteratorAt(trackKaFromCascId);
+      auto trackKaFromCharm = tracks.rawIteratorAt(trackKaFromCharmId);
 
       auto trackPiFromLam = trackV0NegDau;
       auto trackPrFromLam = trackV0PosDau;
@@ -302,7 +308,7 @@ struct HfCandidateSelectorToOmegaKa {
       }
 
       // dcaXY v0 daughters to PV cut
-      if (candidate.dcaXYToPvV0Dau0() < dcaPosToPvMin || candidate.dcaXYToPvV0Dau1() < dcaNegToPvMin) {
+      if (std::abs(candidate.dcaXYToPvV0Dau0()) < dcaPosToPvMin || std::abs(candidate.dcaXYToPvV0Dau1()) < dcaNegToPvMin) {
         resultSelections = false;
         registry.fill(HIST("hSelDcaXYToPvV0Daughters"), 0);
       } else {
@@ -310,7 +316,7 @@ struct HfCandidateSelectorToOmegaKa {
       }
 
       // dcaXY ka <-- cascade to PV cut
-      if (candidate.dcaXYToPvCascDau() < dcaBachToPvMin) {
+      if (std::abs(candidate.dcaXYToPvCascDau()) < dcaBachToPvMin) {
         resultSelections = false;
         registry.fill(HIST("hSelDcaXYToPvKaFromCasc"), 0);
       } else {

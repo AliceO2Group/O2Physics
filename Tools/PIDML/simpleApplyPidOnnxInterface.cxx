@@ -14,14 +14,14 @@
 ///
 /// \author Maja Kabus <mkabus@cern.ch>
 
+#include <string>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "CCDB/CcdbApi.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Tools/PIDML/pidOnnxInterface.h"
-
-#include <string>
 
 using namespace o2;
 using namespace o2::framework;

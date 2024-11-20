@@ -36,9 +36,9 @@ std::vector<std::string> splitString(const std::string& str, char delimiter)
   return ret;
 }
 //_______________________________________________
-EMEventCut* o2::aod::pwgem::photon::eventcuts::GetCut(const char* cutName)
+EMPhotonEventCut* o2::aod::pwgem::photon::eventcuts::GetCut(const char* cutName)
 {
-  EMEventCut* cut = new EMEventCut(cutName, cutName);
+  EMPhotonEventCut* cut = new EMPhotonEventCut(cutName, cutName);
   std::string nameStr = cutName;
 
   if (!nameStr.compare("nocut")) {
@@ -284,198 +284,185 @@ DalitzEECut* o2::aod::pwgem::photon::dalitzeecuts::GetCut(const char* cutName)
   DalitzEECut* cut = new DalitzEECut(cutName, cutName);
   std::string nameStr = cutName;
   // cut name should be like this mee0_120_minpt200_maxeta09_dca20_100_tpchadronbandrej_lowB in unit of MeV.
+  return cut;
 
-  if (!nameStr.compare("nocut")) {
-    // apply kinetic cuts
-    cut->SetTrackPtRange(0.1, 1e+10f);
-    cut->SetTrackEtaRange(-0.9, +0.9);
-
-    // for pair
-    cut->SetMeeRange(0, 1e+10);
-    cut->SetMaxPhivPairMeeDep([](float mee) { return (mee - -0.028) / 0.0185; });
-    cut->ApplyPhiV(false);
-    cut->ApplyPrefilter(false);
-
-    // for track cuts
-    cut->SetMinNCrossedRowsTPC(40);
-    cut->SetMinNCrossedRowsOverFindableClustersTPC(0.8);
-    cut->SetChi2PerClusterTPC(0.0, 4.0);
-    cut->SetChi2PerClusterITS(0.0, 5.0);
-    cut->SetNClustersITS(4, 7);
-    cut->SetMaxDcaXY(1.0);
-    cut->SetMaxDcaZ(1.0);
-    return cut;
-  }
-
-  if (!nameStr.compare("pc_itsib")) {
-    // for pair
-    cut->ApplyPhiV(true);
-    cut->SelectPhotonConversion(true);
-    cut->SetMeeRange(0.f, 0.03f);
-    cut->SetMaxPhivPairMeeDep([](float mee) {
-      return (mee - -0.028) / 0.0185;
-    });
-
-    // for track
-    cut->SetTrackPtRange(0.05f, 1e10f);
-    cut->SetTrackEtaRange(-0.9, +0.9);
-    cut->SetMinNCrossedRowsTPC(40);
-    cut->SetMinNCrossedRowsOverFindableClustersTPC(0.8);
-    cut->SetChi2PerClusterTPC(0.0, 4.0);
-    cut->SetChi2PerClusterITS(0.0, 5.0);
-    cut->SetNClustersITS(2, 7);
-    cut->SetMaxDcaXY(1.0);
-    cut->SetMaxDcaZ(1.0);
-
-    // for PID
-    cut->SetPIDScheme(static_cast<int>(DalitzEECut::PIDSchemes::kTPConly));
-    cut->SetTOFbetaRange(true, 0.0, 0.95);
-    cut->SetTPCNsigmaElRange(-3, +3);
-    cut->SetTPCNsigmaPiRange(0, 0);
-    return cut;
-  }
-
-  float min_mass = 0.0;
-  float max_mass = 1e+10;
-  float min_pt = 0.05;
-  float max_eta = 0.9;
-  float min_dca3d_pair = 0.0;
-  float max_dca3d_pair = 1e+10;
-  std::vector<std::string> tmp = splitString(nameStr, '_');
-  for (size_t i = 0; i < tmp.size(); i++) {
-    // printf("string = %s , num = %d\n", tmp[i].data(), customAtoi(tmp[i]));
-    if (tmp[i].find("mee") != std::string::npos || tmp[i].find("mmumu") != std::string::npos) {
-      min_mass = static_cast<float>(customAtoi(tmp[i])) * 1e-3;     // convert MeV to GeV
-      max_mass = static_cast<float>(customAtoi(tmp[i + 1])) * 1e-3; // convert MeV to GeV
-    }
-    if (tmp[i].find("minpt") != std::string::npos) {
-      min_pt = static_cast<float>(customAtoi(tmp[i])) * 1e-3; // convert MeV to GeV
-    }
-    if (tmp[i].find("maxeta") != std::string::npos) {
-      max_eta = static_cast<float>(customAtoi(tmp[i])) * 0.1;
-    }
-    if (tmp[i].find("dca") != std::string::npos) {
-      min_dca3d_pair = static_cast<float>(customAtoi(tmp[i])) * 0.1;     // 3d dca in sigma
-      max_dca3d_pair = static_cast<float>(customAtoi(tmp[i + 1])) * 0.1; // 3d dca in sigma
-    }
-  } // end of split string loop
-
-  // apply kinetic cuts
-  cut->SetTrackPtRange(min_pt, 1e+10f);
-  cut->SetTrackEtaRange(-max_eta, +max_eta);
-
-  // for pair
-  cut->SetMeeRange(min_mass, max_mass);
-  cut->SetMaxPhivPairMeeDep([](float mee) { return (mee - -0.028) / 0.0185; });
-  cut->SetPairDCARange(min_dca3d_pair, max_dca3d_pair); // in sigma
-
-  cut->ApplyPhiV(true);
-  if (nameStr.find("wophiv") != std::string::npos) {
-    cut->ApplyPhiV(false);
-  } else if (nameStr.find("wphiv") != std::string::npos) {
-    cut->ApplyPhiV(true);
-  }
-
-  cut->ApplyPrefilter(false);
-  if (nameStr.find("wpf") != std::string::npos) {
-    cut->ApplyPrefilter(true);
-  } else if (nameStr.find("wopf") != std::string::npos) {
-    cut->ApplyPrefilter(false);
-  }
-
-  // for track cuts
-  cut->SetMinNCrossedRowsTPC(100);
-  cut->SetMinNCrossedRowsOverFindableClustersTPC(0.8);
-  cut->SetChi2PerClusterTPC(0.0, 4.0);
-  cut->SetChi2PerClusterITS(0.0, 5.0);
-  cut->SetNClustersITS(5, 7);
-  cut->SetMeanClusterSizeITSob(0, 16);
-  cut->SetMaxDcaXY(1.0);
-  cut->SetMaxDcaZ(1.0);
-
-  if (nameStr.find("lowB") != std::string::npos) {
-    cut->SetMinNCrossedRowsTPC(40);
-    cut->SetMinNCrossedRowsOverFindableClustersTPC(0.8);
-    cut->SetChi2PerClusterTPC(0.0, 4.0);
-    cut->SetChi2PerClusterITS(0.0, 5.0);
-    cut->SetNClustersITS(4, 7);
-    cut->SetMeanClusterSizeITSob(0, 16);
-    cut->SetMaxDcaXY(1.0);
-    cut->SetMaxDcaZ(1.0);
-  } else if (nameStr.find("nominalB") != std::string::npos) {
-    cut->SetMinNCrossedRowsTPC(100);
-    cut->SetMinNCrossedRowsOverFindableClustersTPC(0.8);
-    cut->SetChi2PerClusterTPC(0.0, 4.0);
-    cut->SetChi2PerClusterITS(0.0, 5.0);
-    cut->SetNClustersITS(5, 7);
-    cut->SetMeanClusterSizeITSob(0, 16);
-    cut->SetMaxDcaXY(1.0);
-    cut->SetMaxDcaZ(1.0);
-  }
-
-  // long pid name should be top, because of if--else if conditions.
-
-  if (nameStr.find("mee") != std::string::npos) { // for electron
-    if (nameStr.find("tpcmupikaprrejortofreq") != std::string::npos) {
-      cut->SetPIDScheme(static_cast<int>(DalitzEECut::PIDSchemes::kTPChadrejORTOFreq));
-      cut->SetTOFbetaRange(true, 0.0, 0.95);
-      cut->SetTPCNsigmaElRange(-2, +3);
-      cut->SetTPCNsigmaPiRange(-3, +3);
-      cut->SetTPCNsigmaKaRange(-3, +3);
-      cut->SetTPCNsigmaPrRange(-3, +3);
-      cut->SetTOFNsigmaElRange(-3, +3);
-      cut->SetTPCNsigmaMuRange(-2, +2);
-      cut->SetMuonExclusionTPC(true);
-      return cut;
-    } else if (nameStr.find("tpcpikaprrejortofreq") != std::string::npos) {
-      cut->SetPIDScheme(static_cast<int>(DalitzEECut::PIDSchemes::kTPChadrejORTOFreq));
-      cut->SetTOFbetaRange(true, 0.0, 0.95);
-      cut->SetTPCNsigmaElRange(-2, +3);
-      cut->SetTPCNsigmaPiRange(-3, +3);
-      cut->SetTPCNsigmaKaRange(-3, +3);
-      cut->SetTPCNsigmaPrRange(-3, +3);
-      cut->SetTOFNsigmaElRange(-3, +3);
-      return cut;
-    } else if (nameStr.find("tpconly") != std::string::npos) {
-      cut->SetPIDScheme(static_cast<int>(DalitzEECut::PIDSchemes::kTPConly));
-      cut->SetTOFbetaRange(true, 0.0, 0.95);
-      cut->SetTPCNsigmaElRange(-2, +3);
-      cut->SetTPCNsigmaPiRange(-3, +3);
-      return cut;
-    } else if (nameStr.find("tpcelonly") != std::string::npos) {
-      cut->SetPIDScheme(static_cast<int>(DalitzEECut::PIDSchemes::kTPConly));
-      cut->SetTOFbetaRange(true, 0.0, 0.95);
-      cut->SetTPCNsigmaElRange(-2, +3);
-      cut->SetTPCNsigmaPiRange(0, 0);
-      return cut;
-    } else if (nameStr.find("mleidlocal") != std::string::npos) {
-      // cut->EnableEIDML(false, "/Users/d/dsekihat/pidml/", false, -1, "eid_lightgbm.onnx");
-      return cut;
-    } else if (nameStr.find("mleid") != std::string::npos) {
-      // cut->EnableEIDML(true, "/Users/d/dsekihat/pidml/", false, -1, "eid_lightgbm.onnx");
-      return cut;
-    } else { // not match electron cut
-      LOGF(info, Form("Did not find electron ID cut %s", cutName));
-      return cut;
-    }
-  } else if (nameStr.find("mmumu") != std::string::npos) { // for muon
-    if (nameStr.find("tpctof") != std::string::npos) {
-      // for PID
-      cut->SetPIDScheme(static_cast<int>(DalitzEECut::PIDSchemes::kMuon_lowB));
-      cut->SetTPCNsigmaElRange(-2, +2); // exclusion
-      cut->SetTPCNsigmaMuRange(-3, +3);
-      cut->SetTPCNsigmaPiRange(-3, +1e+10);
-      cut->SetTOFNsigmaMuRange(-3, +3);
-      cut->SetTOFNsigmaPiRange(-3, +1e+10);
-      return cut;
-    } else { // not match muon cut
-      LOGF(info, Form("Did not find muon ID cut %s", cutName));
-      return cut;
-    }
-  } else { // match neither electron nor electron
-    LOGF(info, Form("Did not find any pid cut %s", cutName));
-    return cut;
-  }
+  //  if (!nameStr.compare("nocut")) {
+  //    // apply kinetic cuts
+  //    cut->SetTrackPtRange(0.1, 1e+10f);
+  //    cut->SetTrackEtaRange(-0.9, +0.9);
+  //
+  //    // for pair
+  //    cut->SetMeeRange(0, 1e+10);
+  //    cut->SetMaxPhivPairMeeDep([](float mee) { return (mee - -0.028) / 0.0185; });
+  //    cut->ApplyPhiV(false);
+  //    cut->ApplyPrefilter(false);
+  //
+  //    // for track cuts
+  //    cut->SetMinNCrossedRowsTPC(40);
+  //    cut->SetMinNCrossedRowsOverFindableClustersTPC(0.8);
+  //    cut->SetChi2PerClusterTPC(0.0, 4.0);
+  //    cut->SetChi2PerClusterITS(0.0, 5.0);
+  //    cut->SetNClustersITS(4, 7);
+  //    cut->SetMaxDcaXY(1.0);
+  //    cut->SetMaxDcaZ(1.0);
+  //    return cut;
+  //  }
+  //
+  //  if (!nameStr.compare("pc_itsib")) {
+  //    // for pair
+  //    cut->ApplyPhiV(true);
+  //    cut->SelectPhotonConversion(true);
+  //    cut->SetMeeRange(0.f, 0.03f);
+  //    cut->SetMaxPhivPairMeeDep([](float mee) {
+  //      return (mee - -0.028) / 0.0185;
+  //    });
+  //
+  //    // for track
+  //    cut->SetTrackPtRange(0.05f, 1e10f);
+  //    cut->SetTrackEtaRange(-0.9, +0.9);
+  //    cut->SetMinNCrossedRowsTPC(40);
+  //    cut->SetMinNCrossedRowsOverFindableClustersTPC(0.8);
+  //    cut->SetChi2PerClusterTPC(0.0, 4.0);
+  //    cut->SetChi2PerClusterITS(0.0, 5.0);
+  //    cut->SetNClustersITS(2, 7);
+  //    cut->SetMaxDcaXY(1.0);
+  //    cut->SetMaxDcaZ(1.0);
+  //
+  //    // for PID
+  //    cut->SetPIDScheme(static_cast<int>(DalitzEECut::PIDSchemes::kTPConly));
+  //    cut->SetTOFbetaRange(true, 0.0, 0.95);
+  //    cut->SetTPCNsigmaElRange(-3, +3);
+  //    cut->SetTPCNsigmaPiRange(0, 0);
+  //    return cut;
+  //  }
+  //
+  //  float min_mass = 0.0;
+  //  float max_mass = 1e+10;
+  //  float min_pt = 0.05;
+  //  float max_eta = 0.9;
+  //  float min_dca3d_pair = 0.0;
+  //  float max_dca3d_pair = 1e+10;
+  //  std::vector<std::string> tmp = splitString(nameStr, '_');
+  //  for (size_t i = 0; i < tmp.size(); i++) {
+  //    // printf("string = %s , num = %d\n", tmp[i].data(), customAtoi(tmp[i]));
+  //    if (tmp[i].find("mee") != std::string::npos || tmp[i].find("mmumu") != std::string::npos) {
+  //      min_mass = static_cast<float>(customAtoi(tmp[i])) * 1e-3;     // convert MeV to GeV
+  //      max_mass = static_cast<float>(customAtoi(tmp[i + 1])) * 1e-3; // convert MeV to GeV
+  //    }
+  //    if (tmp[i].find("minpt") != std::string::npos) {
+  //      min_pt = static_cast<float>(customAtoi(tmp[i])) * 1e-3; // convert MeV to GeV
+  //    }
+  //    if (tmp[i].find("maxeta") != std::string::npos) {
+  //      max_eta = static_cast<float>(customAtoi(tmp[i])) * 0.1;
+  //    }
+  //    if (tmp[i].find("dca") != std::string::npos) {
+  //      min_dca3d_pair = static_cast<float>(customAtoi(tmp[i])) * 0.1;     // 3d dca in sigma
+  //      max_dca3d_pair = static_cast<float>(customAtoi(tmp[i + 1])) * 0.1; // 3d dca in sigma
+  //    }
+  //  } // end of split string loop
+  //
+  //  // apply kinetic cuts
+  //  cut->SetTrackPtRange(min_pt, 1e+10f);
+  //  cut->SetTrackEtaRange(-max_eta, +max_eta);
+  //
+  //  // for pair
+  //  cut->SetMeeRange(min_mass, max_mass);
+  //  cut->SetMaxPhivPairMeeDep([](float mee) { return (mee - -0.028) / 0.0185; });
+  //  cut->SetPairDCARange(min_dca3d_pair, max_dca3d_pair); // in sigma
+  //
+  //  cut->ApplyPhiV(true);
+  //  if (nameStr.find("wophiv") != std::string::npos) {
+  //    cut->ApplyPhiV(false);
+  //  } else if (nameStr.find("wphiv") != std::string::npos) {
+  //    cut->ApplyPhiV(true);
+  //  }
+  //
+  //  cut->ApplyPrefilter(false);
+  //  if (nameStr.find("wpf") != std::string::npos) {
+  //    cut->ApplyPrefilter(true);
+  //  } else if (nameStr.find("wopf") != std::string::npos) {
+  //    cut->ApplyPrefilter(false);
+  //  }
+  //
+  //  // for track cuts
+  //  cut->SetMinNCrossedRowsTPC(100);
+  //  cut->SetMinNCrossedRowsOverFindableClustersTPC(0.8);
+  //  cut->SetChi2PerClusterTPC(0.0, 4.0);
+  //  cut->SetChi2PerClusterITS(0.0, 5.0);
+  //  cut->SetNClustersITS(5, 7);
+  //  cut->SetMeanClusterSizeITSob(0, 16);
+  //  cut->SetMaxDcaXY(1.0);
+  //  cut->SetMaxDcaZ(1.0);
+  //
+  //  if (nameStr.find("lowB") != std::string::npos) {
+  //    cut->SetMinNCrossedRowsTPC(40);
+  //    cut->SetMinNCrossedRowsOverFindableClustersTPC(0.8);
+  //    cut->SetChi2PerClusterTPC(0.0, 4.0);
+  //    cut->SetChi2PerClusterITS(0.0, 5.0);
+  //    cut->SetNClustersITS(4, 7);
+  //    cut->SetMeanClusterSizeITSob(0, 16);
+  //    cut->SetMaxDcaXY(1.0);
+  //    cut->SetMaxDcaZ(1.0);
+  //  } else if (nameStr.find("nominalB") != std::string::npos) {
+  //    cut->SetMinNCrossedRowsTPC(100);
+  //    cut->SetMinNCrossedRowsOverFindableClustersTPC(0.8);
+  //    cut->SetChi2PerClusterTPC(0.0, 4.0);
+  //    cut->SetChi2PerClusterITS(0.0, 5.0);
+  //    cut->SetNClustersITS(5, 7);
+  //    cut->SetMeanClusterSizeITSob(0, 16);
+  //    cut->SetMaxDcaXY(1.0);
+  //    cut->SetMaxDcaZ(1.0);
+  //  }
+  //
+  //  // long pid name should be top, because of if--else if conditions.
+  //
+  //  if (nameStr.find("mee") != std::string::npos) { // for electron
+  //    if (nameStr.find("tpcmupikaprrejortofreq") != std::string::npos) {
+  //      cut->SetPIDScheme(static_cast<int>(DalitzEECut::PIDSchemes::kTPChadrejORTOFreq));
+  //      cut->SetTOFbetaRange(true, 0.0, 0.95);
+  //      cut->SetTPCNsigmaElRange(-2, +3);
+  //      cut->SetTPCNsigmaPiRange(-3, +3);
+  //      cut->SetTPCNsigmaKaRange(-3, +3);
+  //      cut->SetTPCNsigmaPrRange(-3, +3);
+  //      cut->SetTOFNsigmaElRange(-3, +3);
+  //      cut->SetTPCNsigmaMuRange(-2, +2);
+  //      cut->SetMuonExclusionTPC(true);
+  //      return cut;
+  //    } else if (nameStr.find("tpcpikaprrejortofreq") != std::string::npos) {
+  //      cut->SetPIDScheme(static_cast<int>(DalitzEECut::PIDSchemes::kTPChadrejORTOFreq));
+  //      cut->SetTOFbetaRange(true, 0.0, 0.95);
+  //      cut->SetTPCNsigmaElRange(-2, +3);
+  //      cut->SetTPCNsigmaPiRange(-3, +3);
+  //      cut->SetTPCNsigmaKaRange(-3, +3);
+  //      cut->SetTPCNsigmaPrRange(-3, +3);
+  //      cut->SetTOFNsigmaElRange(-3, +3);
+  //      return cut;
+  //    } else if (nameStr.find("tpconly") != std::string::npos) {
+  //      cut->SetPIDScheme(static_cast<int>(DalitzEECut::PIDSchemes::kTPConly));
+  //      cut->SetTOFbetaRange(true, 0.0, 0.95);
+  //      cut->SetTPCNsigmaElRange(-2, +3);
+  //      cut->SetTPCNsigmaPiRange(-3, +3);
+  //      return cut;
+  //    } else if (nameStr.find("tpcelonly") != std::string::npos) {
+  //      cut->SetPIDScheme(static_cast<int>(DalitzEECut::PIDSchemes::kTPConly));
+  //      cut->SetTOFbetaRange(true, 0.0, 0.95);
+  //      cut->SetTPCNsigmaElRange(-2, +3);
+  //      cut->SetTPCNsigmaPiRange(0, 0);
+  //      return cut;
+  //    } else if (nameStr.find("mleidlocal") != std::string::npos) {
+  //      // cut->EnableEIDML(false, "/Users/d/dsekihat/pidml/", false, -1, "eid_lightgbm.onnx");
+  //      return cut;
+  //    } else if (nameStr.find("mleid") != std::string::npos) {
+  //      // cut->EnableEIDML(true, "/Users/d/dsekihat/pidml/", false, -1, "eid_lightgbm.onnx");
+  //      return cut;
+  //    } else { // not match electron cut
+  //      LOGF(info, Form("Did not find electron ID cut %s", cutName));
+  //      return cut;
+  //    }
+  //  } else { // do not match mee
+  //    LOGF(info, Form("Did not find any pid cut %s", cutName));
+  //    return cut;
+  //  }
 }
 
 PHOSPhotonCut* o2::aod::pwgem::photon::phoscuts::GetCut(const char* cutName)

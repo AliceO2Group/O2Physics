@@ -24,7 +24,7 @@ using namespace o2;
 using namespace o2::framework;
 
 // *) Run 3:
-using EventSelection = soa::Join<aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs>;
+using EventSelection = soa::Join<aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs>;
 using CollisionRec = soa::Join<aod::Collisions, EventSelection>::iterator; // use in json "isMC": "true" for "event-selection-task"
 using CollisionRecSim = soa::Join<aod::Collisions, aod::McCollisionLabels, EventSelection>::iterator;
 using CollisionSim = aod::McCollision;
@@ -62,6 +62,7 @@ using CollisionRecSim_Run1 = soa::Join<aod::Collisions, aod::McCollisionLabels, 
 #include <TExMap.h>
 #include <TF1.h>
 #include <TF3.h>
+#include <TObjString.h>
 using namespace std;
 
 // *) Enums:
@@ -93,11 +94,11 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   {
     // *) Trick to avoid name clashes, part 1;
     // *) Default configuration, booking, binning and cuts;
-    // *) Insanity checks;
+    // *) Insanity checks before booking;
     // *) Book random generator;
     // *) Book base list;
     // *) Book all remaining objects;
-    // ...
+    // *) Insanity checks after booking;
     // *) Trick to avoid name clashes, part 2;
 
     // *) Trick to avoid name clashes, part 1:
@@ -105,16 +106,15 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     TH1::AddDirectory(kFALSE);
 
     // *) Default configuration, booking, binning and cuts:
-    DefaultConfiguration();
-    DefaultBooking(); // here I decide only which histograms are booked, not details like binning, etc. That's done later in Book* member functions.
-    DefaultBinning();
-    DefaultCuts(); // Remark: has to be called after DefaultBinning(), since some default cuts are defined through default binning, to ease bookeeping
+    DefaultConfiguration(); // here default values from configurables are taken into account
+    DefaultBooking();       // here I decide only which histograms are booked, not details like binning, etc.
+    DefaultBinning();       // here default values for bins are either hardwired, or values for bins provided via configurables are taken into account
+    DefaultCuts();          // here default values for cuts are either hardwired, or defined through default binning to ease bookeeping,
+                            // or values for cuts provided via configurables are taken into account
+                            // Remark: DefaultCuts() has to be called after DefaultBinning()
 
-    // *) Set what to process - only rec, both rec and sim, only sim:
-    // WhatToProcess(); // yes, this can be called here, after calling all Default* member functions above, because this has an effect only on Book* members functions, and the ones called afterward
-
-    // *) Insanity checks:
-    InsanityChecks();
+    // *) Insanity checks before booking:
+    InsanityChecksBeforeBooking(); // check only harwired values and the ones obtained from configurables
 
     // *) Book random generator:
     delete gRandom;
@@ -134,11 +134,15 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     BookQvectorHistograms();
     BookCorrelationsHistograms();
     BookWeightsHistograms();
+    BookCentralityWeightsHistograms();
     BookNestedLoopsHistograms();
     BookNUAHistograms();
     BookInternalValidationHistograms();
     BookTest0Histograms();
     BookTheRest(); // here I book everything that was not sorted (yet) in the specific functions above
+
+    // *) Insanity checks after booking:
+    InsanityChecksAfterBooking(); // pointers of all local histograms, etc., are available, so I can do insanity checks directly on all booked objects
 
     // *) Trick to avoid name clashes, part 2:
     TH1::AddDirectory(oldHistAddStatus);
@@ -189,7 +193,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   // -------------------------------------------
 
   // C) Process only simulated data:
-  void processSim(CollisionSim const& collision, aod::BCs const&, TracksSim const& tracks)
+  void processSim(CollisionSim const& /*collision*/, aod::BCs const&, TracksSim const& /*tracks*/)
   {
     // Steer<eSim>(collision, tracks); // TBI 20240517 not ready yet, but I do not really need this one urgently, since RecSim is working, and I need that one for efficiencies...
   }
@@ -216,7 +220,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   // -------------------------------------------
 
   // F) Process only converted simulated Run 2 data:
-  void processSim_Run2(CollisionSim const& collision) // TBI 20240517 extend this subscription eventually
+  void processSim_Run2(CollisionSim const& /*collision*/) // TBI 20240517 extend this subscription eventually
   {
     // Steer<eSim_Run2>(collision, tracks); // TBI 20240517 not ready yet, but I do not really need this one urgently, since RecSim_Run2 is working, and I need that one for efficiencies...
   }
@@ -234,7 +238,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   // -------------------------------------------
 
   // H) Process both converted reconstructed and corresponding MC truth simulated Run 1 data;
-  void processRecSim_Run1(CollisionRecSim_Run1 const& collision, aod::BCs const&, TracksRecSim const& tracks, aod::McParticles const&, aod::McCollisions const&)
+  void processRecSim_Run1(CollisionRecSim_Run1 const& /*collision*/, aod::BCs const&, TracksRecSim const& /*tracks*/, aod::McParticles const&, aod::McCollisions const&)
   {
     // Steer<eRecAndSim_Run1>(collision, tracks); // TBI 20240517 not ready yet, but for benchmarking in any case I need only "Rec"
   }

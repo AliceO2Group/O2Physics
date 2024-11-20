@@ -60,6 +60,7 @@ struct TrackSelectionFlags {
   static constexpr flagtype kGlobalTrackWoTPCCluster = kQualityTracksWoTPCCluster | kPrimaryTracks | kInAcceptanceTracks;
   static constexpr flagtype kGlobalTrackWoPtEta = kQualityTracks | kPrimaryTracks;
   static constexpr flagtype kGlobalTrackWoDCA = kQualityTracks | kInAcceptanceTracks;
+  static constexpr flagtype kGlobalTrackWoDCAxy = kQualityTracks | kInAcceptanceTracks | kDCAz;
   static constexpr flagtype kGlobalTrackWoDCATPCCluster = kQualityTracksWoTPCCluster | kInAcceptanceTracks;
 
   /// @brief Function to check flag content

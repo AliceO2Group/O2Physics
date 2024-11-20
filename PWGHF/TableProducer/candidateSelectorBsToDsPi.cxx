@@ -15,6 +15,9 @@
 ///
 /// \author Phil Stahlhut <phil.lennart.stahlhut@cern.ch>
 
+#include <string>
+#include <vector>
+
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/RunningWorkflowInfo.h"
@@ -59,7 +62,7 @@ struct HfCandidateSelectorBsToDsPi {
   Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{hf_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
   Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{hf_cuts_ml::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
   Configurable<LabeledArray<double>> cutsMl{"cutsMl", {hf_cuts_ml::cuts[0], hf_cuts_ml::nBinsPt, hf_cuts_ml::nCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
-  Configurable<int8_t> nClassesMl{"nClassesMl", (int8_t)hf_cuts_ml::nCutScores, "Number of classes in ML model"};
+  Configurable<int> nClassesMl{"nClassesMl", static_cast<int>(hf_cuts_ml::nCutScores), "Number of classes in ML model"};
   // CCDB configuration
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"EventFiltering/PWGHF/BDTBs"}, "Paths of models on CCDB"};
@@ -116,7 +119,6 @@ struct HfCandidateSelectorBsToDsPi {
         hfMlResponse.setModelPathsLocal(onnxFileNames);
       }
       hfMlResponse.init();
-      outputMl.assign(((std::vector<int>)cutDirMl).size(), -1.f); // dummy value for ML output
     }
 
     int selectionFlagDs = -1;
@@ -147,19 +149,9 @@ struct HfCandidateSelectorBsToDsPi {
   {
     for (const auto& hfCandBs : hfCandsBs) {
       int statusBsToDsPi = 0;
+      outputMl.clear();
       auto ptCandBs = hfCandBs.pt();
 
-      // check if flagged as Bs → Ds π
-      if (!TESTBIT(hfCandBs.hfflag(), hf_cand_bs::DecayType::BsToDsPi)) {
-        hfSelBsToDsPiCandidate(statusBsToDsPi);
-        if (applyMl) {
-          hfMlBsToDsPiCandidate(outputMl);
-        }
-        if (activateQA) {
-          registry.fill(HIST("hSelections"), 1, ptCandBs);
-        }
-        continue;
-      }
       SETBIT(statusBsToDsPi, SelectionStep::RecoSkims); // RecoSkims = 0 --> statusBsToDsPi = 1
       if (activateQA) {
         registry.fill(HIST("hSelections"), 2 + SelectionStep::RecoSkims, ptCandBs);

@@ -44,79 +44,31 @@ struct TriggerCorrelationsTask {
 
   HistogramRegistry registry;
 
-  int nChTrigs;
-  int nFullTrigs;
-  int nChHFTrigs;
-  int nAllTrigs;
-
-  int chTrigOffset;
-  int fullTrigOffset;
-  int chHFTrigOffset;
-
+  std::vector<int> triggerMaskBits;
   void init(o2::framework::InitContext&)
   {
-    std::vector<std::string> trigSelChLabels = {"chargedLow", "chargedHigh", "trackLowPt", "trackHighPt"};
-    std::vector<std::string> trigSelFullLabels = {"fullHigh", "fullLow", "neutralHigh", "neutralLow", "gammaVeryHighEMCAL", "gammaHighEMCAL", "gammaLowEMCAL", "gammaVeryLowEMCAL", "gammaVeryHighDCAL", "gammaHighDCAL", "gammaLowDCAL", "gammaVeryLowDCAL"};
-    std::vector<std::string> trigSelChHFLabels = {"chargedD0Low", "chargedD0High", "chargedLcLow", "chargedLcHigh"};
-    nChTrigs = trigSelChLabels.size();
-    nFullTrigs = trigSelFullLabels.size();
-    nChHFTrigs = trigSelChHFLabels.size();
-    nAllTrigs = nChTrigs + nFullTrigs + nChHFTrigs;
-    chTrigOffset = 0;
-    fullTrigOffset = chTrigOffset + nChTrigs;
-    chHFTrigOffset = fullTrigOffset + nFullTrigs;
-    registry.add("triggerCorrelations", "Correlation between jet triggers", HistType::kTH2D, {{nAllTrigs, -0.5, static_cast<double>(nAllTrigs) - 0.5, "primary trigger"}, {nAllTrigs, -0.5, static_cast<double>(nAllTrigs) - 0.5, "secondary trigger"}});
+    triggerMaskBits = jetderiveddatautilities::initialiseTriggerMaskBits(jetderiveddatautilities::JTriggerMasks);
+
+    std::vector<std::string> trigSelLabels = {"JetChLowPt", "JetChHighPt", "TrackLowPt", "TrackHighPt", "JetD0ChLowPt", "JetD0ChHighPt", "JetLcChLowPt", "JetLcChHighPt", "EMCALReadout", "JetFullHighPt", "JetFullLowPt", "JetNeutralHighPt", "JetNeutralLowPt", "GammaVeryHighPtEMCAL", "GammaVeryHighPtDCAL", "GammaHighPtEMCAL", "GammaHighPtDCAL", "GammaLowPtEMCAL", "GammaLowPtDCAL", "GammaVeryLowPtEMCAL", "GammaVeryLowPtDCAL"};
+    registry.add("triggerCorrelations", "Correlation between jet triggers", HistType::kTH2D, {{static_cast<int>(trigSelLabels.size()), -0.5, static_cast<double>(trigSelLabels.size()) - 0.5, "primary trigger"}, {static_cast<int>(trigSelLabels.size()), -0.5, static_cast<double>(trigSelLabels.size()) - 0.5, "secondary trigger"}});
     auto triggerCorrelation = registry.get<TH2>(HIST("triggerCorrelations"));
-    for (auto iChTrigs = 0; iChTrigs < nChTrigs; iChTrigs++) {
-      triggerCorrelation->GetXaxis()->SetBinLabel(iChTrigs + chTrigOffset + 1, trigSelChLabels[iChTrigs].data());
-      triggerCorrelation->GetYaxis()->SetBinLabel(iChTrigs + chTrigOffset + 1, trigSelChLabels[iChTrigs].data());
-    }
-    for (auto iFullTrigs = 0; iFullTrigs < nFullTrigs; iFullTrigs++) {
-      triggerCorrelation->GetXaxis()->SetBinLabel(iFullTrigs + fullTrigOffset + 1, trigSelFullLabels[iFullTrigs].data());
-      triggerCorrelation->GetYaxis()->SetBinLabel(iFullTrigs + fullTrigOffset + 1, trigSelFullLabels[iFullTrigs].data());
-    }
-    for (auto iChHFTrigs = 0; iChHFTrigs < nChHFTrigs; iChHFTrigs++) {
-      triggerCorrelation->GetXaxis()->SetBinLabel(iChHFTrigs + chHFTrigOffset + 1, trigSelChHFLabels[iChHFTrigs].data());
-      triggerCorrelation->GetYaxis()->SetBinLabel(iChHFTrigs + chHFTrigOffset + 1, trigSelChHFLabels[iChHFTrigs].data());
+    for (std::vector<std::string>::size_type iTrigs = 0; iTrigs < trigSelLabels.size(); iTrigs++) {
+      triggerCorrelation->GetXaxis()->SetBinLabel(iTrigs + 1, trigSelLabels[iTrigs].data());
+      triggerCorrelation->GetYaxis()->SetBinLabel(iTrigs + 1, trigSelLabels[iTrigs].data());
     }
   }
 
   template <typename T>
-  void fillCorrelationsHistogram(T const& collision, bool fill = false, int iTrig = -1)
+  void fillCorrelationsHistogram(T const& collision, bool fill = false, int iCurrentTrig = -1)
   {
-
-    for (auto iChTrigs = 0; iChTrigs < nChTrigs; iChTrigs++) {
+    for (std::vector<int>::size_type iTrig = 0; iTrig < triggerMaskBits.size(); iTrig++) {
       if (fill) {
-        if (jetderiveddatautilities::selectChargedTrigger(collision, iChTrigs + 1)) {
-          registry.fill(HIST("triggerCorrelations"), iTrig, iChTrigs + chTrigOffset);
+        if (jetderiveddatautilities::selectTrigger(collision, triggerMaskBits[iTrig])) {
+          registry.fill(HIST("triggerCorrelations"), iCurrentTrig, iTrig);
         }
       } else {
-        if (jetderiveddatautilities::selectChargedTrigger(collision, iChTrigs + 1)) {
-          fillCorrelationsHistogram(collision, true, iChTrigs + chTrigOffset);
-        }
-      }
-    }
-
-    for (auto iFullTrigs = 0; iFullTrigs < nFullTrigs; iFullTrigs++) {
-      if (fill) {
-        if (jetderiveddatautilities::selectFullTrigger(collision, iFullTrigs + 1)) {
-          registry.fill(HIST("triggerCorrelations"), iTrig, iFullTrigs + fullTrigOffset);
-        }
-      } else {
-        if (jetderiveddatautilities::selectFullTrigger(collision, iFullTrigs + 1)) {
-          fillCorrelationsHistogram(collision, true, iFullTrigs + fullTrigOffset);
-        }
-      }
-    }
-
-    for (auto iChHFTrigs = 0; iChHFTrigs < nFullTrigs; iChHFTrigs++) {
-      if (fill) {
-        if (jetderiveddatautilities::selectChargedHFTrigger(collision, iChHFTrigs + 1)) {
-          registry.fill(HIST("triggerCorrelations"), iTrig, iChHFTrigs + chHFTrigOffset);
-        }
-      } else {
-        if (jetderiveddatautilities::selectChargedHFTrigger(collision, iChHFTrigs + 1)) {
-          fillCorrelationsHistogram(collision, true, iChHFTrigs + chHFTrigOffset);
+        if (jetderiveddatautilities::selectTrigger(collision, triggerMaskBits[iTrig])) {
+          fillCorrelationsHistogram(collision, true, iTrig);
         }
       }
     }

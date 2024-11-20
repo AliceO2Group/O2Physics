@@ -49,7 +49,7 @@ struct tpcSpectraTinyPiKaPr {
   template <std::size_t i, typename T>
   void fillParticleHistos(const T& track, const float& nsigma)
   {
-    if (abs(nsigma) > cfgNSigmaCut) {
+    if (std::abs(nsigma) > cfgNSigmaCut) {
       return;
     }
     histos.fill(HIST(hp[i]), track.p());

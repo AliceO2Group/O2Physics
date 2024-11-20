@@ -13,6 +13,8 @@
 #include <utility>
 #include <random>
 #include <iostream>
+#include <memory>
+#include <algorithm>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -321,7 +323,7 @@ struct nucleiEbye {
   }
 
   template <class C, class T, class V0>
-  int fillRecoEvent(C const& collision, T const& tracks, V0 const& V0s, float const& centrality)
+  int fillRecoEvent(C const& /*collision*/, T const& tracks, V0 const& V0s, float const& centrality)
   {
     candidateTracks[0].clear();
     candidateTracks[1].clear();
@@ -357,6 +359,8 @@ struct nucleiEbye {
       histos.fill(HIST("QA/nClsTPC"), track.tpcNcls());
 
       for (int iP{0}; iP < kNpart; ++iP) {
+        if (track.mass() != iP)
+          continue;
         if (trackPt < ptMin[iP] || trackPt > ptMax[iP]) {
           continue;
         }
@@ -607,7 +611,7 @@ struct nucleiEbye {
   }
 
   template <class C, class T, class V0>
-  void fillMcGen(C const& collision, T const& tracks, V0 const& v0s, float const& centrality)
+  void fillMcGen(C const& /*collision*/, T const& tracks, V0 const& v0s, float const& centrality)
   {
 
     tempTracks[0]->Reset();
@@ -673,6 +677,8 @@ struct nucleiEbye {
 
   void processData(aod::CollEbyeTable const& collision, aod::NucleiEbyeTables const& tracks, aod::LambdaEbyeTables const& v0s)
   {
+    if (std::abs(collision.zvtx()) > zVtxMax)
+      return;
     histos.fill(HIST("QA/zVtx"), collision.zvtx());
     fillRecoEvent(collision, tracks, v0s, collision.centrality());
   }
@@ -681,6 +687,8 @@ struct nucleiEbye {
   void processMc(aod::CollEbyeTables const& collisions, aod::McNucleiEbyeTables const& tracksTot, aod::McLambdaEbyeTables const& v0sTot)
   {
     for (auto& collision : collisions) {
+      if (std::abs(collision.zvtx()) > zVtxMax)
+        continue;
       auto tracks = tracksTot.sliceBy(perCollTrack, collision.globalIndex());
       auto v0s = v0sTot.sliceBy(perCollV0s, collision.globalIndex());
       histos.fill(HIST("QA/zVtx"), collision.zvtx());

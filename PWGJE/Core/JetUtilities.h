@@ -144,9 +144,17 @@ float deltaR(T const& A, U const& B)
   float dPhi = RecoDecay::constrainAngle(A.phi() - B.phi(), -M_PI);
   float dEta = A.eta() - B.eta();
 
-  return TMath::Sqrt(dEta * dEta + dPhi * dPhi);
+  return std::sqrt(dEta * dEta + dPhi * dPhi);
 }
+// same as deltaR but explicit specification of the eta and phi components
+template <typename T, typename U, typename V, typename W>
+float deltaR(T const& eta1, U const& phi1, V const& eta2, W const& phi2)
+{
+  float dPhi = RecoDecay::constrainAngle(phi1 - phi2, -M_PI);
+  float dEta = eta1 - eta2;
 
+  return std::sqrt(dEta * dEta + dPhi * dPhi);
+}
 }; // namespace jetutilities
 
 #endif // PWGJE_CORE_JETUTILITIES_H_

@@ -26,8 +26,8 @@
 using namespace o2;
 using namespace o2::aod;
 
-using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
-using MyV0Photon = MyV0Photons::iterator;
+// using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
+// using MyV0Photon = MyV0Photons::iterator;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

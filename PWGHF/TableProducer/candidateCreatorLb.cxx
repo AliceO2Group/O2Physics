@@ -141,7 +141,7 @@ struct HfCandidateCreatorLb {
           continue;
         }
       } catch (const std::runtime_error& error) {
-        LOG(info) << "Run time error found: " << error.what() << ". DCFitterN cannot work, skipping the candidate.";
+        LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN cannot work, skipping the candidate.";
         hCandidatesLc->Fill(SVFitting::Fail);
         continue;
       }
@@ -183,7 +183,7 @@ struct HfCandidateCreatorLb {
             continue;
           }
         } catch (const std::runtime_error& error) {
-          LOG(info) << "Run time error found: " << error.what() << ". DCFitterN cannot work, skipping the candidate.";
+          LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN cannot work, skipping the candidate.";
           hCandidatesLb->Fill(SVFitting::Fail);
           continue;
         }
@@ -255,7 +255,7 @@ struct HfCandidateCreatorLbExpressions {
   /// @brief dummy process function, to be run on data
   void process(aod::Tracks const&) {}
 
-  void processMc(aod::HfCand3Prong const&,
+  void processMc(aod::HfCand3Prong const& lcCandidates,
                  aod::TracksWMc const& tracks,
                  aod::McParticles const& mcParticles)
   {
@@ -266,6 +266,7 @@ struct HfCandidateCreatorLbExpressions {
     int8_t debug = 0;
 
     rowCandidateLb->bindExternalIndices(&tracks);
+    rowCandidateLb->bindExternalIndices(&lcCandidates);
 
     // Match reconstructed candidates.
     for (const auto& candidate : *rowCandidateLb) {
