@@ -739,6 +739,7 @@ struct decay3bodyBuilder {
       float dEdxProton;
       float dEdxPion;
       float tpcNsigmaDeuteron = trackBach.tpcNSigmaDe();
+      float tpcNsigmaPionBach = trackBach.tpcNSigmaPi();
       float dEdxDeuteron = trackBach.tpcSignal();
       if (isMatter) { // hypertriton (proton, pi-, deuteron)
         tpcNsigmaProton = trackPos.tpcNSigmaPr();
@@ -1047,12 +1048,8 @@ struct decay3bodyBuilder {
         kfpPion.GetQ(),
         trackBach.sign(),
         // daughter PID
-        tpcNsigmaProton,
-        tpcNsigmaPion,
-        tpcNsigmaDeuteron,
-        dEdxProton,
-        dEdxPion,
-        dEdxDeuteron,
+        tpcNsigmaProton, tpcNsigmaPion, tpcNsigmaDeuteron, tpcNsigmaPionBach,
+        dEdxProton, dEdxPion, dEdxDeuteron,
         tofNSigmaDeuteron,
         averageClusterSizeDeuteron,
         trackBach.pidForTracking());
@@ -1099,12 +1096,8 @@ struct decay3bodyBuilder {
           kfpPion.GetQ(),
           trackBach.sign(),
           // daughter PID
-          tpcNsigmaProton,
-          tpcNsigmaPion,
-          tpcNsigmaDeuteron,
-          dEdxProton,
-          dEdxPion,
-          dEdxDeuteron,
+          tpcNsigmaProton, tpcNsigmaPion, tpcNsigmaDeuteron, tpcNsigmaPionBach,
+          dEdxProton, dEdxPion, dEdxDeuteron,
           tofNSigmaDeuteron,
           averageClusterSizeDeuteron,
           trackBach.pidForTracking());
@@ -1380,7 +1373,6 @@ struct decay3bodyLabelBuilder {
 
 struct decay3bodyInitializer {
   Spawns<aod::Vtx3BodyDatas> vtx3bodydatas;
-  // Spawns<aod::KFVtx3BodyDatas> kfvtx3bodydatas;
   void init(InitContext const&) {}
 };
 
