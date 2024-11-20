@@ -121,7 +121,7 @@ class HFInvMassFitter : public TNamed
   {
     if (mean < meanLowLimit ||
         mean > meanUpLimit) {
-      cout << "Invalid Gaussian mean limmit!" << endl;
+      std::cout << "Invalid Gaussian mean limmit!" << std::endl;
     }
     setInitialGaussianMean(mean);
     mMassLowLimit = meanLowLimit;
@@ -132,7 +132,7 @@ class HFInvMassFitter : public TNamed
   {
     if (mean < meanLowLimit ||
         mean > meanUpLimit) {
-      cout << "Invalid Gaussian mean limmit for reflection!" << endl;
+      std::cout << "Invalid Gaussian mean limmit for reflection!" << std::endl;
     }
     setInitialGaussianMean(mean);
     mMassReflLowLimit = meanLowLimit;
@@ -153,7 +153,7 @@ class HFInvMassFitter : public TNamed
   void setFixSecondGaussianSigma(Double_t sigma)
   {
     if (mTypeOfSgnPdf != DoubleGaus) {
-      cout << "Fit type should be 2Gaus!" << endl;
+      std::cout << "Fit type should be 2Gaus!" << std::endl;
     }
     setInitialSecondGaussianSigma(sigma);
     mFixedSigmaDoubleGaus = kTRUE;
@@ -162,7 +162,7 @@ class HFInvMassFitter : public TNamed
   {
     if (mTypeOfSgnPdf != DoubleGaus &&
         mTypeOfSgnPdf != DoubleGausSigmaRatioPar) {
-      cout << "Fit type should be 2Gaus or 2GausSigmaRatio!" << endl;
+      std::cout << "Fit type should be 2Gaus or 2GausSigmaRatio!" << std::endl;
     }
     setInitialFracDoubleGaus(frac);
     mFixedFracDoubleGaus = kTRUE;
@@ -170,7 +170,7 @@ class HFInvMassFitter : public TNamed
   void setFixRatioToGausSigma(Double_t sigmaFrac)
   {
     if (mTypeOfSgnPdf != DoubleGausSigmaRatioPar) {
-      cout << "Fit type should be set to k2GausSigmaRatioPar!" << endl;
+      std::cout << "Fit type should be set to k2GausSigmaRatioPar!" << std::endl;
     }
     setInitialRatioDoubleGausSigma(sigmaFrac);
     mFixedRatioDoubleGausSigma = kTRUE;

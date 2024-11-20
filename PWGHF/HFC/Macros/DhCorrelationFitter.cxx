@@ -39,6 +39,8 @@
 #include <TMinuit.h>
 #include "DhCorrelationFitter.h"
 
+using namespace std;
+
 DhCorrelationFitter::DhCorrelationFitter() : // default constructor
                                              fIsReflected(kFALSE),
                                              fTypeOfFitFunc(kConstwoGaus),
