@@ -93,29 +93,26 @@ struct FilterCF {
   template <typename TCollision>
   bool keepCollision(TCollision& collision)
   {
-    if (cfgMinMultiplicity > 0) {
-      if (collision.multiplicity() >= cfgMinMultiplicity)
-        return true;
-      else
-        return false;
-    }
+    bool isMultSelected = false;
+    if (collision.multiplicity() >= cfgMinMultiplicity)
+        isMultSelected = true;
 
     if (cfgTrigger == 0) {
       return true;
     } else if (cfgTrigger == 7) {
-      return collision.alias_bit(kINT7) && collision.sel7();
+      return isMultSelected && collision.alias_bit(kINT7) && collision.sel7();
     } else if (cfgTrigger == 8) {
-      return collision.sel8();
+      return isMultSelected && collision.sel8();
     } else if (cfgTrigger == 9) { // relevant only for Pb-Pb
-      return collision.sel8() && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV);
+      return isMultSelected && collision.sel8() && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV);
     } else if (cfgTrigger == 10) { // TVX trigger only (sel8 selection before April, 2024)
-      return collision.selection_bit(aod::evsel::kIsTriggerTVX);
+      return isMultSelected && collision.selection_bit(aod::evsel::kIsTriggerTVX);
     } else if (cfgTrigger == 11) { // sel8 selection for MC
-      return collision.selection_bit(aod::evsel::kIsTriggerTVX) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder);
+      return isMultSelected && collision.selection_bit(aod::evsel::kIsTriggerTVX) && collision.selection_bit(aod::evsel::kNoTimeFrameBorder);
     } else if (cfgTrigger == 12) { // relevant only for Pb-Pb with occupancy cuts and rejection of the collisions which have other events nearby
       int occupancy = collision.trackOccupancyInTimeRange();
       if (occupancy >= 0 && occupancy < 500)
-        return collision.sel8() && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) && collision.selection_bit(aod::evsel::kNoCollInTimeRangeStandard);
+        return isMultSelected && collision.sel8() && collision.selection_bit(aod::evsel::kNoSameBunchPileup) && collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) && collision.selection_bit(aod::evsel::kNoCollInTimeRangeStandard);
       else
         return false;
     }
