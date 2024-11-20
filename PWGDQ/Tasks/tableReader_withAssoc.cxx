@@ -165,6 +165,7 @@ struct AnalysisEventSelection {
   Configurable<std::string> fConfigAddEventHistogram{"cfgAddEventHistogram", "", "Comma separated list of histograms"};
   Configurable<int> fConfigITSROFrameStartBorderMargin{"ITSROFrameStartBorderMargin", -1, "Number of bcs at the start of ITS RO Frame border. Take from CCDB if -1"};
   Configurable<int> fConfigITSROFrameEndBorderMargin{"ITSROFrameEndBorderMargin", -1, "Number of bcs at the end of ITS RO Frame border. Take from CCDB if -1"};
+  Configurable<bool> fConfigRunZorro{"cfgRunZorro", false, "Enable event selection with zorro [WARNING: under debug, do not enable!]"};
   Configurable<string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
 
@@ -248,8 +249,15 @@ struct AnalysisEventSelection {
       bool decision = false;
       fHistMan->FillHistClass("Event_BeforeCuts", VarManager::fgValues); // automatically fill all the histograms in the class Event
       if (fEventCut->IsSelected(VarManager::fgValues)) {
-        fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
-        decision = true;
+        if (fConfigRunZorro) {
+          if (event.tag_bit(56)) { // This is the bit used for the software trigger event selections [TO BE DONE: find a more clear way to use it]
+            fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
+            decision = true;
+          }
+        } else {
+          fHistMan->FillHistClass("Event_AfterCuts", VarManager::fgValues);
+          decision = true;
+        }
       }
       fSelMap[event.globalIndex()] = decision;
       if (fBCCollMap.find(event.globalBC()) == fBCCollMap.end()) {
@@ -1075,8 +1083,8 @@ struct AnalysisSameEventPairing {
                 histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
                 fTrackHistNames[fNCutsBarrel + icut * fNPairCuts + iPairCut] = names;
               } // end loop (pair cuts)
-            }   // end if (pair cuts)
-          }     // end if enableBarrelHistos
+            } // end if (pair cuts)
+          } // end if enableBarrelHistos
         }
       }
     }
@@ -1110,8 +1118,26 @@ struct AnalysisSameEventPairing {
             names.push_back(Form("PairsMuonSEPM_ambiguousOutOfBunch_%s", objArray->At(icut)->GetName()));
             names.push_back(Form("PairsMuonSEPP_ambiguousOutOfBunch_%s", objArray->At(icut)->GetName()));
             names.push_back(Form("PairsMuonSEMM_ambiguousOutOfBunch_%s", objArray->At(icut)->GetName()));
+            names.push_back(Form("PairsMuonSEPM_unambiguous_%s", objArray->At(icut)->GetName()));
+            names.push_back(Form("PairsMuonSEPP_unambiguous_%s", objArray->At(icut)->GetName()));
+            names.push_back(Form("PairsMuonSEMM_unambiguous_%s", objArray->At(icut)->GetName()));
             histNames += Form("%s;%s;%s;", names[(fEnableMuonMixingHistos ? 6 : 3)].Data(), names[(fEnableMuonMixingHistos ? 7 : 4)].Data(), names[(fEnableMuonMixingHistos ? 8 : 5)].Data());
             histNames += Form("%s;%s;%s;", names[(fEnableMuonMixingHistos ? 9 : 6)].Data(), names[(fEnableMuonMixingHistos ? 10 : 7)].Data(), names[(fEnableMuonMixingHistos ? 11 : 8)].Data());
+            histNames += Form("%s;%s;%s;", names[(fEnableMuonMixingHistos ? 12 : 9)].Data(), names[(fEnableMuonMixingHistos ? 13 : 10)].Data(), names[(fEnableMuonMixingHistos ? 14 : 11)].Data());
+            if (fEnableMuonMixingHistos) {
+              names.push_back(Form("PairsMuonMEPM_ambiguousInBunch_%s", objArray->At(icut)->GetName()));
+              names.push_back(Form("PairsMuonMEPP_ambiguousInBunch_%s", objArray->At(icut)->GetName()));
+              names.push_back(Form("PairsMuonMEMM_ambiguousInBunch_%s", objArray->At(icut)->GetName()));
+              names.push_back(Form("PairsMuonMEPM_ambiguousOutOfBunch_%s", objArray->At(icut)->GetName()));
+              names.push_back(Form("PairsMuonMEPP_ambiguousOutOfBunch_%s", objArray->At(icut)->GetName()));
+              names.push_back(Form("PairsMuonMEMM_ambiguousOutOfBunch_%s", objArray->At(icut)->GetName()));
+              names.push_back(Form("PairsMuonMEPM_unambiguous_%s", objArray->At(icut)->GetName()));
+              names.push_back(Form("PairsMuonMEPP_unambiguous_%s", objArray->At(icut)->GetName()));
+              names.push_back(Form("PairsMuonMEMM_unambiguous_%s", objArray->At(icut)->GetName()));
+              histNames += Form("%s;%s;%s;", names[15].Data(), names[16].Data(), names[17].Data());
+              histNames += Form("%s;%s;%s;", names[18].Data(), names[19].Data(), names[20].Data());
+              histNames += Form("%s;%s;%s;", names[21].Data(), names[22].Data(), names[23].Data());
+            }
             fMuonHistNames[icut] = names;
 
             TString cutNamesStr = fConfigPairCuts.value;
@@ -1126,7 +1152,7 @@ struct AnalysisSameEventPairing {
                 histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
                 fMuonHistNames[fNCutsMuon + icut * fNCutsMuon + iPairCut] = names;
               } // end loop (pair cuts)
-            }   // end if (pair cuts)
+            } // end if (pair cuts)
           }
         }
       }
@@ -1467,10 +1493,12 @@ struct AnalysisSameEventPairing {
         // Fill histograms
         bool isAmbiInBunch = false;
         bool isAmbiOutOfBunch = false;
+        bool isUnambiguous = false;
         for (int icut = 0; icut < ncuts; icut++) {
           if (twoTrackFilter & (uint32_t(1) << icut)) {
             isAmbiInBunch = (twoTrackFilter & (uint32_t(1) << 28)) || (twoTrackFilter & (uint32_t(1) << 29));
             isAmbiOutOfBunch = (twoTrackFilter & (uint32_t(1) << 30)) || (twoTrackFilter & (uint32_t(1) << 31));
+            isUnambiguous = !((twoTrackFilter & (uint32_t(1) << 28)) || (twoTrackFilter & (uint32_t(1) << 29)) || (twoTrackFilter & (uint32_t(1) << 30)) || (twoTrackFilter & (uint32_t(1) << 31)));
             if (sign1 * sign2 < 0) {
               fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues);
               if (isAmbiInBunch) {
@@ -1478,6 +1506,9 @@ struct AnalysisSameEventPairing {
               }
               if (isAmbiOutOfBunch) {
                 fHistMan->FillHistClass(histNames[icut][3 + histIdxOffset + 3].Data(), VarManager::fgValues);
+              }
+              if (isUnambiguous) {
+                fHistMan->FillHistClass(histNames[icut][3 + histIdxOffset + 6].Data(), VarManager::fgValues);
               }
             } else {
               if (sign1 > 0) {
@@ -1488,6 +1519,9 @@ struct AnalysisSameEventPairing {
                 if (isAmbiOutOfBunch) {
                   fHistMan->FillHistClass(histNames[icut][4 + histIdxOffset + 3].Data(), VarManager::fgValues);
                 }
+                if (isUnambiguous) {
+                  fHistMan->FillHistClass(histNames[icut][4 + histIdxOffset + 6].Data(), VarManager::fgValues);
+                }
               } else {
                 fHistMan->FillHistClass(histNames[icut][2].Data(), VarManager::fgValues);
                 if (isAmbiInBunch) {
@@ -1495,6 +1529,9 @@ struct AnalysisSameEventPairing {
                 }
                 if (isAmbiOutOfBunch) {
                   fHistMan->FillHistClass(histNames[icut][5 + histIdxOffset + 3].Data(), VarManager::fgValues);
+                }
+                if (isUnambiguous) {
+                  fHistMan->FillHistClass(histNames[icut][5 + histIdxOffset + 6].Data(), VarManager::fgValues);
                 }
               }
             }
@@ -1514,8 +1551,8 @@ struct AnalysisSameEventPairing {
             } // end loop (pair cuts)
           }
         } // end loop (cuts)
-      }   // end loop over pairs of track associations
-    }     // end loop over events
+      } // end loop over pairs of track associations
+    } // end loop over events
   }
 
   template <int TPairType, uint32_t TEventFillMap, typename TAssoc1, typename TAssoc2, typename TTracks1, typename TTracks2>
@@ -1557,6 +1594,19 @@ struct AnalysisSameEventPairing {
             VarManager::FillPairVn<TPairType>(t1, t2);
           }
           pairSign = t1.sign() + t2.sign();
+          // store the ambiguity number of the two dilepton legs in the last 4 digits of the two-track filter
+          if (t1.muonAmbiguityInBunch() > 1) {
+            twoTrackFilter |= (uint32_t(1) << 28);
+          }
+          if (t2.muonAmbiguityInBunch() > 1) {
+            twoTrackFilter |= (uint32_t(1) << 29);
+          }
+          if (t1.muonAmbiguityOutOfBunch() > 1) {
+            twoTrackFilter |= (uint32_t(1) << 30);
+          }
+          if (t2.muonAmbiguityOutOfBunch() > 1) {
+            twoTrackFilter |= (uint32_t(1) << 31);
+          }
           ncuts = fNCutsMuon;
           histNames = fMuonHistNames;
         }
@@ -1564,22 +1614,55 @@ struct AnalysisSameEventPairing {
           twoTrackFilter = a1.isBarrelSelected_raw() & a1.isBarrelSelectedPrefilter_raw() & a2.isMuonSelected_raw() & fTrackFilterMask;
         }*/
 
+        bool isAmbiInBunch = false;
+        bool isAmbiOutOfBunch = false;
+        bool isUnambiguous = false;
         for (int icut = 0; icut < ncuts; icut++) {
           if (!(twoTrackFilter & (uint32_t(1) << icut))) {
             continue; // cut not passed
           }
+          isAmbiInBunch = (twoTrackFilter & (uint32_t(1) << 28)) || (twoTrackFilter & (uint32_t(1) << 29));
+          isAmbiOutOfBunch = (twoTrackFilter & (uint32_t(1) << 30)) || (twoTrackFilter & (uint32_t(1) << 31));
+          isUnambiguous = !((twoTrackFilter & (uint32_t(1) << 28)) || (twoTrackFilter & (uint32_t(1) << 29)) || (twoTrackFilter & (uint32_t(1) << 30)) || (twoTrackFilter & (uint32_t(1) << 31)));
           if (pairSign == 0) {
             fHistMan->FillHistClass(histNames[icut][3].Data(), VarManager::fgValues);
+            if (isAmbiInBunch) {
+              fHistMan->FillHistClass(histNames[icut][15].Data(), VarManager::fgValues);
+            }
+            if (isAmbiOutOfBunch) {
+              fHistMan->FillHistClass(histNames[icut][18].Data(), VarManager::fgValues);
+            }
+            if (isUnambiguous) {
+              fHistMan->FillHistClass(histNames[icut][21].Data(), VarManager::fgValues);
+            }
           } else {
             if (pairSign > 0) {
               fHistMan->FillHistClass(histNames[icut][4].Data(), VarManager::fgValues);
+              if (isAmbiInBunch) {
+                fHistMan->FillHistClass(histNames[icut][16].Data(), VarManager::fgValues);
+              }
+              if (isAmbiOutOfBunch) {
+                fHistMan->FillHistClass(histNames[icut][19].Data(), VarManager::fgValues);
+              }
+              if (isUnambiguous) {
+                fHistMan->FillHistClass(histNames[icut][22].Data(), VarManager::fgValues);
+              }
             } else {
               fHistMan->FillHistClass(histNames[icut][5].Data(), VarManager::fgValues);
+              if (isAmbiInBunch) {
+                fHistMan->FillHistClass(histNames[icut][17].Data(), VarManager::fgValues);
+              }
+              if (isAmbiOutOfBunch) {
+                fHistMan->FillHistClass(histNames[icut][20].Data(), VarManager::fgValues);
+              }
+              if (isUnambiguous) {
+                fHistMan->FillHistClass(histNames[icut][23].Data(), VarManager::fgValues);
+              }
             }
           }
         } // end for (cuts)
-      }   // end for (track2)
-    }     // end for (track1)
+      } // end for (track2)
+    } // end for (track1)
   }
 
   // barrel-barrel and muon-muon event mixing
@@ -1640,7 +1723,7 @@ struct AnalysisSameEventPairing {
 
   void processMixingAllSkimmed(soa::Filtered<MyEventsHashSelected>& events,
                                soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& trackAssocs, MyBarrelTracksWithCov const& tracks,
-                               soa::Join<aod::ReducedMuonsAssoc, aod::MuonTrackCuts> const& muonAssocs, MyMuonTracksWithCov const& muons)
+                               soa::Join<aod::ReducedMuonsAssoc, aod::MuonTrackCuts> const& muonAssocs, MyMuonTracksWithCovWithAmbiguities const& muons)
   {
     runSameSideMixing<pairTypeEE, gkEventFillMap>(events, trackAssocs, tracks, trackAssocsPerCollision);
     runSameSideMixing<pairTypeMuMu, gkEventFillMap>(events, muonAssocs, muons, muonAssocsPerCollision);
@@ -1871,7 +1954,7 @@ struct AnalysisAsymmetricPairing {
               fTrackHistNames[(fNLegCuts * (fNCommonTrackCuts + 1) + fNLegCuts * fNPairCuts) + icut * (fNPairCuts * fNCommonTrackCuts + 1) + iCommonCut * (1 + fNPairCuts) + iPairCut] = names;
             } // end loop (common cuts)
           } // end loop (pair cuts)
-        }   // end if (pair cuts)
+        } // end if (pair cuts)
       } else {
         names = {};
         std::vector<TString> pairHistPrefixes = {"PairsBarrelSEPM"};
@@ -1922,7 +2005,7 @@ struct AnalysisAsymmetricPairing {
               fTrackHistNames[(fNLegCuts * (fNCommonTrackCuts + 1) + fNLegCuts * fNPairCuts) + icut * (fNPairCuts * fNCommonTrackCuts + 1) + iCommonCut * (1 + fNPairCuts) + iPairCut] = names;
             } // end loop (common cuts)
           } // end loop (pair cuts)
-        }   // end if (pair cuts)
+        } // end if (pair cuts)
       }
     }
     // Make sure the leg cuts are covered by the configured filter masks
@@ -2162,8 +2245,8 @@ struct AnalysisAsymmetricPairing {
         if constexpr (trackHasCov && TTwoProngFitter) {
           ditrackExtraList(t1.globalIndex(), t2.globalIndex(), VarManager::fgValues[VarManager::kVertexingTauzProjected], VarManager::fgValues[VarManager::kVertexingLzProjected], VarManager::fgValues[VarManager::kVertexingLxyProjected]);
         }
-      }   // end inner assoc loop (leg A)
-    }     // end event loop
+      } // end inner assoc loop (leg A)
+    } // end event loop
   }
 
   // Template function to run same event triplets (e.g. D+->K-pi+pi+)
@@ -2407,7 +2490,6 @@ struct AnalysisDileptonTrack {
     bool isBarrelAsymmetric = context.mOptions.get<bool>("processDstarToD0Pi");
     bool isMuon = context.mOptions.get<bool>("processMuonSkimmed");
     bool isMuonME = context.mOptions.get<bool>("processMuonMixedEvent");
-    bool isAnyProcessEnabled = isBarrel || isBarrelME || isMuon || isMuonME;
 
     fCurrentRun = 0;
     fValuesDilepton = new float[VarManager::kNVars];
@@ -2772,8 +2854,8 @@ struct AnalysisDileptonTrack {
             }
           }
         } // end for (dileptons)
-      }   // end for (assocs)
-    }     // end event loop
+      } // end for (assocs)
+    } // end event loop
   }
 
   void processMuonMixedEvent(soa::Filtered<MyEventsHashSelected>& events,
@@ -2811,8 +2893,8 @@ struct AnalysisDileptonTrack {
             }
           }
         } // end for (dileptons)
-      }   // end for (assocs)
-    }     // end event loop
+      } // end for (assocs)
+    } // end event loop
   }
 
   void processDummy(MyEvents&)

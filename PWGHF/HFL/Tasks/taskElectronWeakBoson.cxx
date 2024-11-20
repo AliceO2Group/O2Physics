@@ -135,7 +135,7 @@ struct HfTaskElectronWeakBoson {
   }
 
   void process(soa::Filtered<aod::Collisions>::iterator const& collision,
-               SelectedClusters const& emcClusters,
+               SelectedClusters const&,
                TrackEle const& tracks,
                o2::aod::EMCALMatchedTracks const& matchedtracks)
   {

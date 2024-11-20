@@ -14,6 +14,8 @@
 /// \author Grazia Luparello <grazia.luparello@cern.ch>
 /// \author Samuele Cattaruzzi <samuele.cattaruzzi@cern.ch>
 
+#include <vector>
+
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
@@ -29,6 +31,7 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/HFC/DataModel/CorrelationTables.h"
+#include "PWGHF/HFC/DataModel/DerivedDataCorrelationTables.h"
 
 using namespace o2;
 using namespace o2::analysis;
@@ -135,6 +138,9 @@ struct HfCorrelatorDsHadrons {
   Produces<aod::DsCandRecoInfo> entryDsCandRecoInfo;
   Produces<aod::DsCandGenInfo> entryDsCandGenInfo;
   Produces<aod::TrackRecoInfo> entryTrackRecoInfo;
+  Produces<aod::HfcRedCollisions> collReduced;
+  Produces<aod::DsCandReduced> candReduced;
+  Produces<aod::AssocTrackRed> assocTrackReduced;
 
   Configurable<bool> fillHistoData{"fillHistoData", true, "Flag for filling histograms in data processes"};
   Configurable<bool> fillHistoMcRec{"fillHistoMcRec", true, "Flag for filling histograms in MC Rec processes"};
@@ -679,6 +685,32 @@ struct HfCorrelatorDsHadrons {
     }   // end loop generated collision
   }
   PROCESS_SWITCH(HfCorrelatorDsHadrons, processMcGen, "Process MC Gen mode", false);
+
+  void processDerivedDataDs(SelCollisionsWithDs::iterator const& collision,
+                            CandDsData const& candidates,
+                            MyTracksData const& tracks)
+  {
+    collReduced(collision.multFT0M(), collision.posZ());
+
+    // Ds fill histograms and Ds candidates information stored
+    for (const auto& candidate : candidates) {
+      // candidate selected
+      if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
+        candReduced(collReduced.lastIndex(), candidate.phi(), candidate.eta(), candidate.pt(), hfHelper.invMassDsToKKPi(candidate));
+      } else if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
+        candReduced(collReduced.lastIndex(), candidate.phi(), candidate.eta(), candidate.pt(), hfHelper.invMassDsToPiKK(candidate));
+      }
+    }
+
+    // tracks information
+    for (const auto& track : tracks) {
+      if (!track.isGlobalTrackWoDCA()) {
+        continue;
+      }
+      assocTrackReduced(collReduced.lastIndex(), track.phi(), track.eta(), track.pt());
+    }
+  }
+  PROCESS_SWITCH(HfCorrelatorDsHadrons, processDerivedDataDs, "Process derived data Ds", false);
 
   // Event Mixing
   void processDataME(SelCollisionsWithDs const& collisions,

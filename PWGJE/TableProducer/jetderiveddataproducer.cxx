@@ -72,6 +72,7 @@ struct JetDerivedDataProducerTask {
   Produces<aod::JMcCollisionPIs> jMcCollisionsParentIndexTable;
   Produces<aod::JTracks> jTracksTable;
   Produces<aod::JTrackExtras> jTracksExtraTable;
+  Produces<aod::JEMCTracks> jTracksEMCalTable;
   Produces<aod::JTrackPIs> jTracksParentIndexTable;
   Produces<aod::JMcTrackLbs> jMcTracksLabelTable;
   Produces<aod::JMcParticles> jMcParticlesTable;
@@ -343,7 +344,7 @@ struct JetDerivedDataProducerTask {
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processParticles, "produces derived parrticle table", false);
 
-  void processClusters(aod::Collision const&, aod::EMCALClusters const& clusters, aod::EMCALClusterCells const& cells, aod::Calos const&, aod::EMCALMatchedTracks const& matchedTracks, aod::Tracks const&)
+  void processClusters(aod::Collision const&, aod::EMCALClusters const& clusters, aod::EMCALClusterCells const& cells, aod::Calos const&, aod::EMCALMatchedTracks const& matchedTracks, soa::Join<aod::Tracks, aod::TracksExtra> const&)
   {
 
     for (auto cluster : clusters) {
@@ -377,6 +378,8 @@ struct JetDerivedDataProducerTask {
       for (const auto& clusterTrack : clusterTracks) {
         auto JClusterID = trackCollisionMapping.find({clusterTrack.trackId(), cluster.collisionId()}); // does EMCal use its own associator?
         clusterTrackIDs.push_back(JClusterID->second);
+        auto emcTrack = clusterTrack.track_as<soa::Join<aod::Tracks, aod::TracksExtra>>();
+        jTracksEMCalTable(JClusterID->second, emcTrack.trackEtaEmcal(), emcTrack.trackPhiEmcal());
       }
       jClustersMatchedTracksTable(clusterTrackIDs);
     }

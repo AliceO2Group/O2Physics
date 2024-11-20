@@ -285,3 +285,10 @@ o2physics_add_dpl_workflow(derived-data-creator-lc-to-p-k-pi
                     SOURCES derivedDataCreatorLcToPKPi.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+
+# Converters
+
+o2physics_add_dpl_workflow(converter-dstar-indices
+                           SOURCES converterDstarIndices.cxx
+                           PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                           COMPONENT_NAME Analysis)

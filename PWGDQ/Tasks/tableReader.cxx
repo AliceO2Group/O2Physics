@@ -116,6 +116,7 @@ using MyEventsSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtende
 using MyEventsHashSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::MixingHashes>;
 using MyEventsVtxCov = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov>;
 using MyEventsVtxCovSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts>;
+using MyEventsVtxCovSelectedMultExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
 using MyEventsVtxCovSelectedQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedEventsQvector>;
 using MyEventsVtxCovSelectedQvectorExtraWithRefFlow = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedEventsQvector, aod::ReducedEventsQvectorExtra, aod::ReducedEventsRefFlow>;
 using MyEventsVtxCovSelectedQvectorCentr = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedEventsQvectorCentr>;
@@ -146,6 +147,7 @@ using MyMftTracks = soa::Join<aod::ReducedMFTs, aod::ReducedMFTsExtra>;
 constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended;
 constexpr static uint32_t gkEventFillMapWithCov = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov;
 constexpr static uint32_t gkEventFillMapWithQvector = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventQvector;
+constexpr static uint32_t gkEventFillMapWithMultExtra = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventMultExtra;
 constexpr static uint32_t gkEventFillMapWithQvectorMultExtra = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventQvector | VarManager::ObjTypes::ReducedEventMultExtra;
 constexpr static uint32_t gkEventFillMapWithQvectorCentr = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::CollisionQvect;
 constexpr static uint32_t gkEventFillMapWithQvectorCentrMultExtra = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::CollisionQvect | VarManager::ObjTypes::ReducedEventMultExtra;
@@ -818,9 +820,9 @@ struct AnalysisEventMixing {
               }
             }
           } // end if (filter bits)
-        }   // end for (cuts)
-      }     // end for (track2)
-    }       // end for (track1)
+        } // end for (cuts)
+      } // end for (track2)
+    } // end for (track1)
   }
 
   // barrel-barrel and muon-muon event mixing
@@ -1064,12 +1066,12 @@ struct AnalysisSameEventPairing {
               }
               fTrackHistNames.push_back(names);
             } // end loop (pair cuts)
-          }   // end if (pair cuts)
-        }     // end loop (track cuts)
-      }       // end if (track cuts)
+          } // end if (pair cuts)
+        } // end loop (track cuts)
+      } // end if (track cuts)
     }
 
-    if (context.mOptions.get<bool>("processDecayToMuMuSkimmed") || context.mOptions.get<bool>("processDecayToMuMuVertexingSkimmed") || context.mOptions.get<bool>("processDecayToMuMuSkimmedWithColl") || context.mOptions.get<bool>("processVnDecayToMuMuSkimmed") || context.mOptions.get<bool>("processVnDecayToMuMuSkimmedWithWeights") || context.mOptions.get<bool>("processVnDecayToMuMuSkimmedWithWeightsAndColl") || context.mOptions.get<bool>("processVnCentrDecayToMuMuSkimmed") || context.mOptions.get<bool>("processAllSkimmed")) {
+    if (context.mOptions.get<bool>("processDecayToMuMuSkimmed") || context.mOptions.get<bool>("processDecayToMuMuSkimmedWithMult") || context.mOptions.get<bool>("processDecayToMuMuVertexingSkimmed") || context.mOptions.get<bool>("processDecayToMuMuSkimmedWithColl") || context.mOptions.get<bool>("processVnDecayToMuMuSkimmed") || context.mOptions.get<bool>("processVnDecayToMuMuSkimmedWithWeights") || context.mOptions.get<bool>("processVnDecayToMuMuSkimmedWithWeightsAndColl") || context.mOptions.get<bool>("processVnCentrDecayToMuMuSkimmed") || context.mOptions.get<bool>("processAllSkimmed")) {
       TString cutNames = fConfigMuonCuts.value;
       if (!cutNames.IsNull()) {
         std::unique_ptr<TObjArray> objArray(cutNames.Tokenize(","));
@@ -1098,9 +1100,9 @@ struct AnalysisSameEventPairing {
               histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
               fMuonHistNames.push_back(names);
             } // end loop (pair cuts)
-          }   // end if (pair cuts)
-        }     // end loop (track cuts)
-      }       // end if (track cuts)
+          } // end if (pair cuts)
+        } // end loop (track cuts)
+      } // end if (track cuts)
     }
     if (context.mOptions.get<bool>("processElectronMuonSkimmed") || context.mOptions.get<bool>("processAllSkimmed")) {
       TString cutNamesBarrel = fConfigTrackCuts.value;
@@ -1131,10 +1133,10 @@ struct AnalysisSameEventPairing {
                 histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
                 fTrackMuonHistNames.push_back(names);
               } // end loop (pair cuts)
-            }   // end if (pair cuts)
-          }     // end loop (track cuts)
-        }       // end if (equal number of cuts)
-      }         // end if (track cuts)
+            } // end if (pair cuts)
+          } // end loop (track cuts)
+        } // end if (equal number of cuts)
+      } // end if (track cuts)
     }
 
     // Usage example of ccdb
@@ -1399,12 +1401,12 @@ struct AnalysisSameEventPairing {
                 }
               }
             }
-          }      // end loop (pair cuts)
+          } // end loop (pair cuts)
         } else { // end if (filter bits)
           iCut = iCut + 1 + fPairCuts.size();
         }
       } // end loop (cuts)
-    }   // end loop over pairs
+    } // end loop over pairs
   }
 
   void processDecayToEESkimmed(soa::Filtered<MyEventsSelected>::iterator const& event, soa::Filtered<MyBarrelTracksSelected> const& tracks)
@@ -1476,6 +1478,13 @@ struct AnalysisSameEventPairing {
     VarManager::ResetValues(0, VarManager::kNVars);
     VarManager::FillEvent<gkEventFillMap>(event, VarManager::fgValues);
     runSameEventPairing<true, VarManager::kDecayToMuMu, gkEventFillMap, gkMuonFillMap>(event, muons, muons);
+  }
+  void processDecayToMuMuSkimmedWithMult(soa::Filtered<MyEventsVtxCovSelectedMultExtra>::iterator const& event, soa::Filtered<MyMuonTracksSelected> const& muons)
+  {
+    // Reset the fValues array
+    VarManager::ResetValues(0, VarManager::kNVars);
+    VarManager::FillEvent<gkEventFillMapWithMultExtra>(event, VarManager::fgValues);
+    runSameEventPairing<true, VarManager::kDecayToMuMu, gkEventFillMapWithMultExtra, gkMuonFillMap>(event, muons, muons);
   }
   void processDecayToMuMuVertexingSkimmed(soa::Filtered<MyEventsVtxCovSelected>::iterator const& event, soa::Filtered<MyMuonTracksSelectedWithCov> const& muons)
   {
@@ -1567,6 +1576,7 @@ struct AnalysisSameEventPairing {
   PROCESS_SWITCH(AnalysisSameEventPairing, processDecayToEESkimmedWithColl, "Run electron-electron pairing, with skimmed tracks and with collision information", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processDecayToEESkimmedWithCollNoTwoProngFitter, "Run electron-electron pairing, with skimmed tracks and with collision information but no two prong fitter", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processDecayToMuMuSkimmed, "Run muon-muon pairing, with skimmed muons", false);
+  PROCESS_SWITCH(AnalysisSameEventPairing, processDecayToMuMuSkimmedWithMult, "Run muon-muon pairing, with skimmed muons and multiplicity", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processDecayToMuMuVertexingSkimmed, "Run muon-muon pairing and vertexing, with skimmed muons", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processDecayToMuMuSkimmedWithColl, "Run muon-muon pairing keeping the info of AO2D collision, with skimmed muons", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processVnDecayToEESkimmed, "Run electron-electron pairing, with skimmed tracks for vn", false);
@@ -1794,7 +1804,7 @@ struct AnalysisDileptonHadron {
           fHistMan->FillHistClass("DileptonHadronInvMassME", VarManager::fgValues);
           fHistMan->FillHistClass("DileptonHadronCorrelationME", VarManager::fgValues);
         } // end for (track)
-      }   // end for (dilepton)
+      } // end for (dilepton)
 
     } // end event loop
   }
@@ -1971,7 +1981,7 @@ struct AnalysisDileptonTrackTrack {
               }
             }
           } // check if the Ditrack cut is selected
-        }   // loop over hadron cuts
+        } // loop over hadron cuts
       }
     }
   }

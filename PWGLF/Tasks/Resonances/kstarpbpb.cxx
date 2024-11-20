@@ -20,6 +20,8 @@
 #include <TH2F.h>
 #include <TLorentzVector.h>
 #include <TPDGCode.h>
+#include <string>
+#include <vector>
 #include <TDatabasePDG.h>
 #include <cmath>
 #include <array>
@@ -83,6 +85,7 @@ struct kstarpbpb {
   Configurable<float> cfgCutDCAxy{"cfgCutDCAxy", 2.0f, "DCAxy range for tracks"};
   Configurable<float> cfgCutDCAz{"cfgCutDCAz", 2.0f, "DCAz range for tracks"};
   Configurable<bool> useGlobalTrack{"useGlobalTrack", true, "use Global track"};
+  Configurable<float> nsigmaCutTOF{"nsigmacutTOF", 3.0, "Value of the TOF Nsigma cut"};
   Configurable<float> nsigmaCutTPC{"nsigmacutTPC", 3.0, "Value of the TPC Nsigma cut"};
   Configurable<float> nsigmaCutCombined{"nsigmaCutCombined", 3.0, "Value of the TOF Nsigma cut"};
   Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 1, "Number of mixed events per event"};
@@ -99,8 +102,12 @@ struct kstarpbpb {
   Configurable<bool> additionalEvsel{"additionalEvsel", false, "Additional event selcection"};
   Configurable<bool> timFrameEvsel{"timFrameEvsel", false, "TPC Time frame boundary cut"};
   Configurable<bool> ispTdepPID{"ispTdepPID", true, "pT dependent PID"};
+  Configurable<bool> OnlyTOF{"OnlyTOF", true, "OnlyTOF"};
+  Configurable<int> strategyPID{"strategyPID", 2, "PID strategy"};
   Configurable<bool> isGI{"isGI", false, "pT dependent PID"};
+  Configurable<float> cfgCutTOFBeta{"cfgCutTOFBeta", 0.0, "cut TOF beta"};
   Configurable<bool> additionalQAplots{"additionalQAplots", true, "Additional QA plots"};
+  Configurable<bool> additionalQAplots1{"additionalQAplots1", true, "Additional QA plots"};
   Configurable<float> confMinRot{"confMinRot", 5.0 * TMath::Pi() / 6.0, "Minimum of rotation"};
   Configurable<float> confMaxRot{"confMaxRot", 7.0 * TMath::Pi() / 6.0, "Maximum of rotation"};
   Configurable<int> nBkgRotations{"nBkgRotations", 9, "Number of rotated copies (background) per each original candidate"};
@@ -115,7 +122,7 @@ struct kstarpbpb {
   Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
 
   using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::EPCalibrationTables, aod::Mults>>;
-  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPi, aod::pidTOFFullPi>>;
+  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTOFbeta, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPi, aod::pidTOFFullPi>>;
 
   SliceCache cache;
   Partition<TrackCandidates> posTracks = aod::track::signed1Pt > cfgCutCharge;
@@ -144,23 +151,27 @@ struct kstarpbpb {
     AxisSpec occupancyAxis = {occupancyBinning, "Occupancy"};
 
     histos.add("hpTvsRapidity", "pT vs Rapidity", kTH2F, {{100, 0.0f, 10.0f}, {300, -1.5f, 1.5f}});
-    histos.add("hFTOCvsTPCSelected", "Mult correlation FT0C vs. TPC after selection", kTH2F, {{80, 0.0f, 80.0f}, {100, -0.5f, 5999.5f}});
-    histos.add("hCentrality", "Centrality distribution", kTH1F, {{200, 0.0, 200.0}});
-    histos.add("hOccupancy", "Occupancy distribution", kTH1F, {occupancyAxis});
-    histos.add("hVtxZ", "Vertex distribution in Z;Z (cm)", kTH1F, {{400, -20.0, 20.0}});
-    histos.add("hPsiFT0C", "PsiFT0C", kTH2F, {centAxis, phiAxis});
-    histos.add("hPsiFT0A", "PsiFT0A", kTH2F, {centAxis, phiAxis});
-    histos.add("hPsiTPC", "PsiTPC", kTH2F, {centAxis, phiAxis});
+    histos.add("TPC_Nsigma_pi", "TPC_Nsigma_pi", kTH2F, {{60, 0.0f, 6.0f}, {500, -5, 5}});
+    histos.add("TPC_Nsigma_ka", "TPC_Nsigma_ka", kTH2F, {{60, 0.0f, 6.0f}, {500, -5, 5}});
+    histos.add("TOF_Nsigma_pi", "TOF_Nsigma_pi", kTH2F, {{60, 0.0f, 6.0f}, {500, -5, 5}});
+    histos.add("TOF_Nsigma_ka", "TOF_Nsigma_ka", kTH2F, {{60, 0.0f, 6.0f}, {500, -5, 5}});
     histos.add("hSparseV2SASameEvent_V2", "hSparseV2SASameEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
     histos.add("hSparseV2SAlikeEventNN_V2", "hSparseV2SAlikeEventNN_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
     histos.add("hSparseV2SAlikeEventPP_V2", "hSparseV2SAlikeEventPP_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
     histos.add("hSparseV2SAMixedEvent_V2", "hSparseV2SAMixedEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
     histos.add("hSparseV2SASameEventRotational_V2", "hSparseV2SASameEventRotational_V2", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisV2, thnAxisCentrality});
-
-    // histogram for resolution
-    histos.add("ResFT0CTPC", "ResFT0CTPC", kTH2F, {centAxis, resAxis});
-    histos.add("ResFT0CFT0A", "ResFT0CFT0A", kTH2F, {centAxis, resAxis});
-    histos.add("ResFT0ATPC", "ResFT0ATPC", kTH2F, {centAxis, resAxis});
+    if (additionalQAplots1) {
+      histos.add("hFTOCvsTPCSelected", "Mult correlation FT0C vs. TPC after selection", kTH2F, {{80, 0.0f, 80.0f}, {100, -0.5f, 5999.5f}});
+      histos.add("hCentrality", "Centrality distribution", kTH1F, {{200, 0.0, 200.0}});
+      histos.add("hOccupancy", "Occupancy distribution", kTH1F, {occupancyAxis});
+      histos.add("hVtxZ", "Vertex distribution in Z;Z (cm)", kTH1F, {{400, -20.0, 20.0}});
+      histos.add("hPsiFT0C", "PsiFT0C", kTH2F, {centAxis, phiAxis});
+      histos.add("hPsiFT0A", "PsiFT0A", kTH2F, {centAxis, phiAxis});
+      histos.add("hPsiTPC", "PsiTPC", kTH2F, {centAxis, phiAxis});
+      histos.add("ResFT0CTPC", "ResFT0CTPC", kTH2F, {centAxis, resAxis});
+      histos.add("ResFT0CFT0A", "ResFT0CFT0A", kTH2F, {centAxis, resAxis});
+      histos.add("ResFT0ATPC", "ResFT0ATPC", kTH2F, {centAxis, resAxis});
+    }
     if (additionalQAplots) {
       // DCA QA
       histos.add("QAbefore/trkDCAxyka", "DCAxy distribution of kaon track candidates", HistType::kTH1F, {{150, 0.0f, 1.0f}});
@@ -248,17 +259,17 @@ struct kstarpbpb {
   bool selectionPIDNew(const T& candidate, int PID)
   {
     if (PID == 0) {
-      if (candidate.pt() < 0.5 && TMath::Abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC) {
+      if (!candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC) {
         return true;
       }
-      if (candidate.pt() >= 0.5 && candidate.hasTOF() && ((candidate.tofNSigmaKa() * candidate.tofNSigmaKa()) + (candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa())) < (nsigmaCutCombined * nsigmaCutCombined)) {
+      if (candidate.hasTOF() && candidate.beta() > cfgCutTOFBeta && TMath::Abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC && TMath::Abs(candidate.tofNSigmaKa()) < nsigmaCutTOF) {
         return true;
       }
     } else if (PID == 1) {
-      if (candidate.pt() < 0.5 && TMath::Abs(candidate.tpcNSigmaPi()) < nsigmaCutTPC) {
+      if (!candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaPi()) < nsigmaCutTPC) {
         return true;
       }
-      if (candidate.pt() >= 0.5 && candidate.hasTOF() && ((candidate.tofNSigmaPi() * candidate.tofNSigmaPi()) + (candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi())) < (nsigmaCutCombined * nsigmaCutCombined)) {
+      if (candidate.hasTOF() && candidate.beta() > cfgCutTOFBeta && TMath::Abs(candidate.tpcNSigmaPi()) < nsigmaCutTPC && TMath::Abs(candidate.tofNSigmaPi()) < nsigmaCutTOF) {
         return true;
       }
     }
@@ -269,18 +280,84 @@ struct kstarpbpb {
   bool selectionPID(const T& candidate, int PID)
   {
     if (PID == 0) {
-      if (!candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC) {
+      if (!OnlyTOF && !candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC) {
         return true;
       }
-      if (candidate.hasTOF() && ((candidate.tofNSigmaKa() * candidate.tofNSigmaKa()) + (candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa())) < (nsigmaCutCombined * nsigmaCutCombined)) {
+      if (!OnlyTOF && candidate.hasTOF() && ((candidate.tofNSigmaKa() * candidate.tofNSigmaKa()) + (candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa())) < (nsigmaCutCombined * nsigmaCutCombined)) {
+        return true;
+      }
+      if (OnlyTOF && candidate.hasTOF() && TMath::Abs(candidate.tofNSigmaKa()) < nsigmaCutTOF) {
         return true;
       }
     } else if (PID == 1) {
-      if (!candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaPi()) < nsigmaCutTPC) {
+      if (!OnlyTOF && !candidate.hasTOF() && TMath::Abs(candidate.tpcNSigmaPi()) < nsigmaCutTPC) {
         return true;
       }
-      if (candidate.hasTOF() && ((candidate.tofNSigmaPi() * candidate.tofNSigmaPi()) + (candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi())) < (nsigmaCutCombined * nsigmaCutCombined)) {
+      if (!OnlyTOF && candidate.hasTOF() && ((candidate.tofNSigmaPi() * candidate.tofNSigmaPi()) + (candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi())) < (nsigmaCutCombined * nsigmaCutCombined)) {
         return true;
+      }
+      if (OnlyTOF && candidate.hasTOF() && TMath::Abs(candidate.tofNSigmaPi()) < nsigmaCutTOF) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  template <typename T>
+  bool strategySelectionPID(const T& candidate, int PID, int strategy)
+  {
+    if (PID == 0) {
+      if (strategy == 0) {
+        if (candidate.pt() < 0.5 && TMath::Abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC) {
+          return true;
+        }
+        if (candidate.pt() >= 0.5 && TMath::Abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC && candidate.hasTOF() && TMath::Abs(candidate.tofNSigmaKa()) < nsigmaCutTOF && candidate.beta() > 0.5) {
+          return true;
+        }
+      } else if (strategy == 1) {
+        if (candidate.pt() < 0.5 && TMath::Abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC) {
+          return true;
+        }
+        if (candidate.pt() >= 0.5 && TMath::Sqrt(candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa() + candidate.tofNSigmaKa() * candidate.tofNSigmaKa()) < nsigmaCutTOF && candidate.beta() > 0.5) {
+          return true;
+        }
+      } else if (strategy == 2) {
+        if (candidate.pt() < 0.5 && TMath::Abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC) {
+          return true;
+        }
+        if (candidate.pt() >= 0.5 && TMath::Abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC && candidate.hasTOF() && TMath::Abs(candidate.tofNSigmaKa()) < nsigmaCutTOF && candidate.beta() > 0.5) {
+          return true;
+        }
+        if (candidate.pt() >= 0.5 && TMath::Abs(candidate.tpcNSigmaKa()) < nsigmaCutTPC && !candidate.hasTOF()) {
+          return true;
+        }
+      }
+    }
+    if (PID == 1) {
+      if (strategy == 0) {
+        if (candidate.pt() < 0.5 && TMath::Abs(candidate.tpcNSigmaPi()) < nsigmaCutTPC) {
+          return true;
+        }
+        if (candidate.pt() >= 0.5 && TMath::Abs(candidate.tpcNSigmaPi()) < nsigmaCutTPC && candidate.hasTOF() && TMath::Abs(candidate.tofNSigmaPi()) < nsigmaCutTOF && candidate.beta() > 0.5) {
+          return true;
+        }
+      } else if (strategy == 1) {
+        if (candidate.pt() < 0.5 && TMath::Abs(candidate.tpcNSigmaPi()) < nsigmaCutTPC) {
+          return true;
+        }
+        if (candidate.pt() >= 0.5 && TMath::Sqrt(candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi() + candidate.tofNSigmaPi() * candidate.tofNSigmaPi()) < nsigmaCutTOF && candidate.beta() > 0.5) {
+          return true;
+        }
+      } else if (strategy == 2) {
+        if (candidate.pt() < 0.5 && TMath::Abs(candidate.tpcNSigmaPi()) < nsigmaCutTPC) {
+          return true;
+        }
+        if (candidate.pt() >= 0.5 && TMath::Abs(candidate.tpcNSigmaPi()) < nsigmaCutTPC && candidate.hasTOF() && TMath::Abs(candidate.tofNSigmaPi()) < nsigmaCutTOF && candidate.beta() > 0.5) {
+          return true;
+        }
+        if (candidate.pt() >= 0.5 && TMath::Abs(candidate.tpcNSigmaPi()) < nsigmaCutTPC && !candidate.hasTOF()) {
+          return true;
+        }
       }
     }
     return false;
@@ -314,7 +391,115 @@ struct kstarpbpb {
   using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C, aod::epcalibrationtable::PsiFT0C>;
   ROOT::Math::PxPyPzMVector KstarMother, daughter1, daughter2, kaonrot, kstarrot;
 
-  void processSameEvent(EventCandidates::iterator const& collision, TrackCandidates const& tracks, aod::BCs const&)
+  void processSE(EventCandidates::iterator const& collision, TrackCandidates const& tracks, aod::BCs const&)
+  {
+    if (!collision.sel8() || !collision.triggereventep() || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+      return;
+    }
+    auto centrality = collision.centFT0C();
+    auto multTPC = collision.multNTracksPV();
+    int occupancy = collision.trackOccupancyInTimeRange();
+    auto psiFT0C = collision.psiFT0C();
+    auto psiFT0A = collision.psiFT0A();
+    auto psiTPC = collision.psiTPC();
+    if (fillOccupancy && occupancy >= cfgOccupancyCut) {
+      return;
+    }
+    if (additionalEvsel && !eventSelected(collision, centrality)) {
+      return;
+    }
+    if (additionalQAplots1) {
+      histos.fill(HIST("hFTOCvsTPCSelected"), centrality, multTPC);
+      histos.fill(HIST("hPsiFT0C"), centrality, psiFT0C);
+      histos.fill(HIST("hPsiFT0A"), centrality, psiFT0A);
+      histos.fill(HIST("hPsiTPC"), centrality, psiTPC);
+      histos.fill(HIST("ResFT0CTPC"), centrality, TMath::Cos(2.0 * (psiFT0C - psiTPC)));
+      histos.fill(HIST("ResFT0CFT0A"), centrality, TMath::Cos(2.0 * (psiFT0C - psiFT0A)));
+      histos.fill(HIST("ResFT0ATPC"), centrality, TMath::Cos(2.0 * (psiTPC - psiFT0A)));
+      histos.fill(HIST("hCentrality"), centrality);
+      histos.fill(HIST("hOccupancy"), occupancy);
+      histos.fill(HIST("hVtxZ"), collision.posZ());
+    }
+    for (auto track1 : tracks) {
+      if (!selectionTrack(track1)) {
+        continue;
+      }
+      bool track1kaon = false;
+      auto track1ID = track1.globalIndex();
+      if (!strategySelectionPID(track1, 0, strategyPID)) {
+        continue;
+      }
+      track1kaon = true;
+      histos.fill(HIST("TPC_Nsigma_ka"), track1.p(), track1.tpcNSigmaKa());
+      if (track1.hasTOF()) {
+        histos.fill(HIST("TOF_Nsigma_ka"), track1.p(), track1.tofNSigmaKa());
+      }
+      for (auto track2 : tracks) {
+        if (!selectionTrack(track2)) {
+          continue;
+        }
+        bool track2pion = false;
+        auto track2ID = track2.globalIndex();
+        if (!strategySelectionPID(track2, 1, strategyPID)) {
+          continue;
+        }
+        track2pion = true;
+        histos.fill(HIST("TPC_Nsigma_pi"), track2.p(), track1.tpcNSigmaPi());
+        if (track2.hasTOF()) {
+          histos.fill(HIST("TOF_Nsigma_pi"), track2.p(), track1.tofNSigmaPi());
+        }
+        if (track2ID == track1ID) {
+          continue;
+        }
+        if (!track1kaon || !track2pion) {
+          continue;
+        }
+        daughter1 = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
+        daughter2 = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massPi);
+        KstarMother = daughter1 + daughter2;
+        if (TMath::Abs(KstarMother.Rapidity()) > confRapidity) {
+          continue;
+        }
+        auto phiminuspsi = GetPhiInRange(KstarMother.Phi() - psiFT0C);
+        auto v2 = TMath::Cos(2.0 * phiminuspsi);
+        // unlike sign
+        if (track1.sign() * track2.sign() < 0) {
+          histos.fill(HIST("hSparseV2SASameEvent_V2"), KstarMother.M(), KstarMother.Pt(), v2, centrality);
+          if (fillRotation) {
+            for (int nrotbkg = 0; nrotbkg < nBkgRotations; nrotbkg++) {
+              auto anglestart = confMinRot;
+              auto angleend = confMaxRot;
+              auto anglestep = (angleend - anglestart) / (1.0 * (nBkgRotations - 1));
+              auto rotangle = anglestart + nrotbkg * anglestep;
+              histos.fill(HIST("hRotation"), rotangle);
+              auto rotkaonPx = track1.px() * std::cos(rotangle) - track1.py() * std::sin(rotangle);
+              auto rotkaonPy = track1.px() * std::sin(rotangle) + track1.py() * std::cos(rotangle);
+              kaonrot = ROOT::Math::PxPyPzMVector(rotkaonPx, rotkaonPy, track1.pz(), massKa);
+              kstarrot = kaonrot + daughter2;
+              if (TMath::Abs(kstarrot.Rapidity()) > confRapidity) {
+                continue;
+              }
+              auto phiminuspsiRot = GetPhiInRange(kstarrot.Phi() - psiFT0C);
+              auto v2Rot = TMath::Cos(2.0 * phiminuspsiRot);
+              histos.fill(HIST("hSparseV2SASameEventRotational_V2"), kstarrot.M(), kstarrot.Pt(), v2Rot, centrality);
+            }
+          }
+        }
+        // like sign
+        if (track1.sign() * track2.sign() > 0) {
+          if (track1.sign() > 0 && track2.sign() > 0) {
+            histos.fill(HIST("hSparseV2SAlikeEventPP_V2"), KstarMother.M(), KstarMother.Pt(), v2, centrality);
+          }
+          if (track1.sign() < 0 && track2.sign() < 0) {
+            histos.fill(HIST("hSparseV2SAlikeEventNN_V2"), KstarMother.M(), KstarMother.Pt(), v2, centrality);
+          }
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(kstarpbpb, processSE, "Process Same event latest", true);
+
+  void processSameEvent(EventCandidates::iterator const& collision, TrackCandidates const& /*tracks*/, aod::BCs const&)
   {
     if (!collision.sel8()) {
       return;
@@ -346,17 +531,18 @@ struct kstarpbpb {
     if (additionalEvsel && !eventSelected(collision, centrality)) {
       return;
     }
-    histos.fill(HIST("hFTOCvsTPCSelected"), centrality, multTPC);
-    histos.fill(HIST("hPsiFT0C"), centrality, psiFT0C);
-    histos.fill(HIST("hPsiFT0A"), centrality, psiFT0A);
-    histos.fill(HIST("hPsiTPC"), centrality, psiTPC);
-    histos.fill(HIST("ResFT0CTPC"), centrality, TMath::Cos(2.0 * (psiFT0C - psiTPC)));
-    histos.fill(HIST("ResFT0CFT0A"), centrality, TMath::Cos(2.0 * (psiFT0C - psiFT0A)));
-    histos.fill(HIST("ResFT0ATPC"), centrality, TMath::Cos(2.0 * (psiTPC - psiFT0A)));
-    histos.fill(HIST("hCentrality"), centrality);
-    histos.fill(HIST("hOccupancy"), occupancy);
-    histos.fill(HIST("hVtxZ"), collision.posZ());
-
+    if (additionalQAplots1) {
+      histos.fill(HIST("hFTOCvsTPCSelected"), centrality, multTPC);
+      histos.fill(HIST("hPsiFT0C"), centrality, psiFT0C);
+      histos.fill(HIST("hPsiFT0A"), centrality, psiFT0A);
+      histos.fill(HIST("hPsiTPC"), centrality, psiTPC);
+      histos.fill(HIST("ResFT0CTPC"), centrality, TMath::Cos(2.0 * (psiFT0C - psiTPC)));
+      histos.fill(HIST("ResFT0CFT0A"), centrality, TMath::Cos(2.0 * (psiFT0C - psiFT0A)));
+      histos.fill(HIST("ResFT0ATPC"), centrality, TMath::Cos(2.0 * (psiTPC - psiFT0A)));
+      histos.fill(HIST("hCentrality"), centrality);
+      histos.fill(HIST("hOccupancy"), occupancy);
+      histos.fill(HIST("hVtxZ"), collision.posZ());
+    }
     for (auto track1 : posThisColl) {
       if (!selectionTrack(track1)) {
         continue;
@@ -500,14 +686,13 @@ struct kstarpbpb {
       }
     }
   }
-  PROCESS_SWITCH(kstarpbpb, processSameEvent, "Process Same event", true);
+  PROCESS_SWITCH(kstarpbpb, processSameEvent, "Process Same event", false);
   void processlikeEvent(EventCandidates::iterator const& collision, TrackCandidates const& tracks, aod::BCs const&)
   {
     if (!collision.sel8()) {
       return;
     }
     auto centrality = collision.centFT0C();
-    auto multTPC = collision.multNTracksPV();
     if (!collision.triggereventep()) {
       return;
     }
@@ -621,7 +806,7 @@ struct kstarpbpb {
     }
   }
 
-  PROCESS_SWITCH(kstarpbpb, processlikeEvent, "Process like event", true);
+  PROCESS_SWITCH(kstarpbpb, processlikeEvent, "Process like event", false);
   void processMixedEvent(EventCandidates const& collisions, TrackCandidates const& /*tracks*/)
   {
     BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicityClass, axisEPAngle}, true};
@@ -743,7 +928,7 @@ struct kstarpbpb {
       }
     }
   }
-  PROCESS_SWITCH(kstarpbpb, processMixedEvent, "Process Mixed event", true);
+  PROCESS_SWITCH(kstarpbpb, processMixedEvent, "Process Mixed event", false);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

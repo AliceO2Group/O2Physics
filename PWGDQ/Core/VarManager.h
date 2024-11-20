@@ -235,6 +235,7 @@ class VarManager : public TObject
     kMultNTracksTPCOnly,
     kMultNTracksITSTPC,
     kTrackOccupancyInTimeRange,
+    kNoCollInTimeRangeStandard,
     kMultAllTracksTPCOnly,
     kMultAllTracksITSTPC,
     kNTPCpileupContribA,
@@ -445,6 +446,7 @@ class VarManager : public TObject
     kTPCncls,
     kITSClusterMap,
     kTPCnclsCR,
+    kTPCnCRoverFindCls,
     kTPCchi2,
     kTPCsignal,
     kTPCsignalRandomized,
@@ -592,6 +594,7 @@ class VarManager : public TObject
     kPhiHE,
     kPhiCS,
     kDeltaPhiPair2,
+    kDeltaEtaPair2,
     kPsiPair,
     kDeltaPhiPair,
     kOpeningAngle,
@@ -617,19 +620,37 @@ class VarManager : public TObject
     kS13A,
     kS31A,
     kM11REF,
+    kM11REFetagap,
     kM01POI,
     kM1111REF,
+    kM1111REFsmall,
     kM0111POI,
     kCORR2REF,
+    kCORR2REFw,
+    kCORR2REFsquared,
+    kCORR2REFsquaredw,
+    kCORR2REFetagap,
+    kCORR2REFetagapw,
+    kCORR2REFetagapsquaredw,
     kCORR2POI,
+    kCORR2POIw,
+    kCORR2POIsquaredw,
+    kCORR2POIsquaredMpw,
     kCORR4REF,
+    kCORR4REFw,
+    kCORR4REFsquaredw,
     kCORR4POI,
+    kCORR4POIw,
+    kCORR4POIsquaredw,
+    kCORR4POIsquaredMpw,
     kM11REFoverMp,
     kM01POIoverMp,
     kM1111REFoverMp,
     kM0111POIoverMp,
     kCORR2POIMp,
     kCORR4POIMp,
+    kCORR2POIMpw,
+    kCORR4POIMpw,
     kPsi2A,
     kPsi2APOS,
     kPsi2ANEG,
@@ -1333,6 +1354,12 @@ void VarManager::FillEvent(T const& event, float* values)
     if (fgUsedVars[kIsNoITSROFBorder]) {
       values[kIsNoITSROFBorder] = event.selection_bit(o2::aod::evsel::kNoITSROFrameBorder);
     }
+    if (fgUsedVars[kTrackOccupancyInTimeRange]) {
+      values[kTrackOccupancyInTimeRange] = event.trackOccupancyInTimeRange();
+    }
+    if (fgUsedVars[kNoCollInTimeRangeStandard]) {
+      values[kNoCollInTimeRangeStandard] = event.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard);
+    }
     if (fgUsedVars[kIsNoTFBorder]) {
       values[kIsNoTFBorder] = event.selection_bit(o2::aod::evsel::kNoTimeFrameBorder);
     }
@@ -1429,7 +1456,6 @@ void VarManager::FillEvent(T const& event, float* values)
     values[kMultNTracksITSOnly] = event.multNTracksITSOnly();
     values[kMultNTracksTPCOnly] = event.multNTracksTPCOnly();
     values[kMultNTracksITSTPC] = event.multNTracksITSTPC();
-    values[kTrackOccupancyInTimeRange] = event.trackOccupancyInTimeRange();
     values[kMultAllTracksTPCOnly] = event.multAllTracksTPCOnly();
     values[kMultAllTracksITSTPC] = event.multAllTracksITSTPC();
     if constexpr ((fillMap & ReducedEventMultExtra) > 0) {
@@ -1455,6 +1481,9 @@ void VarManager::FillEvent(T const& event, float* values)
     }
     if (fgUsedVars[kIsNoTFBorder]) {
       values[kIsNoTFBorder] = (event.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) > 0);
+    }
+    if (fgUsedVars[kNoCollInTimeRangeStandard]) {
+      values[kNoCollInTimeRangeStandard] = (event.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) > 0);
     }
     if (fgUsedVars[kIsNoSameBunch]) {
       values[kIsNoSameBunch] = (event.selection_bit(o2::aod::evsel::kNoSameBunchPileup) > 0);
@@ -1593,9 +1622,19 @@ void VarManager::FillEvent(T const& event, float* values)
 
     if constexpr ((fillMap & ReducedEventRefFlow) > 0) {
       values[kM1111REF] = event.m1111ref();
+      values[kM1111REFsmall] = event.m1111ref();
       values[kM11REF] = event.m11ref();
-      values[kCORR4REF] = event.corr4ref();
+      values[kM11REFetagap] = event.m11ref();
       values[kCORR2REF] = event.corr2ref();
+      values[kCORR2REFsquared] = event.corr2ref();
+      values[kCORR2REFw] = event.corr2ref();
+      values[kCORR2REFsquaredw] = event.corr2ref();
+      values[kCORR2REFetagap] = event.corr2ref();
+      values[kCORR2REFetagapw] = event.corr2ref();
+      values[kCORR2REFetagapsquaredw] = event.corr2ref();
+      values[kCORR4REF] = event.corr4ref();
+      values[kCORR4REFw] = event.corr4ref();
+      values[kCORR4REFsquaredw] = event.corr4ref();
       values[kMultA] = event.multa();
     }
   }
@@ -2045,6 +2084,9 @@ void VarManager::FillTrack(T const& track, float* values)
     values[kHasTPC] = track.hasTPC();
 
     if constexpr ((fillMap & TrackExtra) > 0) {
+      if (fgUsedVars[kTPCnCRoverFindCls]) {
+        values[kTPCnCRoverFindCls] = track.tpcCrossedRowsOverFindableCls();
+      }
       if (fgUsedVars[kITSncls]) {
         values[kITSncls] = track.itsNCls(); // dynamic column
       }
@@ -2538,6 +2580,10 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
     }
   }
 
+  if (fgUsedVars[kDeltaEtaPair2]) {
+    values[kDeltaEtaPair2] = v1.Eta() - v2.Eta();
+  }
+
   if (fgUsedVars[kPsiPair]) {
     values[kDeltaPhiPair] = (t1.sign() * fgMagField > 0.) ? (v1.Phi() - v2.Phi()) : (v2.Phi() - v1.Phi());
     double xipair = TMath::ACos((v1.Px() * v2.Px() + v1.Py() * v2.Py() + v1.Pz() * v2.Pz()) / v1.P() / v2.P());
@@ -2875,6 +2921,21 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
   // values[kPhi] = v12.Phi();
   values[kPhi] = v12.Phi() > 0 ? v12.Phi() : v12.Phi() + 2. * M_PI;
   values[kRap] = -v12.Rapidity();
+
+  if (fgUsedVars[kDeltaPhiPair2]) {
+    double phipair2ME = v1.Phi() - v2.Phi();
+    if (phipair2ME > 3 * TMath::Pi() / 2) {
+      values[kDeltaPhiPair2] = phipair2ME - 2 * TMath::Pi();
+    } else if (phipair2ME < -TMath::Pi() / 2) {
+      values[kDeltaPhiPair2] = phipair2ME + 2 * TMath::Pi();
+    } else {
+      values[kDeltaPhiPair2] = phipair2ME;
+    }
+  }
+
+  if (fgUsedVars[kDeltaEtaPair2]) {
+    values[kDeltaEtaPair2] = v1.Eta() - v2.Eta();
+  }
 
   // TODO: provide different computations for vn
   // Compute the scalar product UQ for two muon from different event using Q-vector from A, for second and third harmonic
@@ -3922,6 +3983,21 @@ void VarManager::FillQVectorFromGFW(C const& /*collision*/, A const& compA11, A 
   values[kCORR4REF] = (pow(norm(compA21), 2) + norm(compA42) - 2. * (compA42 * conj(compA21) * conj(compA21)).real() + 8. * (compA23 * conj(compA21)).real() - 4. * S12A * norm(compA21) - 6. * S14A - 2. * S22A) / values[kM1111REF];
   values[kCORR2REF] = std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF]) ? 0 : values[kCORR2REF];
   values[kCORR4REF] = std::isnan(values[kCORR4REF]) || std::isinf(values[kCORR4REF]) ? 0 : values[kCORR4REF];
+  values[kCORR2REFw] = values[kCORR2REF] * values[kM11REF];
+  values[kCORR2REFsquared] = values[kCORR2REF] * values[kCORR2REF];
+  values[kCORR2REFsquaredw] = values[kCORR2REF] * values[kCORR2REF] * values[kM11REF];
+  values[kCORR4REFw] = values[kCORR4REF] * values[kM1111REF];
+  values[kCORR4REFsquaredw] = values[kCORR4REF] * values[kCORR4REF] * values[kM1111REF];
+
+  // For cumulants: A = Full TPC, B = Negative TPC, C = Positive TPC
+  complex<double> QA(values[kQ2X0A] * values[kS11A], values[kQ2Y0A] * values[kS11A]);
+  complex<double> QB(values[kQ2X0B] * S11B, values[kQ2Y0B] * S11B);
+  complex<double> QC(values[kQ2X0C] * S11C, values[kQ2Y0C] * S11C);
+  values[kM11REFetagap] = S11B * S11C;
+  values[kCORR2REFetagap] = ((QB * conj(QC)).real()) / values[kM11REFetagap];
+  values[kCORR2REFetagap] = std::isnan(values[kCORR2REFetagap]) || std::isinf(values[kCORR2REFetagap]) ? 0 : values[kCORR2REFetagap];
+  values[kCORR2REFetagapw] = values[kCORR2REFetagap] * values[kM11REFetagap];
+  values[kCORR2REFetagapsquaredw] = values[kCORR2REFetagap] * values[kCORR2REFetagap] * values[kM11REFetagap];
 
   // TODO: provide different computations for R
   // Compute the R factor using the 2 sub-events technique for second and third harmonic

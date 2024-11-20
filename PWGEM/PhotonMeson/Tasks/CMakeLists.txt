@@ -126,5 +126,5 @@ o2physics_add_dpl_workflow(check-mc-v0
 
 o2physics_add_dpl_workflow(pi0-flow-emc
                     SOURCES taskPi0FlowEMC.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore
                     COMPONENT_NAME Analysis)
