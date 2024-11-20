@@ -22,12 +22,6 @@
 #include "PWGCF/Core/CorrelationContainer.h"
 #include "PWGCF/Core/PairCuts.h"
 
-#include "TMath.h"
-#include "TList.h"
-#include "TProfile.h"
-#include "TRandom3.h"
-#include <cmath>
-#include <iostream>
 #include <vector>
 
 namespace o2::aod
@@ -44,9 +38,6 @@ using Hash = Hashes::iterator;
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-
-int s = 1; // same event
-int m = 2; // mixed event
 
 struct CorrSparse {
   Configurable<float> cfgZVtxCut = {"zvtxcut", 10.0, "Vertex z cut. Default 10 cm"};
