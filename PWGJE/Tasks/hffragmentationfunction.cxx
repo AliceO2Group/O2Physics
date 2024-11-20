@@ -194,11 +194,6 @@ struct HfFragmentationFunctionTask {
 
   int eventSelection = -1;
 
-  Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
-  Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
-
-  int eventSelection = -1;
-
   void init(InitContext const&)
   {
     // initialise event selection:
