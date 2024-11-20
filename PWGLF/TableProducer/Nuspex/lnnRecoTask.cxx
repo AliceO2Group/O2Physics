@@ -12,6 +12,11 @@
 // Build \Lambda-n-n candidates from V0s and tracks
 // ==============================================================================
 #include <array>
+#include <memory>
+#include <string>
+#include <vector>
+#include <algorithm>
+
 #include <TLorentzVector.h>
 
 #include "Framework/runDataProcessing.h"
@@ -77,7 +82,6 @@ std::shared_ptr<TH1> hIsMatterGenTwoBody;
 std::shared_ptr<TH2> hDCAxy3H;
 std::shared_ptr<TH1> hLnnCandLoss;
 std::shared_ptr<TH2> hNSigma3HTPC_preselection;
-std::shared_ptr<TH2> hNSigma3HTOF_preselection;
 
 float alphaAP(std::array<float, 3> const& momB, std::array<float, 3> const& momC)
 {
@@ -154,10 +158,10 @@ struct lnnRecoTask {
   Configurable<float> TPCRigidityMin3H{"TPCRigidityMin3H", 0.2, "Minimum rigidity of the triton candidate"};
   Configurable<float> nSigmaCutMinTPC{"nSigmaCutMinTPC", -5, "triton dEdx cut (n sigma)"};
   Configurable<float> nSigmaCutMaxTPC{"nSigmaCutMaxTPC", 5, "triton dEdx cut (n sigma)"};
-  Configurable<float> nSigmaCutTOF{"nSigmaCutMinTOF", 3, "triton TOF cut (n sigma)"};
   Configurable<float> nTPCClusMin3H{"nTPCClusMin3H", 80, "triton NTPC clusters cut"};
   Configurable<float> ptMinTOF{"ptMinTOF", 0.8, "minimum pt for TOF cut"};
   Configurable<float> TrTOFMass2Cut{"TrTOFMass2Cut", 5.5, "minimum Triton mass square to TOF"};
+  Configurable<float> BetaTrTOF{"BetaTrTOF", 0.4, "minimum beta TOF cut"};
   Configurable<bool> mcSignalOnly{"mcSignalOnly", true, "If true, save only signal in MC"};
 
   // Define o2 fitter, 2-prong, active memory (no need to redefine per event)
@@ -257,7 +261,6 @@ struct lnnRecoTask {
     hEvents = qaRegistry.add<TH1>("hEvents", ";Events; ", HistType::kTH1D, {{2, -0.5, 1.5}});
     hLnnCandLoss = qaRegistry.add<TH1>("hLnnCandLoss", ";CandLoss; ", HistType::kTH1D, {{7, -0.5, 6.5}});
     hNSigma3HTPC_preselection = qaRegistry.add<TH2>("hNSigma3HTPC_preselection", "#it{p}/z (GeV/#it{c}); n#sigma_{TPC}(^{3}H)", HistType::kTH2F, {rigidityAxis, nSigma3HAxis});
-    hNSigma3HTOF_preselection = qaRegistry.add<TH2>("hNSigma3HTOF_preselection", "; Signed p({}^{3}H) (GeV/#it{c^2}); n#sigma_{TOF} ({}^{3}H)", HistType::kTH2F, {TritMomAxis, nSigma3HAxis});
 
     hEvents->GetXaxis()->SetBinLabel(1, "All");
     hEvents->GetXaxis()->SetBinLabel(2, "sel8");
@@ -422,13 +425,10 @@ struct lnnRecoTask {
         if (!h3track.hasTOF()) {
           continue;
         }
-        hNSigma3HTOF_preselection->Fill(h3track.p(), h3track.tofNSigmaTr());
-        if (std::abs(h3track.tofNSigmaTr()) > nSigmaCutTOF) {
-          continue;
-        }
+
         beta = h3track.beta();
         lnnCand.mass2TrTOF = h3track.mass() * h3track.mass();
-        if (lnnCand.mass2TrTOF < TrTOFMass2Cut) {
+        if (lnnCand.mass2TrTOF < TrTOFMass2Cut || beta < BetaTrTOF) {
           continue;
         }
       }

@@ -195,8 +195,8 @@ struct TreeCreatorElectronML {
   Configurable<float> minpt{"minpt", 0.2, "min. pT"};
   Configurable<float> maxDcaZ{"maxDcaZ", 1.0, "max DCA Z"};
   Configurable<float> maxDcaXY{"maxDcaXY", 1.0, "max DCA XY"};
-  Configurable<uint8_t> minITSClusters{"minITSLayers", 5, "min. of ITS clusters"};
-  Configurable<uint8_t> minITSClustersIB{"minITSClustersIB", 3, "min. number of ITS clusters in inner barrel"};
+  Configurable<uint> minITSClusters{"minITSLayers", 5, "min. of ITS clusters"};
+  Configurable<uint> minITSClustersIB{"minITSClustersIB", 3, "min. number of ITS clusters in inner barrel"};
   Configurable<float> downSampleEl{"downSampleEl", 1.0, "down scaling factor for electrons"};
   Configurable<float> downSamplePi{"downSamplePi", 1.0, "down scaling factor for pions"};
   Configurable<float> downSampleKa{"downSampleKa", 1.0, "down scaling factor for kaons"};
