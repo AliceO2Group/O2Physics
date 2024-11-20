@@ -283,7 +283,7 @@ struct femtoUniverseEfficiencyBase {
   {
     /// Histogramming same event
     for (auto& part : grouppartsOneMCGen) {
-      if (!ConfNoPDGPartOne && part.pidcut() != ConfPDGCodePartOne) {
+      if (!ConfNoPDGPartOne && part.tempFitVar() != ConfPDGCodePartOne) {
         continue;
       }
       trackHistoPartOneGen.fillQA<isMC, false>(part);
@@ -291,7 +291,7 @@ struct femtoUniverseEfficiencyBase {
 
     if (!ConfIsSame) {
       for (auto& part : grouppartsTwoMCGen) {
-        if (!ConfNoPDGPartTwo && part.pidcut() != ConfPDGCodePartTwo) {
+        if (!ConfNoPDGPartTwo && part.tempFitVar() != ConfPDGCodePartTwo) {
           continue;
         }
         trackHistoPartTwoGen.fillQA<isMC, false>(part);

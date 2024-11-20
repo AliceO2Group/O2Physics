@@ -1445,7 +1445,7 @@ struct femtoUniverseProducerTask {
         std::vector<int> tmpPDGCodes = ConfMCTruthPDGCodes; // necessary due to some features of the Configurable
         for (uint32_t pdg : tmpPDGCodes) {
           if (static_cast<int>(pdg) == static_cast<int>(pdgCode)) {
-            if ((pdgCode == 333)) { // && (recoMcIds && recoMcIds->get().contains(particle.globalIndex()))) { // ATTENTION: all Phi mesons are NOT primary particles
+            if (pdgCode == 333) { // && (recoMcIds && recoMcIds->get().contains(particle.globalIndex()))) { // ATTENTION: all Phi mesons are NOT primary particles
               pass = true;
             } else {
               if (particle.isPhysicalPrimary() || (ConfActivateSecondaries && recoMcIds && recoMcIds->get().contains(particle.globalIndex())))
@@ -1497,11 +1497,11 @@ struct femtoUniverseProducerTask {
     if constexpr (resolveDaughs) {
       childIDs[0] = 0;
       childIDs[1] = 0;
-      for (int i = 0; i < tmpIDtrack.size(); i++) {
+      for (std::size_t i = 0; i < tmpIDtrack.size(); i++) {
         const auto& particle = tracks.iteratorAt(tmpIDtrack[i] - tracks.begin().globalIndex());
         for (int daughIndex = 0, n = std::min(2ul, particle.daughtersIds().size()); daughIndex < n; daughIndex++) {
           // loop to find the corresponding index of the daughters
-          for (int j = 0; j < tmpIDtrack.size(); j++) {
+          for (std::size_t j = 0; j < tmpIDtrack.size(); j++) {
             if (tmpIDtrack[j] == particle.daughtersIds()[daughIndex]) {
               childIDs[daughIndex] = i - j;
               break;

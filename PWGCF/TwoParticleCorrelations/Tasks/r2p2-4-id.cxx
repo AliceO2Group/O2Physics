@@ -51,12 +51,12 @@ struct FillFlagsTable {
     auto tpcnsigma = (std::vector<std::vector<float>>){TPCnsigmacutsPi, TPCnsigmacutsKa, TPCnsigmacutsPr};
     auto tofpt = (std::vector<std::vector<float>>){TOFpTrangesPi, TOFpTrangesKa, TOFpTrangesPr};
     auto tofnsigma = (std::vector<std::vector<float>>){TOFnsigmacutsPi, TOFnsigmacutsKa, TOFnsigmacutsPr};
-    for (int8_t i = 0; i < tpcpt[species].size(); i++)
+    for (std::size_t i = 0; i < tpcpt[species].size(); i++)
       if (trackpt < tpcpt[species][i]) {
         tpcindex = i;
         break;
       }
-    for (int8_t i = 0; i < tofpt[species].size(); i++)
+    for (std::size_t i = 0; i < tofpt[species].size(); i++)
       if (trackpt >= tofpt[species][i]) {
         tofindex = i;
         break;
