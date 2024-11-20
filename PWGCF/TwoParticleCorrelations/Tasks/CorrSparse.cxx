@@ -9,6 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include <vector>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -21,8 +22,6 @@
 #include "Common/DataModel/Centrality.h"
 #include "PWGCF/Core/CorrelationContainer.h"
 #include "PWGCF/Core/PairCuts.h"
-
-#include <vector>
 
 namespace o2::aod
 {
@@ -47,16 +46,13 @@ struct CorrSparse {
   Configurable<float> cfgDCAzCut = {"dcacut", 0.3, "DCA z cut. Default 0.3 cm"};
   Configurable<float> cfgDCAxyCut = {"dcacutxy", 0.3, "DCA xy cut. Default 0.2 cm"};
   Configurable<float> cfgDCAxySigmaCut = {"dcacutxysigma", 1, "DCA xy sigma cut. Default 0.3"};
-
   Configurable<float> cfgCutChi2prTPCcls = {"chi2cut", 2.5, "Chi2 cut. Default 2.5"};
-
   ConfigurableAxis axisVertex{"axisVertex", {7, -7, 7}, "vertex axis for histograms"};
   ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -constants::math::PIHalf, constants::math::PIHalf * 3}, "delta phi axis for histograms"};
   ConfigurableAxis axisDeltaEta{"axisDeltaEta", {40, -2, 2}, "delta eta axis for histograms"};
   ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt trigger axis for histograms"};
   ConfigurableAxis axisPtAssoc{"axisPtAssoc", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt associated axis for histograms"};
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 15, 20, 25, 30, 35, 40, 50, 60, 80, 100}, "multiplicity / centrality axis for histograms"};
-
   HistogramRegistry registry{"registry"};
   int logcolls = 0;
   int logcollpairs = 0;
