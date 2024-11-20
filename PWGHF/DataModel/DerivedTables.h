@@ -608,6 +608,9 @@ DECLARE_SOA_TABLE_STAGED(HfPIds, "HFPID", //! Table with original global indices
                          hf_mc_particle::McCollisionId,
                          hf_mc_particle::McParticleId,
                          o2::soa::Marker<MarkerBase>);
+
+
+
 } // namespace o2::aod
 
 #endif // PWGHF_DATAMODEL_DERIVEDTABLES_H_
