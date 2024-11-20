@@ -1503,7 +1503,7 @@ struct derivedlambdakzeroanalysis {
         if (!IsEventAccepted(collision, false)) {
           continue;
         }
-        
+
         if (biggestNContribs < collision.multPVTotalContributors()) {
           biggestNContribs = collision.multPVTotalContributors();
           centrality = collision.centFT0C();
@@ -1614,7 +1614,7 @@ struct derivedlambdakzeroanalysis {
         (mlConfigurations.useAntiLambdaScores && mlConfigurations.calculateAntiLambdaScores)) {
       initCCDB(collision);
     }
-    
+
     if (!IsEventAccepted(collision, true)) {
       return;
     }
@@ -1812,7 +1812,6 @@ struct derivedlambdakzeroanalysis {
       }
     }
   }
-
 
   // ______________________________________________________
   // Simulated processing (subscribes to MC information too)
