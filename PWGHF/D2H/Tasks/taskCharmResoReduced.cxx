@@ -80,7 +80,7 @@ DECLARE_SOA_COLUMN(SignD0, signD0, float);                                      
 } // namespace hf_cand_reso_lite
 
 DECLARE_SOA_TABLE(HfCandResoLites, "AOD", "HFCANDRESOLITE", //! Table with some B0 properties
-                  // Candidate Properties
+                                                            // Candidate Properties
                   hf_cand_reso_lite::M,
                   hf_cand_reso_lite::Pt,
                   hf_cand_reso_lite::P,
@@ -114,7 +114,7 @@ DECLARE_SOA_TABLE(HfCandResoLites, "AOD", "HFCANDRESOLITE", //! Table with some 
                   hf_cand_reso_lite::PtGen,
                   hf_cand_reso_lite::SignD0);
 
-  DECLARE_SOA_TABLE(HfGenResoLites, "AOD", "HFGENRESOLITE", //! Table with some B0 properties
+DECLARE_SOA_TABLE(HfGenResoLites, "AOD", "HFGENRESOLITE", //! Table with some B0 properties
                   hf_cand_reso_lite::Pt,
                   hf_cand_reso_lite::Y,
                   hf_cand_reso_lite::Origin);
@@ -176,7 +176,7 @@ struct HfTaskCharmResoReduced {
     registry.add("hBz", "Collision Bz ; Bz [T] ; entries", {HistType::kTH1F, {{20, -10., 10.}}});
     registry.add("hSparse", "THn for production studies with cosThStar and BDT scores", HistType::kTHnSparseF, {axisPt, axisPtProng0, axisPtProng1, axisInvMassReso, axisInvMassProng0, axisInvMassProng1, axisCosThetaStar, axisBkgBdtScore, axisNonPromptBdtScore});
 
-    if (doprocessDs1Mc || doprocessDs2StarMc || doprocessDs1McWithMl|| doprocessDs2StarMcWithMl) {
+    if (doprocessDs1Mc || doprocessDs2StarMc || doprocessDs1McWithMl || doprocessDs2StarMcWithMl) {
       // gen histos
       registry.add("hYRecPrompt", "Charm resonance candidates pT", {HistType::kTH2F, {axisPt, axisEta}});
       registry.add("hYRecNonPrompt", "Charm resonance candidates pT", {HistType::kTH2F, {axisPt, axisEta}});
@@ -262,13 +262,13 @@ struct HfTaskCharmResoReduced {
         if (channel == DecayChannel::Ds1ToDstarK0s && !(std::abs(flagMcMatchRec) == DecayTypeMc::Ds1ToDStarK0ToD0PiK0s || std::abs(flagMcMatchRec) == DecayTypeMc::Ds1ToDStarK0ToD0PiK0sPart || std::abs(flagMcMatchRec) == DecayTypeMc::Ds1ToDStarK0ToD0NoPiK0sPart || std::abs(flagMcMatchRec) == DecayTypeMc::Ds1ToDStarK0ToD0PiK0sOneMu)) {
           return;
         }
-        if (channel == DecayChannel::Ds2StarToDplusK0s && !(std::abs(flagMcMatchRec) == DecayTypeMc::Ds2StarToDplusK0sToPiKaPiPiPi ||  std::abs(flagMcMatchRec) == DecayTypeMc::Ds2StarToDplusK0sOneMu)) {
+        if (channel == DecayChannel::Ds2StarToDplusK0s && !(std::abs(flagMcMatchRec) == DecayTypeMc::Ds2StarToDplusK0sToPiKaPiPiPi || std::abs(flagMcMatchRec) == DecayTypeMc::Ds2StarToDplusK0sOneMu)) {
           return;
         }
       }
-      if (origin == 1){
+      if (origin == 1) {
         registry.fill(HIST("hYRecPrompt"), candidate.pt(), y);
-      } else if (origin == 2){
+      } else if (origin == 2) {
         registry.fill(HIST("hYRecNonPrompt"), candidate.pt(), y);
       }
     }
@@ -292,7 +292,7 @@ struct HfTaskCharmResoReduced {
     if (fillSparses) {
       registry.fill(HIST("hSparse"), candidate.pt(), candidate.ptProng0(), candidate.ptProng1(), invMassReso, invMassBach0, invMassBach1, cosThetaStar, mlScoreBkg, mlScoreNonPrompt);
     }
-    
+
     if (fillTrees) {
       hfCandResoLite(
         invMassReso,
@@ -404,7 +404,7 @@ struct HfTaskCharmResoReduced {
           registry.fill(HIST("hPtYWithProngsInAccepanceGenSig"), ptParticle, yParticle, originParticle, flag);
         }
       }
-      if (fillTrees){
+      if (fillTrees) {
         hfGenResoLite(ptParticle, yParticle, originParticle);
       }
     }
@@ -469,3 +469,4 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<HfTaskCharmResoReduced>(cfgc)};
 }
+ 

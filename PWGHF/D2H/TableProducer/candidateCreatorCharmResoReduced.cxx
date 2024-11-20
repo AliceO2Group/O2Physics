@@ -333,7 +333,7 @@ struct HfCandidateCreatorCharmResoReduced {
           switch (channel) {
             case DecayChannel::Ds1ToDstarK0s:
               invMassV0 = candV0Tr.invMassK0s();
-              if (candD.dType() > 0){
+              if (candD.dType() > 0) {
                 invMassReso = RecoDecay::m(std::array{candD.pVectorProng0(), candD.pVectorProng1(), candD.pVectorProng2(), pVecV0Tr}, std::array{massPion, massKaon, massPion, massK0}) - invMassD;
               } else {
                 invMassReso = RecoDecay::m(std::array{candD.pVectorProng1(), candD.pVectorProng0(), candD.pVectorProng2(), pVecV0Tr}, std::array{massPion, massKaon, massPion, massK0}) - invMassD;
@@ -738,3 +738,4 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   return WorkflowSpec{adaptAnalysisTask<HfCandidateCreatorCharmResoReduced>(cfgc),
                       adaptAnalysisTask<HfCandidateCreatorCharmResoReducedExpressions>(cfgc)};
 }
+ 
