@@ -31,6 +31,7 @@
 #include "DataFormatsParameters/GRPLHCIFData.h"
 #include "DataFormatsParameters/GRPECSObject.h"
 
+#include "DetectorsBase/Propagator.h"
 #include "DetectorsBase/GeometryManager.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsParameters/GRPMagField.h"
@@ -98,7 +99,7 @@ struct DileptonMC {
   Configurable<int> cfgNtracksPV08Min{"cfgNtracksPV08Min", -1, "min. multNTracksPV"};
   Configurable<int> cfgNtracksPV08Max{"cfgNtracksPV08Max", static_cast<int>(1e+9), "max. multNTracksPV"};
   Configurable<bool> cfgApplyWeightTTCA{"cfgApplyWeightTTCA", false, "flag to apply weighting by 1/N"};
-  Configurable<uint8_t> cfgDCAType{"cfgDCAType", 0, "type of DCA for output. 0:3D, 1:XY, 2:Z, else:3D"};
+  Configurable<uint> cfgDCAType{"cfgDCAType", 0, "type of DCA for output. 0:3D, 1:XY, 2:Z, else:3D"};
   Configurable<bool> cfgFillUnfolding{"cfgFillUnfolding", false, "flag to fill histograms for unfolding"};
 
   ConfigurableAxis ConfMllBins{"ConfMllBins", {VARIABLE_WIDTH, 0.00, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.20, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.30, 0.31, 0.32, 0.33, 0.34, 0.35, 0.36, 0.37, 0.38, 0.39, 0.40, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49, 0.50, 0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.60, 0.61, 0.62, 0.63, 0.64, 0.65, 0.66, 0.67, 0.68, 0.69, 0.70, 0.71, 0.72, 0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 0.80, 0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.90, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.00, 1.01, 1.02, 1.03, 1.04, 1.05, 1.06, 1.07, 1.08, 1.09, 1.10, 1.11, 1.12, 1.13, 1.14, 1.15, 1.16, 1.17, 1.18, 1.19, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.10, 2.20, 2.30, 2.40, 2.50, 2.60, 2.70, 2.75, 2.80, 2.85, 2.90, 2.95, 3.00, 3.05, 3.10, 3.15, 3.20, 3.25, 3.30, 3.35, 3.40, 3.45, 3.50, 3.55, 3.60, 3.65, 3.70, 3.75, 3.80, 3.85, 3.90, 3.95, 4.00}, "mll bins for output histograms"};
@@ -152,9 +153,13 @@ struct DileptonMC {
     Configurable<bool> cfg_apply_detadphi{"cfg_apply_detadphi", false, "flag to apply deta-dphi elliptic cut"};
     Configurable<float> cfg_min_deta{"cfg_min_deta", 0.02, "min deta between 2 electrons (elliptic cut)"};
     Configurable<float> cfg_min_dphi{"cfg_min_dphi", 0.2, "min dphi between 2 electrons (elliptic cut)"};
+    Configurable<bool> cfg_apply_detadphi_geom{"cfg_apply_detadphi_geom", false, "flag to apply generator deta-dphi elliptic cut"};
+    Configurable<float> cfg_min_deta_geom{"cfg_min_deta_geom", 0.02, "geometrical min deta between 2 electrons (elliptic cut)"};
+    Configurable<float> cfg_min_dphi_geom{"cfg_min_dphi_geom", 0.2, "geometrical min dphi between 2 electrons (elliptic cut)"};
     Configurable<float> cfg_min_opang{"cfg_min_opang", 0.0, "min opening angle"};
     Configurable<float> cfg_max_opang{"cfg_max_opang", 6.4, "max opening angle"};
     Configurable<bool> cfg_require_diff_sides{"cfg_require_diff_sides", false, "flag to require 2 tracks are from different sides."};
+    Configurable<float> cfg_x_to_go{"cfg_x_to_go", -1, "x (cm) to be propagated in local coordinate"};
 
     Configurable<float> cfg_min_pt_track{"cfg_min_pt_track", 0.2, "min pT for single track"};
     Configurable<float> cfg_min_eta_track{"cfg_min_eta_track", -0.8, "max eta for single track"};
@@ -221,7 +226,7 @@ struct DileptonMC {
     Configurable<float> cfg_min_deta{"cfg_min_deta", 0.02, "min deta between 2 muons (elliptic cut)"};
     Configurable<float> cfg_min_dphi{"cfg_min_dphi", 0.02, "min dphi between 2 muons (elliptic cut)"};
 
-    Configurable<uint8_t> cfg_track_type{"cfg_track_type", 3, "muon track type [0: MFT-MCH-MID, 3: MCH-MID]"};
+    Configurable<uint> cfg_track_type{"cfg_track_type", 3, "muon track type [0: MFT-MCH-MID, 3: MCH-MID]"};
     Configurable<float> cfg_min_pt_track{"cfg_min_pt_track", 0.1, "min pT for single track"};
     Configurable<float> cfg_min_eta_track{"cfg_min_eta_track", -4.0, "min eta for single track"};
     Configurable<float> cfg_max_eta_track{"cfg_max_eta_track", -2.5, "max eta for single track"};
@@ -242,7 +247,7 @@ struct DileptonMC {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   // o2::vertexing::DCAFitterN<2> fitter;
   // o2::vertexing::FwdDCAFitterN<2> fwdfitter;
-  // o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
+  o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   int mRunNumber;
   float d_bz;
 
@@ -351,8 +356,9 @@ struct DileptonMC {
     fRegistry.addClone("Pair/sm/Photon/", "Pair/sm/NonPromptPsi2S/");
 
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
-      fRegistry.add("Pair/sm/Photon/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{90, 0, M_PI}, {100, 0.0f, 0.5f}}, true);
-      fRegistry.add("Pair/sm/Pi0/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{90, 0, M_PI}, {100, 0.0f, 0.5f}}, true);
+      fRegistry.add("Pair/sm/Photon/hGeomDeltaEtaDeltaPhi", Form("difference in #eta-#varphi plane between 2 tracks at X = %2.1f cm;#Delta#varphi (rad.);#Delta#eta;", dielectroncuts.cfg_x_to_go.value), kTH2D, {{90, -M_PI, M_PI}, {100, -0.5, +0.5}}, true);
+      fRegistry.add("Pair/sm/Photon/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{90, 0, M_PI}, {100, 0.0f, 1.0f}}, true);
+      fRegistry.add("Pair/sm/Pi0/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{90, 0, M_PI}, {100, 0.0f, 1.0f}}, true);
     }
 
     fRegistry.add("Pair/ccbar/c2l_c2l/hadron_hadron/hs", "hs pair", kTHnSparseD, {axis_mass, axis_pt, axis_y, axis_dphi_ee, axis_deta_ee, axis_cos_theta_cs, axis_phi_cs, axis_aco, axis_asym_pt, axis_dphi_e_ee, axis_dca}, true);
@@ -461,6 +467,7 @@ struct DileptonMC {
       if (fabs(d_bz) > 1e-5) {
         grpmag.setL3Current(30000.f / (d_bz / 5.0f));
       }
+      o2::base::Propagator::initFieldFromGRP(&grpmag);
       mRunNumber = collision.runNumber();
       // fitter.setBz(d_bz);
       // fwdfitter.setBz(d_bz);
@@ -473,6 +480,7 @@ struct DileptonMC {
     if (!skipGRPOquery)
       grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
     if (grpo) {
+      o2::base::Propagator::initFieldFromGRP(grpo);
       // Fetch magnetic field from ccdb for current collision
       d_bz = grpo->getNominalL3Field();
       LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
@@ -481,6 +489,7 @@ struct DileptonMC {
       if (!grpmag) {
         LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
       }
+      o2::base::Propagator::initFieldFromGRP(grpmag);
       // Fetch magnetic field from ccdb for current collision
       d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
       LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
@@ -684,9 +693,27 @@ struct DileptonMC {
     }
   }
 
-  template <bool isSmeared, typename TCollision, typename TTrack1, typename TTrack2, typename TCut, typename TMCParticles>
-  bool fillTruePairInfo(TCollision const& collision, TTrack1 const& t1, TTrack2 const& t2, TCut const& cut, TMCParticles const& mcparticles)
+  template <bool isSmeared, typename TCollision, typename TMCCollisions, typename TTrack1, typename TTrack2, typename TCut, typename TMCParticles>
+  bool fillTruePairInfo(TCollision const& collision, TMCCollisions const&, TTrack1 const& t1, TTrack2 const& t2, TCut const& cut, TMCParticles const& mcparticles)
   {
+    auto t1mc = mcparticles.iteratorAt(t1.emmcparticleId());
+    auto t2mc = mcparticles.iteratorAt(t2.emmcparticleId());
+    bool is_from_same_mcevent = t1mc.emmceventId() == t2mc.emmceventId();
+
+    auto mccollision1 = t1mc.template emmcevent_as<TMCCollisions>();
+    auto mccollision2 = t2mc.template emmcevent_as<TMCCollisions>();
+    if (cfgEventGeneratorType >= 0 && mccollision1.getSubGeneratorId() != cfgEventGeneratorType) {
+      return false;
+    }
+    if (cfgEventGeneratorType >= 0 && mccollision2.getSubGeneratorId() != cfgEventGeneratorType) {
+      return false;
+    }
+    if (!isInAcceptance<isSmeared>(t1mc) || !isInAcceptance<isSmeared>(t2mc)) {
+      return false;
+    }
+
+    float deta_geom = 999.f;
+    float dphi_geom = 999.f;
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
       if (dielectroncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) {
         if (!cut.template IsSelectedTrack<false, true>(t1, collision) || !cut.template IsSelectedTrack<false, true>(t2, collision)) {
@@ -700,6 +727,31 @@ struct DileptonMC {
       if (!cut.template IsSelectedPair(t1, t2, d_bz)) {
         return false;
       }
+
+      if (dielectroncuts.cfg_x_to_go > 0.f) {
+        auto track_par_cov1 = getTrackParCov(t1);
+        track_par_cov1.setPID(o2::track::PID::Electron);
+        o2::base::Propagator::Instance()->propagateToX(track_par_cov1, dielectroncuts.cfg_x_to_go, d_bz, o2::base::PropagatorImpl<float>::MAX_SIN_PHI, o2::base::PropagatorImpl<float>::MAX_STEP, matCorr);
+        auto xyz1 = track_par_cov1.getXYZGlo();
+        float eta1 = RecoDecay::eta(std::array{xyz1.X(), xyz1.Y(), xyz1.Z()});
+        float phi1 = RecoDecay::phi(std::array{xyz1.X(), xyz1.Y()});
+        o2::math_utils::bringTo02Pi(phi1);
+
+        auto track_par_cov2 = getTrackParCov(t2);
+        track_par_cov2.setPID(o2::track::PID::Electron);
+        o2::base::Propagator::Instance()->propagateToX(track_par_cov2, dielectroncuts.cfg_x_to_go, d_bz, o2::base::PropagatorImpl<float>::MAX_SIN_PHI, o2::base::PropagatorImpl<float>::MAX_STEP, matCorr);
+        auto xyz2 = track_par_cov2.getXYZGlo();
+        float eta2 = RecoDecay::eta(std::array{xyz2.X(), xyz2.Y(), xyz2.Z()});
+        float phi2 = RecoDecay::phi(std::array{xyz2.X(), xyz2.Y()});
+        o2::math_utils::bringTo02Pi(phi2);
+
+        float deta_geom = t1.sign() * t1.pt() > t2.sign() * t2.pt() ? eta1 - eta2 : eta2 - eta1;
+        float dphi_geom = t1.sign() * t1.pt() > t2.sign() * t2.pt() ? phi1 - phi2 : phi2 - phi1;
+        o2::math_utils::bringToPMPi(dphi_geom);
+        if (dielectroncuts.cfg_apply_detadphi_geom && std::pow(deta_geom / dielectroncuts.cfg_min_deta_geom, 2) + std::pow(dphi_geom / dielectroncuts.cfg_min_dphi_geom, 2) < 1.f) {
+          return false;
+        }
+      }
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
       if (!cut.template IsSelectedTrack(t1) || !cut.template IsSelectedTrack(t2)) {
         return false;
@@ -711,14 +763,6 @@ struct DileptonMC {
 
     // float pca = 999.f, lxy = 999.f; // in unit of cm
     // o2::aod::pwgem::dilepton::utils::pairutil::isSVFound(fitter, collision, t1, t2, pca, lxy);
-
-    auto t1mc = mcparticles.iteratorAt(t1.emmcparticleId());
-    auto t2mc = mcparticles.iteratorAt(t2.emmcparticleId());
-    bool is_from_same_mcevent = t1mc.emmceventId() == t2mc.emmceventId();
-
-    if (!isInAcceptance<isSmeared>(t1mc) || !isInAcceptance<isSmeared>(t2mc)) {
-      return false;
-    }
     float pt1 = 0.f, eta1 = 0.f, phi1 = 0.f, pt2 = 0.f, eta2 = 0.f, phi2 = 0.f;
     if constexpr (isSmeared) {
       if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
@@ -765,22 +809,12 @@ struct DileptonMC {
     ROOT::Math::PtEtaPhiMVector v2mc(pt2, eta2, phi2, leptonM2);
     ROOT::Math::PtEtaPhiMVector v12mc = v1mc + v2mc;
 
-    float deta_mc = v1mc.Eta() - v2mc.Eta();
-    float dphi_mc = v1mc.Phi() - v2mc.Phi();
-    o2::math_utils::bringToPMPi(dphi_mc);
-
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
       if (v12mc.Rapidity() < dielectroncuts.cfg_min_pair_y || dielectroncuts.cfg_max_pair_y < v12mc.Rapidity()) {
         return false;
       }
-      if (dielectroncuts.cfg_apply_detadphi && std::pow(deta_mc / dielectroncuts.cfg_min_deta, 2) + std::pow(dphi_mc / dielectroncuts.cfg_min_dphi, 2) < 1.f) {
-        return false;
-      }
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
       if (v12mc.Rapidity() < dimuoncuts.cfg_min_pair_y || dimuoncuts.cfg_max_pair_y < v12mc.Rapidity()) {
-        return false;
-      }
-      if (dimuoncuts.cfg_apply_detadphi && std::pow(deta_mc / dimuoncuts.cfg_min_deta, 2) + std::pow(dphi_mc / dimuoncuts.cfg_min_dphi, 2) < 1.f) {
         return false;
       }
     }
@@ -921,6 +955,7 @@ struct DileptonMC {
               fRegistry.fill(HIST("Pair/sm/Photon/hs"), v12.M(), v12.Pt(), v12.Rapidity(), abs(dphi), deta, abs(cos_thetaCS), abs(phiCS), aco, asym, abs(dphi_e_ee), pair_dca, weight);
               if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
                 fRegistry.fill(HIST("Pair/sm/Photon/hMvsPhiV"), phiv, v12.M());
+                fRegistry.fill(HIST("Pair/sm/Photon/hGeomDeltaEtaDeltaPhi"), dphi_geom, deta_geom, weight);
               }
               break;
             default:
@@ -1035,97 +1070,12 @@ struct DileptonMC {
   using FilteredMyCollisions = soa::Filtered<MyCollisions>;
 
   template <bool isSmeared, typename TCollisions, typename TMCLeptons, typename TPreslice, typename TCut, typename TMCCollisions, typename TMCParticles>
-  void runTruePairing(TCollisions const& collisions, TMCLeptons const& posTracks, TMCLeptons const& negTracks, TPreslice const& perCollision, TCut const& cut, TMCCollisions const&, TMCParticles const& mcparticles)
+  void runTruePairing(TCollisions const& collisions, TMCLeptons const& posTracks, TMCLeptons const& negTracks, TPreslice const& perCollision, TCut const& cut, TMCCollisions const& mccollisions, TMCParticles const& mcparticles)
   {
     for (auto& collision : collisions) {
       initCCDB(collision);
       float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
-        continue;
-      }
-
-      // auto mccollision = collision.template emmcevent_as<TMCCollisions>();
-      // if (cfgEventGeneratorType >= 0 && mccollision.getSubGeneratorId() != cfgEventGeneratorType) {
-      //   continue;
-      // }
-
-      if (!fEMEventCut.IsSelected(collision)) {
-        continue;
-      }
-
-      auto posTracks_per_coll = posTracks.sliceByCached(perCollision, collision.globalIndex(), cache);
-      auto negTracks_per_coll = negTracks.sliceByCached(perCollision, collision.globalIndex(), cache);
-      // LOGF(info, "centrality = %f , posTracks_per_coll.size() = %d, negTracks_per_coll.size() = %d", centralities[cfgCentEstimator], posTracks_per_coll.size(), negTracks_per_coll.size());
-
-      for (auto& [pos, neg] : combinations(CombinationsFullIndexPolicy(posTracks_per_coll, negTracks_per_coll))) { // ULS
-        auto mcpos = mcparticles.iteratorAt(pos.emmcparticleId());
-        auto mccollision_from_pos = mcpos.template emmcevent_as<TMCCollisions>();
-        if (cfgEventGeneratorType >= 0 && mccollision_from_pos.getSubGeneratorId() != cfgEventGeneratorType) {
-          continue;
-        }
-        auto mcneg = mcparticles.iteratorAt(neg.emmcparticleId());
-        auto mccollision_from_neg = mcneg.template emmcevent_as<TMCCollisions>();
-        if (cfgEventGeneratorType >= 0 && mccollision_from_neg.getSubGeneratorId() != cfgEventGeneratorType) {
-          continue;
-        }
-
-        fillTruePairInfo<isSmeared>(collision, pos, neg, cut, mcparticles);
-      } // end of ULS pair loop
-
-      for (auto& [pos1, pos2] : combinations(CombinationsStrictlyUpperIndexPolicy(posTracks_per_coll, posTracks_per_coll))) { // LS++
-        auto mcpos1 = mcparticles.iteratorAt(pos1.emmcparticleId());
-        auto mccollision_from_pos1 = mcpos1.template emmcevent_as<TMCCollisions>();
-        if (cfgEventGeneratorType >= 0 && mccollision_from_pos1.getSubGeneratorId() != cfgEventGeneratorType) {
-          continue;
-        }
-        auto mcpos2 = mcparticles.iteratorAt(pos2.emmcparticleId());
-        auto mccollision_from_pos2 = mcpos2.template emmcevent_as<TMCCollisions>();
-        if (cfgEventGeneratorType >= 0 && mccollision_from_pos2.getSubGeneratorId() != cfgEventGeneratorType) {
-          continue;
-        }
-        fillTruePairInfo<isSmeared>(collision, pos1, pos2, cut, mcparticles);
-      } // end of LS++ pair loop
-
-      for (auto& [neg1, neg2] : combinations(CombinationsStrictlyUpperIndexPolicy(negTracks_per_coll, negTracks_per_coll))) { // LS--
-        auto mcneg1 = mcparticles.iteratorAt(neg1.emmcparticleId());
-        auto mccollision_from_neg1 = mcneg1.template emmcevent_as<TMCCollisions>();
-        if (cfgEventGeneratorType >= 0 && mccollision_from_neg1.getSubGeneratorId() != cfgEventGeneratorType) {
-          continue;
-        }
-        auto mcneg2 = mcparticles.iteratorAt(neg2.emmcparticleId());
-        auto mccollision_from_neg2 = mcneg2.template emmcevent_as<TMCCollisions>();
-        if (cfgEventGeneratorType >= 0 && mccollision_from_neg2.getSubGeneratorId() != cfgEventGeneratorType) {
-          continue;
-        }
-        fillTruePairInfo<isSmeared>(collision, neg1, neg2, cut, mcparticles);
-      } // end of LS-- pair loop
-
-    } // end of collision loop
-  }
-
-  template <bool isSmeared, typename TCollisions, typename TMCCollisions, typename TMCLeptons, typename TMCParticles>
-  void runGenInfo(TCollisions const& collisions, TMCCollisions const&, TMCLeptons const& posTracksMC, TMCLeptons const& negTracksMC, TMCParticles const& mcparticles)
-  {
-    // loop over mc stack and fill histograms for pure MC truth signals
-    // all MC tracks which belong to the MC event corresponding to the current reconstructed event
-
-    std::vector<int> used_mccollisionIds; // used mc collisionIds
-    used_mccollisionIds.reserve(collisions.size());
-
-    for (auto& collision : collisions) {
-      auto mccollision = collision.template emmcevent_as<TMCCollisions>();
-      if (std::find(used_mccollisionIds.begin(), used_mccollisionIds.end(), mccollision.globalIndex()) != used_mccollisionIds.end()) {
-        // LOGF(info, "same mc collision is repeated. continue;");
-        continue;
-      }
-      used_mccollisionIds.emplace_back(mccollision.globalIndex());
-
-      float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
-      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
-        continue;
-      }
-
-      if (cfgEventGeneratorType >= 0 && mccollision.getSubGeneratorId() != cfgEventGeneratorType) {
         continue;
       }
 
@@ -1136,6 +1086,56 @@ struct DileptonMC {
       o2::aod::pwgem::dilepton::utils::eventhistogram::fillEventInfo<1, -1>(&fRegistry, collision);
       fRegistry.fill(HIST("Event/before/hCollisionCounter"), o2::aod::pwgem::dilepton::utils::eventhistogram::nbin_ev); // accepted
       fRegistry.fill(HIST("Event/after/hCollisionCounter"), o2::aod::pwgem::dilepton::utils::eventhistogram::nbin_ev);  // accepted
+
+      auto posTracks_per_coll = posTracks.sliceByCached(perCollision, collision.globalIndex(), cache);
+      auto negTracks_per_coll = negTracks.sliceByCached(perCollision, collision.globalIndex(), cache);
+      // LOGF(info, "centrality = %f , posTracks_per_coll.size() = %d, negTracks_per_coll.size() = %d", centralities[cfgCentEstimator], posTracks_per_coll.size(), negTracks_per_coll.size());
+
+      for (auto& [pos, neg] : combinations(CombinationsFullIndexPolicy(posTracks_per_coll, negTracks_per_coll))) { // ULS
+        fillTruePairInfo<isSmeared>(collision, mccollisions, pos, neg, cut, mcparticles);
+      } // end of ULS pair loop
+
+      for (auto& [pos1, pos2] : combinations(CombinationsStrictlyUpperIndexPolicy(posTracks_per_coll, posTracks_per_coll))) { // LS++
+        fillTruePairInfo<isSmeared>(collision, mccollisions, pos1, pos2, cut, mcparticles);
+      } // end of LS++ pair loop
+
+      for (auto& [neg1, neg2] : combinations(CombinationsStrictlyUpperIndexPolicy(negTracks_per_coll, negTracks_per_coll))) { // LS--
+        fillTruePairInfo<isSmeared>(collision, mccollisions, neg1, neg2, cut, mcparticles);
+      } // end of LS-- pair loop
+
+    } // end of collision loop
+  }
+
+  template <bool isSmeared, typename TCollisions, typename TMCCollisions, typename TMCLeptons, typename TMCParticles>
+  void runGenInfo(TCollisions const& collisions, TMCCollisions const& mccollisions, TMCLeptons const& posTracksMC, TMCLeptons const& negTracksMC, TMCParticles const& mcparticles)
+  {
+    for (auto& mccollision : mccollisions) {
+      if (cfgEventGeneratorType >= 0 && mccollision.getSubGeneratorId() != cfgEventGeneratorType) {
+        continue;
+      }
+
+      auto rec_colls_per_mccoll = collisions.sliceBy(recColperMcCollision, mccollision.globalIndex());
+      uint32_t maxNumContrib = 0;
+      int rec_col_globalIndex = -999;
+      for (auto& rec_col : rec_colls_per_mccoll) {
+        if (rec_col.numContrib() > maxNumContrib) {
+          rec_col_globalIndex = rec_col.globalIndex();
+          maxNumContrib = rec_col.numContrib(); // assign mc collision to collision where the number of contibutor is lager. LF/MM recommendation
+        }
+      }
+
+      if (rec_colls_per_mccoll.size() < 1) {
+        continue;
+      }
+      auto collision = collisions.rawIteratorAt(rec_col_globalIndex);
+
+      float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
+      if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
+        continue;
+      }
+      if (!fEMEventCut.IsSelected(collision)) {
+        continue;
+      }
 
       auto posTracks_per_coll = posTracksMC.sliceByCachedUnsorted(aod::emmcparticle::emmceventId, mccollision.globalIndex(), cache);
       auto negTracks_per_coll = negTracksMC.sliceByCachedUnsorted(aod::emmcparticle::emmceventId, mccollision.globalIndex(), cache);
@@ -1615,8 +1615,6 @@ struct DileptonMC {
         }
       } // end of true LS++ pair loop
     } // end of collision loop
-    used_mccollisionIds.clear();
-    used_mccollisionIds.shrink_to_fit();
   }
 
   template <bool is_wo_acc = false, typename TCollision, typename TTrack1, typename TTrack2, typename TCut>
@@ -1641,6 +1639,30 @@ struct DileptonMC {
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
       if (!cut.template IsSelectedPair<is_wo_acc>(t1, t2, d_bz)) {
         return false;
+      }
+      if (dielectroncuts.cfg_x_to_go > 0.f) {
+        auto track_par_cov1 = getTrackParCov(t1);
+        track_par_cov1.setPID(o2::track::PID::Electron);
+        o2::base::Propagator::Instance()->propagateToX(track_par_cov1, dielectroncuts.cfg_x_to_go, d_bz, o2::base::PropagatorImpl<float>::MAX_SIN_PHI, o2::base::PropagatorImpl<float>::MAX_STEP, matCorr);
+        auto xyz1 = track_par_cov1.getXYZGlo();
+        float eta1 = RecoDecay::eta(std::array{xyz1.X(), xyz1.Y(), xyz1.Z()});
+        float phi1 = RecoDecay::phi(std::array{xyz1.X(), xyz1.Y()});
+        o2::math_utils::bringTo02Pi(phi1);
+
+        auto track_par_cov2 = getTrackParCov(t2);
+        track_par_cov2.setPID(o2::track::PID::Electron);
+        o2::base::Propagator::Instance()->propagateToX(track_par_cov2, dielectroncuts.cfg_x_to_go, d_bz, o2::base::PropagatorImpl<float>::MAX_SIN_PHI, o2::base::PropagatorImpl<float>::MAX_STEP, matCorr);
+        auto xyz2 = track_par_cov2.getXYZGlo();
+        float eta2 = RecoDecay::eta(std::array{xyz2.X(), xyz2.Y(), xyz2.Z()});
+        float phi2 = RecoDecay::phi(std::array{xyz2.X(), xyz2.Y()});
+        o2::math_utils::bringTo02Pi(phi2);
+
+        float deta_geom = t1.sign() * t1.pt() > t2.sign() * t2.pt() ? eta1 - eta2 : eta2 - eta1;
+        float dphi_geom = t1.sign() * t1.pt() > t2.sign() * t2.pt() ? phi1 - phi2 : phi2 - phi1;
+        o2::math_utils::bringToPMPi(dphi_geom);
+        if (dielectroncuts.cfg_apply_detadphi_geom && std::pow(deta_geom / dielectroncuts.cfg_min_deta_geom, 2) + std::pow(dphi_geom / dielectroncuts.cfg_min_dphi_geom, 2) < 1.f) {
+          return false;
+        }
       }
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
       if (!cut.template IsSelectedPair<is_wo_acc>(t1, t2)) {
@@ -2111,6 +2133,7 @@ struct DileptonMC {
   Partition<aod::EMMCParticles> negative_muonsMC = o2::aod::mcparticle::pdgCode == 13;      // mu-
   PresliceUnsorted<aod::EMMCParticles> perMcCollision = aod::emmcparticle::emmceventId;
   PresliceUnsorted<aod::EMMCGenVectorMesons> perMcCollision_vm = aod::emmcgenvectormeson::emmceventId;
+  PresliceUnsorted<MyCollisions> recColperMcCollision = aod::emmceventlabel::emmceventId;
 
   void processAnalysis(FilteredMyCollisions const& collisions, aod::EMMCEvents const& mccollisions, aod::EMMCParticles const& mcparticles, TLeptons const& leptons)
   {

@@ -142,7 +142,7 @@ struct PhotonIsolationQA {
     Data_Info.add("hEvsPtIso", "Pt_Iso", o2HistType::kTH2F, {{Energy_Axis}, {PtIso_Axis}});
     Data_Info.add("hRho_Perpen_Cone", "Energy vs Density of perpendicular cone", o2HistType::kTH2F, {{Energy_Axis}, {Rho_Axis}});
     Data_Info.add("hShowerShape", "Shower shape", o2HistType::kTH2F, {{Shower_Shape_Long_Axis}, {Shower_Shape_Short_Axis}});
-    Data_Info.add("hSigmaLongvsPtIso", "Long shower shape vs Pt_Iso", o2HistType::kTH2F, {{Shower_Shape_Long_Axis}, {PtIso_Axis}});
+    Data_Info.add("hSigmaLongvsPtIso", "Long shower shape vs Pt_Iso", o2HistType::kTH3F, {{Shower_Shape_Long_Axis}, {PtIso_Axis}, {Energy_Axis}});
     Data_Info.add("hABCDControlRegion", "Yield Control Regions", o2HistType::kTH2F, {{ABCD_Axis}, {Energy_Axis}});
     Data_Info.add("hCollperBC", "collisions per BC", o2HistType::kTH1F, {BC_Axis});
     Data_Info.add("hEnergy_NLM_Flag", "Energy vs NLM", o2HistType::kTH3F, {{Energy_Axis}, {NLM_Axis}, {SM_Flag_Axis}});
@@ -493,7 +493,7 @@ struct PhotonIsolationQA {
 
                 Data_Info.fill(HIST("hEvsPtIso"), cluster.energy(), Pt_iso);
                 Data_Info.fill(HIST("hRho_Perpen_Cone"), cluster.energy(), Rho_Perpen_Cone);
-                Data_Info.fill(HIST("hSigmaLongvsPtIso"), cluster.m02(), Pt_iso);
+                Data_Info.fill(HIST("hSigmaLongvsPtIso"), cluster.m02(), Pt_iso, cluster.energy());
                 fillABCDHisto(Data_Info, cluster, Pt_iso);
               }
             }
