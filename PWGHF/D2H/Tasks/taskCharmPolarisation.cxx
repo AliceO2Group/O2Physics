@@ -189,6 +189,9 @@ struct TaskPolarisationCharmHadrons {
   Configurable<bool> activateTHnEulerPhiMonitor{"activateTHnEulerPhiMonitor", false, "Flag to switch on the monitoring THnSparse vs. Euler angle phi (Lc -> pKpi)"};
   ConfigurableAxis configTHnAxisEulerPhi{"configTHnAxisEulerPhi", {24, -o2::constants::math::PI, o2::constants::math::PI}, "Euler polar angle #phi"};
 
+  /// Application of rapidity cut for reconstructed candidates
+  Configurable<float> rapidityCut{"rapidityCut", 999.f, "Max. value of reconstructed candidate rapidity (abs. value)"};
+
   Filter filterSelectDstarCandidates = aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == selectionFlagDstarToD0Pi;
   Filter filterSelectLcToPKPiCandidates = (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLcToPKPi) || (aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLcToPKPi);
 
@@ -1165,6 +1168,11 @@ struct TaskPolarisationCharmHadrons {
       } // Lc->pKpi
 
       if (invMassCharmHadForSparse < minInvMass || invMassCharmHadForSparse > maxInvMass) {
+        continue;
+      }
+
+      /// apply rapidity selection on the reconstructed candidate
+      if(std::abs(rapidity) > rapidityCut) {
         continue;
       }
 
