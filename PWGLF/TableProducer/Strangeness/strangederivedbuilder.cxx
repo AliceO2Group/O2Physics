@@ -114,6 +114,7 @@ struct strangederivedbuilder {
   Produces<aod::StraFV0AQVs> StraFV0AQVs;     // FV0A Q-vector
   Produces<aod::StraTPCQVs> StraTPCQVs;       // TPC Q-vector
   Produces<aod::StraFT0CQVsEv> StraFT0CQVsEv; // events used to compute FT0C Q-vector (LF)
+  Produces<aod::StraZDCSP> StraZDCSP;         // ZDC Sums and Products
 
   //__________________________________________________
   // Generated binned data
@@ -803,6 +804,10 @@ struct strangederivedbuilder {
     StraFT0CQVs(collision.qFT0C() * std::cos(2 * collision.psiFT0C()), collision.qFT0C() * std::sin(2 * collision.psiFT0C()), collision.qFT0C());
     StraFT0CQVsEv(collision.triggereventep());
   }
+  void processZDCSP(soa::Join<aod::Collisions, aod::SPCalibrationTables>::iterator const& collision)
+  {
+    StraZDCSP(collision.triggereventsp(), collision.psiZDCA(), collision.psiZDCC());
+  }
   void processFT0MQVectors(soa::Join<aod::Collisions, aod::QvectorFT0Ms>::iterator const& collision)
   {
     StraFT0MQVs(collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.sumAmplFT0M());
@@ -908,6 +913,7 @@ struct strangederivedbuilder {
   PROCESS_SWITCH(strangederivedbuilder, processFV0AQVectors, "Produce FV0A Q-vectors table", false);
   PROCESS_SWITCH(strangederivedbuilder, processTPCQVectors, "Produce TPC Q-vectors table", false);
   PROCESS_SWITCH(strangederivedbuilder, processTPCQVectorsLF, "Produce TPC Q-vectors table using LF temporary calibration", false);
+  PROCESS_SWITCH(strangederivedbuilder, processZDCSP, "Produce ZDC SP table", false);
 
   // dedicated findable functionality
   PROCESS_SWITCH(strangederivedbuilder, processV0FoundTags, "Produce FoundV0Tags for findable exercise", false);

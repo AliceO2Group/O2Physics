@@ -134,6 +134,7 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     BookQvectorHistograms();
     BookCorrelationsHistograms();
     BookWeightsHistograms();
+    BookCentralityWeightsHistograms();
     BookNestedLoopsHistograms();
     BookNUAHistograms();
     BookInternalValidationHistograms();
