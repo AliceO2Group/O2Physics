@@ -43,3 +43,8 @@ o2physics_add_dpl_workflow(task-mc-validation
 #                     SOURCES taskSelOptimisation.cxx
 #                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
 #                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(correlate-estimator-dn-deta
+                    SOURCES correlateEstimatorDnDeta.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
