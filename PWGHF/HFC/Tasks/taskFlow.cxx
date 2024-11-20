@@ -241,10 +241,16 @@ struct HfTaskFlow {
     //  =========================
 
     // DATA : event histograms for TPC-TPC HF-h same event
+    registry.add("Data/TpcTpc/HfHadron/SameEvent/hPt", "pT", {HistType::kTH1F, {{100, 0, 10, "p_{T}"}}});
+    registry.add("Data/TpcTpc/HfHadron/SameEvent/hEta", "eta", {HistType::kTH1F, {{100, -4, 4, "#eta"}}});
+    registry.add("Data/TpcTpc/HfHadron/SameEvent/hPhi", "phi", {HistType::kTH1F, {{100, 0, TwoPI, "#varphi"}}});
+    registry.add("Data/TpcTpc/HfHadron/SameEvent/hYields", "multiplicity vs pT vs eta", {HistType::kTH3F, {{200, 0, 200, "multiplicity"}, {40, 0, 20, "p_{T}"}, {100, -2, 2, "#eta"}}});
+    registry.add("Data/TpcTpc/HfHadron/SameEvent/hEtaPhi", "multiplicity vs eta vs phi", {HistType::kTH3F, {{200, 0, 200, "multiplicity"}, {100, -2, 2, "#eta"}, {200, 0, TwoPI, "#varphi"}}});
     
     registry.add("Data/TpcTpc/HfHadron/SameEvent/2Prong/hEventCountSame", "bin", {HistType::kTH1F, {{nBinsMix + 2, -2.5, -0.5 + nBinsMix, "bin"}}});
     registry.add("Data/TpcTpc/HfHadron/SameEvent/2Prong/hEta", "eta", {HistType::kTH1F, {{100, -4, 4, "#eta"}}});
     registry.add("Data/TpcTpc/HfHadron/SameEvent/2Prong/hPhi", "phi", {HistType::kTH1F, {{100, 0, TwoPI, "#varphi"}}});
+    registry.add("Data/TpcTpc/HfHadron/SameEvent/2Prong/hMultiplicity", "multiplicity;multiplicity;entries", {HistType::kTH1F, {{10000, 0., 10000.}}});
     registry.add("Data/TpcTpc/HfHadron/MixedEvent/hEventCountHFMixing", "bin", {HistType::kTH1F, {{nBinsMix + 2, -2.5, -0.5 + nBinsMix, "bin"}}});
     registry.add("Data/TpcTpc/HfHadron/MixedEvent/hMultiplicityHFMixing", "hMultiplicityHFMixing", {HistType::kTH1F, {{500, 0, 500}}});
     registry.add("Data/TpcTpc/HfHadron/MixedEvent/hVtxZHFMixing", "hVtxZHFMixing", {HistType::kTH1F, {{100, -10, 10}}});
@@ -288,7 +294,7 @@ struct HfTaskFlow {
     registry.add("Data/TpcTpc/HfHadron/SameEvent/3Prong/hd0VsPtProng0", "3-prong candidates;prong 0 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{600, -0.4, 0.4}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("Data/TpcTpc/HfHadron/SameEvent/3Prong/hd0VsPtProng1", "3-prong candidates;prong 1 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{600, -0.4, 0.4}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("Data/TpcTpc/HfHadron/SameEvent/3Prong/hd0VsPtProng2", "3-prong candidates;prong 2 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{600, -0.4, 0.4}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("Data/TpcTpc/HfHadron/SameEvent/3Prong/hMultiplicity", "multiplicity;multiplicity;entries", {HistType::kTH1F, {{10000, 0., 10000.}}});
+    registry.add("Data/TpcTpc/HfHadron/SameEvent/3Prong/hMultiplicity", "multiplicity;multiplicity;entries", {HistType::kTH1F, {{500, 0, 500}}});
     registry.add("Data/TpcTpc/HfHadron/SameEvent/3Prong/hPt", "3-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}});
     registry.add("Data/TpcTpc/HfHadron/SameEvent/3Prong/hPtProng0", "3-prong candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}});
     registry.add("Data/TpcTpc/HfHadron/SameEvent/3Prong/hPtProng1", "3-prong candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}});
@@ -330,6 +336,7 @@ struct HfTaskFlow {
     registry.add("Data/TpcMft/HadronHadron/SameEvent/hPtTPC", "pT", {HistType::kTH1F, {{100, 0, 10, "p_{T}"}}});
     registry.add("Data/TpcMft/HadronHadron/SameEvent/hYieldsTPC", "multiplicity vs pT vs eta", {HistType::kTH3F, {{200, 0, 200, "multiplicity"}, {40, 0, 20, "p_{T}"}, {100, -2, 2, "#eta"}}});
     registry.add("Data/TpcMft/HadronHadron/SameEvent/hNtracksTPC", "hNtracks", {HistType::kTH1F, {{500, 0, 500}}});
+    registry.add("Data/TpcMft/HadronHadron/SameEvent/hMultiplicityTPC", "multiplicity;multiplicity;entries", {HistType::kTH1F, {{500, 0, 500}}});
 
     // DATA : associated particles (MFT tracks) histograms for TPC-MFT h-h same event
     registry.add("Data/TpcMft/HadronHadron/SameEvent/hEtaPhiMFT", "multiplicity vs eta vs phi in MFT", {HistType::kTH3F, {{200, 0, 200, "multiplicity"}, {100, -2, 2, "#eta"}, {200, 0, TwoPI, "#varphi"}}});
@@ -432,7 +439,7 @@ struct HfTaskFlow {
     registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hd0VsPtProng0", "3-prong candidates;prong 0 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{600, -0.4, 0.4}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hd0VsPtProng1", "3-prong candidates;prong 1 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{600, -0.4, 0.4}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hd0VsPtProng2", "3-prong candidates;prong 2 DCAxy to prim. vertex (cm);entries", {HistType::kTH2F, {{600, -0.4, 0.4}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hMultiplicity", "multiplicity;multiplicity;entries", {HistType::kTH1F, {{10000, 0., 10000.}}});
+    registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hMultiplicity", "multiplicity;multiplicity;entries", {HistType::kTH1F, {{500, 0, 500}}});
     registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hPt", "3-prong candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}});
     registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hPtProng0", "3-prong candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}});
     registry.add("Data/TpcMft/HfHadron/SameEvent/3Prong/hPtProng1", "3-prong candidates;prong 1 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {{360, 0., 36.}}});
@@ -543,44 +550,28 @@ struct HfTaskFlow {
   } // End of init() function
 
   // =========================
-  //    templates
-  //  FIXME: Some collisions are rejected here, what causes (part of) differences with the D0 task
-  // =========================
-  template <typename TCollision>
-  bool isCollisionSelected(TCollision const& collision, bool fillHistograms = false)
-  {
-    if (fillHistograms)
-      registry.fill(HIST("Data/hEventCounter"), 1);
-
-    if (processMc == false) {
-      if (!collision.sel8()) {
-        return false;
-      }
-    }
-
-    if (fillHistograms)
-      registry.fill(HIST("Data/hEventCounter"), 3);
-
-    return true;
-  }
-
-  // =========================
-  //      Quality Assesment plots
+  //      Quality Assesment plots for Same Event
   // =========================
 
   // ---- DATA : TPC-TPC h-h Same Event QA ----
-  template <typename TTracks>
-  void fillTpcTpcChChSameEventQa(float multiplicity, TTracks const& tracks)
+  template <typename TTrack>
+  void fillTpcTpcChChSameEventQa(float multiplicity, TTrack const& track)
   {
-    int nTracks = tracks.size();
-    for (const auto& track1 : tracks) {
-      registry.fill(HIST("Data/TpcTpc/HadronHadron/SameEvent/hPt"), track1.pt());
-      registry.fill(HIST("Data/TpcTpc/HadronHadron/SameEvent/hEta"), track1.eta());
-      registry.fill(HIST("Data/TpcTpc/HadronHadron/SameEvent/hPhi"), track1.phi());
-      registry.fill(HIST("Data/TpcTpc/HadronHadron/SameEvent/hYields"), multiplicity, track1.pt(), track1.eta());
-      registry.fill(HIST("Data/TpcTpc/HadronHadron/SameEvent/hEtaPhi"), multiplicity, track1.eta(), track1.phi());
-    }
-    registry.fill(HIST("Data/TpcTpc/HadronHadron/SameEvent/hNtracks"), nTracks);
+    registry.fill(HIST("Data/TpcTpc/HadronHadron/SameEvent/hPt"), track.pt());
+    registry.fill(HIST("Data/TpcTpc/HadronHadron/SameEvent/hEta"), track.eta());
+    registry.fill(HIST("Data/TpcTpc/HadronHadron/SameEvent/hPhi"), track.phi());
+    registry.fill(HIST("Data/TpcTpc/HadronHadron/SameEvent/hYields"), multiplicity, track.pt(), track.eta());
+    registry.fill(HIST("Data/TpcTpc/HadronHadron/SameEvent/hEtaPhi"), multiplicity, track.eta(), track.phi());
+  }
+
+  template <typename TTrack>
+  void fillTpcTpcHfChSameEventQa(float multiplicity, TTrack const& track)
+  {
+    registry.fill(HIST("Data/TpcTpc/Hfadron/SameEvent/hPt"), track.pt());
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/hEta"), track.eta());
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/hPhi"), track.phi());
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/hYields"), multiplicity, track.pt(), track.eta());
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/hEtaPhi"), multiplicity, track.eta(), track.phi());
   }
 
   // ---- MC : TPC-TPC h-h Same Event QA ----
@@ -622,6 +613,264 @@ struct HfTaskFlow {
     }
     return nTracks;
   }
+
+  // ---- DATA : TPC-MFT h-h Same Event QA ----
+  template <typename TTrack>
+  void fillTpcMftChChSameEventQa(float multiplicity, TTrack const& track, bool isTPC)
+  {
+    float phi = track.phi();
+    o2::math_utils::bringTo02Pi(phi);
+
+    if (isTPC) { // trigger hadron from TPC
+      registry.fill(HIST("Data/TpcMft/HadronHadron/SameEvent/hEtaTPC"), track.eta());
+      registry.fill(HIST("Data/TpcMft/HadronHadron/SameEvent/hPhiTPC"), phi);
+      registry.fill(HIST("Data/TpcMft/HadronHadron/SameEvent/hEtaPhiTPC"), multiplicity, track.eta(), phi);
+      registry.fill(HIST("Data/TpcMft/HadronHadron/SameEvent/hPtTPC"), track.pt());
+      registry.fill(HIST("Data/TpcMft/HadronHadron/SameEvent/hYieldsTPC"), multiplicity, track.pt(), track.eta());
+      registry.fill(HIST("Data/TpcMft/HadronHadron/SameEvent/hMultiplicityTPC"), multiplicity);
+      //add multiplicity plot?
+    } else {  // associated hadron from MFT
+      registry.fill(HIST("Data/TpcMft/HadronHadron/SameEvent/hEtaMFT"), track.eta());
+      registry.fill(HIST("Data/TpcMft/HadronHadron/SameEvent/hPhiMFT"), phi);
+      registry.fill(HIST("Data/TpcMft/HadronHadron/SameEvent/hEtaPhiMFT"), multiplicity, track.eta(), phi);
+      registry.fill(HIST("Data/TpcMft/HadronHadron/SameEvent/hPtMFT"), track.pt());
+      registry.fill(HIST("Data/TpcMft/HadronHadron/SameEvent/hYieldsMFT"), multiplicity, track.pt(), track.eta());
+    }
+  }
+
+  // ---- DATA : TPC-MFT HF-h Same Event QA ----
+  
+  template <typename TTrack>
+  void fillTpcMftHfChSameEventQa(float multiplicity, TTrack const& track)
+  {
+    // Used to fill QA plots for associated track from MFT when doing TPC-MFT HF-h correlations
+    float phi = track.phi();
+    o2::math_utils::bringTo02Pi(phi);
+
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/hEtaMFT"), track.eta());
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/hPhiMFT"), phi);
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/hEtaPhiMFT"), multiplicity, track.eta(), phi);
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/hPtMFT"), track.pt());
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/hYieldsMFT"), multiplicity, track.pt(), track.eta());
+    //add plot for multiplicity ?
+  }
+  
+
+  // ---- DATA : TPC-TPC HF-h Same Event (Candidates) QA ----
+  //  TODO: Note: we do not need all these plots since they are in D0 and Lc task -> remove it after we are sure this works
+
+  //  TODO: Note: we do not need all these plots since they are in D0 and Lc task -> remove it after we are sure this works
+  template <typename TTrack>
+  void fillTpcTpcD0CandidateQa(float multiplicity, TTrack const& candidate)
+  {
+    float phi = candidate.phi();
+    o2::math_utils::bringTo02Pi(phi);
+
+    if (candidate.isSelD0() >= selectionFlagD0) {
+      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hMassVsPt"), hfHelper.invMassD0ToPiK(candidate), candidate.pt());
+      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hMass"), hfHelper.invMassD0ToPiK(candidate));
+    }
+    if (candidate.isSelD0bar() >= selectionFlagD0bar) {
+      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hMassVsPt"), hfHelper.invMassD0barToKPi(candidate), candidate.pt());
+      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hMass"), hfHelper.invMassD0barToKPi(candidate));
+    }
+  
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hMultiplicity"), multiplicity);
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hEta"), candidate.eta());
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hPhi"), phi);
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hPtCandidate"), candidate.pt());
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hPtProng0"), candidate.ptProng0());
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hPtProng1"), candidate.ptProng1());
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hDecLength"), candidate.decayLength(), candidate.pt());
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hDecLengthXY"), candidate.decayLengthXY(), candidate.pt());
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hd0Prong0"), candidate.impactParameter0(), candidate.pt());
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hd0Prong1"), candidate.impactParameter1(), candidate.pt());
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hd0d0"), candidate.impactParameterProduct(), candidate.pt());
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hCTS"), hfHelper.cosThetaStarD0(candidate), candidate.pt());
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hCt"), hfHelper.ctD0(candidate), candidate.pt());
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hCPA"), candidate.cpa(), candidate.pt());
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hEtaCandVsPt"), candidate.eta(), candidate.pt());
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hSelectionStatus"), candidate.isSelD0() + (candidate.isSelD0bar() * 2), candidate.pt());
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hImpParErr"), candidate.errorImpactParameter0(), candidate.pt());
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hImpParErr"), candidate.errorImpactParameter1(), candidate.pt());
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hDecLenErr"), candidate.errorDecayLength(), candidate.pt());
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hDecLenXYErr"), candidate.errorDecayLengthXY(), candidate.pt());
+  }
+
+  // ---- DATA : TPC-TPC HF-h Same Event (Candidates) QA ----
+  //  TODO: Note: we do not need all these plots since they are in D0 and Lc task -> remove it after we are sure this works
+  template <typename TTrack>
+  void fillTpcTpcLcCandidateQa(float multiplicity, TTrack const& candidate)
+  {
+    float phi = candidate.phi();
+    o2::math_utils::bringTo02Pi(phi);
+
+    auto pt = candidate.pt();
+    auto ptProng0 = candidate.ptProng0();
+    auto ptProng1 = candidate.ptProng1();
+    auto ptProng2 = candidate.ptProng2();
+    auto decayLength = candidate.decayLength();
+    auto decayLengthXY = candidate.decayLengthXY();
+    auto chi2PCA = candidate.chi2PCA();
+    auto cpa = candidate.cpa();
+    auto cpaXY = candidate.cpaXY();
+
+    if (candidate.isSelLcToPKPi() >= selectionFlagLcToPKPi) {
+      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hMass"), hfHelper.invMassLcToPKPi(candidate));
+      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hMassVsPtVsMult"), hfHelper.invMassLcToPKPi(candidate), pt, multiplicity);
+      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hMassVsPt"), hfHelper.invMassLcToPKPi(candidate), pt);
+    }
+    if (candidate.isSelLcToPiKP() >= selectionFlagLcToPiKP) {
+      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hMass"), hfHelper.invMassLcToPiKP(candidate));
+      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hMassVsPtVsMult"), hfHelper.invMassLcToPiKP(candidate), pt, multiplicity);
+      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hMassVsPt"), hfHelper.invMassLcToPiKP(candidate), pt);
+    }
+
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hMultiplicity"), multiplicity);
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hPt"), pt);
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hPtProng0"), ptProng0);
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hPtProng1"), ptProng1);
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hPtProng2"), ptProng2);
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hd0Prong0"), candidate.impactParameter0());
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hd0Prong1"), candidate.impactParameter1());
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hd0Prong2"), candidate.impactParameter2());
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hd0VsPtProng0"), candidate.impactParameter0(), pt);
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hd0VsPtProng1"), candidate.impactParameter1(), pt);
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hd0VsPtProng2"), candidate.impactParameter2(), pt);
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hDecLength"), decayLength);
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hDecLengthVsPt"), decayLength, pt);
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hDecLengthxy"), decayLengthXY);
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hDecLengthxyVsPt"), decayLengthXY, pt);
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hCt"), hfHelper.ctLc(candidate));
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hCtVsPt"), hfHelper.ctLc(candidate), pt);
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hCPA"), cpa);
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hCPAVsPt"), cpa, pt);
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hCPAxy"), cpaXY);
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hCPAxyVsPt"), cpaXY, pt);
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hDca2"), chi2PCA);
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hDca2VsPt"), chi2PCA, pt);
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hEta"), candidate.eta());
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hEtaVsPt"), candidate.eta(), pt);
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hPhi"), phi);
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hPhiVsPt"), phi, pt);
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hSelectionStatus"), candidate.isSelLcToPKPi(), pt);
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hSelectionStatus"), candidate.isSelLcToPiKP(), pt);
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hImpParErrProng0"), candidate.errorImpactParameter0(), pt);
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hImpParErrProng1"), candidate.errorImpactParameter1(), pt);
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hImpParErrProng2"), candidate.errorImpactParameter2(), pt);
+    registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hDecLenErr"), candidate.errorDecayLength(), pt);
+  }
+
+
+  // ---- DATA : TPC-MFT HF-h Same Event (Candidates) QA ----
+  //  TODO: Note: we do not need all these plots since they are in D0 and Lc task -> remove it after we are sure this works
+  template <typename TTrack>
+  void fillTpcMftD0CandidateQa(float multiplicity, TTrack const& candidate)
+  {
+    float phi = candidate.phi();
+    o2::math_utils::bringTo02Pi(phi);
+
+    if (candidate.isSelD0() >= selectionFlagD0) {
+      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hMassVsPt"), hfHelper.invMassD0ToPiK(candidate), candidate.pt());
+      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hMass"), hfHelper.invMassD0ToPiK(candidate));
+    }
+    if (candidate.isSelD0bar() >= selectionFlagD0bar) {
+      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hMassVsPt"), hfHelper.invMassD0barToKPi(candidate), candidate.pt());
+      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hMass"), hfHelper.invMassD0barToKPi(candidate));
+    }
+
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hEtaCandidate"), candidate.eta());
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hPhiCandidate"), phi);
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hEtaPhiCandidate"), multiplicity, candidate.eta(), phi);
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hYieldsCandidate"), multiplicity, candidate.pt(), candidate.eta());
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hPtCandidate"), candidate.pt());
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hPtProng0"), candidate.ptProng0());
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hPtProng1"), candidate.ptProng1());
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hDecLength"), candidate.decayLength(), candidate.pt());
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hDecLengthXY"), candidate.decayLengthXY(), candidate.pt());
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hd0Prong0"), candidate.impactParameter0(), candidate.pt());
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hd0Prong1"), candidate.impactParameter1(), candidate.pt());
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hd0d0"), candidate.impactParameterProduct(), candidate.pt());
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hCTS"), hfHelper.cosThetaStarD0(candidate), candidate.pt());
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hCt"), hfHelper.ctD0(candidate), candidate.pt());
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hCPA"), candidate.cpa(), candidate.pt());
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hEtaCandVsPt"), candidate.eta(), candidate.pt());
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hSelectionStatus"), candidate.isSelD0() + (candidate.isSelD0bar() * 2), candidate.pt());
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hImpParErr"), candidate.errorImpactParameter0(), candidate.pt());
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hImpParErr"), candidate.errorImpactParameter1(), candidate.pt());
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hDecLenErr"), candidate.errorDecayLength(), candidate.pt());
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hDecLenXYErr"), candidate.errorDecayLengthXY(), candidate.pt());
+  }
+
+  // ---- DATA : TPC-MFT HF-h Same Event (Candidates) QA ----
+  //  TODO: Note: we do not need all these plots since they are in D0 and Lc task -> remove it after we are sure this works
+  
+  template <typename TTrack>
+  void fillTpcMftLcCandidateQa(float multiplicity, TTrack const& candidate)
+  {
+    auto pt = candidate.pt();
+    auto ptProng0 = candidate.ptProng0();
+    auto ptProng1 = candidate.ptProng1();
+    auto ptProng2 = candidate.ptProng2();
+    auto decayLength = candidate.decayLength();
+    auto decayLengthXY = candidate.decayLengthXY();
+    auto chi2PCA = candidate.chi2PCA();
+    auto cpa = candidate.cpa();
+    auto cpaXY = candidate.cpaXY();
+    float phi = candidate.phi();
+    o2::math_utils::bringTo02Pi(phi);
+
+    if (candidate.isSelLcToPKPi() >= selectionFlagLcToPKPi) {
+      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hMass"), hfHelper.invMassLcToPKPi(candidate));
+      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hMassVsPtVsMult"), hfHelper.invMassLcToPKPi(candidate), pt, multiplicity);
+      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hMassVsPt"), hfHelper.invMassLcToPKPi(candidate), pt);
+    }
+    if (candidate.isSelLcToPiKP() >= selectionFlagLcToPiKP) {
+      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hMass"), hfHelper.invMassLcToPiKP(candidate));
+      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hMassVsPtVsMult"), hfHelper.invMassLcToPiKP(candidate), pt, multiplicity);
+      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hMassVsPt"), hfHelper.invMassLcToPiKP(candidate), pt);
+    }
+
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hYieldsCandidate"), multiplicity, candidate.pt(), candidate.eta());
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hEtaPhiCandidate"), multiplicity, candidate.eta(), phi);
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hNtracksCandidate"), multiplicity);
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hPt"), pt);
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hPtProng0"), ptProng0);
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hPtProng1"), ptProng1);
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hPtProng2"), ptProng2);
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hd0Prong0"), candidate.impactParameter0());
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hd0Prong1"), candidate.impactParameter1());
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hd0Prong2"), candidate.impactParameter2());
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hd0VsPtProng0"), candidate.impactParameter0(), pt);
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hd0VsPtProng1"), candidate.impactParameter1(), pt);
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hd0VsPtProng2"), candidate.impactParameter2(), pt);
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hDecLength"), decayLength);
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hDecLengthVsPt"), decayLength, pt);
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hDecLengthxy"), decayLengthXY);
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hDecLengthxyVsPt"), decayLengthXY, pt);
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hCt"), hfHelper.ctLc(candidate));
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hCtVsPt"), hfHelper.ctLc(candidate), pt);
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hCPA"), cpa);
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hCPAVsPt"), cpa, pt);
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hCPAxy"), cpaXY);
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hCPAxyVsPt"), cpaXY, pt);
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hDca2"), chi2PCA);
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hDca2VsPt"), chi2PCA, pt);
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hEta"), candidate.eta());
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hEtaVsPt"), candidate.eta(), pt);
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hPhi"), candidate.phi());
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hPhiVsPt"), candidate.phi(), pt);
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hSelectionStatus"), candidate.isSelLcToPKPi(), pt);
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hSelectionStatus"), candidate.isSelLcToPiKP(), pt);
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hImpParErrProng0"), candidate.errorImpactParameter0(), pt);
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hImpParErrProng1"), candidate.errorImpactParameter1(), pt);
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hImpParErrProng2"), candidate.errorImpactParameter2(), pt);
+    registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hDecLenErr"), candidate.errorDecayLength(), pt);
+  }
+
+ // =========================
+ //      Quality Assesment plots for Mixed Event
+ // =========================
 
   // ---- DATA : TPC-TPC h-h Mixed Event QA ----
   template <typename TTracks>
@@ -692,73 +941,6 @@ struct HfTaskFlow {
       registry.fill(HIST("Data/TpcTpc/HfHadron/MixedEvent/hPhiHFMixing"), track1.phi());
     }
     registry.fill(HIST("Data/TpcTpc/HfHadron/MixedEvent/hNtracksHFMixing"), nTracks);
-  }
-
-  // ---- DATA : TPC-MFT h-h Same Event QA ----
-  template <typename TTracks>
-  void fillTpcMftChChSameEventQa(float multiplicity, TTracks const& tracks)
-  {
-    int nTracks = tracks.size();
-    bool isMFT = false;
-    for (const auto& track1 : tracks) {
-      if constexpr (std::is_same_v<aod::MFTTracks, TTracks>) { // if MFT tracks
-
-        // apply cuts for MFT tracks
-        if (!isAcceptedMftTrack(track1)) {
-          continue;
-        }
-
-        isMFT = true;
-        registry.fill(HIST("Data/TpcMft/HadronHadron/SameEvent/hEtaMFT"), track1.eta());
-        float phi = track1.phi();
-        o2::math_utils::bringTo02Pi(phi);
-
-        registry.fill(HIST("Data/TpcMft/HadronHadron/SameEvent/hPhiMFT"), phi);
-        registry.fill(HIST("Data/TpcMft/HadronHadron/SameEvent/hEtaPhiMFT"), multiplicity, track1.eta(), phi);
-        registry.fill(HIST("Data/TpcMft/HadronHadron/SameEvent/hPtMFT"), track1.pt());
-        registry.fill(HIST("Data/TpcMft/HadronHadron/SameEvent/hYieldsMFT"), multiplicity, track1.pt(), track1.eta());
-      } else { // if TPC tracks
-        registry.fill(HIST("Data/TpcMft/HadronHadron/SameEvent/hEtaTPC"), track1.eta());
-        float phi = track1.phi();
-        o2::math_utils::bringTo02Pi(phi);
-        registry.fill(HIST("Data/TpcMft/HadronHadron/SameEvent/hPhiTPC"), phi);
-        registry.fill(HIST("Data/TpcMft/HadronHadron/SameEvent/hEtaPhiTPC"), multiplicity, track1.eta(), phi);
-        registry.fill(HIST("Data/TpcMft/HadronHadron/SameEvent/hPtTPC"), track1.pt());
-        registry.fill(HIST("Data/TpcMft/HadronHadron/SameEvent/hYieldsTPC"), multiplicity, track1.pt(), track1.eta());
-      }
-      if (isMFT) {
-        registry.fill(HIST("Data/TpcMft/HadronHadron/SameEvent/hNtracksMFT"), nTracks);
-      } else {
-        registry.fill(HIST("Data/TpcMft/HadronHadron/SameEvent/hNtracksTPC"), nTracks);
-      }
-    }
-  }
-
-  // ---- DATA : TPC-MFT HF-h Same Event QA ----
-  template <typename TTracks>
-  void fillTpcMftHfChSameEventQa(float multiplicity, TTracks const& tracks)
-  {
-    // This is only called with MFT tracks, so no TPC case here
-    int nTracks = tracks.size();
-    for (const auto& track1 : tracks) {
-      if constexpr (std::is_same_v<aod::MFTTracks, TTracks>) { // if MFT tracks
-
-        // apply cuts for MFT tracks
-        if (!isAcceptedMftTrack(track1)) {
-          continue;
-        }
-
-        float phi = track1.phi();
-        o2::math_utils::bringTo02Pi(phi);
-
-        registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/hEtaMFT"), track1.eta());
-        registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/hPhiMFT"), phi);
-        registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/hEtaPhiMFT"), multiplicity, track1.eta(), phi);
-        registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/hPtMFT"), track1.pt());
-        registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/hYieldsMFT"), multiplicity, track1.pt(), track1.eta());
-      }
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/hNtracksMFT"), nTracks);
-    }
   }
 
   // ---- DATA : TPC-MFT h-h Mixed Event QA ----
@@ -841,6 +1023,30 @@ struct HfTaskFlow {
     }
   }
 
+  // =========================
+  //      Cuts with functions
+  // =========================
+
+
+  //  FIXME: Some collisions are rejected here, what causes (part of) differences with the D0 task
+  template <typename TCollision>
+  bool isCollisionSelected(TCollision const& collision, bool fillHistograms = false)
+  {
+    if (fillHistograms)
+      registry.fill(HIST("Data/hEventCounter"), 1);
+
+    if (processMc == false) {
+      if (!collision.sel8()) {
+        return false;
+      }
+    }
+
+    if (fillHistograms)
+      registry.fill(HIST("Data/hEventCounter"), 3);
+
+    return true;
+  }
+  
   //  TODO: Check how to put this into a Filter
   template <typename TTrack>
   bool isAcceptedCandidate(TTrack const& candidate)
@@ -903,238 +1109,12 @@ struct HfTaskFlow {
     return true;
   }
 
-  // ---- DATA : TPC-TPC HF-h Same Event (Candidates) QA ----
-  //  TODO: Note: we do not need all these plots since they are in D0 and Lc task -> remove it after we are sure this works
-  template <typename TTracks>
-  void fillTpcTpcD0CandidateQa(TTracks const& candidates)
-  {
-    for (const auto& candidate : candidates) {
-      if (!isAcceptedCandidate(candidate)) {
-        continue;
-      }
-
-      if (candidate.isSelD0() >= selectionFlagD0) {
-        registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hMassVsPt"), hfHelper.invMassD0ToPiK(candidate), candidate.pt());
-        registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hMass"), hfHelper.invMassD0ToPiK(candidate));
-      }
-      if (candidate.isSelD0bar() >= selectionFlagD0bar) {
-        registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hMassVsPt"), hfHelper.invMassD0barToKPi(candidate), candidate.pt());
-        registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hMass"), hfHelper.invMassD0barToKPi(candidate));
-      }
-  
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hEta"), candidate.eta());
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hPhi"), candidate.phi());
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hPtCandidate"), candidate.pt());
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hPtProng0"), candidate.ptProng0());
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hPtProng1"), candidate.ptProng1());
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hDecLength"), candidate.decayLength(), candidate.pt());
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hDecLengthXY"), candidate.decayLengthXY(), candidate.pt());
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hd0Prong0"), candidate.impactParameter0(), candidate.pt());
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hd0Prong1"), candidate.impactParameter1(), candidate.pt());
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hd0d0"), candidate.impactParameterProduct(), candidate.pt());
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hCTS"), hfHelper.cosThetaStarD0(candidate), candidate.pt());
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hCt"), hfHelper.ctD0(candidate), candidate.pt());
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hCPA"), candidate.cpa(), candidate.pt());
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hEtaCandVsPt"), candidate.eta(), candidate.pt());
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hSelectionStatus"), candidate.isSelD0() + (candidate.isSelD0bar() * 2), candidate.pt());
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hImpParErr"), candidate.errorImpactParameter0(), candidate.pt());
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hImpParErr"), candidate.errorImpactParameter1(), candidate.pt());
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hDecLenErr"), candidate.errorDecayLength(), candidate.pt());
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/2Prong/hDecLenXYErr"), candidate.errorDecayLengthXY(), candidate.pt());
-    }
-  }
-
-  // ---- DATA : TPC-TPC HF-h Same Event (Candidates) QA ----
-  //  TODO: Note: we do not need all these plots since they are in D0 and Lc task -> remove it after we are sure this works
-  template <typename TTracks>
-  void fillTpcTpcLcCandidateQa(TTracks const& candidates)
-  {
-    int nTracks = candidates.size();
-    for (const auto& candidate : candidates) {
-      if (!isAcceptedCandidate(candidate)) {
-        continue;
-      }
-
-      auto pt = candidate.pt();
-      auto ptProng0 = candidate.ptProng0();
-      auto ptProng1 = candidate.ptProng1();
-      auto ptProng2 = candidate.ptProng2();
-      auto decayLength = candidate.decayLength();
-      auto decayLengthXY = candidate.decayLengthXY();
-      auto chi2PCA = candidate.chi2PCA();
-      auto cpa = candidate.cpa();
-      auto cpaXY = candidate.cpaXY();
-
-      if (candidate.isSelLcToPKPi() >= selectionFlagLcToPKPi) {
-        registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hMass"), hfHelper.invMassLcToPKPi(candidate));
-        registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hMassVsPtVsMult"), hfHelper.invMassLcToPKPi(candidate), pt, nTracks);
-        registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hMassVsPt"), hfHelper.invMassLcToPKPi(candidate), pt);
-      }
-      if (candidate.isSelLcToPiKP() >= selectionFlagLcToPiKP) {
-        registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hMass"), hfHelper.invMassLcToPiKP(candidate));
-        registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hMassVsPtVsMult"), hfHelper.invMassLcToPiKP(candidate), pt, nTracks);
-        registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hMassVsPt"), hfHelper.invMassLcToPiKP(candidate), pt);
-      }
-
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hMultiplicity"), nTracks);
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hPt"), pt);
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hPtProng0"), ptProng0);
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hPtProng1"), ptProng1);
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hPtProng2"), ptProng2);
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hd0Prong0"), candidate.impactParameter0());
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hd0Prong1"), candidate.impactParameter1());
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hd0Prong2"), candidate.impactParameter2());
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hd0VsPtProng0"), candidate.impactParameter0(), pt);
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hd0VsPtProng1"), candidate.impactParameter1(), pt);
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hd0VsPtProng2"), candidate.impactParameter2(), pt);
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hDecLength"), decayLength);
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hDecLengthVsPt"), decayLength, pt);
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hDecLengthxy"), decayLengthXY);
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hDecLengthxyVsPt"), decayLengthXY, pt);
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hCt"), hfHelper.ctLc(candidate));
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hCtVsPt"), hfHelper.ctLc(candidate), pt);
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hCPA"), cpa);
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hCPAVsPt"), cpa, pt);
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hCPAxy"), cpaXY);
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hCPAxyVsPt"), cpaXY, pt);
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hDca2"), chi2PCA);
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hDca2VsPt"), chi2PCA, pt);
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hEta"), candidate.eta());
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hEtaVsPt"), candidate.eta(), pt);
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hPhi"), candidate.phi());
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hPhiVsPt"), candidate.phi(), pt);
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hSelectionStatus"), candidate.isSelLcToPKPi(), pt);
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hSelectionStatus"), candidate.isSelLcToPiKP(), pt);
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hImpParErrProng0"), candidate.errorImpactParameter0(), pt);
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hImpParErrProng1"), candidate.errorImpactParameter1(), pt);
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hImpParErrProng2"), candidate.errorImpactParameter2(), pt);
-      registry.fill(HIST("Data/TpcTpc/HfHadron/SameEvent/3Prong/hDecLenErr"), candidate.errorDecayLength(), pt);
-    }
-  }
-
-  // ---- DATA : TPC-MFT HF-h Same Event (Candidates) QA ----
-  //  TODO: Note: we do not need all these plots since they are in D0 and Lc task -> remove it after we are sure this works
-  template <typename TTracks>
-  void fillTpcMftD0CandidateQa(TTracks const& candidates, float multiplicity)
-  {
-    int nTracks = candidates.size();
-    for (const auto& candidate : candidates) {
-      if (!isAcceptedCandidate(candidate)) {
-        continue;
-      }
-
-      if (candidate.isSelD0() >= selectionFlagD0) {
-        registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hMassVsPt"), hfHelper.invMassD0ToPiK(candidate), candidate.pt());
-        registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hMass"), hfHelper.invMassD0ToPiK(candidate));
-      }
-      if (candidate.isSelD0bar() >= selectionFlagD0bar) {
-        registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hMassVsPt"), hfHelper.invMassD0barToKPi(candidate), candidate.pt());
-        registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hMass"), hfHelper.invMassD0barToKPi(candidate));
-      }
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hEtaCandidate"), candidate.eta());
-      float phi = candidate.phi();
-      o2::math_utils::bringTo02Pi(phi);
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hPhiCandidate"), phi);
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hEtaPhiCandidate"), multiplicity, candidate.eta(), phi);
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hYieldsCandidate"), multiplicity, candidate.pt(), candidate.eta());
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hNtracksCandidate"), nTracks);
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hPtCandidate"), candidate.pt());
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hPtProng0"), candidate.ptProng0());
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hPtProng1"), candidate.ptProng1());
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hDecLength"), candidate.decayLength(), candidate.pt());
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hDecLengthXY"), candidate.decayLengthXY(), candidate.pt());
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hd0Prong0"), candidate.impactParameter0(), candidate.pt());
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hd0Prong1"), candidate.impactParameter1(), candidate.pt());
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hd0d0"), candidate.impactParameterProduct(), candidate.pt());
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hCTS"), hfHelper.cosThetaStarD0(candidate), candidate.pt());
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hCt"), hfHelper.ctD0(candidate), candidate.pt());
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hCPA"), candidate.cpa(), candidate.pt());
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hEtaCandVsPt"), candidate.eta(), candidate.pt());
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hSelectionStatus"), candidate.isSelD0() + (candidate.isSelD0bar() * 2), candidate.pt());
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hImpParErr"), candidate.errorImpactParameter0(), candidate.pt());
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hImpParErr"), candidate.errorImpactParameter1(), candidate.pt());
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hDecLenErr"), candidate.errorDecayLength(), candidate.pt());
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hDecLenXYErr"), candidate.errorDecayLengthXY(), candidate.pt());
-    }
-  }
-
-  // ---- DATA : TPC-MFT HF-h Same Event (Candidates) QA ----
-  //  TODO: Note: we do not need all these plots since they are in D0 and Lc task -> remove it after we are sure this works
-  template <typename TTracks>
-  void fillTpcMftLcCandidateQa(TTracks const& candidates, float multiplicity)
-  {
-    for (const auto& candidate : candidates) {
-      if (!isAcceptedCandidate(candidate)) {
-        continue;
-      }
-
-      auto pt = candidate.pt();
-      auto ptProng0 = candidate.ptProng0();
-      auto ptProng1 = candidate.ptProng1();
-      auto ptProng2 = candidate.ptProng2();
-      auto decayLength = candidate.decayLength();
-      auto decayLengthXY = candidate.decayLengthXY();
-      auto chi2PCA = candidate.chi2PCA();
-      auto cpa = candidate.cpa();
-      auto cpaXY = candidate.cpaXY();
-      float phi = candidate.phi();
-      o2::math_utils::bringTo02Pi(phi);
-
-      if (candidate.isSelLcToPKPi() >= selectionFlagLcToPKPi) {
-        registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hMass"), hfHelper.invMassLcToPKPi(candidate));
-        registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hMassVsPtVsMult"), hfHelper.invMassLcToPKPi(candidate), pt, multiplicity);
-        registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hMassVsPt"), hfHelper.invMassLcToPKPi(candidate), pt);
-      }
-      if (candidate.isSelLcToPiKP() >= selectionFlagLcToPiKP) {
-        registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hMass"), hfHelper.invMassLcToPiKP(candidate));
-        registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hMassVsPtVsMult"), hfHelper.invMassLcToPiKP(candidate), pt, multiplicity);
-        registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hMassVsPt"), hfHelper.invMassLcToPiKP(candidate), pt);
-      }
-
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hYieldsCandidate"), multiplicity, candidate.pt(), candidate.eta());
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hEtaPhiCandidate"), multiplicity, candidate.eta(), phi);
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hNtracksCandidate"), multiplicity);
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hPt"), pt);
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hPtProng0"), ptProng0);
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hPtProng1"), ptProng1);
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hPtProng2"), ptProng2);
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hd0Prong0"), candidate.impactParameter0());
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hd0Prong1"), candidate.impactParameter1());
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hd0Prong2"), candidate.impactParameter2());
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hd0VsPtProng0"), candidate.impactParameter0(), pt);
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hd0VsPtProng1"), candidate.impactParameter1(), pt);
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hd0VsPtProng2"), candidate.impactParameter2(), pt);
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hDecLength"), decayLength);
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hDecLengthVsPt"), decayLength, pt);
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hDecLengthxy"), decayLengthXY);
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hDecLengthxyVsPt"), decayLengthXY, pt);
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hCt"), hfHelper.ctLc(candidate));
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hCtVsPt"), hfHelper.ctLc(candidate), pt);
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hCPA"), cpa);
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hCPAVsPt"), cpa, pt);
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hCPAxy"), cpaXY);
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hCPAxyVsPt"), cpaXY, pt);
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hDca2"), chi2PCA);
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hDca2VsPt"), chi2PCA, pt);
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hEta"), candidate.eta());
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hEtaVsPt"), candidate.eta(), pt);
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hPhi"), candidate.phi());
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hPhiVsPt"), candidate.phi(), pt);
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hSelectionStatus"), candidate.isSelLcToPKPi(), pt);
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hSelectionStatus"), candidate.isSelLcToPiKP(), pt);
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hImpParErrProng0"), candidate.errorImpactParameter0(), pt);
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hImpParErrProng1"), candidate.errorImpactParameter1(), pt);
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hImpParErrProng2"), candidate.errorImpactParameter2(), pt);
-      registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hDecLenErr"), candidate.errorDecayLength(), pt);
-    }
-  }
-
   // =========================
   //      Correlation functions
   // =========================
 
   template <CorrelationContainer::CFStep step, typename TTarget, typename TTracksTrig, typename TTracksAssoc>
-  void fillCorrelations(TTarget target, TTracksTrig const& tracks1, TTracksAssoc const& tracks2, float multiplicity, float posZ)
+  void fillCorrelations(TTarget target, TTracksTrig const& tracks1, TTracksAssoc const& tracks2, float multiplicity, float posZ, bool sameEvent)
   {
     auto triggerWeight = 1;
     auto associatedWeight = 1;
@@ -1184,6 +1164,31 @@ struct HfTaskFlow {
         target->getTriggerHist()->Fill(step, pt1, multiplicity, posZ, triggerWeight);
       } else {
         target->getTriggerHist()->Fill(step, pt1, multiplicity, posZ, invmass, triggerWeight);
+      }
+
+      // FILL QA PLOTS for trigger particle
+      if (sameEvent) {
+      //if constexpr (std::is_same_v<FilteredCollisionsWSelMult, TCollisions>) { // If DATA
+        if constexpr (!std::is_same_v<aod::MFTTracks, TTracksAssoc>) { // IF TPC-TPC case
+          if constexpr (std::is_same_v<HfCandidatesSelD0, TTracksTrig>) {  // IF D0 CASE -> TPC-TPC D0-h
+            fillTpcTpcD0CandidateQa(multiplicity, track1);
+          } else if constexpr (std::is_same_v<HfCandidatesSelLc, TTracksTrig>) { // IF LC CASE -> TPC-TPC Lc-h
+            fillTpcTpcLcCandidateQa(multiplicity, track1);
+          } else { // IF NEITHER D0 NOR LC -> TPC-TPC h-h
+            fillTpcTpcChChSameEventQa(multiplicity, track1);
+          }
+        } else {                                                        // IF TPC-MFT case
+          if constexpr (std::is_same_v<HfCandidatesSelD0, TTracksTrig>) { // IF D0 CASE -> TPC-MFT D0-h
+            fillTpcMftD0CandidateQa(multiplicity, track1);
+          } else if constexpr (std::is_same_v<HfCandidatesSelLc, TTracksTrig>) { // IF LC CASE -> TPC-MFT Lc-h
+            fillTpcMftLcCandidateQa(multiplicity, track1);
+          } else { // IF NEITHER D0 NOR LC -> TPC-MFT h-h
+            fillTpcMftChChSameEventQa(multiplicity, track1, true);
+          } // end of if condition for TPC-TPC or TPC-MFT case
+        }
+      //} else {                                                        // If MC (add cases later)
+        //fillTpcTpcChChSameEventQaMc(multiplicityTracks2, vz, tracks1);
+      //}
       }
 
       for (const auto& track2 : tracks2) {
@@ -1248,8 +1253,33 @@ struct HfTaskFlow {
           target->getPairHist()->Fill(step, eta1 - eta2, pt2, pt1, multiplicity, deltaPhi, posZ, invmass,
                                       triggerWeight * associatedWeight);
         }
-      }
-    }
+
+        // FILL QA PLOTS for associated particle
+        if (sameEvent) {
+        //if constexpr (std::is_same_v<FilteredCollisionsWSelMult, TCollisions>) { // If DATA
+          if constexpr (!std::is_same_v<aod::MFTTracks, TTracksAssoc>) { // IF TPC-TPC case
+            if constexpr (std::is_same_v<HfCandidatesSelD0, TTracksTrig>) {  // IF D0 CASE -> TPC-TPC D0-h
+              fillTpcTpcHfChSameEventQa(multiplicity, track2);
+            } else if constexpr (std::is_same_v<HfCandidatesSelLc, TTracksTrig>) { // IF LC CASE -> TPC-TPC Lc-h
+              fillTpcTpcHfChSameEventQa(multiplicity, track2);
+            }
+            // No if condition if it is h-h, because it would be the same plots than for the trigger particle 
+          } else {                                                        // IF TPC-MFT case
+            if constexpr (std::is_same_v<HfCandidatesSelD0, TTracksTrig>) { // IF D0 CASE -> TPC-MFT D0-h
+              fillTpcMftHfChSameEventQa(multiplicity, track2);
+            } else if constexpr (std::is_same_v<HfCandidatesSelLc, TTracksTrig>) { // IF LC CASE -> TPC-MFT Lc-h
+              fillTpcMftHfChSameEventQa(multiplicity, track2);
+            } else { // IF NEITHER D0 NOR LC -> TPC-MFT h-h
+              fillTpcMftChChSameEventQa(multiplicity, track2, false);
+            } // end of if condition for TPC-TPC or TPC-MFT case
+          }
+        //} else {                                                        // If MC (add cases later)
+          //fillTpcTpcChChSameEventQaMc(multiplicityTracks2, vz, tracks1);
+        //}
+        }
+
+      } // end of loop over tracks2
+    } // end of loop over tracks 1
   }
 
   // template <typename TTracksTrig, typename TTracksAssoc, typename TLambda>
@@ -1286,7 +1316,7 @@ struct HfTaskFlow {
 
       if constexpr (std::is_same_v<FilteredCollisionsWSelMultMC, TCollisions>) { // If MC
         registry.fill(HIST("MC/Rec/TpcTpc/HadronHadron/MixedEvent/hEventCountMixing"), bin);
-        fillTpcTpcChChMixedEventQaMc(multiplicityTracks2, vz, tracks1);
+        //fillTpcTpcChChMixedEventQaMc(multiplicityTracks2, vz, tracks1);
 
         // if constexpr (std::is_same_v<HfCandidatesSelD0, TTracksTrig> || std::is_same_v<HfCandidatesSelLc, TTracksTrig>) {
         //   registry.fill(HIST("Data/TpcTpc/HfHadron/MixedEvent/hEventCountHFMixing"), bin);
@@ -1319,7 +1349,7 @@ struct HfTaskFlow {
       }
 
       corrContainer->fillEvent(multiplicityTracks2, CorrelationContainer::kCFStepReconstructed);
-      fillCorrelations<CorrelationContainer::kCFStepReconstructed>(corrContainer, tracks1, tracks2, multiplicityTracks1, collision1.posZ());
+      fillCorrelations<CorrelationContainer::kCFStepReconstructed>(corrContainer, tracks1, tracks2, multiplicityTracks1, collision1.posZ(), false);
     }
   }
 
@@ -1356,7 +1386,7 @@ struct HfTaskFlow {
       // TO BE DONE : ADD ONE MORE IF CONDITION TO FILL THE MC CASE
       // TODO : FILL NEW PLOTS FOR MCTRUTH ONLY
       registry.fill(HIST("MC/Gen/TpcTpc/HadronHadron/MixedEvent/hEventCountMixing"), bin);
-      fillTpcTpcChChMixedEventQaMc(multiplicity, vz, tracks1);
+      //fillTpcTpcChChMixedEventQaMc(multiplicity, vz, tracks1);
 
       // if constexpr (std::is_same_v<HfCandidatesSelD0, TTracksTrig> || std::is_same_v<HfCandidatesSelLc, TTracksTrig>) {
       //   registry.fill(HIST("Data/TpcTpc/HfHadron/MixedEvent/hEventCountHFMixing"), bin);
@@ -1367,7 +1397,7 @@ struct HfTaskFlow {
       // }
 
       corrContainer->fillEvent(multiplicity, CorrelationContainer::kCFStepAll);
-      fillCorrelations<CorrelationContainer::kCFStepAll>(corrContainer, tracks1, tracks2, multiplicity, collision1.posZ());
+      fillCorrelations<CorrelationContainer::kCFStepAll>(corrContainer, tracks1, tracks2, multiplicity, collision1.posZ(), false);
     }
   }
 
@@ -1397,9 +1427,9 @@ struct HfTaskFlow {
 
     sameTPCTPCChCh->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
 
-    fillTpcTpcChChSameEventQa(multiplicity, tracks);
+    //fillTpcTpcChChSameEventQa(multiplicity, tracks);
     // TO-DO : add if condition for when we will implant corrected correlations (kCFStepReconstructed -> kCFStepCorrected)
-    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(sameTPCTPCChCh, tracks, tracks, multiplicity, collision.posZ());
+    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(sameTPCTPCChCh, tracks, tracks, multiplicity, collision.posZ(), true);
   }
   PROCESS_SWITCH(HfTaskFlow, processSameTpcTpcChCh, "DATA : Process same-event correlations for TPC-TPC h-h case", false);
 
@@ -1428,8 +1458,8 @@ struct HfTaskFlow {
 
     sameTPCTPCHfCh->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
 
-    fillTpcTpcD0CandidateQa(candidates);
-    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(sameTPCTPCHfCh, candidates, tracks, multiplicity, collision.posZ());
+    //fillTpcTpcD0CandidateQa(candidates);
+    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(sameTPCTPCHfCh, candidates, tracks, multiplicity, collision.posZ(), true);
   }
   PROCESS_SWITCH(HfTaskFlow, processSameTpcTpcD0Ch, "DATA : Process same-event correlations for TPC-TPC D0-h case", false);
 
@@ -1458,8 +1488,8 @@ struct HfTaskFlow {
 
     sameTPCTPCHfCh->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
 
-    fillTpcTpcLcCandidateQa(candidates);
-    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(sameTPCTPCHfCh, candidates, tracks, multiplicity, collision.posZ());
+    //fillTpcTpcLcCandidateQa(candidates);
+    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(sameTPCTPCHfCh, candidates, tracks, multiplicity, collision.posZ(), true);
   }
   PROCESS_SWITCH(HfTaskFlow, processSameTpcTpcLcCh, "DATA : Process same-event correlations for TPC-TPC Lc-h case", false);
 
@@ -1476,15 +1506,15 @@ struct HfTaskFlow {
     }
 
     const auto multiplicityTPC = tracks.size();
-    const auto multiplicityMFT = mftTracks.size();
+    //const auto multiplicityMFT = mftTracks.size();
     BinningPolicyBase<2> baseBinning{{axisVertex, axisMultiplicity}, true};
     int bin = baseBinning.getBin(std::make_tuple(collision.posZ(), multiplicityTPC));
     registry.fill(HIST("Data/TpcMft/HadronHadron/SameEvent/hEventCountSame"), bin);
 
     sameTPCMFTChCh->fillEvent(multiplicityTPC, CorrelationContainer::kCFStepReconstructed);
-    fillTpcMftChChSameEventQa(multiplicityTPC, tracks);
-    fillTpcMftChChSameEventQa(multiplicityMFT, mftTracks);
-    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(sameTPCMFTChCh, tracks, mftTracks, multiplicityTPC, collision.posZ());
+    //fillTpcMftChChSameEventQa(multiplicityTPC, tracks);
+    //fillTpcMftChChSameEventQa(multiplicityMFT, mftTracks);
+    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(sameTPCMFTChCh, tracks, mftTracks, multiplicityTPC, collision.posZ(), true);
   }
   PROCESS_SWITCH(HfTaskFlow, processSameTpcMftChCh, "DATA : Process same-event correlations for TPC-MFT h-h case", false);
 
@@ -1507,15 +1537,15 @@ struct HfTaskFlow {
     }
 
     const auto multiplicityCandidates = candidates.size();
-    const auto multiplicityMFT = mftTracks.size();
+    //const auto multiplicityMFT = mftTracks.size();
     BinningPolicyBase<2> baseBinning{{axisVertex, axisMultiplicity}, true};
     int bin = baseBinning.getBin(std::make_tuple(collision.posZ(), multiplicityCandidates));
     registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hEventCountSame"), bin);
 
     sameTPCMFTHfCh->fillEvent(multiplicityCandidates, CorrelationContainer::kCFStepReconstructed);
-    fillTpcMftD0CandidateQa(candidates, multiplicityCandidates);
-    fillTpcMftHfChSameEventQa(multiplicityMFT, mftTracks);
-    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(sameTPCMFTHfCh, candidates, mftTracks, multiplicityCandidates, collision.posZ());
+    //fillTpcMftD0CandidateQa(candidates, multiplicityCandidates);
+    //fillTpcMftHfChSameEventQa(multiplicityMFT, mftTracks);
+    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(sameTPCMFTHfCh, candidates, mftTracks, multiplicityCandidates, collision.posZ(), true);
   }
   PROCESS_SWITCH(HfTaskFlow, processSameTpcMftD0Ch, "DATA : Process same-event correlations for TPC-MFT D0-h case", false);
 
@@ -1538,15 +1568,15 @@ struct HfTaskFlow {
     }
 
     const auto multiplicityCandidates = candidates.size();
-    const auto multiplicityMFT = mftTracks.size();
+    //const auto multiplicityMFT = mftTracks.size();
     BinningPolicyBase<2> baseBinning{{axisVertex, axisMultiplicity}, true};
     int bin = baseBinning.getBin(std::make_tuple(collision.posZ(), multiplicityCandidates));
     registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hEventCountSame"), bin);
 
     sameTPCMFTHfCh->fillEvent(multiplicityCandidates, CorrelationContainer::kCFStepReconstructed);
-    fillTpcMftLcCandidateQa(candidates, multiplicityCandidates);
-    fillTpcMftHfChSameEventQa(multiplicityMFT, mftTracks);
-    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(sameTPCMFTHfCh, candidates, mftTracks, multiplicityCandidates, collision.posZ());
+    //fillTpcMftLcCandidateQa(candidates, multiplicityCandidates);
+    //fillTpcMftHfChSameEventQa(multiplicityMFT, mftTracks);
+    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(sameTPCMFTHfCh, candidates, mftTracks, multiplicityCandidates, collision.posZ(), true);
   }
   PROCESS_SWITCH(HfTaskFlow, processSameTpcMftLcCh, "DATA : Process same-event correlations for TPC-MFT Lc-h case", false);
 
@@ -1574,7 +1604,7 @@ struct HfTaskFlow {
     sameTPCTPCChChMC->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
 
     fillTpcTpcChChSameEventQaMc<CorrelationContainer::kCFStepReconstructed>(multiplicity, mcTracks);
-    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(sameTPCTPCChChMC, mcTracks, mcTracks, multiplicity, mcCollision.posZ());
+    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(sameTPCTPCChChMC, mcTracks, mcTracks, multiplicity, mcCollision.posZ(), true);
   }
   PROCESS_SWITCH(HfTaskFlow, processSameTpcTpcChChmcREC, "MONTE-CARLO : Process same-event correlations for TPC-TPC h-h case", false);
 
@@ -1605,7 +1635,7 @@ struct HfTaskFlow {
     // In Katka's code, the first time doing this does not fill the histograms, right now will be filled two times..
     auto multPrimaryCharge0 = fillTpcTpcChChSameEventQaMc<CorrelationContainer::kCFStepAll>(multiplicity, mcParticles);
     sameTPCTPCChChMC->fillEvent(multPrimaryCharge0, CorrelationContainer::kCFStepAll);
-    fillCorrelations<CorrelationContainer::kCFStepAll>(sameTPCTPCChChMC, mcParticles, mcParticles, multPrimaryCharge0, mcCollision.posZ());
+    fillCorrelations<CorrelationContainer::kCFStepAll>(sameTPCTPCChChMC, mcParticles, mcParticles, multPrimaryCharge0, mcCollision.posZ(), true);
 
     // NOT USED BY KATARINA APPARENTLY
     // BinningPolicyBase<2> baseBinning{{axisVertex, axisMultiplicity}, true};
@@ -1617,7 +1647,7 @@ struct HfTaskFlow {
     // This line below for sure induce that some plots are filled two times
     // multPrimaryCharge0 = fillTpcTpcChChSameEventQaMc<CorrelationContainer::kCFStepVertex>(multiplicity, mcParticles);
     // sameTPCTPCChChMC->fillEvent(multPrimaryCharge0, CorrelationContainer::kCFStepVertex);
-    // fillCorrelations<CorrelationContainer::kCFStepVertex>(sameTPCTPCChChMC, mcParticles, mcParticles, multPrimaryCharge0, mcCollision.posZ());
+    // fillCorrelations<CorrelationContainer::kCFStepVertex>(sameTPCTPCChChMC, mcParticles, mcParticles, multPrimaryCharge0, mcCollision.posZ(), true);
   }
   PROCESS_SWITCH(HfTaskFlow, processSameTpcTpcChChmcGEN, "MONTE-CARLO : Process same-event correlations for TPC-TPC h-h case", false);
 
@@ -1703,8 +1733,8 @@ struct HfTaskFlow {
                               aod::MFTTracks const& mftTracks)
   {
     //  we want to group collisions based on charged-track multiplicity
-    auto getTracksSize = [&tracks, this](FilteredCollisionsWSelMult::iterator const& col) {
-      auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex(), this->cache);
+    auto getTracksSize = [&mftTracks, this](FilteredCollisionsWSelMult::iterator const& col) {
+      auto associatedTracks = mftTracks.sliceByCached(o2::aod::track::collisionId, col.globalIndex(), this->cache);
       auto size = associatedTracks.size();
       return size;
     };
