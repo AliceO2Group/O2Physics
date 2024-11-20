@@ -35,6 +35,7 @@ using namespace o2::aod;
 using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::constants::physics;
 
 enum Selections : uint8_t {
   NoSel = 0,
@@ -118,18 +119,6 @@ struct HfCandidateCreatorCharmResoReduced {
   Preslice<aod::HfRed3PrNoTrks> candsDPerCollision = hf_track_index_reduced::hfRedCollisionId;
   Preslice<HfRed3PrNoTrksWithMl> candsDPerCollisionWithMl = hf_track_index_reduced::hfRedCollisionId;
 
-  // Useful constants
-  double massPion{0.};
-  double massKaon{0.};
-  double massK0{0.};
-  double massLambda{0.};
-  double massProton{0.};
-  double massPion{0.};
-  double massKaon{0.};
-  double massDplus{0.};
-  double massDstar{0.};
-  double massD0{0.};
-
   HistogramRegistry registry{"registry"};
 
   void init(InitContext const&)
@@ -166,17 +155,6 @@ struct HfCandidateCreatorCharmResoReduced {
         registry.get<TH1>(HIST("hSelections"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
       }
     }
-    // mass constants
-    massK0 = o2::constants::physics::MassK0Short;
-    massLambda = o2::constants::physics::MassLambda;
-    massProton = o2::constants::physics::MassProton;
-    massPion = o2::constants::physics::MassPiPlus;
-    massKaon = o2::constants::physics::MassKPlus;
-    massDplus = o2::constants::physics::MassDPlus;
-    massDstar = o2::constants::physics::MassDStar;
-    massD0 = o2::constants::physics::MassD0;
-    massPion = o2::constants::physics::MassPiPlus;
-    massKaon = o2::constants::physics::MassKPlus;
   }
 
   /// Basic selection of D candidates
@@ -230,10 +208,10 @@ struct HfCandidateCreatorCharmResoReduced {
       return false;
     }
     if (channel == DecayChannel::Ds2StarToDplusK0s || channel == DecayChannel::Ds1ToDstarK0s) {
-      massV0 = massK0;
+      massV0 = MassK0Short;
       invMassV0 = candV0.invMassK0s();
     } else if (channel == DecayChannel::XcToDplusLambda || channel == DecayChannel::LambdaDminus) {
-      massV0 = massLambda;
+      massV0 = MassLambda;
       int wsFact{1};
       if (channel == DecayChannel::LambdaDminus)
         wsFact = -1;
@@ -320,13 +298,14 @@ struct HfCandidateCreatorCharmResoReduced {
         float invMassReso{0.};
         float invMassV0{0.};
         std::array<float, 3> pVecV0Tr = {candV0Tr.px(), candV0Tr.py(), candV0Tr.pz()};
+        std::array<std::array<float, 3>, 3> pVectorCharmProngs = {candD.pVectorProng0(), candD.pVectorProng1(), candD.pVectorProng2()};
         float ptReso = RecoDecay::pt(RecoDecay::sumOfVec(pVecV0Tr, pVecD));
 
         if constexpr (channel == DecayChannel::DstarTrack) {
           if (candD.dType() > 0) {
-            invMassReso = RecoDecay::m(std::array{candD.pVectorProng0(), candD.pVectorProng1(), candD.pVectorProng2(), pVecV0Tr}, std::array{massPion, massKaon, massPion, massProton});
+            invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVectorCharmProngs[2], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassProton});
           } else {
-            invMassReso = RecoDecay::m(std::array{candD.pVectorProng1(), candD.pVectorProng0(), candD.pVectorProng2(), pVecV0Tr}, std::array{massPion, massKaon, massPion, massProton});
+            invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[1], pVectorCharmProngs[0], pVectorCharmProngs[2], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassProton});
           }
           registry.fill(HIST("hMassDstarTrack"), invMassReso - invMassD, ptReso);
         } else {
@@ -334,15 +313,15 @@ struct HfCandidateCreatorCharmResoReduced {
             case DecayChannel::Ds1ToDstarK0s:
               invMassV0 = candV0Tr.invMassK0s();
               if (candD.dType() > 0) {
-                invMassReso = RecoDecay::m(std::array{candD.pVectorProng0(), candD.pVectorProng1(), candD.pVectorProng2(), pVecV0Tr}, std::array{massPion, massKaon, massPion, massK0}) - invMassD;
+                invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVectorCharmProngs[2], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassK0Short}) - invMassD;
               } else {
-                invMassReso = RecoDecay::m(std::array{candD.pVectorProng1(), candD.pVectorProng0(), candD.pVectorProng2(), pVecV0Tr}, std::array{massPion, massKaon, massPion, massK0}) - invMassD;
+                invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[1], pVectorCharmProngs[0], pVectorCharmProngs[2], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassK0Short}) - invMassD;
               }
               registry.fill(HIST("hMassDs1"), invMassReso, ptReso);
               break;
             case DecayChannel::Ds2StarToDplusK0s:
               invMassV0 = candV0Tr.invMassK0s();
-              invMassReso = RecoDecay::m(std::array{candD.pVectorProng0(), candD.pVectorProng1(), candD.pVectorProng2(), pVecV0Tr}, std::array{massPion, massKaon, massPion, massK0}) - invMassD;
+              invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVectorCharmProngs[2], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassK0Short}) - invMassD;
               registry.fill(HIST("hMassDs2Star"), invMassReso, ptReso);
               break;
             case DecayChannel::XcToDplusLambda:
@@ -351,7 +330,7 @@ struct HfCandidateCreatorCharmResoReduced {
               } else {
                 invMassV0 = candV0Tr.invMassAntiLambda();
               }
-              invMassReso = RecoDecay::m(std::array{candD.pVectorProng0(), candD.pVectorProng1(), candD.pVectorProng2(), pVecV0Tr}, std::array{massPion, massKaon, massPion, massLambda}) - invMassD;
+              invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVectorCharmProngs[2], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassLambda}) - invMassD;
               registry.fill(HIST("hMassXcRes"), invMassReso, ptReso);
               break;
             case DecayChannel::LambdaDminus:
@@ -360,7 +339,7 @@ struct HfCandidateCreatorCharmResoReduced {
               } else {
                 invMassV0 = candV0Tr.invMassAntiLambda();
               }
-              invMassReso = RecoDecay::m(std::array{candD.pVectorProng0(), candD.pVectorProng1(), candD.pVectorProng2(), pVecV0Tr}, std::array{massPion, massKaon, massPion, massLambda}) - invMassD;
+              invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVectorCharmProngs[2], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassLambda}) - invMassD;
               registry.fill(HIST("hMassLambdaDminus"), invMassReso, ptReso);
               break;
             default:
@@ -437,12 +416,12 @@ struct HfCandidateCreatorCharmResoReduced {
         switch (channel) {
           case DecayChannel::Ds1ToDstarK0s:
             invMassV0 = bachV0Tr.invMassK0s();
-            invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{massDstar, massK0});
+            invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassDStar, MassK0Short});
             registry.fill(HIST("hMassDs1"), invMassReso, ptReso);
             break;
           case DecayChannel::Ds2StarToDplusK0s:
             invMassV0 = bachV0Tr.invMassK0s();
-            invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{massDplus, massK0});
+            invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassDPlus, MassK0Short});
             registry.fill(HIST("hMassDs2Star"), invMassReso, ptReso);
             break;
           case DecayChannel::XcToDplusLambda:
@@ -451,7 +430,7 @@ struct HfCandidateCreatorCharmResoReduced {
             } else {
               invMassV0 = bachV0Tr.invMassAntiLambda();
             }
-            invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{massDplus, massLambda});
+            invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassDPlus, MassLambda});
             registry.fill(HIST("hMassXcRes"), invMassReso, ptReso);
             break;
           case DecayChannel::LambdaDminus:
@@ -460,7 +439,7 @@ struct HfCandidateCreatorCharmResoReduced {
             } else {
               invMassV0 = bachV0Tr.invMassAntiLambda();
             }
-            invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{massDplus, massLambda});
+            invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassDPlus, MassLambda});
             registry.fill(HIST("hMassLambdaDminus"), invMassReso, ptReso);
             break;
           default:
