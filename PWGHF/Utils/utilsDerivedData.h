@@ -79,30 +79,35 @@ struct ProducesHfDerivedData : o2::framework::ProducesGroup {
   std::map<int, std::vector<int>> matchedCollisions; // indices of derived reconstructed collisions matched to the global indices of MC collisions
   std::map<int, bool> hasMcParticles;                // flags for MC collisions with HF particles
 
-  void init(ConfigurableHfDerivedData const& c) {
+  void init(ConfigurableHfDerivedData const& c)
+  {
     conf = &c;
   }
 
   template <typename T>
-  void reserveTablesCandidates(T size) {
+  void reserveTablesCandidates(T size)
+  {
     o2::analysis::hf_derived::reserveTable(rowCandidateBase, conf->fillCandidateBase, size);
   }
 
   template <typename T>
-  void reserveTablesColl(T size) {
+  void reserveTablesColl(T size)
+  {
     o2::analysis::hf_derived::reserveTable(rowCollBase, conf->fillCollBase, size);
     o2::analysis::hf_derived::reserveTable(rowCollId, conf->fillCollId, size);
   }
 
   template <typename T>
-  void reserveTablesMcColl(T size) {
+  void reserveTablesMcColl(T size)
+  {
     o2::analysis::hf_derived::reserveTable(rowMcCollBase, conf->fillMcCollBase, size);
     o2::analysis::hf_derived::reserveTable(rowMcCollId, conf->fillMcCollId, size);
     o2::analysis::hf_derived::reserveTable(rowMcRCollId, conf->fillMcRCollId, size);
   }
 
   template <typename T>
-  void reserveTablesParticles(T size) {
+  void reserveTablesParticles(T size)
+  {
     o2::analysis::hf_derived::reserveTable(rowParticleBase, conf->fillParticleBase, size);
     o2::analysis::hf_derived::reserveTable(rowParticleId, conf->fillParticleId, size);
   }

@@ -110,7 +110,6 @@ struct HfDerivedDataCreatorBplusToD0Pi {
     rowsCommon.init(confDerData);
   }
 
-
   template <typename T, typename U, typename V>
   void fillTablesCandidate(const T& candidate, const U& prongCharm, const V& prongBachelor, int candFlag, double invMass,
                            double ct, double y, int8_t flagMc, int8_t origin, float mlScore, const std::vector<float>& mlScoresCharm)

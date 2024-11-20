@@ -579,9 +579,9 @@ DECLARE_SOA_TABLE_STAGED(HfBplusMcs, "HFBPMC", //! Table with MC candidate info
 // MC particle columns
 namespace hf_mc_particle
 {
-DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision); //! MC collision of this particle
-DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle);   //! MC particle
-DECLARE_SOA_INDEX_COLUMN(HfMcCollBase, hfMcCollBase); //! collision index pointing to the derived MC collision table for B+ candidates
+DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision);                 //! MC collision of this particle
+DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle);                   //! MC particle
+DECLARE_SOA_INDEX_COLUMN(HfMcCollBase, hfMcCollBase);               //! collision index pointing to the derived MC collision table for B+ candidates
 DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t);         //! flag for generator level matching
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);               //! particle origin, generator level
 DECLARE_SOA_COLUMN(FlagMcDecayChanGen, flagMcDecayChanGen, int8_t); //! resonant decay channel flag, generator level
