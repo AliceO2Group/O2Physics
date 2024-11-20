@@ -303,10 +303,10 @@ struct McSGCandProducer {
     {}};
 
   template <typename TMcCollision>
-  void updateUDMcCollisions(TMcCollision const& mccol)
+  void updateUDMcCollisions(TMcCollision const& mccol, uint64_t globBC)
   {
     // save mccol
-    outputMcCollisions(mccol.bcId(),
+    outputMcCollisions(globBC,
                        mccol.generatorsID(),
                        mccol.posX(),
                        mccol.posY(),
@@ -502,8 +502,10 @@ struct McSGCandProducer {
     auto sgcandAtEnd = sgcand == lastsgcand;
     auto mccolAtEnd = mccol == lastmccol;
     bool goon = !sgcandAtEnd || !mccolAtEnd;
-    int counter = 0;
     while (goon) {
+      auto bcIter = mccol.bc_as<BCs>();
+      uint64_t globBC = bcIter.globalBC();
+      // uint64_t globBC = 0;
       // check if dgcand has an associated McCollision
       if (sgcand.has_collision()) {
         auto sgcandCol = sgcand.collision_as<CCs>();
@@ -538,13 +540,12 @@ struct McSGCandProducer {
             LOGF(info, "  Saving McCollision %d", mcsgId);
             // update UDMcCollisions
             auto sgcandMcCol = sgcand.collision_as<CCs>().mcCollision();
-            updateUDMcCollisions(sgcandMcCol);
+            updateUDMcCollisions(sgcandMcCol, globBC);
             mcColIsSaved[mcsgId] = outputMcCollisions.lastIndex();
           }
 
           // update UDMcColsLabels (for each UDCollision -> UDMcCollisions)
           outputMcCollsLabels(mcColIsSaved[mcsgId]);
-          counter++;
 
           // update UDMcParticles
           auto mcPartsSlice = mcparts.sliceBy(mcPartsPerMcCollision, mcsgId);
@@ -560,7 +561,6 @@ struct McSGCandProducer {
 
           // update UDMcColsLabels (for each UDCollision -> UDMcCollisions)
           outputMcCollsLabels(-1);
-          counter++;
 
           // update UDMcParticles and UDMcTrackLabels (for each UDTrack -> UDMcParticles)
           // loop over tracks of dgcand
@@ -593,7 +593,7 @@ struct McSGCandProducer {
         if (mcColIsSaved.find(mccolId) == mcColIsSaved.end()) {
           LOGF(info, "  Saving McCollision %d", mccolId);
           // update UDMcCollisions
-          updateUDMcCollisions(mccol);
+          updateUDMcCollisions(mccol, globBC);
           mcColIsSaved[mccolId] = outputMcCollisions.lastIndex();
 
           // update UDMcParticles
