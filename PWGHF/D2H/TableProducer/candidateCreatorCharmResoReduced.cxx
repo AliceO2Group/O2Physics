@@ -738,4 +738,3 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   return WorkflowSpec{adaptAnalysisTask<HfCandidateCreatorCharmResoReduced>(cfgc),
                       adaptAnalysisTask<HfCandidateCreatorCharmResoReducedExpressions>(cfgc)};
 }
- 
