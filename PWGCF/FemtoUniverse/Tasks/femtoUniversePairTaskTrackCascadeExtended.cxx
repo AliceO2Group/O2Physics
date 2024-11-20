@@ -263,7 +263,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
 
   void processSameEvent(FilteredFDCollision& col, FemtoFullParticles& parts)
   {
-    const auto& magFieldTesla = col.magField();
+    // const auto& magFieldTesla = col.magField();
 
     auto groupPartsOne = partsOne->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto groupPartsTwo = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
@@ -307,9 +307,9 @@ struct femtoUniversePairTaskTrackCascadeExtended {
         continue;
       if (!IsParticleCombined(p1, ConfTrackChoicePartOne))
         continue;
-      const auto& posChild = parts.iteratorAt(p2.index() - 3);
-      const auto& negChild = parts.iteratorAt(p2.index() - 2);
-      const auto& bachelor = parts.iteratorAt(p2.index() - 1);
+      // const auto& posChild = parts.iteratorAt(p2.index() - 3);
+      // const auto& negChild = parts.iteratorAt(p2.index() - 2);
+      // const auto& bachelor = parts.iteratorAt(p2.index() - 1);
 
       /// Child particles must pass this condition to be selected
       /*if (!IsParticleTPC(posChild, CascChildTable[ConfCascType1][0]) || !IsParticleTPC(negChild, CascChildTable[ConfCascType1][1]) || !IsParticleTPC(bachelor, CascChildTable[ConfCascType1][2]))
@@ -320,7 +320,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackCascadeExtended, processSameEvent, "Enable processing same event for track - cascade", true);
 
-  void processMixedEvent(FilteredFDCollisions& cols, FemtoFullParticles& parts)
+  void processMixedEvent(FilteredFDCollisions& cols, FemtoFullParticles& /*parts*/)
   {
     ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinning{{ConfVtxBins, ConfMultBins}, true};
 
@@ -341,9 +341,9 @@ struct femtoUniversePairTaskTrackCascadeExtended {
         if (!IsParticleCombined(p1, ConfTrackChoicePartOne))
           continue;
 
-        const auto& posChild = parts.iteratorAt(p2.index() - 3);
-        const auto& negChild = parts.iteratorAt(p2.index() - 2);
-        const auto& bachelor = parts.iteratorAt(p2.index() - 1);
+        // const auto& posChild = parts.iteratorAt(p2.index() - 3);
+        // const auto& negChild = parts.iteratorAt(p2.index() - 2);
+        // const auto& bachelor = parts.iteratorAt(p2.index() - 1);
 
         /// Child particles must pass this condition to be selected
         /*if (!IsParticleTPC(posChild, CascChildTable[ConfCascType1][0]) || !IsParticleTPC(negChild, CascChildTable[ConfCascType1][1]) || !IsParticleTPC(bachelor, CascChildTable[ConfCascType1][2]))
