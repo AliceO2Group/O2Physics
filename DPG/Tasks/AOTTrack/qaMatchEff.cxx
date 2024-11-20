@@ -31,7 +31,10 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/runDataProcessing.h"
-
+//
+#include "string"
+#include "vector"
+#include "set"
 //
 namespace extConfPar
 {
