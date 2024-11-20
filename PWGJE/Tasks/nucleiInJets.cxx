@@ -1202,7 +1202,7 @@ struct nucleiInJets {
       // add pid later
 
       bool jetFlag = false;
-      for (int iDJet = 0; iDJet < mcdJetPt.size(); iDJet++) {
+      for (std::size_t iDJet = 0; iDJet < mcdJetPt.size(); iDJet++) {
         double delPhi = TVector2::Phi_mpi_pi(mcdJetPhi[iDJet] - track.phi());
         double delEta = mcdJetEta[iDJet] - track.eta();
         double R = TMath::Sqrt((delEta * delEta) + (delPhi * delPhi));
@@ -1282,7 +1282,7 @@ struct nucleiInJets {
       // add pid later
 
       bool jetFlag = false;
-      for (int iDJet = 0; iDJet < mcpJetPt.size(); iDJet++) {
+      for (std::size_t iDJet = 0; iDJet < mcpJetPt.size(); iDJet++) {
         double delPhi = TVector2::Phi_mpi_pi(mcpJetPhi[iDJet] - mcParticle.phi());
         double delEta = mcpJetEta[iDJet] - mcParticle.eta();
         double R = TMath::Sqrt((delEta * delEta) + (delPhi * delPhi));

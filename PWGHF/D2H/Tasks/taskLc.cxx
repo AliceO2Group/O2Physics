@@ -673,10 +673,9 @@ struct HfTaskLc {
     for (const auto& collision : collisions) {
       // MC Rec.
       fillHistosMcRec<fillMl>(collision, candidates, mcParticles);
-      // MC gen.
-      auto mcParticlesPerColl = mcParticles.sliceBy(perMcCollision, collision.globalIndex());
-      fillHistosMcGen(mcParticlesPerColl);
     }
+    // MC gen.
+    fillHistosMcGen(mcParticles);
   }
 
   void processDataStd(Collisions const& collisions,

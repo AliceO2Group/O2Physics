@@ -200,12 +200,11 @@ static const float defaultDownscaling[128][1]{
   {1.f},
   {1.f}}; /// Max number of columns for triggers is 128 (extendible)
 
-#define FILTER_CONFIGURABLE(_TYPE_)                                                                                                                                                         \
-  Configurable<LabeledArray<float>> cfg##_TYPE_                                                                                                                                             \
-  {                                                                                                                                                                                         \
-#_TYPE_, {defaultDownscaling[0], NumberOfColumns(typename _TYPE_::table_t::columns{}), 1, ColumnsNames(typename _TYPE_::table_t::columns{}), downscalingName }, #_TYPE_ " downscalings" \
+#define FILTER_CONFIGURABLE(_TYPE_)                                                                                                                                                                                  \
+  Configurable<LabeledArray<float>> cfg##_TYPE_                                                                                                                                                                      \
+  {                                                                                                                                                                                                                  \
+    #_TYPE_, {defaultDownscaling[0], NumberOfColumns(typename _TYPE_::table_t::persistent_columns_t{}), 1, ColumnsNames(typename _TYPE_::table_t::persistent_columns_t{}), downscalingName}, #_TYPE_ " downscalings" \
   }
-
 } // namespace
 
 struct centralEventFilterTask {
@@ -272,11 +271,11 @@ struct centralEventFilterTask {
   {
 
     // Filling output table
-    auto bcTabConsumer = pc.inputs().get<TableConsumer>(aod::MetadataTrait<std::decay_t<aod::BCs>>::metadata::tableLabel());
+    auto bcTabConsumer = pc.inputs().get<TableConsumer>(o2::soa::getTableLabel<aod::BCs>());
     auto bcTabPtr{bcTabConsumer->asArrowTable()};
-    auto collTabConsumer = pc.inputs().get<TableConsumer>(aod::MetadataTrait<std::decay_t<aod::Collisions>>::metadata::tableLabel());
+    auto collTabConsumer = pc.inputs().get<TableConsumer>(o2::soa::getTableLabel<aod::Collisions>());
     auto collTabPtr{collTabConsumer->asArrowTable()};
-    auto evSelConsumer = pc.inputs().get<TableConsumer>(aod::MetadataTrait<std::decay_t<aod::EvSels>>::metadata::tableLabel());
+    auto evSelConsumer = pc.inputs().get<TableConsumer>(o2::soa::getTableLabel<aod::EvSels>());
     auto evSelTabPtr{evSelConsumer->asArrowTable()};
 
     auto columnGloBCId{bcTabPtr->GetColumnByName(aod::BC::GlobalBC::mLabel)};

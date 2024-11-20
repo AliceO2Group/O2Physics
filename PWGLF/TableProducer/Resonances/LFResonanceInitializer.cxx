@@ -15,6 +15,8 @@
 ///
 /// \author Bong-Hwi Lim <bong-hwi.lim@cern.ch>
 
+#include <string>
+#include <vector>
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/Centrality.h"
@@ -511,6 +513,18 @@ struct reso2initializer {
                v0.eta(),
                v0.phi(),
                childIDs,
+               v0.template posTrack_as<TrackType>().tpcNSigmaPi(),
+               v0.template posTrack_as<TrackType>().tpcNSigmaKa(),
+               v0.template posTrack_as<TrackType>().tpcNSigmaPr(),
+               v0.template posTrack_as<TrackType>().tofNSigmaPi(),
+               v0.template posTrack_as<TrackType>().tofNSigmaKa(),
+               v0.template posTrack_as<TrackType>().tofNSigmaPr(),
+               v0.template negTrack_as<TrackType>().tpcNSigmaPi(),
+               v0.template negTrack_as<TrackType>().tpcNSigmaKa(),
+               v0.template negTrack_as<TrackType>().tpcNSigmaPr(),
+               v0.template negTrack_as<TrackType>().tofNSigmaPi(),
+               v0.template negTrack_as<TrackType>().tofNSigmaKa(),
+               v0.template negTrack_as<TrackType>().tofNSigmaPr(),
                v0.v0cosPA(),
                v0.dcaV0daughters(),
                v0.dcapostopv(),
@@ -545,6 +559,24 @@ struct reso2initializer {
                     casc.eta(),
                     casc.phi(),
                     childIDs,
+                    casc.template posTrack_as<TrackType>().tpcNSigmaPi(),
+                    casc.template posTrack_as<TrackType>().tpcNSigmaKa(),
+                    casc.template posTrack_as<TrackType>().tpcNSigmaPr(),
+                    casc.template posTrack_as<TrackType>().tofNSigmaPi(),
+                    casc.template posTrack_as<TrackType>().tofNSigmaKa(),
+                    casc.template posTrack_as<TrackType>().tofNSigmaPr(),
+                    casc.template negTrack_as<TrackType>().tpcNSigmaPi(),
+                    casc.template negTrack_as<TrackType>().tpcNSigmaKa(),
+                    casc.template negTrack_as<TrackType>().tpcNSigmaPr(),
+                    casc.template negTrack_as<TrackType>().tofNSigmaPi(),
+                    casc.template negTrack_as<TrackType>().tofNSigmaKa(),
+                    casc.template negTrack_as<TrackType>().tofNSigmaPr(),
+                    casc.template bachelor_as<TrackType>().tpcNSigmaPi(),
+                    casc.template bachelor_as<TrackType>().tpcNSigmaKa(),
+                    casc.template bachelor_as<TrackType>().tpcNSigmaPr(),
+                    casc.template bachelor_as<TrackType>().tofNSigmaPi(),
+                    casc.template bachelor_as<TrackType>().tofNSigmaKa(),
+                    casc.template bachelor_as<TrackType>().tofNSigmaPr(),
                     casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()),
                     casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()),
                     casc.dcaV0daughters(),

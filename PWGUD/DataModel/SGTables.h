@@ -51,10 +51,20 @@ DECLARE_SOA_COLUMN(TOFpi, tofpi, float);
 DECLARE_SOA_COLUMN(TOFka, tofka, float);
 DECLARE_SOA_COLUMN(TOFpr, tofpr, float);
 DECLARE_SOA_COLUMN(TOFel, tofel, float);
+DECLARE_SOA_COLUMN(TPCmu, tpcmu, float);
+DECLARE_SOA_COLUMN(TOFmu, tofmu, float);
+DECLARE_SOA_COLUMN(TPCde, tpcde, float);
+DECLARE_SOA_COLUMN(TPCtr, tpctr, float);
+DECLARE_SOA_COLUMN(TPChe, tpche, float);
+DECLARE_SOA_COLUMN(TPCal, tpcal, float);
+DECLARE_SOA_COLUMN(TOFde, tofde, float);
+DECLARE_SOA_COLUMN(TOFtr, toftr, float);
+DECLARE_SOA_COLUMN(TOFhe, tofhe, float);
+DECLARE_SOA_COLUMN(TOFal, tofal, float);
 } // namespace sgtrack
 DECLARE_SOA_TABLE(SGTracks, "AOD", "SGTRACK",
                   o2::soa::Index<>, sgtrack::SGEventId,
-                  sgtrack::Pt, sgtrack::Eta, sgtrack::Phi, sgtrack::Sign, sgtrack::TPCpi, sgtrack::TPCka, sgtrack::TPCpr, sgtrack::TPCel, sgtrack::TOFpi, sgtrack::TOFka, sgtrack::TOFpr, sgtrack::TOFel);
+                  sgtrack::Pt, sgtrack::Eta, sgtrack::Phi, sgtrack::Sign, sgtrack::TPCpi, sgtrack::TPCka, sgtrack::TPCpr, sgtrack::TPCel, sgtrack::TOFpi, sgtrack::TOFka, sgtrack::TOFpr, sgtrack::TOFel, sgtrack::TPCmu, sgtrack::TOFmu, sgtrack::TPCde, sgtrack::TPCtr, sgtrack::TPChe, sgtrack::TPCal, sgtrack::TOFde, sgtrack::TOFtr, sgtrack::TOFhe, sgtrack::TOFal);
 using SGTrack = SGTracks::iterator;
 } // namespace o2::aod
 

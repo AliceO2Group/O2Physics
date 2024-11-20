@@ -49,13 +49,13 @@ struct BCRangeSelector {
 
   void run(ProcessingContext& pc)
   {
-    auto bcConsumer = pc.inputs().get<TableConsumer>(aod::MetadataTrait<std::decay_t<aod::BCs>>::metadata::tableLabel());
+    auto bcConsumer = pc.inputs().get<TableConsumer>(o2::soa::getTableLabel<aod::BCs>());
     auto bcTable{bcConsumer->asArrowTable()};
-    auto collConsumer = pc.inputs().get<TableConsumer>(aod::MetadataTrait<std::decay_t<aod::Collisions>>::metadata::tableLabel());
+    auto collConsumer = pc.inputs().get<TableConsumer>(o2::soa::getTableLabel<aod::Collisions>());
     auto collTable{collConsumer->asArrowTable()};
-    auto evSelConsumer = pc.inputs().get<TableConsumer>(aod::MetadataTrait<std::decay_t<aod::EvSels>>::metadata::tableLabel());
+    auto evSelConsumer = pc.inputs().get<TableConsumer>(o2::soa::getTableLabel<aod::EvSels>());
     auto evSelTable{evSelConsumer->asArrowTable()};
-    auto cefpConsumer = pc.inputs().get<TableConsumer>(aod::MetadataTrait<std::decay_t<aod::CefpDecisions>>::metadata::tableLabel());
+    auto cefpConsumer = pc.inputs().get<TableConsumer>(o2::soa::getTableLabel<aod::CefpDecisions>());
     auto cefpTable{cefpConsumer->asArrowTable()};
 
     auto bcs = aod::BCs({bcTable});
