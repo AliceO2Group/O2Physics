@@ -984,7 +984,7 @@ class VarManager : public TObject
   static void FillPairCollisionMatCorr(C const& collision, T1 const& t1, T2 const& t2, M const& materialCorr, P const& propagator, float* values = nullptr);
   template <typename T1, typename T2, typename T3>
   static void FillTriple(T1 const& t1, T2 const& t2, T3 const& t3, float* values = nullptr, PairCandidateType pairType = kTripleCandidateToEEPhoton);
-  template <int pairType, typename T1, typename T2>
+  template <uint32_t fillMap, int pairType, typename T1, typename T2>
   static void FillPairME(T1 const& t1, T2 const& t2, float* values = nullptr);
   template <typename T1, typename T2>
   static void FillPairMC(T1 const& t1, T2 const& t2, float* values = nullptr, PairCandidateType pairType = kDecayToEE);
@@ -2903,7 +2903,7 @@ void VarManager::FillTriple(T1 const& t1, T2 const& t2, T3 const& t3, float* val
   }
 }
 
-template <int pairType, typename T1, typename T2>
+template <uint32_t fillMap, int pairType, typename T1, typename T2>
 void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
 {
   //
@@ -2954,30 +2954,31 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
     values[kDeltaEtaPair2] = v1.Eta() - v2.Eta();
   }
 
-  // TODO: provide different computations for vn
-  // Compute the scalar product UQ for two muon from different event using Q-vector from A, for second and third harmonic
-  float Psi2A1 = getEventPlane(2, values[kQ2X0A1], values[kQ2Y0A1]);
-  float Psi2A2 = getEventPlane(2, values[kQ2X0A2], values[kQ2Y0A2]);
-  values[kCos2DeltaPhiEv1] = TMath::Cos(2 * (v1.Phi() - Psi2A1));
-  values[kCos2DeltaPhiEv2] = TMath::Cos(2 * (v2.Phi() - Psi2A2));
-  values[kU2Q2Ev1] = values[kQ2X0A1] * TMath::Cos(2 * v1.Phi()) + values[kQ2Y0A1] * TMath::Sin(2 * v1.Phi());
-  values[kU2Q2Ev2] = values[kQ2X0A2] * TMath::Cos(2 * v2.Phi()) + values[kQ2Y0A2] * TMath::Sin(2 * v2.Phi());
+  if constexpr ((fillMap & ReducedEventQvector) > 0 || (fillMap & CollisionQvect) > 0) {
+    // TODO: provide different computations for vn
+    // Compute the scalar product UQ for two muon from different event using Q-vector from A, for second and third harmonic
+    float Psi2A1 = getEventPlane(2, values[kQ2X0A1], values[kQ2Y0A1]);
+    float Psi2A2 = getEventPlane(2, values[kQ2X0A2], values[kQ2Y0A2]);
+    values[kCos2DeltaPhiEv1] = TMath::Cos(2 * (v1.Phi() - Psi2A1));
+    values[kCos2DeltaPhiEv2] = TMath::Cos(2 * (v2.Phi() - Psi2A2));
+    values[kU2Q2Ev1] = values[kQ2X0A1] * TMath::Cos(2 * v1.Phi()) + values[kQ2Y0A1] * TMath::Sin(2 * v1.Phi());
+    values[kU2Q2Ev2] = values[kQ2X0A2] * TMath::Cos(2 * v2.Phi()) + values[kQ2Y0A2] * TMath::Sin(2 * v2.Phi());
 
-  values[kCos2DeltaPhiMu1] = TMath::Cos(2 * (v1.Phi() - v12.Phi()));
-  values[kCos2DeltaPhiMu2] = TMath::Cos(2 * (v2.Phi() - v12.Phi()));
+    values[kCos2DeltaPhiMu1] = TMath::Cos(2 * (v1.Phi() - v12.Phi()));
+    values[kCos2DeltaPhiMu2] = TMath::Cos(2 * (v2.Phi() - v12.Phi()));
 
-  values[kV2SP1] = values[kU2Q2Ev1] / values[kTwoR2SP1];
-  values[kV2SP2] = values[kU2Q2Ev2] / values[kTwoR2SP2];
-  values[kV2EP1] = values[kCos2DeltaPhiEv1] / values[kTwoR2EP1];
-  values[kV2EP2] = values[kCos2DeltaPhiEv2] / values[kTwoR2EP2];
+    values[kV2SP1] = values[kU2Q2Ev1] / values[kTwoR2SP1];
+    values[kV2SP2] = values[kU2Q2Ev2] / values[kTwoR2SP2];
+    values[kV2EP1] = values[kCos2DeltaPhiEv1] / values[kTwoR2EP1];
+    values[kV2EP2] = values[kCos2DeltaPhiEv2] / values[kTwoR2EP2];
 
-  float V2ME_SP = values[kV2SP1] * values[kCos2DeltaPhiMu1] + values[kV2SP2] * values[kCos2DeltaPhiMu2];
-  float V2ME_EP = values[kV2EP1] * values[kCos2DeltaPhiMu1] + values[kV2EP2] * values[kCos2DeltaPhiMu2];
-  values[kV2ME_SP] = std::isnan(V2ME_SP) || std::isinf(V2ME_SP) ? 0. : V2ME_SP;
-  values[kWV2ME_SP] = std::isnan(V2ME_SP) || std::isinf(V2ME_SP) ? 0. : 1.0;
-  values[kV2ME_EP] = std::isnan(V2ME_EP) || std::isinf(V2ME_EP) ? 0. : V2ME_EP;
-  values[kWV2ME_EP] = std::isnan(V2ME_EP) || std::isinf(V2ME_EP) ? 0. : 1.0;
-
+    float V2ME_SP = values[kV2SP1] * values[kCos2DeltaPhiMu1] + values[kV2SP2] * values[kCos2DeltaPhiMu2];
+    float V2ME_EP = values[kV2EP1] * values[kCos2DeltaPhiMu1] + values[kV2EP2] * values[kCos2DeltaPhiMu2];
+    values[kV2ME_SP] = std::isnan(V2ME_SP) || std::isinf(V2ME_SP) ? 0. : V2ME_SP;
+    values[kWV2ME_SP] = std::isnan(V2ME_SP) || std::isinf(V2ME_SP) ? 0. : 1.0;
+    values[kV2ME_EP] = std::isnan(V2ME_EP) || std::isinf(V2ME_EP) ? 0. : V2ME_EP;
+    values[kWV2ME_EP] = std::isnan(V2ME_EP) || std::isinf(V2ME_EP) ? 0. : 1.0;
+  }
   if constexpr (pairType == kDecayToMuMu) {
     if (fgUsedVars[kQuadDCAabsXY]) {
       double dca1X = t1.fwdDcaX();

@@ -1571,7 +1571,7 @@ struct AnalysisSameEventPairing {
           }
           auto t1 = a1.template reducedtrack_as<TTracks1>();
           auto t2 = a2.template reducedtrack_as<TTracks2>();
-          VarManager::FillPairME<TPairType>(t1, t2);
+          VarManager::FillPairME<TEventFillMap, TPairType>(t1, t2);
           if constexpr ((TEventFillMap & VarManager::ObjTypes::ReducedEventQvector) > 0) {
             VarManager::FillPairVn<TEventFillMap, TPairType>(t1, t2);
           }
@@ -1589,7 +1589,7 @@ struct AnalysisSameEventPairing {
             continue;
           if (t1.matchMFTTrackId() == t2.matchMFTTrackId())
             continue;
-          VarManager::FillPairME<TPairType>(t1, t2);
+          VarManager::FillPairME<TEventFillMap, TPairType>(t1, t2);
           if constexpr ((TEventFillMap & VarManager::ObjTypes::ReducedEventQvector) > 0) {
             VarManager::FillPairVn<TEventFillMap, TPairType>(t1, t2);
           }
