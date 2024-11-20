@@ -240,7 +240,6 @@ struct HfDerivedDataCreatorBplusToD0Pi {
         continue;
       }
       LOGF(debug, "Filling rec. collision %d at derived index %d", thisCollId, rowsCommon.rowCollBase.lastIndex() + 1);
-      // rowsCommon.fillTablesCollision(collision, 0, collision.bc().runNumber());
       rowsCommon.fillTablesCollision<isMc>(collision);
 
       // Fill candidate properties
