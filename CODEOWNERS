@@ -15,7 +15,7 @@
 /Common/CCDB @alibuild @jgrosseo @iarsene @ekryshen @ddobrigk
 /Common/Tools/Multiplicity @alibuild @ddobrigk @victor-gonzalez
 /ALICE3 @alibuild @njacazio @hscheid
-/DPG @alibuild @chiarazampolli @noferini
+/DPG @alibuild @chiarazampolli @alcaliva @catalinristea
 /DPG/Tasks/AOTEvent @alibuild @ekryshen @strogolo @altsybee
 /DPG/Tasks/AOTTrack @alibuild @mfaggin @iouribelikov @njacazio
 /DPG/Tasks/TOF @alibuild @noferini @njacazio
