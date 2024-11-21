@@ -75,7 +75,7 @@ struct meanPtFlucId {
   Configurable<float> cfgMcTofShiftPi{"cfgMcTofShiftPi", 0., "Pion Shift in TOF (MC data) "};
   Configurable<float> cfgMcTofShiftKa{"cfgMcTofShiftKa", 0., "Kaon Shift in TOF (MC data) "};
   Configurable<float> cfgMcTofShiftPr{"cfgMcTofShiftPr", 0., "Proton Shift in TOF (MC data) "};
-  Configurable<bool> cfgMCTruth{"cfgMCTruth", true, ""};
+  Configurable<bool> cfgMCTruth{"cfgMCTruth", false, ""};
   Configurable<bool> cfgPosZ{"cfgPosZ", true, "Position Z"};
   Configurable<bool> cfgSel8{"cfgSel8", true, "Sel8 trigger"};
   Configurable<bool> cfgEvSel1{"cfgEvSel1", true, "kNoSameBunchPileup"};
@@ -1063,7 +1063,7 @@ struct meanPtFlucId {
       FillHistos<true, false>(col, tracks);
     }
   }
-  PROCESS_SWITCH(meanPtFlucId, process_Run3, "Process for Run3", false);
+  PROCESS_SWITCH(meanPtFlucId, process_Run3, "Process for Run3", true);
 
   void process_MCRecoRun3(MyMCCollisions::iterator const& col, aod::McCollisions const&, MyMCTracks const& tracks, aod::McParticles const&)
   {
@@ -1075,7 +1075,7 @@ struct meanPtFlucId {
       FillHistos<false, true>(col, tracks);
     }
   }
-  PROCESS_SWITCH(meanPtFlucId, process_MCRecoRun3, "process MC Reconstructed Run-3", true);
+  PROCESS_SWITCH(meanPtFlucId, process_MCRecoRun3, "process MC Reconstructed Run-3", false);
 
   void process_MCGen(soa::Join<aod::McCollisions, aod::MultsExtraMC>::iterator const& mccol, aod::McParticles const& McParticles)
   {
@@ -1162,7 +1162,7 @@ struct meanPtFlucId {
     FillAnalysisHistos<Gen_Kaon>(NTPC, N_FT0C, N_Ka, Q1_Ka, Q2_Ka, Q3_Ka, Q4_Ka);
     FillAnalysisHistos<Gen_Proton>(NTPC, N_FT0C, N_Pr, Q1_Pr, Q2_Pr, Q3_Pr, Q4_Pr);
   }
-  PROCESS_SWITCH(meanPtFlucId, process_MCGen, "process MC Generated", true);
+  PROCESS_SWITCH(meanPtFlucId, process_MCGen, "process MC Generated", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
