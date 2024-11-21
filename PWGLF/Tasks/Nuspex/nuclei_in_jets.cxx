@@ -600,7 +600,7 @@ struct nuclei_in_jets {
     double pt_max(0);
 
     // Loop over Reconstructed Tracks
-    for (auto track : tracks) {
+    for (auto const& track : tracks) {
 
       if (!passedTrackSelectionForJetReconstruction(track))
         continue;
