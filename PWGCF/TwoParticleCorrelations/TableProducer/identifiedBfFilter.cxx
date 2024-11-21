@@ -12,6 +12,8 @@
 
 #include <cmath>
 #include <algorithm>
+#include <string>
+#include <vector>
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -935,11 +937,9 @@ struct IdentifiedBfFilterTracks {
   template <typename TrackObject>
   inline MatchRecoGenSpecies IdentifyTrack(TrackObject const& track);
   template <typename TrackObject>
-  MatchRecoGenSpecies trackIdentification(TrackObject const& track);
-  template <typename TrackObject>
   int8_t AcceptTrack(TrackObject const& track);
   template <typename ParticleObject, typename MCCollisionObject>
-  int8_t AcceptParticle(ParticleObject& particle, MCCollisionObject const&);
+  int8_t AcceptParticle(ParticleObject& particle, MCCollisionObject const& mccollision);
   template <typename CollisionObjects, typename TrackObject>
   int8_t selectTrackAmbiguousCheck(CollisionObjects const& collisions, TrackObject const& track);
   template <typename ParticleObject>
@@ -1020,7 +1020,6 @@ struct IdentifiedBfFilterTracks {
   void filterParticles(soa::Join<aod::McCollisions, aod::IdentifiedBfCFGenCollisionsInfo> const& gencollisions, aod::McParticles const& particles)
   {
     using namespace identifiedbffilter;
-
     int acceptedparticles = 0;
     int acceptedcollisions = 0;
     if (!fullDerivedData) {
@@ -1049,38 +1048,9 @@ struct IdentifiedBfFilterTracks {
           fillParticleHistosBeforeSelection(particle, mccollision, charge);
 
           /* track selection */
-          /* TODO: at some point the pid has to be substituted by the identified species */
           pid = AcceptParticle(particle, mccollision);
-          if (!(pid < 0)) {
-            /* the particle has been accepted */
-            /* let's identify the particle */
-            /* TODO: probably this needs to go to AcceptParticle */
-            MatchRecoGenSpecies sp = IdentifyParticle(particle);
-            if (sp != kWrongSpecies) {
-              if (sp != kIdBfCharged) {
-                /* fill the charged particle histograms */
-                fillParticleHistosAfterSelection(particle, mccollision, charge, kIdBfCharged);
-                /* update charged multiplicities */
-                if (pid % 2 == 0) {
-                  partMultPos[kIdBfCharged]++;
-                }
-                if (pid % 2 == 1) {
-                  partMultNeg[kIdBfCharged]++;
-                }
-              }
-              /* fill the species  histograms */
-              fillParticleHistosAfterSelection(particle, mccollision, charge, sp);
-              /* update species multiplicities */
-              if (pid % 2 == 0) {
-                partMultPos[sp]++;
-              }
-              if (pid % 2 == 1) {
-                partMultNeg[sp]++;
-              }
-              acceptedparticles++;
-            } else {
-              pid = -1;
-            }
+          if (!(pid < 0)) { // if PID isn't negative
+            acceptedparticles++;
           }
         }
       } else {
@@ -1161,7 +1131,7 @@ struct IdentifiedBfFilterTracks {
   }
   PROCESS_SWITCH(IdentifiedBfFilterTracks, filterRecoWithoutPIDAmbiguous, "Track filtering without PID information with ambiguous tracks check", false)
 
-  void filterDetectorLevelWithoutPID(soa::Join<aod::Collisions, aod::IdentifiedBfCFCollisionsInfo> const& collisions, IdBfFullTracksDetLevel const& tracks)
+  void filterDetectorLevelWithoutPID(soa::Join<aod::Collisions, aod::IdentifiedBfCFCollisionsInfo> const& collisions, IdBfFullTracksDetLevel const& tracks, aod::McParticles const&)
   {
     filterTracks(collisions, tracks);
   }
@@ -1358,30 +1328,6 @@ inline MatchRecoGenSpecies IdentifiedBfFilterTracks::IdentifyTrack(TrackObject c
   }
 }
 
-template <typename TrackObject>
-MatchRecoGenSpecies IdentifiedBfFilterTracks::trackIdentification(TrackObject const& track)
-{
-  using namespace identifiedbffilter;
-  MatchRecoGenSpecies sp = kWrongSpecies;
-  if (recoIdMethod == 0) {
-    sp = kIdBfCharged;
-  } else if (recoIdMethod == 1) {
-
-    if constexpr (framework::has_type_v<aod::pidtpc_tiny::TPCNSigmaStorePi, typename TrackObject::all_columns> || framework::has_type_v<aod::pidtpc::TPCNSigmaPi, typename TrackObject::all_columns>) {
-      sp = IdentifyTrack(track);
-    } else {
-      LOGF(fatal, "Track identification required but PID information not present");
-    }
-  } else if (recoIdMethod == 2) {
-    if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
-      sp = IdentifyParticle(track.template mcParticle_as<aod::McParticles>());
-    } else {
-      LOGF(fatal, "Track identification required from MC particle but MC information not present");
-    }
-  }
-  return sp;
-}
-
 /// \brief Accepts or not the passed track
 /// \param track the track of interest
 /// \return the internal track id, -1 if not accepted
@@ -1404,17 +1350,33 @@ inline int8_t IdentifiedBfFilterTracks::AcceptTrack(TrackObject const& track)
   if (matchTrackType(track)) {
     if (ptlow < track.pt() && track.pt() < ptup && etalow < track.eta() && track.eta() < etaup) {
       fillTrackHistosAfterSelection(track, kIdBfCharged);
-      MatchRecoGenSpecies sp = trackIdentification(track);
+      MatchRecoGenSpecies sp = kWrongSpecies;
+      if (recoIdMethod == 0) {
+        sp = kIdBfCharged;
+      } else if (recoIdMethod == 1) {
+
+        if constexpr (framework::has_type_v<aod::pidtpc_tiny::TPCNSigmaStorePi, typename TrackObject::all_columns> || framework::has_type_v<aod::pidtpc::TPCNSigmaPi, typename TrackObject::all_columns>) {
+          sp = IdentifyTrack(track);
+        } else {
+          LOGF(fatal, "Track identification required but PID information not present");
+        }
+      } else if (recoIdMethod == 2) {
+        if constexpr (framework::has_type_v<aod::mctracklabel::McParticleId, typename TrackObject::all_columns>) {
+          sp = IdentifyParticle(track.template mcParticle_as<aod::McParticles>());
+        } else {
+          LOGF(fatal, "Track identification required from MC particle but MC information not present");
+        }
+      }
       if (sp == kWrongSpecies) {
         return -1;
       }
       if (!(sp < 0)) {
         fillTrackHistosAfterSelection(track, sp); //<Fill accepted track histo with PID
-        if (track.sign() > 0) {
+        if (track.sign() > 0) {                   // if positive
           trkMultPos[sp]++; //<< Update Particle Multiplicity
           return speciesChargeValue1[sp];
         }
-        if (track.sign() < 0) {
+        if (track.sign() < 0) { // if negative
           trkMultNeg[sp]++; //<< Update Particle Multiplicity
           return speciesChargeValue1[sp] + 1;
         }
@@ -1428,7 +1390,7 @@ inline int8_t IdentifiedBfFilterTracks::AcceptTrack(TrackObject const& track)
 /// \param track the particle of interest
 /// \return `true` if the particle is accepted, `false` otherwise
 template <typename ParticleObject, typename MCCollisionObject>
-inline int8_t IdentifiedBfFilterTracks::AcceptParticle(ParticleObject& particle, MCCollisionObject const&)
+inline int8_t IdentifiedBfFilterTracks::AcceptParticle(ParticleObject& particle, MCCollisionObject const& mccollision)
 {
   /* overall momentum cut */
   if (!(overallminp < particle.p())) {
@@ -1444,6 +1406,26 @@ inline int8_t IdentifiedBfFilterTracks::AcceptParticle(ParticleObject& particle,
 
     if (ptlow < particle.pt() && particle.pt() < ptup && etalow < particle.eta() && particle.eta() < etaup) {
       MatchRecoGenSpecies sp = IdentifyParticle(particle);
+      if (sp != kWrongSpecies) {
+        if (sp != kIdBfCharged) {
+          /* fill the charged particle histograms */
+          fillParticleHistosAfterSelection(particle, mccollision, charge, kIdBfCharged);
+          /* update charged multiplicities */
+          if (charge == 1) {
+            partMultPos[kIdBfCharged]++;
+          } else if (charge == -1) {
+            partMultNeg[kIdBfCharged]++;
+          }
+        }
+        /* fill the species  histograms */
+        fillParticleHistosAfterSelection(particle, mccollision, charge, sp);
+        /* update species multiplicities */
+        if (charge == 1) {
+          partMultPos[sp]++;
+        } else if (charge == -1) {
+          partMultNeg[sp]++;
+        }
+      }
       if (charge == 1) {
         return speciesChargeValue1[sp];
 
