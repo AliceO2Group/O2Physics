@@ -23,16 +23,6 @@
 #include "PWGCF/Core/CorrelationContainer.h"
 #include "PWGCF/Core/PairCuts.h"
 
-namespace o2::aod
-{
-namespace hash
-{
-DECLARE_SOA_COLUMN(Bin, bin, int);
-} // namespace hash
-DECLARE_SOA_TABLE(Hashes, "AOD", "HASH", hash::Bin);
-
-using Hash = Hashes::iterator;
-} // namespace o2::aod
 
 using namespace o2;
 using namespace o2::framework;
