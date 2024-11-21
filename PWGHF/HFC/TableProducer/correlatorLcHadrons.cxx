@@ -271,10 +271,9 @@ struct HfCorrelatorLcHadrons {
     if (selectedLcCandidates.size() == 0) {
       return;
     }
-
     // find leading particle
     if (correlateLcWithLeadingParticle) {
-      leadingIndex = findLeadingParticle(tracks, dcaXYTrackMax.value, dcaZTrackMax.value);
+      leadingIndex = findLeadingParticle(tracks, dcaXYTrackMax.value, dcaZTrackMax.value, etaTrackMax.value);
     }
 
     int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multFT0M()));
@@ -363,7 +362,6 @@ struct HfCorrelatorLcHadrons {
             continue;
           }
         }
-
         if (candidate.isSelLcToPKPi() >= selectionFlagLc) {
           entryLcHadronPair(getDeltaPhi(track.phi(), candidate.phi()),
                             track.eta() - candidate.eta(),
@@ -397,10 +395,9 @@ struct HfCorrelatorLcHadrons {
     if (selectedLcCandidatesMc.size() == 0) {
       return;
     }
-
     // find leading particle
     if (correlateLcWithLeadingParticle) {
-      leadingIndex = findLeadingParticle(tracks, dcaXYTrackMax.value, dcaZTrackMax.value);
+      leadingIndex = findLeadingParticle(tracks, dcaXYTrackMax.value, dcaZTrackMax.value, etaTrackMax.value);
     }
 
     int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multFT0M()));
@@ -517,7 +514,6 @@ struct HfCorrelatorLcHadrons {
             continue;
           }
         }
-
         if (candidate.isSelLcToPKPi() >= selectionFlagLc) {
           entryLcHadronPair(getDeltaPhi(track.phi(), candidate.phi()),
                             track.eta() - candidate.eta(),
@@ -536,6 +532,7 @@ struct HfCorrelatorLcHadrons {
                             correlationStatus);
           entryLcHadronRecoInfo(hfHelper.invMassLcToPiKP(candidate), isLcSignal);
         }
+
       } // end inner loop (Tracks)
     }   // end outer Lc loop
     registry.fill(HIST("hZvtx"), collision.posZ());
