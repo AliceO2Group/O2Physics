@@ -25,6 +25,7 @@
 
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGLF/DataModel/mcCentrality.h"
 
 namespace o2::aod
 {
@@ -194,6 +195,7 @@ DECLARE_SOA_TABLE_STAGED(Hf3PMcCollBases, "HF3PMCCOLLBASE", //! Table with basic
                          mccollision::PosX,
                          mccollision::PosY,
                          mccollision::PosZ,
+                         cent::CentFT0M,
                          o2::soa::Marker<Marker3P>);
 
 using Hf3PMcCollBase = Hf3PMcCollBases::iterator;
