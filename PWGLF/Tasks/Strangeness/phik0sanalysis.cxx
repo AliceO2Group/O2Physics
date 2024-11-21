@@ -175,6 +175,12 @@ struct phik0shortanalysis {
   // Necessary to flag INEL>0 events in GenMC
   Service<o2::framework::O2DatabasePDG> pdgDB;
 
+  typedef struct TLorentzVectorAndPID {
+    TLorentzVector fLorentzVector;
+    float fnSigmaTPC;
+    float fnSigmaTOF;
+  } TLorentzVectorAndPID;
+
   void init(InitContext&)
   {
     // Axes
@@ -531,7 +537,7 @@ struct phik0shortanalysis {
 
   // Fill 2D invariant mass histogram for V0 and Phi
   template <bool isMC>
-  void fillInvMass2D(TLorentzVector V0, const std::vector<TLorentzVector> listPhi, float multiplicity, const std::array<float, 3> weights)
+  void fillInvMass2D(const TLorentzVector& V0, const std::vector<TLorentzVector>& listPhi, float multiplicity, const std::array<float, 3> weights)
   {
     double massV0 = V0.M();
     double ptV0 = V0.Pt();
@@ -564,10 +570,12 @@ struct phik0shortanalysis {
 
   // Fill Phi invariant mass vs Pion nSigmadE/dx histogram
   template <bool isMC>
-  void fillInvMassNSigma(TLorentzVector Pi, float nSigmaTPCPi, float nSigmaTOFPi, const std::vector<TLorentzVector> listPhi, float multiplicity, const std::array<float, 3> weights)
+  void fillInvMassNSigma(const TLorentzVectorAndPID& Pi, const std::vector<TLorentzVector>& listPhi, float multiplicity, const std::array<float, 3> weights)
   {
-    double rapidityPi = Pi.Rapidity();
-    double ptPi = Pi.Pt();
+    float nSigmaTPCPi = Pi.fnSigmaTPC;
+    float nSigmaTOFPi = Pi.fnSigmaTOF;
+    double rapidityPi = Pi.fLorentzVector.Rapidity();
+    double ptPi = Pi.fLorentzVector.Pt();
 
     for (unsigned int phitag = 0; phitag < listPhi.size(); phitag++) {
       double massPhi = listPhi[phitag].M();
@@ -631,8 +639,7 @@ struct phik0shortanalysis {
         if (track2ID == track1ID)
           continue; // condition to avoid double counting of pair
 
-        TLorentzVector recPhi;
-        recPhi = recMother(track1, track2, massKa, massKa);
+        TLorentzVector recPhi = recMother(track1, track2, massKa, massKa);
         if (std::abs(recPhi.Rapidity()) > cfgyAcceptance)
           continue;
 
@@ -665,8 +672,7 @@ struct phik0shortanalysis {
             }
           }
 
-          TLorentzVector recK0S;
-          recK0S.SetXYZM(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
+          TLorentzVector recK0S(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
 
           if (std::abs(recK0S.Rapidity()) > cfgyAcceptance)
             continue;
@@ -697,8 +703,7 @@ struct phik0shortanalysis {
           if (!selectionPion(track))
             continue;
 
-          TLorentzVector recPi;
-          recPi.SetXYZM(track.px(), track.py(), track.pz(), massPi);
+          TLorentzVector recPi(track.px(), track.py(), track.pz(), massPi);
 
           if (std::abs(recPi.Rapidity()) > cfgyAcceptance)
             continue;
@@ -746,8 +751,7 @@ struct phik0shortanalysis {
       if (!selectionV0(v0, posDaughterTrack, negDaughterTrack))
         continue;
 
-      TLorentzVector recK0S;
-      recK0S.SetXYZM(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
+      TLorentzVector recK0S(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
       if (std::abs(recK0S.Rapidity()) > cfgyAcceptance)
         continue;
 
@@ -771,8 +775,7 @@ struct phik0shortanalysis {
           if (track2ID == track1ID)
             continue; // condition to avoid double counting of pair
 
-          TLorentzVector recPhi;
-          recPhi = recMother(track1, track2, massKa, massKa);
+          TLorentzVector recPhi = recMother(track1, track2, massKa, massKa);
           if (std::abs(recPhi.Rapidity()) > cfgyAcceptance)
             continue;
 
@@ -820,14 +823,14 @@ struct phik0shortanalysis {
       if (!selectionPion(track))
         continue;
 
-      TLorentzVector recPi;
-      recPi.SetXYZM(track.px(), track.py(), track.pz(), massPi);
-      if (std::abs(recPi.Rapidity()) > cfgyAcceptance)
+      TLorentzVector vecPi(track.px(), track.py(), track.pz(), massPi);
+      if (std::abs(vecPi.Rapidity()) > cfgyAcceptance)
         continue;
 
-      float nsigmaTPC, nsigmaTOF;
-      nsigmaTPC = (track.hasTPC() ? track.tpcNSigmaPi() : -9.99);
-      nsigmaTOF = (track.hasTOF() ? track.tofNSigmaPi() : -9.99);
+      float nsigmaTPC = (track.hasTPC() ? track.tpcNSigmaPi() : -9.99);
+      float nsigmaTOF = (track.hasTOF() ? track.tofNSigmaPi() : -9.99);
+
+      TLorentzVectorAndPID recPi{vecPi, nsigmaTPC, nsigmaTOF};
 
       std::vector<TLorentzVector> listrecPhi;
       std::array<int, 3> counts{};
@@ -849,8 +852,7 @@ struct phik0shortanalysis {
           if (track2ID == track1ID)
             continue; // condition to avoid double counting of pair
 
-          TLorentzVector recPhi;
-          recPhi = recMother(track1, track2, massKa, massKa);
+          TLorentzVector recPhi = recMother(track1, track2, massKa, massKa);
           if (std::abs(recPhi.Rapidity()) > cfgyAcceptance)
             continue;
 
@@ -858,10 +860,10 @@ struct phik0shortanalysis {
 
           if (lowmPhi <= recPhi.M() && recPhi.M() <= upmPhi) {
             counts.at(0)++;
-            if (std::abs(recPi.Rapidity() - recPhi.Rapidity()) > cfgFirstCutonDeltay)
+            if (std::abs(vecPi.Rapidity() - recPhi.Rapidity()) > cfgFirstCutonDeltay)
               continue;
             counts.at(1)++;
-            if (std::abs(recPi.Rapidity() - recPhi.Rapidity()) > cfgSecondCutonDeltay)
+            if (std::abs(vecPi.Rapidity() - recPhi.Rapidity()) > cfgSecondCutonDeltay)
               continue;
             counts.at(2)++;
           }
@@ -873,7 +875,7 @@ struct phik0shortanalysis {
         weights.at(i) = (counts.at(i) > 0 ? 1. / static_cast<float>(counts.at(i)) : 0);
       }
 
-      fillInvMassNSigma<false>(recPi, nsigmaTPC, nsigmaTOF, listrecPhi, multiplicity, weights);
+      fillInvMassNSigma<false>(recPi, listrecPhi, multiplicity, weights);
     }
   }
 
@@ -943,8 +945,7 @@ struct phik0shortanalysis {
         if (pdgParentPhi != 333)
           continue;
 
-        TLorentzVector recPhi;
-        recPhi = recMother(track1, track2, massKa, massKa);
+        TLorentzVector recPhi = recMother(track1, track2, massKa, massKa);
         if (std::abs(recPhi.Rapidity()) > cfgyAcceptance)
           continue;
 
@@ -988,8 +989,7 @@ struct phik0shortanalysis {
           if (!selectionV0(v0, posDaughterTrack, negDaughterTrack))
             continue;
 
-          TLorentzVector recK0S;
-          recK0S.SetXYZM(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
+          TLorentzVector recK0S(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
 
           if (std::abs(recK0S.Rapidity()) > cfgyAcceptance)
             continue;
@@ -1025,8 +1025,7 @@ struct phik0shortanalysis {
           if (!selectionPion(track))
             continue;
 
-          TLorentzVector recPi;
-          recPi.SetXYZM(track.px(), track.py(), track.pz(), massPi);
+          TLorentzVector recPi(track.px(), track.py(), track.pz(), massPi);
 
           if (std::abs(recPi.Rapidity()) > cfgyAcceptance)
             continue;
@@ -1098,8 +1097,7 @@ struct phik0shortanalysis {
       if (!selectionV0(v0, posDaughterTrack, negDaughterTrack))
         continue;
 
-      TLorentzVector recK0S;
-      recK0S.SetXYZM(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
+      TLorentzVector recK0S(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
       if (std::abs(recK0S.Rapidity()) > cfgyAcceptance)
         continue;
 
@@ -1149,8 +1147,7 @@ struct phik0shortanalysis {
           if (pdgParentPhi != 333)
             continue;
 
-          TLorentzVector recPhi;
-          recPhi = recMother(track1, track2, massKa, massKa);
+          TLorentzVector recPhi = recMother(track1, track2, massKa, massKa);
 
           if (lowmPhi <= recPhi.M() && recPhi.M() <= upmPhi) {
             if (std::abs(recPhi.Rapidity()) > cfgyAcceptance)
@@ -1209,8 +1206,7 @@ struct phik0shortanalysis {
       if (!selectionPion(track))
         continue;
 
-      TLorentzVector recPi;
-      recPi.SetXYZM(track.px(), track.py(), track.pz(), massPi);
+      TLorentzVector recPi(track.px(), track.py(), track.pz(), massPi);
       if (std::abs(recPi.Rapidity()) > cfgyAcceptance)
         continue;
 
@@ -1264,8 +1260,7 @@ struct phik0shortanalysis {
           if (pdgParentPhi != 333)
             continue;
 
-          TLorentzVector recPhi;
-          recPhi = recMother(track1, track2, massKa, massKa);
+          TLorentzVector recPhi = recMother(track1, track2, massKa, massKa);
 
           if (lowmPhi <= recPhi.M() && recPhi.M() <= upmPhi) {
             if (std::abs(recPhi.Rapidity()) > cfgyAcceptance)
@@ -1329,8 +1324,7 @@ struct phik0shortanalysis {
         if (track2ID == track1ID)
           continue; // condition to avoid double counting of pair
 
-        TLorentzVector recPhi;
-        recPhi = recMother(track1, track2, massKa, massKa);
+        TLorentzVector recPhi = recMother(track1, track2, massKa, massKa);
         if (std::abs(recPhi.Rapidity()) > cfgyAcceptance)
           continue;
 
@@ -1351,8 +1345,7 @@ struct phik0shortanalysis {
           if (!selectionV0(v0, posDaughterTrack, negDaughterTrack))
             continue;
 
-          TLorentzVector recK0S;
-          recK0S.SetXYZM(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
+          TLorentzVector recK0S(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
 
           if (std::abs(recK0S.Rapidity()) > cfgyAcceptance)
             continue;
@@ -1383,8 +1376,7 @@ struct phik0shortanalysis {
           if (!selectionPion(track))
             continue;
 
-          TLorentzVector recPi;
-          recPi.SetXYZM(track.px(), track.py(), track.pz(), massPi);
+          TLorentzVector recPi(track.px(), track.py(), track.pz(), massPi);
 
           if (std::abs(recPi.Rapidity()) > cfgyAcceptance)
             continue;
@@ -1435,8 +1427,7 @@ struct phik0shortanalysis {
       if (!selectionV0(v0, posDaughterTrack, negDaughterTrack))
         continue;
 
-      TLorentzVector recK0S;
-      recK0S.SetXYZM(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
+      TLorentzVector recK0S(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
       if (std::abs(recK0S.Rapidity()) > cfgyAcceptance)
         continue;
 
@@ -1458,8 +1449,7 @@ struct phik0shortanalysis {
           if (track2ID == track1ID)
             continue; // condition to avoid double counting of pair
 
-          TLorentzVector recPhi;
-          recPhi = recMother(track1, track2, massKa, massKa);
+          TLorentzVector recPhi = recMother(track1, track2, massKa, massKa);
           if (std::abs(recPhi.Rapidity()) > cfgyAcceptance)
             continue;
 
@@ -1510,14 +1500,14 @@ struct phik0shortanalysis {
       if (!selectionPion(track))
         continue;
 
-      TLorentzVector recPi;
-      recPi.SetXYZM(track.px(), track.py(), track.pz(), massPi);
-      if (std::abs(recPi.Rapidity()) > cfgyAcceptance)
+      TLorentzVector vecPi(track.px(), track.py(), track.pz(), massPi);
+      if (std::abs(vecPi.Rapidity()) > cfgyAcceptance)
         continue;
 
-      float nsigmaTPC, nsigmaTOF;
-      nsigmaTPC = (track.hasTPC() ? track.tpcNSigmaPi() : -9.99);
-      nsigmaTOF = (track.hasTOF() ? track.tofNSigmaPi() : -9.99);
+      float nsigmaTPC = (track.hasTPC() ? track.tpcNSigmaPi() : -9.99);
+      float nsigmaTOF = (track.hasTOF() ? track.tofNSigmaPi() : -9.99);
+
+      TLorentzVectorAndPID recPi(vecPi, nsigmaTPC, nsigmaTOF);
 
       std::vector<TLorentzVector> listrecPhi;
       std::array<int, 3> counts{};
@@ -1537,8 +1527,7 @@ struct phik0shortanalysis {
           if (track2ID == track1ID)
             continue; // condition to avoid double counting of pair
 
-          TLorentzVector recPhi;
-          recPhi = recMother(track1, track2, massKa, massKa);
+          TLorentzVector recPhi = recMother(track1, track2, massKa, massKa);
           if (std::abs(recPhi.Rapidity()) > cfgyAcceptance)
             continue;
 
@@ -1546,10 +1535,10 @@ struct phik0shortanalysis {
 
           if (lowmPhi <= recPhi.M() && recPhi.M() <= upmPhi) {
             counts.at(0)++;
-            if (std::abs(recPi.Rapidity() - recPhi.Rapidity()) > cfgFirstCutonDeltay)
+            if (std::abs(vecPi.Rapidity() - recPhi.Rapidity()) > cfgFirstCutonDeltay)
               continue;
             counts.at(1)++;
-            if (std::abs(recPi.Rapidity() - recPhi.Rapidity()) > cfgSecondCutonDeltay)
+            if (std::abs(vecPi.Rapidity() - recPhi.Rapidity()) > cfgSecondCutonDeltay)
               continue;
             counts.at(2)++;
           }
@@ -1561,7 +1550,7 @@ struct phik0shortanalysis {
         weights.at(i) = (counts.at(i) > 0 ? 1. / static_cast<float>(counts.at(i)) : 0);
       }
 
-      fillInvMassNSigma<true>(recPi, nsigmaTPC, nsigmaTOF, listrecPhi, genmultiplicity, weights);
+      fillInvMassNSigma<true>(recPi, listrecPhi, genmultiplicity, weights);
     }
   }
 
