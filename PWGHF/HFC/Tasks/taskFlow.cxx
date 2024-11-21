@@ -1119,7 +1119,13 @@ struct HfTaskFlow {
     auto triggerWeight = 1;
     auto associatedWeight = 1;
 
+    //To avoid filling associated tracks QA many times
+    // I fill it only for the first trigger track of the collision
+    auto loopCounter = 0; 
+
     for (const auto& track1 : tracks1) {
+
+      loopCounter++;
 
       float eta1 = track1.eta();
       float pt1 = track1.pt();
@@ -1186,6 +1192,7 @@ struct HfTaskFlow {
             fillTpcMftChChSameEventQa(multiplicity, track1, true);
           } // end of if condition for TPC-TPC or TPC-MFT case
         }
+      // Maybe I won't need it for MC (first files are way lighter in MC, but also I need to loop over all tracks in MC GEN)
       //} else {                                                        // If MC (add cases later)
         //fillTpcTpcChChSameEventQaMc(multiplicityTracks2, vz, tracks1);
       //}
@@ -1255,7 +1262,7 @@ struct HfTaskFlow {
         }
 
         // FILL QA PLOTS for associated particle
-        if (sameEvent) {
+        if (sameEvent && (loopCounter == 1)) {
         //if constexpr (std::is_same_v<FilteredCollisionsWSelMult, TCollisions>) { // If DATA
           if constexpr (!std::is_same_v<aod::MFTTracks, TTracksAssoc>) { // IF TPC-TPC case
             if constexpr (std::is_same_v<HfCandidatesSelD0, TTracksTrig>) {  // IF D0 CASE -> TPC-TPC D0-h
@@ -1427,7 +1434,6 @@ struct HfTaskFlow {
 
     sameTPCTPCChCh->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
 
-    //fillTpcTpcChChSameEventQa(multiplicity, tracks);
     // TO-DO : add if condition for when we will implant corrected correlations (kCFStepReconstructed -> kCFStepCorrected)
     fillCorrelations<CorrelationContainer::kCFStepReconstructed>(sameTPCTPCChCh, tracks, tracks, multiplicity, collision.posZ(), true);
   }
@@ -1458,7 +1464,6 @@ struct HfTaskFlow {
 
     sameTPCTPCHfCh->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
 
-    //fillTpcTpcD0CandidateQa(candidates);
     fillCorrelations<CorrelationContainer::kCFStepReconstructed>(sameTPCTPCHfCh, candidates, tracks, multiplicity, collision.posZ(), true);
   }
   PROCESS_SWITCH(HfTaskFlow, processSameTpcTpcD0Ch, "DATA : Process same-event correlations for TPC-TPC D0-h case", false);
@@ -1488,7 +1493,6 @@ struct HfTaskFlow {
 
     sameTPCTPCHfCh->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
 
-    //fillTpcTpcLcCandidateQa(candidates);
     fillCorrelations<CorrelationContainer::kCFStepReconstructed>(sameTPCTPCHfCh, candidates, tracks, multiplicity, collision.posZ(), true);
   }
   PROCESS_SWITCH(HfTaskFlow, processSameTpcTpcLcCh, "DATA : Process same-event correlations for TPC-TPC Lc-h case", false);
@@ -1506,14 +1510,12 @@ struct HfTaskFlow {
     }
 
     const auto multiplicityTPC = tracks.size();
-    //const auto multiplicityMFT = mftTracks.size();
     BinningPolicyBase<2> baseBinning{{axisVertex, axisMultiplicity}, true};
     int bin = baseBinning.getBin(std::make_tuple(collision.posZ(), multiplicityTPC));
     registry.fill(HIST("Data/TpcMft/HadronHadron/SameEvent/hEventCountSame"), bin);
 
     sameTPCMFTChCh->fillEvent(multiplicityTPC, CorrelationContainer::kCFStepReconstructed);
-    //fillTpcMftChChSameEventQa(multiplicityTPC, tracks);
-    //fillTpcMftChChSameEventQa(multiplicityMFT, mftTracks);
+
     fillCorrelations<CorrelationContainer::kCFStepReconstructed>(sameTPCMFTChCh, tracks, mftTracks, multiplicityTPC, collision.posZ(), true);
   }
   PROCESS_SWITCH(HfTaskFlow, processSameTpcMftChCh, "DATA : Process same-event correlations for TPC-MFT h-h case", false);
@@ -1537,14 +1539,12 @@ struct HfTaskFlow {
     }
 
     const auto multiplicityCandidates = candidates.size();
-    //const auto multiplicityMFT = mftTracks.size();
     BinningPolicyBase<2> baseBinning{{axisVertex, axisMultiplicity}, true};
     int bin = baseBinning.getBin(std::make_tuple(collision.posZ(), multiplicityCandidates));
     registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/2Prong/hEventCountSame"), bin);
 
     sameTPCMFTHfCh->fillEvent(multiplicityCandidates, CorrelationContainer::kCFStepReconstructed);
-    //fillTpcMftD0CandidateQa(candidates, multiplicityCandidates);
-    //fillTpcMftHfChSameEventQa(multiplicityMFT, mftTracks);
+
     fillCorrelations<CorrelationContainer::kCFStepReconstructed>(sameTPCMFTHfCh, candidates, mftTracks, multiplicityCandidates, collision.posZ(), true);
   }
   PROCESS_SWITCH(HfTaskFlow, processSameTpcMftD0Ch, "DATA : Process same-event correlations for TPC-MFT D0-h case", false);
@@ -1568,14 +1568,12 @@ struct HfTaskFlow {
     }
 
     const auto multiplicityCandidates = candidates.size();
-    //const auto multiplicityMFT = mftTracks.size();
     BinningPolicyBase<2> baseBinning{{axisVertex, axisMultiplicity}, true};
     int bin = baseBinning.getBin(std::make_tuple(collision.posZ(), multiplicityCandidates));
     registry.fill(HIST("Data/TpcMft/HfHadron/SameEvent/3Prong/hEventCountSame"), bin);
 
     sameTPCMFTHfCh->fillEvent(multiplicityCandidates, CorrelationContainer::kCFStepReconstructed);
-    //fillTpcMftLcCandidateQa(candidates, multiplicityCandidates);
-    //fillTpcMftHfChSameEventQa(multiplicityMFT, mftTracks);
+
     fillCorrelations<CorrelationContainer::kCFStepReconstructed>(sameTPCMFTHfCh, candidates, mftTracks, multiplicityCandidates, collision.posZ(), true);
   }
   PROCESS_SWITCH(HfTaskFlow, processSameTpcMftLcCh, "DATA : Process same-event correlations for TPC-MFT Lc-h case", false);
@@ -1686,13 +1684,6 @@ struct HfTaskFlow {
       return size;
     };
 
-    // auto getTracksSize = [&candidates, this](FilteredCollisionsWSelMult::iterator const& col) {
-    //  // Still o2::aod::track::collisionId with HF ??? -> I don't think so
-    //   auto associatedTracks = candidates.sliceByCached(o2::aod::hf_cand::collisionId, col.globalIndex(), this->cache);
-    //   auto size = associatedTracks.size();
-    //   return size;
-    // };
-
     mixCollisions(collisions, candidates, tracks, getTracksSize, mixedTPCTPCHfCh);
   }
   PROCESS_SWITCH(HfTaskFlow, processMixedTpcTpcD0Ch, "DATA : Process mixed-event correlations for TPC-TPC D0-h case", false);
@@ -1712,13 +1703,6 @@ struct HfTaskFlow {
       auto size = associatedTracks.size();
       return size;
     };
-
-    // auto getTracksSize = [&candidates, this](FilteredCollisionsWSelMult::iterator const& col) {
-    //  // Still o2::aod::track::collisionId with HF ??? -> I don't think so
-    //   auto associatedTracks = candidates.sliceByCached(o2::aod::hf_cand::collisionId, col.globalIndex(), this->cache);
-    //   auto size = associatedTracks.size();
-    //   return size;
-    // };
 
     mixCollisions(collisions, candidates, tracks, getTracksSize, mixedTPCTPCHfCh);
   }
@@ -1759,13 +1743,6 @@ struct HfTaskFlow {
       return size;
     };
 
-    // auto getTracksSize = [&candidates, this](FilteredCollisionsWSelMult::iterator const& col) {
-    //  // Still o2::aod::track::collisionId with HF ??? -> I don't think so
-    //   auto associatedTracks = candidates.sliceByCached(o2::aod::hf_cand::collisionId, col.globalIndex(), this->cache);
-    //   auto size = associatedTracks.size();
-    //   return size;
-    // };
-
     mixCollisions(collisions, candidates, mftTracks, getTracksSize, mixedTPCMFTHfCh);
   }
   PROCESS_SWITCH(HfTaskFlow, processMixedTpcMftD0Ch, "DATA : Process mixed-event correlations for TPC-MFT D0-h case", false);
@@ -1786,13 +1763,6 @@ struct HfTaskFlow {
       auto size = associatedTracks.size();
       return size;
     };
-
-    // auto getTracksSize = [&candidates, this](FilteredCollisionsWSelMult::iterator const& col) {
-    //  // Still o2::aod::track::collisionId with HF ??? -> I don't think so
-    //   auto associatedTracks = candidates.sliceByCached(o2::aod::hf_cand::collisionId, col.globalIndex(), this->cache);
-    //   auto size = associatedTracks.size();
-    //   return size;
-    // };
 
     mixCollisions(collisions, candidates, mftTracks, getTracksSize, mixedTPCMFTHfCh);
   }
