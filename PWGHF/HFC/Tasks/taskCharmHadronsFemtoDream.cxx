@@ -196,6 +196,10 @@ struct HfTaskCharmHadronsFemtoDream {
 
   void init(InitContext& /*context*/)
   {
+    // setup columnpolicy for binning
+    colBinningMult = {{mixingBinVztx, mixingBinMult}, true};
+    colBinningMultPercentile = {{mixingBinVztx, mixingBinMultPercentile}, true};
+    colBinningMultMultPercentile = {{mixingBinVztx, mixingBinMult, mixingBinMultPercentile}, true};
     eventHisto.init(&registry);
     trackHistoPartOne.init(&registry, binmultTempFit, binMulPercentile, binpTTrack, binEta, binPhi, binTempFitVarTrack, binNSigmaTPC, binNSigmaTOF, binNSigmaTPCTOF, binTPCClusters, dummy, isMc, pdgCodeTrack1, true);
 
@@ -242,7 +246,7 @@ struct HfTaskCharmHadronsFemtoDream {
     /// Histogramming same event
     for (auto const& part : sliceTrk1) {
 
-      trackHistoPartOne.fillQA<isMc, true>(part, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
+      trackHistoPartOne.fillQA<isMc, true>(part, static_cast<aod::femtodreamparticle::MomentumType>(ConfTempFitVarMomentum.value), col.multNtr(), col.multV0M());
     }
 
     for (auto const& [p1, p2] : combinations(CombinationsFullIndexPolicy(sliceTrk1, sliceCharmHad))) {
@@ -349,7 +353,6 @@ struct HfTaskCharmHadronsFemtoDream {
       }
 
       const int multiplicityCol = collision1.multNtr();
-
       registryMixQa.fill(HIST("MixingQA/hMECollisionBins"), colBinningMult.getBin({collision1.posZ(), multiplicityCol}));
 
       auto sliceTrk1 = part1->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision1.globalIndex(), cache);
