@@ -215,8 +215,8 @@ struct QaEfficiency {
   ConfigurableAxis etaBins{"etaBins", {200, -3.f, 3.f}, "Eta binning"};
   ConfigurableAxis phiBins{"phiBins", {200, 0.f, 6.284f}, "Phi binning"};
   ConfigurableAxis yBins{"yBins", {200, -0.5f, 0.5f}, "Y binning"};
-  ConfigurableAxis occBins{"occBins", {1000, 0.f, 14000.f}, "Occupancy binning"};
-  ConfigurableAxis centBins{"centBins", {119, 0.f, 110.f}, "Centrality binning"};
+  ConfigurableAxis occBins{"occBins", {100, 0.f, 14000.f}, "Occupancy binning"};
+  ConfigurableAxis centBins{"centBins", {110, 0.f, 110.f}, "Centrality binning"};
   ConfigurableAxis radiusBins{"radiusBins", {200, 0.f, 100.f}, "Radius binning"};
   // Task configuration
   Configurable<bool> makeEff{"make-eff", false, "Flag to produce the efficiency with TEfficiency"};
@@ -643,25 +643,17 @@ struct QaEfficiency {
       const AxisSpec axisOcc{occBins, "Occupancy"};
       const AxisSpec axisCent{centBins, "Centrality"};
 
-      histos.add("MC/occ/gen/pos", "Generated Positive ", kTH2D, {axisOcc, axisPt});
-      histos.add("MC/cent/gen/pos", "Generated Positive ", kTH2D, {axisCent, axisPt});
-      histos.add("MC/occ/gen/neg", "Generated Negative ", kTH2D, {axisOcc, axisPt});
-      histos.add("MC/cent/gen/neg", "Generated Negative ", kTH2D, {axisCent, axisPt});
+      histos.add("MC/occ_cent/gen/pos", "Generated Positive ", kTH3D, {axisOcc, axisCent, axisPt});
+      histos.add("MC/occ_cent/gen/neg", "Generated Negative ", kTH3D, {axisOcc, axisCent, axisPt});
 
-      histos.add("MC/occ/reco/pos/its_tpc_tof", "ITS-TPC-TOF Positive ", kTH2D, {axisOcc, axisPt});
-      histos.add("MC/cent/reco/pos/its_tpc_tof", "ITS-TPC-TOF Positive ", kTH2D, {axisCent, axisPt});
-      histos.add("MC/occ/reco/neg/its_tpc_tof", "ITS-TPC-TOF Negative ", kTH2D, {axisOcc, axisPt});
-      histos.add("MC/cent/reco/neg/its_tpc_tof", "ITS-TPC-TOF Negative ", kTH2D, {axisCent, axisPt});
+      histos.add("MC/occ_cent/reco/pos/its_tpc_tof", "ITS-TPC-TOF Positive ", kTH3D, {axisOcc, axisCent, axisPt});
+      histos.add("MC/occ_cent/reco/neg/its_tpc_tof", "ITS-TPC-TOF Negative ", kTH3D, {axisOcc, axisCent, axisPt});
 
-      histos.add("MC/occ/reco/pos/its_tpc", "ITS-TPC Positive ", kTH2D, {axisOcc, axisPt});
-      histos.add("MC/cent/reco/pos/its_tpc", "ITS-TPC Positive ", kTH2D, {axisCent, axisPt});
-      histos.add("MC/occ/reco/neg/its_tpc", "ITS-TPC Negative ", kTH2D, {axisOcc, axisPt});
-      histos.add("MC/cent/reco/neg/its_tpc", "ITS-TPC Negative ", kTH2D, {axisCent, axisPt});
+      histos.add("MC/occ_cent/reco/pos/its_tpc", "ITS-TPC Positive ", kTH3D, {axisOcc, axisCent, axisPt});
+      histos.add("MC/occ_cent/reco/neg/its_tpc", "ITS-TPC Negative ", kTH3D, {axisOcc, axisCent, axisPt});
 
-      histos.add("MC/occ/reco/pos/its", "ITS Positive ", kTH2D, {axisOcc, axisPt});
-      histos.add("MC/cent/reco/pos/its", "ITS Positive ", kTH2D, {axisCent, axisPt});
-      histos.add("MC/occ/reco/neg/its", "ITS Negative ", kTH2D, {axisOcc, axisPt});
-      histos.add("MC/cent/reco/neg/its", "ITS Negative ", kTH2D, {axisCent, axisPt});
+      histos.add("MC/occ_cent/reco/pos/its", "ITS Positive ", kTH3D, {axisOcc, axisCent, axisPt});
+      histos.add("MC/occ_cent/reco/neg/its", "ITS Negative ", kTH3D, {axisOcc, axisCent, axisPt});
     }
 
     static_for<0, 1>([&](auto pdgSign) {
@@ -781,6 +773,20 @@ struct QaEfficiency {
 
     histos.add("Data/trackLength", "Track length;Track length (cm)", kTH1D, {{2000, -1000, 1000}});
 
+    if (doOccupancy) {
+      histos.add("Data/occ_cent/pos/its_tpc_tof", "ITS-TPC-TOF Positive ", kTH3D, {axisOcc, axisCent, axisPt});
+      histos.add("Data/occ_cent/neg/its_tpc_tof", "ITS-TPC-TOF Negative ", kTH3D, {axisOcc, axisCent, axisPt});
+
+      histos.add("Data/occ_cent/pos/its_tpc", "ITS-TPC Positive ", kTH3D, {axisOcc, axisCent, axisPt});
+      histos.add("Data/occ_cent/neg/its_tpc", "ITS-TPC Negative ", kTH3D, {axisOcc, axisCent, axisPt});
+
+      histos.add("Data/occ_cent/pos/tpc", "TPC Positive ", kTH3D, {axisOcc, axisCent, axisPt});
+      histos.add("Data/occ_cent/neg/tpc", "TPC Negative ", kTH3D, {axisOcc, axisCent, axisPt});
+
+      histos.add("Data/occ_cent/pos/its", "ITS Positive ", kTH3D, {axisOcc, axisCent, axisPt});
+      histos.add("Data/occ_cent/neg/its", "ITS Negative ", kTH3D, {axisOcc, axisCent, axisPt});
+    }
+  
     // ITS-TPC-TOF
     histos.add("Data/pos/pt/its_tpc_tof", "ITS-TPC-TOF Positive " + tagPt, kTH1D, {axisPt});
     histos.add("Data/neg/pt/its_tpc_tof", "ITS-TPC-TOF Negative " + tagPt, kTH1D, {axisPt});
@@ -793,13 +799,6 @@ struct QaEfficiency {
 
     histos.add("Data/pos/etaphi/its_tpc_tof", "ITS-TPC-TOF Positive " + tagEtaPhi, kTH2D, {axisEta, axisPhi});
     histos.add("Data/neg/etaphi/its_tpc_tof", "ITS-TPC-TOF Negative " + tagEtaPhi, kTH2D, {axisEta, axisPhi});
-  
-    if (doOccupancy) {
-      histos.add("Data/occ/pos/its_tpc_tof", "ITS-TPC-TOF Positive ", kTH2D, {axisOcc, axisPt});
-      histos.add("Data/cent/pos/its_tpc_tof", "ITS-TPC-TOF Positive ", kTH2D, {axisCent, axisPt});
-      histos.add("Data/occ/neg/its_tpc_tof", "ITS-TPC-TOF Negative ", kTH2D, {axisOcc, axisPt});
-      histos.add("Data/cent/neg/its_tpc_tof", "ITS-TPC-TOF Negative ", kTH2D, {axisCent, axisPt});
-    }
 
     // ITS-TPC
     histos.add("Data/pos/pt/its_tpc", "ITS-TPC Positive " + tagPt, kTH1D, {axisPt});
@@ -814,13 +813,6 @@ struct QaEfficiency {
     histos.add("Data/pos/etaphi/its_tpc", "ITS-TPC Positive " + tagEtaPhi, kTH2D, {axisEta, axisPhi});
     histos.add("Data/neg/etaphi/its_tpc", "ITS-TPC Negative " + tagEtaPhi, kTH2D, {axisEta, axisPhi});
 
-    if (doOccupancy) {
-      histos.add("Data/occ/pos/its_tpc", "ITS-TPC Positive ", kTH2D, {axisOcc, axisPt});
-      histos.add("Data/cent/pos/its_tpc", "ITS-TPC Positive ", kTH2D, {axisCent, axisPt});
-      histos.add("Data/occ/neg/its_tpc", "ITS-TPC Negative ", kTH2D, {axisOcc, axisPt});
-      histos.add("Data/cent/neg/its_tpc", "ITS-TPC Negative ", kTH2D, {axisCent, axisPt});
-    }
-
     // TPC
     histos.add("Data/pos/pt/tpc", "TPC Positive " + tagPt, kTH1D, {axisPt});
     histos.add("Data/neg/pt/tpc", "TPC Negative " + tagPt, kTH1D, {axisPt});
@@ -833,13 +825,6 @@ struct QaEfficiency {
 
     histos.add("Data/pos/etaphi/tpc", "TPC Positive " + tagEtaPhi, kTH2D, {axisEta, axisPhi});
     histos.add("Data/neg/etaphi/tpc", "TPC Negative " + tagEtaPhi, kTH2D, {axisEta, axisPhi});
-
-    if (doOccupancy) {
-      histos.add("Data/occ/pos/tpc", "TPC Positive ", kTH2D, {axisOcc, axisPt});
-      histos.add("Data/cent/pos/tpc", "TPC Positive ", kTH2D, {axisCent, axisPt});
-      histos.add("Data/occ/neg/tpc", "TPC Negative ", kTH2D, {axisOcc, axisPt});
-      histos.add("Data/cent/neg/tpc", "TPC Negative ", kTH2D, {axisCent, axisPt});
-    }
 
     // ITS
     histos.add("Data/pos/pt/its", "ITS Positive " + tagPt, kTH1D, {axisPt});
@@ -854,13 +839,6 @@ struct QaEfficiency {
     histos.add("Data/pos/etaphi/its", "ITS Positive " + tagEtaPhi, kTH2D, {axisEta, axisPhi});
     histos.add("Data/neg/etaphi/its", "ITS Negative " + tagEtaPhi, kTH2D, {axisEta, axisPhi});
   
-    if (doOccupancy) {
-      histos.add("Data/occ/pos/its", "ITS Positive ", kTH2D, {axisOcc, axisPt});
-      histos.add("Data/cent/pos/its", "ITS Positive ", kTH2D, {axisCent, axisPt});
-      histos.add("Data/occ/neg/its", "ITS Negative ", kTH2D, {axisOcc, axisPt});
-      histos.add("Data/cent/neg/its", "ITS Negative ", kTH2D, {axisCent, axisPt});
-    }
-
     // HMPID
     if (doprocessHmpid) {
       histos.add("Data/pos/hmpidMomDiff", "HMPID Positive Momentum difference", kTH1D, {{100, -10, 10, "#it{p} - #it{p}_{HMPID} (GeV/#it{c})"}});
@@ -1825,30 +1803,24 @@ struct QaEfficiency {
             float trackSign = track.sign();
             if (trackSign > 0) { 
               if (passedTOF && passedTPC && passedITS) {
-                histos.fill(HIST("MC/cent/reco/pos/its_tpc_tof"), centrality, trackPt);
-                histos.fill(HIST("MC/occ/reco/pos/its_tpc_tof"), occupancy, trackPt);
+                histos.fill(HIST("MC/occ_cent/reco/pos/its_tpc_tof"), occupancy, centrality, trackPt);
               }
               if (passedTPC && passedITS) {
-                histos.fill(HIST("MC/cent/reco/pos/its_tpc"), centrality, trackPt);
-                histos.fill(HIST("MC/occ/reco/pos/its_tpc"), occupancy, trackPt);
+                histos.fill(HIST("MC/occ_cent/reco/pos/its_tpc"), occupancy, centrality, trackPt);
               }
               if (passedITS) {
-                histos.fill(HIST("MC/cent/reco/pos/its"), centrality, trackPt);
-                histos.fill(HIST("MC/occ/reco/pos/its"), occupancy, trackPt);
+                histos.fill(HIST("MC/occ_cent/reco/pos/its"), occupancy, centrality, trackPt);
               }
             }
             if (trackSign < 0) { 
               if (passedTOF && passedTPC && passedITS) {
-                histos.fill(HIST("MC/cent/reco/neg/its_tpc_tof"), centrality, trackPt);
-                histos.fill(HIST("MC/occ/reco/neg/its_tpc_tof"), occupancy, trackPt);
+                histos.fill(HIST("MC/occ_cent/reco/neg/its_tpc_tof"), occupancy, centrality, trackPt);
               }
               if (passedTPC && passedITS) {
-                histos.fill(HIST("MC/cent/reco/neg/its_tpc"), centrality, trackPt);
-                histos.fill(HIST("MC/occ/reco/neg/its_tpc"), occupancy, trackPt);
+                histos.fill(HIST("MC/occ_cent/reco/neg/its_tpc"), occupancy, centrality, trackPt);
               }
               if (passedITS) {
-                histos.fill(HIST("MC/cent/reco/neg/its"), centrality, trackPt);
-                histos.fill(HIST("MC/occ/reco/neg/its"), occupancy, trackPt);
+                histos.fill(HIST("MC/occ_cent/reco/neg/its"), occupancy, centrality, trackPt);
               }
             } 
           }
@@ -1900,12 +1872,10 @@ struct QaEfficiency {
             float partSign = particle.pdgCode();
             float mcPartPt = particle.pt();
             if (partSign > 0) { 
-              histos.fill(HIST("MC/cent/gen/pos"), centrality, mcPartPt);
-              histos.fill(HIST("MC/occ/gen/pos"), occupancy, mcPartPt);
+              histos.fill(HIST("MC/occ_cent/gen/pos"), occupancy, centrality, mcPartPt);
             }
-            if (partSign < 0) { 
-              histos.fill(HIST("MC/cent/gen/neg"), centrality, mcPartPt);
-              histos.fill(HIST("MC/occ/gen/neg"), occupancy, mcPartPt);
+            if (partSign < 0) {
+              histos.fill(HIST("MC/occ_cent/gen/neg"), occupancy, centrality, mcPartPt);
             } 
           }
 
@@ -2108,8 +2078,7 @@ struct QaEfficiency {
           histos.fill(HIST("Data/pos/etaphi/its"), trackEta, trackPhi);
           
           if (doOccupancy) {
-            histos.fill(HIST("Data/occ/pos/its"), occupancy, trackPt);
-            histos.fill(HIST("Data/cent/pos/its"), collision.centFT0C(), trackPt);
+            histos.fill(HIST("Data/occ_cent/pos/its"), occupancy, collision.centFT0C(), trackPt);
           }
         } else {
           histos.fill(HIST("Data/neg/pt/its"), trackPt);
@@ -2118,8 +2087,7 @@ struct QaEfficiency {
           histos.fill(HIST("Data/neg/etaphi/its"), trackEta, trackPhi);
           
           if (doOccupancy) {
-            histos.fill(HIST("Data/occ/neg/its"), occupancy, trackPt);
-            histos.fill(HIST("Data/cent/neg/its"), collision.centFT0C(), trackPt);
+            histos.fill(HIST("Data/occ_cent/neg/its"), occupancy, collision.centFT0C(), trackPt);
           }
         }
       }
@@ -2132,8 +2100,7 @@ struct QaEfficiency {
           histos.fill(HIST("Data/pos/etaphi/tpc"), trackEta, trackPhi);
           
           if (doOccupancy) {
-            histos.fill(HIST("Data/occ/pos/tpc"), occupancy, trackPt);
-            histos.fill(HIST("Data/cent/pos/tpc"), collision.centFT0C(), trackPt);
+            histos.fill(HIST("Data/occ_cent/pos/tpc"), occupancy, collision.centFT0C(), trackPt);
           }
         } else {
           histos.fill(HIST("Data/neg/pt/tpc"), trackPt);
@@ -2142,8 +2109,7 @@ struct QaEfficiency {
           histos.fill(HIST("Data/neg/etaphi/tpc"), trackEta, trackPhi);
           
           if (doOccupancy) {
-            histos.fill(HIST("Data/occ/neg/tpc"), occupancy, trackPt);
-            histos.fill(HIST("Data/cent/neg/tpc"), collision.centFT0C(), trackPt);
+            histos.fill(HIST("Data/occ_cent/neg/tpc"), occupancy, collision.centFT0C(), trackPt);
           }
         }
       }
@@ -2156,8 +2122,7 @@ struct QaEfficiency {
           histos.fill(HIST("Data/pos/etaphi/its_tpc"), trackEta, trackPhi);
           
           if (doOccupancy) {
-            histos.fill(HIST("Data/occ/pos/its_tpc"), occupancy, trackPt);
-            histos.fill(HIST("Data/cent/pos/its_tpc"), collision.centFT0C(), trackPt);
+            histos.fill(HIST("Data/occ_cent/pos/its_tpc"), occupancy, collision.centFT0C(), trackPt);
           }
         } else {
           histos.fill(HIST("Data/neg/pt/its_tpc"), trackPt);
@@ -2166,8 +2131,7 @@ struct QaEfficiency {
           histos.fill(HIST("Data/neg/etaphi/its_tpc"), trackEta, trackPhi);
 
           if (doOccupancy) {
-            histos.fill(HIST("Data/occ/pos/its_tpc"), occupancy, trackPt);
-            histos.fill(HIST("Data/cent/pos/its_tpc"), collision.centFT0C(), trackPt);
+            histos.fill(HIST("Data/occ_cent/neg/its_tpc"), occupancy, collision.centFT0C(), trackPt);
           }
         }
       }
@@ -2180,8 +2144,7 @@ struct QaEfficiency {
           histos.fill(HIST("Data/pos/etaphi/its_tpc_tof"), trackEta, trackPhi);
 
           if (doOccupancy) {
-            histos.fill(HIST("Data/occ/pos/its_tpc_tof"), occupancy, trackPt);
-            histos.fill(HIST("Data/cent/pos/its_tpc_tof"), collision.centFT0C(), trackPt);
+            histos.fill(HIST("Data/occ_cent/pos/its_tpc_tof"), occupancy, collision.centFT0C(), trackPt);
           }
         } else {
           histos.fill(HIST("Data/neg/pt/its_tpc_tof"), trackPt);
@@ -2190,8 +2153,7 @@ struct QaEfficiency {
           histos.fill(HIST("Data/neg/etaphi/its_tpc_tof"), trackEta, trackPhi);
 
           if (doOccupancy) {
-            histos.fill(HIST("Data/occ/neg/its_tpc"), occupancy, trackPt);
-            histos.fill(HIST("Data/cent/neg/its_tpc"), collision.centFT0C(), trackPt);
+            histos.fill(HIST("Data/occ_cent/neg/its"), occupancy, collision.centFT0C(), trackPt);
           }
         }
       }
