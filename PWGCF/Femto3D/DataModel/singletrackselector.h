@@ -276,6 +276,8 @@ DECLARE_SOA_DYNAMIC_COLUMN(TPCCrossedRowsOverFindableCls, tpcCrossedRowsOverFind
 DECLARE_SOA_DYNAMIC_COLUMN(TPCFractionSharedCls, tpcFractionSharedCls, //! Fraction of shared TPC clusters
                            [](uint8_t tpcNClsShared, int16_t tpcNClsFound) -> float { return (float)tpcNClsShared / (float)tpcNClsFound; });
 
+DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigmaPi_v0, tofNSigmaPi,
+                           [](binning::nsigma_v0::binned_t nsigma_binned) -> float { return singletrackselector::unPack<binning::nsigma_v0>(nsigma_binned); });
 DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaPi_v0, tpcNSigmaPi,
                            [](binning::nsigma_v0::binned_t nsigma_binned) -> float { return singletrackselector::unPack<binning::nsigma_v0>(nsigma_binned); });
 DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigmaKa_v0, tofNSigmaKa,
