@@ -441,7 +441,7 @@ struct nuclei_in_jets {
   {
     // Event Counter: before event selection
     registryData.fill(HIST("number_of_events_data"), 0.5);
-    registryQC.fill(HIST("event_selection_jets"), 0.5); //all events before jet selection
+    registryQC.fill(HIST("event_selection_jets"), 0.5); // all events before jet selection
 
     // Event Selection
     if (!collision.sel8())
@@ -593,7 +593,7 @@ struct nuclei_in_jets {
     if (n_jets_selected == 0)
       return;
     registryData.fill(HIST("number_of_events_data"), 3.5);
-    registryQC.fill(HIST("event_selection_jets"), 1.5); //events with pTjet>10 GeV/c selected
+    registryQC.fill(HIST("event_selection_jets"), 1.5); // events with pTjet>10 GeV/c selected
     //************************************************************************************************************************************
 
     // Leading Track
@@ -612,7 +612,7 @@ struct nuclei_in_jets {
     // Event Counter: Skip Events with pt<pt_leading_min
     if (pt_max < 5.0)
       return;
-    registryQC.fill(HIST("event_selection_jets"), 2.5); //events with pTleading > 5 GeV/c selected
+    registryQC.fill(HIST("event_selection_jets"), 2.5); // events with pTleading > 5 GeV/c selected
 
     // Overlaps
     int nOverlaps(0);
