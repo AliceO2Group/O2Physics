@@ -68,6 +68,8 @@ struct phik0shortanalysis {
   HistogramRegistry K0SeffHist{"K0SeffHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry PioneffHist{"PioneffHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry yaccHist{"yaccHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry closureMCPhiK0SHist{"closureMCPhiK0SHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry closureMCPhiPionHist{"closureMCPhiPionHist", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
 
   // Configurable for event selection
   Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
@@ -276,7 +278,7 @@ struct phik0shortanalysis {
     PhiK0SHist.add("h4PhiK0SSEFCut", "2D Invariant mass of Phi and K0Short for Same Event Deltay < FirstCut", kTHnSparseF, {binnedmultAxis, binnedptK0SAxis, K0SmassAxis, sigPhimassAxis});
     PhiK0SHist.add("h4PhiK0SSESCut", "2D Invariant mass of Phi and K0Short for Same Event Deltay < SecondCut", kTHnSparseF, {binnedmultAxis, binnedptK0SAxis, K0SmassAxis, sigPhimassAxis});
 
-    // MC 2D mass for Phi and K0S
+    // RecMC K0S coupled to Phi
     MCPhiK0SHist.add("h3RecMCPhiK0SSEInc", "2D Invariant mass of Phi and K0Short for RecMC Inclusive", kTH3F, {binnedmultAxis, binnedptK0SAxis, K0SmassAxis});
     MCPhiK0SHist.add("h3RecMCPhiK0SSEFCut", "2D Invariant mass of Phi and K0Short for RecMC Deltay < FirstCut", kTH3F, {binnedmultAxis, binnedptK0SAxis, K0SmassAxis});
     MCPhiK0SHist.add("h3RecMCPhiK0SSESCut", "2D Invariant mass of Phi and K0Short for RecMC Deltay < SecondCut", kTH3F, {binnedmultAxis, binnedptK0SAxis, K0SmassAxis});
@@ -290,12 +292,17 @@ struct phik0shortanalysis {
     MCPhiK0SHist.add("h2PhiK0SGenMCFCutAssocReco", "K0Short coupled to Phi for GenMC Deltay < FirstCut Associated Reco Collision", kTH2F, {binnedmultAxis, binnedptK0SAxis});
     MCPhiK0SHist.add("h2PhiK0SGenMCSCutAssocReco", "K0Short coupled to Phi for GenMC Deltay < SecondCut Associated Reco Collision", kTH2F, {binnedmultAxis, binnedptK0SAxis});
 
+    // 2D mass for Phi and K0S for Closure Test
+    closureMCPhiK0SHist.add("h4ClosureMCPhiK0SSEInc", "2D Invariant mass of Phi and K0Short for Same Event Inclusive for Closure Test", kTHnSparseF, {binnedmultAxis, binnedptK0SAxis, K0SmassAxis, sigPhimassAxis});
+    closureMCPhiK0SHist.add("h4ClosureMCPhiK0SSEFCut", "2D Invariant mass of Phi and K0Short for Same Event Deltay < FirstCut for Closure Test", kTHnSparseF, {binnedmultAxis, binnedptK0SAxis, K0SmassAxis, sigPhimassAxis});
+    closureMCPhiK0SHist.add("h4ClosureMCPhiK0SSESCut", "2D Invariant mass of Phi and K0Short for Same Event Deltay < SecondCut for Closure Test", kTHnSparseF, {binnedmultAxis, binnedptK0SAxis, K0SmassAxis, sigPhimassAxis});
+
     // Phi mass vs Pion NSigma dE/dx for Data
     PhiPionHist.add("h5PhiPiSEInc", "Phi Invariant mass vs Pion nSigma TPC/TOF for Same Event Inclusive", kTHnSparseF, {binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}, sigPhimassAxis});
     PhiPionHist.add("h5PhiPiSEFCut", "Phi Invariant mass vs Pion nSigma TPC/TOF for Same Event Deltay < FirstCut", kTHnSparseF, {binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}, sigPhimassAxis});
     PhiPionHist.add("h5PhiPiSESCut", "Phi Invariant mass vs Pion nSigma TPC/TOF for Same Event Deltay < SecondCut", kTHnSparseF, {binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}, sigPhimassAxis});
 
-    // MC Phi mass vs Pion NSigma dE/dx
+    // RecMC Pion coupled to Phi
     MCPhiPionHist.add("h4RecMCPhiPiSEInc", "Phi Invariant mass vs Pion nSigma TPC/TOF for RecMC Inclusive", kTHnSparseF, {binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}});
     MCPhiPionHist.add("h4RecMCPhiPiSEFCut", "Phi Invariant mass vs Pion nSigma TPC/TOF for RecMC Deltay < FirstCut", kTHnSparseF, {binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}});
     MCPhiPionHist.add("h4RecMCPhiPiSESCut", "Phi Invariant mass vs Pion nSigma TPC/TOF for RecMC Deltay < SecondCut", kTHnSparseF, {binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}});
@@ -308,6 +315,11 @@ struct phik0shortanalysis {
     MCPhiPionHist.add("h2PhiPiGenMCIncAssocReco", "Pion coupled to Phi for GenMC Inclusive Associated Reco Collision", kTH2F, {binnedmultAxis, binnedptPiAxis});
     MCPhiPionHist.add("h2PhiPiGenMCFCutAssocReco", "Pion coupled to Phi for GenMC Deltay < FirstCut Associated Reco Collision", kTH2F, {binnedmultAxis, binnedptPiAxis});
     MCPhiPionHist.add("h2PhiPiGenMCSCutAssocReco", "Pion coupled to Phi for GenMC Deltay < SecondCut Associated Reco Collision", kTH2F, {binnedmultAxis, binnedptPiAxis});
+
+    // Phi mass vs Pion NSigma dE/dx for Closure Test
+    closureMCPhiPionHist.add("h5ClosureMCPhiPiSEInc", "Phi Invariant mass vs Pion nSigma TPC/TOF for Same Event Inclusive for Closure Test", kTHnSparseF, {binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}, sigPhimassAxis});
+    closureMCPhiPionHist.add("h5ClosureMCPhiPiSEFCut", "Phi Invariant mass vs Pion nSigma TPC/TOF for Same Event Deltay < FirstCut for Closure Test", kTHnSparseF, {binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}, sigPhimassAxis});
+    closureMCPhiPionHist.add("h5ClosureMCPhiPiSESCut", "Phi Invariant mass vs Pion nSigma TPC/TOF for Same Event Deltay < SecondCut for Closure Test", kTHnSparseF, {binnedmultAxis, binnedptPiAxis, {100, -10.0f, 10.0f}, {100, -10.0f, 10.0f}, sigPhimassAxis});
 
     // MCPhi invariant mass for computing efficiencies and MCnormalisation
     PhieffHist.add("h2PhieffInvMass", "Invariant mass of Phi for Efficiency (no K0S/Pi)", kTH2F, {binnedmultAxis, PhimassAxis});
@@ -557,13 +569,13 @@ struct phik0shortanalysis {
           continue;
         PhiK0SHist.fill(HIST("h4PhiK0SSESCut"), multiplicity, ptV0, massV0, massPhi, weights.at(2));
       } else { // MC event
-        MCPhiK0SHist.fill(HIST("h3RecMCPhiK0SSEInc"), multiplicity, ptV0, massV0, weights.at(0));
+        closureMCPhiK0SHist.fill(HIST("h4ClosureMCPhiK0SSEInc"), multiplicity, ptV0, massV0, massPhi, weights.at(0));
         if (deltay > cfgFirstCutonDeltay)
           continue;
-        MCPhiK0SHist.fill(HIST("h3RecMCPhiK0SSEFCut"), multiplicity, ptV0, massV0, weights.at(1));
+        closureMCPhiK0SHist.fill(HIST("h4ClosureMCPhiK0SSEFCut"), multiplicity, ptV0, massV0, massPhi, weights.at(1));
         if (deltay > cfgSecondCutonDeltay)
           continue;
-        MCPhiK0SHist.fill(HIST("h3RecMCPhiK0SSESCut"), multiplicity, ptV0, massV0, weights.at(2));
+        closureMCPhiK0SHist.fill(HIST("h4ClosureMCPhiK0SSESCut"), multiplicity, ptV0, massV0, massPhi, weights.at(2));
       }
     }
   }
@@ -591,13 +603,13 @@ struct phik0shortanalysis {
           continue;
         PhiPionHist.fill(HIST("h5PhiPiSESCut"), multiplicity, ptPi, nSigmaTPCPi, nSigmaTOFPi, massPhi, weights.at(2));
       } else { // MC event
-        MCPhiPionHist.fill(HIST("h4RecMCPhiPiSEInc"), multiplicity, ptPi, nSigmaTPCPi, nSigmaTOFPi, weights.at(0));
+        closureMCPhiPionHist.fill(HIST("h5ClosureMCPhiPiSEInc"), multiplicity, ptPi, nSigmaTPCPi, nSigmaTOFPi, massPhi, weights.at(0));
         if (deltay > cfgFirstCutonDeltay)
           continue;
-        MCPhiPionHist.fill(HIST("h4RecMCPhiPiSEFCut"), multiplicity, ptPi, nSigmaTPCPi, nSigmaTOFPi, weights.at(1));
+        closureMCPhiPionHist.fill(HIST("h5ClosureMCPhiPiSEFCut"), multiplicity, ptPi, nSigmaTPCPi, nSigmaTOFPi, massPhi, weights.at(1));
         if (deltay > cfgSecondCutonDeltay)
           continue;
-        MCPhiPionHist.fill(HIST("h4RecMCPhiPiSESCut"), multiplicity, ptPi, nSigmaTPCPi, nSigmaTOFPi, weights.at(2));
+        closureMCPhiPionHist.fill(HIST("h5ClosureMCPhiPiSESCut"), multiplicity, ptPi, nSigmaTPCPi, nSigmaTOFPi, massPhi, weights.at(2));
       }
     }
   }
