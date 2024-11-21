@@ -1077,7 +1077,7 @@ struct RecoDecay {
             auto mother = particlesMC.rawIteratorAt(particleMother.mothersIds().front() - particlesMC.offset());
             auto PDGParticleIMother = std::abs(mother.pdgCode()); // PDG code of the mother
             if (PDGParticleIMother < 9 || (PDGParticleIMother > 20 && PDGParticleIMother < 38)) {
-              auto PDGPaticle = std::abs(particleMother.pdgCode());
+              // auto PDGPaticle = std::abs(particleMother.pdgCode());
               if (
                 (PDGParticleIMother / 100 == 5 || // b mesons
                  PDGParticleIMother / 1000 == 5)  // b baryons
@@ -1100,7 +1100,7 @@ struct RecoDecay {
             }
             auto mother = particlesMC.rawIteratorAt(iMother - particlesMC.offset());
             // Check status code
-            auto motherStatusCode = std::abs(mother.getGenStatusCode());
+            // auto motherStatusCode = std::abs(mother.getGenStatusCode());
             auto PDGParticleIMother = std::abs(mother.pdgCode()); // PDG code of the mother
             // Check mother's PDG code.
             // printf("getMother: ");

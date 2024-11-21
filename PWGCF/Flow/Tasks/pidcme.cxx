@@ -471,6 +471,9 @@ struct pidcme {
       return;
     }
     int DetInd = DetId * 4 + cfgnTotalSystem * 4 * (nmode - 2);
+    bool kisPi = false, kisKa = false, kisPr = false;
+    // bool kisPi_2 = false;
+    bool kisKa_2 = false, kisPr_2 = false;
     float Psi_n = helperEP.GetEventPlane(collision.qvecRe()[DetInd + 3], collision.qvecIm()[DetInd + 3], nmode);
     for (auto& trk : track1) {
       if (!SelTrack(trk))

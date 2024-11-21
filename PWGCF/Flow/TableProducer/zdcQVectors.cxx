@@ -456,7 +456,7 @@ struct ZdcQVectors {
     } else if (hist->InheritsFrom("TProfile")) {
       TProfile* h = reinterpret_cast<TProfile*>(hist);
       TString name = h->GetName();
-      int bin;
+      int bin{};
       if (name.Contains("mean_vx"))
         bin = h->GetXaxis()->FindBin(v[0]);
       if (name.Contains("mean_vy"))
