@@ -538,8 +538,8 @@ struct AnalysisTrackSelection {
               }
             }
           } // end loop over cuts
-        }   // end loop over MC signals
-      }     // end if (filterMap > 0)
+        } // end loop over MC signals
+      } // end if (filterMap > 0)
 
       // count the number of associations per track
       if (filterMap > 0) {
@@ -811,7 +811,7 @@ struct AnalysisMuonSelection {
             }
           }
         } // end loop over cuts
-      }   // end loop over MC signals
+      } // end loop over MC signals
 
       // count the number of associations per track
       if (event.isEventSelected_bit(1)) {
@@ -1236,7 +1236,7 @@ struct AnalysisSameEventPairing {
                 // NOTE: In the numbering scheme for the map key, we use the number of barrel cuts in the barrel-track selection task
                 fTrackHistNames[fNCutsBarrel + icut * fNPairCuts + iPairCut] = names;
               } // end loop (pair cuts)
-            }   // end if (pair cuts)
+            } // end if (pair cuts)
 
             // assign hist directories for the MC matched pairs for each (track cut,MCsignal) combination
             if (!sigNamesStr.IsNull()) {
@@ -1314,7 +1314,7 @@ struct AnalysisSameEventPairing {
                 histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
                 fMuonHistNames[fNCutsMuon + icut * fNCutsMuon + iPairCut] = names;
               } // end loop (pair cuts)
-            }   // end if (pair cuts)
+            } // end if (pair cuts)
 
             // assign hist directories for pairs matched to MC signals for each (muon cut, MCrec signal) combination
             if (!sigNamesStr.IsNull()) {
@@ -1343,7 +1343,7 @@ struct AnalysisSameEventPairing {
           }
         }
       } // end loop over cuts
-    }   // end if (muonCutsStr)
+    } // end if (muonCutsStr)
 
     // Add histogram classes for each specified MCsignal at the generator level
     // TODO: create a std::vector of hist classes to be used at Fill time, to avoid using Form in the process function
@@ -1739,8 +1739,8 @@ struct AnalysisSameEventPairing {
             } // end loop (pair cuts)
           }
         } // end loop (cuts)
-      }   // end loop over pairs of track associations
-    }     // end loop over events
+      } // end loop over pairs of track associations
+    } // end loop over events
   }
 
   // Preslice<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
@@ -1789,8 +1789,8 @@ struct AnalysisSameEventPairing {
               fHistMan->FillHistClass(Form("MCTruthGenPair_%s", sig.GetName()), VarManager::fgValues);
             }
           } // end loop over MC signals
-        }   // end loop over pairs
-      }     // end loop over events
+        } // end loop over pairs
+      } // end loop over events
     }
   } // end runMCGen
 
@@ -1979,7 +1979,6 @@ struct AnalysisDileptonTrack {
             DefineHistograms(fHistMan, fHistNamesDileptonTrack[icut], fConfigHistogramSubgroups.value.data()); // define dilepton-track histograms
             DefineHistograms(fHistMan, fHistNamesDileptons[icut], "barrel,vertexing");                         // define dilepton histograms
             std::vector<TString> mcHistNames;
-            int isig = 0;
             for (auto& sig : fRecMCSignals) {
               mcHistNames.push_back(Form("DileptonTrackMCMatched_%s_%s_%s", tempStr.Data(), fConfigTrackCut.value.data(), sig.GetName()));
               DefineHistograms(fHistMan, mcHistNames[mcHistNames.size() - 1], fConfigHistogramSubgroups.value.data());
