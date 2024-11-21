@@ -53,7 +53,7 @@ struct HfTaskDirectedFlowCharmHadrons {
   Configurable<bool> storeMl{"storeMl", false, "Flag to store ML scores"};
   Configurable<bool> direct{"direct", false, "Flag to calculate direct v1 odd and even"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::vector<int>> classMl{"classMl", {0, 1, 2}, "Indices of BDT scores to be stored. Two indexes max."};
+  Configurable<std::vector<int>> classMl{"classMl", {0, 2}, "Indices of BDT scores to be stored. Two indexes max."};
 
   ConfigurableAxis thnConfigAxisInvMass{"thnConfigAxisInvMass", {100, 1.78, 2.05}, ""};
   ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {VARIABLE_WIDTH, 0.2, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.5, 8.0, 10.0}, ""};
@@ -63,7 +63,6 @@ struct HfTaskDirectedFlowCharmHadrons {
   ConfigurableAxis thnConfigAxisSign{"thnConfigAxisSign", {2, -2.0, 2.0}, ""};
   ConfigurableAxis thnConfigAxisMlOne{"thnConfigAxisMlOne", {1000, 0., 1.}, ""};
   ConfigurableAxis thnConfigAxisMlTwo{"thnConfigAxisMlTwo", {1000, 0., 1.}, ""};
-  ConfigurableAxis thnConfigAxisMlThree{"thnConfigAxisMlThree", {1000, 0., 1.}, ""};
 
   using CandDplusDataWMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
   using CandDplusData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;
@@ -107,12 +106,11 @@ struct HfTaskDirectedFlowCharmHadrons {
     const AxisSpec thnAxisScalarProd{thnConfigAxisScalarProd, "SP"};
     const AxisSpec thnAxisSign{thnConfigAxisSign, "Sign"};
     const AxisSpec thnAxisMlOne{thnConfigAxisMlOne, "Bkg score"};
-    const AxisSpec thnAxisMlTwo{thnConfigAxisMlTwo, "Prompt score"};
-    const AxisSpec thnAxisMlThree{thnConfigAxisMlThree, "FD score"};
+    const AxisSpec thnAxisMlTwo{thnConfigAxisMlTwo, "FD score"};
 
     std::vector<AxisSpec> axes = {thnAxisInvMass, thnAxisCent, thnAxisPt, thnAxisEta, thnAxisScalarProd, thnAxisSign};
     if (storeMl) {
-      axes.insert(axes.end(), {thnAxisMlOne, thnAxisMlTwo, thnAxisMlThree});
+      axes.insert(axes.end(), {thnAxisMlOne, thnAxisMlTwo});
     }
 
     if (direct) {
@@ -203,7 +201,7 @@ struct HfTaskDirectedFlowCharmHadrons {
 
     for (const auto& candidate : candidates) {
       double massCand = 0.;
-      std::vector<double> outputMl = {-999., -999., -999.};
+      std::vector<double> outputMl = {-999., -999.};
       if constexpr (std::is_same_v<T1, CandDplusData> || std::is_same_v<T1, CandDplusDataWMl>) {
         massCand = hfHelper.invMassDplusToPiKPi(candidate);
         if constexpr (std::is_same_v<T1, CandDplusDataWMl>) {
@@ -253,15 +251,15 @@ struct HfTaskDirectedFlowCharmHadrons {
 
       if (storeMl) {
         if (direct) {
-          registry.fill(HIST("hpuxyQxypvscentpteta"), massCand, cent, ptCand, etaCand, uxyQxyp, sign, outputMl[0], outputMl[1], outputMl[2]);
-          registry.fill(HIST("hpuxyQxytvscentpteta"), massCand, cent, ptCand, etaCand, uxyQxyt, sign, outputMl[0], outputMl[1], outputMl[2]);
-          registry.fill(HIST("hpoddvscentpteta"), massCand, cent, ptCand, etaCand, oddv1, sign, outputMl[0], outputMl[1], outputMl[2]);
-          registry.fill(HIST("hpevenvscentpteta"), massCand, cent, ptCand, etaCand, evenv1, sign, outputMl[0], outputMl[1], outputMl[2]);
+          registry.fill(HIST("hpuxyQxypvscentpteta"), massCand, cent, ptCand, etaCand, uxyQxyp, sign, outputMl[0], outputMl[1]);
+          registry.fill(HIST("hpuxyQxytvscentpteta"), massCand, cent, ptCand, etaCand, uxyQxyt, sign, outputMl[0], outputMl[1]);
+          registry.fill(HIST("hpoddvscentpteta"), massCand, cent, ptCand, etaCand, oddv1, sign, outputMl[0], outputMl[1]);
+          registry.fill(HIST("hpevenvscentpteta"), massCand, cent, ptCand, etaCand, evenv1, sign, outputMl[0], outputMl[1]);
         } else {
-          registry.fill(HIST("hpuxQxpvscentpteta"), massCand, cent, ptCand, etaCand, uxQxp, sign, outputMl[0], outputMl[1], outputMl[2]);
-          registry.fill(HIST("hpuyQypvscentpteta"), massCand, cent, ptCand, etaCand, uyQyp, sign, outputMl[0], outputMl[1], outputMl[2]);
-          registry.fill(HIST("hpuxQxtvscentpteta"), massCand, cent, ptCand, etaCand, uxQxt, sign, outputMl[0], outputMl[1], outputMl[2]);
-          registry.fill(HIST("hpuyQytvscentpteta"), massCand, cent, ptCand, etaCand, uyQyt, sign, outputMl[0], outputMl[1], outputMl[2]);
+          registry.fill(HIST("hpuxQxpvscentpteta"), massCand, cent, ptCand, etaCand, uxQxp, sign, outputMl[0], outputMl[1]);
+          registry.fill(HIST("hpuyQypvscentpteta"), massCand, cent, ptCand, etaCand, uyQyp, sign, outputMl[0], outputMl[1]);
+          registry.fill(HIST("hpuxQxtvscentpteta"), massCand, cent, ptCand, etaCand, uxQxt, sign, outputMl[0], outputMl[1]);
+          registry.fill(HIST("hpuyQytvscentpteta"), massCand, cent, ptCand, etaCand, uyQyt, sign, outputMl[0], outputMl[1]);
         }
       } else {
         if (direct) {
