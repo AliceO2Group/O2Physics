@@ -308,6 +308,7 @@ DECLARE_SOA_COLUMN(MlProbXicToPKPi, mlProbXicToPKPi, std::vector<float>); //!
 DECLARE_SOA_COLUMN(MlProbXicToPiKP, mlProbXicToPiKP, std::vector<float>); //!
 // XicPlus to Xi Pi Pi
 DECLARE_SOA_COLUMN(IsSelXicToXiPiPi, isSelXicToXiPiPi, int); //!
+DECLARE_SOA_COLUMN(MlProbXicToXiPiPi, mlProbXicToXiPiPi, std::vector<float>); //!
 } // namespace hf_sel_candidate_xic
 
 DECLARE_SOA_TABLE(HfSelXicToPKPi, "AOD", "HFSELXIC", //!
@@ -317,6 +318,8 @@ DECLARE_SOA_TABLE(HfMlXicToPKPi, "AOD", "HFMLXIC", //!
 // XicPlus to Xi Pi Pi
 DECLARE_SOA_TABLE(HfSelXicToXiPiPi, "AOD", "HFSELXICTOXI2PI", //!
                   hf_sel_candidate_xic::IsSelXicToXiPiPi);
+DECLARE_SOA_TABLE(HfMlXicToXiPiPi, "AOD", "HFMLXICTOXI2PI", //!
+                  hf_sel_candidate_xic::MlProbXicToXiPiPi);
 
 namespace hf_sel_candidate_xicc
 {

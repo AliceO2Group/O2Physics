@@ -246,7 +246,7 @@ struct Jetchargedv2Task {
     AxisSpec axisEvtPl{360, -constants::math::PI, constants::math::PI};
 
     histosQA.add("histCentFull", "Centrality distribution for valid events", HistType::kTH1F, {axisCent});
-    for (auto i = 0; i < cfgnMods->size(); i++) {
+    for (std::size_t i = 0; i < cfgnMods->size(); i++) {
       histosQA.add(Form("histQvecUncorV%d", cfgnMods->at(i)), "", {HistType::kTH3F, {axisQvecF, axisQvecF, axisCent}});
       histosQA.add(Form("histQvecRectrV%d", cfgnMods->at(i)), "", {HistType::kTH3F, {axisQvecF, axisQvecF, axisCent}});
       histosQA.add(Form("histQvecTwistV%d", cfgnMods->at(i)), "", {HistType::kTH3F, {axisQvecF, axisQvecF, axisCent}});
@@ -351,7 +351,7 @@ struct Jetchargedv2Task {
                       soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets,
                       aod::JetTracks const& tracks)
   {
-    double collnum = 1;
+    // double collnum = 1;
     for (const auto& collision : collisions) {
       double leadingJetPt = -1;
       double leadingJetPhi = -1;
@@ -370,7 +370,7 @@ struct Jetchargedv2Task {
       }
 
       //=====================< evt pln [n=2->\Psi_2, n=3->\Psi_3] >=====================//
-      for (auto i = 0; i < cfgnMods->size(); i++) {
+      for (std::size_t i = 0; i < cfgnMods->size(); i++) {
         int nmode = cfgnMods->at(i);
         int DetInd = DetId * 4 + cfgnTotalSystem * 4 * (nmode - 2);
         if (nmode == 2) {
@@ -412,8 +412,8 @@ struct Jetchargedv2Task {
               continue;
             }
             phiMinusPsi2 = jet.phi() - evtPl2;
-            Double_t jetPtCorr = 0.0;
-            jetPtCorr = jet.pt() - collision.rho() * jet.area();
+            // Double_t jetPtCorr = 0.0;
+            // jetPtCorr = jet.pt() - collision.rho() * jet.area();
 
             if ((phiMinusPsi2 < TMath::Pi() / 4) || (phiMinusPsi2 >= 7 * TMath::Pi() / 4) || (phiMinusPsi2 >= 3 * TMath::Pi() / 4 && phiMinusPsi2 < 5 * TMath::Pi() / 4)) {
               registry.fill(HIST("h_jet_pt_in_plane_v2"), jet.pt() - (collision.rho() * jet.area()), 1.0);
@@ -435,8 +435,8 @@ struct Jetchargedv2Task {
               continue;
             }
             phiMinusPsi3 = jet.phi() - evtPl3;
-            Double_t jetPtCorr = 0.0;
-            jetPtCorr = jet.pt() - collision.rho() * jet.area();
+            // Double_t jetPtCorr = 0.0;
+            // jetPtCorr = jet.pt() - collision.rho() * jet.area();
 
             if ((phiMinusPsi3 < TMath::Pi() / 4) || (phiMinusPsi3 >= 7 * TMath::Pi() / 4) || (phiMinusPsi3 >= 3 * TMath::Pi() / 4 && phiMinusPsi3 < 5 * TMath::Pi() / 4)) {
               registry.fill(HIST("h_jet_pt_in_plane_v3"), jet.pt() - (collision.rho() * jet.area()), 1.0);
@@ -475,7 +475,7 @@ struct Jetchargedv2Task {
       return;
     }
 
-    for (auto i = 0; i < cfgnMods->size(); i++) {
+    for (std::size_t i = 0; i < cfgnMods->size(); i++) {
       TRandom3 randomNumber(0);
       float randomConeEta = randomNumber.Uniform(trackEtaMin + randomConeR, trackEtaMax - randomConeR);
       float randomConePhi = randomNumber.Uniform(0.0, 2 * M_PI);
