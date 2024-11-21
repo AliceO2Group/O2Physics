@@ -1272,7 +1272,7 @@ struct quarkoniaToHyperons {
   }
 
   template <typename TV0>
-  void analyseV0Candidate(TV0 v0, float pt, float centrality, uint64_t selMap, std::vector<bool>& selK0ShortIndices, std::vector<bool>& selLambdaIndices, std::vector<bool>& selAntiLambdaIndices, int v0TableOffset)
+  void analyseV0Candidate(TV0 v0, float pt, float /*centrality*/, uint64_t selMap, std::vector<bool>& selK0ShortIndices, std::vector<bool>& selLambdaIndices, std::vector<bool>& selAntiLambdaIndices, int v0TableOffset)
   // precalculate this information so that a check is one mask operation, not many
   {
     bool passK0ShortSelections = false;
@@ -1940,7 +1940,7 @@ struct quarkoniaToHyperons {
 
         auto cascadeMC = cascade.cascMCCore_as<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>();
 
-        float ptmc = RecoDecay::sqrtSumOfSquares(cascadeMC.pxMC(), cascadeMC.pyMC());
+        // float ptmc = RecoDecay::sqrtSumOfSquares(cascadeMC.pxMC(), cascadeMC.pyMC());
         float ymc = 1e-3;
         if (TMath::Abs(cascadeMC.pdgCode()) == 3312)
           ymc = RecoDecay::y(std::array{cascadeMC.pxMC(), cascadeMC.pyMC(), cascadeMC.pzMC()}, o2::constants::physics::MassXiMinus);
