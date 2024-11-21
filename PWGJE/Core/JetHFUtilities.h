@@ -35,8 +35,6 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
 
-#include "PWGLF/DataModel/mcCentrality.h"
-
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/DataModel/DerivedTables.h"
