@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file jetmatching.cxx
-/// \brief matching duplicate jets
+/// \brief matching event-wise constituent subtracted data jets and unsubtracted data jets
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
 #include "Framework/AnalysisTask.h"
@@ -30,8 +30,8 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-template <typename JetsBase, typename JetsTag, typename JetsBasetoTagMatchingTable, typename JetsTagtoBaseMatchingTable, typename Tracks, typename Candidates>
-struct JetMatchingDuplicates {
+template <typename JetsBase, typename JetsTag, typename JetsBasetoTagMatchingTable, typename JetsTagtoBaseMatchingTable, typename TracksTag, typename Candidates>
+struct JetMatchingSub {
 
   Configurable<bool> doMatchingGeo{"doMatchingGeo", true, "Enable geometric matching"};
   Configurable<bool> doMatchingPt{"doMatchingPt", true, "Enable pt matching"};
@@ -56,11 +56,11 @@ struct JetMatchingDuplicates {
   void processDummy(aod::JetCollisions const&)
   {
   }
-  PROCESS_SWITCH(JetMatchingDuplicates, processDummy, "Dummy process", true);
+  PROCESS_SWITCH(JetMatchingSub, processDummy, "Dummy process", true);
 
   void processJets(aod::JetCollisions const& collisions,
                    JetsBase const& jetsBase, JetsTag const& jetsTag,
-                   Tracks const& tracks, Candidates const& candidates)
+                   aod::JetTracks const& tracks, TracksTag const& tracksSub, Candidates const& candidates)
   {
 
     // initialise objects used to store the matching index arrays (array in case a mcCollision is split) before filling the matching tables
@@ -78,8 +78,8 @@ struct JetMatchingDuplicates {
 
       const auto jetsBasePerColl = jetsBase.sliceBy(baseJetsPerCollision, collision.globalIndex());
       const auto jetsTagPerColl = jetsTag.sliceBy(tagJetsPerCollision, collision.globalIndex());
-      // initialise template parameters as false since even if they are Mc we are not matching between detector and particle level
-      jetmatchingutilities::doAllMatching<false, false>(jetsBasePerColl, jetsTagPerColl, jetsBasetoTagMatchingGeo, jetsBasetoTagMatchingPt, jetsBasetoTagMatchingHF, jetsTagtoBaseMatchingGeo, jetsTagtoBaseMatchingPt, jetsTagtoBaseMatchingHF, candidates, candidates, tracks, tracks, tracks, tracks, doMatchingGeo, doMatchingHf, doMatchingPt, maxMatchingDistance, minPtFraction);
+
+      jetmatchingutilities::doAllMatching<jetsBaseIsMc, jetsTagIsMc>(jetsBasePerColl, jetsTagPerColl, jetsBasetoTagMatchingGeo, jetsBasetoTagMatchingPt, jetsBasetoTagMatchingHF, jetsTagtoBaseMatchingGeo, jetsTagtoBaseMatchingPt, jetsTagtoBaseMatchingHF, candidates, candidates, tracks, tracks, tracksSub, tracksSub, doMatchingGeo, doMatchingHf, doMatchingPt, maxMatchingDistance, minPtFraction);
     }
 
     for (auto i = 0; i < jetsBase.size(); ++i) {
@@ -89,37 +89,14 @@ struct JetMatchingDuplicates {
       jetsTagtoBaseMatchingTable(jetsTagtoBaseMatchingGeo[i], jetsTagtoBaseMatchingPt[i], jetsTagtoBaseMatchingHF[i]); // is (and needs to) be filled in order
     }
   }
-  PROCESS_SWITCH(JetMatchingDuplicates, processJets, "Perform jet matching", false);
+  PROCESS_SWITCH(JetMatchingSub, processJets, "Perform jet matching", false);
 };
 
-using Charged1JetDataMatching = JetMatchingDuplicates<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>,
-                                                      soa::Join<aod::Charged1Jets, aod::Charged1JetConstituents>,
-                                                      aod::ChargedJetsMatchedToCharged1Jets,
-                                                      aod::Charged1JetsMatchedToChargedJets,
-                                                      aod::JTracks,
-                                                      aod::JDummys>;
 
-using Charged1JetMCDMatching = JetMatchingDuplicates<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>,
-                                                     soa::Join<aod::Charged1MCDetectorLevelJets, aod::Charged1MCDetectorLevelJetConstituents>,
-                                                     aod::ChargedMCDetectorLevelJetsMatchedToCharged1MCDetectorLevelJets,
-                                                     aod::Charged1MCDetectorLevelJetsMatchedToChargedMCDetectorLevelJets,
-                                                     aod::JTracks,
-                                                     aod::JDummys>;
 
-using Charged1JetMCPMatching = JetMatchingDuplicates<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>,
-                                                     soa::Join<aod::Charged1MCParticleLevelJets, aod::Charged1MCParticleLevelJetConstituents>,
-                                                     aod::ChargedMCParticleLevelJetsMatchedToCharged1MCParticleLevelJets,
-                                                     aod::Charged1MCParticleLevelJetsMatchedToChargedMCParticleLevelJets,
-                                                     aod::JMcParticles,
-                                                     aod::JDummys>;
-
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-{
-  std::vector<o2::framework::DataProcessorSpec> tasks;
-
-  tasks.emplace_back(adaptAnalysisTask<Charged1JetDataMatching>(cfgc, SetDefaultProcesses{}, TaskName{"jet-matching-data-ch-1"}));
-  tasks.emplace_back(adaptAnalysisTask<Charged1JetMCDMatching>(cfgc, SetDefaultProcesses{}, TaskName{"jet-matching-mcd-ch-1"}));
-  tasks.emplace_back(adaptAnalysisTask<Charged1JetMCPMatching>(cfgc, SetDefaultProcesses{}, TaskName{"jet-matching-mcp-ch-1"}));
-
-  return WorkflowSpec{tasks};
-}
+/*using BplusChargedJetMatching = JetMatchingSub<soa::Join<aod::BplusChargedJets, aod::BplusChargedJetConstituents>,
+                                               soa::Join<aod::BplusChargedEventWiseSubtractedJets, aod::BplusChargedEventWiseSubtractedJetConstituents>,
+                                               aod::BplusChargedJetsMatchedToBplusChargedEventWiseSubtractedJets,
+                                               aod::BplusChargedEventWiseSubtractedJetsMatchedToBplusChargedJets,
+                                               aod::JTrackBplusSubs,
+                                               aod::CandidatesBplusData>;*/

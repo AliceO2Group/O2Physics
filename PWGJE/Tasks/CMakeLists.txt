@@ -52,12 +52,28 @@ if(FastJet_FOUND)
                         SOURCES jetsubstructureoutput.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
-    o2physics_add_dpl_workflow(jet-substructure-hf
-                        SOURCES jetsubstructurehf.cxx
+    o2physics_add_dpl_workflow(jet-substructure-d0
+                        SOURCES jetsubstructureD0.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
-    o2physics_add_dpl_workflow(jet-substructure-hf-output
-                        SOURCES jetsubstructurehfoutput.cxx
+    o2physics_add_dpl_workflow(jet-substructure-lc
+                        SOURCES jetsubstructureLc.cxx
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(jet-substructure-dielectron
+                        SOURCES jetsubstructureDielectron.cxx
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(jet-substructure-d0-output
+                        SOURCES jetsubstructureD0output.cxx
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(jet-substructure-lc-output
+                        SOURCES jetsubstructureLcoutput.cxx
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
+                        COMPONENT_NAME Analysis)
+    o2physics_add_dpl_workflow(jet-substructure-dielectron-output
+                        SOURCES jetsubstructureDielectronoutput.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
     o2physics_add_dpl_workflow(jet-fragmentation
