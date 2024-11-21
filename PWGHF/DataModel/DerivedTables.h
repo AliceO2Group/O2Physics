@@ -609,8 +609,51 @@ DECLARE_SOA_TABLE_STAGED(HfPIds, "HFPID", //! Table with original global indices
                          hf_mc_particle::McParticleId,
                          o2::soa::Marker<MarkerBase>);
 
+// Legacy types for JE
 
+using HfD0CollBases = HfCollBases;
+using HfD0CollBase = HfCollBase;
+using HfD0CollIds = HfCollIds;
+using HfD0McCollBases = HfMcCollBases;
+using HfD0McCollBase = HfMcCollBase;
+using HfD0McCollIds = HfMcCollIds;
+using HfD0McRCollIds = HfMcRCollIds;
+using HfD0Bases = HfBases;
+using HfD0PBases = HfPBases;
+using HfD0PIds = HfPIds;
 
+using StoredHfD0CollBases = StoredHfCollBases;
+using StoredHfD0CollBase = StoredHfCollBase;
+using StoredHfD0CollIds = StoredHfCollIds;
+using StoredHfD0McCollBases = StoredHfMcCollBases;
+using StoredHfD0McCollBase = StoredHfMcCollBase;
+using StoredHfD0McCollIds = StoredHfMcCollIds;
+using StoredHfD0McRCollIds = StoredHfMcRCollIds;
+using StoredHfD0Bases = StoredHfBases;
+using StoredHfD0PBases = StoredHfPBases;
+using StoredHfD0PIds = StoredHfPIds;
+
+using Hf3PCollBases = HfCollBases;
+using Hf3PCollBase = HfCollBase;
+using Hf3PCollIds = HfCollIds;
+using Hf3PMcCollBases = HfMcCollBases;
+using Hf3PMcCollBase = HfMcCollBase;
+using Hf3PMcCollIds = HfMcCollIds;
+using Hf3PMcRCollIds = HfMcRCollIds;
+using Hf3PBases = HfBases;
+using Hf3PPBases = HfPBases;
+using Hf3PPIds = HfPIds;
+
+using StoredHf3PCollBases = StoredHfCollBases;
+using StoredHf3PCollBase = StoredHfCollBase;
+using StoredHf3PCollIds = StoredHfCollIds;
+using StoredHf3PMcCollBases = StoredHfMcCollBases;
+using StoredHf3PMcCollBase = StoredHfMcCollBase;
+using StoredHf3PMcCollIds = StoredHfMcCollIds;
+using StoredHf3PMcRCollIds = StoredHfMcRCollIds;
+using StoredHf3PBases = StoredHfBases;
+using StoredHf3PPBases = StoredHfPBases;
+using StoredHf3PPIds = StoredHfPIds;
 } // namespace o2::aod
 
 #endif // PWGHF_DATAMODEL_DERIVEDTABLES_H_
