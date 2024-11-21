@@ -343,8 +343,8 @@ DECLARE_SOA_TABLE(HfRedPidDau1s, "AOD", "HFREDPIDDAU1", //!
                   hf_track_pid_reduced::TOFNSigmaKaProng1,
                   hf_track_vars_reduced::HasTOFProng1,
                   hf_track_vars_reduced::HasTPCProng1,
-                  hf_track_pid_reduced::TPCTOFNSigmaPiProng0<hf_track_pid_reduced::TPCNSigmaPiProng1, hf_track_pid_reduced::TOFNSigmaPiProng1>,
-                  hf_track_pid_reduced::TPCTOFNSigmaKaProng0<hf_track_pid_reduced::TPCNSigmaKaProng1, hf_track_pid_reduced::TOFNSigmaKaProng1>);
+                  hf_track_pid_reduced::TPCTOFNSigmaPiProng1<hf_track_pid_reduced::TPCNSigmaPiProng1, hf_track_pid_reduced::TOFNSigmaPiProng1>,
+                  hf_track_pid_reduced::TPCTOFNSigmaKaProng1<hf_track_pid_reduced::TPCNSigmaKaProng1, hf_track_pid_reduced::TOFNSigmaKaProng1>);
 
 DECLARE_SOA_TABLE(HfRedPidDau2s, "AOD", "HFREDPIDDAU2", //!
                   hf_track_pid_reduced::TPCNSigmaPiProng2,
