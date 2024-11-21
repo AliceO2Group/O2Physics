@@ -39,6 +39,7 @@ namespace pid_studies
 {
 DECLARE_SOA_COLUMN(MassK0, massK0, float);                  //! Candidate mass
 DECLARE_SOA_COLUMN(MassLambda, massLambda, float);          //! Candidate mass
+DECLARE_SOA_COLUMN(MassOmega, massOmega, float);            //! Candidate mass
 DECLARE_SOA_COLUMN(PtPos, ptPos, float);                    //! Transverse momentum of positive track (GeV/c)
 DECLARE_SOA_COLUMN(PtNeg, ptNeg, float);                    //! Transverse momentum of negative track (GeV/c)
 DECLARE_SOA_COLUMN(Radius, radius, float);                  //! Radius
@@ -91,11 +92,27 @@ DECLARE_SOA_TABLE(pidV0s, "AOD", "PIDV0S", //! Table with PID information
                   pid_studies::CentralityFT0M,                  
                   pid_studies::CandFlag                  
                   );
+
+DECLARE_SOA_TABLE(pidCascades, "AOD", "PIDCASCADES", //! Table with PID information
+                  // pid_studies::MassOmega,
+                  // pid_studies::PtPos,
+                  // pid_studies::PtNeg,
+                  // pid_studies::Radius,
+                  // pid_studies::Cpa,
+                  // pid_studies::NSigmaTpcPosKa,
+                  // pid_studies::NSigmaTpcNegKa,
+                  pid_studies::OccupancyFt0c,
+                  pid_studies::OccupancyIts,
+                  pid_studies::CentralityFT0C,                  
+                  pid_studies::CentralityFT0M,                  
+                  pid_studies::CandFlag                  
+                  );
 } // namespace o2::aod
 
 
 struct pidStudies {
   Produces <o2::aod::pidV0s> pidV0;
+  Produces <o2::aod::pidCascades> pidCascade;
   HistogramRegistry registry{"registry", {}};
 
   using PIDTracks = soa::Join<aod::Tracks, aod::TracksExtra,
@@ -103,11 +120,14 @@ struct pidStudies {
                             aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
   using CollSels = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms>;
   using V0sMCRec = soa::Join<aod::V0Datas, aod::V0CoreMCLabels>;
+  using CascsMCRec = soa::Join<aod::CascDatas, aod::CascCoreMCLabels>;
 
   Configurable<float> massK0Min{"massK0Min", 0.4, "Minimum mass for K0"};
   Configurable<float> massK0Max{"massK0Max", 0.6, "Maximum mass for K0"};
   Configurable<float> massLambdaMin{"massLambdaMin", 1.0, "Minimum mass for lambda"};
   Configurable<float> massLambdaMax{"massLambdaMax", 1.3, "Maximum mass for lambda"};
+  Configurable<float> massOmegaMin{"massOmegaMin", 1.5, "Minimum mass for omega"};
+  Configurable<float> massOmegaMax{"massOmegaMax", 1.8, "Maximum mass for omega"};
 
   void init(InitContext&)
   {
@@ -116,35 +136,54 @@ struct pidStudies {
   template <typename Cand>
   void fillTree(Cand const& candidate, const int& flag)
   {
-    const auto& posTrack = candidate.template posTrack_as<PIDTracks>();
-    const auto& negTrack = candidate.template negTrack_as<PIDTracks>();
-    pidV0(
-      candidate.mK0Short(),
-      candidate.mLambda(),
-      posTrack.pt(),
-      negTrack.pt(),
-      candidate.v0radius(),
-      candidate.v0cosPA(),
-      posTrack.tofNSigmaPi(),
-      negTrack.tofNSigmaPi(),
-      posTrack.tofNSigmaKa(),
-      negTrack.tofNSigmaKa(),
-      posTrack.tofNSigmaPr(),
-      negTrack.tofNSigmaPr(),
-      posTrack.tpcNSigmaPi(),
-      negTrack.tpcNSigmaPi(),
-      posTrack.tpcNSigmaKa(),
-      negTrack.tpcNSigmaKa(),
-      posTrack.tpcNSigmaPr(),
-      negTrack.tpcNSigmaPr(),
-      candidate.alpha(),
-      candidate.qtarm(),
-      candidate.template collision_as<CollSels>().ft0cOccupancyInTimeRange(),
-      candidate.template collision_as<CollSels>().trackOccupancyInTimeRange(),
-      candidate.template collision_as<CollSels>().centFT0C(),
-      candidate.template collision_as<CollSels>().centFT0M(),
-      flag
-    );
+    if constexpr (std::is_same<Cand, V0sMCRec::iterator>::value) {
+      const auto& posTrack = candidate.template posTrack_as<PIDTracks>();
+      const auto& negTrack = candidate.template negTrack_as<PIDTracks>();
+      pidV0(
+        candidate.mK0Short(),
+        candidate.mLambda(),
+        posTrack.pt(),
+        negTrack.pt(),
+        candidate.v0radius(),
+        candidate.v0cosPA(),
+        posTrack.tofNSigmaPi(),
+        negTrack.tofNSigmaPi(),
+        posTrack.tofNSigmaKa(),
+        negTrack.tofNSigmaKa(),
+        posTrack.tofNSigmaPr(),
+        negTrack.tofNSigmaPr(),
+        posTrack.tpcNSigmaPi(),
+        negTrack.tpcNSigmaPi(),
+        posTrack.tpcNSigmaKa(),
+        negTrack.tpcNSigmaKa(),
+        posTrack.tpcNSigmaPr(),
+        negTrack.tpcNSigmaPr(),
+        candidate.alpha(),
+        candidate.qtarm(),
+        candidate.template collision_as<CollSels>().ft0cOccupancyInTimeRange(),
+        candidate.template collision_as<CollSels>().trackOccupancyInTimeRange(),
+        candidate.template collision_as<CollSels>().centFT0C(),
+        candidate.template collision_as<CollSels>().centFT0M(),
+        flag
+      );
+    } else {
+      // const auto& posTrack = candidate.template posTrack_as<PIDTracks>();
+      // const auto& negTrack = candidate.template negTrack_as<PIDTracks>();
+      pidCascades(
+        // candidate.mOmega(),
+        // posTrack.pt(),
+        // negTrack.pt(),
+        // candidate.v0radius(),
+        // candidate.v0cosPA(),
+        // posTrack.tpcNSigmaKa(),
+        // negTrack.tpcNSigmaKa(),
+        candidate.template collision_as<CollSels>().ft0cOccupancyInTimeRange(),
+        candidate.template collision_as<CollSels>().trackOccupancyInTimeRange(),
+        candidate.template collision_as<CollSels>().centFT0C(),
+        candidate.template collision_as<CollSels>().centFT0M(),
+        flag
+      );      
+    }
   } 
 
   template <typename T1>
@@ -154,32 +193,81 @@ struct pidStudies {
       if (!cand.has_v0MCCore())
         return matched;
       auto v0MC = cand.template v0MCCore_as<aod::V0MCCores>();     
-      int sign = 1;
-      if (v0MC.pdgCode() < 0) sign=-1;
-      if (v0MC.pdgCode() == sign*3122 && v0MC.pdgCodeNegative() == -sign*211 
-          && v0MC.pdgCodePositive() == sign*2212) {
-          matched = sign*1;
+      // LOG(info) << "v0MC.pdgCode() " << v0MC.pdgCode();
+      // LOG(info) << "v0MC.pdgCodeNegative() " << v0MC.pdgCodeNegative();
+      // LOG(info) << "v0MC.pdgCodePositive() " << v0MC.pdgCodePositive();
+      if (v0MC.pdgCode() == 3122 && v0MC.pdgCodeNegative() == -211 
+          && v0MC.pdgCodePositive() == 2212) {
+          matched = 1;
       }
-      if (v0MC.pdgCode() == sign*310 && v0MC.pdgCodeNegative() == -sign*211 
-          && v0MC.pdgCodePositive() == sign*211) {
-          matched = sign*2;
+      if (v0MC.pdgCode() == -3122 && v0MC.pdgCodeNegative() == -2212 
+          && v0MC.pdgCodePositive() == 211) {
+          matched = -1;
+      }
+      if (v0MC.pdgCode() == 310 && v0MC.pdgCodeNegative() == -211 
+          && v0MC.pdgCodePositive() == 211) {
+          matched = 2;
+      } 
+      if (v0MC.pdgCode() == -310 && v0MC.pdgCodeNegative() == -211 
+          && v0MC.pdgCodePositive() == 211) {
+          matched = -2;
+      }
+    }
+    if constexpr (std::is_same<T1, CascsMCRec::iterator>::value) {
+      if (!cand.has_cascMCCore())
+        return matched;
+      LOG(info) << "Inside checker";
+      auto cascMC = cand.template cascMCCore_as<aod::CascMCCores>();     
+      // LOG(info) << "cascMC.pdgCode() " << cascMC.pdgCode();
+      // LOG(info) << "cascMC.pdgCodeBachelor() " << cascMC.pdgCodeBachelor();
+      // LOG(info) << "cascMC.pdgCodeV0() " << cascMC.pdgCodeV0();
+      // LOG(info) << "cascMC.pdgCodePositive() " << cascMC.pdgCodePositive();
+      // LOG(info) << "cascMC.pdgCodeNegative() " << cascMC.pdgCodeNegative();
+      if (cascMC.pdgCode() > 0) {
+        if (cascMC.pdgCode() == 3334 && 
+            cascMC.pdgCodeBachelor() == -321 && 
+            cascMC.pdgCodeV0() == 3122 &&
+            cascMC.pdgCodePositive() == 2212 &&
+            cascMC.pdgCodeNegative() == -211) {
+            matched = 3;
+        }
+      } else {
+        if (cascMC.pdgCode() == -3334 && 
+            cascMC.pdgCodeBachelor() == 321 && 
+            cascMC.pdgCodeV0() == -3122 &&
+            cascMC.pdgCodePositive() == 211 &&
+            cascMC.pdgCodeNegative() == -2212) {
+            matched = -3;
+        }
       }
     }
     return matched;   
   }
 
-  void processMC(V0sMCRec const& V0s, aod::V0MCCores const& V0sMC, CollSels const&, PIDTracks const&)
-  {
+  void processMC(V0sMCRec const& V0s, aod::V0MCCores const& V0sMC, CascsMCRec const& cascs, 
+                 aod::CascMCCores const& cascsMC, CollSels const&, PIDTracks const&)  {
     for (const auto& v0 : V0s) {
       if (v0.mK0Short() > massK0Min && v0.mK0Short() < massK0Max ||
-        v0.mLambda() > massLambdaMin && v0.mLambda() < massLambdaMax ||
-        v0.mAntiLambda() > massLambdaMin && v0.mAntiLambda() < massLambdaMax) {
-          int matched = isMatched(v0); 
+          v0.mLambda() > massLambdaMin && v0.mLambda() < massLambdaMax ||
+          v0.mAntiLambda() > massLambdaMin && v0.mAntiLambda() < massLambdaMax) {
+        int matched = isMatched(v0); 
         if(matched != 0) {
           fillTree(v0, matched);
         }
       }
     }
+    for (const auto& casc : cascs) {
+      LOG(info) << "checking omega";
+      if (casc.mOmega() > massOmegaMin && casc.mOmega() < massOmegaMax) {
+        LOG(info) << "mass passed";
+        int matched = isMatched(casc); 
+        if(matched != 0) {
+          LOG(info) << "Matched omega";
+          // fillTree(casc, matched);
+        }
+      }
+    }
+    
   }
   PROCESS_SWITCH(pidStudies, processMC, "process MC", true);
 
