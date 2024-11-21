@@ -155,20 +155,6 @@ std::array<std::shared_ptr<TH2>, nParticles> hPtEtaItsTpc;
 std::array<std::shared_ptr<TH2>, nParticles> hPtEtaTrkItsTpc;
 std::array<std::shared_ptr<TH2>, nParticles> hPtEtaItsTpcTof;
 std::array<std::shared_ptr<TH2>, nParticles> hPtEtaGenerated;
-
-// Occupancy
-std::array<std::shared_ptr<TH2>, nParticles> hPtOccItsTpc;
-std::array<std::shared_ptr<TH2>, nParticles> hPtOccTrkIts;
-std::array<std::shared_ptr<TH2>, nParticles> hPtOccTrkItsTpc;
-std::array<std::shared_ptr<TH2>, nParticles> hPtOccTrkItsTpcTof;
-std::array<std::shared_ptr<TH2>, nParticles> hPtOccItsTpcTof;
-std::array<std::shared_ptr<TH2>, nParticles> hPtOccGenerated;
-// Centrality
-std::array<std::shared_ptr<TH2>, nParticles> hPtCentItsTpc;
-std::array<std::shared_ptr<TH2>, nParticles> hPtCentTrkItsTpc;
-std::array<std::shared_ptr<TH2>, nParticles> hPtCentItsTpcTof;
-std::array<std::shared_ptr<TH2>, nParticles> hPtCentGenerated;
-
 // 2D  Pt vs Radius
 std::array<std::shared_ptr<TH2>, nParticles> hPtRadiusItsTpc;
 std::array<std::shared_ptr<TH2>, nParticles> hPtRadiusTrkItsTpc;
