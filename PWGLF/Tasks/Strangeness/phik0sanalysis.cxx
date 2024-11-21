@@ -776,20 +776,20 @@ struct phik0shortanalysis {
             continue; // condition to avoid double counting of pair
 
           TLorentzVector recPhi = recMother(track1, track2, massKa, massKa);
-          if (std::abs(recPhi.Rapidity()) > cfgyAcceptance)
+
+          if (recPhi.M() < lowmPhi || recPhi.M() > upmPhi)
             continue;
 
+          if (std::abs(recPhi.Rapidity()) > cfgyAcceptance)
+            continue;
           listrecPhi.push_back(recPhi);
-
-          if (lowmPhi <= recPhi.M() && recPhi.M() <= upmPhi) {
-            counts.at(0)++;
-            if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) > cfgFirstCutonDeltay)
-              continue;
-            counts.at(1)++;
-            if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) > cfgSecondCutonDeltay)
-              continue;
-            counts.at(2)++;
-          }
+          counts.at(0)++;
+          if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) > cfgFirstCutonDeltay)
+            continue;
+          counts.at(1)++;
+          if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) > cfgSecondCutonDeltay)
+            continue;
+          counts.at(2)++;
         }
       }
 
@@ -853,20 +853,20 @@ struct phik0shortanalysis {
             continue; // condition to avoid double counting of pair
 
           TLorentzVector recPhi = recMother(track1, track2, massKa, massKa);
-          if (std::abs(recPhi.Rapidity()) > cfgyAcceptance)
+
+          if (recPhi.M() < lowmPhi || recPhi.M() > upmPhi)
             continue;
 
+          if (std::abs(recPhi.Rapidity()) > cfgyAcceptance)
+            continue;
           listrecPhi.push_back(recPhi);
-
-          if (lowmPhi <= recPhi.M() && recPhi.M() <= upmPhi) {
-            counts.at(0)++;
-            if (std::abs(vecPi.Rapidity() - recPhi.Rapidity()) > cfgFirstCutonDeltay)
-              continue;
-            counts.at(1)++;
-            if (std::abs(vecPi.Rapidity() - recPhi.Rapidity()) > cfgSecondCutonDeltay)
-              continue;
-            counts.at(2)++;
-          }
+          counts.at(0)++;
+          if (std::abs(vecPi.Rapidity() - recPhi.Rapidity()) > cfgFirstCutonDeltay)
+            continue;
+          counts.at(1)++;
+          if (std::abs(vecPi.Rapidity() - recPhi.Rapidity()) > cfgSecondCutonDeltay)
+            continue;
+          counts.at(2)++;
         }
       }
 
@@ -1149,26 +1149,27 @@ struct phik0shortanalysis {
 
           TLorentzVector recPhi = recMother(track1, track2, massKa, massKa);
 
-          if (lowmPhi <= recPhi.M() && recPhi.M() <= upmPhi) {
-            if (std::abs(recPhi.Rapidity()) > cfgyAcceptance)
-              continue;
-            if (!isCountedPhi.at(0)) {
-              yaccHist.fill(HIST("hyaccK0SRecMC"), genmultiplicity, recK0S.Pt(), recK0S.Rapidity());
-              MCPhiK0SHist.fill(HIST("h3RecMCPhiK0SSEInc"), genmultiplicity, recK0S.Pt(), recK0S.M());
-              isCountedPhi.at(0) = true;
-            }
-            if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) > cfgFirstCutonDeltay)
-              continue;
-            if (!isCountedPhi.at(1)) {
-              MCPhiK0SHist.fill(HIST("h3RecMCPhiK0SSEFCut"), genmultiplicity, recK0S.Pt(), recK0S.M());
-              isCountedPhi.at(1) = true;
-            }
-            if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) > cfgSecondCutonDeltay)
-              continue;
-            if (!isCountedPhi.at(2)) {
-              MCPhiK0SHist.fill(HIST("h3RecMCPhiK0SSESCut"), genmultiplicity, recK0S.Pt(), recK0S.M());
-              isCountedPhi.at(2) = true;
-            }
+          if (recPhi.M() < lowmPhi || recPhi.M() > upmPhi)
+            continue;
+
+          if (std::abs(recPhi.Rapidity()) > cfgyAcceptance)
+            continue;
+          if (!isCountedPhi.at(0)) {
+            yaccHist.fill(HIST("hyaccK0SRecMC"), genmultiplicity, recK0S.Pt(), recK0S.Rapidity());
+            MCPhiK0SHist.fill(HIST("h3RecMCPhiK0SSEInc"), genmultiplicity, recK0S.Pt(), recK0S.M());
+            isCountedPhi.at(0) = true;
+          }
+          if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) > cfgFirstCutonDeltay)
+            continue;
+          if (!isCountedPhi.at(1)) {
+            MCPhiK0SHist.fill(HIST("h3RecMCPhiK0SSEFCut"), genmultiplicity, recK0S.Pt(), recK0S.M());
+            isCountedPhi.at(1) = true;
+          }
+          if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) > cfgSecondCutonDeltay)
+            continue;
+          if (!isCountedPhi.at(2)) {
+            MCPhiK0SHist.fill(HIST("h3RecMCPhiK0SSESCut"), genmultiplicity, recK0S.Pt(), recK0S.M());
+            isCountedPhi.at(2) = true;
           }
         }
       }
@@ -1262,26 +1263,27 @@ struct phik0shortanalysis {
 
           TLorentzVector recPhi = recMother(track1, track2, massKa, massKa);
 
-          if (lowmPhi <= recPhi.M() && recPhi.M() <= upmPhi) {
-            if (std::abs(recPhi.Rapidity()) > cfgyAcceptance)
-              continue;
-            if (!isCountedPhi.at(0)) {
-              yaccHist.fill(HIST("hyaccPiRecMC"), genmultiplicity, recPi.Pt(), recPi.Rapidity());
-              MCPhiPionHist.fill(HIST("h4RecMCPhiPiSEInc"), genmultiplicity, recPi.Pt(), nsigmaTPC, nsigmaTOF);
-              isCountedPhi.at(0) = true;
-            }
-            if (std::abs(recPi.Rapidity() - recPhi.Rapidity()) > cfgFirstCutonDeltay)
-              continue;
-            if (!isCountedPhi.at(1)) {
-              MCPhiPionHist.fill(HIST("h4RecMCPhiPiSEFCut"), genmultiplicity, recPi.Pt(), nsigmaTPC, nsigmaTOF);
-              isCountedPhi.at(1) = true;
-            }
-            if (std::abs(recPi.Rapidity() - recPhi.Rapidity()) > cfgSecondCutonDeltay)
-              continue;
-            if (!isCountedPhi.at(2)) {
-              MCPhiPionHist.fill(HIST("h4RecMCPhiPiSESCut"), genmultiplicity, recPi.Pt(), nsigmaTPC, nsigmaTOF);
-              isCountedPhi.at(2) = true;
-            }
+          if (recPhi.M() < lowmPhi || recPhi.M() > upmPhi)
+            continue;
+
+          if (std::abs(recPhi.Rapidity()) > cfgyAcceptance)
+            continue;
+          if (!isCountedPhi.at(0)) {
+            yaccHist.fill(HIST("hyaccPiRecMC"), genmultiplicity, recPi.Pt(), recPi.Rapidity());
+            MCPhiPionHist.fill(HIST("h4RecMCPhiPiSEInc"), genmultiplicity, recPi.Pt(), nsigmaTPC, nsigmaTOF);
+            isCountedPhi.at(0) = true;
+          }
+          if (std::abs(recPi.Rapidity() - recPhi.Rapidity()) > cfgFirstCutonDeltay)
+            continue;
+          if (!isCountedPhi.at(1)) {
+            MCPhiPionHist.fill(HIST("h4RecMCPhiPiSEFCut"), genmultiplicity, recPi.Pt(), nsigmaTPC, nsigmaTOF);
+            isCountedPhi.at(1) = true;
+          }
+          if (std::abs(recPi.Rapidity() - recPhi.Rapidity()) > cfgSecondCutonDeltay)
+            continue;
+          if (!isCountedPhi.at(2)) {
+            MCPhiPionHist.fill(HIST("h4RecMCPhiPiSESCut"), genmultiplicity, recPi.Pt(), nsigmaTPC, nsigmaTOF);
+            isCountedPhi.at(2) = true;
           }
         }
       }
@@ -1450,20 +1452,20 @@ struct phik0shortanalysis {
             continue; // condition to avoid double counting of pair
 
           TLorentzVector recPhi = recMother(track1, track2, massKa, massKa);
-          if (std::abs(recPhi.Rapidity()) > cfgyAcceptance)
+
+          if (recPhi.M() < lowmPhi || recPhi.M() > upmPhi)
             continue;
 
+          if (std::abs(recPhi.Rapidity()) > cfgyAcceptance)
+            continue;
           listrecPhi.push_back(recPhi);
-
-          if (lowmPhi <= recPhi.M() && recPhi.M() <= upmPhi) {
-            counts.at(0)++;
-            if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) > cfgFirstCutonDeltay)
-              continue;
-            counts.at(1)++;
-            if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) > cfgSecondCutonDeltay)
-              continue;
-            counts.at(2)++;
-          }
+          counts.at(0)++;
+          if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) > cfgFirstCutonDeltay)
+            continue;
+          counts.at(1)++;
+          if (std::abs(recK0S.Rapidity() - recPhi.Rapidity()) > cfgSecondCutonDeltay)
+            continue;
+          counts.at(2)++;
         }
       }
 
@@ -1528,20 +1530,20 @@ struct phik0shortanalysis {
             continue; // condition to avoid double counting of pair
 
           TLorentzVector recPhi = recMother(track1, track2, massKa, massKa);
-          if (std::abs(recPhi.Rapidity()) > cfgyAcceptance)
+
+          if (recPhi.M() < lowmPhi || recPhi.M() > upmPhi)
             continue;
 
+          if (std::abs(recPhi.Rapidity()) > cfgyAcceptance)
+            continue;
           listrecPhi.push_back(recPhi);
-
-          if (lowmPhi <= recPhi.M() && recPhi.M() <= upmPhi) {
-            counts.at(0)++;
-            if (std::abs(vecPi.Rapidity() - recPhi.Rapidity()) > cfgFirstCutonDeltay)
-              continue;
-            counts.at(1)++;
-            if (std::abs(vecPi.Rapidity() - recPhi.Rapidity()) > cfgSecondCutonDeltay)
-              continue;
-            counts.at(2)++;
-          }
+          counts.at(0)++;
+          if (std::abs(vecPi.Rapidity() - recPhi.Rapidity()) > cfgFirstCutonDeltay)
+            continue;
+          counts.at(1)++;
+          if (std::abs(vecPi.Rapidity() - recPhi.Rapidity()) > cfgSecondCutonDeltay)
+            continue;
+          counts.at(2)++;
         }
       }
 
