@@ -113,7 +113,7 @@ struct pidStudies {
   {
   }
 
-  template <bool isMc, typename Cand>
+  template <typename Cand>
   void fillTree(Cand const& candidate, const int& flag)
   {
     const auto& posTrack = candidate.template posTrack_as<PIDTracks>();
@@ -176,7 +176,7 @@ struct pidStudies {
         v0.mAntiLambda() > massLambdaMin && v0.mAntiLambda() < massLambdaMax) {
           int matched = isMatched(v0); 
         if(matched != 0) {
-          fillTree<true>(v0, matched);
+          fillTree(v0, matched);
         }
       }
     }
@@ -189,7 +189,7 @@ struct pidStudies {
       if (v0.mK0Short() > massK0Min && v0.mK0Short() < massK0Max ||
           v0.mLambda() > massLambdaMin && v0.mLambda() < massLambdaMax ||
           v0.mAntiLambda() > massLambdaMin && v0.mAntiLambda() < massLambdaMax) {
-        fillTree<false>(v0, 0);
+        fillTree(v0, 0);
       }
     }
   }
