@@ -2061,7 +2061,9 @@ struct QaEfficiency {
       float trackPhi = track.phi();
       float trackSign = track.sign();
       float occupancy;
+      float centrality;
       if (doOccupancy) {
+        centrality = collision.centFT0C();
         if (useFT0OccEstimator) {
           /// occupancy estimator (FT0c signal amplitudes in +-10us from current collision)
           occupancy = collision.ft0cOccupancyInTimeRange();
@@ -2078,7 +2080,7 @@ struct QaEfficiency {
           histos.fill(HIST("Data/pos/etaphi/its"), trackEta, trackPhi);
 
           if (doOccupancy) {
-            histos.fill(HIST("Data/occ_cent/pos/its"), occupancy, collision.centFT0C(), trackPt);
+            histos.fill(HIST("Data/occ_cent/pos/its"), occupancy, centrality, trackPt);
           }
         } else {
           histos.fill(HIST("Data/neg/pt/its"), trackPt);
@@ -2087,7 +2089,7 @@ struct QaEfficiency {
           histos.fill(HIST("Data/neg/etaphi/its"), trackEta, trackPhi);
 
           if (doOccupancy) {
-            histos.fill(HIST("Data/occ_cent/neg/its"), occupancy, collision.centFT0C(), trackPt);
+            histos.fill(HIST("Data/occ_cent/neg/its"), occupancy, centrality, trackPt);
           }
         }
       }
@@ -2100,7 +2102,7 @@ struct QaEfficiency {
           histos.fill(HIST("Data/pos/etaphi/tpc"), trackEta, trackPhi);
 
           if (doOccupancy) {
-            histos.fill(HIST("Data/occ_cent/pos/tpc"), occupancy, collision.centFT0C(), trackPt);
+            histos.fill(HIST("Data/occ_cent/pos/tpc"), occupancy, centrality, trackPt);
           }
         } else {
           histos.fill(HIST("Data/neg/pt/tpc"), trackPt);
@@ -2109,7 +2111,7 @@ struct QaEfficiency {
           histos.fill(HIST("Data/neg/etaphi/tpc"), trackEta, trackPhi);
 
           if (doOccupancy) {
-            histos.fill(HIST("Data/occ_cent/neg/tpc"), occupancy, collision.centFT0C(), trackPt);
+            histos.fill(HIST("Data/occ_cent/neg/tpc"), occupancy, centrality, trackPt);
           }
         }
       }
@@ -2122,7 +2124,7 @@ struct QaEfficiency {
           histos.fill(HIST("Data/pos/etaphi/its_tpc"), trackEta, trackPhi);
 
           if (doOccupancy) {
-            histos.fill(HIST("Data/occ_cent/pos/its_tpc"), occupancy, collision.centFT0C(), trackPt);
+            histos.fill(HIST("Data/occ_cent/pos/its_tpc"), occupancy, centrality, trackPt);
           }
         } else {
           histos.fill(HIST("Data/neg/pt/its_tpc"), trackPt);
@@ -2131,7 +2133,7 @@ struct QaEfficiency {
           histos.fill(HIST("Data/neg/etaphi/its_tpc"), trackEta, trackPhi);
 
           if (doOccupancy) {
-            histos.fill(HIST("Data/occ_cent/neg/its_tpc"), occupancy, collision.centFT0C(), trackPt);
+            histos.fill(HIST("Data/occ_cent/neg/its_tpc"), occupancy, centrality, trackPt);
           }
         }
       }
@@ -2144,7 +2146,7 @@ struct QaEfficiency {
           histos.fill(HIST("Data/pos/etaphi/its_tpc_tof"), trackEta, trackPhi);
 
           if (doOccupancy) {
-            histos.fill(HIST("Data/occ_cent/pos/its_tpc_tof"), occupancy, collision.centFT0C(), trackPt);
+            histos.fill(HIST("Data/occ_cent/pos/its_tpc_tof"), occupancy, centrality, trackPt);
           }
         } else {
           histos.fill(HIST("Data/neg/pt/its_tpc_tof"), trackPt);
@@ -2153,7 +2155,7 @@ struct QaEfficiency {
           histos.fill(HIST("Data/neg/etaphi/its_tpc_tof"), trackEta, trackPhi);
 
           if (doOccupancy) {
-            histos.fill(HIST("Data/occ_cent/neg/its"), occupancy, collision.centFT0C(), trackPt);
+            histos.fill(HIST("Data/occ_cent/neg/its"), occupancy, centrality, trackPt);
           }
         }
       }
