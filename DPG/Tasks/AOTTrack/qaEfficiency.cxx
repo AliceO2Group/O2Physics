@@ -2090,8 +2090,8 @@ struct QaEfficiency {
       float trackEta = track.eta();
       float trackPhi = track.phi();
       float trackSign = track.sign();
+      float occupancy;
       if (doOccupancy) {
-        float occupancy;
         if (useFT0OccEstimator) {  
           /// occupancy estimator (FT0c signal amplitudes in +-10us from current collision)
           occupancy = collision.ft0cOccupancyInTimeRange();
