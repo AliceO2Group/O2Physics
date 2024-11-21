@@ -548,6 +548,22 @@ struct HfTaskBplusReduced {
           candidateMlScoreSig = candidate.mlProbBplusToD0Pi();
         }
         auto prong1 = candidate.template prong1_as<TracksPion>();
+        float tpcNSigmaPi, tofNSigmaPi, tpcTofNSigmaPi, tpcNSigmaKa, tofNSigmaKa, tpcTofNSigmaKa;
+        if (prong1.signed1Pt() < 0){
+          tpcNSigmaPi = candD0.tpcNSigmaPiProng1();
+          tofNSigmaPi = candD0.tofNSigmaPiProng1();
+          tpcTofNSigmaPi = candD0.tpcTofNSigmaPiProng1();
+          tpcNSigmaKa = candD0.tpcNSigmaKaProng0();
+          tofNSigmaKa = candD0.tofNSigmaKaProng0();
+          tpcTofNSigmaKa = candD0.tpcTofNSigmaKaProng0();
+        } else {
+          tpcNSigmaPi = candD0.tpcNSigmaPiProng0();
+          tofNSigmaPi = candD0.tofNSigmaPiProng0();
+          tpcTofNSigmaPi = candD0.tpcTofNSigmaPiProng0();
+          tpcNSigmaKa = candD0.tpcNSigmaKaProng1();
+          tofNSigmaKa = candD0.tofNSigmaKaProng1();
+          tpcTofNSigmaKa = candD0.tpcTofNSigmaKaProng1();
+        }
 
         float ptMother = -1.;
         if constexpr (doMc) {
@@ -583,12 +599,12 @@ struct HfTaskBplusReduced {
           candD0.itsNClsProngMin(),
           candD0.tpcNClsCrossedRowsProngMin(),
           candD0.tpcChi2NClProngMax(),
-          candD0.tpcNSigmaPiProng0(),
-          candD0.tofNSigmaPiProng0(),
-          candD0.tpcTofNSigmaPiProng0(),
-          candD0.tpcNSigmaKaProng1(),
-          candD0.tofNSigmaKaProng1(),
-          candD0.tpcTofNSigmaKaProng1(),
+          tpcNSigmaPi,
+          tofNSigmaPi,
+          tpcTofNSigmaPi,
+          tpcNSigmaKa,
+          tofNSigmaKa,
+          tpcTofNSigmaKa,
           prong0MlScoreBkg,
           prong0MlScorePrompt,
           prong0MlScoreNonprompt,
