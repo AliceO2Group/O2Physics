@@ -44,6 +44,8 @@
 #include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/DataModel/Jet.h"
 
+#include "PWGLF/DataModel/mcCentrality.h"
+
 namespace jethfutilities
 {
 
@@ -549,7 +551,7 @@ void fillD0McCollisionTable(T const& mcCollision, U& D0McCollisionTable, int32_t
 template <typename T, typename U>
 void fillLcMcCollisionTable(T const& mcCollision, U& LcMcCollisionTable, int32_t& LcMcCollisionTableIndex)
 {
-  LcMcCollisionTable(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ());
+  LcMcCollisionTable(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ(), mcCollision.centFT0M());
   LcMcCollisionTableIndex = LcMcCollisionTable.lastIndex();
 }
 
