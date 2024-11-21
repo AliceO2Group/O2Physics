@@ -28,7 +28,23 @@ enum MyParticle {
   P_MUON = 1,
   P_PION = 2,
   P_KAON = 3,
-  P_PROTON = 4
+  P_PROTON = 4,
+  P_ENUM_COUNTER = 5
+};
+
+enum MyTauChannel {
+  CH_EE = 0,
+  CH_MUMU = 1,
+  CH_EMU = 2,
+  CH_PIPI = 3,
+  CH_EPI = 4,
+  CH_MUPI = 5,
+  CH_FOURPI = 6,
+  CH_ETHREEPI = 7,
+  CH_MUTHREEPI = 8,
+  CH_SIXPI = 9,
+  CH_EMUPI = 10,
+  CH_ENUM_COUNTER = 11
 };
 
 void printLargeMessage(std::string info)
@@ -196,6 +212,30 @@ double calculateAcoplanarity(double phi_trk1, double phi_trk2)
     return aco;
   else
     return (o2::constants::math::TwoPI - aco);
+}
+
+template <typename Ps>
+int countPhysicalPrimary(Ps particles)
+// Function to loop over particles associated to a mcCollision and return total of physical primary particles
+{
+  int nTotal = 0;
+  for (auto& particle : particles){
+    if (!particle.isPhysicalPrimary()) continue;
+    nTotal++;
+  }
+  return nTotal;
+}
+
+template <typename Ps>
+int countParticlesWithoutMother(Ps particles)
+// Function to loop over particles associated to a mcCollision and return total of particles without mothers (hopely alternative to isPhysicalPrimary)
+{
+  int nTotal = 0;
+  for (auto& particle : particles){
+    if (particle.has_mothers()) continue;
+    nTotal++;
+  }
+  return nTotal;
 }
 
 template <typename T>
