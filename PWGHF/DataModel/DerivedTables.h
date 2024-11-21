@@ -23,9 +23,10 @@
 
 #include "Common/Core/RecoDecay.h"
 
+#include "PWGLF/DataModel/mcCentrality.h"
+
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGLF/DataModel/mcCentrality.h"
 
 namespace o2::aod
 {
