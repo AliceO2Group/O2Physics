@@ -61,6 +61,7 @@ DECLARE_SOA_COLUMN(OccupancyFt0c, occupancyFt0c, float);    //! Occupancy from F
 DECLARE_SOA_COLUMN(OccupancyIts, occupancyIts, float);      //! Occupancy from ITS
 DECLARE_SOA_COLUMN(CentralityFT0C, centralityFT0C, float);  //! Centrality from FT0C
 DECLARE_SOA_COLUMN(CentralityFT0M, centralityFT0M, float);  //! Centrality from FT0M
+DECLARE_SOA_COLUMN(CandFlag, candFlag, int);                //! Flag for MC matching
 } // namespace pid_studies
 
 DECLARE_SOA_TABLE(pidV0s, "AOD", "PIDV0S", //! Table with PID information
@@ -87,7 +88,8 @@ DECLARE_SOA_TABLE(pidV0s, "AOD", "PIDV0S", //! Table with PID information
                   pid_studies::OccupancyFt0c,
                   pid_studies::OccupancyIts,
                   pid_studies::CentralityFT0C,                  
-                  pid_studies::CentralityFT0M                  
+                  pid_studies::CentralityFT0M,                  
+                  pid_studies::CandFlag                  
                   );
 } // namespace o2::aod
 
@@ -101,10 +103,6 @@ struct pidStudies {
                             aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
   using CollSels = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms>;
   using V0sMCRec = soa::Join<aod::V0Datas, aod::V0CoreMCLabels>;
-  using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs, aod::DauTrackTOFPIDs>;
-  // using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
-
-  // using V0sMCRec = soa::Join<aod::V0Cores, aod::V0CoreMCLabels>;
 
   Configurable<float> massK0Min{"massK0Min", 0.4, "Minimum mass for K0"};
   Configurable<float> massK0Max{"massK0Max", 0.6, "Maximum mass for K0"};
@@ -116,113 +114,70 @@ struct pidStudies {
   }
 
   template <bool isMc, typename Cand>
-  void fillTree(Cand const& candidate)
+  void fillTree(Cand const& candidate, const int& flag)
   {
-    if constexpr(!isMc) {
-      const auto& posTrack = candidate.template posTrack_as<PIDTracks>();
-      const auto& negTrack = candidate.template negTrack_as<PIDTracks>();
-      pidV0(
-        candidate.mK0Short(),
-        candidate.mLambda(),
-        posTrack.pt(),
-        negTrack.pt(),
-        candidate.v0radius(),
-        candidate.v0cosPA(),
-        posTrack.tofNSigmaPi(),
-        negTrack.tofNSigmaPi(),
-        posTrack.tofNSigmaKa(),
-        negTrack.tofNSigmaKa(),
-        posTrack.tofNSigmaPr(),
-        negTrack.tofNSigmaPr(),
-        posTrack.tpcNSigmaPi(),
-        negTrack.tpcNSigmaPi(),
-        posTrack.tpcNSigmaKa(),
-        negTrack.tpcNSigmaKa(),
-        posTrack.tpcNSigmaPr(),
-        negTrack.tpcNSigmaPr(),
-        candidate.alpha(),
-        candidate.qtarm(),
-        candidate.template collision_as<CollSels>().ft0cOccupancyInTimeRange(),
-        candidate.template collision_as<CollSels>().trackOccupancyInTimeRange(),
-        candidate.template collision_as<CollSels>().centFT0C(),
-        candidate.template collision_as<CollSels>().centFT0M()
-      );
-    } else {
-      LOG(info) << "Filling MC";
-      const auto& posTrack = candidate.template posTrack_as<PIDTracks>();
-      const auto& negTrack = candidate.template negTrack_as<PIDTracks>();
-
-      // auto negTrack = candidate.template negTrack_as<soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs, aod::DauTrackTOFPIDs>>();
-      // auto posTrack = candidate.template posTrack_as<soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs, aod::DauTrackTOFPIDs>>();
-
-      pidV0(
-        candidate.mK0Short(),
-        candidate.mLambda(),
-        posTrack.pt(),
-        negTrack.pt(),
-        candidate.v0radius(),
-        candidate.v0cosPA(),
-        posTrack.tofNSigmaPi(),
-        negTrack.tofNSigmaPi(),
-        posTrack.tofNSigmaKa(),
-        negTrack.tofNSigmaKa(),
-        posTrack.tofNSigmaPr(),
-        negTrack.tofNSigmaPr(),
-        posTrack.tpcNSigmaPi(),
-        negTrack.tpcNSigmaPi(),
-        posTrack.tpcNSigmaKa(),
-        negTrack.tpcNSigmaKa(),
-        posTrack.tpcNSigmaPr(),
-        negTrack.tpcNSigmaPr(),
-        candidate.alpha(),
-        candidate.qtarm(),
-        0, // candidate.template collision_as<CollSels>().ft0cOccupancyInTimeRange(),
-        0, // candidate.template collision_as<CollSels>().trackOccupancyInTimeRange(),
-        0, // candidate.template collision_as<CollSels>().centFT0C(),
-        0 // candidate.template collision_as<CollSels>().centFT0M()
-      );
-    }
-
-  }
+    const auto& posTrack = candidate.template posTrack_as<PIDTracks>();
+    const auto& negTrack = candidate.template negTrack_as<PIDTracks>();
+    pidV0(
+      candidate.mK0Short(),
+      candidate.mLambda(),
+      posTrack.pt(),
+      negTrack.pt(),
+      candidate.v0radius(),
+      candidate.v0cosPA(),
+      posTrack.tofNSigmaPi(),
+      negTrack.tofNSigmaPi(),
+      posTrack.tofNSigmaKa(),
+      negTrack.tofNSigmaKa(),
+      posTrack.tofNSigmaPr(),
+      negTrack.tofNSigmaPr(),
+      posTrack.tpcNSigmaPi(),
+      negTrack.tpcNSigmaPi(),
+      posTrack.tpcNSigmaKa(),
+      negTrack.tpcNSigmaKa(),
+      posTrack.tpcNSigmaPr(),
+      negTrack.tpcNSigmaPr(),
+      candidate.alpha(),
+      candidate.qtarm(),
+      candidate.template collision_as<CollSels>().ft0cOccupancyInTimeRange(),
+      candidate.template collision_as<CollSels>().trackOccupancyInTimeRange(),
+      candidate.template collision_as<CollSels>().centFT0C(),
+      candidate.template collision_as<CollSels>().centFT0M(),
+      flag
+    );
+  } 
 
   template <typename T1>
-  bool isMatched(const T1& cand) {
-    // LOG(info) << "Checking";
-    bool matched = false;
+  int isMatched(const T1& cand) {
+    int matched{0};
     if constexpr (std::is_same<T1, V0sMCRec::iterator>::value) {
       if (!cand.has_v0MCCore())
-        return false;
+        return matched;
       auto v0MC = cand.template v0MCCore_as<aod::V0MCCores>();     
-      if (std::abs(v0MC.pdgCode()) == 3122 && (abs(v0MC.pdgCodeNegative()) == 211) 
-          && (abs(v0MC.pdgCodePositive()) == 2212)) {
-          LOG(info) << "Lambda matched";
-          matched = true;
+      int sign = 1;
+      if (v0MC.pdgCode() < 0) sign=-1;
+      if (v0MC.pdgCode() == sign*3122 && v0MC.pdgCodeNegative() == -sign*211 
+          && v0MC.pdgCodePositive() == sign*2212) {
+          matched = sign*1;
       }
-      if (std::abs(v0MC.pdgCode()) == 310 && (abs(v0MC.pdgCodeNegative()) == 211) 
-          && (abs(v0MC.pdgCodePositive()) == 211)) {
-          LOG(info) << "K0S matched";
-          matched = true;
+      if (v0MC.pdgCode() == sign*310 && v0MC.pdgCodeNegative() == -sign*211 
+          && v0MC.pdgCodePositive() == sign*211) {
+          matched = sign*2;
       }
     }
     return matched;   
   }
 
-  void processMC(V0sMCRec const& V0s, aod::V0MCCores const& V0sMC, PIDTracks const&)
+  void processMC(V0sMCRec const& V0s, aod::V0MCCores const& V0sMC, CollSels const&, PIDTracks const&)
   {
-    // LOG(info) << "Processing MC";
-    // LOG(info) << "Size: " << V0s.size();
     for (const auto& v0 : V0s) {
       if (v0.mK0Short() > massK0Min && v0.mK0Short() < massK0Max ||
         v0.mLambda() > massLambdaMin && v0.mLambda() < massLambdaMax ||
         v0.mAntiLambda() > massLambdaMin && v0.mAntiLambda() < massLambdaMax) {
-          // LOG(info) << "mass sel ok";
-          // bool matched = isMatched(v0); 
-          // LOG(info) << "---------";
-          if(isMatched(v0)) {
-            fillTree<true>(v0);
-          } else {
-            LOG(info) << "v0 not matched";
-          }
+          int matched = isMatched(v0); 
+        if(matched != 0) {
+          fillTree<true>(v0, matched);
+        }
       }
     }
   }
@@ -234,7 +189,7 @@ struct pidStudies {
       if (v0.mK0Short() > massK0Min && v0.mK0Short() < massK0Max ||
           v0.mLambda() > massLambdaMin && v0.mLambda() < massLambdaMax ||
           v0.mAntiLambda() > massLambdaMin && v0.mAntiLambda() < massLambdaMax) {
-        fillTree<false>(v0);
+        fillTree<false>(v0, 0);
       }
     }
   }
