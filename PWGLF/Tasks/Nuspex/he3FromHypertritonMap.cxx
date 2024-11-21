@@ -46,7 +46,7 @@ using std::array;
 
 using MCTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksDCA, aod::McTrackLabels>;
 
-struct hypertritonToHeliumMap {
+struct he3FromHypertritonMap {
   HistogramRegistry registryMC{
     "registryMC",
     {},
