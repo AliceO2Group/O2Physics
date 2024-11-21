@@ -39,11 +39,12 @@ namespace o2::aod
 {
 namespace pid_studies
 {
-enum Particle {NotMatched=0, Lambda, K0s, Omega};
+enum Particle {NotMatched=0, K0s, Lambda, Omega};
 // V0s
 DECLARE_SOA_COLUMN(MassK0, massK0, float);                  //! Candidate mass
 DECLARE_SOA_COLUMN(MassLambda, massLambda, float);          //! Candidate mass
 DECLARE_SOA_COLUMN(MassAntiLambda, massAntiLambda, float);  //! Candidate mass
+DECLARE_SOA_COLUMN(Pt, pt, float);                          //! Transverse momentum of the candidate (GeV/c)
 DECLARE_SOA_COLUMN(PtPos, ptPos, float);                    //! Transverse momentum of positive track (GeV/c)
 DECLARE_SOA_COLUMN(PtNeg, ptNeg, float);                    //! Transverse momentum of negative track (GeV/c)
 DECLARE_SOA_COLUMN(Radius, radius, float);                  //! Radius
@@ -80,6 +81,7 @@ DECLARE_SOA_TABLE(pidV0s, "AOD", "PIDV0S", //! Table with PID information
                   pid_studies::MassK0,
                   pid_studies::MassLambda,
                   pid_studies::MassAntiLambda,
+                  pid_studies::Pt,
                   pid_studies::PtPos,
                   pid_studies::PtNeg,
                   pid_studies::Radius,
@@ -103,6 +105,7 @@ DECLARE_SOA_TABLE(pidV0s, "AOD", "PIDV0S", //! Table with PID information
 
 DECLARE_SOA_TABLE(pidCascades, "AOD", "PIDCASCADES", //! Table with PID information
                   pid_studies::MassOmega,
+                  pid_studies::Pt,
                   pid_studies::MassXi,
                   pid_studies::CascCosPA,
                   pid_studies::DCAV0daughters,
@@ -142,23 +145,23 @@ struct pidStudies {
   {
   }
 
-  template <typename Cand>
+  template <bool isV0, typename Cand>
   void fillTree(Cand const& candidate, const int& flag)
   {
-    LOG(info) << candidate.pt();
     float pseudoRndm = candidate.pt() * 1000. - (int64_t)(candidate.pt() * 1000);
     if (candidate.pt() < ptMaxForDownSample && pseudoRndm > downSampleBkgFactor) {
       return;
     }
 
     const auto& coll = candidate.template collision_as<CollSels>();
-    if constexpr (std::is_same<Cand, V0sMCRec::iterator>::value) {
+    if constexpr (isV0) {
       const auto& posTrack = candidate.template posTrack_as<PIDTracks>();
       const auto& negTrack = candidate.template negTrack_as<PIDTracks>();
       pidV0(
         candidate.mK0Short(),
         candidate.mLambda(),
         candidate.mAntiLambda(),
+        candidate.pt(),
         posTrack.pt(),
         negTrack.pt(),
         candidate.v0radius(),
@@ -179,11 +182,11 @@ struct pidStudies {
         coll.centFT0M(),
         flag
       );
-    } 
-    if constexpr (std::is_same<Cand, CascsMCRec::iterator>::value) {
+    } else {
       const auto& bachTrack = candidate.template bachelor_as<PIDTracks>();
       pidCascade(
         candidate.mOmega(),
+        candidate.pt(),
         candidate.mXi(),
         candidate.casccosPA(coll.posX(), coll.posY(), coll.posZ()),
         candidate.dcaV0daughters(),
@@ -206,15 +209,6 @@ struct pidStudies {
         return aod::pid_studies::NotMatched;
       }
       auto v0MC = cand.template v0MCCore_as<aod::V0MCCores>();
-      LOG(info) << v0MC.pdgCode();
-      if (v0MC.pdgCode() == kLambda0 && v0MC.pdgCodeNegative() == -kPiPlus 
-          && v0MC.pdgCodePositive() == kProton) {
-          return aod::pid_studies::Lambda;
-      }
-      if (v0MC.pdgCode() == -kLambda0 && v0MC.pdgCodeNegative() == -kProton 
-          && v0MC.pdgCodePositive() == kPiPlus) {
-          return -aod::pid_studies::Lambda;
-      }
       if (v0MC.pdgCode() == kK0Short && v0MC.pdgCodeNegative() == -kPiPlus 
           && v0MC.pdgCodePositive() == kPiPlus) {
           return aod::pid_studies::K0s;
@@ -222,6 +216,14 @@ struct pidStudies {
       if (v0MC.pdgCode() == -kK0Short && v0MC.pdgCodeNegative() == -kPiPlus 
           && v0MC.pdgCodePositive() == kPiPlus) {
           return -aod::pid_studies::K0s;
+      }
+      if (v0MC.pdgCode() == kLambda0 && v0MC.pdgCodeNegative() == -kPiPlus 
+          && v0MC.pdgCodePositive() == kProton) {
+          return aod::pid_studies::Lambda;
+      }
+      if (v0MC.pdgCode() == -kLambda0 && v0MC.pdgCodeNegative() == -kProton 
+          && v0MC.pdgCodePositive() == kPiPlus) {
+          return -aod::pid_studies::Lambda;
       }
     }
     if constexpr (std::is_same<T1, CascsMCRec::iterator>::value) {
@@ -249,27 +251,26 @@ struct pidStudies {
     }   
   }
 
-  void processMC(V0sMCRec const& V0s, aod::V0MCCores const& V0sMC, CascsMCRec const& cascs, 
-                 aod::CascMCCores const& cascsMC, CollSels const&, PIDTracks const&)  {
+  void processMC(V0sMCRec const& V0s, aod::V0MCCores const&, CascsMCRec const& cascades, 
+                 aod::CascMCCores const&, CollSels const&, PIDTracks const&)  {
     for (const auto& v0 : V0s) {
       if (v0.mK0Short() > massK0Min && v0.mK0Short() < massK0Max ||
           v0.mLambda() > massLambdaMin && v0.mLambda() < massLambdaMax ||
           v0.mAntiLambda() > massLambdaMin && v0.mAntiLambda() < massLambdaMax) {
         int matched = isMatched(v0); 
-        if(matched != 0) {
-          fillTree(v0, matched);
+        if(matched != aod::pid_studies::NotMatched) {
+          fillTree<true>(v0, matched);
         }
       }
     }
-    for (const auto& casc : cascs) {
+    for (const auto& casc : cascades) {
       if (casc.mOmega() > massOmegaMin && casc.mOmega() < massOmegaMax) {
         int matched = isMatched(casc); 
-        if(matched != 0) {
-          fillTree(casc, matched);
+        if(matched != aod::pid_studies::NotMatched) {
+          fillTree<false>(casc, matched);
         }
       }
     }
-    
   }
   PROCESS_SWITCH(pidStudies, processMC, "Process MC", true);
 
@@ -279,7 +280,12 @@ struct pidStudies {
       if (v0.mK0Short() > massK0Min && v0.mK0Short() < massK0Max ||
           v0.mLambda() > massLambdaMin && v0.mLambda() < massLambdaMax ||
           v0.mAntiLambda() > massLambdaMin && v0.mAntiLambda() < massLambdaMax) {
-        fillTree(v0, aod::pid_studies::NotMatched);
+        fillTree<true>(v0, aod::pid_studies::NotMatched);
+      }
+    }
+    for (const auto& casc : cascades) {
+      if (casc.mOmega() > massOmegaMin && casc.mOmega() < massOmegaMax) {
+        fillTree<false>(casc, aod::pid_studies::NotMatched);
       }
     }
   }
