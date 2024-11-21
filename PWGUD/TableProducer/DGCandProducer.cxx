@@ -11,6 +11,7 @@
 //
 // \brief Saves relevant information of DG candidates
 // \author Paul Buehler, paul.buehler@oeaw.ac.at
+
 #include <vector>
 #include <string>
 #include <map>
@@ -377,7 +378,8 @@ struct McDGCandProducer {
   void updateUDMcCollisions(TMcCollision const& mccol)
   {
     // save mccol
-    outputMcCollisions(mccol.bcId(),
+    auto bc = mccol.template bc_as<BCs>();
+    outputMcCollisions(bc.globalBC(),
                        mccol.generatorsID(),
                        mccol.posX(),
                        mccol.posY(),
