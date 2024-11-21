@@ -46,7 +46,6 @@
 #include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/DataModel/Jet.h"
 
-
 namespace jethfutilities
 {
 
