@@ -246,7 +246,7 @@ struct RofOccupancyQaTask {
     histos.add("afterNarrowDeltaTimeCut/hThisEvITSTr_vs_occupancyInPreviousROF_1collPerROF_XaxisWins", "", kTH2D, {{250, 0., 8000 * k}, {250, 0., 8000 * k}});
 
     // 2,3,4 colls in ROF
-    histos.add("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyInROF_2coll_noVzCutOnOtherVertices", "", kTH2D, {{500, 0., 20000 * k}, {250, 0., 8000 * k}});
+    histos.add("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyInROF_2coll_noVzCutOnOtherVertices", "", kTH2D, {{500, 0., 8000 * k}, {250, 0., 8000 * k}});
     histos.add("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyInROF_3coll_noVzCutOnOtherVertices", "", kTH2D, {{500, 0., 20000 * k}, {250, 0., 8000 * k}});
     histos.add("vZ_TF_ROF_border_cuts/hThisEvITSTr_vs_occupancyInROF_4coll_noVzCutOnOtherVertices", "", kTH2D, {{500, 0., 20000 * k}, {250, 0., 8000 * k}});
 
@@ -453,7 +453,7 @@ struct RofOccupancyQaTask {
       for (auto& track : colPvTracks) {
         if (track.itsNCls() >= 5) {
           vTracksITS567perColl[colIndex]++;
-          if (fabs(track.eta() < 0.8))
+          if (fabs(track.eta()) < 0.8)
             vTracksITS567eta08perColl[colIndex]++;
           if (track.tpcNClsFound() > 70)
             vTracksITSTPCperColl[colIndex]++;
@@ -754,7 +754,7 @@ struct RofOccupancyQaTask {
       vROFidThisColl[colIndex] = rofIdInTF;
 
       if (fabs(vZ) < 10)
-        vNumCollinROFinVz10[colIndex]++;
+        vNumCollinROFinVz10[colIndex] = 1;
       for (uint32_t iCol = 0; iCol < vAssocToSameROF.size(); iCol++) {
         int thisColIndex = vAssocToSameROF[iCol];
         // int64_t thisRofId = (vFoundGlobalBC[thisColIndex] + 3564 - rofOffset) / rofLength;
@@ -769,6 +769,8 @@ struct RofOccupancyQaTask {
         nITS567tracksForRofVetoStrict += vTracksITS567perColl[thisColIndex];
         nSumAmplFT0CforRofVetoStrict += vAmpFT0CperColl[thisColIndex];
         vNumCollinROF[colIndex]++;
+        if (fabs(vCollVz[thisColIndex]) < 10)
+          vNumCollinROFinVz10[colIndex]++;
         vInROFcollIndex[colIndex] = thisBcInITSROF > bcInITSROF ? 0 : 1; // if colIndex is for the first coll in ROF => inROFindex=0, otherwise =1
 
         // if (vTracksITS567perColl[thisColIndex] > confNtracksCutVetoOnCollInROF)
@@ -883,13 +885,13 @@ struct RofOccupancyQaTask {
         } else if (dt > -4.0 && dt <= -2.0) { // us, strict veto to suppress fake ITS-TPC matches more
           if (vTracksITS567perColl[thisColIndex] > confNtracksCutVetoOnCollInTimeRange / 5)
             nITS567tracksForVetoStandard += vTracksITS567perColl[thisColIndex];
-        } else if (fabs(dt) < 10 + fabs(vZ) / driftV) { // loose veto, 8 us corresponds to maximum possible |vZ|, which is ~20 cm
+        } else if (fabs(dt) < 8 + fabs(vZ) / driftV) { // loose veto, 8 us corresponds to maximum possible |vZ|, which is ~20 cm
           // counting number of other collisions with mult above threshold
           if (vTracksITS567perColl[thisColIndex] > confNtracksCutVetoOnCollInTimeRange)
             nITS567tracksForVetoStandard += vTracksITS567perColl[thisColIndex];
         }
         // vZ-dependent time cut to avoid collinear tracks from other collisions (experimental)
-        if (fabs(dt) < 10 + fabs(vZ) / driftV) {
+        if (fabs(dt) < 8 + fabs(vZ) / driftV) {
           if (dt < 0) {
             // check distance between given vZ and (moving in two directions) vZ of drifting tracks from past collisions
             if ((fabs(vCollVz[thisColIndex] - fabs(dt) * driftV - vZ) < confEpsilonDistanceForVzDependentVetoTPC) ||

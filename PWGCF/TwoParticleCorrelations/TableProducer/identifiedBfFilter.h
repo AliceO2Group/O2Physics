@@ -34,8 +34,8 @@ namespace aod
 {
 using CollisionsEvSelCent = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentNTPVs>;
 using CollisionEvSelCent = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentNTPVs>::iterator;
-using CollisionsEvSelRun2Cent = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentRun2V0Ms, aod::CentRun2CL0s, aod::CentRun2CL1s>;
-using CollisionEvSelRun2Cent = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentRun2V0Ms, aod::CentRun2CL0s, aod::CentRun2CL1s>::iterator;
+using CollisionsEvSelRun2Cent = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentRun2V0Ms>;
+using CollisionEvSelRun2Cent = soa::Join<aod::Collisions, aod::Mults, aod::EvSels, aod::CentRun2V0Ms>::iterator;
 using CollisionsEvSel = soa::Join<aod::Collisions, aod::Mults, aod::EvSels>;
 using CollisionEvSel = soa::Join<aod::Collisions, aod::Mults, aod::EvSels>::iterator;
 using TrackData = soa::Join<aod::Tracks, aod::TracksCov, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>::iterator;
@@ -523,38 +523,60 @@ inline float extractMultiplicity(CollisionObject const& collision, CentMultEstim
 //////////////////////////////////////////////////////////////////////////////////
 /// \brief Centrality/multiplicity percentile
 template <typename CollisionObject>
-  requires(o2::aod::HasRun2Centrality<CollisionObject>)
 float getCentMultPercentile(CollisionObject collision)
 {
-  switch (fCentMultEstimator) {
-    case kV0M:
-      return collision.centRun2V0M();
-    case kCL0:
-      return collision.centRun2CL0();
-    case kCL1:
-      return collision.centRun2CL1();
-    default:
-      return 105.0;
-  }
-}
+  if constexpr (framework::has_type_v<aod::cent::CentRun2V0M, typename CollisionObject::all_columns> ||
+                framework::has_type_v<aod::cent::CentRun2CL0, typename CollisionObject::all_columns> ||
+                framework::has_type_v<aod::cent::CentRun2CL1, typename CollisionObject::all_columns>) {
+    switch (fCentMultEstimator) {
+      case kV0M:
+        return collision.centRun2V0M();
+        break;
+      case kCL0:
+        if constexpr (framework::has_type_v<aod::cent::CentRun2CL0, typename CollisionObject::all_columns>) {
+          return collision.centRun2CL0();
+        } else {
+          return 105.0;
+        }
+        break;
 
-template <typename CollisionObject>
-  requires(o2::aod::HasCentrality<CollisionObject>)
-float getCentMultPercentile(CollisionObject collision)
-{
-  switch (fCentMultEstimator) {
-    case kFV0A:
-      return collision.centFV0A();
-    case kFT0M:
-      return collision.centFT0M();
-    case kFT0A:
-      return collision.centFT0A();
-    case kFT0C:
-      return collision.centFT0C();
-    case kNTPV:
-      return collision.centNTPV();
-    default:
-      return 105.0;
+      case kCL1:
+        if constexpr (framework::has_type_v<aod::cent::CentRun2CL1, typename CollisionObject::all_columns>) {
+          return collision.centRun2CL1();
+        } else {
+          return 105.0;
+        }
+        break;
+      default:
+        return 105.0;
+        break;
+    }
+  }
+  if constexpr (framework::has_type_v<aod::cent::CentFV0A, typename CollisionObject::all_columns> ||
+                framework::has_type_v<aod::cent::CentFT0M, typename CollisionObject::all_columns> ||
+                framework::has_type_v<aod::cent::CentFT0A, typename CollisionObject::all_columns> ||
+                framework::has_type_v<aod::cent::CentFT0C, typename CollisionObject::all_columns> ||
+                framework::has_type_v<aod::cent::CentNTPV, typename CollisionObject::all_columns>) {
+    switch (fCentMultEstimator) {
+      case kFV0A:
+        return collision.centFV0A();
+        break;
+      case kFT0M:
+        return collision.centFT0M();
+        break;
+      case kFT0A:
+        return collision.centFT0A();
+        break;
+      case kFT0C:
+        return collision.centFT0C();
+        break;
+      case kNTPV:
+        return collision.centNTPV();
+        break;
+      default:
+        return 105.0;
+        break;
+    }
   }
 }
 

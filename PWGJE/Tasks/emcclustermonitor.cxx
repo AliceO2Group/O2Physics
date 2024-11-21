@@ -16,6 +16,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <numeric>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -75,6 +76,7 @@ struct ClusterMonitor {
 
   std::vector<int> mVetoBCIDs;
   std::vector<int> mSelectBCIDs;
+  std::vector<float> mCellTime;
 
   /// \brief Create output histograms and initialize geometry
   void init(InitContext const&)
@@ -94,6 +96,8 @@ struct ClusterMonitor {
     const o2Axis supermoduleAxis{20, -0.5, 19.5, "Supermodule ID"};
     o2Axis timeAxis{mClusterTimeBinning, "t_{cl} (ns)"};
     o2Axis numberClustersAxis{mNumberClusterBinning, "Number of clusters / event"};
+    const AxisSpec thAxisCellTimeDiff{3000, -1500, 1500, "#Delta#it{t}_{cell} (ns)"};
+    const AxisSpec thAxisCellTimeMean{1500, -600, 900, "#LT#it{t}_{cell}#GT (ns)"};
 
     // event properties
     mHistManager.add("eventsAll", "Number of events", o2HistType::kTH1F, {{1, 0.5, 1.5}});
@@ -121,6 +125,8 @@ struct ClusterMonitor {
     mHistManager.add("clusterDistanceToBadChannel", "Distance to bad channel", o2HistType::kTH1F, {{100, 0, 100}});
     mHistManager.add("clusterTimeVsE", "Cluster time vs energy", o2HistType::kTH2F, {timeAxis, energyAxis});
     mHistManager.add("clusterAmpFractionLeadingCell", "Fraction of energy in leading cell", o2HistType::kTH1F, {{100, 0, 1}});
+    mHistManager.add("clusterCellTimeDiff", "Cell time difference in clusters", o2HistType::kTH1D, {thAxisCellTimeDiff});
+    mHistManager.add("clusterCellTimeMean", "Mean cell time per cluster", o2HistType::kTH1D, {thAxisCellTimeMean});
 
     // add histograms per supermodule
     for (int ism = 0; ism < 20; ++ism) {
@@ -238,11 +244,20 @@ struct ClusterMonitor {
       auto cellsofcluster = emccluscells.sliceBy(perCluster, cluster.globalIndex());
       double maxamp = 0;
       double ampfraction = 0;
+      mCellTime.clear();
+      mCellTime.reserve(cellsofcluster.size());
       for (const auto& cell : cellsofcluster) {
         // example how to get any information of the cell associated with cluster
         LOG(debug) << "Cell ID:" << cell.calo().amplitude() << " Time " << cell.calo().time();
         if (cell.calo().amplitude() > maxamp) {
           maxamp = cell.calo().amplitude();
+        }
+        mCellTime.push_back(cell.calo().time());
+      } // end of loop over cells
+      mHistManager.fill(HIST("clusterCellTimeMean"), std::accumulate(mCellTime.begin(), mCellTime.end(), 0.0f) / mCellTime.size());
+      for (int iCell1 = 0; iCell1 < mCellTime.size() - 1; iCell1++) {
+        for (int iCell2 = iCell1 + 1; iCell2 < mCellTime.size(); iCell2++) {
+          mHistManager.fill(HIST("clusterCellTimeDiff"), mCellTime[iCell1] - mCellTime[iCell2]);
         }
       }
       ampfraction = maxamp / cluster.energy();
