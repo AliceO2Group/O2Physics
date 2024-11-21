@@ -117,6 +117,5 @@ struct hypertritonToHeliumMap {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<hypertritonToHeliumMap>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<he3FromHypertritonMap>(cfgc)};
 }
-
