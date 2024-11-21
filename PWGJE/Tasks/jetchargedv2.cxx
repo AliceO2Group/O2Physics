@@ -250,7 +250,6 @@ struct Jetchargedv2Task {
     AxisSpec axisEvtPl{360, -constants::math::PI, constants::math::PI};
 
     histosQA.add("histCent", "Centrality distribution for valid events", HistType::kTH1F, {axisCent});
-    histosQA.add("histCentTrkProcess", "Centrality distribution for valid events_TrkProcess", HistType::kTH1F, {axisCent});
     histosQA.add("histCentTrkProcess_aftersel", "Centrality distribution for valid events_TrkProcess after selection", HistType::kTH1F, {axisCent});
 
     for (uint i = 0; i < cfgnMods->size(); i++) {
@@ -308,18 +307,6 @@ struct Jetchargedv2Task {
                     soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets,
                     aod::JetTracks const& tracks)
   {
-    for (auto jet : jets) {
-      if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
-        continue;
-      }
-      if (!isAcceptedJet<aod::JetTracks>(jet)) {
-        continue;
-      }
-      if (jet.r() == round(selectedJetsRadius * 100.0f)) {
-        registry.fill(HIST("h_jet_pt_rhoareasubtracted"), jet.pt() - (collision.rho() * jet.area()), 1);
-      }
-    }
-
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
     }
@@ -396,6 +383,7 @@ struct Jetchargedv2Task {
           if (!isAcceptedJet<aod::JetTracks>(jet)) {
             continue;
           }
+          registry.fill(HIST("h_jet_pt_rhoareasubtracted"), jet.pt() - (collision.rho() * jet.area()), 1);
           if (jet.r() == round(selectedJetsRadius * 100.0f)) {
             registry.fill(HIST("h_jet_pt_in_out_plane_v2"), jet.pt() - (collision.rho() * jet.area()), 1.0);
           }
@@ -539,7 +527,7 @@ struct Jetchargedv2Task {
   void processTracksQA(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::Qvectors>>::iterator const& collision,
                        soa::Filtered<aod::JetTracks> const& tracks)
   {
-    histosQA.fill(HIST("histCentTrkProcess"), collision.centrality());
+    // histosQA.fill(HIST("histCentTrkProcess"), collision.centrality());
     registry.fill(HIST("h2_centrality_collisions"), collision.centrality(), 0.5);
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
