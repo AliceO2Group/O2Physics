@@ -549,7 +549,7 @@ struct HfTaskBplusReduced {
         }
         auto prong1 = candidate.template prong1_as<TracksPion>();
         float tpcNSigmaPi, tofNSigmaPi, tpcTofNSigmaPi, tpcNSigmaKa, tofNSigmaKa, tpcTofNSigmaKa;
-        if (prong1.signed1Pt() < 0){
+        if (prong1.signed1Pt() < 0) {
           tpcNSigmaPi = candD0.tpcNSigmaPiProng1();
           tofNSigmaPi = candD0.tofNSigmaPiProng1();
           tpcTofNSigmaPi = candD0.tpcTofNSigmaPiProng1();
