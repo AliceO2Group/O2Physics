@@ -622,7 +622,7 @@ struct FlowGFWOmegaXi {
           continue;
         PDGCode = kOmegaMinus;
         CandNum_all[3] = CandNum_all[3] + 1;
-      } else if (casc.sign() < 0 && TMath::Abs(casc.yXi()) < cfgCasc_rapidity && TMath::Abs(bachelor.tpcNSigmaPi()) < cfgNSigmaCascPion && TMath::Abs(posdau.tpcNSigmaPr()) < cfgNSigmaCascProton && TMath::Abs(negdau.tpcNSigmaPi() ) < cfgNSigmaCascPion && TMath::Abs(bachelor.tofNSigmaPi()) < cfgNSigmaCascPion && TMath::Abs(posdau.tofNSigmaPr()) < cfgNSigmaCascProton && TMath::Abs(negdau.tofNSigmaPi()) < cfgNSigmaCascPion) {
+      } else if (casc.sign() < 0 && TMath::Abs(casc.yXi()) < cfgCasc_rapidity && TMath::Abs(bachelor.tpcNSigmaPi()) < cfgNSigmaCascPion && TMath::Abs(posdau.tpcNSigmaPr()) < cfgNSigmaCascProton && TMath::Abs(negdau.tpcNSigmaPi()) < cfgNSigmaCascPion && TMath::Abs(bachelor.tofNSigmaPi()) < cfgNSigmaCascPion && TMath::Abs(posdau.tofNSigmaPr()) < cfgNSigmaCascProton && TMath::Abs(negdau.tofNSigmaPi()) < cfgNSigmaCascPion) {
         registry.fill(HIST("InvMassXiMinus_all"), casc.pt(), casc.mXi(), casc.eta(), cent);
         if (!setCurrentParticleWeights(weff, wacc, casc, vtxz, 3))
           continue;
