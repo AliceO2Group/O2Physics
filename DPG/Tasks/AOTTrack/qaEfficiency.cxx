@@ -786,7 +786,7 @@ struct QaEfficiency {
       histos.add("Data/occ_cent/pos/its", "ITS Positive ", kTH3D, {axisOcc, axisCent, axisPt});
       histos.add("Data/occ_cent/neg/its", "ITS Negative ", kTH3D, {axisOcc, axisCent, axisPt});
     }
-  
+
     // ITS-TPC-TOF
     histos.add("Data/pos/pt/its_tpc_tof", "ITS-TPC-TOF Positive " + tagPt, kTH1D, {axisPt});
     histos.add("Data/neg/pt/its_tpc_tof", "ITS-TPC-TOF Negative " + tagPt, kTH1D, {axisPt});
@@ -838,7 +838,7 @@ struct QaEfficiency {
 
     histos.add("Data/pos/etaphi/its", "ITS Positive " + tagEtaPhi, kTH2D, {axisEta, axisPhi});
     histos.add("Data/neg/etaphi/its", "ITS Negative " + tagEtaPhi, kTH2D, {axisEta, axisPhi});
-  
+
     // HMPID
     if (doprocessHmpid) {
       histos.add("Data/pos/hmpidMomDiff", "HMPID Positive Momentum difference", kTH1D, {{100, -10, 10, "#it{p} - #it{p}_{HMPID} (GeV/#it{c})"}});
@@ -1682,13 +1682,13 @@ struct QaEfficiency {
       collMult = collision.numContrib();
 
       if (collMult > multiplicity) {
-        if (useFT0OccEstimator) {  
+        if (useFT0OccEstimator) {
           /// occupancy estimator (FT0c signal amplitudes in +-10us from current collision)
           occupancy = collision.ft0cOccupancyInTimeRange();
         } else {
           /// occupancy estimator (ITS tracks with at least 5 clusters in +-10us from current collision)
           occupancy = static_cast<float>(collision.trackOccupancyInTimeRange());
-        } 
+        }
         multiplicity = collMult;
       }
     } // end loop over collisions
@@ -1743,7 +1743,7 @@ struct QaEfficiency {
         continue;
       }
       float centrality = -1.;
-      float occupancy = -1.; 
+      float occupancy = -1.;
       if (doOccupancy) {
         centrality = getCentralityColl(groupedCollisions);
         occupancy = getOccupancyColl(groupedCollisions);
@@ -1774,7 +1774,7 @@ struct QaEfficiency {
           continue;
         }
         histos.fill(HIST("MC/generatedCollisions"), 5);
-        if (useFT0OccEstimator) {  
+        if (useFT0OccEstimator) {
           /// occupancy estimator (FT0c signal amplitudes in +-10us from current collision)
           occupancy = collision.ft0cOccupancyInTimeRange();
         } else {
@@ -1797,11 +1797,11 @@ struct QaEfficiency {
           if (keepOnlyHfParticles && !RecoDecay::getCharmHadronOrigin(mcParticles, particle, /*searchUpToQuark*/ true)) {
             continue;
           }
-  
+
           if (doOccupancy) {
             float trackPt = track.pt();
             float trackSign = track.sign();
-            if (trackSign > 0) { 
+            if (trackSign > 0) {
               if (passedTOF && passedTPC && passedITS) {
                 histos.fill(HIST("MC/occ_cent/reco/pos/its_tpc_tof"), occupancy, centrality, trackPt);
               }
@@ -1812,7 +1812,7 @@ struct QaEfficiency {
                 histos.fill(HIST("MC/occ_cent/reco/pos/its"), occupancy, centrality, trackPt);
               }
             }
-            if (trackSign < 0) { 
+            if (trackSign < 0) {
               if (passedTOF && passedTPC && passedITS) {
                 histos.fill(HIST("MC/occ_cent/reco/neg/its_tpc_tof"), occupancy, centrality, trackPt);
               }
@@ -1822,7 +1822,7 @@ struct QaEfficiency {
               if (passedITS) {
                 histos.fill(HIST("MC/occ_cent/reco/neg/its"), occupancy, centrality, trackPt);
               }
-            } 
+            }
           }
 
           // Filling variable histograms
@@ -1871,12 +1871,12 @@ struct QaEfficiency {
           if (doOccupancy) {
             float partSign = particle.pdgCode();
             float mcPartPt = particle.pt();
-            if (partSign > 0) { 
+            if (partSign > 0) {
               histos.fill(HIST("MC/occ_cent/gen/pos"), occupancy, centrality, mcPartPt);
             }
             if (partSign < 0) {
               histos.fill(HIST("MC/occ_cent/gen/neg"), occupancy, centrality, mcPartPt);
-            } 
+            }
           }
 
           static_for<0, 1>([&](auto pdgSign) {
@@ -2055,14 +2055,14 @@ struct QaEfficiency {
       }
 
       histos.fill(HIST("Data/trackLength"), track.length());
-      
+
       float trackPt = track.pt();
       float trackEta = track.eta();
       float trackPhi = track.phi();
       float trackSign = track.sign();
       float occupancy;
       if (doOccupancy) {
-        if (useFT0OccEstimator) {  
+        if (useFT0OccEstimator) {
           /// occupancy estimator (FT0c signal amplitudes in +-10us from current collision)
           occupancy = collision.ft0cOccupancyInTimeRange();
         } else {
@@ -2076,7 +2076,7 @@ struct QaEfficiency {
           histos.fill(HIST("Data/pos/eta/its"), trackEta);
           histos.fill(HIST("Data/pos/phi/its"), trackPhi);
           histos.fill(HIST("Data/pos/etaphi/its"), trackEta, trackPhi);
-          
+
           if (doOccupancy) {
             histos.fill(HIST("Data/occ_cent/pos/its"), occupancy, collision.centFT0C(), trackPt);
           }
@@ -2085,7 +2085,7 @@ struct QaEfficiency {
           histos.fill(HIST("Data/neg/eta/its"), trackEta);
           histos.fill(HIST("Data/neg/phi/its"), trackPhi);
           histos.fill(HIST("Data/neg/etaphi/its"), trackEta, trackPhi);
-          
+
           if (doOccupancy) {
             histos.fill(HIST("Data/occ_cent/neg/its"), occupancy, collision.centFT0C(), trackPt);
           }
@@ -2098,7 +2098,7 @@ struct QaEfficiency {
           histos.fill(HIST("Data/pos/eta/tpc"), trackEta);
           histos.fill(HIST("Data/pos/phi/tpc"), trackPhi);
           histos.fill(HIST("Data/pos/etaphi/tpc"), trackEta, trackPhi);
-          
+
           if (doOccupancy) {
             histos.fill(HIST("Data/occ_cent/pos/tpc"), occupancy, collision.centFT0C(), trackPt);
           }
@@ -2107,7 +2107,7 @@ struct QaEfficiency {
           histos.fill(HIST("Data/neg/eta/tpc"), trackEta);
           histos.fill(HIST("Data/neg/phi/tpc"), trackPhi);
           histos.fill(HIST("Data/neg/etaphi/tpc"), trackEta, trackPhi);
-          
+
           if (doOccupancy) {
             histos.fill(HIST("Data/occ_cent/neg/tpc"), occupancy, collision.centFT0C(), trackPt);
           }
@@ -2120,7 +2120,7 @@ struct QaEfficiency {
           histos.fill(HIST("Data/pos/eta/its_tpc"), trackEta);
           histos.fill(HIST("Data/pos/phi/its_tpc"), trackPhi);
           histos.fill(HIST("Data/pos/etaphi/its_tpc"), trackEta, trackPhi);
-          
+
           if (doOccupancy) {
             histos.fill(HIST("Data/occ_cent/pos/its_tpc"), occupancy, collision.centFT0C(), trackPt);
           }
