@@ -42,7 +42,7 @@ using namespace o2::framework::expressions;
 // The standalone jfluc code expects the entire list of tracks for an event. At the same time, it expects weights together with other track attributes.
 // This workflow creates a table of weights that can be joined with track tables.
 struct jflucWeightsLoader {
-  O2_DEFINE_CONFIGURABLE(pathPhiWeights, std::string, "local:///home/maxim/Documents/Work/SPC_Run3/Run3_test_data/corrections/correction_LHC23zzh_pass3_v4.root", "Local (local://) or CCDB path for the phi acceptance correction histogram");
+  O2_DEFINE_CONFIGURABLE(pathPhiWeights, std::string, "local:///home/maxim/Documents/Work/Run3_local/corrections/correction_LHC23zzh_pass4-local.root", "Local (local://) or CCDB path for the phi acceptance correction histogram");
 
   THnF* ph = 0;
   TFile* pf = 0;
