@@ -66,8 +66,8 @@ struct ThreePartCorr {
   using MyFilteredMCParticles = soa::Filtered<aod::McParticles>;
   using MyFilteredMCRecCollision = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>>::iterator;
   using MyFilteredMCTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::McTrackLabels,
-						     aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr,
-						     aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFbeta>>;
+                                                     aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr,
+                                                     aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFbeta>>;
 
   // Mixed-events binning policy
   SliceCache cache;
@@ -320,8 +320,8 @@ struct ThreePartCorr {
     for (const auto& particle : particles) {
       if (particle.isPhysicalPrimary()) {
 
-	// Efficiency - Generated
-	MCRegistry.fill(HIST("hGenerated"), particle.pt());
+        // Efficiency - Generated
+        MCRegistry.fill(HIST("hGenerated"), particle.pt());
         if (particle.pdgCode() == kPiPlus) { // Pos pions
           MCRegistry.fill(HIST("hGenPionP"), particle.pt());
         } else if (particle.pdgCode() == kPiMinus) { // Neg pions
@@ -356,8 +356,8 @@ struct ThreePartCorr {
       auto particle = track.mcParticle();
       if (particle.isPhysicalPrimary()) {
 
-	// Efficiency - Reconstructed
-	MCRegistry.fill(HIST("hReconstructed"), track.pt());
+        // Efficiency - Reconstructed
+        MCRegistry.fill(HIST("hReconstructed"), track.pt());
         if (particle.pdgCode() == kPiPlus) { // Pos pions
           MCRegistry.fill(HIST("hRecPionP"), track.pt());
         } else if (particle.pdgCode() == kPiMinus) { // Neg pions
@@ -372,46 +372,46 @@ struct ThreePartCorr {
           MCRegistry.fill(HIST("hRecProtonN"), track.pt());
         }
 
-	// Purity
-	A_PID = TrackPID(track);
-	if (A_PID[1] < 4.0) {
-	  
-	  if (track.sign() > 0) { // Positive tracks
-	    if (A_PID[0] == 0.0) { // Pions
-	      MCRegistry.fill(HIST("hSelectPionP"), track.pt());
-	      if (particle.pdgCode() == kPiPlus) {
-		MCRegistry.fill(HIST("hTrueSelectPionP"), track.pt());
-	      }
-	    } else if (A_PID[0] == 1.0) { // Kaons
-	      MCRegistry.fill(HIST("hSelectKaonP"), track.pt());
-	      if (particle.pdgCode() == kKPlus) {
-		MCRegistry.fill(HIST("hTrueSelectKaonP"), track.pt());
-	      }
-	    } else if (A_PID[0] == 2.0) { // Protons
-	      MCRegistry.fill(HIST("hSelectProtonP"), track.pt());
-	      if (particle.pdgCode() == kProton) {
-		MCRegistry.fill(HIST("hTrueSelectProtonP"), track.pt());
-	      }
-	    }	      
-	  } else if (track.sign() < 0) { // Negative tracks
-	    if (A_PID[0] == 0.0) { // Pions
-	      MCRegistry.fill(HIST("hSelectPionN"), track.pt());
-	      if (particle.pdgCode() == kPiMinus) {
-		MCRegistry.fill(HIST("hTrueSelectPionN"), track.pt());
-	      }
-	    } else if (A_PID[0] == 1.0) { // Kaons
-	      MCRegistry.fill(HIST("hSelectKaonN"), track.pt());
-	      if (particle.pdgCode() == kKMinus) {
-		MCRegistry.fill(HIST("hTrueSelectKaonN"), track.pt());
-	      }
-	    } else if (A_PID[0] == 2.0) { // Protons
-	      MCRegistry.fill(HIST("hSelectProtonN"), track.pt());
-	      if (particle.pdgCode() == kProtonBar) {
-		MCRegistry.fill(HIST("hTrueSelectProtonN"), track.pt());
-	      }
-	    }
-	  }
-	}
+        // Purity
+        A_PID = TrackPID(track);
+        if (A_PID[1] < 4.0) {
+
+          if (track.sign() > 0) {  // Positive tracks
+            if (A_PID[0] == 0.0) { // Pions
+              MCRegistry.fill(HIST("hSelectPionP"), track.pt());
+              if (particle.pdgCode() == kPiPlus) {
+                MCRegistry.fill(HIST("hTrueSelectPionP"), track.pt());
+              }
+            } else if (A_PID[0] == 1.0) { // Kaons
+              MCRegistry.fill(HIST("hSelectKaonP"), track.pt());
+              if (particle.pdgCode() == kKPlus) {
+                MCRegistry.fill(HIST("hTrueSelectKaonP"), track.pt());
+              }
+            } else if (A_PID[0] == 2.0) { // Protons
+              MCRegistry.fill(HIST("hSelectProtonP"), track.pt());
+              if (particle.pdgCode() == kProton) {
+                MCRegistry.fill(HIST("hTrueSelectProtonP"), track.pt());
+              }
+            }
+          } else if (track.sign() < 0) { // Negative tracks
+            if (A_PID[0] == 0.0) {       // Pions
+              MCRegistry.fill(HIST("hSelectPionN"), track.pt());
+              if (particle.pdgCode() == kPiMinus) {
+                MCRegistry.fill(HIST("hTrueSelectPionN"), track.pt());
+              }
+            } else if (A_PID[0] == 1.0) { // Kaons
+              MCRegistry.fill(HIST("hSelectKaonN"), track.pt());
+              if (particle.pdgCode() == kKMinus) {
+                MCRegistry.fill(HIST("hTrueSelectKaonN"), track.pt());
+              }
+            } else if (A_PID[0] == 2.0) { // Protons
+              MCRegistry.fill(HIST("hSelectProtonN"), track.pt());
+              if (particle.pdgCode() == kProtonBar) {
+                MCRegistry.fill(HIST("hTrueSelectProtonN"), track.pt());
+              }
+            }
+          }
+        }
       }
     }
     // End of the Monte-Carlo reconstructed QA
