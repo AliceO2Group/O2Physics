@@ -291,6 +291,7 @@ struct QaEfficiency {
     const AxisSpec axisY{yBins, "#it{y}"};
     const AxisSpec axisPhi{phiBins, "#it{#varphi} (rad)"};
     const AxisSpec axisRadius{radiusBins, "Radius (cm)"};
+    const AxisSpec axisOcc{occBins, "Occupancy"};
 
     const char* partName = particleName(pdgSign, id);
     LOG(info) << "Preparing histograms for particle: " << partName << " pdgSign " << pdgSign;
@@ -630,6 +631,32 @@ struct QaEfficiency {
 
     listEfficiencyMC.setObject(new THashList);
 
+    if (doOccupancy) {
+      const AxisSpec axisPt{ptBins, "#it{p}_{T} (GeV/#it{c})"};
+      const AxisSpec axisOcc{occBins, "Occupancy"};
+      const AxisSpec axisCent{centBins, "Centrality"};
+
+      histos.add("MC/occ/gen/pos", "Generated Positive ", kTH2D, {axisOcc, axisPt});
+      histos.add("MC/cent/gen/pos", "Generated Positive ", kTH2D, {axisCent, axisPt});
+      histos.add("MC/occ/gen/neg", "Generated Negative ", kTH2D, {axisOcc, axisPt});
+      histos.add("MC/cent/gen/neg", "Generated Negative ", kTH2D, {axisCent, axisPt});
+
+      histos.add("MC/occ/reco/pos/its_tpc_tof", "ITS-TPC-TOF Positive ", kTH2D, {axisOcc, axisPt});
+      histos.add("MC/cent/reco/pos/its_tpc_tof", "ITS-TPC-TOF Positive ", kTH2D, {axisCent, axisPt});
+      histos.add("MC/occ/reco/neg/its_tpc_tof", "ITS-TPC-TOF Negative ", kTH2D, {axisOcc, axisPt});
+      histos.add("MC/cent/reco/neg/its_tpc_tof", "ITS-TPC-TOF Negative ", kTH2D, {axisCent, axisPt});
+
+      histos.add("MC/occ/reco/pos/its_tpc", "ITS-TPC Positive ", kTH2D, {axisOcc, axisPt});
+      histos.add("MC/cent/reco/pos/its_tpc", "ITS-TPC Positive ", kTH2D, {axisCent, axisPt});
+      histos.add("MC/occ/reco/neg/its_tpc", "ITS-TPC Negative ", kTH2D, {axisOcc, axisPt});
+      histos.add("MC/cent/reco/neg/its_tpc", "ITS-TPC Negative ", kTH2D, {axisCent, axisPt});
+
+      histos.add("MC/occ/reco/pos/its", "ITS Positive ", kTH2D, {axisOcc, axisPt});
+      histos.add("MC/cent/reco/pos/its", "ITS Positive ", kTH2D, {axisCent, axisPt});
+      histos.add("MC/occ/reco/neg/its", "ITS Negative ", kTH2D, {axisOcc, axisPt});
+      histos.add("MC/cent/reco/neg/its", "ITS Negative ", kTH2D, {axisCent, axisPt});
+    }
+
     static_for<0, 1>([&](auto pdgSign) {
       makeMCHistograms<pdgSign, o2::track::PID::Electron>(doEl);
       makeMCHistograms<pdgSign, o2::track::PID::Muon>(doMu);
@@ -757,6 +784,13 @@ struct QaEfficiency {
 
     histos.add("Data/pos/etaphi/its_tpc_tof", "ITS-TPC-TOF Positive " + tagEtaPhi, kTH2D, {axisEta, axisPhi});
     histos.add("Data/neg/etaphi/its_tpc_tof", "ITS-TPC-TOF Negative " + tagEtaPhi, kTH2D, {axisEta, axisPhi});
+  
+    if (doOccupancy) {
+      histos.add("Data/occ/pos/its_tpc_tof", "ITS-TPC-TOF Positive ", kTH2D, {axisOcc, axisPt});
+      histos.add("Data/cent/pos/its_tpc_tof", "ITS-TPC-TOF Positive ", kTH2D, {axisCent, axisPt});
+      histos.add("Data/occ/neg/its_tpc_tof", "ITS-TPC-TOF Negative ", kTH2D, {axisOcc, axisPt});
+      histos.add("Data/cent/neg/its_tpc_tof", "ITS-TPC-TOF Negative ", kTH2D, {axisCent, axisPt});
+    }
 
     // ITS-TPC
     histos.add("Data/pos/pt/its_tpc", "ITS-TPC Positive " + tagPt, kTH1D, {axisPt});
@@ -771,6 +805,13 @@ struct QaEfficiency {
     histos.add("Data/pos/etaphi/its_tpc", "ITS-TPC Positive " + tagEtaPhi, kTH2D, {axisEta, axisPhi});
     histos.add("Data/neg/etaphi/its_tpc", "ITS-TPC Negative " + tagEtaPhi, kTH2D, {axisEta, axisPhi});
 
+    if (doOccupancy) {
+      histos.add("Data/occ/pos/its_tpc", "ITS-TPC Positive ", kTH2D, {axisOcc, axisPt});
+      histos.add("Data/cent/pos/its_tpc", "ITS-TPC Positive ", kTH2D, {axisCent, axisPt});
+      histos.add("Data/occ/neg/its_tpc", "ITS-TPC Negative ", kTH2D, {axisOcc, axisPt});
+      histos.add("Data/cent/neg/its_tpc", "ITS-TPC Negative ", kTH2D, {axisCent, axisPt});
+    }
+
     // TPC
     histos.add("Data/pos/pt/tpc", "TPC Positive " + tagPt, kTH1D, {axisPt});
     histos.add("Data/neg/pt/tpc", "TPC Negative " + tagPt, kTH1D, {axisPt});
@@ -784,6 +825,13 @@ struct QaEfficiency {
     histos.add("Data/pos/etaphi/tpc", "TPC Positive " + tagEtaPhi, kTH2D, {axisEta, axisPhi});
     histos.add("Data/neg/etaphi/tpc", "TPC Negative " + tagEtaPhi, kTH2D, {axisEta, axisPhi});
 
+    if (doOccupancy) {
+      histos.add("Data/occ/pos/tpc", "TPC Positive ", kTH2D, {axisOcc, axisPt});
+      histos.add("Data/cent/pos/tpc", "TPC Positive ", kTH2D, {axisCent, axisPt});
+      histos.add("Data/occ/neg/tpc", "TPC Negative ", kTH2D, {axisOcc, axisPt});
+      histos.add("Data/cent/neg/tpc", "TPC Negative ", kTH2D, {axisCent, axisPt});
+    }
+
     // ITS
     histos.add("Data/pos/pt/its", "ITS Positive " + tagPt, kTH1D, {axisPt});
     histos.add("Data/neg/pt/its", "ITS Negative " + tagPt, kTH1D, {axisPt});
@@ -796,6 +844,13 @@ struct QaEfficiency {
 
     histos.add("Data/pos/etaphi/its", "ITS Positive " + tagEtaPhi, kTH2D, {axisEta, axisPhi});
     histos.add("Data/neg/etaphi/its", "ITS Negative " + tagEtaPhi, kTH2D, {axisEta, axisPhi});
+  
+    if (doOccupancy) {
+      histos.add("Data/occ/pos/its", "ITS Positive ", kTH2D, {axisOcc, axisPt});
+      histos.add("Data/cent/pos/its", "ITS Positive ", kTH2D, {axisCent, axisPt});
+      histos.add("Data/occ/neg/its", "ITS Negative ", kTH2D, {axisOcc, axisPt});
+      histos.add("Data/cent/neg/its", "ITS Negative ", kTH2D, {axisCent, axisPt});
+    }
 
     // HMPID
     if (doprocessHmpid) {
@@ -1693,6 +1748,39 @@ struct QaEfficiency {
           if (keepOnlyHfParticles && !RecoDecay::getCharmHadronOrigin(mcParticles, particle, /*searchUpToQuark*/ true)) {
             continue;
           }
+  
+          if (doOccupancy) {
+            float trackPt = track.pt();
+            float trackSign = track.sign();
+            if (trackSign > 0) { 
+              if (passedTOF && passedTPC && passedITS) {
+                histos.fill(HIST("MC/cent/reco/pos/its_tpc_tof"), centrality, trackPt);
+                histos.fill(HIST("MC/occ/reco/pos/its_tpc_tof"), occupancy, trackPt);
+              }
+              if (passedTPC && passedITS) {
+                histos.fill(HIST("MC/cent/reco/pos/its_tpc"), centrality, trackPt);
+                histos.fill(HIST("MC/occ/reco/pos/its_tpc"), occupancy, trackPt);
+              }
+              if (passedITS) {
+                histos.fill(HIST("MC/cent/reco/pos/its"), centrality, trackPt);
+                histos.fill(HIST("MC/occ/reco/pos/its"), occupancy, trackPt);
+              }
+            }
+            if (trackSign < 0) { 
+              if (passedTOF && passedTPC && passedITS) {
+                histos.fill(HIST("MC/cent/reco/neg/its_tpc_tof"), centrality, trackPt);
+                histos.fill(HIST("MC/occ/reco/neg/its_tpc_tof"), occupancy, trackPt);
+              }
+              if (passedTPC && passedITS) {
+                histos.fill(HIST("MC/cent/reco/neg/its_tpc"), centrality, trackPt);
+                histos.fill(HIST("MC/occ/reco/neg/its_tpc"), occupancy, trackPt);
+              }
+              if (passedITS) {
+                histos.fill(HIST("MC/cent/reco/neg/its"), centrality, trackPt);
+                histos.fill(HIST("MC/occ/reco/neg/its"), occupancy, trackPt);
+              }
+            } 
+          }
 
           // Filling variable histograms
           histos.fill(HIST("MC/trackLength"), track.length());
@@ -1735,6 +1823,19 @@ struct QaEfficiency {
           // search for particles from HF decays
           if (keepOnlyHfParticles && !RecoDecay::getCharmHadronOrigin(mcParticles, particle, /*searchUpToQuark*/ true)) {
             continue;
+          }
+
+          if (doOccupancy) {
+            float trackSign = particle.pdgCode();
+            float mcPartPt = particle.pt();
+            if (trackSign > 0) { 
+              histos.fill(HIST("MC/cent/gen/pos"), centrality, mcPartPt);
+              histos.fill(HIST("MC/occ/gen/pos"), occupancy, mcPartPt);
+            }
+            if (trackSign < 0) { 
+              histos.fill(HIST("MC/cent/gen/neg"), centrality, mcPartPt);
+              histos.fill(HIST("MC/occ/gen/neg"), occupancy, mcPartPt);
+            } 
           }
 
           static_for<0, 1>([&](auto pdgSign) {
@@ -1915,58 +2016,162 @@ struct QaEfficiency {
       histos.fill(HIST("Data/trackLength"), track.length());
 
       if (passedITS) {
-        if (track.sign() > 0) {
-          histos.fill(HIST("Data/pos/pt/its"), track.pt());
-          histos.fill(HIST("Data/pos/eta/its"), track.eta());
-          histos.fill(HIST("Data/pos/phi/its"), track.phi());
-          histos.fill(HIST("Data/pos/etaphi/its"), track.eta(), track.phi());
+        if (trackSign > 0) {
+          histos.fill(HIST("Data/pos/pt/its"), trackPt);
+          histos.fill(HIST("Data/pos/eta/its"), trackEta);
+          histos.fill(HIST("Data/pos/phi/its"), trackPhi);
+          histos.fill(HIST("Data/pos/etaphi/its"), trackEta, trackPhi);
+          
+          if (doOccupancy) {
+            float occupancy;
+            if (useFT0OccEstimator) {  
+              /// occupancy estimator (FT0c signal amplitudes in +-10us from current collision)
+              occupancy = collision.ft0cOccupancyInTimeRange();
+            } else {
+              /// occupancy estimator (ITS tracks with at least 5 clusters in +-10us from current collision)
+              occupancy = static_cast<float>(collision.trackOccupancyInTimeRange());
+            } 
+            histos.fill(HIST("Data/occ/pos/its"), occupancy, trackPt);
+            histos.fill(HIST("Data/cent/pos/its"), collision.centFT0C(), trackPt);
+          }
         } else {
-          histos.fill(HIST("Data/neg/pt/its"), track.pt());
-          histos.fill(HIST("Data/neg/eta/its"), track.eta());
-          histos.fill(HIST("Data/neg/phi/its"), track.phi());
-          histos.fill(HIST("Data/neg/etaphi/its"), track.eta(), track.phi());
+          histos.fill(HIST("Data/neg/pt/its"), trackPt);
+          histos.fill(HIST("Data/neg/eta/its"), trackEta);
+          histos.fill(HIST("Data/neg/phi/its"), trackPhi);
+          histos.fill(HIST("Data/neg/etaphi/its"), trackEta, trackPhi);
+          
+          if (doOccupancy) {
+            float occupancy;
+            if (useFT0OccEstimator) {  
+              /// occupancy estimator (FT0c signal amplitudes in +-10us from current collision)
+              occupancy = collision.ft0cOccupancyInTimeRange();
+            } else {
+              /// occupancy estimator (ITS tracks with at least 5 clusters in +-10us from current collision)
+              occupancy = static_cast<float>(collision.trackOccupancyInTimeRange());
+            } 
+            histos.fill(HIST("Data/occ/neg/its"), occupancy, trackPt);
+            histos.fill(HIST("Data/cent/neg/its"), collision.centFT0C(), trackPt);
+          }
         }
       }
 
       if (passedTPC) {
-        if (track.sign() > 0) {
-          histos.fill(HIST("Data/pos/pt/tpc"), track.pt());
-          histos.fill(HIST("Data/pos/eta/tpc"), track.eta());
-          histos.fill(HIST("Data/pos/phi/tpc"), track.phi());
-          histos.fill(HIST("Data/pos/etaphi/tpc"), track.eta(), track.phi());
+        if (trackSign > 0) {
+          histos.fill(HIST("Data/pos/pt/tpc"), trackPt);
+          histos.fill(HIST("Data/pos/eta/tpc"), trackEta);
+          histos.fill(HIST("Data/pos/phi/tpc"), trackPhi);
+          histos.fill(HIST("Data/pos/etaphi/tpc"), trackEta, trackPhi);
+          
+          if (doOccupancy) {
+            float occupancy;
+            if (useFT0OccEstimator) {  
+              /// occupancy estimator (FT0c signal amplitudes in +-10us from current collision)
+              occupancy = collision.ft0cOccupancyInTimeRange();
+            } else {
+              /// occupancy estimator (ITS tracks with at least 5 clusters in +-10us from current collision)
+              occupancy = static_cast<float>(collision.trackOccupancyInTimeRange());
+            } 
+            histos.fill(HIST("Data/occ/pos/tpc"), occupancy, trackPt);
+            histos.fill(HIST("Data/cent/pos/tpc"), collision.centFT0C(), trackPt);
+          }
         } else {
-          histos.fill(HIST("Data/neg/pt/tpc"), track.pt());
-          histos.fill(HIST("Data/neg/eta/tpc"), track.eta());
-          histos.fill(HIST("Data/neg/phi/tpc"), track.phi());
-          histos.fill(HIST("Data/neg/etaphi/tpc"), track.eta(), track.phi());
+          histos.fill(HIST("Data/neg/pt/tpc"), trackPt);
+          histos.fill(HIST("Data/neg/eta/tpc"), trackEta);
+          histos.fill(HIST("Data/neg/phi/tpc"), trackPhi);
+          histos.fill(HIST("Data/neg/etaphi/tpc"), trackEta, trackPhi);
+          
+          if (doOccupancy) {
+            float occupancy;
+            if (useFT0OccEstimator) {  
+              /// occupancy estimator (FT0c signal amplitudes in +-10us from current collision)
+              occupancy = collision.ft0cOccupancyInTimeRange();
+            } else {
+              /// occupancy estimator (ITS tracks with at least 5 clusters in +-10us from current collision)
+              occupancy = static_cast<float>(collision.trackOccupancyInTimeRange());
+            } 
+            histos.fill(HIST("Data/occ/neg/tpc"), occupancy, trackPt);
+            histos.fill(HIST("Data/cent/neg/tpc"), collision.centFT0C(), trackPt);
+          }
         }
       }
 
       if (passedITS && passedTPC) {
-        if (track.sign() > 0) {
-          histos.fill(HIST("Data/pos/pt/its_tpc"), track.pt());
-          histos.fill(HIST("Data/pos/eta/its_tpc"), track.eta());
-          histos.fill(HIST("Data/pos/phi/its_tpc"), track.phi());
-          histos.fill(HIST("Data/pos/etaphi/its_tpc"), track.eta(), track.phi());
+        if (trackSign > 0) {
+          histos.fill(HIST("Data/pos/pt/its_tpc"), trackPt);
+          histos.fill(HIST("Data/pos/eta/its_tpc"), trackEta);
+          histos.fill(HIST("Data/pos/phi/its_tpc"), trackPhi);
+          histos.fill(HIST("Data/pos/etaphi/its_tpc"), trackEta, trackPhi);
+          
+          if (doOccupancy) {
+            float occupancy;
+            if (useFT0OccEstimator) {  
+              /// occupancy estimator (FT0c signal amplitudes in +-10us from current collision)
+              occupancy = collision.ft0cOccupancyInTimeRange();
+            } else {
+              /// occupancy estimator (ITS tracks with at least 5 clusters in +-10us from current collision)
+              occupancy = static_cast<float>(collision.trackOccupancyInTimeRange());
+            } 
+            histos.fill(HIST("Data/occ/pos/its_tpc"), occupancy, trackPt);
+            histos.fill(HIST("Data/cent/pos/its_tpc"), collision.centFT0C(), trackPt);
+          }
         } else {
-          histos.fill(HIST("Data/neg/pt/its_tpc"), track.pt());
-          histos.fill(HIST("Data/neg/eta/its_tpc"), track.eta());
-          histos.fill(HIST("Data/neg/phi/its_tpc"), track.phi());
-          histos.fill(HIST("Data/neg/etaphi/its_tpc"), track.eta(), track.phi());
+          histos.fill(HIST("Data/neg/pt/its_tpc"), trackPt);
+          histos.fill(HIST("Data/neg/eta/its_tpc"), trackEta);
+          histos.fill(HIST("Data/neg/phi/its_tpc"), trackPhi);
+          histos.fill(HIST("Data/neg/etaphi/its_tpc"), trackEta, trackPhi);
+
+          if (doOccupancy) {
+            float occupancy;
+            if (useFT0OccEstimator) {  
+              /// occupancy estimator (FT0c signal amplitudes in +-10us from current collision)
+              occupancy = collision.ft0cOccupancyInTimeRange();
+            } else {
+              /// occupancy estimator (ITS tracks with at least 5 clusters in +-10us from current collision)
+              occupancy = static_cast<float>(collision.trackOccupancyInTimeRange());
+            } 
+            histos.fill(HIST("Data/occ/pos/its_tpc"), occupancy, trackPt);
+            histos.fill(HIST("Data/cent/pos/its_tpc"), collision.centFT0C(), trackPt);
+          }
         }
       }
 
       if (passedITS && passedTPC && passedTOF) {
-        if (track.sign() > 0) {
-          histos.fill(HIST("Data/pos/pt/its_tpc_tof"), track.pt());
-          histos.fill(HIST("Data/pos/eta/its_tpc_tof"), track.eta());
-          histos.fill(HIST("Data/pos/phi/its_tpc_tof"), track.phi());
-          histos.fill(HIST("Data/pos/etaphi/its_tpc_tof"), track.eta(), track.phi());
+        if (trackSign > 0) {
+          histos.fill(HIST("Data/pos/pt/its_tpc_tof"), trackPt);
+          histos.fill(HIST("Data/pos/eta/its_tpc_tof"), trackEta);
+          histos.fill(HIST("Data/pos/phi/its_tpc_tof"), trackPhi);
+          histos.fill(HIST("Data/pos/etaphi/its_tpc_tof"), trackEta, trackPhi);
+
+          if (doOccupancy) {
+            float occupancy;
+            if (useFT0OccEstimator) {  
+              /// occupancy estimator (FT0c signal amplitudes in +-10us from current collision)
+              occupancy = collision.ft0cOccupancyInTimeRange();
+            } else {
+              /// occupancy estimator (ITS tracks with at least 5 clusters in +-10us from current collision)
+              occupancy = static_cast<float>(collision.trackOccupancyInTimeRange());
+            } 
+            histos.fill(HIST("Data/occ/pos/its_tpc_tof"), occupancy, trackPt);
+            histos.fill(HIST("Data/cent/pos/its_tpc_tof"), collision.centFT0C(), trackPt);
+          }
         } else {
-          histos.fill(HIST("Data/neg/pt/its_tpc_tof"), track.pt());
-          histos.fill(HIST("Data/neg/eta/its_tpc_tof"), track.eta());
-          histos.fill(HIST("Data/neg/phi/its_tpc_tof"), track.phi());
-          histos.fill(HIST("Data/neg/etaphi/its_tpc_tof"), track.eta(), track.phi());
+          histos.fill(HIST("Data/neg/pt/its_tpc_tof"), trackPt);
+          histos.fill(HIST("Data/neg/eta/its_tpc_tof"), trackEta);
+          histos.fill(HIST("Data/neg/phi/its_tpc_tof"), trackPhi);
+          histos.fill(HIST("Data/neg/etaphi/its_tpc_tof"), trackEta, trackPhi);
+
+          if (doOccupancy) {
+            float occupancy;
+            if (useFT0OccEstimator) {  
+              /// occupancy estimator (FT0c signal amplitudes in +-10us from current collision)
+              occupancy = collision.ft0cOccupancyInTimeRange();
+            } else {
+              /// occupancy estimator (ITS tracks with at least 5 clusters in +-10us from current collision)
+              occupancy = static_cast<float>(collision.trackOccupancyInTimeRange());
+            } 
+            histos.fill(HIST("Data/occ/neg/its_tpc"), occupancy, trackPt);
+            histos.fill(HIST("Data/cent/neg/its_tpc"), collision.centFT0C(), trackPt);
+          }
         }
       }
 
