@@ -139,8 +139,8 @@ struct HfTaskCharmHadronsFemtoDream {
   FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kCharmHadron> pairCloseRejectionME;
   Filter eventMultiplicity = aod::femtodreamcollision::multNtr >= eventSel.multMin && aod::femtodreamcollision::multNtr <= eventSel.multMax;
   Filter eventMultiplicityPercentile = aod::femtodreamcollision::multV0M >= eventSel.multPercentileMin && aod::femtodreamcollision::multV0M <= eventSel.multPercentileMax;
-  Filter hfCandSelFilter = static_cast<int>(aod::fdhf::candidateSelFlag) >= charmHadCandSel.value;
-  Filter hfMcSelFilter = static_cast<int>(nabs(aod::fdhf::flagMc)) == charmHadMcSel.value;
+  Filter hfCandSelFilter = uint8_t(aod::fdhf::candidateSelFlag) >= charmHadCandSel.value;
+  Filter hfMcSelFilter = uint8_t(nabs(aod::fdhf::flagMc)) == charmHadMcSel.value;
   Filter trackEtaFilterLow = ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack), aod::femtodreamparticle::eta < etaTrack1Max, true);
   Filter trackEtaFilterUp = ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack), aod::femtodreamparticle::eta > etaTrack1Min, true);
   Filter trackPtFilterLow = ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack), aod::femtodreamparticle::pt < ptTrack1Max, true);
