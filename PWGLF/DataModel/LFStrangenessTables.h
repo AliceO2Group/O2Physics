@@ -227,7 +227,7 @@ DECLARE_SOA_TABLE(StraZDCSP, "AOD", "STRAZDCSP", //! events used to compute the 
 DECLARE_SOA_TABLE(StraStamps_000, "AOD", "STRASTAMPS", //! information for ID-ing mag field if needed
                   bc::RunNumber, timestamp::Timestamp);
 DECLARE_SOA_TABLE_VERSIONED(StraStamps_001, "AOD", "STRASTAMPS", 1, //! information for ID-ing mag field if needed
-                  bc::RunNumber, timestamp::Timestamp, bc::GlobalBC);
+                            bc::RunNumber, timestamp::Timestamp, bc::GlobalBC);
 
 using StraRawCents = StraRawCents_004;
 using StraEvSels = StraEvSels_003;
