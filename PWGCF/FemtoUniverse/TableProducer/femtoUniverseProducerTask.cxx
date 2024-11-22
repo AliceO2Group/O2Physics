@@ -777,7 +777,6 @@ struct femtoUniverseProducerTask {
     if (!colCuts.isSelected(col)) {
       return;
     }
-    
     if (!ConfIsUsePileUp) {
       if (ConfDoSpher) {
         outputCollision(vtxZ, mult, multNtr, colCuts.computeSphericity(col, tracks), mMagField);
