@@ -28,20 +28,20 @@
 #include "TMath.h"
 #include "TGraph.h"
 #include "TFile.h"
+#include "TF2.h"
 
 // O2 includes
 #include "DataFormatsTOF/ParameterContainers.h"
 #include "Framework/Logger.h"
 #include "ReconstructionDataFormats/PID.h"
 #include "Framework/DataTypes.h"
+#include "CommonConstants/PhysicsConstants.h"
 
 namespace o2::pid::tof
 {
 
 // Utility values
-static constexpr float kCSPEED = TMath::C() * 1.0e2f * 1.0e-12f; /// Speed of light in TOF units (cm/ps)
-static constexpr float kCSPEDDInv = 1.f / kCSPEED;               /// Inverse of the Speed of light in TOF units (ps/cm)
-static constexpr float defaultReturnValue = -999.f;              /// Default return value in case TOF measurement is not available
+static constexpr float defaultReturnValue = -999.f; /// Default return value in case TOF measurement is not available
 
 /// \brief Class to handle the the TOF detector response for the TOF beta measurement
 template <typename TrackType>
@@ -55,7 +55,7 @@ class Beta
   /// \param length Length in cm of the track
   /// \param tofSignal TOF signal in ps for the track
   /// \param collisionTime collision time in ps for the event of the track
-  static float GetBeta(const float length, const float tofSignal, const float collisionTime) { return length / (tofSignal - collisionTime) * kCSPEDDInv; }
+  static float GetBeta(const float length, const float tofSignal, const float collisionTime) { return length / (tofSignal - collisionTime) * o2::constants::physics::invLightSpeedCm2PS; }
 
   /// Gets the beta for the track of interest
   /// \param track Track of interest
@@ -139,6 +139,11 @@ class TOFResoParamsV2 : public o2::tof::Parameters<13>
 
   ~TOFResoParamsV2() = default;
 
+  template <o2::track::PID::ID pid>
+  float getResolution(const float, const float) const
+  {
+    return -1.f;
+  }
   // Momentum shift for charge calibration
   void setMomentumChargeShiftParameters(std::unordered_map<std::string, float> const& pars)
   {
@@ -201,6 +206,24 @@ class TOFResoParamsV2 : public o2::tof::Parameters<13>
     printMomentumChargeShiftParameters();
   }
 
+  // Time shift for post calibration
+  void setTimeShiftParameters(std::unordered_map<std::string, float> const& pars, bool positive)
+  {
+    std::string baseOpt = positive ? "TimeShift.Pos." : "TimeShift.Neg.";
+
+    if (pars.count(baseOpt + "GetN") == 0) { // If the map does not contain the number of eta bins, we assume that no correction has to be applied
+      return;
+    }
+    const int nPoints = static_cast<int>(pars.at(baseOpt + "GetN"));
+    if (nPoints <= 0) {
+      LOG(fatal) << "TOFResoParamsV2 shift: time must be positive";
+    }
+    TGraph graph;
+    for (int i = 0; i < nPoints; ++i) {
+      graph.AddPoint(pars.at(Form("TimeShift.eta%i", i)), pars.at(Form("TimeShift.cor%i", i)));
+    }
+    setTimeShiftParameters(&graph, positive);
+  }
   void setTimeShiftParameters(std::string const& filename, std::string const& objname, bool positive)
   {
     TFile f(filename.c_str(), "READ");
@@ -212,7 +235,7 @@ class TOFResoParamsV2 : public o2::tof::Parameters<13>
       }
       f.Close();
     }
-    LOG(info) << "Set the Time Shift parameters from file " << filename << " and object " << objname << " for " << (positive ? "positive" : "negative");
+    LOG(info) << "Set the Time Shift parameters from file " << filename << " and object " << objname << " for " << (positive ? "positive" : "negative") << " example of shift at eta 0: " << getTimeShift(0, positive);
   }
   void setTimeShiftParameters(TGraph* g, bool positive)
   {
@@ -313,7 +336,7 @@ class TOFResoParamsV3 : public o2::tof::Parameters<13>
     }
   }
 
-  // Time shift for post calibration
+  // Time shift for post calibration to realign as a function of eta
   void setTimeShiftParameters(std::unordered_map<std::string, float> const& pars, bool positive)
   {
     std::string baseOpt = positive ? "TimeShift.Pos." : "TimeShift.Neg.";
@@ -367,6 +390,66 @@ class TOFResoParamsV3 : public o2::tof::Parameters<13>
     return gNegEtaTimeCorr->Eval(eta);
   }
 
+  void setResolutionParametrization(std::unordered_map<std::string, float> const& pars)
+  {
+    static constexpr std::array<const char*, 9> particleNames = {"El", "Mu", "Pi", "Ka", "Pr", "De", "Tr", "He", "Al"};
+    for (int i = 0; i < 9; ++i) {
+      const std::string baseOpt = Form("tofResTrack.%s_", particleNames[i]);
+      // Check if a key begins with a string
+      for (const auto& [key, value] : pars) {
+        if (key.find(baseOpt) == 0) {
+          // Remove from the key the baseOpt
+          const std::string fun = key.substr(baseOpt.size());
+          mResolution[i] = new TF2(baseOpt.c_str(), fun.c_str(), 0., 20, -1, 1.);
+          LOG(info) << "Set the resolution function for " << particleNames[i] << " with formula " << mResolution[i]->GetFormula()->GetExpFormula();
+          break;
+        }
+      }
+    }
+    // Print a summary
+    for (int i = 0; i < 9; ++i) {
+      if (!mResolution[i]) {
+        LOG(info) << "Resolution function for " << particleNames[i] << " not provided, using default " << mDefaultResoParams[i];
+        continue;
+      }
+      LOG(info) << "Resolution function for " << particleNames[i] << " is " << mResolution[i]->GetName() << " with formula " << mResolution[i]->GetFormula()->GetExpFormula();
+    }
+  }
+
+  template <o2::track::PID::ID pid>
+  float getResolution(const float p, const float eta) const
+  {
+    if (!mResolution[pid]) {
+      LOG(info) << "Making default resolution parametrization for id " << pid << " :" << mDefaultResoParams[pid];
+      mResolution[pid] = new TF2(Form("tofResTrack.Default_id%i", pid), mDefaultResoParams[pid], 0., 20, -1, 1.);
+    }
+    return mResolution[pid]->Eval(p, eta);
+  }
+
+  void Save(const char* filename)
+  {
+    TFile f(filename, "RECREATE");
+    for (auto* h : mResolution) {
+      h->Write();
+    }
+    if (gPosEtaTimeCorr) {
+      // gPosEtaTimeCorr->SetName("gPosEtaTimeCorr");
+      // gPosEtaTimeCorr->Write();
+    } else {
+      TNamed("NOgPosEtaTimeCorr", "not available").Write("NOgPosEtaTimeCorr");
+    }
+    if (gNegEtaTimeCorr) {
+      // gNegEtaTimeCorr->SetName("gNegEtaTimeCorr");
+      // gNegEtaTimeCorr->Write("gNegEtaTimeCorr");
+    } else {
+      TNamed("NOgNegEtaTimeCorr", "not available").Write("NOgNegEtaTimeCorr");
+    }
+    TNamed(Form("mEtaN=%i", mEtaN), "value").Write();
+    TNamed(Form("mEtaStart=%f", mEtaStart), "value").Write();
+    TNamed(Form("mEtaStop=%f", mEtaStop), "value").Write();
+    TNamed(Form("mInvEtaWidth=%f", mInvEtaWidth), "value").Write();
+  }
+
  private:
   // Charge calibration
   int mEtaN = 0; // Number of eta bins, 0 means no correction
@@ -374,6 +457,16 @@ class TOFResoParamsV3 : public o2::tof::Parameters<13>
   float mEtaStop = 0.f;
   float mInvEtaWidth = 9999.f;
   std::vector<float> mContent;
+  std::array<TF2*, 9> mResolution{nullptr};
+  static constexpr std::array<const char*, 9> mDefaultResoParams{"14.3*TMath::Power((TMath::Max(x-0.319,0.1))*(1-0.4235*y*y),-0.8467)",
+                                                                 "14.3*TMath::Power((TMath::Max(x-0.319,0.1))*(1-0.4235*y*y),-0.8467)",
+                                                                 "14.3*TMath::Power((TMath::Max(x-0.319,0.1))*(1-0.4235*y*y),-0.8467)",
+                                                                 "42.66*TMath::Power((TMath::Max(x-0.417,0.1))*(1-0.4235*y*y),-0.7145)",
+                                                                 "99.46*TMath::Power((TMath::Max(x-0.447,0.1))*(1-0.4235*y*y),-0.8094)",
+                                                                 "216*TMath::Power((TMath::Max(x-0.647,0.1))*(1-0.4235*y*y),-0.76)",
+                                                                 "315*TMath::Power((TMath::Max(x-0.811,0.1))*(1-0.4235*y*y),-0.783)",
+                                                                 "157*TMath::Power((TMath::Max(x-0.556,0.1))*(1-0.4235*y*y),-0.783)",
+                                                                 "216*TMath::Power((TMath::Max(x-0.647,0.1))*(1-0.4235*y*y),-0.76)"};
 
   // Time shift for post calibration
   TGraph* gPosEtaTimeCorr = nullptr; /// Time shift correction for positive tracks
@@ -391,7 +484,7 @@ class ExpTimes
   static constexpr float mMassZSqared = mMassZ * mMassZ;                   /// (M/z)^2
 
   /// Computes the expected time of a track, given it TOF expected momentum
-  static float ComputeExpectedTime(const float tofExpMom, const float length) { return length * sqrt((mMassZSqared) + (tofExpMom * tofExpMom)) / (kCSPEED * tofExpMom); }
+  static float ComputeExpectedTime(const float tofExpMom, const float length) { return length * sqrt((mMassZSqared) + (tofExpMom * tofExpMom)) / (o2::constants::physics::LightSpeedCm2PS * tofExpMom); }
 
   /// Gets the expected signal of the track of interest under the PID assumption
   /// \param track Track of interest
@@ -401,7 +494,7 @@ class ExpTimes
       return defaultReturnValue;
     }
     if (track.trackType() == o2::aod::track::Run2Track) {
-      return ComputeExpectedTime(track.tofExpMom() * kCSPEDDInv, track.length());
+      return ComputeExpectedTime(track.tofExpMom() * o2::constants::physics::invLightSpeedCm2PS, track.length());
     }
     return ComputeExpectedTime(track.tofExpMom(), track.length());
   }
@@ -416,7 +509,7 @@ class ExpTimes
       return defaultReturnValue;
     }
     if (track.trackType() == o2::aod::track::Run2Track) {
-      return ComputeExpectedTime(track.tofExpMom() * kCSPEDDInv / (1.f + track.sign() * parameters.getMomentumChargeShift(track.eta())), track.length());
+      return ComputeExpectedTime(track.tofExpMom() * o2::constants::physics::invLightSpeedCm2PS / (1.f + track.sign() * parameters.getMomentumChargeShift(track.eta())), track.length());
     }
     LOG(debug) << "TOF exp. mom. " << track.tofExpMom() << " shifted = " << track.tofExpMom() / (1.f + track.sign() * parameters.getMomentumChargeShift(track.eta()));
     return ComputeExpectedTime(track.tofExpMom() / (1.f + track.sign() * parameters.getMomentumChargeShift(track.eta())), track.length()) + parameters.getTimeShift(track.eta(), track.sign());
@@ -432,8 +525,13 @@ class ExpTimes
   static float GetExpectedSigma(const ParamType& parameters, const TrackType& track, const float tofSignal, const float collisionTimeRes)
   {
     const float& mom = track.p();
+    const float& eta = track.eta();
     if (mom <= 0) {
       return -999.f;
+    }
+    const float reso = parameters.template getResolution<id>(mom, eta);
+    if (reso > 0) {
+      return std::sqrt(reso * reso + parameters[4] * parameters[4] + collisionTimeRes * collisionTimeRes);
     }
     if constexpr (id <= o2::track::PID::Pion) {
       LOG(debug) << "Using parameters for the pion hypothesis and ID " << id;
