@@ -40,8 +40,10 @@
 namespace o2::pid::tof
 {
 
-// Utility values
-static constexpr float defaultReturnValue = -999.f; /// Default return value in case TOF measurement is not available
+// Utility values (to remove!)
+static constexpr float kCSPEED = TMath::C() * 1.0e2f * 1.0e-12f; /// Speed of light in TOF units (cm/ps)
+static constexpr float kCSPEDDInv = 1.f / kCSPEED;               /// Inverse of the Speed of light in TOF units (ps/cm)
+static constexpr float defaultReturnValue = -999.f;              /// Default return value in case TOF measurement is not available
 
 /// \brief Class to handle the the TOF detector response for the TOF beta measurement
 template <typename TrackType>
@@ -206,24 +208,6 @@ class TOFResoParamsV2 : public o2::tof::Parameters<13>
     printMomentumChargeShiftParameters();
   }
 
-  // Time shift for post calibration
-  void setTimeShiftParameters(std::unordered_map<std::string, float> const& pars, bool positive)
-  {
-    std::string baseOpt = positive ? "TimeShift.Pos." : "TimeShift.Neg.";
-
-    if (pars.count(baseOpt + "GetN") == 0) { // If the map does not contain the number of eta bins, we assume that no correction has to be applied
-      return;
-    }
-    const int nPoints = static_cast<int>(pars.at(baseOpt + "GetN"));
-    if (nPoints <= 0) {
-      LOG(fatal) << "TOFResoParamsV2 shift: time must be positive";
-    }
-    TGraph graph;
-    for (int i = 0; i < nPoints; ++i) {
-      graph.AddPoint(pars.at(Form("TimeShift.eta%i", i)), pars.at(Form("TimeShift.cor%i", i)));
-    }
-    setTimeShiftParameters(&graph, positive);
-  }
   void setTimeShiftParameters(std::string const& filename, std::string const& objname, bool positive)
   {
     TFile f(filename.c_str(), "READ");
@@ -235,7 +219,7 @@ class TOFResoParamsV2 : public o2::tof::Parameters<13>
       }
       f.Close();
     }
-    LOG(info) << "Set the Time Shift parameters from file " << filename << " and object " << objname << " for " << (positive ? "positive" : "negative") << " example of shift at eta 0: " << getTimeShift(0, positive);
+    LOG(info) << "Set the Time Shift parameters from file " << filename << " and object " << objname << " for " << (positive ? "positive" : "negative");
   }
   void setTimeShiftParameters(TGraph* g, bool positive)
   {
@@ -277,14 +261,12 @@ class TOFResoParamsV2 : public o2::tof::Parameters<13>
 class TOFResoParamsV3 : public o2::tof::Parameters<13>
 {
  public:
-  TOFResoParamsV3() : Parameters(std::array<std::string, 13>{"TrkRes.Pi.P0", "TrkRes.Pi.P1", "TrkRes.Pi.P2", "TrkRes.Pi.P3", "time_resolution",
-                                                             "TrkRes.Ka.P0", "TrkRes.Ka.P1", "TrkRes.Ka.P2", "TrkRes.Ka.P3",
-                                                             "TrkRes.Pr.P0", "TrkRes.Pr.P1", "TrkRes.Pr.P2", "TrkRes.Pr.P3"},
+  TOFResoParamsV3() : Parameters(std::array<std::string, 13>{"time_resolution", "time_resolution", "time_resolution", "time_resolution", "time_resolution",
+                                                             "time_resolution", "time_resolution", "time_resolution", "time_resolution",
+                                                             "time_resolution", "time_resolution", "time_resolution", "time_resolution"},
                                  "TOFResoParamsV3")
   {
-    setParameters(std::array<float, 13>{0.008, 0.008, 0.002, 40.0, 60.0,
-                                        0.008, 0.008, 0.002, 40.0,
-                                        0.008, 0.008, 0.002, 40.0});
+    setParameters(std::array<float, 13>{60.0});
   } // Default constructor with default parameters
 
   ~TOFResoParamsV3() = default;
@@ -410,7 +392,7 @@ class TOFResoParamsV3 : public o2::tof::Parameters<13>
     for (int i = 0; i < 9; ++i) {
       if (!mResolution[i]) {
         LOG(info) << "Resolution function for " << particleNames[i] << " not provided, using default " << mDefaultResoParams[i];
-        continue;
+        mResolution[i] = new TF2(Form("tofResTrack.%s_Default", particleNames[i]), mDefaultResoParams[i], 0., 20, -1, 1.);
       }
       LOG(info) << "Resolution function for " << particleNames[i] << " is " << mResolution[i]->GetName() << " with formula " << mResolution[i]->GetFormula()->GetExpFormula();
     }
@@ -419,35 +401,7 @@ class TOFResoParamsV3 : public o2::tof::Parameters<13>
   template <o2::track::PID::ID pid>
   float getResolution(const float p, const float eta) const
   {
-    if (!mResolution[pid]) {
-      LOG(info) << "Making default resolution parametrization for id " << pid << " :" << mDefaultResoParams[pid];
-      mResolution[pid] = new TF2(Form("tofResTrack.Default_id%i", pid), mDefaultResoParams[pid], 0., 20, -1, 1.);
-    }
     return mResolution[pid]->Eval(p, eta);
-  }
-
-  void Save(const char* filename)
-  {
-    TFile f(filename, "RECREATE");
-    for (auto* h : mResolution) {
-      h->Write();
-    }
-    if (gPosEtaTimeCorr) {
-      // gPosEtaTimeCorr->SetName("gPosEtaTimeCorr");
-      // gPosEtaTimeCorr->Write();
-    } else {
-      TNamed("NOgPosEtaTimeCorr", "not available").Write("NOgPosEtaTimeCorr");
-    }
-    if (gNegEtaTimeCorr) {
-      // gNegEtaTimeCorr->SetName("gNegEtaTimeCorr");
-      // gNegEtaTimeCorr->Write("gNegEtaTimeCorr");
-    } else {
-      TNamed("NOgNegEtaTimeCorr", "not available").Write("NOgNegEtaTimeCorr");
-    }
-    TNamed(Form("mEtaN=%i", mEtaN), "value").Write();
-    TNamed(Form("mEtaStart=%f", mEtaStart), "value").Write();
-    TNamed(Form("mEtaStop=%f", mEtaStop), "value").Write();
-    TNamed(Form("mInvEtaWidth=%f", mInvEtaWidth), "value").Write();
   }
 
  private:
