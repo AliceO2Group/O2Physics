@@ -73,7 +73,7 @@ DECLARE_SOA_COLUMN(LeadingTrackPt, leadingtrackpt, float);
 DECLARE_SOA_COLUMN(PerpConeRho, perpconerho, float);
 DECLARE_SOA_COLUMN(NConstituents, nConstituents, ushort);
 } // namespace gjchjet
-DECLARE_SOA_TABLE(GjChargedJets, "AOD", "GJCHJET", gjchjet::GjEventId, gjchjet::Pt, gjchjet::Eta, gjchjet::Phi, gjchjet::Radius, gjchjet::Energy, gjchjet::Mass, gjchjet::Area, gjchjet::LeadingTrackPt,gjchjet::PerpConeRho,gjchjet::NConstituents)
+DECLARE_SOA_TABLE(GjChargedJets, "AOD", "GJCHJET", gjchjet::GjEventId, gjchjet::Pt, gjchjet::Eta, gjchjet::Phi, gjchjet::Radius, gjchjet::Energy, gjchjet::Mass, gjchjet::Area, gjchjet::LeadingTrackPt, gjchjet::PerpConeRho, gjchjet::NConstituents)
 } // namespace o2::aod
 
 #endif // PWGJE_DATAMODEL_GAMMAJETANALYSISTREE_H_

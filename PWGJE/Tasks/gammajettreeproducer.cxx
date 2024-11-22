@@ -108,7 +108,7 @@ struct GammaJetTreeProducer {
     const o2Axis energyAxis{100, 0, 100, "E (GeV)"};
     const o2Axis m02Axis{100, 0, 3, "m02"};
     const o2Axis etaAxis{100, -1, 1, "#eta"};
-    const o2Axis phiAxis{100, 0 , 2*TMath::Pi(), "#phi"};
+    const o2Axis phiAxis{100, 0, 2 * TMath::Pi(), "#phi"};
     const o2Axis occupancyAxis{300, 0, 30000, "occupancy"};
     mHistograms.add("clusterE", "Energy of cluster", o2HistType::kTH1F, {energyAxis});
     mHistograms.add("trackPt", "pT of track", o2HistType::kTH1F, {ptAxis});
@@ -266,7 +266,7 @@ struct GammaJetTreeProducer {
         auto emcTracksPerTrack = emctracks.sliceBy(EMCTrackPerTrack, track.globalIndex());
         auto emcTrack = emcTracksPerTrack.iteratorAt(0);
         // find closest track that still has E/p < trackMatchingEoverP
-        if (cluster.energy()/track.p() > trackMatchingEoverP) {
+        if (cluster.energy() / track.p() > trackMatchingEoverP) {
           continue;
         } else {
           dEta = cluster.eta() - emcTrack.etaEmcal();
@@ -295,7 +295,7 @@ struct GammaJetTreeProducer {
       return;
     }
     float leadingTrackPt = 0;
-     ushort nconst = 0;
+    ushort nconst = 0;
     // loop over charged jets
     for (auto jet : chargedJets) {
       if (jet.pt() < jetPtMin)
