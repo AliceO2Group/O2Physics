@@ -40,6 +40,7 @@
 #include "Framework/ASoAHelpers.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "ReconstructionDataFormats/Track.h"
+#include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "Common/Core/trackUtilities.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
@@ -54,6 +55,9 @@
 #include "PWGUD/Core/SGSelector.h"
 #include "Tools/ML/MlResponse.h"
 #include "Tools/ML/model.h"
+
+#include "EventFiltering/Zorro.h"
+#include "EventFiltering/ZorroSummary.h"
 
 // constants
 const float ctauXiPDG = 4.91;     // from PDG
@@ -83,6 +87,11 @@ struct quarkoniaToHyperons {
   // master analysis switches
   Configurable<bool> isPP{"isPP", true, "If running on pp collision, switch it on true"};
 
+  // for running over skimmed dataset
+  Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", false, "If running over skimmed data, switch it on true"};
+  Configurable<std::string> cfgSkimmedTrigger{"cfgSkimmedTrigger", "fDoubleXi,fTripleXi,fQuadrupleXi", "(std::string) Comma separated list of triggers of interest"};
+
+  // switch on/off event selections
   Configurable<bool> requireSel8{"requireSel8", true, "require sel8 event selection"};
   Configurable<bool> rejectITSROFBorder{"rejectITSROFBorder", true, "reject events at ITS ROF border"};
   Configurable<bool> rejectTFBorder{"rejectTFBorder", true, "reject events at TF border"};
@@ -257,9 +266,13 @@ struct quarkoniaToHyperons {
     Configurable<std::string> mVtxPath{"ccdbConfigurations.mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
   } ccdbConfigurations;
 
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::ccdb::CcdbApi ccdbApi;
   int mRunNumber;
   std::map<std::string, std::string> metadata;
+
+  Zorro zorro;
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
 
   static constexpr float defaultLifetimeCuts[1][2] = {{30., 20.}};
   Configurable<LabeledArray<float>> lifetimecut{"lifetimecut", {defaultLifetimeCuts[0], 2, {"lifetimecutLambda", "lifetimecutK0S"}}, "lifetimecut"};
@@ -656,6 +669,11 @@ struct quarkoniaToHyperons {
         histos.add("OmOmBar/h3dInvMassTruePsi2S", "h3dInvMassTruePsi2S", kTH3F, {axisCentrality, axisPt, axisQuarkoniumMass});
       }
     }
+
+    if (cfgSkimmedProcessing) {
+      zorroSummary.setObject(zorro.getZorroSummary());
+    }
+
     // inspect histogram sizes, please
     histos.print();
   }
@@ -668,6 +686,15 @@ struct quarkoniaToHyperons {
     }
 
     mRunNumber = collision.runNumber();
+    if (cfgSkimmedProcessing) {
+      ccdb->setURL(ccdbConfigurations.ccdburl);
+      ccdb->setCaching(true);
+      ccdb->setLocalObjectValidityChecking();
+      ccdb->setFatalWhenNull(false);
+
+      zorro.initCCDB(ccdb.service, collision.runNumber(), collision.timestamp(), cfgSkimmedTrigger.value);
+      zorro.populateHistRegistry(histos, collision.runNumber());
+    }
 
     // machine learning initialization if requested
     if (mlConfigurations.calculateK0ShortScores ||
@@ -1747,7 +1774,8 @@ struct quarkoniaToHyperons {
   void processRealData(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps>::iterator const& collision, v0Candidates const& fullV0s, cascadeCandidates const& fullCascades, dauTracks const&)
   {
     // Fire up CCDB
-    if ((mlConfigurations.useK0ShortScores && mlConfigurations.calculateK0ShortScores) ||
+    if (cfgSkimmedProcessing ||
+        (mlConfigurations.useK0ShortScores && mlConfigurations.calculateK0ShortScores) ||
         (mlConfigurations.useLambdaScores && mlConfigurations.calculateLambdaScores) ||
         (mlConfigurations.useAntiLambdaScores && mlConfigurations.calculateAntiLambdaScores)) {
       initCCDB(collision);
@@ -1755,6 +1783,10 @@ struct quarkoniaToHyperons {
 
     if (!IsEventAccepted(collision, true)) {
       return;
+    }
+
+    if (cfgSkimmedProcessing) {
+      zorro.isSelected(collision.globalBC()); /// Just let Zorro do the accounting
     }
 
     float centrality = -1;
@@ -1881,7 +1913,8 @@ struct quarkoniaToHyperons {
   void processMonteCarlo(soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraCollLabels>::iterator const& collision, v0MCCandidates const& fullV0s, cascadeMCCandidates const& fullCascades, dauTracks const&, aod::MotherMCParts const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& /*mccollisions*/, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&, soa::Join<aod::CascMCCores, aod::CascMCCollRefs> const&)
   {
     // Fire up CCDB
-    if ((mlConfigurations.useK0ShortScores && mlConfigurations.calculateK0ShortScores) ||
+    if (cfgSkimmedProcessing ||
+        (mlConfigurations.useK0ShortScores && mlConfigurations.calculateK0ShortScores) ||
         (mlConfigurations.useLambdaScores && mlConfigurations.calculateLambdaScores) ||
         (mlConfigurations.useAntiLambdaScores && mlConfigurations.calculateAntiLambdaScores)) {
       initCCDB(collision);
@@ -1889,6 +1922,10 @@ struct quarkoniaToHyperons {
 
     if (!IsEventAccepted(collision, true)) {
       return;
+    }
+
+    if (cfgSkimmedProcessing) {
+      zorro.isSelected(collision.globalBC()); /// Just let Zorro do the accounting
     }
 
     float centrality = -1;
