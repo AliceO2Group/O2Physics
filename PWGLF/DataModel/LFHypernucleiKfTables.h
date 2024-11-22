@@ -116,7 +116,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(ITSmeanClsSize, itsMeanClsSize, [](uint32_t itsCluste
     if (itsClusterSizes >> (4 * i) & 15)
       n++;
   }
-  return (float)sum / n;
+  return static_cast<float>(sum) / n;
 });
 } // namespace hykftrk
 
