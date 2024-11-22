@@ -25,6 +25,7 @@
 #include <vector>
 #include <TComplex.h>
 #include <TMath.h>
+#include <cstdio>
 
 // o2Physics includes.
 #include "Framework/AnalysisDataModel.h"
