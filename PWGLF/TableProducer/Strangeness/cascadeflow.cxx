@@ -135,10 +135,14 @@ struct cascadeFlow {
   Configurable<bool> isNoSameBunchPileupCut{"isNoSameBunchPileupCut", 1, "Same found-by-T0 bunch crossing rejection"};
   Configurable<bool> isGoodZvtxFT0vsPVCut{"isGoodZvtxFT0vsPVCut", 1, "z of PV by tracks and z of PV from FT0 A-C time difference cut"};
   Configurable<bool> isGoodEventEP{"isGoodEventEP", 1, "Event is used to calibrate event plane"};
+  Configurable <bool> isTrackOccupancySel{"isTrackOccupancySel", 0, "isTrackOccupancySel"};
   Configurable<int> MinOccupancy{"MinOccupancy", 0, "MinOccupancy"};
   Configurable<int> MaxOccupancy{"MaxOccupancy", 500, "MaxOccupancy"};
+  Configurable <bool> isFT0OccupancySel{"isFT0OccupancySel", 0, "isFT0OccupancySel"};
+  Configurable<int> MinOccupancyFT0{"MinOccupancyFT0", 0, "MinOccupancyFT0"};
+  Configurable<int> MaxOccupancyFT0{"MaxOccupancyFT0", 5000, "MaxOccupancyFT0"};
   Configurable<bool> isCollInStandardTimeRange{"isCollInStandardTimeRange", 1, "To remove collisions in +-10 micros time range"};
-  Configurable<bool> isCollInNarrowTimeRange{"isCollInNarrowTimeRange", 0, "To remove collisions in +-4 micros time range"};
+  Configurable<bool> isCollInNarrowTimeRange{"isCollInNarrowTimeRange", 0, "To remove collisions in +-2 micros time range"};
 
   Configurable<float> MinPt{"MinPt", 0.6, "Min pt of cascade"};
   Configurable<float> MaxPt{"MaxPt", 10, "Max pt of cascade"};
@@ -213,19 +217,26 @@ struct cascadeFlow {
 
     // occupancy cut
     int occupancy = collision.trackOccupancyInTimeRange();
-    if (occupancy < MinOccupancy || occupancy > MaxOccupancy) {
+    if (isTrackOccupancySel && (occupancy < MinOccupancy || occupancy > MaxOccupancy)) {
       return false;
     }
+    //occupancy cut based on FT0C 
+    int occupancyFT0 =collision.ft0cOccupancyInTimeRange();
+    if (isFT0OccupancySel && (occupancyFT0 < MinOccupancyFT0 || occupancyFT0 > MaxOccupancyFT0)) {
+      return false;
+    }
+
     if (isFillHisto)
       histos.fill(HIST("hNEvents"), 5.5);
 
+    //time-based event selection
     if (isCollInStandardTimeRange && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       return false;
     }
-
-    if (isCollInNarrowTimeRange && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
+    if (isCollInNarrowTimeRange && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict)) {
       return false;
     }
+    
     if (isFillHisto)
       histos.fill(HIST("hNEvents"), 6.5);
 
