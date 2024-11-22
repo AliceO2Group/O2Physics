@@ -386,9 +386,10 @@ DECLARE_SOA_COLUMN(TPCInnerParamTrack0, tpcinnerparamtrack0, float);     //! mom
 DECLARE_SOA_COLUMN(TPCInnerParamTrack1, tpcinnerparamtrack1, float);     //! momentum at inner wall of TPC of pion daughter
 DECLARE_SOA_COLUMN(TPCInnerParamTrack2, tpcinnerparamtrack2, float);     //! momentum at inner wall of TPC of deuteron daughter
 // PID
-DECLARE_SOA_COLUMN(TPCNSigmaProton, tpcnsigmaproton, float);            //! nsigma of TPC PID of the proton daughter
-DECLARE_SOA_COLUMN(TPCNSigmaPion, tpcnsigmapion, float);                //! nsigma of TPC PID of the pion daughter
-DECLARE_SOA_COLUMN(TPCNSigmaDeuteron, tpcnsigmadeuteron, float);        //! nsigma of TPC PID of the bachelor daughter
+DECLARE_SOA_COLUMN(TPCNSigmaProton, tpcnsigmaproton, float);            //! nsigma proton of TPC PID of the proton daughter
+DECLARE_SOA_COLUMN(TPCNSigmaPion, tpcnsigmapion, float);                //! nsigma pion of TPC PID of the pion daughter
+DECLARE_SOA_COLUMN(TPCNSigmaDeuteron, tpcnsigmadeuteron, float);        //! nsigma deuteron of TPC PID of the bachelor daughter
+DECLARE_SOA_COLUMN(TPCNSigmaPionBach, tpcnsigmapionbach, float);        //! nsigma pion of TPC PID of the bachelor daughter
 DECLARE_SOA_COLUMN(TPCdEdxProton, tpcdedxproton, float);                //! TPC dEdx of the proton daughter
 DECLARE_SOA_COLUMN(TPCdEdxPion, tpcdedxpion, float);                    //! TPC dEdx of the pion daughter
 DECLARE_SOA_COLUMN(TPCdEdxDeuteron, tpcdedxdeuteron, float);            //! TPC dEdx of the bachelor daughter
@@ -406,6 +407,12 @@ DECLARE_SOA_COLUMN(GenCtau, genctau, double);           //! generated ctau
 DECLARE_SOA_COLUMN(GenPhi, genphi, float);              //! generated phi
 DECLARE_SOA_COLUMN(GenEta, geneta, float);              //! generated eta
 DECLARE_SOA_COLUMN(GenRapidity, genrapidity, float);    //! generated rapidity
+DECLARE_SOA_COLUMN(GenPosP, genposp, float);            //! generated momentum pos daughter particle
+DECLARE_SOA_COLUMN(GenPosPt, genpospt, float);          //! generated transverse momentum pos daughter particle
+DECLARE_SOA_COLUMN(GenNegP, gennegp, float);            //! generated momentum neg daughter particle
+DECLARE_SOA_COLUMN(GenNegPt, gennegpt, float);          //! generated transverse momentum neg daughter particle
+DECLARE_SOA_COLUMN(GenBachP, genbachp, float);          //! generated momentum bachelor daughter particle
+DECLARE_SOA_COLUMN(GenBachPt, genbachpt, float);        //! generated transverse momentum bachelor daughter particle
 DECLARE_SOA_COLUMN(IsTrueH3L, istrueh3l, bool);         //! flag for true hypertriton candidate
 DECLARE_SOA_COLUMN(IsTrueAntiH3L, istrueantih3l, bool); //! flag for true anti-hypertriton candidate
 DECLARE_SOA_COLUMN(PdgCode, pdgcode, int);              //! MC particle PDG code
@@ -452,31 +459,11 @@ DECLARE_SOA_TABLE(KFVtx3BodyDatas, "AOD", "KFVTX3BODYDATA",
                   kfvtx3body::DCAxyTrackPosToPV, kfvtx3body::DCAxyTrackNegToPV, kfvtx3body::DCAxyTrackBachToPV,
                   kfvtx3body::DCATrackPosToPV, kfvtx3body::DCATrackNegToPV, kfvtx3body::DCATrackBachToPV,
                   kfvtx3body::Track0Sign, kfvtx3body::Track1Sign, kfvtx3body::Track2Sign, // track sing: proton, pion, deuteron
-                  kfvtx3body::TPCNSigmaProton, kfvtx3body::TPCNSigmaPion, kfvtx3body::TPCNSigmaDeuteron,
+                  kfvtx3body::TPCNSigmaProton, kfvtx3body::TPCNSigmaPion, kfvtx3body::TPCNSigmaDeuteron, kfvtx3body::TPCNSigmaPionBach,
                   kfvtx3body::TPCdEdxProton, kfvtx3body::TPCdEdxPion, kfvtx3body::TPCdEdxDeuteron,
                   kfvtx3body::TOFNSigmaDeuteron,
                   kfvtx3body::ITSClusSizeDeuteron,
-                  kfvtx3body::PIDTrackingDeuteron,
-
-                  // dynamic columns
-                  vtx3body::VtxRadius<vtx3body::X, vtx3body::Y>,
-                  vtx3body::DistOverTotMom<vtx3body::X, vtx3body::Y, vtx3body::Z, kfvtx3body::Px, kfvtx3body::Py, kfvtx3body::Pz>,
-                  vtx3body::VtxCosPA<vtx3body::X, vtx3body::Y, vtx3body::Z, kfvtx3body::Px, kfvtx3body::Py, kfvtx3body::Pz>,
-                  vtx3body::DCAVtxToPV<vtx3body::X, vtx3body::Y, vtx3body::Z, kfvtx3body::Px, kfvtx3body::Py, kfvtx3body::Pz>,
-
-                  // Longitudinal
-                  vtx3body::YHypertriton<kfvtx3body::Px, kfvtx3body::Py, kfvtx3body::Pz>,
-                  vtx3body::Eta<kfvtx3body::Px, kfvtx3body::Py, kfvtx3body::Pz>,
-                  vtx3body::Phi<kfvtx3body::Px, kfvtx3body::Py>,
-                  vtx3body::Track0Pt<vtx3body::PxTrack0, vtx3body::PyTrack0>,                      // proton pT
-                  vtx3body::Track0Eta<vtx3body::PxTrack0, vtx3body::PyTrack0, vtx3body::PzTrack0>, // proton eta
-                  vtx3body::Track0Phi<vtx3body::PxTrack0, vtx3body::PyTrack0>,                     // proton phi
-                  vtx3body::Track1Pt<vtx3body::PxTrack1, vtx3body::PyTrack1>,                      // pion pT
-                  vtx3body::Track1Eta<vtx3body::PxTrack1, vtx3body::PyTrack1, vtx3body::PzTrack1>, // pion eta
-                  vtx3body::Track1Phi<vtx3body::PxTrack1, vtx3body::PyTrack1>,                     // pion phi
-                  vtx3body::Track2Pt<vtx3body::PxTrack2, vtx3body::PyTrack2>,                      // deuteron pT
-                  vtx3body::Track2Eta<vtx3body::PxTrack2, vtx3body::PyTrack2, vtx3body::PzTrack2>, // deuteron eta
-                  vtx3body::Track2Phi<vtx3body::PxTrack2, vtx3body::PyTrack2>);                    // deuteron phi
+                  kfvtx3body::PIDTrackingDeuteron);
 
 using KFVtx3BodyData = KFVtx3BodyDatas::iterator;
 namespace kfvtx3body
@@ -518,31 +505,11 @@ DECLARE_SOA_TABLE(KFVtx3BodyDatasLite, "AOD", "KF3BODYLITE",
                   kfvtx3body::DCAxyTrack0ToTrack1KF, kfvtx3body::DCAxyTrack0ToTrack2KF, kfvtx3body::DCAxyTrack1ToTrack2KF,
                   kfvtx3body::DCAVtxDaughtersKF,
                   kfvtx3body::Track0Sign, kfvtx3body::Track1Sign, kfvtx3body::Track2Sign, // track sing: proton, pion, deuteron
-                  kfvtx3body::TPCNSigmaProton, kfvtx3body::TPCNSigmaPion, kfvtx3body::TPCNSigmaDeuteron,
+                  kfvtx3body::TPCNSigmaProton, kfvtx3body::TPCNSigmaPion, kfvtx3body::TPCNSigmaDeuteron, kfvtx3body::TPCNSigmaPionBach,
                   kfvtx3body::TPCdEdxProton, kfvtx3body::TPCdEdxPion, kfvtx3body::TPCdEdxDeuteron,
                   kfvtx3body::TOFNSigmaDeuteron,
                   kfvtx3body::ITSClusSizeDeuteron,
-                  kfvtx3body::PIDTrackingDeuteron,
-
-                  // dynamic columns
-                  vtx3body::VtxRadius<vtx3body::X, vtx3body::Y>,
-                  vtx3body::DistOverTotMom<vtx3body::X, vtx3body::Y, vtx3body::Z, kfvtx3body::Px, kfvtx3body::Py, kfvtx3body::Pz>,
-                  vtx3body::VtxCosPA<vtx3body::X, vtx3body::Y, vtx3body::Z, kfvtx3body::Px, kfvtx3body::Py, kfvtx3body::Pz>,
-                  vtx3body::DCAVtxToPV<vtx3body::X, vtx3body::Y, vtx3body::Z, kfvtx3body::Px, kfvtx3body::Py, kfvtx3body::Pz>,
-
-                  // Longitudinal
-                  vtx3body::YHypertriton<kfvtx3body::Px, kfvtx3body::Py, kfvtx3body::Pz>,
-                  vtx3body::Eta<kfvtx3body::Px, kfvtx3body::Py, kfvtx3body::Pz>,
-                  vtx3body::Phi<kfvtx3body::Px, kfvtx3body::Py>,
-                  vtx3body::Track0Pt<vtx3body::PxTrack0, vtx3body::PyTrack0>,                      // proton pT
-                  vtx3body::Track0Eta<vtx3body::PxTrack0, vtx3body::PyTrack0, vtx3body::PzTrack0>, // proton eta
-                  vtx3body::Track0Phi<vtx3body::PxTrack0, vtx3body::PyTrack0>,                     // proton phi
-                  vtx3body::Track1Pt<vtx3body::PxTrack1, vtx3body::PyTrack1>,                      // pion pT
-                  vtx3body::Track1Eta<vtx3body::PxTrack1, vtx3body::PyTrack1, vtx3body::PzTrack1>, // pion eta
-                  vtx3body::Track1Phi<vtx3body::PxTrack1, vtx3body::PyTrack1>,                     // pion phi
-                  vtx3body::Track2Pt<vtx3body::PxTrack2, vtx3body::PyTrack2>,                      // deuteron pT
-                  vtx3body::Track2Eta<vtx3body::PxTrack2, vtx3body::PyTrack2, vtx3body::PzTrack2>, // deuteron eta
-                  vtx3body::Track2Phi<vtx3body::PxTrack2, vtx3body::PyTrack2>);                    // deuteron phi
+                  kfvtx3body::PIDTrackingDeuteron);
 
 using KFVtx3BodyDataLite = KFVtx3BodyDatasLite::iterator;
 
@@ -579,7 +546,7 @@ DECLARE_SOA_TABLE(McKFVtx3BodyDatas, "AOD", "MCKF3BODYDATAS",
                   kfvtx3body::DCAxyTrackPosToPV, kfvtx3body::DCAxyTrackNegToPV, kfvtx3body::DCAxyTrackBachToPV,
                   kfvtx3body::DCATrackPosToPV, kfvtx3body::DCATrackNegToPV, kfvtx3body::DCATrackBachToPV,
                   kfvtx3body::Track0Sign, kfvtx3body::Track1Sign, kfvtx3body::Track2Sign, // track sing: proton, pion, deuteron
-                  kfvtx3body::TPCNSigmaProton, kfvtx3body::TPCNSigmaPion, kfvtx3body::TPCNSigmaDeuteron,
+                  kfvtx3body::TPCNSigmaProton, kfvtx3body::TPCNSigmaPion, kfvtx3body::TPCNSigmaDeuteron, kfvtx3body::TPCNSigmaPionBach,
                   kfvtx3body::TPCdEdxProton, kfvtx3body::TPCdEdxPion, kfvtx3body::TPCdEdxDeuteron,
                   kfvtx3body::TOFNSigmaDeuteron,
                   kfvtx3body::ITSClusSizeDeuteron,
@@ -593,30 +560,13 @@ DECLARE_SOA_TABLE(McKFVtx3BodyDatas, "AOD", "MCKF3BODYDATAS",
                   kfvtx3body::GenPhi,
                   kfvtx3body::GenEta,
                   kfvtx3body::GenRapidity,
+                  kfvtx3body::GenPosP, kfvtx3body::GenPosPt,
+                  kfvtx3body::GenNegP, kfvtx3body::GenNegPt,
+                  kfvtx3body::GenBachP, kfvtx3body::GenBachPt,
                   kfvtx3body::IsTrueH3L, kfvtx3body::IsTrueAntiH3L,
                   kfvtx3body::PdgCode,
                   kfvtx3body::IsReco,
-                  kfvtx3body::SurvEvSel,
-
-                  // dynamic columns
-                  vtx3body::VtxRadius<vtx3body::X, vtx3body::Y>,
-                  vtx3body::DistOverTotMom<vtx3body::X, vtx3body::Y, vtx3body::Z, kfvtx3body::Px, kfvtx3body::Py, kfvtx3body::Pz>,
-                  vtx3body::VtxCosPA<vtx3body::X, vtx3body::Y, vtx3body::Z, kfvtx3body::Px, kfvtx3body::Py, kfvtx3body::Pz>,
-                  vtx3body::DCAVtxToPV<vtx3body::X, vtx3body::Y, vtx3body::Z, kfvtx3body::Px, kfvtx3body::Py, kfvtx3body::Pz>,
-
-                  // Longitudinal
-                  vtx3body::YHypertriton<kfvtx3body::Px, kfvtx3body::Py, kfvtx3body::Pz>,
-                  vtx3body::Eta<kfvtx3body::Px, kfvtx3body::Py, kfvtx3body::Pz>,
-                  vtx3body::Phi<kfvtx3body::Px, kfvtx3body::Py>,
-                  vtx3body::Track0Pt<vtx3body::PxTrack0, vtx3body::PyTrack0>,                      // proton pT
-                  vtx3body::Track0Eta<vtx3body::PxTrack0, vtx3body::PyTrack0, vtx3body::PzTrack0>, // proton eta
-                  vtx3body::Track0Phi<vtx3body::PxTrack0, vtx3body::PyTrack0>,                     // proton phi
-                  vtx3body::Track1Pt<vtx3body::PxTrack1, vtx3body::PyTrack1>,                      // pion pT
-                  vtx3body::Track1Eta<vtx3body::PxTrack1, vtx3body::PyTrack1, vtx3body::PzTrack1>, // pion eta
-                  vtx3body::Track1Phi<vtx3body::PxTrack1, vtx3body::PyTrack1>,                     // pion phi
-                  vtx3body::Track2Pt<vtx3body::PxTrack2, vtx3body::PyTrack2>,                      // deuteron pT
-                  vtx3body::Track2Eta<vtx3body::PxTrack2, vtx3body::PyTrack2, vtx3body::PzTrack2>, // deuteron eta
-                  vtx3body::Track2Phi<vtx3body::PxTrack2, vtx3body::PyTrack2>);                    // deuteron phi
+                  kfvtx3body::SurvEvSel);
 
 // Definition of labels for KFVtx3BodyDatas
 namespace mckfvtx3bodylabel

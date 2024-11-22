@@ -137,12 +137,13 @@ int jetTrackFromHFShower(T const& jet, U const& /*tracks*/, V const& particles, 
   bool hasMcParticle = false;
   int origin = -1;
   for (auto& track : jet.template tracks_as<U>()) {
+    hftrack = track; // for init if origin is 1 or 2, the track is not hftrack
     if (!track.has_mcParticle()) {
       continue;
     }
     hasMcParticle = true;
     auto const& particle = track.template mcParticle_as<V>();
-    origin = RecoDecay::getCharmHadronOrigin(particles, particle, searchUpToQuark);
+    origin = RecoDecay::getParticleOrigin(particles, particle, searchUpToQuark);
     if (origin == 1 || origin == 2) { // 1=charm , 2=beauty
       hftrack = track;
       if (origin == 1) {
@@ -153,6 +154,7 @@ int jetTrackFromHFShower(T const& jet, U const& /*tracks*/, V const& particles, 
       }
     }
   }
+
   if (hasMcParticle) {
     return JetTaggingSpecies::lightflavour;
   } else {
@@ -173,7 +175,8 @@ int jetParticleFromHFShower(T const& jet, U const& particles, typename U::iterat
 
   int origin = -1;
   for (const auto& particle : jet.template tracks_as<U>()) {
-    origin = RecoDecay::getCharmHadronOrigin(particles, particle, searchUpToQuark);
+    hfparticle = particle; // for init if origin is 1 or 2, the particle is not hfparticle
+    origin = RecoDecay::getParticleOrigin(particles, particle, searchUpToQuark);
     if (origin == 1 || origin == 2) { // 1=charm , 2=beauty
       hfparticle = particle;
       if (origin == 1) {

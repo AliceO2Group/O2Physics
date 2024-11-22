@@ -100,6 +100,19 @@ class FemtoUniversePairCleaner
         return false;
       }
       return part1.globalIndex() != part2.globalIndex();
+    } else if constexpr (mPartOneType == o2::aod::femtouniverseparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtouniverseparticle::ParticleType::kCascade) {
+      /// Track-Cascade combination part1 is hadron and part2 is cascade
+      if (part1.partType() != o2::aod::femtouniverseparticle::ParticleType::kTrack || part2.partType() != o2::aod::femtouniverseparticle::ParticleType::kCascade) {
+        LOG(fatal) << "FemtoUniversePairCleaner: passed arguments don't agree with FemtoUniversePairCleaner instantiation! Please provide first argument kTrack candidate and second argument kCascade candidate.";
+        return false;
+      }
+      // Getting cascade children for part2
+      const auto& posChild = particles.iteratorAt(part2.index() - 3);
+      const auto& negChild = particles.iteratorAt(part2.index() - 2);
+      const auto& bachelor = particles.iteratorAt(part2.index() - 1);
+      if (part1.globalIndex() == posChild.globalIndex() || part1.globalIndex() == negChild.globalIndex() || part1.globalIndex() == bachelor.globalIndex()) {
+        return false;
+      }
     } else if constexpr (mPartOneType == o2::aod::femtouniverseparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtouniverseparticle::ParticleType::kD0) {
       /// Track-D0 combination part1 is hadron and part2 is D0
       if (part2.partType() != o2::aod::femtouniverseparticle::ParticleType::kD0) {

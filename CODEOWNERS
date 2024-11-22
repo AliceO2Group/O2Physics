@@ -15,7 +15,7 @@
 /Common/CCDB @alibuild @jgrosseo @iarsene @ekryshen @ddobrigk
 /Common/Tools/Multiplicity @alibuild @ddobrigk @victor-gonzalez
 /ALICE3 @alibuild @njacazio @hscheid
-/DPG @alibuild @chiarazampolli @noferini
+/DPG @alibuild @chiarazampolli @alcaliva @catalinristea
 /DPG/Tasks/AOTEvent @alibuild @ekryshen @strogolo @altsybee
 /DPG/Tasks/AOTTrack @alibuild @mfaggin @iouribelikov @njacazio
 /DPG/Tasks/TOF @alibuild @noferini @njacazio
@@ -55,7 +55,7 @@
 /PWGMM/UE   @alibuild @aalkin @aortizve
 
 /PWGUD @alibuild @pbuehler @abylinkin @rolavick
-/PWGJE @alibuild @lhavener @maoyx @nzardosh @fjonasALICE @mfasDa
+/PWGJE @alibuild @lhavener @maoyx @nzardosh @fjonasALICE @mfasDa @mhemmer-cern
 /Tools/PIDML @alibuild @saganatt
 /Tools/ML @alibuild @fcatalan92 @fmazzasc
 /Tutorials/PWGCF @alibuild @jgrosseo @saganatt @victor-gonzalez @zchochul

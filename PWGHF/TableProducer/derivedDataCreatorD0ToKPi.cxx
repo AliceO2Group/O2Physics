@@ -15,6 +15,10 @@
 ///
 /// \author Vít Kučera <vit.kucera@cern.ch>, Inha University
 
+#include <algorithm>
+#include <map>
+#include <vector>
+
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
@@ -27,10 +31,14 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/DataModel/DerivedTables.h"
+#include "PWGHF/Utils/utilsDerivedData.h"
+#include "PWGHF/Utils/utilsPid.h"
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::aod::pid_tpc_tof_utils;
+using namespace o2::analysis::hf_derived;
 
 /// Writes the full information in an output TTree
 struct HfDerivedDataCreatorD0ToKPi {
@@ -132,14 +140,6 @@ struct HfDerivedDataCreatorD0ToKPi {
     }
   }
 
-  template <typename T>
-  void reserveTable(T& table, const Configurable<bool>& enabled, const uint64_t size)
-  {
-    if (enabled.value) {
-      table.reserve(size);
-    }
-  };
-
   template <bool isMC, typename T>
   // void fillTablesCollision(const T& collision, int isEventReject, int runNumber)
   void fillTablesCollision(const T& collision)
@@ -204,33 +204,18 @@ struct HfDerivedDataCreatorD0ToKPi {
         invMass,
         y);
     }
-
     if (fillCandidatePar) {
-      float tpcNSigmaPiExpPi = candidate.nSigTpcPi0();
-      float tofNSigmaPiExpPi = candidate.nSigTofPi0();
-      float tpcTofNSigmaPiExpPi = candidate.tpcTofNSigmaPi0();
-      float tpcNSigmaKaExpPi = candidate.nSigTpcKa0();
-      float tofNSigmaKaExpPi = candidate.nSigTofKa0();
-      float tpcTofNSigmaKaExpPi = candidate.tpcTofNSigmaKa0();
-      float tpcNSigmaPiExpKa = candidate.nSigTpcPi1();
-      float tofNSigmaPiExpKa = candidate.nSigTofPi1();
-      float tpcTofNSigmaPiExpKa = candidate.tpcTofNSigmaPi1();
-      float tpcNSigmaKaExpKa = candidate.nSigTpcKa1();
-      float tofNSigmaKaExpKa = candidate.nSigTofKa1();
-      float tpcTofNSigmaKaExpKa = candidate.tpcTofNSigmaKa1();
-      if (candFlag == 1) {
-        tpcNSigmaPiExpPi = candidate.nSigTpcPi1();
-        tofNSigmaPiExpPi = candidate.nSigTofPi1();
-        tpcTofNSigmaPiExpPi = candidate.tpcTofNSigmaPi1();
-        tpcNSigmaKaExpPi = candidate.nSigTpcKa1();
-        tofNSigmaKaExpPi = candidate.nSigTofKa1();
-        tpcTofNSigmaKaExpPi = candidate.tpcTofNSigmaKa1();
-        tpcNSigmaPiExpKa = candidate.nSigTpcPi0();
-        tofNSigmaPiExpKa = candidate.nSigTofPi0();
-        tpcTofNSigmaPiExpKa = candidate.tpcTofNSigmaPi0();
-        tpcNSigmaKaExpKa = candidate.nSigTpcKa0();
-        tofNSigmaKaExpKa = candidate.nSigTofKa0();
-        tpcTofNSigmaKaExpKa = candidate.tpcTofNSigmaKa0();
+      std::array<std::array<std::array<float, 3>, 2>, 2> sigmas{}; // PID nSigma [Expected][Hypothesis][TPC/TOF/TPC+TOF]
+      if (candFlag == 0) {
+        GET_N_SIGMA_PRONG(sigmas[HfProngSpecies::Pion][HfProngSpecies::Pion], candidate, 0, Pi)
+        GET_N_SIGMA_PRONG(sigmas[HfProngSpecies::Pion][HfProngSpecies::Kaon], candidate, 0, Ka)
+        GET_N_SIGMA_PRONG(sigmas[HfProngSpecies::Kaon][HfProngSpecies::Pion], candidate, 1, Pi)
+        GET_N_SIGMA_PRONG(sigmas[HfProngSpecies::Kaon][HfProngSpecies::Kaon], candidate, 1, Ka)
+      } else if (candFlag == 1) {
+        GET_N_SIGMA_PRONG(sigmas[HfProngSpecies::Pion][HfProngSpecies::Pion], candidate, 1, Pi)
+        GET_N_SIGMA_PRONG(sigmas[HfProngSpecies::Pion][HfProngSpecies::Kaon], candidate, 1, Ka)
+        GET_N_SIGMA_PRONG(sigmas[HfProngSpecies::Kaon][HfProngSpecies::Pion], candidate, 0, Pi)
+        GET_N_SIGMA_PRONG(sigmas[HfProngSpecies::Kaon][HfProngSpecies::Kaon], candidate, 0, Ka)
       }
       rowCandidatePar(
         candidate.chi2PCA(),
@@ -246,18 +231,18 @@ struct HfDerivedDataCreatorD0ToKPi {
         candidate.impactParameter1(),
         candidate.impactParameterNormalised0(),
         candidate.impactParameterNormalised1(),
-        tpcNSigmaPiExpPi,
-        tofNSigmaPiExpPi,
-        tpcTofNSigmaPiExpPi,
-        tpcNSigmaKaExpPi,
-        tofNSigmaKaExpPi,
-        tpcTofNSigmaKaExpPi,
-        tpcNSigmaPiExpKa,
-        tofNSigmaPiExpKa,
-        tpcTofNSigmaPiExpKa,
-        tpcNSigmaKaExpKa,
-        tofNSigmaKaExpKa,
-        tpcTofNSigmaKaExpKa,
+        sigmas[HfProngSpecies::Pion][HfProngSpecies::Pion][0],
+        sigmas[HfProngSpecies::Pion][HfProngSpecies::Pion][1],
+        sigmas[HfProngSpecies::Pion][HfProngSpecies::Pion][2],
+        sigmas[HfProngSpecies::Pion][HfProngSpecies::Kaon][0],
+        sigmas[HfProngSpecies::Pion][HfProngSpecies::Kaon][1],
+        sigmas[HfProngSpecies::Pion][HfProngSpecies::Kaon][2],
+        sigmas[HfProngSpecies::Kaon][HfProngSpecies::Pion][0],
+        sigmas[HfProngSpecies::Kaon][HfProngSpecies::Pion][1],
+        sigmas[HfProngSpecies::Kaon][HfProngSpecies::Pion][2],
+        sigmas[HfProngSpecies::Kaon][HfProngSpecies::Kaon][0],
+        sigmas[HfProngSpecies::Kaon][HfProngSpecies::Kaon][1],
+        sigmas[HfProngSpecies::Kaon][HfProngSpecies::Kaon][2],
         candidate.maxNormalisedDeltaIP(),
         candidate.impactParameterProduct());
     }
@@ -363,6 +348,7 @@ struct HfDerivedDataCreatorD0ToKPi {
       reserveTable(rowCandidatePar, fillCandidatePar, sizeTableCand);
       reserveTable(rowCandidateParE, fillCandidateParE, sizeTableCand);
       reserveTable(rowCandidateSel, fillCandidateSel, sizeTableCand);
+      reserveTable(rowCandidateMl, fillCandidateMl, sizeTableCand);
       reserveTable(rowCandidateId, fillCandidateId, sizeTableCand);
       if constexpr (isMc) {
         reserveTable(rowCandidateMc, fillCandidateMc, sizeTableCand);
@@ -377,7 +363,7 @@ struct HfDerivedDataCreatorD0ToKPi {
               continue;
             }
             if (downSampleBkgFactor < 1.) {
-              float pseudoRndm = candidate.ptProng0() * 1000. - (int64_t)(candidate.ptProng0() * 1000);
+              float pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
               if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
                 continue;
               }
@@ -390,7 +376,7 @@ struct HfDerivedDataCreatorD0ToKPi {
           }
         } else {
           if (downSampleBkgFactor < 1.) {
-            float pseudoRndm = candidate.ptProng0() * 1000. - (int64_t)(candidate.ptProng0() * 1000);
+            float pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
             if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
               continue;
             }
@@ -448,6 +434,7 @@ struct HfDerivedDataCreatorD0ToKPi {
     // Fill MC collision properties
     auto sizeTableMcColl = mcCollisions.size();
     reserveTable(rowMcCollBase, fillMcCollBase, sizeTableMcColl);
+    reserveTable(rowMcCollId, fillMcCollId, sizeTableMcColl);
     reserveTable(rowMcRCollId, fillMcRCollId, sizeTableMcColl);
     for (const auto& mcCollision : mcCollisions) {
       auto thisMcCollId = mcCollision.globalIndex();

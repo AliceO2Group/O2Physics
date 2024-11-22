@@ -113,7 +113,7 @@ struct sgPIDAnalyzer {
     histos.add("TOF/nMu", "Negative TPC Mu vs TOF El vs pt", {HistType::kTH3F, {ptBins, nSigmaBins, nSigmaBins}});
   }
 
-  void process(aod::SGEvents const& events, aod::SGTracks const& tracks)
+  void process(aod::SGEvents const&, aod::SGTracks const& tracks)
   {
     for (const auto& track : tracks) {
       if (track.eta() < eta_min || track.eta() > eta_max)

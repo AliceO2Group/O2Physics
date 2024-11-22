@@ -43,12 +43,15 @@ Region getRegion(T const deltaPhi)
 }
 
 // ========= Find Leading Particle ==============
-template <typename TTracks, typename T1, typename T2>
-int findLeadingParticle(TTracks const& tracks, T1 const dcaXYTrackMax, T2 const dcaZTrackMax)
+template <typename TTracks, typename T1, typename T2, typename T3>
+int findLeadingParticle(TTracks const& tracks, T1 const dcaXYTrackMax, T2 const dcaZTrackMax, T3 const etaTrackMax)
 {
   auto leadingParticle = tracks.begin();
   for (auto const& track : tracks) {
     if (std::abs(track.dcaXY()) >= dcaXYTrackMax || std::abs(track.dcaZ()) >= dcaZTrackMax) {
+      continue;
+    }
+    if (std::abs(track.eta()) > etaTrackMax) {
       continue;
     }
     if (track.pt() > leadingParticle.pt()) {
