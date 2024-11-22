@@ -268,7 +268,7 @@ struct hyperNucleus {
     for (int dc : daughterTrackSigns_)
       daughterTrackSigns.push_back(dc);
   }
-  int GetNdaughters() { return (int)daughters.size(); }
+  int GetNdaughters() { return static_cast<int>(daughters.size()); }
   const char* motherName() { return name.Contains("->") ? ((TString)name(0, name.First("-"))).Data() : name.Data(); }
   const char* daughterNames() { return name.Contains("->") ? ((TString)name(name.First("-") + 2, name.Length())).Data() : ""; }
   void Print()
@@ -351,7 +351,7 @@ struct hyperNucCandidate {
       return kfpDaughters.front().GetQ() / std::abs(kfpDaughters.front().GetQ());
     return kfp.GetQ() / std::abs(kfp.GetQ());
   }
-  int GetNdaughters() { return (int)kfpDaughters.size(); }
+  int GetNdaughters() { return static_cast<int>(kfpDaughters.size()); }
   float GetDcaTracks() { return GetNdaughters() == 2 ? GetDcaTracks2() : GetMaxDcaToSv(); }
   float GetDcaTracks2() { return kfpDaughters.at(0).GetDistanceFromParticle(kfpDaughters.at(1)); }
   float GetMaxDcaToSv()
@@ -723,7 +723,7 @@ struct hypKfRecoTask {
 
       int nHypNucDaughters = singleHyperNucCandidates.at(hyperNuc->daughters.at(0)).size();
       std::vector<int64_t> vecHypNucDaughers;
-      for (int64_t i = 0; i < (int64_t)nHypNucDaughters; i++) {
+      for (int64_t i = 0; i < static_cast<int64_t>(nHypNucDaughters); i++) {
         vecHypNucDaughers.push_back(i);
       }
 
