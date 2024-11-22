@@ -139,8 +139,7 @@ struct femtoUniversePairTaskTrackD0 {
   Configurable<bool> ConfUseMassCutForD0D0bar{"ConfUseMassCutForD0D0bar", false, "Switch to save D0/D0bar within declared inv. mass range"};
 
   /// Partitions for particle 1
-  Partition<FemtoFullParticles> partsTrack = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == int8_t(ConfTrack.ConfTrackSign))
-                                              && (aod::femtouniverseparticle::pt > ConfTrack.ConfTrackLowPtCut) && (aod::femtouniverseparticle::pt < ConfTrack.ConfTrackHighPtCut);
+  Partition<FemtoFullParticles> partsTrack = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == int8_t(ConfTrack.ConfTrackSign)) && (aod::femtouniverseparticle::pt > ConfTrack.ConfTrackLowPtCut) && (aod::femtouniverseparticle::pt < ConfTrack.ConfTrackHighPtCut);
   Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> partsTrackMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack));
 
   /// Partitions for particle 2
@@ -149,11 +148,9 @@ struct femtoUniversePairTaskTrackD0 {
   /// Partition with D0/D0bar candidates, which pass only one mass hypothesis
   Partition<FemtoFullParticles> partsOnlyD0D0bar = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kD0)) && (aod::femtouniverseparticle::mLambda < 0.0f || aod::femtouniverseparticle::mAntiLambda < 0.0f);
   /// Partition with D0 mesons only (one mass hypothesis)
-  Partition<FemtoFullParticles> partsD0s = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kD0)) && (aod::femtouniverseparticle::mLambda > 0.0f) && (aod::femtouniverseparticle::mAntiLambda < 0.0f)
-                                            && (aod::femtouniverseparticle::pt > ConfDmesons.ConfMinPtD0D0bar) && (aod::femtouniverseparticle::pt < ConfDmesons.ConfMaxPtD0D0bar);
+  Partition<FemtoFullParticles> partsD0s = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kD0)) && (aod::femtouniverseparticle::mLambda > 0.0f) && (aod::femtouniverseparticle::mAntiLambda < 0.0f) && (aod::femtouniverseparticle::pt > ConfDmesons.ConfMinPtD0D0bar) && (aod::femtouniverseparticle::pt < ConfDmesons.ConfMaxPtD0D0bar);
   /// Partition with D0bar mesons only (one mass hypothesis)
-  Partition<FemtoFullParticles> partsD0bars = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kD0)) && (aod::femtouniverseparticle::mLambda < 0.0f) && (aod::femtouniverseparticle::mAntiLambda > 0.0f)
-                                              && (aod::femtouniverseparticle::pt > ConfDmesons.ConfMinPtD0D0bar) && (aod::femtouniverseparticle::pt < ConfDmesons.ConfMaxPtD0D0bar);
+  Partition<FemtoFullParticles> partsD0bars = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kD0)) && (aod::femtouniverseparticle::mLambda < 0.0f) && (aod::femtouniverseparticle::mAntiLambda > 0.0f) && (aod::femtouniverseparticle::pt > ConfDmesons.ConfMinPtD0D0bar) && (aod::femtouniverseparticle::pt < ConfDmesons.ConfMaxPtD0D0bar);
   /// Partition for D0/D0bar mesons from MC
   Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> partsD0D0barMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kD0));
 
@@ -603,7 +600,7 @@ struct femtoUniversePairTaskTrackD0 {
         if (!IsParticleNSigma(track.p(), trackCuts.getNsigmaTPC(track, o2::track::PID::Proton), trackCuts.getNsigmaTOF(track, o2::track::PID::Proton), trackCuts.getNsigmaTPC(track, o2::track::PID::Pion), trackCuts.getNsigmaTOF(track, o2::track::PID::Pion), trackCuts.getNsigmaTPC(track, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(track, o2::track::PID::Kaon))) {
           continue;
         }
-      }      
+      }
       // // Set inv. mass cut for D0/D0bar candidates
       if (ConfUseMassCutForD0D0bar) {
         if ((d0candidate.mLambda() < ConfD0D0barSideBand.ConfSignalRegionMin || d0candidate.mLambda() > ConfD0D0barSideBand.ConfSignalRegionMax) || (d0candidate.mAntiLambda() < ConfD0D0barSideBand.ConfSignalRegionMin || d0candidate.mAntiLambda() > ConfD0D0barSideBand.ConfSignalRegionMax)) {
