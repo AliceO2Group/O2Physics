@@ -152,7 +152,7 @@ struct pidStudies {
   template <bool isV0, typename Cand>
   void fillTree(Cand const& candidate, const int& flag)
   {
-    float pseudoRndm = candidate.pt() * 1000. - (int64_t)(candidate.pt() * 1000);
+    float pseudoRndm = candidate.pt() * 1000. - static_cast<int64_t>(candidate.pt() * 1000);
     if (candidate.pt() < ptMaxForDownSample && pseudoRndm > downSampleBkgFactor) {
       return;
     }
