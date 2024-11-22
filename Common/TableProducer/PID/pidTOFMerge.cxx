@@ -19,6 +19,7 @@
 #include <utility>
 #include <vector>
 #include <string>
+#include <map>
 
 // O2 includes
 #include "Framework/runDataProcessing.h"
