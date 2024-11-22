@@ -30,8 +30,8 @@ using namespace o2::aod;
 
 struct ft0CorrectedTable {
   // Configurables
-  Configurable<float> resoFT0A{"resoFT0A", 20.f, "FT0A resolution"};
-  Configurable<float> resoFT0C{"resoFT0C", 20.f, "FT0C resolution"};
+  Configurable<float> resoFT0A{"resoFT0A", 20.f, "FT0A resolution in ps for the MC override"};
+  Configurable<float> resoFT0C{"resoFT0C", 20.f, "FT0C resolution in ps for the MC override"};
   Configurable<bool> addHistograms{"addHistograms", false, "Add QA histograms"};
   Configurable<int> cfgCollisionSystem{"collisionSystem", -2, "Collision system: -2 (use cfg values), -1 (autoset), 0 (pp), 1 (PbPb), 2 (XeXe), 3 (pPb)"};
   Configurable<std::string> cfgUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -61,6 +61,11 @@ struct ft0CorrectedTable {
     // Not later than now objects
     ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
 
+    if (doprocessWithBypassFT0timeInMC) {
+      // From ps to ns
+      resoFT0A.value = resoFT0A.value / 1000.f;
+      resoFT0C.value = resoFT0C.value / 1000.f;
+    }
     if (!addHistograms) {
       return;
     }
@@ -135,6 +140,9 @@ struct ft0CorrectedTable {
         default:
           break;
       }
+      // Resolution is given in ps
+      resoFT0A.value = resoFT0A.value / 1000.f;
+      resoFT0C.value = resoFT0C.value / 1000.f;
     }
     table.reserve(collisions.size());
     float t0A = 1e10f;
