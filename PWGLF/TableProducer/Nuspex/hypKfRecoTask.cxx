@@ -35,6 +35,10 @@
 #include "PWGLF/DataModel/LFHypernucleiKfTables.h"
 #include "TRandom.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
+#include <iostream>
+#include <limits>
+#include <vector>
+#include <string>
 
 // KFParticle
 #ifndef HomogeneousField
