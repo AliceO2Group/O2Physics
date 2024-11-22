@@ -242,11 +242,11 @@ struct HfPidStudies {
     return aod::pid_studies::Particle::NotMatched;
   }
 
-  void processMc(V0sMcRec const& V0s, 
-                 aod::V0MCCores const&, 
+  void processMc(V0sMcRec const& V0s,
+                 aod::V0MCCores const&,
                  CascsMcRec const& cascades,
-                 aod::CascMCCores const&, 
-                 CollSels const&, 
+                 aod::CascMCCores const&,
+                 CollSels const&,
                  PidTracks const&)
   {
     for (const auto& v0 : V0s) {
