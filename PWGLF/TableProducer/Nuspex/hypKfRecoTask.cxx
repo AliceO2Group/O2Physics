@@ -12,6 +12,10 @@
 /// \brief Hypernuclei rconstruction using KGParticle package
 /// \authors Janik Ditzel <jditzel@cern.ch> and Michael Hartung <mhartung@cern.ch>
 
+#include <iostream>
+#include <limits>
+#include <vector>
+#include <string>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -35,10 +39,6 @@
 #include "PWGLF/DataModel/LFHypernucleiKfTables.h"
 #include "TRandom.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
-#include <iostream>
-#include <limits>
-#include <vector>
-#include <string>
 
 // KFParticle
 #ifndef HomogeneousField
