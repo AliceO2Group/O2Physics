@@ -88,7 +88,7 @@ struct highmasslambda {
   Configurable<float> cfgCutCentralityMax{"cfgCutCentralityMax", 50.0f, "Accepted maximum Centrality"};
   Configurable<float> cfgCutCentralityMin{"cfgCutCentralityMin", 30.0f, "Accepted minimum Centrality"};
   // proton track cut
-  Configurable<bool> rejectPID{"reject PID", true, "pion, kaon, electron rejection"};
+  Configurable<bool> rejectPID{"rejectPID", true, "pion, kaon, electron rejection"};
   Configurable<float> cfgCutTOFBeta{"cfgCutTOFBeta", 0.0, "cut TOF beta"};
   Configurable<bool> ispTdifferentialDCA{"ispTdifferentialDCA", true, "is pT differential DCA"};
   Configurable<bool> isPVContributor{"isPVContributor", true, "is PV contributor"};
@@ -601,7 +601,6 @@ struct highmasslambda {
       if (!selectionTrack(track1)) {
         continue;
       }
-
       // PID check
       if (PIDstrategy == 0 && !selectionPID1(track1)) {
         continue;
@@ -634,7 +633,6 @@ struct highmasslambda {
           histos.fill(HIST("hNsigmaProtonKaonTPC_afterKa"), track1.tpcNSigmaPr(), track1.tpcNSigmaKa(), track1.tpcInnerParam());
         }
       }
-
       histos.fill(HIST("hMomCorr"), track1.p() / track1.sign(), track1.p() - track1.tpcInnerParam(), centrality);
       histos.fill(HIST("hEta"), track1.eta());
       histos.fill(HIST("hDcaxy"), track1.dcaXY());
@@ -699,7 +697,6 @@ struct highmasslambda {
             histos.fill(HIST("hSparseV2SASameEvent_V2_dcatopv"), Lambdac.M(), Lambdac.Pt(), v2, v0.dcav0topv(), Proton.Pt());
           }
         }
-
         if (fillRotation) {
           for (int nrotbkg = 0; nrotbkg < nBkgRotations; nrotbkg++) {
             auto anglestart = confMinRot;
@@ -780,21 +777,10 @@ struct highmasslambda {
         continue;
       }
       for (auto& [track1, v0] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
+
         if (!selectionTrack(track1)) {
           continue;
         }
-        if (!track1.hasTOF()) {
-          if (rejectPID && !rejectPi(track1)) {
-            continue;
-          }
-          if (rejectPID && !rejectEl(track1)) {
-            continue;
-          }
-          if (rejectPID && !rejectKa(track1)) {
-            continue;
-          }
-        }
-
         // PID check
         if (PIDstrategy == 0 && !selectionPID1(track1)) {
           continue;
@@ -809,6 +795,11 @@ struct highmasslambda {
           continue;
         }
 
+        if (!track1.hasTOF()) {
+          if (rejectPID && !rejectEl(track1)) {
+            continue;
+          }
+        }
         if (!SelectionV0(collision2, v0)) {
           continue;
         }
