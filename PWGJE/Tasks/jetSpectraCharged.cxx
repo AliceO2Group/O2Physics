@@ -255,8 +255,11 @@ struct JetSpectraChargedTask {
   Filter trackCuts = (aod::jtrack::pt >= trackPtMin && aod::jtrack::pt < trackPtMax && aod::jtrack::eta > trackEtaMin && aod::jtrack::eta < trackEtaMax);
   Filter trackSubCuts = (aod::jtracksub::pt >= trackPtMin && aod::jtracksub::pt < trackPtMax && aod::jtracksub::eta > trackEtaMin && aod::jtracksub::eta < trackEtaMax);
   Filter eventCuts = (nabs(aod::jcollision::posZ) < vertexZCut && aod::jcollision::centrality >= centralityMin && aod::jcollision::centrality < centralityMax);
+  Filter particlecuts = (aod::jmcparticle::pt >= trackPtMin && aod::jmcparticle::pt < trackPtMax && aod::jmcparticle::eta > trackEtaMin && aod::jmcparticle::eta < trackEtaMax);
+  
   PresliceUnsorted<soa::Filtered<aod::JetCollisionsMCD>> CollisionsPerMCPCollision = aod::jmccollisionlb::mcCollisionId;
-
+  // Preslice<aod::JetTracksMCD> tracksPerJCollision = o2::aod::jtracks::collisionId
+  
   template <typename TTracks, typename TJets>
   bool isAcceptedJet(TJets const& jet)
   {
@@ -497,7 +500,7 @@ struct JetSpectraChargedTask {
   }
 
   template <typename TCollisions, typename TJets, typename TTracks>
-  void randomCone(TCollisions const& collision, TJets const& jets, TTracks const& tracks)
+  void fillrandomCone(TCollisions const& collision, TJets const& jets, TTracks const& tracks)
   {
       // fill nothing for now 
   }
@@ -781,6 +784,32 @@ struct JetSpectraChargedTask {
   }
   PROCESS_SWITCH(JetSpectraChargedTask, processCollisionsWeighted, "collision for weighted events", true);
 
+  void processmcparticles(aod::JetMcCollision const& mcCollision,
+                          soa::SmallGroups<aod::JetCollisionsMCD> const& collisions,
+                          soa::Filtered<aod::JetParticles> const& mcparticles)
+  {
+      registry.fill(HIST("h_mccollisions_part"), 0.5);
+      registry.fill(HIST("h2_centrality_mccollisions_part"), collisions.begin(), 0.5);
+      if(!abs(mcCollision.posZ() < vertexZCut)){
+        return
+      }
+      if(!abs(collisions.size() < 1)){
+        return
+      }
+
+      bool hasSel8Coll = false;
+      bool centralityCheck = false;
+      if(jetderiveddatautilities::selectionCollision(collisions.begin(), eventselection)){
+        hasSel8Coll = true;
+      }
+      if(!check){
+      }
+      registry.fill(HIST("h_mccollisions_part"), 1.5);
+      registry.fill(HIST("h2_centrality_mccollisions_part"), collisions.begin(), 1.5);
+      fillparticleHistograms(collision.begin(), mcparticles);
+  }
+  PROCESS_SWITCH(JetSpectraChargedTask, processmcparticles, "QA for charged mc particles", false);
+
 
   void processTracks(soa::Filtered<aod::JetCollisions>::iterator const& collision,
                      soa::Filtered<soa::Join<aod::JetTracks, aod::JTrackExtras>> const& tracks)
@@ -851,13 +880,13 @@ struct JetSpectraChargedTask {
 
   void processRandomConeData(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator const& collision, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets, soa::Filtered<aod::JetTracks> const& tracks)
   {
-    randomCone(collision, jets, tracks);
+    fillrandomCone(collision, jets, tracks);
   }
   PROCESS_SWITCH(JetSpectraChargedTask, processRandomConeData, "QA for random cone estimation of background fluctuations in data", false);
 
   void processRandomConeMCD(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator const& collision, soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents> const& jets, soa::Filtered<aod::JetTracks> const& tracks)
   {
-    randomCone(collision, jets, tracks);
+    fillrandomCone(collision, jets, tracks);
   }
   PROCESS_SWITCH(JetSpectraChargedTask, processRandomConeMCD, "QA for random cone estimation of background fluctuations in mcd", false);
 };
