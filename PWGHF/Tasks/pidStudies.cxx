@@ -65,11 +65,13 @@ DECLARE_SOA_COLUMN(QtArm, qtArm, float);                   //! Armenteros Qt
 // Cascades
 DECLARE_SOA_COLUMN(MassOmega, massOmega, float);             //! Candidate mass
 DECLARE_SOA_COLUMN(MassXi, massXi, float);                   //! Candidate mass
+DECLARE_SOA_COLUMN(BachPt, bachPt, float);                   //! Transverse momentum of the bachelor (GeV/c)
+DECLARE_SOA_COLUMN(V0cosPA, v0cosPA, float);                 //! V0 CPA
 DECLARE_SOA_COLUMN(CascCosPA, casccosPA, float);             //! Cascade CPA
 DECLARE_SOA_COLUMN(DCAV0daughters, dcaV0daughters, float);   //! DCA of V0 daughters
 DECLARE_SOA_COLUMN(DCAv0topv, dcav0topv, float);             //! V0 DCA to PV
-DECLARE_SOA_COLUMN(NSigmaTpcBachKa, nSigmaTpcBachKa, float); //! nSigmaTPC of positive bachelor with kaon hypothesis
-DECLARE_SOA_COLUMN(NSigmaTofBachKa, nSigmaTofBachKa, float); //! nSigmaTPC of negative bachelor with kaon hypothesis
+DECLARE_SOA_COLUMN(NSigmaTpcBachKa, nSigmaTpcBachKa, float); //! nSigmaTPC of bachelor with kaon hypothesis
+DECLARE_SOA_COLUMN(NSigmaTofBachKa, nSigmaTofBachKa, float); //! nSigmaTOF of bachelor with kaon hypothesis
 
 // Common columns
 DECLARE_SOA_COLUMN(OccupancyFt0c, occupancyFt0c, float);   //! Occupancy from FT0C
@@ -107,6 +109,8 @@ DECLARE_SOA_TABLE(pidV0s, "AOD", "PIDV0S", //! Table with PID information
 DECLARE_SOA_TABLE(pidCascades, "AOD", "PIDCASCADES", //! Table with PID information
                   pid_studies::MassOmega,
                   pid_studies::Pt,
+                  pid_studies::BachPt,
+                  pid_studies::V0cosPA,
                   pid_studies::MassXi,
                   pid_studies::CascCosPA,
                   pid_studies::DCAV0daughters,
@@ -186,6 +190,8 @@ struct pidStudies {
       pidCascade(
         candidate.mOmega(),
         candidate.pt(),
+        candidate.bachelorpt(),
+        candidate.v0cosPA(coll.posX(), coll.posY(), coll.posZ()),
         candidate.mXi(),
         candidate.casccosPA(coll.posX(), coll.posY(), coll.posZ()),
         candidate.dcaV0daughters(),
@@ -210,9 +216,6 @@ struct pidStudies {
       auto v0MC = cand.template v0MCCore_as<aod::V0MCCores>();
       if (v0MC.pdgCode() == kK0Short && v0MC.pdgCodeNegative() == -kPiPlus && v0MC.pdgCodePositive() == kPiPlus) {
         return aod::pid_studies::Particle::K0s;
-      }
-      if (v0MC.pdgCode() == -kK0Short && v0MC.pdgCodeNegative() == -kPiPlus && v0MC.pdgCodePositive() == kPiPlus) {
-        return -aod::pid_studies::Particle::K0s;
       }
       if (v0MC.pdgCode() == kLambda0 && v0MC.pdgCodeNegative() == -kPiPlus && v0MC.pdgCodePositive() == kProton) {
         return aod::pid_studies::Particle::Lambda;
@@ -258,7 +261,7 @@ struct pidStudies {
       }
     }
     for (const auto& casc : cascades) {
-      if (casc.mOmega() > massOmegaMin && casc.mOmega() < massOmegaMax) {
+      if (casc.mOmega() > massOmegaMin && casc.mOmega() < massOmegaMax && casc.mLambda() > massLambdaMin && casc.mLambda() < massLambdaMax) {
         int matched = isMatched(casc);
         if (matched != aod::pid_studies::Particle::NotMatched) {
           fillTree<false>(casc, matched);
@@ -278,7 +281,7 @@ struct pidStudies {
       }
     }
     for (const auto& casc : cascades) {
-      if (casc.mOmega() > massOmegaMin && casc.mOmega() < massOmegaMax) {
+      if (casc.mOmega() > massOmegaMin && casc.mOmega() < massOmegaMax && casc.mLambda() > massLambdaMin && casc.mLambda() < massLambdaMax) {
         fillTree<false>(casc, aod::pid_studies::Particle::NotMatched);
       }
     }
