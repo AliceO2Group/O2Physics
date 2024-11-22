@@ -162,7 +162,7 @@ struct HfFilterPrepareMlSamples { // Main struct
       auto trackFirst = cand3Prong.prong0_as<BigTracksPID>();  // first daughter
       auto trackSecond = cand3Prong.prong1_as<BigTracksPID>(); // second daughter
       auto trackThird = cand3Prong.prong2_as<BigTracksPID>();  // third daughter
-      auto arrayDaughters = std::array{trackFirst, trackSecond, trackThird};
+      // auto arrayDaughters = std::array{trackFirst, trackSecond, trackThird};
 
       auto trackParFirst = getTrackPar(trackFirst);
       auto trackParSecond = getTrackPar(trackSecond);
@@ -206,7 +206,7 @@ struct HfFilterPrepareMlSamples { // Main struct
         deltaMassKKFirst = std::abs(RecoDecay::m(std::array{pVecFirst, pVecSecond}, std::array{massKa, massKa}) - massPhi);
         deltaMassKKSecond = std::abs(RecoDecay::m(std::array{pVecThird, pVecSecond}, std::array{massKa, massKa}) - massPhi);
       }
-      int8_t sign = 0;
+      // int8_t sign = 0;
       auto flag = RecoDecay::OriginType::None;
 
       float pseudoRndm = trackFirst.pt() * 1000. - static_cast<int64_t>(trackFirst.pt() * 1000);

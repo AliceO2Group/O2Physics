@@ -14,6 +14,7 @@
 /// \since  2024-11-12
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
 /// \author Francesco Mazzaschi francesco.mazzaschi@cern.ch
+/// \author Giorgio Alberto Lucia giorgio.alberto.lucia@cern.ch
 /// \brief  Task to produce PID tables for ITS split for each particle.
 ///         Only the tables for the mass hypotheses requested are filled, the others are sent empty.
 ///
@@ -42,14 +43,21 @@ using namespace o2::track;
 MetadataHelper metadataInfo;
 
 static constexpr int nCases = 2;
-static constexpr int nParameters = 5;
+static constexpr int nParameters = 9;
 static const std::vector<std::string> casesNames{"Data", "MC"};
-static const std::vector<std::string> parameterNames{"bb1", "bb2", "bb3", "Charge exponent", "Resolution"};
-static constexpr float defaultParameters[nCases][nParameters]{{0.903, 2.014, 2.440, 2.299999952316284f, 0.15f},
-                                                              {0.903, 2.014, 2.440, 2.299999952316284f, 0.15f}};
+static const std::vector<std::string> parameterNames{"RespITSPar1", "RespITSPar2", "RespITSPar3",
+                                                     "RespITSPar1_Z2", "RespITSPar2_Z2", "RespITSPar3_Z2",
+                                                     "ResolutionPar1", "ResolutionPar2", "ResolutionPar3"};
+static constexpr float defaultParameters[nCases][nParameters]{{0.903, 2.014, 2.440,
+                                                               2.8752, 1.1246, 5.0259,
+                                                               0.2431, -0.3293, 1.533},
+                                                              {0.903, 2.014, 2.440,
+                                                               2.8752, 1.1246, 5.0259,
+                                                               0.2431, -0.3293, 1.533}};
 
 /// Task to produce the ITS PID information for each particle species
-/// The parametrization is: [p0/(bg)**p1 + p2] * pow(q, p3), being bg = p/m and q the charge
+/// The parametrization is: [p0/(bg)**p1 + p2] being bg = p/m. Different parametrizations are used for He3 and Alpha particles.
+/// The resolution depends on the bg and is modelled with an erf function: p0*TMath::Erf((bg-p1)/p2)
 struct itsPid {
 
   Configurable<LabeledArray<float>> itsParams{"itsParams",
@@ -74,11 +82,15 @@ struct itsPid {
       LOG(fatal) << "Not implemented yet";
     } else {
       const char* key = metadataInfo.isMC() ? "MC" : "Data";
-      o2::aod::ITSResponse::setParameters(itsParams->get(key, "bb1"),
-                                          itsParams->get(key, "bb2"),
-                                          itsParams->get(key, "bb3"),
-                                          itsParams->get(key, "Charge exponent"),
-                                          itsParams->get(key, "Resolution"));
+      o2::aod::ITSResponse::setParameters(itsParams->get(key, "RespITSPar1"),
+                                          itsParams->get(key, "RespITSPar2"),
+                                          itsParams->get(key, "RespITSPar3"),
+                                          itsParams->get(key, "RespITSPar1_Z2"),
+                                          itsParams->get(key, "RespITSPar2_Z2"),
+                                          itsParams->get(key, "RespITSPar3_Z2"),
+                                          itsParams->get(key, "ResolutionPar1"),
+                                          itsParams->get(key, "ResolutionPar2"),
+                                          itsParams->get(key, "ResolutionPar3"));
     }
   }
 

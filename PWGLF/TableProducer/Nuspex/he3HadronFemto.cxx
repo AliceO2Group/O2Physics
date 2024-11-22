@@ -101,17 +101,18 @@ enum Selections {
 
 struct he3HadCandidate {
 
-  float recoPtHe3() const { return sign * std::hypot(momHe3[0], momHe3[1]); }
+  float recoPtHe3() const { return signHe3 * std::hypot(momHe3[0], momHe3[1]); }
   float recoPhiHe3() const { return std::atan2(momHe3[1], momHe3[0]); }
   float recoEtaHe3() const { return std::asinh(momHe3[2] / recoPtHe3()); }
-  float recoPtHad() const { return sign * std::hypot(momHad[0], momHad[1]); }
+  float recoPtHad() const { return signHad * std::hypot(momHad[0], momHad[1]); }
   float recoPhiHad() const { return std::atan2(momHad[1], momHad[0]); }
   float recoEtaHad() const { return std::asinh(momHad[2] / recoPtHad()); }
 
   std::array<float, 3> momHe3 = {99.f, 99.f, 99.f};
   std::array<float, 3> momHad = {99.f, 99.f, 99.f};
 
-  float sign = 1.f;
+  float signHe3 = 1.f;
+  float signHad = 1.f;
   float invMass = -10.f;
   float DCAxyHe3 = -10.f;
   float DCAzHe3 = -10.f;
@@ -224,9 +225,6 @@ struct he3hadronfemto {
   Service<o2::ccdb::BasicCCDBManager> m_ccdb;
   Zorro m_zorro;
   OutputObj<ZorroSummary> m_zorroSummary{"zorroSummary"};
-
-  // check for mixed event to same event distribution compatibility
-  std::vector<int> m_trackIdx2;
 
   HistogramRegistry m_qaRegistry{
     "QA",
@@ -394,7 +392,6 @@ struct he3hadronfemto {
     float tpcNSigmaHad = 0;
     if (setting_HadPDGCode == 211) {
       tpcNSigmaHad = candidate.tpcNSigmaPi();
-      LOG(info) << "pion";
     } else if (setting_HadPDGCode == 2212) {
       tpcNSigmaHad = candidate.tpcNSigmaPr();
     } else {
@@ -409,7 +406,6 @@ struct he3hadronfemto {
     float tofNSigmaHad = 0;
     if (setting_HadPDGCode == 211) {
       tofNSigmaHad = candidate.tofNSigmaPi();
-      LOG(info) << "piontof";
     } else if (setting_HadPDGCode == 2212) {
       tofNSigmaHad = candidate.tofNSigmaPr();
     } else {
@@ -429,12 +425,12 @@ struct he3hadronfemto {
       if (std::abs(tpcNSigmaHad) > setting_cutNsigmaTPC) {
         return false;
       }
-      m_qaRegistry.fill(HIST("h2NsigmaHadronTOF_preselection"), candidate.p(), tpcNSigmaHad);
-      if (std::abs(tpcNSigmaHad) > setting_cutNsigmaTOF) {
+      m_qaRegistry.fill(HIST("h2NsigmaHadronTOF_preselection"), candidate.p(), tofNSigmaHad);
+      if (std::abs(tofNSigmaHad) > setting_cutNsigmaTOF) {
         return false;
       }
       m_qaRegistry.fill(HIST("h2NsigmaHadronTPC"), candidate.tpcInnerParam(), tpcNSigmaHad);
-      m_qaRegistry.fill(HIST("h2NsigmaHadronTOF"), candidate.p(), tpcNSigmaHad);
+      m_qaRegistry.fill(HIST("h2NsigmaHadronTOF"), candidate.p(), tofNSigmaHad);
       return true;
     } else if (std::abs(tpcNSigmaHad) < setting_cutNsigmaTPC) {
       m_qaRegistry.fill(HIST("h2NsigmaHadronTPC"), candidate.tpcInnerParam(), tpcNSigmaHad);
@@ -557,7 +553,8 @@ struct he3hadronfemto {
       return false;
     }
 
-    he3Hadcand.sign = trackHe3.sign();
+    he3Hadcand.signHe3 = trackHe3.sign();
+    he3Hadcand.signHad = trackHad.sign();
 
     he3Hadcand.DCAxyHe3 = trackHe3.dcaXY();
     he3Hadcand.DCAzHe3 = trackHe3.dcaZ();
@@ -649,16 +646,11 @@ struct he3hadronfemto {
           continue;
         }
 
-        if (!setting_enableBkgUS) {
-          if (track0.sign() * track1.sign() < 0) {
-            continue;
-          }
-        } else if (setting_enableBkgUS) {
-          if (track0.sign() * track1.sign() > 0) {
-            continue;
-          }
-        } else {
-          LOG(info) << "setting_enableBkgUS has to be 0 or 1";
+        if (!setting_enableBkgUS && (track0.sign() * track1.sign() < 0)) {
+          continue;
+        }
+        if (setting_enableBkgUS && (track0.sign() * track1.sign() > 0)) {
+          continue;
         }
 
         if (!selectTrack(track1) || !selectionPIDHadron(track1)) {
@@ -745,6 +737,8 @@ struct he3hadronfemto {
     }
     if (setting_fillMultiplicity) {
       m_outputMultiplicityTable(
+        collision.globalIndex(),
+        collision.posZ(),
         collision.numContrib(),
         collision.centFT0C(),
         collision.multFT0C());
