@@ -735,8 +735,13 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "MuonDcaX_vs_eta", "", false, 2000, -20.0, 20.0, VarManager::kMuonDCAx, 500, -5.0, 5.0, VarManager::kEta);
         hm->AddHistogram(histClass, "MuonDcaY_vs_eta", "", false, 2000, -20.0, 20.0, VarManager::kMuonDCAy, 500, -5.0, 5.0, VarManager::kEta);
       } else {
+        hm->AddHistogram(histClass, "Pt", "p_{T} distribution", false, 2000, 0.0, 20.0, VarManager::kPt);
+        hm->AddHistogram(histClass, "Eta", "#eta distribution", false, 500, -5.0, 5.0, VarManager::kEta);
+        hm->AddHistogram(histClass, "Phi", "#varphi distribution", false, 500, -2. * TMath::Pi(), 2. * TMath::Pi(), VarManager::kPhi);
         hm->AddHistogram(histClass, "AmbiguityInBunch", "", false, 10, 0.0, 10., VarManager::kMuonNAssocsInBunch);
         hm->AddHistogram(histClass, "AmbiguityOutOfBunch", "", false, 10, 0.0, 10., VarManager::kMuonNAssocsOutOfBunch);
+        hm->AddHistogram(histClass, "AmbiguityInBunch_pt", "in bunch collision ambiguity vs p_{T}", false, 50, 0.0, 10.0, VarManager::kPt, 10, 0., 10., VarManager::kMuonNAssocsInBunch);
+        hm->AddHistogram(histClass, "AmbiguityOutOfBunch_pt", "out of bunch collision ambiguity vs p_{T}", false, 50, 0.0, 10.0, VarManager::kPt, 10, 0., 10., VarManager::kMuonNAssocsOutOfBunch);
       }
     }
 
