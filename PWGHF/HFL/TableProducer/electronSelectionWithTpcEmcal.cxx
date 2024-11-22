@@ -502,7 +502,7 @@ struct HfElectronSelectionWithTpcEmcal {
             isULSElectronFound = 1;
           }
         }
-         HfElectronSelection(track.collisionId(), matchTrack.globalIndex(), etaMatchTrack, phiMatchTrack, ptMatchTrack, isLSElectronFound, isULSElectronFound);
+        HfElectronSelection(track.collisionId(), matchTrack.globalIndex(), etaMatchTrack, phiMatchTrack, ptMatchTrack, isLSElectronFound, isULSElectronFound);
 
         electronSel(track.collisionId(), matchTrack.globalIndex(), etaMatchTrack, phiMatchTrack, ptMatchTrack, pMatchTrack, trackRapidity, matchTrack.dcaXY(), matchTrack.dcaZ(), matchTrack.tpcNSigmaEl(), matchTrack.tofNSigmaEl(),
                     eMatchEmcCluster, etaMatchEmcCluster, phiMatchEmcCluster, m02MatchEmcCluster, m20MatchEmcCluster, cellEmcCluster, timeEmcCluster, deltaEtaMatch, deltaPhiMatch, isEMcal, isLSElectronFound, isULSElectronFound);
@@ -618,7 +618,7 @@ struct HfElectronSelectionWithTpcEmcal {
             registry.fill(HIST("hEtaeEmbTrkPt"), particleMc.pt());
           }
 
-           HfGenElectronSel(particleMc.index(), particleMc.eta(), particleMc.phi(), particleMc.pt(), isNonHfe);
+          HfGenElectronSel(particleMc.index(), particleMc.eta(), particleMc.phi(), particleMc.pt(), isNonHfe);
         }
       }
     }
