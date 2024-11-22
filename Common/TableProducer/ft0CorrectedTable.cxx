@@ -10,6 +10,7 @@
 // or submit itself to any jurisdiction.
 
 #include <bitset>
+#include <string>
 #include "Framework/ConfigParamSpec.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
