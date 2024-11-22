@@ -227,4 +227,4 @@ DECLARE_SOA_TABLE(HypKfHypNucs, "AOD", "HYPKFHYPNUC",
 using HypKfHypNuc = HypKfHypNucs::iterator;
 } // namespace o2::aod
 
-#endif  // PWGLF_DATAMODEL_LFHYPERNUCLEIKFTABLES_H_
+#endif // PWGLF_DATAMODEL_LFHYPERNUCLEIKFTABLES_H_
