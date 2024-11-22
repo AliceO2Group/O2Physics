@@ -33,6 +33,7 @@
 #include "DCAFitter/DCAFitterN.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "PWGLF/DataModel/LFHypernucleiKfTables.h"
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
