@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file pidStudies.cxx
+/// \file HfPidStudies.cxx
 /// \brief task for studies of PID performance
 ///
 /// \author Fabrizio Chinu <fabrizio.chinu@cern.ch>, Università and INFN Torino
@@ -81,7 +81,7 @@ DECLARE_SOA_COLUMN(CentralityFT0M, centralityFT0M, float); //! Centrality from F
 DECLARE_SOA_COLUMN(CandFlag, candFlag, int);               //! Flag for MC matching
 } // namespace pid_studies
 
-DECLARE_SOA_TABLE(pidV0s, "AOD", "PIDV0S", //! Table with PID information
+DECLARE_SOA_TABLE(PidV0s, "AOD", "PIDV0S", //! Table with PID information
                   pid_studies::MassK0,
                   pid_studies::MassLambda,
                   pid_studies::MassAntiLambda,
@@ -106,7 +106,7 @@ DECLARE_SOA_TABLE(pidV0s, "AOD", "PIDV0S", //! Table with PID information
                   pid_studies::CentralityFT0M,
                   pid_studies::CandFlag);
 
-DECLARE_SOA_TABLE(pidCascades, "AOD", "PIDCASCADES", //! Table with PID information
+DECLARE_SOA_TABLE(PidCascades, "AOD", "PIDCASCADES", //! Table with PID information
                   pid_studies::MassOmega,
                   pid_studies::Pt,
                   pid_studies::BachPt,
@@ -124,17 +124,9 @@ DECLARE_SOA_TABLE(pidCascades, "AOD", "PIDCASCADES", //! Table with PID informat
                   pid_studies::CandFlag);
 } // namespace o2::aod
 
-struct pidStudies {
-  Produces<o2::aod::pidV0s> pidV0;
-  Produces<o2::aod::pidCascades> pidCascade;
-  HistogramRegistry registry{"registry", {}};
-
-  using PIDTracks = soa::Join<aod::Tracks, aod::TracksExtra,
-                              aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
-                              aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
-  using CollSels = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms>;
-  using V0sMCRec = soa::Join<aod::V0Datas, aod::V0CoreMCLabels>;
-  using CascsMCRec = soa::Join<aod::CascDatas, aod::CascCoreMCLabels>;
+struct HfPidStudies {
+  Produces<o2::aod::PidV0s> pidV0;
+  Produces<o2::aod::PidCascades> pidCascade;
 
   Configurable<float> massK0Min{"massK0Min", 0.4, "Minimum mass for K0"};
   Configurable<float> massK0Max{"massK0Max", 0.6, "Maximum mass for K0"};
@@ -145,12 +137,15 @@ struct pidStudies {
   Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of candidates to keep"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
 
-  void init(InitContext&)
-  {
-  }
+  using PidTracks = soa::Join<aod::Tracks, aod::TracksExtra,
+                              aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
+                              aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
+  using CollSels = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms>;
+  using V0sMcRec = soa::Join<aod::V0Datas, aod::V0CoreMCLabels>;
+  using CascsMcRec = soa::Join<aod::CascDatas, aod::CascCoreMCLabels>;
 
   template <bool isV0, typename Cand>
-  void fillTree(Cand const& candidate, const int& flag)
+  void fillTree(Cand const& candidate, const int flag)
   {
     float pseudoRndm = candidate.pt() * 1000. - static_cast<int64_t>(candidate.pt() * 1000);
     if (candidate.pt() < ptMaxForDownSample && pseudoRndm > downSampleBkgFactor) {
@@ -159,8 +154,8 @@ struct pidStudies {
 
     const auto& coll = candidate.template collision_as<CollSels>();
     if constexpr (isV0) {
-      const auto& posTrack = candidate.template posTrack_as<PIDTracks>();
-      const auto& negTrack = candidate.template negTrack_as<PIDTracks>();
+      const auto& posTrack = candidate.template posTrack_as<PidTracks>();
+      const auto& negTrack = candidate.template negTrack_as<PidTracks>();
       pidV0(
         candidate.mK0Short(),
         candidate.mLambda(),
@@ -186,7 +181,7 @@ struct pidStudies {
         coll.centFT0M(),
         flag);
     } else {
-      const auto& bachTrack = candidate.template bachelor_as<PIDTracks>();
+      const auto& bachTrack = candidate.template bachelor_as<PidTracks>();
       pidCascade(
         candidate.mOmega(),
         candidate.pt(),
@@ -209,7 +204,7 @@ struct pidStudies {
   template <typename T1>
   int isMatched(const T1& cand)
   {
-    if constexpr (std::is_same<T1, V0sMCRec::iterator>::value) {
+    if constexpr (std::is_same<T1, V0sMcRec::iterator>::value) {
       if (!cand.has_v0MCCore()) {
         return aod::pid_studies::Particle::NotMatched;
       }
@@ -224,7 +219,7 @@ struct pidStudies {
         return -aod::pid_studies::Particle::Lambda;
       }
     }
-    if constexpr (std::is_same<T1, CascsMCRec::iterator>::value) {
+    if constexpr (std::is_same<T1, CascsMcRec::iterator>::value) {
       if (!cand.has_cascMCCore()) {
         return aod::pid_studies::Particle::NotMatched;
       }
@@ -247,8 +242,12 @@ struct pidStudies {
     return aod::pid_studies::Particle::NotMatched;
   }
 
-  void processMC(V0sMCRec const& V0s, aod::V0MCCores const&, CascsMCRec const& cascades,
-                 aod::CascMCCores const&, CollSels const&, PIDTracks const&)
+  void processMc(V0sMcRec const& V0s, 
+                 aod::V0MCCores const&, 
+                 CascsMcRec const& cascades,
+                 aod::CascMCCores const&, 
+                 CollSels const&, 
+                 PidTracks const&)
   {
     for (const auto& v0 : V0s) {
       if ((v0.mK0Short() > massK0Min && v0.mK0Short() < massK0Max) ||
@@ -269,9 +268,9 @@ struct pidStudies {
       }
     }
   }
-  PROCESS_SWITCH(pidStudies, processMC, "Process MC", true);
+  PROCESS_SWITCH(HfPidStudies, processMc, "Process MC", true);
 
-  void processData(aod::V0Datas const& V0s, aod::CascDatas const& cascades, CollSels const&, PIDTracks const&)
+  void processData(aod::V0Datas const& V0s, aod::CascDatas const& cascades, CollSels const&, PidTracks const&)
   {
     for (const auto& v0 : V0s) {
       if ((v0.mK0Short() > massK0Min && v0.mK0Short() < massK0Max) ||
@@ -286,10 +285,10 @@ struct pidStudies {
       }
     }
   }
-  PROCESS_SWITCH(pidStudies, processData, "Process data", false);
+  PROCESS_SWITCH(HfPidStudies, processData, "Process data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<pidStudies>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfPidStudies>(cfgc)};
 }
