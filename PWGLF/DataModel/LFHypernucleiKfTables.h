@@ -22,29 +22,27 @@ namespace o2::aod
 {
 namespace hykfmcColl
 {
-DECLARE_SOA_COLUMN(PassedEvSel, passedEvSel, bool);           //!  
+DECLARE_SOA_COLUMN(PassedEvSel, passedEvSel, bool); //!
 }
 DECLARE_SOA_TABLE(HypKfMcCollisions, "AOD", "HYPKFMCCOLL",
                   o2::soa::Index<>,
                   hykfmcColl::PassedEvSel,
                   mccollision::PosX,
                   mccollision::PosY,
-                  mccollision::PosZ
-                  );
+                  mccollision::PosZ);
 using HypKfMcCollision = HypKfMcCollisions::iterator;
 
-
-namespace hykfmc 
+namespace hykfmc
 {
 DECLARE_SOA_INDEX_COLUMN(HypKfMcCollision, hypKfMcCollision);
-DECLARE_SOA_COLUMN(Species, species, int8_t);                                //!
-DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool);           //!
-DECLARE_SOA_COLUMN(Svx, svx, float);           //!
-DECLARE_SOA_COLUMN(Svy, svy, float);           //!
-DECLARE_SOA_COLUMN(Svz, svz, float);           //!  
+DECLARE_SOA_COLUMN(Species, species, int8_t);                   //!
+DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool); //!
+DECLARE_SOA_COLUMN(Svx, svx, float);                            //!
+DECLARE_SOA_COLUMN(Svy, svy, float);                            //!
+DECLARE_SOA_COLUMN(Svz, svz, float);                            //!
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float px, float py) { return RecoDecay::pt(std::array{px, py}); });
 DECLARE_SOA_DYNAMIC_COLUMN(Y, y, [](float E, float pz) { return 0.5 * TMath::Log((E + pz) / (E - pz)); });
-DECLARE_SOA_DYNAMIC_COLUMN(Mass, mass, [](float E, float px, float py, float pz) { return TMath::Sqrt(E*E - px*px - py*py - pz*pz); });
+DECLARE_SOA_DYNAMIC_COLUMN(Mass, mass, [](float E, float px, float py, float pz) { return TMath::Sqrt(E * E - px * px - py * py - pz * pz); });
 DECLARE_SOA_DYNAMIC_COLUMN(IsMatter, isMatter, [](int pdgCode) { return pdgCode > 0; });
 } // namespace hykfmc
 
@@ -53,7 +51,7 @@ DECLARE_SOA_TABLE(HypKfMcParticles, "AOD", "HYPKFMCPART",
                   hykfmc::HypKfMcCollisionId,
                   hykfmc::Species,
                   mcparticle::PdgCode,
-                  hykfmc::IsPhysicalPrimary,                  
+                  hykfmc::IsPhysicalPrimary,
                   mcparticle::Px,
                   mcparticle::Py,
                   mcparticle::Pz,
@@ -61,11 +59,10 @@ DECLARE_SOA_TABLE(HypKfMcParticles, "AOD", "HYPKFMCPART",
                   hykfmc::Svx,
                   hykfmc::Svy,
                   hykfmc::Svz,
-                  hykfmc::Pt<mcparticle::Px, mcparticle::Py>,                  
+                  hykfmc::Pt<mcparticle::Px, mcparticle::Py>,
                   hykfmc::Y<mcparticle::E, mcparticle::Pz>,
                   hykfmc::Mass<mcparticle::E, mcparticle::Px, mcparticle::Py, mcparticle::Pz>,
-                  hykfmc::IsMatter<mcparticle::PdgCode>                                                                                        
-                  );
+                  hykfmc::IsMatter<mcparticle::PdgCode>);
 using HypKfMcParticle = HypKfMcParticles::iterator;
 
 DECLARE_SOA_TABLE(HypKfCollisions, "AOD", "HYPKFCOLL",
@@ -77,49 +74,51 @@ DECLARE_SOA_TABLE(HypKfCollisions, "AOD", "HYPKFCOLL",
                   collision::PosZ,
                   cent::CentFT0A,
                   cent::CentFT0C,
-                  cent::CentFT0M
-                  );
+                  cent::CentFT0M);
 using HypKfCollision = HypKfCollisions::iterator;
 
-namespace hykftrk 
+namespace hykftrk
 {
 DECLARE_SOA_INDEX_COLUMN(HypKfCollision, hypKfCollision);
-DECLARE_SOA_COLUMN(Rigidity, rigidity, float);           //!
-DECLARE_SOA_COLUMN(TPCnCluster, tpcNcluster, float);           //!
-DECLARE_SOA_COLUMN(TPCnSigma, tpcNsigma, float);           //!
-DECLARE_SOA_COLUMN(TPCnSigmaNhp, tpcNsigmaNhp, float);           //!
-DECLARE_SOA_COLUMN(TPCnSigmaNlp, tpcNsigmaNlp, float);           //!
-DECLARE_SOA_COLUMN(TOFMass, tofMass, float);           //!
-DECLARE_SOA_COLUMN(IsPVContributor, isPVContributor, bool);           //!
-DECLARE_SOA_COLUMN(SubMass, subMass, float);           //!
-DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float pt, float phi) { return (double) pt * TMath::Cos(phi); });
-DECLARE_SOA_DYNAMIC_COLUMN(Py, py, [](float pt, float phi) { return (double) pt * TMath::Sin(phi); });
-DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, [](float pt, float eta) { return (double) pt * TMath::SinH(eta); });
+DECLARE_SOA_COLUMN(Rigidity, rigidity, float);              //!
+DECLARE_SOA_COLUMN(TPCnCluster, tpcNcluster, float);        //!
+DECLARE_SOA_COLUMN(TPCnSigma, tpcNsigma, float);            //!
+DECLARE_SOA_COLUMN(TPCnSigmaNhp, tpcNsigmaNhp, float);      //!
+DECLARE_SOA_COLUMN(TPCnSigmaNlp, tpcNsigmaNlp, float);      //!
+DECLARE_SOA_COLUMN(TOFMass, tofMass, float);                //!
+DECLARE_SOA_COLUMN(IsPVContributor, isPVContributor, bool); //!
+DECLARE_SOA_COLUMN(SubMass, subMass, float);                //!
+DECLARE_SOA_DYNAMIC_COLUMN(Px, px, [](float pt, float phi) { return (double)pt * TMath::Cos(phi); });
+DECLARE_SOA_DYNAMIC_COLUMN(Py, py, [](float pt, float phi) { return (double)pt * TMath::Sin(phi); });
+DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, [](float pt, float eta) { return (double)pt * TMath::SinH(eta); });
 DECLARE_SOA_DYNAMIC_COLUMN(P, p, [](float pt, float eta) { return pt * TMath::CosH(eta); }); //
 DECLARE_SOA_DYNAMIC_COLUMN(Y, y, [](float pt, float eta, float mass) { return std::log((RecoDecay::sqrtSumOfSquares(mass, pt * TMath::CosH(eta)) + pt * TMath::SinH(eta)) / RecoDecay::sqrtSumOfSquares(mass, pt)); });
 DECLARE_SOA_DYNAMIC_COLUMN(Lambda, lambda, [](float eta) { return 1. / TMath::CosH(eta); });
-DECLARE_SOA_DYNAMIC_COLUMN(ITSnCluster, itsNcluster, [](uint32_t itsClusterSizes) { 
+DECLARE_SOA_DYNAMIC_COLUMN(ITSnCluster, itsNcluster, [](uint32_t itsClusterSizes) {
   uint8_t n = 0;
   for (uint8_t i = 0; i < 7; i++) {
-    if (itsClusterSizes	 >> (4*i) & 15) n++;
-  }    
+    if (itsClusterSizes >> (4 * i) & 15)
+      n++;
+  }
   return n;
 });
-DECLARE_SOA_DYNAMIC_COLUMN(ITSfirstLayer, itsFirstLayer, [](uint32_t itsClusterSizes	) { 
+DECLARE_SOA_DYNAMIC_COLUMN(ITSfirstLayer, itsFirstLayer, [](uint32_t itsClusterSizes) {
   for (int i = 0; i < 8; i++) {
-    if (itsClusterSizes	 >> (4*i) & 15) return i;
+    if (itsClusterSizes >> (4 * i) & 15)
+      return i;
   }
-  return -999; 
+  return -999;
 });
-DECLARE_SOA_DYNAMIC_COLUMN(ITSmeanClsSize, itsMeanClsSize, [](uint32_t itsClusterSizes	) { 
+DECLARE_SOA_DYNAMIC_COLUMN(ITSmeanClsSize, itsMeanClsSize, [](uint32_t itsClusterSizes) {
   int sum = 0, n = 0;
   for (int i = 0; i < 8; i++) {
-    sum += (itsClusterSizes	 >> (4*i) & 15);
-    if (itsClusterSizes	 >> (4*i) & 15) n++;
+    sum += (itsClusterSizes >> (4 * i) & 15);
+    if (itsClusterSizes >> (4 * i) & 15)
+      n++;
   }
-  return (float) sum / n; 
+  return (float)sum / n;
 });
-} // namespace hykfmc
+} // namespace hykftrk
 
 DECLARE_SOA_TABLE(HypKfTracks, "AOD", "HYPKFTRACK",
                   o2::soa::Index<>,
@@ -135,9 +134,9 @@ DECLARE_SOA_TABLE(HypKfTracks, "AOD", "HYPKFTRACK",
                   track::ITSChi2NCl,
                   hykftrk::Rigidity,
                   track::TPCSignal,
-                  hykftrk::TPCnSigma,   
-                  hykftrk::TPCnSigmaNhp,   
-                  hykftrk::TPCnSigmaNlp,   
+                  hykftrk::TPCnSigma,
+                  hykftrk::TPCnSigmaNhp,
+                  hykftrk::TPCnSigmaNlp,
                   hykftrk::TOFMass,
                   hykftrk::IsPVContributor,
                   hykftrk::Px<track::Pt, track::Phi>,
@@ -147,14 +146,12 @@ DECLARE_SOA_TABLE(HypKfTracks, "AOD", "HYPKFTRACK",
                   hykftrk::Lambda<track::Eta>,
                   hykftrk::ITSnCluster<track::ITSClusterSizes>,
                   hykftrk::ITSfirstLayer<track::ITSClusterSizes>,
-                  hykftrk::ITSmeanClsSize<track::ITSClusterSizes>
-                  );
+                  hykftrk::ITSmeanClsSize<track::ITSClusterSizes>);
 using HypKfTrack = HypKfTracks::iterator;
 
 DECLARE_SOA_TABLE(HypKfSubDaughters, "AOD", "HYPKFSUBD",
                   o2::soa::Index<>,
-                  hykftrk::SubMass                               
-                  );
+                  hykftrk::SubMass);
 using HypKfSubDaughter = HypKfSubDaughters::iterator;
 
 DECLARE_SOA_TABLE(HypKfDaughterAddons, "AOD", "HYPKFDADD",
@@ -164,11 +161,10 @@ DECLARE_SOA_TABLE(HypKfDaughterAddons, "AOD", "HYPKFDADD",
                   track::Z,
                   mcparticle::Px,
                   mcparticle::Py,
-                  mcparticle::Pz                               
-                  );
+                  mcparticle::Pz);
 using HypKfDaughterAddon = HypKfDaughterAddons::iterator;
 
-namespace hykfhyp 
+namespace hykfhyp
 {
 DECLARE_SOA_INDEX_COLUMN(HypKfCollision, hypKfCollision);
 DECLARE_SOA_INDEX_COLUMN(HypKfMcParticle, hypKfMcParticle);
@@ -176,17 +172,17 @@ DECLARE_SOA_ARRAY_INDEX_COLUMN(HypKfDaughterAddon, addons);
 DECLARE_SOA_ARRAY_INDEX_COLUMN(HypKfTrack, daughterTracks);
 DECLARE_SOA_SELF_INDEX_COLUMN(HypDaughter, hypDaughter);
 DECLARE_SOA_ARRAY_INDEX_COLUMN(HypKfSubDaughter, subDaughters);
-DECLARE_SOA_COLUMN(Primary, primary, bool);           //!
-DECLARE_SOA_COLUMN(Mass, mass, float);           //!
-DECLARE_SOA_COLUMN(Px, px, float);           //!
-DECLARE_SOA_COLUMN(Py, py, float);           //!
-DECLARE_SOA_COLUMN(Pz, pz, float);           //!
-DECLARE_SOA_COLUMN(DcaToPvXY, dcaToPvXY, float);           //!
-DECLARE_SOA_COLUMN(DcaToPvZ, dcaToPvZ, float);           //!
-DECLARE_SOA_COLUMN(DcaToVtxXY, dcaToVtxXY, float);           //!
-DECLARE_SOA_COLUMN(DcaToVtxZ, dcaToVtxZ, float);           //!
-DECLARE_SOA_COLUMN(Chi2, chi2, float);           //!
-DECLARE_SOA_COLUMN(DevToPvXY, devToPvXY, float);           //!
+DECLARE_SOA_COLUMN(Primary, primary, bool);        //!
+DECLARE_SOA_COLUMN(Mass, mass, float);             //!
+DECLARE_SOA_COLUMN(Px, px, float);                 //!
+DECLARE_SOA_COLUMN(Py, py, float);                 //!
+DECLARE_SOA_COLUMN(Pz, pz, float);                 //!
+DECLARE_SOA_COLUMN(DcaToPvXY, dcaToPvXY, float);   //!
+DECLARE_SOA_COLUMN(DcaToPvZ, dcaToPvZ, float);     //!
+DECLARE_SOA_COLUMN(DcaToVtxXY, dcaToVtxXY, float); //!
+DECLARE_SOA_COLUMN(DcaToVtxZ, dcaToVtxZ, float);   //!
+DECLARE_SOA_COLUMN(Chi2, chi2, float);             //!
+DECLARE_SOA_COLUMN(DevToPvXY, devToPvXY, float);   //!
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float px, float py) { return RecoDecay::pt(px, py); });
 DECLARE_SOA_DYNAMIC_COLUMN(Eta, eta, [](float px, float py, float pz) { return RecoDecay::eta(std::array{px, py, pz}); });
 DECLARE_SOA_DYNAMIC_COLUMN(Phi, phi, [](float px, float py) { return RecoDecay::phi(std::array{px, py}); });
@@ -197,8 +193,6 @@ DECLARE_SOA_DYNAMIC_COLUMN(IsMatter, isMatter, [](int8_t species) { return speci
 DECLARE_SOA_DYNAMIC_COLUMN(Cascade, cascade, [](int hypDaughter) { return hypDaughter > 0; });
 } // namespace hykfhyp
 
-
-
 DECLARE_SOA_TABLE(HypKfHypNucs, "AOD", "HYPKFHYPNUC",
                   o2::soa::Index<>,
                   hykfhyp::HypKfMcParticleId,
@@ -206,19 +200,19 @@ DECLARE_SOA_TABLE(HypKfHypNucs, "AOD", "HYPKFHYPNUC",
                   hykfhyp::HypKfTrackIds,
                   hykfhyp::HypKfDaughterAddonIds,
                   hykfhyp::HypDaughterId,
-                  hykfhyp::HypKfSubDaughterIds,                  
+                  hykfhyp::HypKfSubDaughterIds,
                   hykfmc::Species,
                   hykfhyp::Primary,
                   hykfhyp::Mass,
                   hykfhyp::Px,
                   hykfhyp::Py,
                   hykfhyp::Pz,
-                  hykfhyp::DcaToPvXY, 
-                  hykfhyp::DcaToPvZ,      
-                  hykfhyp::DevToPvXY, 
-                  hykfhyp::DcaToVtxXY, 
-                  hykfhyp::DcaToVtxZ, 
-                  hykfhyp::Chi2,                                                                      
+                  hykfhyp::DcaToPvXY,
+                  hykfhyp::DcaToPvZ,
+                  hykfhyp::DevToPvXY,
+                  hykfhyp::DcaToVtxXY,
+                  hykfhyp::DcaToVtxZ,
+                  hykfhyp::Chi2,
                   hykfmc::Svx,
                   hykfmc::Svy,
                   hykfmc::Svz,
@@ -226,12 +220,11 @@ DECLARE_SOA_TABLE(HypKfHypNucs, "AOD", "HYPKFHYPNUC",
                   hykfhyp::Pt<hykfhyp::Px, hykfhyp::Py>,
                   hykfhyp::Eta<hykfhyp::Px, hykfhyp::Py, hykfhyp::Pz>,
                   hykfhyp::Phi<hykfhyp::Px, hykfhyp::Py>,
-                  hykfhyp::P<hykfhyp::Px, hykfhyp::Py, hykfhyp::Pz>,  
+                  hykfhyp::P<hykfhyp::Px, hykfhyp::Py, hykfhyp::Pz>,
                   hykfhyp::McTrue<hykfhyp::HypKfMcParticleId>,
                   hykfhyp::IsMatter<hykfmc::Species>,
-                  hykfhyp::Cascade<hykfhyp::HypDaughterId>                                                    
-                  );
+                  hykfhyp::Cascade<hykfhyp::HypDaughterId>);
 using HypKfHypNuc = HypKfHypNucs::iterator;
 } // namespace o2::aod
 
-#endif //LFHYPERNUCLEIKF
+#endif // LFHYPERNUCLEIKF
