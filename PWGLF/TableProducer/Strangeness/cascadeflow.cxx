@@ -399,7 +399,11 @@ struct cascadeFlow {
     histos.add("hCascadeSignal", "hCascadeSignal", HistType::kTH1F, {{6, -0.5, 5.5}});
     histos.add("hCascade", "hCascade", HistType::kTH1F, {{6, -0.5, 5.5}});
     histos.add("hXiPtvsCent", "hXiPtvsCent", HistType::kTH2F, {{100, 0, 100}, {200, 0, 20}});
+    histos.add("hXiPtvsCentEta08", "hXiPtvsCentEta08", HistType::kTH2F, {{100, 0, 100}, {200, 0, 20}});
+    histos.add("hXiPtvsCentY05", "hXiPtvsCentY05", HistType::kTH2F, {{100, 0, 100}, {200, 0, 20}});
     histos.add("hOmegaPtvsCent", "hOmegaPtvsCent", HistType::kTH2F, {{100, 0, 100}, {200, 0, 20}});
+    histos.add("hOmegaPtvsCentEta08", "hOmegaPtvsCentEta08", HistType::kTH2F, {{100, 0, 100}, {200, 0, 20}});
+    histos.add("hOmegaPtvsCentY05", "hOmegaPtvsCentY05", HistType::kTH2F, {{100, 0, 100}, {200, 0, 20}});
     histos.add("hCascadePhi", "hCascadePhi", HistType::kTH1F, {{100, 0, 2 * TMath::Pi()}});
     histos.add("hcascminuspsiT0C", "hcascminuspsiT0C", HistType::kTH1F, {{100, 0, TMath::Pi()}});
     histos.add("hv2CEPvsFT0C", "hv2CEPvsFT0C", HistType::kTH2F, {CentAxis, {100, -1, 1}});
@@ -813,11 +817,22 @@ struct cascadeFlow {
         pdgCode = 0;
       }
 
+      // rapidity definition
+      float XiY = RecoDecay::y(std::array{casc.px(), casc.py(), casc.pz()}, constants::physics::MassXiMinus);
+      float OmegaY = RecoDecay::y(std::array{casc.px(), casc.py(), casc.pz()}, constants::physics::MassOmegaMinus);
       // true reco cascades before applying any selection
       if (std::abs(pdgCode) == 3312 && std::abs(cascMC.pdgCodeV0()) == 3122 && std::abs(cascMC.pdgCodeBachelor()) == 211) {
         histos.fill(HIST("hXiPtvsCent"), coll.centFT0C(), casc.pt());
+        if (std::abs(casc.eta()) < 0.8)
+          histos.fill(HIST("hXiPtvsCentEta08"), coll.centFT0C(), casc.pt());
+        if (std::abs(XiY) < 0.5)
+          histos.fill(HIST("hXiPtvsCentY05"), coll.centFT0C(), casc.pt());
       } else if (std::abs(pdgCode) == 3334 && std::abs(cascMC.pdgCodeV0()) == 3122 && std::abs(cascMC.pdgCodeBachelor()) == 321) {
         histos.fill(HIST("hOmegaPtvsCent"), coll.centFT0C(), casc.pt());
+        if (std::abs(casc.eta()) < 0.8)
+          histos.fill(HIST("hOmegaPtvsCentEta08"), coll.centFT0C(), casc.pt());
+        if (std::abs(OmegaY) < 0.5)
+          histos.fill(HIST("hOmegaPtvsCentY05"), coll.centFT0C(), casc.pt());
       }
 
       /// Add some minimal cuts for single track variables (min number of TPC clusters)
