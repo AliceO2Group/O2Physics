@@ -77,8 +77,8 @@ struct HfTaskCharmHadronsFemtoDream {
 
   /// Particle 2 (Charm Hadrons)
   Configurable<float> charmHadBkgBDTmax{"charmHadBkgBDTmax", 1., "Maximum background bdt score for Charm Hadron (particle 2)"};
-  Configurable<int8_t> charmHadCandSel{"charmHadCandSel", 1, "candidate selection for charm hadron"};
-  Configurable<int8_t> charmHadMcSel{"charmHadMcSel", 2, "charm hadron selection for mc, partDplusToPiKPi (1), partLcToPKPi (2), partDsToKKPi (4), partXicToPKPi (8)"};
+  Configurable<int> charmHadCandSel{"charmHadCandSel", 1, "candidate selection for charm hadron"};
+  Configurable<int> charmHadMcSel{"charmHadMcSel", 2, "charm hadron selection for mc, partDplusToPiKPi (1), partLcToPKPi (2), partDsToKKPi (4), partXicToPKPi (8)"};
   Configurable<float> charmHadFdBDTmin{"charmHadFdBDTmin", 0., "Minimum feed-down bdt score Charm Hadron (particle 2)"};
   Configurable<float> charmHadFdBDTmax{"charmHadFdBDTmax", 1., "Maximum feed-down bdt score Charm Hadron (particle 2)"};
   Configurable<float> charmHadMaxInvMass{"charmHadMaxInvMass", 2.45, "Maximum invariant mass of Charm Hadron (particle 2)"};
@@ -196,6 +196,10 @@ struct HfTaskCharmHadronsFemtoDream {
 
   void init(InitContext& /*context*/)
   {
+    // setup columnpolicy for binning
+    colBinningMult = {{mixingBinVztx, mixingBinMult}, true};
+    colBinningMultPercentile = {{mixingBinVztx, mixingBinMultPercentile}, true};
+    colBinningMultMultPercentile = {{mixingBinVztx, mixingBinMult, mixingBinMultPercentile}, true};
     eventHisto.init(&registry);
     trackHistoPartOne.init(&registry, binmultTempFit, binMulPercentile, binpTTrack, binEta, binPhi, binTempFitVarTrack, binNSigmaTPC, binNSigmaTOF, binNSigmaTPCTOF, binTPCClusters, dummy, isMc, pdgCodeTrack1, true);
 
@@ -242,7 +246,7 @@ struct HfTaskCharmHadronsFemtoDream {
     /// Histogramming same event
     for (auto const& part : sliceTrk1) {
 
-      trackHistoPartOne.fillQA<isMc, true>(part, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
+      trackHistoPartOne.fillQA<isMc, true>(part, static_cast<aod::femtodreamparticle::MomentumType>(ConfTempFitVarMomentum.value), col.multNtr(), col.multV0M());
     }
 
     for (auto const& [p1, p2] : combinations(CombinationsFullIndexPolicy(sliceTrk1, sliceCharmHad))) {
@@ -349,7 +353,6 @@ struct HfTaskCharmHadronsFemtoDream {
       }
 
       const int multiplicityCol = collision1.multNtr();
-
       registryMixQa.fill(HIST("MixingQA/hMECollisionBins"), colBinningMult.getBin({collision1.posZ(), multiplicityCol}));
 
       auto sliceTrk1 = part1->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision1.globalIndex(), cache);

@@ -109,7 +109,7 @@ struct femtoUniversePairTaskTrackD0 {
     Configurable<bool> ConfIsSame{"ConfIsSame", false, "Pairs of the same particle"};
     Configurable<int> ConfPDGCodeTrack{"ConfPDGCodeTrack", 2212, "Particle 2 - PDG code"};
     Configurable<int> ConfPIDTrack{"ConfPIDTrack", 2, "Particle 2 - Read from cutCulator"}; // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>
-    Configurable<int8_t> ConfTrackSign{"ConfTrackSign", 1, "Track sign"};
+    Configurable<int> ConfTrackSign{"ConfTrackSign", 1, "Track sign"};
     Configurable<bool> ConfIsTrackIdentified{"ConfIsTrackIdentified", true, "Enable PID for the track"};
   } ConfTrack;
 
@@ -133,7 +133,7 @@ struct femtoUniversePairTaskTrackD0 {
   } ConfD0D0barSideBand;
 
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits"};
-  Configurable<uint8_t> ConfChooseD0trackCorr{"ConfChooseD0trackCorr", 3, "If 0 - only D0s, 1 - only D0bars, 2 - D0/D0bar (one mass hypo.), 3 - all D0/D0bar cand."};
+  Configurable<uint> ConfChooseD0trackCorr{"ConfChooseD0trackCorr", 3, "If 0 - only D0s, 1 - only D0bars, 2 - D0/D0bar (one mass hypo.), 3 - all D0/D0bar cand."};
   Configurable<bool> ConfUsePtCutForD0D0bar{"ConfUsePtCutForD0D0bar", false, "Include pT cut for D0/D0bar in same and mixed processes."};
   Configurable<bool> ConfUseMassCutForD0D0bar{"ConfUseMassCutForD0D0bar", false, "Switch to save D0/D0bar within declared inv. mass range"};
 

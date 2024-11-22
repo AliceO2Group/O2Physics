@@ -29,6 +29,7 @@ DECLARE_SOA_COLUMN(ITSClusSize, itsClusSize, float);
 DECLARE_SOA_COLUMN(IsGoodMatch, isGoodMatch, bool);
 DECLARE_SOA_COLUMN(IsGoodCascade, isGoodCascade, bool);
 DECLARE_SOA_COLUMN(PdgCodeMom, pdgCodeMom, int);
+DECLARE_SOA_COLUMN(PdgCodeITStrack, pdgCodeITStrack, int);
 DECLARE_SOA_COLUMN(IsFromBeauty, isFromBeauty, bool);
 DECLARE_SOA_COLUMN(IsFromCharm, isFromCharm, bool);
 
@@ -165,6 +166,7 @@ DECLARE_SOA_TABLE(NPCascTableMC, "AOD", "NPCASCTABLEMC",
                   NPCascadeTable::IsGoodMatch,
                   NPCascadeTable::IsGoodCascade,
                   NPCascadeTable::PdgCodeMom,
+                  NPCascadeTable::PdgCodeITStrack,
                   NPCascadeTable::IsFromBeauty,
                   NPCascadeTable::IsFromCharm,
                   NPCascadeTable::PvX,

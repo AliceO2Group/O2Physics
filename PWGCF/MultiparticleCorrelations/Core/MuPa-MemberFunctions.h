@@ -64,9 +64,6 @@ void BookBaseList()
   fBasePro->GetXaxis()->SetBinLabel(eInsanityCheckForEachParticle, "fInsanityCheckForEachParticle");
   fBasePro->Fill(eInsanityCheckForEachParticle, static_cast<double>(tc.fInsanityCheckForEachParticle));
 
-  fBasePro->GetXaxis()->SetBinLabel(eUseCCDB, "fUseCCDB");
-  fBasePro->Fill(eUseCCDB, static_cast<double>(tc.fUseCCDB));
-
   fBasePro->GetXaxis()->SetBinLabel(eWhichProcess, Form("WhichProcess = %s", tc.fWhichProcess.Data()));
 
   fBasePro->GetXaxis()->SetBinLabel(eRandomSeed, "fRandomSeed");
@@ -136,7 +133,6 @@ void DefaultConfiguration()
   tc.fVerboseUtility = cf_tc.cfVerboseUtility;
   tc.fVerboseForEachParticle = cf_tc.cfVerboseForEachParticle;
   tc.fDoAdditionalInsanityChecks = cf_tc.cfDoAdditionalInsanityChecks;
-  tc.fUseCCDB = cf_tc.cfUseCCDB;
   // Set automatically what to process, from an implicit variable "doprocessSomeProcessName" within a PROCESS_SWITCH clause:
   tc.fProcess[eProcessRec] = doprocessRec;
   tc.fProcess[eProcessRecSim] = doprocessRecSim;
@@ -352,7 +348,7 @@ void DefaultConfiguration()
   t0.fCalculateTest0AsFunctionOf[AFO_ETA] = cf_t0.cfCalculateTest0AsFunctionOfEta;
   t0.fCalculateTest0AsFunctionOf[AFO_OCCUPANCY] = cf_t0.cfCalculateTest0AsFunctionOfOccupancy;
   t0.fFileWithLabels = TString(cf_t0.cfFileWithLabels);
-  t0.fUseDefaultLabels = TString(cf_t0.cfUseDefaultLabels);
+  t0.fUseDefaultLabels = cf_t0.cfUseDefaultLabels;
 
   // *) Particle weights:
   pw.fUseWeights[wPHI] = cf_pw.cfUsePhiWeights;
@@ -361,6 +357,10 @@ void DefaultConfiguration()
   pw.fUseDiffWeights[wPHIPT] = cf_pw.cfUseDiffPhiPtWeights;
   pw.fUseDiffWeights[wPHIETA] = cf_pw.cfUseDiffPhiEtaWeights;
   pw.fFileWithWeights = cf_pw.cfFileWithWeights;
+
+  // *) Centrality weights:
+  cw.fUseCentralityWeights = cf_cw.cfUseCentralityWeights;
+  cw.fFileWithCentralityWeights = cf_cw.cfFileWithCentralityWeights;
 
   // ...
 
@@ -408,6 +408,7 @@ void DefaultConfiguration()
 
       // *) histogram names with custom NUA distributions in that file + get those histograms immediately here:
       auto lCustomNUAPDFHistNames = (vector<string>)cf_nua.cfCustomNUAPDFHistNames;
+      // TBI 20241115 For some reason, the default values of configurable "cfCustomNUAPDFHistNames" are not correctly propagated in the local variables, but I can circumvent that with JSON settings for the time being
       if (lCustomNUAPDFHistNames.size() != eNUAPDF_N) {
         LOGF(info, "\033[1;31m lCustomNUAPDFHistNames.size() = %d\033[0m", lCustomNUAPDFHistNames.size());
         LOGF(info, "\033[1;31m eNUAPDF_N = %d\033[0m", static_cast<int>(eNUAPDF_N));
@@ -686,6 +687,7 @@ void DefaultBooking()
   // *) If you do not want particular 2D event histogram to be booked, use configurable array cfBookQAEventHistograms2D, where you can specify flags 1 (book) or 0 (do not book).
   // Ordering of the flags in that array is interpreted through ordering of enums in enum eQAEventHistograms2D
   auto lBookQAEventHistograms2D = cf_qa.cfBookQAEventHistograms2D.value; // this is now the local version of that string array from configurable
+  // TBI 20241115 For some reason, the default values of configurable "cfBookQAEventHistograms2D" are not correctly propagated in the local variables, but I can circumvent that with JSON settings for the time being
   if (lBookQAEventHistograms2D.size() != eQAEventHistograms2D_N) {
     LOGF(info, "\033[1;31m lBookQAEventHistograms2D.size() = %d\033[0m", lBookQAEventHistograms2D.size());
     LOGF(info, "\033[1;31m eQAEventHistograms2D_N = %d\033[0m", static_cast<int>(eQAEventHistograms2D_N));
@@ -1551,11 +1553,11 @@ void InsanityChecksBeforeBooking()
 
   // **) Supported centrality estimators for Run 3 are enlisted here:
   if (tc.fProcess[eProcessRec] || tc.fProcess[eProcessRecSim] || tc.fProcess[eProcessSim]) {
-    if (!(ec.fsEventCuts[eCentralityEstimator].EqualTo("centFT0C") ||
-          ec.fsEventCuts[eCentralityEstimator].EqualTo("centFT0M") ||
-          ec.fsEventCuts[eCentralityEstimator].EqualTo("centFV0A") ||
-          ec.fsEventCuts[eCentralityEstimator].EqualTo("centNTPV"))) {
-      LOGF(fatal, "\033[1;31m%s at line %d : centrality estimator = %s is not supported yet for Run 3 analysis.\nUse \"centFT0C\", \"centFT0M\", \"centFV0A\", or \"centNTPV\" (case sensitive!) \033[0m", __FUNCTION__, __LINE__, ec.fsEventCuts[eCentralityEstimator].Data());
+    if (!(ec.fsEventCuts[eCentralityEstimator].EqualTo("centFT0C", TString::kIgnoreCase) ||
+          ec.fsEventCuts[eCentralityEstimator].EqualTo("centFT0M", TString::kIgnoreCase) ||
+          ec.fsEventCuts[eCentralityEstimator].EqualTo("centFV0A", TString::kIgnoreCase) ||
+          ec.fsEventCuts[eCentralityEstimator].EqualTo("centNTPV", TString::kIgnoreCase))) {
+      LOGF(fatal, "\033[1;31m%s at line %d : centrality estimator = %s is not supported yet for Run 3 analysis.\nUse \"centFT0C\", \"centFT0M\", \"centFV0A\", or \"centNTPV\"\033[0m", __FUNCTION__, __LINE__, ec.fsEventCuts[eCentralityEstimator].Data());
     }
   }
 
@@ -1729,6 +1731,7 @@ void BookAndNestAllLists()
   // *) Correlations;
   // *) Q-vectors;
   // *) Particle weights;
+  // *) Centrality weights;
   // *) Nested loops;
   // *) Toy NUA;
   // *) Internal validation;
@@ -1786,6 +1789,12 @@ void BookAndNestAllLists()
   pw.fWeightsList->SetName("Weights");
   pw.fWeightsList->SetOwner(kTRUE);
   fBaseList->Add(pw.fWeightsList);
+
+  // *) Centrality weights:
+  cw.fCentralityWeightsList = new TList();
+  cw.fCentralityWeightsList->SetName("CentralityWeights");
+  cw.fCentralityWeightsList->SetOwner(kTRUE);
+  fBaseList->Add(cw.fCentralityWeightsList);
 
   // *) Nested loops:
   nl.fNestedLoopsList = new TList();
@@ -2679,6 +2688,43 @@ void BookWeightsHistograms()
 
 //============================================================
 
+void BookCentralityWeightsHistograms()
+{
+  // Book all objects for particle centrality weights.
+
+  // a) Book the profile holding flags;
+  // b) Histograms for centrality weights.
+
+  if (tc.fVerbose) {
+    StartFunction(__FUNCTION__);
+  }
+
+  // a) Book the profile holding flags:
+  cw.fCentralityWeightsFlagsPro =
+    new TProfile("fWeightsFlagsPro", "flags for centrality weights", 1, 0., 1.);
+  cw.fCentralityWeightsFlagsPro->SetStats(kFALSE);
+  cw.fCentralityWeightsFlagsPro->SetLineColor(eColor);
+  cw.fCentralityWeightsFlagsPro->SetFillColor(eFillColor);
+  cw.fCentralityWeightsFlagsPro->GetXaxis()->SetLabelSize(0.05);
+  cw.fCentralityWeightsFlagsPro->GetXaxis()->SetBinLabel(1, "TBI 20241118 I need to store here name of centrality esimator for which centrality weights were calculated");
+  if (cw.fUseCentralityWeights) {
+    cw.fCentralityWeightsFlagsPro->Fill(0.5, 1.); // TBI 20241118 shall I automate this?
+  }
+  cw.fCentralityWeightsList->Add(cw.fCentralityWeightsFlagsPro);
+
+  // b) Histograms for centrality weights:
+  //    As of 20240216, I have abandoned the idea to generate centrality weights internally, centrality weights
+  //    are always fetched and cloned from external files, in any case (local, AliEn, CCDB).
+  //    Therefore, add histos with centrality weights to this list only after they are cloned from external files.
+
+  if (tc.fVerbose) {
+    ExitFunction(__FUNCTION__);
+  }
+
+} // void BookWeightsHistograms()
+
+//============================================================
+
 void BookNestedLoopsHistograms()
 {
   // Book all nested loops histograms.
@@ -3186,7 +3232,6 @@ void InternalValidation()
     if (iv.fHarmonicsOptionInternalValidation->EqualTo("correlated")) {
       // Sample 3 correlated vn's from TF3 fvnPDF, and with them initialize fPhiPDF:
       fvnPDF->GetRandom3(v1, v2, v3);
-      // cout<<Form("v1 = %.4f, v2 = %.4f, v3 = %.4f",v1,v2,v3)<<endl;
       fPhiPDF->SetParameter(0, v1);
       fPhiPDF->SetParameter(1, v2);
       fPhiPDF->SetParameter(2, v3);
@@ -3587,6 +3632,15 @@ void Preprocess(T const& collision)
     if (pw.fUseWeights[wPHI] || pw.fUseWeights[wPT] || pw.fUseWeights[wETA] || pw.fUseDiffWeights[wPHIPT] || pw.fUseDiffWeights[wPHIETA]) {
       GetParticleWeights();
       pw.fParticleWeightsAreFetched = kTRUE;
+    }
+  }
+
+  // *) Fetch the centrality weights for this particular run number. Do it only once.
+  //    TBI 20231012 If eventualy I can access programatically run number in init(...) at run time, this shall go there.
+  if (!cw.fCentralityWeightsAreFetched) {
+    if (cw.fUseCentralityWeights) {
+      GetCentralityWeights();
+      cw.fCentralityWeightsAreFetched = kTRUE;
     }
   }
 
@@ -7249,6 +7303,46 @@ void SetDiffWeightsHist(TH1D* const hist, eDiffWeights whichDiffWeight, Int_t bi
 
 //============================================================
 
+void SetCentralityWeightsHist(TH1D* const hist)
+{
+  // Copy histogram holding weights from an external file to the corresponding data member.
+
+  if (tc.fVerbose) {
+    StartFunction(__FUNCTION__);
+  }
+
+  // Finally:
+  hist->SetDirectory(0);
+  cw.fCentralityWeightsHist = reinterpret_cast<TH1D*>(hist->Clone());
+
+  if (!cw.fCentralityWeightsHist) {
+    LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+  }
+
+  // Cosmetics: TBI 20240216 do I really want to overwrite initial cosmetics, perhaps this shall go better into MakeCentralityWeights.C ?
+  //                         Or I could move all this to GetHistogramWithCentralityWeights, where in any case I am setting e.g. histogram title, etc.
+  cw.fCentralityWeightsHist->SetStats(kFALSE);
+  cw.fCentralityWeightsHist->GetXaxis()->SetTitle("Centrality percentile");
+  cw.fCentralityWeightsHist->GetYaxis()->SetTitle(Form("Centrality weight (%s)", ec.fsEventCuts[eCentralityEstimator].Data()));
+  cw.fCentralityWeightsHist->SetFillColor(eFillColor);
+  cw.fCentralityWeightsHist->SetLineColor(eColor);
+  if (!cw.fCentralityWeightsList) {
+    LOGF(fatal, "\033[1;31m%s at line %d: fCentralityWeightsList is NULL. That means that you have called SetCentralityWeightsHist(...) in init(), before this TList was booked.\033[0m", __FUNCTION__, __LINE__);
+  }
+  cw.fCentralityWeightsList->Add(cw.fCentralityWeightsHist); // This is working at the moment, because I am fetching all centrality weights in Preprocess(), which is called after init()
+                                                             // But if eventually it will be possible to fetch run number programatically in init(), I will have to re-think this line.
+
+  // Flag:
+  cw.fUseCentralityWeights = kTRUE;
+
+  if (tc.fVerbose) {
+    ExitFunction(__FUNCTION__);
+  }
+
+} // void SetCentralityWeightsHist(TH1D* const hist)
+
+//============================================================
+
 TH1D* GetWeightsHist(eWeights whichWeight)
 {
   // The standard getter.
@@ -7377,14 +7471,10 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* runNumber, const
 
     ccdb->setURL("http://alice-ccdb.cern.ch");
     if (tc.fVerbose) {
-      LOGF(info, "\033[1;32mAccessing in CCDB %s\033[0m",
-           TString(filePath).ReplaceAll("/alice-ccdb.cern.ch/", "").Data());
+      LOGF(info, "\033[1;32mAccessing in CCDB %s\033[0m", TString(filePath).ReplaceAll("/alice-ccdb.cern.ch/", "").Data());
     }
 
-    baseList =
-      reinterpret_cast<TList*>(ccdb->get<TList>(TString(filePath)
-                                                  .ReplaceAll("/alice-ccdb.cern.ch/", "")
-                                                  .Data()));
+    baseList = reinterpret_cast<TList*>(ccdb->get<TList>(TString(filePath).ReplaceAll("/alice-ccdb.cern.ch/", "").Data()));
 
     if (!baseList) {
       LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
@@ -7419,10 +7509,9 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* runNumber, const
       LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
     }
 
-    weightsFile->GetObject(
-      "ccdb_object", baseList); // TBI 20231008 for simplicity, harwired name
-                                // of base TList is "ccdb_object" also for
-                                // local case, see if I need to change this
+    weightsFile->GetObject("ccdb_object", baseList); // TBI 20231008 for simplicity, harwired name
+                                                     // of base TList is "ccdb_object" also for
+                                                     // local case, see if I need to change this
     if (!baseList) {
       // weightsFile->ls();
       LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
@@ -7540,6 +7629,184 @@ TH1D* GetHistogramWithWeights(const char* filePath, const char* runNumber, const
   return hist;
 
 } // TH1D* GetHistogramWithWeights(const char* filePath, const char* runNumber, const char* variable, Int_t bin = -1)
+
+//============================================================
+
+TH1D* GetHistogramWithCentralityWeights(const char* filePath, const char* runNumber)
+{
+  // Get and return histogram with centrality weights from an external file.
+
+  // TBI 20241118 Shall I merge this function with GetHistogramWithWeights(...) as there is a bit of code bloat?
+
+  // TBI 20241021 Strictly speaking, I do not need to pass here first 2 arguments, "filePath" and "runNumber", because they are initialized at call from data members.
+  //              But since this function is called only once, it's not an important performance loss. But re-think the design here eventually.
+
+  // a) Return value;
+  // b) Basic protection for arguments;
+  // c) Determine from filePath if the file in on a local machine, or in AliEn, or in CCDB;
+  // d) Handle the AliEn case;
+  // e) Handle the CCDB case;
+  // f) Handle the local case;
+  // g) The final touch on histogram with centrality weights.
+
+  if (tc.fVerbose) {
+    StartFunction(__FUNCTION__);
+    LOGF(info, "\033[1;33m filePath = %s\033[0m", filePath);
+    LOGF(info, "\033[1;33m runNumber = %s\033[0m", runNumber);
+    LOGF(info, "\033[1;33m fTaskName = %s\033[0m", tc.fTaskName.Data());
+  }
+
+  // a) Return value:
+  TH1D* hist = NULL;
+  TList* baseList = NULL;     // base top-level list in the TFile, e.g. named "ccdb_object"
+  TList* listWithRuns = NULL; // nested list with run-wise TList's holding run-specific weights
+
+  // b) Basic protection for arguments:
+  // ...
+
+  // c) Determine from filePath if the file in on a local machine, or in home
+  // dir AliEn, or in CCDB:
+  //    Algorithm: If filePath begins with "/alice/cern.ch/" then it's in home
+  //    dir AliEn. If filePath begins with "/alice-ccdb.cern.ch/" then it's in
+  //    CCDB. Therefore, files in AliEn and CCDB must be specified with abs path,
+  //    for local files both abs and relative paths are just fine.
+  Bool_t bFileIsInAliEn = kFALSE;
+  Bool_t bFileIsInCCDB = kFALSE;
+  if (TString(filePath).BeginsWith("/alice/cern.ch/")) {
+    bFileIsInAliEn = kTRUE;
+  } else {
+    if (TString(filePath).BeginsWith("/alice-ccdb.cern.ch/")) {
+      bFileIsInCCDB = kTRUE;
+    } // else {
+  } // if (TString(filePath).BeginsWith("/alice/cern.ch/")) {
+
+  if (bFileIsInAliEn) {
+    // d) Handle the AliEn case:
+    TGrid* alien = TGrid::Connect("alien", gSystem->Getenv("USER"), "", "");
+    if (!alien) {
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+    }
+    TFile* centralityWeightsFile = TFile::Open(Form("alien://%s", filePath), "READ");
+    if (!centralityWeightsFile) {
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+    }
+
+    centralityWeightsFile->GetObject("ccdb_object", baseList); // TBI 20231008 for simplicity, harwired name
+                                                               // of base TList is "ccdb_object" also for
+                                                               // AliEn case, see if I need to change this
+    if (!baseList) {
+      // centralityWeightsFile->ls();
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+    }
+
+    listWithRuns = reinterpret_cast<TList*>(GetObjectFromList(baseList, runNumber));
+    if (!listWithRuns) {
+      TString runNumberWithLeadingZeroes = "000";
+      runNumberWithLeadingZeroes += runNumber; // another try, with "000" prepended to run number
+      listWithRuns = reinterpret_cast<TList*>(GetObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
+      if (!listWithRuns) {
+        LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+      }
+    }
+
+  } else if (bFileIsInCCDB) {
+
+    // e) Handle the CCDB case: Remember that here I do not access the file,
+    //    instead directly object in that file.
+    //    My home dir in CCDB: https://alice-ccdb.cern.ch/browse/Users/a/abilandz/
+    //    Inspired by:
+    //    1. Discussion at:
+    //    https://alice-talk.web.cern.ch/t/access-to-lhc-filling-scheme/1073/17
+    //    2. See also:
+    //    https://github.com/AliceO2Group/O2Physics/blob/master/Tutorials/src/efficiencyGlobal.cxx
+    //    https://github.com/AliceO2Group/O2Physics/blob/master/Tutorials/src/efficiencyPerRun.cxx
+    //    3. O2 Analysis Tutorial 2.0:
+    //    https://indico.cern.ch/event/1267433/timetable/#20230417.detailed
+
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    if (tc.fVerbose) {
+      LOGF(info, "\033[1;32mAccessing in CCDB %s\033[0m", TString(filePath).ReplaceAll("/alice-ccdb.cern.ch/", "").Data());
+    }
+
+    baseList = reinterpret_cast<TList*>(ccdb->get<TList>(TString(filePath).ReplaceAll("/alice-ccdb.cern.ch/", "").Data()));
+
+    if (!baseList) {
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+    }
+
+    listWithRuns = reinterpret_cast<TList*>(GetObjectFromList(baseList, runNumber));
+    if (!listWithRuns) {
+      TString runNumberWithLeadingZeroes = "000";
+      runNumberWithLeadingZeroes += runNumber; // another try, with "000" prepended to run number
+      listWithRuns = reinterpret_cast<TList*>(GetObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
+      if (!listWithRuns) {
+        LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+      }
+    }
+
+  } else {
+
+    // f) Handle the local case:
+    //    TBI 20231008 In principle, also for the local case in O2, I could
+    //    maintain the same local structure of weights as it was in AliPhysics.
+    //                 But for simplicity, in O2 I organize local weights in the
+    //                 same way as in AliEn or CCDB.
+
+    // Check if the external ROOT file exists at specified path:
+    if (gSystem->AccessPathName(filePath, kFileExists)) {
+      LOGF(info, "\033[1;33m if(gSystem->AccessPathName(filePath,kFileExists)), filePath = %s \033[0m", filePath);
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+    }
+
+    TFile* centralityWeightsFile = TFile::Open(filePath, "READ");
+    if (!centralityWeightsFile) {
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+    }
+
+    centralityWeightsFile->GetObject("ccdb_object", baseList); // TBI 20231008 for simplicity, harwired name
+                                                               // of base TList is "ccdb_object" also for
+                                                               // local case, see if I need to change this
+    if (!baseList) {
+      // centralityWeightsFile->ls();
+      LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+    }
+
+    listWithRuns = reinterpret_cast<TList*>(GetObjectFromList(baseList, runNumber));
+    if (!listWithRuns) {
+      TString runNumberWithLeadingZeroes = "000";
+      runNumberWithLeadingZeroes += runNumber; // another try, with "000" prepended to run number
+      listWithRuns = reinterpret_cast<TList*>(GetObjectFromList(baseList, runNumberWithLeadingZeroes.Data()));
+      if (!listWithRuns) {
+        LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
+      }
+    }
+
+  } // else {
+
+  // g) The final touch on histogram with centrality weights:
+  // fetch histogram directly from this list:
+  hist = reinterpret_cast<TH1D*>(listWithRuns->FindObject(Form("%s_%s", ec.fsEventCuts[eCentralityEstimator].Data(), tc.fTaskName.Data())));
+  // if the previous search failed, descend recursively also into the nested lists:
+  if (!hist) {
+    hist = reinterpret_cast<TH1D*>(GetObjectFromList(listWithRuns, Form("%s_%s", ec.fsEventCuts[eCentralityEstimator].Data(), tc.fTaskName.Data())));
+  }
+  if (!hist) {
+    hist = reinterpret_cast<TH1D*>(GetObjectFromList(listWithRuns, Form("%s", ec.fsEventCuts[eCentralityEstimator].Data()))); // yes, for some simple tests I can have only histogram named e.g. 'CentFT0C'
+  }
+  if (!hist) {
+    listWithRuns->ls();
+    LOGF(fatal, "\033[1;31m%s at line %d : \033[0m", __FUNCTION__, __LINE__);
+  }
+  hist->SetDirectory(0);
+  hist->SetTitle(Form("%s, %s", filePath, runNumber)); // I have to do it here, because only here I have "filePath" available
+
+  if (tc.fVerbose) {
+    ExitFunction(__FUNCTION__);
+  }
+
+  return hist;
+
+} // TH1D* GetHistogramWithCentralityWeights(const char* filePath, const char* runNumber)
 
 //============================================================
 
@@ -8272,6 +8539,39 @@ void GetParticleWeights()
 
 //============================================================
 
+void GetCentralityWeights()
+{
+  // Get the centrality weights. Call this function only once.
+
+  //    TBI 20231012 Here the current working assumption is that:
+  //    1) Corrections do not change within a given run;
+  //    2) Hyperloop proceeses the dataset one masterjob per run number.
+  //    If any of these 2 assumptions are violated, this code will have to be modified.
+
+  // a) Centrality weights;
+  // b) ...
+
+  if (tc.fVerbose) {
+    StartFunction(__FUNCTION__);
+  }
+
+  // a) Centrality weights:
+  if (cw.fUseCentralityWeights) {
+    TH1D* centralityWeights = GetHistogramWithCentralityWeights(cw.fFileWithCentralityWeights.Data(), tc.fRunNumber.Data());
+    if (!centralityWeights) {
+      LOGF(fatal, "in function \033[1;31m%s at line %d : centralityWeights is NULL. Check the external file %s with centrality weights\033[0m", __FUNCTION__, __LINE__, cw.fFileWithCentralityWeights.Data());
+    }
+    SetCentralityWeightsHist(centralityWeights);
+  }
+
+  if (tc.fVerbose) {
+    ExitFunction(__FUNCTION__);
+  }
+
+} // void GetCentralityWeights()
+
+//============================================================
+
 Bool_t MaxNumberOfEvents(eBeforeAfter ba)
 {
   // Check if max number of events was reached. Can be used for cut eNumberOfEvents (= total events, with ba = eBefore), and eSelectedEvents (ba = eAfter).
@@ -8433,10 +8733,10 @@ const char* FancyFormatting(const char* name)
     fancyFormatting = "V_{z}";
   } else if (TString(name).EqualTo("Centrality")) {
     TString tmp = ec.fsEventCuts[eCentralityEstimator]; // I have to introduce local TString tmp, because ReplaceAll replaces in-place
-    if (tmp.BeginsWith("centRun2")) {
-      fancyFormatting = Form("Centrality (%s)", tmp.ReplaceAll("centRun2", "").Data()); // "centRun2V0M" => "Centrality (V0M)"
-    } else if (tmp.BeginsWith("cent")) {
-      fancyFormatting = Form("Centrality (%s)", tmp.ReplaceAll("cent", "").Data()); // "centFT0C" => "Centrality (FT0C)"
+    if (tmp.BeginsWith("CentRun2")) {
+      fancyFormatting = Form("Centrality (%s)", tmp.ReplaceAll("CentRun2", "").Data()); // "CentRun2V0M" => "Centrality (V0M)"
+    } else if (tmp.BeginsWith("Cent")) {
+      fancyFormatting = Form("Centrality (%s)", tmp.ReplaceAll("Cent", "").Data()); // "CentFT0C" => "Centrality (FT0C)"
     } else {
       LOGF(fatal, "\033[1;31m%s at line %d : the case tmp = %s is not supported yet\033[0m", __FUNCTION__, __LINE__, tmp.Data());
     }
@@ -8691,36 +8991,49 @@ Double_t CalculateKineCustomNestedLoops(TArrayI* harmonics, eAsFunctionOf AFO_va
     StartFunction(__FUNCTION__);
   }
 
+  Trace(__FUNCTION__, __LINE__);
+
   if (!harmonics) {
     LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
   }
+
+  Trace(__FUNCTION__, __LINE__);
 
   // *) ...
   eqvectorKine qvKine = eqvectorKine_N; // which component of q-vector
   TString kineVarName = "";
   switch (AFO_variable) {
     case AFO_PT:
+      Trace(__FUNCTION__, __LINE__);
       qvKine = PTq;
       kineVarName = "pt";
       break;
     case AFO_ETA:
+      Trace(__FUNCTION__, __LINE__);
       qvKine = ETAq;
       kineVarName = "eta";
       break;
     default:
+      Trace(__FUNCTION__, __LINE__);
       LOGF(fatal, "\033[1;31m%s at line %d : This AFO_variable = %d is not supported yet. \033[0m", __FUNCTION__, __LINE__, static_cast<int>(AFO_variable));
       break;
   } // switch(AFO_variable)
+
+  Trace(__FUNCTION__, __LINE__);
 
   // *) Insanity checks on above settings:
   if (qvKine == eqvectorKine_N) {
     LOGF(fatal, "\033[1;31m%s at line %d : qvKine == eqvectorKine_N => add some more entries to the case statement \033[0m", __FUNCTION__, __LINE__);
   }
 
+  Trace(__FUNCTION__, __LINE__);
+
   if (0 > bin || res.fResultsPro[AFO_variable]->GetNbinsX() < bin) { // this 'bin' starts from 0, i.e. this is an array bin
     // either underflow or overflow is hit, meaning that histogram is booked in narrower range than cuts
     LOGF(fatal, "\033[1;31m%s at line %d => AFO_variable = %d, bin = %d\033[0m", __FUNCTION__, __LINE__, static_cast<int>(AFO_variable), bin);
   }
+
+  Trace(__FUNCTION__, __LINE__);
 
   // Get the number of particles in this kine bin:
   Int_t nParticles = 0;
@@ -8730,25 +9043,40 @@ Double_t CalculateKineCustomNestedLoops(TArrayI* harmonics, eAsFunctionOf AFO_va
     }
   }
 
+  Trace(__FUNCTION__, __LINE__);
+
   // 'qvKine' is enum eqvectorKine:
   if (!res.fResultsPro[AFO_variable]) {
     LOGF(fatal, "\033[1;31m%s at line %d : AFO_variable = %d, bin = %d \033[0m", __FUNCTION__, __LINE__, static_cast<int>(AFO_variable), bin);
   }
+
+  Trace(__FUNCTION__, __LINE__);
+
   LOGF(info, " Processing qvKine = %d (vs. %s), nParticles in this kine bin = %d, bin range = [%f,%f) ....", static_cast<int>(qvKine), kineVarName.Data(), nParticles, res.fResultsPro[AFO_variable]->GetBinLowEdge(bin + 1), res.fResultsPro[AFO_variable]->GetBinLowEdge(bin + 2));
+
+  Trace(__FUNCTION__, __LINE__);
 
   // a) Determine the order of correlator;
   Int_t order = harmonics->GetSize();
   if (0 == order || order > gMaxCorrelator) {
     LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
   }
+
+  Trace(__FUNCTION__, __LINE__);
+
   if (order > nParticles) {
     LOGF(info, "  There is no enough particles in this bin to calculate the requested correlator");
     return 0.; // TBI 20240405 Is this really safe here? Re-think...
   }
+
+  Trace(__FUNCTION__, __LINE__);
+
   if (nl.fMaxNestedLoop > 0 && nl.fMaxNestedLoop < order) {
     LOGF(info, "  nl.fMaxNestedLoop > 0 && nl.fMaxNestedLoop < order, where nl.fMaxNestedLoop = %d, order = %d", nl.fMaxNestedLoop, order);
     return 0.; // TBI 20240405 Is this really safe here? Re-think...
   }
+
+  Trace(__FUNCTION__, __LINE__);
 
   // b) Custom nested loop:
   TProfile* profile = new TProfile("profile", "", 1, 0., 1.); // helper profile to get all averages automatically
@@ -8912,10 +9240,18 @@ Double_t CalculateKineCustomNestedLoops(TArrayI* harmonics, eAsFunctionOf AFO_va
     } // for(int i2=0; i2<nParticles; i2++)
   } // for(int i1=0; i1<nParticles; i1++)
 
+  Trace(__FUNCTION__, __LINE__);
+
   // c) Return value:
   Double_t finalValue = profile->GetBinContent(1);
+
+  Trace(__FUNCTION__, __LINE__);
+
   delete profile;
   profile = NULL;
+
+  Trace(__FUNCTION__, __LINE__);
+
   if (tc.fVerbose) {
     ExitFunction(__FUNCTION__);
   }
@@ -9204,7 +9540,7 @@ void BanishmentLoopOverParticles(T const& tracks)
 
     // *) Break the loop if fixed number of particles is taken randomly from each event (use always in combination with tc.fUseFisherYates = kTRUE):
     if (tc.fFixedNumberOfRandomlySelectedTracks > 0 && tc.fFixedNumberOfRandomlySelectedTracks == lSelectedTracks) {
-      LOGF(info, "%s Breaking the loop over particles, since requested fixed number of %d particles was reached", __FUNCTION__, tc.fFixedNumberOfRandomlySelectedTracks);
+      LOGF(info, "%s : Breaking the loop over particles, since requested fixed number of %d particles was reached", __FUNCTION__, tc.fFixedNumberOfRandomlySelectedTracks);
       break;
     }
 
@@ -9273,6 +9609,19 @@ void Trace(const char* functionName, Int_t lineNumber)
   LOGF(info, "\033[1;32m%s .... line %d\033[0m", functionName, lineNumber);
 
 } // void Trace(const char* functionName, Int_t lineNumber)
+
+//============================================================
+
+void Exit()
+{
+  // A simple utility wrapper. Used only during debugging.
+  // Use directly as:  Exit();
+  // Line number, function name, formatting, etc, are determinad automatically.
+
+  LOGF(info, "\n\n\n\n\n\n\n\n\n\n");
+  exit(1);
+
+} // void Exit()
 
 //============================================================
 
@@ -9838,7 +10187,7 @@ void MainLoopOverParticles(T const& tracks)
 
     // *) Break the loop if fixed number of particles is taken randomly from each event (use always in combination with tc.fUseFisherYates = kTRUE):
     if (tc.fFixedNumberOfRandomlySelectedTracks > 0 && tc.fFixedNumberOfRandomlySelectedTracks == ebye.fSelectedTracks) {
-      LOGF(info, "  Breaking the loop over particles, since requested fixed number of %d particles was reached", tc.fFixedNumberOfRandomlySelectedTracks);
+      LOGF(info, "%s : Breaking the loop over particles, since requested fixed number of %d particles was reached", __FUNCTION__, tc.fFixedNumberOfRandomlySelectedTracks);
       break;
     }
 
