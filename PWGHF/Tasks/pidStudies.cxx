@@ -248,7 +248,8 @@ struct pidStudies {
             return -aod::pid_studies::Omega;
         }
       }
-    }   
+    }
+    return aod::pid_studies::NotMatched;
   }
 
   void processMC(V0sMCRec const& V0s, aod::V0MCCores const&, CascsMCRec const& cascades, 
@@ -257,7 +258,7 @@ struct pidStudies {
       if (v0.mK0Short() > massK0Min && v0.mK0Short() < massK0Max ||
           v0.mLambda() > massLambdaMin && v0.mLambda() < massLambdaMax ||
           v0.mAntiLambda() > massLambdaMin && v0.mAntiLambda() < massLambdaMax) {
-        int matched = isMatched(v0); 
+        int matched = isMatched(v0);
         if(matched != aod::pid_studies::NotMatched) {
           fillTree<true>(v0, matched);
         }
