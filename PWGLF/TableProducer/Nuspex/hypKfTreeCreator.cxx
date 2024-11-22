@@ -12,6 +12,7 @@
 /// \brief Creates flat tree for ML analysis
 /// \authors Janik Ditzel <jditzel@cern.ch> and Michael Hartung <mhartung@cern.ch>
 
+#include <vector>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -33,7 +34,6 @@
 #include "DCAFitter/DCAFitterN.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "PWGLF/DataModel/LFHypernucleiKfTables.h"
-#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
