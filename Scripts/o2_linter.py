@@ -1411,7 +1411,7 @@ def main():
         tests.append(TestHfNameConfigurable())
 
     test_names = [t.name for t in tests]  # short names of activated tests
-    suffixes = tuple(set([s for test in tests for s in test.suffixes]))  # all suffixes from all enabled tests
+    suffixes = tuple({s for test in tests for s in test.suffixes})  # all suffixes from all enabled tests
     passed = True  # global result of all tests
 
     # Report overview before running.
