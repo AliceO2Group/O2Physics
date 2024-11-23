@@ -162,6 +162,7 @@ class TestSpec(ABC):
     message = "Test failed"  # error message
     suffixes: "list[str]" = []  # suffixes of files to test
     per_line = True  # Test lines separately one by one.
+    n_issues = 0  # issue counter
 
     def file_matches(self, path: str) -> bool:
         """Test whether the path matches the pattern for files to test."""
@@ -202,10 +203,12 @@ class TestSpec(ABC):
                     continue
                 if not self.test_line(line):
                     passed = False
+                    self.n_issues += 1
                     print_error(path, i + 1, self.name, self.message)
         else:
             passed = self.test_file(path, content)
             if not passed:
+                self.n_issues += 1
                 print_error(path, None, self.name, self.message)
         return passed
 
@@ -1413,6 +1416,7 @@ def main():
     test_names = [t.name for t in tests]  # short names of activated tests
     suffixes = tuple({s for test in tests for s in test.suffixes})  # all suffixes from all enabled tests
     passed = True  # global result of all tests
+    n_files_bad = {name: 0 for name in test_names}  # counter of files with issues
 
     # Report overview before running.
     print(f"Testing {len(args.paths)} files.")
@@ -1434,11 +1438,18 @@ def main():
                 for test in tests:
                     result = test.run(path, content)
                     if not result:
+                        n_files_bad[test.name] += 1
                         passed = False
                     # print(f"File \"{path}\" {'passed' if result else 'failed'} the test {test.name}.")
         except IOError:
             print(f'Failed to open file "{path}".')
             sys.exit(1)
+
+    # Report results per test.
+    print("\nResults per test")
+    print("test\tissues\tbad files")
+    for test in tests:
+        print(f"{test.name}\t{test.n_issues}\t{n_files_bad[test.name]}")
 
     # Report global result.
     title_result = "O2 linter result"
@@ -1458,7 +1469,7 @@ def main():
             print(f"::error title={title_result}::{msg_result}")
             print(f"::notice::{msg_disable}")
         else:
-            print(f"{title_result}: {msg_result}")
+            print(f"\n{title_result}: {msg_result}")
             print(msg_disable)
         sys.exit(1)
 
