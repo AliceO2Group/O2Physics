@@ -76,7 +76,7 @@ struct TreeWriterTpcV0 {
                        ((trackSelection.node() == 3) && requireGlobalTrackWoDCAInFilter()) ||
                        ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
                        ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
-  
+
   ctpRateFetcher mRateFetcher;
 
   /// Funktion to fill skimmed tables
@@ -194,7 +194,7 @@ struct TreeWriterTpcV0 {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     const int runnumber = bc.runNumber();
     float hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), runnumber, "ZNC hadronic") * 1.e-3;
-    
+
     rowTPCTree.reserve(tracks.size());
 
     /// Loop over v0 candidates
@@ -303,7 +303,7 @@ struct TreeWriterTPCTOF {
                        ((trackSelection.node() == 3) && requireGlobalTrackWoDCAInFilter()) ||
                        ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
                        ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
-    
+
   ctpRateFetcher mRateFetcher;
 
   double tsalisCharged(double pt, double mass, double sqrts)
