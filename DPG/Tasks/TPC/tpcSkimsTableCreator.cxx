@@ -45,7 +45,8 @@ using namespace o2::dataformats;
 
 struct TreeWriterTpcV0 {
 
-  Service<o2::ccdb::BasicCCDBManager> ccdb; 
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+
   using Trks = soa::Join<aod::Tracks, aod::V0Bits, aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::TrackSelection>;
   using Coll = soa::Join<aod::Collisions, aod::Mults, aod::EvSels>;
 
@@ -76,7 +77,7 @@ struct TreeWriterTpcV0 {
                        ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
                        ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
   
-  ctpRateFetcher mRateFetcher; 
+  ctpRateFetcher mRateFetcher;
 
   /// Funktion to fill skimmed tables
   template <typename T, typename C, typename V0>
@@ -192,7 +193,7 @@ struct TreeWriterTpcV0 {
     }
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     const int runnumber = bc.runNumber();
-    float hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), runnumber, "ZNC hadronic") * 1.e-3; //
+    float hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), runnumber, "ZNC hadronic") * 1.e-3;
     
     rowTPCTree.reserve(tracks.size());
 
@@ -241,7 +242,9 @@ struct TreeWriterTpcV0 {
 };  /// struct TreeWriterTpcV0
 
 struct TreeWriterTPCTOF {
-  Service<o2::ccdb::BasicCCDBManager> ccdb; 
+
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::TrackSelection>;
   using Coll = soa::Join<aod::Collisions, aod::Mults, aod::EvSels>;
 
@@ -301,7 +304,7 @@ struct TreeWriterTPCTOF {
                        ((trackSelection.node() == 4) && requireQualityTracksInFilter()) ||
                        ((trackSelection.node() == 5) && requireTrackCutInFilter(TrackSelectionFlags::kInAcceptanceTracks));
     
-  ctpRateFetcher mRateFetcher;     
+  ctpRateFetcher mRateFetcher;
 
   double tsalisCharged(double pt, double mass, double sqrts)
   {
@@ -401,7 +404,7 @@ struct TreeWriterTPCTOF {
 
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     const int runnumber = bc.runNumber();
-    float hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), runnumber, "ZNC hadronic") * 1.e-3; //
+    float hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), runnumber, "ZNC hadronic") * 1.e-3;
 
     rowTPCTOFTree.reserve(tracks.size());
     for (auto const& trk : tracks) {
