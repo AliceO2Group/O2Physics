@@ -141,8 +141,8 @@ struct cascadeFlow {
   Configurable <bool> isFT0OccupancySel{"isFT0OccupancySel", 0, "isFT0OccupancySel"};
   Configurable<int> MinOccupancyFT0{"MinOccupancyFT0", 0, "MinOccupancyFT0"};
   Configurable<int> MaxOccupancyFT0{"MaxOccupancyFT0", 5000, "MaxOccupancyFT0"};
-  Configurable<bool> isCollInStandardTimeRange{"isCollInStandardTimeRange", 1, "To remove collisions in +-10 micros time range"};
-  Configurable<bool> isCollInNarrowTimeRange{"isCollInNarrowTimeRange", 0, "To remove collisions in +-2 micros time range"};
+  Configurable<bool> isNoCollInStandardTimeRange{"isNoCollInStandardTimeRange", 1, "To remove collisions in +-10 micros time range"};
+  Configurable<bool> isNoCollInNarrowTimeRange{"isNoCollInNarrowTimeRange", 0, "To remove collisions in +-2 micros time range"};
 
   Configurable<float> MinPt{"MinPt", 0.6, "Min pt of cascade"};
   Configurable<float> MaxPt{"MaxPt", 10, "Max pt of cascade"};
@@ -230,10 +230,10 @@ struct cascadeFlow {
       histos.fill(HIST("hNEvents"), 5.5);
 
     //time-based event selection
-    if (isCollInStandardTimeRange && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+    if (isNoCollInStandardTimeRange && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       return false;
     }
-    if (isCollInNarrowTimeRange && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict)) {
+    if (isNoCollInNarrowTimeRange && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict)) {
       return false;
     }
     
@@ -348,7 +348,16 @@ struct cascadeFlow {
       cosThetaStarLambda[i] = boostedLambda.Pz() / boostedLambda.P();
     }
 
+    //time-based event selection
+    bool isNoCollInTimeRangeStd = 0;
+    if (coll.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) isNoCollInTimeRangeStd = 1;
+    //IN-ROF pile-up rejection
+    bool isNoCollInRofStd = 0;
+    if (coll.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) isNoCollInRofStd = 1;
+
     analysisSample(coll.centFT0C(),
+		   isNoCollInTimeRangeStd,
+		   isNoCollInRofStd,
                    casc.sign(),
                    casc.pt(),
                    casc.eta(),
