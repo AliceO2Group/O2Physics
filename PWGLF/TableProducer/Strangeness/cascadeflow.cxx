@@ -143,6 +143,8 @@ struct cascadeFlow {
   Configurable<int> MaxOccupancyFT0{"MaxOccupancyFT0", 5000, "MaxOccupancyFT0"};
   Configurable<bool> isNoCollInStandardTimeRange{"isNoCollInStandardTimeRange", 1, "To remove collisions in +-10 micros time range"};
   Configurable<bool> isNoCollInNarrowTimeRange{"isNoCollInNarrowTimeRange", 0, "To remove collisions in +-2 micros time range"};
+  Configurable<bool> isNoCollInRofStandard{"isNoCollInRofStandard", 0, "To remove collisions in the same ITS ROF and with a multiplicity above a certain threshold"};
+  Configurable<bool> isNoTVXinTRD{"isNoTVXinTRD", 0, "To remove collisions with trigger in TRD"};
 
   Configurable<float> MinPt{"MinPt", 0.6, "Min pt of cascade"};
   Configurable<float> MaxPt{"MaxPt", 10, "Max pt of cascade"};
@@ -239,6 +241,22 @@ struct cascadeFlow {
     
     if (isFillHisto)
       histos.fill(HIST("hNEvents"), 6.5);
+
+    //In-ROF event selection
+    if (isNoCollInRofStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)){
+      return false;
+    }
+      
+    if (isFillHisto)
+      histos.fill(HIST("hNEvents"), 7.5);
+
+    //TVX in TRD
+    // if (isNoTVXinTRD && collision.alias_bit(kTVXinTRD)){
+    //  return false;
+    // }
+    
+    if (isFillHisto)
+      histos.fill(HIST("hNEvents"), 8.5);
 
     if (isFillHisto) {
       histos.fill(HIST("hEventNchCorrelation"), collision.multNTracksPVeta1(), collision.multNTracksGlobal());
@@ -354,6 +372,9 @@ struct cascadeFlow {
     //IN-ROF pile-up rejection
     bool isNoCollInRofStd = 0;
     if (coll.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) isNoCollInRofStd = 1;
+    //TVX in TRD
+    bool isTVXinTRD = 0;
+    //    if (coll.alias_bit(kTVXinTRD)) isTVXinTRD = 1;
 
     analysisSample(coll.centFT0C(),
 		   isNoCollInTimeRangeStd,
@@ -385,7 +406,7 @@ struct cascadeFlow {
     const AxisSpec ptAxis{static_cast<int>((MaxPt - MinPt) / 0.2), MinPt, MaxPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec v2Axis{200, -1., 1., "#it{v}_{2}"};
     const AxisSpec CentAxis{18, 0., 90., "FT0C centrality percentile"};
-    TString hNEventsLabels[8] = {"All", "sel8", "z vrtx", "kNoSameBunchPileup", "kIsGoodZvtxFT0vsPV", "trackOccupancyInTimeRange", "kNoCollInTimeRange", "kIsGoodEventEP"};
+    TString hNEventsLabels[10] = {"All", "sel8", "z vrtx", "kNoSameBunchPileup", "kIsGoodZvtxFT0vsPV", "trackOccupancyInTimeRange", "kNoCollInTimeRange", "kNoCollInROF", "kTVXinTRD", "kIsGoodEventEP"};
     TString hNEventsLabelsMC[6] = {"All", "z vtx", ">=1RecoColl", "1Reco", "2Reco", "EvSelected"};
     TString hNCascLabelsMC[8] = {"All Xi", "all Omega", "Xi: has MC coll", "Om: has MC coll", "Xi: isPrimary", "Om: is Primary", "Xi: |eta|<0.8", "Om: |eta| < 0.8"};
 
@@ -396,7 +417,7 @@ struct cascadeFlow {
     resolution.add("QVectorsNormT0CTPCC", "QVectorsNormT0CTPCC", HistType::kTH2F, {axisQVsNorm, CentAxis});
     resolution.add("QVectorsNormTPCAC", "QVectorsNormTPCCB", HistType::kTH2F, {axisQVsNorm, CentAxis});
 
-    histos.add("hNEvents", "hNEvents", {HistType::kTH1F, {{8, 0.f, 8.f}}});
+    histos.add("hNEvents", "hNEvents", {HistType::kTH1F, {{10, 0.f, 10.f}}});
     for (Int_t n = 1; n <= histos.get<TH1>(HIST("hNEvents"))->GetNbinsX(); n++) {
       histos.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(n, hNEventsLabels[n - 1]);
     }
@@ -568,7 +589,7 @@ struct cascadeFlow {
     if (isGoodEventEP && !coll.triggereventep()) {
       return;
     }
-    histos.fill(HIST("hNEvents"), 7.5);
+    histos.fill(HIST("hNEvents"), 9.5);
     histos.fill(HIST("hEventNchCorrelationAfterEP"), coll.multNTracksPVeta1(), coll.multNTracksGlobal());
     histos.fill(HIST("hEventPVcontributorsVsCentralityAfterEP"), coll.centFT0C(), coll.multNTracksPVeta1());
     histos.fill(HIST("hEventGlobalTracksVsCentralityAfterEP"), coll.centFT0C(), coll.multNTracksGlobal());
@@ -693,7 +714,7 @@ struct cascadeFlow {
       }
     }
 
-    histos.fill(HIST("hNEvents"), 7.5);
+    histos.fill(HIST("hNEvents"), 9.5);
     histos.fill(HIST("hEventNchCorrelationAfterEP"), coll.multNTracksPVeta1(), coll.multNTracksGlobal());
     histos.fill(HIST("hEventPVcontributorsVsCentralityAfterEP"), coll.centFT0C(), coll.multNTracksPVeta1());
     histos.fill(HIST("hEventGlobalTracksVsCentralityAfterEP"), coll.centFT0C(), coll.multNTracksGlobal());
@@ -814,7 +835,7 @@ struct cascadeFlow {
       return;
     }
 
-    histos.fill(HIST("hNEvents"), 7.5);
+    histos.fill(HIST("hNEvents"), 9.5);
     histos.fill(HIST("hEventNchCorrelationAfterEP"), coll.multNTracksPVeta1(), coll.multNTracksGlobal());
     histos.fill(HIST("hEventPVcontributorsVsCentralityAfterEP"), coll.centFT0C(), coll.multNTracksPVeta1());
     histos.fill(HIST("hEventGlobalTracksVsCentralityAfterEP"), coll.centFT0C(), coll.multNTracksGlobal());
