@@ -135,10 +135,10 @@ struct cascadeFlow {
   Configurable<bool> isNoSameBunchPileupCut{"isNoSameBunchPileupCut", 1, "Same found-by-T0 bunch crossing rejection"};
   Configurable<bool> isGoodZvtxFT0vsPVCut{"isGoodZvtxFT0vsPVCut", 1, "z of PV by tracks and z of PV from FT0 A-C time difference cut"};
   Configurable<bool> isGoodEventEP{"isGoodEventEP", 1, "Event is used to calibrate event plane"};
-  Configurable <bool> isTrackOccupancySel{"isTrackOccupancySel", 0, "isTrackOccupancySel"};
+  Configurable<bool> isTrackOccupancySel{"isTrackOccupancySel", 0, "isTrackOccupancySel"};
   Configurable<int> MinOccupancy{"MinOccupancy", 0, "MinOccupancy"};
   Configurable<int> MaxOccupancy{"MaxOccupancy", 500, "MaxOccupancy"};
-  Configurable <bool> isFT0OccupancySel{"isFT0OccupancySel", 0, "isFT0OccupancySel"};
+  Configurable<bool> isFT0OccupancySel{"isFT0OccupancySel", 0, "isFT0OccupancySel"};
   Configurable<int> MinOccupancyFT0{"MinOccupancyFT0", 0, "MinOccupancyFT0"};
   Configurable<int> MaxOccupancyFT0{"MaxOccupancyFT0", 5000, "MaxOccupancyFT0"};
   Configurable<bool> isNoCollInStandardTimeRange{"isNoCollInStandardTimeRange", 1, "To remove collisions in +-10 micros time range"};
@@ -222,8 +222,8 @@ struct cascadeFlow {
     if (isTrackOccupancySel && (occupancy < MinOccupancy || occupancy > MaxOccupancy)) {
       return false;
     }
-    //occupancy cut based on FT0C 
-    int occupancyFT0 =collision.ft0cOccupancyInTimeRange();
+    // occupancy cut based on FT0C
+    int occupancyFT0 = collision.ft0cOccupancyInTimeRange();
     if (isFT0OccupancySel && (occupancyFT0 < MinOccupancyFT0 || occupancyFT0 > MaxOccupancyFT0)) {
       return false;
     }
@@ -231,30 +231,30 @@ struct cascadeFlow {
     if (isFillHisto)
       histos.fill(HIST("hNEvents"), 5.5);
 
-    //time-based event selection
+    // time-based event selection
     if (isNoCollInStandardTimeRange && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       return false;
     }
     if (isNoCollInNarrowTimeRange && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict)) {
       return false;
     }
-    
+
     if (isFillHisto)
       histos.fill(HIST("hNEvents"), 6.5);
 
-    //In-ROF event selection
-    if (isNoCollInRofStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)){
+    // In-ROF event selection
+    if (isNoCollInRofStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
       return false;
     }
-      
+
     if (isFillHisto)
       histos.fill(HIST("hNEvents"), 7.5);
 
-    //TVX in TRD
-    // if (isNoTVXinTRD && collision.alias_bit(kTVXinTRD)){
-    //  return false;
-    // }
-    
+    // TVX in TRD
+    //  if (isNoTVXinTRD && collision.alias_bit(kTVXinTRD)){
+    //   return false;
+    //  }
+
     if (isFillHisto)
       histos.fill(HIST("hNEvents"), 8.5);
 
@@ -366,19 +366,21 @@ struct cascadeFlow {
       cosThetaStarLambda[i] = boostedLambda.Pz() / boostedLambda.P();
     }
 
-    //time-based event selection
+    // time-based event selection
     bool isNoCollInTimeRangeStd = 0;
-    if (coll.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) isNoCollInTimeRangeStd = 1;
-    //IN-ROF pile-up rejection
+    if (coll.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))
+      isNoCollInTimeRangeStd = 1;
+    // IN-ROF pile-up rejection
     bool isNoCollInRofStd = 0;
-    if (coll.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) isNoCollInRofStd = 1;
-    //TVX in TRD
+    if (coll.selection_bit(o2::aod::evsel::kNoCollInRofStandard))
+      isNoCollInRofStd = 1;
+    // TVX in TRD
     bool isTVXinTRD = 0;
     //    if (coll.alias_bit(kTVXinTRD)) isTVXinTRD = 1;
 
     analysisSample(coll.centFT0C(),
-		   isNoCollInTimeRangeStd,
-		   isNoCollInRofStd,
+                   isNoCollInTimeRangeStd,
+                   isNoCollInRofStd,
                    casc.sign(),
                    casc.pt(),
                    casc.eta(),
