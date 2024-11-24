@@ -137,6 +137,8 @@ struct tofPidQa {
   Configurable<bool> splitSignalPerCharge{"splitSignalPerCharge", true, "Split the signal per charge (reduces memory footprint if off)"};
   Configurable<bool> enableVsMomentumHistograms{"enableVsMomentumHistograms", false, "Enables plots vs momentum instead of just pT (reduces memory footprint if off)"};
   Configurable<bool> requireGoodMatchTracks{"requireGoodMatchTracks", false, "Require good match tracks"};
+  Configurable<float> pvContributorsMin{"pvContributorsMin", -10, "Minimum pvContributors"};
+  Configurable<float> pvContributorsMax{"pvContributorsMax", 10000, "Maximum pvContributors"};
 
   template <o2::track::PID::ID id>
   void initPerParticle(const AxisSpec& pAxis,
@@ -282,6 +284,8 @@ struct tofPidQa {
     h->GetXaxis()->SetBinLabel(1, "Events read");
     h->GetXaxis()->SetBinLabel(2, "Passed ev. sel.");
     h->GetXaxis()->SetBinLabel(3, "Passed vtx Z");
+    h->GetXaxis()->SetBinLabel(4, Form("Passed pvContributorsMin %f", pvContributorsMin.value));
+    h->GetXaxis()->SetBinLabel(5, Form("Passed pvContributorsMax %f", pvContributorsMax.value));
 
     h = histos.add<TH1>("event/trackselection", "", kTH1D, {{10, 0.5, 10.5, "Selection passed"}});
     h->GetXaxis()->SetBinLabel(1, "Tracks read");
@@ -375,11 +379,30 @@ struct tofPidQa {
         }
       }
     }
-    if (abs(collision.posZ()) > 10.f) {
+    if (std::abs(collision.posZ()) > 10.f) {
+      return false;
+    }
+    // Count the number of contributors
+    int pvContributors = 0;
+    for (const auto& trk : tracks) {
+      if (trk.isPVContributor()) {
+        pvContributors++;
+      }
+    }
+    if (pvContributors < pvContributorsMin) {
       return false;
     }
     if constexpr (fillHistograms) {
-      histos.fill(HIST("event/evsel"), 3);
+      histos.fill(HIST("event/evsel"), 4);
+    }
+    if (pvContributors > pvContributorsMax) {
+      return false;
+    }
+    if constexpr (fillHistograms) {
+      histos.fill(HIST("event/evsel"), 5);
+    }
+    if constexpr (fillHistograms) {
+      histos.fill(HIST("event/evsel"), 6);
       histos.fill(HIST("event/vertexz"), collision.posZ());
 
       histos.fill(HIST("event/evtime/colltime"), collision.collisionTime() * 1000.f);
@@ -505,7 +528,7 @@ struct tofPidQa {
       }
 
       if (applyRapidityCut) {
-        if (abs(t.rapidity(PID::getMass(id))) > 0.5) {
+        if (std::abs(t.rapidity(PID::getMass(id))) > 0.5) {
           continue;
         }
       }
