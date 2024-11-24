@@ -24,7 +24,7 @@
 #include "Common/DataModel/Multiplicity.h"
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-
+#include <vector>
 #include <TLorentzVector.h>
 
 using namespace o2;
