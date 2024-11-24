@@ -1562,7 +1562,7 @@ struct lambdakzeroPreselector {
   void checkAndFinalize()
   {
     // parse + publish tag table now
-    for (int ii = 0; ii < selectionMask.size(); ii++) {
+    for (int ii = 0; ii < int(selectionMask.size()); ii++) {
       histos.fill(HIST("hPreselectorStatistics"), 0.0f); // all V0s
       bool validV0 = bitcheck(selectionMask[ii], bitTrackQuality);
       if (validV0) {
