@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file HfPidStudies.cxx
+/// \file pidStudies.cxx
 /// \brief task for studies of PID performance
 ///
 /// \author Fabrizio Chinu <fabrizio.chinu@cern.ch>, Università and INFN Torino
@@ -20,8 +20,8 @@
 #include "TPDGCode.h"
 
 #include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
+
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
