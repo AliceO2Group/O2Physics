@@ -23,9 +23,7 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-
 #include <TLorentzVector.h>
-#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
