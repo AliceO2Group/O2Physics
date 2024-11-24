@@ -7950,7 +7950,7 @@ TH1D* GetHistogramWithCentralityWeights(const char* filePath, const char* runNum
 
     // xxxxxxxxxxxx  TBI 20241124 remove this code
 
-    hist = (TH1D*)centralityWeightsFile->Get("FT0C_Default list name"); // TBI 20241122 temporary workaround
+    hist = reinterpret_cast<TH1D*>(centralityWeightsFile->Get("FT0C_Default list name")); // TBI 20241122 temporary workaround
     if (!hist) {
       Exit();
     }
