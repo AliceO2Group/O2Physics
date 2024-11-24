@@ -41,6 +41,11 @@ enum class DileptonAnalysisType : int {
   kVM = 5,
   kHFll = 6,
 };
+enum class DileptonPrefilterBit : int {
+  kMee = 0,             // reject tracks from pi0 dalitz decays at very low mass where S/B > 1
+  kPhiV = 1,            // reject tracks from photon conversions
+  kFakeMatchITSTPC = 2, // reject tracks from photon conversions misreconstructed as ITS-TPC matched track
+};
 
 using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;
 using SMatrix5 = ROOT::Math::SVector<double, 5>;
@@ -314,6 +319,11 @@ inline float getOpeningAngle(float pxpos, float pypos, float pzpos, float pxneg,
   float ptot2 = RecoDecay::p2(pxpos, pypos, pzpos) * RecoDecay::p2(pxneg, pyneg, pzneg);
   float argcos = RecoDecay::dotProd(std::array{pxpos, pypos, pzpos}, std::array{pxneg, pyneg, pzneg}) / std::sqrt(ptot2);
   return std::acos(clipToPM1(argcos));
+}
+//_______________________________________________________________________
+inline float pairDCAQuadSum(const float dca1, const float dca2)
+{
+  return std::sqrt((dca1 * dca1 + dca2 * dca2) / 2.);
 }
 //_______________________________________________________________________
 } // namespace o2::aod::pwgem::dilepton::utils::pairutil

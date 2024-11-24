@@ -14,6 +14,10 @@
 ///
 /// \author Hadi Hassan <hadi.hassan@cern.ch>, University of Jyväskylä
 
+#include <string>
+#include <algorithm>
+#include <vector>
+
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoA.h"
@@ -84,6 +88,7 @@ struct BJetTaggingML {
   // event level configurables
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
+  Configurable<bool> useEventWeight{"useEventWeight", true, "Flag whether to scale histograms with the event weight"};
 
   Configurable<float> pTHatMaxMCD{"pTHatMaxMCD", 999.0, "maximum fraction of hard scattering for jet acceptance in detector MC"};
   Configurable<float> pTHatMaxMCP{"pTHatMaxMCP", 999.0, "maximum fraction of hard scattering for jet acceptance in particle MC"};
@@ -114,7 +119,7 @@ struct BJetTaggingML {
   Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{5., 1000.}, "pT bin limits for ML application"};
   Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{cuts_ml::CutSmaller, cuts_ml::CutNot}, "Whether to reject score values greater or smaller than the threshold"};
   Configurable<LabeledArray<double>> cutsMl{"cutsMl", {defaultCutsMl[0], 1, 2, {"pT bin 0"}, {"score for default b-jet tagging", "uncer 1"}}, "ML selections per pT bin"};
-  Configurable<int8_t> nClassesMl{"nClassesMl", (int8_t)2, "Number of classes in ML model"};
+  Configurable<int> nClassesMl{"nClassesMl", 2, "Number of classes in ML model"};
   Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
 
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -215,8 +220,8 @@ struct BJetTaggingML {
   Filter jetFilter = (aod::jet::pt >= jetPtMin && aod::jet::pt <= jetPtMax && aod::jet::eta < jetEtaMax - aod::jet::r / 100.f && aod::jet::eta > jetEtaMin + aod::jet::r / 100.f);
 
   using FilteredCollision = soa::Filtered<soa::Join<aod::JCollisions, aod::JCollisionPIs>>;
-  using JetTrackswID = soa::Join<JetTracks, aod::JTrackExtras, aod::JTrackPIs>;
-  using JetTracksMCDwID = soa::Join<JetTracksMCD, aod::JTrackExtras, aod::JTrackPIs>;
+  using JetTrackswID = soa::Join<aod::JetTracks, aod::JTrackExtras, aod::JTrackPIs>;
+  using JetTracksMCDwID = soa::Join<aod::JetTracksMCD, aod::JTrackExtras, aod::JTrackPIs>;
   using DataJets = soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::DataSecondaryVertex3ProngIndices>>;
 
   std::vector<std::vector<float>> getInputsForML(bjetParams jetparams, std::vector<bjetTrackParams>& tracksParams, std::vector<bjetSVParams>& svsParams)
@@ -425,7 +430,7 @@ struct BJetTaggingML {
   Preslice<aod::JMcParticles> McParticlesPerCollision = aod::jmcparticle::mcCollisionId;
   Preslice<MCPJetTable> McPJetsPerCollision = aod::jet::mcCollisionId;
 
-  void processMCJets(FilteredCollisionMCD::iterator const& collision, MCDJetTable const& MCDjets, MCPJetTable const& MCPjets, JetTracksMCDwID const& allTracks, JetParticles const& MCParticles, aod::MCDSecondaryVertex3Prongs const& allSVs)
+  void processMCJets(FilteredCollisionMCD::iterator const& collision, MCDJetTable const& MCDjets, MCPJetTable const& MCPjets, JetTracksMCDwID const& allTracks, aod::JetParticles const& MCParticles, aod::MCDSecondaryVertex3Prongs const& allSVs)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelection)) {
       return;
@@ -450,7 +455,7 @@ struct BJetTaggingML {
         continue;
       }
 
-      float eventWeight = analysisJet.eventWeight();
+      float eventWeight = useEventWeight ? analysisJet.eventWeight() : 1.0;
       float pTHat = 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
       if (analysisJet.pt() > pTHatMaxMCD * pTHat) {
         continue;
@@ -535,7 +540,7 @@ struct BJetTaggingML {
         continue;
       }
 
-      float eventWeight = mcpjet.eventWeight();
+      float eventWeight = useEventWeight ? mcpjet.eventWeight() : 1.0;
       float pTHat = 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
       if (mcpjet.pt() > pTHatMaxMCP * pTHat) {
         continue;
@@ -565,7 +570,7 @@ struct BJetTaggingML {
   Filter mccollisionFilter = nabs(aod::jmccollision::posZ) < vertexZCut;
   using FilteredCollisionMCP = soa::Filtered<aod::JMcCollisions>;
 
-  void processMCTruthJets(FilteredCollisionMCP::iterator const& /*collision*/, MCPJetTable const& MCPjets, JetParticles const& MCParticles)
+  void processMCTruthJets(FilteredCollisionMCP::iterator const& /*collision*/, MCPJetTable const& MCPjets, aod::JetParticles const& MCParticles)
   {
 
     for (const auto& mcpjet : MCPjets) {
@@ -582,7 +587,7 @@ struct BJetTaggingML {
         continue;
       }
 
-      float eventWeight = mcpjet.eventWeight();
+      float eventWeight = useEventWeight ? mcpjet.eventWeight() : 1.0;
       float pTHat = 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
       if (mcpjet.pt() > pTHatMaxMCP * pTHat) {
         continue;

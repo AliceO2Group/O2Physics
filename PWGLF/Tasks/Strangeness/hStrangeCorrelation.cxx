@@ -20,6 +20,8 @@
 /// \author David Dobrigkeit Chinellato (david.dobrigkeit.chinellato@cern.ch)
 /// \author Zhongbao Yin (Zhong-Bao.Yin@cern.ch)
 
+#include <string>
+#include <vector>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -74,6 +76,7 @@ struct correlateStrangeness {
   Configurable<bool> doAutocorrelationRejection{"doAutocorrelationRejection", true, "reject pairs where trigger Id is the same as daughter particle Id"};
 
   Configurable<int> triggerBinToSelect{"triggerBinToSelect", 0, "trigger bin to select on if processSelectEventWithTrigger enabled"};
+  Configurable<int> triggerParticleCharge{"triggerParticleCharge", 0, "For checks, if 0 all charged tracks, if -1 only neg., if 1 only positive"};
 
   // Axes - configurable for smaller sizes
   ConfigurableAxis axisMult{"axisMult", {VARIABLE_WIDTH, 0.0f, 0.01f, 1.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 70.0f, 100.0f}, "Mixing bins - multiplicity"};
@@ -233,6 +236,12 @@ struct correlateStrangeness {
     if (track.pt() > axisRanges[3][1] || track.pt() < axisRanges[3][0]) {
       return false;
     }
+    if (triggerParticleCharge > 0 && track.sign() < 0) {
+      return false;
+    }
+    if (triggerParticleCharge < 0 && track.sign() > 0) {
+      return false;
+    }
     return true;
   }
   void fillCorrelationsV0(aod::TriggerTracks const& triggers, aod::AssocV0s const& assocs, bool mixing, float pvz, float mult)
@@ -311,8 +320,17 @@ struct correlateStrangeness {
           if (bitcheck(doCorrelation, index) && (!applyEfficiencyCorrection || efficiency != 0)) {
             if (assocCandidate.compatible(index, systCuts.dEdxCompatibility) && (!doMCassociation || assocCandidate.mcTrue(index)) && (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary()) && !mixing && -massWindowConfigurations.maxBgNSigma < assocCandidate.invMassNSigma(index) && assocCandidate.invMassNSigma(index) < -massWindowConfigurations.minBgNSigma)
               histos.fill(HIST("sameEvent/LeftBg/") + HIST(v0names[index]), deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult, weight);
-            if (assocCandidate.compatible(index, systCuts.dEdxCompatibility) && (!doMCassociation || assocCandidate.mcTrue(index)) && (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary()) && !mixing && -massWindowConfigurations.maxPeakNSigma < assocCandidate.invMassNSigma(index) && assocCandidate.invMassNSigma(index) < +massWindowConfigurations.maxPeakNSigma)
+            if (assocCandidate.compatible(index, systCuts.dEdxCompatibility) && (!doMCassociation || assocCandidate.mcTrue(index)) && (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary()) && !mixing && -massWindowConfigurations.maxPeakNSigma < assocCandidate.invMassNSigma(index) && assocCandidate.invMassNSigma(index) < +massWindowConfigurations.maxPeakNSigma) {
               histos.fill(HIST("sameEvent/Signal/") + HIST(v0names[index]), deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult, weight);
+              if (std::abs(deltaphi) < 0.8) {
+                histos.fill(HIST("hITSClusters") + HIST(v0names[index]) + HIST("NegativeDaughterToward"), ptassoc, negtrack.itsNCls(), assoc.v0radius());
+                histos.fill(HIST("hITSClusters") + HIST(v0names[index]) + HIST("PositiveDaughterToward"), ptassoc, postrack.itsNCls(), assoc.v0radius());
+              }
+              if (std::abs(deltaphi) > 1 && std::abs(deltaphi) < 2) {
+                histos.fill(HIST("hITSClusters") + HIST(v0names[index]) + HIST("NegativeDaughterTransverse"), ptassoc, negtrack.itsNCls(), assoc.v0radius());
+                histos.fill(HIST("hITSClusters") + HIST(v0names[index]) + HIST("PositiveDaughterTransverse"), ptassoc, postrack.itsNCls(), assoc.v0radius());
+              }
+            }
             if (assocCandidate.compatible(index, systCuts.dEdxCompatibility) && (!doMCassociation || assocCandidate.mcTrue(index)) && (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary()) && !mixing && +massWindowConfigurations.minBgNSigma < assocCandidate.invMassNSigma(index) && assocCandidate.invMassNSigma(index) < +massWindowConfigurations.maxBgNSigma)
               histos.fill(HIST("sameEvent/RightBg/") + HIST(v0names[index]), deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult, weight);
             if (assocCandidate.compatible(index, systCuts.dEdxCompatibility) && (!doMCassociation || assocCandidate.mcTrue(index)) && (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary()) && mixing && -massWindowConfigurations.maxBgNSigma < assocCandidate.invMassNSigma(index) && assocCandidate.invMassNSigma(index) < -massWindowConfigurations.minBgNSigma)
@@ -694,11 +712,18 @@ struct correlateStrangeness {
     histos.add("hTriggerPtResolution", ";p_{T}^{reconstructed} (GeV/c); p_{T}^{generated} (GeV/c)", kTH2F, {axisPtQA, axisPtQA});
     histos.add("hTriggerPrimaryEtaVsPt", "hTriggerPrimaryEtaVsPt", kTH3F, {axisPtQA, axisEta, axisMult});
     histos.add("hTrackEtaVsPtVsPhi", "hTrackEtaVsPtVsPhi", kTH3F, {axisPtQA, axisEta, axisPhi});
+
     bool hStrange = false;
     for (int i = 0; i < 8; i++) {
-      histos.add(fmt::format("h{}EtaVsPtVsPhi", particlenames[i]).c_str(), "", kTH3F, {axisPtQA, axisEta, axisPhi});
-      histos.add(fmt::format("h{}EtaVsPtVsPhiBg", particlenames[i]).c_str(), "", kTH3F, {axisPtQA, axisEta, axisPhi});
+      if ((doprocessSameEventHV0s && i < 3) || (doprocessSameEventHCascades && i > 2 && i < 7) || (doprocessSameEventHPions && i == 7))
+        histos.add(fmt::format("h{}EtaVsPtVsPhi", particlenames[i]).c_str(), "", kTH3F, {axisPtQA, axisEta, axisPhi});
+      if ((doprocessSameEventHV0s && i < 3) || (doprocessSameEventHCascades && i > 2 && i < 7))
+        histos.add(fmt::format("h{}EtaVsPtVsPhiBg", particlenames[i]).c_str(), "", kTH3F, {axisPtQA, axisEta, axisPhi});
       if (bitcheck(doCorrelation, i)) {
+        histos.add(fmt::format("hITSClusters{}NegativeDaughterToward", particlenames[i]).c_str(), "", kTH3F, {axisPtAssoc, {8, -0.5, 7.5}, {20, 0, 10}});
+        histos.add(fmt::format("hITSClusters{}PositiveDaughterToward", particlenames[i]).c_str(), "", kTH3F, {axisPtAssoc, {8, -0.5, 7.5}, {20, 0, 10}});
+        histos.add(fmt::format("hITSClusters{}NegativeDaughterTransverse", particlenames[i]).c_str(), "", kTH3F, {axisPtAssoc, {8, -0.5, 7.5}, {20, 0, 10}});
+        histos.add(fmt::format("hITSClusters{}PositiveDaughterTransverse", particlenames[i]).c_str(), "", kTH3F, {axisPtAssoc, {8, -0.5, 7.5}, {20, 0, 10}});
         histos.add(fmt::format("h3d{}Spectrum", particlenames[i]).c_str(), fmt::format("h3d{}Spectrum", particlenames[i]).c_str(), kTH3F, {axisPtQA, axisMult, axisMassNSigma});
         histos.add(fmt::format("h3d{}SpectrumY", particlenames[i]).c_str(), fmt::format("h3d{}SpectrumY", particlenames[i]).c_str(), kTH3F, {axisPtQA, axisMult, axisMassNSigma});
         histos.add(fmt::format("sameEvent/Signal/{}", particlenames[i]).c_str(), "", kTHnF, {axisDeltaPhiNDim, axisDeltaEtaNDim, axisPtAssocNDim, axisPtTriggerNDim, axisVtxZNDim, axisMultNDim});
@@ -1426,9 +1451,16 @@ struct correlateStrangeness {
         continue;
       }
       if (abs(mcParticle.pdgCode()) == 211 || abs(mcParticle.pdgCode()) == 321 || abs(mcParticle.pdgCode()) == 2212 || abs(mcParticle.pdgCode()) == 11 || abs(mcParticle.pdgCode()) == 13) {
+        Int_t charge = 0;
+        if (mcParticle.pdgCode() < 0)
+          charge = -1;
+        if (mcParticle.pdgCode() > 0)
+          charge = 1;
         if (!doTriggPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
-          triggerIndices.emplace_back(iteratorNum);
-          histos.fill(HIST("ClosureTest/hTrigger"), gpt, geta, bestCollisionFT0Mpercentile);
+          if ((triggerParticleCharge > 0 && charge > 0) || (triggerParticleCharge < 0 && charge < 0) || triggerParticleCharge == 0) {
+            triggerIndices.emplace_back(iteratorNum);
+            histos.fill(HIST("ClosureTest/hTrigger"), gpt, geta, bestCollisionFT0Mpercentile);
+          }
         }
       }
       if (!doAssocPhysicalPrimary || mcParticle.isPhysicalPrimary()) {

@@ -77,12 +77,12 @@ struct JetMatchingQA {
   {
   }
 
-  void processDummy(JetMcCollisions const&)
+  void processDummy(aod::JetMcCollisions const&)
   {
   }
   PROCESS_SWITCH(JetMatchingQA, processDummy, "Dummy process", true);
 
-  void processMCD(JetCollision const&, JetParticles const&, JetTracksMCD const&,
+  void processMCD(aod::JetCollision const&, aod::JetParticles const&, aod::JetTracksMCD const&,
                   BaseJetCollection const& djets, TagJetCollection const&)
   {
     for (const auto& djet : djets) {
@@ -106,13 +106,13 @@ struct JetMatchingQA {
         registry.fill(HIST("h_jet_match_hf_Nconst"), pjet.tracksIds().size(), djet.tracksIds().size());
 
         double pjet_pt_lead = 0.;
-        for (auto& mcparticle : pjet.template tracks_as<JetParticles>()) {
+        for (auto& mcparticle : pjet.template tracks_as<aod::JetParticles>()) {
           if (mcparticle.pt() > pjet_pt_lead) {
             pjet_pt_lead = mcparticle.pt();
           }
         }
         double djet_pt_lead = 0.;
-        for (auto& track : djet.template tracks_as<JetTracksMCD>()) {
+        for (auto& track : djet.template tracks_as<aod::JetTracksMCD>()) {
           if (track.pt() > djet_pt_lead) {
             djet_pt_lead = track.pt();
           }
@@ -134,13 +134,13 @@ struct JetMatchingQA {
         registry.fill(HIST("h_jet_match_geo_Nconst"), pjet.tracksIds().size(), djet.tracksIds().size());
 
         double pjet_pt_lead = 0.;
-        for (auto& mcparticle : pjet.template tracks_as<JetParticles>()) {
+        for (auto& mcparticle : pjet.template tracks_as<aod::JetParticles>()) {
           if (mcparticle.pt() > pjet_pt_lead) {
             pjet_pt_lead = mcparticle.pt();
           }
         }
         double djet_pt_lead = 0.;
-        for (auto& track : djet.template tracks_as<JetTracksMCD>()) {
+        for (auto& track : djet.template tracks_as<aod::JetTracksMCD>()) {
           if (track.pt() > djet_pt_lead) {
             djet_pt_lead = track.pt();
           }
@@ -161,13 +161,13 @@ struct JetMatchingQA {
         registry.fill(HIST("h_jet_match_pt_Nconst"), pjet.tracksIds().size(), djet.tracksIds().size());
 
         double pjet_pt_lead = 0.;
-        for (auto& mcparticle : pjet.template tracks_as<JetParticles>()) {
+        for (auto& mcparticle : pjet.template tracks_as<aod::JetParticles>()) {
           if (mcparticle.pt() > pjet_pt_lead) {
             pjet_pt_lead = mcparticle.pt();
           }
         }
         double djet_pt_lead = 0.;
-        for (auto& track : djet.template tracks_as<JetTracksMCD>()) {
+        for (auto& track : djet.template tracks_as<aod::JetTracksMCD>()) {
           if (track.pt() > djet_pt_lead) {
             djet_pt_lead = track.pt();
           }
@@ -178,7 +178,7 @@ struct JetMatchingQA {
   }
   PROCESS_SWITCH(JetMatchingQA, processMCD, "QA on detector-level jets", false);
 
-  void processMCP(JetMcCollision const&,
+  void processMCP(aod::JetMcCollision const&,
                   TagJetCollection const& pjets, BaseJetCollection const&)
   {
     for (const auto& pjet : pjets) {

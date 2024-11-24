@@ -80,7 +80,7 @@ using MyEMCClusters = soa::Join<aod::SkimEMCClusters, aod::EMCEMEventIds>;
 using MyEMCCluster = MyEMCClusters::iterator;
 
 using MyPHOSClusters = soa::Join<aod::PHOSClusters, aod::PHOSEMEventIds>;
-using MyPHOSCluster = MyEMCClusters::iterator;
+using MyPHOSCluster = MyPHOSClusters::iterator;
 
 template <PairType pairtype, typename... Types>
 struct Pi0EtaToGammaGamma {
@@ -210,6 +210,7 @@ struct Pi0EtaToGammaGamma {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   int mRunNumber;
   float d_bz;
+  o2::emcal::Geometry* emcalGeom;
 
   void init(InitContext&)
   {
@@ -244,7 +245,7 @@ struct Pi0EtaToGammaGamma {
 
     if constexpr (pairtype == kEMCEMC) {
       fRegistry.addClone("Pair/same/", "Pair/rotation/");
-      o2::emcal::Geometry::GetInstanceFromRunNumber(300000);
+      emcalGeom = o2::emcal::Geometry::GetInstanceFromRunNumber(300000);
     }
 
     mRunNumber = 0;
@@ -321,7 +322,6 @@ struct Pi0EtaToGammaGamma {
     fEMEventCut.SetRequireGoodZvtxFT0vsPV(eventcuts.cfgRequireGoodZvtxFT0vsPV);
     fEMEventCut.SetRequireEMCReadoutInMB(eventcuts.cfgRequireEMCReadoutInMB);
     fEMEventCut.SetRequireEMCHardwareTriggered(eventcuts.cfgRequireEMCHardwareTriggered);
-    fEMEventCut.SetOccupancyRange(eventcuts.cfgOccupancyMin, eventcuts.cfgOccupancyMax);
   }
 
   void DefinePCMCut()
@@ -450,9 +450,29 @@ struct Pi0EtaToGammaGamma {
     photon1 = rotationMatrix * photon1;
     photon2 = rotationMatrix * photon2;
 
+    int iCellID_photon1 = 0;
+    int iCellID_photon2 = 0;
+
+    try {
+      iCellID_photon1 = emcalGeom->GetAbsCellIdFromEtaPhi(photon1.Eta(), photon1.Phi());
+    } catch (o2::emcal::InvalidPositionException& e) {
+      iCellID_photon1 = -1;
+    }
+    try {
+      iCellID_photon2 = emcalGeom->GetAbsCellIdFromEtaPhi(photon2.Eta(), photon2.Phi());
+    } catch (o2::emcal::InvalidPositionException& e) {
+      iCellID_photon2 = -1;
+    }
+    if (iCellID_photon1 == -1 && iCellID_photon2 == -1) {
+      return;
+    }
+
     for (auto& photon : photons_coll) {
       if (photon.globalIndex() == ig1 || photon.globalIndex() == ig2) {
         // only combine rotated photons with other photons
+        continue;
+      }
+      if (!(fEMCCut.IsSelected<MyEMCCluster>(photon))) {
         continue;
       }
 
@@ -463,20 +483,6 @@ struct Pi0EtaToGammaGamma {
       float openingAngle1 = std::acos(photon1.Vect().Dot(photon3.Vect()) / (photon1.P() * photon3.P()));
       float openingAngle2 = std::acos(photon2.Vect().Dot(photon3.Vect()) / (photon2.P() * photon3.P()));
 
-      int iCellID_photon1 = 0;
-      int iCellID_photon2 = 0;
-
-      try {
-        iCellID_photon1 = o2::emcal::Geometry::GetInstance()->GetAbsCellIdFromEtaPhi(photon1.Eta(), photon1.Phi());
-      } catch (o2::emcal::InvalidPositionException& e) {
-        iCellID_photon1 = -1;
-      }
-      try {
-        iCellID_photon2 = o2::emcal::Geometry::GetInstance()->GetAbsCellIdFromEtaPhi(photon2.Eta(), photon2.Phi());
-      } catch (o2::emcal::InvalidPositionException& e) {
-        iCellID_photon2 = -1;
-      }
-
       if (openingAngle1 > emccuts.minOpenAngle && abs(mother1.Rapidity()) < maxY && iCellID_photon1 > 0) {
         fRegistry.fill(HIST("Pair/rotation/hs"), mother1.M(), mother1.Pt(), eventWeight);
       }
@@ -484,6 +490,7 @@ struct Pi0EtaToGammaGamma {
         fRegistry.fill(HIST("Pair/rotation/hs"), mother2.M(), mother2.Pt(), eventWeight);
       }
     }
+    return;
   }
 
   SliceCache cache;
@@ -788,6 +795,7 @@ struct Pi0EtaToGammaGamma {
     } // end of collision loop
   }
 
+  Filter collisionFilter_occupancy = eventcuts.cfgOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgOccupancyMax;
   Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
   using FilteredMyCollisions = soa::Filtered<MyCollisions>;
 

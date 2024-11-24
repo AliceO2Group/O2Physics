@@ -70,7 +70,7 @@ struct femtoUniverseEfficiencyBase {
 
   /// Particle 1
   Configurable<int32_t> ConfPDGCodePartOne{"ConfPDGCodePartOne", 2212, "Particle 1 - PDG code"};
-  Configurable<uint8_t> ConfParticleTypePartOne{"ConfParticleTypePartOne", aod::femtouniverseparticle::ParticleType::kTrack, "Particle 1 - particle type: 0 - track, 2 - V0, 6 - phi"};
+  Configurable<uint> ConfParticleTypePartOne{"ConfParticleTypePartOne", aod::femtouniverseparticle::ParticleType::kTrack, "Particle 1 - particle type: 0 - track, 2 - V0, 6 - phi"};
   Configurable<bool> ConfNoPDGPartOne{"ConfNoPDGPartOne", false, "0: selecting part one by PDG, 1: no PID selection"};
   Configurable<float> ConfPtLowPart1{"ConfPtLowPart1", 0.2, "Lower limit for Pt for the first particle"};
   Configurable<float> ConfPtHighPart1{"ConfPtHighPart1", 2.5, "Higher limit for Pt for the first particle"};
@@ -91,7 +91,7 @@ struct femtoUniverseEfficiencyBase {
   /// Particle 2
   Configurable<bool> ConfIsSame{"ConfIsSame", false, "Pairs of the same particle"};
   Configurable<int32_t> ConfPDGCodePartTwo{"ConfPDGCodePartTwo", 333, "Particle 2 - PDG code"};
-  Configurable<uint8_t> ConfParticleTypePartTwo{"ConfParticleTypePartTwo", aod::femtouniverseparticle::ParticleType::kTrack, "Particle 2 - particle type:  0 - track, 2 - V0, 6 - phi"};
+  Configurable<uint> ConfParticleTypePartTwo{"ConfParticleTypePartTwo", aod::femtouniverseparticle::ParticleType::kTrack, "Particle 2 - particle type:  0 - track, 2 - V0, 6 - phi"};
   Configurable<bool> ConfNoPDGPartTwo{"ConfNoPDGPartTwo", false, "0: selecting part two by PDG, 1: no PID selection"};
   Configurable<float> ConfPtLowPart2{"ConfPtLowPart2", 0.2, "Lower limit for Pt for the second particle"};
   Configurable<float> ConfPtHighPart2{"ConfPtHighPart2", 2.5, "Higher limit for Pt for the second particle"};
@@ -283,7 +283,7 @@ struct femtoUniverseEfficiencyBase {
   {
     /// Histogramming same event
     for (auto& part : grouppartsOneMCGen) {
-      if (!ConfNoPDGPartOne && part.pidcut() != ConfPDGCodePartOne) {
+      if (!ConfNoPDGPartOne && part.tempFitVar() != ConfPDGCodePartOne) {
         continue;
       }
       trackHistoPartOneGen.fillQA<isMC, false>(part);
@@ -291,7 +291,7 @@ struct femtoUniverseEfficiencyBase {
 
     if (!ConfIsSame) {
       for (auto& part : grouppartsTwoMCGen) {
-        if (!ConfNoPDGPartTwo && part.pidcut() != ConfPDGCodePartTwo) {
+        if (!ConfNoPDGPartTwo && part.tempFitVar() != ConfPDGCodePartTwo) {
           continue;
         }
         trackHistoPartTwoGen.fillQA<isMC, false>(part);

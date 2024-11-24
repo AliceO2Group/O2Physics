@@ -9,6 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include <memory>
+#include <string>
+#include <vector>
+#include <tuple>
+
 #include "CCDB/BasicCCDBManager.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -46,6 +51,7 @@ struct NPCascCandidate {
   bool isGoodMatch;
   bool isGoodCascade;
   int pdgCodeMom;
+  int pdgCodeITStrack;
   bool isFromBeauty;
   bool isFromCharm;
   float pvX;
@@ -389,7 +395,7 @@ struct NonPromptCascadeTask {
           mom = grandma;
         }
       }
-      return {fromCharm, fromBeauty};
+      return {fromBeauty, fromCharm};
     };
 
     for (const auto& trackedCascade : trackedCascades) {
@@ -592,8 +598,9 @@ struct NonPromptCascadeTask {
         fromHF = isFromHF(track.mcParticle());
         pdgCodeMom = track.mcParticle().has_mothers() ? track.mcParticle().mothers_as<aod::McParticles>()[0].pdgCode() : 0;
       }
+      int itsTrackPDG = ITStrack.has_mcParticle() ? ITStrack.mcParticle().pdgCode() : 0;
 
-      candidates.emplace_back(NPCascCandidate{track.globalIndex(), ITStrack.globalIndex(), trackedCascade.collisionId(), trackedCascade.matchingChi2(), trackedCascade.itsClsSize(), isGoodMatch, isGoodCascade, pdgCodeMom, std::get<0>(fromHF), std::get<1>(fromHF),
+      candidates.emplace_back(NPCascCandidate{track.globalIndex(), ITStrack.globalIndex(), trackedCascade.collisionId(), trackedCascade.matchingChi2(), trackedCascade.itsClsSize(), isGoodMatch, isGoodCascade, pdgCodeMom, itsTrackPDG, std::get<0>(fromHF), std::get<1>(fromHF),
                                               primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
                                               track.pt(), track.eta(), track.phi(),
                                               protonTrack.pt(), protonTrack.eta(), pionTrack.pt(), pionTrack.eta(), bachelor.pt(), bachelor.eta(),
@@ -622,7 +629,7 @@ struct NonPromptCascadeTask {
       auto mcCollision = particle.mcCollision_as<aod::McCollisions>();
       auto label = collisions.iteratorAt(c.collisionID);
 
-      NPCTableMC(c.matchingChi2, c.itsClusSize, c.isGoodMatch, c.isGoodCascade, c.pdgCodeMom, c.isFromBeauty, c.isFromCharm,
+      NPCTableMC(c.matchingChi2, c.itsClusSize, c.isGoodMatch, c.isGoodCascade, c.pdgCodeMom, c.pdgCodeITStrack, c.isFromBeauty, c.isFromCharm,
                  c.pvX, c.pvY, c.pvZ,
                  c.cascPt, c.cascEta, c.cascPhi,
                  c.protonPt, c.protonEta, c.pionPt, c.pionEta, c.bachPt, c.bachEta,
@@ -842,7 +849,7 @@ struct NonPromptCascadeTask {
       daughtersDCA dDCA;
       fillDauDCA(trackedCascade, bachelor, protonTrack, pionTrack, primaryVertex, isOmega, dDCA);
 
-      candidates.emplace_back(NPCascCandidate{track.globalIndex(), ITStrack.globalIndex(), trackedCascade.collisionId(), trackedCascade.matchingChi2(), trackedCascade.itsClsSize(), 0, 0, 0, 0, 0,
+      candidates.emplace_back(NPCascCandidate{track.globalIndex(), ITStrack.globalIndex(), trackedCascade.collisionId(), trackedCascade.matchingChi2(), trackedCascade.itsClsSize(), 0, 0, 0, 0, 0, 0,
                                               primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
                                               track.pt(), track.eta(), track.phi(),
                                               protonTrack.pt(), protonTrack.eta(), pionTrack.pt(), pionTrack.eta(), bachelor.pt(), bachelor.eta(),

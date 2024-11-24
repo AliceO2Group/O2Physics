@@ -28,12 +28,22 @@ namespace o2::aod
 {
 namespace spcalibrationtable
 {
-DECLARE_SOA_COLUMN(TriggerEvent, triggerevent, bool);
+DECLARE_SOA_COLUMN(TriggerEventSP, triggereventsp, bool);
 DECLARE_SOA_COLUMN(TriggerEventRunNo, triggereventrunno, int);
 DECLARE_SOA_COLUMN(Cent, cent, float);
 DECLARE_SOA_COLUMN(Vx, vx, float);
 DECLARE_SOA_COLUMN(Vy, vy, float);
 DECLARE_SOA_COLUMN(Vz, vz, float);
+DECLARE_SOA_COLUMN(ZNAC, znaC, float);
+DECLARE_SOA_COLUMN(ZNCC, zncC, float);
+DECLARE_SOA_COLUMN(ZNAE0, znaE0, float);
+DECLARE_SOA_COLUMN(ZNAE1, znaE1, float);
+DECLARE_SOA_COLUMN(ZNAE2, znaE2, float);
+DECLARE_SOA_COLUMN(ZNAE3, znaE3, float);
+DECLARE_SOA_COLUMN(ZNCE0, zncE0, float);
+DECLARE_SOA_COLUMN(ZNCE1, zncE1, float);
+DECLARE_SOA_COLUMN(ZNCE2, zncE2, float);
+DECLARE_SOA_COLUMN(ZNCE3, zncE3, float);
 DECLARE_SOA_COLUMN(QXZDCA, qxZDCA, float);
 DECLARE_SOA_COLUMN(QXZDCC, qxZDCC, float);
 DECLARE_SOA_COLUMN(QYZDCA, qyZDCA, float);
@@ -42,12 +52,22 @@ DECLARE_SOA_COLUMN(PsiZDCC, psiZDCC, float);
 DECLARE_SOA_COLUMN(PsiZDCA, psiZDCA, float);
 } // namespace spcalibrationtable
 DECLARE_SOA_TABLE(SPCalibrationTables, "AOD", "SPCALCOLS",
-                  spcalibrationtable::TriggerEvent,
+                  spcalibrationtable::TriggerEventSP,
                   spcalibrationtable::TriggerEventRunNo,
                   spcalibrationtable::Cent,
                   spcalibrationtable::Vx,
                   spcalibrationtable::Vy,
                   spcalibrationtable::Vz,
+                  spcalibrationtable::ZNAC,
+                  spcalibrationtable::ZNCC,
+                  spcalibrationtable::ZNAE0,
+                  spcalibrationtable::ZNAE1,
+                  spcalibrationtable::ZNAE2,
+                  spcalibrationtable::ZNAE3,
+                  spcalibrationtable::ZNCE0,
+                  spcalibrationtable::ZNCE1,
+                  spcalibrationtable::ZNCE2,
+                  spcalibrationtable::ZNCE3,
                   spcalibrationtable::QXZDCA,
                   spcalibrationtable::QXZDCC,
                   spcalibrationtable::QYZDCA,

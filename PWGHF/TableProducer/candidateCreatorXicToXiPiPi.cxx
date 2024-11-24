@@ -20,6 +20,10 @@
 #define HomogeneousField
 #endif
 
+#include <string>
+#include <utility>
+#include <vector>
+
 #include <KFParticleBase.h>
 #include <KFParticle.h>
 #include <KFPTrack.h>
@@ -309,12 +313,12 @@ struct HfCandidateCreatorXicToXiPiPi {
       //---------------------------------fill candidate table rows-------------------------------------------------------------------------------------------
       rowCandidateBase(collision.globalIndex(),
                        primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
-                       covMatrixPV[0], covMatrixPV[2], covMatrixPV[5],
+                       std::sqrt(covMatrixPV[0]), std::sqrt(covMatrixPV[2]), std::sqrt(covMatrixPV[5]),
                        /*3-prong specific columns*/
                        rowTrackIndexXicPlus.cascadeId(), rowTrackIndexXicPlus.prong0Id(), rowTrackIndexXicPlus.prong1Id(),
                        casc.bachelorId(), casc.posTrackId(), casc.negTrackId(),
                        secondaryVertex[0], secondaryVertex[1], secondaryVertex[2],
-                       covMatrixSV[0], covMatrixSV[2], covMatrixSV[5],
+                       std::sqrt(covMatrixSV[0]), std::sqrt(covMatrixSV[2]), std::sqrt(covMatrixSV[5]),
                        errorDecayLength, errorDecayLengthXY,
                        chi2SV, massXiPiPi, signXic,
                        pVecXi[0], pVecXi[1], pVecXi[2],
@@ -416,15 +420,17 @@ struct HfCandidateCreatorXicToXiPiPi {
       float chi2GeoXicPlus = kfXicPlus.GetChi2() / kfXicPlus.GetNDF();
 
       // topological constraint of Xic to PV
+      float chi2topoXicPlusToPVBeforeConstraint = kfXicPlus.GetDeviationFromVertex(KFPV);
       KFParticle kfXicPlusToPV = kfXicPlus;
       kfXicPlusToPV.SetProductionVertex(KFPV);
-      float chi2topoXicPlusPV = kfXicPlusToPV.GetChi2() / kfXicPlusToPV.GetNDF();
+      float chi2topoXicPlusToPV = kfXicPlusToPV.GetChi2() / kfXicPlusToPV.GetNDF();
       if (constrainXicPlusToPv) {
         kfXicPlus = kfXicPlusToPV;
         kfXicPlus.TransportToDecayVertex();
       }
 
       // topological constraint of Xi to XicPlus
+      float chi2topoXiToXicPlusBeforeConstraint = kfXi.GetDeviationFromVertex(kfXicPlus);
       KFParticle kfXiToXicPlus = kfXi;
       kfXiToXicPlus.SetProductionVertex(kfXicPlus);
       float chi2topoXiToXicPlus = kfXiToXicPlus.GetChi2() / kfXiToXicPlus.GetNDF();
@@ -532,7 +538,7 @@ struct HfCandidateCreatorXicToXiPiPi {
       //------------------------------fill candidate table rows--------------------------------------
       rowCandidateBase(collision.globalIndex(),
                        KFPV.GetX(), KFPV.GetY(), KFPV.GetZ(),
-                       covMatrixPV[0], covMatrixPV[2], covMatrixPV[5],
+                       std::sqrt(covMatrixPV[0]), std::sqrt(covMatrixPV[2]), std::sqrt(covMatrixPV[5]),
                        /*3-prong specific columns*/
                        rowTrackIndexXicPlus.cascadeId(), rowTrackIndexXicPlus.prong0Id(), rowTrackIndexXicPlus.prong1Id(),
                        casc.bachelorId(), casc.posTrackId(), casc.negTrackId(),
@@ -550,7 +556,8 @@ struct HfCandidateCreatorXicToXiPiPi {
                        casc.xlambda(), casc.ylambda(), casc.zlambda(),
                        cpaXi, cpaXYXi, cpaLambda, cpaXYLambda,
                        massXiPi0, massXiPi1);
-      rowCandidateKF(casc.kfCascadeChi2(), casc.kfV0Chi2(), chi2topoXicPlusPV, chi2topoXiToXicPlus,
+      rowCandidateKF(casc.kfCascadeChi2(), casc.kfV0Chi2(),
+                     chi2topoXicPlusToPVBeforeConstraint, chi2topoXicPlusToPV, chi2topoXiToXicPlusBeforeConstraint, chi2topoXiToXicPlus,
                      dcaXYPi0Pi1, dcaXYPi0Xi, dcaXYPi1Xi,
                      dcaPi0Pi1, dcaPi0Xi, dcaPi1Xi,
                      casc.dcacascdaughters());
