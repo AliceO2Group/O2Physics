@@ -22,7 +22,6 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
-
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include <TLorentzVector.h>
