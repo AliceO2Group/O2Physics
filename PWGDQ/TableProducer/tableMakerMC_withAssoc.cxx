@@ -17,6 +17,10 @@
 //    and the MC truth particles corresponding to the reconstructed tracks selected by the specified track cuts on reconstructed data.
 
 #include <iostream>
+#include <map>
+#include <string>
+#include <memory>
+#include <vector>
 #include "TList.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -599,7 +603,7 @@ struct TableMakerMC {
 
       // store V0 and Dalitz bits selection information in the track tag
       if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackV0Bits)) { // BIT0-4: V0Bits
-        trackFilteringTag |= uint64_t(track.pidbit());
+        trackFilteringTag |= static_cast<uint64_t>(track.pidbit());
         for (int iv0 = 0; iv0 < 5; iv0++) {
           if (track.pidbit() & (uint8_t(1) << iv0)) {
             (reinterpret_cast<TH1I*>(fStatsList->At(1)))->Fill(fTrackCuts.size() + static_cast<float>(iv0));
@@ -607,9 +611,9 @@ struct TableMakerMC {
         }
       } // end if V0Bits
       if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::DalitzBits)) {
-        trackFilteringTag |= (uint64_t(track.dalitzBits()) << VarManager::kDalitzBits); // BIT5-12: Dalitz
+        trackFilteringTag |= (static_cast<uint64_t>(track.dalitzBits()) << VarManager::kDalitzBits); // BIT5-12: Dalitz
       }
-      trackFilteringTag |= (uint64_t(trackTempFilterMap) << VarManager::kBarrelUserCutsBits); // BIT13-...:  user track filters
+      trackFilteringTag |= (static_cast<uint64_t>(trackTempFilterMap) << VarManager::kBarrelUserCutsBits); // BIT13-...:  user track filters
 
       // NOTE: The collision ID that is written in the table is the one originally assigned in the AOD.
       //       However, in data analysis one should loop over associations, so this one should not be used.
@@ -655,7 +659,7 @@ struct TableMakerMC {
         // check all the specified signals and fill histograms for MC truth matched tracks
         for (auto& sig : fMCSignals) {
           if (sig.CheckSignal(true, mctrack)) {
-            mcflags |= (uint16_t(1) << i);
+            mcflags |= (static_cast<uint16_t>(1) << i);
             // If detailed QA is on, fill histograms for each MC signal and track cut combination
             if (fDoDetailedQA) {
               j = 0;
@@ -701,7 +705,7 @@ struct TableMakerMC {
       // write the MFT track global index in the map for skimming (to make sure we have it just once)
       if (fMftIndexMap.find(track.globalIndex()) == fMftIndexMap.end()) {
         uint32_t reducedEventIdx = fCollIndexMap[collision.globalIndex()];
-        mftTrack(reducedEventIdx, uint64_t(0), track.pt(), track.eta(), track.phi());
+        mftTrack(reducedEventIdx, static_cast<uint64_t>(0), track.pt(), track.eta(), track.phi());
         // TODO: We are not writing the DCA at the moment, because this depends on the collision association
         mftTrackExtra(track.mftClusterSizesAndTrackFlags(), track.sign(), 0.0, 0.0, track.nClusters());
 
@@ -795,7 +799,7 @@ struct TableMakerMC {
           // check all the specified signals and fill histograms for MC truth matched tracks
           for (auto& sig : fMCSignals) {
             if (sig.CheckSignal(true, mctrack)) {
-              mcflags |= (uint16_t(1) << i);
+              mcflags |= (static_cast<uint16_t>(1) << i);
               if (fDoDetailedQA) {
                 for (auto& cut : fMuonCuts) {
                   if (trackTempFilterMap & (uint8_t(1) << j)) {
@@ -1035,7 +1039,7 @@ struct TableMakerMC {
               mctrack.weight(), mctrack.pt(), mctrack.eta(), mctrack.phi(), mctrack.e(),
               mctrack.vx(), mctrack.vy(), mctrack.vz(), mctrack.vt(), mcflags);
       for (unsigned int isig = 0; isig < fMCSignals.size(); isig++) {
-        if (mcflags & (uint16_t(1) << isig)) {
+        if (mcflags & (static_cast<uint16_t>(1) << isig)) {
           (reinterpret_cast<TH1I*>(fStatsList->At(3)))->Fill(static_cast<float>(isig));
         }
       }

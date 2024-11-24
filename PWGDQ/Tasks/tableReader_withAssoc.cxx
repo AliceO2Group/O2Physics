@@ -19,6 +19,10 @@
 #include <numeric>
 #include <vector>
 #include <algorithm>
+#include <set>
+#include <map>
+#include <string>
+#include <memory>
 #include <TH1F.h>
 #include <TH3F.h>
 #include <THashList.h>
@@ -751,7 +755,7 @@ struct AnalysisMuonSelection {
       iCut = 0;
       for (auto cut = fMuonCuts.begin(); cut != fMuonCuts.end(); cut++, iCut++) {
         if ((*cut).IsSelected(VarManager::fgValues)) {
-          filterMap |= (uint32_t(1) << iCut);
+          filterMap |= (static_cast<uint32_t>(1) << iCut);
           if (fConfigQA) {
             fHistMan->FillHistClass(Form("TrackMuon_%s", (*cut).GetName()), VarManager::fgValues);
           }
@@ -1117,7 +1121,7 @@ struct AnalysisSameEventPairing {
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
         TString tempStr = objArray->At(icut)->GetName();
         if (objArrayTrackCuts->FindObject(tempStr.Data()) != nullptr) {
-          fTrackFilterMask |= (uint32_t(1) << icut);
+          fTrackFilterMask |= (static_cast<uint32_t>(1) << icut);
 
           if (fEnableBarrelHistos) {
             names = {
@@ -1167,7 +1171,7 @@ struct AnalysisSameEventPairing {
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
         TString tempStr = objArray->At(icut)->GetName();
         if (objArrayMuonCuts->FindObject(tempStr.Data()) != nullptr) {
-          fMuonFilterMask |= (uint32_t(1) << icut);
+          fMuonFilterMask |= (static_cast<uint32_t>(1) << icut);
 
           if (fEnableMuonHistos) {
             // no pair cuts
@@ -1531,7 +1535,7 @@ struct AnalysisSameEventPairing {
                             -999., -999., -999., -999.,
                             -999., -999., -999., -999.,
                             -999., -999., -999., -999.,
-                            (twoTrackFilter & (uint32_t(1) << 28)) || (twoTrackFilter & (uint32_t(1) << 30)), (twoTrackFilter & (uint32_t(1) << 29)) || (twoTrackFilter & (uint32_t(1) << 31)),
+                            (twoTrackFilter & (static_cast<uint32_t>(1) << 28)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 30)), (twoTrackFilter & (static_cast<uint32_t>(1) << 29)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 31)),
                             VarManager::fgValues[VarManager::kU2Q2], VarManager::fgValues[VarManager::kU3Q3],
                             VarManager::fgValues[VarManager::kR2EP_AB], VarManager::fgValues[VarManager::kR2SP_AB], VarManager::fgValues[VarManager::kCentFT0C],
                             VarManager::fgValues[VarManager::kCos2DeltaPhi], VarManager::fgValues[VarManager::kCos3DeltaPhi],
@@ -1566,7 +1570,7 @@ struct AnalysisSameEventPairing {
         bool isAmbiOutOfBunch = false;
         bool isUnambiguous = false;
         for (int icut = 0; icut < ncuts; icut++) {
-          if (twoTrackFilter & (uint32_t(1) << icut)) {
+          if (twoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
             isAmbiInBunch = (twoTrackFilter & (static_cast<uint32_t>(1) << 28)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 29));
             isAmbiOutOfBunch = (twoTrackFilter & (static_cast<uint32_t>(1) << 30)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 31));
             isUnambiguous = !(isAmbiInBunch || isAmbiOutOfBunch);
@@ -1926,8 +1930,8 @@ struct AnalysisAsymmetricPairing {
       for (int icut = 0; icut < fNCommonTrackCuts; ++icut) {
         commonCutIdx = objArray->IndexOf(objArrayCommon->At(icut));
         if (commonCutIdx >= 0) {
-          fCommonTrackCutMask |= uint32_t(1) << objArray->IndexOf(objArrayCommon->At(icut));
-          fCommonTrackCutFilterMasks[icut] = uint32_t(1) << objArray->IndexOf(objArrayCommon->At(icut));
+          fCommonTrackCutMask |= static_cast<uint32_t>(1) << objArray->IndexOf(objArrayCommon->At(icut));
+          fCommonTrackCutFilterMasks[icut] = static_cast<uint32_t>(1) << objArray->IndexOf(objArrayCommon->At(icut));
         } else {
           LOGF(fatal, "Common track cut %s was not calculated upstream. Check the config!", objArrayCommon->At(icut)->GetName());
         }
@@ -1973,16 +1977,16 @@ struct AnalysisAsymmetricPairing {
       // Find leg cuts in the track selection cuts
       legAIdx = objArray->IndexOf(legs->At(0));
       if (legAIdx >= 0) {
-        fConstructedLegAFilterMask |= (uint32_t(1) << legAIdx);
-        fTrackCutFilterMasks[icut] |= uint32_t(1) << legAIdx;
+        fConstructedLegAFilterMask |= (static_cast<uint32_t>(1) << legAIdx);
+        fTrackCutFilterMasks[icut] |= static_cast<uint32_t>(1) << legAIdx;
       } else {
         LOGF(fatal, "Leg A cut %s was not calculated upstream. Check the config!", legs->At(0)->GetName());
         continue;
       }
       legBIdx = objArray->IndexOf(legs->At(1));
       if (legBIdx >= 0) {
-        fConstructedLegBFilterMask |= (uint32_t(1) << legBIdx);
-        fTrackCutFilterMasks[icut] |= uint32_t(1) << legBIdx;
+        fConstructedLegBFilterMask |= (static_cast<uint32_t>(1) << legBIdx);
+        fTrackCutFilterMasks[icut] |= static_cast<uint32_t>(1) << legBIdx;
       } else {
         LOGF(fatal, "Leg B cut %s was not calculated upstream. Check the config!", legs->At(1)->GetName());
         continue;
@@ -1990,8 +1994,8 @@ struct AnalysisAsymmetricPairing {
       if (isThreeProng[icut]) {
         legCIdx = objArray->IndexOf(legs->At(2));
         if (legCIdx >= 0) {
-          fConstructedLegCFilterMask |= (uint32_t(1) << legCIdx);
-          fTrackCutFilterMasks[icut] |= uint32_t(1) << legCIdx;
+          fConstructedLegCFilterMask |= (static_cast<uint32_t>(1) << legCIdx);
+          fTrackCutFilterMasks[icut] |= static_cast<uint32_t>(1) << legCIdx;
         } else {
           LOGF(fatal, "Leg C cut %s was not calculated upstream. Check the config!", legs->At(2)->GetName());
           continue;
