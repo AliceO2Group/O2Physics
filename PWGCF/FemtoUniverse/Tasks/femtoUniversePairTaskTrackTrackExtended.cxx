@@ -51,7 +51,6 @@ static const float cutsTable[NPart][NCuts]{
 } // namespace
 
 struct FemtoUniversePairTaskTrackTrackExtended {
-
   /// Particle selection part
 
   /// Table for both particles
@@ -170,8 +169,8 @@ struct FemtoUniversePairTaskTrackTrackExtended {
   HistogramRegistry resultRegistry{"Correlations", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry mixQaRegistry{"mixQaRegistry", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  HistogramRegistry efficiencyRegistry{"Efficiency", {}, OutputObjHandlingPolicy::AnalysisObject};
-  EfficiencyCalculator<FemtoUniversePairTaskTrackTrackExtended> efficiencyCalculator{this, trackonefilter.confPDGCodePartOne};
+  OutputObj<TH1F> effHist{TH1F("Efficiency_part1", "Efficiency origin/generated ; p_{T} (GeV/c); Efficiency", 100, 0, 4)};
+  EfficiencyCalculator<FemtoUniversePairTaskTrackTrackExtended> effCalc{this, &qaRegistry, trackonefilter.confPDGCodePartOne, effHist.object.get()};
 
   /// @brief Counter for particle swapping
   int fNeventsProcessed = 0;
@@ -307,8 +306,10 @@ struct FemtoUniversePairTaskTrackTrackExtended {
     return false;
   }
 
-  void init(InitContext&)
+  void init(InitContext& ic)
   {
+    effCalc.saveAfterProcess(ic);
+
     eventHisto.init(&qaRegistry);
     trackHistoPartOne.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarBins, twotracksconfigs.confIsMC, trackonefilter.confPDGCodePartOne, true); // last true = isDebug
     if (!confIsSame) {
@@ -452,10 +453,11 @@ struct FemtoUniversePairTaskTrackTrackExtended {
           continue;
         }
 
+        float weight = effCalc.getWeight(p1);
         if (swpart)
-          sameEventCont.setPair<isMC>(p1, p2, multCol, twotracksconfigs.confUse3D);
+          sameEventCont.setPair<isMC>(p1, p2, multCol, twotracksconfigs.confUse3D, weight);
         else
-          sameEventCont.setPair<isMC>(p2, p1, multCol, twotracksconfigs.confUse3D);
+          sameEventCont.setPair<isMC>(p2, p1, multCol, twotracksconfigs.confUse3D, weight);
 
         swpart = !swpart;
       }
@@ -507,9 +509,9 @@ struct FemtoUniversePairTaskTrackTrackExtended {
         if (!pairCleaner.isCleanPair(p1, p2, parts)) {
           continue;
         }
-        auto efficiency = efficiencyCalculator.getEfficiency();
-        auto weight = 1.0f;
-        sameEventCont.setPair<isMC>(p1, p2, multCol, twotracksconfigs.confUse3D, weight);
+
+        // float weight = efficiencyCalculator.getWeight(p1);
+        sameEventCont.setPair<isMC>(p1, p2, multCol, twotracksconfigs.confUse3D);
       }
     }
   }
@@ -541,7 +543,7 @@ struct FemtoUniversePairTaskTrackTrackExtended {
       fillCollision(col);
 
       auto groupMCTruth{partsOneMCTruth->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache)};
-      efficiencyCalculator.doMCTruth(trackonefilter.confPDGCodePartOne, groupMCTruth);
+      effCalc.doMCTruth(trackonefilter.confPDGCodePartOne, groupMCTruth);
 
       auto groupMCReco1 = partsOneMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
       auto groupMCReco2 = partsTwoMCReco->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
@@ -549,18 +551,15 @@ struct FemtoUniversePairTaskTrackTrackExtended {
       doSameEvent<true>(groupMCReco1, groupMCReco2, parts, col.magField(), col.multNtr());
     }
 
-    std::shared_ptr<TH1> efficiencyHist{efficiencyRegistry.get<TH1>(HIST("Efficiency/part1"))};
-
-    std::shared_ptr<TH1> truth{efficiencyRegistry.get<TH1>(HIST("MCTruthTracks_one/hPt"))};
+    std::shared_ptr<TH1> truth{qaRegistry.get<TH1>(HIST("MCTruthTracks_one/hPt"))};
     std::shared_ptr<TH1> reco{qaRegistry.get<TH1>(HIST("Tracks_one_MC/hPt"))};
 
-    for (int bin{0}; bin < efficiencyHist->GetNbinsX(); bin++) {
+    for (int bin{0}; bin < effHist->GetNbinsX(); bin++) {
       auto denom{truth->GetBinContent(bin)};
-      efficiencyHist->SetBinContent(bin, denom == 0 ? 0 : reco->GetBinContent(bin) / denom);
+      effHist->SetBinContent(bin, denom == 0 ? 0 : reco->GetBinContent(bin) / denom);
     }
 
-    // auto bc = cols.iteratorAt(0).template bc_as<aod::BCsWithTimestamps>();
-    efficiencyCalculator.save();
+    LOG(info) << "### PROCESS DONE";
   }
   PROCESS_SWITCH(FemtoUniversePairTaskTrackTrackExtended, processSameEventMC, "Enable processing same event for Monte Carlo", false);
 
