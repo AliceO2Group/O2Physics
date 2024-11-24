@@ -11,7 +11,6 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
-#include "ITStracking/Vertexer.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 using namespace o2;
