@@ -13,6 +13,8 @@
 ///
 /// \author Rahul Verma (rahul.verma@iitb.ac.in) :: Sadhana Dash (sadhana@phy.iitb.ac.in)
 
+#include <vector>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/O2DatabasePDGPlugin.h"
@@ -66,8 +68,8 @@ struct isospin_fluctuation {
     AxisSquarredArray.push_back(-1.5);
     AxisSquarredArray.push_back(-0.5);
     for (int i = 1; i < 1000; i++) {
-      AxisSquarredArray.push_back(double(i * i) - 0.5);
-      AxisSquarredArray.push_back(double(i * i) + 0.5);
+      AxisSquarredArray.push_back(static_cast<double>(i * i) - 0.5);
+      AxisSquarredArray.push_back(static_cast<double>(i * i) + 0.5);
     }
 
     // Axes
@@ -1197,7 +1199,7 @@ struct isospin_fluctuation {
   // Insertion Sort  // Using insertion sort when array is almost sorted
   void InsertionSortVector(std::vector<int64_t>& UnsortedVector)
   {
-    for (long unsigned int i = 1; i < UnsortedVector.size(); i++) {
+    for (uint i = 1; i < UnsortedVector.size(); i++) {
       int currentElement = UnsortedVector[i]; // Element to be Inserted at correct position
       int j;                                  //(j+1) is the correct position of current element
       for (j = i - 1; j >= 0 && (UnsortedVector[j] > currentElement); j--) {
@@ -1210,7 +1212,7 @@ struct isospin_fluctuation {
   // 03-Sorting a Vector Of Vector
   void InsertionSortVectorOfVector(std::vector<std::vector<int64_t>>& UnsortedVector)
   {
-    for (long unsigned int i = 1; i < UnsortedVector.size(); i++) {
+    for (uint i = 1; i < UnsortedVector.size(); i++) {
       std::vector<int64_t> currentElement = UnsortedVector[i]; // Element to be Inserted at correct position
       int j;                                                   //(j+1) is the correct position of current element
       for (j = i - 1; j >= 0 && (UnsortedVector[j][0] > currentElement[0]); j--) {
@@ -1221,9 +1223,9 @@ struct isospin_fluctuation {
   }
 
   template <typename T>
-  long int FindIteratorPosition(long int globalIDX, T tracks)
+  int64_t FindIteratorPosition(int64_t globalIDX, T tracks)
   {
-    long int iterPos = 0;
+    int64_t iterPos = 0;
     for (auto trk : tracks) {
       if (trk.globalIndex() == globalIDX) {
         return iterPos;
@@ -1677,9 +1679,9 @@ struct isospin_fluctuation {
   template <typename T>
   void FindRepeatEntries(std::vector<int64_t> ParticleList, T hist)
   {
-    for (long unsigned int ii = 0; ii < ParticleList.size(); ii++) {
+    for (uint ii = 0; ii < ParticleList.size(); ii++) {
       int nCommonCount = 0; // checking the repeat number of track
-      for (long unsigned int jj = 0; jj < ParticleList.size(); jj++) {
+      for (uint jj = 0; jj < ParticleList.size(); jj++) {
         if (ParticleList[jj] == ParticleList[ii]) {
           if (jj < ii) {
             break;
@@ -1693,9 +1695,9 @@ struct isospin_fluctuation {
 
   void FillNewListFromOldList(std::vector<int64_t>& NewList, std::vector<int64_t> OldList)
   {
-    for (long unsigned int ii = 0; ii < OldList.size(); ii++) {
+    for (uint ii = 0; ii < OldList.size(); ii++) {
       bool RepeatEntry = false;
-      for (long unsigned int jj = 0; jj < NewList.size(); jj++) {
+      for (uint jj = 0; jj < NewList.size(); jj++) {
         if (OldList[ii] == NewList[jj]) {
           RepeatEntry = true;
         }
@@ -1707,7 +1709,7 @@ struct isospin_fluctuation {
   }
 
   template <typename T>
-  bool checkTrackSelection(T track, std::vector<int64_t> DauParticleList, long unsigned int& skippingPosition, int& rejectionTag)
+  bool checkTrackSelection(T track, std::vector<int64_t> DauParticleList, uint& skippingPosition, int& rejectionTag)
   {
     if (track.tpcNClsCrossedRows() < 70) {
       rejectionTag = 1;
@@ -2194,11 +2196,11 @@ struct isospin_fluctuation {
                myTracks const& tracks) // aod::TracksIU const& FullTrack)
   {
 
-    std::vector<int64_t> K0sPosList; // long int
-    std::vector<int64_t> K0sNegList; // long int
+    std::vector<int64_t> K0sPosList; // int64_t
+    std::vector<int64_t> K0sNegList; // int64_t
 
-    std::vector<std::vector<int64_t>> K0sPosListWithCollision; // long int
-    std::vector<std::vector<int64_t>> K0sNegListWithCollision; // long int
+    std::vector<std::vector<int64_t>> K0sPosListWithCollision; // int64_t
+    std::vector<std::vector<int64_t>> K0sNegListWithCollision; // int64_t
 
     // iterate over all the v0s of current dataframe
     for (const auto& v0 : V0s) {
@@ -2299,19 +2301,19 @@ struct isospin_fluctuation {
     InsertionSortVector(PosDauList);
     InsertionSortVector(FullDauList);
 
-    for (long unsigned int ii = 0; ii < (PosDauList.size() - 1); ii++) {
+    for (uint ii = 0; ii < (PosDauList.size() - 1); ii++) {
       if (PosDauList[ii] > PosDauList[ii + 1]) {
         LOG(info) << "ERROR:: PosDauList Not in Sequence = " << ii;
       }
     }
 
-    for (long unsigned int ii = 0; ii < (FullDauList.size() - 1); ii++) {
+    for (uint ii = 0; ii < (FullDauList.size() - 1); ii++) {
       if (FullDauList[ii] > FullDauList[ii + 1]) {
         LOG(info) << "ERROR:: FullDauList Not in Sequence = " << ii;
       }
     }
 
-    long unsigned int skippingPosition = 0;
+    uint skippingPosition = 0;
     for (const auto& collision : collisions) {
       iEvent++;
       int nK0s = 0;
