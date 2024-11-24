@@ -137,7 +137,7 @@ void HistogramManager::AddHistogram(const char* histClass, const char* hname, co
   }
   // check whether this histogram name was used before
   if (hList->FindObject(hname)) {
-    LOG(warn) << "HistogramManager::AddHistogram(): Histogram " << hname << " already exists";
+    LOG(warn) << "HistogramManager::AddHistogram(): Histogram " << hname << " already exists in class " << histClass;
     return;
   }
 
