@@ -206,7 +206,6 @@ struct AnalysisEventSelection {
     fSelMap.clear();
     fBCCollMap.clear();
 
-
     for (auto& event : events) {
       // Reset the fValues array and fill event observables
       VarManager::ResetValues(0, VarManager::kNEventWiseVariables);
@@ -255,7 +254,7 @@ struct AnalysisEventSelection {
     for (auto bc1It = fBCCollMap.begin(); bc1It != fBCCollMap.end(); ++bc1It) {
       uint64_t bc1 = bc1It->first;
       auto bc1Events = bc1It->second;
-      
+
       // same bunch event correlations, if more than 1 collisions in this bunch
       if (bc1Events.size() > 1) {
         for (auto ev1It = bc1Events.begin(); ev1It != bc1Events.end(); ++ev1It) {
@@ -269,9 +268,9 @@ struct AnalysisEventSelection {
               collisionSplittingMap[*ev2It] = true;
             }
             fHistMan->FillHistClass("SameBunchCorrelations", VarManager::fgValues);
-          }  // end second event loop
-        }  // end first event loop
-      }  // end if BC1 events > 1
+          } // end second event loop
+        } // end first event loop
+      } // end if BC1 events > 1
 
       // loop over the following BCs in the TF
       for (auto bc2It = std::next(bc1It); bc2It != fBCCollMap.end(); ++bc2It) {
@@ -537,8 +536,8 @@ struct AnalysisTrackSelection {
               }
             }
           } // end loop over cuts
-        }   // end loop over MC signals
-      }     // end if (filterMap > 0)
+        } // end loop over MC signals
+      } // end if (filterMap > 0)
 
       // count the number of associations per track
       if (fConfigPublishAmbiguity && filterMap > 0) {
@@ -818,10 +817,10 @@ struct AnalysisMuonSelection {
             }
           }
         } // end loop over cuts
-      }   // end loop over MC signals
+      } // end loop over MC signals
 
       // count the number of associations per track
-      if (fConfigPublishAmbiguity && filterMap > 0) { 
+      if (fConfigPublishAmbiguity && filterMap > 0) {
         if (event.isEventSelected_bit(1)) {
           if (fNAssocsInBunch.find(track.globalIndex()) == fNAssocsInBunch.end()) {
             std::vector<int64_t> evVector = {event.globalIndex()};
@@ -829,7 +828,7 @@ struct AnalysisMuonSelection {
           } else {
             auto& evVector = fNAssocsInBunch[track.globalIndex()];
             evVector.push_back(event.globalIndex());
-          } 
+          }
         } else {
           if (fNAssocsOutOfBunch.find(track.globalIndex()) == fNAssocsOutOfBunch.end()) {
             std::vector<int64_t> evVector = {event.globalIndex()};
@@ -846,9 +845,9 @@ struct AnalysisMuonSelection {
     // TODO: some tracks can be associated to both collisions that have in bunch pileup and collisions from different bunches
     //       So one could QA these tracks separately
     if (fConfigPublishAmbiguity) {
-    for (auto& [trackIdx, evIndices] : fNAssocsInBunch) {
+      for (auto& [trackIdx, evIndices] : fNAssocsInBunch) {
         if (evIndices.size() == 1) {
-            continue;
+          continue;
         }
         auto track = muons.rawIteratorAt(trackIdx);
         VarManager::ResetValues(0, VarManager::kNVars);
@@ -859,7 +858,7 @@ struct AnalysisMuonSelection {
 
       for (auto& [trackIdx, evIndices] : fNAssocsOutOfBunch) {
         if (evIndices.size() == 1) {
-            continue;
+          continue;
         }
         auto track = muons.rawIteratorAt(trackIdx);
         VarManager::ResetValues(0, VarManager::kNVars);
@@ -960,12 +959,12 @@ struct AnalysisPrefilterSelection {
         }
       }
     }
-    // NOTE: If no prefilter loose cut is specified to be "prefiltered" or no track cuts are asked to be prefiltered, 
+    // NOTE: If no prefilter loose cut is specified to be "prefiltered" or no track cuts are asked to be prefiltered,
     //        then make a warning. In the processing, the produced table will just lead to a neutral behaviour (no prefilter applied)
     if (fPrefilterMask == static_cast<uint32_t>(0) || fPrefilterCutBit < 0) {
       LOG(warn) << "No loose cut or track cuts for prefiltering are specified. This task will do nothing.";
     }
-    
+
     // setup the prefilter pair cut
     fPairCut = new AnalysisCompositeCut(true);
     TString pairCutStr = fConfigPrefilterPairCut.value;
@@ -1042,8 +1041,7 @@ struct AnalysisPrefilterSelection {
       // If cuts were not configured, then produce a map with all 1's
       if (fPrefilterCutBit < 0 || fPrefilterMask == 0) {
         prefilter(mymap);
-      }
-      else if (fPrefilterMap.find(track.globalIndex()) != fPrefilterMap.end()) {
+      } else if (fPrefilterMap.find(track.globalIndex()) != fPrefilterMap.end()) {
         // NOTE: publish the bitwise negated bits (~), so there will be zeroes for cuts that failed the prefiltering and 1 everywhere else
         mymap = ~fPrefilterMap[track.globalIndex()];
         prefilter(mymap);
@@ -1095,18 +1093,18 @@ struct AnalysisSameEventPairing {
     Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
     Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   } fConfigCCDB;
-  
+
   struct : ConfigurableGroup {
-  Configurable<bool> useRemoteField{"cfgUseRemoteField", false, "Chose whether to fetch the magnetic field from ccdb or set it manually"};
-  Configurable<float> magField{"cfgMagField", 5.0f, "Manually set magnetic field"};  
-  Configurable<bool> flatTables{"cfgFlatTables", false, "Produce a single flat tables with all relevant information of the pairs and single tracks"};
-  Configurable<bool> useKFVertexing{"cfgUseKFVertexing", false, "Use KF Particle for secondary vertex reconstruction (DCAFitter is used by default)"};
-  Configurable<bool> useAbsDCA{"cfgUseAbsDCA", false, "Use absolute DCA minimization instead of chi^2 minimization in secondary vertexing"};
-  Configurable<bool> propToPCA{"cfgPropToPCA", false, "Propagate tracks to secondary vertex"};
-  Configurable<bool> corrFullGeo{"cfgCorrFullGeo", false, "Use full geometry to correct for MCS effects in track propagation"};
-  Configurable<bool> noCorr{"cfgNoCorrFwdProp", false, "Do not correct for MCS effects in track propagation"};
-  Configurable<std::string> collisionSystem{"syst", "pp", "Collision system, pp or PbPb"};
-  Configurable<float> centerMassEnergy{"energy", 13600, "Center of mass energy in GeV"};
+    Configurable<bool> useRemoteField{"cfgUseRemoteField", false, "Chose whether to fetch the magnetic field from ccdb or set it manually"};
+    Configurable<float> magField{"cfgMagField", 5.0f, "Manually set magnetic field"};
+    Configurable<bool> flatTables{"cfgFlatTables", false, "Produce a single flat tables with all relevant information of the pairs and single tracks"};
+    Configurable<bool> useKFVertexing{"cfgUseKFVertexing", false, "Use KF Particle for secondary vertex reconstruction (DCAFitter is used by default)"};
+    Configurable<bool> useAbsDCA{"cfgUseAbsDCA", false, "Use absolute DCA minimization instead of chi^2 minimization in secondary vertexing"};
+    Configurable<bool> propToPCA{"cfgPropToPCA", false, "Propagate tracks to secondary vertex"};
+    Configurable<bool> corrFullGeo{"cfgCorrFullGeo", false, "Use full geometry to correct for MCS effects in track propagation"};
+    Configurable<bool> noCorr{"cfgNoCorrFwdProp", false, "Do not correct for MCS effects in track propagation"};
+    Configurable<std::string> collisionSystem{"syst", "pp", "Collision system, pp or PbPb"};
+    Configurable<float> centerMassEnergy{"energy", 13600, "Center of mass energy in GeV"};
   } fConfigOptions;
 
   struct : ConfigurableGroup {
@@ -1246,7 +1244,7 @@ struct AnalysisSameEventPairing {
                 // NOTE: In the numbering scheme for the map key, we use the number of barrel cuts in the barrel-track selection task
                 fTrackHistNames[fNCutsBarrel + icut * fNPairCuts + iPairCut] = names;
               } // end loop (pair cuts)
-            }   // end if (pair cuts)
+            } // end if (pair cuts)
 
             // assign hist directories for the MC matched pairs for each (track cut,MCsignal) combination
             if (!sigNamesStr.IsNull()) {
@@ -1324,7 +1322,7 @@ struct AnalysisSameEventPairing {
                 histNames += Form("%s;%s;%s;", names[0].Data(), names[1].Data(), names[2].Data());
                 fMuonHistNames[fNCutsMuon + icut * fNCutsMuon + iPairCut] = names;
               } // end loop (pair cuts)
-            }   // end if (pair cuts)
+            } // end if (pair cuts)
 
             // assign hist directories for pairs matched to MC signals for each (muon cut, MCrec signal) combination
             if (!sigNamesStr.IsNull()) {
@@ -1353,7 +1351,7 @@ struct AnalysisSameEventPairing {
           }
         }
       } // end loop over cuts
-    }   // end if (muonCutsStr)
+    } // end if (muonCutsStr)
 
     // Add histogram classes for each specified MCsignal at the generator level
     // TODO: create a std::vector of hist classes to be used at Fill time, to avoid using Form in the process function
@@ -1745,8 +1743,8 @@ struct AnalysisSameEventPairing {
             } // end loop (pair cuts)
           }
         } // end loop (cuts)
-      }   // end loop over pairs of track associations
-    }     // end loop over events
+      } // end loop over pairs of track associations
+    } // end loop over events
   }
 
   // Preslice<ReducedMCTracks> perReducedMcEvent = aod::reducedtrackMC::reducedMCeventId;
@@ -1795,8 +1793,8 @@ struct AnalysisSameEventPairing {
               fHistMan->FillHistClass(Form("MCTruthGenPair_%s", sig.GetName()), VarManager::fgValues);
             }
           } // end loop over MC signals
-        }   // end loop over pairs
-      }     // end loop over events
+        } // end loop over pairs
+      } // end loop over events
     }
   } // end runMCGen
 
@@ -1989,7 +1987,7 @@ struct AnalysisDileptonTrack {
             DefineHistograms(fHistMan, fHistNamesDileptonTrack[icut], fConfigHistogramSubgroups.value.data()); // define dilepton-track histograms
             DefineHistograms(fHistMan, fHistNamesDileptons[icut], "barrel,vertexing");                         // define dilepton histograms
             std::vector<TString> mcHistNames;
-            
+
             for (auto& sig : fRecMCSignals) {
               mcHistNames.push_back(Form("DileptonTrackMCMatched_%s_%s_%s", tempStr.Data(), fConfigTrackCut.value.data(), sig.GetName()));
               DefineHistograms(fHistMan, mcHistNames[mcHistNames.size() - 1], fConfigHistogramSubgroups.value.data());

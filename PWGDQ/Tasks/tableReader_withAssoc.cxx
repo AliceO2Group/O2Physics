@@ -66,7 +66,7 @@ namespace o2::aod
 namespace dqanalysisflags
 {
 DECLARE_SOA_COLUMN(MixingHash, mixingHash, int);                                     //! Hash used in event mixing
-DECLARE_SOA_BITMAP_COLUMN(IsEventSelected, isEventSelected, 8);                     //! Event decision
+DECLARE_SOA_BITMAP_COLUMN(IsEventSelected, isEventSelected, 8);                      //! Event decision
 DECLARE_SOA_BITMAP_COLUMN(IsBarrelSelected, isBarrelSelected, 32);                   //! Barrel track decisions
 DECLARE_SOA_COLUMN(BarrelAmbiguityInBunch, barrelAmbiguityInBunch, int8_t);          //! Barrel track in-bunch ambiguity
 DECLARE_SOA_COLUMN(BarrelAmbiguityOutOfBunch, barrelAmbiguityOutOfBunch, int8_t);    //! Barrel track out of bunch ambiguity
@@ -168,11 +168,11 @@ struct AnalysisEventSelection {
 
   Configurable<int> fConfigITSROFrameStartBorderMargin{"cfgITSROFrameStartBorderMargin", -1, "Number of bcs at the start of ITS RO Frame border. Take from CCDB if -1"};
   Configurable<int> fConfigITSROFrameEndBorderMargin{"cfgITSROFrameEndBorderMargin", -1, "Number of bcs at the end of ITS RO Frame border. Take from CCDB if -1"};
-  
+
   Configurable<float> fConfigSplitCollisionsDeltaZ{"cfgSplitCollisionsDeltaZ", 1.0, "maximum delta-z (cm) between two collisions to consider them as split candidates"};
   Configurable<unsigned int> fConfigSplitCollisionsDeltaBC{"cfgSplitCollisionsDeltaBC", 100, "maximum delta-BC between two collisions to consider them as split candidates; do not apply if value is negative"};
   Configurable<bool> fConfigCheckSplitCollisions{"cfgCheckSplitCollisions", false, "If true, run the split collision check and fill histograms"};
-  
+
   Configurable<bool> fConfigRunZorro{"cfgRunZorro", false, "Enable event selection with zorro [WARNING: under debug, do not enable!]"};
   Configurable<string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
@@ -296,7 +296,7 @@ struct AnalysisEventSelection {
   template <uint32_t TEventFillMap, typename TEvents>
   void publishSelections(TEvents const& events)
   {
-    // Create a map for collisions which are candidate of being split 
+    // Create a map for collisions which are candidate of being split
     // key: event global index, value: whether pileup event is a possible splitting
     std::map<int64_t, bool> collisionSplittingMap;
 
@@ -306,7 +306,7 @@ struct AnalysisEventSelection {
     for (auto bc1It = fBCCollMap.begin(); bc1It != fBCCollMap.end(); ++bc1It) {
       uint64_t bc1 = bc1It->first;
       auto bc1Events = bc1It->second;
-      
+
       // same bunch event correlations, if more than 1 collisions in this bunch
       if (bc1Events.size() > 1) {
         for (auto ev1It = bc1Events.begin(); ev1It != bc1Events.end(); ++ev1It) {
@@ -320,9 +320,9 @@ struct AnalysisEventSelection {
               collisionSplittingMap[*ev2It] = true;
             }
             fHistMan->FillHistClass("SameBunchCorrelations", VarManager::fgValues);
-          }  // end second event loop
-        }  // end first event loop
-      }  // end if BC1 events > 1
+          } // end second event loop
+        } // end first event loop
+      } // end if BC1 events > 1
 
       // loop over the following BCs in the TF
       for (auto bc2It = std::next(bc1It); bc2It != fBCCollMap.end(); ++bc2It) {
@@ -409,7 +409,7 @@ struct AnalysisTrackSelection {
   Configurable<string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<string> fConfigCcdbPathTPC{"ccdb-path-tpc", "Users/z/zhxiong/TPCPID/PostCalib", "base path to the ccdb object"};
   Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
-  
+
   Configurable<bool> fConfigComputeTPCpostCalib{"cfgTPCpostCalib", false, "If true, compute TPC post-calibrated n-sigmas"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<bool> fConfigDummyRunlist{"cfgDummyRunlist", false, "If true, use dummy runlist"};
@@ -467,7 +467,7 @@ struct AnalysisTrackSelection {
     if (fConfigDummyRunlist) {
       VarManager::SetDummyRunlist(fConfigInitRunNumber);
     }
-    
+
     fCCDB->setURL(fConfigCcdbUrl.value);
     fCCDB->setCaching(true);
     fCCDB->setLocalObjectValidityChecking();
@@ -611,7 +611,7 @@ struct AnalysisTrackSelection {
         }
         trackAmbiguities(nInBunch, nOutOfBunch);
       }
-    }  // end if (fConfigPublishAmbiguity)
+    } // end if (fConfigPublishAmbiguity)
 
   } // end runTrackSelection()
 
@@ -778,7 +778,7 @@ struct AnalysisMuonSelection {
             evVector.push_back(event.globalIndex());
           }
         }
-      }  // end if (fConfigPublishAmbiguity)
+      } // end if (fConfigPublishAmbiguity)
     } // end loop over assocs
 
     if (fConfigPublishAmbiguity) {
@@ -894,7 +894,7 @@ struct AnalysisPrefilterSelection {
     if (fPrefilterMask == static_cast<uint32_t>(0) || fPrefilterCutBit < 0) {
       LOG(warn) << "No specified loose cut or track cuts for prefiltering. This task will do nothing.";
     }
-    
+
     // setup the prefilter pair cut
     fPairCut = new AnalysisCompositeCut(true);
     TString pairCutStr = fConfigPrefilterPairCut.value;
@@ -906,7 +906,7 @@ struct AnalysisPrefilterSelection {
     VarManager::SetDefaultVarNames();
 
     VarManager::SetupTwoProngDCAFitter(5.0f, true, 200.0f, 4.0f, 1.0e-3f, 0.9f, true); // TODO: get these parameters from Configurables
-    //VarManager::SetupTwoProngFwdDCAFitter(5.0f, true, 200.0f, 1.0e-3f, 0.9f, true);
+    // VarManager::SetupTwoProngFwdDCAFitter(5.0f, true, 200.0f, 1.0e-3f, 0.9f, true);
   }
 
   template <uint32_t TTrackFillMap, typename TTracks>
@@ -971,8 +971,7 @@ struct AnalysisPrefilterSelection {
       // If cuts were not configured, then produce a map with all 1's
       if (fPrefilterCutBit < 0 || fPrefilterMask == 0) {
         prefilter(mymap);
-      }
-      else if (fPrefilterMap.find(track.globalIndex()) != fPrefilterMap.end()) {
+      } else if (fPrefilterMap.find(track.globalIndex()) != fPrefilterMap.end()) {
         // NOTE: publish the bitwise negated bits (~), so there will be zeroes for cuts that failed the prefiltering and 1 everywhere else
         mymap = ~fPrefilterMap[track.globalIndex()];
         prefilter(mymap);
@@ -1031,7 +1030,7 @@ struct AnalysisSameEventPairing {
 
   struct : ConfigurableGroup {
     Configurable<bool> useRemoteField{"cfgUseRemoteField", false, "Chose whether to fetch the magnetic field from ccdb or set it manually"};
-    Configurable<float> magField{"cfgMagField", 5.0f, "Manually set magnetic field"}; 
+    Configurable<float> magField{"cfgMagField", 5.0f, "Manually set magnetic field"};
     Configurable<bool> flatTables{"cfgFlatTables", false, "Produce a single flat tables with all relevant information of the pairs and single tracks"};
     Configurable<bool> useKFVertexing{"cfgUseKFVertexing", false, "Use KF Particle for secondary vertex reconstruction (DCAFitter is used by default)"};
     Configurable<bool> useAbsDCA{"cfgUseAbsDCA", false, "Use absolute DCA minimization instead of chi^2 minimization in secondary vertexing"};
@@ -1286,8 +1285,8 @@ struct AnalysisSameEventPairing {
       fHistMan->SetUseDefaultVariableNames(true);
       fHistMan->SetDefaultVarNames(VarManager::fgVariableNames, VarManager::fgVariableUnits);
       VarManager::SetCollisionSystem((TString)fConfigOptions.collisionSystem, fConfigOptions.centerMassEnergy); // set collision system and center of mass energy
-      DefineHistograms(fHistMan, histNames.Data(), fConfigAddSEPHistogram.value.data()); // define all histograms
-      VarManager::SetUseVars(fHistMan->GetUsedVars());                                   // provide the list of required variables so that VarManager knows what to fill
+      DefineHistograms(fHistMan, histNames.Data(), fConfigAddSEPHistogram.value.data());                        // define all histograms
+      VarManager::SetUseVars(fHistMan->GetUsedVars());                                                          // provide the list of required variables so that VarManager knows what to fill
       fOutputList.setObject(fHistMan->GetMainHistogramList());
     }
   }
@@ -2544,7 +2543,7 @@ struct AnalysisDileptonTrack {
 
   // TODO: The filter expressions seem to always use the default value of configurables, not the values from the actual configuration file
   Filter eventFilter = aod::dqanalysisflags::isEventSelected > static_cast<uint8_t>(1);
-  Filter dileptonFilter = aod::reducedpair::pt > fConfigDileptonpTCut && aod::reducedpair::mass > fConfigDileptonLowMass && aod::reducedpair::mass<fConfigDileptonHighMass && aod::reducedpair::sign == 0 && aod::reducedpair::lxy > fConfigDileptonLxyCut;
+  Filter dileptonFilter = aod::reducedpair::pt > fConfigDileptonpTCut&& aod::reducedpair::mass > fConfigDileptonLowMass&& aod::reducedpair::mass<fConfigDileptonHighMass && aod::reducedpair::sign == 0 && aod::reducedpair::lxy> fConfigDileptonLxyCut;
   Filter filterBarrel = aod::dqanalysisflags::isBarrelSelected > static_cast<uint32_t>(0);
   Filter filterMuon = aod::dqanalysisflags::isMuonSelected > static_cast<uint32_t>(0);
 

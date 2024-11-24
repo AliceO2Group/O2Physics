@@ -218,7 +218,7 @@ struct TableMakerMC {
     if (!(isProcessBCenabled || isBarrelEnabled || isMuonEnabled)) {
       LOG(fatal) << "No process function was enabled for TableMakerMC. Check it out!!!";
     }
-    
+
     // Define user specified cut
     DefineCuts();
 
@@ -368,7 +368,6 @@ struct TableMakerMC {
     }
   }
 
-
   void skimMCParticles(aod::McParticles const& mcTracks, aod::McCollisions const&)
   {
     // Select MC particles which fulfill at least one of the user specified MC signals
@@ -381,7 +380,7 @@ struct TableMakerMC {
     fLabelsMapReversed.clear();
     fMCFlags.clear();
 
-    uint16_t mcflags = static_cast<uint16_t>(0);   // flags which will hold the decisions for each MC signal
+    uint16_t mcflags = static_cast<uint16_t>(0); // flags which will hold the decisions for each MC signal
     int trackCounter = 0;
 
     for (auto& mctrack : mcTracks) {
@@ -451,7 +450,7 @@ struct TableMakerMC {
     // Loop over collisions
     for (const auto& collision : collisions) {
 
-      // Fill the stats event histogram with the event selection bits  
+      // Fill the stats event histogram with the event selection bits
       for (int i = 0; i < o2::aod::evsel::kNsel; i++) {
         if (collision.selection_bit(i)) {
           (reinterpret_cast<TH2I*>(fStatsList->At(0)))->Fill(1.0, static_cast<float>(i));
@@ -591,7 +590,7 @@ struct TableMakerMC {
         continue;
       }
 
-      // If this track is already present in the index map, it means it was already skimmed, 
+      // If this track is already present in the index map, it means it was already skimmed,
       // so we just store the association and we skip the track
       if (fTrackIndexMap.find(track.globalIndex()) != fTrackIndexMap.end()) {
         trackBarrelAssoc(fCollIndexMap[collision.globalIndex()], fTrackIndexMap[track.globalIndex()]);
@@ -616,7 +615,7 @@ struct TableMakerMC {
       //       However, in data analysis one should loop over associations, so this one should not be used.
       //      In the case of Run2-like analysis, there will be no associations, so this ID will be the one originally assigned in the AO2Ds (updated for the skims)
       uint32_t reducedEventIdx = fCollIndexMap[track.collisionId()];
-    
+
       // NOTE: trackBarrelInfo stores the index of the collision as in AO2D (for use in some cases where the analysis on skims is done
       //   in workflows where the original AO2Ds are also present)
       trackBarrelInfo(track.collisionId(), collision.posX(), collision.posY(), collision.posZ(), track.globalIndex());

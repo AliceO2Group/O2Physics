@@ -497,7 +497,6 @@ struct TableMaker {
     fStatsList->AddAt(histZorroSel, kStatsZorroSel);
   }
 
-
   template <uint32_t TEventFillMap, uint32_t TTrackFillMap, typename TEvents, typename TBCs, typename TZdcs, typename TTrackAssoc, typename TTracks>
   void skimCollisions(TEvents const& collisions, TBCs const& /*bcs*/, TZdcs const& /*zdcs*/,
                       TTrackAssoc const& trackAssocs, TTracks const& tracks)
@@ -703,7 +702,7 @@ struct TableMaker {
         continue;
       }
 
-      // If this track is already present in the index map, it means it was already skimmed, 
+      // If this track is already present in the index map, it means it was already skimmed,
       // so we just store the association and we skip the track
       if (fTrackIndexMap.find(track.globalIndex()) != fTrackIndexMap.end()) {
         trackBarrelAssoc(fCollIndexMap[collision.globalIndex()], fTrackIndexMap[track.globalIndex()]);
@@ -761,7 +760,7 @@ struct TableMaker {
       //      If new associations are done with the skimmed data, the track time wrt new collision can then be recomputed based on the
       //        relative difference in time between the original and the new collision.
       uint32_t reducedEventIdx = fCollIndexMap[track.collisionId()]; // This gives the original iD of the track
-      
+
       // NOTE: trackBarrelInfo stores the index of the collision as in AO2D (for use in some cases where the analysis on skims is done
       //   in workflows where the original AO2Ds are also present)
       trackBarrelInfo(collision.globalIndex(), collision.posX(), collision.posY(), collision.posZ(), track.globalIndex());
@@ -790,7 +789,7 @@ struct TableMaker {
                        track.trdSignal());
       }
       fTrackIndexMap[track.globalIndex()] = trackBasic.lastIndex();
-      
+
       // write the skimmed collision - track association
       trackBarrelAssoc(fCollIndexMap[collision.globalIndex()], fTrackIndexMap[track.globalIndex()]);
     } // end loop over associations
