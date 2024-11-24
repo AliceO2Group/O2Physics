@@ -1683,7 +1683,7 @@ struct isospin_fluctuation {
         if (ParticleList[jj] == ParticleList[ii]) {
           if (jj < ii) {
             break;
-          }               // break if it was already counted
+          } // break if it was already counted
           nCommonCount++; // To Calculate no of times the entry was repeated
         }
       }
@@ -2403,7 +2403,7 @@ struct isospin_fluctuation {
             nK0s++;
           }
         } // End of K0s loop
-      }   // End of V0s Loop
+      } // End of V0s Loop
 
       nTrack = 0;
       int nRejectedPiPlus = 0;
@@ -2602,7 +2602,7 @@ struct isospin_fluctuation {
       }
       recoAnalysis.fill(HIST("hTest"), nPion * nPion);
     } // collision loop ends
-  }   // Process Function Ends
+  } // Process Function Ends
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
