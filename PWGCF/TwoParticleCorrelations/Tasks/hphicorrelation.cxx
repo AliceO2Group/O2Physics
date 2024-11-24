@@ -24,6 +24,7 @@
 #include "Common/DataModel/Multiplicity.h"
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+
 #include <TLorentzVector.h>
 #include <vector>
 
@@ -1228,7 +1229,7 @@ struct hphicorrelation {
         if (ParticleList[jj] == ParticleList[ii]) {
           if (jj < ii) {
             break;
-          }               // break if it was already counted
+          } // break if it was already counted
           nCommonCount++; // To Calculate no of times the entry was repeated
         }
       }
@@ -2157,7 +2158,7 @@ struct hphicorrelation {
             // both tracks are Kaon now;
             SE_FillRHCorrelationUS(collision, triggerTrack, posTrack, negTrack, nCR_Phi, nCR_Phi_0_2, nCR_Phi_2_4, nCR_Phi_4_8, nCR_Phi_8_i);
           } // Second Track
-        }   // first Track
+        } // first Track
         // 01-End  -obtaining h-Phi correlation
       } // trigger Loop-End
       // 01-h-phi All Three Region Unlike Sign correlation
@@ -2300,7 +2301,7 @@ struct hphicorrelation {
               nPhiPhi++;
               SE_FillPhiPhiCorrelation(collision, posTrack, negTrack, posTrack2, negTrack2, nLeadPhi, nAssoPhi_0_2, nAssoPhi_2_4);
             } // negTrack2
-          }   // posTrack2
+          } // posTrack2
           // 03-End  -PhiPhi Correlation
         } // negTrack
         fillSelectedTrack = 1;
@@ -2579,7 +2580,7 @@ struct hphicorrelation {
           }
         }
       } // Mixing Case Loop
-    }   // CollisionLoop-End
+    } // CollisionLoop-End
 
     // Store Dataframe information
     for (int iBin = 1; iBin <= 40; iBin++) {
