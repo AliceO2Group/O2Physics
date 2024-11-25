@@ -1212,7 +1212,7 @@ class TestHfStructMembers(TestSpec):
 
     def test_file(self, path: str, content) -> bool:
         passed = True
-        dic_struct: dict[str, dict] = {}
+        dic_structs: dict[str, dict] = {}
         struct_name = ""
         for i, line in enumerate(content):
             if is_comment_cpp(line):
@@ -1220,27 +1220,27 @@ class TestHfStructMembers(TestSpec):
             if line.startswith("struct "):  # expecting no indentation
                 line = remove_comment_cpp(line)
                 struct_name = line.strip().split()[1]
-                dic_struct[struct_name] = {}
+                dic_structs[struct_name] = {}
                 continue
             if not struct_name:
                 continue
             # Save line numbers of members of the current struct for each category.
             for member in self.member_order:
                 if line.startswith(f"  {member}"):  # expecting single-level indentation for direct members
-                    if member not in dic_struct[struct_name]:
-                        dic_struct[struct_name][member] = []
-                    dic_struct[struct_name][member].append(i + 1)  # save line number
+                    if member not in dic_structs[struct_name]:
+                        dic_structs[struct_name][member] = []
+                    dic_structs[struct_name][member].append(i + 1)  # save line number
                     break
         # print(dic_struct)
         # Detect members declared in a wrong order.
         last_line_last_member = 0  # line number of the last member of the previous member category
         index_last_member = 0  # index of the previous member category in the member_order list
-        for struct_name in dic_struct:
+        for struct_name, dic_struct in dic_structs.items():
             for i_m, member in enumerate(self.member_order):
-                if member not in dic_struct[struct_name]:
+                if member not in dic_struct:
                     continue
-                first_line = min(dic_struct[struct_name][member])  # line number of the first member of this category
-                last_line = max(dic_struct[struct_name][member])  # line number of the last member of this category
+                first_line = min(dic_struct[member])  # line number of the first member of this category
+                last_line = max(dic_struct[member])  # line number of the last member of this category
                 if (
                     first_line < last_line_last_member
                 ):  # The current category starts before the end of the previous category.
