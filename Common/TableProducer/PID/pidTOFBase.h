@@ -44,7 +44,6 @@ DECLARE_SOA_COLUMN(EvTimeTOFErr, evTimeTOFErr, float);           //! Error of th
 DECLARE_SOA_COLUMN(EvTimeTOFMult, evTimeTOFMult, int);           //! Event time multiplicity for TOF
 } // namespace pidtofevtime
 
-
 DECLARE_SOA_TABLE(EvTimeTOFOnly, "AOD", "EvTimeTOFOnly", //! Table for the TOF event time only with TOF. One entry per track.
                   pidtofevtime::UsedForTOFEvTime,
                   pidtofevtime::EvTimeTOF,
