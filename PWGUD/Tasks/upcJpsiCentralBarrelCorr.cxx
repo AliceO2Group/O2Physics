@@ -14,6 +14,7 @@
 /// \since March 2024
 
 #include <vector>
+#include <utility>
 
 // O2 headers
 #include "Framework/runDataProcessing.h"
@@ -1569,7 +1570,7 @@ struct UpcJpsiCentralBarrel {
             TGmu.get<TH2>(HIST("TGmu/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tpcSignal());
           }
           if (trkDaughter1.hasTOF()) {
-            TGmu.get<TH2>(HIST("TGmu/PID/hBetaTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.beta());
+            TGmu.get<TH2>(HIST("TGmu/PID/hBetaTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz()), trkDaughter1.beta());
           }
           if (trkDaughter2.hasTOF()) {
 
@@ -1602,6 +1603,7 @@ struct UpcJpsiCentralBarrel {
             TGmuCand.get<TH2>(HIST("TGmuCand/PID/hTPCVsPhi"))->Fill(RecoDecay::phi(daughter2), trkDaughter2.tpcSignal());
           }
           if (trkDaughter1.hasTOF()) {
+            TGmuCand.get<TH2>(HIST("TGmuCand/PID/hBetaTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter1.px(), trkDaughter1.py(), trkDaughter1.pz()), trkDaughter1.beta());
           }
           if (trkDaughter2.hasTOF()) {
             TGmuCand.get<TH2>(HIST("TGmuCand/PID/hBetaTOFVsP"))->Fill(RecoDecay::sqrtSumOfSquares(trkDaughter2.px(), trkDaughter2.py(), trkDaughter2.pz()), trkDaughter2.beta());
