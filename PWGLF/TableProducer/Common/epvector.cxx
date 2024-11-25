@@ -96,6 +96,7 @@ struct epvector {
   Configurable<bool> useGainCallib{"useGainCallib", true, "use gain calibration"};
   Configurable<bool> useRecentere{"useRecentere", true, "use Recentering"};
   Configurable<bool> useShift{"useShift", false, "use Shift"};
+  Configurable<bool> useShift2{"useShift2", false, "use Shift for others"};
   Configurable<std::string> ConfGainPath{"ConfGainPath", "Users/s/skundu/My/Object/test100", "Path to gain calibration"};
   Configurable<std::string> ConfRecentere{"ConfRecentere", "Users/s/skundu/My/Object/Finaltest2/recenereall", "Path for recentere"};
   Configurable<std::string> ConfShift{"ConfShift", "Users/s/skundu/My/Object/Finaltest2/recenereall", "Path for Shift"};
@@ -374,10 +375,12 @@ struct epvector {
 
       if (useShift && (currentRunNumber != lastRunNumber)) {
         shiftprofile = ccdb->getForTimeStamp<TProfile3D>(ConfShift.value, bc.timestamp());
-        shiftprofile2 = ccdb->getForTimeStamp<TProfile3D>(ConfShiftFT0A.value, bc.timestamp());
-        shiftprofile3 = ccdb->getForTimeStamp<TProfile3D>(ConfShiftTPC.value, bc.timestamp());
-        shiftprofile4 = ccdb->getForTimeStamp<TProfile3D>(ConfShiftTPCL.value, bc.timestamp());
-        shiftprofile5 = ccdb->getForTimeStamp<TProfile3D>(ConfShiftTPCR.value, bc.timestamp());
+        if (useShift2) {
+          shiftprofile2 = ccdb->getForTimeStamp<TProfile3D>(ConfShiftFT0A.value, bc.timestamp());
+          shiftprofile3 = ccdb->getForTimeStamp<TProfile3D>(ConfShiftTPC.value, bc.timestamp());
+          shiftprofile4 = ccdb->getForTimeStamp<TProfile3D>(ConfShiftTPCL.value, bc.timestamp());
+          shiftprofile5 = ccdb->getForTimeStamp<TProfile3D>(ConfShiftTPCR.value, bc.timestamp());
+        }
       }
       if (useShift) {
         auto deltapsiFT0C = 0.0;
@@ -388,24 +391,24 @@ struct epvector {
         for (int ishift = 1; ishift <= 10; ishift++) {
           auto coeffshiftxFT0C = shiftprofile->GetBinContent(shiftprofile->FindBin(centrality, 0.5, ishift - 0.5));
           auto coeffshiftyFT0C = shiftprofile->GetBinContent(shiftprofile->FindBin(centrality, 1.5, ishift - 0.5));
-
-          auto coeffshiftxFT0A = shiftprofile2->GetBinContent(shiftprofile2->FindBin(centrality, 0.5, ishift - 0.5));
-          auto coeffshiftyFT0A = shiftprofile2->GetBinContent(shiftprofile2->FindBin(centrality, 1.5, ishift - 0.5));
-
-          auto coeffshiftxTPC = shiftprofile3->GetBinContent(shiftprofile3->FindBin(centrality, 0.5, ishift - 0.5));
-          auto coeffshiftyTPC = shiftprofile3->GetBinContent(shiftprofile3->FindBin(centrality, 1.5, ishift - 0.5));
-
-          auto coeffshiftxTPCL = shiftprofile4->GetBinContent(shiftprofile4->FindBin(centrality, 0.5, ishift - 0.5));
-          auto coeffshiftyTPCL = shiftprofile4->GetBinContent(shiftprofile4->FindBin(centrality, 1.5, ishift - 0.5));
-
-          auto coeffshiftxTPCR = shiftprofile5->GetBinContent(shiftprofile5->FindBin(centrality, 0.5, ishift - 0.5));
-          auto coeffshiftyTPCR = shiftprofile5->GetBinContent(shiftprofile5->FindBin(centrality, 1.5, ishift - 0.5));
-
           deltapsiFT0C = deltapsiFT0C + ((1 / (1.0 * ishift)) * (-coeffshiftxFT0C * TMath::Cos(ishift * 2.0 * psiFT0C) + coeffshiftyFT0C * TMath::Sin(ishift * 2.0 * psiFT0C)));
-          deltapsiFT0A = deltapsiFT0A + ((1 / (1.0 * ishift)) * (-coeffshiftxFT0A * TMath::Cos(ishift * 2.0 * psiFT0A) + coeffshiftyFT0A * TMath::Sin(ishift * 2.0 * psiFT0A)));
-          deltapsiTPC = deltapsiTPC + ((1 / (1.0 * ishift)) * (-coeffshiftxTPC * TMath::Cos(ishift * 2.0 * psiTPC) + coeffshiftyTPC * TMath::Sin(ishift * 2.0 * psiTPC)));
-          deltapsiTPCL = deltapsiTPCL + ((1 / (1.0 * ishift)) * (-coeffshiftxTPCL * TMath::Cos(ishift * 2.0 * psiTPCL) + coeffshiftyTPCL * TMath::Sin(ishift * 2.0 * psiTPCL)));
-          deltapsiTPCR = deltapsiTPCR + ((1 / (1.0 * ishift)) * (-coeffshiftxTPCR * TMath::Cos(ishift * 2.0 * psiTPCR) + coeffshiftyTPCR * TMath::Sin(ishift * 2.0 * psiTPCR)));
+          if (useShift2) {
+            auto coeffshiftxFT0A = shiftprofile2->GetBinContent(shiftprofile2->FindBin(centrality, 0.5, ishift - 0.5));
+            auto coeffshiftyFT0A = shiftprofile2->GetBinContent(shiftprofile2->FindBin(centrality, 1.5, ishift - 0.5));
+
+            auto coeffshiftxTPC = shiftprofile3->GetBinContent(shiftprofile3->FindBin(centrality, 0.5, ishift - 0.5));
+            auto coeffshiftyTPC = shiftprofile3->GetBinContent(shiftprofile3->FindBin(centrality, 1.5, ishift - 0.5));
+
+            auto coeffshiftxTPCL = shiftprofile4->GetBinContent(shiftprofile4->FindBin(centrality, 0.5, ishift - 0.5));
+            auto coeffshiftyTPCL = shiftprofile4->GetBinContent(shiftprofile4->FindBin(centrality, 1.5, ishift - 0.5));
+
+            auto coeffshiftxTPCR = shiftprofile5->GetBinContent(shiftprofile5->FindBin(centrality, 0.5, ishift - 0.5));
+            auto coeffshiftyTPCR = shiftprofile5->GetBinContent(shiftprofile5->FindBin(centrality, 1.5, ishift - 0.5));
+            deltapsiFT0A = deltapsiFT0A + ((1 / (1.0 * ishift)) * (-coeffshiftxFT0A * TMath::Cos(ishift * 2.0 * psiFT0A) + coeffshiftyFT0A * TMath::Sin(ishift * 2.0 * psiFT0A)));
+            deltapsiTPC = deltapsiTPC + ((1 / (1.0 * ishift)) * (-coeffshiftxTPC * TMath::Cos(ishift * 2.0 * psiTPC) + coeffshiftyTPC * TMath::Sin(ishift * 2.0 * psiTPC)));
+            deltapsiTPCL = deltapsiTPCL + ((1 / (1.0 * ishift)) * (-coeffshiftxTPCL * TMath::Cos(ishift * 2.0 * psiTPCL) + coeffshiftyTPCL * TMath::Sin(ishift * 2.0 * psiTPCL)));
+            deltapsiTPCR = deltapsiTPCR + ((1 / (1.0 * ishift)) * (-coeffshiftxTPCR * TMath::Cos(ishift * 2.0 * psiTPCR) + coeffshiftyTPCR * TMath::Sin(ishift * 2.0 * psiTPCR)));
+          }
         }
         psiFT0C = psiFT0C + deltapsiFT0C;
         psiFT0A = psiFT0A + deltapsiFT0A;
