@@ -102,7 +102,7 @@ static const std::vector<std::string> reduceLb{"reduce factor"};
 constexpr int hyperNucEnabled[nHyperNuclei][1]{{0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}, {0}};
 constexpr float reduceFactor[nHyperNuclei][1]{{1.}, {1.}, {1.}, {1.}, {1.}, {1.}, {1.}, {1.}, {1.}, {1.}};
 static const std::vector<std::string> hyperNucPdgLb{"PDG code"};
-constexpr int hyperNucPdgCodes[nHyperNuclei][1]{
+static constexpr int hyperNucPdgCodes[nHyperNuclei][1]{
   {3122},
   {o2::constants::physics::kHyperTriton},
   {o2::constants::physics::kHyperTriton},
@@ -114,7 +114,7 @@ constexpr int hyperNucPdgCodes[nHyperNuclei][1]{
   {0},
   {0}};
 static const std::vector<std::string> hyperNucDaughtersLb{"daughter1", "daughter2", "daughter3", "daughter4"};
-constexpr std::string hyperNucDaughters[nHyperNuclei][4]{
+static constexpr std::string hyperNucDaughters[nHyperNuclei][4]{
   {"proton", "pion", "none", "none"},
   {"helion", "pion", "none", "none"},
   {"deuteron", "proton", "pion", "none"},
@@ -125,7 +125,7 @@ constexpr std::string hyperNucDaughters[nHyperNuclei][4]{
   {"helion", "deuteron", "pion", "none"},
   {"none", "none", "none", "none"},
   {"none", "none", "none", "none"}};
-constexpr std::string hyperNucSigns[nHyperNuclei][4]{
+static constexpr std::string hyperNucSigns[nHyperNuclei][4]{
   {"+", "-", "", ""},
   {"+", "-", "", ""},
   {"+", "+", "-", ""},
@@ -174,7 +174,7 @@ constexpr int cascadePdgCodes[nCascades][1]{
   {0},
   {0}};
 static const std::vector<std::string> cascadeHypDaughterLb{"hypernucleus"};
-constexpr std::string cascadeHypDaughter[nCascades][1]{
+static constexpr std::string cascadeHypDaughter[nCascades][1]{
   {"4LHe->3He+p+pi"},
   {"4LHe->3He+p+pi"},
   {"none"},
@@ -182,14 +182,14 @@ constexpr std::string cascadeHypDaughter[nCascades][1]{
   {"none"},
   {"none"}};
 static const std::vector<std::string> cascadeDaughtersLb{"daughter2", "daughter3", "daughter4"};
-constexpr std::string cascadeDaughters[nCascades][3]{
+static constexpr std::string cascadeDaughters[nCascades][3]{
   {"pion", "none", "none"},
   {"pion", "none", "none"},
   {"none", "none", "none"},
   {"none", "none", "none"},
   {"none", "none", "none"},
   {"none", "none", "none"}};
-constexpr std::string cascadeSigns[nCascades][4]{
+static constexpr std::string cascadeSigns[nCascades][4]{
   {"+", "-", "", ""},
   {"+", "-", "", ""},
   {"", "", "", ""},
