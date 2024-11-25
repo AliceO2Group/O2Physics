@@ -100,7 +100,7 @@ def print_error(path: str, line: Union[int, None], title: str, message: str):
     print(f"{path}:{str_line} {message} [{title}]")  # terminal format
     if github_mode:
         str_line = "" if line is None else f",line={line}"
-        print(f"::error file={path}{str_line},title=[{title}]::{message}")  # GitHub annotation format
+        print(f"::warning file={path}{str_line},title=[{title}]::{message}")  # GitHub annotation format
 
 
 def is_comment_cpp(line: str) -> bool:
