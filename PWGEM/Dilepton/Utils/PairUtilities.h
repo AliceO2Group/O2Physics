@@ -41,6 +41,11 @@ enum class DileptonAnalysisType : int {
   kVM = 5,
   kHFll = 6,
 };
+enum class DileptonPrefilterBit : int {
+  kMee = 0,             // reject tracks from pi0 dalitz decays at very low mass where S/B > 1
+  kPhiV = 1,            // reject tracks from photon conversions
+  kFakeMatchITSTPC = 2, // reject tracks from photon conversions misreconstructed as ITS-TPC matched track
+};
 
 using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;
 using SMatrix5 = ROOT::Math::SVector<double, 5>;
