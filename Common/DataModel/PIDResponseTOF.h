@@ -460,6 +460,11 @@ namespace pidtofbeta
 {
 DECLARE_SOA_COLUMN(Beta, beta, float);           //! TOF beta
 DECLARE_SOA_COLUMN(BetaError, betaerror, float); //! Uncertainty on the TOF beta
+// Dynamic column, i.e. the future
+DECLARE_SOA_DYNAMIC_COLUMN(TOFBetaImp, tofBeta, //! TOF Beta value
+                           [](const float length, const float tofSignal, const float collisionTime) -> float {
+                             return length / (tofSignal - collisionTime) * o2::constants::physics::invLightSpeedCm2PS;
+                           });
 //
 DECLARE_SOA_COLUMN(ExpBetaEl, expbetael, float);           //! Expected beta of electron
 DECLARE_SOA_COLUMN(ExpBetaElError, expbetaelerror, float); //! Expected uncertainty on the beta of electron
@@ -469,13 +474,23 @@ DECLARE_SOA_DYNAMIC_COLUMN(DiffBetaEl, diffbetael,             //! Difference be
                            [](float beta, float expbetael) -> float { return beta - expbetael; });
 } // namespace pidtofbeta
 
+using TOFBeta = pidtofbeta::TOFBetaImp<o2::aod::track::Length, o2::aod::pidtofsignal::TOFSignal, o2::aod::pidtofevtime::TOFEvTime>;
+
 DECLARE_SOA_TABLE(pidTOFbeta, "AOD", "pidTOFbeta", //! Table of the TOF beta
                   pidtofbeta::Beta, pidtofbeta::BetaError);
 
 namespace pidtofmass
 {
 DECLARE_SOA_COLUMN(TOFMass, mass, float); //! TOF mass
+// Dynamic column, i.e. the future
+DECLARE_SOA_DYNAMIC_COLUMN(TOFMassImp, tofMass, //! TOF Mass value
+                           [](const float length, const float tofSignal, const float collisionTime, const float momentum) -> float {
+                             const float beta = length / (tofSignal - collisionTime) * o2::constants::physics::invLightSpeedCm2PS;
+                             return (momentum / beta) * std::sqrt(std::abs(1.f - beta * beta));
+                           });
 } // namespace pidtofmass
+
+using TOFMass = pidtofmass::TOFMassImp<o2::aod::track::Length, o2::aod::pidtofsignal::TOFSignal, o2::aod::pidtofevtime::TOFEvTime, o2::aod::track::TOFExpMom>;
 
 DECLARE_SOA_TABLE(pidTOFmass, "AOD", "pidTOFmass", //! Table of the TOF mass
                   pidtofmass::TOFMass);
