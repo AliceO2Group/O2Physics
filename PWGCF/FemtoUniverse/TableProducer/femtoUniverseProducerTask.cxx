@@ -445,7 +445,7 @@ struct femtoUniverseProducerTask {
   int mRunNumber = 0;
   float mMagField;
   Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
-  ctpRateFetcher mRateFetcher; // inspired by zdcSP.cxx in PWGLF
+  ctpRateFetcher mRateFetcher;              // inspired by zdcSP.cxx in PWGLF
 
   void init(InitContext&)
   {
@@ -894,10 +894,7 @@ struct femtoUniverseProducerTask {
   void fillCollisionsCentRun3ColExtra(CollisionType const& col, double irrate)
   {
     int occupancy = col.trackOccupancyInTimeRange();
-    //if ((col.selection_bit(aod::evsel::kNoSameBunchPileup)) && (col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) && (occupancy > ConfTPCOccupancyMin && occupancy <= ConfTPCOccupancyMax)) {
-    if ((col.selection_bit(aod::evsel::kNoSameBunchPileup)) && (col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
-      outputCollExtra(irrate, occupancy);
-    }
+    outputCollExtra(irrate, occupancy);
   }
 
   template <bool isMC, typename TrackType>
