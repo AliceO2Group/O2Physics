@@ -433,10 +433,11 @@ struct HfTreeCreatorLcToPKPi {
       auto trackPos1 = candidate.template prong0_as<soa::Join<TracksWPid, o2::aod::McTrackLabels>>(); // positive daughter (negative for the antiparticles)
       auto trackNeg = candidate.template prong1_as<soa::Join<TracksWPid, o2::aod::McTrackLabels>>();  // negative daughter (positive for the antiparticles)
       auto trackPos2 = candidate.template prong2_as<soa::Join<TracksWPid, o2::aod::McTrackLabels>>(); // positive daughter (negative for the antiparticles)
-      bool isMcCandidateSignal = std::abs(candidate.flagMcMatchRec()) == (1 << o2::aod::hf_cand_3prong::DecayType::LcToPKPi);
       auto fillTable = [&](int CandFlag) {
         double pseudoRndm = trackPos1.pt() * 1000. - (int64_t)(trackPos1.pt() * 1000);
         const int FunctionSelection = CandFlag == 0 ? candidate.isSelLcToPKPi() : candidate.isSelLcToPiKP();
+        const int sigbgstatus = DetermineSignalBgStatus(candidate, CandFlag);
+        bool isMcCandidateSignal = (sigbgstatus==1) || (sigbgstatus==2);
         if (FunctionSelection >= selectionFlagLc && (/*keep all*/ (!keepOnlySignalMc && !keepOnlyBkg) || /*keep only signal*/ (keepOnlySignalMc && isMcCandidateSignal) || /*keep only background and downsample it*/ (keepOnlyBkg && !isMcCandidateSignal && (candidate.pt() > downSampleBkgPtMax || (pseudoRndm < downSampleBkgFactor && candidate.pt() < downSampleBkgPtMax))))) {
           if constexpr (reconstructionType == aod::hf_cand::VertexerType::DCAFitter) {
             const float FunctionInvMass = CandFlag == 0 ? hfHelper.invMassLcToPKPi(candidate) : hfHelper.invMassLcToPiKP(candidate);
@@ -590,7 +591,6 @@ struct HfTreeCreatorLcToPKPi {
             const float T = l * MassLambdaCPlus / LightSpeedCm2PS / p;
             const float deltaT = dl * MassLambdaCPlus / LightSpeedCm2PS / p;
             const float mass = CandFlag == 0 ? candidate.kfMassPKPi() : candidate.kfMassPiKP();
-            const int sigbgstatus = DetermineSignalBgStatus(candidate, CandFlag);
             rowCandidateKF(
               chi2prim_proton, chi2prim_kaon, chi2prim_pion,
               dca_proton_kaon, dca_proton_pion, dca_pion_kaon,
