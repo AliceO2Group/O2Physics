@@ -767,12 +767,6 @@ struct k892analysis_PbPb {
       auto bc1 = collision1.bc_as<BCsWithRun2Info>();
       auto bc2 = collision2.bc_as<BCsWithRun2Info>();
 
-      // if (!collision1.alias_bit(kINT7) || !collision2.alias_bit(kINT7))
-      //   continue;
-
-      // if (!collision1.sel7() || !collision2.sel7())
-      // 	return;
-
       if (!(bc1.eventCuts() & BIT(aod::Run2EventCuts::kAliEventCutsAccepted)) || !(bc2.eventCuts() & BIT(aod::Run2EventCuts::kAliEventCutsAccepted)))
         continue;
 
@@ -939,15 +933,7 @@ struct k892analysis_PbPb {
     for (auto& RecCollision : recCollisions) {
       auto bc = RecCollision.bc_as<BCsWithRun2Info>();
       histos.fill(HIST("hMCrecCollSels"), 3);
-
-      // if (!RecCollision.alias_bit(kINT7))
-      // 	return;
-      // histos.fill(HIST("hMCrecCollSels"), 4);
-
-      // if (!RecCollision.sel7())
-      // 	return;
-      // histos.fill(HIST("hMCrecCollSels"), 5);
-
+      
       if (!(bc.eventCuts() & BIT(aod::Run2EventCuts::kAliEventCutsAccepted)))
         return;
       histos.fill(HIST("hMCrecCollSels"), 4);
