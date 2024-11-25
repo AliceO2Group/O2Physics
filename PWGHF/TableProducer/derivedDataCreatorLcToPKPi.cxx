@@ -27,6 +27,8 @@
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
 
+#include "PWGLF/DataModel/mcCentrality.h"
+
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -91,7 +93,7 @@ struct HfDerivedDataCreatorLcToPKPi {
   using SelectedCandidatesMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfMlLcToPKPi>>;
   using SelectedCandidatesMcMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc, aod::HfMlLcToPKPi>>;
   using MatchedGenCandidatesMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
-  using TypeMcCollisions = aod::McCollisions;
+  using TypeMcCollisions = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
 
   Filter filterSelectCandidates = aod::hf_sel_candidate_lc::isSelLcToPKPi >= 1 || aod::hf_sel_candidate_lc::isSelLcToPiKP >= 1;
   Filter filterMcGenMatching = nabs(aod::hf_cand_3prong::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::LcToPKPi));
@@ -159,7 +161,8 @@ struct HfDerivedDataCreatorLcToPKPi {
       rowMcCollBase(
         mcCollision.posX(),
         mcCollision.posY(),
-        mcCollision.posZ());
+        mcCollision.posZ(),
+        mcCollision.centFT0M());
     }
     if (fillMcCollId) {
       rowMcCollId(

@@ -1571,9 +1571,9 @@ struct AnalysisSameEventPairing {
           }
           auto t1 = a1.template reducedtrack_as<TTracks1>();
           auto t2 = a2.template reducedtrack_as<TTracks2>();
-          VarManager::FillPairME<TPairType>(t1, t2);
+          VarManager::FillPairME<TEventFillMap, TPairType>(t1, t2);
           if constexpr ((TEventFillMap & VarManager::ObjTypes::ReducedEventQvector) > 0) {
-            VarManager::FillPairVn<TPairType>(t1, t2);
+            VarManager::FillPairVn<TEventFillMap, TPairType>(t1, t2);
           }
           pairSign = t1.sign() + t2.sign();
           ncuts = fNCutsBarrel;
@@ -1589,9 +1589,9 @@ struct AnalysisSameEventPairing {
             continue;
           if (t1.matchMFTTrackId() == t2.matchMFTTrackId())
             continue;
-          VarManager::FillPairME<TPairType>(t1, t2);
+          VarManager::FillPairME<TEventFillMap, TPairType>(t1, t2);
           if constexpr ((TEventFillMap & VarManager::ObjTypes::ReducedEventQvector) > 0) {
-            VarManager::FillPairVn<TPairType>(t1, t2);
+            VarManager::FillPairVn<TEventFillMap, TPairType>(t1, t2);
           }
           pairSign = t1.sign() + t2.sign();
           // store the ambiguity number of the two dilepton legs in the last 4 digits of the two-track filter

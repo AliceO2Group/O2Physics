@@ -838,13 +838,6 @@ struct highmasslambda {
         }
         auto anglesign = (v0.x() - collision1.posX()) * v0.px() + (v0.y() - collision1.posY()) * v0.py() + (v0.z() - collision1.posZ()) * v0.pz();
         anglesign = anglesign / TMath::Abs(anglesign);
-        auto dcasum = 0.0;
-        if (useSignDCAV0) {
-          dcasum = anglesign * (v0.dcav0topv()) - track1.dcaXY();
-        }
-        if (!useSignDCAV0) {
-          dcasum = v0.dcav0topv() - track1.dcaXY();
-        }
 
         if (occupancy1 < cfgOccupancyCut && occupancy2 < cfgOccupancyCut && Lambdac.M() > cMinLambdaMass && Lambdac.M() <= cMaxLambdaMass && TMath::Abs(Lambdac.Rapidity()) < confRapidity && Lambdac.Pt() > 2.0 && Lambdac.Pt() <= 6.0) {
           if (fillDefault) {
