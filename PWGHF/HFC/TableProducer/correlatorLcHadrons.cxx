@@ -303,7 +303,7 @@ struct HfCorrelatorLcHadrons {
 
     // find leading particle
     if (correlateLcWithLeadingParticle) {
-      leadingIndex = findLeadingParticle(tracks, dcaXYTrackMax.value, dcaZTrackMax.value);
+      leadingIndex = findLeadingParticle(tracks, dcaXYTrackMax.value, dcaZTrackMax.value, etaTrackMax.value);
     }
 
     int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multFT0M()));
@@ -425,7 +425,7 @@ struct HfCorrelatorLcHadrons {
 
     // find leading particle
     if (correlateLcWithLeadingParticle) {
-      leadingIndex = findLeadingParticle(tracks, dcaXYTrackMax.value, dcaZTrackMax.value);
+      leadingIndex = findLeadingParticle(tracks, dcaXYTrackMax.value, dcaZTrackMax.value, etaTrackMax.value);
     }
 
     int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multFT0M()));
