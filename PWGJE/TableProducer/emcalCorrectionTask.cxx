@@ -184,13 +184,15 @@ struct EmcalCorrectionTask {
     o2Axis energyAxis{200, 0., 100., "E (GeV)"},
       timeAxis{300, -100, 200., "t (ns)"},
       etaAxis{160, -0.8, 0.8, "#eta"},
-      phiAxis{72, 0, 2 * 3.14159, "phi"};
+      phiAxis{72, 0, 2 * 3.14159, "phi"},
+      nlmAxis{50, -0.5, 49.5, "NLM"};
     mHistManager.add("hCellE", "hCellE", o2HistType::kTH1F, {energyAxis});
     mHistManager.add("hCellTowerID", "hCellTowerID", o2HistType::kTH1D, {{20000, 0, 20000}});
     mHistManager.add("hCellEtaPhi", "hCellEtaPhi", o2HistType::kTH2F, {etaAxis, phiAxis});
     // NOTE: Reversed column and row because it's more natural for presentation.
     mHistManager.add("hCellRowCol", "hCellRowCol;Column;Row", o2HistType::kTH2D, {{97, 0, 97}, {600, 0, 600}});
     mHistManager.add("hClusterE", "hClusterE", o2HistType::kTH1F, {energyAxis});
+    mHistManager.add("hClusterNLM", "hClusterNLM", o2HistType::kTH1F, {nlmAxis});
     mHistManager.add("hClusterEtaPhi", "hClusterEtaPhi", o2HistType::kTH2F, {etaAxis, phiAxis});
     mHistManager.add("hClusterTime", "hClusterTime", o2HistType::kTH1F, {timeAxis});
     mHistManager.add("hGlobalTrackEtaPhi", "hGlobalTrackEtaPhi", o2HistType::kTH2F, {etaAxis, phiAxis});
@@ -627,6 +629,7 @@ struct EmcalCorrectionTask {
       } // end of cells of cluser loop
       // fill histograms
       mHistManager.fill(HIST("hClusterE"), cluster.E());
+      mHistManager.fill(HIST("hClusterNLM"), cluster.getNExMax());
       mHistManager.fill(HIST("hClusterTime"), cluster.getClusterTime());
       mHistManager.fill(HIST("hClusterEtaPhi"), pos.Eta(), TVector2::Phi_0_2pi(pos.Phi()));
       if (IndexMapPair && trackGlobalIndex) {
