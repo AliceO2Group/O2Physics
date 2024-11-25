@@ -125,7 +125,7 @@ struct phik0shortanalysis {
   Configurable<float> NSigmaTOFPion{"NSigmaTOFPion", 5.0, "NSigmaTOFPion"};
 
   // Configurable on pion pT bins
-  Configurable<std::vector<double>> binspTPi{"binspTPi", {0.2, 0.4, 0.6, 0.8, 1.0f, 1.2, 1.5, 2.0, 3.0}, "pT bin limits for pions"};
+  Configurable<std::vector<double>> binspTPi{"binspTPi", {0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 3.0}, "pT bin limits for pions"};
 
   // Configurables for delta y selection
   Configurable<int> nBinsy{"nBinsy", 10, "Number of bins in y and deltay axis"};
@@ -1521,7 +1521,7 @@ struct phik0shortanalysis {
       float nsigmaTPC = (track.hasTPC() ? track.tpcNSigmaPi() : -9.99);
       float nsigmaTOF = (track.hasTOF() ? track.tofNSigmaPi() : -9.99);
 
-      TLorentzVectorAndPID recPi(vecPi, nsigmaTPC, nsigmaTOF);
+      TLorentzVectorAndPID recPi{vecPi, nsigmaTPC, nsigmaTOF};
 
       std::vector<TLorentzVector> listrecPhi;
       std::array<int, 3> counts{};
