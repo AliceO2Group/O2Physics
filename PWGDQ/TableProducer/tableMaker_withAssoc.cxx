@@ -665,6 +665,13 @@ struct TableMaker {
       // get the track
       auto track = assoc.template track_as<TTracks>();
 
+      // If the original collision of this track was not selected for skimming, then we skip this track.
+      //  Normally, the filter-pp is selecting all collisions which contain the tracks which contributed to the triggering
+      //    of an event, so this is rejecting possibly a few tracks unrelated to the trigger, originally associated with collisions distant in time.
+      if (fCollIndexMap.find(track.collisionId()) == fCollIndexMap.end()) {
+        continue;
+      }
+
       trackFilteringTag = static_cast<uint64_t>(0);
       trackTempFilterMap = static_cast<uint32_t>(0);
       VarManager::FillTrack<TTrackFillMap>(track);
@@ -692,6 +699,13 @@ struct TableMaker {
         }
       }
       if (!trackTempFilterMap) {
+        continue;
+      }
+
+      // If this track is already present in the index map, it means it was already skimmed,
+      // so we just store the association and we skip the track
+      if (fTrackIndexMap.find(track.globalIndex()) != fTrackIndexMap.end()) {
+        trackBarrelAssoc(fCollIndexMap[collision.globalIndex()], fTrackIndexMap[track.globalIndex()]);
         continue;
       }
 
@@ -733,57 +747,49 @@ struct TableMaker {
           trackFilteringTag |= (static_cast<uint64_t>(1) << VarManager::kIsTPCPostcalibrated);
         }
       }
-      // write the track global index in the map for skimming (to make sure we have it just once)
-      if (fTrackIndexMap.find(track.globalIndex()) == fTrackIndexMap.end()) {
 
-        // Calculating the percentage of orphan tracks i.e., tracks which have no collisions associated to it
-        if (!track.has_collision()) {
-          (reinterpret_cast<TH1D*>(fStatsList->At(kStatsOrphanTracks)))->Fill(static_cast<float>(-1));
-        } else {
-          (reinterpret_cast<TH1D*>(fStatsList->At(kStatsOrphanTracks)))->Fill(0.9);
-        }
-
-        // NOTE: The collision ID written in the table is the one of the original collision assigned in the AO2D.
-        //      The reason is that the time associated to the track is wrt that collision.
-        //      If new associations are done with the skimmed data, the track time wrt new collision can then be recomputed based on the
-        //        relative difference in time between the original and the new collision.
-
-        // If the original collision of this track was not selected for skimming, then we skip this track.
-        //  Normally, the filter-pp is selecting all collisions which contain the tracks which contributed to the triggering
-        //    of an event, so this is rejecting possibly a few tracks originally associated with collisions distant in time.
-        if (fCollIndexMap.find(track.collisionId()) == fCollIndexMap.end()) {
-          continue;
-        }
-        uint32_t reducedEventIdx = fCollIndexMap[track.collisionId()]; // This gives the original iD of the track
-        // NOTE: trackBarrelInfo stores the index of the collision as in AO2D (for use in some cases where the analysis on skims is done
-        //   in workflows where the original AO2Ds are also present)
-        trackBarrelInfo(collision.globalIndex(), collision.posX(), collision.posY(), collision.posZ(), track.globalIndex());
-        trackBasic(reducedEventIdx, trackFilteringTag, track.pt(), track.eta(), track.phi(), track.sign(), 0);
-        trackBarrel(track.x(), track.alpha(), track.y(), track.z(), track.snp(), track.tgl(), track.signed1Pt(),
-                    track.tpcInnerParam(), track.flags(), track.itsClusterMap(), track.itsChi2NCl(),
-                    track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(),
-                    track.tpcNClsShared(), track.tpcChi2NCl(),
-                    track.trdChi2(), track.trdPattern(), track.tofChi2(),
-                    track.length(), track.dcaXY(), track.dcaZ(),
-                    track.trackTime(), track.trackTimeRes(), track.tofExpMom(),
-                    track.detectorMap());
-        if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackCov)) {
-          trackBarrelCov(track.cYY(), track.cZY(), track.cZZ(), track.cSnpY(), track.cSnpZ(),
-                         track.cSnpSnp(), track.cTglY(), track.cTglZ(), track.cTglSnp(), track.cTglTgl(),
-                         track.c1PtY(), track.c1PtZ(), track.c1PtSnp(), track.c1PtTgl(), track.c1Pt21Pt2());
-        }
-        if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackPID)) {
-          float nSigmaEl = (fConfigPostCalibTPC.fConfigComputeTPCpostCalib ? VarManager::fgValues[VarManager::kTPCnSigmaEl_Corr] : track.tpcNSigmaEl());
-          float nSigmaPi = (fConfigPostCalibTPC.fConfigComputeTPCpostCalib ? VarManager::fgValues[VarManager::kTPCnSigmaPi_Corr] : track.tpcNSigmaPi());
-          float nSigmaKa = ((fConfigPostCalibTPC.fConfigComputeTPCpostCalib && fConfigPostCalibTPC.fConfigComputeTPCpostCalibKaon) ? VarManager::fgValues[VarManager::kTPCnSigmaKa_Corr] : track.tpcNSigmaKa());
-          float nSigmaPr = (fConfigPostCalibTPC.fConfigComputeTPCpostCalib ? VarManager::fgValues[VarManager::kTPCnSigmaPr_Corr] : track.tpcNSigmaPr());
-          trackBarrelPID(track.tpcSignal(),
-                         nSigmaEl, track.tpcNSigmaMu(), nSigmaPi, nSigmaKa, nSigmaPr,
-                         track.beta(), track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
-                         track.trdSignal());
-        }
-        fTrackIndexMap[track.globalIndex()] = trackBasic.lastIndex();
+      // Calculating the percentage of orphan tracks i.e., tracks which have no collisions associated to it
+      if (!track.has_collision()) {
+        (reinterpret_cast<TH1D*>(fStatsList->At(kStatsOrphanTracks)))->Fill(static_cast<float>(-1));
+      } else {
+        (reinterpret_cast<TH1D*>(fStatsList->At(kStatsOrphanTracks)))->Fill(0.9);
       }
+
+      // NOTE: The collision ID written in the table is the one of the original collision assigned in the AO2D.
+      //      The reason is that the time associated to the track is wrt that collision.
+      //      If new associations are done with the skimmed data, the track time wrt new collision can then be recomputed based on the
+      //        relative difference in time between the original and the new collision.
+      uint32_t reducedEventIdx = fCollIndexMap[track.collisionId()]; // This gives the original iD of the track
+
+      // NOTE: trackBarrelInfo stores the index of the collision as in AO2D (for use in some cases where the analysis on skims is done
+      //   in workflows where the original AO2Ds are also present)
+      trackBarrelInfo(collision.globalIndex(), collision.posX(), collision.posY(), collision.posZ(), track.globalIndex());
+      trackBasic(reducedEventIdx, trackFilteringTag, track.pt(), track.eta(), track.phi(), track.sign(), 0);
+      trackBarrel(track.x(), track.alpha(), track.y(), track.z(), track.snp(), track.tgl(), track.signed1Pt(),
+                  track.tpcInnerParam(), track.flags(), track.itsClusterMap(), track.itsChi2NCl(),
+                  track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(),
+                  track.tpcNClsShared(), track.tpcChi2NCl(),
+                  track.trdChi2(), track.trdPattern(), track.tofChi2(),
+                  track.length(), track.dcaXY(), track.dcaZ(),
+                  track.trackTime(), track.trackTimeRes(), track.tofExpMom(),
+                  track.detectorMap());
+      if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackCov)) {
+        trackBarrelCov(track.cYY(), track.cZY(), track.cZZ(), track.cSnpY(), track.cSnpZ(),
+                       track.cSnpSnp(), track.cTglY(), track.cTglZ(), track.cTglSnp(), track.cTglTgl(),
+                       track.c1PtY(), track.c1PtZ(), track.c1PtSnp(), track.c1PtTgl(), track.c1Pt21Pt2());
+      }
+      if constexpr (static_cast<bool>(TTrackFillMap & VarManager::ObjTypes::TrackPID)) {
+        float nSigmaEl = (fConfigPostCalibTPC.fConfigComputeTPCpostCalib ? VarManager::fgValues[VarManager::kTPCnSigmaEl_Corr] : track.tpcNSigmaEl());
+        float nSigmaPi = (fConfigPostCalibTPC.fConfigComputeTPCpostCalib ? VarManager::fgValues[VarManager::kTPCnSigmaPi_Corr] : track.tpcNSigmaPi());
+        float nSigmaKa = ((fConfigPostCalibTPC.fConfigComputeTPCpostCalib && fConfigPostCalibTPC.fConfigComputeTPCpostCalibKaon) ? VarManager::fgValues[VarManager::kTPCnSigmaKa_Corr] : track.tpcNSigmaKa());
+        float nSigmaPr = (fConfigPostCalibTPC.fConfigComputeTPCpostCalib ? VarManager::fgValues[VarManager::kTPCnSigmaPr_Corr] : track.tpcNSigmaPr());
+        trackBarrelPID(track.tpcSignal(),
+                       nSigmaEl, track.tpcNSigmaMu(), nSigmaPi, nSigmaKa, nSigmaPr,
+                       track.beta(), track.tofNSigmaEl(), track.tofNSigmaMu(), track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
+                       track.trdSignal());
+      }
+      fTrackIndexMap[track.globalIndex()] = trackBasic.lastIndex();
+
       // write the skimmed collision - track association
       trackBarrelAssoc(fCollIndexMap[collision.globalIndex()], fTrackIndexMap[track.globalIndex()]);
     } // end loop over associations
