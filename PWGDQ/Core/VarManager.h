@@ -710,7 +710,7 @@ class VarManager : public TObject
     kKFPairDeviationxyFromPV,
     kNPairVariables,
 
-    //MC Particle pair Variables
+    // MC Particle pair Variables
     kMCCosThetaHE,
     kMCCosThetaCS,
     kMCPhiHE,
@@ -3057,7 +3057,7 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values, PairCandi
   ROOT::Math::XYZVectorF xaxis_CS{(yaxis_CS.Cross(zaxis_CS)).Unit()};
 
   if (fgUsedVars[kMCCosThetaHE]) {
-     values[kMCCosThetaHE] = (t1.pdgCode() < 0 ? zaxis_HE.Dot(v1_CM) : zaxis_HE.Dot(v2_CM));
+    values[kMCCosThetaHE] = (t1.pdgCode() < 0 ? zaxis_HE.Dot(v1_CM) : zaxis_HE.Dot(v2_CM));
   }
 
   if (fgUsedVars[kMCPhiHE]) {
