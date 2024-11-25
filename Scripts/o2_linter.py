@@ -816,7 +816,7 @@ class TestNameTable(TestSpec):
             return True
         if not (match := re.match(r"DECLARE(_[A-Z]+)*_TABLES?(_[A-Z]+)*\(", line)):
             return True
-        # Extract names of the column type and getter.
+        # Extract names of the table type.
         line = remove_comment_cpp(line)
         line = line[len(match.group()) :].strip()  # Extract part after "(".
         if not (match := re.match(r"([^,\) ]+)", line)):
@@ -825,6 +825,11 @@ class TestNameTable(TestSpec):
         table_type_name = match.group(1)
         # print(f"Got \"{table_type_name}\"")
         # return True
+        # Check for a version suffix.
+        if match := re.match(r"(.*)_([0-9]{3})", line):
+            table_type_name = match.group(1)
+            # table_version = match.group(2)
+            # print(f"Got versioned table \"{table_type_name}\", version {table_version}")
         if table_type_name[0] == "_":  # probably a macro variable
             return True
         # The actual test comes here.
