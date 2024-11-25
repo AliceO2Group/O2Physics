@@ -142,7 +142,7 @@ struct UpcTauCentralBarrelRL {
   ConfigurableAxis axisFITtime{"axisFITtime", {201, -40.5, 40.5}, "FIT time in ns"};
   ConfigurableAxis axisFITamplitude{"axisFITamplitude", {1000, 0., 1000.}, "FIT amplitude"};
 
-  AxisSpec axisChannels{CH_ENUM_COUNTER, -0.5, CH_ENUM_COUNTER-0.5, "Channels (-)"};
+  AxisSpec axisChannels{CH_ENUM_COUNTER, -0.5, CH_ENUM_COUNTER - 0.5, "Channels (-)"};
 
   using FullUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags>;
   using FullUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels>::iterator;
@@ -163,7 +163,7 @@ struct UpcTauCentralBarrelRL {
     countCollisions = 0;
     isFirstReconstructedCollisions = true;
 
-    if (doMainHistos){
+    if (doMainHistos) {
       histos.add("Events/hCountCollisions", ";;Number of  analysed collision (-)", HistType::kTH1D, {{1, 0.5, 1.5}});
       histos.add("Events/UDtableGapSide", ";GapSide value from UD table (-);Number of events (-)", HistType::kTH1D, {{4, -1.5, 2.5}});
       histos.add("Events/TrueGapSideDiffToTableValue", ";Difference trueGapSide from SGselector and gapSide from UD table (-);Number of events (-)", HistType::kTH1D, {{7, -3.5, 3.5}});
@@ -227,7 +227,7 @@ struct UpcTauCentralBarrelRL {
       histos.add("Tracks/GoodTrack/TPC/tpcChi2NCl", "chi2 per cluster in TPC;chi2 / cluster TPC", kTH1D, {axisTPCchi2});
     }
 
-    if (doPIDhistos){
+    if (doPIDhistos) {
       histos.add("Tracks/raw/PID/hTPCsignalVsZ", "All tracks;Track z-vertex (cm);TPC d#it{E}/d#it{x} (arb. units)", HistType::kTH2D, {axisZvtx, axisTPCdEdx});
       histos.add("Tracks/raw/PID/hTPCsignalVsP", "All tracks;Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", HistType::kTH2D, {axisMom, axisTPCdEdx});
       histos.add("Tracks/raw/PID/hTPCsignalVsPt", "All tracks;Track #it{p_{#rm T}} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", HistType::kTH2D, {axisPt, axisTPCdEdx});
@@ -893,16 +893,15 @@ struct UpcTauCentralBarrelRL {
     if (doTruth) {
       histos.add("Events/Truth/hCountCollisions", ";;Number of generated collision (-)", HistType::kTH1D, {{1, 0.5, 1.5}});
       histos.add("Events/Truth/hChannels", ";Channels (-);Number of events (-)", HistType::kTH1D, {{axisChannels}});
-      histos.add("Events/Truth/hPDGcodesAll", ";PDG codes of all particles (-);Number of events (-)", HistType::kTH1D, {{2001,-1000,1000}});
-      histos.add("Events/Truth/hPDGcodesNoMother", ";PDG codes of particles without mother (-);Number of events (-)", HistType::kTH1D, {{2001,-1000,1000}});
-      histos.add("Events/Truth/hPDGcodesTauDaughters", ";PDG codes of daughters of particles without mother (-);Number of events (-)", HistType::kTH1D, {{2001,-1000,1000}});
+      histos.add("Events/Truth/hPDGcodesAll", ";PDG codes of all particles (-);Number of events (-)", HistType::kTH1D, {{2001, -1000, 1000}});
+      histos.add("Events/Truth/hPDGcodesNoMother", ";PDG codes of particles without mother (-);Number of events (-)", HistType::kTH1D, {{2001, -1000, 1000}});
+      histos.add("Events/Truth/hPDGcodesTauDaughters", ";PDG codes of daughters of particles without mother (-);Number of events (-)", HistType::kTH1D, {{2001, -1000, 1000}});
       histos.add("Events/Truth/hNparticles", ";Number of particles in a collision (-);Number of events (-)", HistType::kTH1D, {axisNparticles});
       histos.add("Events/Truth/hNtauDaughters", ";Number of daughters of no-mother particle in a collision (-);Number of events (-)", HistType::kTH1D, {axisNparticles});
       histos.add("Events/Truth/hNelectrons", ";Number of electrons in a collision (-);Number of events (-)", HistType::kTH1D, {axisNparticles});
       histos.add("Events/Truth/hNmuons", ";Number of muons in a collision (-);Number of events (-)", HistType::kTH1D, {axisNparticles});
       histos.add("Events/Truth/hNpions", ";Number of pions in a collision (-);Number of events (-)", HistType::kTH1D, {axisNparticles});
-      histos.add("Events/Truth/hNphysPartVsNwoutMotherParts", ";Number of physical primary particles (-);Number of particles without mother(-)", HistType::kTH2D, {axisNparticles,axisNparticles});
-
+      histos.add("Events/Truth/hNphysPartVsNwoutMotherParts", ";Number of physical primary particles (-);Number of particles without mother(-)", HistType::kTH2D, {axisNparticles, axisNparticles});
     }
 
   } // end init
@@ -1130,7 +1129,8 @@ struct UpcTauCentralBarrelRL {
   }
 
   template <typename C>
-  bool isGoodFITtime(C const& coll, float maxFITtime){
+  bool isGoodFITtime(C const& coll, float maxFITtime)
+  {
 
     // FTOA
     if ((std::abs(coll.timeFT0A()) > maxFITtime) && coll.timeFT0A() > -998.)
@@ -1144,7 +1144,8 @@ struct UpcTauCentralBarrelRL {
   }
 
   template <typename T>
-  bool selectedGoodElectron(T const& electronCandidate){
+  bool selectedGoodElectron(T const& electronCandidate)
+  {
     if (!electronCandidate.hasTOF())
       return false;
     if (electronCandidate.tpcNSigmaEl() < cutMyElectronNsigmaL || electronCandidate.tpcNSigmaEl() > cutMyElectronNsigmaU)
@@ -1152,10 +1153,11 @@ struct UpcTauCentralBarrelRL {
     if (electronCandidate.tpcNSigmaPi() > cutMyElectronPiNsigmaL && electronCandidate.tpcNSigmaPi() < cutMyElectronPiNsigmaU)
       return false;
     return true;
-    }
+  }
 
   template <typename T>
-  bool selectedTauEvent(T const& trkDaug1, T const& trkDaug2){
+  bool selectedTauEvent(T const& trkDaug1, T const& trkDaug2)
+  {
     TLorentzVector mother, daug[2], motherOfPions, pion[2];
     daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
     daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(trackPDG(trkDaug2, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
@@ -1165,11 +1167,11 @@ struct UpcTauCentralBarrelRL {
     motherOfPions = pion[0] + pion[1];
     if (trkDaug1.sign() * trkDaug2.sign() > 0)
       return false;
-//    if (calculateAcoplanarity(daug[0].Phi(), daug[1].Phi()) > 4 * o2::constants::math::PI / 5)
-//      return false;
+    //    if (calculateAcoplanarity(daug[0].Phi(), daug[1].Phi()) > 4 * o2::constants::math::PI / 5)
+    //      return false;
     bool goodElectron = (enumMyParticle(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON) ? selectedGoodElectron(trkDaug1) : selectedGoodElectron(trkDaug2);
-//    if (!goodElectron)
-//      return false;
+    //    if (!goodElectron)
+    //      return false;
     if (useCutMyNoRho && (motherOfPions.M() > cutMyRhoLow && motherOfPions.M() < cutMyRhoHigh))
       return false;
     if (useCutMyOnlyRho && (motherOfPions.M() > cutMyRhoHigh || motherOfPions.M() < cutMyRhoLow))
@@ -1315,7 +1317,7 @@ struct UpcTauCentralBarrelRL {
       auto acoplanarity = calculateAcoplanarity(daug[0].Phi(), daug[1].Phi());
       auto sign = trkDaug1.sign() * trkDaug2.sign();
       bool passAvgITSclsSizesCut = passITSAvgClsSizesLowMomCut(trkDaug1, cutAvgITSclusterSize, cutPtAvgITSclusterSize) && passITSAvgClsSizesLowMomCut(trkDaug2, cutAvgITSclusterSize, cutPtAvgITSclusterSize);
-      if (applyTauEventSelection && !selectedTauEvent(trkDaug1,trkDaug2)) {
+      if (applyTauEventSelection && !selectedTauEvent(trkDaug1, trkDaug2)) {
         return;
       }
 
@@ -2353,7 +2355,7 @@ struct UpcTauCentralBarrelRL {
       const auto& trkDaug2 = reconstructedBarrelTracks.iteratorAt(vecPVnoPIDidx[1]);
       daug[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
       daug[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(trackPDG(trkDaug2, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
-      if (applyTauEventSelection && !selectedTauEvent(trkDaug1,trkDaug2)) {
+      if (applyTauEventSelection && !selectedTauEvent(trkDaug1, trkDaug2)) {
         return;
       }
 
@@ -2375,7 +2377,6 @@ struct UpcTauCentralBarrelRL {
       }
     }
 
-
     if (countPVGTselected == 2 && doTwoTracks) {
       TLorentzVector daug[2], pion[2], muon[2];
       const auto& trkDaug1 = reconstructedBarrelTracks.iteratorAt(vecPVidx[0]);
@@ -2386,7 +2387,7 @@ struct UpcTauCentralBarrelRL {
       pion[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(211), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
       muon[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(13), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
       muon[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(13), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
-      if (applyTauEventSelection && !selectedTauEvent(trkDaug1,trkDaug2)) {
+      if (applyTauEventSelection && !selectedTauEvent(trkDaug1, trkDaug2)) {
         return;
       }
 
@@ -2786,13 +2787,13 @@ struct UpcTauCentralBarrelRL {
       pion[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(211), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
       muon[0].SetPxPyPzE(trkDaug1.px(), trkDaug1.py(), trkDaug1.pz(), energy(pdg->Mass(13), trkDaug1.px(), trkDaug1.py(), trkDaug1.pz()));
       muon[1].SetPxPyPzE(trkDaug2.px(), trkDaug2.py(), trkDaug2.pz(), energy(pdg->Mass(13), trkDaug2.px(), trkDaug2.py(), trkDaug2.pz()));
-      if (applyTauEventSelection && !selectedTauEvent(trkDaug1,trkDaug2)) {
+      if (applyTauEventSelection && !selectedTauEvent(trkDaug1, trkDaug2)) {
         return;
       }
       if (trkDaug1.hasTPC() && trkDaug2.hasTPC()) {
         if ((countPVGTelectrons == 1 && countPVGTmuons == 1) || (countPVGTelectrons == 1 && countPVGTpions == 1)) {
 
-          if (isMC){
+          if (isMC) {
             int pid = 0;
             if (trkDaug1.has_udMcParticle()) {
               auto part = trkDaug1.udMcParticle();
@@ -2813,7 +2814,7 @@ struct UpcTauCentralBarrelRL {
               }
             }
             bool isNotTrueElectron = false;
-            if (enumMyParticle(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON){
+            if (enumMyParticle(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON) {
               if (trkDaug1.has_udMcParticle()) {
                 auto particle = trkDaug1.udMcParticle();
                 if (enumMyParticle(particle.pdgCode()) != P_ELECTRON)
@@ -2826,7 +2827,7 @@ struct UpcTauCentralBarrelRL {
                   isNotTrueElectron = true;
               }
             }
-            if (oppositeMCtrueElectronCheck){
+            if (oppositeMCtrueElectronCheck) {
               if (doMCtrueElectronCheck && !isNotTrueElectron)
                 return;
             } else {
@@ -2931,8 +2932,8 @@ struct UpcTauCentralBarrelRL {
   } // end fillMCPIDhistograms
 
   template <typename C>
-  void fillFIThistograms(C const& reconstructedCollision){
-
+  void fillFIThistograms(C const& reconstructedCollision)
+  {
 
     histos.get<TH1>(HIST("Events/FIT/hAmplitudeFT0A"))->Fill(reconstructedCollision.totalFT0AmplitudeA());
     histos.get<TH1>(HIST("Events/FIT/hAmplitudeFT0C"))->Fill(reconstructedCollision.totalFT0AmplitudeC());
@@ -2946,11 +2947,11 @@ struct UpcTauCentralBarrelRL {
     histos.get<TH1>(HIST("Events/FIT/hTimeFDDC"))->Fill(reconstructedCollision.timeFDDC());
     histos.get<TH1>(HIST("Events/FIT/hTimeFV0A"))->Fill(reconstructedCollision.timeFV0A());
 
-    histos.get<TH2>(HIST("Events/FIT/hTimeFT0AvsFT0C"))->Fill(reconstructedCollision.timeFT0A(),reconstructedCollision.timeFT0C());
-    histos.get<TH2>(HIST("Events/FIT/hTimeFT0CvsFDDA"))->Fill(reconstructedCollision.timeFT0C(),reconstructedCollision.timeFDDA());
-    histos.get<TH2>(HIST("Events/FIT/hTimeFDDAvsFDDC"))->Fill(reconstructedCollision.timeFDDA(),reconstructedCollision.timeFDDC());
-    histos.get<TH2>(HIST("Events/FIT/hTimeFDDCvsFV0A"))->Fill(reconstructedCollision.timeFDDC(),reconstructedCollision.timeFV0A());
-    histos.get<TH2>(HIST("Events/FIT/hTimeFV0AvsFT0A"))->Fill(reconstructedCollision.timeFV0A(),reconstructedCollision.timeFT0A());
+    histos.get<TH2>(HIST("Events/FIT/hTimeFT0AvsFT0C"))->Fill(reconstructedCollision.timeFT0A(), reconstructedCollision.timeFT0C());
+    histos.get<TH2>(HIST("Events/FIT/hTimeFT0CvsFDDA"))->Fill(reconstructedCollision.timeFT0C(), reconstructedCollision.timeFDDA());
+    histos.get<TH2>(HIST("Events/FIT/hTimeFDDAvsFDDC"))->Fill(reconstructedCollision.timeFDDA(), reconstructedCollision.timeFDDC());
+    histos.get<TH2>(HIST("Events/FIT/hTimeFDDCvsFV0A"))->Fill(reconstructedCollision.timeFDDC(), reconstructedCollision.timeFV0A());
+    histos.get<TH2>(HIST("Events/FIT/hTimeFV0AvsFT0A"))->Fill(reconstructedCollision.timeFV0A(), reconstructedCollision.timeFT0A());
   }
 
   void processMCDGrecoLevel(FullMCUDCollision const& reconstructedCollision,
@@ -2960,14 +2961,14 @@ struct UpcTauCentralBarrelRL {
     countCollisions++;
     isMC = true;
 
-    if (!isGoodFITtime(reconstructedCollision,cutMyFITtime))
+    if (!isGoodFITtime(reconstructedCollision, cutMyFITtime))
       return;
 
     if (applyAcceptanceSelection) {
       for (auto& track : reconstructedBarrelTracks) {
         if (!track.isPVContributor())
           continue;
-//        printLargeMessage(Form("RECO: eta %.3f cut %.2f",std::abs(eta(track.px(), track.py(), track.py())),static_cast<double>(cutMyAccTrackEta)));
+        //        printLargeMessage(Form("RECO: eta %.3f cut %.2f",std::abs(eta(track.px(), track.py(), track.py())),static_cast<double>(cutMyAccTrackEta)));
         if (std::abs(eta(track.px(), track.py(), track.py())) > cutMyAccTrackEta)
           return;
       }
@@ -2980,7 +2981,7 @@ struct UpcTauCentralBarrelRL {
 
     if (doPIDhistos)
       fillPIDhistograms(reconstructedCollision, reconstructedBarrelTracks);
-//      fillMCPIDhistograms(reconstructedBarrelTracks);
+    //      fillMCPIDhistograms(reconstructedBarrelTracks);
 
   } // end processDGrecoLevel
 
@@ -2994,7 +2995,7 @@ struct UpcTauCentralBarrelRL {
       for (auto& particle : particles) {
         if (particle.has_mothers())
           continue;
-//        printLargeMessage(Form("GENE: eta %.3f cut %.2f",std::abs(eta(particle.px(), particle.py(), particle.py())),static_cast<double>(cutMyAccTrackEta)));
+        //        printLargeMessage(Form("GENE: eta %.3f cut %.2f",std::abs(eta(particle.px(), particle.py(), particle.py())),static_cast<double>(cutMyAccTrackEta)));
         if (std::abs(eta(particle.px(), particle.py(), particle.py())) > cutMyAccTrackEta)
           return;
       }
@@ -3003,26 +3004,27 @@ struct UpcTauCentralBarrelRL {
     if (doTruth) {
       histos.get<TH1>(HIST("Events/Truth/hCountCollisions"))->Fill(1);
       histos.get<TH1>(HIST("Events/Truth/hNparticles"))->Fill(particles.size());
-      histos.get<TH2>(HIST("Events/Truth/hNphysPartVsNwoutMotherParts"))->Fill(countPhysicalPrimary(particles),countParticlesWithoutMother(particles));
+      histos.get<TH2>(HIST("Events/Truth/hNphysPartVsNwoutMotherParts"))->Fill(countPhysicalPrimary(particles), countParticlesWithoutMother(particles));
 
       int countElectrons = 0;
       int countMuons = 0;
       int countPions = 0;
 
-      for (auto& particle : particles){
+      for (auto& particle : particles) {
         histos.get<TH1>(HIST("Events/Truth/hPDGcodesAll"))->Fill(particle.pdgCode());
-//        if (!particle.isPhysicalPrimary()) continue;
-        if (particle.has_mothers()) continue;
+        //        if (!particle.isPhysicalPrimary()) continue;
+        if (particle.has_mothers())
+          continue;
         histos.get<TH1>(HIST("Events/Truth/hPDGcodesNoMother"))->Fill(particle.pdgCode());
         auto daughters = particle.daughters_as<aod::UDMcParticles>();
         histos.get<TH1>(HIST("Events/Truth/hNtauDaughters"))->Fill(daughters.size());
-        for (auto& daughter : daughters){
+        for (auto& daughter : daughters) {
           histos.get<TH1>(HIST("Events/Truth/hPDGcodesTauDaughters"))->Fill(daughter.pdgCode());
-          if (enumMyParticle(daughter.pdgCode())==P_ELECTRON)
+          if (enumMyParticle(daughter.pdgCode()) == P_ELECTRON)
             countElectrons++;
-          if (enumMyParticle(daughter.pdgCode())==P_MUON)
+          if (enumMyParticle(daughter.pdgCode()) == P_MUON)
             countMuons++;
-          if (enumMyParticle(daughter.pdgCode())==P_PION)
+          if (enumMyParticle(daughter.pdgCode()) == P_PION)
             countPions++;
         }
       }
@@ -3053,10 +3055,7 @@ struct UpcTauCentralBarrelRL {
         histos.get<TH1>(HIST("Events/Truth/hChannels"))->Fill(CH_MUTHREEPI);
       if (countPions == 6)
         histos.get<TH1>(HIST("Events/Truth/hChannels"))->Fill(CH_SIXPI);
-
-
     }
-
 
   } // end processDGrecoLevel
 
@@ -3065,7 +3064,7 @@ struct UpcTauCentralBarrelRL {
   {
     countCollisions++;
 
-    if (!isGoodFITtime(reconstructedCollision,cutMyFITtime))
+    if (!isGoodFITtime(reconstructedCollision, cutMyFITtime))
       return;
 
     if (doMainHistos) {
@@ -3092,7 +3091,7 @@ struct UpcTauCentralBarrelRL {
     if (gapSide != whichGapSide)
       return;
 
-    if (!isGoodFITtime(reconstructedCollision,cutMyFITtime))
+    if (!isGoodFITtime(reconstructedCollision, cutMyFITtime))
       return;
 
     if (doMainHistos) {
