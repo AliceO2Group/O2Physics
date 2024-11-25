@@ -45,6 +45,7 @@
 #include "Common/TableProducer/PID/pidTOFBase.h"
 #include "Common/Core/PID/TPCPIDResponse.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseITS.h"
 #include "DCAFitter/DCAFitterN.h"
 
 #include "PWGLF/DataModel/LFClusterStudiesTable.h"
@@ -234,6 +235,12 @@ struct LfTreeCreatorClusterStudies {
      {"nSigmaTOFDe", "nSigma TOF Deuteron; signed #it{p} (GeV/#it{c}); n#sigma_{TOF} d", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, -3.0f, 3.0f}}}},
      {"TOFmassDe", "TOF mass De; signed #it{p}_{T} (GeV/#it{c}); mass_{TOF} ^{3}He (GeV/#it{c}^2)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, 1.0f, 5.0f}}}},
      {"TOFmassHe", "TOF mass He3; signed #it{p}_{T} (GeV/#it{c}); mass_{TOF} ^{3}He (GeV/#it{c}^2)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, 1.0f, 5.0f}}}},
+     {"nSigmaITSEl", "nSigma ITS Electron; signed #it{p} (GeV/#it{c}); n#sigma_{ITS} e", {HistType::kTH2F, {{50, -5.0f, 5.0f}, {60, -2.0f, 2.0f}}}},
+     {"nSigmaITSPi", "nSigma ITS Pion; signed #it{p} (GeV/#it{c}); n#sigma_{ITS} #pi", {HistType::kTH2F, {{50, -5.0f, 5.0f}, {60, -3.0f, 3.0f}}}},
+     {"nSigmaITSKa", "nSigma ITS Kaon; signed #it{p} (GeV/#it{c}); n#sigma_{ITS} e", {HistType::kTH2F, {{50, -5.0f, 5.0f}, {60, -4.0f, 4.0f}}}},
+     {"nSigmaITSPr", "nSigma ITS Proton; signed #it{p} (GeV/#it{c}); n#sigma_{ITS} p", {HistType::kTH2F, {{50, -5.0f, 5.0f}, {60, -3.0f, 3.0f}}}},
+     {"nSigmaITSDe", "nSigma ITS Deuteron; signed #it{p} (GeV/#it{c}); n#sigma_{ITS} d", {HistType::kTH2F, {{50, -5.0f, 5.0f}, {100, -3.0f, 3.0f}}}},
+     {"nSigmaITSHe", "nSigma ITS He3; signed #it{p} (GeV/#it{c}); n#sigma_{ITS} ^{3}He", {HistType::kTH2F, {{50, -5.0f, 5.0f}, {100, -3.0f, 3.0f}}}},
      {"pmatchingEl", "#it{p} matching e; signed #it{p}_{TPC} (GeV/#it{c}); #frac{#it{p}_{TPC} - #it{p}}{#it{p}_{TPC}}", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, -0.5f, 0.5f}}}},
      {"pmatchingPi", "#it{p} matching #pi; signed #it{p}_{TPC} (GeV/#it{c}); #frac{#it{p}_{TPC} - #it{p}}{#it{p}_{TPC}}", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, -0.5f, 0.5f}}}},
      {"pmatchingKa", "#it{p} matching K; signed #it{p}_{TPC} (GeV/#it{c}); #frac{#it{p}_{TPC} - #it{p}}{#it{p}_{TPC}}", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {100, -0.5f, 0.5f}}}},
@@ -260,6 +267,7 @@ struct LfTreeCreatorClusterStudies {
   o2::vertexing::DCAFitterN<2> m_fitter;
   o2::pid::tof::Beta<TracksFullIU::iterator> m_responseBeta;
   o2::pid::tof::Beta<TracksFullIUMc::iterator> m_responseBetaMc;
+  o2::aod::ITSResponse m_responseITS;
 
   template <typename T>
   bool initializeFitter(const T& trackParCovA, const T& trackParCovB)
@@ -705,7 +713,9 @@ struct LfTreeCreatorClusterStudies {
       m_hAnalysis.fill(HIST("massLambda"), std::hypot(momMother[0], momMother[1], momMother[2]), massLambdaV0);
       m_hAnalysis.fill(HIST("armenteros_plot_lambda"), alphaAP, qtAP);
       m_hAnalysis.fill(HIST("nSigmaTPCPr"), std::hypot(momPos[0], momPos[1], momPos[2]), posTrack.tpcNSigmaPr());
+      m_hAnalysis.fill(HIST("nSigmaITSPr"), std::hypot(momPos[0], momPos[1], momPos[2]), m_responseITS.nSigmaITS<o2::track::PID::Proton>(posTrack.itsClusterSizes(), posTrack.p(), posTrack.eta()));
       m_hAnalysis.fill(HIST("nSigmaTPCPi"), std::hypot(momNeg[0], momNeg[1], momNeg[2]) * -1.f, negTrack.tpcNSigmaPi());
+      m_hAnalysis.fill(HIST("nSigmaITSPi"), std::hypot(momNeg[0], momNeg[1], momNeg[2]) * -1.f, m_responseITS.nSigmaITS<o2::track::PID::Pion>(negTrack.itsClusterSizes(), negTrack.p(), negTrack.eta()));
       m_hAnalysis.fill(HIST("pmatchingPr"), posTrack.tpcInnerParam(), (posTrack.tpcInnerParam() - posTrack.p()) / posTrack.tpcInnerParam());
       m_hAnalysis.fill(HIST("pmatchingPi"), -negTrack.tpcInnerParam(), (negTrack.tpcInnerParam() - negTrack.p()) / negTrack.tpcInnerParam());
 
@@ -715,7 +725,9 @@ struct LfTreeCreatorClusterStudies {
       // "signed" pt for antimatter
       m_hAnalysis.fill(HIST("armenteros_plot_lambda"), alphaAP, qtAP);
       m_hAnalysis.fill(HIST("nSigmaTPCPi"), std::hypot(momPos[0], momPos[1], momPos[2]), posTrack.tpcNSigmaPi());
-      m_hAnalysis.fill(HIST("nSigmaTPCPi"), std::hypot(momNeg[0], momNeg[1], momNeg[2]) * -1.f, negTrack.tpcNSigmaPr());
+      m_hAnalysis.fill(HIST("nSigmaITSPi"), std::hypot(momPos[0], momPos[1], momPos[2]), m_responseITS.nSigmaITS<o2::track::PID::Pion>(posTrack.itsClusterSizes(), posTrack.p(), posTrack.eta()));
+      m_hAnalysis.fill(HIST("nSigmaTPCPr"), std::hypot(momNeg[0], momNeg[1], momNeg[2]) * -1.f, negTrack.tpcNSigmaPr());
+      m_hAnalysis.fill(HIST("nSigmaITSPr"), std::hypot(momNeg[0], momNeg[1], momNeg[2]) * -1.f, m_responseITS.nSigmaITS<o2::track::PID::Proton>(negTrack.itsClusterSizes(), negTrack.p(), negTrack.eta()));
       m_hAnalysis.fill(HIST("pmatchingPi"), posTrack.tpcInnerParam(), (posTrack.tpcInnerParam() - posTrack.p()) / posTrack.tpcInnerParam());
       m_hAnalysis.fill(HIST("pmatchingPr"), -negTrack.tpcInnerParam(), (negTrack.tpcInnerParam() - negTrack.p()) / negTrack.tpcInnerParam());
 
@@ -723,6 +735,8 @@ struct LfTreeCreatorClusterStudies {
       massV0 = 0.f;
       m_hAnalysis.fill(HIST("nSigmaTPCEl"), std::hypot(momPos[0], momPos[1], momPos[2]), posTrack.tpcNSigmaEl());
       m_hAnalysis.fill(HIST("nSigmaTPCEl"), std::hypot(momNeg[0], momNeg[1], momNeg[2]) * -1.f, negTrack.tpcNSigmaEl());
+      m_hAnalysis.fill(HIST("nSigmaITSEl"), std::hypot(momPos[0], momPos[1], momPos[2]), m_responseITS.nSigmaITS<o2::track::PID::Electron>(posTrack.itsClusterSizes(), posTrack.p(), posTrack.eta()));
+      m_hAnalysis.fill(HIST("nSigmaITSEl"), std::hypot(momNeg[0], momNeg[1], momNeg[2]) * -1.f, m_responseITS.nSigmaITS<o2::track::PID::Electron>(negTrack.itsClusterSizes(), negTrack.p(), negTrack.eta()));
       m_hAnalysis.fill(HIST("armenteros_plot_gamma"), alphaAP, qtAP);
       m_hAnalysis.fill(HIST("pmatchingEl"), posTrack.tpcInnerParam(), (posTrack.tpcInnerParam() - posTrack.p()) / posTrack.tpcInnerParam());
       m_hAnalysis.fill(HIST("pmatchingEl"), -negTrack.tpcInnerParam(), (negTrack.tpcInnerParam() - negTrack.p()) / negTrack.tpcInnerParam());
@@ -972,6 +986,7 @@ struct LfTreeCreatorClusterStudies {
     }
     m_hAnalysis.fill(HIST("de_selections"), DeSelections::kDePIDtof);
     m_hAnalysis.fill(HIST("nSigmaTPCDe"), track.p() * track.sign(), computeNSigmaDe(track));
+    m_hAnalysis.fill(HIST("nSigmaITSDe"), track.p() * track.sign(), m_responseITS.nSigmaITS<o2::track::PID::Deuteron>(track.itsClusterSizes(), track.p(), track.eta()));
     m_hAnalysis.fill(HIST("nSigmaTOFDe"), track.p() * track.sign(), track.tofNSigmaDe());
     m_hAnalysis.fill(HIST("TOFmassDe"), track.p() * track.sign(), computeTOFmassDe<isMC>(track));
     m_hAnalysis.fill(HIST("pmatchingDe"), track.sign() * track.tpcInnerParam(), (track.tpcInnerParam() - track.p()) / track.tpcInnerParam());
@@ -1060,6 +1075,7 @@ struct LfTreeCreatorClusterStudies {
 
     m_hAnalysis.fill(HIST("he3_selections"), He3Selections::kHe3PIDtof);
     m_hAnalysis.fill(HIST("nSigmaTPCHe"), track.p() * track.sign(), computeNSigmaHe3(track));
+    m_hAnalysis.fill(HIST("nSigmaITSHe"), track.p() * track.sign(), m_responseITS.nSigmaITS<o2::track::PID::Helium3>(track.itsClusterSizes(), track.p(), track.eta()));
     m_hAnalysis.fill(HIST("TOFmassHe"), track.p() * track.sign(), tofMass);
     m_hAnalysis.fill(HIST("pmatchingHe"), track.sign() * correctedTPCinnerParam, (correctedTPCinnerParam - track.p()) / correctedTPCinnerParam);
 
