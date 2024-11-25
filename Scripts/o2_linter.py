@@ -1434,9 +1434,10 @@ def main():
 
     # Report results per test.
     print("\nResults per test")
-    print("test\tissues\tbad files")
+    len_max = max(len(name) for name in test_names)
+    print(f"test{' ' * (len_max - len('test'))}\tissues\tbad files")
     for test in tests:
-        print(f"{test.name}\t{test.n_issues}\t{n_files_bad[test.name]}")
+        print(f"{test.name}{' ' * (len_max - len(test.name))}\t{test.n_issues}\t{n_files_bad[test.name]}")
 
     # Report global result.
     title_result = "O2 linter result"
