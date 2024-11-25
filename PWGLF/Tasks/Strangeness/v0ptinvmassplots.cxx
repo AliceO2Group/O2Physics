@@ -19,6 +19,10 @@ for different pt ranges (constituting bins), so 3x20=60 plots.The values are ins
 Plots of the invariant masses at different stages of the analysis (ex. before and after the V0 cuts are enforced) and some pt distributions.
 This analysis includes two processes, one for Real Data and one for MC Data switchable at the end of the code, only run one at a time*/
 
+#include <memory>
+#include <vector>
+#include <string>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Common/DataModel/EventSelection.h"
@@ -193,7 +197,7 @@ struct v0ptinvmassplots {
   void RecMCprocess(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>::iterator const&,
                     soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s,
                     DaughterTracks const&, // no need to define a variable for tracks, if we don't access them directly
-                    aod::McParticles const& mcParticles)
+                    aod::McParticles const& /*mcParticles*/)
   {
     for (const auto& v0 : V0s) {
       rPtAnalysis.fill(HIST("hV0PtAll"), v0.pt());
