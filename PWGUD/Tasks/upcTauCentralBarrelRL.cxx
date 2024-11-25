@@ -360,12 +360,12 @@ struct UpcTauCentralBarrelRL {
       histos.add("EventTwoTracks/PID/hTPCnSigmaPiVsP", ";Track #it{p} (GeV/c);n#sigma^{#pi}_{TPC} (arb. units)", HistType::kTH2D, {axisMom, axisNsigma});
       histos.add("EventTwoTracks/PID/hTPCnSigmaKaVsP", ";Track #it{p} (GeV/c);n#sigma^{K}_{TPC} (arb. units)", HistType::kTH2D, {axisMom, axisNsigma});
       histos.add("EventTwoTracks/PID/hTPCnSigmaPrVsP", ";Track #it{p} (GeV/c);n#sigma^{p}_{TPC} (arb. units)", HistType::kTH2D, {axisMom, axisNsigma});
-      histos.add("EventTwoTracks/PID/noPIDapplied/hTPCsignalVsP", ";Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", HistType::kTH2D, {axisMom, axisTPCdEdx});
-      histos.add("EventTwoTracks/PID/noPIDapplied/hTPCnSigmaElVsP", ";Track #it{p} (GeV/c);n#sigma^{e}_{TPC} (arb. units)", HistType::kTH2D, {axisMom, axisNsigma});
-      histos.add("EventTwoTracks/PID/noPIDapplied/hTPCnSigmaMuVsP", ";Track #it{p} (GeV/c);n#sigma^{#mu}_{TPC} (arb. units)", HistType::kTH2D, {axisMom, axisNsigma});
-      histos.add("EventTwoTracks/PID/noPIDapplied/hTPCnSigmaPiVsP", ";Track #it{p} (GeV/c);n#sigma^{#pi}_{TPC} (arb. units)", HistType::kTH2D, {axisMom, axisNsigma});
-      histos.add("EventTwoTracks/PID/noPIDapplied/hTPCnSigmaKaVsP", ";Track #it{p} (GeV/c);n#sigma^{K}_{TPC} (arb. units)", HistType::kTH2D, {axisMom, axisNsigma});
-      histos.add("EventTwoTracks/PID/noPIDapplied/hTPCnSigmaPrVsP", ";Track #it{p} (GeV/c);n#sigma^{p}_{TPC} (arb. units)", HistType::kTH2D, {axisMom, axisNsigma});
+      histos.add("EventTwoTracks/PID/NoPID/hTPCsignalVsP", ";Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", HistType::kTH2D, {axisMom, axisTPCdEdx});
+      histos.add("EventTwoTracks/PID/NoPID/hTPCnSigmaElVsP", ";Track #it{p} (GeV/c);n#sigma^{e}_{TPC} (arb. units)", HistType::kTH2D, {axisMom, axisNsigma});
+      histos.add("EventTwoTracks/PID/NoPID/hTPCnSigmaMuVsP", ";Track #it{p} (GeV/c);n#sigma^{#mu}_{TPC} (arb. units)", HistType::kTH2D, {axisMom, axisNsigma});
+      histos.add("EventTwoTracks/PID/NoPID/hTPCnSigmaPiVsP", ";Track #it{p} (GeV/c);n#sigma^{#pi}_{TPC} (arb. units)", HistType::kTH2D, {axisMom, axisNsigma});
+      histos.add("EventTwoTracks/PID/NoPID/hTPCnSigmaKaVsP", ";Track #it{p} (GeV/c);n#sigma^{K}_{TPC} (arb. units)", HistType::kTH2D, {axisMom, axisNsigma});
+      histos.add("EventTwoTracks/PID/NoPID/hTPCnSigmaPrVsP", ";Track #it{p} (GeV/c);n#sigma^{p}_{TPC} (arb. units)", HistType::kTH2D, {axisMom, axisNsigma});
 
       histos.add("EventTwoTracks/TwoElectrons/hInvariantMass", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMass});
       histos.add("EventTwoTracks/TwoElectrons/hInvariantMassWide", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {axisInvMassWide});
@@ -2358,20 +2358,20 @@ struct UpcTauCentralBarrelRL {
       }
 
       if (trkDaug1.hasTPC()) {
-        histos.get<TH2>(HIST("EventTwoTracks/PID/NoPIDapplied/hTPCsignalVsP"))->Fill(daug[0].P(), trkDaug1.tpcSignal());
-        histos.get<TH2>(HIST("EventTwoTracks/PID/NoPIDapplied/hTPCnSigmaElVsP"))->Fill(daug[0].P(), trkDaug1.tpcNSigmaEl());
-        histos.get<TH2>(HIST("EventTwoTracks/PID/NoPIDapplied/hTPCnSigmaMuVsP"))->Fill(daug[0].P(), trkDaug1.tpcNSigmaMu());
-        histos.get<TH2>(HIST("EventTwoTracks/PID/NoPIDapplied/hTPCnSigmaPiVsP"))->Fill(daug[0].P(), trkDaug1.tpcNSigmaPi());
-        histos.get<TH2>(HIST("EventTwoTracks/PID/NoPIDapplied/hTPCnSigmaKaVsP"))->Fill(daug[0].P(), trkDaug1.tpcNSigmaKa());
-        histos.get<TH2>(HIST("EventTwoTracks/PID/NoPIDapplied/hTPCnSigmaPrVsP"))->Fill(daug[0].P(), trkDaug1.tpcNSigmaPr());
+        histos.get<TH2>(HIST("EventTwoTracks/PID/NoPID/hTPCsignalVsP"))->Fill(daug[0].P(), trkDaug1.tpcSignal());
+        histos.get<TH2>(HIST("EventTwoTracks/PID/NoPID/hTPCnSigmaElVsP"))->Fill(daug[0].P(), trkDaug1.tpcNSigmaEl());
+        histos.get<TH2>(HIST("EventTwoTracks/PID/NoPID/hTPCnSigmaMuVsP"))->Fill(daug[0].P(), trkDaug1.tpcNSigmaMu());
+        histos.get<TH2>(HIST("EventTwoTracks/PID/NoPID/hTPCnSigmaPiVsP"))->Fill(daug[0].P(), trkDaug1.tpcNSigmaPi());
+        histos.get<TH2>(HIST("EventTwoTracks/PID/NoPID/hTPCnSigmaKaVsP"))->Fill(daug[0].P(), trkDaug1.tpcNSigmaKa());
+        histos.get<TH2>(HIST("EventTwoTracks/PID/NoPID/hTPCnSigmaPrVsP"))->Fill(daug[0].P(), trkDaug1.tpcNSigmaPr());
       }
       if (trkDaug2.hasTPC()) {
-        histos.get<TH2>(HIST("EventTwoTracks/PID/NoPIDapplied/hTPCsignalVsP"))->Fill(daug[1].P(), trkDaug2.tpcSignal());
-        histos.get<TH2>(HIST("EventTwoTracks/PID/NoPIDapplied/hTPCnSigmaElVsP"))->Fill(daug[1].P(), trkDaug2.tpcNSigmaEl());
-        histos.get<TH2>(HIST("EventTwoTracks/PID/NoPIDapplied/hTPCnSigmaMuVsP"))->Fill(daug[1].P(), trkDaug2.tpcNSigmaMu());
-        histos.get<TH2>(HIST("EventTwoTracks/PID/NoPIDapplied/hTPCnSigmaPiVsP"))->Fill(daug[1].P(), trkDaug2.tpcNSigmaPi());
-        histos.get<TH2>(HIST("EventTwoTracks/PID/NoPIDapplied/hTPCnSigmaKaVsP"))->Fill(daug[1].P(), trkDaug2.tpcNSigmaKa());
-        histos.get<TH2>(HIST("EventTwoTracks/PID/NoPIDapplied/hTPCnSigmaPrVsP"))->Fill(daug[1].P(), trkDaug2.tpcNSigmaPr());
+        histos.get<TH2>(HIST("EventTwoTracks/PID/NoPID/hTPCsignalVsP"))->Fill(daug[1].P(), trkDaug2.tpcSignal());
+        histos.get<TH2>(HIST("EventTwoTracks/PID/NoPID/hTPCnSigmaElVsP"))->Fill(daug[1].P(), trkDaug2.tpcNSigmaEl());
+        histos.get<TH2>(HIST("EventTwoTracks/PID/NoPID/hTPCnSigmaMuVsP"))->Fill(daug[1].P(), trkDaug2.tpcNSigmaMu());
+        histos.get<TH2>(HIST("EventTwoTracks/PID/NoPID/hTPCnSigmaPiVsP"))->Fill(daug[1].P(), trkDaug2.tpcNSigmaPi());
+        histos.get<TH2>(HIST("EventTwoTracks/PID/NoPID/hTPCnSigmaKaVsP"))->Fill(daug[1].P(), trkDaug2.tpcNSigmaKa());
+        histos.get<TH2>(HIST("EventTwoTracks/PID/NoPID/hTPCnSigmaPrVsP"))->Fill(daug[1].P(), trkDaug2.tpcNSigmaPr());
       }
     }
 
