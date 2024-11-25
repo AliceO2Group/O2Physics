@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 ///
-/// \file   megaConverter.cxx
+/// \file   converter.cxx
 /// \since  2024-11-12
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
 /// \brief  Combined converter task
