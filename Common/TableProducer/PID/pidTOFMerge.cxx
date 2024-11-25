@@ -178,6 +178,9 @@ struct TOFCalibConfig {
         mRespParamsV3.setMomentumChargeShiftParameters(paramCollection->getPars(mReconstructionPass));
         mRespParamsV3.printMomentumChargeShiftParameters();
       }
+    } else {
+      std::unordered_map<std::string, float> m;
+      mRespParamsV3.setResolutionParametrization(m);
     }
 
     // Loading additional calibration objects
@@ -211,7 +214,6 @@ struct TOFCalibConfig {
     // Calibration object is defined
     LOG(info) << "Parametrization at init time:";
     mRespParamsV3.print();
-    // mRespParamsV3.Save("/tmp/calib.root");
   }
 
   template <typename CCDBObject, typename BcType>
