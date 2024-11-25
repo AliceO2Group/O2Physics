@@ -114,7 +114,7 @@ struct HfFemtoDreamProducer {
   using FemtoFullCollisionMc = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::McCollisionLabels>::iterator;
   using FemtoFullMcgenCollisions = soa::Join<aod::McCollisions, o2::aod::MultsExtraMC>;
   using FemtoFullMcgenCollision = FemtoFullMcgenCollisions::iterator;
-  using FemtoHFTracks = soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
+  using FemtoHFTracks = soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe>;
   using FemtoHFTrack = FemtoHFTracks::iterator;
   using FemtoHFMcTracks = soa::Join<aod::McTrackLabels, FemtoHFTracks>;
   using FemtoHFMcTrack = FemtoHFMcTracks::iterator;
