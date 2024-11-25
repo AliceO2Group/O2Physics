@@ -297,22 +297,36 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "R2EP_TPCFT0A_CentV0M", "", false, 18, 0.0, 90.0, VarManager::kCentVZERO, 500, -10.0, 10.0, VarManager::kR2EP_AB);
       hm->AddHistogram(histClass, "R2EP_TPCFT0C_CentV0M", "", false, 18, 0.0, 90.0, VarManager::kCentVZERO, 500, -10.0, 10.0, VarManager::kR2EP_AC);
       hm->AddHistogram(histClass, "R2EP_FT0CFT0A_CentV0M", "", false, 18, 0.0, 90.0, VarManager::kCentVZERO, 500, -10.0, 10.0, VarManager::kR2EP_BC);
-      hm->AddHistogram(histClass, "R2SP_TPCFT0A_CentFT0C", "", false, 18, 0.0, 90.0, VarManager::kCentFT0C, 500, -10.0, 10.0, VarManager::kR2SP_AB);
-      hm->AddHistogram(histClass, "R2SP_TPCFT0C_CentFT0C", "", false, 18, 0.0, 90.0, VarManager::kCentFT0C, 500, -10.0, 10.0, VarManager::kR2SP_AC);
-      hm->AddHistogram(histClass, "R2SP_FT0AFT0C_CentFT0C", "", false, 18, 0.0, 90.0, VarManager::kCentFT0C, 500, -10.0, 10.0, VarManager::kR2SP_BC);
+      hm->AddHistogram(histClass, "R2SP_TPCFT0A_CentFT0C", "", false, 90, 0.0, 90.0, VarManager::kCentFT0C, 500, -10.0, 10.0, VarManager::kR2SP_AB);
+      hm->AddHistogram(histClass, "R2SP_TPCFT0C_CentFT0C", "", false, 90, 0.0, 90.0, VarManager::kCentFT0C, 500, -10.0, 10.0, VarManager::kR2SP_AC);
+      hm->AddHistogram(histClass, "R2SP_FT0AFT0C_CentFT0C", "", false, 90, 0.0, 90.0, VarManager::kCentFT0C, 500, -10.0, 10.0, VarManager::kR2SP_BC);
       hm->AddHistogram(histClass, "R2SP_FT0CTPCPOS_CentFT0C", "", false, 18, 0.0, 90.0, VarManager::kCentFT0C, 500, -10.0, 10.0, VarManager::kR2SP_FT0CTPCPOS);
       hm->AddHistogram(histClass, "R2SP_FT0CTPCNEG_CentFT0C", "", false, 18, 0.0, 90.0, VarManager::kCentFT0C, 500, -10.0, 10.0, VarManager::kR2SP_FT0CTPCNEG);
       hm->AddHistogram(histClass, "R2SP_FT0ATPCPOS_CentFT0C", "", false, 18, 0.0, 90.0, VarManager::kCentFT0C, 500, -10.0, 10.0, VarManager::kR2SP_FT0ATPCPOS);
       hm->AddHistogram(histClass, "R2SP_FT0ATPCNEG_CentFT0C", "", false, 18, 0.0, 90.0, VarManager::kCentFT0C, 500, -10.0, 10.0, VarManager::kR2SP_FT0ATPCNEG);
       hm->AddHistogram(histClass, "R3SP_CentFT0C", "", true, 18, 0.0, 90.0, VarManager::kCentFT0C, 500, -10.0, 10.0, VarManager::kR3SP);
-      hm->AddHistogram(histClass, "R2EP_TPCFT0A_CentFT0C", "", false, 18, 0.0, 90.0, VarManager::kCentFT0C, 500, -10.0, 10.0, VarManager::kR2EP_AB);
-      hm->AddHistogram(histClass, "R2EP_TPCFT0C_CentFT0C", "", false, 18, 0.0, 90.0, VarManager::kCentFT0C, 500, -10.0, 10.0, VarManager::kR2EP_AC);
-      hm->AddHistogram(histClass, "R2EP_FT0CFT0A_CentFT0C", "", false, 18, 0.0, 90.0, VarManager::kCentFT0C, 500, -10.0, 10.0, VarManager::kR2EP_BC);
+      hm->AddHistogram(histClass, "R2EP_TPCFT0A_CentFT0C", "", false, 90, 0.0, 90.0, VarManager::kCentFT0C, 500, -10.0, 10.0, VarManager::kR2EP_AB);
+      hm->AddHistogram(histClass, "R2EP_TPCFT0C_CentFT0C", "", false, 90, 0.0, 90.0, VarManager::kCentFT0C, 500, -10.0, 10.0, VarManager::kR2EP_AC);
+      hm->AddHistogram(histClass, "R2EP_FT0CFT0A_CentFT0C", "", false, 90, 0.0, 90.0, VarManager::kCentFT0C, 500, -10.0, 10.0, VarManager::kR2EP_BC);
       hm->AddHistogram(histClass, "R2EP_FT0CTPCPOS_CentFT0C", "", false, 18, 0.0, 90.0, VarManager::kCentFT0C, 500, -10.0, 10.0, VarManager::kR2EP_FT0CTPCPOS);
       hm->AddHistogram(histClass, "R2EP_FT0CTPCNEG_CentFT0C", "", false, 18, 0.0, 90.0, VarManager::kCentFT0C, 500, -10.0, 10.0, VarManager::kR2EP_FT0CTPCNEG);
       hm->AddHistogram(histClass, "R2EP_FT0ATPCPOS_CentFT0C", "", false, 18, 0.0, 90.0, VarManager::kCentFT0C, 500, -10.0, 10.0, VarManager::kR2EP_FT0ATPCPOS);
       hm->AddHistogram(histClass, "R2EP_FT0ATPCNEG_CentFT0C", "", false, 18, 0.0, 90.0, VarManager::kCentFT0C, 500, -10.0, 10.0, VarManager::kR2EP_FT0ATPCNEG);
       hm->AddHistogram(histClass, "R3EP_CentFT0C", "", true, 18, 0.0, 90.0, VarManager::kCentFT0C, 500, -10.0, 10.0, VarManager::kR3EP);
+    }
+    if (subGroupStr.Contains("reso-profile")) {
+      hm->AddHistogram(histClass, "Profile_R2SP_TPCFT0A_CentFT0C", "Profile_R2SP_TPCFT0A_CentFT0C", true, 90, 0.0, 90.0, VarManager::kCentFT0C, 500, 0.0, 5.0, VarManager::kR2SP_AB, 0, 0, 0, -1, "", "", "", -1, VarManager::kWR2SP_AB);
+      hm->AddHistogram(histClass, "Profile_R2SP_TPCFT0C_CentFT0C", "Profile_R2SP_TPCFT0C_CentFT0C", true, 90, 0.0, 90.0, VarManager::kCentFT0C, 500, 0.0, 5.0, VarManager::kR2SP_AC, 0, 0, 0, -1, "", "", "", -1, VarManager::kWR2SP_AC);
+      hm->AddHistogram(histClass, "Profile_R2SP_FT0AFT0C_CentFT0C", "Profile_R2SP_FT0AFT0C_CentFT0C", true, 90, 0.0, 90.0, VarManager::kCentFT0C, 500, 0.0, 5.0, VarManager::kR2SP_BC, 0, 0, 0, -1, "", "", "", -1, VarManager::kWR2SP_BC);
+      hm->AddHistogram(histClass, "Profile_R2EP_TPCFT0A_CentFT0C", "Profile_R2EP_TPCFT0A_CentFT0C", true, 90, 0.0, 90.0, VarManager::kCentFT0C, 500, 0.0, 5.0, VarManager::kR2EP_AB, 0, 0, 0, -1, "", "", "", -1, VarManager::kWR2EP_AB);
+      hm->AddHistogram(histClass, "Profile_R2EP_TPCFT0C_CentFT0C", "Profile_R2EP_TPCFT0C_CentFT0C", true, 90, 0.0, 90.0, VarManager::kCentFT0C, 500, 0.0, 5.0, VarManager::kR2EP_AC, 0, 0, 0, -1, "", "", "", -1, VarManager::kWR2EP_AC);
+      hm->AddHistogram(histClass, "Profile_R2EP_FT0AFT0C_CentFT0C", "Profile_R2EP_FT0AFT0C_CentFT0C", true, 90, 0.0, 90.0, VarManager::kCentFT0C, 500, 0.0, 5.0, VarManager::kR2EP_BC, 0, 0, 0, -1, "", "", "", -1, VarManager::kWR2EP_BC);
+      hm->AddHistogram(histClass, "Profile_R2SP_Im_TPCFT0A_CentFT0C", "Profile_R2SP_Im_TPCFT0A_CentFT0C", true, 90, 0.0, 90.0, VarManager::kCentFT0C, 500, 0.0, 5.0, VarManager::kR2SP_AB_Im, 0, 0, 0, -1, "", "", "", -1, VarManager::kWR2SP_AB_Im);
+      hm->AddHistogram(histClass, "Profile_R2SP_Im_TPCFT0C_CentFT0C", "Profile_R2SP_Im_TPCFT0C_CentFT0C", true, 90, 0.0, 90.0, VarManager::kCentFT0C, 500, 0.0, 5.0, VarManager::kR2SP_AC_Im, 0, 0, 0, -1, "", "", "", -1, VarManager::kWR2SP_AC_Im);
+      hm->AddHistogram(histClass, "Profile_R2SP_Im_FT0AFT0C_CentFT0C", "Profile_R2SP_Im_FT0AFT0C_CentFT0C", true, 90, 0.0, 90.0, VarManager::kCentFT0C, 500, 0.0, 5.0, VarManager::kR2SP_BC_Im, 0, 0, 0, -1, "", "", "", -1, VarManager::kWR2SP_BC_Im);
+      hm->AddHistogram(histClass, "Profile_R2EP_Im_TPCFT0A_CentFT0C", "Profile_R2EP_Im_TPCFT0A_CentFT0C", true, 90, 0.0, 90.0, VarManager::kCentFT0C, 500, 0.0, 5.0, VarManager::kR2EP_AB_Im, 0, 0, 0, -1, "", "", "", -1, VarManager::kWR2EP_AB_Im);
+      hm->AddHistogram(histClass, "Profile_R2EP_Im_TPCFT0C_CentFT0C", "Profile_R2EP_Im_TPCFT0C_CentFT0C", true, 90, 0.0, 90.0, VarManager::kCentFT0C, 500, 0.0, 5.0, VarManager::kR2EP_AC_Im, 0, 0, 0, -1, "", "", "", -1, VarManager::kWR2EP_AC_Im);
+      hm->AddHistogram(histClass, "Profile_R2EP_Im_FT0AFT0C_CentFT0C", "Profile_R2EP_Im_FT0AFT0C_CentFT0C", true, 90, 0.0, 90.0, VarManager::kCentFT0C, 500, 0.0, 5.0, VarManager::kR2EP_BC_Im, 0, 0, 0, -1, "", "", "", -1, VarManager::kWR2EP_BC_Im);
     }
     if (subGroupStr.Contains("filter")) {
       hm->AddHistogram(histClass, "IsDoubleGap", "Is double gap", false, 2, -0.5, 1.5, VarManager::kIsDoubleGap);
@@ -990,25 +1004,8 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "U2Q2_CentFT0C_ev2", "mass vs. centrality vs. U2Q2_event2", false, 125, 0.0, 5.0, VarManager::kMass, 9, 0.0, 90.0, VarManager::kCentFT0C, 100, -10.0, 10.0, VarManager::kU2Q2Ev2);
       }
       if (subGroupStr.Contains("metest")) {
-        int var1[5] = {VarManager::kMass, VarManager::kPt, VarManager::kCentFT0C, VarManager::kU2Q2Ev1, VarManager::kCos2DeltaPhiMu1};
-        int var2[5] = {VarManager::kMass, VarManager::kPt, VarManager::kCentFT0C, VarManager::kU2Q2Ev2, VarManager::kCos2DeltaPhiMu2};
-        int bins[5] = {250, 60, 18, 100, 100};
-        double minBins[5] = {0.0, 0.0, 0.0, -10., -1.0};
-        double maxBins[5] = {5.0, 30.0, 90.0, 10., 1.0};
-        hm->AddHistogram(histClass, "Mass_Pt_CentFT0C_U2Q2ev1_cos2DeltaPhiMu1", "", 5, var1, bins, minBins, maxBins, 0, -1, kTRUE);
-        hm->AddHistogram(histClass, "Mass_Pt_CentFT0C_U2Q2ev2_cos2DeltaPhiMu2", "", 5, var2, bins, minBins, maxBins, 0, -1, kTRUE);
-        hm->AddHistogram(histClass, "R2SPAB1_CentFT0C", "mass vs centrality vs. R2SPAB_event1", false, 250, 0.0, 5.0, VarManager::kMass, 18, 0.0, 90.0, VarManager::kCentFT0C, 100, -10.0, 10.0, VarManager::kTwoR2SP_AB1);
-        hm->AddHistogram(histClass, "R2SPAB2_CentFT0C", "mass vs centrality vs. R2SPAB_event2", false, 250, 0.0, 5.0, VarManager::kMass, 18, 0.0, 90.0, VarManager::kCentFT0C, 100, -10.0, 10.0, VarManager::kTwoR2SP_AB2);
-        hm->AddHistogram(histClass, "R2SPAC1_CentFT0C", "mass vs centrality vs. R2SPAC_event1", false, 250, 0.0, 5.0, VarManager::kMass, 18, 0.0, 90.0, VarManager::kCentFT0C, 100, -10.0, 10.0, VarManager::kTwoR2SP_AC1);
-        hm->AddHistogram(histClass, "R2SPAC2_CentFT0C", "mass vs centrality vs. R2SPAC_event2", false, 250, 0.0, 5.0, VarManager::kMass, 18, 0.0, 90.0, VarManager::kCentFT0C, 100, -10.0, 10.0, VarManager::kTwoR2SP_AC2);
-        hm->AddHistogram(histClass, "R2SPBC1_CentFT0C", "mass vs centrality vs. R2SPBC_event1", false, 250, 0.0, 5.0, VarManager::kMass, 18, 0.0, 90.0, VarManager::kCentFT0C, 100, -10.0, 10.0, VarManager::kTwoR2SP_BC1);
-        hm->AddHistogram(histClass, "R2SPBC2_CentFT0C", "mass vs centrality vs. R2SPBC_event2", false, 250, 0.0, 5.0, VarManager::kMass, 18, 0.0, 90.0, VarManager::kCentFT0C, 100, -10.0, 10.0, VarManager::kTwoR2SP_BC2);
-        hm->AddHistogram(histClass, "R2EPAB1_CentFT0C", "mass vs centrality vs. R2EPAB_event1", false, 250, 0.0, 5.0, VarManager::kMass, 18, 0.0, 90.0, VarManager::kCentFT0C, 100, -10.0, 10.0, VarManager::kTwoR2EP_AB1);
-        hm->AddHistogram(histClass, "R2EPAB2_CentFT0C", "mass vs centrality vs. R2EPAB_event2", false, 250, 0.0, 5.0, VarManager::kMass, 18, 0.0, 90.0, VarManager::kCentFT0C, 100, -10.0, 10.0, VarManager::kTwoR2EP_AB2);
-        hm->AddHistogram(histClass, "R2EPAC1_CentFT0C", "mass vs centrality vs. R2EPAC_event1", false, 250, 0.0, 5.0, VarManager::kMass, 18, 0.0, 90.0, VarManager::kCentFT0C, 100, -10.0, 10.0, VarManager::kTwoR2EP_AC1);
-        hm->AddHistogram(histClass, "R2EPAC2_CentFT0C", "mass vs centrality vs. R2EPAC_event2", false, 250, 0.0, 5.0, VarManager::kMass, 18, 0.0, 90.0, VarManager::kCentFT0C, 100, -10.0, 10.0, VarManager::kTwoR2EP_AC2);
-        hm->AddHistogram(histClass, "R2EPBC1_CentFT0C", "mass vs centrality vs. R2EPBC_event1", false, 250, 0.0, 5.0, VarManager::kMass, 18, 0.0, 90.0, VarManager::kCentFT0C, 100, -10.0, 10.0, VarManager::kTwoR2EP_BC1);
-        hm->AddHistogram(histClass, "R2EPBC2_CentFT0C", "mass vs centrality vs. R2EPBC_event2", false, 250, 0.0, 5.0, VarManager::kMass, 18, 0.0, 90.0, VarManager::kCentFT0C, 100, -10.0, 10.0, VarManager::kTwoR2EP_BC2);
+        hm->AddHistogram(histClass, "Mass_Pt_CentFT0C_V2ME_SP", "", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 90, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kV2ME_SP, VarManager::kWV2ME_SP);
+        hm->AddHistogram(histClass, "Mass_Pt_CentFT0C_V2ME_EP", "", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 90, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kV2ME_EP, VarManager::kWV2ME_EP);
       }
       if (subGroupStr.Contains("dimuon-polarization-he")) {
         int varspTHE[4] = {VarManager::kMass, VarManager::kPt, VarManager::kCosThetaHE, VarManager::kPhiHE};
@@ -1157,6 +1154,10 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         double maxBins[6] = {5.0, 30.0, 4.0, 90.0, 10.0, 2.0};
         hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_V2", "", 6, varV2, bins, minBins, maxBins, 0, -1, kTRUE);
         hm->AddHistogram(histClass, "Mass_Pt_centrFT0C_V3", "", 6, varV3, bins, minBins, maxBins, 0, -1, kTRUE);
+      }
+      if (subGroupStr.Contains("flow-ccdb")) {
+        hm->AddHistogram(histClass, "Mass_Pt_CentFT0C_V2SPwR", "Mass_Pt_CentFT0C_V2SPwR, --s--", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 90, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kV2SP, VarManager::kWV2SP);
+        hm->AddHistogram(histClass, "Mass_Pt_CentFT0C_V2EPwR", "Mass_Pt_CentFT0C_V2EPwR, --s--", true, 250, 0.0, 5.0, VarManager::kMass, 60, 0.0, 30.0, VarManager::kPt, 90, 0.0, 90.0, VarManager::kCentFT0C, "", "", "", VarManager::kV2EP, VarManager::kWV2EP);
       }
       if (subGroupStr.Contains("cumulant")) {
         int var[4] = {VarManager::kMass, VarManager::kPt, VarManager::kRap, VarManager::kCentFT0C};
