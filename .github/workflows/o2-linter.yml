@@ -14,7 +14,7 @@ concurrency:
 jobs:
   o2-linter:
     name: O2 linter
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -26,4 +26,5 @@ jobs:
           readarray -t files < <(git diff --diff-filter d --name-only origin/${{ env.MAIN_BRANCH }}...)
           [ ${{ github.event_name }} == 'pull_request' ] && options="-g"
           # shellcheck disable=SC2086 # Ignore unquoted options.
-          python Scripts/o2_linter.py $options "${files[@]}"
+          python3 Scripts/o2_linter.py $options "${files[@]}"
+          echo "Tip: If you allow actions in your fork repository, O2 linter will run when you push commits."

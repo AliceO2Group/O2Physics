@@ -1458,6 +1458,9 @@ def main():
         else:
             print(f"\n{title_result}: {msg_result}")
             print(msg_disable)
+    # Print tips.
+    print("\nTip: You can run the O2 linter locally with: python3 Scripts/o2_linter.py <files>")
+    if not passed:
         sys.exit(1)
 
 
