@@ -267,9 +267,9 @@ struct TracksExtraConverter {
   Produces<aod::StoredTracksExtra_001> tracksExtra_001;
   void init(o2::framework::InitContext& initContext)
   {
-    doprocessConverter.value = isTableRequiredInWorkflow(initContext, "StoredTracksExtra_002");
+    doprocessConverter.value = isTableRequiredInWorkflow(initContext, "StoredTracksExtra_001");
     if (doprocessConverter) {
-      LOG(info) << "Enabling converter for table StoredTracksExtra_002";
+      LOG(info) << "Enabling converter for table StoredTracksExtra_001";
     }
   }
   void processConverter(aod::TracksExtra_000 const& tracksExtra_000)
@@ -547,7 +547,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
         workflow.push_back(adaptAnalysisTask<bcConverter>(cfgc));
       } else if (t == "O2collision_001") {
         LOG(info) << "  - AOD converter: Table " << t << " needs no converter";
-      } else if (t == "O2collision_000") {
+      } else if (t == "O2collision_000" || t == "O2collision") {
         LOG(info) << "  + AOD converter: Table " << t << " found, adding converter task";
         workflow.push_back(adaptAnalysisTask<collisionConverter>(cfgc));
       } else if (t == "O2fdd_001") {
@@ -585,27 +585,27 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
         LOG(info) << "  - AOD converter: Table " << t << " needs no converter";
       } else if (t == "O2mccollision_001") {
         LOG(info) << "  - AOD converter: Table " << t << " needs no converter";
-      } else if (t == "O2mccollision_000") {
-        LOG(info) << "  + AOD converter: Table " << t << " found, adding converter task";
+      } else if (t == "O2mccollision" || t == "O2mccollision_000") {
+        LOG(info) << "  + AOD converter: Table " << t << " found, adding converter task mcCollisionConverter";
         workflow.push_back(adaptAnalysisTask<mcCollisionConverter>(cfgc));
       } else if (t == "O2mcparticle_001") {
         LOG(info) << "  - AOD converter: Table " << t << " needs no converter";
       } else if (t == "O2mcparticle_000") {
         LOG(info) << "  + AOD converter: Table " << t << " found, adding converter task";
         workflow.push_back(adaptAnalysisTask<McConverter>(cfgc));
-      } else if (t == "O2trackextra_001") {
-        LOG(info) << "  - AOD converter: Table " << t << " needs no converter";
       } else if (t == "O2trackextra_000" || t == "O2trackextra") {
         LOG(info) << "  + AOD converter: Table " << t << " found, adding converter task";
         workflow.push_back(adaptAnalysisTask<TracksExtraConverter>(cfgc));
         workflow.push_back(adaptAnalysisTask<TracksExtraSpawner>(cfgc));
+      } else if (t == "O2trackextra_001") {
+        LOG(info) << "  - AOD converter: Table " << t << " needs no converter";
       } else if (t == "O2zdc_001") {
         LOG(info) << "  - AOD converter: Table " << t << " needs no converter";
-      } else if (t == "O2zdc_000") {
+      } else if (t == "O2zdc_000" || t == "O2zdc") {
         LOG(info) << "  + AOD converter: Table " << t << " found, adding converter task";
         workflow.push_back(adaptAnalysisTask<zdcConverter>(cfgc));
       } else {
-        LOG(warning) << "AOD converter: Versioned table not covered " << t;
+        LOG(debug) << "AOD converter: Versioned table not covered " << t;
       }
     }
   } else {
