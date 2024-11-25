@@ -670,8 +670,8 @@ struct spvector {
       psiZDCA = 1.0 * TMath::ATan2(qyZDCA, qxZDCA);
 
       if (useShift && (currentRunNumber != lastRunNumber)) {
-        shiftprofileC = ccdb->getForTimeStamp<TProfile3D>(ConfShiftC.value, ts);
-        shiftprofileA = ccdb->getForTimeStamp<TProfile3D>(ConfShiftA.value, ts);
+        shiftprofileC = ccdb->getForTimeStamp<TProfile3D>(ConfShiftC.value, bc.timestamp());
+        shiftprofileA = ccdb->getForTimeStamp<TProfile3D>(ConfShiftA.value, bc.timestamp());
       }
       if (useShift) {
         auto deltapsiZDCC = 0.0;
