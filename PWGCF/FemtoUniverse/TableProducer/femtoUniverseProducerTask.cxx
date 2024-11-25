@@ -877,9 +877,9 @@ struct femtoUniverseProducerTask {
       } else {
         outputCollision(vtxZ, cent, multNtr, 2, mMagField);
       }
-      
+
       fillCollisionsCentRun3ColExtra<isMC>(col, irrate);
-      
+
       fillTracks<isMC>(tracks);
       if (ConfV0Selection.ConfIsFillV0s) {
         fillV0<isMC>(col, fullV0s, tracks);
@@ -896,7 +896,7 @@ struct femtoUniverseProducerTask {
     int occupancy = col.trackOccupancyInTimeRange();
     //if ((col.selection_bit(aod::evsel::kNoSameBunchPileup)) && (col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) && (occupancy > ConfTPCOccupancyMin && occupancy <= ConfTPCOccupancyMax)) {
     if ((col.selection_bit(aod::evsel::kNoSameBunchPileup)) && (col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
-      outputCollExtra(irrate, occupancy);      
+      outputCollExtra(irrate, occupancy);
     }
   }
 
@@ -1797,7 +1797,7 @@ struct femtoUniverseProducerTask {
     ir = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; // fetch IR
 
     // fill the tables
-    fillCollisionsCentRun3<true>(col, tracks, fullV0s, fullCascades, ir);    
+    fillCollisionsCentRun3<true>(col, tracks, fullV0s, fullCascades, ir);
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processFullMCCent, "Provide MC data with centrality bins", false);
 
@@ -1825,8 +1825,8 @@ struct femtoUniverseProducerTask {
     double ir = 0.;
     ir = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; // fetch IR
 
-    // fill the tables    
-    fillCollisionsCentRun3<false>(col, tracks, fullV0s, fullCascades, ir);    
+    // fill the tables
+    fillCollisionsCentRun3<false>(col, tracks, fullV0s, fullCascades, ir);
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processTrackCentRun3Data, "Provide experimental data for Run 3 with centrality for track track", false);
 };
