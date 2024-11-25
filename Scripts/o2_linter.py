@@ -1153,23 +1153,6 @@ class TestNameTask(TestSpec):
 # PWG-HF
 
 
-class TestHfConstAuto(TestSpec):
-    """PWGHF: Detect swapped const auto."""
-
-    name = "pwghf/const-auto"
-    message = 'Use "const auto" instead of "auto const".'
-    suffixes = [".h", ".cxx"]
-
-    def file_matches(self, path: str) -> bool:
-        return TestSpec.file_matches(self, path) and "PWGHF/" in path
-
-    def test_line(self, line: str) -> bool:
-        if is_comment_cpp(line):
-            return True
-        line = remove_comment_cpp(line)
-        return "auto const" not in line
-
-
 class TestHfNameStructClass(TestSpec):
     """PWGHF: Test names of structs and classes."""
 
@@ -1412,7 +1395,6 @@ def main():
     # PWG-HF
     enable_pwghf = True
     if enable_pwghf:
-        tests.append(TestHfConstAuto())
         tests.append(TestHfNameStructClass())
         tests.append(TestHfStructMembers())
         tests.append(TestHfNameFileWorkflow())
