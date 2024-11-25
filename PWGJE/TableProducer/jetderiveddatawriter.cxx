@@ -151,7 +151,7 @@ struct JetDerivedDataWriter {
   Preslice<aod::CandidatesD0MCD> D0sPerCollision = aod::jd0indices::collisionId;
   Preslice<aod::CandidatesLcMCD> LcsPerCollision = aod::jlcindices::collisionId;
   Preslice<aod::CandidatesDielectronMCD> DielectronsPerCollision = aod::jdielectronindices::collisionId;
-  Preslice<aod::JEMCTracks> EMCTrackPerTrack = aod::jemctrack::trackId;
+  PresliceUnsorted<aod::JEMCTracks> EMCTrackPerTrack = aod::jemctrack::trackId;
 
   std::vector<bool> collisionFlag;
   std::vector<bool> McCollisionFlag;

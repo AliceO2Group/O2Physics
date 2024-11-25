@@ -21,6 +21,7 @@
 #include <Framework/HistogramSpec.h>
 #include <TLorentzVector.h>
 #include <TRandom.h>
+#include <fairlogger/Logger.h>
 
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Centrality.h"
@@ -42,6 +43,8 @@ struct lambdaAnalysis_pb {
   Preslice<aod::ResoTracks> perRCol = aod::resodaughter::resoCollisionId;
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
   // Configurables.
+
+  Configurable<int> ConfEvtOccupancyInTimeRange{"ConfEvtOccupancyInTimeRange", -1, "Evt sel: maximum track occupancy"};
   Configurable<int> nBinsPt{"nBinsPt", 100, "N bins in pT histogram"};
   Configurable<int> nBinsInvM{"nBinsInvM", 120, "N bins in InvMass histogram"};
   Configurable<int> lambda1520id{"lambda1520id", 3124, "pdg"};
@@ -138,7 +141,7 @@ struct lambdaAnalysis_pb {
     histos.add("QAbefore/Kaon/h2d_ka_nsigma_tof_vs_tpc", "n#sigma^{TPC} vs n#sigma^{TOF} Kaons", kTH2F, {axisTPCNsigma, axisTOFNsigma});
 
     // QA After
-    histos.add("QAafter/Proton/hd_pr_pt", "p_{T}-spectra Protons", kTH1F, {axisPt_pid});
+    histos.add("QAafter/Proton/hd_pr_pt", "p_{T}-spectra Protons", kTH2F, {axisPt_pid, axisCent});
     histos.add("QAafter/Proton/h2d_pr_dca_z", "dca_{z} Protons", kTH2F, {axisPt_pid, axisDCAz});
     histos.add("QAafter/Proton/h2d_pr_dca_xy", "dca_{xy} Protons", kTH2F, {axisPt_pid, axisDCAxy});
     histos.add("QAafter/Proton/h2d_pr_dEdx_p", "TPC Signal Protons", kTH2F, {axisP_pid, axisdEdx});
@@ -153,7 +156,7 @@ struct lambdaAnalysis_pb {
     histos.add("QAafter/Proton/h2d_Prka_nsigma_tof_p", " Protons kaon", kTH2F, {axisP_pid, axisTOFNsigma});
     histos.add("QAafter/Proton/h2d_Prel_nsigma_tof_p", " Protons electron", kTH2F, {axisP_pid, axisTOFNsigma});
     histos.add("QAafter/Proton/h2d_pr_nsigma_tof_vs_tpc", "n#sigma(TOF) vs n#sigma(TPC) Protons", kTH2F, {axisTPCNsigma, axisTOFNsigma});
-    histos.add("QAafter/Kaon/hd_ka_pt", "p_{T}-spectra Kaons", kTH1F, {axisPt_pid});
+    histos.add("QAafter/Kaon/hd_ka_pt", "p_{T}-spectra Kaons", kTH2F, {axisPt_pid, axisCent});
     histos.add("QAafter/Kaon/h2d_ka_dca_z", "dca_{z} Kaons", kTH2F, {axisPt_pid, axisDCAz});
     histos.add("QAafter/Kaon/h2d_ka_dca_xy", "dca_{xy} Kaons", kTH2F, {axisPt_pid, axisDCAxy});
     histos.add("QAafter/Kaon/h2d_ka_dEdx_p", "TPC Signal Kaon", kTH2F, {axisP_pid, axisdEdx});
@@ -427,7 +430,7 @@ struct lambdaAnalysis_pb {
         auto _tpcnsigmaPr = trkPr.tpcNSigmaPr();
 
         // Proton
-        histos.fill(HIST("QAafter/Proton/hd_pr_pt"), _ptPr);
+        histos.fill(HIST("QAafter/Proton/hd_pr_pt"), _ptPr, mult);
         histos.fill(HIST("QAafter/Proton/h2d_pr_dca_z"), _ptPr, trkPr.dcaZ());
         histos.fill(HIST("QAafter/Proton/h2d_pr_dca_xy"), _ptPr, trkPr.dcaXY());
         histos.fill(HIST("QAafter/Proton/h2d_pr_dEdx_p"), p_ptot, trkPr.tpcSignal());
@@ -449,7 +452,7 @@ struct lambdaAnalysis_pb {
         auto _tpcnsigmaKa = trkKa.tpcNSigmaKa();
 
         // Kaon
-        histos.fill(HIST("QAafter/Kaon/hd_ka_pt"), _ptKa);
+        histos.fill(HIST("QAafter/Kaon/hd_ka_pt"), _ptKa, mult);
         histos.fill(HIST("QAafter/Kaon/h2d_ka_dca_z"), _ptKa, trkKa.dcaZ());
         histos.fill(HIST("QAafter/Kaon/h2d_ka_dca_xy"), _ptKa, trkKa.dcaXY());
         histos.fill(HIST("QAafter/Kaon/h2d_ka_dEdx_p"), k_ptot, trkKa.tpcSignal());
@@ -558,6 +561,8 @@ struct lambdaAnalysis_pb {
   {
 
     // LOGF(info, " collisions: Index = %d %d", collision.globalIndex(),tracks.size());
+    if (ConfEvtOccupancyInTimeRange > 0 && collision.trackOccupancyInTimeRange() > ConfEvtOccupancyInTimeRange)
+      return;
     histos.fill(HIST("Event/h1d_ft0_mult_percentile"), collision.cent());
     fillDataHistos<false, false>(tracks, tracks, collision.cent());
   }
@@ -597,7 +602,6 @@ struct lambdaAnalysis_pb {
     }
 
     for (auto const& part : resoParents) {
-
       if (abs(part.pdgCode()) != lambda1520id) // // L* pdg_code = 3124
         continue;
       if (abs(part.y()) > 0.5) { // rapidity cut
@@ -616,7 +620,10 @@ struct lambdaAnalysis_pb {
 
       if (!pass1 || !pass2) // If we have both decay products
         continue;
-      auto mass = 1.520; // part.M()
+
+      TLorentzVector p4;
+      p4.SetPxPyPzE(part.px(), part.py(), part.pz(), part.e());
+      auto mass = p4.M();
       if (part.pdgCode() > 0)
         histos.fill(HIST("Analysis/h3d_gen_lstar_PM"), mass, part.pt(), mult);
       else
@@ -637,7 +644,8 @@ struct lambdaAnalysis_pb {
 
     SameKindPair<resoCols, resoTracks, BinningType2> pairs{binningPositions2, cNumMixEv, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
     for (auto& [c1, t1, c2, t2] : pairs) {
-
+      if (ConfEvtOccupancyInTimeRange > 0 && c1.trackOccupancyInTimeRange() > ConfEvtOccupancyInTimeRange && c2.trackOccupancyInTimeRange() > ConfEvtOccupancyInTimeRange)
+        return;
       // LOGF(info, "processMCMixedDerived: Mixed collisions : %d (%.3f, %.3f,%d), %d (%.3f, %.3f,%d)",c1.globalIndex(), c1.posZ(), c1.cent(),c1.mult(), c2.globalIndex(), c2.posZ(), c2.cent(),c2.mult());
       histos.fill(HIST("Event/mixing_vzVsmultpercentile"), c1.cent(), c1.posZ(), c1.evtPl());
       fillDataHistos<true, false>(t1, t2, c1.cent());
@@ -656,7 +664,8 @@ struct lambdaAnalysis_pb {
 
     if (doprocessData)
       LOG(error) << "Disable processData() first!";
-
+    if (ConfEvtOccupancyInTimeRange > 0 && collision.trackOccupancyInTimeRange() > ConfEvtOccupancyInTimeRange)
+      return;
     // LOGF(info, "inside df collisions: Index = %d %d", collision.globalIndex(),tracks.size());
     histos.fill(HIST("Event/h1d_ft0_mult_percentile"), collision.cent());
     fillDataHistos<false, false>(tracks, tracks, collision.cent());
@@ -676,6 +685,8 @@ struct lambdaAnalysis_pb {
 
     SameKindPair<resoColDFs, resoTrackDFs, BinningTypeDF> pairs{binningPositions2, cNumMixEv, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
     for (auto& [c1, t1, c2, t2] : pairs) {
+      if (ConfEvtOccupancyInTimeRange > 0 && c1.trackOccupancyInTimeRange() > ConfEvtOccupancyInTimeRange && c2.trackOccupancyInTimeRange() > ConfEvtOccupancyInTimeRange)
+        return;
 
       // LOGF(info, "processMCMixedDerived: Mixed collisions : %d (%.3f, %.3f,%d), %d (%.3f, %.3f,%d)",c1.globalIndex(), c1.posZ(), c1.cent(),c1.mult(), c2.globalIndex(), c2.posZ(), c2.cent(),c2.mult());
       histos.fill(HIST("Event/mixing_vzVsmultpercentile"), c1.cent(), c1.posZ(), c1.evtPl());
@@ -691,13 +702,13 @@ struct lambdaAnalysis_pb {
     if (doprocessMix || doprocessMixDF)
       LOG(fatal) << "Disable processMix() or processMixDF() first!";
     LOGF(debug, "Event Mixing Started");
-
     BinningTypeEP binningPositions2{{cMixVtxBins, cMixMultBins, cMixEPAngle}, true};
     auto tracksTuple = std::make_tuple(tracks);
 
     SameKindPair<resoColDFs, resoTrackDFs, BinningTypeEP> pairs{binningPositions2, cNumMixEv, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
     for (auto& [c1, t1, c2, t2] : pairs) {
-
+      if (ConfEvtOccupancyInTimeRange > 0 && c1.trackOccupancyInTimeRange() > ConfEvtOccupancyInTimeRange && c2.trackOccupancyInTimeRange() > ConfEvtOccupancyInTimeRange)
+        return;
       //  LOGF(info, "processMCMixedDerived: Mixed collisions : %d (%.3f, %.3f,%.3f), %d (%.3f, %.3f, %.3f)",c1.globalIndex(), c1.posZ(), c1.cent(),c1.evtPl(), c2.globalIndex(), c2.posZ(), c2.cent(),c2.evtPl());
       histos.fill(HIST("Event/mixing_vzVsmultpercentile"), c1.cent(), c1.posZ(), c1.evtPl());
       fillDataHistos<true, false>(t1, t2, c1.cent());

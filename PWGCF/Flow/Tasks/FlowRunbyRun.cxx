@@ -36,6 +36,7 @@
 #include "GFW.h"
 #include "GFWCumulant.h"
 #include "GFWWeights.h"
+#include "FlowContainer.h"
 #include "TList.h"
 #include <TProfile.h>
 #include <TRandom3.h>
@@ -60,6 +61,8 @@ struct FlowRunbyRun {
   O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2.0f, "max DCA to vertex z")
   O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, false, "Use Nch for flow observables")
   Configurable<std::vector<int>> cfgRunNumbers{"cfgRunNumbers", std::vector<int>{544095, 544098, 544116, 544121, 544122, 544123, 544124}, "Preconfigured run numbers"};
+  Configurable<std::vector<std::string>> cfgUserDefineGFWCorr{"cfgUserDefineGFWCorr", std::vector<std::string>{"refN10 {2} refP10 {-2}"}, "User defined GFW CorrelatorConfig"};
+  Configurable<std::vector<std::string>> cfgUserDefineGFWName{"cfgUserDefineGFWName", std::vector<std::string>{"Ch10Gap22"}, "User defined GFW Name"};
 
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis axisPhi{"axisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
@@ -76,11 +79,15 @@ struct FlowRunbyRun {
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
 
   // Define output
+  OutputObj<FlowContainer> fFC{FlowContainer("FlowContainer")};
   HistogramRegistry registry{"registry"};
 
   // define global variables
   GFW* fGFW = new GFW();
   std::vector<GFW::CorrConfig> corrconfigs;
+  std::vector<GFW::CorrConfig> corrconfigsFC;
+  TAxis* fPtAxis;
+  TRandom3* fRndm = new TRandom3(0);
   std::vector<int> RunNumbers;                                        // vector of run numbers
   std::map<int, std::vector<std::shared_ptr<TH1>>> TH1sList;          // map of histograms for all runs
   std::map<int, std::vector<std::shared_ptr<TProfile>>> ProfilesList; // map of profiles for all runs
@@ -114,12 +121,43 @@ struct FlowRunbyRun {
       CreateOutputObjectsForRun(runNumber);
     }
 
+    o2::framework::AxisSpec axis = axisPt;
+    int nPtBins = axis.binEdges.size() - 1;
+    double* PtBins = &(axis.binEdges)[0];
+    fPtAxis = new TAxis(nPtBins, PtBins);
+
+    // Create FlowContainer
+    TObjArray* oba = new TObjArray();
+    std::vector<std::string> UserDefineGFWCorr = cfgUserDefineGFWCorr;
+    std::vector<std::string> UserDefineGFWName = cfgUserDefineGFWName;
+    if (!UserDefineGFWCorr.empty() && !UserDefineGFWName.empty()) {
+      for (uint i = 0; i < UserDefineGFWName.size(); i++) {
+        oba->Add(new TNamed(UserDefineGFWName.at(i).c_str(), UserDefineGFWName.at(i).c_str()));
+      }
+    }
+    fFC->SetName("FlowContainer");
+    fFC->SetXAxis(fPtAxis);
+    fFC->Initialize(oba, axisIndependent, 1);
+    delete oba;
+
     fGFW->AddRegion("full", -0.8, 0.8, 1, 1);
     fGFW->AddRegion("refN10", -0.8, -0.5, 1, 1);
     fGFW->AddRegion("refP10", 0.5, 0.8, 1, 1);
     corrconfigs.resize(kCount_TProfileNames);
     corrconfigs[c22] = fGFW->GetCorrelatorConfig("full {2 -2}", "ChFull22", kFALSE);
     corrconfigs[c22_gap10] = fGFW->GetCorrelatorConfig("refN10 {2} refP10 {-2}", "Ch10Gap22", kFALSE);
+    if (!UserDefineGFWCorr.empty() && !UserDefineGFWName.empty()) {
+      LOGF(info, "User adding GFW CorrelatorConfig:");
+      // attentaion: here we follow the index of cfgUserDefineGFWCorr
+      for (uint i = 0; i < UserDefineGFWCorr.size(); i++) {
+        if (i >= UserDefineGFWName.size()) {
+          LOGF(fatal, "The names you provided are more than configurations. UserDefineGFWName.size(): %d > UserDefineGFWCorr.size(): %d", UserDefineGFWName.size(), UserDefineGFWCorr.size());
+          break;
+        }
+        LOGF(info, "%d: %s %s", i, UserDefineGFWCorr.at(i).c_str(), UserDefineGFWName.at(i).c_str());
+        corrconfigsFC.push_back(fGFW->GetCorrelatorConfig(UserDefineGFWCorr.at(i).c_str(), UserDefineGFWName.at(i).c_str(), kFALSE));
+      }
+    }
     fGFW->CreateRegions();
   }
 
@@ -135,6 +173,29 @@ struct FlowRunbyRun {
       if (TMath::Abs(val) < 1)
         profile->Fill(cent, val, dnx);
       return;
+    }
+    return;
+  }
+
+  void FillFC(const GFW::CorrConfig& corrconf, const double& cent, const double& rndm)
+  {
+    double dnx, val;
+    dnx = fGFW->Calculate(corrconf, 0, kTRUE).real();
+    if (dnx == 0)
+      return;
+    if (!corrconf.pTDif) {
+      val = fGFW->Calculate(corrconf, 0, kFALSE).real() / dnx;
+      if (TMath::Abs(val) < 1)
+        fFC->FillProfile(corrconf.Head.c_str(), cent, val, dnx, rndm);
+      return;
+    }
+    for (Int_t i = 1; i <= fPtAxis->GetNbins(); i++) {
+      dnx = fGFW->Calculate(corrconf, i - 1, kTRUE).real();
+      if (dnx == 0)
+        continue;
+      val = fGFW->Calculate(corrconf, i - 1, kFALSE).real() / dnx;
+      if (TMath::Abs(val) < 1)
+        fFC->FillProfile(Form("%s_pt_%i", corrconf.Head.c_str(), i), cent, val, dnx, rndm);
     }
     return;
   }
@@ -164,6 +225,7 @@ struct FlowRunbyRun {
     // detect run number
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     int runNumber = bc.runNumber();
+    float l_Random = fRndm->Rndm();
     if (std::find(RunNumbers.begin(), RunNumbers.end(), runNumber) == RunNumbers.end()) {
       // if run number is not in the preconfigured list, create new output histograms for this run
       CreateOutputObjectsForRun(runNumber);
@@ -185,7 +247,6 @@ struct FlowRunbyRun {
     for (auto& track : tracks) {
       TH1sList[runNumber][hPhi]->Fill(track.phi());
       TH1sList[runNumber][hEta]->Fill(track.eta());
-      bool WithinPtPOI = (cfgCutPtPOIMin < track.pt()) && (track.pt() < cfgCutPtPOIMax); // within POI pT range
       bool WithinPtRef = (cfgCutPtRefMin < track.pt()) && (track.pt() < cfgCutPtRefMax); // within RF pT range
       if (WithinPtRef) {
         fGFW->Fill(track.eta(), 1, track.phi(), wacc * weff, 1);
@@ -195,6 +256,10 @@ struct FlowRunbyRun {
     // Filling TProfile
     for (uint i = 0; i < kCount_TProfileNames; ++i) {
       FillProfile(corrconfigs[i], ProfilesList[runNumber][i], cent);
+    }
+    // Filling Flow Container
+    for (uint l_ind = 0; l_ind < corrconfigsFC.size(); l_ind++) {
+      FillFC(corrconfigsFC.at(l_ind), cent, l_Random);
     }
   }
 };
