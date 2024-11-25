@@ -73,3 +73,8 @@ o2physics_add_dpl_workflow(stramccollisionconverter
                     SOURCES stramccollisionconverter.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(strastampsconverter
+                    SOURCES strastampsconverter.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)

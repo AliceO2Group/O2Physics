@@ -382,7 +382,7 @@ struct strangederivedbuilder {
                       energyCommonZNA, energyCommonZNC,
                       // Collision flags
                       collision.flags());
-        strangeStamps(bc.runNumber(), bc.timestamp());
+        strangeStamps(bc.runNumber(), bc.timestamp(), bc.globalBC());
       }
       for (const auto& v0 : V0Table_thisColl)
         V0CollIndices[v0.globalIndex()] = strangeColl.lastIndex();
