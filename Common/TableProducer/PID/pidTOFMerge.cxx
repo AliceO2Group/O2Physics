@@ -100,6 +100,7 @@ struct TOFCalibConfig {
     getCfg(initContext, "paramFileName", mParamFileName, task);
     getCfg(initContext, "parametrizationPath", mParametrizationPath, task);
     getCfg(initContext, "reconstructionPass", mReconstructionPass, task);
+    getCfg(initContext, "reconstructionPassDefault", mReconstructionPassDefault, task);
     getCfg(initContext, "loadResponseFromCCDB", mLoadResponseFromCCDB, task);
     getCfg(initContext, "fatalOnPassNotAvailable", mFatalOnPassNotAvailable, task);
     getCfg(initContext, "enableTimeDependentResponse", mEnableTimeDependentResponse, task);
