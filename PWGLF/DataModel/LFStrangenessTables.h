@@ -152,7 +152,7 @@ DECLARE_SOA_TABLE_VERSIONED(StraEvSels_002, "AOD", "STRAEVSELS", 2,         //! 
                             udcollision::TotalFDDAmplitudeC, // UPC info: re-assigned FDD-C amplitude, in case of SG event, from the most active bc
                             udzdc::EnergyCommonZNA,          // UPC info: re-assigned ZN-A amplitude, in case of SG event, from the most active bc
                             udzdc::EnergyCommonZNC,          // UPC info: re-assigned ZN-C amplitude, in case of SG event, from the most active bc
-                            collision::Flags, // Contains Vertex::Flags, with most notably the UPCMode to know whether the vertex has been found using UPC settings
+                            collision::Flags,                // Contains Vertex::Flags, with most notably the UPCMode to know whether the vertex has been found using UPC settings
                             stracollision::IsUPC<udcollision::GapSide>);
 
 DECLARE_SOA_TABLE_VERSIONED(StraEvSels_003, "AOD", "STRAEVSELS", 3,         //! debug information
@@ -177,7 +177,7 @@ DECLARE_SOA_TABLE_VERSIONED(StraEvSels_003, "AOD", "STRAEVSELS", 3,         //! 
                             udcollision::TotalFDDAmplitudeC, // UPC info: re-assigned FDD-C amplitude, in case of SG event, from the most active bc
                             udzdc::EnergyCommonZNA,          // UPC info: re-assigned ZN-A amplitude, in case of SG event, from the most active bc
                             udzdc::EnergyCommonZNC,          // UPC info: re-assigned ZN-C amplitude, in case of SG event, from the most active bc
-                            collision::Flags, // Contains Vertex::Flags, with most notably the UPCMode to know whether the vertex has been found using UPC settings
+                            collision::Flags,                // Contains Vertex::Flags, with most notably the UPCMode to know whether the vertex has been found using UPC settings
                             stracollision::IsUPC<udcollision::GapSide>);
 
 DECLARE_SOA_TABLE_VERSIONED(StraEvSels_004, "AOD", "STRAEVSELS", 4,         //! debug information
@@ -204,7 +204,7 @@ DECLARE_SOA_TABLE_VERSIONED(StraEvSels_004, "AOD", "STRAEVSELS", 4,         //! 
                             udzdc::EnergyCommonZNC,          // UPC info: re-assigned ZN-C amplitude, in case of SG event, from the most active bc
 
                             collision::Flags, // Contains Vertex::Flags, with most notably the UPCMode to know whether the vertex has been found using UPC settings
-                            evsel::Alias, // trigger aliases (e.g. kTVXinTRD for v2)
+                            evsel::Alias,     // trigger aliases (e.g. kTVXinTRD for v2)
 
                             // Dynamic columns for manipulating information
                             // stracollision::TotalFV0AmplitudeA<mult::MultFV0A>,
