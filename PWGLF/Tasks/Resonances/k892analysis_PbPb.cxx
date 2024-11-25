@@ -933,7 +933,7 @@ struct k892analysis_PbPb {
     for (auto& RecCollision : recCollisions) {
       auto bc = RecCollision.bc_as<BCsWithRun2Info>();
       histos.fill(HIST("hMCrecCollSels"), 3);
-      
+
       if (!(bc.eventCuts() & BIT(aod::Run2EventCuts::kAliEventCutsAccepted)))
         return;
       histos.fill(HIST("hMCrecCollSels"), 4);
