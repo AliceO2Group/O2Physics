@@ -13,8 +13,11 @@
 /// \author Roman Lavicka, roman.lavicka@cern.ch
 /// \since  12.07.2022
 
-// #include <algorithm>
-// #include <iterator>
+// C++ headers
+#include <set>
+#include <utility>
+#include <algorithm>
+#include <vector>
 
 // O2 headers
 #include "Framework/AnalysisTask.h"
