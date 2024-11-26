@@ -381,7 +381,8 @@ struct strangederivedbuilder {
                       totalFDDAmplitudeA, totalFDDAmplitudeC,
                       energyCommonZNA, energyCommonZNC,
                       // Collision flags
-                      collision.flags());
+                      collision.flags(),
+                      collision.alias_raw());
         strangeStamps(bc.runNumber(), bc.timestamp(), bc.globalBC());
       }
       for (const auto& v0 : V0Table_thisColl)
