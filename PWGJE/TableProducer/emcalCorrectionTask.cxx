@@ -19,6 +19,9 @@
 #include <memory>
 #include <unordered_map>
 #include <cmath>
+#include <string>
+#include <tuple>
+#include <vector>
 
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/runDataProcessing.h"
@@ -87,7 +90,7 @@ struct EmcalCorrectionTask {
   Configurable<float> exoticCellInCrossMinAmplitude{"exoticCellInCrossMinAmplitude", 0.1, "Minimum energy of cells in cross, if lower not considered in cross"};
   Configurable<bool> useWeightExotic{"useWeightExotic", false, "States if weights should be used for exotic cell cut"};
   Configurable<bool> isMC{"isMC", false, "States if run over MC"};
-  Configurable<int> applyCellTimeShift{"applyCellTimeShift", 0, "apply shift to the cell time; 0 = off; 1 = const shift; 2 = eta-dependent shift"};
+  Configurable<int> applyCellTimeShift{"applyCellTimeShift", 0, "apply shift to the cell time for data and MC; For data: 0 = off; non-zero = log function extracted from data - For MC: 0 = off; 1 = const shift; 2 = eta-dependent shift"};
 
   // Require EMCAL cells (CALO type 1)
   Filter emccellfilter = aod::calo::caloType == selectedCellType;
@@ -181,13 +184,15 @@ struct EmcalCorrectionTask {
     o2Axis energyAxis{200, 0., 100., "E (GeV)"},
       timeAxis{300, -100, 200., "t (ns)"},
       etaAxis{160, -0.8, 0.8, "#eta"},
-      phiAxis{72, 0, 2 * 3.14159, "phi"};
+      phiAxis{72, 0, 2 * 3.14159, "phi"},
+      nlmAxis{50, -0.5, 49.5, "NLM"};
     mHistManager.add("hCellE", "hCellE", o2HistType::kTH1F, {energyAxis});
     mHistManager.add("hCellTowerID", "hCellTowerID", o2HistType::kTH1D, {{20000, 0, 20000}});
     mHistManager.add("hCellEtaPhi", "hCellEtaPhi", o2HistType::kTH2F, {etaAxis, phiAxis});
     // NOTE: Reversed column and row because it's more natural for presentation.
     mHistManager.add("hCellRowCol", "hCellRowCol;Column;Row", o2HistType::kTH2D, {{97, 0, 97}, {600, 0, 600}});
     mHistManager.add("hClusterE", "hClusterE", o2HistType::kTH1F, {energyAxis});
+    mHistManager.add("hClusterNLM", "hClusterNLM", o2HistType::kTH1F, {nlmAxis});
     mHistManager.add("hClusterEtaPhi", "hClusterEtaPhi", o2HistType::kTH2F, {etaAxis, phiAxis});
     mHistManager.add("hClusterTime", "hClusterTime", o2HistType::kTH1F, {timeAxis});
     mHistManager.add("hGlobalTrackEtaPhi", "hGlobalTrackEtaPhi", o2HistType::kTH2F, {etaAxis, phiAxis});
@@ -264,7 +269,7 @@ struct EmcalCorrectionTask {
         }
         cellsBC.emplace_back(cell.cellNumber(),
                              amplitude,
-                             cell.time() + getCellTimeShift(cell.cellNumber()),
+                             cell.time() + getCellTimeShift(cell.cellNumber(), amplitude),
                              o2::emcal::intToChannelType(cell.cellType()));
         cellIndicesBC.emplace_back(cell.globalIndex());
       }
@@ -383,7 +388,7 @@ struct EmcalCorrectionTask {
         }
         cellsBC.emplace_back(cell.cellNumber(),
                              amplitude,
-                             cell.time() + getCellTimeShift(cell.cellNumber()),
+                             cell.time() + getCellTimeShift(cell.cellNumber(), amplitude),
                              o2::emcal::intToChannelType(cell.cellType()));
         cellIndicesBC.emplace_back(cell.globalIndex());
         cellLabels.emplace_back(cell.mcParticleIds(), cell.amplitudeA());
@@ -485,7 +490,7 @@ struct EmcalCorrectionTask {
       for (auto& cell : cellsInBC) {
         cellsBC.emplace_back(cell.cellNumber(),
                              cell.amplitude(),
-                             cell.time() + getCellTimeShift(cell.cellNumber()),
+                             cell.time() + getCellTimeShift(cell.cellNumber(), cell.amplitude()),
                              o2::emcal::intToChannelType(cell.cellType()));
         cellIndicesBC.emplace_back(cell.globalIndex());
       }
@@ -624,6 +629,7 @@ struct EmcalCorrectionTask {
       } // end of cells of cluser loop
       // fill histograms
       mHistManager.fill(HIST("hClusterE"), cluster.E());
+      mHistManager.fill(HIST("hClusterNLM"), cluster.getNExMax());
       mHistManager.fill(HIST("hClusterTime"), cluster.getClusterTime());
       mHistManager.fill(HIST("hClusterEtaPhi"), pos.Eta(), TVector2::Phi_0_2pi(pos.Phi()));
       if (IndexMapPair && trackGlobalIndex) {
@@ -790,9 +796,10 @@ struct EmcalCorrectionTask {
     }
   }
 
-  // Apply shift of the cell time
-  // This has to be done to shift the cell time in MC (which is not calibrated to 0 due to the flight time of the particles to the EMCal surface (~15ns))
-  float getCellTimeShift(const int16_t cellID)
+  // Apply shift of the cell time in data and MC
+  // In MC this has to be done to shift the cell time, which is not calibrated to 0 due to the flight time of the particles to the EMCal surface (~15ns)
+  // In data this is done to correct for the time walk effect
+  float getCellTimeShift(const int16_t cellID, const float cellEnergy)
   {
     if (isMC) {
       if (applyCellTimeShift == 1) { // constant shift
@@ -810,7 +817,16 @@ struct EmcalCorrectionTask {
         return 0.f;
       }
     } else { // data
-      return 0.f;
+      if (applyCellTimeShift != 0) {
+        if (cellEnergy < 0.3) // Cells with tless than 300 MeV cannot be the leading cell in the cluster, so their time does not require precise calibration
+          return 0.f;
+        else if (cellEnergy < 4.)                                         // Low energy regime
+          return (0.57284 + 0.82194 * TMath::Log(1.30651 * cellEnergy));  // Parameters extracted from LHC22o (pp), but also usable for other periods
+        else                                                              // High energy regime
+          return (-0.05858 + 1.50593 * TMath::Log(0.97591 * cellEnergy)); // Parameters extracted from LHC22o (pp), but also usable for other periods
+      } else {                                                            // Dont apply cell time shift if applyCellTimeShift == 0
+        return 0.f;
+      }
     }
   }
 };

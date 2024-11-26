@@ -336,14 +336,14 @@ struct EventSelectionQaTask {
     }
 
     // bc-based event selection qa
-    for (auto& bc : bcs) {
+    for (const auto& bc : bcs) {
       for (int iAlias = 0; iAlias < kNaliases; iAlias++) {
         histos.fill(HIST("hBcCounterAll"), iAlias, bc.alias_bit(iAlias));
       }
     }
 
     // collision-based event selection qa
-    for (auto& col : cols) {
+    for (const auto& col : cols) {
       bool sel1 = col.selection_bit(kIsINT1) && col.selection_bit(kNoBGV0A) && col.selection_bit(kNoBGV0C) && col.selection_bit(kNoTPCLaserWarmUp) && col.selection_bit(kNoTPCHVdip);
 
       for (int iAlias = 0; iAlias < kNaliases; iAlias++) {
@@ -367,7 +367,7 @@ struct EventSelectionQaTask {
         histos.fill(HIST("hSelCounter"), i, col.selection_bit(i));
       }
 
-      auto bc = col.bc_as<BCsRun2>();
+      const auto& bc = col.bc_as<BCsRun2>();
       uint64_t globalBC = bc.globalBC();
       // uint64_t orbit = globalBC / nBCsPerOrbit;
       int localBC = globalBC % nBCsPerOrbit;
@@ -665,7 +665,7 @@ struct EventSelectionQaTask {
     std::vector<uint64_t> vGlobalBCs(nBCs, 0);
 
     // bc-based event selection qa
-    for (auto& bc : bcs) {
+    for (const auto& bc : bcs) {
       if (!bc.has_ft0())
         continue;
       float multT0A = bc.ft0().sumAmpA();
@@ -684,7 +684,7 @@ struct EventSelectionQaTask {
     }
 
     // bc-based event selection qa
-    for (auto& bc : bcs) {
+    for (const auto& bc : bcs) {
       for (int iAlias = 0; iAlias < kNaliases; iAlias++) {
         histos.fill(HIST("hBcCounterAll"), iAlias, bc.alias_bit(iAlias));
       }
@@ -810,7 +810,7 @@ struct EventSelectionQaTask {
 
     // map for pileup checks
     std::vector<int> vCollisionsPerBc(bcs.size(), 0);
-    for (auto& col : cols) {
+    for (const auto& col : cols) {
       if (col.foundBCId() < 0 || col.foundBCId() >= bcs.size())
         continue;
       vCollisionsPerBc[col.foundBCId()]++;
@@ -826,7 +826,7 @@ struct EventSelectionQaTask {
     // to be used for closest TVX (FT0-OR) searches
     std::map<int64_t, int32_t> mapGlobalBcWithTVX;
     std::map<int64_t, int32_t> mapGlobalBcWithTOR;
-    for (auto& bc : bcs) {
+    for (const auto& bc : bcs) {
       int64_t globalBC = bc.globalBC();
       // skip non-colliding bcs for data and anchored runs
       if (runNumber >= 500000 && bcPatternB[globalBC % o2::constants::lhc::LHCMaxBunches] == 0) {
@@ -859,7 +859,7 @@ struct EventSelectionQaTask {
     }
 
     // collision-based event selection qa
-    for (auto& col : cols) {
+    for (const auto& col : cols) {
       for (int iAlias = 0; iAlias < kNaliases; iAlias++) {
         if (!col.alias_bit(iAlias)) {
           continue;
@@ -893,7 +893,7 @@ struct EventSelectionQaTask {
       // count tracks of different types
       auto tracksGrouped = tracks.sliceBy(perCollision, col.globalIndex());
       int nContributorsAfterEtaTPCCuts = 0;
-      for (auto& track : tracksGrouped) {
+      for (const auto& track : tracksGrouped) {
         int trackBcDiff = bcDiff + track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS;
         if (!track.isPVContributor())
           continue;
@@ -1078,7 +1078,7 @@ struct EventSelectionQaTask {
 
   void processMCRun3(aod::McCollisions const& mcCols, soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels> const& cols, BCsRun3 const&, aod::FT0s const&)
   {
-    for (auto& mcCol : mcCols) {
+    for (const auto& mcCol : mcCols) {
       auto bc = mcCol.bc_as<BCsRun3>();
       uint64_t globalBC = bc.globalBC();
       uint64_t orbit = globalBC / nBCsPerOrbit;
@@ -1094,7 +1094,7 @@ struct EventSelectionQaTask {
     }
 
     // check fraction of collisions matched to wrong bcs
-    for (auto& col : cols) {
+    for (const auto& col : cols) {
       if (!col.has_mcCollision()) {
         continue;
       }

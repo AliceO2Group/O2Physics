@@ -361,9 +361,6 @@ struct DetectorOccupancyQaTask {
     int runNumber = bcs.iteratorAt(0).runNumber();
     if (runNumber != lastRunNumber) {
       lastRunNumber = runNumber; // do it only once
-      int64_t tsSOR = 0;
-      int64_t tsEOR = 1;
-      uint32_t nOrbitsPerTF = 128; // 128 in 2022, 32 in 2023
 
       if (runNumber >= 500000) {
         auto runInfo = o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), runNumber);

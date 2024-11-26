@@ -185,6 +185,12 @@ struct tagRun2V0MCalibration {
   TFormula* mMCScale = nullptr;
 } Run2V0MInfo;
 
+struct tagRun2CL0Calibration {
+  bool mCalibrationStored = false;
+  TH1* mhVtxAmpCorr = nullptr;
+  TH1* mhMultSelCalib = nullptr;
+} Run2CL0Info;
+
 struct ebyeMaker {
   Produces<aod::CollEbyeTable> collisionEbyeTable;
   Produces<aod::MiniCollTable> miniCollTable;
@@ -411,6 +417,13 @@ struct ebyeMaker {
         Run2V0MInfo.mCalibrationStored = true;
       } else {
         LOGF(fatal, "Calibration information from V0M for run %d corrupted", bc.runNumber());
+      }
+      Run2CL0Info.mhVtxAmpCorr = getccdb("hVtx_fnSPDClusters0_Normalized");
+      Run2CL0Info.mhMultSelCalib = getccdb("hMultSelCalib_CL0");
+      if ((Run2CL0Info.mhVtxAmpCorr != nullptr) && (Run2CL0Info.mhMultSelCalib != nullptr)) {
+        Run2CL0Info.mCalibrationStored = true;
+      } else {
+        LOGF(fatal, "Calibration information from CL0 multiplicity for run %d corrupted", bc.runNumber());
       }
     } else {
       auto grpmagPath{"GLO/Config/GRPMagField"};
@@ -1004,7 +1017,7 @@ struct ebyeMaker {
   }
   PROCESS_SWITCH(ebyeMaker, processRun3, "process (Run 3)", false);
 
-  void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2CL0s, aod::TrackletMults> const& collisions, TracksFull const& tracks, aod::V0s const& V0s, aod::FV0As const& fv0as, aod::FV0Cs const& fv0cs, BCsWithRun2Info const&)
+  void processRun2(soa::Join<aod::Collisions, aod::EvSels, aod::TrackletMults> const& collisions, TracksFull const& tracks, aod::V0s const& V0s, aod::FV0As const& fv0as, aod::FV0Cs const& fv0cs, BCsWithRun2Info const&)
   {
     for (const auto& collision : collisions) {
       auto bc = collision.bc_as<BCsWithRun2Info>();
@@ -1024,7 +1037,11 @@ struct ebyeMaker {
       if (!(collision.sel7() && collision.alias_bit(kINT7)) && (!kINT7Intervals || (kINT7Intervals && ((cV0M >= 10 && cV0M < 30) || cV0M > 50))))
         continue;
 
-      auto centralityCl0 = collision.centRun2CL0();
+      auto centralityCl0 = 105.0f;
+      if (Run2CL0Info.mCalibrationStored) {
+        float cl0m = bc.spdClustersL0() * Run2CL0Info.mhVtxAmpCorr->GetBinContent(Run2CL0Info.mhVtxAmpCorr->FindFixBin(collision.posZ()));
+        centralityCl0 = Run2CL0Info.mhMultSelCalib->GetBinContent(Run2CL0Info.mhMultSelCalib->FindFixBin(cl0m));
+      }
       if (kUseEstimatorsCorrelationCut) {
         const auto& x = centralityCl0;
         const double center = estimatorsCorrelationCoef[0] + estimatorsCorrelationCoef[1] * x;

@@ -17,6 +17,7 @@
 /// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 
 #include <vector>
+#include <string>
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
@@ -72,8 +73,8 @@ struct femtoUniversePairTaskTrackPhi {
   struct : o2::framework::ConfigurableGroup {
     Configurable<std::string> ConfEfficiencyTrackPath{"ConfEfficiencyTrackPath", "", "Local path to proton efficiency TH2F file"};
     Configurable<std::string> ConfEfficiencyPhiPath{"ConfEfficiencyPhiPath", "", "Local path to Phi efficiency TH2F file"};
-    Configurable<long> ConfEfficiencyTrackTimestamp{"ConfEfficiencyTrackTimestamp", 0, "(long int) Timestamp for hadron"};
-    Configurable<long> ConfEfficiencyPhiTimestamp{"ConfEfficiencyPhiTimestamp", 0, "(long int) Timestamp for phi"};
+    Configurable<int64_t> ConfEfficiencyTrackTimestamp{"ConfEfficiencyTrackTimestamp", 0, "(int64_t) Timestamp for hadron"};
+    Configurable<int64_t> ConfEfficiencyPhiTimestamp{"ConfEfficiencyPhiTimestamp", 0, "(int64_t) Timestamp for phi"};
   } ConfEff;
 
   struct : o2::framework::ConfigurableGroup {
@@ -438,7 +439,7 @@ struct femtoUniversePairTaskTrackPhi {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 
-    long now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now);
 
     if (!ConfEff.ConfEfficiencyTrackPath.value.empty()) {
@@ -584,10 +585,11 @@ struct femtoUniversePairTaskTrackPhi {
     float mMassTwo = TDatabasePDG::Instance()->GetParticle(-321)->Mass(); // FIXME: Get from the PDG service of the common header
 
     for (auto& [kaon1, kaon2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsKaons, groupPartsKaons))) {
-      if (!IsKaonNSigma(kaon1.p(), trackCuts.getNsigmaTPC(kaon1, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(kaon1, o2::track::PID::Kaon))) {
-      }
-      if (!IsKaonNSigma(kaon2.p(), trackCuts.getNsigmaTPC(kaon2, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(kaon2, o2::track::PID::Kaon))) {
-      }
+      // empty if statements commented out on 20241114 to get rid of MegaLinter errors
+      // if (!IsKaonNSigma(kaon1.p(), trackCuts.getNsigmaTPC(kaon1, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(kaon1, o2::track::PID::Kaon))) {
+      // }
+      // if (!IsKaonNSigma(kaon2.p(), trackCuts.getNsigmaTPC(kaon2, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(kaon2, o2::track::PID::Kaon))) {
+      // }
       if ((kaon1.mAntiLambda() == 1) && (kaon2.mAntiLambda() == 1)) {
         part1Vec.SetPtEtaPhiM(kaon1.pt(), kaon1.eta(), kaon1.phi(), mMassOne);
         part2Vec.SetPtEtaPhiM(kaon2.pt(), kaon2.eta(), kaon2.phi(), mMassOne);
@@ -765,7 +767,7 @@ struct femtoUniversePairTaskTrackPhi {
         registryMCtruth.fill(HIST("MCtruthKp"), part.pt(), part.eta());
         registryMCtruth.fill(HIST("MCtruthKpPt"), part.pt());
       }
-      if ((pdgCode == 333)) {
+      if (pdgCode == 333) {
         registryMCtruth.fill(HIST("MCtruthPhi"), part.pt(), part.eta());
         continue;
       }

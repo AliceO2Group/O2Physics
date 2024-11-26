@@ -161,7 +161,7 @@ struct femtoUniversePairTaskTrackTrackMcTruth {
 
     /// Histogramming same event
     for (auto& part : groupPartsOne) {
-      if (!ConfNoPDGPartOne && part.pidcut() != ConfPDGCodePartOne) {
+      if (!ConfNoPDGPartOne && part.tempFitVar() != ConfPDGCodePartOne) {
         continue;
       }
       trackHistoPartOne.fillQA<isMC, false>(part);
@@ -169,7 +169,7 @@ struct femtoUniversePairTaskTrackTrackMcTruth {
 
     if (!ConfIsSame) {
       for (auto& part : groupPartsTwo) {
-        if (!ConfNoPDGPartTwo && part.pidcut() != ConfPDGCodePartTwo) {
+        if (!ConfNoPDGPartTwo && part.tempFitVar() != ConfPDGCodePartTwo) {
           continue;
         }
         trackHistoPartTwo.fillQA<isMC, false>(part);
@@ -183,7 +183,7 @@ struct femtoUniversePairTaskTrackTrackMcTruth {
         if (!pairCleaner.isCleanPair(p1, p2, parts)) {
           continue;
         }
-        if ((!ConfNoPDGPartOne && p2.pidcut() != ConfPDGCodePartOne) || (!ConfNoPDGPartTwo && p1.pidcut() != ConfPDGCodePartTwo)) {
+        if ((!ConfNoPDGPartOne && p2.tempFitVar() != ConfPDGCodePartOne) || (!ConfNoPDGPartTwo && p1.tempFitVar() != ConfPDGCodePartTwo)) {
           continue;
         }
         if (swpart)
@@ -200,7 +200,7 @@ struct femtoUniversePairTaskTrackTrackMcTruth {
         if (!pairCleaner.isCleanPair(p1, p2, parts)) {
           continue;
         }
-        if ((!ConfNoPDGPartOne && p2.pidcut() != ConfPDGCodePartOne) || (!ConfNoPDGPartTwo && p1.pidcut() != ConfPDGCodePartTwo)) {
+        if ((!ConfNoPDGPartOne && p2.tempFitVar() != ConfPDGCodePartOne) || (!ConfNoPDGPartTwo && p1.tempFitVar() != ConfPDGCodePartTwo)) {
           continue;
         }
         if (swpart)
@@ -244,7 +244,7 @@ struct femtoUniversePairTaskTrackTrackMcTruth {
     fNeventsProcessed++;
 
     for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
-      if ((!ConfNoPDGPartOne && p2.pidcut() != ConfPDGCodePartOne) || (!ConfNoPDGPartTwo && p1.pidcut() != ConfPDGCodePartTwo)) {
+      if ((!ConfNoPDGPartOne && p2.tempFitVar() != ConfPDGCodePartOne) || (!ConfNoPDGPartTwo && p1.tempFitVar() != ConfPDGCodePartTwo)) {
         continue;
       }
       if (swpart)
