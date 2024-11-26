@@ -12,17 +12,17 @@
 if(FastJet_FOUND)
 
 o2physics_add_dpl_workflow(jet-matching-data-ch-1
-                    SOURCES jetmatchingduplicateschargeddata1.cxx
+                    SOURCES jetMatchingDuplicatesChargedData1.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-matching-mcd-ch-1
-                    SOURCES jetmatchingduplicateschargedmcd1.cxx
+                    SOURCES jetMatchingDuplicatesChargedMCD1.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(jet-matching-mcp-ch-1
-                    SOURCES jetmatchingduplicateschargedmcp1.cxx
+                    SOURCES jetMatchingDuplicatesChargedMCP1.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
