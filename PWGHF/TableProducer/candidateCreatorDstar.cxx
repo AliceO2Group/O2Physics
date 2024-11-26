@@ -15,7 +15,10 @@
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 /// \author Deependra Sharma <deependra.sharma@cern.ch>, IITB
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
-
+// std
+#include <memory>
+#include <string>
+#include <vector>
 // ROOT
 #include <TPDGCode.h>
 // O2
