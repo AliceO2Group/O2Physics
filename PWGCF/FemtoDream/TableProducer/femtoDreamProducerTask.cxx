@@ -15,6 +15,8 @@
 
 #include <CCDB/BasicCCDBManager.h>
 #include <fairlogger/Logger.h>
+#include <vector>
+#include <string>
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -109,6 +111,7 @@ struct femtoDreamProducerTask {
     "ConfTriggerSwitches",
     {softwareTriggers::triggerSwitches[0], 1, softwareTriggers::nTriggers, std::vector<std::string>{"Switch"}, softwareTriggers::triggerNames},
     "Turn on which trigger should be checked for recorded events to pass selection"};
+  Configurable<std::string> ConfBaseCCDBPathForTriggers{"ConfBaseCCDBPathForTriggers", "Users/m/mpuccio/EventFiltering/OTS/Chunked/", "Provide ccdb path for trigger table; default - trigger coordination"};
 
   // Event cuts - usual selection criteria
   Configurable<float> ConfEvtZvtx{"ConfEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
@@ -341,6 +344,7 @@ struct femtoDreamProducerTask {
 
     // Init for zorro to get trigger flags
     if (ConfEnableTriggerSelection) {
+      zorro.setCCDBpath(ConfBaseCCDBPathForTriggers);
       zorro.initCCDB(ccdb.service, mRunNumber, timestamp, zorroTriggerNames);
     }
   }
