@@ -65,10 +65,9 @@ struct centralityStudy {
   Configurable<float> scaleSignalFT0M{"scaleSignalFT0M", 1.00f, "scale FT0M signal for convenience"};
   Configurable<float> scaleSignalFV0A{"scaleSignalFV0A", 1.00f, "scale FV0A signal for convenience"};
 
-  // reject low zna/c 
+  // reject low zna/c
   Configurable<float> minZNACsignal{"minZNACsignal", 15.0f, "min zna/c signal"};
   Configurable<float> maxFT0CforZNACselection{"maxFT0CforZNACselection", 35000.0f, "max ft0c signal for minZNACsignal to work"};
-
 
   // Configurable Axes for 2d plots, etc
   ConfigurableAxis axisMultFV0A{"axisMultFV0A", {1000, 0, 100000}, "FV0A amplitude"};
@@ -247,7 +246,7 @@ struct centralityStudy {
 
     if (collision.multFT0C() < maxFT0CforZNACselection &&
         collision.multZNA() < minZNACsignal &&
-        collision.multZNC() < minZNACsignal ) {
+        collision.multZNC() < minZNACsignal) {
       return;
     }
     histos.fill(HIST("hCollisionSelection"), 15 /* pass em/upc rejection */);
@@ -323,7 +322,7 @@ struct centralityStudy {
 
     if (multbc.multBCFT0C() < maxFT0CforZNACselection &&
         multbc.multBCZNA() < minZNACsignal &&
-        multbc.multBCZNC() < minZNACsignal ) {
+        multbc.multBCZNC() < minZNACsignal) {
       return;
     }
     histos.fill(HIST("hBCSelection"), 5); // znac
@@ -331,7 +330,7 @@ struct centralityStudy {
     // if we got here, we also finally fill the FT0C histogram, please
     histos.fill(HIST("hFT0C_BCs"), multbc.multBCFT0C() * scaleSignalFT0C);
 
-    //ZN signals
+    // ZN signals
     histos.fill(HIST("hZNAvsFT0C_BCs"), multbc.multBCFT0C() * scaleSignalFT0C, multbc.multBCZNA());
     histos.fill(HIST("hZNCvsFT0C_BCs"), multbc.multBCFT0C() * scaleSignalFT0C, multbc.multBCZNC());
 
