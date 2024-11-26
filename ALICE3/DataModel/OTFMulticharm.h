@@ -42,6 +42,35 @@ DECLARE_SOA_COLUMN(MXiCC, mXiCC, float);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Eta, eta, float);
 
+// tracking counters
+DECLARE_SOA_COLUMN(NSiliconHitsXi, nSiliconHitsXi, int);
+DECLARE_SOA_COLUMN(NSiliconHitsPiFromXi, nSiliconHitsPiFromXi, int);
+DECLARE_SOA_COLUMN(NSiliconHitsPiFromLa, nSiliconHitsPiFromLa, int);
+DECLARE_SOA_COLUMN(NSiliconHitsPrFromLa, nSiliconHitsPrFromLa, int);
+DECLARE_SOA_COLUMN(NSiliconHitsPiC1, nSiliconHitsPiC1, int);
+DECLARE_SOA_COLUMN(NSiliconHitsPiC2, nSiliconHitsPiC2, int);
+DECLARE_SOA_COLUMN(NSiliconHitsPiCC, nSiliconHitsPiCC, int);
+
+DECLARE_SOA_COLUMN(NTPCHitsPiFromXi, nTPCHitsPiFromXi, int);
+DECLARE_SOA_COLUMN(NTPCHitsPiFromLa, nTPCHitsPiFromLa, int);
+DECLARE_SOA_COLUMN(NTPCHitsPrFromLa, nTPCHitsPrFromLa, int);
+DECLARE_SOA_COLUMN(NTPCHitsPiC1, nTPCHitsPiC1, int);
+DECLARE_SOA_COLUMN(NTPCHitsPiC2, nTPCHitsPiC2, int);
+DECLARE_SOA_COLUMN(NTPCHitsPiCC, nTPCHitsPiCC, int);
+
+// DCA to PV variables
+DECLARE_SOA_COLUMN(DCAToPVXi, dcaToPVXi, float);
+DECLARE_SOA_COLUMN(DCAToPVXiC, dcaToPVXiC, float);
+DECLARE_SOA_COLUMN(DCAToPVXiCC, dcaToPVXiCC, float);
+
+DECLARE_SOA_COLUMN(DCAToPVPiFromXi, dcaToPVPiFromXi, float);
+DECLARE_SOA_COLUMN(DCAToPVPiFromLa, dcaToPVPiFromLa, float);
+DECLARE_SOA_COLUMN(DCAToPVPrFromLa, dcaToPVPrFromLa, float);
+
+DECLARE_SOA_COLUMN(DCAToPVPiC1, dcaToPVPiC1, float);
+DECLARE_SOA_COLUMN(DCAToPVPiC2, dcaToPVPiC2, float);
+DECLARE_SOA_COLUMN(DCAToPVPiCC, dcaToPVPiCC, float);
+
 } // namespace otfmulticharm
 DECLARE_SOA_TABLE(MCharmIndices, "AOD", "MCharmIndices",
                   o2::soa::Index<>,
@@ -56,7 +85,31 @@ DECLARE_SOA_TABLE(MCharmCores, "AOD", "MCharmCores",
                   otfmulticharm::MXiC,
                   otfmulticharm::MXiCC,
                   otfmulticharm::Pt,
-                  otfmulticharm::Eta);
+                  otfmulticharm::Eta,
+
+                  otfmulticharm::NSiliconHitsXi,
+                  otfmulticharm::NSiliconHitsPiFromXi,
+                  otfmulticharm::NSiliconHitsPiFromLa,
+                  otfmulticharm::NSiliconHitsPrFromLa,
+                  otfmulticharm::NSiliconHitsPiC1,
+                  otfmulticharm::NSiliconHitsPiC2,
+                  otfmulticharm::NSiliconHitsPiCC,
+                  otfmulticharm::NTPCHitsPiFromXi,
+                  otfmulticharm::NTPCHitsPiFromLa,
+                  otfmulticharm::NTPCHitsPrFromLa,
+                  otfmulticharm::NTPCHitsPiC1,
+                  otfmulticharm::NTPCHitsPiC2,
+                  otfmulticharm::NTPCHitsPiCC,
+
+                  otfmulticharm::DCAToPVXi,
+                  otfmulticharm::DCAToPVXiC,
+                  otfmulticharm::DCAToPVXiCC,
+                  otfmulticharm::DCAToPVPiFromXi,
+                  otfmulticharm::DCAToPVPiFromLa,
+                  otfmulticharm::DCAToPVPrFromLa,
+                  otfmulticharm::DCAToPVPiC1,
+                  otfmulticharm::DCAToPVPiC2,
+                  otfmulticharm::DCAToPVPiCC);
 
 } // namespace o2::aod
 

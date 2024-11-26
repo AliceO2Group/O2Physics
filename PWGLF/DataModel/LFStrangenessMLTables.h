@@ -235,6 +235,18 @@ DECLARE_SOA_TABLE(CascMLCandidates, "AOD", "CAMLCANDIDATES",
                   cascmlcandidates::IsXiPlus,
                   cascmlcandidates::IsOmegaMinus,
                   cascmlcandidates::IsOmegaPlus);
+
+namespace CascMLSelection
+{
+DECLARE_SOA_COLUMN(XiBDTScore, xiBDTScore, float);
+DECLARE_SOA_COLUMN(OmegaBDTScore, omegaBDTScore, float);
+} // namespace CascMLSelection
+
+DECLARE_SOA_TABLE(CascXiMLScores, "AOD", "CASCXIMLSCORES",
+                  CascMLSelection::XiBDTScore);
+DECLARE_SOA_TABLE(CascOmMLScores, "AOD", "CASCOMMLSCORES",
+                  CascMLSelection::OmegaBDTScore);
+
 } // namespace o2::aod
 
 #endif // PWGLF_DATAMODEL_LFSTRANGENESSMLTABLES_H_

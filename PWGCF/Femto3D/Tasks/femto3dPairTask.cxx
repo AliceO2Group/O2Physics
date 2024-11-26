@@ -97,6 +97,7 @@ struct FemtoCorrelations {
   ConfigurableAxis CFkStarBinning{"CFkStarBinning", {500, 0.005, 5.005}, "k* binning of the CF (Nbins, lowlimit, uplimit)"};
 
   Configurable<bool> _fill3dCF{"fill3dCF", false, "flag for filling 3D LCMS histos: true -- fill; false -- not"};
+  Configurable<int> _fill3dAddHistos{"fill3dAddHistos", 1, "flag for filling additional 3D histos: 0 -- nothing; 1 -- Q_LCMS vs. k*; 2 -- Q_LCMS vs. Gamma_out (currently testing)"};
   Configurable<int> _fillDetaDphi{"fillDetaDphi", -1, "flag for filling dEta(dPhi*) histos: '-1' -- don't fill; '0' -- fill before the cut; '1' -- fill after the cut; '2' -- fill before & after the cut"};
   ConfigurableAxis CF3DqLCMSBinning{"CF3DqLCMSBinning", {60, -0.3, 0.3}, "q_out/side/long binning of the CF 3D in LCMS (Nbins, lowlimit, uplimit)"};
   // the next configarable is responsible for skipping (pseudo)randomly chosen ($value -1) pairs of events in the mixing process
@@ -147,7 +148,7 @@ struct FemtoCorrelations {
 
   std::vector<std::vector<std::shared_ptr<TH3>>> SEhistos_3D;
   std::vector<std::vector<std::shared_ptr<TH3>>> MEhistos_3D;
-  std::vector<std::vector<std::shared_ptr<TH3>>> qLCMSvskStar;
+  std::vector<std::vector<std::shared_ptr<TH3>>> Add3dHistos;
 
   std::vector<std::vector<std::shared_ptr<TH2>>> DoubleTrack_SE_histos_BC; // BC -- before cutting
   std::vector<std::vector<std::shared_ptr<TH2>>> DoubleTrack_ME_histos_BC; // BC -- before cutting
@@ -204,19 +205,26 @@ struct FemtoCorrelations {
       if (_fill3dCF) {
         std::vector<std::shared_ptr<TH3>> SEperMult_3D;
         std::vector<std::shared_ptr<TH3>> MEperMult_3D;
-        std::vector<std::shared_ptr<TH3>> qLCMSvskStarperMult;
+        std::vector<std::shared_ptr<TH3>> Add3dHistosperMult;
 
         for (unsigned int j = 0; j < _kTbins.value.size() - 1; j++) {
           auto hSE_3D = registry.add<TH3>(Form("Cent%i/SE_3D_cent%i_kT%i", i, i, j), Form("SE_3D_cent%i_kT%i", i, j), kTH3F, {{CF3DqLCMSBinning, "q_out (GeV/c)"}, {CF3DqLCMSBinning, "q_side (GeV/c)"}, {CF3DqLCMSBinning, "q_long (GeV/c)"}});
           auto hME_3D = registry.add<TH3>(Form("Cent%i/ME_3D_cent%i_kT%i", i, i, j), Form("ME_3D_cent%i_kT%i", i, j), kTH3F, {{CF3DqLCMSBinning, "q_out (GeV/c)"}, {CF3DqLCMSBinning, "q_side (GeV/c)"}, {CF3DqLCMSBinning, "q_long (GeV/c)"}});
-          auto hqLCMSvskStar = registry.add<TH3>(Form("Cent%i/qLCMSvskStar_cent%i_kT%i", i, i, j), Form("qLCMSvskStar_cent%i_kT%i", i, j), kTH3F, {{CF3DqLCMSBinning, "q_out (GeV/c)"}, {CF3DqLCMSBinning, "q_side (GeV/c)"}, {CF3DqLCMSBinning, "q_long (GeV/c)"}});
           SEperMult_3D.push_back(std::move(hSE_3D));
           MEperMult_3D.push_back(std::move(hME_3D));
-          qLCMSvskStarperMult.push_back(std::move(hqLCMSvskStar));
+
+          if (_fill3dAddHistos == 1) {
+            auto hAdd3dHistos = registry.add<TH3>(Form("Cent%i/qLCMSvskStar_cent%i_kT%i", i, i, j), Form("qLCMSvskStar_cent%i_kT%i", i, j), kTH3F, {{CF3DqLCMSBinning, "q_out (GeV/c)"}, {CF3DqLCMSBinning, "q_side (GeV/c)"}, {CF3DqLCMSBinning, "q_long (GeV/c)"}});
+            Add3dHistosperMult.push_back(std::move(hAdd3dHistos));
+          } else if (_fill3dAddHistos == 2) {
+            auto hAdd3dHistos = registry.add<TH3>(Form("Cent%i/qLCMSvsGout_cent%i_kT%i", i, i, j), Form("qLCMSvsGout_cent%i_kT%i", i, j), kTH3F, {{CF3DqLCMSBinning, "q_out (GeV/c)"}, {CF3DqLCMSBinning, "q_side (GeV/c)"}, {CF3DqLCMSBinning, "q_long (GeV/c)"}});
+            Add3dHistosperMult.push_back(std::move(hAdd3dHistos));
+          }
         }
         SEhistos_3D.push_back(std::move(SEperMult_3D));
         MEhistos_3D.push_back(std::move(MEperMult_3D));
-        qLCMSvskStar.push_back(std::move(qLCMSvskStarperMult));
+        if (_fill3dAddHistos != 0)
+          Add3dHistos.push_back(std::move(Add3dHistosperMult));
       }
 
       if (_fillDetaDphi > -1) {
@@ -366,7 +374,10 @@ struct FemtoCorrelations {
             std::mt19937 mt(std::chrono::steady_clock::now().time_since_epoch().count());
             TVector3 qLCMS = std::pow(-1, (mt() % 2)) * Pair->GetQLCMS(); // introducing randomness to the pair order ([first, second]); important only for 3D because if there are any sudden order/correlation in the tables, it could couse unwanted asymmetries in the final 3d rel. momentum distributions; irrelevant in 1D case because the absolute value of the rel.momentum is taken
             MEhistos_3D[multBin][kTbin]->Fill(qLCMS.X(), qLCMS.Y(), qLCMS.Z());
-            qLCMSvskStar[multBin][kTbin]->Fill(qLCMS.X(), qLCMS.Y(), qLCMS.Z(), Pair->GetKstar());
+            if (_fill3dAddHistos == 1)
+              Add3dHistos[multBin][kTbin]->Fill(qLCMS.X(), qLCMS.Y(), qLCMS.Z(), Pair->GetKstar());
+            else if (_fill3dAddHistos == 2)
+              Add3dHistos[multBin][kTbin]->Fill(qLCMS.X(), qLCMS.Y(), qLCMS.Z(), Pair->GetGammaOut());
           }
         }
         Pair->ResetPair();
@@ -380,7 +391,7 @@ struct FemtoCorrelations {
       LOGF(fatal, "One of passed PDG is 0!!!");
 
     for (auto track : tracks) {
-      if (abs(track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().posZ()) > _vertexZ)
+      if (std::fabs(track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().posZ()) > _vertexZ)
         continue;
       if (_removeSameBunchPileup && !track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().isNoSameBunchPileup())
         continue;
@@ -400,7 +411,7 @@ struct FemtoCorrelations {
         continue;
       if (track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().occupancy() < _OccupancyCut.value.first || track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().occupancy() >= _OccupancyCut.value.second)
         continue;
-      if (abs(track.dcaXY()) > _dcaXY.value[0] + _dcaXY.value[1] * std::pow(track.pt(), _dcaXY.value[2]) || abs(track.dcaZ()) > _dcaZ.value[0] + _dcaZ.value[1] * std::pow(track.pt(), _dcaZ.value[2]))
+      if (std::fabs(track.dcaXY()) > _dcaXY.value[0] + _dcaXY.value[1] * std::pow(track.pt(), _dcaXY.value[2]) || std::fabs(track.dcaZ()) > _dcaZ.value[0] + _dcaZ.value[1] * std::pow(track.pt(), _dcaZ.value[2]))
         continue;
 
       if (track.sign() == _sign_1 && (track.p() < _PIDtrshld_1 ? o2::aod::singletrackselector::TPCselection(track, TPCcuts_1) : o2::aod::singletrackselector::TOFselection(track, TOFcuts_1, _tpcNSigmaResidual_1.value))) { // filling the map: eventID <-> selected particles1

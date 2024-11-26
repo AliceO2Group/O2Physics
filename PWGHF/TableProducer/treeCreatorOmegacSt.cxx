@@ -23,6 +23,8 @@
 #include "DataFormatsParameters/GRPObject.h"
 #include "DCAFitter/DCAFitterN.h"
 #include "DetectorsBase/Propagator.h"
+#include "EventFiltering/Zorro.h"
+#include "EventFiltering/ZorroSummary.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoA.h"
@@ -127,6 +129,8 @@ DECLARE_SOA_COLUMN(Chi2TopologicalCharmedBaryon, chi2TopologicalCharmedBaryon, f
 DECLARE_SOA_COLUMN(Chi2TopologicalCasc, chi2TopologicalCasc, float);
 DECLARE_SOA_COLUMN(DecayLengthCharmedBaryon, decayLengthCharmedBaryon, float);
 DECLARE_SOA_COLUMN(DecayLengthXYCharmedBaryon, decayLengthXYCharmedBaryon, float);
+DECLARE_SOA_COLUMN(DecayLengthCharmedBaryonUntracked, decayLengthCharmedBaryonUntracked, float);
+DECLARE_SOA_COLUMN(DecayLengthXYCharmedBaryonUntracked, decayLengthXYCharmedBaryonUntracked, float);
 DECLARE_SOA_COLUMN(DecayLengthCasc, decayLengthCasc, float);
 DECLARE_SOA_COLUMN(DecayLengthXYCasc, decayLengthXYCasc, float);
 DECLARE_SOA_INDEX_COLUMN_FULL(MotherCasc, motherCasc, int, HfStChBarGens, "_Casc");
@@ -178,6 +182,8 @@ DECLARE_SOA_TABLE(HfStChBars, "AOD", "HFSTCHBAR",
                   hf_st_charmed_baryon::Chi2TopologicalCasc,
                   hf_st_charmed_baryon::DecayLengthCharmedBaryon,
                   hf_st_charmed_baryon::DecayLengthXYCharmedBaryon,
+                  hf_st_charmed_baryon::DecayLengthCharmedBaryonUntracked,
+                  hf_st_charmed_baryon::DecayLengthXYCharmedBaryonUntracked,
                   hf_st_charmed_baryon::DecayLengthCasc,
                   hf_st_charmed_baryon::DecayLengthXYCasc,
                   hf_st_charmed_baryon::MotherCascId,
@@ -188,6 +194,9 @@ struct HfTreeCreatorOmegacSt {
   Produces<aod::HfStChBars> outputTable;
   Produces<aod::HfStChBarGens> outputTableGen;
 
+  Zorro zorro;
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
+
   Configurable<int> materialCorrectionType{"materialCorrectionType", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrLUT), "Type of material correction"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpMagPath{"grpMagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
@@ -195,6 +204,7 @@ struct HfTreeCreatorOmegacSt {
   Configurable<std::string> matLutPath{"matLutPath", "GLO/Param/MatLUT", "Path of the material LUT"};
   Configurable<bool> propToDCA{"propToDCA", true, "create tracks version propagated to PCA"};
   Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
+  Configurable<bool> skimmedProcessing{"skimmedProcessing", false, "Put true if you are processing apass*_skimmed datasets"};
   Configurable<double> maxR{"maxR", 200., "reject PCA's above this radius"};
   Configurable<double> maxDZIni{"maxDZIni", 4., "reject (if>0) PCA candidate if tracks DZ exceeds threshold"};
   Configurable<double> minParamChange{"minParamChange", 1.e-3, "stop iterations if largest change of any X is smaller than this"};
@@ -362,6 +372,13 @@ struct HfTreeCreatorOmegacSt {
     for (const auto& collision : collisions) {
       const auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       if (runNumber != bc.runNumber()) {
+        if (skimmedProcessing) {
+          if (runNumber == 0) {
+            zorroSummary.setObject(zorro.getZorroSummary());
+          }
+          zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), "fTrackedOmega");
+          zorro.populateHistRegistry(registry, bc.runNumber());
+        }
         runNumber = bc.runNumber();
         auto timestamp = bc.timestamp();
 
@@ -375,6 +392,9 @@ struct HfTreeCreatorOmegacSt {
           LOG(fatal) << "Got nullptr from CCDB for path " << grpMagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << timestamp;
         }
         df2.setBz(bz);
+      }
+      if (skimmedProcessing) {
+        zorro.isSelected(collision.bc().globalBC());
       }
 
       const auto primaryVertex = getPrimaryVertex(collision);
@@ -460,8 +480,9 @@ struct HfTreeCreatorOmegacSt {
         std::array<std::array<float, 3>, 2> momentaCascDaughters;
         trackParV0.getPxPyPzGlo(momentaCascDaughters[0]);
         trackParBachelor.getPxPyPzGlo(momentaCascDaughters[1]);
+        o2::track::TrackParCov trackParCovCascUntracked = df2.createParentTrackParCov(0);
         std::array<float, 3> pCasc;
-        df2.createParentTrackParCov().getPxPyPzGlo(pCasc);
+        trackParCovCascUntracked.getPxPyPzGlo(pCasc);
         const auto cpaCasc = RecoDecay::cpa(primaryVertexPos, df2.getPCACandidate(), pCasc);
         const auto cpaXYCasc = RecoDecay::cpaXY(primaryVertexPos, df2.getPCACandidate(), pCasc);
 
@@ -538,6 +559,13 @@ struct HfTreeCreatorOmegacSt {
 
                 hCandidatesCascPi->Fill(SVFitting::BeforeFit);
                 try {
+                  auto decayLengthUntracked = -1.;
+                  auto decayLengthXYUntracked = -1.;
+                  if (df2.process(trackParCovCascUntracked, trackParCovPion)) {
+                    const auto& secondaryVertexUntracked = df2.getPCACandidate();
+                    decayLengthUntracked = RecoDecay::distance(secondaryVertexUntracked, primaryVertexPos);
+                    decayLengthXYUntracked = RecoDecay::distanceXY(secondaryVertexUntracked, primaryVertexPos);
+                  }
                   if (df2.process(trackParCovCasc, trackParCovPion)) {
                     const auto& secondaryVertex = df2.getPCACandidate();
                     const auto decayLength = RecoDecay::distance(secondaryVertex, primaryVertexPos);
@@ -603,6 +631,8 @@ struct HfTreeCreatorOmegacSt {
                                   trackedCascade.topologyChi2(),
                                   decayLength,
                                   decayLengthXY,
+                                  decayLengthUntracked,
+                                  decayLengthXYUntracked,
                                   decayLengthCasc,
                                   decayLengthCascXY,
                                   trackCascMotherId,

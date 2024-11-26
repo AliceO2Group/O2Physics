@@ -708,7 +708,6 @@ struct phiInJets {
     double RealPhiCand = 0;
     double RealPhiCandWithJet = 0;
     double RealPhiCandInJet = 0;
-
     // Track Eff
     for (const auto& track : tracks) {
       auto originalTrack = track.track_as<myCompleteTracks>();
@@ -822,7 +821,7 @@ struct phiInJets {
           int goodjets = 0;
           double jetpt = 0;
 
-          for (int i = 0; i < mcd_pt.size(); i++) {
+          for (std::size_t i = 0; i < mcd_pt.size(); i++) {
             if (i == 0) {
               if (lResonance.M() > 1.005 && lResonance.M() < 1.035) {
                 RealPhiCandWithJet++;

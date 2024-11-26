@@ -16,6 +16,8 @@
 /// \author S. Kundu (CERN) sourav.kundu@cern.ch
 /// \author M. Faggin (CERN) mattia.faggin@cern.ch
 
+#include <vector>
+
 #include "TRandom3.h"
 #include "Math/Vector3D.h"
 #include "Math/Vector4D.h"
@@ -159,12 +161,15 @@ struct TaskPolarisationCharmHadrons {
   struct : ConfigurableGroup {
     Configurable<bool> applyLcBkgVeto{"applyLcBkgVeto", false, "Flag to enable the veto on D+ and Ds+ background for Lc->pKpi analysis"};
     /// background from D+->K-pi+pi+
+    Configurable<bool> enableLcBkgVetoDplusKPiPi{"enableLcBkgVetoDplusKPiPi", false, "Flag to enable the veto on D+->K-pi+pi+ for Lc->pKpi analysis"};
     Configurable<float> massDplusKPiPiMinVeto{"massDplusKPiPiMinVeto", 1.85, "Min. value for D+->K-pi+pi+ veto"};
     Configurable<float> massDplusKPiPiMaxVeto{"massDplusKPiPiMaxVeto", 1.90, "Max. value for D+->K-pi+pi+ veto"};
     /// background from D+->K+K-pi+
+    Configurable<bool> enableLcBkgVetoDplusKKPi{"enableLcBkgVetoDplusKKPi", false, "Flag to enable the veto on D+->K+K-pi+ for Lc->pKpi analysis"};
     Configurable<float> massDplusKKPiMinVeto{"massDplusKKPiMinVeto", 1.85, "Min. value for D+->K+K-pi+ veto"}; // one can use also massDplusKPiPiMinVeto, but this allows more flexibility in analysis
     Configurable<float> massDplusKKPiMaxVeto{"massDplusKKPiMaxVeto", 1.90, "Max. value for D+->K+K-pi+ veto"}; // one can use also massDplusKPiPiMaxVeto, but this allows more flexibility in analysis
     /// background from Ds+->K+K-pi+
+    Configurable<bool> enableLcBkgVetoDsKKPi{"enableLcBkgVetoDsKKPi", false, "Flag to enable the veto on Ds+->K+K-pi+ for Lc->pKpi analysis"};
     Configurable<float> massDsKKPiMinVeto{"massDsKKPiMinVeto", 1.94, "Min. value for Ds+->K+K-pi+ veto"};
     Configurable<float> massDsKKPiMaxVeto{"massDsKKPiMaxVeto", 2.00, "Max. value for Ds+->K+K-pi+ veto"};
   } lcBkgVeto;
@@ -185,6 +190,9 @@ struct TaskPolarisationCharmHadrons {
   /// Monitoring of phi Euler angle
   Configurable<bool> activateTHnEulerPhiMonitor{"activateTHnEulerPhiMonitor", false, "Flag to switch on the monitoring THnSparse vs. Euler angle phi (Lc -> pKpi)"};
   ConfigurableAxis configTHnAxisEulerPhi{"configTHnAxisEulerPhi", {24, -o2::constants::math::PI, o2::constants::math::PI}, "Euler polar angle #phi"};
+
+  /// Application of rapidity cut for reconstructed candidates
+  Configurable<float> rapidityCut{"rapidityCut", 999.f, "Max. value of reconstructed candidate rapidity (abs. value)"};
 
   Filter filterSelectDstarCandidates = aod::hf_sel_candidate_dstar::isSelDstarToD0Pi == selectionFlagDstarToD0Pi;
   Filter filterSelectLcToPKPiCandidates = (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLcToPKPi) || (aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLcToPKPi);
@@ -534,18 +542,18 @@ struct TaskPolarisationCharmHadrons {
       if constexpr (!doMc) {                                                            // data
         if constexpr (withMl) {                                                         // with ML
           if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) {  // D*+
-            registry.fill(HIST("hHelicity"), invMassCharmHad, ptCharmHad, numPvContributors, rapCharmHad, invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate);
+            registry.fill(HIST("hHelicity"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate);
           } else if constexpr (channel == charm_polarisation::DecayChannel::LcToPKPi) { // Lc+
-            registry.fill(HIST("hHelicity"), invMassCharmHad, ptCharmHad, numPvContributors, rapCharmHad, invMassKPiLc, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate, charge);
+            registry.fill(HIST("hHelicity"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassKPiLc, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate, charge);
             if (activateTHnEulerPhiMonitor) {
               registry.fill(HIST("hEulerPhiHelicity"), invMassCharmHad, ptCharmHad, invMassKPiLc, phiEuler, outputMl[0], /*outputMl[1],*/ outputMl[2], charge);
             }
           }
         } else {                                                                       // without ML
           if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
-            registry.fill(HIST("hHelicity"), invMassCharmHad, ptCharmHad, numPvContributors, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate);
+            registry.fill(HIST("hHelicity"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate);
           } else if constexpr (channel == charm_polarisation::DecayChannel::LcToPKPi) { // Lc+
-            registry.fill(HIST("hHelicity"), invMassCharmHad, ptCharmHad, numPvContributors, rapCharmHad, invMassKPiLc, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate, charge);
+            registry.fill(HIST("hHelicity"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassKPiLc, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate, charge);
             if (activateTHnEulerPhiMonitor) {
               registry.fill(HIST("hEulerPhiHelicity"), invMassCharmHad, ptCharmHad, invMassKPiLc, phiEuler, charge);
             }
@@ -598,18 +606,18 @@ struct TaskPolarisationCharmHadrons {
       if constexpr (!doMc) {                                                                     // data
         if constexpr (withMl) {                                                                  // with ML
           if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) {           // D*+
-            registry.fill(HIST("hProduction"), invMassCharmHad, ptCharmHad, numPvContributors, rapCharmHad, invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate);
+            registry.fill(HIST("hProduction"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate);
           } else if constexpr (channel == charm_polarisation::DecayChannel::LcToPKPi) { // Lc+
-            registry.fill(HIST("hProduction"), invMassCharmHad, ptCharmHad, numPvContributors, rapCharmHad, invMassKPiLc, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate, charge);
+            registry.fill(HIST("hProduction"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassKPiLc, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate, charge);
             if (activateTHnEulerPhiMonitor) {
               registry.fill(HIST("hEulerPhiProduction"), invMassCharmHad, ptCharmHad, invMassKPiLc, phiEuler, outputMl[0], /*outputMl[1],*/ outputMl[2], charge);
             }
           }
         } else {                                                                       // without ML
           if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
-            registry.fill(HIST("hProduction"), invMassCharmHad, ptCharmHad, numPvContributors, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate);
+            registry.fill(HIST("hProduction"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate);
           } else if constexpr (channel == charm_polarisation::DecayChannel::LcToPKPi) { // Lc+
-            registry.fill(HIST("hProduction"), invMassCharmHad, ptCharmHad, numPvContributors, rapCharmHad, invMassKPiLc, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate, charge);
+            registry.fill(HIST("hProduction"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassKPiLc, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate, charge);
             if (activateTHnEulerPhiMonitor) {
               registry.fill(HIST("hEulerPhiProduction"), invMassCharmHad, ptCharmHad, invMassKPiLc, phiEuler, charge);
             }
@@ -662,18 +670,18 @@ struct TaskPolarisationCharmHadrons {
       if constexpr (!doMc) {                                                               // data
         if constexpr (withMl) {                                                            // with ML
           if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) {     // D*+
-            registry.fill(HIST("hBeam"), invMassCharmHad, ptCharmHad, numPvContributors, rapCharmHad, invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate);
+            registry.fill(HIST("hBeam"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate);
           } else if constexpr (channel == charm_polarisation::DecayChannel::LcToPKPi) { // Lc+
-            registry.fill(HIST("hBeam"), invMassCharmHad, ptCharmHad, numPvContributors, rapCharmHad, invMassKPiLc, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate, charge);
+            registry.fill(HIST("hBeam"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassKPiLc, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate, charge);
             if (activateTHnEulerPhiMonitor) {
               registry.fill(HIST("hEulerPhiBeam"), invMassCharmHad, ptCharmHad, invMassKPiLc, phiEuler, outputMl[0], /*outputMl[1],*/ outputMl[2], charge);
             }
           }
         } else {                                                                       // without ML
           if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
-            registry.fill(HIST("hBeam"), invMassCharmHad, ptCharmHad, numPvContributors, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate);
+            registry.fill(HIST("hBeam"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate);
           } else if constexpr (channel == charm_polarisation::DecayChannel::LcToPKPi) { // Lc+
-            registry.fill(HIST("hBeam"), invMassCharmHad, ptCharmHad, numPvContributors, rapCharmHad, invMassKPiLc, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate, charge);
+            registry.fill(HIST("hBeam"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassKPiLc, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate, charge);
             if (activateTHnEulerPhiMonitor) {
               registry.fill(HIST("hEulerPhiBeam"), invMassCharmHad, ptCharmHad, invMassKPiLc, phiEuler, charge);
             }
@@ -726,15 +734,15 @@ struct TaskPolarisationCharmHadrons {
       if constexpr (!doMc) {                                                                 // data
         if constexpr (withMl) {                                                              // with ML
           if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) {       // D*+
-            registry.fill(HIST("hRandom"), invMassCharmHad, ptCharmHad, numPvContributors, rapCharmHad, invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate);
+            registry.fill(HIST("hRandom"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate);
           } else if constexpr (channel == charm_polarisation::DecayChannel::LcToPKPi) { // Lc+
-            registry.fill(HIST("hRandom"), invMassCharmHad, ptCharmHad, numPvContributors, rapCharmHad, invMassKPiLc, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate, charge);
+            registry.fill(HIST("hRandom"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassKPiLc, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate, charge);
           }
         } else {                                                                       // without ML
           if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
-            registry.fill(HIST("hRandom"), invMassCharmHad, ptCharmHad, numPvContributors, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate);
+            registry.fill(HIST("hRandom"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate);
           } else if constexpr (channel == charm_polarisation::DecayChannel::LcToPKPi) { // Lc+
-            registry.fill(HIST("hRandom"), invMassCharmHad, ptCharmHad, numPvContributors, rapCharmHad, invMassKPiLc, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate, charge);
+            registry.fill(HIST("hRandom"), invMassCharmHad, ptCharmHad, numPvContributors, std::abs(rapCharmHad), invMassKPiLc, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate, charge);
           }
         }
       } else {                                                                           // MC --> no distinction among channels, since rotational bkg not supported
@@ -1135,11 +1143,11 @@ struct TaskPolarisationCharmHadrons {
         }
 
         /// put veto on D+, Ds+ inv. masses, to reduce the background
-        if (lcBkgVeto.applyLcBkgVeto && ((lcBkgVeto.massDplusKPiPiMinVeto < invMassPiKPi && invMassPiKPi < lcBkgVeto.massDplusKPiPiMaxVeto) /*bkg. from D+ -> K+pi-pi-*/ ||
-                                         (lcBkgVeto.massDplusKKPiMinVeto < invMassKKPi && invMassKKPi < lcBkgVeto.massDplusKKPiMaxVeto) /*bkg. from D+ -> K+K-pi+ (1st mass hypothesis)*/ ||
-                                         (lcBkgVeto.massDplusKKPiMinVeto < invMassPiKK && invMassPiKK < lcBkgVeto.massDplusKKPiMaxVeto) /*bkg. from D+ -> K+K-pi+ (2nd mass hypothesis)*/ ||
-                                         (lcBkgVeto.massDsKKPiMinVeto < invMassKKPi && invMassKKPi < lcBkgVeto.massDsKKPiMaxVeto) /*bkg. from Ds+ -> K+K-pi+ (1st mass hypothesis)*/ ||
-                                         (lcBkgVeto.massDsKKPiMinVeto < invMassPiKK && invMassPiKK < lcBkgVeto.massDsKKPiMaxVeto)) /*bkg. from Ds+ -> K+K-pi+ (2nd mass hypothesis)*/) {
+        if (lcBkgVeto.applyLcBkgVeto && ((lcBkgVeto.enableLcBkgVetoDplusKPiPi && lcBkgVeto.massDplusKPiPiMinVeto < invMassPiKPi && invMassPiKPi < lcBkgVeto.massDplusKPiPiMaxVeto) /*bkg. from D+ -> K+pi-pi-*/ ||
+                                         (lcBkgVeto.enableLcBkgVetoDplusKKPi && lcBkgVeto.massDplusKKPiMinVeto < invMassKKPi && invMassKKPi < lcBkgVeto.massDplusKKPiMaxVeto) /*bkg. from D+ -> K+K-pi+ (1st mass hypothesis)*/ ||
+                                         (lcBkgVeto.enableLcBkgVetoDplusKKPi && lcBkgVeto.massDplusKKPiMinVeto < invMassPiKK && invMassPiKK < lcBkgVeto.massDplusKKPiMaxVeto) /*bkg. from D+ -> K+K-pi+ (2nd mass hypothesis)*/ ||
+                                         (lcBkgVeto.enableLcBkgVetoDsKKPi && lcBkgVeto.massDsKKPiMinVeto < invMassKKPi && invMassKKPi < lcBkgVeto.massDsKKPiMaxVeto) /*bkg. from Ds+ -> K+K-pi+ (1st mass hypothesis)*/ ||
+                                         (lcBkgVeto.enableLcBkgVetoDsKKPi && lcBkgVeto.massDsKKPiMinVeto < invMassPiKK && invMassPiKK < lcBkgVeto.massDsKKPiMaxVeto)) /*bkg. from Ds+ -> K+K-pi+ (2nd mass hypothesis)*/) {
           /// this candidate has D+ and/or Ds+ in the veto range, let's reject it
           continue;
         }
@@ -1162,6 +1170,11 @@ struct TaskPolarisationCharmHadrons {
       } // Lc->pKpi
 
       if (invMassCharmHadForSparse < minInvMass || invMassCharmHadForSparse > maxInvMass) {
+        continue;
+      }
+
+      /// apply rapidity selection on the reconstructed candidate
+      if (std::abs(rapidity) > rapidityCut) {
         continue;
       }
 
@@ -1379,7 +1392,7 @@ struct TaskPolarisationCharmHadrons {
                        isRealPKPi, isRealLcPKPi, isReflected,
                        charge);
         } // end studyLcPKPiBkgMc
-      }   // end table for Lc->pKpi background studies
+      } // end table for Lc->pKpi background studies
 
     } /// end loop over mass hypotheses
 

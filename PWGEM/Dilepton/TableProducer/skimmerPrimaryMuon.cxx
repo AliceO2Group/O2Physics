@@ -22,7 +22,6 @@
 #include "CommonConstants/PhysicsConstants.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/Core/TableHelper.h"
-#include "EventFiltering/Zorro.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPMagField.h"
@@ -42,6 +41,9 @@ using namespace o2::soa;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
+
+using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels>;
+using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerInfosTMP>;
 
 using MyTracks = soa::Join<aod::FwdTracks, aod::FwdTracksCov>; // muon tracks are repeated. i.e. not exclusive.
 using MyTrack = MyTracks::iterator;
@@ -71,7 +73,6 @@ struct skimmerPrimaryMuon {
 
   // Configurables
   Configurable<bool> fillQAHistogram{"fillQAHistogram", false, "flag to fill QA histograms"};
-  Configurable<bool> applyEveSel_at_skimming{"applyEveSel_at_skimming", false, "flag to apply minimal event selection at the skimming level"};
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
@@ -83,11 +84,7 @@ struct skimmerPrimaryMuon {
   Configurable<float> maxeta_mft{"maxeta_mft", -2.5, "eta acceptance"};
   Configurable<float> minRabs{"minRabs", 17.6, "min. R at absorber end"};
   Configurable<float> maxRabs{"maxRabs", 89.5, "max. R at absorber end"};
-  Configurable<bool> enable_swt{"enable_swt", false, "flag to process skimmed data (swt triggered)"};
-  Configurable<std::string> cfg_swt_names{"cfg_swt_names", "", "comma-separated software trigger names"};
-  Configurable<bool> inherit_from_emevent_dilepton{"inherit_from_emevent_dilepton", false, "flag to inherit task options from emevent-dilepton"};
 
-  Zorro zorro;
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   int mRunNumber;
@@ -96,7 +93,7 @@ struct skimmerPrimaryMuon {
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
   static constexpr std::string_view muon_types[5] = {"MFTMCHMID/", "MFTMCHMIDOtherMatch/", "MFTMCH/", "MCHMID/", "MCH/"};
 
-  void init(InitContext& initContext)
+  void init(InitContext&)
   {
     ccdb->setURL(ccdburl);
     ccdb->setCaching(true);
@@ -104,26 +101,15 @@ struct skimmerPrimaryMuon {
     ccdb->setFatalWhenNull(false);
     ccdbApi.init(ccdburl);
 
-    // o2::mch::TrackExtrap::setField();
     addHistograms();
 
     mRunNumber = 0;
-
-    if (inherit_from_emevent_dilepton) {
-      getTaskOptionValue(initContext, "create-emevent-dilepton", "applyEveSel_at_skimming", applyEveSel_at_skimming.value, true); // for EM users.
-      getTaskOptionValue(initContext, "create-emevent-dilepton", "enable_swt", enable_swt.value, true);                           // for EM users.
-      getTaskOptionValue(initContext, "create-emevent-dilepton", "cfg_swt_names", cfg_swt_names.value, true);                     // for EM users.
-    }
   }
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
   {
     if (mRunNumber == bc.runNumber()) {
       return;
-    }
-
-    if (enable_swt) {
-      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), cfg_swt_names.value);
     }
 
     mRunNumber = bc.runNumber();
@@ -417,19 +403,17 @@ struct skimmerPrimaryMuon {
 
   // Preslice<aod::FwdTracks> fwdtrackIndicesPerMFTsa = aod::fwdtrack::matchMFTTrackId;
 
+  Preslice<aod::FwdTrackAssoc> fwdtrackIndicesPerCollision = aod::track_association::collisionId;
   Partition<MyTracks> global_muons = o2::aod::fwdtrack::trackType == uint8_t(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack); // MFT-MCH-MID
   Partition<MyTracks> sa_muons = o2::aod::fwdtrack::trackType == uint8_t(o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack); // MCH-MID
 
-  void processRec_SA(Join<aod::Collisions, aod::EvSels> const& collisions, aod::BCsWithTimestamps const&, MyTracks const& tracks, aod::MFTTracks const&)
+  void processRec_SA(MyCollisions const& collisions, aod::BCsWithTimestamps const&, MyTracks const& tracks, aod::MFTTracks const&)
   {
     for (auto& collision : collisions) {
       auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       fRegistry.fill(HIST("Event/hCollisionCounter"), 0.f);
-      if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
-        continue;
-      }
-      if (enable_swt && !zorro.isSelected(bc.globalBC())) {
+      if (!collision.isSelected()) {
         continue;
       }
 
@@ -482,17 +466,13 @@ struct skimmerPrimaryMuon {
   }
   PROCESS_SWITCH(skimmerPrimaryMuon, processRec_SA, "process reconstructed info only with standalone", true);
 
-  Preslice<aod::FwdTrackAssoc> fwdtrackIndicesPerCollision = aod::track_association::collisionId;
-  void processRec_TTCA(Join<aod::Collisions, aod::EvSels> const& collisions, aod::BCsWithTimestamps const&, MyTracks const& tracks, aod::MFTTracks const&, aod::FwdTrackAssoc const& fwdtrackIndices)
+  void processRec_TTCA(MyCollisions const& collisions, aod::BCsWithTimestamps const&, MyTracks const& tracks, aod::MFTTracks const&, aod::FwdTrackAssoc const& fwdtrackIndices)
   {
     for (auto& collision : collisions) {
       auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       fRegistry.fill(HIST("Event/hCollisionCounter"), 0.f);
-      if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
-        continue;
-      }
-      if (enable_swt && !zorro.isSelected(bc.globalBC())) {
+      if (!collision.isSelected()) {
         continue;
       }
 
@@ -504,7 +484,7 @@ struct skimmerPrimaryMuon {
         auto track = fwdtrackId.template fwdtrack_as<MyTracks>();
         // LOGF(info, "TTCA | collision.globalIndex() = %d, track.globalIndex() = %d, track.trackType() = %d, track.matchMFTTrackId() = %d, track.matchMCHTrackId() = %d, track.offsets() = %d", collision.globalIndex(), track.globalIndex(), track.trackType(), track.matchMFTTrackId(), track.matchMCHTrackId(), track.offsets());
 
-        // auto collision_in_track = track.collision_as<aod::Collisions>();
+        // auto collision_in_track = track.collision_as<MyCollisions>();
         // auto bc_in_track = collision_in_track.bc_as<aod::BCsWithTimestamps>();
         // LOGF(info, "track.globalIndex() = %d , bc_in_track.globalBC() = %lld", track.globalIndex(), bc_in_track.globalBC());
 
@@ -548,10 +528,137 @@ struct skimmerPrimaryMuon {
   }
   PROCESS_SWITCH(skimmerPrimaryMuon, processRec_TTCA, "process reconstructed info only with TTCA", false);
 
+  void processRec_SA_SWT(MyCollisionsWithSWT const& collisions, aod::BCsWithTimestamps const&, MyTracks const& tracks, aod::MFTTracks const&)
+  {
+    for (auto& collision : collisions) {
+      auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
+      initCCDB(bc);
+      fRegistry.fill(HIST("Event/hCollisionCounter"), 0.f);
+      if (!collision.isSelected()) {
+        continue;
+      }
+      if (collision.swtaliastmp_raw() == 0) {
+        continue;
+      }
+
+      auto sa_muons_per_coll = sa_muons->sliceByCached(o2::aod::fwdtrack::collisionId, collision.globalIndex(), cache);
+      auto global_muons_per_coll = global_muons->sliceByCached(o2::aod::fwdtrack::collisionId, collision.globalIndex(), cache);
+
+      int counter = 0;
+      int offset = emprimarymuons.lastIndex() + 1;
+
+      for (auto& track : sa_muons_per_coll) {
+        if (fillQAHistogram) {
+          fillTrackHistogram<3>(track, collision);
+        }
+        if (isSelected<false>(track, collision)) {
+          map_new_sa_muon_index[std::make_pair(collision.globalIndex(), track.globalIndex())] = counter + offset;
+          counter++;
+        }
+      } // end of standalone muon loop
+      for (auto& track : global_muons_per_coll) {
+        if (fillQAHistogram) {
+          fillTrackHistogram<0>(track, collision);
+        }
+
+        if (map_new_sa_muon_index.find(std::make_pair(collision.globalIndex(), track.matchMCHTrackId())) == map_new_sa_muon_index.end()) { // don't apply muon selection to MCH-MID track in MFT-MCH-MID track
+          map_new_sa_muon_index[std::make_pair(collision.globalIndex(), track.matchMCHTrackId())] = counter + offset;
+          counter++;
+        }
+        if (isSelected<false>(track, collision)) {
+          map_new_sa_muon_index[std::make_pair(collision.globalIndex(), track.globalIndex())] = counter + offset;
+          counter++;
+        }
+      } // end of global muon loop
+
+      // fill table after mapping
+      for (const auto& [key, value] : map_new_sa_muon_index) {
+        // int collisionId = std::get<0>(key);
+        // int fwdtrackId = std::get<1>(key);
+        // int new_fwdtrackId = value;
+        // LOGF(info, "collisionId = %d, fwdtrackId = %d, new_fwdtrackId = %d", collisionId, fwdtrackId, new_fwdtrackId);
+        auto track = tracks.iteratorAt(std::get<1>(key));
+        if (track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack)) {
+          fillMuonTable<aod::MFTTracks>(track, collision, value);
+        } else if (track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack)) {
+          fillMuonTable<aod::MFTTracks>(track, collision, map_new_sa_muon_index[std::make_pair(collision.globalIndex(), track.matchMCHTrackId())]);
+        }
+      }
+
+      map_new_sa_muon_index.clear();
+    } // end of collision loop
+  }
+  PROCESS_SWITCH(skimmerPrimaryMuon, processRec_SA_SWT, "process reconstructed info only with standalone", false);
+
+  void processRec_TTCA_SWT(MyCollisionsWithSWT const& collisions, aod::BCsWithTimestamps const&, MyTracks const& tracks, aod::MFTTracks const&, aod::FwdTrackAssoc const& fwdtrackIndices)
+  {
+    for (auto& collision : collisions) {
+      auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
+      initCCDB(bc);
+      fRegistry.fill(HIST("Event/hCollisionCounter"), 0.f);
+      if (!collision.isSelected()) {
+        continue;
+      }
+      if (collision.swtaliastmp_raw() == 0) {
+        continue;
+      }
+
+      int counter = 0;
+      int offset = emprimarymuons.lastIndex() + 1;
+
+      auto fwdtrackIdsThisCollision = fwdtrackIndices.sliceBy(fwdtrackIndicesPerCollision, collision.globalIndex());
+      for (auto& fwdtrackId : fwdtrackIdsThisCollision) {
+        auto track = fwdtrackId.template fwdtrack_as<MyTracks>();
+        // LOGF(info, "TTCA | collision.globalIndex() = %d, track.globalIndex() = %d, track.trackType() = %d, track.matchMFTTrackId() = %d, track.matchMCHTrackId() = %d, track.offsets() = %d", collision.globalIndex(), track.globalIndex(), track.trackType(), track.matchMFTTrackId(), track.matchMCHTrackId(), track.offsets());
+
+        // auto collision_in_track = track.collision_as<MyCollisions>();
+        // auto bc_in_track = collision_in_track.bc_as<aod::BCsWithTimestamps>();
+        // LOGF(info, "track.globalIndex() = %d , bc_in_track.globalBC() = %lld", track.globalIndex(), bc_in_track.globalBC());
+
+        if (track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack)) {
+          if (fillQAHistogram) {
+            fillTrackHistogram<3>(track, collision);
+          }
+          if (isSelected<false>(track, collision)) {
+            map_new_sa_muon_index[std::make_pair(collision.globalIndex(), track.globalIndex())] = counter + offset;
+            counter++;
+          }
+        } else if (track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack)) {
+          if (fillQAHistogram) {
+            fillTrackHistogram<0>(track, collision);
+          }
+          if (map_new_sa_muon_index.find(std::make_pair(collision.globalIndex(), track.matchMCHTrackId())) == map_new_sa_muon_index.end()) {
+            map_new_sa_muon_index[std::make_pair(collision.globalIndex(), track.matchMCHTrackId())] = counter + offset;
+            counter++;
+          }
+          if (isSelected<false>(track, collision)) {
+            map_new_sa_muon_index[std::make_pair(collision.globalIndex(), track.globalIndex())] = counter + offset;
+            counter++;
+          }
+        }
+      } // end of track loop
+
+      for (const auto& [key, value] : map_new_sa_muon_index) {
+        // int collisionId = std::get<0>(key);
+        // int fwdtrackId = std::get<1>(key);
+        // int new_fwdtrackId = value;
+        auto track = tracks.iteratorAt(std::get<1>(key));
+        if (track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack)) {
+          fillMuonTable<aod::MFTTracks>(track, collision, value);
+        } else if (track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack)) {
+          fillMuonTable<aod::MFTTracks>(track, collision, map_new_sa_muon_index[std::make_pair(collision.globalIndex(), track.matchMCHTrackId())]);
+        }
+      }
+
+      map_new_sa_muon_index.clear();
+    } // end of collision loop
+  }
+  PROCESS_SWITCH(skimmerPrimaryMuon, processRec_TTCA_SWT, "process reconstructed info only with TTCA", false);
+
   Partition<MyTracksMC> global_muons_mc = o2::aod::fwdtrack::trackType == uint8_t(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack); // MFT-MCH-MID
   Partition<MyTracksMC> sa_muons_mc = o2::aod::fwdtrack::trackType == uint8_t(o2::aod::fwdtrack::ForwardTrackTypeEnum::MuonStandaloneTrack); // MCH-MID
 
-  void processMC_SA(soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels> const& collisions, aod::BCsWithTimestamps const&, MyTracksMC const& tracks, MFTTracksMC const&)
+  void processMC_SA(soa::Join<MyCollisions, aod::McCollisionLabels> const& collisions, aod::BCsWithTimestamps const&, MyTracksMC const& tracks, MFTTracksMC const&)
   {
     for (auto& collision : collisions) {
       if (!collision.has_mcCollision()) {
@@ -560,7 +667,7 @@ struct skimmerPrimaryMuon {
       auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       fRegistry.fill(HIST("Event/hCollisionCounter"), 0.f);
-      if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
+      if (!collision.isSelected()) {
         continue;
       }
 
@@ -616,7 +723,7 @@ struct skimmerPrimaryMuon {
   }
   PROCESS_SWITCH(skimmerPrimaryMuon, processMC_SA, "process reconstructed and MC info", false);
 
-  void processMC_TTCA(soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels> const& collisions, aod::BCsWithTimestamps const&, MyTracksMC const& tracks, MFTTracksMC const&, aod::FwdTrackAssoc const& fwdtrackIndices)
+  void processMC_TTCA(soa::Join<MyCollisions, aod::McCollisionLabels> const& collisions, aod::BCsWithTimestamps const&, MyTracksMC const& tracks, MFTTracksMC const&, aod::FwdTrackAssoc const& fwdtrackIndices)
   {
     for (auto& collision : collisions) {
       if (!collision.has_mcCollision()) {
@@ -625,7 +732,7 @@ struct skimmerPrimaryMuon {
       auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       fRegistry.fill(HIST("Event/hCollisionCounter"), 0.f);
-      if (applyEveSel_at_skimming && (!collision.selection_bit(o2::aod::evsel::kIsTriggerTVX) || !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
+      if (!collision.isSelected()) {
         continue;
       }
 

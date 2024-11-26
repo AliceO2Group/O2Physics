@@ -162,7 +162,8 @@ struct HfCorrelatorDplusHadrons {
 
   Configurable<int> selectionFlagDplus{"selectionFlagDplus", 7, "Selection Flag for Dplus"}; // 7 corresponds to topo+PID cuts
   Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "Number of events mixed in ME process"};
-  Configurable<int> applyEfficiency{"applyEfficiency", 1, "Flag for applying D-meson efficiency weights"};
+  Configurable<bool> applyEfficiency{"applyEfficiency", true, "Flag for applying D-meson efficiency weights"};
+  Configurable<bool> removeDaughters{"removeDaughters", true, "Flag for removing D-meson daughters from correlations"};
   Configurable<float> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
   Configurable<float> yCandGenMax{"yCandGenMax", 0.5, "max. gen. cand. rapidity"};
   Configurable<float> etaTrackMax{"etaTrackMax", 0.8, "max. eta of tracks"};
@@ -352,8 +353,10 @@ struct HfCorrelatorDplusHadrons {
             continue;
           }
           // Removing Dplus daughters by checking track indices
-          if ((candidate.prong0Id() == track.globalIndex()) || (candidate.prong1Id() == track.globalIndex()) || (candidate.prong2Id() == track.globalIndex())) {
-            continue;
+          if (removeDaughters) {
+            if ((candidate.prong0Id() == track.globalIndex()) || (candidate.prong1Id() == track.globalIndex()) || (candidate.prong2Id() == track.globalIndex())) {
+              continue;
+            }
           }
           entryDplusHadronPair(getDeltaPhi(track.phi(), candidate.phi()),
                                track.eta() - candidate.eta(),
@@ -404,7 +407,7 @@ struct HfCorrelatorDplusHadrons {
       // MC reco level
       bool isDplusPrompt = false;
       bool isDplusNonPrompt = false;
-      bool flagDplusSignal = false;
+      bool isDplusSignal = false;
       for (const auto& candidate : candidates) {
         // rapidity and pT selections
         if (std::abs(hfHelper.yDplus(candidate)) >= yCandMax || candidate.pt() <= ptCandMin || candidate.pt() >= ptCandMax) {
@@ -417,7 +420,7 @@ struct HfCorrelatorDplusHadrons {
           efficiencyWeightD = 1. / efficiencyD->at(effBinD);
         }
         // Dplus flag
-        flagDplusSignal = std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi;
+        isDplusSignal = TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_3prong::DecayType::DplusToPiKPi);
         // prompt and non-prompt division
         isDplusPrompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
         isDplusNonPrompt = candidate.originMcRec() == RecoDecay::OriginType::NonPrompt;
@@ -428,7 +431,7 @@ struct HfCorrelatorDplusHadrons {
         registry.fill(HIST("hMassDplusMcRec"), hfHelper.invMassDplusToPiKPi(candidate), efficiencyWeightD);
         registry.fill(HIST("hDplusBin"), poolBin);
 
-        if (flagDplusSignal) {
+        if (isDplusSignal) {
           // fill per-candidate distributions from Dplus true candidates
           registry.fill(HIST("hPtProng0MCRec"), candidate.ptProng0());
           registry.fill(HIST("hPtProng1MCRec"), candidate.ptProng1());
@@ -472,14 +475,16 @@ struct HfCorrelatorDplusHadrons {
             continue;
           }
           // Removing Dplus daughters by checking track indices
-          if ((candidate.prong0Id() == track.globalIndex()) || (candidate.prong1Id() == track.globalIndex()) || (candidate.prong2Id() == track.globalIndex())) {
-            continue;
+          if (removeDaughters) {
+            if ((candidate.prong0Id() == track.globalIndex()) || (candidate.prong1Id() == track.globalIndex()) || (candidate.prong2Id() == track.globalIndex())) {
+              continue;
+            }
           }
           entryDplusHadronPair(getDeltaPhi(track.phi(), candidate.phi()),
                                track.eta() - candidate.eta(),
                                candidate.pt(),
                                track.pt(), poolBin);
-          entryDplusHadronRecoInfo(hfHelper.invMassDplusToPiKPi(candidate), flagDplusSignal);
+          entryDplusHadronRecoInfo(hfHelper.invMassDplusToPiKPi(candidate), isDplusSignal);
           entryDplusHadronMlInfo(outputMl[0], outputMl[1]);
           if (track.has_mcParticle()) {
             auto mcParticle = track.template mcParticle_as<aod::McParticles>();
@@ -517,10 +522,14 @@ struct HfCorrelatorDplusHadrons {
     registry.fill(HIST("hMultFT0AMcGen"), mcCollision.multMCFT0A());
 
     bool isDplusPrompt = false;
+    bool isDplusNonPrompt = false;
     // MC gen level
     for (const auto& particle1 : mcParticles) {
       // check if the particle is Dplus  (for general plot filling and selection, so both cases are fine) - NOTE: decay channel is not probed!
       if (std::abs(particle1.pdgCode()) != Pdg::kDPlus) {
+        continue;
+      }
+      if (!TESTBIT(std::abs(particle1.flagMcMatchGen()), aod::hf_cand_3prong::DecayType::DplusToPiKPi)) {
         continue;
       }
       double yD = RecoDecay::y(particle1.pVector(), MassDPlus);
@@ -535,9 +544,10 @@ struct HfCorrelatorDplusHadrons {
 
       // prompt and non-prompt division
       isDplusPrompt = particle1.originMcGen() == RecoDecay::OriginType::Prompt;
+      isDplusNonPrompt = particle1.originMcGen() == RecoDecay::OriginType::NonPrompt;
       if (isDplusPrompt) {
         registry.fill(HIST("hPtCandMcGenPrompt"), particle1.pt());
-      } else {
+      } else if (isDplusNonPrompt) {
         registry.fill(HIST("hPtCandMcGenNonPrompt"), particle1.pt());
       }
 
@@ -563,8 +573,10 @@ struct HfCorrelatorDplusHadrons {
         if (std::abs(particleAssoc.eta()) > etaTrackMax || particleAssoc.pt() < ptTrackMin || particleAssoc.pt() > ptTrackMax) {
           continue;
         }
-        if (particleAssoc.globalIndex() == prongsId[0] || particleAssoc.globalIndex() == prongsId[1] || particleAssoc.globalIndex() == prongsId[2]) {
-          continue;
+        if (removeDaughters) {
+          if (particleAssoc.globalIndex() == prongsId[0] || particleAssoc.globalIndex() == prongsId[1] || particleAssoc.globalIndex() == prongsId[2]) {
+            continue;
+          }
         }
         if ((std::abs(particleAssoc.pdgCode()) != kElectron) && (std::abs(particleAssoc.pdgCode()) != kMuonMinus) && (std::abs(particleAssoc.pdgCode()) != kPiPlus) && (std::abs(particleAssoc.pdgCode()) != kKPlus) && (std::abs(particleAssoc.pdgCode()) != kProton)) {
           continue;
@@ -583,7 +595,7 @@ struct HfCorrelatorDplusHadrons {
         entryDplusHadronRecoInfo(MassDPlus, true);
         entryDplusHadronGenInfo(isDplusPrompt, particleAssoc.isPhysicalPrimary(), trackOrigin);
       } // end associated loop
-    }   // end trigger
+    } // end trigger
     registry.fill(HIST("hcountDplusHadronPerEvent"), counterDplusHadron);
     registry.fill(HIST("hZvtx"), mcCollision.posZ());
     // registry.fill(HIST("hMultiplicity"), getTracksSize(mcCollision));
@@ -623,11 +635,11 @@ struct HfCorrelatorDplusHadrons {
         continue;
       }
       // Dplus flag
-      bool flagDplusSignal = std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi;
+      bool isDplusSignal = TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_3prong::DecayType::DplusToPiKPi);
       // prompt and non-prompt division
       bool isDplusPrompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
       bool isDplusNonPrompt = candidate.originMcRec() == RecoDecay::OriginType::NonPrompt;
-      if (flagDplusSignal) {
+      if (isDplusSignal) {
         if (isDplusPrompt) {
           registry.fill(HIST("hPtCandMcRecSigPrompt"), candidate.pt());
           registry.fill(HIST("hPtVsMultiplicityMcRecPrompt"), candidate.pt(), 0);
@@ -661,7 +673,7 @@ struct HfCorrelatorDplusHadrons {
         std::vector<float> outputMl = {-1., -1., -1.};
         bool isPhysicalPrimary = false;
         int trackOrigin = -1;
-        bool flagDplusSignal = std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi;
+        bool isDplusSignal = std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi;
         // prompt and non-prompt division
         bool isDplusPrompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
         if (pAssoc.has_mcParticle()) {
@@ -676,7 +688,7 @@ struct HfCorrelatorDplusHadrons {
                              candidate.pt(),
                              pAssoc.pt(),
                              poolBin);
-        entryDplusHadronRecoInfo(hfHelper.invMassDplusToPiKPi(candidate), flagDplusSignal);
+        entryDplusHadronRecoInfo(hfHelper.invMassDplusToPiKPi(candidate), isDplusSignal);
         entryDplusHadronGenInfo(isDplusPrompt, isPhysicalPrimary, trackOrigin);
         for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
           outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMl->at(iclass)];

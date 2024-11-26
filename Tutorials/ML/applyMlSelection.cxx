@@ -11,7 +11,7 @@
 
 /// \file   applyMlSelection.cxx
 /// \brief  Showcase usage of trained ML model exported to ONNX format for candidate selection in analysis
-/// \brief  This is only the starting point for the tutorial. The complete task is available at https://github.com/AliceO2Group/analysis-tutorials/tree/master/o2at-3/machineLearning/MlInference
+/// \brief  This is only the starting point for the tutorial. The complete task is available at https://github.com/AliceO2Group/analysis-tutorials/tree/master/o2at-4/machineLearning/MlInference
 ///
 /// \author Fabio Catalano <fabio.catalano@cern.ch>, CERN
 
@@ -39,13 +39,13 @@ struct applyMlSelection {
   Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{1., 36.}, "pT bin limits for ML application"};
   Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{cuts_ml::CutSmaller, cuts_ml::CutNot, cuts_ml::CutNot}, "Whether to reject score values greater or smaller than the threshold"};
   Configurable<LabeledArray<double>> cutsMl{"cutsMl", {defaultCutsMl[0], 1, 3, {"pT bin 0"}, {"score prompt", "score non-prompt", "score bkg"}}, "ML selections per pT bin"};
-  Configurable<int8_t> nClassesMl{"nClassesMl", (int8_t)3, "Number of classes in ML model"};
+  Configurable<int> nClassesMl{"nClassesMl", 3, "Number of classes in ML model"};
   // Model file names
   Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"model_onnx.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
   // Bonus: CCDB configuration (needed for ML application on the GRID)
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> modelPathsCCDB{"modelPathsCCDB", "Users/f/fcatalan/O2AT3/MlInference", "Path on CCDB"};
+  Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"Users/c/ciacco/O2AT4/MlInference"}, "Path on CCDB"};
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
 
   Filter filterDsFlag = (o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(aod::hf_cand_3prong::DecayType::DsToKKPi))) != static_cast<uint8_t>(0);

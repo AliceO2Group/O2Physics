@@ -24,9 +24,11 @@ using namespace o2;
 using namespace o2::framework;
 
 // *) Run 3:
-using EventSelection = soa::Join<aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs>;
+using EventSelection = soa::Join<aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs>;
 using CollisionRec = soa::Join<aod::Collisions, EventSelection>::iterator; // use in json "isMC": "true" for "event-selection-task"
 using CollisionRecSim = soa::Join<aod::Collisions, aod::McCollisionLabels, EventSelection>::iterator;
+// using CollisionRecSim = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::MultsExtraMC, EventSelection>::iterator;
+// using CollisionRecSim = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::MultsExtraMC, EventSelection>::iterator;
 using CollisionSim = aod::McCollision;
 using TracksRec = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
 using TrackRec = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>::iterator;
@@ -62,6 +64,7 @@ using CollisionRecSim_Run1 = soa::Join<aod::Collisions, aod::McCollisionLabels, 
 #include <TExMap.h>
 #include <TF1.h>
 #include <TF3.h>
+#include <TObjString.h>
 using namespace std;
 
 // *) Enums:
@@ -93,11 +96,11 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
   {
     // *) Trick to avoid name clashes, part 1;
     // *) Default configuration, booking, binning and cuts;
-    // *) Insanity checks;
+    // *) Insanity checks before booking;
     // *) Book random generator;
     // *) Book base list;
     // *) Book all remaining objects;
-    // ...
+    // *) Insanity checks after booking;
     // *) Trick to avoid name clashes, part 2;
 
     // *) Trick to avoid name clashes, part 1:
@@ -105,16 +108,20 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     TH1::AddDirectory(kFALSE);
 
     // *) Default configuration, booking, binning and cuts:
-    DefaultConfiguration();
-    DefaultBooking(); // here I decide only which histograms are booked, not details like binning, etc. That's done later in Book* member functions.
-    DefaultBinning();
-    DefaultCuts(); // Remark: has to be called after DefaultBinning(), since some default cuts are defined through default binning, to ease bookeeping
+    DefaultConfiguration(); // here default values from configurables are taken into account
+    DefaultBooking();       // here I decide only which histograms are booked, not details like binning, etc.
+    DefaultBinning();       // here default values for bins are either hardwired, or values for bins provided via configurables are taken into account
+    DefaultCuts();          // here default values for cuts are either hardwired, or defined through default binning to ease bookeeping,
+                            // or values for cuts provided via configurables are taken into account
+                            // Remark: DefaultCuts() has to be called after DefaultBinning()
 
-    // *) Set what to process - only rec, both rec and sim, only sim:
-    // WhatToProcess(); // yes, this can be called here, after calling all Default* member functions above, because this has an effect only on Book* members functions, and the ones called afterward
+    // *) Specific cuts:
+    if (tc.fUseSpecificCuts) {
+      SpecificCuts(tc.fWhichSpecificCuts); // after default cuts are applied, on top of them apply analysis-specific cuts. Has to be called after DefaultBinning() and DefaultCuts()
+    }
 
-    // *) Insanity checks:
-    InsanityChecks();
+    // *) Insanity checks before booking:
+    InsanityChecksBeforeBooking(); // check only hardwired values and the ones obtained from configurables
 
     // *) Book random generator:
     delete gRandom;
@@ -134,11 +141,15 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
     BookQvectorHistograms();
     BookCorrelationsHistograms();
     BookWeightsHistograms();
+    BookCentralityWeightsHistograms();
     BookNestedLoopsHistograms();
     BookNUAHistograms();
     BookInternalValidationHistograms();
     BookTest0Histograms();
     BookTheRest(); // here I book everything that was not sorted (yet) in the specific functions above
+
+    // *) Insanity checks after booking:
+    InsanityChecksAfterBooking(); // pointers of all local histograms, etc., are available, so I can do insanity checks directly on all booked objects
 
     // *) Trick to avoid name clashes, part 2:
     TH1::AddDirectory(oldHistAddStatus);

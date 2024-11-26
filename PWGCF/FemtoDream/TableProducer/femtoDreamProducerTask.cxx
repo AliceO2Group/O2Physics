@@ -15,6 +15,8 @@
 
 #include <CCDB/BasicCCDBManager.h>
 #include <fairlogger/Logger.h>
+#include <vector>
+#include <string>
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -56,8 +58,10 @@ using FemtoFullMCgenCollision = FemtoFullMCgenCollisions::iterator;
 
 using FemtoFullTracks =
   soa::Join<aod::FullTracks, aod::TracksDCA,
-            aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
-            aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe>;
+            aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa,
+            aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullTr, aod::pidTPCFullHe,
+            aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullKa,
+            aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullTr, aod::pidTOFFullHe>;
 } // namespace o2::aod
 
 namespace softwareTriggers
@@ -107,6 +111,7 @@ struct femtoDreamProducerTask {
     "ConfTriggerSwitches",
     {softwareTriggers::triggerSwitches[0], 1, softwareTriggers::nTriggers, std::vector<std::string>{"Switch"}, softwareTriggers::triggerNames},
     "Turn on which trigger should be checked for recorded events to pass selection"};
+  Configurable<std::string> ConfBaseCCDBPathForTriggers{"ConfBaseCCDBPathForTriggers", "Users/m/mpuccio/EventFiltering/OTS/Chunked/", "Provide ccdb path for trigger table; default - trigger coordination"};
 
   // Event cuts - usual selection criteria
   Configurable<float> ConfEvtZvtx{"ConfEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
@@ -339,6 +344,7 @@ struct femtoDreamProducerTask {
 
     // Init for zorro to get trigger flags
     if (ConfEnableTriggerSelection) {
+      zorro.setCCDBpath(ConfBaseCCDBPathForTriggers);
       zorro.initCCDB(ccdb.service, mRunNumber, timestamp, zorroTriggerNames);
     }
   }
@@ -363,16 +369,21 @@ struct femtoDreamProducerTask {
                        particle.tpcNSigmaKa(),
                        particle.tpcNSigmaPr(),
                        particle.tpcNSigmaDe(),
+                       particle.tpcNSigmaTr(),
+                       particle.tpcNSigmaHe(),
                        particle.tofNSigmaEl(),
                        particle.tofNSigmaPi(),
                        particle.tofNSigmaKa(),
                        particle.tofNSigmaPr(),
                        particle.tofNSigmaDe(),
+                       particle.tofNSigmaTr(),
+                       particle.tofNSigmaHe(),
                        -999., -999., -999., -999., -999., -999.);
     } else {
-      outputDebugParts(-999., -999., -999., -999., -999., -999., -999., -999.,
-                       -999., -999., -999., -999., -999., -999., -999., -999.,
-                       -999., -999., -999., -999., -999.,
+      outputDebugParts(-999., -999., -999., -999., -999., -999., -999.,
+                       -999., -999., -999., -999., -999., -999., -999.,
+                       -999., -999., -999., -999., -999., -999., -999.,
+                       -999., -999., -999., -999.,
                        particle.dcaV0daughters(),
                        particle.v0radius(),
                        particle.x(),
@@ -647,8 +658,8 @@ struct femtoDreamProducerTask {
     }
 
     if (ConfIsActivateReso.value) {
-      for (auto iDaug1 = 0; iDaug1 < Daughter1.size(); ++iDaug1) {
-        for (auto iDaug2 = 0; iDaug2 < Daughter2.size(); ++iDaug2) {
+      for (std::size_t iDaug1 = 0; iDaug1 < Daughter1.size(); ++iDaug1) {
+        for (std::size_t iDaug2 = 0; iDaug2 < Daughter2.size(); ++iDaug2) {
           // MC stuff is still missing, also V0 QA
           // ALSO: fix indices and other table entries which are now set to 0 as deflaut as not needed for p-p-phi cf ana
 
@@ -703,7 +714,7 @@ struct femtoDreamProducerTask {
               outputDebugParts(-999., -999., -999., -999., -999., -999., -999., -999.,
                                -999., -999., -999., -999., -999., -999., -999., -999.,
                                -999., -999., -999., -999., -999., -999., -999., -999.,
-                               -999., -999., -999.); // QA for Reso
+                               -999., -999. - 999., -999., -999., -999., -999., -999.); // QA for Reso
             }
           }
         }

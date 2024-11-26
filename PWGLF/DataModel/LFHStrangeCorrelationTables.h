@@ -39,8 +39,9 @@ namespace triggerTracks
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);                       //!
 DECLARE_SOA_COLUMN(MCPhysicalPrimary, mcPhysicalPrimary, bool);       // true physical primary flag
 DECLARE_SOA_INDEX_COLUMN_FULL(Track, track, int, Tracks, "_Trigger"); //!
+DECLARE_SOA_COLUMN(MCOriginalPt, mcOriginalPt, float);                // true generated pt
 } // namespace triggerTracks
-DECLARE_SOA_TABLE(TriggerTracks, "AOD", "TRIGGERTRACKS", o2::soa::Index<>, triggerTracks::CollisionId, triggerTracks::MCPhysicalPrimary, triggerTracks::TrackId);
+DECLARE_SOA_TABLE(TriggerTracks, "AOD", "TRIGGERTRACKS", o2::soa::Index<>, triggerTracks::CollisionId, triggerTracks::MCPhysicalPrimary, triggerTracks::TrackId, triggerTracks::MCOriginalPt);
 /// _________________________________________
 /// Table for storing assoc track indices
 namespace assocPions

@@ -62,6 +62,7 @@ struct TrackPropagation {
   // for TrackTuner only (MC smearing)
   Configurable<bool> useTrackTuner{"useTrackTuner", false, "Apply track tuner corrections to MC"};
   Configurable<bool> fillTrackTunerTable{"fillTrackTunerTable", false, "flag to fill track tuner table"};
+  Configurable<int> trackTunerConfigSource{"trackTunerConfigSource", aod::track_tuner::InputString, "1: input string; 2: TrackTuner Configurables"};
   Configurable<std::string> trackTunerParams{"trackTunerParams", "debugInfo=0|updateTrackDCAs=1|updateTrackCovMat=1|updateCurvature=0|updateCurvatureIU=0|updatePulls=0|isInputFileFromCCDB=1|pathInputFile=Users/m/mfaggin/test/inputsTrackTuner/PbPb2022|nameInputFile=trackTuner_DataLHC22sPass5_McLHC22l1b2_run529397.root|pathFileQoverPt=Users/h/hsharma/qOverPtGraphs|nameFileQoverPt=D0sigma_Data_removal_itstps_MC_LHC22b1b.root|usePvRefitCorrections=0|qOverPtMC=-1.|qOverPtData=-1.", "TrackTuner parameter initialization (format: <name>=<value>|<name>=<value>)"};
   ConfigurableAxis axisPtQA{"axisPtQA", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for QA histograms"};
   OutputObj<TH1D> trackTunedTracks{TH1D("trackTunedTracks", "", 1, 0.5, 1.5), OutputObjHandlingPolicy::AnalysisObject};
@@ -119,13 +120,23 @@ struct TrackPropagation {
 
     /// TrackTuner initialization
     if (useTrackTuner) {
-      std::string outputStringParams = trackTunerObj.configParams(trackTunerParams);
+      std::string outputStringParams = "";
+      switch (trackTunerConfigSource) {
+        case aod::track_tuner::InputString:
+          outputStringParams = trackTunerObj.configParams(trackTunerParams);
+          break;
+        case aod::track_tuner::Configurables:
+          outputStringParams = trackTunerObj.configParams();
+          break;
+
+        default:
+          LOG(fatal) << "TrackTuner configuration source not defined. Fix it! (Supported options: input string (1); Configurables (2))";
+          break;
+      }
+
       trackTunerObj.getDcaGraphs();
       trackTunedTracks->SetTitle(outputStringParams.c_str());
       trackTunedTracks->GetXaxis()->SetBinLabel(1, "all tracks");
-      trackTunedTracks->GetXaxis()->SetBinLabel(2, "tracks tuned (no negative detXY)");
-      trackTunedTracks->GetXaxis()->SetBinLabel(3, "untouched tracks due to negative detXY");
-      trackTunedTracks->GetXaxis()->SetBinLabel(4, "original detXY<0");
     }
   }
 

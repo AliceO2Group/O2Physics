@@ -44,6 +44,12 @@ o2physics_add_dpl_workflow(its-tpc-matching-qa
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(strangeness-tracking-qc
+    SOURCES strangenessTrackingQC.cxx
+    PUBLIC_LINK_LIBRARIES O2::Framework O2::ReconstructionDataFormats O2Physics::AnalysisCore O2::DetectorsBase
+    COMPONENT_NAME Analysis)
+
+
 o2physics_add_dpl_workflow(mc-signal-loss
     SOURCES mcSignalLoss.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -66,7 +72,7 @@ o2physics_add_dpl_workflow(tpc-dedx-qa
 
 o2physics_add_dpl_workflow(vertexqa
     SOURCES vertexQA.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(efficiencyqa
@@ -111,5 +117,10 @@ o2physics_add_dpl_workflow(tracked-cascade-properties
 
 o2physics_add_dpl_workflow(mc-particle-predictions
     SOURCES mcParticlePrediction.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(strange-derived-qa
+    SOURCES strangederivedqa.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)

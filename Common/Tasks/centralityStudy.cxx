@@ -46,13 +46,40 @@ struct centralityStudy {
   Configurable<bool> requireIsVertexTOFmatched{"requireIsVertexTOFmatched", true, "require events with at least one of vertex contributors matched to TOF"};
   Configurable<bool> requireIsVertexTRDmatched{"requireIsVertexTRDmatched", true, "require events with at least one of vertex contributors matched to TRD"};
   Configurable<bool> rejectSameBunchPileup{"rejectSameBunchPileup", true, "reject collisions in case of pileup with another collision in the same foundBC"};
-  Configurable<float> minTimeDelta{"minTimeDelta", -1.0f, "reject collision if another collision is this close or less in time"};
 
-  // Configurable Axes
-  ConfigurableAxis axisMultFT0C{"axisMultFT0C", {2000, 0, 100000}, "FT0C amplitude"};
+  Configurable<bool> rejectITSinROFpileupStandard{"rejectITSinROFpileupStandard", false, "reject collisions in case of in-ROF ITS pileup (standard)"};
+  Configurable<bool> rejectITSinROFpileupStrict{"rejectITSinROFpileupStrict", false, "reject collisions in case of in-ROF ITS pileup (strict)"};
+  Configurable<bool> rejectCollInTimeRangeNarrow{"rejectCollInTimeRangeNarrow", false, "reject if extra colls in time range (narrow)"};
+
+  Configurable<bool> selectUPCcollisions{"selectUPCcollisions", false, "select collisions tagged with UPC flag"};
+
+  Configurable<bool> selectCollidingBCs{"selectCollidingBCs", true, "BC analysis: select colliding BCs"};
+  Configurable<bool> selectTVX{"selectTVX", true, "BC analysis: select TVX"};
+  Configurable<bool> selectFV0OrA{"selectFV0OrA", true, "BC analysis: select FV0OrA"};
+  Configurable<float> vertexZwithT0{"vertexZwithT0", 1000.0f, "require a certain vertex-Z in BC analysis"};
+
+  Configurable<float> minTimeDelta{"minTimeDelta", -1.0f, "reject collision if another collision is this close or less in time"};
+  Configurable<float> minFT0CforVertexZ{"minFT0CforVertexZ", 250, "minimum FT0C for vertex-Z profile calculation"};
+
+  Configurable<float> scaleSignalFT0C{"scaleSignalFT0C", 1.00f, "scale FT0C signal for convenience"};
+  Configurable<float> scaleSignalFT0M{"scaleSignalFT0M", 1.00f, "scale FT0M signal for convenience"};
+  Configurable<float> scaleSignalFV0A{"scaleSignalFV0A", 1.00f, "scale FV0A signal for convenience"};
+
+  // reject low zna/c
+  Configurable<float> minZNACsignal{"minZNACsignal", 15.0f, "min zna/c signal"};
+  Configurable<float> maxFT0CforZNACselection{"maxFT0CforZNACselection", 35000.0f, "max ft0c signal for minZNACsignal to work"};
+
+  // Configurable Axes for 2d plots, etc
+  ConfigurableAxis axisMultFV0A{"axisMultFV0A", {1000, 0, 100000}, "FV0A amplitude"};
+  ConfigurableAxis axisMultFT0A{"axisMultFT0A", {1000, 0, 100000}, "FT0A amplitude"};
+  ConfigurableAxis axisMultFT0C{"axisMultFT0C", {1000, 0, 100000}, "FT0C amplitude"};
+  ConfigurableAxis axisMultFDDA{"axisMultFDDA", {1000, 0, 100000}, "FDDA amplitude"};
+  ConfigurableAxis axisMultFDDC{"axisMultFDDC", {1000, 0, 100000}, "FDDC amplitude"};
   ConfigurableAxis axisMultPVContributors{"axisMultPVContributors", {200, 0, 6000}, "Number of PV Contributors"};
 
   // For one-dimensional plots, where binning is no issue
+  ConfigurableAxis axisMultUltraFineFV0A{"axisMultUltraFineFV0A", {60000, 0, 60000}, "FV0A amplitude"};
+  ConfigurableAxis axisMultUltraFineFT0M{"axisMultUltraFineFT0M", {50000, 0, 200000}, "FT0M amplitude"};
   ConfigurableAxis axisMultUltraFineFT0C{"axisMultUltraFineFT0C", {60000, 0, 60000}, "FT0C amplitude"};
   ConfigurableAxis axisMultUltraFinePVContributors{"axisMultUltraFinePVContributors", {10000, 0, 10000}, "Number of PV Contributors"};
 
@@ -63,6 +90,11 @@ struct centralityStudy {
   ConfigurableAxis axisCentrality{"axisCentrality", {100, 0, 100}, "FT0C percentile"};
   ConfigurableAxis axisPVChi2{"axisPVChi2", {300, 0, 30}, "FT0C percentile"};
   ConfigurableAxis axisDeltaTime{"axisDeltaTime", {300, 0, 300}, "#Delta time"};
+
+  // For profile Z
+  ConfigurableAxis axisPVz{"axisPVz", {400, -20.0f, +20.0f}, "PVz (cm)"};
+
+  ConfigurableAxis axisZN{"axisZN", {1100, -50.0f, +500.0f}, "ZN"};
 
   void init(InitContext&)
   {
@@ -80,23 +112,47 @@ struct centralityStudy {
       histos.get<TH1>(HIST("hCollisionSelection"))->GetXaxis()->SetBinLabel(9, "kIsVertexTRDmatched");
       histos.get<TH1>(HIST("hCollisionSelection"))->GetXaxis()->SetBinLabel(10, "kNoSameBunchPileup");
       histos.get<TH1>(HIST("hCollisionSelection"))->GetXaxis()->SetBinLabel(11, "Neighbour rejection");
+      histos.get<TH1>(HIST("hCollisionSelection"))->GetXaxis()->SetBinLabel(12, "no ITS in-ROF pileup (standard)");
+      histos.get<TH1>(HIST("hCollisionSelection"))->GetXaxis()->SetBinLabel(13, "no ITS in-ROF pileup (strict)");
 
       histos.add("hFT0C_Collisions", "hFT0C_Collisions", kTH1D, {axisMultUltraFineFT0C});
+      histos.add("hFT0M_Collisions", "hFT0M_Collisions", kTH1D, {axisMultUltraFineFT0M});
+      histos.add("hFV0A_Collisions", "hFV0A_Collisions", kTH1D, {axisMultUltraFineFV0A});
       histos.add("hNPVContributors", "hNPVContributors", kTH1D, {axisMultUltraFinePVContributors});
+
+      histos.add("hFT0CvsPVz_Collisions_All", "hFT0CvsPVz_Collisions_All", kTProfile, {axisPVz});
+      histos.add("hFT0CvsPVz_Collisions", "hFT0CvsPVz_Collisions", kTProfile, {axisPVz});
     }
 
     if (doprocessBCs) {
-      histos.add("hBCSelection", "hBCSelection", kTH1D, {{10, -0.5, 9.5f}});
+      histos.add("hBCSelection", "hBCSelection", kTH1D, {{20, -0.5, 19.5f}});
       histos.add("hFT0C_BCs", "hFT0C_BCs", kTH1D, {axisMultUltraFineFT0C});
+      histos.add("hFT0M_BCs", "hFT0M_BCs", kTH1D, {axisMultUltraFineFT0M});
+      histos.add("hFV0A_BCs", "hFV0A_BCs", kTH1D, {axisMultUltraFineFV0A});
+
+      histos.add("hFT0CvsPVz_BCs_All", "hFT0CvsPVz_BCs_All", kTProfile, {axisPVz});
+      histos.add("hFT0CvsPVz_BCs", "hFT0CvsPVz_BCs", kTProfile, {axisPVz});
+
+      histos.add("hVertexZ_BCvsCO", "hVertexZ_BCvsCO", kTH2D, {axisPVz, axisPVz});
+
+      histos.add("hZNAvsFT0C_BCs", "hZNAvsFT0C_BCs", kTH2D, {axisMultFT0C, axisZN});
+      histos.add("hZNCvsFT0C_BCs", "hZNCvsFT0C_BCs", kTH2D, {axisMultFT0C, axisZN});
     }
 
     if (do2DPlots) {
-      histos.add("hFT0CvsNContribs", "hFT0CvsNContribs", kTH2F, {axisMultPVContributors, axisMultFT0C});
+      histos.add("hNContribsVsFT0C", "hNContribsVsFT0C", kTH2F, {axisMultFT0C, axisMultPVContributors});
       histos.add("hMatchedVsITSOnly", "hMatchedVsITSOnly", kTH2F, {axisMultITSOnly, axisMultITSTPC});
+
+      // 2d correlation of fit signals
+      histos.add("hFT0AVsFT0C", "hFT0AVsFT0C", kTH2F, {axisMultFT0C, axisMultFT0A});
+      histos.add("hFV0AVsFT0C", "hFV0AVsFT0C", kTH2F, {axisMultFT0C, axisMultFV0A});
+      histos.add("hFDDAVsFT0C", "hFDDAVsFT0C", kTH2F, {axisMultFT0C, axisMultFDDA});
+      histos.add("hFDDCVsFT0C", "hFDDCVsFT0C", kTH2F, {axisMultFT0C, axisMultFDDC});
     }
 
     if (doprocessCollisionsWithCentrality) {
       // in case requested: do vs centrality debugging
+      histos.add("hCentrality", "hCentrality", kTH1F, {axisCentrality});
       histos.add("hNContribsVsCentrality", "hNContribsVsCentrality", kTH2F, {axisCentrality, axisMultPVContributors});
       histos.add("hNITSTPCTracksVsCentrality", "hNITSTPCTracksVsCentrality", kTH2F, {axisCentrality, axisMultPVContributors});
       histos.add("hNITSOnlyTracksVsCentrality", "hNITSOnlyTracksVsCentrality", kTH2F, {axisCentrality, axisMultPVContributors});
@@ -168,18 +224,57 @@ struct centralityStudy {
       histos.fill(HIST("hCollisionSelection"), 10 /* has suspicious neighbour */);
     }
 
+    if (rejectITSinROFpileupStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+      return;
+    }
+    histos.fill(HIST("hCollisionSelection"), 11 /* Not ITS ROF pileup (standard) */);
+
+    if (rejectITSinROFpileupStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStrict)) {
+      return;
+    }
+    histos.fill(HIST("hCollisionSelection"), 12 /* Not ITS ROF pileup (strict) */);
+
+    if (selectUPCcollisions && collision.flags() < 1) { // if zero then NOT upc, otherwise UPC
+      return;
+    }
+    histos.fill(HIST("hCollisionSelection"), 13 /* is UPC event */);
+
+    if (rejectCollInTimeRangeNarrow && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
+      return;
+    }
+    histos.fill(HIST("hCollisionSelection"), 14 /* Not ITS ROF pileup (strict) */);
+
+    if (collision.multFT0C() < maxFT0CforZNACselection &&
+        collision.multZNA() < minZNACsignal &&
+        collision.multZNC() < minZNACsignal) {
+      return;
+    }
+    histos.fill(HIST("hCollisionSelection"), 15 /* pass em/upc rejection */);
+
     // if we got here, we also finally fill the FT0C histogram, please
     histos.fill(HIST("hNPVContributors"), collision.multPVTotalContributors());
-    histos.fill(HIST("hFT0C_Collisions"), collision.multFT0C());
-
+    histos.fill(HIST("hFT0C_Collisions"), collision.multFT0C() * scaleSignalFT0C);
+    histos.fill(HIST("hFT0M_Collisions"), (collision.multFT0A() + collision.multFT0C()) * scaleSignalFT0M);
+    histos.fill(HIST("hFV0A_Collisions"), collision.multFV0A() * scaleSignalFV0A);
+    histos.fill(HIST("hFT0CvsPVz_Collisions_All"), collision.multPVz(), collision.multFT0C() * scaleSignalFT0C);
+    if (collision.multFT0C() > minFT0CforVertexZ) {
+      histos.fill(HIST("hFT0CvsPVz_Collisions"), collision.multPVz(), collision.multFT0C() * scaleSignalFT0C);
+    }
     if (do2DPlots) {
-      histos.fill(HIST("hFT0CvsNContribs"), collision.multNTracksPV(), collision.multFT0C());
+      histos.fill(HIST("hNContribsVsFT0C"), collision.multFT0C() * scaleSignalFT0C, collision.multPVTotalContributors());
       histos.fill(HIST("hMatchedVsITSOnly"), collision.multNTracksITSOnly(), collision.multNTracksITSTPC());
+
+      // correlate also FIT detector signals
+      histos.fill(HIST("hFT0AVsFT0C"), collision.multFT0C() * scaleSignalFT0C, collision.multFT0A());
+      histos.fill(HIST("hFV0AVsFT0C"), collision.multFT0C() * scaleSignalFT0C, collision.multFV0A());
+      histos.fill(HIST("hFDDAVsFT0C"), collision.multFT0C() * scaleSignalFT0C, collision.multFDDA());
+      histos.fill(HIST("hFDDCVsFT0C"), collision.multFT0C() * scaleSignalFT0C, collision.multFDDC());
     }
 
     // if the table has centrality information
     if constexpr (requires { collision.centFT0C(); }) {
       // process FT0C centrality plots
+      histos.fill(HIST("hCentrality"), collision.centFT0C());
       histos.fill(HIST("hNContribsVsCentrality"), collision.centFT0C(), collision.multPVTotalContributors());
       histos.fill(HIST("hNITSTPCTracksVsCentrality"), collision.centFT0C(), collision.multNTracksITSTPC());
       histos.fill(HIST("hNITSOnlyTracksVsCentrality"), collision.centFT0C(), collision.multNTracksITSOnly());
@@ -203,23 +298,57 @@ struct centralityStudy {
     genericProcessCollision(collision);
   }
 
-  void processBCs(aod::MultsBC::iterator const& multbc)
+  void processBCs(soa::Join<aod::BC2Mults, aod::MultBCs>::iterator const& multbc, soa::Join<aod::Mults, aod::MultsExtra, aod::MultSelections, aod::CentFT0Cs, aod::MultsGlobal> const&)
   {
     // process BCs, calculate FT0C distribution
     // conditionals suggested by FIT team (Jacek O. et al)
     histos.fill(HIST("hBCSelection"), 0); // all BCs
-    if (!multbc.multBCColliding())
+    if (selectCollidingBCs && !multbc.multBCColliding())
       return;
     histos.fill(HIST("hBCSelection"), 1); // colliding
-    if (!multbc.multBCTVX())
+    if (selectTVX && !multbc.multBCTVX())
       return;
     histos.fill(HIST("hBCSelection"), 2); // TVX
-    if (!multbc.multBCFV0OrA())
+    if (selectFV0OrA && !multbc.multBCFV0OrA())
       return;
     histos.fill(HIST("hBCSelection"), 3); // FV0OrA
+    if (vertexZwithT0 < 100.0f) {
+      if (!multbc.multBCFT0PosZValid())
+        return;
+      if (TMath::Abs(multbc.multBCFT0PosZ()) > vertexZwithT0)
+        return;
+    }
+    histos.fill(HIST("hBCSelection"), 4); // FV0OrA
+
+    if (multbc.multBCFT0C() < maxFT0CforZNACselection &&
+        multbc.multBCZNA() < minZNACsignal &&
+        multbc.multBCZNC() < minZNACsignal) {
+      return;
+    }
+    histos.fill(HIST("hBCSelection"), 5); // znac
 
     // if we got here, we also finally fill the FT0C histogram, please
-    histos.fill(HIST("hFT0C_BCs"), multbc.multBCFT0C());
+    histos.fill(HIST("hFT0C_BCs"), multbc.multBCFT0C() * scaleSignalFT0C);
+
+    // ZN signals
+    histos.fill(HIST("hZNAvsFT0C_BCs"), multbc.multBCFT0C() * scaleSignalFT0C, multbc.multBCZNA());
+    histos.fill(HIST("hZNCvsFT0C_BCs"), multbc.multBCFT0C() * scaleSignalFT0C, multbc.multBCZNC());
+
+    histos.fill(HIST("hFT0M_BCs"), (multbc.multBCFT0A() + multbc.multBCFT0C()) * scaleSignalFT0M);
+    histos.fill(HIST("hFV0A_BCs"), multbc.multBCFV0A() * scaleSignalFV0A);
+    if (multbc.multBCFT0PosZValid()) {
+      histos.fill(HIST("hFT0CvsPVz_BCs_All"), multbc.multBCFT0PosZ(), multbc.multBCFT0C() * scaleSignalFT0C);
+      if (multbc.multBCFT0C() > minFT0CforVertexZ) {
+        histos.fill(HIST("hFT0CvsPVz_BCs"), multbc.multBCFT0PosZ(), multbc.multBCFT0C() * scaleSignalFT0C);
+      }
+    }
+
+    if (multbc.has_ft0Mult()) {
+      auto multco = multbc.ft0Mult_as<soa::Join<aod::Mults, aod::MultsExtra, aod::MultSelections, aod::CentFT0Cs, aod::MultsGlobal>>();
+      if (multbc.multBCFT0PosZValid()) {
+        histos.fill(HIST("hVertexZ_BCvsCO"), multco.multPVz(), multbc.multBCFT0PosZ());
+      }
+    }
   }
 
   PROCESS_SWITCH(centralityStudy, processCollisions, "per-collision analysis", false);

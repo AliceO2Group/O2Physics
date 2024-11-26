@@ -218,11 +218,24 @@ struct DiffQA {
   }
 
   // ...............................................................................................................
-  void processMain(CC const& collision, BCs const& bct0s,
-                   TCs const& tracks, FWs const& fwdtracks, ATs const& /*ambtracks*/, AFTs const& /*ambfwdtracks*/,
-                   aod::FT0s const& /*ft0s*/, aod::FV0As const& /*fv0as*/, aod::FDDs const& /*fdds*/,
-                   aod::Zdcs& zdcs, aod::Calos& calos,
-                   aod::V0s const& v0s, aod::Cascades const& cascades)
+  // filter for global tracks
+  Filter globalTrackFilter = requireGlobalTrackInFilter();
+  using globalTracks = soa::Filtered<TCs>;
+
+  void processMain(CC const& collision,
+                   BCs const& bct0s,
+                   TCs const& tracks,
+                   FWs const& fwdtracks,
+                   globalTracks const& goodTracks,
+                   ATs const& /*ambtracks*/,
+                   AFTs const& /*ambfwdtracks*/,
+                   aod::FT0s const& /*ft0s*/,
+                   aod::FV0As const& /*fv0as*/,
+                   aod::FDDs const& /*fdds*/,
+                   aod::Zdcs& zdcs,
+                   aod::Calos& calos,
+                   aod::V0s const& v0s,
+                   aod::Cascades const& cascades)
   {
     LOGF(debug, "<DiffQA> Collision %d", collision.globalIndex());
     LOGF(debug, "<DiffQA> Start %i", abcrs.size());
@@ -239,8 +252,6 @@ struct DiffQA {
     // vertex tracks
     registry.get<TH1>(HIST("collisions/PVTracks"))->Fill(collision.numContrib());
     // global tracks
-    Partition<TCs> goodTracks = requireGlobalTrackInFilter();
-    goodTracks.bindTable(tracks);
     registry.get<TH1>(HIST("collisions/globalTracks"))->Fill(goodTracks.size());
 
     // loop over all tracks

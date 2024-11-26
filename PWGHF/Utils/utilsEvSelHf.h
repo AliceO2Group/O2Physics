@@ -24,8 +24,11 @@
 #include "Framework/Configurable.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/HistogramSpec.h"
+#include "Framework/OutputObjHeader.h"
 
+#include "Common/CCDB/EventSelectionParams.h"
 #include "EventFiltering/Zorro.h"
+#include "EventFiltering/ZorroSummary.h"
 #include "PWGHF/Core/CentralityEstimation.h"
 
 namespace o2::hf_evsel
@@ -45,6 +48,9 @@ enum EventRejection {
   NContrib,
   Chi2,
   PositionZ,
+  NoCollInTimeRangeNarrow,
+  NoCollInTimeRangeStandard,
+  NoCollInRofStandard,
   NEventRejection
 };
 
@@ -70,6 +76,9 @@ void setEventRejectionLabels(Histo& hRejection, std::string softwareTriggerLabel
   hRejection->GetXaxis()->SetBinLabel(EventRejection::NContrib + 1, "# of PV contributors");
   hRejection->GetXaxis()->SetBinLabel(EventRejection::Chi2 + 1, "PV #it{#chi}^{2}");
   hRejection->GetXaxis()->SetBinLabel(EventRejection::PositionZ + 1, "PV #it{z}");
+  hRejection->GetXaxis()->SetBinLabel(EventRejection::NoCollInTimeRangeNarrow + 1, "No coll timerange narrow");
+  hRejection->GetXaxis()->SetBinLabel(EventRejection::NoCollInTimeRangeStandard + 1, "No coll timerange strict");
+  hRejection->GetXaxis()->SetBinLabel(EventRejection::NoCollInRofStandard + 1, "No coll in ROF std");
 }
 
 struct HfEventSelection : o2::framework::ConfigurableGroup {
@@ -85,14 +94,19 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<bool> useIsGoodZvtxFT0vsPV{"useIsGoodZvtxFT0vsPV", false, "Check consistency between PVz from central barrel with that from FT0 timing"};
   o2::framework::Configurable<bool> useNoSameBunchPileup{"useNoSameBunchPileup", false, "Exclude collisions in bunches with more than 1 reco. PV"}; // POTENTIALLY BAD FOR BEAUTY ANALYSES
   o2::framework::Configurable<bool> useNumTracksInTimeRange{"useNumTracksInTimeRange", false, "Apply occupancy selection (num. ITS tracks with at least 5 clusters in +-100us from current collision)"};
+  o2::framework::Configurable<bool> useFT0cOccEstimator{"useFT0cOccEstimator", false, "Adopt FT0c amplitudes as occupancy estimator instead of ITS tracks"};
   o2::framework::Configurable<int> numTracksInTimeRangeMin{"numTracksInTimeRangeMin", 0, "Minimum occupancy"};
   o2::framework::Configurable<int> numTracksInTimeRangeMax{"numTracksInTimeRangeMax", 1000000, "Maximum occupancy"};
   o2::framework::Configurable<int> nPvContributorsMin{"nPvContributorsMin", 0, "Minimum number of PV contributors"};
   o2::framework::Configurable<float> chi2PvMax{"chi2PvMax", -1.f, "Maximum PV chi2"};
   o2::framework::Configurable<float> zPvPosMin{"zPvPosMin", -10.f, "Minimum PV posZ (cm)"};
   o2::framework::Configurable<float> zPvPosMax{"zPvPosMax", 10.f, "Maximum PV posZ (cm)"};
+  o2::framework::Configurable<bool> useNoCollInTimeRangeNarrow{"useNoCollInTimeRangeNarrow", false, "Reject collisions in time range narrow"};
+  o2::framework::Configurable<bool> useNoCollInTimeRangeStandard{"useNoCollInTimeRangeStandard", false, "Reject collisions in time range strict"};
+  o2::framework::Configurable<bool> useNoCollInRofStandard{"useNoCollInRofStandard", false, "Reject collisions in ROF standard"};
   o2::framework::Configurable<std::string> softwareTrigger{"softwareTrigger", "", "Label of software trigger. Multiple triggers can be selected dividing them by a comma. Set None if you want bcs that are not selected by any trigger"};
   o2::framework::Configurable<uint64_t> bcMarginForSoftwareTrigger{"bcMarginForSoftwareTrigger", 100, "Number of BCs of margin for software triggers"};
+  o2::framework::Configurable<std::string> ccdbPathSoftwareTrigger{"ccdbPathSoftwareTrigger", "Users/m/mpuccio/EventFiltering/OTS/", "ccdb path for ZORRO objects"};
 
   // histogram names
   static constexpr char nameHistCollisions[] = "hCollisions";
@@ -107,6 +121,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
 
   // util to retrieve trigger mask in case of software triggers
   Zorro zorro;
+  o2::framework::OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
   int currentRun{-1};
 
   /// \brief Adds collision monitoring histograms in the histogram registry.
@@ -121,6 +136,11 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
     hPosYAfterEvSel = registry.add<TH1>(nameHistPosYAfterEvSel, "selected events;#it{y}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{200, -0.5, 0.5}}});
     hNumPvContributorsAfterSel = registry.add<TH1>(nameHistNumPvContributorsAfterSel, "selected events;#it{y}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{500, -0.5, 499.5}}});
     setEventRejectionLabels(hCollisions, softwareTrigger);
+
+    // we initialise the summary object
+    if (softwareTrigger.value != "") {
+      zorroSummary.setObject(zorro.getZorroSummary());
+    }
   }
 
   /// \brief Applies event selection.
@@ -179,9 +199,27 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
       if (useNoSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
         SETBIT(rejectionMask, EventRejection::NoSameBunchPileup);
       }
-      /// occupancy estimator (ITS tracks with at least 5 clusters in +-10us from current collision)
+      /// No collisions in time range narrow
+      if (useNoCollInTimeRangeNarrow && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
+        SETBIT(rejectionMask, EventRejection::NoCollInTimeRangeNarrow);
+      }
+      /// No collisions in time range strict
+      if (useNoCollInTimeRangeStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+        SETBIT(rejectionMask, EventRejection::NoCollInTimeRangeStandard);
+      }
+      /// No collisions in ROF standard
+      if (useNoCollInRofStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
+        SETBIT(rejectionMask, EventRejection::NoCollInRofStandard);
+      }
       if (useNumTracksInTimeRange) {
-        const int numTracksInTimeRange = collision.trackOccupancyInTimeRange();
+        float numTracksInTimeRange;
+        if (useFT0cOccEstimator) {
+          /// occupancy estimator (FT0c signal amplitudes in +-10us from current collision)
+          numTracksInTimeRange = collision.ft0cOccupancyInTimeRange();
+        } else {
+          /// occupancy estimator (ITS tracks with at least 5 clusters in +-10us from current collision)
+          numTracksInTimeRange = static_cast<float>(collision.trackOccupancyInTimeRange());
+        }
         if (numTracksInTimeRange < numTracksInTimeRangeMin || numTracksInTimeRange > numTracksInTimeRangeMax) {
           SETBIT(rejectionMask, EventRejection::NumTracksInTimeRange);
         }
@@ -209,8 +247,9 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
 
       int runNumber = bc.runNumber();
       if (runNumber != currentRun) { // We might need to update Zorro from CCDB if the run number changes
-        zorro.initCCDB(ccdb.service, runNumber, bc.timestamp(), softwareTrigger.value);
+        zorro.setCCDBpath(ccdbPathSoftwareTrigger);
         zorro.setBCtolerance(bcMarginForSoftwareTrigger);
+        zorro.initCCDB(ccdb.service, runNumber, bc.timestamp(), softwareTrigger.value);
         currentRun = runNumber;
       }
       zorro.populateHistRegistry(registry, runNumber);

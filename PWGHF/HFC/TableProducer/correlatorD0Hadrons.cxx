@@ -15,6 +15,8 @@
 /// \author Samrangy Sadhu <samrangy.sadhu@cern.ch>, INFN Bari
 /// \author Swapnesh Santosh Khade <swapnesh.santosh.khade@cern.ch>, IIT Indore
 
+#include <vector>
+
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
@@ -30,12 +32,14 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/HFC/DataModel/CorrelationTables.h"
+#include "PWGHF/HFC/Utils/utilsCorrelations.h"
 
 using namespace o2;
 using namespace o2::analysis;
 using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::analysis::hf_correlations;
 
 ///
 /// Returns deltaPhi value in range [-pi/2., 3.*pi/2], typically used for correlation studies
@@ -176,7 +180,7 @@ struct HfCorrelatorD0Hadrons {
   Configurable<int> applyEfficiency{"efficiencyFlagD", 1, "Flag for applying D-meson efficiency weights"};
   Configurable<float> multMin{"multMin", 0., "minimum multiplicity accepted"};
   Configurable<float> multMax{"multMax", 10000., "maximum multiplicity accepted"};
-  Configurable<float> ptSoftPionMax{"ptSoftPionMax", 3 * 800. * pow(10., -6.), "max. pT cut for soft pion identification"};
+  Configurable<float> ptSoftPionMax{"ptSoftPionMax", 3.f * 800.f * std::pow(10.f, -6.f), "max. pT cut for soft pion identification"};
   Configurable<bool> correlateD0WithLeadingParticle{"correlateD0WithLeadingParticle", false, "Switch for correlation of D0 mesons with leading particle only"};
   Configurable<bool> storeAutoCorrelationFlag{"storeAutoCorrelationFlag", false, "Store flag that indicates if the track is paired to its D-meson mother instead of skipping it"};
   Configurable<int> numberEventsMixed{"numberEventsMixed", 5, "Number of events mixed in ME process"};
@@ -264,22 +268,6 @@ struct HfCorrelatorD0Hadrons {
     registry.add("hCountD0TriggersGen", "D0 trigger particles - MC gen;;N of trigger D0", {HistType::kTH2F, {{1, -0.5, 0.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
   }
 
-  // Find Leading Particle
-  template <typename TTracks>
-  int findLeadingParticle(TTracks const& tracks)
-  {
-    auto leadingParticle = tracks.begin();
-    for (auto const& track : tracks) {
-      if (std::abs(track.dcaXY()) >= 1. || std::abs(track.dcaZ()) >= 1.) {
-        continue;
-      }
-      if (track.pt() > leadingParticle.pt()) {
-        leadingParticle = track;
-      }
-    }
-    int leadingIndex = leadingParticle.globalIndex();
-    return leadingIndex;
-  }
   // =======  Process starts for Data, Same event ============
 
   /// D0-h correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
@@ -293,7 +281,7 @@ struct HfCorrelatorD0Hadrons {
     }
     // find leading particle
     if (correlateD0WithLeadingParticle) {
-      leadingIndex = findLeadingParticle(tracks);
+      leadingIndex = findLeadingParticle(tracks, dcaXYTrackMax.value, dcaZTrackMax.value, etaTrackMax.value);
     }
 
     int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multFT0M()));
@@ -437,7 +425,7 @@ struct HfCorrelatorD0Hadrons {
     }
     // find leading particle
     if (correlateD0WithLeadingParticle) {
-      leadingIndex = findLeadingParticle(tracks);
+      leadingIndex = findLeadingParticle(tracks, dcaXYTrackMax.value, dcaZTrackMax.value, etaTrackMax.value);
     }
     int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multFT0M()));
     int nTracks = 0;
@@ -559,7 +547,7 @@ struct HfCorrelatorD0Hadrons {
           if (track.globalIndex() != leadingIndex) {
             continue;
           }
-          registry.fill(HIST("hTrackCounter"), 4); // fill no. of tracks  have leading particle
+          registry.fill(HIST("hTrackCounterRec"), 4); // fill no. of tracks  have leading particle
         }
 
         int signalStatus = 0;
@@ -605,6 +593,10 @@ struct HfCorrelatorD0Hadrons {
   {
     registry.fill(HIST("hEvtCountGen"), 0);
     // MC gen level
+    // find leading particle
+    if (correlateD0WithLeadingParticle) {
+      leadingIndex = findLeadingParticleMcGen(mcParticles, etaTrackMax.value, ptTrackMin.value);
+    }
     for (const auto& particle1 : mcParticles) {
       // check if the particle is D0 or D0bar (for general plot filling and selection, so both cases are fine) - NOTE: decay channel is not probed!
       if (std::abs(particle1.pdgCode()) != Pdg::kD0) {
@@ -647,10 +639,22 @@ struct HfCorrelatorD0Hadrons {
 
         auto indexMotherPi = RecoDecay::getMother(mcParticles, particle2, Pdg::kDStar, true, nullptr, 1); // last arguement 1 is written to consider immediate decay mother only
         auto indexMotherD0 = RecoDecay::getMother(mcParticles, particle1, Pdg::kDStar, true, nullptr, 1);
-        if (std::abs(particle2.pdgCode()) == kPiPlus && indexMotherPi >= 0 && indexMotherD0 >= 0 && indexMotherPi == indexMotherD0)
-          continue;
+        bool correlationStatus = false;
+        if (std::abs(particle2.pdgCode()) == kPiPlus && indexMotherPi >= 0 && indexMotherD0 >= 0 && indexMotherPi == indexMotherD0) {
+          if (!storeAutoCorrelationFlag) {
+            continue;
+          }
+          correlationStatus = true;
+        }
 
         registry.fill(HIST("hTrackCounterGen"), 3); // fill after soft pion removal
+
+        if (correlateD0WithLeadingParticle) {
+          if (particle2.globalIndex() != leadingIndex) {
+            continue;
+          }
+          registry.fill(HIST("hTrackCounterGen"), 4); // fill no. of tracks  have leading particle
+        }
 
         auto getTracksSize = [&mcParticles](aod::McCollision const& /*collision*/) {
           int nTracks = 0;
@@ -664,8 +668,6 @@ struct HfCorrelatorD0Hadrons {
         using BinningTypeMcGen = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::mccollision::PosZ, decltype(getTracksSize)>;
         BinningTypeMcGen corrBinningMcGen{{getTracksSize}, {zPoolBins, multPoolBinsMcGen}, true};
         int poolBin = corrBinningMcGen.getBin(std::make_tuple(mcCollision.posZ(), getTracksSize(mcCollision)));
-
-        bool correlationStatus = false;
         entryD0HadronPair(getDeltaPhi(particle2.phi(), particle1.phi()),
                           particle2.eta() - particle1.eta(),
                           particle1.pt(),

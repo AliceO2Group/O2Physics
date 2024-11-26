@@ -25,6 +25,7 @@
 #include <cmath>
 #include <array>
 #include <cstdlib>
+#include <vector>
 
 #include "TRandom3.h"
 #include "Math/Vector3D.h"
@@ -74,12 +75,10 @@ struct highmasslambda {
   // Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
 
   // fill output
+  Configurable<bool> fillQA{"fillQA", false, "fillQA"};
   Configurable<bool> useSP{"useSP", false, "useSP"};
   Configurable<bool> useSignDCAV0{"useSignDCAV0", true, "useSignDCAV0"};
-  Configurable<bool> additionalEvSel{"additionalEvSel", true, "additionalEvSel"};
-  Configurable<bool> additionalEvSel2{"additionalEvSel2", false, "additionalEvSel2"};
   Configurable<bool> fillDefault{"fillDefault", false, "fill Occupancy"};
-  Configurable<bool> fillOccupancy{"fillOccupancy", true, "fill Occupancy"};
   Configurable<int> cfgOccupancyCut{"cfgOccupancyCut", 2500, "Occupancy cut"};
   Configurable<bool> fillDecayLength{"fillDecayLength", true, "fill decay length"};
   Configurable<bool> fillPolarization{"fillPolarization", false, "fill polarization"};
@@ -89,6 +88,8 @@ struct highmasslambda {
   Configurable<float> cfgCutCentralityMax{"cfgCutCentralityMax", 50.0f, "Accepted maximum Centrality"};
   Configurable<float> cfgCutCentralityMin{"cfgCutCentralityMin", 30.0f, "Accepted minimum Centrality"};
   // proton track cut
+  Configurable<bool> rejectPID{"rejectPID", true, "pion, kaon, electron rejection"};
+  Configurable<float> cfgCutTOFBeta{"cfgCutTOFBeta", 0.0, "cut TOF beta"};
   Configurable<bool> ispTdifferentialDCA{"ispTdifferentialDCA", true, "is pT differential DCA"};
   Configurable<bool> isPVContributor{"isPVContributor", true, "is PV contributor"};
   Configurable<float> confMinRot{"confMinRot", 5.0 * TMath::Pi() / 6.0, "Minimum of rotation"};
@@ -110,8 +111,9 @@ struct highmasslambda {
   Configurable<int> cfgTPCcluster{"cfgTPCcluster", 70, "Number of TPC cluster"};
   Configurable<int> PIDstrategy{"PIDstrategy", 0, "0: TOF Veto, 1: TOF Veto opti, 2: TOF, 3: TOF loose 1, 4: TOF loose 2, 5: old pt dep"};
   Configurable<float> nsigmaCutTPC{"nsigmacutTPC", 3.0, "Value of the TPC Nsigma cut"};
-  Configurable<float> nsigmaCutCombined{"nsigmaCutCombined", 3.0, "TPC TOF combined PID"};
+  Configurable<float> nsigmaCutTOF{"nsigmaCutTOF", 3.0, "TOF PID"};
   Configurable<float> nsigmaCutTPCPre{"nsigmacutTPCPre", 3.0, "Value of the TPC Nsigma cut Pre filter"};
+  Configurable<float> minnsigmaCutTPCPre{"minnsigmacutTPCPre", -2.0, "Minimum Value of the TPC Nsigma cut Pre filter"};
   Configurable<float> kaonrejpar{"kaonrejpar", 1.0, "Kaon rej. par"};
   // Configs for V0
   Configurable<float> ConfV0PtMin{"ConfV0PtMin", 0.f, "Minimum transverse momentum of V0"};
@@ -122,6 +124,8 @@ struct highmasslambda {
   Configurable<double> cMaxV0DCA{"cMaxV0DCA", 0.2, "Maximum V0 DCA to PV"};
   Configurable<float> cMaxV0LifeTime{"cMaxV0LifeTime", 20, "Maximum V0 life time"};
   Configurable<float> cSigmaMassKs0{"cSigmaMassKs0", 0.006, "Sigma cut on KS0 mass"};
+  Configurable<float> cMinLambdaMass{"cMinLambdaMass", 2.18, "Minimum lambda mass"};
+  Configurable<float> cMaxLambdaMass{"cMaxLambdaMass", 2.42, "Maximum lambda mass"};
   // config for V0 daughters
   Configurable<float> ConfDaughEta{"ConfDaughEta", 0.8f, "V0 Daugh sel: max eta"};
   Configurable<float> ConfDaughPt{"ConfDaughPt", 0.1f, "V0 Daugh sel: min pt"};
@@ -152,10 +156,10 @@ struct highmasslambda {
   Filter centralityFilter = (nabs(aod::cent::centFT0C) < cfgCutCentralityMax && nabs(aod::cent::centFT0C) > cfgCutCentralityMin);
   Filter acceptanceFilter = (nabs(aod::track::eta) < cfgCutEta && nabs(aod::track::pt) > cfgCutPT);
   Filter dcaCutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
-  Filter pidFilter = nabs(aod::pidtpc::tpcNSigmaPr) < nsigmaCutTPCPre;
+  Filter pidFilter = aod::pidtpc::tpcNSigmaPr > minnsigmaCutTPCPre&& aod::pidtpc::tpcNSigmaPr < nsigmaCutTPCPre;
 
   using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::EPCalibrationTables, aod::Mults>>;
-  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullEl, aod::pidTOFFullEl>>;
+  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPr, aod::pidTOFbeta, aod::pidTOFFullPr, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullEl, aod::pidTOFFullEl>>;
   using AllTrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi>;
   using ResoV0s = aod::V0Datas;
 
@@ -169,8 +173,8 @@ struct highmasslambda {
   {
     std::vector<double> occupancyBinning = {0.0, 500.0, 1000.0, 1500.0, 2000.0, 3000.0, 4000.0, 5000.0, 50000.0};
     // std::vector<double> dcaBinning = {0.0, 0.0005, 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01, 0.012, 0.014, 0.016, 0.02, 0.03, 0.05, 0.1, 0.5, 1.0};
-    std::vector<double> dcaBinning = {0.0, 0.0005, 0.001, 0.002, 0.003, 0.004, 0.006, 0.008, 0.01, 0.015, 0.02, 0.04, 0.08, 0.1, 0.3, 1.0};
-    std::vector<double> ptProtonBinning = {0.2, 0.3, 0.5, 0.8, 1.2, 1.6, 2.0, 3.0, 4.0, 6.0};
+    std::vector<double> dcaBinning = {0.0, 0.0005, 0.001, 0.0012, 0.0014, 0.0016, 0.002, 0.0025, 0.003, 0.004, 0.005, 0.006, 0.008, 0.01, 0.015, 0.02, 0.04, 0.05, 0.06, 0.08, 0.1, 0.3, 1.0};
+    std::vector<double> ptProtonBinning = {0.2, 0.3, 0.5, 0.6, 0.8, 1.2, 1.4, 1.6, 2.0, 3.0, 4.0, 6.0};
     std::vector<double> ptLambdaBinning = {2.0, 3.0, 4.0, 5.0, 6.0};
 
     const AxisSpec thnAxisInvMass{configThnAxisInvMass, "#it{M} (GeV/#it{c}^{2})"};
@@ -190,7 +194,7 @@ struct highmasslambda {
     AxisSpec centAxis = {8, 0, 80, "V0M (%)"};
     // AxisSpec ptProtonAxis = {16, 0.0, 8, "V0M (%)"};
     AxisSpec dcaAxis = {dcaBinning, "DCAxy"};
-    AxisSpec dcatoPVAxis = {50, 0.0, 0.4, "V0M (%)"};
+    AxisSpec dcatoPVAxis = {50, 0.0, 0.5, "V0M (%)"};
     AxisSpec occupancyAxis = {occupancyBinning, "occupancy"};
     AxisSpec ptProtonAxis = {ptProtonBinning, "pT proton"};
 
@@ -214,14 +218,6 @@ struct highmasslambda {
     histos.add("hNsigmaProtonPionTPC", "NsigmaProton-Pion TPC distribution", kTH3F, {{60, -3.0f, 3.0f}, {200, -10.0f, 10.0f}, {60, 0.0f, 6.0f}});
     histos.add("hNsigmaProtonKaonTPC", "NsigmaProton-Kaon TPC distribution", kTH3F, {{60, -3.0f, 3.0f}, {200, -10.0f, 10.0f}, {60, 0.0f, 6.0f}});
 
-    histos.add("hNsigmaProtonElectronTPC_afterPi", "NsigmaProton-Electron TPC distribution", kTH3F, {{60, -3.0f, 3.0f}, {200, -10.0f, 10.0f}, {60, 0.0f, 6.0f}});
-    histos.add("hNsigmaProtonPionTPC_afterPi", "NsigmaProton-Pion TPC distribution", kTH3F, {{60, -3.0f, 3.0f}, {200, -10.0f, 10.0f}, {60, 0.0f, 6.0f}});
-    histos.add("hNsigmaProtonKaonTPC_afterPi", "NsigmaProton-Kaon TPC distribution", kTH3F, {{60, -3.0f, 3.0f}, {200, -10.0f, 10.0f}, {60, 0.0f, 6.0f}});
-
-    histos.add("hNsigmaProtonElectronTPC_afterEl", "NsigmaProton-Electron TPC distribution", kTH3F, {{60, -3.0f, 3.0f}, {200, -10.0f, 10.0f}, {60, 0.0f, 6.0f}});
-    histos.add("hNsigmaProtonPionTPC_afterEl", "NsigmaProton-Pion TPC distribution", kTH3F, {{60, -3.0f, 3.0f}, {200, -10.0f, 10.0f}, {60, 0.0f, 6.0f}});
-    histos.add("hNsigmaProtonKaonTPC_afterEl", "NsigmaProton-Kaon TPC distribution", kTH3F, {{60, -3.0f, 3.0f}, {200, -10.0f, 10.0f}, {60, 0.0f, 6.0f}});
-
     histos.add("hNsigmaProtonElectronTPC_afterKa", "NsigmaProton-Electron TPC distribution", kTH3F, {{60, -3.0f, 3.0f}, {200, -10.0f, 10.0f}, {60, 0.0f, 6.0f}});
     histos.add("hNsigmaProtonPionTPC_afterKa", "NsigmaProton-Pion TPC distribution", kTH3F, {{60, -3.0f, 3.0f}, {200, -10.0f, 10.0f}, {60, 0.0f, 6.0f}});
     histos.add("hNsigmaProtonKaonTPC_afterKa", "NsigmaProton-Kaon TPC distribution", kTH3F, {{60, -3.0f, 3.0f}, {200, -10.0f, 10.0f}, {60, 0.0f, 6.0f}});
@@ -235,34 +231,16 @@ struct highmasslambda {
     histos.add("hPsiTPC", "PsiTPC", kTH3F, {centAxis, phiAxis, occupancyAxis});
     histos.add("hPsiTPCR", "PsiTPCR", kTH3F, {centAxis, phiAxis, occupancyAxis});
     histos.add("hPsiTPCL", "PsiTPCL", kTH3F, {centAxis, phiAxis, occupancyAxis});
+
     if (fillDefault) {
-      if (fillDecayLength) {
-        histos.add("hSparseV2SASameEvent_V2", "hSparseV2SASameEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, thnAxisDCASum});
-        histos.add("hSparseV2SAMixedEvent_V2", "hSparseV2SAMixedEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, thnAxisDCASum});
-        histos.add("hSparseV2SASameEventRotational_V2", "hSparseV2SASameEventRotational_V2", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, thnAxisDCASum});
-      }
-      histos.add("hSparseV2SASameEvent_V2_new", "hSparseV2SASameEvent_V2_new", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, dcaAxis, ptProtonAxis});
-      histos.add("hSparseV2SAMixedEvent_V2_new", "hSparseV2SAMixedEvent_V2_new", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, dcaAxis, ptProtonAxis});
-      histos.add("hSparseV2SASameEventRotational_V2_new", "hSparseV2SASameEventRotational_V2_new", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, dcaAxis, ptProtonAxis});
+      histos.add("hSparseV2SASameEvent_V2", "hSparseV2SASameEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, dcaAxis, ptProtonAxis});
+      histos.add("hSparseV2SASameEventRotational_V2", "hSparseV2SASameEventRotational", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, dcaAxis, ptProtonAxis});
+      histos.add("hSparseV2SAMixedEvent_V2", "hSparseV2SAMixedEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, dcaAxis, ptProtonAxis});
     }
-    if (fillOccupancy) {
-      if (fillDecayLength) {
-        histos.add("hSparseV2SASameEvent_V2_occupancy", "hSparseV2SASameEvent_V2_occupancy", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, thnAxisDCASum, dcaAxis});
-        histos.add("hSparseV2SASameEventRotational_V2_occupancy", "hSparseV2SASameEventRotational_V2_occupancy", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, thnAxisDCASum, dcaAxis});
-        histos.add("hSparseV2SAMixedEvent_V2_occupancy", "hSparseV2SAMixedEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, thnAxisDCASum, dcaAxis});
-      }
-      histos.add("hSparseV2SASameEvent_V2_new_occupancy", "hSparseV2SASameEvent_V2_new_occupancy", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, dcaAxis, ptProtonAxis});
-      histos.add("hSparseV2SASameEventRotational_V2_new_occupancy", "hSparseV2SASameEventRotational_V2_new_occupancy", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, dcaAxis, ptProtonAxis});
-      histos.add("hSparseV2SAMixedEvent_V2_new_occupancy", "hSparseV2SAMixedEvent_V2_new", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, dcaAxis, ptProtonAxis});
-    } else {
-      if (fillDecayLength) {
-        histos.add("hSparseV2SASameEvent_V2_occupancy", "hSparseV2SASameEvent_V2_occupancy", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, thnAxisDCASum, dcaAxis});
-        histos.add("hSparseV2SASameEventRotational_V2_occupancy", "hSparseV2SASameEventRotational_V2_occupancy", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, thnAxisDCASum, dcaAxis});
-        histos.add("hSparseV2SAMixedEvent_V2_occupancy", "hSparseV2SAMixedEvent_V2", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, thnAxisDCASum, dcaAxis});
-      }
-      histos.add("hSparseV2SASameEvent_V2_new_occupancy", "hSparseV2SASameEvent_V2_new_occupancy", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, dcaAxis, ptProtonAxis});
-      histos.add("hSparseV2SASameEventRotational_V2_new_occupancy", "hSparseV2SASameEventRotational_V2_new_occupancy", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, dcaAxis, ptProtonAxis});
-      histos.add("hSparseV2SAMixedEvent_V2_new_occupancy", "hSparseV2SAMixedEvent_V2_new", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, dcaAxis, ptProtonAxis});
+    if (fillDecayLength) {
+      histos.add("hSparseV2SASameEvent_V2_dcatopv", "hSparseV2SASameEvent_V2_dcatopv", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, dcatoPVAxis, ptProtonAxis});
+      histos.add("hSparseV2SASameEventRotational_V2_dcatopv", "hSparseV2SASameEventRotational_V2_dcatopv", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, dcatoPVAxis, ptProtonAxis});
+      histos.add("hSparseV2SAMixedEvent_V2_dcatopv", "hSparseV2SAMixedEvent_V2_dcatopv", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSP, dcatoPVAxis, ptProtonAxis});
     }
     if (fillPolarization) {
       histos.add("hSparseV2SASameEventplus_SA", "hSparseV2SASameEventplus_SA", HistType::kTHnSparseF, {thnAxisInvMass, ptLambdaBinning, thnAxisSA, thnAxisPhiminusPsi, thnAxisCentrality});
@@ -411,23 +389,17 @@ struct highmasslambda {
   template <typename T>
   bool selectionPID1(const T& candidate)
   {
-    if (candidate.tpcInnerParam() < 0.7 && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0) {
+    if (candidate.tpcInnerParam() < 0.85 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
       return true;
     }
-    if (candidate.tpcInnerParam() >= 0.7) {
-      // printf("I am here: %.3f\n", candidate.tpcInnerParam());
+    if (candidate.tpcInnerParam() >= 0.85) {
       if (candidate.hasTOF()) {
-        auto combinedPID = TMath::Sqrt(candidate.tpcNSigmaPr() * candidate.tpcNSigmaPr() + candidate.tofNSigmaPr() * candidate.tofNSigmaPr()) / TMath::Sqrt(2.0);
-        // printf("combine PIDA: %.3f\n", combinedPID);
-        if (combinedPID < nsigmaCutCombined) {
+        if (candidate.beta() > cfgCutTOFBeta && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC && TMath::Abs(candidate.tofNSigmaPr()) < nsigmaCutTOF) {
           return true;
         }
       }
       if (!candidate.hasTOF()) {
-        if (candidate.tpcInnerParam() < 1.5 && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0) {
-          return true;
-        }
-        if (candidate.tpcInnerParam() >= 1.5 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < 2.0) {
+        if (candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
           return true;
         }
       }
@@ -439,16 +411,11 @@ struct highmasslambda {
   template <typename T>
   bool selectionPID2(const T& candidate)
   {
-    if (candidate.tpcInnerParam() < 0.7 && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0) {
+    if (candidate.tpcInnerParam() < 0.85 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
       return true;
     }
-    if (candidate.tpcInnerParam() >= 0.7) {
-      if (candidate.hasTOF()) {
-        auto combinedPID = TMath::Sqrt(candidate.tpcNSigmaPr() * candidate.tpcNSigmaPr() + candidate.tofNSigmaPr() * candidate.tofNSigmaPr()) / TMath::Sqrt(2.0);
-        if (combinedPID < nsigmaCutCombined) {
-          return true;
-        }
-      }
+    if (candidate.tpcInnerParam() >= 0.85 && candidate.beta() > cfgCutTOFBeta && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC && TMath::Abs(candidate.tofNSigmaPr()) < nsigmaCutTOF) {
+      return true;
     }
     return false;
   }
@@ -457,18 +424,17 @@ struct highmasslambda {
   template <typename T>
   bool selectionPID3(const T& candidate)
   {
-    if (candidate.tpcInnerParam() < 0.7 && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0) {
+    if (candidate.tpcInnerParam() < 0.85 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
       return true;
     }
-    if (candidate.tpcInnerParam() >= 0.7) {
+    if (candidate.tpcInnerParam() >= 0.85) {
       if (candidate.hasTOF()) {
-        auto combinedPID = TMath::Sqrt(candidate.tpcNSigmaPr() * candidate.tpcNSigmaPr() + candidate.tofNSigmaPr() * candidate.tofNSigmaPr()) / TMath::Sqrt(2.0);
-        if (combinedPID < nsigmaCutCombined) {
+        if (candidate.beta() > cfgCutTOFBeta && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC && TMath::Abs(candidate.tofNSigmaPr()) < nsigmaCutTOF) {
           return true;
         }
       }
       if (!candidate.hasTOF()) {
-        if (candidate.tpcInnerParam() < 1.5 && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0) {
+        if (candidate.tpcInnerParam() < 1.5 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
           return true;
         }
       }
@@ -480,21 +446,17 @@ struct highmasslambda {
   template <typename T>
   bool selectionPID4(const T& candidate)
   {
-    if (candidate.tpcInnerParam() < 0.7 && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0) {
+    if (candidate.tpcInnerParam() < 0.85 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
       return true;
     }
-    if (candidate.tpcInnerParam() >= 0.7) {
+    if (candidate.tpcInnerParam() >= 0.85) {
       if (candidate.hasTOF()) {
-        auto combinedPID = TMath::Sqrt(candidate.tpcNSigmaPr() * candidate.tpcNSigmaPr() + candidate.tofNSigmaPr() * candidate.tofNSigmaPr()) / TMath::Sqrt(2.0);
-        if (combinedPID < nsigmaCutCombined) {
+        if (candidate.beta() > cfgCutTOFBeta && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC && TMath::Abs(candidate.tofNSigmaPr()) < nsigmaCutTOF) {
           return true;
         }
       }
       if (!candidate.hasTOF()) {
-        if (candidate.tpcInnerParam() < 1.5 && TMath::Abs(candidate.tpcNSigmaPr()) < 3.0) {
-          return true;
-        }
-        if (candidate.tpcInnerParam() >= 1.5 && candidate.tpcInnerParam() < 1.8 && candidate.tpcNSigmaPr() > -1.5 && candidate.tpcNSigmaPr() < 2.0) {
+        if (candidate.tpcInnerParam() < 1.8 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
           return true;
         }
       }
@@ -587,7 +549,7 @@ struct highmasslambda {
   ConfigurableAxis axisEPAngle{"axisEPAngle", {1, -TMath::Pi() / 2, TMath::Pi() / 2}, "event plane angle"};
 
   using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C, aod::epcalibrationtable::PsiFT0C>;
-  ROOT::Math::PxPyPzMVector Lambdac, Proton, Kshort, LambdacRot, ProtonRot, fourVecDauCM;
+  ROOT::Math::PxPyPzMVector Lambdac, Proton, Kshort, LambdacRot, KshortRot, fourVecDauCM;
   ROOT::Math::XYZVector threeVecDauCM, threeVecDauCMXY, eventplaneVec, eventplaneVecNorm, beamvector;
   double massPi = TDatabasePDG::Instance()->GetParticle(kPiPlus)->Mass();   // FIXME: Get from the common header
   double massPr = TDatabasePDG::Instance()->GetParticle(kProton)->Mass();   // FIXME: Get from the common header
@@ -595,22 +557,17 @@ struct highmasslambda {
   double v2, v2Rot;
   void processSameEvent(EventCandidates::iterator const& collision, TrackCandidates const& tracks, AllTrackCandidates const&, ResoV0s const& V0s, aod::BCs const&)
   {
-    if (!collision.sel8()) {
+    if (!collision.sel8() || !collision.triggereventep() || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       return;
     }
+
     auto centrality = collision.centFT0C();
     auto multTPC = collision.multNTracksPV();
     histos.fill(HIST("hFTOCvsTPCNoCut"), centrality, multTPC);
-    if (!collision.triggereventep()) {
-      return;
-    }
-    if (additionalEvSel && (!collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
-      return;
-    }
-    if (additionalEvSel2 && (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))) {
-      return;
-    }
     int occupancy = collision.trackOccupancyInTimeRange();
+    if (occupancy > cfgOccupancyCut) {
+      return;
+    }
     auto psiFT0C = collision.psiFT0C();
     auto psiFT0A = collision.psiFT0A();
     auto psiTPC = collision.psiTPC();
@@ -644,33 +601,6 @@ struct highmasslambda {
       if (!selectionTrack(track1)) {
         continue;
       }
-      if (track1.hasTOF()) {
-        histos.fill(HIST("hNsigmaProtonTOFPre"), track1.tofNSigmaPr(), track1.pt());
-      }
-      if (!track1.hasTOF()) {
-        histos.fill(HIST("hNsigmaProtonElectronTPC"), track1.tpcNSigmaPr(), track1.tpcNSigmaEl(), track1.tpcInnerParam());
-        histos.fill(HIST("hNsigmaProtonPionTPC"), track1.tpcNSigmaPr(), track1.tpcNSigmaPi(), track1.tpcInnerParam());
-        histos.fill(HIST("hNsigmaProtonKaonTPC"), track1.tpcNSigmaPr(), track1.tpcNSigmaKa(), track1.tpcInnerParam());
-        if (!rejectPi(track1)) {
-          continue;
-        }
-        histos.fill(HIST("hNsigmaProtonElectronTPC_afterPi"), track1.tpcNSigmaPr(), track1.tpcNSigmaEl(), track1.tpcInnerParam());
-        histos.fill(HIST("hNsigmaProtonPionTPC_afterPi"), track1.tpcNSigmaPr(), track1.tpcNSigmaPi(), track1.tpcInnerParam());
-        histos.fill(HIST("hNsigmaProtonKaonTPC_afterPi"), track1.tpcNSigmaPr(), track1.tpcNSigmaKa(), track1.tpcInnerParam());
-        if (!rejectEl(track1)) {
-          continue;
-        }
-        histos.fill(HIST("hNsigmaProtonElectronTPC_afterEl"), track1.tpcNSigmaPr(), track1.tpcNSigmaEl(), track1.tpcInnerParam());
-        histos.fill(HIST("hNsigmaProtonPionTPC_afterEl"), track1.tpcNSigmaPr(), track1.tpcNSigmaPi(), track1.tpcInnerParam());
-        histos.fill(HIST("hNsigmaProtonKaonTPC_afterEl"), track1.tpcNSigmaPr(), track1.tpcNSigmaKa(), track1.tpcInnerParam());
-        if (!rejectKa(track1)) {
-          continue;
-        }
-        histos.fill(HIST("hNsigmaProtonElectronTPC_afterKa"), track1.tpcNSigmaPr(), track1.tpcNSigmaEl(), track1.tpcInnerParam());
-        histos.fill(HIST("hNsigmaProtonPionTPC_afterKa"), track1.tpcNSigmaPr(), track1.tpcNSigmaPi(), track1.tpcInnerParam());
-        histos.fill(HIST("hNsigmaProtonKaonTPC_afterKa"), track1.tpcNSigmaPr(), track1.tpcNSigmaKa(), track1.tpcInnerParam());
-      }
-
       // PID check
       if (PIDstrategy == 0 && !selectionPID1(track1)) {
         continue;
@@ -685,6 +615,24 @@ struct highmasslambda {
         continue;
       }
 
+      if (track1.hasTOF()) {
+        histos.fill(HIST("hNsigmaProtonTOFPre"), track1.tofNSigmaPr(), track1.pt());
+      }
+      if (!track1.hasTOF()) {
+        if (fillQA) {
+          histos.fill(HIST("hNsigmaProtonElectronTPC"), track1.tpcNSigmaPr(), track1.tpcNSigmaEl(), track1.tpcInnerParam());
+          histos.fill(HIST("hNsigmaProtonPionTPC"), track1.tpcNSigmaPr(), track1.tpcNSigmaPi(), track1.tpcInnerParam());
+          histos.fill(HIST("hNsigmaProtonKaonTPC"), track1.tpcNSigmaPr(), track1.tpcNSigmaKa(), track1.tpcInnerParam());
+        }
+        if (rejectPID && !rejectKa(track1)) {
+          continue;
+        }
+        if (fillQA) {
+          histos.fill(HIST("hNsigmaProtonElectronTPC_afterKa"), track1.tpcNSigmaPr(), track1.tpcNSigmaEl(), track1.tpcInnerParam());
+          histos.fill(HIST("hNsigmaProtonPionTPC_afterKa"), track1.tpcNSigmaPr(), track1.tpcNSigmaPi(), track1.tpcInnerParam());
+          histos.fill(HIST("hNsigmaProtonKaonTPC_afterKa"), track1.tpcNSigmaPr(), track1.tpcNSigmaKa(), track1.tpcInnerParam());
+        }
+      }
       histos.fill(HIST("hMomCorr"), track1.p() / track1.sign(), track1.p() - track1.tpcInnerParam(), centrality);
       histos.fill(HIST("hEta"), track1.eta());
       histos.fill(HIST("hDcaxy"), track1.dcaXY());
@@ -725,12 +673,6 @@ struct highmasslambda {
         Proton = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massPr);
         Kshort = ROOT::Math::PxPyPzMVector(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
         Lambdac = Proton + Kshort;
-        if (Lambdac.Pt() > 6.0 || Lambdac.Pt() < 2.0) {
-          continue;
-        }
-        if (TMath::Abs(Lambdac.Rapidity()) > confRapidity) {
-          continue;
-        }
         auto phiminuspsi = GetPhiInRange(Lambdac.Phi() - psiFT0C);
 
         if (useSP) {
@@ -747,25 +689,12 @@ struct highmasslambda {
           dcasum = v0.dcav0topv() - track1.dcaXY();
         }
         histos.fill(HIST("hMassvsDecaySum"), Lambdac.M(), dcasum);
-        if (fillDefault && Lambdac.M() > 2.18 && Lambdac.M() <= 2.42) {
+        if (Lambdac.M() > cMinLambdaMass && Lambdac.M() <= cMaxLambdaMass && TMath::Abs(Lambdac.Rapidity()) < confRapidity && Lambdac.Pt() > 2.0 && Lambdac.Pt() <= 6.0) {
+          if (fillDefault) {
+            histos.fill(HIST("hSparseV2SASameEvent_V2"), Lambdac.M(), Lambdac.Pt(), v2, TMath::Abs(track1.dcaXY()), Proton.Pt());
+          }
           if (fillDecayLength) {
-            histos.fill(HIST("hSparseV2SASameEvent_V2"), Lambdac.M(), Lambdac.Pt(), v2, dcasum);
-          }
-          histos.fill(HIST("hSparseV2SASameEvent_V2_new"), Lambdac.M(), Lambdac.Pt(), v2, TMath::Abs(track1.dcaXY()), Proton.Pt());
-        }
-        if (fillOccupancy && occupancy < cfgOccupancyCut) {
-          if (Lambdac.M() > 2.18 && Lambdac.M() <= 2.42) {
-            if (fillDecayLength) {
-              histos.fill(HIST("hSparseV2SASameEvent_V2_occupancy"), Lambdac.M(), Lambdac.Pt(), v2, dcasum, TMath::Abs(track1.dcaXY()));
-            }
-            histos.fill(HIST("hSparseV2SASameEvent_V2_new_occupancy"), Lambdac.M(), Lambdac.Pt(), v2, TMath::Abs(track1.dcaXY()), Proton.Pt());
-          }
-        } else {
-          if (Lambdac.M() > 2.18 && Lambdac.M() <= 2.42) {
-            if (fillDecayLength) {
-              histos.fill(HIST("hSparseV2SASameEvent_V2_occupancy"), Lambdac.M(), Lambdac.Pt(), v2, dcasum, TMath::Abs(track1.dcaXY()));
-            }
-            histos.fill(HIST("hSparseV2SASameEvent_V2_new_occupancy"), Lambdac.M(), Lambdac.Pt(), v2, TMath::Abs(track1.dcaXY()), Proton.Pt());
+            histos.fill(HIST("hSparseV2SASameEvent_V2_dcatopv"), Lambdac.M(), Lambdac.Pt(), v2, v0.dcav0topv(), Proton.Pt());
           }
         }
         if (fillRotation) {
@@ -775,10 +704,10 @@ struct highmasslambda {
             auto anglestep = (angleend - anglestart) / (1.0 * (nBkgRotations - 1));
             auto rotangle = anglestart + nrotbkg * anglestep;
             histos.fill(HIST("hRotation"), rotangle);
-            auto rotProtonPx = track1.px() * std::cos(rotangle) - track1.py() * std::sin(rotangle);
-            auto rotProtonPy = track1.px() * std::sin(rotangle) + track1.py() * std::cos(rotangle);
-            ProtonRot = ROOT::Math::PxPyPzMVector(rotProtonPx, rotProtonPy, track1.pz(), massPr);
-            LambdacRot = ProtonRot + Kshort;
+            auto rotKaonPx = Kshort.px() * std::cos(rotangle) - Kshort.py() * std::sin(rotangle);
+            auto rotKaonPy = Kshort.px() * std::sin(rotangle) + Kshort.py() * std::cos(rotangle);
+            KshortRot = ROOT::Math::PxPyPzMVector(rotKaonPx, rotKaonPy, Kshort.pz(), massK0s);
+            LambdacRot = Proton + KshortRot;
             auto phiminuspsiRot = GetPhiInRange(LambdacRot.Phi() - psiFT0C);
             if (useSP) {
               v2Rot = TMath::Cos(2.0 * phiminuspsiRot) * QFT0C;
@@ -786,37 +715,26 @@ struct highmasslambda {
             if (!useSP) {
               v2Rot = TMath::Cos(2.0 * phiminuspsiRot);
             }
-            if (fillDefault && LambdacRot.M() > 2.18 && LambdacRot.M() <= 2.42) {
+
+            if (LambdacRot.M() > cMinLambdaMass && LambdacRot.M() <= cMaxLambdaMass && TMath::Abs(LambdacRot.Rapidity()) < confRapidity && LambdacRot.Pt() > 2.0 && LambdacRot.Pt() <= 6.0) {
+              if (fillDefault) {
+                histos.fill(HIST("hSparseV2SASameEventRotational_V2"), LambdacRot.M(), LambdacRot.Pt(), v2Rot, TMath::Abs(track1.dcaXY()), Proton.Pt());
+              }
               if (fillDecayLength) {
-                histos.fill(HIST("hSparseV2SASameEventRotational_V2"), LambdacRot.M(), LambdacRot.Pt(), v2Rot, dcasum);
-              }
-              histos.fill(HIST("hSparseV2SASameEventRotational_V2_new"), LambdacRot.M(), LambdacRot.Pt(), v2Rot, TMath::Abs(track1.dcaXY()), Proton.Pt());
-            }
-            if (fillOccupancy && occupancy < cfgOccupancyCut) {
-              if (LambdacRot.M() > 2.18 && LambdacRot.M() <= 2.42) {
-                if (fillDecayLength) {
-                  histos.fill(HIST("hSparseV2SASameEventRotational_V2_occupancy"), LambdacRot.M(), LambdacRot.Pt(), v2Rot, dcasum, TMath::Abs(track1.dcaXY()));
-                }
-                histos.fill(HIST("hSparseV2SASameEventRotational_V2_new_occupancy"), LambdacRot.M(), LambdacRot.Pt(), v2Rot, TMath::Abs(track1.dcaXY()), Proton.Pt());
-              }
-            } else {
-              if (LambdacRot.M() > 2.18 && LambdacRot.M() <= 2.42) {
-                if (fillDecayLength) {
-                  histos.fill(HIST("hSparseV2SASameEventRotational_V2_occupancy"), LambdacRot.M(), LambdacRot.Pt(), v2Rot, dcasum, TMath::Abs(track1.dcaXY()));
-                }
-                histos.fill(HIST("hSparseV2SASameEventRotational_V2_new_occupancy"), LambdacRot.M(), LambdacRot.Pt(), v2Rot, TMath::Abs(track1.dcaXY()), Proton.Pt());
+                histos.fill(HIST("hSparseV2SASameEventRotational_V2_dcatopv"), LambdacRot.M(), LambdacRot.Pt(), v2Rot, v0.dcav0topv(), Proton.Pt());
               }
             }
           }
         }
-        ROOT::Math::Boost boost{Lambdac.BoostToCM()};
-        fourVecDauCM = boost(Kshort);
-        threeVecDauCM = fourVecDauCM.Vect();
-        threeVecDauCMXY = ROOT::Math::XYZVector(threeVecDauCM.X(), threeVecDauCM.Y(), 0.);
-        beamvector = ROOT::Math::XYZVector(0, 0, 1);
-        auto cosThetaStar = beamvector.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(beamvector.Mag2());
-        auto SA = cosThetaStar * TMath::Sin(2.0 * phiminuspsi);
         if (fillPolarization) {
+          ROOT::Math::Boost boost{Lambdac.BoostToCM()};
+          fourVecDauCM = boost(Kshort);
+          threeVecDauCM = fourVecDauCM.Vect();
+          threeVecDauCMXY = ROOT::Math::XYZVector(threeVecDauCM.X(), threeVecDauCM.Y(), 0.);
+          beamvector = ROOT::Math::XYZVector(0, 0, 1);
+          auto cosThetaStar = beamvector.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(beamvector.Mag2());
+          auto SA = cosThetaStar * TMath::Sin(2.0 * phiminuspsi);
+
           if (track1.sign() > 0) {
             histos.fill(HIST("hSparseV2SASameEventplus_SA"), Lambdac.M(), Lambdac.Pt(), cosThetaStar, phiminuspsi, centrality);
             histos.fill(HIST("hSparseV2SASameEventplus_SA_A0"), Lambdac.M(), Lambdac.Pt(), cosThetaStar * cosThetaStar, phiminuspsi, centrality);
@@ -838,44 +756,31 @@ struct highmasslambda {
     BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicityClass, axisEPAngle}, true};
     Pair<EventCandidates, TrackCandidates, ResoV0s, BinningTypeVertexContributor> pairs{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksV0sTuple, &cache}; // -1 is the number of the bin to skip
     for (auto& [collision1, tracks1, collision2, tracks2] : pairs) {
-      if (!collision1.sel8() || !collision2.sel8()) {
+      if (!collision1.sel8() || !collision1.triggereventep() || !collision1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision1.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision1.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision1.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision1.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
         continue;
       }
-      if (!collision1.triggereventep() || !collision2.triggereventep()) {
+      if (!collision2.sel8() || !collision2.triggereventep() || !collision2.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision2.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision2.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision2.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision2.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
         continue;
       }
-      if (additionalEvSel && (!collision1.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision1.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
+      if (collision1.bcId() == collision2.bcId()) {
         continue;
-      }
-      if (additionalEvSel && (!collision2.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision2.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))) {
-        continue;
-      }
-      if (additionalEvSel2 && (!collision1.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))) {
-        return;
-      }
-      if (additionalEvSel2 && (!collision2.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))) {
-        return;
       }
       auto centrality = collision1.centFT0C();
       auto psiFT0C = collision1.psiFT0C();
       auto QFT0C = collision1.qFT0C();
-      int occupancy = collision1.trackOccupancyInTimeRange();
+      int occupancy1 = collision1.trackOccupancyInTimeRange();
+      int occupancy2 = collision1.trackOccupancyInTimeRange();
+      if (occupancy1 > cfgOccupancyCut) {
+        continue;
+      }
+      if (occupancy2 > cfgOccupancyCut) {
+        continue;
+      }
       for (auto& [track1, v0] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
+
         if (!selectionTrack(track1)) {
           continue;
         }
-        if (!track1.hasTOF()) {
-          if (!rejectPi(track1)) {
-            continue;
-          }
-          if (!rejectEl(track1)) {
-            continue;
-          }
-          if (!rejectKa(track1)) {
-            continue;
-          }
-        }
-
         // PID check
         if (PIDstrategy == 0 && !selectionPID1(track1)) {
           continue;
@@ -890,6 +795,11 @@ struct highmasslambda {
           continue;
         }
 
+        if (!track1.hasTOF()) {
+          if (rejectPID && !rejectEl(track1)) {
+            continue;
+          }
+        }
         if (!SelectionV0(collision2, v0)) {
           continue;
         }
@@ -919,45 +829,24 @@ struct highmasslambda {
         }
         auto anglesign = (v0.x() - collision1.posX()) * v0.px() + (v0.y() - collision1.posY()) * v0.py() + (v0.z() - collision1.posZ()) * v0.pz();
         anglesign = anglesign / TMath::Abs(anglesign);
-        auto dcasum = 0.0;
-        if (useSignDCAV0) {
-          dcasum = anglesign * (v0.dcav0topv()) - track1.dcaXY();
-        }
-        if (!useSignDCAV0) {
-          dcasum = v0.dcav0topv() - track1.dcaXY();
-        }
-        // auto diffangle = Proton.Phi() - Lambdac.Phi();
-        // auto decaylength = TMath::Abs((track1.dcaXY() / TMath::Sin(diffangle)) / (Lambdac.P() / 2.286));
-        // auto dcasum = TMath::Sqrt(track1.dcaXY() * track1.dcaXY() + v0.dcav0topv() * v0.dcav0topv());
-        if (fillDefault && Lambdac.M() > 2.18 && Lambdac.M() <= 2.42) {
+
+        if (occupancy1 < cfgOccupancyCut && occupancy2 < cfgOccupancyCut && Lambdac.M() > cMinLambdaMass && Lambdac.M() <= cMaxLambdaMass && TMath::Abs(Lambdac.Rapidity()) < confRapidity && Lambdac.Pt() > 2.0 && Lambdac.Pt() <= 6.0) {
+          if (fillDefault) {
+            histos.fill(HIST("hSparseV2SAMixedEvent_V2"), Lambdac.M(), Lambdac.Pt(), v2, TMath::Abs(track1.dcaXY()), Proton.Pt());
+          }
           if (fillDecayLength) {
-            histos.fill(HIST("hSparseV2SAMixedEvent_V2"), Lambdac.M(), Lambdac.Pt(), v2, dcasum);
-          }
-          histos.fill(HIST("hSparseV2SAMixedEvent_V2_new"), Lambdac.M(), Lambdac.Pt(), v2, TMath::Abs(track1.dcaXY()), Proton.Pt());
-        }
-        if (fillOccupancy && occupancy < cfgOccupancyCut) {
-          if (Lambdac.M() > 2.18 && Lambdac.M() <= 2.42) {
-            if (fillDecayLength) {
-              histos.fill(HIST("hSparseV2SAMixedEvent_V2_occupancy"), Lambdac.M(), Lambdac.Pt(), v2, dcasum, TMath::Abs(track1.dcaXY()));
-            }
-            histos.fill(HIST("hSparseV2SAMixedEvent_V2_new_occupancy"), Lambdac.M(), Lambdac.Pt(), v2, TMath::Abs(track1.dcaXY()), Proton.Pt());
-          }
-        } else {
-          if (Lambdac.M() > 2.18 && Lambdac.M() <= 2.42) {
-            if (fillDecayLength) {
-              histos.fill(HIST("hSparseV2SAMixedEvent_V2_occupancy"), Lambdac.M(), Lambdac.Pt(), v2, dcasum, TMath::Abs(track1.dcaXY()));
-            }
-            histos.fill(HIST("hSparseV2SAMixedEvent_V2_new_occupancy"), Lambdac.M(), Lambdac.Pt(), v2, TMath::Abs(track1.dcaXY()), Proton.Pt());
+            histos.fill(HIST("hSparseV2SAMixedEvent_V2_dcatopv"), Lambdac.M(), Lambdac.Pt(), v2, v0.dcav0topv(), Proton.Pt());
           }
         }
-        ROOT::Math::Boost boost{Lambdac.BoostToCM()};
-        fourVecDauCM = boost(Kshort);
-        threeVecDauCM = fourVecDauCM.Vect();
-        threeVecDauCMXY = ROOT::Math::XYZVector(threeVecDauCM.X(), threeVecDauCM.Y(), 0.);
-        beamvector = ROOT::Math::XYZVector(0, 0, 1);
-        auto cosThetaStar = beamvector.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(beamvector.Mag2());
-        auto SA = cosThetaStar * TMath::Sin(2.0 * phiminuspsi);
         if (fillPolarization) {
+          ROOT::Math::Boost boost{Lambdac.BoostToCM()};
+          fourVecDauCM = boost(Kshort);
+          threeVecDauCM = fourVecDauCM.Vect();
+          threeVecDauCMXY = ROOT::Math::XYZVector(threeVecDauCM.X(), threeVecDauCM.Y(), 0.);
+          beamvector = ROOT::Math::XYZVector(0, 0, 1);
+          auto cosThetaStar = beamvector.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(beamvector.Mag2());
+          auto SA = cosThetaStar * TMath::Sin(2.0 * phiminuspsi);
+
           if (track1.sign() > 0) {
             histos.fill(HIST("hSparseV2SAMixedEventplus_SA"), Lambdac.M(), Lambdac.Pt(), cosThetaStar, phiminuspsi, centrality);
             histos.fill(HIST("hSparseV2SAMixedEventplus_SA_A0"), Lambdac.M(), Lambdac.Pt(), cosThetaStar * cosThetaStar, phiminuspsi, centrality);

@@ -62,9 +62,10 @@ template <typename trackType,
           typename responseParametersType>
 o2::tof::eventTimeContainer evTimeMakerForTracks(const trackTypeContainer& tracks,
                                                  const responseParametersType& responseParameters,
-                                                 const float& diamond = 6.0)
+                                                 const float& diamond = 6.0,
+                                                 bool isFast = false)
 {
-  return o2::tof::evTimeMakerFromParam<trackTypeContainer, trackType, trackFilter, response, responseParametersType>(tracks, responseParameters, diamond);
+  return o2::tof::evTimeMakerFromParam<trackTypeContainer, trackType, trackFilter, response, responseParametersType>(tracks, responseParameters, diamond, isFast);
 }
 
 /// Task to produce the event time tables for generic TOF PID
@@ -81,6 +82,7 @@ struct pidTOFGeneric {
   o2::pid::tof::TOFResoParamsV2 mRespParamsV2;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Configurable<bool> inheritFromBaseTask{"inheritFromBaseTask", true, "Flag to iherit all common configurables from the TOF base task"};
+  Configurable<bool> fastTOFPID{"fastTOFPID", false, "Flag to enable computeEvTimeFast for evTimeMaker"};
   // CCDB configuration (inherited from TOF signal task)
   Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<int64_t> timestamp{"ccdb-timestamp", -1, "timestamp of the object"};
@@ -130,7 +132,7 @@ struct pidTOFGeneric {
       LOGF(fatal, "Cannot enable more process functions at the same time. Please choose one.");
     }
     // Checking that the table is requested in the workflow and enabling it
-    enableTable = isTableRequiredInWorkflow(initContext, "EvTimeTOFFT0");
+    enableTable = isTableRequiredInWorkflow(initContext, "EvTimeTOFFT0") || isTableRequiredInWorkflow(initContext, "EvTimeTOFFT0ForTrack");
     if (!enableTable) {
       LOG(info) << "Table for global Event time is not required, disabling it";
       return;
@@ -232,7 +234,7 @@ struct pidTOFGeneric {
       }
 
       // First make table for event time
-      const auto evTimeTOF = evTimeMakerForTracks<TrksEvTime::iterator, filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, mRespParamsV2, diamond);
+      const auto evTimeTOF = evTimeMakerForTracks<TrksEvTime::iterator, filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, mRespParamsV2, diamond, fastTOFPID);
       int nGoodTracksForTOF = 0; // count for ntrackIndex for removeBias()
       float et = evTimeTOF.mEventTime;
       float erret = evTimeTOF.mEventTimeError;
@@ -293,7 +295,7 @@ struct pidTOFGeneric {
       }
 
       // Compute the TOF event time
-      const auto evTimeTOF = evTimeMakerForTracks<TrksEvTime::iterator, filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, mRespParamsV2, diamond);
+      const auto evTimeTOF = evTimeMakerForTracks<TrksEvTime::iterator, filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, mRespParamsV2, diamond, fastTOFPID);
 
       float t0TOF[2] = {static_cast<float_t>(evTimeTOF.mEventTime), static_cast<float_t>(evTimeTOF.mEventTimeError)}; // Value and error of TOF
       float t0AC[2] = {.0f, 999.f};                                                                                   // Value and error of T0A or T0C or T0AC

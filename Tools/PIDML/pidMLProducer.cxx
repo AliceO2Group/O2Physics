@@ -190,11 +190,35 @@ struct PidMlProducer {
     }
   }
 
+  template <typename T>
+  float getTOFSignal(T const& track)
+  {
+    return tofMissing(track) ? std::numeric_limits<float>::quiet_NaN() : track.tofSignal();
+  }
+
+  template <typename T>
+  float getTOFBeta(T const& track)
+  {
+    return tofMissing(track) ? std::numeric_limits<float>::quiet_NaN() : track.beta();
+  }
+
+  template <typename T>
+  float getTRDSignal(T const& track)
+  {
+    return trdMissing(track) ? std::numeric_limits<float>::quiet_NaN() : track.trdSignal();
+  }
+
+  template <typename T>
+  uint8_t getTRDPattern(T const& track)
+  {
+    return trdMissing(track) ? static_cast<uint8_t>(0U) : track.trdPattern();
+  }
+
   void processDataML(MyCollisionML const& /*collision*/, BigTracksDataML const& tracks)
   {
     for (const auto& track : tracks) {
-      pidTracksTableDataML(track.tpcSignal(), track.trdSignal(), track.trdPattern(),
-                           track.tofSignal(), track.beta(),
+      pidTracksTableDataML(track.tpcSignal(), getTRDSignal(track), getTRDPattern(track),
+                           getTOFSignal(track), getTOFBeta(track),
                            track.p(), track.pt(), track.px(), track.py(), track.pz(),
                            track.sign(),
                            track.x(), track.y(), track.z(),
@@ -216,9 +240,9 @@ struct PidMlProducer {
                          collision.multFT0A(), collision.multFT0C(), collision.multFT0M(),
                          collision.multZNA(), collision.multZNC(),
                          collision.multTracklets(), collision.multTPC(),
-                         track.tpcSignal(), track.trdSignal(), track.trdPattern(),
+                         track.tpcSignal(), getTRDSignal(track), getTRDPattern(track),
                          track.trackEtaEmcal(), track.trackPhiEmcal(),
-                         track.tofSignal(), track.beta(),
+                         getTOFSignal(track), getTOFBeta(track),
                          track.p(), track.pt(), track.px(), track.py(), track.pz(),
                          track.sign(),
                          track.x(), track.y(), track.z(),
@@ -251,8 +275,8 @@ struct PidMlProducer {
       const auto mcParticle = track.mcParticle_as<aod::McParticles>();
       uint8_t isPrimary = static_cast<uint8_t>(mcParticle.isPhysicalPrimary());
       uint32_t pdgCode = mcParticle.pdgCode();
-      pidTracksTableMCML(track.tpcSignal(), track.trdSignal(), track.trdPattern(),
-                         track.tofSignal(), track.beta(),
+      pidTracksTableMCML(track.tpcSignal(), getTRDSignal(track), getTRDPattern(track),
+                         getTOFSignal(track), getTOFBeta(track),
                          track.p(), track.pt(), track.px(), track.py(), track.pz(),
                          track.sign(),
                          track.x(), track.y(), track.z(),
@@ -282,9 +306,9 @@ struct PidMlProducer {
                        collision.multFT0A(), collision.multFT0C(), collision.multFT0M(),
                        collision.multZNA(), collision.multZNC(),
                        collision.multTracklets(), collision.multTPC(),
-                       track.tpcSignal(), track.trdSignal(), track.trdPattern(),
+                       track.tpcSignal(), getTRDSignal(track), getTRDPattern(track),
                        track.trackEtaEmcal(), track.trackPhiEmcal(),
-                       track.tofSignal(), track.beta(),
+                       getTOFSignal(track), getTOFBeta(track),
                        track.p(), track.pt(), track.px(), track.py(), track.pz(),
                        track.sign(),
                        track.x(), track.y(), track.z(),

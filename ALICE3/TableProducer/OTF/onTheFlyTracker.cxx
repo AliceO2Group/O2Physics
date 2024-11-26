@@ -81,7 +81,7 @@ struct OnTheFlyTracker {
   Produces<aod::UpgradeCascades> upgradeCascades;
 
   // optionally produced, empty (to be tuned later)
-  Produces<aod::StoredTracksExtra> tracksExtra; // base table, extend later
+  Produces<aod::StoredTracksExtra_001> tracksExtra; // base table, extend later
   Produces<aod::TrackSelection> trackSelection;
   Produces<aod::TrackSelectionExtension> trackSelectionExtension;
 
@@ -859,7 +859,7 @@ struct OnTheFlyTracker {
               histos.fill(HIST("hXiBuilding"), 6.0f);
               thisCascade.cascadeTrackId = lastTrackIndex + tracksAlice3.size(); // this is the next index to be filled -> should be it
 
-              tracksAlice3.push_back(TrackAlice3{cascadeTrack, mcParticle.globalIndex(), t, 100.f * 1e-3, false, false, 1});
+              tracksAlice3.push_back(TrackAlice3{cascadeTrack, mcParticle.globalIndex(), t, 100.f * 1e-3, false, false, 1, thisCascade.foundClusters});
 
               if (doXiQA) {
                 histos.fill(HIST("h2dDeltaPtVsPt"), trackParCov.getPt(), cascadeTrack.getPt() - trackParCov.getPt());

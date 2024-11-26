@@ -171,18 +171,21 @@ struct tofPidCollisionTimeQa {
       return;
     }
     const AxisSpec diffAxis{1000, -1000, 1000, "Difference"};
-    histos.add<TH1>("MC/diff/All", "All", HistType::kTH1F, {diffAxis})->GetXaxis()->SetTitle("t_{MC}-t_{All} (ps)");
-    histos.add<TH1>("MC/diff/FT0", "FT0", HistType::kTH1F, {diffAxis})->GetXaxis()->SetTitle("t_{MC}-t_{FT0} (ps)");
-    histos.add<TH1>("MC/diff/TOF", "TOF", HistType::kTH1F, {diffAxis})->GetXaxis()->SetTitle("t_{MC}-t_{TOF} (ps)");
+    histos.add<TH1>("MC/diff/All", "All", HistType::kTH1F, {diffAxis})->GetXaxis()->SetTitle("t^{MC}_{ev}-t^{All}_{ev} (ps)");
+    histos.add<TH1>("MC/diff/FT0", "FT0", HistType::kTH1F, {diffAxis})->GetXaxis()->SetTitle("t^{MC}_{ev}-t_{FT0}_{ev} (ps)");
+    histos.add<TH1>("MC/diff/TOF", "TOF", HistType::kTH1F, {diffAxis})->GetXaxis()->SetTitle("t^{MC}_{ev}-t_{TOF}_{ev} (ps)");
 
-    histos.add<TH2>("MC/diffvsZ/All", "All", HistType::kTH2F, {diffAxis, {100, -20, 20}})->GetXaxis()->SetTitle("t_{MC}-t_{All} (ps)");
-    histos.add<TH2>("MC/diffvsZ/FT0", "FT0", HistType::kTH2F, {diffAxis, {100, -20, 20}})->GetXaxis()->SetTitle("t_{MC}-t_{FT0} (ps)");
-    histos.add<TH2>("MC/diffvsZ/TOF", "TOF", HistType::kTH2F, {diffAxis, {100, -20, 20}})->GetXaxis()->SetTitle("t_{MC}-t_{TOF} (ps)");
+    histos.add<TH2>("MC/diffvsZ/All", "All", HistType::kTH2F, {diffAxis, {100, -20, 20}})->GetXaxis()->SetTitle("t^{MC}_{ev}-t^{All}_{ev}_{ev} (ps)");
+    histos.add<TH2>("MC/diffvsZ/FT0", "FT0", HistType::kTH2F, {diffAxis, {100, -20, 20}})->GetXaxis()->SetTitle("t^{MC}_{ev}-t_{FT0}_{ev} (ps)");
+    histos.add<TH2>("MC/diffvsZ/TOF", "TOF", HistType::kTH2F, {diffAxis, {100, -20, 20}})->GetXaxis()->SetTitle("t^{MC}_{ev}-t_{TOF}_{ev} (ps)");
 
     // pion
-    histos.add("MC/particle/pdg211/all/particleDiff", "", HistType::kTH2F, {pAxis, diffAxis});
-    histos.add("MC/particle/pdg211/all/delta", "", HistType::kTH2F, {pAxis, diffAxis});
-    histos.addClone("MC/particle/pdg211/all/particleDiff", "MC/particle/pdg211/prm/particleDiff");
+    histos.add<TH2>("MC/particle/pdg211/all/particleDiff", "particleDiff", HistType::kTH2F, {ptAxis, diffAxis})->GetYaxis()->SetTitle("t^{MC}_{ev}-t^{part}_{MC} (ps)");
+    histos.add<TH2>("MC/particle/pdg211/all/delta", "delta", HistType::kTH2F, {ptAxis, diffAxis})->GetYaxis()->SetTitle("t_{TOF}-t^{MC}_{ev}-t_{exp} (ps)");
+    histos.add<TH2>("MC/particle/pdg211/all/deltaTRD", "deltaTRD", HistType::kTH2F, {ptAxis, diffAxis})->GetYaxis()->SetTitle("t_{TOF}-t^{MC}_{ev}-t_{exp} (ps)");
+    histos.add<TH2>("MC/particle/pdg211/all/deltaNoTRD", "deltaNoTRD", HistType::kTH2F, {ptAxis, diffAxis})->GetYaxis()->SetTitle("t_{TOF}-t^{MC}_{ev}-t_{exp} (ps)");
+    histos.addClone("MC/particle/pdg211/all/", "MC/particle/pdg211/prm/");
+
     histos.addClone("MC/particle/pdg211/", "MC/particle/pdgNeg211/");
 
     // kaon
@@ -342,7 +345,7 @@ struct tofPidCollisionTimeQa {
         const float& massT0C = collision.t0CCorrectedValid() ? o2::pid::tof::TOFMass<TrksData::iterator>::GetTOFMass(trk, betaT0C) : 999.f;
         const float& massT0AC = collision.t0ACValid() ? o2::pid::tof::TOFMass<TrksData::iterator>::GetTOFMass(trk, betaT0AC) : 999.f;
 
-        const float& deltaPi = trk.tofSignal() - trk.tofEvTime() - o2::pid::tof::ExpTimes<TrksData::iterator, o2::track::PID::Pion>::GetExpectedSignal(trk);
+        const float& deltaPi = trk.tofSignal() - trk.tofEvTime() - trk.tofExpTimePi();
 
         histos.fill(HIST("tofbeta/inclusive"), trk.p(), trk.beta());
         histos.fill(HIST("tofmass/inclusive"), trk.p(), trk.mass());
@@ -364,6 +367,10 @@ struct tofPidCollisionTimeQa {
         histos.fill(HIST("tofmass/EvTimeT0COnly"), trk.p(), massT0C);
         histos.fill(HIST("tofmass/EvTimeT0ACOnly"), trk.p(), massT0AC);
 
+        if (trk.p() > minPReso && trk.p() < maxPReso) {
+          histos.fill(HIST("deltaVsMult/pi"), trk.evTimeTOFMult(), deltaPi);
+          histos.fill(HIST("deltaVsReso/pi"), trk.evTimeTOFMult(), deltaPi);
+        }
         if (enableDebug) {
 
           histos.fill(HIST("withtof/p"), trk.p());
@@ -372,10 +379,6 @@ struct tofPidCollisionTimeQa {
           histos.fill(HIST("withtof/tofSignal"), trk.tofSignal());
           histos.fill(HIST("withtof/beta"), trk.p(), trk.beta());
           histos.fill(HIST("withtof/delta"), trk.p(), deltaPi);
-          if (trk.p() > minPReso && trk.p() < maxPReso) {
-            histos.fill(HIST("deltaVsMult/pi"), trk.evTimeTOFMult(), deltaPi);
-            histos.fill(HIST("deltaVsReso/pi"), trk.evTimeTOFMult(), deltaPi);
-          }
 
           histos.fill(HIST("withtof/expP"), trk.p(), trk.tofExpMom());
           histos.fill(HIST("withtof/mass"), trk.mass());
@@ -446,15 +449,78 @@ struct tofPidCollisionTimeQa {
     for (auto& trk : tracks) {
       if (!trk.has_collision()) { // Track was not assigned to a collision
         continue;
-      } else if (trk.collisionId() == lastCollisionId) { // Event was already processed
-        continue;
       }
-      lastCollisionId = trk.collisionId(); /// Cache last collision ID
       const auto& collision = trk.collision_as<EvTimeCollisionsMC>();
       if (!collision.has_mcCollision()) {
         continue;
       }
       const auto& collisionMC = collision.mcCollision_as<aod::McCollisions>();
+      const float eventtimeMC = collisionMC.t() * 1000.f;
+
+      if (trk.has_mcParticle()) {
+        const auto& particle = trk.mcParticle();
+        const auto& mcCollTimeMinusFormationTime = particle.vt() - collisionMC.t();
+        const auto& mcTOFvalue = trk.tofSignal() - eventtimeMC - trk.tofExpTimePi();
+        LOG(debug) << "Track " << particle.vt() << " vs " << eventtimeMC;
+        switch (particle.pdgCode()) {
+          case 211:
+            histos.fill(HIST("MC/particle/pdg211/all/particleDiff"), particle.pt(), mcCollTimeMinusFormationTime);
+            histos.fill(HIST("MC/particle/pdg211/all/delta"), particle.pt(), mcTOFvalue);
+            if (trk.hasTRD()) {
+              histos.fill(HIST("MC/particle/pdg211/all/deltaTRD"), particle.pt(), mcTOFvalue);
+            } else {
+              histos.fill(HIST("MC/particle/pdg211/all/deltaNoTRD"), particle.pt(), mcTOFvalue);
+            }
+            if (particle.isPhysicalPrimary()) {
+              histos.fill(HIST("MC/particle/pdg211/prm/particleDiff"), particle.pt(), mcCollTimeMinusFormationTime);
+            }
+            break;
+          case -211:
+            histos.fill(HIST("MC/particle/pdgNeg211/all/particleDiff"), particle.pt(), mcCollTimeMinusFormationTime);
+            histos.fill(HIST("MC/particle/pdgNeg211/all/delta"), particle.pt(), mcTOFvalue);
+            histos.fill(HIST("MC/particle/pdgNeg211/all/delta"), particle.pt(), mcTOFvalue);
+            if (trk.hasTRD()) {
+              histos.fill(HIST("MC/particle/pdgNeg211/all/deltaTRD"), particle.pt(), mcTOFvalue);
+            } else {
+              histos.fill(HIST("MC/particle/pdgNeg211/all/deltaNoTRD"), particle.pt(), mcTOFvalue);
+            }
+            if (particle.isPhysicalPrimary()) {
+              histos.fill(HIST("MC/particle/pdgNeg211/prm/particleDiff"), particle.pt(), mcCollTimeMinusFormationTime);
+            }
+            break;
+          case 321:
+            histos.fill(HIST("MC/particle/pdg321/all/particleDiff"), particle.pt(), mcCollTimeMinusFormationTime);
+            if (particle.isPhysicalPrimary()) {
+              histos.fill(HIST("MC/particle/pdg321/prm/particleDiff"), particle.pt(), mcCollTimeMinusFormationTime);
+            }
+            break;
+          case -321:
+            histos.fill(HIST("MC/particle/pdgNeg321/all/particleDiff"), particle.pt(), mcCollTimeMinusFormationTime);
+            if (particle.isPhysicalPrimary()) {
+              histos.fill(HIST("MC/particle/pdgNeg321/prm/particleDiff"), particle.pt(), mcCollTimeMinusFormationTime);
+            }
+            break;
+          case 2212:
+            histos.fill(HIST("MC/particle/pdg2212/all/particleDiff"), particle.pt(), mcCollTimeMinusFormationTime);
+            if (particle.isPhysicalPrimary()) {
+              histos.fill(HIST("MC/particle/pdg2212/prm/particleDiff"), particle.pt(), mcCollTimeMinusFormationTime);
+            }
+            break;
+          case -2212:
+            histos.fill(HIST("MC/particle/pdgNeg2212/all/particleDiff"), particle.pt(), mcCollTimeMinusFormationTime);
+            if (particle.isPhysicalPrimary()) {
+              histos.fill(HIST("MC/particle/pdgNeg2212/prm/particleDiff"), particle.pt(), mcCollTimeMinusFormationTime);
+            }
+            break;
+          default:
+            break;
+        }
+      }
+
+      if (trk.collisionId() == lastCollisionId) { // Event was already processed
+        continue;
+      }
+      lastCollisionId = trk.collisionId(); /// Cache last collision ID
 
       float t0AC[2] = {0.f, 0.f};
       // const auto& ft0 = collision.foundFT0();
@@ -515,8 +581,6 @@ struct tofPidCollisionTimeQa {
       // timeInBCNS + bc2ns();
       // bc* o2::constants::lhc::LHCBunchSpacingNS + orbit* o2::constants::lhc::LHCOrbitNS;
       // int64_t(mcBC.globalBC() * o2::constants::lhc::LHCBunchSpacingNS * 1e-3))
-      const int64_t bcMCtime = static_cast<int64_t>((collisionMC.t() + 2.f) / o2::constants::lhc::LHCBunchSpacingNS);
-      const float eventtimeMC = (collisionMC.t() - bcMCtime * o2::constants::lhc::LHCBunchSpacingNS) * 1000.f;
 
       histos.fill(HIST("MC/CollisionTime/eventtimeMC"), eventtimeMC);
       histos.fill(HIST("MC/CollisionTime/All"), trk.tofEvTime());
@@ -532,55 +596,6 @@ struct tofPidCollisionTimeQa {
       histos.fill(HIST("MC/diffvsZ/All"), eventtimeMC - trk.tofEvTime(), collisionMC.posZ());
       histos.fill(HIST("MC/diffvsZ/FT0"), eventtimeMC - t0AC[0], collisionMC.posZ());
       histos.fill(HIST("MC/diffvsZ/TOF"), eventtimeMC - trk.evTimeTOF(), collisionMC.posZ());
-
-      if (!trk.has_mcParticle()) {
-        continue;
-      }
-      const auto& particle = trk.mcParticle();
-      const auto& tMimusFormationTime = collisionMC.t() - particle.vt();
-      // const auto & mcTOFvalue = eventtimeMC - trk.tofSignal() - ;
-      LOG(debug) << "Track " << particle.vt() << " vs " << eventtimeMC;
-      switch (particle.pdgCode()) {
-        case 211:
-          histos.fill(HIST("MC/particle/pdg211/all/particleDiff"), particle.pt(), tMimusFormationTime);
-          // histos.fill(HIST("MC/particle/pdg211/all/delta"), particle.pt(), mcTOFvalue);
-          if (particle.isPhysicalPrimary()) {
-            histos.fill(HIST("MC/particle/pdg211/prm/particleDiff"), particle.pt(), tMimusFormationTime);
-          }
-          break;
-        case -211:
-          histos.fill(HIST("MC/particle/pdgNeg211/all/particleDiff"), particle.pt(), tMimusFormationTime);
-          if (particle.isPhysicalPrimary()) {
-            histos.fill(HIST("MC/particle/pdgNeg211/prm/particleDiff"), particle.pt(), tMimusFormationTime);
-          }
-          break;
-        case 321:
-          histos.fill(HIST("MC/particle/pdg321/all/particleDiff"), particle.pt(), tMimusFormationTime);
-          if (particle.isPhysicalPrimary()) {
-            histos.fill(HIST("MC/particle/pdg321/prm/particleDiff"), particle.pt(), tMimusFormationTime);
-          }
-          break;
-        case -321:
-          histos.fill(HIST("MC/particle/pdgNeg321/all/particleDiff"), particle.pt(), tMimusFormationTime);
-          if (particle.isPhysicalPrimary()) {
-            histos.fill(HIST("MC/particle/pdgNeg321/prm/particleDiff"), particle.pt(), tMimusFormationTime);
-          }
-          break;
-        case 2212:
-          histos.fill(HIST("MC/particle/pdg2212/all/particleDiff"), particle.pt(), tMimusFormationTime);
-          if (particle.isPhysicalPrimary()) {
-            histos.fill(HIST("MC/particle/pdg2212/prm/particleDiff"), particle.pt(), tMimusFormationTime);
-          }
-          break;
-        case -2212:
-          histos.fill(HIST("MC/particle/pdgNeg2212/all/particleDiff"), particle.pt(), tMimusFormationTime);
-          if (particle.isPhysicalPrimary()) {
-            histos.fill(HIST("MC/particle/pdgNeg2212/prm/particleDiff"), particle.pt(), tMimusFormationTime);
-          }
-          break;
-        default:
-          break;
-      }
     }
   }
   PROCESS_SWITCH(tofPidCollisionTimeQa, processMC, "Process MC", false);
