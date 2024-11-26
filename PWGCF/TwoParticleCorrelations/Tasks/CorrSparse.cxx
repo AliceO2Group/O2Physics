@@ -16,12 +16,14 @@
 #include "Framework/ASoAHelpers.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/RunningWorkflowInfo.h"
+#include "Common/Core/RecoDecay.h"
 #include "CommonConstants/MathConstants.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Centrality.h"
 #include "PWGCF/Core/CorrelationContainer.h"
 #include "PWGCF/Core/PairCuts.h"
+
 
 using namespace o2;
 using namespace o2::framework;
@@ -95,12 +97,7 @@ struct CorrSparse {
 
         float deltaPhi = track1.phi() - track2.phi();
         float deltaEta = track1.eta() - track2.eta();
-        if (deltaPhi > 1.5f * PI) {
-          deltaPhi -= TwoPI;
-        }
-        if (deltaPhi < -PIHalf) {
-          deltaPhi += TwoPI;
-        }
+        RecoDecay::constrainAngle(deltaPhi, -PIHalf);
 
         // fill the right sparse and histograms
         if (system == 1) {
