@@ -262,6 +262,7 @@ struct tofPidQa {
   {
     const AxisSpec multAxis{100, 0, 100, "TOF multiplicity"};
     const AxisSpec vtxZAxis{100, -20, 20, "Vtx_{z} (cm)"};
+    const AxisSpec contributorsAxis{100, 0, 1000, "PV contributors"};
     const AxisSpec etaAxis{etaBins, "#it{#eta}"};
     const AxisSpec phiAxis{phiBins, "#it{#phi}"};
     const AxisSpec colTimeAxis{100, -2000, 2000, "Collision time (ps)"};
@@ -295,6 +296,7 @@ struct tofPidQa {
     h->GetXaxis()->SetBinLabel(5, "hasTOF");
     h->GetXaxis()->SetBinLabel(6, "goodTOFMatch");
 
+    histos.add("event/pvcontributors", "", kTH1D, {contributorsAxis});
     histos.add("event/vertexz", "", kTH1D, {vtxZAxis});
     h = histos.add<TH1>("event/particlehypo", "", kTH1D, {{10, 0, 10, "PID in tracking"}});
     for (int i = 0; i < 9; i++) {
@@ -389,6 +391,7 @@ struct tofPidQa {
         pvContributors++;
       }
     }
+    histos.fill(HIST("event/pvcontributors"), pvContributors);
     if (pvContributors < pvContributorsMin) {
       return false;
     }
