@@ -9,23 +9,21 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-
 if(FastJet_FOUND)
 
-o2physics_add_dpl_workflow(jet-finder-data-charged-1
-                    SOURCES jetFinderDataCharged1.cxx
+o2physics_add_dpl_workflow(jet-matching-data-ch-1
+                    SOURCES jetMatchingDuplicatesChargedData1.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(jet-finder-mcd-charged-1
-                    SOURCES jetFinderMCDCharged1.cxx
+o2physics_add_dpl_workflow(jet-matching-mcd-ch-1
+                    SOURCES jetMatchingDuplicatesChargedMCD1.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(jet-finder-mcp-charged-1
-                    SOURCES jetFinderMCPCharged1.cxx
+o2physics_add_dpl_workflow(jet-matching-mcp-ch-1
+                    SOURCES jetMatchingDuplicatesChargedMCP1.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore O2::FrameworkPhysicsSupport
                     COMPONENT_NAME Analysis)
-
 
 endif()
