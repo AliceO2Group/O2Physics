@@ -41,9 +41,6 @@ DECLARE_SOA_COLUMN(ZPv, zPv, float);
 DECLARE_SOA_COLUMN(XPvErr, xPvErr, float);
 DECLARE_SOA_COLUMN(YPvErr, yPvErr, float);
 DECLARE_SOA_COLUMN(ZPvErr, zPvErr, float);
-DECLARE_SOA_COLUMN(XPvGen, xPvGen, float);
-DECLARE_SOA_COLUMN(YPvGen, yPvGen, float);
-DECLARE_SOA_COLUMN(ZPvGen, zPvGen, float);
 DECLARE_SOA_COLUMN(XSv, xSv, float);
 DECLARE_SOA_COLUMN(YSv, ySv, float);
 DECLARE_SOA_COLUMN(ZSv, zSv, float);
@@ -51,16 +48,7 @@ DECLARE_SOA_COLUMN(XSvErr, xSvErr, float);
 DECLARE_SOA_COLUMN(YSvErr, ySvErr, float);
 DECLARE_SOA_COLUMN(ZSvErr, zSvErr, float);
 DECLARE_SOA_COLUMN(Chi2Sv, chi2Sv, float);
-DECLARE_SOA_COLUMN(XSvGen, xSvGen, float);
-DECLARE_SOA_COLUMN(YSvGen, ySvGen, float);
-DECLARE_SOA_COLUMN(ZSvGen, zSvGen, float);
-DECLARE_SOA_COLUMN(XDecVtxXi, xDecVtxXi, float);
-DECLARE_SOA_COLUMN(YDecVtxXi, yDecVtxXi, float);
-DECLARE_SOA_COLUMN(ZDecVtxXi, zDecVtxXi, float);
 DECLARE_SOA_COLUMN(Chi2XiVtx, chi2XiVtx, float);
-DECLARE_SOA_COLUMN(XDecVtxLam, xDecVtxLam, float);
-DECLARE_SOA_COLUMN(YDecVtxLam, yDecVtxLam, float);
-DECLARE_SOA_COLUMN(ZDecVtxLam, zDecVtxLam, float);
 DECLARE_SOA_COLUMN(Chi2LamVtx, chi2LamVtx, float);
 // properties of XicPlus
 DECLARE_SOA_COLUMN(Sign, sign, float);
@@ -125,6 +113,8 @@ DECLARE_SOA_COLUMN(ZSvPull, zSvPull, float);
 
 DECLARE_SOA_TABLE(HfCandXicToXiPiPiLites, "AOD", "HFXICXI2PILITE",
                   hf_cand_xic_to_xi_pi_pi::FlagMcMatchRec,
+                  hf_cand_xic_to_xi_pi_pi::DebugMcRec,
+                  hf_cand_xic_to_xi_pi_pi::OriginRec,
                   full::CandidateSelFlag,
                   full::Sign,
                   full::Y,
@@ -160,6 +150,8 @@ DECLARE_SOA_TABLE(HfCandXicToXiPiPiLites, "AOD", "HFXICXI2PILITE",
 
 DECLARE_SOA_TABLE(HfCandXicToXiPiPiLiteKfs, "AOD", "HFXICXI2PILITKF",
                   hf_cand_xic_to_xi_pi_pi::FlagMcMatchRec,
+                  hf_cand_xic_to_xi_pi_pi::DebugMcRec,
+                  hf_cand_xic_to_xi_pi_pi::OriginRec,
                   full::CandidateSelFlag,
                   full::Sign,
                   full::Y,
@@ -209,6 +201,8 @@ DECLARE_SOA_TABLE(HfCandXicToXiPiPiLiteKfs, "AOD", "HFXICXI2PILITKF",
 
 DECLARE_SOA_TABLE(HfCandXicToXiPiPiFulls, "AOD", "HFXICXI2PIFULL",
                   hf_cand_xic_to_xi_pi_pi::FlagMcMatchRec,
+                  hf_cand_xic_to_xi_pi_pi::DebugMcRec,
+                  hf_cand_xic_to_xi_pi_pi::OriginRec,
                   full::CandidateSelFlag,
                   full::Sign,
                   full::Y,
@@ -242,7 +236,6 @@ DECLARE_SOA_TABLE(HfCandXicToXiPiPiFulls, "AOD", "HFXICXI2PIFULL",
                   full::ImpactParameterNormalisedPi1,
                   full::MaxNormalisedDeltaIP,
                   // additional columns only stored in the full candidate table
-                  full::E,
                   full::XPv,
                   full::YPv,
                   full::ZPv,
@@ -254,16 +247,12 @@ DECLARE_SOA_TABLE(HfCandXicToXiPiPiFulls, "AOD", "HFXICXI2PIFULL",
                   full::ZSv,
                   full::XSvErr,
                   full::YSvErr,
-                  full::ZSvErr,
-                  full::XDecVtxXi,
-                  full::YDecVtxXi,
-                  full::ZDecVtxXi,
-                  full::XDecVtxLam,
-                  full::YDecVtxLam,
-                  full::ZDecVtxLam);
+                  full::ZSvErr);
 
 DECLARE_SOA_TABLE(HfCandXicToXiPiPiFullKfs, "AOD", "HFXICXI2PIFULKF",
                   hf_cand_xic_to_xi_pi_pi::FlagMcMatchRec,
+                  hf_cand_xic_to_xi_pi_pi::DebugMcRec,
+                  hf_cand_xic_to_xi_pi_pi::OriginRec,
                   full::CandidateSelFlag,
                   full::Sign,
                   full::Y,
@@ -297,7 +286,6 @@ DECLARE_SOA_TABLE(HfCandXicToXiPiPiFullKfs, "AOD", "HFXICXI2PIFULKF",
                   full::ImpactParameterNormalisedPi1,
                   full::MaxNormalisedDeltaIP,
                   // additional columns only stored in the full candidate table
-                  full::E,
                   full::XPv,
                   full::YPv,
                   full::ZPv,
@@ -310,12 +298,6 @@ DECLARE_SOA_TABLE(HfCandXicToXiPiPiFullKfs, "AOD", "HFXICXI2PIFULKF",
                   full::XSvErr,
                   full::YSvErr,
                   full::ZSvErr,
-                  full::XDecVtxXi,
-                  full::YDecVtxXi,
-                  full::ZDecVtxXi,
-                  full::XDecVtxLam,
-                  full::YDecVtxLam,
-                  full::ZDecVtxLam,
                   // KF-specific columns
                   full::Chi2XiVtx,
                   full::Chi2LamVtx,
@@ -332,17 +314,13 @@ DECLARE_SOA_TABLE(HfCandXicToXiPiPiFullKfs, "AOD", "HFXICXI2PIFULKF",
                   full::DcaXiDaughters);
 
 DECLARE_SOA_TABLE(HfCandXicToXiPiPiFullPs, "AOD", "HFXICXI2PIFULLP",
+                  hf_cand_xic_to_xi_pi_pi::FlagMcMatchGen,
+                  hf_cand_xic_to_xi_pi_pi::DebugMcGen,
+                  hf_cand_xic_to_xi_pi_pi::OriginGen,
                   full::Pt,
                   full::Eta,
                   full::Phi,
-                  full::Y,
-                  full::XPvGen,
-                  full::YPvGen,
-                  full::ZPvGen,
-                  full::XSvGen,
-                  full::YSvGen,
-                  full::ZSvGen,
-                  hf_cand_xic_to_xi_pi_pi::FlagMcMatchGen);
+                  full::Y);
 
 DECLARE_SOA_TABLE(HfCandXicToXiPiPiResiduals, "AOD", "HFXICXI2PIRESID",
                   full::PResidual,
@@ -399,13 +377,19 @@ struct HfTreeCreatorXicToXiPiPi {
   void fillCandidateTable(const T& candidate)
   {
     int8_t flagMc = 0;
+    int8_t debugMc = 0;
+    int8_t originMc = 0;
     if constexpr (doMc) {
       flagMc = candidate.flagMcMatchRec();
+      debugMc = candidate.debugMcRec();
+      originMc = candidate.originRec();
     }
     if constexpr (!doKf) {
       if (fillCandidateLiteTable) {
         rowCandidateLite(
           flagMc,
+          debugMc,
+          originMc,
           candidate.isSelXicToXiPiPi(),
           candidate.sign(),
           candidate.y(o2::constants::physics::MassXiCPlus),
@@ -441,6 +425,8 @@ struct HfTreeCreatorXicToXiPiPi {
       } else {
         rowCandidateFull(
           flagMc,
+          debugMc,
+          originMc,
           candidate.isSelXicToXiPiPi(),
           candidate.sign(),
           candidate.y(o2::constants::physics::MassXiCPlus),
@@ -474,7 +460,6 @@ struct HfTreeCreatorXicToXiPiPi {
           candidate.impactParameterNormalised2(),
           candidate.maxNormalisedDeltaIP(),
           // additional columns only stored in the full candidate table
-          candidate.e(o2::constants::physics::MassXiCPlus),
           candidate.posX(),
           candidate.posY(),
           candidate.posZ(),
@@ -486,18 +471,14 @@ struct HfTreeCreatorXicToXiPiPi {
           candidate.zSecondaryVertex(),
           candidate.xSvErr(),
           candidate.ySvErr(),
-          candidate.zSvErr(),
-          candidate.xDecayVtxXi(),
-          candidate.yDecayVtxXi(),
-          candidate.zDecayVtxXi(),
-          candidate.xDecayVtxLambda(),
-          candidate.yDecayVtxLambda(),
-          candidate.zDecayVtxLambda());
+          candidate.zSvErr());
       }
     } else {
       if (fillCandidateLiteTable) {
         rowCandidateLiteKf(
           flagMc,
+          debugMc,
+          originMc,
           candidate.isSelXicToXiPiPi(),
           candidate.sign(),
           candidate.y(o2::constants::physics::MassXiCPlus),
@@ -547,6 +528,8 @@ struct HfTreeCreatorXicToXiPiPi {
       } else {
         rowCandidateFullKf(
           flagMc,
+          debugMc,
+          originMc,
           candidate.isSelXicToXiPiPi(),
           candidate.sign(),
           candidate.y(o2::constants::physics::MassXiCPlus),
@@ -580,7 +563,6 @@ struct HfTreeCreatorXicToXiPiPi {
           candidate.impactParameterNormalised2(),
           candidate.maxNormalisedDeltaIP(),
           // additional columns only stored in the full candidate table
-          candidate.e(o2::constants::physics::MassXiCPlus),
           candidate.posX(),
           candidate.posY(),
           candidate.posZ(),
@@ -593,12 +575,6 @@ struct HfTreeCreatorXicToXiPiPi {
           candidate.xSvErr(),
           candidate.ySvErr(),
           candidate.zSvErr(),
-          candidate.xDecayVtxXi(),
-          candidate.yDecayVtxXi(),
-          candidate.zDecayVtxXi(),
-          candidate.xDecayVtxLambda(),
-          candidate.yDecayVtxLambda(),
-          candidate.zDecayVtxLambda(),
           // KF-specific columns
           candidate.kfCascadeChi2(),
           candidate.kfV0Chi2(),
@@ -660,8 +636,6 @@ struct HfTreeCreatorXicToXiPiPi {
   void processMc(SelectedCandidatesMc const& candidates,
                  soa::Join<aod::McParticles, aod::HfCandXicMcGen> const& particles)
   {
-    std::vector<int> arrDaughIndex;
-
     // Filling candidate properties
     if (fillOnlySignal) {
       if (fillCandidateLiteTable) {
@@ -701,22 +675,14 @@ struct HfTreeCreatorXicToXiPiPi {
 
       for (const auto& particle : particles) {
         if (TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi) || TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiResPiToXiPiPi)) {
-          arrDaughIndex.clear();
-          RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{+kXiMinus, +kPiPlus, +kPiPlus}, 2);
-          auto XicDaugh0 = particles.rawIteratorAt(arrDaughIndex[0]);
-
           rowCandidateFullParticles(
+            particle.flagMcMatchGen(),
+            particle.debugMcGen(),
+            particle.originGen(),
             particle.pt(),
             particle.eta(),
             particle.phi(),
-            RecoDecay::y(particle.pVector(), o2::constants::physics::MassXiCPlus),
-            particle.vx(),
-            particle.vy(),
-            particle.vz(),
-            XicDaugh0.vx(),
-            XicDaugh0.vx(),
-            XicDaugh0.vz(),
-            particle.flagMcMatchGen());
+            RecoDecay::y(particle.pVector(), o2::constants::physics::MassXiCPlus));
         }
       } // loop over generated particles
     }
@@ -726,8 +692,6 @@ struct HfTreeCreatorXicToXiPiPi {
   void processMcKf(SelectedCandidatesKfMc const& candidates,
                    soa::Join<aod::McParticles, aod::HfCandXicMcGen> const& particles)
   {
-    std::vector<int> arrDaughIndex;
-
     // Filling candidate properties
     if (fillOnlySignal) {
       if (fillCandidateLiteTable) {
@@ -766,22 +730,14 @@ struct HfTreeCreatorXicToXiPiPi {
       rowCandidateFullParticles.reserve(particles.size());
       for (const auto& particle : particles) {
         if (TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi) || TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiResPiToXiPiPi)) {
-          arrDaughIndex.clear();
-          RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{+kXiMinus, +kPiPlus, +kPiPlus}, 2);
-          auto XicDaugh0 = particles.rawIteratorAt(arrDaughIndex[0]);
-
           rowCandidateFullParticles(
+            particle.flagMcMatchGen(),
+            particle.debugMcGen(),
+            particle.originGen(),
             particle.pt(),
             particle.eta(),
             particle.phi(),
-            RecoDecay::y(particle.pVector(), o2::constants::physics::MassXiCPlus),
-            particle.vx(),
-            particle.vy(),
-            particle.vz(),
-            XicDaugh0.vx(),
-            XicDaugh0.vx(),
-            XicDaugh0.vz(),
-            particle.flagMcMatchGen());
+            RecoDecay::y(particle.pVector(), o2::constants::physics::MassXiCPlus));
         }
       } // loop over generated particles
     }

@@ -270,10 +270,12 @@ struct HfCandidateCreatorXicToXiPiPi {
 
       // calculate cosine of pointing angle
       std::array<float, 3> pvCoord = {collision.posX(), collision.posY(), collision.posZ()};
-      double cpaLambda = casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
-      double cpaXYLambda = RecoDecay::cpaXY(pvCoord, vertexV0, pVecV0);
-      double cpaXi = casc.casccosPA(collision.posX(), collision.posY(), collision.posZ());
-      double cpaXYXi = RecoDecay::cpaXY(pvCoord, vertexCasc, pVecCasc);
+      float cpaLambda = casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
+      float cpaXYLambda = RecoDecay::cpaXY(pvCoord, vertexV0, pVecV0);
+      float cpaXi = casc.casccosPA(collision.posX(), collision.posY(), collision.posZ());
+      float cpaXYXi = RecoDecay::cpaXY(pvCoord, vertexCasc, pVecCasc);
+      float cpaLambdaToXi = RecoDecay::cpa(vertexCasc, vertexV0, pVecV0);
+      float cpaXYLambdaToXi = RecoDecay::cpaXY(vertexCasc, vertexV0, pVecV0);
 
       // get invariant mass of Xi-pi pairs
       auto arrayMomentaXiPi0 = std::array{pVecXi, pVecPi0};
@@ -282,7 +284,7 @@ struct HfCandidateCreatorXicToXiPiPi {
       massXiPi1 = RecoDecay::m(std::move(arrayMomentaXiPi1), std::array{MassXiMinus, MassPiPlus});
 
       // get uncertainty of the decay length
-      double phi, theta;
+      float phi, theta;
       getPointDirection(std::array{primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()}, secondaryVertex, phi, theta);
       auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixSV, phi, theta));
       auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixSV, phi, 0.));
@@ -329,8 +331,8 @@ struct HfCandidateCreatorXicToXiPiPi {
                        /*cascade specific columns*/
                        vertexCasc[0], vertexCasc[1], vertexCasc[2],
                        vertexV0[0], vertexV0[1], vertexV0[2],
-                       cpaXi, cpaXYXi, cpaLambda, cpaXYLambda,
-                       massXiPi0, massXiPi1);
+                       cpaXi, cpaXYXi, cpaLambda, cpaXYLambda, cpaLambdaToXi, cpaXYLambdaToXi,
+                       casc.mXi(), massXiPi0, massXiPi1);
     } // loop over track triplets
   }
   PROCESS_SWITCH(HfCandidateCreatorXicToXiPiPi, processXicplusWithDcaFitter, "Run candidate creator with DCAFitter.", true);
@@ -474,10 +476,12 @@ struct HfCandidateCreatorXicToXiPiPi {
 
       // calculate cosine of pointing angle
       std::array<float, 3> pvCoord = {collision.posX(), collision.posY(), collision.posZ()};
-      double cpaLambda = casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
-      double cpaXYLambda = RecoDecay::cpaXY(pvCoord, vertexV0, pVecV0);
-      double cpaXi = casc.casccosPA(collision.posX(), collision.posY(), collision.posZ());
-      double cpaXYXi = RecoDecay::cpaXY(pvCoord, vertexCasc, pVecCasc);
+      float cpaLambda = casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
+      float cpaXYLambda = RecoDecay::cpaXY(pvCoord, vertexV0, pVecV0);
+      float cpaXi = casc.casccosPA(collision.posX(), collision.posY(), collision.posZ());
+      float cpaXYXi = RecoDecay::cpaXY(pvCoord, vertexCasc, pVecCasc);
+      float cpaLambdaToXi = RecoDecay::cpa(vertexCasc, vertexV0, pVecV0);
+      float cpaXYLambdaToXi = RecoDecay::cpaXY(vertexCasc, vertexV0, pVecV0);
 
       // get DCAs of Pi0-Pi1, Pi0-Xi, Pi1-Xi
       float dcaXYPi0Pi1 = kfCharmBachelor0Upd.GetDistanceFromParticleXY(kfCharmBachelor1Upd);
@@ -554,8 +558,8 @@ struct HfCandidateCreatorXicToXiPiPi {
                        /*cascade specific columns*/
                        casc.x(), casc.y(), casc.z(),
                        casc.xlambda(), casc.ylambda(), casc.zlambda(),
-                       cpaXi, cpaXYXi, cpaLambda, cpaXYLambda,
-                       massXiPi0, massXiPi1);
+                       cpaXi, cpaXYXi, cpaLambda, cpaXYLambda, cpaLambdaToXi, cpaXYLambdaToXi,
+                       casc.mXi(), massXiPi0, massXiPi1);
       rowCandidateKF(casc.kfCascadeChi2(), casc.kfV0Chi2(),
                      chi2topoXicPlusToPVBeforeConstraint, chi2topoXicPlusToPV, chi2topoXiToXicPlusBeforeConstraint, chi2topoXiToXicPlus,
                      dcaXYPi0Pi1, dcaXYPi0Xi, dcaXYPi1Xi,
