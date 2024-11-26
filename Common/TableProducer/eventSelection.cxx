@@ -8,6 +8,8 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+#include <vector>
+#include <map>
 
 #include "Framework/ConfigParamSpec.h"
 #include "Framework/runDataProcessing.h"
@@ -624,7 +626,7 @@ struct EventSelectionTask {
   }
   PROCESS_SWITCH(EventSelectionTask, processRun2, "Process Run2 event selection", true);
 
-  Partition<FullTracksIU> pvTracks = ((aod::track::flags & (uint32_t)o2::aod::track::PVContributor) == (uint32_t)o2::aod::track::PVContributor);
+  Partition<FullTracksIU> pvTracks = ((aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor));
   void processRun3(aod::Collisions const& cols, FullTracksIU const&, BCsWithBcSelsRun3 const& bcs, aod::FT0s const&)
   {
     int run = bcs.iteratorAt(0).runNumber();
@@ -821,8 +823,9 @@ struct EventSelectionTask {
     }
 
     // save indices of collisions for occupancy calculation (both in ROF and in time range)
-    std::vector<std::vector<int>> vCollsInTimeWin;
     std::vector<std::vector<int>> vCollsInSameITSROF;
+    std::vector<std::vector<int>> vCollsInPrevITSROF;
+    std::vector<std::vector<int>> vCollsInTimeWin;
     std::vector<std::vector<float>> vTimeDeltaForColls; // delta time wrt a given collision
     for (auto& col : cols) {
       int32_t colIndex = col.globalIndex();
@@ -835,7 +838,7 @@ struct EventSelectionTask {
       int64_t rofId = (foundGlobalBC + 3564 - rofOffset) / rofLength;
 
       // ### for in-ROF occupancy
-      std::vector<int> vAssocToSameROF;
+      std::vector<int> vAssocCollInSameROF;
       // find all collisions in the same ROF before a given collision
       int32_t minColIndex = colIndex - 1;
       while (minColIndex >= 0) {
@@ -850,7 +853,7 @@ struct EventSelectionTask {
         // check if we are within the same ROF
         if (thisRofId != rofId)
           break;
-        vAssocToSameROF.push_back(minColIndex);
+        vAssocCollInSameROF.push_back(minColIndex);
         minColIndex--;
       }
       // find all collisions in the same ROF after the current one
@@ -860,14 +863,31 @@ struct EventSelectionTask {
         int64_t thisTFid = (thisBC - bcSOR) / nBCsPerTF;
         if (thisTFid != TFid)
           break;
-        // int thisRofIdInTF = (thisBC - rofOffset) / rofLength;
         int64_t thisRofId = (thisBC + 3564 - rofOffset) / rofLength;
         if (thisRofId != rofId)
           break;
-        vAssocToSameROF.push_back(maxColIndex);
+        vAssocCollInSameROF.push_back(maxColIndex);
         maxColIndex++;
       }
-      vCollsInSameITSROF.push_back(vAssocToSameROF);
+      vCollsInSameITSROF.push_back(vAssocCollInSameROF);
+
+      // ### bookkeep collisions in previous ROF
+      std::vector<int> vAssocCollInPrevROF;
+      minColIndex = colIndex - 1;
+      while (minColIndex >= 0) {
+        int64_t thisBC = vFoundGlobalBC[minColIndex];
+        // check if this is still the same TF
+        int64_t thisTFid = (thisBC - bcSOR) / nBCsPerTF;
+        if (thisTFid != TFid)
+          break;
+        int64_t thisRofId = (thisBC + 3564 - rofOffset) / rofLength;
+        if (thisRofId == rofId - 1)
+          vAssocCollInPrevROF.push_back(minColIndex);
+        else if (thisRofId < rofId - 1)
+          break;
+        minColIndex--;
+      }
+      vCollsInPrevITSROF.push_back(vAssocCollInPrevROF);
 
       // ### for occupancy in time windows
       std::vector<int> vAssocToThisCol;
@@ -924,28 +944,39 @@ struct EventSelectionTask {
     std::vector<bool> vNoCollInSameRofStrict(cols.size(), 0);      // to veto events with other collisions in the same ITS ROF
     std::vector<bool> vNoCollInSameRofStandard(cols.size(), 0);    // to veto events with other collisions in the same ITS ROF, with per-collision multiplicity above threshold
     std::vector<bool> vNoCollInSameRofWithCloseVz(cols.size(), 0); // to veto events with nearby collisions with close vZ
+    std::vector<bool> vNoHighMultCollInPrevRof(cols.size(), 0);    // veto events if FT0C amplitude in previous ITS ROF is above threshold
 
     for (auto& col : cols) {
       int32_t colIndex = col.globalIndex();
       float vZ = col.posZ();
 
       // ### in-ROF occupancy
-      std::vector<int> vAssocToSameROF = vCollsInSameITSROF[colIndex];
-      int nITS567tracksForRofVetoStrict = 0;        // to veto events with other collisions in the same ITS ROF
+      std::vector<int> vAssocCollInSameROF = vCollsInSameITSROF[colIndex];
+      int nITS567tracksForSameRofVetoStrict = 0;    // to veto events with other collisions in the same ITS ROF
       int nCollsInRofWithFT0CAboveVetoStandard = 0; // to veto events with other collisions in the same ITS ROF, with per-collision multiplicity above threshold
       int nITS567tracksForRofVetoOnCloseVz = 0;     // to veto events with nearby collisions with close vZ
-      for (uint32_t iCol = 0; iCol < vAssocToSameROF.size(); iCol++) {
-        int thisColIndex = vAssocToSameROF[iCol];
-        nITS567tracksForRofVetoStrict += vTracksITS567perColl[thisColIndex];
+      for (uint32_t iCol = 0; iCol < vAssocCollInSameROF.size(); iCol++) {
+        int thisColIndex = vAssocCollInSameROF[iCol];
+        nITS567tracksForSameRofVetoStrict += vTracksITS567perColl[thisColIndex];
         if (vAmpFT0CperColl[thisColIndex] > confFT0CamplCutVetoOnCollInROF)
           nCollsInRofWithFT0CAboveVetoStandard++;
         if (fabs(vCollVz[thisColIndex] - vZ) < confEpsilonVzDiffVetoInROF)
           nITS567tracksForRofVetoOnCloseVz += vTracksITS567perColl[thisColIndex];
       }
       // in-ROF occupancy flags
-      vNoCollInSameRofStrict[colIndex] = (nITS567tracksForRofVetoStrict == 0);
+      vNoCollInSameRofStrict[colIndex] = (nITS567tracksForSameRofVetoStrict == 0);
       vNoCollInSameRofStandard[colIndex] = (nCollsInRofWithFT0CAboveVetoStandard == 0);
       vNoCollInSameRofWithCloseVz[colIndex] = (nITS567tracksForRofVetoOnCloseVz == 0);
+
+      // ### occupancy in previous ROF
+      std::vector<int> vAssocCollInPrevROF = vCollsInPrevITSROF[colIndex];
+      float totalFT0amplInPrevROF = 0;
+      for (uint32_t iCol = 0; iCol < vAssocCollInPrevROF.size(); iCol++) {
+        int thisColIndex = vAssocCollInPrevROF[iCol];
+        totalFT0amplInPrevROF += vAmpFT0CperColl[thisColIndex];
+      }
+      // veto events if FT0C amplitude in previous ITS ROF is above threshold
+      vNoHighMultCollInPrevRof[colIndex] = (totalFT0amplInPrevROF < confFT0CamplCutVetoOnCollInROF);
 
       // ### occupancy in time windows
       // protection against TF borders
@@ -1058,6 +1089,7 @@ struct EventSelectionTask {
       // selection bits based on ITS in-ROF occupancy
       selection |= vNoCollInSameRofStrict[colIndex] ? BIT(kNoCollInRofStrict) : 0;
       selection |= (vNoCollInSameRofStandard[colIndex] && vNoCollInSameRofWithCloseVz[colIndex]) ? BIT(kNoCollInRofStandard) : 0;
+      selection |= vNoHighMultCollInPrevRof[colIndex] ? BIT(kNoHighMultCollInPrevRof) : 0;
 
       // apply int7-like selections
       bool sel7 = 0;
