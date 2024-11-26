@@ -54,8 +54,6 @@ struct he3FromHypertritonMap {
     true,
     true};
 
-  Configurable<int> particle_of_interest{"particle_of_interest", 0, "0=antihelium3, 1=antihypertriton"};
-
   // Track Parameters
   Configurable<int> min_ITS_nClusters{"min_ITS_nClusters", 7, "minimum number of found ITS clusters"};
   Configurable<int> min_TPC_nClusters{"min_TPC_nClusters", 100, "minimum number of found TPC clusters"};
@@ -71,14 +69,18 @@ struct he3FromHypertritonMap {
   Configurable<float> min_pt{"min_pt", 0.0f, "minimum pt of the tracks"};
   Configurable<float> max_pt{"max_pt", 10.0f, "maximum pt of the tracks"};
   Configurable<int> nbin_pt{"nbin_pt", 50, "number of pt bins"};
+  Configurable<int> nbin_dca = {"nbin_dca", 50, "number of DCA bins"};
 
   int AntihePDG = -1000020030;
   int AntiHypertritonPDG = -1010010030;
+  int AntiHyperHelium4PDG = -1010020040;
 
   void init(InitContext const&)
   {
-    registryMC.add("he3SecPtRec", "he3SecPtRec", HistType::kTH1F, {{nbin_pt, min_pt, max_pt, "p_{T} (GeV/c)"}});
+    registryMC.add("he3SecPtRec_from_hypertriton", "he3SecPtRec_from_hypertriton", HistType::kTH1F, {{nbin_pt, min_pt, max_pt, "p_{T} (GeV/c)"}});
+    registryMC.add("he3SecPtRec_from_hyperHe4", "he3SecPtRec_from_hyperHe4", HistType::kTH1F, {{nbin_pt, min_pt, max_pt, "p_{T} (GeV/c)"}});
     registryMC.add("hypertritonPtgen", "hypertritonPtGen", HistType::kTH1F, {{nbin_pt, min_pt, max_pt, "p_{T} (GeV/c)"}});
+    registryMC.add("hyperHe4Ptgen", "hyperHe4PtGen", HistType::kTH1F, {{nbin_pt, min_pt, max_pt, "p_{T} (GeV/c)"}});
   }
 
   void processMC(aod::McParticles const& mcParticles, const MCTracks& tracks)
@@ -93,7 +95,7 @@ struct he3FromHypertritonMap {
       }
 
       for (auto& motherparticle : mcparticle.mothers_as<aod::McParticles>()) {
-        if (motherparticle.pdgCode() == AntiHypertritonPDG) {
+        if (motherparticle.pdgCode() == AntiHypertritonPDG || motherparticle.pdgCode() == AntiHyperHelium4PDG) {
           if (track.itsNCls() < min_ITS_nClusters ||
               track.tpcNClsFound() < min_TPC_nClusters ||
               track.tpcNClsCrossedRows() < min_TPC_nCrossedRows ||
@@ -106,8 +108,14 @@ struct he3FromHypertritonMap {
               track.itsChi2NCl() > 36.f) {
             continue;
           }
-          registryMC.fill(HIST("he3SecPtRec"), track.pt());
-          registryMC.fill(HIST("hypertritonPtgen"), motherparticle.pt());
+          if (motherparticle.pdgCode() == AntiHypertritonPDG) {
+            registryMC.fill(HIST("he3SecPtRec_from_hypertriton"), 2 * track.pt());
+            registryMC.fill(HIST("hypertritonPtgen"), motherparticle.pt());
+          }
+          if (motherparticle.pdgCode() == AntiHyperHelium4PDG) {
+            registryMC.fill(HIST("he3SecPtRec_from_hyperHe4"), 2 * track.pt());
+            registryMC.fill(HIST("hyperHe4Ptgen"), motherparticle.pt());
+          }
         }
       }
     }
