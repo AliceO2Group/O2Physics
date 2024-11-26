@@ -19,6 +19,8 @@ enum eConfiguration {
   eVerbose,
   eVerboseUtility,
   eVerboseForEachParticle,
+  eVerboseEventCounter,
+  ePlainPrintout,
   eDoAdditionalInsanityChecks,
   eInsanityCheckForEachParticle,
   eWhichProcess,
@@ -28,6 +30,8 @@ enum eConfiguration {
   eUseStopwatch,
   eFloatingPointPrecision,
   eSequentialBailout,
+  eUseSpecificCuts,
+  eWhichSpecificCuts,
   eConfiguration_N
 };
 
@@ -88,40 +92,39 @@ enum eVnPsin { eVn = 0,
                ePsin = 1 };
 
 enum eEventHistograms {
-  eNumberOfEvents = 0, // Total events = eNumberOfEvents + eBefore, Selected events = eNumberOfEvents + eAfter
-  eTotalMultiplicity,
-  eSelectedTracks,
-  eMultFV0M,      // ref. mult from helper task o2-analysis-multiplicity-table
-  eMultFT0M,      // ref. mult from helper task o2-analysis-multiplicity-table
-  eMultTPC,       // ref. mult from helper task o2-analysis-multiplicity-table
-  eMultNTracksPV, // ref. mult from helper task o2-analysis-multiplicity-table
-  eMultTracklets, // ref. mult from helper task o2-analysis-multiplicity-table, use only for Run 2
-  eCentrality,    // default centrality estimator
+  eNumberOfEvents = 0,    // Total events = eNumberOfEvents + eBefore, Selected events = eNumberOfEvents + eAfter
+  eTotalMultiplicity,     // TBI 20241123 I define it as tracks.size(), but most likely this I do not need this
+  eMultiplicity,          // see documentation below for ebye.fMultiplicity
+  eReferenceMultiplicity, // see documentation below for ebye.fReferenceMultiplicity
+  eCentrality,            // default centrality estimator
   eVertex_x,
   eVertex_y,
   eVertex_z,
   eNContributors, // number of tracks used for the vertex
   eImpactParameter,
-  eOccupancy, // from helper task o2-analysis-event-selection, see also IA's presentation in https://indico.cern.ch/event/1464946, slide 38. Use specific occupancy estimator via eOccupancyEstimator
+  eOccupancy,             // from helper task o2-analysis-event-selection, see also IA's presentation in https://indico.cern.ch/event/1464946, slide 38. Use specific occupancy estimator via eOccupancyEstimator
+  eMultMCNParticlesEta08, // from helper task table o2::aod::MultMCExtras
   eEventHistograms_N
 };
 
 enum eEventCuts {
   // a) For available event selection bits, check https://github.com/AliceO2Group/O2Physics/blob/master/Common/CCDB/EventSelectionParams.cxx
   // b) Some settings are configurable, check: https://github.com/AliceO2Group/O2Physics/blob/master/Common/TableProducer/eventSelection.cxx
-  eTrigger = eEventHistograms_N, // Do NOT use eTrigger for Run 3. Validated only for Run 2, and it has to be "kINT7" . TBI 20240522 investigate for Run 1
-  eSel7,                         // See def. of sel7 in Ref. b) above. Event selection decision based on V0A & V0C => use only in Run 2 and Run 1. TBI 20240522 I stil need to validate this one over MC
-  eSel8,                         // See def. of sel7 in Ref. b) above. Event selection decision based on TVX => use only in Run 3, both for data and MC
-                                 // *) As of 20240410, kNoITSROFrameBorder (only in MC) and kNoTimeFrameBorder event selection cuts are part of Sel8
-                                 //    See also email from EK from 20240410
-  eCentralityEstimator,          // the default centrality estimator, set via configurable. All supported centrality estimators, for QA, etc, are in enum eCentralityEstimators
-  eSelectedEvents,               // selected events = eNumberOfEvents + eAfter => therefore I do not need a special histogram for it
-  eNoSameBunchPileup,            // reject collisions in case of pileup with another collision in the same foundBC (emails from IA on 20240404 and EK on 20240410)
-  eIsGoodZvtxFT0vsPV,            // small difference between z-vertex from PV and from FT0 (emails from IA on 20240404 and EK on 20240410)
-  eIsVertexITSTPC,               // at least one ITS-TPC track (reject vertices built from ITS-only tracks) (emails from IA on 20240404 and EK on 20240410
-  eIsVertexTOFmatched,           // at least one of vertex contributors is matched to TOF
-  eIsVertexTRDmatched,           // at least one of vertex contributors is matched to TRD
-  eOccupancyEstimator,           // the default Occupancy estimator, set via configurable. All supported centrality estimators, for QA, etc, are in enum eOccupancyEstimators
+  eTrigger = eEventHistograms_N,   // Do NOT use eTrigger for Run 3. Validated only for Run 2, and it has to be "kINT7" . TBI 20240522 investigate for Run 1
+  eSel7,                           // See def. of sel7 in Ref. b) above. Event selection decision based on V0A & V0C => use only in Run 2 and Run 1. TBI 20240522 I stil need to validate this one over MC
+  eSel8,                           // See def. of sel7 in Ref. b) above. Event selection decision based on TVX => use only in Run 3, both for data and MC
+                                   // *) As of 20240410, kNoITSROFrameBorder (only in MC) and kNoTimeFrameBorder event selection cuts are part of Sel8
+                                   //    See also email from EK from 2024041
+  eMultiplicityEstimator,          // see documentation below for ebye.fMultiplicity
+  eReferenceMultiplicityEstimator, // see documentation below for ebye.fReferenceMultiplicity
+  eCentralityEstimator,            // the default centrality estimator, set via configurable. All supported centrality estimators, for QA, etc, are in enum eCentralityEstimators
+  eSelectedEvents,                 // selected events = eNumberOfEvents + eAfter => therefore I do not need a special histogram for it
+  eNoSameBunchPileup,              // reject collisions in case of pileup with another collision in the same foundBC (emails from IA on 20240404 and EK on 20240410)
+  eIsGoodZvtxFT0vsPV,              // small difference between z-vertex from PV and from FT0 (emails from IA on 20240404 and EK on 20240410)
+  eIsVertexITSTPC,                 // at least one ITS-TPC track (reject vertices built from ITS-only tracks) (emails from IA on 20240404 and EK on 20240410
+  eIsVertexTOFmatched,             // at least one of vertex contributors is matched to TOF
+  eIsVertexTRDmatched,             // at least one of vertex contributors is matched to TRD
+  eOccupancyEstimator,             // the default Occupancy estimator, set via configurable. All supported centrality estimators, for QA, etc, are in enum eOccupancyEstimators
   eEventCuts_N
 };
 
@@ -225,24 +228,47 @@ enum eCutCounter {
 };
 
 enum eQAEventHistograms2D {
-  eMultTPC_vs_NContributors = 0,
-  eMultTPC_vs_Centrality, // only vs. chosen centrality estimator
-  eVertex_z_vs_MultTPC,
-  eVertex_z_vs_NContributors,
+  // General (estimators can be chosen via configurables):
+  eMultiplicity_vs_ReferenceMultiplicity = 0,
+  eMultiplicity_vs_NContributors,
+  eMultiplicity_vs_Centrality,
+  eMultiplicity_vs_Vertex_z,
+  eMultiplicity_vs_Occupancy,
+  eReferenceMultiplicity_vs_NContributors,
+  eReferenceMultiplicity_vs_Centrality,
+  eReferenceMultiplicity_vs_Vertex_z,
+  eReferenceMultiplicity_vs_Occupancy,
+  eNContributors_vs_Centrality,
+  eNContributors_vs_Vertex_z,
+  eNContributors_vs_Occupancy,
+  eCentrality_vs_Vertex_z,
+  eCentrality_vs_Occupancy,
+  eVertex_z_vs_Occupancy,
+  // ...
+  // Specific (estimators are hardwired):
   eCentFT0C_vs_CentNTPV,                // Run 3 centrality
   eCentFT0M_vs_CentNTPV,                // Run 3 centrality
   eCentRun2V0M_vs_CentRun2SPDTracklets, // Run 2 centrality (do not use in Run 1 converted, because there is no centrality information)
-  eCentRun2V0M_vs_NContributors,        // Run 2 centrality (do not use in Run 1 converted, because there is no centrality information)
   eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange,
-  eTrackOccupancyInTimeRange_vs_MultTPC,
-  eTrackOccupancyInTimeRange_vs_Vertex_z,
-  eTrackOccupancyInTimeRange_vs_Centrality, // only vs. chosen centrality estimator
+  // ...
   eQAEventHistograms2D_N
 };
 
 enum eQAParticleHistograms2D {
   ePt_vs_dcaXY,
   eQAParticleHistograms2D_N
+};
+
+enum eReferenceMultiplicityEstimators {
+  // Run 3:
+  eMultTPC = 0,
+  eMultFV0M,      // ref. mult from helper task o2-analysis-multiplicity-table
+  eMultFT0C,      // ref. mult from helper task o2-analysis-multiplicity-table
+  eMultFT0M,      // ref. mult from helper task o2-analysis-multiplicity-table
+  eMultNTracksPV, // ref. mult from helper task o2-analysis-multiplicity-table
+  // Run 2:
+  eMultTracklets, // ref. mult from helper task o2-analysis-multiplicity-table, use only for Run 2
+  eReferenceMultiplicityEstimators_N
 };
 
 enum eCentralityEstimators {
@@ -267,6 +293,11 @@ enum eEventCounter {
   eTotal,     // total number of events, before any cuts are applied
   eProcessed, // number of processed events, i.e. number of events which survived cuts and on which analysis have been performed
   eEventCounter_N
+};
+
+enum eSpecificCuts {
+  eLHC23zzh,
+  eSpecificCuts_N
 };
 
 #endif // PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_ENUMS_H_
