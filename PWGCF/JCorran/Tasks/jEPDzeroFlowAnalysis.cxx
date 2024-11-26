@@ -202,6 +202,7 @@ struct jEPDzeroFlowAnalysis {
     }
     fillHistosFlow(collision, p2tracks);
   }
+  PROCESS_SWITCH(jEPDzeroFlowAnalysis, processData, "Process Event for data", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
