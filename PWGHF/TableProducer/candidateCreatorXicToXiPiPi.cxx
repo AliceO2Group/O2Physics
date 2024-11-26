@@ -95,6 +95,9 @@ struct HfCandidateCreatorXicToXiPiPi {
   float massXiPi0{0.};
   float massXiPi1{0.};
   double bz{0.};
+  enum XicCandCounter { AllIdTriplets = 0,
+                        CascPreSel,
+                        VertexFit };
 
   using CascadesLinked = soa::Join<aod::Cascades, aod::CascDataLink>;
   using CascFull = soa::Join<aod::CascDatas, aod::CascCovs>;
@@ -111,6 +114,13 @@ struct HfCandidateCreatorXicToXiPiPi {
 
     // add histograms to registry
     if (fillHistograms) {
+      // counter
+      registry.add("hVertexerType", "Use KF or DCAFitterN;Vertexer type;entries", {HistType::kTH1F, {{2, -0.5, 1.5}}}); // See o2::aod::hf_cand::VertexerType
+      registry.add("hCandCounter", "hCandCounter", {HistType::kTH1F, {{3, 0.f, 0.3}}});
+      registry.get<TH1>(HIST("hCandCounter"))->GetXaxis()->SetBinLabel(1 + AllIdTriplets, "total");
+      registry.get<TH1>(HIST("hCandCounter"))->GetXaxis()->SetBinLabel(1 + CascPreSel, "Cascade preselection");
+      registry.get<TH1>(HIST("hCandCounter"))->GetXaxis()->SetBinLabel(1 + VertexFit, "Successful vertex fit");
+      // physical variables
       registry.add("hMass3", "3-prong candidates;inv. mass (#Xi #pi #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 2.3, 2.7}}});
       registry.add("hCovPVXX", "3-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", {HistType::kTH1D, {{100, 0., 1.e-4}}});
       registry.add("hCovSVXX", "3-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", {HistType::kTH1D, {{100, 0., 0.2}}});
@@ -120,7 +130,6 @@ struct HfCandidateCreatorXicToXiPiPi {
       registry.add("hCovSVXZ", "3-prong candidates;XZ element of cov. matrix of sec. vtx. position (cm^{2});entries", {HistType::kTH1D, {{100, -1.e-4, 0.2}}});
       registry.add("hCovPVZZ", "3-prong candidates;ZZ element of cov. matrix of prim. vtx. position (cm^{2});entries", {HistType::kTH1D, {{100, 0., 1.e-4}}});
       registry.add("hCovSVZZ", "3-prong candidates;ZZ element of cov. matrix of sec. vtx. position (cm^{2});entries", {HistType::kTH1D, {{100, 0., 0.2}}});
-      registry.add("hVertexerType", "Use KF or DCAFitterN;Vertexer type;entries", {HistType::kTH1F, {{2, -0.5, 1.5}}}); // See o2::aod::hf_cand::VertexerType
       registry.add("hDcaXYProngs", "DCAxy of 3-prong candidates;#it{p}_{T} (GeV/#it{c};#it{d}_{xy}) (#mum);entries", {HistType::kTH2D, {{100, 0., 20.}, {200, -500., 500.}}});
       registry.add("hDcaZProngs", "DCAz of 3-prong candidates;#it{p}_{T} (GeV/#it{c};#it{d}_{z}) (#mum);entries", {HistType::kTH2D, {{100, 0., 20.}, {200, -500., 500.}}});
     }
@@ -167,6 +176,7 @@ struct HfCandidateCreatorXicToXiPiPi {
       auto trackCharmBachelor0 = rowTrackIndexXicPlus.prong0_as<aod::TracksWCovDca>();
       auto trackCharmBachelor1 = rowTrackIndexXicPlus.prong1_as<aod::TracksWCovDca>();
       auto collision = rowTrackIndexXicPlus.collision();
+      registry.fill(HIST("hCandCounter"), 1 + AllIdTriplets);
 
       // preselect cascade candidates
       if (doCascadePreselection) {
@@ -177,6 +187,7 @@ struct HfCandidateCreatorXicToXiPiPi {
           continue;
         }
       }
+      registry.fill(HIST("hCandCounter"), 1 + CascPreSel);
 
       //----------------------Set the magnetic field from ccdb---------------------------------------
       /// The static instance of the propagator was already modified in the HFTrackIndexSkimCreator,
@@ -231,6 +242,7 @@ struct HfCandidateCreatorXicToXiPiPi {
         LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN cannot work, skipping the candidate.";
         continue;
       }
+      registry.fill(HIST("hCandCounter"), 1 + VertexFit);
 
       //----------------------------calculate physical properties-----------------------
       // Charge of charm baryon
@@ -354,6 +366,7 @@ struct HfCandidateCreatorXicToXiPiPi {
       auto trackCharmBachelor0 = rowTrackIndexXicPlus.prong0_as<aod::TracksWCovExtra>();
       auto trackCharmBachelor1 = rowTrackIndexXicPlus.prong1_as<aod::TracksWCovExtra>();
       auto collision = rowTrackIndexXicPlus.collision();
+      registry.fill(HIST("hCandCounter"), 1 + AllIdTriplets);
 
       //-------------------preselect cascade candidates--------------------------------------
       if (doCascadePreselection) {
@@ -364,6 +377,7 @@ struct HfCandidateCreatorXicToXiPiPi {
           continue;
         }
       }
+      registry.fill(HIST("hCandCounter"), 1 + CascPreSel);
 
       //----------------------Set the magnetic field from ccdb-----------------------------
       /// The static instance of the propagator was already modified in the HFTrackIndexSkimCreator,
@@ -417,6 +431,7 @@ struct HfCandidateCreatorXicToXiPiPi {
         LOG(debug) << "Failed to construct XicPlus : " << e.what();
         continue;
       }
+      registry.fill(HIST("hCandCounter"), 1 + VertexFit);
 
       // get geometrical chi2 of XicPlus
       float chi2GeoXicPlus = kfXicPlus.GetChi2() / kfXicPlus.GetNDF();
@@ -457,22 +472,22 @@ struct HfCandidateCreatorXicToXiPiPi {
       // sign of charm baryon
       int signXic = casc.sign() < 0 ? +1 : -1;
 
-      // get updated daughter tracks after vertex fit
-      // after production vertex constraint the parameters of the particle are stored at the position of the production vertex
-      KFParticle kfCharmBachelor0Upd = kfCharmBachelor0;
-      KFParticle kfCharmBachelor1Upd = kfCharmBachelor1;
-      KFParticle kfXiUpd = kfXi;
-      kfCharmBachelor0Upd.SetProductionVertex(kfXicPlus);
-      kfCharmBachelor1Upd.SetProductionVertex(kfXicPlus);
-      kfXiUpd.SetProductionVertex(kfXicPlus);
+      // transport XicPlus daughters to XicPlus decay vertex (secondary vertex)
+      float secondaryVertex[3] = {0.};
+      secondaryVertex[0] = kfXicPlus.GetX();
+      secondaryVertex[1] = kfXicPlus.GetY();
+      secondaryVertex[2] = kfXicPlus.GetZ();
+      kfXi.TransportToPoint(secondaryVertex);
+      kfCharmBachelor0.TransportToPoint(secondaryVertex);
+      kfCharmBachelor1.TransportToPoint(secondaryVertex);
 
-      // get impact parameters of updated XicPlus daughters
+      // get impact parameters of XicPlus daughters
       float impactParameterPi0XY = 0., errImpactParameterPi0XY = 0.;
       float impactParameterPi1XY = 0., errImpactParameterPi1XY = 0.;
       float impactParameterXiXY = 0., errImpactParameterXiXY = 0.;
-      kfCharmBachelor0Upd.GetDistanceFromVertexXY(KFPV, impactParameterPi0XY, errImpactParameterPi0XY);
-      kfCharmBachelor1Upd.GetDistanceFromVertexXY(KFPV, impactParameterPi1XY, errImpactParameterPi1XY);
-      kfXiUpd.GetDistanceFromVertexXY(KFPV, impactParameterXiXY, errImpactParameterXiXY);
+      kfCharmBachelor0.GetDistanceFromVertexXY(KFPV, impactParameterPi0XY, errImpactParameterPi0XY);
+      kfCharmBachelor1.GetDistanceFromVertexXY(KFPV, impactParameterPi1XY, errImpactParameterPi1XY);
+      kfXi.GetDistanceFromVertexXY(KFPV, impactParameterXiXY, errImpactParameterXiXY);
 
       // calculate cosine of pointing angle
       std::array<float, 3> pvCoord = {collision.posX(), collision.posY(), collision.posZ()};
@@ -484,12 +499,12 @@ struct HfCandidateCreatorXicToXiPiPi {
       float cpaXYLambdaToXi = RecoDecay::cpaXY(vertexCasc, vertexV0, pVecV0);
 
       // get DCAs of Pi0-Pi1, Pi0-Xi, Pi1-Xi
-      float dcaXYPi0Pi1 = kfCharmBachelor0Upd.GetDistanceFromParticleXY(kfCharmBachelor1Upd);
-      float dcaXYPi0Xi = kfCharmBachelor0Upd.GetDistanceFromParticleXY(kfXiUpd);
-      float dcaXYPi1Xi = kfCharmBachelor1Upd.GetDistanceFromParticleXY(kfXiUpd);
-      float dcaPi0Pi1 = kfCharmBachelor0Upd.GetDistanceFromParticle(kfCharmBachelor1Upd);
-      float dcaPi0Xi = kfCharmBachelor0Upd.GetDistanceFromParticle(kfXiUpd);
-      float dcaPi1Xi = kfCharmBachelor1Upd.GetDistanceFromParticle(kfXiUpd);
+      float dcaXYPi0Pi1 = kfCharmBachelor0.GetDistanceFromParticleXY(kfCharmBachelor1);
+      float dcaXYPi0Xi = kfCharmBachelor0.GetDistanceFromParticleXY(kfXi);
+      float dcaXYPi1Xi = kfCharmBachelor1.GetDistanceFromParticleXY(kfXi);
+      float dcaPi0Pi1 = kfCharmBachelor0.GetDistanceFromParticle(kfCharmBachelor1);
+      float dcaPi0Xi = kfCharmBachelor0.GetDistanceFromParticle(kfXi);
+      float dcaPi1Xi = kfCharmBachelor1.GetDistanceFromParticle(kfXi);
 
       // mass of Xi-Pi0 pair
       KFParticle kfXiPi0;
@@ -546,7 +561,7 @@ struct HfCandidateCreatorXicToXiPiPi {
                        /*3-prong specific columns*/
                        rowTrackIndexXicPlus.cascadeId(), rowTrackIndexXicPlus.prong0Id(), rowTrackIndexXicPlus.prong1Id(),
                        casc.bachelorId(), casc.posTrackId(), casc.negTrackId(),
-                       kfXicPlus.GetX(), kfXicPlus.GetY(), kfXicPlus.GetZ(),
+                       secondaryVertex[0], secondaryVertex[1], secondaryVertex[2],
                        kfXicPlus.GetErrX(), kfXicPlus.GetErrY(), kfXicPlus.GetErrZ(),
                        kfXicPlus.GetErrDecayLength(), kfXicPlus.GetErrDecayLengthXY(),
                        chi2GeoXicPlus, massXiPiPi, signXic,
