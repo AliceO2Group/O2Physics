@@ -54,7 +54,6 @@ struct he3FromHypertritonMap {
     true,
     true};
 
-
   // Track Parameters
   Configurable<int> min_ITS_nClusters{"min_ITS_nClusters", 7, "minimum number of found ITS clusters"};
   Configurable<int> min_TPC_nClusters{"min_TPC_nClusters", 100, "minimum number of found TPC clusters"};
@@ -70,11 +69,11 @@ struct he3FromHypertritonMap {
   Configurable<float> min_pt{"min_pt", 0.0f, "minimum pt of the tracks"};
   Configurable<float> max_pt{"max_pt", 10.0f, "maximum pt of the tracks"};
   Configurable<int> nbin_pt{"nbin_pt", 50, "number of pt bins"};
-  Configurable<int> nbin_dca={"nbin_dca", 50, "number of DCA bins"};
+  Configurable<int> nbin_dca = {"nbin_dca", 50, "number of DCA bins"};
 
   int AntihePDG = -1000020030;
   int AntiHypertritonPDG = -1010010030;
-  int AntiHyperHelium4PDG= -1010020040;
+  int AntiHyperHelium4PDG = -1010020040;
 
   void init(InitContext const&)
   {
@@ -109,14 +108,12 @@ struct he3FromHypertritonMap {
               track.itsChi2NCl() > 36.f) {
             continue;
           }
-          if(motherparticle.pdgCode() == AntiHypertritonPDG)
-          {
-            registryMC.fill(HIST("he3SecPtRec_from_hypertriton"), 2*track.pt());
+          if (motherparticle.pdgCode() == AntiHypertritonPDG) {
+            registryMC.fill(HIST("he3SecPtRec_from_hypertriton"), 2 * track.pt());
             registryMC.fill(HIST("hypertritonPtgen"), motherparticle.pt());
           }
-          if(motherparticle.pdgCode() == AntiHyperHelium4PDG)
-          {
-            registryMC.fill(HIST("he3SecPtRec_from_hyperHe4"), 2*track.pt());
+          if (motherparticle.pdgCode() == AntiHyperHelium4PDG) {
+            registryMC.fill(HIST("he3SecPtRec_from_hyperHe4"), 2 * track.pt());
             registryMC.fill(HIST("hyperHe4Ptgen"), motherparticle.pt());
           }
         }
