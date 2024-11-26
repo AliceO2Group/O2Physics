@@ -72,7 +72,7 @@ const double ptLcAxisMax = 36.;
 using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFT0M<aod::mult::MultFT0A, aod::mult::MultFT0C>>;
 
 using SelectedCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::Mults, aod::LcSelection>>;
-using SelectedTracks = soa::Filtered<aod::TracksWDca>;
+using SelectedTracks = soa::Filtered<soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
 using SelectedCandidatesData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>;
 using SelectedCandidatesMcRec = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>>;
 using SelectedCollisionsMcGen = soa::Filtered<soa::Join<aod::McCollisions, aod::LcSelection>>;
@@ -195,12 +195,19 @@ struct HfCorrelatorLcHadrons {
   ConfigurableAxis binsMultiplicityMc{"binsMultiplicityMc", {VARIABLE_WIDTH, 0.0f, 20.0f, 50.0f, 500.0f}, "Mixing bins - MC multiplicity"}; // In MCGen multiplicity is defined by counting tracks
   Configurable<bool> storeAutoCorrelationFlag{"storeAutoCorrelationFlag", false, "Store flag that indicates if the track is paired to its D-meson mother instead of skipping it"};
   Configurable<bool> correlateLcWithLeadingParticle{"correlateLcWithLeadingParticle", false, "Switch for correlation of Lc baryons with leading particle only"};
-
+  Configurable<std::vector<int>> trkPIDspecies{"trkPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Kaon, o2::track::PID::Proton}, "Trk sel: Particles species for PID"};
+  Configurable<bool> pidTrkApplied{"pidTrkApplied", true, "Apply PID selection for associated tracks"};
+  Configurable<std::vector<float>> pidTPCMax{"pidTPCMax", std::vector<float>{999., 999., 3.}, "maximum nSigma TPC"};
+  Configurable<std::vector<float>> pidTOFMax{"pidTOFMax", std::vector<float>{999., 999., 3.}, "maximum nSigma TOF"};
+  Configurable<float> tofPIDThreshold{"tofPIDThreshold", 0.75, "minimum pT after which TOF PID is applicable"};
+  Configurable<bool> fillTrkPID{"fillTrkPID", true, "fill PID information for associated tracks"};
   HfHelper hfHelper;
   SliceCache cache;
   BinningType corrBinning{{binsZVtx, binsMultiplicity}, true};
   int leadingIndex = 0;
   bool correlationStatus = false;
+  std::vector<int> tmpPids = trkPIDspecies;
+  std::vector<o2::track::PID> mPIDspecies;
 
   // Filters for ME
   Filter collisionFilter = aod::hf_selection_lc_collision::lcSel >= filterFlagLc;
@@ -260,11 +267,15 @@ struct HfCorrelatorLcHadrons {
     registry.add("hMassLcMcRecBkg", "Lc background candidates - Mc reco;inv. mass (p k #pi) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{massAxisBins, massAxisMin, massAxisMax}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hCountLctriggersMcGen", "Lc trigger particles - Mc gen;;N of trigger Lc", {HistType::kTH2F, {{1, -0.5, 0.5}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     corrBinning = {{binsZVtx, binsMultiplicity}, true};
+
+    for (o2::track::PID pid : tmpPids) {
+      mPIDspecies.push_back(pid);
+    }
   }
 
   /// Lc-h correlation pair builder - for real data and data-like analysis (i.e. reco-level w/o matching request via Mc truth)
   void processData(soa::Join<aod::Collisions, aod::Mults>::iterator const& collision,
-                   aod::TracksWDca const& tracks,
+                   SelectedTracks const& tracks,
                    soa::Join<aod::HfCand3Prong, aod::HfSelLc> const&)
   {
     // protection against empty tables to be sliced
@@ -285,6 +296,10 @@ struct HfCorrelatorLcHadrons {
         }
         if (std::abs(track.dcaXY()) > dcaXYTrackMax || std::abs(track.dcaZ()) > dcaZTrackMax) {
           continue;
+        }
+        if (pidTrkApplied) {
+          if (!passPIDSelection(track, mPIDspecies, pidTPCMax, pidTOFMax, tofPIDThreshold))
+            continue;
         }
         nTracks++;
         registry.fill(HIST("hTracksPoolBin"), poolBin);
@@ -335,6 +350,10 @@ struct HfCorrelatorLcHadrons {
         registry.fill(HIST("hMassLcData"), hfHelper.invMassLcToPiKP(candidate), efficiencyWeight);
         registry.fill(HIST("hSelectionStatusLcToPiKP"), candidate.isSelLcToPiKP());
       }
+
+      auto trackPos1 = candidate.template prong0_as<SelectedTracks>(); // positive daughter (negative for the antiparticles)
+      auto trackNeg = candidate.template prong1_as<SelectedTracks>();  // negative daughter (positive for the antiparticles)
+      auto trackPos2 = candidate.template prong2_as<SelectedTracks>(); // positive daughter (negative for the antiparticles)
       // Lc-Hadron correlation dedicated section
       // if the candidate is a Lc, search for Hadrons and evaluate correlations
 
@@ -348,7 +367,10 @@ struct HfCorrelatorLcHadrons {
         if (std::abs(track.dcaXY()) >= dcaXYTrackMax || std::abs(track.dcaZ()) >= dcaZTrackMax) {
           continue; // Remove secondary tracks
         }
-
+        if (pidTrkApplied) {
+          if (!passPIDSelection(track, mPIDspecies, pidTPCMax, pidTOFMax, tofPIDThreshold))
+            continue;
+        }
         // Remove Lc daughters by checking track indices
         if ((candidate.prong0Id() == track.globalIndex()) || (candidate.prong1Id() == track.globalIndex()) || (candidate.prong2Id() == track.globalIndex())) {
           if (!storeAutoCorrelationFlag) {
@@ -380,6 +402,9 @@ struct HfCorrelatorLcHadrons {
                             correlationStatus);
           entryLcHadronRecoInfo(hfHelper.invMassLcToPiKP(candidate), false);
         }
+        if (fillTrkPID) {
+          entryLcHadronPairTrkPID((trackPos1.sign() + trackNeg.sign() + trackPos2.sign()), track.sign(), track.tpcNSigmaPr(), track.tpcNSigmaKa(), track.tpcNSigmaPi(), track.tofNSigmaPr(), track.tofNSigmaKa(), track.tofNSigmaPi());
+        }
       } // Hadron Tracks loop
     }   // end outer Lc loop
     registry.fill(HIST("hZvtx"), collision.posZ());
@@ -389,7 +414,7 @@ struct HfCorrelatorLcHadrons {
 
   /// Lc-Hadron correlation process starts for McRec
   void processMcRec(soa::Join<aod::Collisions, aod::Mults>::iterator const& collision,
-                    aod::TracksWDca const& tracks,
+                    SelectedTracks const& tracks,
                     soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec> const&)
   {
     if (selectedLcCandidatesMc.size() == 0) {
@@ -409,6 +434,10 @@ struct HfCorrelatorLcHadrons {
         }
         if (std::abs(track.dcaXY()) > dcaXYTrackMax || std::abs(track.dcaZ()) > dcaZTrackMax) {
           continue;
+        }
+        if (pidTrkApplied) {
+          if (!passPIDSelection(track, mPIDspecies, pidTPCMax, pidTOFMax, tofPIDThreshold))
+            continue;
         }
         nTracks++;
         registry.fill(HIST("hTracksPoolBin"), poolBin);
@@ -438,6 +467,10 @@ struct HfCorrelatorLcHadrons {
       if (candidate.pt() >= ptTrackMax) {
         continue;
       }
+      auto trackPos1 = candidate.template prong0_as<SelectedTracks>(); // positive daughter (negative for the antiparticles)
+      auto trackNeg = candidate.template prong1_as<SelectedTracks>();  // negative daughter (positive for the antiparticles)
+      auto trackPos2 = candidate.template prong2_as<SelectedTracks>(); // positive daughter (negative for the antiparticles)
+
       double efficiencyWeight = 1.;
       if (applyEfficiency) {
         efficiencyWeight = 1. / efficiencyLc->at(o2::analysis::findBin(binsPt, candidate.pt()));
@@ -500,6 +533,10 @@ struct HfCorrelatorLcHadrons {
         if (std::abs(track.dcaXY()) >= dcaXYTrackMax || std::abs(track.dcaZ()) >= dcaZTrackMax) {
           continue; // Remove secondary tracks
         }
+        if (pidTrkApplied) {
+          if (!passPIDSelection(track, mPIDspecies, pidTPCMax, pidTOFMax, tofPIDThreshold))
+            continue;
+        }
         // Removing Lc daughters by checking track indices
         if ((candidate.prong0Id() == track.globalIndex()) || (candidate.prong1Id() == track.globalIndex()) || (candidate.prong2Id() == track.globalIndex())) {
           if (!storeAutoCorrelationFlag) {
@@ -532,7 +569,9 @@ struct HfCorrelatorLcHadrons {
                             correlationStatus);
           entryLcHadronRecoInfo(hfHelper.invMassLcToPiKP(candidate), isLcSignal);
         }
-
+        if (fillTrkPID) {
+          entryLcHadronPairTrkPID((trackPos1.sign() + trackNeg.sign() + trackPos2.sign()), track.sign(), track.tpcNSigmaPr(), track.tpcNSigmaKa(), track.tpcNSigmaPi(), track.tofNSigmaPr(), track.tofNSigmaKa(), track.tofNSigmaPi());
+        }
       } // end inner loop (Tracks)
     }   // end outer Lc loop
     registry.fill(HIST("hZvtx"), collision.posZ());
@@ -601,6 +640,9 @@ struct HfCorrelatorLcHadrons {
             continue;
           }
 
+          if (pidTrkApplied && (std::abs(particleAssoc.pdgCode()) != kProton))
+            continue; // proton PID
+
           if ((std::abs(particleAssoc.pdgCode()) != kElectron) && (std::abs(particleAssoc.pdgCode()) != kMuonMinus) && (std::abs(particleAssoc.pdgCode()) != kPiPlus) && (std::abs(particle.pdgCode()) != kKPlus) && (std::abs(particleAssoc.pdgCode()) != kProton)) {
             if (!storeAutoCorrelationFlag) {
               continue;
@@ -651,6 +693,13 @@ struct HfCorrelatorLcHadrons {
         if (yCandMax >= 0. && std::abs(hfHelper.yLc(t1)) > yCandMax) {
           continue;
         }
+        if (pidTrkApplied) {
+          if (!passPIDSelection(t2, mPIDspecies, pidTPCMax, pidTOFMax, tofPIDThreshold))
+            continue;
+        }
+        auto trackPos1 = t1.template prong0_as<SelectedTracks>(); // positive daughter (negative for the antiparticles)
+        auto trackNeg = t1.template prong1_as<SelectedTracks>();  // negative daughter (positive for the antiparticles)
+        auto trackPos2 = t1.template prong2_as<SelectedTracks>(); // positive daughter (negative for the antiparticles)
         // LcToPKPi and LcToPiKP division
         if (t1.isSelLcToPKPi() >= selectionFlagLc) {
           entryLcHadronPair(getDeltaPhi(t1.phi(), t2.phi()),
@@ -670,6 +719,9 @@ struct HfCorrelatorLcHadrons {
                             correlationStatus);
           entryLcHadronRecoInfo(hfHelper.invMassLcToPiKP(t1), false);
         }
+        if (fillTrkPID) {
+          entryLcHadronPairTrkPID((trackPos1.sign() + trackNeg.sign() + trackPos2.sign()), t2.sign(), t2.tpcNSigmaPr(), t2.tpcNSigmaKa(), t2.tpcNSigmaPi(), t2.tofNSigmaPr(), t2.tofNSigmaKa(), t2.tofNSigmaPi());
+        }
       }
     }
   }
@@ -688,6 +740,13 @@ struct HfCorrelatorLcHadrons {
         if (yCandMax >= 0. && std::abs(hfHelper.yLc(t1)) > yCandMax) {
           continue;
         }
+        if (pidTrkApplied) {
+          if (!passPIDSelection(t2, mPIDspecies, pidTPCMax, pidTOFMax, tofPIDThreshold))
+            continue;
+        }
+        auto trackPos1 = t1.template prong0_as<SelectedTracks>(); // positive daughter (negative for the antiparticles)
+        auto trackNeg = t1.template prong1_as<SelectedTracks>();  // negative daughter (positive for the antiparticles)
+        auto trackPos2 = t1.template prong2_as<SelectedTracks>(); // positive daughter (negative for the antiparticles)
         if (t1.isSelLcToPKPi() >= selectionFlagLc) {
           entryLcHadronPair(getDeltaPhi(t1.phi(), t2.phi()),
                             t1.eta() - t2.eta(),
@@ -705,6 +764,9 @@ struct HfCorrelatorLcHadrons {
                             poolBin,
                             correlationStatus);
           entryLcHadronRecoInfo(hfHelper.invMassLcToPiKP(t1), false);
+        }
+        if (fillTrkPID) {
+          entryLcHadronPairTrkPID((trackPos1.sign() + trackNeg.sign() + trackPos2.sign()), t2.sign(), t2.tpcNSigmaPr(), t2.tpcNSigmaKa(), t2.tpcNSigmaPi(), t2.tofNSigmaPr(), t2.tofNSigmaKa(), t2.tofNSigmaPi());
         }
       }
     }
@@ -752,6 +814,10 @@ struct HfCorrelatorLcHadrons {
         if (t2.pt() < ptTrackMin) {
           continue;
         }
+
+        if (pidTrkApplied && (std::abs(t2.pdgCode()) != kProton))
+          continue; // proton PID
+
         int poolBin = corrBinningMcGen.getBin(std::make_tuple(c2.posZ(), getTracksSize(c2)));
         entryLcHadronPair(getDeltaPhi(t1.phi(), t2.phi()),
                           t1.eta() - t2.eta(),

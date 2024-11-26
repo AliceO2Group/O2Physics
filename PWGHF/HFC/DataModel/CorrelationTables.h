@@ -105,6 +105,14 @@ DECLARE_SOA_COLUMN(MLc, mLc, float);                          //! Invariant mass
 DECLARE_SOA_COLUMN(SignalStatus, signalStatus, int);          //! Tag for LcToPKPi/LcToPiKP
 DECLARE_SOA_COLUMN(PoolBin, poolBin, int);                    //! Pool Bin for the MixedEvent
 DECLARE_SOA_COLUMN(IsAutoCorrelated, isAutoCorrelated, bool); //! Correlation Status
+DECLARE_SOA_COLUMN(PrNsigmTPC, prNsigmTPC, float);            //! Associated Particle TPC nSigma proton
+DECLARE_SOA_COLUMN(KaNsigmTPC, kaNsigmTPC, float);            //! Associated Particle TPC nSigma Kaon
+DECLARE_SOA_COLUMN(PiNsigmTPC, piNsigmTPC, float);            //! Associated Particle TPC nSigma Pion
+DECLARE_SOA_COLUMN(PrNsigmTOF, prNsigmTOF, float);            //! Associated Particle TOF nSigma Proton
+DECLARE_SOA_COLUMN(KaNsigmTOF, kaNsigmTOF, float);            //! Associated Particle TOF nSigma Kaon
+DECLARE_SOA_COLUMN(PiNsigmTOF, piNsigmTOF, float);            //! Associated Particle TOF nSigma Pion
+DECLARE_SOA_COLUMN(ChargeLc, chargeLc, int8_t);            //! Associated Particle TOF nSigma Pion
+DECLARE_SOA_COLUMN(ChargeTrk, chargeTrk, int8_t);            //! Associated Particle TOF nSigma Pion
 } // namespace hf_correlation_lc_hadron
 
 DECLARE_SOA_TABLE(LcHadronPair, "AOD", "LCHPAIR", //! Lc-Hadrons pairs Informations
@@ -118,6 +126,15 @@ DECLARE_SOA_TABLE(LcHadronPair, "AOD", "LCHPAIR", //! Lc-Hadrons pairs Informati
 DECLARE_SOA_TABLE(LcHadronRecoInfo, "AOD", "LCHRECOINFO", //! Lc-Hadrons pairs Reconstructed Informations
                   aod::hf_correlation_lc_hadron::MLc,
                   aod::hf_correlation_lc_hadron::SignalStatus);
+DECLARE_SOA_TABLE(LcHadronPairTrkPID, "AOD", "LCHPAIRPID", //! Lc-proton details
+                  aod::hf_correlation_lc_hadron::ChargeLc,
+                  aod::hf_correlation_lc_hadron::ChargeTrk,
+                  aod::hf_correlation_lc_hadron::PrNsigmTPC,
+                  aod::hf_correlation_lc_hadron::KaNsigmTPC,
+                  aod::hf_correlation_lc_hadron::PiNsigmTPC,
+                  aod::hf_correlation_lc_hadron::PrNsigmTOF,
+                  aod::hf_correlation_lc_hadron::KaNsigmTOF,
+                  aod::hf_correlation_lc_hadron::PiNsigmTOF);
 
 // definition of columns and tables for Ds-Hadron correlation pairs
 namespace hf_correlation_ds_hadron

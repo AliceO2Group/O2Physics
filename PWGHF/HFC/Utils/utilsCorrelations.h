@@ -41,7 +41,49 @@ Region getRegion(T const deltaPhi)
     return Transverse;
   }
 }
+//apply PID selection on associated tracks
+template <typename Atrack, typename SpeciesContainer, typename T1, typename T2>
+bool passPIDSelection(Atrack const& track, SpeciesContainer const& mPIDspecies, 
+                      T1 const maxTPC, T2 const maxTOF, double ptThreshold = 0.75) {
+    size_t speciesIndex = 0;
 
+    // Ensure size consistency
+    if (mPIDspecies.size() != maxTPC.value.size() || mPIDspecies.size() != maxTOF.value.size()) {
+        LOGF(error, "Size of particle species and corresponding nSigma selection array should be same");
+    }
+
+    for (auto const& pid : mPIDspecies) {
+        auto nSigmaTPC = o2::aod::pidutils::tpcNSigma(pid, track);
+        if (std::abs(nSigmaTPC) > maxTPC->at(speciesIndex)) {
+            return false;
+        }
+
+        if (track.pt() > ptThreshold && track.hasTOF()) {
+            auto nSigmaTOF = o2::aod::pidutils::tofNSigma(pid, track);
+            if (std::abs(nSigmaTOF) > maxTOF->at(speciesIndex)) {
+                return false;
+            }
+        }
+        //std::cout<<"species "<<pid<<"  number i "<<speciesIndex<<"  tpcSigmaMax  "<<maxTPC->at(speciesIndex)<<"  tofSigmaMax  "<<maxTOF->at(speciesIndex)<<std::endl;
+        //std::cout<<"proton nSigma TPC "<<track.tpcNSigmaPr()<<" "<<nSigmaTPC<<"  tof "<<track.tofNSigmaPr()<<std::endl;
+        ++speciesIndex;
+    }
+    return true;
+}
+
+//template <typename Atrack, typename species, typename T1, typename T2>
+//void passPIDSelction(Atrack const& track, species const mPIDspecies, T1 const maxTPC, T2  maxTOF){
+//   int iSpecie =0;
+//          for (auto pid : mPIDspecies){
+//          auto nSigmaTPC = o2::aod::pidutils::tpcNSigma(pid, track);
+//          auto nSigmaTOF = o2::aod::pidutils::tofNSigma(pid, track);
+//          if(std::abs(nSigmaTPC) > maxTPC->at(iSpecie)) continue;
+//          if(track.pt() > 0.75 && track.hasTOF()){
+//            if(std::abs(nSigmaTOF) > maxTOF->at(iSpecie)) continue;
+//          }
+//          iSpecie++;
+//        }
+//}
 // ========= Find Leading Particle ==============
 template <typename TTracks, typename T1, typename T2, typename T3>
 int findLeadingParticle(TTracks const& tracks, T1 const dcaXYTrackMax, T2 const dcaZTrackMax, T3 const etaTrackMax)
