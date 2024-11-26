@@ -124,7 +124,7 @@ static const std::string hyperNucDaughters[nHyperNuclei][4]{
   {"alpha", "proton", "pion", "none"},
   {"helion", "deuteron", "pion", "none"},
   {"none", "none", "none", "none"},
-  {"none", "none", "none", "none"}};
+  {"none", "none", "none", "none"}}; // NOLINT: runtime/string
 static const std::string hyperNucSigns[nHyperNuclei][4]{
   {"+", "-", "", ""},
   {"+", "-", "", ""},
@@ -135,7 +135,7 @@ static const std::string hyperNucSigns[nHyperNuclei][4]{
   {"+", "+", "-", ""},
   {"+", "+", "-", ""},
   {"", "", "", ""},
-  {"", "", "", ""}};
+  {"", "", "", ""}}; // NOLINT: runtime/string
 const int nSelPrim = 8;
 static const std::vector<std::string> preSelectionPrimNames{"minMass", "maxMass", "minCt", "maxCt", "minCosPa", "maxDcaTracks", "maxDcaMotherToPvXY", "maxDcaMotherToPvZ"};
 constexpr double preSelectionsPrimaries[nHyperNuclei][nSelPrim]{
@@ -180,7 +180,7 @@ static const std::string cascadeHypDaughter[nCascades][1]{
   {"none"},
   {"none"},
   {"none"},
-  {"none"}};
+  {"none"}}; // NOLINT: runtime/string
 static const std::vector<std::string> cascadeDaughtersLb{"daughter2", "daughter3", "daughter4"};
 static const std::string cascadeDaughters[nCascades][3]{
   {"pion", "none", "none"},
@@ -188,14 +188,14 @@ static const std::string cascadeDaughters[nCascades][3]{
   {"none", "none", "none"},
   {"none", "none", "none"},
   {"none", "none", "none"},
-  {"none", "none", "none"}};
+  {"none", "none", "none"}}; // NOLINT: runtime/string
 static const std::string cascadeSigns[nCascades][4]{
   {"+", "-", "", ""},
   {"+", "-", "", ""},
   {"", "", "", ""},
   {"", "", "", ""},
   {"", "", "", ""},
-  {"", "", "", ""}};
+  {"", "", "", ""}}; // NOLINT: runtime/string
 const int nSelCas = 8;
 static const std::vector<std::string> preSelectionCascadeNames{"minMass", "maxMass", "minCt", "maxCt", "minCosPa", "maxDcaTracks", "maxDcaMotherToPvXY", "maxDcaMotherToPvZ"};
 constexpr double preSelectionsCascades[nCascades][nSelCas]{
