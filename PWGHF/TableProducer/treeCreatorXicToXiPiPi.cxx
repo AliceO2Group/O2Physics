@@ -323,6 +323,7 @@ DECLARE_SOA_TABLE(HfCandXicToXiPiPiFullPs, "AOD", "HFXICXI2PIFULLP",
                   full::Y);
 
 DECLARE_SOA_TABLE(HfCandXicToXiPiPiResiduals, "AOD", "HFXICXI2PIRESID",
+                  hf_cand_xic_to_xi_pi_pi::OriginGen,
                   full::PResidual,
                   full::PtResidual,
                   full::XPvResidual,
@@ -753,8 +754,9 @@ struct HfTreeCreatorXicToXiPiPi {
     recSig->bindExternalIndices(&tracks);
 
     std::vector<int> arrDaughIndex;
-    int indexRecXic;
+    int indexRecXicPlus;
     int8_t sign;
+    int8_t origin;
     std::array<float, 3> pvResiduals;
     std::array<float, 3> svResiduals;
     std::array<float, 3> pvPulls;
@@ -762,8 +764,9 @@ struct HfTreeCreatorXicToXiPiPi {
 
     for (const auto& candidate : recSig) {
       arrDaughIndex.clear();
-      indexRecXic = -1;
+      indexRecXicPlus = -1;
       sign = 0;
+      origin = 0;
       pvResiduals = {-9999.9};
       svResiduals = {-9999.9};
       pvPulls = {-9999.9};
@@ -775,24 +778,30 @@ struct HfTreeCreatorXicToXiPiPi {
                                        candidate.posTrack_as<aod::TracksWMc>(),  // p <- lambda
                                        candidate.negTrack_as<aod::TracksWMc>()}; // pi <- lambda
 
-      // get Xic and daughters as MC particle
-      indexRecXic = RecoDecay::getMatchedMCRec(particles, arrayDaughters, Pdg::kXiCPlus, std::array{+kPiPlus, +kPiPlus, +kPiMinus, +kProton, +kPiMinus}, true, &sign, 4);
-      if (indexRecXic == -1) {
+      // get XicPlus as MC particle
+      indexRecXicPlus = RecoDecay::getMatchedMCRec(particles, arrayDaughters, Pdg::kXiCPlus, std::array{+kPiPlus, +kPiPlus, +kPiMinus, +kProton, +kPiMinus}, true, &sign, 4);
+      if (indexRecXicPlus == -1) {
         continue;
       }
-      auto XicGen = particles.rawIteratorAt(indexRecXic);
-      RecoDecay::getDaughters(XicGen, &arrDaughIndex, std::array{+kXiMinus, +kPiPlus, +kPiPlus}, 2);
-      auto XicDaugh0 = particles.rawIteratorAt(arrDaughIndex[0]);
+      auto XicPlusGen = particles.rawIteratorAt(indexRecXicPlus);
+      origin = RecoDecay::getCharmHadronOrigin(particles, XicPlusGen, true);
+
+      //get MC collision
+      auto mcCollision = XicPlusGen.mcCollision_as<aod::McCollisions>();
+
+      // get XicPlus daughters as MC particle
+      RecoDecay::getDaughters(XicPlusGen, &arrDaughIndex, std::array{+kXiMinus, +kPiPlus, +kPiPlus}, 2);
+      auto XicPlusDaugh0 = particles.rawIteratorAt(arrDaughIndex[0]);
 
       // calculate residuals and pulls
-      float pResidual = candidate.p() - XicGen.p();
-      float ptResidual = candidate.pt() - XicGen.pt();
-      pvResiduals[0] = candidate.posX() - XicGen.vx();
-      pvResiduals[1] = candidate.posY() - XicGen.vy();
-      pvResiduals[2] = candidate.posZ() - XicGen.vz();
-      svResiduals[0] = candidate.xSecondaryVertex() - XicDaugh0.vx();
-      svResiduals[1] = candidate.ySecondaryVertex() - XicDaugh0.vy();
-      svResiduals[2] = candidate.zSecondaryVertex() - XicDaugh0.vz();
+      float pResidual = candidate.p() - XicPlusGen.p();
+      float ptResidual = candidate.pt() - XicPlusGen.pt();
+      pvResiduals[0] = candidate.posX() - mcCollision.posX();
+      pvResiduals[1] = candidate.posY() - mcCollision.posY();
+      pvResiduals[2] = candidate.posZ() - mcCollision.posZ();
+      svResiduals[0] = candidate.xSecondaryVertex() - XicPlusDaugh0.vx();
+      svResiduals[1] = candidate.ySecondaryVertex() - XicPlusDaugh0.vy();
+      svResiduals[2] = candidate.zSecondaryVertex() - XicPlusDaugh0.vz();
       try {
         pvPulls[0] = pvResiduals[0] / candidate.xPvErr();
         pvPulls[1] = pvResiduals[1] / candidate.yPvErr();
@@ -806,6 +815,7 @@ struct HfTreeCreatorXicToXiPiPi {
 
       // fill table
       rowCandidateResiduals(
+        origin,
         pResidual,
         ptResidual,
         pvResiduals[0],
