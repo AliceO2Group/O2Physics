@@ -960,7 +960,7 @@ struct DptDptCorrelationsTask {
               auto cfg = new o2::analysis::TrackSelectionPIDCfg();
               cfg->mUseIt = true;
               cfg->mExclude = false;
-              pidselector.Add(spid, cfg);
+              pidselector.addSpecies(spid, cfg);
             }
           }
         };

@@ -307,8 +307,8 @@ struct QADataCollectingEngine {
           h->Fill(track.eta(), track.pt());
         }
       };
-      bool hasits = track.hasITS() && TrackSelectionFlags::checkFlag(track.trackCutFlag(), trackSelectionITS);
-      bool hastpc = track.hasTPC() && TrackSelectionFlags::checkFlag(track.trackCutFlag(), trackSelectionTPC);
+      bool hasits = track.hasITS() && TrackSelectionFlags::checkFlag(track.trackCutFlag(), TrackSelectionITS);
+      bool hastpc = track.hasTPC() && TrackSelectionFlags::checkFlag(track.trackCutFlag(), TrackSelectionTPC);
       bool hastof = track.hasTOF();
 
       fhITS_NCls_vs_PtB->Fill(track.pt(), track.itsNCls());
@@ -320,7 +320,7 @@ struct QADataCollectingEngine {
       fhTPC_CrossedRows_vs_PtB->Fill(track.pt(), track.tpcNClsCrossedRows());
       fhTPC_CrossedRowsOverFindableCls_vs_PtB->Fill(track.pt(), track.tpcCrossedRowsOverFindableCls());
       fhTPC_Chi2NCls_vs_PtB->Fill(track.pt(), track.tpcChi2NCl());
-      if (InTheAcceptance<CollisionsObject>(track)) {
+      if (inTheAcceptance<CollisionsObject>(track)) {
         /* efficiency histograms */
         fillhisto(fhPt_vs_EtaItsAcc, hasits);
         fillhisto(fhPt_vs_EtaTpcAcc, hastpc);
@@ -686,7 +686,7 @@ struct DptDptEfficiencyAndQc {
               auto cfg = new o2::analysis::TrackSelectionPIDCfg();
               cfg->mUseIt = true;
               cfg->mExclude = false;
-              pidselector.Add(spid, cfg);
+              pidselector.addSpecies(spid, cfg);
             }
           }
         };

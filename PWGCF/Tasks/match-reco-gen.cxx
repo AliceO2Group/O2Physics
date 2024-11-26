@@ -407,9 +407,9 @@ struct CheckGeneratorLevelVsDetectorLevel {
         if (!(track.collisionId() < 0)) {
           typename CollisionsObject::iterator coll = collisions.iteratorAt(track.collisionId());
           float centormult = -100.0f;
-          if (IsEvtSelected(coll, centormult)) {
+          if (isEventSelected(coll, centormult)) {
             /* TODO: AcceptTrack does not consider PID */
-            if (AcceptTrack<CollisionsObject>(track)) {
+            if (acceptTrack<CollisionsObject>(track)) {
               /* the track has been accepted */
               nreco++;
               LOGF(MATCHRECGENLOGTRACKS, "Accepted track with global Id %d and collision Id %d has label %d associated to MC collision %d", recix, track.collisionId(), label, track.template mcParticle_as<aod::McParticles>().mcCollisionId());
