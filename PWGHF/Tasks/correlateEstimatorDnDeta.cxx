@@ -15,6 +15,7 @@
 /// \author Fabrizio Chinu <fabrizio.chinu@cern.ch>, Università and INFN Torino
 
 #include <string>
+#include <vector>
 #include <array>
 
 #include "TPDGCode.h"
@@ -30,8 +31,8 @@ using namespace o2::framework::expressions;
 
 struct CorrelateEstimatorDnDeta {
   HistogramRegistry registry{"registry", {}};
-static constexpr int8_t nEstimators = 8;
-static constexpr std::array<std::string_view, nEstimators> estimatorsNames = {"FV0A", "FT0A", "FT0C", "FT0M", "FDDA", "FDDC", "FDDM", "NTPV"};
+  static constexpr int8_t nEstimators = 8;
+  static constexpr std::array<std::string_view, nEstimators> estimatorsNames = {"FV0A", "FT0A", "FT0C", "FT0M", "FDDA", "FDDC", "FDDM", "NTPV"};
 
   std::vector<unsigned> consideredParticles = {
     kElectron,
