@@ -13,6 +13,9 @@
 // Class for dilepton Cut
 //
 
+#include <utility>
+#include <set>
+
 #include "Framework/Logger.h"
 #include "PWGEM/Dilepton/Core/DielectronCut.h"
 
@@ -56,11 +59,13 @@ void DielectronCut::SetMaxPhivPairMeeDep(std::function<float(float)> meeDepCut)
   mMaxPhivPairMeeDep = meeDepCut;
   LOG(info) << "Dielectron Cut, set max phiv pair mee dep: " << mMaxPhivPairMeeDep(0.02);
 }
-void DielectronCut::SetPhivPairRange(float min, float max)
+void DielectronCut::SetPhivPairRange(float min_phiv, float max_phiv, float min_mee, float max_mee)
 {
-  mMinPhivPair = min;
-  mMaxPhivPair = max;
-  LOG(info) << "Dielectron Cut, set phiv range: " << mMinPhivPair << " - " << mMaxPhivPair;
+  mMinPhivPair = min_phiv;
+  mMaxPhivPair = max_phiv;
+  mMinMeeForPhivPair = min_mee;
+  mMaxMeeForPhivPair = max_mee;
+  LOG(info) << "Dielectron Cut, set phiv range: " << mMinPhivPair << " - " << mMaxPhivPair << " and mee range: " << mMinMeeForPhivPair << " - " << mMaxMeeForPhivPair;
 }
 void DielectronCut::SelectPhotonConversion(bool flag)
 {
@@ -73,6 +78,26 @@ void DielectronCut::SetMindEtadPhi(bool flag, float min_deta, float min_dphi)
   mMinDeltaEta = min_deta;
   mMinDeltaPhi = min_dphi;
   LOG(info) << "Dielectron Cut, set apply deta-dphi cut: " << mApplydEtadPhi << " min_deta: " << mMinDeltaEta << " min_dphi: " << mMinDeltaPhi;
+}
+void DielectronCut::SetRequireDifferentSides(bool flag)
+{
+  mRequireDiffSides = flag;
+  LOG(info) << "Dielectron Cut, require 2 tracks to be from different sides: " << mRequireDiffSides;
+}
+void DielectronCut::SetPrefilterPhiV(float max_mee_uls, float max_phiv_uls, float max_mee_ls, float max_phiv_ls)
+{
+  mMaxMee_phiv_uls = max_mee_uls;
+  mMaxPhiV_uls = max_phiv_uls;
+  mSlope_phiv_ls = max_mee_ls / (M_PI - max_phiv_ls);
+  mIntercept_phiv_ls = max_mee_ls - mSlope_phiv_ls * M_PI;
+  LOG(info) << "Dielectron Cut, set phiv prefilter ULS: " << " mMaxMee_phiv_uls: " << mMaxMee_phiv_uls << " mMaxPhiV_uls: " << mMaxPhiV_uls;
+  LOG(info) << "Dielectron Cut, set phiv prefilter LS: " << " mSlope_phiv_ls: " << mSlope_phiv_ls << " mIntercept_phiv_ls: " << mIntercept_phiv_ls;
+}
+void DielectronCut::SetPrefilterMee(float min_mee_uls, float max_mee_uls)
+{
+  mMinMee_uls = min_mee_uls;
+  mMaxMee_uls = max_mee_uls;
+  LOG(info) << "Dielectron Cut, set mee prefilter ULS: " << " mMinMee_uls: " << mMinMee_uls << " mMaxMee_uls: " << mMaxMee_uls;
 }
 void DielectronCut::SetTrackPtRange(float minPt, float maxPt)
 {
@@ -112,6 +137,12 @@ void DielectronCut::SetMaxFracSharedClustersTPC(float max)
   mMaxFracSharedClustersTPC = max;
   LOG(info) << "Dielectron Cut, set max fraction of shared clusters in  TPC: " << mMaxFracSharedClustersTPC;
 }
+void DielectronCut::SetRelDiffPin(float min, float max)
+{
+  mMinRelDiffPin = min;
+  mMaxRelDiffPin = max;
+  LOG(info) << "Dielectron Cut, set rel. diff. between Pin and Ppv range: " << mMinRelDiffPin << " - " << mMaxRelDiffPin;
+}
 void DielectronCut::SetChi2PerClusterTPC(float min, float max)
 {
   mMinChi2PerClusterTPC = min;
@@ -139,6 +170,13 @@ void DielectronCut::SetMeanClusterSizeITS(float min, float max, float minP, floa
   mMaxP_ITSClusterSize = maxP;
   LOG(info) << "Dielectron Cut, set mean cluster size ITS range: " << mMinMeanClusterSizeITS << " - " << mMaxMeanClusterSizeITS;
 }
+void DielectronCut::SetChi2TOF(float min, float max)
+{
+  mMinChi2TOF = min;
+  mMaxChi2TOF = max;
+  LOG(info) << "Dielectron Cut, set chi2 TOF range: " << mMinChi2TOF << " - " << mMaxChi2TOF;
+}
+
 void DielectronCut::SetTrackDca3DRange(float min, float max)
 {
   mMinDca3D = min;

@@ -13,6 +13,8 @@
 /// \brief Tasks that produces the track tables used for the pairing
 /// \author Ravindra Singh, GSI, ravindra.singh@cern.ch
 
+#include <string>
+#include <vector>
 #include "CCDB/BasicCCDBManager.h"
 
 #include "Common/Core/trackUtilities.h"
@@ -112,7 +114,7 @@ struct HfFemtoDreamProducer {
   using FemtoFullCollisionMc = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::McCollisionLabels>::iterator;
   using FemtoFullMcgenCollisions = soa::Join<aod::McCollisions, o2::aod::MultsExtraMC>;
   using FemtoFullMcgenCollision = FemtoFullMcgenCollisions::iterator;
-  using FemtoHFTracks = soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
+  using FemtoHFTracks = soa::Join<aod::FullTracks, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe>;
   using FemtoHFTrack = FemtoHFTracks::iterator;
   using FemtoHFMcTracks = soa::Join<aod::McTrackLabels, FemtoHFTracks>;
   using FemtoHFMcTrack = FemtoHFMcTracks::iterator;
@@ -197,16 +199,21 @@ struct HfFemtoDreamProducer {
                      particle.dcaXY(),
                      particle.dcaZ(),
                      particle.tpcSignal(),
+                     -999.,
                      particle.tpcNSigmaPi(),
                      particle.tpcNSigmaKa(),
                      particle.tpcNSigmaPr(),
+                     particle.tpcNSigmaDe(),
+                     -999.,
+                     -999.,
+                     -999.,
                      particle.tofNSigmaPi(),
                      particle.tofNSigmaKa(),
                      particle.tofNSigmaPr(),
-                     -999., -999., -999., -999.,
-                     -999., -999., -999., -999.,
-                     -999., -999., -999., -999.,
-                     -999., -999.);
+                     particle.tofNSigmaDe(),
+                     -999.,
+                     -999.,
+                     -999., -999., -999., -999., -999., -999.);
   }
 
   template <typename CollisionType, typename ParticleType>

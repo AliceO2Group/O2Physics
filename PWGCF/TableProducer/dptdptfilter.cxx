@@ -11,10 +11,13 @@
 
 #include <cmath>
 #include <algorithm>
+#include <string>
+#include <vector>
 
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
+#include "CommonConstants/PhysicsConstants.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/Core/TableHelper.h"
@@ -29,6 +32,7 @@
 #include "Framework/RunningWorkflowInfo.h"
 #include <TROOT.h>
 #include <TDatabasePDG.h>
+#include <TPDGCode.h>
 #include <TParameter.h>
 #include <TList.h>
 #include <TDirectory.h>
@@ -85,10 +89,25 @@ const char* speciesName[kDptDptNoOfSpecies] = {"h", "e", "mu", "pi", "ka", "p"};
 
 const char* speciesTitle[kDptDptNoOfSpecies] = {"", "e", "#mu", "#pi", "K", "p"};
 
+const char* eventSelectionSteps[knCollisionSelectionFlags] = {
+  "MB",
+  "INT7",
+  "SEL7",
+  "SEL8",
+  "NOSAMEBUNCHPUP",
+  "ISGOODZVTXFT0VSPV",
+  "ISVERTEXITSTPC",
+  "ISVERTEXTOFMATCHED",
+  "ISVERTEXTRDMATCHED",
+  "OCCUPANCY",
+  "CENTRALITY",
+  "ZVERTEX"};
+
 //============================================================================================
 // The DptDptFilter histogram objects
 // TODO: consider registering in the histogram registry
 //============================================================================================
+TH1D* fhEventSelection = nullptr;
 TH1F* fhCentMultB = nullptr;
 TH1F* fhCentMultA = nullptr;
 TH1F* fhVertexZB = nullptr;
@@ -163,6 +182,169 @@ std::vector<int> partMultNeg; // multiplicity of negative particles
 
 using namespace dptdptfilter;
 
+//////////////////////////////////////////////////////////////////////////////
+// Multiplicity in principle for on the fly generated events
+//////////////////////////////////////////////////////////////////////////////
+
+struct Multiplicity {
+  enum multest {
+    kV0M,
+    kCL1,
+    kCL1GAP
+  };
+
+  float getMultiplicityClass() { return multiplicityclass; }
+  float getMultiplicity() { return multiplicity; }
+
+  multest classestimator = kV0M;
+
+  float multiplicityclass = -1.0;
+  float multiplicity = 0.0;
+  bool inelgth0 = false;
+  int V0AM = 0;
+  int V0CM = 0;
+  int CL1M = 0;
+  int CL1EtaGapM = 0;
+  int dNchdEta = 0;
+  int nPart = 0;
+  TH1F* fhNPartTot = nullptr;           ///< total number of particles analyzed
+  TH1F* fhMultiplicity;                 ///< the multiplicity distribution
+  TH2F* fhV0Multiplicity;               ///< the V0M multiplicity histogram
+  TH2F* fhCL1Multiplicity;              ///< the CL1 multiplicity histogram
+  TH2F* fhCL1EtaGapMultiplicity;        ///< the CL1 with an eta gap multiplicity histogram
+  const TH1* fhV0MMultPercentile;       ///< the V0M Centrality / Multiplicity percentile estimation histogram
+  const TH1* fhCL1MultPercentile;       ///< the CL1 Centrality / Multiplicity percentile estimation histogram
+  const TH1* fhCL1EtaGapMultPercentile; ///< the CL1 with an eta gap Centrality / Multiplicity percentile estimation histogram
+
+  void init(TList* hlist)
+  {
+    fhNPartTot = new TH1F("CollisionNpart", "Collision analyzed particles;number of particles;counts", 8000, -0.5, 8000 - 0.5);
+    fhMultiplicity = new TH1F("CollisionMultiplicity", "Event multiplicity;multiplicity (%);counts", 101, -0.5, 101 - 0.5);
+    fhV0Multiplicity = new TH2F("V0Multiplicity", "V0M;V0M;d#it{N}/d#eta;counts", 3000, -9.5, 3000 - 9.5, 2500, -9.5, 2500 - 9.5);
+    fhCL1Multiplicity = new TH2F("CL1Multiplicity", "CL1M;CL1M;d#it{N}/d#eta;counts", 3000, -9.5, 3000 - 9.5, 2500, -9.5, 2500 - 9.5);
+    fhCL1EtaGapMultiplicity = new TH2F("CL1EtaGapMultiplicity", "CL1M (excl |#eta|<0.8);CL1M;d#it{N}/d#eta;counts", 3000, -9.5, 3000 - 9.5, 2500, -9.5, 2500 - 9.5);
+
+    hlist->Add(fhNPartTot);
+    hlist->Add(fhMultiplicity);
+    hlist->Add(fhV0Multiplicity);
+    hlist->Add(fhCL1Multiplicity);
+    hlist->Add(fhCL1EtaGapMultiplicity);
+  }
+
+  void setMultiplicityPercentiles(TList* list)
+  {
+    LOGF(info, "setMultiplicityPercentiles()", "From list %s", list->GetName());
+    fhV0MMultPercentile = reinterpret_cast<TH1*>(list->FindObject("V0MCentMult"));
+    fhCL1MultPercentile = reinterpret_cast<TH1*>(list->FindObject("CL1MCentMult"));
+    fhCL1EtaGapMultPercentile = reinterpret_cast<TH1*>(list->FindObject("CL1EtaGapMCentMult"));
+
+    if (fhV0MMultPercentile == nullptr || fhCL1MultPercentile == nullptr || fhCL1EtaGapMultPercentile == nullptr) {
+      LOGF(fatal, "setMultiplicityPercentiles()", "Percentiles histograms not correctly loaded. ABORTING!!!");
+      return;
+    }
+  }
+
+  template <typename Particle>
+  bool addParticleToMultiplicity(const Particle& p)
+  {
+    /* on the fly MC production */
+    /* get event multiplicity according to the passed eta range  */
+    /* event multiplicity as number of primary charged particles */
+    /* based on AliAnalysisTaskPhiCorrelations implementation    */
+    int pdgcode = std::abs(p.pdgCode());
+    auto addTo = [](const Particle& p, int& est, float etamin, float etamax) {
+      if (p.eta() < etamax && etamin < p.eta()) {
+        est = est + 1;
+      }
+    };
+
+    /* pdg checks */
+    switch (pdgcode) {
+      case kPiPlus:
+      case kKPlus:
+      case kProton:
+        /* not clear if we should use IsPhysicalPrimary here */
+        /* TODO: adapt to FT0M Run 3 and other estimators */
+        if (0.001 < p.pt() && p.pt() < 50.0) {
+          if (p.eta() < 1.0 && -1.0 < p.eta()) {
+            inelgth0 = true;
+          }
+          addTo(p, V0AM, 2.8, 5.1);
+          addTo(p, V0CM, -3.7, -1.7);
+          addTo(p, CL1M, -1.4, 1.4);
+          addTo(p, CL1EtaGapM, -1.4, -0.8);
+          addTo(p, CL1EtaGapM, 0.8, 1.4);
+          addTo(p, dNchdEta, -0.5, 0.5);
+          nPart++;
+        }
+        break;
+      default:
+        break;
+    }
+    return true;
+  }
+
+  template <typename CollisionParticles>
+  void extractMultiplicity(const CollisionParticles& particles)
+  {
+    multiplicityclass = 105;
+    multiplicity = 0;
+    inelgth0 = false;
+    nPart = 0;
+    V0AM = 0;
+    V0CM = 0;
+    CL1M = 0;
+    CL1EtaGapM = 0;
+    dNchdEta = 0;
+
+    for (auto particle : particles) {
+      addParticleToMultiplicity(particle);
+    }
+
+    if (inelgth0) {
+      if (fhNPartTot != nullptr) {
+        fhNPartTot->Fill(nPart);
+      }
+      if (fhV0Multiplicity != nullptr) {
+        fhV0Multiplicity->Fill(V0AM + V0CM, dNchdEta);
+      }
+      if (fhCL1Multiplicity != nullptr) {
+        fhCL1Multiplicity->Fill(CL1M, dNchdEta);
+      }
+      if (fhCL1EtaGapMultiplicity != nullptr) {
+        fhCL1EtaGapMultiplicity->Fill(CL1EtaGapM, dNchdEta);
+      }
+      switch (classestimator) {
+        case kV0M:
+          if (fhV0MMultPercentile != nullptr) {
+            multiplicityclass = fhV0MMultPercentile->GetBinContent(fhV0MMultPercentile->FindFixBin(V0AM + V0CM));
+            multiplicity = V0AM + V0CM;
+          }
+          break;
+        case kCL1:
+          if (fhCL1MultPercentile != nullptr) {
+            multiplicityclass = fhCL1MultPercentile->GetBinContent(fhCL1MultPercentile->FindFixBin(CL1M));
+            multiplicity = CL1M;
+          }
+          break;
+        case kCL1GAP:
+          if (fhCL1EtaGapMultPercentile != nullptr) {
+            multiplicityclass = fhCL1EtaGapMultPercentile->GetBinContent(fhCL1EtaGapMultPercentile->FindFixBin(CL1EtaGapM));
+            multiplicity = CL1EtaGapM;
+          }
+          break;
+        default:
+          break;
+      }
+      fhMultiplicity->Fill(multiplicityclass);
+    }
+  }
+};
+
+//////////////////////////////////////////////////////////////////////////////
+// The filter class
+//////////////////////////////////////////////////////////////////////////////
+
 struct DptDptFilter {
   struct : ConfigurableGroup {
     Configurable<std::string> cfgCCDBUrl{"input_ccdburl", "http://ccdb-test.cern.ch:8080", "The CCDB url for the input file"};
@@ -172,6 +354,8 @@ struct DptDptFilter {
   } cfginputfile;
   Configurable<bool> cfgFullDerivedData{"fullderiveddata", false, "Produce the full derived data for external storage. Default false"};
   Configurable<std::string> cfgCentMultEstimator{"centmultestimator", "V0M", "Centrality/multiplicity estimator detector: V0M,CL0,CL1,FV0A,FT0M,FT0A,FT0C,NTPV,NOCM: none. Default V0M"};
+  Configurable<std::string> cfgOccupancyEstimation{"occestimation", "None", "Occupancy estimation: None, Tracks, FT0C. Default None"};
+  Configurable<float> cfgMaxOccupancy{"occmax", 1e6f, "Maximum allowed occupancy. Depends on the occupancy estimation"};
   Configurable<std::string> cfgSystem{"syst", "PbPb", "System: pp, PbPb, Pbp, pPb, XeXe, ppRun3, PbPbRun3. Default PbPb"};
   Configurable<std::string> cfgDataType{"datatype", "data", "Data type: data, datanoevsel, MC, FastMC, OnTheFlyMC. Default data"};
   Configurable<std::string> cfgTriggSel{"triggsel", "MB", "Trigger selection: MB,VTXTOFMATCHED,VTXTRDMATCHED,VTXTRDTOFMATCHED,None. Default MB"};
@@ -188,6 +372,8 @@ struct DptDptFilter {
   Produces<aod::DptDptCFCollisionsInfo> collisionsinfo;
   Produces<aod::DptDptCFAcceptedTrueCollisions> acceptedtrueevents;
   Produces<aod::DptDptCFGenCollisionsInfo> gencollisionsinfo;
+
+  Multiplicity multiplicity;
 
   void init(InitContext const&)
   {
@@ -212,9 +398,15 @@ struct DptDptFilter {
     /* the centrality/multiplicity estimation */
     if (doprocessWithoutCent || doprocessWithoutCentDetectorLevel || doprocessWithoutCentGeneratorLevel) {
       fCentMultEstimator = kNOCM;
+    } else if (doprocessOnTheFlyGeneratorLevel) {
+      fCentMultEstimator = kFV0A;
     } else {
       fCentMultEstimator = getCentMultEstimator(cfgCentMultEstimator);
     }
+    /* the occupancy selection */
+    fOccupancyEstimation = getOccupancyEstimator(cfgOccupancyEstimation);
+    fMaxOccupancy = cfgMaxOccupancy;
+
     /* the trigger selection */
     fTriggerSelection = getTriggerSelection(cfgTriggSel);
     traceCollId0 = cfgTraceCollId0;
@@ -230,6 +422,10 @@ struct DptDptFilter {
 
     if ((fDataType == kData) || (fDataType == kDataNoEvtSel) || (fDataType == kMC)) {
       /* create the reconstructed data histograms */
+      fhEventSelection = new TH1D("EventSelection", ";counts", knCollisionSelectionFlags, -0.5f, static_cast<float>(knCollisionSelectionFlags) - 0.5f);
+      for (int ix = 0; ix < knCollisionSelectionFlags; ++ix) {
+        fhEventSelection->GetXaxis()->SetBinLabel(ix + 1, eventSelectionSteps[ix]);
+      }
       /* TODO: proper axes and axes titles according to the system; still incomplete */
       std::string multestimator = getCentMultEstimatorName(fCentMultEstimator);
       if (fSystem > kPbp) {
@@ -249,6 +445,7 @@ struct DptDptFilter {
       fhVertexZA = new TH1F("VertexZA", "Vertex Z; z_{vtx}", zvtxbins, zvtxlow, zvtxup);
 
       /* add the hstograms to the output list */
+      fOutputList->Add(fhEventSelection);
       fOutputList->Add(fhCentMultB);
       fOutputList->Add(fhCentMultA);
       fOutputList->Add(fhMultB);
@@ -271,14 +468,20 @@ struct DptDptFilter {
 
       fhTrueVertexZB = new TH1F("TrueVertexZB", "Vertex Z before (truth); z_{vtx}", 60, -15, 15);
       fhTrueVertexZA = new TH1F("TrueVertexZA", "Vertex Z (truth); z_{vtx}", zvtxbins, zvtxlow, zvtxup);
-      fhTrueVertexZAA = new TH1F("TrueVertexZAA", "Vertex Z (truth rec associated); z_{vtx}", zvtxbins, zvtxlow, zvtxup);
+      if (!doprocessOnTheFlyGeneratorLevel) {
+        fhTrueVertexZAA = new TH1F("TrueVertexZAA", "Vertex Z (truth rec associated); z_{vtx}", zvtxbins, zvtxlow, zvtxup);
+      }
 
       /* add the hstograms to the output list */
       fOutputList->Add(fhTrueCentMultB);
       fOutputList->Add(fhTrueCentMultA);
       fOutputList->Add(fhTrueVertexZB);
       fOutputList->Add(fhTrueVertexZA);
-      fOutputList->Add(fhTrueVertexZAA);
+      if (doprocessOnTheFlyGeneratorLevel) {
+        multiplicity.init(fOutputList);
+      } else {
+        fOutputList->Add(fhTrueVertexZAA);
+      }
     }
   }
 
@@ -304,7 +507,7 @@ struct DptDptFilter {
   PROCESS_SWITCH(DptDptFilter, processWithoutCentDetectorLevel, "Process MC detector level without centrality", false);
 
   template <typename CollisionObject, typename ParticlesList>
-  void processGenerated(CollisionObject const& mccollision, ParticlesList const& mcparticles, float centormult);
+  bool processGenerated(CollisionObject const& mccollision, ParticlesList const& mcparticles, float centormult);
 
   template <typename CollisionsGroup, typename AllCollisions>
   void processGeneratorLevel(aod::McCollision const& mccollision,
@@ -330,6 +533,10 @@ struct DptDptFilter {
                                         aod::McParticles const& mcparticles,
                                         aod::CollisionsEvSel const& allcollisions);
   PROCESS_SWITCH(DptDptFilter, processWithoutCentGeneratorLevel, "Process generated without centrality", false);
+
+  void processOnTheFlyGeneratorLevel(aod::McCollision const& mccollision,
+                                     aod::McParticles const& mcparticles);
+  PROCESS_SWITCH(DptDptFilter, processOnTheFlyGeneratorLevel, "Process on the fly generated events", false);
 
   void processVertexGenerated(aod::McCollisions const&);
   PROCESS_SWITCH(DptDptFilter, processVertexGenerated, "Process vertex generator level", false);
@@ -365,6 +572,12 @@ void DptDptFilter::processReconstructed(CollisionObject const& collision, Tracks
       collisionsinfo(uint8_t(false), 105.0);
     }
   }
+  /* report the event selection */
+  for (int iflag = 0; iflag < knCollisionSelectionFlags; ++iflag) {
+    if (collisionFlags.test(iflag)) {
+      fhEventSelection->Fill(iflag);
+    }
+  }
 }
 
 void DptDptFilter::processWithCent(aod::CollisionEvSelCent const& collision, DptDptFullTracks const& ftracks)
@@ -398,7 +611,7 @@ void DptDptFilter::processWithoutCentDetectorLevel(aod::CollisionEvSel const& co
 }
 
 template <typename CollisionObject, typename ParticlesList>
-void DptDptFilter::processGenerated(CollisionObject const& mccollision, ParticlesList const&, float centormult)
+bool DptDptFilter::processGenerated(CollisionObject const& mccollision, ParticlesList const&, float centormult)
 {
   using namespace dptdptfilter;
 
@@ -411,6 +624,7 @@ void DptDptFilter::processGenerated(CollisionObject const& mccollision, Particle
   } else {
     gencollisionsinfo(acceptedevent, centormult);
   }
+  return static_cast<bool>(acceptedevent);
 }
 
 template <typename CollisionsGroup, typename AllCollisions>
@@ -469,6 +683,26 @@ void DptDptFilter::processWithoutCentGeneratorLevel(aod::McCollision const& mcco
                                                     aod::CollisionsEvSel const& allcollisions)
 {
   processGeneratorLevel(mccollision, collisions, mcparticles, allcollisions, 50.0);
+}
+
+void DptDptFilter::processOnTheFlyGeneratorLevel(aod::McCollision const& mccollision,
+                                                 aod::McParticles const& mcparticles)
+{
+  uint8_t acceptedEvent = uint8_t(false);
+  fhTrueVertexZB->Fill(mccollision.posZ());
+  /* we assign a default value for the time being */
+  float centormult = 50.0f;
+  if (IsEvtSelected(mccollision, centormult)) {
+    acceptedEvent = true;
+    multiplicity.extractMultiplicity(mcparticles);
+    fhTrueVertexZA->Fill((mccollision.posZ()));
+    centormult = multiplicity.getMultiplicityClass();
+  }
+  if (fullDerivedData) {
+    acceptedtrueevents(mccollision.bcId(), mccollision.posZ(), acceptedEvent, centormult);
+  } else {
+    gencollisionsinfo(acceptedEvent, centormult);
+  }
 }
 
 void DptDptFilter::processVertexGenerated(aod::McCollisions const& mccollisions)

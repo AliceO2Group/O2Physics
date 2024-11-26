@@ -9,7 +9,23 @@ common:
 
 infrastructure:
   - changed-files:
-      - any-glob-to-any-file: ['.github/**', 'cmake/**', 'dependencies/**', 'packaging/**']
+      - any-glob-to-any-file:
+          - '.clang-format'
+          - '.clang-tidy'
+          - '.flake8'
+          - '.github/**'
+          - '.checkov.yml'
+          - '.mega-linter.yml'
+          - 'cmake/**'
+          - 'CODEOWNERS'
+          - 'CPPLINT.cfg'
+          - 'dependencies/**'
+          - 'packaging/**'
+          - 'pyproject.toml'
+
+datamodel:
+  - changed-files:
+      - any-glob-to-any-file: ['DataModel/**', '*/DataModel/**']
 
 dpg:
   - changed-files:

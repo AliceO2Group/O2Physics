@@ -208,14 +208,34 @@ DECLARE_SOA_COLUMN(StoredTPCNSigmaHe, storedTpcNSigmaHe, binning::nsigma::binned
 
 DECLARE_SOA_COLUMN(StoredTOFNSigmaPi_v1, storedTofNSigmaPi_v1, binning::nsigma::binned_t); // (v1)
 DECLARE_SOA_COLUMN(StoredTPCNSigmaPi_v1, storedTpcNSigmaPi_v1, binning::nsigma::binned_t); // (v1)
+
 DECLARE_SOA_COLUMN(StoredTOFNSigmaKa_v1, storedTofNSigmaKa_v1, binning::nsigma::binned_t); // (v1)
 DECLARE_SOA_COLUMN(StoredTPCNSigmaKa_v1, storedTpcNSigmaKa_v1, binning::nsigma::binned_t); // (v1)
+
 DECLARE_SOA_COLUMN(StoredTOFNSigmaPr_v1, storedTofNSigmaPr_v1, binning::nsigma::binned_t); // (v1)
 DECLARE_SOA_COLUMN(StoredTPCNSigmaPr_v1, storedTpcNSigmaPr_v1, binning::nsigma::binned_t); // (v1)
+
 DECLARE_SOA_COLUMN(StoredTOFNSigmaDe_v1, storedTofNSigmaDe_v1, binning::nsigma::binned_t); // (v1)
 DECLARE_SOA_COLUMN(StoredTPCNSigmaDe_v1, storedTpcNSigmaDe_v1, binning::nsigma::binned_t); // (v1)
+
 DECLARE_SOA_COLUMN(StoredTOFNSigmaHe_v1, storedTofNSigmaHe_v1, binning::nsigma::binned_t); // (v1)
 DECLARE_SOA_COLUMN(StoredTPCNSigmaHe_v1, storedTpcNSigmaHe_v1, binning::nsigma::binned_t); // (v1)
+
+DECLARE_SOA_COLUMN(StoredITSNSigmaPi_v1, storedItsNSigmaPi_v1, binning::nsigma::binned_t); // (v1)
+DECLARE_SOA_DYNAMIC_COLUMN(ITSNSigmaPi_v1, itsNSigmaPi,
+                           [](binning::nsigma_v1::binned_t nsigma_binned) -> float { return singletrackselector::unPackSymmetric<binning::nsigma_v1>(nsigma_binned); });
+DECLARE_SOA_COLUMN(StoredITSNSigmaKa_v1, storedItsNSigmaKa_v1, binning::nsigma::binned_t); // (v1)
+DECLARE_SOA_DYNAMIC_COLUMN(ITSNSigmaKa_v1, itsNSigmaKa,
+                           [](binning::nsigma_v1::binned_t nsigma_binned) -> float { return singletrackselector::unPackSymmetric<binning::nsigma_v1>(nsigma_binned); });
+DECLARE_SOA_COLUMN(StoredITSNSigmaPr_v1, storedItsNSigmaPr_v1, binning::nsigma::binned_t); // (v1)
+DECLARE_SOA_DYNAMIC_COLUMN(ITSNSigmaPr_v1, itsNSigmaPr,
+                           [](binning::nsigma_v1::binned_t nsigma_binned) -> float { return singletrackselector::unPackSymmetric<binning::nsigma_v1>(nsigma_binned); });
+DECLARE_SOA_COLUMN(StoredITSNSigmaDe_v1, storedItsNSigmaDe_v1, binning::nsigma::binned_t); // (v1)
+DECLARE_SOA_DYNAMIC_COLUMN(ITSNSigmaDe_v1, itsNSigmaDe,
+                           [](binning::nsigma_v1::binned_t nsigma_binned) -> float { return singletrackselector::unPackSymmetric<binning::nsigma_v1>(nsigma_binned); });
+DECLARE_SOA_COLUMN(StoredITSNSigmaHe_v1, storedItsNSigmaHe_v1, binning::nsigma::binned_t); // (v1)
+DECLARE_SOA_DYNAMIC_COLUMN(ITSNSigmaHe_v1, itsNSigmaHe,
+                           [](binning::nsigma_v1::binned_t nsigma_binned) -> float { return singletrackselector::unPackSymmetric<binning::nsigma_v1>(nsigma_binned); });
 
 DECLARE_SOA_DYNAMIC_COLUMN(Energy, energy, [](float p, float mass) -> float { return sqrt(p * p + mass * mass); });
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float p, float eta) -> float { return p / std::cosh(eta); });
@@ -315,166 +335,166 @@ DECLARE_SOA_DYNAMIC_COLUMN(Rapidity, rapidity, //! Track rapidity, computed unde
 
 } // namespace singletrackselector
 
-DECLARE_SOA_TABLE_FULL(SingleTrackSels_v0, "SelTracks", "AOD", "SINGLETRACKSEL", // Table of the variables for single track selection.
-                       o2::soa::Index<>,
-                       singletrackselector::SingleCollSelId,
-                       singletrackselector::P,
-                       singletrackselector::Eta,
-                       singletrackselector::Phi,
-                       singletrackselector::Sign,
-                       singletrackselector::TPCNClsFound,
-                       singletrackselector::TPCNClsShared,
-                       singletrackselector::ITSNCls,
-                       singletrackselector::StoredDcaXY,
-                       singletrackselector::StoredDcaZ,
-                       singletrackselector::StoredTPCChi2NCl,
-                       singletrackselector::StoredITSChi2NCl,
-                       singletrackselector::StoredTPCCrossedRowsOverFindableCls,
+DECLARE_SOA_TABLE(SingleTrackSels_v0, "AOD", "SINGLETRACKSEL", // Table of the variables for single track selection.
+                  o2::soa::Index<>,
+                  singletrackselector::SingleCollSelId,
+                  singletrackselector::P,
+                  singletrackselector::Eta,
+                  singletrackselector::Phi,
+                  singletrackselector::Sign,
+                  singletrackselector::TPCNClsFound,
+                  singletrackselector::TPCNClsShared,
+                  singletrackselector::ITSNCls,
+                  singletrackselector::StoredDcaXY,
+                  singletrackselector::StoredDcaZ,
+                  singletrackselector::StoredTPCChi2NCl,
+                  singletrackselector::StoredITSChi2NCl,
+                  singletrackselector::StoredTPCCrossedRowsOverFindableCls,
 
-                       singletrackselector::StoredTOFNSigmaPi,
-                       singletrackselector::StoredTPCNSigmaPi,
-                       singletrackselector::StoredTOFNSigmaKa,
-                       singletrackselector::StoredTPCNSigmaKa,
-                       singletrackselector::StoredTOFNSigmaPr,
-                       singletrackselector::StoredTPCNSigmaPr,
-                       singletrackselector::StoredTOFNSigmaDe,
-                       singletrackselector::StoredTPCNSigmaDe,
+                  singletrackselector::StoredTOFNSigmaPi,
+                  singletrackselector::StoredTPCNSigmaPi,
+                  singletrackselector::StoredTOFNSigmaKa,
+                  singletrackselector::StoredTPCNSigmaKa,
+                  singletrackselector::StoredTOFNSigmaPr,
+                  singletrackselector::StoredTPCNSigmaPr,
+                  singletrackselector::StoredTOFNSigmaDe,
+                  singletrackselector::StoredTPCNSigmaDe,
 
-                       singletrackselector::DcaXY_v0<singletrackselector::StoredDcaXY>,
-                       singletrackselector::DcaZ_v0<singletrackselector::StoredDcaZ>,
-                       singletrackselector::TPCChi2NCl<singletrackselector::StoredTPCChi2NCl>,
-                       singletrackselector::ITSChi2NCl<singletrackselector::StoredITSChi2NCl>,
-                       singletrackselector::TPCCrossedRowsOverFindableCls<singletrackselector::StoredTPCCrossedRowsOverFindableCls>,
-                       singletrackselector::TPCFractionSharedCls<singletrackselector::TPCNClsShared, singletrackselector::TPCNClsFound>,
+                  singletrackselector::DcaXY_v0<singletrackselector::StoredDcaXY>,
+                  singletrackselector::DcaZ_v0<singletrackselector::StoredDcaZ>,
+                  singletrackselector::TPCChi2NCl<singletrackselector::StoredTPCChi2NCl>,
+                  singletrackselector::ITSChi2NCl<singletrackselector::StoredITSChi2NCl>,
+                  singletrackselector::TPCCrossedRowsOverFindableCls<singletrackselector::StoredTPCCrossedRowsOverFindableCls>,
+                  singletrackselector::TPCFractionSharedCls<singletrackselector::TPCNClsShared, singletrackselector::TPCNClsFound>,
 
-                       singletrackselector::TOFNSigmaPi_v0<singletrackselector::StoredTOFNSigmaPi>,
-                       singletrackselector::TPCNSigmaPi_v0<singletrackselector::StoredTPCNSigmaPi>,
-                       singletrackselector::TOFNSigmaKa_v0<singletrackselector::StoredTOFNSigmaKa>,
-                       singletrackselector::TPCNSigmaKa_v0<singletrackselector::StoredTPCNSigmaKa>,
-                       singletrackselector::TOFNSigmaPr_v0<singletrackselector::StoredTOFNSigmaPr>,
-                       singletrackselector::TPCNSigmaPr_v0<singletrackselector::StoredTPCNSigmaPr>,
-                       singletrackselector::TOFNSigmaDe_v0<singletrackselector::StoredTOFNSigmaDe>,
-                       singletrackselector::TPCNSigmaDe_v0<singletrackselector::StoredTPCNSigmaDe>,
+                  singletrackselector::TOFNSigmaPi_v0<singletrackselector::StoredTOFNSigmaPi>,
+                  singletrackselector::TPCNSigmaPi_v0<singletrackselector::StoredTPCNSigmaPi>,
+                  singletrackselector::TOFNSigmaKa_v0<singletrackselector::StoredTOFNSigmaKa>,
+                  singletrackselector::TPCNSigmaKa_v0<singletrackselector::StoredTPCNSigmaKa>,
+                  singletrackselector::TOFNSigmaPr_v0<singletrackselector::StoredTOFNSigmaPr>,
+                  singletrackselector::TPCNSigmaPr_v0<singletrackselector::StoredTPCNSigmaPr>,
+                  singletrackselector::TOFNSigmaDe_v0<singletrackselector::StoredTOFNSigmaDe>,
+                  singletrackselector::TPCNSigmaDe_v0<singletrackselector::StoredTPCNSigmaDe>,
 
-                       singletrackselector::Rapidity<singletrackselector::P, singletrackselector::Eta>,
-                       singletrackselector::Energy<singletrackselector::P>,
-                       singletrackselector::Pt<singletrackselector::P, singletrackselector::Eta>,
-                       singletrackselector::Px<singletrackselector::P, singletrackselector::Eta, singletrackselector::Phi>,
-                       singletrackselector::Py<singletrackselector::P, singletrackselector::Eta, singletrackselector::Phi>,
-                       singletrackselector::Pz<singletrackselector::P, singletrackselector::Eta>,
-                       singletrackselector::PhiStar<singletrackselector::P, singletrackselector::Eta, singletrackselector::Sign, singletrackselector::Phi>);
+                  singletrackselector::Rapidity<singletrackselector::P, singletrackselector::Eta>,
+                  singletrackselector::Energy<singletrackselector::P>,
+                  singletrackselector::Pt<singletrackselector::P, singletrackselector::Eta>,
+                  singletrackselector::Px<singletrackselector::P, singletrackselector::Eta, singletrackselector::Phi>,
+                  singletrackselector::Py<singletrackselector::P, singletrackselector::Eta, singletrackselector::Phi>,
+                  singletrackselector::Pz<singletrackselector::P, singletrackselector::Eta>,
+                  singletrackselector::PhiStar<singletrackselector::P, singletrackselector::Eta, singletrackselector::Sign, singletrackselector::Phi>);
 
-DECLARE_SOA_TABLE_FULL(SingleTrackSels_v1, "SelTracks", "AOD", "SINGLETRACKSEL1", // Table of the variables for single track selection.
-                       o2::soa::Index<>,
-                       singletrackselector::SingleCollSelId,
-                       singletrackselector::P,
-                       singletrackselector::Eta,
-                       singletrackselector::Phi,
-                       singletrackselector::Sign,
-                       singletrackselector::TPCNClsFound,
-                       singletrackselector::TPCNClsShared,
-                       singletrackselector::ITSclsMap,
-                       singletrackselector::ITSclusterSizes,
-                       singletrackselector::StoredDcaXY_v1,
-                       singletrackselector::StoredDcaZ_v1,
-                       singletrackselector::StoredTPCChi2NCl,
-                       singletrackselector::StoredITSChi2NCl,
-                       singletrackselector::StoredTPCCrossedRowsOverFindableCls,
+DECLARE_SOA_TABLE_VERSIONED(SingleTrackSels_v1, "AOD", "SINGLETRACKSEL1", 1, // Table of the variables for single track selection.
+                            o2::soa::Index<>,
+                            singletrackselector::SingleCollSelId,
+                            singletrackselector::P,
+                            singletrackselector::Eta,
+                            singletrackselector::Phi,
+                            singletrackselector::Sign,
+                            singletrackselector::TPCNClsFound,
+                            singletrackselector::TPCNClsShared,
+                            singletrackselector::ITSclsMap,
+                            singletrackselector::ITSclusterSizes,
+                            singletrackselector::StoredDcaXY_v1,
+                            singletrackselector::StoredDcaZ_v1,
+                            singletrackselector::StoredTPCChi2NCl,
+                            singletrackselector::StoredITSChi2NCl,
+                            singletrackselector::StoredTPCCrossedRowsOverFindableCls,
 
-                       singletrackselector::StoredTOFNSigmaPi,
-                       singletrackselector::StoredTPCNSigmaPi,
-                       singletrackselector::StoredTOFNSigmaKa,
-                       singletrackselector::StoredTPCNSigmaKa,
-                       singletrackselector::StoredTOFNSigmaPr,
-                       singletrackselector::StoredTPCNSigmaPr,
-                       singletrackselector::StoredTOFNSigmaDe,
-                       singletrackselector::StoredTPCNSigmaDe,
-                       singletrackselector::StoredTOFNSigmaHe,
-                       singletrackselector::StoredTPCNSigmaHe,
+                            singletrackselector::StoredTOFNSigmaPi,
+                            singletrackselector::StoredTPCNSigmaPi,
+                            singletrackselector::StoredTOFNSigmaKa,
+                            singletrackselector::StoredTPCNSigmaKa,
+                            singletrackselector::StoredTOFNSigmaPr,
+                            singletrackselector::StoredTPCNSigmaPr,
+                            singletrackselector::StoredTOFNSigmaDe,
+                            singletrackselector::StoredTPCNSigmaDe,
+                            singletrackselector::StoredTOFNSigmaHe,
+                            singletrackselector::StoredTPCNSigmaHe,
 
-                       singletrackselector::ITSNClsDyn<singletrackselector::ITSclusterSizes>,
-                       track::v001::ITSClsSizeInLayer<singletrackselector::ITSclusterSizes>,
-                       singletrackselector::DcaXY_v1<singletrackselector::StoredDcaXY_v1>,
-                       singletrackselector::DcaZ_v1<singletrackselector::StoredDcaZ_v1>,
-                       singletrackselector::TPCChi2NCl<singletrackselector::StoredTPCChi2NCl>,
-                       singletrackselector::ITSChi2NCl<singletrackselector::StoredITSChi2NCl>,
-                       singletrackselector::TPCCrossedRowsOverFindableCls<singletrackselector::StoredTPCCrossedRowsOverFindableCls>,
-                       singletrackselector::TPCFractionSharedCls<singletrackselector::TPCNClsShared, singletrackselector::TPCNClsFound>,
+                            singletrackselector::ITSNClsDyn<singletrackselector::ITSclusterSizes>,
+                            track::v001::ITSClsSizeInLayer<singletrackselector::ITSclusterSizes>,
+                            singletrackselector::DcaXY_v1<singletrackselector::StoredDcaXY_v1>,
+                            singletrackselector::DcaZ_v1<singletrackselector::StoredDcaZ_v1>,
+                            singletrackselector::TPCChi2NCl<singletrackselector::StoredTPCChi2NCl>,
+                            singletrackselector::ITSChi2NCl<singletrackselector::StoredITSChi2NCl>,
+                            singletrackselector::TPCCrossedRowsOverFindableCls<singletrackselector::StoredTPCCrossedRowsOverFindableCls>,
+                            singletrackselector::TPCFractionSharedCls<singletrackselector::TPCNClsShared, singletrackselector::TPCNClsFound>,
 
-                       singletrackselector::TOFNSigmaPi_v0<singletrackselector::StoredTOFNSigmaPi>,
-                       singletrackselector::TPCNSigmaPi_v0<singletrackselector::StoredTPCNSigmaPi>,
-                       singletrackselector::TOFNSigmaKa_v0<singletrackselector::StoredTOFNSigmaKa>,
-                       singletrackselector::TPCNSigmaKa_v0<singletrackselector::StoredTPCNSigmaKa>,
-                       singletrackselector::TOFNSigmaPr_v0<singletrackselector::StoredTOFNSigmaPr>,
-                       singletrackselector::TPCNSigmaPr_v0<singletrackselector::StoredTPCNSigmaPr>,
-                       singletrackselector::TOFNSigmaDe_v0<singletrackselector::StoredTOFNSigmaDe>,
-                       singletrackselector::TPCNSigmaDe_v0<singletrackselector::StoredTPCNSigmaDe>,
-                       singletrackselector::TOFNSigmaHe_v0<singletrackselector::StoredTOFNSigmaHe>,
-                       singletrackselector::TPCNSigmaHe_v0<singletrackselector::StoredTPCNSigmaHe>,
+                            singletrackselector::TOFNSigmaPi_v0<singletrackselector::StoredTOFNSigmaPi>,
+                            singletrackselector::TPCNSigmaPi_v0<singletrackselector::StoredTPCNSigmaPi>,
+                            singletrackselector::TOFNSigmaKa_v0<singletrackselector::StoredTOFNSigmaKa>,
+                            singletrackselector::TPCNSigmaKa_v0<singletrackselector::StoredTPCNSigmaKa>,
+                            singletrackselector::TOFNSigmaPr_v0<singletrackselector::StoredTOFNSigmaPr>,
+                            singletrackselector::TPCNSigmaPr_v0<singletrackselector::StoredTPCNSigmaPr>,
+                            singletrackselector::TOFNSigmaDe_v0<singletrackselector::StoredTOFNSigmaDe>,
+                            singletrackselector::TPCNSigmaDe_v0<singletrackselector::StoredTPCNSigmaDe>,
+                            singletrackselector::TOFNSigmaHe_v0<singletrackselector::StoredTOFNSigmaHe>,
+                            singletrackselector::TPCNSigmaHe_v0<singletrackselector::StoredTPCNSigmaHe>,
 
-                       singletrackselector::Rapidity<singletrackselector::P, singletrackselector::Eta>,
-                       singletrackselector::Energy<singletrackselector::P>,
-                       singletrackselector::Pt<singletrackselector::P, singletrackselector::Eta>,
-                       singletrackselector::Px<singletrackselector::P, singletrackselector::Eta, singletrackselector::Phi>,
-                       singletrackselector::Py<singletrackselector::P, singletrackselector::Eta, singletrackselector::Phi>,
-                       singletrackselector::Pz<singletrackselector::P, singletrackselector::Eta>,
-                       singletrackselector::PhiStar<singletrackselector::P, singletrackselector::Eta, singletrackselector::Sign, singletrackselector::Phi>);
+                            singletrackselector::Rapidity<singletrackselector::P, singletrackselector::Eta>,
+                            singletrackselector::Energy<singletrackselector::P>,
+                            singletrackselector::Pt<singletrackselector::P, singletrackselector::Eta>,
+                            singletrackselector::Px<singletrackselector::P, singletrackselector::Eta, singletrackselector::Phi>,
+                            singletrackselector::Py<singletrackselector::P, singletrackselector::Eta, singletrackselector::Phi>,
+                            singletrackselector::Pz<singletrackselector::P, singletrackselector::Eta>,
+                            singletrackselector::PhiStar<singletrackselector::P, singletrackselector::Eta, singletrackselector::Sign, singletrackselector::Phi>);
 
-DECLARE_SOA_TABLE_FULL(SingleTrackSels_v2, "SelTracks", "AOD", "SINGLETRACKSEL2", // Table of the variables for single track selection.
-                       o2::soa::Index<>,
-                       singletrackselector::SingleCollSelId,
-                       singletrackselector::P,
-                       singletrackselector::Eta,
-                       singletrackselector::Phi,
-                       singletrackselector::Sign,
-                       singletrackselector::TPCNClsFound,
-                       singletrackselector::TPCNClsShared,
-                       singletrackselector::ITSclsMap,
-                       singletrackselector::ITSclusterSizes,
-                       singletrackselector::StoredDcaXY_v2,
-                       singletrackselector::StoredDcaZ_v2,
-                       singletrackselector::StoredTPCChi2NCl,
-                       singletrackselector::StoredITSChi2NCl,
-                       singletrackselector::StoredTPCCrossedRowsOverFindableCls,
+DECLARE_SOA_TABLE_VERSIONED(SingleTrackSels_v2, "AOD", "SINGLETRACKSEL2", 2, // Table of the variables for single track selection.
+                            o2::soa::Index<>,
+                            singletrackselector::SingleCollSelId,
+                            singletrackselector::P,
+                            singletrackselector::Eta,
+                            singletrackselector::Phi,
+                            singletrackselector::Sign,
+                            singletrackselector::TPCNClsFound,
+                            singletrackselector::TPCNClsShared,
+                            singletrackselector::ITSclsMap,
+                            singletrackselector::ITSclusterSizes,
+                            singletrackselector::StoredDcaXY_v2,
+                            singletrackselector::StoredDcaZ_v2,
+                            singletrackselector::StoredTPCChi2NCl,
+                            singletrackselector::StoredITSChi2NCl,
+                            singletrackselector::StoredTPCCrossedRowsOverFindableCls,
 
-                       singletrackselector::StoredTOFNSigmaPi_v1,
-                       singletrackselector::StoredTPCNSigmaPi_v1,
-                       singletrackselector::StoredTOFNSigmaKa_v1,
-                       singletrackselector::StoredTPCNSigmaKa_v1,
-                       singletrackselector::StoredTOFNSigmaPr_v1,
-                       singletrackselector::StoredTPCNSigmaPr_v1,
-                       singletrackselector::StoredTOFNSigmaDe_v1,
-                       singletrackselector::StoredTPCNSigmaDe_v1,
-                       singletrackselector::StoredTOFNSigmaHe_v1,
-                       singletrackselector::StoredTPCNSigmaHe_v1,
+                            singletrackselector::StoredTOFNSigmaPi_v1,
+                            singletrackselector::StoredTPCNSigmaPi_v1,
+                            singletrackselector::StoredTOFNSigmaKa_v1,
+                            singletrackselector::StoredTPCNSigmaKa_v1,
+                            singletrackselector::StoredTOFNSigmaPr_v1,
+                            singletrackselector::StoredTPCNSigmaPr_v1,
+                            singletrackselector::StoredTOFNSigmaDe_v1,
+                            singletrackselector::StoredTPCNSigmaDe_v1,
+                            singletrackselector::StoredTOFNSigmaHe_v1,
+                            singletrackselector::StoredTPCNSigmaHe_v1,
 
-                       singletrackselector::ITSNClsDyn<singletrackselector::ITSclusterSizes>,
-                       track::v001::ITSClsSizeInLayer<singletrackselector::ITSclusterSizes>,
-                       singletrackselector::DcaXY_v2<singletrackselector::StoredDcaXY_v2>,
-                       singletrackselector::DcaZ_v2<singletrackselector::StoredDcaZ_v2>,
-                       singletrackselector::TPCChi2NCl<singletrackselector::StoredTPCChi2NCl>,
-                       singletrackselector::ITSChi2NCl<singletrackselector::StoredITSChi2NCl>,
-                       singletrackselector::TPCCrossedRowsOverFindableCls<singletrackselector::StoredTPCCrossedRowsOverFindableCls>,
-                       singletrackselector::TPCFractionSharedCls<singletrackselector::TPCNClsShared, singletrackselector::TPCNClsFound>,
+                            singletrackselector::ITSNClsDyn<singletrackselector::ITSclusterSizes>,
+                            track::v001::ITSClsSizeInLayer<singletrackselector::ITSclusterSizes>,
+                            singletrackselector::DcaXY_v2<singletrackselector::StoredDcaXY_v2>,
+                            singletrackselector::DcaZ_v2<singletrackselector::StoredDcaZ_v2>,
+                            singletrackselector::TPCChi2NCl<singletrackselector::StoredTPCChi2NCl>,
+                            singletrackselector::ITSChi2NCl<singletrackselector::StoredITSChi2NCl>,
+                            singletrackselector::TPCCrossedRowsOverFindableCls<singletrackselector::StoredTPCCrossedRowsOverFindableCls>,
+                            singletrackselector::TPCFractionSharedCls<singletrackselector::TPCNClsShared, singletrackselector::TPCNClsFound>,
 
-                       singletrackselector::TOFNSigmaPi_v1<singletrackselector::StoredTOFNSigmaPi_v1>,
-                       singletrackselector::TPCNSigmaPi_v1<singletrackselector::StoredTPCNSigmaPi_v1>,
-                       singletrackselector::TOFNSigmaKa_v1<singletrackselector::StoredTOFNSigmaKa_v1>,
-                       singletrackselector::TPCNSigmaKa_v1<singletrackselector::StoredTPCNSigmaKa_v1>,
-                       singletrackselector::TOFNSigmaPr_v1<singletrackselector::StoredTOFNSigmaPr_v1>,
-                       singletrackselector::TPCNSigmaPr_v1<singletrackselector::StoredTPCNSigmaPr_v1>,
-                       singletrackselector::TOFNSigmaDe_v1<singletrackselector::StoredTOFNSigmaDe_v1>,
-                       singletrackselector::TPCNSigmaDe_v1<singletrackselector::StoredTPCNSigmaDe_v1>,
-                       singletrackselector::TOFNSigmaHe_v1<singletrackselector::StoredTOFNSigmaHe_v1>,
-                       singletrackselector::TPCNSigmaHe_v1<singletrackselector::StoredTPCNSigmaHe_v1>,
+                            singletrackselector::TOFNSigmaPi_v1<singletrackselector::StoredTOFNSigmaPi_v1>,
+                            singletrackselector::TPCNSigmaPi_v1<singletrackselector::StoredTPCNSigmaPi_v1>,
+                            singletrackselector::TOFNSigmaKa_v1<singletrackselector::StoredTOFNSigmaKa_v1>,
+                            singletrackselector::TPCNSigmaKa_v1<singletrackselector::StoredTPCNSigmaKa_v1>,
+                            singletrackselector::TOFNSigmaPr_v1<singletrackselector::StoredTOFNSigmaPr_v1>,
+                            singletrackselector::TPCNSigmaPr_v1<singletrackselector::StoredTPCNSigmaPr_v1>,
+                            singletrackselector::TOFNSigmaDe_v1<singletrackselector::StoredTOFNSigmaDe_v1>,
+                            singletrackselector::TPCNSigmaDe_v1<singletrackselector::StoredTPCNSigmaDe_v1>,
+                            singletrackselector::TOFNSigmaHe_v1<singletrackselector::StoredTOFNSigmaHe_v1>,
+                            singletrackselector::TPCNSigmaHe_v1<singletrackselector::StoredTPCNSigmaHe_v1>,
 
-                       singletrackselector::Rapidity<singletrackselector::P, singletrackselector::Eta>,
-                       singletrackselector::Energy<singletrackselector::P>,
-                       singletrackselector::Pt<singletrackselector::P, singletrackselector::Eta>,
-                       singletrackselector::Px<singletrackselector::P, singletrackselector::Eta, singletrackselector::Phi>,
-                       singletrackselector::Py<singletrackselector::P, singletrackselector::Eta, singletrackselector::Phi>,
-                       singletrackselector::Pz<singletrackselector::P, singletrackselector::Eta>,
-                       singletrackselector::PhiStar<singletrackselector::P, singletrackselector::Eta, singletrackselector::Sign, singletrackselector::Phi>);
+                            singletrackselector::Rapidity<singletrackselector::P, singletrackselector::Eta>,
+                            singletrackselector::Energy<singletrackselector::P>,
+                            singletrackselector::Pt<singletrackselector::P, singletrackselector::Eta>,
+                            singletrackselector::Px<singletrackselector::P, singletrackselector::Eta, singletrackselector::Phi>,
+                            singletrackselector::Py<singletrackselector::P, singletrackselector::Eta, singletrackselector::Phi>,
+                            singletrackselector::Pz<singletrackselector::P, singletrackselector::Eta>,
+                            singletrackselector::PhiStar<singletrackselector::P, singletrackselector::Eta, singletrackselector::Sign, singletrackselector::Phi>);
 
 using SingleTrackSels = SingleTrackSels_v2;
 
@@ -486,6 +506,18 @@ DECLARE_SOA_TABLE(SingleTrkExtras, "AOD", "SINGLETRKEXTRA",
 DECLARE_SOA_TABLE(SinglePIDEls, "AOD", "SINGLEPIDEL",
                   singletrackselector::StoredTPCNSigmaEl,
                   singletrackselector::TPCNSigmaEl<singletrackselector::StoredTPCNSigmaEl>);
+
+DECLARE_SOA_TABLE(SinglePIDsITSPi, "AOD", "STSPIDITSPI",
+                  singletrackselector::StoredITSNSigmaPi_v1,
+                  singletrackselector::ITSNSigmaPi_v1<singletrackselector::StoredITSNSigmaPi_v1>);
+
+DECLARE_SOA_TABLE(SinglePIDsITSKa, "AOD", "STSPIDITSKA",
+                  singletrackselector::StoredITSNSigmaKa_v1,
+                  singletrackselector::ITSNSigmaKa_v1<singletrackselector::StoredITSNSigmaKa_v1>);
+
+DECLARE_SOA_TABLE(SinglePIDsITSPr, "AOD", "STSPIDITSPR",
+                  singletrackselector::StoredITSNSigmaPr_v1,
+                  singletrackselector::ITSNSigmaPr_v1<singletrackselector::StoredITSNSigmaPr_v1>);
 
 namespace singletrackselector
 {
