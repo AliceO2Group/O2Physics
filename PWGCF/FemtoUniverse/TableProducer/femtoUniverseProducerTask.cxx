@@ -22,6 +22,7 @@
 #include <algorithm>
 #include <set>
 
+#include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -101,6 +102,7 @@ int getRowDaughters(int daughID, T const& vecID)
 
 struct femtoUniverseProducerTask {
   Produces<aod::FDCollisions> outputCollision;
+  Produces<aod::FDExtCollisions> outputCollExtra;
   Produces<aod::FDParticles> outputParts;
   Produces<aod::FDMCParticles> outputPartsMC;
   Produces<aod::FDExtParticles> outputDebugParts;
@@ -178,6 +180,7 @@ struct femtoUniverseProducerTask {
   // V0
   FemtoUniverseV0Selection v0Cuts;
   struct : o2::framework::ConfigurableGroup {
+    Configurable<bool> ConfIsFillV0s{"ConfIsFillV0s", false, "Choice to fill V0s"};
     Configurable<std::vector<float>> ConfV0Sign{FemtoUniverseV0Selection::getSelectionName(femtoUniverseV0Selection::kV0Sign, "ConfV0"), std::vector<float>{-1, 1}, FemtoUniverseV0Selection::getSelectionHelper(femtoUniverseV0Selection::kV0Sign, "V0 selection: ")};
     Configurable<std::vector<float>> ConfV0PtMin{FemtoUniverseV0Selection::getSelectionName(femtoUniverseV0Selection::kV0pTMin, "ConfV0"), std::vector<float>{0.3f, 0.4f, 0.5f}, FemtoUniverseV0Selection::getSelectionHelper(femtoUniverseV0Selection::kV0pTMin, "V0 selection: ")};
     Configurable<std::vector<float>> ConfV0PtMax{FemtoUniverseV0Selection::getSelectionName(femtoUniverseV0Selection::kV0pTMax, "ConfV0"), std::vector<float>{3.3f, 3.4f, 3.5f}, FemtoUniverseV0Selection::getSelectionHelper(femtoUniverseV0Selection::kV0pTMax, "V0 selection: ")};
@@ -226,6 +229,7 @@ struct femtoUniverseProducerTask {
   // CASCADE
   FemtoUniverseCascadeSelection cascadeCuts;
   struct : o2::framework::ConfigurableGroup {
+    Configurable<bool> ConfIsFillCascades{"ConfIsFillCascades", false, "Choice to fill cascades"};
     Configurable<std::vector<float>> ConfCascSign{FemtoUniverseCascadeSelection::getSelectionName(femtoUniverseCascadeSelection::kCascadeSign, "ConfCasc"), std::vector<float>{-1, 1}, FemtoUniverseCascadeSelection::getSelectionHelper(femtoUniverseCascadeSelection::kCascadeSign, "Cascade selection: ")};
     Configurable<std::vector<float>> ConfCascPtMin{FemtoUniverseCascadeSelection::getSelectionName(femtoUniverseCascadeSelection::kCascadepTMin, "ConfCasc"), std::vector<float>{0.3f, 0.4f, 0.5f}, FemtoUniverseCascadeSelection::getSelectionHelper(femtoUniverseCascadeSelection::kCascadepTMin, "Cascade selection: ")};
     Configurable<std::vector<float>> ConfCascPtMax{FemtoUniverseCascadeSelection::getSelectionName(femtoUniverseCascadeSelection::kCascadepTMax, "ConfCasc"), std::vector<float>{3.3f, 3.4f, 3.5f}, FemtoUniverseCascadeSelection::getSelectionHelper(femtoUniverseCascadeSelection::kCascadepTMax, "Cascade selection: ")};
@@ -438,16 +442,17 @@ struct femtoUniverseProducerTask {
   HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::QAObject};
   HistogramRegistry cascadeQaRegistry{"CascadeQAHistos", {}, OutputObjHandlingPolicy::QAObject};
 
-  int mRunNumber;
+  int mRunNumber = 0;
   float mMagField;
   Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
+  ctpRateFetcher mRateFetcher;              // inspired by zdcSP.cxx in PWGLF
 
   void init(InitContext&)
   {
-    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackCascadeData || doprocessTrackD0mesonData || doprocessTrackCentRun2Data || doprocessTrackCentRun3Data || doprocessTrackV0CentRun3) == false && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth || doprocessTrackMCGen || doprocessTruthAndFullMC || doprocessFullMCCent) == false) {
+    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackCascadeData || doprocessTrackD0mesonData || doprocessTrackCentRun2Data || doprocessTrackCentRun3Data) == false && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth || doprocessTrackMCGen || doprocessTruthAndFullMC || doprocessFullMCCent) == false) {
       LOGF(fatal, "Neither processFullData nor processFullMC enabled. Please choose one.");
     }
-    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackCascadeData || doprocessTrackD0mesonData || doprocessTrackCentRun2Data || doprocessTrackCentRun3Data || doprocessTrackV0CentRun3) == true && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth || doprocessTrackMCGen || doprocessTruthAndFullMC || doprocessFullMCCent) == true) {
+    if ((doprocessFullData || doprocessTrackPhiData || doprocessTrackData || doprocessTrackV0 || doprocessTrackCascadeData || doprocessTrackD0mesonData || doprocessTrackCentRun2Data || doprocessTrackCentRun3Data) == true && (doprocessFullMC || doprocessTrackMC || doprocessTrackMCTruth || doprocessTrackMCGen || doprocessTruthAndFullMC || doprocessFullMCCent) == true) {
       LOGF(fatal,
            "Cannot enable process Data and process MC at the same time. "
            "Please choose one.");
@@ -843,8 +848,8 @@ struct femtoUniverseProducerTask {
     }
   }
 
-  template <bool isMC, typename CollisionType, typename TrackType>
-  void fillCollisionsCentRun3(CollisionType const& col, TrackType const& tracks)
+  template <bool isMC, typename CollisionType, typename TrackType, typename V0Type, typename CascadeType>
+  void fillCollisionsCentRun3(CollisionType const& col, TrackType const& tracks, V0Type const& fullV0s, CascadeType const& fullCascades, double irrate)
   {
     const auto vtxZ = col.posZ();
     int cent = 0;
@@ -871,7 +876,24 @@ struct femtoUniverseProducerTask {
       } else {
         outputCollision(vtxZ, cent, multNtr, 2, mMagField);
       }
+
+      fillCollisionsCentRun3ColExtra<isMC>(col, irrate);
+
+      fillTracks<isMC>(tracks);
+      if (ConfV0Selection.ConfIsFillV0s) {
+        fillV0<isMC>(col, fullV0s, tracks);
+      }
+      if (ConfCascadeSelection.ConfIsFillCascades) {
+        fillCascade<isMC>(col, fullCascades, tracks);
+      }
     }
+  }
+
+  template <bool isMC, typename CollisionType>
+  void fillCollisionsCentRun3ColExtra(CollisionType const& col, double irrate)
+  {
+    int occupancy = col.trackOccupancyInTimeRange();
+    outputCollExtra(irrate, occupancy);
   }
 
   template <bool isMC, typename TrackType>
@@ -1586,7 +1608,7 @@ struct femtoUniverseProducerTask {
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processTrackCascadeData, "Provide experimental data for track cascades", false);
 
-  void processTrackV0CentRun3(aod::FemtoFullCollisionCentRun3 const& col,
+  /*void processTrackV0CentRun3(aod::FemtoFullCollisionCentRun3 const& col,
                               aod::BCsWithTimestamps const&,
                               soa::Filtered<aod::FemtoFullTracks> const& tracks,
                               o2::aod::V0Datas const& fullV0s)
@@ -1594,11 +1616,11 @@ struct femtoUniverseProducerTask {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
-    fillCollisionsCentRun3<false>(col, tracks);
+    fillCollisionsCentRun3<false>(col, tracks, fullV0s);
     fillTracks<false>(tracks);
     fillV0<false>(col, fullV0s, tracks);
   }
-  PROCESS_SWITCH(femtoUniverseProducerTask, processTrackV0CentRun3, "Provide experimental data for track v0", false);
+  PROCESS_SWITCH(femtoUniverseProducerTask, processTrackV0CentRun3, "Provide experimental data for track v0", false);*/
 
   void processFullMC(aod::FemtoFullCollisionMC const& col,
                      aod::BCsWithTimestamps const&,
@@ -1761,14 +1783,17 @@ struct femtoUniverseProducerTask {
                          soa::Join<aod::FemtoFullTracks, aod::McTrackLabels> const& tracks,
                          aod::McCollisions const&,
                          aod::McParticles const&,
-                         soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s)
+                         soa::Join<aod::V0Datas, aod::McV0Labels> const& fullV0s,
+                         soa::Join<aod::CascDatas, aod::McCascLabels> const& fullCascades)
   {
     // get magnetic field for run
-    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+    auto bc = col.bc_as<aod::BCsWithTimestamps>();
+    getMagneticFieldTesla(bc);
+    double ir = 0.;
+    ir = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; // fetch IR
+
     // fill the tables
-    fillCollisionsCentRun3<true>(col, tracks);
-    fillTracks<true>(tracks);
-    fillV0<true>(col, fullV0s, tracks);
+    fillCollisionsCentRun3<true>(col, tracks, fullV0s, fullCascades, ir);
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processFullMCCent, "Provide MC data with centrality bins", false);
 
@@ -1786,13 +1811,18 @@ struct femtoUniverseProducerTask {
 
   void processTrackCentRun3Data(aod::FemtoFullCollisionCentRun3 const& col,
                                 aod::BCsWithTimestamps const&,
-                                soa::Filtered<aod::FemtoFullTracks> const& tracks)
+                                soa::Filtered<aod::FemtoFullTracks> const& tracks,
+                                aod::V0Datas const& fullV0s,
+                                aod::CascDatas const& fullCascades)
   {
     // get magnetic field for run
-    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
+    auto bc = col.bc_as<aod::BCsWithTimestamps>();
+    getMagneticFieldTesla(bc);
+    double ir = 0.;
+    ir = mRateFetcher.fetch(ccdb.service, bc.timestamp(), mRunNumber, "ZNC hadronic") * 1.e-3; // fetch IR
+
     // fill the tables
-    fillCollisionsCentRun3<false>(col, tracks);
-    fillTracks<false>(tracks);
+    fillCollisionsCentRun3<false>(col, tracks, fullV0s, fullCascades, ir);
   }
   PROCESS_SWITCH(femtoUniverseProducerTask, processTrackCentRun3Data, "Provide experimental data for Run 3 with centrality for track track", false);
 };
