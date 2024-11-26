@@ -1170,11 +1170,11 @@ struct UpcTauCentralBarrelRL {
     motherOfPions = pion[0] + pion[1];
     if (trkDaug1.sign() * trkDaug2.sign() > 0)
       return false;
-    //    if (calculateAcoplanarity(daug[0].Phi(), daug[1].Phi()) > 4 * o2::constants::math::PI / 5)
-    //      return false;
+    if (calculateAcoplanarity(daug[0].Phi(), daug[1].Phi()) > 4 * o2::constants::math::PI / 5)
+      return false;
     bool goodElectron = (enumMyParticle(trackPDG(trkDaug1, cutMySiTPC, cutMySiTOF, usePIDwTOF, useScutTOFinTPC)) == P_ELECTRON) ? selectedGoodElectron(trkDaug1) : selectedGoodElectron(trkDaug2);
-    //    if (!goodElectron)
-    //      return false;
+    if (!goodElectron)
+      return false;
     if (useCutMyNoRho && (motherOfPions.M() > cutMyRhoLow && motherOfPions.M() < cutMyRhoHigh))
       return false;
     if (useCutMyOnlyRho && (motherOfPions.M() > cutMyRhoHigh || motherOfPions.M() < cutMyRhoLow))
