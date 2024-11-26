@@ -80,6 +80,6 @@ o2physics_add_dpl_workflow(multsextra-converter
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(multmcextras-converter
-                    SOURCES MultMCExtrasConverter.cxx
+                    SOURCES multMCExtrasConverter.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
