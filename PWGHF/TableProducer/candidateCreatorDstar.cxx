@@ -508,7 +508,6 @@ struct HfCandidateCreatorDstarExpressions {
   o2::framework::Configurable<bool> rejectBackground{"rejectBackground", true, "Reject particles from background events"};
   o2::framework::Configurable<bool> matchKinkedDecayTopology{"matchKinkedDecayTopology", true, "Match also candidates with tracks that decay with kinked topology"};
 
-
   using McCollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
   using McCollisionsFT0Cs = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs>;
   using McCollisionsFT0Ms = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Ms>;
@@ -556,7 +555,6 @@ struct HfCandidateCreatorDstarExpressions {
     int8_t originDstar = 0, originD0 = 0;
     int8_t nKinkedTracksDstar = 0, nKinkedTracksD0 = 0;
 
-
     // Match reconstructed candidates.
     for (const auto& rowCandidateDstar : *rowsCandidateDstar) {
       flagDstar = 0;
@@ -590,8 +588,7 @@ struct HfCandidateCreatorDstarExpressions {
         }
       }
 
-      
-      if (matchKinkedDecayTopology){
+      if (matchKinkedDecayTopology) {
         // D*± → D0(bar) π±
         indexRecDstar = RecoDecay::getMatchedMCRec<false, false, false, true>(mcParticles, arrayDaughtersDstar, Pdg::kDStar, std::array{+kPiPlus, +kPiPlus, -kKPlus}, true, &signDstar, 2, &nKinkedTracksDstar);
         // D0(bar) → π± K∓
@@ -602,7 +599,7 @@ struct HfCandidateCreatorDstarExpressions {
         // D0(bar) → π± K∓
         indexRecD0 = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersofD0, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &signD0);
       }
-      
+
       if (indexRecDstar > -1) {
         flagDstar = signDstar * (BIT(aod::hf_cand_dstar::DecayType::DstarToD0Pi));
       }

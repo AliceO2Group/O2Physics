@@ -724,7 +724,7 @@ struct HfCandidateCreator2ProngExpressions {
     int8_t sign = 0;
     int8_t flag = 0;
     int8_t origin = 0;
-    int8_t nKinkedTracks = 0;    
+    int8_t nKinkedTracks = 0;
 
     // Match reconstructed candidates.
     // Spawned table can be used directly
@@ -753,7 +753,7 @@ struct HfCandidateCreator2ProngExpressions {
       std::vector<int> idxBhadMothers{};
 
       // D0(bar) → π± K∓
-      if (matchKinkedDecayTopology){
+      if (matchKinkedDecayTopology) {
         indexRec = RecoDecay::getMatchedMCRec<false, false, false, true>(mcParticles, arrayDaughters, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign, 1, &nKinkedTracks);
       } else {
         indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign);

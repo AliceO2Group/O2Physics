@@ -458,7 +458,6 @@ struct HfCandidateCreator3ProngExpressions {
   o2::framework::Configurable<bool> rejectBackground{"rejectBackground", true, "Reject particles from background events"};
   o2::framework::Configurable<bool> matchKinkedDecayTopology{"matchKinkedDecayTopology", true, "Match also candidates with tracks that decay with kinked topology"};
 
-
   bool createDplus{false};
   bool createDs{false};
   bool createLc{false};
@@ -568,9 +567,9 @@ struct HfCandidateCreator3ProngExpressions {
 
       // D± → π± K∓ π±
       if (createDplus) {
-        if (matchKinkedDecayTopology){
+        if (matchKinkedDecayTopology) {
           indexRec = RecoDecay::getMatchedMCRec<false, false, false, true>(mcParticles, arrayDaughters, Pdg::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2, &nKinkedTracks);
-        } else{
+        } else {
           indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kDPlus, std::array{+kPiPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
         }
         if (indexRec > -1) {
@@ -581,14 +580,14 @@ struct HfCandidateCreator3ProngExpressions {
       // Ds± → K± K∓ π± and D± → K± K∓ π±
       if (flag == 0 && createDs) {
         bool isDplus = false;
-        if (matchKinkedDecayTopology){
+        if (matchKinkedDecayTopology) {
           indexRec = RecoDecay::getMatchedMCRec<false, false, false, true>(mcParticles, arrayDaughters, Pdg::kDS, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2, &nKinkedTracks);
         } else {
           indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kDS, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
         }
         if (indexRec == -1) {
           isDplus = true;
-          if (matchKinkedDecayTopology){
+          if (matchKinkedDecayTopology) {
             indexRec = RecoDecay::getMatchedMCRec<false, false, false, true>(mcParticles, arrayDaughters, Pdg::kDPlus, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2, &nKinkedTracks);
           } else {
             indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kDPlus, std::array{+kKPlus, -kKPlus, +kPiPlus}, true, &sign, 2);
@@ -618,9 +617,9 @@ struct HfCandidateCreator3ProngExpressions {
 
       // Λc± → p± K∓ π±
       if (flag == 0 && createLc) {
-        if (matchKinkedDecayTopology){
+        if (matchKinkedDecayTopology) {
           indexRec = RecoDecay::getMatchedMCRec<false, false, false, true>(mcParticles, arrayDaughters, Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2, &nKinkedTracks);
-        } else{
+        } else {
           indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
         }
         if (indexRec > -1) {
@@ -649,11 +648,11 @@ struct HfCandidateCreator3ProngExpressions {
 
       // Ξc± → p± K∓ π±
       if (flag == 0 && createXic) {
-        if (matchKinkedDecayTopology){
+        if (matchKinkedDecayTopology) {
           indexRec = RecoDecay::getMatchedMCRec<false, false, false, true>(mcParticles, arrayDaughters, Pdg::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2, &nKinkedTracks);
         } else {
           indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kXiCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2);
-        }       
+        }
         if (indexRec > -1) {
           flag = sign * (1 << DecayType::XicToPKPi);
         }
