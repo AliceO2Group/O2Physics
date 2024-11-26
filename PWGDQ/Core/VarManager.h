@@ -646,6 +646,8 @@ class VarManager : public TObject
     kM01POI,
     kM1111REF,
     kM1111REFsmall,
+    kM11M1111REF,
+    kCORR2CORR4REF,
     kM0111POI,
     kCORR2REF,
     kCORR2REFw,
@@ -1651,6 +1653,8 @@ void VarManager::FillEvent(T const& event, float* values)
     if constexpr ((fillMap & ReducedEventRefFlow) > 0) {
       values[kM1111REF] = event.m1111ref();
       values[kM1111REFsmall] = event.m1111ref();
+      values[kM11M1111REF] = event.m1111ref();
+      values[kCORR2CORR4REF] = event.corr4ref();
       values[kM11REF] = event.m11ref();
       values[kM11REFetagap] = event.m11ref();
       values[kCORR2REF] = event.corr2ref();
@@ -4027,6 +4031,8 @@ void VarManager::FillQVectorFromGFW(C const& /*collision*/, A const& compA11, A 
   values[kCORR2REFsquaredw] = values[kCORR2REF] * values[kCORR2REF] * values[kM11REF];
   values[kCORR4REFw] = values[kCORR4REF] * values[kM1111REF];
   values[kCORR4REFsquaredw] = values[kCORR4REF] * values[kCORR4REF] * values[kM1111REF];
+  values[kCORR2CORR4REF] = values[kCORR2REF] * values[kCORR4REF];
+  values[kM11M1111REF] = values[kM11REF] * values[kM1111REF];
 
   // For cumulants: A = Full TPC, B = Negative TPC, C = Positive TPC
   complex<double> QA(values[kQ2X0A] * values[kS11A], values[kQ2Y0A] * values[kS11A]);
