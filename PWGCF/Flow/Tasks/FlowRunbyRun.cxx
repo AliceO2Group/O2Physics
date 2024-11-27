@@ -94,7 +94,7 @@ struct FlowRunbyRun {
   std::vector<int> RunNumbers;                                        // vector of run numbers
   std::map<int, std::vector<std::shared_ptr<TH1>>> TH1sList;          // map of histograms for all runs
   std::map<int, std::vector<std::shared_ptr<TProfile>>> ProfilesList; // map of profiles for all runs
-  std::map<int, GFWWeights*> WeightsList; // map of weights for all runs
+  std::map<int, GFWWeights*> WeightsList;                             // map of weights for all runs
   enum OutputTH1Names {
     // here are TProfiles for vn-pt correlations that are not implemented in GFW
     hPhi = 0,
@@ -257,7 +257,6 @@ struct FlowRunbyRun {
         return;
       }
     }
-    
 
     TH1sList[runNumber][hVtxZ]->Fill(collision.posZ());
     TH1sList[runNumber][hMult]->Fill(tracks.size());
@@ -275,7 +274,7 @@ struct FlowRunbyRun {
         fGFW->Fill(track.eta(), 1, track.phi(), wacc * weff, 1);
       }
       if (cfgOutputNUAWeightsRefPt) {
-        if (WithinPtRef) 
+        if (WithinPtRef)
           WeightsList[runNumber]->Fill(track.phi(), track.eta(), collision.posZ(), track.pt(), cent, 0);
       } else {
         WeightsList[runNumber]->Fill(track.phi(), track.eta(), collision.posZ(), track.pt(), cent, 0);
