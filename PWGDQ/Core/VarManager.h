@@ -645,36 +645,20 @@ class VarManager : public TObject
     kM11REFetagap,
     kM01POI,
     kM1111REF,
-    kM1111REFsmall,
     kM11M1111REF,
     kCORR2CORR4REF,
     kM0111POI,
     kCORR2REF,
-    kCORR2REFw,
-    kCORR2REFsquared,
-    kCORR2REFsquaredw,
     kCORR2REFetagap,
-    kCORR2REFetagapw,
-    kCORR2REFetagapsquaredw,
     kCORR2POI,
-    kCORR2POIw,
-    kCORR2POIsquaredw,
-    kCORR2POIsquaredMpw,
     kCORR4REF,
-    kCORR4REFw,
-    kCORR4REFsquaredw,
     kCORR4POI,
-    kCORR4POIw,
-    kCORR4POIsquaredw,
-    kCORR4POIsquaredMpw,
     kM11REFoverMp,
     kM01POIoverMp,
     kM1111REFoverMp,
     kM0111POIoverMp,
     kCORR2POIMp,
     kCORR4POIMp,
-    kCORR2POIMpw,
-    kCORR4POIMpw,
     kR2SP,
     kR2EP,
     kPsi2A,
@@ -1652,21 +1636,11 @@ void VarManager::FillEvent(T const& event, float* values)
 
     if constexpr ((fillMap & ReducedEventRefFlow) > 0) {
       values[kM1111REF] = event.m1111ref();
-      values[kM1111REFsmall] = event.m1111ref();
-      values[kM11M1111REF] = event.m1111ref();
-      values[kCORR2CORR4REF] = event.corr4ref();
       values[kM11REF] = event.m11ref();
-      values[kM11REFetagap] = event.m11ref();
+      values[kM11M1111REF] = event.m11ref() * event.m1111ref();
       values[kCORR2REF] = event.corr2ref();
-      values[kCORR2REFsquared] = event.corr2ref();
-      values[kCORR2REFw] = event.corr2ref();
-      values[kCORR2REFsquaredw] = event.corr2ref();
-      values[kCORR2REFetagap] = event.corr2ref();
-      values[kCORR2REFetagapw] = event.corr2ref();
-      values[kCORR2REFetagapsquaredw] = event.corr2ref();
       values[kCORR4REF] = event.corr4ref();
-      values[kCORR4REFw] = event.corr4ref();
-      values[kCORR4REFsquaredw] = event.corr4ref();
+      values[kCORR2CORR4REF] = event.corr2ref() * event.corr4ref();
       values[kMultA] = event.multa();
     }
   }
@@ -4026,11 +4000,6 @@ void VarManager::FillQVectorFromGFW(C const& /*collision*/, A const& compA11, A 
   values[kM1111REF] = std::isnan(values[kM1111REF]) || std::isinf(values[kM1111REF]) ? 0 : values[kM1111REF];
   values[kM11REF] = std::isnan(values[kCORR2REF]) || std::isinf(values[kCORR2REF]) ? 0 : values[kM11REF];
   values[kM1111REF] = std::isnan(values[kCORR4REF]) || std::isinf(values[kCORR4REF]) ? 0 : values[kM1111REF];
-  values[kCORR2REFw] = values[kCORR2REF] * values[kM11REF];
-  values[kCORR2REFsquared] = values[kCORR2REF] * values[kCORR2REF];
-  values[kCORR2REFsquaredw] = values[kCORR2REF] * values[kCORR2REF] * values[kM11REF];
-  values[kCORR4REFw] = values[kCORR4REF] * values[kM1111REF];
-  values[kCORR4REFsquaredw] = values[kCORR4REF] * values[kCORR4REF] * values[kM1111REF];
   values[kCORR2CORR4REF] = values[kCORR2REF] * values[kCORR4REF];
   values[kM11M1111REF] = values[kM11REF] * values[kM1111REF];
 
@@ -4041,8 +4010,6 @@ void VarManager::FillQVectorFromGFW(C const& /*collision*/, A const& compA11, A 
   values[kM11REFetagap] = S11B * S11C;
   values[kCORR2REFetagap] = ((QB * conj(QC)).real()) / values[kM11REFetagap];
   values[kCORR2REFetagap] = std::isnan(values[kCORR2REFetagap]) || std::isinf(values[kCORR2REFetagap]) ? 0 : values[kCORR2REFetagap];
-  values[kCORR2REFetagapw] = values[kCORR2REFetagap] * values[kM11REFetagap];
-  values[kCORR2REFetagapsquaredw] = values[kCORR2REFetagap] * values[kCORR2REFetagap] * values[kM11REFetagap];
 
   // TODO: provide different computations for R
   // Compute the R factor using the 2 sub-events technique for second and third harmonic
