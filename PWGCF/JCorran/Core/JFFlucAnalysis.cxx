@@ -19,6 +19,7 @@
 
 JFFlucAnalysis::JFFlucAnalysis() : TNamed(),
                                    fVertex(0),
+								   fAvgInvariantMass(0.0f),
                                    fCent(0),
                                    fImpactParameter(-1),
                                    subeventMask(kSubEvent_A | kSubEvent_B),
@@ -32,6 +33,7 @@ JFFlucAnalysis::JFFlucAnalysis() : TNamed(),
 //________________________________________________________________________
 JFFlucAnalysis::JFFlucAnalysis(const char* /*name*/) : TNamed(),
                                                        fVertex(0),
+									   fAvgInvariantMass(0.0f),
                                                        fCent(0),
                                                        fImpactParameter(-1),
                                                        subeventMask(kSubEvent_A | kSubEvent_B),
@@ -45,6 +47,7 @@ JFFlucAnalysis::JFFlucAnalysis(const char* /*name*/) : TNamed(),
 //________________________________________________________________________
 JFFlucAnalysis::JFFlucAnalysis(const JFFlucAnalysis& a) : TNamed(a),
                                                           fVertex(a.fVertex),
+									   fAvgInvariantMass(a.fAvgInvariantMass),
                                                           fCent(a.fCent),
                                                           fImpactParameter(a.fImpactParameter),
                                                           subeventMask(a.subeventMask),
@@ -136,7 +139,7 @@ void JFFlucAnalysis::UserExec(Option_t* /*popt*/) // NOLINT(readability/casting)
   for (UInt_t i = 0; i < 2; ++i) {
     if ((subeventMask & (1 << i)) == 0)
       continue;
-    decltype(pqvecs->QvectorQCgap[i])& Qa = pqvecs->QvectorQCgap[i];
+    decltype(pqvecs->QvectorQCgap[i])& Qa = pqvecs->QvectorQCgap[i]; //this is for one differential bin only.
     decltype(pqvecs->QvectorQCgap[1 - i])& Qb = (pqvecsRef ? pqvecsRef : pqvecs)->QvectorQCgap[1 - i]; // A & B subevents from POI and REF, when given
     Double_t ref_2p = TwoGap(Qa, Qb, 0, 0).Re();
     Double_t ref_3p = ThreeGap(Qa, Qb, 0, 0, 0).Re();
@@ -203,11 +206,11 @@ void JFFlucAnalysis::UserExec(Option_t* /*popt*/) // NOLINT(readability/casting)
                                             // vn2[ih][ik] = corr[ih][ik].Re() / ref_2Np[ik - 1];
         // fh_vn[ih][ik][fCBin]->Fill(vn2[ih][ik], ebe_2Np_weight[ik - 1]);
         // fh_vna[ih][ik][fCBin]->Fill(ncorr[ih][ik].Re() / ref_2Np[ik - 1], ebe_2Np_weight[ik - 1]);
-        phs[HIST_THN_SPARSE_VN]->Fill(fCent, ih, ik, ncorr[ih][ik].Re() / ref_2Np[ik - 1], ebe_2Np_weight[ik - 1]);
+        phs[HIST_THN_SPARSE_VN]->Fill(fCent, fAvgInvariantMass, ih, ik, ncorr[ih][ik].Re() / ref_2Np[ik - 1], ebe_2Np_weight[ik - 1]);
         for (UInt_t ihh = 2; ihh < kcNH; ihh++) {
           for (UInt_t ikk = 1; ikk < nKL; ikk++) {
             Double_t vn2_vn2 = ncorr2[ih][ik][ihh][ikk] / ref_2Np[ik + ikk - 1];
-            phs[HIST_THN_SPARSE_VN_VN]->Fill(fCent, ih, ik, ihh, ikk, vn2_vn2, ebe_2Np_weight[ik + ikk - 1]);
+            phs[HIST_THN_SPARSE_VN_VN]->Fill(fCent, fAvgInvariantMass, ih, ik, ihh, ikk, vn2_vn2, ebe_2Np_weight[ik + ikk - 1]);
           }
         }
       }
@@ -246,41 +249,41 @@ void JFFlucAnalysis::UserExec(Option_t* /*popt*/) // NOLINT(readability/casting)
     TComplex nV5V5V3V3 = FourGap22(Qa, Qb, 5, 3, 5, 3) / ref_4p;
     TComplex nV4V4V3V3 = FourGap22(Qa, Qb, 4, 3, 4, 3) / ref_4p;
 
-    pht[HIST_THN_V4V2starv2_2]->Fill(fCent, V4V2starv2_2.Re());
-    pht[HIST_THN_V4V2starv2_4]->Fill(fCent, V4V2starv2_4.Re());
-    pht[HIST_THN_V4V2star_2]->Fill(fCent, V4V2star_2.Re(), ebe_3p_weight); // added 2015.3.18
-    pht[HIST_THN_V5V2starV3starv2_2]->Fill(fCent, V5V2starV3starv2_2.Re());
-    pht[HIST_THN_V5V2starV3star]->Fill(fCent, V5V2starV3star.Re(), ebe_3p_weight);
-    pht[HIST_THN_V5V2starV3startv3_2]->Fill(fCent, V5V2starV3startv3_2.Re());
-    pht[HIST_THN_V6V2star_3]->Fill(fCent, V6V2star_3.Re(), ebe_4p_weightB);
-    pht[HIST_THN_V6V3star_2]->Fill(fCent, V6V3star_2.Re(), ebe_3p_weight);
-    pht[HIST_THN_V7V2star_2V3star]->Fill(fCent, V7V2star_2V3star.Re(), ebe_4p_weightB);
+    pht[HIST_THN_V4V2starv2_2]->Fill(fCent, fAvgInvariantMass, V4V2starv2_2.Re());
+    pht[HIST_THN_V4V2starv2_4]->Fill(fCent, fAvgInvariantMass, V4V2starv2_4.Re());
+    pht[HIST_THN_V4V2star_2]->Fill(fCent, fAvgInvariantMass, V4V2star_2.Re(), ebe_3p_weight); // added 2015.3.18
+    pht[HIST_THN_V5V2starV3starv2_2]->Fill(fCent, fAvgInvariantMass, V5V2starV3starv2_2.Re());
+    pht[HIST_THN_V5V2starV3star]->Fill(fCent, fAvgInvariantMass, V5V2starV3star.Re(), ebe_3p_weight);
+    pht[HIST_THN_V5V2starV3startv3_2]->Fill(fCent, fAvgInvariantMass, V5V2starV3startv3_2.Re());
+    pht[HIST_THN_V6V2star_3]->Fill(fCent, fAvgInvariantMass, V6V2star_3.Re(), ebe_4p_weightB);
+    pht[HIST_THN_V6V3star_2]->Fill(fCent, fAvgInvariantMass, V6V3star_2.Re(), ebe_3p_weight);
+    pht[HIST_THN_V7V2star_2V3star]->Fill(fCent, fAvgInvariantMass, V7V2star_2V3star.Re(), ebe_4p_weightB);
 
-    pht[HIST_THN_V4V2star_2]->Fill(fCent, nV4V2star_2.Re(), ebe_3p_weight); // added 2015.6.10
-    pht[HIST_THN_V5V2starV3star]->Fill(fCent, nV5V2starV3star.Re(), ebe_3p_weight);
-    pht[HIST_THN_V6V3star_2]->Fill(fCent, nV6V3star_2.Re(), ebe_3p_weight);
+    pht[HIST_THN_V4V2star_2]->Fill(fCent, fAvgInvariantMass, nV4V2star_2.Re(), ebe_3p_weight); // added 2015.6.10
+    pht[HIST_THN_V5V2starV3star]->Fill(fCent, fAvgInvariantMass, nV5V2starV3star.Re(), ebe_3p_weight);
+    pht[HIST_THN_V6V3star_2]->Fill(fCent, fAvgInvariantMass, nV6V3star_2.Re(), ebe_3p_weight);
 
     // use this to avoid self-correlation 4p correlation (2 particles from A, 2 particles from B) -> MA(MA-1)MB(MB-1) : evt weight..
-    pht[HIST_THN_nV4V4V2V2]->Fill(fCent, nV4V4V2V2.Re(), ebe_2Np_weight[1]);
-    pht[HIST_THN_nV3V3V2V2]->Fill(fCent, nV3V3V2V2.Re(), ebe_2Np_weight[1]);
+    pht[HIST_THN_nV4V4V2V2]->Fill(fCent, fAvgInvariantMass, nV4V4V2V2.Re(), ebe_2Np_weight[1]);
+    pht[HIST_THN_nV3V3V2V2]->Fill(fCent, fAvgInvariantMass, nV3V3V2V2.Re(), ebe_2Np_weight[1]);
 
-    pht[HIST_THN_nV5V5V2V2]->Fill(fCent, nV5V5V2V2.Re(), ebe_2Np_weight[1]);
-    pht[HIST_THN_nV5V5V3V3]->Fill(fCent, nV5V5V3V3.Re(), ebe_2Np_weight[1]);
-    pht[HIST_THN_nV4V4V3V3]->Fill(fCent, nV4V4V3V3.Re(), ebe_2Np_weight[1]);
+    pht[HIST_THN_nV5V5V2V2]->Fill(fCent, fAvgInvariantMass, nV5V5V2V2.Re(), ebe_2Np_weight[1]);
+    pht[HIST_THN_nV5V5V3V3]->Fill(fCent, fAvgInvariantMass, nV5V5V3V3.Re(), ebe_2Np_weight[1]);
+    pht[HIST_THN_nV4V4V3V3]->Fill(fCent, fAvgInvariantMass, nV4V4V3V3.Re(), ebe_2Np_weight[1]);
 
     // higher order correlators, added 2017.8.10
-    pht[HIST_THN_V8V2starV3star_2]->Fill(fCent, V8V2starV3star_2.Re(), ebe_4p_weightB);
-    pht[HIST_THN_V8V2star_4]->Fill(fCent, V8V2star_4.Re()); // 5p weight
-    pht[HIST_THN_V6V2star_3]->Fill(fCent, nV6V2star_3.Re(), ebe_4p_weightB);
-    pht[HIST_THN_V7V2star_2V3star]->Fill(fCent, nV7V2star_2V3star.Re(), ebe_4p_weightB);
-    pht[HIST_THN_V8V2starV3star_2]->Fill(fCent, nV8V2starV3star_2.Re(), ebe_4p_weightB);
+    pht[HIST_THN_V8V2starV3star_2]->Fill(fCent, fAvgInvariantMass, V8V2starV3star_2.Re(), ebe_4p_weightB);
+    pht[HIST_THN_V8V2star_4]->Fill(fCent, fAvgInvariantMass, V8V2star_4.Re()); // 5p weight
+    pht[HIST_THN_V6V2star_3]->Fill(fCent, fAvgInvariantMass, nV6V2star_3.Re(), ebe_4p_weightB);
+    pht[HIST_THN_V7V2star_2V3star]->Fill(fCent, fAvgInvariantMass, nV7V2star_2V3star.Re(), ebe_4p_weightB);
+    pht[HIST_THN_V8V2starV3star_2]->Fill(fCent, fAvgInvariantMass, nV8V2starV3star_2.Re(), ebe_4p_weightB);
 
-    pht[HIST_THN_V6V2starV4star]->Fill(fCent, V6V2starV4star.Re(), ebe_3p_weight);
-    pht[HIST_THN_V7V2starV5star]->Fill(fCent, V7V2starV5star.Re(), ebe_3p_weight);
-    pht[HIST_THN_V7V3starV4star]->Fill(fCent, V7V3starV4star.Re(), ebe_3p_weight);
-    pht[HIST_THN_V6V2starV4star]->Fill(fCent, nV6V2starV4star.Re(), ebe_3p_weight);
-    pht[HIST_THN_V7V2starV5star]->Fill(fCent, nV7V2starV5star.Re(), ebe_3p_weight);
-    pht[HIST_THN_V7V3starV4star]->Fill(fCent, nV7V3starV4star.Re(), ebe_3p_weight);
+    pht[HIST_THN_V6V2starV4star]->Fill(fCent, fAvgInvariantMass, V6V2starV4star.Re(), ebe_3p_weight);
+    pht[HIST_THN_V7V2starV5star]->Fill(fCent, fAvgInvariantMass, V7V2starV5star.Re(), ebe_3p_weight);
+    pht[HIST_THN_V7V3starV4star]->Fill(fCent, fAvgInvariantMass, V7V3starV4star.Re(), ebe_3p_weight);
+    pht[HIST_THN_V6V2starV4star]->Fill(fCent, fAvgInvariantMass, nV6V2starV4star.Re(), ebe_3p_weight);
+    pht[HIST_THN_V7V2starV5star]->Fill(fCent, fAvgInvariantMass, nV7V2starV5star.Re(), ebe_3p_weight);
+    pht[HIST_THN_V7V3starV4star]->Fill(fCent, fAvgInvariantMass, nV7V3starV4star.Re(), ebe_3p_weight);
 
     Double_t event_weight_two_gap = 1.0;
     if (flags & kFlucEbEWeighting) {
@@ -289,7 +292,7 @@ void JFFlucAnalysis::UserExec(Option_t* /*popt*/) // NOLINT(readability/casting)
 
     for (UInt_t ih = 2; ih < kNH; ih++) {
       TComplex sctwoGap = (Qa[ih][1] * TComplex::Conjugate(Qb[ih][1])) / (Qa[0][1] * Qb[0][1]).Re();
-      pht[HIST_THN_SC_with_QC_2corr_gap]->Fill(fCent, ih, sctwoGap.Re(), event_weight_two_gap);
+      pht[HIST_THN_SC_with_QC_2corr_gap]->Fill(fCent, fAvgInvariantMass, ih, sctwoGap.Re(), event_weight_two_gap);
     }
   }
 
@@ -303,10 +306,10 @@ void JFFlucAnalysis::UserExec(Option_t* /*popt*/) // NOLINT(readability/casting)
   for (UInt_t ih = 2; ih < kNH; ih++) {
     for (UInt_t ihh = 2, mm = (ih < kcNH ? ih : static_cast<UInt_t>(kcNH)); ihh < mm; ihh++) {
       TComplex scfour = Four(ih, ihh, -ih, -ihh) / Four(0, 0, 0, 0).Re();
-      pht[HIST_THN_SC_with_QC_4corr]->Fill(fCent, ih, ihh, scfour.Re(), event_weight_four);
+      pht[HIST_THN_SC_with_QC_4corr]->Fill(fCent, fAvgInvariantMass, ih, ihh, scfour.Re(), event_weight_four);
     }
     TComplex sctwo = Two(ih, -ih) / Two(0, 0).Re();
-    pht[HIST_THN_SC_with_QC_2corr]->Fill(fCent, ih, sctwo.Re(), event_weight_two);
+    pht[HIST_THN_SC_with_QC_2corr]->Fill(fCent, fAvgInvariantMass, ih, sctwo.Re(), event_weight_two);
   }
 }
 
