@@ -106,7 +106,7 @@ struct jEPDzeroFlowAnalysis {
   ConfigurableAxis centAxis{"centAxis", {VARIABLE_WIDTH, 0, 10, 20, 30, 40, 50, 60, 70, 80, 100}, "Centrality interval"};
   ConfigurableAxis cosAxis{"cosAxis", {110, -1.05, 1.05}, "Cosine axis"};
 
-//  Filter track2pFilter = (nabs(aod::cf2prongtrack::eta) < cfgEtaMax) && (aod::cf2prongtrack::pt > cfgPtMin);
+  //  Filter track2pFilter = (nabs(aod::cf2prongtrack::eta) < cfgEtaMax) && (aod::cf2prongtrack::pt > cfgPtMin);
 
   EventPlaneHelper helperEP;
 
@@ -175,8 +175,8 @@ struct jEPDzeroFlowAnalysis {
       return;
     }
     int DetInd = DetId * 4 + cfgNQvec * 4;
-//    int RefAInd = RefAId * 4 + cfgNQvec * 4;
-//    int RefBInd = RefBId * 4 + cfgNQvec * 4;
+    //    int RefAInd = RefAId * 4 + cfgNQvec * 4;
+    //    int RefBInd = RefBId * 4 + cfgNQvec * 4;
     for (auto& trk : trks) {
       histos.fill(HIST("hist_EP_cos_Det_v2"), trk.invMass(), trk.pt(), std::cos(2.0 * (trk.phi() - helperEP.GetEventPlane(coll.qvecRe()[DetInd + 3], coll.qvecIm()[DetInd + 3], 2))), centrality);
       histos.fill(HIST("hist_EP_sin_Det_v2"), trk.invMass(), trk.pt(), std::sin(2.0 * (trk.phi() - helperEP.GetEventPlane(coll.qvecRe()[DetInd + 3], coll.qvecIm()[DetInd + 3], 2))), centrality);
