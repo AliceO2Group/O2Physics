@@ -325,6 +325,13 @@ inline float pairDCAQuadSum(const float dca1, const float dca2)
 {
   return std::sqrt((dca1 * dca1 + dca2 * dca2) / 2.);
 }
+
+//_______________________________________________________________________
+inline float pairDCASignQuadSum(const float dca1, const float dca2, const float charge1, const float charge2)
+{
+  return charge1 * charge2 * TMath::Sign(1., dca1) * TMath::Sign(1., dca2) * std::sqrt((dca1 * dca1 + dca2 * dca2) / 2.);
+}
+
 //_______________________________________________________________________
 } // namespace o2::aod::pwgem::dilepton::utils::pairutil
 #endif // PWGEM_DILEPTON_UTILS_PAIRUTILITIES_H_
