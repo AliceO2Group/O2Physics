@@ -1247,29 +1247,29 @@ struct QaEfficiency {
         bool motherIsAccepted = true;
         // Check for mothers if needed
         if (checkForMothers.value && mothersPDGs.value.size() > 0 && mcParticle.has_mothers()) {
-        motherIsAccepted = false;
-        auto mothers = mcParticle.mothers_as<o2::aod::McParticles>();
+         motherIsAccepted = false;
+         auto mothers = mcParticle.mothers_as<o2::aod::McParticles>();
             
-        // Loop over mother particles
-        for (const auto& mother : mothers) {
-          for (const auto& pdgToCheck : mothersPDGs.value) {
-            if (mother.pdgCode() == pdgToCheck) {
-              motherIsAccepted = true;  // Mother matches the list of specified PDGs
-              break;
-            }
+         // Loop over mother particles
+         for (const auto& mother : mothers) {
+           for (const auto& pdgToCheck : mothersPDGs.value) {
+             if (mother.pdgCode() == pdgToCheck) {
+               motherIsAccepted = true;  // Mother matches the list of specified PDGs
+               break;
+             }
           }  // If mother is accepted, break out of loop
           if (motherIsAccepted) {
             break;
           }
         }
       }
-      // If mother particle is accepted, fill histograms for Xi and Lambda pT
-      if (motherIsAccepted) {
-        hPtmotherGenerated->Fill(mcParticle.pt());  // Fill generated pT for Lambda
+        // If mother particle is accepted, fill histograms for Xi and Lambda pT
+        if (motherIsAccepted) {
+          hPtmotherGenerated->Fill(mcParticle.pt());  // Fill generated pT for Lambda
         }
-     }
+      }
+    }
   }
-}
 
         if (motherIsAccepted) {
           hPtGeneratedStr[histogramIndex]->Fill(mcParticle.pt());
