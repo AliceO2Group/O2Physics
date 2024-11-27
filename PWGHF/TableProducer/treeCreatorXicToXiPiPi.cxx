@@ -65,9 +65,9 @@ DECLARE_SOA_COLUMN(Chi2TopoXicPlusToPV, chi2TopoXicPlusToPV, float);
 DECLARE_SOA_COLUMN(Chi2TopoXiToXicPlusBeforeConstraint, chi2TopoXiToXicPlusBeforeConstraint, float);
 DECLARE_SOA_COLUMN(Chi2TopoXiToXicPlus, chi2TopoXiToXicPlus, float);
 // properties of daughter tracks
-DECLARE_SOA_COLUMN(PtXi, ptXi, float);                                                 //! Transverse momentum of Xi (prong0) (GeV/c)
-DECLARE_SOA_COLUMN(ImpactParameterXi, impactParameterXi, float);                       //! Impact parameter of Xi (prong0)
-DECLARE_SOA_COLUMN(ImpactParameterNormalisedXi, impactParameterNormalisedXi, float);   //! Normalised impact parameter of Xi (prong0)
+DECLARE_SOA_COLUMN(PtXi, ptXi, float);                                               //! Transverse momentum of Xi (prong0) (GeV/c)
+DECLARE_SOA_COLUMN(ImpactParameterXi, impactParameterXi, float);                     //! Impact parameter of Xi (prong0)
+DECLARE_SOA_COLUMN(ImpactParameterNormalisedXi, impactParameterNormalisedXi, float); //! Normalised impact parameter of Xi (prong0)
 DECLARE_SOA_COLUMN(PPi0, pPi0, float);
 DECLARE_SOA_COLUMN(PtPi0, ptPi0, float);                                               //! Transverse momentum of Pi0 (prong1) (GeV/c)
 DECLARE_SOA_COLUMN(ImpactParameterPi0, impactParameterPi0, float);                     //! Impact parameter of Pi0 (prong1)
@@ -840,7 +840,7 @@ struct HfTreeCreatorXicToXiPiPi {
       auto XicPlusGen = particles.rawIteratorAt(indexRecXicPlus);
       origin = RecoDecay::getCharmHadronOrigin(particles, XicPlusGen, true);
 
-      //get MC collision
+      // get MC collision
       auto mcCollision = XicPlusGen.mcCollision_as<aod::McCollisions>();
 
       // get XicPlus daughters as MC particle
