@@ -402,9 +402,9 @@ struct CorrelationTask {
           }
         } // D0 and anti-D0 selection
 
-	if constexpr (std::experimental::is_detected<hasProng0Id, typename TTracks1::iterator>::value) {
+        if constexpr (std::experimental::is_detected<hasProng0Id, typename TTracks1::iterator>::value) {
           if constexpr (std::experimental::is_detected<hasProng0Id, typename TTracks2::iterator>::value) {
-	    if (track1.cfTrackProng0Id() == track2.cfTrackProng0Id()) {
+            if (track1.cfTrackProng0Id() == track2.cfTrackProng0Id()) {
               continue;
             }
           }
@@ -446,16 +446,15 @@ struct CorrelationTask {
 
         if constexpr (std::is_same<TTracks1, TTracks2>::value) {
           if constexpr (step >= CorrelationContainer::kCFStepReconstructed) {
-if constexpr (std::experimental::is_detected<hasSign, typename TTracks1::iterator>::value && std::experimental::is_detected<hasSign, typename TTracks2::iterator>::value) {
-		  if (cfg.mPairCuts && mPairCuts.conversionCuts(track1, track2)) {
-              continue;
+            if constexpr (std::experimental::is_detected<hasSign, typename TTracks1::iterator>::value && std::experimental::is_detected<hasSign, typename TTracks2::iterator>::value) {
+              if (cfg.mPairCuts && mPairCuts.conversionCuts(track1, track2)) {
+                continue;
+              }
+              if (cfgTwoTrackCut > 0 && mPairCuts.twoTrackCut(track1, track2, magField)) {
+                continue;
+              }
             }
-
-            if (cfgTwoTrackCut > 0 && mPairCuts.twoTrackCut(track1, track2, magField)) {
-              continue;
-            }
-}
-}
+          }
         }
 
         float associatedWeight = triggerWeight;
