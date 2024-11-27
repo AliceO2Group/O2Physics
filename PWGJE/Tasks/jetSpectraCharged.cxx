@@ -282,7 +282,7 @@ struct JetSpectraChargedTask {
     auto charge = 0.;
     if(p != nullptr){
       charge = p->Charge();
-    {
+    }
     return std::abs(charge) >= 3.;
   }
 
