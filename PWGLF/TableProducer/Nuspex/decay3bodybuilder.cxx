@@ -215,9 +215,9 @@ struct decay3bodyBuilder {
     Configurable<bool> applyTopoSel{"kfparticleConfigurations.applyTopoSel", false, "Apply selection constraining the mother to the PV with KFParticle"};
     Configurable<float> maxChi2topo{"kfparticleConfigurations.maxChi2topo", 1000., "Maximum chi2 topological with KFParticle"};
     Configurable<int> nEvtMixing{"kfparticleConfigurations.nEvtMixing", 5, "Number of events to mix"};
+    Configurable<bool> applySVertexerCuts{"kfparticleConfigurations.applySVertexerCuts", true, "Apply SVertexer selections in event mixing case"};
     ConfigurableAxis binsVtxZ{"kfparticleConfigurations.binsVtxZ", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
     ConfigurableAxis binsMultiplicity{"kfparticleConfigurations.binsMultiplicity", {VARIABLE_WIDTH, 0.0f, 1.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f, 100.0f, 110.0f}, "Mixing bins - multiplicity"};
-  
   } kfparticleConfigurations;
 
   //------------------------------------------------------------------
@@ -243,11 +243,10 @@ struct decay3bodyBuilder {
   ConfigurableAxis axisPosZ{"axisPosZ", {40, -10, 10}, "Mixing bins - posZ"};
   ConfigurableAxis axisCentrality{"axisCentrality", {10, 0, 100}, "Mixing bins - centrality"};
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
-  
+
   // KF event mixing
   using BinningTypeKF = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultNTracksPV>;
   BinningTypeKF binningOnPosAndMult{{kfparticleConfigurations.binsVtxZ, kfparticleConfigurations.binsMultiplicity}, true};
-  Pair<ColwithEvTimesMults, aod::Decay3Bodys, TrackExtPIDIUwithEvTimes, BinningTypeKF> pair{binningOnPosAndMult, kfparticleConfigurations.nEvtMixing, -1, &cache}; // indicates that 5 events should be mixed and under/overflow (-1) to be ignored
 
   // Filters and slices
   // Filter collisionFilter = (aod::evsel::sel8 == true && nabs(aod::collision::posZ) < 10.f);
@@ -912,7 +911,7 @@ struct decay3bodyBuilder {
     }
     registry.fill(HIST("hVtx3BodyCounterKFParticle"), kKfVtxDCAzPV);
     // SVertexer selection bachelor track for event mixing
-    if (isEventMixing && TrackBachDca < 0.05) {
+    if (isEventMixing && kfparticleConfigurations.applySVertexerCuts && TrackBachDca < 0.05) {
       return;
     }
 
@@ -1101,7 +1100,7 @@ struct decay3bodyBuilder {
     float radius3body = sqrt(KFHt.GetX() * KFHt.GetX() + KFHt.GetY() * KFHt.GetY());
     float radiusV0 = sqrt(KFV0.GetX() * KFV0.GetX() + KFV0.GetY() * KFV0.GetY());
     float radiusTrackBachIU = sqrt(trackBach.x() * trackBach.x() + trackBach.y() * trackBach.y());
-    if (isEventMixing && (abs(radiusV0 - radius3body) > 3 || radiusTrackBachIU - radius3body > 50 || radius3body - radiusTrackBachIU > 1)) {
+    if (isEventMixing && kfparticleConfigurations.applySVertexerCuts && (abs(radiusV0 - radius3body) > 3 || (radiusTrackBachIU - radius3body) > 50 || (radius3body - radiusTrackBachIU) > 1)) {
       return;
     }
 
@@ -1211,7 +1210,7 @@ struct decay3bodyBuilder {
         averageClusterSizeDeuteron,
         trackBach.pidForTracking());
     }
-    LOG(info) << "Table filled.";
+    LOG(debug) << "Table filled.";
 
     // fill event counter hist (has selected candidate)
     registry.fill(HIST("hEventCounterKFParticle"), 3.5);
@@ -1389,12 +1388,12 @@ struct decay3bodyBuilder {
   }
   PROCESS_SWITCH(decay3bodyBuilder, processRun3withKFParticle, "Produce KFParticle decay3body tables", false);
 
-  void processRun3EMwithKFParticle(ColwithEvTimesMults const&, TrackExtPIDIUwithEvTimes const&, aod::Decay3Bodys const&, aod::BCsWithTimestamps const&)
+  void processRun3EMwithKFParticle(ColwithEvTimesMults const& collisions, TrackExtPIDIUwithEvTimes const& tracksIU, aod::Decay3Bodys const& decay3bodys, aod::BCsWithTimestamps const&)
   {
-    int count = 0;
-    // tracks1: decay3bodys (for V0 pair)
-    // tracks2: tracks (for bachelor track)
-    for (auto& [c1, tracks1, c2, tracks2] : pair) {
+    auto tuple = std::make_tuple(decay3bodys, tracksIU);
+    Pair<ColwithEvTimesMults, aod::Decay3Bodys, TrackExtPIDIUwithEvTimes, BinningTypeKF> pair{binningOnPosAndMult, kfparticleConfigurations.nEvtMixing, -1, collisions, tuple, &cache}; // indicates that under/overflow (-1) to be ignored
+
+    for (auto& [c1, decays3body, c2, tracks] : pair) {
       registry.fill(HIST("QA/EM/hPairCounterMixing"), 0.5);
       // event selection
       if (kfparticleConfigurations.doSel8selection && (!c1.sel8() || !c2.sel8())) {
@@ -1409,34 +1408,23 @@ struct decay3bodyBuilder {
       initCCDB(bc);
       LOG(debug) << "CCDB initialised.";
 
-      count++;
-      if (count == 1000) {
-        break;
-      }
-
-      int trackCount = 0;
-      for (auto& [t1, t2] : soa::combinations(soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
-        auto trackPos = t1.template track0_as<TrackExtPIDIUwithEvTimes>();
-        auto trackNeg = t1.template track1_as<TrackExtPIDIUwithEvTimes>();
-        auto trackBach = t1.template track2_as<TrackExtPIDIUwithEvTimes>();
-
-        trackCount++;
-        if (trackCount == 100) {
-          break;
-        }
+      for (auto& [decay3body, track] : soa::combinations(soa::CombinationsFullIndexPolicy(decays3body, tracks))) {
+        auto trackPos = decay3body.template track0_as<TrackExtPIDIUwithEvTimes>();
+        auto trackNeg = decay3body.template track1_as<TrackExtPIDIUwithEvTimes>();
+        auto trackBach = decay3body.template track2_as<TrackExtPIDIUwithEvTimes>();
 
         registry.fill(HIST("QA/EM/hCombinationCounterMixing"), 0.5);
 
         // selections bachelor track
-        if ((trackBach.sign() > 0 && !(t2.sign() > 0)) || (trackBach.sign() < 0 && !(t2.sign() < 0)) || trackBach.globalIndex() == t2.globalIndex()) { // only combine if t2 has correct sign and is not same as trackBach
+        if ((trackBach.sign() > 0 && !(track.sign() > 0)) || (trackBach.sign() < 0 && !(track.sign() < 0)) || trackBach.globalIndex() == track.globalIndex()) { // only combine if track has correct sign and is not same as trackBach
           continue;
         }
         registry.fill(HIST("QA/EM/hCombinationCounterMixing"), 1.5);
-        if (t2.pt() < 0.6) { // SVertexer selection
+        if (track.pt() < 0.6) { // SVertexer selection
           continue;
         }
         registry.fill(HIST("QA/EM/hCombinationCounterMixing"), 2.5);
-        buildVtx3BodyDataTableKFParticle<ColwithEvTimesMults>(c1, trackPos, trackNeg, t2, -1, bachelorcharge);
+        buildVtx3BodyDataTableKFParticle<ColwithEvTimesMults>(c1, trackPos, trackNeg, track, -1, bachelorcharge);
         LOG(debug) << "buildVtx3BodyDataTableKFParticle called.";
       }
     }
@@ -1472,8 +1460,14 @@ struct kfdecay3bodyDataLinkBuilder {
 
   void init(InitContext const&) {}
 
+  void processDoNotBuildLink(aod::Collisions::iterator const&)
+  {
+    // dummy process function
+  }
+  PROCESS_SWITCH(kfdecay3bodyDataLinkBuilder, processDoNotBuildLink, "Do not build data link table.", false);
+
   // build Decay3Body -> KFDecay3BodyData link table
-  void process(aod::Decay3Bodys const& decay3bodytable, aod::KFVtx3BodyDatas const& vtxdatatable)
+  void processBuildLink(aod::Decay3Bodys const& decay3bodytable, aod::KFVtx3BodyDatas const& vtxdatatable)
   {
     std::vector<int> lIndices;
     lIndices.reserve(decay3bodytable.size());
@@ -1486,6 +1480,7 @@ struct kfdecay3bodyDataLinkBuilder {
       kfvtxdataLink(lIndices[ii]);
     }
   }
+  PROCESS_SWITCH(kfdecay3bodyDataLinkBuilder, processBuildLink, "Build data link table.", true);
 };
 
 struct decay3bodyLabelBuilder {
