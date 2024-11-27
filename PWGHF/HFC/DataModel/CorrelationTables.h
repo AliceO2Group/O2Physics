@@ -97,15 +97,15 @@ DECLARE_SOA_TABLE(DHadronRecoInfo, "AOD", "DHADRONRECOINFO", //! D0-Hadrons pair
 // Note: definition of columns and tables for Lc-Hadron correlation pairs
 namespace hf_correlation_lc_hadron
 {
-DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);                			   //! DeltaPhi between Lc and Hadrons
-DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);                			   //! DeltaEta between Lc and Hadrons
-DECLARE_SOA_COLUMN(PtLc, ptLc, float);                        			   //! Transverse momentum of Lc
-DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);                			   //! Transverse momentum of Hadron
-DECLARE_SOA_COLUMN(MLc, mLc, float);                          			   //! Invariant mass of Lc
+DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);                             //! DeltaPhi between Lc and Hadrons
+DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);                             //! DeltaEta between Lc and Hadrons
+DECLARE_SOA_COLUMN(PtLc, ptLc, float);                                     //! Transverse momentum of Lc
+DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);                             //! Transverse momentum of Hadron
+DECLARE_SOA_COLUMN(MLc, mLc, float);                                       //! Invariant mass of Lc
 DECLARE_SOA_COLUMN(MlScoreBkg, mlScoreBkg, float);                         //! ML background score for Lc selection
 DECLARE_SOA_COLUMN(MlScorePrompt, mlScorePrompt, float);                   //! ML prompt score for Lc selection
-DECLARE_SOA_COLUMN(SignalStatus, signalStatus, int);          			   //! Tag for LcToPKPi/LcToPiKP
-DECLARE_SOA_COLUMN(PoolBin, poolBin, int);                    			   //! Pool Bin for the MixedEvent
+DECLARE_SOA_COLUMN(SignalStatus, signalStatus, int);                       //! Tag for LcToPKPi/LcToPiKP
+DECLARE_SOA_COLUMN(PoolBin, poolBin, int);                                 //! Pool Bin for the MixedEvent
 DECLARE_SOA_COLUMN(TrackDcaXY, trackDcaXY, float);                         //! DCA xy of the track
 DECLARE_SOA_COLUMN(TrackDcaZ, trackDcaZ, float);                           //! DCA z of the track
 DECLARE_SOA_COLUMN(TrackTPCNClsCrossedRows, trackTPCNClsCrossedRows, int); //! Number of crossed TPC Rows
@@ -113,7 +113,7 @@ DECLARE_SOA_COLUMN(TrackOrigin, trackOrigin, int);                         //! N
 DECLARE_SOA_COLUMN(IsSignal, isSignal, bool);                              //! Used in MC-Rec, Lc Signal
 DECLARE_SOA_COLUMN(IsPrompt, isPrompt, bool);                              //! Used in MC-Rec, Lc Prompt or Non-Prompt
 DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool);            //! Used in MC-Rec, primary associated particles
-DECLARE_SOA_COLUMN(IsAutoCorrelated, isAutoCorrelated, bool); //! Correlation Status
+DECLARE_SOA_COLUMN(IsAutoCorrelated, isAutoCorrelated, bool);              //! Correlation Status
 } // namespace hf_correlation_lc_hadron
 
 DECLARE_SOA_TABLE(LcHadronPair, "AOD", "LCHPAIR", //! Lc-Hadrons pairs Informations
