@@ -702,7 +702,7 @@ struct nucleiSpectra {
         if (fillTree) {
           if (flag & BIT(2)) {
             if (track.pt() < cfgCutPtMinTree || track.pt() > cfgCutPtMaxTree || track.sign() > 0)
-            continue;
+              continue;
           }
         }
         nuclei::candidates.emplace_back(NucleusCandidate{
