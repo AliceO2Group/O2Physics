@@ -1257,13 +1257,12 @@ class TestHfStructMembers(TestSpec):
         return passed
 
 
-class TestHfNameFileWorkflow(TestSpec):
-    """PWGHF: Test names of workflow files."""
+class TestHfNameFileWorkflowTask(TestSpec):
+    """PWGHF: Test names of task workflow files."""
 
-    name = "pwghf/name/workflow-file"
+    name = "pwghf/name/workflow-file-task"
     message = (
-        "Name of a workflow file must match the name of the main task in it. "
-        "See the PWGHF O2 naming conventions for details."
+        'Name of a PWGHF task workflow file must start with "task". '
     )
     suffixes = [".cxx"]
     per_line = False
@@ -1272,12 +1271,31 @@ class TestHfNameFileWorkflow(TestSpec):
         return TestSpec.file_matches(self, path) and "PWGHF/" in path and "Macros/" not in path
 
     def test_file(self, path: str, content) -> bool:
-        file_name = os.path.basename(path).rstrip(".cxx")
-        if file_name[0].isupper():
-            return False
+        file_name = os.path.basename(path)
         if "/Tasks/" in path and not file_name.startswith("task"):
             return False
-        base_struct_name = f"Hf{file_name[0].upper()}{file_name[1:]}"  # expected base of struct names
+        return True
+
+
+class TestNameFileWorkflow(TestSpec):
+    """Test names of workflow files."""
+
+    name = "name/workflow-file"
+    message = (
+        "Name of a workflow file must match the name of the main task in it (without the PWG prefix). "
+        '(Class implementation files should be in "Core" directories.)'
+    )
+    suffixes = [".cxx"]
+    per_line = False
+
+    def file_matches(self, path: str) -> bool:
+        return TestSpec.file_matches(self, path) and "/Core/" not in path
+
+    def test_file(self, path: str, content) -> bool:
+        file_name = os.path.basename(path).rstrip(".cxx")
+        base_struct_name = f"{file_name[0].upper()}{file_name[1:]}"  # expected base of struct names
+        if "PWGHF/" in path:
+            base_struct_name = "Hf" + base_struct_name
         # print(f"For file {file_name} expecting to find {base_struct_name}.")
         struct_names = []  # actual struct names in the file
         for line in content:
@@ -1397,7 +1415,8 @@ def main():
     if enable_pwghf:
         tests.append(TestHfNameStructClass())
         tests.append(TestHfStructMembers())
-        tests.append(TestHfNameFileWorkflow())
+        tests.append(TestHfNameFileWorkflowTask())
+        tests.append(TestNameFileWorkflow())
         tests.append(TestHfNameConfigurable())
 
     test_names = [t.name for t in tests]  # short names of activated tests
