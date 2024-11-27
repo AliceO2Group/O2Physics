@@ -517,7 +517,7 @@ struct femtoUniversePairTaskTrackV0Extended {
   PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processMCSameEvent, "Enable processing same event for MC truth track - V0", false);
 
   /// This function processes MC same events for V0 - V0
-  void processMCSameEventV0(FilteredFDCollision& col, FemtoFullParticles& parts)
+  void processMCSameEventV0(FilteredFDCollision& col, FemtoFullParticles& /*parts*/)
   {
     auto groupPartsTwo = partsTwoMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     const int multCol = ConfUseCent ? col.multV0M() : col.multNtr();
@@ -753,7 +753,7 @@ struct femtoUniversePairTaskTrackV0Extended {
   PROCESS_SWITCH(femtoUniversePairTaskTrackV0Extended, processMCMixedEvent, "Enable processing mixed events for MC truth track - V0", false);
 
   /// This function processes MC mixed events for V0 - V0
-  void processMCMixedEventV0(FilteredFDCollisions& cols, FemtoFullParticles& parts)
+  void processMCMixedEventV0(FilteredFDCollisions& cols, FemtoFullParticles& /*parts*/)
   {
     ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningMult{{ConfVtxBins, ConfMultBins}, true};
     ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{ConfVtxBins, ConfMultBins}, true};

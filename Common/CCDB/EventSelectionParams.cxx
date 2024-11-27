@@ -60,7 +60,8 @@ const char* selectionLabels[kNsel] = {
   "kNoCollInTimeRangeStandard",
   "kNoCollInTimeRangeVzDependent",
   "kNoCollInRofStrict",
-  "kNoCollInRofStandard"};
+  "kNoCollInRofStandard",
+  "kNoHighMultCollInPrevRof"};
 } // namespace o2::aod::evsel
 
 using namespace o2::aod::evsel;

@@ -66,6 +66,7 @@ enum EventSelectionFlags {
   kNoCollInTimeRangeVzDependent, // no other collisions in vZ-dependent time range near a given collision
   kNoCollInRofStrict,            // no other collisions in this Readout Frame
   kNoCollInRofStandard,          // no other collisions in this Readout Frame with per-collision multiplicity above threshold
+  kNoHighMultCollInPrevRof,      // veto an event if FT0C amplitude in previous ITS ROF is above threshold
   kNsel                          // counter
 };
 

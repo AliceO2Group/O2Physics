@@ -48,6 +48,9 @@ DECLARE_SOA_DYNAMIC_COLUMN(IsInelGt1, isInelGt1, //! is INEL > 1
 // MC
 DECLARE_SOA_COLUMN(MultMCFT0A, multMCFT0A, int);                       //!
 DECLARE_SOA_COLUMN(MultMCFT0C, multMCFT0C, int);                       //!
+DECLARE_SOA_COLUMN(MultMCFV0A, multMCFV0A, int);                       //!
+DECLARE_SOA_COLUMN(MultMCFDDA, multMCFDDA, int);                       //!
+DECLARE_SOA_COLUMN(MultMCFDDC, multMCFDDC, int);                       //!
 DECLARE_SOA_COLUMN(MultMCNParticlesEta10, multMCNParticlesEta10, int); //!
 DECLARE_SOA_COLUMN(MultMCNParticlesEta08, multMCNParticlesEta08, int); //!
 DECLARE_SOA_COLUMN(MultMCNParticlesEta05, multMCNParticlesEta05, int); //!
@@ -144,7 +147,7 @@ DECLARE_SOA_TABLE(MultSelections, "AOD", "MULTSELECTIONS", //!
 using MultExtra = MultsExtra::iterator;
 
 // mc collisions table - indexed to Mult
-DECLARE_SOA_TABLE(MultMCExtras, "AOD", "MULTMCEXTRA", //! Table for the MC information
+DECLARE_SOA_TABLE(MultMCExtras_000, "AOD", "MULTMCEXTRA", //! Table for MC information
                   mult::MultMCFT0A,
                   mult::MultMCFT0C,
                   mult::MultMCNParticlesEta05,
@@ -154,6 +157,23 @@ DECLARE_SOA_TABLE(MultMCExtras, "AOD", "MULTMCEXTRA", //! Table for the MC infor
                   mult::IsInelGt0<mult::MultMCNParticlesEta10>,
                   mult::IsInelGt1<mult::MultMCNParticlesEta10>,
                   o2::soa::Marker<1>);
+
+// mc collisions table - indexed to Mult
+DECLARE_SOA_TABLE_VERSIONED(MultMCExtras_001, "AOD", "MULTMCEXTRA", 1, //! Table for MC information
+                            mult::MultMCFT0A,
+                            mult::MultMCFT0C,
+                            mult::MultMCFV0A,
+                            mult::MultMCFDDA,
+                            mult::MultMCFDDC,
+                            mult::MultMCNParticlesEta05,
+                            mult::MultMCNParticlesEta08,
+                            mult::MultMCNParticlesEta10,
+                            mult::MultMCPVz,
+                            mult::IsInelGt0<mult::MultMCNParticlesEta10>,
+                            mult::IsInelGt1<mult::MultMCNParticlesEta10>,
+                            o2::soa::Marker<1>);
+
+using MultMCExtras = MultMCExtras_001;
 using MultMCExtra = MultMCExtras::iterator;
 using MultsExtraMC = MultMCExtras; // for backwards compatibility with previous naming scheme
 

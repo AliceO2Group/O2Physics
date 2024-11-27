@@ -60,7 +60,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
   Configurable<int> ConfTrackChoicePartOne{"ConfTrackChoicePartOne", 0, "0:Proton, 1:Pion, 2:Kaon"};
   Configurable<int> ConfTrkPDGCodePartOne{"ConfTrkPDGCodePartOne", 2212, "Particle 1 (Track) - PDG code"};
   Configurable<int> ConfCascType1{"ConfCascType1", 0, "select one of the V0s (Omega = 0, Xi = 1, anti-Omega = 2, anti-Xi = 3) for track-cascade combination"};
-  Configurable<int> ConfChargePart1{"ConfChargePart1", 0, "sign of particle 1"};
+  Configurable<int> ConfChargePart1{"ConfChargePart1", 1, "sign of particle 1"};
   Configurable<float> ConfHPtPart1{"ConfHPtPart1", 4.0f, "higher limit for pt of particle 1"};
   Configurable<float> ConfLPtPart1{"ConfLPtPart1", 0.5f, "lower limit for pt of particle 1"};
   Configurable<float> ConfHPtPart2{"ConfHPtPart2", 4.0f, "higher limit for pt of particle 2"};
@@ -103,6 +103,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
 
   FemtoUniverseContainer<femtoUniverseContainer::EventType::same, femtoUniverseContainer::Observable::kstar> sameEventCont;
   FemtoUniverseContainer<femtoUniverseContainer::EventType::mixed, femtoUniverseContainer::Observable::kstar> mixedEventCont;
+  FemtoUniversePairCleaner<aod::femtouniverseparticle::ParticleType::kTrack, aod::femtouniverseparticle::ParticleType::kCascade> pairCleaner;
 
   HistogramRegistry rXiQA{"xi", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -197,6 +198,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
 
     sameEventCont.init(&resultRegistry, ConfkstarBins, ConfMultBins, ConfkTBins, ConfmTBins, ConfmultBins3D, ConfmTBins3D, ConfEtaBins, ConfPhiBins, ConfIsMC, ConfUse3D);
     mixedEventCont.init(&resultRegistry, ConfkstarBins, ConfMultBins, ConfkTBins, ConfmTBins, ConfmultBins3D, ConfmTBins3D, ConfEtaBins, ConfPhiBins, ConfIsMC, ConfUse3D);
+    pairCleaner.init(&qaRegistry);
   }
 
   void processCascades(FilteredFDCollision& col, FemtoFullParticles& parts)
@@ -263,8 +265,6 @@ struct femtoUniversePairTaskTrackCascadeExtended {
 
   void processSameEvent(FilteredFDCollision& col, FemtoFullParticles& parts)
   {
-    const auto& magFieldTesla = col.magField();
-
     auto groupPartsOne = partsOne->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto groupPartsTwo = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
 
@@ -275,8 +275,8 @@ struct femtoUniversePairTaskTrackCascadeExtended {
       const auto& negChild = parts.iteratorAt(part.index() - 2);
       const auto& bachelor = parts.iteratorAt(part.index() - 1);
       /// Child particles must pass this condition to be selected
-      /*if (!IsParticleTPC(posChild, CascChildTable[ConfCascType1][0]) || !IsParticleTPC(negChild, CascChildTable[ConfCascType1][1]) || !IsParticleTPC(bachelor, CascChildTable[ConfCascType1][2]))
-        continue;*/
+      if (!IsParticleTPC(posChild, CascChildTable[ConfCascType1][0]) || !IsParticleTPC(negChild, CascChildTable[ConfCascType1][1]) || !IsParticleTPC(bachelor, CascChildTable[ConfCascType1][2]))
+        continue;
 
       posChildHistos.fillQA<false, true>(posChild);
       negChildHistos.fillQA<false, true>(negChild);
@@ -303,17 +303,22 @@ struct femtoUniversePairTaskTrackCascadeExtended {
     }
 
     for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
+      // Cascade invariant mass cut
       if (!invMCascade(p2.mLambda(), p2.mAntiLambda()))
         continue;
+      // PID
       if (!IsParticleCombined(p1, ConfTrackChoicePartOne))
         continue;
+      // track cleaning
+      if (!pairCleaner.isCleanPair(p1, p2, parts)) {
+        continue;
+      }
       const auto& posChild = parts.iteratorAt(p2.index() - 3);
       const auto& negChild = parts.iteratorAt(p2.index() - 2);
       const auto& bachelor = parts.iteratorAt(p2.index() - 1);
-
       /// Child particles must pass this condition to be selected
-      /*if (!IsParticleTPC(posChild, CascChildTable[ConfCascType1][0]) || !IsParticleTPC(negChild, CascChildTable[ConfCascType1][1]) || !IsParticleTPC(bachelor, CascChildTable[ConfCascType1][2]))
-        continue;*/
+      if (!IsParticleTPC(posChild, CascChildTable[ConfCascType1][0]) || !IsParticleTPC(negChild, CascChildTable[ConfCascType1][1]) || !IsParticleTPC(bachelor, CascChildTable[ConfCascType1][2]))
+        continue;
 
       sameEventCont.setPair<false>(p1, p2, col.multNtr(), ConfUse3D, 1.0f);
     }
@@ -336,18 +341,23 @@ struct femtoUniversePairTaskTrackCascadeExtended {
         continue;
       }
       for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
+        // Cascade invariant mass cut
         if (!invMCascade(p2.mLambda(), p2.mAntiLambda()))
           continue;
+        // PID
         if (!IsParticleCombined(p1, ConfTrackChoicePartOne))
           continue;
 
         const auto& posChild = parts.iteratorAt(p2.index() - 3);
         const auto& negChild = parts.iteratorAt(p2.index() - 2);
         const auto& bachelor = parts.iteratorAt(p2.index() - 1);
-
         /// Child particles must pass this condition to be selected
-        /*if (!IsParticleTPC(posChild, CascChildTable[ConfCascType1][0]) || !IsParticleTPC(negChild, CascChildTable[ConfCascType1][1]) || !IsParticleTPC(bachelor, CascChildTable[ConfCascType1][2]))
-          continue;*/
+        if (!IsParticleTPC(posChild, CascChildTable[ConfCascType1][0]) || !IsParticleTPC(negChild, CascChildTable[ConfCascType1][1]) || !IsParticleTPC(bachelor, CascChildTable[ConfCascType1][2]))
+          continue;
+        // track cleaning
+        if (!pairCleaner.isCleanPair(p1, p2, parts)) {
+          continue;
+        }
 
         mixedEventCont.setPair<false>(p1, p2, collision1.multNtr(), ConfUse3D, 1.0f);
       }

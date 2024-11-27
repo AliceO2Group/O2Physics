@@ -109,8 +109,10 @@ struct femtoUniversePairTaskTrackD0 {
     Configurable<bool> ConfIsSame{"ConfIsSame", false, "Pairs of the same particle"};
     Configurable<int> ConfPDGCodeTrack{"ConfPDGCodeTrack", 2212, "Particle 2 - PDG code"};
     Configurable<int> ConfPIDTrack{"ConfPIDTrack", 2, "Particle 2 - Read from cutCulator"}; // we also need the possibility to specify whether the bit is true/false ->std>>vector<std::pair<int, int>>
-    Configurable<int8_t> ConfTrackSign{"ConfTrackSign", 1, "Track sign"};
+    Configurable<int> ConfTrackSign{"ConfTrackSign", 1, "Track sign"};
     Configurable<bool> ConfIsTrackIdentified{"ConfIsTrackIdentified", true, "Enable PID for the track"};
+    Configurable<float> ConfTrackLowPtCut{"ConfTrackLowPtCut", 0.5, "Low pT cut of the track"};
+    Configurable<float> ConfTrackHighPtCut{"ConfTrackHighPtCut", 2.5, "High pT cut of the track"};
   } ConfTrack;
 
   /// Particle 2 --- D0/D0bar meson
@@ -134,22 +136,21 @@ struct femtoUniversePairTaskTrackD0 {
 
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits"};
   Configurable<uint8_t> ConfChooseD0trackCorr{"ConfChooseD0trackCorr", 3, "If 0 - only D0s, 1 - only D0bars, 2 - D0/D0bar (one mass hypo.), 3 - all D0/D0bar cand."};
-  Configurable<bool> ConfUsePtCutForD0D0bar{"ConfUsePtCutForD0D0bar", false, "Include pT cut for D0/D0bar in same and mixed processes."};
   Configurable<bool> ConfUseMassCutForD0D0bar{"ConfUseMassCutForD0D0bar", false, "Switch to save D0/D0bar within declared inv. mass range"};
 
   /// Partitions for particle 1
-  Partition<FemtoFullParticles> partsTrack = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == int8_t(ConfTrack.ConfTrackSign));
+  Partition<FemtoFullParticles> partsTrack = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == int8_t(ConfTrack.ConfTrackSign)) && (aod::femtouniverseparticle::pt > ConfTrack.ConfTrackLowPtCut) && (aod::femtouniverseparticle::pt < ConfTrack.ConfTrackHighPtCut);
   Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> partsTrackMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack));
 
   /// Partitions for particle 2
-  /// Partition with all D0/D0bar mesons (which pass double and one mass hypothesis)
-  Partition<FemtoFullParticles> partsAllDmesons = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kD0));
+  /// Partition with all D0/D0bar mesons (which pass double mass hypothesis)
+  Partition<FemtoFullParticles> partsAllDmesons = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kD0)) && (aod::femtouniverseparticle::mLambda > 0.0f) && (aod::femtouniverseparticle::mAntiLambda > 0.0f);
   /// Partition with D0/D0bar candidates, which pass only one mass hypothesis
   Partition<FemtoFullParticles> partsOnlyD0D0bar = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kD0)) && (aod::femtouniverseparticle::mLambda < 0.0f || aod::femtouniverseparticle::mAntiLambda < 0.0f);
   /// Partition with D0 mesons only (one mass hypothesis)
-  Partition<FemtoFullParticles> partsD0s = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kD0)) && (aod::femtouniverseparticle::mLambda > 0.0f) && (aod::femtouniverseparticle::mAntiLambda < 0.0f);
+  Partition<FemtoFullParticles> partsD0s = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kD0)) && (aod::femtouniverseparticle::mLambda > 0.0f) && (aod::femtouniverseparticle::mAntiLambda < 0.0f) && (aod::femtouniverseparticle::pt > ConfDmesons.ConfMinPtD0D0bar) && (aod::femtouniverseparticle::pt < ConfDmesons.ConfMaxPtD0D0bar);
   /// Partition with D0bar mesons only (one mass hypothesis)
-  Partition<FemtoFullParticles> partsD0bars = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kD0)) && (aod::femtouniverseparticle::mLambda < 0.0f) && (aod::femtouniverseparticle::mAntiLambda > 0.0f);
+  Partition<FemtoFullParticles> partsD0bars = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kD0)) && (aod::femtouniverseparticle::mLambda < 0.0f) && (aod::femtouniverseparticle::mAntiLambda > 0.0f) && (aod::femtouniverseparticle::pt > ConfDmesons.ConfMinPtD0D0bar) && (aod::femtouniverseparticle::pt < ConfDmesons.ConfMaxPtD0D0bar);
   /// Partition for D0/D0bar mesons from MC
   Partition<soa::Join<aod::FDParticles, aod::FDMCLabels>> partsD0D0barMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kD0));
 
@@ -403,9 +404,8 @@ struct femtoUniversePairTaskTrackD0 {
 
     // D0/D0bar histograms
     auto vbins = (std::vector<double>)binsPt;
-    registry.add("hMassVsPt", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {ConfInvMassBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hMassVsPtFinerBinning", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {ConfInvMassFinerBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
-    registry.add("hInvMassVsPtOnlyD0D0bar", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {ConfInvMassBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("D0D0bar_oneMassHypo/hMassVsPt", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {ConfInvMassBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
+    registry.add("D0D0bar_oneMassHypo/hMassVsPtFinerBinning", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {ConfInvMassFinerBins, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hDeltaPhiSigSig", "SxS correlation;#Delta#varphi (rad);counts", {HistType::kTH1F, {{10, 0.0, o2::constants::math::PI}}});
     registry.add("hDeltaPhiD0BgD0barSig", "B(D0)x S(D0bar) correlation;#Delta#varphi (rad);counts", {HistType::kTH1F, {{10, 0.0, o2::constants::math::PI}}});
     registry.add("hDeltaPhiD0SigD0barBg", "S(D0)x B(D0bar) correlation;#Delta#varphi (rad);counts", {HistType::kTH1F, {{10, 0.0, o2::constants::math::PI}}});
@@ -430,16 +430,6 @@ struct femtoUniversePairTaskTrackD0 {
     // loop over all D mesons
     for (auto const& dmeson : groupPartsAllDmesons) {
 
-      if (dmeson.mLambda() > 0.0f) {
-        registry.fill(HIST("hMassVsPt"), dmeson.mLambda(), dmeson.pt());
-        registry.fill(HIST("hMassVsPtFinerBinning"), dmeson.mLambda(), dmeson.pt());
-      }
-
-      if (dmeson.mAntiLambda() > 0.0f) {
-        registry.fill(HIST("hMassVsPt"), dmeson.mAntiLambda(), dmeson.pt());
-        registry.fill(HIST("hMassVsPtFinerBinning"), dmeson.mAntiLambda(), dmeson.pt());
-      }
-
       registry.fill(HIST("hPtDmesonCand"), dmeson.pt());
       registry.fill(HIST("hPhiDmesonCand"), dmeson.phi());
       registry.fill(HIST("hEtaDmesonCand"), dmeson.eta());
@@ -451,7 +441,7 @@ struct femtoUniversePairTaskTrackD0 {
       registry.fill(HIST("hPtD0D0bar"), d0d0bar.pt());
 
       if (d0d0bar.mLambda() > 0.0f && d0d0bar.mAntiLambda() < 0.0f) {
-        registry.fill(HIST("hInvMassVsPtOnlyD0D0bar"), d0d0bar.mLambda(), d0d0bar.pt());
+        registry.fill(HIST("D0D0bar_oneMassHypo/hMassVsPt"), d0d0bar.mLambda(), d0d0bar.pt());
         if (d0d0bar.mLambda() > ConfDmesons.ConfMinInvMassD0D0bar && d0d0bar.mLambda() < ConfDmesons.ConfMaxInvMassD0D0bar) {
           registry.fill(HIST("hInvMassD0"), d0d0bar.mLambda());
         }
@@ -460,7 +450,7 @@ struct femtoUniversePairTaskTrackD0 {
         registry.fill(HIST("hEtaD0"), d0d0bar.eta());
       }
       if (d0d0bar.mLambda() < 0.0f && d0d0bar.mAntiLambda() > 0.0f) {
-        registry.fill(HIST("hInvMassVsPtOnlyD0D0bar"), d0d0bar.mAntiLambda(), d0d0bar.pt());
+        registry.fill(HIST("D0D0bar_oneMassHypo/hMassVsPt"), d0d0bar.mAntiLambda(), d0d0bar.pt());
         if (d0d0bar.mAntiLambda() > ConfDmesons.ConfMinInvMassD0D0bar && d0d0bar.mAntiLambda() < ConfDmesons.ConfMaxInvMassD0D0bar) {
           registry.fill(HIST("hInvMassD0bar"), d0d0bar.mAntiLambda());
         }
@@ -611,15 +601,9 @@ struct femtoUniversePairTaskTrackD0 {
           continue;
         }
       }
-      // // Set pT cut for D0/D0bar candidates
-      if (ConfUsePtCutForD0D0bar) {
-        if (d0candidate.pt() < ConfDmesons.ConfMinPtD0D0bar && d0candidate.pt() > ConfDmesons.ConfMaxPtD0D0bar) {
-          continue;
-        }
-      }
       // // Set inv. mass cut for D0/D0bar candidates
       if (ConfUseMassCutForD0D0bar) {
-        if ((d0candidate.mLambda() < ConfD0D0barSideBand.ConfSignalRegionMin && d0candidate.mLambda() > ConfD0D0barSideBand.ConfSignalRegionMax) || (d0candidate.mAntiLambda() < ConfD0D0barSideBand.ConfSignalRegionMin && d0candidate.mAntiLambda() > ConfD0D0barSideBand.ConfSignalRegionMax)) {
+        if ((d0candidate.mLambda() < ConfD0D0barSideBand.ConfSignalRegionMin || d0candidate.mLambda() > ConfD0D0barSideBand.ConfSignalRegionMax) || (d0candidate.mAntiLambda() < ConfD0D0barSideBand.ConfSignalRegionMin || d0candidate.mAntiLambda() > ConfD0D0barSideBand.ConfSignalRegionMax)) {
           continue;
         }
       }
@@ -708,15 +692,9 @@ struct femtoUniversePairTaskTrackD0 {
           continue;
         }
       }
-      // // Set pT cut for D0/D0bar candidates
-      if (ConfUsePtCutForD0D0bar) {
-        if (d0candidate.pt() < ConfDmesons.ConfMinPtD0D0bar && d0candidate.pt() > ConfDmesons.ConfMaxPtD0D0bar) {
-          continue;
-        }
-      }
       // // Set inv. mass cut for D0/D0bar candidates
       if (ConfUseMassCutForD0D0bar) {
-        if ((d0candidate.mLambda() < ConfD0D0barSideBand.ConfSignalRegionMin && d0candidate.mLambda() > ConfD0D0barSideBand.ConfSignalRegionMax) || (d0candidate.mAntiLambda() < ConfD0D0barSideBand.ConfSignalRegionMin && d0candidate.mAntiLambda() > ConfD0D0barSideBand.ConfSignalRegionMax)) {
+        if ((d0candidate.mLambda() < ConfD0D0barSideBand.ConfSignalRegionMin || d0candidate.mLambda() > ConfD0D0barSideBand.ConfSignalRegionMax) || (d0candidate.mAntiLambda() < ConfD0D0barSideBand.ConfSignalRegionMin || d0candidate.mAntiLambda() > ConfD0D0barSideBand.ConfSignalRegionMax)) {
           continue;
         }
       }
