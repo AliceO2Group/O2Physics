@@ -138,7 +138,7 @@ struct femtoUniversePairTaskTrackTrack3DMultKtExtended {
 
   Filter collfilter = (o2::aod::femtouniversecollision::multV0M > ConfV0MLow) && (o2::aod::femtouniversecollision::multV0M < ConfV0MHigh) &&
                       (o2::aod::femtouniversecollision::occupancy > ConfTPCOccupancyLow) && (o2::aod::femtouniversecollision::occupancy < ConfTPCOccupancyHigh);
-  using FilteredFDCollisions = soa::Filtered<soa::Join<aod::FDCollisions, aod::FDExtCollisions>>;  
+  using FilteredFDCollisions = soa::Filtered<soa::Join<aod::FDCollisions, aod::FDExtCollisions>>;
   using FilteredFDCollision = soa::Filtered<aod::FDCollisions>::iterator;
 
   /// Particle part
