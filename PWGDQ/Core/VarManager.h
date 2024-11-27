@@ -1637,10 +1637,10 @@ void VarManager::FillEvent(T const& event, float* values)
     if constexpr ((fillMap & ReducedEventRefFlow) > 0) {
       values[kM1111REF] = event.m1111ref();
       values[kM11REF] = event.m11ref();
-      values[kM11M1111REF] = event.m11ref() * event.m1111ref();
+      values[kM11M1111REF] = event.m11m1111ref();
       values[kCORR2REF] = event.corr2ref();
       values[kCORR4REF] = event.corr4ref();
-      values[kCORR2CORR4REF] = event.corr2ref() * event.corr4ref();
+      values[kCORR2CORR4REF] = event.corr2corr4ref();
       values[kMultA] = event.multa();
     }
   }
