@@ -66,6 +66,16 @@ using namespace o2::soa;
 using namespace o2::constants::physics;
 
 struct jEPDzeroFlowAnalysis {
+  enum {
+    kFT0C = 0,
+    kFT0A = 1,
+    kFT0M,
+    kFV0A,
+    kTPCpos,
+    kTPCneg,
+    kTPCall
+  };
+
   using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::Qvectors>;
   HistogramRegistry histos{
     "histos",
@@ -73,7 +83,7 @@ struct jEPDzeroFlowAnalysis {
     OutputObjHandlingPolicy::AnalysisObject};
 
   Configurable<float> cfgCentSel{"cfgCentSel", 80., "Centrality selection"};
-  Configurable<int> cfgCentEst{"cfgCentEst", 1, "Centrality estimator, 1: FT0C, 2: FT0M"};
+  Configurable<std::string> cfgCentEst{"cfgCentEst", "FT0C", "Centrality estimator; FT0M or FT0C available"};
 
   Configurable<bool> cfgPVSel{"cfgPVSel", false, "Additional PV selection flag for syst"};
   Configurable<float> cfgPV{"cfgPV", 8.0, "Additional PV selection range for syst"};
@@ -113,19 +123,19 @@ struct jEPDzeroFlowAnalysis {
   int GetDetId(const T& name)
   {
     if (name.value == "FT0C") {
-      return 0;
+      return kFT0C;
     } else if (name.value == "FT0A") {
-      return 1;
+      return kFT0A;
     } else if (name.value == "FT0M") {
-      return 2;
+      return kFT0M;
     } else if (name.value == "FV0A") {
-      return 3;
-    } else if (name.value == "TPCPos") {
-      return 4;
-    } else if (name.value == "TPCNeg") {
-      return 5;
-    } else if (name.value == "TPCTot") {
-      return 6;
+      return kFV0A;
+    } else if (name.value == "TPCpos") {
+      return kTPCpos;
+    } else if (name.value == "TPCneg") {
+      return kTPCneg;
+    } else if (name.value == "TPCall") {
+      return kTPCall;
     } else {
       return 0;
     }
@@ -135,27 +145,27 @@ struct jEPDzeroFlowAnalysis {
   bool eventSelected(TCollision collision)
   {
     if (!collision.sel8()) {
-      return 0;
+      return false;
     }
     if (cfgCentSel < centrality) {
-      return 0;
+      return false;
     }
     if (!collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
-      return 0;
+      return false;
     }
     if (!collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
-      return 0;
+      return false;
     }
     if (cfgPVSel && std::abs(collision.posZ()) > cfgPV) {
-      return 0;
+      return false;
     }
     if (cfgAddEvtSelPileup && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
-      return 0;
+      return false;
     }
     if (collision.trackOccupancyInTimeRange() > cfgMaxOccupancy || collision.trackOccupancyInTimeRange() < cfgMinOccupancy) {
-      return 0;
+      return false;
     }
-    return 1;
+    return true;
   } // event selection
 
   template <typename CollType, typename TrackType>
@@ -180,7 +190,7 @@ struct jEPDzeroFlowAnalysis {
     RefBId = GetDetId(cfgRefBName);
 
     if (DetId == RefAId || DetId == RefBId || RefAId == RefBId) {
-      LOGF(info, "Wrong detector configuration \n The FT0C will be used to get Q-Vector \n The TPCpos and TPCneg will be used as reference systems");
+      LOGF(fatal, "Wrong detector configuration \n set the systems correctly");
       DetId = 0;
       RefAId = 4;
       RefBId = 5;
@@ -192,9 +202,9 @@ struct jEPDzeroFlowAnalysis {
 
   void processData(MyCollisions::iterator const& collision, aod::CF2ProngTracks const& p2tracks)
   {
-    if (cfgCentEst == 1) {
+    if (cfgCentEst == "FT0C") {
       centrality = collision.centFT0C();
-    } else if (cfgCentEst == 2) {
+    } else if (cfgCentEst == "FT0M") {
       centrality = collision.centFT0M();
     }
     if (!eventSelected(collision)) {
