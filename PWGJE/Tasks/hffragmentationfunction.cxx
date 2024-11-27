@@ -72,7 +72,7 @@ DECLARE_SOA_COLUMN(JetHfDist, jethfdist, float);
 DECLARE_SOA_COLUMN(JetPt, jetpt, float);
 DECLARE_SOA_COLUMN(JetEta, jeteta, float);
 DECLARE_SOA_COLUMN(JetPhi, jetphi, float);
-DECLARE_SOA_COLUMN(JetNConst, jetnconst, float);
+DECLARE_SOA_COLUMN(JetNConst, jetnconst, int);
 DECLARE_SOA_COLUMN(HfPt, hfpt, float);
 DECLARE_SOA_COLUMN(HfEta, hfeta, float);
 DECLARE_SOA_COLUMN(HfPhi, hfphi, float);
