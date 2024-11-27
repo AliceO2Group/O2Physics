@@ -116,8 +116,10 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   static constexpr char nameHistPosXAfterEvSel[] = "hPosXAfterEvSel";
   static constexpr char nameHistPosYAfterEvSel[] = "hPosYAfterEvSel";
   static constexpr char nameHistNumPvContributorsAfterSel[] = "hNumPvContributorsAfterSel";
+  static constexpr char nameHistCollisionsCentOcc[] = "hCollisionsCentOcc";
 
   std::shared_ptr<TH1> hCollisions, hSelCollisionsCent, hPosZBeforeEvSel, hPosZAfterEvSel, hPosXAfterEvSel, hPosYAfterEvSel, hNumPvContributorsAfterSel;
+  std::shared_ptr<TH2> hCollisionsCentOcc;
 
   // util to retrieve trigger mask in case of software triggers
   Zorro zorro;
@@ -135,6 +137,13 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
     hPosXAfterEvSel = registry.add<TH1>(nameHistPosXAfterEvSel, "selected events;#it{x}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{200, -0.5, 0.5}}});
     hPosYAfterEvSel = registry.add<TH1>(nameHistPosYAfterEvSel, "selected events;#it{y}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{200, -0.5, 0.5}}});
     hNumPvContributorsAfterSel = registry.add<TH1>(nameHistNumPvContributorsAfterSel, "selected events;#it{y}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{500, -0.5, 499.5}}});
+    setEventRejectionLabels(hCollisions, softwareTrigger);
+  
+    if (useFT0cOccEstimator) {
+      hCollisionsCentOcc = registry.add<TH2>(nameHistCollisionsCentOcc, "selected events;Centrality; Occupancy", {o2::framework::HistType::kTH2D, {{110, 0, 110}, {100, 0, 140000}}});
+    } else {
+      hCollisionsCentOcc = registry.add<TH2>(nameHistCollisionsCentOcc, "selected events;Centrality; Occupancy", {o2::framework::HistType::kTH2D, {{110, 0, 110}, {140, 0, 14000}}});
+    }
     setEventRejectionLabels(hCollisions, softwareTrigger);
 
     // we initialise the summary object
@@ -290,6 +299,13 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
     hPosZAfterEvSel->Fill(posZ);
     hNumPvContributorsAfterSel->Fill(collision.numContrib());
     hSelCollisionsCent->Fill(centrality);
+    if (useFT0cOccEstimator) {
+      /// occupancy estimator (FT0c signal amplitudes in +-10us from current collision)
+      hCollisionsCentOcc->Fill(centrality, collision.ft0cOccupancyInTimeRange());
+    } else {
+      /// occupancy estimator (ITS tracks with at least 5 clusters in +-10us from current collision)
+      hCollisionsCentOcc->Fill(centrality, collision.trackOccupancyInTimeRange());
+    }
   }
 };
 
