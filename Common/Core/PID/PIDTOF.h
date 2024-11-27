@@ -129,12 +129,18 @@ class TOFMass
   /// Gets the TOF mass for the track of interest
   /// \param track Track of interest
   template <typename TrackType>
-  static float GetTOFMass(const TrackType& track, const float beta) { return track.hasTOF() ? GetTOFMass(track.p(), beta) : defaultReturnValue; }
+  static float GetTOFMass(const TrackType& track, const float beta)
+  {
+    return track.hasTOF() ? GetTOFMass(track.p(), beta) : defaultReturnValue;
+  }
 
   /// Gets the TOF mass for the track of interest
   /// \param track Track of interest
   template <typename TrackType>
-  static float GetTOFMass(const TrackType& track) { return track.hasTOF() ? GetTOFMass(track.p(), Beta::GetBeta<TrackType>(track)) : defaultReturnValue; }
+  static float GetTOFMass(const TrackType& track)
+  {
+    return track.hasTOF() ? GetTOFMass(track.p(), Beta::GetBeta<TrackType>(track)) : defaultReturnValue;
+  }
 };
 
 /// \brief Next implementation class to store TOF response parameters for exp. times
