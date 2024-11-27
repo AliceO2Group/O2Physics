@@ -209,13 +209,6 @@ perSpeciesWrapper(tpcExpSignalDiff);
 
 } // namespace pidutils
 
-namespace mcpidtpc
-{
-// Tuned MC on data
-DECLARE_SOA_COLUMN(DeDxTunedMc, mcTunedTPCSignal, float); //! TPC signal after TuneOnData application for MC
-} // namespace mcpidtpc
-
-DECLARE_SOA_TABLE(mcTPCTuneOnData, "AOD", "MCTPCTUNEONDATA", mcpidtpc::DeDxTunedMc);
 
 namespace pidtpc
 {
@@ -238,7 +231,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(TPCExpSignalHe, tpcExpSignalHe, //! Expected signal w
                            [](float nsigma, float sigma, float tpcsignal) -> float { return tpcsignal - nsigma * sigma; });
 DECLARE_SOA_DYNAMIC_COLUMN(TPCExpSignalAl, tpcExpSignalAl, //! Expected signal with the TPC detector for alpha
                            [](float nsigma, float sigma, float tpcsignal) -> float { return tpcsignal - nsigma * sigma; });
-// Expected signals difference
+// Delta with respect to signal
 DECLARE_SOA_DYNAMIC_COLUMN(TPCExpSignalDiffEl, tpcExpSignalDiffEl, //! Difference between signal and expected for electron
                            [](float nsigma, float sigma) -> float { return nsigma * sigma; });
 DECLARE_SOA_DYNAMIC_COLUMN(TPCExpSignalDiffMu, tpcExpSignalDiffMu, //! Difference between signal and expected for muon
@@ -349,23 +342,41 @@ DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaAl, tpcNSigmaAl, //! Unwrapped (float) nsigm
 
 // Per particle tables
 DECLARE_SOA_TABLE(pidTPCFullEl, "AOD", "pidTPCFullEl", //! Table of the TPC (full) response with expected signal, expected resolution and Nsigma for electron
-                  pidtpc::TPCExpSignalEl<pidtpc::TPCNSigmaEl, pidtpc::TPCExpSigmaEl>, pidtpc::TPCExpSignalDiffEl<pidtpc::TPCNSigmaEl, pidtpc::TPCExpSigmaEl>, pidtpc::TPCExpSigmaEl, pidtpc::TPCNSigmaEl);
+                  pidtpc::TPCExpSignalEl<pidtpc::TPCNSigmaEl, pidtpc::TPCExpSigmaEl>,
+                  pidtpc::TPCExpSignalDiffEl<pidtpc::TPCNSigmaEl, pidtpc::TPCExpSigmaEl>,
+                  pidtpc::TPCExpSigmaEl, pidtpc::TPCNSigmaEl);
 DECLARE_SOA_TABLE(pidTPCFullMu, "AOD", "pidTPCFullMu", //! Table of the TPC (full) response with expected signal, expected resolution and Nsigma for muon
-                  pidtpc::TPCExpSignalMu<pidtpc::TPCNSigmaMu, pidtpc::TPCExpSigmaMu>, pidtpc::TPCExpSignalDiffMu<pidtpc::TPCNSigmaMu, pidtpc::TPCExpSigmaMu>, pidtpc::TPCExpSigmaMu, pidtpc::TPCNSigmaMu);
+                  pidtpc::TPCExpSignalMu<pidtpc::TPCNSigmaMu, pidtpc::TPCExpSigmaMu>,
+                  pidtpc::TPCExpSignalDiffMu<pidtpc::TPCNSigmaMu, pidtpc::TPCExpSigmaMu>,
+                  pidtpc::TPCExpSigmaMu, pidtpc::TPCNSigmaMu);
 DECLARE_SOA_TABLE(pidTPCFullPi, "AOD", "pidTPCFullPi", //! Table of the TPC (full) response with expected signal, expected resolution and Nsigma for pion
-                  pidtpc::TPCExpSignalPi<pidtpc::TPCNSigmaPi, pidtpc::TPCExpSigmaPi>, pidtpc::TPCExpSignalDiffPi<pidtpc::TPCNSigmaPi, pidtpc::TPCExpSigmaPi>, pidtpc::TPCExpSigmaPi, pidtpc::TPCNSigmaPi);
+                  pidtpc::TPCExpSignalPi<pidtpc::TPCNSigmaPi, pidtpc::TPCExpSigmaPi>,
+                  pidtpc::TPCExpSignalDiffPi<pidtpc::TPCNSigmaPi, pidtpc::TPCExpSigmaPi>,
+                  pidtpc::TPCExpSigmaPi, pidtpc::TPCNSigmaPi);
 DECLARE_SOA_TABLE(pidTPCFullKa, "AOD", "pidTPCFullKa", //! Table of the TPC (full) response with expected signal, expected resolution and Nsigma for kaon
-                  pidtpc::TPCExpSignalKa<pidtpc::TPCNSigmaKa, pidtpc::TPCExpSigmaKa>, pidtpc::TPCExpSignalDiffKa<pidtpc::TPCNSigmaKa, pidtpc::TPCExpSigmaKa>, pidtpc::TPCExpSigmaKa, pidtpc::TPCNSigmaKa);
+                  pidtpc::TPCExpSignalKa<pidtpc::TPCNSigmaKa, pidtpc::TPCExpSigmaKa>,
+                  pidtpc::TPCExpSignalDiffKa<pidtpc::TPCNSigmaKa, pidtpc::TPCExpSigmaKa>,
+                  pidtpc::TPCExpSigmaKa, pidtpc::TPCNSigmaKa);
 DECLARE_SOA_TABLE(pidTPCFullPr, "AOD", "pidTPCFullPr", //! Table of the TPC (full) response with expected signal, expected resolution and Nsigma for proton
-                  pidtpc::TPCExpSignalPr<pidtpc::TPCNSigmaPr, pidtpc::TPCExpSigmaPr>, pidtpc::TPCExpSignalDiffPr<pidtpc::TPCNSigmaPr, pidtpc::TPCExpSigmaPr>, pidtpc::TPCExpSigmaPr, pidtpc::TPCNSigmaPr);
+                  pidtpc::TPCExpSignalPr<pidtpc::TPCNSigmaPr, pidtpc::TPCExpSigmaPr>,
+                  pidtpc::TPCExpSignalDiffPr<pidtpc::TPCNSigmaPr, pidtpc::TPCExpSigmaPr>,
+                  pidtpc::TPCExpSigmaPr, pidtpc::TPCNSigmaPr);
 DECLARE_SOA_TABLE(pidTPCFullDe, "AOD", "pidTPCFullDe", //! Table of the TPC (full) response with expected signal, expected resolution and Nsigma for deuteron
-                  pidtpc::TPCExpSignalDe<pidtpc::TPCNSigmaDe, pidtpc::TPCExpSigmaDe>, pidtpc::TPCExpSignalDiffDe<pidtpc::TPCNSigmaDe, pidtpc::TPCExpSigmaDe>, pidtpc::TPCExpSigmaDe, pidtpc::TPCNSigmaDe);
+                  pidtpc::TPCExpSignalDe<pidtpc::TPCNSigmaDe, pidtpc::TPCExpSigmaDe>,
+                  pidtpc::TPCExpSignalDiffDe<pidtpc::TPCNSigmaDe, pidtpc::TPCExpSigmaDe>,
+                  pidtpc::TPCExpSigmaDe, pidtpc::TPCNSigmaDe);
 DECLARE_SOA_TABLE(pidTPCFullTr, "AOD", "pidTPCFullTr", //! Table of the TPC (full) response with expected signal, expected resolution and Nsigma for triton
-                  pidtpc::TPCExpSignalTr<pidtpc::TPCNSigmaTr, pidtpc::TPCExpSigmaTr>, pidtpc::TPCExpSignalDiffTr<pidtpc::TPCNSigmaTr, pidtpc::TPCExpSigmaTr>, pidtpc::TPCExpSigmaTr, pidtpc::TPCNSigmaTr);
+                  pidtpc::TPCExpSignalTr<pidtpc::TPCNSigmaTr, pidtpc::TPCExpSigmaTr>,
+                  pidtpc::TPCExpSignalDiffTr<pidtpc::TPCNSigmaTr, pidtpc::TPCExpSigmaTr>,
+                  pidtpc::TPCExpSigmaTr, pidtpc::TPCNSigmaTr);
 DECLARE_SOA_TABLE(pidTPCFullHe, "AOD", "pidTPCFullHe", //! Table of the TPC (full) response with expected signal, expected resolution and Nsigma for helium3
-                  pidtpc::TPCExpSignalHe<pidtpc::TPCNSigmaHe, pidtpc::TPCExpSigmaHe>, pidtpc::TPCExpSignalDiffHe<pidtpc::TPCNSigmaHe, pidtpc::TPCExpSigmaHe>, pidtpc::TPCExpSigmaHe, pidtpc::TPCNSigmaHe);
+                  pidtpc::TPCExpSignalHe<pidtpc::TPCNSigmaHe, pidtpc::TPCExpSigmaHe>,
+                  pidtpc::TPCExpSignalDiffHe<pidtpc::TPCNSigmaHe, pidtpc::TPCExpSigmaHe>,
+                  pidtpc::TPCExpSigmaHe, pidtpc::TPCNSigmaHe);
 DECLARE_SOA_TABLE(pidTPCFullAl, "AOD", "pidTPCFullAl", //! Table of the TPC (full) response with expected signal, expected resolution and Nsigma for alpha
-                  pidtpc::TPCExpSignalAl<pidtpc::TPCNSigmaAl, pidtpc::TPCExpSigmaAl>, pidtpc::TPCExpSignalDiffAl<pidtpc::TPCNSigmaAl, pidtpc::TPCExpSigmaAl>, pidtpc::TPCExpSigmaAl, pidtpc::TPCNSigmaAl);
+                  pidtpc::TPCExpSignalAl<pidtpc::TPCNSigmaAl, pidtpc::TPCExpSigmaAl>,
+                  pidtpc::TPCExpSignalDiffAl<pidtpc::TPCNSigmaAl, pidtpc::TPCExpSigmaAl>,
+                  pidtpc::TPCExpSigmaAl, pidtpc::TPCNSigmaAl);
 
 // Tiny size tables
 DECLARE_SOA_TABLE(pidTPCEl, "AOD", "pidTPCEl", //! Table of the TPC response with binned Nsigma for electron
@@ -386,6 +397,16 @@ DECLARE_SOA_TABLE(pidTPCHe, "AOD", "pidTPCHe", //! Table of the TPC response wit
                   pidtpc_tiny::TPCNSigmaStoreHe, pidtpc_tiny::TPCNSigmaHe<pidtpc_tiny::TPCNSigmaStoreHe>);
 DECLARE_SOA_TABLE(pidTPCAl, "AOD", "pidTPCAl", //! Table of the TPC response with binned Nsigma for alpha
                   pidtpc_tiny::TPCNSigmaStoreAl, pidtpc_tiny::TPCNSigmaAl<pidtpc_tiny::TPCNSigmaStoreAl>);
+
+// Extra tables
+namespace mcpidtpc
+{
+// Tuned MC on data
+DECLARE_SOA_COLUMN(DeDxTunedMc, mcTunedTPCSignal, float); //! TPC signal after TuneOnData application for MC
+} // namespace mcpidtpc
+
+DECLARE_SOA_TABLE(mcTPCTuneOnData, "AOD", "MCTPCTUNEONDATA", mcpidtpc::DeDxTunedMc);
+
 
 } // namespace o2::aod
 

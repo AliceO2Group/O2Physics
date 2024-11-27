@@ -209,100 +209,10 @@ perSpeciesWrapper(tofExpSignalDiff);
 
 } // namespace pidutils
 
-namespace pidflags
-{
-
-namespace enums
-{
-enum PIDFlags : uint8_t {
-  EvTimeUndef = 0x0,  // Event collision not set, corresponding to the LHC Fill event time
-  EvTimeTOF = 0x1,    // Event collision time from TOF
-  EvTimeT0AC = 0x2,   // Event collision time from the FT0AC
-  EvTimeTOFT0AC = 0x4 // Event collision time from the TOF and FT0AC
-};
-}
-
-DECLARE_SOA_COLUMN(GoodTOFMatch, goodTOFMatch, bool);        //! Bool for the TOF PID information on the single track information
-DECLARE_SOA_COLUMN(TOFFlags, tofFlags, uint8_t);             //! Flag for the complementary TOF PID information for the event time
-DECLARE_SOA_DYNAMIC_COLUMN(IsEvTimeDefined, isEvTimeDefined, //! True if the Event Time was computed with any method i.e. there is a usable event time
-                           [](uint8_t flags) -> bool { return (flags > 0); });
-DECLARE_SOA_DYNAMIC_COLUMN(IsEvTimeTOF, isEvTimeTOF, //! True if the Event Time was computed with the TOF
-                           [](uint8_t flags) -> bool { return (flags & enums::PIDFlags::EvTimeTOF) == enums::PIDFlags::EvTimeTOF; });
-DECLARE_SOA_DYNAMIC_COLUMN(IsEvTimeT0AC, isEvTimeT0AC, //! True if the Event Time was computed with the T0AC
-                           [](uint8_t flags) -> bool { return (flags & enums::PIDFlags::EvTimeT0AC) == enums::PIDFlags::EvTimeT0AC; });
-DECLARE_SOA_DYNAMIC_COLUMN(IsEvTimeTOFT0AC, isEvTimeTOFT0AC, //! True if the Event Time was computed with the TOF and T0AC
-                           [](uint8_t flags) -> bool { return (flags & enums::PIDFlags::EvTimeTOFT0AC) == enums::PIDFlags::EvTimeTOFT0AC; });
-
-} // namespace pidflags
-
-struct TOFResponse {
-
-  static float ComputeTOFSignal(const float trackTime, const float expTime) { return trackTime * 1000.f + expTime; }
-
-  static float expSignal(const float tofExpMom, const float length, const o2::track::PID::ID id)
-  {
-    const float massSquared = o2::track::pid_constants::sMasses2[id];
-    return o2::framework::pid::tof::MassToExpTime(tofExpMom, length, massSquared);
-  }
-  static float GetTOFSignal(const float trackTime,
-                            float tofExpMom,
-                            const float length,
-                            const uint8_t trackType,
-                            const uint32_t flags,
-                            const uint8_t detectorMap)
-  {
-    const bool hasTOF = detectorMap & o2::aod::track::TOF;
-    if (!hasTOF) {
-      return -999.f;
-    }
-    const uint32_t pidForTracking = flags >> 28;
-    if (trackType == o2::aod::track::Run2Track) {
-      tofExpMom *= kCSPEDDInv;
-    }
-    const float exptime = expSignal(tofExpMom, length, pidForTracking);
-
-    return ComputeExpectedTime(trackTime, expTime);
-  }
-};
-
-namespace pidtofsignal
-{
-
-DECLARE_SOA_DYNAMIC_COLUMN(TOFSignalImp, tofSignal, //! TOF signal from track time
-                           [](const float trackTime,
-                              float tofExpMom,
-                              const float length,
-                              const uint8_t trackType,
-                              const uint32_t flags,
-                              const uint8_t detectorMap) -> float {
-                             return TOFResponse::GetTOFSignal(trackTime, tofExpMom, length, trackType, flags, detectorMap);
-                           });
-DECLARE_SOA_DYNAMIC_COLUMN(EventCollisionTime, eventCollisionTime, //! Event collision time used for the track. Needs the TOF
-                           [](float signal, float tMinusTexp, float texp) -> float { return texp + tMinusTexp - signal; });
-
-} // namespace pidtofsignal
-
-namespace pidtofbeta
-{
-DECLARE_SOA_COLUMN(Beta, beta, float);           //! TOF beta
-DECLARE_SOA_COLUMN(BetaError, betaerror, float); //! Uncertainty on the TOF beta
-//
-DECLARE_SOA_COLUMN(ExpBetaEl, expbetael, float);           //! Expected beta of electron
-DECLARE_SOA_COLUMN(ExpBetaElError, expbetaelerror, float); //! Expected uncertainty on the beta of electron
-//
-DECLARE_SOA_COLUMN(SeparationBetaEl, separationbetael, float); //! Separation computed with the expected beta for electrons
-DECLARE_SOA_DYNAMIC_COLUMN(DiffBetaEl, diffbetael,             //! Difference between the measured and the expected beta for electrons
-                           [](float beta, float expbetael) -> float { return beta - expbetael; });
-} // namespace pidtofbeta
-
-namespace pidtofmass
-{
-DECLARE_SOA_COLUMN(TOFMass, mass, float); //! TOF mass
-} // namespace pidtofmass
 
 namespace pidtof
 {
-// Expected times
+// Expected signals
 DECLARE_SOA_DYNAMIC_COLUMN(TOFExpSignalEl, tofExpSignalEl, //! Expected time for electron
                            [](float nsigma, float sigma, float tofsignal) -> float { return tofsignal - nsigma * sigma; });
 DECLARE_SOA_DYNAMIC_COLUMN(TOFExpSignalMu, tofExpSignalMu, //! Expected time for muon
@@ -360,6 +270,7 @@ DECLARE_SOA_COLUMN(TOFNSigmaDe, tofNSigmaDe, float); //! Nsigma separation with 
 DECLARE_SOA_COLUMN(TOFNSigmaTr, tofNSigmaTr, float); //! Nsigma separation with the TOF detector for triton
 DECLARE_SOA_COLUMN(TOFNSigmaHe, tofNSigmaHe, float); //! Nsigma separation with the TOF detector for helium3
 DECLARE_SOA_COLUMN(TOFNSigmaAl, tofNSigmaAl, float); //! Nsigma separation with the TOF detector for alpha
+
 } // namespace pidtof
 
 namespace pidtof_tiny
@@ -429,24 +340,6 @@ DECLARE_SOA_DYNAMIC_COLUMN(TOFNSigmaAl, tofNSigmaAl, //! Unwrapped (float) nsigm
 
 } // namespace pidtof_tiny
 
-using TOFSignal = TOFSignalImp<o2::aod::track::TrackTime, o2::aod::track::Length, o2::aod::track::TrackType, o2::aod::track::Flags, o2::aod::track::DetectorMap>; //! Column of the TOF signal
-
-DECLARE_SOA_TABLE(pidTOFFlags, "AOD", "pidTOFFlags", //! Table of the flags for TOF signal quality on the track level
-                  pidflags::GoodTOFMatch);
-
-DECLARE_SOA_TABLE(pidTOFbeta, "AOD", "pidTOFbeta", //! Table of the TOF beta
-                  pidtofbeta::Beta, pidtofbeta::BetaError);
-
-DECLARE_SOA_TABLE(pidTOFmass, "AOD", "pidTOFmass", //! Table of the TOF mass
-                  pidtofmass::TOFMass);
-
-DECLARE_SOA_TABLE(pidEvTimeFlags, "AOD", "pidEvTimeFlags", //! Table of the PID flags for the event time tables
-                  pidflags::TOFFlags,
-                  pidflags::IsEvTimeDefined<pidflags::TOFFlags>,
-                  pidflags::IsEvTimeTOF<pidflags::TOFFlags>,
-                  pidflags::IsEvTimeT0AC<pidflags::TOFFlags>,
-                  pidflags::IsEvTimeTOFT0AC<pidflags::TOFFlags>);
-
 // Per particle tables
 DECLARE_SOA_TABLE(pidTOFFullEl, "AOD", "pidTOFFullEl", //! Table of the TOF (full) response with expected signal, expected resolution and Nsigma for electron
                   pidtof::TOFExpSignalDiffEl<pidtof::TOFNSigmaEl, pidtof::TOFExpSigmaEl>,
@@ -504,6 +397,74 @@ DECLARE_SOA_TABLE(pidTOFHe, "AOD", "pidTOFHe", //! Table of the TOF response wit
                   pidtof_tiny::TOFNSigmaStoreHe, pidtof_tiny::TOFNSigmaHe<pidtof_tiny::TOFNSigmaStoreHe>);
 DECLARE_SOA_TABLE(pidTOFAl, "AOD", "pidTOFAl", //! Table of the TOF response with binned Nsigma for alpha
                   pidtof_tiny::TOFNSigmaStoreAl, pidtof_tiny::TOFNSigmaAl<pidtof_tiny::TOFNSigmaStoreAl>);
+
+
+// Extra tables
+namespace pidflags
+{
+
+namespace enums
+{
+enum PIDFlags : uint8_t {
+  EvTimeUndef = 0x0,  // Event collision not set, corresponding to the LHC Fill event time
+  EvTimeTOF = 0x1,    // Event collision time from TOF
+  EvTimeT0AC = 0x2,   // Event collision time from the FT0AC
+  EvTimeTOFT0AC = 0x4 // Event collision time from the TOF and FT0AC
+};
+}
+
+DECLARE_SOA_COLUMN(GoodTOFMatch, goodTOFMatch, bool);        //! Bool for the TOF PID information on the single track information
+DECLARE_SOA_COLUMN(TOFFlags, tofFlags, uint8_t);             //! Flag for the complementary TOF PID information for the event time
+DECLARE_SOA_DYNAMIC_COLUMN(IsEvTimeDefined, isEvTimeDefined, //! True if the Event Time was computed with any method i.e. there is a usable event time
+                           [](uint8_t flags) -> bool { return (flags > 0); });
+DECLARE_SOA_DYNAMIC_COLUMN(IsEvTimeTOF, isEvTimeTOF, //! True if the Event Time was computed with the TOF
+                           [](uint8_t flags) -> bool { return (flags & enums::PIDFlags::EvTimeTOF) == enums::PIDFlags::EvTimeTOF; });
+DECLARE_SOA_DYNAMIC_COLUMN(IsEvTimeT0AC, isEvTimeT0AC, //! True if the Event Time was computed with the T0AC
+                           [](uint8_t flags) -> bool { return (flags & enums::PIDFlags::EvTimeT0AC) == enums::PIDFlags::EvTimeT0AC; });
+DECLARE_SOA_DYNAMIC_COLUMN(IsEvTimeTOFT0AC, isEvTimeTOFT0AC, //! True if the Event Time was computed with the TOF and T0AC
+                           [](uint8_t flags) -> bool { return (flags & enums::PIDFlags::EvTimeTOFT0AC) == enums::PIDFlags::EvTimeTOFT0AC; });
+
+} // namespace pidflags
+
+namespace pidtofsignal
+{
+} // namespace pidtofsignal
+
+namespace pidtofbeta
+{
+DECLARE_SOA_COLUMN(Beta, beta, float);           //! TOF beta
+DECLARE_SOA_COLUMN(BetaError, betaerror, float); //! Uncertainty on the TOF beta
+//
+DECLARE_SOA_COLUMN(ExpBetaEl, expbetael, float);           //! Expected beta of electron
+DECLARE_SOA_COLUMN(ExpBetaElError, expbetaelerror, float); //! Expected uncertainty on the beta of electron
+//
+DECLARE_SOA_COLUMN(SeparationBetaEl, separationbetael, float); //! Separation computed with the expected beta for electrons
+DECLARE_SOA_DYNAMIC_COLUMN(DiffBetaEl, diffbetael,             //! Difference between the measured and the expected beta for electrons
+                           [](float beta, float expbetael) -> float { return beta - expbetael; });
+} // namespace pidtofbeta
+
+namespace pidtofmass
+{
+DECLARE_SOA_COLUMN(TOFMass, mass, float); //! TOF mass
+} // namespace pidtofmass
+
+using TOFSignal = TOFSignalImp<o2::aod::track::TrackTime, o2::aod::track::Length, o2::aod::track::TrackType, o2::aod::track::Flags, o2::aod::track::DetectorMap>; //! Column of the TOF signal
+
+DECLARE_SOA_TABLE(pidTOFFlags, "AOD", "pidTOFFlags", //! Table of the flags for TOF signal quality on the track level
+                  pidflags::GoodTOFMatch);
+
+DECLARE_SOA_TABLE(pidTOFbeta, "AOD", "pidTOFbeta", //! Table of the TOF beta
+                  pidtofbeta::Beta, pidtofbeta::BetaError);
+
+DECLARE_SOA_TABLE(pidTOFmass, "AOD", "pidTOFmass", //! Table of the TOF mass
+                  pidtofmass::TOFMass);
+
+DECLARE_SOA_TABLE(pidEvTimeFlags, "AOD", "pidEvTimeFlags", //! Table of the PID flags for the event time tables
+                  pidflags::TOFFlags,
+                  pidflags::IsEvTimeDefined<pidflags::TOFFlags>,
+                  pidflags::IsEvTimeTOF<pidflags::TOFFlags>,
+                  pidflags::IsEvTimeT0AC<pidflags::TOFFlags>,
+                  pidflags::IsEvTimeTOFT0AC<pidflags::TOFFlags>);
 
 } // namespace o2::aod
 
