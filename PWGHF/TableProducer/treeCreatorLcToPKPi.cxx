@@ -137,12 +137,13 @@ DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(DecayX, decayX, float);
 DECLARE_SOA_COLUMN(DecayY, decayY, float);
 DECLARE_SOA_COLUMN(DecayZ, decayZ, float);
+DECLARE_SOA_COLUMN(DecayL, decayL, float);
 DECLARE_SOA_COLUMN(DecayT, decayT, float);
 }
 
 DECLARE_SOA_TABLE(HfCandLcMCs, "AOD", "HFCANDLCMC",
                   mc_match::P, mc_match::Pt,
-                  mc_match::DecayX, mc_match::DecayY, mc_match::DecayZ,
+                  mc_match::DecayX, mc_match::DecayY, mc_match::DecayZ, mc_match::DecayL,
                   mc_match::DecayT
 )
 
@@ -326,6 +327,7 @@ struct HfTreeCreatorLcToPKPi {
   Configurable<float> downSampleBkgPtMax{"downSampleBkgPtMax", 100.f, "Max. pt for background downsampling"};
 
   constexpr static float UndefValue = -999.f;
+  constexpr static float NanoToPico = 1000.f;
 
   HfHelper hfHelper;
 
@@ -625,28 +627,36 @@ struct HfTreeCreatorLcToPKPi {
             }
           }
           if (fillCandidateMcTable) {
-            float p, pt, X, Y, Z, T;
+            float p, pt, X, Y, Z, L, T;
             if (!isMcCandidateSignal) {
               p = UndefValue;
               pt = UndefValue;
               X = UndefValue;
               Y = UndefValue;
               Z = UndefValue;
+              L = UndefValue;
               T = UndefValue;
             } else {
               auto mcParticleProng0 = candidate.template prong0_as<soa::Join<TracksWPid, o2::aod::McTrackLabels>>().template mcParticle_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>();
               auto indexMother = RecoDecay::getMother(particles, mcParticleProng0, o2::constants::physics::Pdg::kLambdaCPlus, true);
               auto particleMother = particles.rawIteratorAt(indexMother);
+              auto mcCollision = particleMother.template mcCollision_as<aod::McCollisions>();
               p = particleMother.p();
               pt = particleMother.pt();
+              const float p2m = p / MassLambdaCPlus;
+              const float gamma = std::sqrt(1 + p2m*p2m); // mother's particle Lorentz factor
+              const float X_PV = mcCollision.posX();
+              const float Y_PV = mcCollision.posY();
+              const float Z_PV = mcCollision.posZ();
               X = mcParticleProng0.vx();
               Y = mcParticleProng0.vy();
               Z = mcParticleProng0.vz();
-              T = mcParticleProng0.vt();
+              L = std::sqrt((X-X_PV)*(X-X_PV) + (Y-Y_PV)*(Y-Y_PV) + (Z-Z_PV)*(Z-Z_PV));
+              T = mcParticleProng0.vt() * NanoToPico / gamma; // from ns to ps * from lab time to proper time
             }
             rowCandidateMC(
               p, pt,
-              X, Y, Z, T
+              X, Y, Z, L, T
             );
           }
         }
