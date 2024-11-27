@@ -303,7 +303,6 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
       hCollisionsCentOcc->Fill(centrality, collision.ft0cOccupancyInTimeRange());
     } else {
       /// occupancy estimator (ITS tracks with at least 5 clusters in +-10us from current collision)
-      LOG(info) << collision.trackOccupancyInTimeRange() <<" "<< centrality;
       hCollisionsCentOcc->Fill(centrality, collision.trackOccupancyInTimeRange());
     }
   }
