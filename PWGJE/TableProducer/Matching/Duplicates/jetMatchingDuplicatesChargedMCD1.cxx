@@ -13,7 +13,7 @@
 //
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
-#include "PWGJE/TableProducer/Matching/jetMatchingDuplicates.cxx"
+#include "PWGJE/TableProducer/Matching/Duplicates/jetMatchingDuplicates.cxx"
 
 using Charged1JetMCDMatchingDupliacates = JetMatchingDuplicates<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>,
                                                                 soa::Join<aod::Charged1MCDetectorLevelJets, aod::Charged1MCDetectorLevelJetConstituents>,
