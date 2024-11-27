@@ -506,19 +506,19 @@ struct NucleiHistTask {
   Configurable<std::vector<float>> Tpc_mSigma_shift_He3{"Tpc_mSigma_shift_He3", {.0f, .0f, .0f, .0f, .0f, .0f, .0f, .0f, .0f, .0f, .0f, .0f, .0f, .0f, .0f, .0f, .0f, .0f, .0f, .0f, .0f, .0f, .0f, .0f, .0f, .0f, .0f, .0f, .0f}, "Array for shifting (anti)helium-3 nSigma values in TPC"};
   Configurable<std::vector<float>> Tpc_mSigma_shift_Al{"Tpc_mSigma_shift_Al", {.0f, .0f, .0f, .0f, .0f, .0f, .0f, .0f, .0f, .0f, .0f, .0f, .0f, .0f, .0f, .0f, .0f, .0f, .0f, .0f, .0f, .0f, .0f, .0f, .0f, .0f, .0f, .0f, .0f}, "Array for shifting (anti)helium-4 nSigma values in TPC"};
 
+  // ***************************************************************************
 
-// ***************************************************************************
-
-  int getBinIndex(const std::vector<float>& ptBinning, float momentum) {
+  int getBinIndex(const std::vector<float>& ptBinning, float momentum)
+  {
     for (size_t i = 0; i < ptBinning.size() - 1; ++i) {
-        if (momentum >= ptBinning[i] && momentum < ptBinning[i + 1]) {
-            return i;
-        }
+      if (momentum >= ptBinning[i] && momentum < ptBinning[i + 1]) {
+        return i;
+      }
     }
     return -1;
   }
 
-// ***************************************************************************
+  // ***************************************************************************
 
   template <typename CollisionType, typename TracksType>
   void fillHistograms(const CollisionType& event, const TracksType& tracks)
@@ -677,12 +677,18 @@ struct NucleiHistTask {
       spectra_reg.fill(HIST("histTpcSignalData"), momentum * track.sign(), track.tpcSignal());
 
       int binIndex = getBinIndex(ptBinning, momentum);
-      if (binIndex >= 0 && binIndex < static_cast<int>(Tpc_mSigma_shift_Pi.value.size())) nSigmaPion += Tpc_mSigma_shift_Pi.value[binIndex];
-      if (binIndex >= 0 && binIndex < static_cast<int>(Tpc_mSigma_shift_Pr.value.size())) nSigmaProton += Tpc_mSigma_shift_Pr.value[binIndex];
-      if (binIndex >= 0 && binIndex < static_cast<int>(Tpc_mSigma_shift_De.value.size())) nSigmaDeut += Tpc_mSigma_shift_De.value[binIndex];
-      if (binIndex >= 0 && binIndex < static_cast<int>(Tpc_mSigma_shift_Tr.value.size())) nSigmaTriton += Tpc_mSigma_shift_Tr.value[binIndex];
-      if (binIndex >= 0 && binIndex < static_cast<int>(Tpc_mSigma_shift_He3.value.size())) nSigmaHe3 += Tpc_mSigma_shift_He3.value[binIndex];
-      if (binIndex >= 0 && binIndex < static_cast<int>(Tpc_mSigma_shift_Al.value.size())) nSigmaHe4 += Tpc_mSigma_shift_Al.value[binIndex];
+      if (binIndex >= 0 && binIndex < static_cast<int>(Tpc_mSigma_shift_Pi.value.size()))
+        nSigmaPion += Tpc_mSigma_shift_Pi.value[binIndex];
+      if (binIndex >= 0 && binIndex < static_cast<int>(Tpc_mSigma_shift_Pr.value.size()))
+        nSigmaProton += Tpc_mSigma_shift_Pr.value[binIndex];
+      if (binIndex >= 0 && binIndex < static_cast<int>(Tpc_mSigma_shift_De.value.size()))
+        nSigmaDeut += Tpc_mSigma_shift_De.value[binIndex];
+      if (binIndex >= 0 && binIndex < static_cast<int>(Tpc_mSigma_shift_Tr.value.size()))
+        nSigmaTriton += Tpc_mSigma_shift_Tr.value[binIndex];
+      if (binIndex >= 0 && binIndex < static_cast<int>(Tpc_mSigma_shift_He3.value.size()))
+        nSigmaHe3 += Tpc_mSigma_shift_He3.value[binIndex];
+      if (binIndex >= 0 && binIndex < static_cast<int>(Tpc_mSigma_shift_Al.value.size()))
+        nSigmaHe4 += Tpc_mSigma_shift_Al.value[binIndex];
 
       if (track.sign() > 0) {
         pion_reg.fill(HIST("histTpcNsigmaData"), momentum, nSigmaPion);
@@ -1315,12 +1321,18 @@ struct NucleiHistTask {
         continue;
 
       int binIndex = getBinIndex(ptBinning, momentum);
-      if (binIndex >= 0 && binIndex < static_cast<int>(Tpc_mSigma_shift_Pi.value.size())) nSigmaPion += Tpc_mSigma_shift_Pi.value[binIndex];
-      if (binIndex >= 0 && binIndex < static_cast<int>(Tpc_mSigma_shift_Pr.value.size())) nSigmaProton += Tpc_mSigma_shift_Pr.value[binIndex];
-      if (binIndex >= 0 && binIndex < static_cast<int>(Tpc_mSigma_shift_De.value.size())) nSigmaDeut += Tpc_mSigma_shift_De.value[binIndex];
-      if (binIndex >= 0 && binIndex < static_cast<int>(Tpc_mSigma_shift_Tr.value.size())) nSigmaTriton += Tpc_mSigma_shift_Tr.value[binIndex];
-      if (binIndex >= 0 && binIndex < static_cast<int>(Tpc_mSigma_shift_He3.value.size())) nSigmaHe3 += Tpc_mSigma_shift_He3.value[binIndex];
-      if (binIndex >= 0 && binIndex < static_cast<int>(Tpc_mSigma_shift_Al.value.size())) nSigmaHe4 += Tpc_mSigma_shift_Al.value[binIndex];
+      if (binIndex >= 0 && binIndex < static_cast<int>(Tpc_mSigma_shift_Pi.value.size()))
+        nSigmaPion += Tpc_mSigma_shift_Pi.value[binIndex];
+      if (binIndex >= 0 && binIndex < static_cast<int>(Tpc_mSigma_shift_Pr.value.size()))
+        nSigmaProton += Tpc_mSigma_shift_Pr.value[binIndex];
+      if (binIndex >= 0 && binIndex < static_cast<int>(Tpc_mSigma_shift_De.value.size()))
+        nSigmaDeut += Tpc_mSigma_shift_De.value[binIndex];
+      if (binIndex >= 0 && binIndex < static_cast<int>(Tpc_mSigma_shift_Tr.value.size()))
+        nSigmaTriton += Tpc_mSigma_shift_Tr.value[binIndex];
+      if (binIndex >= 0 && binIndex < static_cast<int>(Tpc_mSigma_shift_He3.value.size()))
+        nSigmaHe3 += Tpc_mSigma_shift_He3.value[binIndex];
+      if (binIndex >= 0 && binIndex < static_cast<int>(Tpc_mSigma_shift_Al.value.size()))
+        nSigmaHe4 += Tpc_mSigma_shift_Al.value[binIndex];
 
       if (track.sign() > 0) {
 
@@ -1463,7 +1475,6 @@ struct NucleiHistTask {
   }
   PROCESS_SWITCH(NucleiHistTask, processData, "process data", true);
 
-
   void processDataCent(EventCandidatesCent::iterator const& event, TrackCandidates const& tracks)
   {
     fillHistograms(event, tracks);
@@ -1471,19 +1482,20 @@ struct NucleiHistTask {
   }
   PROCESS_SWITCH(NucleiHistTask, processDataCent, "process data with centralities", false);
 
-
   void processMCgen(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles)
   {
-      MC_gen_reg.fill(HIST("histRecVtxMC"), mcCollision.posZ());
-      MC_gen_reg.fill(HIST("histCentrality"), mcCollision.impactParameter());
+    MC_gen_reg.fill(HIST("histRecVtxMC"), mcCollision.posZ());
+    MC_gen_reg.fill(HIST("histCentrality"), mcCollision.impactParameter());
 
-      for (const auto& mcParticleGen : mcParticles) {
+    for (const auto& mcParticleGen : mcParticles) {
       if (require_PhysicalPrimary_MC_gen && !mcParticleGen.isPhysicalPrimary())
         continue;
       int pdgCode = mcParticleGen.pdgCode();
 
-      if (mcParticleGen.y() > yMax || mcParticleGen.y() < yMin) continue;
-      if (mcParticleGen.eta() > cfgCutEta || mcParticleGen.eta() < -cfgCutEta) continue;
+      if (mcParticleGen.y() > yMax || mcParticleGen.y() < yMin)
+        continue;
+      if (mcParticleGen.eta() > cfgCutEta || mcParticleGen.eta() < -cfgCutEta)
+        continue;
 
       int pdgbin = 0;
       switch (pdgCode) {
@@ -1555,10 +1567,9 @@ struct NucleiHistTask {
     }
   }
   PROCESS_SWITCH(NucleiHistTask, processMCgen, "process generated MC", false);
-  
-  
+
   void processMCreco(soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::CentFT0Cs>::iterator const& collisions, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTPCLfFullPi, aod::pidTOFFullPi, aod::pidTPCLfFullKa, aod::pidTOFFullKa, aod::pidTPCLfFullPr, aod::pidTOFFullPr, aod::pidTPCLfFullDe, aod::pidTOFFullDe, aod::pidTPCLfFullTr, aod::pidTOFFullTr, aod::pidTPCLfFullHe, aod::pidTOFFullHe, aod::pidTPCLfFullAl, aod::pidTOFFullAl, aod::McTrackLabels, aod::TrackSelection, aod::TrackSelectionExtension, aod::TOFSignal, aod::pidTOFmass, aod::pidTOFbeta>> const& tracks,
-                 aod::McParticles& /*mcParticles*/, aod::McCollisions const& /*mcCollisions*/)
+                     aod::McParticles& /*mcParticles*/, aod::McCollisions const& /*mcCollisions*/)
   {
 
     if (event_selection_MC_sel8 && !collisions.sel8())
@@ -1815,12 +1826,18 @@ struct NucleiHistTask {
       float nSigmaHe4 = track.tpcNSigmaAl();
 
       int binIndex = getBinIndex(ptBinning, momentum);
-      if (binIndex >= 0 && binIndex < static_cast<int>(Tpc_mSigma_shift_Pi.value.size())) nSigmaPion += Tpc_mSigma_shift_Pi.value[binIndex];
-      if (binIndex >= 0 && binIndex < static_cast<int>(Tpc_mSigma_shift_Pr.value.size())) nSigmaProton += Tpc_mSigma_shift_Pr.value[binIndex];
-      if (binIndex >= 0 && binIndex < static_cast<int>(Tpc_mSigma_shift_De.value.size())) nSigmaDeuteron += Tpc_mSigma_shift_De.value[binIndex];
-      if (binIndex >= 0 && binIndex < static_cast<int>(Tpc_mSigma_shift_Tr.value.size())) nSigmaTriton += Tpc_mSigma_shift_Tr.value[binIndex];
-      if (binIndex >= 0 && binIndex < static_cast<int>(Tpc_mSigma_shift_He3.value.size())) nSigmaHe3 += Tpc_mSigma_shift_He3.value[binIndex];
-      if (binIndex >= 0 && binIndex < static_cast<int>(Tpc_mSigma_shift_Al.value.size())) nSigmaHe4 += Tpc_mSigma_shift_Al.value[binIndex];
+      if (binIndex >= 0 && binIndex < static_cast<int>(Tpc_mSigma_shift_Pi.value.size()))
+        nSigmaPion += Tpc_mSigma_shift_Pi.value[binIndex];
+      if (binIndex >= 0 && binIndex < static_cast<int>(Tpc_mSigma_shift_Pr.value.size()))
+        nSigmaProton += Tpc_mSigma_shift_Pr.value[binIndex];
+      if (binIndex >= 0 && binIndex < static_cast<int>(Tpc_mSigma_shift_De.value.size()))
+        nSigmaDeuteron += Tpc_mSigma_shift_De.value[binIndex];
+      if (binIndex >= 0 && binIndex < static_cast<int>(Tpc_mSigma_shift_Tr.value.size()))
+        nSigmaTriton += Tpc_mSigma_shift_Tr.value[binIndex];
+      if (binIndex >= 0 && binIndex < static_cast<int>(Tpc_mSigma_shift_He3.value.size()))
+        nSigmaHe3 += Tpc_mSigma_shift_He3.value[binIndex];
+      if (binIndex >= 0 && binIndex < static_cast<int>(Tpc_mSigma_shift_Al.value.size()))
+        nSigmaHe4 += Tpc_mSigma_shift_Al.value[binIndex];
 
       if (track.sign() > 0) {
         MC_recon_reg.fill(HIST("histTpcNsigmaDataPi"), momentum, nSigmaPion);
