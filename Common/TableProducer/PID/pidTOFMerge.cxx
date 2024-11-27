@@ -70,11 +70,12 @@ struct TOFCalibConfig {
     mTimestamp = opt.cfgTimestamp.value;
     mTimeShiftCCDBPathPos = opt.cfgTimeShiftCCDBPathPos.value;
     mTimeShiftCCDBPathNeg = opt.cfgTimeShiftCCDBPathNeg.value;
+    mTimeShiftCCDBPathPosMC = opt.cfgTimeShiftCCDBPathPosMC.value;
+    mTimeShiftCCDBPathNegMC = opt.cfgTimeShiftCCDBPathNegMC.value;
     mParamFileName = opt.cfgParamFileName.value;
     mParametrizationPath = opt.cfgParametrizationPath.value;
     mReconstructionPass = opt.cfgReconstructionPass.value;
     mReconstructionPassDefault = opt.cfgReconstructionPassDefault.value;
-    mLoadResponseFromCCDB = opt.cfgLoadResponseFromCCDB.value;
     mFatalOnPassNotAvailable = opt.cfgFatalOnPassNotAvailable.value;
     mEnableTimeDependentResponse = opt.cfgEnableTimeDependentResponse.value;
     mCollisionSystem = opt.cfgCollisionSystem.value;
@@ -97,11 +98,12 @@ struct TOFCalibConfig {
     getCfg(initContext, "ccdb-timestamp", mTimestamp, task);
     getCfg(initContext, "timeShiftCCDBPathPos", mTimeShiftCCDBPathPos, task);
     getCfg(initContext, "timeShiftCCDBPathNeg", mTimeShiftCCDBPathNeg, task);
+    getCfg(initContext, "timeShiftCCDBPathPosMC", mTimeShiftCCDBPathPosMC, task);
+    getCfg(initContext, "timeShiftCCDBPathNegMC", mTimeShiftCCDBPathNegMC, task);
     getCfg(initContext, "paramFileName", mParamFileName, task);
     getCfg(initContext, "parametrizationPath", mParametrizationPath, task);
     getCfg(initContext, "reconstructionPass", mReconstructionPass, task);
     getCfg(initContext, "reconstructionPassDefault", mReconstructionPassDefault, task);
-    getCfg(initContext, "loadResponseFromCCDB", mLoadResponseFromCCDB, task);
     getCfg(initContext, "fatalOnPassNotAvailable", mFatalOnPassNotAvailable, task);
     getCfg(initContext, "enableTimeDependentResponse", mEnableTimeDependentResponse, task);
     getCfg(initContext, "collisionSystem", mCollisionSystem, task);
@@ -149,18 +151,15 @@ struct TOFCalibConfig {
           } else {
             mRespParamsV3.setResolutionParametrization(paramCollection.getPars(mReconstructionPassDefault));
             mRespParamsV3.setMomentumChargeShiftParameters(paramCollection.getPars(mReconstructionPassDefault));
-            mRespParamsV3.printMomentumChargeShiftParameters();
           }
         }
       } else { // Pass is available, load non standard parameters
         mRespParamsV3.setResolutionParametrization(paramCollection.getPars(mReconstructionPass));
         mRespParamsV3.setMomentumChargeShiftParameters(paramCollection.getPars(mReconstructionPass));
-        mRespParamsV3.printMomentumChargeShiftParameters();
       }
-    } else if (mLoadResponseFromCCDB && !mEnableTimeDependentResponse) { // Loading it from CCDB
+    } else if (!mEnableTimeDependentResponse) { // Loading it from CCDB
       LOG(info) << "Loading initial exp. sigma parametrization from CCDB, using path: " << mParametrizationPath << " for timestamp " << mTimestamp;
       o2::tof::ParameterCollection* paramCollection = ccdb->template getForTimeStamp<o2::tof::ParameterCollection>(mParametrizationPath, mTimestamp);
-      paramCollection->print();
       if (!paramCollection->retrieveParameters(mRespParamsV3, mReconstructionPass)) { // Attempt at loading the parameters with the pass defined
         if (mFatalOnPassNotAvailable) {
           LOG(fatal) << "Pass '" << mReconstructionPass << "' not available in the retrieved CCDB object";
@@ -172,50 +171,43 @@ struct TOFCalibConfig {
           } else {
             mRespParamsV3.setResolutionParametrization(paramCollection->getPars(mReconstructionPassDefault));
             mRespParamsV3.setMomentumChargeShiftParameters(paramCollection->getPars(mReconstructionPassDefault));
-            mRespParamsV3.printMomentumChargeShiftParameters();
           }
         }
       } else { // Pass is available, load non standard parameters
         mRespParamsV3.setResolutionParametrization(paramCollection->getPars(mReconstructionPass));
         mRespParamsV3.setMomentumChargeShiftParameters(paramCollection->getPars(mReconstructionPass));
-        mRespParamsV3.printMomentumChargeShiftParameters();
       }
-    } else {
-      std::unordered_map<std::string, float> m;
-      mRespParamsV3.setResolutionParametrization(m);
     }
 
     // Loading additional calibration objects
-    if (mTimeShiftCCDBPathPos != "") {
-      if (mTimeShiftCCDBPathPos.find(".root") != std::string::npos) {
-        mRespParamsV3.setTimeShiftParameters(mTimeShiftCCDBPathPos, "ccdb_object", true);
+    std::map<std::string, std::string> metadata;
+    metadata["RecoPassName"] = mReconstructionPass;
+    const std::string nameShiftPos = metadataInfo.isMC() ? mTimeShiftCCDBPathPosMC : mTimeShiftCCDBPathPos;
+    if (nameShiftPos != "") {
+      if (nameShiftPos.find(".root") != std::string::npos) {
+        mRespParamsV3.setTimeShiftParameters(nameShiftPos, "ccdb_object", true);
       } else if (!mEnableTimeDependentResponse) {
-        if (mReconstructionPass == "") {
-          mRespParamsV3.setTimeShiftParameters(ccdb->template getForTimeStamp<TGraph>(mTimeShiftCCDBPathPos, mTimestamp), true);
-        } else {
-          std::map<std::string, std::string> metadata;
-          metadata["RecoPassName"] = mReconstructionPass;
-          mRespParamsV3.setTimeShiftParameters(ccdb->template getSpecific<TGraph>(mTimeShiftCCDBPathPos, mTimestamp, metadata), true);
-        }
+        LOG(info) << "Setting once the time shift for positive from ccdb '" << nameShiftPos << "' and timestamp " << mTimestamp << " and pass '" << mReconstructionPass << "'";
+        TGraph* gShift = mReconstructionPass == "" ? ccdb->template getForTimeStamp<TGraph>(nameShiftPos, mTimestamp)
+                                                   : ccdb->template getSpecific<TGraph>(nameShiftPos, mTimestamp, metadata);
+        mRespParamsV3.setTimeShiftParameters(gShift, true);
       }
     }
-    if (mTimeShiftCCDBPathNeg != "") {
-      if (mTimeShiftCCDBPathNeg.find(".root") != std::string::npos) {
-        mRespParamsV3.setTimeShiftParameters(mTimeShiftCCDBPathNeg, "ccdb_object", false);
+    const std::string nameShiftNeg = metadataInfo.isMC() ? mTimeShiftCCDBPathNegMC : mTimeShiftCCDBPathNeg;
+    if (nameShiftNeg != "") {
+      if (nameShiftNeg.find(".root") != std::string::npos) {
+        mRespParamsV3.setTimeShiftParameters(nameShiftNeg, "ccdb_object", false);
       } else if (!mEnableTimeDependentResponse) {
-        if (mReconstructionPass == "") {
-          mRespParamsV3.setTimeShiftParameters(ccdb->template getForTimeStamp<TGraph>(mTimeShiftCCDBPathNeg, mTimestamp), false);
-        } else {
-          std::map<std::string, std::string> metadata;
-          metadata["RecoPassName"] = mReconstructionPass;
-          mRespParamsV3.setTimeShiftParameters(ccdb->template getSpecific<TGraph>(mTimeShiftCCDBPathNeg, mTimestamp, metadata), false);
-        }
+        LOG(info) << "Setting once the time shift for negative from ccdb '" << nameShiftNeg << "' and timestamp " << mTimestamp << " and pass '" << mReconstructionPass << "'";
+        TGraph* gShift = mReconstructionPass == "" ? ccdb->template getForTimeStamp<TGraph>(nameShiftNeg, mTimestamp)
+                                                   : ccdb->template getSpecific<TGraph>(nameShiftNeg, mTimestamp, metadata);
+        mRespParamsV3.setTimeShiftParameters(gShift, false);
       }
     }
 
     // Calibration object is defined
     LOG(info) << "Parametrization at init time:";
-    mRespParamsV3.print();
+    mRespParamsV3.printFullConfig();
   }
 
   template <typename CCDBObject, typename BcType>
@@ -244,50 +236,49 @@ struct TOFCalibConfig {
       return;
     }
     LOG(info) << "Updating parametrization from path '" << mParametrizationPath << "' and timestamp " << mTimestamp << " and reconstruction pass '" << mReconstructionPass << "'";
-    if (mParamFileName.empty()) { // Not loading if parametrization from file
-      if (!ccdb->template getForTimeStamp<o2::tof::ParameterCollection>(mParametrizationPath, mTimestamp)->retrieveParameters(mRespParamsV3, mReconstructionPass)) {
+    if (mParamFileName.empty()) { // Not loading if parametrization was taken from file
+      LOG(info) << "Updating parametrization from ccdb";
+      const o2::tof::ParameterCollection* paramCollection = ccdb->template getForTimeStamp<o2::tof::ParameterCollection>(mParametrizationPath, mTimestamp);
+      if (!paramCollection->retrieveParameters(mRespParamsV3, mReconstructionPass)) {
         if (mFatalOnPassNotAvailable) {
           LOGF(fatal, "Pass '%s' not available in the retrieved CCDB object", mReconstructionPass.data());
         } else {
           LOGF(warning, "Pass '%s' not available in the retrieved CCDB object, fetching '%s'", mReconstructionPass.data(), mReconstructionPassDefault.data());
-          if (!ccdb->template getForTimeStamp<o2::tof::ParameterCollection>(mParametrizationPath, mTimestamp)->retrieveParameters(mRespParamsV3, mReconstructionPassDefault)) {
-            ccdb->template getForTimeStamp<o2::tof::ParameterCollection>(mParametrizationPath, mTimestamp)->print();
+          if (!paramCollection->retrieveParameters(mRespParamsV3, mReconstructionPassDefault)) {
+            paramCollection->print();
             LOG(fatal) << "Cannot get default pass for calibration " << mReconstructionPassDefault;
+          } else { // Found the default case
+            mRespParamsV3.setResolutionParametrization(paramCollection->getPars(mReconstructionPassDefault));
+            mRespParamsV3.setMomentumChargeShiftParameters(paramCollection->getPars(mReconstructionPassDefault));
           }
         }
+      } else { // Found the non default case
+        mRespParamsV3.setResolutionParametrization(paramCollection->getPars(mReconstructionPass));
+        mRespParamsV3.setMomentumChargeShiftParameters(paramCollection->getPars(mReconstructionPass));
       }
     }
 
     // Loading additional calibration objects
-    if (mTimeShiftCCDBPathPos != "") {
-      if (mTimeShiftCCDBPathPos.find(".root") != std::string::npos) {
-        mRespParamsV3.setTimeShiftParameters(mTimeShiftCCDBPathPos, "ccdb_object", true);
-      } else {
-        if (mReconstructionPass == "") {
-          mRespParamsV3.setTimeShiftParameters(ccdb->template getForTimeStamp<TGraph>(mTimeShiftCCDBPathPos, mTimestamp), true);
-        } else {
-          std::map<std::string, std::string> metadata;
-          metadata["RecoPassName"] = mReconstructionPass;
-          mRespParamsV3.setTimeShiftParameters(ccdb->template getSpecific<TGraph>(mTimeShiftCCDBPathPos, mTimestamp, metadata), true);
-        }
-      }
+    std::map<std::string, std::string> metadata;
+    metadata["RecoPassName"] = mReconstructionPass;
+    const std::string nameShiftPos = metadataInfo.isMC() ? mTimeShiftCCDBPathPosMC : mTimeShiftCCDBPathPos;
+    if (nameShiftPos != "" && nameShiftPos.find(".root") == std::string::npos) {
+      LOG(info) << "Updating the time shift for positive from ccdb '" << nameShiftPos << "' and timestamp " << mTimestamp << " and pass '" << mReconstructionPass << "'";
+      TGraph* gShift = mReconstructionPass == "" ? ccdb->template getForTimeStamp<TGraph>(nameShiftPos, mTimestamp)
+                                                 : ccdb->template getSpecific<TGraph>(nameShiftPos, mTimestamp, metadata);
+      mRespParamsV3.setTimeShiftParameters(gShift, true);
+      LOG(info) << " test getTimeShift at 0 pos: " << mRespParamsV3.getTimeShift(0, true);
     }
-    if (mTimeShiftCCDBPathNeg != "") {
-      if (mTimeShiftCCDBPathNeg.find(".root") != std::string::npos) {
-        mRespParamsV3.setTimeShiftParameters(mTimeShiftCCDBPathNeg, "ccdb_object", false);
-      } else {
-        if (mReconstructionPass == "") {
-          mRespParamsV3.setTimeShiftParameters(ccdb->template getForTimeStamp<TGraph>(mTimeShiftCCDBPathNeg, mTimestamp), false);
-        } else {
-          std::map<std::string, std::string> metadata;
-          metadata["RecoPassName"] = mReconstructionPass;
-          mRespParamsV3.setTimeShiftParameters(ccdb->template getSpecific<TGraph>(mTimeShiftCCDBPathNeg, mTimestamp, metadata), false);
-        }
-      }
-      LOG(info) << " test getTimeShift neg: " << mRespParamsV3.getTimeShift(0, false);
+    const std::string nameShiftNeg = metadataInfo.isMC() ? mTimeShiftCCDBPathNegMC : mTimeShiftCCDBPathNeg;
+    if (nameShiftNeg != "" && nameShiftNeg.find(".root") == std::string::npos) {
+      LOG(info) << "Updating the time shift for negative from ccdb '" << nameShiftNeg << "' and timestamp " << mTimestamp << " and pass '" << mReconstructionPass << "'";
+      TGraph* gShift = mReconstructionPass == "" ? ccdb->template getForTimeStamp<TGraph>(nameShiftNeg, mTimestamp)
+                                                 : ccdb->template getSpecific<TGraph>(nameShiftNeg, mTimestamp, metadata);
+      mRespParamsV3.setTimeShiftParameters(gShift, true);
+      LOG(info) << " test getTimeShift at 0 neg: " << mRespParamsV3.getTimeShift(0, false);
     }
-
-    return;
+    LOG(info) << "Parametrization at setup time:";
+    mRespParamsV3.printFullConfig();
   }
 
   bool autoSetProcessFunctions() const { return mAutoSetProcessFunctions; }
@@ -303,11 +294,12 @@ struct TOFCalibConfig {
   int64_t mTimestamp;
   std::string mTimeShiftCCDBPathPos;
   std::string mTimeShiftCCDBPathNeg;
+  std::string mTimeShiftCCDBPathPosMC;
+  std::string mTimeShiftCCDBPathNegMC;
   std::string mParamFileName;
   std::string mParametrizationPath;
   std::string mReconstructionPass;
   std::string mReconstructionPassDefault;
-  bool mLoadResponseFromCCDB;
   bool mFatalOnPassNotAvailable;
   bool mEnableTimeDependentResponse;
   int mCollisionSystem;
@@ -345,11 +337,12 @@ struct tofSignal {
     Configurable<int64_t> cfgTimestamp{"ccdb-timestamp", -1, "timestamp of the object"};
     Configurable<std::string> cfgTimeShiftCCDBPathPos{"timeShiftCCDBPathPos", "", "Path of the TOF time shift vs eta for pos. tracks. If empty none is taken"};
     Configurable<std::string> cfgTimeShiftCCDBPathNeg{"timeShiftCCDBPathNeg", "", "Path of the TOF time shift vs eta for neg. tracks. If empty none is taken"};
+    Configurable<std::string> cfgTimeShiftCCDBPathPosMC{"timeShiftCCDBPathPosMC", "", "Path of the TOF time shift for MC vs eta for pos. tracks. If empty none is taken"};
+    Configurable<std::string> cfgTimeShiftCCDBPathNegMC{"timeShiftCCDBPathNegMC", "", "Path of the TOF time shift for MC vs eta for neg. tracks. If empty none is taken"};
     Configurable<std::string> cfgParamFileName{"paramFileName", "", "Path to the parametrization object. If empty the parametrization is not taken from file"};
     Configurable<std::string> cfgParametrizationPath{"parametrizationPath", "TOF/Calib/Params", "Path of the TOF parametrization on the CCDB or in the file, if the paramFileName is not empty"};
     Configurable<std::string> cfgReconstructionPass{"reconstructionPass", "", {"Apass to use when fetching the calibration tables. Empty (default) does not check for any pass. Use `metadata` to fetch it from the AO2D metadata. Otherwise it will override the metadata."}};
     Configurable<std::string> cfgReconstructionPassDefault{"reconstructionPassDefault", "unanchored", {"Default pass to get if the standard one is not found"}};
-    Configurable<bool> cfgLoadResponseFromCCDB{"loadResponseFromCCDB", false, "Flag to load the response from the CCDB"};
     Configurable<bool> cfgFatalOnPassNotAvailable{"fatalOnPassNotAvailable", true, "Flag to throw a fatal if the pass is not available in the retrieved CCDB object"};
     Configurable<bool> cfgEnableTimeDependentResponse{"enableTimeDependentResponse", false, "Flag to use the collision timestamp to fetch the PID Response"};
     Configurable<int> cfgCollisionSystem{"collisionSystem", -1, "Collision system: -1 (autoset), 0 (pp), 1 (PbPb), 2 (XeXe), 3 (pPb)"};
