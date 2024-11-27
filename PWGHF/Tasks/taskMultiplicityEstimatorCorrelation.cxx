@@ -9,8 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file correlateEstimatorDnDeta.cxx
-/// \brief task for correlating the multiplicity estimator with generated dN/deta
+/// \file taskMultiplicityEstimatorCorrelation.cxx
+/// \brief Task for correlating the multiplicity estimator with generated dN/deta
 ///
 /// \author Fabrizio Chinu <fabrizio.chinu@cern.ch>, Università and INFN Torino
 
@@ -29,7 +29,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct CorrelateEstimatorDnDeta {
+struct taskMultiplicityEstimatorCorrelation {
   HistogramRegistry registry{"registry", {}};
   static constexpr int8_t nEstimators = 8;
   static constexpr std::array<std::string_view, nEstimators> estimatorsNames = {"FV0A", "FT0A", "FT0C", "FT0M", "FDDA", "FDDC", "FDDM", "NTPV"};
@@ -133,5 +133,5 @@ struct CorrelateEstimatorDnDeta {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<CorrelateEstimatorDnDeta>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<taskMultiplicityEstimatorCorrelation>(cfgc)};
 }

@@ -9,11 +9,6 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-o2physics_add_dpl_workflow(correlate-estimator-dn-deta
-                    SOURCES correlateEstimatorDnDeta.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(task-charm-had-impact-par
                     SOURCES taskCharmHadImpactPar.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -42,6 +37,11 @@ o2physics_add_dpl_workflow(task-mc-gen-pt-rap-shapes
 o2physics_add_dpl_workflow(task-mc-validation
                     SOURCES taskMcValidation.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(task-multiplicity-estimator-correlation
+                    SOURCES taskMultiplicityEstimatorCorrelation.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 # o2physics_add_dpl_workflow(task-sel-optimisation
