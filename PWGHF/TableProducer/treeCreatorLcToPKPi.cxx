@@ -99,6 +99,12 @@ DECLARE_SOA_COLUMN(MultZeqNTracksPV, multZeqNTracksPV, float);
 
 namespace kf
 {
+DECLARE_SOA_COLUMN(X, x, float); //! decay vertex X coordinate
+DECLARE_SOA_COLUMN(Y, y, float); //! decay vertex Y coordinate
+DECLARE_SOA_COLUMN(Z, z, float); //! decay vertex Z coordinate
+DECLARE_SOA_COLUMN(ErrX, errX, float); //! decay vertex X coordinate error
+DECLARE_SOA_COLUMN(ErrY, errY, float); //! decay vertex Y coordinate error
+DECLARE_SOA_COLUMN(ErrZ, errZ, float); //! decay vertex Z coordinate error
 DECLARE_SOA_COLUMN(Chi2PrimProton, chi2PrimProton, float);
 DECLARE_SOA_COLUMN(Chi2PrimKaon, chi2PrimKaon, float);
 DECLARE_SOA_COLUMN(Chi2PrimPion, chi2PrimPion, float);
@@ -114,10 +120,12 @@ DECLARE_SOA_COLUMN(L, l, float);     //! decay length
 DECLARE_SOA_COLUMN(DeltaL, deltaL, float);     //! decay length error
 DECLARE_SOA_COLUMN(LdL, ldl, float);     //! decay length over its error
 DECLARE_SOA_COLUMN(T, t, float);     //! lifetime
-DECLARE_SOA_COLUMN(DeltaT, deltat, float);     //! lifetime error
+DECLARE_SOA_COLUMN(DeltaT, deltaT, float);     //! lifetime error
 DECLARE_SOA_COLUMN(MassInv, massInv, float);     //! invariant mass
 DECLARE_SOA_COLUMN(P, p, float);     //! momentum
 DECLARE_SOA_COLUMN(Pt, pt, float);     //! transverse momentum
+DECLARE_SOA_COLUMN(DeltaP, deltaP, float);     //! momentum error
+DECLARE_SOA_COLUMN(DeltaPt, deltaPt, float);     //! transverse momentum error
 DECLARE_SOA_COLUMN(IsSelected, isSelected, int);     //! flag whether candidate was selected in candidateSelectorLc task
 DECLARE_SOA_COLUMN(SigBgStatus, sigBgStatus, int);     //! 0 bg, 1 prompt, 2 non-prompt, 3 wrong order of prongs, -1 default value (impossible, should not be the case)
 }
@@ -139,11 +147,13 @@ DECLARE_SOA_TABLE(HfCandLcMCs, "AOD", "HFCANDLCMC",
 )
 
 DECLARE_SOA_TABLE(HfCandLcKFs, "AOD", "HFCANDLCKF",
+                  kf::X, kf::Y, kf::Z, kf::ErrX, kf::ErrY, kf::ErrZ,
                   kf::Chi2PrimProton, kf::Chi2PrimKaon, kf::Chi2PrimPion,
                   kf::DCAProtonKaon, kf::DCAProtonPion, kf::DCAPionKaon,
                   kf::Chi2geoProtonKaon, kf::Chi2geoProtonPion, kf::Chi2geoPionKaon,
                   kf::Chi2geo, kf::Chi2topo, kf::L, kf::DeltaL, kf::LdL, kf::T, kf::DeltaT,
-                  kf::MassInv, kf::P, kf::Pt, kf::IsSelected, kf::SigBgStatus
+                  kf::MassInv, kf::P, kf::Pt, kf::DeltaP, kf::DeltaPt,
+                  kf::IsSelected, kf::SigBgStatus
 );
 
 DECLARE_SOA_TABLE(HfCandLcLites, "AOD", "HFCANDLCLITE",
@@ -294,7 +304,6 @@ DECLARE_SOA_TABLE(HfCandLcFullPs, "AOD", "HFCANDLCFULLP",
                   full::OriginMcGen);
 
 
-
 } // namespace o2::aod
 
 /// Writes the full information in an output TTree
@@ -306,7 +315,6 @@ struct HfTreeCreatorLcToPKPi {
   Produces<o2::aod::HfCollIdLCLite> rowCollisionId;
   Produces<o2::aod::HfCandLcFullEvs> rowCandidateFullEvents;
   Produces<o2::aod::HfCandLcFullPs> rowCandidateFullParticles;
-//   Partition<o2::soa::Join<o2::aod::HfCand3Prong, o2::aod::HfCand3ProngMcRec, o2::aod::HfSelLc>> candidatesSpawns = true;
 
   Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
   Configurable<bool> fillCandidateLiteTable{"fillCandidateLiteTable", false, "Switch to fill lite table with candidate properties"};
@@ -573,6 +581,12 @@ struct HfTreeCreatorLcToPKPi {
                 FunctionInvMassKPi);
             }
           } else {
+            const float X = candidate.xSecondaryVertex();
+            const float Y = candidate.ySecondaryVertex();
+            const float Z = candidate.zSecondaryVertex();
+            const float ErrX = candidate.kfErrorX();
+            const float ErrY = candidate.kfErrorY();
+            const float ErrZ = candidate.kfErrorZ();
             const float chi2prim_proton = CandFlag == 0 ? candidate.kfChi2PrimProng0() : candidate.kfChi2PrimProng2();
             const float chi2prim_kaon = candidate.kfChi2PrimProng1();
             const float chi2prim_pion = CandFlag == 0 ? candidate.kfChi2PrimProng2() : candidate.kfChi2PrimProng0();
@@ -587,16 +601,22 @@ struct HfTreeCreatorLcToPKPi {
             const float l = candidate.kfL();
             const float dl = candidate.kfDeltaL();
             const float pt = std::sqrt(candidate.kfPx()*candidate.kfPx() + candidate.kfPy()*candidate.kfPy());
+            const float deltaPt = std::sqrt(candidate.kfPx()*candidate.kfPx()*candidate.kfErrorPx()*candidate.kfErrorPx() +
+                                            candidate.kfPy()*candidate.kfPy()*candidate.kfErrorPy()*candidate.kfErrorPy() )/pt;
             const float p = std::sqrt(pt*pt + candidate.kfPz()*candidate.kfPz());
+            const float deltaP = std::sqrt(pt*pt*deltaPt*deltaPt +
+                                           candidate.kfPz()*candidate.kfPz()*candidate.kfErrorPz()*candidate.kfErrorPz()) / p;
             const float T = l * MassLambdaCPlus / LightSpeedCm2PS / p;
             const float deltaT = dl * MassLambdaCPlus / LightSpeedCm2PS / p;
             const float mass = CandFlag == 0 ? candidate.kfMassPKPi() : candidate.kfMassPiKP();
             rowCandidateKF(
+              X, Y, Z, ErrX, ErrY, ErrZ,
               chi2prim_proton, chi2prim_kaon, chi2prim_pion,
               dca_proton_kaon, dca_proton_pion, dca_pion_kaon,
               chi2geo_proton_kaon, chi2geo_proton_pion, chi2geo_pion_kaon,
               chi2geo, chi2topo, l, dl, l/dl, T, deltaT,
-              mass, p, pt, FunctionSelection, sigbgstatus
+              mass, p, pt, deltaP, deltaPt,
+              FunctionSelection, sigbgstatus
             );
 
             if (fillCollIdTable) {

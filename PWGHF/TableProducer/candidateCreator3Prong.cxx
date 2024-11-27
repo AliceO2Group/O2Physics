@@ -577,7 +577,8 @@ struct HfCandidateCreator3Prong {
                        rowTrackIndexProng3.hfflag());
 
       // fill KF info
-      rowCandidateKF(massPKPi, massPiKP, massPiKPi, massKKPi, massPiKK, massKPi, massPiK,
+      rowCandidateKF(kfCandPKPi.GetErrX(), kfCandPKPi.GetErrY(), kfCandPKPi.GetErrZ(),
+                     massPKPi, massPiKP, massPiKPi, massKKPi, massPiKK, massKPi, massPiK,
                      kfCandPKPi.GetPx(), kfCandPKPi.GetPy(), kfCandPKPi.GetPz(),
                      kfCandPKPi.GetErrPx(), kfCandPKPi.GetErrPy(), kfCandPKPi.GetErrPz(),
                      chi2prim_first, chi2prim_second, chi2prim_third,

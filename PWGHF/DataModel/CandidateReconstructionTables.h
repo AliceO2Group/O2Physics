@@ -957,6 +957,9 @@ enum DecayChannelDToKKPi {
 };
 
 // KF related properties
+DECLARE_SOA_COLUMN(KfErrorX, kfErrorX, float);       //! error of candidate's decay point X coordinate from the KFParticle fit
+DECLARE_SOA_COLUMN(KfErrorY, kfErrorY, float);       //! error of candidate's decay point Y coordinate from the KFParticle fit
+DECLARE_SOA_COLUMN(KfErrorZ, kfErrorZ, float);       //! error of candidate's decay point Z coordinate from the KFParticle fit
 DECLARE_SOA_COLUMN(KfMassPKPi, kfMassPKPi, float);       //! mass of the PKPi candidate from the KFParticle fit
 DECLARE_SOA_COLUMN(KfMassPiKP, kfMassPiKP, float);       //! mass of the PiKP candidate from the KFParticle fit
 DECLARE_SOA_COLUMN(KfMassPiKPi, kfMassPiKPi, float);     //! mass of the PiKPi candidate from the KFParticle fit
@@ -1034,6 +1037,7 @@ DECLARE_SOA_EXTENDED_TABLE_USER(HfCand3ProngExt, HfCand3ProngBase, "HFCAND3PEXT"
 using HfCand3Prong = HfCand3ProngExt;
 
 DECLARE_SOA_TABLE(HfCand3ProngKF, "AOD", "HFCAND3PKF",
+                  hf_cand_3prong::KfErrorX, hf_cand_3prong::KfErrorY, hf_cand_3prong::KfErrorZ,
                   hf_cand_3prong::KfMassPKPi, hf_cand_3prong::KfMassPiKP, hf_cand_3prong::KfMassPiKPi, hf_cand_3prong::KfMassKKPi, hf_cand_3prong::KfMassPiKK, hf_cand_3prong::KfMassKPi, hf_cand_3prong::KfMassPiK,
                   hf_cand_3prong::KfPx, hf_cand_3prong::KfPy, hf_cand_3prong::KfPz,
                   hf_cand_3prong::KfErrorPx, hf_cand_3prong::KfErrorPy, hf_cand_3prong::KfErrorPz,
