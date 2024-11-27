@@ -27,6 +27,8 @@ using namespace o2::framework;
 using EventSelection = soa::Join<aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs>;
 using CollisionRec = soa::Join<aod::Collisions, EventSelection>::iterator; // use in json "isMC": "true" for "event-selection-task"
 using CollisionRecSim = soa::Join<aod::Collisions, aod::McCollisionLabels, EventSelection>::iterator;
+// using CollisionRecSim = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::MultsExtraMC, EventSelection>::iterator;
+// using CollisionRecSim = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::MultsExtraMC, EventSelection>::iterator;
 using CollisionSim = aod::McCollision;
 using TracksRec = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
 using TrackRec = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>::iterator;
@@ -113,8 +115,13 @@ struct MultiparticleCorrelationsAB // this name is used in lower-case format to 
                             // or values for cuts provided via configurables are taken into account
                             // Remark: DefaultCuts() has to be called after DefaultBinning()
 
+    // *) Specific cuts:
+    if (tc.fUseSpecificCuts) {
+      SpecificCuts(tc.fWhichSpecificCuts); // after default cuts are applied, on top of them apply analysis-specific cuts. Has to be called after DefaultBinning() and DefaultCuts()
+    }
+
     // *) Insanity checks before booking:
-    InsanityChecksBeforeBooking(); // check only harwired values and the ones obtained from configurables
+    InsanityChecksBeforeBooking(); // check only hardwired values and the ones obtained from configurables
 
     // *) Book random generator:
     delete gRandom;

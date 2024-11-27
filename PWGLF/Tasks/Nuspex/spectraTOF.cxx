@@ -1124,7 +1124,7 @@ struct tofSpectra {
   }
 
   template <bool fillHistograms = false, typename TrackType, typename CollisionType>
-  bool isTrackSelected(TrackType const& track, CollisionType const& collision)
+  bool isTrackSelected(TrackType const& track, CollisionType const& /*collision*/)
   {
     if constexpr (fillHistograms) {
       histos.fill(HIST("tracksel"), 1);
