@@ -1254,15 +1254,15 @@ struct QaEfficiency {
           for (const auto& mother : mothers) {
             for (const auto& pdgToCheck : mothersPDGs.value) {
               if (mother.pdgCode() == pdgToCheck) {
-                motherIsAccepted = true;  // Mother matches the list of specified PDGs
+                motherIsAccepted = true; // Mother matches the list of specified PDGs
                 break;
               }
-           }  // If mother is accepted, break out of loop
-           if (motherIsAccepted) {
-             break;
-           }
-         }
-       }
+            } // If mother is accepted, break out of loop
+            if (motherIsAccepted) {
+              break;
+            }
+          }
+        }
         // If mother particle is accepted, fill histograms for Xi and Lambda pT
         if (motherIsAccepted) {
           hPtmotherGenerated->Fill(mcParticle.pt()); // Fill generated pT for Lambda
