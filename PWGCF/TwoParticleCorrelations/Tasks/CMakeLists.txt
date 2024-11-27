@@ -47,3 +47,12 @@ o2physics_add_dpl_workflow(twopartcorr-per-run-extraqc
                            SOURCES perRunExtraQc.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore O2Physics::AnalysisCCDB
                            COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(corrsparses
+                           SOURCES CorrSparse.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
+                           COMPONENT_NAME Analysis)
+
+
+
+

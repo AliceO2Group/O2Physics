@@ -24,6 +24,7 @@
 #include "ReconstructionDataFormats/DCA.h"
 #include "ReconstructionDataFormats/Track.h"
 #include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -35,6 +36,7 @@
 #include "TEfficiency.h"
 #include "THashList.h"
 
+using namespace o2;
 using namespace o2::framework;
 
 // Indices for the track cut histogram
@@ -213,6 +215,8 @@ struct QaEfficiency {
   ConfigurableAxis etaBins{"etaBins", {200, -3.f, 3.f}, "Eta binning"};
   ConfigurableAxis phiBins{"phiBins", {200, 0.f, 6.284f}, "Phi binning"};
   ConfigurableAxis yBins{"yBins", {200, -0.5f, 0.5f}, "Y binning"};
+  ConfigurableAxis occBins{"occBins", {100, 0.f, 14000.f}, "Occupancy binning"};
+  ConfigurableAxis centBins{"centBins", {110, 0.f, 110.f}, "Centrality binning"};
   ConfigurableAxis radiusBins{"radiusBins", {200, 0.f, 100.f}, "Radius binning"};
   // Task configuration
   Configurable<bool> makeEff{"make-eff", false, "Flag to produce the efficiency with TEfficiency"};
@@ -241,11 +245,14 @@ struct QaEfficiency {
   Configurable<float> minDcaZ{"minDcaZ", -2.f, "Additional cut on the minimum abs value of the DCA z"};
   Configurable<float> minDcaXY{"minDcaXY", -1.f, "Additional cut on the minimum abs value of the DCA xy"};
 
+  Configurable<bool> doOccupancy{"doOccupancyStudy", false, "Flag to store Occupancy-related information"};
+  Configurable<bool> useFT0OccEstimator{"useFT0OccEstimator", false, "Flag to adopt FT0c to estimate occupancy instead of ITS"};
+
   // Output objects for TEfficiency
   OutputObj<THashList> listEfficiencyMC{"EfficiencyMC"};
   OutputObj<THashList> listEfficiencyData{"EfficiencyData"};
 
-  using CollisionCandidates = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>;
+  using CollisionCandidates = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels, aod::CentFT0Cs>;
   using CollisionCandidatesMC = o2::soa::Join<CollisionCandidates, o2::aod::McCollisionLabels>;
   using TrackCandidates = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TrackSelection, o2::aod::TrackSelectionExtension, o2::aod::TracksDCA>;
   using TrackCandidatesMC = o2::soa::Join<TrackCandidates, o2::aod::McTrackLabels>;
@@ -291,6 +298,7 @@ struct QaEfficiency {
     const AxisSpec axisY{yBins, "#it{y}"};
     const AxisSpec axisPhi{phiBins, "#it{#varphi} (rad)"};
     const AxisSpec axisRadius{radiusBins, "Radius (cm)"};
+    const AxisSpec axisOcc{occBins, "Occupancy"};
 
     const char* partName = particleName(pdgSign, id);
     LOG(info) << "Preparing histograms for particle: " << partName << " pdgSign " << pdgSign;
@@ -630,6 +638,24 @@ struct QaEfficiency {
 
     listEfficiencyMC.setObject(new THashList);
 
+    if (doOccupancy) {
+      const AxisSpec axisPt{ptBins, "#it{p}_{T} (GeV/#it{c})"};
+      const AxisSpec axisOcc{occBins, "Occupancy"};
+      const AxisSpec axisCent{centBins, "Centrality"};
+
+      histos.add("MC/occ_cent/gen/pos", "Generated Positive ", kTH3D, {axisOcc, axisCent, axisPt});
+      histos.add("MC/occ_cent/gen/neg", "Generated Negative ", kTH3D, {axisOcc, axisCent, axisPt});
+
+      histos.add("MC/occ_cent/reco/pos/its_tpc_tof", "ITS-TPC-TOF Positive ", kTH3D, {axisOcc, axisCent, axisPt});
+      histos.add("MC/occ_cent/reco/neg/its_tpc_tof", "ITS-TPC-TOF Negative ", kTH3D, {axisOcc, axisCent, axisPt});
+
+      histos.add("MC/occ_cent/reco/pos/its_tpc", "ITS-TPC Positive ", kTH3D, {axisOcc, axisCent, axisPt});
+      histos.add("MC/occ_cent/reco/neg/its_tpc", "ITS-TPC Negative ", kTH3D, {axisOcc, axisCent, axisPt});
+
+      histos.add("MC/occ_cent/reco/pos/its", "ITS Positive ", kTH3D, {axisOcc, axisCent, axisPt});
+      histos.add("MC/occ_cent/reco/neg/its", "ITS Negative ", kTH3D, {axisOcc, axisCent, axisPt});
+    }
+
     static_for<0, 1>([&](auto pdgSign) {
       makeMCHistograms<pdgSign, o2::track::PID::Electron>(doEl);
       makeMCHistograms<pdgSign, o2::track::PID::Muon>(doMu);
@@ -734,6 +760,8 @@ struct QaEfficiency {
                                 ptMin, ptMax,
                                 phiMin, phiMax);
     const AxisSpec axisEta{etaBins, "#it{#eta}"};
+    const AxisSpec axisOcc{occBins, "Occupancy"};
+    const AxisSpec axisCent{centBins, "Centrality"};
 
     const TString tagPhi = Form("#it{#eta} [%.2f,%.2f] #it{p}_{T} [%.2f,%.2f]",
                                 etaMin, etaMax,
@@ -744,6 +772,20 @@ struct QaEfficiency {
                                    ptMin, ptMax);
 
     histos.add("Data/trackLength", "Track length;Track length (cm)", kTH1D, {{2000, -1000, 1000}});
+
+    if (doOccupancy) {
+      histos.add("Data/occ_cent/pos/its_tpc_tof", "ITS-TPC-TOF Positive ", kTH3D, {axisOcc, axisCent, axisPt});
+      histos.add("Data/occ_cent/neg/its_tpc_tof", "ITS-TPC-TOF Negative ", kTH3D, {axisOcc, axisCent, axisPt});
+
+      histos.add("Data/occ_cent/pos/its_tpc", "ITS-TPC Positive ", kTH3D, {axisOcc, axisCent, axisPt});
+      histos.add("Data/occ_cent/neg/its_tpc", "ITS-TPC Negative ", kTH3D, {axisOcc, axisCent, axisPt});
+
+      histos.add("Data/occ_cent/pos/tpc", "TPC Positive ", kTH3D, {axisOcc, axisCent, axisPt});
+      histos.add("Data/occ_cent/neg/tpc", "TPC Negative ", kTH3D, {axisOcc, axisCent, axisPt});
+
+      histos.add("Data/occ_cent/pos/its", "ITS Positive ", kTH3D, {axisOcc, axisCent, axisPt});
+      histos.add("Data/occ_cent/neg/its", "ITS Negative ", kTH3D, {axisOcc, axisCent, axisPt});
+    }
 
     // ITS-TPC-TOF
     histos.add("Data/pos/pt/its_tpc_tof", "ITS-TPC-TOF Positive " + tagPt, kTH1D, {axisPt});
@@ -1627,6 +1669,54 @@ struct QaEfficiency {
     return true;
   }
 
+  /// \brief Function to get MC collision occupancy
+  /// \param collSlice collection of reconstructed collisions
+  /// \return collision occupancy
+  template <typename CCs>
+  int getOccupancyColl(CCs const& collSlice)
+  {
+    float multiplicity{0.f};
+    int occupancy = 0;
+    for (const auto& collision : collSlice) {
+      float collMult{0.f};
+      collMult = collision.numContrib();
+
+      if (collMult > multiplicity) {
+        if (useFT0OccEstimator) {
+          /// occupancy estimator (FT0c signal amplitudes in +-10us from current collision)
+          occupancy = collision.ft0cOccupancyInTimeRange();
+        } else {
+          /// occupancy estimator (ITS tracks with at least 5 clusters in +-10us from current collision)
+          occupancy = static_cast<float>(collision.trackOccupancyInTimeRange());
+        }
+        multiplicity = collMult;
+      }
+    } // end loop over collisions
+
+    return occupancy;
+  }
+
+  /// \brief Function to get MC collision centrality
+  /// \param collSlice collection of reconstructed collisions
+  /// \return collision centrality
+  template <typename CCs>
+  int getCentralityColl(CCs const& collSlice)
+  {
+    float multiplicity{0.f};
+    int centrality = 0;
+    for (const auto& collision : collSlice) {
+      float collMult{0.f};
+      collMult = collision.numContrib();
+
+      if (collMult > multiplicity) {
+        centrality = collision.centFT0C();
+        multiplicity = collMult;
+      }
+    } // end loop over collisions
+
+    return centrality;
+  }
+
   // MC process
   // Single-track efficiency calculated only for MC collisions with at least 1 reco. collision
   SliceCache cache;
@@ -1651,6 +1741,12 @@ struct QaEfficiency {
 
       if (groupedCollisions.size() < 1) { // Skipping MC events that have no reconstructed collisions
         continue;
+      }
+      float centrality = -1.;
+      float occupancy = -1.;
+      if (doOccupancy) {
+        centrality = getCentralityColl(groupedCollisions);
+        occupancy = getOccupancyColl(groupedCollisions);
       }
       histos.fill(HIST("MC/generatedCollisions"), 2);
       if (skipEventsWithoutTPCTracks) {
@@ -1678,6 +1774,14 @@ struct QaEfficiency {
           continue;
         }
         histos.fill(HIST("MC/generatedCollisions"), 5);
+        if (useFT0OccEstimator) {
+          /// occupancy estimator (FT0c signal amplitudes in +-10us from current collision)
+          occupancy = collision.ft0cOccupancyInTimeRange();
+        } else {
+          /// occupancy estimator (ITS tracks with at least 5 clusters in +-10us from current collision)
+          occupancy = static_cast<float>(collision.trackOccupancyInTimeRange());
+        }
+        centrality = collision.centFT0C();
 
         const auto groupedTracks = tracks.sliceBy(perCollision, collision.globalIndex());
 
@@ -1692,6 +1796,33 @@ struct QaEfficiency {
           const auto& particle = track.mcParticle();
           if (keepOnlyHfParticles && !RecoDecay::getCharmHadronOrigin(mcParticles, particle, /*searchUpToQuark*/ true)) {
             continue;
+          }
+
+          if (doOccupancy) {
+            float trackPt = track.pt();
+            float trackSign = track.sign();
+            if (trackSign > 0) {
+              if (passedTOF && passedTPC && passedITS) {
+                histos.fill(HIST("MC/occ_cent/reco/pos/its_tpc_tof"), occupancy, centrality, trackPt);
+              }
+              if (passedTPC && passedITS) {
+                histos.fill(HIST("MC/occ_cent/reco/pos/its_tpc"), occupancy, centrality, trackPt);
+              }
+              if (passedITS) {
+                histos.fill(HIST("MC/occ_cent/reco/pos/its"), occupancy, centrality, trackPt);
+              }
+            }
+            if (trackSign < 0) {
+              if (passedTOF && passedTPC && passedITS) {
+                histos.fill(HIST("MC/occ_cent/reco/neg/its_tpc_tof"), occupancy, centrality, trackPt);
+              }
+              if (passedTPC && passedITS) {
+                histos.fill(HIST("MC/occ_cent/reco/neg/its_tpc"), occupancy, centrality, trackPt);
+              }
+              if (passedITS) {
+                histos.fill(HIST("MC/occ_cent/reco/neg/its"), occupancy, centrality, trackPt);
+              }
+            }
           }
 
           // Filling variable histograms
@@ -1735,6 +1866,17 @@ struct QaEfficiency {
           // search for particles from HF decays
           if (keepOnlyHfParticles && !RecoDecay::getCharmHadronOrigin(mcParticles, particle, /*searchUpToQuark*/ true)) {
             continue;
+          }
+
+          if (doOccupancy) {
+            float partSign = particle.pdgCode();
+            float mcPartPt = particle.pt();
+            if (partSign > 0) {
+              histos.fill(HIST("MC/occ_cent/gen/pos"), occupancy, centrality, mcPartPt);
+            }
+            if (partSign < 0) {
+              histos.fill(HIST("MC/occ_cent/gen/neg"), occupancy, centrality, mcPartPt);
+            }
           }
 
           static_for<0, 1>([&](auto pdgSign) {
@@ -1914,76 +2056,124 @@ struct QaEfficiency {
 
       histos.fill(HIST("Data/trackLength"), track.length());
 
-      if (passedITS) {
-        if (track.sign() > 0) {
-          histos.fill(HIST("Data/pos/pt/its"), track.pt());
-          histos.fill(HIST("Data/pos/eta/its"), track.eta());
-          histos.fill(HIST("Data/pos/phi/its"), track.phi());
-          histos.fill(HIST("Data/pos/etaphi/its"), track.eta(), track.phi());
+      float trackPt = track.pt();
+      float trackEta = track.eta();
+      float trackPhi = track.phi();
+      float trackSign = track.sign();
+      float occupancy;
+      float centrality;
+      if (doOccupancy) {
+        centrality = collision.centFT0C();
+        if (useFT0OccEstimator) {
+          /// occupancy estimator (FT0c signal amplitudes in +-10us from current collision)
+          occupancy = collision.ft0cOccupancyInTimeRange();
         } else {
-          histos.fill(HIST("Data/neg/pt/its"), track.pt());
-          histos.fill(HIST("Data/neg/eta/its"), track.eta());
-          histos.fill(HIST("Data/neg/phi/its"), track.phi());
-          histos.fill(HIST("Data/neg/etaphi/its"), track.eta(), track.phi());
+          /// occupancy estimator (ITS tracks with at least 5 clusters in +-10us from current collision)
+          occupancy = static_cast<float>(collision.trackOccupancyInTimeRange());
+        }
+      }
+      if (passedITS) {
+        if (trackSign > 0) {
+          histos.fill(HIST("Data/pos/pt/its"), trackPt);
+          histos.fill(HIST("Data/pos/eta/its"), trackEta);
+          histos.fill(HIST("Data/pos/phi/its"), trackPhi);
+          histos.fill(HIST("Data/pos/etaphi/its"), trackEta, trackPhi);
+
+          if (doOccupancy) {
+            histos.fill(HIST("Data/occ_cent/pos/its"), occupancy, centrality, trackPt);
+          }
+        } else {
+          histos.fill(HIST("Data/neg/pt/its"), trackPt);
+          histos.fill(HIST("Data/neg/eta/its"), trackEta);
+          histos.fill(HIST("Data/neg/phi/its"), trackPhi);
+          histos.fill(HIST("Data/neg/etaphi/its"), trackEta, trackPhi);
+
+          if (doOccupancy) {
+            histos.fill(HIST("Data/occ_cent/neg/its"), occupancy, centrality, trackPt);
+          }
         }
       }
 
       if (passedTPC) {
-        if (track.sign() > 0) {
-          histos.fill(HIST("Data/pos/pt/tpc"), track.pt());
-          histos.fill(HIST("Data/pos/eta/tpc"), track.eta());
-          histos.fill(HIST("Data/pos/phi/tpc"), track.phi());
-          histos.fill(HIST("Data/pos/etaphi/tpc"), track.eta(), track.phi());
+        if (trackSign > 0) {
+          histos.fill(HIST("Data/pos/pt/tpc"), trackPt);
+          histos.fill(HIST("Data/pos/eta/tpc"), trackEta);
+          histos.fill(HIST("Data/pos/phi/tpc"), trackPhi);
+          histos.fill(HIST("Data/pos/etaphi/tpc"), trackEta, trackPhi);
+
+          if (doOccupancy) {
+            histos.fill(HIST("Data/occ_cent/pos/tpc"), occupancy, centrality, trackPt);
+          }
         } else {
-          histos.fill(HIST("Data/neg/pt/tpc"), track.pt());
-          histos.fill(HIST("Data/neg/eta/tpc"), track.eta());
-          histos.fill(HIST("Data/neg/phi/tpc"), track.phi());
-          histos.fill(HIST("Data/neg/etaphi/tpc"), track.eta(), track.phi());
+          histos.fill(HIST("Data/neg/pt/tpc"), trackPt);
+          histos.fill(HIST("Data/neg/eta/tpc"), trackEta);
+          histos.fill(HIST("Data/neg/phi/tpc"), trackPhi);
+          histos.fill(HIST("Data/neg/etaphi/tpc"), trackEta, trackPhi);
+
+          if (doOccupancy) {
+            histos.fill(HIST("Data/occ_cent/neg/tpc"), occupancy, centrality, trackPt);
+          }
         }
       }
 
       if (passedITS && passedTPC) {
-        if (track.sign() > 0) {
-          histos.fill(HIST("Data/pos/pt/its_tpc"), track.pt());
-          histos.fill(HIST("Data/pos/eta/its_tpc"), track.eta());
-          histos.fill(HIST("Data/pos/phi/its_tpc"), track.phi());
-          histos.fill(HIST("Data/pos/etaphi/its_tpc"), track.eta(), track.phi());
+        if (trackSign > 0) {
+          histos.fill(HIST("Data/pos/pt/its_tpc"), trackPt);
+          histos.fill(HIST("Data/pos/eta/its_tpc"), trackEta);
+          histos.fill(HIST("Data/pos/phi/its_tpc"), trackPhi);
+          histos.fill(HIST("Data/pos/etaphi/its_tpc"), trackEta, trackPhi);
+
+          if (doOccupancy) {
+            histos.fill(HIST("Data/occ_cent/pos/its_tpc"), occupancy, centrality, trackPt);
+          }
         } else {
-          histos.fill(HIST("Data/neg/pt/its_tpc"), track.pt());
-          histos.fill(HIST("Data/neg/eta/its_tpc"), track.eta());
-          histos.fill(HIST("Data/neg/phi/its_tpc"), track.phi());
-          histos.fill(HIST("Data/neg/etaphi/its_tpc"), track.eta(), track.phi());
+          histos.fill(HIST("Data/neg/pt/its_tpc"), trackPt);
+          histos.fill(HIST("Data/neg/eta/its_tpc"), trackEta);
+          histos.fill(HIST("Data/neg/phi/its_tpc"), trackPhi);
+          histos.fill(HIST("Data/neg/etaphi/its_tpc"), trackEta, trackPhi);
+
+          if (doOccupancy) {
+            histos.fill(HIST("Data/occ_cent/neg/its_tpc"), occupancy, centrality, trackPt);
+          }
         }
       }
 
       if (passedITS && passedTPC && passedTOF) {
-        if (track.sign() > 0) {
-          histos.fill(HIST("Data/pos/pt/its_tpc_tof"), track.pt());
-          histos.fill(HIST("Data/pos/eta/its_tpc_tof"), track.eta());
-          histos.fill(HIST("Data/pos/phi/its_tpc_tof"), track.phi());
-          histos.fill(HIST("Data/pos/etaphi/its_tpc_tof"), track.eta(), track.phi());
+        if (trackSign > 0) {
+          histos.fill(HIST("Data/pos/pt/its_tpc_tof"), trackPt);
+          histos.fill(HIST("Data/pos/eta/its_tpc_tof"), trackEta);
+          histos.fill(HIST("Data/pos/phi/its_tpc_tof"), trackPhi);
+          histos.fill(HIST("Data/pos/etaphi/its_tpc_tof"), trackEta, trackPhi);
+
+          if (doOccupancy) {
+            histos.fill(HIST("Data/occ_cent/pos/its_tpc_tof"), occupancy, centrality, trackPt);
+          }
         } else {
-          histos.fill(HIST("Data/neg/pt/its_tpc_tof"), track.pt());
-          histos.fill(HIST("Data/neg/eta/its_tpc_tof"), track.eta());
-          histos.fill(HIST("Data/neg/phi/its_tpc_tof"), track.phi());
-          histos.fill(HIST("Data/neg/etaphi/its_tpc_tof"), track.eta(), track.phi());
+          histos.fill(HIST("Data/neg/pt/its_tpc_tof"), trackPt);
+          histos.fill(HIST("Data/neg/eta/its_tpc_tof"), trackEta);
+          histos.fill(HIST("Data/neg/phi/its_tpc_tof"), trackPhi);
+          histos.fill(HIST("Data/neg/etaphi/its_tpc_tof"), trackEta, trackPhi);
+
+          if (doOccupancy) {
+            histos.fill(HIST("Data/occ_cent/neg/its"), occupancy, centrality, trackPt);
+          }
         }
       }
 
       if (makeEff) {
         if (passedITS) {
-          effITSTPCMatchingVsPt->Fill(passedTPC, track.pt());
+          effITSTPCMatchingVsPt->Fill(passedTPC, trackPt);
         }
         if (passedTPC) {
-          effTPCITSMatchingVsPt->Fill(passedITS, track.pt());
+          effTPCITSMatchingVsPt->Fill(passedITS, trackPt);
         }
         if (passedITS && passedTPC) {
-          effTPCTOFMatchingVsPt->Fill(passedTOF, track.pt());
+          effTPCTOFMatchingVsPt->Fill(passedTOF, trackPt);
           effTPCTOFMatchingVsP->Fill(passedTOF, track.p());
-          effTPCTOFMatchingVsEta->Fill(passedTOF, track.eta());
-          effTPCTOFMatchingVsPhi->Fill(passedTOF, track.phi());
-          effTPCTOFMatchingVsPtVsEta->Fill(passedTOF, track.pt(), track.eta());
-          effTPCTOFMatchingVsPtVsPhi->Fill(passedTOF, track.pt(), track.phi());
+          effTPCTOFMatchingVsEta->Fill(passedTOF, trackEta);
+          effTPCTOFMatchingVsPhi->Fill(passedTOF, trackPhi);
+          effTPCTOFMatchingVsPtVsEta->Fill(passedTOF, trackPt, trackEta);
+          effTPCTOFMatchingVsPtVsPhi->Fill(passedTOF, trackPt, trackPhi);
         }
       }
     }

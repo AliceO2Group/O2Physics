@@ -107,20 +107,9 @@ namespace muon_params
 DECLARE_SOA_COLUMN(TRACKCHI2, trackChi2, float);
 DECLARE_SOA_COLUMN(RABS, rabs, float);
 DECLARE_SOA_COLUMN(Q, q, int16_t);
-
 DECLARE_SOA_COLUMN(PT, pt, float);
 DECLARE_SOA_COLUMN(ETA, eta, float);
 DECLARE_SOA_COLUMN(PHI, phi, float);
-
-DECLARE_SOA_COLUMN(PT_AT_PV, pt_pv, float);
-DECLARE_SOA_COLUMN(ETA_AT_PV, eta_pv, float);
-DECLARE_SOA_COLUMN(PHI_AT_PV, phi_pv, float);
-
-DECLARE_SOA_COLUMN(PT_AT_DCA, pt_dca, float);
-DECLARE_SOA_COLUMN(ETA_AT_DCA, eta_dca, float);
-DECLARE_SOA_COLUMN(PHI_AT_DCA, phi_dca, float);
-DECLARE_SOA_COLUMN(DCA, dca, float);
-
 DECLARE_SOA_COLUMN(HASMFT, has_mft, bool);
 } // namespace muon_params
 
@@ -131,13 +120,6 @@ DECLARE_SOA_TABLE(MUONParams, "AOD", "MUON",
                   muon_params::PT,
                   muon_params::ETA,
                   muon_params::PHI,
-                  muon_params::PT_AT_PV,
-                  muon_params::ETA_AT_PV,
-                  muon_params::PHI_AT_PV,
-                  muon_params::PT_AT_DCA,
-                  muon_params::ETA_AT_DCA,
-                  muon_params::PHI_AT_DCA,
-                  muon_params::DCA,
                   muon_params::HASMFT);
 
 namespace mft_params
@@ -146,13 +128,9 @@ DECLARE_SOA_COLUMN(NCLUST, nclust, int);
 DECLARE_SOA_COLUMN(ISCA, isCA, bool);
 DECLARE_SOA_COLUMN(TRACKCHI2, trackChi2, float);
 DECLARE_SOA_COLUMN(Q, q, int16_t);
-DECLARE_SOA_COLUMN(PT, pt, float);
-DECLARE_SOA_COLUMN(ETA, eta, float);
-DECLARE_SOA_COLUMN(PHI, phi, float);
 DECLARE_SOA_COLUMN(PT_AT_DCA, pt_dca, float);
 DECLARE_SOA_COLUMN(ETA_AT_DCA, eta_dca, float);
 DECLARE_SOA_COLUMN(PHI_AT_DCA, phi_dca, float);
-DECLARE_SOA_COLUMN(DCA, dca, float);
 DECLARE_SOA_COLUMN(DCAx, dcax, float);
 DECLARE_SOA_COLUMN(DCAy, dcay, float);
 } // namespace mft_params
@@ -162,15 +140,11 @@ DECLARE_SOA_TABLE(MFTParams, "AOD", "MFT",
                   mft_params::ISCA,
                   mft_params::TRACKCHI2,
                   mft_params::Q,
-                  mft_params::PT,
-                  mft_params::ETA,
-                  mft_params::PHI,
                   mft_params::PT_AT_DCA,
                   mft_params::ETA_AT_DCA,
                   mft_params::PHI_AT_DCA,
                   mft_params::DCAx,
-                  mft_params::DCAy,
-                  mft_params::DCA);
+                  mft_params::DCAy);
 
 namespace matching_params
 {
@@ -200,9 +174,6 @@ DECLARE_SOA_COLUMN(MftDCA, mftdca, float);
 } // namespace matching_params
 
 DECLARE_SOA_TABLE(MatchParams, "AOD", "MATCHING",
-                  matching_params::NClustMFTTracks,
-                  matching_params::Chi2MFTTracks,
-                  matching_params::DeltaP,
                   matching_params::DeltaPt,
                   matching_params::DeltaEta,
                   matching_params::DeltaPhi,
@@ -210,13 +181,9 @@ DECLARE_SOA_TABLE(MatchParams, "AOD", "MATCHING",
                   matching_params::DeltaY,
                   matching_params::MchPt,
                   matching_params::MchEta,
-                  matching_params::MchPhi,
                   matching_params::MchQ,
-                  matching_params::MftPt,
                   matching_params::MftEta,
-                  matching_params::MftPhi,
-                  matching_params::MftQ,
-                  matching_params::MftDCA);
+                  matching_params::MftQ);
 
 namespace mix_matching_params
 {
@@ -243,13 +210,21 @@ DECLARE_SOA_COLUMN(MftQ, mftq, float);
 DECLARE_SOA_COLUMN(MftDCA, mftdca, float);
 } // namespace mix_matching_params
 
+DECLARE_SOA_TABLE(MixMatchParams, "AOD", "MIXMATCHING",
+                  mix_matching_params::DeltaPt,
+                  mix_matching_params::DeltaEta,
+                  mix_matching_params::DeltaPhi,
+                  mix_matching_params::DeltaX,
+                  mix_matching_params::DeltaY,
+                  mix_matching_params::MchPt,
+                  mix_matching_params::MchEta,
+                  mix_matching_params::MchQ,
+                  mix_matching_params::MftEta,
+                  mix_matching_params::MftQ);
+
 namespace tag_matching_params
 {
 // matching parameters
-DECLARE_SOA_COLUMN(NClustMFTTracks, nClustMFT, int);
-DECLARE_SOA_COLUMN(Chi2MFTTracks, chi2MFT, float);
-
-DECLARE_SOA_COLUMN(DeltaP, dp_mchplane, float);
 DECLARE_SOA_COLUMN(DeltaPt, dpt_mchplane, float);
 DECLARE_SOA_COLUMN(DeltaEta, deta_mchplane, float);
 DECLARE_SOA_COLUMN(DeltaPhi, dphi_mchplane, float);
@@ -258,22 +233,14 @@ DECLARE_SOA_COLUMN(DeltaY, dy_mchplane, float);
 
 DECLARE_SOA_COLUMN(MchPt, mchpt, float);
 DECLARE_SOA_COLUMN(MchEta, mcheta, float);
-DECLARE_SOA_COLUMN(MchPhi, mchphi, float);
 DECLARE_SOA_COLUMN(MchQ, mchq, float);
 
-DECLARE_SOA_COLUMN(MftPt, mftpt, float);
 DECLARE_SOA_COLUMN(MftEta, mfteta, float);
-DECLARE_SOA_COLUMN(MftPhi, mftphi, float);
 DECLARE_SOA_COLUMN(MftQ, mftq, float);
-DECLARE_SOA_COLUMN(MftDCA, mftdca, float);
-
 DECLARE_SOA_COLUMN(IsTaged, isTaged, bool);
 } // namespace tag_matching_params
 
 DECLARE_SOA_TABLE(TagMatchParams, "AOD", "TAGMATCHING",
-                  tag_matching_params::NClustMFTTracks,
-                  tag_matching_params::Chi2MFTTracks,
-                  tag_matching_params::DeltaP,
                   tag_matching_params::DeltaPt,
                   tag_matching_params::DeltaEta,
                   tag_matching_params::DeltaPhi,
@@ -281,19 +248,16 @@ DECLARE_SOA_TABLE(TagMatchParams, "AOD", "TAGMATCHING",
                   tag_matching_params::DeltaY,
                   tag_matching_params::MchPt,
                   tag_matching_params::MchEta,
-                  tag_matching_params::MchPhi,
                   tag_matching_params::MchQ,
-                  tag_matching_params::MftPt,
                   tag_matching_params::MftEta,
-                  tag_matching_params::MftPhi,
                   tag_matching_params::MftQ,
-                  tag_matching_params::MftDCA,
                   tag_matching_params::IsTaged);
 
 namespace probe_matching_params
 {
 // matching parameters
 DECLARE_SOA_COLUMN(NMFTCandTagMuon, nTagMFT, int);
+DECLARE_SOA_COLUMN(NMFTCandProbeMuon, nProbeMFT, int);
 DECLARE_SOA_COLUMN(TagMuonP, tagmuonp, float);
 
 DECLARE_SOA_COLUMN(NClustMFTTracks, nClustMFT, int);
@@ -320,10 +284,8 @@ DECLARE_SOA_COLUMN(MftDCA, mftdca, float);
 
 DECLARE_SOA_TABLE(ProbeMatchParams, "AOD", "PROBEMATCHING",
                   probe_matching_params::NMFTCandTagMuon,
+                  probe_matching_params::NMFTCandProbeMuon,
                   probe_matching_params::TagMuonP,
-                  probe_matching_params::NClustMFTTracks,
-                  probe_matching_params::Chi2MFTTracks,
-                  probe_matching_params::DeltaP,
                   probe_matching_params::DeltaPt,
                   probe_matching_params::DeltaEta,
                   probe_matching_params::DeltaPhi,
@@ -331,32 +293,9 @@ DECLARE_SOA_TABLE(ProbeMatchParams, "AOD", "PROBEMATCHING",
                   probe_matching_params::DeltaY,
                   probe_matching_params::MchPt,
                   probe_matching_params::MchEta,
-                  probe_matching_params::MchPhi,
                   probe_matching_params::MchQ,
-                  probe_matching_params::MftPt,
                   probe_matching_params::MftEta,
-                  probe_matching_params::MftPhi,
-                  probe_matching_params::MftQ,
-                  probe_matching_params::MftDCA);
-
-DECLARE_SOA_TABLE(MixMatchParams, "AOD", "MIXMATCHING",
-                  mix_matching_params::NClustMFTTracks,
-                  mix_matching_params::Chi2MFTTracks,
-                  mix_matching_params::DeltaP,
-                  mix_matching_params::DeltaPt,
-                  mix_matching_params::DeltaEta,
-                  mix_matching_params::DeltaPhi,
-                  mix_matching_params::DeltaX,
-                  mix_matching_params::DeltaY,
-                  mix_matching_params::MchPt,
-                  mix_matching_params::MchEta,
-                  mix_matching_params::MchPhi,
-                  mix_matching_params::MchQ,
-                  mix_matching_params::MftPt,
-                  mix_matching_params::MftEta,
-                  mix_matching_params::MftPhi,
-                  mix_matching_params::MftQ,
-                  mix_matching_params::MftDCA);
+                  probe_matching_params::MftQ);
 
 namespace muon_pair
 {
@@ -379,7 +318,6 @@ DECLARE_SOA_COLUMN(Rap, rap, float);
 } // namespace tag_muon_pair
 
 DECLARE_SOA_TABLE(TagMuonPair, "AOD", "TAGDIMUON", tag_muon_pair::NMFT, tag_muon_pair::Q, tag_muon_pair::M, tag_muon_pair::Pt, tag_muon_pair::Rap);
-
 } // namespace o2::aod
 
 struct match_mft_mch_data {
@@ -399,40 +337,54 @@ struct match_mft_mch_data {
      {"hMchCorrP", "MCH track total momentum (propagated to PV); p [GeV/c]; Counts", {HistType::kTH1F, {{2000, 0, 200}}}},
      {"hMassCorrMchPair", "Corrected MCH track pair mass (propagated to PV); m [GeV/c^{2}]; Counts", {HistType::kTH1F, {{1000, 0, 10}}}}}};
 
+  ////   Variables for selecting muon tracks
   Configurable<float> fEtaMchLow{"cfgEtaMchLow", -4.0f, ""};
   Configurable<float> fEtaMchUp{"cfgEtaMchUp", -2.5f, ""};
-  Configurable<float> fEtaMftLow{"cfgEtaMftlow", -3.6f, ""};
-  Configurable<float> fEtaMftUp{"cfgEtaMftup", -2.5f, ""};
-  // Filter etaMchFilter = (fEtaMchLow < aod::fwdtrack::eta) && (aod::fwdtrack::eta < fEtaMchUp);
-
   Configurable<float> fRabsLow1{"cfgRabsLow1", 17.6f, ""};
   Configurable<float> fRabsUp1{"cfgRabsUp1", 26.5f, ""};
   Configurable<float> fRabsLow2{"cfgRabsLow2", 26.5f, ""};
   Configurable<float> fRabsUp2{"cfgRabsUp2", 89.5f, ""};
   Configurable<float> fPdcaUp1{"cfgPdcaUp1", 594.f, ""};
   Configurable<float> fPdcaUp2{"cfgPdcaUp2", 324.f, ""};
-  // Filter rAbsFilter = (fRabsLow1 < aod::fwdtrack::rAtAbsorberEnd && aod::fwdtrack::rAtAbsorberEnd < fRabsUp1 && aod::fwdtrack::pDca < fPdcaUp1) || (fRabsLow2 < aod::fwdtrack::rAtAbsorberEnd && aod::fwdtrack::rAtAbsorberEnd < fRabsUp2 && aod::fwdtrack::pDca < fPdcaUp2);
-
   Configurable<float> fTrackChi2MchUp{"cfgTrackChi2MchUp", 5.f, ""};
-  // Filter trackChi2MchFilter = aod::fwdtrack::chi2 < fTrackChi2MchUp;
-
   Configurable<float> fMatchingChi2MchMidUp{"cfgMatchingChi2MchMidUp", 999.f, ""};
-  // Filter matchingChi2MchMidFilter = aod::fwdtrack::chi2MatchMCHMID < fMatchingChi2MchMidUp;
 
-  // Configurable<float> fSaveMixedMatchingParamsRate{"cfgSaveMixedMatchingParamsRate", 0.002f, ""};
+  ////   Variables for selecting mft tracks
+  Configurable<float> fEtaMftLow{"cfgEtaMftlow", -3.6f, ""};
+  Configurable<float> fEtaMftUp{"cfgEtaMftup", -2.5f, ""};
+  Configurable<int> fTrackNClustMftLow{"cfgTrackNClustMftLow", 7, ""};
+  Configurable<float> fTrackChi2MftUp{"cfgTrackChi2MftUp", 999.f, ""};
 
+  ///    Variables to add preselection for the matching table
   Configurable<float> fPreselectMatchingX{"cfgPreselectMatchingX", 999.f, ""};
   Configurable<float> fPreselectMatchingY{"cfgPreselectMatchingY", 999.f, ""};
 
-  Configurable<float> fTagMassWindowMin{"cfgTagMassWindowMin", 2.8f, ""};
-  Configurable<float> fTagMassWindowMax{"cfgTagMassWindowMax", 3.3f, ""};
-
+  ///    Variables to event mixing criteria
+  Configurable<float> fSaveMixedMatchingParamsRate{"cfgSaveMixedMatchingParamsRate", 0.002f, ""};
   Configurable<int> fEventMaxDeltaNMFT{"cfgEventMaxDeltaNMFT", 1, ""};
   Configurable<float> fEventMaxDeltaVtxZ{"cfgEventMaxDeltaVtxZ", 1.f, ""};
 
-  Configurable<float> fTagRWindow{"cfgTagRWindow", 3.f, ""};
-  Configurable<float> fTagPhiWindow{"cfgTagPhiWindow", 0.1f, ""};
-  Configurable<float> fTagEtaWindow{"cfgTagEtaWindow", 0.1f, ""};
+  ////   Variables for selecting tag muon
+  Configurable<float> fTagMassWindowMin{"cfgTagMassWindowMin", 2.8f, ""};
+  Configurable<float> fTagMassWindowMax{"cfgTagMassWindowMax", 3.3f, ""};
+  Configurable<float> fTagXWindowLow{"cfgTagXWindowLow", -0.80f, ""};
+  Configurable<float> fTagXWindowUp{"cfgTagXWindowUp", 0.84f, ""};
+  Configurable<float> fTagYWindowLow{"cfgTagYWindowLow", -0.64f, ""};
+  Configurable<float> fTagYWindowUp{"cfgTagYWindowUp", 0.95f, ""};
+  Configurable<float> fTagPhiWindowLow{"cfgTagPhiWindowLow", -0.041f, ""};
+  Configurable<float> fTagPhiWindowUp{"cfgTagPhiWindowUp", 0.039f, ""};
+  Configurable<float> fTagEtaWindowLow{"cfgTagEtaWindowLow", -0.045f, ""};
+  Configurable<float> fTagEtaWindowUp{"cfgTagEtaWindowUp", 0.033f, ""};
+
+  ////   Variables for selecting probe muon
+  Configurable<float> fProbeXWindowLow{"cfgProbeXWindowLow", -10.f, ""};
+  Configurable<float> fProbeXWindowUp{"cfgProbeXWindowUp", 10.f, ""};
+  Configurable<float> fProbeYWindowLow{"cfgProbeYWindowLow", -10.f, ""};
+  Configurable<float> fProbeYWindowUp{"cfgProbeYWindowUp", 10.f, ""};
+  Configurable<float> fProbePhiWindowLow{"cfgProbePhiWindowLow", -1.0f, ""};
+  Configurable<float> fProbePhiWindowUp{"cfgProbePhiWindowUp", 1.0f, ""};
+  Configurable<float> fProbeEtaWindowLow{"cfgProbeEtaWindowLow", -1.0f, ""};
+  Configurable<float> fProbeEtaWindowUp{"cfgProbeEtaWindowUp", 1.0f, ""};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -479,7 +431,7 @@ struct match_mft_mch_data {
                          ToDCA };
 
   template <typename T>
-  o2::dataformats::GlobalFwdTrack PropagateMuon(T const& muon, int PropType)
+  o2::dataformats::GlobalFwdTrack PropagateMUONTrack(T const& muon, int PropType)
   {
 
     auto collision = muon.collision();
@@ -492,7 +444,7 @@ struct match_mft_mch_data {
     std::vector<float> v1{muon.cXX(), muon.cXY(), muon.cYY(), muon.cPhiX(), muon.cPhiY(),
                           muon.cPhiPhi(), muon.cTglX(), muon.cTglY(), muon.cTglPhi(), muon.cTglTgl(),
                           muon.c1PtX(), muon.c1PtY(), muon.c1PtPhi(), muon.c1PtTgl(), muon.c1Pt21Pt2()};
-    if (isGoodFwdTrack(muon)) {
+    if (isGoodMUONTrack(muon)) {
       SMatrix55 tcovs(v1.begin(), v1.end());
       o2::track::TrackParCovFwd fwdtrack{muon.z(), tpars, tcovs, chi2};
 
@@ -550,7 +502,7 @@ struct match_mft_mch_data {
   }
 
   template <typename T>
-  bool isGoodFwdTrack(T track)
+  bool isGoodMUONTrack(T track)
   {
     if (!track.has_collision())
       return false;
@@ -558,17 +510,17 @@ struct match_mft_mch_data {
       return false;
     if (track.chi2() > fTrackChi2MchUp)
       return false;
-    if (17.6 > track.rAtAbsorberEnd() || track.rAtAbsorberEnd() > 89.5)
+    if (fRabsLow1 > track.rAtAbsorberEnd() || track.rAtAbsorberEnd() > fRabsUp2)
       return false;
-    if (track.rAtAbsorberEnd() < 26.5 && 594. < track.pDca())
+    if (track.rAtAbsorberEnd() < fRabsUp1 && fPdcaUp1 < track.pDca())
       return false;
-    if (track.rAtAbsorberEnd() > 26.5 && 324. < track.pDca())
+    if (track.rAtAbsorberEnd() > fRabsLow2 && fPdcaUp2 < track.pDca())
       return false;
     return true;
   }
 
   template <typename T>
-  int selectTagMuon(T track1, T track2)
+  int selectTagMUON(T track1, T track2)
   {
     if (track1.pt() > track2.pt()) {
       return track1.globalIndex();
@@ -578,7 +530,7 @@ struct match_mft_mch_data {
   }
 
   template <typename T>
-  int selectProbeMuon(T track1, T track2)
+  int selectProbeMUONTrack(T track1, T track2)
   {
     if (track1.pt() < track2.pt()) {
       return track1.globalIndex();
@@ -587,10 +539,30 @@ struct match_mft_mch_data {
     }
   }
 
-  bool isGoodKenematicTrack(o2::dataformats::GlobalFwdTrack track)
+  bool isGoodKenematicMUONTrack(o2::dataformats::GlobalFwdTrack track)
   {
     if (fEtaMchLow > track.getEta() || track.getEta() > fEtaMchUp)
       return false;
+    return true;
+  }
+
+  template <typename T>
+  bool isGoodMFTTrack(T track)
+  {
+    if (!track.has_collision())
+      return false;
+    if (track.chi2() > fTrackChi2MftUp)
+      return false;
+    if (track.nClusters() < fTrackNClustMftLow)
+      return false;
+    return true;
+  }
+
+  bool isGoodKenematicMFTTrack(o2::track::TrackParCovFwd track)
+  {
+    if (fEtaMftLow > track.getEta() || track.getEta() > fEtaMftUp) {
+      return false;
+    }
     return true;
   }
 
@@ -606,13 +578,19 @@ struct match_mft_mch_data {
 
     for (const auto& mfttrack : mfttracks) {
 
-      if (!mfttrack.has_collision())
+      if (!isGoodMFTTrack(mfttrack)) {
         continue;
+      }
+
       bcs_mfttrack.insert(mfttrack.collisionId());
       std::vector<int64_t>& tracks = map_mfttraks[mfttrack.collisionId()];
       tracks.push_back(mfttrack.globalIndex());
 
       o2::track::TrackParCovFwd mftpartrack = PropagateMFT(mfttrack, ProagationPoint::ToDCA);
+
+      if (!isGoodKenematicMFTTrack(mftpartrack)) {
+        continue;
+      }
 
       auto collision = mfttrack.collision();
 
@@ -620,14 +598,8 @@ struct match_mft_mch_data {
 
       float dx = mftpartrack.getX() - collision.posX();
       float dy = mftpartrack.getY() - collision.posY();
-      float dca = sqrt(dx * dx + dy * dy);
 
-      mftParams(mfttrack.nClusters(), mfttrack.isCA(),
-                mfttrack.chi2(), mfttrack.sign(),
-                mfttrack.pt(), mfttrack.eta(), mfttrack.phi(),
-                mftpartrack.getPt(), mftpartrack.getEta(), mftpartrack.getPhi(),
-                dx, dy, dca);
-
+      mftParams(mfttrack.nClusters(), mfttrack.isCA(), mfttrack.chi2(), mfttrack.sign(), mftpartrack.getPt(), mftpartrack.getEta(), mftpartrack.getPhi(), dx, dy);
       nmfttracks[mfttrack.collisionId()]++;
     }
 
@@ -636,48 +608,43 @@ struct match_mft_mch_data {
 
     for (auto fwdtrack : fwdtracks) {
 
-      if (!isGoodFwdTrack(fwdtrack))
+      if (!isGoodMUONTrack(fwdtrack)) {
         continue;
+      }
 
-      o2::dataformats::GlobalFwdTrack propmuonAtPV = PropagateMuon(fwdtrack, ProagationPoint::ToVtx);
-      o2::dataformats::GlobalFwdTrack propmuonAtDCA = PropagateMuon(fwdtrack, ProagationPoint::ToDCA);
-      if (!isGoodKenematicTrack(propmuonAtPV))
+      o2::dataformats::GlobalFwdTrack propmuonAtPV = PropagateMUONTrack(fwdtrack, ProagationPoint::ToVtx);
+      if (!isGoodKenematicMUONTrack(propmuonAtPV)) {
         continue;
+      }
+
       std::vector<int64_t>& tracks = map_fwdtraks[fwdtrack.collisionId()];
       tracks.push_back(fwdtrack.globalIndex());
-
-      auto collision = fwdtrack.collision();
-
-      float dx = propmuonAtDCA.getX() - collision.posX();
-      float dy = propmuonAtDCA.getY() - collision.posY();
-      float DCA = sqrt(dx * dx + dy * dy);
 
       bool hasMFT = false;
 
       std::vector<int64_t>& mfttracks = map_mfttraks[fwdtrack.collisionId()];
 
-      if (mfttracks.size() > 0)
+      if (mfttracks.size() > 0) {
         hasMFT = true;
+      }
 
-      muonParams(fwdtrack.chi2(), fwdtrack.rAtAbsorberEnd(), fwdtrack.sign(), fwdtrack.pt(), fwdtrack.eta(), fwdtrack.phi(),
-                 propmuonAtPV.getPt(), propmuonAtPV.getEta(), propmuonAtPV.getPhi(),
-                 propmuonAtDCA.getPt(), propmuonAtDCA.getEta(), propmuonAtDCA.getPhi(),
-                 DCA, hasMFT);
-
+      muonParams(fwdtrack.chi2(), fwdtrack.rAtAbsorberEnd(), fwdtrack.sign(), propmuonAtPV.getPt(), propmuonAtPV.getEta(), propmuonAtPV.getPhi(), hasMFT);
       nfwdtracks[fwdtrack.collisionId()]++;
     }
 
     for (auto fwdtrack1 : fwdtracks) {
 
-      if (!isGoodFwdTrack(fwdtrack1))
+      if (!isGoodMUONTrack(fwdtrack1)) {
         continue;
+      }
 
       int ibc = fwdtrack1.collisionId();
       auto collision = fwdtrack1.collision();
 
-      o2::dataformats::GlobalFwdTrack fwdtrackAtPV1 = PropagateMuon(fwdtrack1, ProagationPoint::ToVtx);
-      if (!isGoodKenematicTrack(fwdtrackAtPV1))
+      o2::dataformats::GlobalFwdTrack fwdtrackAtPV1 = PropagateMUONTrack(fwdtrack1, ProagationPoint::ToVtx);
+      if (!isGoodKenematicMUONTrack(fwdtrackAtPV1)) {
         continue;
+      }
 
       //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       ///////////////                                    MIXED EVENT                                     ///////////////
@@ -686,10 +653,12 @@ struct match_mft_mch_data {
 
         if (ibc == bc_mfttrack)
           continue;
-        if (fabs(nmfttracks[ibc] - nmfttracks[bc_mfttrack]) > fEventMaxDeltaNMFT)
+        if (fabs(nmfttracks[ibc] - nmfttracks[bc_mfttrack]) > fEventMaxDeltaNMFT) {
           continue;
-        if (fabs(map_vtxZ[bc_mfttrack] - collision.posZ()) > fEventMaxDeltaVtxZ)
+        }
+        if (fabs(map_vtxZ[bc_mfttrack] - collision.posZ()) > fEventMaxDeltaVtxZ) {
           continue;
+        }
 
         std::vector<int64_t>& mfttrackGlobalIndex = map_mfttraks[bc_mfttrack];
 
@@ -701,27 +670,22 @@ struct match_mft_mch_data {
           V1.SetPtEtaPhi(mfttrack_at_matching.getPt(), mfttrack_at_matching.getEta(), mfttrack_at_matching.getPhi());
           V2.SetPtEtaPhi(fwdtrack1.pt(), fwdtrack1.eta(), fwdtrack1.phi());
 
-          double deltaP = mfttrack_at_matching.getP() - fwdtrack1.p();
           double deltaPt = mfttrack_at_matching.getPt() - fwdtrack1.pt();
           double deltaX = mfttrack_at_matching.getX() - fwdtrack1.x();
           double deltaY = mfttrack_at_matching.getY() - fwdtrack1.y();
           double deltaPhi = V1.DeltaPhi(V2);
           double deltaEta = mfttrack_at_matching.getEta() - fwdtrack1.eta();
 
-          if (fabs(deltaX) > fPreselectMatchingX)
+          if (fabs(deltaX) > fPreselectMatchingX) {
             continue;
-          if (fabs(deltaY) > fPreselectMatchingY)
+          }
+          if (fabs(deltaY) > fPreselectMatchingY) {
             continue;
+          }
 
           o2::track::TrackParCovFwd mfttrack_at_dca = PropagateMFT(mfttrack1, ProagationPoint::ToDCA);
-          float dx = mfttrack_at_dca.getX() - collision.posX();
-          float dy = mfttrack_at_dca.getY() - collision.posY();
-          float DCA = sqrt(dx * dx + dy * dy);
 
-          mixmatchingParams(mfttrack1.nClusters(), mfttrack1.chi2(),
-                            deltaP, deltaPt, deltaEta, deltaPhi, deltaX, deltaY,
-                            fwdtrackAtPV1.getPt(), fwdtrackAtPV1.getEta(), fwdtrackAtPV1.getPhi(), fwdtrack1.sign(),
-                            mfttrack_at_dca.getPt(), mfttrack_at_dca.getEta(), mfttrack_at_dca.getPhi(), mfttrack1.sign(), DCA);
+          mixmatchingParams(deltaPt, deltaEta, deltaPhi, deltaX, deltaY, fwdtrackAtPV1.getPt(), fwdtrackAtPV1.getEta(), fwdtrack1.sign(), mfttrack_at_dca.getEta(), mfttrack1.sign());
         }
       } // end of loop bc_mfttrack
 
@@ -738,44 +702,45 @@ struct match_mft_mch_data {
         V1.SetPtEtaPhi(mfttrack_at_matching.getPt(), mfttrack_at_matching.getEta(), mfttrack_at_matching.getPhi());
         V2.SetPtEtaPhi(fwdtrack1.pt(), fwdtrack1.eta(), fwdtrack1.phi());
 
-        double deltaP = mfttrack_at_matching.getP() - fwdtrack1.p();
         double deltaPt = mfttrack_at_matching.getPt() - fwdtrack1.pt();
         double deltaX = mfttrack_at_matching.getX() - fwdtrack1.x();
         double deltaY = mfttrack_at_matching.getY() - fwdtrack1.y();
         double deltaPhi = V1.DeltaPhi(V2);
         double deltaEta = mfttrack_at_matching.getEta() - fwdtrack1.eta();
 
-        if (fabs(deltaX) > fPreselectMatchingX)
+        if (fabs(deltaX) > fPreselectMatchingX) {
           continue;
-        if (fabs(deltaY) > fPreselectMatchingY)
+        }
+        if (fabs(deltaY) > fPreselectMatchingY) {
           continue;
+        }
 
         o2::track::TrackParCovFwd mfttrack_at_dca = PropagateMFT(mfttrack1, ProagationPoint::ToDCA);
-        float dx = mfttrack_at_dca.getX() - collision.posX();
-        float dy = mfttrack_at_dca.getY() - collision.posY();
-        float DCA = sqrt(dx * dx + dy * dy);
 
-        matchingParams(mfttrack1.nClusters(), mfttrack1.chi2(),
-                       deltaP, deltaPt, deltaEta, deltaPhi, deltaX, deltaY,
-                       fwdtrackAtPV1.getPt(), fwdtrackAtPV1.getEta(), fwdtrackAtPV1.getPhi(), fwdtrack1.sign(),
-                       mfttrack_at_dca.getPt(), mfttrack_at_dca.getEta(), mfttrack_at_dca.getPhi(), mfttrack1.sign(), DCA);
+        matchingParams(deltaPt, deltaEta, deltaPhi, deltaX, deltaY,
+                       fwdtrackAtPV1.getPt(), fwdtrackAtPV1.getEta(), fwdtrack1.sign(),
+                       mfttrack_at_dca.getEta(), mfttrack1.sign());
+
       } // end of loop idmfttrack1
 
       std::vector<int64_t>& fwdtrackGlobalIndex = map_fwdtraks[ibc];
 
       for (int idfwdtrack2 = 0; idfwdtrack2 < static_cast<int>(fwdtrackGlobalIndex.size()); ++idfwdtrack2) {
 
-        if (fwdtrack1.globalIndex() == fwdtrackGlobalIndex[idfwdtrack2])
+        if (fwdtrack1.globalIndex() == fwdtrackGlobalIndex[idfwdtrack2]) {
           continue;
+        }
 
         auto fwdtrack2 = fwdtracks.rawIteratorAt(fwdtrackGlobalIndex[idfwdtrack2]);
 
-        if (!isGoodFwdTrack(fwdtrack2))
+        if (!isGoodMUONTrack(fwdtrack2)) {
           continue;
+        }
 
-        o2::dataformats::GlobalFwdTrack fwdtrackAtPV2 = PropagateMuon(fwdtrack2, ProagationPoint::ToVtx);
-        if (!isGoodKenematicTrack(fwdtrackAtPV2))
+        o2::dataformats::GlobalFwdTrack fwdtrackAtPV2 = PropagateMUONTrack(fwdtrack2, ProagationPoint::ToVtx);
+        if (!isGoodKenematicMUONTrack(fwdtrackAtPV2)) {
           continue;
+        }
 
         muon1LV.SetPtEtaPhiM(fwdtrackAtPV1.getPt(), fwdtrackAtPV1.getEta(), fwdtrackAtPV1.getPhi(), mMu);
         muon2LV.SetPtEtaPhiM(fwdtrackAtPV2.getPt(), fwdtrackAtPV2.getEta(), fwdtrackAtPV2.getPhi(), mMu);
@@ -783,20 +748,23 @@ struct match_mft_mch_data {
 
         muonPairs(nmfttracks[ibc], fwdtrack1.sign() + fwdtrack2.sign(), dimuonLV.M(), dimuonLV.Pt(), dimuonLV.Rapidity());
 
-        if (fabs(fwdtrack1.sign() + fwdtrack2.sign()) > 0)
+        if (fabs(fwdtrack1.sign() + fwdtrack2.sign()) > 0) {
           continue;
-        if (fTagMassWindowMin > dimuonLV.M() || dimuonLV.M() > fTagMassWindowMax)
+        }
+        if (fTagMassWindowMin > dimuonLV.M() || dimuonLV.M() > fTagMassWindowMax) {
           continue;
-        if (nmfttracks[ibc] < 1)
+        }
+        if (nmfttracks[ibc] < 1) {
           continue;
+        }
 
         tagmuonPairs(nmfttracks[ibc], fwdtrack1.sign() + fwdtrack2.sign(), dimuonLV.M(), dimuonLV.Pt(), dimuonLV.Rapidity());
 
         bool isGoodTag = false;
-        int nMFTCandsTagMuon = 0;
+        int nMFTCandsTagMUON = 0;
 
-        auto tagfwdtrack = fwdtracks.rawIteratorAt(selectTagMuon(fwdtrack1, fwdtrack2));
-        o2::dataformats::GlobalFwdTrack tagfwdtrackAtPV = PropagateMuon(tagfwdtrack, ProagationPoint::ToVtx);
+        auto tagfwdtrack = fwdtracks.rawIteratorAt(selectTagMUON(fwdtrack1, fwdtrack2));
+        o2::dataformats::GlobalFwdTrack tagfwdtrackAtPV = PropagateMUONTrack(tagfwdtrack, ProagationPoint::ToVtx);
 
         for (int idmfttrack1 = 0; idmfttrack1 < static_cast<int>(mfttrackGlobalIndex.size()); ++idmfttrack1) {
 
@@ -806,43 +774,64 @@ struct match_mft_mch_data {
           V1.SetPtEtaPhi(mfttrack_at_matching.getPt(), mfttrack_at_matching.getEta(), mfttrack_at_matching.getPhi());
           V2.SetPtEtaPhi(tagfwdtrack.pt(), tagfwdtrack.eta(), tagfwdtrack.phi());
 
-          double deltaP = mfttrack_at_matching.getP() - tagfwdtrack.p();
           double deltaPt = mfttrack_at_matching.getPt() - tagfwdtrack.pt();
           double deltaX = mfttrack_at_matching.getX() - tagfwdtrack.x();
           double deltaY = mfttrack_at_matching.getY() - tagfwdtrack.y();
           double deltaPhi = V1.DeltaPhi(V2);
           double deltaEta = mfttrack_at_matching.getEta() - tagfwdtrack.eta();
 
-          double deltaR = sqrt(deltaX * deltaX + deltaY * deltaY);
-          if (fabs(deltaX) > fPreselectMatchingX)
+          if (fabs(deltaX) > fPreselectMatchingX) {
             continue;
-          if (fabs(deltaY) > fPreselectMatchingY)
+          }
+          if (fabs(deltaY) > fPreselectMatchingY) {
             continue;
+          }
 
           o2::track::TrackParCovFwd mfttrack_at_dca = PropagateMFT(mfttrack1, ProagationPoint::ToDCA);
-          float dx = mfttrack_at_dca.getX() - collision.posX();
-          float dy = mfttrack_at_dca.getY() - collision.posY();
-          float DCA = sqrt(dx * dx + dy * dy);
 
           bool dummyTag = false;
 
-          if (fabs(deltaR) < fTagRWindow && fabs(deltaPhi) < fTagPhiWindow && fabs(deltaEta) < fTagEtaWindow) {
+          if (fTagXWindowLow < deltaX && deltaX < fTagXWindowUp &&
+              fTagXWindowLow < deltaY && deltaY < fTagXWindowUp &&
+              fTagPhiWindowLow < deltaPhi && deltaPhi < fTagPhiWindowUp &&
+              fTagEtaWindowLow < deltaEta && deltaEta < fTagEtaWindowUp) {
             isGoodTag = true;
             dummyTag = true;
-            nMFTCandsTagMuon++;
+            nMFTCandsTagMUON++;
           }
 
-          tagmatchingParams(mfttrack1.nClusters(), mfttrack1.chi2(),
-                            deltaP, deltaPt, deltaEta, deltaPhi, deltaX, deltaY,
-                            tagfwdtrackAtPV.getPt(), tagfwdtrackAtPV.getEta(), tagfwdtrackAtPV.getPhi(), tagfwdtrack.sign(),
-                            mfttrack_at_dca.getPt(), mfttrack_at_dca.getEta(), mfttrack_at_dca.getPhi(), mfttrack1.sign(), DCA, dummyTag);
+          tagmatchingParams(deltaPt, deltaEta, deltaPhi, deltaX, deltaY,
+                            tagfwdtrackAtPV.getPt(), tagfwdtrackAtPV.getEta(), tagfwdtrack.sign(), mfttrack_at_dca.getEta(), mfttrack1.sign(), dummyTag);
         }
 
-        if (!isGoodTag)
+        if (!isGoodTag) {
           continue;
+        }
 
-        auto probefwdtrack = fwdtracks.rawIteratorAt(selectProbeMuon(fwdtrack1, fwdtrack2));
-        o2::dataformats::GlobalFwdTrack probefwdtrackAtPV = PropagateMuon(probefwdtrack, ProagationPoint::ToVtx);
+        auto probefwdtrack = fwdtracks.rawIteratorAt(selectProbeMUONTrack(fwdtrack1, fwdtrack2));
+        o2::dataformats::GlobalFwdTrack probefwdtrackAtPV = PropagateMUONTrack(probefwdtrack, ProagationPoint::ToVtx);
+
+        int nMFTCandsProbeMUON = 0;
+        /// Counting the number of MFT tracks in a probe muon track
+        for (int idmfttrack1 = 0; idmfttrack1 < static_cast<int>(mfttrackGlobalIndex.size()); ++idmfttrack1) {
+
+          auto mfttrack1 = mfttracks.rawIteratorAt(mfttrackGlobalIndex[idmfttrack1]);
+          o2::track::TrackParCovFwd mfttrack_at_matching = PropagateMFTtoMatchingPlane(mfttrack1, probefwdtrack);
+          V1.SetPtEtaPhi(mfttrack_at_matching.getPt(), mfttrack_at_matching.getEta(), mfttrack_at_matching.getPhi());
+          V2.SetPtEtaPhi(probefwdtrack.pt(), probefwdtrack.eta(), probefwdtrack.phi());
+
+          double deltaX = mfttrack_at_matching.getX() - probefwdtrack.x();
+          double deltaY = mfttrack_at_matching.getY() - probefwdtrack.y();
+          double deltaPhi = V1.DeltaPhi(V2);
+          double deltaEta = mfttrack_at_matching.getEta() - probefwdtrack.eta();
+
+          if (fProbeXWindowLow < deltaX && deltaX < fProbeXWindowUp &&
+              fProbeXWindowLow < deltaY && deltaY < fProbeXWindowUp &&
+              fProbePhiWindowLow < deltaPhi && deltaPhi < fProbePhiWindowUp &&
+              fProbeEtaWindowLow < deltaEta && deltaEta < fProbeEtaWindowUp) {
+            nMFTCandsProbeMUON++;
+          }
+        }
 
         for (int idmfttrack1 = 0; idmfttrack1 < static_cast<int>(mfttrackGlobalIndex.size()); ++idmfttrack1) {
 
@@ -852,27 +841,22 @@ struct match_mft_mch_data {
           V1.SetPtEtaPhi(mfttrack_at_matching.getPt(), mfttrack_at_matching.getEta(), mfttrack_at_matching.getPhi());
           V2.SetPtEtaPhi(probefwdtrack.pt(), probefwdtrack.eta(), probefwdtrack.phi());
 
-          double deltaP = mfttrack_at_matching.getP() - probefwdtrack.p();
           double deltaPt = mfttrack_at_matching.getPt() - probefwdtrack.pt();
           double deltaX = mfttrack_at_matching.getX() - probefwdtrack.x();
           double deltaY = mfttrack_at_matching.getY() - probefwdtrack.y();
           double deltaPhi = V1.DeltaPhi(V2);
           double deltaEta = mfttrack_at_matching.getEta() - probefwdtrack.eta();
 
-          if (fabs(deltaX) > fPreselectMatchingX)
+          if (fabs(deltaX) > fPreselectMatchingX) {
             continue;
-          if (fabs(deltaY) > fPreselectMatchingY)
+          }
+          if (fabs(deltaY) > fPreselectMatchingY) {
             continue;
+          }
 
           o2::track::TrackParCovFwd mfttrack_at_dca = PropagateMFT(mfttrack1, ProagationPoint::ToDCA);
-          float dx = mfttrack_at_dca.getX() - collision.posX();
-          float dy = mfttrack_at_dca.getY() - collision.posY();
-          float DCA = sqrt(dx * dx + dy * dy);
 
-          probematchingParams(nMFTCandsTagMuon, tagfwdtrack.p(), mfttrack1.nClusters(), mfttrack1.chi2(),
-                              deltaP, deltaPt, deltaEta, deltaPhi, deltaX, deltaY,
-                              probefwdtrackAtPV.getPt(), probefwdtrackAtPV.getEta(), probefwdtrackAtPV.getPhi(), probefwdtrack.sign(),
-                              mfttrack_at_dca.getPt(), mfttrack_at_dca.getEta(), mfttrack_at_dca.getPhi(), mfttrack1.sign(), DCA);
+          probematchingParams(nMFTCandsTagMUON, nMFTCandsProbeMUON, tagfwdtrack.p(), deltaPt, deltaEta, deltaPhi, deltaX, deltaY, probefwdtrackAtPV.getPt(), probefwdtrackAtPV.getEta(), probefwdtrack.sign(), mfttrack_at_dca.getEta(), mfttrack1.sign());
         }
       }
     }
