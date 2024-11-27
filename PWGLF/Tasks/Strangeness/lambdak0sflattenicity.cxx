@@ -185,6 +185,8 @@ struct lambdak0sflattenicity {
                                    "Eta range for tracks"};
   Configurable<float> cfgTrkLowPtCut{"cfgTrkLowPtCut", 0.0f, "Minimum  pT"};
 
+  int nbin = 1;
+
   void init(InitContext const&)
   {
     // Axes
@@ -209,17 +211,37 @@ struct lambdak0sflattenicity {
     rEventSelection.add("hEventsSelected", "hEventsSelected",
                         {HistType::kTH1D, {{12, 0, 12}}});
 
-    rEventSelection.get<TH1>(HIST("hEventsSelected"))->GetXaxis()->SetBinLabel(1, "all");
-    rEventSelection.get<TH1>(HIST("hEventsSelected"))->GetXaxis()->SetBinLabel(2, "sel8");
-    rEventSelection.get<TH1>(HIST("hEventsSelected"))->GetXaxis()->SetBinLabel(3, "zvertex");
-    rEventSelection.get<TH1>(HIST("hEventsSelected"))->GetXaxis()->SetBinLabel(4, "TFBorder");
-    rEventSelection.get<TH1>(HIST("hEventsSelected"))->GetXaxis()->SetBinLabel(5, "ITSROFBorder");
-    rEventSelection.get<TH1>(HIST("hEventsSelected"))->GetXaxis()->SetBinLabel(6, "VertexITSTPC");
-    rEventSelection.get<TH1>(HIST("hEventsSelected"))->GetXaxis()->SetBinLabel(7, "SameBunchPileup");
-    rEventSelection.get<TH1>(HIST("hEventsSelected"))->GetXaxis()->SetBinLabel(8, "isGoodZvtxFT0vsPV");
-    rEventSelection.get<TH1>(HIST("hEventsSelected"))->GetXaxis()->SetBinLabel(9, "TVX");
-    rEventSelection.get<TH1>(HIST("hEventsSelected"))->GetXaxis()->SetBinLabel(10, "INEL>0");
-    rEventSelection.get<TH1>(HIST("hEventsSelected"))->GetXaxis()->SetBinLabel(11, "Applied selection");
+    rEventSelection.get<TH1>(HIST("hEventsSelected"))->GetXaxis()->SetBinLabel(nbin++, "all");
+    if (Issel8) {
+      rEventSelection.get<TH1>(HIST("hEventsSelected"))->GetXaxis()->SetBinLabel(nbin++, "sel8");
+    }
+
+    rEventSelection.get<TH1>(HIST("hEventsSelected"))->GetXaxis()->SetBinLabel(nbin++, "zvertex");
+
+    if (IsNoTimeFrameBorder) {
+      rEventSelection.get<TH1>(HIST("hEventsSelected"))->GetXaxis()->SetBinLabel(nbin++, "TFBorder");
+    }
+    if (IsNoITSROFrameBorder) {
+      rEventSelection.get<TH1>(HIST("hEventsSelected"))->GetXaxis()->SetBinLabel(nbin++, "ITSROFBorder");
+    }
+    if (IsVertexITSTPC) {
+      rEventSelection.get<TH1>(HIST("hEventsSelected"))->GetXaxis()->SetBinLabel(nbin++, "VertexITSTPC");
+    }
+    if (IsNoSameBunchPileup) {
+      rEventSelection.get<TH1>(HIST("hEventsSelected"))->GetXaxis()->SetBinLabel(nbin++, "SameBunchPileup");
+    }
+    if (IsGoodZvtxFT0vsPV) {
+      rEventSelection.get<TH1>(HIST("hEventsSelected"))->GetXaxis()->SetBinLabel(nbin++, "isGoodZvtxFT0vsPV");
+    }
+    if (IsTriggerTVX) {
+      rEventSelection.get<TH1>(HIST("hEventsSelected"))->GetXaxis()->SetBinLabel(nbin++, "TVX");
+    }
+    if (IsINELgt0) {
+      rEventSelection.get<TH1>(HIST("hEventsSelected"))->GetXaxis()->SetBinLabel(nbin++, "INEL>0");
+    }
+    if (doprocessGenMC) {
+      rEventSelection.get<TH1>(HIST("hEventsSelected"))->GetXaxis()->SetBinLabel(nbin, "Applied selection");
+    }
 
     rEventSelection.add("hFlattenicityDistribution", "hFlattenicityDistribution",
                         {HistType::kTH1D, {flatAxis}});
@@ -733,59 +755,83 @@ struct lambdak0sflattenicity {
   template <typename TCollision>
   bool isEventSelected(TCollision const& collision)
   {
-    rEventSelection.fill(HIST("hEventsSelected"), 0.5);
+    float nbinev = 0.5;
+    rEventSelection.fill(HIST("hEventsSelected"), nbinev);
 
     if (Issel8 && !collision.sel8()) {
       return false;
     }
+    if (Issel8) {
+      nbinev++;
+      rEventSelection.fill(HIST("hEventsSelected"), nbinev);
+    }
 
-    rEventSelection.fill(HIST("hEventsSelected"), 1.5);
     if (TMath::Abs(collision.posZ()) > cutzvertex) {
       return false;
     }
 
-    rEventSelection.fill(HIST("hEventsSelected"), 2.5);
+    nbinev++;
+    rEventSelection.fill(HIST("hEventsSelected"), nbinev);
 
     if (IsNoTimeFrameBorder &&
         !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
       return false;
     }
-    rEventSelection.fill(HIST("hEventsSelected"), 3.5);
+    if (IsNoTimeFrameBorder) {
+      nbinev++;
+      rEventSelection.fill(HIST("hEventsSelected"), nbinev);
+    }
 
     if (IsNoITSROFrameBorder &&
         !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
       return false;
     }
-    rEventSelection.fill(HIST("hEventsSelected"), 4.5);
-
+    if (IsNoITSROFrameBorder) {
+      nbinev++;
+      rEventSelection.fill(HIST("hEventsSelected"), nbinev);
+    }
     if (IsVertexITSTPC &&
         !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
       return false;
     }
-    rEventSelection.fill(HIST("hEventsSelected"), 5.5);
+    if (IsVertexITSTPC) {
+      nbinev++;
+      rEventSelection.fill(HIST("hEventsSelected"), nbinev);
+    }
 
     if (IsNoSameBunchPileup &&
         !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       return false;
     }
-    rEventSelection.fill(HIST("hEventsSelected"), 6.5);
+    if (IsNoSameBunchPileup) {
+      nbinev++;
+      rEventSelection.fill(HIST("hEventsSelected"), nbinev);
+    }
 
     if (IsGoodZvtxFT0vsPV &&
         !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       return false;
     }
-    rEventSelection.fill(HIST("hEventsSelected"), 7.5);
-
+    if (IsGoodZvtxFT0vsPV) {
+      nbinev++;
+      rEventSelection.fill(HIST("hEventsSelected"), nbinev);
+    }
     if (IsTriggerTVX &&
         !collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
       return false;
     }
-    rEventSelection.fill(HIST("hEventsSelected"), 8.5);
+    if (IsTriggerTVX) {
+      nbinev++;
+      rEventSelection.fill(HIST("hEventsSelected"), nbinev);
+    }
 
     if (IsINELgt0 && (collision.isInelGt0() == false)) {
       return false;
     }
-    rEventSelection.fill(HIST("hEventsSelected"), 9.5);
+    if (IsINELgt0) {
+      nbinev++;
+      rEventSelection.fill(HIST("hEventsSelected"), nbinev);
+    }
 
     return true;
   }
@@ -1577,7 +1623,7 @@ struct lambdak0sflattenicity {
       if (applyEvSel && !isEventSelected(collision)) {
         continue;
       }
-      rEventSelection.fill(HIST("hEventsSelected"), 10.5);
+      rEventSelection.fill(HIST("hEventsSelected"), nbin - 0.5);
       rEventSelection.fill(HIST("hNEventsMCReco"), 1.5);
       rEventSelection.fill(HIST("hFlat_RecoColl_MC"), flattenicity);
 
