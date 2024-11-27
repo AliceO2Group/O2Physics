@@ -133,8 +133,15 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   /// Event part
   Configurable<float> ConfV0MLow{"ConfV0MLow", 0.0, "Lower limit for V0M multiplicity"};
   Configurable<float> ConfV0MHigh{"ConfV0MHigh", 25000.0, "Upper limit for V0M multiplicity"};
-  Filter collV0Mfilter = ((o2::aod::femtouniversecollision::multV0M > ConfV0MLow) && (o2::aod::femtouniversecollision::multV0M < ConfV0MHigh));
-  using FilteredFDCollisions = soa::Filtered<aod::FDCollisions>;
+  Configurable<float> ConfTPCOccupancyLow{"ConfTPCOccupancyLow", 0.0, "Lower limit for TPC occupancy"};
+  Configurable<float> ConfTPCOccupancyHigh{"ConfTPCOccupancyHigh", 500.0, "Higher limit for TPC occupancy"};
+  Configurable<float> ConfIntRateLow{"ConfIntRateLow", 0.0, "Lower limit for interaction rate"};
+  Configurable<float> ConfIntRateHigh{"ConfIntRateHigh", 10000.0, "Higher limit for interaction rate"};
+
+  Filter collfilter = (o2::aod::femtouniversecollision::multV0M > ConfV0MLow) && (o2::aod::femtouniversecollision::multV0M < ConfV0MHigh) &&
+                      (o2::aod::femtouniversecollision::irrate > ConfIntRateLow) && (o2::aod::femtouniversecollision::irrate < ConfIntRateHigh) &&
+                      (o2::aod::femtouniversecollision::occupancy > ConfTPCOccupancyLow) && (o2::aod::femtouniversecollision::occupancy < ConfTPCOccupancyHigh);
+  using FilteredFDCollisions = soa::Filtered<soa::Join<aod::FDCollisions, aod::FDExtCollisions>>;
   using FilteredFDCollision = soa::Filtered<aod::FDCollisions>::iterator;
   // Filter trackAdditionalfilter = (nabs(aod::femtouniverseparticle::eta) < twotracksconfigs.ConfEtaMax); // example filtering on configurable
 
