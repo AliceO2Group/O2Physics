@@ -1245,34 +1245,34 @@ struct QaEfficiency {
     } else {
       if (mcParticle.getProcess() == 4) { // Particle decay
         bool motherIsAccepted = true;
-         // Check for mothers if needed
+        // Check for mothers if needed
         if (checkForMothers.value && mothersPDGs.value.size() > 0 && mcParticle.has_mothers()) {
-            motherIsAccepted = false;
-            auto mothers = mcParticle.mothers_as<o2::aod::McParticles>();
+        motherIsAccepted = false;
+        auto mothers = mcParticle.mothers_as<o2::aod::McParticles>();
             
-            // Loop over mother particles
-            for (const auto& mother : mothers) {
-                for (const auto& pdgToCheck : mothersPDGs.value) {
-                    if (mother.pdgCode() == pdgToCheck) {
-                        motherIsAccepted = true;  // Mother matches the list of specified PDGs
-                        break;
-                    }
-                }  // If mother is accepted, break out of loop
-                if (motherIsAccepted) {
-                    break;
-                 }
+        // Loop over mother particles
+        for (const auto& mother : mothers) {
+          for (const auto& pdgToCheck : mothersPDGs.value) {
+            if (mother.pdgCode() == pdgToCheck) {
+              motherIsAccepted = true;  // Mother matches the list of specified PDGs
+              break;
             }
+          }  // If mother is accepted, break out of loop
+          if (motherIsAccepted) {
+            break;
+          }
         }
-          // If mother particle is accepted, fill histograms for Xi and Lambda pT
-            if (motherIsAccepted) {
-             if (mcParticle.pdgCode() == 3312 || mcParticle.pdgCode() == -3312) {  // Xi
-                hPtXiGenerated->Fill(mcParticle.pt());  // Fill generated pT for Xi
-                } else if (mcParticle.pdgCode() == 3122 || mcParticle.pdgCode() == -3122) {  // Lambda
-                  hPtLambdaGenerated->Fill(mcParticle.pt());  // Fill generated pT for Lambda
-                  }
-                }
-              }
-            }
+      }
+      // If mother particle is accepted, fill histograms for Xi and Lambda pT
+      if (motherIsAccepted) {
+        if (mcParticle.pdgCode() == 3312 || mcParticle.pdgCode() == -3312) {  // Xi
+          hPtXiGenerated->Fill(mcParticle.pt());  // Fill generated pT for Xi
+        } else if (mcParticle.pdgCode() == 3122 || mcParticle.pdgCode() == -3122) {  // Lambda
+          hPtLambdaGenerated->Fill(mcParticle.pt());  // Fill generated pT for Lambda
+        }
+     }
+  }
+}
 
         if (motherIsAccepted) {
           hPtGeneratedStr[histogramIndex]->Fill(mcParticle.pt());
