@@ -1301,7 +1301,7 @@ struct quarkoniaToHyperons {
   }
 
   template <typename TV0>
-  void analyseV0Candidate(TV0 v0, float pt, float /*centrality*/, uint64_t selMap, std::vector<bool>& selK0ShortIndices, std::vector<bool>& selLambdaIndices, std::vector<bool>& selAntiLambdaIndices, int v0TableOffset)
+  void analyseV0Candidate(TV0 v0, float pt, uint64_t selMap, std::vector<bool>& selK0ShortIndices, std::vector<bool>& selLambdaIndices, std::vector<bool>& selAntiLambdaIndices, int v0TableOffset)
   // precalculate this information so that a check is one mask operation, not many
   {
     bool passK0ShortSelections = false;
@@ -1813,7 +1813,7 @@ struct quarkoniaToHyperons {
         selMap = selMap | (uint64_t(1) << selConsiderK0Short) | (uint64_t(1) << selConsiderLambda) | (uint64_t(1) << selConsiderAntiLambda);
         selMap = selMap | (uint64_t(1) << selPhysPrimK0Short) | (uint64_t(1) << selPhysPrimLambda) | (uint64_t(1) << selPhysPrimAntiLambda);
 
-        analyseV0Candidate(v0, v0.pt(), centrality, selMap, selK0ShortIndices, selLambdaIndices, selAntiLambdaIndices, fullV0s.offset());
+        analyseV0Candidate(v0, v0.pt(), selMap, selK0ShortIndices, selLambdaIndices, selAntiLambdaIndices, fullV0s.offset());
       } // end v0 loop
 
       // count the number of K0s, Lambda and AntiLambdas passsing the selections
@@ -1963,7 +1963,7 @@ struct quarkoniaToHyperons {
           selMap = selMap | (uint64_t(1) << selPhysPrimK0Short) | (uint64_t(1) << selPhysPrimLambda) | (uint64_t(1) << selPhysPrimAntiLambda);
         }
 
-        analyseV0Candidate(v0, ptmc, centrality, selMap, selK0ShortIndices, selLambdaIndices, selAntiLambdaIndices, fullV0s.offset());
+        analyseV0Candidate(v0, ptmc, selMap, selK0ShortIndices, selLambdaIndices, selAntiLambdaIndices, fullV0s.offset());
       } // end v0 loop
 
       /// count the number of K0s, Lambda and AntiLambdas passsing the selections
@@ -2003,7 +2003,6 @@ struct quarkoniaToHyperons {
 
         auto cascadeMC = cascade.cascMCCore_as<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>();
 
-        // float ptmc = RecoDecay::sqrtSumOfSquares(cascadeMC.pxMC(), cascadeMC.pyMC());
         float ymc = 1e-3;
         if (TMath::Abs(cascadeMC.pdgCode()) == 3312)
           ymc = RecoDecay::y(std::array{cascadeMC.pxMC(), cascadeMC.pyMC(), cascadeMC.pzMC()}, o2::constants::physics::MassXiMinus);
