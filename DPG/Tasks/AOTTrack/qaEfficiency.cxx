@@ -74,8 +74,8 @@ static constexpr int PDGs[nParticles] = {11, 13, 211, 321, 2212, 1000010020, 100
                                          -11, -13, -211, -321, -2212, -1000010020, -1000010030, -1000020030, -1000020040};
 
 // Histograms
-std::shared_ptr<TH1> hPtXiGenerated; // histogram to store pT of Xi and Lambda
-std::shared_ptr<TH1> hPtLambdaGenerated; 
+std::shared_ptr<TH1> hPtmotherGenerated; // histogram to store pT of Xi and Lambda
+
 // Pt
 std::array<std::shared_ptr<TH1>, nParticles> hPtIts;
 std::array<std::shared_ptr<TH1>, nParticles> hPtTpc;
@@ -333,8 +333,8 @@ struct QaEfficiency {
                                   phiMin, phiMax,
                                   yMin, yMax);
     const int histogramIndex = id + pdgSign * nSpecies;
-    hPtXiGenerated = histos.add<TH1>("MC/Xi/pt/generated","Generated pT of Xi ",kTH1D, {histos.getAxis("axisPt")}); 
-    hPtLambdaGenerated = histos.add<TH1>("MC/Lambda/pt/generated","Generated pT of Lambda ",kTH1D, {histos.getAxis("axisPt")}); 
+    hPtmotherGenerated = histos.add<TH1>("MC/mother/pt/generated","Generated pT of mother Lambda or Xi ",+ tagPt, kTH1D, {axisPt}); 
+   
     // Pt
     hPtIts[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/its", PDGs[histogramIndex]), "ITS tracks " + tagPt, kTH1D, {axisPt});
     hPtTpc[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/tpc", PDGs[histogramIndex]), "TPC tracks " + tagPt, kTH1D, {axisPt});
@@ -1265,10 +1265,7 @@ struct QaEfficiency {
       }
       // If mother particle is accepted, fill histograms for Xi and Lambda pT
       if (motherIsAccepted) {
-        if (mcParticle.pdgCode() == 3312 || mcParticle.pdgCode() == -3312) {  // Xi
-          hPtXiGenerated->Fill(mcParticle.pt());  // Fill generated pT for Xi
-        } else if (mcParticle.pdgCode() == 3122 || mcParticle.pdgCode() == -3122) {  // Lambda
-          hPtLambdaGenerated->Fill(mcParticle.pt());  // Fill generated pT for Lambda
+        hPtmotherGenerated->Fill(mcParticle.pt());  // Fill generated pT for Lambda
         }
      }
   }
