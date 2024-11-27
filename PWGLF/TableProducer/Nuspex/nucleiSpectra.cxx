@@ -700,7 +700,7 @@ struct nucleiSpectra {
             collision.multTPC()});
         }
         if (fillTree) {
-          if (flag & BIT(2)) { 
+          if (flag & BIT(2)) {
             if (track.pt() < cfgCutPtMinTree || track.pt() > cfgCutPtMaxTree || track.sign() > 0)
             continue;
           }
