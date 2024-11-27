@@ -57,7 +57,7 @@ DECLARE_SOA_COLUMN(ItsClusterSizeHad, itsClusterSizeHad, uint32_t);
 DECLARE_SOA_COLUMN(SharedClustersHe3, sharedClustersHe3, uint8_t);
 DECLARE_SOA_COLUMN(SharedClustersHad, sharedClustersHad, uint8_t);
 
-DECLARE_SOA_COLUMN(IsBkgLS, isBkgLS, bool);
+DECLARE_SOA_COLUMN(IsBkgUS, isBkgUS, bool);
 DECLARE_SOA_COLUMN(IsBkgEM, isBkgEM, bool);
 
 DECLARE_SOA_COLUMN(PtMCHe3, ptMCHe3, float);
@@ -69,6 +69,8 @@ DECLARE_SOA_COLUMN(PhiMCHad, phiMCHad, float);
 DECLARE_SOA_COLUMN(SignedPtMC, signedPtMC, float);
 DECLARE_SOA_COLUMN(MassMC, massMC, float);
 
+DECLARE_SOA_COLUMN(CollisionId, collisionId, int64_t);
+DECLARE_SOA_COLUMN(ZVertex, zVertex, float);
 DECLARE_SOA_COLUMN(Multiplicity, multiplicity, uint16_t);
 DECLARE_SOA_COLUMN(CentralityFT0C, centFT0C, float);
 DECLARE_SOA_COLUMN(MultiplicityFT0C, multiplicityFT0C, float);
@@ -103,7 +105,7 @@ DECLARE_SOA_TABLE(he3HadronTable, "AOD", "HE3HADTABLE",
                   he3HadronTablesNS::ItsClusterSizeHad,
                   he3HadronTablesNS::SharedClustersHe3,
                   he3HadronTablesNS::SharedClustersHad,
-                  he3HadronTablesNS::IsBkgLS,
+                  he3HadronTablesNS::IsBkgUS,
                   he3HadronTablesNS::IsBkgEM)
 DECLARE_SOA_TABLE(he3HadronTableMC, "AOD", "HE3HADTABLEMC",
                   he3HadronTablesNS::PtMCHe3,
@@ -115,6 +117,8 @@ DECLARE_SOA_TABLE(he3HadronTableMC, "AOD", "HE3HADTABLEMC",
                   he3HadronTablesNS::SignedPtMC,
                   he3HadronTablesNS::MassMC)
 DECLARE_SOA_TABLE(he3HadronMult, "AOD", "HE3HADMULT",
+                  he3HadronTablesNS::CollisionId,
+                  he3HadronTablesNS::ZVertex,
                   he3HadronTablesNS::Multiplicity,
                   he3HadronTablesNS::CentralityFT0C,
                   he3HadronTablesNS::MultiplicityFT0C)

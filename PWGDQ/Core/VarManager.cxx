@@ -765,6 +765,10 @@ void VarManager::SetDefaultVarNames()
   fgVariableUnits[kM1111REF] = "";
   fgVariableNames[kM1111REFsmall] = "M_{1111}^{REF}small ";
   fgVariableUnits[kM1111REFsmall] = "";
+  fgVariableNames[kM11M1111REF] = "M_{11}_{REF}M_{1111}_{REF} ";
+  fgVariableUnits[kM11M1111REF] = "";
+  fgVariableNames[kCORR2CORR4REF] = "<2><4>";
+  fgVariableUnits[kCORR2CORR4REF] = "";
   fgVariableNames[kM0111POI] = "M^{'}_{0111}^{POI} ";
   fgVariableUnits[kM0111POI] = "";
   fgVariableNames[kCORR2REF] = "<2> ";

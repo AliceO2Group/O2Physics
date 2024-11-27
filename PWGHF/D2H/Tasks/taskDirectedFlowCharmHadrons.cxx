@@ -13,6 +13,7 @@
 /// \brief Analysis task for charm hadron directed flow
 ///
 /// \author Prottay Das, prottay.das@cern.ch
+/// \author Biao Zhang, biao.zhanng@cern.ch
 
 #include <string>
 #include <vector>
@@ -40,7 +41,9 @@ using namespace o2::framework::expressions;
 using namespace o2::hf_centrality;
 using namespace o2::hf_evsel;
 
-enum DecayChannel { DplusToPiKPi = 0 };
+enum DecayChannel { DplusToPiKPi = 0,
+                    D0ToPiK,
+                    D0ToKPi };
 
 struct HfTaskDirectedFlowCharmHadrons {
   Configurable<int> centEstimator{"centEstimator", 2, "Centrality estimation (FT0A: 1, FT0C: 2, FT0M: 3, FV0A: 4)"};
@@ -48,6 +51,7 @@ struct HfTaskDirectedFlowCharmHadrons {
   Configurable<float> centralityMin{"centralityMin", 0., "Minimum centrality accepted in SP computation"};
   Configurable<float> centralityMax{"centralityMax", 100., "Maximum centrality accepted in SP computation"};
   Configurable<bool> storeMl{"storeMl", false, "Flag to store ML scores"};
+  Configurable<bool> direct{"direct", false, "Flag to calculate direct v1 odd and even"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::vector<int>> classMl{"classMl", {0, 2}, "Indices of BDT scores to be stored. Two indexes max."};
 
@@ -62,10 +66,18 @@ struct HfTaskDirectedFlowCharmHadrons {
 
   using CandDplusDataWMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
   using CandDplusData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;
+  using CandD0DataWMl = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfMlD0>>;
+  using CandD0Data = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
   using CollsWithQvecs = soa::Join<aod::Collisions, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::SPCalibrationTables>;
   using TracksWithExtra = soa::Join<aod::Tracks, aod::TracksExtra>;
 
   Filter filterSelectDplusCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlag;
+  Filter filterSelectD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlag || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlag;
+
+  Partition<CandD0Data> selectedD0ToPiK = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlag;
+  Partition<CandD0Data> selectedD0ToKPi = aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlag;
+  Partition<CandD0DataWMl> selectedD0ToPiKWMl = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlag;
+  Partition<CandD0DataWMl> selectedD0ToKPiWMl = aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlag;
 
   SliceCache cache;
   HfHelper hfHelper;
@@ -79,7 +91,7 @@ struct HfTaskDirectedFlowCharmHadrons {
   {
 
     /// check process functions
-    std::array<int, 2> processes = {doprocessDplusStd, doprocessDplusMl};
+    std::array<int, 4> processes = {doprocessDplusStd, doprocessDplusMl, doprocessD0Std, doprocessD0Ml};
     const int nProcesses = std::accumulate(processes.begin(), processes.end(), 0);
     if (nProcesses > 1) {
       LOGP(fatal, "Only one process function should be enabled at a time, please check your configuration");
@@ -100,15 +112,23 @@ struct HfTaskDirectedFlowCharmHadrons {
     if (storeMl) {
       axes.insert(axes.end(), {thnAxisMlOne, thnAxisMlTwo});
     }
-    registry.add("hpuxQxpvscentpteta", "hpuxQxpvscentpteta", HistType::kTHnSparseF, axes, true);
-    registry.add("hpuyQypvscentpteta", "hpuyQypvscentpteta", HistType::kTHnSparseF, axes, true);
-    registry.add("hpuxQxtvscentpteta", "hpuxQxtvscentpteta", HistType::kTHnSparseF, axes, true);
-    registry.add("hpuyQytvscentpteta", "hpuyQytvscentpteta", HistType::kTHnSparseF, axes, true);
 
-    registry.add("hpQxtQxpvscent", "hpQxtQxpvscent", HistType::kTHnSparseF, {thnAxisCent, thnAxisScalarProd}, true);
-    registry.add("hpQytQypvscent", "hpQytQypvscent", HistType::kTHnSparseF, {thnAxisCent, thnAxisScalarProd}, true);
-    registry.add("hpQxtQypvscent", "hpQxtQypvscent", HistType::kTHnSparseF, {thnAxisCent, thnAxisScalarProd}, true);
-    registry.add("hpQxpQytvscent", "hpQxpQytvscent", HistType::kTHnSparseF, {thnAxisCent, thnAxisScalarProd}, true);
+    if (direct) {
+      registry.add("hpQxytpvscent", "hpQxytpvscent", HistType::kTHnSparseF, {thnAxisCent, thnAxisScalarProd}, true);
+      registry.add("hpuxyQxypvscentpteta", "hpuxyQxypvscentpteta", HistType::kTHnSparseF, axes, true);
+      registry.add("hpuxyQxytvscentpteta", "hpuxyQxytvscentpteta", HistType::kTHnSparseF, axes, true);
+      registry.add("hpoddvscentpteta", "hpoddvscentpteta", HistType::kTHnSparseF, axes, true);
+      registry.add("hpevenvscentpteta", "hpevenvscentpteta", HistType::kTHnSparseF, axes, true);
+    } else {
+      registry.add("hpQxtQxpvscent", "hpQxtQxpvscent", HistType::kTHnSparseF, {thnAxisCent, thnAxisScalarProd}, true);
+      registry.add("hpQytQypvscent", "hpQytQypvscent", HistType::kTHnSparseF, {thnAxisCent, thnAxisScalarProd}, true);
+      registry.add("hpQxtQypvscent", "hpQxtQypvscent", HistType::kTHnSparseF, {thnAxisCent, thnAxisScalarProd}, true);
+      registry.add("hpQxpQytvscent", "hpQxpQytvscent", HistType::kTHnSparseF, {thnAxisCent, thnAxisScalarProd}, true);
+      registry.add("hpuxQxpvscentpteta", "hpuxQxpvscentpteta", HistType::kTHnSparseF, axes, true);
+      registry.add("hpuyQypvscentpteta", "hpuyQypvscentpteta", HistType::kTHnSparseF, axes, true);
+      registry.add("hpuxQxtvscentpteta", "hpuxQxtvscentpteta", HistType::kTHnSparseF, axes, true);
+      registry.add("hpuyQytvscentpteta", "hpuyQytvscentpteta", HistType::kTHnSparseF, axes, true);
+    }
 
     ccdb->setURL(ccdbUrl);
     ccdb->setCaching(true);
@@ -154,7 +174,7 @@ struct HfTaskDirectedFlowCharmHadrons {
       return;
     }
 
-    if (!collision.triggerevent()) { // for selecting only callibrated events
+    if (!collision.triggereventsp()) { // for selecting only callibrated events
       return;
     }
 
@@ -165,14 +185,19 @@ struct HfTaskDirectedFlowCharmHadrons {
 
     auto QxtQxp = qxZDCC * qxZDCA;
     auto QytQyp = qyZDCC * qyZDCA;
+    auto Qxytp = QxtQxp + QytQyp;
     auto QxpQyt = qxZDCA * qyZDCC;
     auto QxtQyp = qxZDCC * qyZDCA;
 
     // correlations in the denominators for SP calculation
-    registry.fill(HIST("hpQxtQxpvscent"), cent, QxtQxp);
-    registry.fill(HIST("hpQytQypvscent"), cent, QytQyp);
-    registry.fill(HIST("hpQxpQytvscent"), cent, QxpQyt);
-    registry.fill(HIST("hpQxtQypvscent"), cent, QxtQyp);
+    if (direct) {
+      registry.fill(HIST("hpQxytpvscent"), cent, Qxytp);
+    } else {
+      registry.fill(HIST("hpQxtQxpvscent"), cent, QxtQxp);
+      registry.fill(HIST("hpQytQypvscent"), cent, QytQyp);
+      registry.fill(HIST("hpQxpQytvscent"), cent, QxpQyt);
+      registry.fill(HIST("hpQxtQypvscent"), cent, QxtQyp);
+    }
 
     for (const auto& candidate : candidates) {
       double massCand = 0.;
@@ -183,10 +208,29 @@ struct HfTaskDirectedFlowCharmHadrons {
           for (unsigned int iclass = 0; iclass < classMl->size(); iclass++)
             outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMl->at(iclass)];
         }
+      } else if constexpr (std::is_same_v<T1, CandD0Data> || std::is_same_v<T1, CandD0DataWMl>) {
+        switch (channel) {
+          case DecayChannel::D0ToPiK:
+            massCand = hfHelper.invMassD0ToPiK(candidate);
+            if constexpr (std::is_same_v<T1, CandD0DataWMl>) {
+              for (unsigned int iclass = 0; iclass < classMl->size(); iclass++)
+                outputMl[iclass] = candidate.mlProbD0()[classMl->at(iclass)];
+            }
+            break;
+          case DecayChannel::D0ToKPi:
+            massCand = hfHelper.invMassD0barToKPi(candidate);
+            if constexpr (std::is_same_v<T1, CandD0DataWMl>) {
+              for (unsigned int iclass = 0; iclass < classMl->size(); iclass++)
+                outputMl[iclass] = candidate.mlProbD0bar()[classMl->at(iclass)];
+            }
+            break;
+          default:
+            break;
+        }
       }
 
       auto trackprong0 = candidate.template prong0_as<Trk>();
-      double sign = trackprong0.sign(); // to differentiate between D+ and D-
+      double sign = trackprong0.sign(); // electric charge of the first daughter track to differentiate particle and antiparticle
 
       double ptCand = candidate.pt();
       double etaCand = candidate.eta();
@@ -198,22 +242,62 @@ struct HfTaskDirectedFlowCharmHadrons {
       auto uy = sinNPhi; // imaginary part of candidate q vector
       auto uxQxp = ux * qxZDCA;
       auto uyQyp = uy * qyZDCA; // correlations of particle and ZDC q vectors
+      auto uxyQxyp = uxQxp + uyQyp;
       auto uxQxt = ux * qxZDCC;
       auto uyQyt = uy * qyZDCC;
+      auto uxyQxyt = uxQxt + uyQyt;
+      auto oddv1 = ux * (qxZDCA - qxZDCC) + uy * (qyZDCA - qyZDCC);
+      auto evenv1 = ux * (qxZDCA + qxZDCC) + uy * (qyZDCA + qyZDCC);
 
       if (storeMl) {
-        registry.fill(HIST("hpuxQxpvscentpteta"), massCand, cent, ptCand, etaCand, uxQxp, sign, outputMl[0], outputMl[1]);
-        registry.fill(HIST("hpuyQypvscentpteta"), massCand, cent, ptCand, etaCand, uyQyp, sign, outputMl[0], outputMl[1]);
-        registry.fill(HIST("hpuxQxtvscentpteta"), massCand, cent, ptCand, etaCand, uxQxt, sign, outputMl[0], outputMl[1]);
-        registry.fill(HIST("hpuyQytvscentpteta"), massCand, cent, ptCand, etaCand, uyQyt, sign, outputMl[0], outputMl[1]);
+        if (direct) {
+          registry.fill(HIST("hpuxyQxypvscentpteta"), massCand, cent, ptCand, etaCand, uxyQxyp, sign, outputMl[0], outputMl[1]);
+          registry.fill(HIST("hpuxyQxytvscentpteta"), massCand, cent, ptCand, etaCand, uxyQxyt, sign, outputMl[0], outputMl[1]);
+          registry.fill(HIST("hpoddvscentpteta"), massCand, cent, ptCand, etaCand, oddv1, sign, outputMl[0], outputMl[1]);
+          registry.fill(HIST("hpevenvscentpteta"), massCand, cent, ptCand, etaCand, evenv1, sign, outputMl[0], outputMl[1]);
+        } else {
+          registry.fill(HIST("hpuxQxpvscentpteta"), massCand, cent, ptCand, etaCand, uxQxp, sign, outputMl[0], outputMl[1]);
+          registry.fill(HIST("hpuyQypvscentpteta"), massCand, cent, ptCand, etaCand, uyQyp, sign, outputMl[0], outputMl[1]);
+          registry.fill(HIST("hpuxQxtvscentpteta"), massCand, cent, ptCand, etaCand, uxQxt, sign, outputMl[0], outputMl[1]);
+          registry.fill(HIST("hpuyQytvscentpteta"), massCand, cent, ptCand, etaCand, uyQyt, sign, outputMl[0], outputMl[1]);
+        }
       } else {
-        registry.fill(HIST("hpuxQxpvscentpteta"), massCand, cent, ptCand, etaCand, uxQxp, sign);
-        registry.fill(HIST("hpuyQypvscentpteta"), massCand, cent, ptCand, etaCand, uyQyp, sign);
-        registry.fill(HIST("hpuxQxtvscentpteta"), massCand, cent, ptCand, etaCand, uxQxt, sign);
-        registry.fill(HIST("hpuyQytvscentpteta"), massCand, cent, ptCand, etaCand, uyQyt, sign);
+        if (direct) {
+          registry.fill(HIST("hpuxyQxypvscentpteta"), massCand, cent, ptCand, etaCand, uxyQxyp, sign);
+          registry.fill(HIST("hpuxyQxytvscentpteta"), massCand, cent, ptCand, etaCand, uxyQxyt, sign);
+          registry.fill(HIST("hpoddvscentpteta"), massCand, cent, ptCand, etaCand, oddv1, sign);
+          registry.fill(HIST("hpevenvscentpteta"), massCand, cent, ptCand, etaCand, evenv1, sign);
+        } else {
+          registry.fill(HIST("hpuxQxpvscentpteta"), massCand, cent, ptCand, etaCand, uxQxp, sign);
+          registry.fill(HIST("hpuyQypvscentpteta"), massCand, cent, ptCand, etaCand, uyQyp, sign);
+          registry.fill(HIST("hpuxQxtvscentpteta"), massCand, cent, ptCand, etaCand, uxQxt, sign);
+          registry.fill(HIST("hpuyQytvscentpteta"), massCand, cent, ptCand, etaCand, uyQyt, sign);
+        }
       }
     }
   }
+  // D0 with ML
+  void processD0Ml(CollsWithQvecs::iterator const& collision,
+                   TracksWithExtra const& tracks)
+  {
+    auto candsD0ToPiKWMl = selectedD0ToPiKWMl->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
+    auto candsD0ToKPiWMl = selectedD0ToKPiWMl->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
+    runFlowAnalysis<DecayChannel::D0ToPiK>(collision, candsD0ToPiKWMl, tracks);
+    runFlowAnalysis<DecayChannel::D0ToKPi>(collision, candsD0ToKPiWMl, tracks);
+  }
+  PROCESS_SWITCH(HfTaskDirectedFlowCharmHadrons, processD0Ml, "Process D0 candidates with ML", false);
+
+  // D0 with rectangular cuts
+  void processD0Std(CollsWithQvecs::iterator const& collision,
+                    TracksWithExtra const& tracks)
+  {
+    auto candsD0ToPiK = selectedD0ToPiK->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
+    auto candsD0ToKPi = selectedD0ToKPi->sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
+    runFlowAnalysis<DecayChannel::D0ToPiK>(collision, candsD0ToPiK, tracks);
+    runFlowAnalysis<DecayChannel::D0ToKPi>(collision, candsD0ToKPi, tracks);
+  }
+  PROCESS_SWITCH(HfTaskDirectedFlowCharmHadrons, processD0Std, "Process D0 candidates with rectangular cuts", false);
+
   // Dplus with ML
   void processDplusMl(CollsWithQvecs::iterator const& collision,
                       CandDplusDataWMl const& candidatesDplus,

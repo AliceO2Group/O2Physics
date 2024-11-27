@@ -76,7 +76,6 @@ class FemtoUniverseMath
     const ROOT::Math::PtEtaPhiMVector vecpart1(part1.pt(), part1.eta(), part1.phi(), mass1);
     const ROOT::Math::PtEtaPhiMVector vecpart2(part2.pt(), part2.eta(), part2.phi(), mass2);
     const ROOT::Math::PtEtaPhiMVector trackSum = vecpart1 + vecpart2;
-    const ROOT::Math::PtEtaPhiMVector trackDiff = vecpart1 - vecpart2;
 
     const float beta = trackSum.Beta();
     const float betax = beta * std::cos(trackSum.Phi()) * std::sin(trackSum.Theta());

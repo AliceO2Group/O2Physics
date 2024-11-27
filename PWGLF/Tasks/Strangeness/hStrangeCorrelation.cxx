@@ -20,6 +20,8 @@
 /// \author David Dobrigkeit Chinellato (david.dobrigkeit.chinellato@cern.ch)
 /// \author Zhongbao Yin (Zhong-Bao.Yin@cern.ch)
 
+#include <string>
+#include <vector>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Common/DataModel/TrackSelectionTables.h"
@@ -33,8 +35,6 @@
 #include "Common/DataModel/Centrality.h"
 #include "Framework/StaticFor.h"
 #include "CCDB/BasicCCDBManager.h"
-#include <string>
-#include <vector>
 
 using namespace o2;
 using namespace o2::constants::math;
@@ -1206,7 +1206,7 @@ struct correlateStrangeness {
     }
   }
 
-  void processMCGenerated(aod::McCollision const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>> const& collisions, aod::McParticles const& mcParticles)
+  void processMCGenerated(aod::McCollision const& /*mcCollision*/, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>> const& collisions, aod::McParticles const& mcParticles)
   {
     histos.fill(HIST("hClosureTestEventCounter"), 2.5f);
 
@@ -1349,7 +1349,7 @@ struct correlateStrangeness {
       });
     }
   }
-  void processClosureTest(aod::McCollision const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>> const& recCollisions, aod::McParticles const& mcParticles)
+  void processClosureTest(aod::McCollision const& /*mcCollision*/, soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::PVMults>> const& recCollisions, aod::McParticles const& mcParticles)
   {
 
     std::vector<uint32_t> triggerIndices;
@@ -1451,9 +1451,16 @@ struct correlateStrangeness {
         continue;
       }
       if (abs(mcParticle.pdgCode()) == 211 || abs(mcParticle.pdgCode()) == 321 || abs(mcParticle.pdgCode()) == 2212 || abs(mcParticle.pdgCode()) == 11 || abs(mcParticle.pdgCode()) == 13) {
+        Int_t charge = 0;
+        if (mcParticle.pdgCode() < 0)
+          charge = -1;
+        if (mcParticle.pdgCode() > 0)
+          charge = 1;
         if (!doTriggPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
-          triggerIndices.emplace_back(iteratorNum);
-          histos.fill(HIST("ClosureTest/hTrigger"), gpt, geta, bestCollisionFT0Mpercentile);
+          if ((triggerParticleCharge > 0 && charge > 0) || (triggerParticleCharge < 0 && charge < 0) || triggerParticleCharge == 0) {
+            triggerIndices.emplace_back(iteratorNum);
+            histos.fill(HIST("ClosureTest/hTrigger"), gpt, geta, bestCollisionFT0Mpercentile);
+          }
         }
       }
       if (!doAssocPhysicalPrimary || mcParticle.isPhysicalPrimary()) {
@@ -1501,7 +1508,7 @@ struct correlateStrangeness {
     associatedIndices.emplace_back(omegaPlusIndices);
     associatedIndices.emplace_back(piIndices);
 
-    for (Int_t iTrigger = 0; iTrigger < triggerIndices.size(); iTrigger++) {
+    for (std::size_t iTrigger = 0; iTrigger < triggerIndices.size(); iTrigger++) {
       auto triggerParticle = mcParticles.iteratorAt(triggerIndices[iTrigger]);
       // check range of trigger particle
       if (triggerParticle.pt() > axisRanges[3][1] || triggerParticle.pt() < axisRanges[3][0]) {
@@ -1511,10 +1518,10 @@ struct correlateStrangeness {
       Double_t gphitrigger = triggerParticle.phi();
       Double_t pttrigger = triggerParticle.pt();
       auto const& mother = triggerParticle.mothers_first_as<aod::McParticles>();
-      Int_t globalIndex = mother.globalIndex();
+      auto globalIndex = mother.globalIndex();
       static_for<0, 7>([&](auto i) { // associated loop
         constexpr int index = i.value;
-        for (Int_t iassoc = 0; iassoc < associatedIndices[index].size(); iassoc++) {
+        for (std::size_t iassoc = 0; iassoc < associatedIndices[index].size(); iassoc++) {
           auto assocParticle = mcParticles.iteratorAt(associatedIndices[index][iassoc]);
           if (triggerIndices[iTrigger] != associatedIndices[index][iassoc] && globalIndex != assocParticle.globalIndex()) { // avoid self
             Double_t getaassoc = assocParticle.eta();

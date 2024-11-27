@@ -136,24 +136,24 @@ DECLARE_SOA_COLUMN(CascTransRadius, casctransRadius, float);                 //!
 DECLARE_SOA_COLUMN(DecayVtxX, decayVtxX, float);                             //! X position of the decay vertex
 DECLARE_SOA_COLUMN(DecayVtxY, decayVtxY, float);                             //! Y position of the decay vertex
 DECLARE_SOA_COLUMN(DecayVtxZ, decayVtxZ, float);                             //! Z position of the decay vertex
-DECLARE_SOA_COLUMN(DaughterTPCNSigmaPi1, daughterTPCNSigmaPi1, float);       //! TPC PID of the first daughter as Pion
-DECLARE_SOA_COLUMN(DaughterTPCNSigmaKa1, daughterTPCNSigmaKa1, float);       //! TPC PID of the first daughter as Kaon
-DECLARE_SOA_COLUMN(DaughterTPCNSigmaPr1, daughterTPCNSigmaPr1, float);       //! TPC PID of the first daughter as Proton
-DECLARE_SOA_COLUMN(DaughterTPCNSigmaPi2, daughterTPCNSigmaPi2, float);       //! TPC PID of the second daughter as Pion
-DECLARE_SOA_COLUMN(DaughterTPCNSigmaKa2, daughterTPCNSigmaKa2, float);       //! TPC PID of the second daughter as Kaon
-DECLARE_SOA_COLUMN(DaughterTPCNSigmaPr2, daughterTPCNSigmaPr2, float);       //! TPC PID of the second daughter as Proton
-DECLARE_SOA_COLUMN(DaughterTPCNSigmaPiBach, daughterTPCNSigmaPiBach, float); //! TPC PID of the bachelor daughter as Pion
-DECLARE_SOA_COLUMN(DaughterTPCNSigmaKaBach, daughterTPCNSigmaKaBach, float); //! TPC PID of the bachelor daughter as Kaon
-DECLARE_SOA_COLUMN(DaughterTPCNSigmaPrBach, daughterTPCNSigmaPrBach, float); //! TPC PID of the bachelor daughter as Proton
-DECLARE_SOA_COLUMN(DaughterTOFNSigmaPi1, daughterTOFNSigmaPi1, float);       //! TOF PID of the first daughter as Pion
-DECLARE_SOA_COLUMN(DaughterTOFNSigmaKa1, daughterTOFNSigmaKa1, float);       //! TOF PID of the first daughter as Kaon
-DECLARE_SOA_COLUMN(DaughterTOFNSigmaPr1, daughterTOFNSigmaPr1, float);       //! TOF PID of the first daughter as Proton
-DECLARE_SOA_COLUMN(DaughterTOFNSigmaPi2, daughterTOFNSigmaPi2, float);       //! TOF PID of the second daughter as Pion
-DECLARE_SOA_COLUMN(DaughterTOFNSigmaKa2, daughterTOFNSigmaKa2, float);       //! TOF PID of the second daughter as Kaon
-DECLARE_SOA_COLUMN(DaughterTOFNSigmaPr2, daughterTOFNSigmaPr2, float);       //! TOF PID of the second daughter as Proton
-DECLARE_SOA_COLUMN(DaughterTOFNSigmaPiBach, daughterTOFNSigmaPiBach, float); //! TOF PID of the bachelor daughter as Pion
-DECLARE_SOA_COLUMN(DaughterTOFNSigmaKaBach, daughterTOFNSigmaKaBach, float); //! TOF PID of the bachelor daughter as Kaon
-DECLARE_SOA_COLUMN(DaughterTOFNSigmaPrBach, daughterTOFNSigmaPrBach, float); //! TOF PID of the bachelor daughter as Proton
+DECLARE_SOA_COLUMN(DaughterTPCNSigmaPosPi, daughterTPCNSigmaPosPi, float);   //! TPC PID of the positive daughter as Pion
+DECLARE_SOA_COLUMN(DaughterTPCNSigmaPosKa, daughterTPCNSigmaPosKa, float);   //! TPC PID of the positive daughter as Kaon
+DECLARE_SOA_COLUMN(DaughterTPCNSigmaPosPr, daughterTPCNSigmaPosPr, float);   //! TPC PID of the positive daughter as Proton
+DECLARE_SOA_COLUMN(DaughterTPCNSigmaNegPi, daughterTPCNSigmaNegPi, float);   //! TPC PID of the negative daughter as Pion
+DECLARE_SOA_COLUMN(DaughterTPCNSigmaNegKa, daughterTPCNSigmaNegKa, float);   //! TPC PID of the negative daughter as Kaon
+DECLARE_SOA_COLUMN(DaughterTPCNSigmaNegPr, daughterTPCNSigmaNegPr, float);   //! TPC PID of the negative daughter as Proton
+DECLARE_SOA_COLUMN(DaughterTPCNSigmaBachPi, daughterTPCNSigmaBachPi, float); //! TPC PID of the bachelor daughter as Pion
+DECLARE_SOA_COLUMN(DaughterTPCNSigmaBachKa, daughterTPCNSigmaBachKa, float); //! TPC PID of the bachelor daughter as Kaon
+DECLARE_SOA_COLUMN(DaughterTPCNSigmaBachPr, daughterTPCNSigmaBachPr, float); //! TPC PID of the bachelor daughter as Proton
+DECLARE_SOA_COLUMN(DaughterTOFNSigmaPosPi, daughterTOFNSigmaPosPi, float);   //! TOF PID of the positive daughter as Pion
+DECLARE_SOA_COLUMN(DaughterTOFNSigmaPosKa, daughterTOFNSigmaPosKa, float);   //! TOF PID of the positive daughter as Kaon
+DECLARE_SOA_COLUMN(DaughterTOFNSigmaPosPr, daughterTOFNSigmaPosPr, float);   //! TOF PID of the positive daughter as Proton
+DECLARE_SOA_COLUMN(DaughterTOFNSigmaNegPi, daughterTOFNSigmaNegPi, float);   //! TOF PID of the negative daughter as Pion
+DECLARE_SOA_COLUMN(DaughterTOFNSigmaNegKa, daughterTOFNSigmaNegKa, float);   //! TOF PID of the negative daughter as Kaon
+DECLARE_SOA_COLUMN(DaughterTOFNSigmaNegPr, daughterTOFNSigmaNegPr, float);   //! TOF PID of the negative daughter as Proton
+DECLARE_SOA_COLUMN(DaughterTOFNSigmaBachPi, daughterTOFNSigmaBachPi, float); //! TOF PID of the bachelor daughter as Pion
+DECLARE_SOA_COLUMN(DaughterTOFNSigmaBachKa, daughterTOFNSigmaBachKa, float); //! TOF PID of the bachelor daughter as Kaon
+DECLARE_SOA_COLUMN(DaughterTOFNSigmaBachPr, daughterTOFNSigmaBachPr, float); //! TOF PID of the bachelor daughter as Proton
 // For MC
 DECLARE_SOA_INDEX_COLUMN(McParticle, mcParticle); //! Index of the corresponding MC particle
 DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool);
@@ -218,18 +218,18 @@ DECLARE_SOA_TABLE(ResoV0s, "AOD", "RESOV0S",
                   resodaughter::Eta,
                   resodaughter::Phi,
                   resodaughter::Indices,
-                  resodaughter::DaughterTPCNSigmaPi1,
-                  resodaughter::DaughterTPCNSigmaKa1,
-                  resodaughter::DaughterTPCNSigmaPr1,
-                  resodaughter::DaughterTPCNSigmaPi2,
-                  resodaughter::DaughterTPCNSigmaKa2,
-                  resodaughter::DaughterTPCNSigmaPr2,
-                  resodaughter::DaughterTOFNSigmaPi1,
-                  resodaughter::DaughterTOFNSigmaKa1,
-                  resodaughter::DaughterTOFNSigmaPr1,
-                  resodaughter::DaughterTOFNSigmaPi2,
-                  resodaughter::DaughterTOFNSigmaKa2,
-                  resodaughter::DaughterTOFNSigmaPr2,
+                  resodaughter::DaughterTPCNSigmaPosPi,
+                  resodaughter::DaughterTPCNSigmaPosKa,
+                  resodaughter::DaughterTPCNSigmaPosPr,
+                  resodaughter::DaughterTPCNSigmaNegPi,
+                  resodaughter::DaughterTPCNSigmaNegKa,
+                  resodaughter::DaughterTPCNSigmaNegPr,
+                  resodaughter::DaughterTOFNSigmaPosPi,
+                  resodaughter::DaughterTOFNSigmaPosKa,
+                  resodaughter::DaughterTOFNSigmaPosPr,
+                  resodaughter::DaughterTOFNSigmaNegPi,
+                  resodaughter::DaughterTOFNSigmaNegKa,
+                  resodaughter::DaughterTOFNSigmaNegPr,
                   resodaughter::V0CosPA,
                   resodaughter::DaughDCA,
                   v0data::DCAPosToPV,
@@ -254,24 +254,24 @@ DECLARE_SOA_TABLE(ResoCascades, "AOD", "RESOCASCADES",
                   resodaughter::Eta,
                   resodaughter::Phi,
                   resodaughter::CascadeIndices,
-                  resodaughter::DaughterTPCNSigmaPi1,
-                  resodaughter::DaughterTPCNSigmaKa1,
-                  resodaughter::DaughterTPCNSigmaPr1,
-                  resodaughter::DaughterTPCNSigmaPi2,
-                  resodaughter::DaughterTPCNSigmaKa2,
-                  resodaughter::DaughterTPCNSigmaPr2,
-                  resodaughter::DaughterTPCNSigmaPiBach,
-                  resodaughter::DaughterTPCNSigmaKaBach,
-                  resodaughter::DaughterTPCNSigmaPrBach,
-                  resodaughter::DaughterTOFNSigmaPi1,
-                  resodaughter::DaughterTOFNSigmaKa1,
-                  resodaughter::DaughterTOFNSigmaPr1,
-                  resodaughter::DaughterTOFNSigmaPi2,
-                  resodaughter::DaughterTOFNSigmaKa2,
-                  resodaughter::DaughterTOFNSigmaPr2,
-                  resodaughter::DaughterTOFNSigmaPiBach,
-                  resodaughter::DaughterTOFNSigmaKaBach,
-                  resodaughter::DaughterTOFNSigmaPrBach,
+                  resodaughter::DaughterTPCNSigmaPosPi,
+                  resodaughter::DaughterTPCNSigmaPosKa,
+                  resodaughter::DaughterTPCNSigmaPosPr,
+                  resodaughter::DaughterTPCNSigmaNegPi,
+                  resodaughter::DaughterTPCNSigmaNegKa,
+                  resodaughter::DaughterTPCNSigmaNegPr,
+                  resodaughter::DaughterTPCNSigmaBachPi,
+                  resodaughter::DaughterTPCNSigmaBachKa,
+                  resodaughter::DaughterTPCNSigmaBachPr,
+                  resodaughter::DaughterTOFNSigmaPosPi,
+                  resodaughter::DaughterTOFNSigmaPosKa,
+                  resodaughter::DaughterTOFNSigmaPosPr,
+                  resodaughter::DaughterTOFNSigmaNegPi,
+                  resodaughter::DaughterTOFNSigmaNegKa,
+                  resodaughter::DaughterTOFNSigmaNegPr,
+                  resodaughter::DaughterTOFNSigmaBachPi,
+                  resodaughter::DaughterTOFNSigmaBachKa,
+                  resodaughter::DaughterTOFNSigmaBachPr,
                   resodaughter::V0CosPA,
                   resodaughter::CascCosPA,
                   resodaughter::DaughDCA,
@@ -339,7 +339,9 @@ DECLARE_SOA_TABLE(ResoMCParents, "AOD", "RESOMCPARENTS",
                   resodaughter::Pz,
                   resodaughter::Eta,
                   resodaughter::Phi,
-                  mcparticle::Y);
+                  mcparticle::Y,
+                  mcparticle::E,
+                  mcparticle::StatusCode);
 using ResoMCParent = ResoMCParents::iterator;
 
 using Reso2TracksExt = soa::Join<aod::FullTracks, aod::TracksDCA>; // without Extra

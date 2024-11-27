@@ -89,10 +89,25 @@ const char* speciesName[kDptDptNoOfSpecies] = {"h", "e", "mu", "pi", "ka", "p"};
 
 const char* speciesTitle[kDptDptNoOfSpecies] = {"", "e", "#mu", "#pi", "K", "p"};
 
+const char* eventSelectionSteps[knCollisionSelectionFlags] = {
+  "MB",
+  "INT7",
+  "SEL7",
+  "SEL8",
+  "NOSAMEBUNCHPUP",
+  "ISGOODZVTXFT0VSPV",
+  "ISVERTEXITSTPC",
+  "ISVERTEXTOFMATCHED",
+  "ISVERTEXTRDMATCHED",
+  "OCCUPANCY",
+  "CENTRALITY",
+  "ZVERTEX"};
+
 //============================================================================================
 // The DptDptFilter histogram objects
 // TODO: consider registering in the histogram registry
 //============================================================================================
+TH1D* fhEventSelection = nullptr;
 TH1F* fhCentMultB = nullptr;
 TH1F* fhCentMultA = nullptr;
 TH1F* fhVertexZB = nullptr;
@@ -339,6 +354,8 @@ struct DptDptFilter {
   } cfginputfile;
   Configurable<bool> cfgFullDerivedData{"fullderiveddata", false, "Produce the full derived data for external storage. Default false"};
   Configurable<std::string> cfgCentMultEstimator{"centmultestimator", "V0M", "Centrality/multiplicity estimator detector: V0M,CL0,CL1,FV0A,FT0M,FT0A,FT0C,NTPV,NOCM: none. Default V0M"};
+  Configurable<std::string> cfgOccupancyEstimation{"occestimation", "None", "Occupancy estimation: None, Tracks, FT0C. Default None"};
+  Configurable<float> cfgMaxOccupancy{"occmax", 1e6f, "Maximum allowed occupancy. Depends on the occupancy estimation"};
   Configurable<std::string> cfgSystem{"syst", "PbPb", "System: pp, PbPb, Pbp, pPb, XeXe, ppRun3, PbPbRun3. Default PbPb"};
   Configurable<std::string> cfgDataType{"datatype", "data", "Data type: data, datanoevsel, MC, FastMC, OnTheFlyMC. Default data"};
   Configurable<std::string> cfgTriggSel{"triggsel", "MB", "Trigger selection: MB,VTXTOFMATCHED,VTXTRDMATCHED,VTXTRDTOFMATCHED,None. Default MB"};
@@ -386,6 +403,10 @@ struct DptDptFilter {
     } else {
       fCentMultEstimator = getCentMultEstimator(cfgCentMultEstimator);
     }
+    /* the occupancy selection */
+    fOccupancyEstimation = getOccupancyEstimator(cfgOccupancyEstimation);
+    fMaxOccupancy = cfgMaxOccupancy;
+
     /* the trigger selection */
     fTriggerSelection = getTriggerSelection(cfgTriggSel);
     traceCollId0 = cfgTraceCollId0;
@@ -401,6 +422,10 @@ struct DptDptFilter {
 
     if ((fDataType == kData) || (fDataType == kDataNoEvtSel) || (fDataType == kMC)) {
       /* create the reconstructed data histograms */
+      fhEventSelection = new TH1D("EventSelection", ";counts", knCollisionSelectionFlags, -0.5f, static_cast<float>(knCollisionSelectionFlags) - 0.5f);
+      for (int ix = 0; ix < knCollisionSelectionFlags; ++ix) {
+        fhEventSelection->GetXaxis()->SetBinLabel(ix + 1, eventSelectionSteps[ix]);
+      }
       /* TODO: proper axes and axes titles according to the system; still incomplete */
       std::string multestimator = getCentMultEstimatorName(fCentMultEstimator);
       if (fSystem > kPbp) {
@@ -420,6 +445,7 @@ struct DptDptFilter {
       fhVertexZA = new TH1F("VertexZA", "Vertex Z; z_{vtx}", zvtxbins, zvtxlow, zvtxup);
 
       /* add the hstograms to the output list */
+      fOutputList->Add(fhEventSelection);
       fOutputList->Add(fhCentMultB);
       fOutputList->Add(fhCentMultA);
       fOutputList->Add(fhMultB);
@@ -544,6 +570,12 @@ void DptDptFilter::processReconstructed(CollisionObject const& collision, Tracks
     if (!fullDerivedData) {
       /* the tracks are done at a different level */
       collisionsinfo(uint8_t(false), 105.0);
+    }
+  }
+  /* report the event selection */
+  for (int iflag = 0; iflag < knCollisionSelectionFlags; ++iflag) {
+    if (collisionFlags.test(iflag)) {
+      fhEventSelection->Fill(iflag);
     }
   }
 }

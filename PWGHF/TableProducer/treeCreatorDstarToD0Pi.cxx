@@ -301,7 +301,7 @@ struct HfTreeCreatorDstarToD0Pi {
     float massDStar{-1.f};
     float cosThetaD0{-1.f};
     float impParameterProng0{-999.}, impParameterProng1{-999.};
-    float errorImpParameterProng0{-999.}, errorImpParameterProng1{-999.};
+    // float errorImpParameterProng0{-999.}, errorImpParameterProng1{-999.};
     float impParameterNormalisedProng0{-999.}, impParameterNormalisedProng1{-999.};
     float ptProng0{-999.}, ptProng1{-999.};
     float pProng0{-999.}, pProng1{-999.};
@@ -315,8 +315,8 @@ struct HfTreeCreatorDstarToD0Pi {
       ptProng1 = candidate.ptProng1();
       impParameterProng0 = candidate.impactParameter0();
       impParameterProng1 = candidate.impactParameter1();
-      errorImpParameterProng0 = candidate.errorImpactParameter0();
-      errorImpParameterProng1 = candidate.errorImpactParameter1();
+      // errorImpParameterProng0 = candidate.errorImpactParameter0();
+      // errorImpParameterProng1 = candidate.errorImpactParameter1();
       impParameterNormalisedProng0 = candidate.impactParameterNormalised0();
       impParameterNormalisedProng1 = candidate.impactParameterNormalised1();
       pProng0 = RecoDecay::p(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0());
@@ -331,8 +331,8 @@ struct HfTreeCreatorDstarToD0Pi {
       ptProng1 = candidate.ptProng0();
       impParameterProng0 = candidate.impactParameter1();
       impParameterProng1 = candidate.impactParameter0();
-      errorImpParameterProng0 = candidate.errorImpactParameter1();
-      errorImpParameterProng1 = candidate.errorImpactParameter0();
+      // errorImpParameterProng0 = candidate.errorImpactParameter1();
+      // errorImpParameterProng1 = candidate.errorImpactParameter0();
       impParameterNormalisedProng0 = candidate.impactParameterNormalised1();
       impParameterNormalisedProng1 = candidate.impactParameterNormalised0();
       pProng0 = RecoDecay::p(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1());
