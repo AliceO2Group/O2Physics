@@ -60,6 +60,7 @@ struct FlowRunbyRun {
   O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5, "Chi2 per TPC clusters")
   O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2.0f, "max DCA to vertex z")
   O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, false, "Use Nch for flow observables")
+  O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeightsRefPt, bool, false, "NUA weights are filled in ref pt bins")
   Configurable<std::vector<int>> cfgRunNumbers{"cfgRunNumbers", std::vector<int>{544095, 544098, 544116, 544121, 544122, 544123, 544124}, "Preconfigured run numbers"};
   Configurable<std::vector<std::string>> cfgUserDefineGFWCorr{"cfgUserDefineGFWCorr", std::vector<std::string>{"refN10 {2} refP10 {-2}"}, "User defined GFW CorrelatorConfig"};
   Configurable<std::vector<std::string>> cfgUserDefineGFWName{"cfgUserDefineGFWName", std::vector<std::string>{"Ch10Gap22"}, "User defined GFW Name"};
@@ -80,6 +81,7 @@ struct FlowRunbyRun {
 
   // Define output
   OutputObj<FlowContainer> fFC{FlowContainer("FlowContainer")};
+  OutputObj<TList> fWeightList{"WeightList", OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry registry{"registry"};
 
   // define global variables
@@ -88,9 +90,11 @@ struct FlowRunbyRun {
   std::vector<GFW::CorrConfig> corrconfigsFC;
   TAxis* fPtAxis;
   TRandom3* fRndm = new TRandom3(0);
+  int lastRunNumer = -1;
   std::vector<int> RunNumbers;                                        // vector of run numbers
   std::map<int, std::vector<std::shared_ptr<TH1>>> TH1sList;          // map of histograms for all runs
   std::map<int, std::vector<std::shared_ptr<TProfile>>> ProfilesList; // map of profiles for all runs
+  std::map<int, GFWWeights*> WeightsList;                             // map of weights for all runs
   enum OutputTH1Names {
     // here are TProfiles for vn-pt correlations that are not implemented in GFW
     hPhi = 0,
@@ -114,6 +118,10 @@ struct FlowRunbyRun {
     ccdb->setURL(url.value);
     ccdb->setCaching(true);
     ccdb->setCreatedNotAfter(nolaterthan.value);
+
+    TList* weightlist = new TList();
+    weightlist->SetOwner(true);
+    fWeightList.setObject(weightlist);
 
     // Add output histograms to the registry
     RunNumbers = cfgRunNumbers;
@@ -214,6 +222,16 @@ struct FlowRunbyRun {
     profiles[c22] = registry.add<TProfile>(Form("%d/c22", runNumber), "", {HistType::kTProfile, {axisIndependent}});
     profiles[c22_gap10] = registry.add<TProfile>(Form("%d/c22_gap10", runNumber), "", {HistType::kTProfile, {axisIndependent}});
     ProfilesList.insert(std::make_pair(runNumber, profiles));
+
+    // WeightsList
+    o2::framework::AxisSpec axis = axisPt;
+    int nPtBins = axis.binEdges.size() - 1;
+    double* PtBins = &(axis.binEdges)[0];
+    GFWWeights* weight = new GFWWeights(Form("weight_%d", runNumber));
+    weight->SetPtBins(nPtBins, PtBins);
+    weight->Init(true, false);
+    fWeightList->Add(weight);
+    WeightsList.insert(std::make_pair(runNumber, weight));
   }
 
   void process(aodCollisions::iterator const& collision, aod::BCsWithTimestamps const&, aodTracks const& tracks)
@@ -226,15 +244,18 @@ struct FlowRunbyRun {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     int runNumber = bc.runNumber();
     float l_Random = fRndm->Rndm();
-    if (std::find(RunNumbers.begin(), RunNumbers.end(), runNumber) == RunNumbers.end()) {
-      // if run number is not in the preconfigured list, create new output histograms for this run
-      CreateOutputObjectsForRun(runNumber);
-      RunNumbers.push_back(runNumber);
-    }
+    if (runNumber != lastRunNumer) {
+      lastRunNumer = runNumber;
+      if (std::find(RunNumbers.begin(), RunNumbers.end(), runNumber) == RunNumbers.end()) {
+        // if run number is not in the preconfigured list, create new output histograms for this run
+        CreateOutputObjectsForRun(runNumber);
+        RunNumbers.push_back(runNumber);
+      }
 
-    if (TH1sList.find(runNumber) == TH1sList.end()) {
-      LOGF(fatal, "RunNumber %d not found in TH1sList", runNumber);
-      return;
+      if (TH1sList.find(runNumber) == TH1sList.end()) {
+        LOGF(fatal, "RunNumber %d not found in TH1sList", runNumber);
+        return;
+      }
     }
 
     TH1sList[runNumber][hVtxZ]->Fill(collision.posZ());
@@ -247,9 +268,16 @@ struct FlowRunbyRun {
     for (auto& track : tracks) {
       TH1sList[runNumber][hPhi]->Fill(track.phi());
       TH1sList[runNumber][hEta]->Fill(track.eta());
+      bool WithinPtPOI = (cfgCutPtPOIMin < track.pt()) && (track.pt() < cfgCutPtPOIMax); // within POI pT range
       bool WithinPtRef = (cfgCutPtRefMin < track.pt()) && (track.pt() < cfgCutPtRefMax); // within RF pT range
       if (WithinPtRef) {
         fGFW->Fill(track.eta(), 1, track.phi(), wacc * weff, 1);
+      }
+      if (cfgOutputNUAWeightsRefPt) {
+        if (WithinPtRef)
+          WeightsList[runNumber]->Fill(track.phi(), track.eta(), collision.posZ(), track.pt(), cent, 0);
+      } else {
+        WeightsList[runNumber]->Fill(track.phi(), track.eta(), collision.posZ(), track.pt(), cent, 0);
       }
     }
 
