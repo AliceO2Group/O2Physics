@@ -140,11 +140,10 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
     setEventRejectionLabels(hCollisions, softwareTrigger);
   
     if (useFT0cOccEstimator) {
-      hCollisionsCentOcc = registry.add<TH2>(nameHistCollisionsCentOcc, "selected events;Centrality; Occupancy", {o2::framework::HistType::kTH2D, {{110, 0, 110}, {100, 0, 140000}}});
+      hCollisionsCentOcc = registry.add<TH2>(nameHistCollisionsCentOcc, "selected events;Centrality; Occupancy", {o2::framework::HistType::kTH2D, {{111, -1, 110}, {100, 0., 140000}}});
     } else {
-      hCollisionsCentOcc = registry.add<TH2>(nameHistCollisionsCentOcc, "selected events;Centrality; Occupancy", {o2::framework::HistType::kTH2D, {{110, 0, 110}, {140, 0, 14000}}});
+      hCollisionsCentOcc = registry.add<TH2>(nameHistCollisionsCentOcc, "selected events;Centrality; Occupancy", {o2::framework::HistType::kTH2D, {{111, -1, 111}, {140, 0., 14000}}});
     }
-    setEventRejectionLabels(hCollisions, softwareTrigger);
 
     // we initialise the summary object
     if (softwareTrigger.value != "") {
@@ -304,6 +303,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
       hCollisionsCentOcc->Fill(centrality, collision.ft0cOccupancyInTimeRange());
     } else {
       /// occupancy estimator (ITS tracks with at least 5 clusters in +-10us from current collision)
+      LOG(info) << collision.trackOccupancyInTimeRange() <<" "<< centrality;
       hCollisionsCentOcc->Fill(centrality, collision.trackOccupancyInTimeRange());
     }
   }
