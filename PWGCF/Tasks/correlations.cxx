@@ -9,6 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 #include <experimental/type_traits>
+#include <vector>
+#include <string>
 
 #include <TH1F.h>
 #include <cmath>
@@ -105,7 +107,7 @@ struct CorrelationTask {
   // This filter is applied to AOD and derived data (column names are identical)
   Filter collisionZVtxFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   // This filter is only applied to AOD
-  Filter collisionVertexTypeFilter = (aod::collision::flags & (uint16_t)aod::collision::CollisionFlagsRun2::Run2VertexerTracks) == (uint16_t)aod::collision::CollisionFlagsRun2::Run2VertexerTracks;
+  Filter collisionVertexTypeFilter = (aod::collision::flags & static_cast<uint16_t>aod::collision::CollisionFlagsRun2::Run2VertexerTracks) == static_cast<uint16_t>aod::collision::CollisionFlagsRun2::Run2VertexerTracks;
 
   // Track filters
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPt) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true));
@@ -245,7 +247,7 @@ struct CorrelationTask {
     for (auto& track1 : tracks1) {
       if constexpr (std::experimental::is_detected<hasInvMass, typename TTracks1::iterator>::value) {
         if constexpr (std::experimental::is_detected<hasDecay, typename TTracks1::iterator>::value) {
-          if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << (uint32_t)track1.decay())) == 0u)
+          if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << static_cast<uint32_t>track1.decay())) == 0u)
             continue;
         }
         registry.fill(HIST("invMass"), track1.invMass(), track1.pt(), multiplicity);
@@ -327,7 +329,7 @@ struct CorrelationTask {
       }
 
       if constexpr (std::experimental::is_detected<hasDecay, typename TTracks1::iterator>::value) {
-        if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << (uint32_t)track1.decay())) == 0u)
+        if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << static_cast<uint32_t>track1.decay())) == 0u)
           continue;
       }
 
@@ -392,7 +394,7 @@ struct CorrelationTask {
         }
 
         if constexpr (std::experimental::is_detected<hasDecay, typename TTracks2::iterator>::value) {
-          if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << (uint32_t)track2.decay())) == 0u)
+          if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << static_cast<uint32_t>track2.decay())) == 0u)
             continue;
         }
 
