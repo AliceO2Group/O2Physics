@@ -169,8 +169,8 @@ struct HfCorrelatorLcHadrons {
   Configurable<float> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
   Configurable<float> yCandGenMax{"yCandGenMax", 0.5, "max. gen. cand. rapidity"};
   Configurable<float> etaTrackMax{"etaTrackMax", 0.8, "max. eta of tracks"};
-  Configurable<float> dcaXYTrackMax{"dcaXYTrackMax", 0.0025, "max. DCAxy of tracks"};
-  Configurable<float> dcaZTrackMax{"dcaZTrackMax", 0.0025, "max. DCAz of tracks"};
+  Configurable<float> dcaXYTrackMax{"dcaXYTrackMax", 1., "max. DCAxy of tracks"};
+  Configurable<float> dcaZTrackMax{"dcaZTrackMax", 1., "max. DCAz of tracks"};
   Configurable<float> ptCandMin{"ptCandMin", 1., "min. cand. pT"};
   Configurable<float> ptCandMax{"ptCandMax", 50., "max. cand. pT"};
   Configurable<float> ptTrackMin{"ptTrackMin", 0.3, "min. track pT"};
