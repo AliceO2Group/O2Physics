@@ -127,8 +127,8 @@ struct GfwPidflow {
     for (Int_t i = 0; i < fPtAxis->GetNbins(); i++)
       oba->Add(new TNamed(Form("Pr08Gap22_pt_%i", i + 1), "Pr08Gap22_pTDiff"));
     oba->Add(new TNamed("ChFull24", "ChFull24"));
-    for(Int_t i=0;i<fPtAxis->GetNbins();i++)
-      oba->Add(new TNamed(Form("ChFull24_pt_%i",i+1),"ChFull24_pTDiff"));
+    for (Int_t i = 0; i < fPtAxis->GetNbins(); i++)
+      oba->Add(new TNamed(Form("ChFull24_pt_%i", i + 1), "ChFull24_pTDiff"));
 
     fFC->SetName("FlowContainer");
     fFC->SetXAxis(fPtAxis);
@@ -137,7 +137,7 @@ struct GfwPidflow {
 
     fGFW->AddRegion("refN08", -0.8, -0.4, 1, 1);
     fGFW->AddRegion("refP08", 0.4, 0.8, 1, 1);
-    fGFW->AddRegion("full",-0.8, 0.8, 1, 512);
+    fGFW->AddRegion("full", -0.8, 0.8, 1, 512);
 
     // charged parts
     fGFW->AddRegion("poiN", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 128);
@@ -319,3 +319,4 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<GfwPidflow>(cfgc)};
 }
+ 
