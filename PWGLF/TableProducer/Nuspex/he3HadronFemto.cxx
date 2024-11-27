@@ -236,6 +236,7 @@ struct he3hadronfemto {
       {"hEmptyPool", "svPoolCreator did not find track pairs false/true", {HistType::kTH1F, {{2, -0.5, 1.5}}}},
       {"hDCAxyHe3", ";DCA_{xy} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
       {"hDCAzHe3", ";DCA_{z} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
+      {"isBkgUS", "isBkgUS", {HistType::kTH1F, {{4, -2.0f, 2.0f}}}},
       {"hhe3HadtInvMass", "; M(^{3}He + p) (GeV/#it{c}^{2})", {HistType::kTH1F, {{50, 3.74f, 3.85f}}}},
       {"hHe3Pt", "#it{p}_{T} distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{200, -6.0f, 6.0f}}}},
       {"hHadronPt", "Pt distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{200, -3.0f, 3.0f}}}},
@@ -646,11 +647,29 @@ struct he3hadronfemto {
           continue;
         }
 
+<<<<<<< HEAD
         if (!setting_enableBkgUS && (track0.sign() * track1.sign() < 0)) {
           continue;
         }
         if (setting_enableBkgUS && (track0.sign() * track1.sign() > 0)) {
           continue;
+=======
+        if (!setting_enableBkgUS) {
+          if (track0.sign() * track1.sign() < 0) {
+            double sign = track0.sign() * track1.sign();
+          LOG(info) << "setting_enableBkgUS=0";
+            continue;
+          }
+        }else if (setting_enableBkgUS){
+          double sign = track0.sign() * track1.sign();
+          LOG(info) << "sign"<<sign;
+          if (track0.sign() * track1.sign() > 0) {
+            LOG(info) << "selectsign"<<sign;
+            continue;
+          }
+        }else{
+          LOG(info) << "setting_enableBkgUS has to be 0 or 1";
+>>>>>>> 67a95979e (update)
         }
 
         if (!selectTrack(track1) || !selectionPIDHadron(track1)) {
@@ -752,6 +771,7 @@ struct he3hadronfemto {
     m_qaRegistry.fill(HIST("hhe3HadtInvMass"), he3Hadcand.invMass);
     m_qaRegistry.fill(HIST("hDCAxyHe3"), he3Hadcand.DCAxyHe3);
     m_qaRegistry.fill(HIST("hDCAzHe3"), he3Hadcand.DCAzHe3);
+    m_qaRegistry.fill(HIST("isBkgUS"), he3Hadcand.isBkgUS);
   }
 
   // ==================================================================================================================
@@ -772,6 +792,9 @@ struct he3hadronfemto {
       fillHistograms(he3Hadcand);
       auto collision = collisions.rawIteratorAt(he3Hadcand.collisionID);
       fillTable(he3Hadcand, collision, /*isMC*/ false);
+      LOG(info) << "ptHe3"<<he3Hadcand.recoPtHe3();
+      LOG(info) << "ptHad"<<he3Hadcand.recoPtHad();
+      LOG(info) << "<<<<<<<<";
     }
   }
 
