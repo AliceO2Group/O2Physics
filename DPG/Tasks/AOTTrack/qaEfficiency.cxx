@@ -74,7 +74,8 @@ static constexpr int PDGs[nParticles] = {11, 13, 211, 321, 2212, 1000010020, 100
                                          -11, -13, -211, -321, -2212, -1000010020, -1000010030, -1000020030, -1000020040};
 
 // Histograms
-
+std::shared_ptr<TH1> hPtXiGenerated; // histogram to store pT of Xi and Lambda
+std::shared_ptr<TH1> hPtLambdaGenerated; 
 // Pt
 std::array<std::shared_ptr<TH1>, nParticles> hPtIts;
 std::array<std::shared_ptr<TH1>, nParticles> hPtTpc;
@@ -332,7 +333,8 @@ struct QaEfficiency {
                                   phiMin, phiMax,
                                   yMin, yMax);
     const int histogramIndex = id + pdgSign * nSpecies;
-
+    hPtXiGenerated = histos.add<TH1>("MC/Xi/pt/generated","Generated pT of Xi ",kTH1D, {histos.getAxis("axisPt")}); 
+    hPtLambdaGenerated = histos.add<TH1>("MC/Lambda/pt/generated","Generated pT of Lambda ",kTH1D, {histos.getAxis("axisPt")}); 
     // Pt
     hPtIts[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/its", PDGs[histogramIndex]), "ITS tracks " + tagPt, kTH1D, {axisPt});
     hPtTpc[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/tpc", PDGs[histogramIndex]), "TPC tracks " + tagPt, kTH1D, {axisPt});
@@ -1242,23 +1244,36 @@ struct QaEfficiency {
       }
     } else {
       if (mcParticle.getProcess() == 4) { // Particle decay
-        // Checking mothers
         bool motherIsAccepted = true;
+         // Check for mothers if needed
         if (checkForMothers.value && mothersPDGs.value.size() > 0 && mcParticle.has_mothers()) {
-          motherIsAccepted = false;
-          auto mothers = mcParticle.mothers_as<o2::aod::McParticles>();
-          for (const auto& mother : mothers) {
-            for (const auto& pdgToCheck : mothersPDGs.value) {
-              if (mother.pdgCode() == pdgToCheck) {
-                motherIsAccepted = true;
-                break;
-              }
-              if (motherIsAccepted) {
-                break;
+            motherIsAccepted = false;
+            auto mothers = mcParticle.mothers_as<o2::aod::McParticles>();
+            
+            // Loop over mother particles
+            for (const auto& mother : mothers) {
+                for (const auto& pdgToCheck : mothersPDGs.value) {
+                    if (mother.pdgCode() == pdgToCheck) {
+                        motherIsAccepted = true;  // Mother matches the list of specified PDGs
+                        break;
+                    }
+                }  // If mother is accepted, break out of loop
+                if (motherIsAccepted) {
+                    break;
+                 }
+            }
+        }
+          // If mother particle is accepted, fill histograms for Xi and Lambda pT
+            if (motherIsAccepted) {
+             if (mcParticle.pdgCode() == 3312 || mcParticle.pdgCode() == -3312) {  // Xi
+                hPtXiGenerated->Fill(mcParticle.pt());  // Fill generated pT for Xi
+                } else if (mcParticle.pdgCode() == 3122 || mcParticle.pdgCode() == -3122) {  // Lambda
+                  hPtLambdaGenerated->Fill(mcParticle.pt());  // Fill generated pT for Lambda
+                  }
+                }
               }
             }
-          }
-        }
+
         if (motherIsAccepted) {
           hPtGeneratedStr[histogramIndex]->Fill(mcParticle.pt());
           if (doPtRadius) {
