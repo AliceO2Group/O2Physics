@@ -84,7 +84,7 @@ struct HfTaskXicToXiPiPi {
     }
 
     static const AxisSpec axisMassXic = {300, 1.8, 3.0, "inv. mass (GeV/#it{c}^{2})"};
-    static const AxisSpec axisMassXiRes = {300, 1.0, 2.0, "inv. mass (GeV/#it{c}^{2})"};
+    static const AxisSpec axisMassXiRes = {300, 1.4, 2.7, "inv. mass (GeV/#it{c}^{2})"};
     static const AxisSpec axisPt = {(std::vector<double>)binsPt, "#it{p}_{T} (GeV/#it{c})"};
     static const AxisSpec axisDecLength = {binsDecLength};
     static const AxisSpec axisErrDecLength = {binsErrDecLength};
@@ -280,10 +280,10 @@ struct HfTaskXicToXiPiPi {
         outputBkg = candidate.mlProbXicToXiPiPi()[0];
         outputPrompt = candidate.mlProbXicToXiPiPi()[1];
       }
-      registry.get<THnSparse>(HIST("hXicToXiPiPiVarsWithML"))->Fill(candidate.pt(), candidate.invMassXic(), candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa(), outputBkg, outputPrompt);
+      registry.get<THnSparse>(HIST("hXicToXiPiPiVarsWithML"))->Fill(candidate.pt(), candidate.invMassXicPlus(), candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa(), outputBkg, outputPrompt);
     } else {
       // without ML information
-      registry.get<THnSparse>(HIST("hXicToXiPiPiVars"))->Fill(candidate.pt(), candidate.invMassXic(), candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa());
+      registry.get<THnSparse>(HIST("hXicToXiPiPiVars"))->Fill(candidate.pt(), candidate.invMassXicPlus(), candidate.chi2PCA(), candidate.decayLength(), candidate.decayLengthXY(), candidate.cpa());
     }
   }
 
@@ -317,7 +317,7 @@ struct HfTaskXicToXiPiPi {
       registry.fill(HIST("hRapidity"), yCandXic, ptCandXic);
       registry.fill(HIST("hCPA"), candidate.cpa(), ptCandXic);
       registry.fill(HIST("hCPAxy"), candidate.cpaXY(), ptCandXic);
-      registry.fill(HIST("hMass"), candidate.invMassXic(), ptCandXic);
+      registry.fill(HIST("hMass"), candidate.invMassXicPlus(), ptCandXic);
       registry.fill(HIST("hDecLength"), candidate.decayLength(), ptCandXic);
       registry.fill(HIST("hErrDecLength"), candidate.errorDecayLength(), ptCandXic);
       registry.fill(HIST("hDecLengthXY"), candidate.decayLengthXY(), ptCandXic);
@@ -398,7 +398,7 @@ struct HfTaskXicToXiPiPi {
         registry.fill(HIST("hSVzRecSig"), candidate.zSecondaryVertex(), ptCandXic);
         registry.fill(HIST("hCPARecSig"), candidate.cpa(), ptCandXic);
         registry.fill(HIST("hCPAxyRecSig"), candidate.cpaXY(), ptCandXic);
-        registry.fill(HIST("hMassRecSig"), candidate.invMassXic(), ptCandXic);
+        registry.fill(HIST("hMassRecSig"), candidate.invMassXicPlus(), ptCandXic);
         registry.fill(HIST("hDecLengthRecSig"), candidate.decayLength(), ptCandXic);
         registry.fill(HIST("hErrDecLengthRecSig"), candidate.errorDecayLength(), ptCandXic);
         registry.fill(HIST("hDecLengthXYRecSig"), candidate.decayLengthXY(), ptCandXic);
@@ -437,7 +437,7 @@ struct HfTaskXicToXiPiPi {
         registry.fill(HIST("hSVzRecBg"), candidate.zSecondaryVertex(), ptCandXic);
         registry.fill(HIST("hCPARecBg"), candidate.cpa(), ptCandXic);
         registry.fill(HIST("hCPAxyRecBg"), candidate.cpaXY(), ptCandXic);
-        registry.fill(HIST("hMassRecBg"), candidate.invMassXic(), ptCandXic);
+        registry.fill(HIST("hMassRecBg"), candidate.invMassXicPlus(), ptCandXic);
         registry.fill(HIST("hDecLengthRecBg"), candidate.decayLength(), ptCandXic);
         registry.fill(HIST("hErrDecLengthRecBg"), candidate.errorDecayLength(), ptCandXic);
         registry.fill(HIST("hDecLengthXYRecBg"), candidate.decayLengthXY(), ptCandXic);
@@ -465,11 +465,11 @@ struct HfTaskXicToXiPiPi {
 
       if (checkDecayTypeMc) {
         if (TESTBIT(flagMcMatchRecXic, hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi)) {
-          registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi, candidate.invMassXic(), ptCandXic);
+          registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi, candidate.invMassXicPlus(), ptCandXic);
         } else if (TESTBIT(flagMcMatchRecXic, hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiResPiToXiPiPi)) {
-          registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiResPiToXiPiPi, candidate.invMassXic(), ptCandXic);
+          registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiResPiToXiPiPi, candidate.invMassXicPlus(), ptCandXic);
         } else {
-          registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_xic_to_xi_pi_pi::DecayType::NDecayType, candidate.invMassXic(), ptCandXic);
+          registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_xic_to_xi_pi_pi::DecayType::NDecayType, candidate.invMassXicPlus(), ptCandXic);
         }
       }
       // fill THnSparse

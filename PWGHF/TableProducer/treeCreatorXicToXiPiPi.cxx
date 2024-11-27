@@ -35,15 +35,9 @@ namespace full
 {
 DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int); //! Selection flag of candidate (output of candidateSelector)
 // vertices
-DECLARE_SOA_COLUMN(XPv, xPv, float);
-DECLARE_SOA_COLUMN(YPv, yPv, float);
-DECLARE_SOA_COLUMN(ZPv, zPv, float);
 DECLARE_SOA_COLUMN(XPvErr, xPvErr, float);
 DECLARE_SOA_COLUMN(YPvErr, yPvErr, float);
 DECLARE_SOA_COLUMN(ZPvErr, zPvErr, float);
-DECLARE_SOA_COLUMN(XSv, xSv, float);
-DECLARE_SOA_COLUMN(YSv, ySv, float);
-DECLARE_SOA_COLUMN(ZSv, zSv, float);
 DECLARE_SOA_COLUMN(XSvErr, xSvErr, float);
 DECLARE_SOA_COLUMN(YSvErr, ySvErr, float);
 DECLARE_SOA_COLUMN(ZSvErr, zSvErr, float);
@@ -74,9 +68,11 @@ DECLARE_SOA_COLUMN(Chi2TopoXiToXicPlus, chi2TopoXiToXicPlus, float);
 DECLARE_SOA_COLUMN(PtXi, ptXi, float);                                                 //! Transverse momentum of Xi (prong0) (GeV/c)
 DECLARE_SOA_COLUMN(ImpactParameterXi, impactParameterXi, float);                       //! Impact parameter of Xi (prong0)
 DECLARE_SOA_COLUMN(ImpactParameterNormalisedXi, impactParameterNormalisedXi, float);   //! Normalised impact parameter of Xi (prong0)
+DECLARE_SOA_COLUMN(PPi0, pPi0, float);
 DECLARE_SOA_COLUMN(PtPi0, ptPi0, float);                                               //! Transverse momentum of Pi0 (prong1) (GeV/c)
 DECLARE_SOA_COLUMN(ImpactParameterPi0, impactParameterPi0, float);                     //! Impact parameter of Pi0 (prong1)
 DECLARE_SOA_COLUMN(ImpactParameterNormalisedPi0, impactParameterNormalisedPi0, float); //! Normalised impact parameter of Pi0 (prong1)
+DECLARE_SOA_COLUMN(PPi1, pPi1, float);
 DECLARE_SOA_COLUMN(PtPi1, ptPi1, float);                                               //! Transverse momentum of Pi1 (prong2) (GeV/c)
 DECLARE_SOA_COLUMN(ImpactParameterPi1, impactParameterPi1, float);                     //! Normalised impact parameter of Pi1 (prong2)
 DECLARE_SOA_COLUMN(ImpactParameterNormalisedPi1, impactParameterNormalisedPi1, float); //! Normalised impact parameter of Pi1 (prong2)
@@ -85,6 +81,8 @@ DECLARE_SOA_COLUMN(CpaXi, cpaXi, float);
 DECLARE_SOA_COLUMN(CpaXYXi, cpaXYXi, float);
 DECLARE_SOA_COLUMN(CpaLam, cpaLam, float);
 DECLARE_SOA_COLUMN(CpaXYLam, cpaXYLam, float);
+DECLARE_SOA_COLUMN(CpaLamToXi, cpaLamToXi, float);
+DECLARE_SOA_COLUMN(CpaXYLamToXi, cpaXYLamToXi, float);
 DECLARE_SOA_COLUMN(DcaXYPi0Pi1, dcaXYPi0Pi1, float);
 DECLARE_SOA_COLUMN(DcaXYPi0Xi, dcaXYPi0Xi, float);
 DECLARE_SOA_COLUMN(DcaXYPi1Xi, dcaXYPi1Xi, float);
@@ -92,8 +90,12 @@ DECLARE_SOA_COLUMN(DcaPi0Pi1, dcaPi0Pi1, float);
 DECLARE_SOA_COLUMN(DcaPi0Xi, dcaPi0Xi, float);
 DECLARE_SOA_COLUMN(DcaPi1Xi, dcaPi1Xi, float);
 DECLARE_SOA_COLUMN(DcaXiDaughters, dcaXiDaughters, float);
+DECLARE_SOA_COLUMN(InvMassXi, invMassXi, float);
 DECLARE_SOA_COLUMN(InvMassXiPi0, invMassXiPi0, float);
 DECLARE_SOA_COLUMN(InvMassXiPi1, invMassXiPi1, float);
+DECLARE_SOA_COLUMN(PBachelorPi, pBachelorPi, float);
+DECLARE_SOA_COLUMN(PPiFromLambda, pPiFromLambda, float);
+DECLARE_SOA_COLUMN(PPrFromLambda, pPrFromLambda, float);
 // residuals and pulls
 DECLARE_SOA_COLUMN(PtResidual, ptResidual, float);
 DECLARE_SOA_COLUMN(PResidual, pResidual, float);
@@ -126,6 +128,7 @@ DECLARE_SOA_TABLE(HfCandXicToXiPiPiLites, "AOD", "HFXICXI2PILITE",
                   full::PtPi0,
                   full::PtPi1,
                   full::M,
+                  full::InvMassXi,
                   full::InvMassXiPi0,
                   full::InvMassXiPi1,
                   full::Chi2Sv,
@@ -163,6 +166,7 @@ DECLARE_SOA_TABLE(HfCandXicToXiPiPiLiteKfs, "AOD", "HFXICXI2PILITKF",
                   full::PtPi0,
                   full::PtPi1,
                   full::M,
+                  full::InvMassXi,
                   full::InvMassXiPi0,
                   full::InvMassXiPi1,
                   full::Chi2Sv,
@@ -214,6 +218,7 @@ DECLARE_SOA_TABLE(HfCandXicToXiPiPiFulls, "AOD", "HFXICXI2PIFULL",
                   full::PtPi0,
                   full::PtPi1,
                   full::M,
+                  full::InvMassXi,
                   full::InvMassXiPi0,
                   full::InvMassXiPi1,
                   full::Chi2Sv,
@@ -236,18 +241,29 @@ DECLARE_SOA_TABLE(HfCandXicToXiPiPiFulls, "AOD", "HFXICXI2PIFULL",
                   full::ImpactParameterNormalisedPi1,
                   full::MaxNormalisedDeltaIP,
                   // additional columns only stored in the full candidate table
-                  full::XPv,
-                  full::YPv,
-                  full::ZPv,
                   full::XPvErr,
                   full::YPvErr,
                   full::ZPvErr,
-                  full::XSv,
-                  full::YSv,
-                  full::ZSv,
                   full::XSvErr,
                   full::YSvErr,
-                  full::ZSvErr);
+                  full::ZSvErr,
+                  full::CpaLamToXi,
+                  full::CpaXYLamToXi,
+                  full::PPi0,
+                  full::PPi1,
+                  full::PBachelorPi,
+                  full::PPiFromLambda,
+                  full::PPrFromLambda,
+                  hf_cand_xic_to_xi_pi_pi::NSigTpcPiFromXicPlus0,
+                  hf_cand_xic_to_xi_pi_pi::NSigTpcPiFromXicPlus1,
+                  hf_cand_xic_to_xi_pi_pi::NSigTpcBachelorPi,
+                  hf_cand_xic_to_xi_pi_pi::NSigTpcPiFromLambda,
+                  hf_cand_xic_to_xi_pi_pi::NSigTpcPrFromLambda,
+                  hf_cand_xic_to_xi_pi_pi::NSigTofPiFromXicPlus0,
+                  hf_cand_xic_to_xi_pi_pi::NSigTofPiFromXicPlus1,
+                  hf_cand_xic_to_xi_pi_pi::NSigTofBachelorPi,
+                  hf_cand_xic_to_xi_pi_pi::NSigTofPiFromLambda,
+                  hf_cand_xic_to_xi_pi_pi::NSigTofPrFromLambda);
 
 DECLARE_SOA_TABLE(HfCandXicToXiPiPiFullKfs, "AOD", "HFXICXI2PIFULKF",
                   hf_cand_xic_to_xi_pi_pi::FlagMcMatchRec,
@@ -264,6 +280,7 @@ DECLARE_SOA_TABLE(HfCandXicToXiPiPiFullKfs, "AOD", "HFXICXI2PIFULKF",
                   full::PtPi0,
                   full::PtPi1,
                   full::M,
+                  full::InvMassXi,
                   full::InvMassXiPi0,
                   full::InvMassXiPi1,
                   full::Chi2Sv,
@@ -286,18 +303,29 @@ DECLARE_SOA_TABLE(HfCandXicToXiPiPiFullKfs, "AOD", "HFXICXI2PIFULKF",
                   full::ImpactParameterNormalisedPi1,
                   full::MaxNormalisedDeltaIP,
                   // additional columns only stored in the full candidate table
-                  full::XPv,
-                  full::YPv,
-                  full::ZPv,
                   full::XPvErr,
                   full::YPvErr,
                   full::ZPvErr,
-                  full::XSv,
-                  full::YSv,
-                  full::ZSv,
                   full::XSvErr,
                   full::YSvErr,
                   full::ZSvErr,
+                  full::CpaLamToXi,
+                  full::CpaXYLamToXi,
+                  full::PPi0,
+                  full::PPi1,
+                  full::PBachelorPi,
+                  full::PPiFromLambda,
+                  full::PPrFromLambda,
+                  hf_cand_xic_to_xi_pi_pi::NSigTpcPiFromXicPlus0,
+                  hf_cand_xic_to_xi_pi_pi::NSigTpcPiFromXicPlus1,
+                  hf_cand_xic_to_xi_pi_pi::NSigTpcBachelorPi,
+                  hf_cand_xic_to_xi_pi_pi::NSigTpcPiFromLambda,
+                  hf_cand_xic_to_xi_pi_pi::NSigTpcPrFromLambda,
+                  hf_cand_xic_to_xi_pi_pi::NSigTofPiFromXicPlus0,
+                  hf_cand_xic_to_xi_pi_pi::NSigTofPiFromXicPlus1,
+                  hf_cand_xic_to_xi_pi_pi::NSigTofBachelorPi,
+                  hf_cand_xic_to_xi_pi_pi::NSigTofPiFromLambda,
+                  hf_cand_xic_to_xi_pi_pi::NSigTofPrFromLambda,
                   // KF-specific columns
                   full::Chi2XiVtx,
                   full::Chi2LamVtx,
@@ -401,7 +429,8 @@ struct HfTreeCreatorXicToXiPiPi {
           candidate.ptProng0(),
           candidate.ptProng1(),
           candidate.ptProng2(),
-          candidate.invMassXic(),
+          candidate.invMassXicPlus(),
+          candidate.invMassXi(),
           candidate.invMassXiPi0(),
           candidate.invMassXiPi1(),
           candidate.chi2PCA(),
@@ -438,7 +467,8 @@ struct HfTreeCreatorXicToXiPiPi {
           candidate.ptProng0(),
           candidate.ptProng1(),
           candidate.ptProng2(),
-          candidate.invMassXic(),
+          candidate.invMassXicPlus(),
+          candidate.invMassXi(),
           candidate.invMassXiPi0(),
           candidate.invMassXiPi1(),
           candidate.chi2PCA(),
@@ -461,18 +491,29 @@ struct HfTreeCreatorXicToXiPiPi {
           candidate.impactParameterNormalised2(),
           candidate.maxNormalisedDeltaIP(),
           // additional columns only stored in the full candidate table
-          candidate.posX(),
-          candidate.posY(),
-          candidate.posZ(),
           candidate.xPvErr(),
           candidate.yPvErr(),
           candidate.zPvErr(),
-          candidate.xSecondaryVertex(),
-          candidate.ySecondaryVertex(),
-          candidate.zSecondaryVertex(),
           candidate.xSvErr(),
           candidate.ySvErr(),
-          candidate.zSvErr());
+          candidate.zSvErr(),
+          candidate.cosPaLambdaToXi(),
+          candidate.cosPaXYLambdaToXi(),
+          candidate.pProng1(),
+          candidate.pProng2(),
+          candidate.pBachelorPi(),
+          candidate.pPiFromLambda(),
+          candidate.pPrFromLambda(),
+          candidate.nSigTpcPiFromXicPlus0(),
+          candidate.nSigTpcPiFromXicPlus1(),
+          candidate.nSigTpcBachelorPi(),
+          candidate.nSigTpcPiFromLambda(),
+          candidate.nSigTpcPrFromLambda(),
+          candidate.nSigTofPiFromXicPlus0(),
+          candidate.nSigTofPiFromXicPlus1(),
+          candidate.nSigTofBachelorPi(),
+          candidate.nSigTofPiFromLambda(),
+          candidate.nSigTofPrFromLambda());
       }
     } else {
       if (fillCandidateLiteTable) {
@@ -490,7 +531,8 @@ struct HfTreeCreatorXicToXiPiPi {
           candidate.ptProng0(),
           candidate.ptProng1(),
           candidate.ptProng2(),
-          candidate.invMassXic(),
+          candidate.invMassXicPlus(),
+          candidate.invMassXi(),
           candidate.invMassXiPi0(),
           candidate.invMassXiPi1(),
           candidate.chi2PCA(),
@@ -541,7 +583,8 @@ struct HfTreeCreatorXicToXiPiPi {
           candidate.ptProng0(),
           candidate.ptProng1(),
           candidate.ptProng2(),
-          candidate.invMassXic(),
+          candidate.invMassXicPlus(),
+          candidate.invMassXi(),
           candidate.invMassXiPi0(),
           candidate.invMassXiPi1(),
           candidate.chi2PCA(),
@@ -564,18 +607,29 @@ struct HfTreeCreatorXicToXiPiPi {
           candidate.impactParameterNormalised2(),
           candidate.maxNormalisedDeltaIP(),
           // additional columns only stored in the full candidate table
-          candidate.posX(),
-          candidate.posY(),
-          candidate.posZ(),
           candidate.xPvErr(),
           candidate.yPvErr(),
           candidate.zPvErr(),
-          candidate.xSecondaryVertex(),
-          candidate.ySecondaryVertex(),
-          candidate.zSecondaryVertex(),
           candidate.xSvErr(),
           candidate.ySvErr(),
           candidate.zSvErr(),
+          candidate.cosPaLambdaToXi(),
+          candidate.cosPaXYLambdaToXi(),
+          candidate.pProng1(),
+          candidate.pProng2(),
+          candidate.pBachelorPi(),
+          candidate.pPiFromLambda(),
+          candidate.pPrFromLambda(),
+          candidate.nSigTpcPiFromXicPlus0(),
+          candidate.nSigTpcPiFromXicPlus1(),
+          candidate.nSigTpcBachelorPi(),
+          candidate.nSigTpcPiFromLambda(),
+          candidate.nSigTpcPrFromLambda(),
+          candidate.nSigTofPiFromXicPlus0(),
+          candidate.nSigTofPiFromXicPlus1(),
+          candidate.nSigTofBachelorPi(),
+          candidate.nSigTofPiFromLambda(),
+          candidate.nSigTofPrFromLambda(),
           // KF-specific columns
           candidate.kfCascadeChi2(),
           candidate.kfV0Chi2(),
