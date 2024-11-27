@@ -85,6 +85,7 @@ struct CorrelationTask {
 
   O2_DEFINE_CONFIGURABLE(cfgDecayParticleMask, int, 0, "Selection bitmask for the decay particles: 0 = no selection")
   O2_DEFINE_CONFIGURABLE(cfgMassAxis, int, 0, "Use invariant mass axis (0 = OFF, 1 = ON)")
+  O2_DEFINE_CONFIGURABLE(cfgDDBARana, int, 0, "switch for DDBAR analysis (0 = OFF, 1 = ON)");
   O2_DEFINE_CONFIGURABLE(cfgMcTriggerPDGs, std::vector<int>, {}, "MC PDG codes to use exclusively as trigger particles and exclude from associated particles. Empty = no selection.")
 
   ConfigurableAxis axisVertex{"axisVertex", {7, -7, 7}, "vertex axis for histograms"};
@@ -185,6 +186,9 @@ struct CorrelationTask {
     std::vector<AxisSpec> userAxis;
     if (cfgMassAxis != 0)
       userAxis.emplace_back(axisInvMass, "m (GeV/c^2)");
+    if (cfgDDBARana != 0)
+      userAxis.emplace_back(axisInvMass, "m (GeV/c^2)");
+
     same.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, userAxis));
     mixed.setObject(new CorrelationContainer("mixedEvent", "mixedEvent", corrAxis, effAxis, userAxis));
 
@@ -316,6 +320,12 @@ struct CorrelationTask {
         }
       }
 
+      if constexpr (std::experimental::is_detected<hasSign, typename TTracks1::iterator>::value) {
+        if (cfgDDBARana) {
+          continue;
+        }
+      }
+
       if constexpr (std::experimental::is_detected<hasDecay, typename TTracks1::iterator>::value) {
         if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << (uint32_t)track1.decay())) == 0u)
           continue;
@@ -375,15 +385,60 @@ struct CorrelationTask {
           }
         }
 
+        if constexpr (std::experimental::is_detected<hasSign, typename TTracks2::iterator>::value) {
+          if (cfgDDBARana) {
+            continue;
+          }
+        }
+
+        if constexpr (std::experimental::is_detected<hasDecay, typename TTracks2::iterator>::value) {
+          if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << (uint32_t)track2.decay())) == 0u)
+            continue;
+        }
+
+        if constexpr (std::experimental::is_detected<hasDecay, typename TTracks1::iterator>::value && std::experimental::is_detected<hasDecay, typename TTracks2::iterator>::value) {
+          if (cfgDDBARana != 0 && (track1.decay() == track2.decay() || track1.decay() > 1 || track2.decay() > 1)) {
+            continue;
+          }
+        } // D0 and anti-D0 selection
+
+	if constexpr (std::experimental::is_detected<hasProng0Id, typename TTracks1::iterator>::value) {
+          if constexpr (std::experimental::is_detected<hasProng0Id, typename TTracks2::iterator>::value) {
+	    if (track1.cfTrackProng0Id() == track2.cfTrackProng0Id()) {
+              continue;
+            }
+          }
+          if constexpr (std::experimental::is_detected<hasProng1Id, typename TTracks2::iterator>::value) {
+            if (track1.cfTrackProng0Id() == track2.cfTrackProng1Id()) {
+              continue;
+            }
+          }
+        }
+
+        if constexpr (std::experimental::is_detected<hasProng1Id, typename TTracks1::iterator>::value) {
+          if constexpr (std::experimental::is_detected<hasProng0Id, typename TTracks2::iterator>::value) {
+            if (track1.cfTrackProng1Id() == track2.cfTrackProng0Id()) {
+              continue;
+            }
+          }
+          if constexpr (std::experimental::is_detected<hasProng1Id, typename TTracks2::iterator>::value) {
+            if (track1.cfTrackProng1Id() == track2.cfTrackProng1Id()) {
+              continue;
+            }
+          }
+        } // no shared prong for two mothers
+
         if (cfgPtOrder != 0 && track2.pt() >= track1.pt()) {
           continue;
         }
 
-        if (cfgAssociatedCharge != 0 && cfgAssociatedCharge * track2.sign() < 0) {
-          continue;
+        if constexpr (std::experimental::is_detected<hasSign, typename TTracks2::iterator>::value) {
+          if (cfgAssociatedCharge != 0 && cfgAssociatedCharge * track2.sign() < 0) {
+            continue;
+          }
         }
 
-        if constexpr (std::experimental::is_detected<hasSign, typename TTracks1::iterator>::value) {
+        if constexpr (std::experimental::is_detected<hasSign, typename TTracks1::iterator>::value && std::experimental::is_detected<hasSign, typename TTracks2::iterator>::value) {
           if (cfgPairCharge != 0 && cfgPairCharge * track1.sign() * track2.sign() < 0) {
             continue;
           }
@@ -391,14 +446,16 @@ struct CorrelationTask {
 
         if constexpr (std::is_same<TTracks1, TTracks2>::value) {
           if constexpr (step >= CorrelationContainer::kCFStepReconstructed) {
-            if (cfg.mPairCuts && mPairCuts.conversionCuts(track1, track2)) {
+if constexpr (std::experimental::is_detected<hasSign, typename TTracks1::iterator>::value && std::experimental::is_detected<hasSign, typename TTracks2::iterator>::value) {
+		  if (cfg.mPairCuts && mPairCuts.conversionCuts(track1, track2)) {
               continue;
             }
 
             if (cfgTwoTrackCut > 0 && mPairCuts.twoTrackCut(track1, track2, magField)) {
               continue;
             }
-          }
+}
+}
         }
 
         float associatedWeight = triggerWeight;
@@ -417,11 +474,16 @@ struct CorrelationTask {
         }
 
         // last param is the weight
-        if (cfgMassAxis) {
+        if (cfgMassAxis && !cfgDDBARana) {
           if constexpr (std::experimental::is_detected<hasInvMass, typename TTracks1::iterator>::value)
             target->getPairHist()->Fill(step, track1.eta() - track2.eta(), track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ, track1.invMass(), associatedWeight);
           else
             LOGF(fatal, "Can not fill mass axis without invMass column. Disable cfgMassAxis.");
+        } else if (cfgMassAxis && cfgDDBARana) {
+          if constexpr (std::experimental::is_detected<hasInvMass, typename TTracks1::iterator>::value && std::experimental::is_detected<hasInvMass, typename TTracks2::iterator>::value)
+            target->getPairHist()->Fill(step, track1.eta() - track2.eta(), track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ, track2.invMass(), track1.invMass(), associatedWeight);
+          else
+            LOGF(fatal, "Can not fill mass axis without invMass column. Disable cfgMassAxis and cfgDDBARana");
         } else {
           target->getPairHist()->Fill(step, track1.eta() - track2.eta(), track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ, associatedWeight);
         }
@@ -546,6 +608,32 @@ struct CorrelationTask {
     }
   }
   PROCESS_SWITCH(CorrelationTask, processSame2ProngDerived, "Process same event on derived data", false);
+
+
+  void processSame2Prong2Prong(derivedCollisions::iterator const& collision, soa::Filtered<aod::CF2ProngTracks> const& p2tracks)
+  {
+    BinningTypeDerived configurableBinningDerived{{axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
+    if (cfgVerbosity > 0) {
+      LOGF(info, "processSame2ProngDerived: 2-prong candidates: %d | Vertex: %.1f | Multiplicity/Centrality: %.1f", p2tracks.size(), collision.posZ(), collision.multiplicity());
+    }
+    loadEfficiency(collision.timestamp());
+
+    const auto multiplicity = collision.multiplicity();
+
+    int bin = configurableBinningDerived.getBin({collision.posZ(), collision.multiplicity()});
+    registry.fill(HIST("eventcount_same"), bin);
+    fillQA(collision, multiplicity, p2tracks, p2tracks);
+
+    same->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
+    fillCorrelations<CorrelationContainer::kCFStepReconstructed>(same, p2tracks, p2tracks, multiplicity, collision.posZ(), 0, 1.0f);
+
+    if (cfg.mEfficiencyAssociated || cfg.mEfficiencyTrigger) {
+      same->fillEvent(multiplicity, CorrelationContainer::kCFStepCorrected);
+      fillCorrelations<CorrelationContainer::kCFStepCorrected>(same, p2tracks, p2tracks, multiplicity, collision.posZ(), 0, 1.0f);
+    }
+  }
+  PROCESS_SWITCH(CorrelationTask, processSame2Prong2Prong, "Process same event on derived data", false);
+
 
   using BinningTypeAOD = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentRun2V0M>;
   void processMixedAOD(aodCollisions& collisions, aodTracks const& tracks, aod::BCsWithTimestamps const&)
