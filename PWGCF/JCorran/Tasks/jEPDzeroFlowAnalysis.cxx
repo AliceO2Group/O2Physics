@@ -202,9 +202,9 @@ struct jEPDzeroFlowAnalysis {
 
   void processData(MyCollisions::iterator const& collision, aod::CF2ProngTracks const& p2tracks)
   {
-    if (cfgCentEst == "FT0C") {
+    if (cfgCentEst.value == "FT0C") {
       centrality = collision.centFT0C();
-    } else if (cfgCentEst == "FT0M") {
+    } else if (cfgCentEst.value == "FT0M") {
       centrality = collision.centFT0M();
     }
     if (!eventSelected(collision)) {
