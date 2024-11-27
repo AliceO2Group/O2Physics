@@ -44,6 +44,7 @@
 
 #include <TProfile.h>
 #include <TRandom3.h>
+#include <TMath.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -69,11 +70,11 @@ struct GfwPidflow {
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis axisPhi{"axisPhi", {60, 0.0, constants::math::TwoPI}, "phi axis for histograms"};
   ConfigurableAxis axisEta{"axisEta", {40, -1., 1.}, "eta axis for histograms"};
-  ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.2, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.00, 1.20, 1.40, 1.60, 1.80, 2.00, 2.20, 2.40, 2.60, 2.80, 3.00, 3.50, 4.00, 5.00, 6.00, 8.00, 10.00}, "pt axis for histograms"};
+  ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.00, 1.20, 1.40, 1.60, 1.80, 2.00, 2.20, 2.40, 2.60, 2.80, 3.00, 3.50, 4.00, 5.00, 6.00, 8.00, 10.00}, "pt axis for histograms"};
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90}, "centrality axis for histograms"};
   ConfigurableAxis axisNsigmaTPC{"axisNsigmaTPC", {80, -5, 5}, "nsigmaTPC axis"};
   ConfigurableAxis axisNsigmaTOF{"axisNsigmaTOF", {80, -5, 5}, "nsigmaTOF axis"};
-  ConfigurableAxis axisparticles{"axisparticles", {3, 0, 3}, "axis for different hadrons"};
+  ConfigurableAxis axisParticles{"axisParticles", {3, 0, 3}, "axis for different hadrons"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtPOIMin) && (aod::track::pt < cfgCutPtPOIMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
@@ -106,8 +107,8 @@ struct GfwPidflow {
     histos.add("c22_gap08_ka", "", {HistType::kTProfile, {axisMultiplicity}});
     histos.add("c22_gap08_pr", "", {HistType::kTProfile, {axisMultiplicity}});
     histos.add("c24_full", "", {HistType::kTProfile, {axisMultiplicity}});
-    histos.add("TofTpcNsigma", "", {HistType::kTHnSparseD, {{axisparticles, axisNsigmaTPC, axisNsigmaTOF}}});
-
+    histos.add("TofTpcNsigma", "", {HistType::kTHnSparseD, {{axisParticles, axisNsigmaTPC, axisNsigmaTOF, axisPt}}});
+    histos.add("partCount", "", {HistType::kTHnSparseD, {{axisParticles, axisMultiplicity, axisPt}}});
     o2::framework::AxisSpec axis = axisPt;
     int nPtBins = axis.binEdges.size() - 1;
     double* PtBins = &(axis.binEdges)[0];
@@ -127,8 +128,8 @@ struct GfwPidflow {
     for (Int_t i = 0; i < fPtAxis->GetNbins(); i++)
       oba->Add(new TNamed(Form("Pr08Gap22_pt_%i", i + 1), "Pr08Gap22_pTDiff"));
     oba->Add(new TNamed("ChFull24", "ChFull24"));
-    for (Int_t i = 0; i < fPtAxis->GetNbins(); i++)
-      oba->Add(new TNamed(Form("ChFull24_pt_%i", i + 1), "ChFull24_pTDiff"));
+    for(Int_t i=0;i<fPtAxis->GetNbins();i++)
+      oba->Add(new TNamed(Form("ChFull24_pt_%i",i+1),"ChFull24_pTDiff"));
 
     fFC->SetName("FlowContainer");
     fFC->SetXAxis(fPtAxis);
@@ -137,7 +138,7 @@ struct GfwPidflow {
 
     fGFW->AddRegion("refN08", -0.8, -0.4, 1, 1);
     fGFW->AddRegion("refP08", 0.4, 0.8, 1, 1);
-    fGFW->AddRegion("full", -0.8, 0.8, 1, 512);
+    fGFW->AddRegion("full",-0.8, 0.8, 1, 512);
 
     // charged parts
     fGFW->AddRegion("poiN", -0.8, -0.4, 1 + fPtAxis->GetNbins(), 128);
@@ -169,6 +170,38 @@ struct GfwPidflow {
     fGFW->CreateRegions();
   }
 
+  enum Particles {
+    PIONS,
+    KAONS,
+    PROTONS
+  };
+
+  enum Particles pion = PIONS;
+  enum Particles kaon = KAONS;
+  enum Particles proton = PROTONS;
+
+  template <typename TTrack>
+  int GetNsigmaPID(TTrack track)
+  {
+    //Computing Nsigma arrays for pion, kaon, and protons
+    std::array<float, 3> nSigmaTPC = {track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
+    std::array<float, 3> nSigmaCombined = {std::hypot(track.tpcNSigmaPi(), track.tofNSigmaPi()), std::hypot(track.tpcNSigmaKa(), track.tofNSigmaKa()), std::hypot(track.tpcNSigmaPr(), track.tofNSigmaPr())};
+    int pid = -1;
+    float nsigma = 3.0;
+
+    //Choose which nSigma to use
+    std::array<float, 3> nSigmaToUse = (track.pt() > 0.4 && track.hasTOF()) ? nSigmaCombined : nSigmaTPC;
+
+    //Select particle with the lowest nsigma
+    for (int i = 0; i < 3; ++i) {
+        if (std::abs(nSigmaToUse[i]) < nsigma) {
+          pid = i;
+          nsigma = std::abs(nSigmaToUse[i]);
+        }
+      }
+    return pid + 1; // shift the pid by 1, 1 = pion, 2 = kaon, 3 = proton
+  }
+
   template <typename TTrack>
   std::pair<int, int> GetBayesID(TTrack track)
   {
@@ -191,7 +224,7 @@ struct GfwPidflow {
     int maxProb[3] = {80, 80, 80};
     int pidID = -1;
     std::pair<int, int> idprob = GetBayesID(track);
-    if (idprob.first == 0 || idprob.first == 1 || idprob.first == 2) { // 0 = pion, 1 = kaon, 2 = proton
+    if (idprob.first == pion || idprob.first == kaon || idprob.first == proton) { // 0 = pion, 1 = kaon, 2 = proton
       pidID = idprob.first;
       float nsigmaTPC[3] = {track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
       if (idprob.second > maxProb[pidID]) {
@@ -277,14 +310,15 @@ struct GfwPidflow {
       histos.fill(HIST("hEta"), track.eta());
       histos.fill(HIST("hPt"), pt);
 
-      histos.fill(HIST("TofTpcNsigma"), 0, track.tpcNSigmaPi(), track.tofNSigmaPi());
-      histos.fill(HIST("TofTpcNsigma"), 1, track.tpcNSigmaKa(), track.tofNSigmaKa());
-      histos.fill(HIST("TofTpcNsigma"), 2, track.tpcNSigmaPr(), track.tofNSigmaPr());
+      histos.fill(HIST("TofTpcNsigma"), pion, track.tpcNSigmaPi(), track.tofNSigmaPi(), pt);
+      histos.fill(HIST("TofTpcNsigma"), kaon, track.tpcNSigmaKa(), track.tofNSigmaKa(), pt);
+      histos.fill(HIST("TofTpcNsigma"), proton, track.tpcNSigmaPr(), track.tofNSigmaPr(), pt);
 
       bool WithinPtPOI = (cfgCutPtPOIMin < pt) && (pt < cfgCutPtPOIMax); // within POI pT range
       bool WithinPtRef = (cfgCutPtMin < pt) && (pt < cfgCutPtMax);       // within RF pT range
 
-      pidIndex = GetBayesPIDIndex(track);
+      //pidIndex = GetBayesPIDIndex(track);
+      pidIndex = GetNsigmaPID(track);
       if (WithinPtRef)
         fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), wacc * weff, 1);
       if (WithinPtPOI)
@@ -294,6 +328,7 @@ struct GfwPidflow {
       fGFW->Fill(track.eta(), 1, track.phi(), wacc * weff, 512);
 
       if (pidIndex) {
+        histos.fill(HIST("partCount"), pidIndex - 1, cent, pt);
         if (WithinPtPOI)
           fGFW->Fill(track.eta(), fPtAxis->FindBin(pt) - 1, track.phi(), wacc * weff, 1 << (pidIndex));
         if (WithinPtPOI && WithinPtRef)
