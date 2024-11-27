@@ -26,6 +26,8 @@
 #include <algorithm>
 #include <functional>
 #include <memory>
+#include <string>
+#include <unordered_map>
 
 #include "TF1.h"
 #include "Framework/Logger.h"
@@ -665,8 +667,9 @@ int vertexClustering(AnyCollision const& collision, AnalysisJet const& jet, AnyT
     if (ti == tj || ti >= n_pos || tj >= n_pos || ti < 0 || tj < 0) {
       LOGF(info, "Track pair index out of range");
       return -1;
-    } else
+    } else {
       return (ti < tj) ? (ti * n_pos - (ti * (ti + 1)) / 2 + tj - ti - 1) : (tj * n_pos - (tj * (tj + 1)) / 2 + ti - tj - 1);
+    }
   }; // index n_trks is for PV
 
   for (int ti = 0; ti < n_pos - 1; ti++)
@@ -716,13 +719,15 @@ int vertexClustering(AnyCollision const& collision, AnalysisJet const& jet, AnyT
 
     bool mrg = true; // Merge-ability check
     for (int ti = 0; ti < n_pos && mrg; ti++)
-      if (tempTrkVtxIndex[ti] == tempTrkVtxIndex[clusteri] && tempTrkVtxIndex[ti] >= 0)
+      if (tempTrkVtxIndex[ti] == tempTrkVtxIndex[clusteri] && tempTrkVtxIndex[ti] >= 0) {
         for (int tj = 0; tj < n_pos && mrg; tj++)
-          if (tj != ti && tempTrkVtxIndex[tj] == tempTrkVtxIndex[clusterj] && tempTrkVtxIndex[tj] >= 0)
+          if (tj != ti && tempTrkVtxIndex[tj] == tempTrkVtxIndex[clusterj] && tempTrkVtxIndex[tj] >= 0) {
             if (dists[trk_pair_idx(ti, tj)] > vtxResParam) { // If there is more distant pair compared to vtx_res between two clusters, they cannot be merged.
               mrg = false;
               min_min_dist = min_dist;
             }
+          }
+      }
     if (min_dist > vtxResParam || min_dist < 0.f)
       break;
 

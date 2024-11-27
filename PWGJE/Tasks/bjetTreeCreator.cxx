@@ -15,6 +15,11 @@
 ///
 /// \author Hadi Hassan <hadi.hassan@cern.ch>, University of Jyväskylä
 
+#include <algorithm>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoA.h"
