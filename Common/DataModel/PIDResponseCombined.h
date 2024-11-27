@@ -10,14 +10,14 @@
 // or submit itself to any jurisdiction.
 
 ///
-/// \file   PIDResponse.h
+/// \file   PIDResponseCombined.h
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
 /// \brief  Set of tables, tasks and utilities to provide the interface between
-///         the analysis data model and the PID response
+///         the analysis data model and the combined PID response
 ///
 
-#ifndef COMMON_DATAMODEL_PIDRESPONSE_H_
-#define COMMON_DATAMODEL_PIDRESPONSE_H_
+#ifndef COMMON_DATAMODEL_PIDRESPONSECOMBINED_H_
+#define COMMON_DATAMODEL_PIDRESPONSECOMBINED_H_
 
 #include <experimental/type_traits>
 
@@ -73,4 +73,4 @@ DECLARE_SOA_TABLE(pidBayes, "AOD", "pidBayes", pidbayes::BayesProb, pidbayes::Ba
 
 } // namespace o2::aod
 
-#endif // COMMON_DATAMODEL_PIDRESPONSE_H_
+#endif // COMMON_DATAMODEL_PIDRESPONSECOMBINED_H_

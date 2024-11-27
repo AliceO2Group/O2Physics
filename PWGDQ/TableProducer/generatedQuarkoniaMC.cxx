@@ -45,7 +45,6 @@
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Qvectors.h"
 #include "Framework/StaticFor.h"
 #include "Common/DataModel/McCollisionExtra.h"
