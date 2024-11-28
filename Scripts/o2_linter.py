@@ -311,7 +311,7 @@ class TestROOT(TestSpec):
     suffixes = [".h", ".cxx"]
 
     def file_matches(self, path: str) -> bool:
-        return TestSpec.file_matches(self, path) and "Macros/" not in path
+        return super().file_matches(path) and "Macros/" not in path
 
     def test_line(self, line: str) -> bool:
         pattern = (
@@ -332,7 +332,7 @@ class TestPi(TestSpec):
     suffixes = [".h", ".cxx"]
 
     def file_matches(self, path: str) -> bool:
-        return TestSpec.file_matches(self, path) and "Macros/" not in path
+        return super().file_matches(path) and "Macros/" not in path
 
     def test_line(self, line: str) -> bool:
         pattern = r"M_PI|TMath::(Two)?Pi"
@@ -390,7 +390,7 @@ class TestPdgDatabase(TestSpec):
     suffixes = [".h", ".cxx"]
 
     def file_matches(self, path: str) -> bool:
-        return TestSpec.file_matches(self, path) and "Macros/" not in path
+        return super().file_matches(path) and "Macros/" not in path
 
     def test_line(self, line: str) -> bool:
         if is_comment_cpp(line):
@@ -449,7 +449,7 @@ class TestLogging(TestSpec):
     suffixes = [".h", ".cxx"]
 
     def file_matches(self, path: str) -> bool:
-        return TestSpec.file_matches(self, path) and "Macros/" not in path
+        return super().file_matches(path) and "Macros/" not in path
 
     def test_line(self, line: str) -> bool:
         pattern = r"^([Pp]rintf\(|(std::)?cout <)"
@@ -1164,7 +1164,7 @@ class TestNameFileWorkflow(TestSpec):
     per_line = False
 
     def file_matches(self, path: str) -> bool:
-        return TestSpec.file_matches(self, path) and "/Core/" not in path
+        return super().file_matches(path) and "/Core/" not in path
 
     def test_file(self, path: str, content) -> bool:
         file_name = os.path.basename(path).rstrip(".cxx")
@@ -1202,7 +1202,7 @@ class TestNameConfigurable(TestSpec):
     suffixes = [".h", ".cxx"]
 
     def file_matches(self, path: str) -> bool:
-        return TestSpec.file_matches(self, path) and "Macros/" not in path
+        return super().file_matches(path) and "Macros/" not in path
 
     def test_line(self, line: str) -> bool:
         if is_comment_cpp(line):
@@ -1242,7 +1242,7 @@ class TestHfNameStructClass(TestSpec):
     suffixes = [".h", ".cxx"]
 
     def file_matches(self, path: str) -> bool:
-        return TestSpec.file_matches(self, path) and "PWGHF/" in path and "Macros/" not in path
+        return super().file_matches(path) and "PWGHF/" in path and "Macros/" not in path
 
     def test_line(self, line: str) -> bool:
         if is_comment_cpp(line):
@@ -1270,7 +1270,7 @@ class TestHfNameFileTask(TestSpec):
     per_line = False
 
     def file_matches(self, path: str) -> bool:
-        return TestSpec.file_matches(self, path) and "PWGHF/" in path and "Macros/" not in path
+        return super().file_matches(path) and "PWGHF/" in path and "Macros/" not in path
 
     def test_file(self, path: str, content) -> bool:
         file_name = os.path.basename(path)
@@ -1309,7 +1309,7 @@ class TestHfStructMembers(TestSpec):
     ]
 
     def file_matches(self, path: str) -> bool:
-        return TestSpec.file_matches(self, path) and "PWGHF/" in path
+        return super().file_matches(path) and "PWGHF/" in path
 
     def test_file(self, path: str, content) -> bool:
         passed = True
