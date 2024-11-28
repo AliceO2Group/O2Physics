@@ -87,7 +87,6 @@ struct CorrelationTask {
 
   O2_DEFINE_CONFIGURABLE(cfgDecayParticleMask, int, 0, "Selection bitmask for the decay particles: 0 = no selection")
   O2_DEFINE_CONFIGURABLE(cfgMassAxis, int, 0, "Use invariant mass axis (0 = OFF, 1 = ON)")
-  O2_DEFINE_CONFIGURABLE(cfgDDBARana, int, 0, "switch for DDBAR analysis (0 = OFF, 1 = ON)");
   O2_DEFINE_CONFIGURABLE(cfgMcTriggerPDGs, std::vector<int>, {}, "MC PDG codes to use exclusively as trigger particles and exclude from associated particles. Empty = no selection.")
 
   ConfigurableAxis axisVertex{"axisVertex", {7, -7, 7}, "vertex axis for histograms"};
@@ -107,7 +106,7 @@ struct CorrelationTask {
   // This filter is applied to AOD and derived data (column names are identical)
   Filter collisionZVtxFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   // This filter is only applied to AOD
-  Filter collisionVertexTypeFilter = (aod::collision::flags & static_cast<uint16_t>aod::collision::CollisionFlagsRun2::Run2VertexerTracks) == static_cast<uint16_t>aod::collision::CollisionFlagsRun2::Run2VertexerTracks;
+  Filter collisionVertexTypeFilter = (aod::collision::flags & static_cast<uint16_t>(aod::collision::CollisionFlagsRun2::Run2VertexerTracks)) == static_cast<uint16_t>(aod::collision::CollisionFlagsRun2::Run2VertexerTracks);
 
   // Track filters
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPt) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true));
@@ -188,7 +187,7 @@ struct CorrelationTask {
     std::vector<AxisSpec> userAxis;
     if (cfgMassAxis != 0)
       userAxis.emplace_back(axisInvMass, "m (GeV/c^2)");
-    if (cfgDDBARana != 0)
+    if (doprocessSame2Prong2Prong)
       userAxis.emplace_back(axisInvMass, "m (GeV/c^2)");
 
     same.setObject(new CorrelationContainer("sameEvent", "sameEvent", corrAxis, effAxis, userAxis));
@@ -247,7 +246,7 @@ struct CorrelationTask {
     for (auto& track1 : tracks1) {
       if constexpr (std::experimental::is_detected<hasInvMass, typename TTracks1::iterator>::value) {
         if constexpr (std::experimental::is_detected<hasDecay, typename TTracks1::iterator>::value) {
-          if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << static_cast<uint32_t>track1.decay())) == 0u)
+          if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << static_cast<uint32_t>(track1.decay()))) == 0u)
             continue;
         }
         registry.fill(HIST("invMass"), track1.invMass(), track1.pt(), multiplicity);
@@ -322,14 +321,8 @@ struct CorrelationTask {
         }
       }
 
-      if constexpr (std::experimental::is_detected<hasSign, typename TTracks1::iterator>::value) {
-        if (cfgDDBARana) {
-          continue;
-        }
-      }
-
       if constexpr (std::experimental::is_detected<hasDecay, typename TTracks1::iterator>::value) {
-        if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << static_cast<uint32_t>track1.decay())) == 0u)
+        if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << static_cast<uint32_t>(track1.decay()))) == 0u)
           continue;
       }
 
@@ -387,19 +380,13 @@ struct CorrelationTask {
           }
         }
 
-        if constexpr (std::experimental::is_detected<hasSign, typename TTracks2::iterator>::value) {
-          if (cfgDDBARana) {
-            continue;
-          }
-        }
-
         if constexpr (std::experimental::is_detected<hasDecay, typename TTracks2::iterator>::value) {
-          if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << static_cast<uint32_t>track2.decay())) == 0u)
+          if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << static_cast<uint32_t>(track2.decay()))) == 0u)
             continue;
         }
 
         if constexpr (std::experimental::is_detected<hasDecay, typename TTracks1::iterator>::value && std::experimental::is_detected<hasDecay, typename TTracks2::iterator>::value) {
-          if (cfgDDBARana != 0 && (track1.decay() == track2.decay() || track1.decay() > 1 || track2.decay() > 1)) {
+          if (doprocessSame2Prong2Prong && (track1.decay() == track2.decay() || track1.decay() > 1 || track2.decay() > 1)) {
             continue;
           }
         } // D0 and anti-D0 selection
@@ -475,16 +462,16 @@ struct CorrelationTask {
         }
 
         // last param is the weight
-        if (cfgMassAxis && !cfgDDBARana) {
+        if (cfgMassAxis && !doprocessSame2Prong2Prong) {
           if constexpr (std::experimental::is_detected<hasInvMass, typename TTracks1::iterator>::value)
             target->getPairHist()->Fill(step, track1.eta() - track2.eta(), track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ, track1.invMass(), associatedWeight);
           else
             LOGF(fatal, "Can not fill mass axis without invMass column. Disable cfgMassAxis.");
-        } else if (cfgMassAxis && cfgDDBARana) {
+        } else if (cfgMassAxis && doprocessSame2Prong2Prong) {
           if constexpr (std::experimental::is_detected<hasInvMass, typename TTracks1::iterator>::value && std::experimental::is_detected<hasInvMass, typename TTracks2::iterator>::value)
             target->getPairHist()->Fill(step, track1.eta() - track2.eta(), track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ, track2.invMass(), track1.invMass(), associatedWeight);
           else
-            LOGF(fatal, "Can not fill mass axis without invMass column. Disable cfgMassAxis and cfgDDBARana");
+            LOGF(fatal, "Can not fill mass axis without invMass column. \n no mass for two particles");
         } else {
           target->getPairHist()->Fill(step, track1.eta() - track2.eta(), track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ, associatedWeight);
         }
