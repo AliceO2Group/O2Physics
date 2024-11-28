@@ -149,7 +149,7 @@ struct UpcTauCentralBarrelRL {
     ConfigurableAxis axisFITtime{"axisFITtime", {201, -40.5, 40.5}, "FIT time in ns"};
     ConfigurableAxis axisFITamplitude{"axisFITamplitude", {1000, 0., 1000.}, "FIT amplitude"};
 
-    AxisSpec axisChannels{CH_ENUM_COUNTER, -0.5, CH_ENUM_COUNTER - 0.5, "Channels (-)"};
+    AxisSpec axisChannels{CH_ENUM_COUNTER, -0.5, +CH_ENUM_COUNTER - 0.5, "Channels (-)"};
   } confAxis;
 
   using FullUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags>;
@@ -2308,13 +2308,13 @@ struct UpcTauCentralBarrelRL {
   {
     if (reconstructedCollision.has_udMcCollision()) {
       const auto& generatedCollision = reconstructedCollision.udMcCollision();
-      printDebugMessage(Form("%lli udMcCollision found", generatedCollision.size()));
+      printDebugMessage(Form("%li udMcCollision found", generatedCollision.size()));
     }
 
     const auto& track = reconstructedBarrelTracks.iteratorAt(0);
     if (track.size() && track.has_udMcParticle()) {
       const auto& particle = track.udMcParticle();
-      printDebugMessage(Form("%lli udMcParticle found", particle.size()));
+      printDebugMessage(Form("%li udMcParticle found", particle.size()));
     }
 
   } // end processTestMC

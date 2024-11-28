@@ -268,7 +268,7 @@ struct FlowRunbyRun {
     for (auto& track : tracks) {
       TH1sList[runNumber][hPhi]->Fill(track.phi());
       TH1sList[runNumber][hEta]->Fill(track.eta());
-      bool WithinPtPOI = (cfgCutPtPOIMin < track.pt()) && (track.pt() < cfgCutPtPOIMax); // within POI pT range
+      // bool WithinPtPOI = (cfgCutPtPOIMin < track.pt()) && (track.pt() < cfgCutPtPOIMax); // within POI pT range
       bool WithinPtRef = (cfgCutPtRefMin < track.pt()) && (track.pt() < cfgCutPtRefMax); // within RF pT range
       if (WithinPtRef) {
         fGFW->Fill(track.eta(), 1, track.phi(), wacc * weff, 1);
