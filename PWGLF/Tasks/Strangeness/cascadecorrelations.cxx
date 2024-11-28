@@ -386,10 +386,6 @@ struct cascadeCorrelations {
   SliceCache cache;
   ConfigurableAxis axisVtxZ{"axisVtxZ", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
   ConfigurableAxis axisMult{"axisMult", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 100, 1000}, "Mixing bins - multiplicity"};
-  using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFT0M<aod::mult::MultFT0A, aod::mult::MultFT0C>>;
-  BinningType colBinning{{axisVtxZ, axisMult}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
-  // Preslice<aod::CascDataExtSelected> collisionSliceCascades = aod::CascDataExtSelected::collisionId;
-  SameKindPair<myCollisions, myCascades, BinningType> pair{colBinning, nMixedEvents, -1, &cache};
 
   void processSameEvent(myCollisions::iterator const& collision, myCascades const& Cascades, aod::V0sLinked const&, aod::V0Datas const&, FullTracksExtIU const&)
   {
@@ -597,6 +593,10 @@ struct cascadeCorrelations {
                          aod::V0sLinked const&, aod::V0Datas const&, FullTracksExtIU const&)
   {
     // mixed events
+    using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFT0M<aod::mult::MultFT0A, aod::mult::MultFT0C>>;
+    BinningType colBinning{{axisVtxZ, axisMult}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
+    // Preslice<aod::CascDataExtSelected> collisionSliceCascades = aod::CascDataExtSelected::collisionId;
+    SameKindPair<myCollisions, myCascades, BinningType> pair{colBinning, nMixedEvents, -1, &cache};
 
     for (auto& [col1, cascades1, col2, cascades2] : pair) {
       if (!col1.sel8() || !col2.sel8())
