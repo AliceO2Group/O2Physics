@@ -658,10 +658,14 @@ struct AnalysisEventMixing {
   Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<bool> fConfigAmbiguousHist{"cfgAmbiHist", false, "Enable Ambiguous histograms for time association studies"};
+  Configurable<string> ccdbPathFlow{"ccdb-path-flow", "Users/c/chizh/FlowResolution", "path to the ccdb object for flow resolution factors"};
+  Configurable<bool> fConfigFlowReso{"cfgFlowReso", false, "Enable loading of flow resolution factors from CCDB"};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   o2::parameters::GRPMagField* grpmag = nullptr;
+  TH1D* ResoFlowSP = nullptr; // Resolution factors for flow analysis, this will be loaded from CCDB
+  TH1D* ResoFlowEP = nullptr; // Resolution factors for flow analysis, this will be loaded from CCDB
   int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
 
   Filter filterEventSelected = aod::dqanalysisflags::isEventSelected == 1;
@@ -788,16 +792,7 @@ struct AnalysisEventMixing {
         if (!twoTrackFilter) { // the tracks must have at least one filter bit in common to continue
           continue;
         }
-        VarManager::FillPairME<TPairType>(track1, track2);
-
-        constexpr bool eventHasQvector = (VarManager::ObjTypes::ReducedEventQvector > 0);
-        if constexpr (eventHasQvector) {
-          VarManager::FillPairVn<TEventFillMap, TPairType>(track1, track2);
-        }
-        constexpr bool eventHasQvectorCentr = (VarManager::ObjTypes::CollisionQvect > 0);
-        if constexpr (eventHasQvectorCentr) {
-          VarManager::FillPairVn<TEventFillMap, TPairType>(track1, track2);
-        }
+        VarManager::FillPairME<TEventFillMap, TPairType>(track1, track2);
 
         for (unsigned int icut = 0; icut < ncuts; icut++) {
           if (twoTrackFilter & (uint32_t(1) << icut)) {
@@ -836,6 +831,16 @@ struct AnalysisEventMixing {
       } else {
         LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", events.begin().timestamp());
       }
+      if (fConfigFlowReso) {
+        TString PathFlow = ccdbPathFlow.value;
+        TString ccdbPathFlowSP = Form("%s/ScalarProduct", PathFlow.Data());
+        TString ccdbPathFlowEP = Form("%s/EventPlane", PathFlow.Data());
+        ResoFlowSP = ccdb->getForTimeStamp<TH1D>(ccdbPathFlowSP.Data(), events.begin().timestamp());
+        ResoFlowEP = ccdb->getForTimeStamp<TH1D>(ccdbPathFlowEP.Data(), events.begin().timestamp());
+        if (ResoFlowSP == nullptr || ResoFlowEP == nullptr) {
+          LOGF(fatal, "Resolution factor is not available in CCDB at timestamp=%llu", events.begin().timestamp());
+        }
+      }
       fCurrentRun = events.begin().runNumber();
     }
 
@@ -852,6 +857,9 @@ struct AnalysisEventMixing {
       tracks2.bindExternalIndices(&events);
 
       VarManager::FillTwoMixEvents<TEventFillMap>(event1, event2, tracks1, tracks2);
+      if (fConfigFlowReso) {
+        VarManager::FillEventFlowResoFactor(ResoFlowSP, ResoFlowEP);
+      }
       runMixedPairing<TEventFillMap, TPairType>(tracks1, tracks2);
     } // end event loop
   }
@@ -944,6 +952,8 @@ struct AnalysisSameEventPairing {
   float mMagField = 0.0;
   o2::parameters::GRPMagField* grpmag = nullptr;
   o2::base::MatLayerCylSet* lut = nullptr;
+  TH1D* ResoFlowSP = nullptr; // Resolution factors for flow analysis, this will be loaded from CCDB
+  TH1D* ResoFlowEP = nullptr; // Resolution factors for flow analysis, this will be loaded from CCDB
   int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
 
   OutputObj<THashList> fOutputList{"output"};
@@ -952,6 +962,8 @@ struct AnalysisSameEventPairing {
   Configurable<string> fConfigPairCuts{"cfgPairCuts", "", "Comma separated list of pair cuts"};
   Configurable<string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<string> ccdbPath{"ccdb-path", "Users/lm", "base path to the ccdb object"};
+  Configurable<string> ccdbPathFlow{"ccdb-path-flow", "Users/c/chizh/FlowResolution", "path to the ccdb object for flow resolution factors"};
+  Configurable<bool> fConfigFlowReso{"cfgFlowReso", false, "Enable loading of flow resolution factors from CCDB"};
   Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<std::string> fConfigAddSEPHistogram{"cfgAddSEPHistogram", "", "Comma separated list of histograms"};
   Configurable<bool> fConfigFlatTables{"cfgFlatTables", false, "Produce a single flat tables with all relevant information of the pairs and single tracks"};
@@ -1184,6 +1196,16 @@ struct AnalysisSameEventPairing {
         }
         VarManager::SetMagneticField(fConfigMagField.value);
       }
+      if (fConfigFlowReso) {
+        TString PathFlow = ccdbPathFlow.value;
+        TString ccdbPathFlowSP = Form("%s/ScalarProduct", PathFlow.Data());
+        TString ccdbPathFlowEP = Form("%s/EventPlane", PathFlow.Data());
+        ResoFlowSP = ccdb->getForTimeStamp<TH1D>(ccdbPathFlowSP.Data(), event.timestamp());
+        ResoFlowEP = ccdb->getForTimeStamp<TH1D>(ccdbPathFlowEP.Data(), event.timestamp());
+        if (ResoFlowSP == nullptr || ResoFlowEP == nullptr) {
+          LOGF(fatal, "Resolution factor is not available in CCDB at timestamp=%llu", event.timestamp());
+        }
+      }
       fCurrentRun = event.runNumber();
     }
 
@@ -1234,6 +1256,11 @@ struct AnalysisSameEventPairing {
 
       VarManager::fgValues[VarManager::kMultDimuons] = mult_dimuons;
     }
+
+    if (fConfigFlowReso) {
+      VarManager::FillEventFlowResoFactor(ResoFlowSP, ResoFlowEP);
+    }
+
     bool isFirst = true;
     for (auto& [t1, t2] : combinations(tracks1, tracks2)) {
       if constexpr (TPairType == VarManager::kDecayToEE || TPairType == VarManager::kDecayToPiPi) {
