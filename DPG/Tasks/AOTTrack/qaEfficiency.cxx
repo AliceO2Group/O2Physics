@@ -1249,7 +1249,6 @@ struct QaEfficiency {
         if (checkForMothers.value && mothersPDGs.value.size() > 0 && mcParticle.has_mothers()) {
           motherIsAccepted = false;
           auto mothers = mcParticle.mothers_as<o2::aod::McParticles>();
-          
           // Loop over mother particles
           for (const auto& mother : mothers) {
             for (const auto& pdgToCheck : mothersPDGs.value) {
