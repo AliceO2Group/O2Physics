@@ -430,6 +430,10 @@ class TOFResoParamsV3 : public o2::tof::Parameters<13>
     static constexpr std::array<const char*, 9> particleNames = {"El", "Mu", "Pi", "Ka", "Pr", "De", "Tr", "He", "Al"};
     // Print a summary
     for (int i = 0; i < 9; ++i) {
+      if (!mResolution[i]) {
+        LOG(info) << "Resolution function for " << particleNames[i] << " is not defined yet";
+        continue;
+      }
       LOG(info) << "Resolution function for " << particleNames[i] << " is " << mResolution[i]->GetName() << " with formula " << mResolution[i]->GetFormula()->GetExpFormula();
     }
   }
