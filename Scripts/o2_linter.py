@@ -1282,7 +1282,7 @@ class TestNameFileWorkflow(TestSpec):
 
     name = "name/workflow-file"
     message = (
-        "Name of a workflow file must match the name of the main task in it (without the PWG prefix). "
+        "Name of a workflow file must match the name of the main struct in it (without the PWG prefix). "
         '(Class implementation files should be in "Core" directories.)'
     )
     suffixes = [".cxx"]
