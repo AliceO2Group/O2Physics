@@ -1264,7 +1264,7 @@ class TestHfNameFileWorkflowTask(TestSpec):
 
     name = "pwghf/name/workflow-file-task"
     message = (
-        'Name of a PWGHF task workflow file must start with "task". '
+        'Name of a PWGHF task workflow file must start with "task".'
     )
     suffixes = [".cxx"]
     per_line = False
@@ -1301,6 +1301,8 @@ class TestNameFileWorkflow(TestSpec):
         # print(f"For file {file_name} expecting to find {base_struct_name}.")
         struct_names = []  # actual struct names in the file
         for line in content:
+            if self.is_disabled(line):
+                return True
             if not line.startswith("struct "):
                 continue
             # Extract struct name.
