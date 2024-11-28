@@ -68,7 +68,7 @@ enum DQTriggers {
   kSingleMuLow,
   kSingleMuHigh,
   kDiMuon,
-//  kElectronMuon, //the ElectronMuon trigger is not available now
+  // kElectronMuon, // the ElectronMuon trigger is not available now
   kNTriggersDQ
 };
 } // namespace
@@ -89,8 +89,8 @@ DECLARE_SOA_INDEX_COLUMN(FwdTrack, fwdtrack);   //! FwdTrack index
 DECLARE_SOA_TABLE(DQEventCuts, "AOD", "DQEVENTCUTS", dqppfilter::IsDQEventSelected);
 DECLARE_SOA_TABLE(DQBarrelTrackCuts, "AOD", "DQBARRELCUTS", dqppfilter::IsDQBarrelSelected);
 DECLARE_SOA_TABLE(DQMuonsCuts, "AOD", "DQMUONCUTS", dqppfilter::IsDQMuonSelected);
-DECLARE_SOA_TABLE(DQEMuBarrelTrackCuts, "AOD", "DQEMUBARRELCUTS", dqppfilter::IsDQEMuBarrelSelected); //for electron-muon pair
-DECLARE_SOA_TABLE(DQEMuMuonsCuts, "AOD", "DQEMUMUONCUTS", dqppfilter::IsDQEMuMuonSelected);           //for electron-muon pair
+DECLARE_SOA_TABLE(DQEMuBarrelTrackCuts, "AOD", "DQEMUBARRELCUTS", dqppfilter::IsDQEMuBarrelSelected); // for electron-muon pair
+DECLARE_SOA_TABLE(DQEMuMuonsCuts, "AOD", "DQEMUMUONCUTS", dqppfilter::IsDQEMuMuonSelected);           // for electron-muon pair
 } // namespace o2::aod
 
 using MyEvents = soa::Join<aod::Collisions, aod::EvSels>;
@@ -323,10 +323,10 @@ struct DQBarrelTrackSelection {
       }
       int j = 0;
       for (auto cut = fEMuTrackCuts.begin(); cut != fEMuTrackCuts.end(); ++cut, ++j) {
-          if ((*cut).IsSelected(VarManager::fgValues)) {
-            filterMapEMu |= (uint32_t(1) << j);
-          }
+        if ((*cut).IsSelected(VarManager::fgValues)) {
+          filterMapEMu |= (uint32_t(1) << j);
         }
+      }
       trackSel(filterMap);
       emuSel(filterMapEMu);
     } // end loop over tracks
@@ -580,13 +580,13 @@ struct DQFilterPPTask {
   int fNElectronMuonCuts;                              // number of electron-muon selections
   std::vector<bool> fBarrelRunPairing;                 // bit map on whether the selections require pairing (barrel)
   std::vector<bool> fMuonRunPairing;                   // bit map on whether the selections require pairing (muon)
-  std::vector<bool> fElectronMuonRunPairing;            //bit map on whether the selections require pairing (e-mu)
+  std::vector<bool> fElectronMuonRunPairing;           // bit map on whether the selections require pairing (e-mu)
   std::vector<int> fBarrelNreqObjs;                    // minimal number of tracks/pairs required (barrel)
   std::vector<int> fMuonNreqObjs;                      // minimal number of tracks/pairs required (muon)
-  std::vector<int> fElectronMuonNreqObjs;              //minimal number of electron-muon pairs required
+  std::vector<int> fElectronMuonNreqObjs;              // minimal number of electron-muon pairs required
   std::map<int, AnalysisCompositeCut> fBarrelPairCuts; // map of barrel pair cuts
   std::map<int, AnalysisCompositeCut> fMuonPairCuts;   // map of muon pair cuts
-  std::map<int, AnalysisCompositeCut> fElectronMuonPairCuts;   //map of electron-muon pair cuts
+  std::map<int, AnalysisCompositeCut> fElectronMuonPairCuts;   // map of electron-muon pair cuts
   std::map<int, TString> fBarrelPairHistNames;         // map with names of the barrel pairing histogram directories
   std::map<int, TString> fMuonPairHistNames;           // map with names of the muon pairing histogram directories
   std::map<int, TString> fElectronMuonPairHistNames;   // map with names of the electron-muon pairing histogram directories
@@ -640,7 +640,7 @@ struct DQFilterPPTask {
         }
       }
     }
-    //electron-muon pair
+    // electron-muon pair
     TString electronMuonSelsStr = fConfigElectronMuonSelections.value;
     std::unique_ptr<TObjArray> objArray3(electronMuonSelsStr.Tokenize(","));
     fNElectronMuonCuts = objArray3->GetEntries();
@@ -889,9 +889,9 @@ struct DQFilterPPTask {
       }
     }
 
-    //electron-muon pair
+    // electron-muon pair
     std::vector<int> objCountersElectronMuon(fNElectronMuonCuts, 0); // init all counters to zero
-    pairingMask = 0; // reset the mask for the e-mu
+    pairingMask = 0;
     for (auto& [trackAssoc, muon] : combinations(barrelAssocs, muonAssocs)) {
       for (int i = 0; i < fNElectronMuonCuts; ++i) {
         if (trackAssoc.isDQEMuBarrelSelected() & muon.isDQEMuMuonSelected() & (uint32_t(1) << i)) {
@@ -1029,13 +1029,15 @@ struct DQFilterPPTask {
         }
       }
       // the ElectronMuon trigger is not available now
-/*      for (int i = fNBarrelCuts + fNMuonCuts; i < fNBarrelCuts + fNMuonCuts + fNElectronMuonCuts; i++) {
+      /*
+      for (int i = fNBarrelCuts + fNMuonCuts; i < fNBarrelCuts + fNMuonCuts + fNElectronMuonCuts; i++) {
         if (filter & (uint64_t(1) << i)) {
           if (i < kNTriggersDQ) {
             decisions[i] = true;
           }
         }
-      }*/
+      }
+      */
       // if this collision fired at least one input, add it to the map, or if it is there already, update the decisions with a logical OR
       // This may happen in the case when some collisions beyond the iterator are added because they contain ambiguous tracks fired on by another collision
       if (fFiltersMap.find(collision.globalIndex()) == fFiltersMap.end()) {
@@ -1117,7 +1119,7 @@ struct DQFilterPPTask {
       if (!collision.isDQEventSelected()) {
         eventFilter(0);
         dqtable(false, false, false, false, false, false, false);
-//        dqtable(false, false, false, false, false, false, false, false); //the ElectronMuon trigger is not available now
+        // dqtable(false, false, false, false, false, false, false, false); // the ElectronMuon trigger is not available now
         continue;
       }
       fStats->Fill(-1.0);
@@ -1125,18 +1127,17 @@ struct DQFilterPPTask {
       if (fFiltersMap.find(collision.globalIndex()) == fFiltersMap.end()) {
         eventFilter(0);
         dqtable(false, false, false, false, false, false, false);
-//        dqtable(false, false, false, false, false, false, false, false); //the ElectronMuon trigger is not available now
+        // dqtable(false, false, false, false, false, false, false, false); // the ElectronMuon trigger is not available now
       } else {
         totalEventsTriggered++;
-          for (int i = 0; i < fNBarrelCuts + fNMuonCuts + fNElectronMuonCuts; i++) {
-              if (fFiltersMap[collision.globalIndex()] & (uint32_t(1) << i))
-                  fStats->Fill(static_cast<float>(i));
-              }
-          }
+        for (int i = 0; i < fNBarrelCuts + fNMuonCuts + fNElectronMuonCuts; i++) {
+          if (fFiltersMap[collision.globalIndex()] & (uint32_t(1) << i))
+            fStats->Fill(static_cast<float>(i));
+        }
         eventFilter(fFiltersMap[collision.globalIndex()]);
         auto dqDecisions = fCEFPfilters[collision.globalIndex()];
         dqtable(dqDecisions[0], dqDecisions[1], dqDecisions[2], dqDecisions[3], dqDecisions[4], dqDecisions[5], dqDecisions[6]);
-//        dqtable(dqDecisions[0], dqDecisions[1], dqDecisions[2], dqDecisions[3], dqDecisions[4], dqDecisions[5], dqDecisions[6], dqDecisions[7]); //the ElectronMuon trigger is not available now
+        // dqtable(dqDecisions[0], dqDecisions[1], dqDecisions[2], dqDecisions[3], dqDecisions[4], dqDecisions[5], dqDecisions[6], dqDecisions[7]); // the ElectronMuon trigger is not available now
       }
     }
 
