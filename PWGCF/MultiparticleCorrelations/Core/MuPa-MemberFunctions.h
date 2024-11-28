@@ -43,11 +43,13 @@ void BookBaseList()
 
   // Remark: If I want to change the ordering of bin labels, simply change the
   // ordering in enum eConfiguration { ... }, nothing needs to be changed here.
+  fBasePro->GetXaxis()->SetBinLabel(eTaskIsConfiguredFromJson, Form("fTaskIsConfiguredFromJson = %s", tc.fTaskIsConfiguredFromJson.Data()));
+
   fBasePro->GetXaxis()->SetBinLabel(eTaskName, Form("fTaskName = %s", tc.fTaskName.Data()));
 
   fBasePro->GetXaxis()->SetBinLabel(eRunNumber, Form("fRunNumber = %s", "__RUN_NUMBER__"));
   // I have to do it this way via placeholder, because run number is available only when i start to process data.
-  // Then, I replace placeholder with run number in DetermineAndPropagateRunNumber(T const& collision)
+  // Then, I replace placeholder with run number in PropagateRunNumber(...)
 
   fBasePro->GetXaxis()->SetBinLabel(eDryRun, "fDryRun");
   fBasePro->Fill(eDryRun, static_cast<double>(tc.fDryRun));
@@ -138,6 +140,7 @@ void DefaultConfiguration()
   //    *) Therefore, wrap up all data members in some struct fields + use in instead of individual configurables ConfigurableGroup whenever possible.
   //    *) Within a given struct field, number of data members do not add to that number. Also, number of enum fields do not add.
 
+  tc.fTaskIsConfiguredFromJson = TString(cf_tc.cfTaskIsConfiguredFromJson);
   tc.fTaskName = TString(cf_tc.cfTaskName);
   tc.fDryRun = cf_tc.cfDryRun;
   tc.fVerbose = cf_tc.cfVerbose;
@@ -231,6 +234,8 @@ void DefaultConfiguration()
   eh.fEventHistogramsName[eNContributors] = "NContributors";
   eh.fEventHistogramsName[eImpactParameter] = "ImpactParameter";
   eh.fEventHistogramsName[eOccupancy] = "Occupancy";
+  eh.fEventHistogramsName[eInteractionRate] = "InteractionRate";
+  eh.fEventHistogramsName[eCurrentRunDuration] = "CurrentRunDuration";
   eh.fEventHistogramsName[eMultMCNParticlesEta08] = "MultMCNParticlesEta08";
 
   for (Int_t t = 0; t < eEventHistograms_N; t++) {
@@ -256,6 +261,8 @@ void DefaultConfiguration()
   ec.fEventCutName[eNContributors] = "NContributors";
   ec.fEventCutName[eImpactParameter] = "ImpactParameter";
   ec.fEventCutName[eOccupancy] = "Occupancy";
+  ec.fEventCutName[eInteractionRate] = "InteractionRate";
+  ec.fEventCutName[eCurrentRunDuration] = "CurrentRunDuration";
   ec.fEventCutName[eMultMCNParticlesEta08] = "MultMCNParticlesEta08";
   ec.fEventCutName[eTrigger] = "Trigger";
   ec.fEventCutName[eSel7] = "Sel7";
@@ -353,6 +360,8 @@ void DefaultConfiguration()
   mupa.fCalculateCorrelationsAsFunctionOf[AFO_PT] = cf_mupa.cfCalculateCorrelationsAsFunctionOfPt;
   mupa.fCalculateCorrelationsAsFunctionOf[AFO_ETA] = cf_mupa.cfCalculateCorrelationsAsFunctionOfEta;
   mupa.fCalculateCorrelationsAsFunctionOf[AFO_OCCUPANCY] = cf_mupa.cfCalculateCorrelationsAsFunctionOfOccupancy;
+  mupa.fCalculateCorrelationsAsFunctionOf[AFO_INTERACTIONRATE] = cf_mupa.cfCalculateCorrelationsAsFunctionOfInteractionRate;
+  mupa.fCalculateCorrelationsAsFunctionOf[AFO_CURRENTRUNDURATION] = cf_mupa.cfCalculateCorrelationsAsFunctionOfCurrentRunDuration;
 
   // *) Test0:
   t0.fCalculateTest0 = cf_t0.cfCalculateTest0;
@@ -361,7 +370,8 @@ void DefaultConfiguration()
   t0.fCalculateTest0AsFunctionOf[AFO_CENTRALITY] = cf_t0.cfCalculateTest0AsFunctionOfCentrality;
   t0.fCalculateTest0AsFunctionOf[AFO_PT] = cf_t0.cfCalculateTest0AsFunctionOfPt;
   t0.fCalculateTest0AsFunctionOf[AFO_ETA] = cf_t0.cfCalculateTest0AsFunctionOfEta;
-  t0.fCalculateTest0AsFunctionOf[AFO_OCCUPANCY] = cf_t0.cfCalculateTest0AsFunctionOfOccupancy;
+  t0.fCalculateTest0AsFunctionOf[AFO_INTERACTIONRATE] = cf_t0.cfCalculateTest0AsFunctionOfInteractionRate;
+  t0.fCalculateTest0AsFunctionOf[AFO_CURRENTRUNDURATION] = cf_t0.cfCalculateTest0AsFunctionOfCurrentRunDuration;
   t0.fFileWithLabels = TString(cf_t0.cfFileWithLabels);
   t0.fUseDefaultLabels = cf_t0.cfUseDefaultLabels;
 
@@ -463,6 +473,25 @@ void DefaultConfiguration()
   iv.fRescaleWithTheoreticalInput = cf_iv.cfRescaleWithTheoreticalInput;
 
   // *) Results histograms:
+  //    Define axis titles:
+  //    Remark: keep ordering in sync with enum eAsFunctionOf
+  res.fResultsProXaxisTitle[AFO_INTEGRATED] = "integrated";
+  res.fResultsProRawName[AFO_INTEGRATED] = "int"; // this is how it appears simplified in the hist name when saved to the file
+  res.fResultsProXaxisTitle[AFO_MULTIPLICITY] = "multiplicity";
+  res.fResultsProRawName[AFO_MULTIPLICITY] = "mult";
+  res.fResultsProXaxisTitle[AFO_CENTRALITY] = "centrality";
+  res.fResultsProRawName[AFO_CENTRALITY] = "cent";
+  res.fResultsProXaxisTitle[AFO_PT] = "pt";
+  res.fResultsProRawName[AFO_PT] = "pt";
+  res.fResultsProXaxisTitle[AFO_ETA] = "eta";
+  res.fResultsProRawName[AFO_ETA] = "eta";
+  res.fResultsProXaxisTitle[AFO_OCCUPANCY] = "occupancy";
+  res.fResultsProRawName[AFO_OCCUPANCY] = "occu";
+  res.fResultsProXaxisTitle[AFO_INTERACTIONRATE] = "interaction rate";
+  res.fResultsProRawName[AFO_INTERACTIONRATE] = "ir";
+  res.fResultsProXaxisTitle[AFO_CURRENTRUNDURATION] = "current run duration";
+  res.fResultsProRawName[AFO_CURRENTRUNDURATION] = "crd";
+
   res.fSaveResultsHistograms = cf_res.cfSaveResultsHistograms;
 
   // *) QA:
@@ -516,6 +545,7 @@ void DefaultConfiguration()
   qa.fEventHistogramsName2D[eCentFT0M_vs_CentNTPV] = Form("%s_vs_%s", qa.fCentralityEstimatorName[eCentFT0M].Data(), qa.fCentralityEstimatorName[eCentNTPV].Data());
   qa.fEventHistogramsName2D[eCentRun2V0M_vs_CentRun2SPDTracklets] = Form("%s_vs_%s", qa.fCentralityEstimatorName[eCentRun2V0M].Data(), qa.fCentralityEstimatorName[eCentRun2SPDTracklets].Data());
   qa.fEventHistogramsName2D[eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange] = Form("%s_vs_%s", qa.fOccupancyEstimatorName[eTrackOccupancyInTimeRange].Data(), qa.fOccupancyEstimatorName[eFT0COccupancyInTimeRange].Data());
+  qa.fEventHistogramsName2D[eCurrentRunDuration_vs_InteractionRate] = Form("%s_vs_%s", "CurrentRunDuration", "InteractionRate"); // TBI 20241127 check if this is the permanent formatting for axis titles
 
   // ***) Quick insanity check that all names are set:
   for (Int_t t = 0; t < eQAEventHistograms2D_N; t++) {
@@ -606,180 +636,194 @@ void DefaultBooking()
   // By default all event histograms are booked. Set this flag to kFALSE to switch off booking of all event histograms:
   eh.fFillEventHistograms = cf_eh.cfFillEventHistograms;
 
-  // *) By default all event histograms are booked. If you do not want particular event histogram to be booked,
-  // use configurable array cfBookEventHistograms, where you can specify name of the histogram accompanied with flags 1 (book) or 0 (do not book).
-  // Supported format: "someName-0" and "someName-1", where "-" is a field separator.
-  // Ordering of the flags in that array is interpreted through ordering of enums in enum eEventHistograms.
-  auto lBookEventHistograms = cf_eh.cfBookEventHistograms.value; // this is now the local version of that string array from configurable.
-  if (lBookEventHistograms.size() != eEventHistograms_N) {
-    LOGF(info, "\033[1;31m lBookEventHistograms.size() = %d\033[0m", lBookEventHistograms.size());
-    LOGF(info, "\033[1;31m eEventHistograms_N) = %d\033[0m", static_cast<int>(eEventHistograms_N));
-    LOGF(fatal, "\033[1;31m%s at line %d : Mismatch in the number of flags in configurable cfBookEventHistograms, and number of entries in enum eEventHistograms \n \033[0m", __FUNCTION__, __LINE__);
-  }
-
-  // *) Insanity check on the content and ordering of histogram names in the initialization in configurable cfBookEventHistograms:
-  // TBI 20240518 I do not need this in fact, I can automate initialization even without ordering in configurable, but it feels with the ordering enforced, it's much safer.
-  for (Int_t name = 0; name < eEventHistograms_N; name++) {
-    // TBI 20240518 I could implement even a strickter EqualTo instead of BeginsWith, but then I need to tokenize, etc., etc. This shall be safe enough.
-    if (!TString(lBookEventHistograms[name]).BeginsWith(eh.fEventHistogramsName[name].Data())) {
-      LOGF(fatal, "\033[1;31m%s at line %d : Wrong content or ordering of contents in configurable cfBookEventHistograms => name = %d, lBookEventHistograms[%d] = \"%s\", eh.fEventHistogramsName[%d] = \"%s\" \033[0m", __FUNCTION__, __LINE__, name, name, TString(lBookEventHistograms[name]).Data(), name, eh.fEventHistogramsName[name].Data());
+  if (eh.fFillEventHistograms) {
+    // *) By default all event histograms are booked. If you do not want particular event histogram to be booked,
+    // use configurable array cfBookEventHistograms, where you can specify name of the histogram accompanied with flags 1 (book) or 0 (do not book).
+    // Supported format: "someName-0" and "someName-1", where "-" is a field separator.
+    // Ordering of the flags in that array is interpreted through ordering of enums in enum eEventHistograms.
+    auto lBookEventHistograms = cf_eh.cfBookEventHistograms.value; // this is now the local version of that string array from configurable.
+    if (lBookEventHistograms.size() != eEventHistograms_N) {
+      LOGF(info, "\033[1;31m lBookEventHistograms.size() = %d\033[0m", lBookEventHistograms.size());
+      LOGF(info, "\033[1;31m eEventHistograms_N) = %d\033[0m", static_cast<int>(eEventHistograms_N));
+      LOGF(fatal, "\033[1;31m%s at line %d : Mismatch in the number of flags in configurable cfBookEventHistograms, and number of entries in enum eEventHistograms \n \033[0m", __FUNCTION__, __LINE__);
     }
-  }
 
-  // I append "&& eh.fFillEventHistograms" below, to switch off booking of all event histograms with one common flag:
-  eh.fBookEventHistograms[eNumberOfEvents] = Alright(lBookEventHistograms[eNumberOfEvents]) && eh.fFillEventHistograms;
-  eh.fBookEventHistograms[eTotalMultiplicity] = Alright(lBookEventHistograms[eTotalMultiplicity]) && eh.fFillEventHistograms;
-  eh.fBookEventHistograms[eMultiplicity] = Alright(lBookEventHistograms[eMultiplicity]) && eh.fFillEventHistograms;
-  eh.fBookEventHistograms[eReferenceMultiplicity] = Alright(lBookEventHistograms[eReferenceMultiplicity]) && eh.fFillEventHistograms;
-  eh.fBookEventHistograms[eCentrality] = Alright(lBookEventHistograms[eCentrality]) && eh.fFillEventHistograms;
-  eh.fBookEventHistograms[eVertex_x] = Alright(lBookEventHistograms[eVertex_x]) && eh.fFillEventHistograms;
-  eh.fBookEventHistograms[eVertex_y] = Alright(lBookEventHistograms[eVertex_y]) && eh.fFillEventHistograms;
-  eh.fBookEventHistograms[eVertex_z] = Alright(lBookEventHistograms[eVertex_z]) && eh.fFillEventHistograms;
-  eh.fBookEventHistograms[eNContributors] = Alright(lBookEventHistograms[eNContributors]) && eh.fFillEventHistograms;
-  eh.fBookEventHistograms[eImpactParameter] = Alright(lBookEventHistograms[eImpactParameter]) && eh.fFillEventHistograms;
-  eh.fBookEventHistograms[eOccupancy] = Alright(lBookEventHistograms[eOccupancy]) && eh.fFillEventHistograms;
-  eh.fBookEventHistograms[eMultMCNParticlesEta08] = Alright(lBookEventHistograms[eMultMCNParticlesEta08]) && eh.fFillEventHistograms;
+    // *) Insanity check on the content and ordering of histogram names in the initialization in configurable cfBookEventHistograms:
+    // TBI 20240518 I do not need this in fact, I can automate initialization even without ordering in configurable, but it feels with the ordering enforced, it's much safer.
+    for (Int_t name = 0; name < eEventHistograms_N; name++) {
+      // TBI 20240518 I could implement even a strickter EqualTo instead of BeginsWith, but then I need to tokenize, etc., etc. This shall be safe enough.
+      if (!TString(lBookEventHistograms[name]).BeginsWith(eh.fEventHistogramsName[name].Data())) {
+        LOGF(fatal, "\033[1;31m%s at line %d : Wrong content or ordering of contents in configurable cfBookEventHistograms => name = %d, lBookEventHistograms[%d] = \"%s\", eh.fEventHistogramsName[%d] = \"%s\" \033[0m", __FUNCTION__, __LINE__, name, name, TString(lBookEventHistograms[name]).Data(), name, eh.fEventHistogramsName[name].Data());
+      }
+    }
+
+    // I append "&& eh.fFillEventHistograms" below, to switch off booking of all event histograms with one common flag:
+    eh.fBookEventHistograms[eNumberOfEvents] = Alright(lBookEventHistograms[eNumberOfEvents]) && eh.fFillEventHistograms;
+    eh.fBookEventHistograms[eTotalMultiplicity] = Alright(lBookEventHistograms[eTotalMultiplicity]) && eh.fFillEventHistograms;
+    eh.fBookEventHistograms[eMultiplicity] = Alright(lBookEventHistograms[eMultiplicity]) && eh.fFillEventHistograms;
+    eh.fBookEventHistograms[eReferenceMultiplicity] = Alright(lBookEventHistograms[eReferenceMultiplicity]) && eh.fFillEventHistograms;
+    eh.fBookEventHistograms[eCentrality] = Alright(lBookEventHistograms[eCentrality]) && eh.fFillEventHistograms;
+    eh.fBookEventHistograms[eVertex_x] = Alright(lBookEventHistograms[eVertex_x]) && eh.fFillEventHistograms;
+    eh.fBookEventHistograms[eVertex_y] = Alright(lBookEventHistograms[eVertex_y]) && eh.fFillEventHistograms;
+    eh.fBookEventHistograms[eVertex_z] = Alright(lBookEventHistograms[eVertex_z]) && eh.fFillEventHistograms;
+    eh.fBookEventHistograms[eNContributors] = Alright(lBookEventHistograms[eNContributors]) && eh.fFillEventHistograms;
+    eh.fBookEventHistograms[eImpactParameter] = Alright(lBookEventHistograms[eImpactParameter]) && eh.fFillEventHistograms;
+    eh.fBookEventHistograms[eOccupancy] = Alright(lBookEventHistograms[eOccupancy]) && eh.fFillEventHistograms;
+    eh.fBookEventHistograms[eInteractionRate] = Alright(lBookEventHistograms[eInteractionRate]) && eh.fFillEventHistograms;
+    eh.fBookEventHistograms[eCurrentRunDuration] = Alright(lBookEventHistograms[eCurrentRunDuration]) && eh.fFillEventHistograms;
+    eh.fBookEventHistograms[eMultMCNParticlesEta08] = Alright(lBookEventHistograms[eMultMCNParticlesEta08]) && eh.fFillEventHistograms;
+  } // end of if (eh.fFillEventHistograms)
 
   // b) Event histograms 2D:
   // TBI 20240515 Ideally, all 2D shall go to QA group, see below
+  // ...
 
   // c) Particle histograms 1D:
   // By default all 1D particle histograms are booked. Set this flag to kFALSE to switch off booking of all 1D particle histograms:
   ph.fFillParticleHistograms = cf_ph.cfFillParticleHistograms;
 
-  // *) If you do not want particular particle histogram to be booked, use configurable array cfBookParticleHistograms, where you can specify flags 1 (book) or 0 (do not book).
-  // Ordering of the flags in that array is interpreted through ordering of enums in enum eParticleHistograms. // TBI 20240124 is this safe enough?
-  auto lBookParticleHistograms = cf_ph.cfBookParticleHistograms.value; // this is now the local version of that string array from configurable.
-  if (lBookParticleHistograms.size() != eParticleHistograms_N) {
-    LOGF(info, "\033[1;31m lBookParticleHistograms.size() = %d\033[0m", lBookParticleHistograms.size());
-    LOGF(info, "\033[1;31m eParticleHistograms_N) = %d\033[0m", static_cast<int>(eParticleHistograms_N));
-    LOGF(fatal, "in function \033[1;31m%s at line %d Mismatch in the number of flags in configurable cfBookParticleHistograms, and number of entries in enum eParticleHistograms \n \033[0m", __FUNCTION__, __LINE__);
-  }
-
-  // *) Insanity check on the content and ordering of particle histograms in the initialization in configurable cfBookParticleHistograms:
-  // TBI 20240518 I do not need this in fact, I can automate initialization even without ordering in configurable, but it feels with the ordering enforced, it's much safer.
-  for (Int_t name = 0; name < eParticleHistograms_N; name++) {
-    // TBI 20240518 I could implement even a strickter EqualTo instead of BeginsWith, but then I need to tokenize, etc., etc. This shall be safe enough.
-    if (!TString(lBookParticleHistograms[name]).BeginsWith(ph.fParticleHistogramsName[name].Data())) {
-      LOGF(fatal, "\033[1;31m%s at line %d : Wrong content or ordering of contents in configurable cfBookParticleHistograms => name = %d, lBookParticleHistograms[name] = \"%s\", ph.fParticleHistogramsName[name] = \"%s\" \033[0m", __FUNCTION__, __LINE__, name, TString(lBookParticleHistograms[name]).Data(), ph.fParticleHistogramsName[name].Data());
+  if (ph.fFillParticleHistograms) {
+    // *) If you do not want particular particle histogram to be booked, use configurable array cfBookParticleHistograms, where you can specify flags 1 (book) or 0 (do not book).
+    // Ordering of the flags in that array is interpreted through ordering of enums in enum eParticleHistograms. // TBI 20240124 is this safe enough?
+    auto lBookParticleHistograms = cf_ph.cfBookParticleHistograms.value; // this is now the local version of that string array from configurable.
+    if (lBookParticleHistograms.size() != eParticleHistograms_N) {
+      LOGF(info, "\033[1;31m lBookParticleHistograms.size() = %d\033[0m", lBookParticleHistograms.size());
+      LOGF(info, "\033[1;31m eParticleHistograms_N) = %d\033[0m", static_cast<int>(eParticleHistograms_N));
+      LOGF(fatal, "in function \033[1;31m%s at line %d Mismatch in the number of flags in configurable cfBookParticleHistograms, and number of entries in enum eParticleHistograms \n \033[0m", __FUNCTION__, __LINE__);
     }
-  }
 
-  // I append "&& ph.fFillParticleHistograms" below, to switch off booking of all 1D particle histograms with one common flag:
-  ph.fBookParticleHistograms[ePhi] = Alright(lBookParticleHistograms[ePhi]) && ph.fFillParticleHistograms;
-  ph.fBookParticleHistograms[ePt] = Alright(lBookParticleHistograms[ePt]) && ph.fFillParticleHistograms;
-  ph.fBookParticleHistograms[eEta] = Alright(lBookParticleHistograms[eEta]) && ph.fFillParticleHistograms;
-  ph.fBookParticleHistograms[eCharge] = Alright(lBookParticleHistograms[eCharge]) && ph.fFillParticleHistograms;
-  ph.fBookParticleHistograms[etpcNClsFindable] = Alright(lBookParticleHistograms[etpcNClsFindable]) && ph.fFillParticleHistograms;
-  ph.fBookParticleHistograms[etpcNClsShared] = Alright(lBookParticleHistograms[etpcNClsShared]) && ph.fFillParticleHistograms;
-  ph.fBookParticleHistograms[etpcNClsFound] = Alright(lBookParticleHistograms[etpcNClsFound]) && ph.fFillParticleHistograms;
-  ph.fBookParticleHistograms[etpcNClsCrossedRows] = Alright(lBookParticleHistograms[etpcNClsCrossedRows]) && ph.fFillParticleHistograms;
-  ph.fBookParticleHistograms[eitsNCls] = Alright(lBookParticleHistograms[eitsNCls]) && ph.fFillParticleHistograms;
-  ph.fBookParticleHistograms[eitsNClsInnerBarrel] = Alright(lBookParticleHistograms[eitsNClsInnerBarrel]) && ph.fFillParticleHistograms;
-  ph.fBookParticleHistograms[etpcCrossedRowsOverFindableCls] = Alright(lBookParticleHistograms[etpcCrossedRowsOverFindableCls]) && ph.fFillParticleHistograms;
-  ph.fBookParticleHistograms[etpcFoundOverFindableCls] = Alright(lBookParticleHistograms[etpcFoundOverFindableCls]) && ph.fFillParticleHistograms;
-  ph.fBookParticleHistograms[etpcFractionSharedCls] = Alright(lBookParticleHistograms[etpcFractionSharedCls]) && ph.fFillParticleHistograms;
-  ph.fBookParticleHistograms[edcaXY] = Alright(lBookParticleHistograms[edcaXY]) && ph.fFillParticleHistograms;
-  ph.fBookParticleHistograms[edcaZ] = Alright(lBookParticleHistograms[edcaZ]) && ph.fFillParticleHistograms;
-  ph.fBookParticleHistograms[ePDG] = Alright(lBookParticleHistograms[ePDG]) && ph.fFillParticleHistograms;
-  // Remark #1: I do not need here anythig for etrackCutFlagFb1, etrackCutFlagFb2, ... eisGlobalTrack, because they are booleans
-  // Remark #2: Nothing special here for ePtDependentDCAxyParameterization, because that is a string.
+    // *) Insanity check on the content and ordering of particle histograms in the initialization in configurable cfBookParticleHistograms:
+    // TBI 20240518 I do not need this in fact, I can automate initialization even without ordering in configurable, but it feels with the ordering enforced, it's much safer.
+    for (Int_t name = 0; name < eParticleHistograms_N; name++) {
+      // TBI 20240518 I could implement even a strickter EqualTo instead of BeginsWith, but then I need to tokenize, etc., etc. This shall be safe enough.
+      if (!TString(lBookParticleHistograms[name]).BeginsWith(ph.fParticleHistogramsName[name].Data())) {
+        LOGF(fatal, "\033[1;31m%s at line %d : Wrong content or ordering of contents in configurable cfBookParticleHistograms => name = %d, lBookParticleHistograms[name] = \"%s\", ph.fParticleHistogramsName[name] = \"%s\" \033[0m", __FUNCTION__, __LINE__, name, TString(lBookParticleHistograms[name]).Data(), ph.fParticleHistogramsName[name].Data());
+      }
+    }
+
+    // I append "&& ph.fFillParticleHistograms" below, to switch off booking of all 1D particle histograms with one common flag:
+    ph.fBookParticleHistograms[ePhi] = Alright(lBookParticleHistograms[ePhi]) && ph.fFillParticleHistograms;
+    ph.fBookParticleHistograms[ePt] = Alright(lBookParticleHistograms[ePt]) && ph.fFillParticleHistograms;
+    ph.fBookParticleHistograms[eEta] = Alright(lBookParticleHistograms[eEta]) && ph.fFillParticleHistograms;
+    ph.fBookParticleHistograms[eCharge] = Alright(lBookParticleHistograms[eCharge]) && ph.fFillParticleHistograms;
+    ph.fBookParticleHistograms[etpcNClsFindable] = Alright(lBookParticleHistograms[etpcNClsFindable]) && ph.fFillParticleHistograms;
+    ph.fBookParticleHistograms[etpcNClsShared] = Alright(lBookParticleHistograms[etpcNClsShared]) && ph.fFillParticleHistograms;
+    ph.fBookParticleHistograms[etpcNClsFound] = Alright(lBookParticleHistograms[etpcNClsFound]) && ph.fFillParticleHistograms;
+    ph.fBookParticleHistograms[etpcNClsCrossedRows] = Alright(lBookParticleHistograms[etpcNClsCrossedRows]) && ph.fFillParticleHistograms;
+    ph.fBookParticleHistograms[eitsNCls] = Alright(lBookParticleHistograms[eitsNCls]) && ph.fFillParticleHistograms;
+    ph.fBookParticleHistograms[eitsNClsInnerBarrel] = Alright(lBookParticleHistograms[eitsNClsInnerBarrel]) && ph.fFillParticleHistograms;
+    ph.fBookParticleHistograms[etpcCrossedRowsOverFindableCls] = Alright(lBookParticleHistograms[etpcCrossedRowsOverFindableCls]) && ph.fFillParticleHistograms;
+    ph.fBookParticleHistograms[etpcFoundOverFindableCls] = Alright(lBookParticleHistograms[etpcFoundOverFindableCls]) && ph.fFillParticleHistograms;
+    ph.fBookParticleHistograms[etpcFractionSharedCls] = Alright(lBookParticleHistograms[etpcFractionSharedCls]) && ph.fFillParticleHistograms;
+    ph.fBookParticleHistograms[edcaXY] = Alright(lBookParticleHistograms[edcaXY]) && ph.fFillParticleHistograms;
+    ph.fBookParticleHistograms[edcaZ] = Alright(lBookParticleHistograms[edcaZ]) && ph.fFillParticleHistograms;
+    ph.fBookParticleHistograms[ePDG] = Alright(lBookParticleHistograms[ePDG]) && ph.fFillParticleHistograms;
+    // Remark #1: I do not need here anythig for etrackCutFlagFb1, etrackCutFlagFb2, ... eisGlobalTrack, because they are booleans
+    // Remark #2: Nothing special here for ePtDependentDCAxyParameterization, because that is a string.
+  } // end of if(ph.fFillParticleHistograms)
 
   // d) Particle histograms 2D:
   // By default all 2D particle histograms are booked. Set this flag to kFALSE to switch off booking of all 2D particle histograms:
   ph.fFillParticleHistograms2D = cf_ph.cfFillParticleHistograms2D;
 
-  // If you do not want particular 2D particle histogram to be booked, use configurable array cfBookParticleHistograms2D, where you can specify flags 1 (book) or 0 (do not book).
-  // *) Ordering of the flags in that array is interpreted through ordering of enums in enum eParticleHistograms2D.
-  auto lBookParticleHistograms2D = cf_ph.cfBookParticleHistograms2D.value; // this is now the local version of that string array from configurable
-  // TBI 20241113 For some reason, the default values of configurable "cfBookParticleHistograms2D" are not correctly propagated in the local variables, but I can circumvent that with JSON settings for the time being
-  if (lBookParticleHistograms2D.size() != eParticleHistograms2D_N) {
-    LOGF(info, "\033[1;31m lBookParticleHistograms2D.size() = %d\033[0m", lBookParticleHistograms2D.size());
-    LOGF(info, "\033[1;31m eParticleHistograms2D_N) = %d\033[0m", static_cast<int>(eParticleHistograms2D_N));
-    LOGF(fatal, "in function \033[1;31m%s at line %d Mismatch in the number of flags in configurable cfBookParticleHistograms2D, and number of entries in enum eParticleHistograms2D \n \033[0m", __FUNCTION__, __LINE__);
-  }
-
-  // *) Insanity check on the content and ordering of 2D particle histograms in the initialization in configurable cfBookParticleHistograms2D:
-  // TBI 20241109 I do not need this in fact, I can automate initialization even without ordering in configurable, but it feels with the ordering enforced, it's much safer.
-  for (Int_t name = 0; name < eParticleHistograms2D_N; name++) {
-    // TBI 20241109 I could implement even a strickter EqualTo instead of BeginsWith, but then I need to tokenize, etc., etc. This shall be safe enough.
-    if (!TString(lBookParticleHistograms2D[name]).BeginsWith(ph.fParticleHistogramsName2D[name].Data())) {
-      LOGF(fatal, "\033[1;31m%s at line %d : Wrong content or ordering of contents in configurable cfBookParticleHistograms2D => name = %d, lBookParticleHistograms2D[name] = \"%s\", ph.fParticleHistogramsName2D[name] = \"%s\" \033[0m", __FUNCTION__, __LINE__, name, TString(lBookParticleHistograms2D[name]).Data(), ph.fParticleHistogramsName2D[name].Data());
+  if (ph.fFillParticleHistograms2D) {
+    // If you do not want particular 2D particle histogram to be booked, use configurable array cfBookParticleHistograms2D, where you can specify flags 1 (book) or 0 (do not book).
+    // *) Ordering of the flags in that array is interpreted through ordering of enums in enum eParticleHistograms2D.
+    auto lBookParticleHistograms2D = cf_ph.cfBookParticleHistograms2D.value; // this is now the local version of that string array from configurable
+    // TBI 20241113 For some reason, the default values of configurable "cfBookParticleHistograms2D" are not correctly propagated in the local variables, but I can circumvent that with JSON settings for the time being
+    if (lBookParticleHistograms2D.size() != eParticleHistograms2D_N) {
+      LOGF(info, "\033[1;31m lBookParticleHistograms2D.size() = %d\033[0m", lBookParticleHistograms2D.size());
+      LOGF(info, "\033[1;31m eParticleHistograms2D_N) = %d\033[0m", static_cast<int>(eParticleHistograms2D_N));
+      LOGF(fatal, "in function \033[1;31m%s at line %d Mismatch in the number of flags in configurable cfBookParticleHistograms2D, and number of entries in enum eParticleHistograms2D \n \033[0m", __FUNCTION__, __LINE__);
     }
-  }
 
-  // I append "&& ph.fFillParticleHistograms2D" below, to switch off booking of all 2D particle histograms with one common flag:
-  ph.fBookParticleHistograms2D[ePhiPt] = Alright(lBookParticleHistograms2D[ePhiPt]) && ph.fFillParticleHistograms2D;
-  ph.fBookParticleHistograms2D[ePhiEta] = Alright(lBookParticleHistograms2D[ePhiEta]) && ph.fFillParticleHistograms2D;
+    // *) Insanity check on the content and ordering of 2D particle histograms in the initialization in configurable cfBookParticleHistograms2D:
+    // TBI 20241109 I do not need this in fact, I can automate initialization even without ordering in configurable, but it feels with the ordering enforced, it's much safer.
+    for (Int_t name = 0; name < eParticleHistograms2D_N; name++) {
+      // TBI 20241109 I could implement even a strickter EqualTo instead of BeginsWith, but then I need to tokenize, etc., etc. This shall be safe enough.
+      if (!TString(lBookParticleHistograms2D[name]).BeginsWith(ph.fParticleHistogramsName2D[name].Data())) {
+        LOGF(fatal, "\033[1;31m%s at line %d : Wrong content or ordering of contents in configurable cfBookParticleHistograms2D => name = %d, lBookParticleHistograms2D[name] = \"%s\", ph.fParticleHistogramsName2D[name] = \"%s\" \033[0m", __FUNCTION__, __LINE__, name, TString(lBookParticleHistograms2D[name]).Data(), ph.fParticleHistogramsName2D[name].Data());
+      }
+    }
+
+    // I append "&& ph.fFillParticleHistograms2D" below, to switch off booking of all 2D particle histograms with one common flag:
+    ph.fBookParticleHistograms2D[ePhiPt] = Alright(lBookParticleHistograms2D[ePhiPt]) && ph.fFillParticleHistograms2D;
+    ph.fBookParticleHistograms2D[ePhiEta] = Alright(lBookParticleHistograms2D[ePhiEta]) && ph.fFillParticleHistograms2D;
+  } // end of if (ph.fFillParticleHistograms2D)
 
   // e) QA:
 
   // **) QA 2D event histograms:
   qa.fFillQAEventHistograms2D = cf_qa.cfFillQAEventHistograms2D;
 
-  // *) If you do not want particular 2D event histogram to be booked, use configurable array cfBookQAEventHistograms2D, where you can specify flags 1 (book) or 0 (do not book).
-  // Ordering of the flags in that array is interpreted through ordering of enums in enum eQAEventHistograms2D
-  auto lBookQAEventHistograms2D = cf_qa.cfBookQAEventHistograms2D.value; // this is now the local version of that string array from configurable
-  // TBI 20241115 For some reason, the default values of configurable "cfBookQAEventHistograms2D" are not correctly propagated in the local variables, but I can circumvent that with JSON settings for the time being
-  if (lBookQAEventHistograms2D.size() != eQAEventHistograms2D_N) {
-    LOGF(info, "\033[1;31m lBookQAEventHistograms2D.size() = %d\033[0m", lBookQAEventHistograms2D.size());
-    LOGF(info, "\033[1;31m eQAEventHistograms2D_N = %d\033[0m", static_cast<int>(eQAEventHistograms2D_N));
-    LOGF(fatal, "in function \033[1;31m%s at line %d Mismatch in the number of flags in configurable cfBookQAEventHistograms2D, and number of entries in enum eQAEventHistograms2D \n \033[0m", __FUNCTION__, __LINE__);
-  }
-
-  // *) Insanity check on the content and ordering of QA 2D event histograms in the initialization in configurable cfBookQAEventHistograms2D:
-  // TBI 20240518 I do not need this in fact, I can automate initialization even without ordering in configurable, but it feels with the ordering enforced, it's much safer.
-  for (Int_t name = 0; name < eQAEventHistograms2D_N; name++) {
-    // TBI 20240518 I could implement even a strickter EqualTo instead of BeginsWith, but then I need to tokenize, etc., etc. This shall be safe enough.
-    if (!TString(lBookQAEventHistograms2D[name]).BeginsWith(qa.fEventHistogramsName2D[name].Data())) {
-      LOGF(fatal, "\033[1;31m%s at line %d : Wrong content or ordering of contents in configurable cfBookQAEventHistograms2D => name = %d, lBookQAEventHistograms2D[name] = \"%s\", qa.fEventHistogramsName2D[name] = \"%s\" \033[0m", __FUNCTION__, __LINE__, name, TString(lBookQAEventHistograms2D[name]).Data(), qa.fEventHistogramsName2D[name].Data());
+  if (qa.fFillQAEventHistograms2D) {
+    // *) If you do not want particular 2D event histogram to be booked, use configurable array cfBookQAEventHistograms2D, where you can specify flags 1 (book) or 0 (do not book).
+    // Ordering of the flags in that array is interpreted through ordering of enums in enum eQAEventHistograms2D
+    auto lBookQAEventHistograms2D = cf_qa.cfBookQAEventHistograms2D.value; // this is now the local version of that string array from configurable
+    // TBI 20241115 For some reason, the default values of configurable "cfBookQAEventHistograms2D" are not correctly propagated in the local variables, but I can circumvent that with JSON settings for the time being
+    if (lBookQAEventHistograms2D.size() != eQAEventHistograms2D_N) {
+      LOGF(info, "\033[1;31m lBookQAEventHistograms2D.size() = %d\033[0m", lBookQAEventHistograms2D.size());
+      LOGF(info, "\033[1;31m eQAEventHistograms2D_N = %d\033[0m", static_cast<int>(eQAEventHistograms2D_N));
+      LOGF(fatal, "in function \033[1;31m%s at line %d Mismatch in the number of flags in configurable cfBookQAEventHistograms2D, and number of entries in enum eQAEventHistograms2D \n \033[0m", __FUNCTION__, __LINE__);
     }
-  }
 
-  // I append "&& qa.fFillQAEventHistograms2D" below, to switch off booking of all 2D event histograms with one common flag:
-  qa.fBookQAEventHistograms2D[eMultiplicity_vs_ReferenceMultiplicity] = Alright(lBookQAEventHistograms2D[eMultiplicity_vs_ReferenceMultiplicity]) && qa.fFillQAEventHistograms2D;
-  qa.fBookQAEventHistograms2D[eMultiplicity_vs_NContributors] = Alright(lBookQAEventHistograms2D[eMultiplicity_vs_NContributors]) && qa.fFillQAEventHistograms2D;
-  qa.fBookQAEventHistograms2D[eMultiplicity_vs_Centrality] = Alright(lBookQAEventHistograms2D[eMultiplicity_vs_Centrality]) && qa.fFillQAEventHistograms2D;
-  qa.fBookQAEventHistograms2D[eMultiplicity_vs_Vertex_z] = Alright(lBookQAEventHistograms2D[eMultiplicity_vs_Vertex_z]) && qa.fFillQAEventHistograms2D;
-  qa.fBookQAEventHistograms2D[eMultiplicity_vs_Occupancy] = Alright(lBookQAEventHistograms2D[eMultiplicity_vs_Occupancy]) && qa.fFillQAEventHistograms2D;
-  qa.fBookQAEventHistograms2D[eReferenceMultiplicity_vs_NContributors] = Alright(lBookQAEventHistograms2D[eReferenceMultiplicity_vs_NContributors]) && qa.fFillQAEventHistograms2D;
-  qa.fBookQAEventHistograms2D[eReferenceMultiplicity_vs_Centrality] = Alright(lBookQAEventHistograms2D[eReferenceMultiplicity_vs_Centrality]) && qa.fFillQAEventHistograms2D;
-  qa.fBookQAEventHistograms2D[eReferenceMultiplicity_vs_Vertex_z] = Alright(lBookQAEventHistograms2D[eReferenceMultiplicity_vs_Vertex_z]) && qa.fFillQAEventHistograms2D;
-  qa.fBookQAEventHistograms2D[eReferenceMultiplicity_vs_Occupancy] = Alright(lBookQAEventHistograms2D[eReferenceMultiplicity_vs_Occupancy]) && qa.fFillQAEventHistograms2D;
-  qa.fBookQAEventHistograms2D[eNContributors_vs_Centrality] = Alright(lBookQAEventHistograms2D[eNContributors_vs_Centrality]) && qa.fFillQAEventHistograms2D;
-  qa.fBookQAEventHistograms2D[eNContributors_vs_Vertex_z] = Alright(lBookQAEventHistograms2D[eNContributors_vs_Vertex_z]) && qa.fFillQAEventHistograms2D;
-  qa.fBookQAEventHistograms2D[eNContributors_vs_Occupancy] = Alright(lBookQAEventHistograms2D[eNContributors_vs_Occupancy]) && qa.fFillQAEventHistograms2D;
-  qa.fBookQAEventHistograms2D[eCentrality_vs_Vertex_z] = Alright(lBookQAEventHistograms2D[eCentrality_vs_Vertex_z]) && qa.fFillQAEventHistograms2D;
-  qa.fBookQAEventHistograms2D[eCentrality_vs_Occupancy] = Alright(lBookQAEventHistograms2D[eCentrality_vs_Occupancy]) && qa.fFillQAEventHistograms2D;
-  qa.fBookQAEventHistograms2D[eVertex_z_vs_Occupancy] = Alright(lBookQAEventHistograms2D[eVertex_z_vs_Occupancy]) && qa.fFillQAEventHistograms2D;
-  qa.fBookQAEventHistograms2D[eCentFT0C_vs_CentNTPV] = Alright(lBookQAEventHistograms2D[eCentFT0C_vs_CentNTPV]) && qa.fFillQAEventHistograms2D;
-  qa.fBookQAEventHistograms2D[eCentFT0M_vs_CentNTPV] = Alright(lBookQAEventHistograms2D[eCentFT0M_vs_CentNTPV]) && qa.fFillQAEventHistograms2D;
-  qa.fBookQAEventHistograms2D[eCentRun2V0M_vs_CentRun2SPDTracklets] = Alright(lBookQAEventHistograms2D[eCentRun2V0M_vs_CentRun2SPDTracklets]) && qa.fFillQAEventHistograms2D;
-  qa.fBookQAEventHistograms2D[eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange] = Alright(lBookQAEventHistograms2D[eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange]) && qa.fFillQAEventHistograms2D;
+    // *) Insanity check on the content and ordering of QA 2D event histograms in the initialization in configurable cfBookQAEventHistograms2D:
+    // TBI 20240518 I do not need this in fact, I can automate initialization even without ordering in configurable, but it feels with the ordering enforced, it's much safer.
+    for (Int_t name = 0; name < eQAEventHistograms2D_N; name++) {
+      // TBI 20240518 I could implement even a strickter EqualTo instead of BeginsWith, but then I need to tokenize, etc., etc. This shall be safe enough.
+      if (!TString(lBookQAEventHistograms2D[name]).BeginsWith(qa.fEventHistogramsName2D[name].Data())) {
+        LOGF(fatal, "\033[1;31m%s at line %d : Wrong content or ordering of contents in configurable cfBookQAEventHistograms2D => name = %d, lBookQAEventHistograms2D[name] = \"%s\", qa.fEventHistogramsName2D[name] = \"%s\" \033[0m", __FUNCTION__, __LINE__, name, TString(lBookQAEventHistograms2D[name]).Data(), qa.fEventHistogramsName2D[name].Data());
+      }
+    }
+
+    // I append "&& qa.fFillQAEventHistograms2D" below, to switch off booking of all 2D event histograms with one common flag:
+    qa.fBookQAEventHistograms2D[eMultiplicity_vs_ReferenceMultiplicity] = Alright(lBookQAEventHistograms2D[eMultiplicity_vs_ReferenceMultiplicity]) && qa.fFillQAEventHistograms2D;
+    qa.fBookQAEventHistograms2D[eMultiplicity_vs_NContributors] = Alright(lBookQAEventHistograms2D[eMultiplicity_vs_NContributors]) && qa.fFillQAEventHistograms2D;
+    qa.fBookQAEventHistograms2D[eMultiplicity_vs_Centrality] = Alright(lBookQAEventHistograms2D[eMultiplicity_vs_Centrality]) && qa.fFillQAEventHistograms2D;
+    qa.fBookQAEventHistograms2D[eMultiplicity_vs_Vertex_z] = Alright(lBookQAEventHistograms2D[eMultiplicity_vs_Vertex_z]) && qa.fFillQAEventHistograms2D;
+    qa.fBookQAEventHistograms2D[eMultiplicity_vs_Occupancy] = Alright(lBookQAEventHistograms2D[eMultiplicity_vs_Occupancy]) && qa.fFillQAEventHistograms2D;
+    qa.fBookQAEventHistograms2D[eReferenceMultiplicity_vs_NContributors] = Alright(lBookQAEventHistograms2D[eReferenceMultiplicity_vs_NContributors]) && qa.fFillQAEventHistograms2D;
+    qa.fBookQAEventHistograms2D[eReferenceMultiplicity_vs_Centrality] = Alright(lBookQAEventHistograms2D[eReferenceMultiplicity_vs_Centrality]) && qa.fFillQAEventHistograms2D;
+    qa.fBookQAEventHistograms2D[eReferenceMultiplicity_vs_Vertex_z] = Alright(lBookQAEventHistograms2D[eReferenceMultiplicity_vs_Vertex_z]) && qa.fFillQAEventHistograms2D;
+    qa.fBookQAEventHistograms2D[eReferenceMultiplicity_vs_Occupancy] = Alright(lBookQAEventHistograms2D[eReferenceMultiplicity_vs_Occupancy]) && qa.fFillQAEventHistograms2D;
+    qa.fBookQAEventHistograms2D[eNContributors_vs_Centrality] = Alright(lBookQAEventHistograms2D[eNContributors_vs_Centrality]) && qa.fFillQAEventHistograms2D;
+    qa.fBookQAEventHistograms2D[eNContributors_vs_Vertex_z] = Alright(lBookQAEventHistograms2D[eNContributors_vs_Vertex_z]) && qa.fFillQAEventHistograms2D;
+    qa.fBookQAEventHistograms2D[eNContributors_vs_Occupancy] = Alright(lBookQAEventHistograms2D[eNContributors_vs_Occupancy]) && qa.fFillQAEventHistograms2D;
+    qa.fBookQAEventHistograms2D[eCentrality_vs_Vertex_z] = Alright(lBookQAEventHistograms2D[eCentrality_vs_Vertex_z]) && qa.fFillQAEventHistograms2D;
+    qa.fBookQAEventHistograms2D[eCentrality_vs_Occupancy] = Alright(lBookQAEventHistograms2D[eCentrality_vs_Occupancy]) && qa.fFillQAEventHistograms2D;
+    qa.fBookQAEventHistograms2D[eVertex_z_vs_Occupancy] = Alright(lBookQAEventHistograms2D[eVertex_z_vs_Occupancy]) && qa.fFillQAEventHistograms2D;
+    qa.fBookQAEventHistograms2D[eCentFT0C_vs_CentNTPV] = Alright(lBookQAEventHistograms2D[eCentFT0C_vs_CentNTPV]) && qa.fFillQAEventHistograms2D;
+    qa.fBookQAEventHistograms2D[eCentFT0M_vs_CentNTPV] = Alright(lBookQAEventHistograms2D[eCentFT0M_vs_CentNTPV]) && qa.fFillQAEventHistograms2D;
+    qa.fBookQAEventHistograms2D[eCentRun2V0M_vs_CentRun2SPDTracklets] = Alright(lBookQAEventHistograms2D[eCentRun2V0M_vs_CentRun2SPDTracklets]) && qa.fFillQAEventHistograms2D;
+    qa.fBookQAEventHistograms2D[eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange] = Alright(lBookQAEventHistograms2D[eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange]) && qa.fFillQAEventHistograms2D;
+    qa.fBookQAEventHistograms2D[eCurrentRunDuration_vs_InteractionRate] = Alright(lBookQAEventHistograms2D[eCurrentRunDuration_vs_InteractionRate]) && qa.fFillQAEventHistograms2D;
+  } // end of if (qa.fFillQAEventHistograms2D)
 
   // **) QA 2D particle histograms:
   qa.fFillQAParticleHistograms2D = cf_qa.cfFillQAParticleHistograms2D;
 
-  // *) If you do not want particular 2D particle histogram to be booked, use configurable array cfBookQAParticleHistograms2D, where you can specify flags 1 (book) or 0 (do not book).
-  // Ordering of the flags in that array is interpreted through ordering of enums in enum eQAParticleHistograms2D.
-  auto lBookQAParticleHistograms2D = (vector<string>)cf_qa.cfBookQAParticleHistograms2D; // this is now the local version of that int array from configurable
-  if (lBookQAParticleHistograms2D.size() != eQAParticleHistograms2D_N) {
-    LOGF(info, "\033[1;31m lBookQAParticleHistograms2D.size() = %d\033[0m", lBookQAParticleHistograms2D.size());
-    LOGF(info, "\033[1;31m eQAParticleHistograms2D_N = %d\033[0m", static_cast<int>(eQAParticleHistograms2D_N));
-    LOGF(fatal, "in function \033[1;31m%s at line %d Mismatch in the number of flags in configurable cfBookQAParticleHistograms2D, and number of entries in enum eParticleHistograms2D \n \033[0m", __FUNCTION__, __LINE__);
-  }
-
-  // *) Insanity check on the content and ordering of QA 2D particle histograms in the initialization in configurable cfBookQAParticleHistograms2D:
-  // TBI 20240518 I do not need this in fact, I can automate initialization even without ordering in configurable, but it feels with the ordering enforced, it's much safer.
-  for (Int_t name = 0; name < eQAParticleHistograms2D_N; name++) {
-    // TBI 20240518 I could implement even a strickter EqualTo instead of BeginsWith, but then I need to tokenize, etc., etc. This shall be safe enough.
-    if (!TString(lBookQAParticleHistograms2D[name]).BeginsWith(qa.fParticleHistogramsName2D[name].Data())) {
-      LOGF(fatal, "\033[1;31m%s at line %d : Wrong content or ordering of contents in configurable cfBookQAParticleHistograms2D => name = %d, lBookQAParticleHistograms2D[name] = \"%s\", qa.fParticleHistogramsName2D[name] = \"%s\" \033[0m", __FUNCTION__, __LINE__, name, TString(lBookQAParticleHistograms2D[name]).Data(), qa.fParticleHistogramsName2D[name].Data());
+  if (qa.fFillQAParticleHistograms2D) {
+    // *) If you do not want particular 2D particle histogram to be booked, use configurable array cfBookQAParticleHistograms2D, where you can specify flags 1 (book) or 0 (do not book).
+    // Ordering of the flags in that array is interpreted through ordering of enums in enum eQAParticleHistograms2D.
+    auto lBookQAParticleHistograms2D = (vector<string>)cf_qa.cfBookQAParticleHistograms2D; // this is now the local version of that int array from configurable
+    if (lBookQAParticleHistograms2D.size() != eQAParticleHistograms2D_N) {
+      LOGF(info, "\033[1;31m lBookQAParticleHistograms2D.size() = %d\033[0m", lBookQAParticleHistograms2D.size());
+      LOGF(info, "\033[1;31m eQAParticleHistograms2D_N = %d\033[0m", static_cast<int>(eQAParticleHistograms2D_N));
+      LOGF(fatal, "in function \033[1;31m%s at line %d Mismatch in the number of flags in configurable cfBookQAParticleHistograms2D, and number of entries in enum eParticleHistograms2D \n \033[0m", __FUNCTION__, __LINE__);
     }
-  }
 
-  // I append "&& qa.fFillQAParticleHistograms2D" below, to switch off booking of all 2D particle histograms with one common flag:
-  qa.fBookQAParticleHistograms2D[ePt_vs_dcaXY] = Alright(lBookQAParticleHistograms2D[ePt_vs_dcaXY]) && qa.fFillQAParticleHistograms2D;
+    // *) Insanity check on the content and ordering of QA 2D particle histograms in the initialization in configurable cfBookQAParticleHistograms2D:
+    // TBI 20240518 I do not need this in fact, I can automate initialization even without ordering in configurable, but it feels with the ordering enforced, it's much safer.
+    for (Int_t name = 0; name < eQAParticleHistograms2D_N; name++) {
+      // TBI 20240518 I could implement even a strickter EqualTo instead of BeginsWith, but then I need to tokenize, etc., etc. This shall be safe enough.
+      if (!TString(lBookQAParticleHistograms2D[name]).BeginsWith(qa.fParticleHistogramsName2D[name].Data())) {
+        LOGF(fatal, "\033[1;31m%s at line %d : Wrong content or ordering of contents in configurable cfBookQAParticleHistograms2D => name = %d, lBookQAParticleHistograms2D[name] = \"%s\", qa.fParticleHistogramsName2D[name] = \"%s\" \033[0m", __FUNCTION__, __LINE__, name, TString(lBookQAParticleHistograms2D[name]).Data(), qa.fParticleHistogramsName2D[name].Data());
+      }
+    }
+
+    // I append "&& qa.fFillQAParticleHistograms2D" below, to switch off booking of all 2D particle histograms with one common flag:
+    qa.fBookQAParticleHistograms2D[ePt_vs_dcaXY] = Alright(lBookQAParticleHistograms2D[ePt_vs_dcaXY]) && qa.fFillQAParticleHistograms2D;
+  } // end of if (qa.fFillQAParticleHistograms2D)
 
   // ...
 
@@ -813,15 +857,15 @@ void DefaultBinning()
   eh.fEventHistogramsBins[eNumberOfEvents][1] = 0.;
   eh.fEventHistogramsBins[eNumberOfEvents][2] = 1.;
 
-  eh.fEventHistogramsBins[eTotalMultiplicity][0] = 10000. / qa.fRebin;
+  eh.fEventHistogramsBins[eTotalMultiplicity][0] = 10000.;
   eh.fEventHistogramsBins[eTotalMultiplicity][1] = 0.;
   eh.fEventHistogramsBins[eTotalMultiplicity][2] = 100000.;
 
-  eh.fEventHistogramsBins[eMultiplicity][0] = 2000. / qa.fRebin;
+  eh.fEventHistogramsBins[eMultiplicity][0] = 2000.;
   eh.fEventHistogramsBins[eMultiplicity][1] = 0.;
   eh.fEventHistogramsBins[eMultiplicity][2] = 20000.;
 
-  eh.fEventHistogramsBins[eReferenceMultiplicity][0] = 6000. / qa.fRebin;
+  eh.fEventHistogramsBins[eReferenceMultiplicity][0] = 6000.;
   eh.fEventHistogramsBins[eReferenceMultiplicity][1] = 0.;
   eh.fEventHistogramsBins[eReferenceMultiplicity][2] = 60000.;
 
@@ -841,7 +885,7 @@ void DefaultBinning()
   eh.fEventHistogramsBins[eVertex_z][1] = -40.;
   eh.fEventHistogramsBins[eVertex_z][2] = 40.;
 
-  eh.fEventHistogramsBins[eNContributors][0] = 1000. / qa.fRebin;
+  eh.fEventHistogramsBins[eNContributors][0] = 1000.;
   eh.fEventHistogramsBins[eNContributors][1] = 0.;
   eh.fEventHistogramsBins[eNContributors][2] = 10000.;
 
@@ -850,20 +894,28 @@ void DefaultBinning()
   eh.fEventHistogramsBins[eImpactParameter][2] = 1000.;
 
   if (ec.fsEventCuts[eOccupancyEstimator].EqualTo("TrackOccupancyInTimeRange", TString::kIgnoreCase)) {
-    eh.fEventHistogramsBins[eOccupancy][0] = 151;
-    eh.fEventHistogramsBins[eOccupancy][1] = -100.; // It's set to -1 if not meaningful TBI 20241109 check this further
+    eh.fEventHistogramsBins[eOccupancy][0] = 150;
+    eh.fEventHistogramsBins[eOccupancy][1] = 0.; // It's set to -1 if not meaningful TBI 20241109 check this further
     eh.fEventHistogramsBins[eOccupancy][2] = 15000.;
   } else if (ec.fsEventCuts[eOccupancyEstimator].EqualTo("FT0COccupancyInTimeRange", TString::kIgnoreCase)) { // keep in sync with values below for 2D QA
-    eh.fEventHistogramsBins[eOccupancy][0] = 601;
-    eh.fEventHistogramsBins[eOccupancy][1] = -100.; // It's set to -1 if not meaningful TBI 20241109 check this further
-    eh.fEventHistogramsBins[eOccupancy][2] = 60000.;
+    eh.fEventHistogramsBins[eOccupancy][0] = 1000;
+    eh.fEventHistogramsBins[eOccupancy][1] = 0.; // It's set to -1 if not meaningful TBI 20241109 check this further
+    eh.fEventHistogramsBins[eOccupancy][2] = 100000.;
   }
   // For 2D QA correlation plot, temporarily I set it to maximum of the 2 => TBI 20241114 this can be refined
   if (qa.fBookQAEventHistograms2D[eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange]) {
-    eh.fEventHistogramsBins[eOccupancy][0] = 601;
-    eh.fEventHistogramsBins[eOccupancy][1] = -100.; // It's set to -1 if not meaningful TBI 20241109 check this further
+    eh.fEventHistogramsBins[eOccupancy][0] = 600;
+    eh.fEventHistogramsBins[eOccupancy][1] = 0.; // It's set to -1 if not meaningful TBI 20241109 check this further
     eh.fEventHistogramsBins[eOccupancy][2] = 60000.;
   }
+
+  eh.fEventHistogramsBins[eInteractionRate][0] = 20000; // TBI 20241127 Remember that I do not have configurables for binning of control histograms, only for results histograms
+  eh.fEventHistogramsBins[eInteractionRate][1] = 0.;
+  eh.fEventHistogramsBins[eInteractionRate][2] = 200.;
+
+  eh.fEventHistogramsBins[eCurrentRunDuration][0] = 10000; // TBI 20241128 Remember that I do not have configurables for binning of control histograms, only for results histograms
+  eh.fEventHistogramsBins[eCurrentRunDuration][1] = 0.;
+  eh.fEventHistogramsBins[eCurrentRunDuration][2] = 100000.;
 
   // b) Default binning for particle histograms 1D:
   ph.fParticleHistogramsBins[ePhi][0] = 360;
@@ -963,6 +1015,10 @@ void DefaultBinning()
   this->InitializeFixedLengthBins(AFO_ETA);
   // *) Fixed-length binning vs. occupancy:
   this->InitializeFixedLengthBins(AFO_OCCUPANCY);
+  // *) Fixed-length binning vs. interaction rate:
+  this->InitializeFixedLengthBins(AFO_INTERACTIONRATE);
+  // *) Fixed-length binning vs. run duration:
+  this->InitializeFixedLengthBins(AFO_CURRENTRUNDURATION);
 
   // e) Variable-length binning set via MuPa-Configurables.h:
   // *) Variable-length binning vs. multiplicity:
@@ -984,6 +1040,14 @@ void DefaultBinning()
   // *) Variable-length binning vs. occupancy:
   if (cf_res.cfUseVariableLength_occu_bins) {
     this->InitializeVariableLengthBins(AFO_OCCUPANCY);
+  }
+  // *) Variable-length binning vs. interaction rate:
+  if (cf_res.cfUseVariableLength_ir_bins) {
+    this->InitializeVariableLengthBins(AFO_INTERACTIONRATE);
+  }
+  // *) Variable-length binning vs. run duration:
+  if (cf_res.cfUseVariableLength_crd_bins) {
+    this->InitializeVariableLengthBins(AFO_CURRENTRUNDURATION);
   }
 
   if (tc.fVerbose) {
@@ -1021,6 +1085,12 @@ void InitializeFixedLengthBins(eAsFunctionOf AFO)
       break;
     case AFO_OCCUPANCY:
       lFixedLength_bins = cf_res.cfFixedLength_occu_bins.value;
+      break;
+    case AFO_INTERACTIONRATE:
+      lFixedLength_bins = cf_res.cfFixedLength_ir_bins.value;
+      break;
+    case AFO_CURRENTRUNDURATION:
+      lFixedLength_bins = cf_res.cfFixedLength_crd_bins.value;
       break;
     // ...
     default:
@@ -1075,6 +1145,12 @@ void InitializeVariableLengthBins(eAsFunctionOf AFO)
       break;
     case AFO_OCCUPANCY:
       lVariableLength_bins = cf_res.cfVariableLength_occu_bins.value;
+      break;
+    case AFO_INTERACTIONRATE:
+      lVariableLength_bins = cf_res.cfVariableLength_ir_bins.value;
+      break;
+    case AFO_CURRENTRUNDURATION:
+      lVariableLength_bins = cf_res.cfVariableLength_crd_bins.value;
       break;
     // ...
     default:
@@ -1185,6 +1261,8 @@ void DefaultCuts()
   ec.fUseEventCuts[eNContributors] = Alright(lUseEventCuts[eNContributors]);
   ec.fUseEventCuts[eImpactParameter] = Alright(lUseEventCuts[eImpactParameter]);
   ec.fUseEventCuts[eOccupancy] = Alright(lUseEventCuts[eOccupancy]);
+  ec.fUseEventCuts[eInteractionRate] = Alright(lUseEventCuts[eInteractionRate]);
+  ec.fUseEventCuts[eCurrentRunDuration] = Alright(lUseEventCuts[eCurrentRunDuration]);
   ec.fUseEventCuts[eMultMCNParticlesEta08] = Alright(lUseEventCuts[eMultMCNParticlesEta08]);
 
   // *) from enum eEventCuts:
@@ -1255,6 +1333,14 @@ void DefaultCuts()
   auto lOccupancy = (vector<float>)cf_ec.cfOccupancy;
   ec.fdEventCuts[eOccupancy][eMin] = lOccupancy[eMin];
   ec.fdEventCuts[eOccupancy][eMax] = lOccupancy[eMax];
+
+  auto lInteractionRate = (vector<float>)cf_ec.cfInteractionRate;
+  ec.fdEventCuts[eInteractionRate][eMin] = lInteractionRate[eMin];
+  ec.fdEventCuts[eInteractionRate][eMax] = lInteractionRate[eMax];
+
+  auto lCurrentRunDuration = (vector<float>)cf_ec.cfCurrentRunDuration;
+  ec.fdEventCuts[eCurrentRunDuration][eMin] = lCurrentRunDuration[eMin];
+  ec.fdEventCuts[eCurrentRunDuration][eMax] = lCurrentRunDuration[eMax];
 
   auto lMultMCNParticlesEta08 = (vector<float>)cf_ec.cfMultMCNParticlesEta08;
   ec.fdEventCuts[eMultMCNParticlesEta08][eMin] = lMultMCNParticlesEta08[eMin];
@@ -1449,10 +1535,98 @@ void SpecificCuts(TString whichSpecificCuts)
 
 //============================================================
 
+void InsanityChecksOnDefinitionsOfConfigurables()
+{
+  // Do insanity checks on values obtained from configurables before using them in the remaining function.
+  // This is really important, because one misconfigured configurable (e.g. boolean set to string), causes the whole json config to die silently, and
+  // only default values from MuPa-Configurables.h are used.
+  // Here I only check if configurables are correctly defined, I do NOT here initialize local variables with configurables, that is done later.
+  // Example misconfiguration in JSON:
+  //       "var": "true",   =>   var = 1 + other configurables are processed correctly
+  //       "var": "truee",  =>   var = 0 + all settings in JSON for configurables are ingored silently
+
+  // TBI 20241127 finalize this function eventually. This is not urgent, though, as only a check below on cfTaskIsConfiguredFromJson covers most cases already.
+
+  // Remark: Ordering below reflects the ordering in Configurables.h, not in DataMembers.h
+  // a) Task configuration;
+  // b) QA;
+  // c) Event histograms;
+  // d) Event cuts;
+  // e) Particle histograms;
+  // f) Particle cuts;
+  // g) Q-vectors;
+  // h) Multiparticle correlations;
+  // i) Test0;
+  // j) Particle weights;
+  // k) Centrality weights;
+  // l) Nested loops;
+  // m) Toy NUA;
+  // n) Internal validation;
+  // o) Results histograms.
+
+  if (tc.fVerbose) {
+    StartFunction(__FUNCTION__);
+  }
+
+  // a) Task configuration:
+  if (!TString(cf_tc.cfTaskIsConfiguredFromJson).EqualTo("yes")) {
+    LOGF(fatal, "\033[1;31m%s at line %d : configurable cfTaskIsConfiguredFromJson = \"%s\", but it has to be set to \"yes\" in JSON => most likely some other configurable is misconfigured and all remaining settings in JSON are ignored silently\033[0m", __FUNCTION__, __LINE__, TString(cf_tc.cfTaskIsConfiguredFromJson).Data());
+  }
+
+  // b) QA:
+  // ...
+
+  // c) Event histograms:
+  // ...
+
+  // d) Event cuts:
+  // ...
+
+  // e) Particle histograms:
+  // ...
+
+  // f) Particle cuts:
+  // ...
+
+  // g) Q-vectors:
+  // ...
+
+  // h) Multiparticle correlations:
+  // ...
+
+  // i) Test0:
+  // ...
+
+  // j) Particle weights:
+  // ...
+
+  // k) Centrality weights:
+  // ...
+
+  // l) Nested loops:
+  // ...
+
+  // m) Toy NUA:
+  // ...
+
+  // n) Internal validation:
+  // ...
+
+  // o) Results histograms:
+  // ...
+
+  if (tc.fVerbose) {
+    ExitFunction(__FUNCTION__);
+  }
+
+} // InsanityChecksOnDefinitionsOfConfigurables()
+
+//============================================================
+
 void InsanityChecksBeforeBooking()
 {
-  // Do insanity checks on configuration, binning and cuts. Values to be checked are either hardwired locally, or obtained from configurables.
-  // Remember that here I cannot do insanity checks on local hostograms, etc., because they are not vbooked yet.
+  // Do insanity checks on configuration, binning and cuts. Values obtained from configurables are checked before being used in InsanityChecksOnDefinitionsOfConfigurables().
+  // Remember that here I cannot do insanity checks on local histograms, etc., because they are not booked yet.
   // For those additional checks, use InsanityChecksAfterBooking().
 
   // a) Insanity checks on configuration;
@@ -2001,151 +2175,151 @@ void BookQAHistograms()
   TString title_y_Event[eQAEventHistograms2D_N] = {""};
 
   // *) "Multiplicity_vs_ReferenceMultiplicity":
-  nBins_x_Event[eMultiplicity_vs_ReferenceMultiplicity] = static_cast<int>(eh.fEventHistogramsBins[eMultiplicity][0]); // TBI 20240702 add support for rebinning
+  nBins_x_Event[eMultiplicity_vs_ReferenceMultiplicity] = static_cast<int>(eh.fEventHistogramsBins[eMultiplicity][0] / qa.fRebin);
   min_x_Event[eMultiplicity_vs_ReferenceMultiplicity] = eh.fEventHistogramsBins[eMultiplicity][1];
   max_x_Event[eMultiplicity_vs_ReferenceMultiplicity] = eh.fEventHistogramsBins[eMultiplicity][2];
   title_x_Event[eMultiplicity_vs_ReferenceMultiplicity] = FancyFormatting(eh.fEventHistogramsName[eMultiplicity].Data());
-  nBins_y_Event[eMultiplicity_vs_ReferenceMultiplicity] = static_cast<int>(eh.fEventHistogramsBins[eReferenceMultiplicity][0]); // TBI 20240702 add support for rebinning
+  nBins_y_Event[eMultiplicity_vs_ReferenceMultiplicity] = static_cast<int>(eh.fEventHistogramsBins[eReferenceMultiplicity][0] / qa.fRebin);
   min_y_Event[eMultiplicity_vs_ReferenceMultiplicity] = eh.fEventHistogramsBins[eReferenceMultiplicity][1];
   max_y_Event[eMultiplicity_vs_ReferenceMultiplicity] = eh.fEventHistogramsBins[eReferenceMultiplicity][2];
   title_y_Event[eMultiplicity_vs_ReferenceMultiplicity] = FancyFormatting(eh.fEventHistogramsName[eReferenceMultiplicity].Data());
 
   // *) "Multiplicity_vs_NContributors":
-  nBins_x_Event[eMultiplicity_vs_NContributors] = static_cast<int>(eh.fEventHistogramsBins[eMultiplicity][0]); // TBI 20240702 add support for rebinning
+  nBins_x_Event[eMultiplicity_vs_NContributors] = static_cast<int>(eh.fEventHistogramsBins[eMultiplicity][0] / qa.fRebin);
   min_x_Event[eMultiplicity_vs_NContributors] = eh.fEventHistogramsBins[eMultiplicity][1];
   max_x_Event[eMultiplicity_vs_NContributors] = eh.fEventHistogramsBins[eMultiplicity][2];
   title_x_Event[eMultiplicity_vs_NContributors] = FancyFormatting(eh.fEventHistogramsName[eMultiplicity].Data());
-  nBins_y_Event[eMultiplicity_vs_NContributors] = static_cast<int>(eh.fEventHistogramsBins[eNContributors][0]); // TBI 20240702 add support for rebinning
+  nBins_y_Event[eMultiplicity_vs_NContributors] = static_cast<int>(eh.fEventHistogramsBins[eNContributors][0] / qa.fRebin);
   min_y_Event[eMultiplicity_vs_NContributors] = eh.fEventHistogramsBins[eNContributors][1];
   max_y_Event[eMultiplicity_vs_NContributors] = eh.fEventHistogramsBins[eNContributors][2];
   title_y_Event[eMultiplicity_vs_NContributors] = FancyFormatting(eh.fEventHistogramsName[eNContributors].Data());
 
   // *) "Multiplicity_vs_Centrality":
-  nBins_x_Event[eMultiplicity_vs_Centrality] = static_cast<int>(eh.fEventHistogramsBins[eMultiplicity][0]); // TBI 20240702 add support for rebinning
+  nBins_x_Event[eMultiplicity_vs_Centrality] = static_cast<int>(eh.fEventHistogramsBins[eMultiplicity][0] / qa.fRebin);
   min_x_Event[eMultiplicity_vs_Centrality] = eh.fEventHistogramsBins[eMultiplicity][1];
   max_x_Event[eMultiplicity_vs_Centrality] = eh.fEventHistogramsBins[eMultiplicity][2];
   title_x_Event[eMultiplicity_vs_Centrality] = FancyFormatting(eh.fEventHistogramsName[eMultiplicity].Data());
-  nBins_y_Event[eMultiplicity_vs_Centrality] = static_cast<int>(eh.fEventHistogramsBins[eCentrality][0]); // TBI 20240702 add support for rebinning
+  nBins_y_Event[eMultiplicity_vs_Centrality] = static_cast<int>(eh.fEventHistogramsBins[eCentrality][0]);
   min_y_Event[eMultiplicity_vs_Centrality] = eh.fEventHistogramsBins[eCentrality][1];
   max_y_Event[eMultiplicity_vs_Centrality] = eh.fEventHistogramsBins[eCentrality][2];
   title_y_Event[eMultiplicity_vs_Centrality] = FancyFormatting(eh.fEventHistogramsName[eCentrality].Data());
 
   // *) "Multiplicity_vs_Vertex_z":
-  nBins_x_Event[eMultiplicity_vs_Vertex_z] = static_cast<int>(eh.fEventHistogramsBins[eMultiplicity][0]); // TBI 20240702 add support for rebinning
+  nBins_x_Event[eMultiplicity_vs_Vertex_z] = static_cast<int>(eh.fEventHistogramsBins[eMultiplicity][0] / qa.fRebin);
   min_x_Event[eMultiplicity_vs_Vertex_z] = eh.fEventHistogramsBins[eMultiplicity][1];
   max_x_Event[eMultiplicity_vs_Vertex_z] = eh.fEventHistogramsBins[eMultiplicity][2];
   title_x_Event[eMultiplicity_vs_Vertex_z] = FancyFormatting(eh.fEventHistogramsName[eMultiplicity].Data());
-  nBins_y_Event[eMultiplicity_vs_Vertex_z] = static_cast<int>(eh.fEventHistogramsBins[eVertex_z][0]); // TBI 20240702 add support for rebinning
+  nBins_y_Event[eMultiplicity_vs_Vertex_z] = static_cast<int>(eh.fEventHistogramsBins[eVertex_z][0]);
   min_y_Event[eMultiplicity_vs_Vertex_z] = eh.fEventHistogramsBins[eVertex_z][1];
   max_y_Event[eMultiplicity_vs_Vertex_z] = eh.fEventHistogramsBins[eVertex_z][2];
   title_y_Event[eMultiplicity_vs_Vertex_z] = FancyFormatting(eh.fEventHistogramsName[eVertex_z].Data());
 
   // *) "Multiplicity_vs_Occupancy":
-  nBins_x_Event[eMultiplicity_vs_Occupancy] = static_cast<int>(eh.fEventHistogramsBins[eMultiplicity][0]); // TBI 20240702 add support for rebinning
+  nBins_x_Event[eMultiplicity_vs_Occupancy] = static_cast<int>(eh.fEventHistogramsBins[eMultiplicity][0] / qa.fRebin);
   min_x_Event[eMultiplicity_vs_Occupancy] = eh.fEventHistogramsBins[eMultiplicity][1];
   max_x_Event[eMultiplicity_vs_Occupancy] = eh.fEventHistogramsBins[eMultiplicity][2];
   title_x_Event[eMultiplicity_vs_Occupancy] = FancyFormatting(eh.fEventHistogramsName[eMultiplicity].Data());
-  nBins_y_Event[eMultiplicity_vs_Occupancy] = static_cast<int>(eh.fEventHistogramsBins[eOccupancy][0]); // TBI 20240702 add support for rebinning
+  nBins_y_Event[eMultiplicity_vs_Occupancy] = static_cast<int>(eh.fEventHistogramsBins[eOccupancy][0] / qa.fRebin);
   min_y_Event[eMultiplicity_vs_Occupancy] = eh.fEventHistogramsBins[eOccupancy][1];
   max_y_Event[eMultiplicity_vs_Occupancy] = eh.fEventHistogramsBins[eOccupancy][2];
   title_y_Event[eMultiplicity_vs_Occupancy] = FancyFormatting(eh.fEventHistogramsName[eOccupancy].Data());
 
   // *) "ReferenceMultiplicity_vs_NContributors":
-  nBins_x_Event[eReferenceMultiplicity_vs_NContributors] = static_cast<int>(eh.fEventHistogramsBins[eReferenceMultiplicity][0]); // TBI 20240702 add support for rebinning
+  nBins_x_Event[eReferenceMultiplicity_vs_NContributors] = static_cast<int>(eh.fEventHistogramsBins[eReferenceMultiplicity][0] / qa.fRebin);
   min_x_Event[eReferenceMultiplicity_vs_NContributors] = eh.fEventHistogramsBins[eReferenceMultiplicity][1];
   max_x_Event[eReferenceMultiplicity_vs_NContributors] = eh.fEventHistogramsBins[eReferenceMultiplicity][2];
   title_x_Event[eReferenceMultiplicity_vs_NContributors] = FancyFormatting(eh.fEventHistogramsName[eReferenceMultiplicity].Data());
-  nBins_y_Event[eReferenceMultiplicity_vs_NContributors] = static_cast<int>(eh.fEventHistogramsBins[eNContributors][0]); // TBI 20240702 add support for rebinning
+  nBins_y_Event[eReferenceMultiplicity_vs_NContributors] = static_cast<int>(eh.fEventHistogramsBins[eNContributors][0] / qa.fRebin);
   min_y_Event[eReferenceMultiplicity_vs_NContributors] = eh.fEventHistogramsBins[eNContributors][1];
   max_y_Event[eReferenceMultiplicity_vs_NContributors] = eh.fEventHistogramsBins[eNContributors][2];
   title_y_Event[eReferenceMultiplicity_vs_NContributors] = FancyFormatting(eh.fEventHistogramsName[eNContributors].Data());
 
   // *) "ReferenceMultiplicity_vs_Centrality":
-  nBins_x_Event[eReferenceMultiplicity_vs_Centrality] = static_cast<int>(eh.fEventHistogramsBins[eReferenceMultiplicity][0]); // TBI 20240702 add support for rebinning
+  nBins_x_Event[eReferenceMultiplicity_vs_Centrality] = static_cast<int>(eh.fEventHistogramsBins[eReferenceMultiplicity][0] / qa.fRebin);
   min_x_Event[eReferenceMultiplicity_vs_Centrality] = eh.fEventHistogramsBins[eReferenceMultiplicity][1];
   max_x_Event[eReferenceMultiplicity_vs_Centrality] = eh.fEventHistogramsBins[eReferenceMultiplicity][2];
   title_x_Event[eReferenceMultiplicity_vs_Centrality] = FancyFormatting(eh.fEventHistogramsName[eReferenceMultiplicity].Data());
-  nBins_y_Event[eReferenceMultiplicity_vs_Centrality] = static_cast<int>(eh.fEventHistogramsBins[eCentrality][0]); // TBI 20240702 add support for rebinning
+  nBins_y_Event[eReferenceMultiplicity_vs_Centrality] = static_cast<int>(eh.fEventHistogramsBins[eCentrality][0]);
   min_y_Event[eReferenceMultiplicity_vs_Centrality] = eh.fEventHistogramsBins[eCentrality][1];
   max_y_Event[eReferenceMultiplicity_vs_Centrality] = eh.fEventHistogramsBins[eCentrality][2];
   title_y_Event[eReferenceMultiplicity_vs_Centrality] = FancyFormatting(eh.fEventHistogramsName[eCentrality].Data());
 
   // *) "ReferenceMultiplicity_vs_Vertex_z":
-  nBins_x_Event[eReferenceMultiplicity_vs_Vertex_z] = static_cast<int>(eh.fEventHistogramsBins[eReferenceMultiplicity][0]); // TBI 20240702 add support for rebinning
+  nBins_x_Event[eReferenceMultiplicity_vs_Vertex_z] = static_cast<int>(eh.fEventHistogramsBins[eReferenceMultiplicity][0] / qa.fRebin);
   min_x_Event[eReferenceMultiplicity_vs_Vertex_z] = eh.fEventHistogramsBins[eReferenceMultiplicity][1];
   max_x_Event[eReferenceMultiplicity_vs_Vertex_z] = eh.fEventHistogramsBins[eReferenceMultiplicity][2];
   title_x_Event[eReferenceMultiplicity_vs_Vertex_z] = FancyFormatting(eh.fEventHistogramsName[eReferenceMultiplicity].Data());
-  nBins_y_Event[eReferenceMultiplicity_vs_Vertex_z] = static_cast<int>(eh.fEventHistogramsBins[eVertex_z][0]); // TBI 20240702 add support for rebinning
+  nBins_y_Event[eReferenceMultiplicity_vs_Vertex_z] = static_cast<int>(eh.fEventHistogramsBins[eVertex_z][0]);
   min_y_Event[eReferenceMultiplicity_vs_Vertex_z] = eh.fEventHistogramsBins[eVertex_z][1];
   max_y_Event[eReferenceMultiplicity_vs_Vertex_z] = eh.fEventHistogramsBins[eVertex_z][2];
   title_y_Event[eReferenceMultiplicity_vs_Vertex_z] = FancyFormatting(eh.fEventHistogramsName[eVertex_z].Data());
 
   // *) "ReferenceMultiplicity_vs_Occupancy":
-  nBins_x_Event[eReferenceMultiplicity_vs_Occupancy] = static_cast<int>(eh.fEventHistogramsBins[eReferenceMultiplicity][0]); // TBI 20240702 add support for rebinning
+  nBins_x_Event[eReferenceMultiplicity_vs_Occupancy] = static_cast<int>(eh.fEventHistogramsBins[eReferenceMultiplicity][0] / qa.fRebin);
   min_x_Event[eReferenceMultiplicity_vs_Occupancy] = eh.fEventHistogramsBins[eReferenceMultiplicity][1];
   max_x_Event[eReferenceMultiplicity_vs_Occupancy] = eh.fEventHistogramsBins[eReferenceMultiplicity][2];
   title_x_Event[eReferenceMultiplicity_vs_Occupancy] = FancyFormatting(eh.fEventHistogramsName[eReferenceMultiplicity].Data());
-  nBins_y_Event[eReferenceMultiplicity_vs_Occupancy] = static_cast<int>(eh.fEventHistogramsBins[eOccupancy][0]); // TBI 20240702 add support for rebinning
+  nBins_y_Event[eReferenceMultiplicity_vs_Occupancy] = static_cast<int>(eh.fEventHistogramsBins[eOccupancy][0] / qa.fRebin);
   min_y_Event[eReferenceMultiplicity_vs_Occupancy] = eh.fEventHistogramsBins[eOccupancy][1];
   max_y_Event[eReferenceMultiplicity_vs_Occupancy] = eh.fEventHistogramsBins[eOccupancy][2];
   title_y_Event[eReferenceMultiplicity_vs_Occupancy] = FancyFormatting(eh.fEventHistogramsName[eOccupancy].Data());
 
   // *) "NContributors_vs_Centrality":
-  nBins_x_Event[eNContributors_vs_Centrality] = static_cast<int>(eh.fEventHistogramsBins[eNContributors][0]); // TBI 20240702 add support for rebinning
+  nBins_x_Event[eNContributors_vs_Centrality] = static_cast<int>(eh.fEventHistogramsBins[eNContributors][0] / qa.fRebin);
   min_x_Event[eNContributors_vs_Centrality] = eh.fEventHistogramsBins[eNContributors][1];
   max_x_Event[eNContributors_vs_Centrality] = eh.fEventHistogramsBins[eNContributors][2];
   title_x_Event[eNContributors_vs_Centrality] = FancyFormatting(eh.fEventHistogramsName[eNContributors].Data());
-  nBins_y_Event[eNContributors_vs_Centrality] = static_cast<int>(eh.fEventHistogramsBins[eCentrality][0]); // TBI 20240702 add support for rebinning
+  nBins_y_Event[eNContributors_vs_Centrality] = static_cast<int>(eh.fEventHistogramsBins[eCentrality][0]);
   min_y_Event[eNContributors_vs_Centrality] = eh.fEventHistogramsBins[eCentrality][1];
   max_y_Event[eNContributors_vs_Centrality] = eh.fEventHistogramsBins[eCentrality][2];
   title_y_Event[eNContributors_vs_Centrality] = FancyFormatting(eh.fEventHistogramsName[eCentrality].Data());
 
   // *) "NContributors_vs_Vertex_z":
-  nBins_x_Event[eNContributors_vs_Vertex_z] = static_cast<int>(eh.fEventHistogramsBins[eNContributors][0]); // TBI 20240702 add support for rebinning
+  nBins_x_Event[eNContributors_vs_Vertex_z] = static_cast<int>(eh.fEventHistogramsBins[eNContributors][0] / qa.fRebin);
   min_x_Event[eNContributors_vs_Vertex_z] = eh.fEventHistogramsBins[eNContributors][1];
   max_x_Event[eNContributors_vs_Vertex_z] = eh.fEventHistogramsBins[eNContributors][2];
   title_x_Event[eNContributors_vs_Vertex_z] = FancyFormatting(eh.fEventHistogramsName[eNContributors].Data());
-  nBins_y_Event[eNContributors_vs_Vertex_z] = static_cast<int>(eh.fEventHistogramsBins[eVertex_z][0]); // TBI 20240702 add support for rebinning
+  nBins_y_Event[eNContributors_vs_Vertex_z] = static_cast<int>(eh.fEventHistogramsBins[eVertex_z][0]);
   min_y_Event[eNContributors_vs_Vertex_z] = eh.fEventHistogramsBins[eVertex_z][1];
   max_y_Event[eNContributors_vs_Vertex_z] = eh.fEventHistogramsBins[eVertex_z][2];
   title_y_Event[eNContributors_vs_Vertex_z] = FancyFormatting(eh.fEventHistogramsName[eVertex_z].Data());
 
   // *) "NContributors_vs_Occupancy":
-  nBins_x_Event[eNContributors_vs_Occupancy] = static_cast<int>(eh.fEventHistogramsBins[eNContributors][0]); // TBI 20240702 add support for rebinning
+  nBins_x_Event[eNContributors_vs_Occupancy] = static_cast<int>(eh.fEventHistogramsBins[eNContributors][0] / qa.fRebin);
   min_x_Event[eNContributors_vs_Occupancy] = eh.fEventHistogramsBins[eNContributors][1];
   max_x_Event[eNContributors_vs_Occupancy] = eh.fEventHistogramsBins[eNContributors][2];
   title_x_Event[eNContributors_vs_Occupancy] = FancyFormatting(eh.fEventHistogramsName[eNContributors].Data());
-  nBins_y_Event[eNContributors_vs_Occupancy] = static_cast<int>(eh.fEventHistogramsBins[eOccupancy][0]); // TBI 20240702 add support for rebinning
+  nBins_y_Event[eNContributors_vs_Occupancy] = static_cast<int>(eh.fEventHistogramsBins[eOccupancy][0] / qa.fRebin);
   min_y_Event[eNContributors_vs_Occupancy] = eh.fEventHistogramsBins[eOccupancy][1];
   max_y_Event[eNContributors_vs_Occupancy] = eh.fEventHistogramsBins[eOccupancy][2];
   title_y_Event[eNContributors_vs_Occupancy] = FancyFormatting(eh.fEventHistogramsName[eOccupancy].Data());
 
   // *) "Centrality_vs_Vertex_z":
-  nBins_x_Event[eCentrality_vs_Vertex_z] = static_cast<int>(eh.fEventHistogramsBins[eCentrality][0]); // TBI 20240702 add support for rebinning
+  nBins_x_Event[eCentrality_vs_Vertex_z] = static_cast<int>(eh.fEventHistogramsBins[eCentrality][0]);
   min_x_Event[eCentrality_vs_Vertex_z] = eh.fEventHistogramsBins[eCentrality][1];
   max_x_Event[eCentrality_vs_Vertex_z] = eh.fEventHistogramsBins[eCentrality][2];
   title_x_Event[eCentrality_vs_Vertex_z] = FancyFormatting(eh.fEventHistogramsName[eCentrality].Data());
-  nBins_y_Event[eCentrality_vs_Vertex_z] = static_cast<int>(eh.fEventHistogramsBins[eVertex_z][0]); // TBI 20240702 add support for rebinning
+  nBins_y_Event[eCentrality_vs_Vertex_z] = static_cast<int>(eh.fEventHistogramsBins[eVertex_z][0]);
   min_y_Event[eCentrality_vs_Vertex_z] = eh.fEventHistogramsBins[eVertex_z][1];
   max_y_Event[eCentrality_vs_Vertex_z] = eh.fEventHistogramsBins[eVertex_z][2];
   title_y_Event[eCentrality_vs_Vertex_z] = FancyFormatting(eh.fEventHistogramsName[eVertex_z].Data());
 
   // *) "Centrality_vs_Occupancy":
-  nBins_x_Event[eCentrality_vs_Occupancy] = static_cast<int>(eh.fEventHistogramsBins[eCentrality][0]); // TBI 20240702 add support for rebinning
+  nBins_x_Event[eCentrality_vs_Occupancy] = static_cast<int>(eh.fEventHistogramsBins[eCentrality][0]);
   min_x_Event[eCentrality_vs_Occupancy] = eh.fEventHistogramsBins[eCentrality][1];
   max_x_Event[eCentrality_vs_Occupancy] = eh.fEventHistogramsBins[eCentrality][2];
   title_x_Event[eCentrality_vs_Occupancy] = FancyFormatting(eh.fEventHistogramsName[eCentrality].Data());
-  nBins_y_Event[eCentrality_vs_Occupancy] = static_cast<int>(eh.fEventHistogramsBins[eOccupancy][0]); // TBI 20240702 add support for rebinning
+  nBins_y_Event[eCentrality_vs_Occupancy] = static_cast<int>(eh.fEventHistogramsBins[eOccupancy][0] / qa.fRebin);
   min_y_Event[eCentrality_vs_Occupancy] = eh.fEventHistogramsBins[eOccupancy][1];
   max_y_Event[eCentrality_vs_Occupancy] = eh.fEventHistogramsBins[eOccupancy][2];
   title_y_Event[eCentrality_vs_Occupancy] = FancyFormatting(eh.fEventHistogramsName[eOccupancy].Data());
 
   // *) "Vertex_z_vs_Occupancy":
-  nBins_x_Event[eVertex_z_vs_Occupancy] = static_cast<int>(eh.fEventHistogramsBins[eVertex_z][0]); // TBI 20240702 add support for rebinning
+  nBins_x_Event[eVertex_z_vs_Occupancy] = static_cast<int>(eh.fEventHistogramsBins[eVertex_z][0]);
   min_x_Event[eVertex_z_vs_Occupancy] = eh.fEventHistogramsBins[eVertex_z][1];
   max_x_Event[eVertex_z_vs_Occupancy] = eh.fEventHistogramsBins[eVertex_z][2];
   title_x_Event[eVertex_z_vs_Occupancy] = FancyFormatting(eh.fEventHistogramsName[eVertex_z].Data());
-  nBins_y_Event[eVertex_z_vs_Occupancy] = static_cast<int>(eh.fEventHistogramsBins[eOccupancy][0]); // TBI 20240702 add support for rebinning
+  nBins_y_Event[eVertex_z_vs_Occupancy] = static_cast<int>(eh.fEventHistogramsBins[eOccupancy][0] / qa.fRebin);
   min_y_Event[eVertex_z_vs_Occupancy] = eh.fEventHistogramsBins[eOccupancy][1];
   max_y_Event[eVertex_z_vs_Occupancy] = eh.fEventHistogramsBins[eOccupancy][2];
   title_y_Event[eVertex_z_vs_Occupancy] = FancyFormatting(eh.fEventHistogramsName[eOccupancy].Data());
@@ -2181,14 +2355,24 @@ void BookQAHistograms()
   title_y_Event[eCentRun2V0M_vs_CentRun2SPDTracklets] = FancyFormatting(qa.fCentralityEstimatorName[eCentRun2SPDTracklets].Data());
 
   // *) "eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange":
-  nBins_x_Event[eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange] = static_cast<int>(eh.fEventHistogramsBins[eOccupancy][0]);
+  nBins_x_Event[eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange] = static_cast<int>(eh.fEventHistogramsBins[eOccupancy][0] / qa.fRebin);
   min_x_Event[eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange] = eh.fEventHistogramsBins[eOccupancy][1];
   max_x_Event[eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange] = eh.fEventHistogramsBins[eOccupancy][2];
   title_x_Event[eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange] = FancyFormatting(qa.fOccupancyEstimatorName[eTrackOccupancyInTimeRange].Data());
-  nBins_y_Event[eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange] = static_cast<int>(eh.fEventHistogramsBins[eOccupancy][0]);
+  nBins_y_Event[eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange] = static_cast<int>(eh.fEventHistogramsBins[eOccupancy][0] / qa.fRebin);
   min_y_Event[eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange] = eh.fEventHistogramsBins[eOccupancy][1];
   max_y_Event[eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange] = eh.fEventHistogramsBins[eOccupancy][2];
   title_y_Event[eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange] = FancyFormatting(qa.fOccupancyEstimatorName[eFT0COccupancyInTimeRange].Data());
+
+  // *) "eCurrentRunDuration_vs_InteractionRate":
+  nBins_x_Event[eCurrentRunDuration_vs_InteractionRate] = static_cast<int>(eh.fEventHistogramsBins[eCurrentRunDuration][0] / qa.fRebin);
+  min_x_Event[eCurrentRunDuration_vs_InteractionRate] = eh.fEventHistogramsBins[eCurrentRunDuration][1];
+  max_x_Event[eCurrentRunDuration_vs_InteractionRate] = eh.fEventHistogramsBins[eCurrentRunDuration][2];
+  title_x_Event[eCurrentRunDuration_vs_InteractionRate] = FancyFormatting(eh.fEventHistogramsName[eCurrentRunDuration].Data());
+  nBins_y_Event[eCurrentRunDuration_vs_InteractionRate] = static_cast<int>(eh.fEventHistogramsBins[eInteractionRate][0] / qa.fRebin);
+  min_y_Event[eCurrentRunDuration_vs_InteractionRate] = eh.fEventHistogramsBins[eInteractionRate][1];
+  max_y_Event[eCurrentRunDuration_vs_InteractionRate] = eh.fEventHistogramsBins[eInteractionRate][2];
+  title_y_Event[eCurrentRunDuration_vs_InteractionRate] = FancyFormatting(eh.fEventHistogramsName[eInteractionRate].Data());
 
   // ...
 
@@ -2241,7 +2425,7 @@ void BookQAHistograms()
 
         qa.fQAEventHistograms2D[t][rs][ba] = new TH2F(
           Form("fQAEventHistograms2D[%s][%s][%s]", qa.fEventHistogramsName2D[t].Data(), srs[rs].Data(), sba[ba].Data()),
-          Form("%s, %s, %s", "__RUN_NUMBER__", srs_long[rs].Data(), sba_long[ba].Data()), // __RUN_NUMBER__ is handled in DetermineAndPropagateRunNumber(T const& collision)
+          Form("%s, %s, %s", "__RUN_NUMBER__", srs_long[rs].Data(), sba_long[ba].Data()), // __RUN_NUMBER__ is handled in PropagateRunNumber(...)
           nBins_x_Event[t], min_x_Event[t], max_x_Event[t], nBins_y_Event[t], min_y_Event[t], max_y_Event[t]);
         qa.fQAEventHistograms2D[t][rs][ba]->GetXaxis()->SetTitle(title_x_Event[t].Data());
         qa.fQAEventHistograms2D[t][rs][ba]->GetYaxis()->SetTitle(title_y_Event[t].Data());
@@ -2305,7 +2489,7 @@ void BookQAHistograms()
       {
         qa.fQAParticleHistograms2D[t][rs][ba] = new TH2F(
           Form("fQAParticleHistograms2D[%s][%s][%s]", qa.fParticleHistogramsName2D[t].Data(), srs[rs].Data(), sba[ba].Data()),
-          Form("%s, %s, %s", "__RUN_NUMBER__", srs_long[rs].Data(), sba_long[ba].Data()), // __RUN_NUMBER__ is handled in DetermineAndPropagateRunNumber(T const& collision)
+          Form("%s, %s, %s", "__RUN_NUMBER__", srs_long[rs].Data(), sba_long[ba].Data()), // __RUN_NUMBER__ is handled in PropagateRunNumber(...)
           nBins_x_Particle[t], min_x_Particle[t], max_x_Particle[t], nBins_y_Particle[t], min_y_Particle[t], max_y_Particle[t]);
 
         qa.fQAParticleHistograms2D[t][rs][ba]->GetXaxis()->SetTitle(title_x_Particle[t].Data());
@@ -2376,7 +2560,7 @@ void BookEventHistograms()
         }
         eh.fEventHistograms[t][rs][ba] = new TH1F(
           Form("fEventHistograms[%s][%s][%s]", eh.fEventHistogramsName[t].Data(), srs[rs].Data(), sba[ba].Data()),
-          Form("%s, %s, %s", "__RUN_NUMBER__", srs_long[rs].Data(), sba_long[ba].Data()), // __RUN_NUMBER__ is handled in DetermineAndPropagateRunNumber(T const& collision)
+          Form("%s, %s, %s", "__RUN_NUMBER__", srs_long[rs].Data(), sba_long[ba].Data()), // __RUN_NUMBER__ is handled in PropagateRunNumber(...)
           static_cast<int>(eh.fEventHistogramsBins[t][0]),
           eh.fEventHistogramsBins[t][1], eh.fEventHistogramsBins[t][2]);
         eh.fEventHistograms[t][rs][ba]->GetXaxis()->SetTitle(FancyFormatting(eh.fEventHistogramsName[t].Data()));
@@ -2570,7 +2754,7 @@ void BookParticleHistograms()
         // optional variable-length binning for y-axis (for supported observables):
         if (ph.fParticleHistogramsName2D[t].EqualTo("Phi_vs_Pt") && res.fUseResultsProVariableLengthBins[AFO_PT]) {
 
-          // Remark: placeholder __RUN_NUMBER__ is handled in DetermineAndPropagateRunNumber(T const& collision)
+          // Remark: placeholder __RUN_NUMBER__ is handled in PropagateRunNumber(...)
 
           // *) variable-length binning for phi vs pt, but only in pt axis:
           ph.fParticleHistograms2D[t][rs][ba] = new TH2D(Form("fParticleHistograms2D[%s][%s][%s]", ph.fParticleHistogramsName2D[t].Data(), srs[rs].Data(), sba[ba].Data()),
@@ -2791,6 +2975,12 @@ void BookCorrelationsHistograms()
           continue;
         }
         if (AFO_OCCUPANCY == v && !mupa.fCalculateCorrelationsAsFunctionOf[AFO_OCCUPANCY]) {
+          continue;
+        }
+        if (AFO_INTERACTIONRATE == v && !mupa.fCalculateCorrelationsAsFunctionOf[AFO_INTERACTIONRATE]) {
+          continue;
+        }
+        if (AFO_CURRENTRUNDURATION == v && !mupa.fCalculateCorrelationsAsFunctionOf[AFO_CURRENTRUNDURATION]) {
           continue;
         }
 
@@ -3405,15 +3595,19 @@ void InternalValidation()
       fPhiPDF->SetParameter(3, fReactionPlane);
     }
 
-    ebye.fCentrality = static_cast<float>(gRandom->Uniform(0., 100.));  // this is perfectly fine for this exercise
-    ebye.fOccupancy = static_cast<float>(gRandom->Uniform(0., 10000.)); // this is perfectly fine for this exercise
+    ebye.fCentrality = static_cast<float>(gRandom->Uniform(0., 100.));           // this is perfectly fine for this exercise
+    ebye.fOccupancy = static_cast<float>(gRandom->Uniform(0., 10000.));          // this is perfectly fine for this exercise
+    ebye.fInteractionRate = static_cast<float>(gRandom->Uniform(0., 10000.));    // this is perfectly fine for this exercise
+    ebye.fCurrentRunDuration = static_cast<float>(gRandom->Uniform(0., 86400.)); // this is perfectly fine for this exercise
 
     //    b2) Fill event histograms before cuts:
     if (eh.fFillEventHistograms) {
       !eh.fEventHistograms[eNumberOfEvents][eSim][eBefore] ? true : eh.fEventHistograms[eNumberOfEvents][eSim][eBefore]->Fill(0.5);
       !eh.fEventHistograms[eTotalMultiplicity][eSim][eBefore] ? true : eh.fEventHistograms[eTotalMultiplicity][eSim][eBefore]->Fill(nMult);
       !eh.fEventHistograms[eCentrality][eSim][eBefore] ? true : eh.fEventHistograms[eCentrality][eSim][eBefore]->Fill(ebye.fCentrality);
-      !eh.fEventHistograms[eOccupancy][eSim][eBefore] ? true : eh.fEventHistograms[eCentrality][eSim][eBefore]->Fill(ebye.fOccupancy);
+      !eh.fEventHistograms[eOccupancy][eSim][eBefore] ? true : eh.fEventHistograms[eOccupancy][eSim][eBefore]->Fill(ebye.fOccupancy);
+      !eh.fEventHistograms[eInteractionRate][eSim][eBefore] ? true : eh.fEventHistograms[eInteractionRate][eSim][eBefore]->Fill(ebye.fInteractionRate);
+      !eh.fEventHistograms[eCurrentRunDuration][eSim][eBefore] ? true : eh.fEventHistograms[eCurrentRunDuration][eSim][eBefore]->Fill(ebye.fCurrentRunDuration);
     }
 
     // ... here I could implement some event cuts, if necessary ...
@@ -3524,7 +3718,9 @@ void InternalValidation()
       !eh.fEventHistograms[eTotalMultiplicity][eSim][eAfter] ? true : eh.fEventHistograms[eTotalMultiplicity][eSim][eAfter]->Fill(nMult);
       !eh.fEventHistograms[eMultiplicity][eSim][eAfter] ? true : eh.fEventHistograms[eMultiplicity][eSim][eAfter]->Fill(ebye.fMultiplicity);
       !eh.fEventHistograms[eCentrality][eSim][eAfter] ? true : eh.fEventHistograms[eCentrality][eSim][eAfter]->Fill(ebye.fCentrality);
-      !eh.fEventHistograms[eOccupancy][eSim][eAfter] ? true : eh.fEventHistograms[eCentrality][eSim][eAfter]->Fill(ebye.fOccupancy);
+      !eh.fEventHistograms[eOccupancy][eSim][eAfter] ? true : eh.fEventHistograms[eOccupancy][eSim][eAfter]->Fill(ebye.fOccupancy);
+      !eh.fEventHistograms[eInteractionRate][eSim][eAfter] ? true : eh.fEventHistograms[eCentrality][eSim][eAfter]->Fill(ebye.fInteractionRate);
+      !eh.fEventHistograms[eCurrentRunDuration][eSim][eAfter] ? true : eh.fEventHistograms[eCurrentRunDuration][eSim][eAfter]->Fill(ebye.fCurrentRunDuration);
     }
 
     // b5) Calculate everything for selected events and particles:
@@ -3681,6 +3877,12 @@ void BookTest0Histograms()
           if (AFO_OCCUPANCY == v && !t0.fCalculateTest0AsFunctionOf[AFO_OCCUPANCY]) {
             continue;
           }
+          if (AFO_INTERACTIONRATE == v && !t0.fCalculateTest0AsFunctionOf[AFO_INTERACTIONRATE]) {
+            continue;
+          }
+          if (AFO_CURRENTRUNDURATION == v && !t0.fCalculateTest0AsFunctionOf[AFO_CURRENTRUNDURATION]) {
+            continue;
+          }
 
           if (!res.fResultsPro[v]) {
             LOGF(fatal, "\033[1;31m%s at line %d\033[0m", __FUNCTION__, __LINE__);
@@ -3731,8 +3933,7 @@ void BookResultsHistograms()
   }
 
   // a) Book the profile holding flags:
-  res.fResultsFlagsPro = new TProfile("fResultsFlagsPro",
-                                      "flags for results histograms", 1, 0., 1.);
+  res.fResultsFlagsPro = new TProfile("fResultsFlagsPro", "flags for results histograms", 1, 0., 1.);
   res.fResultsFlagsPro->SetStats(kFALSE);
   res.fResultsFlagsPro->SetLineColor(eColor);
   res.fResultsFlagsPro->SetFillColor(eFillColor);
@@ -3791,8 +3992,8 @@ void BookTheRest()
 
 //============================================================
 
-template <typename T>
-void Preprocess(T const& collision)
+template <eRecSim rs, typename T1, typename T2>
+void Preprocess(T1 const& collision, T2 const& bcs)
 {
   // Do all thingies before starting to process data (e.g. count number of events, fetch the run number, get the weights for this run number, etc.).
 
@@ -3815,10 +4016,11 @@ void Preprocess(T const& collision)
 
   // *) Determine and propagate run number info to already booked objects:
   if (!tc.fRunNumberIsDetermined) {
-    DetermineAndPropagateRunNumber(collision);
+    DetermineRunNumber<rs>(collision, bcs);
+    PropagateRunNumber();
   }
   if (tc.fDoAdditionalInsanityChecks && tc.fRunNumberIsDetermined) {
-    CheckCurrentRunNumber(collision);
+    CheckCurrentRunNumber<rs>(collision, bcs);
   }
 
   // *) Fetch the weights for this particular run number. Do it only once.
@@ -3843,35 +4045,62 @@ void Preprocess(T const& collision)
     ExitFunction(__FUNCTION__);
   }
 
-} // template <typename T> void Preprocess(T const& collision)
+} // template <eRecSim rs, typename T1, typename T2> void Preprocess(T1 const& collision, T2 const& bcs)
 
 //============================================================
 
-template <typename T>
-void DetermineAndPropagateRunNumber(T const& collision)
+template <eRecSim rs, typename T1, typename T2>
+void DetermineRunNumber(T1 const& collision, T2 const&)
 {
-  // Determine and propagate run number info to already booked objects, wherever it's relevant.
+  // Determine a run number.
   // Make sure in process(...) that this function is called only once.
 
-  // TBI 20231018 At the moment I can access run number info only in process(...) via collision->bc().runNumber(), but not in init(...)
+  // TBI 20231018 At the moment I can access run number info only in process(...), but not in init(...)
   // Once I can access run number info in init(...), this function shall be called in init(...), not in process(...)
 
-  // a) Determine run number;
-  // b) Propagate run number to all booked objects, wherever that info is relevant.
+  // a) Determine run number for Run 3 real data;
+  // b) Determine run number for the rest. TBI 20241126 differentiate this support as well, e.g. for eRecSim and eSim. But Run 2 and Run 1 most likely will stay as before
 
   if (tc.fVerbose) {
     StartFunction(__FUNCTION__);
   }
 
-  // a) Determine run number for reconstructed data:
-  tc.fRunNumber = Form("%d", collision.bc().runNumber()); // implemented for both aod::Collision and aod::McCollision, so I can use it straight, as long as I have subscribed to aod::BCs
-  if (tc.fRunNumber.EqualTo("")) {
-    LOGF(error, "\033[1;33m%s fRunNumber is empty, collision->bc().runNumber() failed...\033[0m", __FUNCTION__);
-    LOGF(fatal, "collision->bc().runNumber() = %d", collision.bc().runNumber());
+  // a) Determine run number for Run 3 real data:
+  if constexpr (rs == eRec) {
+
+    auto bc = collision.template foundBC_as<T2>(); // TBI 20241126 I have the same code snippet at 2 other locations, I shall unify at some point
+    tc.fRunNumber = Form("%d", bc.runNumber());
+    if (tc.fRunNumber.EqualTo("")) {
+      LOGF(error, "\033[1;33m%s fRunNumber is empty, bc.runNumber() failed...\033[0m", __FUNCTION__);
+      LOGF(fatal, "bc.runNumber() = %d", bc.runNumber());
+    }
+  } else {
+    // b) Determine run number for the rest. TBI 20241126 differentiate this support as well, e.g. for eRecSim and eSim. But Run 2 and Run 1 most likely will stay as before
+    LOGF(fatal, "bc.runNumber() is not validated yet beyond eRec");
   }
   tc.fRunNumberIsDetermined = kTRUE;
 
-  // b) Propagate run number to all booked objects, wherever that info is relevant:
+  if (tc.fVerbose) {
+    ExitFunction(__FUNCTION__);
+  }
+
+} // template <eRecSim rs, typename T1, typename T2> void DetermineRunNumber(T1 const& collision, T2 const&)
+
+//============================================================
+
+void PropagateRunNumber()
+{
+  // Propagate run number info to already booked objects, wherever it's relevant.
+
+  if (tc.fVerbose) {
+    StartFunction(__FUNCTION__);
+  }
+
+  // Do some local insanity checks:
+  if (tc.fRunNumber.EqualTo("")) {
+    LOGF(fatal, "\033[1;31m%s at line %d : tc.fRunNumber is empty \033[0m", __FUNCTION__, __LINE__);
+  }
+
   // *) base:
   fBasePro->GetXaxis()->SetBinLabel(eRunNumber, Form("fRunNumber = %s", tc.fRunNumber.Data()));
 
@@ -3956,7 +4185,6 @@ void DetermineAndPropagateRunNumber(T const& collision)
   {
     for (Int_t cc = 0; cc < eCutCounter_N; cc++) // enum eCutCounter
     {
-
       if (!pc.fParticleCutCounterHist[rs][cc]) {
         continue;
       }
@@ -4010,29 +4238,46 @@ void DetermineAndPropagateRunNumber(T const& collision)
     ExitFunction(__FUNCTION__);
   }
 
-} // template <typename T> void DetermineAndPropagateRunNumber(T const& collision)
+} // PropagateRunNumber()
 
 //============================================================
 
-template <typename T>
-void CheckCurrentRunNumber(T const& collision)
+template <eRecSim rs, typename T1, typename T2>
+void CheckCurrentRunNumber(T1 const& collision, T2 const&)
 {
   // Insanity check for the current run number.
+
+  // a) Support for Run 3 real data;
+  // b) The rest. TBI 20241126 differentiate this support as well, e.g. for eRecSim and eSim. But Run 2 and Run 1 most likely will stay as before
 
   if (tc.fVerbose) {
     StartFunction(__FUNCTION__);
   }
 
-  if (!tc.fRunNumber.EqualTo(Form("%d", collision.bc().runNumber()))) {
-    LOGF(error, "\033[1;33m%s Run number changed within process(). This most likely indicates that a given masterjob is processing 2 or more different runs in one go.\033[0m", __FUNCTION__);
-    LOGF(fatal, "tc.fRunNumber = %s, collision.bc().runNumber() = %d", tc.fRunNumber.Data(), collision.bc().runNumber());
-  }
+  // a) Support for Run 3 real data:
+  if constexpr (rs == eRec) {
+
+    auto bc = collision.template foundBC_as<T2>(); // TBI 20241126 I have the same code snippet at 2 other locations, I shall unify at some point
+    if (!tc.fRunNumber.EqualTo(Form("%d", bc.runNumber()))) {
+      LOGF(error, "\033[1;33m%s Run number changed within process(). This most likely indicates that a given masterjob is processing 2 or more different runs in one go.\033[0m", __FUNCTION__);
+      LOGF(fatal, "tc.fRunNumber = %s, bc.runNumber() = %d", tc.fRunNumber.Data(), bc.runNumber());
+    }
+
+  } else {
+    // b) The rest:
+
+    if (!tc.fRunNumber.EqualTo(Form("%d", collision.bc().runNumber()))) {
+      LOGF(error, "\033[1;33m%s Run number changed within process(). This most likely indicates that a given masterjob is processing 2 or more different runs in one go.\033[0m", __FUNCTION__);
+      LOGF(fatal, "tc.fRunNumber = %s, collision.bc().runNumber() = %d", tc.fRunNumber.Data(), collision.bc().runNumber());
+    }
+
+  } // to else
 
   if (tc.fVerbose) {
     ExitFunction(__FUNCTION__);
   }
 
-} // template <typename T> void CheckCurrentRunNumber(T const& collision)
+} // template <eRecSim rs, typename T1, typename T2> void CheckCurrentRunNumber(T1 const& collision, T2 const&)
 
 //============================================================
 
@@ -4055,6 +4300,8 @@ void ResetEventByEventQuantities()
   ebye.fReferenceMultiplicity = 0.;
   ebye.fCentrality = 0.;
   ebye.fOccupancy = 0.;
+  ebye.fInteractionRate = 0.;
+  ebye.fCurrentRunDuration = 0.;
 
   // b) Q-vectors:
   if (qv.fCalculateQvectors) {
@@ -4440,6 +4687,28 @@ Bool_t EventCuts(T1 const& collision, T2 const& tracks, eCutModus cutModus)
       }
     }
 
+    //   *) InteractionRate:
+    if (ec.fUseEventCuts[eInteractionRate]) {
+      if (cutModus == eCutCounterBinning) {
+        EventCut(eRec, eInteractionRate, eCutCounterBinning);
+      } else if (ebye.fInteractionRate < ec.fdEventCuts[eInteractionRate][eMin] || ebye.fInteractionRate > ec.fdEventCuts[eInteractionRate][eMax] || TMath::Abs(ebye.fInteractionRate - ec.fdEventCuts[eInteractionRate][eMax]) < tc.fFloatingPointPrecision) {
+        if (!EventCut(eRec, eInteractionRate, cutModus)) {
+          return kFALSE;
+        }
+      }
+    }
+
+    //   *) CurrentRunDuration: // TBI 20241128 check if I can use this one also on Run 2 and Run 1, most likely not
+    if (ec.fUseEventCuts[eCurrentRunDuration]) {
+      if (cutModus == eCutCounterBinning) {
+        EventCut(eRec, eCurrentRunDuration, eCutCounterBinning);
+      } else if (ebye.fCurrentRunDuration < ec.fdEventCuts[eCurrentRunDuration][eMin] || ebye.fCurrentRunDuration > ec.fdEventCuts[eCurrentRunDuration][eMax] || TMath::Abs(ebye.fCurrentRunDuration - ec.fdEventCuts[eCurrentRunDuration][eMax]) < tc.fFloatingPointPrecision) {
+        if (!EventCut(eRec, eCurrentRunDuration, cutModus)) {
+          return kFALSE;
+        }
+      }
+    }
+
     //   *) NoSameBunchPileup: // see O2Physics/Common/CCDB/EventSelectionParams.cxx
     if (ec.fUseEventCuts[eNoSameBunchPileup]) {
       if (cutModus == eCutCounterBinning) {
@@ -4791,6 +5060,8 @@ void FillEventHistograms(T1 const& collision, T2 const& tracks, eBeforeAfter ba)
   if constexpr (rs == eRec || rs == eRecAndSim) {
     if (eh.fFillEventHistograms) {
       !eh.fEventHistograms[eOccupancy][eRec][ba] ? true : eh.fEventHistograms[eOccupancy][eRec][ba]->Fill(ebye.fOccupancy);
+      !eh.fEventHistograms[eInteractionRate][eRec][ba] ? true : eh.fEventHistograms[eInteractionRate][eRec][ba]->Fill(ebye.fInteractionRate);
+      !eh.fEventHistograms[eCurrentRunDuration][eRec][ba] ? true : eh.fEventHistograms[eCurrentRunDuration][eRec][ba]->Fill(ebye.fCurrentRunDuration); // TBI 20241128 check if this one can be used for Run 2 and Run 1 converted, most likely not
     }
     // QA:
     if (qa.fFillQAEventHistograms2D) {
@@ -4809,6 +5080,7 @@ void FillEventHistograms(T1 const& collision, T2 const& tracks, eBeforeAfter ba)
       //      !eh.fEventHistograms[eMultFT0M][eRec][ba] ? true : eh.fEventHistograms[eMultFT0M][eRec][ba]->Fill(collision.multFT0M());
       //      !eh.fEventHistograms[eMultFV0M][eRec][ba] ? true : eh.fEventHistograms[eMultFV0M][eRec][ba]->Fill(collision.multFV0M());
       !qa.fQAEventHistograms2D[eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange][eRec][ba] ? true : qa.fQAEventHistograms2D[eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange][eRec][ba]->Fill(collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
+      !qa.fQAEventHistograms2D[eCurrentRunDuration_vs_InteractionRate][eRec][ba] ? true : qa.fQAEventHistograms2D[eCurrentRunDuration_vs_InteractionRate][eRec][ba]->Fill(ebye.fCurrentRunDuration, ebye.fInteractionRate);
     }
 
     // ... and corresponding MC truth simulated (Run 3 specific)
@@ -6094,6 +6366,14 @@ void CalculateCorrelations()
     if (mupa.fCorrelationsPro[0][h - 1][AFO_OCCUPANCY]) {
       mupa.fCorrelationsPro[0][h - 1][AFO_OCCUPANCY]->Fill(ebye.fOccupancy, twoC, wTwo);
     }
+    // vs. interaction rate:
+    if (mupa.fCorrelationsPro[0][h - 1][AFO_INTERACTIONRATE]) {
+      mupa.fCorrelationsPro[0][h - 1][AFO_INTERACTIONRATE]->Fill(ebye.fInteractionRate, twoC, wTwo);
+    }
+    // vs. current run duration:
+    if (mupa.fCorrelationsPro[0][h - 1][AFO_CURRENTRUNDURATION]) {
+      mupa.fCorrelationsPro[0][h - 1][AFO_CURRENTRUNDURATION]->Fill(ebye.fCurrentRunDuration, twoC, wTwo);
+    }
 
     // 4p:
     if (ebye.fSelectedTracks < 4) {
@@ -6150,6 +6430,14 @@ void CalculateCorrelations()
     // vs. occupancy:
     if (mupa.fCorrelationsPro[1][h - 1][AFO_OCCUPANCY]) {
       mupa.fCorrelationsPro[1][h - 1][AFO_OCCUPANCY]->Fill(ebye.fOccupancy, fourC, wFour);
+    }
+    // vs. interaction rate:
+    if (mupa.fCorrelationsPro[1][h - 1][AFO_INTERACTIONRATE]) {
+      mupa.fCorrelationsPro[1][h - 1][AFO_INTERACTIONRATE]->Fill(ebye.fInteractionRate, fourC, wFour);
+    }
+    // vs. current run duration:
+    if (mupa.fCorrelationsPro[1][h - 1][AFO_CURRENTRUNDURATION]) {
+      mupa.fCorrelationsPro[1][h - 1][AFO_CURRENTRUNDURATION]->Fill(ebye.fCurrentRunDuration, fourC, wFour);
     }
 
     // 6p:
@@ -6209,6 +6497,14 @@ void CalculateCorrelations()
     // vs. occupancy:
     if (mupa.fCorrelationsPro[2][h - 1][AFO_OCCUPANCY]) {
       mupa.fCorrelationsPro[2][h - 1][AFO_OCCUPANCY]->Fill(ebye.fOccupancy, sixC, wSix);
+    }
+    // vs. interaction rate:
+    if (mupa.fCorrelationsPro[2][h - 1][AFO_INTERACTIONRATE]) {
+      mupa.fCorrelationsPro[2][h - 1][AFO_INTERACTIONRATE]->Fill(ebye.fInteractionRate, sixC, wSix);
+    }
+    // vs. current run duration:
+    if (mupa.fCorrelationsPro[2][h - 1][AFO_CURRENTRUNDURATION]) {
+      mupa.fCorrelationsPro[2][h - 1][AFO_CURRENTRUNDURATION]->Fill(ebye.fCurrentRunDuration, sixC, wSix);
     }
 
     // 8p:
@@ -6270,6 +6566,14 @@ void CalculateCorrelations()
     // vs. occupancy:
     if (mupa.fCorrelationsPro[3][h - 1][AFO_OCCUPANCY]) {
       mupa.fCorrelationsPro[3][h - 1][AFO_OCCUPANCY]->Fill(ebye.fOccupancy, eightC, wEight);
+    }
+    // vs. interaction rate:
+    if (mupa.fCorrelationsPro[3][h - 1][AFO_INTERACTIONRATE]) {
+      mupa.fCorrelationsPro[3][h - 1][AFO_INTERACTIONRATE]->Fill(ebye.fInteractionRate, eightC, wEight);
+    }
+    // vs. current run duration:
+    if (mupa.fCorrelationsPro[3][h - 1][AFO_CURRENTRUNDURATION]) {
+      mupa.fCorrelationsPro[3][h - 1][AFO_CURRENTRUNDURATION]->Fill(ebye.fCurrentRunDuration, eightC, wEight);
     }
 
   } // for(Int_t h=1;h<=gMaxHarmonic;h++) // harmonic
@@ -6538,6 +6842,14 @@ void CalculateTest0()
         // vs. occupancy:
         if (t0.fTest0Pro[mo][mi][AFO_OCCUPANCY]) {
           t0.fTest0Pro[mo][mi][AFO_OCCUPANCY]->Fill(ebye.fOccupancy, correlation / weight, weight);
+        }
+        // vs. interaction rate:
+        if (t0.fTest0Pro[mo][mi][AFO_INTERACTIONRATE]) {
+          t0.fTest0Pro[mo][mi][AFO_INTERACTIONRATE]->Fill(ebye.fInteractionRate, correlation / weight, weight);
+        }
+        // vs. current run duration:
+        if (t0.fTest0Pro[mo][mi][AFO_CURRENTRUNDURATION]) {
+          t0.fTest0Pro[mo][mi][AFO_CURRENTRUNDURATION]->Fill(ebye.fCurrentRunDuration, correlation / weight, weight);
         }
       } // if(t0.fTest0Labels[mo][mi])
     } // for(Int_t mi=0;mi<gMaxIndex;mi++)
@@ -6884,6 +7196,16 @@ void CalculateNestedLoops()
           nl.fNestedLoopsPro[0][h][AFO_OCCUPANCY]->Fill(
             ebye.fOccupancy, TMath::Cos((h + 1.) * (dPhi1 - dPhi2)), dW1 * dW2);
         }
+        // fill cos, 2p, vs. interaction rate:
+        if (nl.fNestedLoopsPro[0][h][AFO_INTERACTIONRATE]) {
+          nl.fNestedLoopsPro[0][h][AFO_INTERACTIONRATE]->Fill(
+            ebye.fInteractionRate, TMath::Cos((h + 1.) * (dPhi1 - dPhi2)), dW1 * dW2);
+        }
+        // fill cos, 2p, vs. current run duration:
+        if (nl.fNestedLoopsPro[0][h][AFO_CURRENTRUNDURATION]) {
+          nl.fNestedLoopsPro[0][h][AFO_CURRENTRUNDURATION]->Fill(
+            ebye.fCurrentRunDuration, TMath::Cos((h + 1.) * (dPhi1 - dPhi2)), dW1 * dW2);
+        }
       } // for(int h=1; h<=6; h++)
     } // for(int i2=0; i2<nParticles; i2++)
   } // for(int i1=0; i1<nParticles; i1++)
@@ -6934,6 +7256,14 @@ void CalculateNestedLoops()
             // fill cos, 4p, all harmonics, vs. occupancy:
             if (nl.fNestedLoopsPro[1][h][AFO_OCCUPANCY]) {
               nl.fNestedLoopsPro[1][h][AFO_OCCUPANCY]->Fill(ebye.fOccupancy, TMath::Cos((h + 1.) * (dPhi1 + dPhi2 - dPhi3 - dPhi4)), dW1 * dW2 * dW3 * dW4);
+            }
+            // fill cos, 4p, all harmonics, vs. interaction rate:
+            if (nl.fNestedLoopsPro[1][h][AFO_INTERACTIONRATE]) {
+              nl.fNestedLoopsPro[1][h][AFO_INTERACTIONRATE]->Fill(ebye.fInteractionRate, TMath::Cos((h + 1.) * (dPhi1 + dPhi2 - dPhi3 - dPhi4)), dW1 * dW2 * dW3 * dW4);
+            }
+            // fill cos, 4p, all harmonics, vs. current run duratione:
+            if (nl.fNestedLoopsPro[1][h][AFO_CURRENTRUNDURATION]) {
+              nl.fNestedLoopsPro[1][h][AFO_CURRENTRUNDURATION]->Fill(ebye.fCurrentRunDuration, TMath::Cos((h + 1.) * (dPhi1 + dPhi2 - dPhi3 - dPhi4)), dW1 * dW2 * dW3 * dW4);
             }
           } // for(int h=0; h<gMaxHarmonic; h++)
         } // for(int i4=0; i4<nParticles; i4++)
@@ -6999,6 +7329,14 @@ void CalculateNestedLoops()
                 // fill cos, 6p, all harmonics, vs. occupancy:
                 if (nl.fNestedLoopsPro[2][h][AFO_OCCUPANCY]) {
                   nl.fNestedLoopsPro[2][h][AFO_OCCUPANCY]->Fill(ebye.fOccupancy, TMath::Cos((h + 1.) * (dPhi1 + dPhi2 + dPhi3 - dPhi4 - dPhi5 - dPhi6)), dW1 * dW2 * dW3 * dW4 * dW5 * dW6);
+                }
+                // fill cos, 6p, all harmonics, vs. interaction rate:
+                if (nl.fNestedLoopsPro[2][h][AFO_INTERACTIONRATE]) {
+                  nl.fNestedLoopsPro[2][h][AFO_INTERACTIONRATE]->Fill(ebye.fInteractionRate, TMath::Cos((h + 1.) * (dPhi1 + dPhi2 + dPhi3 - dPhi4 - dPhi5 - dPhi6)), dW1 * dW2 * dW3 * dW4 * dW5 * dW6);
+                }
+                // fill cos, 6p, all harmonics, vs. current run duration:
+                if (nl.fNestedLoopsPro[2][h][AFO_CURRENTRUNDURATION]) {
+                  nl.fNestedLoopsPro[2][h][AFO_CURRENTRUNDURATION]->Fill(ebye.fCurrentRunDuration, TMath::Cos((h + 1.) * (dPhi1 + dPhi2 + dPhi3 - dPhi4 - dPhi5 - dPhi6)), dW1 * dW2 * dW3 * dW4 * dW5 * dW6);
                 }
               } // for(int h=0; h<gMaxHarmonic; h++)
             } // if(i6==i1||i6==i2||i6==i3||i6==i4||i6==i5){continue;}
@@ -7078,6 +7416,14 @@ void CalculateNestedLoops()
                     // fill cos, 8p, all harmonics, vs. occupancy:
                     if (nl.fNestedLoopsPro[3][h][AFO_OCCUPANCY]) {
                       nl.fNestedLoopsPro[3][h][AFO_OCCUPANCY]->Fill(ebye.fOccupancy, TMath::Cos((h + 1.) * (dPhi1 + dPhi2 + dPhi3 + dPhi4 - dPhi5 - dPhi6 - dPhi7 - dPhi8)), dW1 * dW2 * dW3 * dW4 * dW5 * dW6 * dW7 * dW8);
+                    }
+                    // fill cos, 8p, all harmonics, vs. interaction rate:
+                    if (nl.fNestedLoopsPro[3][h][AFO_INTERACTIONRATE]) {
+                      nl.fNestedLoopsPro[3][h][AFO_INTERACTIONRATE]->Fill(ebye.fInteractionRate, TMath::Cos((h + 1.) * (dPhi1 + dPhi2 + dPhi3 + dPhi4 - dPhi5 - dPhi6 - dPhi7 - dPhi8)), dW1 * dW2 * dW3 * dW4 * dW5 * dW6 * dW7 * dW8);
+                    }
+                    // fill cos, 8p, all harmonics, vs. current run duration:
+                    if (nl.fNestedLoopsPro[3][h][AFO_CURRENTRUNDURATION]) {
+                      nl.fNestedLoopsPro[3][h][AFO_CURRENTRUNDURATION]->Fill(ebye.fCurrentRunDuration, TMath::Cos((h + 1.) * (dPhi1 + dPhi2 + dPhi3 + dPhi4 - dPhi5 - dPhi6 - dPhi7 - dPhi8)), dW1 * dW2 * dW3 * dW4 * dW5 * dW6 * dW7 * dW8);
                     }
                   } // for(int h=0; h<gMaxHarmonic; h++)
                 } // for(int i8=0; i8<nParticles; i8++)
@@ -8019,8 +8365,8 @@ TObjArray* GetDefaultObjArrayWithLabels()
   arr->SetOwner();
 
   // Define some labels:
-  const Int_t nLabels = 4;
-  TString labels[nLabels] = {"1 -1", "2 -2", "1 2 -3", "2 3 -3 -2"};
+  const Int_t nLabels = 7;
+  TString labels[nLabels] = {"1 -1", "2 -2", "3 -3", "2 1 -1 -2", "3 1 -1 -3", "3 2 -2 -3", "3 2 1 -1 -2 -3"};
 
   // Make a transfer:
   for (Int_t l = 0; l < nLabels; l++) {
@@ -8962,6 +9308,10 @@ const char* FancyFormatting(const char* name)
     fancyFormatting = "ft0cOccupancyInTimeRange()";
   } else if (TString(name).EqualTo("Occupancy", TString::kIgnoreCase)) {
     fancyFormatting = Form("Occupancy (%s)", ec.fsEventCuts[eOccupancyEstimator].Data());
+  } else if (TString(name).EqualTo("InteractionRate", TString::kIgnoreCase) || TString(name).EqualTo("Interaction Rate", TString::kIgnoreCase)) {
+    fancyFormatting = "Interaction Rate [kHz]"; // TBI 20241127 do I leave kHz hardwired here?
+  } else if (TString(name).EqualTo("CurrentRunDuration", TString::kIgnoreCase) || TString(name).EqualTo("Current Run Duration", TString::kIgnoreCase)) {
+    fancyFormatting = "Current run duration [s] (i.e. time in seconds since start of run)";
   }
 
   if (tc.fVerboseUtility) {
@@ -9697,6 +10047,68 @@ void DetermineOccupancy(T const& collision)
 
 //============================================================
 
+template <eRecSim rs, typename T1, typename T2>
+void DetermineInteractionRate(T1 const& collision, T2 const&)
+{
+  // Determine interaction rate.
+
+  // a) Determine interaction rate only for eRec;
+  // b) For all other cases, set interaction rate to -1 for the time being;
+  // c) Print interaction rate and run duration for the audience...
+
+  if (tc.fVerbose) {
+    StartFunction(__FUNCTION__);
+  }
+
+  // a) Determine interaction rate only for eRec:
+  if constexpr (rs == eRec) {
+    auto bc = collision.template foundBC_as<T2>(); // TBI 20241126 this seems to works as expected, but check and validate further
+                                                   // cout << bc.runNumber() << endl; // works as expected
+                                                   // cout << bc.timestamp() << endl;  // works as expected
+                                                   // TBI 20241126 I have the same code snippet at 2 other locations, I shall unify at some point
+
+    // Get start timestamp and end timemstamp for this run in miliseconds, and convert both of them in seconds:
+    // o see O2/CCDB/src/BasicCCDBManager.cxx, O2/CCDB/include/CCDB/BasicCCDBManager.h
+    // o example usage in O2Physics/PWGLF/TableProducer/Common/zdcSP.cxx
+    auto runDuration = ccdb->getRunDuration(bc.runNumber()); // this is total run duration, not the current one (see below)
+    int64_t startOfRun = std::floor(runDuration.first * 0.001);
+    int64_t endOfRun = std::ceil(runDuration.second * 0.001);
+    int64_t runDurationInSec = endOfRun - startOfRun; // yes, this is now in seconds
+
+    // From documentation: double ctpRateFetcher::fetch(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber, std::string sourceName)
+    double hadronicRate = mRateFetcher.fetch(ccdb.service, static_cast<uint64_t>(bc.timestamp()), static_cast<int>(bc.runNumber()), "ZNC hadronic") * 1.e-3;
+    if (hadronicRate > 0.) {
+      ebye.fInteractionRate = static_cast<float>(hadronicRate);
+    } else {
+      LOGF(fatal, "\033[1;31m%s at line %d : hadronicRate = %f is meaningless \033[0m", __FUNCTION__, __LINE__, hadronicRate);
+    }
+
+    // If I feel 2D QA eCurrentRunDuration_vs_InteractionRate , extract still the current run duration:
+    if (qa.fBookQAEventHistograms2D[eCurrentRunDuration_vs_InteractionRate]) { // TBI 20241127 do I check this flag, of pointers, like in FillEventHistograms(...) ?
+      ebye.fCurrentRunDuration = std::floor(bc.timestamp() * 0.001) - startOfRun;
+      if (ebye.fCurrentRunDuration > runDurationInSec) {
+        LOGF(fatal, "\033[1;31m%s at line %d : ebye.fCurrentRunDuration = %d is bigger than runDurationInSec = %d, which is meaningless \033[0m", __FUNCTION__, __LINE__, static_cast<int>(ebye.fCurrentRunDuration), static_cast<int>(runDurationInSec));
+      }
+    }
+  } else {
+
+    ebye.fInteractionRate = -1.;
+    ebye.fCurrentRunDuration = -1.;
+  }
+
+  // c) Print interaction rate and run duration for the audience...:
+  if (tc.fVerbose) {
+    LOGF(info, "\033[1;32m ebye.fInteractionRate = %f kHz\033[0m", ebye.fInteractionRate);
+    if (qa.fBookQAEventHistograms2D[eCurrentRunDuration_vs_InteractionRate]) { // TBI 20241127 do I check this flag, of pointers, like in FillEventHistograms(...) ?
+      LOGF(info, "\033[1;32m ebye.fCurrentRunDuration = %f s (in seconds after SOR)\033[0m", ebye.fCurrentRunDuration);
+    }
+    ExitFunction(__FUNCTION__);
+  }
+
+} // template <eRecSim rs, typename T1, typename T2> void DetermineInteractionRate(T1 const& collision, T2 const& bcs)
+
+//============================================================
+
 void DetermineEventCounters()
 {
   // Determine all event counters.
@@ -10374,8 +10786,8 @@ void MainLoopOverParticles(T const& tracks)
 
 //============================================================
 
-template <eRecSim rs, typename T1, typename T2>
-void Steer(T1 const& collision, T2 const& tracks)
+template <eRecSim rs, typename T1, typename T2, typename T3>
+void Steer(T1 const& collision, T2 const& bcs, T3 const& tracks)
 {
   // This is the only function to be called in processRec(...), processRecSim(...), and processSim(...).
   // All analysis workflow is defined step-by-step here, via dedicated function calls.
@@ -10389,7 +10801,7 @@ void Steer(T1 const& collision, T2 const& tracks)
   if (tc.fDryRun) {
     EventCounterForDryRun(eFill);
     EventCounterForDryRun(ePrint);
-    Preprocess(collision); // yes, so that e.g. I can only test if the particle and centrality weights were correctly fetched from external file and initialized locally into data members
+    Preprocess<rs>(collision, bcs); // yes, so that e.g. I can only test if the particle and centrality weights were correctly fetched from external file and initialized locally into data members
     return;
   }
 
@@ -10409,7 +10821,7 @@ void Steer(T1 const& collision, T2 const& tracks)
   }
 
   // *) Do all thingies before starting to process data from this collision (e.g. cut on number of events (both total and selected), fetch the run number, etc.):
-  Preprocess(collision);
+  Preprocess<rs>(collision, bcs);
 
   // *) Determine collision reference multiplicity:
   DetermineReferenceMultiplicity<rs>(collision);
@@ -10419,6 +10831,9 @@ void Steer(T1 const& collision, T2 const& tracks)
 
   // *) Determine collision occupancy:
   DetermineOccupancy<rs>(collision);
+
+  // *) Determine collision interaction rate:
+  DetermineInteractionRate<rs>(collision, bcs);
 
   // *) Fill event histograms before event cuts:
   if (eh.fFillEventHistograms || qa.fFillQAEventHistograms2D) {
