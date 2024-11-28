@@ -672,8 +672,6 @@ struct JetSpectraChargedTask {
 
       fillParticleHistograms(Collisions.begin(), mcparticles);
   }
-
-  // 确保宏 PROCESS_SWITCH 正确使用
   PROCESS_SWITCH(JetSpectraChargedTask, processMcparticles, "QA for charged mc particles", false);
     
   void processMcparticlesWeighted(aod::JetMcCollision const& mcCollision,
