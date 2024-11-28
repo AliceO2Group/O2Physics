@@ -274,13 +274,12 @@ class TestStdPrefix(TestSpec):
         r"pow\(",
         r"min\(",
         r"max\(",
-        r"log\(",
+        r"log(2|10)?\(",
         r"exp\(",
-        r"sin\(",
-        r"cos\(",
-        r"tan\(",
-        r"atan\(",
+        r"a?(sin|cos|tan)h?\(",
         r"atan2\(",
+        r"erfc?\(",
+        r"hypot\(",
     ]
 
     def test_line(self, line: str) -> bool:
