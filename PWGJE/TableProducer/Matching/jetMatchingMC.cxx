@@ -61,11 +61,6 @@ struct JetMatchingMc {
   {
   }
 
-  void processDummy(aod::JetMcCollisions const&)
-  {
-  }
-  PROCESS_SWITCH(JetMatchingMc, processDummy, "Dummy process", true);
-
   void processJets(aod::JetMcCollisions const& mcCollisions, aod::JetCollisionsMCD const& collisions,
                    JetsBase const& jetsBase, JetsTag const& jetsTag,
                    aod::JetTracksMCD const& tracks,
@@ -105,7 +100,7 @@ struct JetMatchingMc {
       jetsTagtoBaseMatchingTable(jetsTagtoBaseMatchingGeo[i], jetsTagtoBaseMatchingPt[i], jetsTagtoBaseMatchingHF[i]); // is (and needs to) be filled in order
     }
   }
-  PROCESS_SWITCH(JetMatchingMc, processJets, "Perform jet matching", false);
+  PROCESS_SWITCH(JetMatchingMc, processJets, "Perform jet matching", true);
 };
 
 /*using BplusChargedJetMatching = JetMatchingMc<soa::Join<aod::BplusChargedMCDetectorLevelJets, aod::BplusChargedMCDetectorLevelJetConstituents>,
