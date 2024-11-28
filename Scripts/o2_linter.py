@@ -195,7 +195,8 @@ class TestSpec(ABC):
         # print(f"Running test {self.name} for {path} with {len(content)} lines")
         if self.per_line:
             for i, line in enumerate(content):
-                line = line.strip()
+                if not isinstance(self, TestUsingDirectives):  # Keep the indentation if needed.
+                    line = line.strip()
                 if not line:
                     continue
                 # print(i + 1, line)
