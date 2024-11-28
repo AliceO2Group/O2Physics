@@ -308,14 +308,17 @@ class TestROOT(TestSpec):
     """Detect unnecessary use of ROOT entities."""
 
     name = "root-entity"
-    message = "Consider replacing ROOT entities with STD C++ or O2 entities."
+    message = "Consider replacing ROOT entities with equivalents from standard C++ or from O2."
     suffixes = [".h", ".cxx"]
 
     def file_matches(self, path: str) -> bool:
         return TestSpec.file_matches(self, path) and "Macros/" not in path
 
     def test_line(self, line: str) -> bool:
-        pattern = r"TMath|(U?(Int|Char|Short)|Double(32)?|Float(16)?|U?Long(64)?|Bool)_t"
+        pattern = (
+            r"TMath::(Abs|Sqrt|Power|Min|Max|Log(2|10)?|Exp|A?(Sin|Cos|Tan)H?|ATan2|Erfc?|Hypot)\(|"
+            r"(U?(Int|Char|Short)|Double(32)?|Float(16)?|U?Long(64)?|Bool)_t"
+        )
         if is_comment_cpp(line):
             return True
         line = remove_comment_cpp(line)
