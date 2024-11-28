@@ -597,7 +597,6 @@ struct CorrelationTask {
   }
   PROCESS_SWITCH(CorrelationTask, processSame2ProngDerived, "Process same event on derived data", false);
 
-
   void processSame2Prong2Prong(derivedCollisions::iterator const& collision, soa::Filtered<aod::CF2ProngTracks> const& p2tracks)
   {
     BinningTypeDerived configurableBinningDerived{{axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
@@ -621,7 +620,6 @@ struct CorrelationTask {
     }
   }
   PROCESS_SWITCH(CorrelationTask, processSame2Prong2Prong, "Process same event on derived data", false);
-
 
   using BinningTypeAOD = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentRun2V0M>;
   void processMixedAOD(aodCollisions& collisions, aodTracks const& tracks, aod::BCsWithTimestamps const&)
