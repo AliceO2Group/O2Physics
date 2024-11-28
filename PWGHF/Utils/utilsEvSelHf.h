@@ -280,7 +280,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   /// \param collision analysed collision
   /// \param rejectionMask bitmask storing the info about which ev. selections are not satisfied by the collision
   template <typename Coll>
-  void fillHistograms(Coll const& collision, const uint16_t rejectionMask, float& centrality, float occupancy=-1)
+  void fillHistograms(Coll const& collision, const uint16_t rejectionMask, float& centrality, float occupancy = -1)
   {
     hCollisions->Fill(EventRejection::None);
     const float posZ = collision.posZ();
