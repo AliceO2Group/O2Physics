@@ -1485,7 +1485,7 @@ struct tofPidBeta {
 
   void process(aod::BCs const&) {}
 
-  o2::pid::tof::Beta<Run2TrksWtofWevTime::iterator> responseBetaRun2;
+  o2::pid::tof::Beta responseBetaRun2;
   void processRun2(Run2TrksWtofWevTime const& tracks)
   {
     if (!enableTableBeta && !enableTableMass) {
@@ -1500,16 +1500,16 @@ struct tofPidBeta {
       }
       if (enableTableMass) {
         if (enableTOFParams) {
-          tablePIDTOFMass(o2::pid::tof::TOFMass<Run2TrksWtofWevTime::iterator>::GetTOFMass(trk.tofExpMom() / (1.f + trk.sign() * mRespParamsV3.getMomentumChargeShift(trk.eta())), beta));
+          tablePIDTOFMass(o2::pid::tof::TOFMass::GetTOFMass(trk.tofExpMom() / (1.f + trk.sign() * mRespParamsV3.getMomentumChargeShift(trk.eta())), beta));
         } else {
-          tablePIDTOFMass(o2::pid::tof::TOFMass<Run2TrksWtofWevTime::iterator>::GetTOFMass(trk, beta));
+          tablePIDTOFMass(o2::pid::tof::TOFMass::GetTOFMass(trk, beta));
         }
       }
     }
   }
   PROCESS_SWITCH(tofPidBeta, processRun2, "Process Run3 data i.e. input is TrackIU. If false, taken from metadata automatically", true);
 
-  o2::pid::tof::Beta<Run3TrksWtofWevTime::iterator> responseBeta;
+  o2::pid::tof::Beta responseBeta;
   void processRun3(Run3TrksWtofWevTime const& tracks)
   {
     if (!enableTableBeta && !enableTableMass) {
@@ -1525,9 +1525,9 @@ struct tofPidBeta {
       }
       if (enableTableMass) {
         if (enableTOFParams) {
-          tablePIDTOFMass(o2::pid::tof::TOFMass<Run3TrksWtofWevTime::iterator>::GetTOFMass(trk.tofExpMom() / (1.f + trk.sign() * mRespParamsV3.getMomentumChargeShift(trk.eta())), beta));
+          tablePIDTOFMass(o2::pid::tof::TOFMass::GetTOFMass(trk.tofExpMom() / (1.f + trk.sign() * mRespParamsV3.getMomentumChargeShift(trk.eta())), beta));
         } else {
-          tablePIDTOFMass(o2::pid::tof::TOFMass<Run3TrksWtofWevTime::iterator>::GetTOFMass(trk, beta));
+          tablePIDTOFMass(o2::pid::tof::TOFMass::GetTOFMass(trk, beta));
         }
       }
     }
