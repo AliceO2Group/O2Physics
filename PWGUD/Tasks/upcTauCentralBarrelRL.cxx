@@ -153,7 +153,6 @@ struct UpcTauCentralBarrelRL {
     AxisSpec axisChannels{CH_ENUM_COUNTER, -0.5, CH_ENUM_COUNTER - 0.5, "Channels (-)"};
   } confAxis;
 
-
   using FullUDTracks = soa::Join<aod::UDTracks, aod::UDTracksExtra, aod::UDTracksDCA, aod::UDTracksPID, aod::UDTracksFlags>;
   using FullUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels>::iterator;
   using FullSGUDCollision = soa::Join<aod::UDCollisions, aod::UDCollisionsSels, aod::SGCollisions, aod::UDZdcsReduced>::iterator;
@@ -591,7 +590,6 @@ struct UpcTauCentralBarrelRL {
       histos.add("EventTwoTracks/ElectronOther/PID/hTOFnSigmaVsEP", ";Electron #it{p} (GeV/c);n#sigma_{TOF} (arb. units)", HistType::kTH2D, {confAxis.axisMom, confAxis.axisNsigma});
       histos.add("EventTwoTracks/ElectronOther/PID/hTOFnSigmaVsMP", ";Muon #it{p} (GeV/c);n#sigma_{TOF} (arb. units)", HistType::kTH2D, {confAxis.axisMom, confAxis.axisNsigma});
       histos.add("EventTwoTracks/ElectronOther/PID/hTOFnSigmaVsPP", ";Pion #it{p} (GeV/c);n#sigma_{TOF} (arb. units)", HistType::kTH2D, {confAxis.axisMom, confAxis.axisNsigma});
-
     }
 
     if (doFourTracks) {
