@@ -9,6 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file dptdptcorrelations.cxx
 #include <CCDB/BasicCCDBManager.h>
 #include <TDatabasePDG.h>
 #include <TDirectory.h>
@@ -21,6 +22,9 @@
 #include <TProfile3D.h>
 #include <TROOT.h>
 #include <TVector2.h>
+#include <cstdio>
+#include <string>
+#include <vector>
 #include <cmath>
 #include <ctime>
 

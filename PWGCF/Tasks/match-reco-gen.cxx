@@ -10,6 +10,8 @@
 // or submit itself to any jurisdiction.
 
 #include <cmath>
+#include <string>
+#include <vector>
 
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
