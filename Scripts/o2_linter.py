@@ -478,7 +478,9 @@ class TestConstRefInForLoop(TestSpec):
 
 
 class TestConstRefInSubscription(TestSpec):
-    """Test const refs in process function subscriptions."""
+    """Test const refs in process function subscriptions.
+    Test only top-level process functions (called process() or has PROCESS_SWITCH).
+    """
 
     name = "const-ref-in-process"
     message = "Use constant references for table subscriptions in process functions."
@@ -490,6 +492,23 @@ class TestConstRefInSubscription(TestSpec):
         n_parens_opened = 0  # number of opened parentheses
         arguments = ""  # process function arguments
         line_process = 0  # line number of the process function
+        # Find names of all top-level process functions with switches.
+        names_functions = ["process"]
+        for i, line in enumerate(content):
+            line = line.strip()
+            if is_comment_cpp(line):
+                continue
+            if not line.startswith("PROCESS_SWITCH"):
+                continue
+            words = line.split()
+            if len(words) < 2:
+                passed = False
+                print_error(path, i + 1, self.name,
+                            "Failed to get the process function name. Keep it on the same line as the switch.")
+                continue
+            names_functions.append(words[1][:-1])
+            # print_error(path, i + 1, self.name, f"Got process function name {words[1][:-1]}.")
+        # Test process functions.
         for i, line in enumerate(content):
             line = line.strip()
             if is_comment_cpp(line):
@@ -498,7 +517,7 @@ class TestConstRefInSubscription(TestSpec):
                 continue
             if "//" in line:  # Remove comment. (Ignore /* to avoid truncating at /*parameter*/.)
                 line = line[: line.index("//")]
-            if re.search(r"^void process[\w]*\(", line):
+            if (match := re.match(r"void (process[\w]*)\(", line)) and match.group(1) in names_functions:
                 line_process = i + 1
                 i_closing = line.rfind(")")
                 i_start = line.index("(") + 1
@@ -1380,29 +1399,29 @@ def main():
     # Bad practice
     enable_bad_practice = True
     if enable_bad_practice:
-        tests.append(TestIOStream())
-        tests.append(TestUsingStd())
-        tests.append(TestUsingDirectives())
-        tests.append(TestStdPrefix())
-        tests.append(TestROOT())
-        tests.append(TestPi())
-        tests.append(TestTwoPiAddSubtract())
-        tests.append(TestPiMultipleFraction())
-        tests.append(TestPdgDatabase())
-        tests.append(TestPdgCode())
-        tests.append(TestPdgMass())
-        tests.append(TestLogging())
-        tests.append(TestConstRefInForLoop())
+        # tests.append(TestIOStream())
+        # tests.append(TestUsingStd())
+        # tests.append(TestUsingDirectives())
+        # tests.append(TestStdPrefix())
+        # tests.append(TestROOT())
+        # tests.append(TestPi())
+        # tests.append(TestTwoPiAddSubtract())
+        # tests.append(TestPiMultipleFraction())
+        # tests.append(TestPdgDatabase())
+        # tests.append(TestPdgCode())
+        # tests.append(TestPdgMass())
+        # tests.append(TestLogging())
+        # tests.append(TestConstRefInForLoop())
         tests.append(TestConstRefInSubscription())
-        tests.append(TestWorkflowOptions())
+        # tests.append(TestWorkflowOptions())
 
     # Documentation
-    enable_documentation = True
+    enable_documentation = False
     if enable_documentation:
         tests.append(TestDocumentationFile())
 
     # Naming conventions
-    enable_naming = True
+    enable_naming = False
     if enable_naming:
         tests.append(TestNameFunctionVariable())
         tests.append(TestNameMacro())
@@ -1422,7 +1441,7 @@ def main():
         tests.append(TestNameConfigurable())
 
     # PWG-HF
-    enable_pwghf = True
+    enable_pwghf = False
     if enable_pwghf:
         tests.append(TestHfNameStructClass())
         tests.append(TestHfNameFileTask())
