@@ -1152,6 +1152,85 @@ class TestNameTask(TestSpec):
         return passed
 
 
+class TestNameFileWorkflow(TestSpec):
+    """Test names of workflow files."""
+
+    name = "name/workflow-file"
+    message = (
+        "Name of a workflow file must match the name of the main struct in it (without the PWG prefix). "
+        '(Class implementation files should be in "Core" directories.)'
+    )
+    suffixes = [".cxx"]
+    per_line = False
+
+    def file_matches(self, path: str) -> bool:
+        return TestSpec.file_matches(self, path) and "/Core/" not in path
+
+    def test_file(self, path: str, content) -> bool:
+        file_name = os.path.basename(path).rstrip(".cxx")
+        base_struct_name = f"{file_name[0].upper()}{file_name[1:]}"  # expected base of struct names
+        if "PWGHF/" in path:
+            base_struct_name = "Hf" + base_struct_name
+        # print(f"For file {file_name} expecting to find {base_struct_name}.")
+        struct_names = []  # actual struct names in the file
+        for line in content:
+            if self.is_disabled(line):
+                return True
+            if not line.startswith("struct "):
+                continue
+            # Extract struct name.
+            words = line.split()
+            if not words[1].isalnum():  # "struct : ..."
+                continue
+            struct_name = words[1]
+            struct_names.append(struct_name)
+        # print(f"Found structs: {struct_names}.")
+        for struct_name in struct_names:
+            if struct_name.startswith(base_struct_name):
+                return True
+        return False
+
+
+class TestNameConfigurable(TestSpec):
+    """Test names of configurables."""
+
+    name = "name/configurable"
+    message = (
+        "Use lowerCamelCase for names of configurables and use the same name "
+        "for the struct member as for the JSON string. (Declare the type and names on the same line.)"
+    )
+    suffixes = [".h", ".cxx"]
+
+    def file_matches(self, path: str) -> bool:
+        return TestSpec.file_matches(self, path) and "Macros/" not in path
+
+    def test_line(self, line: str) -> bool:
+        if is_comment_cpp(line):
+            return True
+        if not line.startswith("Configurable"):
+            return True
+        # Extract Configurable name.
+        words = line.split()
+        if len(words) < 2:
+            return False
+        if len(words) > 2 and words[2] == "=":  # expecting Configurable... nameCpp = {"nameJson",
+            name_cpp = words[1]  # nameCpp
+            name_json = words[3][1:]  # expecting "nameJson",
+        else:
+            names = words[1].split("{")  # expecting Configurable... nameCpp{"nameJson",
+            if len(names) < 2:
+                return False
+            name_cpp = names[0]  # nameCpp
+            name_json = names[1]  # expecting "nameJson",
+            if not name_json:
+                return False
+        if name_json[0] != '"':  # JSON name is not a literal string.
+            return True
+        name_json = name_json.strip('",')  # expecting nameJson
+        # The actual test comes here.
+        return is_lower_camel_case(name_cpp) and name_cpp == name_json
+
+
 # PWG-HF
 
 
@@ -1178,6 +1257,26 @@ class TestHfNameStructClass(TestSpec):
         struct_name = words[1]
         # The actual test comes here.
         return struct_name.startswith("Hf")
+
+
+class TestHfNameFileTask(TestSpec):
+    """PWGHF: Test names of task workflow files."""
+
+    name = "pwghf/name/task-file"
+    message = (
+        'Name of a PWGHF task workflow file must start with "task".'
+    )
+    suffixes = [".cxx"]
+    per_line = False
+
+    def file_matches(self, path: str) -> bool:
+        return TestSpec.file_matches(self, path) and "PWGHF/" in path and "Macros/" not in path
+
+    def test_file(self, path: str, content) -> bool:
+        file_name = os.path.basename(path)
+        if "/Tasks/" in path and not file_name.startswith("task"):
+            return False
+        return True
 
 
 class TestHfStructMembers(TestSpec):
@@ -1259,105 +1358,6 @@ class TestHfStructMembers(TestSpec):
         return passed
 
 
-class TestHfNameFileTask(TestSpec):
-    """PWGHF: Test names of task workflow files."""
-
-    name = "pwghf/name/task-file"
-    message = (
-        'Name of a PWGHF task workflow file must start with "task".'
-    )
-    suffixes = [".cxx"]
-    per_line = False
-
-    def file_matches(self, path: str) -> bool:
-        return TestSpec.file_matches(self, path) and "PWGHF/" in path and "Macros/" not in path
-
-    def test_file(self, path: str, content) -> bool:
-        file_name = os.path.basename(path)
-        if "/Tasks/" in path and not file_name.startswith("task"):
-            return False
-        return True
-
-
-class TestNameFileWorkflow(TestSpec):
-    """Test names of workflow files."""
-
-    name = "name/workflow-file"
-    message = (
-        "Name of a workflow file must match the name of the main struct in it (without the PWG prefix). "
-        '(Class implementation files should be in "Core" directories.)'
-    )
-    suffixes = [".cxx"]
-    per_line = False
-
-    def file_matches(self, path: str) -> bool:
-        return TestSpec.file_matches(self, path) and "/Core/" not in path
-
-    def test_file(self, path: str, content) -> bool:
-        file_name = os.path.basename(path).rstrip(".cxx")
-        base_struct_name = f"{file_name[0].upper()}{file_name[1:]}"  # expected base of struct names
-        if "PWGHF/" in path:
-            base_struct_name = "Hf" + base_struct_name
-        # print(f"For file {file_name} expecting to find {base_struct_name}.")
-        struct_names = []  # actual struct names in the file
-        for line in content:
-            if self.is_disabled(line):
-                return True
-            if not line.startswith("struct "):
-                continue
-            # Extract struct name.
-            words = line.split()
-            if not words[1].isalnum():  # "struct : ..."
-                continue
-            struct_name = words[1]
-            struct_names.append(struct_name)
-        # print(f"Found structs: {struct_names}.")
-        for struct_name in struct_names:
-            if struct_name.startswith(base_struct_name):
-                return True
-        return False
-
-
-class TestNameConfigurable(TestSpec):
-    """Test names of configurables."""
-
-    name = "name/configurable"
-    message = (
-        "Use lowerCamelCase for names of configurables and use the same name "
-        "for the struct member as for the JSON string. (Declare the type and names on the same line.)"
-    )
-    suffixes = [".h", ".cxx"]
-
-    def file_matches(self, path: str) -> bool:
-        return TestSpec.file_matches(self, path) and "Macros/" not in path
-
-    def test_line(self, line: str) -> bool:
-        if is_comment_cpp(line):
-            return True
-        if not line.startswith("Configurable"):
-            return True
-        # Extract Configurable name.
-        words = line.split()
-        if len(words) < 2:
-            return False
-        if len(words) > 2 and words[2] == "=":  # expecting Configurable... nameCpp = {"nameJson",
-            name_cpp = words[1]  # nameCpp
-            name_json = words[3][1:]  # expecting "nameJson",
-        else:
-            names = words[1].split("{")  # expecting Configurable... nameCpp{"nameJson",
-            if len(names) < 2:
-                return False
-            name_cpp = names[0]  # nameCpp
-            name_json = names[1]  # expecting "nameJson",
-            if not name_json:
-                return False
-        if name_json[0] != '"':  # JSON name is not a literal string.
-            return True
-        name_json = name_json.strip('",')  # expecting nameJson
-        # The actual test comes here.
-        return is_lower_camel_case(name_cpp) and name_cpp == name_json
-
-
 # End of test implementations
 
 
@@ -1419,15 +1419,15 @@ def main():
         tests.append(TestNameFilePython())
         tests.append(TestNameWorkflow())
         tests.append(TestNameTask())
+        tests.append(TestNameFileWorkflow())
+        tests.append(TestNameConfigurable())
 
     # PWG-HF
     enable_pwghf = True
     if enable_pwghf:
         tests.append(TestHfNameStructClass())
-        tests.append(TestHfStructMembers())
         tests.append(TestHfNameFileTask())
-        tests.append(TestNameFileWorkflow())
-        tests.append(TestNameConfigurable())
+        tests.append(TestHfStructMembers())
 
     test_names = [t.name for t in tests]  # short names of activated tests
     suffixes = tuple({s for test in tests for s in test.suffixes})  # all suffixes from all enabled tests
