@@ -29,7 +29,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct taskMultiplicityEstimatorCorrelation {
+struct HfTaskMultiplicityEstimatorCorrelation {
   HistogramRegistry registry{"registry", {}};
   static constexpr int8_t nEstimators = 8;
   static constexpr std::array<std::string_view, nEstimators> estimatorsNames = {"FV0A", "FT0A", "FT0C", "FT0M", "FDDA", "FDDC", "FDDM", "NTPV"};
@@ -133,5 +133,5 @@ struct taskMultiplicityEstimatorCorrelation {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<taskMultiplicityEstimatorCorrelation>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfTaskMultiplicityEstimatorCorrelation>(cfgc)};
 }
