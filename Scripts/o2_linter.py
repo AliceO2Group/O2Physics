@@ -503,8 +503,12 @@ class TestConstRefInSubscription(TestSpec):
             words = line.split()
             if len(words) < 2:
                 passed = False
-                print_error(path, i + 1, self.name,
-                            "Failed to get the process function name. Keep it on the same line as the switch.")
+                print_error(
+                    path,
+                    i + 1,
+                    self.name,
+                    "Failed to get the process function name. Keep it on the same line as the switch.",
+                )
                 continue
             names_functions.append(words[1][:-1])
             # print_error(path, i + 1, self.name, f"Got process function name {words[1][:-1]}.")
