@@ -272,7 +272,83 @@ struct HfElectronSelectionWithTpcEmcal {
     }
     return true;
   }
+  // nonHfe Identification
+  template <typename ElectronType, typename TracksType>
+  void nonHfe(ElectronType const& electron, TracksType const& tracks, bool isEMcal)
+  {
+    bool isLSElectronFound = 0;
+    bool isULSElectronFound = 0;
+    bool isLSElectron = 0;
+    bool isULSElectron = 0;
+    float invMassElectron = 0.;
+    float massLike = 0;
+    float massUnLike = 0;
+    for (const auto& pTrack : tracks) {
 
+      if (pTrack.globalIndex() == electron.globalIndex())
+        continue;
+
+      // Apply partner electron selection
+
+      if (!selAssoTracks(pTrack)) {
+        continue;
+      }
+      int PDGe1 = kElectron;
+      int PDGe2 = kElectron;
+      if (electron.sign() > 0) {
+        PDGe1 = kPositron;
+      }
+
+      if (pTrack.sign() > 0) {
+        PDGe2 = kPositron;
+      }
+
+      KFPTrack kfpTrack = createKFPTrackFromTrack(electron);
+      KFPTrack kfpAssociatedTrack = createKFPTrackFromTrack(pTrack);
+      KFParticle KFTrack(kfpTrack, PDGe1);
+      KFParticle kfAssociatedTrack(kfpAssociatedTrack, PDGe2);
+      const KFParticle* electronPairs[2] = {&KFTrack, &kfAssociatedTrack};
+      KFNonHfe.SetConstructMethod(2);
+      KFNonHfe.Construct(electronPairs, 2);
+
+      int ndf = KFNonHfe.GetNDF();
+      Double_t chi2recg = KFNonHfe.GetChi2() / ndf;
+      if (ndf < 1.0) {
+        continue;
+      }
+
+      if (std::sqrt(std::abs(chi2recg)) > chiSquareMax) {
+        continue;
+      }
+
+      invMassElectron = RecoDecay::m(std::array{pTrack.pVector(), electron.pVector()}, std::array{MassElectron, MassElectron});
+
+      // for like charge
+      if (pTrack.sign() == electron.sign()) {
+        massLike = invMassElectron;
+        isLSElectron = true;
+        registry.fill(HIST("hLikeMass"), massLike);
+      }
+      // for unlike charge
+      if (pTrack.sign() != electron.sign()) {
+        massUnLike = invMassElectron;
+        isULSElectron = true;
+        registry.fill(HIST("hUnLikeMass"), massUnLike);
+      }
+
+      // for like charge
+      if (isLSElectron && (invMassElectron <= invariantMass)) {
+        massLike = invMassElectron;
+        isLSElectronFound = 1;
+      }
+      // for unlike charge
+      if (isULSElectron && (invMassElectron <= invariantMass)) {
+        massUnLike = invMassElectron;
+        isULSElectronFound = 1;
+      }
+    }
+    HfElectronSelection(electron.collisionId(), electron.globalIndex(), electron.eta(), electron.phi(), electron.pt(), electron.tpcNSigmaEl(), electron.tofNSigmaEl(), isLSElectronFound, isULSElectronFound, isEMcal);
+  }
   // Electron Identification
   template <bool isMc, typename TracksType, typename EmcClusterType, typename MatchType, typename CollisionType, typename ParticleType>
   void fillElectronTrack(CollisionType const& collision, TracksType const& tracks, EmcClusterType const& emcClusters, MatchType const& matchedTracks, ParticleType const& /*particlemc*/)
@@ -304,7 +380,7 @@ struct HfElectronSelectionWithTpcEmcal {
     float dcaxyTrack = -999;
     float dcazTrack = -999;
     float tpcNsigmaTrack = -999;
-    int electronId = -999;
+
     for (const auto& track : tracks) {
       phiTrack = track.phi();
       etaTrack = track.eta();
@@ -313,7 +389,6 @@ struct HfElectronSelectionWithTpcEmcal {
       dcaxyTrack = track.dcaXY();
       dcazTrack = track.dcaZ();
       tpcNsigmaTrack = track.tpcNSigmaEl();
-      electronId = track.globalIndex();
       // Apply Track Selection
       if (!selTracks(track)) {
         continue;
@@ -348,8 +423,6 @@ struct HfElectronSelectionWithTpcEmcal {
       float deltaEtaMatch = -999.;
       float eop = -999;
       bool isEMcal = false;
-      bool isLSElectronFound = 0;
-      bool isULSElectronFound = 0;
 
       float trackRapidity = track.rapidity(MassElectron);
 
@@ -409,7 +482,6 @@ struct HfElectronSelectionWithTpcEmcal {
         registry.fill(HIST("hAfterMatchEtaPhi"), etaMatchTrack, phiMatchTrack);
         registry.fill(HIST("hAfterMatchEnergyLossVsP"), matchTrack.tpcSignal(), pMatchTrack);
         registry.fill(HIST("hAfterMatchEnergyLossVsPt"), matchTrack.tpcSignal(), ptMatchTrack);
-
         // Apply Electron Identification cuts
         if constexpr (!isMc) {
           if ((tpcNsigmaMatchTrack < tpcNsigmaElectronMin || tpcNsigmaMatchTrack > tpcNsigmaElectronMax) || (m02MatchEmcCluster < m02EmcClusterElectronMin || m02MatchEmcCluster > m02EmcClusterElectronMax) || (m20MatchEmcCluster < m20EmcClusterElectronMin || m20MatchEmcCluster > m20EmcClusterElectronMax)) {
@@ -428,84 +500,12 @@ struct HfElectronSelectionWithTpcEmcal {
           continue;
         }
 
-        /////////////////////////////////////////////////////////////            photonic electron          ///////////////////////////////////////////////////////
+        /////////////////          NonHf electron Selection with Emcal       ////////////////////////
 
-        isLSElectronFound = 0;
-        isULSElectronFound = 0;
-        bool isLSElectron = 0;
-        bool isULSElectron = 0;
-        float invMassElectron = 0.;
-        float massLike = 0;
-        float massUnLike = 0;
-
-        for (const auto& pTrack : tracks) {
-
-          if (pTrack.globalIndex() == matchTrack.globalIndex())
-            continue;
-
-          // Apply Associated electron Selection
-
-          if (!selAssoTracks(pTrack)) {
-            continue;
-          }
-          int PDGe1 = kElectron;
-          int PDGe2 = kElectron;
-          if (matchTrack.sign() > 0) {
-            PDGe1 = kPositron;
-          }
-
-          if (pTrack.sign() > 0) {
-            PDGe2 = kPositron;
-          }
-
-          KFPTrack kfpTrack = createKFPTrackFromTrack(matchTrack);
-          KFPTrack kfpAssociatedTrack = createKFPTrackFromTrack(pTrack);
-          KFParticle KFTrack(kfpTrack, PDGe1);
-          KFParticle kfAssociatedTrack(kfpAssociatedTrack, PDGe2);
-          const KFParticle* LcDaughters[2] = {&KFTrack, &kfAssociatedTrack};
-          KFNonHfe.SetConstructMethod(2);
-          KFNonHfe.Construct(LcDaughters, 2);
-
-          int ndf = KFNonHfe.GetNDF();
-          Double_t chi2recg = KFNonHfe.GetChi2() / ndf;
-          if (ndf < 1.0) {
-            continue;
-          }
-
-          if (std::sqrt(std::abs(chi2recg)) > chiSquareMax) {
-            continue;
-          }
-
-          invMassElectron = RecoDecay::m(std::array{pTrack.pVector(), matchTrack.pVector()}, std::array{MassElectron, MassElectron});
-
-          // for like charge
-          if (pTrack.sign() == matchTrack.sign()) {
-            massLike = invMassElectron;
-            isLSElectron = true;
-            registry.fill(HIST("hLikeMass"), massLike);
-          }
-          // for unlike charge
-          if (pTrack.sign() != matchTrack.sign()) {
-            massUnLike = invMassElectron;
-            isULSElectron = true;
-            registry.fill(HIST("hUnLikeMass"), massUnLike);
-          }
-
-          // for like charge
-          if (isLSElectron && (invMassElectron <= invariantMass)) {
-            massLike = invMassElectron;
-            isLSElectronFound = 1;
-          }
-          // for unlike charge
-          if (isULSElectron && (invMassElectron <= invariantMass)) {
-            massUnLike = invMassElectron;
-            isULSElectronFound = 1;
-          }
-        }
-        HfElectronSelection(track.collisionId(), matchTrack.globalIndex(), etaMatchTrack, phiMatchTrack, ptMatchTrack, isLSElectronFound, isULSElectronFound);
+        nonHfe(matchTrack, tracks, true);
 
         electronSel(track.collisionId(), matchTrack.globalIndex(), etaMatchTrack, phiMatchTrack, ptMatchTrack, pMatchTrack, trackRapidity, matchTrack.dcaXY(), matchTrack.dcaZ(), matchTrack.tpcNSigmaEl(), matchTrack.tofNSigmaEl(),
-                    eMatchEmcCluster, etaMatchEmcCluster, phiMatchEmcCluster, m02MatchEmcCluster, m20MatchEmcCluster, cellEmcCluster, timeEmcCluster, deltaEtaMatch, deltaPhiMatch, isEMcal, isLSElectronFound, isULSElectronFound);
+                    eMatchEmcCluster, etaMatchEmcCluster, phiMatchEmcCluster, m02MatchEmcCluster, m20MatchEmcCluster, cellEmcCluster, timeEmcCluster, deltaEtaMatch, deltaPhiMatch, isEMcal);
       }
 
       /// Electron information without Emcal and use TPC and TOF
@@ -513,8 +513,10 @@ struct HfElectronSelectionWithTpcEmcal {
         continue;
       }
 
+      /////////////////          NonHf electron Selection without Emcal       ////////////////////////
+      nonHfe(track, tracks, false);
       electronSel(track.collisionId(), track.globalIndex(), etaTrack, phiTrack, ptTrack, pTrack, trackRapidity, dcaxyTrack, dcazTrack, track.tpcNSigmaEl(), track.tofNSigmaEl(),
-                  eMatchEmcCluster, etaMatchEmcCluster, phiMatchEmcCluster, m02MatchEmcCluster, m20MatchEmcCluster, cellEmcCluster, timeEmcCluster, deltaEtaMatch, deltaPhiMatch, isEMcal, isLSElectronFound, isULSElectronFound);
+                  eMatchEmcCluster, etaMatchEmcCluster, phiMatchEmcCluster, m02MatchEmcCluster, m20MatchEmcCluster, cellEmcCluster, timeEmcCluster, deltaEtaMatch, deltaPhiMatch, isEMcal);
     }
   }
 
@@ -543,16 +545,9 @@ struct HfElectronSelectionWithTpcEmcal {
   {
 
     ///// electron identification
-    double ptMcGen = -999;
-    double etaMcGen = -999;
-    double phiMcGen = -999;
-    double pMcGen = -999;
     bool isNonHfe = false;
     for (const auto& particleMc : mcParticles) {
-      ptMcGen = particleMc.pt();
-      etaMcGen = particleMc.eta();
-      phiMcGen = particleMc.phi();
-      pMcGen = particleMc.p();
+
       if (!particleMc.isPhysicalPrimary())
         continue;
       if (!mcGensel(particleMc)) {
@@ -560,7 +555,7 @@ struct HfElectronSelectionWithTpcEmcal {
       }
       if (abs(particleMc.pdgCode()) == 11) {
 
-        registry.fill(HIST("hMcgenInElectron"), ptMcGen, phiMcGen, etaMcGen);
+        registry.fill(HIST("hMcgenInElectron"), particleMc.pt(), particleMc.phi(), particleMc.eta());
         bool isEmbEta = false;
         bool isEmbPi0 = false;
 
