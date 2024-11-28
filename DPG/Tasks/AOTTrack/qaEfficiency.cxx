@@ -333,8 +333,8 @@ struct QaEfficiency {
                                   phiMin, phiMax,
                                   yMin, yMax);
     const int histogramIndex = id + pdgSign * nSpecies;
-    hPtmotherGenerated = histos.add<TH1>("MC/mother/pt/generated", "Generated pT of mother Lambda or Xi ", +tagPt, kTH1D, {axisPt}); 
-   
+    hPtmotherGenerated = histos.add<TH1D>("MC/mother/pt/generated", "Generated pT of mother Lambda or Xi", kTH1D, {axisPt});
+
     // Pt
     hPtIts[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/its", PDGs[histogramIndex]), "ITS tracks " + tagPt, kTH1D, {axisPt});
     hPtTpc[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/tpc", PDGs[histogramIndex]), "TPC tracks " + tagPt, kTH1D, {axisPt});
@@ -1257,20 +1257,12 @@ struct QaEfficiency {
                 motherIsAccepted = true; // Mother matches the list of specified PDGs
                 break;
               }
-            } // If mother is accepted, break out of loop
-            if (motherIsAccepted) {
-              break;
+              if (motherIsAccepted) {
+                hPtmotherGenerated->Fill(mcParticle.pt()); // Fill generated pT for Lambda
+              }
             }
           }
         }
-        // If mother particle is accepted, fill histograms for Xi and Lambda pT
-        if (motherIsAccepted) {
-          hPtmotherGenerated->Fill(mcParticle.pt()); // Fill generated pT for Lambda
-        }
-      }
-    }
-  }
-
         if (motherIsAccepted) {
           hPtGeneratedStr[histogramIndex]->Fill(mcParticle.pt());
           if (doPtRadius) {
