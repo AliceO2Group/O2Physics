@@ -113,6 +113,7 @@ class FemtoUniversePairCleaner
       if (part1.globalIndex() == posChild.globalIndex() || part1.globalIndex() == negChild.globalIndex() || part1.globalIndex() == bachelor.globalIndex()) {
         return false;
       }
+      return part1.globalIndex() != part2.globalIndex();
     } else if constexpr (mPartOneType == o2::aod::femtouniverseparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtouniverseparticle::ParticleType::kD0) {
       /// Track-D0 combination part1 is hadron and part2 is D0
       if (part2.partType() != o2::aod::femtouniverseparticle::ParticleType::kD0) {
