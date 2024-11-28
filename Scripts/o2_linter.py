@@ -1259,10 +1259,10 @@ class TestHfStructMembers(TestSpec):
         return passed
 
 
-class TestHfNameFileWorkflowTask(TestSpec):
+class TestHfNameFileTask(TestSpec):
     """PWGHF: Test names of task workflow files."""
 
-    name = "pwghf/name/workflow-file-task"
+    name = "pwghf/name/task-file"
     message = (
         'Name of a PWGHF task workflow file must start with "task".'
     )
@@ -1419,7 +1419,7 @@ def main():
     if enable_pwghf:
         tests.append(TestHfNameStructClass())
         tests.append(TestHfStructMembers())
-        tests.append(TestHfNameFileWorkflowTask())
+        tests.append(TestHfNameFileTask())
         tests.append(TestNameFileWorkflow())
         tests.append(TestHfNameConfigurable())
 
