@@ -2271,13 +2271,13 @@ struct UpcTauCentralBarrelRL {
   {
     if (reconstructedCollision.has_udMcCollision()) {
       const auto& generatedCollision = reconstructedCollision.udMcCollision();
-      printDebugMessage(Form("%lli udMcCollision found",generatedCollision.size()));
+      printDebugMessage(Form("%lli udMcCollision found", generatedCollision.size()));
     }
 
     const auto& track = reconstructedBarrelTracks.iteratorAt(0);
     if (track.size() && track.has_udMcParticle()) {
       const auto& particle = track.udMcParticle();
-      printDebugMessage(Form("%lli udMcParticle found",particle.size()));
+      printDebugMessage(Form("%lli udMcParticle found", particle.size()));
     }
 
   } // end processTestMC
