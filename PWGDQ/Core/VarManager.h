@@ -4007,7 +4007,8 @@ void VarManager::FillQVectorFromGFW(C const& /*collision*/, A const& compA11, A 
   complex<double> QC(values[kQ2X0C] * S11C, values[kQ2Y0C] * S11C);
   values[kM11REFetagap] = S11B * S11C;
   values[kCORR2REFetagap] = ((QB * conj(QC)).real()) / values[kM11REFetagap];
-  values[kCORR2REFetagap] = std::isnan(values[kCORR2REFetagap]) || std::isinf(values[kCORR2REFetagap]) ? 0 : values[kCORR2REFetagap];
+  values[kCORR2REFetagap] = std::isnan(values[kM11REFetagap]) || std::isinf(values[kM11REFetagap]) || std::isnan(values[kCORR2REFetagap]) || std::isinf(values[kCORR2REFetagap]) ? 0 : values[kCORR2REFetagap];
+  values[kM11REFetagap] = std::isnan(values[kM11REFetagap]) || std::isinf(values[kM11REFetagap]) || std::isnan(values[kCORR2REFetagap]) || std::isinf(values[kCORR2REFetagap]) ? 0 : values[kM11REFetagap];
 
   // TODO: provide different computations for R
   // Compute the R factor using the 2 sub-events technique for second and third harmonic
