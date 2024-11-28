@@ -1403,29 +1403,29 @@ def main():
     # Bad practice
     enable_bad_practice = True
     if enable_bad_practice:
-        # tests.append(TestIOStream())
-        # tests.append(TestUsingStd())
-        # tests.append(TestUsingDirectives())
-        # tests.append(TestStdPrefix())
-        # tests.append(TestROOT())
-        # tests.append(TestPi())
-        # tests.append(TestTwoPiAddSubtract())
-        # tests.append(TestPiMultipleFraction())
-        # tests.append(TestPdgDatabase())
-        # tests.append(TestPdgCode())
-        # tests.append(TestPdgMass())
-        # tests.append(TestLogging())
-        # tests.append(TestConstRefInForLoop())
+        tests.append(TestIOStream())
+        tests.append(TestUsingStd())
+        tests.append(TestUsingDirectives())
+        tests.append(TestStdPrefix())
+        tests.append(TestROOT())
+        tests.append(TestPi())
+        tests.append(TestTwoPiAddSubtract())
+        tests.append(TestPiMultipleFraction())
+        tests.append(TestPdgDatabase())
+        tests.append(TestPdgCode())
+        tests.append(TestPdgMass())
+        tests.append(TestLogging())
+        tests.append(TestConstRefInForLoop())
         tests.append(TestConstRefInSubscription())
-        # tests.append(TestWorkflowOptions())
+        tests.append(TestWorkflowOptions())
 
     # Documentation
-    enable_documentation = False
+    enable_documentation = True
     if enable_documentation:
         tests.append(TestDocumentationFile())
 
     # Naming conventions
-    enable_naming = False
+    enable_naming = True
     if enable_naming:
         tests.append(TestNameFunctionVariable())
         tests.append(TestNameMacro())
@@ -1445,7 +1445,7 @@ def main():
         tests.append(TestNameConfigurable())
 
     # PWG-HF
-    enable_pwghf = False
+    enable_pwghf = True
     if enable_pwghf:
         tests.append(TestHfNameStructClass())
         tests.append(TestHfNameFileTask())
