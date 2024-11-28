@@ -462,16 +462,16 @@ struct CorrelationTask {
         }
 
         // last param is the weight
-        if (cfgMassAxis && !doprocessSame2Prong2Prong) {
-          if constexpr (std::experimental::is_detected<hasInvMass, typename TTracks1::iterator>::value)
-            target->getPairHist()->Fill(step, track1.eta() - track2.eta(), track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ, track1.invMass(), associatedWeight);
-          else
-            LOGF(fatal, "Can not fill mass axis without invMass column. Disable cfgMassAxis.");
-        } else if (cfgMassAxis && doprocessSame2Prong2Prong) {
+        if (cfgMassAxis && doprocessSame2Prong2Prong) {
           if constexpr (std::experimental::is_detected<hasInvMass, typename TTracks1::iterator>::value && std::experimental::is_detected<hasInvMass, typename TTracks2::iterator>::value)
             target->getPairHist()->Fill(step, track1.eta() - track2.eta(), track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ, track2.invMass(), track1.invMass(), associatedWeight);
           else
             LOGF(fatal, "Can not fill mass axis without invMass column. \n no mass for two particles");
+        } else if (cfgMassAxis) {
+          if constexpr (std::experimental::is_detected<hasInvMass, typename TTracks1::iterator>::value)
+            target->getPairHist()->Fill(step, track1.eta() - track2.eta(), track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ, track1.invMass(), associatedWeight);
+          else
+            LOGF(fatal, "Can not fill mass axis without invMass column. Disable cfgMassAxis.");
         } else {
           target->getPairHist()->Fill(step, track1.eta() - track2.eta(), track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ, associatedWeight);
         }
