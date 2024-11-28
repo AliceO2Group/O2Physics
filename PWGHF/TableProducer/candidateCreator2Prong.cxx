@@ -677,6 +677,7 @@ struct HfCandidateCreator2ProngExpressions {
 
   // Configuration
   o2::framework::Configurable<bool> rejectBackground{"rejectBackground", true, "Reject particles from background events"};
+  o2::framework::Configurable<bool> matchKinkedDecayTopology{"matchKinkedDecayTopology", false, "Match also candidates with tracks that decay with kinked topology"};
 
   HfEventSelectionMc hfEvSelMc; // mc event selection and monitoring
 
@@ -723,6 +724,7 @@ struct HfCandidateCreator2ProngExpressions {
     int8_t sign = 0;
     int8_t flag = 0;
     int8_t origin = 0;
+    int8_t nKinkedTracks = 0;
 
     // Match reconstructed candidates.
     // Spawned table can be used directly
@@ -744,14 +746,18 @@ struct HfCandidateCreator2ProngExpressions {
           }
         }
         if (fromBkg) {
-          rowMcMatchRec(flag, origin, -1.f, 0);
+          rowMcMatchRec(flag, origin, -1.f, 0, 0);
           continue;
         }
       }
       std::vector<int> idxBhadMothers{};
 
       // D0(bar) → π± K∓
-      indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign);
+      if (matchKinkedDecayTopology) {
+        indexRec = RecoDecay::getMatchedMCRec<false, false, false, true>(mcParticles, arrayDaughters, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign, 1, &nKinkedTracks);
+      } else {
+        indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign);
+      }
       if (indexRec > -1) {
         flag = sign * (1 << DecayType::D0ToPiK);
       }
@@ -779,9 +785,9 @@ struct HfCandidateCreator2ProngExpressions {
       }
       if (origin == RecoDecay::OriginType::NonPrompt) {
         auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
-        rowMcMatchRec(flag, origin, bHadMother.pt(), bHadMother.pdgCode());
+        rowMcMatchRec(flag, origin, bHadMother.pt(), bHadMother.pdgCode(), nKinkedTracks);
       } else {
-        rowMcMatchRec(flag, origin, -1.f, 0);
+        rowMcMatchRec(flag, origin, -1.f, 0, nKinkedTracks);
       }
     }
 

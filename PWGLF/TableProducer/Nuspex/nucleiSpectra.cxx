@@ -831,12 +831,16 @@ struct nucleiSpectra {
           if (particle.mcCollisionId() == collMCGlobId) {
             c.correctPV = true;
           }
+          if (!c.correctPV) {
+            c.flags |= kIsAmbiguous;
+          }
           if (!particle.isPhysicalPrimary()) {
             c.isSecondary = true;
             if (particle.getProcess() == 4) {
               c.fromWeakDecay = true;
             }
           }
+
           if (c.fillDCAHist && cfgDCAHists->get(iS, c.pt < 0)) {
             nuclei::hDCAHists[c.pt < 0][iS]->Fill(std::abs(c.pt), c.DCAxy, c.DCAz, c.nSigmaTPC[iS], c.tofMasses[iS], c.ITSnCls, c.TPCnCls, c.correctPV, c.isSecondary, c.fromWeakDecay);
           }
@@ -845,16 +849,20 @@ struct nucleiSpectra {
       if (!storeIt) {
         continue;
       }
+      int MotherpdgCode = 0;
       isReconstructed[particle.globalIndex()] = true;
       if (particle.isPhysicalPrimary()) {
         c.flags |= kIsPhysicalPrimary;
       } else if (particle.has_mothers()) {
         c.flags |= kIsSecondaryFromWeakDecay;
+        for (auto& motherparticle : particle.mothers_as<aod::McParticles>()) {
+          MotherpdgCode = motherparticle.pdgCode();
+        }
       } else {
         c.flags |= kIsSecondaryFromMaterial;
       }
       float absoDecL = computeAbsoDecL(particle);
-      nucleiTableMC(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.TOFchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.TPCnClsShared, c.clusterSizesITS, particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), goodCollisions[particle.mcCollisionId()], absoDecL);
+      nucleiTableMC(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.TOFchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.TPCnClsShared, c.clusterSizesITS, particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), MotherpdgCode, goodCollisions[particle.mcCollisionId()], absoDecL);
     }
 
     int index{0};
@@ -875,7 +883,7 @@ struct nucleiSpectra {
 
         if (!isReconstructed[index] && (cfgTreeConfig->get(iS, 0u) || cfgTreeConfig->get(iS, 1u))) {
           float absDecL = computeAbsoDecL(particle);
-          nucleiTableMC(999., 999., 999., 0., 0., 999., 999., 999., -1, -1, -1, -1, flags, 0, 0, 0, 0, 0, 0, particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), goodCollisions[particle.mcCollisionId()], absDecL);
+          nucleiTableMC(999., 999., 999., 0., 0., 999., 999., 999., -1, -1, -1, -1, flags, 0, 0, 0, 0, 0, 0, particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), 0, goodCollisions[particle.mcCollisionId()], absDecL);
         }
         break;
       }

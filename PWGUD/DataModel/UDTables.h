@@ -29,7 +29,7 @@ namespace udmccollision
 DECLARE_SOA_COLUMN(GlobalBC, globalBC, uint64_t); //!
 } // namespace udmccollision
 
-DECLARE_SOA_TABLE(UDMcCollisions, "AOD", "UDMCCOLLISIONS",
+DECLARE_SOA_TABLE(UDMcCollisions, "AOD", "UDMCCOLLISION",
                   o2::soa::Index<>,
                   udmccollision::GlobalBC,
                   mccollision::GeneratorsID,
@@ -53,7 +53,7 @@ DECLARE_SOA_COLUMN(Pz, pz, float);                         //!
 DECLARE_SOA_COLUMN(E, e, float);                           //!
 } // namespace udmcparticle
 
-DECLARE_SOA_TABLE_FULL(UDMcParticles, "UDMcParticles", "AOD", "UDMCPARTICLES", //!
+DECLARE_SOA_TABLE_FULL(UDMcParticles, "UDMcParticles", "AOD", "UDMCPARTICLE", //!
                        o2::soa::Index<>, udmcparticle::UDMcCollisionId,
                        mcparticle::PdgCode,
                        mcparticle::StatusCode,

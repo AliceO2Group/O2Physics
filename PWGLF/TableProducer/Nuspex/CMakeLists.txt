@@ -88,3 +88,13 @@ o2physics_add_dpl_workflow(threebody-kf-task
     SOURCES threebodyKFTask.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(hypernuclei-kf-reco-task
+    SOURCES hypKfRecoTask.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore KFParticle::KFParticle
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(hypernuclei-kf-tree-creator
+    SOURCES hypKfTreeCreator.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
