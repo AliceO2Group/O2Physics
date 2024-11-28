@@ -492,8 +492,8 @@ class TestConstRefInSubscription(TestSpec):
         n_parens_opened = 0  # number of opened parentheses
         arguments = ""  # process function arguments
         line_process = 0  # line number of the process function
-        # Find names of all top-level process functions with switches.
-        names_functions = ["process"]
+        # Find names of all top-level process functions.
+        names_functions = ["process"]  # names of allowed process functions to test
         for i, line in enumerate(content):
             line = line.strip()
             if is_comment_cpp(line):
@@ -510,7 +510,7 @@ class TestConstRefInSubscription(TestSpec):
                     "Failed to get the process function name. Keep it on the same line as the switch.",
                 )
                 continue
-            names_functions.append(words[1][:-1])
+            names_functions.append(words[1][:-1])  # Remove the trailing comma.
             # print_error(path, i + 1, self.name, f"Got process function name {words[1][:-1]}.")
         # Test process functions.
         for i, line in enumerate(content):
