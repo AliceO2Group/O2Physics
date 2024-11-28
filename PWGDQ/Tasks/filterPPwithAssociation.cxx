@@ -586,7 +586,7 @@ struct DQFilterPPTask {
   std::vector<int> fElectronMuonNreqObjs;              // minimal number of electron-muon pairs required
   std::map<int, AnalysisCompositeCut> fBarrelPairCuts; // map of barrel pair cuts
   std::map<int, AnalysisCompositeCut> fMuonPairCuts;   // map of muon pair cuts
-  std::map<int, AnalysisCompositeCut> fElectronMuonPairCuts;   // map of electron-muon pair cuts
+  std::map<int, AnalysisCompositeCut> fElectronMuonPairCuts; // map of electron-muon pair cuts
   std::map<int, TString> fBarrelPairHistNames;         // map with names of the barrel pairing histogram directories
   std::map<int, TString> fMuonPairHistNames;           // map with names of the muon pairing histogram directories
   std::map<int, TString> fElectronMuonPairHistNames;   // map with names of the electron-muon pairing histogram directories
