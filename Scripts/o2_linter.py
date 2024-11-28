@@ -1263,7 +1263,7 @@ class TestHfNameFileTask(TestSpec):
     """PWGHF: Test names of task workflow files."""
 
     name = "pwghf/name/task-file"
-    message = ('Name of a PWGHF task workflow file must start with "task".')
+    message = 'Name of a PWGHF task workflow file must start with "task".'
     suffixes = [".cxx"]
     per_line = False
 
