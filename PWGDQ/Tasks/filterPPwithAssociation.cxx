@@ -13,6 +13,8 @@
 //
 #include <iostream>
 #include <vector>
+#include <map>
+#include <string>
 #include <memory>
 #include <cstring>
 #include <TH1.h>
@@ -292,15 +294,15 @@ struct DQBarrelTrackSelection {
     // o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
     o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
-    uint32_t filterMap = uint32_t(0);
-    uint32_t filterMapEMu = uint32_t(0);
+    uint32_t filterMap = static_cast<uint32_t>(0);
+    uint32_t filterMapEMu = static_cast<uint32_t>(0);
     trackSel.reserve(tracksBarrel.size());
     emuSel.reserve(emuBarrel.size());
 
     VarManager::ResetValues(0, VarManager::kNBarrelTrackVariables);
     for (auto& trackAssoc : trackAssocs) {
-      filterMap = uint32_t(0);
-      filterMapEMu = uint32_t(0);
+      filterMap = static_cast<uint32_t>(0);
+      filterMapEMu = static_cast<uint32_t>(0);
 
       auto track = trackAssoc.template track_as<TTracks>();
 
@@ -315,7 +317,7 @@ struct DQBarrelTrackSelection {
       int i = 0;
       for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); ++cut, ++i) {
         if ((*cut).IsSelected(VarManager::fgValues)) {
-          filterMap |= (uint32_t(1) << i);
+          filterMap |= (static_cast<uint32_t>(1) << i);
           if (fConfigQA) {
             fHistMan->FillHistClass(fCutHistNames[i].Data(), VarManager::fgValues);
           }
@@ -324,7 +326,7 @@ struct DQBarrelTrackSelection {
       int j = 0;
       for (auto cut = fEMuTrackCuts.begin(); cut != fEMuTrackCuts.end(); ++cut, ++j) {
         if ((*cut).IsSelected(VarManager::fgValues)) {
-          filterMapEMu |= (uint32_t(1) << j);
+          filterMapEMu |= (static_cast<uint32_t>(1) << j);
         }
       }
       trackSel(filterMap);
@@ -436,16 +438,16 @@ struct DQMuonsSelection {
       }
     }
 
-    uint32_t filterMap = uint32_t(0);
-    uint32_t filterMapEMu = uint32_t(0);
+    uint32_t filterMap = static_cast<uint32_t>(0);
+    uint32_t filterMapEMu = static_cast<uint32_t>(0);
     trackSel.reserve(muons.size());
     emuSel.reserve(muons.size());
 
     VarManager::ResetValues(0, VarManager::kNMuonTrackVariables);
 
     for (auto& muonAssoc : muonAssocs) {
-      filterMap = uint32_t(0);
-      filterMapEMu = uint32_t(0);
+      filterMap = static_cast<uint32_t>(0);
+      filterMapEMu = static_cast<uint32_t>(0);
       auto muon = muonAssoc.template fwdtrack_as<TMuons>();
       VarManager::FillTrack<TMuonFillMap>(muon);
       if (fPropMuon) {
@@ -457,7 +459,7 @@ struct DQMuonsSelection {
       int i = 0;
       for (auto cut = fTrackCuts.begin(); cut != fTrackCuts.end(); ++cut, ++i) {
         if ((*cut).IsSelected(VarManager::fgValues)) {
-          filterMap |= (uint32_t(1) << i);
+          filterMap |= (static_cast<uint32_t>(1) << i);
           if (fConfigQA) {
             fHistMan->FillHistClass(fCutHistNames[i].Data(), VarManager::fgValues);
           }
@@ -466,7 +468,7 @@ struct DQMuonsSelection {
       int j = 0;
       for (auto cut = fEMuTrackCuts.begin(); cut != fEMuTrackCuts.end(); ++cut, ++j) {
         if ((*cut).IsSelected(VarManager::fgValues)) {
-          filterMapEMu |= (uint32_t(1) << j);
+          filterMapEMu |= (static_cast<uint32_t>(1) << j);
         }
       }
       trackSel(filterMap);
@@ -748,7 +750,7 @@ struct DQFilterPPTask {
     // count the number of barrel tracks fulfilling each cut
     for (auto trackAssoc : barrelAssocs) {
       for (int i = 0; i < fNBarrelCuts; ++i) {
-        if (trackAssoc.isDQBarrelSelected() & (uint32_t(1) << i)) {
+        if (trackAssoc.isDQBarrelSelected() & (static_cast<uint32_t>(1) << i)) {
           objCountersBarrel[i] += 1;
         }
       }
@@ -759,7 +761,7 @@ struct DQFilterPPTask {
     for (int i = 0; i < fNBarrelCuts; i++) {
       if (fBarrelRunPairing[i]) {
         if (objCountersBarrel[i] > 1) { // pairing has to be enabled and at least two tracks are needed
-          pairingMask |= (uint32_t(1) << i);
+          pairingMask |= (static_cast<uint32_t>(1) << i);
         }
         objCountersBarrel[i] = 0; // reset counters for selections where pairing is needed (count pairs instead)
       }
@@ -772,7 +774,7 @@ struct DQFilterPPTask {
     for (int icut = 0; icut < fNBarrelCuts; icut++) {
       TString objStr = objArrayLS->At(icut)->GetName();
       if (!objStr.CompareTo("true")) {
-        pairingLS |= (uint32_t(1) << icut);
+        pairingLS |= (static_cast<uint32_t>(1) << icut);
       }
     }
 
@@ -795,13 +797,13 @@ struct DQFilterPPTask {
         VarManager::FillPair<VarManager::kDecayToEE, TTrackFillMap>(t1, t2); // compute pair quantities
         for (int icut = 0; icut < fNBarrelCuts; icut++) {
           // select like-sign pairs if trigger has set boolean true within fConfigFilterLsBarrelTracksPairs
-          if (!(pairingLS & (uint32_t(1) << icut))) {
+          if (!(pairingLS & (static_cast<uint32_t>(1) << icut))) {
             if (t1.sign() * t2.sign() > 0) {
               continue;
             }
           }
 
-          if (!(pairFilter & (uint32_t(1) << icut))) {
+          if (!(pairFilter & (static_cast<uint32_t>(1) << icut))) {
             continue;
           }
           if (!fBarrelPairCuts[icut].IsSelected(VarManager::fgValues)) {
@@ -819,7 +821,7 @@ struct DQFilterPPTask {
     // count the number of muon-collision associations fulfilling each selection
     for (auto muon : muonAssocs) {
       for (int i = 0; i < fNMuonCuts; ++i) {
-        if (muon.isDQMuonSelected() & (uint32_t(1) << i)) {
+        if (muon.isDQMuonSelected() & (static_cast<uint32_t>(1) << i)) {
           objCountersMuon[i] += 1;
         }
       }
@@ -830,7 +832,7 @@ struct DQFilterPPTask {
     for (int i = 0; i < fNMuonCuts; i++) {
       if (fMuonRunPairing[i]) { // pairing has to be enabled and at least two tracks are needed
         if (objCountersMuon[i] > 1) {
-          pairingMask |= (uint32_t(1) << i);
+          pairingMask |= (static_cast<uint32_t>(1) << i);
         }
         objCountersMuon[i] = 0; // reset counters for selections where pairing is needed (count pairs instead)
       }
@@ -843,7 +845,7 @@ struct DQFilterPPTask {
     for (int icut = 0; icut < fNMuonCuts; icut++) {
       TString objStr = objArrayMuonLS->At(icut)->GetName();
       if (!objStr.CompareTo("true")) {
-        pairingLS |= (uint32_t(1) << icut);
+        pairingLS |= (static_cast<uint32_t>(1) << icut);
       }
     }
 
@@ -870,12 +872,12 @@ struct DQFilterPPTask {
         }
         for (int icut = 0; icut < fNMuonCuts; icut++) {
           // select like-sign pairs if trigger has set boolean true within fConfigFilterLsMuonsPairs
-          if (!(pairingLS & (uint32_t(1) << icut))) {
+          if (!(pairingLS & (static_cast<uint32_t>(1) << icut))) {
             if (t1.sign() * t2.sign() > 0) {
               continue;
             }
           }
-          if (!(pairFilter & (uint32_t(1) << icut))) {
+          if (!(pairFilter & (static_cast<uint32_t>(1) << icut))) {
             continue;
           }
           if (!fMuonPairCuts[icut].IsSelected(VarManager::fgValues)) {
@@ -894,9 +896,9 @@ struct DQFilterPPTask {
     pairingMask = 0;
     for (auto& [trackAssoc, muon] : combinations(barrelAssocs, muonAssocs)) {
       for (int i = 0; i < fNElectronMuonCuts; ++i) {
-        if (trackAssoc.isDQEMuBarrelSelected() & muon.isDQEMuMuonSelected() & (uint32_t(1) << i)) {
+        if (trackAssoc.isDQEMuBarrelSelected() & muon.isDQEMuMuonSelected() & (static_cast<uint32_t>(1) << i)) {
           if (fElectronMuonRunPairing[i]) {
-            pairingMask |= (uint32_t(1) << i);
+            pairingMask |= (static_cast<uint32_t>(1) << i);
           }
         }
       }
@@ -908,7 +910,7 @@ struct DQFilterPPTask {
     for (int icut = 0; icut < fNElectronMuonCuts; icut++) {
       TString objStr = objArrayElectronMuonLS->At(icut)->GetName();
       if (!objStr.CompareTo("true")) {
-        pairingLS |= (uint32_t(1) << icut);
+        pairingLS |= (static_cast<uint32_t>(1) << icut);
       }
     }
 
@@ -929,12 +931,12 @@ struct DQFilterPPTask {
         VarManager::FillPair<VarManager::kElectronMuon, TTrackFillMap>(t1, t2); // compute pair quantities
         for (int icut = 0; icut < fNElectronMuonCuts; icut++) {
           // select like-sign pairs if trigger has set boolean true within fConfigFilterLsElectronMuonsPairs
-          if (!(pairingLS & (uint32_t(1) << icut))) {
+          if (!(pairingLS & (static_cast<uint32_t>(1) << icut))) {
             if (t1.sign() * t2.sign() > 0) {
               continue;
             }
           }
-          if (!(pairFilter & (uint32_t(1) << icut))) {
+          if (!(pairFilter & (static_cast<uint32_t>(1) << icut))) {
             continue;
           }
           if (!fElectronMuonPairCuts[icut].IsSelected(VarManager::fgValues)) {
@@ -951,17 +953,17 @@ struct DQFilterPPTask {
     uint64_t filter = 0;
     for (int i = 0; i < fNBarrelCuts; i++) {
       if (objCountersBarrel[i] >= fBarrelNreqObjs[i]) {
-        filter |= (uint64_t(1) << i);
+        filter |= (static_cast<uint64_t>(1) << i);
       }
     }
     for (int i = 0; i < fNMuonCuts; i++) {
       if (objCountersMuon[i] >= fMuonNreqObjs[i]) {
-        filter |= (uint64_t(1) << (i + fNBarrelCuts));
+        filter |= (static_cast<uint64_t>(1) << (i + fNBarrelCuts));
       }
     }
     for (int i = 0; i < fNElectronMuonCuts; i++) {
       if (objCountersElectronMuon[i] >= fElectronMuonNreqObjs[i]) {
-        filter |= (uint64_t(1) << (i + fNBarrelCuts + fNMuonCuts));
+        filter |= (static_cast<uint64_t>(1) << (i + fNBarrelCuts + fNMuonCuts));
       }
     }
     return filter;
@@ -983,11 +985,11 @@ struct DQFilterPPTask {
 
     uint64_t barrelMask = 0;
     for (int i = 0; i < fNBarrelCuts; i++) {
-      barrelMask |= (uint64_t(1) << i);
+      barrelMask |= (static_cast<uint64_t>(1) << i);
     }
     uint64_t muonMask = 0;
     for (int i = fNBarrelCuts; i < fNBarrelCuts + fNMuonCuts; i++) {
-      muonMask |= (uint64_t(1) << i);
+      muonMask |= (static_cast<uint64_t>(1) << i);
     }
     // Loop over collisions
     // int event = 0;
@@ -1015,14 +1017,14 @@ struct DQFilterPPTask {
       // compute the CEPF decisions (this is done in a spacial setup with exactly kNTriggersDQ configured triggers)
       std::vector<bool> decisions(kNTriggersDQ, false); // event decisions to be transmitted to CEFP
       for (int i = 0; i < fNBarrelCuts; i++) {
-        if (filter & (uint64_t(1) << i)) {
+        if (filter & (static_cast<uint64_t>(1) << i)) {
           if (i < kNTriggersDQ) {
             decisions[i] = true;
           }
         }
       }
       for (int i = fNBarrelCuts; i < fNBarrelCuts + fNMuonCuts; i++) {
-        if (filter & (uint64_t(1) << i)) {
+        if (filter & (static_cast<uint64_t>(1) << i)) {
           if (i < kNTriggersDQ) {
             decisions[i] = true;
           }
@@ -1031,7 +1033,7 @@ struct DQFilterPPTask {
       // the ElectronMuon trigger is not available now
       /*
       for (int i = fNBarrelCuts + fNMuonCuts; i < fNBarrelCuts + fNMuonCuts + fNElectronMuonCuts; i++) {
-        if (filter & (uint64_t(1) << i)) {
+        if (filter & (static_cast<uint64_t>(1) << i)) {
           if (i < kNTriggersDQ) {
             decisions[i] = true;
           }
