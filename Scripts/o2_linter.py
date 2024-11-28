@@ -1318,18 +1318,18 @@ class TestNameFileWorkflow(TestSpec):
         return False
 
 
-class TestHfNameConfigurable(TestSpec):
-    """PWGHF: Test names of configurables."""
+class TestNameConfigurable(TestSpec):
+    """Test names of configurables."""
 
-    name = "pwghf/name/configurable"
+    name = "name/configurable"
     message = (
         "Use lowerCamelCase for names of configurables and use the same name "
-        "for the struct member as for the JSON string."
+        "for the struct member as for the JSON string. (Declare the type and names on the same line.)"
     )
     suffixes = [".h", ".cxx"]
 
     def file_matches(self, path: str) -> bool:
-        return TestSpec.file_matches(self, path) and "PWGHF/" in path and "Macros/" not in path
+        return TestSpec.file_matches(self, path) and "Macros/" not in path
 
     def test_line(self, line: str) -> bool:
         if is_comment_cpp(line):
@@ -1338,13 +1338,19 @@ class TestHfNameConfigurable(TestSpec):
             return True
         # Extract Configurable name.
         words = line.split()
-        if words[2] == "=":  # expecting Configurable... nameCpp = {"nameJson",
+        if len(words) < 2:
+            return False
+        if len(words) > 2 and words[2] == "=":  # expecting Configurable... nameCpp = {"nameJson",
             name_cpp = words[1]  # nameCpp
             name_json = words[3][1:]  # expecting "nameJson",
         else:
             names = words[1].split("{")  # expecting Configurable... nameCpp{"nameJson",
+            if len(names) < 2:
+                return False
             name_cpp = names[0]  # nameCpp
             name_json = names[1]  # expecting "nameJson",
+            if not name_json:
+                return False
         if name_json[0] != '"':  # JSON name is not a literal string.
             return True
         name_json = name_json.strip('",')  # expecting nameJson
@@ -1421,7 +1427,7 @@ def main():
         tests.append(TestHfStructMembers())
         tests.append(TestHfNameFileTask())
         tests.append(TestNameFileWorkflow())
-        tests.append(TestHfNameConfigurable())
+        tests.append(TestNameConfigurable())
 
     test_names = [t.name for t in tests]  # short names of activated tests
     suffixes = tuple({s for test in tests for s in test.suffixes})  # all suffixes from all enabled tests
