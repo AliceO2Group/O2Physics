@@ -596,8 +596,8 @@ struct lambdapolarization {
           histos.fill(HIST("psi2/h_alambda_cos"), v0.mAntiLambda(), v0.pt(), angle, centrality, relphi, weight);
           histos.fill(HIST("psi2/h_alambda_cos2"), v0.mAntiLambda(), v0.pt(), angle * angle, centrality, relphi, weight);
           histos.fill(HIST("psi2/h_alambda_cossin"), v0.mAntiLambda(), v0.pt(), angle * TMath::Sin(relphi), centrality, weight);
-          histos.fill(HIST("psi2/h_alambda_vncos"), v0.mLambda(), v0.pt(), TMath::Cos(relphi), centrality, weight);
-          histos.fill(HIST("psi2/h_alambda_vnsin"), v0.mLambda(), v0.pt(), TMath::Sin(relphi), centrality, weight);
+          histos.fill(HIST("psi2/h_alambda_vncos"), v0.mAntiLambda(), v0.pt(), TMath::Cos(relphi), centrality, weight);
+          histos.fill(HIST("psi2/h_alambda_vnsin"), v0.mAntiLambda(), v0.pt(), TMath::Sin(relphi), centrality, weight);
         }
       } else if (nmode == 3) {
         if (LambdaTag) {
@@ -611,8 +611,8 @@ struct lambdapolarization {
           histos.fill(HIST("psi3/h_alambda_cos"), v0.mAntiLambda(), v0.pt(), angle, centrality, relphi, weight);
           histos.fill(HIST("psi3/h_alambda_cos2"), v0.mAntiLambda(), v0.pt(), angle * angle, centrality, relphi, weight);
           histos.fill(HIST("psi3/h_alambda_cossin"), v0.mAntiLambda(), v0.pt(), angle * TMath::Sin(relphi), centrality, weight);
-          histos.fill(HIST("psi3/h_alambda_vncos"), v0.mLambda(), v0.pt(), TMath::Cos(relphi), centrality, weight);
-          histos.fill(HIST("psi3/h_alambda_vnsin"), v0.mLambda(), v0.pt(), TMath::Sin(relphi), centrality, weight);
+          histos.fill(HIST("psi3/h_alambda_vncos"), v0.mAntiLambda(), v0.pt(), TMath::Cos(relphi), centrality, weight);
+          histos.fill(HIST("psi3/h_alambda_vnsin"), v0.mAntiLambda(), v0.pt(), TMath::Sin(relphi), centrality, weight);
         }
       } else if (nmode == 4) {
         if (LambdaTag) {
@@ -626,8 +626,8 @@ struct lambdapolarization {
           histos.fill(HIST("psi4/h_alambda_cos"), v0.mAntiLambda(), v0.pt(), angle, centrality, relphi, weight);
           histos.fill(HIST("psi4/h_alambda_cos2"), v0.mAntiLambda(), v0.pt(), angle * angle, centrality, relphi, weight);
           histos.fill(HIST("psi4/h_alambda_cossin"), v0.mAntiLambda(), v0.pt(), angle * TMath::Sin(relphi), centrality, weight);
-          histos.fill(HIST("psi4/h_alambda_vncos"), v0.mLambda(), v0.pt(), TMath::Cos(relphi), centrality, weight);
-          histos.fill(HIST("psi4/h_alambda_vnsin"), v0.mLambda(), v0.pt(), TMath::Sin(relphi), centrality, weight);
+          histos.fill(HIST("psi4/h_alambda_vncos"), v0.mAntiLambda(), v0.pt(), TMath::Cos(relphi), centrality, weight);
+          histos.fill(HIST("psi4/h_alambda_vnsin"), v0.mAntiLambda(), v0.pt(), TMath::Sin(relphi), centrality, weight);
         }
       } ////////// FIXME: not possible to get histograms using nmode
     }
