@@ -107,6 +107,8 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::string> softwareTrigger{"softwareTrigger", "", "Label of software trigger. Multiple triggers can be selected dividing them by a comma. Set None if you want bcs that are not selected by any trigger"};
   o2::framework::Configurable<uint64_t> bcMarginForSoftwareTrigger{"bcMarginForSoftwareTrigger", 100, "Number of BCs of margin for software triggers"};
   o2::framework::Configurable<std::string> ccdbPathSoftwareTrigger{"ccdbPathSoftwareTrigger", "Users/m/mpuccio/EventFiltering/OTS/", "ccdb path for ZORRO objects"};
+  o2::framework::ConfigurableAxis th2ConfigAxisCent{"th2ConfigAxisCent", {100, 0., 100.}, ""};
+  o2::framework::ConfigurableAxis th2ConfigAxisOccupancy{"th2ConfigAxisOccupancy", {14, 0, 140000}, ""};
 
   // histogram names
   static constexpr char nameHistCollisions[] = "hCollisions";
@@ -139,11 +141,9 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
     hNumPvContributorsAfterSel = registry.add<TH1>(nameHistNumPvContributorsAfterSel, "selected events;#it{y}_{prim. vtx.} (cm);entries", {o2::framework::HistType::kTH1D, {{500, -0.5, 499.5}}});
     setEventRejectionLabels(hCollisions, softwareTrigger);
   
-    if (useFT0cOccEstimator) {
-      hCollisionsCentOcc = registry.add<TH2>(nameHistCollisionsCentOcc, "selected events;Centrality; Occupancy", {o2::framework::HistType::kTH2D, {{111, -1, 110}, {100, 0., 140000}}});
-    } else {
-      hCollisionsCentOcc = registry.add<TH2>(nameHistCollisionsCentOcc, "selected events;Centrality; Occupancy", {o2::framework::HistType::kTH2D, {{111, -1, 111}, {140, 0., 14000}}});
-    }
+    const o2::framework::AxisSpec th2AxisCent{th2ConfigAxisCent, "Centrality"};
+    const o2::framework::AxisSpec th2AxisOccupancy{th2ConfigAxisOccupancy, "Occupancy"};
+    hCollisionsCentOcc = registry.add<TH2>(nameHistCollisionsCentOcc, "selected events;Centrality; Occupancy", {o2::framework::HistType::kTH2D, {th2AxisCent, th2AxisOccupancy}});
 
     // we initialise the summary object
     if (softwareTrigger.value != "") {
