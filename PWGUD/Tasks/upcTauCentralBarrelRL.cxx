@@ -644,7 +644,7 @@ struct UpcTauCentralBarrelRL {
       histos.add("EventSixTracks/hMotherPt", ";Mother #it{p_{T}} (GeV/c);Number of events (-)", HistType::kTH1D, {confAxis.axisPt});
       histos.add("EventSixTracks/hMotherPhi", ";Mother #phi (rad);Number of events (-)", HistType::kTH1D, {confAxis.axisPhi});
       histos.add("EventSixTracks/hMotherRapidity", ";Mother #it{y} (-);Number of events (-)", HistType::kTH1D, {confAxis.axisRap});
-      histos.add("EventSixTracks//hMotherMassVsPt", ";Invariant mass (GeV/c^{2});Mother #it{p_{T}} (GeV/c)", HistType::kTH2D, {confAxis.axisInvMassWide, confAxis.axisPt});
+      histos.add("EventSixTracks/hMotherMassVsPt", ";Invariant mass (GeV/c^{2});Mother #it{p_{T}} (GeV/c)", HistType::kTH2D, {confAxis.axisInvMassWide, confAxis.axisPt});
       histos.add("EventSixTracks/PID/hTPCsignalVsP", ";Track #it{p} (GeV/c);TPC d#it{E}/d#it{x} (arb. units)", HistType::kTH2D, {confAxis.axisMom, confAxis.axisTPCdEdx});
 
       histos.add("EventSixTracks/SixPions/hInvariantMass", ";Invariant mass (GeV/c^{2});Number of events (-)", HistType::kTH1D, {confAxis.axisInvMass});
@@ -2262,7 +2262,7 @@ struct UpcTauCentralBarrelRL {
 
   } // end processMCgenDG
 
-  void processTestMC(FullMCSGUDCollision const& reconstructedCollision,
+  void processTestMC(FullMCUDCollision const& reconstructedCollision,
                      FullMCUDTracks const& reconstructedBarrelTracks,
                      aod::UDMcCollisions const&,
                      aod::UDMcParticles const&)
