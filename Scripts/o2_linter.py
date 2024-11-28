@@ -1428,7 +1428,7 @@ def main():
     print(f"Testing {len(args.paths)} files.")
     # print(args.paths)
     print("Enabled tests:", test_names)
-    print("Suffixes of tested files:", suffixes)
+    print("Suffixes of tested files:", sorted(suffixes))
     # print(f"Github annotations: {github_mode}.")
 
     # Test files.
