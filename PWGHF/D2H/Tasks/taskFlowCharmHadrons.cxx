@@ -386,10 +386,11 @@ struct HfTaskFlowCharmHadrons {
                       aod::BCsWithTimestamps const&)
   {
     float centrality{-1.f};
+    float occupancy = getOccupancy(collision);
     const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, centEstimator, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
 
     /// monitor the satisfied event selections
-    hfEvSel.fillHistograms(collision, rejectionMask, centrality);
+    hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy);
     return rejectionMask == 0;
   }
 
