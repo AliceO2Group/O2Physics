@@ -590,7 +590,6 @@ struct DQFilterPPTask {
   std::map<int, TString> fBarrelPairHistNames;         // map with names of the barrel pairing histogram directories
   std::map<int, TString> fMuonPairHistNames;           // map with names of the muon pairing histogram directories
   std::map<int, TString> fElectronMuonPairHistNames;   // map with names of the electron-muon pairing histogram directories
-    
 
   std::map<uint64_t, uint64_t> fFiltersMap;           // map of filters for events that passed at least one filter
   std::map<uint64_t, std::vector<bool>> fCEFPfilters; // map of CEFP filters for events that passed at least one filter
