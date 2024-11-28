@@ -195,7 +195,7 @@ struct strangeYieldPbPb {
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for v0 analysis"};
   ConfigurableAxis axisPtXi{"axisPtCasc", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for cascade analysis"};
   ConfigurableAxis axisPtCoarse{"axisPtCoarse", {VARIABLE_WIDTH, 0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 7.0f, 10.0f, 15.0f}, "pt axis for QA"};
-  ConfigurableAxis axisEta{"axisEta", {40, -2.0f, 2.0f}, "#eta"};
+  ConfigurableAxis axisEta{"axisEta", {100, -2.0f, 2.0f}, "#eta"};
   ConfigurableAxis axisRap{"axisRap", {100, -2.0f, 2.0f}, "y"};
 
   // Invariant mass axes
@@ -214,7 +214,7 @@ struct strangeYieldPbPb {
   ConfigurableAxis axisNTracksGlobal{"axisNTracksGlobal", {100, -0.5f, 99.5f}, "Number of global tracks"};
   ConfigurableAxis axisNTracksPVeta1{"axisNTracksPVeta1", {100, -0.5f, 99.5f}, "Number of PV contributors in |eta| < 1"};
   ConfigurableAxis axisNTracksTotalExceptITSonly{"axisNTracksTotalExceptITSonly", {100, -0.5f, 99.5f}, "Number of ITS-TPC and TPC only tracks"};
-  ConfigurableAxis axisNchInvMass{"axisNchInvMass", {20, -0.5f, 19.5f}, "Number of charged particles for kTHnSparseF"};
+  ConfigurableAxis axisNchInvMass{"axisNchInvMass", {200, -0.5f, 199.5f}, "Number of charged particles for kTHnSparseF"};
 
   ConfigurableAxis axisFT0C_QA{"axisFT0C_QA",
                                {VARIABLE_WIDTH, 0., 0.01, 0.05, 0.1, 0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 105.5},
@@ -387,7 +387,7 @@ struct strangeYieldPbPb {
   template <int partID>
   void addHistograms(HistogramRegistry& histos)
   {
-    histos.add(Form("%s/h6dMass", particlenames[partID].data()), "h6dMass", kTHnSparseF, {axisFT0C, axisPt, axisInvMass.at(partID), axisSelGap, axisNchInvMass, axisRap});
+    histos.add(Form("%s/h7dMass", particlenames[partID].data()), "h7dMass", kTHnSparseF, {axisFT0C, axisPt, axisInvMass.at(partID), axisSelGap, axisNchInvMass, axisRap, axisEta});
     histos.add(Form("%s/h2dMass", particlenames[partID].data()), "h2dMass", kTH2F, {axisInvMass.at(partID), axisSelGap});
     if (doPlainTopoQA) {
       addTopoHistograms<partID>(histos);
@@ -474,7 +474,7 @@ struct strangeYieldPbPb {
     }
 
     histos.fill(HIST(particlenames[partID]) + HIST("/h2dMass"), invMass, gap);
-    histos.fill(HIST(particlenames[partID]) + HIST("/h6dMass"), centrality, pT, invMass, gap, coll.multAllTracksTPCOnly() + coll.multAllTracksITSTPC(), rapidity);
+    histos.fill(HIST(particlenames[partID]) + HIST("/h7dMass"), centrality, pT, invMass, gap, coll.multNTracksGlobal(), rapidity, cand.eta());
     if (doKienmaticQA) {
       histos.fill(HIST(particlenames[partID]) + HIST("/h3dPosEtaPt"), pT, cand.positiveeta(), gap);
       histos.fill(HIST(particlenames[partID]) + HIST("/h3dNegEtaPt"), pT, cand.negativeeta(), gap);
@@ -624,7 +624,7 @@ struct strangeYieldPbPb {
       }
     }
     histos.fill(HIST(particlenames[partID]) + HIST("/h2dMass"), invMass, gap);
-    histos.fill(HIST(particlenames[partID]) + HIST("/h6dMass"), centrality, pT, invMass, gap, coll.multAllTracksTPCOnly() + coll.multAllTracksITSTPC(), rapidity);
+    histos.fill(HIST(particlenames[partID]) + HIST("/h7dMass"), centrality, pT, invMass, gap, coll.multNTracksGlobal(), rapidity, cand.eta());
     if (doKienmaticQA) {
       histos.fill(HIST(particlenames[partID]) + HIST("/h3dPosEtaPt"), pT, cand.positiveeta(), gap);
       histos.fill(HIST(particlenames[partID]) + HIST("/h3dNegEtaPt"), pT, cand.negativeeta(), gap);

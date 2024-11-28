@@ -116,3 +116,8 @@ o2physics_add_dpl_workflow(photon-hbt-pcmee
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGEMPhotonMesonCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(prefilter-dielectron
+                    SOURCES prefilterDielectron.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::MLCore O2Physics::PWGEMDileptonCore
+                    COMPONENT_NAME Analysis)
+

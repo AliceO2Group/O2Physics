@@ -864,7 +864,9 @@ struct reso2initializer {
                      mcPart.pz(),
                      mcPart.eta(),
                      mcPart.phi(),
-                     mcPart.y());
+                     mcPart.y(),
+                     mcPart.e(),
+                     mcPart.statusCode());
       daughterPDGs.clear();
     }
   }
