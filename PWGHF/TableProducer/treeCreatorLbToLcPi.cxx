@@ -185,14 +185,12 @@ DECLARE_SOA_TABLE(HfCandLbFulls, "AOD", "HFCANDLBFULL",
 
 } // namespace o2::aod
 
-
 /// Writes the full information in an output TTree
 struct HfTreeCreatorLbToLcPi {
   Produces<o2::aod::HfCandLbFulls> rowCandidateFull;
-
   HfHelper hfHelper;
 
-  using TracksWPid = soa::Join<aod::Tracks, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr , aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
+  using TracksWPid = soa::Join<aod::Tracks, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
 
   void process(soa::Join<aod::HfCandLb, aod::HfSelLbToLcPi> const& candidates,
                soa::Join<aod::HfCand3Prong, aod::HfSelLc> const&,
@@ -205,97 +203,97 @@ struct HfTreeCreatorLbToLcPi {
                            float FunctionInvMass,
                            float FunctionCt,
                            float FunctionY) {
-          auto candLc = candidate.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>();
-          auto track0 = candidate.prong1_as<TracksWPid>(); // daughter pion track
-          auto track1 = candLc.prong0_as<TracksWPid>();    // granddaughter tracks (lc decay particles)
-          auto track2 = candLc.prong1_as<TracksWPid>();
-          auto track3 = candLc.prong2_as<TracksWPid>();
+        auto candLc = candidate.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>();
+        auto track0 = candidate.prong1_as<TracksWPid>(); // daughter pion track
+        auto track1 = candLc.prong0_as<TracksWPid>();    // granddaughter tracks (lc decay particles)
+        auto track2 = candLc.prong1_as<TracksWPid>();
+        auto track3 = candLc.prong2_as<TracksWPid>();
 
-          auto TempConst = -1; // For data
+        auto TempConst = -1; // For data
 
-          rowCandidateFull(
-            candidate.posX(),
-            candidate.posY(),
-            candidate.posZ(),
-            candidate.xSecondaryVertex(),
-            candidate.ySecondaryVertex(),
-            candidate.zSecondaryVertex(),
-            candidate.errorDecayLength(),
-            candidate.errorDecayLengthXY(),
-            candidate.chi2PCA(),
-            candidate.impactParameterXY(),
-            candidate.rSecondaryVertex(),
-            candidate.decayLength(),
-            candidate.decayLengthXY(),
-            candidate.decayLengthNormalised(),
-            candidate.decayLengthXYNormalised(),
-            candidate.impactParameterNormalised0(),
-            candidate.ptProng0(),
-            RecoDecay::p(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()),
-            candidate.impactParameterNormalised1(),
-            candidate.ptProng1(),
-            RecoDecay::p(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()),
-            track0.sign(),
-            track0.tofNSigmaPi(),
-            track0.tpcNSigmaPi(),
-            candidate.pxProng0(),
-            candidate.pyProng0(),
-            candidate.pzProng0(),
-            candidate.pxProng1(),
-            candidate.pyProng1(),
-            candidate.pzProng1(),
-            candidate.impactParameter0(),
-            candidate.impactParameter1(),
-            candidate.errorImpactParameter0(),
-            candidate.errorImpactParameter1(),
-            track1.tpcNSigmaPi(),
-            track1.tpcNSigmaKa(),
-            track1.tpcNSigmaPr(),
-            track2.tpcNSigmaPi(),
-            track2.tpcNSigmaKa(),
-            track2.tpcNSigmaPr(),
-            track3.tpcNSigmaPi(),
-            track3.tpcNSigmaKa(),
-            track3.tpcNSigmaPr(),
-            track1.tofNSigmaPr(),
-            track2.tofNSigmaKa(),
-            track3.tofNSigmaPi(),
-            hfHelper.invMassLcToPKPi(candLc),
-            hfHelper.ctLc(candLc),
-            hfHelper.yLc(candLc),
-            hfHelper.eLc(candLc),
-            candLc.eta(),
-            candLc.xSecondaryVertex(),
-            candLc.ySecondaryVertex(),
-            candLc.zSecondaryVertex(),
-            candLc.cpa(),
-            candLc.cpaXY(),
-            candLc.chi2PCA(),
-            candLc.decayLength(),
-            candLc.decayLengthXY(),
-            candLc.decayLengthXYNormalised(),
-            candLc.impactParameter0(),
-            candLc.errorImpactParameter0(),
-            candLc.impactParameter1(),
-            candLc.errorImpactParameter1(),
-            candLc.impactParameter2(),
-            candLc.errorImpactParameter2(),
-            track1.px(), track1.py(), track1.pz(),
-            track2.px(), track2.py(), track2.pz(),
-            track3.px(), track3.py(), track3.pz(),
-            track1.sign(), track2.sign(), track3.sign(),
-            FunctionSelection,
-            FunctionInvMass,
-            candidate.pt(),
-            candidate.p(),
-            candidate.cpa(),
-            candidate.cpaXY(),
-            FunctionCt,
-            candidate.eta(),
-            candidate.phi(),
-            FunctionY,
-            TempConst,
-            TempConst);
+        rowCandidateFull(
+          candidate.posX(),
+          candidate.posY(),
+          candidate.posZ(),
+          candidate.xSecondaryVertex(),
+          candidate.ySecondaryVertex(),
+          candidate.zSecondaryVertex(),
+          candidate.errorDecayLength(),
+          candidate.errorDecayLengthXY(),
+          candidate.chi2PCA(),
+          candidate.impactParameterXY(),
+          candidate.rSecondaryVertex(),
+          candidate.decayLength(),
+          candidate.decayLengthXY(),
+          candidate.decayLengthNormalised(),
+          candidate.decayLengthXYNormalised(),
+          candidate.impactParameterNormalised0(),
+          candidate.ptProng0(),
+          RecoDecay::p(candidate.pxProng0(), candidate.pyProng0(), candidate.pzProng0()),
+          candidate.impactParameterNormalised1(),
+          candidate.ptProng1(),
+          RecoDecay::p(candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()),
+          track0.sign(),
+          track0.tofNSigmaPi(),
+          track0.tpcNSigmaPi(),
+          candidate.pxProng0(),
+          candidate.pyProng0(),
+          candidate.pzProng0(),
+          candidate.pxProng1(),
+          candidate.pyProng1(),
+          candidate.pzProng1(),
+          candidate.impactParameter0(),
+          candidate.impactParameter1(),
+          candidate.errorImpactParameter0(),
+          candidate.errorImpactParameter1(),
+          track1.tpcNSigmaPi(),
+          track1.tpcNSigmaKa(),
+          track1.tpcNSigmaPr(),
+          track2.tpcNSigmaPi(),
+          track2.tpcNSigmaKa(),
+          track2.tpcNSigmaPr(),
+          track3.tpcNSigmaPi(),
+          track3.tpcNSigmaKa(),
+          track3.tpcNSigmaPr(),
+          track1.tofNSigmaPr(),
+          track2.tofNSigmaKa(),
+          track3.tofNSigmaPi(),
+          hfHelper.invMassLcToPKPi(candLc),
+          hfHelper.ctLc(candLc),
+          hfHelper.yLc(candLc),
+          hfHelper.eLc(candLc),
+          candLc.eta(),
+          candLc.xSecondaryVertex(),
+          candLc.ySecondaryVertex(),
+          candLc.zSecondaryVertex(),
+          candLc.cpa(),
+          candLc.cpaXY(),
+          candLc.chi2PCA(),
+          candLc.decayLength(),
+          candLc.decayLengthXY(),
+          candLc.decayLengthXYNormalised(),
+          candLc.impactParameter0(),
+          candLc.errorImpactParameter0(),
+          candLc.impactParameter1(),
+          candLc.errorImpactParameter1(),
+          candLc.impactParameter2(),
+          candLc.errorImpactParameter2(),
+          track1.px(), track1.py(), track1.pz(),
+          track2.px(), track2.py(), track2.pz(),
+          track3.px(), track3.py(), track3.pz(),
+          track1.sign(), track2.sign(), track3.sign(),
+          FunctionSelection,
+          FunctionInvMass,
+          candidate.pt(),
+          candidate.p(),
+          candidate.cpa(),
+          candidate.cpaXY(),
+          FunctionCt,
+          candidate.eta(),
+          candidate.phi(),
+          FunctionY,
+          TempConst,
+          TempConst);
       };
       fillTable(candidate.isSelLbToLcPi(), hfHelper.invMassLbToLcPi(candidate), hfHelper.ctLb(candidate), hfHelper.yLb(candidate));
     }
@@ -305,7 +303,6 @@ struct HfTreeCreatorLbToLcPi {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow;
-  //workflow.push_back(adaptAnalysisTask<HfTreeCreatorLbToLcPiAlice3PidIndexBuilder>(cfgc));
   workflow.push_back(adaptAnalysisTask<HfTreeCreatorLbToLcPi>(cfgc));
   return workflow;
 }
