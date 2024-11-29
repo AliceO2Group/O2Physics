@@ -568,7 +568,7 @@ struct EmcalCorrectionTask {
     mClusterLabels.clear();
     mClusterFactories.reset();
     // in preparation for future O2 changes
-    //mClusterFactories.setClusterizerSettings(mClusterDefinitions.at(iClusterizer).minCellEnergy, mClusterDefinitions.at(iClusterizer).timeMin, mClusterDefinitions.at(iClusterizer).timeMax, mClusterDefinitions.at(iClusterizer).recalcShowerShape5x5);
+    // mClusterFactories.setClusterizerSettings(mClusterDefinitions.at(iClusterizer).minCellEnergy, mClusterDefinitions.at(iClusterizer).timeMin, mClusterDefinitions.at(iClusterizer).timeMax, mClusterDefinitions.at(iClusterizer).recalcShowerShape5x5);
     if (cellLabels) {
       mClusterFactories.setContainer(*emcalClusters, cellsBC, *emcalClustersInputIndices, cellLabels);
     } else {
