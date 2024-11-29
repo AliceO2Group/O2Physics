@@ -297,7 +297,7 @@ struct DQBarrelTrackSelection {
     uint32_t filterMap = static_cast<uint32_t>(0);
     uint32_t filterMapEMu = static_cast<uint32_t>(0);
     trackSel.reserve(tracksBarrel.size());
-    emuSel.reserve(trackBarrel.size());
+    emuSel.reserve(tracksBarrel.size());
 
     VarManager::ResetValues(0, VarManager::kNBarrelTrackVariables);
     for (auto& trackAssoc : trackAssocs) {
