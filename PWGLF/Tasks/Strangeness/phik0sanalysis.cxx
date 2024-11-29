@@ -839,8 +839,8 @@ struct phik0shortanalysis {
       if (std::abs(vecPi.Rapidity()) > cfgyAcceptance)
         continue;
 
-      float nsigmaTPC = (track.hasTPC() ? track.tpcNSigmaPi() : -9.99);
-      float nsigmaTOF = (track.hasTOF() ? track.tofNSigmaPi() : -9.99);
+      float nsigmaTPC = (track.hasTPC() ? track.tpcNSigmaPi() : -999);
+      float nsigmaTOF = (track.hasTOF() ? track.tofNSigmaPi() : -999);
 
       TLorentzVectorAndPID recPi{vecPi, nsigmaTPC, nsigmaTOF};
 
@@ -1224,8 +1224,8 @@ struct phik0shortanalysis {
         continue;
 
       float nsigmaTPC, nsigmaTOF;
-      nsigmaTPC = (track.hasTPC() ? track.tpcNSigmaPi() : -9.99);
-      nsigmaTOF = (track.hasTOF() ? track.tofNSigmaPi() : -9.99);
+      nsigmaTPC = (track.hasTPC() ? track.tpcNSigmaPi() : -999);
+      nsigmaTOF = (track.hasTOF() ? track.tofNSigmaPi() : -999);
 
       PioneffHist.fill(HIST("h4PieffInvMass"), genmultiplicity, recPi.Pt(), nsigmaTPC, nsigmaTOF);
 
@@ -1518,8 +1518,8 @@ struct phik0shortanalysis {
       if (std::abs(vecPi.Rapidity()) > cfgyAcceptance)
         continue;
 
-      float nsigmaTPC = (track.hasTPC() ? track.tpcNSigmaPi() : -9.99);
-      float nsigmaTOF = (track.hasTOF() ? track.tofNSigmaPi() : -9.99);
+      float nsigmaTPC = (track.hasTPC() ? track.tpcNSigmaPi() : -999);
+      float nsigmaTOF = (track.hasTOF() ? track.tofNSigmaPi() : -999);
 
       TLorentzVectorAndPID recPi{vecPi, nsigmaTPC, nsigmaTOF};
 
