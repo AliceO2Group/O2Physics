@@ -763,7 +763,7 @@ struct femtoUniverseProducerTask {
   void fillCollisions(CollisionType const& col, TrackType const& tracks)
   {
     const auto vtxZ = col.posZ();
-    int mult = 0;
+    float mult = 0;
     int multNtr = 0;
     if (ConfIsRun3) {
       mult = col.multFV0M();
@@ -806,7 +806,7 @@ struct femtoUniverseProducerTask {
   {
     for (auto& c : col) {
       const auto vtxZ = c.posZ();
-      int mult = 0;
+      float mult = 0;
       int multNtr = 0;
 
       if (std::abs(vtxZ) > ConfEvtZvtx) {
@@ -825,7 +825,7 @@ struct femtoUniverseProducerTask {
   void fillCollisionsCentRun2(CollisionType const& col, TrackType const& tracks)
   {
     const auto vtxZ = col.posZ();
-    int cent = 0;
+    float cent = 0;
     int multNtr = 0;
     if (!ConfIsRun3) {
       cent = col.centRun2V0M();
@@ -853,7 +853,7 @@ struct femtoUniverseProducerTask {
   void fillCollisionsCentRun3(CollisionType const& col, TrackType const& tracks, V0Type const& fullV0s, CascadeType const& fullCascades, double irrate)
   {
     const auto vtxZ = col.posZ();
-    int cent = 0;
+    float cent = 0;
     int multNtr = 0;
     if (ConfIsRun3) {
       multNtr = col.multNTracksPV();

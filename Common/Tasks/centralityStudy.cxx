@@ -65,9 +65,19 @@ struct centralityStudy {
   Configurable<float> scaleSignalFT0M{"scaleSignalFT0M", 1.00f, "scale FT0M signal for convenience"};
   Configurable<float> scaleSignalFV0A{"scaleSignalFV0A", 1.00f, "scale FV0A signal for convenience"};
 
+  // _______________________________________
+  // upc rejection criteria
   // reject low zna/c
-  Configurable<float> minZNACsignal{"minZNACsignal", 15.0f, "min zna/c signal"};
-  Configurable<float> maxFT0CforZNACselection{"maxFT0CforZNACselection", 35000.0f, "max ft0c signal for minZNACsignal to work"};
+  struct : ConfigurableGroup {
+    Configurable<float> minZNACsignal{"minZNACsignal", -999999.0f, "min zna/c signal"};
+    Configurable<float> maxFT0CforZNACselection{"maxFT0CforZNACselection", -99999.0f, "max ft0c signal for minZNACsignal to work"};
+
+    Configurable<float> minFV0Asignal{"minFV0Asignal", -999999.0f, "min fv0a signal"};
+    Configurable<float> maxFT0CforFV0Aselection{"maxFT0CforFV0Aselection", -99999.0f, "max ft0c signal for minFV0Asignal to work"};
+
+    Configurable<float> minFDDAsignal{"minFDDAsignal", -999999.0f, "min fdda signal"};
+    Configurable<float> maxFT0CforFDDAselection{"maxFT0CforFDDAselection", -99999.0f, "max ft0c signal for minFDDAsignal to work"};
+  } upcRejection;
 
   // Configurable Axes for 2d plots, etc
   ConfigurableAxis axisMultFV0A{"axisMultFV0A", {1000, 0, 100000}, "FV0A amplitude"};
@@ -244,9 +254,17 @@ struct centralityStudy {
     }
     histos.fill(HIST("hCollisionSelection"), 14 /* Not ITS ROF pileup (strict) */);
 
-    if (collision.multFT0C() < maxFT0CforZNACselection &&
-        collision.multZNA() < minZNACsignal &&
-        collision.multZNC() < minZNACsignal) {
+    if (collision.multFT0C() < upcRejection.maxFT0CforZNACselection &&
+        collision.multZNA() < upcRejection.minZNACsignal &&
+        collision.multZNC() < upcRejection.minZNACsignal) {
+      return;
+    }
+    if (collision.multFT0C() < upcRejection.maxFT0CforFV0Aselection &&
+        collision.multFV0A() < upcRejection.minFV0Asignal) {
+      return;
+    }
+    if (collision.multFT0C() < upcRejection.maxFT0CforFDDAselection &&
+        collision.multFDDA() < upcRejection.minFDDAsignal) {
       return;
     }
     histos.fill(HIST("hCollisionSelection"), 15 /* pass em/upc rejection */);
@@ -320,11 +338,20 @@ struct centralityStudy {
     }
     histos.fill(HIST("hBCSelection"), 4); // FV0OrA
 
-    if (multbc.multBCFT0C() < maxFT0CforZNACselection &&
-        multbc.multBCZNA() < minZNACsignal &&
-        multbc.multBCZNC() < minZNACsignal) {
+    if (multbc.multBCFT0C() < upcRejection.maxFT0CforZNACselection &&
+        multbc.multBCZNA() < upcRejection.minZNACsignal &&
+        multbc.multBCZNC() < upcRejection.minZNACsignal) {
       return;
     }
+    if (multbc.multBCFT0C() < upcRejection.maxFT0CforFV0Aselection &&
+        multbc.multBCFV0A() < upcRejection.minFV0Asignal) {
+      return;
+    }
+    if (multbc.multBCFT0C() < upcRejection.maxFT0CforFDDAselection &&
+        multbc.multBCFDDA() < upcRejection.minFDDAsignal) {
+      return;
+    }
+
     histos.fill(HIST("hBCSelection"), 5); // znac
 
     // if we got here, we also finally fill the FT0C histogram, please

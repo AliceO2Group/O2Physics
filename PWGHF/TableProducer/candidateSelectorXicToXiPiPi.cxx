@@ -147,7 +147,7 @@ struct HfCandidateSelectorXicToXiPiPi {
     }
 
     // check candidate mass is within a defined mass window
-    if (std::abs(hfCandXic.invMassXic() - o2::constants::physics::MassXiCPlus) > cuts->get(pTBin, "m")) {
+    if (std::abs(hfCandXic.invMassXicPlus() - o2::constants::physics::MassXiCPlus) > cuts->get(pTBin, "m")) {
       return false;
     }
 
@@ -284,8 +284,7 @@ struct HfCandidateSelectorXicToXiPiPi {
         }
       }
 
-      // ML selections
-
+      // ML selection
       if (applyMl) {
         bool isSelectedMlXicToXiPiPi = false;
         std::vector<float> inputFeaturesXicToXiPiPi = hfMlResponse.getInputFeatures(hfCandXic);
@@ -299,6 +298,9 @@ struct HfCandidateSelectorXicToXiPiPi {
           continue;
         }
         SETBIT(statusXicToXiPiPi, aod::SelectionStep::RecoMl);
+        if (activateQA) {
+          registry.fill(HIST("hSelections"), 2 + SelectionStep::RecoMl, ptCandXic);
+        }
       }
 
       hfSelXicToXiPiPiCandidate(statusXicToXiPiPi);

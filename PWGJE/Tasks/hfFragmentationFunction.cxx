@@ -72,7 +72,7 @@ DECLARE_SOA_COLUMN(JetHfDist, jethfdist, float);
 DECLARE_SOA_COLUMN(JetPt, jetpt, float);
 DECLARE_SOA_COLUMN(JetEta, jeteta, float);
 DECLARE_SOA_COLUMN(JetPhi, jetphi, float);
-DECLARE_SOA_COLUMN(JetNConst, jetnconst, float);
+DECLARE_SOA_COLUMN(JetNConst, jetnconst, int);
 DECLARE_SOA_COLUMN(HfPt, hfpt, float);
 DECLARE_SOA_COLUMN(HfEta, hfeta, float);
 DECLARE_SOA_COLUMN(HfPhi, hfphi, float);
@@ -323,24 +323,29 @@ struct HfFragmentationFunctionTask {
             registry.fill(HIST("h_jet_counter"), 1.5);
           }
 
-          // reflection information for storage: +1 = D0, -1 = D0bar, 0 = neither
+          // reflection information for storage: D0 = +1, D0bar = -1, neither = 0
           int matchedFrom = 0;
           int decayChannel = 1 << aod::hf_cand_2prong::DecayType::D0ToPiK;
+          int selectedAs = 0;
 
           if (mcdd0cand.flagMcMatchRec() == decayChannel) { // matched to D0 on truth level
             matchedFrom = 1;
           } else if (mcdd0cand.flagMcMatchRec() == -decayChannel) { // matched to D0bar on truth level
             matchedFrom = -1;
-          } else { // matched to another kind of particle on truth level
-            matchedFrom = 0;
+          }
+          // bitwise AND operation: Checks whether BIT(i) is set, regardless of other bits
+          if (mcdd0cand.candidateSelFlag() & BIT(0)) { // CandidateSelFlag == BIT(0) -> selected as D0
+            selectedAs = 1;
+          } else if (mcdd0cand.candidateSelFlag() & BIT(1)) { // CandidateSelFlag == BIT(1) -> selected as D0bar
+            selectedAs = -1;
           }
 
           // store data in MC detector level table
           mcddistJetTable(jetutilities::deltaR(mcdjet, mcdd0cand),
                           mcdjet.pt(), mcdjet.eta(), mcdjet.phi(), mcdjet.tracks_as<aod::JetTracks>().size(),                                                         // detector level jet
                           mcdd0cand.pt(), mcdd0cand.eta(), mcdd0cand.phi(), mcdd0cand.m(), mcdd0cand.y(), (mcdd0cand.originMcRec() == RecoDecay::OriginType::Prompt), // detector level D0 candidate
-                          mcdjet.has_matchedJetCand(), mcdd0cand.mlScores()[0], mcdd0cand.mlScores()[1], mcdd0cand.mlScores()[2],                                     // ML scores for bkg, prompt and non-prompt
-                          matchedFrom, mcdd0cand.candidateSelFlag());                                                                                                 // check whether detector level candidate is a reflection, CandidateSelFlag == 0 -> selected as D0, CandidateSelFlag == 1 -> selected as D0bar
+                          mcdjet.has_matchedJetCand(), mcdd0cand.mlScores()[0], mcdd0cand.mlScores()[1], mcdd0cand.mlScores()[2],                                     // // Machine Learning PID scores: background, prompt, non-prompt
+                          matchedFrom, selectedAs);                                                                                                                   // D0 = +1, D0bar = -1, neither = 0
         }
       }
 
@@ -409,16 +414,21 @@ struct HfFragmentationFunctionTask {
           // obtain leading HF candidate in jet
           auto mcdd0cand = mcdjet.candidates_first_as<aod::CandidatesD0MCD>();
 
-          // reflection information for storage: +1 = D0, -1 = D0bar, 0 = neither
+          // reflection information for storage: D0 = +1, D0bar = -1, neither = 0
           int matchedFrom = 0;
           int decayChannel = 1 << aod::hf_cand_2prong::DecayType::D0ToPiK;
+          int selectedAs = 0;
 
           if (mcdd0cand.flagMcMatchRec() == decayChannel) { // matched to D0 on truth level
             matchedFrom = 1;
           } else if (mcdd0cand.flagMcMatchRec() == -decayChannel) { // matched to D0bar on truth level
             matchedFrom = -1;
-          } else { // matched to another kind of particle on truth level
-            matchedFrom = 0;
+          }
+          // bitwise AND operation: Checks whether BIT(i) is set, regardless of other bits
+          if (mcdd0cand.candidateSelFlag() & BIT(0)) { // CandidateSelFlag == BIT(0) -> selected as D0
+            selectedAs = 1;
+          } else if (mcdd0cand.candidateSelFlag() & BIT(1)) { // CandidateSelFlag == BIT(1) -> selected as D0bar
+            selectedAs = -1;
           }
 
           // loop through detector level matched to current particle level
@@ -434,8 +444,8 @@ struct HfFragmentationFunctionTask {
                           mcpd0cand.pt(), mcpd0cand.eta(), mcpd0cand.phi(), mcpd0cand.y(), (mcpd0cand.originMcGen() == RecoDecay::OriginType::Prompt),                // particle level D0
                           jetutilities::deltaR(mcdjet, mcdd0cand), mcdjet.pt(), mcdjet.eta(), mcdjet.phi(), mcdjet.tracks_as<aod::JetTracks>().size(),                // detector level jet
                           mcdd0cand.pt(), mcdd0cand.eta(), mcdd0cand.phi(), mcdd0cand.m(), mcdd0cand.y(), (mcdd0cand.originMcRec() == RecoDecay::OriginType::Prompt), // detector level D0
-                          mcdd0cand.mlScores()[0], mcdd0cand.mlScores()[1], mcdd0cand.mlScores()[2],
-                          matchedFrom, mcdd0cand.candidateSelFlag()); // check whether detector level candidate is a reflection, CandidateSelFlag == 0 -> selected as D0, CandidateSelFlag == 1 -> selected as D0bar
+                          mcdd0cand.mlScores()[0], mcdd0cand.mlScores()[1], mcdd0cand.mlScores()[2],                                                                  // Machine Learning PID scores: background, prompt, non-prompt
+                          matchedFrom, selectedAs);                                                                                                                   // D0 = +1, D0bar = -1, neither = 0
           }
         }
       }

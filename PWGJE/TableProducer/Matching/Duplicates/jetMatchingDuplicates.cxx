@@ -53,11 +53,6 @@ struct JetMatchingDuplicates {
   {
   }
 
-  void processDummy(aod::JetCollisions const&)
-  {
-  }
-  PROCESS_SWITCH(JetMatchingDuplicates, processDummy, "Dummy process", true);
-
   void processJets(aod::JetCollisions const& collisions,
                    JetsBase const& jetsBase, JetsTag const& jetsTag,
                    Tracks const& tracks, Candidates const& candidates)
@@ -89,5 +84,5 @@ struct JetMatchingDuplicates {
       jetsTagtoBaseMatchingTable(jetsTagtoBaseMatchingGeo[i], jetsTagtoBaseMatchingPt[i], jetsTagtoBaseMatchingHF[i]); // is (and needs to) be filled in order
     }
   }
-  PROCESS_SWITCH(JetMatchingDuplicates, processJets, "Perform jet matching", false);
+  PROCESS_SWITCH(JetMatchingDuplicates, processJets, "Perform jet matching", true);
 };

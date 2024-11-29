@@ -120,6 +120,7 @@ struct Dilepton {
   Configurable<int> cfgNtracksPV08Max{"cfgNtracksPV08Max", static_cast<int>(1e+9), "max. multNTracksPV"};
   Configurable<bool> cfgApplyWeightTTCA{"cfgApplyWeightTTCA", false, "flag to apply weighting by 1/N"};
   Configurable<uint> cfgDCAType{"cfgDCAType", 0, "type of DCA for output. 0:3D, 1:XY, 2:Z, else:3D"};
+  Configurable<bool> cfgUseSignedDCA{"cfgUseSignedDCA", false, "flag to use signs in the DCA calculation"};
 
   ConfigurableAxis ConfMllBins{"ConfMllBins", {VARIABLE_WIDTH, 0.00, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.10, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.20, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.30, 0.31, 0.32, 0.33, 0.34, 0.35, 0.36, 0.37, 0.38, 0.39, 0.40, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49, 0.50, 0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.60, 0.61, 0.62, 0.63, 0.64, 0.65, 0.66, 0.67, 0.68, 0.69, 0.70, 0.71, 0.72, 0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 0.80, 0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.90, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.00, 1.01, 1.02, 1.03, 1.04, 1.05, 1.06, 1.07, 1.08, 1.09, 1.10, 1.11, 1.12, 1.13, 1.14, 1.15, 1.16, 1.17, 1.18, 1.19, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.10, 2.20, 2.30, 2.40, 2.50, 2.60, 2.70, 2.75, 2.80, 2.85, 2.90, 2.95, 3.00, 3.05, 3.10, 3.15, 3.20, 3.25, 3.30, 3.35, 3.40, 3.45, 3.50, 3.55, 3.60, 3.65, 3.70, 3.75, 3.80, 3.85, 3.90, 3.95, 4.00}, "mll bins for output histograms"};
   ConfigurableAxis ConfPtllBins{"ConfPtllBins", {VARIABLE_WIDTH, 0.00, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.50, 3.00, 3.50, 4.00, 4.50, 5.00, 6.00, 7.00, 8.00, 9.00, 10.00}, "pTll bins for output histograms"};
@@ -520,6 +521,9 @@ struct Dilepton {
       } else if (cfgDCAType == 2) {
         pair_dca_axis_title = "DCA_{ee}^{Z} (#sigma)";
       }
+      if (cfgUseSignedDCA) {
+        pair_dca_axis_title = "Signed " + pair_dca_axis_title;
+      }
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
       mass_axis_title = "m_{#mu#mu} (GeV/c^{2})";
       pair_pt_axis_title = "p_{T,#mu#mu} (GeV/c)";
@@ -539,6 +543,7 @@ struct Dilepton {
         fRegistry.add("Pair/same/uls/hMvsPhiV", "m_{ee} vs. #varphi_{V};#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", kTH2D, {{90, 0, M_PI}, {100, 0.0f, 1.0f}}, true);                                                              // phiv is only for dielectron
         fRegistry.add("Pair/same/uls/hMvsPhiV_prop", Form("m_{ee} vs. #varphi_{V} at r = %2.1f cm;#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", dielectroncuts.cfg_x_to_go.value), kTH2D, {{90, 0, M_PI}, {100, 0.0f, 1.0f}}, true); // phiv is only for dielectron
         fRegistry.add("Pair/same/uls/hMvsOpAng", "m_{ee} vs. angle between 2 tracks;#omega (rad.);m_{ee} (GeV/c^{2})", kTH2D, {{100, 0, 2.0}, {20, 0.0f, 3.2}}, true);
+        fRegistry.add("Pair/same/uls/hDCA1vsDCA2", "DCA of leg1 vs. DCA of leg2;DCA1(#sigma);DCA2 (#sigma)", kTH2D, {{100, 0, 10.0}, {100, 0, 10}}, true);
       }
       fRegistry.addClone("Pair/same/uls/", "Pair/same/lspp/");
       fRegistry.addClone("Pair/same/uls/", "Pair/same/lsmm/");
@@ -947,11 +952,23 @@ struct Dilepton {
 
     float pair_dca = 999.f;
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
-      pair_dca = pairDCAQuadSum(dca3DinSigma(t1), dca3DinSigma(t2));
+      if (cfgUseSignedDCA) {
+        pair_dca = pairDCASignQuadSum(dca3DinSigma(t1), dca3DinSigma(t2), t1.sign(), t2.sign());
+      } else {
+        pair_dca = pairDCAQuadSum(dca3DinSigma(t1), dca3DinSigma(t2));
+      }
       if (cfgDCAType == 1) {
-        pair_dca = pairDCAQuadSum(dcaXYinSigma(t1), dcaXYinSigma(t2));
+        if (cfgUseSignedDCA) {
+          pair_dca = pairDCASignQuadSum(dcaXYinSigma(t1), dcaXYinSigma(t2), t1.sign(), t2.sign());
+        } else {
+          pair_dca = pairDCAQuadSum(dcaXYinSigma(t1), dcaXYinSigma(t2));
+        }
       } else if (cfgDCAType == 2) {
-        pair_dca = pairDCAQuadSum(dcaZinSigma(t1), dcaZinSigma(t2));
+        if (cfgUseSignedDCA) {
+          pair_dca = pairDCASignQuadSum(dcaZinSigma(t1), dcaZinSigma(t2), t1.sign(), t2.sign());
+        } else {
+          pair_dca = pairDCAQuadSum(dcaZinSigma(t1), dcaZinSigma(t2));
+        }
       }
     } else if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDimuon) {
       pair_dca = pairDCAQuadSum(fwdDcaXYinSigma(t1), fwdDcaXYinSigma(t2));

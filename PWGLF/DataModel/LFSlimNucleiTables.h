@@ -48,6 +48,7 @@ DECLARE_SOA_COLUMN(gPt, genPt, float);
 DECLARE_SOA_COLUMN(gEta, genEta, float);
 DECLARE_SOA_COLUMN(gPhi, genPhi, float);
 DECLARE_SOA_COLUMN(PDGcode, pdgCode, int);
+DECLARE_SOA_COLUMN(MotherPDGcode, MotherpdgCode, int);
 DECLARE_SOA_COLUMN(SurvivedEventSelection, survivedEventSelection, bool);
 DECLARE_SOA_COLUMN(AbsoDecL, absoDecL, float);
 
@@ -127,6 +128,7 @@ DECLARE_SOA_TABLE(NucleiTableMC, "AOD", "NUCLEITABLEMC",
                   NucleiTableNS::gEta,
                   NucleiTableNS::gPhi,
                   NucleiTableNS::PDGcode,
+                  NucleiTableNS::MotherPDGcode,
                   NucleiTableNS::SurvivedEventSelection,
                   NucleiTableNS::AbsoDecL);
 

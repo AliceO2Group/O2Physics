@@ -209,11 +209,13 @@ using JetClustersMCD = o2::soa::Join<JClusters, JMcClusterLbs>;
 using JetMcCollisions = JMcCollisions;
 using JetMcCollision = JetMcCollisions::iterator;
 using JetParticles = JMcParticles;
+using JetParticlesSub = JMcParticleSubs;
 
 using CollisionsD0 = o2::soa::Join<HfD0CollBases, JD0CollisionIds>;
 using CandidatesD0Data = o2::soa::Join<HfD0Bases, HfD0Pars, HfD0ParEs, HfD0Sels, HfD0Mls, JD0Ids>;
 using CandidatesD0MCD = o2::soa::Join<HfD0Bases, HfD0Pars, HfD0ParEs, HfD0Sels, HfD0Mls, HfD0Mcs, JD0Ids>;
 using JetTracksSubD0 = JTrackD0Subs;
+using JetParticlesSubD0 = JMcParticleD0Subs;
 using McCollisionsD0 = o2::soa::Join<HfD0McCollBases, JD0McCollisionIds>;
 using CandidatesD0MCP = o2::soa::Join<HfD0PBases, JD0PIds>;
 
@@ -221,12 +223,14 @@ using CollisionsLc = o2::soa::Join<Hf3PCollBases, JLcCollisionIds>;
 using CandidatesLcData = o2::soa::Join<Hf3PBases, Hf3PPars, Hf3PParEs, Hf3PSels, Hf3PMls, JLcIds>;
 using CandidatesLcMCD = o2::soa::Join<Hf3PBases, Hf3PPars, Hf3PParEs, Hf3PSels, Hf3PMls, Hf3PMcs, JLcIds>;
 using JetTracksSubLc = JTrackLcSubs;
+using JetParticlesSubLc = JMcParticleLcSubs;
 using McCollisionsLc = o2::soa::Join<Hf3PMcCollBases, JLcMcCollisionIds>;
 using CandidatesLcMCP = o2::soa::Join<Hf3PPBases, JLcPIds>;
 
 using CandidatesBplusData = o2::soa::Join<HfCandBplus, HfSelBplusToD0Pi>;
 using CandidatesBplusMCD = o2::soa::Join<HfCandBplus, HfSelBplusToD0Pi, HfCandBplusMcRec>;
 using JetTracksSubBplus = JTrackBplusSubs;
+using JetParticlesSubBplus = JMcParticleBplusSubs;
 using CandidatesBplusMCP = o2::soa::Join<JMcParticles, HfCandBplusMcGen>;
 
 using CandidatesV0Data = o2::soa::Join<V0Cores, JV0Ids>;
@@ -239,6 +243,7 @@ using CollisionsDielectron = o2::soa::Join<ReducedEvents, JDielectronCollisionId
 using CandidatesDielectronData = o2::soa::Join<Dielectrons, JDielectronIds>;
 using CandidatesDielectronMCD = o2::soa::Join<Dielectrons, JDielectronIds>;
 using JetTracksSubDielectron = JTrackDielectronSubs;
+using JetParticlesSubDielectron = JMcParticleDielectronSubs;
 using McCollisionsDielectron = o2::soa::Join<JDielectronMcCollisions, JDielectronMcCollisionIds>;
 using CandidatesDielectronMCP = o2::soa::Join<JDielectronMcs, JDielectronMcIds>;
 

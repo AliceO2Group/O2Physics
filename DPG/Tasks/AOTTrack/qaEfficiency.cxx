@@ -17,6 +17,9 @@
 ///
 
 // O2 includes
+#include <memory>
+#include <vector>
+
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "Framework/HistogramRegistry.h"
@@ -74,6 +77,7 @@ static constexpr int PDGs[nParticles] = {11, 13, 211, 321, 2212, 1000010020, 100
                                          -11, -13, -211, -321, -2212, -1000010020, -1000010030, -1000020030, -1000020040};
 
 // Histograms
+std::shared_ptr<TH1> hPtmotherGenerated; // histogram to store pT of Xi and Lambda
 
 // Pt
 std::array<std::shared_ptr<TH1>, nParticles> hPtIts;
@@ -332,6 +336,7 @@ struct QaEfficiency {
                                   phiMin, phiMax,
                                   yMin, yMax);
     const int histogramIndex = id + pdgSign * nSpecies;
+    hPtmotherGenerated = histos.add<TH1>("MC/mother/pt/generated", "Generated pT of mother Lambda or Xi", kTH1D, {axisPt});
 
     // Pt
     hPtIts[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/its", PDGs[histogramIndex]), "ITS tracks " + tagPt, kTH1D, {axisPt});
@@ -1242,19 +1247,20 @@ struct QaEfficiency {
       }
     } else {
       if (mcParticle.getProcess() == 4) { // Particle decay
-        // Checking mothers
         bool motherIsAccepted = true;
+        // Check for mothers if needed
         if (checkForMothers.value && mothersPDGs.value.size() > 0 && mcParticle.has_mothers()) {
           motherIsAccepted = false;
           auto mothers = mcParticle.mothers_as<o2::aod::McParticles>();
+          // Loop over mother particles
           for (const auto& mother : mothers) {
             for (const auto& pdgToCheck : mothersPDGs.value) {
               if (mother.pdgCode() == pdgToCheck) {
-                motherIsAccepted = true;
+                motherIsAccepted = true; // Mother matches the list of specified PDGs
                 break;
               }
               if (motherIsAccepted) {
-                break;
+                hPtmotherGenerated->Fill(mother.pt()); // Fill generated pT for Lambda
               }
             }
           }

@@ -13,7 +13,8 @@
 #define PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_ENUMS_H_
 
 enum eConfiguration {
-  eTaskName = 1, // here I start from 1 exceptionally, because these enums are used as bin contents, and ROOT starts counting bins from 1
+  eTaskIsConfiguredFromJson = 1, // here I start from 1 exceptionally, because these enums are used as bin contents, and ROOT starts counting bins from 1
+  eTaskName,
   eRunNumber,
   eDryRun,
   eVerbose,
@@ -103,6 +104,8 @@ enum eEventHistograms {
   eNContributors, // number of tracks used for the vertex
   eImpactParameter,
   eOccupancy,             // from helper task o2-analysis-event-selection, see also IA's presentation in https://indico.cern.ch/event/1464946, slide 38. Use specific occupancy estimator via eOccupancyEstimator
+  eInteractionRate,       // from utility ctpRateFetcher
+  eCurrentRunDuration,    // calculated with utility ctpRateFetcher
   eMultMCNParticlesEta08, // from helper task table o2::aod::MultMCExtras
   eEventHistograms_N
 };
@@ -182,11 +185,13 @@ enum eParticleCuts {
 
 enum eAsFunctionOf {
   AFO_INTEGRATED = 0,
-  AFO_MULTIPLICITY = 1, // vs. default multiplicity, which is (at the moment) fSelectedTracks, i.e. number of tracks in Q-vector
-  AFO_CENTRALITY = 2,   // vs. default centrality estimator, see how it's calculated in DetermineCentrality(...)
-  AFO_PT = 3,
-  AFO_ETA = 4,
-  AFO_OCCUPANCY = 5, // vs. default "occupancy" variable which is (at the moment) "TrackOccupancyInTimeRange" (alternative is "FT0COccupancyInTimeRange")
+  AFO_MULTIPLICITY, // vs. default multiplicity, which is (at the moment) fSelectedTracks, i.e. number of tracks in Q-vector
+  AFO_CENTRALITY,   // vs. default centrality estimator, see how it's calculated in DetermineCentrality(...)
+  AFO_PT,
+  AFO_ETA,
+  AFO_OCCUPANCY,          // vs. default "occupancy" variable which is (at the moment) "FT0COccupancyInTimeRange" (alternative is "TrackOccupancyInTimeRange")
+  AFO_INTERACTIONRATE,    // vs. "interation rate"
+  AFO_CURRENTRUNDURATION, // vs. "current run duration", i.e. vs "seconds since start of run"
   eAsFunctionOf_N
 }; // prefix is needed, to avoid conflict with enum eKinematics
 
@@ -229,7 +234,7 @@ enum eCutCounter {
 
 enum eQAEventHistograms2D {
   // General (estimators can be chosen via configurables):
-  eMultiplicity_vs_ReferenceMultiplicity = 0,
+  eMultiplicity_vs_ReferenceMultiplicity = 0, // multiplicity is x, reference multiplicity is y. I can swap offline if needed: histOriginal->GetBinContent(x,y); histSwapped->Fill(y,x);
   eMultiplicity_vs_NContributors,
   eMultiplicity_vs_Centrality,
   eMultiplicity_vs_Vertex_z,
@@ -245,11 +250,12 @@ enum eQAEventHistograms2D {
   eCentrality_vs_Occupancy,
   eVertex_z_vs_Occupancy,
   // ...
-  // Specific (estimators are hardwired):
+  // Specific (everything is hardwired):
   eCentFT0C_vs_CentNTPV,                // Run 3 centrality
   eCentFT0M_vs_CentNTPV,                // Run 3 centrality
   eCentRun2V0M_vs_CentRun2SPDTracklets, // Run 2 centrality (do not use in Run 1 converted, because there is no centrality information)
   eTrackOccupancyInTimeRange_vs_FT0COccupancyInTimeRange,
+  eCurrentRunDuration_vs_InteractionRate,
   // ...
   eQAEventHistograms2D_N
 };

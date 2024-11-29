@@ -8,6 +8,11 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
+/// \file dptdptfilter.h
+/// \brief Filters collisions and tracks according to selection criteria
+/// \author victor.gonzalez.sebastian@gmail.com
+
 #ifndef PWGCF_TABLEPRODUCER_DPTDPTFILTER_H_
 #define PWGCF_TABLEPRODUCER_DPTDPTFILTER_H_
 
@@ -17,7 +22,6 @@
 #include <bitset>
 #include <string>
 #include <iomanip>
-#include <iostream>
 #include <fstream>
 #include <locale>
 #include <sstream>
@@ -119,7 +123,8 @@ enum OccupancyEstimationType {
 /// \enum CollisionSelectionFlags
 /// \brief The different criteria for selecting/rejecting collisions
 enum CollisionSelectionFlags {
-  kMBBIT = 0,               ///< minimum  bias
+  kIN = 0,                  ///< new unhandled, yet, event
+  kMBBIT,                   ///< minimum  bias
   kINT7BIT,                 ///< INT7 Run 1/2
   kSEL7BIT,                 ///< Sel7 Run 1/2
   kSEL8BIT,                 ///< Sel8
@@ -131,6 +136,7 @@ enum CollisionSelectionFlags {
   kOCCUPANCYBIT,            ///< occupancy within limits
   kCENTRALITYBIT,           ///< centrality cut passed
   kZVERTEXBIT,              ///< zvtx cut passed
+  kSELECTED,                ///< the event has passed all selections
   knCollisionSelectionFlags ///< number of flags
 };
 
@@ -172,18 +178,18 @@ bool onlyInOneSide = false; /* select only tracks that don't cross the TPC centr
 
 /* selection criteria from PWGMM */
 // default quality criteria for tracks with ITS contribution
-static constexpr o2::aod::track::TrackSelectionFlags::flagtype trackSelectionITS =
+static constexpr o2::aod::track::TrackSelectionFlags::flagtype TrackSelectionITS =
   o2::aod::track::TrackSelectionFlags::kITSNCls | o2::aod::track::TrackSelectionFlags::kITSChi2NDF |
   o2::aod::track::TrackSelectionFlags::kITSHits;
 
 // default quality criteria for tracks with TPC contribution
-static constexpr o2::aod::track::TrackSelectionFlags::flagtype trackSelectionTPC =
+static constexpr o2::aod::track::TrackSelectionFlags::flagtype TrackSelectionTPC =
   o2::aod::track::TrackSelectionFlags::kTPCNCls |
   o2::aod::track::TrackSelectionFlags::kTPCCrossedRowsOverNCls |
   o2::aod::track::TrackSelectionFlags::kTPCChi2NDF;
 
 // default standard DCA cuts
-static constexpr o2::aod::track::TrackSelectionFlags::flagtype trackSelectionDCA =
+static constexpr o2::aod::track::TrackSelectionFlags::flagtype TrackSelectionDCA =
   o2::aod::track::TrackSelectionFlags::kDCAz | o2::aod::track::TrackSelectionFlags::kDCAxy;
 
 int tracktype = 1;
@@ -311,7 +317,7 @@ inline void initializeTrackSelection(const TrackSelectionTuneCfg& tune)
       break;
   }
   if (tune.mUseIt) {
-    for (auto filter : trackFilters) {
+    for (auto const& filter : trackFilters) {
       if (tune.mUseTPCclusters) {
         filter->SetMinNClustersTPC(tune.mTPCclusters);
       }
@@ -943,9 +949,10 @@ inline bool occupancySelection<aod::McCollision>(aod::McCollision const&)
 //////////////////////////////////////////////////////////////////////////////////
 
 template <typename CollisionObject>
-inline bool IsEvtSelected(CollisionObject const& collision, float& centormult)
+inline bool isEventSelected(CollisionObject const& collision, float& centormult)
 {
   collisionFlags.reset();
+  collisionFlags.set(kIN);
 
   bool trigsel = triggerSelection(collision);
 
@@ -968,7 +975,13 @@ inline bool IsEvtSelected(CollisionObject const& collision, float& centormult)
 
   bool centmultsel = centralitySelection(collision, centormult);
 
-  return trigsel && occupancysel && zvtxsel && centmultsel;
+  bool accepted = trigsel && occupancysel && zvtxsel && centmultsel;
+
+  if (accepted) {
+    collisionFlags.set(kSELECTED);
+  }
+
+  return accepted;
 }
 
 //////////////////////////////////////////////////////////////////////////////////
@@ -987,11 +1000,11 @@ inline bool matchTrackType(TrackObject const& track)
     //       (track.passedDCAxy && track.passedDCAz && track.passedGoldenChi2) &&
     //       (track.passedITSNCls && track.passedITSChi2NDF && track.passedITSHits) &&
     //       (!track.hasTPC || (track.passedTPCNCls && track.passedTPCChi2NDF && track.passedTPCCrossedRowsOverNCls));
-    return track.hasITS() && ((track.trackCutFlag() & trackSelectionITS) == trackSelectionITS) &&
-           (!track.hasTPC() || ((track.trackCutFlag() & trackSelectionTPC) == trackSelectionTPC)) &&
-           ((track.trackCutFlag() & trackSelectionDCA) == trackSelectionDCA);
+    return track.hasITS() && ((track.trackCutFlag() & TrackSelectionITS) == TrackSelectionITS) &&
+           (!track.hasTPC() || ((track.trackCutFlag() & TrackSelectionTPC) == TrackSelectionTPC)) &&
+           ((track.trackCutFlag() & TrackSelectionDCA) == TrackSelectionDCA);
   } else {
-    for (auto filter : trackFilters) {
+    for (auto const& filter : trackFilters) {
       if (filter->IsSelected(track)) {
         /* additional track cuts if needed */
         auto checkDca2Dcut = [&](auto const& track) {
@@ -1028,7 +1041,7 @@ inline bool matchTrackType(TrackObject const& track)
 /// \param track the track of interest
 /// \return true if the track is in the acceptance, otherwise false
 template <typename CollisionsObject, typename TrackObject>
-inline bool InTheAcceptance(TrackObject const& track)
+inline bool inTheAcceptance(TrackObject const& track)
 {
   /* the side on which the collision happened */
   float side = track.template collision_as<CollisionsObject>().posZ();
@@ -1070,9 +1083,9 @@ inline bool InTheAcceptance(TrackObject const& track)
 /// \param track the track of interest
 /// \return true if the track is accepted, otherwise false
 template <typename CollisionsObject, typename TrackObject>
-inline bool AcceptTrack(TrackObject const& track)
+inline bool acceptTrack(TrackObject const& track)
 {
-  if (InTheAcceptance<CollisionsObject>(track)) {
+  if (inTheAcceptance<CollisionsObject>(track)) {
     if (matchTrackType(track)) {
       return true;
     }
@@ -1083,7 +1096,7 @@ inline bool AcceptTrack(TrackObject const& track)
 template <typename ParticleObject, typename MCCollisionObject>
 void exploreMothers(ParticleObject& particle, MCCollisionObject& collision)
 {
-  for (auto& m : particle.template mothers_as<aod::McParticles>()) {
+  for (const auto& m : particle.template mothers_as<aod::McParticles>()) {
     LOGF(info, "   mother index: %d", m.globalIndex());
     LOGF(info, "   Tracking back mother");
     LOGF(info, "   assigned collision Id: %d, looping on collision Id: %d", m.mcCollisionId(), collision.globalIndex());
@@ -1109,7 +1122,7 @@ inline float getCharge(ParticleObject& particle)
 /// \param track the particle of interest
 /// \return `true` if the particle is accepted, `false` otherwise
 template <typename ParticleObject, typename MCCollisionObject>
-inline bool AcceptParticle(ParticleObject& particle, MCCollisionObject const&)
+inline bool acceptParticle(ParticleObject& particle, MCCollisionObject const&)
 {
   /* overall momentum cut */
   if (!(overallminp < particle.p())) {
@@ -1184,7 +1197,7 @@ struct PIDSpeciesSelection {
     reportadjdetectorwithcharge(tpcnsigmasshiftneg, "TPC", "M");
     reportadjdetectorwithcharge(tofnsigmasshiftneg, "TOF", "M");
   }
-  void Add(uint8_t sp, o2::analysis::TrackSelectionPIDCfg* incfg)
+  void addSpecies(uint8_t sp, o2::analysis::TrackSelectionPIDCfg* incfg)
   {
     o2::analysis::TrackSelectionPIDCfg* cfg = new o2::analysis::TrackSelectionPIDCfg(*incfg);
     config.push_back(cfg);
@@ -1199,7 +1212,7 @@ struct PIDSpeciesSelection {
     LOGF(info, "  maxTOF nsigmas: el: %.2f, mu: %.2f, pi: %.2f, ka: %.2f, pr: %.2f", last->mMaxNSigmasTOF[0], last->mMaxNSigmasTOF[1], last->mMaxNSigmasTOF[2], last->mMaxNSigmasTOF[3], last->mMaxNSigmasTOF[4]);
     LOGF(info, "  %.1f < pT < %.1f", last->mPtMin, last->mPtMax);
   }
-  void AddExclude(uint8_t sp, const o2::analysis::TrackSelectionPIDCfg* incfg)
+  void addExcludedSpecies(uint8_t sp, const o2::analysis::TrackSelectionPIDCfg* incfg)
   {
     o2::analysis::TrackSelectionPIDCfg* cfg = new o2::analysis::TrackSelectionPIDCfg(*incfg);
     configexclude.push_back(cfg);
@@ -1228,10 +1241,10 @@ struct PIDSpeciesSelection {
     };
     auto outnsigmasdebug = [&]() {
       if constexpr (outdebug != 0) {
-        for (auto tpcn : tpcnsigmas) {
+        for (auto const& tpcn : tpcnsigmas) {
           debuginfo += TString::Format("%.4f,", tpcn);
         }
-        for (auto tofn : tofnsigmas) {
+        for (auto const& tofn : tofnsigmas) {
           debuginfo += TString::Format("%.4f,", tofn);
         }
       }
