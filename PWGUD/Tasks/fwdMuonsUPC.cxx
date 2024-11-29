@@ -434,10 +434,10 @@ struct fwdMuonsUPC {
       return false;
     return true;
   }
-  
+
   // function to compute phi for azimuth anisotropy
   void computePhiAnis(TLorentzVector p1, TLorentzVector p2, int sign1, float &phiAverage, float &phiCharge){
-    
+
     TLorentzVector tSum, tDiffAv, tDiffCh;
     tSum = p1 + p2;
     if(sign1>0){
@@ -457,7 +457,7 @@ struct fwdMuonsUPC {
     // charge
     phiCharge = tSum.DeltaPhi(tDiffCh);
   }
-    
+
 
   // function that processes the candidates:
   // it applies V0 selection, trk selection, kine selection, and fills the histograms
@@ -476,7 +476,7 @@ struct fwdMuonsUPC {
           return;
       }
     }
-    
+
     // select opposite charge events only
     if (cand.netCharge() != 0) {
       registry.fill(HIST("hSameSign"), cand.numContrib());
@@ -526,7 +526,7 @@ struct fwdMuonsUPC {
     float phiAverage = 0;
     float phiCharge = 0;
     computePhiAnis(p1,p2,tr1.sign(),phiAverage, phiCharge);
-  
+
     // zdc info
     if (TMath::Abs(zdc.timeA) < 10)
       registry.fill(HIST("hTimeZNA"), zdc.timeA);
@@ -620,7 +620,7 @@ struct fwdMuonsUPC {
 
     //check that all pairs are mu+mu-
     if(McPart1.pdgCode() + McPart2.pdgCode() != 0) LOGF(info,"PDG codes: %d | %d" ,McPart1.pdgCode(),McPart2.pdgCode());
-    
+
     // create Lorentz vectors
     TLorentzVector p1, p2;
     auto mMu = particleMass(pdg, 13);
@@ -648,7 +648,7 @@ struct fwdMuonsUPC {
     //compute phi for azimuth anisotropy
     float phiAverage = 0;
     float phiCharge = 0;
-    computePhiAnis(p1,p2,McPart1.pdgCode(),phiAverage, phiCharge);    
+    computePhiAnis(p1,p2,McPart1.pdgCode(),phiAverage, phiCharge);
 
     // fill the histos
     McGenRegistry.fill(HIST("hPtTrkPos"), p1.Pt());
@@ -681,7 +681,7 @@ struct fwdMuonsUPC {
           return;
       }
     }
-    
+
     // select opposite charge events only
     if (cand.netCharge() != 0) {
       registry.fill(HIST("hSameSign"), cand.numContrib());
@@ -741,7 +741,7 @@ struct fwdMuonsUPC {
     //compute gen phi for azimuth anisotropy
     float phiGenAverage = 0;
     float phiGenCharge = 0;
-    computePhiAnis(p1,p2,McPart1.pdgCode(),phiGenAverage, phiGenCharge); 
+    computePhiAnis(p1,p2,McPart1.pdgCode(),phiGenAverage, phiGenCharge);
 
     // print info in case of problems
     if(tr1.sign()*McPart1.pdgCode()>0 || tr2.sign()*McPart2.pdgCode()>0){
@@ -749,9 +749,9 @@ struct fwdMuonsUPC {
       LOGF(info, "real: %d | %d",(int)tr1.sign(), (int)tr2.sign());
       LOGF(info, "mc  : %i | %i",(int)McPart1.pdgCode(), (int)McPart2.pdgCode());
       LOGF(info, "contrib: %d", (int)cand.numContrib());
-    } 
+    }
 
-    // fill the histos 
+    // fill the histos
     // reco info
     McRecoRegistry.fill(HIST("hContrib"), cand.numContrib());
     McRecoRegistry.fill(HIST("hPtTrkPos"), p1.Pt());
@@ -857,7 +857,7 @@ struct fwdMuonsUPC {
 
   // process MC Truth
   void processMcGen(aod::UDMcCollisions const& mccollisions, aod::UDMcParticles const& McParts){
-    
+
     // map with the tracks
     std::unordered_map<int32_t, std::vector<int32_t>> tracksPerCand;
     collectMcCandIDs(tracksPerCand, McParts);
@@ -879,7 +879,7 @@ struct fwdMuonsUPC {
 
   // process reco MC (gen info included)
   void processMcReco(CandidatesFwd const& eventCandidates,
-                     CompleteFwdTracks const& fwdTracks, 
+                     CompleteFwdTracks const& fwdTracks,
                      aod::UDMcCollisions const& mcCandidates,
                      aod::UDMcParticles const& McParts)
   {
@@ -912,7 +912,7 @@ struct fwdMuonsUPC {
         if(mcCandID1 != mcCandID2){
           //LOGF(info, "mc tracks belong to different collisions");
         }
-        
+
         //auto mcTr1 = McParts.iteratorAt(tr1.udMcParticleId());
         //auto mcTr2 = McParts.iteratorAt(tr2.udMcParticleId());
         processMcRecoCand(cand, tr1, trMc1, tr2, trMc2);
