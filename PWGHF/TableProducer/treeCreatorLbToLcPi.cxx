@@ -21,7 +21,6 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 
-
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
@@ -52,14 +51,14 @@ DECLARE_SOA_COLUMN(DecayLength, decayLength, float);
 DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);
 DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);
 DECLARE_SOA_COLUMN(DecayLengthXYNormalised, decayLengthXYNormalised, float);
-DECLARE_SOA_COLUMN(CPA, cpa, float);
-DECLARE_SOA_COLUMN(CPAXY, cpaXY, float);
+DECLARE_SOA_COLUMN(CPA, cPA, float);
+DECLARE_SOA_COLUMN(CPAXY, cPAXY, float);
 DECLARE_SOA_COLUMN(Ct, ct, float);
 DECLARE_SOA_COLUMN(MCflag, mcflag, int8_t);
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);
-DECLARE_SOA_COLUMN(SignTrk0, signTrk0, short);
-DECLARE_SOA_COLUMN(NSigTOFTrk0Pi, nsigTOFTrk0Pi, float);
-DECLARE_SOA_COLUMN(NSigTPCTrk0Pi, nsigTPCTrk0Pi, float);
+DECLARE_SOA_COLUMN(SignTrk0, signTrk0, int16_t);
+DECLARE_SOA_COLUMN(NSigTOFTrk0Pi, nSigTOFTrk0Pi, float);
+DECLARE_SOA_COLUMN(NSigTPCTrk0Pi, nSigTPCTrk0Pi, float);
 // Lc selection parameters
 DECLARE_SOA_COLUMN(LcM, lcM, float);
 DECLARE_SOA_COLUMN(LcCt, lcCt, float);
@@ -209,7 +208,7 @@ struct HfTreeCreatorLbToLcPi {
         auto track2 = candLc.prong1_as<TracksWPid>();
         auto track3 = candLc.prong2_as<TracksWPid>();
 
-        auto TempConst = -1; // For data
+        auto tempConst = -1; // For data
 
         rowCandidateFull(
           candidate.posX(),
@@ -292,8 +291,8 @@ struct HfTreeCreatorLbToLcPi {
           candidate.eta(),
           candidate.phi(),
           FunctionY,
-          TempConst,
-          TempConst);
+          tempConst,
+          tempConst);
       };
       fillTable(candidate.isSelLbToLcPi(), hfHelper.invMassLbToLcPi(candidate), hfHelper.ctLb(candidate), hfHelper.yLb(candidate));
     }
