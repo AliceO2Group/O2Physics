@@ -390,6 +390,20 @@ class TOFResoParamsV3 : public o2::tof::Parameters<13>
     return gNegEtaTimeCorr->Eval(eta);
   }
 
+  void printTimeShiftParameters() const
+  {
+    if (gPosEtaTimeCorr) {
+      LOG(info) << "Using a time shift for Pos " << gPosEtaTimeCorr->GetName() << " " << gPosEtaTimeCorr->GetTitle() << " value at 0: " << gPosEtaTimeCorr->Eval(0) << " vs correction " << getTimeShift(0, 1);
+    } else {
+      LOG(info) << "Using no time shift for Pos vs correction " << getTimeShift(0, 1);
+    }
+    if (gNegEtaTimeCorr) {
+      LOG(info) << "Using a time shift for Neg " << gNegEtaTimeCorr->GetName() << " " << gNegEtaTimeCorr->GetTitle() << " value at 0: " << gNegEtaTimeCorr->Eval(0) << " vs correction " << getTimeShift(0, -1);
+    } else {
+      LOG(info) << "Using no time shift for Neg vs correction " << getTimeShift(0, -1);
+    }
+  }
+
   void setResolutionParametrization(std::unordered_map<std::string, float> const& pars)
   {
     static constexpr std::array<const char*, 9> particleNames = {"El", "Mu", "Pi", "Ka", "Pr", "De", "Tr", "He", "Al"};
@@ -441,6 +455,7 @@ class TOFResoParamsV3 : public o2::tof::Parameters<13>
   {
     print();
     printMomentumChargeShiftParameters();
+    printTimeShiftParameters();
     printResolution();
   }
 

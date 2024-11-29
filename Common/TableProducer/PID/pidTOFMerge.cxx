@@ -159,7 +159,7 @@ struct TOFCalibConfig {
       }
     } else if (!mEnableTimeDependentResponse) { // Loading it from CCDB
       LOG(info) << "Loading initial exp. sigma parametrization from CCDB, using path: " << mParametrizationPath << " for timestamp " << mTimestamp;
-      o2::tof::ParameterCollection* paramCollection = ccdb->template getForTimeStamp<o2::tof::ParameterCollection>(mParametrizationPath, mTimestamp);
+      o2::tof::ParameterCollection* paramCollection = ccdb->template getSpecific<o2::tof::ParameterCollection>(mParametrizationPath, mTimestamp);
       if (!paramCollection->retrieveParameters(mRespParamsV3, mReconstructionPass)) { // Attempt at loading the parameters with the pass defined
         if (mFatalOnPassNotAvailable) {
           LOG(fatal) << "Pass '" << mReconstructionPass << "' not available in the retrieved CCDB object";
@@ -181,29 +181,32 @@ struct TOFCalibConfig {
 
     // Loading additional calibration objects
     std::map<std::string, std::string> metadata;
-    metadata["RecoPassName"] = mReconstructionPass;
+    if (!mReconstructionPass.empty()) {
+      metadata["RecoPassName"] = mReconstructionPass;
+    }
+
+    auto updateTimeShift = [&](const std::string& nameShift, bool isPositive) {
+      if (nameShift.empty()) {
+        return;
+      }
+      const bool isFromFile = nameShift.find(".root") != std::string::npos;
+      if (isFromFile) {
+        LOG(info) << "Initializing the time shift for " << (isPositive ? "positive" : "negative") << " from file '" << nameShift << "'";
+        mRespParamsV3.setTimeShiftParameters(nameShift, "ccdb_object", isPositive);
+      } else if (!mEnableTimeDependentResponse) { // If the response is fixed fetch it at the init time
+        LOG(info) << "Initializing the time shift for " << (isPositive ? "positive" : "negative")
+                  << " from ccdb '" << nameShift << "' and timestamp " << mTimestamp
+                  << " and pass '" << mReconstructionPass << "'";
+        mRespParamsV3.setTimeShiftParameters(ccdb->template getSpecific<TGraph>(nameShift, mTimestamp, metadata), isPositive);
+      }
+      LOG(info) << " test getTimeShift at 0 " << (isPositive ? "pos" : "neg") << ": "
+                << mRespParamsV3.getTimeShift(0, isPositive);
+    };
+
     const std::string nameShiftPos = metadataInfo.isMC() ? mTimeShiftCCDBPathPosMC : mTimeShiftCCDBPathPos;
-    if (nameShiftPos != "") {
-      if (nameShiftPos.find(".root") != std::string::npos) {
-        mRespParamsV3.setTimeShiftParameters(nameShiftPos, "ccdb_object", true);
-      } else if (!mEnableTimeDependentResponse) {
-        LOG(info) << "Setting once the time shift for positive from ccdb '" << nameShiftPos << "' and timestamp " << mTimestamp << " and pass '" << mReconstructionPass << "'";
-        TGraph* gShift = mReconstructionPass == "" ? ccdb->template getForTimeStamp<TGraph>(nameShiftPos, mTimestamp)
-                                                   : ccdb->template getSpecific<TGraph>(nameShiftPos, mTimestamp, metadata);
-        mRespParamsV3.setTimeShiftParameters(gShift, true);
-      }
-    }
+    updateTimeShift(nameShiftPos, true);
     const std::string nameShiftNeg = metadataInfo.isMC() ? mTimeShiftCCDBPathNegMC : mTimeShiftCCDBPathNeg;
-    if (nameShiftNeg != "") {
-      if (nameShiftNeg.find(".root") != std::string::npos) {
-        mRespParamsV3.setTimeShiftParameters(nameShiftNeg, "ccdb_object", false);
-      } else if (!mEnableTimeDependentResponse) {
-        LOG(info) << "Setting once the time shift for negative from ccdb '" << nameShiftNeg << "' and timestamp " << mTimestamp << " and pass '" << mReconstructionPass << "'";
-        TGraph* gShift = mReconstructionPass == "" ? ccdb->template getForTimeStamp<TGraph>(nameShiftNeg, mTimestamp)
-                                                   : ccdb->template getSpecific<TGraph>(nameShiftNeg, mTimestamp, metadata);
-        mRespParamsV3.setTimeShiftParameters(gShift, false);
-      }
-    }
+    updateTimeShift(nameShiftNeg, true);
 
     // Calibration object is defined
     LOG(info) << "Parametrization at init time:";
@@ -220,13 +223,14 @@ struct TOFCalibConfig {
     if (mLastRunNumber == bc.runNumber()) {
       return;
     }
+    LOG(info) << "Updating the parametrization from last run " << mLastRunNumber << " to " << bc.runNumber() << " and timestamp from " << mTimestamp << " " << bc.timestamp();
     mLastRunNumber = bc.runNumber();
     mTimestamp = bc.timestamp();
 
     // Check the beam type
     if (mCollisionSystem == -1) {
-      o2::parameters::GRPLHCIFData* grpo = ccdb->template getForTimeStamp<o2::parameters::GRPLHCIFData>(mPathGrpLhcIf,
-                                                                                                        mTimestamp);
+      o2::parameters::GRPLHCIFData* grpo = ccdb->template getSpecific<o2::parameters::GRPLHCIFData>(mPathGrpLhcIf,
+                                                                                                    mTimestamp);
       mCollisionSystem = CollisionSystemType::getCollisionTypeFromGrp(grpo);
     } else {
       LOG(debug) << "Not setting collisions system as already set to " << mCollisionSystem << " " << CollisionSystemType::getCollisionSystemName(mCollisionSystem);
@@ -235,10 +239,10 @@ struct TOFCalibConfig {
     if (!mEnableTimeDependentResponse) {
       return;
     }
-    LOG(info) << "Updating parametrization from path '" << mParametrizationPath << "' and timestamp " << mTimestamp << " and reconstruction pass '" << mReconstructionPass << "'";
+    LOG(info) << "Updating parametrization from path '" << mParametrizationPath << "' and timestamp " << mTimestamp << " and reconstruction pass '" << mReconstructionPass << "' for run number " << bc.runNumber();
     if (mParamFileName.empty()) { // Not loading if parametrization was taken from file
       LOG(info) << "Updating parametrization from ccdb";
-      const o2::tof::ParameterCollection* paramCollection = ccdb->template getForTimeStamp<o2::tof::ParameterCollection>(mParametrizationPath, mTimestamp);
+      const o2::tof::ParameterCollection* paramCollection = ccdb->template getSpecific<o2::tof::ParameterCollection>(mParametrizationPath, mTimestamp);
       if (!paramCollection->retrieveParameters(mRespParamsV3, mReconstructionPass)) {
         if (mFatalOnPassNotAvailable) {
           LOGF(fatal, "Pass '%s' not available in the retrieved CCDB object", mReconstructionPass.data());
@@ -260,23 +264,29 @@ struct TOFCalibConfig {
 
     // Loading additional calibration objects
     std::map<std::string, std::string> metadata;
-    metadata["RecoPassName"] = mReconstructionPass;
-    const std::string nameShiftPos = metadataInfo.isMC() ? mTimeShiftCCDBPathPosMC : mTimeShiftCCDBPathPos;
-    if (nameShiftPos != "" && nameShiftPos.find(".root") == std::string::npos) {
-      LOG(info) << "Updating the time shift for positive from ccdb '" << nameShiftPos << "' and timestamp " << mTimestamp << " and pass '" << mReconstructionPass << "'";
-      TGraph* gShift = mReconstructionPass == "" ? ccdb->template getForTimeStamp<TGraph>(nameShiftPos, mTimestamp)
-                                                 : ccdb->template getSpecific<TGraph>(nameShiftPos, mTimestamp, metadata);
-      mRespParamsV3.setTimeShiftParameters(gShift, true);
-      LOG(info) << " test getTimeShift at 0 pos: " << mRespParamsV3.getTimeShift(0, true);
+    if (!mReconstructionPass.empty()) {
+      metadata["RecoPassName"] = mReconstructionPass;
     }
-    const std::string nameShiftNeg = metadataInfo.isMC() ? mTimeShiftCCDBPathNegMC : mTimeShiftCCDBPathNeg;
-    if (nameShiftNeg != "" && nameShiftNeg.find(".root") == std::string::npos) {
-      LOG(info) << "Updating the time shift for negative from ccdb '" << nameShiftNeg << "' and timestamp " << mTimestamp << " and pass '" << mReconstructionPass << "'";
-      TGraph* gShift = mReconstructionPass == "" ? ccdb->template getForTimeStamp<TGraph>(nameShiftNeg, mTimestamp)
-                                                 : ccdb->template getSpecific<TGraph>(nameShiftNeg, mTimestamp, metadata);
-      mRespParamsV3.setTimeShiftParameters(gShift, true);
-      LOG(info) << " test getTimeShift at 0 neg: " << mRespParamsV3.getTimeShift(0, false);
-    }
+
+    auto updateTimeShift = [&](const std::string& nameShift, bool isPositive) {
+      if (nameShift.empty()) {
+        return;
+      }
+      const bool isFromFile = nameShift.find(".root") != std::string::npos;
+      if (isFromFile) {
+        return;
+      }
+      LOG(info) << "Updating the time shift for " << (isPositive ? "positive" : "negative")
+                << " from ccdb '" << nameShift << "' and timestamp " << mTimestamp
+                << " and pass '" << mReconstructionPass << "'";
+      mRespParamsV3.setTimeShiftParameters(ccdb->template getSpecific<TGraph>(nameShift, mTimestamp, metadata), isPositive);
+      LOG(info) << " test getTimeShift at 0 " << (isPositive ? "pos" : "neg") << ": "
+                << mRespParamsV3.getTimeShift(0, isPositive);
+    };
+
+    updateTimeShift(metadataInfo.isMC() ? mTimeShiftCCDBPathPosMC : mTimeShiftCCDBPathPos, true);
+    updateTimeShift(metadataInfo.isMC() ? mTimeShiftCCDBPathNegMC : mTimeShiftCCDBPathNeg, false);
+
     LOG(info) << "Parametrization at setup time:";
     mRespParamsV3.printFullConfig();
   }
@@ -604,7 +614,7 @@ struct tofEventTime {
   void processRun3(Run3TrksWtof& tracks,
                    aod::FT0s const&,
                    EvTimeCollisionsFT0 const&,
-                   aod::BCsWithTimestamps const&)
+                   aod::BCsWithTimestamps const& bcs)
   {
     if (!enableTableTOFEvTime) {
       return;
@@ -616,39 +626,24 @@ struct tofEventTime {
     if (enableTableEvTimeTOFOnly) {
       tableEvTimeTOFOnly.reserve(tracks.size());
     }
-    bool calibUpdated = false;
-    for (auto const& track : tracks) { // Loop on all tracks
-      if (!track.has_collision()) {    // Skipping tracks without collisions
-        continue;
-      }
-      const auto& coll = track.collision_as<EvTimeCollisionsFT0>();
-      if (!coll.has_bc()) {
-        continue;
-      }
-      mTOFCalibConfig.processSetup(mRespParamsV3, ccdb, coll.bc_as<aod::BCsWithTimestamps>()); // Update the calibration parameters
-      calibUpdated = true;
-      break;
-    }
+
+    mTOFCalibConfig.processSetup(mRespParamsV3, ccdb, bcs.iteratorAt(0)); // Update the calibration parameters
 
     // Autoset the processing mode for the event time computation
-    if (calibUpdated) {
-      if (mComputeEvTimeWithTOF == -1 || mComputeEvTimeWithFT0 == -1) {
-        switch (mTOFCalibConfig.collisionSystem()) {
-          case CollisionSystemType::kCollSyspp: // pp
-            mComputeEvTimeWithTOF.value = ((mComputeEvTimeWithTOF == -1) ? 0 : mComputeEvTimeWithTOF.value);
-            mComputeEvTimeWithFT0.value = ((mComputeEvTimeWithFT0 == -1) ? 1 : mComputeEvTimeWithFT0.value);
-            break;
-          case CollisionSystemType::kCollSysPbPb: // PbPb
-            mComputeEvTimeWithTOF.value = ((mComputeEvTimeWithTOF == -1) ? 1 : mComputeEvTimeWithTOF.value);
-            mComputeEvTimeWithFT0.value = ((mComputeEvTimeWithFT0 == -1) ? 0 : mComputeEvTimeWithFT0.value);
-            break;
-          default:
-            LOG(fatal) << "Collision system " << mTOFCalibConfig.collisionSystem() << " " << CollisionSystemType::getCollisionSystemName(mTOFCalibConfig.collisionSystem()) << " not supported for TOF event time computation";
-            break;
-        }
+    if (mComputeEvTimeWithTOF == -1 || mComputeEvTimeWithFT0 == -1) {
+      switch (mTOFCalibConfig.collisionSystem()) {
+        case CollisionSystemType::kCollSyspp: // pp
+          mComputeEvTimeWithTOF.value = ((mComputeEvTimeWithTOF == -1) ? 0 : mComputeEvTimeWithTOF.value);
+          mComputeEvTimeWithFT0.value = ((mComputeEvTimeWithFT0 == -1) ? 1 : mComputeEvTimeWithFT0.value);
+          break;
+        case CollisionSystemType::kCollSysPbPb: // PbPb
+          mComputeEvTimeWithTOF.value = ((mComputeEvTimeWithTOF == -1) ? 1 : mComputeEvTimeWithTOF.value);
+          mComputeEvTimeWithFT0.value = ((mComputeEvTimeWithFT0 == -1) ? 0 : mComputeEvTimeWithFT0.value);
+          break;
+        default:
+          LOG(fatal) << "Collision system " << mTOFCalibConfig.collisionSystem() << " " << CollisionSystemType::getCollisionSystemName(mTOFCalibConfig.collisionSystem()) << " not supported for TOF event time computation";
+          break;
       }
-    } else {
-      LOG(warning) << "Calibration not updated on " << tracks.size() << " tracks !!";
     }
     LOG(debug) << "Running on " << CollisionSystemType::getCollisionSystemName(mTOFCalibConfig.collisionSystem()) << " mComputeEvTimeWithTOF " << mComputeEvTimeWithTOF.value << " mComputeEvTimeWithFT0 " << mComputeEvTimeWithFT0.value;
 
@@ -1100,7 +1095,7 @@ struct tofPidMerge {
   using ResponseImplementation = o2::pid::tof::ExpTimes<Run3TrksWtofWevTime::iterator, pid>;
   void processRun3(Run3TrksWtofWevTime const& tracks,
                    Run3Cols const&,
-                   aod::BCsWithTimestamps const&)
+                   aod::BCsWithTimestamps const& bcs)
   {
     constexpr auto responseEl = ResponseImplementation<PID::Electron>();
     constexpr auto responseMu = ResponseImplementation<PID::Muon>();
@@ -1112,17 +1107,7 @@ struct tofPidMerge {
     constexpr auto responseHe = ResponseImplementation<PID::Helium3>();
     constexpr auto responseAl = ResponseImplementation<PID::Alpha>();
 
-    for (auto const& track : tracks) { // Loop on all tracks
-      if (!track.has_collision()) {    // Skipping tracks without collisions
-        continue;
-      }
-      const auto& coll = track.collision();
-      if (!coll.has_bc()) {
-        continue;
-      }
-      mTOFCalibConfig.processSetup(mRespParamsV3, ccdb, coll.bc_as<aod::BCsWithTimestamps>()); // Update the calibration parameters
-      break;
-    }
+    mTOFCalibConfig.processSetup(mRespParamsV3, ccdb, bcs.iteratorAt(0)); // Update the calibration parameters
 
     for (auto const& pidId : mEnabledParticles) {
       reserveTable(pidId, tracks.size(), false);
@@ -1272,7 +1257,7 @@ struct tofPidMerge {
   using ResponseImplementationRun2 = o2::pid::tof::ExpTimes<Run2TrksWtofWevTime::iterator, pid>;
   void processRun2(Run2TrksWtofWevTime const& tracks,
                    Run3Cols const&,
-                   aod::BCsWithTimestamps const&)
+                   aod::BCsWithTimestamps const& bcs)
   {
     constexpr auto responseEl = ResponseImplementationRun2<PID::Electron>();
     constexpr auto responseMu = ResponseImplementationRun2<PID::Muon>();
@@ -1284,17 +1269,7 @@ struct tofPidMerge {
     constexpr auto responseHe = ResponseImplementationRun2<PID::Helium3>();
     constexpr auto responseAl = ResponseImplementationRun2<PID::Alpha>();
 
-    for (auto const& track : tracks) { // Loop on all tracks
-      if (!track.has_collision()) {    // Skipping tracks without collisions
-        continue;
-      }
-      const auto& coll = track.collision();
-      if (!coll.has_bc()) {
-        continue;
-      }
-      mTOFCalibConfig.processSetup(mRespParamsV3, ccdb, coll.bc_as<aod::BCsWithTimestamps>()); // Update the calibration parameters
-      break;
-    }
+    mTOFCalibConfig.processSetup(mRespParamsV3, ccdb, bcs.iteratorAt(0)); // Update the calibration parameters
 
     for (auto const& pidId : mEnabledParticles) {
       reserveTable(pidId, tracks.size(), false);
