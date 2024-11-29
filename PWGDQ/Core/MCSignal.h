@@ -66,13 +66,13 @@ class MCSignal : public TNamed
 {
  public:
   MCSignal();
-  MCSignal(int nProngs, const char* name = "", const char* title = "");
-  MCSignal(const char* name, const char* title, std::vector<MCProng> prongs, std::vector<short> commonAncestors, bool excludeCommonAncestor = false);
+  MCSignal(int nProngs, const char* name = "", const char* title = "");  // NOLINT
+  MCSignal(const char* name, const char* title, std::vector<MCProng> prongs, std::vector<int8_t> commonAncestors, bool excludeCommonAncestor = false);
   MCSignal(const MCSignal& c) = default;
   ~MCSignal() override = default;
 
-  void SetProngs(std::vector<MCProng> prongs, std::vector<short> commonAncestors);
-  void AddProng(MCProng prong, short commonAncestor = -1);
+  void SetProngs(std::vector<MCProng> prongs, std::vector<int8_t> commonAncestors);
+  void AddProng(MCProng prong, int8_t commonAncestor = -1);
   void SetDecayChannelIsExclusive(bool option = true)
   {
     fDecayChannelIsExclusive = option;
@@ -115,7 +115,7 @@ class MCSignal : public TNamed
  private:
   std::vector<MCProng> fProngs;           // vector of MCProng
   unsigned int fNProngs;                  // number of prongs
-  std::vector<short> fCommonAncestorIdxs; // index of the most recent ancestor, relative to each prong's history
+  std::vector<int8_t> fCommonAncestorIdxs; // index of the most recent ancestor, relative to each prong's history
   bool fExcludeCommonAncestor;            // explicitly request that there is no common ancestor
   bool fDecayChannelIsExclusive;          // if true, then the indicated mother particle has a number of daughters which is equal to the number of prongs defined in this MC signal
   bool fDecayChannelIsNotExclusive;       // if true, then the indicated mother particle has a number of daughters which is larger than the number of prongs defined in this MC signal
@@ -215,27 +215,27 @@ bool MCSignal::CheckProng(int i, bool checkSources, const T& track)
       // check each source
       uint64_t sourcesDecision = 0;
       // Check kPhysicalPrimary
-      if (fProngs[i].fSourceBits[j] & (uint64_t(1) << MCProng::kPhysicalPrimary)) {
-        if ((fProngs[i].fExcludeSource[j] & (uint64_t(1) << MCProng::kPhysicalPrimary)) != currentMCParticle.isPhysicalPrimary()) {
-          sourcesDecision |= (uint64_t(1) << MCProng::kPhysicalPrimary);
+      if (fProngs[i].fSourceBits[j] & (static_cast<uint64_t>(1) << MCProng::kPhysicalPrimary)) {
+        if ((fProngs[i].fExcludeSource[j] & (static_cast<uint64_t>(1) << MCProng::kPhysicalPrimary)) != currentMCParticle.isPhysicalPrimary()) {
+          sourcesDecision |= (static_cast<uint64_t>(1) << MCProng::kPhysicalPrimary);
         }
       }
       // Check kProducedInTransport
-      if (fProngs[i].fSourceBits[j] & (uint64_t(1) << MCProng::kProducedInTransport)) {
-        if ((fProngs[i].fExcludeSource[j] & (uint64_t(1) << MCProng::kProducedInTransport)) != (!currentMCParticle.producedByGenerator())) {
-          sourcesDecision |= (uint64_t(1) << MCProng::kProducedInTransport);
+      if (fProngs[i].fSourceBits[j] & (static_cast<uint64_t>(1) << MCProng::kProducedInTransport)) {
+        if ((fProngs[i].fExcludeSource[j] & (static_cast<uint64_t>(1) << MCProng::kProducedInTransport)) != (!currentMCParticle.producedByGenerator())) {
+          sourcesDecision |= (static_cast<uint64_t>(1) << MCProng::kProducedInTransport);
         }
       }
       // Check kProducedByGenerator
-      if (fProngs[i].fSourceBits[j] & (uint64_t(1) << MCProng::kProducedByGenerator)) {
-        if ((fProngs[i].fExcludeSource[j] & (uint64_t(1) << MCProng::kProducedByGenerator)) != currentMCParticle.producedByGenerator()) {
-          sourcesDecision |= (uint64_t(1) << MCProng::kProducedByGenerator);
+      if (fProngs[i].fSourceBits[j] & (static_cast<uint64_t>(1) << MCProng::kProducedByGenerator)) {
+        if ((fProngs[i].fExcludeSource[j] & (static_cast<uint64_t>(1) << MCProng::kProducedByGenerator)) != currentMCParticle.producedByGenerator()) {
+          sourcesDecision |= (static_cast<uint64_t>(1) << MCProng::kProducedByGenerator);
         }
       }
       // Check kFromBackgroundEvent
-      if (fProngs[i].fSourceBits[j] & (uint64_t(1) << MCProng::kFromBackgroundEvent)) {
-        if ((fProngs[i].fExcludeSource[j] & (uint64_t(1) << MCProng::kFromBackgroundEvent)) != currentMCParticle.fromBackgroundEvent()) {
-          sourcesDecision |= (uint64_t(1) << MCProng::kFromBackgroundEvent);
+      if (fProngs[i].fSourceBits[j] & (static_cast<uint64_t>(1) << MCProng::kFromBackgroundEvent)) {
+        if ((fProngs[i].fExcludeSource[j] & (static_cast<uint64_t>(1) << MCProng::kFromBackgroundEvent)) != currentMCParticle.fromBackgroundEvent()) {
+          sourcesDecision |= (static_cast<uint64_t>(1) << MCProng::kFromBackgroundEvent);
         }
       }
       // no source bit is fulfilled
@@ -276,9 +276,9 @@ bool MCSignal::CheckProng(int i, bool checkSources, const T& track)
     }
   }
 
-  if (fProngs[i].fPDGInHistory.size() == 0)
+  if (fProngs[i].fPDGInHistory.size() == 0) {
     return true;
-  else { // check if mother pdg is in history
+  } else { // check if mother pdg is in history
     std::vector<int> pdgInHistory;
 
     // while find mothers, check if the provided PDG codes are included or excluded in the particle decay history

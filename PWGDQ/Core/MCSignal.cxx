@@ -9,6 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include <vector>
+#include <iostream>
+
 #include "PWGDQ/Core/MCSignal.h"
 
 using std::cout;
@@ -42,7 +45,7 @@ MCSignal::MCSignal(int nProngs, const char* name /*= ""*/, const char* title /*=
 }
 
 //________________________________________________________________________________________________
-MCSignal::MCSignal(const char* name, const char* title, std::vector<MCProng> prongs, std::vector<short> commonAncestors, bool excludeCommonAncestor) : TNamed(name, title),
+MCSignal::MCSignal(const char* name, const char* title, std::vector<MCProng> prongs, std::vector<int8_t> commonAncestors, bool excludeCommonAncestor) : TNamed(name, title),
                                                                                                                                                        fProngs(prongs),
                                                                                                                                                        fNProngs(prongs.size()),
                                                                                                                                                        fCommonAncestorIdxs(commonAncestors),
@@ -54,7 +57,7 @@ MCSignal::MCSignal(const char* name, const char* title, std::vector<MCProng> pro
 }
 
 //________________________________________________________________________________________________
-void MCSignal::SetProngs(std::vector<MCProng> prongs, std::vector<short> commonAncestors)
+void MCSignal::SetProngs(std::vector<MCProng> prongs, std::vector<int8_t> commonAncestors)
 {
   fProngs = prongs;
   fNProngs = fProngs.size();
@@ -62,7 +65,7 @@ void MCSignal::SetProngs(std::vector<MCProng> prongs, std::vector<short> commonA
 }
 
 //________________________________________________________________________________________________
-void MCSignal::AddProng(MCProng prong, short commonAncestor)
+void MCSignal::AddProng(MCProng prong, int8_t commonAncestor)
 {
   if (fProngs.size() < fNProngs) {
     fProngs.push_back(prong);
