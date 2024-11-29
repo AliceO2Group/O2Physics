@@ -16,9 +16,6 @@
 
 /// \author Andrea Giovanni Riffero <andrea.giovanni.riffero@cern.ch>
 
-#include <vector>
-#include <unordered_map>
-
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -26,6 +23,9 @@
 #include "DataFormatsParameters/GRPLHCIFData.h"
 #include "DataFormatsParameters/GRPECSObject.h"
 #include "PWGUD/DataModel/UDTables.h"
+
+#include <vector>
+#include <unordered_map>
 
 #include "TDatabasePDG.h"
 #include "TLorentzVector.h"
