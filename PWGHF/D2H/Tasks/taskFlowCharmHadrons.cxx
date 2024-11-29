@@ -80,7 +80,7 @@ struct HfTaskFlowCharmHadrons {
   ConfigurableAxis thnConfigAxisOccupancyITS{"thnConfigAxisOccupancyITS", {14, 0, 14000}, ""};
   ConfigurableAxis thnConfigAxisOccupancyFT0C{"thnConfigAxisOccupancyFT0C", {14, 0, 140000}, ""};
   ConfigurableAxis thnConfigAxisNoSameBunchPileup{"thnConfigAxisNoSameBunchPileup", {2, 0, 2}, ""};
-  ConfigurableAxis thnConfigAxisNumTracksInTimeRange{"thnConfigAxisNumTracksInTimeRange", {2, 0, 2}, ""};
+  ConfigurableAxis thnConfigAxisOccupancy{"thnConfigAxisOccupancy", {2, 0, 2}, ""};
   ConfigurableAxis thnConfigAxisNoCollInTimeRangeNarrow{"thnConfigAxisNoCollInTimeRangeNarrow", {2, 0, 2}, ""};
   ConfigurableAxis thnConfigAxisNoCollInTimeRangeStandard{"thnConfigAxisNoCollInTimeRangeStandard", {2, 0, 2}, ""};
   ConfigurableAxis thnConfigAxisNoCollInRofStandard{"thnConfigAxisNoCollInRofStandard", {2, 0, 2}, ""};
@@ -134,7 +134,7 @@ struct HfTaskFlowCharmHadrons {
     const AxisSpec thnAxisOccupancyITS{thnConfigAxisOccupancyITS, "OccupancyITS"};
     const AxisSpec thnAxisOccupancyFT0C{thnConfigAxisOccupancyFT0C, "OccupancyFT0C"};
     const AxisSpec thnAxisNoSameBunchPileup{thnConfigAxisNoSameBunchPileup, "NoSameBunchPileup"};
-    const AxisSpec thnAxisNumTracksInTimeRange{thnConfigAxisNumTracksInTimeRange, "NumTracksInTimeRange"};
+    const AxisSpec thnAxisOccupancy{thnConfigAxisOccupancy, "Occupancy"};
     const AxisSpec thnAxisNoCollInTimeRangeNarrow{thnConfigAxisNoCollInTimeRangeNarrow, "NoCollInTimeRangeNarrow"};
     const AxisSpec thnAxisNoCollInTimeRangeStandard{thnConfigAxisNoCollInTimeRangeStandard, "NoCollInTimeRangeStandard"};
     const AxisSpec thnAxisNoCollInRofStandard{thnConfigAxisNoCollInRofStandard, "NoCollInRofStandard"};
@@ -148,10 +148,10 @@ struct HfTaskFlowCharmHadrons {
     }
     if (occEstimator != 0) {
       if (occEstimator == 1) {
-        axes.insert(axes.end(), {thnAxisOccupancyITS, thnAxisNoSameBunchPileup, thnAxisNumTracksInTimeRange,
+        axes.insert(axes.end(), {thnAxisOccupancyITS, thnAxisNoSameBunchPileup, thnAxisOccupancy,
                                  thnAxisNoCollInTimeRangeNarrow, thnAxisNoCollInTimeRangeStandard, thnAxisNoCollInRofStandard});
       } else {
-        axes.insert(axes.end(), {thnAxisOccupancyFT0C, thnAxisNoSameBunchPileup, thnAxisNumTracksInTimeRange,
+        axes.insert(axes.end(), {thnAxisOccupancyFT0C, thnAxisNoSameBunchPileup, thnAxisOccupancy,
                                  thnAxisNoCollInTimeRangeNarrow, thnAxisNoCollInTimeRangeStandard, thnAxisNoCollInRofStandard});
       }
     }
@@ -284,14 +284,14 @@ struct HfTaskFlowCharmHadrons {
         if (storeEP) {
           registry.fill(HIST("hSparseFlowCharm"), mass, pt, cent, sp, cosNPhi, cosDeltaPhi, outputMl[0], outputMl[1], occupancy,
                         TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoSameBunchPileup),
-                        TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NumTracksInTimeRange),
+                        TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::Occupancy),
                         TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoCollInTimeRangeNarrow),
                         TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoCollInTimeRangeStandard),
                         TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoCollInRofStandard));
         } else {
           registry.fill(HIST("hSparseFlowCharm"), mass, pt, cent, sp, outputMl[0], outputMl[1], occupancy,
                         TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoSameBunchPileup),
-                        TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NumTracksInTimeRange),
+                        TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::Occupancy),
                         TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoCollInTimeRangeNarrow),
                         TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoCollInTimeRangeStandard),
                         TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoCollInRofStandard));
@@ -300,14 +300,14 @@ struct HfTaskFlowCharmHadrons {
         if (storeEP) {
           registry.fill(HIST("hSparseFlowCharm"), mass, pt, cent, sp, cosNPhi, cosDeltaPhi, occupancy,
                         TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoSameBunchPileup),
-                        TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NumTracksInTimeRange),
+                        TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::Occupancy),
                         TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoCollInTimeRangeNarrow),
                         TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoCollInTimeRangeStandard),
                         TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoCollInRofStandard));
         } else {
           registry.fill(HIST("hSparseFlowCharm"), mass, pt, cent, sp, occupancy,
                         TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoSameBunchPileup),
-                        TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NumTracksInTimeRange),
+                        TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::Occupancy),
                         TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoCollInTimeRangeNarrow),
                         TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoCollInTimeRangeStandard),
                         TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoCollInRofStandard));

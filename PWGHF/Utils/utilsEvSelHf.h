@@ -44,7 +44,7 @@ enum EventRejection {
   ItsRofBorderCut,
   IsGoodZvtxFT0vsPV,
   NoSameBunchPileup,
-  NumTracksInTimeRange,
+  Occupancy,
   NContrib,
   Chi2,
   PositionZ,
@@ -72,7 +72,7 @@ void setEventRejectionLabels(Histo& hRejection, std::string softwareTriggerLabel
   hRejection->GetXaxis()->SetBinLabel(EventRejection::ItsRofBorderCut + 1, "ITS ROF border");
   hRejection->GetXaxis()->SetBinLabel(EventRejection::IsGoodZvtxFT0vsPV + 1, "PV #it{z} consistency FT0 timing");
   hRejection->GetXaxis()->SetBinLabel(EventRejection::NoSameBunchPileup + 1, "No same-bunch pile-up"); // POTENTIALLY BAD FOR BEAUTY ANALYSES
-  hRejection->GetXaxis()->SetBinLabel(EventRejection::NumTracksInTimeRange + 1, "Occupancy");
+  hRejection->GetXaxis()->SetBinLabel(EventRejection::Occupancy + 1, "Occupancy");
   hRejection->GetXaxis()->SetBinLabel(EventRejection::NContrib + 1, "# of PV contributors");
   hRejection->GetXaxis()->SetBinLabel(EventRejection::Chi2 + 1, "PV #it{#chi}^{2}");
   hRejection->GetXaxis()->SetBinLabel(EventRejection::PositionZ + 1, "PV #it{z}");
@@ -93,10 +93,10 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<bool> useItsRofBorderCut{"useItsRofBorderCut", true, "Apply ITS ROF border cut"};
   o2::framework::Configurable<bool> useIsGoodZvtxFT0vsPV{"useIsGoodZvtxFT0vsPV", false, "Check consistency between PVz from central barrel with that from FT0 timing"};
   o2::framework::Configurable<bool> useNoSameBunchPileup{"useNoSameBunchPileup", false, "Exclude collisions in bunches with more than 1 reco. PV"}; // POTENTIALLY BAD FOR BEAUTY ANALYSES
-  o2::framework::Configurable<bool> useNumTracksInTimeRange{"useNumTracksInTimeRange", false, "Apply occupancy selection (num. ITS tracks with at least 5 clusters in +-100us from current collision)"};
+  o2::framework::Configurable<bool> useOccupancyCut {"useOccupancyCut ", false, "Apply occupancy selection (num. ITS tracks with at least 5 clusters or num. of signals in FT0c in +-100us from current collision)"};
   o2::framework::Configurable<int> occEstimator{"occEstimator", 1, "Occupancy estimation (1: ITS, 2: FT0C)"};
-  o2::framework::Configurable<int> numTracksInTimeRangeMin{"numTracksInTimeRangeMin", 0, "Minimum occupancy"};
-  o2::framework::Configurable<int> numTracksInTimeRangeMax{"numTracksInTimeRangeMax", 1000000, "Maximum occupancy"};
+  o2::framework::Configurable<int> occupancyMin{"occupancyMin", 0, "Minimum occupancy"};
+  o2::framework::Configurable<int> occupancyMax{"occupancyMax", 1000000, "Maximum occupancy"};
   o2::framework::Configurable<int> nPvContributorsMin{"nPvContributorsMin", 0, "Minimum number of PV contributors"};
   o2::framework::Configurable<float> chi2PvMax{"chi2PvMax", -1.f, "Maximum PV chi2"};
   o2::framework::Configurable<float> zPvPosMin{"zPvPosMin", -10.f, "Minimum PV posZ (cm)"};
@@ -165,17 +165,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
     uint16_t rejectionMask{0}; // 16 bits, in case new ev. selections will be added
 
     if constexpr (centEstimator != o2::hf_centrality::CentralityEstimator::None) {
-      if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0A) {
-        centrality = collision.centFT0A();
-      } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0C) {
-        centrality = collision.centFT0C();
-      } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0M) {
-        centrality = collision.centFT0M();
-      } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FV0A) {
-        centrality = collision.centFV0A();
-      } else {
-        LOGP(fatal, "Unsupported centrality estimator!");
-      }
+      centrality = getCentrality<centEstimator>(collision);
       if (centrality < centralityMin || centrality > centralityMax) {
         SETBIT(rejectionMask, EventRejection::Centrality);
       }
@@ -219,10 +209,10 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
       if (useNoCollInRofStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
         SETBIT(rejectionMask, EventRejection::NoCollInRofStandard);
       }
-      if (useNumTracksInTimeRange) {
-        float numTracksInTimeRange = getOccupancy(collision, occEstimator);
-        if (numTracksInTimeRange < numTracksInTimeRangeMin || numTracksInTimeRange > numTracksInTimeRangeMax) {
-          SETBIT(rejectionMask, EventRejection::NumTracksInTimeRange);
+      if (useOccupancyCut ) {
+        float occupancy = getOccupancy(collision, occEstimator);
+        if (occupancy < occupancyMin || occupancy > occupancyMax) {
+          SETBIT(rejectionMask, EventRejection::Occupancy);
         }
       }
     }
@@ -271,7 +261,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
 
   /// Get the occupancy
   /// \param collision is the collision with the occupancy information
-  /// \param occEstimator is the occupancy estimation (1: ITS, 2: FT0C)
+  /// \param occEstimator is the occupancy estimator (1: ITS, 2: FT0C)
   template <typename Coll>
   float getOccupancy(Coll const& collision, int occEstimator = 1)
   {
@@ -286,6 +276,26 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
         LOG(warning) << "Occupancy estimator not valid. Possible values are ITS or FT0C. Fallback to ITS";
         return collision.trackOccupancyInTimeRange();
         break;
+    }
+  }
+
+  /// Get the centrality
+  /// \param collision is the collision with the centrality information
+  /// \param centEstimator is the centrality estimator from hf_centrality::CentralityEstimator
+  template <o2::hf_centrality::CentralityEstimator centEstimator, typename Coll>
+  float getCentrality(Coll const& collision)
+  {
+    if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0A) {
+      return collision.centFT0A();
+    } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0C) {
+      return collision.centFT0C();
+    } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0M) {
+      return collision.centFT0M();
+    } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FV0A) {
+      return collision.centFV0A();
+    } else {
+      LOG(warning) << "Centrality estimator not valid. Possible values are V0A, T0M, T0A, T0C. Fallback to FT0c";
+      return collision.centFT0C();
     }
   }
 
