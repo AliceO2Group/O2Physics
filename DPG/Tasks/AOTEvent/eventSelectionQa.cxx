@@ -9,7 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "map"
+#include <map>
+#include <vector>
+#include <unordered_map>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
