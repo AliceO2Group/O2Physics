@@ -64,8 +64,7 @@ struct HfTaskFlowCharmHadrons {
   Configurable<float> centralityMax{"centralityMax", 100., "Maximum centrality accepted in SP/EP computation (not applied in resolution process)"};
   Configurable<bool> storeEP{"storeEP", false, "Flag to store EP-related axis"};
   Configurable<bool> storeMl{"storeMl", false, "Flag to store ML scores"};
-  Configurable<int> occEstimator{"occEstimator", 1, "Occupancy estimation (1: ITS, 2: FT0C)"};
-  Configurable<bool> storeOccupancy{"storeOccupancy", false, "Flag to store TH2 occITS/occFT0C + HfEvSelBitMasks"};
+  Configurable<int> occEstimator{"occEstimator", 0, "Occupancy estimation (0: None, 1: ITS, 2: FT0C)"};
   Configurable<bool> saveEpResoHisto{"saveEpResoHisto", false, "Flag to save event plane resolution histogram"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::vector<int>> classMl{"classMl", {0, 2}, "Indexes of BDT scores to be stored. Two indexes max."};
@@ -147,7 +146,7 @@ struct HfTaskFlowCharmHadrons {
     if (storeMl) {
       axes.insert(axes.end(), {thnAxisMlOne, thnAxisMlTwo});
     }
-    if (storeOccupancy) {
+    if (occEstimator != 0) {
       if (occEstimator == 1) {
         axes.insert(axes.end(), {thnAxisOccupancyITS, thnAxisNoSameBunchPileup, thnAxisNumTracksInTimeRange,
                                  thnAxisNoCollInTimeRangeNarrow, thnAxisNoCollInTimeRangeStandard, thnAxisNoCollInRofStandard});
@@ -158,7 +157,7 @@ struct HfTaskFlowCharmHadrons {
     }
     registry.add("hSparseFlowCharm", "THn for SP", HistType::kTHnSparseF, axes);
 
-    if (storeOccupancy) {
+    if (occEstimator != 0) {
       registry.add("trackOccVsFT0COcc", "trackOccVsFT0COcc; trackOcc; FT0COcc", {HistType::kTH2F, {thnAxisOccupancyITS, thnAxisOccupancyFT0C}});
     }
 
@@ -280,7 +279,7 @@ struct HfTaskFlowCharmHadrons {
                float& occupancy,
                uint16_t& hfevselflag)
   {
-    if (storeOccupancy) {
+    if (occEstimator != 0) {
       if (storeMl) {
         if (storeEP) {
           registry.fill(HIST("hSparseFlowCharm"), mass, pt, cent, sp, cosNPhi, cosDeltaPhi, outputMl[0], outputMl[1], occupancy,
@@ -331,26 +330,6 @@ struct HfTaskFlowCharmHadrons {
     }
   }
 
-  /// Get the occupancy
-  /// \param collision is the collision with the occupancy information
-  float getOccupancy(CollsWithQvecs::iterator const& collision)
-  {
-    float occupancy = -999.;
-    switch (occEstimator) {
-      case 1:
-        occupancy = collision.trackOccupancyInTimeRange();
-        break;
-      case 2:
-        occupancy = collision.ft0cOccupancyInTimeRange();
-        break;
-      default:
-        LOG(warning) << "Occupancy estimator not valid. Possible values are ITS or FT0C. Fallback to ITS";
-        occupancy = collision.trackOccupancyInTimeRange();
-        break;
-    }
-    return occupancy;
-  }
-
   /// Get the centrality
   /// \param collision is the collision with the centrality information
   float getCentrality(CollsWithQvecs::iterator const& collision)
@@ -380,17 +359,20 @@ struct HfTaskFlowCharmHadrons {
   /// Check if the collision is selected
   /// \param collision is the collision with the Q vector information
   /// \param bc is the bunch crossing with timestamp information
+  /// \param centrality is the collision centrality
   /// \return true if the collision is selected, false otherwise
   template <o2::hf_centrality::CentralityEstimator centEstimator>
   bool isCollSelected(CollsWithQvecs::iterator const& collision,
-                      aod::BCsWithTimestamps const&)
+                      aod::BCsWithTimestamps const&,
+                      float& centrality)
   {
-    float centrality{-1.f};
-    float occupancy = getOccupancy(collision);
+    float occupancy = hfEvSel.getOccupancy(collision, occEstimator);
     const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, centEstimator, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
+    centrality = getCentrality(collision);
 
     /// monitor the satisfied event selections
     hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy);
+    registry.fill(HIST("trackOccVsFT0COcc"), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
     return rejectionMask == 0;
   }
 
@@ -455,8 +437,8 @@ struct HfTaskFlowCharmHadrons {
     }
     float occupancy = 0.;
     uint16_t hfevflag;
-    if (storeOccupancy) {
-      occupancy = getOccupancy(collision);
+    if (occEstimator != 0) {
+      occupancy = hfEvSel.getOccupancy(collision, occEstimator);
       registry.fill(HIST("trackOccVsFT0COcc"), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
       hfevflag = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, cent, ccdb, registry);
     }
@@ -649,12 +631,12 @@ struct HfTaskFlowCharmHadrons {
   void processResolution(CollsWithQvecs::iterator const& collision,
                          aod::BCsWithTimestamps const& bcs)
   {
-    if (!isCollSelected<o2::hf_centrality::CentralityEstimator::None>(collision, bcs)) {
+    float centrality {-1.f};
+    if (!isCollSelected<o2::hf_centrality::CentralityEstimator::None>(collision, bcs, centrality)) {
       // no selection on the centrality is applied on purpose to allow for the resolution study in post-processing
       return;
     }
 
-    float centrality = getCentrality(collision); // centrality not updated in the rejection mask function
     float xQVecFT0a = collision.qvecFT0ARe();
     float yQVecFT0a = collision.qvecFT0AIm();
     float xQVecFT0c = collision.qvecFT0CRe();

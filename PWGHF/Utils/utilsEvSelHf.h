@@ -94,7 +94,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<bool> useIsGoodZvtxFT0vsPV{"useIsGoodZvtxFT0vsPV", false, "Check consistency between PVz from central barrel with that from FT0 timing"};
   o2::framework::Configurable<bool> useNoSameBunchPileup{"useNoSameBunchPileup", false, "Exclude collisions in bunches with more than 1 reco. PV"}; // POTENTIALLY BAD FOR BEAUTY ANALYSES
   o2::framework::Configurable<bool> useNumTracksInTimeRange{"useNumTracksInTimeRange", false, "Apply occupancy selection (num. ITS tracks with at least 5 clusters in +-100us from current collision)"};
-  o2::framework::Configurable<bool> useFT0cOccEstimator{"useFT0cOccEstimator", false, "Adopt FT0c amplitudes as occupancy estimator instead of ITS tracks"};
+  o2::framework::Configurable<int> occEstimator{"occEstimator", 1, "Occupancy estimation (1: ITS, 2: FT0C)"};
   o2::framework::Configurable<int> numTracksInTimeRangeMin{"numTracksInTimeRangeMin", 0, "Minimum occupancy"};
   o2::framework::Configurable<int> numTracksInTimeRangeMax{"numTracksInTimeRangeMax", 1000000, "Maximum occupancy"};
   o2::framework::Configurable<int> nPvContributorsMin{"nPvContributorsMin", 0, "Minimum number of PV contributors"};
@@ -220,14 +220,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
         SETBIT(rejectionMask, EventRejection::NoCollInRofStandard);
       }
       if (useNumTracksInTimeRange) {
-        float numTracksInTimeRange;
-        if (useFT0cOccEstimator) {
-          /// occupancy estimator (FT0c signal amplitudes in +-10us from current collision)
-          numTracksInTimeRange = collision.ft0cOccupancyInTimeRange();
-        } else {
-          /// occupancy estimator (ITS tracks with at least 5 clusters in +-10us from current collision)
-          numTracksInTimeRange = static_cast<float>(collision.trackOccupancyInTimeRange());
-        }
+        float numTracksInTimeRange = getOccupancy(collision, occEstimator);
         if (numTracksInTimeRange < numTracksInTimeRangeMin || numTracksInTimeRange > numTracksInTimeRangeMax) {
           SETBIT(rejectionMask, EventRejection::NumTracksInTimeRange);
         }
@@ -274,6 +267,26 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
     }
 
     return rejectionMask;
+  }
+
+  /// Get the occupancy
+  /// \param collision is the collision with the occupancy information
+  /// \param occEstimator is the occupancy estimation (1: ITS, 2: FT0C)
+  template <typename Coll>
+  float getOccupancy(Coll const& collision, int occEstimator = 1)
+  {
+    switch (occEstimator) {
+      case 1: // ITS
+        return collision.trackOccupancyInTimeRange();
+        break;
+      case 2: // FT0c
+        return collision.ft0cOccupancyInTimeRange();
+        break;
+      default:
+        LOG(warning) << "Occupancy estimator not valid. Possible values are ITS or FT0C. Fallback to ITS";
+        return collision.trackOccupancyInTimeRange();
+        break;
+    }
   }
 
   /// \brief Fills histograms for monitoring event selections satisfied by the collision.
