@@ -66,7 +66,7 @@ struct centralityStudy {
   Configurable<float> scaleSignalFV0A{"scaleSignalFV0A", 1.00f, "scale FV0A signal for convenience"};
 
   // _______________________________________
-  // upc rejection criteria 
+  // upc rejection criteria
   // reject low zna/c
   struct : ConfigurableGroup {
     Configurable<float> minZNACsignal{"minZNACsignal", -999999.0f, "min zna/c signal"};
