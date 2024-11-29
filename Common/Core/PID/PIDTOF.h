@@ -46,7 +46,6 @@ static constexpr float kCSPEDDInv = 1.f / kCSPEED;               /// Inverse of 
 static constexpr float defaultReturnValue = -999.f;              /// Default return value in case TOF measurement is not available
 
 /// \brief Class to handle the the TOF detector response for the TOF beta measurement
-template <typename TrackType>
 class Beta
 {
  public:
@@ -62,11 +61,19 @@ class Beta
   /// Gets the beta for the track of interest
   /// \param track Track of interest
   /// \param collisionTime Collision time
-  static float GetBeta(const TrackType& track, const float collisionTime) { return track.hasTOF() ? GetBeta(track.length(), track.tofSignal(), collisionTime) : defaultReturnValue; }
+  template <typename TrackType>
+  static float GetBeta(const TrackType& track, const float collisionTime)
+  {
+    return track.hasTOF() ? GetBeta(track.length(), track.tofSignal(), collisionTime) : defaultReturnValue;
+  }
 
   /// Gets the beta for the track of interest
   /// \param track Track of interest
-  static float GetBeta(const TrackType& track) { return GetBeta(track, track.tofEvTime()); }
+  template <typename TrackType>
+  static float GetBeta(const TrackType& track)
+  {
+    return GetBeta(track, track.tofEvTime());
+  }
 
   /// Computes the expected uncertainty on the beta measurement
   /// \param length Length in cm of the track
@@ -77,7 +84,11 @@ class Beta
 
   /// Gets the expected uncertainty on the beta measurement of the track of interest
   /// \param track Track of interest
-  float GetExpectedSigma(const TrackType& track) const { return GetExpectedSigma(track.length(), track.tofSignal(), track.tofEvTime(), mExpectedResolution); }
+  template <typename TrackType>
+  float GetExpectedSigma(const TrackType& track) const
+  {
+    return GetExpectedSigma(track.length(), track.tofSignal(), track.tofEvTime(), mExpectedResolution);
+  }
 
   /// Gets the expected beta for a given mass hypothesis (no energy loss taken into account)
   /// \param momentum momentum in GeV/c of the track
@@ -86,7 +97,7 @@ class Beta
 
   /// Gets the expected beta given the particle index (no energy loss taken into account) of the track of interest
   /// \param track Track of interest
-  template <o2::track::PID::ID id>
+  template <o2::track::PID::ID id, typename TrackType>
   float GetExpectedBeta(const TrackType& track) const
   {
     return GetExpectedBeta(track.p(), o2::track::PID::getMass2Z(id));
@@ -94,7 +105,7 @@ class Beta
 
   /// Gets the number of sigmas with respect the approximate beta (no energy loss taken into account) of the track of interest
   /// \param track Track of interest
-  template <o2::track::PID::ID id>
+  template <o2::track::PID::ID id, typename TrackType>
   float GetSeparation(const TrackType& track) const
   {
     return (GetBeta(track) - GetExpectedBeta<id>(track)) / GetExpectedSigma(track);
@@ -104,7 +115,6 @@ class Beta
 };
 
 /// \brief Class to handle the the TOF detector response for the TOF mass measurement
-template <typename TrackType>
 class TOFMass
 {
  public:
@@ -118,11 +128,19 @@ class TOFMass
 
   /// Gets the TOF mass for the track of interest
   /// \param track Track of interest
-  static float GetTOFMass(const TrackType& track, const float beta) { return track.hasTOF() ? GetTOFMass(track.p(), beta) : defaultReturnValue; }
+  template <typename TrackType>
+  static float GetTOFMass(const TrackType& track, const float beta)
+  {
+    return track.hasTOF() ? GetTOFMass(track.p(), beta) : defaultReturnValue;
+  }
 
   /// Gets the TOF mass for the track of interest
   /// \param track Track of interest
-  static float GetTOFMass(const TrackType& track) { return track.hasTOF() ? GetTOFMass(track.p(), Beta<TrackType>::GetBeta(track)) : defaultReturnValue; }
+  template <typename TrackType>
+  static float GetTOFMass(const TrackType& track)
+  {
+    return track.hasTOF() ? GetTOFMass(track.p(), Beta::GetBeta<TrackType>(track)) : defaultReturnValue;
+  }
 };
 
 /// \brief Next implementation class to store TOF response parameters for exp. times

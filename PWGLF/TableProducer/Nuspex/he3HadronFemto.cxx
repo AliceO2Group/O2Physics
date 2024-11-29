@@ -592,16 +592,15 @@ struct he3hadronfemto {
     he3Hadcand.trackIDHe3 = trackHe3.globalIndex();
     he3Hadcand.trackIDHad = trackHad.globalIndex();
 
-    o2::pid::tof::Beta<typename Ttracks::iterator> responseBeta;
     if (trackHe3.hasTOF()) {
-      float beta = responseBeta.GetBeta(trackHe3);
+      float beta = o2::pid::tof::Beta::GetBeta(trackHe3);
       beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
       bool heliumPID = trackHe3.pidForTracking() == o2::track::PID::Helium3 || trackHe3.pidForTracking() == o2::track::PID::Alpha;
       float correctedTPCinnerParamHe3 = (heliumPID && setting_compensatePIDinTracking) ? trackHe3.tpcInnerParam() / 2.f : trackHe3.tpcInnerParam();
       he3Hadcand.massTOFHe3 = correctedTPCinnerParamHe3 * 2.f * std::sqrt(1.f / (beta * beta) - 1.f);
     }
     if (trackHad.hasTOF()) {
-      float beta = responseBeta.GetBeta(trackHad);
+      float beta = o2::pid::tof::Beta::GetBeta(trackHad);
       beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
       he3Hadcand.massTOFHad = trackHad.tpcInnerParam() * std::sqrt(1.f / (beta * beta) - 1.f);
     }
