@@ -59,6 +59,11 @@ o2physics_add_dpl_workflow(task-directed-flow-charm-hadrons
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(task-directed-flow-dstar
+                    SOURCES taskDirectedFlowDstar.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(task-dplus
                     SOURCES taskDplus.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
