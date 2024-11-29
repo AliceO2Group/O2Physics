@@ -113,12 +113,12 @@ class MCSignal : public TNamed
   void PrintConfig();
 
  private:
-  std::vector<MCProng> fProngs;           // vector of MCProng
-  unsigned int fNProngs;                  // number of prongs
+  std::vector<MCProng> fProngs;            // vector of MCProng
+  unsigned int fNProngs;                   // number of prongs
   std::vector<int8_t> fCommonAncestorIdxs; // index of the most recent ancestor, relative to each prong's history
-  bool fExcludeCommonAncestor;            // explicitly request that there is no common ancestor
-  bool fDecayChannelIsExclusive;          // if true, then the indicated mother particle has a number of daughters which is equal to the number of prongs defined in this MC signal
-  bool fDecayChannelIsNotExclusive;       // if true, then the indicated mother particle has a number of daughters which is larger than the number of prongs defined in this MC signal
+  bool fExcludeCommonAncestor;             // explicitly request that there is no common ancestor
+  bool fDecayChannelIsExclusive;           // if true, then the indicated mother particle has a number of daughters which is equal to the number of prongs defined in this MC signal
+  bool fDecayChannelIsNotExclusive;        // if true, then the indicated mother particle has a number of daughters which is larger than the number of prongs defined in this MC signal
   int fTempAncestorLabel;
 
   template <typename T>
