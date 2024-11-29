@@ -50,28 +50,28 @@ struct femtoUniversePairTaskTrackTrackMcTruth {
   Configurable<float> ConfEtaMax{"ConfEtaMax", 0.8f, "Higher limit for |Eta| (the same for both particles)"};
 
   /// Particle 1
-  Configurable<int32_t> ConfPDGCodePartOne{"ConfPDGCodePartOne", 211, "Particle 1 - PDG code"};
+  Configurable<int32_t> ConfPDGCodePartOne{"ConfPDGCodePartOne", 2212, "Particle 1 - PDG code"};
   Configurable<bool> ConfNoPDGPartOne{"ConfNoPDGPartOne", false, "0: selecting part by PDG, 1: no PID selection"};
   Configurable<float> ConfPtLowPart1{"ConfPtLowPart1", 0.2, "Lower limit for Pt for the first particle"};
   Configurable<float> ConfPtHighPart1{"ConfPtHighPart1", 2.5, "Higher limit for Pt for the first particle"};
 
   /// Partition for particle 1
-  Partition<aod::FDParticles> partsOne = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (ConfNoPDGPartOne || aod::femtouniverseparticle::pidcut == uint32_t(ConfPDGCodePartOne)) &&
-                                         aod::femtouniverseparticle::pt < ConfPtHighPart1 && aod::femtouniverseparticle::pt > ConfPtLowPart1&& nabs(aod::femtouniverseparticle::eta) < ConfEtaMax;
+  Partition<aod::FDParticles> partsOne = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) &&
+                                         (aod::femtouniverseparticle::pt < ConfPtHighPart1) && (aod::femtouniverseparticle::pt > ConfPtLowPart1) && (nabs(aod::femtouniverseparticle::eta) < ConfEtaMax);
 
   /// Histogramming for particle 1
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kMCTruthTrack, 1> trackHistoPartOne;
 
   /// Particle 2
   Configurable<bool> ConfIsSame{"ConfIsSame", false, "Pairs of the same particle"};
-  Configurable<int32_t> ConfPDGCodePartTwo{"ConfPDGCodePartTwo", 211, "Particle 2 - PDG code"};
+  Configurable<int32_t> ConfPDGCodePartTwo{"ConfPDGCodePartTwo", 333, "Particle 2 - PDG code"};
   Configurable<bool> ConfNoPDGPartTwo{"ConfNoPDGPartTwo", false, "0: selecting part by PDG, 1: no PID selection"};
   Configurable<float> ConfPtLowPart2{"ConfPtLowPart2", 0.2, "Lower limit for Pt for the second particle"};
   Configurable<float> ConfPtHighPart2{"ConfPtHighPart2", 2.5, "Higher limit for Pt for the second particle"};
 
   /// Partition for particle 2
-  Partition<aod::FDParticles> partsTwo = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) && (ConfNoPDGPartTwo || aod::femtouniverseparticle::pidcut == uint32_t(ConfPDGCodePartTwo)) &&
-                                         aod::femtouniverseparticle::pt < ConfPtHighPart2 && aod::femtouniverseparticle::pt > ConfPtLowPart2&& nabs(aod::femtouniverseparticle::eta) < ConfEtaMax;
+  Partition<aod::FDParticles> partsTwo = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kMCTruthTrack)) &&
+                                         (aod::femtouniverseparticle::pt < ConfPtHighPart2) && (aod::femtouniverseparticle::pt > ConfPtLowPart2) && (nabs(aod::femtouniverseparticle::eta) < ConfEtaMax);
 
   /// Histogramming for particle 2
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kMCTruthTrack, 2> trackHistoPartTwo;
@@ -161,31 +161,57 @@ struct femtoUniversePairTaskTrackTrackMcTruth {
 
     /// Histogramming same event
     for (auto& part : groupPartsOne) {
-
+      if (!ConfNoPDGPartOne && part.tempFitVar() != ConfPDGCodePartOne) {
+        continue;
+      }
       trackHistoPartOne.fillQA<isMC, false>(part);
     }
 
     if (!ConfIsSame) {
       for (auto& part : groupPartsTwo) {
-
+        if (!ConfNoPDGPartTwo && part.tempFitVar() != ConfPDGCodePartTwo) {
+          continue;
+        }
         trackHistoPartTwo.fillQA<isMC, false>(part);
       }
     }
     /// Now build the combinations
-    for (auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsOne, groupPartsTwo))) {
-      // track cleaning
-      if (!pairCleaner.isCleanPair(p1, p2, parts)) {
-        continue;
-      }
-      if (swpart)
-        sameEventCont.setPair<isMC>(p1, p2, multCol, ConfUse3D);
-      else
-        sameEventCont.setPair<isMC>(p2, p1, multCol, ConfUse3D);
+    if (!ConfIsSame) {
+      // Build the combinations for pairs of non-identical particles
+      for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
+        // track cleaning
+        if (!pairCleaner.isCleanPair(p1, p2, parts)) {
+          continue;
+        }
+        if ((!ConfNoPDGPartOne && p2.tempFitVar() != ConfPDGCodePartOne) || (!ConfNoPDGPartTwo && p1.tempFitVar() != ConfPDGCodePartTwo)) {
+          continue;
+        }
+        if (swpart)
+          sameEventCont.setPair<isMC>(p1, p2, multCol, ConfUse3D);
+        else
+          sameEventCont.setPair<isMC>(p2, p1, multCol, ConfUse3D);
 
-      swpart = !swpart;
+        swpart = !swpart;
+      }
+    } else {
+      // Build the combinations for pairs of identical pairs
+      for (auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsOne, groupPartsTwo))) {
+        // track cleaning
+        if (!pairCleaner.isCleanPair(p1, p2, parts)) {
+          continue;
+        }
+        if ((!ConfNoPDGPartOne && p2.tempFitVar() != ConfPDGCodePartOne) || (!ConfNoPDGPartTwo && p1.tempFitVar() != ConfPDGCodePartTwo)) {
+          continue;
+        }
+        if (swpart)
+          sameEventCont.setPair<isMC>(p1, p2, multCol, ConfUse3D);
+        else
+          sameEventCont.setPair<isMC>(p2, p1, multCol, ConfUse3D);
+
+        swpart = !swpart;
+      }
     }
   }
-
   /// process function for to call doSameEvent with Data
   /// \param col subscribe to the collision table (Data)
   /// \param parts subscribe to the femtoUniverseParticleTable
@@ -218,6 +244,9 @@ struct femtoUniversePairTaskTrackTrackMcTruth {
     fNeventsProcessed++;
 
     for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
+      if ((!ConfNoPDGPartOne && p2.tempFitVar() != ConfPDGCodePartOne) || (!ConfNoPDGPartTwo && p1.tempFitVar() != ConfPDGCodePartTwo)) {
+        continue;
+      }
       if (swpart)
         mixedEventCont.setPair<isMC>(p1, p2, multCol, ConfUse3D);
       else

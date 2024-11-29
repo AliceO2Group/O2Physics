@@ -37,6 +37,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "TrainingTree.h"
+#include <cmath>
 
 using namespace o2;
 using namespace o2::framework;
@@ -181,7 +182,7 @@ struct ConsumeWeights {
     /// fill histograms with using BDT scores produced by previous task as weights
 
     for (auto& track : tracks) {
-      if (isfinite(track.pt())) {
+      if (std::isfinite(track.pt())) {
         registry.fill(HIST("Weighted/Tracks/Pt"), track.pt(), collision.weight());
       }
     }
@@ -201,7 +202,7 @@ struct ConsumeWeights {
     /// fill histograms without weights
 
     for (auto& track : tracks) {
-      if (isfinite(track.pt())) {
+      if (std::isfinite(track.pt())) {
         registry.fill(HIST("Tracks/Pt"), track.pt());
       }
     }

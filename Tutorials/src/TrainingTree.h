@@ -45,7 +45,7 @@ auto meanPt(Tracks const& tracks)
   auto apt = 0.f;
   auto npt = 0;
   for (auto& track : tracks) {
-    if (isfinite(track.pt()) && (std::abs(track.pt()) > 1e-3)) {
+    if (std::isfinite(track.pt()) && (std::abs(track.pt()) > 1e-3)) {
       ++npt;
       apt += track.pt();
     }

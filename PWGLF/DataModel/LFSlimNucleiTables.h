@@ -36,16 +36,19 @@ DECLARE_SOA_COLUMN(DCAz, dcaz, float);
 DECLARE_SOA_COLUMN(TPCsignal, tpcSignal, float);
 DECLARE_SOA_COLUMN(ITSchi2, itsChi2, float);
 DECLARE_SOA_COLUMN(TPCchi2, tpcChi2, float);
+DECLARE_SOA_COLUMN(TOFchi2, tofChi2, float);
 DECLARE_SOA_COLUMN(Flags, flags, uint16_t);
 DECLARE_SOA_COLUMN(TPCfindableCls, tpcFindableCls, uint8_t);
 DECLARE_SOA_COLUMN(TPCcrossedRows, tpcCrossedRows, uint8_t);
 DECLARE_SOA_COLUMN(ITSclsMap, itsClsMap, uint8_t);
 DECLARE_SOA_COLUMN(TPCnCls, tpcNCls, uint8_t);
+DECLARE_SOA_COLUMN(TPCnClsShared, tpcNClsShared, uint8_t);
 DECLARE_SOA_COLUMN(ITSclusterSizes, itsClusterSizes, uint32_t);
 DECLARE_SOA_COLUMN(gPt, genPt, float);
 DECLARE_SOA_COLUMN(gEta, genEta, float);
 DECLARE_SOA_COLUMN(gPhi, genPhi, float);
 DECLARE_SOA_COLUMN(PDGcode, pdgCode, int);
+DECLARE_SOA_COLUMN(MotherPDGcode, MotherpdgCode, int);
 DECLARE_SOA_COLUMN(SurvivedEventSelection, survivedEventSelection, bool);
 DECLARE_SOA_COLUMN(AbsoDecL, absoDecL, float);
 
@@ -78,11 +81,13 @@ DECLARE_SOA_TABLE(NucleiTable, "AOD", "NUCLEITABLE",
                   NucleiTableNS::TPCsignal,
                   NucleiTableNS::ITSchi2,
                   NucleiTableNS::TPCchi2,
+                  NucleiTableNS::TOFchi2,
                   NucleiTableNS::Flags,
                   NucleiTableNS::TPCfindableCls,
                   NucleiTableNS::TPCcrossedRows,
                   NucleiTableNS::ITSclsMap,
                   NucleiTableNS::TPCnCls,
+                  NucleiTableNS::TPCnClsShared,
                   NucleiTableNS::ITSclusterSizes);
 
 DECLARE_SOA_TABLE(NucleiTableFlow, "AOD", "NUCLEITABLEFLOW",
@@ -111,16 +116,19 @@ DECLARE_SOA_TABLE(NucleiTableMC, "AOD", "NUCLEITABLEMC",
                   NucleiTableNS::TPCsignal,
                   NucleiTableNS::ITSchi2,
                   NucleiTableNS::TPCchi2,
+                  NucleiTableNS::TOFchi2,
                   NucleiTableNS::Flags,
                   NucleiTableNS::TPCfindableCls,
                   NucleiTableNS::TPCcrossedRows,
                   NucleiTableNS::ITSclsMap,
                   NucleiTableNS::TPCnCls,
+                  NucleiTableNS::TPCnClsShared,
                   NucleiTableNS::ITSclusterSizes,
                   NucleiTableNS::gPt,
                   NucleiTableNS::gEta,
                   NucleiTableNS::gPhi,
                   NucleiTableNS::PDGcode,
+                  NucleiTableNS::MotherPDGcode,
                   NucleiTableNS::SurvivedEventSelection,
                   NucleiTableNS::AbsoDecL);
 

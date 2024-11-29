@@ -166,11 +166,15 @@ DECLARE_SOA_COLUMN(TPCNSigmaPi, tpcNSigmaPi, float); //! Nsigma separation with 
 DECLARE_SOA_COLUMN(TPCNSigmaKa, tpcNSigmaKa, float); //! Nsigma separation with the TPC detector for kaon
 DECLARE_SOA_COLUMN(TPCNSigmaPr, tpcNSigmaPr, float); //! Nsigma separation with the TPC detector for proton
 DECLARE_SOA_COLUMN(TPCNSigmaDe, tpcNSigmaDe, float); //! Nsigma separation with the TPC detector for deuteron
-DECLARE_SOA_COLUMN(TOFNSigmaEl, tofNSigmaEl, float); //! Nsigma separation with the TPC detector for electron
-DECLARE_SOA_COLUMN(TOFNSigmaPi, tofNSigmaPi, float); //! Nsigma separation with the TPC detector for pion
-DECLARE_SOA_COLUMN(TOFNSigmaKa, tofNSigmaKa, float); //! Nsigma separation with the TPC detector for kaon
-DECLARE_SOA_COLUMN(TOFNSigmaPr, tofNSigmaPr, float); //! Nsigma separation with the TPC detector for proton
-DECLARE_SOA_COLUMN(TOFNSigmaDe, tofNSigmaDe, float); //! Nsigma separation with the TPC detector for deuteron
+DECLARE_SOA_COLUMN(TPCNSigmaTr, tpcNSigmaTr, float); //! Nsigma separation with the TPC detector for triton
+DECLARE_SOA_COLUMN(TPCNSigmaHe, tpcNSigmaHe, float); //! Nsigma separation with the TPC detector for helium3
+DECLARE_SOA_COLUMN(TOFNSigmaEl, tofNSigmaEl, float); //! Nsigma separation with the TOF detector for electron
+DECLARE_SOA_COLUMN(TOFNSigmaPi, tofNSigmaPi, float); //! Nsigma separation with the TOF detector for pion
+DECLARE_SOA_COLUMN(TOFNSigmaKa, tofNSigmaKa, float); //! Nsigma separation with the TOF detector for kaon
+DECLARE_SOA_COLUMN(TOFNSigmaPr, tofNSigmaPr, float); //! Nsigma separation with the TOF detector for proton
+DECLARE_SOA_COLUMN(TOFNSigmaDe, tofNSigmaDe, float); //! Nsigma separation with the TOF detector for deuteron
+DECLARE_SOA_COLUMN(TOFNSigmaTr, tofNSigmaTr, float); //! Nsigma separation with the TOF detector for triton
+DECLARE_SOA_COLUMN(TOFNSigmaHe, tofNSigmaHe, float); //! Nsigma separation with the TOF detector for helium3
 DECLARE_SOA_COLUMN(DaughDCA, daughDCA, float);       //! DCA between daughters
 DECLARE_SOA_COLUMN(TransRadius, transRadius, float); //! Transverse radius of the decay vertex
 DECLARE_SOA_COLUMN(DecayVtxX, decayVtxX, float);     //! X position of the decay vertex
@@ -206,7 +210,7 @@ DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int8_t);     //! Selectio
 DECLARE_SOA_COLUMN(BDTBkg, bdtBkg, float);                          //! Background score using Boosted Decision Tree for charm hadron
 DECLARE_SOA_COLUMN(BDTPrompt, bdtPrompt, float);                    //! Prompt signal score using Boosted Decision Tree for charm hadron
 DECLARE_SOA_COLUMN(BDTFD, bdtFD, float);                            //! Feed-down score using Boosted Decision Tree for charm hadron
-DECLARE_SOA_COLUMN(FlagMc, flagMc, int8_t);                         //! To select MC particle among charm hadrons, { DplusToPiKPi = 0, LcToPKPi = 2, DsToKKPi = 4, XicToPKP = 8, N3ProngD = 2ecays };
+DECLARE_SOA_COLUMN(FlagMc, flagMc, int8_t);                         //! To select MC particle among charm hadrons, { DplusToPiKPi = 1, LcToPKPi = 2, DsToKKPi = 4, XicToPKP = 8, N3ProngD = 2ecays };
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);               //! flag for reconstruction level matching (1 for prompt, 2 for non-prompt)
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);               //! flag for generator level matching (1 for prompt, 2 for non-prompt)
 DECLARE_SOA_COLUMN(IsCandidateSwapped, isCandidateSwapped, int8_t); //! swapping of the prongs order (0 for Lc -> pkpi, 1 for Lc -> pikp)
@@ -218,7 +222,7 @@ DECLARE_SOA_COLUMN(CharmM, charmM, float);                          //! Charm ha
 DECLARE_SOA_COLUMN(CharmPt, charmPt, float);                        //! Transverse momentum of charm hadron for result task
 DECLARE_SOA_COLUMN(Mult, mult, int);                                //! Charge particle multiplicity
 DECLARE_SOA_COLUMN(MultPercentile, multPercentile, float);          //! Multiplicity precentile
-DECLARE_SOA_COLUMN(PartPairSign, partPairSign, int8_t);             //! Selection between ++ (1), and -- pair (2)
+DECLARE_SOA_COLUMN(PairSign, pairSign, int8_t);                     //! Selection between like sign (1) and unlike sign pair (2)
 DECLARE_SOA_COLUMN(ProcessType, processType, int64_t);              //! Selection between same-event (1), and mixed-event (2)
 DECLARE_SOA_DYNAMIC_COLUMN(M, m,                                    //!
                            [](float pt0, float phi0, float eta0, float pt1, float phi1, float eta1, float pt2, float phi2, float eta2, const std::array<double, 3>& m) -> float { return RecoDecay::m(std::array{
@@ -294,8 +298,11 @@ DECLARE_SOA_TABLE(FDResultsHF, "AOD", "FDRESULTSHF", //! table to store results 
                   fdhf::MT,
                   fdhf::Mult,
                   fdhf::MultPercentile,
-                  fdhf::PartPairSign,
-                  fdhf::ProcessType);
+                  fdhf::Charge,
+                  fdhf::PairSign,
+                  fdhf::ProcessType,
+                  fdhf::FlagMc,
+                  fdhf::OriginMcRec);
 
 DECLARE_SOA_TABLE(FDHfCandMC, "AOD", "FDHFCANDMC", //! Table for reconstructed MC charm hadron candidates
                   o2::soa::Index<>,
@@ -343,11 +350,15 @@ DECLARE_SOA_TABLE(FDExtParticles, "AOD", "FDEXTPARTICLE",
                   femtodreamparticle::TPCNSigmaKa,
                   femtodreamparticle::TPCNSigmaPr,
                   femtodreamparticle::TPCNSigmaDe,
+                  femtodreamparticle::TPCNSigmaTr,
+                  femtodreamparticle::TPCNSigmaHe,
                   femtodreamparticle::TOFNSigmaEl,
                   femtodreamparticle::TOFNSigmaPi,
                   femtodreamparticle::TOFNSigmaKa,
                   femtodreamparticle::TOFNSigmaPr,
                   femtodreamparticle::TOFNSigmaDe,
+                  femtodreamparticle::TOFNSigmaTr,
+                  femtodreamparticle::TOFNSigmaHe,
                   femtodreamparticle::DaughDCA,
                   femtodreamparticle::TransRadius,
                   femtodreamparticle::DecayVtxX,
@@ -440,8 +451,8 @@ namespace hash
 {
 DECLARE_SOA_COLUMN(Bin, bin, int); //! Hash for the event mixing
 } // namespace hash
-DECLARE_SOA_TABLE(Hashes, "AOD", "HASH", hash::Bin);
-using Hash = Hashes::iterator;
+DECLARE_SOA_TABLE(MixingHashes, "AOD", "HASH", hash::Bin);
+using MixingHash = MixingHashes::iterator;
 
 } // namespace o2::aod
 

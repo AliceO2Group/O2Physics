@@ -81,6 +81,7 @@ struct SGFITAnalyzer {
   void init(InitContext&)
   {
     const AxisSpec axispt{ptAxis, "p_{T}"};
+    const AxisSpec axismeanpt{ptAxis, "<p_{T}>"};
     const AxisSpec axisBC{BCAxis, "BC"};
     const AxisSpec axiseta{etaAxis, "#eta"};
     const AxisSpec axismult{multAxis, "N_{tracks}"};
@@ -108,6 +109,12 @@ struct SGFITAnalyzer {
     registry.add("collisions/multiplicityZ1PVCAC", "Multiplicity of PV contributors AC-side; PV contributors; Tracks", {HistType::kTH1F, {{axismult}}});
     registry.add("collisions/GapSide", "Gap Side: A, C, A+C", {HistType::kTH1F, {{3, -0.5, 2.5}}});
     registry.add("collisions/TrueGapSide", "Gap Side: A, C, A+C", {HistType::kTH1F, {{4, -1.5, 2.5}}});
+    registry.add("collisions/2D/multiplicityVsMeanPtPVCA", "Multiplicity of PV contributors A-side; PV contributors; mean #{p}_{T}", {HistType::kTH2F, {{axismult}, {axismeanpt}}});
+    registry.add("collisions/2D/multiplicityVsEtaPVCA", "Multiplicity of PV contributors A-side; PV contributors; #eta", {HistType::kTH2F, {{axismult}, {axiseta}}});
+    registry.add("collisions/2D/multiplicityVsMeanPtPVCC", "Multiplicity of PV contributors C-side; PV contributors; mean #{p}_{T}", {HistType::kTH2F, {{axismult}, {axismeanpt}}});
+    registry.add("collisions/2D/multiplicityVsEtaPVCC", "Multiplicity of PV contributors C-side; PV contributors; #eta", {HistType::kTH2F, {{axismult}, {axiseta}}});
+    registry.add("collisions/2D/multiplicityVsMeanPtPVCAC", "Multiplicity of PV contributors AC-side; PV contributors; mean #{p}_{T}", {HistType::kTH2F, {{axismult}, {axismeanpt}}});
+    registry.add("collisions/2D/multiplicityVsEtaPVCAC", "Multiplicity of PV contributors AC-side; PV contributors; #eta", {HistType::kTH2F, {{axismult}, {axiseta}}});
 
     // track histograms
     registry.add("tracks/QCAll", "Track QC of all tracks; Hit in detector; Tracks", {HistType::kTH1F, {{5, -0.5, 4.5}}});
@@ -418,8 +425,14 @@ struct SGFITAnalyzer {
       }
     }
     int pva = 0;
+    double avPtPVa = 0;
+    std::vector<double> vecEtaPVa;
     int pvc = 0;
+    double avPtPVc = 0;
+    std::vector<double> vecEtaPVc;
     int pvac = 0;
+    double avPtPVac = 0;
+    std::vector<double> vecEtaPVac;
     int z0pva = 0;
     int z0pvc = 0;
     int z0pvac = 0;
@@ -747,6 +760,9 @@ struct SGFITAnalyzer {
         registry.get<TH1>(HIST("tracks/ptPVC"))->Fill(track.pt(), 1.);
         //        registry.get<TH2>(HIST("tracks/etavsptPVC"))->Fill(vtrk.Eta(), track.pt(), 1.);
         if (truegapSide == 0) {
+          pva++;
+          avPtPVa += track.pt();
+          vecEtaPVa.push_back(vtrk.Eta());
           registry.get<TH1>(HIST("tracks/etaApv"))->Fill(vtrk.Eta(), 1.);
           if (!an)
             registry.get<TH1>(HIST("tracks/eta2Apv"))->Fill(vtrk.Eta(), 1.);
@@ -754,9 +770,11 @@ struct SGFITAnalyzer {
             z0pva++;
           else if (an == 4)
             z1pva++;
-          pva++;
         }
         if (truegapSide == 1) {
+          pvc++;
+          avPtPVc += track.pt();
+          vecEtaPVc.push_back(vtrk.Eta());
           registry.get<TH1>(HIST("tracks/etaCpv"))->Fill(vtrk.Eta(), 1.);
           if (!cn)
             registry.get<TH1>(HIST("tracks/eta2Cpv"))->Fill(vtrk.Eta(), 1.);
@@ -764,9 +782,11 @@ struct SGFITAnalyzer {
             z0pvc++;
           else if (cn == 4)
             z1pvc++;
-          pvc++;
         }
         if (truegapSide == 2) {
+          pvac++;
+          avPtPVac += track.pt();
+          vecEtaPVac.push_back(vtrk.Eta());
           registry.get<TH1>(HIST("tracks/etaACpv"))->Fill(vtrk.Eta(), 1.);
           if (!an && !cn)
             registry.get<TH1>(HIST("tracks/eta2ACpv"))->Fill(vtrk.Eta(), 1.);
@@ -774,18 +794,29 @@ struct SGFITAnalyzer {
             z0pvac++;
           else if (an >= 3 && cn >= 3)
             z1pvac++;
-          pvac++;
         }
         registry.get<TH2>(HIST("tracks/TPCSignalvspPVC"))->Fill(vtrk.Mag(), signalTPC, 1.);
         registry.get<TH2>(HIST("tracks/TOFSignalvspPVC"))->Fill(vtrk.Mag(), signalTOF, 1.);
       }
     }
-    if (pva)
+    if (pva) {
       registry.get<TH1>(HIST("collisions/multiplicityPVCA"))->Fill(pva, 1.);
-    if (pvc)
+      registry.get<TH2>(HIST("collisions/2D/multiplicityVsMeanPtPVCA"))->Fill(pva, avPtPVa / pva, 1.);
+      for (auto& element : vecEtaPVa)
+        registry.get<TH2>(HIST("collisions/2D/multiplicityVsEtaPVCA"))->Fill(pva, element, 1.);
+    }
+    if (pvc) {
       registry.get<TH1>(HIST("collisions/multiplicityPVCC"))->Fill(pvc, 1.);
-    if (pvac)
+      registry.get<TH2>(HIST("collisions/2D/multiplicityVsMeanPtPVCC"))->Fill(pvc, avPtPVc / pvc, 1.);
+      for (auto& element : vecEtaPVc)
+        registry.get<TH2>(HIST("collisions/2D/multiplicityVsEtaPVCC"))->Fill(pvc, element, 1.);
+    }
+    if (pvac) {
       registry.get<TH1>(HIST("collisions/multiplicityPVCAC"))->Fill(pvac, 1.);
+      registry.get<TH2>(HIST("collisions/2D/multiplicityVsMeanPtPVCAC"))->Fill(pvac, avPtPVac / pvac, 1.);
+      for (auto& element : vecEtaPVac)
+        registry.get<TH2>(HIST("collisions/2D/multiplicityVsEtaPVCAC"))->Fill(pvac, element, 1.);
+    }
     if (pva)
       registry.get<TH1>(HIST("collisions/multiplicityZ0PVCA"))->Fill(z0pva, 1.);
     if (pvc)

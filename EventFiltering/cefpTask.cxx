@@ -14,12 +14,13 @@
 #include <rapidjson/document.h>
 #include <rapidjson/filereadstream.h>
 
-#include <iostream>
 #include <cstdio>
 #include <random>
 #include <string>
 #include <string_view>
 #include <vector>
+#include <unordered_map>
+#include <utility>
 
 #include "filterTables.h"
 
@@ -200,18 +201,20 @@ static const float defaultDownscaling[128][1]{
   {1.f},
   {1.f}}; /// Max number of columns for triggers is 128 (extendible)
 
-#define FILTER_CONFIGURABLE(_TYPE_)                                                                                                                                                         \
-  Configurable<LabeledArray<float>> cfg##_TYPE_                                                                                                                                             \
-  {                                                                                                                                                                                         \
-#_TYPE_, {defaultDownscaling[0], NumberOfColumns(typename _TYPE_::table_t::columns{}), 1, ColumnsNames(typename _TYPE_::table_t::columns{}), downscalingName }, #_TYPE_ " downscalings" \
+#define FILTER_CONFIGURABLE(_TYPE_)                                                                                                                                                                                  \
+  Configurable<LabeledArray<float>> cfg##_TYPE_                                                                                                                                                                      \
+  {                                                                                                                                                                                                                  \
+    #_TYPE_, {defaultDownscaling[0], NumberOfColumns(typename _TYPE_::table_t::persistent_columns_t{}), 1, ColumnsNames(typename _TYPE_::table_t::persistent_columns_t{}), downscalingName}, #_TYPE_ " downscalings" \
   }
-
 } // namespace
 
 struct centralEventFilterTask {
 
   HistogramRegistry scalers{"scalers", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   Produces<aod::CefpDecisions> tags;
+
+  Configurable<bool> cfgDisableDownscalings{"cfgDisableDownscalings", false, "Disable downscalings"};
+  Configurable<bool> cfgSkipUntriggeredEvents{"cfgSkipUntriggeredEvents", false, "Skip untriggered events"};
 
   FILTER_CONFIGURABLE(F1ProtonFilters);
   FILTER_CONFIGURABLE(NucleiFilters);
@@ -261,17 +264,20 @@ struct centralEventFilterTask {
         col.second = filterOpt.get(col.first.data(), 0u);
       }
     }
+    if (cfgDisableDownscalings.value) {
+      LOG(info) << "Downscalings are disabled for all channels.";
+    }
   }
 
   void run(ProcessingContext& pc)
   {
 
     // Filling output table
-    auto bcTabConsumer = pc.inputs().get<TableConsumer>(aod::MetadataTrait<std::decay_t<aod::BCs>>::metadata::tableLabel());
+    auto bcTabConsumer = pc.inputs().get<TableConsumer>(o2::soa::getTableLabel<aod::BCs>());
     auto bcTabPtr{bcTabConsumer->asArrowTable()};
-    auto collTabConsumer = pc.inputs().get<TableConsumer>(aod::MetadataTrait<std::decay_t<aod::Collisions>>::metadata::tableLabel());
+    auto collTabConsumer = pc.inputs().get<TableConsumer>(o2::soa::getTableLabel<aod::Collisions>());
     auto collTabPtr{collTabConsumer->asArrowTable()};
-    auto evSelConsumer = pc.inputs().get<TableConsumer>(aod::MetadataTrait<std::decay_t<aod::EvSels>>::metadata::tableLabel());
+    auto evSelConsumer = pc.inputs().get<TableConsumer>(o2::soa::getTableLabel<aod::EvSels>());
     auto evSelTabPtr{evSelConsumer->asArrowTable()};
 
     auto columnGloBCId{bcTabPtr->GetColumnByName(aod::BC::GlobalBC::mLabel)};
@@ -327,7 +333,7 @@ struct centralEventFilterTask {
         uint64_t decisionBin{(bin - 2) / 64};
         uint64_t triggerBit{BIT((bin - 2) % 64)};
         auto column{tablePtr->GetColumnByName(colName.first)};
-        double downscaling{colName.second};
+        double downscaling{cfgDisableDownscalings.value ? 1. : colName.second};
         if (column) {
           int entry = 0;
           for (int64_t iC{0}; iC < column->num_chunks(); ++iC) {
@@ -358,7 +364,7 @@ struct centralEventFilterTask {
           if (!(outTrigger[iE][iD] & BIT(iB))) {
             continue;
           }
-          for (int jD{0}; jD < outTrigger[0].size(); ++jD) {
+          for (uint64_t jD{0}; jD < outTrigger[0].size(); ++jD) {
             for (int iC{iB}; iC < 64; ++iC) {
               if (outTrigger[iE][iD] & BIT(iC)) {
                 mCovariance->Fill(iD * 64 + iB, jD * 64 + iC);
@@ -385,6 +391,9 @@ struct centralEventFilterTask {
     }
     for (uint64_t iD{0}; iD < outDecision.size(); ++iD) {
       uint64_t foundBC = FoundBCArray->Value(iD) >= 0 && FoundBCArray->Value(iD) < GloBCArray->length() ? GloBCArray->Value(FoundBCArray->Value(iD)) : -1;
+      if (cfgSkipUntriggeredEvents.value && !outDecision[iD][0] && !outDecision[iD][1]) {
+        continue;
+      }
       tags(CollBCIdArray->Value(iD), GloBCArray->Value(CollBCIdArray->Value(iD)), foundBC, CollTimeArray->Value(iD), CollTimeResArray->Value(iD), outTrigger[iD][0], outTrigger[iD][1], outDecision[iD][0], outDecision[iD][1]);
     }
   }

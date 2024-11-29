@@ -96,7 +96,7 @@ using hasTPCAl = decltype(std::declval<T&>().tpcNSigmaAl());
 // PID index as template argument
 #define perSpeciesWrapper(functionName)                       \
   template <o2::track::PID::ID index, typename TrackType>     \
-  const auto functionName(const TrackType& track)             \
+  auto functionName(const TrackType& track)                   \
   {                                                           \
     if constexpr (index == o2::track::PID::Electron) {        \
       return track.functionName##El();                        \
@@ -122,7 +122,7 @@ using hasTPCAl = decltype(std::declval<T&>().tpcNSigmaAl());
 perSpeciesWrapper(tofNSigma);
 perSpeciesWrapper(tofExpSigma);
 template <o2::track::PID::ID index, typename TrackType>
-const auto tofExpSignal(const TrackType& track)
+auto tofExpSignal(const TrackType& track)
 {
   if constexpr (index == o2::track::PID::Electron) {
     return track.tofExpSignalEl(track.tofSignal());
@@ -149,7 +149,7 @@ perSpeciesWrapper(tofExpSignalDiff);
 perSpeciesWrapper(tpcNSigma);
 perSpeciesWrapper(tpcExpSigma);
 template <o2::track::PID::ID index, typename TrackType>
-const auto tpcExpSignal(const TrackType& track)
+auto tpcExpSignal(const TrackType& track)
 {
   if constexpr (index == o2::track::PID::Electron) {
     return track.tpcExpSignalEl(track.tpcSignal());
@@ -178,7 +178,7 @@ perSpeciesWrapper(tpcExpSignalDiff);
 // PID index as function argument for TOF
 #define perSpeciesWrapper(functionName)                                                                             \
   template <typename TrackType>                                                                                     \
-  const auto functionName(const o2::track::PID::ID index, const TrackType& track)                                   \
+  auto functionName(const o2::track::PID::ID index, const TrackType& track)                                         \
   {                                                                                                                 \
     switch (index) {                                                                                                \
       case o2::track::PID::Electron:                                                                                \
@@ -226,7 +226,7 @@ perSpeciesWrapper(tpcExpSignalDiff);
 perSpeciesWrapper(tofNSigma);
 perSpeciesWrapper(tofExpSigma);
 template <typename TrackType>
-const auto tofExpSignal(const o2::track::PID::ID index, const TrackType& track)
+auto tofExpSignal(const o2::track::PID::ID index, const TrackType& track)
 {
   switch (index) {
     case o2::track::PID::Electron:
@@ -277,7 +277,7 @@ perSpeciesWrapper(tofExpSignalDiff);
 // PID index as function argument for TPC
 #define perSpeciesWrapper(functionName)                                                                             \
   template <typename TrackType>                                                                                     \
-  const auto functionName(const o2::track::PID::ID index, const TrackType& track)                                   \
+  auto functionName(const o2::track::PID::ID index, const TrackType& track)                                         \
   {                                                                                                                 \
     switch (index) {                                                                                                \
       case o2::track::PID::Electron:                                                                                \
@@ -325,7 +325,7 @@ perSpeciesWrapper(tofExpSignalDiff);
 perSpeciesWrapper(tpcNSigma);
 perSpeciesWrapper(tpcExpSigma);
 template <typename TrackType>
-const auto tpcExpSignal(const o2::track::PID::ID index, const TrackType& track)
+auto tpcExpSignal(const o2::track::PID::ID index, const TrackType& track)
 {
   switch (index) {
     case o2::track::PID::Electron:

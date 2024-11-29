@@ -49,33 +49,30 @@ class EMCPhotonCut : public TNamed
   template <typename T, typename Cluster>
   bool IsSelected(Cluster const& cluster) const
   {
-    // auto track = cluster.template MatchedTrack_as<T>();
-    auto track = nullptr;
-    if (!IsSelectedEMCal(EMCPhotonCuts::kEnergy, cluster, track)) {
+    if (!IsSelectedEMCal(EMCPhotonCuts::kEnergy, cluster)) {
       return false;
     }
-    if (!IsSelectedEMCal(EMCPhotonCuts::kNCell, cluster, track)) {
+    if (!IsSelectedEMCal(EMCPhotonCuts::kNCell, cluster)) {
       return false;
     }
-    if (!IsSelectedEMCal(EMCPhotonCuts::kM02, cluster, track)) {
+    if (!IsSelectedEMCal(EMCPhotonCuts::kM02, cluster)) {
       return false;
     }
-    if (!IsSelectedEMCal(EMCPhotonCuts::kTiming, cluster, track)) {
+    if (!IsSelectedEMCal(EMCPhotonCuts::kTiming, cluster)) {
       return false;
     }
-    if (!IsSelectedEMCal(EMCPhotonCuts::kTM, cluster, track)) {
+    if (mUseTM && (!IsSelectedEMCal(EMCPhotonCuts::kTM, cluster))) {
       return false;
     }
-    if (!IsSelectedEMCal(EMCPhotonCuts::kExotic, cluster, track)) {
+    if (!IsSelectedEMCal(EMCPhotonCuts::kExotic, cluster)) {
       return false;
     }
     return true;
   }
 
-  // Temporary function to check if cluster passes a given selection criteria. To be replaced by framework filters.
   // Returns true if a cluster survives the cuts!
-  template <typename Cluster, typename Track>
-  bool IsSelectedEMCal(const EMCPhotonCuts& cut, Cluster const& cluster, Track const& /*track*/) const
+  template <typename Cluster>
+  bool IsSelectedEMCal(const EMCPhotonCuts& cut, Cluster const& cluster) const
   {
     switch (cut) {
       case EMCPhotonCuts::kEnergy:
@@ -124,6 +121,7 @@ class EMCPhotonCut : public TNamed
   void SetTrackMatchingPhi(std::function<float(float)> funcTM);
   void SetMinEoverP(float min = 0.7f);
   void SetUseExoticCut(bool flag = true);
+  void SetUseTM(bool flag = true);
 
   /// @brief Print the cluster selection
   void print() const;
@@ -138,6 +136,7 @@ class EMCPhotonCut : public TNamed
   float mMaxTime{25.f};     ///< maximum cluster timing
   float mMinEoverP{1.75f};  ///< minimum cluster energy over track momentum ratio needed for the pair to be considered matched
   bool mUseExoticCut{true}; ///< flag to decide if the exotic cluster cut is to be checked or not
+  bool mUseTM{true};        ///< flag to decide if track matching cut is to be checek or not
 
   std::function<float(float)> mTrackMatchingEta{}; ///< function to get check if a pre matched track and cluster pair is considered an actual match for eta
   std::function<float(float)> mTrackMatchingPhi{}; ///< function to get check if a pre matched track and cluster pair is considered an actual match for phi

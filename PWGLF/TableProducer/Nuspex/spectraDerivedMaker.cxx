@@ -178,7 +178,7 @@ struct spectraDerivedMaker {
         histos.fill(HIST("evsel"), 6.f);
       }
     }
-    if (abs(collision.posZ()) > cfgCutVertex) {
+    if (std::abs(collision.posZ()) > cfgCutVertex) {
       return false;
     }
     if constexpr (fillHistograms) {
@@ -235,7 +235,7 @@ struct spectraDerivedMaker {
     if constexpr (fillHistograms) {
       histos.fill(HIST("tracksel"), 1);
     }
-    if (abs(track.eta()) > cfgCutEta) {
+    if (std::abs(track.eta()) > cfgCutEta) {
       return false;
     }
     if constexpr (fillHistograms) {

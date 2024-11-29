@@ -92,7 +92,7 @@ struct CFTutorialTask2 {
     HistRegistry.fill(HIST("Event/hZvtx"), col.posZ());
 
     // TODO
-    // generate partition of particles 1&2 with sliceByCached method
+    // generate partition of particles 1 & 2 with sliceByCached method
 
     /// TODO:
     /// loop over particle group 1

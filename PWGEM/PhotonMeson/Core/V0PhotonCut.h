@@ -54,6 +54,7 @@ class V0PhotonCut : public TNamed
     kTPCNCls,
     kTPCCrossedRows,
     kTPCCrossedRowsOverNCls,
+    kTPCFracSharedClusters,
     kTPCChi2NDF,
     kTPCNsigmaEl,
     kTPCNsigmaPi,
@@ -61,7 +62,7 @@ class V0PhotonCut : public TNamed
     kDCAz,
     kITSNCls,
     kITSChi2NDF,
-    kITSCluserSize,
+    kITSClusterSize,
     kIsWithinBeamPipe,
     kRequireITSTPC,
     kRequireITSonly,
@@ -71,8 +72,6 @@ class V0PhotonCut : public TNamed
     kRequireTPCTRDTOF,
     kNCuts
   };
-
-  static const char* mCutNames[static_cast<int>(V0PhotonCuts::kNCuts)];
 
   template <class TLeg, typename TV0>
   bool IsSelected(TV0 const& v0) const
@@ -144,6 +143,9 @@ class V0PhotonCut : public TNamed
       if (!track.hasITS() && !track.hasTPC()) { // track has to be ITSonly or TPConly or ITS-TPC
         return false;
       }
+      if (mDisableITSonly && isITSonlyTrack(track)) {
+        return false;
+      }
 
       if (mRejectITSib) {
         auto hits_ib = std::count_if(its_ib_Requirement.second.begin(), its_ib_Requirement.second.end(), [&](auto&& requiredLayer) { return track.itsClusterMap() & (1 << requiredLayer); });
@@ -205,7 +207,7 @@ class V0PhotonCut : public TNamed
     if (!IsSelectedTrack(track, V0PhotonCuts::kITSChi2NDF)) {
       return false;
     }
-    if (!IsSelectedTrack(track, V0PhotonCuts::kITSCluserSize)) {
+    if (!IsSelectedTrack(track, V0PhotonCuts::kITSClusterSize)) {
       return false;
     }
     return true;
@@ -223,6 +225,9 @@ class V0PhotonCut : public TNamed
     if (!IsSelectedTrack(track, V0PhotonCuts::kTPCCrossedRowsOverNCls)) {
       return false;
     }
+    if (!IsSelectedTrack(track, V0PhotonCuts::kTPCFracSharedClusters)) {
+      return false;
+    }
     if (!IsSelectedTrack(track, V0PhotonCuts::kTPCChi2NDF)) {
       return false;
     }
@@ -233,31 +238,6 @@ class V0PhotonCut : public TNamed
       return false;
     }
     return true;
-  }
-
-  template <typename T>
-  uint32_t IsSelectedMask(T const& track) const
-  {
-    uint32_t flag = 0;
-
-    auto setFlag = [&](const V0PhotonCuts& cut) {
-      if (IsSelectedTrack(track, cut)) {
-        flag |= 1UL << static_cast<int>(cut);
-      }
-    };
-
-    setFlag(V0PhotonCuts::kV0PtRange);
-    setFlag(V0PhotonCuts::kV0EtaRange);
-    setFlag(V0PhotonCuts::kTrackPtRange);
-    setFlag(V0PhotonCuts::kTrackEtaRange);
-    setFlag(V0PhotonCuts::kTPCNCls);
-    setFlag(V0PhotonCuts::kTPCCrossedRows);
-    setFlag(V0PhotonCuts::kTPCCrossedRowsOverNCls);
-    setFlag(V0PhotonCuts::kTPCChi2NDF);
-    setFlag(V0PhotonCuts::kDCAxy);
-    setFlag(V0PhotonCuts::kDCAz);
-
-    return flag;
   }
 
   template <typename T>
@@ -371,6 +351,9 @@ class V0PhotonCut : public TNamed
       case V0PhotonCuts::kTPCCrossedRowsOverNCls:
         return track.tpcCrossedRowsOverFindableCls() >= mMinNCrossedRowsOverFindableClustersTPC;
 
+      case V0PhotonCuts::kTPCFracSharedClusters:
+        return track.tpcFractionSharedCls() <= mMaxFracSharedClustersTPC;
+
       case V0PhotonCuts::kTPCChi2NDF:
         return mMinChi2PerClusterTPC < track.tpcChi2NCl() && track.tpcChi2NCl() < mMaxChi2PerClusterTPC;
 
@@ -392,7 +375,7 @@ class V0PhotonCut : public TNamed
       case V0PhotonCuts::kITSChi2NDF:
         return mMinChi2PerClusterITS < track.itsChi2NCl() && track.itsChi2NCl() < mMaxChi2PerClusterITS;
 
-      case V0PhotonCuts::kITSCluserSize: {
+      case V0PhotonCuts::kITSClusterSize: {
         if (!isITSonlyTrack(track)) {
           return true;
         }
@@ -465,6 +448,7 @@ class V0PhotonCut : public TNamed
   void SetMinNClustersTPC(int minNClustersTPC);
   void SetMinNCrossedRowsTPC(int minNCrossedRowsTPC);
   void SetMinNCrossedRowsOverFindableClustersTPC(float minNCrossedRowsOverFindableClustersTPC);
+  void SetMaxFracSharedClustersTPC(float max);
   void SetChi2PerClusterTPC(float min, float max);
   void SetNClustersITS(int min, int max);
   void SetChi2PerClusterITS(float min, float max);
@@ -483,9 +467,7 @@ class V0PhotonCut : public TNamed
   void SetRequireTPCTRD(bool flag);
   void SetRequireTPCTOF(bool flag);
   void SetRequireTPCTRDTOF(bool flag);
-
-  /// @brief Print the track selection
-  void print() const;
+  void SetDisableITSonly(bool flag);
 
  private:
   static const std::pair<int8_t, std::set<uint8_t>> its_ib_Requirement;
@@ -520,6 +502,7 @@ class V0PhotonCut : public TNamed
   int mMinNCrossedRowsTPC{0};                                          // min number of crossed rows in TPC
   float mMinChi2PerClusterTPC{-1e10f}, mMaxChi2PerClusterTPC{1e10f};   // max tpc fit chi2 per TPC cluster
   float mMinNCrossedRowsOverFindableClustersTPC{0.f};                  // min ratio crossed rows / findable clusters
+  float mMaxFracSharedClustersTPC{999.f};                              // max ratio shared clusters / clusters in TPC
   int mMinNClustersITS{0}, mMaxNClustersITS{7};                        // range in number of ITS clusters
   float mMinChi2PerClusterITS{-1e10f}, mMaxChi2PerClusterITS{1e10f};   // max its fit chi2 per ITS cluster
   float mMinMeanClusterSizeITS{-1e10f}, mMaxMeanClusterSizeITS{1e10f}; // max <its cluster size> x cos(Lmabda)
@@ -534,6 +517,7 @@ class V0PhotonCut : public TNamed
   bool mRequireTPCTRD{false};
   bool mRequireTPCTOF{false};
   bool mRequireTPCTRDTOF{false};
+  bool mDisableITSonly{false};
 
   ClassDef(V0PhotonCut, 1);
 };

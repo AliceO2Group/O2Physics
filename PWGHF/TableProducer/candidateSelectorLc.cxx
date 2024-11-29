@@ -17,6 +17,9 @@
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 /// \author Grazia Luparello  <grazia.luparello@cern.ch>, INFN Trieste
 
+#include <string>
+#include <vector>
+
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
@@ -77,7 +80,7 @@ struct HfCandidateSelectorLc {
   Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{hf_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
   Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{hf_cuts_ml::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
   Configurable<LabeledArray<double>> cutsMl{"cutsMl", {hf_cuts_ml::cuts[0], hf_cuts_ml::nBinsPt, hf_cuts_ml::nCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
-  Configurable<int8_t> nClassesMl{"nClassesMl", (int8_t)hf_cuts_ml::nCutScores, "Number of classes in ML model"};
+  Configurable<int> nClassesMl{"nClassesMl", static_cast<int>(hf_cuts_ml::nCutScores), "Number of classes in ML model"};
   Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
   // CCDB configuration
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -100,6 +103,8 @@ struct HfCandidateSelectorLc {
   using TracksSelBayesPid = soa::Join<TracksSel, aod::pidBayesPi, aod::pidBayesKa, aod::pidBayesPr, aod::pidBayes>;
 
   HistogramRegistry registry{"registry"};
+
+  double massK0Star892;
 
   void init(InitContext const&)
   {
@@ -144,6 +149,8 @@ struct HfCandidateSelectorLc {
       hfMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
       hfMlResponse.init();
     }
+
+    massK0Star892 = o2::constants::physics::MassK0Star892;
   }
 
   /// Single track quality cuts
@@ -197,6 +204,21 @@ struct HfCandidateSelectorLc {
       return false;
     }
 
+    // candidate decay length XY
+    if (candidate.decayLengthXY() <= cuts->get(pTBin, "decLengthXY")) {
+      return false;
+    }
+
+    // candidate normalized decay length XY
+    if (candidate.decayLengthXYNormalised() < cuts->get(pTBin, "normDecLXY")) {
+      return false;
+    }
+
+    // candidate impact parameter XY
+    if (std::abs(candidate.impactParameterXY()) > cuts->get(pTBin, "impParXY")) {
+      return false;
+    }
+
     if (!isSelectedCandidateProngDca(candidate)) {
       return false;
     }
@@ -225,6 +247,7 @@ struct HfCandidateSelectorLc {
       return false;
     }
 
+    // cut on Lc->pKpi, piKp mass values
     if (trackProton.globalIndex() == candidate.prong0Id()) {
       if (std::abs(hfHelper.invMassLcToPKPi(candidate) - o2::constants::physics::MassLambdaCPlus) > cuts->get(pTBin, "m")) {
         return false;
@@ -232,6 +255,24 @@ struct HfCandidateSelectorLc {
     } else {
       if (std::abs(hfHelper.invMassLcToPiKP(candidate) - o2::constants::physics::MassLambdaCPlus) > cuts->get(pTBin, "m")) {
         return false;
+      }
+    }
+
+    /// cut on the Kpi pair invariant mass, to study Lc->pK*(->Kpi)
+    const double cutMassKPi = cuts->get(pTBin, "mass (Kpi)");
+    if (cutMassKPi > 0) {
+      if (trackProton.globalIndex() == candidate.prong0Id()) {
+        // inspecting the pKpi hypothesis
+        // K: prong1, pi: prong 2
+        if (std::abs(hfHelper.invMassKPiPairLcToPKPi(candidate) - massK0Star892) > cutMassKPi) {
+          return false;
+        }
+      } else {
+        // inspecting the piKp hypothesis
+        // K: prong1, pi: prong 0
+        if (std::abs(hfHelper.invMassKPiPairLcToPiKP(candidate) - massK0Star892) > cutMassKPi) {
+          return false;
+        }
       }
     }
 
@@ -409,11 +450,11 @@ struct HfCandidateSelectorLc {
         isSelectedMlLcToPiKP = false;
 
         if (pidLcToPKPi == 1 && pidBayesLcToPKPi == 1 && topolLcToPKPi) {
-          std::vector<float> inputFeaturesLcToPKPi = hfMlResponse.getInputFeatures(candidate, trackPos1, trackNeg, trackPos2);
+          std::vector<float> inputFeaturesLcToPKPi = hfMlResponse.getInputFeatures(candidate, trackPos1, trackNeg, trackPos2, true);
           isSelectedMlLcToPKPi = hfMlResponse.isSelectedMl(inputFeaturesLcToPKPi, candidate.pt(), outputMlLcToPKPi);
         }
         if (pidLcToPiKP == 1 && pidBayesLcToPiKP == 1 && topolLcToPiKP) {
-          std::vector<float> inputFeaturesLcToPiKP = hfMlResponse.getInputFeatures(candidate, trackPos1, trackNeg, trackPos2);
+          std::vector<float> inputFeaturesLcToPiKP = hfMlResponse.getInputFeatures(candidate, trackPos1, trackNeg, trackPos2, false);
           isSelectedMlLcToPiKP = hfMlResponse.isSelectedMl(inputFeaturesLcToPiKP, candidate.pt(), outputMlLcToPiKP);
         }
 

@@ -82,7 +82,7 @@ struct SinglePhoton {
   Configurable<bool> EMC_UseExoticCut{"EMC_UseExoticCut", true, "FLag to use the EMCal exotic cluster cut"};
 
   Configurable<std::string> fConfigEMEventCut{"cfgEMEventCut", "minbias", "em event cut"}; // only 1 event cut per wagon
-  EMEventCut fEMEventCut;
+  EMPhotonEventCut fEMEventCut;
   static constexpr std::string_view event_types[2] = {"before", "after"};
 
   OutputObj<THashList> fOutputEvent{"Event"};
@@ -228,10 +228,10 @@ struct SinglePhoton {
           custom_cut->SetM02Range(EMC_minM02, EMC_maxM02);
           custom_cut->SetTimeRange(EMC_minTime, EMC_maxTime);
 
-          custom_cut->SetTrackMatchingEta([&a, &b, &c](float pT) {
+          custom_cut->SetTrackMatchingEta([a, b, c](float pT) {
             return a + pow(pT + b, c);
           });
-          custom_cut->SetTrackMatchingPhi([&d, &e, &f](float pT) {
+          custom_cut->SetTrackMatchingPhi([d, e, f](float pT) {
             return d + pow(pT + e, f);
           });
 
@@ -306,7 +306,7 @@ struct SinglePhoton {
       std::array<float, 2> q2ft0m = {collision.q2xft0m(), collision.q2yft0m()};
       std::array<float, 2> q2ft0a = {collision.q2xft0a(), collision.q2yft0a()};
       std::array<float, 2> q2ft0c = {collision.q2xft0c(), collision.q2yft0c()};
-      std::array<float, 2> q2fv0a = {collision.q2xfv0a(), collision.q2yfv0a()};
+      // std::array<float, 2> q2fv0a = {collision.q2xfv0a(), collision.q2yfv0a()};
 
       auto photons1_coll = photons1.sliceBy(perCollision1, collision.globalIndex());
       for (auto& cut : cuts1) {
@@ -323,7 +323,7 @@ struct SinglePhoton {
             reinterpret_cast<TH2F*>(list_photon_det_cut->FindObject("hPt_SPQ2FT0M"))->Fill(photon.pt(), RecoDecay::dotProd(u2_photon, q2ft0m));
             reinterpret_cast<TH2F*>(list_photon_det_cut->FindObject("hPt_SPQ2FT0A"))->Fill(photon.pt(), RecoDecay::dotProd(u2_photon, q2ft0a));
             reinterpret_cast<TH2F*>(list_photon_det_cut->FindObject("hPt_SPQ2FT0C"))->Fill(photon.pt(), RecoDecay::dotProd(u2_photon, q2ft0c));
-            reinterpret_cast<TH2F*>(list_photon_det_cut->FindObject("hPt_SPQ2FV0A"))->Fill(photon.pt(), RecoDecay::dotProd(u2_photon, q2fv0a));
+            // reinterpret_cast<TH2F*>(list_photon_det_cut->FindObject("hPt_SPQ2FV0A"))->Fill(photon.pt(), RecoDecay::dotProd(u2_photon, q2fv0a));
           } else {
             reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hPt"))->Fill(photon.pt());
           }
@@ -331,8 +331,8 @@ struct SinglePhoton {
           reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hY"))->Fill(photon.eta());
           reinterpret_cast<TH1F*>(list_photon_det_cut->FindObject("hPhi"))->Fill(photon.phi());
         } // end of photon loop
-      }   // end of cut loop
-    }     // end of collision loop
+      } // end of cut loop
+    } // end of collision loop
   }
 
   Partition<MyCollisions> grouped_collisions = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax); // this goes to same event.

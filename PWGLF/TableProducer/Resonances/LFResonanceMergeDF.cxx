@@ -25,6 +25,7 @@
 /// ///
 /// \author Bong-Hwi Lim <bong-hwi.lim@cern.ch>
 ///    Nasir Mehdi Malik
+#include <vector>
 
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/Core/TrackSelection.h"
@@ -60,12 +61,12 @@ using namespace o2::soa;
 
 struct reso2dfmerged {
   //  SliceCache cache;
-
   Configurable<int> nDF{"nDF", 1, "no of combination of collision"};
   Configurable<bool> cpidCut{"cpidCut", 0, "pid cut"};
   Configurable<bool> crejtpc{"crejtpc", 0, "reject electron pion"};
   Configurable<bool> crejtof{"crejtof", 0, "reject electron pion tof"};
-
+  Configurable<bool> isPrimary{"isPrimary", 0, "is Primary only"};
+  Configurable<bool> isGlobal{"isGlobal", 0, "Global tracks only"};
   Configurable<float> cDCAXY{"cDCAXY", 1., "value of dcaxy"};
   Configurable<float> cDCAZ{"cDCAZ", 1., "value of dcaz"};
   Configurable<float> nsigmaPr{"nsigmaPr", 6., "nsigma value for proton"};
@@ -92,7 +93,7 @@ struct reso2dfmerged {
   std::vector<std::vector<std::tuple<float, float, float, float,
                                      float, float, signed char, unsigned char, unsigned char, unsigned char,
                                      float, float, float, float,
-                                     bool, float, float, float,
+                                     bool, bool, bool, float, float, float,
                                      float, float, float, float,
                                      float, float, bool, bool,
                                      bool, bool, bool, bool, float, float, float>>>
@@ -105,7 +106,7 @@ struct reso2dfmerged {
     std::vector<std::tuple<float, float, float, float,
                            float, float, signed char, unsigned char, unsigned char, unsigned char,
                            float, float, float, float,
-                           bool, float, float, float,
+                           bool, bool, bool, float, float, float,
                            float, float, float, float,
                            float, float, bool, bool,
                            bool, bool, bool, bool, float, float, float>>
@@ -116,14 +117,14 @@ struct reso2dfmerged {
           if (std::abs(track.tpcNSigmaPr()) > nsigmaPr && std::abs(track.tpcNSigmaKa()) > nsigmaKa)
             continue;
 
-          if (crejtpc && ((track.tpcNSigmaPr() > track.tpcNSigmaEl() && track.tpcNSigmaKa() > track.tpcNSigmaEl()) || (track.tpcNSigmaPr() > track.tpcNSigmaPi() && track.tpcNSigmaKa() > track.tpcNSigmaPi())))
+          if (crejtpc && ((std::abs(track.tpcNSigmaPr()) > std::abs(track.tpcNSigmaEl()) && std::abs(track.tpcNSigmaKa()) > std::abs(track.tpcNSigmaEl())) || (std::abs(track.tpcNSigmaPr()) > std::abs(track.tpcNSigmaPi()) && std::abs(track.tpcNSigmaKa()) > std::abs(track.tpcNSigmaPi()))))
             continue;
 
         } else {
           if (std::abs(track.tofNSigmaPr()) > nsigmatofPr && std::abs(track.tofNSigmaKa()) > nsigmatofKa)
             continue;
 
-          if (crejtof && ((track.tofNSigmaPr() > track.tofNSigmaEl() && track.tofNSigmaKa() > track.tofNSigmaEl()) || (track.tofNSigmaPr() > track.tofNSigmaPi() && track.tofNSigmaKa() > track.tofNSigmaPi())))
+          if (crejtof && ((std::abs(track.tofNSigmaPr()) > std::abs(track.tofNSigmaEl()) && std::abs(track.tofNSigmaKa()) > std::abs(track.tofNSigmaEl())) || (std::abs(track.tofNSigmaPr()) > std::abs(track.tofNSigmaPi()) && std::abs(track.tofNSigmaKa()) > std::abs(track.tofNSigmaPi()))))
             continue;
         }
 
@@ -148,6 +149,8 @@ struct reso2dfmerged {
         track.dcaZ(),
         track.x(),
         track.alpha(),
+        track.hasITS(),
+        track.hasTPC(),
         track.hasTOF(),
         track.tpcNSigmaPi(),
         track.tpcNSigmaKa(),
@@ -181,7 +184,7 @@ struct reso2dfmerged {
       const auto& innerVector = vecOfVecOfTuples[i];
 
       histos.fill(HIST("Event/h1d_ft0_mult_percentile"), std::get<3>(tuple));
-      resoCollisionsdf(std::get<0>(tuple), std::get<1>(tuple), std::get<2>(tuple), std::get<3>(tuple), std::get<4>(tuple), std::get<5>(tuple), 0., 0., 0., 0, 0);
+      resoCollisionsdf(0, std::get<0>(tuple), std::get<1>(tuple), std::get<2>(tuple), std::get<3>(tuple), std::get<4>(tuple), std::get<5>(tuple), 0., 0., 0., 0., 0, collision.trackOccupancyInTimeRange());
       //  LOGF(info, "collisions: Index = %d ) %f - %f - %f %f %d -- %d", std::get<0>(tuple).globalIndex(),std::get<1>(tuple),std::get<2>(tuple), std::get<3>(tuple), std::get<4>(tuple), std::get<5>(tuple).size(),resoCollisionsdf.lastIndex());
 
       for (const auto& tuple : innerVector) {
@@ -218,7 +221,9 @@ struct reso2dfmerged {
                     std::get<29>(tuple),
                     std::get<30>(tuple),
                     std::get<31>(tuple),
-                    std::get<32>(tuple));
+                    std::get<32>(tuple),
+                    std::get<33>(tuple),
+                    std::get<34>(tuple));
       }
     }
 
@@ -234,24 +239,28 @@ struct reso2dfmerged {
 
     if (doprocessTrackDataDF)
       LOG(fatal) << "Disable processTrackDataDF first!";
+
     histos.fill(HIST("Event/h1d_ft0_mult_percentile"), collision.cent());
 
-    resoCollisionsdf(collision.posX(), collision.posY(), collision.posZ(), collision.cent(), collision.spherocity(), collision.evtPl(), 0., 0., 0., 0., 0);
+    resoCollisionsdf(0, collision.posX(), collision.posY(), collision.posZ(), collision.cent(), collision.spherocity(), collision.evtPl(), 0., 0., 0., 0., 0, collision.trackOccupancyInTimeRange());
 
     for (auto& track : tracks) {
-
+      if (isPrimary && !track.isPrimaryTrack())
+        continue;
+      if (isGlobal && !track.isGlobalTrack())
+        continue;
       if (!track.hasTOF()) {
         if (std::abs(track.tpcNSigmaPr()) > nsigmaPr && std::abs(track.tpcNSigmaKa()) > nsigmaKa)
           continue;
 
-        if (crejtpc && ((track.tpcNSigmaPr() > track.tpcNSigmaEl() && track.tpcNSigmaKa() > track.tpcNSigmaEl()) || (track.tpcNSigmaPr() > track.tpcNSigmaPi() && track.tpcNSigmaKa() > track.tpcNSigmaPi())))
+        if (crejtpc && ((std::abs(track.tpcNSigmaPr()) > std::abs(track.tpcNSigmaEl()) && std::abs(track.tpcNSigmaKa()) > std::abs(track.tpcNSigmaEl())) || (std::abs(track.tpcNSigmaPr()) > std::abs(track.tpcNSigmaPi()) && std::abs(track.tpcNSigmaKa()) > std::abs(track.tpcNSigmaPi()))))
           continue;
 
       } else {
         if (std::abs(track.tofNSigmaPr()) > nsigmatofPr && std::abs(track.tofNSigmaKa()) > nsigmatofKa)
           continue;
 
-        if (crejtof && ((track.tofNSigmaPr() > track.tofNSigmaEl() && track.tofNSigmaKa() > track.tofNSigmaEl()) || (track.tofNSigmaPr() > track.tofNSigmaPi() && track.tofNSigmaKa() > track.tofNSigmaPi())))
+        if (crejtof && ((std::abs(track.tofNSigmaPr()) > std::abs(track.tofNSigmaEl()) && std::abs(track.tofNSigmaKa()) > std::abs(track.tofNSigmaEl())) || (std::abs(track.tofNSigmaPr()) > std::abs(track.tofNSigmaPi()) && std::abs(track.tofNSigmaKa()) > std::abs(track.tofNSigmaPi()))))
           continue;
       }
 
@@ -275,6 +284,8 @@ struct reso2dfmerged {
                   track.dcaZ(),
                   track.x(),
                   track.alpha(),
+                  track.hasITS(),
+                  track.hasTPC(),
                   track.hasTOF(),
                   track.tpcNSigmaPi(),
                   track.tpcNSigmaKa(),

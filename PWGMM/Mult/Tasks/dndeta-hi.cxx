@@ -154,10 +154,6 @@ AxisSpec PtVarAxis = {kPtVarend - 1, +kPtVarbegin + 0.5, +kPtVarend - 0.5, "", "
 AxisSpec EvtClassAxis = {kECend - 1, +kECbegin + 0.5, +kECend - 0.5, "", "event class"};
 AxisSpec TrigClassAxis = {kTrigend - 1, +kTrigbegin + 0.5, +kTrigend - 0.5, "", "trigger class"};
 AxisSpec ParticleTypeAxis = {kParTypeend - 1, +kParTypebegin + 0.5, +kParTypeend - 0.5, "", "Particle type"};
-std::vector<double> centBinningPbPb = {0, 1, 2, 3, 4, 5, 10, 20, 30, 40, 50, 60, 70, 80, 100};
-std::vector<double> centBinning = {0., 0.01, 0.1, 1.0, 5.0, 10., 15, 20., 25, 30., 35., 40., 45., 50., 70., 100.0};
-AxisSpec CentAxis = {centBinning, "", "centrality"};
-AxisSpec CentAxisPbPb = {centBinningPbPb, "", "centrality"};
 AxisSpec SpeciesAxis = {kSpeciesend - 1, +kSpeciesbegin + 0.5, +kSpeciesend - 0.5, "", "species class"};
 AxisSpec MassAxis = {600, 0.3f, 1.3f, "Mass (GeV/c^{2})", "Inv. Mass (GeV/c^{2})"};
 AxisSpec SignAxis = {kSignend - 1, +kSignbegin + 0.5, +kSignend - 0.5, "", "sign"};
@@ -199,6 +195,7 @@ struct MultiplicityCounter {
   Configurable<float> v0radius{"v0radius", 0.5, "Radius"};
   Configurable<float> etadau{"etadau", 4, "Eta Daughters"};
   Configurable<float> rapidity{"v0rapidity", 0.5, "V0 rapidity"};
+  ConfigurableAxis centBinning{"centrality", {VARIABLE_WIDTH, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 22, 24, 26, 28, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100}, ""};
 
   // Configurable<bool> mftanalysis{"mftanalysis", false, "mft analysis switch"};
   Configurable<bool> zvtxcut{"zvtxcut", false, "z vtx cut < 10cm"};
@@ -212,6 +209,9 @@ struct MultiplicityCounter {
   std::vector<int> usedTracksIds;
   void init(InitContext&)
   {
+
+    AxisSpec CentAxis = {centBinning, "", "centrality"};
+    AxisSpec CentAxisPbPb = {centBinning, "", "centrality"};
     registry.add({"hetaresponse", ";etaresponse", {HistType::kTH2D, {{80, -4, 4}, {80, -4, 4}}}});
     registry.add({"hft0multiplicity", ";multiplicity", {HistType::kTH1D, {{10000, 0, 100000}}}});
     registry.add({"hcentrality", IsPbPb ? " ; centrality_FT0C (%) " : "; centrality_FT0M", {HistType::kTH1F, {{10000, 0, 100}}}});

@@ -58,6 +58,9 @@ struct HfTaskLb {
   Filter filterSelectCandidates = (aod::hf_sel_candidate_lb::isSelLbToLcPi >= selectionFlagLb);
 
   using TracksWExt = soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, aod::TrackSelection, o2::aod::TrackSelectionExtension, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
+  using TracksWExtMc = soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, aod::TrackSelection, o2::aod::TrackSelectionExtension, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa, McTrackLabels>;
+
+  PresliceUnsorted<aod::TracksWMc> McPartID = aod::mctracklabel::mcParticleId;
 
   bool passesImpactParameterResolution(float pT, float d0Resolution)
   {
@@ -294,7 +297,7 @@ struct HfTaskLb {
 
   void processMc(soa::Filtered<soa::Join<aod::HfCandLb, aod::HfSelLbToLcPi, aod::HfCandLbMcRec>> const& candidates,
                  soa::Join<aod::McParticles, aod::HfCandLbMcGen> const& mcParticles,
-                 aod::TracksWMc const&,
+                 TracksWExtMc const&,
                  aod::HfCand3Prong const&)
   {
     // MC rec
@@ -306,9 +309,10 @@ struct HfTaskLb {
         continue;
       }
       auto candLc = candidate.prong0_as<aod::HfCand3Prong>();
+
       if (std::abs(candidate.flagMcMatchRec()) == 1 << hf_cand_lb::DecayType::LbToLcPi) {
 
-        auto indexMother = RecoDecay::getMother(mcParticles, candidate.prong1_as<aod::TracksWMc>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandLbMcGen>>(), o2::constants::physics::Pdg::kLambdaB0, true);
+        auto indexMother = RecoDecay::getMother(mcParticles, candidate.prong1_as<TracksWExtMc>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandLbMcGen>>(), o2::constants::physics::Pdg::kLambdaB0, true);
         auto particleMother = mcParticles.rawIteratorAt(indexMother);
         registry.fill(HIST("MC/hPtGenSig"), particleMother.pt());
         registry.fill(HIST("MC/hPtRecSig"), candidate.pt());
@@ -362,7 +366,7 @@ struct HfTaskLb {
 
         float ptProngs[2], yProngs[2], etaProngs[2];
         int counter = 0;
-        for (const auto& daught : particle.daughters_as<aod::McParticles>()) {
+        for (const auto& daught : particle.daughters_as<soa::Join<aod::McParticles, aod::HfCandLbMcGen>>()) {
           ptProngs[counter] = daught.pt();
           etaProngs[counter] = daught.eta();
           yProngs[counter] = RecoDecay::y(daught.pVector(), pdg->Mass(daught.pdgCode()));

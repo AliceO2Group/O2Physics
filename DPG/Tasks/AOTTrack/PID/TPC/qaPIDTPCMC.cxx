@@ -303,6 +303,7 @@ struct pidTpcQaMc {
     histos.add(hnsigmaMCmat[mcID * Np + massID].data(), Form("True Secondary %s from material", pT[mcID]), HistType::kTH2F, {ptAxis, nSigmaAxis});
 
     if constexpr (mcID == massID) {
+      histos.add(hsignalMC[mcID].data(), Form("%s", pT[mcID]), HistType::kTH2F, {pAxis, signalAxis});
       histos.add(hsignalMCprm[mcID].data(), Form("Primary %s", pT[mcID]), HistType::kTH2F, {pAxis, signalAxis});
       histos.add(hsignalMCstr[mcID].data(), Form("Secondary %s from decay", pT[mcID]), HistType::kTH2F, {pAxis, signalAxis});
       histos.add(hsignalMCmat[mcID].data(), Form("Secondary %s from material", pT[mcID]), HistType::kTH2F, {pAxis, signalAxis});

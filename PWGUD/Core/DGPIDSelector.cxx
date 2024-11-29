@@ -8,7 +8,8 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-
+#include <vector>
+#include <string>
 #include "CommonConstants/PhysicsConstants.h"
 #include "DGPIDSelector.h"
 
@@ -143,7 +144,7 @@ void DGAnaparHolder::Print()
   LOGF(info, "    max alpha:         %f", mMaxAlpha);
   LOGF(info, "    min system pT:     %f", mMinptsys);
   LOGF(info, "    max system pT:     %f", mMaxptsys);
-  LOGF(info, "    nCombine:          %d", mNCombine);
+  LOGF(info, "    nCombine:          %zu", mNCombine);
   LOGF(info, "    unlike charges");
   for (auto ch : mUnlikeCharges) {
     LOGF(info, "      %i", ch);
@@ -160,6 +161,108 @@ void DGAnaparHolder::Print()
 }
 
 // -----------------------------------------------------------------------------
+// setter
+void DGAnaparHolder::SetNTracks(int min, int max)
+{
+  mMinNTracks = min;
+  mMaxNTracks = max;
+}
+
+void DGAnaparHolder::SetMinRgtrwTOF(float rgtrwTOF)
+{
+  mMinRgtrwTOF = rgtrwTOF;
+}
+
+void DGAnaparHolder::SetmaxDCA(float maxxy, float maxz)
+{
+  mMaxDCAxy = maxxy;
+  mMaxDCAz = maxz;
+}
+
+void DGAnaparHolder::SetdBC(int min, int max)
+{
+  mdBCMin = min;
+  mdBCMax = max;
+}
+
+void DGAnaparHolder::SetFITvetoes(std::vector<int> vetoes)
+{
+
+  if (vetoes.size() == 5) {
+    mFITvetoes = vetoes;
+  } else {
+    LOGF(info, "Wrong number of vetoes. Vetoes are not set!");
+  }
+}
+
+void DGAnaparHolder::SetITSOnlyTracks(bool itsOnly)
+{
+  mITSOnlyTracks = itsOnly;
+}
+
+void DGAnaparHolder::SetNClTPC(int min, int max)
+{
+  mMinNClTPC = min;
+  mMaxNClTPC = max;
+}
+
+void DGAnaparHolder::SetChi2NClTPC(float min, float max)
+{
+  mMinChi2NClTPC = min;
+  mMaxChi2NClTPC = max;
+}
+
+void DGAnaparHolder::Setpt(float min, float max)
+{
+  mMinpt = min;
+  mMaxpt = max;
+}
+
+void DGAnaparHolder::Seteta(float min, float max)
+{
+  mMineta = min;
+  mMaxeta = max;
+}
+
+void DGAnaparHolder::SetAlpha(float min, float max)
+{
+  mMinAlpha = min;
+  mMaxAlpha = max;
+}
+
+void DGAnaparHolder::Setptsys(float min, float max)
+{
+  mMinptsys = min;
+  mMaxptsys = max;
+}
+
+void DGAnaparHolder::SetnCombine(std::size_t nComb)
+{
+  mNCombine = nComb;
+}
+
+void DGAnaparHolder::SetnetCharges(std::vector<int> charges)
+{
+  mNetCharges = charges;
+}
+
+void DGAnaparHolder::SetunlikeCharges(std::vector<int> charges)
+{
+  mUnlikeCharges = charges;
+}
+
+void DGAnaparHolder::SetlikeCharges(std::vector<int> charges)
+{
+  mLikeCharges = charges;
+}
+
+void DGAnaparHolder::SetPIDs(std::vector<int> pids)
+{
+  mDGPIDs = pids;
+}
+
+// -----------------------------------------------------------------------------
+// getter
 DGPIDCuts DGAnaparHolder::PIDCuts()
 {
   return DGPIDCuts(mDGPIDCutValues);
@@ -197,7 +300,7 @@ void DGAnaparHolder::makeUniquePermutations()
     auto hash = hasher(std::string(hashstr));
     if (std::find(hashes.begin(), hashes.end(), hash) == hashes.end()) {
       hashes.push_back(hash);
-      for (auto ii = 0; ii < mNCombine; ii++) {
+      for (std::size_t ii = 0; ii < mNCombine; ii++) {
         muniquePerms.push_back(perm[ii]);
       }
     }
@@ -420,7 +523,7 @@ std::vector<std::vector<int>> DGPIDSelector::combinations(int nPool)
   for (auto comb : combs) {
     for (auto ii = 0u; ii < numUniquePerms; ii++) {
       std::vector<int> cope(mAnaPars.nCombine(), 0);
-      for (auto jj = 0; jj < mAnaPars.nCombine(); jj++) {
+      for (std::size_t jj = 0; jj < mAnaPars.nCombine(); jj++) {
         auto ind = ii * mAnaPars.nCombine() + jj;
         cope[uniquePerms[ind]] = comb[jj];
       }

@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// jet tutorial skeleton task for hands on tutorial session (09/11/2023)
+// jet tutorial task for hands on tutorial session (16/11/2024)
 //
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 //
@@ -26,6 +26,7 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "PWGJE/Core/FastJetUtilities.h"
+#include "PWGJE/Core/JetUtilities.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 
@@ -45,12 +46,14 @@ struct JetTutorialSkeletonTask {
                               {"h_jet_pt", "jet pT;#it{p}_{T,jet} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}}},
                               {"h_jet_eta", "jet #eta;#eta_{jet};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}},
                               {"h_jet_phi", "jet #phi;#phi_{jet};entries", {HistType::kTH1F, {{80, -1.0, 7.}}}},
-                              {"h_jet_pt_bkgsub", "jet pT bkg sub;#it{p}_{T,jet} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}}},
+                              {"h_jet_pt_rhosub", "jet pT bkg sub;#it{p}_{T,jet} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}}},
+                              {"h_jet_pt_constsub", "jet pT bkg sub;#it{p}_{T,jet} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}}},
                               {"h_part_jet_pt", "particle level jet pT;#it{p}_{T,jet part} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}}},
                               {"h_part_jet_eta", "particle level jet #eta;#eta_{jet part};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}},
                               {"h_part_jet_phi", "particle level jet #phi;#phi_{jet part};entries", {HistType::kTH1F, {{80, -1.0, 7.}}}},
                               {"h_jet_ntracks", "jet N tracks;N_{jet tracks};entries", {HistType::kTH1F, {{40, -0.5, 39.5}}}},
                               {"h_jet_angularity", "jet angularity ;#lambda_{1};entries", {HistType::kTH1F, {{5, 0.0, 0.5}}}},
+                              {"h_jet_angularity_constsub", "jet angularity bkg sub;#lambda_{1};entries", {HistType::kTH1F, {{5, 0.0, 0.5}}}},
                               {"h_full_jet_pt", "jet pT;#it{p}_{T,jet} (GeV/#it{c});entries", {HistType::kTH1F, {{200, 0., 200.}}}},
                               {"h_full_jet_eta", "jet #eta;#eta_{jet};entries", {HistType::kTH1F, {{100, -1.0, 1.0}}}},
                               {"h_full_jet_phi", "jet #phi;#phi_{jet};entries", {HistType::kTH1F, {{80, -1.0, 7.}}}},
@@ -66,92 +69,153 @@ struct JetTutorialSkeletonTask {
                               {"h_matched_jets_eta", "#eta_{jet part}; #eta_{jet det}", {HistType::kTH2F, {{100, -1.0, 1.0}, {100, -1.0, 1.0}}}},
                               {"h_matched_jets_phi", "#phi_{jet part}; #phi_{jet det}", {HistType::kTH2F, {{80, -1.0, 7.}, {80, -1.0, 7.}}}}}};
 
+  Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
+
   Configurable<float> jetPtMin{"jetPtMin", 5.0, "minimum jet pT cut"};
   Configurable<float> jetR{"jetR", 0.4, "jet resolution parameter"};
 
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
   Configurable<std::string> trackSelections{"trackSelections", "globalTracks", "set track selections"};
 
+  Configurable<float> kappa{"kappa", 1.0, "angularity kappa"};
+  Configurable<float> alpha{"alpha", 1.0, "angularity alpha"};
+
+  Configurable<std::string> triggerMasks{"triggerMasks", "", "possible JE Trigger masks: fJetChLowPt,fJetChHighPt,fTrackLowPt,fTrackHighPt,fJetD0ChLowPt,fJetD0ChHighPt,fJetLcChLowPt,fJetLcChHighPt,fEMCALReadout,fJetFullHighPt,fJetFullLowPt,fJetNeutralHighPt,fJetNeutralLowPt,fGammaVeryHighPtEMCAL,fGammaVeryHighPtDCAL,fGammaHighPtEMCAL,fGammaHighPtDCAL,fGammaLowPtEMCAL,fGammaLowPtDCAL,fGammaVeryLowPtEMCAL,fGammaVeryLowPtDCAL"};
+
   int eventSelection = -1;
   int trackSelection = -1;
+  std::vector<int> triggerMaskBits;
 
   void init(o2::framework::InitContext&)
   {
     eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(eventSelections));
     trackSelection = jetderiveddatautilities::initialiseTrackSelection(static_cast<std::string>(trackSelections));
+    triggerMaskBits = jetderiveddatautilities::initialiseTriggerMaskBits(triggerMasks);
   }
 
   Filter jetCuts = aod::jet::pt > jetPtMin&& aod::jet::r == nround(jetR.node() * 100.0f);
+  Filter collisionFilter = nabs(aod::jcollision::posZ) < vertexZCut;
+  Filter mcCollisionFilter = nabs(aod::jmccollision::posZ) < vertexZCut;
 
-  void processCollisions(aod::JCollision const&, aod::JTracks const&)
+  Preslice<soa::Filtered<aod::ChargedMCParticleLevelJets>> perMcCollisionJets = aod::jet::mcCollisionId;
+
+  void processDummy(aod::JDummys const&)
   {
   }
-  PROCESS_SWITCH(JetTutorialSkeletonTask, processCollisions, "process self contained collisions", true);
+  PROCESS_SWITCH(JetTutorialSkeletonTask, processDummy, "dummy process", false);
 
-  void processCollisionsWithExternalTracks(aod::JCollision const&, soa::Join<aod::JTracks, aod::JTrackPIs> const&, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection> const&)
-  {
-  }
-  PROCESS_SWITCH(JetTutorialSkeletonTask, processCollisionsWithExternalTracks, "process non self contained collisions", true);
+  /*
+    void processCollisions(aod::JetCollision const& collision, aod::JetTracks const& tracks)
+    {
 
-  void processDataCharged(soa::Filtered<aod::ChargedJets>::iterator const&)
-  {
-  }
-  PROCESS_SWITCH(JetTutorialSkeletonTask, processDataCharged, "jets data", true);
+    }
+    PROCESS_SWITCH(JetTutorialSkeletonTask, processCollisions, "process JE collisions", false);
 
-  void processMCDetectorLevelCharged(soa::Filtered<aod::ChargedMCDetectorLevelJets>::iterator const&)
-  {
-  }
-  PROCESS_SWITCH(JetTutorialSkeletonTask, processMCDetectorLevelCharged, "jets on detector level MC", false);
+    void processCollisionsWithExternalTracks(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<aod::JetTracks, aod::JTrackPIs> const& tracks, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection> const&)
+    {
 
-  void processMCParticleLevel(soa::Filtered<aod::ChargedMCParticleLevelJets>::iterator const&)
-  {
-  }
-  PROCESS_SWITCH(JetTutorialSkeletonTask, processMCParticleLevel, "jets on particle level MC", false);
+    }
+    PROCESS_SWITCH(JetTutorialSkeletonTask, processCollisionsWithExternalTracks, "process JE collisions with access to the original track table", false);
 
-  void processMCCharged(aod::JCollisions const&, soa::Filtered<aod::ChargedMCDetectorLevelJets> const&, soa::Filtered<aod::ChargedMCParticleLevelJets> const&)
-  {
-  }
-  PROCESS_SWITCH(JetTutorialSkeletonTask, processMCCharged, "jets on detector and particle level MC", false);
+    void processDataCharged(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Filtered<aod::ChargedJets> const& jets)
+    {
 
-  using JetMCPTable = soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>>;
-  void processMCChargedMatched(aod::JCollision const&,
-                               soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>> const&,
-                               JetMCPTable const&,
-                               aod::JTracks const&,
-                               aod::JMcParticles const&)
-  {
-  }
-  PROCESS_SWITCH(JetTutorialSkeletonTask, processMCChargedMatched, "jet finder QA matched mcp and mcd", false);
+    }
+    PROCESS_SWITCH(JetTutorialSkeletonTask, processDataCharged, "charged jets in data", false);
 
-  void processDataChargedSubstructure(soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>>::iterator const&, aod::JTracks const&)
-  {
-  }
-  PROCESS_SWITCH(JetTutorialSkeletonTask, processDataChargedSubstructure, "jet substructure charged jets", false);
+    void processMCDetectorLevelCharged(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Filtered<aod::ChargedMCDetectorLevelJets> const& jets)
+    {
 
-  void processMCParticleSubstructure(soa::Filtered<soa::Join<aod::FullMCParticleLevelJets, aod::FullMCParticleLevelJetConstituents>>::iterator const&, aod::JMcParticles const&)
-  {
-  }
-  PROCESS_SWITCH(JetTutorialSkeletonTask, processMCParticleSubstructure, "jet substructure particle level full jets", false);
+    }
+    PROCESS_SWITCH(JetTutorialSkeletonTask, processMCDetectorLevelCharged, "charged jets in detector level MC", false);
 
-  void processDataFull(soa::Filtered<aod::FullJets>::iterator const&)
-  {
-  }
-  PROCESS_SWITCH(JetTutorialSkeletonTask, processDataFull, "jets data", true);
+    void processMCDetectorLevelWeightedCharged(soa::Filtered<aod::JetCollisionsMCD>::iterator const& collision, aod::JetMcCollisions const& ,soa::Filtered<aod::ChargedMCDetectorLevelJets> const& jets)
+    {
 
-  void processDataFullSubstructure(soa::Filtered<soa::Join<aod::FullJets, aod::FullJetConstituents>>::iterator const&, aod::JTracks const&, aod::JClusters const&)
-  {
-  }
-  PROCESS_SWITCH(JetTutorialSkeletonTask, processDataFullSubstructure, "jet substructure full jets", false);
+    }
+    PROCESS_SWITCH(JetTutorialSkeletonTask, processMCDetectorLevelWeightedCharged, "charged jets in weighted detector level MC", false);
 
-  void processDataRecoil(aod::JCollision const&, soa::Filtered<aod::ChargedJets> const&, aod::JTracks const&)
-  {
-  }
-  PROCESS_SWITCH(JetTutorialSkeletonTask, processDataRecoil, "hadron-recoil jets", false);
+    void processMCParticleLevelCharged(soa::Filtered<aod::JetMcCollisions>::iterator const& mcCollision, soa::Filtered<aod::ChargedMCParticleLevelJets> const& jets)
+    {
 
-  /*void processDataBackgroundSubtracted(soa::Join<aod::JCollisions, aod::JCollisionRhos>::iterator const& collision, soa::Filtered<aod::ChargedJets> const& jets)
-  {
-  }
-  PROCESS_SWITCH(JetTutorialSkeletonTask, processDataBackgroundSubtracted, "baackground subtracted jets", false);*/
+    }
+    PROCESS_SWITCH(JetTutorialSkeletonTask, processMCParticleLevelCharged, "charged jets in particle level MC", false);
+
+    void processMCCharged(soa::Filtered<aod::JetCollisionsMCD>::iterator const& collision, aod::JetMcCollisions const& , soa::Filtered<aod::ChargedMCDetectorLevelJets> const& mcdjets, soa::Filtered<aod::ChargedMCParticleLevelJets> const& mcpjets)
+    {
+
+    }
+    PROCESS_SWITCH(JetTutorialSkeletonTask, processMCCharged, "charged jets in detector and particle level MC", false);
+
+
+    using JetMCPTable = soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>>;
+    void processMCMatchedCharged(soa::Filtered<aod::JetCollisionsMCD>::iterator const& collision,
+                                 soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>> const& mcdjets,
+                                 JetMCPTable const&,
+                                 aod::JetTracks const&,
+                                 aod::JetParticles const&)
+    {
+
+    }
+    PROCESS_SWITCH(JetTutorialSkeletonTask, processMCMatchedCharged, "matched detector and particle level charged jets", false);
+
+    void processDataSubstructureCharged(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>>const& jets, aod::JetTracks const&)
+    {
+
+    }
+    PROCESS_SWITCH(JetTutorialSkeletonTask, processDataSubstructureCharged, "charged jet substructure", false);
+
+  void processDataFull(soa::Filtered<aod::JetCollisions>::iterator const& , soa::Filtered<aod::FullJets> const& jets)
+    {
+
+    }
+    PROCESS_SWITCH(JetTutorialSkeletonTask, processDataFull, "full jets in data", false);
+
+  void processDataSubstructureFull(soa::Filtered<aod::JetCollisions>::iterator const& , soa::Filtered<soa::Join<aod::FullJets, aod::FullJetConstituents>> const& jets, aod::JetTracks const&, aod::JetClusters const&)
+    {
+
+    }
+    PROCESS_SWITCH(JetTutorialSkeletonTask, processDataSubstructureFull, "full jet substructure", false);
+
+
+    void processMCParticleLevelSubstructureFull(soa::Filtered<aod::JetMcCollisions>::iterator const& mcCollision, soa::Filtered<soa::Join<aod::FullMCParticleLevelJets, aod::FullMCParticleLevelJetConstituents>> const& jets, aod::JetParticles const&)
+    {
+
+    }
+    PROCESS_SWITCH(JetTutorialSkeletonTask, processMCParticleLevelSubstructureFull, "full particle level jet substructure", false);
+
+
+    void processRecoilDataCharged(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Filtered<aod::ChargedJets> const& jets, aod::JetTracks const& tracks)
+    {
+
+    }
+    PROCESS_SWITCH(JetTutorialSkeletonTask, processRecoilDataCharged, "hadron-recoil charged jets", false);
+
+    void processDataRhoAreaSubtractedCharged(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator const& collision, soa::Filtered<aod::ChargedJets> const& jets)
+    {
+
+    }
+    PROCESS_SWITCH(JetTutorialSkeletonTask, processDataRhoAreaSubtractedCharged, "charged rho-area  subtracted jets", false);
+
+    void processDataConstituentSubtractedCharged(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Filtered<aod::ChargedEventWiseSubtractedJets> const& jets)
+    {
+
+    }
+    PROCESS_SWITCH(JetTutorialSkeletonTask, processDataConstituentSubtractedCharged, "charged constituent subtracted jets", false);
+
+
+    void processDataConstituentSubtractedSubstructureCharged(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Filtered<soa::Join<aod::ChargedEventWiseSubtractedJets, aod::ChargedEventWiseSubtractedJetConstituents>>const& jets, aod::JetTracksSub const&)
+    {
+
+    }
+    PROCESS_SWITCH(JetTutorialSkeletonTask, processDataConstituentSubtractedSubstructureCharged, "charged constituent subtracted jet substructure", false);
+
+    void processDataTriggered(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Filtered<aod::ChargedJets> const& jets)
+    {
+
+    }
+    PROCESS_SWITCH(JetTutorialSkeletonTask, processDataTriggered, "jets triggered", false);
+  */
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<JetTutorialSkeletonTask>(cfgc, TaskName{"jet-tutorial-skeleton"})}; }

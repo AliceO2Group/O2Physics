@@ -60,7 +60,6 @@ struct KaonPidTask {
   Configurable<std::string> cfgCCDBURL{"ccdb-url", "http://alice-ccdb.cern.ch", "URL of the CCDB repository"};
   Configurable<int> cfgPid{"pid", 321, "PID to predict"};
   Configurable<double> cfgCertainty{"certainty", 0.5, "Minimum certainty above which the model accepts a particular type of particle"};
-  Configurable<uint32_t> cfgDetector{"detector", kTPCTOFTRD, "What detectors to use: 0: TPC only, 1: TPC + TOF, 2: TPC + TOF + TRD"};
   Configurable<uint64_t> cfgTimestamp{"timestamp", 0, "Fixed timestamp"};
   Configurable<bool> cfgUseCCDB{"useCCDB", false, "Whether to autofetch ML model from CCDB. If false, local file will be used."};
 
@@ -85,7 +84,7 @@ struct KaonPidTask {
     if (cfgUseCCDB) {
       ccdbApi.init(cfgCCDBURL); // Initializes ccdbApi when cfgUseCCDB is set to 'true'
     }
-    pidModel = std::make_shared<PidONNXModel>(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, cfgTimestamp.value, cfgPid.value, static_cast<PidMLDetector>(cfgDetector.value), cfgCertainty.value);
+    pidModel = std::make_shared<PidONNXModel>(cfgPathLocal.value, cfgPathCCDB.value, cfgUseCCDB.value, ccdbApi, cfgTimestamp.value, cfgPid.value, cfgCertainty.value);
 
     histos.add("hChargePos", ";z;", kTH1F, {{3, -1.5, 1.5}});
     histos.add("hChargeNeg", ";z;", kTH1F, {{3, -1.5, 1.5}});

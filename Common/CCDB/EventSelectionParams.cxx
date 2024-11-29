@@ -55,13 +55,13 @@ const char* selectionLabels[kNsel] = {
   "kIsVertexITSTPC",
   "kIsVertexTOFmatched",
   "kIsVertexTRDmatched",
-  "kNoHighOccupancyAgressive",
-  "kNoHighOccupancyStrict",
-  "kNoHighOccupancyMedium",
-  "kNoHighOccupancyRelaxed",
-  "kNoHighOccupancyGentle",
+  "kNoCollInTimeRangeNarrow",
+  "kNoCollInTimeRangeStrict",
   "kNoCollInTimeRangeStandard",
-  "kNoCollInTimeRangeNarrow"};
+  "kNoCollInTimeRangeVzDependent",
+  "kNoCollInRofStrict",
+  "kNoCollInRofStandard",
+  "kNoHighMultCollInPrevRof"};
 } // namespace o2::aod::evsel
 
 using namespace o2::aod::evsel;

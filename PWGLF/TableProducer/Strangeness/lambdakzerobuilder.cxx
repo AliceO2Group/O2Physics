@@ -36,6 +36,8 @@
 //    david.dobrigkeit.chinellato@cern.ch
 //
 
+#include <string>
+#include <vector>
 #include <cmath>
 #include <array>
 #include <cstdlib>
@@ -263,6 +265,7 @@ struct lambdakzeroBuilder {
   static constexpr float defaultLambdaWindowParameters[1][4] = {{1.17518e-03, 1.24099e-04, 5.47937e-03, 3.08009e-01}};
   Configurable<LabeledArray<float>> massCutK0{"massCutK0", {defaultK0MassWindowParameters[0], 4, {"constant", "linear", "expoConstant", "expoRelax"}}, "mass parameters for K0"};
   Configurable<LabeledArray<float>> massCutLambda{"massCutLambda", {defaultLambdaWindowParameters[0], 4, {"constant", "linear", "expoConstant", "expoRelax"}}, "mass parameters for Lambda"};
+  Configurable<float> massCutPhoton{"massCutPhoton", 0.2, "Photon max mass"};
   Configurable<float> massWindownumberOfSigmas{"massWindownumberOfSigmas", 5e+6, "number of sigmas around mass peaks to keep"};
   Configurable<bool> massWindowWithTPCPID{"massWindowWithTPCPID", false, "when checking mass windows, correlate with TPC dE/dx"};
   Configurable<float> massWindowSafetyMargin{"massWindowSafetyMargin", 0.001, "Extra mass window safety margin"};
@@ -977,15 +980,18 @@ struct lambdakzeroBuilder {
     bool desiredMassK0Short = false;
     bool desiredMassLambda = false;
     bool desiredMassAntiLambda = false;
+    bool desiredMassGamma = false;
 
     if (massWindownumberOfSigmas > 1e+3) {
       desiredMassK0Short = true;    // safety fallback
       desiredMassLambda = true;     // safety fallback
       desiredMassAntiLambda = true; // safety fallback
+      desiredMassGamma = true;      // safety fallback
     } else {
       desiredMassK0Short = TMath::Abs(v0candidate.k0ShortMass - o2::constants::physics::MassKaonNeutral) < massWindownumberOfSigmas * getMassSigmaK0Short(lPt) + massWindowSafetyMargin;
       desiredMassLambda = TMath::Abs(v0candidate.lambdaMass - o2::constants::physics::MassLambda) < massWindownumberOfSigmas * getMassSigmaLambda(lPt) + massWindowSafetyMargin;
       desiredMassAntiLambda = TMath::Abs(v0candidate.antiLambdaMass - o2::constants::physics::MassLambda) < massWindownumberOfSigmas * getMassSigmaLambda(lPt) + massWindowSafetyMargin;
+      desiredMassGamma = TMath::Abs(lGammaMass) < massCutPhoton;
     }
 
     // check if user requested to correlate mass requirement with TPC PID
@@ -993,6 +999,7 @@ struct lambdakzeroBuilder {
     bool dEdxK0Short = V0.isdEdxK0Short() || !massWindowWithTPCPID;
     bool dEdxLambda = V0.isdEdxLambda() || !massWindowWithTPCPID;
     bool dEdxAntiLambda = V0.isdEdxAntiLambda() || !massWindowWithTPCPID;
+    bool dEdxGamma = V0.isdEdxGamma() || !massWindowWithTPCPID;
 
     // check proper lifetime if asked for
     bool passML2P_K0Short = lML2P_K0Short < lifetimecut->get("lifetimecutK0S") || lifetimecut->get("lifetimecutK0S") > 1000;
@@ -1003,6 +1010,8 @@ struct lambdakzeroBuilder {
     if (passML2P_Lambda && dEdxLambda && desiredMassLambda)
       keepCandidate = true;
     if (passML2P_Lambda && dEdxAntiLambda && desiredMassAntiLambda)
+      keepCandidate = true;
+    if (dEdxGamma && desiredMassGamma)
       keepCandidate = true;
 
     if (!keepCandidate)
@@ -1182,16 +1191,11 @@ struct lambdakzeroBuilder {
         if (V0.v0Type() > 1 && !storePhotonCandidates)
           continue;
 
-        if (mlConfigurations.calculateK0ShortScores ||
-            mlConfigurations.calculateLambdaScores ||
-            mlConfigurations.calculateAntiLambdaScores ||
-            mlConfigurations.calculateGammaScores) {
-          // at this stage, the candidate is interesting -> populate table
-          gammaMLSelections(gammaScore);
-          lambdaMLSelections(lambdaScore);
-          antiLambdaMLSelections(antiLambdaScore);
-          k0ShortMLSelections(k0ShortScore);
-        }
+        // at this stage, the candidate is interesting -> populate table
+        gammaMLSelections(gammaScore);
+        lambdaMLSelections(lambdaScore);
+        antiLambdaMLSelections(antiLambdaScore);
+        k0ShortMLSelections(k0ShortScore);
 
         // populates the various tables for analysis
         statisticsRegistry.v0stats[kCountStandardV0]++;
@@ -1377,7 +1381,7 @@ struct lambdakzeroPreselector {
   Configurable<int> minITSCluITSOnly{"minITSCluITSOnly", 0, "minimum number of ITS clusters to ask for if daughter track does not have TPC"};
 
   // for bit-packed maps
-  std::vector<uint16_t> selectionMask;
+  std::vector<uint32_t> selectionMask;
   enum v0bit { bitInteresting = 0,
                bitTrackQuality,
                bitTrueGamma,
@@ -1386,6 +1390,7 @@ struct lambdakzeroPreselector {
                bitTrueAntiLambda,
                bitTrueHypertriton,
                bitTrueAntiHypertriton,
+               bitPhysicalPrimary,
                bitdEdxGamma,
                bitdEdxK0Short,
                bitdEdxLambda,
@@ -1419,7 +1424,7 @@ struct lambdakzeroPreselector {
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// function to check track quality
   template <class TTrackTo, typename TV0Object>
-  void checkTrackQuality(TV0Object const& lV0Candidate, uint16_t& maskElement, bool passdEdx = false)
+  void checkTrackQuality(TV0Object const& lV0Candidate, uint32_t& maskElement, bool passdEdx = false)
   {
     auto lNegTrack = lV0Candidate.template negTrack_as<TTrackTo>();
     auto lPosTrack = lV0Candidate.template posTrack_as<TTrackTo>();
@@ -1462,9 +1467,10 @@ struct lambdakzeroPreselector {
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   /// function to check PDG association
   template <class TTrackTo, typename TV0Object>
-  void checkPDG(TV0Object const& lV0Candidate, uint16_t& maskElement)
+  void checkPDG(TV0Object const& lV0Candidate, uint32_t& maskElement)
   {
     int lPDG = -1;
+    bool physicalPrimary = false;
     auto lNegTrack = lV0Candidate.template negTrack_as<TTrackTo>();
     auto lPosTrack = lV0Candidate.template posTrack_as<TTrackTo>();
 
@@ -1478,6 +1484,7 @@ struct lambdakzeroPreselector {
           for (auto& lPosMother : lMCPosTrack.template mothers_as<aod::McParticles>()) {
             if (lNegMother.globalIndex() == lPosMother.globalIndex() && (!dIfMCselectPhysicalPrimary || lNegMother.isPhysicalPrimary())) {
               lPDG = lNegMother.pdgCode();
+              physicalPrimary = lNegMother.isPhysicalPrimary();
 
               // additionally check PDG of the mother particle if requested
               if (dIfMCselectV0MotherPDG != 0) {
@@ -1507,10 +1514,12 @@ struct lambdakzeroPreselector {
       bitset(maskElement, bitTrueHypertriton);
     if (lPDG == -1010010030)
       bitset(maskElement, bitTrueAntiHypertriton);
+    if (physicalPrimary)
+      bitset(maskElement, bitPhysicalPrimary);
   }
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
   template <class TTrackTo, typename TV0Object>
-  void checkdEdx(TV0Object const& lV0Candidate, uint16_t& maskElement)
+  void checkdEdx(TV0Object const& lV0Candidate, uint32_t& maskElement)
   {
     auto lNegTrack = lV0Candidate.template negTrack_as<TTrackTo>();
     auto lPosTrack = lV0Candidate.template posTrack_as<TTrackTo>();
@@ -1555,7 +1564,7 @@ struct lambdakzeroPreselector {
   void checkAndFinalize()
   {
     // parse + publish tag table now
-    for (int ii = 0; ii < selectionMask.size(); ii++) {
+    for (std::size_t ii = 0; ii < selectionMask.size(); ii++) {
       histos.fill(HIST("hPreselectorStatistics"), 0.0f); // all V0s
       bool validV0 = bitcheck(selectionMask[ii], bitTrackQuality);
       if (validV0) {
@@ -1593,7 +1602,8 @@ struct lambdakzeroPreselector {
       }
       v0tags(validV0,
              bitcheck(selectionMask[ii], bitTrueGamma), bitcheck(selectionMask[ii], bitTrueK0Short), bitcheck(selectionMask[ii], bitTrueLambda),
-             bitcheck(selectionMask[ii], bitTrueAntiLambda), bitcheck(selectionMask[ii], bitTrueHypertriton), bitcheck(selectionMask[ii], bitTrueAntiHypertriton),
+             bitcheck(selectionMask[ii], bitTrueAntiLambda),
+             bitcheck(selectionMask[ii], bitTrueHypertriton), bitcheck(selectionMask[ii], bitTrueAntiHypertriton), bitcheck(selectionMask[ii], bitPhysicalPrimary),
              bitcheck(selectionMask[ii], bitdEdxGamma), bitcheck(selectionMask[ii], bitdEdxK0Short), bitcheck(selectionMask[ii], bitdEdxLambda),
              bitcheck(selectionMask[ii], bitdEdxAntiLambda), bitcheck(selectionMask[ii], bitdEdxHypertriton), bitcheck(selectionMask[ii], bitdEdxAntiHypertriton),
              bitcheck(selectionMask[ii], bitUsedInCascade), bitcheck(selectionMask[ii], bitUsedInTrackedCascade));

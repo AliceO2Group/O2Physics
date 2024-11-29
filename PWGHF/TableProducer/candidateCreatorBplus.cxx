@@ -18,6 +18,10 @@
 /// \author Deepa Thomas <deepa.thomas@cern.ch>, UT Austin
 /// \author Antonio Palasciano <antonio.palasciano@cern.ch>, Università degli Studi di Bari & INFN, Sezione di Bari
 
+#include <memory>
+#include <string>
+#include <vector>
+
 #include "CommonConstants/PhysicsConstants.h"
 #include "DCAFitter/DCAFitterN.h"
 #include "Framework/AnalysisTask.h"
@@ -79,9 +83,6 @@ struct HfCandidateCreatorBplus {
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   int runNumber;
 
-  double massPi{0.};
-  double massD0{0.};
-  double massBplus{0.};
   double invMass2D0PiMin{0.};
   double invMass2D0PiMax{0.};
   double bz{0.};
@@ -110,11 +111,8 @@ struct HfCandidateCreatorBplus {
   void init(InitContext const&)
   {
     // invariant-mass window cut
-    massPi = MassPiPlus;
-    massD0 = MassD0;
-    massBplus = MassBPlus;
-    invMass2D0PiMin = (massBplus - invMassWindowBplus) * (massBplus - invMassWindowBplus);
-    invMass2D0PiMax = (massBplus + invMassWindowBplus) * (massBplus + invMassWindowBplus);
+    invMass2D0PiMin = (MassBPlus - invMassWindowBplus) * (MassBPlus - invMassWindowBplus);
+    invMass2D0PiMax = (MassBPlus + invMassWindowBplus) * (MassBPlus + invMassWindowBplus);
 
     // Initialise fitter for B vertex
     dfB.setPropagateToPCA(propagateToPCA);
@@ -173,16 +171,8 @@ struct HfCandidateCreatorBplus {
                aod::BCsWithTimestamps const&)
   {
 
-    static int nCol = 0;
-
     for (const auto& collision : collisions) {
       auto primaryVertex = getPrimaryVertex(collision);
-
-      if (nCol % 10000 == 0) {
-        LOG(debug) << nCol << " collisions parsed";
-      }
-      nCol++;
-
       /// Set the magnetic field from ccdb.
       /// The static instance of the propagator was already modified in the HFTrackIndexSkimCreator,
       /// but this is not true when running on Run2 data/MC already converted into AO2Ds.
@@ -236,7 +226,7 @@ struct HfCandidateCreatorBplus {
             continue;
           }
         } catch (const std::runtime_error& error) {
-          LOG(info) << "Run time error found: " << error.what() << ". DCFitterN for D cannot work, skipping the candidate.";
+          LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN for D cannot work, skipping the candidate.";
           hCandidatesD->Fill(SVFitting::Fail);
           continue;
         }
@@ -294,7 +284,6 @@ struct HfCandidateCreatorBplus {
           auto trackParCovPi = getTrackParCov(trackPion);
           std::array<float, 3> pVecD0 = {0., 0., 0.};
           std::array<float, 3> pVecBach = {0., 0., 0.};
-          std::array<float, 3> pVecBCand = {0., 0., 0.};
 
           // find the DCA between the D0 and the bachelor track, for B+
           hCandidatesB->Fill(SVFitting::BeforeFit);
@@ -303,7 +292,7 @@ struct HfCandidateCreatorBplus {
               continue;
             }
           } catch (const std::runtime_error& error) {
-            LOG(info) << "Run time error found: " << error.what() << ". DCFitterN for B cannot work, skipping the candidate.";
+            LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN for B cannot work, skipping the candidate.";
             hCandidatesB->Fill(SVFitting::Fail);
             continue;
           }
@@ -317,8 +306,6 @@ struct HfCandidateCreatorBplus {
           auto chi2PCA = dfB.getChi2AtPCACandidate();
           auto covMatrixPCA = dfB.calcPCACovMatrixFlat();
           hCovSVXX->Fill(covMatrixPCA[0]); // FIXME: Calculation of errorDecayLength(XY) gives wrong values without this line.
-
-          pVecBCand = RecoDecay::pVec(pVecD0, pVecBach);
 
           // get track impact parameters
           // This modifies track momenta!
@@ -336,7 +323,7 @@ struct HfCandidateCreatorBplus {
           auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
 
           // compute invariant mass square and apply selection
-          auto invMass2D0Pi = RecoDecay::m2(std::array{pVecD0, pVecBach}, std::array{massD0, massPi});
+          auto invMass2D0Pi = RecoDecay::m2(std::array{pVecD0, pVecBach}, std::array{MassD0, MassPiPlus});
           if ((invMass2D0Pi < invMass2D0PiMin) || (invMass2D0Pi > invMass2D0PiMax)) {
             continue;
           }

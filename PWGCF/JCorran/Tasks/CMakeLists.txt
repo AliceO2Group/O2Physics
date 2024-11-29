@@ -28,3 +28,13 @@ o2physics_add_dpl_workflow(flow-nuacreation
                     SOURCES flowJNUACreation.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::JCorran
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(epflow-analysis
+                    SOURCES jEPFlowAnalysis.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::JCorran
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(epdzeroflow-analysis
+                    SOURCES jEPDzeroFlowAnalysis.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
+                    COMPONENT_NAME Analysis)

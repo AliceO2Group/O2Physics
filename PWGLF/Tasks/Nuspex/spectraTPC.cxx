@@ -117,7 +117,7 @@ struct tpcSpectra {
   void fillParticleHistos(const T& track)
   {
     const float y = TMath::ASinH(track.pt() / TMath::Sqrt(PID::getMass2(id) + track.pt() * track.pt()) * TMath::SinH(track.eta()));
-    if (abs(y) > 0.5) {
+    if (std::abs(y) > 0.5) {
       return;
     }
     const auto& nsigma = o2::aod::pidutils::tpcNSigma<id>(track);
@@ -131,7 +131,7 @@ struct tpcSpectra {
     if (!track.isGlobalTrack()) {
       return;
     }
-    if (abs(nsigma) > cfgNSigmaCut) {
+    if (std::abs(nsigma) > cfgNSigmaCut) {
       return;
     }
     histos.fill(HIST(hp[id]), track.p());
@@ -155,7 +155,7 @@ struct tpcSpectra {
       return;
     }
     histos.fill(HIST("evsel"), 2);
-    if (abs(collision.posZ()) > cfgCutVertex) {
+    if (std::abs(collision.posZ()) > cfgCutVertex) {
       return;
     }
     histos.fill(HIST("evsel"), 3);
@@ -163,7 +163,7 @@ struct tpcSpectra {
 
     for (const auto& track : tracks) {
       histos.fill(HIST("tracksel"), 1);
-      if (abs(track.eta()) > cfgCutEta) {
+      if (std::abs(track.eta()) > cfgCutEta) {
         continue;
       }
       histos.fill(HIST("tracksel"), 2);
@@ -279,7 +279,7 @@ struct tpcPidQaSignalwTof {
                TrackCandidates const& tracks)
   {
     histos.fill(HIST("evsel"), 1);
-    if (abs(collision.posZ()) > cfgCutVertex) {
+    if (std::abs(collision.posZ()) > cfgCutVertex) {
       return;
     }
     histos.fill(HIST("evsel"), 2);
@@ -287,7 +287,7 @@ struct tpcPidQaSignalwTof {
 
     for (const auto& track : tracks) {
       histos.fill(HIST("tracksel"), 1);
-      if (abs(track.eta()) > cfgCutEta) {
+      if (std::abs(track.eta()) > cfgCutEta) {
         continue;
       }
       histos.fill(HIST("tracksel"), 2);

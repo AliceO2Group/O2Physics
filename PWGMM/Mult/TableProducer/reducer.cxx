@@ -47,10 +47,17 @@ struct Reducer {
   Configurable<std::vector<double>> etaBins{"eta", {-1.5, -0.5, 0.5, 1.5}, "eta binning"};
   Configurable<std::vector<double>> phiBins{"phi", {0., PI / 2., PI, 3. * PI / 2., 2. * PI}, "phi binning"};
 
+  Configurable<bool> useEvSel{"useEvSel", true, "use event selection"};
+  Configurable<bool> checkTF{"checkTF", false, "check TF border"};
+  Configurable<bool> checkITSROF{"checkITSROF", false, "check ITS readout frame border"};
+  Configurable<bool> checkFT0PVcoincidence{"checkFT0PVcoincidence", true, "Check coincidence between FT0 and PV"};
+  Configurable<bool> rejectITSonly{"rejectITSonly", true, "Reject ITS-only vertex"};
+
   Preslice<aod::Collisions> cperBC = aod::collision::bcId;
   Preslice<aod::McCollisions> mccperBC = aod::mccollision::bcId;
   Preslice<aod::McParticles> perMCc = aod::mcparticle::mcCollisionId;
   Preslice<aod::Tracks> perC = aod::track::collisionId;
+  PresliceUnsorted<soa::Join<aod::Collisions, aod::McCollisionLabels>> cperMCc = aod::mccollisionlabel::mcCollisionId;
 
   std::random_device rd;
   std::mt19937 randomgen;
@@ -79,6 +86,16 @@ struct Reducer {
             1. / (1 + params->get((int)0, 1) * params->get((int)0, 1)) * // 1 - alpha
                                                                          // v2 );
               1. / (x * TMath::Beta(x, (1. + params->get((int)0, 5) * params->get((int)0, 5)))) * TMath::Power((params->get((int)0, 4) * params->get((int)0, 4)) / ((1. + params->get((int)0, 5) * params->get((int)0, 5)) + (params->get((int)0, 4) * params->get((int)0, 4))), x) * TMath::Power((1. + params->get((int)0, 5) * params->get((int)0, 5)) / ((1. + params->get((int)0, 5) * params->get((int)0, 5)) + (params->get((int)0, 4) * params->get((int)0, 4))), (1. + params->get((int)0, 5) * params->get((int)0, 5))));
+  }
+
+  template <typename C>
+  inline bool isCollisionSelected(C const& collision)
+  {
+    return collision.selection_bit(aod::evsel::kIsTriggerTVX) &&
+           (!checkTF || collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) &&
+           (!checkITSROF || collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) &&
+           (!checkFT0PVcoincidence || collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) &&
+           (!rejectITSonly || collision.selection_bit(aod::evsel::kIsVertexITSTPC));
   }
 
   void init(InitContext const&)
@@ -192,6 +209,19 @@ struct Reducer {
         ++i;
         continue;
       }
+      if (useEvSel) {
+        bool pass = false;
+        for (auto& c : collisions) {
+          if (isCollisionSelected(c)) {
+            pass = true;
+            break;
+          }
+        }
+        if (!pass) {
+          ++i;
+          continue;
+        }
+      }
       rmcc(bcId, weights[i], mcc.posX(), mcc.posY(), mcc.posZ(), mcc.impactParameter(), mcc.multMCFT0A(), mcc.multMCFT0C(), mcc.multMCNParticlesEta05(), mcc.multMCNParticlesEta10());
       if constexpr (requires {mcc.processId(); mcc.pdf1(); }) {
         rhepmci(rmcc.lastIndex(), mcc.xsectGen(), mcc.ptHard(), mcc.nMPI(), mcc.processId(), mcc.id1(), mcc.id2(), mcc.pdfId1(), mcc.pdfId2(), mcc.x1(), mcc.x2(), mcc.scalePdf(), mcc.pdf1(), mcc.pdf2());
@@ -201,18 +231,18 @@ struct Reducer {
       usedLabels.push_back(rmcc.lastIndex());
       ++i;
     }
-    i = 0;
     // check Reco events
     for (auto& c : collisions) {
       // discard fake events
       if (!c.has_mcCollision()) {
-        ++i;
         continue;
       }
       // discard events for which MC event was discarded
       auto pos = std::find(usedMCCs.begin(), usedMCCs.end(), c.mcCollisionId());
       if (pos == usedMCCs.end()) {
-        ++i;
+        continue;
+      }
+      if (useEvSel && !isCollisionSelected(c)) {
         continue;
       }
       std::fill(binned.begin(), binned.end(), 0);
@@ -225,7 +255,6 @@ struct Reducer {
       }
       rc(bcId, c.posX(), c.posY(), c.posZ(), c.collisionTimeRes(), c.multFT0A(), c.multFT0C(), c.multFDDA(), c.multFDDC(), c.multZNA(), c.multZNC(), c.multNTracksPV(), c.multNTracksPVeta1(), c.multNTracksPVetaHalf(), binned);
       rmcl(usedLabels[std::distance(usedMCCs.begin(), pos)]);
-      ++i;
     }
   }
 };

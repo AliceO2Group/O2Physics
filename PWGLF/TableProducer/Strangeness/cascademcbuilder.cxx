@@ -61,6 +61,8 @@ struct cascademcbuilder {
   Configurable<bool> addGeneratedOmegaMinus{"addGeneratedOmegaMinus", false, "add CascMCCore entry for generated, not-recoed OmegaMinus"};
   Configurable<bool> addGeneratedOmegaPlus{"addGeneratedOmegaPlus", false, "add CascMCCore entry for generated, not-recoed OmegaPlus"};
 
+  Configurable<bool> treatPiToMuDecays{"treatPiToMuDecays", true, "if true, will correctly capture pi -> mu and V0 label will still point to originating V0 decay in those cases. Nota bene: prong info will still be for the muon!"};
+
   Configurable<float> rapidityWindow{"rapidityWindow", 0.5, "rapidity window to save non-recoed candidates"};
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
@@ -76,6 +78,9 @@ struct cascademcbuilder {
     int pdgCodeNegative;
     int pdgCodeBachelor;
     bool isPhysicalPrimary;
+    int processPositive = -1;
+    int processNegative = -1;
+    int processBachelor = -1;
     std::array<float, 3> xyz;
     std::array<float, 3> lxyz;
     std::array<float, 3> posP;
@@ -89,7 +94,35 @@ struct cascademcbuilder {
   mcCascinfo thisInfo;
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
 
-  void init(InitContext const&) {}
+  // kink handling
+  template <typename mcpart>
+  int getOriginatingParticle(mcpart const& part, int& indexForPositionOfDecay)
+  {
+    int returnValue = -1;
+    if (part.has_mothers()) {
+      auto const& motherList = part.template mothers_as<aod::McParticles>();
+      if (motherList.size() == 1) {
+        for (const auto& mother : motherList) {
+          if (std::abs(part.pdgCode()) == 13 && treatPiToMuDecays) {
+            // muon decay, de-ref mother twice
+            if (mother.has_mothers()) {
+              auto grandMotherList = mother.template mothers_as<aod::McParticles>();
+              if (grandMotherList.size() == 1) {
+                for (const auto& grandMother : grandMotherList) {
+                  returnValue = grandMother.globalIndex();
+                  indexForPositionOfDecay = mother.globalIndex(); // for V0 decay position: grab muon
+                }
+              }
+            }
+          } else {
+            returnValue = mother.globalIndex();
+            indexForPositionOfDecay = part.globalIndex();
+          }
+        }
+      }
+    }
+    return returnValue;
+  }
 
   template <typename TCascadeTable, typename TMCParticleTable>
   void generateCascadeMCinfo(TCascadeTable cascTable, TMCParticleTable mcParticles)
@@ -142,60 +175,64 @@ struct cascademcbuilder {
         thisInfo.bachP[0] = lMCBachTrack.px();
         thisInfo.bachP[1] = lMCBachTrack.py();
         thisInfo.bachP[2] = lMCBachTrack.pz();
+        thisInfo.processPositive = lMCPosTrack.getProcess();
+        thisInfo.processNegative = lMCNegTrack.getProcess();
+        thisInfo.processBachelor = lMCBachTrack.getProcess();
 
-        // Step 1: check if the mother is the same, go up a level
-        if (lMCNegTrack.has_mothers() && lMCPosTrack.has_mothers()) {
-          for (auto& lNegMother : lMCNegTrack.template mothers_as<aod::McParticles>()) {
-            for (auto& lPosMother : lMCPosTrack.template mothers_as<aod::McParticles>()) {
-              if (lNegMother == lPosMother) {
-                // acquire information
-                thisInfo.lxyz[0] = lMCPosTrack.vx();
-                thisInfo.lxyz[1] = lMCPosTrack.vy();
-                thisInfo.lxyz[2] = lMCPosTrack.vz();
-                thisInfo.pdgCodeV0 = lNegMother.pdgCode();
+        // Step 0: treat pi -> mu + antineutrino
+        // if present, de-reference original V0 correctly and provide label to original object
+        // NOTA BENE: the prong info will still correspond to a muon, treat carefully!
+        int negOriginating = -1, posOriginating = -1, bachOriginating = -1;
+        int particleForLambdaDecayPositionIdx = -1, particleForCascadeDecayPositionIdx = -1;
+        negOriginating = getOriginatingParticle(lMCNegTrack, particleForLambdaDecayPositionIdx);
+        posOriginating = getOriginatingParticle(lMCPosTrack, particleForLambdaDecayPositionIdx);
+        bachOriginating = getOriginatingParticle(lMCBachTrack, particleForCascadeDecayPositionIdx);
 
-                // if we got to this level, it means the mother particle exists and is the same
-                // now we have to go one level up and compare to the bachelor mother too
-                if (lNegMother.has_mothers() && lMCBachTrack.has_mothers()) {
-                  for (auto& lV0Mother : lNegMother.template mothers_as<aod::McParticles>()) {
-                    for (auto& lBachMother : lMCBachTrack.template mothers_as<aod::McParticles>()) {
-                      if (lV0Mother == lBachMother) {
-                        thisInfo.label = lV0Mother.globalIndex();
+        if (negOriginating > -1 && negOriginating == posOriginating) {
+          auto originatingV0 = mcParticles.rawIteratorAt(negOriginating);
+          auto particleForLambdaDecayPosition = mcParticles.rawIteratorAt(particleForLambdaDecayPositionIdx);
 
-                        if (lV0Mother.has_mcCollision()) {
-                          thisInfo.mcCollision = lV0Mother.mcCollisionId(); // save this reference, please
-                        }
+          thisInfo.label = originatingV0.globalIndex();
+          thisInfo.lxyz[0] = particleForLambdaDecayPosition.vx();
+          thisInfo.lxyz[1] = particleForLambdaDecayPosition.vy();
+          thisInfo.lxyz[2] = particleForLambdaDecayPosition.vz();
+          thisInfo.pdgCodeV0 = originatingV0.pdgCode();
 
-                        thisInfo.pdgCode = lV0Mother.pdgCode();
-                        thisInfo.isPhysicalPrimary = lV0Mother.isPhysicalPrimary();
-                        thisInfo.xyz[0] = lMCBachTrack.vx();
-                        thisInfo.xyz[1] = lMCBachTrack.vy();
-                        thisInfo.xyz[2] = lMCBachTrack.vz();
-                        thisInfo.momentum[0] = lV0Mother.px();
-                        thisInfo.momentum[1] = lV0Mother.py();
-                        thisInfo.momentum[2] = lV0Mother.pz();
-                        if (lV0Mother.has_mothers()) {
-                          for (auto& lV0GrandMother : lV0Mother.template mothers_as<aod::McParticles>()) {
-                            thisInfo.pdgCodeMother = lV0GrandMother.pdgCode();
-                            thisInfo.motherLabel = lV0GrandMother.globalIndex();
-                          }
-                        }
-                      }
-                    }
-                  } // end conditional V0-bach pair
-                }   // end has mothers
-              }   // end neg = pos mother conditional
-            }
-          } // end loop neg/pos mothers
-        }   // end conditional of mothers existing
+          if (originatingV0.has_mothers()) {
+            for (auto& lV0Mother : originatingV0.template mothers_as<aod::McParticles>()) {
+              if (lV0Mother.globalIndex() == bachOriginating) { // found mother particle
+                thisInfo.label = lV0Mother.globalIndex();
+
+                if (lV0Mother.has_mcCollision()) {
+                  thisInfo.mcCollision = lV0Mother.mcCollisionId(); // save this reference, please
+                }
+
+                thisInfo.pdgCode = lV0Mother.pdgCode();
+                thisInfo.isPhysicalPrimary = lV0Mother.isPhysicalPrimary();
+                thisInfo.xyz[0] = originatingV0.vx();
+                thisInfo.xyz[1] = originatingV0.vy();
+                thisInfo.xyz[2] = originatingV0.vz();
+                thisInfo.momentum[0] = lV0Mother.px();
+                thisInfo.momentum[1] = lV0Mother.py();
+                thisInfo.momentum[2] = lV0Mother.pz();
+                if (lV0Mother.has_mothers()) {
+                  for (auto& lV0GrandMother : lV0Mother.template mothers_as<aod::McParticles>()) {
+                    thisInfo.pdgCodeMother = lV0GrandMother.pdgCode();
+                    thisInfo.motherLabel = lV0GrandMother.globalIndex();
+                  }
+                }
+              }
+            } // end v0 mother loop
+          } // end has_mothers check for V0
+        } // end conditional of pos/neg originating being the same
       }     // end association check
       // Construct label table (note: this will be joinable with CascDatas)
       casclabels(
         thisInfo.label, thisInfo.motherLabel);
 
       // Mark mcParticle as recoed (no searching necessary afterwards)
-      if (thisInfo.motherLabel > -1) {
-        mcParticleIsReco[thisInfo.motherLabel] = true;
+      if (thisInfo.label > -1) {
+        mcParticleIsReco[thisInfo.label] = true;
       }
 
       if (populateCascMCCoresSymmetric) {
@@ -216,10 +253,7 @@ struct cascademcbuilder {
         // step 1: check if this element is already provided in the table
         //         using the packedIndices variable calculated above
         for (uint32_t ii = 0; ii < mcCascinfos.size(); ii++) {
-          if (
-            thisInfo.mcParticlePositive == mcCascinfos[ii].mcParticlePositive && mcCascinfos[ii].mcParticlePositive > 0 &&
-            thisInfo.mcParticleNegative == mcCascinfos[ii].mcParticleNegative && mcCascinfos[ii].mcParticleNegative > 0 &&
-            thisInfo.mcParticleBachelor == mcCascinfos[ii].mcParticleBachelor && mcCascinfos[ii].mcParticleBachelor > 0) {
+          if (thisInfo.label == mcCascinfos[ii].label && mcCascinfos[ii].label > -1) {
             thisCascMCCoreIndex = ii;
             break; // this exists already in list
           }
@@ -272,6 +306,54 @@ struct cascademcbuilder {
           thisInfo.momentum[0] = mcParticle.px();
           thisInfo.momentum[1] = mcParticle.py();
           thisInfo.momentum[2] = mcParticle.pz();
+          thisInfo.label = mcParticle.globalIndex();
+
+          if (mcParticle.has_daughters()) {
+            auto const& daughters = mcParticle.template daughters_as<aod::McParticles>();
+            for (auto& dau : daughters) {
+              if (dau.getProcess() != 4) // check whether the daughter comes from a decay
+                continue;
+
+              if (TMath::Abs(dau.pdgCode()) == 211 || TMath::Abs(dau.pdgCode()) == 321) {
+                thisInfo.pdgCodeBachelor = dau.pdgCode();
+                thisInfo.bachP[0] = dau.px();
+                thisInfo.bachP[1] = dau.py();
+                thisInfo.bachP[2] = dau.pz();
+                thisInfo.xyz[0] = dau.vx();
+                thisInfo.xyz[1] = dau.vy();
+                thisInfo.xyz[2] = dau.vz();
+                thisInfo.mcParticleBachelor = dau.globalIndex();
+              }
+              if (TMath::Abs(dau.pdgCode()) == 2212) {
+                thisInfo.pdgCodeV0 = dau.pdgCode();
+
+                for (auto& v0Dau : dau.template daughters_as<aod::McParticles>()) {
+                  if (v0Dau.getProcess() != 4)
+                    continue;
+
+                  if (v0Dau.pdgCode() > 0) {
+                    thisInfo.pdgCodePositive = v0Dau.pdgCode();
+                    thisInfo.processPositive = v0Dau.getProcess();
+                    thisInfo.posP[0] = v0Dau.px();
+                    thisInfo.posP[1] = v0Dau.py();
+                    thisInfo.posP[2] = v0Dau.pz();
+                    thisInfo.lxyz[0] = v0Dau.vx();
+                    thisInfo.lxyz[1] = v0Dau.vy();
+                    thisInfo.lxyz[2] = v0Dau.vz();
+                    thisInfo.mcParticlePositive = v0Dau.globalIndex();
+                  }
+                  if (v0Dau.pdgCode() < 0) {
+                    thisInfo.pdgCodeNegative = v0Dau.pdgCode();
+                    thisInfo.processNegative = v0Dau.getProcess();
+                    thisInfo.negP[0] = v0Dau.px();
+                    thisInfo.negP[1] = v0Dau.py();
+                    thisInfo.negP[2] = v0Dau.pz();
+                    thisInfo.mcParticleNegative = v0Dau.globalIndex();
+                  }
+                }
+              }
+            }
+          }
 
           // if I got here, it means this MC particle was not recoed and is of interest. Add it please
           mcCascinfos.push_back(thisInfo);

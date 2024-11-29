@@ -402,7 +402,7 @@ struct MultiplicityQa {
     histos.fill(HIST("multiplicityQa/h2dFT0MVsNchT0M"), nchFT0, biggestFT0);
   }
 
-  void processFIT(aod::MultsBC const& multsdebug)
+  void processFIT(aod::MultBCs const& multsdebug)
   {
     for (auto& mult : multsdebug) {
       histos.fill(HIST("multiplicityQa/hIsolatedFT0A"), mult.multBCFT0A());

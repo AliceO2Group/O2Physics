@@ -16,6 +16,7 @@
 #include <cstdlib>
 #include <chrono>
 #include <string>
+#include <vector>
 
 #include "TLorentzVector.h"
 #include "TRandom3.h"
@@ -87,6 +88,12 @@ struct lambdapolarization {
   Configurable<float> cfgCentSel{"cfgCentSel", 80., "Centrality selection"};
   Configurable<int> cfgCentEst{"cfgCentEst", 1, "Centrality estimator, 1: FT0C, 2: FT0M"};
 
+  Configurable<bool> cfgPVSel{"cfgPVSel", false, "Additional PV selection flag for syst"};
+  Configurable<float> cfgPV{"cfgPV", 8.0, "Additional PV selection range for syst"};
+  Configurable<bool> cfgAddEvtSelPileup{"cfgAddEvtSelPileup", false, "flag for additional pileup selection"};
+  Configurable<int> cfgMaxOccupancy{"cfgMaxOccupancy", 999999, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
+  Configurable<int> cfgMinOccupancy{"cfgMinOccupancy", 0, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
+
   Configurable<float> cfgv0radiusMin{"cfgv0radiusMin", 1.2, "minimum decay radius"};
   Configurable<float> cfgDCAPosToPVMin{"cfgDCAPosToPVMin", 0.05, "minimum DCA to PV for positive track"};
   Configurable<float> cfgDCANegToPVMin{"cfgDCANegToPVMin", 0.2, "minimum DCA to PV for negative track"};
@@ -109,14 +116,25 @@ struct lambdapolarization {
   Configurable<float> cfgDaughPiPt{"cfgDaughPiPt", 0.5, "minimum daughter pion pt"};
 
   Configurable<int> cfgnMods{"cfgnMods", 1, "The number of modulations of interest starting from 2"};
+  Configurable<int> cfgNQvec{"cfgNQvec", 7, "The number of total Qvectors for looping over the task"};
 
   Configurable<std::string> cfgQvecDetName{"cfgQvecDetName", "FT0C", "The name of detector to be analyzed"};
-  Configurable<std::string> cfgQvecRefAName{"cfgQvecRefAName", "BPos", "The name of detector for reference A"};
-  Configurable<std::string> cfgQvecRefBName{"cfgQvecRefBName", "BNeg", "The name of detector for reference B"};
+  Configurable<std::string> cfgQvecRefAName{"cfgQvecRefAName", "TPCpos", "The name of detector for reference A"};
+  Configurable<std::string> cfgQvecRefBName{"cfgQvecRefBName", "TPCneg", "The name of detector for reference B"};
+
+  Configurable<bool> cfgPhiDepStudy{"cfgPhiDepStudy", false, "cfg for phi dependent study"};
+  Configurable<float> cfgPhiDepSig{"cfgPhiDepSig", 0.2, "cfg for significance on phi dependent study"};
 
   Configurable<bool> cfgShiftCorr{"cfgShiftCorr", false, "additional shift correction"};
   Configurable<bool> cfgShiftCorrDef{"cfgShiftCorrDef", false, "additional shift correction definition"};
   Configurable<std::string> cfgShiftPath{"cfgShiftPath", "Users/j/junlee/Qvector/QvecCalib/Shift", "Path for Shift"};
+
+  Configurable<bool> cfgEffCor{"cfgEffCor", false, "flag to apply efficiency correction"};
+  Configurable<std::string> cfgEffCorPath{"cfgEffCorPath", "", "path for pseudo efficiency correction"};
+
+  ConfigurableAxis massAxis{"massAxis", {30, 1.1, 1.13}, "Invariant mass axis"};
+  ConfigurableAxis ptAxis{"ptAxis", {VARIABLE_WIDTH, 0.2, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.5, 8.0, 10.0, 100.0}, "Transverse momentum bins"};
+  ConfigurableAxis centAxis{"centAxis", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 100}, "Centrality interval"};
 
   TF1* fMultPVCutLow = nullptr;
   TF1* fMultPVCutHigh = nullptr;
@@ -137,6 +155,7 @@ struct lambdapolarization {
   int currentRunNumber = -999;
   int lastRunNumber = -999;
   std::vector<TProfile3D*> shiftprofile{};
+  TProfile2D* EffMap = nullptr;
 
   std::string fullCCDBShiftCorrPath;
 
@@ -151,10 +170,12 @@ struct lambdapolarization {
       return 2;
     } else if (name.value == "FV0A") {
       return 3;
-    } else if (name.value == "BPos") {
+    } else if (name.value == "TPCpos") {
       return 4;
-    } else if (name.value == "BNeg") {
+    } else if (name.value == "TPCneg") {
       return 5;
+    } else if (name.value == "TPCall") {
+      return 6;
     } else {
       return 0;
     }
@@ -162,21 +183,16 @@ struct lambdapolarization {
 
   void init(o2::framework::InitContext&)
   {
-    if (cfgnMods > 1)
-      LOGF(fatal, "multiple harmonics not implemented yet"); // FIXME: will be updated after Qvector task updates
-
-    AxisSpec massAxis = {100, 1.065, 1.165};
-    AxisSpec ptAxis = {100, 0.0, 10.0};
     AxisSpec cosAxis = {110, -1.05, 1.05};
-    AxisSpec centAxis = {8, 0.0, 80.0};
     AxisSpec centQaAxis = {80, 0.0, 80.0};
+    AxisSpec PVzQaAxis = {300, -15.0, 15.0};
     AxisSpec epAxis = {6, 0.0, 2.0 * constants::math::PI};
     AxisSpec epQaAxis = {100, -1.0 * constants::math::PI, constants::math::PI};
 
     AxisSpec pidAxis = {100, -10, 10};
 
     AxisSpec shiftAxis = {10, 0, 10, "shift"};
-    AxisSpec basisAxis = {6, 0, 6, "basis"};
+    AxisSpec basisAxis = {20, 0, 20, "basis"};
 
     for (auto i = 2; i < cfgnMods + 2; i++) {
       histos.add(Form("psi%d/h_lambda_cos", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis, epAxis}});
@@ -186,10 +202,20 @@ struct lambdapolarization {
 
       histos.add(Form("psi%d/h_lambda_cossin", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
       histos.add(Form("psi%d/h_alambda_cossin", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
+
+      histos.add(Form("psi%d/h_lambda_vncos", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
+      histos.add(Form("psi%d/h_lambda_vnsin", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
+      histos.add(Form("psi%d/h_alambda_vncos", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
+      histos.add(Form("psi%d/h_alambda_vnsin", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
     }
+    histos.add("QA/ptspec_l", "", {HistType::kTH3F, {massAxis, ptAxis, centAxis}});
+    histos.add("QA/ptspec_al", "", {HistType::kTH3F, {massAxis, ptAxis, centAxis}});
+    histos.add("QA/ptspecCor_l", "", {HistType::kTH3F, {massAxis, ptAxis, centAxis}});
+    histos.add("QA/ptspecCor_al", "", {HistType::kTH3F, {massAxis, ptAxis, centAxis}});
 
     if (cfgQAv0) {
       histos.add("QA/CentDist", "", {HistType::kTH1F, {centQaAxis}});
+      histos.add("QA/PVzDist", "", {HistType::kTH1F, {PVzQaAxis}});
 
       histos.add("QA/nsigma_tpc_pt_ppr", "", {HistType::kTH2F, {ptAxis, pidAxis}});
       histos.add("QA/nsigma_tpc_pt_ppi", "", {HistType::kTH2F, {ptAxis, pidAxis}});
@@ -226,7 +252,7 @@ struct lambdapolarization {
     RefBId = GetDetId(cfgQvecRefBName);
 
     if (DetId == RefAId || DetId == RefBId || RefAId == RefBId) {
-      LOGF(info, "Wrong detector configuration \n The FT0C will be used to get Q-Vector \n The BPos and BNeg will be used as reference systems");
+      LOGF(info, "Wrong detector configuration \n The FT0C will be used to get Q-Vector \n The TPCpos and TPCneg will be used as reference systems");
       DetId = 0;
       RefAId = 4;
       RefBId = 5;
@@ -275,6 +301,15 @@ struct lambdapolarization {
     if (!collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       return 0;
     }
+    if (cfgPVSel && std::abs(collision.posZ()) > cfgPV) {
+      return 0;
+    }
+    if (cfgAddEvtSelPileup && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
+      return 0;
+    }
+    if (collision.trackOccupancyInTimeRange() > cfgMaxOccupancy || collision.trackOccupancyInTimeRange() < cfgMinOccupancy) {
+      return 0;
+    }
 
     return 1;
   } // event selection
@@ -290,7 +325,7 @@ struct lambdapolarization {
       return false;
     if (candidate.v0cosPA() < cfgv0CosPA)
       return false;
-    if (candidate.dcaV0daughters() > cfgDCAV0Dau)
+    if (std::abs(candidate.dcaV0daughters()) > cfgDCAV0Dau)
       return false;
     if (candidate.pt() < cfgV0PtMin)
       return false;
@@ -328,9 +363,9 @@ struct lambdapolarization {
   template <typename TCollision>
   void FillShiftCorrection(TCollision const& collision, int nmode)
   {
-    QvecDetInd = DetId * 4 + 3 + (nmode - 2) * 24;
-    QvecRefAInd = RefAId * 4 + 3 + (nmode - 2) * 24;
-    QvecRefBInd = RefBId * 4 + 3 + (nmode - 2) * 24;
+    QvecDetInd = DetId * 4 + 3 + (nmode - 2) * cfgNQvec * 4;
+    QvecRefAInd = RefAId * 4 + 3 + (nmode - 2) * cfgNQvec * 4;
+    QvecRefBInd = RefBId * 4 + 3 + (nmode - 2) * cfgNQvec * 4;
     for (int ishift = 1; ishift <= 10; ishift++) {
       if (nmode == 2) {
         histos.fill(HIST("psi2/ShiftFIT"), centrality, 0.5, ishift - 0.5, TMath::Sin(ishift * static_cast<float>(nmode) * TMath::ATan2(collision.qvecIm()[QvecDetInd], collision.qvecRe()[QvecDetInd]) / static_cast<float>(nmode)));
@@ -366,9 +401,12 @@ struct lambdapolarization {
   template <typename TCollision>
   void FillEPQA(TCollision const& collision, int nmode)
   {
-    QvecDetInd = DetId * 4 + 3 + (nmode - 2) * 24;
-    QvecRefAInd = RefAId * 4 + 3 + (nmode - 2) * 24;
-    QvecRefBInd = RefBId * 4 + 3 + (nmode - 2) * 24;
+    QvecDetInd = DetId * 4 + 3 + (nmode - 2) * cfgNQvec * 4;
+    QvecRefAInd = RefAId * 4 + 3 + (nmode - 2) * cfgNQvec * 4;
+    QvecRefBInd = RefBId * 4 + 3 + (nmode - 2) * cfgNQvec * 4;
+
+    if (collision.qvecAmp()[DetId] < 1e-5 || collision.qvecAmp()[RefAId] < 1e-5 || collision.qvecAmp()[RefBId] < 1e-5)
+      return;
 
     if (nmode == 2) {
       histos.fill(HIST("psi2/QA/EP_Det"), centrality, TMath::ATan2(collision.qvecIm()[QvecDetInd], collision.qvecRe()[QvecDetInd]) / static_cast<float>(nmode));
@@ -401,9 +439,9 @@ struct lambdapolarization {
       auto deltapsiFT0A = 0.0;
       auto deltapsiFV0A = 0.0;
 
-      auto psidefFT0C = TMath::ATan2(collision.qvecIm()[3 + (nmode - 2) * 24], collision.qvecRe()[3 + (nmode - 2) * 24]) / static_cast<float>(nmode);
-      auto psidefFT0A = TMath::ATan2(collision.qvecIm()[3 + 4 + (nmode - 2) * 24], collision.qvecRe()[3 + 4 + (nmode - 2) * 24]) / static_cast<float>(nmode);
-      auto psidefFV0A = TMath::ATan2(collision.qvecIm()[3 + 12 + (nmode - 2) * 24], collision.qvecRe()[3 + 12 + (nmode - 2) * 24]) / static_cast<float>(nmode);
+      auto psidefFT0C = TMath::ATan2(collision.qvecIm()[QvecDetInd], collision.qvecRe()[QvecDetInd]) / static_cast<float>(nmode);
+      auto psidefFT0A = TMath::ATan2(collision.qvecIm()[QvecRefAInd], collision.qvecRe()[QvecRefAInd]) / static_cast<float>(nmode);
+      auto psidefFV0A = TMath::ATan2(collision.qvecIm()[QvecRefBInd], collision.qvecRe()[QvecRefBInd]) / static_cast<float>(nmode);
       for (int ishift = 1; ishift <= 10; ishift++) {
         auto coeffshiftxFT0C = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(centrality, 0.5, ishift - 0.5));
         auto coeffshiftyFT0C = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(centrality, 1.5, ishift - 0.5));
@@ -447,6 +485,10 @@ struct lambdapolarization {
   template <typename TCollision, typename V0>
   void FillHistograms(TCollision const& collision, V0 const& V0s, int nmode)
   {
+    QvecDetInd = DetId * 4 + 3 + (nmode - 2) * cfgNQvec * 4;
+    QvecRefAInd = RefAId * 4 + 3 + (nmode - 2) * cfgNQvec * 4;
+    QvecRefBInd = RefBId * 4 + 3 + (nmode - 2) * cfgNQvec * 4;
+
     for (auto& v0 : V0s) {
       auto postrack = v0.template posTrack_as<TrackCandidates>();
       auto negtrack = v0.template negTrack_as<TrackCandidates>();
@@ -475,7 +517,7 @@ struct lambdapolarization {
         aLambdaTag = 1;
       }
 
-      if (!LambdaTag && !aLambdaTag)
+      if (LambdaTag == aLambdaTag)
         continue;
 
       if (!SelectionV0(collision, v0))
@@ -490,21 +532,22 @@ struct lambdapolarization {
         PionVec = ROOT::Math::PxPyPzMVector(postrack.px(), postrack.py(), postrack.pz(), massPi);
       }
       LambdaVec = ProtonVec + PionVec;
+      LambdaVec.SetM(massLambda);
 
       ROOT::Math::Boost boost{LambdaVec.BoostToCM()};
       ProtonBoostedVec = boost(ProtonVec);
 
       angle = ProtonBoostedVec.Pz() / ProtonBoostedVec.P();
-      relphi = TVector2::Phi_0_2pi(static_cast<float>(nmode) * (LambdaVec.Phi() - TMath::ATan2(collision.qvecIm()[3 + (nmode - 2) * 24], collision.qvecRe()[3 + (nmode - 2) * 24]) / static_cast<float>(nmode)));
+      relphi = TVector2::Phi_0_2pi(static_cast<float>(nmode) * (LambdaVec.Phi() - TMath::ATan2(collision.qvecIm()[QvecDetInd], collision.qvecRe()[QvecDetInd]) / static_cast<float>(nmode)));
 
       if (cfgShiftCorr) {
         auto deltapsiFT0C = 0.0;
         auto deltapsiFT0A = 0.0;
         auto deltapsiFV0A = 0.0;
 
-        auto psidefFT0C = TMath::ATan2(collision.qvecIm()[3 + (nmode - 2) * 24], collision.qvecRe()[3 + (nmode - 2) * 24]) / static_cast<float>(nmode);
-        auto psidefFT0A = TMath::ATan2(collision.qvecIm()[3 + 4 + (nmode - 2) * 24], collision.qvecRe()[3 + 4 + (nmode - 2) * 24]) / static_cast<float>(nmode);
-        auto psidefFV0A = TMath::ATan2(collision.qvecIm()[3 + 12 + (nmode - 2) * 24], collision.qvecRe()[3 + 12 + (nmode - 2) * 24]) / static_cast<float>(nmode);
+        auto psidefFT0C = TMath::ATan2(collision.qvecIm()[3 + (nmode - 2) * 28], collision.qvecRe()[3 + (nmode - 2) * 28]) / static_cast<float>(nmode);
+        auto psidefFT0A = TMath::ATan2(collision.qvecIm()[3 + 4 + (nmode - 2) * 28], collision.qvecRe()[3 + 4 + (nmode - 2) * 28]) / static_cast<float>(nmode);
+        auto psidefFV0A = TMath::ATan2(collision.qvecIm()[3 + 12 + (nmode - 2) * 28], collision.qvecRe()[3 + 12 + (nmode - 2) * 28]) / static_cast<float>(nmode);
         for (int ishift = 1; ishift <= 10; ishift++) {
           auto coeffshiftxFT0C = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(centrality, 0.5, ishift - 0.5));
           auto coeffshiftyFT0C = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(centrality, 1.5, ishift - 0.5));
@@ -520,38 +563,71 @@ struct lambdapolarization {
         relphi = TVector2::Phi_0_2pi(static_cast<float>(nmode) * (LambdaVec.Phi() - psidefFT0C - deltapsiFT0C));
       }
 
+      if (cfgPhiDepStudy && cfgPhiDepSig * std::abs(TMath::Sin(relphi)) > gRandom->Uniform(0, 1)) {
+        continue;
+      }
+
+      if (LambdaTag) {
+        histos.fill(HIST("QA/ptspec_l"), v0.mLambda(), v0.pt(), centrality);
+        if (cfgEffCor) {
+          histos.fill(HIST("QA/ptspecCor_l"), v0.mLambda(), v0.pt(), centrality,
+                      1.0 / EffMap->GetBinContent(EffMap->GetXaxis()->FindBin(v0.pt()), EffMap->GetYaxis()->FindBin(centrality)));
+        }
+      }
+      if (aLambdaTag) {
+        histos.fill(HIST("QA/ptspec_al"), v0.mAntiLambda(), v0.pt(), centrality);
+        if (cfgEffCor) {
+          histos.fill(HIST("QA/ptspecCor_al"), v0.mAntiLambda(), v0.pt(), centrality,
+                      1.0 / EffMap->GetBinContent(EffMap->GetXaxis()->FindBin(v0.pt()), EffMap->GetYaxis()->FindBin(centrality)));
+        }
+      }
+
+      double weight = cfgEffCor ? 1.0 / EffMap->GetBinContent(EffMap->GetXaxis()->FindBin(v0.pt()), EffMap->GetYaxis()->FindBin(centrality)) : 1.;
+
       if (nmode == 2) { ////////////
         if (LambdaTag) {
-          histos.fill(HIST("psi2/h_lambda_cos"), v0.mLambda(), v0.pt(), angle, centrality, relphi);
-          histos.fill(HIST("psi2/h_lambda_cos2"), v0.mLambda(), v0.pt(), angle * angle, centrality, relphi);
-          histos.fill(HIST("psi2/h_lambda_cossin"), v0.mLambda(), v0.pt(), angle * TMath::Sin(relphi), centrality);
+          histos.fill(HIST("psi2/h_lambda_cos"), v0.mLambda(), v0.pt(), angle, centrality, relphi, weight);
+          histos.fill(HIST("psi2/h_lambda_cos2"), v0.mLambda(), v0.pt(), angle * angle, centrality, relphi, weight);
+          histos.fill(HIST("psi2/h_lambda_cossin"), v0.mLambda(), v0.pt(), angle * TMath::Sin(relphi), centrality, weight);
+          histos.fill(HIST("psi2/h_lambda_vncos"), v0.mLambda(), v0.pt(), TMath::Cos(relphi), centrality, weight);
+          histos.fill(HIST("psi2/h_lambda_vnsin"), v0.mLambda(), v0.pt(), TMath::Sin(relphi), centrality, weight);
         }
         if (aLambdaTag) {
-          histos.fill(HIST("psi2/h_alambda_cos"), v0.mAntiLambda(), v0.pt(), angle, centrality, relphi);
-          histos.fill(HIST("psi2/h_alambda_cos2"), v0.mAntiLambda(), v0.pt(), angle * angle, centrality, relphi);
-          histos.fill(HIST("psi2/h_alambda_cossin"), v0.mAntiLambda(), v0.pt(), angle * TMath::Sin(relphi), centrality);
+          histos.fill(HIST("psi2/h_alambda_cos"), v0.mAntiLambda(), v0.pt(), angle, centrality, relphi, weight);
+          histos.fill(HIST("psi2/h_alambda_cos2"), v0.mAntiLambda(), v0.pt(), angle * angle, centrality, relphi, weight);
+          histos.fill(HIST("psi2/h_alambda_cossin"), v0.mAntiLambda(), v0.pt(), angle * TMath::Sin(relphi), centrality, weight);
+          histos.fill(HIST("psi2/h_alambda_vncos"), v0.mAntiLambda(), v0.pt(), TMath::Cos(relphi), centrality, weight);
+          histos.fill(HIST("psi2/h_alambda_vnsin"), v0.mAntiLambda(), v0.pt(), TMath::Sin(relphi), centrality, weight);
         }
       } else if (nmode == 3) {
         if (LambdaTag) {
-          histos.fill(HIST("psi3/h_lambda_cos"), v0.mLambda(), v0.pt(), angle, centrality, relphi);
-          histos.fill(HIST("psi3/h_lambda_cos2"), v0.mLambda(), v0.pt(), angle * angle, centrality, relphi);
-          histos.fill(HIST("psi3/h_lambda_cossin"), v0.mLambda(), v0.pt(), angle * TMath::Sin(relphi), centrality);
+          histos.fill(HIST("psi3/h_lambda_cos"), v0.mLambda(), v0.pt(), angle, centrality, relphi, weight);
+          histos.fill(HIST("psi3/h_lambda_cos2"), v0.mLambda(), v0.pt(), angle * angle, centrality, relphi, weight);
+          histos.fill(HIST("psi3/h_lambda_cossin"), v0.mLambda(), v0.pt(), angle * TMath::Sin(relphi), centrality, weight);
+          histos.fill(HIST("psi3/h_lambda_vncos"), v0.mLambda(), v0.pt(), TMath::Cos(relphi), centrality, weight);
+          histos.fill(HIST("psi3/h_lambda_vnsin"), v0.mLambda(), v0.pt(), TMath::Sin(relphi), centrality, weight);
         }
         if (aLambdaTag) {
-          histos.fill(HIST("psi3/h_alambda_cos"), v0.mAntiLambda(), v0.pt(), angle, centrality, relphi);
-          histos.fill(HIST("psi3/h_alambda_cos2"), v0.mAntiLambda(), v0.pt(), angle * angle, centrality, relphi);
-          histos.fill(HIST("psi3/h_alambda_cossin"), v0.mAntiLambda(), v0.pt(), angle * TMath::Sin(relphi), centrality);
+          histos.fill(HIST("psi3/h_alambda_cos"), v0.mAntiLambda(), v0.pt(), angle, centrality, relphi, weight);
+          histos.fill(HIST("psi3/h_alambda_cos2"), v0.mAntiLambda(), v0.pt(), angle * angle, centrality, relphi, weight);
+          histos.fill(HIST("psi3/h_alambda_cossin"), v0.mAntiLambda(), v0.pt(), angle * TMath::Sin(relphi), centrality, weight);
+          histos.fill(HIST("psi3/h_alambda_vncos"), v0.mAntiLambda(), v0.pt(), TMath::Cos(relphi), centrality, weight);
+          histos.fill(HIST("psi3/h_alambda_vnsin"), v0.mAntiLambda(), v0.pt(), TMath::Sin(relphi), centrality, weight);
         }
       } else if (nmode == 4) {
         if (LambdaTag) {
-          histos.fill(HIST("psi4/h_lambda_cos"), v0.mLambda(), v0.pt(), angle, centrality, relphi);
-          histos.fill(HIST("psi4/h_lambda_cos2"), v0.mLambda(), v0.pt(), angle * angle, centrality, relphi);
-          histos.fill(HIST("psi4/h_lambda_cossin"), v0.mLambda(), v0.pt(), angle * TMath::Sin(relphi), centrality);
+          histos.fill(HIST("psi4/h_lambda_cos"), v0.mLambda(), v0.pt(), angle, centrality, relphi, weight);
+          histos.fill(HIST("psi4/h_lambda_cos2"), v0.mLambda(), v0.pt(), angle * angle, centrality, relphi, weight);
+          histos.fill(HIST("psi4/h_lambda_cossin"), v0.mLambda(), v0.pt(), angle * TMath::Sin(relphi), centrality, weight);
+          histos.fill(HIST("psi4/h_lambda_vncos"), v0.mLambda(), v0.pt(), TMath::Cos(relphi), centrality, weight);
+          histos.fill(HIST("psi4/h_lambda_vnsin"), v0.mLambda(), v0.pt(), TMath::Sin(relphi), centrality, weight);
         }
         if (aLambdaTag) {
-          histos.fill(HIST("psi4/h_alambda_cos"), v0.mAntiLambda(), v0.pt(), angle, centrality, relphi);
-          histos.fill(HIST("psi4/h_alambda_cos2"), v0.mAntiLambda(), v0.pt(), angle * angle, centrality, relphi);
-          histos.fill(HIST("psi4/h_alambda_cossin"), v0.mAntiLambda(), v0.pt(), angle * TMath::Sin(relphi), centrality);
+          histos.fill(HIST("psi4/h_alambda_cos"), v0.mAntiLambda(), v0.pt(), angle, centrality, relphi, weight);
+          histos.fill(HIST("psi4/h_alambda_cos2"), v0.mAntiLambda(), v0.pt(), angle * angle, centrality, relphi, weight);
+          histos.fill(HIST("psi4/h_alambda_cossin"), v0.mAntiLambda(), v0.pt(), angle * TMath::Sin(relphi), centrality, weight);
+          histos.fill(HIST("psi4/h_alambda_vncos"), v0.mAntiLambda(), v0.pt(), TMath::Cos(relphi), centrality, weight);
+          histos.fill(HIST("psi4/h_alambda_vnsin"), v0.mAntiLambda(), v0.pt(), TMath::Sin(relphi), centrality, weight);
         }
       } ////////// FIXME: not possible to get histograms using nmode
     }
@@ -570,6 +646,8 @@ struct lambdapolarization {
       return;
     }
     histos.fill(HIST("QA/CentDist"), centrality, 1.0);
+    histos.fill(HIST("QA/PVzDist"), collision.posZ(), 1.0);
+
     if (cfgShiftCorr) {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       currentRunNumber = bc.runNumber();
@@ -585,11 +663,11 @@ struct lambdapolarization {
         lastRunNumber = currentRunNumber;
       }
     }
+    if (cfgEffCor) {
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      EffMap = ccdb->getForTimeStamp<TProfile2D>(cfgEffCorPath.value, bc.timestamp());
+    }
     for (int i = 2; i < cfgnMods + 2; i++) {
-      QvecDetInd = 0;
-      QvecRefAInd = 4;
-      QvecRefBInd = 5;
-
       if (cfgShiftCorrDef) {
         FillShiftCorrection(collision, i);
       }

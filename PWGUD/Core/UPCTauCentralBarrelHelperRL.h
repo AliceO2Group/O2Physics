@@ -28,7 +28,23 @@ enum MyParticle {
   P_MUON = 1,
   P_PION = 2,
   P_KAON = 3,
-  P_PROTON = 4
+  P_PROTON = 4,
+  P_ENUM_COUNTER = 5
+};
+
+enum MyTauChannel {
+  CH_EE = 0,
+  CH_MUMU = 1,
+  CH_EMU = 2,
+  CH_PIPI = 3,
+  CH_EPI = 4,
+  CH_MUPI = 5,
+  CH_FOURPI = 6,
+  CH_ETHREEPI = 7,
+  CH_MUTHREEPI = 8,
+  CH_SIXPI = 9,
+  CH_EMUPI = 10,
+  CH_ENUM_COUNTER = 11
 };
 
 void printLargeMessage(std::string info)
@@ -43,8 +59,14 @@ void printMediumMessage(std::string info)
   LOGF(info, "+++++++++++++ %s +++++++++++++", info);
 }
 
+void printDebugMessage(std::string info)
+// Helper to printf info message to terminal
+{
+  LOGF(debug, "X!X!X!X!X!X!X!X!X %s X!X!X!X!X!X!X!X!X", info);
+}
+
 template <typename T>
-int testPIDhypothesis(T trackPIDinfo, float nSigmaShift = 0., bool isMC = false)
+int testPIDhypothesis(T trackPIDinfo, float maxNsigmaTPC = 5.0, float maxNsigmaTOF = 5.0, bool useTOF = true, bool useTOFsigmaAfterTPC = true, float nSigmaShift = 0., bool isMC = false)
 // Choose, which particle it is according to PID
 {
   float nSigmaTPC[5];
@@ -70,34 +92,51 @@ int testPIDhypothesis(T trackPIDinfo, float nSigmaShift = 0., bool isMC = false)
   int enumChoiceTOF = std::distance(std::begin(nSigmaTOF),
                                     std::min_element(std::begin(nSigmaTOF), std::end(nSigmaTOF)));
 
-  if (trackPIDinfo.hasTPC() || trackPIDinfo.hasTOF()) {
-    if (trackPIDinfo.hasTOF()) {
-      return enumChoiceTOF;
+  if (trackPIDinfo.hasTPC()) {
+    if (trackPIDinfo.hasTOF() && useTOF) {
+      if (nSigmaTOF[enumChoiceTOF] < maxNsigmaTOF) {
+        return enumChoiceTOF;
+      } else {
+        printDebugMessage(Form("testPIDhypothesis cut - the lowest nSigmaTOF is higher than %f", maxNsigmaTPC));
+        return -1;
+      }
+    } else if (trackPIDinfo.hasTOF() && useTOFsigmaAfterTPC) {
+      if (nSigmaTPC[enumChoiceTPC] < maxNsigmaTPC && nSigmaTOF[enumChoiceTPC] < maxNsigmaTOF) {
+        return enumChoiceTPC;
+      } else {
+        printDebugMessage(Form("testPIDhypothesis cut - the lowest nSigmaTPC is higher than %f or the lowest nSigmaTOF is higher than %f", maxNsigmaTPC, maxNsigmaTOF));
+        return -1;
+      }
     } else {
-      return enumChoiceTPC;
+      if (nSigmaTPC[enumChoiceTPC] < maxNsigmaTPC) {
+        return enumChoiceTPC;
+      } else {
+        printDebugMessage(Form("testPIDhypothesis cut - the lowest nSigmaTPC is higher than %f", maxNsigmaTPC));
+        return -1;
+      }
     }
   } else {
-    LOGF(debug, "testPIDhypothesis failed - track did not leave information in TPC or TOF");
+    printDebugMessage("testPIDhypothesis failed - track did not leave information in TPC");
     return -1;
   }
 }
 
 template <typename T>
-int trackPDG(T trackPIDinfo)
+int trackPDG(T trackPIDinfo, float maxNsigmaTPC = 5.0, float maxNsigmaTOF = 5.0, bool useTOF = true, bool useTOFsigmaAfterTPC = true, float nSigmaShift = 0., bool isMC = false)
 // using testPIDhypothesis, reads enumMyParticle and return pdg value
 {
-  if (testPIDhypothesis(trackPIDinfo) == P_ELECTRON) {
+  if (testPIDhypothesis(trackPIDinfo, maxNsigmaTPC, maxNsigmaTOF, useTOF, useTOFsigmaAfterTPC, nSigmaShift, isMC) == P_ELECTRON) {
     return 11;
-  } else if (testPIDhypothesis(trackPIDinfo) == P_MUON) {
+  } else if (testPIDhypothesis(trackPIDinfo, maxNsigmaTPC, maxNsigmaTOF, useTOF, useTOFsigmaAfterTPC, nSigmaShift, isMC) == P_MUON) {
     return 13;
-  } else if (testPIDhypothesis(trackPIDinfo) == P_PION) {
+  } else if (testPIDhypothesis(trackPIDinfo, maxNsigmaTPC, maxNsigmaTOF, useTOF, useTOFsigmaAfterTPC, nSigmaShift, isMC) == P_PION) {
     return 211;
-  } else if (testPIDhypothesis(trackPIDinfo) == P_KAON) {
+  } else if (testPIDhypothesis(trackPIDinfo, maxNsigmaTPC, maxNsigmaTOF, useTOF, useTOFsigmaAfterTPC, nSigmaShift, isMC) == P_KAON) {
     return 321;
-  } else if (testPIDhypothesis(trackPIDinfo) == P_PROTON) {
+  } else if (testPIDhypothesis(trackPIDinfo, maxNsigmaTPC, maxNsigmaTOF, useTOF, useTOFsigmaAfterTPC, nSigmaShift, isMC) == P_PROTON) {
     return 2212;
   } else {
-    printMediumMessage("Something is wrong with track PDG selector");
+    printDebugMessage("Something is wrong with track PDG selector");
     return -1.;
   }
 }
@@ -116,7 +155,7 @@ int enumMyParticle(int valuePDG)
   } else if (std::abs(valuePDG) == 2212) {
     return P_PROTON;
   } else {
-    printMediumMessage("PDG value not found in enumMyParticle. Returning -1.");
+    printDebugMessage("PDG value not found in enumMyParticle. Returning -1.");
     return -1.;
   }
 }
@@ -173,6 +212,32 @@ double calculateAcoplanarity(double phi_trk1, double phi_trk2)
     return aco;
   else
     return (o2::constants::math::TwoPI - aco);
+}
+
+template <typename Ps>
+int countPhysicalPrimary(Ps particles)
+// Function to loop over particles associated to a mcCollision and return total of physical primary particles
+{
+  int nTotal = 0;
+  for (auto& particle : particles) {
+    if (!particle.isPhysicalPrimary())
+      continue;
+    nTotal++;
+  }
+  return nTotal;
+}
+
+template <typename Ps>
+int countParticlesWithoutMother(Ps particles)
+// Function to loop over particles associated to a mcCollision and return total of particles without mothers (hopely alternative to isPhysicalPrimary)
+{
+  int nTotal = 0;
+  for (auto& particle : particles) {
+    if (particle.has_mothers())
+      continue;
+    nTotal++;
+  }
+  return nTotal;
 }
 
 template <typename T>
