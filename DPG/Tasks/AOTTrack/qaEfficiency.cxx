@@ -1161,15 +1161,15 @@ struct QaEfficiency {
               break;
             }
             if (motherIsAccepted) {
-            // Access production and decay vertices
-            auto prodVertex = mother.productionVertex(); // Replace with the correct method
-            auto decayVertex = mother.decayVertex();     // Replace with the correct method
+              // Access production and decay vertices
+              auto prodVertex = mother.productionVertex(); // Replace with the correct method
+              auto decayVertex = mother.decayVertex();     // Replace with the correct method
 
-            // Calculate the decay length
-            double decayLength = std::sqrt( std::pow(decayVertex.x() - prodVertex.x(), 2) + std::pow(decayVertex.y() - prodVertex.y(), 2) + std::pow(decayVertex.z() - prodVertex.z(), 2));
+              // Calculate the decay length
+              double decayLength = std::sqrt( std::pow(decayVertex.x() - prodVertex.x(), 2) + std::pow(decayVertex.y() - prodVertex.y(), 2) + std::pow(decayVertex.z() - prodVertex.z(), 2));
 
-            // Fill the decay length mother
-            hdecayLengthmother->Fill(decayLength);
+             // Fill the decay length mother
+              hdecayLengthmother->Fill(decayLength);
             }
           }
         }
