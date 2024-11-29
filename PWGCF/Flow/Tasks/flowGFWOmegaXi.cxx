@@ -49,17 +49,17 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 namespace
 {
-  std::shared_ptr<TProfile> REFc22[10];
-  std::shared_ptr<TProfile> REFc24[10];
-  std::shared_ptr<TProfile3D> K0sc22[10];
-  std::shared_ptr<TProfile3D> K0sc24[10];
-  std::shared_ptr<TProfile3D> Lambdac22[10];
-  std::shared_ptr<TProfile3D> Lambdac24[10];
-  std::shared_ptr<TProfile3D> Xic22[10];
-  std::shared_ptr<TProfile3D> Xic24[10];
-  std::shared_ptr<TProfile3D> Omegac22[10];
-  std::shared_ptr<TProfile3D> Omegac24[10];
-}
+std::shared_ptr<TProfile> REFc22[10];
+std::shared_ptr<TProfile> REFc24[10];
+std::shared_ptr<TProfile3D> K0sc22[10];
+std::shared_ptr<TProfile3D> K0sc24[10];
+std::shared_ptr<TProfile3D> Lambdac22[10];
+std::shared_ptr<TProfile3D> Lambdac24[10];
+std::shared_ptr<TProfile3D> Xic22[10];
+std::shared_ptr<TProfile3D> Xic24[10];
+std::shared_ptr<TProfile3D> Omegac22[10];
+std::shared_ptr<TProfile3D> Omegac24[10];
+} // namespace
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
@@ -251,8 +251,8 @@ struct FlowGFWOmegaXi {
     registry.add("Omegac24dpt", ";pt ; C_{2}{4} ", {HistType::kTProfile3D, {cfgaxisPtXi, cfgaxisOmegaminusMassforflow, axisMultiplicity}});
     registry.add("K0sc24dpt", ";pt ; C_{2}{4} ", {HistType::kTProfile3D, {cfgaxisPtV0, cfgaxisK0sMassforflow, axisMultiplicity}});
     registry.add("Lambdac24dpt", ";pt ; C_{2}{4} ", {HistType::kTProfile3D, {cfgaxisPtV0, cfgaxisLambdaMassforflow, axisMultiplicity}});
-    // for Jackknife cut
-    for (int i = 1; i <= 10; i++){
+    // for Jackknife
+    for (int i = 1; i <= 10; i++) {
       REFc22[i - 1] = registry.add<TProfile>(Form("Jackknife/REF/c22_%d", i), ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile, {axisMultiplicity}});
       REFc24[i - 1] = registry.add<TProfile>(Form("Jackknife/REF/c24_%d", i), ";Centrality  (%) ; C_{2}{2} ", {HistType::kTProfile, {axisMultiplicity}});
       Xic22[i - 1] = registry.add<TProfile3D>(Form("Jackknife/Xi/Xic22dpt_%d", i), ";pt ; C_{2}{2} ", {HistType::kTProfile3D, {cfgaxisPtXi, cfgaxisXiminusMassforflow, axisMultiplicity}});
@@ -700,7 +700,7 @@ struct FlowGFWOmegaXi {
         PDGCode = kLambda0;
         CandNum_all[1] = CandNum_all[1] + 1;
       }
-      //fill QA before cut
+      // fill QA before cut
       registry.fill(HIST("hqaV0radiusbefore"), v0.v0radius());
       registry.fill(HIST("hqaV0cosPAbefore"), v0.v0cosPA());
       registry.fill(HIST("hqadcaV0daubefore"), v0.dcaV0daughters());
@@ -717,7 +717,7 @@ struct FlowGFWOmegaXi {
       if (v0negdau.tpcNClsFindable() < cfgtpcclufindable)
         continue;
       if (v0posdau.tpcCrossedRowsOverFindableCls() < cfgtpccrossoverfindable)
-       continue;
+        continue;
       if (v0posdau.itsNCls() < cfgitsclusters)
         continue;
       if (v0negdau.itsNCls() < cfgitsclusters)
@@ -733,7 +733,7 @@ struct FlowGFWOmegaXi {
         continue;
       if (TMath::Abs(v0.dcanegtopv()) < cfgv0_dcadautopv)
         continue;
-      //fill QA after cut
+      // fill QA after cut
       registry.fill(HIST("hqaV0radiusafter"), v0.v0radius());
       registry.fill(HIST("hqaV0cosPAafter"), v0.v0cosPA());
       registry.fill(HIST("hqadcaV0dauafter"), v0.dcaV0daughters());
@@ -875,7 +875,7 @@ struct FlowGFWOmegaXi {
     // Fill subevents flow
     TRandom3* fRdm = new TRandom3(0);
     double Eventrdm = 10 * fRdm->Rndm();
-    for (int j = 1; j <= 10; j++){
+    for (int j = 1; j <= 10; j++) {
       if (Eventrdm > (j - 1) && Eventrdm < j)
         continue;
       FillProfile(corrconfigs.at(15), REFc22[j - 1], cent);
