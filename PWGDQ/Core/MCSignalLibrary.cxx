@@ -11,7 +11,7 @@
 //
 // Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //
-#include <vector>
+#include <string>
 
 #include <TPDGCode.h>
 #include "CommonConstants/PhysicsConstants.h"
