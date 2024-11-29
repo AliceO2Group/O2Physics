@@ -22,7 +22,9 @@ MCSignal::MCSignal() : TNamed("", ""),
                        fNProngs(0),
                        fCommonAncestorIdxs({}),
                        fExcludeCommonAncestor(false),
-                       fTempAncestorLabel(-1)
+                       fTempAncestorLabel(-1),
+                       fDecayChannelIsExclusive(false),
+                       fDecayChannelIsNotExclusive(false)
 {
 }
 
@@ -32,7 +34,9 @@ MCSignal::MCSignal(int nProngs, const char* name /*= ""*/, const char* title /*=
                                                                                          fNProngs(nProngs),
                                                                                          fCommonAncestorIdxs({}),
                                                                                          fExcludeCommonAncestor(false),
-                                                                                         fTempAncestorLabel(-1)
+                                                                                         fTempAncestorLabel(-1),
+                                                                                         fDecayChannelIsExclusive(false),
+                                                                                         fDecayChannelIsNotExclusive(false)
 {
   fProngs.reserve(nProngs);
 }
@@ -43,7 +47,9 @@ MCSignal::MCSignal(const char* name, const char* title, std::vector<MCProng> pro
                                                                                                                                                        fNProngs(prongs.size()),
                                                                                                                                                        fCommonAncestorIdxs(commonAncestors),
                                                                                                                                                        fExcludeCommonAncestor(excludeCommonAncestor),
-                                                                                                                                                       fTempAncestorLabel(-1)
+                                                                                                                                                       fTempAncestorLabel(-1),
+                                                                                                                                                       fDecayChannelIsExclusive(false),
+                                                                                                                                                       fDecayChannelIsNotExclusive(false)
 {
 }
 
@@ -71,6 +77,8 @@ void MCSignal::PrintConfig()
 {
   cout << "Name/Title: " << fName << " / " << fTitle << endl;
   cout << "Exclude common ancestor combinations: " << fExcludeCommonAncestor << endl;
+  cout << "Decay channel is exclusive: " << fDecayChannelIsExclusive << endl;
+  cout << "Decay channel is not exclusive: " << fDecayChannelIsNotExclusive << endl;
   cout << "Printing " << fNProngs << "/" << fProngs.size() << " prongs:" << endl;
   int i = 0;
   for (auto& pr : fProngs) {
