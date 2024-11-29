@@ -349,7 +349,6 @@ struct FlowGFWOmegaXi {
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiLambdaNdpt {2} refP10 {-2}", "Lambda10Gap22b", kTRUE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiLambdafulldpt reffull {2 2 -2 -2}", "Xi10Gap24a", kTRUE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("refP10 {2} refN10 {-2}", "Ref10Gap22a", kFALSE));
-    corrconfigs.push_back(fGFW->GetCorrelatorConfig("refN10 {2} refP10 {-2}", "Ref10Gap22b", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("reffull reffull {2 2 -2 -2}", "Ref10Gap24", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiK0sP {2} refN10 {-2}", "K0s10Gap22inta", kFALSE));
     corrconfigs.push_back(fGFW->GetCorrelatorConfig("poiK0sN {2} refP10 {-2}", "K0s10Gap22intb", kFALSE));
@@ -846,12 +845,11 @@ struct FlowGFWOmegaXi {
     }
     // Filling cumulant with ROOT TProfile and loop for all ptBins
     FillProfile(corrconfigs.at(15), HIST("c22"), cent);
-    FillProfile(corrconfigs.at(16), HIST("c22"), cent);
-    FillProfile(corrconfigs.at(17), HIST("c24"), cent);
+    FillProfile(corrconfigs.at(16), HIST("c24"), cent);
+    FillProfile(corrconfigs.at(17), HIST("K0sc22"), cent);
     FillProfile(corrconfigs.at(18), HIST("K0sc22"), cent);
-    FillProfile(corrconfigs.at(19), HIST("K0sc22"), cent);
+    FillProfile(corrconfigs.at(19), HIST("Lambdac22"), cent);
     FillProfile(corrconfigs.at(20), HIST("Lambdac22"), cent);
-    FillProfile(corrconfigs.at(21), HIST("Lambdac22"), cent);
     for (int i = 1; i <= nPtBins; i++) {
       FillProfilepT(corrconfigs.at(0), HIST("c22dpt"), i, cent);
       FillProfilepT(corrconfigs.at(1), HIST("c22dpt"), i, cent);
@@ -880,8 +878,7 @@ struct FlowGFWOmegaXi {
       if (Eventrdm > (j - 1) && Eventrdm < j)
         continue;
       FillProfile(corrconfigs.at(15), REFc22[j - 1], cent);
-      FillProfile(corrconfigs.at(16), REFc22[j - 1], cent);
-      FillProfile(corrconfigs.at(17), REFc24[j - 1], cent);
+      FillProfile(corrconfigs.at(16), REFc24[j - 1], cent);
       for (int i = 1; i <= nV0PtBins; i++) {
         FillProfilepTMass(corrconfigs.at(9), K0sc22[j - 1], i, kK0Short, cent);
         FillProfilepTMass(corrconfigs.at(10), K0sc22[j - 1], i, kK0Short, cent);
