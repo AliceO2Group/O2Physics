@@ -16,6 +16,7 @@
 #include <vector>
 #include <string>
 #include <cmath>
+#include <memory>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/ASoAHelpers.h"
