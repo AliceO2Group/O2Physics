@@ -57,4 +57,4 @@ o2physics_add_dpl_workflow(flow-pid-cme
 o2physics_add_dpl_workflow(flow-sp
                     SOURCES flowSP.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::GFWCore
-                    COMPONENT_NAME Analysis)                   
+                    COMPONENT_NAME Analysis)
