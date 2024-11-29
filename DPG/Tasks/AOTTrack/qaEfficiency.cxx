@@ -78,6 +78,7 @@ static constexpr int PDGs[nParticles] = {11, 13, 211, 321, 2212, 1000010020, 100
 
 // Histograms
 std::shared_ptr<TH1> hPtmotherGenerated; // histogram to store pT of Xi and Lambda
+std::shared_ptr<TH1> hdecaylengthmother; // histogram to store decaylength of mother
 
 // Pt
 std::array<std::shared_ptr<TH1>, nParticles> hPtIts;
@@ -292,6 +293,7 @@ struct QaEfficiency {
       LOG(fatal) << "Can't interpret pdgSign " << pdgSign;
     }
 
+    AxisSpec axisDecayLength{100, 0.0, 10.0, "Decay Length (cm)"};
     AxisSpec axisPt{ptBins, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec axisP{ptBins, "#it{p} (GeV/#it{c})"};
     if (logPt) {
@@ -337,6 +339,7 @@ struct QaEfficiency {
                                   yMin, yMax);
     const int histogramIndex = id + pdgSign * nSpecies;
     hPtmotherGenerated = histos.add<TH1>("MC/mother/pt/generated", "Generated pT of mother Lambda or Xi", kTH1D, {axisPt});
+    hdecaylengthmother = histos.add<TH1>("MC/mother/decayLength", "Decay Length of mother particle", kTH1D, {axisDecayLength});
 
     // Pt
     hPtIts[histogramIndex] = histos.add<TH1>(Form("MC/pdg%i/pt/its", PDGs[histogramIndex]), "ITS tracks " + tagPt, kTH1D, {axisPt});
@@ -1158,7 +1161,15 @@ struct QaEfficiency {
               break;
             }
             if (motherIsAccepted) {
-              break;
+            // Access production and decay vertices
+            auto prodVertex = mother.productionVertex(); // Replace with the correct method
+            auto decayVertex = mother.decayVertex();     // Replace with the correct method
+
+            // Calculate the decay length
+            double decayLength = std::sqrt( std::pow(decayVertex.x() - prodVertex.x(), 2) + std::pow(decayVertex.y() - prodVertex.y(), 2) + std::pow(decayVertex.z() - prodVertex.z(), 2));
+
+            // Fill the decay length mother
+            hdecayLengthmother->Fill(decayLength);
             }
           }
         }
