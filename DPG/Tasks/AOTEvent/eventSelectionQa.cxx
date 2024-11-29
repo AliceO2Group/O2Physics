@@ -35,6 +35,7 @@ using BCsRun2 = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps, aod::BcSe
 using BCsRun3 = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels, aod::Run3MatchedToBCSparse>;
 using ColEvSels = soa::Join<aod::Collisions, aod::EvSels>;
 using FullTracksIU = soa::Join<aod::TracksIU, aod::TracksExtra>;
+using FullTracksIUwithLabels = soa::Join<aod::TracksIU, aod::TracksExtra, aod::McTrackLabels>;
 
 struct EventSelectionQaTask {
   Configurable<bool> isMC{"isMC", 0, "0 - data, 1 - MC"};
@@ -306,6 +307,11 @@ struct EventSelectionQaTask {
     histos.add("hVertexXMC", "", kTH1F, {axisVtxXY});
     histos.add("hVertexYMC", "", kTH1F, {axisVtxXY});
     histos.add("hVertexZMC", "", kTH1F, {axisVtxZ});
+    histos.add("hNcontribColFromMC", "", kTH1F, {axisNcontrib});
+    histos.add("hNcontribAccFromMC", "", kTH1F, {axisNcontrib});
+    histos.add("hNcontribMisFromMC", "", kTH1F, {axisNcontrib});
+    histos.add("hNcontribColFromData", "", kTH1F, {axisNcontrib});
+    histos.add("hNcontribAccFromData", "", kTH1F, {axisNcontrib});
 
     for (int i = 0; i < kNsel; i++) {
       histos.get<TH1>(HIST("hSelCounter"))->GetXaxis()->SetBinLabel(i + 1, selectionLabels[i]);
@@ -1062,10 +1068,24 @@ struct EventSelectionQaTask {
       histos.fill(HIST("hNcontribAcc"), nContributors);
 
     } // collisions
+
+    // TVX efficiency after TF and ITS ROF border cuts
+    for (auto& col : cols) {
+      if (!col.selection_bit(kNoTimeFrameBorder) || !col.selection_bit(kNoITSROFrameBorder))
+        continue;
+
+      uint32_t nContrib = col.numContrib();
+      histos.fill(HIST("hNcontribColFromData"), nContrib);
+      if (!col.selection_bit(kIsTriggerTVX))
+        continue;
+
+      histos.fill(HIST("hNcontribAccFromData"), nContrib);
+    }
   }
   PROCESS_SWITCH(EventSelectionQaTask, processRun3, "Process Run3 event selection QA", false);
 
-  void processMCRun3(aod::McCollisions const& mcCols, soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels> const& cols, BCsRun3 const&, aod::FT0s const&)
+  Partition<FullTracksIUwithLabels> pvTracks = ((aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor));
+  void processMCRun3(aod::McCollisions const& mcCols, soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels> const& cols, FullTracksIUwithLabels const&, BCsRun3 const&, aod::FT0s const&, aod::McParticles const& mcParts)
   {
     for (const auto& mcCol : mcCols) {
       auto bc = mcCol.bc_as<BCsRun3>();
@@ -1082,19 +1102,40 @@ struct EventSelectionQaTask {
       histos.fill(HIST("hNcolMCVsBcInTF"), bcInTF);
     }
 
-    // check fraction of collisions matched to wrong bcs
-    for (const auto& col : cols) {
-      if (!col.has_mcCollision()) {
-        continue;
-      }
-      uint64_t mcBC = col.mcCollision().bc_as<BCsRun3>().globalBC();
-      uint64_t rcBC = col.foundBC_as<BCsRun3>().globalBC();
-      if (mcBC != rcBC) {
-        histos.fill(HIST("hNcontribMis"), col.numContrib());
-        if (col.collisionTimeRes() < 12) {
-          // ~ wrong bcs for collisions with T0F-matched tracks
-          histos.fill(HIST("hNcontribMisTOF"), col.numContrib());
+    for (auto& col : cols) {
+      int32_t mcColIdFromCollision = col.mcCollisionId();
+      // check if collision is built from tracks originating from different MC collisions
+      bool isCollisionAmbiguous = 0;
+      const auto& colPvTracks = pvTracks.sliceByCached(aod::track::collisionId, col.globalIndex(), cache);
+      for (auto& track : colPvTracks) {
+        int32_t mcPartId = track.mcParticleId();
+        int32_t mcColId = mcPartId >= 0 ? mcParts.iteratorAt(mcPartId).mcCollisionId() : -1;
+        if (mcColId < 0 || mcColIdFromCollision != mcColId) {
+          isCollisionAmbiguous = 1;
+          break;
         }
+      }
+
+      // skip ambiguous collisions
+      if (isCollisionAmbiguous)
+        continue;
+
+      // skip collisions at the borders of TF and ITS ROF
+      if (!col.selection_bit(kNoTimeFrameBorder) || !col.selection_bit(kNoITSROFrameBorder))
+        continue;
+
+      uint32_t nContrib = col.numContrib();
+      histos.fill(HIST("hNcontribColFromMC"), nContrib);
+      if (!col.selection_bit(kIsTriggerTVX))
+        continue;
+
+      histos.fill(HIST("hNcontribAccFromMC"), nContrib);
+
+      int64_t rcBC = col.foundBC_as<BCsRun3>().globalBC();
+      int64_t mcBC = col.mcCollision().bc_as<BCsRun3>().globalBC();
+
+      if (mcBC != rcBC) {
+        histos.fill(HIST("hNcontribMisFromMC"), nContrib);
       }
     }
   }
