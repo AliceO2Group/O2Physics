@@ -197,7 +197,7 @@ struct jEPDzeroFlowAnalysis {
     }
 
     histos.add(Form("hist_EP_cos_Det_v2"), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
-    histos.add(Form("hist_EP_cos_Det_v2"), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
+    histos.add(Form("hist_EP_sin_Det_v2"), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis}});
   }
 
   void processData(MyCollisions::iterator const& collision, aod::CF2ProngTracks const& p2tracks)
