@@ -15,6 +15,9 @@
 /// \author S. Politanò, INFN Torino, Italy
 /// \author Wu Chuntai, CUG, China
 
+#include <string>
+#include <vector>
+
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
@@ -61,6 +64,8 @@ struct HfTaskFlowCharmHadrons {
   Configurable<float> centralityMax{"centralityMax", 100., "Maximum centrality accepted in SP/EP computation (not applied in resolution process)"};
   Configurable<bool> storeEP{"storeEP", false, "Flag to store EP-related axis"};
   Configurable<bool> storeMl{"storeMl", false, "Flag to store ML scores"};
+  Configurable<int> occEstimator{"occEstimator", 1, "Occupancy estimation (1: ITS, 2: FT0C)"};
+  Configurable<bool> storeOccupancy{"storeOccupancy", false, "Flag to store TH2 occITS/occFT0C + HfEvSelBitMasks"};
   Configurable<bool> saveEpResoHisto{"saveEpResoHisto", false, "Flag to save event plane resolution histogram"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::vector<int>> classMl{"classMl", {0, 2}, "Indexes of BDT scores to be stored. Two indexes max."};
@@ -73,6 +78,13 @@ struct HfTaskFlowCharmHadrons {
   ConfigurableAxis thnConfigAxisScalarProd{"thnConfigAxisScalarProd", {100, 0., 1.}, ""};
   ConfigurableAxis thnConfigAxisMlOne{"thnConfigAxisMlOne", {1000, 0., 1.}, ""};
   ConfigurableAxis thnConfigAxisMlTwo{"thnConfigAxisMlTwo", {1000, 0., 1.}, ""};
+  ConfigurableAxis thnConfigAxisOccupancyITS{"thnConfigAxisOccupancyITS", {14, 0, 14000}, ""};
+  ConfigurableAxis thnConfigAxisOccupancyFT0C{"thnConfigAxisOccupancyFT0C", {14, 0, 140000}, ""};
+  ConfigurableAxis thnConfigAxisNoSameBunchPileup{"thnConfigAxisNoSameBunchPileup", {2, 0, 2}, ""};
+  ConfigurableAxis thnConfigAxisNumTracksInTimeRange{"thnConfigAxisNumTracksInTimeRange", {2, 0, 2}, ""};
+  ConfigurableAxis thnConfigAxisNoCollInTimeRangeNarrow{"thnConfigAxisNoCollInTimeRangeNarrow", {2, 0, 2}, ""};
+  ConfigurableAxis thnConfigAxisNoCollInTimeRangeStandard{"thnConfigAxisNoCollInTimeRangeStandard", {2, 0, 2}, ""};
+  ConfigurableAxis thnConfigAxisNoCollInRofStandard{"thnConfigAxisNoCollInRofStandard", {2, 0, 2}, ""};
 
   using CandDsDataWMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfMlDsToKKPi>>;
   using CandDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>>;
@@ -120,6 +132,13 @@ struct HfTaskFlowCharmHadrons {
     const AxisSpec thnAxisScalarProd{thnConfigAxisScalarProd, "SP"};
     const AxisSpec thnAxisMlOne{thnConfigAxisMlOne, "Bkg score"};
     const AxisSpec thnAxisMlTwo{thnConfigAxisMlTwo, "FD score"};
+    const AxisSpec thnAxisOccupancyITS{thnConfigAxisOccupancyITS, "OccupancyITS"};
+    const AxisSpec thnAxisOccupancyFT0C{thnConfigAxisOccupancyFT0C, "OccupancyFT0C"};
+    const AxisSpec thnAxisNoSameBunchPileup{thnConfigAxisNoSameBunchPileup, "NoSameBunchPileup"};
+    const AxisSpec thnAxisNumTracksInTimeRange{thnConfigAxisNumTracksInTimeRange, "NumTracksInTimeRange"};
+    const AxisSpec thnAxisNoCollInTimeRangeNarrow{thnConfigAxisNoCollInTimeRangeNarrow, "NoCollInTimeRangeNarrow"};
+    const AxisSpec thnAxisNoCollInTimeRangeStandard{thnConfigAxisNoCollInTimeRangeStandard, "NoCollInTimeRangeStandard"};
+    const AxisSpec thnAxisNoCollInRofStandard{thnConfigAxisNoCollInRofStandard, "NoCollInRofStandard"};
 
     std::vector<AxisSpec> axes = {thnAxisInvMass, thnAxisPt, thnAxisCent, thnAxisScalarProd};
     if (storeEP) {
@@ -128,7 +147,20 @@ struct HfTaskFlowCharmHadrons {
     if (storeMl) {
       axes.insert(axes.end(), {thnAxisMlOne, thnAxisMlTwo});
     }
+    if (storeOccupancy) {
+      if (occEstimator == 1) {
+        axes.insert(axes.end(), {thnAxisOccupancyITS, thnAxisNoSameBunchPileup, thnAxisNumTracksInTimeRange,
+                                 thnAxisNoCollInTimeRangeNarrow, thnAxisNoCollInTimeRangeStandard, thnAxisNoCollInRofStandard});
+      } else {
+        axes.insert(axes.end(), {thnAxisOccupancyFT0C, thnAxisNoSameBunchPileup, thnAxisNumTracksInTimeRange,
+                                 thnAxisNoCollInTimeRangeNarrow, thnAxisNoCollInTimeRangeStandard, thnAxisNoCollInRofStandard});
+      }
+    }
     registry.add("hSparseFlowCharm", "THn for SP", HistType::kTHnSparseF, axes);
+
+    if (storeOccupancy) {
+      registry.add("trackOccVsFT0COcc", "trackOccVsFT0COcc; trackOcc; FT0COcc", {HistType::kTH2F, {thnAxisOccupancyITS, thnAxisOccupancyFT0C}});
+    }
 
     if (doprocessResolution) { // enable resolution histograms only for resolution process
       registry.add("spReso/hSpResoFT0cFT0a", "hSpResoFT0cFT0a; centrality; Q_{FT0c} #bullet Q_{FT0a}", {HistType::kTH2F, {thnAxisCent, thnAxisScalarProd}});
@@ -236,27 +268,87 @@ struct HfTaskFlowCharmHadrons {
   /// \param cosDeltaPhi is the cosine of the n*(phi - evtPl) angle
   /// \param sp is the scalar product
   /// \param outputMl are the ML scores
+  /// \param occupancy is the occupancy of the collision using the track estimator
+  /// \param hfevselflag flag of the collision associated to utilsEvSelHf.h
   void fillThn(float& mass,
                float& pt,
                float& cent,
                float& cosNPhi,
                float& cosDeltaPhi,
                float& sp,
-               std::vector<float>& outputMl)
+               std::vector<float>& outputMl,
+               float& occupancy,
+               uint16_t& hfevselflag)
   {
-    if (storeMl) {
-      if (storeEP) {
-        registry.fill(HIST("hSparseFlowCharm"), mass, pt, cent, sp, cosNPhi, cosDeltaPhi, outputMl[0], outputMl[1]);
+    if (storeOccupancy) {
+      if (storeMl) {
+        if (storeEP) {
+          registry.fill(HIST("hSparseFlowCharm"), mass, pt, cent, sp, cosNPhi, cosDeltaPhi, outputMl[0], outputMl[1], occupancy,
+                        TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoSameBunchPileup),
+                        TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NumTracksInTimeRange),
+                        TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoCollInTimeRangeNarrow),
+                        TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoCollInTimeRangeStandard),
+                        TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoCollInRofStandard));
+        } else {
+          registry.fill(HIST("hSparseFlowCharm"), mass, pt, cent, sp, outputMl[0], outputMl[1], occupancy,
+                        TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoSameBunchPileup),
+                        TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NumTracksInTimeRange),
+                        TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoCollInTimeRangeNarrow),
+                        TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoCollInTimeRangeStandard),
+                        TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoCollInRofStandard));
+        }
       } else {
-        registry.fill(HIST("hSparseFlowCharm"), mass, pt, cent, sp, outputMl[0], outputMl[1]);
+        if (storeEP) {
+          registry.fill(HIST("hSparseFlowCharm"), mass, pt, cent, sp, cosNPhi, cosDeltaPhi, occupancy,
+                        TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoSameBunchPileup),
+                        TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NumTracksInTimeRange),
+                        TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoCollInTimeRangeNarrow),
+                        TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoCollInTimeRangeStandard),
+                        TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoCollInRofStandard));
+        } else {
+          registry.fill(HIST("hSparseFlowCharm"), mass, pt, cent, sp, occupancy,
+                        TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoSameBunchPileup),
+                        TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NumTracksInTimeRange),
+                        TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoCollInTimeRangeNarrow),
+                        TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoCollInTimeRangeStandard),
+                        TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoCollInRofStandard));
+        }
       }
     } else {
-      if (storeEP) {
-        registry.fill(HIST("hSparseFlowCharm"), mass, pt, cent, sp, cosNPhi, cosDeltaPhi);
+      if (storeMl) {
+        if (storeEP) {
+          registry.fill(HIST("hSparseFlowCharm"), mass, pt, cent, sp, cosNPhi, cosDeltaPhi, outputMl[0], outputMl[1]);
+        } else {
+          registry.fill(HIST("hSparseFlowCharm"), mass, pt, cent, sp, outputMl[0], outputMl[1]);
+        }
       } else {
-        registry.fill(HIST("hSparseFlowCharm"), mass, pt, cent, sp);
+        if (storeEP) {
+          registry.fill(HIST("hSparseFlowCharm"), mass, pt, cent, sp, cosNPhi, cosDeltaPhi);
+        } else {
+          registry.fill(HIST("hSparseFlowCharm"), mass, pt, cent, sp);
+        }
       }
     }
+  }
+
+  /// Get the occupancy
+  /// \param collision is the collision with the occupancy information
+  float getOccupancy(CollsWithQvecs::iterator const& collision)
+  {
+    float occupancy = -999.;
+    switch (occEstimator) {
+      case 1:
+        occupancy = collision.trackOccupancyInTimeRange();
+        break;
+      case 2:
+        occupancy = collision.ft0cOccupancyInTimeRange();
+        break;
+      default:
+        LOG(warning) << "Occupancy estimator not valid. Possible values are ITS or FT0C. Fallback to ITS";
+        occupancy = collision.trackOccupancyInTimeRange();
+        break;
+    }
+    return occupancy;
   }
 
   /// Get the centrality
@@ -360,6 +452,13 @@ struct HfTaskFlowCharmHadrons {
     if (cent < centralityMin || cent > centralityMax) {
       return;
     }
+    float occupancy = 0.;
+    uint16_t hfevflag;
+    if (storeOccupancy) {
+      occupancy = getOccupancy(collision);
+      registry.fill(HIST("trackOccVsFT0COcc"), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
+      hfevflag = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, cent, ccdb, registry);
+    }
 
     std::vector<float> qVecs = getQvec(collision);
     float xQVec = qVecs[0];
@@ -459,7 +558,7 @@ struct HfTaskFlowCharmHadrons {
       float scalprodCand = cosNPhi * xQVec + sinNPhi * yQVec;
       float cosDeltaPhi = std::cos(harmonic * (phiCand - evtPl));
 
-      fillThn(massCand, ptCand, cent, cosNPhi, cosDeltaPhi, scalprodCand, outputMl);
+      fillThn(massCand, ptCand, cent, cosNPhi, cosDeltaPhi, scalprodCand, outputMl, occupancy, hfevflag);
     }
   }
 

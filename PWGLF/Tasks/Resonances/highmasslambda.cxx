@@ -75,6 +75,7 @@ struct highmasslambda {
   // Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
 
   // fill output
+  Configurable<bool> fillQA{"fillQA", false, "fillQA"};
   Configurable<bool> useSP{"useSP", false, "useSP"};
   Configurable<bool> useSignDCAV0{"useSignDCAV0", true, "useSignDCAV0"};
   Configurable<bool> fillDefault{"fillDefault", false, "fill Occupancy"};
@@ -87,7 +88,7 @@ struct highmasslambda {
   Configurable<float> cfgCutCentralityMax{"cfgCutCentralityMax", 50.0f, "Accepted maximum Centrality"};
   Configurable<float> cfgCutCentralityMin{"cfgCutCentralityMin", 30.0f, "Accepted minimum Centrality"};
   // proton track cut
-  Configurable<bool> rejectPID{"reject PID", true, "pion, kaon, electron rejection"};
+  Configurable<bool> rejectPID{"rejectPID", true, "pion, kaon, electron rejection"};
   Configurable<float> cfgCutTOFBeta{"cfgCutTOFBeta", 0.0, "cut TOF beta"};
   Configurable<bool> ispTdifferentialDCA{"ispTdifferentialDCA", true, "is pT differential DCA"};
   Configurable<bool> isPVContributor{"isPVContributor", true, "is PV contributor"};
@@ -112,6 +113,7 @@ struct highmasslambda {
   Configurable<float> nsigmaCutTPC{"nsigmacutTPC", 3.0, "Value of the TPC Nsigma cut"};
   Configurable<float> nsigmaCutTOF{"nsigmaCutTOF", 3.0, "TOF PID"};
   Configurable<float> nsigmaCutTPCPre{"nsigmacutTPCPre", 3.0, "Value of the TPC Nsigma cut Pre filter"};
+  Configurable<float> minnsigmaCutTPCPre{"minnsigmacutTPCPre", -2.0, "Minimum Value of the TPC Nsigma cut Pre filter"};
   Configurable<float> kaonrejpar{"kaonrejpar", 1.0, "Kaon rej. par"};
   // Configs for V0
   Configurable<float> ConfV0PtMin{"ConfV0PtMin", 0.f, "Minimum transverse momentum of V0"};
@@ -154,7 +156,7 @@ struct highmasslambda {
   Filter centralityFilter = (nabs(aod::cent::centFT0C) < cfgCutCentralityMax && nabs(aod::cent::centFT0C) > cfgCutCentralityMin);
   Filter acceptanceFilter = (nabs(aod::track::eta) < cfgCutEta && nabs(aod::track::pt) > cfgCutPT);
   Filter dcaCutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
-  Filter pidFilter = nabs(aod::pidtpc::tpcNSigmaPr) < nsigmaCutTPCPre;
+  Filter pidFilter = aod::pidtpc::tpcNSigmaPr > minnsigmaCutTPCPre&& aod::pidtpc::tpcNSigmaPr < nsigmaCutTPCPre;
 
   using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::EPCalibrationTables, aod::Mults>>;
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPr, aod::pidTOFbeta, aod::pidTOFFullPr, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullEl, aod::pidTOFFullEl>>;
@@ -216,19 +218,11 @@ struct highmasslambda {
     histos.add("hNsigmaProtonPionTPC", "NsigmaProton-Pion TPC distribution", kTH3F, {{60, -3.0f, 3.0f}, {200, -10.0f, 10.0f}, {60, 0.0f, 6.0f}});
     histos.add("hNsigmaProtonKaonTPC", "NsigmaProton-Kaon TPC distribution", kTH3F, {{60, -3.0f, 3.0f}, {200, -10.0f, 10.0f}, {60, 0.0f, 6.0f}});
 
-    histos.add("hNsigmaProtonElectronTPC_afterPi", "NsigmaProton-Electron TPC distribution", kTH3F, {{60, -3.0f, 3.0f}, {200, -10.0f, 10.0f}, {60, 0.0f, 6.0f}});
-    histos.add("hNsigmaProtonPionTPC_afterPi", "NsigmaProton-Pion TPC distribution", kTH3F, {{60, -3.0f, 3.0f}, {200, -10.0f, 10.0f}, {60, 0.0f, 6.0f}});
-    histos.add("hNsigmaProtonKaonTPC_afterPi", "NsigmaProton-Kaon TPC distribution", kTH3F, {{60, -3.0f, 3.0f}, {200, -10.0f, 10.0f}, {60, 0.0f, 6.0f}});
-
-    histos.add("hNsigmaProtonElectronTPC_afterEl", "NsigmaProton-Electron TPC distribution", kTH3F, {{60, -3.0f, 3.0f}, {200, -10.0f, 10.0f}, {60, 0.0f, 6.0f}});
-    histos.add("hNsigmaProtonPionTPC_afterEl", "NsigmaProton-Pion TPC distribution", kTH3F, {{60, -3.0f, 3.0f}, {200, -10.0f, 10.0f}, {60, 0.0f, 6.0f}});
-    histos.add("hNsigmaProtonKaonTPC_afterEl", "NsigmaProton-Kaon TPC distribution", kTH3F, {{60, -3.0f, 3.0f}, {200, -10.0f, 10.0f}, {60, 0.0f, 6.0f}});
-
     histos.add("hNsigmaProtonElectronTPC_afterKa", "NsigmaProton-Electron TPC distribution", kTH3F, {{60, -3.0f, 3.0f}, {200, -10.0f, 10.0f}, {60, 0.0f, 6.0f}});
     histos.add("hNsigmaProtonPionTPC_afterKa", "NsigmaProton-Pion TPC distribution", kTH3F, {{60, -3.0f, 3.0f}, {200, -10.0f, 10.0f}, {60, 0.0f, 6.0f}});
     histos.add("hNsigmaProtonKaonTPC_afterKa", "NsigmaProton-Kaon TPC distribution", kTH3F, {{60, -3.0f, 3.0f}, {200, -10.0f, 10.0f}, {60, 0.0f, 6.0f}});
 
-    histos.add("hNsigmaProtonTPC", "NsigmaProton TPC distribution", kTH3F, {{100, -5.0f, 5.0f}, {60, 0.0f, 6.0f}, occupancyBinning});
+    histos.add("hNsigmaProtonTPC", "NsigmaProton TPC distribution", kTH2F, {{100, -5.0f, 5.0f}, {60, 0.0f, 6.0f}});
     histos.add("hNsigmaProtonTOF", "NsigmaProton TOF distribution", kTH2F, {{1000, -50.0f, 50.0f}, {60, 0.0f, 6.0f}});
     histos.add("hNsigmaProtonTOFPre", "NsigmaProton TOF distribution Pre sel", kTH2F, {{1000, -50.0f, 50.0f}, {60, 0.0f, 6.0f}});
     histos.add("hMassvsDecaySum", "hMassvsDecaySum", kTH2F, {thnAxisInvMass, thnAxisDCASum});
@@ -395,10 +389,10 @@ struct highmasslambda {
   template <typename T>
   bool selectionPID1(const T& candidate)
   {
-    if (candidate.tpcInnerParam() < 0.9 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
+    if (candidate.tpcInnerParam() < 0.85 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
       return true;
     }
-    if (candidate.tpcInnerParam() >= 0.9) {
+    if (candidate.tpcInnerParam() >= 0.85) {
       if (candidate.hasTOF()) {
         if (candidate.beta() > cfgCutTOFBeta && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC && TMath::Abs(candidate.tofNSigmaPr()) < nsigmaCutTOF) {
           return true;
@@ -417,10 +411,10 @@ struct highmasslambda {
   template <typename T>
   bool selectionPID2(const T& candidate)
   {
-    if (candidate.tpcInnerParam() < 0.9 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
+    if (candidate.tpcInnerParam() < 0.85 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
       return true;
     }
-    if (candidate.tpcInnerParam() >= 0.9 && candidate.beta() > cfgCutTOFBeta && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC && TMath::Abs(candidate.tofNSigmaPr()) < nsigmaCutTOF) {
+    if (candidate.tpcInnerParam() >= 0.85 && candidate.beta() > cfgCutTOFBeta && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC && TMath::Abs(candidate.tofNSigmaPr()) < nsigmaCutTOF) {
       return true;
     }
     return false;
@@ -430,10 +424,10 @@ struct highmasslambda {
   template <typename T>
   bool selectionPID3(const T& candidate)
   {
-    if (candidate.tpcInnerParam() < 0.9 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
+    if (candidate.tpcInnerParam() < 0.85 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
       return true;
     }
-    if (candidate.tpcInnerParam() >= 0.9) {
+    if (candidate.tpcInnerParam() >= 0.85) {
       if (candidate.hasTOF()) {
         if (candidate.beta() > cfgCutTOFBeta && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC && TMath::Abs(candidate.tofNSigmaPr()) < nsigmaCutTOF) {
           return true;
@@ -452,17 +446,17 @@ struct highmasslambda {
   template <typename T>
   bool selectionPID4(const T& candidate)
   {
-    if (candidate.tpcInnerParam() < 0.9 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
+    if (candidate.tpcInnerParam() < 0.85 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
       return true;
     }
-    if (candidate.tpcInnerParam() >= 0.9) {
+    if (candidate.tpcInnerParam() >= 0.85) {
       if (candidate.hasTOF()) {
         if (candidate.beta() > cfgCutTOFBeta && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC && TMath::Abs(candidate.tofNSigmaPr()) < nsigmaCutTOF) {
           return true;
         }
       }
       if (!candidate.hasTOF()) {
-        if (candidate.tpcInnerParam() < 1.5 && candidate.tpcInnerParam() < 1.8 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
+        if (candidate.tpcInnerParam() < 1.8 && candidate.tpcNSigmaPr() > -2.0 && candidate.tpcNSigmaPr() < nsigmaCutTPC) {
           return true;
         }
       }
@@ -570,8 +564,10 @@ struct highmasslambda {
     auto centrality = collision.centFT0C();
     auto multTPC = collision.multNTracksPV();
     histos.fill(HIST("hFTOCvsTPCNoCut"), centrality, multTPC);
-
     int occupancy = collision.trackOccupancyInTimeRange();
+    if (occupancy > cfgOccupancyCut) {
+      return;
+    }
     auto psiFT0C = collision.psiFT0C();
     auto psiFT0A = collision.psiFT0A();
     auto psiTPC = collision.psiTPC();
@@ -605,33 +601,6 @@ struct highmasslambda {
       if (!selectionTrack(track1)) {
         continue;
       }
-      if (track1.hasTOF()) {
-        histos.fill(HIST("hNsigmaProtonTOFPre"), track1.tofNSigmaPr(), track1.pt());
-      }
-      if (!track1.hasTOF()) {
-        histos.fill(HIST("hNsigmaProtonElectronTPC"), track1.tpcNSigmaPr(), track1.tpcNSigmaEl(), track1.tpcInnerParam());
-        histos.fill(HIST("hNsigmaProtonPionTPC"), track1.tpcNSigmaPr(), track1.tpcNSigmaPi(), track1.tpcInnerParam());
-        histos.fill(HIST("hNsigmaProtonKaonTPC"), track1.tpcNSigmaPr(), track1.tpcNSigmaKa(), track1.tpcInnerParam());
-        if (rejectPID && !rejectPi(track1)) {
-          continue;
-        }
-        histos.fill(HIST("hNsigmaProtonElectronTPC_afterPi"), track1.tpcNSigmaPr(), track1.tpcNSigmaEl(), track1.tpcInnerParam());
-        histos.fill(HIST("hNsigmaProtonPionTPC_afterPi"), track1.tpcNSigmaPr(), track1.tpcNSigmaPi(), track1.tpcInnerParam());
-        histos.fill(HIST("hNsigmaProtonKaonTPC_afterPi"), track1.tpcNSigmaPr(), track1.tpcNSigmaKa(), track1.tpcInnerParam());
-        if (rejectPID && !rejectEl(track1)) {
-          continue;
-        }
-        histos.fill(HIST("hNsigmaProtonElectronTPC_afterEl"), track1.tpcNSigmaPr(), track1.tpcNSigmaEl(), track1.tpcInnerParam());
-        histos.fill(HIST("hNsigmaProtonPionTPC_afterEl"), track1.tpcNSigmaPr(), track1.tpcNSigmaPi(), track1.tpcInnerParam());
-        histos.fill(HIST("hNsigmaProtonKaonTPC_afterEl"), track1.tpcNSigmaPr(), track1.tpcNSigmaKa(), track1.tpcInnerParam());
-        if (rejectPID && !rejectKa(track1)) {
-          continue;
-        }
-        histos.fill(HIST("hNsigmaProtonElectronTPC_afterKa"), track1.tpcNSigmaPr(), track1.tpcNSigmaEl(), track1.tpcInnerParam());
-        histos.fill(HIST("hNsigmaProtonPionTPC_afterKa"), track1.tpcNSigmaPr(), track1.tpcNSigmaPi(), track1.tpcInnerParam());
-        histos.fill(HIST("hNsigmaProtonKaonTPC_afterKa"), track1.tpcNSigmaPr(), track1.tpcNSigmaKa(), track1.tpcInnerParam());
-      }
-
       // PID check
       if (PIDstrategy == 0 && !selectionPID1(track1)) {
         continue;
@@ -646,12 +615,30 @@ struct highmasslambda {
         continue;
       }
 
+      if (track1.hasTOF()) {
+        histos.fill(HIST("hNsigmaProtonTOFPre"), track1.tofNSigmaPr(), track1.pt());
+      }
+      if (!track1.hasTOF()) {
+        if (fillQA) {
+          histos.fill(HIST("hNsigmaProtonElectronTPC"), track1.tpcNSigmaPr(), track1.tpcNSigmaEl(), track1.tpcInnerParam());
+          histos.fill(HIST("hNsigmaProtonPionTPC"), track1.tpcNSigmaPr(), track1.tpcNSigmaPi(), track1.tpcInnerParam());
+          histos.fill(HIST("hNsigmaProtonKaonTPC"), track1.tpcNSigmaPr(), track1.tpcNSigmaKa(), track1.tpcInnerParam());
+        }
+        if (rejectPID && !rejectKa(track1)) {
+          continue;
+        }
+        if (fillQA) {
+          histos.fill(HIST("hNsigmaProtonElectronTPC_afterKa"), track1.tpcNSigmaPr(), track1.tpcNSigmaEl(), track1.tpcInnerParam());
+          histos.fill(HIST("hNsigmaProtonPionTPC_afterKa"), track1.tpcNSigmaPr(), track1.tpcNSigmaPi(), track1.tpcInnerParam());
+          histos.fill(HIST("hNsigmaProtonKaonTPC_afterKa"), track1.tpcNSigmaPr(), track1.tpcNSigmaKa(), track1.tpcInnerParam());
+        }
+      }
       histos.fill(HIST("hMomCorr"), track1.p() / track1.sign(), track1.p() - track1.tpcInnerParam(), centrality);
       histos.fill(HIST("hEta"), track1.eta());
       histos.fill(HIST("hDcaxy"), track1.dcaXY());
       histos.fill(HIST("hDcaz"), track1.dcaZ());
       histos.fill(HIST("hNsigmaProtonTPCDiff"), track1.tpcNSigmaPr(), track1.tpcNSigmaKa(), track1.pt());
-      histos.fill(HIST("hNsigmaProtonTPC"), track1.tpcNSigmaPr(), track1.pt(), occupancy);
+      histos.fill(HIST("hNsigmaProtonTPC"), track1.tpcNSigmaPr(), track1.pt());
       if (track1.hasTOF()) {
         histos.fill(HIST("hNsigmaProtonTOF"), track1.tofNSigmaPr(), track1.pt());
       }
@@ -702,7 +689,7 @@ struct highmasslambda {
           dcasum = v0.dcav0topv() - track1.dcaXY();
         }
         histos.fill(HIST("hMassvsDecaySum"), Lambdac.M(), dcasum);
-        if (occupancy < cfgOccupancyCut && Lambdac.M() > cMinLambdaMass && Lambdac.M() <= cMaxLambdaMass && TMath::Abs(Lambdac.Rapidity()) < confRapidity && Lambdac.Pt() > 2.0 && Lambdac.Pt() <= 6.0) {
+        if (Lambdac.M() > cMinLambdaMass && Lambdac.M() <= cMaxLambdaMass && TMath::Abs(Lambdac.Rapidity()) < confRapidity && Lambdac.Pt() > 2.0 && Lambdac.Pt() <= 6.0) {
           if (fillDefault) {
             histos.fill(HIST("hSparseV2SASameEvent_V2"), Lambdac.M(), Lambdac.Pt(), v2, TMath::Abs(track1.dcaXY()), Proton.Pt());
           }
@@ -710,7 +697,6 @@ struct highmasslambda {
             histos.fill(HIST("hSparseV2SASameEvent_V2_dcatopv"), Lambdac.M(), Lambdac.Pt(), v2, v0.dcav0topv(), Proton.Pt());
           }
         }
-
         if (fillRotation) {
           for (int nrotbkg = 0; nrotbkg < nBkgRotations; nrotbkg++) {
             auto anglestart = confMinRot;
@@ -730,7 +716,7 @@ struct highmasslambda {
               v2Rot = TMath::Cos(2.0 * phiminuspsiRot);
             }
 
-            if (occupancy < cfgOccupancyCut && LambdacRot.M() > cMinLambdaMass && LambdacRot.M() <= cMaxLambdaMass && TMath::Abs(LambdacRot.Rapidity()) < confRapidity && LambdacRot.Pt() > 2.0 && LambdacRot.Pt() <= 6.0) {
+            if (LambdacRot.M() > cMinLambdaMass && LambdacRot.M() <= cMaxLambdaMass && TMath::Abs(LambdacRot.Rapidity()) < confRapidity && LambdacRot.Pt() > 2.0 && LambdacRot.Pt() <= 6.0) {
               if (fillDefault) {
                 histos.fill(HIST("hSparseV2SASameEventRotational_V2"), LambdacRot.M(), LambdacRot.Pt(), v2Rot, TMath::Abs(track1.dcaXY()), Proton.Pt());
               }
@@ -784,22 +770,17 @@ struct highmasslambda {
       auto QFT0C = collision1.qFT0C();
       int occupancy1 = collision1.trackOccupancyInTimeRange();
       int occupancy2 = collision1.trackOccupancyInTimeRange();
+      if (occupancy1 > cfgOccupancyCut) {
+        continue;
+      }
+      if (occupancy2 > cfgOccupancyCut) {
+        continue;
+      }
       for (auto& [track1, v0] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
+
         if (!selectionTrack(track1)) {
           continue;
         }
-        if (!track1.hasTOF()) {
-          if (rejectPID && !rejectPi(track1)) {
-            continue;
-          }
-          if (rejectPID && !rejectEl(track1)) {
-            continue;
-          }
-          if (rejectPID && !rejectKa(track1)) {
-            continue;
-          }
-        }
-
         // PID check
         if (PIDstrategy == 0 && !selectionPID1(track1)) {
           continue;
@@ -814,6 +795,11 @@ struct highmasslambda {
           continue;
         }
 
+        if (!track1.hasTOF()) {
+          if (rejectPID && !rejectEl(track1)) {
+            continue;
+          }
+        }
         if (!SelectionV0(collision2, v0)) {
           continue;
         }
@@ -843,13 +829,6 @@ struct highmasslambda {
         }
         auto anglesign = (v0.x() - collision1.posX()) * v0.px() + (v0.y() - collision1.posY()) * v0.py() + (v0.z() - collision1.posZ()) * v0.pz();
         anglesign = anglesign / TMath::Abs(anglesign);
-        auto dcasum = 0.0;
-        if (useSignDCAV0) {
-          dcasum = anglesign * (v0.dcav0topv()) - track1.dcaXY();
-        }
-        if (!useSignDCAV0) {
-          dcasum = v0.dcav0topv() - track1.dcaXY();
-        }
 
         if (occupancy1 < cfgOccupancyCut && occupancy2 < cfgOccupancyCut && Lambdac.M() > cMinLambdaMass && Lambdac.M() <= cMaxLambdaMass && TMath::Abs(Lambdac.Rapidity()) < confRapidity && Lambdac.Pt() > 2.0 && Lambdac.Pt() <= 6.0) {
           if (fillDefault) {

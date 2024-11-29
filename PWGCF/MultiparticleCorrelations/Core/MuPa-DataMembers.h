@@ -37,19 +37,19 @@ TProfile* fBasePro = NULL; //!<! keeps flags relevant for the whole analysis
 
 // *) Task configuration:
 struct TaskConfiguration {
-  TString fTaskName = "";                          // task name - this one is used to get the right weights
-                                                   // programatically for this analysis
+  TString fTaskIsConfiguredFromJson = "no";        // the trick to ensure that settings from JSON are taken into account, even if only one configurable is misconfigured, when everything dies silently
+  TString fTaskName = "";                          // task name - this one is used to get the right weights programatically for this analysis
   TString fRunNumber = "";                         // over which run number this task is executed
   Bool_t fRunNumberIsDetermined = kFALSE;          // ensures that run number is determined in process() and propagated to already booked objects only once
   Bool_t fDryRun = kFALSE;                         // book all histos and run without storing and calculating anything
   Bool_t fVerbose = kFALSE;                        // print additional info during debugging, but not for simply utility function or function calls per particle (see next)
   Bool_t fVerboseUtility = kFALSE;                 // print additional info during debugging also for simply utility function, but not for function calls per particle (see next)
   Bool_t fVerboseForEachParticle = kFALSE;         // print additional info during debugging, also for function calls per particle
+  Bool_t fVerboseEventCounter = kTRUE;             // print or not only event counter
+  Bool_t fPlainPrintout = kFALSE;                  // print in color or in plain (use the latter in HL)
   Bool_t fDoAdditionalInsanityChecks = kFALSE;     // do additional insanity checks at run time, at the expense of losing a bit of performance
                                                    // (for instance, check if the run number in the current 'collision' is the same as run number in the first 'collision', etc.)
   Bool_t fInsanityCheckForEachParticle = kFALSE;   // do additional insanity checks at run time for each particle, at the expense of losing a lot of performance. Use only during debugging.
-  Bool_t fUseCCDB = kFALSE;                        // access personal files from CCDB (kTRUE, this is set as default in Configurables),
-                                                   // or from home dir in AliEn (kFALSE, use with care, as this is discouraged)
   Bool_t fProcess[eProcess_N] = {kFALSE};          // set what to process. See enum eProcess for full description. Set via implicit variables within a PROCESS_SWITCH clause.
   TString fWhichProcess = "ProcessRec";            // dump in this variable which process was used
   UInt_t fRandomSeed = 0;                          // argument for TRandom3 constructor. By default it is 0 (seed is guaranteed to be unique in time and space)
@@ -59,42 +59,50 @@ struct TaskConfiguration {
   Bool_t fUseStopwatch = kFALSE;                   // do some basing profiling with TStopwatch for where the execution time is going
   TStopwatch* fTimer[eTimer_N] = {NULL};           // stopwatch, global (overal execution time) and local
   Float_t fFloatingPointPrecision = 1.e-6;         // two floats are the same if TMath::Abs(f1 - f2) < fFloatingPointPrecision (there is configurable for it)
-  // Bool_t fRescaleWithTheoreticalInput; // if kTRUE, all measured correlators are
-  // rescaled with theoretical input, so that in profiles everything is at 1. Used
-  // both in OTF and internal val.
-} tc; // "tc" labels an instance of this group of variables.
+  Int_t fSequentialBailout = 0;                    // if fSequentialBailout > 0, then each fSequentialBailout events the function BailOut() is called. Can be used for real analysis and for IV.
+  Bool_t fUseSpecificCuts = kFALSE;                // apply after DefaultCuts() also hardwired analysis-specific cuts, determined via tc.fWhichSpecificCuts
+  TString fWhichSpecificCuts = "";                 // determine which set of analysis-specific cuts will be applied after DefaultCuts(). Use in combination with tc.fUseSpecificCuts
+} tc;                                              // "tc" labels an instance of this group of variables.
 
 // *) Event-by-event quantities:
 struct EventByEventQuantities {
-  Int_t fSelectedTracks = 0; // integer counter of tracks used to calculate Q-vectors, after all particle cuts have been applied
-  Float_t fCentrality = 0.;  // event-by-event centrality. Value of the default centrality estimator, set via configurable cfCentralityEstimator
-  Float_t fOccupancy = 0.;   // event-by-event occupancy. Value of the default occupancy estimator, set via configurable cfOccupancyEstimator
-} ebye;                      // "ebye" is a common label for objects in this struct
+  Int_t fSelectedTracks = 0;           // integer counter of tracks used to calculate Q-vectors, after all particle cuts have been applied
+  Float_t fMultiplicity = 0.;          // my internal multiplicity, can be set to fSelectedTracks (calculated internally), fReferenceMultiplicity (calculated outside of my code), etc.
+                                       // Results "vs. mult" are plotted against fMultiplicity, whatever it is set to.
+                                       // Use configurable cfMultiplicityEstimator[eMultiplicityEstimator] to define what is this multiplicity, by default it is "SelectedTracks"
+  Float_t fReferenceMultiplicity = 0.; // reference multiplicity, calculated outside of my code. Can be "MultTPC", "MultFV0M", etc.
+                                       // Use configurable cfReferenceMultiplicityEstimator[eReferenceMultiplicityEstimator]" to define what is this multiplicity, by default it is "TBI 20241123 I do not know yet which estimator is best for ref. mult."
+  Float_t fCentrality = 0.;            // event-by-event centrality. Value of the default centrality estimator, set via configurable cfCentralityEstimator
+  Float_t fOccupancy = 0.;             // event-by-event occupancy. Value of the default occupancy estimator, set via configurable cfOccupancyEstimator
+  Float_t fInteractionRate = 0.;       // event-by-event interaction rate
+  Float_t fCurrentRunDuration = 0.;    // how many seconds after start of run this collision was taken, i.e. seconds after start of run (SOR)
+} ebye;                                // "ebye" is a common label for objects in this struct
 
 // *) QA:
 //    Remark 1: I keep new histograms in this group, until I need them permanently in the analysis. Then, they are moved to EventHistograms or ParticleHistograms (yes, even if they are 2D).
 //    Remark 2: All 2D histograms book as TH2F, due to "stmem error" in terminate (see .cxx for further details)
 struct QualityAssurance {
-  TList* fQAList = NULL;                                                   //!<! base list to hold all QA output object
-  TProfile* fQAHistogramsPro = NULL;                                       //!<! keeps flags relevant for the QA histograms
-  Bool_t fCheckUnderflowAndOverflow = kFALSE;                              // check and bail out if in event and particle histograms there are entries which went to underflow or overflow bins
-  TH2F* fQAEventHistograms2D[eQAEventHistograms2D_N][2][2] = {{{NULL}}};   //! [ type - see enum eQAEventHistograms2D ][reco,sim][before, after particle cuts]
-  Bool_t fFillQAEventHistograms2D = kTRUE;                                 // if kFALSE, all 2D event histograms are not filled. if kTRUE, the ones for which fBookQAEventHistograms2D[...] is kTRUE, are filled
-  Bool_t fBookQAEventHistograms2D[eQAEventHistograms2D_N] = {kTRUE};       // book or not this 2D histogram, see configurable cfBookQAEventHistograms2D
-  Float_t fEventHistogramsBins2D[eQAEventHistograms2D_N][2][3] = {{{0.}}}; // [type - see enum][x,y][nBins,min,max]
-  TString fEventHistogramsName2D[eQAEventHistograms2D_N] = {""};           // name of fQAEventHistograms2D, determined programatically from other 1D names, to ease bookkeeping
-  // Int_t fQAEventHistograms2DRebin[eQAEventHistograms2D_N][2] = {{1}};             // to reduce memory consumption, use this number to merge bins together (i.e. "rebinning") [type - see enum][x,y]
-  TH2F* fQAParticleHistograms2D[eQAParticleHistograms2D_N][2][2] = {{{NULL}}};   //! [ type - see enum eQAParticleHistograms2D ][reco,sim][before, after particle cuts]
-  Bool_t fFillQAParticleHistograms2D = kTRUE;                                    // if kFALSE, all 2D particle histograms are not filled. if kTRUE, the ones for which fBookQAParticleHistograms2D[...] is kTRUE, are filled
-  Bool_t fBookQAParticleHistograms2D[eQAParticleHistograms2D_N] = {kTRUE};       // book or not this 2D histogram, see configurable cfBookQAParticleHistograms2D
-  Float_t fParticleHistogramsBins2D[eQAParticleHistograms2D_N][2][3] = {{{0.}}}; // [type - see enum][x,y][nBins,min,max]
-  TString fParticleHistogramsName2D[eQAParticleHistograms2D_N] = {""};           // name of fQAParticleHistograms2D, determined programatically from other 1D names, to ease bookkeeping
-  // Int_t fQAParticleHistograms2DRebin[eQAParticleHistograms2D_N][2] = {{1}};       // to reduce memory consumption, use this number to merge bins together (i.e. "rebinning") [type - see enum][x,y]
-  Float_t fCentrality[eCentralityEstimators_N] = {0.};              // used mostly in QA correlation plots
-  TString fCentralityEstimatorName[eCentralityEstimators_N] = {""}; //
-  Float_t fOccupancy[eOccupancyEstimators_N] = {0.};                // used mostly in QA correlation plots
-  TString fOccupancyEstimatorName[eOccupancyEstimators_N] = {""};   //
-} qa;                                                               // "qa" is a common label for objects in this struct
+  TList* fQAList = NULL;                                                                  //!<! base list to hold all QA output object
+  TProfile* fQAHistogramsPro = NULL;                                                      //!<! keeps flags relevant for the QA histograms
+  Bool_t fCheckUnderflowAndOverflow = kFALSE;                                             // check and bail out if in event and particle histograms there are entries which went to underflow or overflow bins
+  Int_t fRebin = 1;                                                                       // number of bins of selected heavy 2D histograms are devided with this number, there is a configurable cfRebin
+  TH2F* fQAEventHistograms2D[eQAEventHistograms2D_N][2][2] = {{{NULL}}};                  //! [ type - see enum eQAEventHistograms2D ][reco,sim][before, after particle cuts]
+  Bool_t fFillQAEventHistograms2D = kTRUE;                                                // if kFALSE, all 2D event histograms are not filled. if kTRUE, the ones for which fBookQAEventHistograms2D[...] is kTRUE, are filled
+  Bool_t fBookQAEventHistograms2D[eQAEventHistograms2D_N] = {kTRUE};                      // book or not this 2D histogram, see configurable cfBookQAEventHistograms2D
+  Float_t fEventHistogramsBins2D[eQAEventHistograms2D_N][2][3] = {{{0.}}};                // [type - see enum][x,y][nBins,min,max]
+  TString fEventHistogramsName2D[eQAEventHistograms2D_N] = {""};                          // name of fQAEventHistograms2D, determined programatically from other 1D names, to ease bookkeeping
+  TH2F* fQAParticleHistograms2D[eQAParticleHistograms2D_N][2][2] = {{{NULL}}};            //! [ type - see enum eQAParticleHistograms2D ][reco,sim][before, after particle cuts]
+  Bool_t fFillQAParticleHistograms2D = kTRUE;                                             // if kFALSE, all 2D particle histograms are not filled. if kTRUE, the ones for which fBookQAParticleHistograms2D[...] is kTRUE, are filled
+  Bool_t fBookQAParticleHistograms2D[eQAParticleHistograms2D_N] = {kTRUE};                // book or not this 2D histogram, see configurable cfBookQAParticleHistograms2D
+  Float_t fParticleHistogramsBins2D[eQAParticleHistograms2D_N][2][3] = {{{0.}}};          // [type - see enum][x,y][nBins,min,max]
+  TString fParticleHistogramsName2D[eQAParticleHistograms2D_N] = {""};                    // name of fQAParticleHistograms2D, determined programatically from other 1D names, to ease bookkeeping
+  Float_t fReferenceMultiplicity[eReferenceMultiplicityEstimators_N] = {0.};              // used mostly in QA correlation plots
+  TString fReferenceMultiplicityEstimatorName[eReferenceMultiplicityEstimators_N] = {""}; // TBI 20241123 add comment
+  Float_t fCentrality[eCentralityEstimators_N] = {0.};                                    // used mostly in QA correlation plots
+  TString fCentralityEstimatorName[eCentralityEstimators_N] = {""};                       // TBI 20241123 add comment
+  Float_t fOccupancy[eOccupancyEstimators_N] = {0.};                                      // used mostly in QA correlation plots
+  TString fOccupancyEstimatorName[eOccupancyEstimators_N] = {""};                         // TBI 20241123 add comment
+} qa;                                                                                     // "qa" is a common label for objects in this struct
 
 // *) Event histograms:
 struct EventHistograms {
@@ -106,6 +114,7 @@ struct EventHistograms {
   Bool_t fBookEventHistograms[eEventHistograms_N] = {kTRUE};     // book or not this histogram, see SetBookEventHistograms
   Float_t fEventHistogramsBins[eEventHistograms_N][3] = {{0.}};  // [nBins,min,max]
   TString fEventHistogramsName[eEventHistograms_N] = {""};       // name of event histogram, used both for 1D and 2D histograms
+  Int_t fEventCounter[eEventCounter_N] = {0};                    // event counters, see enum eEventCounter for full explanation
   // 2D:
   // ...
   // Remark: All 2D event histograms are still in the QA group. Move here only the ones I will use regularly in the analysis
@@ -118,7 +127,7 @@ struct EventCuts {
   Bool_t fUseEventCuts[eEventCuts_N] = {kFALSE};           // Use or do not use a cut enumerated in eEventHistograms + eEventCuts
   Bool_t fUseEventCutCounterAbsolute = kFALSE;             // profile and save how many times each event cut counter triggered (absolute). Use with care, as this is computationally heavy
   Bool_t fUseEventCutCounterSequential = kFALSE;           // profile and save how many times each event cut counter triggered (sequential). Use with care, as this is computationally heavy
-  Bool_t fEventCutCounterBinLabelingIsDone = kFALSE;       // this flag ensures that ordered labeling of bins, to resemble ordering of cut implementation, is done only once.
+  Bool_t fEventCutCounterBinLabelingIsDone = kFALSE;       // this flag ensures that ordered labeling of bins, to resemble ordering of cut implementation, is done only once
   Bool_t fPrintCutCounterContent = kFALSE;                 // if true, prints on the screen content of fEventCutCounterHist[][] (all which were booked)
   TString fEventCutName[eEventCuts_N] = {""};              // event cut name, with default ordering defined by ordering in enum eEventCuts
   TExMap* fEventCutCounterMap[2] = {NULL};                 // map (key, value) = (enum eEventCuts, ordered bin number)
@@ -185,8 +194,10 @@ struct MultiparticleCorrelations {
   TProfile* fCorrelationsFlagsPro = NULL;                                    // profile to hold all flags for correlations
   Bool_t fCalculateCorrelations = kTRUE;                                     // calculate and store integrated correlations
   TProfile* fCorrelationsPro[4][gMaxHarmonic][eAsFunctionOf_N] = {{{NULL}}}; //! multiparticle correlations
-                                                                             //! [2p=0,4p=1,6p=2,8p=3][n=1,n=2,...,n=gMaxHarmonic][0=integrated,1=vs.
-                                                                             //! multiplicity,2=vs. centrality,3=pT,4=eta]
+                                                                             //  [2p=0,4p=1,6p=2,8p=3][n=1,n=2,...,n=gMaxHarmonic]
+                                                                             //  [0=integrated,1=vs. multiplicity,2=vs. centrality,3=pT,4=eta,5=vs. occupancy]
+  Bool_t fCalculateCorrelationsAsFunctionOf[eAsFunctionOf_N] = {false};      //! [0=integrated,1=vs. multiplicity,2=vs. centrality,3=pT,4=eta,5=vs. occupancy, ...]
+                                                                             //  As of 20241111, 3=pT and 4=eta are not implemented, see void CalculateKineCorrelations(...)
 } mupa;                                                                      // "mupa" is a common label for objects in this struct
 
 // *) Particle weights:
@@ -200,6 +211,16 @@ struct ParticleWeights {
   TString fFileWithWeights = "";                                          // path to external ROOT file which holds all particle weights
   Bool_t fParticleWeightsAreFetched = kFALSE;                             // ensures that particle weights are fetched only once
 } pw;                                                                     // "pw" labels an instance of this group of histograms
+
+// *) Centrality weights:
+struct CentralityWeights {
+  TList* fCentralityWeightsList = NULL;         // list to hold all Q-vector objects
+  TProfile* fCentralityWeightsFlagsPro = NULL;  // profile to hold all flags for CentralityWeights
+  Bool_t fUseCentralityWeights = false;         // use centrality weights
+  TH1D* fCentralityWeightsHist = NULL;          // histograms holding centrality weights
+  TString fFileWithCentralityWeights = "";      // path to external ROOT file which holds all centrality weights
+  Bool_t fCentralityWeightsAreFetched = kFALSE; // ensures that centrality weights are fetched only once
+} cw;
 
 // *) Nested loops:
 struct NestedLoops {
@@ -234,9 +255,12 @@ struct InternalValidation {
   TList* fInternalValidationList = NULL;              // list to hold all objects for internal validation
   TProfile* fInternalValidationFlagsPro = NULL;       // profile to hold all flags for internal validation
   Bool_t fUseInternalValidation = kFALSE;             // use internal validation
-  Bool_t fInternalValidationForceBailout = kFALSE;    // force bailout after fnEventsInternalValidation is reached. In HL, for each real event, I do fnEventsInternalValidation events
-  UInt_t fnEventsInternalValidation = 0;              // how many events will be sampled on-the-fly for internal validation
-  TString* fHarmonicsOptionInternalValidation = NULL; // see .cxx for full documentation
+  Bool_t fInternalValidationForceBailout = kFALSE;    // force bailout in internal validation after either eNumberOfEvents or eSelectedEvents is reached.
+                                                      // This is OK as long as I do not apply any event cuts in InternalValidation().
+                                                      // Remember that for each real event, I do fnEventsInternalValidation events on-the-fly.
+                                                      // Can be used in combination with setting fSequentialBailout > 0.
+  UInt_t fnEventsInternalValidation = 0;              // how many on-the-fly events will be sampled for each real event, for internal validation
+  TString* fHarmonicsOptionInternalValidation = NULL; // "constant" or "correlated", see .cxx for full documentation
   Bool_t fRescaleWithTheoreticalInput = kFALSE;       // if kTRUE, all measured correlators are rescaled with theoretical input, so that in profiles everything is at 1
   TArrayD* fInternalValidationVnPsin[2] = {NULL};     // 0 = { v1, v2, ... }, 1 = { Psi1, Psi2, ... }
   Int_t fMultRangeInternalValidation[2] = {0, 0};     // min and max values for uniform multiplicity distribution in on-the-fly analysis (convention: min <= M < max)
@@ -244,15 +268,16 @@ struct InternalValidation {
 
 // *) Test0:
 struct Test0 {
-  TList* fTest0List = NULL;                                                               // list to hold all objects for Test0
-  TProfile* fTest0FlagsPro = NULL;                                                        // store all flags for Test0
-  Bool_t fCalculateTest0 = kFALSE;                                                        // calculate or not Test0
-  TProfile* fTest0Pro[gMaxCorrelator][gMaxIndex][eAsFunctionOf_N] = {{{NULL}}};           //! [order][index][0=integrated,1=vs. multiplicity,2=vs. centrality,3=pT,4=eta]
-  TString* fTest0Labels[gMaxCorrelator][gMaxIndex] = {{NULL}};                            // all labels: k-p'th order is stored in k-1'th index. So yes, I also store 1-p
-  Bool_t fCalculateTest0AsFunctionOf[eAsFunctionOf_N] = {true, true, true, false, false}; //! [0=integrated,1=vs. multiplicity,2=vs. centrality,3=pT,4=eta]
-  TString fFileWithLabels = "";                                                           // path to external ROOT file which specifies all labels of interest
-  TH1I* fTest0LabelsPlaceholder = NULL;                                                   // store all Test0 labels in this histogram
-} t0;                                                                                     // "t0" labels an instance of this group of histograms
+  TList* fTest0List = NULL;                                                     // list to hold all objects for Test0
+  TProfile* fTest0FlagsPro = NULL;                                              // store all flags for Test0
+  Bool_t fCalculateTest0 = kFALSE;                                              // calculate or not Test0
+  TProfile* fTest0Pro[gMaxCorrelator][gMaxIndex][eAsFunctionOf_N] = {{{NULL}}}; //! [order][index][0=integrated,1=vs. multiplicity,2=vs. centrality,3=pT,4=eta]
+  TString* fTest0Labels[gMaxCorrelator][gMaxIndex] = {{NULL}};                  // all labels: k-p'th order is stored in k-1'th index. So yes, I also store 1-p
+  Bool_t fCalculateTest0AsFunctionOf[eAsFunctionOf_N] = {false};                //! [0=integrated,1=vs. multiplicity,2=vs. centrality,3=pT,4=eta,5=vs. occupancy, ...]
+  TString fFileWithLabels = "";                                                 // path to external ROOT file which specifies all labels of interest
+  Bool_t fUseDefaultLabels = kFALSE;                                            // use default labels hardwired in GetDefaultObjArrayWithLabels()
+  TH1I* fTest0LabelsPlaceholder = NULL;                                         // store all Test0 labels in this histogram
+} t0;                                                                           // "t0" labels an instance of this group of histograms
 
 // *) Results:
 struct Results {                                   // This is in addition also sort of "abstract" interface, which defines common binning, etc., for other groups of histograms.
@@ -262,12 +287,12 @@ struct Results {                                   // This is in addition also s
   TProfile* fResultsPro[eAsFunctionOf_N] = {NULL}; //!<! example histogram to store some results + "abstract" interface, which defines common binning, etc., for other groups of histograms.
 
   // Remark: These settings apply to following categories fCorrelationsPro, fNestedLoopsPro, fTest0Pro, and fResultsHist
-  Float_t fResultsProFixedLengthBins[eAsFunctionOf_N][3] = {{0.}};                                                             // [nBins,min,max]
-  TArrayF* fResultsProVariableLengthBins[eAsFunctionOf_N] = {NULL};                                                            // here for each variable in eAsFunctionOf I specify array holding bin boundaries
-  Bool_t fUseResultsProVariableLengthBins[eAsFunctionOf_N] = {kFALSE};                                                         // use or not variable-length bins
-  TString fResultsProVariableLengthBinsString[eAsFunctionOf_N] = {""};                                                         // TBI 20241110 this one is obsolete, can be removed
-  TString fResultsProXaxisTitle[eAsFunctionOf_N] = {"integrated", "multiplicity", "centrality", "p_{T}", "#eta", "occupancy"}; // keep ordering in sync with enum eAsFunctionOf
-  TString fResultsProRawName[eAsFunctionOf_N] = {"int", "mult", "cent", "pt", "eta", "occu"};                                  // this is how it appears simplified in the hist name when saved to the file
-} res;                                                                                                                         // "res" labels an instance of this group of histograms
+  Float_t fResultsProFixedLengthBins[eAsFunctionOf_N][3] = {{0.}};     // [nBins,min,max]
+  TArrayF* fResultsProVariableLengthBins[eAsFunctionOf_N] = {NULL};    // here for each variable in eAsFunctionOf I specify array holding bin boundaries
+  Bool_t fUseResultsProVariableLengthBins[eAsFunctionOf_N] = {kFALSE}; // use or not variable-length bins
+  TString fResultsProVariableLengthBinsString[eAsFunctionOf_N] = {""}; // TBI 20241110 this one is obsolete, can be removed
+  TString fResultsProXaxisTitle[eAsFunctionOf_N] = {""};               // keep ordering in sync with enum eAsFunctionOf
+  TString fResultsProRawName[eAsFunctionOf_N] = {""};                  // this is how it appears simplified in the hist name when saved to the file
+} res;                                                                 // "res" labels an instance of this group of histograms
 
 #endif // PWGCF_MULTIPARTICLECORRELATIONS_CORE_MUPA_DATAMEMBERS_H_

@@ -15,6 +15,8 @@
 #include <cmath>
 #include <array>
 #include <cstdlib>
+#include <vector>
+#include <algorithm>
 #include <TLorentzVector.h>
 
 #include "Framework/runDataProcessing.h"
@@ -636,6 +638,8 @@ struct threebodyRecoTask {
         continue;
       }
       registry.fill(HIST("hEventCounter"), 2.5);
+      registry.fill(HIST("hCentFT0C"), collision.centFT0C());
+
       if (collision.mcCollisionId() >= 0) {
         isGoodCollision[collision.mcCollisionId()] = true;
       }

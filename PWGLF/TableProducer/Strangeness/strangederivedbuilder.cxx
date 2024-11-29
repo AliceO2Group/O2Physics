@@ -21,6 +21,8 @@
 #include <map>
 #include <iterator>
 #include <utility>
+#include <string>
+#include <vector>
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/RunningWorkflowInfo.h"
@@ -112,6 +114,7 @@ struct strangederivedbuilder {
   Produces<aod::StraFV0AQVs> StraFV0AQVs;     // FV0A Q-vector
   Produces<aod::StraTPCQVs> StraTPCQVs;       // TPC Q-vector
   Produces<aod::StraFT0CQVsEv> StraFT0CQVsEv; // events used to compute FT0C Q-vector (LF)
+  Produces<aod::StraZDCSP> StraZDCSP;         // ZDC Sums and Products
 
   //__________________________________________________
   // Generated binned data
@@ -378,8 +381,9 @@ struct strangederivedbuilder {
                       totalFDDAmplitudeA, totalFDDAmplitudeC,
                       energyCommonZNA, energyCommonZNC,
                       // Collision flags
-                      collision.flags());
-        strangeStamps(bc.runNumber(), bc.timestamp());
+                      collision.flags(),
+                      collision.alias_raw());
+        strangeStamps(bc.runNumber(), bc.timestamp(), bc.globalBC());
       }
       for (const auto& v0 : V0Table_thisColl)
         V0CollIndices[v0.globalIndex()] = strangeColl.lastIndex();
@@ -414,7 +418,8 @@ struct strangederivedbuilder {
     // ______________________________________________
     // fill all MC collisions, correlate via index later on
     for (const auto& mccollision : mcCollisions) {
-      strangeMCColl(mccollision.posX(), mccollision.posY(), mccollision.posZ(), mccollision.impactParameter());
+      strangeMCColl(mccollision.posX(), mccollision.posY(), mccollision.posZ(),
+                    mccollision.impactParameter(), mccollision.eventPlaneAngle());
       strangeMCMults(mccollision.multMCFT0A(), mccollision.multMCFT0C(),
                      mccollision.multMCNParticlesEta05(),
                      mccollision.multMCNParticlesEta08(),
@@ -800,6 +805,10 @@ struct strangederivedbuilder {
     StraFT0CQVs(collision.qFT0C() * std::cos(2 * collision.psiFT0C()), collision.qFT0C() * std::sin(2 * collision.psiFT0C()), collision.qFT0C());
     StraFT0CQVsEv(collision.triggereventep());
   }
+  void processZDCSP(soa::Join<aod::Collisions, aod::SPCalibrationTables>::iterator const& collision)
+  {
+    StraZDCSP(collision.triggereventsp(), collision.psiZDCA(), collision.psiZDCC());
+  }
   void processFT0MQVectors(soa::Join<aod::Collisions, aod::QvectorFT0Ms>::iterator const& collision)
   {
     StraFT0MQVs(collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.sumAmplFT0M());
@@ -905,6 +914,7 @@ struct strangederivedbuilder {
   PROCESS_SWITCH(strangederivedbuilder, processFV0AQVectors, "Produce FV0A Q-vectors table", false);
   PROCESS_SWITCH(strangederivedbuilder, processTPCQVectors, "Produce TPC Q-vectors table", false);
   PROCESS_SWITCH(strangederivedbuilder, processTPCQVectorsLF, "Produce TPC Q-vectors table using LF temporary calibration", false);
+  PROCESS_SWITCH(strangederivedbuilder, processZDCSP, "Produce ZDC SP table", false);
 
   // dedicated findable functionality
   PROCESS_SWITCH(strangederivedbuilder, processV0FoundTags, "Produce FoundV0Tags for findable exercise", false);
