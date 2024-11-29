@@ -33,7 +33,6 @@
 #include "TMath.h"
 #include "TRandom3.h"
 
-
 // table for saving tree with info on data
 namespace dimu
 {
@@ -81,7 +80,6 @@ DECLARE_SOA_TABLE(DiMu, "AOD", "DIMU",
                   dimu::Tzna, dimu::Ezna, dimu::Tznc, dimu::Eznc, dimu::Nclass);
 } // namespace o2::aod
 
-
 // for saving tree with info on reco MC
 namespace recodimu
 {
@@ -92,21 +90,21 @@ DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(PhiAv, phiAv, float);
 DECLARE_SOA_COLUMN(PhiCh, phiCh, float);
 // tracks positive (p) and negative (n)
-DECLARE_SOA_COLUMN(Ptp,  ptp, float);
+DECLARE_SOA_COLUMN(Ptp, ptp, float);
 DECLARE_SOA_COLUMN(Etap, etap, float);
 DECLARE_SOA_COLUMN(Phip, phip, float);
-DECLARE_SOA_COLUMN(Ptn,  ptn, float);
+DECLARE_SOA_COLUMN(Ptn, ptn, float);
 DECLARE_SOA_COLUMN(Etan, etan, float);
 DECLARE_SOA_COLUMN(Phin, phin, float);
-//gen info dimuon
-DECLARE_SOA_COLUMN(GenPt,  gen_pt, float);
+// gen info dimuon
+DECLARE_SOA_COLUMN(GenPt, gen_pt, float);
 DECLARE_SOA_COLUMN(GenRap, gen_rap, float);
 DECLARE_SOA_COLUMN(GenPhi, gen_phi, float);
-//gen info trks
-DECLARE_SOA_COLUMN(GenPtp,  gen_ptp, float);
+// gen info trks
+DECLARE_SOA_COLUMN(GenPtp, gen_ptp, float);
 DECLARE_SOA_COLUMN(GenEtap, gen_etap, float);
 DECLARE_SOA_COLUMN(GenPhip, gen_phip, float);
-DECLARE_SOA_COLUMN(GenPtn,  gen_ptn, float);
+DECLARE_SOA_COLUMN(GenPtn, gen_ptn, float);
 DECLARE_SOA_COLUMN(GenEtan, gen_etan, float);
 DECLARE_SOA_COLUMN(GenPhin, gen_phin, float);
 } // namespace recodimu
@@ -195,7 +193,6 @@ struct fwdMuonsUPC {
   Configurable<float> lowEnZN{"lowEnZN", -50., "lower limit in ZN energy histo"};
   Configurable<float> highEnZN{"highEnZN", 250., "upper limit in ZN energy histo"};
 
-
   void init(InitContext&)
   {
     // PDG
@@ -240,8 +237,8 @@ struct fwdMuonsUPC {
     registry.add("hPhiTrkPos", "#varphi of positive muons;;#counts", kTH1D, {axisPhiSingle});
     registry.add("hPhiTrkNeg", "#varphi of negative muons;;#counts", kTH1D, {axisPhiSingle});
     registry.add("hSameSign", "hSameSign;;#counts", kTH1D, {{6, -0.5, 5.5}});
-    registry.add("hPhiCharge", "#phi #it{charge}", kTH1D,{axisPhi});
-    registry.add("hPhiAverage", "#phi #it{average}", kTH1D,{axisPhi});
+    registry.add("hPhiCharge", "#phi #it{charge}", kTH1D, {axisPhi});
+    registry.add("hPhiAverage", "#phi #it{average}", kTH1D, {axisPhi});
 
     // data
     registry.add("hTimeZNA", "ZNA Times;;#counts", kTH1D, {axisTimeZN});
@@ -278,8 +275,8 @@ struct fwdMuonsUPC {
     McGenRegistry.add("hEtaTrkNeg", "#eta of negative muons;;#counts", kTH1D, {axisEtaSingle});
     McGenRegistry.add("hPhiTrkPos", "#varphi of positive muons;;#counts", kTH1D, {axisPhiSingle});
     McGenRegistry.add("hPhiTrkNeg", "#varphi of negative muons;;#counts", kTH1D, {axisPhiSingle});
-    McGenRegistry.add("hPhiCharge", "#phi #it{charge}", kTH1D,{axisPhi});
-    McGenRegistry.add("hPhiAverage", "#phi #it{average}", kTH1D,{axisPhi});
+    McGenRegistry.add("hPhiCharge", "#phi #it{charge}", kTH1D, {axisPhi});
+    McGenRegistry.add("hPhiAverage", "#phi #it{average}", kTH1D, {axisPhi});
 
     // reco MC
     McRecoRegistry.add("hMass", "Invariant mass of muon pairs;;#counts", kTH1D, {axisMass});
@@ -298,10 +295,10 @@ struct fwdMuonsUPC {
     McRecoRegistry.add("hPhiTrkPos", "#varphi of positive muons;;#counts", kTH1D, {axisPhiSingle});
     McRecoRegistry.add("hPhiTrkNeg", "#varphi of negative muons;;#counts", kTH1D, {axisPhiSingle});
     McRecoRegistry.add("hSameSign", "hSameSign;;#counts", kTH1D, {{6, -0.5, 5.5}});
-    McRecoRegistry.add("hPhiCharge", "#phi #it{charge}", kTH1D,{axisPhi});
-    McRecoRegistry.add("hPhiAverage", "#phi #it{average}", kTH1D,{axisPhi});
+    McRecoRegistry.add("hPhiCharge", "#phi #it{charge}", kTH1D, {axisPhi});
+    McRecoRegistry.add("hPhiAverage", "#phi #it{average}", kTH1D, {axisPhi});
 
-    //corr gen-reco
+    // corr gen-reco
     McRecoRegistry.add("hPtcorr", "gen pT vs reco pT", kTH2D, {axisPt, axisPt});
     McRecoRegistry.add("hRapcorr", "gen rapidity vs reco rapidity", kTH2D, {axisRapidity, axisRapidity});
     McRecoRegistry.add("hPhicorr", "gen #phi vs reco #phi", kTH2D, {axisPhi, axisPhi});
@@ -361,11 +358,11 @@ struct fwdMuonsUPC {
       if (candId < 0)
         continue;
 
-      if(!tr.has_udMcParticle()){
-        //LOGF(info,"tr does not have mc part");
+      if (!tr.has_udMcParticle()) {
+        // LOGF(info,"tr does not have mc part");
         continue;
       }
-      //retrieve mc particle from the reco track
+      // retrieve mc particle from the reco track
       auto mcPart = tr.udMcParticle();
 
       tracksPerCand[candId].push_back(tr.globalIndex());
@@ -436,20 +433,23 @@ struct fwdMuonsUPC {
   }
 
   // function to compute phi for azimuth anisotropy
-  void computePhiAnis(TLorentzVector p1, TLorentzVector p2, int sign1, float &phiAverage, float &phiCharge){
+  void computePhiAnis(TLorentzVector p1, TLorentzVector p2, int sign1, float& phiAverage, float& phiCharge)
+  {
 
     TLorentzVector tSum, tDiffAv, tDiffCh;
     tSum = p1 + p2;
-    if(sign1>0){
+    if (sign1 > 0) {
       tDiffCh = p1 - p2;
-      if(gRandom->Rndm()>0.5)
+      if (gRandom->Rndm() > 0.5)
         tDiffAv = p1 - p2;
-      else tDiffAv = p2 - p1;
-    }else{
-      tDiffCh = p2 - p1;
-      if(gRandom->Rndm()>0.5)
+      else
         tDiffAv = p2 - p1;
-      else tDiffAv = p1 - p2;
+    } else {
+      tDiffCh = p2 - p1;
+      if (gRandom->Rndm() > 0.5)
+        tDiffAv = p2 - p1;
+      else
+        tDiffAv = p1 - p2;
     }
 
     // average
@@ -457,7 +457,6 @@ struct fwdMuonsUPC {
     // charge
     phiCharge = tSum.DeltaPhi(tDiffCh);
   }
-
 
   // function that processes the candidates:
   // it applies V0 selection, trk selection, kine selection, and fills the histograms
@@ -498,23 +497,23 @@ struct fwdMuonsUPC {
     if (nMIDs != 2)
       return;
 
-    //form Lorentz vectors
+    // form Lorentz vectors
     TLorentzVector p1, p2;
     auto mMu = particleMass(pdg, 13);
     p1.SetXYZM(tr1.px(), tr1.py(), tr1.pz(), mMu);
     p2.SetXYZM(tr2.px(), tr2.py(), tr2.pz(), mMu);
     TLorentzVector p = p1 + p2;
 
-    //cut on pair kinematics
-    //select mass
-    if(p.M() < lowMass)
+    // cut on pair kinematics
+    // select mass
+    if (p.M() < lowMass)
       return;
-    if(p.M() > highMass)
+    if (p.M() > highMass)
       return;
-    //select pt
-    if(p.Pt() < lowPt)
+    // select pt
+    if (p.Pt() < lowPt)
       return;
-    if(p.Pt() > highPt)
+    if (p.Pt() > highPt)
       return;
     // select rapidity
     if (p.Rapidity() < lowRapidity)
@@ -525,7 +524,7 @@ struct fwdMuonsUPC {
     // compute phi for azimuth anisotropy
     float phiAverage = 0;
     float phiCharge = 0;
-    computePhiAnis(p1,p2,tr1.sign(),phiAverage, phiCharge);
+    computePhiAnis(p1, p2, tr1.sign(), phiAverage, phiCharge);
 
     // zdc info
     if (TMath::Abs(zdc.timeA) < 10)
@@ -616,10 +615,12 @@ struct fwdMuonsUPC {
   // function that processes the MC gen candidates:
   // it applies some kinematics cut and fills the histograms
   void processMcGenCand(aod::UDMcCollisions::iterator const& mcCand,
-                        aod::UDMcParticles::iterator const& McPart1, aod::UDMcParticles::iterator const& McPart2){
+                        aod::UDMcParticles::iterator const& McPart1, aod::UDMcParticles::iterator const& McPart2)
+  {
 
-    //check that all pairs are mu+mu-
-    if(McPart1.pdgCode() + McPart2.pdgCode() != 0) LOGF(info,"PDG codes: %d | %d" ,McPart1.pdgCode(),McPart2.pdgCode());
+    // check that all pairs are mu+mu-
+    if (McPart1.pdgCode() + McPart2.pdgCode() != 0)
+      LOGF(info, "PDG codes: %d | %d", McPart1.pdgCode(), McPart2.pdgCode());
 
     // create Lorentz vectors
     TLorentzVector p1, p2;
@@ -628,16 +629,16 @@ struct fwdMuonsUPC {
     p2.SetXYZM(McPart2.px(), McPart2.py(), McPart2.pz(), mMu);
     TLorentzVector p = p1 + p2;
 
-    //cut on pair kinematics
-    //select mass
-    if(p.M() < lowMass)
+    // cut on pair kinematics
+    // select mass
+    if (p.M() < lowMass)
       return;
-    if(p.M() > highMass)
+    if (p.M() > highMass)
       return;
-    //select pt
-    if(p.Pt() < lowPt)
+    // select pt
+    if (p.Pt() < lowPt)
       return;
-    if(p.Pt() > highPt)
+    if (p.Pt() > highPt)
       return;
     // select rapidity
     if (p.Rapidity() < lowRapidity)
@@ -645,10 +646,10 @@ struct fwdMuonsUPC {
     if (p.Rapidity() > highRapidity)
       return;
 
-    //compute phi for azimuth anisotropy
+    // compute phi for azimuth anisotropy
     float phiAverage = 0;
     float phiCharge = 0;
-    computePhiAnis(p1,p2,McPart1.pdgCode(),phiAverage, phiCharge);
+    computePhiAnis(p1, p2, McPart1.pdgCode(), phiAverage, phiCharge);
 
     // fill the histos
     McGenRegistry.fill(HIST("hPtTrkPos"), p1.Pt());
@@ -710,16 +711,16 @@ struct fwdMuonsUPC {
     p2.SetXYZM(tr2.px(), tr2.py(), tr2.pz(), mMu);
     TLorentzVector p = p1 + p2;
 
-    //cut on pair kinematics (reco candidates)
-    //select mass
-    if(p.M() < lowMass)
+    // cut on pair kinematics (reco candidates)
+    // select mass
+    if (p.M() < lowMass)
       return;
-    if(p.M() > highMass)
+    if (p.M() > highMass)
       return;
-    //select pt
-    if(p.Pt() < lowPt)
+    // select pt
+    if (p.Pt() < lowPt)
       return;
-    if(p.Pt() > highPt)
+    if (p.Pt() > highPt)
       return;
     // select rapidity
     if (p.Rapidity() < lowRapidity)
@@ -730,7 +731,7 @@ struct fwdMuonsUPC {
     // compute phi for azimuth anisotropy
     float phiAverage = 0;
     float phiCharge = 0;
-    computePhiAnis(p1,p2,tr1.sign(),phiAverage, phiCharge);
+    computePhiAnis(p1, p2, tr1.sign(), phiAverage, phiCharge);
 
     // gen particle
     TLorentzVector p1Mc, p2Mc;
@@ -738,16 +739,16 @@ struct fwdMuonsUPC {
     p2Mc.SetXYZM(McPart2.px(), McPart2.py(), McPart2.pz(), mMu);
     TLorentzVector pMc = p1Mc + p2Mc;
 
-    //compute gen phi for azimuth anisotropy
+    // compute gen phi for azimuth anisotropy
     float phiGenAverage = 0;
     float phiGenCharge = 0;
-    computePhiAnis(p1,p2,McPart1.pdgCode(),phiGenAverage, phiGenCharge);
+    computePhiAnis(p1, p2, McPart1.pdgCode(), phiGenAverage, phiGenCharge);
 
     // print info in case of problems
-    if(tr1.sign()*McPart1.pdgCode()>0 || tr2.sign()*McPart2.pdgCode()>0){
+    if (tr1.sign() * McPart1.pdgCode() > 0 || tr2.sign() * McPart2.pdgCode() > 0) {
       LOGF(info, "Problem: ");
-      LOGF(info, "real: %d | %d",(int)tr1.sign(), (int)tr2.sign());
-      LOGF(info, "mc  : %i | %i",(int)McPart1.pdgCode(), (int)McPart2.pdgCode());
+      LOGF(info, "real: %d | %d", (int)tr1.sign(), (int)tr2.sign());
+      LOGF(info, "mc  : %i | %i", (int)McPart1.pdgCode(), (int)McPart2.pdgCode());
       LOGF(info, "contrib: %d", (int)cand.numContrib());
     }
 
@@ -772,7 +773,7 @@ struct fwdMuonsUPC {
     McRecoRegistry.fill(HIST("hPhiAverage"), phiAverage);
     McRecoRegistry.fill(HIST("hPhiCharge"), phiCharge);
 
-    //gen info (of reco events)
+    // gen info (of reco events)
     McGenRegistry.fill(HIST("hPtTrkPos"), p1Mc.Pt());
     McGenRegistry.fill(HIST("hPtTrkNeg"), p2Mc.Pt());
     McGenRegistry.fill(HIST("hEtaTrkPos"), p1Mc.Eta());
@@ -788,17 +789,17 @@ struct fwdMuonsUPC {
     McGenRegistry.fill(HIST("hPhiCharge"), phiGenCharge);
 
     // reco-gen correlations
-    McRecoRegistry.fill(HIST("hPtcorr"), p.Pt(),pMc.Pt());
-    McRecoRegistry.fill(HIST("hRapcorr"), p.Eta(),pMc.Eta());
-    McRecoRegistry.fill(HIST("hPhicorr"), p.Phi(),pMc.Phi());
+    McRecoRegistry.fill(HIST("hPtcorr"), p.Pt(), pMc.Pt());
+    McRecoRegistry.fill(HIST("hRapcorr"), p.Eta(), pMc.Eta());
+    McRecoRegistry.fill(HIST("hPhicorr"), p.Phi(), pMc.Phi());
 
-    //store the event to save it into a tree
-    if(tr1.sign() > 0){
+    // store the event to save it into a tree
+    if (tr1.sign() > 0) {
       dimuReco(p.Pt(), p.Rapidity(), p.Phi(),
                phiAverage, phiCharge,
                p1.Pt(), p1.PseudoRapidity(), p1.Phi(),
                p2.Pt(), p2.PseudoRapidity(), p2.Phi(),
-               //gen info
+               // gen info
                pMc.Pt(), pMc.Rapidity(), pMc.Phi(),
                p1Mc.Pt(), p1Mc.PseudoRapidity(), p1Mc.Phi(),
                p2Mc.Pt(), p2Mc.PseudoRapidity(), p2Mc.Phi());
@@ -807,7 +808,7 @@ struct fwdMuonsUPC {
                phiAverage, phiCharge,
                p2.Pt(), p2.PseudoRapidity(), p2.Phi(),
                p1.Pt(), p1.PseudoRapidity(), p1.Phi(),
-               //gen info
+               // gen info
                pMc.Pt(), pMc.Rapidity(), pMc.Phi(),
                p2Mc.Pt(), p2Mc.PseudoRapidity(), p2Mc.Phi(),
                p1Mc.Pt(), p1Mc.PseudoRapidity(), p1Mc.Phi());
@@ -816,8 +817,8 @@ struct fwdMuonsUPC {
 
   // PROCESS FUNCTION
   void processData(CandidatesFwd const& eventCandidates,
-               o2::aod::UDZdcsReduced& ZDCs,
-               ForwardTracks const& fwdTracks)
+                   o2::aod::UDZdcsReduced& ZDCs,
+                   ForwardTracks const& fwdTracks)
   {
 
     // map with the tracks
@@ -854,9 +855,9 @@ struct fwdMuonsUPC {
 
   PROCESS_SWITCH(fwdMuonsUPC, processData, "", true);
 
-
   // process MC Truth
-  void processMcGen(aod::UDMcCollisions const& mccollisions, aod::UDMcParticles const& McParts){
+  void processMcGen(aod::UDMcCollisions const& mccollisions, aod::UDMcParticles const& McParts)
+  {
 
     // map with the tracks
     std::unordered_map<int32_t, std::vector<int32_t>> tracksPerCand;
@@ -876,7 +877,6 @@ struct fwdMuonsUPC {
   }
   PROCESS_SWITCH(fwdMuonsUPC, processMcGen, "", false);
 
-
   // process reco MC (gen info included)
   void processMcReco(CandidatesFwd const& eventCandidates,
                      CompleteFwdTracks const& fwdTracks,
@@ -887,39 +887,38 @@ struct fwdMuonsUPC {
     collectRecoCandID(tracksPerCandAll, fwdTracks);
 
     // loop over the candidates
-      for (const auto& item : tracksPerCandAll) {
-        if(item.second.size()!=6){
-          //LOGF(info, "error: reco track(s) not gen");
-          continue;
-        }
-
-        int32_t trId1 = item.second[0];
-        int32_t trId2 = item.second[3]; //[2]
-
-        int32_t candID = item.first;
-        auto cand = eventCandidates.iteratorAt(candID);
-        auto tr1 = fwdTracks.iteratorAt(trId1);
-        auto tr2 = fwdTracks.iteratorAt(trId2);
-
-        auto trMcId1 = item.second[1];
-        auto trMcId2 = item.second[4];
-        auto trMc1 = McParts.iteratorAt(trMcId1);
-        auto trMc2 = McParts.iteratorAt(trMcId2);
-
-        auto mcCandID1 = mcCandidates.iteratorAt(item.second[2]);
-        auto mcCandID2 = mcCandidates.iteratorAt(item.second[5]);
-
-        if(mcCandID1 != mcCandID2){
-          //LOGF(info, "mc tracks belong to different collisions");
-        }
-
-        //auto mcTr1 = McParts.iteratorAt(tr1.udMcParticleId());
-        //auto mcTr2 = McParts.iteratorAt(tr2.udMcParticleId());
-        processMcRecoCand(cand, tr1, trMc1, tr2, trMc2);
+    for (const auto& item : tracksPerCandAll) {
+      if (item.second.size() != 6) {
+        // LOGF(info, "error: reco track(s) not gen");
+        continue;
       }
+
+      int32_t trId1 = item.second[0];
+      int32_t trId2 = item.second[3]; //[2]
+
+      int32_t candID = item.first;
+      auto cand = eventCandidates.iteratorAt(candID);
+      auto tr1 = fwdTracks.iteratorAt(trId1);
+      auto tr2 = fwdTracks.iteratorAt(trId2);
+
+      auto trMcId1 = item.second[1];
+      auto trMcId2 = item.second[4];
+      auto trMc1 = McParts.iteratorAt(trMcId1);
+      auto trMc2 = McParts.iteratorAt(trMcId2);
+
+      auto mcCandID1 = mcCandidates.iteratorAt(item.second[2]);
+      auto mcCandID2 = mcCandidates.iteratorAt(item.second[5]);
+
+      if (mcCandID1 != mcCandID2) {
+        // LOGF(info, "mc tracks belong to different collisions");
+      }
+
+      // auto mcTr1 = McParts.iteratorAt(tr1.udMcParticleId());
+      // auto mcTr2 = McParts.iteratorAt(tr2.udMcParticleId());
+      processMcRecoCand(cand, tr1, trMc1, tr2, trMc2);
+    }
   }
   PROCESS_SWITCH(fwdMuonsUPC, processMcReco, "", false);
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
