@@ -105,21 +105,24 @@ DECLARE_SOA_COLUMN(Z, z, float); //! decay vertex Z coordinate
 DECLARE_SOA_COLUMN(ErrX, errX, float); //! decay vertex X coordinate error
 DECLARE_SOA_COLUMN(ErrY, errY, float); //! decay vertex Y coordinate error
 DECLARE_SOA_COLUMN(ErrZ, errZ, float); //! decay vertex Z coordinate error
-DECLARE_SOA_COLUMN(Chi2PrimProton, chi2PrimProton, float);
-DECLARE_SOA_COLUMN(Chi2PrimKaon, chi2PrimKaon, float);
-DECLARE_SOA_COLUMN(Chi2PrimPion, chi2PrimPion, float);
-DECLARE_SOA_COLUMN(DCAProtonKaon, dcaProtonKaon, float);
-DECLARE_SOA_COLUMN(DCAProtonPion, dcaProtonPion, float);
-DECLARE_SOA_COLUMN(DCAPionKaon, dcaPionKaon, float);
-DECLARE_SOA_COLUMN(Chi2geoProtonKaon, chi2geoProtonKaon, float);
-DECLARE_SOA_COLUMN(Chi2geoProtonPion, chi2geoProtonPion, float);
-DECLARE_SOA_COLUMN(Chi2geoPionKaon, chi2geoPionKaon, float);
+DECLARE_SOA_COLUMN(ErrPVX, errPVX, float); //! event vertex X coordinate error
+DECLARE_SOA_COLUMN(ErrPVY, errPVY, float); //! event vertex Y coordinate error
+DECLARE_SOA_COLUMN(ErrPVZ, errPVZ, float); //! event vertex Z coordinate error
+DECLARE_SOA_COLUMN(Chi2PrimProton, chi2PrimProton, float); //! Chi2 of prong's approach to the PV
+DECLARE_SOA_COLUMN(Chi2PrimKaon, chi2PrimKaon, float); //! Chi2 of prong's approach to the PV
+DECLARE_SOA_COLUMN(Chi2PrimPion, chi2PrimPion, float); //! Chi2 of prong's approach to the PV
+DECLARE_SOA_COLUMN(DCAProtonKaon, dcaProtonKaon, float); //! Distance of closest approach between 2 prongs, cm
+DECLARE_SOA_COLUMN(DCAProtonPion, dcaProtonPion, float); //! Distance of closest approach between 2 prongs, cm
+DECLARE_SOA_COLUMN(DCAPionKaon, dcaPionKaon, float); //! Distance of closest approach between 2 prongs, cm
+DECLARE_SOA_COLUMN(Chi2geoProtonKaon, chi2geoProtonKaon, float); // Chi2 of two prongs' approach to each other
+DECLARE_SOA_COLUMN(Chi2geoProtonPion, chi2geoProtonPion, float); // Chi2 of two prongs' approach to each other
+DECLARE_SOA_COLUMN(Chi2geoPionKaon, chi2geoPionKaon, float); // Chi2 of two prongs' approach to each other
 DECLARE_SOA_COLUMN(Chi2geo, chi2geo, float);     //! chi2 geo of the full candidate
 DECLARE_SOA_COLUMN(Chi2topo, chi2topo, float);     //! chi2 topo of the full candidate (chi2prim of candidate to PV)
-DECLARE_SOA_COLUMN(L, l, float);     //! decay length
+DECLARE_SOA_COLUMN(L, l, float);     //! decay length, cm
 DECLARE_SOA_COLUMN(DeltaL, deltaL, float);     //! decay length error
 DECLARE_SOA_COLUMN(LdL, ldl, float);     //! decay length over its error
-DECLARE_SOA_COLUMN(T, t, float);     //! lifetime
+DECLARE_SOA_COLUMN(T, t, float);     //! proper lifetime, ps
 DECLARE_SOA_COLUMN(DeltaT, deltaT, float);     //! lifetime error
 DECLARE_SOA_COLUMN(MassInv, massInv, float);     //! invariant mass
 DECLARE_SOA_COLUMN(P, p, float);     //! momentum
@@ -127,28 +130,33 @@ DECLARE_SOA_COLUMN(Pt, pt, float);     //! transverse momentum
 DECLARE_SOA_COLUMN(DeltaP, deltaP, float);     //! momentum error
 DECLARE_SOA_COLUMN(DeltaPt, deltaPt, float);     //! transverse momentum error
 DECLARE_SOA_COLUMN(IsSelected, isSelected, int);     //! flag whether candidate was selected in candidateSelectorLc task
-DECLARE_SOA_COLUMN(SigBgStatus, sigBgStatus, int);     //! 0 bg, 1 prompt, 2 non-prompt, 3 wrong order of prongs, -1 default value (impossible, should not be the case)
+DECLARE_SOA_COLUMN(SigBgStatus, sigBgStatus, int);     //! 0 bg, 1 prompt, 2 non-prompt, 3 wrong order of prongs, -1 default value (impossible, should not be the case), -999 for data
 }
 
 namespace mc_match
 {
-DECLARE_SOA_COLUMN(P, p, float);
-DECLARE_SOA_COLUMN(Pt, pt, float);
-DECLARE_SOA_COLUMN(DecayX, decayX, float);
-DECLARE_SOA_COLUMN(DecayY, decayY, float);
-DECLARE_SOA_COLUMN(DecayZ, decayZ, float);
-DECLARE_SOA_COLUMN(DecayL, decayL, float);
-DECLARE_SOA_COLUMN(DecayT, decayT, float);
+DECLARE_SOA_COLUMN(P, p, float); //! Momentum, GeV/c
+DECLARE_SOA_COLUMN(Pt, pt, float); //! Transverse momentum, GeV/c
+DECLARE_SOA_COLUMN(DecayX, decayX, float); //! Secondary (decay) vertex X coordinate, cm
+DECLARE_SOA_COLUMN(DecayY, decayY, float); //! Secondary (decay) vertex Y coordinate, cm
+DECLARE_SOA_COLUMN(DecayZ, decayZ, float); //! Secondary (decay) vertex Z coordinate, cm
+DECLARE_SOA_COLUMN(DecayL, decayL, float); //! Decay length, cm (distance between PV and SV, curvature is neglected)
+DECLARE_SOA_COLUMN(DecayT, decayT, float); //! Proper lifetime, ps
+DECLARE_SOA_COLUMN(EventX, eventX, float); //! Primary (event) vertex X coordinate, cm
+DECLARE_SOA_COLUMN(EventY, eventY, float); //! Primary (event) vertex Y coordinate, cm
+DECLARE_SOA_COLUMN(EventZ, eventZ, float); //! Primary (event) vertex Z coordinate, cm
 }
 
 DECLARE_SOA_TABLE(HfCandLcMCs, "AOD", "HFCANDLCMC",
                   mc_match::P, mc_match::Pt,
                   mc_match::DecayX, mc_match::DecayY, mc_match::DecayZ, mc_match::DecayL,
-                  mc_match::DecayT
+                  mc_match::DecayT,
+                  mc_match::EventX, mc_match::EventY, mc_match::EventZ
 )
 
 DECLARE_SOA_TABLE(HfCandLcKFs, "AOD", "HFCANDLCKF",
                   kf::X, kf::Y, kf::Z, kf::ErrX, kf::ErrY, kf::ErrZ,
+                  kf::ErrPVX, kf::ErrPVY, kf::ErrPVZ,
                   kf::Chi2PrimProton, kf::Chi2PrimKaon, kf::Chi2PrimPion,
                   kf::DCAProtonKaon, kf::DCAProtonPion, kf::DCAPionKaon,
                   kf::Chi2geoProtonKaon, kf::Chi2geoProtonPion, kf::Chi2geoPionKaon,
@@ -591,6 +599,9 @@ struct HfTreeCreatorLcToPKPi {
             const float ErrX = candidate.kfErrorX();
             const float ErrY = candidate.kfErrorY();
             const float ErrZ = candidate.kfErrorZ();
+            const float ErrPVX = candidate.kfErrorPVX();
+            const float ErrPVY = candidate.kfErrorPVY();
+            const float ErrPVZ = candidate.kfErrorPVZ();
             const float chi2prim_proton = CandFlag == 0 ? candidate.kfChi2PrimProng0() : candidate.kfChi2PrimProng2();
             const float chi2prim_kaon = candidate.kfChi2PrimProng1();
             const float chi2prim_pion = CandFlag == 0 ? candidate.kfChi2PrimProng2() : candidate.kfChi2PrimProng0();
@@ -615,6 +626,7 @@ struct HfTreeCreatorLcToPKPi {
             const float mass = CandFlag == 0 ? candidate.kfMassPKPi() : candidate.kfMassPiKP();
             rowCandidateKF(
               X, Y, Z, ErrX, ErrY, ErrZ,
+              ErrPVX, ErrPVY, ErrPVZ,
               chi2prim_proton, chi2prim_kaon, chi2prim_pion,
               dca_proton_kaon, dca_proton_pion, dca_pion_kaon,
               chi2geo_proton_kaon, chi2geo_proton_pion, chi2geo_pion_kaon,
@@ -629,13 +641,16 @@ struct HfTreeCreatorLcToPKPi {
             }
           }
           if (fillCandidateMcTable) {
-            float p, pt, X, Y, Z, L, T;
+            float p, pt, X, Y, Z, X_PV, Y_PV, Z_PV, L, T;
             if (!isMcCandidateSignal) {
               p = UndefValueFloat;
               pt = UndefValueFloat;
               X = UndefValueFloat;
               Y = UndefValueFloat;
               Z = UndefValueFloat;
+              X_PV = UndefValueFloat;
+              Y_PV = UndefValueFloat;
+              Z_PV = UndefValueFloat;
               L = UndefValueFloat;
               T = UndefValueFloat;
             } else {
@@ -647,9 +662,9 @@ struct HfTreeCreatorLcToPKPi {
               pt = particleMother.pt();
               const float p2m = p / MassLambdaCPlus;
               const float gamma = std::sqrt(1 + p2m*p2m); // mother's particle Lorentz factor
-              const float X_PV = mcCollision.posX();
-              const float Y_PV = mcCollision.posY();
-              const float Z_PV = mcCollision.posZ();
+              X_PV = mcCollision.posX();
+              Y_PV = mcCollision.posY();
+              Z_PV = mcCollision.posZ();
               X = mcParticleProng0.vx();
               Y = mcParticleProng0.vy();
               Z = mcParticleProng0.vz();
@@ -658,7 +673,8 @@ struct HfTreeCreatorLcToPKPi {
             }
             rowCandidateMC(
               p, pt,
-              X, Y, Z, L, T
+              X, Y, Z, L, T,
+              X_PV, Y_PV, Z_PV
             );
           }
         }
@@ -953,6 +969,9 @@ struct HfTreeCreatorLcToPKPi {
             const float ErrX = candidate.kfErrorX();
             const float ErrY = candidate.kfErrorY();
             const float ErrZ = candidate.kfErrorZ();
+            const float ErrPVX = candidate.kfErrorPVX();
+            const float ErrPVY = candidate.kfErrorPVY();
+            const float ErrPVZ = candidate.kfErrorPVZ();
             const float chi2prim_proton = CandFlag == 0 ? candidate.kfChi2PrimProng0() : candidate.kfChi2PrimProng2();
             const float chi2prim_kaon = candidate.kfChi2PrimProng1();
             const float chi2prim_pion = CandFlag == 0 ? candidate.kfChi2PrimProng2() : candidate.kfChi2PrimProng0();
@@ -977,6 +996,7 @@ struct HfTreeCreatorLcToPKPi {
             const float mass = CandFlag == 0 ? candidate.kfMassPKPi() : candidate.kfMassPiKP();
             rowCandidateKF(
               X, Y, Z, ErrX, ErrY, ErrZ,
+              ErrPVX, ErrPVY, ErrPVZ,
               chi2prim_proton, chi2prim_kaon, chi2prim_pion,
               dca_proton_kaon, dca_proton_pion, dca_pion_kaon,
               chi2geo_proton_kaon, chi2geo_proton_pion, chi2geo_pion_kaon,

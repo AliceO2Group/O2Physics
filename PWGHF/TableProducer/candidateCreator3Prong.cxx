@@ -578,6 +578,7 @@ struct HfCandidateCreator3Prong {
 
       // fill KF info
       rowCandidateKF(kfCandPKPi.GetErrX(), kfCandPKPi.GetErrY(), kfCandPKPi.GetErrZ(),
+                     std::sqrt(kfCandPKPi.Covariance(0, 0)), std::sqrt(kfCandPKPi.Covariance(1, 1)), std::sqrt(kfCandPKPi.Covariance(2, 2)),
                      massPKPi, massPiKP, massPiKPi, massKKPi, massPiKK, massKPi, massPiK,
                      kfCandPKPi.GetPx(), kfCandPKPi.GetPy(), kfCandPKPi.GetPz(),
                      kfCandPKPi.GetErrPx(), kfCandPKPi.GetErrPy(), kfCandPKPi.GetErrPz(),
