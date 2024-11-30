@@ -52,6 +52,7 @@ struct HfTaskDirectedFlowCharmHadrons {
   Configurable<float> centralityMax{"centralityMax", 100., "Maximum centrality accepted in SP computation"};
   Configurable<bool> storeMl{"storeMl", false, "Flag to store ML scores"};
   Configurable<bool> direct{"direct", false, "Flag to calculate direct v1 odd and even"};
+  Configurable<bool> userap{"userap", false, "Flag to fill rapidity vs eta "};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::vector<int>> classMl{"classMl", {0, 2}, "Indices of BDT scores to be stored. Two indexes max."};
 
@@ -201,9 +202,11 @@ struct HfTaskDirectedFlowCharmHadrons {
 
     for (const auto& candidate : candidates) {
       double massCand = 0.;
+      double rapCand = 0.;
       std::vector<double> outputMl = {-999., -999.};
       if constexpr (std::is_same_v<T1, CandDplusData> || std::is_same_v<T1, CandDplusDataWMl>) {
         massCand = hfHelper.invMassDplusToPiKPi(candidate);
+        rapCand = hfHelper.yDplus(candidate);
         if constexpr (std::is_same_v<T1, CandDplusDataWMl>) {
           for (unsigned int iclass = 0; iclass < classMl->size(); iclass++)
             outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMl->at(iclass)];
@@ -237,6 +240,9 @@ struct HfTaskDirectedFlowCharmHadrons {
       double phiCand = candidate.phi();
       double cosNPhi = std::cos(phiCand);
       double sinNPhi = std::sin(phiCand);
+
+      if (userap)
+        etaCand = rapCand;
 
       auto ux = cosNPhi; // real part of candidate q vector
       auto uy = sinNPhi; // imaginary part of candidate q vector
