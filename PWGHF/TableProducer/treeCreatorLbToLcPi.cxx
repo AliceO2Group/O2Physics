@@ -179,7 +179,7 @@ DECLARE_SOA_TABLE(HfCandLbFulls, "AOD", "HFCANDLBFULL",
                   full::Eta,
                   full::Phi,
                   full::Y,
-                  full::MCflag,
+                  full::McFlag,
                   full::OriginMcRec);
 
 } // namespace o2::aod
